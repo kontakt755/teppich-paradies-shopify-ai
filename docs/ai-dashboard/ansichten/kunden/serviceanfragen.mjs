@@ -80,6 +80,10 @@ function statusBadge(status) {
 }
 
 function zeileHtml(e) {
+  const ladenStatus = { neu: 'Neu', angebot: 'Angebot', nachfassen: 'Nachfassen', gewonnen: 'Gewonnen', verloren: 'Verloren' };
+  const laden = e.laden?.anzahl === 1
+    ? `<p class="small muted">Laden: ${esc(ladenStatus[e.laden.status] || e.laden.status)} · <a href="${esc(e.laden.url)}" target="_blank" rel="noopener">Zugehörigen Vorgang öffnen</a></p>`
+    : e.laden?.anzahl === 2 ? '<p class="small muted">Mehrere Laden-Vorgänge zur selben Anfrage – Zuordnung prüfen.</p>' : '';
   const kontakt = [
     e.telefon ? `<span class="tel-gross">${telLink(e.telefon)}</span>` : '',
     e.email ? `<a href="mailto:${esc(e.email)}" class="sa-mail">${esc(e.email)}</a>` : '',
@@ -90,6 +94,7 @@ function zeileHtml(e) {
       <div class="t">${esc(e.name || 'ohne Namen')}${e.plz ? ` <span class="muted small">${esc(e.plz)}</span>` : ''}</div>
       <div class="m"><span class="badge plain">${esc(LEISTUNG_LABEL[e.leistung] || e.leistung)}</span><span>${esc(QUELLE_LABEL[e.quelle] || e.quelle)}${e.herkunft ? ` · ${esc(e.herkunft)}` : ''}</span><span>${esc(fmtDate(e.datum))}</span>${e.mailId ? '<span>aus dem Postfach übernommen</span>' : ''}</div>
       ${kontakt ? `<div class="sa-kontakt">${kontakt}</div>` : ''}
+      ${laden}
       ${e.naechsterSchritt ? `<div class="next">${esc(e.naechsterSchritt)}</div>` : ''}
       ${notiz ? `<div class="small muted sa-notiz">${esc(notiz)}</div>` : ''}
     </div>
