@@ -99,7 +99,7 @@
       <p class="tp-lieferzeit tp-lieferzeit--produkt"{{ tp_lz_attr }} data-fett="1"><strong>Lieferzeit:</strong> {{ tp_lz_text | escape }}</p>
   {%- endcase -%}
   {%- if tp_lz_datum -%}
-    <script src="{{ 'tp-lieferdatum.js' | asset_url }}" defer></script>
+    <script src="{{ 'tp-lieferdatum.js' | asset_url }}" type="module"></script>
   {%- endif -%}
 {%- endif -%}
 
