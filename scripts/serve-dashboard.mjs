@@ -39,10 +39,12 @@ import { leseBenutzer, benutzerDateiExistiert, benutzerDateiPfad } from '../oper
 import { protokollPfad, letzteEintraege } from '../operations/lib/protokoll.mjs';
 import { logFehler, pfadOhneAbfrage } from './dashboard-log.mjs';
 import { beimEndeLoeschen } from './dashboard-datenkopie.mjs';
+import { dienstversion } from './dashboard-version.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..');
 const ROOT = resolve(REPO_ROOT, 'docs/ai-dashboard');
+const DIENSTVERSION = dienstversion(REPO_ROOT);
 const PORT = Number(process.env.PORT || 8001);
 const HOST = process.env.TP_DASHBOARD_HOST || '127.0.0.1';
 const MAX_BODY = 64 * 1024;
@@ -333,7 +335,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/kettelversand|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-packen|kunden\/musterwirkung|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/bestellung-abhaken|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|version|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/kettelversand|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-packen|kunden\/musterwirkung|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/bestellung-abhaken|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -378,6 +380,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     const url = new URL(req.url, `http://${req.headers.host || HOST}`);
     if (simple === 'prozesse/links' && req.method === 'GET') result = api.prozessLinks({ benutzer });
     else if (simple === 'prozesse/links' && req.method === 'POST') result = api.prozessLinksSetzen(await readJson(req), { benutzer });
+    else if (simple === 'version') result = { version: DIENSTVERSION };
     else if (simple === 'capabilities') result = await api.capabilities();
     else if (simple === 'sync') result = await api.sync();
     else if (simple === 'activity') result = await api.activity();
@@ -536,7 +539,8 @@ export async function handleStatic(req, res, pathname) {
   const file = join(ROOT, rel);
   if (!file.startsWith(ROOT)) { send(res, 403, '403', 'text/plain; charset=utf-8'); return; }
   try {
-    const data = await readFile(file);
+    const roh = await readFile(file);
+    const data = file === join(ROOT, 'index.html') ? roh.toString('utf8').replace('__TP_DIENSTVERSION__', DIENSTVERSION) : roh;
     send(res, 200, data, TYPES[extname(file)] || 'application/octet-stream');
   } catch {
     send(res, 404, '404 - nicht gefunden', 'text/plain; charset=utf-8');

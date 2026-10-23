@@ -11,7 +11,7 @@ import { viewKundenSuche, viewKundenDetail } from './kunden/akte.mjs';
 import { viewKundenBestellungen, ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { viewKundenAngebote, viewKundenWarenkoerbe } from './kunden/angebote.mjs';
 import { fallMarkeSetzen, viewKundenFaelle } from './kunden/faelle.mjs';
-import { ensureServiceanfragen, serviceKlick, serviceNeuAnzahl, viewKundenServiceanfragen } from './kunden/serviceanfragen.mjs';
+import { ensureServiceanfragen, serviceKlick, serviceOffenAnzahl, viewKundenServiceanfragen } from './kunden/serviceanfragen.mjs';
 import { ensureMusterPacken, musterPackenKlick, musterPackenOffen, viewKundenMusterPacken } from './kunden/muster-packen.mjs';
 
 export function viewKunden() {
@@ -84,7 +84,7 @@ function m_badge() {
 }
 
 function s_badge() {
-  const n = serviceNeuAnzahl();
+  const n = serviceOffenAnzahl();
   return n ? ` <span class="badge gap">${n}</span>` : '';
 }
 

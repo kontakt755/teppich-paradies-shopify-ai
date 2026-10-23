@@ -1220,3 +1220,7 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
 .heute-geschaeft-ohne-offen .heute-geschaeft-raster { grid-template-columns: minmax(0, 1fr); }
 .heute-geschaeft-ohne-offen .heute-geschaeft-weiter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 850px) { .heute-geschaeft-ohne-offen .heute-geschaeft-weiter { grid-template-columns: minmax(0, 1fr); } }
+
+/* Dienstupdate bleibt unabhaengig von der Ansicht und ihren Eingaben. */
+.dienstversion-leiste:not([hidden]) { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
+.dienstversion-leiste > span { min-width:0; overflow-wrap:anywhere; }

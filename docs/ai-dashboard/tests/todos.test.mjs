@@ -417,21 +417,30 @@ test('Sicht "Alles": wirklich alles - auch normale Laden-Arbeit, die die frueher
   assert.equal(zaehleTodos(quellen, { ich: 'chef', jetzt: JETZT }).alles, alles.length, 'Chip-Zahl = Listenlaenge');
 });
 
-test('Service-Anfrage "neu" wird To-do, bearbeitete nicht; gelb ab 1 Tag, rot ab 3', () => {
+test('Service-Anfrage bleibt nach Erstkontakt sichtbar, nur neue werden nach 1/3 Tagen gelb/rot', () => {
   const tag = n => vorTagen(n).slice(0, 10);
   const serviceanfragen = [
     { id: 'S-001', status: 'neu', leistung: 'treppe', quelle: 'formular', name: 'Testkundin', plz: '16515', telefon: '0000', erstelltAm: vorTagen(0) },
     { id: 'S-002', status: 'neu', leistung: 'verlegeservice', quelle: 'werbung', email: 'x@example.invalid', datum: tag(4) },
-    { id: 'S-003', status: 'kontaktiert', leistung: 'aufmass', quelle: 'telefon', name: 'Schon dran', erstelltAm: vorTagen(9) },
+    { id: 'S-003', status: 'kontaktiert', leistung: 'aufmass', quelle: 'telefon', name: 'Schon dran', erstelltAm: vorTagen(9), naechsterSchritt: 'Aufmaß vereinbaren' },
+    { id: 'S-004', status: 'termin', leistung: 'aufmass', quelle: 'telefon', name: 'Termin', erstelltAm: vorTagen(8) },
+    { id: 'S-005', status: 'angebot', leistung: 'treppe', quelle: 'telefon', name: 'Angebot', erstelltAm: vorTagen(7) },
+    { id: 'S-006', status: 'gewonnen' }, { id: 'S-007', status: 'verloren' },
   ];
   const todos = leiteTodosAb({ serviceanfragen }, { sicht: 'laden', jetzt: JETZT });
-  assert.deepEqual(todos.map(t => t.id), ['service:S-002', 'service:S-001']);
+  assert.deepEqual(todos.map(t => t.id), ['service:S-002', 'service:S-003', 'service:S-004', 'service:S-005', 'service:S-001']);
   assert.equal(todos[0].ton, 'crit');
   assert.equal(todos[0].titel, 'Bei x@example.invalid melden: neue Anfrage Verlegeservice');
   assert.match(todos[0].kontext, /Werbung · eingegangen vor 4 Tagen · nur E-Mail/);
-  assert.equal(todos[1].ton, '');
-  assert.equal(todos[1].titel, 'Bei Testkundin, 16515 melden: neue Anfrage Treppe');
-  assert.deepEqual(todos[1].knopf, { text: 'Melden', href: '#/kunden?tab=service' });
+  const neu = todos.find(t => t.id === 'service:S-001');
+  assert.equal(neu.ton, '');
+  assert.equal(neu.titel, 'Bei Testkundin, 16515 melden: neue Anfrage Treppe');
+  assert.deepEqual(neu.knopf, { text: 'Anfrage öffnen', href: '#/kunden?tab=service&anfrage=S-001' });
+  assert.equal(todos[1].titel, 'Schon dran: Aufmaß vereinbaren');
+  assert.equal(todos[2].titel, 'Termin: Nächsten Schritt klären');
+  assert.match(todos[3].kontext, /Treppe · Angebot/);
+  assert.ok(todos.slice(1).every(t => t.ton === ''), 'keine erfundene Ueberfaelligkeit aus dem Anfragedatum');
+  assert.equal(zaehleTodos({ serviceanfragen }, { jetzt: JETZT }).laden, 5);
 });
 
 test('Liefertermin bestaetigt: vorher Lieferant dran (kein Nachhaken), danach wir - in To-do und Wartespalte gleich', () => {

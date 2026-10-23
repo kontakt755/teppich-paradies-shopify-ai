@@ -26,6 +26,16 @@ export const STATUS_LABEL = Object.freeze({
 /** Abgeschlossen: gewonnen oder verloren - alles andere ist noch Arbeit. */
 export const ABGESCHLOSSEN = Object.freeze(['gewonnen', 'verloren']);
 
+/** Ein Erstkontakt beendet den Vorgang nicht; Wiedervorlagen bleiben in der Laden-App. */
+export function serviceOffen(e) {
+  return Boolean(e?.id && STATUS.includes(e.status) && !ABGESCHLOSSEN.includes(e.status));
+}
+
+/** Gezielter Sprung zur vorhandenen Anfrage, ohne Kontaktdaten in der Adresse. */
+export function serviceLink(id) {
+  return `#/kunden?${new URLSearchParams({ tab: 'service', anfrage: String(id) })}`;
+}
+
 export const GRENZEN = Object.freeze({ name: 120, telefon: 40, email: 160, plz: 10, herkunft: 120, notiz: 2000, naechsterSchritt: 300, mailId: 100 });
 
 export class ServiceanfrageFehler extends Error {}

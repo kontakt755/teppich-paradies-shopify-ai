@@ -14,7 +14,7 @@
 import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
 import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
-import { LEISTUNG_LABEL, QUELLE_LABEL } from './serviceanfragen.mjs';
+import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
 import { sichereUrl } from './akquise.mjs';
 
@@ -393,22 +393,22 @@ function ausFaellen(quellen) {
 }
 
 /**
- * Neue Service-Anfragen (Kunden > Service-Anfragen, Status "neu"): jemand will verlegen lassen,
- * eine Treppe oder ein Aufmass - das ist Geld, das morgens auf der Startseite stehen muss.
- * Bis 2026-10-19 erschienen sie nur im Reiter selbst (Codex-Audit Punkt 3).
+ * Offene Service-Anfragen bleiben bis zum Abschluss sichtbar. Nur fuer den Erstkontakt gelten
+ * die bestehenden Altersfristen; kontaktiert/Termin/Angebot ist ohne Wiedervorlage kein Verzug.
  */
 function ausServiceanfragen(quellen, jetzt) {
   return (quellen.serviceanfragen || [])
-    .filter(e => e?.status === 'neu' && e.id)
+    .filter(serviceOffen)
     .map(e => {
       const tage = tageSeit(e.erstelltAm || (e.datum ? `${e.datum}T00:00:00` : null), jetzt);
       const wer = [e.name, e.plz].filter(Boolean).join(', ') || e.telefon || e.email || 'ohne Namen';
+      const neu = e.status === 'neu';
       return {
-        id: `service:${e.id}`, art: 'service', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.service), alterTage: tage,
-        titel: `Bei ${wer} melden: neue Anfrage ${LEISTUNG_LABEL[e.leistung] || 'Service'}`,
-        kontext: [QUELLE_LABEL[e.quelle] || null, e.herkunft || null, tage === null ? null : `eingegangen ${vorText(tage)}`,
+        id: `service:${e.id}`, art: 'service', bereich: 'laden', ton: neu ? tonNachAlter(tage, ...FRISTEN.service) : '', alterTage: tage,
+        titel: neu ? `Bei ${wer} melden: neue Anfrage ${LEISTUNG_LABEL[e.leistung] || 'Service'}` : `${wer}: ${e.naechsterSchritt || 'Nächsten Schritt klären'}`,
+        kontext: [neu ? null : `${LEISTUNG_LABEL[e.leistung] || 'Service'} · ${STATUS_LABEL[e.status]}`, QUELLE_LABEL[e.quelle] || null, e.herkunft || null, tage === null ? null : `eingegangen ${vorText(tage)}`,
           e.telefon ? null : (e.email ? 'nur E-Mail' : null)].filter(Boolean).join(' · '),
-        knopf: { text: 'Melden', href: '#/kunden?tab=service' },
+        knopf: { text: 'Anfrage öffnen', href: serviceLink(e.id) },
       };
     });
 }
