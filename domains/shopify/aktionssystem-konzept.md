@@ -233,3 +233,33 @@ selbst aus.
 **Offen:** Produktkarten in Kollektionen zeigen die Aktion noch nicht; Zubehoer in der
 Aktionskollektion wird im Rechner ohne Abzug angezeigt (im Warenkorb zieht Shopify ihn
 trotzdem ab); Google-Feed bekommt keinen sale_price (Merchant-Promotions waeren der Weg).
+
+## Jahreskalender vorbereiten (23.10.2026)
+
+`npm run -s aktion:plan` zeigt die vorgeschlagenen sieben Wellen aus
+`domains/shopify/aktionskalender.json`. Kollektionen und Termine sind Vorschlaege,
+keine bereits freigegebenen Kampagnen. Jede Welle bleibt mit `prozent: null` und
+`freigegeben: false` gesperrt. Es gibt keinen geplanten Schreiblauf und keinen
+automatisch angelegten Rabatt.
+
+Erst wenn Prozent, Zielkollektion und Ausnahmen je Welle feststehen, beide Felder
+entsprechend pflegen. Vor der Freigabe die Zielkollektion im Admin lesen und bereits
+reduzierte Ware, Muster, Zubehoer und Auslauf konkret pruefen; die Zuordnung ist
+keine Eigenschaft, die der Kalender aus einem Kollektionsnamen ableiten kann.
+Die vorhandene Auswahl „Intern: Regulaerer Preis“ ist dafuer eine Pruefhilfe,
+keine automatische Freigabe aller vorgeschlagenen Kollektionen.
+
+`npm run -s aktion:plan -- --welle <id> --jahr <JJJJ>` erzeugt dann ausschliesslich
+eine lokale Datei mit Rabatt- und Anzeigeentwurf; eine bestehende Datei wird nicht
+ueberschrieben. Der Rabatt verwendet Berliner Ortszeit einschliesslich Sommerzeit.
+Das erzeugte Metaobjekt steht absichtlich auf `aktiv: false`. Erst den Rabatt mit
+Prozent, Zeitraum und Zielmenge zuruecklesen; danach Anzeige aktivieren und die
+bestehenden Produkt-/Rechner-/Warenkorb-Gegenproben durchfuehren. Bei Fehlern bleibt
+die Anzeige aus. Die Topbar hat zusaetzlich den standardmaessig ausgeschalteten
+Schalter `aktion_zeigen`; sie wird erst nach diesen Gegenproben freigeschaltet.
+
+Lokale Liquid-Fixtures pruefen Ohne-Aktion, abgeschaltete Topbar, Start-/Endtag,
+Ueberlappung, ungueltige Daten sowie sichere Text-/Linkausgabe. Sie ersetzen vor der
+ersten echten Aktivierung nicht die Gegenprobe des konkreten Rabatts auf den
+tatsaechlich ausgewaehlten Produkten. Solange Kampagnenwerte fehlen, ist nur die
+Vorbereitung abgeschlossen; keine aktive Aktion und kein Rabatt sind zugesagt.
