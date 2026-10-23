@@ -213,6 +213,8 @@ test('Server: Mitarbeiter legt an und aendert, Rolle "lesen" darf nur lesen', as
       const lesen = async keks => (await fetch(`${base}/api/kunden/serviceanfragen`, { headers: { cookie: keks } })).json();
       const lena = await anmelden('lena', 'platzhalter-lesen-1');
       const mona = await anmelden('mona', 'platzhalter-mitarbeiter-1');
+      assert.equal((await fetch(`${base}/api/version`)).status, 401, 'Versionsabfrage bleibt angemeldet');
+      for (const cookie of [lena, mona]) assert.equal((await fetch(`${base}/api/version`, { headers: { cookie } })).status, 200, 'Versionshinweis ist fuer alle Rollen verfuegbar');
 
       assert.deepEqual(await lesen(mona), { verfuegbar: true, eintraege: [] }, 'fehlende Datei = leere Liste');
       const neu = { datum: '2026-10-15', leistung: 'treppe', quelle: 'telefon', name: 'Erika Beispiel', telefon: '0171 000' };

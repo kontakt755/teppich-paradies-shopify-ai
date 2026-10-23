@@ -1295,6 +1295,22 @@ Rein lesend, für alle Rollen (auch „lesen“): `ansichten/bildrechte.mjs`, En
 
 ## 20. Kunden › „Service-Anfragen“ (seit 2026-10-16, #1361, Werkbank w-030)
 
+**Offene Folgearbeit (23.10., #1631):** „Heute“ und der Kundenzaehler behalten neben neuen auch
+kontaktierte Anfragen, Termine und Angebote, bis die Anfrage gewonnen/verloren ist. Der vorhandene
+`naechsterSchritt` wird angezeigt, sonst „Nächsten Schritt klären“. Altersfristen gelten weiterhin nur
+fuer neue Anfragen: ein altes Anfragedatum beweist bei einem vereinbarten Termin keinen Verzug.
+„Anfrage öffnen“ springt per `anfrage=S-…` gezielt in die bestehende Serviceansicht (auch lesend).
+Eine fehlende ID meldet „nicht gefunden“ und bietet den Rueckweg zur Liste.
+Wiedervorlagen bleiben ausschliesslich in der vorhandenen Laden-App. Der vorhandene Ladenlink
+oeffnet deren Einstieg; er behauptet keine automatische Zuordnung und keinen gemeinsamen Status.
+Der absichtlich aggregierte Zahlenendpunkt bleibt unveraendert.
+
+**Noch offene Verknuepfung:** Fuer eine echte Service→Laden-Zuordnung braucht die private Anfrage
+eine bestaetigte vorhandene Laden-Vorgangs-ID und die Laden-App einen gezielten Einstieg auf diese
+ID. Statushoheit und Wiedervorlage bleiben dort. Eine Zuordnung darf erst nach Gegenlesen des
+bestehenden Vorgangs gespeichert werden, nie allein anhand eines aehnlichen Namens. Diese
+Schnittstelle und ein Abgleich beider Datenmodelle sind in #1631 bewusst nicht implementiert.
+
 Anfragen für Verlegeservice, Treppe und Aufmaß an einer Stelle, mit Quelle und Status – damit
 messbar wird, was die Serviceseiten und die Werbung bringen (Inhaber 15.10.: im Control Center
 unter „Kunden“). Reiter `#/kunden?tab=service`, Modul `ansichten/kunden/serviceanfragen.mjs`,

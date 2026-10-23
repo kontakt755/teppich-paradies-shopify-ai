@@ -12,6 +12,7 @@
   <link rel="manifest" href="./manifest.webmanifest" crossorigin="use-credentials">
   <meta name="theme-color" content="#0d0c0b">
   <meta name="description" content="Online-Shop: Warenbestellungen, Muster, Packstation, Versand und Lexikon fuer Teppich Paradies">
+  <meta name="tp-dienstversion" content="__TP_DIENSTVERSION__">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -148,6 +149,10 @@
       <!-- "Stand: vor 3 Min." bzw. Hinweis bei veralteten Daten (bausteine/datenstand.mjs); ausserhalb
            von #main, damit das Nachschreiben keine Eingabe stoert. -->
       <div class="datenstand-leiste" id="datenstandLeiste" hidden></div>
+      <div class="datenstand-leiste warn dienstversion-leiste no-print" id="dienstversionLeiste" role="status" hidden>
+        <span>Neue Version verfügbar. Offene Eingaben bitte zuerst speichern.</span>
+        <button type="button" class="btn btn-sm" id="dienstversionLaden">Neu laden</button>
+      </div>
       <main id="main" class="page" tabindex="-1" aria-live="polite">
         <section class="skeleton" aria-busy="true">
           <div class="sk-line w40"></div>

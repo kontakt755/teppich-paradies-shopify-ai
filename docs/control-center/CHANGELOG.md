@@ -2,6 +2,22 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-23 · Offene Servicefolgearbeit und freiwilliges Versionsupdate (#1631)
+
+- **Geaendert:** Kontaktierte Anfragen, Termine und Angebote bleiben auf „Heute“ sichtbar und
+  zaehlen im Kundenreiter/der Navigation mit. Der vorhandene naechste Schritt und ein gezielter
+  Sprung zur bestehenden Anfrage ersetzen die reine Erstkontaktliste. Nur neue Anfragen tragen
+  die vorhandene Alterswarnung. Ein Dienstupdate zeigt einen manuellen Hinweis ausserhalb der
+  Ansicht; offene Eingaben und Dialoge sperren den Neuladen-Knopf bis zum Speichern/Schliessen.
+- **Getestet:** Ableitung mit allen offenen/abgeschlossenen Stati, genaue ID-Spruenge, keine
+  erfundene Ueberfaelligkeit; Versionsfingerabdruck ohne Datenexporte, HTML/GET-Konsistenz,
+  Herkunfts-/Methoden-/Rollenpruefung und Eingabeschutz. Browserpruefung gegen Datenkopie.
+- **Risiken:** Sichtbarkeit ist keine gemeinsame Statussynchronisation mit dem Laden. Dessen
+  vorhandene Wiedervorlage und der aggregierte Zahlenendpunkt bleiben erhalten; eine bestaetigte
+  Service→Laden-Vorgangsverknuepfung braucht weiterhin beide Datenmodelle.
+- **Naechste Stufe:** Nach Review den Dashboard-Dienst abgleichen; vorhandene offene Tabs sehen
+  den neuen Hinweis erstmals nach einem Laden dieser Fassung.
+
 ## 2026-10-23 · Gewicht und gemeinsame Rollenmaße im Packdialog (#1629)
 
 - **Geaendert:** Der vorhandene Packstueckdialog berechnet aus Fertigmassen, Form,

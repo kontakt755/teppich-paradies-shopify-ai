@@ -200,6 +200,14 @@ es gibt keinen Service Worker. Nach einem Update holt der Browser also beim näc
 neu; alte und neue Fassungen können sich nicht mischen. Versionsanhängsel (`?v=…`) an Modul-Importen
 sind deshalb unnötig – und schädlich, weil dieselbe Datei unter zwei Adressen zweimal ausgeführt würde.
 
+**Bereits offene Seiten (seit 23.10., #1631):** `GET /api/version` liefert fuer alle angemeldeten
+Rollen nur den beim Dienststart eingefrorenen Codefingerabdruck. Die Ausgangsversion steht im
+ausgelieferten HTML (`meta[name=tp-dienstversion]`); Datenexporte aendern sie nicht. Ein anderer
+Dienststand zeigt „Neue Version verfügbar“ ausserhalb von `#main`. Es gibt kein automatisches
+Neuladen. „Neu laden“ ist eine bewusste Aktion und wartet bei offenen Dialogen oder geaenderten
+Text-, Auswahl- und Checkboxfeldern auf Speichern/Schliessen. Die Pruefung laeuft minuetlich und
+beim Zurueckkehren in den Tab. Ein Netzausfall ist kein Update; 401 beendet die Sitzung wie bisher.
+
 Der Browser braucht keinen Token.
 
 **Arbeitsplatz** (`#/prozesse`): Die drei Schnellzugriffe stehen auch auf „Heute“ und in der
