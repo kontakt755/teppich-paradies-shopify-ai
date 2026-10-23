@@ -53,6 +53,9 @@ gebraeuchlich), Erfassen.
 
 ## Noch offen
 
+- **Gewicht & Rollenmaße berechnen:** unverbindliche Vorschlaege aus Teppichmassen, Gesamtgewicht je m², Gesamtdicke und Verpackung; fertiges Packstueck weiterhin messen und wiegen.
+- **Rollenachse:** Laenge der aufgerollten Teppichkante; bei mehreren Teppichen mindestens die laengste kurze Seite.
+
 - In der Tabelle der Lieferantenpost steht in den Zellen weiter die Kurzmarke
   „AB 14.10.“ / „LS 16.10.“ (`ART_KURZ` in `lib/lieferbelege.mjs`), die
   Spaltenkoepfe sind ausgeschrieben.

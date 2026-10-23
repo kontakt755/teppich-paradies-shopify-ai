@@ -97,6 +97,7 @@ import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs
 import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
 import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
 import { musterwirkung } from '../operations/lib/musterwirkung.mjs';
+import { packhilfeDaten } from '../operations/lib/packhilfe-daten.mjs';
 import { musterPackliste } from '../docs/ai-dashboard/lib/muster-packen.mjs';
 import { musterPackenPfad, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
@@ -2429,10 +2430,21 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const stand=leseKettelversand(dir).auftraege[orderId] || {revision:0,positionen:{},pakete:[]};
       const abholPlz=k.stammdaten.absender?.kettelservice?.plz;
       const tarif=kettelTarife(path.join(dir,'versandkosten','tarife.json')).tarif;
+      const rohAuftrag = exportOrders(readJsonGecacht(path.join(dir, 'bestelluebersicht', 'orders.json')))?.find(a => a.id === orderId);
+      const rohPositionen = Array.isArray(rohAuftrag?.lineItems) ? rohAuftrag.lineItems
+        : Array.isArray(rohAuftrag?.lineItems?.nodes) ? rohAuftrag.lineItems.nodes
+          : Array.isArray(rohAuftrag?.lineItems?.edges) ? rohAuftrag.lineItems.edges.map(e => e.node).filter(Boolean) : [];
+      let katalog = [];
+      try { katalog = this._lexikonProdukte(); } catch { /* Optionale Materialhilfe bleibt unbekannt. */ }
       let portale={};
       try { const p=readJsonIfExists(path.join(dir,'versandkosten','portale.json')); for(const name of ['GLS','GEL']) if(typeof p?.[name]==='string' && /^https:\/\//.test(p[name])) portale[name]=p[name]; } catch { /* Optionaler Portalzugang */ }
       return {verfuegbar:true,orderId,name:auftrag.name,revision:stand.revision,
-        positionen:auftrag.positionen.filter(kettelPosition).map(p=>({id:p.lineItemId,titel:p.titel,farbe:p.farbe,ausfuehrung:p.ausfuehrung,stand:stand.positionen[p.lineItemId] || {}})),
+        positionen:auftrag.positionen.filter(kettelPosition).map(p=>{
+          const produkte = p.handle ? katalog.filter(x => x?.handle === p.handle) : [];
+          const roh = rohPositionen.filter(x => x?.id === p.lineItemId);
+          return {id:p.lineItemId,titel:p.titel,farbe:p.farbe,ausfuehrung:p.ausfuehrung,stand:stand.positionen[p.lineItemId] || {},
+            packhilfe:packhilfeDaten({position:p,rohPosition:roh.length === 1 ? roh[0] : null,produkt:produkte.length === 1 ? produkte[0] : null})};
+        }),
         pakete:stand.pakete.map(p=>({...p,vergleich:packVergleich(p,tarif,{zielPlz:auftrag.details?.lieferadresse?.plz,abholPlz})})),portale};
     },
 
