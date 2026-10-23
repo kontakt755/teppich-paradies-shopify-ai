@@ -63,6 +63,17 @@ Die lokale Ausgabe ist ein Pruef-/Vorbereitungsergebnis und publiziert keinen Ka
 
 **Vor dem koordinierten Livewechsel zwingend:**
 
+**Belegter Vorbereitungsstand nach Sortimentsentnahme, 23.10.:** Der vollstaendige
+Seitenlauf pruefte zunaechst 424 Produkte / 4.619 Varianten. Danach wurden drei
+Massprodukte aus einer bestaetigt ausgelaufenen Linie autoritativ als `ARCHIVED`
+gegengelesen. Ein neuer vollstaendiger Adminabruf enthaelt 421 Produkte / 4.616
+Varianten; alle verbleibenden gelesenen Felder einschliesslich Preisen,
+Vergleichspreisen, Verfuegbarkeit und `updatedAt` stimmen mit dem geprueften
+Snapshot ueberein. Der vorhandene Vorher-ID-Guard akzeptiert ausschliesslich
+diese drei belegten Entnahmen. Die vorbereiteten Dateien wurden ohne erneuten
+Massencrawl daraus abgeleitet; Manifest und Abnahme trennen Seitenlauf und
+frischen Adminabgleich. Das ist kein Produktiv- oder Kanalverarbeitungsnachweis.
+
 1. Aktuellen Komplettlauf gegen das Kandidaten-Theme und danach Live pruefen;
    keine ungeklaerten Auslassungen. Alten Quellen-/Regelstand fuer Ruecknahme sichern.
 2. Die blinde stuendliche Shopify-Flow-Publikation neuer TNM-Produkte anhalten oder
