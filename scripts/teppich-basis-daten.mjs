@@ -139,14 +139,15 @@ export class Keks {
   kopf() { return [...this.werte].map(([k, v]) => `${k}=${v}`).join('; '); }
 }
 
-export async function holen(url, keks, { versuche = 2 } = {}) {
+export async function holen(url, keks, { versuche = 2, vorAbruf } = {}) {
   let ziel = url;
   for (let schritt = 0; schritt < 8; schritt++) {
     let antwort;
     try {
+      await vorAbruf?.();
       antwort = await fetch(ziel, { redirect: 'manual', headers: { cookie: keks.kopf(), 'user-agent': 'tp-teppich-basis-daten' } });
     } catch (e) {
-      if (versuche > 1) return holen(url, keks, { versuche: versuche - 1 });
+      if (versuche > 1) return holen(url, keks, { versuche: versuche - 1, vorAbruf });
       throw e;
     }
     keks.aufnehmen(antwort);
@@ -156,9 +157,9 @@ export async function holen(url, keks, { versuche = 2 } = {}) {
     }
     if ((antwort.status === 429 || antwort.status >= 500) && versuche > 1) {
       await new Promise((r) => setTimeout(r, 1500));
-      return holen(url, keks, { versuche: versuche - 1 });
+      return holen(url, keks, { versuche: versuche - 1, vorAbruf });
     }
-    return { status: antwort.status, text: await antwort.text(), theme: themeAus(antwort.headers.get('server-timing')) };
+    return { status: antwort.status, text: await antwort.text(), theme: themeAus(antwort.headers.get('server-timing')), retryAfter: antwort.headers.get('retry-after') };
   }
   throw new Error(`zu viele Weiterleitungen: ${url}`);
 }

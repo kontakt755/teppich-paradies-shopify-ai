@@ -53,6 +53,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
+import { setTimeout as warten } from 'node:timers/promises';
 import { Keks, holen, SHOP, MYSHOPIFY } from './teppich-basis-daten.mjs';
 import { feedTitel, GRATIS_AB } from '../operations/scripts/feed-titel.mjs';
 
@@ -62,7 +63,22 @@ const M = globalThis.TPMass;
 export const STORE = 'sjjyq1-6w.myshopify.com';
 export const PRODUKTART = 'Teppich nach Maß';
 export const AUS_STANDARD = path.join(os.homedir(), 'teppich-paradies-analyse', 'teppich-nach-mass-feed');
-const PARALLEL = 4;
+export const ABRUF_ABSTAND_MS = 1500;
+
+/** Ein globaler Starttakt fuer alle HTTP-Aufrufe dieses Laufs, auch Weiterleitungen. */
+export function abrufTaktung({ jetzt = Date.now, pause = warten } = {}) {
+  let letzterStart = -Infinity;
+  let kette = Promise.resolve();
+  return () => {
+    const naechster = kette.then(async () => {
+      const rest = ABRUF_ABSTAND_MS - (jetzt() - letzterStart);
+      if (rest > 0) await pause(rest);
+      letzterStart = jetzt();
+    });
+    kette = naechster.catch(() => {});
+    return naechster;
+  };
+}
 
 /* ─── Aufruf ─────────────────────────────────────────────────────────── */
 
@@ -352,15 +368,16 @@ export function tsv(kopf, zeilen) {
 
 /* ─── Ablauf ─────────────────────────────────────────────────────────── */
 
-export async function seiteLaden(handle, keks, theme) {
-  const r = await holen(`${SHOP}/products/${encodeURIComponent(handle)}?_tnm=${Date.now()}`, keks);
-  if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
+export async function seiteLaden(handle, keks, theme, { vorAbruf } = {}) {
+  // Kein automatischer Wiederholungsversuch: 429 beendet den gesamten Lauf.
+  const r = await holen(`${SHOP}/products/${encodeURIComponent(handle)}?_tnm=${Date.now()}`, keks, { versuche: 1, vorAbruf });
+  if (r.status !== 200) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status, retryAfter: r.retryAfter });
   if (theme && r.theme && r.theme !== theme) throw new Error(`Antwort kam von Theme ${r.theme} statt ${theme} (Vorschau verloren)`);
   return seiteAuswerten(r.text);
 }
 
 /** Gemeinsamer Builder fuer lokalen CLI/MCP-Lauf und vorhandenen OAuth-Tagesjob. */
-export async function feedErzeugen(produkte, { theme, laden = seiteLaden } = {}) {
+export async function feedErzeugen(produkte, { theme, laden = seiteLaden, jetzt, pause } = {}) {
   if (!Array.isArray(produkte) || !produkte.length) throw new Error('Keine Teppiche nach Mass gefunden.');
   const ids = new Set();
   for (const p of produkte) {
@@ -373,25 +390,34 @@ export async function feedErzeugen(produkte, { theme, laden = seiteLaden } = {})
     }
   }
   const keks = new Keks();
-  if (theme) await holen(`${MYSHOPIFY}/?preview_theme_id=${theme}`, keks);
+  const vorAbruf = abrufTaktung({ jetzt, pause });
   const varianten = produkte.reduce((n, p) => n + p.variants.length, 0);
 
   const zeilen = [];
   const fehler = [];
   let naechster = 0;
-  async function arbeiter() {
-    while (naechster < produkte.length) {
-      const p = produkte[naechster++];
-      try {
-        const r = zeilenFuerProdukt(p, await laden(p.handle, keks, theme));
-        zeilen.push(...r.zeilen);
-        fehler.push(...r.fehler);
-      } catch (e) {
-        fehler.push({ handle: p.handle, variante: null, farbe: null, grund: `Seite: ${e.message}` });
-      }
+  let abbruch = null;
+  const rateLimit = (r) => ({ status: 429, retryAfter: r.retryAfter ?? null,
+    hinweis: 'Kein automatischer Retry. Retry-After vor einem neuen, bewusst gestarteten Lauf beachten.' });
+  if (theme) {
+    const r = await holen(`${MYSHOPIFY}/?preview_theme_id=${theme}`, keks, { versuche: 1, vorAbruf });
+    if (r.status === 429) {
+      fehler.push({ handle: null, variante: null, farbe: null, grund: 'Vorschau: HTTP 429' });
+      abbruch = rateLimit(r);
     }
   }
-  await Promise.all(Array.from({ length: PARALLEL }, arbeiter));
+  // Bewusst seriell: keine weiteren Produktanfragen nach dem ersten 429.
+  while (naechster < produkte.length && !abbruch) {
+    const p = produkte[naechster++];
+    try {
+      const r = zeilenFuerProdukt(p, await laden(p.handle, keks, theme, { vorAbruf }));
+      zeilen.push(...r.zeilen);
+      fehler.push(...r.fehler);
+    } catch (e) {
+      fehler.push({ handle: p.handle, variante: null, farbe: null, grund: `Seite: ${e.message}` });
+      if (e.status === 429) abbruch = rateLimit(e);
+    }
+  }
   zeilen.sort((a, b) => a.handle.localeCompare(b.handle) || a.metaId.localeCompare(b.metaId));
   const groessen = {};
   for (const z of zeilen) groessen[z.groesse] = (groessen[z.groesse] || 0) + 1;
@@ -405,6 +431,7 @@ export async function feedErzeugen(produkte, { theme, laden = seiteLaden } = {})
     zeilen: zeilen.length,
     groessen,
     ausgelassen: fehler,
+    ...(abbruch ? { abbruch: { ...abbruch, ungepruefteProdukte: produkte.length - naechster } } : {}),
     validierteProdukte: produkte.filter((p) => p.variants.every((v) => zeilen.some((z) => z.metaId === nummer(v.id)))).map((p) => ({ id: p.id, updatedAt: p.updatedAt, variantIds: zeilen.filter((z) => z.itemGroupId === nummer(p.id)).map((z) => z.metaId) })),
     kanalFreigabe: false,
     hinweis: 'Das Manifest veroeffentlicht keine Produkte. Freigabe erst nach verarbeiteter Endpreisquelle.',
