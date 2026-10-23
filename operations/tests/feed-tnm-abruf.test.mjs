@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { katalogJsonl, katalogProdukte, katalogHash, pruefeUmfang, datei, metaZeilen, metaDatei, META_KOPF, vorbereiten, verifizierteEntnahmen } from '../scripts/feed-tnm-abruf.mjs';
+import { katalogJsonl, katalogProdukte, katalogHash, pruefeUmfang, datei, metaZeilen, metaDatei, META_KOPF, vorbereiten, verifizierteEntnahmen, diagnoseZeilen } from '../scripts/feed-tnm-abruf.mjs';
 
 const seite = (nodes, endCursor = null) => ({ products: { pageInfo: { hasNextPage: Boolean(endCursor), endCursor }, nodes } });
 const produkt = (id = 1, variants = [{ id: 'gid://shopify/ProductVariant/11', price: '0.85', compareAtPrice: null, availableForSale: true }]) => ({
@@ -79,6 +79,21 @@ test('eine ungueltige/fehlende Zeile verhindert die gesamte Vorbereitung', async
   await assert.rejects(vorbereiten({ proxy, vorher, metaVorher, erzeugen: async () => ({ zeilen: [], pruefung: { varianten: 1, ausgelassen: [{ grund: 'stale' }] } }) }), /keine Feeddatei ersetzt/);
 });
 
+test('CI-Diagnose zeigt hoechstens zehn oeffentliche Zuordnungen und behaelt alle Gruende im Protokoll', () => {
+  const pruefung = { ausgelassen: Array.from({ length: 122 }, (_, i) => ({
+    handle: `p${i}`, variante: String(i + 1), grund: 'JSON-LD stimmt nicht\n::warning::kein Befehl',
+    farbe: 'Sand', interneRohdaten: 'nie-ins-log',
+  })) };
+  const zeilen = diagnoseZeilen(pruefung);
+  assert.equal(zeilen.length, 10);
+  assert.equal(pruefung.ausgelassen.length, 122);
+  assert.deepEqual(JSON.parse(zeilen[0].slice('TNM-Pruefung: '.length)), {
+    handle: 'p0', variante: '1', grund: 'JSON-LD stimmt nicht\n::warning::kein Befehl',
+  });
+  assert.ok(zeilen.every((z) => !z.includes('\n') && !z.includes('nie-ins-log') && !z.includes('farbe')));
+  assert.deepEqual(diagnoseZeilen({ ausgelassen: [] }), []);
+});
+
 test('Katalogaenderung waehrend des Abrufs wird erkannt', async () => {
   let calls = 0;
   const proxy = { execute: async () => { const p = produkt(); if (calls++) p.updatedAt = '2026-10-23T10:01:00Z'; return seite([p]); } };
@@ -121,5 +136,8 @@ test('der eine bestehende Workflow nutzt Proxy-Entry und veroeffentlicht beide Q
   assert.match(yml, /shopify-oauth\.mjs --grant client-credentials/);
   assert.match(yml, /node operations\/scripts\/feed-tnm-abruf\.mjs.*--pruefung tp-tnm-pruefung\.json/);
   assert.match(yml, /git add tp-tnm-preise\.txt tp-tnm-meta\.tsv tp-tnm-pruefung\.json/);
+  assert.match(yml, /name: Vollstaendiges Pruefprotokoll sichern\n\s+if: always\(\)\n\s+uses: actions\/upload-artifact@v4/);
+  assert.match(yml, /path: tp-tnm-pruefung\.json\n\s+if-no-files-found: warn\n\s+retention-days: 7/);
+  assert.doesNotMatch(yml.slice(yml.indexOf('- name: Auf feed-daten veroeffentlichen')), /if: always\(\)|if: failure\(\)/);
   assert.doesNotMatch(yml, /shopify store execute|tnmPreisZeilen|erster Lauf/);
 });

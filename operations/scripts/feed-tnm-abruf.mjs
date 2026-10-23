@@ -86,6 +86,12 @@ export const datei = (zeilen) => tsv(GOOGLE_SPALTEN, zeilen);
 export const metaZeilen = (angebote) => angebote.map(metaZeile);
 export const metaDatei = (zeilen) => tsv(META_KOPF, zeilen);
 
+/** Begrenzte CI-Diagnose: nur oeffentliche Zuordnung und Fehlergrund, keine Rohdaten. */
+export function diagnoseZeilen(pruefung) {
+  return (pruefung?.ausgelassen ?? []).slice(0, 10).map(({ handle, variante, grund }) =>
+    `TNM-Pruefung: ${JSON.stringify({ handle, variante, grund })}`);
+}
+
 export function vorherIds(text) {
   if (!text?.trim()) return [];
   const [kopf, ...rows] = text.trimEnd().split(/\r?\n/).map((z) => z.split('\t'));
@@ -181,7 +187,10 @@ async function main(argv) {
   let r;
   try { r = await vorbereiten({ proxy, vorher, metaVorher }); }
   catch (e) {
-    if (e.pruefung) fs.writeFileSync(o.pruefung, `${JSON.stringify(e.pruefung, null, 2)}\n`);
+    if (e.pruefung) {
+      fs.writeFileSync(o.pruefung, `${JSON.stringify(e.pruefung, null, 2)}\n`);
+      for (const zeile of diagnoseZeilen(e.pruefung)) console.error(zeile);
+    }
     throw e;
   }
   const ausgaben = [[o.aus, r.google], [o['meta-aus'], r.meta], [o.pruefung, `${JSON.stringify(r.pruefung, null, 2)}\n`]];

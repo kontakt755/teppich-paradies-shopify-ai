@@ -55,6 +55,15 @@ jobs:
           SHOPIFY_ADMIN_TOKEN: ${{ env.SHOPIFY_ADMIN_TOKEN || secrets.SHOPIFY_ADMIN_TOKEN }}
         run: node operations/scripts/feed-tnm-abruf.mjs --aus tp-tnm-preise.txt --vorher vorher.txt --meta-aus tp-tnm-meta.tsv --meta-vorher vorher-meta.tsv --pruefung tp-tnm-pruefung.json
 
+      - name: Vollstaendiges Pruefprotokoll sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tnm-pruefung-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tp-tnm-pruefung.json
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Auf feed-daten veroeffentlichen
         run: |
           mkdir veroeffentlichung && cd veroeffentlichung
