@@ -7,6 +7,9 @@
  * Fuer die Shopify-Quelle bietet das Merchant Center keine Titel-Regel an; die
  * ergaenzende Quelle "tp-feedtitel.txt" (Datei, Zuordnung ueber id) ueberschreibt
  * nur den Titel. Shopify selbst bleibt unveraendert.
+ * Die Bulk-Quelle umfasst nur aktive Produkte der bestehenden Google-&-YouTube-
+ * Publikation. Andere aktive Shopartikel haben dort noch kein Angebot und
+ * koennen durch diese ergaenzende Quelle nicht neu angelegt werden.
  *
  * Grundpreis: Die App uebertraegt den in Shopify gepflegten Grundpreis
  * (unitPriceMeasurement, z. B. 2,21 m² je Paket) nicht - Google meldet bei allen
@@ -33,16 +36,17 @@
  *
  * Ablauf (nach groesseren Importen wiederholen, sonst behalten neue Produkte den Rohtitel):
  *   1. npm run -s feed:titel -- --bulk-query   -> Abfrage per bulkOperationRunQuery (Shopify-MCP) laufen lassen, JSONL laden
- *   2. npm run -s feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt --tnm-aus tp-tnm-preise.txt
- *   3. Merchant Center -> Datenquellen -> Zusaetzliche Quellen -> tp-feedtitel.txt und tp-tnm-preise.txt
- *      -> jeweils Aktualisieren -> Datei hochladen (greift nur fuer Angebote, die dort schon existieren)
+ *   2. npm run -s feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt
+ *   3. Merchant Center -> bestehende zusaetzliche Quelle tp-feedtitel.txt
+ *      -> Aktualisieren -> Datei hochladen (greift nur fuer bestehende Angebote).
+ *      Der TNM-Endpreisfeed bleibt beim vorhandenen Tagesjob.
  */
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 export const BULK_QUERY = `
 {
-  products(query: "status:active") {
+  products(query: "status:active AND publication_ids:367654764878") {
     edges {
       node {
         id title productType
