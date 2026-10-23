@@ -80,7 +80,7 @@ const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation'
   'social/upload-zugaenge.json', 'social/upload-links.json',
   // Textvorlage fuer "Muster nachfassen" auf Heute. Der Ordner nachfassen/ bleibt bewusst draussen:
   // mit der echten postfach.json schickte ein Klick auf "Jetzt senden" in der Pruefung echte Mails.
-  'muster-nachfassen-texte.md', 'versandkosten'];
+  'muster-bestellung', 'muster-nachfassen-texte.md', 'versandkosten'];
 
 // Spiegel von ANSICHT_ROLLEN in docs/ai-dashboard/kern/router.mjs: diese Ansichten sieht nur der
 // Inhaber; Mitarbeiter und "lesen" landen dort ohnehin auf "Heute". "social" ist fuer "lesen"

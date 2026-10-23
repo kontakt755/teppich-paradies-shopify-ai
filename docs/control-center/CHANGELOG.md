@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-23 · Gemessene Restlaenge im bestehenden Rollenbestand (#1643)
+
+- **Geaendert:** Inhaber tragen die gemessene Restlaenge direkt bei der vorhandenen Restrolle ein.
+  Feste Breite, Vorschau und konservative Abrundung in volle m²; ausschliesslich physischer Bestand
+  mit atomarer Gegenpruefung, Vorgangs-ID, Protokoll und Read-back. Gebundene, reservierte,
+  zurueckgehaltene oder unbekannte Mengen sperren die Inventur. Der bestehende Ladenknopf
+  verlangt die Buchung vor Zahlung und Zuschnitt.
+- **Getestet:** Nur Attrappen: 12 m Bestand / 10 m Laden / 5 m Online in beiden Reihenfolgen
+  und gleichzeitig; Inventursperren, Dezimallaengen, 4-/5-m-Breite, leere Rolle, falsche Einheit,
+  alter Dialog, gleichzeitige physische Aenderung, erhaltene Onlinebindung, Berechtigungen und
+  Antwortverlust. Shopify-Operationen gegen das aktuelle Schema validiert. 916 Dashboard- und
+  892 Operationstests bestanden; Browser bei 390/1440 px: Inventur speichern, Ladenlaenge
+  abbuchen, gebundene Ware gesperrt, keine JavaScript-Fehler oder Seitenueberlaeufe.
+- **Risiken:** Die bisherigen ganzen m² sind konservativ, nicht zentimetergenau. Getrennte Rollen
+  bleiben getrennte Bestaende. Keine SumUp-Anbindung; das Team muss vor dem Ladenabschluss
+  buchen. Keine echten Produkt- oder Bestandsaenderungen im Test.
+- **Naechste Stufe:** PR-Diff unabhaengig pruefen und bestehenden Dashboard-Dienst aktualisieren;
+  neue Artikel bleiben bis zu bestaetigten Rollendaten und Preisen unveroeffentlicht.
+
 ## 2026-10-23 · Offene Servicefolgearbeit und freiwilliges Versionsupdate (#1631)
 
 - **Geaendert:** Kontaktierte Anfragen, Termine und Angebote bleiben auf „Heute“ sichtbar und
@@ -2552,3 +2571,9 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Richtpreis-Vorschläge stammen aus Lexware-Artikelpreisen (Abruf 13.10., netto,
   nur Arbeit), `freigegeben: false` bis der Inhaber zustimmt. Fotos zur Referenz weiter über „Fotos“.
 - **Nächste Stufe:** Richtpreise live in Lexware gegenprüfen und freigeben.
+
+## 2026-10-23 – Kostenlose Muster automatisch bestellen (#1648)
+
+- Vorhandene Bestellvorlagen und Firmenpostfach fuer privat freigegebene kostenlose Muster verbunden.
+- Versandnachweis und Bestellt-Status automatisch; Artikel und Farben je Kunde direkt sichtbar.
+- Doppelversand, unklare SMTP-Ausgaenge, alte Anfragen und kostenpflichtige Muster abgesichert.

@@ -9,12 +9,13 @@ function produkt(z) {
   return {
     id: z.id, title: z.titel, status: z.status, handle: z.handle || 'test-reststueck', productType: z.productType,
     tags: z.tags || [], rollenbreite: null,
+    maxRollenlaenge: { value: z.maxRollenlaenge ?? '5000' }, preisPro001Qm: { value: z.preisPro001Qm ?? 'false' },
     featuredMedia: null,
     metafields: { nodes: Object.entries(z.felder).map(([key, value]) => ({ key, value })) },
     variants: { nodes: [{
       id: 'gid://shopify/ProductVariant/8001', sku: z.sku, price: z.preis || '149.00', inventoryPolicy: z.policy,
       rollenbreite: z.rollenbreite ? { value: z.rollenbreite } : null,
-      inventoryItem: { id: ITEM_ID, tracked: z.tracked, inventoryLevel: z.available === null ? null : { quantities: [{ name: 'available', quantity: z.available }, { name: 'on_hand', quantity: z.available }] } },
+      inventoryItem: { id: ITEM_ID, tracked: z.tracked, inventoryLevel: z.available === null ? null : { quantities: Object.entries({ available: z.available, on_hand: z.onHand ?? z.available, committed: z.committed ?? 0, reserved: z.reserved ?? 0, damaged: z.damaged ?? 0, safety_stock: z.safety_stock ?? 0, quality_control: z.quality_control ?? 0 }).map(([name, quantity]) => ({ name, quantity })) } },
     }] },
   };
 }
@@ -62,14 +63,16 @@ export function attrappe({ available, verweigert = false, felderFehler = false, 
         const vorlage = { ...produkt({ ...z, id: 'gid://shopify/Product/1', titel: 'VORLAGE Sonderposten', sku: 'SP-0000', available: 0, felder: {} }) };
         return { products: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [produkt(z), vorlage, ...weitere] } };
       }
-      if (name === 'SonderpostenLadenverkauf') {
+      if (name === 'SonderpostenLadenverkauf' || name === 'SonderpostenRolleninventur') {
         if (verweigert) throw new Error('Shopify GraphQL: Access denied for inventorySetQuantities field. Required access: `write_inventory` access scope.');
         if (antwortWeg === 'vor') throw new Error('Shopify Admin API: The operation was aborted due to timeout');
         const q = variables.input.quantities[0];
-        if (q.changeFromQuantity !== z.available) {
+        const alt = variables.input.name === 'on_hand' ? (z.onHand ?? z.available) : z.available;
+        if (q.changeFromQuantity !== alt) {
           return { inventorySetQuantities: { inventoryAdjustmentGroup: null, userErrors: [{ field: ['input'], message: 'stale', code: 'CHANGE_FROM_QUANTITY_STALE' }] } };
         }
-        z.available = q.quantity;
+        if (variables.input.name === 'on_hand') { z.onHand = q.quantity; z.available += q.quantity - alt; }
+        else { if (z.onHand !== undefined) z.onHand += q.quantity - z.available; z.available = q.quantity; }
         if (antwortWeg === 'nach') throw new Error('Shopify Admin API: The operation was aborted due to timeout');
         return { inventorySetQuantities: { inventoryAdjustmentGroup: { id: 'gid://shopify/InventoryAdjustmentGroup/1', reason: 'correction', referenceDocumentUri: variables.input.referenceDocumentUri, changes: [] }, userErrors: [] } };
       }

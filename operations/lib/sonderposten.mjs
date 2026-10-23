@@ -72,9 +72,11 @@ export const RECHT_FEHLT_ROLLE = 'Bestand kann nicht geändert werden: dem Contr
 const VARIANTEN_FELDER = `variants(first: 2) { nodes { id sku price inventoryPolicy
   rollenbreite: metafield(namespace: "custom", key: "rollenbreite") { value }
   inventoryItem { id tracked
-  inventoryLevel(locationId: $locationId) { quantities(names: ["available", "on_hand"]) { name quantity } } } } }`;
+  inventoryLevel(locationId: $locationId) { quantities(names: ["available", "on_hand", "committed", "reserved", "damaged", "safety_stock", "quality_control"]) { name quantity } } } } }`;
 
 const PRODUKT_FELDER = `id title status handle productType tags
+      preisPro001Qm: metafield(namespace: "custom", key: "preis_pro_001_qm") { value }
+      maxRollenlaenge: metafield(namespace: "custom", key: "max_roll_laenge_cm") { value }
       rollenbreite: metafield(namespace: "custom", key: "rollenbreite") { value }`;
 
 export const LISTE_QUERY = `
@@ -106,6 +108,9 @@ mutation SonderpostenLadenverkauf($input: InventorySetQuantitiesInput!, $schlues
     userErrors { field message code }
   }
 }`;
+
+/** Inventur setzt ausschliesslich den physischen Bestand, nie gebundene Mengen. */
+export const INVENTUR_MUTATION = BESTAND_MUTATION.replace('SonderpostenLadenverkauf', 'SonderpostenRolleninventur');
 
 export const FELDER_MUTATION = `
 mutation SonderpostenVerkauftFelder($metafields: [MetafieldsSetInput!]!) {
@@ -201,6 +206,23 @@ export function eintragAus(produkt) {
   const bild = produkt.featuredMedia?.preview?.image || null;
   const rolle = istRolle(produkt);
   const rollenbreite = rolle ? rollenbreiteM(produkt) : null;
+  const vorhanden = item?.tracked ? menge(item.inventoryLevel, 'on_hand') : null;
+  const gebunden = menge(item?.inventoryLevel, 'committed');
+  const reserviert = menge(item?.inventoryLevel, 'reserved');
+  const gesperrteMengen = ['damaged', 'safety_stock', 'quality_control'].map(n => menge(item?.inventoryLevel, n));
+  const zurueckgehalten = gesperrteMengen.every(n => n !== null) ? gesperrteMengen.reduce((a, n) => a + n, 0) : null;
+  let inventurHinweis = null;
+  if (rolle) {
+    if (!['ACTIVE', 'DRAFT'].includes(produkt.status) || produkt.variants.nodes.length !== 1 || String(produkt.preisPro001Qm?.value) === 'true' || !(zahl(produkt.maxRollenlaenge?.value) > 0)) {
+      inventurHinweis = 'Bestandskorrektur nur bei einer Rollenvariante mit m²-Einheit und festem Längenlimit. Bitte in Shopify prüfen.';
+    } else if (!item?.tracked || !ueberverkaufGesperrt) {
+      inventurHinweis = 'In Shopify Bestand verfolgen und Verkauf bei Nichtverfügbarkeit ausschalten.';
+    } else if ([bestand, vorhanden, gebunden, reserviert, ...gesperrteMengen].some(n => n === null || !Number.isInteger(n) || n < 0)) {
+      inventurHinweis = 'Nicht alle Bestandsmengen sind eindeutig lesbar. Bitte in Shopify prüfen.';
+    } else if (gebunden !== 0 || reserviert !== 0 || zurueckgehalten !== 0 || vorhanden !== bestand) {
+      inventurHinweis = 'Es gibt gebundene, reservierte oder zurückgehaltene Ware. Erst diese Mengen in Shopify klären; hier wird nichts überschrieben.';
+    }
+  }
   return {
     id: produkt.id,
     // stueck = Einzelstueck (Bestand 1); rolle = Restrolle (Bestand in m2)
@@ -217,6 +239,12 @@ export function eintragAus(produkt) {
     ueberverkaufGesperrt,
     // null = Bestand wird nicht gefuehrt oder ist am Standort nicht angelegt.
     bestand,
+    bestandVorhanden: vorhanden,
+    bestandGebunden: gebunden,
+    bestandReserviert: reserviert,
+    bestandZurueckgehalten: zurueckgehalten,
+    inventurMoeglich: rolle && inventurHinweis === null,
+    inventurHinweis,
     breiteM: rolle ? rollenbreite : breite,
     laengeM: rolle ? (bestand === null ? null : Math.max(0, Math.floor((bestand * 10000) / Math.round(rollenbreite * 100))) / 100) : laenge,
     flaecheM2: rolle ? bestand : flaeche,
@@ -237,6 +265,54 @@ export function eintragAus(produkt) {
       && (rolle ? bestand !== null && bestand > 0 : bestand === 1),
     // Bestand 0 sperrt den Onlinekauf nur mit gefuehrtem Bestand und DENY.
     onlineGesperrt: Boolean(item?.tracked) && ueberverkaufGesperrt && bestand === 0,
+  };
+}
+
+/** Gemessene, durchgehende Rollenlaenge konservativ als physische ganze m2 erfassen. */
+export async function korrigiereRollenbestand(proxy, { produktId, inventoryItemId, laengeM, erwarteterBestand, operationId, standortId = STANDORT_ID } = {}) {
+  if (!/^gid:\/\/shopify\/Product\/\d+$/.test(String(produktId || ''))) throw new SonderpostenFehler(400, 'Ungültige Produkt-ID.');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(operationId || ''))) throw new SonderpostenFehler(400, 'Die Vorgangs-ID fehlt. Bitte den Dialog neu öffnen.');
+  const laenge = Number(laengeM);
+  if (laengeM === null || laengeM === '' || !Number.isFinite(laenge) || laenge < 0 || laenge > 100 || Math.abs(laenge * 100 - Math.round(laenge * 100)) > 1e-6) throw new SonderpostenFehler(400, 'Bitte die gemessene Länge von 0 bis 100 m mit höchstens zwei Nachkommastellen angeben.');
+  if (!Number.isInteger(erwarteterBestand) || erwarteterBestand < 0 || !inventoryItemId) throw new SonderpostenFehler(400, 'Der bisherige Bestand fehlt. Bitte die Liste neu laden.');
+  let vorher;
+  try { ({ eintrag: vorher } = await leseEinzeln(proxy, produktId, { standortId })); }
+  catch (e) {
+    if (e instanceof SonderpostenFehler) throw e;
+    throw new SonderpostenFehler(502, 'Shopify war nicht lesbar – nichts geändert. Bitte noch einmal versuchen.');
+  }
+  if (vorher.typ !== 'rolle') throw new SonderpostenFehler(400, 'Das ist keine Restrolle.');
+  if (!vorher.inventurMoeglich) throw new SonderpostenFehler(409, vorher.inventurHinweis, { grund: 'inventur-gesperrt' });
+  if (vorher.inventoryItemId !== inventoryItemId || vorher.bestandVorhanden !== erwarteterBestand) throw new SonderpostenFehler(409, 'Der Bestand hat sich seit dem Laden geändert. Bitte die Liste neu laden und die Länge erneut prüfen.', { grund: 'bestand' });
+  const breiteCm = Math.round(vorher.breiteM * 100);
+  if (!(breiteCm > 0) || breiteCm > 1000 || Math.abs(vorher.breiteM * 100 - breiteCm) > 1e-6) throw new SonderpostenFehler(409, 'Die Rollenbreite ist nicht eindeutig. Bitte in Shopify prüfen.');
+  const neu = Math.floor(Math.round(laenge * 100) * breiteCm / 10000);
+  const referenz = `tp://rollen-inventur/${numId(produktId)}/${operationId}?laenge_cm=${Math.round(laenge * 100)}`;
+  const input = { name: 'on_hand', reason: 'correction', referenceDocumentUri: referenz, quantities: [{ inventoryItemId, locationId: standortId, quantity: neu, changeFromQuantity: erwarteterBestand }] };
+  let antwort;
+  try { antwort = await proxy.execute(INVENTUR_MUTATION, { input, schluessel: `rollen-inventur-${operationId}` }); }
+  catch (e) {
+    if (istZugriffVerweigert(e)) throw new SonderpostenFehler(403, 'Bestand kann nicht geändert werden: dem Dashboard fehlt das Shopify-Recht write_inventory.', { grund: 'recht-fehlt' });
+    const pruef = await leseOderNull(proxy, produktId, standortId);
+    // Ein passender Zielwert allein beweist bei einer Inventur nicht, wer ihn gesetzt hat.
+    // Wiederholungen behalten denselben Schluessel und dieselben CAS-Parameter.
+    throw new SonderpostenFehler(504, `Ob die Restlänge gespeichert wurde, ist unklar. Bitte neu laden und den Bestand in Shopify prüfen${pruef ? ` (physisch ${pruef.bestandVorhanden} m²)` : ''}.`, { grund: 'unklar' });
+  }
+  const fehler = antwort?.inventorySetQuantities?.userErrors;
+  if (!Array.isArray(fehler)) throw new SonderpostenFehler(504, 'Shopify hat keine eindeutige Antwort gegeben. Bitte neu laden und den Bestand prüfen.', { grund: 'unklar' });
+  if (fehler.length) {
+    if (fehler.some(e => /STALE|COMPARE/.test(e.code || ''))) throw new SonderpostenFehler(409, 'Der Bestand wurde gleichzeitig geändert – nichts überschrieben. Bitte neu laden und erneut prüfen.', { grund: 'bestand' });
+    throw new SonderpostenFehler(502, `Shopify hat die Bestandskorrektur abgelehnt: ${fehler.map(e => e.message).join('; ')}`);
+  }
+  const nachher = await leseOderNull(proxy, produktId, standortId);
+  return {
+    typ: 'inventur', gebucht: true,
+    ok: Boolean(nachher?.getrackt && nachher.ueberverkaufGesperrt && nachher.bestandVorhanden === neu && nachher.bestand >= 0),
+    gegenprobe: nachher ? 'ok' : 'fehlgeschlagen',
+    titel: vorher.titel, operationId, referenz, laengeM: laenge, breiteM: vorher.breiteM,
+    bestandVorher: vorher.bestandVorhanden, bestandErwartet: neu,
+    bestandNachher: nachher?.bestandVorhanden ?? null, verfuegbarNachher: nachher?.bestand ?? null,
+    restLaengeM: nachher?.laengeM ?? null, eintrag: nachher,
   };
 }
 

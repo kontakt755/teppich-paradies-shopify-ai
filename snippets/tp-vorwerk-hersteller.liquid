@@ -1,0 +1,9 @@
+{% doc %}
+  Herstellerzeile auf den Produktdetailseiten der Marke Vorwerk.
+  @param {product} product - Produkt der aktuellen Detailseite
+  Vorwerk-Logo: https://commons.wikimedia.org/wiki/File:Vorwerk.svg
+{% enddoc %}
+{%- assign tp_hersteller = product.vendor | strip | downcase -%}
+{%- if tp_hersteller == 'vorwerk' -%}
+  {% render 'tp-yasmin-angebot' %}
+{%- endif -%}
