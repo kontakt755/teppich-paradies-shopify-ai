@@ -19,13 +19,18 @@
   - R<a><e>~w|w  Eintrag mit Mitwerten w; a = 1 wenn ein Wert aktiv,
                  e = 1 wenn ein Wert Treffer hat
   Mit nur_anzahl: Anzahl der aktiven sichtbaren Eintraege.
-  Gilt nur fuer Florhoehe, Gesamtstaerke und Nutzschicht; sonst leer.
+  Gilt fuer Florhoehe, Gesamtstaerke, Nutzschicht und Groessen; sonst leer.
 
   @param {object} filter - der Listenfilter
   @param {boolean} [nur_anzahl] - nur die Anzahl aktiver Eintraege ausgeben
 {%- enddoc -%}
 {%- liquid
   assign tp_wg_an = false
+  assign tp_wg_groesse = false
+  if filter.param_name == 'filter.v.option.größe'
+    assign tp_wg_an = true
+    assign tp_wg_groesse = true
+  endif
   if filter.param_name == 'filter.p.m.custom.florhoehe_mm' or filter.param_name == 'filter.p.m.custom.gesamtstarke' or filter.param_name == 'filter.p.m.custom.nutzschicht'
     assign tp_wg_an = true
   endif
@@ -34,6 +39,26 @@
   endif
 
   if tp_wg_an
+    if tp_wg_groesse
+      assign tp_wg_besitzer = ''
+      for tp_wg_v in filter.values
+        assign tp_wg_ix = forloop.index0
+        assign tp_wg_bi = -1
+        assign tp_wg_key = tp_wg_v.label | replace: ' ', ' ' | replace: ' ', ' ' | remove: ' '
+        for tp_wg_m in filter.values
+          if forloop.index0 >= tp_wg_ix
+            break
+          endif
+          assign tp_wg_mkey = tp_wg_m.label | replace: ' ', ' ' | replace: ' ', ' ' | remove: ' '
+          if tp_wg_key == tp_wg_mkey
+            assign tp_wg_bi = forloop.index0
+            break
+          endif
+        endfor
+        assign tp_wg_besitzer = tp_wg_besitzer | append: tp_wg_bi | append: ';'
+      endfor
+      assign tp_wg_besitzer = tp_wg_besitzer | split: ';'
+    else
     # 1. Je Wert: Art (g = Gruppe, w = Zahlwert, x = sonstiges) und Bereich
     assign tp_wg_info = ''
     for tp_wg_v in filter.values
@@ -175,6 +200,8 @@
       assign tp_wg_besitzer2 = tp_wg_besitzer2 | append: tp_wg_bi | append: ';'
     endfor
     assign tp_wg_besitzer = tp_wg_besitzer2 | split: ';'
+
+    endif
 
     # 4. Tokens ausgeben
     assign tp_wg_aus = ''

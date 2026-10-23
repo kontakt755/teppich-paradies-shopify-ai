@@ -13,6 +13,7 @@
   @param {string} art - 'rolle' oder 'paket'
   @param {string} id - Kennung des umgebenden Blocks
   @param {boolean} [muster] - Dielenoptik: Laufrichtung per Bild waehlen
+  @param {boolean} [nur_finder] - Meterware-Hilfe nur bei gueltiger Finder-Uebergabe zeigen
 {% enddoc %}
 <script src="{{ 'tp-raummass.js' | asset_url }}" defer></script>
 {%- if art == 'paket' -%}
@@ -53,11 +54,11 @@
   </template>
 </details>
 {%- else -%}
-<details class="tp-rm" data-tp-rm-rolle{% if muster %} data-rm-muster{% endif %}>
+<details class="tp-rm" data-tp-rm-rolle{% if muster %} data-rm-muster{% endif %}{% if nur_finder %} data-rm-nur-finder hidden{% endif %}>
   <summary class="tp-rm__summary">
     <span class="tp-rm__summary-text">
       <span class="tp-rm__summary-titel">Raummaße eingeben</span>
-      <span class="tp-rm__summary-sub">Wir berechnen Ihr Bestellmaß – mit oder ohne Zugabe</span>
+      <span class="tp-rm__summary-sub">{% if nur_finder %}Bestellmaß von der Rolle – mit oder ohne Längenzugabe{% else %}Wir berechnen Ihr Bestellmaß – mit oder ohne Zugabe{% endif %}</span>
     </span>
     <span class="tp-rm__summary-aktion"><span class="tp-rm__auf">Öffnen</span><span class="tp-rm__zu">Schließen</span> <span class="tp-rm__pfeil" aria-hidden="true">▾</span></span>
   </summary>
