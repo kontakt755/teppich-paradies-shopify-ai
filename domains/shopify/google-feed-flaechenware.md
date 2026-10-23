@@ -61,6 +61,12 @@ Der Export darf hoechstens 30 Minuten alt sein; jedes Produkt enthaelt `id`,
 `selectedOptions`, `image.url`. Keine Tokens oder neue Scopes dafuer suchen.
 Die lokale Ausgabe ist ein Pruef-/Vorbereitungsergebnis und publiziert keinen Kanal.
 
+Der Seitenabruf laeuft seriell mit mindestens 1.500 ms zwischen allen HTTP-
+Requeststarts, einschliesslich Weiterleitungen. Es gibt dabei keinen automatischen
+HTTP-Retry. Der erste 429 beendet den gesamten Lauf; `Retry-After` und die Zahl der
+ungeprueften Produkte bleiben im vollstaendigen Actions-Pruefprotokoll erhalten.
+Vor einem bewusst neu gestarteten Lauf die dort angegebene Wartezeit beachten.
+
 **Vor dem koordinierten Livewechsel zwingend:**
 
 **Belegter Vorbereitungsstand nach Sortimentsentnahme, 23.10.:** Der vollstaendige

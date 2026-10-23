@@ -5,8 +5,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   argumente, seiteAuswerten, beispielAngebote, konfiguratorPreis, zeilenFuerProdukt,
-  csv, tsv, googleZeile, metaZeile, GOOGLE_SPALTEN, META_SPALTEN, adminLaden, AUS_STANDARD, katalogAusJson, feedErzeugen,
+  csv, tsv, googleZeile, metaZeile, GOOGLE_SPALTEN, META_SPALTEN, adminLaden, AUS_STANDARD, katalogAusJson, feedErzeugen, abrufTaktung,
 } from '../../scripts/teppich-nach-mass-feed.mjs';
+import { holen, Keks } from '../../scripts/teppich-basis-daten.mjs';
+import { vorbereiten } from '../../operations/scripts/feed-tnm-abruf.mjs';
 
 const ORIGIN = 'https://www.teppich-paradies.net';
 
@@ -259,4 +261,51 @@ test('gemeinsamer Builder meldet fehlende Beispielgroesse und unvollstaendige Me
   assert.equal(r.zeilen.length, 0);
   assert.equal(r.pruefung.ausgelassen.length, 2);
   assert.match(r.pruefung.ausgelassen[0].grund, /Bild fehlt/);
+});
+
+test('ein globaler Fake-Clock-Takt haelt auch parallele Aufrufer und Weiterleitungen mindestens 1500 ms auseinander', async () => {
+  let zeit = 0;
+  const starts = [];
+  const original = globalThis.fetch;
+  const vorAbruf = abrufTaktung({ jetzt: () => zeit, pause: async (ms) => { zeit += ms; } });
+  globalThis.fetch = async () => {
+    starts.push(zeit);
+    return starts.length === 1 ? new Response('', { status: 302, headers: { location: '/ziel' } }) : new Response('OK');
+  };
+  try {
+    await Promise.all([
+      holen(`${ORIGIN}/start`, new Keks(), { versuche: 1, vorAbruf }),
+      holen(`${ORIGIN}/zweiter-aufrufer`, new Keks(), { versuche: 1, vorAbruf }),
+    ]);
+    assert.deepEqual(starts, [0, 1500, 3000]);
+  } finally { globalThis.fetch = original; }
+});
+
+test('erster 429 stoppt global ohne Retry, bewahrt Retry-After und sperrt den partiellen Feed', async () => {
+  let zeit = 0;
+  const starts = [];
+  const original = globalThis.fetch;
+  const p = produkt(); p.variants = p.variants.slice(0, 1);
+  const ps = [p, ...[78, 79].map((id) => ({ ...p, id: `gid://shopify/Product/${id}`, handle: `p${id}`,
+    variants: [{ ...p.variants[0], id: `gid://shopify/ProductVariant/${id}` }] }))];
+  globalThis.fetch = async () => {
+    starts.push(zeit);
+    if (starts.length === 1) return new Response(html(jsonLd([{ id: 11, w: 80, l: 150, preis: 189.4 }]), ek()));
+    if (starts.length === 2) return new Response('', { status: 429, headers: { 'retry-after': '120' } });
+    throw new Error('Nach 429 darf kein HTTP-Aufruf mehr starten');
+  };
+  try {
+    const r = await feedErzeugen(ps, { jetzt: () => zeit, pause: async (ms) => { zeit += ms; } });
+    assert.deepEqual(starts, [0, 1500]);
+    assert.equal(r.zeilen.length, 1);
+    assert.equal(r.pruefung.ok, false);
+    assert.deepEqual(r.pruefung.abbruch, { status: 429, retryAfter: '120', ungepruefteProdukte: 1,
+      hinweis: 'Kein automatischer Retry. Retry-After vor einem neuen, bewusst gestarteten Lauf beachten.' });
+    assert.equal(r.pruefung.ausgelassen.length, 1);
+    const proxy = { execute: async () => ({ products: { pageInfo: { hasNextPage: false }, nodes: ps.map((x) => ({
+      ...x, variants: { pageInfo: { hasNextPage: false }, nodes: x.variants },
+    })) } }) };
+    await assert.rejects(vorbereiten({ proxy, vorher: '', metaVorher: '', erzeugen: async () => r }), /keine Feeddatei ersetzt/);
+    assert.deepEqual(starts, [0, 1500]);
+  } finally { globalThis.fetch = original; }
 });
