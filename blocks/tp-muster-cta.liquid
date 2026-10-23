@@ -37,6 +37,22 @@
     render 'tp-musteroption', product: product
   endcapture
   assign tp_mc_url = tp_mc_url | strip
+  assign tp_mc_farbindex = -1
+  if product.template_suffix == 'einfassung' and tp_mc_url contains '?produkt='
+    assign tp_mc_farboptionen = 'farbe,dekor,color' | split: ','
+    for tp_mc_option in product.options_with_values
+      assign tp_mc_optionsname = tp_mc_option.name | downcase | strip
+      if tp_mc_farboptionen contains tp_mc_optionsname
+        assign tp_mc_farbindex = forloop.index0
+        assign tp_mc_startfarbe = product.selected_or_first_available_variant.options[tp_mc_farbindex]
+        if tp_mc_startfarbe != blank and tp_mc_startfarbe != 'Default Title'
+          assign tp_mc_farbe_url = tp_mc_startfarbe | url_encode
+          assign tp_mc_url = tp_mc_url | append: '&farbe=' | append: tp_mc_farbe_url
+        endif
+        break
+      endif
+    endfor
+  endif
   assign tp_mc_anfrage = false
   assign tp_mc_typ = product.type | downcase | strip
   if tp_mc_url == blank
@@ -67,7 +83,7 @@
       Vinyl: beide Zustaende stehen im HTML, assets/tp-muster-grenze.js schaltet
       nach Warenkorb-Aenderungen (Drawer, Zurueck-Knopf) um, ohne Neuladen.
     {%- endcomment -%}
-    <a class="tp-muster-cta__link-{{ tp_mc_id }}" href="{{ tp_mc_url }}"{% if tp_mc_grenze != blank %} data-tp-mg-offen{% endif %}{% if tp_mc_grenze == 'voll' %} hidden{% endif %}>
+    <a class="tp-muster-cta__link-{{ tp_mc_id }}" href="{{ tp_mc_url }}"{% if tp_mc_farbindex >= 0 %} data-tp-ek-muster="{{ product.id }}" data-tp-ek-muster-farbindex="{{ tp_mc_farbindex }}"{% endif %}{% if tp_mc_grenze != blank %} data-tp-mg-offen{% endif %}{% if tp_mc_grenze == 'voll' %} hidden{% endif %}>
       {%- if tp_mc_anfrage -%}
         Kostenloses Muster anfragen
         <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Kostenlos wie alle unsere Muster. Weil diese Muster wertiger sind, senden wir sie nach kurzer Anfrage zu – wir stimmen Ihr Dekor mit Ihnen ab.</small>
