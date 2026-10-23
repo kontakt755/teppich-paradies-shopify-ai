@@ -1,3 +1,4 @@
+import { musterAutomatikBlock } from '../bausteine/muster-bestellanzeige.mjs';
 /**
  * Ansicht "Heute" (#/heute): standardmaessig Shop-Arbeit mit Warenkunden zuerst.
  * Die ausdruecklichen Alltagssichten behalten die seit 2026-10-19 gebuendelte Arbeitsliste
@@ -177,6 +178,7 @@ function viewShop() {
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
     </header>
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
+    ${musterAutomatikBlock(kunden.bestellungen)}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
     ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, pack: kunden.musterPacken,
       nachfassen: nf.alle, texte: heuteDaten.musterTexte })}

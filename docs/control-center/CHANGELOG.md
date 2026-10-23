@@ -2571,3 +2571,9 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Richtpreis-Vorschläge stammen aus Lexware-Artikelpreisen (Abruf 13.10., netto,
   nur Arbeit), `freigegeben: false` bis der Inhaber zustimmt. Fotos zur Referenz weiter über „Fotos“.
 - **Nächste Stufe:** Richtpreise live in Lexware gegenprüfen und freigeben.
+
+## 2026-10-23 – Kostenlose Muster automatisch bestellen (#1648)
+
+- Vorhandene Bestellvorlagen und Firmenpostfach fuer privat freigegebene kostenlose Muster verbunden.
+- Versandnachweis und Bestellt-Status automatisch; Artikel und Farben je Kunde direkt sichtbar.
+- Doppelversand, unklare SMTP-Ausgaenge, alte Anfragen und kostenpflichtige Muster abgesichert.

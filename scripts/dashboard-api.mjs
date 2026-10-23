@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
+import { musterAutomatikLauf, musterAutomatikAnzeige } from '../operations/lib/muster-bestellautomatik.mjs';
 import { vorbereitungStand } from '../operations/lib/bestellvorbereitung.mjs';
 import { arbeitsstand } from '../operations/lib/arbeitsstand.mjs';
 import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffung.mjs';
@@ -1682,7 +1683,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let katalog = [];
       try { katalog = this._lexikonProdukte(); } catch { /* Optionale Kaufquelle unlesbar: keine Links, Bestellliste bleibt nutzbar. */ }
       const haken = leseBestellmarken(bestellmarkenPfad(dir));
-      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+      const musterAutomatik = musterAutomatikAnzeige(dir, { modell, statusAlle, stammdaten: leseStammdaten(stammdatenPfad(dir)) }, katalog, now());
+      return { verfuegbar: true, musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
     },
 
     /** Rein lesende Aggregate, ohne Kundennamen oder zweite Bestellablage. */
@@ -2385,6 +2387,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           absenderHinterlegt: !!(stammdaten.absender.firma || stammdaten.absender.kontaktName || stammdaten.absender.lieferanschrift),
         },
       };
+    },
+
+    async musterBestellungenAutomatisch({ probe = false, senden = smtpSenden } = {}) {
+      const dir = privatDirPath || privatDir();
+      return musterAutomatikLauf({ dir, kontext: () => this._lieferantenKontext(), katalog: () => this._lexikonProdukte(), jetzt: now(), probe, senden });
     },
 
     /** Alle Lieferanten mit Stammdaten, offenen Positionen je Stufe und ueberfaelligen Bestellungen. */

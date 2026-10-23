@@ -17,6 +17,7 @@ function start(query = '') {
     ...kontext, state, einkauf: {}, kunden: {}, heuteDaten: {},
     musterNachfassenStand: () => ({ offen: [], erledigt: [], abgemeldet: [] }),
     versandLaeuft: () => null, startBestellarbeit: () => ({}),
+    musterAutomatikBlock: () => '',
     warenbestellungenBlock: block('Waren'), bestellarbeitBlock: block('Muster'),
     shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
     istNurLesend: () => false, darfAnsicht: () => true,

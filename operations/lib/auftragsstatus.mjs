@@ -133,6 +133,7 @@ function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmen
   if (!actor) throw new AuftragsstatusFehler('actor (gh-Login) ist Pflicht');
 
   const bisher = alle[key] || {};
+  if (bisher.uebernahme?.id === 'musterautomatik' && actor !== 'Musterautomatik') throw new AuftragsstatusFehler('Automatischer Mailversand läuft oder ist ungeklärt. Vor manueller Bestellung im Postfach prüfen und die Arbeit bewusst übernehmen.', 409);
   const stand = bestellmenge === undefined ? bisher : beschaffungsStand(bisher, bestellmenge);
   if (!darfWeiter(stand, status)) throw new AuftragsstatusFehler(stand.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.', 409);
   const zeit = jetzt.toISOString();

@@ -4,6 +4,9 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 
 const QUELLEN = [
+  ['Musterbestellungen', 'muster-bestellung/versand.json'],
+  ['Musterautomatik-Hinweis', 'muster-bestellung/laufstatus.json'],
+  ['Musterautomatik', 'muster-bestellung/konfiguration.json'],
   ['Kettler und Packstücke', 'kettelversand.json'],
   ['Auftragsstand', 'auftragsstatus.json'], ['Packstation', 'muster-packen.json'],
   ['Bestellmarken', 'bestellmarken.json'], ['Musterherkunft', 'musterherkunft.json'],
