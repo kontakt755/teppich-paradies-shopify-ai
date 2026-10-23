@@ -783,3 +783,32 @@ Fehlermeldung im Log, bis `.env.local` eingerichtet ist.
 Ersetzt keine geplante Aufgabe, die den Rechner nicht ständig am Laufen hat -
 der Dienst braucht wie die geplante Aufgabe einen eingeschalteten,
 angemeldeten Mac mit diesem Repository.
+
+### Taegliche Betriebssicherung
+
+`npm run daten:sichern` sichert vorhandene lokale Betriebsdaten in ein privates
+Tagesarchiv. Erst nach erfolgreichem Lesen des Archivverzeichnisses und Pruefung
+aller Quellbereiche ersetzt das Archiv den vorherigen Tagesstand und schreibt
+den Erfolgsbeleg. Fehler lassen vorhandenes Archiv und Erfolgsdatum bestehen.
+Archiv und temporaere Archivdatei haben Dateirechte `0600`.
+
+Der mechanische Lauf braucht kein KI-Kontingent. Den bisherigen Claude-Zeitplan
+**Betriebsdaten sichern** zuerst pausieren, danach aus der laufenden, dauerhaften
+Dienst-Arbeitskopie (nicht aus einem kurzlebigen Feature-Worktree) ausfuehren:
+
+```
+bash operations/scripts/dienste-einrichten.sh --nur-sicherung
+```
+
+Der vorhandene Sicherungslauf wird als `net.teppich-paradies.sicherung`
+taeglich um 22:30 Uhr Ortszeit und beim Laden des Benutzer-Dienstes gestartet.
+Der Mac muss angemeldet und verfuegbar sein; launchd holt einen waehrend des
+Schlafs verpassten Kalendertermin beim Aufwachen nach. Es gibt keinen
+endlosen Neustart bei Fehlern. Der Zustand bleibt dann sichtbar alt bis zu
+einem erfolgreichen Lauf. Protokoll: `~/Library/Logs/teppich-paradies-sicherung.log`.
+Erneute Einrichtung mit unveraenderter Vorlage startet keinen zweiten Dienst.
+
+Das Dashboard meldet nach dem taeglichen Solltermin plus 30 Minuten Laufzeit
+einen ausgebliebenen Tag bereits als alt; die Berechnung verwendet Europe/Berlin
+einschliesslich Sommer-/Winterzeit. Der 48-Stunden-Schutz bleibt zusaetzlich.
+Eine Sicherung auf derselben Platte ersetzt keine unabhaengige externe Kopie.
