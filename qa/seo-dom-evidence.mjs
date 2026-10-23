@@ -8,13 +8,22 @@ export function collectSmallTouchTargets() {
   const size = element => {
     const rect = element.getBoundingClientRect();
     const areas = [{ width: rect.width, height: rect.height }];
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const reachableSquare = () => [[0, 0], [-19.5, -19.5], [19.5, -19.5], [-19.5, 19.5], [19.5, 19.5]].every(([dx, dy]) => {
+      const x = centerX + dx;
+      const y = centerY + dy;
+      if (x < 0 || y < 0 || x >= document.documentElement.clientWidth || y >= document.documentElement.clientHeight) return false;
+      const hit = document.elementFromPoint(x, y);
+      return Boolean(hit && (hit === element || element.contains(hit)));
+    });
     for (const pseudo of ['::before', '::after']) {
       const style = getComputedStyle(element, pseudo);
       if (!style.content || ['none', 'normal'].includes(style.content) || style.position !== 'absolute' || style.pointerEvents === 'none') continue;
       const pseudoWidth = Number.parseFloat(style.width);
       const pseudoHeight = Number.parseFloat(style.height);
-      if (pseudoWidth > 0 && pseudoHeight > 0) {
-        areas.push({ width: pseudoWidth, height: pseudoHeight });
+      if (pseudoWidth >= 40 && pseudoHeight >= 40 && reachableSquare()) {
+        areas.push({ width: 40, height: 40 });
       }
     }
     // Ein abgeschnittener Pseudobereich vergroessert die reale Trefferflaeche nicht.

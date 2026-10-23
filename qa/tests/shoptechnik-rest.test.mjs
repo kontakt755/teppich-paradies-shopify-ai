@@ -88,17 +88,17 @@ test('Prüfer unterscheidet Modulwiederholung und echte Mehrfachausführung', ()
   assert.deepEqual(duplicateExecutableScripts([{ src, type: 'application/json' }, { src, type: 'application/json' }], 'https://shop.example'), []);
 });
 
-function element({ width = 16, height = 16, label, pseudo, clip, checkbox = false } = {}) {
+function element({ width = 16, height = 16, left = 100, top = 100, label, pseudo, clip, checkbox = false } = {}) {
   const target = {
     tagName: checkbox ? 'INPUT' : 'BUTTON', labels: label ? [label] : [], parentElement: clip,
-    getBoundingClientRect: () => ({ width, height }), getAttribute: () => '', textContent: 'Testziel',
+    getBoundingClientRect: () => ({ width, height, left, top }), getAttribute: () => '', textContent: 'Testziel', contains: () => false,
     matches: () => checkbox, style: { opacity: '1' }, pseudo,
   };
   return target;
 }
-function smallTargets(elements) {
+function smallTargets(elements, hitTest = () => elements[0]) {
   return JSON.parse(JSON.stringify(vm.runInNewContext(`(${collectSmallTouchTargets.toString()})()`, {
-    document: { querySelectorAll: () => elements },
+    document: { querySelectorAll: () => elements, documentElement: { clientWidth: 390, clientHeight: 844 }, elementFromPoint: hitTest },
     getComputedStyle: (target, pseudo) => pseudo ? target.pseudo || { content: 'none' } : { display: 'block', visibility: 'visible', opacity: '1', ...target.style },
   })));
 }
@@ -115,4 +115,12 @@ test('44-px-Pseudotrefferfläche zählt; dekorative oder abgeschnittene Fläche 
   const clip = element({ width: 36, height: 36 }); clip.style.overflowX = 'hidden';
   assert.equal(smallTargets([element({ width: 36, height: 36, pseudo, clip })]).length, 1);
   assert.equal(smallTargets([element({ width: 100, height: 20, pseudo: { ...pseudo, width: '10px', height: '100px' } })]).length, 1);
+});
+
+test('Verschobenes oder verdecktes 44-px-Pseudoelement wird nicht als bedienbare Fläche ausgegeben', () => {
+  const pseudo = { content: '""', position: 'absolute', width: '44px', height: '44px', pointerEvents: 'auto' };
+  const target = element({ width: 36, height: 36, pseudo });
+  assert.equal(smallTargets([target], (x, y) => x >= 100 && x < 136 && y >= 100 && y < 136 ? target : null).length, 1, 'verschobene Erweiterung trifft nicht rund um den Knopf');
+  assert.equal(smallTargets([target], () => element({ width: 44, height: 44 })).length, 1, 'anderes Element verdeckt die Trefferfläche');
+  assert.equal(smallTargets([element({ width: 36, height: 36, top: 900, pseudo })]).length, 1, 'außerhalb Viewport ist die Erweiterung nicht belegt');
 });
