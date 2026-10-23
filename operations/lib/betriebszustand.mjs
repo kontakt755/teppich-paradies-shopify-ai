@@ -27,7 +27,8 @@ export function sicherungsstand(datei, jetzt) {
   const heute = ortszeit(jetzt);
   const tag = heute.minuten >= 23 * 60 ? heute.tag
     : new Date(Date.parse(`${heute.tag}T12:00:00Z`) - 86400000).toISOString().slice(0, 10);
-  if (ortszeit(new Date(aktuell.letzterErfolg)).tag < tag) {
+  const erfolg = ortszeit(new Date(aktuell.letzterErfolg));
+  if (erfolg.tag < tag || (erfolg.tag === tag && erfolg.minuten < 22 * 60 + 30)) {
     return { ...aktuell, status: 'alt', grund: 'taeglicher-solltermin-verpasst', erwartetFuer: tag };
   }
   return aktuell;

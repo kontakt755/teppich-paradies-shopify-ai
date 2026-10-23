@@ -105,6 +105,18 @@ test('Solltermin hat eine halbe Stunde Laufzeit und folgt Berlin auch beim Winte
   assert.equal(betriebszustand(dir, { jetzt: new Date('2026-10-26T08:00:00Z') }).sicherung.status, 'ok');
 });
 
+test('ein morgendlicher Anmeldelauf verdeckt keinen ausgefallenen Abendlauf', () => {
+  const dir = beispielPrivatDir();
+  const f = path.join(dir, 'sicherungsstand.json');
+  fs.writeFileSync(f, JSON.stringify({ letzterErfolg: '2026-10-22T06:00:00Z' }));
+  for (const zeit of ['2026-10-22T21:10:00Z', '2026-10-23T08:00:00Z']) {
+    assert.equal(betriebszustand(dir, { jetzt: new Date(zeit) }).sicherung.status, 'alt');
+  }
+  fs.writeFileSync(f, JSON.stringify({ letzterErfolg: '2026-10-23T06:00:00Z' }));
+  assert.equal(betriebszustand(dir, { jetzt: new Date('2026-10-23T08:00:00Z') }).sicherung.status, 'ok');
+  assert.equal(betriebszustand(dir, { jetzt: new Date('2026-10-23T21:10:00Z') }).sicherung.status, 'alt');
+});
+
 test('sichern: wirft eine klare Meldung, wenn gar keine Quelle existiert', () => {
   const dir = tmpDir(); // leer
   assert.throws(() => sichern({ privatDir: dir, ziel: path.join(dir, 'sicherungen') }), /Keine Betriebsdaten/);
