@@ -7,6 +7,7 @@ import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } fro
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
 import { targetUrl as workflowTargetUrl } from './target-url.mjs';
+import { collectSmallTouchTargets, duplicateExecutableScripts } from './seo-dom-evidence.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const hardTimeout = installHardProcessTimeout({ timeoutMs: 5 * 60_000, label: 'SEO-Check' });
@@ -159,11 +160,6 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
       if (!el.matches('input, select, textarea') || ['hidden', 'submit', 'button'].includes(el.type)) return false;
       return !accessibleName(el) && !el.labels?.length && !el.closest('label');
     }).map(el => el.outerHTML.slice(0, 240));
-    const smallTargets = interactive.filter(el => {
-      if (!el.matches('button, input, select, textarea, a.button, a[role="button"], a[class*="button"], summary')) return false;
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && (rect.width < 40 || rect.height < 40);
-    }).slice(0, 12).map(el => ({ name: accessibleName(el).slice(0, 80), tag: el.tagName, width: Math.round(el.getBoundingClientRect().width), height: Math.round(el.getBoundingClientRect().height) }));
     const resourceEntries = performance.getEntriesByType('resource').map(entry => ({ name: entry.name, initiatorType: entry.initiatorType, transferSize: entry.transferSize || 0, duration: Math.round(entry.duration) }));
     const scripts = [...document.scripts].map(script => script.src).filter(Boolean);
     const bodyText = document.body?.innerText || '';
@@ -182,7 +178,8 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
       h1: [...document.querySelectorAll('h1')].filter(visible).map(x => x.textContent.replace(/\s+/g, ' ').trim()),
       bodyText, mainText, jsonLd, links, facets, scripts,
       images: relevantImages.map(img => ({ src: img.currentSrc || img.src, alt: img.getAttribute('alt'), decorativeInNamedControl: decorativeInNamedControl(img), broken: img.complete && img.naturalWidth === 0, loading: img.loading || '', naturalWidth: img.naturalWidth, renderedWidth: Math.round(img.getBoundingClientRect().width), top: Math.round(img.getBoundingClientRect().top) })),
-      unnamedButtons, unnamedLinks, unlabeledInputs, smallTargets, resourceEntries,
+      unnamedButtons, unnamedLinks, unlabeledInputs, resourceEntries,
+      scriptElements: [...document.scripts].filter(script => script.src).map(script => ({ src: script.src, type: script.type })),
       visiblePriceTexts: [...document.querySelectorAll('main product-price, main .price, main [class*="price"]')].filter(visible).filter((el, _, all) => !all.some(other => other !== el && other.contains(el))).map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 160),
       visibleComparePrices: [...document.querySelectorAll('main s, main del, main [class*="compare-at"]')].filter(visible).map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean),
       footerShipping: !!document.querySelector('footer a[href*="/pages/versand-lieferung"]'),
@@ -301,9 +298,10 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
       if (finalPath !== canonicalPath) add('WARN', 'CANONICAL_PATH', pageConfig.name, viewportName, `Canonical-Pfad weicht ab: ${canonicalPath} statt ${finalPath}`);
     } catch { add('ERROR', 'CANONICAL_INVALID', pageConfig.name, viewportName, `Canonical ist keine valide URL: ${data.canonical}`); }
   }
+  data.smallTargets = await page.evaluate(collectSmallTouchTargets);
   const robots = `${data.robots} ${headers['x-robots-tag'] || ''}`.toLowerCase();
   if (viewportName === 'Desktop' && pageConfig.indexExpected && robots.includes('noindex')) add('ERROR', 'UNEXPECTED_NOINDEX', pageConfig.name, viewportName, `Unerwartetes noindex: ${robots.trim()}`);
-  if (viewportName === 'Desktop' && !pageConfig.indexExpected && !robots.includes('noindex')) add('WARN', 'NOINDEX_UNCLEAR', pageConfig.name, viewportName, 'Kein explizites noindex im HTML/Header; robots.txt-Verhalten separat prüfen');
+  if (viewportName === 'Desktop' && !pageConfig.indexExpected && !robots.includes('noindex')) add('WARN', 'NOINDEX_UNCLEAR', pageConfig.name, viewportName, 'Kein explizites noindex im HTML/Header. Das belegt keine Indexierung; robots.txt und den tatsächlichen Indexstatus getrennt prüfen.');
   data.images.filter(img => img.broken).forEach(img => add('ERROR', 'BROKEN_IMAGE', pageConfig.name, viewportName, `Sichtbares Bild defekt: ${img.src}`));
   const missingAltImages = data.images.filter(img => (img.alt === null || img.alt.trim() === '') && !img.decorativeInNamedControl);
   if (missingAltImages.length) add('WARN', 'IMAGE_ALT_MISSING', pageConfig.name, viewportName, `${missingAltImages.length} relevante sichtbare Bilder ohne Alt-Text`, { examples: missingAltImages.slice(0, 5).map(img => img.src) });
@@ -369,7 +367,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   if (data.layoutShift > 0.25) add('WARN', 'LAYOUT_SHIFT', pageConfig.name, viewportName, `Hoher beobachteter Layout Shift: ${data.layoutShift.toFixed(3)}`);
   const largeResources = data.resourceEntries.filter(entry => entry.transferSize > 700000).sort((a, b) => b.transferSize - a.transferSize).slice(0, 6);
   largeResources.forEach(entry => add('WARN', 'LARGE_RESOURCE', pageConfig.name, viewportName, `Große Ressource (${Math.round(entry.transferSize / 1024)} KiB): ${entry.name}`));
-  const duplicateCustomScripts = [...new Set(data.scripts.filter(src => new URL(src, page.url()).origin === new URL(config.baseUrl).origin).filter((src, i, all) => all.indexOf(src) !== i))];
+  const duplicateCustomScripts = duplicateExecutableScripts(data.scriptElements, config.baseUrl);
   if (viewportName === 'Desktop' && duplicateCustomScripts.length) add('WARN', 'DUPLICATE_SCRIPT', pageConfig.name, viewportName, `${duplicateCustomScripts.length} eigene Theme-Scripts mehrfach eingebunden`, { scripts: duplicateCustomScripts });
   const platformHeaderWarnings = consoleErrors.filter(item => isKnownShopifyLoginXFrameWarning(item, config.baseUrl));
   platformHeaderWarnings.slice(0, 1).forEach(item => add(
