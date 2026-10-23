@@ -13,6 +13,7 @@ const JETZT = new Date('2026-10-08T09:15:00.000Z');
 const MONA = { name: 'Mona Mitarbeiter', kuerzel: 'mona', rolle: 'mitarbeiter' };
 // So meldet die Anmeldung den gemeinsamen Zugang (Einzelpasswort): Name "Inhaber", kein Kuerzel.
 const NOTZUGANG = { name: 'Inhaber', kuerzel: null, rolle: 'inhaber' };
+const INVENTUR = { produktId: PRODUKT_ID, inventoryItemId: ITEM_ID, laengeM: 12, erwarteterBestand: 80, operationId: 'e143b490-5db8-40d3-a75b-31c4b8ddf864' };
 
 function protokoll() {
   const datei = path.join(process.env.TP_PRIVAT_DIR, 'protokoll.jsonl');
@@ -185,6 +186,31 @@ test('Gemeinsamer Zugang, Restrolle: Name ins Protokoll; persoenliches Konto sch
   assert.doesNotMatch(neu[1].objekt, /gemeinsamen Zugang/);
 });
 
+test('Inventur: Inhaber, persoenlicher Name, physischer Bestand und Protokoll mit Vorgangs-ID', async () => {
+  const a = attrappe({ rolle: true }); const api = apiMit(a);
+  const vorher = protokoll().length;
+  await assert.rejects(() => api.sonderpostenBestand(INVENTUR, MONA), e => e.status === 403);
+  assert.deepEqual(a.namen(), []);
+  await assert.rejects(() => api.sonderpostenBestand(INVENTUR, NOTZUGANG), e => e.status === 400 && e.extra.grund === 'name-fehlt');
+  const r = await api.sonderpostenBestand({ ...INVENTUR, verkauftVon: 'Faelschung', standortId: 'gid://shopify/Location/1' }, { name: 'Ina Inhaber', kuerzel: 'ina', rolle: 'inhaber' });
+  assert.equal(r.ok, true); assert.equal(r.bestandNachher, 48);
+  const neu = protokoll().slice(vorher);
+  assert.equal(neu.length, 1); assert.equal(neu[0].benutzer, 'Ina Inhaber');
+  assert.equal(neu[0].aktion, 'sonderposten-rollenbestand');
+  assert.match(neu[0].objekt, new RegExp(INVENTUR.operationId));
+  assert.equal(a.aufrufe.find(x => x.name === 'SonderpostenRolleninventur').variables.input.quantities[0].locationId, 'gid://shopify/Location/98426814798', 'Browser darf den Standort nicht austauschen');
+});
+
+test('Inventur: unklarer Ausgang steht im Protokoll, gebundene Ware bleibt unveraendert', async () => {
+  const a = attrappe({ rolle: true, antwortWeg: 'nach' });
+  const vorher = protokoll().length;
+  await assert.rejects(() => apiMit(a).sonderpostenBestand({ ...INVENTUR, verkauftVon: 'Test Inhaber' }, NOTZUGANG), e => e.status === 504);
+  assert.equal(protokoll().slice(vorher)[0].aktion, 'sonderposten-rollenbestand-unklar');
+  const b = attrappe({ rolle: true }); b.zustand.committed = 4; b.zustand.onHand = 84;
+  await assert.rejects(() => apiMit(b).sonderpostenBestand({ ...INVENTUR, verkauftVon: 'Test Inhaber' }, NOTZUGANG), e => e.status === 409);
+  assert.equal(b.zustand.available, 80);
+});
+
 test('Server: /api/sonderposten/verkauft - lesen 403, mitarbeiter 200, inhaber 200, GET 405', async () => {
   const { schreibeBenutzer, benutzerAnlegen } = await import('../../../operations/lib/benutzer.mjs');
   const privat = wegwerfOrdner('tp-sonderposten-rollen-');
@@ -235,6 +261,15 @@ test('Server: /api/sonderposten/verkauft - lesen 403, mitarbeiter 200, inhaber 2
       const ina = await anmelden('ina', 'platzhalter-inhaber-1');
       aktuell = attrappe();
       assert.equal((await buchen(ina)).status, 200);
+
+      const inventur = keks => fetch(`${base}/api/sonderposten/bestand`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: keks }, body: JSON.stringify(INVENTUR) });
+      aktuell = attrappe({ rolle: true });
+      assert.equal((await inventur(lena)).status, 403);
+      assert.equal((await inventur(mona)).status, 403);
+      assert.deepEqual(aktuell.namen(), [], 'Inventur ist serverseitig Inhabersache');
+      const inventurOk = await inventur(ina);
+      assert.equal(inventurOk.status, 200); assert.equal((await inventurOk.json()).bestandNachher, 48);
+      assert.equal((await fetch(`${base}/api/sonderposten/bestand`, { headers: { cookie: ina } })).status, 405);
 
       aktuell = attrappe({ verweigert: true });
       const ohneRecht = await buchen(ina);

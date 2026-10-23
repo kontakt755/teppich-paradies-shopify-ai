@@ -77,7 +77,7 @@ import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as ME
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefeReferenz } from '../docs/ai-dashboard/lib/akquise.mjs';
-import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
+import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, korrigiereRollenbestand, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
 import { dashboardLinks } from './weitere-dashboards.mjs';
@@ -4057,6 +4057,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Dialog. Produkt-ID und inventoryItemId werden gegen den frisch gelesenen Stand
      * geprueft.
      */
+    async sonderpostenBestand(payload = {}, benutzer = null) {
+      if (benutzer && benutzer.rolle !== 'inhaber') throw new ApiError(403, 'Bestandskorrekturen macht der Inhaber.');
+      const persoenlich = Boolean(benutzer?.kuerzel && benutzer?.name);
+      const angegeben = String(payload.verkauftVon ?? '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (!persoenlich && !angegeben) throw new ApiError(400, 'Bitte angeben, wer den Bestand geprüft hat.', { grund: 'name-fehlt' });
+      const wer = persoenlich ? benutzer.name : angegeben;
+      const zugang = await shopify();
+      if (zugang?.art === 'sammeln') throw new ApiError(503, 'Kein Zugang zu Shopify eingerichtet – nichts geändert.', { grund: 'kein-zugang' });
+      let r;
+      const { produktId, inventoryItemId, laengeM, erwarteterBestand, operationId } = payload;
+      try { r = await korrigiereRollenbestand(zugang.proxy, { produktId, inventoryItemId, laengeM, erwarteterBestand, operationId }); }
+      catch (e) {
+        if (!(e instanceof SonderpostenFehler)) throw e;
+        if (e.extra?.grund === 'unklar') merke(persoenlich ? benutzer : null, wer, 'sonderposten-rollenbestand-unklar', `${payload.produktId} · Vorgang ${payload.operationId} · Ergebnis unklar, Bestand pruefen`);
+        throw new ApiError(e.status, e.message, e.extra);
+      }
+      merke(persoenlich ? benutzer : null, wer, 'sonderposten-rollenbestand', `${r.titel} · gemessen ${r.laengeM} m bei ${r.breiteM} m Breite · physisch ${r.bestandVorher} → ${r.bestandErwartet} m² · ${payload.produktId} · Vorgang ${r.operationId}${r.ok ? '' : ' · Gegenprobe pruefen'}${persoenlich ? '' : ' · Name im gemeinsamen Zugang angegeben'}`);
+      return r;
+    },
+
     async sonderpostenVerkauft(payload, benutzer) {
       const { produktId, inventoryItemId, laengeM } = payload || {};
       if (!produktId) throw new ApiError(400, 'produktId ist Pflicht', { missing: ['produktId'] });

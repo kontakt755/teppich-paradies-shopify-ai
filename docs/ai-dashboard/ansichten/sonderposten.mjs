@@ -18,7 +18,8 @@ import { fetchEinkauf } from '../kern/api.mjs';
 import { istNurLesend } from '../kern/sitzung.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState, stoerungState } from '../bausteine/karten.mjs';
-import { meldungNachBuchung, rollenRechnung } from '../lib/sonderposten.mjs';
+import { meldungNachBuchung, rollenRechnung, inventurRechnung, meldungNachInventur } from '../lib/sonderposten.mjs';
+import { neueKennung } from '../lib/druckliste.mjs';
 
 export const sonderposten = { daten: null, laedt: false };
 
@@ -94,8 +95,10 @@ function karte(e) {
     ? `<img class="sp-bild" src="${esc(e.bild)}" alt="${esc(e.bildAlt || e.titel)}" loading="lazy" width="72" height="72">`
     : '<div class="sp-bild sp-ohne-bild" aria-hidden="true">kein Foto</div>';
   const knopf = e.verkaufbar && !istNurLesend()
-    ? `<button type="button" class="btn btn-primary btn-sm" data-sp-verkauft="${esc(e.id)}">Im Laden verkauft…</button>`
+    ? `<button type="button" class="btn btn-primary btn-sm" data-sp-verkauft="${esc(e.id)}">${e.typ === 'rolle' ? 'Ladenverkauf buchen…' : 'Im Laden verkauft…'}</button>`
     : '';
+  const inventur = e.typ === 'rolle' && !istNurLesend() && state.session?.benutzer?.rolle !== 'mitarbeiter'
+    ? `<button type="button" class="btn btn-sm" data-sp-bestand="${esc(e.id)}">Restlänge eintragen…</button>` : '';
   return `<article class="sp-karte${e.verkaufbar ? '' : ' sp-weg'}">
     ${bild}
     <div class="sp-inhalt">
@@ -117,6 +120,7 @@ function karte(e) {
         ? `<span class="sp-preis">${e.preis === null ? '–' : `${esc(fmtPreis(e.preis))} €/m²`}<span class="small muted sp-preis-zusatz">online</span></span>`
         : `<span class="sp-preis">${e.preis === null ? '–' : `${esc(fmtPreis(e.preis))} €`}</span>`}
       ${knopf}
+      ${inventur}
     </div>
   </article>`;
 }
@@ -127,7 +131,7 @@ export function viewSonderposten() {
   const q = state.route.params.get('spq') || '';
   const anzahlVerfuegbar = d?.verfuegbar ? d.eintraege.filter(e => e.verkaufbar).length : null;
   const kopf = `<div class="page-head"><div><h1>Sonderposten</h1>
-    <p class="sub">Hier buchst du Reststücke, Einzelstücke und Restrollen ab, die im Laden verkauft sind – der Shop zeigt sofort den neuen Bestand.</p></div>
+    <p class="sub">Rollen im Laden vor Zahlung und Zuschnitt buchen. Erst nach bestätigter Buchung verkaufen – der Online-Shop verwendet denselben Bestand.</p></div>
     <div class="head-actions"><button type="button" class="btn btn-sm" data-sp-neu${sonderposten.laedt ? ' disabled' : ''}>${sonderposten.laedt ? 'Lädt …' : 'Neu laden'}</button></div></div>`;
   const suche = `<div class="toolbar search-hero"><input type="search" inputmode="search" autocomplete="off" placeholder="SP-Nummer oder Name, z. B. SP-0042 oder Yasmin" value="${esc(q)}" data-param="spq" aria-label="Sonderposten suchen"></div>`;
 
@@ -181,11 +185,11 @@ function merkeNamen(name) {
   } catch { /* ohne Speicher keine Vorschlaege - die Buchung geht trotzdem */ }
 }
 
-function nameFeld() {
+function nameFeld(titel = 'Wer hat verkauft?') {
   if (!brauchtNamen()) return '';
   const namen = gemerkteNamen();
   return `<div class="field">
-      <label for="spVerkaeufer">Wer hat verkauft?</label>
+      <label for="spVerkaeufer">${esc(titel)}</label>
       <input id="spVerkaeufer" name="verkaeufer" type="text" autocomplete="off" maxlength="60" placeholder="Name"${namen.length ? ' list="spNamen"' : ''}>
       ${namen.length ? `<datalist id="spNamen">${namen.map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>` : ''}
       <span class="hint">Steht im Protokoll.</span>
@@ -200,13 +204,14 @@ function leseNamen(form) {
 
 // -- Buchen -----------------------------------------------------------------
 
-async function bucheVerkauf(e, laengeM = null, verkauftVon = null) {
-  const r = await fetch('/api/sonderposten/verkauft', {
+async function bucheVerkauf(e, laengeM = null, verkauftVon = null, inventur = null) {
+  const r = await fetch(inventur ? '/api/sonderposten/bestand' : '/api/sonderposten/verkauft', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       produktId: e.id, inventoryItemId: e.inventoryItemId,
       ...(laengeM === null ? {} : { laengeM }),
       ...(verkauftVon ? { verkauftVon } : {}),
+      ...(inventur || {}),
     }),
   });
   const j = await r.json().catch(() => ({}));
@@ -270,16 +275,16 @@ function oeffneVerkaufDialog(e) {
 function oeffneRollenDialog(e) {
   const breite = zahlDe(e.breiteM);
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="spTitel" data-dialog novalidate>
-    <h2 id="spTitel">Von der Rolle verkauft</h2>
+    <h2 id="spTitel">Ladenverkauf buchen</h2>
     <div class="sp-dialog-stueck">
       ${e.bild ? `<img class="sp-bild" src="${esc(e.bild)}" alt="" width="72" height="72">` : ''}
       <div><div class="sp-titel">${esc(e.titel)}</div>
         <div class="small muted">Rolle ${esc(breite)} m breit · ${esc(restText(e))}</div></div>
     </div>
     <div class="field">
-      <label for="spLaenge">Abgeschnittene Länge</label>
+      <label for="spLaenge">Länge für den Ladenkunden</label>
       <div class="sp-eingabe"><input id="spLaenge" name="laenge" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 3,5" aria-describedby="spLaengeHinweis spRechnung"><span>m</span></div>
-      <span class="hint" id="spLaengeHinweis">Immer die Länge über die volle Rollenbreite (${esc(breite)} m) – auch bei schmaleren Stücken: Ein Teppich 2 × 3 m verbraucht 2 m der Rolle.</span>
+      <span class="hint" id="spLaengeHinweis">Vor Zahlung und Zuschnitt buchen. Immer volle Rollenbreite (${esc(breite)} m): Ein Teppich 2 × 3 m verbraucht 2 m der Rolle. Bei unklarer Antwort erst den Bestand prüfen.</span>
     </div>
     <p class="sp-rechnung" id="spRechnung" data-sp-rechnung aria-live="polite"></p>
     ${nameFeld()}
@@ -329,9 +334,63 @@ function oeffneRollenDialog(e) {
   });
 }
 
+function oeffneInventurDialog(e) {
+  // Ein Schluessel je Dialog; wiederholte Zustellung derselben Anfrage behaelt ihn.
+  const operationId = neueKennung();
+  const menge = n => n === null || n === undefined ? 'unbekannt' : `${zahlDe(n)} m²`;
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="spTitel" data-dialog novalidate>
+    <h2 id="spTitel">Restlänge eintragen</h2>
+    <div class="sp-dialog-stueck"><div><div class="sp-titel">${esc(e.titel)}</div><div class="small muted">Feste Rollenbreite: ${esc(zahlDe(e.breiteM))} m</div></div></div>
+    <p class="small">Shopify: physisch ${esc(menge(e.bestandVorhanden))} · frei ${esc(menge(e.bestand))} · gebunden ${esc(menge(e.bestandGebunden))} · reserviert ${esc(menge(e.bestandReserviert))} · zurückgehalten ${esc(menge(e.bestandZurueckgehalten))}.</p>
+    ${e.inventurMoeglich ? `<div class="field"><label for="spLaenge">Gemessene Restlänge</label><div class="sp-eingabe"><input id="spLaenge" inputmode="decimal" type="text" autocomplete="off" placeholder="z. B. 12" aria-describedby="spInventurHinweis spRechnung"><span>m</span></div><span class="hint" id="spInventurHinweis">Nur diese durchgehende Rolle nachmessen. Getrennte Reststücke einzeln führen. 0 bedeutet leer. Shopify speichert volle m²; Bruchteile werden sicher abgerundet.</span></div>
+    <p class="sp-rechnung" id="spRechnung" data-sp-rechnung aria-live="polite"></p>${nameFeld('Wer hat den Bestand geprüft?')}`
+    : `<p class="notice warn">${esc(e.inventurHinweis || 'Bitte den Bestand zuerst in Shopify prüfen.')}</p><a href="${esc(e.adminUrl)}" target="_blank" rel="noopener">In Shopify prüfen</a>`}
+    <p data-sp-meldung hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Schließen</button>${e.inventurMoeglich ? '<button type="submit" class="btn btn-primary" disabled>Restlänge speichern</button>' : ''}</div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  if (!e.inventurMoeglich) { form.addEventListener('submit', ev => ev.preventDefault()); form.querySelector('[data-close-dialog]').focus(); return; }
+  const feld = form.querySelector('#spLaenge');
+  const knopf = form.querySelector('[type=submit]');
+  const zeile = form.querySelector('[data-sp-rechnung]');
+  const namensFeld = form.querySelector('#spVerkaeufer');
+  const aktualisiere = () => {
+    const r = inventurRechnung(feld.value, e.breiteM);
+    zeile.textContent = r.ok ? r.text : r.fehler;
+    zeile.classList.toggle('sp-rechnung-fehler', !r.ok && !r.leer);
+    knopf.disabled = !r.ok || leseNamen(form) === '';
+    return r;
+  };
+  feld.addEventListener('input', aktualisiere);
+  namensFeld?.addEventListener('input', aktualisiere);
+  feld.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const r = aktualisiere();
+    const name = leseNamen(form);
+    if (!r.ok || name === '') return;
+    knopf.disabled = true; feld.disabled = true;
+    if (namensFeld) namensFeld.disabled = true;
+    knopf.textContent = 'Wird gespeichert …';
+    let antwort;
+    try { antwort = await bucheVerkauf(e, r.laengeM, name, { erwarteterBestand: e.bestandVorhanden, operationId }); } catch { antwort = { verbindung: false }; }
+    const m = meldungNachInventur(antwort);
+    if (m.neuLaden) ensureSonderposten({ neu: true });
+    if (m.erfolg) { $('#dialogRoot').innerHTML = ''; toast(m.text); return; }
+    zeigeDialogMeldung(form, m.klasse, m.text);
+    knopf.hidden = true;
+  });
+}
+
 /** Klicks der Ansicht. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function sonderpostenKlick(ev) {
   if (ev.target.closest('[data-sp-neu]')) { ensureSonderposten({ neu: true }); render(); return true; }
+  const inventur = ev.target.closest('[data-sp-bestand]');
+  if (inventur) {
+    const e = sonderposten.daten?.eintraege?.find(x => x.id === inventur.dataset.spBestand);
+    if (e) oeffneInventurDialog(e);
+    return true;
+  }
   const k = ev.target.closest('[data-sp-verkauft]');
   if (!k) return false;
   const e = sonderposten.daten?.eintraege?.find(x => x.id === k.dataset.spVerkauft);

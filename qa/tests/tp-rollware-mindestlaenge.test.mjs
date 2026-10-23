@@ -78,7 +78,7 @@ function slice(a, b) {
   return rechner.slice(s, e);
 }
 
-async function klick(eingabe, minCm) {
+async function klick(eingabe, minCm, breiteCm = 200) {
   const requests = [];
   const listeners = {};
   const cta = { addEventListener: (t, f) => { listeners[t] = f; }, setAttribute() {}, removeAttribute() {}, classList: { add() {}, remove() {}, toggle() {} } };
@@ -86,8 +86,8 @@ async function klick(eingabe, minCm) {
     ART: globalThis.TPRollwareArt, einheitAktiv: 'cm', MIN_BESTELL_CM: minCm, MAX_LENGTH_CM: 5000,
     lengthInput: { value: eingabe }, wunschInput: null, widthSeg: {},
     fmt: (n) => n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    selectedWidth: () => 200, artMode: () => 'meter', cmExact: false, bahnenAktiv: () => null,
-    target: { id: 1, price: 3249, available: true }, data: {}, farbBreiten: [200],
+    selectedWidth: () => breiteCm, artMode: () => 'meter', cmExact: false, bahnenAktiv: () => null,
+    target: { id: 1, price: 3249, available: true }, data: {}, farbBreiten: [breiteCm],
     updateExtras: () => ({ items: [], rows: [], sum: 0 }),
     inFlight: false, cta, ctaHint: { hidden: true }, cartLink: { hidden: true, setAttribute() {} }, errMin: { hidden: true }, errMax: null,
     clearInvalid() {}, markInvalid() {}, zeigeFehlerfeld() {}, calculate() {}, setTimeout() {},
@@ -117,4 +117,13 @@ test('Klick: Laenge ab Mindestlaenge und Produkte ohne Mindestlaenge unveraender
   assert.equal(ohne.quantity, 10);
   assert.equal(ohne.properties['Gewünschte Länge'], '500 cm');
   assert.equal(ohne.properties['Mindestbestellmenge'], undefined);
+});
+
+test('20 m Restrolle gehen mit 80 bzw. 100 m2-Einheiten in den Request, kein Theme-Limit von 50', async () => {
+  for (const [breite, menge] of [[400, 80], [500, 100]]) {
+    const r = await klick('2000', 0, breite);
+    assert.equal(r.quantity, menge);
+    assert.equal(r.properties['Rollenbreite'], `${breite} cm`);
+    assert.equal(r.properties['Gewünschte Länge'], '2000 cm');
+  }
 });

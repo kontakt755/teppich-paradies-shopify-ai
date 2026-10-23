@@ -1010,6 +1010,37 @@ sagt der Dialog, wie man bis dahin in der Shopify-App abzieht. Der Dialog rechne
 (`lib/sonderposten.mjs`, `rollenRechnung`; ein Test hält Browser und Server gleich). Der Shop zeigt den Rest
 unter dem Preis aus demselben Bestand (`blocks/tp-aktion-hinweis.liquid`, `snippets/tp-rollenrest.liquid`).
 
+**Gemessene Restlaenge (2026-10-23, #1643).** Im vorhandenen Rollenbereich erfasst der Inhaber
+die physisch gemessene Laenge einer einzelnen, durchgehenden Rolle. `POST /api/sonderposten/bestand`
+verlangt genau eine bestandsgefuehrte, nicht ueberverkaufbare m²-Variante mit festem Laengenlimit.
+Der Dialog zeigt Rollenbreite, physischen/freien Bestand und gebundene, reservierte und sonst
+zurueckgehaltene Mengen. Sobald eine davon nicht lesbar oder ungleich 0 ist, bleibt die Inventur
+gesperrt; getrennte Reststuecke werden nie zu einer durchgehenden Rolle addiert.
+
+Laenge (0 bis 100 m, Zentimeter) × feste Rollenbreite wird auf volle m² **abgerundet**. Erfasst wird
+`on_hand`, nicht `available`: eine nach dem Lesen entstandene Onlinebindung bleibt von Shopify
+abgezogen. Der Server liest frisch, vergleicht Item-ID und den vorher angezeigten physischen
+Bestand und setzt mit `changeFromQuantity` und einer stabilen UUID je Dialog. Gleichzeitige
+physische Bestandsaenderungen werden abgelehnt; Antwortverlust bleibt „unklar“. Protokoll und
+Gegenprobe nennen den Vorgang und unterscheiden physisch von frei verfuegbar. Ein unlesbares
+oder abweichendes Ergebnis wird nie als bestaetigte Korrektur gemeldet.
+
+Die Rollenabbuchung im Laden ist **vor Zahlung und Zuschnitt** zu bestaetigen. Erst danach den
+Verkauf abschliessen; bei unklarer Antwort erst den Bestand pruefen. Eine SumUp-Buchung allein
+aendert diesen Shopify-Bestand nicht. Faellt der Ladenverkauf anschliessend aus, prueft der
+Inhaber den physischen Bestand und korrigiert ihn ueber denselben Inventurdialog. Das ist keine
+automatische Kassenanbindung und keine zweite Lagerverwaltung.
+
+API-Nachweis: [Bestandszustaende](https://shopify.dev/docs/apps/build/orders-fulfillment/inventory-management-apps/manage-quantities-states),
+[on_hand mit atomarer Gegenpruefung](https://shopify.dev/docs/api/admin-graphql/2026-10/mutations/inventorySetQuantities).
+
+Die Bestandslaenge ist kein Nachweis fuer eine einzelne bestellbare Warenkorbmenge: 20 m werden
+bei 4/5 m Breite korrekt als 80/100 Einheiten angefragt. Ein separat in Shopify eingestelltes
+[Add-to-cart limit](https://help.shopify.com/en/manual/checkout-settings/add-to-cart-limit)
+kann diese Menge trotzdem begrenzen (Shopify setzt bei kleinen Shops standardmaessig 50).
+Vor dem Start den aktuellen Checkout-Wert lesend pruefen; weder Bestandseinheiten umbauen noch
+Checkout-Einstellungen ohne eigenen Auftrag aendern.
+
 **Tests** sprechen nie echtes Shopify: `tests/_testumgebung.mjs` blendet `.env.local` und die
 `SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
 über `createApi({ shopifyZugang })` bzw. `ersetzeShopifyZugang()` in `serve-dashboard.mjs` hinein.

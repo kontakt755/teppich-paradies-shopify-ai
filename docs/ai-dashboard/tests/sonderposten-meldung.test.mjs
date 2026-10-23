@@ -58,9 +58,9 @@ test('Serverfehler: Text des Servers, unklar bleibt unklar, leere 5xx-Antwort is
 test('die Ansicht nimmt ihre Rueckmeldung aus lib/sonderposten.mjs und behauptet ohne Antwort nichts', async () => {
   const { readFileSync } = await import('node:fs');
   const quelle = readFileSync(new URL('../ansichten/sonderposten.mjs', import.meta.url), 'utf8');
-  assert.match(quelle, /import \{ meldungNachBuchung(, rollenRechnung)? \} from '\.\.\/lib\/sonderposten\.mjs'/);
+  assert.match(quelle, /import \{ meldungNachBuchung, rollenRechnung, inventurRechnung, meldungNachInventur \} from '\.\.\/lib\/sonderposten\.mjs'/);
   // Beide Dialoge (Einzelstueck und Restrolle) werten fehlende Antworten als "unklar".
-  assert.equal(quelle.match(/catch \{ antwort = \{ verbindung: false \}; \}/g)?.length, 2);
+  assert.equal(quelle.match(/catch \{ antwort = \{ verbindung: false \}; \}/g)?.length, 3);
   assert.doesNotMatch(quelle, /Es wurde nichts gebucht/);
 });
 
@@ -106,4 +106,26 @@ test('Rolle gebucht, aber Gegenprobe weicht ab oder ist nicht lesbar: Warnung, k
   assert.match(nichtLesbar.text, /angenommen \(80 → 66 m²\)/);
   const abweichend = meldungNachBuchung({ ok: true, ergebnis: { ...basis, gegenprobe: 'ok', ok: false, bestandNachher: 62 } });
   assert.match(abweichend.text, /62 m² statt 66 m²/);
+});
+
+test('Inventurvorschau: sichere Abrundung, feste Breite, 0 und begrenzte Nachkommastellen', async () => {
+  const { inventurRechnung } = await import('../lib/sonderposten.mjs');
+  assert.equal(inventurRechnung('12', 4).qm, 48);
+  assert.equal(inventurRechnung('20', 5).qm, 100);
+  assert.equal(inventurRechnung('12,13', 4).qm, 48);
+  assert.equal(inventurRechnung('12,13', 4).verfuegbarM, 12);
+  assert.match(inventurRechnung('12,13', 4).text, /abgerundet auf 48 m²/);
+  assert.equal(inventurRechnung('0', 4).qm, 0);
+  assert.equal(inventurRechnung('', 4).leer, true);
+  for (const text of ['-1', '1,234', '100,01', 'NaN', 'Infinity']) assert.equal(inventurRechnung(text, 4).ok, false);
+  assert.equal(inventurRechnung('12', 0).ok, false);
+});
+
+test('Inventurrueckmeldung unterscheidet physisch/frei und warnt ohne Gegenprobe', async () => {
+  const { meldungNachInventur } = await import('../lib/sonderposten.mjs');
+  const ergebnis = { typ: 'inventur', gebucht: true, ok: true, gegenprobe: 'ok', bestandNachher: 48, verfuegbarNachher: 28, restLaengeM: 7 };
+  const m = meldungNachInventur({ ok: true, ergebnis });
+  assert.equal(m.erfolg, true); assert.match(m.text, /physisch 48 m² · jetzt 7 m \(28 m²\) frei/);
+  assert.equal(meldungNachInventur({ ok: true, ergebnis: { ...ergebnis, gegenprobe: 'fehlgeschlagen' } }).erfolg, false);
+  assert.match(meldungNachInventur({ verbindung: false }).text, /Restlänge.*unklar/);
 });
