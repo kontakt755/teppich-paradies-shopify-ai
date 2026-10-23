@@ -71,8 +71,10 @@ Erst die erfolgreiche Gegenprobe ergibt `write-log.json`; eine leere
    Zustand und Artikelzuordnung bestaetigen. Nennbreite ist keine Nutzbreite.
 2. Bilder und Versand-/Packdaten sowie Bearbeitungszeit ergaenzen. Fuer
    abweichende Nutzbreiten auch Quell- und Komponentenvertrag neu pruefen.
-3. Echten Bestand ueber die vorhandene sichere Restlaengen-Inventur erfassen;
-   eigene Maßgrenzen passend zur Quelle setzen und gezielt freigeben.
+3. Nach Maßpruefung an der Rollenquelle `custom.max_roll_laenge_cm` passend
+   und positiv setzen; erst dann ist die vorhandene sichere Restlaengen-Inventur
+   moeglich. Darueber den echten Bestand erfassen; eigene Maßgrenzen passend
+   zur Quelle setzen und gezielt freigeben.
 4. Bestellmix aus Raummaß, Kettelteppich und unterschiedlichen Quellen sowie
    Storno vor/nach Zuschnitt abnehmen. Die interne Mailvorlage muss den
    geaenderten Block enthalten, bevor gerichtete Angebote aktiviert werden.

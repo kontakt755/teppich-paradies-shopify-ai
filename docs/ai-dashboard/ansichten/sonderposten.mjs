@@ -284,7 +284,7 @@ function oeffneRollenDialog(e) {
     <div class="field">
       <label for="spLaenge">Länge für den Ladenkunden</label>
       <div class="sp-eingabe"><input id="spLaenge" name="laenge" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 3,5" aria-describedby="spLaengeHinweis spRechnung"><span>m</span></div>
-      <span class="hint" id="spLaengeHinweis">Vor Zahlung und Zuschnitt buchen. Immer volle Rollenbreite (${esc(breite)} m): Ein Teppich 2 × 3 m verbraucht 2 m der Rolle. Bei unklarer Antwort erst den Bestand prüfen.</span>
+      <span class="hint" id="spLaengeHinweis">Vor Zahlung und Zuschnitt buchen. Die Länge eingeben, die über die volle Rollenbreite (${esc(breite)} m) abgeschnitten wird. Flor- und Laufrichtung beachten. Bei unklarer Antwort erst den Bestand prüfen.</span>
     </div>
     <p class="sp-rechnung" id="spRechnung" data-sp-rechnung aria-live="polite"></p>
     ${nameFeld()}
