@@ -131,17 +131,24 @@ kann dafuer weg?
    Risiken · Naechste Stufe), bei neuem Verhalten auch `ARCHITEKTUR.md`.
 8. PR mit `Closes #<n>`, danach `npm run task -- review <n> --note "PR #…"`.
 9. Nach dem Merge den Dienst nachziehen – main hineinmergen, nie umschalten.
-   `~/tp-dashboard` steht auf dem Zweig `dashboard-betrieb`, der eigene Commits
-   traegt („betrieb: Zwischenstand“, 24./25.09.). Darin liegen
-   `start-dashboard.sh` (startet die App „Teppich Dashboard“) und `einrichten.sh`
-   (Starter „Dashboard einrichten“ auf dem Schreibtisch); beide werden benutzt,
-   nicht entfernen. `--ff-only` schlaegt deshalb immer fehl:
+   `~/tp-dashboard` steht auf dem Zweig `dashboard-betrieb` (Upstream `origin/main`),
+   weil `main` dem Deploy-Worktree gehoert. `--ff-only` schlaegt fehl, der Zweig traegt
+   eigene Merge-Commits. Inhaltlich ist er seit 2026-10-24 gleich `main`:
+   `einrichten.sh` (Starter „Dashboard einrichten“ auf dem Schreibtisch) und
+   `start-dashboard.sh` liegen jetzt in main - nicht entfernen; die App „Teppich
+   Dashboard“ startet `scripts/dashboard-app-starten.sh`. Zeitpunkt: direkt nach
+   einem Lauf der Codex-Automation „Neue Muster automatisch bestellen“ (alle 15 min,
+   arbeitet in `~/tp-dashboard`; letzter Lauf = Aenderungszeit ihres Threads unter
+   `~/.codex/sessions`).
    ```
    cd ~/tp-dashboard && git fetch -q origin
    git merge-tree --write-tree HEAD origin/main   # Exit 0 = konfliktfrei
    git merge origin/main -m "merge: <PR-Titel> (#<n>)"
+   git diff --quiet HEAD@{1} HEAD -- package-lock.json || npm ci --no-audit --no-fund
    npm run dashboard:test
    launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.dashboard
+   git diff --stat origin/main HEAD      # muss leer sein, sonst traegt der Betrieb eigenen Code
+   git push -q origin dashboard-betrieb  # Betriebsstand auf GitHub sichern
    ```
    Der Dienst baut nach dem Start erst `issues.json`, ein paar Sekunden warten.
    Dann `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8001/login` → 200
