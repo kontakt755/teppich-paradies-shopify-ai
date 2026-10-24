@@ -360,12 +360,24 @@ export function vorigeRunde(r, max = 8000) {
   return `\n\nBefunde deiner vorigen Runde (Runde ${r.runde}, Commit ${String(r.head).slice(0, 12)}). Pruefe zuerst, ob sie behoben sind, und nenne offene erneut:\n<vorige_runde>\n${text}\n</vorige_runde>`;
 }
 
+/**
+ * Befundzeile aus der Codex-Antwort. Verwertbar nur im verlangten Format (reviewKopf):
+ * Befunde als "P1|P2|P3 Datei:Zeile - ...", sonst genau KEINE BEFUNDE, und am Ende
+ * "Geprueft:". "P2 kann ich nicht pruefen" oder KEINE BEFUNDE neben P1-Zeilen
+ * galten sonst als gueltiges Review (Codex-Review #1669, Runde 2).
+ */
 export function ergebnisZeile(text) {
-  if (/^\s*KEINE BEFUNDE\s*$/m.test(text)) return 'keine Befunde';
-  const n = (p) => (text.match(new RegExp(`^\\s*[-*]*\\s*\\**${p}\\b`, 'gm')) || []).length;
-  const zahlen = ['P1', 'P2', 'P3'].map((p) => [p, n(p)]);
-  if (!zahlen.some(([, k]) => k > 0)) return 'unklar (Antwortformat nicht eingehalten)';
-  return zahlen.map(([p, k]) => `${k} ${p}`).join(', ');
+  const zeilen = text.split('\n');
+  const befund = zeilen.filter((z) => /^\s*[-*]*\s*\**P[123]\b/.test(z));
+  const formgerecht = befund.filter((z) => /^\s*[-*]*\s*\**P[123]\**\s+\S+:\d+\S*\s+-\s+\S/.test(z));
+  const keine = zeilen.some((z) => /^\s*KEINE BEFUNDE\s*$/.test(z));
+  if (!zeilen.some((z) => /^\s*\**Gepr(ue|ü)ft\**:/i.test(z))) return 'unklar (Abschlusszeile "Geprueft:" fehlt)';
+  if (formgerecht.length < befund.length) return 'unklar (Befundzeile ohne Datei:Zeile)';
+  if (keine && befund.length) return 'unklar (KEINE BEFUNDE und Befunde zugleich)';
+  if (keine) return 'keine Befunde';
+  if (!befund.length) return 'unklar (Antwortformat nicht eingehalten)';
+  const n = (p) => befund.filter((z) => new RegExp(`^\\s*[-*]*\\s*\\**${p}\\b`).test(z)).length;
+  return ['P1', 'P2', 'P3'].map((p) => `${n(p)} ${p}`).join(', ');
 }
 
 function reviewOrdner() {

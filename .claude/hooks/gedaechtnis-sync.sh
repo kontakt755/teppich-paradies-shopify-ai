@@ -79,9 +79,10 @@ case "$MODUS" in
     fi
     # Nur bei einem Konflikt laeuft ein Rebase; ohne Netz scheitert gleich der push unten.
     if ! git pull -q --rebase origin main >/dev/null 2>&1 && [ -d "$(git rev-parse --git-path rebase-merge)" ]; then
-      git checkout --theirs . >/dev/null 2>&1
-      git add -A >/dev/null 2>&1
-      if ! GIT_EDITOR=true git rebase --continue >/dev/null 2>&1; then
+      # Alle drei Schritte muessen gelingen: scheitert checkout --theirs (z. B. eigene
+      # Loeschung gegen fremde Aenderung), nahm add -A sonst den Fremdstand und die
+      # eigene Arbeit verschwand still (Codex-Review #1669, Runde 2).
+      if ! { git checkout --theirs . && git add -A && GIT_EDITOR=true git rebase --continue; } >/dev/null 2>&1; then
         git rebase --abort >/dev/null 2>&1
         melde "Konflikt mit dem Fernstand nicht loesbar - lokal committet, nicht gepusht."
       fi

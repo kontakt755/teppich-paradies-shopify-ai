@@ -49,9 +49,16 @@ export function worktrees(porcelain) {
 /** Grund, warum die Kopie bleibt - oder null, wenn sie weg darf. */
 const darin = (pfad, wurzel) => pfad === wurzel || pfad.startsWith(wurzel + path.sep);
 
-/** Absolute Pfade aus den <string>-Werten von LaunchAgent-Plists (XML). */
-export function dienstPfade(plists) {
-  return plists.flatMap((xml) => [...xml.matchAll(/<string>(\/[^<]+)<\/string>/g)].map((m) => m[1]));
+/**
+ * Absolute Pfade aus den <string>-Werten von LaunchAgent-Plists (XML), auch
+ * mitten in Shell-Aufrufen: neun Dienste starten per `bash -lc 'cd "$HOME/tp-dashboard" && ...'`
+ * (Codex-Review #1669, Runde 2).
+ */
+export function dienstPfade(plists, home = os.homedir()) {
+  return plists.flatMap((xml) => [...xml.matchAll(/<string>([^<]*)<\/string>/g)].flatMap((m) => {
+    const wert = m[1].replace(/&amp;/g, '&').replace(/\$\{HOME\}|\$HOME|(^|[\s"'=])~(?=\/)/g, (t, vor) => (vor ?? '') + home);
+    return [...wert.matchAll(/\/[^\s"'`;&|()<>]+/g)].map((p) => p[0].replace(/\/+$/, ''));
+  }));
 }
 
 export function grund(w, { haupt, eigene, gemergt, geaendert, ignoriert, letzteAktivitaet, prozessCwds, dienste = [], jetzt }) {

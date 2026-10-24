@@ -52,3 +52,18 @@ test('ein LaunchAgent, der in die Kopie zeigt, haelt sie fest - auch gemergt und
   assert.equal(grund(wt('/r/tp-dashboard-alt'), basis({ dienste })), null, 'nur echte Unterpfade zaehlen');
   assert.match(grund(wt('/r/.claude/worktrees/a'), basis({ dienste: null })), /LaunchAgents nicht pruefbar/);
 });
+
+test('auch Shell-Aufrufe mit $HOME, ${HOME} und ~ zaehlen als Verweis', () => {
+  const plist = (s) => `<array><string>/bin/bash</string><string>-lc</string><string>${s}</string></array>`;
+  const d = dienstPfade([
+    plist('cd "$HOME/tp-dashboard" &amp;&amp; exec npm run -s auslauf:pruefen'),
+    plist("cd ${HOME}/tp-andere/ && date"),
+    plist('cd ~/tp-dritte; exec npm run x'),
+    plist('echo a~/kein-pfad'),
+  ], '/Users/t');
+  assert.ok(d.includes('/Users/t/tp-dashboard'), d.join(' '));
+  assert.ok(d.includes('/Users/t/tp-andere'));
+  assert.ok(d.includes('/Users/t/tp-dritte'));
+  assert.ok(!d.some((p) => p.includes('kein-pfad') && p.startsWith('/Users/t')), 'a~/x ist kein Home-Pfad');
+  assert.match(grund(wt('/Users/t/tp-dashboard', 'dashboard-betrieb'), basis({ dienste: d })), /LaunchAgent/);
+});

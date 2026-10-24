@@ -183,8 +183,16 @@ test('vorigeRunde: Befunde der letzten Runde gehen mit, gekuerzt, sonst nichts',
 
 test('ergebnisZeile: zaehlt Befunde, erkennt KEINE BEFUNDE und Formatfehler', () => {
   assert.equal(ergebnisZeile('KEINE BEFUNDE\nGeprueft: alles'), 'keine Befunde');
-  assert.equal(ergebnisZeile('- P1 a.mjs:3 - x - y\n- **P2** b:1 - z\nP3 c - d\nGeprueft: Diff'), '1 P1, 1 P2, 1 P3');
-  assert.match(ergebnisZeile('Sieht gut aus.'), /unklar/);
+  assert.equal(ergebnisZeile('- P1 a.mjs:3 - x - y\n- **P2** b:1 - z\nP3 c.md:10-12 - d\nGeprueft: Diff'), '1 P1, 1 P2, 1 P3');
+  assert.match(ergebnisZeile('Sieht gut aus.\nGeprueft: nichts'), /unklar/);
+});
+
+test('ergebnisZeile: unvollstaendige oder widerspruechliche Antworten sind nicht verwertbar', () => {
+  assert.match(ergebnisZeile('P2 kann ich wegen fehlendem Zugriff nicht pruefen.\nGeprueft: nichts'), /ohne Datei:Zeile/);
+  assert.match(ergebnisZeile('P1 a.mjs:1 - x - y\nKEINE BEFUNDE\nGeprueft: Diff'), /zugleich/);
+  assert.match(ergebnisZeile('KEINE BEFUNDE'), /Geprueft/);
+  assert.match(ergebnisZeile('P2 a.mjs:1 - x - y'), /Geprueft/);
+  assert.equal(ergebnisZeile('KEINE BEFUNDE\n\nGeprüft: Diff und Tests'), 'keine Befunde');
 });
 
 test('Kontingent erschoepft wird erkannt, eine Zeilennummer 429 nicht', () => {

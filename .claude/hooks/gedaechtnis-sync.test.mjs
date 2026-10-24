@@ -133,3 +133,17 @@ test('push: scheitert git add, meldet der Sync das - als Hook Exit 0, mit --stre
   assert.equal(streng.status, 1);
   assert.match(streng.stderr, /git add fehlgeschlagen/);
 });
+
+test('push: eigene Loeschung gegen fremde Aenderung geht nicht still verloren', () => {
+  // Codex-Review #1669, Runde 2: checkout --theirs scheiterte, add -A nahm den
+  // Fremdstand, die eigene Loeschung verschwand und der Sync meldete Erfolg.
+  const { a, b } = aufbau();
+  writeFileSync(join(a, 'MEMORY.md'), '# Index\n- neu auf a\n');
+  assert.equal(sync('push', a).status, 0);
+  git(b, 'rm', '-q', 'MEMORY.md');
+  const r = sync('push', b, '--streng');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /Konflikt mit dem Fernstand nicht loesbar/);
+  assert.ok(!existsSync(join(b, '.git', 'rebase-merge')), 'kein haengender Rebase');
+  assert.match(git(b, 'log', '-1', '--format=%s'), /^Gedaechtnis /, 'die eigene Loeschung bleibt als lokaler Commit erhalten');
+});
