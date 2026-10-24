@@ -136,7 +136,7 @@ test('der eine bestehende Workflow nutzt Proxy-Entry und veroeffentlicht beide Q
   assert.match(yml, /shopify-oauth\.mjs --grant client-credentials/);
   assert.match(yml, /node operations\/scripts\/feed-tnm-abruf\.mjs.*--pruefung tp-tnm-pruefung\.json/);
   assert.match(yml, /git add tp-tnm-preise\.txt tp-tnm-meta\.tsv tp-tnm-pruefung\.json/);
-  assert.match(yml, /name: Vollstaendiges Pruefprotokoll sichern\n\s+if: always\(\)\n\s+uses: actions\/upload-artifact@v4/);
+  assert.match(yml, /name: Vollstaendiges Pruefprotokoll sichern\n\s+if: always\(\)\n\s+uses: actions\/upload-artifact@v\d+/);
   assert.match(yml, /path: tp-tnm-pruefung\.json\n\s+if-no-files-found: warn\n\s+retention-days: 7/);
   assert.doesNotMatch(yml.slice(yml.indexOf('- name: Auf feed-daten veroeffentlichen')), /if: always\(\)|if: failure\(\)/);
   assert.doesNotMatch(yml, /shopify store execute|tnmPreisZeilen|erster Lauf/);

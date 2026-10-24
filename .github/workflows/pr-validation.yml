@@ -14,32 +14,23 @@ concurrency:
 jobs:
   safe-static-checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - run: npm ci
-      - run: python3 -m unittest tests/test_bild_qualitaetstest.py
-      - run: npm run qa:unit:test
-      - run: npm run automation:test
-      - run: npm run workflow:test
-      - run: npm run qa:evidence:test
-      - run: npm run secret:scan
-      # Beide Guards liefen bisher nur in `workflow:validate`, also nur wenn
-      # jemand sie lokal aufrief. Genau die Fehler, die sie abfangen, sind
-      # mehrfach ueber PRs bis in main gelangt: ungueltiges Liquid, das Shopify
-      # beim Push still verwirft, und Block-Schemata, die zwar deployen, aber
-      # im Theme-Editor unsichtbar bleiben.
-      - run: npm run liquid:guard
-      - run: npm run schema:guard
-      - run: npm run template:guard
-      # Faengt ab, dass eine Theme-ID als Prosa-Fakt in CLAUDE.md/AGENTS.md
-      # veraltet, ohne dass es jemand merkt - genau so wurde monatelang ein
-      # Theme als Live-Stand genannt, das es in der Admin API nicht mehr gab.
-      - run: npm run theme:guard
+      # Fuer themecheck:guard (Theme Check laeuft offline, keine Anmeldung).
+      # Dieselbe Version wie auf dem Mac, damit Baseline und Befunde gleich sind.
+      - run: npm install -g --no-fund --no-audit @shopify/cli@4.9.4
+      # Dieselbe Pruefung wie lokal vor dem Commit (AGENTS.md): alle Testsuiten,
+      # Liquid-, Schema-, Template-, Live-Theme- und Schrift-Guard, Theme Check
+      # gegen die Baseline, Secret-Scan und der Python-Bildtest. Bis 2026-10-24
+      # lief hier nur ein Teil davon; Schrift-Guard, Theme Check und fuenf
+      # Testsuiten fielen sonst erst im Deploy oder im Betrieb auf.
+      - run: npm run -s pruefen

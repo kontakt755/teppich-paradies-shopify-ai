@@ -10,6 +10,11 @@ ignore:
   # in theme-check nicht (Fehleranalyse 13.10.: 58 Fehlalarme, darunter die
   # LiquidComplexity der Bestellmail, die "npm run qa" auf FAIL setzte).
   - "/domains/**"
+  # Abhaengigkeiten sind kein Theme. Theme-Check prueft jede Datei unter einem
+  # Ordner namens locales/ als Uebersetzung; seit Puppeteer 25.16 bringt dessen
+  # Unterabhaengigkeit zod node_modules/zod/locales/package.json mit, und der
+  # Guard meldete zwei ValidJSON-Fehler (2026-10-24).
+  - "/node_modules/**"
 
 JSONMissingBlock:
   # Lokal grundsaetzlich nicht aufloesbar, zwei Ursachen:

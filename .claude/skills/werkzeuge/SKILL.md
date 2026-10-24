@@ -11,6 +11,7 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 
 | Befehl | Zweck |
 |---|---|
+| `npm run -s pruefen` | **vor jedem Commit** und in der PR-Validierung derselbe Lauf: alle Testsuiten, die Guards darunter (ohne menu/unmerged/essential), Theme Check gegen die Baseline, Secret-Scan, Python-Bildtest; meldet alle Fehler auf einmal. `-- --nur a,b` / `-- --ohne themecheck` (ohne Shopify CLI) |
 | `npm run workflow:doctor` | **vor jedem Deploy**: alle Voraussetzungen in einem Lauf |
 | `npm run -s deploy:frei` | **vor jedem Merge nach main**: läuft gerade ein Deploy (Preview bis Live)? Exit 1 = nicht mergen |
 | `npm run theme:block list\|add\|remove` | Bloecke in Templates setzen, statt im Editor zu klicken |
@@ -40,3 +41,14 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 
 Weitere Pruefungen (`qa`, `seo:check`, `compare:check`, `sales:check`,
 `secret:scan`) stehen im Skill `theme-regeln` unter „Tests“.
+
+## Abhaengigkeiten aktualisieren
+
+npm (ab 11.19) fuehrt Installationsskripte von Abhaengigkeiten nur aus, wenn
+`allowScripts` in `package.json` sie erlaubt. Puppeteer laedt darueber sein
+Chrome; die Freigabe gilt genau fuer die gepruefte Version (`puppeteer@25.16.0`).
+Nach einem Puppeteer-Update deshalb `npm install-scripts approve puppeteer`
+und `npm ci` - sonst fehlt der passende Browser, und Social-Rendering,
+`dashboard:pruefen` und `auslauf:pruefen` scheitern erst im Betrieb.
+`npm install-scripts ls` zeigt, was noch ungeprueft ist. Danach
+`npm run -s pruefen` (startet auch den Browsertest der Betriebssuite).
