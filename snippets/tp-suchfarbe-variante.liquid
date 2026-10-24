@@ -144,6 +144,12 @@
         if tp_sf_teile.size != 2
           continue
         endif
+        # Beige erweitert nur den aktiven Filter. Bestehende Suchwort-Gruppen,
+        # besonders Grau mit Greige/Taupe, behalten ihre bisherige Bedeutung.
+        assign tp_sf_gruppenname = tp_sf_teile | first | strip
+        if tp_sf_gruppenname == 'beige-filter' and tp_sf_runde == 1
+          continue
+        endif
         assign tp_sf_liste = tp_sf_teile | last | downcase | split: ','
         assign tp_sf_muster = ''
         assign tp_sf_gilt = false
