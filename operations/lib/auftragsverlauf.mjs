@@ -77,6 +77,7 @@ export const SCHRITT_LABEL = Object.freeze({
     raus: 'Gelabelt und an Kunden verschickt',
     raus_eigen: 'Aus eigenem Bestand an Kunden verschickt',
     raus_vorbei: 'Persönlich übergeben',
+    raus_direkt: 'Vom Lieferanten direkt an den Kunden verschickt',
     kunde_hat_muster: 'Kunde hat Muster',
     nachgefasst: 'Nachgefasst',
     ergebnis: 'Ergebnis',
@@ -296,12 +297,18 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   let eigen = null;
   if (art === AUFTRAGSART.MUSTER) {
     eigen = eigenerBestand(positionen);
+    // Mit Lieferziel "Kunden" bestellt (ueber: 'kunde'): der Hersteller verschickt die Muster
+    // selbst. "Bei uns angekommen" gibt es dann nie - bis 2026-10-24 blieben solche Auftraege
+    // dort haengen, ohne Shopify-Versand und ohne Nachfassen.
+    direkt = !eigen && positionen.length > 0 && positionen.every(p => statusAlle[positionKey(auftrag.id, p.lineItemId)]?.ueber === 'kunde');
     schritte.push(start('angefragt'));
     // Aus eigenem Bestand: "beim Lieferanten bestellt" und "bei uns angekommen" entfallen;
     // beim Vorbeibringen heisst der Schritt "persoenlich uebergeben" statt "verschickt".
-    if (!eigen) schritte.push(ausPosition('bestellt'), ausPosition('geliefert'));
+    if (!eigen) schritte.push(ausPosition('bestellt'));
+    if (!eigen && !direkt) schritte.push(ausPosition('geliefert'));
     const raus = ausVersand();
-    schritte.push(eigen === 'vorbei' ? { ...raus, label: label.raus_vorbei } : eigen === 'versand' ? { ...raus, label: label.raus_eigen } : raus);
+    schritte.push(eigen === 'vorbei' ? { ...raus, label: label.raus_vorbei } : eigen === 'versand' ? { ...raus, label: label.raus_eigen }
+      : direkt ? { ...raus, label: label.raus_direkt } : raus);
 
     const hat = jeSchritt.kunde_hat_muster?.at(-1);
     schritte.push(hat
@@ -416,6 +423,7 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
       case 'geliefert':
         return beimLieferanten('Lieferant schickt die Muster an uns', 'geliefert', 'Muster sind angekommen');
       case 'raus':
+        if (stand.direktversand) return beimLieferanten('Lieferant schickt die Muster direkt an den Kunden', 'raus', 'Ist an den Kunden raus…');
         if (stand.eigenerBestand) {
           // Persoenliche Uebergabe belegt Empfang; Postversand braucht seinen getrennten Versanddialog.
           const kunde = kundeUndOrt(auftrag);

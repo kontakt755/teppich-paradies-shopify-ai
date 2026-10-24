@@ -19,6 +19,13 @@ import { darfWeiter, beschaffungsStand } from '../../docs/ai-dashboard/lib/besch
 
 export const STATUS_ORDER = Object.freeze(['bestellt', 'geliefert', 'raus', 'erledigt']);
 
+/**
+ * Vermerk "ueber" beim Bestellen: wohin der Lieferant liefert, wenn es nicht der Laden ist.
+ * 'kettler' = Ware geht erst an unseren Kettelservice (#1453), 'kunde' = der Lieferant schickt
+ * die Muster direkt an den Kunden (Herstellermuster, Lieferziel "Kunden" in der Bestellmail).
+ */
+export const UEBER_WERTE = Object.freeze(['kettler', 'kunde']);
+
 export const STATUS_LABEL = Object.freeze({
   bestellt: 'Bestellt',
   geliefert: 'Geliefert an uns',
@@ -122,7 +129,7 @@ function clip(text, max) {
  * @param {string} [p.sendungsnummer]  nur bei "raus": Sendungsnummer des Pakets (geht mit der Versandbuchung an Shopify)
  * @param {string} [p.versanddienst]   nur bei "raus", z. B. "GLS"
  * @param {boolean} [p.versandMail]    nur bei "raus": bekommt der Kunde die Versandmail? (gilt auch beim Nachholen)
- * @param {'kettler'|null} [p.ueber]   nur bei "bestellt": Ware geht erst an unseren Kettelservice.
+ * @param {'kettler'|'kunde'|null} [p.ueber]  nur bei "bestellt", Werte siehe UEBER_WERTE.
  *                                     null nimmt den Vermerk zurueck, ohne Angabe bleibt er, wie er war.
  * @param {Date}   [p.jetzt]
  */
@@ -149,7 +156,7 @@ function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmen
   };
   if (status === 'bestellt') {
     eintrag.lieferantBestellnummer = lieferantBestellnummer ? clip(lieferantBestellnummer, 200) : (bisher.lieferantBestellnummer || null);
-    if (ueber !== undefined) eintrag.ueber = ueber === 'kettler' ? 'kettler' : null;
+    if (ueber !== undefined) eintrag.ueber = UEBER_WERTE.includes(ueber) ? ueber : null;
   }
   if (notiz) eintrag[`${status}Notiz`] = clip(notiz, 2000);
   if (status === 'raus') {

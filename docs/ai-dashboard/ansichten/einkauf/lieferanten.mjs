@@ -637,9 +637,10 @@ async function markiereMail(i, knopf) {
   knopf.disabled = true;
   if (!await pruefeVorbereitung(i)) { if (!dialog.fehler) knopf.disabled = false; return; }
   const nr = ($(`#lfNr${i}`)?.value || '').trim() || null;
-  // Ware-Mail an den Kettler: vermerken, damit der Auftragsfluss "unterwegs zum Kettler" zeigt.
-  // Andere Ware-Mails nehmen einen alten Vermerk zurueck; Muster lassen ihn unberuehrt.
-  const ueber = m.art === 'ware' ? (m.lieferziel === 'kettler' ? 'kettler' : null) : undefined;
+  // Vermerk zum Lieferweg, damit der Auftragsfluss den richtigen naechsten Schritt zeigt: Ware an
+  // den Kettler ("unterwegs zum Kettler"), Muster direkt an den Kunden (kein "angekommen" bei uns).
+  // Jede andere Mail nimmt einen alten Vermerk zurueck.
+  const ueber = m.art === 'ware' ? (m.lieferziel === 'kettler' ? 'kettler' : null) : (m.lieferziel === 'kunde' ? 'kunde' : null);
   const ok = await markiereAlsBestellt(m.positionen, nr, { ueber });
   if (ok) { dialog.markiert.add(i); dialog.gesetzt.set(i, m.positionen.filter(p => afEintragFuer(p)?.status === 'bestellt')); }
   // Karten und Zahlen dahinter nachziehen. Der Dialog bleibt offen - mit "Rückgängig", falls der

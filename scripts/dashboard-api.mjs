@@ -34,7 +34,7 @@ import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
@@ -2543,8 +2543,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           return {ok:true,...this.einkaufKettelversand({orderId})};
         } catch(e) {throw new ApiError(409,e.message);}
       }
-      // Ware ueber unseren Kettelservice: nur dieser eine Wert, alles andere nimmt den Vermerk zurueck.
-      const ueber = payload?.ueber === undefined ? undefined : payload.ueber === 'kettler' ? 'kettler' : null;
+      // Ware ueber unseren Kettelservice bzw. Muster direkt vom Lieferanten zum Kunden: nur diese
+      // Werte, alles andere nimmt den Vermerk zurueck.
+      const ueber = payload?.ueber === undefined ? undefined : UEBER_WERTE.includes(payload.ueber) ? payload.ueber : null;
       if (aktion === 'beschaffung' || aktion === 'uebernahme') {
         const dir = privatDirPath || privatDir();
         const modell = ladeBestellModell(dir);

@@ -69,13 +69,16 @@ export const AF_STATUS_LABEL = { bestellt: 'Bestellt', geliefert: 'Geliefert an 
 // Ware ueber unseren Kettelservice (eintrag.ueber = 'kettler'): dieselben Schritte, nur sagt der
 // Text, wo die Ware gerade ist - "Geliefert an uns" heisst hier "beim Kettler abgeholt".
 const AF_KETTLER_LABEL = { bestellt: 'Bestellt · unterwegs zum Kettler', geliefert: 'Beim Kettler abgeholt' };
-/** Standtext einer Position, mit Kettler-Weg, wenn er vermerkt ist. */
+/** Standtext einer Position, mit Kettler- bzw. Direktweg, wenn er vermerkt ist. */
 export function afStatusText(eintrag) {
   const s = eintrag?.status;
   if (!s) return 'Noch nicht bestellt';
+  if (s === 'bestellt' && istDirektZumKunden(eintrag)) return 'Bestellt · Lieferant schickt direkt an den Kunden';
   return (eintrag.ueber === 'kettler' && AF_KETTLER_LABEL[s]) || AF_STATUS_LABEL[s] || s;
 }
 export const istUeberKettler = eintrag => eintrag?.ueber === 'kettler';
+/** Muster mit Lieferziel "Kunden" bestellt (ueber = 'kunde'): bei uns kommt nichts an, nach "bestellt" folgt "raus". */
+export const istDirektZumKunden = eintrag => eintrag?.ueber === 'kunde';
 // Naechster Schritt nach dem AKTUELLEN Status (nicht nach der Filtergruppe!). "raus" und
 // "erledigt" fallen beide in die Filtergruppe "erledigt" (afFilterGruppe) - ein Mapping ueber
 // die Filtergruppe liefert dafuer keinen eindeutigen Eintrag; frueher verschwand so der
@@ -477,16 +480,22 @@ export async function markiereMusterAngekommen(positionen) {
 export function musterSchrittKnopf(hier, { klasse = 'btn btn-sm' } = {}) {
   if (istNurLesend() || !hier?.length) return '';
   const statusVon = p => afEintragFuer(p)?.status || null;
-  const s = musterSchritt(hier, statusVon);
+  const direktVon = p => istDirektZumKunden(afEintragFuer(p));
+  const s = musterSchritt(hier, statusVon, { direktVon });
   if (s?.schritt === 'angekommen') {
     const daten = JSON.stringify(s.positionen.map(p => ({ orderId: p.orderId, lineItemId: p.lineItemId })));
     const text = s.positionen.length === 1 ? 'Muster angekommen' : `Alle ${s.positionen.length} angekommen`;
     return `<button type="button" class="${klasse}" data-muster-angekommen="${esc(daten)}" title="Die Muster sind bei uns eingetroffen">${esc(text)}</button>`;
   }
   const orderIds = [...new Set(hier.map(p => p.orderId).filter(Boolean))];
+  // Direkt vom Lieferanten: der Versand-Dialog fuer den ganzen Auftrag bucht in Shopify und
+  // startet damit das Nachfassen - "angekommen" gibt es hier nicht.
+  if (s?.schritt === 'direkt' && orderIds.length === 1) {
+    return `<button type="button" class="${klasse}" data-af-set data-af-status="raus" data-af-order="${esc(orderIds[0])}" title="Der Lieferant hat die Muster direkt an den Kunden geschickt">Ist an den Kunden raus…</button>`;
+  }
   if (orderIds.length !== 1) return '';
   const auftrag = alleAuftraege().find(a => a.id === orderIds[0]);
-  const ganz = musterSchritt((auftrag?.positionen || hier).map(p => ({ ...p, orderId: orderIds[0] })), statusVon);
+  const ganz = musterSchritt((auftrag?.positionen || hier).map(p => ({ ...p, orderId: orderIds[0] })), statusVon, { direktVon });
   if (ganz?.schritt !== 'verschicken') return '';
   const packen = `<a class="${klasse}" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(orderIds[0])}">Packstation</a>`;
   return `${packen}<button type="button" class="${klasse}" data-af-set data-af-status="raus" data-af-order="${esc(orderIds[0])}" data-af-item="${esc(ganz.positionen[0].lineItemId)}">${ganz.uebergabe ? 'Übergeben…' : 'Verschicken…'}</button>`;

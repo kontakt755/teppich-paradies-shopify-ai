@@ -13,6 +13,7 @@ import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { einkauf, kundeUndOrt, ladeStandNeu } from './auftragsfluss.mjs';
 import { VERSANDDIENSTE, versandKandidaten, vorauswahl, versandRueckmeldung, istUebergabe } from '../../lib/versand.mjs';
+import { beschaffungsStand, darfWeiter, beschaffungText } from '../../lib/beschaffung.mjs';
 import { shopifyAbgleichKlick } from './shopify-abgleich.mjs';
 
 // Zuletzt gewaehlter Versanddienst je Geraet - im Laden ist es fast immer derselbe.
@@ -62,19 +63,33 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
   const position = nurGeklickt ? (auftrag?.positionen || []).find(p => p.lineItemId === lineItemId) || null : null;
   const stand = einkauf.auftragsstatus?.positionen || {};
   const status = Object.fromEntries(kandidaten.map(p => [p.lineItemId, stand[`${orderId}::${p.lineItemId}`]?.status || null]));
+  // Bestaetigte Fehlmenge offen (Teil-Wareneingang): diese Artikel lehnt der Server ab. Am 19.10.
+  // kam die Ablehnung erst nach dem Buchen-Klick, dreimal hintereinander, waehrend der Dialog
+  // weiter denselben Knopf anbot. Jetzt steht vorher da, was fehlt, mit dem Weg zum Wareneingang.
+  // Ohne Bestellmenge in den geladenen Daten entscheidet allein der Server (keine Sperre auf Verdacht).
+  const gesperrt = kandidaten.filter(p => p.bestellSoll || p.bestellmenge)
+    .map(p => ({ p, e: beschaffungsStand(stand[`${orderId}::${p.lineItemId}`] || null, p.bestellSoll || p.bestellmenge) }))
+    .filter(x => !darfWeiter(x.e, 'raus'));
+  const bereit = kandidaten.filter(p => !gesperrt.some(x => x.p.lineItemId === p.lineItemId));
+  const nurGesperrt = Boolean(auftrag) && kandidaten.length > 0 && !bereit.length && !nurGeklickt;
+  // Vorauswahl ueber alle offenen Artikel, damit eine Eigenleistung nicht ohne die gesperrte Ware vorab angekreuzt wird.
   const vor = vorauswahl(kandidaten, { geklickt: geklickt?.lineItemId || null, status });
   // Muster, die jemand persoenlich vorbeibringt: keine Sendungsnummer, Mail vorab aus.
   const uebergabe = istUebergabe(geklickt ? [geklickt] : position ? [position] : kandidaten);
   // Abholung im Laden: Mail vorab aus (eine Mail "ist unterwegs" passt nicht).
   const abholung = /abhol|pick.?up|selbst/i.test(String(auftrag?.details?.versandart || ''));
   const dienst = letzterDienst();
+  const sperre = gesperrt.length ? `<div class="notice warn" role="status"><p><b>${nurGesperrt ? 'Noch nicht versandbereit' : 'Nicht alles ist versandbereit'}</b> – der Wareneingang ist unvollständig.</p>
+      ${gesperrt.map(x => `<p>${esc(artikelText(x.p))}: ${esc(beschaffungText(x.e))}. <button type="button" class="btn btn-sm" data-beschaffung data-af-status="geliefert" data-af-order="${esc(orderId)}" data-af-item="${esc(x.p.lineItemId)}">Wareneingang ergänzen…</button></p>`).join('')}
+    </div>` : '';
   const liste = nurGeklickt
     ? `<p class="small">${esc(position ? artikelText(position) : 'Dieser Artikel')}</p>`
-    : kandidaten.length > 1
+    : nurGesperrt ? ''
+    : bereit.length > 1
     ? `<fieldset class="zl-wahl"><legend>Was ist in diesem Paket?</legend>
-        ${kandidaten.map(p => `<label><input type="checkbox" name="pos" value="${esc(p.lineItemId)}"${vor.has(p.lineItemId) ? ' checked' : ''}> ${esc(artikelText(p))}</label>`).join('')}
+        ${bereit.map(p => `<label><input type="checkbox" name="pos" value="${esc(p.lineItemId)}"${vor.has(p.lineItemId) ? ' checked' : ''}> ${esc(artikelText(p))}</label>`).join('')}
       </fieldset>`
-    : kandidaten.length === 1 ? `<p class="small">${esc(artikelText(kandidaten[0]))}</p>`
+    : bereit.length === 1 ? `<p class="small">${esc(artikelText(bereit[0]))}</p>`
       // Stand unbekannt (Bestellung nicht geladen): der Server nimmt alles, was noch nicht raus ist.
       : nichtsOffen ? '<p class="small muted">Alle Artikel sind schon als raus eingetragen – hier ist nichts mehr zu buchen.</p>'
         : '<p class="small muted">Alle Artikel dieser Bestellung, die noch nicht raus sind.</p>';
@@ -86,20 +101,22 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="vsTitel" data-dialog>
     <h2 id="vsTitel">${uebergabe ? 'Übergeben' : 'An Kunden raus'}${auftrag?.name ? ` · ${esc(auftrag.name)}` : ''}</h2>
     ${name || ort ? `<p class="small muted">${esc([name, ort].filter(Boolean).join(' · '))}</p>` : ''}
+    ${sperre}
     ${liste}
-    ${nichtsOffen ? '' : `${sendung}
+    ${nichtsOffen || nurGesperrt ? '' : `${sendung}
     <fieldset class="zl-wahl"><label><input type="checkbox" name="mail"${uebergabe || abholung ? '' : ' checked'}> Kunde bekommt die Versandmail von Shopify</label></fieldset>
     <p class="small muted">Die Artikel werden in Shopify als versendet gebucht.</p>`}
-    <div class="actions"><button type="button" class="btn" data-close-dialog>${nichtsOffen ? 'Schließen' : 'Abbrechen'}</button>${nichtsOffen ? '' : `<button type="submit" class="btn btn-primary">Als ${wort} buchen</button>`}</div>
+    <p data-vs-fehler class="notice crit" role="alert" tabindex="-1" hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>${nichtsOffen || nurGesperrt ? 'Schließen' : 'Abbrechen'}</button>${nichtsOffen || nurGesperrt ? '' : `<button type="submit" class="btn btn-primary">Als ${wort} buchen</button>`}</div>
   </form></div>`;
   const form = $('#dialogRoot form');
-  (form.querySelector('#vsNummer') || form.querySelector('[type=submit]') || form.querySelector('[data-close-dialog].btn'))?.focus();
+  ((nurGesperrt && form.querySelector('[data-beschaffung]')) || form.querySelector('#vsNummer') || form.querySelector('[type=submit]') || form.querySelector('[data-close-dialog].btn'))?.focus();
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     const daten = new FormData(form);
-    if (nichtsOffen) return;
+    if (nichtsOffen || nurGesperrt) return;
     // Angeklickte Position, die im geladenen Stand fehlt: genau diese eine, nie die ganze Bestellung.
-    const ids = nurGeklickt ? [lineItemId] : kandidaten.length > 1 ? daten.getAll('pos').map(String) : kandidaten.length === 1 ? [kandidaten[0].lineItemId] : null;
+    const ids = nurGeklickt ? [lineItemId] : bereit.length > 1 ? daten.getAll('pos').map(String) : bereit.length === 1 ? [bereit[0].lineItemId] : null;
     if (ids && !ids.length) { toast('Bitte mindestens einen Artikel ankreuzen.', 'warn'); return; }
     const nummer = String(daten.get('nummer') || '').trim();
     const gewaehlt = String(daten.get('dienst') || '');
@@ -115,7 +132,10 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
       antwort = await orgSchreiben('/api/einkauf/auftragsstatus', rumpf);
     } catch (e) {
       // Der Server setzt erst den Schritt und bucht dann; ohne Antwort ist beides offen.
+      // Der Grund bleibt im Dialog stehen - ein Toast war weg, bevor jemand ihn las.
       toast(`Nicht gespeichert: ${e.message}`, 'crit');
+      const fehler = form.querySelector('[data-vs-fehler]');
+      fehler.textContent = `Nicht gespeichert: ${e.message}`; fehler.hidden = false; fehler.focus();
       knopf.disabled = false;
       knopf.textContent = text;
       return;

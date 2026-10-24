@@ -128,6 +128,14 @@ test('Kettler-Vermerk: "bestellt" mit ueber=kettler bleibt bei den naechsten Sch
   assert.equal(setzeStatus(file, { ...basis, status: 'geliefert' }).ueber, 'kettler', 'naechster Schritt behaelt den Weg');
   assert.equal(setzeStatus(file, { ...basis, status: 'bestellt' }).ueber, 'kettler', 'ohne Angabe bleibt der Vermerk');
   assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: null }).ueber, null);
-  assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: 'irgendwas' }).ueber, null, 'nur "kettler" ist ein Weg');
+  assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: 'irgendwas' }).ueber, null, 'nur "kettler" und "kunde" sind Wege');
   assert.equal(leseAlle(file)[positionKey('o1', 'l1')].ueber, null);
+});
+
+test('Direktversand-Vermerk: Muster mit ueber=kunde behalten den Weg bis "raus"', () => {
+  const file = auftragsstatusPfad(tmpDir());
+  const basis = { orderId: 'o2', lineItemId: 'l2', actor: 'test' };
+  assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: 'kunde' }).ueber, 'kunde');
+  assert.equal(setzeStatus(file, { ...basis, status: 'raus' }).ueber, 'kunde', '"raus" ohne Angabe behaelt den Weg');
+  assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: null }).ueber, null, 'Mail an den Laden nimmt ihn zurueck');
 });
