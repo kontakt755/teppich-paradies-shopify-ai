@@ -1342,6 +1342,19 @@ ID. Statushoheit und Wiedervorlage bleiben dort. Eine Zuordnung darf erst nach G
 bestehenden Vorgangs gespeichert werden, nie allein anhand eines aehnlichen Namens. Diese
 Schnittstelle und ein Abgleich beider Datenmodelle sind in #1631 bewusst nicht implementiert.
 
+**Vorbereiteter lesender Folgeabgleich (23.10., noch kein Live-Nachweis):**
+`scripts/service-laden-abgleich.mjs` fragt einen separaten App-Endpunkt anhand von
+SHA-256-Hashes der vorhandenen Gmail-Message-IDs ab. Nur eine exakte, eindeutige
+Quellzuordnung liefert den bestehenden Auftrag und dessen Laden-Status. Die
+Serviceansicht zeigt diesen Status zusaetzlich und nutzt den bereits vorhandenen
+App-Direktlink; sie ueberschreibt weder lokale Statusfelder noch Wiedervorlagen.
+Mehrdeutige Treffer bekommen keinen Link. Fehlender Zugang, altes Deployment,
+Anmeldeseite oder unvollstaendige Antwort lassen die bisherige Serviceansicht bestehen.
+Der reine Zahlenendpunkt bleibt unveraendert, der interne Schluessel ausschliesslich
+im lokalen Server. App-Gegenstueck `ServiceAbgleich.js` liegt in einer getrennten
+Arbeitskopie. Der ausdrueckliche App-Releaseaufschub bis zur persoenlichen
+Google-Anmeldung gilt weiter; lokale Tests sind kein echter Service→Auftrag-Nachweis.
+
 Anfragen für Verlegeservice, Treppe und Aufmaß an einer Stelle, mit Quelle und Status – damit
 messbar wird, was die Serviceseiten und die Werbung bringen (Inhaber 15.10.: im Control Center
 unter „Kunden“). Reiter `#/kunden?tab=service`, Modul `ansichten/kunden/serviceanfragen.mjs`,
