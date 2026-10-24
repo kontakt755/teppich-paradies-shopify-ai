@@ -82,15 +82,14 @@ Jeder Punkt hat eine komplette Sitzung gekostet. Vor dem Loslegen lesen. Die Vor
 ## Vor jedem Commit
 
 ```
-npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard && npm run schrift:guard
-npm run -s themecheck:guard                  # Theme-Check-Fehler und neue Warnungen gegen qa/theme-check-baseline.json - dieselbe Pruefung wie FULL_QA in workflow preview
-node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --static-only
+npm run -s pruefen      # alle Testsuiten, Liquid-/Schema-/Template-/Theme-/Schrift-Guard, Theme Check gegen die Baseline, Secret-Scan
 ```
 
-Der volle Lauf (`validate` ohne `--static`) braucht die Storefront und laeuft nur
-lokal auf dem Mac. Unbekannte Flags brechen ab.
-
-Vor einem Commit sollte `npm run secret:scan` laufen, wenn neue Dateien mit potenziell sensiblem Inhalt hinzugekommen sind.
+Die PR-Validierung fuehrt genau denselben Befehl aus: was lokal gruen ist, ist
+im PR gruen. Ohne Shopify CLI (Remote-Session) `-- --ohne themecheck`; der
+ausgelassene Schritt steht im Ergebnis. Der volle Lauf `node workflow/cli.mjs
+validate` (ohne `--static`) braucht zusaetzlich die Storefront und laeuft nur
+lokal auf dem Mac; unbekannte Flags brechen ab.
 
 ## Werkzeuge
 
@@ -122,7 +121,7 @@ Aktionen und Streichpreise bei Teppichboden, Preisstufen der gekettelten Fußlei
 
 ## Tests
 
-`npm test` startet alle Suiten (rund 20 s). Was je Änderung risikobasiert zu prüfen ist (Desktop, Mobile ca. 390 px, Warenkorb, Muster …) und welche weiteren Checks es gibt: Skill `theme-regeln`.
+`npm test` startet alle Suiten (rund 35 s), `npm run -s pruefen` zusaetzlich alle Guards. Was je Änderung risikobasiert zu prüfen ist (Desktop, Mobile ca. 390 px, Warenkorb, Muster …) und welche weiteren Checks es gibt: Skill `theme-regeln`.
 
 ## Gedächtnis, Übergaben und Review
 

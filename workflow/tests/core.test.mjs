@@ -262,9 +262,15 @@ test('local evidence gate requires every network-dependent step to be individual
 test('draft PR CI stays static and cannot execute Storefront or Shopify writes', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/pr-validation.yml', import.meta.url), 'utf8');
   assert.match(workflow, /safe-static-checks:/);
-  assert.match(workflow, /npm run workflow:test/);
-  assert.match(workflow, /npm run secret:scan/);
-  assert.doesNotMatch(workflow, /local-verification-gate|verify-local-checks|run-(?:seo-check|qa|sales-readiness)|shopify theme (?:push|publish)/i);
+  // Seit 2026-10-24 ruft die CI die gemeinsame Pruefung auf (scripts/pruefen.mjs);
+  // workflow:test (ueber npm test) und secret:scan stecken dort als Schritte.
+  assert.match(workflow, /npm run -s pruefen/);
+  const pruefen = fs.readFileSync(new URL('../../scripts/pruefen.mjs', import.meta.url), 'utf8');
+  assert.match(pruefen, /npm: 'test'/);
+  assert.match(pruefen, /npm: 'secret:scan'/);
+  for (const quelle of [workflow, pruefen]) {
+    assert.doesNotMatch(quelle, /local-verification-gate|verify-local-checks|run-(?:seo-check|qa|sales-readiness)|shopify theme (?:push|publish)/i);
+  }
 });
 
 test('tracked evidence directory is not blanket-gitignored (evidence must be able to reach CI)', () => {

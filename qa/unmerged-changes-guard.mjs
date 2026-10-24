@@ -10,8 +10,9 @@
  */
 
 import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync, realpathSync } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 
 // Dateitypen, bei denen Drift kritisch ist
 const CRITICAL_PATHS = [
@@ -120,7 +121,7 @@ export function runUnmergedChangesGuard() {
 }
 
 // CLI-Ausführung
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = runUnmergedChangesGuard();
 
   if (!result.passed) {

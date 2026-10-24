@@ -26,10 +26,10 @@ jobs:
     # (nur labeled-Events, die hier nicht abonniert sind) - keine Schleife.
     if: github.actor != 'github-actions[bot]'
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: 24
       - name: Status-Labels anwenden
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -463,7 +463,7 @@ async function main(argv) {
   );
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     console.error(`❌ ${error.message}`);
     process.exitCode = 1;

@@ -19,6 +19,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import {
   PRUEFBAR, AUSFALL_GRENZE, pruefziele, bewerteSeite, bewerteSuche, zusammenfassen, gesamtStand,
@@ -224,6 +225,6 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`Ampel ${stand.ampel}, ${stand.befunde.length} Befunde -> ${ziel}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(e => { console.error(e.message); process.exit(1); });
 }

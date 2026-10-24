@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test && npm run lexware:test",
+    "pruefen": "node scripts/pruefen.mjs",
     "qa": "node qa/run-qa.mjs",
     "themecheck:guard": "node qa/run-themecheck-guard.mjs",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
@@ -110,8 +111,11 @@
     "aktion:plan": "node scripts/aktion-plan.mjs"
   },
   "devDependencies": {
-    "liquidjs": "^10.29.0",
-    "playwright-core": "1.54.2",
-    "puppeteer": "^25.10.0"
+    "liquidjs": "^10.30.0",
+    "playwright-core": "1.64.1",
+    "puppeteer": "^25.16.0"
+  },
+  "allowScripts": {
+    "puppeteer@25.16.0": true
   }
 }

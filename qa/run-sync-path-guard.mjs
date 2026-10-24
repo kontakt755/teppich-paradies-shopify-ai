@@ -10,8 +10,10 @@
  * Sync-Mechanismus zwischen Rechnern, kein Dateisystem-Sync.
  */
 import os from 'node:os';
+import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 // Namensbasierte Marker fangen Cloud-Dienst-Ordner ausserhalb des Standard-
 // Homes ab (z.B. ein manuell verschobener Dropbox-Ordner).
@@ -61,4 +63,4 @@ function main() {
 }
 
 // Nur beim Direktaufruf ausfuehren, nicht beim Import (z.B. aus Tests).
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) main();

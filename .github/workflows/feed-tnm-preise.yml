@@ -30,12 +30,12 @@ jobs:
       HAT_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID != '' }}
     steps:
       - name: Checkout main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: 24
 
       - name: Admin-Token holen (client_credentials)
         if: ${{ env.HAT_CLIENT_ID == 'true' }}
@@ -57,7 +57,7 @@ jobs:
 
       - name: Vollstaendiges Pruefprotokoll sichern
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tnm-pruefung-${{ github.run_id }}-${{ github.run_attempt }}
           path: tp-tnm-pruefung.json

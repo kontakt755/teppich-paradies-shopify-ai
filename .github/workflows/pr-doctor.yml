@@ -31,15 +31,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # merge-base und merge-tree brauchen die volle Historie.
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+        env:
+          # Kein Browser noetig; Puppeteer laedt sonst je Lauf Chrome.
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
       - run: npm run pr:doctor:melden
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
