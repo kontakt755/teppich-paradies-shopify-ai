@@ -203,6 +203,8 @@
     var cta = q('[data-cta]');
     var warenkorb = q('[data-warenkorb]');
     var band = null;
+    var bandNameLeer = q('[data-band-name]') ? q('[data-band-name]').textContent : '';
+    var massUrlZuletzt = window.location.href;
     var target = null;
     var stand = null;
     // Waehrend der Warenkorb-Aufruf laeuft, darf rechnen() den Knopf nicht
@@ -793,6 +795,7 @@
       if (url.href !== window.location.href) {
         try { window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash); } catch (e) {}
       }
+      massUrlZuletzt = window.location.href;
     }
 
     function massAusUrl(ersetzen) {
@@ -816,12 +819,13 @@
         root.querySelectorAll('input[name="' + uid + '-band"]').forEach(function (input) {
           input.checked = !!band && input.value === (band.nr || band.name);
         });
-        if (q('[data-band-name]')) q('[data-band-name]').textContent = band ? bandText(band, ' · ') : '';
+        if (q('[data-band-name]')) q('[data-band-name]').textContent = band ? bandText(band, ' · ') : bandNameLeer;
       }
       function cm(key) {
         var raw = sp.get(key) || '';
         var n = /^\d+$/.test(raw) ? Number(raw) : 0;
-        return Number.isSafeInteger(n) && n >= minCm && n <= Math.max(maxW, maxL) ? n : 0;
+        // Kategorie-Uebermasse bis 2000 cm wie bisher zur vorhandenen Masswarnung durchlassen.
+        return Number.isSafeInteger(n) && n >= minCm && n <= Math.max(2000, maxW, maxL) ? n : 0;
       }
       var uw = cm('breite');
       var ul = cm('laenge');
@@ -1207,7 +1211,7 @@
       gewaehlt = variantVonHorizon(e, d.produkt_id, gewaehlt);
       setTimeout(rechnen, 60);
     });
-    window.addEventListener('popstate', function () { gewaehlt = null; massAusUrl(true); rechnen(); });
+    window.addEventListener('popstate', function () { gewaehlt = null; if (window.location.href !== massUrlZuletzt) massAusUrl(true); rechnen(); });
 
     // Nach dem Absenden des Anfrageformulars laedt die Seite neu - die
     // Erfolgs- oder Fehlermeldung steht im Anfragebereich, also dorthin.
