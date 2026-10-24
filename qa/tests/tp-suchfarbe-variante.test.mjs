@@ -110,7 +110,7 @@ test('Farbgruppen: bestehende Grau-Gruppe und Beige nur fuer den aktiven Filter'
   const daten = ohneDoc('snippets/tp-suchfarbe-gruppen.liquid').replace(/{%-?\s*comment\s*-?%}[\s\S]*?{%-?\s*endcomment\s*-?%}/g, '').trim();
   assert.deepEqual(daten.split('\n').map((z) => z.trim()).filter(Boolean), [
     'grau: grau, silber, stein*, anthrazit, greige, taupe',
-    'beige-filter: beige, sand, creme, natur, ecru, elfenbein, champagner, greige, taupe',
+    'beige-filter: beige, sand, creme, natur, ecru, elfenbein, champagner, greige, taupe, leinen',
   ]);
 });
 
@@ -188,7 +188,7 @@ function blauware() {
 }
 
 test('Beige-Filter zeigt Sand, Creme und die weiteren belegten hellen Originalnamen statt Rot', async () => {
-  for (const farbe of ['Sand (250)', 'Creme (069)', 'Natur (101)', 'Ecru', 'Elfenbein', 'Champagner', 'Greige (049)', 'Taupe (260)']) {
+  for (const farbe of ['Sand (250)', 'Creme (069)', 'Natur (101)', 'Ecru', 'Elfenbein', 'Champagner', 'Greige (049)', 'Taupe (260)', 'Leinen (72)']) {
     const p = produkt([variante('Weinrot (106)', '400 cm'), variante(farbe, '400 cm')]);
     assert.equal((await wahl(p, farbfilter(['Beige']))).option1, farbe, farbe);
   }
