@@ -17,13 +17,17 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const dateien = execFileSync('git', ['ls-files', '--', '*.mjs'], { cwd: WURZEL, encoding: 'utf8' }).split('\n').filter(Boolean);
+// --others: auch noch nicht committete Dateien, sonst sieht der lokale Lauf eine
+// neue Datei nicht, die CI dann bemaengelt (so geschehen mit dieser Datei).
+const dateien = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', '*.mjs'], { cwd: WURZEL, encoding: 'utf8' })
+  .split('\n').filter((d) => d && fs.existsSync(path.join(WURZEL, d)));
+const KOMMENTAR = /^\s*(\/\/|\*|\/\*)/;
 
 function fundstellen(pruefe) {
   const treffer = [];
   for (const datei of dateien) {
     const text = fs.readFileSync(path.join(WURZEL, datei), 'utf8');
-    text.split('\n').forEach((zeile, i) => { if (pruefe(zeile)) treffer.push(`${datei}:${i + 1}`); });
+    text.split('\n').forEach((zeile, i) => { if (!KOMMENTAR.test(zeile) && pruefe(zeile)) treffer.push(`${datei}:${i + 1}`); });
   }
   return treffer;
 }
