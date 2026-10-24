@@ -22,6 +22,8 @@
  * Alle Funktionen sind rein und werden mit einem Fake-gh getestet.
  */
 
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 
@@ -173,4 +175,4 @@ async function main() {
   console.log(`${done.length} angewendet`);
 }
 
-if (process.argv[1] && process.argv[1].endsWith('task-automation.mjs')) main().catch(e => { console.error(e.message); process.exit(1); });
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(e => { console.error(e.message); process.exit(1); });

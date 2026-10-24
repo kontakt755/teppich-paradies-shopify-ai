@@ -24,9 +24,9 @@
  *   - kein Lieferantenname in kundensichtbaren Feldern
  * Exit 1 bei jedem Fehler - nichts wird still korrigiert.
  */
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync, realpathSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import {
   ARTEN, FORMEN, KONFIG_STANDARD, SERVICE_WERTE, VERFUEGBAR, WUNSCH, breiteCm, ladeLieferantenNamen,
   lieferantenTreffer, maxBreiteCm, namenSet, raummassPreis,
@@ -228,7 +228,7 @@ function arg(name) {
   return i === -1 ? null : process.argv[i + 1];
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const namen = ladeLieferantenNamen();
   const fehler = pruefeTheme(ROOT, namen);
   if (!namen) console.warn('HINWEIS  Namensprüfung übersprungen: keine interne Liste (TP_LIEFERANTEN_NAMEN oder Konfiguration).');

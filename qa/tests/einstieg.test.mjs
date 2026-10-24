@@ -41,6 +41,11 @@ test('realpathSync(argv[1]) nur nach existsSync(argv[1])', () => {
   assert.deepEqual(fundstellen((z) => z.includes('realpathSync(process.argv[1])') && !z.includes('existsSync(process.argv[1])')), []);
 });
 
+test('kein Einstieg nutzt pathToFileURL(argv[1]) oder argv[1].endsWith', () => {
+  const muster = /import\.meta\.url\s*===\s*pathToFileURL\(process\.argv\[1\]\)\.href|pathToFileURL\(process\.argv\[1\]\)\.href\s*===\s*import\.meta\.url|process\.argv\[1\]\.endsWith\s*\(/;
+  assert.deepEqual(fundstellen((z) => muster.test(z)), []);
+});
+
 test('ein Skript mit diesem Einstieg laesst sich aus stdin importieren', () => {
   const ziel = pathToFileURL(path.join(WURZEL, 'scripts/pruefen.mjs')).href;
   const r = spawnSync(process.execPath, ['--input-type=module', '-'], { input: `import ${JSON.stringify(ziel)}; console.log('ok');`, encoding: 'utf8' });

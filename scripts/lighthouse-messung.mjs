@@ -41,10 +41,10 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, realpathSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 /** Dieselbe Version wie beim Ausgangswert vom 2026-09-22. */
 export const LIGHTHOUSE_VERSION = '13.5.0';
@@ -269,6 +269,6 @@ async function main() {
   console.log('\n' + md);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((e) => { console.error('FEHLER:', e.message); process.exit(1); });
 }
