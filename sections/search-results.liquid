@@ -36,7 +36,59 @@
         assign tp_sr_seiten = search.results | where: 'object_type', 'page'
         assign tp_sr_kategorien = search.results | where: 'object_type', 'collection'
       -%}
+      {%- liquid
+        # Shopifys semantische Suche liefert fuer jeden Begriff Produkte, auch
+        # fuer "Fahrrad" oder "xyzqwert" rund 1.000 (gemessen 2026-10-24).
+        # Traegt auf Seite 1 kein Treffer einen der Suchbegriffe in Titel,
+        # Produkttyp, Tags oder Artikelnummer, sagt ein Hinweis das ehrlich.
+        # Umlaute werden beidseitig vereinfacht, lange Begriffe verlieren zwei
+        # Endbuchstaben ("teppichboeden" findet "Teppichboden").
+        assign tp_sr_unsicher = false
+        if paginate.current_page == 1 and tp_sr_produkte.size > 0 and search.terms != blank
+          assign tp_sr_stopp = 'und,oder,mit,fur,der,die,das,von,aus,ein,eine' | split: ','
+          assign tp_sr_roh = search.terms | downcase | replace: 'ä', 'a' | replace: 'ö', 'o' | replace: 'ü', 'u' | replace: 'ß', 'ss' | remove: '&quot;' | remove: '"' | replace: '-', ' ' | replace: ',', ' ' | split: ' '
+          assign tp_sr_begriffe = ''
+          for tp_sr_b in tp_sr_roh
+            if tp_sr_b.size < 3 or tp_sr_stopp contains tp_sr_b
+              continue
+            endif
+            # Eigener Name: assign auf die Schleifenvariable wirkt in Liquid
+            # nicht innerhalb derselben Schleife
+            assign tp_sr_stamm = tp_sr_b
+            if tp_sr_b.size >= 6
+              assign tp_sr_laenge = tp_sr_b.size | minus: 2
+              assign tp_sr_stamm = tp_sr_b | slice: 0, tp_sr_laenge
+            endif
+            assign tp_sr_begriffe = tp_sr_begriffe | append: tp_sr_stamm | append: '|'
+          endfor
+          assign tp_sr_begriffe = tp_sr_begriffe | split: '|'
+
+          if tp_sr_begriffe.size > 0
+            assign tp_sr_unsicher = true
+            for tp_sr_p in tp_sr_produkte
+              assign tp_sr_tags = tp_sr_p.tags | join: ' '
+              assign tp_sr_text = tp_sr_p.title | append: ' ' | append: tp_sr_p.type | append: ' ' | append: tp_sr_tags
+              for tp_sr_v in tp_sr_p.variants limit: 20
+                assign tp_sr_text = tp_sr_text | append: ' ' | append: tp_sr_v.sku
+              endfor
+              assign tp_sr_text = tp_sr_text | downcase | replace: 'ä', 'a' | replace: 'ö', 'o' | replace: 'ü', 'u' | replace: 'ß', 'ss'
+              for tp_sr_s in tp_sr_begriffe
+                if tp_sr_text contains tp_sr_s
+                  assign tp_sr_unsicher = false
+                  break
+                endif
+              endfor
+              unless tp_sr_unsicher
+                break
+              endunless
+            endfor
+          endif
+        endif
+      -%}
       {% if search.results_count > 0 %}
+        {% if tp_sr_unsicher %}
+          {% render 'tp-suche-leer', begriff: search.terms %}
+        {% endif %}
         {% if tp_sr_produkte.size > 0 %}
           {% content_for 'block', type: 'filters', id: 'filters', results: search, results_size: tp_sr_produkte.size %}
         {% endif %}

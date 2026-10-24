@@ -47,7 +47,7 @@
   endif
   assign og_url = tp_canonical_url
   assign og_type = 'website'
-  assign og_description = page_description | default: shop.description | default: tp_marke
+  assign og_description = page_description | default: shop.description | default: tp_marke | replace: 'TeppichParadies', 'Teppich Paradies'
   assign optimized_page_title = page_title
   if request.page_type == 'index' and page_title == shop.name
     assign og_title = tp_startseite_titel
@@ -301,6 +301,17 @@
   {%- elsif request.page_type == 'cart' -%}
     {%- comment -%} Shopify liefert hier "Dein Warenkorb" - der Shop siezt (Audit B-17) {%- endcomment -%}
     Ihr Warenkorb &ndash; {{ tp_marke }}
+  {%- elsif request.page_type == 'search' -%}
+    {%- comment -%}
+      Shopify liefert "Suche: 974 Ergebnisse gefunden fuer ..." - die Zahl
+      stammt aus der semantischen Suche und ist auch fuer Unsinnsbegriffe
+      hoch (Shopanalyse 2026-10-24). Im Tab steht deshalb nur der Begriff.
+    {%- endcomment -%}
+    {%- if search.terms != blank -%}
+      Suche: „{{ search.terms | escape }}“ | {{ tp_marke }}
+    {%- else -%}
+      Suche | {{ tp_marke }}
+    {%- endif -%}
   {%- else -%}
     {%- comment -%}
       Der else-Zweig fehlte nach f195de7: Kollektionen, Seiten und Suche
@@ -375,7 +386,7 @@
   {%- endcomment -%}
   <meta
     name="description"
-    content="{{ page_description | escape_once }}"
+    content="{{ page_description | replace: 'TeppichParadies', 'Teppich Paradies' | escape_once }}"
   >
 {%- elsif request.page_type == 'collection' and collection.handle == 'all' -%}
   {%- comment -%}
