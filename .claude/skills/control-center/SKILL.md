@@ -148,8 +148,9 @@ kann dafuer weg?
    npm run dashboard:test
    launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.dashboard
    git diff --stat origin/main HEAD      # muss leer sein, sonst traegt der Betrieb eigenen Code
-   git push -q origin dashboard-betrieb  # Betriebsstand auf GitHub sichern
    ```
+   Nicht pushen: der Betriebszweig traegt nur Merge-Commits ohne eigenen Inhalt,
+   gesichert ist alles ueber main (der Classifier sperrt den Push als Veroeffentlichung).
    Der Dienst baut nach dem Start erst `issues.json`, ein paar Sekunden warten.
    Dann `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8001/login` → 200
    und `git rev-list --count HEAD..origin/main` → 0. Im Browser einmal hart neu
