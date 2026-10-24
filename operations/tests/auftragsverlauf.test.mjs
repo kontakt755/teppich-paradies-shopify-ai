@@ -94,6 +94,34 @@ test('Muster beim Lieferanten: warten, ab 7 Tagen nachhaken, ab 14 Tagen Problem
   assert.equal(bei(WARTE_PROBLEM_TAGE).faelligSeitTagen, WARTE_PROBLEM_TAGE - WARTE_NACHHAKEN_TAGE);
 });
 
+test('Muster direkt vom Lieferanten (ueber=kunde): kein "bei uns angekommen", warten auf seinen Versand, danach Nachfassen', () => {
+  const a = einAuftrag(bestellung(1, [muster(1), muster(2)]));
+  const statusAlle = statusBis(a, 'bestellt');
+  for (const e of Object.values(statusAlle)) e.ueber = 'kunde';
+  const z = zeitleiste(a, { statusAlle, jetzt: am(4) });
+  assert.equal(z.direktversand, true);
+  assert.deepEqual(z.verlauf.map(s => s.schritt), ['angefragt', 'bestellt', 'raus', 'kunde_hat_muster', 'nachgefasst', 'ergebnis']);
+  assert.equal(z.verlauf[2].label, 'Vom Lieferanten direkt an den Kunden verschickt');
+  assert.deepEqual([z.naechsterSchritt.wer, z.naechsterSchritt.aktion, z.naechsterSchritt.stufe], ['lieferant', 'raus', 'warten']);
+  assert.match(z.naechsterSchritt.text, /direkt an den Kunden/);
+  assert.equal(zeitleiste(a, { statusAlle, jetzt: am(2 + WARTE_NACHHAKEN_TAGE) }).naechsterSchritt.stufe, 'nachhaken', 'ohne Versand nach einer Woche nachhaken');
+
+  // Nach "raus" (Versanddialog) laeuft die Musterstrecke weiter wie gewohnt.
+  const dir = tmp(); const file = auftragsstatusPfad(dir);
+  for (const p of a.positionen) {
+    setzeStatus(file, { orderId: a.id, lineItemId: p.lineItemId, status: 'bestellt', ueber: 'kunde', actor: 'Mitarbeiter 1', jetzt: new Date(tag(2)) });
+    setzeStatus(file, { orderId: a.id, lineItemId: p.lineItemId, status: 'raus', actor: 'Mitarbeiter 1', jetzt: new Date(tag(5)) });
+  }
+  const raus = zeitleiste(a, { statusAlle: leseAlle(file), jetzt: am(6) });
+  assert.equal(zustaende(raus).raus, 'erledigt');
+  assert.equal(zustaende(raus).kunde_hat_muster, 'aktuell');
+
+  // Ohne Vermerk (an uns bestellt) bleibt "angekommen" Pflicht - auch wenn nur ein Muster direkt geht.
+  const gemischt = statusBis(a, 'bestellt');
+  Object.values(gemischt)[0].ueber = 'kunde';
+  assert.deepEqual(zeitleiste(a, { statusAlle: gemischt, jetzt: am(4) }).verlauf.map(s => s.schritt).slice(0, 3), ['angefragt', 'bestellt', 'geliefert']);
+});
+
 test('Muster bei uns: labeln und verschicken (wir); wer und wann stehen am erledigten Schritt', () => {
   const a = einAuftrag(bestellung(1, [muster(1), muster(2)]));
   const z = zeitleiste(a, { statusAlle: statusBis(a, 'geliefert'), jetzt: am(5) });

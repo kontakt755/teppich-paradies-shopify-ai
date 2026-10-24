@@ -142,7 +142,7 @@ export async function musterAutomatikLauf({ dir, kontext, katalog, jetzt = new D
     const sichern = () => schreiben(pfad(dir, 'versand'), journal);
     const vermerken = s => {
       const alle = leseAlle(statusFile);
-      const angaben = s.positionen.filter(p => offen(alle[positionKey(s.orderId, p.lineItemId)])).map(p => ({ orderId: s.orderId, lineItemId: p.lineItemId, status: 'bestellt', actor: ACTOR, jetzt: new Date(s.am), notiz: `Automatisch per E-Mail bestellt an ${s.an}. Nachricht ${s.messageId}` }));
+      const angaben = s.positionen.filter(p => offen(alle[positionKey(s.orderId, p.lineItemId)])).map(p => ({ orderId: s.orderId, lineItemId: p.lineItemId, status: 'bestellt', actor: ACTOR, jetzt: new Date(s.am), ueber: s.lieferziel === 'kunde' ? 'kunde' : null, notiz: `Automatisch per E-Mail bestellt an ${s.an}. Nachricht ${s.messageId}` }));
       setzeStatusPositionen(statusFile, angaben);
       const frisch = leseAlle(statusFile);
       for (const p of s.positionen) { const e = frisch[positionKey(s.orderId, p.lineItemId)]; if (e?.uebernahme?.id === UEBERNAHME) e.uebernahme = null; }

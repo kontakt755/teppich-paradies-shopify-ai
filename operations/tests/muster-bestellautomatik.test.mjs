@@ -40,6 +40,17 @@ test('versendet vorhandene Vorlage einmal, setzt Bestellt und zeigt Artikel je K
   const s = musterAutomatikAnzeige(u.dir, u.kontext(), u.katalog).auftraege.o1;
   assert.equal(s.bestellt[0].positionen[0].farbe, 'Grau'); assert.equal(s.klaeren.length, 0);
 });
+test('Lieferziel Kunde: Bestellt mit Vermerk "direkt an den Kunden", Laden ohne Vermerk', async t => {
+  const laden = umgebung(t);
+  await laden.lauf();
+  assert.equal(leseAlle(laden.statusFile)[positionKey('o1', 'p1')].ueber, null);
+  const u = umgebung(t);
+  u.regel.lieferziel = 'kunde'; u.stammdaten.lieferanten.A.muster.lieferung = 'kunde';
+  u.datei('muster-bestellung/konfiguration.json', u.konfig);
+  assert.equal((await u.lauf()).verschickt, 1);
+  const e = leseAlle(u.statusFile)[positionKey('o1', 'p1')];
+  assert.deepEqual([e.status, e.ueber], ['bestellt', 'kunde']);
+});
 for (const [name, aendern] of [
   ['alte Anfrage', u => u.a.datum = '2026-10-22T10:00:00Z'],
   ['nicht bezahlt', u => u.a.bezahlt = 'PENDING'],

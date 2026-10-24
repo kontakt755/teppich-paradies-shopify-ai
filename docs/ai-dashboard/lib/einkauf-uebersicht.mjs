@@ -70,14 +70,18 @@ export function jeKommission(eintraege = []) {
  * anklicken, die drei Muster sind angekommen, nicht jedes Muster einzeln"). `statusVon(p)` liefert
  * den Auftragsfluss-Status einer Position oder null.
  * - "angekommen": mindestens ein Muster ist beim Lieferanten bestellt - alle bestellten auf einmal.
+ * - "direkt": alle bestellten Muster schickt der Lieferant direkt an den Kunden (`direktVon(p)`,
+ *   Lieferziel "Kunden") - der naechste Schritt ist "raus", nicht "angekommen".
  * - "verschicken": nichts mehr zu bestellen oder unterwegs, mindestens eins liegt bei uns
  *   (angekommen oder aus eigenem Bestand). `uebergabe`, wenn alle persoenlich vorbeigebracht werden.
  * - null: es gibt fuer diese Muster gerade keinen gemeinsamen Schritt.
  */
-export function musterSchritt(positionen = [], statusVon = () => null) {
+export function musterSchritt(positionen = [], statusVon = () => null, { direktVon = () => false } = {}) {
   const muster = (positionen || []).filter(p => p?.istMuster && p.lineItemId);
   const bestellt = muster.filter(p => statusVon(p) === 'bestellt');
-  if (bestellt.length) return { schritt: 'angekommen', positionen: bestellt };
+  const anUns = bestellt.filter(p => !direktVon(p));
+  if (anUns.length) return { schritt: 'angekommen', positionen: anUns };
+  if (bestellt.length) return { schritt: 'direkt', positionen: bestellt };
   if (muster.some(p => !statusVon(p) && !musterEigen(p))) return null;
   const bereit = muster.filter(p => statusVon(p) === 'geliefert' || (!statusVon(p) && musterEigen(p)));
   if (!bereit.length) return null;
