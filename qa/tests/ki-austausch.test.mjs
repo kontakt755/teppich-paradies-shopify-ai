@@ -7,6 +7,7 @@ import path from 'node:path';
 import {
   argumente, codexAufruf, claudeAufruf, codexAntwort, claudeAntwort, codexKandidaten, kindUmgebung, kopf,
   geheim, KONTINGENT, reviewKopf, reviewDateiname, reviewsLesen, reviewStand, ergebnisZeile, gueltig, vorigeRunde,
+  kopfUmsetzen, umsetzenKopie,
 } from '../../scripts/ki-austausch.mjs';
 
 test('argumente: neue Frage, Fortsetzung und Optionen', () => {
@@ -199,4 +200,31 @@ test('Kontingent erschoepft wird erkannt, eine Zeilennummer 429 nicht', () => {
   assert.ok(KONTINGENT.test("You've hit your usage limit. Try again later."));
   assert.ok(KONTINGENT.test('HTTP 429 Too Many Requests'));
   assert.ok(!KONTINGENT.test('at scripts/x.mjs:429:12'));
+});
+
+test('umsetzen: Thema pruefen, Auftrag mitnehmen', () => {
+  assert.deepEqual(argumente(['umsetzen', 'einstieg-rest', 'Stelle', 'um']), { befehl: 'umsetzen', thema: 'einstieg-rest', frage: 'Stelle um' });
+  assert.equal(argumente(['umsetzen', 'x1', 'A', '--aufwand', 'low']).aufwand, 'low');
+  for (const t of [undefined, 'A', '../x', 'a b', 'x'.repeat(50), '-x']) assert.throws(() => argumente(['umsetzen', ...(t === undefined ? [] : [t]), 'A']), /Thema/);
+});
+
+test('codexAufruf: schreiben nur mit workspace-write, auch beim Fortsetzen', () => {
+  const neu = codexAufruf({ cd: '/k', schreiben: true });
+  assert.equal(neu[neu.indexOf('--sandbox') + 1], 'workspace-write');
+  assert.ok(codexAufruf({ id: 't', cd: '/k', schreiben: true }).includes('sandbox_mode="workspace-write"'));
+  assert.equal(codexAufruf({ cd: '/k' })[codexAufruf({ cd: '/k' }).indexOf('--sandbox') + 1], 'read-only', 'Fragen bleiben nur lesend');
+  assert.ok(!codexAufruf({ cd: '/k' }).join(' ').includes('workspace-write'));
+  for (const id of [undefined, 't']) {
+    assert.ok(codexAufruf({ id, cd: '/k', schreiben: true }).includes('sandbox_workspace_write.network_access=false'), 'Netz bleibt zu, egal was config.toml sagt');
+  }
+});
+
+test('kopfUmsetzen: Grenzen und Abschlussformat', () => {
+  const k = kopfUmsetzen('Claude Code');
+  assert.match(k, /Nicht: git commit, push/);
+  assert.match(k, /Zugangsdaten und Netz hast du nicht/);
+  assert.match(k, /Geaendert:/);
+  assert.match(k, /Getestet:/);
+  assert.match(k, /Offen:/);
+  assert.equal(umsetzenKopie('/r', 'abc'), path.join('/r', '.claude', 'worktrees', 'codex-abc'));
 });

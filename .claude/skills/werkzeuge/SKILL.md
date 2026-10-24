@@ -37,6 +37,7 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run -s handoff` | Uebergabetext fuer die naechste Sitzung aus dem Git-Stand |
 | `npm run -s ki:frag -- codex\|claude "Frage"` | direkte, nur lesende Rueckfrage an die andere KI; `weiter <ki>` setzt fort, Diff per stdin → Skill `codex` |
 | `npm run -s ki:frag -- review <PR>` / `review-stand <PR>` | Codex-Review an den Head-Commit gebunden, in sauberer Kopie; `review-stand` endet nur bei passendem Review mit Exit 0 (vor kritischen Merges) |
+| `npm run -s ki:frag -- umsetzen <thema> "Auftrag"` | Codex setzt in einer eigenen Kopie um (ohne Netz und Zugangsdaten, ohne Commit); Claude prueft, testet, committet → Skill `codex` |
 | `npm run -s uebergaben [-- --an claude\|codex\|mensch]` | offene und wartende Uebergaben im Vault nach Empfaenger, mit Hinweisen auf unklare Zustaendigkeit und liegengebliebene Aufgaben |
 | `npm run -s worktrees:aufraeumen [-- --entfernen]` | nach Merges: zeigt bzw. entfernt gemergte, saubere, ruhende Arbeitskopien (Branches bleiben) |
 | `npm run -s gedaechtnis:sync -- pull\|push` | Vault-Sync von Hand (Codex); bricht bei Fehlern mit Exit 1 ab |

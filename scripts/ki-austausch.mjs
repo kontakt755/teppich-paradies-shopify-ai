@@ -2,9 +2,11 @@
 // Direkter Austausch zwischen Claude Code und Codex ueber die lokal
 // angemeldeten Kommandozeilen (Abo-Konten, keine API-Keys).
 //
-// Beide Seiten fragen die andere nur lesend: Codex laeuft mit
-// `--sandbox read-only`, Claude mit `--permission-mode plan`. Arbeit, die
-// Dateien aendert, bleibt eine Uebergabe (Vault `Zusammenarbeit/`).
+// Fragen laufen nur lesend: Codex mit `--sandbox read-only`, Claude mit
+// `--permission-mode plan`. Umsetzen laesst Codex Dateien aendern - nur in einer
+// eigenen, frischen Arbeitskopie (`--sandbox workspace-write`: kein Netz, keine
+// Zugangsdaten); committen, pushen und den PR macht Claude nach eigener Pruefung
+// (Freigabe Benutzer 2026-10-24).
 //
 //   npm run -s ki:frag -- codex "Frage"            neues Gespraech mit Codex
 //   npm run -s ki:frag -- claude "Frage"           neues Gespraech mit Claude (fuer Codex)
@@ -12,6 +14,8 @@
 //   npm run -s ki:frag -- faeden                    gemerkte Gespraeche anzeigen
 //   npm run -s ki:frag -- review 1234 ["Zusatz"]    Codex prueft den PR-Diff, gebunden an den Head-Commit
 //   npm run -s ki:frag -- review-stand 1234         gilt das letzte Review noch fuer den aktuellen Head? (Exit 1 = nein)
+//   npm run -s ki:frag -- umsetzen <thema> "Auftrag" Codex setzt in .claude/worktrees/codex-<thema> um;
+//                                                    erneut aufgerufen: Korrekturrunde in derselben Kopie
 //
 // Optionen: --faden <name> (eigener Gespraechsname, Standard = ki),
 //           --modell <m>, --aufwand <low|medium|high|xhigh> (nur Codex),
@@ -48,6 +52,20 @@ export function kopf(von) {
   ].join('\n');
 }
 
+export function kopfUmsetzen(von) {
+  return [
+    `[Auftrag von ${von} ueber scripts/ki-austausch.mjs im Repository TeppichParadies.`,
+    'Setze ihn in der aktuellen Arbeitskopie um (eigener Branch, frisch von origin/main) und aendere nur Dateien darin.',
+    'Nicht: git commit, push oder Branches, Deploys, Installationen, Schreibzugriffe nach aussen (Shopify, Mail, GitHub). Zugangsdaten und Netz hast du nicht.',
+    'Regeln stehen in AGENTS.md (Lieferantennamen nur als Pseudonyme, keine absoluten Pfade). Kleine, gezielte Aenderung, nichts nebenbei umbauen.',
+    'Am Ende genau drei Abschnitte, knapp auf Deutsch:',
+    'Geaendert: <Datei - was>',
+    'Getestet: <Befehl -> Ergebnis>; was du nicht testen konntest, ausdruecklich nennen',
+    'Offen: <was fehlt oder unklar ist, sonst "nichts">]',
+    '',
+  ].join('\n');
+}
+
 export function argumente(argv) {
   const a = { optionen: {}, rest: [] };
   for (let i = 0; i < argv.length; i++) {
@@ -64,12 +82,17 @@ export function argumente(argv) {
   let weiter = false;
   if (befehl === 'weiter') { weiter = true; befehl = frage.shift(); }
   if (befehl === 'faeden') return { befehl, ...a.optionen };
+  if (!weiter && befehl === 'umsetzen') {
+    const [thema, ...rest] = frage;
+    if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(thema || '')) throw new Error('umsetzen braucht ein Thema aus Kleinbuchstaben, Ziffern und -, z. B. umsetzen einstieg-rest "Auftrag"');
+    return { befehl, thema, frage: rest.join(' ').trim(), ...a.optionen };
+  }
   if (!weiter && (befehl === 'review' || befehl === 'review-stand')) {
     const [nr, ...rest] = frage;
     if (!/^\d+$/.test(nr || '')) throw new Error(`${befehl} braucht eine PR-Nummer, z. B. ${befehl} 1234`);
     return { befehl, pr: Number(nr), frage: rest.join(' ').trim(), ...a.optionen };
   }
-  if (!KIS.includes(befehl)) throw new Error(`Erstes Argument: ${KIS.join(' | ')} | weiter <ki> | faeden | review <pr> | review-stand <pr>`);
+  if (!KIS.includes(befehl)) throw new Error(`Erstes Argument: ${KIS.join(' | ')} | weiter <ki> | faeden | review <pr> | review-stand <pr> | umsetzen <thema>`);
   return { befehl, weiter, frage: frage.join(' ').trim(), ...a.optionen };
 }
 
@@ -98,13 +121,17 @@ function finde(kandidaten) {
 
 // Die Frage geht ueber stdin ("-" bei Codex, ohne Argument bei Claude): ein
 // grosser Diff als Prozessargument scheitert sonst am Betriebssystemlimit (E2BIG).
-export function codexAufruf({ id, modell, aufwand, cd }) {
+export function codexAufruf({ id, modell, aufwand, cd, schreiben = false }) {
   const a = ['exec'];
   if (id) a.push('resume');
   a.push('--json', '--skip-git-repo-check', '-c', 'suppress_unstable_features_warning=true');
+  // workspace-write: schreibt nur im Arbeitsordner (und /tmp), ohne Netz
+  const sandbox = schreiben ? 'workspace-write' : 'read-only';
   // resume kennt --sandbox/--cd nicht; die Sandbox gilt dort per -c
-  if (id) a.push('-c', 'sandbox_mode="read-only"');
-  else a.push('--sandbox', 'read-only', '--cd', cd);
+  if (id) a.push('-c', `sandbox_mode="${sandbox}"`);
+  else a.push('--sandbox', sandbox, '--cd', cd);
+  // ausdruecklich, damit eine Einstellung in ~/.codex/config.toml das Netz nicht oeffnet
+  if (schreiben) a.push('-c', 'sandbox_workspace_write.network_access=false');
   if (modell) a.push('--model', modell);
   if (aufwand) a.push('-c', `model_reasoning_effort="${aufwand}"`);
   if (id) a.push(id);
@@ -251,6 +278,7 @@ async function main() {
 
   if (a.befehl === 'review-stand') return reviewStandMelden(a.pr);
   if (a.befehl === 'review') return reviewAusfuehren(a, { datei, tiefe });
+  if (a.befehl === 'umsetzen') return umsetzenAusfuehren(a, { datei, faeden, tiefe });
 
   const ki = a.befehl;
   const name = a.faden || ki;
@@ -278,14 +306,14 @@ async function main() {
 /** Kontingent erschoepft: nicht wiederholen (Exit 3), sondern Stand sichern. */
 export const KONTINGENT = /usage limit|rate limit|quota|(?:HTTP|status) 429|too many requests|Wochenlimit|weekly limit/i;
 
-async function frageKi({ ki, id, frage, cd, tiefe, modell, aufwand }) {
+async function frageKi({ ki, id, frage, cd, tiefe, modell, aufwand, schreiben = false }) {
   const bin = finde(ki === 'codex' ? codexKandidaten() : claudeKandidaten());
   if (!bin) throw new Error(ki === 'codex'
     ? 'Codex-CLI nicht gefunden (ChatGPT-App installiert? sonst CODEX_BIN setzen).'
     : 'Claude-CLI nicht gefunden (CLAUDE_BIN setzen).');
 
   const args = ki === 'codex'
-    ? codexAufruf({ id, modell, aufwand, cd })
+    ? codexAufruf({ id, modell, aufwand, cd, schreiben })
     : claudeAufruf({ id, modell });
   const env = kindUmgebung(process.env, ki, tiefe);
   const { code, out, err } = await lauf(bin, args, { env, cwd: cd, eingabe: frage });
@@ -463,4 +491,52 @@ async function reviewAusfuehren(a, { datei, tiefe }) {
 // Vergleich mit file://argv[1] nie, und das Skript endete still (Codex-Review #1667).
 if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((e) => { console.error(e.message); process.exit(e.exitCode || 1); });
+}
+
+// ---- Umsetzung durch Codex in einer eigenen Arbeitskopie ----
+
+// Funktionsdeklaration statt const: der Programmeinstieg steht weiter oben und ruft
+// main() auf, bevor eine const hier unten initialisiert ist (beim ersten Praxislauf passiert).
+export function umsetzenKopie(haupt, thema) {
+  return path.join(haupt, '.claude', 'worktrees', `codex-${thema}`);
+}
+
+/** Erste Runde legt Kopie und Branch an; weitere Runden setzen das gemerkte Gespraech dort fort. */
+async function umsetzenAusfuehren(a, { datei, faeden, tiefe }) {
+  const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const hier = git(['rev-parse', '--show-toplevel']);
+  const haupt = path.dirname(git(['rev-parse', '--path-format=absolute', '--git-common-dir'], hier));
+  const kopie = umsetzenKopie(haupt, a.thema);
+  const name = `umsetzen-${a.thema}`;
+  const f = faeden[name];
+  let id = null;
+  let runde = 1;
+  if (fs.existsSync(kopie)) {
+    if (!f || f.ki !== 'codex') throw new Error(`${kopie} gibt es schon, aber kein Codex-Gespraech "${name}" dazu - anderes Thema waehlen.`);
+    id = f.id;
+    runde = (f.runde || 1) + 1;
+    if (runde > MAX_RUNDEN) console.error(`Hinweis: Umsetzungsrunde ${runde} fuer "${a.thema}". AGENTS.md: nach drei Runden Ursache klaeren statt weiterzudrehen.`);
+  } else {
+    const branch = `codex/${a.thema}-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
+    try { git(['fetch', '-q', 'origin', 'main'], hier); } catch { console.error('Hinweis: git fetch fehlgeschlagen - Kopie vom letzten bekannten origin/main.'); }
+    git(['worktree', 'add', '-q', '-b', branch, kopie, 'origin/main'], hier);
+    // Ohne node_modules kann Codex nicht testen (der Hauptcheckout hat keine), und in
+    // der Sandbox fehlt das Netz. Darum hier installieren, meist aus dem npm-Cache.
+    try { execFileSync('npm', ['ci', '--no-audit', '--no-fund'], { cwd: kopie, stdio: 'ignore', timeout: 10 * 60 * 1000 }); }
+    catch { console.error(`Hinweis: npm ci in ${kopie} fehlgeschlagen - Codex kann dort evtl. nicht testen.`); }
+  }
+
+  const zusatz = await stdinText();
+  if (!a.frage && !zusatz) throw new Error('Kein Auftrag angegeben.');
+  const frage = (id ? '' : kopfUmsetzen('Claude Code')) + (a.frage || 'Siehe Text unten.') + (zusatz ? `\n\n<stdin>\n${zusatz}\n</stdin>` : '');
+  const antwort = await frageKi({ ki: 'codex', id, frage, cd: kopie, tiefe, modell: a.modell, aufwand: a.aufwand, schreiben: true });
+  merke(datei, name, { ki: 'codex', id: antwort.id || id, cd: kopie, runde, zuletzt: new Date().toISOString().slice(0, 16) + 'Z' });
+
+  const geaendert = git(['status', '--porcelain'], kopie).split('\n').filter(Boolean);
+  console.log(antwort.text);
+  console.error(`\n[Codex-Umsetzung "${a.thema}" · Runde ${runde} · ${geaendert.length} geaenderte Dateien · ${kopie} (${git(['branch', '--show-current'], kopie)})]`);
+  console.error(geaendert.length
+    ? `[Jetzt Claude: git -C ${kopie} diff lesen, dort npm run -s pruefen, dann committen, pushen, PR. Korrektur: npm run -s ki:frag -- umsetzen ${a.thema} "..."]`
+    : '[Codex hat nichts geaendert - Antwort lesen; Kopie bleibt fuer eine Korrekturrunde.]');
+  if (!geaendert.length) process.exitCode = 1;
 }

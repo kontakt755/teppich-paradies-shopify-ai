@@ -22,7 +22,8 @@ npm run -s ki:frag -- faeden                          # gemerkte Gespraeche
 
 - Codex laeuft **nur lesend** (`--sandbox read-only`, auch beim Fortsetzen) in
   der aktuellen Arbeitskopie und kennt `AGENTS.md`. Er darf Dateien lesen und
-  lesende Befehle ausfuehren, aber nichts schreiben.
+  lesende Befehle ausfuehren, aber nichts schreiben. Einzige Ausnahme ist
+  `umsetzen` (unten) in einer eigenen Kopie.
 - `--faden <name>` fuer parallele Gespraeche (z. B. je PR), sonst heisst das
   Gespraech `codex` und wird beim naechsten neuen ueberschrieben.
 - `--aufwand low|medium|high|xhigh` setzt die Denktiefe; Standard ist die
@@ -84,8 +85,29 @@ Ein Schleifenschutz (`TP_KI_TIEFE`) laesst hoechstens Claude -> Codex -> Claude 
   Frage (Pseudonyme wie im Repository).
 - Antwort zusammenfassen und kennzeichnen ("Codex meint: ..."); wo Claude
   anderer Meinung ist, das sagen und begruenden.
-- Arbeit, die Dateien aendert, nicht ueber diesen Weg vergeben - das bleibt eine
-  Uebergabe (`Zusammenarbeit/` im Vault, nur auf ausdruecklichen Auftrag).
+- Arbeit, die Dateien aendert, nur ueber `umsetzen` vergeben (unten), sonst
+  bleibt sie eine Uebergabe (`Zusammenarbeit/` im Vault, nur auf ausdruecklichen Auftrag).
+
+## Codex setzt um
+
+```bash
+npm run -s ki:frag -- umsetzen einstieg-rest "Ziel ... Abnahme: ... Dateien: ..."   # Runde 1
+npm run -s ki:frag -- umsetzen einstieg-rest "Korrektur: ..."                       # Runde 2, gleiche Kopie
+```
+
+- Runde 1 legt `.claude/worktrees/codex-<thema>` auf einem neuen Branch
+  `codex/<thema>-<datum>` von `origin/main` an und installiert dort
+  `node_modules` (`npm ci`, ausserhalb der Sandbox). Codex laeuft mit
+  `--sandbox workspace-write`: schreibt nur in dieser Kopie, kein Netz
+  (ausdruecklich `network_access=false`), keine Zugangsdaten, kein Commit (die
+  Git-Daten liegen ausserhalb der Kopie; `git commit` scheitert am `index.lock`,
+  geprueft 2026-10-24).
+- Codex endet mit „Geaendert / Getestet / Offen“; das Skript nennt die Zahl der
+  geaenderten Dateien (keine -> Exit 1).
+- Danach Claude: `git -C <kopie> diff` lesen, in der Kopie `npm run -s pruefen`,
+  committen („Umgesetzt von Codex, geprueft von Claude“), pushen, PR. Ab der
+  vierten Runde warnt das Skript.
+- Nicht fuer Shopify-, Mail-, Deploy- oder andere Arbeit mit Wirkung nach aussen.
 
 ## Stoerungen
 
