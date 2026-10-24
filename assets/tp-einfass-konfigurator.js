@@ -305,12 +305,14 @@
         input.type = 'radio';
         input.name = uid + '-band';
         input.value = b.nr || b.name;
+        input.checked = band === b;
         input.setAttribute('aria-label', bandText(b, ' '));
         var punkt = document.createElement('span');
         punkt.style.background = b.hex;
         label.appendChild(input);
         label.appendChild(punkt);
         box.appendChild(label);
+        if (band === b && q('[data-band-name]')) q('[data-band-name]').textContent = bandText(b, ' · ');
         input.addEventListener('change', function () {
           band = b;
           var name = q('[data-band-name]');
@@ -770,8 +772,61 @@
     // Gueltiges Mass an den Befestigungs-Tipp melden (assets/tp-unterlage-vorschlag.js);
     // null, sobald kein bestellbares Mass vorliegt.
     function massMelden(mass) {
+      massUrlAktualisieren(mass);
       if (typeof root.dispatchEvent !== 'function' || typeof CustomEvent !== 'function') return;
       root.dispatchEvent(new CustomEvent('tp-ek:mass', { detail: mass }));
+    }
+
+    function massUrlAktualisieren(mass) {
+      if (!d.produkt_url || !window.history || typeof window.history.replaceState !== 'function') return;
+      var url = new URL(window.location.href);
+      var produktUrl = new URL(d.produkt_url, url);
+      if (!url.pathname.endsWith(produktUrl.pathname)) return;
+      ['breite', 'laenge', 'form', 'band'].forEach(function (key) { url.searchParams.delete(key); });
+      if (mass && target) {
+        url.searchParams.set('variant', String(target.id));
+        url.searchParams.set('breite', String(mass.w));
+        if (mass.f !== 'rund') url.searchParams.set('laenge', String(mass.l));
+        url.searchParams.set('form', mass.f);
+        if (bandWahl && band) url.searchParams.set('band', bandText(band, ' '));
+      }
+      if (url.href !== window.location.href) {
+        try { window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash); } catch (e) {}
+      }
+    }
+
+    function massAusUrl(ersetzen) {
+      if (ersetzen) {
+        if (inBreite) inBreite.value = '';
+        if (inLaenge) inLaenge.value = '';
+        var ersteForm = root.querySelector('input[name^="tp-ek-form-"]');
+        if (ersteForm) ersteForm.checked = true;
+        if (bandWahl) band = null;
+      }
+      var sp = new URLSearchParams(window.location.search);
+      var ausForm = sp.get('form');
+      if (art !== 'raummass' && ['rechteck', 'rund', 'oval'].indexOf(ausForm) >= 0) {
+        var formInput = root.querySelector('input[name^="tp-ek-form-"][value="' + ausForm + '"]');
+        if (formInput) formInput.checked = true;
+      }
+      if (bandWahl && !band) {
+        band = baender.filter(function (b) { return bandText(b, ' ') === sp.get('band'); })[0] || null;
+      }
+      if (ersetzen && bandWahl) {
+        root.querySelectorAll('input[name="' + uid + '-band"]').forEach(function (input) {
+          input.checked = !!band && input.value === (band.nr || band.name);
+        });
+        if (q('[data-band-name]')) q('[data-band-name]').textContent = band ? bandText(band, ' · ') : '';
+      }
+      function cm(key) {
+        var raw = sp.get(key) || '';
+        var n = /^\d+$/.test(raw) ? Number(raw) : 0;
+        return Number.isSafeInteger(n) && n >= minCm && n <= Math.max(maxW, maxL) ? n : 0;
+      }
+      var uw = cm('breite');
+      var ul = cm('laenge');
+      if (inBreite && !inBreite.value && uw) inBreite.value = String(uw);
+      if (inLaenge && !inLaenge.value && ul) inLaenge.value = String(ul);
     }
 
     function rechnen() {
@@ -1122,6 +1177,7 @@
         });
     }
 
+    massAusUrl();
     raeumeAufbauen();
     ansichtSetzen(ansicht);
     baenderAufbauen();
@@ -1151,19 +1207,7 @@
       gewaehlt = variantVonHorizon(e, d.produkt_id, gewaehlt);
       setTimeout(rechnen, 60);
     });
-    window.addEventListener('popstate', function () { gewaehlt = null; rechnen(); });
-
-    // Mass von der Kategorieseite (Mass-Rechner, ?breite=&laenge=, assets/tp-teppich-rechner.js):
-    // vorbelegen, solange die Felder leer sind. Nur ganze Zentimeter im erlaubten Bereich;
-    // alles andere bleibt leer wie bisher. Grenzen je Farbe prueft rechnen() wie bei Eingabe.
-    (function () {
-      var sp = new URLSearchParams(window.location.search);
-      var uw = parseInt(sp.get('breite'), 10);
-      var ul = parseInt(sp.get('laenge'), 10);
-      if (!(uw >= 50 && uw <= 2000) || !inBreite || inBreite.value) return;
-      inBreite.value = String(uw);
-      if (inLaenge && !inLaenge.value && ul >= 50 && ul <= 2000) inLaenge.value = String(ul);
-    })();
+    window.addEventListener('popstate', function () { gewaehlt = null; massAusUrl(true); rechnen(); });
 
     // Nach dem Absenden des Anfrageformulars laedt die Seite neu - die
     // Erfolgs- oder Fehlermeldung steht im Anfragebereich, also dorthin.

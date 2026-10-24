@@ -294,7 +294,8 @@
   {%- else -%}
     <p class="tp-cart-mengenhinweis">
       Menge ergibt sich aus dem Maß.
-      <a href="{{ line_item.url }}">Zum Produkt</a>
+      {%- capture tp_gz_mass_url -%}{%- render 'tp-cart-mass-url', line_item: line_item -%}{%- endcapture -%}
+      <a href="{{ tp_gz_mass_url | escape }}">Zum Produkt</a>
     </p>
   {%- endif -%}
   {%- render 'tp-cart-checkout-menge', line_item: line_item -%}
