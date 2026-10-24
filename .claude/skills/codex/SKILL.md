@@ -30,6 +30,31 @@ npm run -s ki:frag -- faeden                          # gemerkte Gespraeche
   Rueckfragen `--aufwand low`.
 - Bash-Timeout auf 600000 ms setzen; lange Reviews im Hintergrund laufen lassen.
 - Die Antwort steht auf stdout, der Hinweis zum Fortsetzen auf stderr.
+- Die andere KI bekommt keine Zugangsdaten aus der Umgebung: Variablen mit
+  TOKEN/SECRET/PASSWORD/API_KEY im Namen und alle `SHOPIFY_*`, `GH_*`,
+  `GITHUB_*`, `LEXWARE_*`, `SUMUP_*`, `AWS_*` sowie `SSH_AUTH_SOCK` werden
+  entfernt (Codex behaelt nur seine eigenen `OPENAI_*`/`CODEX_*`).
+
+## PR-Review mit festem Pruefgegenstand
+
+```bash
+npm run -s ki:frag -- review 1234                    # Review des aktuellen PR-Heads
+npm run -s ki:frag -- review 1234 "Runde 2: bitte P2 aus Runde 1 nachpruefen"
+npm run -s ki:frag -- review-stand 1234              # Exit 0 nur, wenn das letzte Review zum Head passt
+```
+
+- `review` holt Head-Commit und Diff per `gh`, bricht ab, wenn sich der Head
+  dabei aendert, und laesst Codex in einer sauberen Kopie genau dieses Commits
+  pruefen (temporaerer Worktree `.claude/worktrees/_pruefung-pr<N>-<sha>`,
+  danach entfernt). Ergebnis: `.git/ki-austausch/reviews/pr-<N>-<sha12>.md`
+  mit Kopfzeile (PR, Commit, Runde, Zeit) und Befundzeile (P1/P2/P3).
+- Folgerunden laufen im Faden `pr-<N>`, Codex kennt also seine fruehere Kritik.
+  Ab Runde 4 warnt das Skript: dann die Ursache klaeren statt weiterzudrehen
+  (`AGENTS.md`, „Zusammenarbeit Claude und Codex“).
+- `review-stand` meldet `aktuell`, `veraltet` (neuer Commit seit dem Review)
+  oder `fehlt`; nur `aktuell` endet mit Exit 0.
+- Eine freie Frage mit Diff per stdin (`codex --faden …`) ist eine zweite
+  Meinung, aber kein an einen Commit gebundenes Review.
 
 ## Gegenrichtung
 
@@ -56,4 +81,6 @@ Ein Schleifenschutz (`TP_KI_TIEFE`) laesst hoechstens Claude -> Codex -> Claude 
 
 - "Codex-CLI nicht gefunden": ChatGPT-App fehlt oder liegt woanders; `CODEX_BIN` setzen.
 - Anmeldefehler bei Codex: Benutzer startet die ChatGPT-App bzw. `codex login`.
-- Kontingent erschoepft (429): Benutzer informieren, nicht in Schleife wiederholen.
+- Kontingent erschoepft: das Skript erkennt Limit-/429-Meldungen und endet mit
+  **Exit 3**. Nicht wiederholen - Stand sichern (`npm run -s handoff`), allein
+  weiterarbeiten oder aufhoeren und den Benutzer informieren.

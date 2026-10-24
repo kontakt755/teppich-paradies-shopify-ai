@@ -5,8 +5,8 @@
 | Datei | Zweck |
 |---|---|
 | `settings.json` | registriert die Hooks und die Freigaben (`permissions.allow`) |
-| `hooks/session-start.sh` | zeigt den Kurzstand des Control Centers (immer) und in Remote-Sessions den Projektzustand samt Abhängigkeiten (siehe unten) |
-| `hooks/gedaechtnis-sync.sh` | Gedächtnis-Ordner (Obsidian-Vault) per Git: pull bei SessionStart, push bei SessionEnd |
+| `hooks/session-start.sh` | zeigt den Kurzstand des Control Centers und offene Übergaben an Claude aus dem Vault (`scripts/uebergaben.mjs --an claude --kurz`; beides immer) und in Remote-Sessions den Projektzustand samt Abhängigkeiten (siehe unten) |
+| `hooks/gedaechtnis-sync.sh` | Gedächtnis-Ordner (Obsidian-Vault) per Git: pull bei SessionStart, push bei SessionEnd. Findet den Vault über den Hauptcheckout, also auch aus Worktrees (bis 24.10. lief er dort ins Leere). Fehler stehen auf stderr; mit `--streng` (so ruft `npm run gedaechtnis:sync` ihn auf, z. B. für Codex) endet er dann mit Exit 1, als Hook nie |
 | `hooks/hauptcheckout-nachziehen.sh` | aus `session-start.sh`: zieht den Hauptcheckout still auf `origin/main`, nur wenn er losgelöst und sauber ist (nie Worktrees, Branches oder geänderte Dateien; ohne Netz nichts) |
 | `hooks/git-gh-guard.mjs`, `theme-delete-guard.mjs` | harte Grenzen (`deny`) für Bash-Befehle |
 | `hooks/deploy-command-guard.mjs` | Hinweis auf `workflow:doctor` bzw. die Troubleshooting-Datei, nur bei Befehlen, die wirklich deployen (`npm run workflow:preview\|live`, `node workflow/cli.mjs preview\|live`, `shopify theme push\|publish`), nicht bei grep/sed/echo/PR-Texten, die die Wörter enthalten |
