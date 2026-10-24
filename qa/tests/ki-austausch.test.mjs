@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   argumente, codexAufruf, claudeAufruf, codexAntwort, claudeAntwort, codexKandidaten, kindUmgebung, kopf,
-  geheim, KONTINGENT, reviewKopf, reviewDateiname, reviewsLesen, reviewStand, ergebnisZeile,
+  geheim, KONTINGENT, reviewKopf, reviewDateiname, reviewsLesen, reviewStand, ergebnisZeile, gueltig, vorigeRunde,
 } from '../../scripts/ki-austausch.mjs';
 
 test('argumente: neue Frage, Fortsetzung und Optionen', () => {
@@ -115,6 +115,17 @@ test('kindUmgebung: Zugangsdaten gehen an keine der beiden KIs, die eigene Codex
   assert.equal(geheim('PATH', 'codex'), false);
 });
 
+test('geheim: auch deutsche und knappe Namen, aber nichts Harmloses', () => {
+  // Codex-Review #1669: TP_DASHBOARD_PASSWORT ging durch.
+  for (const k of ['TP_DASHBOARD_PASSWORT', 'INTERNETMARKE_PORTOKASSE_PASSWORT', 'DB_PASSWORD', 'SMTP_PASS', 'MAIL_KENNWORT', 'SSH_KEY', 'HIGGSFIELD_APIKEY', 'SHOP_COOKIE']) {
+    assert.equal(geheim(k, 'codex'), true, k);
+    assert.equal(geheim(k, 'claude'), true, k);
+  }
+  for (const k of ['PATH', 'HOME', 'LANG', 'TERM_SESSION_ID', 'MONKEY', 'TP_KI_TIEFE', 'NODE_OPTIONS']) assert.equal(geheim(k, 'codex'), false, k);
+  assert.equal(geheim('OPENAI_API_KEY', 'codex'), false, 'die eigene Anmeldung von Codex bleibt');
+  assert.equal(geheim('OPENAI_API_KEY', 'claude'), true);
+});
+
 test('argumente: review und review-stand brauchen eine PR-Nummer', () => {
   assert.deepEqual(argumente(['review', '1667']), { befehl: 'review', pr: 1667, frage: '' });
   const z = argumente(['review', '12', 'Achte', 'auf', 'Preise', '--aufwand', 'low']);
@@ -137,7 +148,7 @@ test('reviewKopf: nennt PR, Head-Commit, Runde und das Antwortformat', () => {
 test('reviewStand: aktuell nur fuer denselben Head, sonst veraltet oder fehlt', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-ki-review-'));
   const schreib = (sha, zeit, runde) => fs.writeFileSync(path.join(dir, reviewDateiname(9, sha)),
-    `# Review PR #9\npr: 9\nhead: ${sha}\nzeit: ${zeit}\nrunde: ${runde}\nergebnis: 1 P1, 0 P2, 0 P3\n---\nP1 x\n`);
+    `# Review PR #9\npr: 9\nhead: ${sha}\nzeit: ${zeit}\nrunde: ${runde}\nergebnis: 0 P1, 1 P2, 0 P3\n---\nP2 x\n`);
   assert.equal(reviewStand(reviewsLesen(dir, 9), 'a'.repeat(40)).status, 'fehlt');
   schreib('a'.repeat(40), '2026-10-24T08:00:00Z', 1);
   schreib('b'.repeat(40), '2026-10-24T09:00:00Z', 2);
@@ -147,6 +158,27 @@ test('reviewStand: aktuell nur fuer denselben Head, sonst veraltet oder fehlt', 
   assert.equal(reviewStand(r, 'b'.repeat(40)).status, 'aktuell');
   assert.equal(reviewStand(r, 'a'.repeat(40)).status, 'veraltet', 'das neueste Review zaehlt, nicht irgendeins');
   assert.equal(reviewsLesen(path.join(dir, 'fehlt'), 9).length, 0);
+  assert.equal(r[1].befunde, 'P2 x');
+});
+
+test('reviewStand: unverwertbare Antwort und offener P1 sind nicht "aktuell"', () => {
+  const h = 'd'.repeat(40);
+  const st = (ergebnis) => reviewStand([{ head: h, runde: 1, ergebnis }], h).status;
+  assert.equal(st('keine Befunde'), 'aktuell');
+  assert.equal(st('0 P1, 2 P2, 1 P3'), 'aktuell');
+  assert.equal(st('1 P1, 0 P2, 0 P3'), 'offen', 'ein P1 blockiert den Merge');
+  assert.equal(st('unklar (Antwortformat nicht eingehalten)'), 'ungueltig', 'Codex-Review #1669: "Pruefung nicht moeglich" galt als aktuell');
+  assert.equal(st(null), 'ungueltig');
+  assert.equal(gueltig('unklar (x)'), false);
+  assert.equal(gueltig('2 P1, 0 P2, 0 P3'), true);
+});
+
+test('vorigeRunde: Befunde der letzten Runde gehen mit, gekuerzt, sonst nichts', () => {
+  const t = vorigeRunde({ runde: 2, head: 'e'.repeat(40), befunde: 'P2 a.mjs:1 - x - y' });
+  assert.match(t, /Runde 2, Commit e{12}\)/);
+  assert.match(t, /<vorige_runde>\nP2 a\.mjs:1/);
+  assert.match(vorigeRunde({ runde: 1, head: 'f', befunde: 'x'.repeat(50) }, 10), /x{10}\n\[\.\.\. gekuerzt\]/);
+  assert.equal(vorigeRunde(null), '');
 });
 
 test('ergebnisZeile: zaehlt Befunde, erkennt KEINE BEFUNDE und Formatfehler', () => {

@@ -31,7 +31,8 @@ npm run -s ki:frag -- faeden                          # gemerkte Gespraeche
 - Bash-Timeout auf 600000 ms setzen; lange Reviews im Hintergrund laufen lassen.
 - Die Antwort steht auf stdout, der Hinweis zum Fortsetzen auf stderr.
 - Die andere KI bekommt keine Zugangsdaten aus der Umgebung: Variablen mit
-  TOKEN/SECRET/PASSWORD/API_KEY im Namen und alle `SHOPIFY_*`, `GH_*`,
+  TOKEN/SECRET/PASSWORD/PASSWORT/KENNWORT/API_KEY/COOKIE oder `*_KEY`/`*_PASS`
+  im Namen und alle `SHOPIFY_*`, `GH_*`,
   `GITHUB_*`, `LEXWARE_*`, `SUMUP_*`, `AWS_*` sowie `SSH_AUTH_SOCK` werden
   entfernt (Codex behaelt nur seine eigenen `OPENAI_*`/`CODEX_*`).
 
@@ -44,15 +45,24 @@ npm run -s ki:frag -- review-stand 1234              # Exit 0 nur, wenn das letz
 ```
 
 - `review` holt Head-Commit und Diff per `gh`, bricht ab, wenn sich der Head
-  dabei aendert, und laesst Codex in einer sauberen Kopie genau dieses Commits
-  pruefen (temporaerer Worktree `.claude/worktrees/_pruefung-pr<N>-<sha>`,
-  danach entfernt). Ergebnis: `.git/ki-austausch/reviews/pr-<N>-<sha12>.md`
-  mit Kopfzeile (PR, Commit, Runde, Zeit) und Befundzeile (P1/P2/P3).
-- Folgerunden laufen im Faden `pr-<N>`, Codex kennt also seine fruehere Kritik.
-  Ab Runde 4 warnt das Skript: dann die Ursache klaeren statt weiterzudrehen
-  (`AGENTS.md`, „Zusammenarbeit Claude und Codex“).
-- `review-stand` meldet `aktuell`, `veraltet` (neuer Commit seit dem Review)
-  oder `fehlt`; nur `aktuell` endet mit Exit 0.
+  dabei aendert, und laesst Codex immer in einer eigenen, frischen Kopie genau
+  dieses Commits pruefen (temporaerer Worktree
+  `.claude/worktrees/_pruefung-pr<N>-<sha8>`, danach entfernt; nie in der
+  eigenen Arbeitskopie, die uncommittete Aenderungen haben kann). Gibt es die
+  Kopie schon, bricht es ab. Ergebnis:
+  `.git/ki-austausch/reviews/pr-<N>-<sha12>.md` mit Kopfzeile (PR, Commit,
+  Runde, Zeit) und Befundzeile (P1/P2/P3).
+- Folgerunden bekommen die Befunde der vorigen Runde mitgeschickt; Codex prueft
+  zuerst, ob sie behoben sind. Ab Runde 4 warnt das Skript: dann die Ursache
+  klaeren statt weiterzudrehen (`AGENTS.md`, „Zusammenarbeit Claude und Codex“).
+- Haelt Codex das Antwortformat nicht ein (z. B. „Pruefung nicht moeglich“),
+  zaehlt das nicht als Review und nicht als Runde: Rohtext unter
+  `…-unverwertbar.txt`, Exit 1.
+- `review-stand` meldet `aktuell` (Exit 0) oder `offen` (Review passt, aber
+  mit P1 - beheben oder den Benutzer entscheiden lassen), `ungueltig`,
+  `veraltet` (neuer Commit seit dem Review), `fehlt` (alle Exit 1).
+- `weiter codex --faden pr-<N>` setzt das Gespraech fort, liest dann aber die
+  eigene Arbeitskopie - die Pruefkopie ist schon entfernt.
 - Eine freie Frage mit Diff per stdin (`codex --faden …`) ist eine zweite
   Meinung, aber kein an einen Commit gebundenes Review.
 

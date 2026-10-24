@@ -16,16 +16,21 @@
 //     loescht ignorierte Dateien ohne Rueckfrage;
 //   - letzte Git-Aktivitaet (Reflog des Worktrees) aelter als 24 Stunden: eine frisch
 //     auf origin/main angelegte Kopie ist "gemergt und sauber", aber gerade in Arbeit;
-//   - kein laufender Prozess hat sein Arbeitsverzeichnis darin (lsof).
+//   - kein laufender Prozess hat sein Arbeitsverzeichnis darin (lsof);
+//   - kein LaunchAgent verweist hinein: der Betriebs-Checkout (~/tp-dashboard)
+//     wuerde sonst entfernt, sobald sein Branch in main steckt und gerade kein
+//     Dienst laeuft (zeitgesteuerte Jobs wie die Sicherung um 22:30).
 // Der Branch bleibt bestehen; zurueckholen mit `git worktree add <pfad> <branch>`.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const NEU_ERZEUGBAR = [
   // node_modules ist oft ein Symlink auf einen anderen Checkout; entfernt wird nur der Link.
-  /^node_modules(\/|$)/, /^\.router\//, /^\.workflow\//, /^qa\/results\//, /^SEO_REPORT\.md$/,
+  // Nicht hier: .router/ (control-center-audit.jsonl, Nutzungsjournale - Protokolle, Codex-Review #1669).
+  /^node_modules(\/|$)/, /^\.workflow\//, /^qa\/results\//, /^SEO_REPORT\.md$/,
   /^docs\/ai-dashboard\/(issues|bodenwissen)\.json$/, /(^|\/)\.DS_Store$/,
 ];
 const RUHE_MS = 24 * 60 * 60 * 1000;
@@ -42,10 +47,19 @@ export function worktrees(porcelain) {
 }
 
 /** Grund, warum die Kopie bleibt - oder null, wenn sie weg darf. */
-export function grund(w, { haupt, eigene, gemergt, geaendert, ignoriert, letzteAktivitaet, prozessCwds, jetzt }) {
+const darin = (pfad, wurzel) => pfad === wurzel || pfad.startsWith(wurzel + path.sep);
+
+/** Absolute Pfade aus den <string>-Werten von LaunchAgent-Plists (XML). */
+export function dienstPfade(plists) {
+  return plists.flatMap((xml) => [...xml.matchAll(/<string>(\/[^<]+)<\/string>/g)].map((m) => m[1]));
+}
+
+export function grund(w, { haupt, eigene, gemergt, geaendert, ignoriert, letzteAktivitaet, prozessCwds, dienste = [], jetzt }) {
   if (w.pfad === haupt) return 'Hauptcheckout';
   if (w.pfad === eigene) return 'eigene Arbeitskopie';
   if (w.branch === 'main') return 'Branch main (Deploy-Worktree)';
+  if (dienste == null) return 'LaunchAgents nicht pruefbar';
+  if (dienste.some((d) => darin(d, w.pfad))) return 'Betriebs-Checkout (ein LaunchAgent verweist hinein)';
   if (!gemergt) return 'Arbeit nicht in origin/main';
   if (geaendert.length) return `${geaendert.length} geaenderte/unversionierte Dateien`;
   const fremd = ignoriert.filter((d) => !NEU_ERZEUGBAR.some((r) => r.test(d)));
@@ -53,7 +67,7 @@ export function grund(w, { haupt, eigene, gemergt, geaendert, ignoriert, letzteA
   if (letzteAktivitaet == null) return 'letzte Aktivitaet unbekannt';
   if (jetzt - letzteAktivitaet < RUHE_MS) return 'Git-Aktivitaet in den letzten 24 Stunden';
   if (prozessCwds == null) return 'laufende Prozesse nicht pruefbar (lsof fehlt)';
-  if (prozessCwds.some((c) => c === w.pfad || c.startsWith(w.pfad + path.sep))) return 'ein laufender Prozess arbeitet darin';
+  if (prozessCwds.some((c) => darin(c, w.pfad))) return 'ein laufender Prozess arbeitet darin';
   return null;
 }
 
@@ -72,6 +86,16 @@ function prozessArbeitsordner() {
   }
 }
 
+function launchAgents() {
+  if (process.platform !== 'darwin') return [];
+  const ordner = path.join(os.homedir(), 'Library', 'LaunchAgents');
+  try {
+    // plutil wandelt auch binaere Plists in XML; Sicherungskopien (*.plist.sicherung-*) zaehlen mit.
+    return dienstPfade(fs.readdirSync(ordner).filter((d) => d.includes('.plist')).map((d) =>
+      execFileSync('plutil', ['-convert', 'xml1', '-o', '-', path.join(ordner, d)], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })));
+  } catch { return null; }
+}
+
 function letzteAktivitaet(pfad) {
   try {
     const gitdir = git(['rev-parse', '--path-format=absolute', '--git-dir'], pfad).trim();
@@ -87,6 +111,7 @@ function main() {
   const haupt = path.dirname(git(['rev-parse', '--path-format=absolute', '--git-common-dir'], eigene).trim());
   try { git(['fetch', '-q', 'origin', 'main'], haupt); } catch { console.error('Hinweis: git fetch fehlgeschlagen - Vergleich mit dem letzten bekannten origin/main.'); }
   const prozessCwds = prozessArbeitsordner();
+  const dienste = launchAgents();
   const jetzt = Date.now();
   const weg = [];
   const bleibt = [];
@@ -97,7 +122,7 @@ function main() {
     const status = gemergt ? git(['status', '--porcelain', '--ignored'], w.pfad).split('\n').filter(Boolean) : [];
     const geaendert = status.filter((z) => !z.startsWith('!! '));
     const ignoriert = status.filter((z) => z.startsWith('!! ')).map((z) => z.slice(3));
-    const g = grund(w, { haupt, eigene, gemergt, geaendert, ignoriert, letzteAktivitaet: letzteAktivitaet(w.pfad), prozessCwds, jetzt });
+    const g = grund(w, { haupt, eigene, gemergt, geaendert, ignoriert, letzteAktivitaet: letzteAktivitaet(w.pfad), prozessCwds, dienste, jetzt });
     (g ? bleibt : weg).push([w, g]);
   }
   const name = (w) => `${w.pfad.replace(process.env.HOME || '', '~')}  ${w.branch ?? `(losgeloest ${w.head.slice(0, 8)})`}`;

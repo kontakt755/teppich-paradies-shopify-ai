@@ -161,10 +161,11 @@ export function kindUmgebung(quelle, ki, tiefe) {
  * Live-Zugangsdaten an Codex). Bis 2026-10-24 erbte Codex die volle Umgebung,
  * in Desktop-Sitzungen u. a. CLAUDE_CODE_MESSAGING_TOKEN. Die eigene Anmeldung
  * der Ziel-KI (bei Codex OPENAI_ und CODEX_) bleibt, sonst meldet sie sich anders an.
+ * Deutsche Namen zaehlen mit: TP_DASHBOARD_PASSWORT ging bis Runde 1 von #1669 durch.
  */
 export function geheim(name, ki) {
   if (ki === 'codex' && /^(OPENAI_|CODEX_)/.test(name)) return false;
-  return /TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_KEY|PRIVATE_KEY/i.test(name)
+  return /TOKEN|SECRET|PASS(WORD|WD|WORT|PHRASE)?($|_)|KENNWORT|CREDENTIAL|API_?KEY|PRIVATE_?KEY|(^|_)KEY$|COOKIE/i.test(name)
     || /^(SHOPIFY_|GH_|GITHUB_|LEXWARE_|SUMUP_|ANTHROPIC_API_KEY$|SSH_AUTH_SOCK$|AWS_)/.test(name)
     || (ki === 'codex' && /^(CLAUDE_CODE_|CLAUDE_AGENT_SDK_)/.test(name));
 }
@@ -331,14 +332,32 @@ export function reviewsLesen(ordner, pr) {
   return namen.map((n) => {
     const text = fs.readFileSync(path.join(ordner, n), 'utf8');
     const feld = (k) => new RegExp(`^${k}: (.*)$`, 'm').exec(text)?.[1]?.trim() ?? null;
-    return { datei: n, head: feld('head'), zeit: feld('zeit'), runde: Number(feld('runde') || 0), ergebnis: feld('ergebnis') };
+    const befunde = text.split('\n---\n').slice(1).join('\n---\n').trim();
+    return { datei: n, head: feld('head'), zeit: feld('zeit'), runde: Number(feld('runde') || 0), ergebnis: feld('ergebnis'), befunde };
   }).sort((x, y) => String(x.zeit).localeCompare(String(y.zeit)));
 }
 
+export const gueltig = (ergebnis) => /^(keine Befunde|\d+ P1, \d+ P2, \d+ P3)$/.test(ergebnis ?? '');
+const offeneP1 = (ergebnis) => Number(/^(\d+) P1/.exec(ergebnis ?? '')?.[1] || 0);
+
+/**
+ * aktuell: neuestes Review gilt fuer den Head, ist verwertbar und hat keinen P1.
+ * Ein P1 ist ein Blocker; haelt Claude ihn fuer falsch, entscheidet der Benutzer.
+ */
 export function reviewStand(reviews, headSha) {
   const letzte = reviews.at(-1) ?? null;
   if (!letzte) return { status: 'fehlt', letzte };
-  return { status: letzte.head === headSha ? 'aktuell' : 'veraltet', letzte };
+  if (letzte.head !== headSha) return { status: 'veraltet', letzte };
+  if (!gueltig(letzte.ergebnis)) return { status: 'ungueltig', letzte };
+  if (offeneP1(letzte.ergebnis)) return { status: 'offen', letzte };
+  return { status: 'aktuell', letzte };
+}
+
+/** Prompt-Teil mit den Befunden der vorigen Runde, damit Codex sie gezielt nachprueft. */
+export function vorigeRunde(r, max = 8000) {
+  if (!r?.befunde) return '';
+  const text = r.befunde.length > max ? `${r.befunde.slice(0, max)}\n[... gekuerzt]` : r.befunde;
+  return `\n\nBefunde deiner vorigen Runde (Runde ${r.runde}, Commit ${String(r.head).slice(0, 12)}). Pruefe zuerst, ob sie behoben sind, und nenne offene erneut:\n<vorige_runde>\n${text}\n</vorige_runde>`;
 }
 
 export function ergebnisZeile(text) {
@@ -363,6 +382,8 @@ function reviewStandMelden(pr) {
   const { status, letzte } = reviewStand(reviewsLesen(reviewOrdner(), pr), info.headRefOid);
   const kurz = info.headRefOid.slice(0, 12);
   if (status === 'aktuell') console.log(`Review aktuell: PR #${pr} Head ${kurz}, Runde ${letzte.runde}, ${letzte.ergebnis} (${letzte.datei}).`);
+  else if (status === 'offen') console.log(`Review fuer Head ${kurz} hat offene P1 (${letzte.ergebnis}): beheben und neu pruefen lassen, oder den Benutzer entscheiden lassen (${letzte.datei}).`);
+  else if (status === 'ungueltig') console.log(`Review fuer Head ${kurz} ist nicht verwertbar (${letzte.ergebnis}). Neu: npm run -s ki:frag -- review ${pr}`);
   else if (status === 'veraltet') console.log(`Review veraltet: letztes fuer ${letzte.head.slice(0, 12)}, PR #${pr} steht jetzt auf ${kurz}. Neu: npm run -s ki:frag -- review ${pr}`);
   else console.log(`Kein Review fuer PR #${pr} (Head ${kurz}). Neu: npm run -s ki:frag -- review ${pr}`);
   process.exitCode = status === 'aktuell' ? 0 : 1;
@@ -378,31 +399,41 @@ async function reviewAusfuehren(a, { datei, tiefe }) {
   const head = vorher.headRefOid;
 
   const ordner = reviewOrdner();
-  const frueher = reviewsLesen(ordner, pr);
-  const runde = (frueher.at(-1)?.runde || 0) + 1;
+  const frueher = reviewsLesen(ordner, pr).filter((r) => gueltig(r.ergebnis));
+  const vorige = frueher.at(-1) ?? null;
+  const runde = (vorige?.runde || 0) + 1;
   if (runde > MAX_RUNDEN) {
     console.error(`Hinweis: Pruefrunde ${runde} fuer PR #${pr}. AGENTS.md: nach zwei bis drei Runden erst Ursache und Blocker analysieren, statt weiter zu wiederholen.`);
   }
 
-  // Eigene Pruefkopie genau auf dem Head-Commit, ausser die Arbeitskopie steht schon dort.
+  // Immer eine eigene, frische Pruefkopie genau auf dem Head-Commit. Die eigene
+  // Arbeitskopie kann uncommittete Aenderungen haben, eine vorhandene Pruefkopie
+  // gehoert womoeglich einem laufenden Review (Codex-Review #1669, Runde 1).
   const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   const hier = git(['rev-parse', '--show-toplevel']);
-  let cd = hier;
-  let pruefkopie = null;
-  if (git(['rev-parse', 'HEAD'], hier) !== head) {
-    const haupt = path.dirname(git(['rev-parse', '--path-format=absolute', '--git-common-dir'], hier));
-    pruefkopie = path.join(haupt, '.claude', 'worktrees', `_pruefung-pr${pr}-${head.slice(0, 8)}`);
-    try { git(['cat-file', '-e', `${head}^{commit}`], hier); } catch { git(['fetch', '-q', 'origin', `pull/${pr}/head`], hier); }
-    if (!fs.existsSync(pruefkopie)) git(['worktree', 'add', '-q', '--detach', pruefkopie, head], hier);
-    cd = pruefkopie;
-  }
+  const haupt = path.dirname(git(['rev-parse', '--path-format=absolute', '--git-common-dir'], hier));
+  const pruefkopie = path.join(haupt, '.claude', 'worktrees', `_pruefung-pr${pr}-${head.slice(0, 8)}`);
+  if (fs.existsSync(pruefkopie)) throw new Error(`Pruefkopie ${pruefkopie} gibt es schon - laeuft gerade ein Review dieses Commits? Sonst entfernen: git worktree remove --force ${pruefkopie}`);
+  try { git(['cat-file', '-e', `${head}^{commit}`], hier); } catch { git(['fetch', '-q', 'origin', `pull/${pr}/head`], hier); }
+  git(['worktree', 'add', '-q', '--detach', pruefkopie, head], hier);
+  const cd = pruefkopie;
 
   try {
+    if (git(['rev-parse', 'HEAD'], cd) !== head) throw new Error(`Pruefkopie steht nicht auf ${head.slice(0, 12)}.`);
     const frage = kopf('Claude Code') + reviewKopf({ pr, titel: vorher.title, head, basis: vorher.baseRefName, kopfRef: vorher.headRefName, runde })
-      + (a.frage ? `\n\nZusaetzlich: ${a.frage}` : '') + `\n\n<diff>\n${diff}\n</diff>`;
+      + vorigeRunde(vorige) + (a.frage ? `\n\nZusaetzlich: ${a.frage}` : '') + `\n\n<diff>\n${diff}\n</diff>`;
     const antwort = await frageKi({ ki: 'codex', frage, cd, tiefe, modell: a.modell, aufwand: a.aufwand });
     const ergebnis = ergebnisZeile(antwort.text);
     fs.mkdirSync(ordner, { recursive: true });
+    if (!gueltig(ergebnis)) {
+      // Nicht als Review ablegen: es zaehlte sonst als Runde und ueberschriebe ein gueltiges Review desselben Commits.
+      const roh = path.join(ordner, `pr-${pr}-${head.slice(0, 12)}-unverwertbar.txt`);
+      fs.writeFileSync(roh, antwort.text);
+      console.log(antwort.text);
+      console.error(`\n[Codex-Antwort fuer PR #${pr} nicht verwertbar (${ergebnis}) - nicht als Review gezaehlt. Rohtext: ${roh}]`);
+      process.exitCode = 1;
+      return;
+    }
     const ziel = path.join(ordner, reviewDateiname(pr, head));
     const zeit = new Date().toISOString();
     fs.writeFileSync(ziel, [`# Review PR #${pr}`, `pr: ${pr}`, `head: ${head}`, `basis: ${vorher.baseRefName}`, `zeit: ${zeit}`,
@@ -412,9 +443,7 @@ async function reviewAusfuehren(a, { datei, tiefe }) {
     console.error(`\n[Codex-Review PR #${pr} · gilt fuer ${head.slice(0, 12)} · Runde ${runde} · ${ergebnis} · ${ziel}]`);
     console.error(`[Rueckfrage: npm run -s ki:frag -- weiter codex --faden pr-${pr} "..." · vor dem Merge: npm run -s ki:frag -- review-stand ${pr}]`);
   } finally {
-    if (pruefkopie) {
-      try { git(['worktree', 'remove', pruefkopie], hier); } catch (e) { console.error(`Pruefkopie nicht entfernt (${pruefkopie}): ${e.message.split('\n')[0]}`); }
-    }
+    try { git(['worktree', 'remove', pruefkopie], hier); } catch (e) { console.error(`Pruefkopie nicht entfernt (${pruefkopie}): ${e.message.split('\n')[0]}`); }
   }
 }
 

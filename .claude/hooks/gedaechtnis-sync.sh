@@ -70,12 +70,21 @@ case "$MODUS" in
     fi
     ;;
   push)
-    git add -A >/dev/null 2>&1
-    git diff --cached --quiet || git commit -q -m "Gedaechtnis $(hostname -s) $(date +%Y-%m-%d_%H:%M)" >/dev/null 2>&1
-    if ! git pull -q --rebase origin main >/dev/null 2>&1; then
+    # Jeder Schritt wird geprueft: sonst schob push den alten Stand erfolgreich
+    # hoch, waehrend die neuen Notizen ungesichert blieben (Codex-Review #1669).
+    git add -A >/dev/null 2>&1 || melde "git add fehlgeschlagen - neue Notizen nicht gesichert."
+    if ! git diff --cached --quiet; then
+      git commit -q -m "Gedaechtnis $(hostname -s) $(date +%Y-%m-%d_%H:%M)" >/dev/null 2>&1 \
+        || melde "commit fehlgeschlagen - neue Notizen nicht gesichert."
+    fi
+    # Nur bei einem Konflikt laeuft ein Rebase; ohne Netz scheitert gleich der push unten.
+    if ! git pull -q --rebase origin main >/dev/null 2>&1 && [ -d "$(git rev-parse --git-path rebase-merge)" ]; then
       git checkout --theirs . >/dev/null 2>&1
       git add -A >/dev/null 2>&1
-      GIT_EDITOR=true git rebase --continue >/dev/null 2>&1 || git rebase --abort >/dev/null 2>&1
+      if ! GIT_EDITOR=true git rebase --continue >/dev/null 2>&1; then
+        git rebase --abort >/dev/null 2>&1
+        melde "Konflikt mit dem Fernstand nicht loesbar - lokal committet, nicht gepusht."
+      fi
     fi
     git push -q origin main >/dev/null 2>&1 \
       || melde "push fehlgeschlagen - Notizen sind lokal committet, aber nicht auf dem anderen Rechner."

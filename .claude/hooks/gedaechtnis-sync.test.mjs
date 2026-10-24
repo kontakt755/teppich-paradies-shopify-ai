@@ -119,3 +119,17 @@ test('aus einem Worktree: Ordner des Hauptcheckouts, nicht des Worktrees', () =>
   assert.equal(r.status, 0, r.stderr);
   assert.equal(readFileSync(join(vault, 'spaeter.md'), 'utf8'), 'spaeter\n');
 });
+
+test('push: scheitert git add, meldet der Sync das - als Hook Exit 0, mit --streng Exit 1', () => {
+  // Codex-Review #1669: vorher schob push den alten Stand erfolgreich hoch und
+  // endete auch mit --streng mit Exit 0, obwohl die neue Notiz ungesichert blieb.
+  const { a } = aufbau();
+  writeFileSync(join(a, 'z.md'), 'z\n');
+  writeFileSync(join(a, '.git', 'index.lock'), '');
+  const hook = sync('push', a);
+  assert.equal(hook.status, 0);
+  assert.match(hook.stderr, /git add fehlgeschlagen/);
+  const streng = sync('push', a, '--streng');
+  assert.equal(streng.status, 1);
+  assert.match(streng.stderr, /git add fehlgeschlagen/);
+});
