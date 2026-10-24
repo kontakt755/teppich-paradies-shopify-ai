@@ -16,6 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { tedAbfrage, ausTed, ausOcds, bereinigen, neuSeit } from '../lib/ausschreibungen.mjs';
+import { fileURLToPath } from 'node:url';
 
 const TED = 'https://api.ted.europa.eu/v3/notices/search';
 const EXPORT = 'https://oeffentlichevergabe.de/api/notice-exports';
@@ -91,6 +92,6 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`${treffer.length} offene Treffer, ${stand.neu.length} neu, ${ausfaelle.length} Ausfaelle -> ${ziel}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(e => { console.error(e.message); process.exit(1); });
 }

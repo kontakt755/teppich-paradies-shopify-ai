@@ -1,7 +1,9 @@
 // Tests fuer scripts/pruefen.mjs - die gemeinsame Pruefung fuer lokal und CI.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SCHRITTE, auswahl, aufruf, bericht } from '../../scripts/pruefen.mjs';
@@ -65,4 +67,15 @@ test('Bericht: Ausgelassenes steht auch beim Erfolg da', () => {
   const { text, exitCode } = bericht([{ name: 'tests', ok: true, ms: 0 }, { name: 'themecheck', ausgelassen: true }]);
   assert.equal(exitCode, 0);
   assert.match(text, /alle 1 Schritte bestanden\. Ausgelassen: themecheck\./);
+});
+
+// Codex-Review #1667: `import.meta.url === file://argv[1]` war bei Leerzeichen im
+// Pfad und unter Windows nie wahr - main() lief nicht, Exit 0 ohne Pruefung.
+test('der Programmeinstieg laeuft auch aus einem Pfad mit Leerzeichen (falsche Option -> Exit 2)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp pruefen '));
+  const kopie = path.join(dir, 'pruefen.mjs');
+  fs.copyFileSync(path.join(wurzel, 'scripts/pruefen.mjs'), kopie);
+  const r = spawnSync(process.execPath, [kopie, '--nur', 'gibtsnicht'], { encoding: 'utf8' });
+  assert.equal(r.status, 2, r.stdout + r.stderr);
+  assert.match(r.stderr, /Unbekannter Schritt/);
 });

@@ -18,6 +18,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   meldungenPfad, abgleichPfad, alleMeldungen, abgleichSetzen, standAusWerkbank, statusText, bildDatei, FehlermeldungFehler,
 } from '../lib/fehlermeldungen.mjs';
@@ -125,6 +126,6 @@ export function main(argv = process.argv.slice(2), { aus = console.log, fehler =
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   process.exitCode = main();
 }

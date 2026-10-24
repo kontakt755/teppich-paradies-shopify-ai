@@ -10,6 +10,8 @@
 //   npm run -s handoff                 Stand der aktuellen Arbeitskopie
 //   npm run -s handoff -- --issue 361  Issue-Nummer mitgeben (sonst aus dem Branchnamen)
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const git = (...a) => {
   try { return execFileSync('git', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; }
@@ -57,4 +59,4 @@ function main() {
   }));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) main();

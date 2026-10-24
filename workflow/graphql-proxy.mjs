@@ -89,7 +89,7 @@ export class GraphQLProxy {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const proxy = new GraphQLProxy();
   console.log(`GraphQL-Proxy bereit: ${proxy.live ? `LIVE gegen ${proxy.endpoint}` : 'SAMMELN (kein SHOPIFY_ADMIN_TOKEN)'}`);
 }

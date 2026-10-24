@@ -14,6 +14,7 @@
 // Alle Schritte laufen auch nach einem Fehler weiter: ein Lauf meldet alle
 // Befunde auf einmal (wie workflow:doctor), danach je Fehler die letzten Zeilen.
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -103,4 +104,4 @@ function main() {
   process.exit(exitCode);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) main();
