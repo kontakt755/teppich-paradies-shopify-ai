@@ -146,6 +146,9 @@
               {%- assign tp_cp_aktion = tp_cp_aktion | strip -%}
               {%- liquid
                 assign tp_cp_item_url = item.url
+                capture tp_cp_item_url
+                  render 'tp-cart-mass-url', line_item: item
+                endcapture
                 if item.properties._Muster_ID != blank and item.properties._Quellprodukt != blank
                   assign tp_cp_item_url = '/products/' | append: item.properties._Quellprodukt
                   if item.properties._Quellvariante_ID != blank

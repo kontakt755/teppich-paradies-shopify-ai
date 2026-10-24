@@ -6,8 +6,33 @@
   Ohne Parameter: Die Zeile "Keine Ergebnisse fuer ..." steht seit Audit B-20
   unter dem Suchfeld (blocks/_search-input), der Suchbegriff wird hier also
   nicht mehr gebraucht.
+
+  Mit begriff: Hinweis ueber den Treffern, wenn Shopify zwar Produkte liefert,
+  aber keines den Suchbegriff traegt (semantische Suche, Shopanalyse
+  2026-10-24). Die Treffer bleiben darunter sichtbar.
+
+  @param {string} [begriff] - Suchbegriff fuer den Hinweis "Kein Produkt mit ... im Namen"
 {% enddoc %}
 
+{%- if begriff != blank -%}
+  <div class="tp-suche-leer tp-suche-leer--hinweis" role="note">
+    <h2 class="tp-suche-leer__titel">Kein Produkt mit „{{ begriff | escape }}“ im Namen gefunden</h2>
+    <p>
+      Diese Produkte könnten passen – oder fragen Sie uns:
+      <a href="tel:+4933015733720">03301 573 37 20</a> ·
+      <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>
+    </p>
+    <ul class="tp-suche-leer__liste">
+      {%- assign tp_sl_handles = 'teppichboden,vinylboden-1,teppich-nach-mass,laminat-parkett,zubehoer' | split: ',' -%}
+      {%- for tp_sl_handle in tp_sl_handles -%}
+        {%- assign tp_sl_coll = collections[tp_sl_handle] -%}
+        {%- if tp_sl_coll != blank -%}
+          <li><a href="{{ tp_sl_coll.url }}">{{ tp_sl_coll.title }}</a></li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+  </div>
+{%- else -%}
 <div class="tp-suche-leer">
   {%- comment -%}
     Die Zeile "Keine Ergebnisse fuer ..." steht schon unter dem Suchfeld
@@ -32,6 +57,7 @@
     oder per <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>.
   </p>
 </div>
+{%- endif -%}
 
 {% stylesheet %}
   /* Ueber die ganze Rasterbreite: vorher sass der Block in der 250-px-Filterspalte (Audit B-20) */
@@ -46,6 +72,38 @@
   .tp-suche-leer__titel {
     margin: 0 0 12px;
     font-size: var(--tp-fs-xl);
+  }
+
+  /* Hinweis ueber Treffern: kleiner als der Leerzustand, die Produkte bleiben die Hauptsache */
+  .tp-suche-leer--hinweis {
+    max-width: none;
+    margin: 0 0 24px;
+    padding: 16px 20px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.15);
+    border-radius: 6px;
+  }
+
+  /* Mobil reicht .collection-wrapper bis an den Rand, die Karten ruecken selbst ein */
+  @media screen and (max-width: 749px) {
+    .tp-suche-leer--hinweis {
+      margin-inline: var(--page-margin, 16px);
+    }
+  }
+
+  .tp-suche-leer--hinweis .tp-suche-leer__titel {
+    font-size: var(--tp-fs-lg);
+  }
+
+  .tp-suche-leer--hinweis p {
+    margin: 0;
+  }
+
+  .tp-suche-leer--hinweis a {
+    color: var(--color-foreground);
+  }
+
+  .tp-suche-leer--hinweis .tp-suche-leer__liste {
+    margin: 16px 0 0;
   }
 
   .tp-suche-leer__liste {

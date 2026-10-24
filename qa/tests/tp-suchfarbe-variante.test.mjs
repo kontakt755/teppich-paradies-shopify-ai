@@ -106,9 +106,12 @@ function rollenware() {
   return produkt(v);
 }
 
-test('Farbgruppen: nur die entschiedene Gruppe grau mit den sechs Woertern', () => {
+test('Farbgruppen: bestehende Grau-Gruppe und Beige nur fuer den aktiven Filter', () => {
   const daten = ohneDoc('snippets/tp-suchfarbe-gruppen.liquid').replace(/{%-?\s*comment\s*-?%}[\s\S]*?{%-?\s*endcomment\s*-?%}/g, '').trim();
-  assert.deepEqual(daten.split('\n').map((z) => z.trim()).filter(Boolean), ['grau: grau, silber, stein*, anthrazit, greige, taupe']);
+  assert.deepEqual(daten.split('\n').map((z) => z.trim()).filter(Boolean), [
+    'grau: grau, silber, stein*, anthrazit, greige, taupe',
+    'beige-filter: beige, sand, creme, natur, ecru, elfenbein, champagner, greige, taupe',
+  ]);
 });
 
 // Review PR #1078: "stein" als Teilwort machte "feinsteinzeug" (16 Karten) und
@@ -183,6 +186,38 @@ function blauware() {
   const farben = ['Senf (050)', 'Petrol (082)', 'Taubenblau (081)', 'Steingrau (073)', 'Jeansblau (182)', 'Karotte (300)', 'Weinrot (310)'];
   return produkt(farben.flatMap((f) => [variante(f, '400cm'), variante(f, '500cm')]));
 }
+
+test('Beige-Filter zeigt Sand, Creme und die weiteren belegten hellen Originalnamen statt Rot', async () => {
+  for (const farbe of ['Sand (250)', 'Creme (069)', 'Natur (101)', 'Ecru', 'Elfenbein', 'Champagner', 'Greige (049)', 'Taupe (260)']) {
+    const p = produkt([variante('Weinrot (106)', '400 cm'), variante(farbe, '400 cm')]);
+    assert.equal((await wahl(p, farbfilter(['Beige']))).option1, farbe, farbe);
+  }
+});
+
+test('Beige-Filter behaelt Breite und nutzt nur verfuegbare Varianten mit eigenem Bild', async () => {
+  const p = produkt([
+    variante('Weinrot', '400 cm'), variante('Weinrot', '500 cm'),
+    variante('Creme', '500 cm', { available: false }), variante('Natur', '500 cm', { bild: false }),
+    variante('Sand', '400 cm'), variante('Sand', '500 cm'),
+  ]);
+  p.selected_variant = p.variants[1];
+  assert.equal((await wahl(p, farbfilter(['Beige']))).title, 'Sand / 500 cm');
+});
+
+test('Beige-Filter wahrt direkte beige Auswahl, Suchwortvorrang und fehlende passende Farbe', async () => {
+  const p = produkt([variante('Sand', '400 cm'), variante('Beige Hell', '400 cm'), variante('Steingrau', '400 cm')]);
+  assert.equal((await wahl(p, farbfilter(['Beige']))).option1, 'Beige Hell');
+  assert.equal((await wahl(p, farbfilter(['Beige'], { seite: 'search', terms: 'grauer teppich' }))).option1, 'Steingrau');
+  assert.equal(await wahl(produkt([variante('Weinrot', '400 cm')]), farbfilter(['Beige'])), null);
+});
+
+test('Neue Beige-Filtergruppe erweitert keine unfiltrierte Suche und laesst Grau-Synonyme bestehen', async () => {
+  const p = produkt([variante('Sand', '400 cm'), variante('Greige', '400 cm'), variante('Taupe', '400 cm')]);
+  assert.equal(await wahl(p, suche('beiger schlingenteppich')), null);
+  assert.equal(await wahl(p, suche('naturstein optik')), null);
+  assert.equal((await wahl(p, suche('taupe teppichboden'))).option1, 'Taupe');
+  assert.equal((await wahl(p, farbfilter(['Grau']))).option1, 'Greige');
+});
 
 test('Farbfilter Blau: erste blaue Farbe mit eigenem Bild, Petrol zaehlt nicht', async () => {
   assert.equal((await wahl(blauware(), farbfilter(['Blau']))).title, 'Taubenblau (081) / 400cm');

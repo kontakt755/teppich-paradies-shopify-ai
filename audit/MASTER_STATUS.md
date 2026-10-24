@@ -1,3 +1,5 @@
+> **Eingestellt.** Dieser Audit endete am 26.09.2026 bei rund 51 % und wird nicht fortgesetzt. Auftrag und Fortschrittsdateien liegen seit 24.10. unter `docs/archiv/2026/SHOP_AUDIT_*`. Die Befunde unten sind ein damaliger Stand, keine offene Liste.
+
 # Teppich-Paradies – Auditstatus
 
 AUDIT FORTSCHRITT: 51 %

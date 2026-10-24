@@ -73,6 +73,7 @@ import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
 import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
+import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -626,6 +627,7 @@ function stammKontakte(dir) {
 }
 
 export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null } = {}) {
+  const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -2188,11 +2190,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Service-Anfragen (Verlegeservice, Treppe, Aufmass): alle, neueste zuerst. */
-    kundenServiceanfragen() {
+    async kundenServiceanfragen() {
       const dir = privatDirPath || privatDir();
       const eintraege = leseServiceanfragen(serviceanfragenPfad(dir))
         .slice().sort((a, b) => (b.datum || '').localeCompare(a.datum || '') || (b.id || '').localeCompare(a.id || ''));
-      return { verfuegbar: true, eintraege };
+      const abgleich = await serviceLaden.abrufen(eintraege);
+      if (!abgleich.verfuegbar) return { verfuegbar: true, eintraege };
+      return { verfuegbar: true, eintraege: serviceMitLaden(eintraege, abgleich, abgleich.basis),
+        ladenAbgleich: { verfuegbar: abgleich.verfuegbar, grund: abgleich.grund || null } };
     },
 
     /**

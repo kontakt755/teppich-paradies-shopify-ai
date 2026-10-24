@@ -23,6 +23,7 @@ kostet nichts. Wird eine Datei doch wieder gebraucht, ist sie ein `git mv` entfe
 | `ORCHESTRATOR_CORE_PHASE_REPORT.md` | 2026-08-12 | Orchestrator Core Phase Report |
 | `PIPELINE_BUILD_REPORT.md` | 2026-08-14 | Pipeline Build Report |
 | `QA_REPORT_PDP_STYLING.md` | 2026-09-18 | QA Report: Teppich-Produktseite UI/UX Redesign |
+| `SHOP_AUDIT_TASK.md`, `SHOP_AUDIT_CODEX_PROGRESS.md`, `SHOP_AUDIT_CONTINUE_PROMPT.md` | 2026-10-13 | Langzeit-Shop-Audit von Codex (Auftrag, Fortschritt, Fortsetzungsprompt). Am 26.09. bei 51 % stehen geblieben, nie abgeschlossen; lagen bis 24.10. im Wurzelverzeichnis und meldeten dort weiter "Status: WORKING". Belege bleiben unter `audit/`, spaetere Audits in `docs/audits/` und den Vault-Uebergaben |
 | `SECURE_MULTIDEVICE_SETUP.md` | 2026-08-28 | Sicheres Multi-Device-Setup |
 | `SEO_META_MANUAL.md` | 2026-08-14 | Fehlende Shopify-Meta-Descriptions |
 | `TASK_CONTEXT_PACK_TEMPLATE.md` | 2026-08-14 | Task Context Pack Template |

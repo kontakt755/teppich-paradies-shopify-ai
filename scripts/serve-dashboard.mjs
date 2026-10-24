@@ -475,7 +475,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'kunden/rueckrufe' && req.method === 'POST') result = await api.kundenRueckrufSetzen(await readJson(req), benutzer);
     else if (simple === 'einkauf/belege' && req.method === 'GET') result = api.einkaufBelege();
     else if (simple === 'einkauf/belege' && req.method === 'POST') result = api.einkaufBelegSetzen(await readJson(req), benutzer);
-    else if (simple === 'kunden/serviceanfragen' && req.method === 'GET') result = api.kundenServiceanfragen();
+    else if (simple === 'kunden/serviceanfragen' && req.method === 'GET') result = await api.kundenServiceanfragen();
     else if (simple === 'kunden/serviceanfragen' && req.method === 'POST') result = api.kundenServiceanfrageSetzen(await readJson(req), benutzer);
     else if (simple === 'kunden/liste') result = api.kundenListe({ q: url.searchParams.get('q') || '' });
     else if (simple === 'angebote/liste') result = api.angeboteListe();
