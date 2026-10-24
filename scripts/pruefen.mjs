@@ -66,6 +66,19 @@ export function aufruf(schritt, env = process.env) {
   return { bin: process.platform === 'win32' ? 'npm.cmd' : 'npm', args: ['run', '-s', schritt.npm] };
 }
 
+// Zeilen, die den Fehler benennen. Die letzten Zeilen allein reichen nicht: beim
+// ersten CI-Lauf (#1667) waren es 30 Zeilen Chrome-Stacktrace ohne Testnamen.
+const MARKE = /^\s*(?:✖|not ok\b|FEHLER\b|ERROR\b|\[FATAL|\[\d+:\d+:[\d/.]+:(?:FATAL|ERROR)|[A-Za-z]*Error\b)/;
+
+export function fehlerzeilen(ausgabe, max = 20) {
+  const gesehen = new Set();
+  for (const zeile of String(ausgabe || '').split('\n')) {
+    if (MARKE.test(zeile)) gesehen.add(zeile.trimEnd());
+    if (gesehen.size >= max) break;
+  }
+  return [...gesehen];
+}
+
 export function bericht(ergebnisse, { zeilen = 30 } = {}) {
   const z = [];
   for (const e of ergebnisse) {
@@ -74,6 +87,8 @@ export function bericht(ergebnisse, { zeilen = 30 } = {}) {
     z.push(`${status.padEnd(11)} ${e.name}${dauer}${e.grund ? ` - ${e.grund}` : ''}`);
   }
   for (const e of ergebnisse.filter((x) => !x.ausgelassen && !x.ok)) {
+    const marken = fehlerzeilen(e.ausgabe);
+    if (marken.length) z.push('', `--- ${e.name}: Fehlerzeilen ---`, ...marken);
     z.push('', `--- ${e.name}: letzte Zeilen ---`);
     z.push(...String(e.ausgabe || '').trimEnd().split('\n').slice(-zeilen));
   }

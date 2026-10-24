@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SCHRITTE, auswahl, aufruf, bericht } from '../../scripts/pruefen.mjs';
+import { SCHRITTE, auswahl, aufruf, bericht, fehlerzeilen } from '../../scripts/pruefen.mjs';
 
 const wurzel = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const scripts = JSON.parse(fs.readFileSync(path.join(wurzel, 'package.json'), 'utf8')).scripts;
@@ -78,4 +78,23 @@ test('der Programmeinstieg laeuft auch aus einem Pfad mit Leerzeichen (falsche O
   const r = spawnSync(process.execPath, [kopie, '--nur', 'gibtsnicht'], { encoding: 'utf8' });
   assert.equal(r.status, 2, r.stdout + r.stderr);
   assert.match(r.stderr, /Unbekannter Schritt/);
+});
+
+test('Fehlerzeilen: Testnamen und Abbruchgrund stehen vor dem Stacktrace', () => {
+  const ausgabe = [
+    '✔ alles gut (1ms)',
+    '✖ Browser-Uebergabe zeigt das Formular (120ms)',
+    '[1234:5678:1024/082756.123:FATAL:zygote_host_impl_linux.cc(128)] No usable sandbox!',
+    'Error: Failed to launch the browser process!',
+    ...Array.from({ length: 40 }, (_, i) => `  #${i} 0x55ec8f799db3 (/home/runner/chrome+0x6ec4db2)`),
+    '✖ Browser-Uebergabe zeigt das Formular (120ms)',
+  ].join('\n');
+  assert.deepEqual(fehlerzeilen(ausgabe), [
+    '✖ Browser-Uebergabe zeigt das Formular (120ms)',
+    '[1234:5678:1024/082756.123:FATAL:zygote_host_impl_linux.cc(128)] No usable sandbox!',
+    'Error: Failed to launch the browser process!',
+  ]);
+  const { text } = bericht([{ name: 'tests', ok: false, ms: 0, grund: 'Exit 1', ausgabe }]);
+  assert.ok(text.indexOf('Fehlerzeilen') < text.indexOf('letzte Zeilen'));
+  assert.match(text, /No usable sandbox/);
 });
