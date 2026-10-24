@@ -37,6 +37,12 @@ if command -v gh >/dev/null 2>&1 && { [ ! -f "$DATEN" ] || [ -n "$(find "$DATEN"
 fi
 node scripts/dashboard-brief.mjs 2>/dev/null | sed 's/^/  /' || true
 
+# Laeuft IMMER: offene Uebergaben an Claude aus dem gemeinsamen Vault
+# (Zusammenarbeit/Aufgaben/). Eine Uebergabedatei startet keine Sitzung; bis
+# 2026-10-24 musste der Benutzer den Auftrag deshalb in einen Chat kopieren,
+# einer lag so vier Tage offen. Ohne offene Uebergabe bleibt die Zeile weg.
+node scripts/uebergaben.mjs --an claude --kurz 2>/dev/null | sed 's/^/  /' || true
+
 # Lokal laeuft die Umgebung ohnehin; der Rest des Hooks ist fuer Claude Code on the web.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0

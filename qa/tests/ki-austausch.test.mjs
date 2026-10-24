@@ -1,8 +1,12 @@
 // Tests fuer scripts/ki-austausch.mjs (direkter Austausch Claude <-> Codex).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   argumente, codexAufruf, claudeAufruf, codexAntwort, claudeAntwort, codexKandidaten, kindUmgebung, kopf,
+  geheim, KONTINGENT, reviewKopf, reviewDateiname, reviewsLesen, reviewStand, ergebnisZeile,
 } from '../../scripts/ki-austausch.mjs';
 
 test('argumente: neue Frage, Fortsetzung und Optionen', () => {
@@ -92,4 +96,67 @@ test('kopf: verlangt nur lesen und Pseudonyme', () => {
   assert.match(k, /Claude Code/);
   assert.match(k, /nur lesen/);
   assert.match(k, /Pseudonyme/);
+});
+
+test('kindUmgebung: Zugangsdaten gehen an keine der beiden KIs, die eigene Codex-Anmeldung bleibt', () => {
+  const q = {
+    PATH: '/bin', HOME: '/h', CLAUDE_CODE_MESSAGING_TOKEN: 't', SHOPIFY_ADMIN_TOKEN: 's', GH_TOKEN: 'g',
+    GITHUB_TOKEN: 'g2', SSH_AUTH_SOCK: '/sock', LEXWARE_API_KEY: 'l', MEIN_SECRET: 'x', OPENAI_API_KEY: 'o', CODEX_HOME: '/c',
+  };
+  const x = kindUmgebung(q, 'codex', 0);
+  for (const k of ['CLAUDE_CODE_MESSAGING_TOKEN', 'SHOPIFY_ADMIN_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN', 'SSH_AUTH_SOCK', 'LEXWARE_API_KEY', 'MEIN_SECRET']) {
+    assert.ok(!(k in x), `${k} darf nicht an Codex gehen`);
+  }
+  assert.equal(x.OPENAI_API_KEY, 'o');
+  assert.equal(x.CODEX_HOME, '/c');
+  assert.equal(x.PATH, '/bin');
+  const c = kindUmgebung(q, 'claude', 0);
+  assert.ok(!('SHOPIFY_ADMIN_TOKEN' in c) && !('OPENAI_API_KEY' in c) && !('GH_TOKEN' in c));
+  assert.equal(geheim('PATH', 'codex'), false);
+});
+
+test('argumente: review und review-stand brauchen eine PR-Nummer', () => {
+  assert.deepEqual(argumente(['review', '1667']), { befehl: 'review', pr: 1667, frage: '' });
+  const z = argumente(['review', '12', 'Achte', 'auf', 'Preise', '--aufwand', 'low']);
+  assert.equal(z.frage, 'Achte auf Preise');
+  assert.equal(z.aufwand, 'low');
+  assert.equal(argumente(['review-stand', '7']).befehl, 'review-stand');
+  assert.throws(() => argumente(['review']), /PR-Nummer/);
+  assert.throws(() => argumente(['review', 'abc']), /PR-Nummer/);
+});
+
+test('reviewKopf: nennt PR, Head-Commit, Runde und das Antwortformat', () => {
+  const k = reviewKopf({ pr: 5, titel: 'T', head: 'a'.repeat(40), basis: 'main', kopfRef: 'x', runde: 2 });
+  assert.match(k, /PR #5/);
+  assert.match(k, new RegExp(`Head-Commit ${'a'.repeat(40)}`));
+  assert.match(k, /Pruefrunde 2/);
+  assert.match(k, /KEINE BEFUNDE/);
+  assert.match(k, /nur diesen Diff/);
+});
+
+test('reviewStand: aktuell nur fuer denselben Head, sonst veraltet oder fehlt', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-ki-review-'));
+  const schreib = (sha, zeit, runde) => fs.writeFileSync(path.join(dir, reviewDateiname(9, sha)),
+    `# Review PR #9\npr: 9\nhead: ${sha}\nzeit: ${zeit}\nrunde: ${runde}\nergebnis: 1 P1, 0 P2, 0 P3\n---\nP1 x\n`);
+  assert.equal(reviewStand(reviewsLesen(dir, 9), 'a'.repeat(40)).status, 'fehlt');
+  schreib('a'.repeat(40), '2026-10-24T08:00:00Z', 1);
+  schreib('b'.repeat(40), '2026-10-24T09:00:00Z', 2);
+  fs.writeFileSync(path.join(dir, reviewDateiname(10, 'c'.repeat(40))), 'head: ccc\n');
+  const r = reviewsLesen(dir, 9);
+  assert.deepEqual(r.map((x) => x.runde), [1, 2]);
+  assert.equal(reviewStand(r, 'b'.repeat(40)).status, 'aktuell');
+  assert.equal(reviewStand(r, 'a'.repeat(40)).status, 'veraltet', 'das neueste Review zaehlt, nicht irgendeins');
+  assert.equal(reviewsLesen(path.join(dir, 'fehlt'), 9).length, 0);
+});
+
+test('ergebnisZeile: zaehlt Befunde, erkennt KEINE BEFUNDE und Formatfehler', () => {
+  assert.equal(ergebnisZeile('KEINE BEFUNDE\nGeprueft: alles'), 'keine Befunde');
+  assert.equal(ergebnisZeile('- P1 a.mjs:3 - x - y\n- **P2** b:1 - z\nP3 c - d\nGeprueft: Diff'), '1 P1, 1 P2, 1 P3');
+  assert.match(ergebnisZeile('Sieht gut aus.'), /unklar/);
+});
+
+test('Kontingent erschoepft wird erkannt, eine Zeilennummer 429 nicht', () => {
+  assert.ok(KONTINGENT.test("You've hit your usage limit. Try again later."));
+  assert.ok(KONTINGENT.test('HTTP 429 Too Many Requests'));
+  assert.ok(!KONTINGENT.test('at scripts/x.mjs:429:12'));
 });
