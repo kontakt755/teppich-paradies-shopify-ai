@@ -19,6 +19,8 @@
  * im Privatordner (LaunchAgent), nie im Repository.
  */
 
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import { createApi } from './dashboard-api.mjs';
 
 function argumente(argv) {
@@ -69,6 +71,6 @@ async function main() {
   else if (r.fehler.length) process.exitCode = 1;
 }
 
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((e) => { console.error(`Versandlauf abgebrochen: ${e?.message || e}`); process.exit(1); });
 }

@@ -18,7 +18,7 @@
  * wurden, Exit 2 bei falschem Aufruf.
  */
 import fs from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { pruefeImporte, jsonlZuProdukten, bericht } from '../lib/import-pruefung.mjs';
 
 export const BULK_QUERY = `
@@ -125,6 +125,6 @@ async function main() {
   if (ergebnis.befunde.some((b) => b.stufe === 'fehler')) process.exitCode = 1;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((e) => { console.error(e.message); process.exit(2); });
 }

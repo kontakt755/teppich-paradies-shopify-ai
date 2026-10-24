@@ -16,9 +16,9 @@
  * geplant - der Mensch entscheidet. Ausgefuehrt wird der Plan erst nach
  * Freigabe, danach prueft guard.mjs das Ergebnis.
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import {
   ARTEN, FORMEN, KONFIG_STANDARD, SERVICE_WERTE, VERFUEGBAR, WUNSCH, WUNSCHMASS, breiteCm, eigeneSku,
   handleSlug, kurzname, lieferantenTreffer, maxBreiteCm, namenSet, raummassPreis,
@@ -211,7 +211,7 @@ function arg(name) {
   return i === -1 ? null : process.argv[i + 1];
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const snap = arg('--snapshot');
   const kPfad = arg('--konfig') || process.env.TP_MASSTEPICH_KONFIG || KONFIG_STANDARD;
   if (!snap || !existsSync(snap) || !existsSync(kPfad)) {

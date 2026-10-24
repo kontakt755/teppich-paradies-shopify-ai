@@ -26,7 +26,8 @@
  *           [--medien] [--abfrage "(vendor:Vorwerk OR vendor:JAB*)"]
  * In GitHub Actions: .github/workflows/meta-bilder-auffrischen.yml (nur manuell).
  */
-import { pathToFileURL } from 'node:url';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { GraphQLProxy } from '../../workflow/graphql-proxy.mjs';
 
 export const META_KANAL = '376821973326';
@@ -150,6 +151,6 @@ async function main(argv) {
   if (fehlerZahl || uebrig) process.exit(1);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main(process.argv.slice(2)).catch((e) => { console.error(e.message); process.exit(2); });
 }
