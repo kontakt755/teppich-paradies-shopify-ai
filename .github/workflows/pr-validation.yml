@@ -28,6 +28,12 @@ jobs:
       # Fuer themecheck:guard (Theme Check laeuft offline, keine Anmeldung).
       # Dieselbe Version wie auf dem Mac, damit Baseline und Befunde gleich sind.
       - run: npm install -g --no-fund --no-audit @shopify/cli@4.9.4
+      # Ubuntu ab 23.10 sperrt per AppArmor die User-Namespaces, die die Chrome-
+      # Sandbox braucht; die Browsertests der Betriebssuite brachen mit "No usable
+      # sandbox!" ab (erster Lauf #1667). Nur auf dem Wegwerf-Runner freigeben,
+      # statt Chrome ohne Sandbox zu starten (pptr.dev/troubleshooting,
+      # chromium docs/security/apparmor-userns-restrictions.md).
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       # Dieselbe Pruefung wie lokal vor dem Commit (AGENTS.md): alle Testsuiten,
       # Liquid-, Schema-, Template-, Live-Theme- und Schrift-Guard, Theme Check
       # gegen die Baseline, Secret-Scan und der Python-Bildtest. Bis 2026-10-24
