@@ -68,7 +68,7 @@ test('cart-products rendert den Mengenhinweis aus dem Snippet', () => {
 
 test('die Hauptzeile zeigt den Hinweis mit Link zurueck zur Produktseite', () => {
   const haupt = hinweis[0].slice(hinweis[0].indexOf('{%- else -%}'));
-  assert.match(haupt, /Menge ergibt sich aus dem Maß\.[\s\S]*?line_item\.url/);
+  assert.match(haupt, /Menge ergibt sich aus dem Maß\.[\s\S]*?render 'tp-cart-mass-url', line_item: line_item/);
 });
 
 // line_item.url einer Zusatzzeile (Kettelservice, Fussleiste, Haftunterlage) fuehrt zum

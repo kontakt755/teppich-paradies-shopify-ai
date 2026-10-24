@@ -1,0 +1,50 @@
+{%- doc -%}
+  Rueckweg zum vorhandenen Masskonfigurator. Liest ausschliesslich die bereits
+  gespeicherten Fertigmasse und Form; keine Ableitung aus der Abrechnungsmenge.
+  Andere Produkte oder unlesbare Altangaben behalten line_item.url.
+  @param {object} line_item - Hauptposition des Warenkorbs
+{%- enddoc -%}
+{%- liquid
+  assign tp_mu_url = line_item.url
+  assign tp_mu_form = line_item.properties.Form | downcase
+  assign tp_mu_mass = line_item.properties['Maße'] | remove: ' cm'
+  assign tp_mu_w = ''
+  assign tp_mu_l = ''
+  if line_item.product.metafields.service.einfassung.value != blank
+    if tp_mu_form == 'rechteck' or tp_mu_form == 'oval'
+      assign tp_mu_seiten = tp_mu_mass | split: ' × '
+      if tp_mu_seiten.size == 2
+        assign tp_mu_w = tp_mu_seiten | first
+        assign tp_mu_l = tp_mu_seiten | last
+      endif
+    elsif tp_mu_form == 'rund'
+      assign tp_mu_w = tp_mu_mass | remove_first: 'Ø '
+    endif
+  endif
+  assign tp_mu_w_zahl = tp_mu_w | plus: 0
+  assign tp_mu_w_text = tp_mu_w_zahl | append: ''
+  assign tp_mu_l_zahl = tp_mu_l | plus: 0
+  assign tp_mu_l_text = tp_mu_l_zahl | append: ''
+  assign tp_mu_w_ganz = tp_mu_w_zahl | floor
+  assign tp_mu_l_ganz = tp_mu_l_zahl | floor
+  assign tp_mu_ok = false
+  if tp_mu_w_zahl > 0 and tp_mu_w == tp_mu_w_text and tp_mu_w_zahl == tp_mu_w_ganz
+    if tp_mu_form == 'rund'
+      assign tp_mu_ok = true
+    elsif tp_mu_l_zahl > 0 and tp_mu_l == tp_mu_l_text and tp_mu_l_zahl == tp_mu_l_ganz
+      assign tp_mu_ok = true
+    endif
+  endif
+  if tp_mu_ok and line_item.product.url != blank and line_item.variant.id != blank
+    assign tp_mu_url = line_item.product.url | append: '?variant=' | append: line_item.variant.id | append: '&breite=' | append: tp_mu_w
+    if tp_mu_form != 'rund'
+      assign tp_mu_url = tp_mu_url | append: '&laenge=' | append: tp_mu_l
+    endif
+    assign tp_mu_url = tp_mu_url | append: '&form=' | append: tp_mu_form
+    if line_item.properties.Bandfarbe != blank
+      assign tp_mu_band = line_item.properties.Bandfarbe | url_encode
+      assign tp_mu_url = tp_mu_url | append: '&band=' | append: tp_mu_band
+    endif
+  endif
+  echo tp_mu_url
+-%}
