@@ -10,7 +10,7 @@
  */
 
 import { execSync } from 'child_process';
-import { readFileSync, realpathSync } from 'fs';
+import { existsSync, readFileSync, realpathSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 
@@ -121,7 +121,7 @@ export function runUnmergedChangesGuard() {
 }
 
 // CLI-Ausführung
-if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = runUnmergedChangesGuard();
 
   if (!result.passed) {

@@ -22,6 +22,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const KIS = ['codex', 'claude'];
 const MAX_TIEFE = 2; // Claude -> Codex -> Claude reicht; keine Endlosschleife
@@ -263,6 +264,6 @@ async function main() {
   console.error(`\n[${ki} · Gespraech "${name}" · weiter mit: npm run -s ki:frag -- weiter ${ki}${a.faden ? ` --faden ${a.faden}` : ''} "..."]`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((e) => { console.error(e.message); process.exit(1); });
 }

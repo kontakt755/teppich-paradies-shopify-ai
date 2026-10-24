@@ -92,6 +92,6 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`${treffer.length} offene Treffer, ${stand.neu.length} neu, ${ausfaelle.length} Ausfaelle -> ${ziel}`);
 }
 
-if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(e => { console.error(e.message); process.exit(1); });
 }

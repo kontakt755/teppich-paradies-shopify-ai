@@ -11,7 +11,7 @@
 //   <json> | npm run -s kurz -- themes       Theme-Antwort (MCP oder `shopify theme list --json`) als Rollenzeilen
 //   <json> | npm run -s kurz -- push         `shopify theme push --json`: nur Fehler, Offenses gezaehlt
 //   npm run -s kurz -- worktrees             Anzahl + nur Worktrees mit ungesicherter Arbeit
-import { readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -113,6 +113,6 @@ function main(art) {
   process.exit(2);
 }
 
-if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   console.log(main(process.argv[2]).join('\n'));
 }

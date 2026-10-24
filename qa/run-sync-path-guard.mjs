@@ -63,4 +63,4 @@ function main() {
 }
 
 // Nur beim Direktaufruf ausfuehren, nicht beim Import (z.B. aus Tests).
-if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) main();
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) main();

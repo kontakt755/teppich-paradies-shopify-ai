@@ -128,7 +128,7 @@ export function cleanOldArtifacts(days = 7) {
 }
 
 // CLI usage
-if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const command = process.argv[2];
 
   switch (command) {
