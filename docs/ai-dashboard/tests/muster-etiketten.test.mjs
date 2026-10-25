@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ETIKETT, ETIKETT_FORMATE, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout, produktUrl,
+  ETIKETT, ETIKETT_FORMATE, andereArten, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout, produktUrl,
   serieAus, serieUndFarbe, technikZeilen, umbrechen, varianteFuer,
 } from '../lib/muster-etiketten.mjs';
 
@@ -49,6 +49,24 @@ test('klassenNummern und technikZeilen: nur Paketware, fehlende Zeilen fallen we
   ]);
   assert.deepEqual(technikZeilen({ qmProPaket: '2', gesamtstaerke: '4 mm', arten: 'Klebevinyl, Klickvinyl' }), [{ label: 'Art', wert: 'Klebevinyl / Klickvinyl' }, { label: 'Stärke', wert: '4 mm' }]);
   assert.deepEqual(technikZeilen(teppich.eigenschaften), []);
+});
+
+test('technikZeilen: Vinyl von der Rolle traegt nur die Art, "Auch als" nur mit belegtem gleichem Dekor', () => {
+  const rolle = { arten: 'Vinyl von der Rolle', gesamtstaerke: '2,8 mm', nutzschicht: '0,35 mm', rollenbreite: '4.0' };
+  assert.deepEqual(technikZeilen(rolle), [{ label: 'Art', wert: 'Vinyl von der Rolle' }]);
+  assert.deepEqual(technikZeilen({ ...vinyl.eigenschaften }, ['Klebevinyl']).slice(0, 3), [
+    { label: 'Art', wert: 'Klickvinyl' },
+    { label: 'Auch als', wert: 'Klebevinyl' },
+    { label: 'Stärke / Nutzschicht', wert: '5 mm / 0,55 mm' },
+  ]);
+  // Teppichboden bekommt keine Technik, auch nicht ueber "Auch als".
+  assert.deepEqual(technikZeilen(teppich.eigenschaften, ['Klickvinyl']), []);
+  // Aus dem Lexikon: eigene Art und Doppelte fallen weg, leere Eintraege auch.
+  const paar = { ...vinyl, gleicherDekor: [{ art: 'Klebevinyl', handle: 'a' }, { art: 'Klebevinyl', handle: 'b' }, { art: 'Klickvinyl', handle: 'c' }, { art: '', handle: 'd' }] };
+  assert.deepEqual(andereArten(paar), ['Klebevinyl']);
+  assert.deepEqual(andereArten(vinyl), []);
+  assert.deepEqual(etikettFuerPosition({ istMuster: true, farbe: 'Eiche Natur', handle: vinyl.handle }, paar).technik.map(z => z.label),
+    ['Art', 'Auch als', 'Stärke / Nutzschicht', 'Nutzungsklasse', 'Format']);
 });
 
 test('etikett: Muster-SKU bleibt leer ohne Hinweis, fehlende Farbe wird genannt', () => {
@@ -158,6 +176,28 @@ test('layout lange Serie und Farbe: alle vier Technikzeilen bleiben vollstaendig
   assert.ok(technik.at(-1).y + technik.at(-1).groesse < artikel.y);
   assert.ok(l.texte.filter(t => t.y < l.linien[0].y).every(t => t.y + t.groesse < l.linien[0].y));
   assert.ok(!l.texte.some(t => t.text.includes('…')), 'auch der lange Titel bleibt vollstaendig');
+});
+
+test('layout mit "Auch als": fuenf Technikzeilen bleiben vollstaendig, QR rechts daneben', () => {
+  const paar = { ...vinyl, gleicherDekor: [{ art: 'Klebevinyl', handle: 'testlinea-eiche-natur-klebevinyl' }] };
+  for (const format of [ETIKETT, ETIKETT_FORMATE['50x100']]) {
+    const e = etikettFuerPosition({ istMuster: true, farbe: 'Eiche Natur', handle: vinyl.handle }, paar);
+    const l = layout(e, mass, format);
+    for (const t of l.texte) assert.ok(t.x >= format.rand - 0.01 && t.x + mass(t.text, t.groesse) <= format.breite - format.rand + 0.01 && t.y + t.groesse <= format.hoehe - format.rand + 0.01, t.text);
+    assert.ok(l.qr.y + l.qr.groesse <= format.hoehe - format.rand && l.qr.x + l.qr.groesse <= format.breite - format.rand);
+    const technik = l.texte.filter(t => t.y > l.linien[0].y && !t.text.startsWith('Art.-Nr.'));
+    assert.deepEqual(technik.map(t => t.text), e.technik.flatMap(z => [z.label, z.wert]));
+    for (let i = 1; i < technik.length; i++) assert.ok(technik[i - 1].y + technik[i - 1].groesse <= technik[i].y);
+    assert.ok(technik.at(-1).y + technik.at(-1).groesse < l.texte.find(t => t.text === 'Art.-Nr. TL-100').y);
+    assert.ok(l.qr && l.qr.groesse >= 100, String(l.qr?.groesse));
+    if (format === ETIKETT) assert.ok(technik.every(t => t.x + mass(t.text, t.groesse) <= l.qr.x - 12));
+  }
+  // Rollenware: nur die Art, der QR-Code steht rechts daneben.
+  const rolle = etikett({ serie: 'Testrolle', farbe: 'Eiche Hell', sku: 'TR-1', handle: 'testrolle', technik: technikZeilen({ arten: 'Vinyl von der Rolle' }) });
+  const lr = layout(rolle, mass);
+  imRahmen(lr);
+  assert.equal(lr.linien.length, 1);
+  assert.ok(lr.qr.groesse >= 100 && lr.texte.find(t => t.text === 'Vinyl von der Rolle').x < lr.qr.x);
 });
 
 test('layout: ohne URL kein QR, ohne SKU keine Art.-Nr.-Zeile', () => {

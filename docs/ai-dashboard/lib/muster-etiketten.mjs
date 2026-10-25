@@ -3,7 +3,9 @@
  * Etikett kommen und wo sie stehen. Reine Funktionen ohne DOM - der Browser zeichnet danach
  * (bausteine/etiketten-druck.mjs), die Tests pruefen Daten und Layout ohne Drucker.
  *
- * Bei Paketware steht zuerst die Art (custom.arten, z. B. "Klickvinyl").
+ * Bei Paketware und bei Vinyl von der Rolle steht zuerst die Art (custom.arten, z. B. "Klickvinyl"),
+ * darunter "Auch als", wenn das Lexikon denselben Dekor in einer anderen Vinyl-Art belegt
+ * (gleicherDekor, operations/lib/lexikon.mjs).
  *
  * Layout (Inhaber 2026-10-20, 400 x 400 px, schwarz/weiss): oben der Shopname als Absender,
  * darunter Serie gross, Farbe, bei Paketware (Vinyl/Designboden) eine Trennlinie und links
@@ -86,13 +88,27 @@ export function klassenNummern(wert) {
   return [...new Set(n)].join(' / ');
 }
 
-/** Technikzeilen fuer Paketware aus den Lexikon-Eigenschaften; fehlende Zeilen fallen weg. */
-export function technikZeilen(eig = {}) {
-  if (leer(eig?.qmProPaket)) return [];
-  const z = [];
+/** Andere Vinyl-Arten desselben Dekors laut Lexikon (`gleicherDekor`), ohne die eigene Art. */
+export function andereArten(produkt) {
+  const eigene = new Set(text(produkt?.eigenschaften?.arten).toLowerCase().split(/\s*,\s*/));
+  const arten = (produkt?.gleicherDekor || []).map(g => text(g?.art)).filter(a => a && !eigene.has(a.toLowerCase()));
+  return [...new Set(arten)];
+}
+
+/**
+ * Technikzeilen aus den Lexikon-Eigenschaften; fehlende Zeilen fallen weg. Paketware bekommt alle
+ * Zeilen, Vinyl von der Rolle nur die Art (und "Auch als"), alles andere keine.
+ */
+export function technikZeilen(eig = {}, auchAls = []) {
   // custom.arten (Metaobjekt-Liste, im Lexikon schon Klartext): "Klickvinyl" oder mehrere.
-  const art = text(eig.arten).split(/\s*,\s*/).filter(Boolean).join(' / ');
+  const art = text(eig?.arten).split(/\s*,\s*/).filter(Boolean).join(' / ');
+  const paket = !leer(eig?.qmProPaket);
+  if (!paket && !/vinyl/i.test(art)) return [];
+  const z = [];
   if (art) z.push({ label: 'Art', wert: art });
+  const auch = [...new Set((auchAls || []).map(a => text(a)).filter(Boolean))];
+  if (auch.length) z.push({ label: 'Auch als', wert: auch.join(' / ') });
+  if (!paket) return z;
   const st = text(eig.gesamtstaerke), ns = text(eig.nutzschicht);
   if (st || ns) z.push({ label: st && ns ? 'Stärke / Nutzschicht' : st ? 'Stärke' : 'Nutzschicht', wert: [st, ns].filter(Boolean).join(' / ') });
   const kl = klassenNummern(eig.nutzungsklasse);
@@ -138,7 +154,7 @@ export function etikettFuerPosition(p, produkt = null) {
     farbe: sf.farbe,
     sku: text(variante?.sku) || text(p?.musterQuelle?.sku),
     handle: handleFuerPosition(p),
-    technik: technikZeilen(produkt?.eigenschaften),
+    technik: technikZeilen(produkt?.eigenschaften, andereArten(produkt)),
   });
 }
 

@@ -1821,6 +1821,19 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   `lib/muster-etiketten.mjs` (rein, getestet), `bausteine/etiketten-druck.mjs` (Canvas, Drucker).
 - **Lexikon:** `nutzschicht`, `format` (`custom.format_cm`) und `arten` sind seit diesem Stand Teil
   der Lexikon-Eigenschaften; sie erscheinen nach dem nächsten Lexikon-Export.
+- **Art und „Auch als“ bei Vinyl (25.10., #1682):** Vinyl von der Rolle ist keine Paketware, bekommt
+  aber die Trennlinie mit der Art („Vinyl von der Rolle“) und daneben den QR-Code; weitere
+  Technikzeilen bleiben Paketware vorbehalten. Darunter steht „Auch als“, wenn derselbe Dekor in einer
+  anderen Vinyl-Art im Shop ist. Belegt ist das nur über `gleicherDekor` aus dem Lexikon-Export
+  (`operations/lib/lexikon.mjs`): beide Produkte aktiv und veröffentlicht, genau eine Vinyl-Art je
+  Produkt, derselbe Shop-Name vor dem Gedankenstrich, derselbe Lieferant und eine gemeinsame
+  Dekornummer (mindestens drei Ziffern) in dessen Artikel- oder Farbnummer. Gleicher Name allein
+  genügt nicht. Stand 25.10.: 92 Paare Klebe-/Klickvinyl, alle bei einem Lieferanten. Bei Lieferant A
+  tragen Klick- und Klebelinien verschiedene Shop-Namen; dort entsteht kein Hinweis, bis eine
+  Zuordnung belegt ist. Mit dem Hinweis rutscht die Technik auf dem 50 × 50-Etikett auf die kleinste
+  Stufe (16/20 px), Serie, Farbe und QR-Code bleiben gleich groß. Bereits vorgemerkte
+  Bestellpositionen, deren Etikett sich dadurch ändert, zeigen „geändert“ und verlangen die übliche
+  bewusste Prüfung.
 - **Verbindung:** Web Bluetooth (Hauptweg, `NiimbotBluetoothClient`), USB-Kabel per WebSerial als
   Ausweg. Beides nur in **Chrome/Edge** und nur in einem sicheren Kontext: `https://…` oder
   `http://localhost`/`127.0.0.1`. Über `http://<IP>:8001` im Firmennetz geht es nicht – dann die
@@ -1846,8 +1859,7 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
 - **Fremdcode:** `@mmote/niimbluelib@0.47.1` (UMD) und `qrcode-generator@1.4.4` werden erst im Dialog
   von cdn.jsdelivr.net geladen, fest gepinnt mit SRI-Prüfsumme. Ohne Internet: Vorschau ohne QR,
   Drucken nicht möglich.
-- **Offen:** Hinweis „auch als Klickvinyl“ (gleicher Dekor in anderer Art) – nur mit belegbarer
-  Zuordnung, noch nicht gebaut.
+- **Offen:** Belegte Klick-/Klebe-Zuordnung bei Lieferant A (verschiedene Shop-Namen je Linie).
 
 ## 27. Muster packen (seit 2026-10-21, #1572)
 
