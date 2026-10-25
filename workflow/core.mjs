@@ -459,6 +459,34 @@ export function deriveWorkflowState({ branch, head, originMain, clean, latest })
   return { ...base, status: 'VALIDATED_MAIN', nextAction: 'Preview separat vorbereiten; Human Approval vor Preview und erneut vor Live erforderlich.' };
 }
 
+// Theme-Einstellungen (config/settings_data.json) zweier Themes vergleichen.
+// Die Deploy-Kette pusht diese Datei nie (--ignore) und wechselt bei jedem
+// Livegang das Theme: was im Admin nur am Live-Theme eingestellt wurde, ist
+// nach dem naechsten Wechsel weg (docs/lessons/settings-data-wechsel.md).
+// Verglichen wird der Inhalt, nicht Schreibweise, Kommentarkopf oder Reihenfolge.
+export function vergleicheThemeEinstellungen(liveText, previewText) {
+  const lesen = (text) => JSON.parse(String(text).replace(/^\uFEFF?\s*\/\*[\s\S]*?\*\//, ''));
+  const stabil = (wert) => {
+    if (Array.isArray(wert)) return `[${wert.map(stabil).join(',')}]`;
+    if (wert && typeof wert === 'object') return `{${Object.keys(wert).sort().map((k) => `${JSON.stringify(k)}:${stabil(wert[k])}`).join(',')}}`;
+    return JSON.stringify(wert);
+  };
+  // Ein Preset-Name in current zaehlt mit dem Inhalt aus presets; platform_customizations
+  // (Theme-CSS der Plattform) steht ausserhalb von current und wird mitverglichen.
+  const aufloesen = (daten) => {
+    const name = daten?.current;
+    const werte = name && typeof name === 'object' ? name
+      : (typeof name === 'string' && daten?.presets?.[name] && typeof daten.presets[name] === 'object') ? daten.presets[name]
+        : { current: name };
+    return daten && 'platform_customizations' in daten ? { ...werte, '@platform_customizations': daten.platform_customizations } : werte;
+  };
+  const a = aufloesen(lesen(liveText));
+  const b = aufloesen(lesen(previewText));
+  const abweichend = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()
+    .filter((schluessel) => stabil(a[schluessel]) !== stabil(b[schluessel]));
+  return { gleich: abweichend.length === 0, abweichend };
+}
+
 export function fileSha256(filePath) {
   if (!fs.existsSync(filePath)) throw new WorkflowGateError(`Erwartete Datei fehlt: ${path.basename(filePath)}`, 'PREVIEW_SETTINGS');
   return createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');

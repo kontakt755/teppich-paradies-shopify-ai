@@ -9,6 +9,7 @@ sie zu umgehen.
 | Datei | Regel in AGENTS.md | Was passierte |
 |---|---|---|
 | [theme-id-drift.md](theme-id-drift.md) | Welches Theme ist live? | Anweisungsdateien nannten wochenlang ein geloeschtes Theme als live |
+| [settings-data-wechsel.md](settings-data-wechsel.md) | Deploy, `workflow:doctor` | Admin-Einstellungen nur am Live-Theme gehen beim naechsten Theme-Wechsel verloren |
 | [ungemergte-branches.md](ungemergte-branches.md) | Fallstrick 6 | Fertige Features lagen auf nie gemergten Branches; Einzel-Cherry-Pick brach den Template-Push |
 | [tote-menuelinks.md](tote-menuelinks.md) | Fallstrick 6b | Zwei Menuelinks lieferten leere Raster — zwei verschiedene Ursachen, gleiches Symptom |
 | [produktimport.md](produktimport.md) | Fallstrick 7, Farbcodes | Sieben Produkte zweimal gebaut; 21 von 24 Farbvarianten erfunden |
