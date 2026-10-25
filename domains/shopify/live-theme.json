@@ -1,32 +1,38 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-24T17:29:36Z",
-    "verifiedBy": "Shopify Admin API nach workflow:live (main bf8d78e2, PR #1678); Rolle MAIN frisch bestaetigt."
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-24T17:29:36Z",
-    "verifiedBy": "Shopify Admin API nach workflow:live (main bf8d78e2, PR #1678); Rolle UNPUBLISHED frisch bestaetigt."
+    "verifiedAt": "2026-10-25T21:06:59Z",
+    "verifiedBy": "Shopify Admin API nach workflow:live (main f735d287, PR #1685/#1686); Rolle MAIN frisch bestaetigt."
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-25T21:06:59Z",
+    "verifiedBy": "Shopify Admin API nach workflow:live (main f735d287, PR #1685/#1686); Rolle UNPUBLISHED frisch bestaetigt."
   },
   "fallback": {
     "themeId": "206590509390",
     "name": "Fallback 2026-10-12 - nicht loeschen",
-    "verifiedAt": "2026-10-24T17:29:36Z",
-    "verifiedBy": "Shopify Admin API nach workflow:live (main bf8d78e2); Rolle UNPUBLISHED und bestehender Name frisch bestaetigt. Keine Aenderung am Theme.",
+    "verifiedAt": "2026-10-25T21:06:59Z",
+    "verifiedBy": "Shopify Admin API nach workflow:live (main f735d287); Rolle UNPUBLISHED und bestehender Name frisch bestaetigt. Keine Aenderung am Theme.",
     "note": "Niemals loeschen oder ueberschreiben. Ersatz fuer 204440699214, das am 2026-10-12 beim Aufraeumen im Shopify-Admin geloescht wurde (der Admin zeigt Entwicklungs-Themes nicht, dafuer dieses). Kopie des Live-Standes nach workflow:live von main da936848 - enthaelt config/settings_data.json, die im Repository nicht gepflegt wird."
   },
   "arbeit": {
     "themeId": "204965413198",
     "name": "Arbeitstheme - nie Preview, nie publishen",
-    "verifiedAt": "2026-10-24T17:29:36Z",
-    "verifiedBy": "Shopify Admin API nach workflow:live (main bf8d78e2); Rolle UNPUBLISHED und bestehender Name frisch bestaetigt. Keine Aenderung am Theme.",
+    "verifiedAt": "2026-10-25T21:06:59Z",
+    "verifiedBy": "Shopify Admin API nach workflow:live (main f735d287); Rolle UNPUBLISHED und bestehender Name frisch bestaetigt. Keine Aenderung am Theme.",
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-25",
+      "note": "Durch workflow:live (main f735d287, PR #1685/#1686) am 2026-10-25T21:06:59Z abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify Admin API bestaetigt."
+    },
     {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",
@@ -978,6 +984,6 @@
       "note": "Durch workflow:live PR #1612 abgeloest; bleibt unpublished als naechstes Preview-Ziel."
     }
   ],
-  "verifyQuery": "query { live: themes(first: 2, roles: [MAIN]) { nodes { id name role } } bekannt: nodes(ids: [\"gid://shopify/OnlineStoreTheme/204438208846\", \"gid://shopify/OnlineStoreTheme/206590509390\", \"gid://shopify/OnlineStoreTheme/204965413198\"]) { ... on OnlineStoreTheme { id name role } } }",
+  "verifyQuery": "query { live: themes(first: 2, roles: [MAIN]) { nodes { id name role } } bekannt: nodes(ids: [\"gid://shopify/OnlineStoreTheme/204436144462\", \"gid://shopify/OnlineStoreTheme/206590509390\", \"gid://shopify/OnlineStoreTheme/204965413198\"]) { ... on OnlineStoreTheme { id name role } } }",
   "verifyHint": "Ueber den Shopify-MCP ausfuehren. Live ist der Knoten mit role MAIN; role UNPUBLISHED sind Preview- und Altthemes."
 }
