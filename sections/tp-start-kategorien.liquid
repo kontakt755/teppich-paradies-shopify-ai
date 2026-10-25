@@ -69,8 +69,12 @@
           endif
         -%}
         <a class="tp-kat__card{% if kat_gross %} tp-kat__card--gross{% endif %}" href="{{ ziel | default: '#' }}" {{ block.shopify_attributes }}>
-          {%- if img != blank and kat_gross -%}
+          {%- comment -%} Hohe Prioritaet nur fuer die erste Kachel (mobil das LCP-Bild):
+            zwei Bilder mit "high" teilen sich die Bandbreite (Analyse 25.10.). {%- endcomment -%}
+          {%- if img != blank and kat_gross and forloop.first -%}
             {{ img | image_url: width: 1200 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '400, 600, 800, 1000, 1200', sizes: kat_sizes_gross, alt: kat_alt, class: 'tp-kat__img' }}
+          {%- elsif img != blank and kat_gross -%}
+            {{ img | image_url: width: 1200 | image_tag: loading: 'eager', widths: '400, 600, 800, 1000, 1200', sizes: kat_sizes_gross, alt: kat_alt, class: 'tp-kat__img' }}
           {%- elsif img != blank -%}
             {{ img | image_url: width: 800 | image_tag: loading: 'lazy', fetchpriority: 'low', widths: '300, 400, 500, 600, 800', sizes: kat_sizes, alt: kat_alt, class: 'tp-kat__img' }}
           {%- else -%}
