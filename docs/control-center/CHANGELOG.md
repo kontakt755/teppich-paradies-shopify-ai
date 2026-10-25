@@ -2,6 +2,30 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-24 · Drei Ablaufreibungen: Muster direkt, Teil-Wareneingang, Service-Stand (#1680)
+
+- **Geaendert:** (1) Muster mit Lieferziel „Kunden“ tragen beim Bestellen `ueber: 'kunde'`; Zeitleiste
+  und Einkauf ueberspringen „bei uns angekommen“ und bieten „Ist an den Kunden raus…“ (Versanddialog,
+  Shopify-Buchung, danach Nachfassen). (2) Der Versanddialog zeigt eine offene Fehlmenge vorher statt nach
+  einem 409 und fuehrt mit „Wareneingang ergänzen…“ in den Mengendialog; dieser nennt die Restmenge, die
+  Rueckmeldung einer Teilbestaetigung sagt „bleibt offen“. (3) Service-Anfrage aus „Heute“: Stand mit einem
+  Klick statt Bearbeiten → Auswahl → Speichern. Anlaesse: fuenf Musterauftraege seit 15.–22.10. auf „bei uns
+  angekommen“, eine Warenbestellung am 19.10. (vier Bestaetigungen 2/3, drei abgelehnte Buchungen), vier Anfragen seit
+  16.10. auf „Neu“.
+- **Getestet:** neue Faelle in `auftragsverlauf`, `auftragsstatus`, `einkauf-uebersicht`; `npm test`
+  8 Suiten ohne Fehler, `dashboard:test` 929/929. `dashboard:pruefen`: 38 Ansichten in 5 Breiten ohne
+  JS-Fehler und Ueberlauf. Klickstrecke gegen die Datenkopie (Instanz ohne Shopify-Zugang, 19/19): Statusknopf
+  schreibt „Neu → Kontaktiert“ samt Verlauf; Versanddialog bei 3/4 lfm ohne Buchen-Knopf, Teilbestaetigung meldet
+  „1 lfm fehlen … bleibt offen“, 4/4 → geliefert und wieder buchbar; Musterauftrag mit Vermerk zeigt keinen
+  Eingangsschritt, „Ist an den Kunden raus…“ setzt alle drei auf raus, Zeitleiste „Vom Lieferanten direkt
+  an den Kunden verschickt“.
+- **Risiken:** Alte Direktmuster ohne Vermerk bleiben, wie sie sind; der Inhaber traegt sie ueber „Etwas
+  anderes ist passiert …“ nach. Die Musterautomatik steht seit 23.10. auf „Laden“, der Direktweg greift
+  also nur bei Hand gewaehltem Ziel. Der Versanddialog prueft gegen den geladenen Stand; der Server bleibt
+  die Sperre. Kein Shopify-Schreibzugriff im Test.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen (Abschnitt 9 im Skill) inklusive Neustart
+  des Dienstes, weil `operations/` betroffen ist.
+
 ## 2026-10-23 · Gemessene Restlaenge im bestehenden Rollenbestand (#1643)
 
 - **Geaendert:** Inhaber tragen die gemessene Restlaenge direkt bei der vorhandenen Restrolle ein.

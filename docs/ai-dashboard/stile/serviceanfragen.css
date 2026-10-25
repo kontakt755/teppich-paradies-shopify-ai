@@ -31,3 +31,5 @@
   .sa-row .r { justify-content: flex-start; }
   .sa-leiste .btn-primary { width: 100%; }
 }
+/* Naechster Stand mit einem Klick (Anfrage aus "Heute" geoeffnet) */
+.sa-status { margin: 10px 0 12px; }

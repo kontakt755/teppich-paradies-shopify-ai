@@ -22,9 +22,10 @@ import { kunden } from './gemeinsam.mjs';
 
 const WER_TEXT = { wir: 'wir', lieferant: 'Lieferant', kunde: 'Kunde' };
 const ART_TEXT = { muster: 'Musterbestellung', ware: 'Bestellung' };
-// Was "Etwas anderes ist passiert ..." anbietet - Reihenfolge wie der Ablauf.
+// Was "Etwas anderes ist passiert ..." anbietet - Reihenfolge wie der Ablauf. "Verschickt" gilt
+// auch fuer Muster, die der Hersteller direkt geschickt hat (ohne Vermerk bestellt, vor 2026-10-24).
 const WAHL = {
-  muster: [['bestellt', 'Muster beim Lieferanten bestellt'], ['geliefert', 'Muster sind bei uns angekommen'], ['raus', 'Gelabelt und an den Kunden verschickt'],
+  muster: [['bestellt', 'Muster beim Lieferanten bestellt'], ['geliefert', 'Muster sind bei uns angekommen'], ['raus', 'An den Kunden verschickt – von uns oder direkt vom Lieferanten'],
     ['kunde_hat_muster', 'Kunde hat die Muster'], ['nachgefasst', 'Nachgefasst'], ['kunde_hat_bestellt', 'Ergebnis: Kunde hat bestellt'], ['kein_interesse', 'Ergebnis: kein Interesse'],
     ['muster_nicht_verfuegbar', 'Muster nicht verfügbar – Kunde informiert']],
   ware: [['bestellt', 'Ware beim Lieferanten bestellt'], ['geliefert', 'Ware ist bei uns angekommen'], ['raus', 'An den Kunden raus'], ['erledigt', 'Erledigt – Auftrag abschließen']],

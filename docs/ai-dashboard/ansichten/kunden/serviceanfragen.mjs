@@ -102,6 +102,34 @@ function zeileHtml(e) {
   </div>`;
 }
 
+/**
+ * Naechster Stand mit einem Klick (Anfrage aus dem To-do auf "Heute" geoeffnet). Vorher ging jeder
+ * Wechsel ueber "Bearbeiten" -> Auswahlfeld -> Speichern; vier von fuenf Anfragen standen am
+ * 24.10. seit ihrer Uebernahme aus dem Postfach (16.10.) unveraendert auf "Neu".
+ */
+function statusKnoepfe(e) {
+  if (istNurLesend() || !serviceOffen(e)) return '';
+  const weiter = STATUS.slice(STATUS.indexOf(e.status) + 1);
+  return `<div class="btn-row sa-status" role="group" aria-label="Neuer Stand von ${esc(e.id)}">${weiter.map((st, i) => `<button type="button" class="btn btn-sm${i === 0 ? ' btn-primary' : ''}" data-sa-status="${esc(st)}" data-sa-id="${esc(e.id)}">${esc(STATUS_LABEL[st])}</button>`).join('')}</div>`;
+}
+
+async function setzeStatus(knopf) {
+  const { saId: id, saStatus: status } = knopf.dataset;
+  knopf.closest('.sa-status')?.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  try {
+    const j = await orgSchreiben('/api/kunden/serviceanfragen', { id, status });
+    const liste = kunden.serviceanfragen?.eintraege;
+    const i = liste ? liste.findIndex(x => x.id === j.eintrag.id) : -1;
+    // Den Laden-Abgleich behalten; der Server schickt ihn nur beim Lesen mit.
+    if (i >= 0) liste[i] = { ...j.eintrag, laden: liste[i].laden }; else kunden.serviceanfragen = null;
+    toast(`${j.eintrag.id}: ${STATUS_LABEL[j.eintrag.status] || j.eintrag.status}`);
+    render();
+  } catch (err) {
+    toast(`Nicht gespeichert: ${err.message}`, 'crit');
+    knopf.closest('.sa-status')?.querySelectorAll('button').forEach(b => { b.disabled = false; });
+  }
+}
+
 const FILTER = {
   offen: { label: 'Offen', passt: serviceOffen },
   gewonnen: { label: 'Gewonnen', passt: e => e.status === 'gewonnen' },
@@ -121,6 +149,7 @@ export function viewKundenServiceanfragen() {
     const laden = state.capabilities.dashboards?.laden;
     return `<p><a href="#/kunden?tab=service">Alle offenen Service-Anfragen</a></p>
       ${e ? `<div class="rows">${zeileHtml(e)}</div>
+        ${statusKnoepfe(e)}
         ${!ABGESCHLOSSEN.includes(e.status) ? `<p class="small muted">Wiedervorlagen werden in der bestehenden Laden-Ansicht gepflegt. ${laden ? `<a href="${esc(laden)}" target="_blank" rel="noopener">Laden-Ansicht öffnen</a>` : ''}</p>` : ''}`
         : emptyState('Diese Anfrage wurde nicht gefunden.', 'Zur offenen Liste wechseln und den aktuellen Stand prüfen.')}`;
   }
@@ -226,9 +255,11 @@ export function openServiceDialog(id = null) {
   });
 }
 
-/** Klicks im Reiter: neue Anfrage, Bearbeiten (Knopf oder Zeile). Telefon- und Mail-Links bleiben Links. */
+/** Klicks im Reiter: neue Anfrage, Statusknopf, Bearbeiten (Knopf oder Zeile). Telefon- und Mail-Links bleiben Links. */
 export function serviceKlick(e) {
   if (e.target.closest('[data-sa-neu]')) { e.preventDefault(); openServiceDialog(); return true; }
+  const st = e.target.closest('[data-sa-status]');
+  if (st) { e.preventDefault(); if (!istNurLesend() && !st.disabled) void setzeStatus(st); return true; }
   const zeile = e.target.closest('[data-sa-bearbeiten]');
   if (!zeile || e.target.closest('a')) return false;
   if (istNurLesend()) return true;

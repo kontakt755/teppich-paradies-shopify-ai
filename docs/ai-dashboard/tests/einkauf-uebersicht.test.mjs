@@ -59,4 +59,11 @@ test('musterSchritt: je Kunde ein gemeinsamer Schritt statt Klick je Muster (Inn
   // Schon raus oder Ware: nichts zu tun.
   assert.equal(musterSchritt([m('A')], stand({ A: 'raus' })), null);
   assert.equal(musterSchritt([{ orderId: 'O', lineItemId: 'W' }], stand({ W: 'bestellt' })), null);
+  // Direkt vom Lieferanten zum Kunden: kein "angekommen", sondern "raus" fuer alle bestellten.
+  const direkt = p => p.lineItemId !== 'C';
+  const s3 = musterSchritt(drei.slice(0, 2), stand({ A: 'bestellt', B: 'bestellt' }), { direktVon: direkt });
+  assert.equal(s3.schritt, 'direkt');
+  assert.deepEqual(s3.positionen.map(p => p.lineItemId), ['A', 'B']);
+  // Eins davon kommt doch zu uns: zuerst dessen "angekommen".
+  assert.deepEqual(musterSchritt(drei, stand({ A: 'bestellt', B: 'bestellt', C: 'bestellt' }), { direktVon: direkt }).positionen.map(p => p.lineItemId), ['C']);
 });

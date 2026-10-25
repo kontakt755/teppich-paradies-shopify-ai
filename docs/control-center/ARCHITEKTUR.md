@@ -1244,6 +1244,15 @@ Fulfillment Orders mit offener Menge. `dashboard:pruefen` startet seine Instanz 
 ohne Shopify-Zugang (`SHOPIFY_*` entfernt, `TP_ENV_LOCAL` ins Leere) – ein Klick auf „raus“ in der Kopie bucht
 nie eine echte Sendung.
 
+**Offene Fehlmenge im Dialog (24.10.2026, #1680).** Der Dialog prüft vor dem Anzeigen je offenem Artikel
+`darfWeiter(beschaffungsStand(…), 'raus')` – dieselbe Regel wie der Server (Abschnitt 18). Gesperrte Artikel
+stehen nicht unter den Häkchen, sondern in einem Hinweis „Noch nicht versandbereit“ bzw. „Nicht alles ist
+versandbereit“ mit dem Stand („3 von 4 lfm verwendbar · 1 lfm fehlen“) und dem Knopf „Wareneingang ergänzen…“
+(öffnet den Mengendialog aus Abschnitt 18). Ist nichts versandbereit, gibt es keinen Buchen-Knopf. Anlass:
+am 19.10. lehnte der Server „raus“ dreimal in 14 Sekunden mit 409 ab, weil der Dialog denselben Knopf weiter
+anbot. Fehlt die Bestellmenge im Browser, sperrt der Dialog nichts auf Verdacht; der Server bleibt die Sperre.
+Lehnt der Server trotzdem ab, bleibt der Grund im Dialog stehen (nicht nur als Toast).
+
 ## 18. Bestätigte Beschaffung und Arbeitsübernahme (#1206)
 
 `auftragsstatus.json` bleibt die einzige lokale Positionsablage. Additiv je Position:
@@ -1254,6 +1263,9 @@ Schreiben statt als leerer Bestand zu gelten. `POST /api/einkauf/auftragsstatus`
 validiert die Position am vorhandenen Bestellmodell und nimmt Soll/Einheit vom Server; Mengen sind
 kumulative menschliche Bestätigungen. Restmenge > 0 bleibt bestellt und sperrt geliefert/raus/erledigt,
 auch über den Sammelschritt. Neue Zustände ändern keine Shopify-Mengen/Preise/Varianten.
+Seit 24.10. (#1680) zeigt der Mengendialog bei einer Restmenge „Noch offen: …“ mit dem Hinweis, die neue
+Gesamtmenge einzutragen, und die Rückmeldung nach einer Teilbestätigung nennt die Fehlmenge und dass die
+Position offen bleibt (vorher klang „Liefertermin / Wareneingang bestätigt.“ nach Abschluss).
 
 **Maßanfertigung (#1267).** Ein erkannter Maßteppich wird nur bei endlicher, positiver Breite und
 Länge als ein Stück im Fertigmaß bestellt. Fehlende, unlesbare, null oder negative Maße bleiben
@@ -1325,6 +1337,13 @@ Rein lesend, für alle Rollen (auch „lesen“): `ansichten/bildrechte.mjs`, En
 
 
 ## 20. Kunden › „Service-Anfragen“ (seit 2026-10-16, #1361, Werkbank w-030)
+
+**Stand mit einem Klick (24.10., #1680):** Die Einzelansicht einer offenen Anfrage (`anfrage=S-…`, Ziel von
+„Anfrage öffnen“ auf „Heute“) zeigt die folgenden Stände als Knöpfe (von „Neu“: Kontaktiert · Termin · Angebot ·
+Gewonnen · Verloren; der nächste ist die Hauptaktion). Ein Klick schreibt nur `{id, status}` über den
+bestehenden `POST /api/kunden/serviceanfragen` (Teiländerung, Verlaufseintrag wie im Dialog). Vorher ging jeder
+Wechsel über „Bearbeiten“ → Auswahlfeld → „Speichern“; am 24.10. standen vier von fünf Anfragen seit ihrer
+Übernahme aus dem Postfach (16.10.) unverändert auf „Neu“. Ob sie anderswo bearbeitet wurden, ist offen.
 
 **Offene Folgearbeit (23.10., #1631):** „Heute“ und der Kundenzaehler behalten neben neuen auch
 kontaktierte Anfragen, Termine und Angebote, bis die Anfrage gewonnen/verloren ist. Der vorhandene
@@ -2140,3 +2159,25 @@ Voraussetzungen: gueltiger Export, hoechstens 20 Minuten alt, offen und bezahlt 
 Vor SMTP wird der Versuch dauerhaft in `muster-bestellung/versand.json` reserviert und die Position als von der Automatik uebernommen gesperrt. Eine Prozesssperre schuetzt parallele Laeufe. Erst SMTP-Annahme setzt die vorhandenen Positionen auf Bestellt; Statusnachtrag nach Abbruch sendet nie erneut. Unklarer SMTP-Ausgang bleibt sichtbar und wird nie blind wiederholt. Nach Postfachkontrolle kann der Inhaber die bestehende Arbeitsuebernahme bewusst uebernehmen. Ein Wiedereroeffnen erzeugt keinen zweiten Versand. Aenderungen an Menge oder Artikel nach Versand werden angezeigt. Versandjournal und Konfiguration gehoeren zur Arbeitsstand-Erkennung.
 
 Kunden → Bestellungen zeigt ohne Aufklappen: Muster bestellt, Zeitpunkt, Artikel/Farbe/Menge, Empfaenger und Lieferziel; daneben getrennte Klaerfaelle. Mailbestellung bestaetigt weder physischen Eingang noch Kundenversand. Keine Shopify-Schreibwirkung.
+
+## Muster direkt vom Lieferanten an den Kunden (24.10.2026, #1680)
+
+Wählt jemand in der Bestellmail für Muster das Lieferziel „Kunden“ (Regel des Inhabers vom 15.10. für
+Herstellermuster; seit 23.10. stehen die Stammdaten und die Musterautomatik bei allen Lieferanten auf „Laden“),
+speichert „Als bestellt markieren“ an den Positionen `ueber: 'kunde'` (`UEBER_WERTE` in
+`operations/lib/auftragsstatus.mjs`, neben `'kettler'` für Ware). Die Musterautomatik setzt denselben Vermerk,
+falls ihre Freigabe einmal `lieferziel: "kunde"` nennt; eine Mail an den Laden nimmt ihn zurück.
+
+Tragen alle Muster eines Auftrags den Vermerk, entfällt in der Zeitleiste „Muster bei uns angekommen“
+(`zeitleiste()`, `direktversand: true` wie bei Ware im Streckengeschäft). Nächster Schritt: „Lieferant schickt
+die Muster direkt an den Kunden“ (wartet, ab 7 Tagen nachhaken, ab 14 Problem) mit „Ist an den Kunden raus…“ →
+Versanddialog (Abschnitt 17) → Shopify-Buchung, danach Nachfassen wie gewohnt (Abschnitt 23). Der erledigte
+Schritt heisst „Vom Lieferanten direkt an den Kunden verschickt“. Im Einkauf (Bestellungen, Lieferanten,
+Ablauf) ersetzt derselbe Knopf „Alle N angekommen“; die Position zeigt „Bestellt · Lieferant schickt direkt
+an den Kunden“.
+
+Vorher kannte nur die Bestellmail das Ziel: solche Aufträge warteten auf „bei uns angekommen“, wurden nach
+14 Tagen als Problem gemeldet und bekamen weder Shopify-Versand noch Nachfassen. Alte Aufträge ohne Vermerk
+werden nicht umgeschrieben (welches Ziel die Mail damals hatte, ist nicht gespeichert). Wer weiss, dass sie
+direkt gingen, nimmt „Etwas anderes ist passiert …“ → „An den Kunden verschickt – von uns oder direkt vom
+Lieferanten“.
