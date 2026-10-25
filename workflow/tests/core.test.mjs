@@ -7,6 +7,7 @@ import {
   APPROVAL_TEXT, GATE_REMEDIATION, REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPreviewHttp, assertPrGate, assertScratchGate, commandName, compareThemeMaps, createDryRunSummary,
   deriveWorkflowState, fileSha256, findingsAreClear, parseThemeList, previewPushArgs, runValidation, selectThemeTargets, verifyLocalEvidence, verifyPreviewPayload,
   remediationFor, verifyPreviewSnapshot, verifySalesReport,
+  vergleicheThemeEinstellungen,
 } from '../core.mjs';
 import { targetUrl } from '../../qa/target-url.mjs';
 
@@ -366,4 +367,25 @@ test('Preview-Lauf prueft die URL ueber assertPreviewHttp, nicht per rohem fetch
   assert.match(cli, /await assertPreviewHttp\(previewUrl,/);
   assert.doesNotMatch(cli, /fetch\(previewUrl/);
   assert.match(cli, /previewHttpAttempts: previewHttp\.attempts/);
+});
+
+test('Theme-Einstellungen: Kommentarkopf und Schluesselreihenfolge zaehlen nicht, Inhalte schon', () => {
+  const kopf = '/*\n * IMPORTANT: The contents of this file are auto-generated.\n */\n';
+  const live = kopf + JSON.stringify({ current: { farbe: '#fff', sections: { a: { type: 'x', settings: { b: 1, c: 2 } } } } });
+  const gleich = JSON.stringify({ current: { sections: { a: { settings: { c: 2, b: 1 }, type: 'x' } }, farbe: '#fff' } });
+  assert.deepEqual(vergleicheThemeEinstellungen(live, gleich), { gleich: true, abweichend: [] });
+  const anders = JSON.stringify({ current: { farbe: '#000', sections: { a: { type: 'x', settings: { b: 1, c: 2 } } }, neu: true } });
+  assert.deepEqual(vergleicheThemeEinstellungen(live, anders), { gleich: false, abweichend: ['farbe', 'neu'] });
+});
+
+test('Theme-Einstellungen: Preset-Name statt Objekt in current wird verglichen', () => {
+  assert.equal(vergleicheThemeEinstellungen('{"current":"Default"}', '{"current":"Default"}').gleich, true);
+  assert.equal(vergleicheThemeEinstellungen('{"current":"Default"}', '{"current":"Dark"}').gleich, false);
+});
+
+test('Doctor meldet abweichende Theme-Einstellungen nur und gleicht nie an', () => {
+  const cli = fs.readFileSync(new URL('../cli.mjs', import.meta.url), 'utf8');
+  const block = cli.slice(cli.indexOf('Theme-Einstellungen von Live und Preview gleich?'), cli.indexOf("'Theme-Einstellungen von Live und Preview stimmen ueberein'"));
+  assert.match(block, /'--only', 'config\/settings_data\.json'/);
+  assert.doesNotMatch(block, /'push'/);
 });

@@ -459,6 +459,27 @@ export function deriveWorkflowState({ branch, head, originMain, clean, latest })
   return { ...base, status: 'VALIDATED_MAIN', nextAction: 'Preview separat vorbereiten; Human Approval vor Preview und erneut vor Live erforderlich.' };
 }
 
+// Theme-Einstellungen (config/settings_data.json) zweier Themes vergleichen.
+// Die Deploy-Kette pusht diese Datei nie (--ignore) und wechselt bei jedem
+// Livegang das Theme: was im Admin nur am Live-Theme eingestellt wurde, ist
+// nach dem naechsten Wechsel weg (docs/lessons/settings-data-wechsel.md).
+// Verglichen wird der Inhalt, nicht Schreibweise, Kommentarkopf oder Reihenfolge.
+export function vergleicheThemeEinstellungen(liveText, previewText) {
+  const lesen = (text) => JSON.parse(String(text).replace(/^\uFEFF?\s*\/\*[\s\S]*?\*\//, ''));
+  const stabil = (wert) => {
+    if (Array.isArray(wert)) return `[${wert.map(stabil).join(',')}]`;
+    if (wert && typeof wert === 'object') return `{${Object.keys(wert).sort().map((k) => `${JSON.stringify(k)}:${stabil(wert[k])}`).join(',')}}`;
+    return JSON.stringify(wert);
+  };
+  const live = lesen(liveText);
+  const preview = lesen(previewText);
+  const a = live?.current && typeof live.current === 'object' ? live.current : { current: live?.current };
+  const b = preview?.current && typeof preview.current === 'object' ? preview.current : { current: preview?.current };
+  const abweichend = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()
+    .filter((schluessel) => stabil(a[schluessel]) !== stabil(b[schluessel]));
+  return { gleich: abweichend.length === 0, abweichend };
+}
+
 export function fileSha256(filePath) {
   if (!fs.existsSync(filePath)) throw new WorkflowGateError(`Erwartete Datei fehlt: ${path.basename(filePath)}`, 'PREVIEW_SETTINGS');
   return createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');

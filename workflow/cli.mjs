@@ -4,7 +4,7 @@ import process from 'node:process';
 import { createHash } from 'node:crypto';
 import {
   APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate, remediationFor,
-  commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
+  commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, vergleicheThemeEinstellungen, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
   assertPreviewHttp, previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
 import { acquireWorktreeLock, releaseOnProcessExit } from './worktree-lock.mjs';
@@ -151,9 +151,10 @@ function doctor() {
   // im Repository gepflegt wird.
   if (cliDa) {
     let bestand = null;
+    let eingetragen = null;
     try {
       const ids = new Set(themeList(String(args.store ?? DEFAULT_STORE)).map((t) => String(t.id)));
-      const eingetragen = JSON.parse(fs.readFileSync(path.join(root, 'domains/shopify/live-theme.json'), 'utf8'));
+      eingetragen = JSON.parse(fs.readFileSync(path.join(root, 'domains/shopify/live-theme.json'), 'utf8'));
       bestand = ['live', 'preview', 'fallback']
         .map((rolle) => ({ rolle, id: String(eingetragen?.[rolle]?.themeId ?? '') }))
         .filter((e) => e.id && !ids.has(e.id));
@@ -167,6 +168,39 @@ function doctor() {
         : `Fehlt in der Admin API: ${bestand.map((e) => `${e.rolle} ${e.id}`).join(', ')}. `
           + 'Ein geloeschtes Theme laesst sich nicht wiederherstellen; Eintrag in '
           + 'domains/shopify/live-theme.json unter retired ausbuchen und Ersatz anlegen.');
+
+    // Theme-Einstellungen von Live und Preview gleich? Die Kette pusht
+    // settings_data.json nie und wechselt beim Livegang das Theme - eine
+    // Admin-Aenderung nur am Live-Theme waere danach weg. Nur melden, nie
+    // angleichen: welche Fassung gilt, entscheidet ein Mensch.
+    // Lesson: docs/lessons/settings-data-wechsel.md
+    if (Array.isArray(bestand) && bestand.length === 0) {
+      const store = String(args.store ?? DEFAULT_STORE);
+      const tmp = createPreviewTempDir();
+      let ergebnis = null;
+      try {
+        const texte = {};
+        for (const rolle of ['live', 'preview']) {
+          const ziel = path.join(tmp, rolle);
+          fs.mkdirSync(ziel, { recursive: true });
+          const pull = run(commandName('shopify'), ['theme', 'pull', '--store', store, '--theme', String(eingetragen[rolle].themeId), '--only', 'config/settings_data.json', '--path', ziel], { timeoutMs: 2 * 60_000 });
+          if (pull.exitCode !== 0) throw new Error(`pull ${rolle}`);
+          texte[rolle] = fs.readFileSync(path.join(ziel, 'config/settings_data.json'), 'utf8');
+        }
+        ergebnis = vergleicheThemeEinstellungen(texte.live, texte.preview);
+      } catch {
+        ergebnis = null;
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+      add(ergebnis?.gleich === true,
+        'Theme-Einstellungen von Live und Preview stimmen ueberein',
+        ergebnis === null
+          ? 'settings_data.json liess sich nicht von beiden Themes holen - Netz und Shopify-Login pruefen.'
+          : `Abweichende Einstellungen: ${ergebnis.abweichend.slice(0, 12).join(', ')}${ergebnis.abweichend.length > 12 ? ' …' : ''}. `
+            + 'Beim Livegang wird das Preview-Theme mit seinen Einstellungen veroeffentlicht. '
+            + 'Vorher klaeren, welche Fassung gilt (docs/lessons/settings-data-wechsel.md); nicht automatisch angleichen.');
+    }
   }
 
   const failed = checks.filter(check => !check.ok);
