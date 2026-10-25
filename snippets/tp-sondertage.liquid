@@ -1,16 +1,17 @@
 {%- doc -%}
-  Feiertage, an denen das Fachgeschaeft geschlossen ist (Brandenburg: an
-  Feiertagen kein Ladenverkauf). Liste nach Angabe des Inhabers, Stand
-  2026-10-22: 31.10., 25.12., 26.12., 01.01. Fuer 24.12. und 31.12. fehlen
-  noch die Uhrzeiten - erst eintragen, wenn sie feststehen.
-  Vergangene Tage fallen von selbst heraus; die Liste jaehrlich fortschreiben.
+  Sonderoeffnungszeiten des Fachgeschaefts, gleich wie im Google-
+  Unternehmensprofil (dort am 2026-10-25 abgelesen): geschlossen am 31.10.,
+  25.12., 26.12. und 01.01., verkuerzt 8:30-12:00 am 24.12. und 31.12.
+  Format je Eintrag: Datum|Name|oeffnet|schliesst (00:00|00:00 = geschlossen).
+  Vergangene Tage fallen von selbst heraus; die Liste jaehrlich fortschreiben
+  und mit dem Google-Profil abgleichen.
 
   @param {string} ausgabe - 'schema': Eintraege fuer openingHoursSpecification,
     jeder mit fuehrendem Komma (an die regulaeren Zeiten anhaengen);
-    'hinweis': ein Satz, wenn ein Schliesstag in den naechsten 7 Tagen liegt.
+    'hinweis': ein Satz, wenn ein Sondertag in den naechsten 7 Tagen liegt.
 {%- enddoc -%}
 {%- liquid
-  assign tpst_liste = '2026-10-31|Reformationstag,2026-12-25|1. Weihnachtsfeiertag,2026-12-26|2. Weihnachtsfeiertag,2027-01-01|Neujahr' | split: ','
+  assign tpst_liste = '2026-10-31|Reformationstag|00:00|00:00,2026-12-24|Heiligabend|08:30|12:00,2026-12-25|1. Weihnachtsfeiertag|00:00|00:00,2026-12-26|2. Weihnachtsfeiertag|00:00|00:00,2026-12-31|Silvester|08:30|12:00,2027-01-01|Neujahr|00:00|00:00' | split: ','
   assign tpst_jetzt = 'now' | date: '%s' | plus: 0
   assign tpst_bald = tpst_jetzt | plus: 604800
   assign tpst_wochentage = 'Sonntag,Montag,Dienstag,Mittwoch,Donnerstag,Freitag,Samstag' | split: ','
@@ -24,10 +25,14 @@
   -%}
   {%- if tpst_ende > tpst_jetzt -%}
     {%- if ausgabe == 'schema' -%}
-      ,{ "@type": "OpeningHoursSpecification", "validFrom": {{ tpst_tag | json }}, "validThrough": {{ tpst_tag | json }}, "opens": "00:00", "closes": "00:00" }
+      ,{ "@type": "OpeningHoursSpecification", "validFrom": {{ tpst_tag | json }}, "validThrough": {{ tpst_tag | json }}, "opens": {{ tpst_teile[2] | json }}, "closes": {{ tpst_teile[3] | json }} }
     {%- elsif ausgabe == 'hinweis' and tpst_beginn <= tpst_bald -%}
       {%- assign tpst_wt = tpst_tag | date: '%w' | plus: 0 -%}
-      <p class="tp-sondertag" role="note">Am {{ tpst_wochentage[tpst_wt] }}, {{ tpst_tag | date: '%d.%m.' }} ({{ tpst_teile[1] }}), ist unser Fachgeschäft geschlossen.</p>
+      {%- if tpst_teile[2] == '00:00' and tpst_teile[3] == '00:00' -%}
+        <p class="tp-sondertag" role="note">Am {{ tpst_wochentage[tpst_wt] }}, {{ tpst_tag | date: '%d.%m.' }} ({{ tpst_teile[1] }}), ist unser Fachgeschäft geschlossen.</p>
+      {%- else -%}
+        <p class="tp-sondertag" role="note">Am {{ tpst_wochentage[tpst_wt] }}, {{ tpst_tag | date: '%d.%m.' }} ({{ tpst_teile[1] }}), ist unser Fachgeschäft nur von {{ tpst_teile[2] | remove_first: '0' }} bis {{ tpst_teile[3] }} Uhr geöffnet.</p>
+      {%- endif -%}
       {%- break -%}
     {%- endif -%}
   {%- endif -%}
