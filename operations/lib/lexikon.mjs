@@ -489,7 +489,48 @@ export function aufbereiten(exportDaten, opt = {}) {
     });
   }
 
+  gleicherDekorVerknuepfen(ergebnis);
+
   return { erstellt: jetzt.toISOString(), anzahl: ergebnis.length, produkte: ergebnis };
+}
+
+// -- Gleicher Dekor in anderer Vinyl-Art -------------------------------
+// Fuer das Muster-Etikett ("Auch als Klickvinyl", Inhaber 2026-10-20). Belegt ist das nur,
+// wenn drei Dinge zusammenkommen: derselbe Shop-Name vor dem Gedankenstrich (Serie und Farbe),
+// derselbe Lieferant und eine gemeinsame Dekornummer in dessen Artikel- oder Farbnummer
+// ("5052" in X-5052-03 und X-RCL5052-03). Ein gleicher Name allein reicht nicht - zwei
+// Linien koennen dieselbe Farbbezeichnung fuer verschiedene Dekore tragen.
+const DEKOR_NUMMER = /\d{3,}/g;
+
+function dekorKandidat(p) {
+  if (String(p.status ?? '').toUpperCase() !== 'ACTIVE' || leer(p.onlineStoreUrl) || String(p.handle ?? '').startsWith('muster-')) return null;
+  const arten = String(p.eigenschaften?.arten ?? '').split(/\s*,\s*/).filter(Boolean);
+  if (arten.length !== 1 || !/vinyl/i.test(arten[0])) return null;
+  const name = normalisieren(String(p.titel ?? '').split(/\s+[–—-]\s+/)[0]).replace(/\s+/g, ' ').trim();
+  const echte = p.varianten.filter((v) => !v.wunschmass && !skuIstMuster(v.sku));
+  const lieferanten = new Set(echte.map((v) => text(v.einkauf?.lieferant)).filter(Boolean));
+  if (!name || lieferanten.size !== 1) return null;
+  const nummern = new Set(echte.flatMap((v) => [v.einkauf?.artikelnummer, v.einkauf?.farbnummer])
+    .flatMap((w) => String(w ?? '').match(DEKOR_NUMMER) ?? []));
+  return nummern.size ? { produkt: p, art: arten[0], schluessel: `${[...lieferanten][0]}|${name}`, nummern } : null;
+}
+
+/** Setzt `gleicherDekor: [{art, handle}]` an Produkten mit belegtem Gegenstueck; sonst fehlt das Feld. */
+export function gleicherDekorVerknuepfen(produkte) {
+  const gruppen = new Map();
+  for (const p of produkte) {
+    const k = dekorKandidat(p);
+    if (k) gruppen.set(k.schluessel, [...(gruppen.get(k.schluessel) ?? []), k]);
+  }
+  for (const gruppe of gruppen.values()) {
+    for (const k of gruppe) {
+      const andere = gruppe.filter((o) => o.art.toLowerCase() !== k.art.toLowerCase() && [...o.nummern].some((n) => k.nummern.has(n)));
+      if (andere.length) {
+        k.produkt.gleicherDekor = andere.map((o) => ({ art: o.art, handle: o.produkt.handle }))
+          .sort((a, b) => a.art.localeCompare(b.art, 'de') || a.handle.localeCompare(b.handle));
+      }
+    }
+  }
 }
 
 // -- Suche ------------------------------------------------------------

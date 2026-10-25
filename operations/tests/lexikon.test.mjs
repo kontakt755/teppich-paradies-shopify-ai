@@ -611,3 +611,39 @@ test('Variantenbild: nur das Bild genau dieser Farbe, sonst kein Feld', async ()
   const { BULK_QUERY } = await import('../scripts/lexikon-export.mjs');
   assert.match(BULK_QUERY, /availableForSale\s+image \{ url \}/);
 });
+
+test('gleicherDekor: gleicher Name, gleicher Lieferant und gemeinsame Dekornummer belegen die andere Vinyl-Art', () => {
+  // Erfundene Daten; nur die Felder, die die Zuordnung braucht.
+  const vinyl = ({ handle, title, art, lieferant = 'D', artikelnummer, status = 'ACTIVE', onlineStoreUrl = `https://shop.example/products/${handle}` }) => ({
+    id: `gid://shopify/Product/${handle.length}`, handle, title, status, productType: art, onlineStoreUrl,
+    metafields: [{ namespace: 'custom', key: 'arten', value: [{ name: art }] }],
+    variants: [{
+      id: `gid://shopify/ProductVariant/${handle.length}`, title: 'Default Title', sku: artikelnummer, price: '40.00',
+      metafields: [
+        { namespace: 'einkauf', key: 'lieferant', value: { kuerzel: lieferant } },
+        { namespace: 'einkauf', key: 'artikelnummer', value: artikelnummer },
+      ],
+    }],
+  });
+  const modell = aufbereiten({ produkte: [
+    vinyl({ handle: 'testeiche-klebe', title: 'Testmarke Testeiche – Klebevinyl 2,5mm', art: 'Klebevinyl', artikelnummer: 'X-5052-03' }),
+    vinyl({ handle: 'testeiche-klick', title: 'Testmarke Testeiche – Klickvinyl 5mm', art: 'Klickvinyl', artikelnummer: 'X-RCL5052-03' }),
+    // Gleicher Name, aber andere Dekornummer: kein Beleg.
+    vinyl({ handle: 'testbuche-klebe', title: 'Testmarke Testbuche – Klebevinyl 2,5mm', art: 'Klebevinyl', artikelnummer: 'X-6001-03' }),
+    vinyl({ handle: 'testbuche-klick', title: 'Testmarke Testbuche – Klickvinyl 5mm', art: 'Klickvinyl', artikelnummer: 'X-RCL7002-03' }),
+    // Gleicher Name und Nummer, aber ein anderer Lieferant: kein Beleg.
+    vinyl({ handle: 'testahorn-klebe', title: 'Testahorn – Klebevinyl', art: 'Klebevinyl', artikelnummer: 'X-8100', lieferant: 'A' }),
+    vinyl({ handle: 'testahorn-klick', title: 'Testahorn – Klickvinyl', art: 'Klickvinyl', artikelnummer: 'Y-8100', lieferant: 'B' }),
+    // Gleiche Art in zwei Staerken ist keine andere Ausfuehrung.
+    vinyl({ handle: 'testlinde-klebe-2', title: 'Testlinde – Klebevinyl 2mm', art: 'Klebevinyl', artikelnummer: 'L-9100-2' }),
+    vinyl({ handle: 'testlinde-klebe-25', title: 'Testlinde – Klebevinyl 2,5mm', art: 'Klebevinyl', artikelnummer: 'L-9100-25' }),
+    // Entwurf zaehlt nicht als "im Shop".
+    vinyl({ handle: 'testeiche-rolle', title: 'Testmarke Testeiche – Vinyl von der Rolle', art: 'Vinyl von der Rolle', artikelnummer: 'R-5052', status: 'DRAFT' }),
+  ] }, { jetzt: JETZT });
+  const je = new Map(modell.produkte.map(p => [p.handle, p]));
+  assert.deepEqual(je.get('testeiche-klebe').gleicherDekor, [{ art: 'Klickvinyl', handle: 'testeiche-klick' }]);
+  assert.deepEqual(je.get('testeiche-klick').gleicherDekor, [{ art: 'Klebevinyl', handle: 'testeiche-klebe' }]);
+  for (const h of ['testbuche-klebe', 'testbuche-klick', 'testahorn-klebe', 'testahorn-klick', 'testlinde-klebe-2', 'testlinde-klebe-25', 'testeiche-rolle']) {
+    assert.equal(Object.hasOwn(je.get(h), 'gleicherDekor'), false, h);
+  }
+});

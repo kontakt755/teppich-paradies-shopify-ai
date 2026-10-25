@@ -2,6 +2,24 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-25 · Musteretiketten: Art bei Vinyl von der Rolle, „Auch als“ bei gleichem Dekor (#1682)
+
+- **Geaendert:** Der Lexikon-Export setzt `gleicherDekor` an Vinyl-Produkten, deren Dekor belegt auch in
+  einer anderen Vinyl-Art im Shop ist (gleicher Shop-Name vor dem Gedankenstrich, gleicher Lieferant,
+  gemeinsame Dekornummer in dessen Artikel- oder Farbnummer). Das Muster-Etikett zeigt darunter „Auch als
+  Klickvinyl“ bzw. „Klebevinyl“. Vinyl von der Rolle bekommt die Zeile „Art“ (bisher nur Paketware).
+  Wunsch des Inhabers vom 20.10.
+- **Getestet:** neue Faelle in `lexikon.test.mjs` (Beleg und vier Gegenfaelle: andere Dekornummer,
+  anderer Lieferant, Entwurf, gleiche Art) und `muster-etiketten.test.mjs` (Technikzeilen, `andereArten`,
+  Layout mit fuenf Zeilen in 50 × 50 und 50 × 100, Rollenware). Probe auf dem echten Lexikon, nur
+  lesend: 184 Produkte (92 Paare) bekommen den Hinweis, alle bei einem Lieferanten; 186 aktive
+  Rollenvinyl bekommen die Art.
+- **Risiken:** Mit dem Hinweis sinkt die Technikschrift auf dem 50 × 50-Etikett auf 16/20 px. Lieferant A
+  bleibt ohne Hinweis, weil Klick- und Klebelinien dort verschieden heissen; die Dekornummern allein
+  belegen den gleichen Dekor nicht. Der Hinweis erscheint erst nach dem naechsten Lexikon-Export.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen und den Sync-Dienst neu starten
+  (`operations/` betroffen); danach ein Etikett am B1 drucken und ansehen.
+
 ## 2026-10-24 · Drei Ablaufreibungen: Muster direkt, Teil-Wareneingang, Service-Stand (#1680)
 
 - **Geaendert:** (1) Muster mit Lieferziel „Kunden“ tragen beim Bestellen `ueber: 'kunde'`; Zeitleiste
