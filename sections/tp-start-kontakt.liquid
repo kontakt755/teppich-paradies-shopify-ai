@@ -73,6 +73,7 @@
         {%- endif -%}
       </div>
       {%- if section.settings.zeiten != blank -%}<p class="tp-s-note">{{ section.settings.zeiten | escape }}</p>{%- endif -%}
+      {%- render 'tp-sondertage', ausgabe: 'hinweis' -%}
       {{ tp_kon_formular }}
     </div>
   </div>

@@ -3,13 +3,23 @@
   assign category_image_url = asset_filename | asset_url
 %}
 
+{%- comment -%} Kacheln sind 150-400 px breit: srcset in mehreren Breiten statt
+  immer der 1200-px-Datei (Analyse 25.10.: drei Kacheln je 95-123 KB fuer
+  153 px). Oberhalb der Falz sofort laden (Einstellung je Block). {%- endcomment -%}
 {% capture category_image %}
   <img
-    src="{{ category_image_url }}"
+    src="{{ asset_filename | asset_img_url: '800x' }}"
+    srcset="
+      {{ asset_filename | asset_img_url: '400x' }} 400w,
+      {{ asset_filename | asset_img_url: '600x' }} 600w,
+      {{ asset_filename | asset_img_url: '800x' }} 800w,
+      {{ category_image_url }} 1200w
+    "
+    sizes="(min-width: 990px) 30vw, (min-width: 750px) 33vw, 50vw"
     alt="{{ block.settings.alt | escape }}"
     width="1200"
     height="900"
-    loading="lazy"
+    {% if block.settings.sofort_laden %}loading="eager"{% else %}loading="lazy"{% endif %}
     decoding="async"
     class="tp-category-image__image"
   >
@@ -61,6 +71,12 @@
       "type": "url",
       "id": "link",
       "label": "Link"
+    },
+    {
+      "type": "checkbox",
+      "id": "sofort_laden",
+      "label": "Sofort laden (Kachel steht oben auf der Seite)",
+      "default": false
     }
   ],
   "presets": [

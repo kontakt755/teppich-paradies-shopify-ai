@@ -357,12 +357,40 @@
     die Karte - so koennen Anzeige und Auszeichnung nicht auseinanderlaufen.
   {%- endcomment -%}
   {%- if section.settings.karte_zeigen -%}
+    {%- comment -%} Preise nur auf der Seite mit der Preistabelle und aus
+      denselben Theme-Einstellungen wie die Tabelle (tp_vs_lose,
+      tp_vs_lose_mindest). Ein Wert, der keine Zahl ergibt, faellt weg. {%- endcomment -%}
+    {%- liquid
+      assign vg_lose = settings.tp_vs_lose | remove: '€/m²' | remove: '€' | remove: ' ' | replace: ',', '.' | times: 1.0
+      assign vg_mindest = settings.tp_vs_lose_mindest | remove: '€' | remove: ' ' | replace: ',', '.' | times: 1.0
+      assign vg_preise = false
+      if page.handle == 'liefer-verlegeservice' and vg_lose > 0
+        assign vg_preise = true
+      endif
+    -%}
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Service",
+        "name": "Liefer- und Verlegeservice für Teppichboden und Vinyl von der Rolle",
+        "url": {{ request.origin | append: '/pages/liefer-verlegeservice' | json }},
         "serviceType": "Bodenverlegung",
         "provider": { "@id": {{ request.origin | append: '/#organization' | json }} },
+        {%- if vg_preise %}
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Lose Verlegung",
+            "priceSpecification": { "@type": "UnitPriceSpecification", "price": {{ vg_lose | json }}, "priceCurrency": "EUR", "unitCode": "MTK", "unitText": "m²" }
+          }{% if vg_mindest > 0 %},
+          {
+            "@type": "Offer",
+            "name": "Mindestpauschale lose Verlegung je Auftrag",
+            "price": {{ vg_mindest | json }},
+            "priceCurrency": "EUR"
+          }{% endif %}
+        ],
+        {%- endif %}
         "areaServed": {
           "@type": "GeoCircle",
           "geoMidpoint": {

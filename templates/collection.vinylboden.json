@@ -137,6 +137,7 @@
                   "name": "TP Kategoriebild",
                   "settings": {
                     "asset_filename": "tp-vinyl-klickvinyl-kategorie-2026.jpg",
+                    "sofort_laden": true,
                     "alt": "Klickvinyl-Planken mit sichtbarer Klickverbindung und Schichtaufbau",
                     "link": "shopify://collections/vinylboden-klickvinyl"
                   },
@@ -207,6 +208,7 @@
                   "name": "TP Kategoriebild",
                   "settings": {
                     "asset_filename": "tp-vinyl-klebevinyl-kategorie-2026.jpg",
+                    "sofort_laden": true,
                     "alt": "Sehr dünne Klebevinyl-Planke ohne Klickverbindung auf vorbereitetem Untergrund",
                     "link": "shopify://collections/vinylboden-klebevinyl"
                   },
@@ -277,6 +279,7 @@
                   "name": "TP Kategoriebild",
                   "settings": {
                     "asset_filename": "tp-vinyl-rollenvinyl-kategorie-2026.jpg",
+                    "sofort_laden": true,
                     "alt": "Breite Rolle mit teilweise ausgerollter Vinyl-Bahnenware",
                     "link": "shopify://collections/vinylboden-vinyl-von-der-rolle"
                   },
