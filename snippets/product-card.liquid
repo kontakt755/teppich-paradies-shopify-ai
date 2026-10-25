@@ -171,8 +171,18 @@
     flex-direction: column;
   }
 
-  .product-card__link {
-    display: contents;
+  /* Kein display: contents am Kartenlink: base.css legt ihn absolut ueber die
+     ganze Karte, er ist der eine Tab-Stopp je Karte. Mit display: contents
+     hatte er keine Flaeche mehr und war per Tastatur nicht erreichbar. */
+  /* Der Link liegt unter dem Karteninhalt und der Rahmen aussen wird vom Raster
+     abgeschnitten: deshalb zeichnet der Inhalt den Fokusrahmen nach innen. */
+  .product-card__link:focus-visible {
+    outline: none;
+  }
+
+  .product-card:has(> .product-card__link:focus-visible) .product-card__content {
+    outline: 2px solid var(--tp-ink, #1d1a17);
+    outline-offset: -2px;
   }
 
   .product-card__content {

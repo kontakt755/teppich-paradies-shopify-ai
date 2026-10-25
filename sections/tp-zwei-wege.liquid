@@ -29,6 +29,10 @@
   endif
 -%}
 
+{%- comment -%} CSS der PLZ-Pruefung vor dem Markup, nicht mitten in der Spalte (Layoutsprung). {%- endcomment -%}
+{%- if section.settings.plz_pruefung -%}
+  {{ 'tp-verlegegebiet.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
 <div class="tp-zw color-{{ section.settings.color_scheme }}">
   <div
     class="tp-zw__grid tp-zw__grid--mobile-{{ section.settings.mobil_zuerst }}"
@@ -82,7 +86,6 @@
           die Section tp-verlegegebiet (assets/tp-verlegegebiet.js liest data-radius
           und data-orte vom naechsten Vorfahren mit data-radius).
         {%- endcomment -%}
-        {{ 'tp-verlegegebiet.css' | asset_url | stylesheet_tag }}
         <div
           class="tp-zw__plz"
           data-radius="{{ settings.tp_vs_radius_premium | default: 50 }}"

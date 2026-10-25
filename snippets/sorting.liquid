@@ -104,7 +104,7 @@
   {% capture accordion_children %}
     <details
       ref="details"
-      id="Sorting-{{ section_id }}"
+      id="Sorting-{{ section_id }}-{{ suffix }}"
       data-default-sort-by="{{ default_sort_by }}"
       class="facets__panel {% if should_use_select_on_mobile %} mobile:hidden {% endif %}"
       data-auto-close-details="desktop,mobile"
@@ -119,7 +119,7 @@
       >
         <span
           class="facets__label"
-          id="sort-label-{{ section_id }}"
+          id="sort-label-{{ section_id }}-{{ suffix }}"
         >
           {{- 'actions.sort' | t -}}
         </span>
@@ -136,13 +136,13 @@
         id="sorting-options-{{ section_id }}-{{ suffix }}"
         class="sorting-filter__options color-{{ settings.popover_color_scheme }}"
         role="listbox"
-        aria-labelledby="sort-label-{{ section_id }}"
+        aria-labelledby="sort-label-{{ section_id }}-{{ suffix }}"
         ref="listbox"
       >
         <div class="sorting-filter__options-inner">
           {% for option in tp_sort_options %}
             <label
-              for="sort-option-{{ option.value }}-{{ section_id }}"
+              for="sort-option-{{ option.value }}-{{ section_id }}-{{ suffix }}"
             >
               <div
                 class="sorting-filter__option"
@@ -153,7 +153,7 @@
                 <input
                   type="radio"
                   name="sort_by"
-                  id="sort-option-{{ option.value }}-{{ section_id }}"
+                  id="sort-option-{{ option.value }}-{{ section_id }}-{{ suffix }}"
                   {% if suffix != blank %}
                     form="FacetFiltersForm--{{ section_id }}-{{ suffix }}"
                   {% endif %}

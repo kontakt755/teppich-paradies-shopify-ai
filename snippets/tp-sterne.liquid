@@ -41,7 +41,7 @@
   -%}
   <{{ tst_tag }}
     class="tp-sterne tp-sterne--{{ groesse | default: 'seite' }}"
-    {% if ziel != blank %}href="{{ ziel }}"{% endif %}
+    {% if ziel != blank %}href="{{ ziel }}"{% else %}role="img"{% endif %}
     aria-label="{{ tst_label | escape }}"
   >
     <span class="tp-sterne__reihe" aria-hidden="true">

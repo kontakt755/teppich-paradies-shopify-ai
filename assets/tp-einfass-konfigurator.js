@@ -878,8 +878,10 @@
       if (l.ungueltig) fehlerListe.push('Länge mindestens ' + minCm + ' cm.');
       var eingabeFehler = fehlerListe.length > 0;
       var eingegeben = b.wert > 0 && (rund || l.wert > 0);
+      var massFehler = eingabeFehler;
       if (eingegeben && !fehlerListe.length) {
         fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL, minW: minCm, minL: minCm, maxKg: maxKg, kgProQm: kgProQm, richtung: rollenRichtung });
+        massFehler = fehlerListe.length > 0;
       }
       if (!target.available) fehlerListe.push('Diese Farbe ist derzeit nicht lieferbar.');
       // TP-005: unabhaengig von Mass-/Farbzustand sichtbar - ein ausgefallener
@@ -906,6 +908,12 @@
       // Vor der ersten Eingabe keine Meldung - ausser die Eingabe selbst ist
       // das Problem (Komma, 0, negativ) oder der Kettelservice ist ausgefallen.
       fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available && !kettelServiceFailed && !pauschaleFailed && !zuschnittFailed && !zsPreisFalsch);
+      // Screenreader: das Feld selbst meldet ein ungueltiges Mass, die Meldung
+      // haengt per aria-describedby am Feld (Liquid). Nur Massfehler, nicht
+      // Liefer- oder Servicefehler.
+      [inBreite, inLaenge].forEach(function (i) {
+        if (i) i.setAttribute('aria-invalid', massFehler && !fehler.hidden ? 'true' : 'false');
+      });
 
       // TP-005: ein ausgefallener konfigurierter Kettelservice macht die
       // Konfiguration ungueltig - stand bleibt null (unten), rechnung/cta

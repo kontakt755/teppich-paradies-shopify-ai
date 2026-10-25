@@ -305,7 +305,7 @@
           <label class="tp-ek__mass">
             <span class="tp-ek__mass-label" data-label-breite>Breite</span>
             <span class="tp-ek__eingabe">
-              <input type="number" inputmode="numeric" min="{{ tp_ek_min_cm }}" step="1" placeholder="{{ tp_ek_ph[0] }}" data-breite>
+              <input type="number" inputmode="numeric" min="{{ tp_ek_min_cm }}" step="1" placeholder="{{ tp_ek_ph[0] }}" aria-describedby="tp-ek-grenzen-{{ tp_ek_id }} tp-ek-fehler-{{ tp_ek_id }}" data-breite>
               <span>cm</span>
             </span>
           </label>
@@ -313,7 +313,7 @@
           <label class="tp-ek__mass" data-feld-laenge>
             <span class="tp-ek__mass-label">Länge</span>
             <span class="tp-ek__eingabe">
-              <input type="number" inputmode="numeric" min="{{ tp_ek_min_cm }}" step="1" placeholder="{{ tp_ek_ph[1] }}" data-laenge>
+              <input type="number" inputmode="numeric" min="{{ tp_ek_min_cm }}" step="1" placeholder="{{ tp_ek_ph[1] }}" aria-describedby="tp-ek-grenzen-{{ tp_ek_id }} tp-ek-fehler-{{ tp_ek_id }}" data-laenge>
               <span>cm</span>
             </span>
           </label>
@@ -323,8 +323,8 @@
           <div class="tp-ek__groessen" data-groessen></div>
           <p class="tp-ek__groessen-hinweis">Ein Klick übernimmt die Maße. Auch diese {{ tp_ek_ph[2] }} fertigen wir erst nach Ihrer Bestellung.</p>
         </div>
-        <p class="tp-ek__grenzen" data-grenzen></p>
-        <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
+        <p class="tp-ek__grenzen" id="tp-ek-grenzen-{{ tp_ek_id }}" data-grenzen></p>
+        <p class="tp-ek__fehler" id="tp-ek-fehler-{{ tp_ek_id }}" role="alert" data-fehler hidden></p>
         {%- unless tp_ek_wort == 'matte' -%}
           {% render 'tp-teppich-groessenhilfe' %}
         {%- endunless -%}

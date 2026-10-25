@@ -60,6 +60,10 @@
   endif
 -%}
 
+{%- comment -%} CSS vor dem Markup: stand es am Ende, malte der Browser den Einstieg ohne
+  Layout und sprang danach in zwei Spalten (Desktop CLS 0,395, Messung 25.10.). {%- endcomment -%}
+{{ 'tp-verlegeservice.css' | asset_url | stylesheet_tag }}
+{% comment %} CSS ausgelagert nach assets/tp-verlegeservice.css (Shop 2.0 M10, Performance): nicht mehr im globalen Section-Bundle. {% endcomment %}
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
   class="tp-vs section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
@@ -401,8 +405,6 @@
   </div>
 </div>
 
-{{ 'tp-verlegeservice.css' | asset_url | stylesheet_tag }}
-{% comment %} CSS ausgelagert nach assets/tp-verlegeservice.css (Shop 2.0 M10, Performance): nicht mehr im globalen Section-Bundle. {% endcomment %}
 
 {% schema %}
 {

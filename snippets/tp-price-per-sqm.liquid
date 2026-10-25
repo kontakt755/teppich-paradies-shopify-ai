@@ -34,11 +34,11 @@
 <div class="tp-price-per-sqm">
   {% if show_compare_price %}
     <div class="tp-price-per-sqm__compare">
-      {{ compare_per_sqm | money_without_currency }}&nbsp;€/m²
+      <span class="visually-hidden">statt </span>{{ compare_per_sqm | money_without_currency }}&nbsp;€/m²
     </div>
   {% endif %}
   <div class="tp-price-per-sqm__unit">
-    <span class="tp-price-per-sqm__amount">{{ price_per_sqm | money_without_currency }}</span>
+    <span class="tp-price-per-sqm__amount">{% if show_compare_price %}<span class="visually-hidden">Aktionspreis </span>{% endif %}{{ price_per_sqm | money_without_currency }}</span>
     <span class="tp-price-per-sqm__label">€/m²</span>
   </div>
   <div class="tp-price-per-sqm__package">

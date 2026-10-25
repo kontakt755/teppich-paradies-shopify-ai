@@ -547,8 +547,7 @@
             },
             {%- endif -%}
             "seller": {
-              "@type": "Organization",
-              "name": {{ shop.name | json }}
+              "@id": {{ request.origin | append: '/#organization' | json }}
             }
           }
         }

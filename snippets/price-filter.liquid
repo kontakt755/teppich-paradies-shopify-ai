@@ -79,7 +79,7 @@
             price-facet--horizontal
           {%- endif %}
         "
-        id="facet-inputs-{{ filter.param_name | escape | replace: '.', '-' }}"
+        id="facet-inputs-{{ filter.param_name | escape | replace: '.', '-' }}{% if id_prefix != blank %}-{{ id_prefix }}{% endif %}"
         data-money-format="{{ shop.money_format | strip_html }}"
         data-currency="{{ localization.country.currency.iso_code }}"
         on:change="/updatePriceFilterAndResults"

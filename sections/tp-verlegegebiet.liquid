@@ -85,6 +85,9 @@
   endif
 -%}
 
+{%- comment -%} CSS vor dem Markup, damit die Section nicht erst ohne Layout gemalt wird (Layoutsprung). {%- endcomment -%}
+{{ 'tp-verlegegebiet.css' | asset_url | stylesheet_tag }}
+{% comment %} CSS ausgelagert nach assets/tp-verlegegebiet.css (Shop 2.0 M10, Performance): nicht mehr im globalen Section-Bundle. {% endcomment %}
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
   class="tp-vg section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
@@ -380,8 +383,6 @@
 
 <script src="{{ 'tp-verlegegebiet.js' | asset_url }}" defer></script>
 
-{{ 'tp-verlegegebiet.css' | asset_url | stylesheet_tag }}
-{% comment %} CSS ausgelagert nach assets/tp-verlegegebiet.css (Shop 2.0 M10, Performance): nicht mehr im globalen Section-Bundle. {% endcomment %}
 
 {% schema %}
 {
