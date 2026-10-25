@@ -471,10 +471,17 @@ export function vergleicheThemeEinstellungen(liveText, previewText) {
     if (wert && typeof wert === 'object') return `{${Object.keys(wert).sort().map((k) => `${JSON.stringify(k)}:${stabil(wert[k])}`).join(',')}}`;
     return JSON.stringify(wert);
   };
-  const live = lesen(liveText);
-  const preview = lesen(previewText);
-  const a = live?.current && typeof live.current === 'object' ? live.current : { current: live?.current };
-  const b = preview?.current && typeof preview.current === 'object' ? preview.current : { current: preview?.current };
+  // Ein Preset-Name in current zaehlt mit dem Inhalt aus presets; platform_customizations
+  // (Theme-CSS der Plattform) steht ausserhalb von current und wird mitverglichen.
+  const aufloesen = (daten) => {
+    const name = daten?.current;
+    const werte = name && typeof name === 'object' ? name
+      : (typeof name === 'string' && daten?.presets?.[name] && typeof daten.presets[name] === 'object') ? daten.presets[name]
+        : { current: name };
+    return daten && 'platform_customizations' in daten ? { ...werte, '@platform_customizations': daten.platform_customizations } : werte;
+  };
+  const a = aufloesen(lesen(liveText));
+  const b = aufloesen(lesen(previewText));
   const abweichend = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()
     .filter((schluessel) => stabil(a[schluessel]) !== stabil(b[schluessel]));
   return { gleich: abweichend.length === 0, abweichend };

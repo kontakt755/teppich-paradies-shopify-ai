@@ -383,6 +383,20 @@ test('Theme-Einstellungen: Preset-Name statt Objekt in current wird verglichen',
   assert.equal(vergleicheThemeEinstellungen('{"current":"Default"}', '{"current":"Dark"}').gleich, false);
 });
 
+test('Theme-Einstellungen: benanntes Preset wird mit seinem Inhalt verglichen', () => {
+  const mit = (farbe) => JSON.stringify({ current: 'Default', presets: { Default: { farbe } } });
+  assert.deepEqual(vergleicheThemeEinstellungen(mit('#fff'), mit('#fff')), { gleich: true, abweichend: [] });
+  assert.deepEqual(vergleicheThemeEinstellungen(mit('#fff'), mit('#000')), { gleich: false, abweichend: ['farbe'] });
+  assert.equal(vergleicheThemeEinstellungen(mit('#fff'), JSON.stringify({ current: { farbe: '#fff' } })).gleich, true);
+});
+
+test('Theme-Einstellungen: platform_customizations wird mitverglichen', () => {
+  const mit = (css) => JSON.stringify({ current: { farbe: '#fff' }, platform_customizations: { custom_css: [css] } });
+  assert.equal(vergleicheThemeEinstellungen(mit('a{}'), mit('a{}')).gleich, true);
+  assert.deepEqual(vergleicheThemeEinstellungen(mit('a{}'), mit('b{}')), { gleich: false, abweichend: ['@platform_customizations'] });
+  assert.equal(vergleicheThemeEinstellungen(mit('a{}'), '{"current":{"farbe":"#fff"}}').gleich, false);
+});
+
 test('Doctor meldet abweichende Theme-Einstellungen nur und gleicht nie an', () => {
   const cli = fs.readFileSync(new URL('../cli.mjs', import.meta.url), 'utf8');
   const block = cli.slice(cli.indexOf('Theme-Einstellungen von Live und Preview gleich?'), cli.indexOf("'Theme-Einstellungen von Live und Preview stimmen ueberein'"));
