@@ -46,8 +46,9 @@
       "mainEntity": [
         {%- assign tpfaq_erste = true -%}
         {%- for tpfaq_block in bloecke -%}
-          {%- assign tpfaq_f = tpfaq_block.settings[tpfaq_frage_key] | strip_html | strip_newlines | strip -%}
-          {%- assign tpfaq_a = tpfaq_block.settings[tpfaq_antwort_key] | strip_html | strip_newlines | strip -%}
+          {%- comment -%} strip_html laesst Entities stehen: "&amp;" kam sonst woertlich in die Antwort {%- endcomment -%}
+          {%- assign tpfaq_f = tpfaq_block.settings[tpfaq_frage_key] | strip_html | strip_newlines | replace: '&amp;', '&' | replace: '&nbsp;', ' ' | strip -%}
+          {%- assign tpfaq_a = tpfaq_block.settings[tpfaq_antwort_key] | strip_html | strip_newlines | replace: '&amp;', '&' | replace: '&nbsp;', ' ' | strip -%}
           {%- if tpfaq_f != blank and tpfaq_a != blank -%}
             {%- unless tpfaq_erste -%},{%- endunless -%}
             {%- assign tpfaq_erste = false -%}

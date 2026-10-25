@@ -33,7 +33,14 @@ class HeaderDrawer extends Component {
   #onKeyUp = (event) => {
     if (event.key !== 'Escape') return;
 
-    this.#close(this.#getDetailsElement(event));
+    // TP: Steht der Fokus auf einer geschlossenen Kategoriezeile (eigene
+    // details aus tp-drawer-nav), schliesst Escape das ganze Menue - vorher
+    // blieb es offen, weil nur die geschlossene Zeile "geschlossen" wurde.
+    const details = this.#getDetailsElement(event);
+    const ziel = details.hasAttribute('open') ? details : this.refs.details;
+    this.#close(ziel);
+    // Fokus zurueck auf den Menue-Knopf, sonst landet er auf der Seite
+    if (ziel === this.refs.details) this.refs.details.querySelector('summary')?.focus();
   };
 
   /**

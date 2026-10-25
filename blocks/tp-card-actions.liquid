@@ -53,7 +53,7 @@
           Wunschmaß verfügbar
         {%- endif -%}
       </p>
-      <a class="tp-card-actions__konfig" href="{{ tp_ca_url }}">Jetzt konfigurieren</a>
+      <a class="tp-card-actions__konfig" href="{{ tp_ca_url }}">Jetzt konfigurieren<span class="visually-hidden">: {{ tp_ca_product.title | escape }}</span></a>
     {%- endif -%}
     {%- if tp_ca_sample_url != blank -%}
       <a
@@ -63,10 +63,11 @@
         {%- comment -%}
           Am Telefon stehen zwei Karten nebeneinander, die Zeile ist dann rund
           170 px breit. Dort bleibt "Muster"; erst ab 480 px kommt das Verb
-          dazu. Ein Wort per CSS auszublenden ist hier richtig, weil beide
-          Fassungen denselben Link meinen - Screenreader lesen die lange.
+          dazu. Das Verb ist dort nur optisch verborgen (kein display: none),
+          damit Screenreader die lange Fassung lesen; der Produktname macht die
+          24 Musterlinks einer Seite unterscheidbar.
         {%- endcomment -%}
-        Muster<span class="tp-card-actions__sample-verb">&nbsp;anfordern</span>
+        Muster<span class="tp-card-actions__sample-verb">&nbsp;anfordern</span><span class="visually-hidden">: {{ tp_ca_product.title | escape }}</span>
       </a>
     {%- endif -%}
   </div>
@@ -116,7 +117,12 @@
     }
 
     .tp-card-actions__sample-verb {
-      display: none;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
 

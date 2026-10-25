@@ -223,6 +223,8 @@
     bottom: 20px;
     left: 50%;
     opacity: 0;
+    /* Ohne visibility blieb die ausgeblendete Leiste per Tab erreichbar */
+    visibility: hidden;
     transform: translateX(-50%) translateY(calc(100% + 40px));
     z-index: calc(var(--layer-sticky) - 1); /* Below sticky header */
     display: block;
@@ -258,7 +260,7 @@
 
   @media (prefers-reduced-motion: no-preference) {
     .sticky-add-to-cart__bar {
-      transition-property: transform, opacity, display;
+      transition-property: transform, opacity, display, visibility;
       transition-duration: 0.3s;
       transition-timing-function: var(--ease-out-quad);
       transition-behavior: allow-discrete;
@@ -268,10 +270,12 @@
   .sticky-add-to-cart__bar[data-stuck='true'] {
     transform: translateX(-50%) translateY(0%);
     opacity: 1;
+    visibility: visible;
   }
 
   sticky-add-to-cart:not([data-variant-available='true']) .sticky-add-to-cart__bar {
     opacity: 0;
+    visibility: hidden;
     transform: translateX(-50%) translateY(calc(100% + 40px));
     display: none;
   }
