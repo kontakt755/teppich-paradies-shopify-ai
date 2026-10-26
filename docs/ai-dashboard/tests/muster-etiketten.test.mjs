@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ETIKETT, ETIKETT_FORMATE, MIN_SCHRIFT, QR_HINWEIS, andereArten, breitenAus, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout,
-  layoutProbleme, produktUrl, qrMindest, qrModule, serieAus, serieUndFarbe, technikZeilen, tinte, umbrechen, varianteFuer,
+  ETIKETT, ETIKETT_FORMATE, MIN_SCHRIFT, QR_HINWEIS, SCHWELLE, andereArten, breitenAus, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout,
+  layoutProbleme, produktUrl, qrMindest, qrModule, qrRaster, schwarzWeiss, serieAus, serieUndFarbe, technikZeilen, tinte, umbrechen, varianteFuer,
 } from '../lib/muster-etiketten.mjs';
 
 // Nur erfundene Daten. Messen ohne Canvas: jedes Zeichen ist gut halb so breit wie die Schriftgroesse.
@@ -188,10 +188,11 @@ test('layout Teppichboden: ohne Technik groesserer QR in der Mitte, lange Namen 
   const namen = l.texte.filter(t => t.y > l.texte[0].y && t.y < l.linien[0].y);
   assert.equal(namen.map(t => t.text).join(' '), `${e.serie} ${e.farbe}`);
   assert.ok(namen.every(t => t.y + t.groesse <= l.qr.y), 'Volltext und QR bleiben getrennt');
-  assert.ok(l.qr.groesse >= 100);
+  // Ab hier nur noch 2 Druckpunkte je Kaestchen (37 x 2 = 74 px) - mehr Flaeche ergab vorher nur Luft im Druck.
+  assert.ok(l.qr.groesse >= qrMindest(e.url), String(l.qr.groesse));
   assert.ok(Math.abs(l.qr.x + l.qr.groesse / 2 - ETIKETT.breite / 2) <= 1);
   const kurz = layout(etikett({ serie: 'Testvelours', farbe: 'Sand', sku: 'X', handle: 'x' }), mass);
-  assert.equal(kurz.qr.groesse, 160, 'QR-Code hoechstens 20 mm - der Rest bleibt Luft zwischen den Linien');
+  assert.equal(kurz.qr.groesse, 132, 'QR-Code hoechstens 20 mm, in ganzen Kaestchen (4 x 33) - der Rest bleibt Luft zwischen den Linien');
 });
 
 test('layout lange Serie und Farbe: alle vier Technikzeilen bleiben vollstaendig und ohne Ueberlappung', () => {
@@ -295,6 +296,30 @@ test('qrModule: Kantenlaenge wie qrcode-generator (Version automatisch, Stufe M)
   assert.equal(qrMindest(url(62)), 66, 'jedes Modul mindestens 2 Druckpunkte');
 });
 
+test('qrRaster: groesste Flaeche in ganzen Kaestchen, ohne URL oder Platz keine', () => {
+  const url = 'x'.repeat(84); // 37 Kaestchen
+  assert.deepEqual([140, 148, 160, 111, 110, 74, 73].map(g => qrRaster(url, g)), [111, 148, 148, 111, 74, 74, 37]);
+  assert.equal(qrRaster('', 140), 0);
+  assert.equal(qrRaster(url, 0), 0);
+});
+
+test('schwarzWeiss: jedes Pixel ganz schwarz oder ganz weiss, Grenze bei SCHWELLE', () => {
+  const px = [[0, 0, 0, 255], [SCHWELLE - 1, SCHWELLE - 1, SCHWELLE - 1, 255], [SCHWELLE, SCHWELLE, SCHWELLE, 255], [255, 255, 255, 0], [200, 30, 30, 255]];
+  const raus = [...schwarzWeiss(new Uint8ClampedArray(px.flat()))];
+  assert.deepEqual(raus, [0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 255]);
+});
+
+test('layout QR-Code: auf ganzen Kaestchen, quer buendig rechts und oben auf Hoehe der Technik', () => {
+  const e = etikettFuerPosition({ istMuster: true, farbe: 'Eiche Natur', handle: vinyl.handle }, vinyl);
+  for (const format of Object.values(ETIKETT_FORMATE)) {
+    const l = layout(e, mass, format);
+    assert.equal(l.qr.groesse % qrModule(e.url), 0, `${format.format}: ${l.qr.groesse} px`);
+  }
+  const l = layout(e, mass);
+  assert.equal(l.qr.x + l.qr.groesse, ETIKETT.breite - ETIKETT.rand, 'rechts am Rand, keine Luecke im Druck');
+  assert.equal(l.qr.y, Math.min(...technikVon(l).map(t => t.y)), 'Oberkante wie die erste Technikzeile');
+});
+
 test('tinte: Akzente ueber Grossbuchstaben und Unterlaengen werden mitgerechnet', () => {
   assert.deepEqual(tinte('Eiche', 40), { oben: 0, unten: 32 });
   assert.deepEqual(tinte('Ölbraun', 40), { oben: 6, unten: 32 });
@@ -325,7 +350,7 @@ function vollstaendigUndFrei(e, l, format) {
   const soll = worte(['www.teppich-paradies.net', e.serie, e.farbe, ...(e.sku ? ['Art.-Nr.', e.sku] : []), ...l.zeilen.flatMap(z => [z.label, z.wert]), ...hinweis]);
   assert.deepEqual(worte(l.texte).sort(), soll.sort(), 'jedes Wort ganz und genau einmal');
   assert.ok(l.texte.every(t => t.groesse >= MIN_SCHRIFT));
-  if (e.url) assert.ok(l.qr.groesse >= qrMindest(e.url));
+  if (e.url) assert.ok(l.qr.groesse >= qrMindest(e.url) && l.qr.groesse % qrModule(e.url) === 0, `QR ${l.qr.groesse} px`);
 }
 
 test('Testetikett Teppichboden mit Farbnummer auf 50 x 50 und 50 x 80: vollstaendig, nichts beruehrt sich', () => {

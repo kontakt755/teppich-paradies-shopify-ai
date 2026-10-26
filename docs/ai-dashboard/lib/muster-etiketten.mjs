@@ -75,6 +75,32 @@ export function qrModule(url) {
 /** Kleinster QR-Code, den ein Handy sicher liest: jedes Modul mindestens 2 Druckpunkte (0,25 mm). */
 export const qrMindest = url => 2 * qrModule(url);
 
+/**
+ * Groesste QR-Flaeche bis `g`, die genau auf das Kaestchenraster passt. Gezeichnet wird in ganzen Druckpunkten
+ * je Kaestchen; der Rest einer krummen Flaeche blieb frei, und der Code sass im Druck tiefer und weiter links
+ * als geplant (Testdruck Inhaber 26.10.: 140 px fuer 37 Kaestchen = 111 px Code, 29 px Luecke).
+ */
+export function qrRaster(url, g) {
+  if (!url || !(g > 0)) return 0;
+  const n = qrModule(url);
+  return Number.isFinite(n) ? Math.floor(g / n) * n : 0;
+}
+
+/**
+ * Helligkeit, unter der ein Pixel schwarz gedruckt wird. niimbluelib druckt jedes nicht ganz weisse Pixel
+ * schwarz - die grauen Kantenpixel der Schrift machten den Druck fetter als die Vorschau, kleine Woerter
+ * liefen zu (Testdruck 26.10.). Schwarz ab gut 40 % Deckung: duenne Striche bleiben ganz.
+ */
+export const SCHWELLE = 150;
+/** RGBA-Bilddaten auf reines Schwarz/Weiss setzen (veraendert `rgba`); so sehen Vorschau und Druck gleich aus. */
+export function schwarzWeiss(rgba, schwelle = SCHWELLE) {
+  for (let i = 0; i < rgba.length; i += 4) {
+    const v = (rgba[i] * 299 + rgba[i + 1] * 587 + rgba[i + 2] * 114) / 1000 < schwelle ? 0 : 255;
+    rgba[i] = v; rgba[i + 1] = v; rgba[i + 2] = v; rgba[i + 3] = 255;
+  }
+  return rgba;
+}
+
 const leer = v => v === null || v === undefined || String(v).trim() === '' || ['–', '-', 'UNGEKLAERT', 'Default Title'].includes(String(v).trim());
 const text = v => (leer(v) ? '' : String(v).trim());
 /** SKU eines Musterartikels (eigenes Musterprodukt oder Sammelprodukt "Kostenloses Muster"). */
@@ -476,7 +502,7 @@ function entwurf(e, mass, format, skala) {
     while (l > lMin && block.hoehe > platz) block = stapelSetzen(--l, spalte);
     return block;
   };
-  const spalteQuer = innen - (qrRechts ? qrRechts + px(12) : 0);
+  const spalteQuer = innen - (qrRechts ? qrRaster(e.url, qrRechts) + px(12) : 0);
   const spalteMin = hoch ? innen : spalteQuer;
   const technikMin = technik.length ? Math.min(tabelleSetzen(lMin, spalteMin)?.hoehe ?? Infinity, stapelSetzen(lMin, spalteMin).hoehe) : 0;
   const reserve = !technik.length ? qrPlatz : hoch ? technikMin + (e.url ? luft + qrPlatz : 0) : Math.max(technikMin, qrPlatz);
@@ -524,7 +550,7 @@ function entwurf(e, mass, format, skala) {
    * Oberkante der Gruppe zurueck.
    */
   const qrMitHinweis = (ueber, abstand) => {
-    const g = e.url ? Math.min(qrMax, platz - ueber - abstand) : 0;
+    const g = e.url ? qrRaster(e.url, Math.min(qrMax, platz - ueber - abstand)) : 0;
     const mitQr = g > 0 && g >= qrMin;
     const hg = Math.max(MIN_SCHRIFT, px(16));
     const hinweis = hoch && mitQr && platz - ueber - abstand - g >= 3 * luft + hg && mass(QR_HINWEIS, hg, false) <= satz;
@@ -535,7 +561,7 @@ function entwurf(e, mass, format, skala) {
     return ab;
   };
   if (technik.length) {
-    const qrGroesse = hoch ? 0 : Math.max(0, Math.min(qrRechts, platz));
+    const qrGroesse = hoch ? 0 : qrRaster(e.url, Math.min(qrRechts, platz));
     const spalte = hoch ? innen : innen - (qrGroesse ? qrGroesse + px(12) : 0);
     const technikPlatz = platz - (hoch && e.url ? luft + qrPlatz : 0);
     const block = technikSetzen(spalte, technikPlatz);
