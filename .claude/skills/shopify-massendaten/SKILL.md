@@ -1,6 +1,6 @@
 ---
 name: shopify-massendaten
-description: Viele Produkt- oder Variantenfelder in Shopify auf einmal setzen (Metafelder wie einkauf.*, custom.*, Tags, Metaobjekt-Verweise) - Plan, Rollback, Batchdateien, Schreiben ueber den MCP und Gegenprobe. Verwenden, sobald mehr als etwa 50 Werte geschrieben werden sollen, bei Lieferanten- und Einkaufsdaten, bei technischen Produktdaten, und immer bevor jemand "userErrors ist leer, passt schon" sagt.
+description: Viele Produkt- oder Variantenfelder in Shopify auf einmal setzen (Metafelder wie einkauf.*, custom.*, Tags, Metaobjekt-Verweise) - Plan, Rollback, Batchdateien, Schreiben ueber den MCP und Gegenprobe. Verwenden, sobald mehr als etwa 50 Werte geschrieben werden sollen, bei Lieferanten- und Einkaufsdaten, bei technischen Produktdaten, und immer bevor jemand "userErrors ist leer, passt schon" sagt. Enthaelt auch die haeufigsten GraphQL-Fallen der Admin-API (falsche Felder, gesperrte Mutationen) - vor jeder neuen, noch nicht erprobten Admin-Abfrage lesen.
 ---
 
 # Massendaten in Shopify schreiben
@@ -80,6 +80,32 @@ naechsten Lauf wieder jemand dieselben Sackgassen abklappert.
 - **Das Zeitfenster des Lieferanten beachten.** `robots.txt` kann
   `Crawl-delay: 120` oder feste Uhrzeiten vorgeben. Das ist kein Hindernis, das
   man umgeht, sondern eine Laufzeit, die man einplant (2.258 Seiten = 75 Stunden).
+
+## GraphQL-Fallen der Admin-API
+
+Diese Fehler kamen zwischen 12. und 26.10.2026 rund 70-mal in 38 Sitzungen vor.
+Felder nie raten, sondern vorher im Schema nachsehen. `graphql_schema` braucht
+dafuer immer `operation` (`query`, `mutation` oder `schema`) oder `type_name`;
+ohne beides lehnt es den Aufruf ab.
+
+| Falsch | Richtig |
+|---|---|
+| `product(handle: "…")` | `product` nimmt nur `id`. Per Handle: `productByIdentifier(identifier: {handle: "…"})` |
+| `collection(handle: "…")` | `collectionByIdentifier(identifier: {handle: "…"})` |
+| `productVariantUpdate` | gibt es nicht: `productVariantsBulkUpdate(productId:, variants: […])` (Preise nur mit Freigabe, AGENTS.md) |
+| `Menu.itemsCount` | gibt es nicht: `items` abfragen und zaehlen |
+| `products(sortKey: BEST_SELLING)` | `ProductSortKeys` kennt kein `BEST_SELLING`. Das gibt es nur in `collection { products(sortKey: BEST_SELLING) }` (`ProductCollectionSortKeys`) |
+
+Der Shopify-Connector lehnt diese Mutationen grundsaetzlich ab. Steht eine davon
+in einem Aufruf mit mehreren Feldern, laeuft der ganze Aufruf nicht:
+
+- `bulkOperationRunMutation`: Pakete per `graphql_mutation` schreiben (Ablauf, Schritt 7).
+- `publishableUnpublish`: Die CLI hat kein `write_publications`, ein anderer
+  Weg ueber MCP oder CLI existiert also nicht. Kanaele nur als Handgriff im Admin
+  ausschliessen (Produkt bzw. Kollektion → Vertriebskanaele), mit ausdruecklicher
+  Freigabe des Benutzers.
+- `themeFilesDelete`: Theme-Dateien nie ueber den MCP aendern oder loeschen,
+  sondern nur ueber die Deploy-Kette (Skill `deploy`).
 
 ## Danach
 
