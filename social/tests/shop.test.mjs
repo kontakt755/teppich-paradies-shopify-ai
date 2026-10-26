@@ -49,12 +49,19 @@ test('Ohne taugliches Bild, als Zubehoer oder ausverkauft: kein Anlass', () => {
   assert.equal(findeKandidaten({ produkte: [n({ variants: [{ id: 1, price: '9', available: false }] })], jetzt: JETZT }).length, 0);
 });
 
-test('Eine kuerzlich gezeigte Familie ruht; eine neue Farbe wird erkannt', () => {
-  const p = n({ options: [{ name: 'Farbe', position: 1, values: ['Grau', 'Beige', 'Gold'] }] });
+test('Eine kuerzlich gezeigte Familie ruht; eine neue Farbe wird erkannt - mit einem Bild dieser Farbe', () => {
+  const farben = ['Grau', 'Beige', 'Gold'];
+  const gold = { src: 'https://cdn.shopify.com/s/files/1/x/solenta-gold-raumbild.jpg?v=1', width: 2400, height: 1800, alt: null, variant_ids: [3] };
+  const mit = bilder => n({ options: [{ name: 'Farbe', position: 1, values: farben }], images: bilder, variants: farben.map((f, i) => ({ id: i + 1, option1: f, price: '21.21', compare_at_price: '24.95', available: true })) });
+  const p = mit([...feedProdukt().images, gold]);
   const vorZehnTagen = new Date(JETZT.getTime() - 10 * 864e5).toISOString();
   assert.equal(findeKandidaten({ produkte: [p], stand: new Map([[p.handle, { zuletzt_beworben: vorZehnTagen }]]), jetzt: JETZT }).length, 0);
   const k = findeKandidaten({ produkte: [p], stand: new Map([[p.handle, { farben: ['Grau', 'Beige'] }]]), jetzt: JETZT });
   assert.equal(k[0].art, 'produkt_farben'); assert.deepEqual(k[0].neueFarben, ['Gold']);
+  assert.match(k[0].bilder[0].src, /gold/, 'das erste Bild zeigt die neue Farbe');
+  // Ohne Bild der neuen Farbe kein Anlass "neue Farbe" (Alvento #81 zeigte Senf statt Basalt).
+  const ohne = findeKandidaten({ produkte: [mit(feedProdukt().images)], stand: new Map([[p.handle, { farben: ['Grau', 'Beige'] }]]), jetzt: JETZT });
+  assert.ok(!ohne.some(x => x.neueFarben));
 });
 
 test('Jahreszeit und Musterbestellungen heben, Auswahl bleibt gemischt', () => {

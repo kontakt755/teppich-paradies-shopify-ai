@@ -12,9 +12,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { erkenntnisse, lernstand as berechneLernstand, punkte, vereinheitliche } from './auswertung.mjs';
+import { quellBilder } from './doppelungen.mjs';
 import { medienZuBeitrag, pruefe } from './freigabe.mjs';
 import { metaBereit, metaKonfig } from './konfig.mjs';
 import { erstelleClient, veroeffentliche } from './meta.mjs';
+import { LIVE_REGELN, produktHandles, pruefeBeitragLive } from './live-pruefung.mjs';
 import { lernstandPfad, medienPfad, socialDir } from './pfade.mjs';
 import { plane } from './planer.mjs';
 import { produktReelSperren } from './produkt-reel.mjs';
@@ -68,8 +70,47 @@ export async function shopAbgleich(db, { holen = globalThis.fetch, jetzt = new D
     db.produktStandSetzen(p.handle, felder);
   }
   db.sql.exec('COMMIT');
-  db.ereignis('shop-scout', 'shop-abgleich', null, { produkte: produkte.length, kandidaten: kandidaten.length, neu: neu.length });
-  return { produkte: produkte.length, kandidaten: kandidaten.length, neu };
+  const abgleich = holeVerschwundeneZurueck(db, { produkte, stand, jetzt });
+  db.ereignis('shop-scout', 'shop-abgleich', null, { produkte: produkte.length, kandidaten: kandidaten.length, neu: neu.length, zurueck: abgleich.zurueck.length });
+  return { produkte: produkte.length, kandidaten: kandidaten.length, neu, ...abgleich };
+}
+
+const istAuslauf = p => (p.tags ?? []).some(t => String(t).toLowerCase() === 'auslauf');
+
+/**
+ * Taeglich nach dem Abgleich: Beitraege, deren Produkt der Feed nicht mehr fuehrt oder das den Tag
+ * "auslauf" traegt, gehen zurueck in die Freigabe - sofort sichtbar in der Zentrale, nicht erst beim
+ * Posten (Novaris fehlte ab 13.10., Aalborg ab 23.10.; beide waren bis November eingeplant).
+ * Liefert der Feed auffaellig weniger als zuletzt, wird nichts zurueckgeholt.
+ */
+export function holeVerschwundeneZurueck(db, { produkte, stand = db.produktStand(), jetzt = new Date(), grenzeAnteil = 0.2 }) {
+  const imFeed = new Map(produkte.map(p => [p.handle, p]));
+  const bekannt = [...stand.values()].filter(s => s.zuletzt_gesehen && jetzt.getTime() - Date.parse(s.zuletzt_gesehen) < 3 * 24 * STUNDE);
+  const fehlend = bekannt.filter(s => !imFeed.has(s.handle));
+  if (bekannt.length >= 50 && fehlend.length > bekannt.length * grenzeAnteil) {
+    return { zurueck: [], hinweis: `Produktfeed unvollständig (${fehlend.length} von ${bekannt.length} bekannten Produkten fehlen) – geplante Beiträge nicht abgeglichen.` };
+  }
+  const tag = jetzt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
+  const zurueck = [];
+  for (const b of db.beitraege({ status: [BEITRAG_STATUS.GEPLANT, BEITRAG_STATUS.FREIGABE] })) {
+    const inhalt = db.inhalt(b.inhalt_id);
+    const handles = produktHandles(inhalt);
+    // Schon zurueckgeholt und noch in der Freigabe: nicht jeden Tag ein zweites Mal. Geplant (nach dem
+    // Zurueckholen nur automatisch wieder freigegeben) holt der Abgleich ihn sichtbar zurueck.
+    if (!handles.length || (b.status === BEITRAG_STATUS.FREIGABE && db.zurueckgehalten(b.id))) continue;
+    const weg = handles.filter(h => !imFeed.has(h));
+    const auslauf = handles.filter(h => imFeed.has(h) && istAuslauf(imFeed.get(h)));
+    if (!weg.length && !auslauf.length) continue;
+    const grund = [
+      weg.length ? `nicht mehr im Shop: ${weg.slice(0, 5).join(', ')}${weg.length > 5 ? ` und ${weg.length - 5} weitere` : ''}` : null,
+      auslauf.length ? `Tag „auslauf“: ${auslauf.slice(0, 5).join(', ')}${auslauf.length > 5 ? ` und ${auslauf.length - 5} weitere` : ''}` : null,
+    ].filter(Boolean).join(' · ');
+    const text = `Shop-Abgleich ${tag}: ${grund} – neu bauen oder verwerfen.`;
+    db.beitragAendern(b.id, { status: BEITRAG_STATUS.FREIGABE, fehler: text });
+    db.ereignis('shop-scout', 'beitrag-zurueckgeholt', `beitrag:${b.id}`, { grund: text });
+    zurueck.push(b.id);
+  }
+  return { zurueck };
 }
 
 // --- Referenzen ---------------------------------------------------------------
@@ -116,15 +157,22 @@ export function ladeLernstand(dir = socialDir()) {
 
 /** Schlaegt Termine fuer alle Entwuerfe vor, die keinen (oder einen verstrichenen) haben. */
 export function planeOffene(db, { jetzt = new Date(), dir = socialDir() } = {}) {
-  const mitInhalt = b => { const i = db.inhalt(b.inhalt_id); return { id: b.id, format: b.format, typ: i.typ, quelle: i.quelle, punkte: i.punkte, erstellt: b.erstellt, geplantAm: b.geplant_am }; };
-  const entwuerfe = db.beitraege({ status: BEITRAG_STATUS.FREIGABE }).map(mitInhalt);
-  const offen = entwuerfe.filter(b => !b.geplantAm || new Date(b.geplantAm) <= jetzt);
+  const mitInhalt = b => {
+    const i = db.inhalt(b.inhalt_id);
+    // inhalt und bilder: dasselbe Quellbild kommt aus verschiedenen Inhalten hoechstens einmal in 14 Tagen.
+    return { id: b.id, format: b.format, typ: i.typ, quelle: i.quelle, punkte: i.punkte, erstellt: b.erstellt, geplantAm: b.geplant_am, inhalt: b.inhalt_id, bilder: quellBilder(b, i, db.medien(b.inhalt_id)) };
+  };
+  const roh = db.beitraege({ status: BEITRAG_STATUS.FREIGABE });
+  // Zurueckgeholtes und Gesperrtes bekommt keinen neuen Termin - das entscheidet ein Mensch.
+  const gehalten = new Set(roh.filter(b => db.zurueckgehalten(b.id)).map(b => b.id));
+  const entwuerfe = roh.map(mitInhalt);
+  const offen = entwuerfe.filter(b => (!b.geplantAm || new Date(b.geplantAm) <= jetzt) && !gehalten.has(b.id));
   // Auch was schon erschienen ist, belegt seinen Tag und zaehlt fuer die Woche -
-  // sonst plant der Planer ein zweites Angebot in dieselbe Woche.
-  const erschienen = db.veroeffentlichtSeit(new Date(jetzt.getTime() - 8 * 24 * STUNDE)).map(b => ({ ...mitInhalt(b), geplantAm: b.veroeffentlicht_am }));
+  // sonst plant der Planer ein zweites Angebot in dieselbe Woche. 14 Tage zurueck wegen der Bildruhe.
+  const erschienen = db.veroeffentlichtSeit(new Date(jetzt.getTime() - 14 * 24 * STUNDE)).map(b => ({ ...mitInhalt(b), geplantAm: b.veroeffentlicht_am }));
   const belegt = [
     ...db.beitraege({ status: [BEITRAG_STATUS.GEPLANT, BEITRAG_STATUS.IN_ARBEIT] }).map(mitInhalt),
-    ...entwuerfe.filter(b => !offen.includes(b)),
+    ...entwuerfe.filter(b => !offen.includes(b) && !gehalten.has(b.id)),
     ...erschienen,
   ];
   const plan = plane({ offen, belegt, jetzt, lernstand: ladeLernstand(dir) });
@@ -173,16 +221,20 @@ function texteFuer(beitrag) {
  *     Laeufen postet genau einer, und die Zentrale kann den Beitrag waehrenddessen
  *     nicht veraendern.
  *   - Noch einmal pruefen: eine Freigabe von gestern gilt nicht, wenn heute ein
- *     Bild Bedenken bekommen hat oder das Material verworfen wurde. Produkt-Reels
- *     zusaetzlich live gegen den Shop (Preis, Variante, keine Aktion, Preisstand <= 21 Tage).
+ *     Bild Bedenken bekommen hat oder das Material verworfen wurde, oder wenn der Beitrag
+ *     zurueckgeholt und danach nur automatisch wieder freigegeben wurde. Jeder Beitrag mit
+ *     Produkt live gegen den Shop (live-pruefung.mjs: kein 404/301, kein Auslauf, Preis im Bild =
+ *     Shop), Produkt-Reels mit ihrer eigenen Pruefung (Preis, Variante, keine Aktion, Preisstand
+ *     <= 21 Tage). Ist der Shop nicht erreichbar, wartet der Beitrag auf den naechsten Takt.
  *   - Das Ergebnis jeder Plattform wird sofort gespeichert.
  *   - Unklare Fehler (Antwort nie gesehen) werden nie automatisch wiederholt.
  *   - Hoechstens ein Feed-Beitrag je Lauf; was laenger als 36 Stunden
  *     ueberfaellig ist, geht zurueck in die Freigabe.
  */
-export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = new Date(), trocken = false, dir = socialDir(), client = null, melde = () => {}, holen = globalThis.fetch } = {}) {
+export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = new Date(), trocken = false, dir = socialDir(), client = null, melde = () => {}, holen = globalThis.fetch, shopPauseMs = LIVE_REGELN.pauseMs } = {}) {
   const meta = client ? { client, bereit: true } : clientAus(env, { trocken, protokoll: melde });
-  const bericht = { faellig: 0, veroeffentlicht: [], fehler: [], zurueck: [], uebersprungen: [], trocken };
+  const bericht = { faellig: 0, veroeffentlicht: [], fehler: [], zurueck: [], uebersprungen: [], wartet: [], trocken };
+  const shopCache = new Map();   // ein Abruf je Produkt und Lauf
 
   // Ein Lauf, der mitten im Veroeffentlichen abgebrochen ist, hinterlaesst IN_ARBEIT.
   // Ob der Beitrag erschienen ist, weiss dann nur ein Mensch.
@@ -219,15 +271,28 @@ export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = n
     // Zweite Pruefung unmittelbar vor dem Veroeffentlichen.
     const inhalt = db.inhalt(beitrag.inhalt_id);
     const { sperren } = pruefe({ beitrag, inhalt, medien: medienZuBeitrag(db, beitrag) });
-    if (inhalt.status === INHALT_STATUS.VERWORFEN) sperren.push('Das Material wurde nach der Freigabe verworfen.');
+    const gehalten = db.zurueckgehalten(beitrag.id);
+    if (gehalten) sperren.push(`Wurde zurückgeholt${gehalten.grund ? ` (${gehalten.grund})` : ''} und danach nur automatisch wieder freigegeben – freigeben muss ein Mensch.`);
+    let warten = null;
     // Produkt-Reel: der Preis steht fest im Video - stimmt er mit dem Shop von jetzt noch ueberein?
     if (inhalt.typ === 'produkt_reel' && !sperren.length) {
       const live = await produktReelSperren(inhalt, { holen, jetzt });
-      sperren.push(...live);
       // Ein falscher Preis im Video bleibt falsch: festhalten, damit die automatische Freigabe ihn nicht
-      // wieder einplant. Nur "nicht moeglich" (Shop kurz nicht erreichbar) darf beim naechsten Takt neu versuchen.
+      // wieder einplant. "Nicht moeglich" (Shop kurz nicht erreichbar) heisst nur: warten.
       const bleibend = live.filter(f => !/^Live-Prüfung nicht möglich/.test(f));
+      sperren.push(...bleibend);
+      if (!bleibend.length && live.length) warten = live.join(' · ');
       if (bleibend.length && !trocken) db.inhaltAendern(inhalt.id, { daten: { ...inhalt.daten, liveFehler: bleibend.join(' · ') } });
+    } else if (!sperren.length && produktHandles(inhalt).length) {
+      // Story, Feed, Karussell mit Produkt: noch im Shop, kein Auslauf, Preis im Bild wie im Shop?
+      const live = await pruefeBeitragLive({ beitrag, inhalt }, { holen, cache: shopCache, pauseMs: shopPauseMs });
+      sperren.push(...live.sperren.map(s => `Live-Prüfung: ${s}`));
+      warten = live.warten;
+    }
+    if (!sperren.length && warten) {
+      melde(`Beitrag ${beitrag.id} wartet: Shop nicht erreichbar (${warten})`);
+      bericht.wartet.push({ id: beitrag.id, grund: warten });
+      continue;
     }
     if (sperren.length) {
       if (!trocken) {

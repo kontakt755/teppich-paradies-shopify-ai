@@ -46,3 +46,32 @@ export function feedProdukt(extra = {}) {
     ...extra,
   };
 }
+
+/**
+ * Shop-Ersatz fuer die Live-Pruefung vor dem Posten: /products/<handle>.js und die Produktseite.
+ * Je Handle einstellbar: {status, location} (404, 301), tags, preis (Cent), farben, seite (HTML).
+ * Unbekannte Handles sind aktive Produkte ohne Besonderheiten - die Tests gehen nie ins Netz.
+ */
+export function scheinShop(produkte = {}) {
+  const aufrufe = [];
+  const antwort = (status, text, kopf = []) => ({ ok: status >= 200 && status < 300, status, headers: new Map(kopf), text: async () => text, json: async () => JSON.parse(text) });
+  const holen = async (url) => {
+    aufrufe.push(String(url));
+    const m = /^\/products\/([^/]+?)(\.js)?$/.exec(new URL(url).pathname);
+    if (!m) return antwort(404, '');
+    const [, handle, js] = m;
+    const p = produkte[handle] ?? {};
+    if (p.status && p.status !== 200) return antwort(p.status, '', p.location ? [['location', p.location]] : []);
+    const preis = p.preis ?? 5000;
+    if (js) {
+      return antwort(200, JSON.stringify({
+        id: 1, handle, title: handle, type: 'Teppichboden', available: true, tags: p.tags ?? [],
+        options: p.farben ? [{ name: 'Farbe', position: 1, values: p.farben }] : [{ name: 'Title', position: 1, values: ['Default Title'] }],
+        variants: [{ id: 11, title: 'Default Title', price: preis, compare_at_price: null, available: true }],
+      }));
+    }
+    const euro = (preis / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return antwort(200, p.seite ?? `<html><main><h1>${handle}</h1><p>${euro}&nbsp;€/m²</p></main></html>`);
+  };
+  return { holen, aufrufe };
+}
