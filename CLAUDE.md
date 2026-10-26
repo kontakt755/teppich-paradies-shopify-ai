@@ -29,7 +29,7 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 | `control-center` | Dashboard (`docs/ai-dashboard/`), `issues.json`, `npm run task` |
 | `produktimport` | neue Produkte aus Lieferantenquellen, Schreibzugriff (`shopify-daten.md`) |
 | `lieferant-a-recherche` | Artikel- und Farbnummern bei Lieferant A belegt klaeren |
-| `shopify-massendaten` | viele Metafelder/Tags auf einmal, mit Plan und Rollback |
+| `shopify-massendaten` | viele Metafelder/Tags auf einmal, mit Plan und Rollback; GraphQL-Fallen der Admin-API (falsche Felder, gesperrte Mutationen) |
 | `raumbilder-recherche` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
 | `theme-regeln` | vor jeder Theme-Aenderung: Bloecke/Schemata, fertige Funktionen, Menue, Produktkarten, UX/Design, Bilder, Schrift/Rot, Testumfang |
 | `preislogik` | Preise, Streich-/Vergleichspreise, Aktionen, Fussleiste, Paketprodukte (€/m²), Vinyl-Preisfilter |
