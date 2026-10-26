@@ -1743,6 +1743,15 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   Bearbeitung und Druck gesperrt. Fehlende Pflichtangaben oder eine noch nicht geladene QR-Bibliothek
   sperren Druck und Download. SKU bleibt optional und wird bei leerem Wert ausgeblendet. Lange
   Paketetiketten passen die Schrift an, damit keine technische Zeile oder Artikelnummer entfaellt.
+- **Rollen und Passform (26.10.):** Im Dialog „Etikettengröße“ 50 × 50, 50 × 80 (400 × 640 px,
+  Faktor 1,3) oder 50 × 100 mm (400 × 800 px, Faktor 1,6), passend zur eingelegten Rolle; die Wahl
+  merkt sich der Browser. `layout()` prueft jeden Entwurf mit `layoutProbleme()` (alles im Rand,
+  keine zwei Teile beruehren sich - Hoehe mit Umlaut-Akzenten und Unterlaengen nach `tinte()`, 1 px
+  Kantenglaettung, weil niimbluelib jedes nicht ganz weisse Pixel schwarz druckt -, keine Kuerzung,
+  kein getrenntes Wort, Schrift ab 12 px, QR-Modul ab 2 Druckpunkten) und setzt das Etikett sonst
+  in 2-%-Schritten kleiner. Passt es auch in Mindestschrift nicht (z. B. Artikelnummer mit 50 Zeichen
+  ohne Leerzeichen), zeigt die Vorschau „Passt nicht auf …“ und Druck sowie PNG bleiben gesperrt.
+  Technikwerte und Adresszeilen brechen an Wortgrenzen um, bevor sie zu klein werden.
 - **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
   Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
   im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt
@@ -1883,7 +1892,7 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
 - **Druck:** derselbe Dialog wie Abschnitt 26 (`oeffneEtikettenDruck`, `allowEditing: false`).
   Etiketten mit `art: 'adresse'` zeichnet `adressLayout` (`lib/adress-etiketten.mjs`) statt des
   Musterlayouts: Absender klein mit Linie, Empfänger so groß wie Breite und Höhe erlauben,
-  Inland ohne Land, „Bestellung #…“ unten rechts; passt in 50 × 50 und 50 × 100.
+  Inland ohne Land, „Bestellung #…“ unten rechts; passt in jedes Format (lange Zeilen brechen um).
 - **Haken und „Zu klären“ (22.10.):** zentral in `muster-packen.json` (`haken` je Bestellposition,
   `klaeren` je Kunde mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
   Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.

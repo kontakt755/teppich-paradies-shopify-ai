@@ -1,6 +1,6 @@
 /**
  * "Etiketten drucken": Vorschau und Druck von Muster-Etiketten (und Adressaufklebern aus "Muster packen")
- * auf dem Niimbot B1 (50 x 50 oder 50 x 100 mm)
+ * auf dem Niimbot B1 (50 x 50, 50 x 80 oder 50 x 100 mm)
  * direkt aus dem Browser - ohne Installation, damit es am Mac und am Windows-Laptop gleich geht.
  *
  * Verbindung per Web Bluetooth (Hauptweg, der B1 haengt nicht am USB), USB-Kabel (WebSerial)
@@ -42,18 +42,38 @@ const druck = { format: gemerktesFormat(), client: null, clientWeg: '', verbindu
 let sitzung = 0;
 const aktuell = k => !!k && druck.kontext === k && !k.beendet && k.sitzung === sitzung && k.element?.isConnected;
 const qrBereit = () => typeof window.qrcode === 'function';
-const unvollstaendig = () => druck.etiketten.some(e => e.fehlt.length);
 
-/** Zeichnet ein Etikett schwarz auf weiss in eine Canvas (400 x 400 bzw. 400 x 800). */
+const font = (g, f) => `${f ? 'bold ' : ''}${g}px ${SCHRIFT}`;
+let messKontext = null;
+const layoutCache = new Map();
+/**
+ * Layout eines Etiketts im gewaehlten Format. Gleiche Aufkleber (auch als eigene Objekte aus der
+ * Druckliste) werden nur einmal berechnet. Adressaufkleber (Muster packen) haben ein eigenes Layout,
+ * gezeichnet wird gleich.
+ */
+function etikettLayout(e) {
+  const format = etikettFormat(druck.format);
+  const key = JSON.stringify([format.format, e.art || '', e.serie, e.farbe, e.sku, e.url, e.technik, e.empfaenger || null]);
+  if (!layoutCache.has(key)) {
+    if (layoutCache.size > 2000) layoutCache.clear();
+    messKontext ||= document.createElement('canvas').getContext('2d');
+    const mass = (t, g, f) => { messKontext.font = font(g, f); return messKontext.measureText(t).width; };
+    layoutCache.set(key, (e.art === 'adresse' ? adressLayout : layout)(e, mass, format));
+  }
+  return layoutCache.get(key);
+}
+/** Was dem Etikett fehlt - auch, dass es im gewaehlten Format nicht ohne Ueberlappen passt. */
+const maengel = e => [...e.fehlt, ...(etikettLayout(e).passt ? [] : [`passt nicht auf ${etikettFormat(druck.format).name}`])];
+const unvollstaendig = () => druck.etiketten.some(e => maengel(e).length);
+
+/** Zeichnet ein Etikett schwarz auf weiss in eine Canvas (400 x 400, 400 x 640 bzw. 400 x 800). */
 function zeichne(canvas, e) {
   const format = etikettFormat(druck.format);
   canvas.width = format.breite; canvas.height = format.hoehe;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#000'; ctx.textBaseline = 'top';
-  const font = (g, f) => `${f ? 'bold ' : ''}${g}px ${SCHRIFT}`;
-  // Adressaufkleber (Muster packen) haben ein eigenes Layout, gezeichnet wird gleich.
-  const { texte, linien, qr } = (e.art === 'adresse' ? adressLayout : layout)(e, (t, g, f) => { ctx.font = font(g, f); return ctx.measureText(t).width; }, format);
+  const { texte, linien, qr } = etikettLayout(e);
   for (const t of texte) { ctx.font = font(t.groesse, t.fett); ctx.fillText(t.text, t.x, t.y); }
   for (const l of linien) ctx.fillRect(l.x1, l.y, l.x2 - l.x1, 2);
   if (qr && window.qrcode) {
@@ -74,9 +94,9 @@ const umgebungsHinweis = () => {
 function vorschauHtml() {
   return druckVorschau(druck.etiketten).eintraege.map(({ index: i, anzahl }) => { const e = druck.etiketten[i]; return `<figure class="etk-karte">
     <canvas class="etk-bild" data-etk-bild="${i}" width="${etikettFormat(druck.format).breite}" height="${etikettFormat(druck.format).hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
-    <figcaption class="small"><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : '<span class="muted">vollständig</span>'}
+    <figcaption class="small"><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(etikettFormat(druck.format).name)} – Angaben kürzen oder größere Rolle wählen</span>`}
       ${druck.allowEditing ? `<button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>` : ''}
-      <button type="button" class="btn btn-sm" data-etk-png="${i}"${e.fehlt.length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
+      <button type="button" class="btn btn-sm" data-etk-png="${i}"${maengel(e).length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
     </figcaption>
   </figure>`; }).join('');
 }

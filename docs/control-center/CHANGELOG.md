@@ -2,6 +2,33 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Musteraufkleber auch 50 × 80 mm; nichts ueberlappt, nichts wird abgeschnitten
+
+- **Geaendert:** Im Druckfenster „Etikettengröße“ jetzt 50 × 50, 50 × 80 (neu, 400 × 640 px, alles 1,3-mal so
+  gross) oder 50 × 100 mm, passend zur eingelegten Rolle; der Browser merkt sich die Wahl. Wunsch des Inhabers:
+  „nix darf ueberlappen oder abgeschnitten sein, egal wie lang oder kurz die Texte“. `layout()` prueft jetzt
+  jeden Entwurf (`layoutProbleme`: im Rand, keine zwei Teile beruehren sich, keine Kuerzung, kein getrenntes
+  Wort, Schrift ab 12 px, QR-Modul ab 2 Druckpunkten) und setzt das Etikett sonst schrittweise kleiner.
+  Zeilenabstaende beruecksichtigen Umlaut-Akzente und Unterlaengen (in Chrome gemessen) und 1 px
+  Kantenglaettung, weil niimbluelib jedes nicht ganz weisse Pixel schwarz druckt. Technikwerte und
+  Adresszeilen brechen an Wortgrenzen um, statt winzig zu werden. Passt ein Etikett auch in Mindestschrift
+  nicht, zeigt die Vorschau „Passt nicht auf …“ und Druck/PNG bleiben gesperrt. Im Hochformat reserviert die
+  Technik jetzt Platz fuer den QR-Code darunter (vorher konnte er bei vielen Technikzeilen wegfallen).
+- **Getestet:** `dashboard:test` 939/939; neu in `muster-etiketten.test.mjs` u. a. 400 Zufallsetiketten (kurz bis
+  sehr lang, Umlaute, Klammern, bis 5 Technikzeilen) in allen drei Formaten, Sperre bei zu langer
+  Artikelnummer; `muster-packen.test.mjs`: ellenlange Adresszeilen brechen um. Pixelpruefung in Chrome (Arial,
+  jedes Teil einzeln gezeichnet, Abstand ≥ 1 px, Tinte im Rand, alle Woerter vorhanden): alle 20 675
+  verschiedenen Etiketten des Lexikon-Exports vom 26.10. (24 690 Varianten) passen in allen drei Formaten, 0
+  Pixelfehler, kleinste Schrift 16 px (50 × 50) bzw. 18 px, kleinster QR-Code 100 / 130 / 160 px; dazu 3000
+  Zufallsetiketten und 800 Adressen ohne Pixelfehler (136 Zufallsetiketten mit Artikelnummern von 40+
+  Zeichen ohne Leerzeichen werden gesperrt).
+  Klickstrecke gegen die Datenkopie: Auswahl 50 × 50 / 50 × 80 / 50 × 100, Vorschau 400 × 640, Wahl gemerkt,
+  zu langes Etikett gesperrt, 0 JS-Fehler; `dashboard:pruefen` (Lexikon, Einkauf; 1440/390 px) ohne Fehler.
+- **Risiken:** Echter Druck auf der 50 × 80-Rolle am B1 erst nach dem Nachziehen von `~/tp-dashboard` (labelType 1
+  wie bisher). Die Tintenmasse gelten fuer Arial; auf einem Rechner ohne Arial nimmt der Browser Helvetica
+  bzw. eine serifenlose Ersatzschrift.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen, Seite neu laden, Testetikett auf 50 × 80 drucken.
+
 ## 2026-10-26 · Packstation: alle Musterbestellungen sofort, mit Anmerkung und Herstellersuche (#1691)
 
 - **Geaendert:** Die Packstation oeffnet mit „Alle offenen“; wartende Umschlaege sagen, was noch fehlt und

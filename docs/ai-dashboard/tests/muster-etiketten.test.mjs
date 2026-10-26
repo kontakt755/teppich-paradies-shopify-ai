@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ETIKETT, ETIKETT_FORMATE, andereArten, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout, produktUrl,
-  serieAus, serieUndFarbe, technikZeilen, umbrechen, varianteFuer,
+  ETIKETT, ETIKETT_FORMATE, MIN_SCHRIFT, andereArten, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout,
+  layoutProbleme, produktUrl, qrMindest, qrModule, serieAus, serieUndFarbe, technikZeilen, tinte, umbrechen, varianteFuer,
 } from '../lib/muster-etiketten.mjs';
 
 // Nur erfundene Daten. Messen ohne Canvas: jedes Zeichen ist gut halb so breit wie die Schriftgroesse.
@@ -239,4 +239,86 @@ test('layout 50 x 100 mm: dieselbe Aufteilung, alles groesser, alles im Rahmen',
     // Hochformat: QR-Code unter allen Texten ausser der Art.-Nr.
     assert.ok(l.texte.filter(t => !t.text.startsWith('Art.-Nr.')).every(t => t.y + t.groesse <= l.qr.y), 'QR unter dem Text');
   }
+});
+
+test('Formate: 50 x 80 mm ist 400 x 640 px und steht zwischen 50 x 50 und 50 x 100', () => {
+  const f = ETIKETT_FORMATE['50x80'];
+  assert.deepEqual([f.breite, f.hoehe, f.rand, f.name], [400, 640, 18, '50 × 80 mm']);
+  assert.equal(etikettFormat('50x80'), f);
+  assert.deepEqual(Object.keys(ETIKETT_FORMATE), ['50x50', '50x80', '50x100']);
+});
+
+test('qrModule: Kantenlaenge wie qrcode-generator (Version automatisch, Stufe M)', () => {
+  const url = n => 'x'.repeat(n);
+  assert.deepEqual([14, 15, 26, 27, 62, 63, 84, 85].map(n => qrModule(url(n))), [21, 25, 25, 29, 33, 37, 37, 41]);
+  assert.equal(qrMindest(url(62)), 66, 'jedes Modul mindestens 2 Druckpunkte');
+});
+
+test('tinte: Akzente ueber Grossbuchstaben und Unterlaengen werden mitgerechnet', () => {
+  assert.deepEqual(tinte('Eiche', 40), { oben: 0, unten: 32 });
+  assert.deepEqual(tinte('Ölbraun', 40), { oben: 6, unten: 32 });
+  assert.deepEqual(tinte('Grau (3N55)', 40), { oben: 0, unten: 40 });
+  assert.equal(tinte('grün', 40).oben, 0, 'Umlaut in Kleinbuchstaben bleibt unter der Oberkante');
+});
+
+test('layoutProbleme: meldet Ueberlappen, Rand, Kuerzung, Mini-Schrift und fehlenden QR-Code', () => {
+  const t = (text, y, groesse = 20) => ({ text, x: 18, y, groesse, fett: false });
+  assert.deepEqual(layoutProbleme({ texte: [t('Eins', 18), t('Zwei', 60)], linien: [], qr: null }, mass), []);
+  assert.match(layoutProbleme({ texte: [t('Eins', 18), t('Zwei', 30)] }, mass).join(), /berührt/);
+  assert.match(layoutProbleme({ texte: [t('Eins', 390)] }, mass).join(), /Rand/);
+  assert.match(layoutProbleme({ texte: [t('Ein…', 18)] }, mass).join(), /gekürzt/);
+  assert.match(layoutProbleme({ texte: [t('Eins', 18, 10)] }, mass).join(), /kleiner als 12/);
+  assert.match(layoutProbleme({ texte: [] }, mass, ETIKETT, 'https://x').join(), /QR/);
+  assert.match(layoutProbleme({ texte: [], qr: { x: 100, y: 100, groesse: 20 } }, mass, ETIKETT, 'https://x').join(), /zu klein/);
+});
+
+// Pruefung "nichts ueberlappt, nichts abgeschnitten": im Rahmen, jedes Wort ganz und genau einmal da,
+// keine zwei Teile beruehren sich (layoutProbleme), Schrift nie unter MIN_SCHRIFT, QR-Code lesbar gross.
+const woerter = t => String(t).split(/\s+/).filter(Boolean);
+function vollstaendigUndFrei(e, l, format) {
+  assert.ok(l.passt, `${format.format}: ${l.probleme.join(' | ')}`);
+  assert.deepEqual(layoutProbleme(l, mass, format, e.url), []);
+  const soll = ['www.teppich-paradies.net', ...woerter(e.serie), ...woerter(e.farbe), ...(e.sku ? ['Art.-Nr.', e.sku] : []), ...e.technik.flatMap(z => [...woerter(z.label), ...woerter(z.wert)])];
+  assert.deepEqual(l.texte.flatMap(t => woerter(t.text)).sort(), soll.sort(), 'jedes Wort ganz und genau einmal');
+  assert.ok(l.texte.every(t => t.groesse >= MIN_SCHRIFT));
+  if (e.url) assert.ok(l.qr.groesse >= qrMindest(e.url));
+}
+
+test('Testetikett Teppichboden mit Farbnummer auf 50 x 50 und 50 x 80: vollstaendig, nichts beruehrt sich', () => {
+  const p = { handle: 'testwerk-lorena-teppichboden-400cm-500cm', titel: 'Testwerk Lorena Teppichboden 400cm 500cm', eigenschaften: { marke: 'Testwerk', florhoehe: '5,3 mm' },
+    varianten: [{ sku: 'TW-LORENA-3N55-400', farbe: 'Marineblau Hell (3N55)' }, { sku: 'TW-LORENA-3N55-500', farbe: 'Marineblau Hell (3N55)' }] };
+  const e = etikettFuerPosition({ istMuster: true, farbe: 'Marineblau Hell (3N55)', handle: p.handle, musterQuelle: { sku: 'TW-LORENA-3N55-400' } }, p);
+  assert.deepEqual([e.serie, e.farbe, e.sku, e.technik.length], ['Testwerk Lorena', 'Marineblau Hell (3N55)', 'TW-LORENA-3N55-400', 0]);
+  const klein = layout(e, mass, ETIKETT), mittel = layout(e, mass, ETIKETT_FORMATE['50x80']);
+  vollstaendigUndFrei(e, klein, ETIKETT);
+  vollstaendigUndFrei(e, mittel, ETIKETT_FORMATE['50x80']);
+  assert.ok(mittel.texte[1].groesse > klein.texte[1].groesse, 'Serie auf 50 x 80 groesser');
+  assert.ok(mittel.qr.groesse > klein.qr.groesse, 'QR-Code auf 50 x 80 groesser');
+  assert.ok(mittel.texte.filter(t => !t.text.startsWith('Art.-Nr.')).every(t => t.y + t.groesse <= mittel.qr.y), 'QR unter dem Namen');
+});
+
+test('layout kurz bis sehr lang: in 50 x 50, 50 x 80 und 50 x 100 ueberlappt nichts und nichts wird abgeschnitten', () => {
+  let seed = 7;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const wahl = a => a[Math.floor(rnd() * a.length)];
+  const teile = ['Eiche', 'Ölbraun', 'Grün', 'Élégance', 'gypsy', '(3N55)', 'Anthrazit', 'Marineblau', 'Hell', 'Teppichbodenfliesen', 'WWW', 'Klickvinyl', '5 mm', '23 / 33', '122 × 18 cm', 'Vinyl von der Rolle', 'Q'];
+  const satz = (a, b) => Array.from({ length: a + Math.floor(rnd() * (b - a + 1)) }, () => wahl(teile)).join(' ');
+  const labels = ['Art', 'Auch als', 'Stärke / Nutzschicht', 'Nutzungsklasse', 'Format'];
+  for (let i = 0; i < 400; i++) {
+    const technik = rnd() < 0.4 ? [] : Array.from({ length: 1 + Math.floor(rnd() * 5) }, () => ({ label: wahl(labels), wert: satz(1, rnd() < 0.8 ? 2 : 5) }));
+    const e = etikett({ serie: satz(1, rnd() < 0.2 ? 10 : 3), farbe: satz(1, rnd() < 0.2 ? 8 : 3), sku: rnd() < 0.1 ? '' : `TW-${i}-${'X'.repeat(Math.floor(rnd() * 14))}`,
+      handle: `test-${'a'.repeat(Math.floor(rnd() * 90))}`, technik });
+    for (const format of Object.values(ETIKETT_FORMATE)) vollstaendigUndFrei(e, layout(e, mass, format), format);
+  }
+});
+
+test('layout: was selbst in Mindestschrift nicht passt, wird gesperrt statt abgeschnitten', () => {
+  const e = etikett({ serie: 'Testvelours', farbe: 'Sand', sku: `TV-${'Y'.repeat(80)}`, handle: 'testvelours' });
+  for (const format of Object.values(ETIKETT_FORMATE)) {
+    const l = layout(e, mass, format);
+    assert.equal(l.passt, false);
+    assert.match(l.probleme.join(), /zu lang/);
+  }
+  // Ein ellenlanger Name ohne Leerzeichen genauso - er wuerde sonst mitten im Wort getrennt.
+  assert.equal(layout(etikett({ serie: 'Z'.repeat(70), farbe: 'Sand', handle: 'x' }), mass).passt, false);
 });
