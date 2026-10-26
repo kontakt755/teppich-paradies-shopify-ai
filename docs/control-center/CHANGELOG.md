@@ -18,7 +18,7 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Gegenprobe, Pause, Postfach-Teil 2 trotz Fehler in Teil 1, trocken ohne Auftragstext),
   `dienst-aktualisieren.test.mjs` (echte Git-Repos: ff-Merge, Konflikt, roter Test, lokale Aenderung,
   Lock-Rauschen, Rueckweg nach fehlender Antwort, Codex aktiv), `todos.test.mjs`, `api.test.mjs`.
-  `npm run -s pruefen` 9/9, `dashboard:test` 966/966, `operations:test` 972/972, `dashboard:pruefen` nur OK.
+  `npm run -s pruefen` 9/9, `dashboard:test` 974/974, `operations:test` 972/972, `dashboard:pruefen` nur OK.
   Echt: Vorpruefung mit leeren Listen startet Claude nicht; `--erzwingen` → Claude fuehrte `npm run -s fehler
   -- abgleich` aus, „nichts zu tun“, 0 Ablehnungen, 3 Runden, 62k Tokens. Voller Abgleich gegen einen Klon
   (12 Commits, echte Testsuiten, launchctl als Attrappe) in 17 s gruen.
@@ -26,6 +26,9 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   per Freigabe-Probe geprueft. `Artifact`/`ArtifactData` sind als ganze Werkzeuge freigegeben (keine
   Einschraenkung je Adresse moeglich). Der Postfach-Lauf braucht die Benutzereinstellungen (Gmail-Konnektor);
   deren Freigaben sind durch Sperren abgedeckt, neue Freigaben dort wirken aber mit.
+  Der Rueckweg nach einem misslungenen Neustart nutzt `git reset --keep` - genau das sperrt
+  `.claude/hooks/git-gh-guard.mjs` fuer Agenten; fuer den unbeaufsichtigten Dienst bewusst so (verwirft
+  nichts, bricht bei lokalen Aenderungen ab), Entscheidung beim Codex-Review/Inhaber.
 - **Naechste Stufe:** Codex-Review des Teils Dienst-Aktualisierung, dann Einschalten nach der Schrittliste im
   PR; App-Aufgaben zwei Wochen als Sicherheitsnetz, danach abschalten.
 
