@@ -9,7 +9,7 @@ import { fortschritt } from '../lib/bestellliste.mjs';
 import { WARTE_NACHHAKEN_TAGE, WARTE_PROBLEM_TAGE } from '../lib/lieferanten.mjs';
 import {
   auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleiste, naechsterSchritt, zeitleistenFuerModell, folgebestellung,
-  auftragsart, dringendsterSchritt, setzbareSchritte, AuftragsverlaufFehler,
+  auftragsart, dringendsterSchritt, setzbareSchritte, AuftragsverlaufFehler, gepacktAmFuer,
   NACHFASSEN_NACH_TAGEN, MUSTER_ANGEKOMMEN_ANNAHME_TAGE, ERGEBNIS_KLAEREN_NACH_TAGEN,
 } from '../lib/auftragsverlauf.mjs';
 
@@ -130,6 +130,28 @@ test('Muster bei uns: labeln und verschicken (wir); wer und wann stehen am erled
   assert.equal(z.verlauf[2].am, tag(4));
   assert.equal(z.verlauf[2].automatisch, false);
   assert.deepEqual([z.naechsterSchritt.wer, z.naechsterSchritt.aktion, z.naechsterSchritt.stufe], ['wir', 'raus', 'faellig']);
+});
+
+test('Umschlag gepackt (#1709): naechster Schritt sagt "zur Post und eintragen", Ablauf bleibt gleich', () => {
+  const a = einAuftrag(bestellung(1, [muster(1), muster(2)]));
+  const statusAlle = statusBis(a, 'geliefert');
+  const ohne = zeitleiste(a, { statusAlle, jetzt: am(8) });
+  assert.match(ohne.naechsterSchritt.text, /^Muster labeln und an den Kunden schicken/);
+  assert.equal('gepacktAm' in ohne, false);
+  const fremd = { [`gid://shopify/Order/99`]: { zeit: tag(5) } };
+  assert.equal(gepacktAmFuer(a.id, fremd), null, 'fremder Umschlag');
+  const gepackt = { [`gid://shopify/Order/0,${a.id}`]: { zeit: tag(5) }, [a.id]: { zeit: tag(4) }, ...fremd };
+  assert.equal(gepacktAmFuer(a.id, gepackt), tag(5), 'neuester Umschlag mit diesem Auftrag');
+  const z = zeitleistenFuerModell({ auftraege: [a] }, { statusAlle, gepackt, jetzt: am(8) }).get(a.id);
+  assert.equal(z.gepacktAm, tag(5));
+  assert.deepEqual(z.verlauf.map(s => [s.schritt, s.zustand]), ohne.verlauf.map(s => [s.schritt, s.zustand]));
+  assert.equal(z.naechsterSchritt.text, 'Umschlag gepackt am 05.01. – zur Post bringen und als verschickt eintragen');
+  assert.deepEqual([z.naechsterSchritt.wer, z.naechsterSchritt.aktion, z.naechsterSchritt.knopf, z.naechsterSchritt.faelligSeitTagen], ['wir', 'raus', 'Muster sind verschickt…', 3]);
+  // Ware kennt keinen Umschlag; ein verschickter Musterauftrag hat einen anderen naechsten Schritt.
+  const w = einAuftrag(bestellung(2, [ware(1)]));
+  assert.equal('gepacktAm' in zeitleiste(w, { gepacktAm: tag(5), jetzt: am(8) }), false);
+  const raus = zeitleiste(a, { statusAlle: statusBis(a, 'raus'), gepacktAm: tag(5), jetzt: am(8) });
+  assert.doesNotMatch(raus.naechsterSchritt?.text || '', /Umschlag gepackt/);
 });
 
 test('Teilweise bestellt: Schritt bleibt offen und nennt den Teilstand', () => {

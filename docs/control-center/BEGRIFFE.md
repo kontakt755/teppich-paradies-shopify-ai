@@ -129,6 +129,10 @@ gebraeuchlich), Erfassen.
   14 Tagen (Ware 30) wieder.
 - **Belegt fertig** = in Shopify versendet, storniert, archiviert oder voll erstattet, oder im Dashboard
   abgeschlossen; fällt ohne Klick aus den Listen.
+- **Gepackt, nicht verschickt** (#1709) = Umschlag in der Packstation gepackt, Versand aber nicht
+  eingetragen; steht nach 3 Tagen in der Aufräumliste.
+- **Ist verschickt…** = Versanddialog „An Kunden raus“ für diesen Umschlag, Versandmail vorab aus.
+- **Liegt noch hier** = der Umschlag ist noch nicht zur Post; die Liste fragt nach 3 Tagen wieder.
 
 ## Dashboard-Updates (#1710)
 

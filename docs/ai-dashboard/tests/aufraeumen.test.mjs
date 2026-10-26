@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { aufraeumFall, aufraeumListe, letzteBewegung, packBefund, AUFRAEUMEN_AB_TAGEN } from '../lib/aufraeumen.mjs';
+import { aufraeumFall, aufraeumListe, letzteBewegung, packBefund, aufraeumenAbTagen, AUFRAEUMEN_AB_TAGEN, GEPACKT_OHNE_VERSAND_AB_TAGEN } from '../lib/aufraeumen.mjs';
 import { belegtFertigGrund, bestellungAusgeblendet, bestellArbeitsstand } from '../lib/bestellarbeit.mjs';
 import { aufraeumenBlock } from '../ansichten/heute/aufraeumen.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
@@ -71,9 +71,9 @@ test('jede belegte Bewegung setzt die Uhr zurueck: Status, Notiz, Zeitleiste, Pa
   assert.equal(letzteBewegung(zeile(basis)), vorTagen(25));
   assert.equal(fall(zeile({ ...basis, notizen: [{ am: vorTagen(3), text: 'Läuft noch – beim Aufräumen bestätigt' }] })), null);
   assert.equal(fall(zeile({ ...basis, verlauf: [{ schritt: 'nachgefasst', am: vorTagen(2) }] })), null);
-  const packen = { gepackt: { [`gid://shopify/Order/1,${O}`]: { zeit: vorTagen(4) } }, haken: {}, klaeren: {} };
-  assert.equal(packBefund(zeile(basis), packen).gepacktAm, vorTagen(4));
-  assert.equal(fall(zeile(basis), { packen }), null, 'gepackt vor 4 Tagen ist Arbeit der Packstation, kein Altfall');
+  const packen = { gepackt: { [`gid://shopify/Order/1,${O}`]: { zeit: vorTagen(2) } }, haken: {}, klaeren: {} };
+  assert.equal(packBefund(zeile(basis), packen).gepacktAm, vorTagen(2));
+  assert.equal(fall(zeile(basis), { packen }), null, 'gepackt vor 2 Tagen: die Packstation ist noch dran');
   assert.equal(fall(zeile(basis), { packen: { gepackt: {}, haken: { [L(1)]: { zeit: vorTagen(1) } }, klaeren: {} } }), null);
   assert.ok(fall(zeile(basis), { packen: { gepackt: { 'gid://shopify/Order/99': { zeit: vorTagen(1) } }, haken: {}, klaeren: {} } }), 'fremder Umschlag zaehlt nicht');
 });
@@ -122,6 +122,41 @@ test('Liste: am laengsten ruhende zuerst; Block erscheint nur mit Faellen und es
   assert.doesNotMatch(lesend, /data-aufraeumen-(abschliessen|laeuft)=/, 'Rolle "lesen" sieht nur "Ansehen"');
 });
 
+test('Gepackt ohne Versandvermerk (#1709): nach 3 Tagen ein Fall mit "Ist verschickt…" statt "Abschließen"', () => {
+  assert.equal(GEPACKT_OHNE_VERSAND_AB_TAGEN, 3);
+  const gl = { status: { [L(1)]: geliefert(8), [L(2)]: geliefert(8) } };
+  const packen = t => ({ gepackt: { [O]: { zeit: vorTagen(t) } }, haken: {}, klaeren: {} });
+  assert.equal(fall(zeile(gl), { packen: packen(2) }), null);
+  const f = fall(zeile(gl), { packen: packen(3) });
+  assert.equal(f.grund, 'gepackt');
+  assert.equal(f.tage, 3);
+  assert.equal(aufraeumenAbTagen(f), 3);
+  assert.equal(aufraeumenAbTagen({ art: 'muster', grund: 'ruhe' }), AUFRAEUMEN_AB_TAGEN.muster);
+  assert.ok(f.belege.includes('Gepackt am 23.10.'));
+  assert.match(f.vorschlag.text, /nicht als verschickt eingetragen/);
+  assert.equal(f.vorschlag.notiz, 'Umschlag gepackt am 23.10., Versand beim Aufräumen eingetragen');
+  assert.deepEqual(f.lineItemIds, [L(1), L(2)]);
+  // "Liegt noch hier" ist eine Bewegung: drei Tage Ruhe, dann fragt die Liste wieder.
+  const liegt = n => zeile({ ...gl, notizen: [{ am: vorTagen(n), text: 'Umschlag liegt noch hier – beim Aufräumen bestätigt' }] });
+  assert.equal(fall(liegt(2), { packen: packen(6) }), null);
+  assert.equal(fall(liegt(3), { packen: packen(6) }).grund, 'gepackt');
+  // Wareneingang nach dem Packen nachgetragen (#1706): Buchhaltung, keine Bewegung - die Uhr laeuft ab dem Packen.
+  const nachgetragen = zeile({ status: { [L(1)]: geliefert(0), [L(2)]: geliefert(0) } });
+  assert.equal(fall(nachgetragen, { packen: packen(4) }).tage, 4);
+  // Schon ein Artikel als verschickt eingetragen: kein Gepackt-Fall, es gilt die normale Ruhefrist.
+  const teil = zeile({ status: { [L(1)]: { ...geliefert(8), status: 'raus', rausAm: vorTagen(4), aktualisiertAm: vorTagen(4) }, [L(2)]: geliefert(8) } });
+  assert.equal(fall(teil, { packen: packen(5) }), null);
+  // Ohne Umschlag bleibt alles wie bisher.
+  assert.equal(fall(zeile(gl)), null, 'angekommen vor 8 Tagen, nicht gepackt: noch keine 14 Tage');
+
+  const zeilen = [{ ...zeile(gl), aufraeumen: f }];
+  const html = aufraeumenBlock({ daten: { verfuegbar: true, zeilen } });
+  assert.match(html, /data-aufraeumen-verschickt="gid:\/\/shopify\/Order\/71"[^>]*>Ist verschickt…</);
+  assert.match(html, /data-aufraeumen-laeuft="[^"]+"[^>]*fragt in 3 Tagen wieder">Liegt noch hier</);
+  assert.doesNotMatch(html, /data-aufraeumen-abschliessen=/, 'gepackt: abschliessen wuerde das Nachfassen ueberspringen');
+  assert.doesNotMatch(aufraeumenBlock({ daten: { verfuegbar: true, zeilen }, lesend: true }), /data-aufraeumen-(verschickt|laeuft)=/);
+});
+
 // API: der Server haengt den Fall an /api/kunden/bestellungen, "Läuft noch" (Notiz) nimmt ihn heraus.
 const muster = id => ({
   id: `gid://shopify/LineItem/${id}`, sku: `M-TEST-${id}`, title: 'Muster Testteppich', variantTitle: 'Grau', quantity: 1, currentQuantity: 1, unfulfilledQuantity: 1,
@@ -160,4 +195,25 @@ test('API: Aufraeumfall an der Bestellzeile, archivierte Bestellung belegt ferti
   assert.equal(zeilen()['#T1'].aufraeumen, null);
   uhr.jetzt = new Date('2026-11-10T10:00:00Z');
   assert.equal(zeilen()['#T1'].aufraeumen.tage, 15, 'nach 14 Tagen fragt die Liste wieder');
+});
+
+test('API: gepackter Umschlag ohne Versand - naechster Schritt und Aufraeumfall aus der Packablage', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-aufraeumen-gepackt-'));
+  fs.mkdirSync(path.join(dir, 'bestelluebersicht'));
+  fs.writeFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), JSON.stringify({ orders: [bestellung(3)] }));
+  const uhr = { jetzt: new Date('2026-10-20T10:00:00Z') };
+  const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, env: {}, now: () => uhr.jetzt,
+    shopifyZugang: async () => { throw new Error('Shopify darf nicht aufgerufen werden'); } });
+  const ich = { name: 'Mitarbeiter 1', rolle: 'mitarbeiter' };
+  await api.einkaufAuftragsstatusSetzen({ aktion: 'schritt', orderId: 'gid://shopify/Order/3', schritt: 'bestellt' }, ich);
+  await api.einkaufAuftragsstatusSetzen({ aktion: 'schritt', orderId: 'gid://shopify/Order/3', schritt: 'geliefert' }, ich);
+  fs.writeFileSync(path.join(dir, 'muster-packen.json'), JSON.stringify({ eintraege: { 'gid://shopify/Order/3': { zeit: '2026-10-22T10:00:00Z', von: 'Laden' } }, haken: {}, klaeren: {} }));
+  uhr.jetzt = new Date('2026-10-26T10:00:00Z');
+  const z = api.kundenBestellungen().zeilen.find(x => x.orderName === '#T3');
+  assert.equal(z.naechsterSchritt.text, 'Umschlag gepackt am 22.10. – zur Post bringen und als verschickt eintragen');
+  assert.equal(z.aufraeumen.grund, 'gepackt');
+  assert.equal(z.aufraeumen.tage, 4);
+  // Beschaedigte Packablage: Zeitleisten laufen weiter, nur ohne diese Angabe.
+  fs.writeFileSync(path.join(dir, 'muster-packen.json'), '{kaputt');
+  assert.match(api.kundenBestellungen().zeilen.find(x => x.orderName === '#T3').naechsterSchritt.text, /^Muster labeln/);
 });
