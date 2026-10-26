@@ -111,3 +111,16 @@ gebraeuchlich), Erfassen.
 - **Versandt, Empfang noch nicht belegt** = vorhandener Versandstand ohne bestätigte
   Zustellung oder dokumentierten Empfang; kein Beweis eines Verlusts.
 - **Hausknopf** = zurück zur Shop-Übersicht; **Mehr** öffnet weitere vorhandene Arbeitswege.
+
+## Aufräumen (#1698)
+
+- **Alte Bestellungen aufräumen** = Block auf der Shop-Übersicht, nur sichtbar, wenn es Fälle gibt:
+  offene Bestellungen ohne Bewegung (Muster ab 14, Ware ab 30 Tagen), bei denen nichts belegt, dass sie
+  fertig sind.
+- **Keine Bewegung** = seit dem Tag hat niemand etwas erfasst (Bestellt, Angekommen, Notiz, Packstation …).
+- **Abschließen** = alle offenen Artikel auf „Erledigt“ mit dem Vorschlag als Vermerk; in Shopify als
+  versendet gebucht, ohne Mail an den Kunden (wie „Kunde fertig“).
+- **Läuft noch** = die Bestellung bleibt offen; das Dashboard merkt sich das als Notiz und fragt nach
+  14 Tagen (Ware 30) wieder.
+- **Belegt fertig** = in Shopify versendet, storniert, archiviert oder voll erstattet, oder im Dashboard
+  abgeschlossen; fällt ohne Klick aus den Listen.
