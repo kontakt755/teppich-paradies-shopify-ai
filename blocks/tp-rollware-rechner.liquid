@@ -2912,6 +2912,12 @@ function tpRwcInit{{ tp_rc_id }}() {
         // ausserhalb des Bildschirms.
         var lage = cta.getBoundingClientRect();
         if (lage.top < 0 || lage.bottom > window.innerHeight) cta.scrollIntoView({ block: 'center' });
+        // Rundgang R2 #76: Der Knopf der Kaufleiste ist waehrend der Pruefung
+        // disabled und verliert dabei den Fokus (er stand danach auf <body>).
+        // Dann zurueck auf den Kaufknopf hier - der naechste Druck auf Enter
+        // bestellt das zweite Stueck. Steht der Fokus woanders, bleibt er dort.
+        var aktiv = document.activeElement;
+        if (!aktiv || aktiv === document.body) cta.focus({ preventScroll: true });
       });
       return;
     }
