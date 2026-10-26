@@ -13,6 +13,7 @@
  * "Nach Partnerladen" (mp=laden): Wareneingang sortieren - je Laden alle noch nicht eingelegten
  * Muster mit Ziel-Umschlag, Aufkleber und Haken direkt in der Zeile.
  * Porto und Versandbuchung folgen, wenn der Versandweg entschieden ist.
+ * In beiden Ansichten steht oben fuer den Packer, welche Herstelleretiketten abkommen (PACKER_INFO).
  */
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast } from '../../kern/helfer.mjs';
@@ -45,6 +46,9 @@ function bindePackOffen() {
 }
 
 const ENDPOINT = '/api/kunden/muster-packen';
+
+// Info fuer den Packer (Inhaber 26.10.2026): Herstelleretiketten kommen ab, nur Vorwerk und JAB behalten ihres.
+const PACKER_INFO = '<p class="notice mp-packer-info"><strong>Wichtig beim Packen:</strong> Herstelleretiketten von den Mustern entfernen – außer bei Vorwerk und JAB. Dort bleibt das Herstelleretikett dran.</p>';
 
 // "Gedruckt" (Umschlag vorbereitet) steht seit 26.10. gemeinsam auf dem Server (#1718). Vorher merkte
 // es sich nur der Browser des druckenden Geraets - diese Vermerke werden beim ersten Laden uebernommen.
@@ -301,8 +305,8 @@ export function viewKundenMusterPacken() {
     </nav>`;
   const suchfeld = `<div class="toolbar"><input type="search" data-param="mpq" value="${esc(state.route.params.get('mpq') || '')}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer"></div>`;
   const fehlerHinweis = packFehlerHtml(d);
-  if (modus === 'laden') return umschalter + fehlerHinweis + viewMusterKommtAn(d);
-  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt ist noch nicht versandt.</p>`;
+  if (modus === 'laden') return umschalter + fehlerHinweis + PACKER_INFO + viewMusterKommtAn(d);
+  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt ist noch nicht versandt.</p>${PACKER_INFO}`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const zielKunde = d.kunden.find(k => k.packSchluessel === ziel);

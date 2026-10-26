@@ -2,6 +2,16 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Packstation: Info fuer den Packer zu Herstelleretiketten
+
+- **Geaendert:** Oben in der Packstation („Nach Kunde packen“ und „Wareneingang nach Partnerladen“) steht als Info: „Wichtig beim Packen:
+  Herstelleretiketten von den Mustern entfernen – außer bei Vorwerk und JAB. Dort bleibt das
+  Herstelleretikett dran.“ Wunsch des Inhabers vom 26.10.; nur eine Info, kein Pflichtschritt.
+- **Getestet:** neuer Fall in `packstation-arbeitslisten.test.mjs` (Info genau einmal, auch unter „Gepackt“);
+  `dashboard:pruefen` Packstation bei 1440/390 px ohne Fehler und ohne Ueberlauf.
+- **Risiken:** keine; die Info gilt fuer alle Umschlaege, eine Kennzeichnung je Muster gibt es nicht.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
+
 ## 2026-10-26 · Nachziehen tauscht Bibliotheken ohne npm ci im Betrieb (#1716)
 
 - **Geaendert:** Aendert sich `package-lock.json`, lief bisher `npm ci` im Dienst-Checkout,

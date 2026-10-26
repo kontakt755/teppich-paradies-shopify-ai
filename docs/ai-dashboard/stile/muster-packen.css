@@ -2,6 +2,7 @@
    Auffallen darf je Karte: welche Bestellung das ist und je Muster Bild + Farbnummer - damit nichts verwechselt wird. */
 
 .mp-hier { margin: 4px 0 12px; }
+.mp-packer-info { margin: 0 0 12px; }
 .mp-summe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 0 0 12px; }
 .mp-kunden { display: grid; gap: 12px; }
 .mp-kunde { min-width: 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow-wrap: anywhere; }
