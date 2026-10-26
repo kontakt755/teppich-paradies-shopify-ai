@@ -80,6 +80,21 @@ test('Health-Oberfläche beschreibt Werkbank neutral und lässt belegten Sicheru
   ctx.einkauf.aktualisierung.betrieb.werkbank={status:'fehler',letzteLokaleRueckmeldung:null,lokalerStatus:'fehler',vollabgleich:'unbekannt'};
   const kaputt=vm.runInNewContext(fn+';aktualisierungHealth()',ctx);assert.equal(kaputt[1].level,'warn');assert.match(kaputt[1].title,/nicht lesbar/);
 });
+test('Systemzustand: automatische Dashboard-Updates melden sich nur, wenn sie haken', () => {
+  const source=fs.readFileSync(new URL('../bausteine/aktualisierung.mjs',import.meta.url),'utf8');
+  const a=source.indexOf('export function aktualisierungHealth()'),b=source.indexOf('\n}\n',a);
+  const fn=source.slice(a,b+2).replace('export ','');
+  const zeile=s=>vm.runInNewContext(fn+';aktualisierungHealth()',{einkauf:{aktualisierung:{verfuegbar:true,manuellVerfuegbar:true,teile:{},betrieb:{nachziehen:s}}},fmtDateTime:x=>x})[0];
+  const ok=zeile({status:'ok',zuletztNachgezogen:'2026-10-26T10:00:00Z'});assert.equal(ok.level,'ok');assert.match(ok.title,/aktuell · zuletzt übernommen 2026-10-26T10:00:00Z/);
+  const haengt=zeile({status:'fehler',art:'konflikt',grund:'Neue Version passt nicht (Konflikt in docs/ai-dashboard/app.js)'});
+  assert.equal(haengt.level,'warn');assert.equal(haengt.title,'Dashboard-Update hängt: die neue Version passt nicht zum laufenden Stand');assert.match(haengt.detail,/bisherigen Stand weiter/);
+  assert.doesNotMatch(haengt.title+haengt.detail,/docs\/|dashboard:test|git /,'keine Pfade, Befehle oder Fehlertexte in der Ansicht');
+  assert.match(zeile({status:'fehler',art:'neu-und-unbekannt'}).title,/unerwarteter Fehler$/);
+  assert.equal(zeile({status:'alt',zuletztGeprueft:'2026-10-26T07:00:00Z'}).level,'warn');
+  assert.match(zeile({status:'wartet',wartetSeit:'x',grund:'Eingabe im Dashboard vor 30 s (muster-packen.json)'}).detail,/nächste Versuch kommt von selbst/);
+  assert.doesNotMatch(zeile({status:'wartet',wartetSeit:'x',grund:'Eingabe (muster-packen.json)'}).detail,/\.json/);
+  assert.equal(zeile({status:'unbekannt'}),undefined,'nie eingerichtet: keine Zeile, auch kein „noch nicht belegt“ auf Heute');
+});
 
 test('Unlesbare optionale Kaufquellen brechen den vorhandenen Bestellablauf nicht', () => {
   assert.deepEqual(musterKaufLinks([quelle], null), []);

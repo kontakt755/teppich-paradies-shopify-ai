@@ -116,8 +116,9 @@ Entscheidend ist die Dateiliste aus Schritt 1; trifft beides zu, beides.
   (`AGENTS.md`, „Grundsaetzliche Arbeitsweise“).
 - **Dashboard** (`docs/ai-dashboard/`, `operations/`, `social/`,
   `scripts/serve-dashboard.mjs`, `scripts/dashboard-api.mjs`): Skill
-  `control-center`, Schritt 9 - `origin/main` in `~/tp-dashboard` (Branch
-  `dashboard-betrieb`) mergen, testen, Dienst neu starten, pruefen.
+  `control-center`, Schritt 9 - zieht der Dienst `net.teppich-paradies.nachziehen`
+  binnen 5 Minuten selbst nach; pruefen mit `cd ~/tp-dashboard && npm run -s
+  betrieb:nachziehen -- --status`, sofort mit `npm run -s betrieb:nachziehen`.
 - **Nur anderes** (Skills, Doku, Skripte, Tests, Hooks): nichts auszurollen.
   Den Hauptcheckout zieht der naechste Sitzungsstart nach
   (`.claude/hooks/hauptcheckout-nachziehen.sh`).

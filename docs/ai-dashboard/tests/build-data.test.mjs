@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPayload, parsePaginated, toIssueRecord } from '../../../scripts/build-dashboard-data.mjs';
+import { abrufFehler, buildPayload, parsePaginated, toIssueRecord } from '../../../scripts/build-dashboard-data.mjs';
 
 const raw = (over = {}) => ({
   number: 34, title: '🚧 Shopify Admin API Integration', state: 'open',
@@ -53,4 +53,12 @@ test('buildPayload filtert PRs und Issues ohne relevante Labels, meldet verfuegb
   assert.equal(p.generated_at, '2026-09-08T10:00:00.000Z');
   assert.deepEqual(p.sync.labelsAvailable, ['priority:p0', 'status:blockiert']);
   assert.equal(p.sync.ok, true);
+});
+
+test('GitHub-Ausfall beim Dienststart: mit alter Datei weiter, sonst und ohne Schalter Abbruch', () => {
+  const fehler = new Error('HTTP 502\nmehr');
+  assert.equal(abrufFehler(fehler, { weiter: true, vorhanden: true }).code, 0);
+  assert.match(abrufFehler(fehler, { weiter: true, vorhanden: true }).meldung, /bisherigen Aufgaben.*HTTP 502$/);
+  assert.equal(abrufFehler(fehler, { weiter: true, vorhanden: false }).code, 1, 'ohne alte Datei kein leeres Dashboard');
+  assert.equal(abrufFehler(fehler, { weiter: false, vorhanden: true }).code, 1, 'Aufruf von Hand meldet den Fehler wie bisher');
 });
