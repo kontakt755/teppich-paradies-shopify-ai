@@ -1,0 +1,62 @@
+{%- doc -%}
+  Querverweis von "Teppich nach Mass" auf die Mass-Kollektionen, die wegen des
+  Renderlimits nicht in teppich-nach-mass stehen: JAB, Vorwerk und Sisal mit
+  Borduere. Wer 200 x 300 rechnet, sah nur die eigenen Qualitaeten und hielt
+  das fuer das ganze Angebot (Rundgang 2026-10-26, Kunde Teppich nach Mass).
+
+  Jeder Link traegt data-tp-mass-link mit seiner Grundadresse. Der Mass-Rechner
+  (assets/tp-teppich-rechner.js) haengt das gerechnete Mass als ?breite=&laenge=
+  an; auf der Zielkollektion gibt snippets/tp-mass-weitergabe.liquid es an die
+  Produktlinks weiter, der Konfigurator traegt es dann ein.
+
+  Kollektionen ohne Produkte werden ausgelassen, ohne Ziel entfaellt die Zeile.
+
+  @param {string} [text] - Text vor den Links, Standard "Auch in Ihrem Mass:" (mit sz)
+{%- enddoc -%}
+{%- liquid
+  assign tp_mq_ziele = 'jab-anstoetz-teppiche-nach-mass|JAB,vorwerk-teppiche-nach-mass|Vorwerk,sisal-kokos-teppiche-nach-mass|Sisal mit Bordüre' | split: ','
+  assign tp_mq_links = ''
+  for tp_mq_ziel in tp_mq_ziele
+    assign tp_mq_teile = tp_mq_ziel | split: '|'
+    assign tp_mq_handle = tp_mq_teile | first
+    assign tp_mq_coll = collections[tp_mq_handle]
+    if tp_mq_coll == blank or tp_mq_coll.products_count == 0
+      continue
+    endif
+    if tp_mq_links != ''
+      assign tp_mq_links = tp_mq_links | append: '<span aria-hidden="true"> · </span>'
+    endif
+    capture tp_mq_link
+      echo '<a href="' | append: tp_mq_coll.url | append: '" data-tp-mass-link="' | append: tp_mq_coll.url | append: '">'
+      echo tp_mq_teile | last | escape
+      echo '</a>'
+    endcapture
+    assign tp_mq_links = tp_mq_links | append: tp_mq_link
+  endfor
+-%}
+{%- if tp_mq_links != '' -%}
+  <p class="tp-mass-quer">{{ text | default: 'Auch in Ihrem Maß:' | escape }} {{ tp_mq_links }}</p>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-mass-quer {
+    margin: 12px 0 0;
+    font-size: var(--tp-fs-sm);
+    line-height: 1.6;
+    color: var(--tp-muted, #655e57);
+  }
+
+  /* Im Rechnerergebnis (Grid mit eigenem Abstand) ohne zusaetzlichen Rand */
+  .tp-tep-rechner__ergebnis > .tp-mass-quer {
+    margin: 0;
+  }
+
+  .tp-mass-quer a {
+    display: inline-block;
+    padding-block: 10px;
+    color: var(--tp-ink, #1d1a17);
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+{% endstylesheet %}

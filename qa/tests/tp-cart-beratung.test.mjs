@@ -204,18 +204,24 @@ test('Zwischen Gesamtbetrag und Kaufknopf steht nur der Preishinweis', () => {
   assert.ok(dazwischen.includes("render 'tax-info'"));
 });
 
-test('Pflichtfrage vor dem Kaufknopf, Verlegeanfrage dahinter', () => {
+test('Pflichtfrage vor dem Kaufknopf, Verlegeanfrage ueber dem Gesamtbetrag', () => {
+  // Rundgang 2026-10-26 (#3): Die Verlegeanfrage stand unter "Zur Kasse" und
+  // den Bezahlknoepfen - wer zur Kasse tippte, sah sie nie. Jetzt steht sie
+  // ueber dem Gesamtbetrag; zwischen Gesamtbetrag und Kaufknopf bleibt nur
+  // der Preishinweis.
   const s = lies('snippets/cart-summary.liquid');
+  const summe = s.indexOf("render 'tp-cart-beratung', stelle: 'vor_summe'");
+  const gesamt = s.indexOf('<div class="cart-totals__container">');
   const vor = s.indexOf("render 'tp-cart-beratung', stelle: 'vor_kasse'");
   const cta = s.indexOf('<div class="cart__ctas">');
-  const nach = s.indexOf("render 'tp-cart-beratung', stelle: 'nach_kasse'");
-  assert.ok(vor > 0 && cta > vor, 'vor_kasse steht vor den Kaufknoepfen');
-  assert.ok(nach > cta, 'nach_kasse steht hinter den Kaufknoepfen');
+  assert.ok(summe > 0 && gesamt > summe, 'vor_summe steht vor dem Gesamtbetrag');
+  assert.ok(vor > gesamt && cta > vor, 'vor_kasse steht vor den Kaufknoepfen');
+  assert.ok(!s.includes("stelle: 'nach_kasse'"), 'keine Stelle mehr hinter den Kaufknoepfen');
 
   const snippet = lies('snippets/tp-cart-beratung.liquid');
   // Die Stelle entscheidet Liquid, nicht CSS - sonst wichen Lese- und
   // Tastaturreihenfolge von der sichtbaren Reihenfolge ab.
-  assert.match(snippet, /assign tpb_stelle_soll = 'nach_kasse'/);
+  assert.match(snippet, /assign tpb_stelle_soll = 'vor_summe'/);
   assert.match(snippet, /if tpb_frage\s*\n\s*assign tpb_stelle_soll = 'vor_kasse'/);
   assert.match(snippet, /if tpb_stelle != tpb_stelle_soll\s*\n\s*assign tpb_zeigen = false/);
   assert.ok(!/(?:^|[\s;{])order:\s*\d/m.test(snippet), 'keine CSS-order-Umsortierung');

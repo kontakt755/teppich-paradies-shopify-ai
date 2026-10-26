@@ -98,7 +98,10 @@ export function etikettenAusLexikon(produkt, originalProdukte = new Map(), besuc
     // Ohne SKU ist die Gleichheit zweier Varianten nicht belegt: nicht still zusammenfassen.
     const key = JSON.stringify([quelle.handle || produkt.handle, norm(e.sku), norm(e.farbe), e.sku ? '' : text(v.id) || index]);
     if (je.has(key)) continue;
-    je.set(key, { key, bezeichnung: [e.farbe || 'Farbe / Ausführung fehlt', e.sku].filter(Boolean).join(' · '), etikett: e });
+    // Die Lieferanten-Artikelnummer der Quellvariante wird nicht gedruckt. Sie dient nur der
+    // Zuordnung von Massartikeln, deren Einkaufsnummer anders geschrieben ist als die Shop-SKU.
+    je.set(key, { key, bezeichnung: [e.farbe || 'Farbe / Ausführung fehlt', e.sku].filter(Boolean).join(' · '), etikett: e,
+      artikelnummer: text(variante?.einkauf?.artikelnummer) });
   }
   return [...je.values()];
 }

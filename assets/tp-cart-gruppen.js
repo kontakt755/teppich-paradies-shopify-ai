@@ -187,6 +187,19 @@
     if (!zeile) return '';
     var fl = flaechenText(zeile);
     if (fl) {
+      // Rollenrechner ohne preis_pro_001_qm: Menge = ganze m2, die Property
+      // nennt EIN Stueck. Dasselbe Mass zweimal im Warenkorb fasst Shopify zu
+      // einer Zeile zusammen - dann "2 × 16,00 m²", sonst die echte Menge.
+      var proStueck = prop(zeile, 'Fläche (aufgerundet)');
+      if (proStueck && !istFlaechenware(zeile)) {
+        var einzeln = Math.round(parseFloat(proStueck.replace('m²', '').replace(/\./g, '').replace(',', '.').trim()) * 100);
+        var menge = (Number(zeile.quantity) || 0) * 100;
+        if (einzeln > 0 && menge !== einzeln) {
+          fl = (menge > einzeln && menge % einzeln === 0)
+            ? (menge / einzeln) + ' × ' + fl
+            : String(zeile.quantity) + ',00 m²';
+        }
+      }
       return hatProp(zeile, 'Mindestpreis') ? fl + ' (Mindestpreis)' : fl;
     }
     // Laengenware: "10 × 95 cm" statt der Menge 950 (cm)

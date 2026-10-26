@@ -1740,7 +1740,10 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   wird weggelassen. Nicht hinterlegte technische Eigenschaften werden nicht erfunden.
   Explizite fehlende/mehrdeutige Quellen-IDs oder Quell-SKUs sperren die Zuordnung. Echte
   Einzeldekore ohne Farboption behalten ihren vollstaendigen Produkttitel; Massartikel verwenden
-  nur das belegte eigene Muster oder Basisprodukt. Die Uebersicht aktualisiert beim Betreten,
+  nur das belegte eigene Muster oder Basisprodukt. Deren Farbe waehlt die Artikelnummer der
+  Massvariante zusammen mit der Farbe; die Nummer darf zur Shop-SKU oder zur Lieferanten-
+  Artikelnummer der Quellvariante passen (Schreibweisen wie `_043`/`_43`). Gedruckt wird immer
+  die Shop-SKU, keine SKU wird geaendert (#1723). Die Uebersicht aktualisiert beim Betreten,
   bei Fokus/Tab-Rueckkehr und alle 30 Sekunden, solange dort niemand tippt.
 - **Vorschau und Korrektur:** „Als PNG speichern“ gibt das 400×400-Bild aus. „Angaben bearbeiten“
   ersetzt das ausgewaehlte Etikett (samt identischen Kopien); waehrend des Abrufs bleiben weitere

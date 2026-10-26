@@ -365,7 +365,19 @@ class StickyAddToCartComponent extends Component {
     const galleryImage = section?.querySelector('media-gallery slideshow-slide img');
     const stickyImage = this.querySelector('.sticky-add-to-cart__image img');
     if (!galleryImage || !stickyImage) return;
-    stickyImage.src = galleryImage.currentSrc || galleryImage.src;
+    // Das Vorschaubild ist 52 px gross. Nach einem Farbwechsel ist currentSrc
+    // des frisch eingesetzten Galeriebilds noch leer, src traegt bei Horizon
+    // width=3840 - die Leiste lud dann das Original (bis 2,8 MB, Rundgang
+    // 2026-10-26, #46). Deshalb immer die Bild-URL mit width=160 (3x Pixeldichte).
+    const quelle = galleryImage.currentSrc || galleryImage.src;
+    if (!quelle) return;
+    try {
+      const url = new URL(quelle, window.location.href);
+      url.searchParams.set('width', '160');
+      stickyImage.src = url.href;
+    } catch {
+      stickyImage.src = quelle;
+    }
     stickyImage.alt = galleryImage.alt;
     stickyImage.removeAttribute('srcset');
   }

@@ -28,3 +28,16 @@ test('Nur echte Waren erzeugen den Speditionshinweis, auch bei Variantenbreite',
   assert.match(await render([item({sample:true}),item()],4000),/ab 50/);
 });
 test('Leerer Warenkorb enthaelt keine Versandzusage',async()=>assert.equal((await render([],0)).trim(),''));
+// Rundgang 2026-10-26 (#17): unter der Schwelle Versandbetrag und Rest zeigen,
+// beides aus den Theme-Einstellungen. Reine Musterkoerbe bleiben kostenlos.
+const renderPreis = (items, total, preis = '4,99 €') => engine.parseAndRender(source, { cart: { items, total_price: total }, settings: { tp_versand_frei_ab: 50, tp_versand_preis: preis }, pages: {} });
+test('unter der Schwelle: Versandbetrag und Rest bis versandkostenfrei', async () => {
+  engine.registerFilter('money', (cent) => (cent / 100).toFixed(2).replace('.', ',') + ' €');
+  const out = (await renderPreis([item()], 1790)).replace(/\s+/g, ' ');
+  assert.match(out, /Versand 4,99 €, noch 32,10 € bis versandkostenfrei/);
+  assert.match(out, /ab 50 € Bestellwert/);
+  assert.match(await renderPreis([item()], 5000), /Versandkostenfrei in Deutschland\./);
+  const muster = await renderPreis([item({ sample: true })], 0);
+  assert.match(muster, /Kostenloser Musterversand/);
+  assert.doesNotMatch(muster, /4,99|noch/);
+});
