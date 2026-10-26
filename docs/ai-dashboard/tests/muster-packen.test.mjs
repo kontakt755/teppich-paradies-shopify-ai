@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
+import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
 import { adressEtikett, adressLayout, ABSENDER } from '../lib/adress-etiketten.mjs';
 import { ETIKETT_FORMATE } from '../lib/muster-etiketten.mjs';
 
@@ -371,4 +371,31 @@ test('aufkleberFuerMuster: genau dieses Muster in bestellter Anzahl, nichts bei 
   assert.deepEqual(aufkleberFuerMuster(eins).map(e => e.sku), ['TV-GR']);
   assert.deepEqual(aufkleberFuerMuster({ ...eins, fehlt: ['Serie'] }), []);
   assert.deepEqual(aufkleberFuerMuster(null), []);
+});
+
+test('aufkleberFuer nurOffen: abgehakte Muster sind schon ueberklebt, die Adresse kommt immer', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, haken: { 'gid://shopify/LineItem/11': { zeit: 'x' } },
+    auftraege: [auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')])] });
+  const k = r.kunden[0];
+  assert.deepEqual(aufkleberFuer(k).map(e => e.art || e.sku), ['TV-SA', 'TV-GR', 'adresse']);
+  assert.deepEqual(aufkleberFuer(k, { nurOffen: true }).map(e => e.art || e.sku), ['TV-GR', 'adresse']);
+});
+
+test('handTreffer: offene Muster als Karten in Packreihenfolge, Eingelegtes und Gepacktes getrennt, hoechstens max', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, statusVon: () => 'geliefert',
+    haken: { 'gid://shopify/LineItem/31': { zeit: 'x' } }, gepackt: { 'gid://shopify/Order/4': { zeit: 'x' } },
+    auftraege: [
+      auftrag(2, '2026-10-19T09:00:00Z', 'Bea Test', [pos(21, '101')]),
+      auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')]),
+      auftrag(3, '2026-10-18T09:00:00Z', 'Cem Test', [pos(31, '101')]),
+      auftrag(4, '2026-10-16T09:00:00Z', 'Dan Test', [pos(41, '101')]),
+    ] });
+  const t = handTreffer(r.kunden, 'sand 11', r.ausserhalb);
+  assert.deepEqual(t.karten.map(x => [x.kunde.name, x.muster.lineItemId.split('/').pop()]), [['Anna Test', '11'], ['Bea Test', '21']], 'aelteste offene Bestellung zuerst');
+  assert.deepEqual(t.eingelegt.map(x => x.kunde.name).sort(), ['Cem Test', 'Dan Test']);
+  const knapp = handTreffer(r.kunden, 'sand 11', r.ausserhalb, { max: 1 });
+  assert.deepEqual([knapp.karten.length, knapp.mehr], [1, 1]);
+  // Kunde oder Bestellnummer: alle offenen Muster dieses Umschlags.
+  assert.deepEqual(handTreffer(r.kunden, '#T1').karten.map(x => x.muster.lineItemId.split('/').pop()), ['11', '12']);
+  assert.deepEqual(handTreffer(r.kunden, '').karten, []);
 });

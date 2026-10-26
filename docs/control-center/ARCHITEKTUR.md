@@ -1986,6 +1986,28 @@ Wunsch: „alles finden“ und Kundenbestellungen „sehr einfach packen und neu
   (fehlende Angaben, Direktversand, Hinweise, Klaerung). Der Wareneingang hat den Haken direkt in der
   Zeile; die Rueckmeldung nennt den Umschlag und wie viele Muster dort noch offen sind.
 
+**Baby-einfach: Bestellung in drei Schritten, „Muster kommt an“ (26.10.2026, #1701).**
+Ablauf des Packers (Inhaber 26.10.): eine Bestellung samt Adresse ausdrucken, dann schauen, was da ist
+und was fehlt. Zwei Reiter: „Bestellung packen“ (Standard, bisher „Nach Kunde packen“) und „Muster kommt an“
+(`mp=laden`, bisher „Wareneingang nach Partnerladen“; alte Links gelten weiter).
+- *Ein Umschlag, drei Schritte, ein Hauptknopf:* 1 · Bestellung drucken („Aufkleber und Adresse drucken“,
+  nur noch nicht abgehakte Muster plus Adresse - `aufkleberFuer(k, { nurOffen: true })`), 2 · Was ist da?
+  („Da: x von n · Fehlt: …“, Haken je Muster; Antworten „Fehlt noch – zurücklegen“ = Zu klären und
+  „Alle n da – Umschlag gepackt“), 3 · Zukleben („Umschlag gepackt“, davor bei Bedarf „Adressaufkleber
+  drucken“). Schritt 1 gilt als erledigt, sobald auf diesem Geraet gedruckt wurde (Druckdialog nach
+  „Drucken“ geschlossen oder „Schon gedruckt – weiter“) oder ein Muster abgehakt ist. Der Druckstand liegt
+  nur im Browser (`localStorage` `tp-mp-gedruckt`, 14 Tage) und entscheidet allein, welcher Knopf
+  leuchtet - kein gemeinsamer Packstand. Zu klaeren: der Hauptknopf ist das Naechstliegende (Fehlendes ist
+  da, Lieferadresse, Musterzuordnung, Restumfang, sonst Bestellstand); Gepackt: „Großbrief vorbereiten“.
+  Alles Weitere steht unter „Mehr …“. Je Muster bleibt ein leises „Nur diesen nachdrucken“.
+- *Muster kommt an:* ein grosses Feld („Was steht auf dem Muster?“, Parameter `mh`). `handTreffer` liefert
+  die passenden, noch nicht eingelegten Muster offener Umschlaege in Packreihenfolge als grosse Karten
+  (Bild, Farbnummer, „Gehört in #…“, „Aufkleber drucken“, „Eingelegt ✓“; bei mehreren ist die aelteste
+  Bestellung markiert), getrennt davon „Schon eingelegt“ und Treffer ausserhalb der Packliste. „Eingelegt ✓“
+  setzt den Haken, leert das Feld und setzt den Fokus fuer das naechste Muster; die Rueckmeldung nennt den
+  Umschlag und was noch offen ist, bei komplettem Umschlag mit Link „Zum Umschlag“. Ohne Eingabe steht
+  darunter der Wareneingang je Partnerladen wie bisher.
+
 Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shopify-Status;
 keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
 nicht als zweiter Hauptstatus. Versand und manueller Listenhaken bleiben unterschiedliche Dinge.
