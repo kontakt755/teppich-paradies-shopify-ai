@@ -9,7 +9,9 @@ import {
   musterNachfassen, kontaktweg, texteAusMarkdown, fuelleText, mailtoLink, platzhalterFrei,
   ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN, HOECHSTENS_TAGE, ERLEDIGT_ZEIGEN_TAGE, SHOP_URL,
   versandLaeuft, teileNachfassen, nachfassTodo,
+  musterArt, vorlageFuer, nameSchreibweise, TEPPICH_VORLAGEN,
 } from '../lib/muster-nachfassen.mjs';
+import { musterKaufLinks } from '../lib/muster-kauf-links.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 
 // Nur erfundene Daten: Testkunden mit example.invalid-Adressen, Produktnamen erfunden.
@@ -185,7 +187,7 @@ test('Vorlage lesen: Betreff und Text der ersten Mail und der Erinnerung', () =>
   assert.doesNotMatch(t.erste.text, /Text 2|---/);
   assert.equal(t.erinnerung.betreff, 'Noch Fragen zu Ihrem neuen Boden?');
   assert.match(t.erinnerung.text, /entschieden\?\n\nFreundliche Grüße\n\{Name\}$/);
-  assert.deepEqual(texteAusMarkdown('# nur eine Überschrift'), { erste: null, erinnerung: null, nichtVerfuegbar: null });
+  assert.deepEqual(texteAusMarkdown('# nur eine Überschrift'), { erste: null, erinnerung: null, nichtVerfuegbar: null, teppich: { erste: null, erinnerung: null } });
 });
 
 test('Text fuellen: Name und Links, Unbekanntes faellt mit seiner Zeile weg', () => {
@@ -263,4 +265,112 @@ test('nachfassTodo: Anrufen bei Rueckrufwunsch, sonst Sprung zur Nachfass-Karte 
   assert.equal(mail.titel, 'Erinnerung schicken: #T1');
   assert.deepEqual(mail.knopf, { text: 'Nachfassen', href: '#/heute?mn=1' });
   assert.equal(mail.bereich, 'laden');
+});
+
+// --- Teppich-Fassung, Anrede, Linkliste (Rundgang 2026-10-26, #7) -------------------------------
+
+const link = (n, titel, farbe, lieferzeit) => ({ titel, farbe, url: `${SHOP_URL}/products/test-teppich-${n}?variant=${100 + n}`, ...(lieferzeit ? { lieferzeit } : {}) });
+const LZ = 'ca. 5–8 Werktage inkl. Ketteln';
+
+test('musterArt: nur Teppich (oder Laeufer) nach Mass ergibt die Teppich-Fassung, Teppichboden nicht', () => {
+  const m = titel => ({ istMuster: true, titel });
+  assert.equal(musterArt([m('Muster Testvelours Teppich nach Maß'), m('Muster: Testsoft Teppich mit Einfassband nach Maß'), { istMuster: false, titel: 'Ware' }]), 'teppich');
+  assert.equal(musterArt([m('Muster Testläufer Läufer nach Maß')]), 'teppich');
+  assert.equal(musterArt([m('Muster Testvelours Teppich nach Maß'), m('Muster: Testeiche – Vinylboden von der Rolle')]), 'boden', 'gemischt: allgemeine Vorlage mit Verlege-Absatz');
+  assert.equal(musterArt([m('Muster Testvelours Teppichboden nach Maß')]), 'boden');
+  assert.equal(musterArt([m('Muster Testvelours Teppichboden')]), 'boden');
+  assert.equal(musterArt([]), 'boden');
+  assert.equal(musterArt(null), 'boden');
+});
+
+test('musterNachfassen: Eintraege tragen die Art; vorlageFuer waehlt die passende Fassung', () => {
+  const teppich = zeile({ raus: 5 });
+  teppich.auftrag.positionen = teppich.auftrag.positionen.slice(0, 2);
+  const boden = zeile({ raus: 5 });
+  const r = musterNachfassen([teppich, boden], { jetzt: JETZT });
+  const art = Object.fromEntries(r.offen.map(e => [e.orderName, e.art]));
+  assert.equal(art[teppich.orderName], 'teppich');
+  assert.equal(art[boden.orderName], 'boden');
+
+  const texte = texteAusMarkdown(VORLAGE);
+  assert.equal(vorlageFuer(texte, { stufe: 'erste', art: 'teppich' }), TEPPICH_VORLAGEN.erste, 'ohne eigenen Abschnitt: eingebaute Teppich-Fassung');
+  assert.equal(vorlageFuer(texte, { stufe: 'erinnerung', art: 'teppich' }), TEPPICH_VORLAGEN.erinnerung);
+  assert.equal(vorlageFuer(texte, { stufe: 'erste', art: 'boden' }), texte.erste);
+  assert.equal(vorlageFuer(texte, { stufe: 'erinnerung' }), texte.erinnerung);
+  assert.equal(vorlageFuer(texte, { stufe: 'unbekannt', art: 'teppich' }), null);
+  assert.equal(vorlageFuer(null, { stufe: 'erste', art: 'teppich' }), null);
+
+  const eigen = texteAusMarkdown(`## Erinnerung Teppich\n**Betreff:** Eigene Teppich-Erinnerung\nHallo\n---\n## Text 1 Teppich\n**Betreff:** Eigener Teppich-Text\nHallo\n---\n${VORLAGE}`);
+  assert.equal(eigen.erste.betreff, 'Ihre Muster – passt die Farbe?', 'Teppich-Abschnitte verdraengen die allgemeinen nicht');
+  assert.equal(eigen.erinnerung.betreff, 'Noch Fragen zu Ihrem neuen Boden?');
+  assert.equal(vorlageFuer(eigen, { stufe: 'erste', art: 'teppich' }).betreff, 'Eigener Teppich-Text', 'Vorlage des Inhabers geht vor');
+  assert.equal(vorlageFuer(eigen, { stufe: 'erinnerung', art: 'teppich' }).betreff, 'Eigene Teppich-Erinnerung');
+  const paradies = texteAusMarkdown('## Text 1 – E-Mail von Teppich Paradies\n**Betreff:** Allgemein\nHallo\n---\n');
+  assert.equal(paradies.erste.betreff, 'Allgemein', '"Teppich Paradies" im Kopf macht keinen Teppich-Abschnitt');
+  assert.equal(paradies.teppich.erste, null);
+});
+
+test('Teppich-Fassung: Wunschmass, Form, Einfassung, Lieferzeit - keine Rollenbreite, keine Verlegung, saubere Absaetze', () => {
+  const produkte = [link(1, 'Testvelours Teppich nach Maß', 'Sand', LZ), link(2, 'Testvelours Teppich nach Maß', 'Greige', LZ), link(3, 'Testsoft Teppich nach Maß', 'Grau', LZ)];
+  const mail = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'testkunde eins', absender: 'Ihr Team von Teppich Paradies', produkte });
+  assert.match(mail.text, /^Guten Tag Testkunde Eins,/);
+  assert.match(mail.text, /Wunschmaß/);
+  assert.match(mail.text, /Maß und Form/);
+  assert.match(mail.text, /Einfassung, zum Beispiel gekettelt/);
+  assert.match(mail.text, /\nLieferzeit laut Produktseite: ca\. 5–8 Werktage inkl\. Ketteln\n/);
+  assert.doesNotMatch(mail.text, /Rollenbreite|verlege|Verlegeteam|von der Rolle|Boden/i);
+  assert.match(mail.text, new RegExp(`Ihre gewählten Produkte finden Sie hier:\\nTestvelours Teppich nach Maß · Sand\\n${SHOP_URL}/products/test-teppich-1\\?variant=101\\n\\nTestvelours`));
+  assert.match(mail.text, /variant=103\n\nWeitere Muster können Sie jederzeit kostenlos nachbestellen: /, 'Leerzeile nach der Linkliste');
+  assert.doesNotMatch(mail.text, /[{}<>]/);
+  assert.doesNotMatch(mail.text, /[ \t]\n/, 'keine Leerzeichen am Zeilenende');
+  assert.ok(platzhalterFrei(mail));
+  assert.equal(mail.betreff, 'Ihre Muster von Teppich Paradies – passt die Farbe?');
+
+  const ein = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde', absender: 'Team', produkte: [link(1, 'Testvelours Teppich nach Maß', 'Sand', LZ)] });
+  assert.match(ein.text, /Ihr gewähltes Produkt finden Sie hier:\nTestvelours/);
+
+  const ohneLz = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde', absender: 'Team', produkte: [link(1, 'A Teppich nach Maß', 'Sand', LZ), link(2, 'B Teppich nach Maß', 'Grau')] });
+  assert.doesNotMatch(ohneLz.text, /Lieferzeit/, 'nicht fuer alle bekannt: Zeile faellt weg');
+  const verschieden = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde', absender: 'Team', produkte: [link(1, 'A Teppich nach Maß', 'Sand', LZ), link(2, 'B Teppich nach Maß', 'Grau', 'ca. 14 Tage')] });
+  assert.doesNotMatch(verschieden.text, /Lieferzeit/, 'verschiedene Lieferzeiten: nichts raten');
+  const ohneLinks = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde', absender: 'Team', produkte: [] });
+  assert.doesNotMatch(ohneLinks.text, /Lieferzeit|gewählte/);
+  assert.ok(platzhalterFrei(ohneLinks));
+
+  const erinnerung = fuelleText(TEPPICH_VORLAGEN.erinnerung, { kundenname: 'TESTKUNDE ZWEI', absender: 'Team', produkte: [link(1, 'Testvelours Teppich nach Maß', 'Sand')] });
+  assert.equal(erinnerung.betreff, 'Noch Fragen zu Ihrem Teppich?');
+  assert.match(erinnerung.text, /^Guten Tag Testkunde Zwei,/);
+  assert.match(erinnerung.text, /Ihr gewähltes Produkt finden Sie hier:\nTestvelours Teppich nach Maß · Sand\n.+variant=101\n\nFreundliche Grüße/);
+  assert.doesNotMatch(erinnerung.text, /Boden|Menge/);
+  assert.ok(platzhalterFrei(erinnerung));
+});
+
+test('Allgemeine Vorlage: Linkliste auf eigenen Zeilen mit Leerzeile, Mehrzahl bei mehreren Produkten', () => {
+  const t = texteAusMarkdown(VORLAGE);
+  const zwei = fuelleText(t.erste, { kundenname: 'Testkunde', absender: 'Anna', produkte: [link(1, 'Testboden', 'Grau'), link(2, 'Testboden', 'Sand')] });
+  assert.match(zwei.text, /Ihre gewählten Produkte finden Sie hier:\nTestboden · Grau\n.+variant=101\n\nTestboden · Sand\n.+variant=102\n\nWeitere Muster: /);
+  const anhang = fuelleText(t.erinnerung, { kundenname: 'Testkunde', absender: 'Anna', produkte: [link(1, 'Testboden', 'Grau'), link(2, 'Testboden', 'Sand')] });
+  assert.match(anhang.text, /Ihre gewählten Produkte:\nTestboden · Grau/, 'Vorlage ohne {Link Produkt}: Block mit Mehrzahl');
+  assert.match(anhang.text, /entschieden\?\n\nIhre gewählten Produkte:\n/, 'genau eine Leerzeile vor dem angehaengten Block');
+  assert.doesNotMatch(anhang.text, /\n{3,}/);
+  assert.doesNotMatch(anhang.text, /Böden/);
+});
+
+test('nameSchreibweise: nur ganz klein oder ganz gross Eingetipptes wird je Wortanfang gross', () => {
+  assert.equal(nameSchreibweise('anna-lena testkunde'), 'Anna-Lena Testkunde');
+  assert.equal(nameSchreibweise('ÖZLEM TESTKUNDIN'), 'Özlem Testkundin');
+  assert.equal(nameSchreibweise('  erika   beispiel '), 'Erika Beispiel');
+  assert.equal(nameSchreibweise('Anna von Testkunde'), 'Anna von Testkunde', 'gemischt bleibt, wie eingegeben');
+  assert.equal(nameSchreibweise('McTest'), 'McTest');
+  assert.equal(nameSchreibweise(''), '');
+  assert.equal(nameSchreibweise(null), '');
+});
+
+test('Musterlinks tragen die Lieferzeit laut Produktseite mit, ohne sie fehlt das Feld', () => {
+  const quelle = { istMuster: true, handle: 'muster-test-teppich', titel: 'Muster Testvelours Teppich nach Maß', sku: 'M-T1', musterQuelle: { produktHandle: 'test-teppich', quellvariante: 'gid://shopify/ProductVariant/123' } };
+  const produkt = { handle: 'test-teppich', status: 'ACTIVE', titel: 'Testvelours Teppich nach Maß', onlineStoreUrl: `${SHOP_URL}/products/test-teppich`,
+    varianten: [{ id: 'gid://shopify/ProductVariant/123', sku: 'T1', farbe: 'Sand', verfuegbar: true }] };
+  assert.equal(musterKaufLinks([quelle], [{ ...produkt, lieferzeit: LZ }])[0].lieferzeit, LZ);
+  assert.equal(Object.hasOwn(musterKaufLinks([quelle], [produkt])[0], 'lieferzeit'), false);
+  assert.equal(musterKaufLinks([quelle], [{ ...produkt, lieferzeit: '{Name}' }])[0].lieferzeit, 'Name', 'keine Platzhalter-Klammern aus Produktdaten');
 });

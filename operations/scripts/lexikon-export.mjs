@@ -109,6 +109,7 @@ export const BULK_QUERY = `
         musterBasis: metafield(namespace: "service", key: "einfass_basis") {
           value reference { ... on Product { id handle } }
         }
+        lieferzeit: metafield(namespace: "service", key: "lieferzeit") { value }
         featuredImage { url }
         metafields(namespace: "custom", first: 30) { edges { node { namespace key value type } } }
         variants {

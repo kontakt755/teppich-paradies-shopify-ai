@@ -10,6 +10,10 @@
   Speditionshinweis, wenn Rollenware oder Paletten in der Sendung sind (Art:
   Meterware/Raummass oder Versandart-Property). Fehlt eine Trackingnummer,
   steht das ehrlich da, mit Telefonnummer statt leerem Button.
+
+  Masszeilen (Teppich nach Mass, Meterware, Kettelservice ...) zeigen Mass und
+  Flaeche statt der internen Menge in 0,01-Schritten (#26, Beispiel #1035:
+  "1 x Rivena Teppich nach Mass - Sandbeige (036) (250 x 310 cm, 7,75 m2)").
 {%- endcomment -%}
 
 {%- liquid
@@ -60,7 +64,101 @@
   <p style="margin:0 0 6px;font-weight:bold;">Inhalt dieser Sendung</p>
   <ul style="margin:0 0 16px;padding-left:20px;">
     {%- for line in fulfillment.fulfillment_line_items -%}
-      <li>{{ line.quantity }} × {{ line.line_item.title | escape }}{% if line.line_item.variant_title != blank and line.line_item.variant_title != 'Default Title' %} – {{ line.line_item.variant_title | escape }}{% endif %}</li>
+      {%- comment -%}
+        Masszeilen (#26): Bei Teppich nach Mass, Meterware/Raummass, Wunschmass,
+        Kettelservice und Laengenware steckt das Mass in der Menge (0,01 m2,
+        0,01 m oder cm). Statt "775 x Teppich" steht dann "1 x Teppich (Masse,
+        Flaeche)", der Kettelservice als "Kante umlaufend 11,20 m". Gelesen wird
+        nur, was der Kunde im Warenkorb selbst gesehen hat (Properties ohne _).
+        Laengenware: Stueck = versandte Menge / "Laenge je Stueck" (Menge in cm),
+        damit eine Teillieferung nur die versandten Stuecke nennt.
+      {%- endcomment -%}
+      {%- liquid
+        assign tp_v_li = line.line_item
+        assign tp_v_mass = ''
+        assign tp_v_flaeche = ''
+        assign tp_v_breite = ''
+        assign tp_v_laenge = ''
+        assign tp_v_rund = ''
+        assign tp_v_seite = ''
+        assign tp_v_kante = ''
+        assign tp_v_zu = ''
+        assign tp_v_je_stueck = ''
+        for p in tp_v_li.properties
+          assign tp_v_w = p.last | strip
+          if tp_v_w == blank
+            continue
+          endif
+          case p.first
+            when 'Maße'
+              assign tp_v_mass = tp_v_w
+            when 'Fläche (abgerechnet)', 'Fläche', 'Fläche (aufgerundet)', 'Fläche (berechnet)'
+              if tp_v_flaeche == ''
+                assign tp_v_flaeche = tp_v_w
+              endif
+            when 'Ihre Breite', 'Rollenbreite', 'Breite'
+              assign tp_v_breite = tp_v_w
+            when 'Gewünschte Länge', 'Länge'
+              assign tp_v_laenge = tp_v_w
+            when 'Durchmesser'
+              assign tp_v_rund = tp_v_w
+            when 'Seitenlänge'
+              assign tp_v_seite = tp_v_w
+            when 'Kante umlaufend'
+              assign tp_v_kante = tp_v_w
+            when 'Zu Teppich', 'Zu Teppichboden', 'Zu Bodenbelag'
+              assign tp_v_zu = tp_v_w
+            when 'Länge je Stück'
+              assign tp_v_je_stueck = tp_v_w
+          endcase
+        endfor
+        if tp_v_mass == ''
+          if tp_v_breite != '' and tp_v_laenge != ''
+            assign tp_v_mass = tp_v_breite | append: ' × ' | append: tp_v_laenge | replace: ' cm × ', ' × '
+          elsif tp_v_rund != ''
+            assign tp_v_mass = 'Ø ' | append: tp_v_rund
+          elsif tp_v_seite != ''
+            assign tp_v_mass = tp_v_seite | append: ' × ' | append: tp_v_seite | replace: ' cm × ', ' × '
+          endif
+        endif
+        assign tp_v_variante = ''
+        if tp_v_li.variant_title != blank and tp_v_li.variant_title != 'Default Title'
+          assign tp_v_variante = ' – ' | append: tp_v_li.variant_title
+        endif
+        if tp_v_je_stueck != ''
+          assign tp_v_stueck = 0
+          assign tp_v_je_cm = tp_v_je_stueck | remove: 'cm' | strip | plus: 0
+          if tp_v_je_cm > 0
+            assign tp_v_rest = line.quantity | modulo: tp_v_je_cm
+            if tp_v_rest == 0
+              assign tp_v_stueck = line.quantity | divided_by: tp_v_je_cm
+            endif
+          endif
+          if tp_v_stueck > 0
+            assign tp_v_zeile = tp_v_stueck | append: ' × ' | append: tp_v_li.title | append: tp_v_variante | append: ' (je ' | append: tp_v_je_stueck | append: ')'
+          else
+            assign tp_v_zeile = tp_v_li.title | append: tp_v_variante | append: ' (insgesamt ' | append: line.quantity | append: ' cm)'
+          endif
+        elsif tp_v_kante != '' and tp_v_mass == '' and tp_v_flaeche == ''
+          assign tp_v_zeile = tp_v_li.title
+          if tp_v_zu != ''
+            assign tp_v_zeile = tp_v_zeile | append: ' für ' | append: tp_v_zu
+          endif
+          assign tp_v_zeile = tp_v_zeile | append: ' – Kante umlaufend ' | append: tp_v_kante
+        elsif tp_v_mass != '' or tp_v_flaeche != ''
+          assign tp_v_klammer = tp_v_mass
+          if tp_v_mass != '' and tp_v_flaeche != ''
+            assign tp_v_klammer = tp_v_klammer | append: ', '
+          endif
+          assign tp_v_klammer = tp_v_klammer | append: tp_v_flaeche
+          assign tp_v_zeile = '1 × ' | append: tp_v_li.title | append: tp_v_variante | append: ' (' | append: tp_v_klammer | append: ')'
+        elsif tp_v_zu != '' and tp_v_laenge != ''
+          assign tp_v_zeile = tp_v_li.title | append: tp_v_variante | append: ' (' | append: tp_v_laenge | append: ')'
+        else
+          assign tp_v_zeile = line.quantity | append: ' × ' | append: tp_v_li.title | append: tp_v_variante
+        endif
+      -%}
+      <li>{{ tp_v_zeile | escape }}</li>
     {%- endfor -%}
   </ul>
 

@@ -24,7 +24,9 @@ export function musterKaufLinks(positionen = [], produkte = []) {
     const v = varianten[0], id = nummer(v.id), url = `${ORIGIN}/products/${handle}?variant=${id}`;
     if (gesehen.has(url)) continue;
     gesehen.add(url);
-    links.push({ titel: String(produkt.titel || p.titel || '').replace(/^Muster\s*:?\s*/i, ''), farbe: String(v.farbe || p.farbe || ''), url });
+    // Lieferzeit laut Produktseite (Lexikon: service.lieferzeit) fuer die Muster-Nachfrage; fehlt sie, fehlt das Feld.
+    const lieferzeit = typeof produkt.lieferzeit === 'string' ? produkt.lieferzeit.replace(/[{}\r\n]/g, ' ').trim().slice(0, 80) : '';
+    links.push({ titel: String(produkt.titel || p.titel || '').replace(/^Muster\s*:?\s*/i, ''), farbe: String(v.farbe || p.farbe || ''), url, ...(lieferzeit ? { lieferzeit } : {}) });
     if (links.length === 3) break;
   }
   return links;
