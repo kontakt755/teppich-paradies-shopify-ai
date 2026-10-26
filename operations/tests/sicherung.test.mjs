@@ -7,6 +7,9 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { sichern, alteSicherungenAufraeumen, vorhandeneQuellen, SICHERUNGSPFADE, NICHT_GESICHERT, kopieAblegen, kopieVermerken, parseArgs } from '../scripts/sicherung.mjs';
 import { betriebszustand } from '../lib/betriebszustand.mjs';
+import { oeffne } from '../../social/lib/db.mjs';
+import { sichereDatenbank } from '../../social/lib/ablauf.mjs';
+import { liesHighlightStand, schreibeHighlightStand } from '../../social/lib/highlights.mjs';
 
 function tmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'tp-sicherung-'));
@@ -297,4 +300,45 @@ test('ein falscher Datenordner wird auch mit Dienst-Plists nicht zur Sicherung',
   fs.writeFileSync(path.join(agents, 'net.teppich-paradies.shopwache.plist'), '<plist/>');
   assert.throws(() => sichern({ privatDir: leer, launchAgentsDir: agents }), /Keine Betriebsdaten/);
   assert.ok(!fs.existsSync(path.join(leer, 'dienste')));
+});
+
+// -- Wiederherstellen: die Befehle im README tun, was sie sagen ---------------
+
+/** Der Befehlsblock unter Schritt 3 "Daten zurueckspielen" in operations/README.md, so wie er dasteht. */
+function zurueckspielBlock() {
+  const readme = fs.readFileSync(path.join(REPO, 'operations', 'README.md'), 'utf8');
+  const abschnitt = readme.slice(readme.indexOf('### Wiederherstellen nach einem Ausfall'));
+  const schritt = abschnitt.slice(abschnitt.indexOf('3. **Daten zurueckspielen.**'));
+  const block = /```\n([\s\S]*?)\n\s*```/.exec(schritt);
+  assert.ok(block, 'Befehlsblock unter Schritt 3 nicht gefunden');
+  return block[1].split('\n').map(z => z.trim()).join('\n');
+}
+
+test('Wiederherstellen nach README: Social-Datenbank und Highlight-Stand kommen zurueck', () => {
+  // Alter Mac: eine Baustelle in der Datenbank, ihr taeglicher Abzug, die von Hand gezaehlten Highlights.
+  const alt = beispielPrivatDir();
+  const social = path.join(alt, 'social');
+  const db = oeffne(path.join(social, 'social.db'));
+  db.inhaltAnlegen({ quelle: 'baustelle', typ: 'kundenprojekt', titel: 'Testbaustelle', einwilligung: true });
+  sichereDatenbank(db, { dir: social });
+  db.schliessen();
+  schreibeHighlightStand({ Verlegung: 3 }, { dir: social, einsortiert: [7], jetzt: new Date('2026-10-20T10:00:00Z') });
+  const { archiv } = sichern({ privatDir: alt, jetzt: new Date('2026-10-26T21:30:00Z') });
+
+  // Neuer Mac: leeres Home, die Befehle aus dem README unveraendert - nur der Archivname ist eingesetzt.
+  const home = tmpDir();
+  const block = zurueckspielBlock().replaceAll('<datum>.tar.gz', archiv);
+  const ausgabe = execFileSync('bash', ['-e', '-c', block], { env: { ...process.env, HOME: home }, encoding: 'utf8' });
+  const neu = path.join(home, 'teppich-paradies-analyse', 'social');
+  // Der Social-Dienst oeffnet social.db (social/lib/pfade.mjs, dbPfad) - dort muss der Abzug stehen.
+  const wieder = oeffne(path.join(neu, 'social.db'));
+  try {
+    assert.deepEqual(wieder.inhalte().map(i => i.titel), ['Testbaustelle'], 'der Dienst findet die alten Inhalte');
+  } finally { wieder.schliessen(); }
+  assert.equal(fs.statSync(path.join(neu, 'social.db')).mode & 0o777, 0o600);
+  assert.match(ausgabe, /^inhalt 1$/m, 'die Pruefzeile im README zeigt die Inhalte');
+  // Die Bereichszahlen traegt die Redaktion von Hand ein, die einsortierten Storys auch (social/lib/highlights.mjs).
+  const stand = liesHighlightStand(neu);
+  assert.equal(stand?.bereiche?.Verlegung, 3, 'die Highlight-Zaehlung kommt zurueck');
+  assert.deepEqual(stand.einsortiert, [7]);
 });

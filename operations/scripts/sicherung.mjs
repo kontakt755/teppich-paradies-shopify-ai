@@ -88,6 +88,9 @@ export const SICHERUNGSPFADE = Object.freeze([
   // Schrift und Logo fuer die Reels (social/lib/produkt-reel.mjs, zusammen unter 1 MB).
   'social/whatsapp-stand.json',
   'social/werkzeug',
+  // Highlights: die Bereichszahlen traegt die Redaktion von Hand ein, dazu die schon einsortierten
+  // Storys (social/lib/highlights.mjs) - beides steht nicht in der Datenbank.
+  'social/highlights.json',
   // Muster-Nachfassen (operations/lib/nachfass-versand.mjs): wer schon angeschrieben wurde und
   // wer nie wieder angeschrieben werden darf - ohne beides gingen nach einer Wiederherstellung
   // doppelte oder unerwuenschte Kundenmails raus. Dazu die Textvorlage. postfach.json
@@ -145,7 +148,6 @@ export const NICHT_GESICHERT = Object.freeze({
   'social/social.db': 'laufende Datenbank; gesichert wird ihr stimmiger Abzug social/sicherung.db',
   'social/medien': 'Fotos und Videos - zu gross fuer das Tagesarchiv',
   'social/lernstand.json': 'wird aus der Datenbank neu berechnet',
-  'social/highlights.json': 'wird aus der Datenbank neu berechnet',
   'social/highlights': 'Titelbilder der Highlights - entstehen neu (npm run social -- highlights)',
   'anreicherung': 'Plan- und Batchdateien der Anreicherung - jeder Lauf schreibt sie neu (npm run daten:anreichern)',
   'lieferant-i/bestand-status.json': 'Stand des letzten Bestandsabgleichs - der naechste Lauf schreibt ihn neu',

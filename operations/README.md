@@ -1055,12 +1055,26 @@ Sync-Dienst neu.
    Der Dienst-Checkout entsteht neu aus `main`; das Nachziehen (`--nur-nachziehen`) haelt ihn danach
    aktuell.
 3. **Daten zurueckspielen.** Die Pfade im Archiv sind relativ zu `$TP_PRIVAT_DIR`, weil das Skript
-   mit `tar -C <Privatordner>` packt:
+   mit `tar -C <Privatordner>` packt. Der Social-Dienst oeffnet `social/social.db`; im Archiv steht
+   nur ihr taeglicher Abzug `social/sicherung.db`. Er muss vor dem ersten Start des Dienstes
+   (Schritt 5) nach `social.db` kopiert werden. Sonst legt der Dienst eine leere Datenbank an.
+   Die letzte Zeile zaehlt zur Kontrolle die Inhalte, Medien und Beitraege. Keine davon darf
+   unerwartet 0 sein.
    ```
    mkdir -p ~/teppich-paradies-analyse && chmod 700 ~/teppich-paradies-analyse
    tar -tzf <datum>.tar.gz | head                       # Inhalt ansehen
    tar -xzf <datum>.tar.gz -C ~/teppich-paradies-analyse
+   cd ~/teppich-paradies-analyse/social
+   [ -e social.db ] || cp sicherung.db social.db         # nie ueber eine vorhandene social.db
+   chmod 600 social.db
+   node -e "const d = new (require('node:sqlite').DatabaseSync)('social.db', { readOnly: true }); for (const t of ['inhalt', 'medium', 'beitrag']) console.log(t, d.prepare('SELECT COUNT(*) AS n FROM ' + t).get().n)"
    ```
+   Gibt es `social.db` schon, lief ein Social-Dienst bereits. Dann alle drei stoppen
+   (`launchctl bootout gui/$(id -u)/<dienst>` fuer `net.teppich-paradies.social`, `…social-takt` und
+   `…social-lauf`), die leere `social.db` samt
+   `social.db-wal` und `social.db-shm` beiseitelegen und den Block ab `cd` wiederholen. Ebenfalls im
+   Archiv und ohne weiteren Schritt wieder da: `social/highlights.json`, der von Hand eingetragene
+   Stand der Instagram-Highlights.
 4. **Zugaenge neu anlegen.** Sie stehen absichtlich nicht im Archiv:
 
    | Zugang | Ort | Anleitung |

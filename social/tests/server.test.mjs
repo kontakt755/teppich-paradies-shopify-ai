@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer, request } from 'node:http';
 import path from 'node:path';
 import test from 'node:test';
 import { zugangAnlegen } from '../lib/eingang.mjs';
@@ -97,6 +97,64 @@ test('Upload: Tagesmenge je Link ueberlebt den Neustart, fast volle Platte nimmt
   // Nicht messbar (null): dann entscheidet nur die Tagesmenge.
   platz.frei = null;
   assert.equal((await fetch(`${basis}/u/${token}/datei/${upload}`, { method: 'PUT', body: JPEG })).status, 200);
+});
+
+test('Upload: gleichzeitige Sendungen teilen sich Tagesmenge, Speicherreserve und Startzahl', async (t) => {
+  const dir = tmpDir(t); const db = testDb(t);
+  process.env.TP_SOCIAL_DIR = dir; t.after(() => { delete process.env.TP_SOCIAL_DIR; });
+  const mehmet = zugangAnlegen('Mehmet').token; const ali = zugangAnlegen('Ali').token;
+  const GIB = 1024 ** 3; const L = JPEG.length;
+  const platz = { frei: 100 * GIB };
+  const zaehler = path.join(dir, 'upload-tageszaehler.json');
+  const setzeZaehler = je => fs.writeFileSync(zaehler, JSON.stringify({ tag: '2026-10-26', je }));
+  const upload = erstelleUpload({ db, dir, jetzt: () => Date.parse('2026-10-26T10:00:00Z'), freierSpeicher: () => platz.frei, nachUpload: () => [] });
+  // Meldet, wenn der Dienst eine Anfrage angenommen hat (sein synchroner Teil ist dann gelaufen).
+  let angenommen = () => {};
+  const basis = await starte(t, (req, res) => { angenommen(); return upload(req, res); });
+  const starten = async token => (await (await fetch(`${basis}/u/${token}/start`, json({ einwilligung: true }))).json()).upload;
+  const put = (token, id) => fetch(`${basis}/u/${token}/datei/${id}`, { method: 'PUT', body: JPEG });
+  // Schickt die Kopfzeilen sofort, den Koerper erst auf weiter(): so laeuft die Sendung noch, waehrend die zweite kommt.
+  async function haengend(pfad, methode, koerper, kopf = {}) {
+    const da = new Promise(r => { angenommen = r; });
+    const anfrage = request(`${basis}${pfad}`, { method: methode, agent: false, headers: { 'Content-Length': koerper.length, ...kopf } });
+    t.after(() => anfrage.destroy());   // bricht ein roter Test vor weiter() ab, haelt die offene Sendung sonst den Lauf fest
+    const antwort = new Promise((ok, fehler) => {
+      anfrage.on('error', fehler);
+      anfrage.on('response', r => { let s = ''; r.on('data', d => { s += d; }); r.on('end', () => ok({ status: r.statusCode, text: s })); });
+    });
+    anfrage.flushHeaders();
+    await da; angenommen = () => {};
+    return { weiter: () => { anfrage.end(koerper); return antwort; } };
+  }
+
+  // Tagesmenge: noch Platz fuer anderthalb Dateien. Zwei gleichzeitige Dateien desselben Links passen nicht beide.
+  setzeZaehler({ Mehmet: { uploads: 3, bytes: 5 * GIB - Math.floor(1.5 * L) } });
+  const [a, b] = [await starten(mehmet), await starten(mehmet)];
+  const erste = await haengend(`/u/${mehmet}/datei/${a}`, 'PUT', JPEG);
+  const zweite = await put(mehmet, b);
+  assert.equal(zweite.status, 429, 'die laufende erste Datei haelt ihren Anteil an der Tagesmenge fest');
+  assert.equal((await erste.weiter()).status, 200);
+  assert.ok(JSON.parse(fs.readFileSync(zaehler, 'utf8')).je.Mehmet.bytes <= 5 * GIB, 'die Tagesmenge ist nicht ueberschritten');
+
+  // Speicherreserve (fuer alle Links gemeinsam): noch Platz fuer anderthalb Dateien ueber 15 GiB.
+  setzeZaehler({});
+  platz.frei = 15 * GIB + Math.floor(1.5 * L);
+  const [c, d] = [await starten(ali), await starten(mehmet)];
+  const dritte = await haengend(`/u/${ali}/datei/${c}`, 'PUT', JPEG);
+  const vierte = await put(mehmet, d);
+  assert.equal(vierte.status, 507, 'die laufende Datei eines anderen Links zaehlt gegen den freien Platz');
+  assert.equal((await dritte.weiter()).status, 200);
+  // Nach dem Ende gibt die Sendung ihren Anteil wieder frei (der Ersatz misst hier nicht nach).
+  assert.equal((await put(mehmet, d)).status, 200, 'kein Anteil bleibt haengen');
+
+  // Startzahl: beim 30. Upload des Tages kommen zwei gleichzeitige Starts nicht beide durch.
+  platz.frei = 100 * GIB;
+  setzeZaehler({ Mehmet: { uploads: 29, bytes: 0 } });
+  const koerper = Buffer.from(JSON.stringify({ einwilligung: true }));
+  const fuenfte = await haengend(`/u/${mehmet}/start`, 'POST', koerper, { 'Content-Type': 'application/json' });
+  assert.equal((await fetch(`${basis}/u/${mehmet}/start`, json({ einwilligung: true }))).status, 200);
+  assert.equal((await fuenfte.weiter()).status, 429, 'der zweite Start sieht den ersten');
+  assert.equal(JSON.parse(fs.readFileSync(zaehler, 'utf8')).je.Mehmet.uploads, 30);
 });
 
 test('Upload: ein abgelaufener Link fuehrt nirgends mehr hin', async (t) => {

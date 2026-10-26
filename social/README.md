@@ -27,7 +27,8 @@ veröffentlicht und misst.
   je Upload höchstens 25 Dateien und 1,5 GB, je Link-Name und Tag höchstens 30 Uploads und
   5 GB. Der Tageszähler liegt in `upload-tageszaehler.json` und übersteht einen Neustart.
   Sind auf der Platte weniger als 15 GiB frei, nimmt der Upload nichts mehr an (Antwort 507),
-  damit Control Center, Datenabgleich und Sicherung weiterlaufen.
+  damit Control Center, Datenabgleich und Sicherung weiterlaufen. Laufen mehrere Sendungen
+  gleichzeitig, hält jede ihren Anteil an Tagesmenge und freiem Platz fest, bis sie fertig ist.
 - **Upload-Links laufen nach 180 Tagen ab** (`LINK_GUELTIG_TAGE`). Links ohne Ablaufdatum
   (vor dem 26.10.2026 angelegt) gelten 180 Tage ab dem Anlegen. Das Datum steht unter
   „Social Media“ im Control Center und in `npm run social -- zugang`. Vorher einen neuen Link

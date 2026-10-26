@@ -288,6 +288,13 @@ export function erstelleUpload({
   freierSpeicher = () => messeSpeicher(dir)?.freiBytes ?? null, zaehlerDatei = uploadZaehlerPfad(dir),
 } = {}) {
   const laufend = new Map();       // uploadId -> { inhaltId, ordner, name, dateien, bytes, belegt, bis }
+  // Laufende Dateien stehen weder im Tageszaehler noch ganz auf der Platte. Jede haelt ihren
+  // Anteil fest, bis sie fertig ist - sonst saehen zwei gleichzeitige Sendungen dieselbe freie
+  // Menge und ueberschritten zusammen Tagesgrenze und Speicherreserve.
+  const anteile = new Set();       // { name, tag, bytes, geschrieben }
+  const anteilTag = (name, tag) => [...anteile].reduce((s, a) => s + (a.name === name && a.tag === tag ? a.bytes : 0), 0);
+  // Was schon geschrieben ist, fehlt bereits in der Messung des freien Platzes.
+  const anteilPlatz = () => [...anteile].reduce((s, a) => s + Math.max(0, a.bytes - a.geschrieben), 0);
 
   // Bewusst keine Sperre nach Fehlversuchen: der Link hat 144 Bit Zufall und ist
   // nicht zu erraten. Eine Sperre je Adresse wuerde hinter einem Proxy (Funnel)
@@ -318,11 +325,12 @@ export function erstelleUpload({
    * Platte) und um jeden Fehler auf beiden Seiten: volle Platte, abgerissene
    * Verbindung. Ohne das beendete ein Schreibfehler den ganzen Dienst.
    */
-  async function speichere(req, ziel, max, zuViel = () => new HttpFehler(413, 'Datei zu groß')) {
+  async function speichere(req, ziel, max, zuViel = () => new HttpFehler(413, 'Datei zu groß'), beiStueck = () => {}) {
     let groesse = 0; let kopf = Buffer.alloc(0);
     const waechter = new Transform({
       transform(stueck, _kodierung, weiter) {
         groesse += stueck.length;
+        beiStueck(stueck.length);
         if (kopf.length < 16) kopf = Buffer.concat([kopf, stueck]).subarray(0, 16);
         weiter(groesse > max ? zuViel() : null, stueck);
       },
@@ -355,12 +363,15 @@ export function erstelleUpload({
       }
 
       if (aktion === 'start' && req.method === 'POST') {
+        // Erst die (kleinen) Angaben lesen, dann pruefen und zaehlen ohne await dazwischen:
+        // sonst kaemen zwei gleichzeitige Starts beide an der Tagesgrenze vorbei.
+        const roh = await liesJson(req);
         const tag = tagVon(new Date(jetzt()));
         const heute = standHeute(z.name, tag, zaehlerDatei);
         if (heute.uploads >= GRENZEN.maxUploadsJeTag) throw new HttpFehler(429, 'Für heute sind es genug Uploads – bitte im Büro melden.');
         if (heute.bytes >= GRENZEN.maxBytesJeTag) throw new HttpFehler(429, TAGESGRENZE);
         platzRest();
-        const angaben = pruefeAngaben(await liesJson(req));
+        const angaben = pruefeAngaben(roh);
         const { id, ordner } = legeBaustelleAn(db, angaben, { von: z.name, jetzt: new Date(jetzt()), dir });
         const neu = crypto.randomBytes(8).toString('hex');
         laufend.set(neu, { inhaltId: id, ordner, name: z.name, dateien: 0, bytes: 0, belegt: false, bis: jetzt() + 2 * 60 * 60 * 1000 });
@@ -380,16 +391,22 @@ export function erstelleUpload({
         if (lauf.belegt) throw new HttpFehler(409, 'Es läuft noch eine Übertragung – bitte kurz warten.');
         // Tagesmenge je Link (ueberlebt einen Neustart) und freier Platz: die kleinere Grenze gilt.
         const tag = tagVon(new Date(jetzt()));
-        const restTag = GRENZEN.maxBytesJeTag - standHeute(lauf.name, tag, zaehlerDatei).bytes;
+        const restTag = GRENZEN.maxBytesJeTag - standHeute(lauf.name, tag, zaehlerDatei).bytes - anteilTag(lauf.name, tag);
         if (restTag <= 0) throw new HttpFehler(429, TAGESGRENZE);
-        const restPlatz = platzRest();
+        const platz = platzRest();
+        const restPlatz = platz === null ? null : platz - anteilPlatz();
+        if (restPlatz !== null && restPlatz <= 0) throw new HttpFehler(507, 'Der Speicher im Büro ist fast voll – bitte im Büro Bescheid geben.');
         const max = Math.min(GRENZEN.maxVideoBytes, rest, restTag, restPlatz ?? Infinity);
         const zuViel = () => (max === restPlatz ? new HttpFehler(507, 'Der Speicher im Büro ist fast voll – bitte im Büro Bescheid geben.')
           : max === restTag ? new HttpFehler(429, TAGESGRENZE) : new HttpFehler(413, 'Datei zu groß'));
+        // Mit angesagter Laenge haelt die Sendung nur so viel fest, sonst die volle erlaubte Menge.
+        const angesagt = Number(req.headers['content-length']);
+        const anteil = { name: lauf.name, tag, bytes: Number.isFinite(angesagt) && angesagt >= 0 ? Math.min(max, angesagt) : max, geschrieben: 0 };
+        anteile.add(anteil);
         lauf.belegt = true;
         try {
           const tmp = path.join(lauf.ordner, `${crypto.randomBytes(6).toString('hex')}.teil`);
-          const { groesse, kopf } = await speichere(req, tmp, max, zuViel);
+          const { groesse, kopf } = await speichere(req, tmp, max, zuViel, n => { anteil.geschrieben += n; });
           const typ = erkenneTyp(kopf);
           const info = DATEITYPEN[typ];
           if (!info || (info.art === 'bild' && groesse > GRENZEN.maxBildBytes)) {
@@ -405,6 +422,7 @@ export function erstelleUpload({
           return sende(res, 200, { ok: true, art: info.art, nummer: lauf.dateien });
         } finally {
           lauf.belegt = false;
+          anteile.delete(anteil);
         }
       }
 
