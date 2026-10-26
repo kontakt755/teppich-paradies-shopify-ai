@@ -2358,3 +2358,27 @@ eigener Schreibpfad:
 
 Die Liste schließt nie selbst ab. Tests: `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Regeln, Grenzen,
 Bewegungen, Vorschläge, Block, API mit Uhr), `bestellarbeit`- und `shop-start`-Tests.
+
+### Gepackt, aber nicht als verschickt eingetragen (#1709, 26.10.2026)
+
+Gepackt ist noch nicht versandt (Abschnitt 27). Am 26.10. standen sieben Musterumschläge seit dem 22.10.
+gepackt, ohne dass jemand den Versand eingetragen hatte. Dashboard und Liste merkten davon nichts.
+
+- **Nächster Schritt:** `zeitleistenFuerModell(…, { gepackt })` liest den Packstand
+  (`gepacktAmFuer()`, neuester Umschlag mit dieser Bestell-ID) und gibt ihn als `gepacktAm` an
+  `zeitleiste()`. Steht ein Musterauftrag bei „Gelabelt und an Kunden verschickt“, heißt der Schritt
+  „Umschlag gepackt am TT.MM. – zur Post bringen und als verschickt eintragen“ (Knopf wie bisher
+  „Muster sind verschickt…“). Der Ablauf selbst bekommt keinen Schritt dazu. Eine kaputte Packablage
+  lässt die Zeitleisten ohne diese Angabe laufen.
+- **Aufräumliste:** Ein Musterauftrag mit gepacktem Umschlag, bei dem kein Artikel „raus“ ist
+  (`grund: 'gepackt'`), wird schon nach 3 Tagen Ruhe ein Fall (`GEPACKT_OHNE_VERSAND_AB_TAGEN`). Die Uhr
+  läuft ab dem Packen. Ein danach nachgetragenes „bestellt“/„angekommen“ ist keine Bewegung, Notizen und
+  spätere Zeitleistenschritte schon (`ruheSeitPacken()`).
+- **Knöpfe:** „Ist verschickt…“ öffnet den Versanddialog wie an der Zeitleiste (`oeffneVersandDialog`
+  mit `mailVorab: false`, Vermerk „Umschlag gepackt am …, Versand beim Aufräumen eingetragen“) und bucht
+  in Shopify. „Liegt noch hier“ schreibt eine Notiz, und die Liste fragt nach 3 Tagen wieder.
+  „Abschließen“ gibt es hier bewusst nicht: „erledigt“ übersprünge das Nachfassen beim Kunden.
+
+Tests: `operations/tests/auftragsverlauf.test.mjs` (nächster Schritt, fremde und mehrere Umschläge,
+Ware, schon verschickt) und `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Grenze 2/3 Tage,
+„Liegt noch hier“, nachgetragener Wareneingang, teils verschickt, Knöpfe, API mit Packablage).

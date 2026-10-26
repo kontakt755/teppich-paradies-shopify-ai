@@ -2,6 +2,27 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Gepackte Umschläge ohne Versandvermerk: richtiger nächster Schritt, nach 3 Tagen aufräumen (#1709)
+
+- **Geaendert:**
+  - Ist ein Musterumschlag gepackt, heißt der nächste Schritt „Umschlag gepackt am TT.MM. – zur Post
+    bringen und als verschickt eintragen“ statt „Muster labeln und an den Kunden schicken“.
+  - Gepackte Umschläge ohne Versandvermerk stehen nach 3 Tagen in „Alte Bestellungen aufräumen“, mit
+    „Ist verschickt…“ (Versanddialog, Versandmail vorab aus) und „Liegt noch hier“. Abschließen gibt es
+    dort bewusst nicht, damit das Nachfassen weiterläuft.
+  - Anlass: Befund aus #1706. #1043–#1047 sind seit dem 22.10. gepackt, ohne eingetragenen Versand.
+- **Getestet:**
+  - `auftragsverlauf.test.mjs`: neuer Test für den nächsten Schritt.
+  - `aufraeumen.test.mjs`: 9 Tests, davon 2 neu (Regel und Knöpfe, API mit Packablage). Eine alte Prüfung
+    wurde umgekehrt: gepackt vor 4 Tagen war bisher bewusst kein Fall.
+  - Läufe: `dashboard:test` 977/977 (nach Rebase), `npm run -s pruefen` 9/9, `dashboard:pruefen` ohne Befund.
+  - Klickstrecke gegen die Datenkopie: Liste 7 (#1013, #1037, #1043–#1047) → 6. „Ist verschickt…“
+    öffnete „An Kunden raus · #1013“ mit Mail aus und setzte 3 Artikel auf „raus“ mit Vermerk und
+    `versandMail: false`. Die Shopify-Buchung war in der Prüfinstanz erwartungsgemäß „nicht gebucht“.
+- **Risiken:** Ob ein gepackter Umschlag wirklich zur Post ging, weiß das Dashboard nicht. Entschieden
+  wird per Klick.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
+
 ## 2026-10-26 · Musteraufkleber: QR-Code auf ganzen Kästchen, Druck so schlank wie die Vorschau (#1708)
 
 - **Geaendert:** Nach dem Testdruck Modena 3N55 auf 50 × 50 und 50 × 80 (Foto Inhaber) gab es zwei Befunde.
