@@ -29,6 +29,21 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   bzw. eine serifenlose Ersatzschrift.
 - **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen, Seite neu laden, Testetikett auf 50 × 80 drucken.
 
+## 2026-10-26 · Packstation: alle Musterbestellungen sofort, mit Anmerkung und Herstellersuche (#1691)
+
+- **Geaendert:** Die Packstation oeffnet mit „Alle offenen“; wartende Umschlaege sagen, was noch fehlt und
+  wann (automatisch) bestellt wurde. Die Suche findet ein Muster ueber das, was darauf steht (Hersteller,
+  Produkt, Kollektion, Farb-/Artikelnummer), klappt bis zu drei Umschlaege auf und markiert das Muster.
+  Direktversand an den Kunden (`ueber: 'kunde'`) steht unter „Zu klaeren“. Anlass: Inhaber 26.10. – seit
+  der Musterautomatik standen 17 Umschlaege unter „Wartet auf Ware“, Standardliste und Menuezahl zeigten 0.
+- **Getestet:** neue Faelle in `muster-packen.test.mjs` (Anmerkung, Direktversand, `packSuche`) und
+  `packstation-arbeitslisten.test.mjs` (Standard „Alle offenen“, Reihenfolge, Anmerkung, Suche mit
+  unbekanntem Wort); der alte Test „Standard nur Packbereit“ ist durch die Entscheidung ersetzt.
+- **Risiken:** Packbereit braucht weiterhin Abhaken oder „angekommen“; die Liste ist laenger als vorher.
+  Die Suche zeigt nur die besten Treffer – ein Tippfehler in der Farbnummer kann auf ein aehnliches Muster
+  fuehren; die markierte Farbnummer vor dem Einlegen vergleichen.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen (nur Dashboard, kein `operations/`).
+
 ## 2026-10-25 · Musteretiketten: Art bei Vinyl von der Rolle, „Auch als“ bei gleichem Dekor (#1682)
 
 - **Geaendert:** Der Lexikon-Export setzt `gleicherDekor` an Vinyl-Produkten, deren Dekor belegt auch in

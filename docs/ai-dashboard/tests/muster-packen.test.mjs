@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { musterPackliste, aufkleberFuer, packSchluessel, STAND_TEXT } from '../lib/muster-packen.mjs';
+import { musterPackliste, aufkleberFuer, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
 import { adressEtikett, adressLayout, ABSENDER } from '../lib/adress-etiketten.mjs';
 import { ETIKETT_FORMATE } from '../lib/muster-etiketten.mjs';
 
@@ -57,7 +57,7 @@ test('vorher = Lieferantenangaben aus dem Lexikon, Stand nur aus belegtem Auftra
     statusVon: (_, li) => ({ 'gid://shopify/LineItem/11': 'geliefert', 'gid://shopify/LineItem/12': 'bestellt' })[li] || null,
     auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102'), pos(13, '101', { musterHerkunft: 'eigen_versand' }), pos(14, '102')])] });
   const [m1, m2, m3, m4] = r.kunden[0].muster;
-  assert.deepEqual(m1.vorher, { produktname: 'Lieferantenware SAND 400', farbnummer: '11', url: 'https://lieferant-a.example/sand', kollektion: null, lieferant: null, bild: null });
+  assert.deepEqual(m1.vorher, { produktname: 'Lieferantenware SAND 400', farbnummer: '11', url: 'https://lieferant-a.example/sand', kollektion: null, lieferant: null, bild: null, hersteller: null, artikelnummer: null });
   assert.equal(m2.vorher.url, null, 'UNGEKLAERT ist kein Link');
   assert.deepEqual([m1.stand, m2.stand, m3.stand, m4.stand], ['da', 'bestellt', 'lager', 'offen']);
   assert.equal(r.kunden[0].nichtBestellt, 1);
@@ -284,4 +284,45 @@ test('Ausschlusszahlen zaehlen Zahlungsverzug und geschlossene Musterauftraege g
     auftrag(103, '2026-10-17', 'Clara', [pos(1031, '101')], { storniert: true }),
   ] });
   assert.deepEqual(r.ausschluesse, { zahlungOffen: 1, geschlossen: 1 });
+});
+
+test('Anmerkung: Bestelldatum und Musterautomatik aus dem Auftragsfluss, Direktversand an den Kunden wird nicht gepackt', () => {
+  const eintraege = {
+    'gid://shopify/LineItem/21': { status: 'bestellt', bestelltAm: '2026-10-24T07:00:00.000Z', bestelltVon: 'Musterautomatik' },
+    'gid://shopify/LineItem/22': { status: 'bestellt', bestelltAm: '2026-10-23T09:00:00.000Z', bestelltVon: 'tobias' },
+    'gid://shopify/LineItem/23': { status: 'geliefert', bestelltAm: '2026-10-20T09:00:00.000Z', bestelltVon: 'Musterautomatik' },
+    'gid://shopify/LineItem/31': { status: 'bestellt', bestelltAm: '2026-10-24T07:00:00.000Z', bestelltVon: 'Musterautomatik', ueber: 'kunde' },
+  };
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, eintragVon: (_, li) => eintraege[li] || null,
+    auftraege: [auftrag(2, '2026-10-23T08:00:00Z', 'Bea Test', [pos(21, '101'), pos(22, '102'), pos(23, '101')]),
+      auftrag(3, '2026-10-23T08:00:00Z', 'Cem Test', [pos(31, '101')])] });
+  const bea = r.kunden.find(k => k.name === 'Bea Test');
+  assert.equal(bea.bereich, 'warten');
+  assert.deepEqual(bea.muster.map(m => [m.stand, m.bestelltAm, m.automatisch]), [
+    ['bestellt', '2026-10-24T07:00:00.000Z', true], ['bestellt', '2026-10-23T09:00:00.000Z', false], ['da', null, false]]);
+  const cem = r.kunden.find(k => k.name === 'Cem Test');
+  assert.equal(cem.direktversand, true);
+  assert.equal(cem.bereich, 'klaeren', 'geht vom Lieferanten direkt an den Kunden - nicht bei uns packen');
+  // Ohne eintragVon bleibt alles wie bisher (nur Status).
+  const alt = musterPackliste({ produkte, schluesselVon, jetzt, statusVon: () => 'bestellt', auftraege: [auftrag(4, '2026-10-23T08:00:00Z', 'Dan Test', [pos(41, '101')])] });
+  assert.deepEqual([alt.kunden[0].muster[0].bestelltAm, alt.kunden[0].muster[0].automatisch], [null, false]);
+});
+
+test('packSuche: Herstellerangaben vom Muster finden den Umschlag, das beste Muster wird markiert, Unbekanntes stoert nicht', () => {
+  const lexikon = new Map([[boden.handle, { ...boden, varianten: boden.varianten.map(v => ({ ...v,
+    einkauf: { ...v.einkauf, hersteller: 'Testwerk Hameln', kollektion: 'Testkollektion', artikelnummer: `ART-${v.sku}` } })) }]]);
+  const r = musterPackliste({ produkte: lexikon, schluesselVon, jetzt, statusVon: () => 'bestellt',
+    auftraege: [auftrag(5, '2026-10-22T08:00:00Z', 'Eva Test', [pos(51, '101'), pos(52, '102')]), auftrag(6, '2026-10-22T09:00:00Z', 'Fynn Test', [pos(61, '102')])] });
+  assert.equal(r.kunden[0].muster[0].vorher.hersteller, 'Testwerk Hameln');
+  const eva = r.kunden.find(k => k.name === 'Eva Test'), fynn = r.kunden.find(k => k.name === 'Fynn Test');
+  // "TSU" steht nirgends, Hersteller, Produkt und Farbnummer passen zum Sand-Muster von Eva.
+  const s = packSuche(r.kunden, 'Testwerk SAND tsu 11');
+  assert.deepEqual(s.treffer, [{ packSchluessel: eva.packSchluessel, muster: ['gid://shopify/LineItem/51'] }]);
+  assert.deepEqual(s.fehlen, ['tsu']);
+  // Farbnummer mit Bindestrich, Gross-/Kleinschreibung und Umlaute egal.
+  assert.deepEqual(packSuche(r.kunden, 'grau ART-TV-GR').treffer.map(t => t.packSchluessel).sort(), [eva.packSchluessel, fynn.packSchluessel].sort());
+  // Bestellnummer findet nur den Umschlag; kurze Woerter passen nicht ohne Satzzeichen irgendwo hinein.
+  assert.deepEqual(packSuche(r.kunden, '#T6').treffer, [{ packSchluessel: fynn.packSchluessel, muster: [] }]);
+  assert.deepEqual(packSuche(r.kunden, 'gibtsnicht'), { woerter: ['gibtsnicht'], treffer: [], fehlen: ['gibtsnicht'] });
+  assert.deepEqual(packSuche(r.kunden, '   ').treffer, []);
 });

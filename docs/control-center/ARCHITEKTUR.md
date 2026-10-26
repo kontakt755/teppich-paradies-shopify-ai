@@ -1949,6 +1949,23 @@ Packbereit. Die Suche (`mpq`) durchsucht alle vier Listen, auch Produkte und Far
 Ein Direktumschlag (`umschlag`) oeffnet dessen Arbeitsliste und die passende Karte.
 Die Wareneingangsansicht nach Partnerladen (`mp=laden`) bleibt erhalten.
 
+**Alle offenen sofort, mit Anmerkung, Suche nach dem Herstelleretikett (Inhaber 26.10.2026, #1691).**
+Seit die Muster automatisch bestellt werden, oeffnet die Packstation mit „Alle offenen“ (Packbereit,
+Zu klaeren, Wartet auf Ware; in dieser Reihenfolge, je Liste aelteste zuerst) statt nur mit Packbereit;
+die Zahl im Menue zaehlt alle offenen Umschlaege. Die vier Einzellisten bleiben waehlbar. Ein
+wartender Umschlag traegt die Anmerkung „Noch nicht da: n von m Mustern. Beim Lieferanten bestellt am …
+(automatisch per Mail)“; das Datum und „automatisch“ kommen aus dem Auftragsfluss (`bestelltAm`,
+`bestelltVon: 'Musterautomatik'`, `eintragVon` in `musterPackliste`). Packbereit wird ein Umschlag
+weiterhin erst, wenn jedes Muster als angekommen belegt oder abgehakt ist - die Packstation behauptet
+keinen Wareneingang. Positionen mit `ueber: 'kunde'` (Abschnitt „Muster direkt …“) gelten wie
+`SUPPLIER_DIRECT` als Direktversand und stehen unter „Zu klaeren“ statt ewig zu warten.
+Die Suche (`packSuche` in `lib/muster-packen.mjs`) liest, was auf dem Muster steht: Herstellername,
+Herstellerprodukt, Kollektion, Farb- und Artikelnummer aus dem Lexikon (`einkauf.*` der Variante mit der
+Aufkleber-SKU), dazu Kunde, Bestellnummer und unser Aufkleber. Jedes Wort zaehlt einzeln; gezeigt werden
+die Umschlaege mit den meisten passenden Woertern, bis zu drei klappen auf, das passende Muster ist
+markiert. Woerter, die nirgends vorkommen (z. B. ein Rueckencode wie „TSU“), werden genannt und
+verhindern keinen Treffer. Ohne Satzzeichen wird erst ab drei Zeichen verglichen („3N-55“ = „3N55“).
+
 Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shopify-Status;
 keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
 nicht als zweiter Hauptstatus. Versand und manueller Listenhaken bleiben unterschiedliche Dinge.

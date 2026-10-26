@@ -16,12 +16,29 @@ function ansicht(query, liste) {
   return viewKundenMusterPacken();
 }
 
-test('Standard zeigt ausschliesslich Packbereit und klappt wartende Umschlaege bei Null nicht auf', () => {
-  const html = ansicht('tab=muster', [kunde(1, 'warten'), kunde(2, 'klaeren')]);
-  assert.match(html, /Gerade kein Umschlag packbereit/);
+test('Standard zeigt alle offenen Umschlaege sofort, Packbereit zuerst, Gepacktes nicht (Inhaber 26.10.)', () => {
+  const html = ansicht('tab=muster', [kunde(1, 'warten'), kunde(2, 'klaeren'), kunde(3, 'packen'), kunde(4, 'gepackt')]);
+  const reihe = [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  assert.deepEqual(reihe, ['order3', 'order2', 'order1']);
+  assert.match(html, /aria-current="page">Alle offenen <span class="mp-filterzahl">3</);
   assert.match(html, /Wareneingang nach Partnerladen/);
-  assert.doesNotMatch(html, /data-mp-kunde=/);
-  assert.equal((html.match(/mp-filterzahl/g) || []).length, 4);
+  assert.equal((html.match(/mp-filterzahl/g) || []).length, 5);
+  assert.doesNotMatch(html, /data-mp-kunde="[^"]*"[^>]* open/, 'ohne Suche oder Direktlink bleibt alles zu');
+  const leer = ansicht('tab=muster', [kunde(5, 'gepackt')]);
+  assert.match(leer, /Gerade keine offene Musterbestellung/);
+});
+
+test('Wartender Umschlag traegt die Anmerkung mit Bestelldatum und Automatik, das Muster seinen Stand', () => {
+  const k = kunde(7, 'warten');
+  k.muster = [{ ...k.muster[0], bestelltAm: '2026-10-24T07:00:00.000Z', automatisch: true },
+    { ...k.muster[0], lineItemId: 'line7b', stand: 'da' }];
+  const html = ansicht('tab=muster', [k]);
+  assert.match(html, /Noch nicht da:<\/strong> 1 von 2 Mustern\. Beim Lieferanten bestellt am 24\.10\., automatisch per Mail\./);
+  assert.match(html, /beim Lieferanten bestellt am 24\.10\. \(automatisch\)/);
+  assert.match(html, /Sind alle abgehakt, ist der Umschlag packbereit/);
+  const ohneBestellung = kunde(8, 'warten');
+  ohneBestellung.muster = [{ ...ohneBestellung.muster[0], stand: 'offen' }];
+  assert.match(ansicht('tab=muster', [ohneBestellung]), /1 Muster ist noch nicht bestellt/);
 });
 
 test('Arbeitsfilter zeigt nur gewaehlten Bereich; Umschlagdirektlink oeffnet auch andere Bereiche', () => {
@@ -39,9 +56,19 @@ test('Suche findet Umschlaege ueber alle Arbeitslisten und erklaert den Umfang',
   const html = ansicht('tab=muster&mpbereich=packen&mpq=TEST2', [kunde(1, 'packen'), kunde(2, 'warten')]);
   assert.match(html, /data-mp-kunde="order2"/);
   assert.doesNotMatch(html, /data-mp-kunde="order1"/);
-  assert.match(html, /Suche berücksichtigt alle vier Arbeitslisten/);
+  assert.match(html, /Suche berücksichtigt alle vier Arbeitslisten – auch Hersteller/);
 });
 
+test('Suche nach dem Herstelleretikett klappt den Umschlag auf und markiert das Muster', () => {
+  const k = kunde(9, 'warten');
+  k.muster = [{ ...k.muster[0], lineItemId: 'line9a', vorher: { produktname: 'Herstellerware Modena 3N55 400 cm', farbnummer: '3N55', hersteller: 'Testwerk' } },
+    { ...k.muster[0], lineItemId: 'line9b', vorher: { produktname: 'Herstellerware Modena 1B28 400 cm', farbnummer: '1B28', hersteller: 'Testwerk' } }];
+  const html = ansicht('tab=muster&mpq=Testwerk%20Modena%20TSU%203N55', [kunde(1, 'packen'), k]);
+  assert.match(html, /data-mp-kunde="order9"[^>]* open/);
+  assert.doesNotMatch(html, /data-mp-kunde="order1"/);
+  assert.equal((html.match(/mp-treffer"/g) || []).length, 1);
+  assert.match(html, /Nicht gefunden: „tsu“ – gezeigt ist der Umschlag, der zu den übrigen Wörtern am besten passt/);
+});
 
 test('gebuendelter Umschlag verlinkt jede Bestellung und behaelt gewaehlten Partnerladen als Rueckweg', () => {
   const k = kunde(4, 'gepackt');
