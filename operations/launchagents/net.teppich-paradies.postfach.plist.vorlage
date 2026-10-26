@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.postfach</string>
+
+  <!-- Postfach als Mac-Dienst (operations/scripts/claude-lauf.mjs, Inhaber 2026-10-26): ersetzt die
+       App-Aufgaben "lieferbelege-postfach" und "serviceanfragen-postfach". Je Lauf zwei getrennte
+       claude -p-Aufrufe nacheinander (erst Lieferbelege, dann Service-Anfragen); ein Fehler im
+       ersten verhindert den zweiten nicht. Gmail nur lesend (search_threads, get_thread,
+       get_message), alle Gmail-Schreibwerkzeuge gesperrt. Sonntags endet der Lauf sofort.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard. Einrichten:
+       bash operations/scripts/dienste-einrichten.sh -\-routinen (kopiert nur), laden von Hand. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; exec node operations/scripts/claude-lauf.mjs postfach</string>
+  </array>
+
+  <!-- Alle zwei Stunden 7:35 bis 19:35 (hoechstens zwei Stunden Verzug). -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>11</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>13</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>35</integer></dict>
+  </array>
+
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/routinen/postfach/dienst.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/routinen/postfach/dienst.log</string>
+</dict>
+</plist>

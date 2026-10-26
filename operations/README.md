@@ -811,3 +811,77 @@ Das Dashboard meldet nach dem taeglichen Solltermin plus 30 Minuten Laufzeit
 einen ausgebliebenen Tag bereits als alt; die Berechnung verwendet Europe/Berlin
 einschliesslich Sommer-/Winterzeit. Der 48-Stunden-Schutz bleibt zusaetzlich.
 Eine Sicherung auf derselben Platte ersetzt keine unabhaengige externe Kopie.
+
+## Routinen als Mac-Dienst (statt geplanter Aufgaben der Claude-App)
+
+Inhaber 2026-10-26: Die teuren Routineläufe der Claude-App (je Start rund 105k Tokens Kontext,
+`fehlermeldungen-werkbank` lief seit 15.10. zu 100 % leer) laufen als launchd-Dienste. Ein Skript
+prüft zuerst ohne KI; Claude startet nur bei echter Arbeit per `claude -p` (Abo-Anmeldung, kein
+API-Key), mit Sonnet, `--permission-mode dontAsk` und einer festen Werkzeugliste je Lauf. Gemessen:
+ein Fehlermeldungs-Lauf ohne Arbeit braucht 3 Runden, 6 s, rund 62k Tokens insgesamt (~20k je Runde).
+
+| Dienst (Vorlage in `launchagents/`) | Wann | Was |
+|---|---|---|
+| `net.teppich-paradies.fehler-vorpruefung` | alle 15 Min., Mo–Sa 7–19 Uhr | `claude-lauf.mjs fehlermeldungen`: `npm run -s fehler -- abgleich` ohne KI; Claude nur bei `neu`, oder für `laufend`/`kuerzlichErledigt` höchstens alle 2 Std. Nach einem Fehlschlag 1 Std. Pause. |
+| `net.teppich-paradies.postfach` | 7:35, 9:35 … 19:35, Mo–Sa | `claude-lauf.mjs postfach`: zwei getrennte `claude -p`-Aufrufe nacheinander, erst Lieferbelege, dann Service-Anfragen. Ein Fehler im ersten verhindert den zweiten nicht. |
+| `net.teppich-paradies.dienst-aktualisieren` | stündlich :20 | `dienst-aktualisieren.mjs`: jeder Takt prüft `aktualisierung.json` (Alter ≤ 60 Min., jeder Teil erfolgreich, Lexikon/Bestand ≤ 3 Std.); einmal am Tag ab 6 Uhr wird `main` in `~/tp-dashboard` übernommen. Ersetzt `shop-zahlen-export` – die Daten holt der Sync-Dienst. |
+
+**Auftragstexte** bleiben privat unter `~/.claude/scheduled-tasks/<aufgabe>/SKILL.md` (sie enthalten
+u. a. die Werkbank-Adresse). Der Lauf liest sie zur Laufzeit, schneidet den YAML-Kopf ab und stellt
+einen kurzen Kopf voran (`lib/routinen.mjs`, `promptKopf`): Laufumgebung, keine Wochenlimit-Bremse,
+Arbeitsordner statt Scratchpad, Gmail-Werkzeugnamen in `claude -p`. Ein geänderter Auftrag in der App
+gilt also auch für den Dienst.
+
+**Werkzeuge** (`lib/routinen.mjs`, `LAEUFE`; `--trocken` zeigt sie vollständig):
+- *Fehlermeldungen:* `--restricted` (keine Benutzer-/Projekteinstellungen, keine Hooks, keine
+  MCP-Server; die Projekteinstellungen von `~/tp-dashboard` geben `Bash` ganz frei). Werkzeuge
+  `Bash, ToolSearch, Artifact, ArtifactData`; freigegeben nur `npm run -s fehler -- abgleich |
+  uebernommen … | werkbank-stand … | verworfen …`, `date -u …`, `cd ~/tp-dashboard`, Artifact/ArtifactData,
+  Schreiben nur im Arbeitsordner, Lesen der Bildschirmfotos.
+- *Postfach:* `--setting-sources user` (dort hängen die claude.ai-Konnektoren). Werkzeuge
+  `Bash, Read, Write, ToolSearch` – ToolSearch ist Pflicht, sonst lädt Claude alle MCP-Schemata
+  sofort (gemessen ~240k statt ~20k Tokens je Anfrage). Gmail nur `search_threads`, `get_thread`,
+  `get_message`; alle 24 Gmail-Schreibwerkzeuge, Shopify-MCP, `git`, `gh`, `shopify`, `curl`, `rm`,
+  `npm run -s fehler …` und Artifact* ausdrücklich gesperrt (eine Sperre schlägt jede Freigabe, auch die
+  aus `~/.claude/settings.json`). Freigegeben: `npm run -s belege|service -- bekannt | uebernehmen …`,
+  `date -u …`, `jq …`, Schreiben nur im Arbeitsordner. Die Zwischendatei löscht der Dienst, nicht Claude.
+
+**Ablage** (privat, `$TP_PRIVAT_DIR/routinen/<lauf>/`, Rechte 0700/0600):
+`dienst.log` (launchd-Ausgabe, je Lauf eine Zeile), `status*.json` (letzter Stand), `laeufe/` (je
+claude-Aufruf: Exit, Tokens, ausgeführte Befehle ohne Inhalte, Abschlusszeile; 14 Tage),
+`arbeit/` (Zwischendateien, vor und nach jedem Lauf geleert), `sperre` (gegen Doppelstart). Sitzungen
+werden nicht gespeichert (`--no-session-persistence`).
+
+**Fehler** sieht man dreifach: macOS-Mitteilung (nur bei neuem Fehler), rotes To-do „Mac-Dienst
+gestört“ auf Heute (Inhaber; auch wenn die Dienst-Aktualisierung 26 Std. oder die
+Datengesundheit 3 Std. ohne erfolgreichen Lauf ist) und `status*.json`. Als Fehler zählt auch jede abgelehnte
+Werkzeugfreigabe – dann passt die Liste nicht zum Auftrag.
+
+**Dienst-Aktualisierung** (Skill `control-center`, Schritt 9, als Skript): Zweig `dashboard-betrieb`,
+keine lokalen Änderungen außer `package-lock.json` → `git fetch` → `git merge-tree --write-tree`
+(Konflikt: melden, nichts tun) → `git commit-tree` → Prüfkopie per `git clone --shared` → `npm ci`,
+`dashboard:test`, `operations:test` (+ `social:test`) → rot: melden, nichts tun → `git merge --ff-only`
+auf genau den geprüften Commit → `npm ci` bei neuer Lockdatei → `launchctl kickstart -k` Dashboard
+(+ Sync bei `operations/`, + Social bei `social/`, nur wenn geladen) → `/login` 200 (Social
+`/api/status` 401). Antwortet der Dienst nicht: `git reset --keep` auf den alten Stand, neu starten,
+melden. Wartet, solange eine Claude-Routine oder die Codex-Automation in `~/tp-dashboard` arbeitet.
+Derselbe rote Stand von main wird nicht stündlich neu getestet. Kein Claude-Reparaturlauf.
+
+**Von Hand:**
+
+```
+node operations/scripts/claude-lauf.mjs fehlermeldungen --trocken    # Befehl, Werkzeuglisten, Prompt-Kopf
+node operations/scripts/claude-lauf.mjs fehlermeldungen              # Vorpruefung, Claude nur bei Arbeit
+node operations/scripts/claude-lauf.mjs fehlermeldungen --erzwingen  # Claude auch ohne Arbeit
+node operations/scripts/claude-lauf.mjs postfach --trocken
+node operations/scripts/dienst-aktualisieren.mjs --trocken            # fetch + merge-tree, aendert nichts
+node operations/scripts/dienst-aktualisieren.mjs --nur-gesundheit
+```
+
+**Einschalten** (im Dienst-Checkout, nachdem main dort nachgezogen ist):
+`bash operations/scripts/dienste-einrichten.sh --routinen` legt die drei Plists nach
+`~/Library/LaunchAgents` und die Log-Ordner an, lädt aber nichts. Laden je Dienst:
+`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/<label>.plist`.
+**Abschalten:** `launchctl bootout gui/$(id -u)/<label>` – danach meldet das Control Center die
+Dienst-Aktualisierung nach 26 Std. als gestört; `~/teppich-paradies-analyse/routinen/dienst-aktualisieren/`
+löschen, wenn sie dauerhaft aus bleiben soll. Die App-Aufgaben bleiben zwei Wochen als Sicherheitsnetz.

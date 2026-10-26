@@ -2,6 +2,33 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Routinen als Mac-Dienst: Fehlermeldungen, Postfach, Dienst-Aktualisierung (Inhaber 26.10.)
+
+- **Geaendert:** Drei launchd-Dienste ersetzen teure App-Aufgaben (je Start ~105k Tokens). `claude-lauf.mjs
+  fehlermeldungen` prueft alle 15 Min. ohne KI und startet `claude -p` (Sonnet, dontAsk, feste Werkzeugliste)
+  nur bei neuen Meldungen bzw. hoechstens alle 2 Std. fuer laufende; `claude-lauf.mjs postfach` alle 2 Std.
+  zwei getrennte Laeufe (Lieferbelege, Service-Anfragen), Gmail nur lesend, alle Schreibwerkzeuge gesperrt;
+  `dienst-aktualisieren.mjs` zieht `main` einmal taeglich nach - getestet vorher in einer Pruefkopie, bei
+  Konflikt/rotem Test bleibt der Dienst-Checkout unberuehrt - und prueft stuendlich `aktualisierung.json`.
+  Auftragstexte bleiben privat in `~/.claude/scheduled-tasks/`. Neues rotes To-do „Mac-Dienst gestört“
+  auf Heute (`/api/shopwache/status` → `routinen`, `ausRoutinen`). Vorlagen und `dienste-einrichten.sh
+  --routinen` legen ab, laden nichts.
+- **Getestet:** `routinen.test.mjs` (Zeitfenster inkl. Zeitumstellung, Werkzeuglisten, Bewertung, Vorpruefung,
+  Status/Mitteilung, Sperre, Gesundheit, stream-json), `claude-lauf.test.mjs` (kein Claude bei leeren Listen,
+  Gegenprobe, Pause, Postfach-Teil 2 trotz Fehler in Teil 1, trocken ohne Auftragstext),
+  `dienst-aktualisieren.test.mjs` (echte Git-Repos: ff-Merge, Konflikt, roter Test, lokale Aenderung,
+  Lock-Rauschen, Rueckweg nach fehlender Antwort, Codex aktiv), `todos.test.mjs`, `api.test.mjs`.
+  `npm run -s pruefen` 9/9, `dashboard:test` 966/966, `operations:test` 972/972, `dashboard:pruefen` nur OK.
+  Echt: Vorpruefung mit leeren Listen startet Claude nicht; `--erzwingen` → Claude fuehrte `npm run -s fehler
+  -- abgleich` aus, „nichts zu tun“, 0 Ablehnungen, 3 Runden, 62k Tokens. Voller Abgleich gegen einen Klon
+  (12 Commits, echte Testsuiten, launchctl als Attrappe) in 17 s gruen.
+- **Risiken:** Bildschirmfoto-Upload (Artifact, Schritt 2c) und die Postfach-Laeufe sind nur trocken bzw.
+  per Freigabe-Probe geprueft. `Artifact`/`ArtifactData` sind als ganze Werkzeuge freigegeben (keine
+  Einschraenkung je Adresse moeglich). Der Postfach-Lauf braucht die Benutzereinstellungen (Gmail-Konnektor);
+  deren Freigaben sind durch Sperren abgedeckt, neue Freigaben dort wirken aber mit.
+- **Naechste Stufe:** Codex-Review des Teils Dienst-Aktualisierung, dann Einschalten nach der Schrittliste im
+  PR; App-Aufgaben zwei Wochen als Sicherheitsnetz, danach abschalten.
+
 ## 2026-10-26 · Packstation baby-einfach: Bestellung in drei Schritten, „Muster kommt an“ (#1701)
 
 - **Geaendert:** Ein geoeffneter Umschlag fuehrt in drei Schritten - Bestellung drucken (Aufkleber und

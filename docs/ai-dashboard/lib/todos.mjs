@@ -593,6 +593,33 @@ function ausAusschreibungen(quellen, jetzt) {
 }
 
 /**
+ * Routinen als Mac-Dienst (operations/lib/routinen.mjs, Inhaber 2026-10-26): Fehlermeldungen,
+ * Postfach und das taegliche Nachziehen des Control Centers laufen per launchd. Gestoert heisst:
+ * der letzte Lauf meldete einen Fehler - oder eine Routine mit festem Takt meldet sich nicht mehr.
+ * Rot, weil es jemand loesen muss (Mails kommen sonst nicht an, das Dashboard bleibt alt).
+ * Kommt mit der Shop-Wache (quellen.shopwache.routinen), also nur beim Inhaber.
+ */
+function ausRoutinen(quellen, jetzt) {
+  const liste = quellen.shopwache?.routinen || [];
+  const gestoert = liste.map((r) => {
+    if (r.ok === false) return { ...r, text: r.meldung || 'Fehler' };
+    const bezug = r.letzterErfolg || r.zeit;
+    const stunden = bezug ? (jetzt.getTime() - new Date(bezug).getTime()) / 3_600_000 : null;
+    if (r.stummNachStunden && stunden !== null && stunden > r.stummNachStunden) {
+      return { ...r, seit: bezug, text: `seit ${Math.floor(stunden)} Stunden kein erfolgreicher Lauf` };
+    }
+    return null;
+  }).filter(Boolean);
+  if (!gestoert.length) return [];
+  const aeltestes = gestoert.map(r => r.seit).filter(Boolean).sort()[0] || null;
+  return [{
+    id: 'routinen', art: 'routinen', bereich: 'website', ton: 'crit', alterTage: tageSeit(aeltestes, jetzt),
+    titel: gestoert.length === 1 ? `Mac-Dienst gestört: ${gestoert[0].titel}` : `Mac-Dienst: ${gestoert.length} Routinen gestört`,
+    kontext: [gestoert[0].text, gestoert.length > 1 ? `+${gestoert.length - 1} weitere` : null].filter(Boolean).join(' · '),
+  }];
+}
+
+/**
  * Akquise Verlegeauftraege (#1447): faellige Wiedervorlagen als ein To-do im Buero.
  * `quellen.akquise` = Liste der faelligen Firmen (lib/akquise.mjs faelligeWiedervorlagen).
  */
@@ -638,6 +665,7 @@ function alleTodos(quellen, opt) {
     ...ausAkquise(quellen),
     ...ausKundenterminen(quellen, k),
     ...ausTailscale(quellen),
+    ...ausRoutinen(quellen, k.jetzt),
   ];
 }
 
@@ -663,7 +691,7 @@ function fuerSicht(todos, sicht, alle) {
  *   aufgaben       /api/org/liste?bereich=alle-aufgaben -> eintraege
  *   freigaben      Entwicklungsaufgaben (issues.json), nur beim Inhaber gefuellt
  *   akquise        faellige Wiedervorlagen (ansichten/akquise.mjs akquiseFaellig), nur beim Inhaber
- *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`)
+ *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`, `routinen`)
  * @param {object} opt
  *   sicht          'inhaber' | 'laden' | 'website'
  *   ich            Kuerzel des angemeldeten Benutzers

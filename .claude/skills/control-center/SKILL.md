@@ -131,6 +131,9 @@ kann dafuer weg?
    Risiken · Naechste Stufe), bei neuem Verhalten auch `ARCHITEKTUR.md`.
 8. PR mit `Closes #<n>`, danach `npm run task -- review <n> --note "PR #…"`.
 9. Nach dem Merge den Dienst nachziehen – main hineinmergen, nie umschalten.
+   Ist `net.teppich-paradies.dienst-aktualisieren` geladen, passiert das einmal taeglich ab 6 Uhr
+   von selbst (`operations/scripts/dienst-aktualisieren.mjs`, testet vorher in einer Pruefkopie);
+   wer die Aenderung sofort braucht, zieht wie unten von Hand nach.
    `~/tp-dashboard` steht auf dem Zweig `dashboard-betrieb` (Upstream `origin/main`),
    weil `main` dem Deploy-Worktree gehoert. `--ff-only` schlaegt fehl, der Zweig traegt
    eigene Merge-Commits. Inhaltlich ist er seit 2026-10-24 gleich `main`:

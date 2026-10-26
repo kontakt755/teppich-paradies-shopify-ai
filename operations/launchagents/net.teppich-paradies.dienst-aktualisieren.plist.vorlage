@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.dienst-aktualisieren</string>
+
+  <!-- Control Center nachziehen ohne Claude (operations/scripts/dienst-aktualisieren.mjs, Inhaber
+       2026-10-26): ersetzt die App-Aufgabe "shop-zahlen-export". Jeder Takt prueft den Datenstand
+       des Sync-Dienstes (aktualisierung.json); einmal am Tag (erster Takt ab 6 Uhr) wird main in
+       den Dienst-Checkout uebernommen - erst nach gruenem Test in einer Pruefkopie, danach
+       Neustart und Antwort-Pruefung. Konflikt oder roter Test: nichts geaendert, Mitteilung und
+       rotes To-do im Control Center. Kein Claude-Reparaturlauf.
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-routinen (kopiert nur), laden von Hand. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; exec node operations/scripts/dienst-aktualisieren.mjs</string>
+  </array>
+
+  <!-- Stuendlich zur 20. Minute. Kein RunAtLoad: Laden allein startet keinen Merge. -->
+  <key>StartCalendarInterval</key>
+  <dict><key>Minute</key><integer>20</integer></dict>
+
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/routinen/dienst-aktualisieren/dienst.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/routinen/dienst-aktualisieren/dienst.log</string>
+</dict>
+</plist>

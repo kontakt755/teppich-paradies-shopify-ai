@@ -10,6 +10,13 @@
 #
 #   bash operations/scripts/dienste-einrichten.sh
 #   bash operations/scripts/dienste-einrichten.sh --nur-sicherung
+#   bash operations/scripts/dienste-einrichten.sh --routinen
+#
+# --routinen legt die drei Routine-Dienste (Fehlermeldungen-Vorpruefung, Postfach,
+# Dienst-Aktualisierung; operations/README.md, Abschnitt "Routinen als Mac-Dienst")
+# nach ~/Library/LaunchAgents und die Log-Ordner an, LAEDT SIE ABER NICHT: das
+# Einschalten (launchctl bootstrap) macht der Inhaber von Hand, die Befehle stehen
+# am Ende der Ausgabe.
 #
 # Die Sicherung ersetzt den bisherigen gleichnamigen Claude-Zeitplan.
 # Diesen vor der Installation pausieren, damit nur ein taeglicher Lauf bleibt.
@@ -36,8 +43,8 @@ SICHERUNG_LABEL="net.teppich-paradies.sicherung"
 SICHERUNG_VORLAGE="${REPO}/operations/launchagents/${SICHERUNG_LABEL}.plist.vorlage"
 SICHERUNG_PLIST="${LAUNCH_AGENTS_DIR}/${SICHERUNG_LABEL}.plist"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--routinen" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --routinen]\n' >&2
   exit 1
 fi
 
@@ -87,8 +94,56 @@ JS
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-sicherung.log"
 }
 
+routinen_ablegen() {
+  schritt "Routine-Dienste ablegen (nicht laden)"
+  local analyse="${HOME}/teppich-paradies-analyse/routinen"
+  mkdir -p "${analyse}/fehlermeldungen" "${analyse}/postfach" "${analyse}/dienst-aktualisieren"
+  chmod 700 "${analyse}"
+  if [[ "${REPO}" != "${HOME}/tp-dashboard" ]]; then
+    hinweis "Hinweis: die Dienste laufen aus ~/tp-dashboard, nicht aus ${REPO} - dort muss main nachgezogen sein."
+  fi
+  local label vorlage ziel tmp
+  for label in net.teppich-paradies.fehler-vorpruefung net.teppich-paradies.postfach net.teppich-paradies.dienst-aktualisieren; do
+    vorlage="${REPO}/operations/launchagents/${label}.plist.vorlage"
+    ziel="${LAUNCH_AGENTS_DIR}/${label}.plist"
+    tmp="${ziel}.$$.tmp"
+    "${NODE_PFAD}" --input-type=module - "${vorlage}" "${tmp}" "${HOME}" <<'JS'
+import fs from 'node:fs';
+const [vorlage, ziel, heim] = process.argv.slice(2);
+const xml = s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+fs.writeFileSync(ziel, fs.readFileSync(vorlage, 'utf8').replaceAll('__HOME__', xml(heim)), { mode: 0o644 });
+JS
+    if ! plutil -lint "${tmp}" >/dev/null; then
+      rm -f "${tmp}"
+      fehler "${vorlage} ist keine gueltige Plist."
+      return 1
+    fi
+    if [[ -f "${ziel}" ]] && cmp -s "${tmp}" "${ziel}"; then
+      rm -f "${tmp}"
+      ok "${label}: unveraendert vorhanden."
+    else
+      mv "${tmp}" "${ziel}"
+      ok "${label}: abgelegt unter ${ziel}."
+    fi
+    if launchctl print "gui/$(id -u)/${label}" >/dev/null 2>&1; then
+      hinweis "  ist bereits geladen - eine geaenderte Datei wirkt erst nach bootout + bootstrap."
+    fi
+  done
+  hinweis ""
+  hinweis "Nichts geladen. Einschalten (je Dienst, erst nach dem Trockenlauf):"
+  for label in net.teppich-paradies.fehler-vorpruefung net.teppich-paradies.postfach net.teppich-paradies.dienst-aktualisieren; do
+    hinweis "  launchctl bootstrap gui/$(id -u) ${LAUNCH_AGENTS_DIR}/${label}.plist"
+  done
+  hinweis "Abschalten: launchctl bootout gui/$(id -u)/<label>"
+}
+
 if [[ "${1:-}" == "--nur-sicherung" ]]; then
   sicherung_einrichten
+  exit 0
+fi
+
+if [[ "${1:-}" == "--routinen" ]]; then
+  routinen_ablegen
   exit 0
 fi
 

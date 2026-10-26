@@ -1123,6 +1123,9 @@ GET /api/fehler/liste ──> Dialog zeigt „Gemeldet“ / „Bei der Technik�
   Klicks jetzt durch (`pointer-events`); vorher war „Fehler melden“ unten links dahinter nicht klickbar.
 - **Grenze:** Der Lauf ist eine geplante Aufgabe der Claude-App auf dem Mac. Ist die App zu, wartet die
   Meldung im Dialog sichtbar auf „Gemeldet“ und wird beim nächsten Lauf übertragen.
+- **Seit 2026-10-26 als Mac-Dienst** (`net.teppich-paradies.fehler-vorpruefung`, Abschnitt 28): alle
+  15 Minuten prüft ein Skript ohne KI, Claude startet nur bei neuen Meldungen (laufende höchstens alle
+  zwei Stunden). Die App-Aufgabe bleibt zwei Wochen als Sicherheitsnetz.
 
 ## 16. Robustheit des Dienstes (seit 2026-10-12)
 
@@ -2311,3 +2314,23 @@ eigener Schreibpfad:
 
 Die Liste schließt nie selbst ab. Tests: `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Regeln, Grenzen,
 Bewegungen, Vorschläge, Block, API mit Uhr), `bestellarbeit`- und `shop-start`-Tests.
+
+## 28. Routinen als Mac-Dienst (Inhaber 26.10.2026)
+
+Fehlermeldungen → Werkbank, Postfach (Lieferbelege, Service-Anfragen) und das tägliche Nachziehen von
+`~/tp-dashboard` laufen per launchd statt als geplante Aufgaben der Claude-App: Skript zuerst, Claude
+(`claude -p`, Sonnet, feste Werkzeugliste) nur bei echter Arbeit, das Nachziehen ganz ohne Claude.
+Einzelheiten, Werkzeuglisten und Ein-/Abschalten: `operations/README.md`, Abschnitt „Routinen als
+Mac-Dienst“.
+
+**Im Control Center:** `/api/shopwache/status` liefert `routinen` mit (`operations/lib/routinen.mjs`,
+`routinenStand`: je Routine `ok`, `meldung`, `zeit`, `seit`, `stummNachStunden` aus
+`$TP_PRIVAT_DIR/routinen/*/status*.json`). `lib/todos.mjs` (`ausRoutinen`) macht daraus ein rotes
+Website-To-do „Mac-Dienst gestört: …“, sobald eine Routine einen Fehler meldet oder eine mit festem
+Takt so lange ohne erfolgreichen Lauf ist (`letzterErfolg`; Dienst-Aktualisierung 26 Std.,
+Datengesundheit 3 Std.). Rot, weil sonst Mails nicht
+ankommen oder das Dashboard alt bleibt; deshalb sieht es der Inhaber auf seiner Startseite. Jede
+Statusdatei hat genau einen Schreiber (das jeweilige Skript), eine kaputte Datei gilt als Fehler.
+Tests: `operations/tests/routinen.test.mjs`, `claude-lauf.test.mjs`, `dienst-aktualisieren.test.mjs`
+(echte Git-Repos im Temp-Ordner: Konflikt, roter Test, lokale Änderung, Rückweg), `todos.test.mjs`,
+`api.test.mjs`.
