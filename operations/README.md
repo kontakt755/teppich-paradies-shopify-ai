@@ -811,3 +811,28 @@ Das Dashboard meldet nach dem taeglichen Solltermin plus 30 Minuten Laufzeit
 einen ausgebliebenen Tag bereits als alt; die Berechnung verwendet Europe/Berlin
 einschliesslich Sommer-/Winterzeit. Der 48-Stunden-Schutz bleibt zusaetzlich.
 Eine Sicherung auf derselben Platte ersetzt keine unabhaengige externe Kopie.
+
+### Dienst-Checkout automatisch nachziehen (seit 2026-10-26, #1710)
+
+`npm run -s betrieb:nachziehen` bringt `~/tp-dashboard` (Zweig `dashboard-betrieb`) auf den
+Stand von `origin/main`, ohne KI-Kontingent und ohne Handgriffe aus Skill `control-center`,
+Schritt 9. Ablauf: `git fetch`, Zusammenfuehren nur im Kopf (`merge-tree`), den Ergebnis-Commit
+in einer losgeloesten Probekopie testen (`dashboard:test`, bei `operations/` bzw. `social/` auch
+deren Suiten, nie mit echten Betriebsdaten), auf Ruhe warten (keine Codex-Automation laeuft in
+diesem Checkout, zwei Minuten keine Eingabe im Dashboard), genau den getesteten Commit vorspulen,
+betroffene Dienste neu starten (Dashboard, Sync bei `operations/`, Social bei `social/`; reine
+Theme-, Regel- und Lehren-Aenderungen starten nichts) und pruefen, dass sie wieder antworten.
+Antwortet ein Dienst nicht, geht der Lauf auf den Commit von vorher zurueck (`reset --keep`) und
+startet erneut. Konflikt, rote Probe und gescheiterter Neustart gelten fuer diesen main-Stand als
+haengend und werden erst wieder versucht, wenn main weiterzieht. Nie pushen.
+
+```
+npm run -s betrieb:nachziehen -- --status   # letzter Stand und Verlauf
+npm run -s betrieb:nachziehen -- --probe    # nur pruefen und testen, nichts uebernehmen
+npm run -s betrieb:nachziehen               # sofort nachziehen (wartet selbst auf Ruhe)
+bash operations/scripts/dienste-einrichten.sh --nur-nachziehen   # Dienst alle 5 Minuten
+```
+
+Zustand: `$TP_PRIVAT_DIR/betrieb-nachziehen.json`; das Dashboard zeigt im Systemzustand nur,
+wenn es haengt, seit ueber einer Stunde wartet oder seit zwei Stunden nicht mehr geprueft hat.
+Protokoll: `~/Library/Logs/teppich-paradies-nachziehen.log` (Leerlaeufe bleiben still).
