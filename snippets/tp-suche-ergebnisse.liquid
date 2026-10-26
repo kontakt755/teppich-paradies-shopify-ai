@@ -120,7 +120,8 @@
   endif
 
   # Feste Service-Seiten (snippets/tp-suche-service-ziele): "Oeffnungszeiten"
-  # fuehrt zur Kontaktseite, "Verlegung" zum Verlegeservice. Sie stehen oben,
+  # fuehrt zur Kontaktseite, "Verlegung" zum Verlegeservice, "Reklamation" zu
+  # Widerruf, Widerrufsbelehrung und Kontakt. Sie stehen oben,
   # vor Vorschlaegen und Produkten; dieselbe Seite nicht noch einmal unten.
   capture tp_se_fest_handles
     render 'tp-suche-service-ziele', begriff: tp_se_begriff_roh
@@ -129,7 +130,15 @@
   assign tp_se_fest = '|'
   assign tp_se_fest_anzahl = 0
   for tp_se_fh in tp_se_fest_handles
-    if tp_se_fh == blank or pages[tp_se_fh] == blank
+    if tp_se_fh == blank
+      continue
+    endif
+    # "refund-policy" ist die Widerrufsbelehrung (Richtlinie, keine Seite).
+    if tp_se_fh == 'refund-policy'
+      if shop.refund_policy == blank
+        continue
+      endif
+    elsif pages[tp_se_fh] == blank
       continue
     endif
     assign tp_se_fest = tp_se_fest | append: tp_se_fh | append: '|'
@@ -179,7 +188,11 @@
           <h3 class="tp-se__h">Service</h3>
           <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
             {%- for tp_se_fh in tp_se_fest_liste -%}
-              {%- assign tp_se_fs = pages[tp_se_fh] -%}
+              {%- if tp_se_fh == 'refund-policy' -%}
+                {%- assign tp_se_fs = shop.refund_policy -%}
+              {%- else -%}
+                {%- assign tp_se_fs = pages[tp_se_fh] -%}
+              {%- endif -%}
               <li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__link" data-tp-typ="seite" href="{{ tp_se_fs.url }}"><span data-tp-titel>{{ tp_se_fs.title | escape }}</span></a></li>
             {%- endfor -%}
           </ul>
