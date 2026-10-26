@@ -228,9 +228,13 @@ function markiereVerwechslung(muster) {
   for (const m of muster) m.verwechselbar = !!m.verwechselbar;
 }
 
-/** Aufkleber eines Kunden in Druckreihenfolge: seine Muster (je bestellte Anzahl), danach die Adresse. */
-export function aufkleberFuer(kunde) {
-  return [...kunde.muster.flatMap(m => Array.from({ length: m.anzahl || 0 }, () => m.etikett)), kunde.adressAufkleber];
+/**
+ * Aufkleber eines Kunden in Druckreihenfolge: seine Muster (je bestellte Anzahl), danach die Adresse.
+ * `nurOffen`: abgehakte Muster sind schon ueberklebt und eingelegt - ihre Aufkleber nicht nochmal.
+ */
+export function aufkleberFuer(kunde, { nurOffen = false } = {}) {
+  const muster = nurOffen ? kunde.muster.filter(m => !m.abgehakt) : kunde.muster;
+  return [...muster.flatMap(m => Array.from({ length: m.anzahl || 0 }, () => m.etikett)), kunde.adressAufkleber];
 }
 
 /** Aufkleber genau eines Musters (Neu-Etikettieren eines einzelnen Musters), je bestellte Anzahl. */
@@ -314,4 +318,25 @@ export function packSuche(kundenListe = [], eingabe = '', ausserhalb = []) {
   const gefunden = new Set([...beste, ...besteAndere].flatMap(x => [...x.passt]));
   return { woerter, treffer: beste.map(x => ({ packSchluessel: x.k.packSchluessel, muster: x.muster })),
     ausserhalb: besteAndere.map(x => ({ orderId: x.b.orderId, muster: x.muster })), fehlen: woerter.filter(w => !gefunden.has(w)) };
+}
+
+/**
+ * "Muster kommt an": welcher Umschlag braucht das Muster in der Hand? `karten` = passende, noch nicht
+ * eingelegte Muster offener Umschlaege in Packreihenfolge (aelteste Bestellung zuerst), hoechstens
+ * `max`; `eingelegt` = passende Muster, die schon im Umschlag liegen oder gepackt sind; dazu die
+ * Bestellungen ausserhalb der Packliste. Passen nur Kunde oder Bestellnummer, zaehlen alle Muster
+ * dieses Umschlags.
+ */
+export function handTreffer(kundenListe = [], eingabe = '', ausserhalb = [], { max = 6 } = {}) {
+  const s = packSuche(kundenListe, eingabe, ausserhalb);
+  const je = new Map(kundenListe.map(k => [k.packSchluessel, k]));
+  const alle = s.treffer.flatMap(t => {
+    const k = je.get(t.packSchluessel);
+    if (!k) return [];
+    const ids = new Set(t.muster.length ? t.muster : k.muster.map(m => m.lineItemId));
+    return k.muster.filter(m => ids.has(m.lineItemId)).map(m => ({ kunde: k, muster: m }));
+  });
+  const offen = alle.filter(x => !x.muster.abgehakt && x.kunde.bereich !== 'gepackt');
+  return { woerter: s.woerter, fehlen: s.fehlen, karten: offen.slice(0, max), mehr: Math.max(0, offen.length - max),
+    eingelegt: alle.filter(x => x.muster.abgehakt || x.kunde.bereich === 'gepackt'), ausserhalb: s.ausserhalb };
 }

@@ -20,7 +20,8 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, musterNachLaden, packSuche, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, packSuche, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { parseRoute } from '../../kern/router.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { kunden } from './gemeinsam.mjs';
 
@@ -43,6 +44,28 @@ function bindePackOffen() {
 }
 
 const ENDPOINT = '/api/kunden/muster-packen';
+
+// "Bestellung gedruckt" gilt nur auf diesem Geraet und entscheidet allein, welcher Schritt leuchtet -
+// kein gemeinsamer Packstand. Ohne Browserspeicher gilt es bis zum Neuladen.
+const GEDRUCKT_SCHLUESSEL = 'tp-mp-gedruckt';
+const GEDRUCKT_TAGE = 14;
+const gedrucktHier = new Set();
+function gedrucktGespeichert() {
+  try { return JSON.parse(localStorage.getItem(GEDRUCKT_SCHLUESSEL) || '{}') || {}; } catch { return {}; }
+}
+function istGedruckt(pk) { return gedrucktHier.has(pk) || !!gedrucktGespeichert()[pk]; }
+function merkeGedruckt(pks) {
+  for (const pk of pks) gedrucktHier.add(pk);
+  try {
+    const grenze = Date.now() - GEDRUCKT_TAGE * 24 * 60 * 60 * 1000;
+    const neu = Object.fromEntries(Object.entries(gedrucktGespeichert()).filter(([, zeit]) => zeit > grenze));
+    for (const pk of pks) neu[pk] = Date.now();
+    localStorage.setItem(GEDRUCKT_SCHLUESSEL, JSON.stringify(neu));
+  } catch { /* gilt bis zum Neuladen */ }
+}
+
+/** Zuletzt im Reiter "Muster kommt an" eingelegt: Rueckmeldung, wohin es kam und was noch fehlt. */
+let handMeldung = null;
 
 export function ensureMusterPacken() {
   if (kunden.musterPacken || kunden.loadingMusterPacken) return;
@@ -85,16 +108,16 @@ function warteAnmerkung(k) {
 
 const adresseText = a => [a?.strasse, [a?.plz, a?.ort].filter(Boolean).join(' ')].filter(v => v && v !== '–').join(', ');
 
-function bildHtml(m) {
+function bildHtml(m, { gross = false } = {}) {
   return m.bild
-    ? `<img class="mp-bild" src="${esc(`${m.bild}${m.bild.includes('?') ? '&' : '?'}width=160`)}" alt="" loading="lazy" width="72" height="72">`
+    ? `<img class="mp-bild${gross ? ' mp-bild-gross' : ''}" src="${esc(`${m.bild}${m.bild.includes('?') ? '&' : '?'}width=${gross ? 320 : 160}`)}" alt="" loading="lazy" width="${gross ? 140 : 72}" height="${gross ? 140 : 72}">`
     : '<span class="mp-bild mp-bild-leer small">kein Farbbild</span>';
 }
 
 /** Nur dieses Muster neu etikettieren - druckt nichts ohne den Druckdialog und schreibt nichts. */
-function druckEinzelnHtml(m) {
+function druckEinzelnHtml(m, { nachdrucken = false } = {}) {
   if (m.fehlt.length) return '';
-  return `<button type="button" class="btn btn-sm mp-druck1" data-mp-drucken-muster="${esc(m.lineItemId)}">Aufkleber drucken${m.anzahl > 1 ? ` (${m.anzahl})` : ''}</button>`;
+  return `<button type="button" class="btn btn-sm${nachdrucken ? ' btn-ghost' : ''} mp-druck1" data-mp-drucken-muster="${esc(m.lineItemId)}">${nachdrucken ? 'Nur diesen nachdrucken' : 'Aufkleber drucken'}${m.anzahl > 1 ? ` (${m.anzahl})` : ''}</button>`;
 }
 
 function hakenHtml(m, lesend) {
@@ -123,7 +146,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-pfeil" aria-hidden="true">→</div>
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="mp-fehlt">Zuordnung fehlt: ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
-      : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m)}`}</div>
+      : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
     <div class="mp-stand small">${fehltHervor ? '<strong class="mp-fehlt">fehlt</strong> · ' : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}<span class="${m.stand === 'offen' ? 'wait-warn' : 'muted'}">${esc(stand)}</span>${link}</div>
   </li>`;
 }
@@ -139,27 +162,52 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
   // In "Zu klären" stehen die fehlenden Muster oben.
   const muster = k.bereich === 'klaeren' ? [...k.muster].sort((a, b) => fehlend.has(b.lineItemId) - fehlend.has(a.lineItemId)) : k.muster;
   const pk = esc(k.packSchluessel);
-  const bestellLinks = k.bestellungen.map(b => `<a class="btn btn-sm btn-ghost" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Bestellstand prüfen</a>`).join('');
   const rueckLaden = state.route.params.get('laden');
   const rueckweg = rueckLaden ? `<a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden&amp;laden=${encodeURIComponent(rueckLaden)}">Zurück zum Wareneingang</a>` : '';
-  let aktionen = '';
+  const bestellLink = (b, klasse = 'btn btn-sm btn-ghost') => `<a class="${klasse}" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Bestellstand prüfen</a>`;
+  const erneutDrucken = druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}" data-mp-alle-aufkleber="1">Alle Aufkleber erneut drucken (${k.aufkleber})</button>` : '';
+  // Je Umschlag leuchtet genau ein Knopf: der naechste Schritt. Alles Seltene steht unter "Mehr …".
+  let schritte = '', unten = '', mehr = [];
   if (k.bereich === 'gepackt') {
-    aktionen = `<button type="button" class="btn btn-sm" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button>${druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Aufkleber erneut drucken (${k.aufkleber})</button>` : ''}<span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>
-      ${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`}`;
+    unten = `<button type="button" class="btn btn-sm btn-primary" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>`;
+    mehr = [erneutDrucken, lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`,
+      ...k.bestellungen.map(b => `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Versand prüfen…</a>`)];
   } else if (k.bereich === 'klaeren') {
-    aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
-      ${(k.adressFehlt || []).length ? `${k.bestellungen.map(b => `<a class="btn btn-sm" href="#/kunden?tab=bestellungen&amp;bfilter=alle&amp;bq=${encodeURIComponent(b.orderName || '')}">${esc(b.orderName)} – Lieferadresse prüfen</a>`).join('')}` : ''}
-      ${(k.zuordnungFehlt || []).length ? '<a class="btn btn-sm" href="#/lexikon">Musterzuordnung prüfen</a>' : ''}
-      ${!lesend && k.restumfangPruefen && !offen && !k.fehlt.length && !k.klaeren ? `<button type="button" class="btn btn-sm" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1" data-mp-restumfang="1">Restumfang geprüft – Umschlag gepackt…</button>` : ''}
-      ${lesend || !k.klaeren ? '' : `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Klärung aufheben – erneut prüfen</button>`}`;
+    // Was zuerst geklaert werden muss, wird der Hauptknopf; der Rest wandert unter "Mehr …".
+    const moeglich = [
+      !lesend && k.klaeren ? kl => `<button type="button" class="${kl}" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Fehlendes ist da – weiter packen</button>` : null,
+      (k.adressFehlt || []).length ? kl => k.bestellungen.map(b => `<a class="${kl}" href="#/kunden?tab=bestellungen&amp;bfilter=alle&amp;bq=${encodeURIComponent(b.orderName || '')}">${esc(b.orderName)} – Lieferadresse prüfen</a>`).join('') : null,
+      (k.zuordnungFehlt || []).length ? kl => `<a class="${kl}" href="#/lexikon">Musterzuordnung prüfen</a>` : null,
+      !lesend && k.restumfangPruefen && !offen && !k.fehlt.length && !k.klaeren ? kl => `<button type="button" class="${kl}" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1" data-mp-restumfang="1">Restumfang geprüft – Umschlag gepackt…</button>` : null,
+    ].filter(Boolean);
+    unten = moeglich.length ? moeglich[0]('btn btn-sm btn-primary') : bestellLink(k.bestellungen[0], 'btn btn-sm btn-primary');
+    mehr = [...moeglich.slice(1).map(f => f('btn btn-sm')), druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Aufkleber und Adresse drucken (${aufkleberFuer(k, { nurOffen: true }).length})</button>` : '',
+      ...(moeglich.length ? k.bestellungen : k.bestellungen.slice(1)).map(b => bestellLink(b))];
   } else {
-    aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
-      ${lesend ? '' : offen
-        ? `<button type="button" class="btn btn-sm${k.bereich === 'packen' ? ' btn-primary' : ''}" data-mp-alle-eingelegt="${pk}">Alle ${k.muster.length} Muster eingelegt – Umschlag gepackt</button>
-           <input type="text" class="mp-notiz" data-mp-notiz="${pk}" maxlength="300" placeholder="Notiz (optional), z. B. was fehlt" aria-label="Notiz zu fehlenden Mustern">
-           <button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="1">Fehlt etwas – zu klären (${offen} offen)</button>`
-        : `<button type="button" class="btn btn-sm btn-primary" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1">Umschlag gepackt</button>`}`;
+    // Ablauf am Packtisch (Inhaber 26.10.): Bestellung samt Adresse drucken, schauen was da ist und
+    // was fehlt, zukleben. "Gedruckt" merkt sich nur dieses Geraet; ein Haken zaehlt auch als gedruckt.
+    const da = k.muster.length - offen;
+    const schritt = !(istGedruckt(k.packSchluessel) || da) ? 1 : offen ? 2 : 3;
+    const fehltNamen = k.muster.filter(m => !m.abgehakt).map(m => `${m.vorher?.produktname || m.etikett?.serie || m.bestellt.titel}${m.vorher?.farbnummer ? ` (Farbnr. ${m.vorher.farbnummer})` : ''}`);
+    const zustand = n => (schritt === n ? 'mp-jetzt' : schritt > n ? 'mp-erledigt' : 'mp-spaeter');
+    schritte = `<ol class="mp-schritte" aria-label="Schritte für diesen Umschlag">
+      <li class="${zustand(1)}"><span class="mp-schritt-titel">1 · Bestellung drucken</span>${schritt === 1
+        ? `<span class="mp-schritt-tun"><button type="button" class="btn btn-primary" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber und Adresse drucken (${aufkleberFuer(k, { nurOffen: true }).length})</button>${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-gedruckt="${pk}">Schon gedruckt – weiter</button>`}</span>`
+        : '<span class="small muted">erledigt</span>'}</li>
+      <li class="${zustand(2)}"><span class="mp-schritt-titel">2 · Was ist da?</span><span class="mp-bilanz"><strong>Da: ${da} von ${k.muster.length}</strong>${offen ? ` · Fehlt: ${esc(fehltNamen.join(', '))}` : ''}</span>${schritt === 2 ? '<span class="small muted">Häkchen bei jedem Muster, das überklebt im Umschlag liegt.</span>' : ''}</li>
+      <li class="${zustand(3)}"><span class="mp-schritt-titel">3 · Zukleben</span>${schritt === 3 ? '<span class="small muted">Alles da – Umschlag zukleben.</span>' : ''}</li>
+    </ol>`;
+    unten = lesend ? '' : schritt === 2
+      ? `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="1">Fehlt noch – zurücklegen (${offen})</button>
+         <button type="button" class="btn btn-sm" data-mp-alle-eingelegt="${pk}">Alle ${k.muster.length} da – Umschlag gepackt</button>`
+      // Einzeln ueber "Muster kommt an" gefuellt: dann fehlt noch der Adressaufkleber (nurOffen = nur Adresse).
+      : schritt === 3 ? `${!istGedruckt(k.packSchluessel) && druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Adressaufkleber drucken</button>` : ''}<button type="button" class="btn btn-sm btn-primary" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1">Umschlag gepackt</button>` : '';
+    mehr = [schritt > 1 ? erneutDrucken : '',
+      !lesend && offen ? `<input type="text" class="mp-notiz" data-mp-notiz="${pk}" maxlength="300" placeholder="Notiz zu „Fehlt noch“ (optional)" aria-label="Notiz zu fehlenden Mustern">` : '',
+      !lesend && schritt === 1 && offen ? `<button type="button" class="btn btn-sm" data-mp-alle-eingelegt="${pk}">Alle ${k.muster.length} da – Umschlag gepackt</button>` : ''];
   }
+  mehr = [...mehr, ...(k.bereich === 'klaeren' ? [] : k.bestellungen.map(b => bestellLink(b))), rueckweg].filter(Boolean);
+  const mehrHtml = mehr.length ? `<details class="mp-mehr"><summary>Mehr …</summary><div class="mp-aktionen">${mehr.join('')}</div></details>` : '';
   return `<details class="mp-kunde mp-${k.bereich}" name="mp-umschlag" data-mp-kunde="${pk}" aria-labelledby="mp-k${nr}"${offenBeiSuche || (packOffen ?? state.route.params.get('umschlag')) === k.packSchluessel ? ' open' : ''}>
     <summary class="mp-kopf">
       <div class="mp-wer">
@@ -177,9 +225,10 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     ${(k.hinweise || []).map(h => `<p class="notice warn">${esc(h)}</p>`).join('')}
     ${(k.adressFehlt || []).length ? `<p class="notice warn">Lieferadresse unvollständig: ${esc(k.adressFehlt.join(', '))}. Bitte die Lieferadresse in der Bestellung prüfen.</p>` : ''}
     ${(k.zuordnungFehlt || []).length ? `<p class="notice warn">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
+    ${schritte}
     <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId), treffer: treffer.has(m.lineItemId) })).join('')}</ul>
     ${k.bereich === 'warten' ? warteAnmerkung(k) : ''}
-    <div class="mp-aktionen">${aktionen}${k.bereich === 'gepackt' ? k.bestellungen.map(b => `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Versand prüfen…</a>`).join('') : ''}${bestellLinks}${rueckweg}</div>
+    ${unten ? `<div class="mp-aktionen">${unten}</div>` : ''}${mehrHtml}
   </details>`;
 }
 
@@ -204,18 +253,18 @@ export function viewKundenMusterPacken() {
   // Links statt Parameterknoepfe: der Wechsel hebt auch eine laufende Suche auf.
   const modusLink = m => {
     const p = new URLSearchParams(state.route.params);
-    for (const k of ['mp', 'mpq', 'laden', 'umschlag']) p.delete(k);
+    for (const k of ['mp', 'mpq', 'mh', 'laden', 'umschlag']) p.delete(k);
     p.set('tab', 'muster'); if (m === 'laden') p.set('mp', 'laden');
     return `#/kunden?${p}`;
   };
   const umschalter = `<nav class="mp-modus" aria-label="Ansicht">
-      <a class="btn btn-sm${modus === 'kunde' ? ' btn-primary' : ''}" href="${esc(modusLink('kunde'))}"${modus === 'kunde' ? ' aria-current="page"' : ''}>Nach Kunde packen</a>
-      <a class="btn btn-sm${modus === 'laden' ? ' btn-primary' : ''}" href="${esc(modusLink('laden'))}"${modus === 'laden' ? ' aria-current="page"' : ''}>Wareneingang nach Partnerladen</a>
+      <a class="btn btn-sm${modus === 'kunde' ? ' btn-primary' : ''}" href="${esc(modusLink('kunde'))}"${modus === 'kunde' ? ' aria-current="page"' : ''}>Bestellung packen</a>
+      <a class="btn btn-sm${modus === 'laden' ? ' btn-primary' : ''}" href="${esc(modusLink('laden'))}"${modus === 'laden' ? ' aria-current="page"' : ''}>Muster kommt an</a>
     </nav>`;
   const suchfeld = `<div class="toolbar"><input type="search" data-param="mpq" value="${esc(state.route.params.get('mpq') || '')}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer"></div>`;
   const fehlerHinweis = packFehlerHtml(d);
-  if (modus === 'laden') return umschalter + fehlerHinweis + suchfeld + viewNachLaden(d);
-  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du Muster je Umschlag: Muster suchen, Aufkleber drucken, aufkleben, einlegen und abhaken. Gepackt ist noch nicht versandt.</p>`;
+  if (modus === 'laden') return umschalter + fehlerHinweis + viewMusterKommtAn(d);
+  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt ist noch nicht versandt.</p>`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const zielKunde = d.kunden.find(k => k.packSchluessel === ziel);
@@ -241,8 +290,9 @@ export function viewKundenMusterPacken() {
   const aufklappen = gefunden && sichtbar.length <= 3;
   const packen = d.kunden.filter(k => k.bereich === 'packen');
   const druckbar = packen.filter(k => !k.fehlt.length);
-  const aufkleber = druckbar.reduce((summe, k) => summe + k.aufkleber, 0);
-  const druck = ['packen', 'offen'].includes(aktiv) && aufkleber ? `<div class="mp-summe"><button type="button" class="btn btn-primary" data-mp-alle>Packbereite drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button></div>` : '';
+  const aufkleber = druckbar.reduce((summe, k) => summe + aufkleberFuer(k, { nurOffen: true }).length, 0);
+  // Kein Hauptknopf: in der Liste leuchtet erst der Schritt im geoeffneten Umschlag.
+  const druck = ['packen', 'offen'].includes(aktiv) && aufkleber ? `<div class="mp-summe"><button type="button" class="btn" data-mp-alle>Alle Packbereiten drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button></div>` : '';
   const leerText = suche ? (gefunden.ausserhalb.length ? 'Kein offener Umschlag passt – siehe unten.' : 'Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen. Weniger Wörter versuchen, z. B. nur die Farbnummer.') : aktiv === 'offen' ? 'Gerade keine offene Musterbestellung.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : 'Keine gepackten Umschläge.';
   const leer = `<div class="mp-arbeitsleer"><p>${leerText}</p>${['packen', 'offen'].includes(aktiv) && !suche ? `<p>Prüfe eingetroffene Muster unter <a href="#/kunden?tab=muster&amp;mp=laden">Wareneingang nach Partnerladen</a> oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
   const titel = aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1];
@@ -284,6 +334,69 @@ function ausserhalbHtml(alle, treffer) {
     <ul class="mp-aussenliste">${zeilen}</ul></section>`;
 }
 
+/**
+ * Reiter "Muster kommt an": Muster in die Hand nehmen, eintippen was darauf steht, und die Karte sagt,
+ * in welchen Umschlag es gehoert - mit "Aufkleber drucken" und "Eingelegt". Ohne Eingabe darunter der
+ * Wareneingang je Partnerladen.
+ */
+function viewMusterKommtAn(d) {
+  const q = (state.route.params.get('mh') || '').trim();
+  const lesend = istNurLesend();
+  const feld = `<div class="mp-hand">
+      <label class="mp-hand-label" for="mpHandFeld">Was steht auf dem Muster?</label>
+      <input id="mpHandFeld" type="search" class="mp-hand-feld" data-param="mh" value="${esc(state.route.params.get('mh') || '')}" placeholder="z. B. Modena 3N55" autocomplete="off" aria-describedby="mpHandHilfe">
+      <p id="mpHandHilfe" class="small muted">Hersteller, Produkt oder Farbnummer eintippen – oder Kunde, Bestellnummer.</p>
+    </div>`;
+  const meldung = handMeldungHtml(d);
+  if (!q) return feld + meldung + viewNachLaden(d);
+  const t = handTreffer(d.kunden, q, d.ausserhalb || []);
+  const karten = t.karten.length ? `<h2 class="mp-titel mp-ohne-pfeil">${t.karten.length === 1 ? 'Gehört in' : `${t.karten.length} offene Muster passen – ältere Bestellung zuerst`}</h2>
+    <div class="mp-karten">${t.karten.map((x, i) => karteHtml(x, { erste: i === 0 && t.karten.length > 1, lesend })).join('')}</div>` : '';
+  const mehr = t.mehr ? `<p class="small muted">Noch ${plural(t.mehr, 'weiterer Treffer', 'weitere Treffer')} – genauer eintippen, z. B. mit Farbnummer.</p>` : '';
+  const fehlen = t.fehlen.length && (t.karten.length || t.eingelegt.length || t.ausserhalb.length) ? `<p class="small muted">Nicht gefunden: ${t.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ist, was zu den übrigen Wörtern passt.</p>` : '';
+  const schon = t.eingelegt.length ? `<section class="mp-arbeitsliste" aria-label="Schon eingelegt"><h2 class="mp-titel mp-ohne-pfeil">Schon eingelegt</h2><ul class="mp-aussenliste">${t.eingelegt.map(({ kunde: k, muster: m }) =>
+    `<li class="mp-aussen"><div><strong>${esc(umschlagKennung(k))}</strong> · ${esc(k.name)} · ${esc(m.vorher?.produktname || m.bestellt.titel)}${m.vorher?.farbnummer ? ` <strong>Farbnr. ${esc(m.vorher.farbnummer)}</strong>` : ''}</div><div class="small muted">${k.bereich === 'gepackt' ? 'Umschlag ist schon gepackt' : 'liegt schon im Umschlag'}</div></li>`).join('')}</ul></section>` : '';
+  const nichts = !t.karten.length && !t.eingelegt.length && !t.ausserhalb.length
+    ? '<div class="mp-arbeitsleer"><p>Nichts gefunden. Weniger Wörter versuchen, z. B. nur die Farbnummer.</p></div>' : '';
+  return `${feld}${meldung}${fehlen}${karten}${mehr}${schon}${t.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], t.ausserhalb) : ''}${nichts}`;
+}
+
+/** Eine grosse Karte je passendem Muster: was draufsteht, wohin es gehoert, zwei Knoepfe. */
+function karteHtml({ kunde: k, muster: m }, { erste = false, lesend = false } = {}) {
+  const v = m.vorher || {}, e = m.etikett || {};
+  const rest = k.muster.filter(x => !x.abgehakt && x.lineItemId !== m.lineItemId).length;
+  return `<article class="mp-karte${erste ? ' mp-karte-erste' : ''}">
+    ${bildHtml(m, { gross: true })}
+    <div class="mp-vorher">
+      <span class="mp-etikett">Auf dem Muster${m.lieferant ? ` · <span class="mp-laden">${esc(m.lieferant)}</span>` : ''}</span>
+      <span class="mp-karte-name">${esc(v.produktname || v.kollektion || m.bestellt.titel)}</span>
+      ${v.farbnummer ? `<span class="mp-farbnr">Farbnr. ${esc(v.farbnummer)}</span>` : '<span class="small muted">keine Farbnummer hinterlegt</span>'}
+      ${m.verwechselbar ? '<span class="mp-achtung">Ähnliches Muster im selben Umschlag – Farbnummer prüfen</span>' : ''}
+    </div>
+    <div class="mp-karte-ziel">
+      <span class="mp-etikett">Gehört in${erste ? ' · wartet am längsten' : ''}</span>
+      <span class="mp-umschlag">${esc(umschlagKennung(k))}</span>
+      <strong>${esc(k.name)}</strong>
+      <span class="small muted">${rest ? `danach noch ${plural(rest, 'Muster', 'Muster')} offen` : 'letztes offenes Muster – danach komplett'}</span>
+      ${k.bereich === 'klaeren' ? '<span class="mp-fehlt">Umschlag ist zu klären</span>' : ''}
+      ${m.fehlt.length ? '<span class="mp-fehlt">Aufkleber-Zuordnung fehlt – im Lexikon prüfen</span>' : `<span class="small">Unser Aufkleber: <strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span>`}
+    </div>
+    <div class="mp-karte-aktionen">
+      ${m.fehlt.length ? '' : `<button type="button" class="btn mp-gross" data-mp-drucken-muster="${esc(m.lineItemId)}">Aufkleber drucken${m.anzahl > 1 ? ` (${m.anzahl})` : ''}</button>`}
+      ${lesend ? '' : `<button type="button" class="btn btn-primary mp-gross" data-mp-eingelegt="${esc(m.lineItemId)}">Eingelegt ✓</button>`}
+    </div>
+  </article>`;
+}
+
+function handMeldungHtml(d) {
+  const k = handMeldung && d.kunden.find(x => x.packSchluessel === handMeldung);
+  if (!k) return '';
+  const rest = k.muster.filter(m => !m.abgehakt).length;
+  if (rest) return `<p class="notice mp-meldung" role="status"><strong>✓ Eingelegt in ${esc(umschlagKennung(k))}</strong> · ${esc(k.name)} – noch ${plural(rest, 'Muster', 'Muster')} offen in diesem Umschlag. Nächstes Muster eintippen.</p>`;
+  return `<p class="notice mp-meldung mp-komplett" role="status"><strong>✓ ${esc(umschlagKennung(k))} · ${esc(k.name)} ist komplett.</strong> Adresse drucken und zukleben.
+    <a class="btn btn-sm btn-primary" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(k.packSchluessel)}">Zum Umschlag</a></p>`;
+}
+
 /** Wareneingang: ein Paket eines Partnerladens auf die richtigen Umschlaege verteilen. */
 function viewNachLaden(d) {
   const laeden = musterNachLaden(d.kunden);
@@ -302,17 +415,19 @@ function viewNachLaden(d) {
         <span><strong>${esc(e.kunde)}</strong></span><span class="small muted">${esc(e.bestellung)}</span>${druckEinzelnHtml(m)}</div>
     </li>`;
   }).join('');
-  return `<p class="sub mp-hier">Paket auspacken, Laden wählen, jedes Muster an Bild und Farbnummer erkennen – oder oben eintippen, was darauf steht. Aufkleber drucken, aufkleben, auf den Stapel mit der Bestellnummer legen und abhaken; abgehakte Muster verschwinden aus dieser Liste.</p>
+  return `<p class="sub mp-hier">Oder ein ganzes Paket nach Partnerladen abarbeiten: Muster an Bild und Farbnummer erkennen, Aufkleber drucken, aufkleben, auf den Stapel mit der Bestellnummer legen und abhaken – abgehakte Muster verschwinden aus der Liste.</p>
     <div class="mp-laeden">${chips}</div>
     <h2 class="mp-titel">${esc(gewaehlt.laden)} <span class="muted">· ${plural(gewaehlt.eintraege.length, 'Muster', 'Muster')}</span></h2>
     <ul class="mp-sortliste">${zeilen}</ul>`;
 }
 
-function drucken(liste, titel) {
-  const etiketten = liste.flatMap(aufkleberFuer);
+/** Druck je Bestellung; wer "Drucken" gedrueckt hat, ist auf diesem Geraet bei Schritt 2. */
+function drucken(liste, titel, { nurOffen = false } = {}) {
+  const etiketten = liste.flatMap(k => aufkleberFuer(k, { nurOffen }));
   if (!etiketten.length) return;
   oeffneEtikettenDruck({ etiketten, titel, allowEditing: false,
-    hinweis: 'Je Kunde erst die Muster, zuletzt die Adresse – so kommt die Rolle in Packreihenfolge heraus. Der Druck bucht nichts.' });
+    hinweis: 'Je Kunde erst die Muster, zuletzt die Adresse – so kommt die Rolle in Packreihenfolge heraus. Der Druck bucht nichts.',
+    beiSchliessen: ({ versucht } = {}) => { if (versucht) { merkeGedruckt(liste.map(k => k.packSchluessel)); render(); } return true; } });
 }
 
 function packFehlerHtml(d) {
@@ -364,6 +479,19 @@ async function schreiben(daten, meldung) {
   }
 }
 
+/** "Eingelegt ✓": Haken setzen, Feld leeren und fuer das naechste Muster bereit machen. */
+async function eingelegt(k, lineItemId) {
+  await schreiben({ packSchluessel: k.packSchluessel, aktion: 'haken', lineItemIds: [lineItemId], an: true });
+  if (!kundeMitMuster(lineItemId)?.muster.find(m => m.lineItemId === lineItemId)?.abgehakt) return;
+  handMeldung = k.packSchluessel;
+  const p = new URLSearchParams(state.route.params);
+  p.delete('mh');
+  history.replaceState(null, '', `#/${state.route.view}?${p}`);
+  parseRoute();
+  render();
+  document.getElementById('mpHandFeld')?.focus();
+}
+
 function kundeMitMuster(lineItemId) {
   return (kunden.musterPacken?.kunden || []).find(k => k.muster.some(m => m.lineItemId === lineItemId));
 }
@@ -391,6 +519,22 @@ export function musterPackenKlick(e) {
     e.preventDefault();
     const k = liste.find(x => x.packSchluessel === grossbrief.dataset.mpGrossbrief);
     if (k?.gepackt) oeffneGrossbriefVorbereitung(k);
+    return true;
+  }
+  const weiter = e.target.closest('[data-mp-gedruckt]');
+  if (weiter) {
+    e.preventDefault();
+    merkeGedruckt([weiter.dataset.mpGedruckt]);
+    render();
+    return true;
+  }
+  const ein = e.target.closest('[data-mp-eingelegt]');
+  if (ein) {
+    e.preventDefault();
+    const k = kundeMitMuster(ein.dataset.mpEingelegt);
+    if (!k || packSpeichert) return true;
+    ein.disabled = true;
+    void eingelegt(k, ein.dataset.mpEingelegt);
     return true;
   }
   const eines = e.target.closest('[data-mp-drucken-muster]');
@@ -423,12 +567,12 @@ export function musterPackenKlick(e) {
   if (einzeln) {
     e.preventDefault();
     const k = liste.find(x => x.packSchluessel === einzeln.dataset.mpDrucken);
-    if (k) drucken([k], `Aufkleber · ${k.name}`);
+    if (k) drucken([k], `Aufkleber · ${k.name}`, { nurOffen: k.bereich !== 'gepackt' && einzeln.dataset.mpAlleAufkleber !== '1' });
     return true;
   }
   if (e.target.closest('[data-mp-alle]')) {
     e.preventDefault();
-    drucken(liste.filter(k => k.bereich === 'packen' && !k.fehlt.length), 'Aufkleber · alle Kunden in Packreihenfolge');
+    drucken(liste.filter(k => k.bereich === 'packen' && !k.fehlt.length), 'Aufkleber · alle Kunden in Packreihenfolge', { nurOffen: true });
     return true;
   }
   const a = e.target.closest('[data-mp-aktion]');

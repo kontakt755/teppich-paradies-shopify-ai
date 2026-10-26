@@ -2,6 +2,23 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Packstation baby-einfach: Bestellung in drei Schritten, „Muster kommt an“ (#1701)
+
+- **Geaendert:** Ein geoeffneter Umschlag fuehrt in drei Schritten - Bestellung drucken (Aufkleber und
+  Adresse), Was ist da? (Da/Fehlt), Zukleben - und zeigt je Schritt genau einen Hauptknopf; Seltenes steht
+  unter „Mehr …“. Neuer Reiter „Muster kommt an“: ein grosses Feld, darunter je passendem Muster eine grosse
+  Karte mit Ziel-Umschlag, „Aufkleber drucken“ und „Eingelegt ✓“ (leert das Feld fuer das naechste Muster);
+  ohne Eingabe der Wareneingang je Partnerladen. Anlass: Inhaber 26.10. („baby einfach … ich drucke immer
+  eine Bestellung aus samt Adresse und schaue, was da ist und was fehlt“).
+- **Getestet:** `packstation-arbeitslisten.test.mjs` (Schritte 1-3 mit genau einem Hauptknopf, Zu klaeren
+  und Gepackt, Reiter „Muster kommt an“ mit Karten, Reihenfolge, Schon eingelegt, Nichts gefunden),
+  `muster-packen.test.mjs` (`handTreffer`, `aufkleberFuer` nur offene), `dashboard-abschlusskorrekturen.test.mjs`
+  („Eingelegt ✓“ leert das Feld und setzt den Fokus nur nach bestaetigtem Haken).
+- **Risiken:** Der Druckstand gilt je Geraet; nach Browserwechsel steht wieder Schritt 1 („Schon gedruckt –
+  weiter“ hilft). Ein abgehaktes Muster gilt als gedruckt.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen (nur Dashboard). Danach eine Woche Praxis, dann
+  ggf. drei Stapel statt fuenf Listen.
+
 ## 2026-10-26 · Alte Bestellungen aufräumen: belegt fertige fallen heraus, der Rest per Klick (#1698)
 
 - **Geaendert:** Bestellungen, die in Shopify archiviert oder voll erstattet sind, gelten als belegt fertig
