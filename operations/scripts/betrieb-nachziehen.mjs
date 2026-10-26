@@ -37,6 +37,7 @@ import {
   codexArbeitet, MODULE_NEU, moduleReste, moduleTauschen, neustartNoetig, privatRuhe, probeTests, prZeilen,
   zustandLesen, zustandNach, zustandSchreiben,
 } from '../lib/betrieb-nachziehen.mjs';
+import { routineLaeuft } from '../lib/routinen.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const STANDARD_PRIVAT_DIR = path.join(os.homedir(), 'teppich-paradies-analyse');
@@ -197,6 +198,7 @@ export async function nachziehen({
   ruhe ||= () => {
     const codex = codexArbeitet({ automationsDir: path.join(os.homedir(), '.codex', 'automations'), sessionsDir: path.join(os.homedir(), '.codex', 'sessions'), checkout: repo, jetzt: jetzt() });
     if (codex.arbeitet) return { ruhig: false, grund: codex.grund };
+    const routine = routineLaeuft(privatDir); if (routine) return { ruhig: false, grund: `Claude-Routine ${routine} läuft` };
     const eingabe = privatRuhe(privatDir, { jetzt: jetzt() });
     return eingabe.ruhig ? { ruhig: true } : { ruhig: false, grund: `Eingabe im Dashboard vor ${eingabe.alterSekunden} s (${eingabe.datei})` };
   };

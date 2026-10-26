@@ -457,3 +457,32 @@ test('Liefertermin bestaetigt: vorher Lieferant dran (kein Nachhaken), danach wi
   assert.equal(w.wir[0].schritt, 'Liefertermin überschritten');
   assert.deepEqual(w.lieferant.map(z => [z.name, z.schritt]), [['Termin Zukunft', 'Ware kommt bis 25.10.2026']]);
 });
+
+test('Routinen als Mac-Dienst: gestoerte oder stumme Routinen werden ein rotes Website-To-do, sonst nichts', () => {
+  const stunden = h => new Date(JETZT.getTime() - h * 3_600_000).toISOString();
+  const mit = routinen => leiteTodosAb({ shopwache: { verfuegbar: false, routinen } }, { sicht: 'website', jetzt: JETZT });
+  const gut = [{ id: 'fehlermeldungen', titel: 'Fehlermeldungen → Werkbank', ok: true, stumm: false, zeit: stunden(1), seit: stunden(30) },
+    { id: 'daten-gesundheit', titel: 'Datenstand des Sync-Dienstes', ok: true, stumm: false, zeit: stunden(2), seit: stunden(48) }];
+  assert.deepEqual(mit(gut), []);
+  assert.deepEqual(mit([]), []);
+  assert.deepEqual(mit(undefined), []);
+
+  const rot = mit([...gut, { id: 'lieferbelege', titel: 'Lieferbelege aus dem Postfach', ok: false, meldung: 'Werkzeug abgelehnt: Write', zeit: stunden(1), seit: vorTagen(2) }]);
+  assert.equal(rot.length, 1);
+  assert.equal(rot[0].id, 'routinen');
+  assert.equal(rot[0].ton, 'crit');
+  assert.equal(rot[0].titel, 'Mac-Dienst gestört: Lieferbelege aus dem Postfach');
+  assert.equal(rot[0].kontext, 'Werkzeug abgelehnt: Write');
+  assert.equal(rot[0].alterTage, 2);
+
+  // Stumm (der Server rechnet mit Zeitfenster, operations/lib/routinen.mjs routinenStand): Text und Alter vom Server.
+  const stumm = mit([{ ...gut[0], stumm: true, stummSeit: vorTagen(3), stummText: 'seit 72 Stunden kein erfolgreicher Lauf (zuletzt: wartet auf Nachziehen)' },
+    { ...gut[1], ok: false, meldung: 'Sync-Dienst meldet seit 90 Min. keinen neuen Stand', seit: stunden(2) }]);
+  assert.equal(stumm[0].titel, 'Mac-Dienst: 2 Routinen gestört');
+  assert.equal(stumm[0].kontext, 'seit 72 Stunden kein erfolgreicher Lauf (zuletzt: wartet auf Nachziehen) · +1 weitere');
+  assert.equal(stumm[0].alterTage, 3, 'Alter ab dem letzten Erfolg bzw. der Einrichtung');
+  assert.equal(mit([{ ...gut[0], stumm: true }])[0].kontext, 'zu lange kein erfolgreicher Lauf');
+  // Rot: der Inhaber sieht es auf seiner Startseite, im Laden zaehlt es nicht.
+  assert.equal(leiteTodosAb({ shopwache: { routinen: [{ ...gut[0], ok: false, meldung: 'x' }] } }, { sicht: 'inhaber', jetzt: JETZT }).length, 1);
+  assert.deepEqual(leiteTodosAb({ shopwache: { routinen: [{ ...gut[0], ok: false, meldung: 'x' }] } }, { sicht: 'laden', jetzt: JETZT }), []);
+});

@@ -276,6 +276,8 @@ async function drucken() {
       task = null;
     }
     k.transportFertig = true;
+    // Nur ein vollstaendiger Lauf zaehlt; ein Fehler im Aufrufer darf die Meldung nicht verhindern.
+    try { k.druckFertig?.(); } catch { /* Aufrufer meldet selbst */ }
     status(`Der Drucklauf ist fertig. Bitte die ${etiketten.length} Aufkleber an der Rolle prüfen.`, k);
     toast(etiketten.length === 1 ? '1 Aufkleber gedruckt' : `${etiketten.length} Aufkleber gedruckt`);
   } catch (err) {
@@ -366,15 +368,16 @@ export async function etikettenFuerBestellung(positionen = []) {
  * oder sind leer - dann nur die Eingabe von Hand.
  * Die optionale Druckliste prueft vorDruck nach der Druckerauswahl erneut. Schon
  * der finale Klick meldet druckVersucht synchron; beiSchliessen bekommt diesen
- * monotonen Stand. Nur die Papierfrage ruft beiBestaetigen auf. false/Fehler
+ * monotonen Stand. druckFertig meldet einen vollstaendig an den Drucker uebertragenen Lauf
+ * (Packstation: Umschlag vorbereitet). Nur die Papierfrage ruft beiBestaetigen auf. false/Fehler
  * lassen den Dialog offen, damit ein Mitarbeiter die Aktion wiederholen kann.
  */
-export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorschau', allowEditing = true, hinweis = '', vorDruck, druckVersucht, beiSchliessen, beiBestaetigen, schonVersucht = false } = {}) {
+export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorschau', allowEditing = true, hinweis = '', vorDruck, druckVersucht, druckFertig, beiSchliessen, beiBestaetigen, schonVersucht = false } = {}) {
   if (druck.laeuft || druck.speichert) { toast('Bitte warten, bis der aktuelle Vorgang fertig ist.'); return; }
   if (!Array.isArray(etiketten) || etiketten.length > DRUCK_LIMIT.etiketten) { toast(`Bitte höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Drucklauf wählen.`); return; }
   // Ein anderer Aufruf darf den alten Auftrag nicht ohne dessen Freigabe ersetzen.
   if (aktuell(druck.kontext) && !await schliessen(druck.kontext)) return;
-  const k = { sitzung, element: null, vorDruck, druckVersucht, beiSchliessen, beiBestaetigen, versucht: !!schonVersucht, transportFertig: false, schliesst: false, bestaetigt: false, beendet: false, verbindet: false, verbindungsNr: 0 };
+  const k = { sitzung, element: null, vorDruck, druckVersucht, druckFertig, beiSchliessen, beiBestaetigen, versucht: !!schonVersucht, transportFertig: false, schliesst: false, bestaetigt: false, beendet: false, verbindet: false, verbindungsNr: 0 };
   druck.kontext = k;
   druck.etiketten = [...etiketten];
   druck.bearbeiten = -1;
