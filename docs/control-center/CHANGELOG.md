@@ -2,6 +2,26 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Packstation: Eingelegt und gepackt bestätigen den Wareneingang (#1706)
+
+- **Geaendert:** „Eingelegt ✓“ und „Umschlag gepackt“ setzen die betroffenen Muster im Auftragsfluss
+  von „bestellt“ auf „geliefert“, nur vorwärts. Ausgenommen sind Direktversand an den Kunden, die
+  laufende Musterautomatik und offene Fehlmengen. Die Packstation meldet die Zahl bzw. einen Fehler.
+  Dazu kommt `packstationWareneingangNachholen()` für die Haken und Umschläge von vorher. Anlass:
+  Befund aus #1698. Gepackte Muster standen weiter auf „bestellt“ und erzeugten „Beim Lieferanten
+  nachhaken“ und Aufräumfälle. Lieferantenbelege (Idee aus derselben Runde) helfen bei Mustern nicht,
+  weil Lieferant A dafür weder AB noch Lieferschein schickt.
+- **Getestet:** `packstation-wareneingang.test.mjs` (6 Tests: Haken setzt nur die abgehakte bestellte
+  Position, Rücknahme stuft nicht zurück; Gepackt erfasst alle, schon gelieferte bleiben unverändert,
+  nie bestellte bekommen keinen Status; Musterautomatik bleibt; Direktversand bleibt; Rolle „lesen“ 403
+  ohne Schreibzugriff; Nachholen mit Datum im Vermerk, zweiter Lauf 0). `dashboard:test` 972/972 (nach Rebase),
+  `npm run -s pruefen` 9/9, `dashboard:pruefen` 38 Ansichten in allen Breiten OK.
+- **Risiken:** Wer versehentlich einen Haken setzt und wieder zurücknimmt, hinterlässt „geliefert“.
+  Das ist gewollt, denn ein Muster verschwindet nicht wieder, und es lässt sich in der Zeitleiste
+  korrigieren.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen und die vorhandenen Haken bzw. Umschläge
+  einmal nachholen (bei angehaltenem Dienst).
+
 ## 2026-10-26 · Musteraufkleber: 4 mm Rand, ruhiger Aufbau, Eckdaten, Druckversatz einstellbar
 
 - **Geaendert:** Nach den ersten vier Ausdrucken (Foto Inhaber: letzte Ziffer der Art.-Nr. rechts halb weg, einmal

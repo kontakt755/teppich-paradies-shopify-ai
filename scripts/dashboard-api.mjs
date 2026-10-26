@@ -920,6 +920,37 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    * ohnehin nicht. Ist danach keine Ware mehr offen, gehen Eigenleistungen (Kettelservice) mit -
    * sonst bliebe die Bestellung in Shopify "teilweise versendet". null = nichts zu buchen.
    */
+  /**
+   * Packstation -> Wareneingang (#1706): wer ein Muster als eingelegt abhakt oder den Umschlag packt,
+   * hat es in der Hand. Positionen, die noch auf "bestellt" stehen, gehen deshalb auf "geliefert" -
+   * bis dahin meldeten Zeitleiste und To-dos weiter "beim Lieferanten nachhaken" und nach 14 Tagen
+   * "bestellt und nicht da", obwohl der Umschlag laengst gepackt war. Nur vorwaerts, nie bei
+   * Direktversand (ueber: 'kunde'), nicht gegen eine laufende Musterautomatik oder eine offene
+   * Fehlmenge. Wirft nie: scheitert der Eintrag, bleibt der Haken trotzdem gesetzt.
+   */
+  function wareneingangAusPackstation({ positionen, actor, notiz }) {
+    const dir = privatDirPath || privatDir();
+    const file = auftragsstatusPfad(dir);
+    try {
+      const alle = leseAuftragsstatus(file);
+      const modell = ladeBestellModell(dir);
+      const auftraege = new Map([...(modell?.auftraege || []), ...(modell?.testauftraege || [])].map(a => [a.id, a]));
+      const angaben = [];
+      for (const { orderId, lineItemId } of positionen || []) {
+        const e = alle[positionKey(orderId, lineItemId)];
+        if (e?.status !== 'bestellt' || e.ueber === 'kunde' || e.uebernahme?.id === 'musterautomatik') continue;
+        const p = (auftraege.get(orderId)?.positionen || []).find(x => x.lineItemId === lineItemId);
+        const bestellmenge = p?.bestellSoll || p?.bestellmenge || null;
+        if (!darfWeiter(beschaffungsStand(e, bestellmenge), 'geliefert')) continue;
+        angaben.push({ orderId, lineItemId, status: 'geliefert', actor, bestellmenge, notiz, jetzt: now() });
+      }
+      if (angaben.length) setzeStatusPositionen(file, angaben);
+      return { anzahl: angaben.length };
+    } catch (e) {
+      return { anzahl: 0, fehler: e.message };
+    }
+  }
+
   async function erledigtBuchen({ dir, auftrag, lineItemIds, benutzer, actor }) {
     if (!auftrag || !lineItemIds?.length) return null;
     const alle = leseAuftragsstatus(auftragsstatusPfad(dir));
@@ -1806,6 +1837,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const von = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
       const nummern = kunde.bestellungen.map(b => b.orderName).join(', ');
       let ergebnis;
+      let eingang = null;
       try {
         if (aktion === 'gepackt') {
           const restumfangBestaetigt = kunde.restumfangPruefen === true && kunde.hinweise?.length === 1 && kunde.hinweise[0] === 'Teilweise erstattet – offene Muster und Versandumfang prüfen.' && payload.restumfangGeprueft === true;
@@ -1826,6 +1858,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           }
           if (alleEingelegt) setzeHaken(datei, offeneMuster, { an: true, von, jetzt: now() });
           ergebnis = setzeGepackt(datei, pk, { gepackt: wert, von, jetzt: now(), restumfangGeprueft: restumfangBestaetigt });
+          if (wert) eingang = wareneingangAusPackstation({ positionen: kunde.muster, actor: von, notiz: 'Umschlag gepackt (Packstation)' });
           // Gepackt erledigt auch ein "zu klaeren".
           if (wert && kunde.klaeren) setzeKlaeren(datei, kunde.schluessel, { klaeren: false });
           merke(benutzer, null, wert ? 'Muster gepackt' : 'Gepackt zurückgenommen', nummern);
@@ -1834,6 +1867,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const ids = Array.isArray(payload.lineItemIds) ? payload.lineItemIds.filter(id => typeof id === 'string') : [];
           if (!ids.length || ids.some(id => !eigene.has(id))) throw new ApiError(400, 'Dieses Muster gehört nicht zu diesem Kunden.');
           ergebnis = setzeHaken(datei, ids, { an: wert, von, jetzt: now() });
+          if (wert) eingang = wareneingangAusPackstation({ positionen: kunde.muster.filter(m => ids.includes(m.lineItemId)), actor: von, notiz: 'Eingelegt in der Packstation' });
         } else {
           const fehlt = kunde.muster.filter(m => !m.abgehakt).map(m => m.lineItemId);
           if (wert && !fehlt.length) throw new ApiError(400, 'Alle Muster sind abgehakt – der Umschlag ist vollständig.');
@@ -1842,7 +1876,32 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           merke(benutzer, null, wert ? 'Muster zu klären' : 'Fehlende Muster sind da', nummern);
         }
       } catch (e) { throw e instanceof ApiError ? e : new ApiError(500, e.message); }
-      return { ok: true, ...ergebnis };
+      if (eingang?.anzahl) merke(benutzer, null, 'Wareneingang aus der Packstation', `${nummern}: ${eingang.anzahl} Muster angekommen`);
+      return { ok: true, ...ergebnis, ...(eingang ? { wareneingang: eingang } : {}) };
+    },
+
+    /**
+     * Einmal nachholen (#1706): Haken und gepackte Umschlaege aus der Zeit vor dieser Regel in den
+     * Wareneingang uebernehmen - dieselbe Regel wie beim Klick. Kein HTTP-Weg; nur bei angehaltenem
+     * Dienst aufrufen, damit auftragsstatus.json einen Schreiber behaelt.
+     */
+    packstationWareneingangNachholen({ actor = 'Packstation (nachgeholt)' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const stand = leseMusterPackStand(musterPackenPfad(dir));
+      const modell = ladeBestellModell(dir);
+      const alle = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])];
+      const muster = a => (a.positionen || []).filter(p => p.lineItemId && p.istMuster).map(p => ({ orderId: a.id, lineItemId: p.lineItemId }));
+      const jePosition = new Map(alle.flatMap(muster).map(p => [p.lineItemId, p]));
+      const tag = iso => { const d = new Date(iso); return Number.isFinite(d.getTime()) ? `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.` : 'unbekanntem Tag'; };
+      const ergebnisse = [
+        ...Object.entries(stand.haken).filter(([id]) => jePosition.has(id))
+          .map(([id, h]) => wareneingangAusPackstation({ positionen: [jePosition.get(id)], actor, notiz: `Aus der Packstation übernommen: eingelegt am ${tag(h?.zeit)}` })),
+        ...Object.entries(stand.gepackt).map(([key, g]) => {
+          const ids = new Set(key.split(','));
+          return wareneingangAusPackstation({ positionen: alle.filter(a => ids.has(a.id)).flatMap(muster), actor, notiz: `Aus der Packstation übernommen: Umschlag gepackt am ${tag(g?.zeit)}` });
+        }),
+      ];
+      return { anzahl: ergebnisse.reduce((s, r) => s + r.anzahl, 0), fehler: ergebnisse.map(r => r.fehler).filter(Boolean) };
     },
 
     async kundenMusteretikettenVormerken(payload = {}, benutzer = null) {
