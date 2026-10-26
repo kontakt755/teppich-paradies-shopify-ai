@@ -77,6 +77,9 @@ gebraeuchlich), Erfassen.
 - **Schritte im Umschlag:** 1 · Bestellung drucken („Aufkleber und Adresse drucken“), 2 · Was ist da? („Da: x von n · Fehlt: …“), 3 · Zukleben („Umschlag gepackt“).
 - **Fehlt noch – zurücklegen** = Umschlag geht nach „Zu klären“, bis „Fehlendes ist da – weiter packen“.
 - **Eingelegt ✓** = Muster liegt überklebt im Umschlag (derselbe Haken wie in der Liste).
+- **Umschlag vorbereitet** = Aufkleber und Adresse sind gedruckt, der Umschlag liegt bereit und wartet auf die
+  fehlenden Muster; sichtbar auf allen Geräten, mit Datum und Person. **Schon gedruckt** trägt es von Hand nach,
+  **Druckvermerk zurücknehmen** (unter „Mehr …“) nimmt es zurück (#1718, 26.10.2026).
 - **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
 - **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
 - Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.

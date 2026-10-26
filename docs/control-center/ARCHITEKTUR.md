@@ -1924,6 +1924,17 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
   Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.
 - **Wareneingang (`mp=laden`):** `musterNachLaden` verteilt die noch nicht eingelegten Muster je
   Partnerladen auf die Umschlag-Nummern aus „Zu packen“.
+- **Umschlag vorbereitet (#1718, 26.10.):** Inhaber druckt Aufkleber und Adresse oft, bevor alle
+  Muster da sind, und legt den Umschlag bereit. Das steht jetzt zentral in `muster-packen.json`
+  (`gedruckt` je `packSchluessel`, `{ zeit, von }`) statt nur im Browser des druckenden Geräts
+  (`localStorage tp-mp-gedruckt`, bis 26.10.). Gesetzt wird es, wenn ein Druck aus der Packstation
+  vollständig beim Drucker ist (`druckFertig` in `oeffneEtikettenDruck`, nicht schon beim Klick),
+  oder von Hand mit „Schon gedruckt“; zurücknehmen unter „Mehr …“. `POST` mit
+  `{ packSchluessel, aktion: 'gedruckt', gedruckt, seit? }`; `seit` (höchstens 30 Tage alt) übernimmt
+  beim ersten Laden alte Gerätevermerke mit ihrem Druckzeitpunkt, danach wird der Browserspeicher
+  geleert. Gepackte Umschläge bekommen keinen Vermerk (409) und zeigen keinen. Der Vermerk ändert die
+  Arbeitsliste nicht: die Kopfzeile zeigt in jedem offenen Bereich „Umschlag vorbereitet · TT.MM.“,
+  Schritt 1 „gedruckt TT.MM., hh:mm · Person“, „Zu klären“ einen Satz im Umschlag.
 
 ### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
 
