@@ -1966,6 +1966,26 @@ die Umschlaege mit den meisten passenden Woertern, bis zu drei klappen auf, das 
 markiert. Woerter, die nirgends vorkommen (z. B. ein Rueckencode wie „TSU“), werden genannt und
 verhindern keinen Treffer. Ohne Satzzeichen wird erst ab drei Zeichen verglichen („3N-55“ = „3N55“).
 
+**Alles finden, je Muster neu etikettieren, mit einem Klick packen (26.10.2026, #1694).**
+Wunsch: „alles finden“ und Kundenbestellungen „sehr einfach packen und neu etikettieren“.
+- *Suche ueberall:* Das Suchfeld steht auch im Wareneingang; mit Suchtext zeigt die Packstation immer
+  die Umschlaege. Der Wechsel der Ansicht (jetzt Links) hebt die Suche auf. `musterPackliste` liefert
+  zusaetzlich `ausserhalb`: Musterbestellungen, die nicht (mehr) gepackt werden - `zahlungOffen`,
+  `geschlossen` (wie bisher gezaehlt), `storniert` und `erledigt` (versendet, Position `raus`/`erledigt`
+  oder offene Menge 0), neueste zuerst, nur mit Name, Bestellnummer und den Suchfeldern des Musters.
+  `packSuche(kunden, eingabe, ausserhalb)` bewertet sie wie Umschlaege; gezeigt wird nur, was am besten
+  passt. Die Ansicht listet sie unter „Außerhalb der Packliste“ mit Grund und Link zur Bestellung, ohne
+  Haken, Druck oder Packaktion. Testbestellungen erscheinen nie.
+- *Neu etikettieren:* Jedes Muster hat „Aufkleber drucken“ (`aufkleberFuerMuster`: genau dieses Muster
+  in bestellter Anzahl, ohne Adresse; nichts bei fehlender Zuordnung) - in allen Arbeitslisten und im
+  Wareneingang. Gepackte Umschlaege bieten „Aufkleber erneut drucken (n)“. Drucken schreibt nichts.
+- *Packen:* „Alle n Muster eingelegt – Umschlag gepackt“ (Packbereit als Hauptaktion, Wartet auf Ware
+  nach Rueckfrage, nie bei Zu klaeren) schickt `aktion: 'gepackt'` mit `alleEingelegt: true` und den
+  gezeigten offenen `lineItemIds`. Der Server hakt nur ab, wenn genau diese Muster noch offen sind
+  (sonst 409, nichts geschrieben), und prueft danach dieselben Sperren wie beim normalen Packen
+  (fehlende Angaben, Direktversand, Hinweise, Klaerung). Der Wareneingang hat den Haken direkt in der
+  Zeile; die Rueckmeldung nennt den Umschlag und wie viele Muster dort noch offen sind.
+
 Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shopify-Status;
 keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
 nicht als zweiter Hauptstatus. Versand und manueller Listenhaken bleiben unterschiedliche Dinge.

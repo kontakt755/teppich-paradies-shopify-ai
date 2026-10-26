@@ -69,6 +69,9 @@ gebraeuchlich), Erfassen.
 - **Wartet auf Ware** = mindestens ein Muster ist noch nicht als vorhanden bestaetigt.
 - **Alle offenen** = Standard der Packstation (26.10.2026): Packbereit, Zu klaeren und Wartet auf Ware zusammen; wartende Umschlaege mit Anmerkung „Noch nicht da … bestellt am …“.
 - **Zu klaeren** = fehlende Muster gemeldet oder Aufkleber/Adresse nicht eindeutig.
+- **Aufkleber drucken** (je Muster) = nur dieses Muster neu etikettieren; **Aufkleber erneut drucken** = ganzer gepackter Umschlag samt Adresse (26.10.2026).
+- **Alle n Muster eingelegt – Umschlag gepackt** = alle offenen Muster abhaken und den Umschlag packen in einem Schritt.
+- **Außerhalb der Packliste** = Suchtreffer in Musterbestellungen, die hier nicht gepackt werden (Zahlung offen, geschlossen, storniert, schon versandt oder erledigt).
 - **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
 - **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
 - Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.

@@ -1770,7 +1770,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
     /**
      * Muster packen schreiben - nur lokal, ohne Versandbuchung. `aktion`:
-     *   gepackt  { gepackt: bool }                 Umschlag gepackt / zuruecknehmen (Standard)
+     *   gepackt  { gepackt: bool }                 Umschlag gepackt / zuruecknehmen (Standard);
+     *            mit { alleEingelegt: true, lineItemIds } zugleich alle noch offenen Muster abhaken -
+     *            nur, wenn die Seite genau diese offenen Muster gezeigt hat
      *   haken    { lineItemIds: [...], an: bool }  Muster ueberklebt und eingelegt
      *   klaeren  { klaeren: bool, notiz? }         unvollstaendig -> zu klaeren (fehlend = alle
      *            nicht abgehakten Muster, vom Server bestimmt) bzw. "Fehlendes ist da"
@@ -1803,9 +1805,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const restumfangBestaetigt = kunde.restumfangPruefen === true && kunde.hinweise?.length === 1 && kunde.hinweise[0] === 'Teilweise erstattet – offene Muster und Versandumfang prüfen.' && payload.restumfangGeprueft === true;
           // Die bewusste Restumfangpruefung gilt nur fuer Teilrueckerstattung, nie fuer Direktversand.
           const hinweisBlockiert = (kunde.hinweise?.length || 0) > 0 && !restumfangBestaetigt;
-          if (wert && (kunde.fehlt.length || kunde.direktversand || hinweisBlockiert || kunde.klaeren || kunde.muster.some(m => !m.abgehakt))) {
+          const offeneMuster = kunde.muster.filter(m => !m.abgehakt).map(m => m.lineItemId);
+          // "Alle eingelegt": die Person bestaetigt jedes gezeigte offene Muster; kam inzwischen eins dazu
+          // oder hat jemand anders abgehakt, stimmt ihre Seite nicht mehr.
+          const alleEingelegt = wert && payload.alleEingelegt === true;
+          if (alleEingelegt) {
+            const gezeigt = Array.isArray(payload.lineItemIds) ? [...new Set(payload.lineItemIds.filter(id => typeof id === 'string'))].sort() : [];
+            if (!offeneMuster.length || JSON.stringify(gezeigt) !== JSON.stringify([...offeneMuster].sort())) {
+              throw new ApiError(409, 'Die Muster dieses Umschlags haben sich geändert. Bitte neu laden und erneut prüfen.');
+            }
+          }
+          if (wert && (kunde.fehlt.length || kunde.direktversand || hinweisBlockiert || kunde.klaeren || (!alleEingelegt && offeneMuster.length))) {
             throw new ApiError(409, 'Bitte zuerst alle Muster tatsächlich einlegen und abhaken sowie offene Angaben und Klärungen prüfen.');
           }
+          if (alleEingelegt) setzeHaken(datei, offeneMuster, { an: true, von, jetzt: now() });
           ergebnis = setzeGepackt(datei, pk, { gepackt: wert, von, jetzt: now(), restumfangGeprueft: restumfangBestaetigt });
           // Gepackt erledigt auch ein "zu klaeren".
           if (wert && kunde.klaeren) setzeKlaeren(datei, kunde.schluessel, { klaeren: false });

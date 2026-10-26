@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { musterPackliste, aufkleberFuer, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
+import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
 import { adressEtikett, adressLayout, ABSENDER } from '../lib/adress-etiketten.mjs';
 import { ETIKETT_FORMATE } from '../lib/muster-etiketten.mjs';
 
@@ -323,6 +323,52 @@ test('packSuche: Herstellerangaben vom Muster finden den Umschlag, das beste Mus
   assert.deepEqual(packSuche(r.kunden, 'grau ART-TV-GR').treffer.map(t => t.packSchluessel).sort(), [eva.packSchluessel, fynn.packSchluessel].sort());
   // Bestellnummer findet nur den Umschlag; kurze Woerter passen nicht ohne Satzzeichen irgendwo hinein.
   assert.deepEqual(packSuche(r.kunden, '#T6').treffer, [{ packSchluessel: fynn.packSchluessel, muster: [] }]);
-  assert.deepEqual(packSuche(r.kunden, 'gibtsnicht'), { woerter: ['gibtsnicht'], treffer: [], fehlen: ['gibtsnicht'] });
+  assert.deepEqual(packSuche(r.kunden, 'gibtsnicht'), { woerter: ['gibtsnicht'], treffer: [], ausserhalb: [], fehlen: ['gibtsnicht'] });
   assert.deepEqual(packSuche(r.kunden, '   ').treffer, []);
+});
+
+test('ausserhalb: storniert, versandt, Zahlung offen, geschlossen und erledigte Muster stehen mit Grund fuer die Suche bereit', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt,
+    statusVon: (_, li) => (li.endsWith('/52') ? 'raus' : null),
+    auftraege: [
+      auftrag(1, '2026-10-17T09:00:00Z', 'Offen Bezahlt', [pos(11, '101')]),
+      auftrag(2, '2026-10-18T09:00:00Z', 'Nicht Bezahlt', [pos(21, '101')], { bezahlt: 'PENDING' }),
+      auftrag(3, '2026-10-19T09:00:00Z', 'Storniert', [pos(31, '101')], { storniert: true }),
+      auftrag(4, '2026-10-16T09:00:00Z', 'Versendet', [pos(41, '102', { menge: 0 })], { erfuellt: 'FULFILLED' }),
+      auftrag(5, '2026-10-15T09:00:00Z', 'Teilweise Raus', [pos(51, '101'), pos(52, '102')]),
+      auftrag(6, '2026-10-14T09:00:00Z', 'Testkauf', [pos(61, '101')], { testbestellung: true }),
+      auftrag(8, '2026-10-13T09:00:00Z', 'Geschlossen', [pos(81, '101')], { offen: false }),
+    ] });
+  // Neueste zuerst; Testbestellungen nie.
+  assert.deepEqual(r.ausserhalb.map(b => [b.orderName, b.grund, b.muster.map(m => m.lineItemId.split('/').pop())]), [
+    ['#T3', 'storniert', ['31']], ['#T2', 'zahlungOffen', ['21']], ['#T4', 'erledigt', ['41']], ['#T5', 'erledigt', ['52']], ['#T8', 'geschlossen', ['81']]]);
+  assert.deepEqual(r.ausschluesse, { zahlungOffen: 1, geschlossen: 1 }, 'Zaehlung wie bisher');
+  assert.deepEqual(r.kunden.map(k => [k.name, k.muster.length]), [['Teilweise Raus', 1], ['Offen Bezahlt', 1]]);
+  const versandt = r.ausserhalb.find(b => b.orderName === '#T4').muster[0];
+  assert.deepEqual([versandt.etikett.sku, versandt.vorher.produktname, versandt.vorher.farbnummer, versandt.bestellt.farbe], ['TV-GR', 'Lieferantenware GRAU 400', '22', 'Sand']);
+  assert.equal(r.ausserhalb.find(b => b.orderName === '#T4').name, 'Versendet');
+});
+
+test('packSuche: Bestellungen ausserhalb der Packliste nur, wenn sie mindestens so gut passen wie ein offener Umschlag', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [
+    auftrag(1, '2026-10-17T09:00:00Z', 'Offen Bezahlt', [pos(11, '101')]),
+    auftrag(4, '2026-10-16T09:00:00Z', 'Versendet', [pos(41, '102')], { erfuellt: 'FULFILLED' }),
+  ] });
+  const grau = packSuche(r.kunden, 'GRAU 22', r.ausserhalb);
+  assert.deepEqual(grau.treffer, []);
+  assert.deepEqual(grau.ausserhalb, [{ orderId: 'gid://shopify/Order/4', muster: ['gid://shopify/LineItem/41'] }]);
+  assert.deepEqual(grau.fehlen, []);
+  const sand = packSuche(r.kunden, 'sand 11', r.ausserhalb);
+  assert.deepEqual(sand.treffer.map(t => t.muster), [['gid://shopify/LineItem/11']]);
+  assert.deepEqual(sand.ausserhalb, [], 'das versandte Muster passt nur zu "sand" - schlechter als der offene Umschlag');
+  assert.deepEqual(packSuche(r.kunden, '#T4', r.ausserhalb).ausserhalb, [{ orderId: 'gid://shopify/Order/4', muster: [] }]);
+});
+
+test('aufkleberFuerMuster: genau dieses Muster in bestellter Anzahl, nichts bei fehlender Zuordnung', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101', { menge: 2, mengeBestellt: 2 }), pos(12, '102')])] });
+  const [zwei, eins] = r.kunden[0].muster;
+  assert.deepEqual(aufkleberFuerMuster(zwei).map(e => e.sku), ['TV-SA', 'TV-SA']);
+  assert.deepEqual(aufkleberFuerMuster(eins).map(e => e.sku), ['TV-GR']);
+  assert.deepEqual(aufkleberFuerMuster({ ...eins, fehlt: ['Serie'] }), []);
+  assert.deepEqual(aufkleberFuerMuster(null), []);
 });
