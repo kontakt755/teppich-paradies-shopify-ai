@@ -160,10 +160,15 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
  * mit socialDir ist es der Ordner social/, mit privatDir die Wurzel, sonst unbekannt (uebersprungen).
  */
 function ablagenImCode() {
+  const mjs = (ordner, prefix) => fs.readdirSync(path.join(REPO, ordner)).filter(n => n.endsWith('.mjs')).map(n => [`${ordner}/${n}`, prefix]);
   const quellen = [
-    ...fs.readdirSync(path.join(REPO, 'operations/lib')).filter(n => n.endsWith('.mjs')).map(n => ['operations/lib/' + n, '']),
-    ...fs.readdirSync(path.join(REPO, 'social/lib')).filter(n => n.endsWith('.mjs')).map(n => ['social/lib/' + n, 'social/']),
-    ['scripts/dashboard-api.mjs', ''],
+    ...mjs('operations/lib', ''),
+    ...mjs('social/lib', 'social/'),
+    // Auch die Skripte legen Ablagen an (Bestandsabgleich, Anreicherung, Feed ...). Dort ist ein
+    // `dir` ohne Zuweisung meist ein Parameter mit unbekanntem Ziel: null = ueberspringen.
+    ...mjs('operations/scripts', null),
+    ...mjs('social/scripts', null),
+    ...mjs('scripts', null),
   ];
   const aufruf = /path\.join\(\s*([^,()]+(?:\(\))?)\s*,\s*((?:'[^'\n]+'\s*,\s*)*'[^'\n]+')\s*\)/g;
   const gefunden = new Map();
@@ -171,8 +176,14 @@ function ablagenImCode() {
     const text = fs.readFileSync(path.join(REPO, datei), 'utf8');
     for (const m of text.matchAll(aufruf)) {
       const basis = m[1].trim();
+      const teile = [...m[2].matchAll(/'([^']+)'/g)].map(x => x[1]);
       let prefix;
-      if (/privat/i.test(basis)) prefix = '';
+      if (/homedir/.test(basis)) {
+        // path.join(os.homedir(), 'teppich-paradies-analyse', '<ablage>', ...)
+        if (teile[0] !== 'teppich-paradies-analyse' || teile.length < 2) continue;
+        teile.shift();
+        prefix = '';
+      } else if (/privat/i.test(basis)) prefix = '';
       else if (/socialDir/.test(basis)) prefix = 'social/';
       else if (basis === 'dir') {
         const zuweisungen = [...text.slice(0, m.index).matchAll(/(?:const|let)\s+dir\s*=\s*([^;\n]+)/g)];
@@ -181,8 +192,9 @@ function ablagenImCode() {
         else if (/socialDir/.test(zuletzt)) prefix = 'social/';
         else if (/privat/i.test(zuletzt)) prefix = '';
         else continue;
+        if (prefix === null) continue;
       } else continue;
-      const rel = prefix + [...m[2].matchAll(/'([^']+)'/g)].map(x => x[1]).join('/');
+      const rel = prefix + teile.join('/');
       if (rel === 'teppich-paradies-analyse' || rel === 'social/') continue; // der Standardordner selbst
       if (!gefunden.has(rel)) gefunden.set(rel, datei);
     }
