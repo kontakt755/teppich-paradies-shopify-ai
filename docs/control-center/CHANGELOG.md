@@ -2,6 +2,36 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Packstation: vorbereitete und angefangene Umschläge stark sichtbar (#1720)
+
+- **Geaendert:** Inhaber zu einem vorbereiteten Umschlag, in dem schon ein Muster lag: „solche Sachen
+  müssen stark sichtbar sein“. Bisher stand der Druck klein in der grauen Metazeile, ein eingelegtes
+  Muster nur als „1 von 3 abgehakt“. Jetzt gilt:
+  - Unter dem Namen jedes offenen Umschlags stehen Marken, also ohne Aufklappen sichtbar:
+    - „Umschlag vorbereitet · TT.MM.“ kräftig neutral, mit dunklem Rahmen.
+    - Liegen schon Muster im Umschlag: „x von n Mustern schon im Umschlag“ (bzw. „Alle n Muster im
+      Umschlag“) in vollem Bernstein, dazu ein Bernstein-Balken links an der Karte.
+  - Diese angefangenen Umschläge stehen in ihrer Gruppe oben („Alle offenen“ und jeder Bereich).
+  - „Muster kommt an“ zeigt dieselben Marken beim Ziel-Umschlag.
+  - Die stille Zeile „x von n abgehakt“ entfällt.
+  - Lücke geschlossen: Wer erst abhakt und den Druck nie vermerkt hat, findet „Schon gedruckt – Umschlag
+    vorbereitet“ jetzt auch in Schritt 2/3 unter „Mehr …“ (bisher nur in Schritt 1 und „Zu klären“).
+- **Getestet:** `packstation-arbeitslisten.test.mjs` neu „Muster schon im Umschlag“:
+  - Reihenfolge in „Alle offenen“ und „Wartet auf Ware“.
+  - Klasse `mp-angefangen`, beide Marken, keine Marke bei Gepacktem.
+  - „Schon gedruckt“ in Schritt 2, Karte in „Muster kommt an“.
+
+  `dashboard:test` 984/984. `dashboard:pruefen`: alle Ansichten OK, kein Überlauf bei 1440–360 px.
+
+  Klickstrecke gegen die Datenkopie:
+  - 12 von 14 wartenden Umschlägen tragen „vorbereitet“, der angefangene steht oben.
+  - Haken in einem leeren Umschlag: Balken und Marke erscheinen, „Schon gedruckt“ ist anklickbar, der
+    Server hat den Vermerk.
+  - Sichtprüfung hell und dunkel bei 1440 und 390 px.
+- **Risiken:** Marken stehen auf 12 von 17 offenen Umschlägen; auffallen soll vor allem der Bernstein.
+  Werden fast alle Umschläge angefangen, verliert die Sortierung ihre Wirkung.
+- **Naechste Stufe:** keine geplant.
+
 ## 2026-10-26 · Nachziehen tauscht Bibliotheken ohne npm ci im Betrieb (#1716)
 
 - **Geaendert:** Aendert sich `package-lock.json`, lief bisher `npm ci` im Dienst-Checkout,

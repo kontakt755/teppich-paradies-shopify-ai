@@ -31,9 +31,15 @@
 /* Suchtreffer: das Muster, das man gerade in der Hand haelt (Akzent = Auswahl). */
 .mp-treffer { background: var(--accent-soft); outline: 2px solid var(--accent); outline-offset: -2px; }
 .mp-treffertext { color: var(--accent); }
-.mp-ok { color: var(--text-2); font-weight: 600; }
 /* Umschlag vorbereitet (Aufkleber gedruckt, #1718): ein Stand, kein Problem - neutral, aber gut lesbar. */
 .mp-vorbereitet { color: var(--text-2); font-weight: 600; }
+/* Was schon auf dem Packtisch liegt (#1720), in der Kopfzeile: vorbereiteter Umschlag kraeftig neutral,
+   Muster schon im Umschlag in Bernstein (angefangene Arbeit) samt Randbalken an der ganzen Karte. */
+.mp-stempelzeile { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+.mp-stempel { display: inline-flex; align-items: center; padding: 3px 10px; border: 2px solid var(--text); border-radius: 6px; color: var(--text); font-size: .85rem; font-weight: 700; }
+.mp-stempel-drin { border-color: var(--warn); background: var(--warn); color: var(--surface); }
+.mp-angefangen { border-left: 6px solid var(--warn); }
+.mp-karte-ziel .mp-stempelzeile { margin: 2px 0; }
 .mp-zahlen { font-size: 1.05rem; }
 .mp-bereich { margin-top: 14px; }
 .mp-bereich > summary { cursor: pointer; list-style: none; padding: 4px 0 8px; }
