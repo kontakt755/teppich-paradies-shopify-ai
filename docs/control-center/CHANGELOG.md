@@ -2,6 +2,42 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Betrieb zieht main automatisch nach (#1710)
+
+- **Geaendert:** Neuer Dienst `net.teppich-paradies.nachziehen` (alle 5 Minuten,
+  `operations/scripts/betrieb-nachziehen.mjs`) ersetzt die Handgriffe aus Skill
+  `control-center`, Schritt 9. Seit dem 12.10. wurde `~/tp-dashboard` 142-mal von Hand oder
+  per KI-Lauf nachgezogen, jedes Mal mit Abpassen des Codex-Musterlaufs. Der Lauf testet den
+  zusammengefuehrten Stand zuerst in einer losgeloesten Probekopie (ohne echte Betriebsdaten),
+  wartet auf Ruhe (kein Codex-Lauf in diesem Checkout, zwei Minuten keine Eingabe), spult genau
+  den getesteten Commit vor, startet nur betroffene Dienste neu (Dashboard; Sync bei
+  `operations/`, Social bei `social/`; reine Theme- und Regelaenderungen gar nichts) und prueft,
+  dass sie antworten. Sonst Rueckweg auf den Stand von vorher. Systemzustand zeigt
+  „Dashboard-Update hängt“, langes Warten oder einen stehengebliebenen Dienst;
+  `dienste-einrichten.sh --nur-nachziehen` richtet ihn ein (gemeinsame Vorlagenfunktion mit der
+  Sicherung). Skills `control-center` und `ship` verweisen auf `--status` statt der sieben Schritte.
+  Dazu: `npm run dashboard` startet bei einem GitHub-Ausfall mit der bisherigen `issues.json`
+  (`build-dashboard-data.mjs --weiter-mit-alten-daten`); vorher verhinderte ein gescheiterter
+  Abruf jeden Neustart, von Hand wie automatisch.
+- **Getestet:** `operations/tests/betrieb-nachziehen.test.mjs` (9 Tests, davon 5 mit echtem git aus
+  origin, Entwicklerklon und Dienst-Checkout: nichts Neues, Uebernahme mit Merge-Commit auf
+  `dashboard-betrieb`, reine Theme-Aenderung ohne Neustart, rote Probe und Konflikt lassen HEAD
+  stehen und werden fuer denselben main-Stand nicht wiederholt, Rueckweg bei fehlendem Neustart,
+  Warten ohne erneuten Testlauf, eigene Aenderungen, losgeloester Kopf, Probe von Hand schreibt
+  nichts). `vereinfachung.test.mjs`: Systemzustand-Zeilen; `build-data.test.mjs`: Start bei GitHub-Ausfall. Echte Probe gegen einen Wegwerf-Klon
+  mit 14 neuen Commits aus main: Probe gruen in rund 10 s, Uebernahme mit Attrappen-Neustart.
+  Erste Fassung testete in einem `git archive`-Export; der fiel in `fehler-melden-api.test.mjs`
+  durch (Dienststand kommt aus git), deshalb jetzt `git worktree add --detach`.
+- **Risiken:** Die Ruhe-Erkennung fuer Codex liest dessen Protokoll (`task_started`/`task_complete`);
+  aendert Codex das Format, gilt ein Lauf ohne Marker nach 5 Minuten Stille als beendet. Eingaben
+  erkennt der Lauf an Dateien direkt im Privatordner; wer laenger als zwei Minuten nichts speichert
+  und dann mitten im Neustart speichert, bekommt eine Fehlermeldung und muss den Klick wiederholen.
+  Der Rueckweg setzt den Betriebszweig per `reset --keep` auf den Commit von Sekunden vorher; der
+  Zweig traegt keine eigenen Inhalte.
+- **Naechste Stufe:** Nach dem Merge einmal von Hand nachziehen, Dienst einrichten, ersten echten
+  Lauf beobachten. Danach die geplante Aufgabe „Dashboard-Daten aktualisieren“ ohne ihren
+  Nachziehschritt (naechster Vorschlag: KI-Laeufe ohne Arbeit sparen).
+
 ## 2026-10-26 · Packstation: Eingelegt und gepackt bestätigen den Wareneingang (#1706)
 
 - **Geaendert:** „Eingelegt ✓“ und „Umschlag gepackt“ setzen die betroffenen Muster im Auftragsfluss

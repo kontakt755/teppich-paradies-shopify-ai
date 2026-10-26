@@ -73,6 +73,15 @@ export function aktualisierungHealth() {
   const a = einkauf.aktualisierung;
   if (!a) return [];
   const betrieb = Object.entries(a.betrieb || {}).map(([quelle, s]) => {
+    // Neue Dashboard-Versionen kommen von selbst; die Zeile spricht nur, wenn das hakt.
+    if (quelle === 'nachziehen') {
+      const melden = 'Das Dashboard läuft auf dem bisherigen Stand weiter, es geht nichts verloren. Bitte Claude im Chat Bescheid geben: „Dashboard-Update hängt“.';
+      if (s.status === 'fehler') return { level: 'warn', title: `Dashboard-Update hängt: ${s.grund || 'Grund unbekannt'}`, detail: melden };
+      if (s.status === 'alt') return { level: 'warn', title: `Automatische Dashboard-Updates laufen nicht${s.zuletztGeprueft ? ` · zuletzt geprüft ${fmtDateTime(s.zuletztGeprueft)}` : ''}`, detail: melden };
+      if (s.status === 'wartet') return { level: 'warn', title: `Dashboard-Update wartet seit ${fmtDateTime(s.wartetSeit)}`, detail: `${s.grund || 'Es kam keine ruhige Minute.'} Der nächste Versuch kommt von selbst.` };
+      if (s.status === 'unbekannt') return { level: 'info', title: 'Dashboard-Updates: automatisches Nachziehen noch nicht gelaufen', detail: '' };
+      return { level: 'ok', title: `Dashboard-Updates: aktuell${s.zuletztNachgezogen ? ` · zuletzt übernommen ${fmtDateTime(s.zuletztNachgezogen)}` : ''}`, detail: '' };
+    }
     if (quelle === 'werkbank') return {
       level: s.status === 'fehler' ? 'warn' : 'info',
       title: `Rückmeldungen aus „Ideen & Fragen“: ${s.status === 'fehler' ? 'lokaler Stand nicht lesbar' : s.letzteLokaleRueckmeldung ? `letzte lokale Rückmeldung ${fmtDateTime(s.letzteLokaleRueckmeldung)}` : 'letzte lokale Rückmeldung unbekannt'}${s.lokalerStatus === 'alt' ? ' – seit über 48 Stunden keine neue lokale Rückmeldung' : ''}`,

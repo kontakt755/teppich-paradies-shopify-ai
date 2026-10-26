@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.nachziehen</string>
+
+  <!-- Dienst-Checkout automatisch auf main nachziehen (operations/scripts/betrieb-nachziehen.mjs):
+       erst in einer Probekopie testen, dann vorspulen und betroffene Dienste neu starten,
+       bei einem Fehler zurueck auf den bisherigen Stand. Ohne KI-Kontingent.
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-nur-nachziehen -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/operations/scripts/betrieb-nachziehen.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>__REPO_PFAD__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <!-- git, npm und launchctl ohne Anmelde-Shell finden. -->
+    <key>PATH</key><string>__NODE_DIR__:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+  <!-- Alle 5 Minuten; launchd startet keinen zweiten Lauf, solange einer auf Ruhe wartet. -->
+  <key>StartInterval</key><integer>300</integer>
+  <key>RunAtLoad</key><false/>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/teppich-paradies-nachziehen.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/teppich-paradies-nachziehen.log</string>
+</dict>
+</plist>

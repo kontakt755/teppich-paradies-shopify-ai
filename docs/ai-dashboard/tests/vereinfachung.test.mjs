@@ -80,6 +80,18 @@ test('Health-Oberfläche beschreibt Werkbank neutral und lässt belegten Sicheru
   ctx.einkauf.aktualisierung.betrieb.werkbank={status:'fehler',letzteLokaleRueckmeldung:null,lokalerStatus:'fehler',vollabgleich:'unbekannt'};
   const kaputt=vm.runInNewContext(fn+';aktualisierungHealth()',ctx);assert.equal(kaputt[1].level,'warn');assert.match(kaputt[1].title,/nicht lesbar/);
 });
+test('Systemzustand: automatische Dashboard-Updates melden sich nur, wenn sie haken', () => {
+  const source=fs.readFileSync(new URL('../bausteine/aktualisierung.mjs',import.meta.url),'utf8');
+  const a=source.indexOf('export function aktualisierungHealth()'),b=source.indexOf('\n}\n',a);
+  const fn=source.slice(a,b+2).replace('export ','');
+  const zeile=s=>vm.runInNewContext(fn+';aktualisierungHealth()',{einkauf:{aktualisierung:{verfuegbar:true,manuellVerfuegbar:true,teile:{},betrieb:{nachziehen:s}}},fmtDateTime:x=>x})[0];
+  const ok=zeile({status:'ok',zuletztNachgezogen:'2026-10-26T10:00:00Z'});assert.equal(ok.level,'ok');assert.match(ok.title,/aktuell · zuletzt übernommen 2026-10-26T10:00:00Z/);
+  const haengt=zeile({status:'fehler',grund:'Prüfung der neuen Version fehlgeschlagen (dashboard:test)'});
+  assert.equal(haengt.level,'warn');assert.match(haengt.title,/^Dashboard-Update hängt: Prüfung/);assert.match(haengt.detail,/bisherigen Stand weiter/);
+  assert.equal(zeile({status:'alt',zuletztGeprueft:'2026-10-26T07:00:00Z'}).level,'warn');
+  assert.match(zeile({status:'wartet',wartetSeit:'x',grund:'Codex läuft.'}).detail,/nächste Versuch kommt von selbst/);
+  assert.equal(zeile({status:'unbekannt'}).level,'info');
+});
 
 test('Unlesbare optionale Kaufquellen brechen den vorhandenen Bestellablauf nicht', () => {
   assert.deepEqual(musterKaufLinks([quelle], null), []);
