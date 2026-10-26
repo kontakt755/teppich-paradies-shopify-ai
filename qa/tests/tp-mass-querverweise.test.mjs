@@ -43,6 +43,9 @@ test('Querverweis steht unter dem Rechnerergebnis und in der Gruppe Natur', () =
   const hero = lies('sections/tp-teppiche-hero.liquid');
   const ergebnis = hero.slice(hero.indexOf('data-tp-rechner-ergebnis'));
   assert.match(ergebnis.slice(0, ergebnis.indexOf('</div>\n    {%- comment -%} Daten')), /render 'tp-mass-querverweise'/);
+  // Direkt unter der Zusammenfassung, vor der Liste mit bis zu 165 Karten (sonst am Handy unsichtbar)
+  assert.ok(ergebnis.indexOf("render 'tp-mass-querverweise'") < ergebnis.indexOf('data-tp-rechner-liste'), 'Querverweis vor der Liste');
+  assert.ok(ergebnis.indexOf('data-tp-rechner-summe') < ergebnis.indexOf("render 'tp-mass-querverweise'"), 'Querverweis nach der Zusammenfassung');
   assert.match(lies('sections/tp-zubehoer-produkte.liquid'), /if tp_tg_filter == 'natur' -%}\s*{%- render 'tp-mass-querverweise'/);
   assert.match(lies('sections/main-collection.liquid'), /collection\.handle contains 'nach-mass'[^%]*-%}\s*{%- render 'tp-mass-weitergabe'/);
 });
