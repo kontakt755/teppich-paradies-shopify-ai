@@ -133,6 +133,41 @@ export function neustartNoetig(geaendert = []) {
   return [...dienste];
 }
 
+/**
+ * Neue Bibliotheken kommen fertig aus der Probe und werden im Dienst-Checkout nur umbenannt.
+ * npm ci dort loescht node_modules zuerst: gemessen am 26.10.2026 fehlte puppeteer bis zu
+ * 0,3 s (6 von 23 frischen Importen scheiterten, social laedt es erst beim Rendern), und
+ * ohne erreichbare Paketquelle blieb der Ordner leer - der Rueckweg brauchte dann wieder npm ci.
+ * Beide Ordner liegen im Checkout selbst, damit das Umbenennen auf demselben Laufwerk bleibt.
+ */
+export const MODULE_NEU = '.nachziehen-module-neu';
+export const MODULE_VORHER = '.nachziehen-module-vorher';
+
+/** Tauscht node_modules gegen die getesteten Bibliotheken; liefert den Weg zurueck. */
+export function moduleTauschen(repo) {
+  const live = path.join(repo, 'node_modules'), neu = path.join(repo, MODULE_NEU), vorher = path.join(repo, MODULE_VORHER);
+  if (!fs.existsSync(neu)) throw new Error('getestete Bibliotheken aus der Probe fehlen');
+  fs.rmSync(vorher, { recursive: true, force: true });
+  const hatte = fs.existsSync(live);
+  if (hatte) fs.renameSync(live, vorher);
+  fs.renameSync(neu, live);
+  return {
+    zurueck() {
+      fs.renameSync(live, neu);
+      if (hatte) fs.renameSync(vorher, live);
+      fs.rmSync(neu, { recursive: true, force: true });
+    },
+    aufraeumen() { fs.rmSync(vorher, { recursive: true, force: true }); },
+  };
+}
+
+/** Reste eines abgebrochenen Laufs; fehlt node_modules mitten im Tausch, kommt der alte Stand zurueck. */
+export function moduleReste(repo) {
+  const live = path.join(repo, 'node_modules'), vorher = path.join(repo, MODULE_VORHER);
+  if (!fs.existsSync(live) && fs.existsSync(vorher)) fs.renameSync(vorher, live);
+  for (const d of [MODULE_NEU, MODULE_VORHER]) fs.rmSync(path.join(repo, d), { recursive: true, force: true });
+}
+
 /** Testsuiten, die vor dem Uebernehmen in der Probekopie laufen. */
 export function probeTests(geaendert = []) {
   const suiten = ['dashboard:test'];

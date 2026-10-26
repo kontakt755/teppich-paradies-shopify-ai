@@ -5,8 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
-  automationLesen, codexArbeitet, letzterLaufmarker, nachziehStand, neustartNoetig,
-  privatRuhe, probeTests, prZeilen, zustandNach,
+  automationLesen, codexArbeitet, letzterLaufmarker, MODULE_NEU, MODULE_VORHER, moduleReste, moduleTauschen,
+  nachziehStand, neustartNoetig, privatRuhe, probeTests, prZeilen, zustandNach,
 } from '../lib/betrieb-nachziehen.mjs';
 import { betriebszustand } from '../lib/betriebszustand.mjs';
 import { nachziehen, sperreNehmen, sperreVerwaist, SPERRE_ALT_MS } from '../scripts/betrieb-nachziehen.mjs';
@@ -126,7 +126,7 @@ function aufbau() {
     fs.writeFileSync(path.join(dev, datei), inhalt);
     g(dev, 'add', '-A'); g(dev, 'commit', '-q', '-m', titel); g(dev, 'push', '-q', 'origin', 'main');
   };
-  return { betrieb, privat, aufMain, probeLaeufe, kopf: () => g(betrieb, 'rev-parse', 'HEAD') };
+  return { dev, betrieb, privat, aufMain, probeLaeufe, kopf: () => g(betrieb, 'rev-parse', 'HEAD') };
 }
 
 function steuerung({ gesund = [] } = {}) {
@@ -275,4 +275,80 @@ test('CLI: im Dienst still bei Wiederholungen, von Hand immer mit Antwort', () =
   assert.equal(starte({ TP_NACHZIEHEN_DIENST: '1' }).stdout, '', 'derselbe Stand wird im Dienst nicht wiederholt');
   assert.match(starte({ TP_NACHZIEHEN_DIENST: '' }).stdout, /haengt: Arbeitskopie steht auf/);
   assert.match(spawnSync(process.execPath, [skript, '--status'], { encoding: 'utf8', env: { ...process.env, TP_PRIVAT_DIR: privat } }).stdout, /^Stand: haengt/);
+});
+
+test('Bibliotheken: Tausch per Umbenennen, Rueckweg ohne Netz, Reste eines Abbruchs', () => {
+  const repo = tmp('module');
+  const lies = ordner => fs.readFileSync(path.join(repo, ordner, 'stand.txt'), 'utf8');
+  const lege = (ordner, inhalt) => { fs.mkdirSync(path.join(repo, ordner)); fs.writeFileSync(path.join(repo, ordner, 'stand.txt'), inhalt); };
+  lege('node_modules', 'alt');
+  assert.throws(() => moduleTauschen(repo), /fehlen/);
+  assert.equal(lies('node_modules'), 'alt', 'ohne getestete Bibliotheken bleibt alles, wie es ist');
+  lege(MODULE_NEU, 'neu');
+  const t = moduleTauschen(repo);
+  assert.equal(lies('node_modules'), 'neu');
+  t.zurueck();
+  assert.equal(lies('node_modules'), 'alt');
+  assert.deepEqual(fs.readdirSync(repo), ['node_modules']);
+  lege(MODULE_NEU, 'neu');
+  moduleTauschen(repo).aufraeumen();
+  assert.deepEqual(fs.readdirSync(repo), ['node_modules']);
+  // Abbruch zwischen den beiden Umbenennungen: node_modules fehlt, der alte Stand kommt zurueck.
+  fs.renameSync(path.join(repo, 'node_modules'), path.join(repo, MODULE_VORHER));
+  lege(MODULE_NEU, 'halb');
+  moduleReste(repo);
+  assert.equal(lies('node_modules'), 'neu');
+  assert.deepEqual(fs.readdirSync(repo), ['node_modules']);
+});
+
+test('Ablauf: neue Bibliotheken kommen getestet aus der Probe, nie per npm ci im laufenden Betrieb', async () => {
+  const u = aufbau();
+  const npmOffline = (cwd, ...args) => execFileSync('npm', [...args, '--offline', '--no-audit', '--no-fund'], { cwd, stdio: 'ignore' });
+  // Lokale Bibliothek, als Kopie installiert (install-links): so liegt sie wirklich in node_modules.
+  // Die Probe schreibt eine Marke hinein; ein npm ci im Betrieb haette sie geloescht.
+  const marke = "node -e \"require('fs').appendFileSync(process.env.TP_PROBE_ZAEHLER,'x');require('fs').writeFileSync('node_modules/.aus-der-probe',process.cwd())\"";
+  const version = v => {
+    fs.mkdirSync(path.join(u.dev, 'vendor', 'testmod'), { recursive: true });
+    fs.writeFileSync(path.join(u.dev, 'vendor', 'testmod', 'package.json'), JSON.stringify({ name: 'testmod', version: v }));
+    fs.rmSync(path.join(u.dev, 'package-lock.json'), { force: true });
+    npmOffline(u.dev, 'install', '--package-lock-only');
+    g(u.dev, 'add', '-A'); g(u.dev, 'commit', '-q', '-m', `testmod ${v}`); g(u.dev, 'push', '-q', 'origin', 'main');
+  };
+  fs.writeFileSync(path.join(u.dev, '.npmrc'), 'install-links=true\n');
+  fs.writeFileSync(path.join(u.dev, 'package.json'), JSON.stringify({ name: 'probe', private: true,
+    dependencies: { testmod: 'file:vendor/testmod' },
+    scripts: { 'dashboard:test': marke, 'operations:test': 'node -e 0', 'social:test': 'node -e 0' } }, null, 2));
+  version('1.0.0');
+  const imBetrieb = () => JSON.parse(fs.readFileSync(path.join(u.betrieb, 'node_modules', 'testmod', 'package.json'), 'utf8')).version;
+  const herkunft = () => fs.readFileSync(path.join(u.betrieb, 'node_modules', '.aus-der-probe'), 'utf8');
+  const reste = () => fs.readdirSync(u.betrieb).filter(d => d.startsWith('.nachziehen-'));
+
+  const s = steuerung();
+  assert.equal((await lauf(u, s)).nachgezogen, true);
+  assert.equal(imBetrieb(), '1.0.0');
+  assert.deepEqual(s.neustarts, ['net.teppich-paradies.dashboard', 'net.teppich-paradies.sync', 'net.teppich-paradies.social']);
+
+  // Ohne Ruhe wird gewartet; die aufgehobenen Bibliotheken bleiben nicht liegen und werden neu geprueft.
+  version('2.0.0');
+  const vorher = herkunft();
+  assert.equal((await lauf(u, s, { ruhe: () => ({ ruhig: false, grund: 'Codex' }) })).stand, 'wartet');
+  assert.deepEqual(reste(), []);
+  assert.equal(imBetrieb(), '1.0.0');
+  const probenVorher = u.probeLaeufe();
+  assert.equal((await lauf(u, s)).nachgezogen, true);
+  assert.equal(u.probeLaeufe(), probenVorher + 1, 'neue Bibliotheken werden fuer den Tausch frisch installiert');
+  assert.equal(imBetrieb(), '2.0.0');
+  assert.notEqual(herkunft(), vorher, 'node_modules stammt aus der letzten Probe');
+  assert.deepEqual(reste(), []);
+
+  // Rueckweg: alte Bibliotheken zurueck, ohne npm und ohne Netz.
+  const zwei = herkunft();
+  version('3.0.0');
+  const r = await lauf(u, steuerung({ gesund: [false, true, true, true] }));
+  assert.equal(r.stand, 'haengt');
+  assert.match(r.grund, /der bisherige Stand läuft wieder/);
+  assert.equal(imBetrieb(), '2.0.0');
+  assert.equal(herkunft(), zwei);
+  assert.deepEqual(reste(), []);
+  assert.equal(g(u.betrieb, 'status', '--porcelain', '--untracked-files=no'), '');
 });

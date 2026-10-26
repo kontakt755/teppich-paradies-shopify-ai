@@ -823,7 +823,11 @@ diesem Checkout, zwei Minuten keine Eingabe im Dashboard), genau den getesteten 
 betroffene Dienste neu starten (Dashboard, Sync bei `operations/`, Social bei `social/`; reine
 Theme-, Regel- und Lehren-Aenderungen starten nichts) und pruefen, dass sie wieder antworten.
 Antwortet ein Dienst nicht, geht der Lauf auf den Commit von vorher zurueck (`reset --keep`) und
-startet erneut. Konflikt, rote Probe und gescheiterter Neustart gelten fuer diesen main-Stand als
+startet erneut. Aendert sich `package-lock.json`, installiert die Probe die Bibliotheken frisch
+(`npm ci`) und testet mit ihnen; im Dienst-Checkout wird `node_modules` dann nur per Umbenennen
+gegen genau diese getauscht (`.nachziehen-module-neu`/`-vorher`, #1716), der Rueckweg tauscht
+ohne Netz zurueck. Nie `npm ci` im laufenden Betrieb: es loescht `node_modules` zuerst (gemessen
+bis 0,3 s ohne `puppeteer`, ohne Paketquelle dauerhaft leer). Konflikt, rote Probe und gescheiterter Neustart gelten fuer diesen main-Stand als
 haengend und werden erst wieder versucht, wenn main weiterzieht. Nie pushen.
 
 ```
