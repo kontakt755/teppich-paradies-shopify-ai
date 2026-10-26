@@ -12,7 +12,7 @@
 import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { DRUCK_LIMIT, druckBloecke, druckVorschau } from '../lib/druckliste.mjs';
-import { ETIKETT, ETIKETT_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle } from '../lib/muster-etiketten.mjs';
+import { ETIKETT, ETIKETT_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle, schwarzWeiss } from '../lib/muster-etiketten.mjs';
 import { adressLayout } from '../lib/adress-etiketten.mjs';
 
 const SKRIPTE = {
@@ -95,9 +95,14 @@ function zeichne(canvas, e, versatz = null) {
     const q = window.qrcode(0, 'M'); q.addData(e.url); q.make();
     const n = q.getModuleCount();
     const modul = Math.floor(qr.groesse / n);
-    const ab = qr.y + (qr.groesse - modul * n);
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) ctx.fillRect(qr.x + c * modul, ab + r * modul, modul, modul);
+    // layout() legt die Flaeche aufs Raster; bliebe doch ein Rest, dann gleichmaessig rundum.
+    const rest = Math.floor((qr.groesse - modul * n) / 2);
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) ctx.fillRect(qr.x + rest + c * modul, qr.y + rest + r * modul, modul, modul);
   }
+  // Reines Schwarz/Weiss: so druckt der B1 - die Vorschau zeigt damit genau das Druckbild.
+  const bild = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  schwarzWeiss(bild.data);
+  ctx.putImageData(bild, 0, 0);
 }
 
 /**
