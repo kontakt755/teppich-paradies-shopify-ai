@@ -5,7 +5,8 @@
  * Die Suche findet ein Muster auch ueber Hersteller, Herstellerprodukt und Farbnummer (packSuche) -
  * in beiden Ansichten und auch in Bestellungen ausserhalb der Packliste (mit Grund, ohne Aktion).
  * Neu etikettieren: je Muster "Aufkleber drucken"; "Alle eingelegt – Umschlag gepackt" hakt in einem
- * Schritt ab und packt.
+ * Schritt ab und packt. Sind Aufkleber und Adresse gedruckt, steht der Umschlag fuer alle Geraete als
+ * "Umschlag vorbereitet" in der Liste (#1718) - er wartet dann nur noch auf die Muster.
  * Je Muster: Bild genau dieser Farbe, Partnerladen, was auf dem Lieferantenmuster steht (vorher,
  * Farbnummer gross) und welcher Aufkleber darauf kommt (nachher). Abhaken speichert zentral;
  * bleibt ein Muster offen, geht der Kunde mit "Fehlt etwas" nach "Zu klären", bis "Fehlendes ist da".
@@ -49,23 +50,52 @@ const ENDPOINT = '/api/kunden/muster-packen';
 // Info fuer den Packer (Inhaber 26.10.2026): Herstelleretiketten kommen ab, nur Vorwerk und JAB behalten ihres.
 const PACKER_INFO = '<p class="notice mp-packer-info"><strong>Wichtig beim Packen:</strong> Herstelleretiketten von den Mustern entfernen – außer bei Vorwerk und JAB. Dort bleibt das Herstelleretikett dran.</p>';
 
-// "Bestellung gedruckt" gilt nur auf diesem Geraet und entscheidet allein, welcher Schritt leuchtet -
-// kein gemeinsamer Packstand. Ohne Browserspeicher gilt es bis zum Neuladen.
-const GEDRUCKT_SCHLUESSEL = 'tp-mp-gedruckt';
-const GEDRUCKT_TAGE = 14;
+// "Gedruckt" (Umschlag vorbereitet) steht seit 26.10. gemeinsam auf dem Server (#1718). Vorher merkte
+// es sich nur der Browser des druckenden Geraets - diese Vermerke werden beim ersten Laden uebernommen.
+const ALT_GEDRUCKT_SCHLUESSEL = 'tp-mp-gedruckt';
+/** Gerade gedruckt, vom Server noch nicht bestaetigt: der naechste Schritt leuchtet trotzdem schon. */
 const gedrucktHier = new Set();
-function gedrucktGespeichert() {
-  try { return JSON.parse(localStorage.getItem(GEDRUCKT_SCHLUESSEL) || '{}') || {}; } catch { return {}; }
-}
-function istGedruckt(pk) { return gedrucktHier.has(pk) || !!gedrucktGespeichert()[pk]; }
-function merkeGedruckt(pks) {
+const istGedruckt = k => !!k.gedruckt || gedrucktHier.has(k.packSchluessel);
+const gedrucktText = g => `gedruckt ${fmtDateTime(g.zeit)}${g.von ? ` · ${g.von}` : ''}`;
+
+/**
+ * Druckvermerk speichern - nach einem vollstaendigen Druck oder fuer alte Geraetevermerke (`seit`).
+ * Ohne eigenen Schreibriegel: der Druckdialog ist offen, gezeichnet wird erst nach dem Schliessen.
+ */
+async function vermerkeGedruckt(pks, { seit = {} } = {}) {
+  if (istNurLesend() || !pks.length) return 0;
   for (const pk of pks) gedrucktHier.add(pk);
+  let ok = 0;
+  for (const pk of pks) {
+    try {
+      await orgSchreiben(ENDPOINT, { packSchluessel: pk, aktion: 'gedruckt', gedruckt: true, ...(seit[pk] ? { seit: seit[pk] } : {}) });
+      ok++;
+    } catch (err) {
+      gedrucktHier.delete(pk);
+      toast(`Gedruckt, aber nicht als vorbereitet vermerkt: ${err.message} – „Schon gedruckt“ wählen.`, 'warn');
+    }
+  }
   try {
-    const grenze = Date.now() - GEDRUCKT_TAGE * 24 * 60 * 60 * 1000;
-    const neu = Object.fromEntries(Object.entries(gedrucktGespeichert()).filter(([, zeit]) => zeit > grenze));
-    for (const pk of pks) neu[pk] = Date.now();
-    localStorage.setItem(GEDRUCKT_SCHLUESSEL, JSON.stringify(neu));
-  } catch { /* gilt bis zum Neuladen */ }
+    const neu = await fetchEinkauf(ENDPOINT);
+    if (neu?.verfuegbar && !neu.fehler) { kunden.musterPacken = neu; for (const pk of pks) gedrucktHier.delete(pk); }
+  } catch { /* bisheriger Stand bleibt sichtbar */ }
+  if (!document.querySelector?.('.etk-dialog')) render();
+  return ok;
+}
+
+/** Einmal je Seite: alte Druckvermerke dieses Browsers fuer noch offene Umschlaege uebernehmen. */
+let altUebernommen = false;
+async function alteVermerkeUebernehmen(d) {
+  if (altUebernommen || !d?.verfuegbar || istNurLesend()) return;
+  altUebernommen = true;
+  let alt = null;
+  try { alt = JSON.parse(localStorage.getItem(ALT_GEDRUCKT_SCHLUESSEL) || 'null'); } catch { return; }
+  if (!alt || typeof alt !== 'object') return;
+  const offen = new Set(d.kunden.filter(k => !k.gepackt && !k.gedruckt).map(k => k.packSchluessel));
+  const pks = Object.keys(alt).filter(pk => offen.has(pk) && Number.isFinite(Number(alt[pk])));
+  const ok = await vermerkeGedruckt(pks, { seit: Object.fromEntries(pks.map(pk => [pk, new Date(Number(alt[pk])).toISOString()])) });
+  if (ok === pks.length) { try { localStorage.removeItem(ALT_GEDRUCKT_SCHLUESSEL); } catch { /* bleibt bis zum naechsten Laden */ } }
+  if (ok) toast(`${plural(ok, 'Umschlag', 'Umschläge')} von diesem Gerät als vorbereitet übernommen`);
 }
 
 /** Zuletzt im Reiter "Muster kommt an" eingelegt: Rueckmeldung, wohin es kam und was noch fehlt. */
@@ -77,6 +107,7 @@ export function ensureMusterPacken() {
   fetchEinkauf(ENDPOINT).then(d => {
     kunden.musterPacken = d; kunden.loadingMusterPacken = false;
     if (['kunden', 'heute'].includes(state.route.view)) render();
+    void alteVermerkeUebernehmen(d);
   });
 }
 
@@ -172,6 +203,10 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
   const erneutDrucken = druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}" data-mp-alle-aufkleber="1">Alle Aufkleber erneut drucken (${k.aufkleber})</button>` : '';
   // Je Umschlag leuchtet genau ein Knopf: der naechste Schritt. Alles Seltene steht unter "Mehr …".
   let schritte = '', unten = '', mehr = [];
+  // Wer schon gedruckt hat, ohne dass es vermerkt wurde (anderes Geraet, Druck vor #1718), traegt es nach.
+  const druckvermerk = lesend || k.bereich === 'gepackt' ? ''
+    : k.gedruckt ? `<button type="button" class="btn btn-sm btn-ghost" data-mp-gedruckt-weg="${pk}">Druckvermerk zurücknehmen</button>`
+      : k.bereich === 'klaeren' ? `<button type="button" class="btn btn-sm" data-mp-gedruckt="${pk}">Schon gedruckt – Umschlag vorbereitet</button>` : '';
   if (k.bereich === 'gepackt') {
     unten = `<button type="button" class="btn btn-sm btn-primary" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>`;
     mehr = [erneutDrucken, lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`,
@@ -186,18 +221,19 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     ].filter(Boolean);
     unten = moeglich.length ? moeglich[0]('btn btn-sm btn-primary') : bestellLink(k.bestellungen[0], 'btn btn-sm btn-primary');
     mehr = [...moeglich.slice(1).map(f => f('btn btn-sm')), druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Aufkleber und Adresse drucken (${aufkleberFuer(k, { nurOffen: true }).length})</button>` : '',
+      druckvermerk,
       ...(moeglich.length ? k.bestellungen : k.bestellungen.slice(1)).map(b => bestellLink(b))];
   } else {
     // Ablauf am Packtisch (Inhaber 26.10.): Bestellung samt Adresse drucken, schauen was da ist und
-    // was fehlt, zukleben. "Gedruckt" merkt sich nur dieses Geraet; ein Haken zaehlt auch als gedruckt.
+    // was fehlt, zukleben. "Gedruckt" gilt fuer alle Geraete (#1718); ein Haken zaehlt auch als gedruckt.
     const da = k.muster.length - offen;
-    const schritt = !(istGedruckt(k.packSchluessel) || da) ? 1 : offen ? 2 : 3;
+    const schritt = !(istGedruckt(k) || da) ? 1 : offen ? 2 : 3;
     const fehltNamen = k.muster.filter(m => !m.abgehakt).map(m => `${m.vorher?.produktname || m.etikett?.serie || m.bestellt.titel}${m.vorher?.farbnummer ? ` (Farbnr. ${m.vorher.farbnummer})` : ''}`);
     const zustand = n => (schritt === n ? 'mp-jetzt' : schritt > n ? 'mp-erledigt' : 'mp-spaeter');
     schritte = `<ol class="mp-schritte" aria-label="Schritte für diesen Umschlag">
       <li class="${zustand(1)}"><span class="mp-schritt-titel">1 · Bestellung drucken</span>${schritt === 1
         ? `<span class="mp-schritt-tun"><button type="button" class="btn btn-primary" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber und Adresse drucken (${aufkleberFuer(k, { nurOffen: true }).length})</button>${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-gedruckt="${pk}">Schon gedruckt – weiter</button>`}</span>`
-        : '<span class="small muted">erledigt</span>'}</li>
+        : `<span class="small muted">${k.gedruckt ? esc(gedrucktText(k.gedruckt)) : 'erledigt'}</span>`}</li>
       <li class="${zustand(2)}"><span class="mp-schritt-titel">2 · Was ist da?</span><span class="mp-bilanz"><strong>Da: ${da} von ${k.muster.length}</strong>${offen ? ` · Fehlt: ${esc(fehltNamen.join(', '))}` : ''}</span>${schritt === 2 ? '<span class="small muted">Häkchen bei jedem Muster, das überklebt im Umschlag liegt.</span>' : ''}</li>
       <li class="${zustand(3)}"><span class="mp-schritt-titel">3 · Zukleben</span>${schritt === 3 ? '<span class="small muted">Alles da – Umschlag zukleben.</span>' : ''}</li>
     </ol>`;
@@ -205,8 +241,8 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
       ? `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="1">Fehlt noch – zurücklegen (${offen})</button>
          <button type="button" class="btn btn-sm" data-mp-alle-eingelegt="${pk}">Alle ${k.muster.length} da – Umschlag gepackt</button>`
       // Einzeln ueber "Muster kommt an" gefuellt: dann fehlt noch der Adressaufkleber (nurOffen = nur Adresse).
-      : schritt === 3 ? `${!istGedruckt(k.packSchluessel) && druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Adressaufkleber drucken</button>` : ''}<button type="button" class="btn btn-sm btn-primary" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1">Umschlag gepackt</button>` : '';
-    mehr = [schritt > 1 ? erneutDrucken : '',
+      : schritt === 3 ? `${!istGedruckt(k) && druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Adressaufkleber drucken</button>` : ''}<button type="button" class="btn btn-sm btn-primary" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1">Umschlag gepackt</button>` : '';
+    mehr = [schritt > 1 ? erneutDrucken : '', druckvermerk,
       !lesend && offen ? `<input type="text" class="mp-notiz" data-mp-notiz="${pk}" maxlength="300" placeholder="Notiz zu „Fehlt noch“ (optional)" aria-label="Notiz zu fehlenden Mustern">` : '',
       !lesend && schritt === 1 && offen ? `<button type="button" class="btn btn-sm" data-mp-alle-eingelegt="${pk}">Alle ${k.muster.length} da – Umschlag gepackt</button>` : ''];
   }
@@ -221,11 +257,13 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
       <div class="mp-meta">
         <span class="small muted">${k.muster.length} Muster · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
         ${tage === null ? '' : `<span class="${tage >= WARTET_AB_TAGEN && k.bereich !== 'gepackt' ? 'wait-warn' : 'small muted'}">${tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`}</span>`}
+        ${k.gedruckt ? `<span class="small mp-vorbereitet">Umschlag vorbereitet · ${esc(datumKurz(k.gedruckt.zeit))}</span>` : ''}
         ${['packen', 'warten'].includes(k.bereich) ? `<span class="small ${offen ? 'muted' : 'mp-ok'}">${offen ? `${k.muster.length - offen} von ${k.muster.length} abgehakt` : 'alles abgehakt'}</span>` : ''}
       </div>
     </summary>
     ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
     ${k.altvermerk && !k.klaeren ? `<p class="small muted">${esc(k.altvermerk)}</p>` : ''}
+    ${k.gedruckt && k.bereich === 'klaeren' ? `<p class="small mp-vorbereitet">Umschlag vorbereitet: Aufkleber und Adresse ${esc(gedrucktText(k.gedruckt))}. Er wartet auf die fehlenden Muster.</p>` : ''}
     ${(k.hinweise || []).map(h => `<p class="notice warn">${esc(h)}</p>`).join('')}
     ${(k.adressFehlt || []).length ? `<p class="notice warn">Lieferadresse unvollständig: ${esc(k.adressFehlt.join(', '))}. Bitte die Lieferadresse in der Bestellung prüfen.</p>` : ''}
     ${(k.zuordnungFehlt || []).length ? `<p class="notice warn">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
@@ -425,13 +463,19 @@ function viewNachLaden(d) {
     <ul class="mp-sortliste">${zeilen}</ul>`;
 }
 
-/** Druck je Bestellung; wer "Drucken" gedrueckt hat, ist auf diesem Geraet bei Schritt 2. */
+/**
+ * Druck je Bestellung. Ist der Lauf vollstaendig beim Drucker, gilt der Umschlag fuer alle Geraete als
+ * vorbereitet (#1718); ein abgebrochener Druck vermerkt nichts - dann "Schon gedruckt" waehlen.
+ */
 function drucken(liste, titel, { nurOffen = false } = {}) {
   const etiketten = liste.flatMap(k => aufkleberFuer(k, { nurOffen }));
   if (!etiketten.length) return;
+  // Der erste Druck zaehlt; Gepacktes wird nur neu etikettiert.
+  const vorbereiten = liste.filter(k => !k.gepackt && !k.gedruckt).map(k => k.packSchluessel);
   oeffneEtikettenDruck({ etiketten, titel, allowEditing: false,
-    hinweis: 'Je Kunde erst die Muster, zuletzt die Adresse – so kommt die Rolle in Packreihenfolge heraus. Der Druck bucht nichts.',
-    beiSchliessen: ({ versucht } = {}) => { if (versucht) { merkeGedruckt(liste.map(k => k.packSchluessel)); render(); } return true; } });
+    hinweis: 'Je Kunde erst die Muster, zuletzt die Adresse – so kommt die Rolle in Packreihenfolge heraus. Nach dem Druck steht der Umschlag als „vorbereitet“ in der Packstation; versandt oder gebucht wird nichts.',
+    druckFertig: () => { void vermerkeGedruckt(vorbereiten); },
+    beiSchliessen: ({ versucht } = {}) => { if (versucht) render(); return true; } });
 }
 
 function packFehlerHtml(d) {
@@ -531,8 +575,18 @@ export function musterPackenKlick(e) {
   const weiter = e.target.closest('[data-mp-gedruckt]');
   if (weiter) {
     e.preventDefault();
-    merkeGedruckt([weiter.dataset.mpGedruckt]);
-    render();
+    if (packSpeichert) return true;
+    weiter.disabled = true;
+    schreiben({ packSchluessel: weiter.dataset.mpGedruckt, aktion: 'gedruckt', gedruckt: true }, 'Vermerkt: Umschlag vorbereitet');
+    return true;
+  }
+  const weg = e.target.closest('[data-mp-gedruckt-weg]');
+  if (weg) {
+    e.preventDefault();
+    if (packSpeichert) return true;
+    weg.disabled = true;
+    gedrucktHier.delete(weg.dataset.mpGedrucktWeg);
+    schreiben({ packSchluessel: weg.dataset.mpGedrucktWeg, aktion: 'gedruckt', gedruckt: false }, 'Druckvermerk zurückgenommen');
     return true;
   }
   const ein = e.target.closest('[data-mp-eingelegt]');

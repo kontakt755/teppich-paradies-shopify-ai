@@ -134,6 +134,33 @@ test('Bestellung packen in drei Schritten: drucken, was ist da, zukleben – gen
   assert.match(drei, /class="mp-mehr"[\s\S]*Alle Aufkleber erneut drucken \(2\)/, 'Zahl aus dem Server (Fixture)');
 });
 
+test('Umschlag vorbereitet: gedruckt steht fuer alle Geraete in der Kopfzeile, Schritt 1 mit Zeit und Person (#1718)', () => {
+  const vermerk = { zeit: '2026-10-25T13:05:00Z', von: 'Laden' };
+  const html = ansicht('tab=muster&umschlag=order1', [{ ...kunde(1, 'warten'), gedruckt: vermerk }]);
+  assert.match(html, /class="small mp-vorbereitet">Umschlag vorbereitet · 25\.10\.</);
+  assert.equal(schritt(html), '2 · Was ist da?', 'gedruckt: weiter bei Schritt 2');
+  assert.match(html, /1 · Bestellung drucken<\/span><span class="small muted">gedruckt 25\.10\.[^<]* · Laden</);
+  assert.match(html, /class="mp-mehr"[\s\S]*data-mp-gedruckt-weg="order1">Druckvermerk zurücknehmen</);
+  assert.doesNotMatch(html, /Schon gedruckt/);
+  // Ohne Vermerk: keine Marke, Schritt 1 leuchtet.
+  const ohne = ansicht('tab=muster&umschlag=order2', [kunde(2, 'warten')]);
+  assert.doesNotMatch(ohne, /Umschlag vorbereitet|data-mp-gedruckt-weg/);
+  assert.equal(schritt(ohne), '1 · Bestellung drucken');
+  // Zu klaeren (Muster fehlen seit Tagen): nachtragen unter "Mehr", der Hauptknopf bleibt.
+  const kl = { ...kunde(3, 'klaeren'), klaeren: { fehlt: ['line3'], zeit: '2026-10-22T08:00:00Z' } };
+  const klOhne = ansicht('tab=muster&umschlag=order3', [kl]);
+  assert.deepEqual(hauptknoepfe(klOhne), ['Fehlendes ist da – weiter packen']);
+  assert.match(klOhne, /class="mp-mehr"[\s\S]*data-mp-gedruckt="order3">Schon gedruckt – Umschlag vorbereitet</);
+  const klMit = ansicht('tab=muster&umschlag=order3', [{ ...kl, gedruckt: vermerk }]);
+  assert.match(klMit, /class="small mp-vorbereitet">Umschlag vorbereitet · 25\.10\.</);
+  assert.match(klMit, /Umschlag vorbereitet: Aufkleber und Adresse gedruckt 25\.10\.[^<]* · Laden\. Er wartet auf die fehlenden Muster\./);
+  assert.match(klMit, /data-mp-gedruckt-weg="order3"/);
+  assert.doesNotMatch(klMit, /data-mp-gedruckt="order3"/);
+  // In der Liste "Alle offenen" (zugeklappt) ist der Stand ohne Aufklappen zu sehen.
+  const liste = ansicht('tab=muster', [{ ...kunde(4, 'warten'), gedruckt: vermerk }, kunde(5, 'warten')]);
+  assert.equal((liste.match(/Umschlag vorbereitet · /g) || []).length, 1);
+});
+
 test('Zu klaeren und Gepackt: ein Hauptknopf fuer das Naechstliegende, Rest unter "Mehr"', () => {
   const kl = { ...kunde(4, 'klaeren'), klaeren: { fehlt: ['line4'], zeit: '2026-10-26T08:00:00Z' } };
   const klaeren = ansicht('tab=muster&umschlag=order4', [kl]);

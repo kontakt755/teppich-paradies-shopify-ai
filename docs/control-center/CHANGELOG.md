@@ -12,6 +12,29 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** keine; die Info gilt fuer alle Umschlaege, eine Kennzeichnung je Muster gibt es nicht.
 - **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
 
+## 2026-10-26 · Packstation: „Umschlag vorbereitet“ für alle Geräte sichtbar (#1718)
+
+- **Geaendert:** Inhaber: „wichtig ist, dass ich es in der Packstation sehen muss – Etikett ausgedruckt
+  bedeutet, dass ich einen Briefumschlag vorbereitet habe und auf Ware/Muster warte“ (Beispiel: ein
+  Umschlag gedruckt, zwei Muster fehlen seit zwei Wochen). Bisher merkte sich nur der Browser des druckenden
+  Geräts den Druck, und der Druck schaltete nur den Schritt im Umschlag weiter. Jetzt gilt:
+  - Der Vermerk `gedruckt` steht zentral in `muster-packen.json` und ist auf jedem Gerät sichtbar.
+  - Er wird gesetzt, sobald ein Druck aus der Packstation vollständig beim Drucker ist (neuer Rückruf
+    `druckFertig` im Druckdialog), oder mit „Schon gedruckt“. Zurücknehmen geht unter „Mehr …“.
+  - Die Kopfzeile jedes offenen Umschlags zeigt dann „Umschlag vorbereitet · TT.MM.“, auch in „Zu klären“.
+  - Schritt 1 zeigt „gedruckt TT.MM., hh:mm · Person“.
+  - „Zu klären“ bekommt einen Satz im Umschlag; dort lässt sich der Vermerk unter „Mehr …“ auch nachtragen.
+  - Alte Gerätevermerke werden beim ersten Laden mit ihrem Druckzeitpunkt übernommen.
+- **Getestet:** `muster-packen-api.test.mjs` neu „POST gedruckt“: lesen 403, ohne Angabe 400, fremder
+  Umschlag 409, `seit` nur bis 30 Tage zurück, Haken lassen den Vermerk stehen, zurücknehmen,
+  gepackt 409. `packstation-arbeitslisten.test.mjs` neu „Umschlag vorbereitet“: Kopfzeile, Schritt 1
+  mit Zeit und Person, „Zu klären“ mit Satz und „Schon gedruckt – Umschlag vorbereitet“ unter
+  „Mehr …“, der Hauptknopf bleibt. Gesamtlauf siehe PR.
+- **Risiken:** Ein abgebrochener Druck vermerkt nichts. Wer dann trotzdem alle Aufkleber hat, wählt
+  „Schon gedruckt“. Was auf einem Gerät vor diesem Stand gedruckt wurde, erscheint erst, wenn dieses
+  Gerät die Packstation einmal öffnet. Für Drucke ganz ohne Packstation (Lexikon) bleibt „Schon gedruckt“.
+- **Naechste Stufe:** Nach Merge den Dienst nachziehen und die schon gedruckten Umschläge mit „Schon gedruckt“ nachtragen.
+
 ## 2026-10-26 · Routinen als Mac-Dienst: Fehlermeldungen, Postfach, Datenstand (Inhaber 26.10.)
 
 - **Geaendert:** Drei launchd-Dienste ersetzen teure App-Aufgaben (je Start ~105k Tokens). `claude-lauf.mjs

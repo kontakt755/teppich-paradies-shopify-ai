@@ -271,3 +271,35 @@ test('GET liefert Musterbestellungen ausserhalb der Packliste mit Grund fuer die
   assert.equal(r.kunden.length, 1);
   assert.deepEqual(r.ausserhalb.map(b => [b.orderName, b.grund, b.muster.map(m => m.vorher?.produktname)]), [['#T803', 'storniert', ['Lieferant Sand 2mm']]]);
 });
+
+test('POST gedruckt: Umschlag vorbereitet fuer alle Geraete; lesen 403, frueherer Zeitpunkt nur belegbar, gepackt 409 (#1718)', t => {
+  const { api } = umgebung(t);
+  const laden = { name: 'Laden', rolle: 'mitarbeiter' };
+  const k0 = api.kundenMusterPacken().kunden[0];
+  const pk = k0.packSchluessel;
+  assert.equal(k0.gedruckt, null);
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gedruckt', gedruckt: true }, { name: 'Gast', rolle: 'lesen' }), e => e.status === 403);
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gedruckt' }, laden), e => e.status === 400);
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: 'gid://shopify/Order/1', aktion: 'gedruckt', gedruckt: true }, laden), e => e.status === 409);
+  assert.equal(api.kundenMusterPacken().kunden[0].gedruckt, null, 'Abgelehntes schreibt nichts');
+  // Uebernahme eines alten Geraetevermerks: der fruehere Druckzeitpunkt bleibt.
+  api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gedruckt', gedruckt: true, seit: '2026-10-19T09:30:00.000Z' }, laden);
+  const k = api.kundenMusterPacken().kunden[0];
+  assert.deepEqual(k.gedruckt, { zeit: '2026-10-19T09:30:00.000Z', von: 'Laden' });
+  assert.equal(k.bereich, k0.bereich, 'vorbereitet aendert die Arbeitsliste nicht');
+  // Ein Haken schreibt dieselbe Datei - der Vermerk bleibt stehen.
+  api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'haken', lineItemIds: [k.muster[0].lineItemId], an: true }, laden);
+  assert.equal(api.kundenMusterPacken().kunden[0].gedruckt?.zeit, '2026-10-19T09:30:00.000Z');
+  // Zukunft, aelter als 30 Tage oder kein Datum: zaehlt ab jetzt.
+  for (const seit of ['2026-11-01T00:00:00Z', '2026-08-01T00:00:00Z', 'Unsinn']) {
+    api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gedruckt', gedruckt: true, seit }, laden);
+    assert.equal(api.kundenMusterPacken().kunden[0].gedruckt.zeit, '2026-10-21T12:00:00.000Z', seit);
+  }
+  api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gedruckt', gedruckt: false }, laden);
+  assert.equal(api.kundenMusterPacken().kunden[0].gedruckt, null, 'zuruecknehmbar');
+  // Gepackt: der Vermerk verschwindet aus der Liste, ein neuer wird abgelehnt.
+  api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gedruckt', gedruckt: true }, laden);
+  api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gepackt', gepackt: true, alleEingelegt: true, lineItemIds: api.kundenMusterPacken().kunden[0].muster.filter(m => !m.abgehakt).map(m => m.lineItemId) }, laden);
+  assert.equal(api.kundenMusterPacken().kunden[0].gedruckt, null);
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gedruckt', gedruckt: true }, laden), e => e.status === 409);
+});

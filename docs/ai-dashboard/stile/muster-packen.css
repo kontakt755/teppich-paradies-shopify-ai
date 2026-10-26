@@ -33,6 +33,8 @@
 .mp-treffer { background: var(--accent-soft); outline: 2px solid var(--accent); outline-offset: -2px; }
 .mp-treffertext { color: var(--accent); }
 .mp-ok { color: var(--text-2); font-weight: 600; }
+/* Umschlag vorbereitet (Aufkleber gedruckt, #1718): ein Stand, kein Problem - neutral, aber gut lesbar. */
+.mp-vorbereitet { color: var(--text-2); font-weight: 600; }
 .mp-zahlen { font-size: 1.05rem; }
 .mp-bereich { margin-top: 14px; }
 .mp-bereich > summary { cursor: pointer; list-style: none; padding: 4px 0 8px; }
