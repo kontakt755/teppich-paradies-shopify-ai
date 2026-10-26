@@ -444,31 +444,6 @@
   {%- endif -%}
 
   {%- comment -%}
-    Verlegung im Kaufweg (Rundgang 2026-10-26, #3): eine leise Zeile unter dem
-    Zubehoer, nur bei Rollenware mit Verlegeservice (tp-vs-berechtigt). Der
-    Satz steht wortgleich im Hinweis unter dem Produkt
-    (blocks/tp-verlegeservice-hinweis), alle Zahlen aus den Theme-Einstellungen.
-    Laeuft eine Preisaktion, gilt das Kostenlos-Versprechen nicht (Inhaber
-    2026-09-20, snippets/tp-aktion-aktiv) - dann bleibt nur der Link. Die Masse
-    haengt das Skript beim Klick an (data-rwc-verlegung).
-  {%- endcomment -%}
-  {%- liquid
-    capture tp_rc_vs
-      render 'tp-vs-berechtigt', product: product
-    endcapture
-    capture tp_rc_vs_aktion
-      render 'tp-aktion-aktiv', product: product
-    endcapture
-  -%}
-  {%- if tp_rc_vs contains 'ja' -%}
-    <p class="tp-rwc-verlegung" data-rwc-body>
-      <b>Verlegung gewünscht?</b>
-      {%- unless tp_rc_vs_aktion contains 'ja' %} Ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert: Lieferung &amp; lose Verlegung bis {{ settings.tp_vs_radius_basis }}&nbsp;km kostenlos.{% endunless %}
-      <a href="/pages/kontakt?thema=verlegung&amp;produkt={{ product.title | url_encode }}&amp;handle={{ product.handle | url_encode }}" data-rwc-verlegung>Verlegung anfragen</a>
-    </p>
-  {%- endif -%}
-
-  {%- comment -%}
     Reihenfolge der Kaufstrecke (Inhaberauftrag 2026-09-21): nach den Massen
     sofort Preis und Kaufknopf. Visualisierer, Zusatzoptionen, Vertrauenszeile,
     Lieferhinweis und Beratung folgen darunter - alles bleibt erhalten, nur
@@ -545,6 +520,33 @@
   {%- endcomment -%}
   <p class="tp-rwc-note tp-rwc-cta-hint" data-cta-hint aria-live="polite" hidden data-rwc-body></p>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
+
+  {%- comment -%}
+    Verlegung im Kaufweg (Rundgang 2026-10-26, #3): eine leise Zeile direkt
+    unter Kaufknopf und Warenkorb-Link, nur bei Rollenware mit Verlegeservice
+    (tp-vs-berechtigt). Bewusst NICHT zwischen Zubehoer und Preis: dort steht
+    nach den Massen sofort Preis und Kaufknopf (Inhaber 2026-09-21 und
+    2026-10-05, siehe Reihenfolge oben). Der Satz steht wortgleich im Hinweis
+    unter dem Produkt (blocks/tp-verlegeservice-hinweis), alle Zahlen aus den
+    Theme-Einstellungen. Laeuft eine Preisaktion, gilt das Kostenlos-Versprechen
+    nicht (Inhaber 2026-09-20, snippets/tp-aktion-aktiv) - dann bleibt nur der
+    Link. Die Masse haengt das Skript beim Klick an (data-rwc-verlegung).
+  {%- endcomment -%}
+  {%- liquid
+    capture tp_rc_vs
+      render 'tp-vs-berechtigt', product: product
+    endcapture
+    capture tp_rc_vs_aktion
+      render 'tp-aktion-aktiv', product: product
+    endcapture
+  -%}
+  {%- if tp_rc_vs contains 'ja' -%}
+    <p class="tp-rwc-verlegung" data-rwc-body>
+      <b>Verlegung gewünscht?</b>
+      {%- unless tp_rc_vs_aktion contains 'ja' %} Ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert: Lieferung &amp; lose Verlegung bis {{ settings.tp_vs_radius_basis }}&nbsp;km kostenlos.{% endunless %}
+      <a href="/pages/kontakt?thema=verlegung&amp;produkt={{ product.title | url_encode }}&amp;handle={{ product.handle | url_encode }}" data-rwc-verlegung>Verlegung anfragen</a>
+    </p>
+  {%- endif -%}
 
   {%- comment -%}
     Reihenfolge (Inhaber 2026-10-05): Farbe > Breite > Laenge > Zubehoer >
@@ -1289,10 +1291,10 @@
 
   /* K4: Zubehoer sichtbar, Tooltip statt Aufklapptext. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer { margin: 4px 0 12px; border-top: 1px solid var(--tp-rwc-line); border-bottom: 1px solid var(--tp-rwc-line); }
-  /* #3: Verlegung als eine Zeile unter dem Zubehoer. Der Link bekommt nach
-     oben und unten Tippflaeche, ohne die Zeilenhoehe zu aendern. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-verlegung { margin: 0 0 12px; font-size: var(--tp-fs-sm); line-height: 1.45; color: var(--tp-rwc-ink); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-verlegung a { padding-block: 12px; color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+  /* #3: Verlegung als leise Zeile unter Kaufknopf und Warenkorb-Link. Der
+     Link ist mindestens 44 px hoch (Tippflaeche wie #63). */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-verlegung { margin: 12px 0 0; font-size: var(--tp-fs-sm); line-height: 1.45; color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-verlegung a { display: inline-flex; align-items: center; min-height: 44px; color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf { min-height: 44px; margin: 0; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__optional { margin-left: -4px; font-size: var(--tp-fs-sm); color: #595959; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer .tp-rwc-extra { margin: 0 0 10px; }

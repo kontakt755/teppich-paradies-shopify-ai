@@ -102,6 +102,17 @@ test('/cart.js nicht erreichbar: Kauf geht ohne Hinweis weiter', async () => {
   assert.equal(r.adds.length, 1);
 });
 
+test('#3 Verlegung steht unter dem Kaufknopf, nicht zwischen Zubehoer und Preis', () => {
+  // Inhaber 2026-09-21/2026-10-05: nach den Massen sofort Preis und Kaufknopf.
+  const verlegung = rechner.indexOf('<p class="tp-rwc-verlegung"');
+  const zubehoer = rechner.indexOf('data-zubehoer hidden');
+  const preis = rechner.indexOf('<div class="tp-rwc-calc"');
+  const cta = rechner.indexOf('data-cta data-add-to-cart');
+  const warenkorbLink = rechner.indexOf('data-cart-link hidden');
+  assert.ok(zubehoer > 0 && preis > zubehoer && cta > preis, 'Grundreihenfolge Zubehoer > Preis > Kaufknopf');
+  assert.ok(verlegung > warenkorbLink && warenkorbLink > cta, 'Verlegung erst nach Kaufknopf und Warenkorb-Link');
+});
+
 test('#56 Bestellfelder sagen Bestellmass, die Zugabe passt zum Raummass-Helfer', () => {
   assert.match(rechner, />Breite des Stücks \(Bestellmaß\)</);
   assert.match(rechner, />Länge des Stücks</);
