@@ -1,6 +1,7 @@
-/** Nur Zeit-/Erfolgsmetadaten der bestehenden Sicherung und Werkbank-Bruecke. */
+/** Nur Zeit-/Erfolgsmetadaten der bestehenden Sicherung, Werkbank-Bruecke und Updates. */
 import fs from 'node:fs';
 import path from 'node:path';
+import { nachziehStand } from './betrieb-nachziehen.mjs';
 
 function stand(datei, feld, jetzt, maxStunden) {
   let roh;
@@ -41,5 +42,7 @@ export function betriebszustand(dir, { jetzt = new Date() } = {}) {
     // Unveraenderte/fallweise unvollstaendige Einleselaeufe und Cloud-Schreibrechte sind damit nicht belegt.
     werkbank: { status: lokal.status === 'fehler' ? 'fehler' : 'unbekannt',
       letzteLokaleRueckmeldung: lokal.letzterErfolg, lokalerStatus: lokal.status, vollabgleich: 'unbekannt' },
+    // Automatisches Nachziehen des Dienst-Checkouts (operations/scripts/betrieb-nachziehen.mjs).
+    nachziehen: nachziehStand(dir, { jetzt }),
   };
 }

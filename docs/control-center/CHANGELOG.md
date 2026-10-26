@@ -12,6 +12,92 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** keine; die Info gilt fuer alle Umschlaege, eine Kennzeichnung je Muster gibt es nicht.
 - **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
 
+## 2026-10-26 · Gepackte Umschläge ohne Versandvermerk: richtiger nächster Schritt, nach 3 Tagen aufräumen (#1709)
+
+- **Geaendert:**
+  - Ist ein Musterumschlag gepackt, heißt der nächste Schritt „Umschlag gepackt am TT.MM. – zur Post
+    bringen und als verschickt eintragen“ statt „Muster labeln und an den Kunden schicken“.
+  - Gepackte Umschläge ohne Versandvermerk stehen nach 3 Tagen in „Alte Bestellungen aufräumen“, mit
+    „Ist verschickt…“ (Versanddialog, Versandmail vorab aus) und „Liegt noch hier“. Abschließen gibt es
+    dort bewusst nicht, damit das Nachfassen weiterläuft.
+  - Anlass: Befund aus #1706. #1043–#1047 sind seit dem 22.10. gepackt, ohne eingetragenen Versand.
+- **Getestet:**
+  - `auftragsverlauf.test.mjs`: neuer Test für den nächsten Schritt.
+  - `aufraeumen.test.mjs`: 9 Tests, davon 2 neu (Regel und Knöpfe, API mit Packablage). Eine alte Prüfung
+    wurde umgekehrt: gepackt vor 4 Tagen war bisher bewusst kein Fall.
+  - Läufe: `dashboard:test` 977/977 (nach Rebase), `npm run -s pruefen` 9/9, `dashboard:pruefen` ohne Befund.
+  - Klickstrecke gegen die Datenkopie: Liste 7 (#1013, #1037, #1043–#1047) → 6. „Ist verschickt…“
+    öffnete „An Kunden raus · #1013“ mit Mail aus und setzte 3 Artikel auf „raus“ mit Vermerk und
+    `versandMail: false`. Die Shopify-Buchung war in der Prüfinstanz erwartungsgemäß „nicht gebucht“.
+- **Risiken:** Ob ein gepackter Umschlag wirklich zur Post ging, weiß das Dashboard nicht. Entschieden
+  wird per Klick.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
+
+## 2026-10-26 · Betrieb zieht main automatisch nach (#1710)
+
+- **Geaendert:** Neuer Dienst `net.teppich-paradies.nachziehen` (alle 5 Minuten,
+  `operations/scripts/betrieb-nachziehen.mjs`) ersetzt die Handgriffe aus Skill
+  `control-center`, Schritt 9. Seit dem 12.10. wurde `~/tp-dashboard` 142-mal von Hand oder
+  per KI-Lauf nachgezogen, jedes Mal mit Abpassen des Codex-Musterlaufs. Der Lauf testet den
+  zusammengefuehrten Stand zuerst in einer losgeloesten Probekopie (ohne echte Betriebsdaten),
+  wartet auf Ruhe (kein Codex-Lauf in diesem Checkout, zwei Minuten keine Eingabe), spult genau
+  den getesteten Commit vor, startet nur betroffene Dienste neu (Dashboard; Sync bei
+  `operations/`, Social bei `social/`; reine Theme- und Regelaenderungen gar nichts) und prueft,
+  dass sie antworten. Sonst Rueckweg auf den Stand von vorher. Systemzustand zeigt
+  „Dashboard-Update hängt“, langes Warten oder einen stehengebliebenen Dienst;
+  `dienste-einrichten.sh --nur-nachziehen` richtet ihn ein (gemeinsame Vorlagenfunktion mit der
+  Sicherung). Skills `control-center` und `ship` verweisen auf `--status` statt der sieben Schritte.
+  Dazu: `npm run dashboard` startet bei einem GitHub-Ausfall mit der bisherigen `issues.json`
+  (`build-dashboard-data.mjs --weiter-mit-alten-daten`); vorher verhinderte ein gescheiterter
+  Abruf jeden Neustart, von Hand wie automatisch.
+- **Getestet:** `operations/tests/betrieb-nachziehen.test.mjs` (12 Tests, davon 6 mit echtem git aus
+  origin, Entwicklerklon und Dienst-Checkout: nichts Neues, Uebernahme mit Merge-Commit auf
+  `dashboard-betrieb`, reine Theme-Aenderung ohne Neustart, rote Probe und Konflikt lassen HEAD
+  stehen und werden fuer denselben main-Stand nicht wiederholt, Rueckweg bei fehlendem Neustart,
+  Warten ohne erneuten Testlauf, eigene Aenderungen, losgeloester Kopf, Probe von Hand schreibt
+  nichts, Sperre nach Absturz, Laufmarker nur als JSON-Ereignis, CLI im Dienst still und von Hand
+  immer mit Antwort). `vereinfachung.test.mjs`: Systemzustand-Zeilen ohne Pfade oder Befehle, keine Zeile
+  ohne Einrichtung; `build-data.test.mjs`: Start bei GitHub-Ausfall. Claude-Pruefung (`/code-review`,
+  Codex-Kontingent war erschoepft) fand 14 Punkte; behoben u. a. Background-Drosselung der Probe,
+  Sperre ohne Altersgrenze, starrer Social-Statuscode, Sync-Pruefung nur per PID, Pfade im Systemzustand. Echte Probe gegen einen Wegwerf-Klon
+  mit 14 neuen Commits aus main: Probe gruen in rund 10 s, Uebernahme mit Attrappen-Neustart.
+  Erste Fassung testete in einem `git archive`-Export; der fiel in `fehler-melden-api.test.mjs`
+  durch (Dienststand kommt aus git), deshalb jetzt `git worktree add --detach`.
+- **Risiken:** Die Ruhe-Erkennung fuer Codex liest dessen Protokoll (`task_started`/`task_complete`);
+  aendert Codex das Format, gilt ein Lauf ohne Marker nach 5 Minuten Stille als beendet. Eingaben
+  erkennt der Lauf an Dateien direkt im Privatordner; wer laenger als zwei Minuten nichts speichert
+  und dann mitten im Neustart speichert, bekommt eine Fehlermeldung und muss den Klick wiederholen.
+  Der Rueckweg setzt den Betriebszweig per `reset --keep` auf den Commit von Sekunden vorher; der
+  Zweig traegt keine eigenen Inhalte.
+  Ungetestet: der Weg mit geaendertem `package-lock.json` (`npm ci` im laufenden Checkout, die alten
+  Dienste laufen dabei noch) und die echte launchd-Steuerung; die greift erst im Betrieb.
+- **Naechste Stufe:** Nach dem Merge einmal von Hand nachziehen, Dienst einrichten, ersten echten
+  Lauf beobachten. Danach die geplante Aufgabe „Dashboard-Daten aktualisieren“ ohne ihren
+  Nachziehschritt (naechster Vorschlag: KI-Laeufe ohne Arbeit sparen).
+
+## 2026-10-26 · Musteraufkleber: QR-Code auf ganzen Kästchen, Druck so schlank wie die Vorschau (#1708)
+
+- **Geaendert:** Nach dem Testdruck Modena 3N55 auf 50 × 50 und 50 × 80 (Foto Inhaber) gab es zwei Befunde.
+  (1) Der QR-Code sass auf 50 × 50 tiefer und weiter links als geplant. `layout()` gab ihm 140 px, gezeichnet
+  wird aber in ganzen Druckpunkten je Kästchen (37 Kästchen × 3 px = 111 px). Den Rest von 29 px liess die
+  Zeichnung oben und rechts frei. Jetzt legt `qrRaster()` die Fläche schon im Layout auf das Kästchenraster:
+  Der Code steht im Querformat bündig am rechten Rand und mit der Oberkante auf Höhe der ersten Technikzeile.
+  Die frei werdende Breite geht an die Technikspalte. (2) Der Druck war fetter als die Vorschau. niimbluelib
+  druckt jedes nicht ganz weisse Pixel schwarz, auch die grauen Kantenpixel der Schrift. `zeichne()` setzt das
+  Bild deshalb am Ende mit `schwarzWeiss()` auf reines Schwarz/Weiss (Schwelle 150 von 255). Vorschau, PNG und
+  Druck zeigen damit dasselbe Bild, kleine Schrift wie „Fußbodenheizung“ läuft nicht mehr zu. Die Schwelle ist
+  aus dem Vergleich 128/150/180 gewählt: 128 wird bei 2,5 mm Schrift dünn, 180 wieder fett.
+- **Getestet:** `muster-etiketten.test.mjs` 27/27, neu: `qrRaster` (Vielfache, ohne URL 0), `schwarzWeiss`
+  (Grenze genau bei `SCHWELLE`), QR im Querformat bündig rechts und oben auf Technikhöhe, jede QR-Fläche in
+  allen Zufallsetiketten ein Vielfaches der Kästchenzahl. `dashboard:test` 975/975. Pixelprüfung im Browser
+  (Puppeteer, echte Canvas-Schrift) über alle Lexikonprodukte, 3000 Zufalls- und 800 Adressetiketten in
+  50 × 50, 50 × 80 und 50 × 100 (Ergebnis siehe PR).
+- **Risiken:** Im Hochformat mit sehr langem Namen bleibt ein QR-Code mit 2 Punkten je Kästchen (z. B. 74 px
+  bei 37 Kästchen). Gedruckt wurde dort schon vorher genau so viel, das Layout meldet die Grösse jetzt nur
+  ehrlich. Die Schwelle ist am Bildschirm gewählt; der nächste Testdruck bestätigt sie.
+- **Naechste Stufe:** Testdruck Modena 50 × 50 und 50 × 80 mit dem neuen Stand. Wirkt der Druck dann zu dünn,
+  `SCHWELLE` in `lib/muster-etiketten.mjs` anheben.
+
 ## 2026-10-26 · Packstation: Eingelegt und gepackt bestätigen den Wareneingang (#1706)
 
 - **Geaendert:** „Eingelegt ✓“ und „Umschlag gepackt“ setzen die betroffenen Muster im Auftragsfluss

@@ -1770,6 +1770,10 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   `tp-etikett-versatz`); er verschiebt nur das Druckbild, nicht Vorschau oder PNG. An den Drucker geht genau
   die Kopfbreite aus `getModelMetadata().printheadPixels` (B1: 384 px), mittig aus dem 400 px breiten Bild
   geschnitten (`aufDruckkopf`); ein breiteres Bild legte die Firmware nicht mittig auf den Kopf.
+  QR-Flächen legt `layout()` per `qrRaster()` auf ganze Kästchen (gezeichnet wird in ganzen Druckpunkten je
+  Kästchen, ein Rest blieb sonst als Lücke im Druck). `zeichne()` setzt das fertige Bild mit `schwarzWeiss()`
+  auf reines Schwarz/Weiss (`SCHWELLE` 150): niimbluelib druckt jedes nicht ganz weisse Pixel schwarz, die
+  grauen Kantenpixel machten den Druck sonst fetter als die Vorschau (#1708).
 - **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
   Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
   im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt
@@ -2354,3 +2358,65 @@ eigener Schreibpfad:
 
 Die Liste schließt nie selbst ab. Tests: `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Regeln, Grenzen,
 Bewegungen, Vorschläge, Block, API mit Uhr), `bestellarbeit`- und `shop-start`-Tests.
+
+### Gepackt, aber nicht als verschickt eingetragen (#1709, 26.10.2026)
+
+Gepackt ist noch nicht versandt (Abschnitt 27). Am 26.10. standen sieben Musterumschläge seit dem 22.10.
+gepackt, ohne dass jemand den Versand eingetragen hatte. Dashboard und Liste merkten davon nichts.
+
+- **Nächster Schritt:** `zeitleistenFuerModell(…, { gepackt })` liest den Packstand
+  (`gepacktAmFuer()`, neuester Umschlag mit dieser Bestell-ID) und gibt ihn als `gepacktAm` an
+  `zeitleiste()`. Steht ein Musterauftrag bei „Gelabelt und an Kunden verschickt“, heißt der Schritt
+  „Umschlag gepackt am TT.MM. – zur Post bringen und als verschickt eintragen“ (Knopf wie bisher
+  „Muster sind verschickt…“). Der Ablauf selbst bekommt keinen Schritt dazu. Eine kaputte Packablage
+  lässt die Zeitleisten ohne diese Angabe laufen.
+- **Aufräumliste:** Ein Musterauftrag mit gepacktem Umschlag, bei dem kein Artikel „raus“ ist
+  (`grund: 'gepackt'`), wird schon nach 3 Tagen Ruhe ein Fall (`GEPACKT_OHNE_VERSAND_AB_TAGEN`). Die Uhr
+  läuft ab dem Packen. Ein danach nachgetragenes „bestellt“/„angekommen“ ist keine Bewegung, Notizen und
+  spätere Zeitleistenschritte schon (`ruheSeitPacken()`).
+- **Knöpfe:** „Ist verschickt…“ öffnet den Versanddialog wie an der Zeitleiste (`oeffneVersandDialog`
+  mit `mailVorab: false`, Vermerk „Umschlag gepackt am …, Versand beim Aufräumen eingetragen“) und bucht
+  in Shopify. „Liegt noch hier“ schreibt eine Notiz, und die Liste fragt nach 3 Tagen wieder.
+  „Abschließen“ gibt es hier bewusst nicht: „erledigt“ übersprünge das Nachfassen beim Kunden.
+
+Tests: `operations/tests/auftragsverlauf.test.mjs` (nächster Schritt, fremde und mehrere Umschläge,
+Ware, schon verschickt) und `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Grenze 2/3 Tage,
+„Liegt noch hier“, nachgetragener Wareneingang, teils verschickt, Knöpfe, API mit Packablage).
+
+## Dienst zieht main automatisch nach (26.10.2026, #1710)
+
+`~/tp-dashboard` steht auf `dashboard-betrieb` (der Zweig `main` gehoert dem Deploy-Worktree).
+Neue Staende von main kamen bis zum 26.10. nur per Hand oder KI-Lauf hinein (Skill
+`control-center`, Schritt 9). Seitdem macht das der launchd-Dienst
+`net.teppich-paradies.nachziehen` alle 5 Minuten, ohne KI-Kontingent:
+
+1. `git fetch`; ohne neuen Commit endet der Lauf still.
+2. `git merge-tree --write-tree HEAD origin/main`. Konflikt: „haengt“, nichts geaendert.
+3. `git commit-tree` legt den Merge-Commit an, ohne den Checkout zu beruehren. Genau dieser
+   Commit wird in einer losgeloesten Arbeitskopie im Temp-Ordner getestet (`dashboard:test`,
+   bei `operations/` bzw. `social/` auch `operations:test`/`social:test`), mit leerem
+   `TP_PRIVAT_DIR`. Ein gruener Baum wird beim Warten nicht erneut getestet.
+4. Ruhe (`operations/lib/betrieb-nachziehen.mjs`): keine aktive Codex-Automation, deren Auftrag
+   diesen Checkout nennt, hat einen offenen Lauf (`task_started` ohne `task_complete` im
+   Protokoll, hoechstens 30 Minuten alt), und keine Datei direkt im Privatordner wurde in den
+   letzten zwei Minuten geschrieben (Unterordner des Sync-Dienstes, `*.log` und
+   `aktualisierung.json` zaehlen nicht). Bis zu zehn Minuten Warten, sonst „wartet“.
+5. `git merge --ff-only` auf den getesteten Commit, bei geaendertem `package-lock.json`
+   `npm ci`, Neustart per `launchctl kickstart -k` nur fuer geladene, betroffene Dienste
+   (`neustartNoetig`): Dashboard bei allem ausser Theme-Ordnern, `.claude/`, `.github/`,
+   `docs/lessons|audits/` und Markdown im Wurzelordner; Sync bei `operations/`; Social bei
+   `social/`. Erfolg = neue PID und `/login` 200 (Social: `/api/status` 401).
+   Der Dashboard-Start baut zuerst `issues.json`; scheitert der GitHub-Abruf, startet er mit der
+   bisherigen Datei (`--weiter-mit-alten-daten`), deshalb bis zu 4 Minuten Startzeit.
+6. Fehler nach dem Vorspulen: `git reset --keep` auf den Commit von vorher, Abhaengigkeiten und
+   Dienste erneut, „haengt“ mit dem Grund. Konflikt, rote Probe und gescheiterter Neustart
+   sperren genau diesen main-Stand, bis main weiterzieht; eine schmutzige Arbeitskopie oder ein
+   falscher Zweig wird bei jedem Lauf neu geprueft.
+
+Zustand in `$TP_PRIVAT_DIR/betrieb-nachziehen.json` (Stand, Grund, Verlauf mit hoechstens 30
+Wechseln). `betriebszustand()` liefert daraus `nachziehen`; der Systemzustand zeigt eine Zeile
+„Dashboard-Update hängt“ (warn), „Dashboard-Update wartet seit …“ (ueber eine Stunde),
+„Automatische Dashboard-Updates laufen nicht“ (zwei Stunden ohne Pruefung) oder ruhig
+„Dashboard-Updates: aktuell“. Offene Seiten bemerken die neue Version wie bisher ueber
+`/api/version` („Neue Version verfügbar“). Eine Sperrdatei verhindert zwei gleichzeitige Laeufe,
+auch wenn jemand `npm run -s betrieb:nachziehen` von Hand startet.

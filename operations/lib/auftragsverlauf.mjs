@@ -181,6 +181,18 @@ function tageSeit(iso, jetzt) {
 }
 
 const tageText = n => (n === 1 ? '1 Tag' : `${n} Tagen`);
+const tagDatum = iso => new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' }).format(new Date(iso));
+
+/**
+ * Wann der Umschlag dieses Auftrags in der Packstation gepackt wurde (#1709), sonst null.
+ * `gepackt` ist der Stand aus muster-packen.json (Schluessel = sortierte Bestell-IDs des Kunden).
+ */
+export function gepacktAmFuer(orderId, gepackt = {}) {
+  const zeiten = Object.entries(gepackt || {})
+    .filter(([key, v]) => String(key).split(',').includes(String(orderId)) && Number.isFinite(Date.parse(v?.zeit)))
+    .map(([, v]) => v.zeit).sort();
+  return zeiten.at(-1) || null;
+}
 
 /** Reine Musterbestellung (jede Position ein Muster) = Musterstrecke, alles andere Warenstrecke. */
 export function auftragsart(auftrag) {
@@ -271,7 +283,7 @@ function eigenerBestand(positionen) {
  * @param {Date} [opts.jetzt]
  * @returns {{ auftragsart, verlauf, verlaufNotizen, abgeschlossen, naechsterSchritt }}
  */
-export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = null, jetzt = new Date() } = {}) {
+export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = null, gepacktAm = null, jetzt = new Date() } = {}) {
   const art = auftragsart(auftrag);
   const label = SCHRITT_LABEL[art];
   const pos = positionsStand(auftrag, statusAlle);
@@ -352,7 +364,9 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
     return { ...rest, zustand };
   });
 
-  const ergebnis = { auftragsart: art, verlauf, verlaufNotizen: notizen, abgeschlossen, direktversand: direkt, eigenerBestand: eigen };
+  const ergebnis = { auftragsart: art, verlauf, verlaufNotizen: notizen, abgeschlossen, direktversand: direkt, eigenerBestand: eigen,
+    // Gepackt ist noch nicht versandt (#1709): nur als Angabe fuer den naechsten Schritt, kein eigener Zeitleistenschritt.
+    ...(art === AUFTRAGSART.MUSTER && gepacktAm ? { gepacktAm } : {}) };
   const beschaffung = (auftrag?.positionen || []).map(p => beschaffungsStand(statusAlle[positionKey(auftrag.id, p.lineItemId)], p.bestellSoll || p.bestellmenge)).filter(e => e?.status === 'bestellt');
   return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, beschaffung, nachverfolgbar: pos.gesamt > 0, jetzt }) };
 }
@@ -360,7 +374,7 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
 /**
  * Genau ein naechster Schritt je offenem Auftrag - reine Funktion.
  *
- * @param {object} stand  Ergebnis von zeitleiste() ({ auftragsart, verlauf, abgeschlossen, direktversand })
+ * @param {object} stand  Ergebnis von zeitleiste() ({ auftragsart, verlauf, abgeschlossen, direktversand, gepacktAm })
  * @param {object} [kontext]
  * @param {object} [kontext.auftrag]        fuer das Bestelldatum als Rueckfallebene
  * @param {object} [kontext.versand]        Sendungsbeleg (intern)
@@ -431,6 +445,11 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
             ? schritt('wir', `Muster vorbeibringen bei ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'kunde_hat_muster', 'Erledigt – Kunde hat Muster', 'faellig', tage, tage)
             : schritt('wir', `Muster verschicken an ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'raus', 'Muster sind verschickt…', 'faellig', tage, tage);
         }
+        if (stand.gepacktAm) {
+          const seit = tageSeit(stand.gepacktAm, jetzt) ?? 0;
+          return schritt('wir', `Umschlag gepackt am ${tagDatum(stand.gepacktAm)} – zur Post bringen und als verschickt eintragen`,
+            'Gepackt ist noch nicht versandt. Ist der Umschlag schon raus, nur noch eintragen.', 'raus', 'Muster sind verschickt…', 'faellig', seit, seit);
+        }
         return schritt('wir', `Muster labeln und an den Kunden schicken${teil}`, 'Neu labeln, eintüten, verschicken.', 'raus', 'Muster sind verschickt…', 'faellig', tage, tage);
       case 'kunde_hat_muster':
       case 'nachgefasst':
@@ -496,7 +515,7 @@ export function dringendsterSchritt(schritte = []) {
  *
  * @returns {Map<string, object>} orderId -> zeitleiste()
  */
-export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {}, jetzt = new Date() } = {}) {
+export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {}, gepackt = {}, jetzt = new Date() } = {}) {
   const alle = [...(modell?.auftraege ?? []), ...(modell?.testauftraege ?? [])];
   const jeKunde = new Map();
   for (const a of alle) {
@@ -507,7 +526,7 @@ export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {
   const ergebnis = new Map();
   for (const a of alle) {
     const folge = auftragsart(a) === AUFTRAGSART.MUSTER && !a.testbestellung ? folgebestellung(a, jeKunde.get(kundenSchluessel(a))) : null;
-    ergebnis.set(a.id, zeitleiste(a, { statusAlle, ereignisse: verlaufAlle[a.id]?.ereignisse ?? [], folge, jetzt }));
+    ergebnis.set(a.id, zeitleiste(a, { statusAlle, ereignisse: verlaufAlle[a.id]?.ereignisse ?? [], folge, gepacktAm: gepacktAmFuer(a.id, gepackt), jetzt }));
   }
   return ergebnis;
 }

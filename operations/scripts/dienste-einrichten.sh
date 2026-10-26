@@ -10,6 +10,10 @@
 #
 #   bash operations/scripts/dienste-einrichten.sh
 #   bash operations/scripts/dienste-einrichten.sh --nur-sicherung
+#   bash operations/scripts/dienste-einrichten.sh --nur-nachziehen
+#
+# --nur-nachziehen richtet net.teppich-paradies.nachziehen ein: zieht den Dienst-Checkout
+# alle 5 Minuten getestet auf main nach (operations/scripts/betrieb-nachziehen.mjs).
 #
 # Die Sicherung ersetzt den bisherigen gleichnamigen Claude-Zeitplan.
 # Diesen vor der Installation pausieren, damit nur ein taeglicher Lauf bleibt.
@@ -33,11 +37,10 @@ SYNC_LABEL="net.teppich-paradies.sync"
 SYNC_VORLAGE="${REPO}/operations/launchagents/${SYNC_LABEL}.plist.vorlage"
 SYNC_PLIST="${LAUNCH_AGENTS_DIR}/${SYNC_LABEL}.plist"
 SICHERUNG_LABEL="net.teppich-paradies.sicherung"
-SICHERUNG_VORLAGE="${REPO}/operations/launchagents/${SICHERUNG_LABEL}.plist.vorlage"
-SICHERUNG_PLIST="${LAUNCH_AGENTS_DIR}/${SICHERUNG_LABEL}.plist"
+NACHZIEHEN_LABEL="net.teppich-paradies.nachziehen"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen]\n' >&2
   exit 1
 fi
 
@@ -56,39 +59,66 @@ command -v node >/dev/null || { fehler "Node fehlt (wird fuer beide Dienste gebr
 NODE_PFAD="$(command -v node)"
 mkdir -p "${LAUNCH_AGENTS_DIR}"
 
-sicherung_einrichten() {
-  schritt "Taegliche Betriebssicherung (${SICHERUNG_LABEL})"
+# Plist aus operations/launchagents/<label>.plist.vorlage erzeugen und (neu) laden.
+# Rueckgabe 0 auch, wenn der Dienst schon unveraendert laeuft.
+vorlage_einrichten() {
+  local label="$1"
+  local vorlage="${REPO}/operations/launchagents/${label}.plist.vorlage"
+  local plist="${LAUNCH_AGENTS_DIR}/${label}.plist"
   mkdir -p "${HOME}/Library/Logs"
-  local tmp="${SICHERUNG_PLIST}.$$.tmp"
+  local tmp="${plist}.$$.tmp"
   # XML-Sonderzeichen in lokalen Pfaden sicher maskieren.
-  "${NODE_PFAD}" --input-type=module - "${SICHERUNG_VORLAGE}" "${tmp}" "${HOME}" "${REPO}" "${NODE_PFAD}" <<'JS'
+  "${NODE_PFAD}" --input-type=module - "${vorlage}" "${tmp}" "${HOME}" "${REPO}" "${NODE_PFAD}" <<'JS'
 import fs from 'node:fs';
+import path from 'node:path';
 const [vorlage, ziel, heim, repo, node] = process.argv.slice(2);
 const xml = s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;');
 let text = fs.readFileSync(vorlage, 'utf8');
-for (const [k, v] of [['__HOME__', heim], ['__REPO_PFAD__', repo], ['__NODE_PFAD__', node]]) text = text.replaceAll(k, xml(v));
+for (const [k, v] of [['__HOME__', heim], ['__REPO_PFAD__', repo], ['__NODE_PFAD__', node], ['__NODE_DIR__', path.dirname(node)]]) text = text.replaceAll(k, xml(v));
 fs.writeFileSync(ziel, text, { mode: 0o600 });
 JS
   if ! plutil -lint "${tmp}"; then
     rm -f "${tmp}"
     return 1
   fi
-  if [[ -f "${SICHERUNG_PLIST}" ]] && cmp -s "${tmp}" "${SICHERUNG_PLIST}" && launchctl list "${SICHERUNG_LABEL}" >/dev/null 2>&1; then
+  if [[ -f "${plist}" ]] && cmp -s "${tmp}" "${plist}" && launchctl list "${label}" >/dev/null 2>&1; then
     rm -f "${tmp}"
     ok "Bereits eingerichtet; kein zweiter Dienst gestartet."
-    return
+    return 0
   fi
-  if launchctl list "${SICHERUNG_LABEL}" >/dev/null 2>&1; then
-    launchctl bootout "gui/$(id -u)/${SICHERUNG_LABEL}"
+  # Aufrufer nutzen `vorlage_einrichten … || return 1`; dort greift set -e nicht, also selbst pruefen.
+  if launchctl list "${label}" >/dev/null 2>&1; then
+    launchctl bootout "gui/$(id -u)/${label}" || { rm -f "${tmp}"; return 1; }
   fi
-  mv "${tmp}" "${SICHERUNG_PLIST}"
-  launchctl bootstrap "gui/$(id -u)" "${SICHERUNG_PLIST}"
+  mv "${tmp}" "${plist}" || { rm -f "${tmp}"; return 1; }
+  launchctl bootstrap "gui/$(id -u)" "${plist}" || return 1
+}
+
+sicherung_einrichten() {
+  schritt "Taegliche Betriebssicherung (${SICHERUNG_LABEL})"
+  vorlage_einrichten "${SICHERUNG_LABEL}" || return 1
   ok "Taeglich 22:30 Uhr und beim Anmelden; ohne KI-Kontingent."
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-sicherung.log"
 }
 
+nachziehen_einrichten() {
+  schritt "Dashboard automatisch nachziehen (${NACHZIEHEN_LABEL})"
+  if [[ "$(git -C "${REPO}" symbolic-ref --quiet --short HEAD 2>/dev/null)" != "dashboard-betrieb" ]]; then
+    fehler "Nur aus dem Dienst-Checkout (Zweig dashboard-betrieb) einrichten, nicht aus ${REPO}."
+    return 1
+  fi
+  vorlage_einrichten "${NACHZIEHEN_LABEL}" || return 1
+  ok "Alle 5 Minuten: neue Stände von main erst testen, dann uebernehmen; ohne KI-Kontingent."
+  hinweis "Stand: npm run -s betrieb:nachziehen -- --status"
+  hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-nachziehen.log"
+}
+
 if [[ "${1:-}" == "--nur-sicherung" ]]; then
   sicherung_einrichten
+  exit 0
+fi
+if [[ "${1:-}" == "--nur-nachziehen" ]]; then
+  nachziehen_einrichten
   exit 0
 fi
 

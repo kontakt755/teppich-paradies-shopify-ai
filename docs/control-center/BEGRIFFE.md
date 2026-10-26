@@ -129,3 +129,16 @@ gebraeuchlich), Erfassen.
   14 Tagen (Ware 30) wieder.
 - **Belegt fertig** = in Shopify versendet, storniert, archiviert oder voll erstattet, oder im Dashboard
   abgeschlossen; fällt ohne Klick aus den Listen.
+- **Gepackt, nicht verschickt** (#1709) = Umschlag in der Packstation gepackt, Versand aber nicht
+  eingetragen; steht nach 3 Tagen in der Aufräumliste.
+- **Ist verschickt…** = Versanddialog „An Kunden raus“ für diesen Umschlag, Versandmail vorab aus.
+- **Liegt noch hier** = der Umschlag ist noch nicht zur Post; die Liste fragt nach 3 Tagen wieder.
+
+## Dashboard-Updates (#1710)
+
+- **Dashboard-Update** = eine neue Version des Control Centers. Sie kommt von selbst (alle
+  5 Minuten geprüft, vorher getestet); offene Seiten zeigen dann „Neue Version verfügbar“.
+- **Dashboard-Update hängt** = Zeile im Systemzustand: die neue Version wurde nicht übernommen,
+  das Dashboard läuft auf dem bisherigen Stand weiter. Dann Claude im Chat Bescheid geben.
+- **wartet** = eine neue Version ist getestet, wird aber erst übernommen, wenn gerade niemand
+  eingibt und kein Codex-Lauf arbeitet; erst nach über einer Stunde Warten wird das gemeldet.
