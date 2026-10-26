@@ -642,39 +642,46 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 /* Handy: Arten als Kacheln in zwei Spalten (w-039: das Teppichboden-Menue
    war 15 volle Zeilen lang), Farbe/Raum/Rollenbreite als Chips darunter.
    2026-10-20 flacher (60 -> 52 px, Bild 36 px): bei 375 px begann "Farbe"
-   erst bei 736 px, also unter dem ersten Bildschirm. */
-/* Sprungmarken unter "Alle ... ansehen" (snippets/tp-menu-spalten.liquid) */
-.menu-drawer .tp-dn-sprung {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 8px 0;
+   erst bei 736 px, also unter dem ersten Bildschirm.
+   2026-10-26 (w-039): hoechstens sechs Kacheln, der Rest als Chips; jede
+   Gruppe ist eine Chip-Zeile zum Wischen. Die Sprungmarken entfallen, das
+   Panel passt bei 390 x 844 auf etwa einen Bildschirm. */
+.menu-drawer .tp-nav-chips--wisch {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 8px;
+  scrollbar-width: none;
+  /* Rechts ausblenden: zeigt, dass es weitergeht */
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
 }
 
-.menu-drawer .tp-dn-sprung__link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 14px;
-  border-radius: 999px;
-  background: rgb(var(--color-foreground-rgb) / 0.06);
-  color: var(--color-foreground);
+.menu-drawer .tp-nav-chips--wisch::-webkit-scrollbar {
+  display: none;
+}
+
+.menu-drawer .tp-nav-chips--wisch > li {
+  flex: none;
+}
+
+.menu-drawer .tp-nav-chips--wisch > li:last-child {
+  padding-inline-end: 24px;
+}
+
+/* "Weitere" (Arten ab der siebten): kleiner, damit sie in drei bis vier
+   Zeilen passen; 40 px hoch bleibt gut tippbar */
+.menu-drawer .tp-nav-chips--weitere {
+  gap: 6px;
+}
+
+.menu-drawer .tp-nav-chips--weitere .tp-nav-chip {
+  min-height: 40px;
+  padding: 0 12px;
   font-size: var(--tp-fs-sm);
-  font-weight: 500;
-  font-family: inherit;
-  text-decoration: none;
-  border: 0;
-  cursor: pointer;
 }
 
-.menu-drawer .tp-dn-sprung__link::after {
-  content: "";
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 8px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(45deg);
+.menu-drawer .tp-nav-chip.is-current {
+  border-color: currentColor;
 }
 
 .menu-drawer .tp-dn-kacheln {
