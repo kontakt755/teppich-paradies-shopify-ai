@@ -1755,6 +1755,24 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   in 2-%-Schritten kleiner. Passt es auch in Mindestschrift nicht (z. B. Artikelnummer mit 50 Zeichen
   ohne Leerzeichen), zeigt die Vorschau „Passt nicht auf …“ und Druck sowie PNG bleiben gesperrt.
   Technikwerte und Adresszeilen brechen an Wortgrenzen um, bevor sie zu klein werden.
+- **Rand, Aufbau und Druckversatz (26.10., nach den ersten Ausdrucken):** Der B1 hat nur 48 mm Druckkopf,
+  Rolle und Druckanfang sitzen nicht auf den Millimeter (NiimBlue #92) - mit 2,25 mm Rand fehlten auf
+  echten Etiketten die letzte Ziffer der Art.-Nr. und einmal die Shopadresse oben halb. Deshalb 4 mm Rand
+  rundum (32 px, `ETIKETT.rand`, gilt auch fuer Adressaufkleber). Aufbau der Musteraufkleber: Shopadresse
+  klein und normal, Serie gross und fett, Farbe normal, eine Linie, Mittelteil (QR-Code, bei Paketware
+  mit Technik als Tabelle: Bezeichnung links, Wert fett rechtsbuendig; „Stärke / Nutzschicht“ als zwei
+  Zeilen), eine Linie, unten „Art.-Nr.“ normal und die Nummer fett in einer Zeile. Namen nehmen lieber
+  eine kleinere Schrift als eine Zeile mehr. Im Hochformat steht bei genug Platz „Produkt im Shop
+  ansehen“ unter dem QR-Code (`QR_HINWEIS`). Eckdaten: Ware ohne Paket (Teppichboden, Sauberlauf,
+  Linoleum …) bekommt Material, Breite (`breitenAus`: Option „Breite“ der Farbe, sonst
+  `custom.rollenbreite`), Florhoehe bzw. Staerke und Nutzungsklasse, alle Ware „Fußbodenheizung: ja“, wenn
+  belegt - als Zeilen mit `zusatz: true`. `layout()` setzt sie der Reihe nach nur, solange Serie und Technik
+  nicht kleiner werden (Serie bis 40 px, Technik bis 18 px in 50 x 50), und meldet in `zeilen`, was wirklich
+  draufsteht. Sitzt der Druck trotzdem schief, stellt man unter
+  „Drucker-Einstellungen“ einen Versatz ein (bis 3 mm je Richtung, je Rechner in `localStorage`
+  `tp-etikett-versatz`); er verschiebt nur das Druckbild, nicht Vorschau oder PNG. An den Drucker geht genau
+  die Kopfbreite aus `getModelMetadata().printheadPixels` (B1: 384 px), mittig aus dem 400 px breiten Bild
+  geschnitten (`aufDruckkopf`); ein breiteres Bild legte die Firmware nicht mittig auf den Kopf.
 - **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
   Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
   im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt
@@ -1901,6 +1919,31 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
   Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.
 - **Wareneingang (`mp=laden`):** `musterNachLaden` verteilt die noch nicht eingelegten Muster je
   Partnerladen auf die Umschlag-Nummern aus „Zu packen“.
+
+### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
+
+Ein Muster, das in der Packstation eingelegt (Haken) oder mit dem Umschlag gepackt wird, ist
+nachweislich da. `wareneingangAusPackstation()` in `dashboard-api.mjs` setzt deshalb im selben
+Klick jede betroffene Position im Auftragsfluss von „bestellt“ auf „geliefert“ (Vermerk „Eingelegt
+in der Packstation“ bzw. „Umschlag gepackt (Packstation)“, handelnde Person = angemeldeter Benutzer).
+Vorher blieben solche Muster auf „bestellt“ und erzeugten ein falsches „Beim Lieferanten nachhaken“
+und nach 14 Tagen einen Fall in „Alte Bestellungen aufräumen“.
+
+- **Nur vorwärts:** ausschließlich „bestellt“ → „geliefert“. Nie bestellte, schon gelieferte oder
+  weitergegebene Positionen bleiben unberührt; ein zurückgenommener Haken bzw. „Gepackt
+  zurückgenommen“ stuft nicht zurück.
+- **Ausgenommen:** Muster direkt vom Lieferanten an den Kunden (`ueber: 'kunde'`), Positionen in der
+  laufenden Musterautomatik (`uebernahme.id === 'musterautomatik'`) und offene Fehlmengen
+  (`darfWeiter`).
+- **Fehler:** Der Packstand ist dann schon gespeichert. Die Antwort trägt `wareneingang.fehler`,
+  und die Packstation zeigt einen Warnhinweis. Bei Erfolg hängt die Meldung zum gepackten Umschlag
+  „N Muster als angekommen vermerkt“ an.
+- **Lieferantenbelege** (Abschnitt 25) helfen hier nicht: Lieferant A schickt für Muster weder AB
+  noch Lieferschein. Die Packstation ist für Muster der einzige Eingangsbeleg.
+- **Nachholen:** `packstationWareneingangNachholen()` wendet dieselbe Regel einmal auf Haken und
+  gepackte Umschläge aus der Zeit davor an (Vermerk „Aus der Packstation übernommen: … am TT.MM.“).
+  Die Funktion hat keinen HTTP-Weg und läuft nur bei angehaltenem Dienst, damit `auftragsstatus.json`
+  einen Schreiber behält. Ein zweiter Lauf ändert nichts.
 
 ### Großbrief vorbereiten (#1591)
 
