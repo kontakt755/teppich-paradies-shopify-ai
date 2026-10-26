@@ -2239,3 +2239,53 @@ Vorher kannte nur die Bestellmail das Ziel: solche Aufträge warteten auf „bei
 werden nicht umgeschrieben (welches Ziel die Mail damals hatte, ist nicht gespeichert). Wer weiss, dass sie
 direkt gingen, nimmt „Etwas anderes ist passiert …“ → „An den Kunden verschickt – von uns oder direkt vom
 Lieferanten“.
+
+## Alte Bestellungen aufräumen (Inhaber 26.10.2026, #1698)
+
+Inhaber 26.10.: „schaue, welche Bestellungen fertig oder storniert sind, damit sie nicht mehr im Dashboard
+stehen – und eine Funktion, die automatisiert prüft, was fertig ist und was nicht; da sind noch sehr alte
+Bestellungen drin.“ Entscheidung: Was belegt fertig ist, fällt automatisch heraus; alte Bestellungen ohne
+Beleg kommen in eine Aufräumliste mit Vorschlag und werden per Klick abgehakt.
+
+**Belegt fertig (ohne Klick).** `belegtFertigGrund()` in `lib/bestellarbeit.mjs`: in Shopify archiviert
+(`closedAt`, Regel vom 21.10.) oder voll erstattet (`REFUNDED`/`VOIDED`). `bestellungAusgeblendet()` zählt
+das jetzt mit; vorher stand eine archivierte, nicht versandte Bestellung in Kunden › Bestellungen weiter
+unter „Offen“. Storniert, Test, in Shopify versendet und im Auftragsfluss abgeschlossen galten schon.
+
+**Aufräumliste.** Regeln in `lib/aufraeumen.mjs` (Browser und Server, ohne DOM). `kundenBestellungen()`
+hängt an jede Zeile `aufraeumen` (`aufraeumFall()`), Packstation-Stand aus `muster-packen.json` als
+zusätzlicher Beleg (kaputte Ablage = Beleg fehlt, Liste bleibt). Ein Fall ist eine offene, nicht belegt
+fertige Bestellung, deren **letzte Bewegung** mindestens 14 Tage (Muster) bzw. 30 Tage (Ware) zurückliegt.
+Bewegung = Bestelldatum, jeder Positionsstand (`aktualisiertAm`, `<status>Am`), Zeitleiste und Notizen,
+Haken/Bestellmarke, Packstation (gepackt, Muster abgehakt, zu klären). Jeder Fall nennt die Belege
+(bestellt am, angekommen, gepackt, in Shopify zurückgehalten, letzte Notiz, spätere Bestellung) und einen
+Vorschlag mit Vermerk:
+
+| Beleg | Vorschlag |
+|---|---|
+| Letzte Notiz sagt „nicht verfügbar/lieferbar/vorrätig“ oder „ausverkauft“ | Muster nicht verfügbar, Kunde informiert |
+| Spätere Warenbestellung desselben Kunden (Zeitleiste) | Kunde hat danach bestellt |
+| Alle Muster angekommen oder Umschlag gepackt | Waren da, Versand nur nicht erfasst |
+| Nie beim Lieferanten bestellt | beim Kunden nachfragen oder abschließen |
+| Teil angekommen | beim Lieferanten nachfragen oder abschließen |
+| Bestellt vor dem 24.10., nie angekommen | wohl direkt vom Lieferanten an den Kunden (Lieferziel damals nicht gespeichert, Abschnitt „Muster direkt …“) |
+| sonst | Muster kamen nie an |
+
+Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt niemand nebenbei), nur
+„Ansehen“ und „Läuft noch“.
+
+**Anzeige und Knöpfe.** `ansichten/heute/aufraeumen.mjs`, Block „Alte Bestellungen aufräumen · N“ auf der
+Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar. Kein
+eigener Schreibpfad:
+- **Abschließen** (Rückfrage mit Vermerk) = `POST /api/kunden/bestellung-fertig` mit den offenen
+  Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Bucht wie jedes „Erledigt“ in Shopify als
+  versendet, ohne Mail (Abschnitt 24); scheitert die Buchung, steht die Bestellung unter „In Shopify noch
+  offen“ zum Nachbuchen. Bewusst nicht der Schritt „Muster nicht verfügbar“: der sperrte die Farbe heute
+  im Shop, obwohl die Notiz Wochen alt ist.
+- **Läuft noch** = Zeitleisten-Schritt `notiz` („Läuft noch – beim Aufräumen bestätigt“) über
+  `POST /api/einkauf/auftragsstatus`; die Notiz ist eine neue Bewegung, die Liste fragt nach 14 bzw. 30
+  Tagen wieder.
+- Rolle „lesen“ sieht nur „Ansehen“; beide Endpunkte stehen schon in der Schreibliste.
+
+Die Liste schließt nie selbst ab. Tests: `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Regeln, Grenzen,
+Bewegungen, Vorschläge, Block, API mit Uhr), `bestellarbeit`- und `shop-start`-Tests.

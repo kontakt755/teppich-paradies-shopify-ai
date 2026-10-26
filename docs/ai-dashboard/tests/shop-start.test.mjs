@@ -19,16 +19,16 @@ function start(query = '') {
     versandLaeuft: () => null, startBestellarbeit: () => ({}),
     musterAutomatikBlock: () => '',
     warenbestellungenBlock: block('Waren'), bestellarbeitBlock: block('Muster'),
-    shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
+    aufraeumenBlock: block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
     istNurLesend: () => false, darfAnsicht: () => true,
   });
   return { html: api.viewHeute(), geladen, bloecke };
 }
 
-test('Shop ist Standard und Waren stehen vor Mustern, danach vorhandene Nacharbeit', () => {
+test('Shop ist Standard und Waren stehen vor Mustern, danach Aufraeumen und vorhandene Nacharbeit', () => {
   const r = start();
   assert.match(r.html, /Shop-Übersicht/);
-  assert.deepEqual(r.bloecke, ['Waren', 'Muster', 'Nacharbeit']);
+  assert.deepEqual(r.bloecke, ['Waren', 'Muster', 'Aufräumen', 'Nacharbeit']);
   for (const name of ['KundenBestellungen', 'EinkaufAuftragsstatus', 'EinkaufBestellungen', 'MusterPacken']) assert.ok(r.geladen.includes(name));
   for (const name of ['KundenRueckrufe', 'KundenFaelle', 'Serviceanfragen', 'HeuteAufgaben', 'LadenZahlen', 'ShopifyAbgleich', 'EinkaufKennzahlen', 'Shopwache', 'Akquise', 'Belege']) assert.ok(!r.geladen.includes(name), `${name} gehoert nicht zum Standardabruf`);
 });
@@ -40,6 +40,6 @@ test('alte Alltagssichten bleiben ausdruecklich erreichbar; unbekannte Sicht ble
 
 test('mn=1 oeffnet den bestehenden Nachfassblock im Shop ohne allgemeine Aufgabenabrufe', () => {
   const r = start('mn=1');
-  assert.deepEqual(r.bloecke, ['Waren', 'Muster', 'Nacharbeit', 'Vorhandener Nachfassblock']);
+  assert.deepEqual(r.bloecke, ['Waren', 'Muster', 'Aufräumen', 'Nacharbeit', 'Vorhandener Nachfassblock']);
   assert.ok(!r.geladen.includes('HeuteAufgaben'));
 });

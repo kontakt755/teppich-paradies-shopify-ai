@@ -2,6 +2,27 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Alte Bestellungen aufräumen: belegt fertige fallen heraus, der Rest per Klick (#1698)
+
+- **Geaendert:** Bestellungen, die in Shopify archiviert oder voll erstattet sind, gelten als belegt fertig
+  und fallen ohne Klick aus „Offen“ (`belegtFertigGrund`). Neu auf der Shop-Übersicht: „Alte Bestellungen
+  aufräumen“ - offene Bestellungen ohne Bewegung seit 14 Tagen (Ware 30), mit den vorhandenen Belegen und
+  einem Vorschlag; Knöpfe „Abschließen“ (wie „Kunde fertig“, Vermerk = Vorschlag, Shopify-Buchung ohne
+  Mail) und „Läuft noch“ (Notiz, fragt später wieder). Anlass: Inhaber 26.10., sehr alte Bestellungen im
+  Dashboard. Befund im echten Bestand (Kopie): Storno und Test waren schon ausgeblendet; 5 Musterbestellungen
+  vom 30.09. bis 11.10. hingen auf „bestellt“, eine davon laut Notiz „nicht verfügbar“, die übrigen
+  vermutlich direkt vom Lieferanten verschickt (Lieferziel vor dem 24.10. nicht gespeichert).
+- **Getestet:** `aufraeumen.test.mjs` (7 Tests: belegt fertig, Ausschlüsse, Grenzen 13/14 und 29/31 Tage,
+  jede Bewegungsart setzt die Uhr zurück, alle Vorschlagsarten, Block escaped und ohne Knöpfe für „lesen“,
+  API mit Uhr: Fall nach 25 Tagen, archiviert nie, „Läuft noch“ bis Tag 15). `dashboard:test` 959/959,
+  `npm run -s pruefen` 9/9. `dashboard:pruefen` heute/kunden alle Breiten OK, 0 px Überlauf. Klickstrecke
+  gegen die Datenkopie: Liste 5 → 4 („Läuft noch“, Notiz gespeichert) → 3 („Abschließen“, alle Artikel
+  erledigt mit Vermerk; Shopify-Buchung in der Prüfinstanz ohne Zugang erwartungsgemäß „nicht gebucht“).
+- **Risiken:** „Abschließen“ bucht im Betrieb in Shopify als versendet (ohne Mail) - gewollt nach
+  Abschnitt 24, aber nicht in der Prüfinstanz nachweisbar. Die Notizerkennung „nicht verfügbar“ ist ein
+  Vorschlag, kein Beleg; entschieden wird per Klick.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen (nur Dashboard und `scripts/`, kein `operations/`).
+
 ## 2026-10-26 · Packstation: alles finden, je Muster neu etikettieren, mit einem Klick packen (#1694)
 
 - **Geaendert:** Die Suche steht auch im Wareneingang und findet zusaetzlich Musterbestellungen ausserhalb

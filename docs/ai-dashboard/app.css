@@ -1212,11 +1212,14 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
 .heute-bestellzeile > div { min-width: 0; overflow-wrap: anywhere; }
 .heute-bestellzeile p { color: var(--text-2); font-size: var(--tp-fs-sm); }
 .heute-bestellzeile .btn { flex-shrink: 0; }
+/* Alte Bestellungen aufraeumen (#1698): drei Knoepfe nebeneinander, der Vorschlag in normaler Textfarbe. */
+.aufraeumen-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; flex-shrink: 0; }
+.heute-bestellzeile .aufraeumen-vorschlag { color: var(--text); margin-top: 4px; }
 .heute-geschaeft-weiter { display: grid; gap: 12px; }
 .heute-weiter-link { display: block; margin-top: 12px; font-size: var(--tp-fs-sm); }
 .heute-weitere-titel { font-size: var(--tp-fs-lg); margin: 20px 0 10px; }
 @media (max-width: 850px) { .heute-geschaeft-raster { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 480px) { .heute-bestellzeile { align-items: stretch; flex-direction: column; } .heute-bestellzeile .btn { align-self: flex-start; } .heute-geschaeft article { padding: 14px; } }
+@media (max-width: 480px) { .heute-bestellzeile { align-items: stretch; flex-direction: column; } .heute-bestellzeile .btn { align-self: flex-start; } .heute-geschaeft article { padding: 14px; } .aufraeumen-knoepfe { justify-content: flex-start; } }
 .heute-geschaeft-ohne-offen .heute-geschaeft-raster { grid-template-columns: minmax(0, 1fr); }
 .heute-geschaeft-ohne-offen .heute-geschaeft-weiter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 850px) { .heute-geschaeft-ohne-offen .heute-geschaeft-weiter { grid-template-columns: minmax(0, 1fr); } }

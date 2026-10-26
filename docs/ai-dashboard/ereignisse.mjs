@@ -33,6 +33,7 @@ import { einkaufKlickBelege } from './ansichten/einkauf/belege.mjs';
 import { lexikonKlick, lexikonEingabe } from './ansichten/lexikon.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
 import { musterNachfassenKlick, musterNachfassenEingabe } from './ansichten/heute/muster-nachfassen.mjs';
+import { aufraeumenKlick } from './ansichten/heute/aufraeumen.mjs';
 import { kundenKlickAkte } from './ansichten/kunden.mjs';
 import { openOrgSchnell } from './ansichten/organisation/dialoge.mjs';
 import {
@@ -118,6 +119,7 @@ export function bindEvents() {
     if (orgKlick(e)) return;
     if (kundenKlickBestellungen(e)) return;
     if (musterNachfassenKlick(e)) return;
+    if (aufraeumenKlick(e)) return;
     if (sonderpostenKlick(e)) return;
     if (akquiseKlick(e)) return;
     const kt = e.target.closest('[data-kopiertext]');
