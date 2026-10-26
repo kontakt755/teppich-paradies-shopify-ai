@@ -233,7 +233,9 @@ Dashboard ist dann unter `https://<name>.ts.net` erreichbar, auch am Handy über
 
 **Grenze.** Geht der Mac mini aus oder ist das Internet im Laden weg, ist das Dashboard weg – die Daten
 liegen dort und nirgendwo sonst. Das ist gewollt (keine Kundendaten in fremder Hand), aber es heißt: der
-Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz.
+Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz. Was nach einem Neustart zu prüfen ist, wie
+man aus dem Tagesarchiv wiederherstellt und wie es ohne den Mac mini weitergeht, steht in
+`operations/README.md`, Abschnitt „Ausfall des Mac mini“.
 
 **Wache (seit 2026-10-12).** Ist Tailscale am Mac mini gestoppt oder abgemeldet, merkt das im Laden
 niemand. Der Server fragt deshalb mit der Shop-Wache (`GET /api/shopwache/status`, Feld `tailscale`)

@@ -812,6 +812,47 @@ einen ausgebliebenen Tag bereits als alt; die Berechnung verwendet Europe/Berlin
 einschliesslich Sommer-/Winterzeit. Der 48-Stunden-Schutz bleibt zusaetzlich.
 Eine Sicherung auf derselben Platte ersetzt keine unabhaengige externe Kopie.
 
+**Was im Archiv steht** (`SICHERUNGSPFADE` in `scripts/sicherung.mjs`, seit 2026-10-26 vollstaendig):
+alles, was es nur auf diesem Mac gibt. Dazu gehoeren Auftragsstatus und Zeitleisten, Musterlager,
+Pack- und Druckhaken, Service-Anfragen, Lieferbelege und Fehlermeldungen. Ausserdem
+Betriebsaufgaben, Rueckrufe, Fallmarken, Lieferanten-Stammdaten, Versandtarife, die gepflegten
+Spalten der Bildrechte, Akquise und das Aenderungsprotokoll (`protokoll.jsonl`). Fuer die
+automatischen Mails: Versandprotokoll und Stoppliste der Muster-Nachfassmails und die
+Musterautomatik. Ohne sie gingen nach einer Wiederherstellung doppelte oder unerwuenschte
+Kundenmails raus. Ebenfalls im Archiv: der Stand der Auslauf-Pruefung, der Stoerungsverlauf der
+Shop-Wache, der Datenbankabzug des Social-Moduls und ein Abzug der Mac-Dienste (`dienste/`, die
+Plists `net.teppich-paradies.*` aus `~/Library/LaunchAgents`; eine Plist mit TOKEN, SECRET,
+PASSW oder API_KEY im Schluesselnamen bleibt draussen).
+
+Bewusst nicht im Archiv (`NICHT_GESICHERT`, je mit Grund): Zugaenge (Firmenpostfach,
+Control-Center-Benutzer, Notpasswort, Meta-Zugang, Upload-Links im Klartext), die
+Shopify-Exporte, die der Sync-Dienst neu holt, und die Fotos des Social-Moduls.
+`tests/sicherung.test.mjs` sucht im Code nach `path.join(<Privatordner>, '…')` und schlaegt fehl,
+solange eine neue Ablage in keiner der beiden Listen steht.
+
+**Zweite Kopie ausser Haus (vorbereitet, Entscheidung beim Inhaber).** Das Skript kann jedes
+fertige Tagesarchiv zusaetzlich in einen zweiten Ordner legen:
+
+```
+npm run daten:sichern -- --kopie "/Volumes/<Platte>/teppich-paradies-sicherungen"
+TP_SICHERUNG_KOPIE="/Volumes/<Platte>/teppich-paradies-sicherungen" npm run daten:sichern
+```
+
+- Der Ordner muss schon existieren. Das Skript legt ihn nie an: ist die Platte nicht angesteckt,
+  entstuende unter `/Volumes` sonst ein gleichnamiger Ordner auf der internen Platte.
+- Geschrieben wird erst eine temporaere Datei, dann wird die Groesse geprueft und umbenannt
+  (Rechte `0600`). Alte Kopien werden nach derselben Frist geloescht.
+- Scheitert die Kopie, bleibt das Tagesarchiv gueltig. Der Lauf endet dann mit Exit 1 und
+  vermerkt den Fehler in `sicherungsstand.json` (Feld `kopie`).
+- Das Skript verschluesselt nicht. Das Ziel muss selbst verschluesselt sein: externe Platte als
+  „APFS (verschluesselt)“ oder ein verschluesselter Cloud-Ordner. Die Archive enthalten Kundendaten.
+
+Eingerichtet wird das erst nach der Entscheidung des Inhabers (externe SSD mit Time Machine oder
+Kopie der Archive): Eintrag `TP_SICHERUNG_KOPIE` unter `EnvironmentVariables` in
+`launchagents/net.teppich-paradies.sicherung.plist.vorlage`, danach
+`bash operations/scripts/dienste-einrichten.sh --nur-sicherung`. Danach einmal das
+Zurueckspielen ueben (Abschnitt „Ausfall des Mac mini“).
+
 ### Dienst-Checkout automatisch nachziehen (seit 2026-10-26, #1710)
 
 `npm run -s betrieb:nachziehen` bringt `~/tp-dashboard` (Zweig `dashboard-betrieb`) auf den
@@ -944,3 +985,106 @@ npm run -s datenstand:pruefen -- --trocken
 löschen (ohne Plist zeigt das Control Center die Routine nicht mehr). **Rückfall** bei „Mac-Dienst
 gestört“, der sich nicht gleich beheben lässt: Dienst abschalten und die pausierte App-Aufgabe
 wieder aktivieren.
+
+## Ausfall des Mac mini: nach einem Neustart pruefen, wiederherstellen, Plan B
+
+Der Mac mini ist der einzige Rechner mit Control Center, Sync, Social-Upload, Sicherung und den
+Routinen. Stand 26.10.2026 startet er nach einem Stromausfall von selbst neu und meldet sich an.
+Alle Dienste mit `RunAtLoad` kommen dann allein zurueck, darunter Dashboard, Sync, Social,
+Shop-Wache, Sicherung und Nachziehen. Die geplanten Aufgaben der Claude-App laufen nur, wenn die App offen ist.
+
+### Nach einem Neustart pruefen
+
+Im Dienst-Checkout (`cd ~/tp-dashboard`):
+
+1. `launchctl list | grep teppich-paradies`: eine Zeile je Dienst. Dashboard, Sync und Social
+   laufen dauerhaft und haben eine Prozessnummer in der ersten Spalte.
+2. `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8001/login` ergibt `200` (Control
+   Center). Dasselbe fuer `http://127.0.0.1:8020/` (Social-Zentrale).
+3. `node operations/scripts/datenstand-pruefen.mjs --trocken` meldet
+   „Datenstand: ok – Datenstand frisch“. Der Sync-Dienst holt gleich nach seinem Start neue
+   Daten; ein paar Minuten nach dem Neustart sollte die Zeile also stimmen.
+4. Tailscale: `tailscale status` zeigt den Mac mini verbunden. `tailscale funnel status` zeigt
+   `:8443 (Funnel on)` mit Ziel `http://127.0.0.1:8021` (Monteur-Upload). Die CLI liegt unter
+   `/Applications/Tailscale.app/Contents/MacOS/Tailscale` (`docs/control-center/ARCHITEKTUR.md`, 1d).
+5. Die Claude-App ist offen und angemeldet. In Systemeinstellungen → Allgemein → Anmeldeobjekte
+   sollte „Claude“ stehen, sonst laufen die App-Aufgaben erst, wenn jemand die App oeffnet. Das
+   prueft und aendert ein Mensch.
+6. Im Control Center auf „Heute“ (Inhaber) darf kein rotes To-do stehen: weder „Mac-Dienst
+   gestoert“ noch „Shop-Kontrolle meldet sich nicht“ oder „Mac mini: Speicher …“.
+
+### Wiederherstellen nach einem Ausfall
+
+Gebraucht wird ein Tagesarchiv `<datum>.tar.gz`, entweder aus `~/teppich-paradies-analyse/sicherungen/`
+des alten Macs oder aus der zweiten Kopie (Abschnitt „Taegliche Betriebssicherung“). Ohne Archiv
+fehlen alle lokalen Staende (Auftragsstatus, Musterlager, Stoppliste …). Die Shopify-Daten holt der
+Sync-Dienst neu.
+
+1. **Mac vorbereiten:** Benutzer anlegen, am besten mit demselben Namen wie vorher. Die Plists in
+   `dienste/` enthalten absolute Pfade. Dann Homebrew, Node (`brew install node`), `gh auth login`,
+   Tailscale (`ARCHITEKTUR.md`, 1d) und die Claude-App installieren.
+2. **Code holen:**
+   ```
+   git clone https://github.com/kontakt755/teppich-paradies-shopify-ai.git ~/teppich-paradies-shopify-ai
+   git clone https://github.com/kontakt755/teppich-paradies-shopify-ai.git ~/tp-dashboard
+   cd ~/tp-dashboard && git switch -c dashboard-betrieb origin/main && npm ci --no-audit --no-fund
+   ```
+   Der Dienst-Checkout entsteht neu aus `main`; das Nachziehen (`--nur-nachziehen`) haelt ihn danach
+   aktuell.
+3. **Daten zurueckspielen.** Die Pfade im Archiv sind relativ zu `$TP_PRIVAT_DIR`, weil das Skript
+   mit `tar -C <Privatordner>` packt:
+   ```
+   mkdir -p ~/teppich-paradies-analyse && chmod 700 ~/teppich-paradies-analyse
+   tar -tzf <datum>.tar.gz | head                       # Inhalt ansehen
+   tar -xzf <datum>.tar.gz -C ~/teppich-paradies-analyse
+   ```
+4. **Zugaenge neu anlegen.** Sie stehen absichtlich nicht im Archiv:
+
+   | Zugang | Ort | Anleitung |
+   |---|---|---|
+   | Shopify, Laden-Zahlen, Links zur Auftrags-App | `~/tp-dashboard/.env.local` | Abschnitt „Zugang einrichten (einmalig)“, Pruefung `npm run operations:verbindung`; Laden: `ARCHITEKTUR.md`, Abschnitt 9 |
+   | Benutzer des Control Centers | `benutzer.json` | `npm run benutzer -- anlegen` (`ARCHITEKTUR.md`, 1e) |
+   | Notpasswort (wahlweise) | `dashboard-passwort.txt` | eine Zeile, Rechte 600 (`ARCHITEKTUR.md`, 1c) |
+   | Firmenpostfach (Nachfassen, Musterautomatik) | `nachfassen/postfach.json` | Rechte 600; ohne Datei geht keine Mail raus (`ARCHITEKTUR.md`, 23) |
+   | Meta-Zugang, Upload-Adresse | `social/zugang.env` | `social/META-EINRICHTUNG.md` |
+   | Upload-Links | – | Die alten gelten weiter (`upload-zugaenge.json` ist im Archiv). Zum Kopieren unter „Social Media“ einen neuen anlegen. |
+
+5. **Dienste einrichten.** Ist der Benutzername gleich, gehen die Dienste aus dem Abzug zurueck.
+   Erst die Pfade in den Plists pruefen, dann je Datei laden:
+   ```
+   cp ~/teppich-paradies-analyse/dienste/*.plist ~/Library/LaunchAgents/
+   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.teppich-paradies.<dienst>.plist
+   ```
+   Sonst aus den Vorlagen im Repository:
+   - `bash operations/scripts/dienste-einrichten.sh` fuer den Sync.
+   - Dasselbe Skript mit `--nur-sicherung`, `--nur-nachziehen` und `--routinen`. Vor `--routinen`
+     die App-Aufgaben pausieren (Abschnitt „Routinen als Mac-Dienst“).
+   - `bash social/scripts/dienste-einrichten.sh` fuer das Social-Modul.
+   - Die uebrigen Vorlagen unter `launchagents/` (Angebote, Auslauf, Ausschreibungen,
+     Lieferant I, Nachfassen) wie in ihrem Kopf beschrieben.
+   - Ohne Vorlage gibt es Dashboard, Shop-Wache, Aufgabenwaechter und Lieferantenseiten. Sie
+     laufen alle mit `bash -lc "cd $HOME/tp-dashboard && exec npm run …"`. Die Vorlage ist die
+     jeweilige Plist im Abzug `dienste/`.
+6. **Tailscale:** anmelden, `tailscale serve --bg 8001`, Funnel nur fuer den Upload-Port 8021
+   (`social/PLAN.md`) und „Disable key expiry“ setzen (`ARCHITEKTUR.md`, 1d). Den Tailnet-Namen in
+   die Dashboard-Plist eintragen (`TP_DASHBOARD_EXTRA_HOSTS`).
+7. Danach die Pruefliste „Nach einem Neustart pruefen“ durchgehen.
+
+### Plan B: der Mac mini faellt laenger aus
+
+- **Weiter wie gewohnt:** Der Shop laeuft bei Shopify. Bestellungen, Versand und Kundenmails gehen
+  im Browser ueber den Shopify-Admin. Die Auftrags-App der Monteure ist eine Google-Apps-Script-App
+  und haengt nicht am Mac mini. Baustellenfotos gehen an die WhatsApp-Gruppe statt ueber den
+  Upload-Link (`social/WHATSAPP.md`).
+- **Faellt weg:** das Control Center (Auftragsstatus, Bestellen, Packstation, Produktsuche) und der
+  Sync. Ebenso die automatischen Muster-Nachfassmails, die Musterbestellungen an Lieferanten, die
+  Shop-Wache, die Routinen und die Sicherung.
+- **In der Zwischenzeit:** Lieferanten von Hand aus dem Shopify-Admin bestellen. Jede Bestellung,
+  jedes Muster und jede Kundenzusage auf einer Liste festhalten und danach im Control Center
+  nachtragen.
+- **Ersatzrechner:** Jeder Mac taugt, mit den Schritten oben. Fuer den Anfang reicht das Control
+  Center nur auf diesem Rechner: `npm run dashboard`, erreichbar unter `http://127.0.0.1:8001`,
+  ohne Netzmodus und ohne Dienste.
+- **Ohne zweite Kopie ausser Haus** sind bei einem Plattenschaden, einem Diebstahl oder einer
+  vollen Platte Original und Sicherung zugleich weg. Das ist eine Entscheidung des Inhabers
+  (Abschnitt „Taegliche Betriebssicherung“).
