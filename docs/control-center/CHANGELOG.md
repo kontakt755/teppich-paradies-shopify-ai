@@ -12,6 +12,29 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** keine; die Info gilt fuer alle Umschlaege, eine Kennzeichnung je Muster gibt es nicht.
 - **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
 
+## 2026-10-26 · Nachziehen tauscht Bibliotheken ohne npm ci im Betrieb (#1716)
+
+- **Geaendert:** Aendert sich `package-lock.json`, lief bisher `npm ci` im Dienst-Checkout,
+  waehrend Dashboard, Sync und Social noch liefen. Gemessen in einer Wegwerfkopie: `npm ci`
+  loescht `node_modules` zuerst, `puppeteer` fehlte bis 291 ms, 6 von 23 frischen Importen
+  scheiterten (Social laedt es erst beim Rendern); ohne erreichbare Paketquelle blieb
+  `node_modules` leer, und der Rueckweg haette wieder `npm ci` gebraucht. Jetzt hebt die Probe
+  ihre frisch installierten, getesteten Bibliotheken auf, und der Lauf tauscht sie per
+  Umbenennen ein, bevor er vorspult. Der Rueckweg tauscht ohne Netz zurueck; Reste eines
+  Abbruchs raeumt der naechste Lauf auf.
+- **Getestet:** Messung mit Beobachter (alle 5 ms Datei, alle 100 ms frischer Import):
+  Tausch 0/27 Luecken, 0/10 Importfehler; Tausch plus Rueckweg 6 ms, 0/9 Importfehler.
+  Neue Tests mit echter lokaler Bibliothek (offline installiert, Marke aus der Probe):
+  Tausch, Warten ohne Ruhe, Rueckweg; derselbe Test scheitert gegen den alten Ablauf.
+  Codex-Review Runde 1 (0 P1, 2 P2) behoben: Abbruch nach dem Tausch vor dem Vorspulen
+  (Marke mit dem HEAD von vorher) und scheiterndes zweites Umbenennen (sofort zurueck),
+  beide Faelle mit Test. Runde 3 (nach #1711, 1 P2): das Zuruecknehmen nach einem Abbruch
+  wartet jetzt ebenfalls auf Ruhe (laufende Claude-Routine), mit Ablauf-Test.
+- **Risiken:** Probe und Dienst-Checkout muessen auf demselben Laufwerk liegen, sonst kopiert
+  die Probe (`cpSync`) statt umzubenennen. Wartet ein Lauf mit neuen Bibliotheken auf Ruhe,
+  installiert und testet der naechste erneut (rund 30 s).
+- **Naechste Stufe:** keine geplant.
+
 ## 2026-10-26 · Packstation: „Umschlag vorbereitet“ für alle Geräte sichtbar (#1718)
 
 - **Geaendert:** Inhaber: „wichtig ist, dass ich es in der Packstation sehen muss – Etikett ausgedruckt
