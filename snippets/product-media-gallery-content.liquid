@@ -148,9 +148,17 @@
   assign tp_serena_material_id = tp_serena_material_id | strip | plus: 0
   assign tp_serena_basis = selected_product.metafields.service.einfass_basis.value
   assign tp_serena_material = tp_serena_basis.media | where: 'id', tp_serena_material_id
-  assign tp_serena_exists = sorted_media | where: 'id', tp_serena_material_id
-  if tp_serena_material.size > 0 and tp_serena_exists.size == 0
-    assign sorted_media = sorted_media | concat: tp_serena_material
+  # Schon in der Galerie? Gleiche Medien-ID oder dasselbe Foto als eigene
+  # Kopie am Teppich: Shopify haengt beim erneuten Hochladen "_<uuid>" an den
+  # Dateinamen, die Medien-ID ist dann eine andere (Rundgang 2026-10-26, #29:
+  # Marken-Teppiche nach Mass zeigten dasselbe Bild zweimal).
+  capture tp_serena_doppelt
+    render 'tp-medien-doppelt', media: tp_serena_material.first, liste: sorted_media
+  endcapture
+  if tp_serena_material.size > 0
+    unless tp_serena_doppelt contains 'ja'
+      assign sorted_media = sorted_media | concat: tp_serena_material
+    endunless
   endif
 
   # Variant-specific media can reduce the visible gallery to one item.

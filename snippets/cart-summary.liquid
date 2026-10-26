@@ -262,15 +262,23 @@
           Wortlaut wie auf der Versandseite (sections/tp-shipping-delivery).
         {%- endcomment -%}
         {%- assign tp_cart_vs_schwelle_cent = settings.tp_vs_schwelle | times: 100 -%}
+        {%- comment -%}
+          Rundgang 2026-10-26 (#3): dieselbe Zusage wie auf der Produktseite
+          (blocks/tp-verlegeservice-hinweis: "Lieferung & lose Verlegung bis
+          15 km kostenlos"), vorher nannte der Warenkorb nur die Anlieferung.
+        {%- endcomment -%}
         {%- if cart.total_price >= tp_cart_vs_schwelle_cent -%}
-          <strong>Kostenlose Anlieferung durch unser Team</strong> im Umkreis von {{ settings.tp_vs_radius_basis }}&nbsp;km um Oranienburg möglich, nach Prüfung der Lieferadresse.
+          <strong>Lieferung &amp; lose Verlegung bis {{ settings.tp_vs_radius_basis }}&nbsp;km kostenlos</strong> – durch unser Team rund um Oranienburg, nach Prüfung der Lieferadresse.
         {%- else -%}
           {%- assign tp_cart_vs_rest = tp_cart_vs_schwelle_cent | minus: cart.total_price -%}
-          <strong>Noch {{ tp_cart_vs_rest | money }} bis zur kostenlosen Anlieferung durch unser Team</strong> im Umkreis von {{ settings.tp_vs_radius_basis }}&nbsp;km um Oranienburg (ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert, nach Prüfung der Lieferadresse).
+          <strong>Noch {{ tp_cart_vs_rest | money }} bis zur kostenlosen Lieferung &amp; losen Verlegung</strong> bis {{ settings.tp_vs_radius_basis }}&nbsp;km um Oranienburg (ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert, nach Prüfung der Lieferadresse).
         {%- endif %}
       </p>
     {%- endif -%}
   {%- endif -%}
+
+  {% # Freiwillige Verlegeanfrage: vor Gesamtbetrag und "Zur Kasse", direkt unter der Zusage zur Verlegung (Rundgang 2026-10-26, #3). Zwischen Gesamtbetrag und Kaufknopf bleibt nur der Preishinweis. %}
+  {% render 'tp-cart-beratung', stelle: 'vor_summe' %}
 
   <div class="cart-totals__container">
     <span
@@ -341,8 +349,6 @@
   {%- render 'tp-zahlung-abholung', kontext: 'warenkorb' -%}
 {%- endif -%}
 
-{% # Hinter dem Kaufknopf: die freiwillige Verlegeanfrage - sie haelt einen Kaufkunden nicht auf %}
-{% render 'tp-cart-beratung', stelle: 'nach_kasse' %}
 {% render 'tp-muster-beratungsanfrage' %}
 
 {% if settings.show_installments %}
