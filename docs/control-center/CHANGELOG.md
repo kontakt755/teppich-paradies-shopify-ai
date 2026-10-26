@@ -4,13 +4,32 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 
 ## 2026-10-26 · Packstation: Info fuer den Packer zu Herstelleretiketten
 
-- **Geaendert:** Oben in der Packstation („Nach Kunde packen“) steht als Info: „Wichtig beim Packen:
+- **Geaendert:** Oben in der Packstation („Nach Kunde packen“ und „Wareneingang nach Partnerladen“) steht als Info: „Wichtig beim Packen:
   Herstelleretiketten von den Mustern entfernen – außer bei Vorwerk und JAB. Dort bleibt das
   Herstelleretikett dran.“ Wunsch des Inhabers vom 26.10.; nur eine Info, kein Pflichtschritt.
 - **Getestet:** neuer Fall in `packstation-arbeitslisten.test.mjs` (Info genau einmal, auch unter „Gepackt“);
   `dashboard:pruefen` Packstation bei 1440/390 px ohne Fehler und ohne Ueberlauf.
 - **Risiken:** keine; die Info gilt fuer alle Umschlaege, eine Kennzeichnung je Muster gibt es nicht.
 - **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
+
+## 2026-10-26 · Packstation: alles finden, je Muster neu etikettieren, mit einem Klick packen (#1694)
+
+- **Geaendert:** Die Suche steht auch im Wareneingang und findet zusaetzlich Musterbestellungen ausserhalb
+  der Packliste (Zahlung offen, geschlossen, storniert, schon versandt/erledigt) - mit Grund und Link,
+  ohne Packaktion. Jedes Muster hat „Aufkleber drucken“ (nur dieses Muster), gepackte Umschlaege
+  „Aufkleber erneut drucken“. „Alle n Muster eingelegt – Umschlag gepackt“ hakt in einem Schritt ab und
+  packt; im Wareneingang wird direkt in der Zeile abgehakt. Anlass: Inhaber 26.10. („alles finden … sehr
+  einfach packen und neu etikettieren“); bisher druckte die Packstation nur ganze Umschlaege, und in der
+  Ablage stand noch kein einziger Haken.
+- **Getestet:** `muster-packen.test.mjs` (Gruende ausserhalb, Suche nur bei gleich gutem Treffer,
+  `aufkleberFuerMuster`), `muster-packen-api.test.mjs` („Alle eingelegt“ mit veralteter Seite 409 ohne
+  Schreiben, Rolle lesen 403, ausserhalb im GET), `packstation-arbeitslisten.test.mjs` (Druck je Muster,
+  erneut drucken, Hauptaktion nur bei Packbereit, Wareneingang mit Haken/Druck/Suche, Abschnitt
+  „Außerhalb der Packliste“).
+- **Risiken:** „Alle eingelegt“ verlaesst sich auf die Person am Packtisch - bei „Wartet auf Ware“ fragt
+  es deshalb einmal nach. Treffer ausserhalb stehen nur, wenn sie mindestens so gut passen wie ein offener
+  Umschlag.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen (nur Dashboard, kein `operations/`).
 
 ## 2026-10-26 · Musteraufkleber auch 50 × 80 mm; nichts ueberlappt, nichts wird abgeschnitten
 

@@ -93,15 +93,35 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
   const vorher = vorherIndex(produkte);
   const gruppen = new Map();
   const ausschluesse = { zahlungOffen: 0, geschlossen: 0 };
+  // Fuer die Suche: Muster, die nicht (mehr) gepackt werden - mit Grund. Wer so ein Muster in der
+  // Hand haelt, soll sehen, wohin es gehoert haette, statt "nichts gefunden".
+  const ausserhalb = [];
+  const merkeAusserhalb = (a, grund, liste) => {
+    if (!liste.length) return;
+    const zeilen = musteretikettenFuerAuftrag({ positionen: liste }, produkte);
+    ausserhalb.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null, grund,
+      name: text(a.details?.lieferadresse?.name) || text(a.details?.kunde?.name) || 'Kunde',
+      muster: zeilen.map((z, i) => {
+        const e = z.etikett || {}, v = e.sku ? vorher(e.sku) : null;
+        return { lineItemId: z.lineItemId, bestellt: { titel: text(liste[i].titel), farbe: text(liste[i].farbe) },
+          etikett: { serie: text(e.serie), farbe: text(e.farbe), sku: text(e.sku) },
+          vorher: v ? { produktname: v.produktname, kollektion: v.kollektion, farbnummer: v.farbnummer, hersteller: v.hersteller, artikelnummer: v.artikelnummer } : null,
+          lieferant: v?.lieferant ? lieferantVon(v.lieferant) : null };
+      }) });
+  };
   for (const a of auftraege) {
-    if (!a || a.storniert || a.testbestellung || a.erfuellt === 'FULFILLED') continue;
+    if (!a || a.testbestellung) continue;
+    const alleMuster = (a.positionen || []).filter(p => p?.istMuster === true);
+    const fertig = p => p.menge === 0 || FERTIG.has(statusVon(a.id, p.lineItemId));
+    if (a.storniert || a.erfuellt === 'FULFILLED') { merkeAusserhalb(a, a.storniert ? 'storniert' : 'erledigt', alleMuster); continue; }
     if (!a.offen || !['PAID', 'PARTIALLY_REFUNDED'].includes(a.bezahlt)) {
-      if ((a.positionen || []).some(p => p?.istMuster && p.menge !== 0 && !FERTIG.has(statusVon(a.id, p.lineItemId)))) {
-        ausschluesse[!a.offen ? 'geschlossen' : 'zahlungOffen']++;
-      }
+      const grund = alleMuster.some(p => !fertig(p)) ? (!a.offen ? 'geschlossen' : 'zahlungOffen') : 'erledigt';
+      if (grund !== 'erledigt') ausschluesse[grund]++;
+      merkeAusserhalb(a, grund, alleMuster);
       continue;
     }
-    const positionen = (a.positionen || []).filter(p => p?.istMuster === true && p.menge !== 0 && !FERTIG.has(statusVon(a.id, p.lineItemId)));
+    merkeAusserhalb(a, 'erledigt', alleMuster.filter(fertig));
+    const positionen = alleMuster.filter(p => !fertig(p));
     if (!positionen.length) continue;
     const zeilen = musteretikettenFuerAuftrag({ positionen }, produkte);
     const identitaet = a.details?.kunde || {};
@@ -185,7 +205,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
   // Packreihenfolge: wer am laengsten wartet, zuerst; Gepacktes ans Ende.
   liste.sort((x, y) => (!!x.gepackt - !!y.gepackt) || text(x.seit).localeCompare(text(y.seit)) || x.name.localeCompare(y.name, 'de'));
   const zahl = b => liste.filter(k => k.bereich === b).length;
-  return { kunden: liste, ausschluesse, offen: liste.filter(k => !k.gepackt).length, zahlen: { warten: zahl('warten'), packen: zahl('packen'), klaeren: zahl('klaeren'), gepackt: zahl('gepackt') } };
+  ausserhalb.sort((x, y) => text(y.datum).localeCompare(text(x.datum)));
+  return { kunden: liste, ausschluesse, ausserhalb, offen: liste.filter(k => !k.gepackt).length, zahlen: { warten: zahl('warten'), packen: zahl('packen'), klaeren: zahl('klaeren'), gepackt: zahl('gepackt') } };
 }
 
 /**
@@ -210,6 +231,11 @@ function markiereVerwechslung(muster) {
 /** Aufkleber eines Kunden in Druckreihenfolge: seine Muster (je bestellte Anzahl), danach die Adresse. */
 export function aufkleberFuer(kunde) {
   return [...kunde.muster.flatMap(m => Array.from({ length: m.anzahl || 0 }, () => m.etikett)), kunde.adressAufkleber];
+}
+
+/** Aufkleber genau eines Musters (Neu-Etikettieren eines einzelnen Musters), je bestellte Anzahl. */
+export function aufkleberFuerMuster(m) {
+  return m?.fehlt?.length || !m?.etikett ? [] : Array.from({ length: m.anzahl || 1 }, () => m.etikett);
 }
 
 /**
@@ -254,29 +280,38 @@ function passendeWoerter(woerter, felder) {
   return woerter.filter(w => heu.some(h => h.includes(w)) || (kompakt(w).length >= 3 && heuKompakt.some(h => h.includes(kompakt(w)))));
 }
 
-/**
- * @returns {{woerter: string[], treffer: {packSchluessel: string, muster: string[]}[], fehlen: string[]}}
- *   `treffer` in der Reihenfolge der Liste, `muster` = lineItemIds der passenden Muster (leer, wenn nur
- *   Kunde/Bestellnummer passen), `fehlen` = Woerter, die in keinem Treffer vorkommen.
- */
-export function packSuche(kundenListe = [], eingabe = '') {
-  const woerter = suchWoerter(eingabe);
-  if (!woerter.length) return { woerter, treffer: [], fehlen: [] };
-  const bewertet = kundenListe.map(k => {
-    const umschlag = passendeWoerter(woerter, [k.name, umschlagKennung(k), ...(k.bestellungen || []).map(b => b.orderName)]);
-    const muster = (k.muster || []).map(m => {
-      const v = m.vorher || {}, e = m.etikett || {};
-      const passt = new Set([...umschlag, ...passendeWoerter(woerter, [m.bestellt?.titel, m.bestellt?.farbe, e.serie, e.farbe, e.sku,
-        v.produktname, v.kollektion, v.farbnummer, v.hersteller, v.artikelnummer, m.lieferant])]);
-      return { id: m.lineItemId, passt };
-    });
-    const bestes = Math.max(umschlag.length, ...muster.map(m => m.passt.size));
-    return { k, bestes, muster: muster.filter(m => m.passt.size === bestes && m.passt.size > umschlag.length).map(m => m.id),
-      passt: new Set([...umschlag, ...muster.filter(m => m.passt.size === bestes).flatMap(m => [...m.passt])]) };
+/** Wie viele Suchwoerter passen zu einem Umschlag bzw. einer Bestellung und zu welchen Mustern. */
+function bewerte(woerter, kopf, muster = []) {
+  const umschlag = passendeWoerter(woerter, kopf);
+  const je = muster.map(m => {
+    const v = m.vorher || {}, e = m.etikett || {};
+    const passt = new Set([...umschlag, ...passendeWoerter(woerter, [m.bestellt?.titel, m.bestellt?.farbe, e.serie, e.farbe, e.sku,
+      v.produktname, v.kollektion, v.farbnummer, v.hersteller, v.artikelnummer, m.lieferant])]);
+    return { id: m.lineItemId, passt };
   });
-  const max = Math.max(0, ...bewertet.map(b => b.bestes));
-  if (!max) return { woerter, treffer: [], fehlen: woerter };
-  const beste = bewertet.filter(b => b.bestes === max);
-  const gefunden = new Set(beste.flatMap(b => [...b.passt]));
-  return { woerter, treffer: beste.map(b => ({ packSchluessel: b.k.packSchluessel, muster: b.muster })), fehlen: woerter.filter(w => !gefunden.has(w)) };
+  const bestes = Math.max(umschlag.length, ...je.map(m => m.passt.size));
+  return { bestes, muster: je.filter(m => m.passt.size === bestes && m.passt.size > umschlag.length).map(m => m.id),
+    passt: new Set([...umschlag, ...je.filter(m => m.passt.size === bestes).flatMap(m => [...m.passt])]) };
+}
+
+/**
+ * @param {object[]} kundenListe  Umschlaege aus musterPackliste
+ * @param {string} eingabe
+ * @param {object[]} [ausserhalb] Bestellungen ausserhalb der Packliste (musterPackliste().ausserhalb)
+ * @returns {{woerter: string[], treffer: {packSchluessel: string, muster: string[]}[], ausserhalb: {orderId: string, muster: string[]}[], fehlen: string[]}}
+ *   `treffer` in der Reihenfolge der Liste, `muster` = lineItemIds der passenden Muster (leer, wenn nur
+ *   Kunde/Bestellnummer passen), `fehlen` = Woerter, die in keinem Treffer vorkommen. Bestellungen
+ *   ausserhalb der Packliste zaehlen gleich; gezeigt wird nur, was am besten passt.
+ */
+export function packSuche(kundenListe = [], eingabe = '', ausserhalb = []) {
+  const woerter = suchWoerter(eingabe);
+  if (!woerter.length) return { woerter, treffer: [], ausserhalb: [], fehlen: [] };
+  const umschlaege = kundenListe.map(k => ({ k, ...bewerte(woerter, [k.name, umschlagKennung(k), ...(k.bestellungen || []).map(b => b.orderName)], k.muster) }));
+  const andere = ausserhalb.map(b => ({ b, ...bewerte(woerter, [b.name, b.orderName], b.muster) }));
+  const max = Math.max(0, ...umschlaege.map(x => x.bestes), ...andere.map(x => x.bestes));
+  if (!max) return { woerter, treffer: [], ausserhalb: [], fehlen: woerter };
+  const beste = umschlaege.filter(x => x.bestes === max), besteAndere = andere.filter(x => x.bestes === max);
+  const gefunden = new Set([...beste, ...besteAndere].flatMap(x => [...x.passt]));
+  return { woerter, treffer: beste.map(x => ({ packSchluessel: x.k.packSchluessel, muster: x.muster })),
+    ausserhalb: besteAndere.map(x => ({ orderId: x.b.orderId, muster: x.muster })), fehlen: woerter.filter(w => !gefunden.has(w)) };
 }

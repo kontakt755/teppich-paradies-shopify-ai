@@ -241,3 +241,33 @@ test('Grossbrief: beschaedigte Ablage bleibt erhalten statt leer ueberschrieben 
     assert.equal(fs.readFileSync(file, 'utf8'), text);
   }
 });
+
+test('Alle eingelegt: hakt genau die gezeigten offenen Muster ab und packt; veraltete Seite oder Rolle lesen schreibt nichts', t => {
+  const { api, dir } = umgebung(t);
+  const laden = { name: 'Laden', rolle: 'mitarbeiter' };
+  const k = api.kundenMusterPacken().kunden[0];
+  const [erstes, zweites] = k.muster.map(m => m.lineItemId);
+  api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, aktion: 'haken', lineItemIds: [erstes], an: true }, laden);
+  const vorher = fs.readFileSync(path.join(dir, 'muster-packen.json'), 'utf8');
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, alleEingelegt: true, lineItemIds: [zweites] }, { name: 'Gast', rolle: 'lesen' }), e => e.status === 403);
+  // Die Seite zeigte noch beide Muster offen - inzwischen ist eins abgehakt.
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, alleEingelegt: true, lineItemIds: [erstes, zweites] }, laden), e => e.status === 409 && /geändert/.test(e.message));
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, alleEingelegt: true }, laden), e => e.status === 409);
+  assert.equal(fs.readFileSync(path.join(dir, 'muster-packen.json'), 'utf8'), vorher, 'nichts geschrieben');
+  api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, alleEingelegt: true, lineItemIds: [zweites] }, laden);
+  const neu = api.kundenMusterPacken().kunden[0];
+  assert.equal(neu.bereich, 'gepackt');
+  assert.deepEqual(neu.muster.map(m => m.abgehakt?.von), ['Laden', 'Laden']);
+  // Ohne "alleEingelegt" gilt weiter: erst alles abhaken.
+  api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: false }, laden);
+  api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, aktion: 'haken', lineItemIds: [zweites], an: false }, laden);
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true }, laden), e => e.status === 409);
+});
+
+test('GET liefert Musterbestellungen ausserhalb der Packliste mit Grund fuer die Suche', t => {
+  const storniert = { ...bestellung(803, '2026-10-19T06:00:00Z'), cancelledAt: '2026-10-19T08:00:00Z' };
+  const { api } = umgebung(t, [bestellung(801, '2026-10-18T06:00:00Z'), storniert]);
+  const r = api.kundenMusterPacken();
+  assert.equal(r.kunden.length, 1);
+  assert.deepEqual(r.ausserhalb.map(b => [b.orderName, b.grund, b.muster.map(m => m.vorher?.produktname)]), [['#T803', 'storniert', ['Lieferant Sand 2mm']]]);
+});

@@ -53,16 +53,25 @@
 
 .mp-modus, .mp-laeden { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
 .mp-sortliste { list-style: none; margin: 8px 0 0; padding: 0; }
-.mp-sortzeile { display: grid; grid-template-columns: 72px minmax(0, 1fr) 20px minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.mp-sortzeile { display: grid; grid-template-columns: 28px 72px minmax(0, 1fr) 20px minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.mp-sortzeile .mp-haken, .mp-sortzeile .mp-pfeil { padding-top: 0; }
+/* Neu etikettieren je Muster: unter "Unser Aufkleber" bzw. unter dem Ziel-Umschlag. */
+.mp-druck1 { justify-self: start; margin-top: 6px; }
+.mp-aussenliste { list-style: none; margin: 8px 0 0; padding: 0; }
+.mp-aussen { display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--line); }
+.mp-aussen ul { margin: 0; padding-left: 18px; }
+.mp-aussen .btn { justify-self: start; }
 .mp-ziel { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 10px; }
 .mp-ziel > :not(.mp-umschlag) { grid-column: 2; }
 .mp-umschlag { grid-row: span 2; display: inline-flex; align-items: center; justify-content: center; min-width: 2.2em; height: 2.2em; padding: 0 6px; border-radius: 999px; background: var(--text); color: var(--surface); font-weight: 700; font-size: 1.1rem; }
 .mp-umschlag-klaeren { background: var(--warn-soft); color: var(--warn); font-size: .8rem; }
 
 @media (max-width: 760px) {
-  .mp-sortzeile { grid-template-columns: 64px minmax(0, 1fr); }
+  .mp-sortzeile { grid-template-columns: 28px 64px minmax(0, 1fr); }
   .mp-sortzeile .mp-pfeil { display: none; }
-  .mp-sortzeile .mp-ziel { grid-column: 2; }
+  .mp-sortzeile .mp-haken { grid-row: span 2; }
+  .mp-sortzeile .mp-ziel { grid-column: 3; }
+  .mp-druck1 { min-height: 44px; }
   .mp-modus .btn, .mp-laeden .btn { min-height: 44px; }
   .mp-zeile { grid-template-columns: 28px 64px minmax(0, 1fr); }
   .mp-haken { grid-row: span 3; padding-top: 2px; }
