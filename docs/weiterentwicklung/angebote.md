@@ -62,8 +62,11 @@ nicht versioniert). Das Skript nutzt dieselben Regeln und Tests wie die Angebots
 - **Reste & Sonderposten** = dauerhafter Bereich für Einzelstücke mit festen Maßen.
 
 Sonderposten bekommen den Tag `angebot` **nicht** (das Skript schließt Produkttyp
-`Sonderposten` aus). Sonst wäre „Angebote“ dauerhaft sichtbar und verlöre seine Funktion als
-Aktionssignal. Stattdessen verweist die Angebotsseite unten auf „Reste & Sonderposten“, und
+`Sonderposten` aus, seit 2026-10-26 auch den Tag `sonderposten`). Sonst wäre „Angebote“ dauerhaft sichtbar und verlöre seine Funktion als
+Aktionssignal. Der Tag zählt, weil manche Reststücke den Typ der Ursprungsware behalten
+(Yasmin: Typ Teppichboden, sonst fällt sie aus dem Zuschnittrechner). Ihr Streichpreis
+bleibt sichtbar; sie stehen nur nicht unter „Angebote“. Soll ein solches Stück ausdrücklich
+als Angebot erscheinen, braucht es eine Ausnahme in Abgleich und Snippet (Inhaber). Stattdessen verweist die Angebotsseite unten auf „Reste & Sonderposten“, und
 „Reste & Sonderposten“ steht als eigener Menüpunkt, sobald die Kollektion Stücke hat (gleiche
 Theme-Sicherung, Bedingung „Kollektion nicht leer“).
 
@@ -82,7 +85,8 @@ Theme-Sicherung, Bedingung „Kollektion nicht leer“).
 
 | Teil | Stand |
 |---|---|
-| `snippets/tp-angebot-sichtbar.liquid` | gebaut – eine Regel für „Angebot“ (Streichpreis sichtbar oder zentrale Aktion; nie Sonderposten) |
+| `snippets/tp-angebot-sichtbar.liquid` | gebaut – eine Regel für „Angebot“ (Streichpreis sichtbar oder zentrale Aktion; nie Sonderposten, am Typ oder Tag) |
+| Startseite „Aktuelle Angebote“ (seit 2026-10-26, Rundgang #69) | Die fünf Listen (`sections/product-list`, Einstellung „Nur sichtbare Angebote“) zeigen nur Karten, für die `tp-angebot-sichtbar` „ja“ sagt – höchstens 48 Prüfungen je Liste. Zeigt eine Liste keine Karte, verschwindet sie samt Reiter (`sections/tp-start-tabs`, CSS `:has()` plus Skript); ohne Karte in allen Listen verschwindet der ganze Abschnitt. Die Kollektionen `angebote-*` fragen weiter nur „Preis reduziert“ ohne Datum; die Umstellung auf den Tag `angebot` (Rundgang #68) braucht eine Freigabe, die Startseite stimmt aber schon ohne sie. |
 | `snippets/tp-menu-link-sichtbar.liquid` | gebaut, an allen vier Menü-Stellen eingehängt (Desktop, Handy-Leiste, Drawer, SEO-Linkliste) |
 | `operations/lib/angebote-abgleich.mjs` + Tests | gebaut, 9 Tests; Regel 1:1 aus den Liquid-Snippets (auch die Liquid-Eigenheit: fehlender Vergleichspreis kippt die Rollenware-Regel nicht) |
 | `npm run angebote:abgleich` | gebaut; Trockenlauf Standard, `--schreiben`, `--stichtag`, `--ausgabe`; wartet auf Shopify-Budget, Gegenprobe nach dem Schreiben |

@@ -9,7 +9,11 @@
     a) Streichpreis: snippets/tp-rabatt-sichtbar sagt "ja" und die angezeigte
        Variante hat compare_at_price > price, oder
     b) zentrale Aktion: snippets/tp-aktion-laufend liefert einen Prozentsatz.
-  Sonderposten zaehlen nie als Angebot - sie haben ihren eigenen Bereich.
+  Sonderposten zaehlen nie als Angebot - sie haben ihren eigenen Bereich
+  (angebote.md, Abschnitt 3). Erkannt am Produkttyp (tp-ist-sonderposten)
+  oder am Tag "sonderposten": Reststuecke wie Yasmin behalten den Typ der
+  Ursprungsware, damit Zuschnittrechner und Kartenart stimmen. Der Tag wirkt
+  nur hier, Streichpreis und Rechner bleiben unberuehrt.
 
   @param {object} product - das Produkt
 {%- enddoc -%}
@@ -17,6 +21,9 @@
   capture tas_sp
     render 'tp-ist-sonderposten', product: product
   endcapture
+  if product.tags contains 'sonderposten'
+    assign tas_sp = 'ja'
+  endif
   assign tas_ja = false
   unless tas_sp contains 'ja'
     capture tas_rabatt_aktion

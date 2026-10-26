@@ -804,6 +804,7 @@
         "padding-block-end": 48,
         "tp_leer_ausblenden": true,
         "tp_je_linie_eins": true,
+        "tp_nur_angebote": true,
         "tp_nur_vorlage": "rolle"
       }
     },
@@ -1016,6 +1017,7 @@
         "padding-block-end": 48,
         "tp_leer_ausblenden": true,
         "tp_je_linie_eins": true,
+        "tp_nur_angebote": true,
         "tp_nur_vorlage": "planken"
       }
     },
@@ -1227,7 +1229,8 @@
         "padding-block-start": 48,
         "padding-block-end": 48,
         "tp_leer_ausblenden": true,
-        "tp_je_linie_eins": true
+        "tp_je_linie_eins": true,
+        "tp_nur_angebote": true
       }
     },
     "angebote_leisten": {
@@ -1438,7 +1441,8 @@
         "padding-block-start": 48,
         "padding-block-end": 48,
         "tp_leer_ausblenden": true,
-        "tp_je_linie_eins": true
+        "tp_je_linie_eins": true,
+        "tp_nur_angebote": true
       }
     },
     "tp_angebote_tabs": {
@@ -1701,6 +1705,7 @@
         "padding-block-end": 48,
         "tp_leer_ausblenden": true,
         "tp_je_linie_eins": true,
+        "tp_nur_angebote": true,
         "tp_nur_vorlage": "fliese"
       }
     },
