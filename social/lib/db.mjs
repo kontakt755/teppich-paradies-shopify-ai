@@ -265,6 +265,19 @@ export function oeffne(datei = dbPfad(), { jetzt = () => new Date() } = {}) {
       const familien = typ === 'produkt_farben' ? anlassFamilien(familie) : [familie];
       return sql.prepare(`SELECT COUNT(*) n FROM inhalt WHERE quelle = 'shopify' AND typ = ? AND json_extract(daten, '$.familie') IN (${familien.map(() => '?').join(',')}) AND erstellt >= ? AND (schluessel IS NULL OR schluessel NOT LIKE '%:veraltet:%')`).get(typ, ...familien, iso(seit)).n > 0;
     },
+    /**
+     * Neue Farben, die seit `seit` schon als Anlass "neue Farbe" angelegt wurden - je Qualitaet
+     * (anlassFamilien). Was bei Teppich nach Mass angekuendigt ist, ist beim Teppichboden derselben
+     * Qualitaet keine Neuigkeit mehr (und umgekehrt).
+     * @returns Set der Farbnamen
+     */
+    angekuendigteFarben(familie, seit) {
+      const familien = anlassFamilien(familie);
+      const zeilen = sql.prepare(`SELECT json_extract(daten, '$.neueFarben') AS farben FROM inhalt WHERE quelle = 'shopify' AND typ = 'produkt_farben' AND json_extract(daten, '$.familie') IN (${familien.map(() => '?').join(',')}) AND erstellt >= ? AND (schluessel IS NULL OR schluessel NOT LIKE '%:veraltet:%')`).all(...familien, iso(seit));
+      return new Set(zeilen.flatMap(z => {
+        try { const f = JSON.parse(z.farben ?? '[]'); return Array.isArray(f) ? f : []; } catch { return []; }
+      }));
+    },
     /** Produkt-Reels, die noch nicht erschienen sind (Freigabe, geplant, in Arbeit): Map handle -> [{id, status, geplant_am}]. */
     reelsOffen() {
       const zeilen = sql.prepare(`SELECT i.produkt_handle AS handle, b.id, b.status, b.geplant_am FROM beitrag b JOIN inhalt i ON i.id = b.inhalt_id

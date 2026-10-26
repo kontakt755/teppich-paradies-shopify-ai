@@ -61,12 +61,20 @@ export async function shopAbgleich(db, { holen = globalThis.fetch, jetzt = new D
   // bekannt, wenn daraus ein Anlass wurde - sonst ginge sie verloren, nur weil
   // der Vorrat dieses Laufs schon voll war.
   const gemeldet = new Set(neu.filter(n => n.neueFarben).map(n => n.handle));
+  // Wurde dieselbe neue Farbe schon fuer die Qualitaet angekuendigt (Teppich nach Mass, Teppichboden),
+  // gilt sie auch hier als bekannt - sonst kaeme sie nach der Ruhezeit doch noch ein zweites Mal
+  // (Zafira, Alvento, Belcanto im Oktober 2026).
+  const angekuendigt = new Map();
+  const schonAngekuendigt = (p, hinzu) => {
+    if (!angekuendigt.has(p.familie)) angekuendigt.set(p.familie, db.angekuendigteFarben(p.familie, ruhe));
+    return hinzu.every(f => angekuendigt.get(p.familie).has(f));
+  };
   db.sql.exec('BEGIN');
   for (const p of produkte) {
     const alt = stand.get(p.handle);
     const felder = standAus(p, alt, jetzt);
-    const hatNeueFarbe = Array.isArray(alt?.farben) && alt.farben.length && p.farben.some(f => !alt.farben.includes(f));
-    if (hatNeueFarbe && !gemeldet.has(p.handle)) felder.farben = alt.farben;
+    const hinzu = Array.isArray(alt?.farben) && alt.farben.length ? p.farben.filter(f => !alt.farben.includes(f)) : [];
+    if (hinzu.length && !gemeldet.has(p.handle) && !schonAngekuendigt(p, hinzu)) felder.farben = alt.farben;
     db.produktStandSetzen(p.handle, felder);
   }
   db.sql.exec('COMMIT');

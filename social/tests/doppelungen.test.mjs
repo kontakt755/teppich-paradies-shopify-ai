@@ -15,20 +15,34 @@ import { feedProdukt, scheinRendern, testDb, tmpDir } from './_hilfe.mjs';
 test('Neue Farbe zaehlt je Qualitaet: Teppichboden und Teppich nach Mass sind eine Neuigkeit (Zafira #105/#128)', async (t) => {
   assert.deepEqual(anlassFamilien('zafira|teppichboden'), ['zafira|teppichboden', 'zafira|teppich nach maß']);
   assert.deepEqual(anlassFamilien('solenta|klebevinyl'), ['solenta|klebevinyl']);
-  const db = testDb(t);
-  const bild = farbe => ({ src: `https://cdn.shopify.com/s/files/1/x/zafira-${farbe.toLowerCase()}-raum.jpg?v=1`, width: 2400, height: 1800, alt: null, variant_ids: [farbe === 'Rauchblau' ? 2 : 1] });
+  let uhr = new Date('2026-09-01T05:00:00Z');
+  const db = testDb(t, () => uhr);
+  const bild = farbe => ({ src: `https://cdn.shopify.com/s/files/1/x/zafira-${farbe.toLowerCase()}-raum.jpg?v=1`, width: 2400, height: 1800, alt: null });
   const zafira = (titel, handle, typ, farben) => feedProdukt({
     title: titel, handle, product_type: typ, tags: [],
     options: [{ name: 'Farbe', position: 1, values: farben }],
-    images: farben.map(bild), variants: farben.map((f, i) => ({ id: i + 1, option1: f, price: '50.00', compare_at_price: null, available: true })),
+    images: farben.map((f, i) => ({ ...bild(f), variant_ids: [i + 1] })), variants: farben.map((f, i) => ({ id: i + 1, option1: f, price: '50.00', compare_at_price: null, available: true })),
   });
   const vorher = [zafira('Zafira Teppichboden 400cm', 'zafira-teppichboden', 'Teppichboden', ['Sand']), zafira('Zafira Teppich nach Maß', 'zafira-teppich-nach-mass', 'Teppich nach Maß', ['Sand'])];
   const opt = { preise: new Map(), nachfrage: new Map() };
-  await shopAbgleich(db, { ...opt, roh: vorher, jetzt: new Date('2026-09-01T05:00:00Z') });
+  await shopAbgleich(db, { ...opt, roh: vorher, jetzt: uhr });
   const nachher = vorher.map(p => zafira(p.title, p.handle, p.product_type, ['Sand', 'Rauchblau']));
-  const r = await shopAbgleich(db, { ...opt, roh: nachher, jetzt: new Date('2026-10-20T05:00:00Z') });
+  uhr = new Date('2026-10-20T05:00:00Z');
+  const r = await shopAbgleich(db, { ...opt, roh: nachher, jetzt: uhr });
   const farben = r.neu.filter(n => n.art === 'produkt_farben' && n.neueFarben);
   assert.equal(farben.length, 1, `nur ein Anlass "neue Farbe": ${JSON.stringify(r.neu)}`);
+  // Auch nach der Ruhezeit nicht: Rauchblau ist fuer Zafira angekuendigt, die andere Warengruppe kennt
+  // die Farbe ab jetzt (Pruefung 26.10.: ohne das kam die zweite Ankuendigung nach 46 Tagen doch).
+  for (const tage of [10, 46, 60]) {
+    uhr = new Date(Date.parse('2026-10-20T05:00:00Z') + tage * 864e5);
+    const spaeter = await shopAbgleich(db, { ...opt, roh: nachher, jetzt: uhr });
+    assert.deepEqual(spaeter.neu.filter(n => n.neueFarben), [], `Tag ${tage}: ${JSON.stringify(spaeter.neu)}`);
+  }
+  // Eine wirklich neue Farbe der anderen Warengruppe bleibt eine Neuigkeit.
+  const drei = nachher.map((p, i) => zafira(p.title, p.handle, p.product_type, i === 0 ? ['Sand', 'Rauchblau', 'Moos'] : ['Sand', 'Rauchblau']));
+  uhr = new Date(Date.parse('2026-10-20T05:00:00Z') + 61 * 864e5);
+  const moos = await shopAbgleich(db, { ...opt, roh: drei, jetzt: uhr });
+  assert.deepEqual(moos.neu.filter(n => n.neueFarben).map(n => n.handle), ['zafira-teppichboden']);
 });
 
 test('Ein Produkt-Reel je Produkt: geplante und wartende Reels zaehlen als belegt (Fjordia #133/#138)', () => {
