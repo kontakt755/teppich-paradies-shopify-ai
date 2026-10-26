@@ -36,9 +36,13 @@ function kanonisch(produkt, variante, produkte, musterSku = '') {
   // Massartikel haben keine eigene SKU; das Lexikon liefert dann alle Farben ihres Musters.
   // Die eine Zeile gilt nur, wenn Artikelnummer UND Farbe zur Variante passen. Artikelnummer:
   // belegtes einkauf.artikelnummer, sonst die Muster-SKU der Bestellposition ("M-" + Original-SKU).
+  // Sie passt zur Shop-SKU der Zeile oder zur Lieferanten-Artikelnummer ihrer Quellvariante -
+  // Lieferant und Shop schreiben dieselbe Nummer teils verschieden (_043 gegen _43).
   if (zeilen.length > 1 && !text(variante?.sku)) {
     const artikel = norm(variante?.einkauf?.artikelnummer) || norm(musterSku), farbe = norm(farbeOderAusfuehrung(variante));
-    zeilen = artikel && farbe ? zeilen.filter(z => norm(z.etikett.sku) === artikel && norm(z.etikett.farbe) === farbe) : [];
+    zeilen = artikel && farbe
+      ? zeilen.filter(z => (norm(z.etikett.sku) === artikel || norm(z.artikelnummer) === artikel) && norm(z.etikett.farbe) === farbe)
+      : [];
   }
   if (zeilen.length !== 1) return null;
   const zeile = zeilen[0];

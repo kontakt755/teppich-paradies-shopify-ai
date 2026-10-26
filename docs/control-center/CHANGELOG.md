@@ -2,6 +2,29 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Musteretiketten: Maßartikel auch über die Lieferanten-Artikelnummer (#1723)
+
+- **Geaendert:** Bestellung #1051 stand in der Packstation unter „Zu klären“, weil ein Muster als
+  „Originalzuordnung fehlt“ galt. Grund: Die Maßvariante trägt die Einkaufsnummer von Lieferant A
+  (`…_043`), die Shop-SKU des Teppichbodens schreibt dieselbe Nummer ohne führende Null (`…_43`).
+  Die Zuordnung verglich nur mit der Shop-SKU.
+  - `etikettenAusLexikon` gibt je Zeile zusätzlich `artikelnummer` mit, die Einkaufsnummer der
+    Quellvariante. Sie wird nicht gedruckt.
+  - Bei Maßartikeln passt eine Zeile jetzt, wenn die Artikelnummer der Maßvariante zur Shop-SKU
+    **oder** zu dieser Einkaufsnummer passt. Die Farbe muss weiterhin übereinstimmen.
+  - Keine SKU geändert, das Etikett zeigt weiter die Shop-SKU.
+- **Getestet:**
+  - Neuer Test in `bestellungs-musteretiketten.test.mjs`: Schreibweise `_043` gegen `_43` wird
+    zugeordnet. Gleiche Nummer bei anderer Farbe bleibt offen, ebenso passende Farbe mit fremder Nummer.
+  - Gegenprobe: Mit dem alten Code schlägt genau dieser Test fehl.
+  - `dashboard:test` 986/986.
+  - Datenkopie, alle 136 Musterzeilen: #1051 wird zugeordnet („Espresso (43) · TEPLORN04_43“), sonst
+    keine Änderung. Offen bleiben wie vorher 6 Zeilen aus #1005 bis #1008 (andere Ursache).
+  - Alle Maßartikel-Farben im Lexikon: 985 → 1023 zugeordnet. Das sind genau die 38 Farben von fünf
+    Linien von Lieferant A mit dieser Schreibweise.
+- **Risiken:** Keine neuen. Zwei passende Zeilen ergeben weiter „fehlt“ statt einer Auswahl.
+- **Nächste Stufe:** keine.
+
 ## 2026-10-26 · Packstation: vorbereitete und angefangene Umschläge stark sichtbar (#1720)
 
 - **Geaendert:** Inhaber zu einem vorbereiteten Umschlag, in dem schon ein Muster lag: „solche Sachen
