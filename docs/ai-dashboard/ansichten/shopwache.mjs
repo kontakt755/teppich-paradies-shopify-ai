@@ -32,7 +32,7 @@ export function viewShopwache() {
   const tailscale = ts ? `<p class="notice warn" role="status"><b>${esc(ts.titel)}.</b> ${esc(ts.handlung)}</p>` : '';
   // Freier Speicher am Mac mini - ebenfalls nur, wenn er knapp wird.
   const sp = speicherHinweis(d?.speicher);
-  const speicher = sp ? `<p class="notice ${sp.ton === 'crit' ? 'crit' : 'warn'}" role="status"><b>${esc(sp.titel)}:</b> ${esc(sp.text)}. ${esc(sp.handlung)}</p>` : '';
+  const speicher = sp ? `<p class="notice ${sp.ton === 'crit' ? 'crit' : 'warn'}" role="status" style="margin:0 0 12px"><b>${esc(sp.titel)}:</b> ${esc(sp.text)}. ${esc(sp.handlung)}</p>` : '';
   if (!d || !d.verfuegbar) {
     return kopf + tailscale + emptyState('Die Shop-Kontrolle ist noch nie gelaufen.', `Auf dem Mac starten: ${d?.befehl || 'npm run shop:wache'}`);
   }
