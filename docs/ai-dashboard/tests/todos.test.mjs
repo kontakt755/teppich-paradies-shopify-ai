@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, tonNachAlter, alterText, tageSeit,
-  tailscaleHinweis,
+  tailscaleHinweis, speicherHinweis,
 } from '../lib/todos.mjs';
 
 // Nur erfundene Daten: Testkunden und Lieferanten-Pseudonyme.
@@ -345,6 +345,25 @@ test('Tailscale gestoppt oder abgemeldet: ein To-do in der Website-Sicht, sonst 
   // Im Laden zaehlt es nicht - die Website-Zahl des Inhabers schon.
   assert.deepEqual(leiteTodosAb({ shopwache: { tailscale: { status: 'gestoppt' } } }, { sicht: 'laden', jetzt: JETZT }), []);
   assert.equal(zaehleTodos({ shopwache: { tailscale: { status: 'gestoppt' } } }, { jetzt: JETZT }).website, 1);
+});
+
+test('Speicher am Mac mini: gelb und rot werden ein Website-To-do, gruen und unbekannt nichts', () => {
+  const stand = (ampel, freiGiB, belegtProzent) => ({ ampel, freiGiB, belegtProzent, gemessenAm: JETZT.toISOString() });
+  const gelb = leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: JETZT.toISOString(), befunde: [], speicher: stand('gelb', 23, 95) } }, { sicht: 'website', jetzt: JETZT });
+  assert.equal(gelb.length, 1);
+  assert.equal(gelb[0].id, 'speicher');
+  assert.equal(gelb[0].ton, 'warn');
+  assert.match(gelb[0].titel, /Speicher wird knapp/);
+  assert.match(gelb[0].kontext, /nur noch 23 GiB frei \(95 % belegt\)/);
+  const rot = leiteTodosAb({ shopwache: { verfuegbar: false, speicher: stand('rot', 12, 97) } }, { sicht: 'website', jetzt: JETZT });
+  assert.equal(rot[0].ton, 'crit');
+  assert.match(rot[0].titel, /fast voll/);
+  for (const s of [stand('gruen', 120, 74), { ampel: 'unbekannt', freiGiB: null }, null]) {
+    assert.deepEqual(leiteTodosAb({ shopwache: { verfuegbar: false, speicher: s } }, { sicht: 'website', jetzt: JETZT }), []);
+    assert.equal(speicherHinweis(s), null);
+  }
+  // Im Laden zaehlt es nicht.
+  assert.deepEqual(leiteTodosAb({ shopwache: { speicher: stand('rot', 12, 97) } }, { sicht: 'laden', jetzt: JETZT }), []);
 });
 
 test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden ein Website-To-do', () => {

@@ -42,8 +42,8 @@ function uploadKarte() {
         <div>
           <div class="t">${esc(z.name)}</div>
           ${z.link
-            ? `<div class="m social-link mono">${esc(z.link)}</div>`
-            : `<div class="m">Gültig seit ${esc(datum(z.seit))}. Der Link wurde nur beim Anlegen angezeigt –
+            ? `<div class="m social-link mono">${esc(z.link)}</div>${z.bis ? `<div class="m">Gültig bis ${esc(datum(z.bis))} – danach einen neuen Link anlegen.</div>` : ''}`
+            : `<div class="m">Gültig seit ${esc(datum(z.seit))}${z.bis ? ` bis ${esc(datum(z.bis))}` : ''}. Der Link wurde nur beim Anlegen angezeigt –
                 für einen kopierbaren Link einmal „Neuen Link anlegen“. Der alte bleibt gültig.</div>`}
         </div>
         <div class="r">${z.link ? `<button type="button" class="btn btn-sm btn-primary" data-kopiertext="${esc(z.link)}">Kopieren</button>` : ''}

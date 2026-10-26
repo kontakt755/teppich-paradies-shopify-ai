@@ -15,6 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { lies, schreib, dateiPfad, haltePruefungFest, privatDir, erzeugeWiederholungen } from '../lib/organisation-speicher.mjs';
 import { pruefeAufgabe, pruefbar } from '../lib/aufgaben-waechter.mjs';
+import { mitZeitstempel } from '../lib/zeitstempel.mjs';
 
 export function argumente(argv) {
   const a = { id: null, basis: 'https://www.teppich-paradies.net', hilfe: false };
@@ -65,14 +66,16 @@ export async function laufe({ datei = dateiPfad(privatDir()), id = null, basis, 
 async function main() {
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) { console.log('npm run aufgaben:pruefen -- [--id <id>] [--basis <url>]'); return; }
+  // Uhrzeit vor jeder Zeile: launchd schreibt die Ausgabe ohne Datum ins Log.
+  const protokoll = mitZeitstempel(console);
   const r = await laufe({ id: a.id, basis: a.basis });
-  console.log(`Aufgabenwächter: ${r.geprueft} geprüft · ${r.erfuellt} erfüllt · ${r.offen} offen · ${r.unklar} unklar${r.wiederholt ? ` · ${r.wiederholt} Wiederholung(en) neu angelegt` : ''}`);
+  protokoll.log(`Aufgabenwächter: ${r.geprueft} geprüft · ${r.erfuellt} erfüllt · ${r.offen} offen · ${r.unklar} unklar${r.wiederholt ? ` · ${r.wiederholt} Wiederholung(en) neu angelegt` : ''}`);
   for (const e of r.ergebnisse) {
-    console.log(`  [${e.erfuellt === true ? 'erfüllt' : e.erfuellt === false ? 'offen' : 'unklar'}] ${e.titel} (${e.vorher} → ${e.nachher}) · ${e.begruendung}`);
+    protokoll.log(`  [${e.erfuellt === true ? 'erfüllt' : e.erfuellt === false ? 'offen' : 'unklar'}] ${e.titel} (${e.vorher} → ${e.nachher}) · ${e.begruendung}`);
   }
-  if (!r.geprueft) console.log('  (keine Aufgabe mit maschinell prüfbarer Vorgabe)');
+  if (!r.geprueft) protokoll.log('  (keine Aufgabe mit maschinell prüfbarer Vorgabe)');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch(err => { console.error(`Fehler: ${err.message}`); process.exit(1); });
+  main().catch(err => { mitZeitstempel(console).error(`Fehler: ${err.message}`); process.exit(1); });
 }

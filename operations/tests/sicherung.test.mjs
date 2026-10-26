@@ -4,8 +4,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { sichern, alteSicherungenAufraeumen, vorhandeneQuellen, SICHERUNGSPFADE } from '../scripts/sicherung.mjs';
+import { fileURLToPath } from 'node:url';
+import { sichern, alteSicherungenAufraeumen, vorhandeneQuellen, SICHERUNGSPFADE, NICHT_GESICHERT, kopieAblegen, kopieVermerken, parseArgs } from '../scripts/sicherung.mjs';
 import { betriebszustand } from '../lib/betriebszustand.mjs';
+import { oeffne } from '../../social/lib/db.mjs';
+import { sichereDatenbank } from '../../social/lib/ablauf.mjs';
+import { liesHighlightStand, schreibeHighlightStand } from '../../social/lib/highlights.mjs';
 
 function tmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'tp-sicherung-'));
@@ -146,4 +150,195 @@ test('alteSicherungenAufraeumen: leeres/fehlendes Zielverzeichnis ist kein Fehle
   const ziel = path.join(tmpDir(), 'existiert-nicht');
   const { geloescht } = alteSicherungenAufraeumen({ ziel, jetzt: new Date() });
   assert.deepEqual(geloescht, []);
+});
+
+// -- Vollstaendigkeit: jede lokale Ablage ist entschieden ---------------------
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+/**
+ * Sucht im Code nach path.join(<privater Ordner>, '<teil>', ...) und liefert die relativen Pfade.
+ * Grob, aber genug fuer den haeufigsten Fall: wer eine neue Ablage anlegt, schreibt sie so.
+ * Basis "dir": massgeblich ist die letzte Zuweisung `const dir = ...` davor im selben File -
+ * mit socialDir ist es der Ordner social/, mit privatDir die Wurzel, sonst unbekannt (uebersprungen).
+ */
+function ablagenImCode() {
+  const mjs = (ordner, prefix) => fs.readdirSync(path.join(REPO, ordner)).filter(n => n.endsWith('.mjs')).map(n => [`${ordner}/${n}`, prefix]);
+  const quellen = [
+    ...mjs('operations/lib', ''),
+    ...mjs('social/lib', 'social/'),
+    // Auch die Skripte legen Ablagen an (Bestandsabgleich, Anreicherung, Feed ...). Dort ist ein
+    // `dir` ohne Zuweisung meist ein Parameter mit unbekanntem Ziel: null = ueberspringen.
+    ...mjs('operations/scripts', null),
+    ...mjs('social/scripts', null),
+    ...mjs('scripts', null),
+  ];
+  const aufruf = /path\.join\(\s*([^,()]+(?:\(\))?)\s*,\s*((?:'[^'\n]+'\s*,\s*)*'[^'\n]+')\s*\)/g;
+  const gefunden = new Map();
+  for (const [datei, standardPrefix] of quellen) {
+    const text = fs.readFileSync(path.join(REPO, datei), 'utf8');
+    for (const m of text.matchAll(aufruf)) {
+      const basis = m[1].trim();
+      const teile = [...m[2].matchAll(/'([^']+)'/g)].map(x => x[1]);
+      let prefix;
+      if (/homedir/.test(basis)) {
+        // path.join(os.homedir(), 'teppich-paradies-analyse', '<ablage>', ...)
+        if (teile[0] !== 'teppich-paradies-analyse' || teile.length < 2) continue;
+        teile.shift();
+        prefix = '';
+      } else if (/privat/i.test(basis)) prefix = '';
+      else if (/socialDir/.test(basis)) prefix = 'social/';
+      else if (basis === 'dir') {
+        const zuweisungen = [...text.slice(0, m.index).matchAll(/(?:const|let)\s+dir\s*=\s*([^;\n]+)/g)];
+        const zuletzt = zuweisungen.at(-1)?.[1] ?? null;
+        if (zuletzt === null) prefix = standardPrefix;
+        else if (/socialDir/.test(zuletzt)) prefix = 'social/';
+        else if (/privat/i.test(zuletzt)) prefix = '';
+        else continue;
+        if (prefix === null) continue;
+      } else continue;
+      const rel = prefix + teile.join('/');
+      if (rel === 'teppich-paradies-analyse' || rel === 'social/') continue; // der Standardordner selbst
+      if (!gefunden.has(rel)) gefunden.set(rel, datei);
+    }
+  }
+  return gefunden;
+}
+
+/** Gehoert `rel` zu einem Eintrag der Liste - gleich, darin, oder ein Ordner, der einen Eintrag enthaelt? */
+function entschieden(rel, liste) {
+  return liste.some(p => rel === p || rel.startsWith(`${p}/`) || p.startsWith(`${rel}/`));
+}
+
+test('jede lokale Ablage im Code ist gesichert oder bewusst ausgelassen (mit Grund)', () => {
+  const ablagen = ablagenImCode();
+  assert.ok(ablagen.size >= 20, `Suche findet zu wenig (${ablagen.size}) - Muster im Test pruefen`);
+  const liste = [...SICHERUNGSPFADE, ...Object.keys(NICHT_GESICHERT)];
+  const offen = [...ablagen].filter(([rel]) => !entschieden(rel, liste)).map(([rel, datei]) => `${rel} (${datei})`);
+  assert.deepEqual(offen, [], 'Neue lokale Ablage: in SICHERUNGSPFADE oder NICHT_GESICHERT (operations/scripts/sicherung.mjs) eintragen');
+});
+
+test('die Listen widersprechen sich nicht, jede Ausnahme hat einen Grund, Zugaenge bleiben draussen', () => {
+  for (const [rel, grund] of Object.entries(NICHT_GESICHERT)) {
+    assert.ok(grund && grund.length > 5, `${rel}: Grund fehlt`);
+    assert.ok(!SICHERUNGSPFADE.includes(rel), `${rel} steht in beiden Listen`);
+  }
+  for (const zugang of ['nachfassen/postfach.json', 'benutzer.json', 'dashboard-passwort.txt', 'social/zugang.env', 'social/upload-links.json']) {
+    assert.ok(!SICHERUNGSPFADE.some(p => zugang === p || zugang.startsWith(`${p}/`)), `${zugang} darf nicht ins Archiv`);
+  }
+  // Die Dateien, die steuern, wer automatisch angeschrieben wird (Befund 26.10.2026).
+  for (const rel of ['nachfassen/versand.json', 'nachfassen/stoppliste.json', 'muster-bestellung', 'protokoll.jsonl', 'auslauf/status.json']) {
+    assert.ok(SICHERUNGSPFADE.includes(rel), `${rel} fehlt in der Sicherung`);
+  }
+});
+
+test('Stoppliste und Versandprotokoll kommen ins Archiv, der Postfach-Zugang daneben nicht', () => {
+  const dir = beispielPrivatDir();
+  fs.mkdirSync(path.join(dir, 'nachfassen'));
+  fs.writeFileSync(path.join(dir, 'nachfassen', 'versand.json'), JSON.stringify({ gesendet: [{ order: '#T1' }] }));
+  fs.writeFileSync(path.join(dir, 'nachfassen', 'stoppliste.json'), JSON.stringify({ kunden: ['kunde@example.invalid'] }));
+  fs.writeFileSync(path.join(dir, 'nachfassen', 'postfach.json'), JSON.stringify({ passwort: 'test-platzhalter' }));
+  fs.mkdirSync(path.join(dir, 'muster-bestellung'));
+  fs.writeFileSync(path.join(dir, 'muster-bestellung', 'versand.json'), '{"version":1,"sendungen":[]}');
+  const { archiv } = sichern({ privatDir: dir, jetzt: new Date('2026-10-26T21:30:00Z') });
+  const liste = execFileSync('tar', ['-tzf', archiv], { encoding: 'utf8' }).split('\n');
+  assert.ok(liste.includes('nachfassen/versand.json'));
+  assert.ok(liste.includes('nachfassen/stoppliste.json'));
+  assert.ok(liste.some(e => e.startsWith('muster-bestellung/')));
+  assert.ok(!liste.some(e => e.includes('postfach')), 'Zugangsdaten bleiben draussen');
+});
+
+test('--kopie legt das fertige Archiv zusaetzlich ab; fehlendes Ziel wird nie angelegt', () => {
+  const dir = beispielPrivatDir();
+  const { archiv } = sichern({ privatDir: dir, jetzt: new Date('2026-10-26T21:30:00Z') });
+  const extern = tmpDir();
+  const k = kopieAblegen(archiv, extern);
+  assert.equal(k.ziel, path.join(extern, '2026-10-26.tar.gz'));
+  assert.deepEqual(fs.readFileSync(k.ziel), fs.readFileSync(archiv));
+  assert.equal(fs.statSync(k.ziel).mode & 0o777, 0o600);
+  assert.ok(!fs.readdirSync(extern).some(n => n.endsWith('.tmp')));
+
+  const nichtAngesteckt = path.join(tmpDir(), 'Volumes', 'TP-Sicherung');
+  assert.throws(() => kopieAblegen(archiv, nichtAngesteckt), /nicht erreichbar/);
+  assert.ok(!fs.existsSync(nichtAngesteckt), 'ein fehlendes Ziel wird nicht angelegt');
+  assert.throws(() => kopieAblegen(archiv, path.dirname(archiv)), /derselbe Ordner/);
+
+  kopieVermerken(dir, { ziel: extern, ok: false, am: '2026-10-26T21:30:00.000Z', fehler: 'Platte fehlt' });
+  const beleg = JSON.parse(fs.readFileSync(path.join(dir, 'sicherungsstand.json'), 'utf8'));
+  assert.equal(beleg.letzterErfolg, '2026-10-26T21:30:00.000Z', 'der Beleg der Sicherung bleibt');
+  assert.equal(beleg.kopie.fehler, 'Platte fehlt');
+});
+
+test('Kopie-Ziel kommt aus --kopie oder TP_SICHERUNG_KOPIE', () => {
+  assert.equal(parseArgs([], {}).kopie, null);
+  assert.equal(parseArgs([], { TP_SICHERUNG_KOPIE: '/Volumes/X/tp' }).kopie, '/Volumes/X/tp');
+  assert.equal(parseArgs(['--kopie', '/Volumes/Y/tp'], { TP_SICHERUNG_KOPIE: '/Volumes/X/tp' }).kopie, '/Volumes/Y/tp');
+});
+
+test('Plists der Mac-Dienste kommen mit ins Archiv, solche mit Zugangsdaten nicht', () => {
+  const dir = beispielPrivatDir();
+  const agents = tmpDir();
+  const plist = (env = '') => `<?xml version="1.0"?><plist version="1.0"><dict><key>Label</key><string>x</string>${env}</dict></plist>`;
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.shopwache.plist'), plist());
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.dashboard.plist'), plist('<key>EnvironmentVariables</key><dict><key>TP_DASHBOARD_HOST</key><string>0.0.0.0</string></dict>'));
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.geheim.plist'), plist('<key>EnvironmentVariables</key><dict><key>SHOPIFY_ADMIN_TOKEN</key><string>test-platzhalter</string></dict>'));
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.dashboard.plist.sicherung-20260925'), 'alt');
+  fs.writeFileSync(path.join(agents, 'com.fremd.dienst.plist'), plist());
+  const r = sichern({ privatDir: dir, jetzt: new Date('2026-10-26T21:30:00Z'), launchAgentsDir: agents });
+  assert.deepEqual(r.dienste, { kopiert: ['net.teppich-paradies.dashboard.plist', 'net.teppich-paradies.shopwache.plist'], ausgelassen: ['net.teppich-paradies.geheim.plist'] });
+  const liste = execFileSync('tar', ['-tzf', r.archiv], { encoding: 'utf8' }).split('\n');
+  assert.ok(liste.includes('dienste/net.teppich-paradies.shopwache.plist'));
+  assert.ok(!liste.some(e => e.includes('geheim') || e.includes('fremd')));
+  assert.equal(fs.statSync(path.join(dir, 'dienste', 'net.teppich-paradies.dashboard.plist')).mode & 0o777, 0o600);
+  // Ohne Ordner (Tests, anderer Rechner) passiert nichts.
+  assert.deepEqual(sichern({ privatDir: beispielPrivatDir(), jetzt: new Date('2026-10-26T21:30:00Z') }).dienste, { kopiert: [], ausgelassen: [] });
+});
+
+test('ein falscher Datenordner wird auch mit Dienst-Plists nicht zur Sicherung', () => {
+  const leer = tmpDir();
+  const agents = tmpDir();
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.shopwache.plist'), '<plist/>');
+  assert.throws(() => sichern({ privatDir: leer, launchAgentsDir: agents }), /Keine Betriebsdaten/);
+  assert.ok(!fs.existsSync(path.join(leer, 'dienste')));
+});
+
+// -- Wiederherstellen: die Befehle im README tun, was sie sagen ---------------
+
+/** Der Befehlsblock unter Schritt 3 "Daten zurueckspielen" in operations/README.md, so wie er dasteht. */
+function zurueckspielBlock() {
+  const readme = fs.readFileSync(path.join(REPO, 'operations', 'README.md'), 'utf8');
+  const abschnitt = readme.slice(readme.indexOf('### Wiederherstellen nach einem Ausfall'));
+  const schritt = abschnitt.slice(abschnitt.indexOf('3. **Daten zurueckspielen.**'));
+  const block = /```\n([\s\S]*?)\n\s*```/.exec(schritt);
+  assert.ok(block, 'Befehlsblock unter Schritt 3 nicht gefunden');
+  return block[1].split('\n').map(z => z.trim()).join('\n');
+}
+
+test('Wiederherstellen nach README: Social-Datenbank und Highlight-Stand kommen zurueck', () => {
+  // Alter Mac: eine Baustelle in der Datenbank, ihr taeglicher Abzug, die von Hand gezaehlten Highlights.
+  const alt = beispielPrivatDir();
+  const social = path.join(alt, 'social');
+  const db = oeffne(path.join(social, 'social.db'));
+  db.inhaltAnlegen({ quelle: 'baustelle', typ: 'kundenprojekt', titel: 'Testbaustelle', einwilligung: true });
+  sichereDatenbank(db, { dir: social });
+  db.schliessen();
+  schreibeHighlightStand({ Verlegung: 3 }, { dir: social, einsortiert: [7], jetzt: new Date('2026-10-20T10:00:00Z') });
+  const { archiv } = sichern({ privatDir: alt, jetzt: new Date('2026-10-26T21:30:00Z') });
+
+  // Neuer Mac: leeres Home, die Befehle aus dem README unveraendert - nur der Archivname ist eingesetzt.
+  const home = tmpDir();
+  const block = zurueckspielBlock().replaceAll('<datum>.tar.gz', archiv);
+  const ausgabe = execFileSync('bash', ['-e', '-c', block], { env: { ...process.env, HOME: home }, encoding: 'utf8' });
+  const neu = path.join(home, 'teppich-paradies-analyse', 'social');
+  // Der Social-Dienst oeffnet social.db (social/lib/pfade.mjs, dbPfad) - dort muss der Abzug stehen.
+  const wieder = oeffne(path.join(neu, 'social.db'));
+  try {
+    assert.deepEqual(wieder.inhalte().map(i => i.titel), ['Testbaustelle'], 'der Dienst findet die alten Inhalte');
+  } finally { wieder.schliessen(); }
+  assert.equal(fs.statSync(path.join(neu, 'social.db')).mode & 0o777, 0o600);
+  assert.match(ausgabe, /^inhalt 1$/m, 'die Pruefzeile im README zeigt die Inhalte');
+  // Die Bereichszahlen traegt die Redaktion von Hand ein, die einsortierten Storys auch (social/lib/highlights.mjs).
+  const stand = liesHighlightStand(neu);
+  assert.equal(stand?.bereiche?.Verlegung, 3, 'die Highlight-Zaehlung kommt zurueck');
+  assert.deepEqual(stand.einsortiert, [7]);
 });

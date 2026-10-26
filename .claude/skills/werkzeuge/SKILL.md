@@ -57,3 +57,9 @@ und `npm ci` - sonst fehlt der passende Browser, und Social-Rendering,
 `dashboard:pruefen` und `auslauf:pruefen` scheitern erst im Betrieb.
 `npm install-scripts ls` zeigt, was noch ungeprueft ist. Danach
 `npm run -s pruefen` (startet auch den Browsertest der Betriebssuite).
+
+Fehlen Bibliotheken (leeres `node_modules`, frischer Worktree), brechen
+`qa:unit:test` und `operations:test` sofort mit „FEHLER: Bibliotheken fehlen …“
+und dem Befehl `npm ci` ab (`scripts/abhaengigkeiten.mjs`), statt dutzende
+rote Tests zu zeigen. `dashboard:pruefen` nimmt puppeteer dann ersatzweise aus
+dem Dienst-Checkout `~/tp-dashboard` (`scripts/puppeteer-laden.mjs`) und sagt das.

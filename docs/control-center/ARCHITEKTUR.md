@@ -233,7 +233,9 @@ Dashboard ist dann unter `https://<name>.ts.net` erreichbar, auch am Handy über
 
 **Grenze.** Geht der Mac mini aus oder ist das Internet im Laden weg, ist das Dashboard weg – die Daten
 liegen dort und nirgendwo sonst. Das ist gewollt (keine Kundendaten in fremder Hand), aber es heißt: der
-Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz.
+Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz. Was nach einem Neustart zu prüfen ist, wie
+man aus dem Tagesarchiv wiederherstellt und wie es ohne den Mac mini weitergeht, steht in
+`operations/README.md`, Abschnitt „Ausfall des Mac mini“.
 
 **Wache (seit 2026-10-12).** Ist Tailscale am Mac mini gestoppt oder abgemeldet, merkt das im Laden
 niemand. Der Server fragt deshalb mit der Shop-Wache (`GET /api/shopwache/status`, Feld `tailscale`)
@@ -752,6 +754,7 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Team-Aufgabe | `/api/org/liste?bereich=alle-aufgaben` | Dringlichkeit „überfällig" (rot) oder „jetzt" (gelb), nicht wartend/zurückgestellt |
 | Freigabe | Entwicklungsaufgaben (`issues.json`) | Status Freigabe oder Review durch Mensch; nur Inhaber |
 | Shop-Wache | `/api/shopwache/status` | Ampel gelb/rot; nur Inhaber |
+| Speicher am Mac mini | `/api/shopwache/status`, Feld `speicher` | gelb unter 40 GiB frei, rot unter 20 GiB (`operations/lib/speicher.mjs`, stündlich von der Shop-Wache gemessen); nur Inhaber, Website-Sicht (seit 2026-10-26) |
 | Neue Service-Anfrage | `/api/kunden/serviceanfragen` | Status „neu“; gelb ab 1, rot ab 3 Tagen (seit 2026-10-19) |
 | Storno vom Lieferanten | `/api/einkauf/belege` | Storno-Beleg zu einer Shop-Bestellung, nicht erledigt; immer rot (§ 25) |
 | Lieferschein da – Ware angekommen? | `/api/einkauf/belege` | Lieferschein, bei uns noch „bestellt“; gelb (§ 25) |
