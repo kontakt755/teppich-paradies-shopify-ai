@@ -47,4 +47,6 @@ test('Konfigurator tauscht die Zeile bei Herstellermustern', () => {
   assert.match(js, /function showHerstellerHinweis\(\)/);
   assert.match(js, /showVinylLimit\(\);\s*showHerstellerHinweis\(\);/);
   assert.match(js, /core\.isHerstellerMuster\(product\)/);
+  // Ohne Musterweg (Laminat, Parkett, Kork, ohne-muster) keine Zeile zu Groesse und Versand
+  assert.match(js, /if \(!core\.canSample\(product\)\) \{\s*loadingEl\.hidden = true;[\s\S]{0,200}?querySelector\('\[data-sample-info\]'\);\s*if \(infoEl\) infoEl\.hidden = true;/);
 });

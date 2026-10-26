@@ -380,6 +380,10 @@
       product = results[0];
       if (!core.canSample(product)) {
         loadingEl.hidden = true;
+        // Kein Muster ueber diese Seite: die Zeile "Muster ca. A5 ..." passt
+        // dann nicht zum Hinweis darunter (Laminat, Parkett, Kork, ohne Muster).
+        var infoEl = root.querySelector('[data-sample-info]');
+        if (infoEl) infoEl.hidden = true;
         if (musterAufAnfrage(product)) {
           // Laminat, Parkett, Kork: kostenlos, aber nur auf Anfrage
           // (Inhaber 14.10.2026, blocks/tp-muster-cta). Alte Links landen hier.
