@@ -9,6 +9,7 @@
  * "Nach Partnerladen" (mp=laden): Wareneingang sortieren - je Laden alle noch nicht eingelegten
  * Muster mit Ziel-Umschlag.
  * Porto und Versandbuchung folgen, wenn der Versandweg entschieden ist.
+ * Oben steht fuer den Packer, welche Herstelleretiketten abkommen (PACKER_INFO).
  */
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast } from '../../kern/helfer.mjs';
@@ -40,6 +41,9 @@ function bindePackOffen() {
 }
 
 const ENDPOINT = '/api/kunden/muster-packen';
+
+// Info fuer den Packer (Inhaber 26.10.2026): Herstelleretiketten kommen ab, nur Vorwerk und JAB behalten ihres.
+const PACKER_INFO = '<p class="notice mp-packer-info"><strong>Wichtig beim Packen:</strong> Herstelleretiketten von den Mustern entfernen – außer bei Vorwerk und JAB. Dort bleibt das Herstelleretikett dran.</p>';
 
 export function ensureMusterPacken() {
   if (kunden.musterPacken || kunden.loadingMusterPacken) return;
@@ -189,7 +193,7 @@ export function viewKundenMusterPacken() {
     </div>`;
   const fehlerHinweis = packFehlerHtml(d);
   if (modus === 'laden') return umschalter + fehlerHinweis + viewNachLaden(d);
-  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du Muster je Umschlag: Farbe prüfen, Aufkleber drucken und eingelegte Muster abhaken. Gepackt ist noch nicht versandt.</p>`;
+  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du Muster je Umschlag: Farbe prüfen, Aufkleber drucken und eingelegte Muster abhaken. Gepackt ist noch nicht versandt.</p>${PACKER_INFO}`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const suche = (state.route.params.get('mpq') || '').trim();

@@ -80,3 +80,11 @@ test('gebuendelter Umschlag verlinkt jede Bestellung und behaelt gewaehlten Part
   const waren = ansicht('tab=muster&mp=laden&laden=Partner%20A', [{ ...kunde(6, 'warten'), muster: [{ ...kunde(6, 'warten').muster[0], lieferant: 'Partner A' }] }]);
   assert.match(waren, /umschlag=order6&amp;laden=Partner%20A/);
 });
+
+test('Packer-Info: Herstelleretiketten ab, ausser bei Vorwerk und JAB (Inhaber 26.10.)', () => {
+  for (const query of ['tab=muster', 'tab=muster&mpbereich=gepackt']) {
+    const html = ansicht(query, [kunde(1, 'packen'), kunde(2, 'gepackt')]);
+    assert.match(html, /<p class="notice mp-packer-info"><strong>Wichtig beim Packen:<\/strong> Herstelleretiketten von den Mustern entfernen – außer bei Vorwerk und JAB\. Dort bleibt das Herstelleretikett dran\.<\/p>/);
+    assert.equal((html.match(/mp-packer-info/g) || []).length, 1, 'genau einmal, nicht je Umschlag');
+  }
+});
