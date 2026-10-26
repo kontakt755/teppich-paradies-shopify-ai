@@ -1,0 +1,42 @@
+{%- doc -%}
+  Mass aus der Adresse (?breite=&laenge=, gesetzt vom Querverweis
+  snippets/tp-mass-querverweise.liquid) an die Produktlinks dieser Kollektion
+  weitergeben. Der Konfigurator der Produktseite liest genau diese Parameter
+  (assets/tp-einfass-konfigurator.js, massAusUrl) und zeigt sofort den
+  Endpreis. Ohne gueltiges Mass in der Adresse passiert nichts.
+
+  Ausgabe nur auf Mass-Kollektionen (sections/main-collection.liquid). Die
+  Weitergabe haengt am Klick, damit auch nachgeladene Karten sie bekommen.
+{%- enddoc -%}
+<span hidden data-tp-mass-weitergabe></span>
+
+{% javascript %}
+  (function () {
+    function start() {
+      if (!document.querySelector('[data-tp-mass-weitergabe]')) return;
+      var sp = new URLSearchParams(window.location.search);
+      var breite = sp.get('breite');
+      var laenge = sp.get('laenge');
+      var gueltig = /^\d{2,4}$/;
+      if (!gueltig.test(breite || '') || !gueltig.test(laenge || '')) return;
+      function setzen(link) {
+        var ziel = new URL(link.href, window.location.href);
+        if (ziel.origin !== window.location.origin) return;
+        ziel.searchParams.set('breite', breite);
+        ziel.searchParams.set('laenge', laenge);
+        link.href = ziel.toString();
+      }
+      // Erfassungsphase: vor assets/product-card.js, das bei Klicks neben einen
+      // Link selbst zur Adresse des Kartenlinks navigiert.
+      document.addEventListener('click', function (event) {
+        if (!(event.target instanceof Element)) return;
+        var link = event.target.closest('a[href*="/products/"]');
+        var karte = event.target.closest('product-card');
+        if (link) setzen(link);
+        if (karte) Array.prototype.forEach.call(karte.querySelectorAll('a[href*="/products/"]'), setzen);
+      }, true);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  })();
+{% endjavascript %}

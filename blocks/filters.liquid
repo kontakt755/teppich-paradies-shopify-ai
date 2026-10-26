@@ -5,6 +5,7 @@
   @param {object} results - The search results object
   @param {number} results_size - The number of products in the search results
   @param {object} [filters] - The filters object
+  @param {boolean} [tp_unsicher] - Suche: kein Treffer traegt den Suchbegriff (sections/search-results.liquid), dann keine Trefferzahl
 {%- enddoc -%}
 
 <script
@@ -35,6 +36,18 @@
   # (Pruefung custom.qm_pro_paket, Audit 13.10.2026). Alle anderen Filter
   # bleiben unveraendert.
   assign tp_preisfilter_aus = 'vinylboden-1,vinylboden-klickvinyl,vinylboden-klebevinyl,vinylboden-fischgraet,angebote-vinylboden,auslauf-vinylboden,jab-anstoetz-designboden,laminat,parkett,korkboden,korkboden-klick,korkboden-kleben,kautschukboden,teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen,teppichboden-buero-gewerbe,angebote-teppichboden,angebote,teppich-nach-mass,marken-teppiche-nach-mass,vorwerk-teppiche-nach-mass,jab-anstoetz-teppiche-nach-mass' | split: ','
+  assign tp_preisfilter_versteckt = false
+  if tp_preisfilter_aus contains collection.handle
+    assign tp_preisfilter_versteckt = true
+  endif
+  # Teppiche und Laeufer nach Mass: der Variantenpreis gilt je 0,01 m2 bzw.
+  # je cm Laenge, der Filter bot "hoechster Preis 1,76 EUR" an und fand bei
+  # echten Preisen nichts (Rundgang 2026-10-26: Sisal & Kokos, Laeufer,
+  # Designteppiche, Auslauf). Neue Mass-Kollektionen fallen ueber Handle oder
+  # Titel von selbst heraus, ohne Eintrag in der Liste oben.
+  if collection.handle contains 'nach-mass' or collection.title contains 'nach Maß'
+    assign tp_preisfilter_versteckt = true
+  endif
   assign tp_teppich_unterkategorie = false
   assign tp_kollektions_praefix = collection.handle | split: '-' | first
   if request.page_type == 'collection' and tp_kollektions_praefix == 'teppichboden' and collection.handle != 'teppichboden'
@@ -162,7 +175,13 @@
         data-testid="products-count"
       >
         <span role="status">
-          {% if request.page_type == 'search' %}
+          {% if request.page_type == 'search' and tp_unsicher %}
+            {%- comment -%}
+              Shopifys semantische Suche meldet fast immer rund 1.000 Treffer. Traegt
+              keiner den Suchbegriff (Hinweis darueber), waere die Zahl irrefuehrend.
+            {%- endcomment -%}
+            Passende Vorschläge
+          {% elsif request.page_type == 'search' %}
             {{- results.results_count }} Suchtreffer
           {% elsif products_count > 25000 %}
             {{- 'content.item_count_cutoff' | t: count: 25000 -}}
@@ -258,7 +277,7 @@
                   {% case filter.type %}
                     {% when 'price_range' %}
                       {%- comment -%}
-                        Liste tp_preisfilter_aus oben. Preisfilter blendet fuer die Vinylboden-Collection
+                        Liste tp_preisfilter_aus und Mass-Regel oben (tp_preisfilter_versteckt). Preisfilter blendet fuer die Vinylboden-Collection
                         bewusst aus: Shopifys nativer Preisfilter filtert nach
                         dem tatsaechlichen Varianten-/Paketpreis, waehrend die
                         Karten hier den €/m²-Preis zeigen (Einheiten-Mismatch,
@@ -270,7 +289,7 @@
                         "hoechster Preis 3,05 EUR" an (2026-10-12). Alle
                         anderen Filter bleiben unveraendert.
                       {%- endcomment -%}
-                      {%- unless request.page_type == 'search' or tp_preisfilter_aus contains collection.handle -%}
+                      {%- unless request.page_type == 'search' or tp_preisfilter_versteckt -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -365,7 +384,9 @@
                 data-testid="products-count"
               >
                 <span role="status">
-                  {% if request.page_type == 'search' %}
+                  {% if request.page_type == 'search' and tp_unsicher %}
+                    Passende Vorschläge
+                  {% elsif request.page_type == 'search' %}
                     {{- results.results_count }} Suchtreffer
                   {% elsif products_count > 25000 %}
                     {{- 'content.item_count_cutoff' | t: count: 25000 -}}
@@ -572,7 +593,7 @@
                 {%- for filter in filters -%}
                   {% case filter.type %}
                     {% when 'price_range' %}
-                      {%- unless request.page_type == 'search' or tp_preisfilter_aus contains collection.handle -%}
+                      {%- unless request.page_type == 'search' or tp_preisfilter_versteckt -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -603,8 +624,9 @@
                           render 'tp-filter-sichtbar', filter: filter
                         endcapture
 
+                        # Farbnamen auch im Filterfenster am Handy (show_swatch_label), nicht nur in der Leiste
                         unless tp_filter_aus contains 'nein'
-                          render 'list-filter', filter: filter, filter_style: 'vertical', active_value_count: active_value_count, should_render_clear: false, in_drawer: true, sectionId: section.id
+                          render 'list-filter', filter: filter, filter_style: 'vertical', active_value_count: active_value_count, should_render_clear: false, show_swatch_label: block_settings.show_swatch_label, in_drawer: true, sectionId: section.id
                         endunless
                       %}
                   {% endcase %}

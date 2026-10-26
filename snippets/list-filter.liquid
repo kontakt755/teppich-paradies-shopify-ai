@@ -911,6 +911,17 @@
     gap: var(--gap-sm);
   }
 
+  /* TP: Farbfilter mit Namen (show_swatch_label in allen Vorlagen). Am Handy und
+     auf Touch-Geraeten ist die ganze Zeile aus Kreis und Name die Tippflaeche,
+     mindestens 44 px hoch (Rundgang 2026-10-26: Kreise allein waren 32 px). */
+  @media screen and (max-width: 749px), (pointer: coarse) {
+    .facets__inputs-wrapper
+      .facets__inputs-list--swatches-grid
+      .variant-option__button-label--has-swatch:has(input[type='checkbox']) {
+      min-height: 44px;
+    }
+  }
+
   .facets__inputs-wrapper .facets__inputs-list--swatches-grid .variant-option__button-label:has(:checked) {
     color: rgb(var(--color-foreground-rgb));
     background-color: rgb(var(--color-background-rgb));
