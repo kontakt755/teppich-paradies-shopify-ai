@@ -462,8 +462,11 @@ async function schreiben(daten, meldung) {
   kunden.loadingMusterPacken = true;
   packFehler = null;
   try {
-    await orgSchreiben(ENDPOINT, daten);
-    if (meldung) toast(meldung);
+    const r = await orgSchreiben(ENDPOINT, daten);
+    // Eingelegt/gepackt bestaetigt den Wareneingang (#1706); ein Fehler dort laesst den Packstand stehen.
+    const eingang = r?.wareneingang;
+    if (eingang?.fehler) toast(`Gespeichert, aber der Wareneingang wurde nicht vermerkt: ${eingang.fehler}`, 'warn');
+    else if (meldung) toast(eingang?.anzahl ? `${meldung} · ${plural(eingang.anzahl, 'Muster', 'Muster')} als angekommen vermerkt` : meldung);
     try {
       const neu = await fetchEinkauf(ENDPOINT);
       if (!neu?.verfuegbar || neu.fehler) throw new Error(neu?.hinweis || 'Die Packliste ist gerade nicht lesbar.');

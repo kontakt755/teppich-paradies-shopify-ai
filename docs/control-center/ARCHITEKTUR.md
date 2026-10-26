@@ -1917,6 +1917,31 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
 - **Wareneingang (`mp=laden`):** `musterNachLaden` verteilt die noch nicht eingelegten Muster je
   Partnerladen auf die Umschlag-Nummern aus „Zu packen“.
 
+### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
+
+Ein Muster, das in der Packstation eingelegt (Haken) oder mit dem Umschlag gepackt wird, ist
+nachweislich da. `wareneingangAusPackstation()` in `dashboard-api.mjs` setzt deshalb im selben
+Klick jede betroffene Position im Auftragsfluss von „bestellt“ auf „geliefert“ (Vermerk „Eingelegt
+in der Packstation“ bzw. „Umschlag gepackt (Packstation)“, handelnde Person = angemeldeter Benutzer).
+Vorher blieben solche Muster auf „bestellt“ und erzeugten ein falsches „Beim Lieferanten nachhaken“
+und nach 14 Tagen einen Fall in „Alte Bestellungen aufräumen“.
+
+- **Nur vorwärts:** ausschließlich „bestellt“ → „geliefert“. Nie bestellte, schon gelieferte oder
+  weitergegebene Positionen bleiben unberührt; ein zurückgenommener Haken bzw. „Gepackt
+  zurückgenommen“ stuft nicht zurück.
+- **Ausgenommen:** Muster direkt vom Lieferanten an den Kunden (`ueber: 'kunde'`), Positionen in der
+  laufenden Musterautomatik (`uebernahme.id === 'musterautomatik'`) und offene Fehlmengen
+  (`darfWeiter`).
+- **Fehler:** Der Packstand ist dann schon gespeichert. Die Antwort trägt `wareneingang.fehler`,
+  und die Packstation zeigt einen Warnhinweis. Bei Erfolg hängt die Meldung zum gepackten Umschlag
+  „N Muster als angekommen vermerkt“ an.
+- **Lieferantenbelege** (Abschnitt 25) helfen hier nicht: Lieferant A schickt für Muster weder AB
+  noch Lieferschein. Die Packstation ist für Muster der einzige Eingangsbeleg.
+- **Nachholen:** `packstationWareneingangNachholen()` wendet dieselbe Regel einmal auf Haken und
+  gepackte Umschläge aus der Zeit davor an (Vermerk „Aus der Packstation übernommen: … am TT.MM.“).
+  Die Funktion hat keinen HTTP-Weg und läuft nur bei angehaltenem Dienst, damit `auftragsstatus.json`
+  einen Schreiber behält. Ein zweiter Lauf ändert nichts.
+
 ### Großbrief vorbereiten (#1591)
 
 Je Kunde öffnet „Großbrief vorbereiten“ die Messwerte zum konkreten Umschlag mit derselben
