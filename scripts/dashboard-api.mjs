@@ -1755,7 +1755,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
         produkte: new Map(this._lexikonProdukte().map(p => [p.handle, p])),
-        statusVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)]?.status || null,
+        // Ganzer Eintrag: Bestelldatum und "Musterautomatik" fuer die Anmerkung beim Warten.
+        eintragVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)] || null,
         schluesselVon: kundenSchluessel,
         gepackt: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren,
         lieferantVon: id => stammdatenFuer(stammdaten, id).name,

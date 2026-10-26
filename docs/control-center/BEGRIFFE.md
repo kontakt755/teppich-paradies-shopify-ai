@@ -67,6 +67,7 @@ gebraeuchlich), Erfassen.
 - **Bestellungen** = Kundenbestellungen; **Bestellen** = Einkauf beim Lieferanten.
 - **Packbereit** = alle Muster haben bestaetigten Bestand oder sind bereits eingelegt, Aufkleber und Adresse sind eindeutig.
 - **Wartet auf Ware** = mindestens ein Muster ist noch nicht als vorhanden bestaetigt.
+- **Alle offenen** = Standard der Packstation (26.10.2026): Packbereit, Zu klaeren und Wartet auf Ware zusammen; wartende Umschlaege mit Anmerkung „Noch nicht da … bestellt am …“.
 - **Zu klaeren** = fehlende Muster gemeldet oder Aufkleber/Adresse nicht eindeutig.
 - **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
 - **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
@@ -80,8 +81,8 @@ gebraeuchlich), Erfassen.
 - **Muster bestellen** = offene Muster je Lieferant vorbereiten; vorhandener Dialog,
   Bestellstand erst nach bewusster Bestaetigung. Allgemeiner Einkauf bleibt unter „Kunden & Einkauf“.
 - **Weitere Aufgaben heute** = uebrige Tagesaufgaben unter der priorisierten Bestellarbeit.
-- **Arbeitsliste** in der Packstation = jeweils Packbereit / Wartet auf Ware / Zu klaeren / Gepackt;
-  die Suche beruecksichtigt alle vier Listen.
+- **Arbeitsliste** in der Packstation = Alle offenen (Standard) oder jeweils Packbereit / Wartet auf Ware /
+  Zu klaeren / Gepackt; die Suche beruecksichtigt alle vier Listen und liest auch Hersteller, Produkt und Farbnummer.
 - **Weitere Filter** = zusaetzliche Bestellfilter; vier Hauptfilter bleiben direkt sichtbar.
 
 ## Shopfokus (#1624)
