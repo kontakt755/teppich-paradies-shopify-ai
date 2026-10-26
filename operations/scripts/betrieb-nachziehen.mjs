@@ -32,7 +32,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   codexArbeitet, neustartNoetig, privatRuhe, probeTests, prZeilen,
-  zustandLesen, zustandNach, zustandSchreiben, ZUSTAND_DATEI,
+  zustandLesen, zustandNach, zustandSchreiben,
 } from '../lib/betrieb-nachziehen.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -40,9 +40,10 @@ const STANDARD_PRIVAT_DIR = path.join(os.homedir(), 'teppich-paradies-analyse');
 
 export const DIENSTE = Object.freeze({
   // Der Start baut erst issues.json (zwei GitHub-Abrufe mit je 60 s Zeitlimit), daher mehr Luft.
-  dashboard: { label: 'net.teppich-paradies.dashboard', url: 'http://127.0.0.1:8001/login', erwartet: [200], startMs: 240000 },
+  dashboard: { label: 'net.teppich-paradies.dashboard', url: 'http://127.0.0.1:8001/login', ok: s => s === 200, startMs: 240000 },
   sync: { label: 'net.teppich-paradies.sync' },
-  social: { label: 'net.teppich-paradies.social', url: 'http://127.0.0.1:8020/api/status', erwartet: [401] },
+  // Social antwortet ohne Anmeldung 401, ohne gesetzten Zugang 200: jede Antwort heisst "laeuft".
+  social: { label: 'net.teppich-paradies.social', url: 'http://127.0.0.1:8020/api/status', ok: s => s < 500 },
 });
 
 const NAMEN = { dashboard: 'das Dashboard', sync: 'der Datenabgleich', social: 'der Social-Dienst', 'npm ci': 'die Programmbibliothek' };
@@ -80,11 +81,12 @@ export function launchdSteuerung({ uid = process.getuid?.() } = {}) {
       while (Date.now() < bis) {
         const jetzt = pid(dienst.label);
         const neu = jetzt && jetzt !== vorherPid;
-        if (neu && !dienst.url) return true;
+        // Ohne Adresse (Sync): dieselbe neue PID zehn Sekunden lang, sonst stuerzt er nur im Kreis ab.
+        if (neu && !dienst.url) { await warte(10000); if (pid(dienst.label) === jetzt) return true; continue; }
         if (neu && dienst.url) {
           try {
             const r = await fetch(dienst.url, { redirect: 'manual', signal: AbortSignal.timeout(5000) });
-            if (dienst.erwartet.includes(r.status)) return true;
+            if (dienst.ok(r.status)) return true;
           } catch { /* startet noch */ }
         }
         await warte(2000);
@@ -116,23 +118,38 @@ function probeKopie(repo, commit, { lockGeaendert, suiten, log }) {
     }
     return { ok: true };
   } finally {
-    git(repo, ['worktree', 'remove', '--force', dir], { erlaubt: [0, 128] });
+    const weg = git(repo, ['worktree', 'remove', '--force', dir], { erlaubt: [0, 128] });
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(privat, { recursive: true, force: true });
-    git(repo, ['worktree', 'prune'], { erlaubt: [0, 128] });
+    // Nur wenn das Entfernen scheiterte, bleibt ein Eintrag ohne Ordner zurueck.
+    if (weg.code !== 0) git(repo, ['worktree', 'prune'], { erlaubt: [0, 128] });
   }
 }
 
-function sperreNehmen(datei) {
+/** Ein Lauf dauert hoechstens rund eine Stunde (10 Minuten Warten, Suiten mit Zeitlimit). */
+export const SPERRE_ALT_MS = 3 * 3600000;
+
+/**
+ * Verwaist ist eine Sperre, deren Prozess nachweislich weg ist (ESRCH) oder die laenger
+ * steht als jeder Lauf - sonst blockierte eine wiederverwendete PID den Automaten fuer immer.
+ */
+export function sperreVerwaist(datei, { jetzt = Date.now() } = {}) {
+  let pid = 0;
+  let alter = 0;
+  try { pid = Number(fs.readFileSync(datei, 'utf8')); alter = jetzt - fs.statSync(datei).mtimeMs; }
+  catch (e) { return e.code === 'ENOENT'; }
+  if (alter > SPERRE_ALT_MS || !Number.isInteger(pid) || pid <= 0) return true;
+  try { process.kill(pid, 0); return false; } catch (e) { return e.code === 'ESRCH'; }
+}
+
+export function sperreNehmen(datei, { versuche = 2 } = {}) {
   try {
     fs.writeFileSync(datei, String(process.pid), { flag: 'wx' });
     return true;
   } catch (e) {
-    if (e.code !== 'EEXIST') throw e;
-    const pid = Number(fs.readFileSync(datei, 'utf8'));
-    try { if (pid) { process.kill(pid, 0); return false; } } catch { /* Prozess weg: alte Sperre */ }
+    if (e.code !== 'EEXIST' || versuche <= 1 || !sperreVerwaist(datei)) return false;
     fs.rmSync(datei, { force: true });
-    return sperreNehmen(datei);
+    return sperreNehmen(datei, { versuche: versuche - 1 });
   }
 }
 
@@ -171,7 +188,7 @@ export async function nachziehen({
   };
   try {
     const aktuellerZweig = git(repo, ['symbolic-ref', '--quiet', '--short', 'HEAD'], { erlaubt: [0, 1] }).out;
-    if (aktuellerZweig !== zweig) return ende({ stand: 'haengt', grund: `Arbeitskopie steht auf „${aktuellerZweig || 'losgelöst'}“ statt „${zweig}“` });
+    if (aktuellerZweig !== zweig) return ende({ stand: 'haengt', art: 'zweig', grund: `Arbeitskopie steht auf „${aktuellerZweig || 'losgelöst'}“ statt „${zweig}“` });
     try { git(repo, ['fetch', '--quiet', 'origin']); }
     catch (e) { return ende({ stand: 'wartet', grund: `main nicht erreichbar (${e.message.slice(0, 120)})` }); }
     const head = git(repo, ['rev-parse', 'HEAD']).out;
@@ -184,7 +201,7 @@ export async function nachziehen({
     const schmutzig = git(repo, ['status', '--porcelain', '--untracked-files=no']).out;
     if (schmutzig) {
       const dateien = schmutzig.split('\n').map(z => z.slice(3)).slice(0, 5).join(', ');
-      return ende({ stand: 'haengt', grund: `Im Dienst-Ordner liegen eigene Änderungen (${dateien})`, ...basis });
+      return ende({ stand: 'haengt', art: 'arbeitskopie', grund: `Im Dienst-Ordner liegen eigene Änderungen (${dateien})`, ...basis });
     }
     const baum = git(repo, ['merge-tree', '--write-tree', '--name-only', 'HEAD', 'origin/main'], { erlaubt: [0, 1] });
     if (baum.code === 1) {
@@ -192,7 +209,7 @@ export async function nachziehen({
       const rest = baum.out.split('\n').slice(1);
       const leer = rest.indexOf('');
       const dateien = (leer < 0 ? rest : rest.slice(0, leer)).slice(0, 5).join(', ');
-      return ende({ stand: 'haengt', grund: `Neue Version passt nicht zum laufenden Stand (Konflikt${dateien ? ` in ${dateien}` : ''})`, ...basis, sperren: true });
+      return ende({ stand: 'haengt', art: 'konflikt', grund: `Neue Version passt nicht zum laufenden Stand (Konflikt${dateien ? ` in ${dateien}` : ''})`, ...basis, sperren: true });
     }
     const tree = baum.out.split('\n')[0];
     const prs = prZeilen(git(repo, ['log', '--merges', '--first-parent', '--format=%s%x09%b', 'HEAD..origin/main']).out).slice(0, 15);
@@ -210,7 +227,7 @@ export async function nachziehen({
       const r = probeKopie(repo, commit, { lockGeaendert, suiten, log });
       if (!r.ok) {
         log(`Probe rot (${r.suite}):\n${r.ende}`);
-        return ende({ stand: 'haengt', grund: `Prüfung der neuen Version fehlgeschlagen (${r.suite})`, ...basis, getestet: null, sperren: true });
+        return ende({ stand: 'haengt', art: 'probe', grund: `Prüfung der neuen Version fehlgeschlagen (${r.suite})`, ...basis, getestet: null, sperren: true });
       }
     }
     const getestet = { baum: tree, head: kurz(head), ok: true, am: jetzt().toISOString() };
@@ -252,7 +269,7 @@ export async function nachziehen({
       const grund = wieder
         ? `Nach dem Update startete ${name(fehler)} nicht, und der bisherige Stand antwortet auch nicht (${name(wieder)})`
         : `Nach dem Update startete ${name(fehler)} nicht – der bisherige Stand läuft wieder`;
-      return ende({ stand: 'haengt', grund, ...basis, getestet: null, sperren: true });
+      return ende({ stand: 'haengt', art: wieder ? 'ausfall' : 'neustart', grund, ...basis, getestet: null, sperren: true });
     }
     return ende({ stand: 'aktuell', nachgezogen: true, von: kurz(head), nach: kurz(commit), prs, betrieb: kurz(commit), main: kurz(main), rueckstand: 0, getestet: null, neugestartet: neuStarten });
   } catch (e) {
@@ -280,11 +297,14 @@ async function cli(argv) {
   if (argv.includes('--status')) { console.log(statusText(zustandLesen(privatDir))); return 0; }
   const stempel = () => new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });
   const log = text => console.log(`${stempel()}  ${text}`);
-  const r = await nachziehen({ probe: argv.includes('--probe'), log });
+  // TP_NACHZIEHEN_ZWEIG nur fuer Tests: ein Zweig, den es nicht gibt, macht jeden Lauf harmlos.
+  const r = await nachziehen({ probe: argv.includes('--probe'), log, zweig: process.env.TP_NACHZIEHEN_ZWEIG || 'dashboard-betrieb' });
   if (r.stand === 'laeuft-schon') { log('Ein anderer Lauf ist noch aktiv.'); return 0; }
-  // Leerlaeufe bleiben still, sonst waechst das Protokoll alle fuenf Minuten.
-  if (r.stand === 'aktuell' && !r.nachgezogen && !process.stdout.isTTY) return 0;
-  if (!process.stdout.isTTY && (r.still || (r.wiederholt && ['haengt', 'wartet'].includes(r.stand)))) return r.stand === 'haengt' ? 1 : 0;
+  // Im Dienst (die Vorlage setzt TP_NACHZIEHEN_DIENST) bleiben Leerlaeufe und Wiederholungen
+  // still, sonst waechst das Protokoll alle fuenf Minuten. Von Hand gibt es immer eine Antwort.
+  const dienst = process.env.TP_NACHZIEHEN_DIENST === '1';
+  if (dienst && r.stand === 'aktuell' && !r.nachgezogen) return 0;
+  if (dienst && (r.still || (r.wiederholt && ['haengt', 'wartet'].includes(r.stand)))) return r.stand === 'haengt' ? 1 : 0;
   log(r.stand === 'aktuell' ? (r.nachgezogen ? `fertig, neu gestartet: ${r.neugestartet.join(', ') || 'nichts'}` : 'aktuell, nichts zu tun')
     : r.stand === 'probe-gruen' ? `Probe grün: ${r.rueckstand} Commit(s), ${r.geaendert} Datei(en) – nichts übernommen (--probe)`
       : `${r.stand}: ${r.grund}`);
@@ -295,4 +315,3 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   cli(process.argv.slice(2)).then(code => { process.exitCode = code; });
 }
 
-export { ZUSTAND_DATEI };

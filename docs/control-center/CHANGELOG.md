@@ -19,12 +19,16 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Dazu: `npm run dashboard` startet bei einem GitHub-Ausfall mit der bisherigen `issues.json`
   (`build-dashboard-data.mjs --weiter-mit-alten-daten`); vorher verhinderte ein gescheiterter
   Abruf jeden Neustart, von Hand wie automatisch.
-- **Getestet:** `operations/tests/betrieb-nachziehen.test.mjs` (9 Tests, davon 5 mit echtem git aus
+- **Getestet:** `operations/tests/betrieb-nachziehen.test.mjs` (12 Tests, davon 6 mit echtem git aus
   origin, Entwicklerklon und Dienst-Checkout: nichts Neues, Uebernahme mit Merge-Commit auf
   `dashboard-betrieb`, reine Theme-Aenderung ohne Neustart, rote Probe und Konflikt lassen HEAD
   stehen und werden fuer denselben main-Stand nicht wiederholt, Rueckweg bei fehlendem Neustart,
   Warten ohne erneuten Testlauf, eigene Aenderungen, losgeloester Kopf, Probe von Hand schreibt
-  nichts). `vereinfachung.test.mjs`: Systemzustand-Zeilen; `build-data.test.mjs`: Start bei GitHub-Ausfall. Echte Probe gegen einen Wegwerf-Klon
+  nichts, Sperre nach Absturz, Laufmarker nur als JSON-Ereignis, CLI im Dienst still und von Hand
+  immer mit Antwort). `vereinfachung.test.mjs`: Systemzustand-Zeilen ohne Pfade oder Befehle, keine Zeile
+  ohne Einrichtung; `build-data.test.mjs`: Start bei GitHub-Ausfall. Claude-Pruefung (`/code-review`,
+  Codex-Kontingent war erschoepft) fand 14 Punkte; behoben u. a. Background-Drosselung der Probe,
+  Sperre ohne Altersgrenze, starrer Social-Statuscode, Sync-Pruefung nur per PID, Pfade im Systemzustand. Echte Probe gegen einen Wegwerf-Klon
   mit 14 neuen Commits aus main: Probe gruen in rund 10 s, Uebernahme mit Attrappen-Neustart.
   Erste Fassung testete in einem `git archive`-Export; der fiel in `fehler-melden-api.test.mjs`
   durch (Dienststand kommt aus git), deshalb jetzt `git worktree add --detach`.
@@ -34,6 +38,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   und dann mitten im Neustart speichert, bekommt eine Fehlermeldung und muss den Klick wiederholen.
   Der Rueckweg setzt den Betriebszweig per `reset --keep` auf den Commit von Sekunden vorher; der
   Zweig traegt keine eigenen Inhalte.
+  Ungetestet: der Weg mit geaendertem `package-lock.json` (`npm ci` im laufenden Checkout, die alten
+  Dienste laufen dabei noch) und die echte launchd-Steuerung; die greift erst im Betrieb.
 - **Naechste Stufe:** Nach dem Merge einmal von Hand nachziehen, Dienst einrichten, ersten echten
   Lauf beobachten. Danach die geplante Aufgabe „Dashboard-Daten aktualisieren“ ohne ihren
   Nachziehschritt (naechster Vorschlag: KI-Laeufe ohne Arbeit sparen).

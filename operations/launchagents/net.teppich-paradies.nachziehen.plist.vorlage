@@ -20,11 +20,14 @@
     <!-- git, npm und launchctl ohne Anmelde-Shell finden. -->
     <key>PATH</key><string>__NODE_DIR__:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>TZ</key><string>Europe/Berlin</string>
+    <!-- Im Dienst bleiben Leerlaeufe still (operations/scripts/betrieb-nachziehen.mjs, cli). -->
+    <key>TP_NACHZIEHEN_DIENST</key><string>1</string>
   </dict>
   <!-- Alle 5 Minuten; launchd startet keinen zweiten Lauf, solange einer auf Ruhe wartet. -->
   <key>StartInterval</key><integer>300</integer>
   <key>RunAtLoad</key><false/>
-  <key>ProcessType</key><string>Background</string>
+  <!-- Standard statt Background: die Probe-Tests haben Zeitlimits, gedrosselt scheiterten sie nur hier. -->
+  <key>ProcessType</key><string>Standard</string>
   <key>StandardOutPath</key><string>__HOME__/Library/Logs/teppich-paradies-nachziehen.log</string>
   <key>StandardErrorPath</key><string>__HOME__/Library/Logs/teppich-paradies-nachziehen.log</string>
 </dict>

@@ -86,11 +86,14 @@ test('Systemzustand: automatische Dashboard-Updates melden sich nur, wenn sie ha
   const fn=source.slice(a,b+2).replace('export ','');
   const zeile=s=>vm.runInNewContext(fn+';aktualisierungHealth()',{einkauf:{aktualisierung:{verfuegbar:true,manuellVerfuegbar:true,teile:{},betrieb:{nachziehen:s}}},fmtDateTime:x=>x})[0];
   const ok=zeile({status:'ok',zuletztNachgezogen:'2026-10-26T10:00:00Z'});assert.equal(ok.level,'ok');assert.match(ok.title,/aktuell · zuletzt übernommen 2026-10-26T10:00:00Z/);
-  const haengt=zeile({status:'fehler',grund:'Prüfung der neuen Version fehlgeschlagen (dashboard:test)'});
-  assert.equal(haengt.level,'warn');assert.match(haengt.title,/^Dashboard-Update hängt: Prüfung/);assert.match(haengt.detail,/bisherigen Stand weiter/);
+  const haengt=zeile({status:'fehler',art:'konflikt',grund:'Neue Version passt nicht (Konflikt in docs/ai-dashboard/app.js)'});
+  assert.equal(haengt.level,'warn');assert.equal(haengt.title,'Dashboard-Update hängt: die neue Version passt nicht zum laufenden Stand');assert.match(haengt.detail,/bisherigen Stand weiter/);
+  assert.doesNotMatch(haengt.title+haengt.detail,/docs\/|dashboard:test|git /,'keine Pfade, Befehle oder Fehlertexte in der Ansicht');
+  assert.match(zeile({status:'fehler',art:'neu-und-unbekannt'}).title,/unerwarteter Fehler$/);
   assert.equal(zeile({status:'alt',zuletztGeprueft:'2026-10-26T07:00:00Z'}).level,'warn');
-  assert.match(zeile({status:'wartet',wartetSeit:'x',grund:'Codex läuft.'}).detail,/nächste Versuch kommt von selbst/);
-  assert.equal(zeile({status:'unbekannt'}).level,'info');
+  assert.match(zeile({status:'wartet',wartetSeit:'x',grund:'Eingabe im Dashboard vor 30 s (muster-packen.json)'}).detail,/nächste Versuch kommt von selbst/);
+  assert.doesNotMatch(zeile({status:'wartet',wartetSeit:'x',grund:'Eingabe (muster-packen.json)'}).detail,/\.json/);
+  assert.equal(zeile({status:'unbekannt'}),undefined,'nie eingerichtet: keine Zeile, auch kein „noch nicht belegt“ auf Heute');
 });
 
 test('Unlesbare optionale Kaufquellen brechen den vorhandenen Bestellablauf nicht', () => {

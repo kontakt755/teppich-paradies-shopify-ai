@@ -86,11 +86,12 @@ JS
     ok "Bereits eingerichtet; kein zweiter Dienst gestartet."
     return 0
   fi
+  # Aufrufer nutzen `vorlage_einrichten … || return 1`; dort greift set -e nicht, also selbst pruefen.
   if launchctl list "${label}" >/dev/null 2>&1; then
-    launchctl bootout "gui/$(id -u)/${label}"
+    launchctl bootout "gui/$(id -u)/${label}" || { rm -f "${tmp}"; return 1; }
   fi
-  mv "${tmp}" "${plist}"
-  launchctl bootstrap "gui/$(id -u)" "${plist}"
+  mv "${tmp}" "${plist}" || { rm -f "${tmp}"; return 1; }
+  launchctl bootstrap "gui/$(id -u)" "${plist}" || return 1
 }
 
 sicherung_einrichten() {

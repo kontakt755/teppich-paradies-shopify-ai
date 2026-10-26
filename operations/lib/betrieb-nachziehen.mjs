@@ -43,12 +43,21 @@ export function automationLesen(text) {
   return { status: wert('status'), thread: wert('target_thread_id'), prompt: wert('prompt') || '' };
 }
 
-/** Letzter Laufmarker im Ende eines Codex-Protokolls: 'gestartet', 'fertig' oder null. */
+/**
+ * Letzter Laufmarker im Ende eines Codex-Protokolls: 'gestartet', 'fertig' oder null.
+ * Zeilenweise als JSON gelesen: derselbe Text in einer Werkzeugausgabe zaehlt nicht.
+ */
 export function letzterLaufmarker(text) {
-  const start = text.lastIndexOf('"type":"task_started"');
-  const ende = text.lastIndexOf('"type":"task_complete"');
-  if (start < 0 && ende < 0) return null;
-  return start > ende ? 'gestartet' : 'fertig';
+  const zeilen = text.split('\n');
+  for (let i = zeilen.length - 1; i >= 0; i--) {
+    if (!zeilen[i].includes('task_')) continue;
+    let ereignis;
+    try { ereignis = JSON.parse(zeilen[i]); } catch { continue; } // erste Zeile des Endes ist oft abgeschnitten
+    const typ = ereignis?.payload?.type;
+    if (typ === 'task_started') return 'gestartet';
+    if (typ === 'task_complete') return 'fertig';
+  }
+  return null;
 }
 
 function protokollEnde(datei, bytes = 512 * 1024) {
@@ -165,13 +174,13 @@ export function zustandNach(alt = {}, ergebnis, jetzt = new Date()) {
   const verlauf = Array.isArray(alt.verlauf) ? alt.verlauf : [];
   const merke = was => { z.verlauf = [...verlauf, { wann, was, ...(ergebnis.prs?.length ? { prs: ergebnis.prs } : {}) }].slice(-VERLAUF_MAX); };
   if (ergebnis.stand === 'aktuell') {
-    z.stand = 'aktuell'; z.grund = null; z.wartetSeit = null; z.gesperrt = null;
+    z.stand = 'aktuell'; z.grund = null; z.art = null; z.wartetSeit = null; z.gesperrt = null;
     if (ergebnis.nachgezogen) { z.zuletztNachgezogen = wann; merke(`nachgezogen ${ergebnis.von} → ${ergebnis.nach}`); }
   } else if (ergebnis.stand === 'wartet') {
-    z.stand = 'wartet'; z.grund = ergebnis.grund;
+    z.stand = 'wartet'; z.grund = ergebnis.grund; z.art = null;
     z.wartetSeit = alt.stand === 'wartet' && alt.wartetSeit ? alt.wartetSeit : wann;
   } else {
-    z.stand = 'haengt'; z.grund = ergebnis.grund; z.wartetSeit = null;
+    z.stand = 'haengt'; z.grund = ergebnis.grund; z.art = ergebnis.art || 'fehler'; z.wartetSeit = null;
     // Gesperrt wird nur ein main-Stand, der selbst scheitert (Konflikt, Tests, Neustart);
     // eine schmutzige Arbeitskopie wird bei jedem Lauf neu geprueft.
     z.gesperrt = ergebnis.sperren && ergebnis.main ? { main: ergebnis.main, grund: ergebnis.grund } : null;
@@ -192,7 +201,8 @@ export function nachziehStand(dir, { jetzt = new Date(), maxStunden = 2, warteMi
   const geprueft = Date.parse(z.zuletztGeprueft || '');
   const basis = { zuletztGeprueft: z.zuletztGeprueft || null, zuletztNachgezogen: z.zuletztNachgezogen || null, rueckstand: z.rueckstand ?? null };
   if (!Number.isFinite(geprueft)) return { status: 'unbekannt', grund: null, ...basis };
-  if (z.stand === 'haengt') return { status: 'fehler', grund: z.grund || 'unbekannt', ...basis };
+  // `art` fuer die Oberflaeche (Klartext), `grund` mit Dateien und Fehlertext nur fuer --status.
+  if (z.stand === 'haengt') return { status: 'fehler', art: z.art || 'fehler', grund: z.grund || 'unbekannt', ...basis };
   if (jetzt.getTime() - geprueft > maxStunden * 3600000) return { status: 'alt', grund: null, ...basis };
   if (z.stand === 'wartet' && jetzt.getTime() - Date.parse(z.wartetSeit || z.zuletztGeprueft) > warteMinuten * 60000) {
     return { status: 'wartet', grund: z.grund || null, wartetSeit: z.wartetSeit || null, ...basis };

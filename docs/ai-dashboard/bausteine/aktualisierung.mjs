@@ -74,12 +74,24 @@ export function aktualisierungHealth() {
   if (!a) return [];
   const betrieb = Object.entries(a.betrieb || {}).map(([quelle, s]) => {
     // Neue Dashboard-Versionen kommen von selbst; die Zeile spricht nur, wenn das hakt.
+    // Nie eingerichtet (anderer Rechner): keine Zeile. Einzelheiten (Dateien, Fehlertext) stehen
+    // nur im Status des Automaten, hier der Klartext je Art.
     if (quelle === 'nachziehen') {
+      if (s.status === 'unbekannt') return null;
+      // Klartext je Art eines haengenden Updates (operations/scripts/betrieb-nachziehen.mjs).
+      const NACHZIEHEN_ART = {
+        konflikt: 'die neue Version passt nicht zum laufenden Stand',
+        probe: 'die Prüfung der neuen Version ist fehlgeschlagen',
+        neustart: 'nach dem Update startete ein Dienst nicht, der bisherige Stand läuft wieder',
+        ausfall: 'nach dem Update startete ein Dienst nicht, auch der bisherige Stand antwortet nicht',
+        arbeitskopie: 'im Dienst-Ordner liegen eigene Änderungen',
+        zweig: 'der Dienst-Ordner steht auf dem falschen Stand',
+        fehler: 'unerwarteter Fehler',
+      };
       const melden = 'Das Dashboard läuft auf dem bisherigen Stand weiter, es geht nichts verloren. Bitte Claude im Chat Bescheid geben: „Dashboard-Update hängt“.';
-      if (s.status === 'fehler') return { level: 'warn', title: `Dashboard-Update hängt: ${s.grund || 'Grund unbekannt'}`, detail: melden };
+      if (s.status === 'fehler') return { level: 'warn', title: `Dashboard-Update hängt: ${NACHZIEHEN_ART[s.art] || NACHZIEHEN_ART.fehler}`, detail: melden };
       if (s.status === 'alt') return { level: 'warn', title: `Automatische Dashboard-Updates laufen nicht${s.zuletztGeprueft ? ` · zuletzt geprüft ${fmtDateTime(s.zuletztGeprueft)}` : ''}`, detail: melden };
-      if (s.status === 'wartet') return { level: 'warn', title: `Dashboard-Update wartet seit ${fmtDateTime(s.wartetSeit)}`, detail: `${s.grund || 'Es kam keine ruhige Minute.'} Der nächste Versuch kommt von selbst.` };
-      if (s.status === 'unbekannt') return { level: 'info', title: 'Dashboard-Updates: automatisches Nachziehen noch nicht gelaufen', detail: '' };
+      if (s.status === 'wartet') return { level: 'warn', title: `Dashboard-Update wartet seit ${fmtDateTime(s.wartetSeit)}`, detail: 'Es kam keine ruhige Minute (gerade Eingaben im Dashboard oder ein Codex-Lauf). Der nächste Versuch kommt von selbst.' };
       return { level: 'ok', title: `Dashboard-Updates: aktuell${s.zuletztNachgezogen ? ` · zuletzt übernommen ${fmtDateTime(s.zuletztNachgezogen)}` : ''}`, detail: '' };
     }
     if (quelle === 'werkbank') return {
@@ -92,7 +104,7 @@ export function aktualisierungHealth() {
     return { level: s.status === 'ok' ? 'ok' : s.status === 'unbekannt' ? 'info' : 'warn',
       title: `${titel}: ${s.letzterErfolg ? `letzter Erfolg ${fmtDateTime(s.letzterErfolg)}` : s.status === 'fehler' ? 'Stand nicht lesbar' : 'Erfolg noch nicht erfasst'}${s.status === 'alt' ? ' – seit über 48 Stunden keine neue Rückmeldung' : ''}`,
       detail: s.status === 'unbekannt' ? 'Noch keine verlässliche Zeitangabe. Beim nächsten erfolgreichen Lauf wird der Stand erfasst.' : s.status === 'ok' ? '' : 'Bitte den Inhaber informieren; die bisherigen Betriebsdaten bleiben erhalten.' };
-  });
+  }).filter(Boolean);
   const aktualisierungHinweis = a.manuellVerfuegbar
     ? 'Bitte „Jetzt aktualisieren“ verwenden.'
     : `${OHNE_ZUGANG_GRUND} ${ZUGANG_EINRICHTEN}`;

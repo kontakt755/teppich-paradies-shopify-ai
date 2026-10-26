@@ -9,7 +9,8 @@ import {
   privatRuhe, probeTests, prZeilen, zustandNach,
 } from '../lib/betrieb-nachziehen.mjs';
 import { betriebszustand } from '../lib/betriebszustand.mjs';
-import { nachziehen } from '../scripts/betrieb-nachziehen.mjs';
+import { nachziehen, sperreNehmen, sperreVerwaist, SPERRE_ALT_MS } from '../scripts/betrieb-nachziehen.mjs';
+import { spawnSync } from 'node:child_process';
 
 const tmp = name => fs.mkdtempSync(path.join(os.tmpdir(), `tp-nachziehen-test-${name}-`));
 const alt = (datei, sekunden) => { const t = (Date.now() - sekunden * 1000) / 1000; fs.utimesSync(datei, t, t); };
@@ -48,6 +49,9 @@ test('Codex: offener Lauf blockiert, fertiger, fremder oder seit 30 Minuten stil
   assert.equal(codexArbeitet({ ...arg, automationsDir: path.join(codex, 'fehlt') }).arbeitet, false);
   assert.equal(automationLesen('status = "PAUSED"\nprompt = "a \\"b\\""').prompt, 'a "b"');
   assert.equal(letzterLaufmarker('nichts'), null);
+  // Derselbe Text in einer Werkzeugausgabe ist kein Laufende; eine abgeschnittene erste Zeile stoert nicht.
+  const ausgabe = JSON.stringify({ payload: { type: 'function_call_output', output: '{"type":"task_complete"}' } });
+  assert.equal(letzterLaufmarker(`pe":"task_complete"}}\n{"payload":{"type":"task_started"}}\n${ausgabe}\n`), 'gestartet');
 });
 
 test('Neustart nur fuer betroffene Dienste, Theme- und Regeldateien starten nichts', () => {
@@ -233,4 +237,42 @@ test('Ablauf: eigene Aenderungen im Dienst-Ordner, falscher Zweig und Probe von 
   g(u.betrieb, 'checkout', '-q', '--detach');
   assert.match((await lauf(u, s)).grund, /losgelöst/);
   assert.equal(s.neustarts.length, 0);
+});
+
+test('Sperre: lebender Lauf blockiert, toter oder uralter nicht', () => {
+  const dir = tmp('sperre');
+  const datei = path.join(dir, 'betrieb-nachziehen.lock');
+  assert.equal(sperreNehmen(datei), true);
+  assert.equal(sperreNehmen(datei), false, 'eigener, lebender Prozess haelt die Sperre');
+  assert.equal(sperreVerwaist(datei), false);
+  alt(datei, SPERRE_ALT_MS / 1000 + 60);
+  assert.equal(sperreVerwaist(datei), true, 'aelter als jeder Lauf: auch eine wiederverwendete PID blockiert nicht');
+  fs.writeFileSync(datei, '999999999');
+  assert.equal(sperreVerwaist(datei), true, 'Prozess gibt es nicht mehr');
+  assert.equal(sperreNehmen(datei), true);
+  assert.equal(fs.readFileSync(datei, 'utf8'), String(process.pid));
+});
+
+test('Konflikt traegt die Art fuer die Oberflaeche, Einzelheiten bleiben im Grund', async () => {
+  const u = aufbau();
+  fs.writeFileSync(path.join(u.betrieb, 'docs/ai-dashboard/app.js'), 'betrieb\n');
+  g(u.betrieb, 'commit', '-q', '-am', 'eigene Aenderung');
+  u.aufMain('docs/ai-dashboard/app.js', 'main\n');
+  await lauf(u, steuerung());
+  const stand = nachziehStand(u.privat);
+  assert.equal(stand.art, 'konflikt');
+  assert.match(stand.grund, /app\.js/);
+});
+
+test('CLI: im Dienst still bei Wiederholungen, von Hand immer mit Antwort', () => {
+  const privat = tmp('cli');
+  const skript = new URL('../scripts/betrieb-nachziehen.mjs', import.meta.url).pathname;
+  // Ein Zweig, den es nicht gibt: auch im Dienst-Checkout selbst haengt jeder Lauf sofort, nichts wird geholt oder neu gestartet.
+  const starte = env => spawnSync(process.execPath, [skript], { encoding: 'utf8', env: { ...process.env, TP_PRIVAT_DIR: privat, TP_NACHZIEHEN_ZWEIG: 'test-zweig-gibt-es-nicht', ...env } });
+  const erst = starte({ TP_NACHZIEHEN_DIENST: '1' });
+  assert.equal(erst.status, 1);
+  assert.match(erst.stdout, /haengt: Arbeitskopie steht auf/);
+  assert.equal(starte({ TP_NACHZIEHEN_DIENST: '1' }).stdout, '', 'derselbe Stand wird im Dienst nicht wiederholt');
+  assert.match(starte({ TP_NACHZIEHEN_DIENST: '' }).stdout, /haengt: Arbeitskopie steht auf/);
+  assert.match(spawnSync(process.execPath, [skript, '--status'], { encoding: 'utf8', env: { ...process.env, TP_PRIVAT_DIR: privat } }).stdout, /^Stand: haengt/);
 });
