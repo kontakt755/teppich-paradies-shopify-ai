@@ -13,13 +13,16 @@
  *  1. git fetch. Nichts Neues: fertig, ohne Ausgabe.
  *  2. Nur im Kopf zusammenfuehren (git merge-tree). Konflikt: haengt, der Dienst laeuft weiter.
  *  3. Den zusammengefuehrten Stand als Commit anlegen und genau diesen in einer Probekopie
- *     testen (git archive, Testsuiten je nach geaenderten Ordnern). Rot: haengt.
+ *     testen (losgeloeste Arbeitskopie, Testsuiten je nach geaenderten Ordnern). Aendert
+ *     sich package-lock.json, installiert die Probe die Bibliotheken neu. Rot: haengt.
  *  4. Auf Ruhe warten: kein Codex-Lauf in diesem Checkout, zwei Minuten keine Eingabe im
  *     Dashboard. Nach zehn Minuten ohne Ruhe versucht es der naechste Lauf.
- *  5. Den getesteten Commit vorspulen (merge --ff-only), Abhaengigkeiten bei Bedarf neu,
+ *  5. Bei neuen Bibliotheken node_modules gegen die getesteten aus der Probe tauschen (nie
+ *     npm ci im laufenden Betrieb), den getesteten Commit vorspulen (merge --ff-only),
  *     betroffene Dienste neu starten; das Dashboard muss danach antworten.
  *  6. Antwortet es nicht: zurueck auf den Stand von vorher (reset --keep auf den Commit, der
- *     Sekunden zuvor HEAD war; der Zweig traegt keine eigenen Inhalte), neu starten, haengt.
+ *     Sekunden zuvor HEAD war; der Zweig traegt keine eigenen Inhalte), alte Bibliotheken
+ *     zurueck (ohne Netz), neu starten, haengt.
  * Ein gescheiterter main-Stand wird erst wieder versucht, wenn main weiterzieht.
  * Zustand: $TP_PRIVAT_DIR/betrieb-nachziehen.json, im Dashboard unter Systemzustand.
  * Nie pushen: gesichert ist alles ueber main.
@@ -31,7 +34,7 @@ import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
-  codexArbeitet, neustartNoetig, privatRuhe, probeTests, prZeilen,
+  codexArbeitet, MODULE_NEU, moduleReste, moduleTauschen, neustartNoetig, privatRuhe, probeTests, prZeilen,
   zustandLesen, zustandNach, zustandSchreiben,
 } from '../lib/betrieb-nachziehen.mjs';
 import { routineLaeuft } from '../lib/routinen.mjs';
@@ -47,7 +50,7 @@ export const DIENSTE = Object.freeze({
   social: { label: 'net.teppich-paradies.social', url: 'http://127.0.0.1:8020/api/status', ok: s => s < 500 },
 });
 
-const NAMEN = { dashboard: 'das Dashboard', sync: 'der Datenabgleich', social: 'der Social-Dienst', 'npm ci': 'die Programmbibliothek' };
+const NAMEN = { dashboard: 'das Dashboard', sync: 'der Datenabgleich', social: 'der Social-Dienst' };
 const warte = ms => new Promise(r => setTimeout(r, ms));
 const kurz = sha => String(sha || '').slice(0, 8);
 
@@ -100,7 +103,7 @@ export function launchdSteuerung({ uid = process.getuid?.() } = {}) {
 
 // Probekopie als losgeloeste Arbeitskopie: einige Tests lesen den Dienststand aus git,
 // ein reines Archiv ohne .git reicht deshalb nicht.
-function probeKopie(repo, commit, { lockGeaendert, suiten, log }) {
+function probeKopie(repo, commit, { lockGeaendert, aufheben, suiten, log }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-nachziehen-'));
   // Die Probe sieht nie die echten Betriebsdaten.
   const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-nachziehen-privat-'));
@@ -116,6 +119,16 @@ function probeKopie(repo, commit, { lockGeaendert, suiten, log }) {
       log(`Probe: ${suite} …`);
       const r = npm(dir, ['run', '-s', suite], { env: { ...process.env, TP_PRIVAT_DIR: privat } });
       if (!r.ok) return { ok: false, suite, ende: r.ende };
+    }
+    // Die eben getesteten Bibliotheken fuer den Tausch im Dienst-Checkout aufheben.
+    if (aufheben) {
+      const quelle = path.join(dir, 'node_modules'), ziel = path.join(repo, MODULE_NEU);
+      fs.rmSync(ziel, { recursive: true, force: true });
+      if (!fs.existsSync(quelle)) fs.mkdirSync(ziel);
+      else {
+        try { fs.renameSync(quelle, ziel); }
+        catch (e) { if (e.code !== 'EXDEV') throw e; fs.cpSync(quelle, ziel, { recursive: true, verbatimSymlinks: true }); }
+      }
     }
     return { ok: true };
   } finally {
@@ -181,6 +194,7 @@ export async function nachziehen({
     // Derselbe Stand wie beim letzten Lauf: das Protokoll muss ihn nicht alle 5 Minuten wiederholen.
     return { ...ergebnis, wiederholt: alt.stand === ergebnis.stand && alt.grund === (ergebnis.grund ?? null) };
   };
+  let aufgehoben = false;
   ruhe ||= () => {
     const codex = codexArbeitet({ automationsDir: path.join(os.homedir(), '.codex', 'automations'), sessionsDir: path.join(os.homedir(), '.codex', 'sessions'), checkout: repo, jetzt: jetzt() });
     if (codex.arbeitet) return { ruhig: false, grund: codex.grund };
@@ -191,9 +205,14 @@ export async function nachziehen({
   try {
     const aktuellerZweig = git(repo, ['symbolic-ref', '--quiet', '--short', 'HEAD'], { erlaubt: [0, 1] }).out;
     if (aktuellerZweig !== zweig) return ende({ stand: 'haengt', art: 'zweig', grund: `Arbeitskopie steht auf „${aktuellerZweig || 'losgelöst'}“ statt „${zweig}“` });
+    const head = git(repo, ['rev-parse', 'HEAD']).out;
+    // Zuruecktauschen nach einem Abbruch trifft laufende Dienste wie ein Tausch: nur in Ruhe,
+    // und nie aus einer Probe von Hand.
+    if (!probe && moduleReste(repo, { head, darfTauschen: () => ruhe().ruhig }) === 'wartet') {
+      return ende({ stand: 'wartet', grund: 'Bibliotheken eines abgebrochenen Laufs warten auf eine ruhige Minute' });
+    }
     try { git(repo, ['fetch', '--quiet', 'origin']); }
     catch (e) { return ende({ stand: 'wartet', grund: `main nicht erreichbar (${e.message.slice(0, 120)})` }); }
-    const head = git(repo, ['rev-parse', 'HEAD']).out;
     const main = git(repo, ['rev-parse', 'origin/main']).out;
     const rueckstand = Number(git(repo, ['rev-list', '--count', 'HEAD..origin/main']).out);
     const basis = { betrieb: kurz(head), main: kurz(main), rueckstand };
@@ -222,11 +241,13 @@ export async function nachziehen({
     const commit = git(repo, ['commit-tree', tree, '-p', head, '-p', main, '-m', nachricht]).out;
 
     // Derselbe Baum wurde schon gruen getestet (wartete nur auf Ruhe): nicht noch einmal.
+    // Neue Bibliotheken braucht der Tausch aber frisch aus der Probe.
     const schonGetestet = alt.getestet?.ok && alt.getestet.baum === tree && alt.getestet.head === kurz(head);
-    if (!schonGetestet || probe) {
+    if (!schonGetestet || probe || lockGeaendert) {
       const suiten = probeTests(geaendert);
       log(`${rueckstand} neue Commit(s) auf main, teste ${suiten.join(', ')} in einer Probekopie`);
-      const r = probeKopie(repo, commit, { lockGeaendert, suiten, log });
+      aufgehoben = lockGeaendert && !probe;
+      const r = probeKopie(repo, commit, { lockGeaendert, aufheben: aufgehoben, suiten, log });
       if (!r.ok) {
         log(`Probe rot (${r.suite}):\n${r.ende}`);
         return ende({ stand: 'haengt', art: 'probe', grund: `Prüfung der neuen Version fehlgeschlagen (${r.suite})`, ...basis, getestet: null, sperren: true });
@@ -250,21 +271,24 @@ export async function nachziehen({
       }
       return null;
     };
-    git(repo, ['merge', '--ff-only', '--quiet', commit]);
-    log(`übernommen ${kurz(head)} → ${kurz(commit)}${prs.length ? ` (${prs.join('; ')})` : ''}`);
+    // Bibliotheken vor dem Vorspulen tauschen: bricht der Lauf dazwischen ab, findet der
+    // naechste HEAD noch auf der Marke, holt die alten Bibliotheken zurueck und versucht es neu.
+    let tausch = null;
+    try {
+      if (lockGeaendert) tausch = moduleTauschen(repo, { head });
+      git(repo, ['merge', '--ff-only', '--quiet', commit]);
+    } catch (e) { tausch?.zurueck(); throw e; }
+    log(`übernommen ${kurz(head)} → ${kurz(commit)}${tausch ? ', Bibliotheken getauscht' : ''}${prs.length ? ` (${prs.join('; ')})` : ''}`);
     // Ab hier ist HEAD vorgespult: jeder Fehler fuehrt ueber den Rueckweg, nie zu einem
     // Checkout mit neuem Code und Diensten auf altem Stand.
     let fehler = null;
-    try {
-      if (lockGeaendert && !npm(repo, ['ci', '--no-audit', '--no-fund']).ok) fehler = 'npm ci';
-      if (!fehler) fehler = await starte();
-    } catch (e) { fehler = `Neustart (${e.message.slice(0, 80)})`; }
+    try { fehler = await starte(); } catch (e) { fehler = `Neustart (${e.message.slice(0, 80)})`; }
     if (fehler) {
       log(`${fehler} antwortet nach dem Update nicht – zurück auf ${kurz(head)}`);
       let wieder;
       try {
         git(repo, ['reset', '--keep', head]);
-        if (lockGeaendert) npm(repo, ['ci', '--no-audit', '--no-fund']);
+        tausch?.zurueck();
         wieder = await starte();
       } catch (e) { wieder = `Rückweg (${e.message.slice(0, 80)})`; }
       const name = n => NAMEN[n] || n;
@@ -273,11 +297,14 @@ export async function nachziehen({
         : `Nach dem Update startete ${name(fehler)} nicht – der bisherige Stand läuft wieder`;
       return ende({ stand: 'haengt', art: wieder ? 'ausfall' : 'neustart', grund, ...basis, getestet: null, sperren: true });
     }
+    tausch?.aufraeumen();
     return ende({ stand: 'aktuell', nachgezogen: true, von: kurz(head), nach: kurz(commit), prs, betrieb: kurz(commit), main: kurz(main), rueckstand: 0, getestet: null, neugestartet: neuStarten });
   } catch (e) {
     log(`Fehler: ${e.message}`);
     return ende({ stand: 'haengt', grund: `Unerwarteter Fehler: ${e.message.slice(0, 160)}` });
   } finally {
+    // Aufgehobene Bibliotheken, die nicht getauscht wurden (wartet, Fehler): weg damit.
+    if (aufgehoben) fs.rmSync(path.join(repo, MODULE_NEU), { recursive: true, force: true });
     fs.rmSync(sperre, { force: true });
   }
 }

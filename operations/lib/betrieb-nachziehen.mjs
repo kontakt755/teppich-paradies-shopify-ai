@@ -133,6 +133,69 @@ export function neustartNoetig(geaendert = []) {
   return [...dienste];
 }
 
+/**
+ * Neue Bibliotheken kommen fertig aus der Probe und werden im Dienst-Checkout nur umbenannt.
+ * npm ci dort loescht node_modules zuerst: gemessen am 26.10.2026 fehlte puppeteer bis zu
+ * 0,3 s (6 von 23 frischen Importen scheiterten, social laedt es erst beim Rendern), und
+ * ohne erreichbare Paketquelle blieb der Ordner leer - der Rueckweg brauchte dann wieder npm ci.
+ * Beide Ordner liegen im Checkout selbst, damit das Umbenennen auf demselben Laufwerk bleibt.
+ */
+export const MODULE_NEU = '.nachziehen-module-neu';
+export const MODULE_VORHER = '.nachziehen-module-vorher';
+// HEAD vor dem Tausch: so erkennt der naechste Lauf, ob nach einem Abbruch noch vorgespult wurde.
+export const MODULE_HEAD = '.nachziehen-module-head';
+
+/**
+ * Tauscht node_modules gegen die getesteten Bibliotheken; liefert den Weg zurueck.
+ * `head` ist der Commit vor dem Vorspulen; `umbenennen` nur fuer Tests.
+ */
+export function moduleTauschen(repo, { head, umbenennen = fs.renameSync } = {}) {
+  const live = path.join(repo, 'node_modules'), neu = path.join(repo, MODULE_NEU), vorher = path.join(repo, MODULE_VORHER);
+  const marke = path.join(repo, MODULE_HEAD);
+  if (!fs.existsSync(neu)) throw new Error('getestete Bibliotheken aus der Probe fehlen');
+  fs.rmSync(vorher, { recursive: true, force: true });
+  if (head) fs.writeFileSync(marke, head);
+  const hatte = fs.existsSync(live);
+  if (hatte) umbenennen(live, vorher);
+  try { umbenennen(neu, live); }
+  catch (e) { if (hatte) umbenennen(vorher, live); fs.rmSync(marke, { force: true }); throw e; }
+  return {
+    zurueck() {
+      umbenennen(live, neu);
+      if (hatte) umbenennen(vorher, live);
+      fs.rmSync(neu, { recursive: true, force: true });
+      fs.rmSync(marke, { force: true });
+    },
+    aufraeumen() {
+      fs.rmSync(vorher, { recursive: true, force: true });
+      fs.rmSync(marke, { force: true });
+    },
+  };
+}
+
+/**
+ * Reste eines abgebrochenen Laufs. Fehlt node_modules mitten im Tausch, kommt der alte Stand
+ * sofort zurueck. Wurde getauscht, aber nicht vorgespult (HEAD steht noch auf der Marke), erst
+ * wenn `darfTauschen()` Ruhe meldet - sonst bleibt alles liegen und das Ergebnis ist 'wartet'.
+ */
+export function moduleReste(repo, { head, darfTauschen = () => true } = {}) {
+  const live = path.join(repo, 'node_modules'), neu = path.join(repo, MODULE_NEU), vorher = path.join(repo, MODULE_VORHER);
+  const marke = path.join(repo, MODULE_HEAD);
+  if (fs.existsSync(vorher)) {
+    let vorHead = null;
+    try { vorHead = fs.readFileSync(marke, 'utf8').trim(); } catch {}
+    if (!fs.existsSync(live)) fs.renameSync(vorher, live);
+    else if (head && vorHead === head) {
+      if (!darfTauschen()) return 'wartet';
+      fs.rmSync(neu, { recursive: true, force: true });
+      fs.renameSync(live, neu);
+      fs.renameSync(vorher, live);
+    }
+  }
+  for (const d of [MODULE_NEU, MODULE_VORHER, MODULE_HEAD]) fs.rmSync(path.join(repo, d), { recursive: true, force: true });
+  return null;
+}
+
 /** Testsuiten, die vor dem Uebernehmen in der Probekopie laufen. */
 export function probeTests(geaendert = []) {
   const suiten = ['dashboard:test'];
