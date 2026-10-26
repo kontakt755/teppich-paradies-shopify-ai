@@ -1773,6 +1773,10 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   `tp-etikett-versatz`); er verschiebt nur das Druckbild, nicht Vorschau oder PNG. An den Drucker geht genau
   die Kopfbreite aus `getModelMetadata().printheadPixels` (B1: 384 px), mittig aus dem 400 px breiten Bild
   geschnitten (`aufDruckkopf`); ein breiteres Bild legte die Firmware nicht mittig auf den Kopf.
+  QR-Flächen legt `layout()` per `qrRaster()` auf ganze Kästchen (gezeichnet wird in ganzen Druckpunkten je
+  Kästchen, ein Rest blieb sonst als Lücke im Druck). `zeichne()` setzt das fertige Bild mit `schwarzWeiss()`
+  auf reines Schwarz/Weiss (`SCHWELLE` 150): niimbluelib druckt jedes nicht ganz weisse Pixel schwarz, die
+  grauen Kantenpixel machten den Druck sonst fetter als die Vorschau (#1708).
 - **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
   Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
   im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt
