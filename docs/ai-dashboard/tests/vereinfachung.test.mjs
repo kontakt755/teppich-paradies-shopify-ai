@@ -28,7 +28,7 @@ test('Musterlinks: genaue aktive Variante, dedupliziert; archivierte, fehlende, 
 test('Bestehender manueller Nachfasstext erhält Auswahl, aber keinen privaten Akten-/Trackinglink und sendet nichts', () => {
   const links = musterKaufLinks([quelle], [produkt]);
   const r = fuelleText({ betreff: 'Ihre Muster', text: 'Guten Tag {Anrede} {Nachname},\nWir beraten gern.\n{Name}' }, { kundenname: 'Testkunde', absender: 'Team', produkte: links });
-  assert.match(r.text, /Ihre gewählten Böden/); assert.match(r.text, /Testboden · Grau/); assert.match(r.text, /variant=123/); assert.ok(!r.text.includes('#/kunden'));
+  assert.match(r.text, /Ihr gewähltes Produkt:\n/); assert.doesNotMatch(r.text, /Böden/); assert.match(r.text, /Testboden · Grau/); assert.match(r.text, /variant=123/); assert.ok(!r.text.includes('#/kunden'));
   assert.ok(!fuelleText({ text: 'Hallo' }, { produkte: [] }).text.includes('Böden'));
 });
 test('v49-Laufzeiten sind optionale echte Integer; fehlend/unzulässig wird niemals 0', () => {

@@ -167,6 +167,64 @@
     opacity: 0.45;
   }
 
+  .tp-treppen-ausf__matrix-scroll:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .tp-treppen-ausf__spalte-kurz {
+    display: none;
+  }
+
+  .tp-treppen-ausf__wisch {
+    margin: 0 0 8px;
+    font-size: var(--tp-fs-sm);
+    line-height: 1.4;
+    opacity: 0.8;
+  }
+
+  .tp-treppen-ausf__wisch[hidden] {
+    display: none;
+  }
+
+  /* Telefon: alle vier Belaege sichtbar (Rundgang 26.10.2026). Kurze Koepfe,
+     weniger Innenabstand, die erste Spalte bricht um statt die Tabelle zu
+     verbreitern. Unter 320 px scrollt der Kasten, dann mit Wisch-Hinweis. */
+  @media screen and (max-width: 749px) {
+    .tp-treppen-ausf__matrix {
+      min-width: 300px;
+      font-size: var(--tp-fs-sm);
+    }
+
+    .tp-treppen-ausf__matrix th,
+    .tp-treppen-ausf__matrix td {
+      padding: 8px 6px;
+    }
+
+    .tp-treppen-ausf__matrix tbody th {
+      padding-left: 0;
+      hyphens: auto;
+      overflow-wrap: break-word;
+    }
+
+    .tp-treppen-ausf__matrix thead th:first-child {
+      padding-left: 0;
+    }
+
+    .tp-treppen-ausf__spalte-lang {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .tp-treppen-ausf__spalte-kurz {
+      display: inline;
+    }
+  }
+
   .tp-treppen-ausf__matrix-hinweis {
     margin: 12px 0 0;
     font-size: var(--tp-fs-sm);

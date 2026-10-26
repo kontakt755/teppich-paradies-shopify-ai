@@ -20,6 +20,21 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Ablauf eines Upload-Links; das Datum steht nur unter „Social Media“.
 - **Naechste Stufe:** keine geplant.
 
+## 2026-10-26 · Service-Anfragen: Wunschzeitraum und „Mieterwechsel / mehrere Wohnungen“
+
+- **Geaendert:** Das Anfrageformular der Serviceseiten (`sections/tp-start-kontakt.liquid`) fragt jetzt
+  freiwillig einen Wunschzeitraum ab und bietet unter „Ich möchte“ die Auswahl „Mieterwechsel / mehrere
+  Wohnungen“ (Rundgang 26.10., Vermieter mit mehreren Objekten). Der Mail-Leser
+  (`docs/ai-dashboard/lib/serviceanfragen.mjs`) kennt das Feld `Wunschzeitraum` und schreibt es in die Notiz
+  („Wunschzeitraum: …“). Die neue Auswahl zählt als Verlegeservice und wird von der Startseite automatisch
+  übernommen.
+- **Getestet:** neue Tests für Mail mit und ohne Wunschzeitraum, Feld und Wert in einer Zeile, Postfach-Übernahme
+  einer Startseiten-Mail; ein Theme-Test prüft, dass jedes Feld und jedes Anliegen aus dem Formular im Mail-Leser
+  eingeordnet ist (neue Felder fallen so beim nächsten Testlauf auf).
+- **Risiken:** Den Feldnamen „Wunschzeitraum“ in der Shopify-Mail kennen wir noch nicht aus einer echten Mail;
+  Shopify übernimmt Feldnamen bisher unverändert (nur Großschreibung wie „Plz“).
+- **Naechste Stufe:** keine geplant.
+
 ## 2026-10-26 · Musteretiketten: Maßartikel auch über die Lieferanten-Artikelnummer (#1723)
 
 - **Geaendert:** Bestellung #1051 stand in der Packstation unter „Zu klären“, weil ein Muster als

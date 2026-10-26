@@ -39,5 +39,21 @@ Firmenkonto kostet nichts und verschickt von kontakt@.
 - `GET <exec>` liefert `{"ok":true,"dienst":"widerruf"}`.
 - Test-Widerruf mit eigener Adresse über die Seite: Mail an den Kunden mit
   Datum/Uhrzeit/Vorgangsnummer, Kopie an kontakt@, Zeile im Protokoll.
-- Missbrauchsbremse: 3 Einsendungen je Adresse pro Stunde (danach abgewiesen); ab 40 insgesamt pro Stunde und bei gefuelltem
-  Honigtopffeld `website` wird protokolliert und intern gemeldet, aber nicht an die Adresse gemailt. Gleiche `id` (je Zusammenfassung) = keine zweite Mail.
+- Missbrauchsbremse: 3 Einsendungen je Adresse pro Stunde (danach abgewiesen). Bei gefuelltem
+  Honigtopffeld `website` wird protokolliert und intern gemeldet, aber nicht an die Adresse gemailt.
+  Gleiche `id` (je Zusammenfassung) = keine zweite Mail.
+- Grenzen fuer das Mail-Kontingent (seit 2026-10-26, Rundgang #59): ab 40 Einsendungen pro Stunde oder
+  100 pro Tag wird jede weitere Einsendung nur noch protokolliert (Sheet-Zeile = Nachweis, Spalte
+  „Bestätigung Kunde“: „NICHT GESENDET: …“). Es gehen dann weder Bestaetigung noch Einzelkopie raus,
+  sondern hoechstens ein Sammelhinweis je Stunde an kontakt@ mit Link zum Protokoll. Vor jeder Mail
+  prueft das Skript `MailApp.getRemainingDailyQuota()` und laesst 200 Mails fuer andere Skripte im
+  Konto frei (Terminerinnerungen der Auftrags-App). Der Tageszaehler steht in den Script-Properties
+  (`TAGESZAEHLER`), weil der Cache nach 6 Stunden verfaellt.
+- `ok:true` nur mit dauerhafter Speicherung: Protokollzeile oder Kopie an kontakt@. Ist die Tabelle
+  nicht erreichbar, traegt die Kopie den Vermerk „NICHT im Protokoll“. Gibt es weder Zeile noch Kopie
+  (etwa ueber den Grenzen oder bei aufgebrauchter Reserve), antwortet das Skript mit `fehler: 'server'`
+  und einer Meldung fuer das Formular; die Antwort wird nicht zwischengespeichert, ein erneuter Versuch
+  mit derselben `id` wird also wieder verarbeitet.
+- Tests ohne Google-Konto: `qa/tests/widerruf-apps-script.test.mjs` (VM mit nachgebauten Diensten).
+- Ob die bereitgestellte Version diesem Stand entspricht, laesst sich nur im Apps-Script-Editor
+  pruefen (Bereitstellungen verwalten → Version). `GET <exec>` zeigt nur, dass die Web-App laeuft.

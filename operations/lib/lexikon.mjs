@@ -369,6 +369,9 @@ export function aufbereiten(exportDaten, opt = {}) {
           basisHandle: text(p.musterBasis?.reference?.handle), vollstaendig: Object.hasOwn(p, 'musterBasis') },
       } : {}),
       produktgruppe: produktgruppe(p),
+      // Lieferzeit laut Produktseite (service.lieferzeit), z. B. fuer die Muster-Nachfrage bei
+      // Teppich nach Mass. Fehlt das Feld, fehlt der Schluessel - nie raten.
+      ...(text(p.lieferzeit?.value) ? { lieferzeit: text(p.lieferzeit.value) } : {}),
       bild: bildUrl(p),
       eigenschaften: eigenschaften(customMap),
       muster: musterBlock(p, varianten, handleSet, musterKandidatenAusVarianten),
