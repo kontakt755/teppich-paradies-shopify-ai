@@ -1,0 +1,27 @@
+{%- doc -%}
+  Steckt dasselbe Foto schon in der Liste? Gibt "ja" aus oder nichts.
+  Gleiche Medien-ID zaehlt, ausserdem der Dateistamm (snippets/tp-medien-dateistamm): Shopify haengt
+  beim erneuten Hochladen derselben Datei "_<uuid>" an den Namen, die
+  Medien-ID ist dann eine andere (Rundgang 2026-10-26, #29).
+
+  Aufruf: capture x / render 'tp-medien-doppelt', media: m, liste: medien / endcapture
+
+  @param {object} media - Medium, das angehaengt werden soll
+  @param {object[]} liste - Medien, die schon in der Galerie stehen
+{%- enddoc -%}
+{%- liquid
+  if media != blank
+    capture tmdp_stamm
+      render 'tp-medien-dateistamm', media: media
+    endcapture
+    for tmdp_m in liste
+      capture tmdp_m_stamm
+        render 'tp-medien-dateistamm', media: tmdp_m
+      endcapture
+      if tmdp_m.id == media.id or tmdp_stamm != blank and tmdp_m_stamm == tmdp_stamm
+        echo 'ja'
+        break
+      endif
+    endfor
+  endif
+-%}

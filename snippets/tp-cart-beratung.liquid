@@ -40,7 +40,7 @@
   (snippets/header-actions.liquid), weil per Morph eingefuegte Script-Tags
   nicht ausgefuehrt werden.
 
-  @param {string} stelle - Einbauort: vor_kasse oder nach_kasse
+  @param {string} stelle - Einbauort: vor_summe (ueber dem Gesamtbetrag) oder vor_kasse
 {%- enddoc -%}
 
 {%- liquid
@@ -130,15 +130,18 @@
     assign tpb_zeigen = true
   endif
 
-  # Vor oder hinter dem Kaufknopf? Was beantwortet werden muss, bevor bestellt
-  # wird, steht davor: die Pflichtfrage bei reiner Musterbestellung. Die
-  # Verlegeanfrage ist ein freiwilliges Interesse und darf einem Kaufkunden
-  # nicht zwischen Gesamtbetrag und "Zur Kasse" stehen.
+  # Wo steht das Element? Was beantwortet werden muss, bevor bestellt wird,
+  # steht direkt vor dem Kaufknopf: die Pflichtfrage bei reiner
+  # Musterbestellung. Die Verlegeanfrage ist ein freiwilliges Interesse und
+  # steht nicht zwischen Gesamtbetrag und "Zur Kasse", sondern darueber unter
+  # der Zusage zur Verlegung (vor_summe). Vorher stand sie unter den
+  # Bezahlknoepfen - wer auf "Zur Kasse" tippte, sah sie nie (Rundgang
+  # 2026-10-26, #3).
   # Umgesetzt ueber die Aufrufstelle statt ueber CSS order, damit Lesereihenfolge
   # und Tastaturreihenfolge zur sichtbaren Reihenfolge passen. Das Element
   # entsteht immer nur EINMAL - zwei davon wuerden sich beim Speichern der
   # Cart-Attribute gegenseitig ueberschreiben.
-  assign tpb_stelle_soll = 'nach_kasse'
+  assign tpb_stelle_soll = 'vor_summe'
   if tpb_frage
     assign tpb_stelle_soll = 'vor_kasse'
   endif
