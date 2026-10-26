@@ -81,6 +81,16 @@ test('gebuendelter Umschlag verlinkt jede Bestellung und behaelt gewaehlten Part
   assert.match(waren, /umschlag=order6&amp;laden=Partner%20A/);
 });
 
+test('Packer-Info: Herstelleretiketten ab, ausser bei Vorwerk und JAB (Inhaber 26.10.)', () => {
+  for (const query of ['tab=muster', 'tab=muster&mpbereich=gepackt']) {
+    const html = ansicht(query, [kunde(1, 'packen'), kunde(2, 'gepackt')]);
+    assert.match(html, /<p class="notice mp-packer-info"><strong>Wichtig beim Packen:<\/strong> Herstelleretiketten von den Mustern entfernen – außer bei Vorwerk und JAB\. Dort bleibt das Herstelleretikett dran\.<\/p>/);
+    assert.equal((html.match(/mp-packer-info/g) || []).length, 1, 'genau einmal, nicht je Umschlag');
+  }
+  const k = { ...kunde(6, 'warten'), muster: [{ ...kunde(6, 'warten').muster[0], lieferant: 'Partner A' }] };
+  assert.equal((ansicht('tab=muster&mp=laden', [k]).match(/mp-packer-info/g) || []).length, 1, 'auch im Wareneingang wird aufgeklebt');
+});
+
 test('Neu etikettieren: einzelnes Muster leise nachdrucken, gepackte Umschlaege alle Aufkleber erneut', () => {
   const k = kunde(1, 'warten');
   k.muster = [{ ...k.muster[0], anzahl: 2 }, { ...k.muster[0], lineItemId: 'line1b', fehlt: ['Serie'] }];
@@ -127,7 +137,7 @@ test('Bestellung packen in drei Schritten: drucken, was ist da, zukleben – gen
 test('Umschlag vorbereitet: gedruckt steht fuer alle Geraete in der Kopfzeile, Schritt 1 mit Zeit und Person (#1718)', () => {
   const vermerk = { zeit: '2026-10-25T13:05:00Z', von: 'Laden' };
   const html = ansicht('tab=muster&umschlag=order1', [{ ...kunde(1, 'warten'), gedruckt: vermerk }]);
-  assert.match(html, /class="small mp-vorbereitet">Umschlag vorbereitet · 25\.10\.</);
+  assert.match(html, /class="mp-stempel">Umschlag vorbereitet · 25\.10\.</);
   assert.equal(schritt(html), '2 · Was ist da?', 'gedruckt: weiter bei Schritt 2');
   assert.match(html, /1 · Bestellung drucken<\/span><span class="small muted">gedruckt 25\.10\.[^<]* · Laden</);
   assert.match(html, /class="mp-mehr"[\s\S]*data-mp-gedruckt-weg="order1">Druckvermerk zurücknehmen</);
@@ -142,13 +152,42 @@ test('Umschlag vorbereitet: gedruckt steht fuer alle Geraete in der Kopfzeile, S
   assert.deepEqual(hauptknoepfe(klOhne), ['Fehlendes ist da – weiter packen']);
   assert.match(klOhne, /class="mp-mehr"[\s\S]*data-mp-gedruckt="order3">Schon gedruckt – Umschlag vorbereitet</);
   const klMit = ansicht('tab=muster&umschlag=order3', [{ ...kl, gedruckt: vermerk }]);
-  assert.match(klMit, /class="small mp-vorbereitet">Umschlag vorbereitet · 25\.10\.</);
+  assert.match(klMit, /class="mp-stempel">Umschlag vorbereitet · 25\.10\.</);
   assert.match(klMit, /Umschlag vorbereitet: Aufkleber und Adresse gedruckt 25\.10\.[^<]* · Laden\. Er wartet auf die fehlenden Muster\./);
   assert.match(klMit, /data-mp-gedruckt-weg="order3"/);
   assert.doesNotMatch(klMit, /data-mp-gedruckt="order3"/);
   // In der Liste "Alle offenen" (zugeklappt) ist der Stand ohne Aufklappen zu sehen.
   const liste = ansicht('tab=muster', [{ ...kunde(4, 'warten'), gedruckt: vermerk }, kunde(5, 'warten')]);
   assert.equal((liste.match(/Umschlag vorbereitet · /g) || []).length, 1);
+});
+
+test('Muster schon im Umschlag: Bernstein-Marke in der Kopfzeile, Randbalken, oben in der Gruppe (#1720)', () => {
+  const vermerk = { zeit: '2026-10-25T13:05:00Z', von: 'Laden' };
+  const drei = k => ({ ...k, muster: ['a', 'b', 'c'].map(x => ({ ...k.muster[0], lineItemId: `${k.packSchluessel}${x}` })) });
+  const halb = k => ({ ...k, muster: k.muster.map((m, i) => (i ? m : { ...m, abgehakt: { zeit: 'x' } })) });
+  const leer = { ...drei(kunde(1, 'warten')), gedruckt: vermerk };
+  const angefangen = halb({ ...drei(kunde(2, 'warten')), gedruckt: vermerk });
+  const liste = ansicht('tab=muster', [kunde(3, 'klaeren'), leer, angefangen]);
+  assert.deepEqual([...liste.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]), ['order3', 'order2', 'order1'], 'innerhalb der Gruppe zuerst');
+  assert.match(liste, /class="mp-kunde mp-warten mp-angefangen"[^>]*data-mp-kunde="order2"/);
+  assert.doesNotMatch(liste, /mp-angefangen"[^>]*data-mp-kunde="order1"/);
+  assert.match(liste, /data-mp-kunde="order2"[\s\S]*?<div class="mp-stempelzeile"><span class="mp-stempel">Umschlag vorbereitet · 25\.10\.<\/span><span class="mp-stempel mp-stempel-drin">1 von 3 Mustern schon im Umschlag</);
+  assert.doesNotMatch(liste, /abgehakt<\/span>/, 'keine stille Zaehlzeile mehr in den Metadaten');
+  const nurWarten = ansicht('tab=muster&mpbereich=warten', [leer, angefangen]);
+  assert.deepEqual([...nurWarten.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]), ['order2', 'order1']);
+  const voll = { ...kunde(4, 'packen'), muster: [{ ...kunde(4, 'packen').muster[0], abgehakt: { zeit: 'x' } }] };
+  assert.match(ansicht('tab=muster', [voll]), /mp-stempel-drin">Muster liegt im Umschlag</);
+  assert.doesNotMatch(ansicht('tab=muster&mpbereich=gepackt', [{ ...halb(drei(kunde(5, 'gepackt'))), gedruckt: vermerk }]), /mp-stempel|mp-angefangen/);
+  // Schon ein Muster drin, Druck nie vermerkt: Schritt 2 leuchtet, der Vermerk ist unter "Mehr" nachzutragen.
+  const ohneVermerk = halb(drei(kunde(6, 'warten')));
+  const offen = ansicht('tab=muster&umschlag=order6', [ohneVermerk]);
+  assert.equal(schritt(offen), '2 · Was ist da?');
+  assert.match(offen, /class="mp-mehr"[\s\S]*data-mp-gedruckt="order6">Schon gedruckt – Umschlag vorbereitet</);
+  assert.doesNotMatch(offen, /class="mp-stempel">/);
+  // Muster kommt an: die Karte sagt, dass der Ziel-Umschlag schon vorbereitet ist und was drin liegt.
+  const mitName = { ...angefangen, muster: angefangen.muster.map(m => ({ ...m, vorher: { produktname: 'Herstellerware Modena', farbnummer: '3N55' } })) };
+  const karte = ansicht('tab=muster&mp=laden&mh=3N55', [mitName]);
+  assert.match(karte, /mp-karte-ziel[\s\S]*Umschlag vorbereitet · 25\.10\.[\s\S]*1 von 3 Mustern schon im Umschlag/);
 });
 
 test('Zu klaeren und Gepackt: ein Hauptknopf fuer das Naechstliegende, Rest unter "Mehr"', () => {

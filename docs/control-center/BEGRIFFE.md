@@ -83,6 +83,8 @@ gebraeuchlich), Erfassen.
 - **Umschlag vorbereitet** = Aufkleber und Adresse sind gedruckt, der Umschlag liegt bereit und wartet auf die
   fehlenden Muster; sichtbar auf allen Geräten, mit Datum und Person. **Schon gedruckt** trägt es von Hand nach,
   **Druckvermerk zurücknehmen** (unter „Mehr …“) nimmt es zurück (#1718, 26.10.2026).
+- **x von n Mustern schon im Umschlag** = Marke in Bernstein für einen angefangenen Umschlag (mindestens ein Haken);
+  ersetzt „x von n abgehakt“, solche Umschläge stehen in ihrer Gruppe oben (#1720, 26.10.2026).
 - **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
 - **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
 - Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.
