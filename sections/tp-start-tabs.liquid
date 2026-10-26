@@ -41,8 +41,10 @@
   steht dort statt der Liste nur die Marke data-tp-liste-leer
   (sections/product-list, "Ohne Produkte ausblenden"). Dann verschwindet ihr
   Reiter, und sind alle Listen leer, der ganze Abschnitt - per CSS :has()
-  schon beim Aufbau der Seite, ohne Springen. Das Skript unten prueft
-  dasselbe noch einmal an den Karten selbst (auch fuer Browser ohne :has()).
+  schon beim Aufbau der Seite, ohne Springen. Ist die erste Liste leer, zeigt
+  CSS bis zum Skript die erste Liste mit Karten (sonst stuende bis dahin nur
+  die Reiterleiste da). Das Skript unten prueft dasselbe noch einmal an den
+  Karten selbst (auch fuer Browser ohne :has()).
 {%- endcomment -%}
 {%- assign tp_tabs_prefix = section.id | split: '__' | first -%}
 {%- assign tp_tabs_alle_leer = '' -%}
@@ -54,6 +56,10 @@
       #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} .section { --page-content-width: calc(var(--tp-container) - 2 * var(--tp-pad)); --page-width: calc(var(--page-content-width) + var(--page-margin) * 2); }
       {%- unless forloop.first or request.design_mode -%}
         .tp-js #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }}:not([data-tp-tab-aktiv]) { display: none; }
+        {%- comment -%} Sind alle Listen davor leer, steht bis zum Skript diese Liste statt einer leeren ersten {%- endcomment -%}
+        {%- if tp_tabs_alle_leer != blank -%}
+          html.tp-js{{ tp_tabs_alle_leer }}:not(:has([data-tp-tab-aktiv])) #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} { display: block; }
+        {%- endif -%}
       {%- endunless -%}
       {%- unless request.design_mode -%}
         {%- capture tp_tabs_leer -%}:has(#shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} [data-tp-liste-leer]){%- endcapture -%}
@@ -100,6 +106,7 @@
         var voll = !!(sec && sec.querySelector('.resource-list__item'));
         if (!voll && !editor) {
           t.hidden = true;
+          t.setAttribute('aria-selected', 'false');
           if (sec) sec.hidden = true;
         }
         return voll || editor;
