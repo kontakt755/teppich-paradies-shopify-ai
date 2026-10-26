@@ -6,8 +6,9 @@
  * Schluessel sind die sortierten Bestell-IDs eines Kunden (packSchluessel) - kommt eine
  * Bestellung dazu, gilt der Umschlag nicht mehr als gepackt. In Shopify aendert sich nichts.
  *
- * Daneben (gleiche Datei): `haken` je Bestellposition (Muster ueberklebt, liegt im Umschlag) und
- * `klaeren` je Kunde (Umschlag unvollstaendig: welche Positionen fehlen, kurze Notiz).
+ * Daneben (gleiche Datei): `haken` je Bestellposition (Muster ueberklebt, liegt im Umschlag),
+ * `klaeren` je Kunde (Umschlag unvollstaendig: welche Positionen fehlen, kurze Notiz) und
+ * `gedruckt` je Umschlag (Aufkleber und Adresse gedruckt: Umschlag vorbereitet, wartet auf Muster).
  */
 
 import fs from 'node:fs';
@@ -27,16 +28,16 @@ export function leseStand(datei) {
   try {
     inhalt = fs.readFileSync(datei, 'utf8');
   } catch (e) {
-    if (e?.code === 'ENOENT') return { gepackt: {}, haken: {}, klaeren: {} };
+    if (e?.code === 'ENOENT') return { gepackt: {}, haken: {}, klaeren: {}, gedruckt: {} };
     throw new Error(`${path.basename(datei)} ist nicht lesbar (${e?.code || e?.message}) – bitte aus der Sicherung holen`);
   }
-  if (!inhalt.trim()) return { gepackt: {}, haken: {}, klaeren: {} };
+  if (!inhalt.trim()) return { gepackt: {}, haken: {}, klaeren: {}, gedruckt: {} };
   let roh;
   try { roh = JSON.parse(inhalt); } catch {
     throw new Error(`${path.basename(datei)} ist beschädigt – bitte aus der Sicherung holen`);
   }
   const objekt = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
-  return { gepackt: objekt(roh?.eintraege), haken: objekt(roh?.haken), klaeren: objekt(roh?.klaeren) };
+  return { gepackt: objekt(roh?.eintraege), haken: objekt(roh?.haken), klaeren: objekt(roh?.klaeren), gedruckt: objekt(roh?.gedruckt) };
 }
 
 /** Nur die gepackten Umschlaege (fruehere Form der Datei). */
@@ -47,7 +48,7 @@ export function leseAlle(datei) {
 function schreibStand(datei, stand) {
   fs.mkdirSync(path.dirname(datei), { recursive: true });
   const tmp = `${datei}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ aktualisiertAm: new Date().toISOString(), eintraege: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren }, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({ aktualisiertAm: new Date().toISOString(), eintraege: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren, gedruckt: stand.gedruckt || {} }, null, 2));
   fs.renameSync(tmp, datei);
 }
 
@@ -60,6 +61,21 @@ export function setzeGepackt(datei, packSchluessel, { gepackt = true, von = null
   else delete stand.gepackt[key];
   schreibStand(datei, stand);
   return { packSchluessel: key, gepackt: stand.gepackt[key] || null };
+}
+
+/**
+ * "Gedruckt" je Umschlag setzen oder zuruecknehmen: Aufkleber und Adresse liegen bereit, der Umschlag
+ * wartet auf die Muster. Gilt fuer alle Geraete (bis 26.10. nur im Browser des druckenden Geraets).
+ * `zeit` darf ein frueherer Druckzeitpunkt sein (Uebernahme alter Geraetevermerke).
+ */
+export function setzeGedruckt(datei, packSchluessel, { gedruckt = true, von = null, zeit = null, jetzt = new Date() } = {}) {
+  const key = String(packSchluessel || '').trim();
+  if (!key) throw new Error('Kein Kunde angegeben');
+  const stand = leseStand(datei);
+  if (gedruckt) stand.gedruckt[key] = { zeit: (zeit || jetzt).toISOString(), von: von || null };
+  else delete stand.gedruckt[key];
+  schreibStand(datei, stand);
+  return { packSchluessel: key, gedruckt: stand.gedruckt[key] || null };
 }
 
 /** Haken je Bestellposition setzen oder entfernen. */

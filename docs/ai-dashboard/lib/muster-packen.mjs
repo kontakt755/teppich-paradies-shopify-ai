@@ -86,7 +86,7 @@ function vorherIndex(produkte) {
  * @param {object} [p.klaeren]          { [Kundenschluessel]: { zeit, von, fehlt: [lineItemId], notiz } }
  * @param {(id) => string} [p.lieferantVon]  Lieferanten-Kuerzel -> Anzeigename (private Stammdaten)
  */
-export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, lieferantVon = id => `Lieferant ${id}`, jetzt = new Date() } = {}) {
+export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, jetzt = new Date() } = {}) {
   const statusVon = eintragVon ? (o, l) => eintragVon(o, l)?.status || null : statusAllein;
   // Vom Lieferanten direkt an den Kunden (#1680): wird nicht bei uns gepackt.
   const direkt = (a, p) => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT') || eintragVon?.(a.id, p.lineItemId)?.ueber === 'kunde';
@@ -196,6 +196,9 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       fehlt: [...unvollstaendig.map(m => `${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`), ...adressAufkleber.fehlt.map(f => `Adresse: ${f}`)],
       nichtBestellt: muster.filter(m => m.stand === 'offen').length,
       gepackt: istGepackt ? { zeit: gepackt[pk].zeit || null, von: gepackt[pk].von || null } : null,
+      // Umschlag vorbereitet: Aufkleber und Adresse gedruckt. Kommt eine Bestellung dazu, aendert sich
+      // der packSchluessel - dann fehlen deren Aufkleber, und der Vermerk gilt nicht mehr.
+      gedruckt: !istGepackt && gedruckt[pk] ? { zeit: gedruckt[pk].zeit || null, von: gedruckt[pk].von || null } : null,
       klaeren: kl ? { zeit: kl.zeit || null, von: kl.von || null, notiz: text(kl.notiz) || null,
         fehlt: muster.filter(m => (kl.fehlt || []).includes(m.lineItemId)).map(m => m.lineItemId) } : null,
       // Ein Haken bestaetigt das physisch eingelegte Muster, sonst braucht es bestaetigten Bestand.

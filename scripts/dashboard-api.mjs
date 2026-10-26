@@ -103,7 +103,7 @@ import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, 
 import { musterwirkung } from '../operations/lib/musterwirkung.mjs';
 import { packhilfeDaten } from '../operations/lib/packhilfe-daten.mjs';
 import { musterPackliste } from '../docs/ai-dashboard/lib/muster-packen.mjs';
-import { musterPackenPfad, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
+import { musterPackenPfad, setzeGedruckt, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1800,7 +1800,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         // Ganzer Eintrag: Bestelldatum und "Musterautomatik" fuer die Anmerkung beim Warten.
         eintragVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)] || null,
         schluesselVon: kundenSchluessel,
-        gepackt: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren,
+        gepackt: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren, gedruckt: stand.gedruckt,
         lieferantVon: id => stammdatenFuer(stammdaten, id).name,
         jetzt: now(),
       });
@@ -1818,6 +1818,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      *   haken    { lineItemIds: [...], an: bool }  Muster ueberklebt und eingelegt
      *   klaeren  { klaeren: bool, notiz? }         unvollstaendig -> zu klaeren (fehlend = alle
      *            nicht abgehakten Muster, vom Server bestimmt) bzw. "Fehlendes ist da"
+     *   gedruckt { gedruckt: bool, seit? }         Aufkleber und Adresse gedruckt: Umschlag vorbereitet,
+     *            wartet auf Muster (fuer alle Geraete). `seit` (ISO, hoechstens 30 Tage alt) uebernimmt
+     *            einen frueheren Druckzeitpunkt; nicht fuer gepackte Umschlaege
      */
     kundenMusterPackenSetzen(payload = {}, benutzer = null) {
       if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
@@ -1831,8 +1834,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           return { ok: true, grossbrief: speichereGrossbrief(grossbriefPfad(privatDirPath || privatDir()), kunde.grossbrief.kontext, payload.version, payload.messung, { von: benutzer?.name || benutzer?.kuerzel || 'Inhaber', jetzt: now() }) };
         } catch (e) { throw new ApiError(e instanceof GrossbriefSpeicherFehler ? e.status : 500, e.message); }
       }
-      if (!['gepackt', 'haken', 'klaeren'].includes(aktion)) throw new ApiError(400, 'Unbekannte Aktion.');
-      const wert = aktion === 'gepackt' ? payload.gepackt : aktion === 'haken' ? payload.an : payload.klaeren;
+      if (!['gepackt', 'haken', 'klaeren', 'gedruckt'].includes(aktion)) throw new ApiError(400, 'Unbekannte Aktion.');
+      const wert = aktion === 'gepackt' ? payload.gepackt : aktion === 'haken' ? payload.an : aktion === 'gedruckt' ? payload.gedruckt : payload.klaeren;
       if (typeof wert !== 'boolean') throw new ApiError(400, `Angabe „${aktion === 'haken' ? 'an' : aktion}“ fehlt.`);
       const liste = this.kundenMusterPacken();
       const kunde = (liste.kunden || []).find(k => k.packSchluessel === pk);
@@ -1873,6 +1876,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           if (!ids.length || ids.some(id => !eigene.has(id))) throw new ApiError(400, 'Dieses Muster gehört nicht zu diesem Kunden.');
           ergebnis = setzeHaken(datei, ids, { an: wert, von, jetzt: now() });
           if (wert) eingang = wareneingangAusPackstation({ positionen: kunde.muster.filter(m => ids.includes(m.lineItemId)), actor: von, notiz: 'Eingelegt in der Packstation' });
+        } else if (aktion === 'gedruckt') {
+          if (wert && kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist schon gepackt.');
+          // Nur ein belegbarer frueherer Zeitpunkt; alles andere zaehlt ab jetzt.
+          const seit = typeof payload.seit === 'string' ? new Date(payload.seit) : null;
+          const zeit = seit && !Number.isNaN(seit.getTime()) && seit <= now() && now() - seit <= 30 * 24 * 60 * 60 * 1000 ? seit : null;
+          ergebnis = setzeGedruckt(datei, pk, { gedruckt: wert, von, zeit, jetzt: now() });
+          merke(benutzer, null, wert ? 'Umschlag vorbereitet (Aufkleber gedruckt)' : 'Druckvermerk zurückgenommen', nummern);
         } else {
           const fehlt = kunde.muster.filter(m => !m.abgehakt).map(m => m.lineItemId);
           if (wert && !fehlt.length) throw new ApiError(400, 'Alle Muster sind abgehakt – der Umschlag ist vollständig.');
