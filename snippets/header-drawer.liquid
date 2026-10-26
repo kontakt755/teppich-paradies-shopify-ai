@@ -343,7 +343,8 @@
     gap: 1px;
   }
   .tp-menu-beschriftung {
-    font-size: 10px;
+    /* Kleinste Stufe der Schriftskala (13 px am Handy) statt fester 10 px (Rundgang 2026-10-26, #63). */
+    font-size: var(--tp-fs-xs);
     font-weight: 600;
     line-height: 1;
     letter-spacing: 0.02em;

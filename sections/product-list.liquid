@@ -4,8 +4,61 @@
   assign max_items = section.settings.max_products
 %}
 
+{%- comment -%}
+  TP: Warenkorb "Passend dazu" nach Inhalt (Rundgang 2026-10-26, #16). Vorher
+  standen immer vier Sockelleisten da - auch bei einem losen Teppich und bei
+  einer reinen Musterbestellung. Jetzt:
+  - nur Muster im Warenkorb: keine Liste
+  - Teppich (nach Mass, Laeufer, Wohnteppich) ohne Bodenbelag: die Unterlagen
+    aus dem Unterlagen-Tipp (snippets/tp-cart-unterlage-hinweis, Inhaber
+    2026-10-12), nur lieferbare
+  - sonst (Teppichboden, Vinyl, Laminat ... oder nur Zubehoer): die
+    eingestellte Kollektion wie bisher
+  Musterzeilen erkennt allein snippets/tp-muster-position.
+{%- endcomment -%}
+{%- liquid
+  assign tp_wk_modus = ''
+  assign tp_wk_unterlagen = ''
+  if section.settings.tp_warenkorb_inhalt and cart.item_count > 0
+    assign tp_wk_ware = 0
+    assign tp_wk_teppich = false
+    assign tp_wk_boden = false
+    assign tp_wk_teppich_typen = 'teppich nach maß|läufer nach maß|teppich|wohnteppich' | split: '|'
+    assign tp_wk_boden_typen = 'teppichboden|vinyl von der rolle|klickvinyl|klebevinyl|laminat|parkett|kork|linoleumboden|kautschukboden' | split: '|'
+    for tp_wk_item in cart.items
+      capture tp_wk_muster
+        render 'tp-muster-position', line_item: tp_wk_item
+      endcapture
+      if tp_wk_muster contains 'ja'
+        continue
+      endif
+      assign tp_wk_ware = tp_wk_ware | plus: 1
+      assign tp_wk_typ = tp_wk_item.product.type | strip | downcase
+      if tp_wk_teppich_typen contains tp_wk_typ
+        assign tp_wk_teppich = true
+      elsif tp_wk_boden_typen contains tp_wk_typ
+        assign tp_wk_boden = true
+      endif
+    endfor
+    if tp_wk_ware == 0
+      assign tp_wk_modus = 'aus'
+    elsif tp_wk_teppich and tp_wk_boden == false
+      assign tp_wk_kandidaten = 'antirutsch-unterlage-fuer-teppiche-rollenware,teppichbremse-fuer-teppiche-rollenware,teppichbremse-fuer-teppiche-abgepasst' | split: ','
+      for tp_wk_handle in tp_wk_kandidaten
+        if all_products[tp_wk_handle].available
+          assign tp_wk_unterlagen = tp_wk_unterlagen | append: tp_wk_handle | append: ','
+        endif
+      endfor
+      if tp_wk_unterlagen != blank
+        assign tp_wk_modus = 'unterlagen'
+      endif
+    endif
+  endif
+-%}
+
 {%- comment -%} TP: leere Kollektion optional ganz ausblenden (Startseite "Stark reduziert", 2026-09-24) {%- endcomment -%}
 {%- if section.settings.tp_leer_ausblenden and section.settings.collection.products_count == 0 -%}
+{%- elsif tp_wk_modus == 'aus' -%}
 {%- else -%}
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
@@ -17,6 +70,7 @@
     section-resource-list
     spacing-style
     gap-style
+    {% if tp_wk_modus == 'unterlagen' %}tp-wk-unterlagen{% endif %}
   "
   style="
     {% render 'spacing-style', settings: section.settings %}
@@ -28,7 +82,19 @@
   </div>
 
   {% capture list_items %}
-    {% if section.settings.collection != blank and shop.products_count != 0 %}
+    {% if tp_wk_modus == 'unterlagen' %}
+      {%- assign tp_wk_liste = tp_wk_unterlagen | split: ',' -%}
+      {%- for tp_wk_handle in tp_wk_liste -%}
+        <div class="resource-list__item">
+          {% # theme-check-disable UniqueStaticBlockId %}
+            {% content_for 'block', type: '_product-card', id: 'static-product-card', closest.product: all_products[tp_wk_handle], card_index: forloop.index0 %}
+          {% # theme-check-enable UniqueStaticBlockId %}
+        </div>
+        {% unless forloop.last %}
+          <!--@list/split-->
+        {% endunless %}
+      {%- endfor -%}
+    {% elsif section.settings.collection != blank and shop.products_count != 0 %}
       {%- if section.settings.tp_je_linie_eins -%}
         {%- comment -%}
           TP A1: je Produktlinie nur ein Dekor (Linie = erstes Wort des Titels,
@@ -171,6 +237,8 @@
 {%- endif -%}
 
 {% stylesheet %}
+  /* Unterlagen statt Kollektion: "Alle ansehen" fuehrte sonst zu den Leisten. */
+  .section-resource-list.tp-wk-unterlagen .section-resource-list__header a { display: none; }
   .tp-linie-item { display: flex; flex-direction: column; }
   .tp-linie-mehr { align-self: flex-start; margin-top: 6px; font-size: var(--tp-fs-sm); font-weight: 500; color: var(--tp-ink, #1d1a17); text-decoration: underline; text-underline-offset: 3px; }
 {% endstylesheet %}
@@ -198,6 +266,13 @@
       "type": "checkbox",
       "id": "tp_leer_ausblenden",
       "label": "Ohne Produkte ausblenden",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "tp_warenkorb_inhalt",
+      "label": "Im Warenkorb nach Inhalt wählen",
+      "info": "Nur Muster: keine Liste. Teppich ohne Bodenbelag: Unterlagen. Sonst die Kollektion.",
       "default": false
     },
     {

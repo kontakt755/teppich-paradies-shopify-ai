@@ -185,6 +185,14 @@
         {%- if section.settings.intro != blank -%}
           <p class="tp-zubehoer-produkte__intro">{{ section.settings.intro | escape }}</p>
         {%- endif -%}
+        {%- comment -%}
+          Gruppe Natur: JAB-Schurwolle und -Sisal, Vorwerk und Sisal mit Borduere stehen
+          wegen des Renderlimits in eigenen Kollektionen und waren hier nicht verlinkt
+          (Rundgang 2026-10-26).
+        {%- endcomment -%}
+        {%- if tp_tg_filter == 'natur' -%}
+          {%- render 'tp-mass-querverweise' -%}
+        {%- endif -%}
       </div>
       {%- if section.settings.link_text != blank and tp_more_href != blank -%}
         <a class="tp-zubehoer-produkte__more" href="{{ tp_more_href }}">
@@ -354,6 +362,25 @@
         var mehrFokus = imKartenbereich && fokus.closest('[data-tp-gruppe-mehr]');
         var ersatz = reihe.querySelector('[data-tp-reihe-ersatz]');
         var retryFokus = ersatz && ersatz.contains(fokus);
+        // Kartenbilder vor dem Einsetzen vorbereiten (Rundgang 2026-10-26): Am Handy
+        // kamen je Reihe die vier sichtbaren Bilder zuerst in 1440 px und danach
+        // noch einmal in 600 px, zusammen rund 7 MB.
+        // 1. Ohne "auto" in sizes: importierte Bilder waehlen ihre Quelle, bevor das
+        //    Layout steht, "auto" fiel dabei auf die volle Bildschirmbreite zurueck.
+        //    Der Rueckfallwert danach (mobil 50vw, ab 750 px 25vw) passt zu den Reihen.
+        // 2. src und srcset ans Ende: importNode kopiert die Attribute der Reihe nach.
+        //    Stand srcset vor loading und sizes, begann Chrome schon beim Kopieren
+        //    einen Abruf in 1440 px (ohne sizes = 100vw), den es gleich wieder abbrach.
+        Array.prototype.forEach.call(neu.querySelectorAll('img[srcset]'), function (img) {
+          var sizes = img.getAttribute('sizes') || '';
+          if (/^auto\s*,/.test(sizes)) img.setAttribute('sizes', sizes.replace(/^auto\s*,\s*/, ''));
+          ['src', 'srcset'].forEach(function (name) {
+            var wert = img.getAttribute(name);
+            if (wert === null) return;
+            img.removeAttribute(name);
+            img.setAttribute(name, wert);
+          });
+        });
         alt.replaceWith(document.importNode(neu, true));
         reihe.removeAttribute('data-tp-reihe-nachladen');
         reihe.removeAttribute('data-tp-reihe-oeffnen');

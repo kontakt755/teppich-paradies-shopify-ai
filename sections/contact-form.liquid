@@ -65,6 +65,14 @@
     width: 18px;
     height: 18px;
   }
+  /* Telefon und WhatsApp als Tippflaeche mit 44 px Hoehe statt 20/26 px
+     (Rundgang 2026-10-26, #63). */
+  .kontakt-info a[href^="tel:"],
+  .kontakt-info .whatsapp-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 
   /* Musterbestellung: eigener, kompakter Zustand oberhalb des Formulars.
      Standardmaessig ausgeblendet - wird nur per JS sichtbar gemacht, wenn

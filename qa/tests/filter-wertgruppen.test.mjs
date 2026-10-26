@@ -113,7 +113,32 @@ test('Preisfilter ist auf Paketware-Kollektionen ausgeblendet', () => {
     assert.ok(liste.includes(handle), handle);
   }
   assert.ok(!liste.includes('teppichboden'));
-  assert.equal((block.match(/tp_preisfilter_aus contains collection\.handle/g) ?? []).length, 2);
+  assert.equal((block.match(/tp_preisfilter_aus contains collection\.handle/g) ?? []).length, 1);
+  // Beide Preisfilter (Leiste und Filterfenster) haengen an derselben Entscheidung.
+  assert.equal((block.match(/request\.page_type == 'search' or tp_preisfilter_versteckt/g) ?? []).length, 2);
+});
+
+test('Preisfilter ist auf allen Teppich- und Laeufer-nach-Mass-Kollektionen ausgeblendet', async () => {
+  // Variantenpreis je 0,01 m2 bzw. je cm: der Shopify-Preisfilter rechnet dort in Cent-Betraegen.
+  const block = read('blocks/filters.liquid');
+  const kopf = block.slice(block.indexOf('assign tp_preisfilter_aus'), block.indexOf('assign tp_teppich_unterkategorie'));
+  const engine = new Liquid();
+  const versteckt = async (handle, title) =>
+    (await engine.parseAndRender(`{%- liquid\n${kopf}\necho tp_preisfilter_versteckt\n-%}`, { collection: { handle, title } })).trim();
+  const mass = [
+    ['sisal-kokos-teppiche-nach-mass', 'Sisal- & Kokosteppiche nach Maß'],
+    ['laeufer-nach-mass', 'Läufer nach Maß'],
+    ['designteppiche-nach-mass', 'Designteppiche nach Maß'],
+    ['auslauf-teppich-nach-mass', 'Auslauf Teppich nach Maß – nur noch kurze Zeit'],
+    ['kokoslaeufer', 'Kokosläufer nach Maß'],
+    ['sisallaeufer', 'Sisalläufer nach Maß'],
+    ['teppich-nach-mass', 'Teppich nach Maß'],
+  ];
+  for (const [handle, title] of mass) assert.equal(await versteckt(handle, title), 'true', handle);
+  for (const [handle, title] of [['teppichboden', 'Teppichboden'], ['teppiche-standardgroessen', 'Teppiche in Standardgrößen'], ['teppiche', 'Teppiche']]) {
+    assert.equal(await versteckt(handle, title), 'false', handle);
+  }
+  assert.equal(await versteckt('laminat', 'Laminat'), 'true');
 });
 
 

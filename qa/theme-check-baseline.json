@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-16T09:51:01.379Z",
+  "generatedAt": "2026-10-26T13:53:01.719Z",
   "errors": 0,
-  "warnings": 54,
+  "warnings": 55,
   "fingerprints": [
     "warning|ExcessiveSettingsCount|blocks/tp-kachel-raster.liquid|156:0|This schema declares 48 settings, which exceeds the maximum of 40. Consider splitting this section or block into smaller pieces, or grouping related options with a header.",
     "warning|HardcodedRoutes|sections/vinylboden-verlegen.liquid|184:15|Use routes object {{ routes.collections_url }} instead of hardcoding /collections",
@@ -10,11 +10,11 @@
     "warning|OrphanedSnippet|snippets/live-chat-widget.liquid|0:0|This snippet is not referenced by any other files",
     "warning|OrphanedSnippet|snippets/predictive-search-resource-carousel.liquid|0:0|This snippet is not referenced by any other files",
     "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|102:17|Unknown object 'predictive_search' used.",
-    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|121:26|Unknown object 'predictive_search' used.",
-    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|128:26|Unknown object 'predictive_search' used.",
-    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|167:29|Unknown object 'predictive_search' used.",
-    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|229:31|Unknown object 'predictive_search' used.",
-    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|253:31|Unknown object 'predictive_search' used.",
+    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|141:17|Unknown object 'predictive_search' used.",
+    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|150:26|Unknown object 'predictive_search' used.",
+    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|200:29|Unknown object 'predictive_search' used.",
+    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|262:31|Unknown object 'predictive_search' used.",
+    "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|286:31|Unknown object 'predictive_search' used.",
     "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|41:25|Unknown object 'predictive_search' used.",
     "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|51:17|Unknown object 'predictive_search' used.",
     "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|66:19|Unknown object 'predictive_search' used.",
@@ -50,12 +50,13 @@
     "warning|ValidScopedCSSClass|snippets/predictive-search-resource-carousel.liquid|20:14|CSS class 'predictive-search-results__resource-header' may be defined outside the scope of this file.",
     "warning|ValidScopedCSSClass|snippets/predictive-search-resource-carousel.liquid|23:13|CSS class 'predictive-search-results__title' may be defined outside the scope of this file.",
     "warning|ValidScopedCSSClass|snippets/search-modal.liquid|33:13|CSS class 'predictive-search' may be defined outside the scope of this file.",
-    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|138:28|CSS class 'predictive-search-results__no-results' may be defined outside the scope of this file.",
-    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|141:50|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
-    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|156:52|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
-    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|165:55|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
-    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|228:54|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
-    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|242:54|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
-    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|252:54|CSS class 'predictive-search-results__list' may be defined outside the scope of this file."
+    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|160:28|CSS class 'predictive-search-results__no-results' may be defined outside the scope of this file.",
+    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|163:50|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
+    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|179:54|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
+    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|188:54|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
+    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|198:55|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
+    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|261:54|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
+    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|275:54|CSS class 'predictive-search-results__list' may be defined outside the scope of this file.",
+    "warning|ValidScopedCSSClass|snippets/tp-suche-ergebnisse.liquid|285:54|CSS class 'predictive-search-results__list' may be defined outside the scope of this file."
   ]
 }

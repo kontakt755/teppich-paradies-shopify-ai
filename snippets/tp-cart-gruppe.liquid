@@ -233,7 +233,12 @@
     # Kundeneinheit aus den Properties; Fallback Stueckzahl. Kein Preis.
     assign tp_gz_text = ''
     if tp_gz_flaeche != blank
-      assign tp_gz_text = tp_gz_flaeche
+      # Dasselbe Mass zweimal im Warenkorb: "2 × 16,00 m²" (eigenes Snippet,
+      # LiquidComplexity).
+      capture tp_gz_text
+        render 'tp-cart-mehrfach-flaeche', line_item: line_item, text: tp_gz_flaeche
+      endcapture
+      assign tp_gz_text = tp_gz_text | strip
       if tp_gz_p['Mindestpreis'] != blank
         assign tp_gz_text = tp_gz_text | append: ' (Mindestpreis)'
       endif

@@ -238,6 +238,7 @@
       },
       "name": "Featured collection",
       "settings": {
+        "tp_warenkorb_inhalt": true,
         "collection": "bodenleisten",
         "layout_type": "grid",
         "carousel_on_mobile": false,

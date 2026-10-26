@@ -95,6 +95,12 @@
         <p class="tp-tep-rechner__summe" data-tp-rechner-summe></p>
         <button type="button" class="tp-tep-rechner__loeschen" data-tp-rechner-loeschen>Maß löschen</button>
       </div>
+      {%- comment -%}
+        Marken und Sisal mit Borduere stehen in eigenen Kollektionen; der Rechner haengt das Mass
+        an die Links. Direkt unter der Zusammenfassung ("165 von 165 Qualitaeten"), nicht erst
+        hinter der ganzen Liste, sonst sieht ihn am Handy niemand.
+      {%- endcomment -%}
+      {%- render 'tp-mass-querverweise' -%}
       <ul class="tp-tep-rechner__liste" role="list" data-tp-rechner-liste></ul>
     </div>
     {%- comment -%} Daten kommen nach dem Laden aus templates/collection.teppiche-rechner (Renderzeit) {%- endcomment -%}
