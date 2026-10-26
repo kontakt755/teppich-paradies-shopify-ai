@@ -5,9 +5,13 @@
     <div class="kundenbilder-grid">
       {% for block in section.blocks %}
         {% if block.type == 'kundenbild' %}
+        {%- comment -%} Alt-Text: eigener Text, sonst die Bildunterschrift, sonst der Alt-Text der Datei (Rundgang 26.10.2026) {%- endcomment -%}
+        {%- assign kb_alt = block.settings.alt | default: block.settings.caption | default: block.settings.image.alt -%}
         <div class="kundenbild">
-          <img src="{{ block.settings.image | image_url: width: 800 }}" alt="{{ block.settings.alt | escape }}" width="{{ block.settings.image.width | default: 800 }}" height="{{ block.settings.image.height | default: 600 }}" loading="lazy">
+          <img src="{{ block.settings.image | image_url: width: 800 }}" alt="{{ kb_alt | strip_html | escape }}" width="{{ block.settings.image.width | default: 800 }}" height="{{ block.settings.image.height | default: 600 }}" loading="lazy">
+          {%- if block.settings.caption != blank %}
           <p>{{ block.settings.caption }}</p>
+          {%- endif %}
         </div>
         {% endif %}
       {% endfor %}

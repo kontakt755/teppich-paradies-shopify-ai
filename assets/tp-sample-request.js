@@ -287,6 +287,10 @@
 
     feld('Betreff', betreff || 'Anfrage zum Produkt');
     feld('Produkt', produkt);
+    // Verlegung und Angebot brauchen den Ort (Einzugsgebiet) und fuer das
+    // Aufmass einen Rueckruf: PLZ und Telefon einblenden, beide freiwillig
+    // (Rundgang 26.10.2026; ob die PLZ Pflicht wird, entscheidet der Inhaber).
+    if (thema === 'verlegung' || thema === 'angebot') root.setAttribute('data-anfrage-felder', '');
     var handle = params.get('handle');
     if (handle && /^[a-z0-9-]+$/.test(handle)) {
       feld('Produkt-Handle', handle);

@@ -78,3 +78,15 @@ test('Postfach: nur Service-Betreffe, jede Mail einmal, von Hand Erfasstes nicht
   assert.equal(berlinerTag('2026-10-15T22:30:00Z'), '2026-10-16');
   assert.ok(SICHERUNGSPFADE.includes('serviceanfragen-postfach.json'));
 });
+
+test('Postfach: Startseite mit "mehrere Wohnungen" und Wunschzeitraum wird angelegt', async () => {
+  const { uebernehmen } = await import('../scripts/serviceanfragen.mjs');
+  const privatDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-postfach-'));
+  const text = 'Betreff:\nAnfrage von der Startseite\n\nName:\nVera Vermieter\n\nPlz:\n16515\n\nE-Mail:\nvera@example.com\n\n'
+    + 'Telefon:\n\nAnliegen:\nMieterwechsel / mehrere Wohnungen\n\nWunschzeitraum:\nvor dem 15. Dezember\n\nText:\nDrei Wohnungen.';
+  const r = uebernehmen([{ id: 'w1', von: 'mailer@shopify.com', datum: '2026-10-26T09:00:00Z', betreff: 'Neue Kundennachricht', text }], { privatDir, jetzt: new Date('2026-10-26T10:00:00Z') });
+  assert.deepEqual(r.angelegt.map(a => [a.id, a.leistung, a.quelle]), [['S-001', 'verlegeservice', 'formular']]);
+  const e = leseAlle(serviceanfragenPfad(privatDir))[0];
+  assert.equal(e.plz, '16515');
+  assert.match(e.notiz, /^Anliegen: Mieterwechsel \/ mehrere Wohnungen\nWunschzeitraum: vor dem 15\. Dezember\nDrei Wohnungen\.$/);
+});
