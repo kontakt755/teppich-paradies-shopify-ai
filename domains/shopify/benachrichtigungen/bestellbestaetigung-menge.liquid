@@ -1,0 +1,64 @@
+{%- comment -%}
+  Mengenspalte der Standard-Artikelliste in der Bestellbestaetigung (#26).
+
+  Bei Teppich nach Mass, Meterware/Raummass, Wunschmass, Kettelservice und
+  Laengenware steckt das Mass in der Menge (0,01 m2, 0,01 m oder cm). Die
+  Standardliste zeigt deshalb "Rivena Teppich nach Mass x 775". Dieses Stueck
+  setzt line_display fuer solche Zeilen auf die echte Stueckzahl: 1 Teppich,
+  1 Kettelservice, bei Laengenware die "Anzahl". Mass, Flaeche und Kante
+  stehen darunter weiter als Eigenschaften der Zeile (seit 2026-09-16 sichtbar).
+  Alle anderen Zeilen bleiben unveraendert.
+
+  Einsetzen: Admin -> Einstellungen -> Benachrichtigungen ->
+  Kundenbenachrichtigungen -> "Bestellbestaetigung" -> Code bearbeiten.
+  Jede Stelle suchen, an der line_display gesetzt wird:
+    {% if line.quantity < line.quantity %}
+      {% capture line_display %} ... {% endcapture %}
+    {% else %}
+      {% assign line_display = line.quantity %}
+    {% endif %}
+  und dieses Stueck direkt NACH dem schliessenden {% endif %} einfuegen (die
+  Vorlage hat die Stelle mehrmals, jede bekommt das Stueck). Die Schleife muss
+  "line" heissen; heisst sie anders, dort "line" ersetzen.
+  Steht in der Vorlage zusaetzlich eine Preiszeile "Preis x {{ line.quantity }}",
+  bleibt sie unveraendert. Danach Testbenachrichtigung senden.
+{%- endcomment -%}
+{%- liquid
+  assign tp_mz_eins = false
+  assign tp_mz_breite = false
+  assign tp_mz_laenge = false
+  assign tp_mz_zu = false
+  assign tp_mz_je_stueck = false
+  assign tp_mz_anzahl = ''
+  for tp_mz_p in line.properties
+    assign tp_mz_w = tp_mz_p.last | strip
+    if tp_mz_w == blank
+      continue
+    endif
+    case tp_mz_p.first
+      when 'Maße', 'Fläche (abgerechnet)', 'Fläche', 'Fläche (aufgerundet)', 'Fläche (berechnet)', 'Durchmesser', 'Seitenlänge', 'Kante umlaufend'
+        assign tp_mz_eins = true
+      when 'Ihre Breite', 'Rollenbreite', 'Breite'
+        assign tp_mz_breite = true
+      when 'Gewünschte Länge', 'Länge'
+        assign tp_mz_laenge = true
+      when 'Zu Teppich', 'Zu Teppichboden'
+        assign tp_mz_zu = true
+      when 'Länge je Stück'
+        assign tp_mz_je_stueck = true
+      when 'Anzahl'
+        assign tp_mz_anzahl = tp_mz_w | remove: 'Stück' | strip
+    endcase
+  endfor
+  if tp_mz_breite and tp_mz_laenge
+    assign tp_mz_eins = true
+  endif
+  if tp_mz_zu and tp_mz_laenge
+    assign tp_mz_eins = true
+  endif
+  if tp_mz_je_stueck
+    assign line_display = tp_mz_anzahl | default: '1'
+  elsif tp_mz_eins
+    assign line_display = 1
+  endif
+-%}

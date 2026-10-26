@@ -8,13 +8,32 @@
   ("Wir bereiten deine Bestellung fuer den Versand vor ...") loeschen, weil er
   fuer Muster nicht passt. Betreff (Feld "E-Mail-Betreff"):
     {% if order.tags contains 'TYP-MUSTER' %}Vielen Dank für Ihre Musterbestellung{% else %}Vielen Dank für Ihre Bestellung {{ name }}{% endif %}
-  (Tags setzt Shopify Flow; ohne Flow greift der Standardbetreff.)
+  (Den Tag TYP-MUSTER setzt nur Shopify Flow, und Flow ist nicht installiert.
+  Ohne Tag greift der zweite Teil - "Vielen Dank fuer Ihre Bestellung #1234" -
+  fuer jede Bestellung. Das ist gewollt und passt auch fuer Muster.)
+
+  Fusszeile der Standardvorlage auf "Sie" umstellen (#25): den Satz
+    Wenn du Fragen hast, antworte auf diese E-Mail oder kontaktiere uns unter ...
+  ersetzen durch
+    Wenn Sie Fragen haben, antworten Sie einfach auf diese E-Mail oder schreiben Sie uns an ...
+  (den Link mit {{ shop.email }} dahinter unveraendert lassen).
 
   Was der Block macht: erkennt Muster / Ware / Mischbestellung an den
   Positionen (SKU "M-..." oder "TP-MUSTER-000" oder Property _Muster_ID),
   spricht den Kunden mit "Sie" an, bestaetigt Beratungswunsch, Masspruefung
   und Verlegeanfrage aus den Bestellattributen und erklaert die naechsten
   Schritte. Keine internen Daten (keine Lieferanten, keine Grosshaendler-IDs).
+
+  Zusagen nur, die gelten (#25):
+  - Abholung im Laden (delivery_method 'pick-up'): eigener Text mit Adresse
+    und Oeffnungszeiten, Abholung erst nach unserer Nachricht.
+  - Ware: keine Sendungsverfolgung versprechen (Ware kommt oft direkt vom
+    Lieferanten, meist ohne Sendungsnummer), nur "wir melden uns".
+  - Herstellermuster (SKU M-VW-..., M-JAB-...) schickt der Hersteller direkt,
+    auch in getrennten Umschlaegen. Fuer sie steht kein Zeitrahmen da, bis der
+    Inhaber einen festlegt.
+  - Je Warenposition die Lieferzeit aus dem Produktfeld service.lieferzeit,
+    nur wenn es gepflegt ist (sonst nichts, nichts erfinden).
 
   Alle Kundeneingaben laufen durch escape (Properties und Attribute sind ueber
   die Cart-API frei setzbar).
@@ -23,6 +42,8 @@
 {%- liquid
   assign tp_k_muster = 0
   assign tp_k_ware = 0
+  assign tp_k_hersteller = 0
+  assign tp_k_lieferzeiten = 0
   for line in line_items
     assign tp_k_ist_muster = false
     assign tp_k_kopf = line.sku | slice: 0, 2
@@ -36,10 +57,24 @@
     endfor
     if tp_k_ist_muster
       assign tp_k_muster = tp_k_muster | plus: 1
+      assign tp_k_sku5 = line.sku | slice: 0, 5
+      assign tp_k_sku6 = line.sku | slice: 0, 6
+      if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-'
+        assign tp_k_hersteller = tp_k_hersteller | plus: 1
+      endif
     else
       assign tp_k_ware = tp_k_ware | plus: 1
+      assign tp_k_lz_feld = line.product.metafields.service.lieferzeit
+      assign tp_k_lz = tp_k_lz_feld.value | default: tp_k_lz_feld | strip
+      if tp_k_lz != blank
+        assign tp_k_lieferzeiten = tp_k_lieferzeiten | plus: 1
+      endif
     endif
   endfor
+  assign tp_k_abholung = false
+  if delivery_method == 'pick-up'
+    assign tp_k_abholung = true
+  endif
   if tp_k_muster > 0 and tp_k_ware == 0
     assign tp_k_typ = 'muster'
   elsif tp_k_muster == 0
@@ -65,7 +100,11 @@
 
   {%- if tp_k_typ == 'muster' -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Musterbestellung bei Teppich Paradies.</p>
-    <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) gehen in den nächsten Werktagen kostenlos per Post an Sie raus. So holen Sie das meiste heraus:</p>
+    {%- if tp_k_hersteller > 0 -%}
+      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) kommen kostenlos per Post zu Ihnen. Muster mit dem Hinweis „direkt vom Hersteller“ schickt der Hersteller selbst an Sie – auch in getrennten Umschlägen und zu unterschiedlichen Zeiten. So holen Sie das meiste heraus:</p>
+    {%- else -%}
+      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) gehen in den nächsten Werktagen kostenlos per Post an Sie raus. So holen Sie das meiste heraus:</p>
+    {%- endif -%}
     <ul style="margin:0 0 16px;padding-left:20px;">
       <li>Legen Sie die Muster dort aus, wo der Boden später liegt – und schauen Sie sie bei Tageslicht und bei Kunstlicht an.</li>
       <li>Vergleichen Sie die Muster neben Möbeln, Wand- und Türfarbe.</li>
@@ -84,16 +123,45 @@
         <li>
           {%- if tp_k_link != blank -%}<a href="{{ tp_k_link | escape }}" style="color:#15171a;">{{ line.title | escape }}</a>{%- else -%}{{ line.title | escape }}{%- endif -%}
           {%- if tp_k_farbe != blank %} – {{ tp_k_farbe | escape }}{% endif -%}
+          {%- assign tp_k_sku5 = line.sku | slice: 0, 5 -%}
+          {%- assign tp_k_sku6 = line.sku | slice: 0, 6 -%}
+          {%- if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-' %} (direkt vom Hersteller){% endif -%}
         </li>
       {%- endfor -%}
     </ul>
     <p style="margin:0 0 16px;">Gefällt Ihnen ein Muster? Über die Links oben kommen Sie direkt zurück zum Produkt und können Ihre Maße eingeben.</p>
   {%- elsif tp_k_typ == 'misch' -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>
-    <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster gehen vorab per Post raus, die Ware bereiten wir für den Versand vor. Sie erhalten eine weitere E-Mail, sobald die Ware unterwegs ist.</p>
+    {%- if tp_k_abholung -%}
+      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster kommen per Post zu Ihnen{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware holen Sie bei uns im Laden ab. Wir melden uns, sobald sie zur Abholung bereitliegt – bitte kommen Sie erst nach unserer Nachricht.</p>
+    {%- else -%}
+      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster gehen vorab per Post raus{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware bereiten wir für den Versand vor. Wir melden uns, sobald die Ware unterwegs ist.</p>
+    {%- endif -%}
   {%- else -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>
-    <p style="margin:0 0 12px;">Wir haben Ihre Bestellung {{ name | escape }} erhalten und bereiten sie für den Versand vor. Sie erhalten eine weitere E-Mail mit Sendungsverfolgung, sobald die Ware unterwegs ist.</p>
+    {%- if tp_k_abholung -%}
+      <p style="margin:0 0 12px;">Wir haben Ihre Bestellung {{ name | escape }} erhalten. Sie holen die Ware bei uns im Laden ab. Wir melden uns, sobald sie zur Abholung bereitliegt – bitte kommen Sie erst nach unserer Nachricht.</p>
+    {%- else -%}
+      <p style="margin:0 0 12px;">Wir haben Ihre Bestellung {{ name | escape }} erhalten und bereiten sie für den Versand vor. Wir melden uns, sobald Ihre Ware unterwegs ist.</p>
+    {%- endif -%}
+  {%- endif -%}
+
+  {%- if tp_k_abholung and tp_k_ware > 0 -%}
+    <p style="margin:0 0 16px;"><strong>Abholung:</strong> Teppich Paradies, Saarlandstraße 73–81, 16515 Oranienburg<br>Öffnungszeiten: Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr</p>
+  {%- endif -%}
+
+  {%- if tp_k_lieferzeiten > 0 -%}
+    <p style="margin:0 0 6px;font-weight:bold;">Lieferzeit laut Produktseite</p>
+    <ul style="margin:0 0 16px;padding-left:20px;">
+      {%- for line in line_items -%}
+        {%- assign tp_k_kopf = line.sku | slice: 0, 2 -%}
+        {%- if tp_k_kopf == 'M-' or line.sku == 'TP-MUSTER-000' -%}{%- continue -%}{%- endif -%}
+        {%- assign tp_k_lz_feld = line.product.metafields.service.lieferzeit -%}
+        {%- assign tp_k_lz = tp_k_lz_feld.value | default: tp_k_lz_feld | strip -%}
+        {%- if tp_k_lz == blank -%}{%- continue -%}{%- endif -%}
+        <li>{{ line.title | escape }}{% if line.variant_title != blank and line.variant_title != 'Default Title' %} – {{ line.variant_title | escape }}{% endif %}: {{ tp_k_lz | escape }}</li>
+      {%- endfor -%}
+    </ul>
   {%- endif -%}
 
   {%- if tp_k_beratung == 'Ja' or tp_k_mass == 'Ja' or tp_k_verlegung == 'Angefragt' -%}

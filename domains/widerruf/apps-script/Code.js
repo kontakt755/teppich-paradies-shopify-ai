@@ -7,6 +7,7 @@
  *   1. Zeile im Protokoll-Sheet „Widerrufe Shop“ (Nachweis, auch wenn Mail scheitert)
  *   2. Eingangsbestaetigung an den Kunden: Inhalt, Datum, Uhrzeit (dauerhafter Datentraeger)
  *   3. Kopie an kontakt@, Antworten gehen direkt an den Kunden
+ *      (ueber der Stunden- oder Tagesgrenze statt Einzelkopien ein Sammelhinweis je Stunde)
  *
  * Keine Geheimnisse im Code: die Protokoll-ID steht in den Script-Properties.
  * Bereitstellen: siehe README.md in diesem Ordner.
@@ -18,10 +19,18 @@ var ZEITZONE = 'Europe/Berlin';
 var PROTOKOLL_NAME = 'Widerrufe Shop (Eingangsprotokoll)';
 
 // Missbrauchsbremse: das Formular darf keine Mailschleuder werden. Ueber der
-// Gesamtgrenze wird trotzdem protokolliert und intern gemeldet, nur die Mail an
-// die eingegebene Adresse entfaellt - so sperrt ein Angreifer keine echten Kunden aus.
+// Stunden- oder Tagesgrenze wird jede Einsendung weiter protokolliert (die
+// Sheet-Zeile ist der Nachweis), aber es gehen keine Einzelmails mehr raus -
+// weder an die eingegebene Adresse noch als Kopie an uns. Stattdessen kommt
+// hoechstens ein Sammelhinweis je Stunde an kontakt@. So sperrt ein Angreifer
+// keine echten Kunden aus und leert trotzdem weder Postfach noch Mail-Kontingent.
 var MAX_JE_ADRESSE_STUNDE = 3;
 var MAX_GESAMT_STUNDE = 40;
+var MAX_GESAMT_TAG = 100;
+// Das MailApp-Tageskontingent teilt sich das Firmenkonto mit anderen Skripten
+// (u. a. den Terminerinnerungen der Auftrags-App). Vor jedem Senden pruefen:
+// bleiben nicht mehr als so viele Mails uebrig, sendet das Formular nichts mehr.
+var MAIL_RESERVE = 200;
 
 var GRENZEN = { name: 120, bestellnummer: 40, email: 254, bestelldatum: 40, artikel: 2000 };
 
@@ -44,11 +53,14 @@ function doPost(e) {
     // Honigtopf: Menschen sehen das Feld nicht. Fuellt es ein Bot (oder ein Autofill),
     // wird trotzdem protokolliert und intern gemeldet, nur ohne Mail an die Adresse.
     var verdacht = String(p.website || '').trim() !== '';
-    var grenze = bremse_(d.email);
+    var bremse = bremse_(d.email);
+    var grenze = bremse.grenze;
     if (grenze === 'adresse') {
       return json_({ ok: false, fehler: 'zu_viele', meldung: 'Zu viele Einsendungen in kurzer Zeit. Bitte schreiben Sie uns an ' + KOPIE_AN + '.' });
     }
-    var kundeMailen = !verdacht && grenze === 'ok';
+    // Einzelmails (Bestaetigung an den Kunden, Kopie an uns) nur innerhalb der Grenzen.
+    var einzeln = grenze === 'ok';
+    var kundeMailen = !verdacht && einzeln;
 
     var jetzt = new Date();
     d.datum = Utilities.formatDate(jetzt, ZEITZONE, 'dd.MM.yyyy');
@@ -57,8 +69,9 @@ function doPost(e) {
 
     var zeile = protokollieren_(d, jetzt);
 
-    var kundeOk = kundeMailen;
-    if (kundeMailen) try {
+    var kontingent = kundeMailen ? kontingentFrei_() : true;
+    var kundeOk = kundeMailen && kontingent;
+    if (kundeOk) try {
       MailApp.sendEmail({
         to: d.email,
         replyTo: KOPIE_AN,
@@ -72,23 +85,40 @@ function doPost(e) {
     }
 
     var grund = kundeOk ? '' : verdacht ? 'Verdacht auf Bot (Honigtopffeld gefüllt), keine Mail an die Adresse geschickt.'
-      : grenze !== 'ok' ? 'Stundengrenze erreicht, keine Mail an die Adresse geschickt.'
+      : grenze === 'stunde' ? 'Stundengrenze erreicht, keine Mail an die Adresse geschickt.'
+      : grenze === 'tag' ? 'Tagesgrenze erreicht, keine Mail an die Adresse geschickt.'
+      : !kontingent ? 'Mail-Kontingent des Kontos fast aufgebraucht (Reserve für andere Skripte), keine Mail an die Adresse geschickt.'
       : 'Die Eingangsbestätigung an ' + d.email + ' konnte nicht verschickt werden.';
     if (zeile) zeile.getCell(1, 9).setValue(kundeOk ? 'gesendet' : 'NICHT GESENDET: ' + grund);
 
-    // Kopie an uns immer, auch wenn die Kundenmail scheitert. Scheitert die Kopie,
-    // ist der Widerruf trotzdem protokolliert - dem Kunden keinen Fehler melden.
-    try {
-      MailApp.sendEmail({
-        to: KOPIE_AN,
-        replyTo: d.email,
-        name: 'Shop – Widerrufsfunktion',
-        subject: 'Widerruf eingegangen: Bestellung ' + d.bestellnummer + ' (' + d.name + ')' + (kundeOk ? '' : ' – OHNE BESTÄTIGUNG AN KUNDEN'),
-        body: mailText_(d, true) + (kundeOk ? '' : '\n\nACHTUNG: ' + grund + ' Bitte prüfen und den Kunden ggf. anders erreichen.'),
-        htmlBody: mailHtml_(d, true)
-      });
-    } catch (err) {
-      console.error('Kopie: ' + (err && err.stack || err));
+    // Kopie an uns, auch wenn die Kundenmail scheitert - aber nur innerhalb der
+    // Grenzen und solange das Kontingent reicht. Darueber steht der Widerruf nur im
+    // Protokoll, und kontakt@ bekommt hoechstens einen Sammelhinweis je Stunde.
+    // Scheitert eine Mail, ist der Widerruf trotzdem protokolliert - dem Kunden keinen Fehler melden.
+    if (einzeln) {
+      if (kontingentFrei_()) try {
+        MailApp.sendEmail({
+          to: KOPIE_AN,
+          replyTo: d.email,
+          name: 'Shop – Widerrufsfunktion',
+          subject: 'Widerruf eingegangen: Bestellung ' + d.bestellnummer + ' (' + d.name + ')' + (kundeOk ? '' : ' – OHNE BESTÄTIGUNG AN KUNDEN'),
+          body: mailText_(d, true) + (kundeOk ? '' : '\n\nACHTUNG: ' + grund + ' Bitte prüfen und den Kunden ggf. anders erreichen.'),
+          htmlBody: mailHtml_(d, true)
+        });
+      } catch (err) {
+        console.error('Kopie: ' + (err && err.stack || err));
+      }
+    } else if (bremse.sammel && kontingentFrei_()) {
+      try {
+        MailApp.sendEmail({
+          to: KOPIE_AN,
+          name: 'Shop – Widerrufsfunktion',
+          subject: 'Widerrufsformular: ' + (grenze === 'tag' ? 'Tagesgrenze' : 'Stundengrenze') + ' erreicht – Einsendungen nur im Protokoll',
+          body: sammelText_(grenze, zeile)
+        });
+      } catch (err) {
+        console.error('Sammelhinweis: ' + (err && err.stack || err));
+      }
     }
 
     var antwort = JSON.stringify({ ok: true, ref: d.ref, datum: d.datum, uhrzeit: d.uhrzeit.slice(0, 5), mail: kundeOk });
@@ -117,23 +147,81 @@ function pruefen_(p) {
   return d;
 }
 
-/** 'ok' | 'adresse' (Adresse gesperrt, abweisen) | 'gesamt' (annehmen, aber nicht an die Adresse mailen) */
+/**
+ * { grenze, sammel }
+ *   grenze: 'ok' | 'adresse' (Adresse gesperrt, abweisen) | 'stunde' | 'tag'
+ *           (annehmen und protokollieren, aber keine Einzelmails)
+ *   sammel: true nur fuer die erste Einsendung ueber einer Grenze in dieser Stunde -
+ *           sie loest den einen Sammelhinweis an kontakt@ aus.
+ */
 function bremse_(email) {
   var cache = CacheService.getScriptCache();
   var schluessel = 'a:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, email.toLowerCase()));
-  var stunde = 'g:' + Utilities.formatDate(new Date(), ZEITZONE, 'yyyyMMddHH');
+  var jetzt = new Date();
+  var stundeKennung = Utilities.formatDate(jetzt, ZEITZONE, 'yyyyMMddHH');
+  var stunde = 'g:' + stundeKennung;
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
     var je = Number(cache.get(schluessel) || 0);
     var ges = Number(cache.get(stunde) || 0);
-    if (je >= MAX_JE_ADRESSE_STUNDE) return 'adresse';
+    if (je >= MAX_JE_ADRESSE_STUNDE) return { grenze: 'adresse', sammel: false };
     cache.put(schluessel, String(je + 1), 3600);
     cache.put(stunde, String(ges + 1), 3600);
-    return ges >= MAX_GESAMT_STUNDE ? 'gesamt' : 'ok';
+    var grenze = ges >= MAX_GESAMT_STUNDE ? 'stunde' : tagZaehlen_(jetzt) ? 'ok' : 'tag';
+    var sammel = false;
+    if (grenze !== 'ok' && !cache.get('s:' + stundeKennung)) {
+      cache.put('s:' + stundeKennung, '1', 3600);
+      sammel = true;
+    }
+    return { grenze: grenze, sammel: sammel };
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Tageszaehler fuer alle angenommenen Einsendungen (Script-Properties, weil der Cache
+ * hoechstens 6 Stunden haelt). Geschrieben wird nur unterhalb der Grenze - ein Angriff
+ * erzeugt also hoechstens MAX_GESAMT_TAG Schreibzugriffe am Tag. Laeuft im Lock von bremse_.
+ * @returns {boolean} true = noch innerhalb der Tagesgrenze (und gezaehlt)
+ */
+function tagZaehlen_(jetzt) {
+  var props = PropertiesService.getScriptProperties();
+  var heute = Utilities.formatDate(jetzt, ZEITZONE, 'yyyyMMdd');
+  var stand = null;
+  try { stand = JSON.parse(props.getProperty('TAGESZAEHLER') || 'null'); } catch (err) { stand = null; }
+  var n = stand && stand.tag === heute ? Number(stand.n) || 0 : 0;
+  if (n >= MAX_GESAMT_TAG) return false;
+  props.setProperty('TAGESZAEHLER', JSON.stringify({ tag: heute, n: n + 1 }));
+  return true;
+}
+
+/** Reicht das MailApp-Tageskontingent noch, ohne die Reserve fuer andere Skripte anzugreifen? */
+function kontingentFrei_() {
+  try {
+    return MailApp.getRemainingDailyQuota() > MAIL_RESERVE;
+  } catch (err) {
+    // Abfrage gescheitert: senden versuchen - scheitert das Senden, ist der Widerruf trotzdem protokolliert.
+    console.error('Kontingent: ' + (err && err.stack || err));
+    return true;
+  }
+}
+
+function sammelText_(grenze, zeile) {
+  var url = '';
+  try { url = zeile ? zeile.getSheet().getParent().getUrl() : ''; } catch (err) { url = ''; }
+  return [
+    'Am Widerrufsformular im Shop ist die ' + (grenze === 'tag' ? 'Tagesgrenze (' + MAX_GESAMT_TAG + ' Einsendungen)' : 'Stundengrenze (' + MAX_GESAMT_STUNDE + ' Einsendungen)') + ' erreicht.',
+    '',
+    'Weitere Einsendungen dieser Stunde werden nur noch im Protokoll erfasst – ohne Eingangsbestätigung an die eingegebene Adresse und ohne Einzelkopie an uns.',
+    'Dieser Hinweis kommt höchstens einmal je Stunde.',
+    '',
+    'Bitte das Protokoll prüfen (Spalte „Bestätigung Kunde“: „NICHT GESENDET“) und echte Widerrufe von Hand bestätigen:',
+    url || ('Tabelle „' + PROTOKOLL_NAME + '“ im Google Drive von ' + KOPIE_AN),
+    '',
+    'Häufen sich solche Hinweise, wird das Formular vermutlich missbraucht.'
+  ].join('\n');
 }
 
 function protokollieren_(d, jetzt) {

@@ -18,7 +18,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
-import { musterNachfassen, fuelleText, mailtoLink, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
+import { musterNachfassen, fuelleText, mailtoLink, vorlageFuer, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
 import { heuteDaten, ladeBestellzeilenNeu } from './daten.mjs';
 
 /** Steht in der Zeitleiste als "von", wenn der Versandlauf nachgefasst hat (operations/lib/nachfass-versand.mjs). */
@@ -56,7 +56,8 @@ function kontaktText(k) {
 }
 
 function zeile(e, texte, lesend, erste, automatisch) {
-  const vorlage = texte?.[e.stufe] || null;
+  // Teppich-Muster bekommen die Teppich-Fassung (Rundgang #7), alle anderen die Vorlage ihrer Stufe.
+  const vorlage = vorlageFuer(texte, e);
   const absender = state.session?.benutzer?.name || null;
   const vorschlag = fuelleText(vorlage, { kundenname: e.kundenname, absender, produkte: e.produkte });
   const schluessel = entwurfSchluessel(e.orderId, e.stufe);

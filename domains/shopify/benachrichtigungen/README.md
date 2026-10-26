@@ -191,14 +191,26 @@ Wer den Namen erneut ändert, muss an drei Stellen denken:
 
 | Datei | Vorlage im Admin | Einsetzen |
 |---|---|---|
-| `bestellbestaetigung-block.liquid` | Kundenbenachrichtigungen → Bestellbestätigung | nach dem Header, Standard-Einleitung entfernen; Betreff siehe Kopfkommentar |
+| `bestellbestaetigung-block.liquid` | Kundenbenachrichtigungen → Bestellbestätigung | nach dem Header, Standard-Einleitung entfernen; Betreff und Sie-Fußzeile siehe Kopfkommentar |
+| `bestellbestaetigung-menge.liquid` | Kundenbenachrichtigungen → Bestellbestätigung | in der Standard-Artikelliste direkt nach jeder Stelle, die `line_display` setzt (Kopfkommentar) |
 | `versandbestaetigung-block.liquid` | Kundenbenachrichtigungen → Versandbestätigung | nach dem Header; Standard-Trackingblock darf bleiben |
 | `interne-bestellmail-block.liquid` | Mitarbeiterbenachrichtigung → Neue Bestellung | vor `</body>` (jetzt mit Bestelltyp und Beratungsblock) |
 
 Beide Kundenbausteine erkennen Muster/Ware/Mischbestellung selbst (SKU `M-…`,
 `TP-MUSTER-000`, Property `_Muster_ID`) und lesen die Warenkorb-Angaben
 (`Beratung`, `Telefon`, `Rückruf`, `Maßprüfung`, `Verlegung`) aus den
-Bestellattributen. Tests: `qa/tests/kundenmail-bloecke.test.mjs`,
+Bestellattributen.
+
+Stand 2026-10-26 (Rundgang, #25/#26): Die Bestellbestätigung verspricht keine
+Sendungsverfolgung mehr, hat einen eigenen Abholtext (`delivery_method ==
+'pick-up'`, Saarlandstraße 73–81, Öffnungszeiten), kennzeichnet Herstellermuster
+(SKU `M-VW-`, `M-JAB-`) als „direkt vom Hersteller“ und nennt je Warenposition die
+Lieferzeit aus `service.lieferzeit`, wenn sie gepflegt ist. Maßzeilen (Teppich nach
+Maß, Meterware, Kettelservice, Längenware) erscheinen in der Versandbestätigung
+mit Maß und Fläche statt als „775 ×“; für die Standardliste der Bestellbestätigung
+setzt `bestellbestaetigung-menge.liquid` die Stückzahl.
+
+Tests: `qa/tests/kundenmail-bloecke.test.mjs`,
 `qa/tests/bestellmail-beratung.test.mjs`. Nach dem Einsetzen im Admin die
 Testbenachrichtigung senden und eine Testbestellung (Tag `TESTBESTELLUNG`)
 mit Beratung Ja prüfen.
