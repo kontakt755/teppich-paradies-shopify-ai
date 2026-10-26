@@ -2,22 +2,29 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key>
-  <string>net.teppich-paradies.fehler-vorpruefung</string>
+  <key>Label</key><string>net.teppich-paradies.fehler-vorpruefung</string>
 
   <!-- Fehlermeldungen -> Werkbank als Mac-Dienst (operations/scripts/claude-lauf.mjs, Inhaber
-       2026-10-26): ersetzt die App-Aufgabe "fehlermeldungen-werkbank". Prueft alle 15 Minuten
-       ohne KI (npm run -s fehler -\- abgleich); Claude startet per claude -p nur bei neuen
-       Meldungen oder - hoechstens alle zwei Stunden - fuer den Stand laufender. Ausserhalb
-       Mo-Sa 7-19 Uhr endet der Lauf sofort (das Skript prueft die Zeit).
-       Laeuft aus dem Dienst-Checkout ~/tp-dashboard. Einrichten:
-       bash operations/scripts/dienste-einrichten.sh -\-routinen (kopiert nur), laden von Hand. -->
+       2026-10-26): ersetzt die App-Aufgabe "fehlermeldungen-werkbank" (beim Einschalten
+       pausieren). Prueft alle 15 Minuten ohne KI (npm run -s fehler -\- abgleich); Claude startet
+       per claude -p nur bei neuen Meldungen oder - hoechstens alle zwei Stunden - fuer den Stand
+       laufender. Ausserhalb Mo-Sa 7-19 Uhr endet der Lauf sofort (das Skript prueft die Zeit).
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-routinen -->
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/bash</string>
-    <string>-lc</string>
-    <string>cd "$HOME/tp-dashboard" &amp;&amp; exec node operations/scripts/claude-lauf.mjs fehlermeldungen</string>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/operations/scripts/claude-lauf.mjs</string>
+    <string>fehlermeldungen</string>
   </array>
+  <key>WorkingDirectory</key><string>__REPO_PFAD__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>TP_DIENST_DIR</key><string>__REPO_PFAD__</string>
+    <!-- npm (fuer Claudes Befehle) und osascript ohne Anmelde-Shell finden; claude per festem Pfad. -->
+    <key>PATH</key><string>__NODE_DIR__:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
 
   <!-- Viertelstuendlich; launchd holt einen im Ruhezustand verpassten Termin einmal nach. -->
   <key>StartCalendarInterval</key>
@@ -27,11 +34,11 @@
     <dict><key>Minute</key><integer>30</integer></dict>
     <dict><key>Minute</key><integer>45</integer></dict>
   </array>
-
+  <!-- Auch gleich beim Laden: der erste Lauf zeigt sofort, ob alles passt (ohne Arbeit kein Claude). -->
+  <key>RunAtLoad</key><true/>
+  <key>ProcessType</key><string>Standard</string>
   <key>Umask</key><integer>63</integer>
-  <key>StandardOutPath</key>
-  <string>__HOME__/teppich-paradies-analyse/routinen/fehlermeldungen/dienst.log</string>
-  <key>StandardErrorPath</key>
-  <string>__HOME__/teppich-paradies-analyse/routinen/fehlermeldungen/dienst.log</string>
+  <key>StandardOutPath</key><string>__HOME__/teppich-paradies-analyse/routinen/fehlermeldungen/dienst.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/teppich-paradies-analyse/routinen/fehlermeldungen/dienst.log</string>
 </dict>
 </plist>

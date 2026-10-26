@@ -62,7 +62,7 @@
     "benutzer": "node operations/scripts/benutzer.mjs",
     "fehler": "node operations/scripts/fehlermeldungen.mjs",
     "routine": "node operations/scripts/claude-lauf.mjs",
-    "dienst:aktualisieren": "node operations/scripts/dienst-aktualisieren.mjs",
+    "datenstand:pruefen": "node operations/scripts/datenstand-pruefen.mjs",
     "service": "node operations/scripts/serviceanfragen.mjs",
     "belege": "node operations/scripts/lieferbelege.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",

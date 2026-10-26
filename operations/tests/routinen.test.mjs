@@ -5,8 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   berlinZeit, imFenster, auftragOhneKopf, promptKopf, claudeArgumente, bewerteLauf, vorpruefung,
-  schreibStatus, liesStatus, routinenStand, nimmSperre, sperreBesetzt, pruefeGesundheit,
+  schreibStatus, liesStatus, routinenStand, nimmSperre, sperreBesetzt, pruefeGesundheit, fensterMinuten,
   GMAIL_LESEN, GMAIL_SCHREIBEN, LAEUFE, arbeitsOrdner, leseAusgabe, neuerSammler, sammle, abschliessen,
+  routineLaeuft, sperrPfad, sperrAlterMs, pruefeWerkzeuge, wacheEinstellungen, WACHE_SKRIPT, auftragPfad,
 } from '../lib/routinen.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'tp-routinen-'));
@@ -63,6 +64,10 @@ test('claude-Argumente Fehlermeldungen: restricted, Sonnet, nur die npm-Befehle 
   assert.deepEqual(args.slice(-2), ['--', '-beginnt mit Strich'], 'Prompt nach --, nie als Option gelesen');
   assert.equal(args[args.indexOf('--model') + 1], 'sonnet');
   assert.ok(args.includes('--restricted'));
+  assert.ok(args.includes('--strict-mcp-config'), '--restricted allein laesst MCP-Server zu');
+  const hook = JSON.parse(args[args.indexOf('--settings') + 1]).hooks.PreToolUse[0];
+  assert.equal(hook.matcher, '*');
+  assert.match(hook.hooks[0].command, /routine-wache\.mjs' 'fehlermeldungen' '\/home\/test\/analyse' '\/home\/test\/tp-dashboard'$/);
   assert.equal(args[args.indexOf('--permission-mode') + 1], 'dontAsk');
   assert.equal(args[args.indexOf('--permission-prompts') + 1], 'none');
   assert.ok(args.includes('--no-session-persistence'));
@@ -74,8 +79,9 @@ test('claude-Argumente Fehlermeldungen: restricted, Sonnet, nur die npm-Befehle 
   assert.ok(!frei.includes('Bash'), 'nie Bash ohne Einschraenkung');
   assert.ok(frei.every(f => !/^Bash\((?!cd |npm run -s fehler -- |date -u )/.test(f)), frei.join(' '));
   const gesperrt = liste(args, '--disallowedTools');
-  for (const g of ['Bash(git *)', 'Bash(gh *)', 'Bash(shopify *)', 'mcp__claude_ai_Shopify', 'ArtifactComments']) assert.ok(gesperrt.includes(g), g);
-  assert.deepEqual(liste(args, '--add-dir').length, 1);
+  for (const g of ['Bash(git *)', 'Bash(gh *)', 'Bash(shopify *)', 'mcp__claude_ai_Shopify', 'ArtifactComments', 'Bash(cat *)', 'Read(//**/.env*)', `Read(/${ctx.dienst}/.env*)`]) assert.ok(gesperrt.includes(g), g);
+  assert.equal(args.filter(a => a === '--add-dir').length, 2, 'Arbeitsordner und Bildschirmfotos');
+  assert.deepEqual(LAEUFE.fehlermeldungen.pflicht, ['Bash', 'ToolSearch', 'Artifact', 'ArtifactData']);
 });
 
 test('claude-Argumente Postfach: Gmail nur lesend, alle Schreibwerkzeuge gesperrt, ToolSearch an', () => {
@@ -95,6 +101,16 @@ test('claude-Argumente Postfach: Gmail nur lesend, alle Schreibwerkzeuge gesperr
   assert.ok(frei.includes('Bash(npm run -s belege -- uebernehmen *)') && frei.includes('Bash(npm run -s service -- uebernehmen *)'));
   assert.ok(frei.includes(`Edit(/${arbeit}/**)`));
   assert.ok(!frei.some(f => f === 'Write' || f === 'Edit'), 'Schreiben nur im Arbeitsordner');
+  assert.ok(args.includes('--settings'), 'Wache auch im Postfach');
+  for (const g of GMAIL_LESEN) assert.ok(LAEUFE.postfach.pflicht.includes(g) && LAEUFE.postfach.erlaubt.includes(g), g);
+  assert.ok(!LAEUFE.postfach.erlaubt.some(n => GMAIL_SCHREIBEN.includes(n)));
+});
+
+test('Wache-Einstellungen: Pfade sicher gequotet, Hook fuer jedes Werkzeug', () => {
+  const s = JSON.parse(wacheEinstellungen('postfach', { privat: "/a/b'c", dienst: '/d e', node: '/usr/bin/node', skript: '/x/routine-wache.mjs' }));
+  assert.equal(s.hooks.PreToolUse[0].hooks[0].command, "'/usr/bin/node' '/x/routine-wache.mjs' 'postfach' '/a/b'\\''c' '/d e'");
+  assert.ok(WACHE_SKRIPT.endsWith(path.join('operations', 'scripts', 'routine-wache.mjs')));
+  assert.ok(fs.existsSync(WACHE_SKRIPT));
 });
 
 const ergebnis = (j) => ({ exitCode: 0, signal: null, stdout: JSON.stringify({ type: 'result', subtype: 'success', is_error: false, num_turns: 4, duration_ms: 61_000, usage: { input_tokens: 10, cache_creation_input_tokens: 1000, cache_read_input_tokens: 5000, output_tokens: 200 }, permission_denials: [], result: 'Ok.\n\nnichts zu tun', ...j }) });
@@ -150,13 +166,49 @@ test('Status: seit bleibt, solange ok gleich bleibt; Mitteilung nur bei neuem Fe
   assert.equal(herz.stand.seit, t(9).toISOString());
   const gut = schreibStatus(dir, 'lieferbelege', { ok: true, art: null, meldung: 'neu 1 (AB 1)' }, t(15));
   assert.equal(gut.stand.seit, t(15).toISOString());
+  assert.equal(gut.stand.letzterErfolg, t(15).toISOString());
+  assert.equal(schreibStatus(dir, 'lieferbelege', { hinweis: 'wartet auf Nachziehen' }, t(17)).stand.letzterErfolg, t(15).toISOString(), 'Ueberspringen ist kein Erfolg');
   assert.equal((fs.statSync(path.join(dir, 'routinen', 'postfach', 'status-lieferbelege.json')).mode & 0o777), 0o600);
-  const stand = routinenStand(dir);
-  assert.equal(stand.length, 1);
-  assert.deepEqual({ id: stand[0].id, ok: stand[0].ok, meldung: stand[0].meldung }, { id: 'lieferbelege', ok: true, meldung: 'neu 1 (AB 1)' });
+  const agents = tmp();
+  assert.deepEqual(routinenStand(dir, { jetzt: t(17), agentsDir: agents }), [], 'ohne Plist nicht eingerichtet');
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.postfach.plist'), '');
+  fs.utimesSync(path.join(agents, 'net.teppich-paradies.postfach.plist'), t(6), t(6));
+  const stand = routinenStand(dir, { jetzt: t(17), agentsDir: agents });
+  assert.deepEqual(stand.map(s => s.id), ['lieferbelege', 'serviceanfragen']);
+  assert.deepEqual({ id: stand[0].id, ok: stand[0].ok, meldung: stand[0].meldung, stumm: stand[0].stumm, hinweis: stand[0].hinweis }, { id: 'lieferbelege', ok: true, meldung: 'neu 1 (AB 1)', stumm: false, hinweis: 'wartet auf Nachziehen' });
+  // Service-Anfragen: eingerichtet um 7 Uhr (UTC 6), nie gelaufen -> nach 5 Stunden im Fenster stumm.
+  assert.equal(stand[1].stumm, true);
+  assert.equal(stand[1].stummText, 'seit der Einrichtung noch kein erfolgreicher Lauf');
   fs.writeFileSync(path.join(dir, 'routinen', 'postfach', 'status-lieferbelege.json'), '{kaputt');
-  assert.equal(routinenStand(dir)[0].ok, false, 'kaputte Statusdatei ist ein Fehler, nicht "alles gut"');
-  assert.equal(routinenStand(tmp()).length, 0);
+  assert.equal(routinenStand(dir, { jetzt: t(17), agentsDir: agents })[0].ok, false, 'kaputte Statusdatei ist ein Fehler, nicht "alles gut"');
+  assert.equal(routinenStand(tmp(), { agentsDir: tmp() }).length, 0);
+});
+
+test('Stumm-Pruefung kennt das Zeitfenster: Nacht und Sonntag zaehlen nicht', () => {
+  // Fenster Mo-Sa 7-19 Uhr Berlin (Winterzeit UTC+1).
+  assert.equal(fensterMinuten('2026-10-26T06:00:00Z', '2026-10-26T08:00:00Z'), 120, 'Montag 7-9 Uhr');
+  assert.equal(fensterMinuten('2026-10-26T18:00:00Z', '2026-10-27T07:00:00Z'), 120, '19-20 Uhr und 7-8 Uhr');
+  assert.equal(fensterMinuten('2026-10-31T18:30:00Z', '2026-11-02T06:30:00Z'), 60, 'Samstag 19:30 bis Montag 7:30');
+  assert.equal(fensterMinuten('2026-10-26T06:00:00Z', '2026-10-26T09:00:00Z', null), 180, 'ohne Fenster: alle Minuten');
+  assert.ok(fensterMinuten('2026-10-01T00:00:00Z', '2026-10-26T00:00:00Z', undefined, 300) <= 305, 'hoert nach der Grenze auf');
+
+  const dir = tmp();
+  const agents = tmp();
+  for (const l of ['net.teppich-paradies.fehler-vorpruefung', 'net.teppich-paradies.datenstand']) {
+    fs.writeFileSync(path.join(agents, `${l}.plist`), '');
+    fs.utimesSync(path.join(agents, `${l}.plist`), new Date('2026-10-20T08:00:00Z'), new Date('2026-10-20T08:00:00Z'));
+  }
+  // Fehlermeldungen: letzter Erfolg Samstag 19:50 -> Montag 8:00 erst 70 Min. im Fenster, nicht stumm.
+  schreibStatus(dir, 'fehlermeldungen', { ok: true, meldung: 'nichts zu tun' }, new Date('2026-10-31T18:50:00Z'));
+  schreibStatus(dir, 'fehlermeldungen', { hinweis: 'läuft noch (Sperre eines früheren Laufs)' }, new Date('2026-11-02T06:45:00Z'));
+  schreibStatus(dir, 'daten-gesundheit', { ok: true, meldung: 'frisch' }, new Date('2026-11-01T20:00:00Z'));
+  const montag8 = routinenStand(dir, { jetzt: new Date('2026-11-02T07:00:00Z'), agentsDir: agents });
+  assert.deepEqual(montag8.map(s => [s.id, s.stumm]), [['fehlermeldungen', false], ['daten-gesundheit', true]], 'Datenstand rund um die Uhr: 11 Std. ohne Erfolg');
+  // Montag 10 Uhr: 190 Min. im Fenster ohne Erfolg -> stumm, mit dem letzten Grund.
+  const montag10 = routinenStand(dir, { jetzt: new Date('2026-11-02T09:00:00Z'), agentsDir: agents });
+  assert.equal(montag10[0].stumm, true);
+  assert.equal(montag10[0].stummText, 'seit 38 Stunden kein erfolgreicher Lauf (zuletzt: läuft noch (Sperre eines früheren Laufs))');
+  assert.equal(montag10[0].stummSeit, '2026-10-31T18:50:00.000Z');
 });
 
 test('Sperre: zweiter Start ist besetzt, die Sperre eines beendeten Prozesses wird uebernommen', () => {
@@ -167,11 +219,46 @@ test('Sperre: zweiter Start ist besetzt, die Sperre eines beendeten Prozesses wi
   assert.equal(sperreBesetzt(datei), true);
   s.freigeben();
   assert.equal(sperreBesetzt(datei), false);
-  fs.writeFileSync(datei, JSON.stringify({ pid: 999_999_99, seit: 'x' }));
+  fs.writeFileSync(datei, JSON.stringify({ pid: 999_999_99, seit: new Date().toISOString() }));
   const neu = nimmSperre(datei);
   assert.ok(neu, 'tote Sperre uebernommen');
   neu.freigeben();
   assert.equal(fs.existsSync(datei), false);
+});
+
+test('Sperre verfaellt nach Zeitlimit plus Puffer - auch bei fremder PID (EPERM)', () => {
+  const datei = path.join(tmp(), 'lauf', 'sperre');
+  const jetzt = new Date('2026-10-26T10:00:00Z');
+  const max = sperrAlterMs('fehlermeldungen');
+  assert.equal(max, 25 * 60_000, '15 Min. Zeitlimit + 10 Min. Puffer');
+  assert.equal(sperrAlterMs('postfach'), 50 * 60_000, 'zwei Teile je 20 Min. + 10 Min.');
+  // PID 1 (launchd) gehoert root: process.kill(1, 0) meldet EPERM - "lebt", aber nur bis zur Altersgrenze.
+  fs.mkdirSync(path.dirname(datei), { recursive: true });
+  fs.writeFileSync(datei, JSON.stringify({ pid: 1, seit: new Date(jetzt.getTime() - 10 * 60_000).toISOString() }));
+  assert.equal(sperreBesetzt(datei, { jetzt, maxAlterMs: max }), true);
+  assert.equal(nimmSperre(datei, { jetzt, maxAlterMs: max }), null);
+  fs.writeFileSync(datei, JSON.stringify({ pid: 1, seit: new Date(jetzt.getTime() - 26 * 60_000).toISOString() }));
+  assert.equal(sperreBesetzt(datei, { jetzt, maxAlterMs: max }), false);
+  const s = nimmSperre(datei, { jetzt, maxAlterMs: max });
+  assert.ok(s, 'verwaiste Sperre uebernommen');
+  s.freigeben();
+  // Gerade angelegt, noch ohne Inhalt: besetzt, nicht wegraeumen.
+  fs.writeFileSync(datei, '');
+  assert.equal(nimmSperre(datei), null);
+  fs.rmSync(datei);
+});
+
+test('routineLaeuft: fuer das Nachziehen (#1715) zaehlt jede frische Routine-Sperre', () => {
+  const privat = tmp();
+  const jetzt = new Date();
+  assert.equal(routineLaeuft(privat, { jetzt }), null);
+  const s = nimmSperre(sperrPfad(privat, 'postfach'), { jetzt });
+  assert.equal(routineLaeuft(privat, { jetzt }), 'postfach');
+  assert.equal(routineLaeuft(privat, { jetzt: new Date(jetzt.getTime() + 51 * 60_000) }), null, 'nach Zeitlimit plus Puffer nicht mehr');
+  s.freigeben();
+  assert.equal(routineLaeuft(privat, { jetzt }), null);
+  fs.writeFileSync(sperrPfad(privat, 'postfach'), JSON.stringify({ pid: 999_999_99, seit: jetzt.toISOString() }));
+  assert.equal(routineLaeuft(privat, { jetzt }), null, 'beendeter Prozess');
 });
 
 test('Datengesundheit: frisch, alt, Teil fehlgeschlagen, Teil veraltet, fehlt', () => {
@@ -206,4 +293,37 @@ test('stream-json: nur result und die Aufrufliste bleiben - Befehle und Pfade, k
   for (let i = 0; i < zeilen.length; i += 7) sammle(s, zeilen.slice(i, i + 7));
   assert.deepEqual(abschliessen(s).aufrufe, a.aufrufe);
   assert.equal(bewerteLauf({ exitCode: 0, stdout: zeilen }).aufrufe.length, 4);
+});
+
+test('Pflichtwerkzeuge am init-Ereignis: fehlt eines, bricht der Lauf ab - ausser sein MCP-Server verbindet noch', () => {
+  const init = { tools: ['Bash', 'ToolSearch'], mcp: [] };
+  assert.deepEqual(pruefeWerkzeuge(init, LAEUFE.fehlermeldungen.pflicht), { ok: false, fehlt: ['Artifact', 'ArtifactData'], wartet: [] });
+  assert.equal(pruefeWerkzeuge({ tools: ['Artifact', 'ArtifactComments', 'ArtifactData', 'Bash', 'ToolSearch'], mcp: [] }, LAEUFE.fehlermeldungen.pflicht).ok, true);
+  const ohneGmail = { tools: ['Bash', 'Read', 'Write', 'ToolSearch'], mcp: [{ name: 'claude.ai Gmail', status: 'pending' }] };
+  assert.deepEqual(pruefeWerkzeuge(ohneGmail, LAEUFE.postfach.pflicht), { ok: true, fehlt: [], wartet: GMAIL_LESEN });
+  assert.deepEqual(pruefeWerkzeuge({ ...ohneGmail, mcp: [{ name: 'claude.ai Gmail', status: 'failed' }] }, LAEUFE.postfach.pflicht).fehlt, GMAIL_LESEN);
+  assert.equal(pruefeWerkzeuge(null, ['Bash']).ok, false);
+  const b = bewerteLauf({ fehlend: ['Artifact', 'ArtifactData'], ergebnis: null, aufrufe: [] });
+  assert.equal(b.art, 'werkzeug-fehlt');
+  assert.match(b.meldung, /Artifact, ArtifactData/);
+});
+
+test('stream-json: init und Gruende der Wache werden gelesen, andere Werkzeugergebnisse nicht', () => {
+  const zeilen = [
+    { type: 'system', subtype: 'init', tools: ['Bash', 'ToolSearch'], mcp_servers: [{ name: 'claude.ai Gmail', status: 'connected' }] },
+    { type: 'user', message: { content: [{ type: 'tool_result', is_error: true, content: 'PreToolUse:Bash hook error: Wache (postfach): Befehl nicht freigegeben: cat x' }] } },
+    { type: 'user', message: { content: [{ type: 'tool_result', content: [{ type: 'text', text: 'Mail von Erika Musterfrau' }] }] } },
+    { type: 'result', subtype: 'success', is_error: false, result: 'fertig', permission_denials: [{ tool_name: 'Bash', tool_input: { command: 'cat x' } }], usage: {} },
+  ].map(z => JSON.stringify(z)).join('\n');
+  const a = leseAusgabe(zeilen);
+  assert.deepEqual(a.init, { tools: ['Bash', 'ToolSearch'], mcp: [{ name: 'claude.ai Gmail', status: 'connected' }] });
+  assert.equal(a.wache.length, 1);
+  assert.doesNotMatch(JSON.stringify(a), /Erika/);
+  const b = bewerteLauf({ exitCode: 0, stdout: zeilen });
+  assert.equal(b.art, 'abgelehnt');
+  assert.equal(b.meldung, 'Werkzeug abgelehnt: Bash (cat x) · Wache (postfach): Befehl nicht freigegeben: cat x · fertig');
+});
+
+test('Auftragstexte liegen privat unter routinen/auftraege/', () => {
+  assert.equal(auftragPfad('/p', 'lieferbelege-postfach'), path.join('/p', 'routinen', 'auftraege', 'lieferbelege-postfach.md'));
 });

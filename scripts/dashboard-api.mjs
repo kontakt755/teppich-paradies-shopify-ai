@@ -628,7 +628,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null } = {}) {
   const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -3832,7 +3832,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ? { geprueftAm: aus2.geprueftAm, treffer: aus2.treffer || [], neu: aus2.neu || [], ausfaelle: aus2.ausfaelle || [] }
         : null;
       // Routinen als Mac-Dienst (operations/lib/routinen.mjs): Stand je Routine, gestoerte werden ein rotes To-do.
-      const routinen = routinenStand(dir);
+      // Eingerichtet = Plist unter ~/Library/LaunchAgents; Tests geben einen eigenen Ordner mit.
+      const routinen = routinenStand(dir, { jetzt: now(), ...(launchAgentsDir ? { agentsDir: launchAgentsDir } : {}) });
       if (!daten || !daten.geprueftAm) {
         return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen, routinen };
       }

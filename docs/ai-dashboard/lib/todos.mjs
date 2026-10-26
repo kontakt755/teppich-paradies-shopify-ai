@@ -594,20 +594,17 @@ function ausAusschreibungen(quellen, jetzt) {
 
 /**
  * Routinen als Mac-Dienst (operations/lib/routinen.mjs, Inhaber 2026-10-26): Fehlermeldungen,
- * Postfach und das taegliche Nachziehen des Control Centers laufen per launchd. Gestoert heisst:
- * der letzte Lauf meldete einen Fehler - oder eine Routine mit festem Takt meldet sich nicht mehr.
- * Rot, weil es jemand loesen muss (Mails kommen sonst nicht an, das Dashboard bleibt alt).
+ * Postfach und die Pruefung des Datenstands laufen per launchd. Gestoert heisst: der letzte Lauf
+ * meldete einen Fehler - oder ein eingerichteter Dienst hatte zu lange keinen erfolgreichen Lauf
+ * (`stumm`, vom Server mit Zeitfenster berechnet: nie gestartet, haengt, dauernd uebersprungen).
+ * Rot, weil es jemand loesen muss (Mails kommen sonst nicht an, Meldungen bleiben liegen).
  * Kommt mit der Shop-Wache (quellen.shopwache.routinen), also nur beim Inhaber.
  */
 function ausRoutinen(quellen, jetzt) {
   const liste = quellen.shopwache?.routinen || [];
   const gestoert = liste.map((r) => {
     if (r.ok === false) return { ...r, text: r.meldung || 'Fehler' };
-    const bezug = r.letzterErfolg || r.zeit;
-    const stunden = bezug ? (jetzt.getTime() - new Date(bezug).getTime()) / 3_600_000 : null;
-    if (r.stummNachStunden && stunden !== null && stunden > r.stummNachStunden) {
-      return { ...r, seit: bezug, text: `seit ${Math.floor(stunden)} Stunden kein erfolgreicher Lauf` };
-    }
+    if (r.stumm) return { ...r, seit: r.stummSeit || r.seit, text: r.stummText || 'zu lange kein erfolgreicher Lauf' };
     return null;
   }).filter(Boolean);
   if (!gestoert.length) return [];

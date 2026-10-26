@@ -461,8 +461,8 @@ test('Liefertermin bestaetigt: vorher Lieferant dran (kein Nachhaken), danach wi
 test('Routinen als Mac-Dienst: gestoerte oder stumme Routinen werden ein rotes Website-To-do, sonst nichts', () => {
   const stunden = h => new Date(JETZT.getTime() - h * 3_600_000).toISOString();
   const mit = routinen => leiteTodosAb({ shopwache: { verfuegbar: false, routinen } }, { sicht: 'website', jetzt: JETZT });
-  const gut = [{ id: 'fehlermeldungen', titel: 'Fehlermeldungen → Werkbank', ok: true, zeit: stunden(1), seit: stunden(30) },
-    { id: 'dienst-aktualisieren', titel: 'Control Center nachziehen (main)', ok: true, zeit: stunden(2), seit: stunden(48), stummNachStunden: 26 }];
+  const gut = [{ id: 'fehlermeldungen', titel: 'Fehlermeldungen → Werkbank', ok: true, stumm: false, zeit: stunden(1), seit: stunden(30) },
+    { id: 'daten-gesundheit', titel: 'Datenstand des Sync-Dienstes', ok: true, stumm: false, zeit: stunden(2), seit: stunden(48) }];
   assert.deepEqual(mit(gut), []);
   assert.deepEqual(mit([]), []);
   assert.deepEqual(mit(undefined), []);
@@ -475,13 +475,13 @@ test('Routinen als Mac-Dienst: gestoerte oder stumme Routinen werden ein rotes W
   assert.equal(rot[0].kontext, 'Werkzeug abgelehnt: Write');
   assert.equal(rot[0].alterTage, 2);
 
-  const stumm = mit([{ ...gut[1], zeit: stunden(30) }, { id: 'daten-gesundheit', titel: 'Datenstand des Sync-Dienstes', ok: false, meldung: 'Sync-Dienst meldet seit 90 Min. keinen neuen Stand', zeit: stunden(0), seit: stunden(2) }]);
+  // Stumm (der Server rechnet mit Zeitfenster, operations/lib/routinen.mjs routinenStand): Text und Alter vom Server.
+  const stumm = mit([{ ...gut[0], stumm: true, stummSeit: vorTagen(3), stummText: 'seit 72 Stunden kein erfolgreicher Lauf (zuletzt: wartet auf Nachziehen)' },
+    { ...gut[1], ok: false, meldung: 'Sync-Dienst meldet seit 90 Min. keinen neuen Stand', seit: stunden(2) }]);
   assert.equal(stumm[0].titel, 'Mac-Dienst: 2 Routinen gestört');
-  assert.match(stumm[0].kontext, /^seit 30 Stunden kein erfolgreicher Lauf · \+1 weitere$/);
-  // Meldet sich jeden Takt, aber ohne Erfolg (z. B. git fetch scheitert): zaehlt ab dem letzten Erfolg.
-  const ohneErfolg = mit([{ ...gut[1], zeit: stunden(0), letzterErfolg: stunden(27) }]);
-  assert.equal(ohneErfolg[0].kontext, 'seit 27 Stunden kein erfolgreicher Lauf');
-  assert.deepEqual(mit([{ ...gut[1], zeit: stunden(0), letzterErfolg: stunden(25) }]), []);
+  assert.equal(stumm[0].kontext, 'seit 72 Stunden kein erfolgreicher Lauf (zuletzt: wartet auf Nachziehen) · +1 weitere');
+  assert.equal(stumm[0].alterTage, 3, 'Alter ab dem letzten Erfolg bzw. der Einrichtung');
+  assert.equal(mit([{ ...gut[0], stumm: true }])[0].kontext, 'zu lange kein erfolgreicher Lauf');
   // Rot: der Inhaber sieht es auf seiner Startseite, im Laden zaehlt es nicht.
   assert.equal(leiteTodosAb({ shopwache: { routinen: [{ ...gut[0], ok: false, meldung: 'x' }] } }, { sicht: 'inhaber', jetzt: JETZT }).length, 1);
   assert.deepEqual(leiteTodosAb({ shopwache: { routinen: [{ ...gut[0], ok: false, meldung: 'x' }] } }, { sicht: 'laden', jetzt: JETZT }), []);

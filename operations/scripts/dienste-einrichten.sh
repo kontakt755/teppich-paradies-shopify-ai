@@ -16,11 +16,12 @@
 # --nur-nachziehen richtet net.teppich-paradies.nachziehen ein: zieht den Dienst-Checkout
 # alle 5 Minuten getestet auf main nach (operations/scripts/betrieb-nachziehen.mjs).
 #
-# --routinen legt die drei Routine-Dienste (Fehlermeldungen-Vorpruefung, Postfach,
-# Dienst-Aktualisierung; operations/README.md, Abschnitt "Routinen als Mac-Dienst")
-# nach ~/Library/LaunchAgents und die Log-Ordner an, LAEDT SIE ABER NICHT: das
-# Einschalten (launchctl bootstrap) macht der Inhaber von Hand, die Befehle stehen
-# am Ende der Ausgabe.
+# --routinen schaltet die Routinen als Mac-Dienst ein (operations/README.md, Abschnitt
+# "Routinen als Mac-Dienst"): kopiert die Auftragstexte einmalig aus den App-Aufgaben nach
+# ~/teppich-paradies-analyse/routinen/auftraege/, prueft per Werkzeugprobe, dass claude -p
+# alle Pflichtwerkzeuge hat, und richtet dann net.teppich-paradies.fehler-vorpruefung,
+# .postfach und .datenstand ein (laedt sie). Vorher die App-Aufgaben pausieren, sonst
+# laufen beide doppelt. Nur aus dem Dienst-Checkout (Zweig dashboard-betrieb).
 #
 # Die Sicherung ersetzt den bisherigen gleichnamigen Claude-Zeitplan.
 # Diesen vor der Installation pausieren, damit nur ein taeglicher Lauf bleibt.
@@ -120,47 +121,72 @@ nachziehen_einrichten() {
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-nachziehen.log"
 }
 
-routinen_ablegen() {
-  schritt "Routine-Dienste ablegen (nicht laden)"
-  local analyse="${HOME}/teppich-paradies-analyse/routinen"
-  mkdir -p "${analyse}/fehlermeldungen" "${analyse}/postfach" "${analyse}/dienst-aktualisieren"
-  chmod 700 "${analyse}"
-  if [[ "${REPO}" != "${HOME}/tp-dashboard" ]]; then
-    hinweis "Hinweis: die Dienste laufen aus ~/tp-dashboard, nicht aus ${REPO} - dort muss main nachgezogen sein."
+ROUTINEN_LABELS=(net.teppich-paradies.fehler-vorpruefung net.teppich-paradies.postfach net.teppich-paradies.datenstand)
+ROUTINEN_AUFGABEN=(fehlermeldungen-werkbank lieferbelege-postfach serviceanfragen-postfach)
+
+routinen_einrichten() {
+  schritt "Routinen als Mac-Dienst (Fehlermeldungen, Postfach, Datenstand)"
+  # Die Plists zeigen auf ${REPO}; dort muss main mit den Skripten schon nachgezogen sein.
+  if [[ "$(git -C "${REPO}" symbolic-ref --quiet --short HEAD 2>/dev/null)" != "dashboard-betrieb" ]]; then
+    fehler "Nur aus dem Dienst-Checkout (Zweig dashboard-betrieb) einrichten, nicht aus ${REPO}."
+    return 1
   fi
-  local label vorlage ziel tmp
-  for label in net.teppich-paradies.fehler-vorpruefung net.teppich-paradies.postfach net.teppich-paradies.dienst-aktualisieren; do
-    vorlage="${REPO}/operations/launchagents/${label}.plist.vorlage"
-    ziel="${LAUNCH_AGENTS_DIR}/${label}.plist"
-    tmp="${ziel}.$$.tmp"
-    "${NODE_PFAD}" --input-type=module - "${vorlage}" "${tmp}" "${HOME}" <<'JS'
-import fs from 'node:fs';
-const [vorlage, ziel, heim] = process.argv.slice(2);
-const xml = s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-fs.writeFileSync(ziel, fs.readFileSync(vorlage, 'utf8').replaceAll('__HOME__', xml(heim)), { mode: 0o644 });
-JS
-    if ! plutil -lint "${tmp}" >/dev/null; then
-      rm -f "${tmp}"
-      fehler "${vorlage} ist keine gueltige Plist."
+  local datei
+  for datei in operations/scripts/claude-lauf.mjs operations/scripts/routine-wache.mjs operations/scripts/datenstand-pruefen.mjs operations/lib/routinen.mjs operations/lib/routine-wache.mjs; do
+    if [[ ! -f "${REPO}/${datei}" ]]; then
+      fehler "${REPO} hat ${datei} noch nicht - erst main nachziehen (npm run -s betrieb:nachziehen -- --status)."
       return 1
     fi
-    if [[ -f "${ziel}" ]] && cmp -s "${tmp}" "${ziel}"; then
-      rm -f "${tmp}"
-      ok "${label}: unveraendert vorhanden."
+  done
+  if [[ ! -x "${HOME}/.local/bin/claude" ]]; then
+    fehler "claude fehlt unter ${HOME}/.local/bin/claude."
+    return 1
+  fi
+  local analyse="${HOME}/teppich-paradies-analyse/routinen"
+  mkdir -p "${analyse}/fehlermeldungen" "${analyse}/postfach" "${analyse}/datenstand" "${analyse}/auftraege"
+  chmod 700 "${analyse}" "${analyse}/auftraege"
+
+  # Auftragstexte einmalig aus den App-Aufgaben kopieren (privat: enthalten u. a. die
+  # Werkbank-Adresse). Eine vorhandene Kopie bleibt - der Dienst liest nur sie.
+  local aufgabe quelle ziel
+  for aufgabe in "${ROUTINEN_AUFGABEN[@]}"; do
+    ziel="${analyse}/auftraege/${aufgabe}.md"
+    quelle="${HOME}/.claude/scheduled-tasks/${aufgabe}/SKILL.md"
+    if [[ -f "${ziel}" ]]; then
+      ok "Auftrag ${aufgabe}: vorhanden, bleibt unveraendert."
+    elif [[ -f "${quelle}" ]]; then
+      install -m 600 "${quelle}" "${ziel}"
+      ok "Auftrag ${aufgabe}: aus der App-Aufgabe kopiert."
     else
-      mv "${tmp}" "${ziel}"
-      ok "${label}: abgelegt unter ${ziel}."
+      fehler "Auftrag ${aufgabe} fehlt: weder ${ziel} noch ${quelle}."
+      return 1
     fi
-    if launchctl print "gui/$(id -u)/${label}" >/dev/null 2>&1; then
-      hinweis "  ist bereits geladen - eine geaenderte Datei wirkt erst nach bootout + bootstrap."
+  done
+
+  # Vor dem Laden: hat claude -p unter launchd-Bedingungen (leere Umgebung wie in der Plist)
+  # alle Pflichtwerkzeuge? Startet claude nur bis zum init-Ereignis - kein Auftrag, keine Arbeit.
+  schritt "Werkzeugprobe (claude -p bis zum Start)"
+  local lauf
+  for lauf in fehlermeldungen postfach; do
+    if ! (cd "${REPO}" && env -i HOME="${HOME}" PATH="$(dirname "${NODE_PFAD}"):/usr/bin:/bin:/usr/sbin:/sbin" TZ=Europe/Berlin \
+        TP_PRIVAT_DIR="${HOME}/teppich-paradies-analyse" TP_DIENST_DIR="${REPO}" \
+        "${NODE_PFAD}" operations/scripts/claude-lauf.mjs "${lauf}" --werkzeugprobe); then
+      fehler "Werkzeugprobe ${lauf} fehlgeschlagen - kein Routine-Dienst geladen."
+      return 1
     fi
+  done
+
+  local label
+  for label in "${ROUTINEN_LABELS[@]}"; do
+    schritt "${label}"
+    vorlage_einrichten "${label}" || return 1
+    ok "Eingerichtet und geladen."
   done
   hinweis ""
-  hinweis "Nichts geladen. Einschalten (je Dienst, erst nach dem Trockenlauf):"
-  for label in net.teppich-paradies.fehler-vorpruefung net.teppich-paradies.postfach net.teppich-paradies.dienst-aktualisieren; do
-    hinweis "  launchctl bootstrap gui/$(id -u) ${LAUNCH_AGENTS_DIR}/${label}.plist"
-  done
-  hinweis "Abschalten: launchctl bootout gui/$(id -u)/<label>"
+  hinweis "Logs: ${analyse}/{fehlermeldungen,postfach,datenstand}/dienst.log"
+  hinweis "Die App-Aufgaben fehlermeldungen-werkbank, lieferbelege-postfach und serviceanfragen-postfach"
+  hinweis "muessen pausiert sein (nicht geloescht) - sonst laufen beide doppelt."
+  hinweis "Abschalten: launchctl bootout gui/$(id -u)/<label>, dann ~/Library/LaunchAgents/<label>.plist loeschen."
 }
 
 if [[ "${1:-}" == "--nur-sicherung" ]]; then
@@ -173,7 +199,7 @@ if [[ "${1:-}" == "--nur-nachziehen" ]]; then
 fi
 
 if [[ "${1:-}" == "--routinen" ]]; then
-  routinen_ablegen
+  routinen_einrichten
   exit 0
 fi
 
