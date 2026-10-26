@@ -29,13 +29,15 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 | `control-center` | Dashboard (`docs/ai-dashboard/`), `issues.json`, `npm run task` |
 | `produktimport` | neue Produkte aus Lieferantenquellen, Schreibzugriff (`shopify-daten.md`) |
 | `lieferant-a-recherche` | Artikel- und Farbnummern bei Lieferant A belegt klaeren |
-| `shopify-massendaten` | viele Metafelder/Tags auf einmal, mit Plan und Rollback |
+| `shopify-massendaten` | viele Metafelder/Tags auf einmal, mit Plan und Rollback; GraphQL-Fallen der Admin-API (falsche Felder, gesperrte Mutationen) |
 | `raumbilder-recherche` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
 | `theme-regeln` | vor jeder Theme-Aenderung: Bloecke/Schemata, fertige Funktionen, Menue, Produktkarten, UX/Design, Bilder, Schrift/Rot, Testumfang |
 | `preislogik` | Preise, Streich-/Vergleichspreise, Aktionen, Fussleiste, Paketprodukte (€/m²), Vinyl-Preisfilter |
 | `werkzeuge` | alle `npm run`-Guards, Doctors und Pruefungen mit Zweck und Zeitpunkt |
 | `theme-audit` | nur lesendes Audit (Performance, SEO, JSON-LD, KI-Abrufbarkeit, App-Last) ergaenzend zu den Guards; Bericht nach `docs/audits/` |
 | `codex` | „frag Codex“, zweite Meinung, Diff/Plan gegenlesen, Review-Blick vor kritischen Merges (`npm run -s ki:frag`) |
+| `ship` | `/ship <PR-Nummer>`, „merge #N“: Freigabe fuer genau diesen PR - Review bei kritischen Aenderungen, CI, `deploy:frei`, Merge-Commit, `pr:doctor`, Theme-/Dashboard-Deploy, eigene Arbeitskopie entfernen |
+| `handoff` | „Uebergabe“, „handoff“, „Prompt fuer neuen Chat“, Kontext wird voll (Auto-Compact bei 50 %, vorher anbieten): `npm run -s handoff` ergaenzen und als einen Block ausgeben |
 
 ## Review
 

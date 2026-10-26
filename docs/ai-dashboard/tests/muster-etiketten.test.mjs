@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ETIKETT, ETIKETT_FORMATE, MIN_SCHRIFT, andereArten, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout,
+  ETIKETT, ETIKETT_FORMATE, MIN_SCHRIFT, QR_HINWEIS, andereArten, breitenAus, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout,
   layoutProbleme, produktUrl, qrMindest, qrModule, serieAus, serieUndFarbe, technikZeilen, tinte, umbrechen, varianteFuer,
 } from '../lib/muster-etiketten.mjs';
 
@@ -39,7 +39,7 @@ test('serieAus: Farbe und Warengruppe fallen weg', () => {
   assert.equal(serieAus('Testlinea Teppichfliesen 50x50cm', 'Graphit (1008)'), 'Testlinea');
 });
 
-test('klassenNummern und technikZeilen: nur Paketware, fehlende Zeilen fallen weg', () => {
+test('klassenNummern und technikZeilen: Paketware feste Zeilen, sonst Eckdaten als Zusatz, fehlende fallen weg', () => {
   assert.equal(klassenNummern('Klasse 23 (Wohnen, stark), Klasse 32 (Gewerbe, normal)'), '23 / 32');
   assert.deepEqual(technikZeilen(vinyl.eigenschaften), [
     { label: 'Art', wert: 'Klickvinyl' },
@@ -48,19 +48,48 @@ test('klassenNummern und technikZeilen: nur Paketware, fehlende Zeilen fallen we
     { label: 'Format', wert: '122 × 18 cm' },
   ]);
   assert.deepEqual(technikZeilen({ qmProPaket: '2', gesamtstaerke: '4 mm', arten: 'Klebevinyl, Klickvinyl' }), [{ label: 'Art', wert: 'Klebevinyl / Klickvinyl' }, { label: 'Stärke', wert: '4 mm' }]);
-  assert.deepEqual(technikZeilen(teppich.eigenschaften), []);
+  assert.deepEqual(technikZeilen(teppich.eigenschaften), [{ label: 'Florhöhe', wert: '8 mm', zusatz: true }]);
+  // Teppichboden: Material, Breite, Florhoehe, Nutzungsklasse, Fussbodenheizung - alles nur, wo Platz ist.
+  assert.deepEqual(technikZeilen({ fasermaterial: 'Polyamid', florhoehe: '5,3 mm', gesamtstaerke: '8 mm', nutzungsklasse: 'Klasse 32 (Gewerbe, normal)', fussbodenheizung: 'Ja', ruecken: 'Textilrücken' }, [], '400 / 500 cm'), [
+    { label: 'Material', wert: 'Polyamid', zusatz: true },
+    { label: 'Breite', wert: '400 / 500 cm', zusatz: true },
+    { label: 'Florhöhe', wert: '5,3 mm', zusatz: true },
+    { label: 'Nutzungsklasse', wert: '32', zusatz: true },
+    { label: 'Fußbodenheizung', wert: 'ja', zusatz: true },
+  ]);
+  // Ohne Florhoehe die Staerke; "Nein" und ellenlange Materialangaben bleiben weg.
+  assert.deepEqual(technikZeilen({ material: 'Polyethylen-Monofilament (glatt) und Polypropylen (gekräuselt)', gesamtstaerke: '2,5 mm', fussbodenheizung: 'Nein' }), [{ label: 'Stärke', wert: '2,5 mm', zusatz: true }]);
+  // Paketware: Fussbodenheizung als Zusatz hinter den festen Zeilen.
+  assert.deepEqual(technikZeilen({ ...vinyl.eigenschaften, fussbodenheizung: 'Ja' }).at(-1), { label: 'Fußbodenheizung', wert: 'ja', zusatz: true });
+});
+
+test('breitenAus: Rollenbreiten der Farbe aus den Varianten, sonst custom.rollenbreite; kein Wunschmass, keine Millimeter', () => {
+  const p = { eigenschaften: {}, varianten: [
+    { farbe: 'Sand', optionen: [{ name: 'Farbe', wert: 'Sand' }, { name: 'Breite', wert: '500cm' }] },
+    { farbe: 'Sand', optionen: [{ name: 'Farbe', wert: 'Sand' }, { name: 'Breite', wert: '400 cm' }] },
+    { farbe: 'Grau', optionen: [{ name: 'Farbe', wert: 'Grau' }, { name: 'Breite', wert: '200 cm' }] },
+    { farbe: 'Grau', optionen: [{ name: 'Breite', wert: 'Wunschmaß' }] },
+  ] };
+  assert.equal(breitenAus(p, 'Sand'), '400 / 500 cm');
+  assert.equal(breitenAus(p, 'Grau'), '200 cm');
+  assert.equal(breitenAus(p), '200 / 400 / 500 cm', 'ohne Farbe alle Breiten');
+  assert.equal(breitenAus(p, 'Unbekannt'), '200 / 400 / 500 cm');
+  assert.equal(breitenAus({ eigenschaften: { rollenbreite: '2.0' }, varianten: [{ optionen: [{ name: 'Breite', wert: 'Wunschmaß' }] }] }), '200 cm');
+  assert.equal(breitenAus({ varianten: [{ optionen: [{ name: 'Breite', wert: '90 mm' }] }] }), '');
+  assert.equal(breitenAus(null), '');
 });
 
 test('technikZeilen: Vinyl von der Rolle traegt nur die Art, "Auch als" nur mit belegtem gleichem Dekor', () => {
   const rolle = { arten: 'Vinyl von der Rolle', gesamtstaerke: '2,8 mm', nutzschicht: '0,35 mm', rollenbreite: '4.0' };
-  assert.deepEqual(technikZeilen(rolle), [{ label: 'Art', wert: 'Vinyl von der Rolle' }]);
+  assert.deepEqual(technikZeilen(rolle).filter(z => !z.zusatz), [{ label: 'Art', wert: 'Vinyl von der Rolle' }]);
+  assert.deepEqual(technikZeilen(rolle, [], '400 cm').filter(z => z.zusatz).map(z => z.label), ['Breite', 'Stärke / Nutzschicht']);
   assert.deepEqual(technikZeilen({ ...vinyl.eigenschaften }, ['Klebevinyl']).slice(0, 3), [
     { label: 'Art', wert: 'Klickvinyl' },
     { label: 'Auch als', wert: 'Klebevinyl' },
     { label: 'Stärke / Nutzschicht', wert: '5 mm / 0,55 mm' },
   ]);
-  // Teppichboden bekommt keine Technik, auch nicht ueber "Auch als".
-  assert.deepEqual(technikZeilen(teppich.eigenschaften, ['Klickvinyl']), []);
+  // Teppichboden bekommt kein "Auch als" (das gibt es nur bei Vinyl).
+  assert.ok(!technikZeilen(teppich.eigenschaften, ['Klickvinyl']).some(z => z.label === 'Auch als'));
   // Aus dem Lexikon: eigene Art und Doppelte fallen weg, leere Eintraege auch.
   const paar = { ...vinyl, gleicherDekor: [{ art: 'Klebevinyl', handle: 'a' }, { art: 'Klebevinyl', handle: 'b' }, { art: 'Klickvinyl', handle: 'c' }, { art: '', handle: 'd' }] };
   assert.deepEqual(andereArten(paar), ['Klebevinyl']);
@@ -84,7 +113,7 @@ test('varianteFuer: Quellvariante vor Farbe, sonst nichts raten', () => {
   assert.equal(varianteFuer({ farbe: 'egal' }, vinyl).sku, 'TL-100');
 });
 
-test('etikettFuerPosition: echte SKU statt Muster-SKU, Technik nur bei Paketware', () => {
+test('etikettFuerPosition: echte SKU statt Muster-SKU, feste Technik nur bei Paketware', () => {
   const v = etikettFuerPosition({ istMuster: true, titel: 'Kostenloses Muster', sku: 'TP-MUSTER-000', farbe: 'Eiche Natur', handle: 'kostenloses-muster', musterQuelle: { produktHandle: vinyl.handle, sku: 'TL-100' } }, vinyl);
   assert.equal(v.serie, 'Testlinea');
   assert.equal(v.farbe, 'Eiche Natur');
@@ -92,7 +121,7 @@ test('etikettFuerPosition: echte SKU statt Muster-SKU, Technik nur bei Paketware
   assert.equal(v.url, `https://www.teppich-paradies.net/products/${vinyl.handle}`);
   assert.equal(v.technik.length, 4);
   const t = etikettFuerPosition({ istMuster: true, titel: 'Muster Testvelours Teppichboden 400cm', sku: 'M-77', farbe: 'Grau', handle: 'muster-testvelours-teppichboden' }, teppich);
-  assert.deepEqual([t.serie, t.sku, t.technik.length], ['Testvelours', 'TV-400-GR', 0]);
+  assert.deepEqual([t.serie, t.sku, t.technik], ['Testvelours', 'TV-400-GR', [{ label: 'Florhöhe', wert: '8 mm', zusatz: true }]]);
   // Ohne Lexikon: Farbe aus der Bestellung, SKU bleibt leer statt Muster-SKU.
   const o = etikettFuerPosition({ istMuster: true, titel: 'Muster Testvelours Teppichboden', sku: 'M-77', farbe: 'Grau', handle: 'muster-testvelours-teppichboden' }, null);
   assert.deepEqual([o.serie, o.farbe, o.sku], ['Testvelours', 'Grau', '']);
@@ -118,6 +147,13 @@ test('umbrechen: Woerter, hartes Trennen, Auslassung nach maxZeilen', () => {
   assert.ok(z[1].endsWith('…'));
 });
 
+// Woerter ohne Schraegstriche: die Tabelle setzt "Stärke / Nutzschicht" mit "5 mm / 0,55 mm" als zwei Zeilen.
+const worte = texte => texte.flatMap(t => String(t.text ?? t).split(/\s+/)).filter(w => w && w !== '/');
+/** Technik = alles zwischen der Linie unter den Namen und der Linie ueber der Art.-Nr. */
+const technikVon = l => l.texte.filter(t => t.y > l.linien[0].y && t.y < l.linien[1].y && t.text !== QR_HINWEIS);
+/** Zeilen untereinander; Bezeichnung und Wert einer Tabellenzeile stehen auf derselben Hoehe. */
+const untereinander = texte => texte.every((t, i) => !i || texte[i - 1].y === t.y || texte[i - 1].y + texte[i - 1].groesse <= t.y);
+
 const imRahmen = ({ texte, qr }) => {
   for (const t of texte) {
     assert.ok(t.x >= ETIKETT.rand - 0.01 && t.x + mass(t.text, t.groesse) <= ETIKETT.breite - ETIKETT.rand + 0.01, t.text);
@@ -126,33 +162,36 @@ const imRahmen = ({ texte, qr }) => {
   if (qr) assert.ok(qr.x >= ETIKETT.rand && qr.y + qr.groesse <= ETIKETT.hoehe - ETIKETT.rand && qr.x + qr.groesse <= ETIKETT.breite - ETIKETT.rand);
 };
 
-test('layout Paketware: Absender oben, Trennlinie, Technik links, QR rechts, Art.-Nr. unten', () => {
+test('layout Paketware: Absender oben, zwei Linien, Technik links, QR rechts, Art.-Nr. unten', () => {
   const e = etikettFuerPosition({ istMuster: true, farbe: 'Eiche Natur', handle: vinyl.handle }, vinyl);
   const l = layout(e, mass);
   imRahmen(l);
   assert.equal(l.texte[0].text, 'www.teppich-paradies.net');
-  assert.equal(l.linien.length, 1);
+  assert.equal(l.texte[0].fett, false, 'Shopadresse normal - die Serie ist die Ueberschrift');
+  assert.equal(l.linien.length, 2, 'Linie unter den Namen und ueber der Art.-Nr.');
   assert.ok(l.qr.groesse <= 140 && l.qr.groesse >= 100, String(l.qr.groesse));
-  assert.ok(l.qr.y > l.linien[0].y);
+  assert.ok(l.qr.y > l.linien[0].y && l.qr.y + l.qr.groesse < l.linien[1].y);
   assert.ok(l.texte.find(t => t.text === '23 / 33').x < l.qr.x);
-  assert.ok(l.texte.some(t => t.text === 'Art.-Nr. TL-100' && t.y > l.qr.y + l.qr.groesse));
+  const nr = l.texte.find(t => t.text === 'TL-100'), label = l.texte.find(t => t.text === 'Art.-Nr.');
+  assert.ok(nr.fett && !label.fett && nr.y === label.y && label.x < nr.x, 'Art.-Nr. normal, Nummer fett, eine Zeile');
+  assert.ok(nr.y > l.linien[1].y);
   // Technik ragt nicht in den QR-Code.
-  assert.ok(l.texte.filter(t => t.y >= l.qr.y).every(t => t.x + mass(t.text, t.groesse) <= l.qr.x || t.text.startsWith('Art.-Nr.')));
+  assert.ok(technikVon(l).every(t => t.x + mass(t.text, t.groesse) <= l.qr.x));
 });
 
 test('layout Teppichboden: ohne Technik groesserer QR in der Mitte, lange Namen bleiben im Rahmen', () => {
   const e = etikett({ serie: 'Testvelours Extra Langer Serienname Mit Woertern', farbe: 'Beige Mittel Dunkler Ton', sku: 'TV-400-SA', handle: 'testvelours-teppichboden' });
   const l = layout(e, mass);
   imRahmen(l);
-  assert.equal(l.linien.length, 0);
+  assert.equal(l.linien.length, 2);
   assert.ok(!l.texte.some(t => t.text.includes('…')), 'Produktname und Farbe bleiben vollstaendig');
-  const namen = l.texte.filter(t => t.y > l.texte[0].y && !t.text.startsWith('Art.-Nr.'));
+  const namen = l.texte.filter(t => t.y > l.texte[0].y && t.y < l.linien[0].y);
   assert.equal(namen.map(t => t.text).join(' '), `${e.serie} ${e.farbe}`);
   assert.ok(namen.every(t => t.y + t.groesse <= l.qr.y), 'Volltext und QR bleiben getrennt');
   assert.ok(l.qr.groesse >= 100);
   assert.ok(Math.abs(l.qr.x + l.qr.groesse / 2 - ETIKETT.breite / 2) <= 1);
   const kurz = layout(etikett({ serie: 'Testvelours', farbe: 'Sand', sku: 'X', handle: 'x' }), mass);
-  assert.equal(kurz.qr.groesse, 180);
+  assert.equal(kurz.qr.groesse, 160, 'QR-Code hoechstens 20 mm - der Rest bleibt Luft zwischen den Linien');
 });
 
 test('layout lange Serie und Farbe: alle vier Technikzeilen bleiben vollstaendig und ohne Ueberlappung', () => {
@@ -168,11 +207,11 @@ test('layout lange Serie und Farbe: alle vier Technikzeilen bleiben vollstaendig
   const l = layout(e, mass);
   imRahmen(l);
   assert.ok(l.qr.groesse >= 100, String(l.qr.groesse));
-  const technik = l.texte.filter(t => t.y > l.linien[0].y && !t.text.startsWith('Art.-Nr.'));
-  assert.deepEqual(technik.map(t => t.text), e.technik.flatMap(z => [z.label, z.wert]));
+  const technik = technikVon(l);
+  assert.deepEqual(worte(technik).sort(), worte(e.technik.flatMap(z => [z.label, z.wert])).sort());
   assert.ok(technik.every(t => t.x + mass(t.text, t.groesse) <= l.qr.x - 12));
-  for (let i = 1; i < technik.length; i++) assert.ok(technik[i - 1].y + technik[i - 1].groesse <= technik[i].y);
-  const artikel = l.texte.find(t => t.text === 'Art.-Nr. TL-LANG-1008');
+  assert.ok(untereinander(technik));
+  const artikel = l.texte.find(t => t.text === 'TL-LANG-1008');
   assert.ok(technik.at(-1).y + technik.at(-1).groesse < artikel.y);
   assert.ok(l.texte.filter(t => t.y < l.linien[0].y).every(t => t.y + t.groesse < l.linien[0].y));
   assert.ok(!l.texte.some(t => t.text.includes('…')), 'auch der lange Titel bleibt vollstaendig');
@@ -185,10 +224,10 @@ test('layout mit "Auch als": fuenf Technikzeilen bleiben vollstaendig, QR rechts
     const l = layout(e, mass, format);
     for (const t of l.texte) assert.ok(t.x >= format.rand - 0.01 && t.x + mass(t.text, t.groesse) <= format.breite - format.rand + 0.01 && t.y + t.groesse <= format.hoehe - format.rand + 0.01, t.text);
     assert.ok(l.qr.y + l.qr.groesse <= format.hoehe - format.rand && l.qr.x + l.qr.groesse <= format.breite - format.rand);
-    const technik = l.texte.filter(t => t.y > l.linien[0].y && !t.text.startsWith('Art.-Nr.'));
-    assert.deepEqual(technik.map(t => t.text), e.technik.flatMap(z => [z.label, z.wert]));
-    for (let i = 1; i < technik.length; i++) assert.ok(technik[i - 1].y + technik[i - 1].groesse <= technik[i].y);
-    assert.ok(technik.at(-1).y + technik.at(-1).groesse < l.texte.find(t => t.text === 'Art.-Nr. TL-100').y);
+    const technik = technikVon(l);
+    assert.deepEqual(worte(technik).sort(), worte(e.technik.flatMap(z => [z.label, z.wert])).sort());
+    assert.ok(untereinander(technik));
+    assert.ok(technik.at(-1).y + technik.at(-1).groesse < l.texte.find(t => t.text === 'TL-100').y);
     assert.ok(l.qr && l.qr.groesse >= 100, String(l.qr?.groesse));
     if (format === ETIKETT) assert.ok(technik.every(t => t.x + mass(t.text, t.groesse) <= l.qr.x - 12));
   }
@@ -196,8 +235,10 @@ test('layout mit "Auch als": fuenf Technikzeilen bleiben vollstaendig, QR rechts
   const rolle = etikett({ serie: 'Testrolle', farbe: 'Eiche Hell', sku: 'TR-1', handle: 'testrolle', technik: technikZeilen({ arten: 'Vinyl von der Rolle' }) });
   const lr = layout(rolle, mass);
   imRahmen(lr);
-  assert.equal(lr.linien.length, 1);
-  assert.ok(lr.qr.groesse >= 100 && lr.texte.find(t => t.text === 'Vinyl von der Rolle').x < lr.qr.x);
+  assert.equal(lr.linien.length, 2);
+  assert.ok(lr.qr.groesse >= 100);
+  assert.deepEqual(worte(technikVon(lr)), ['Art', 'Vinyl', 'von', 'der', 'Rolle']);
+  assert.ok(technikVon(lr).every(t => t.x + mass(t.text, t.groesse) <= lr.qr.x - 12));
 });
 
 test('layout: ohne URL kein QR, ohne SKU keine Art.-Nr.-Zeile', () => {
@@ -234,16 +275,16 @@ test('layout 50 x 100 mm: dieselbe Aufteilung, alles groesser, alles im Rahmen',
     assert.ok(l.qr.groesse > klein.qr.groesse, `QR groesser (${klein.qr.groesse} -> ${l.qr.groesse})`);
     assert.ok(!l.texte.some(t => t.text.includes('…')), 'nichts abgeschnitten');
     assert.equal(l.texte[0].text, 'www.teppich-paradies.net', 'Shopname vollstaendig');
-    const namen = l.texte.slice(1).filter(t => !t.text.startsWith('Art.-Nr.')).map(t => t.text).join(' ');
-    assert.ok(namen.startsWith(`${e.serie} ${e.farbe}`), `kein Wort getrennt: ${namen}`);
-    // Hochformat: QR-Code unter allen Texten ausser der Art.-Nr.
-    assert.ok(l.texte.filter(t => !t.text.startsWith('Art.-Nr.')).every(t => t.y + t.groesse <= l.qr.y), 'QR unter dem Text');
+    const namen = l.texte.filter(t => t.y > l.texte[0].y && t.y < l.linien[0].y).map(t => t.text).join(' ');
+    assert.equal(namen, `${e.serie} ${e.farbe}`, 'kein Wort getrennt');
+    // Hochformat: QR-Code unter Namen und Technik, nur der Hinweis steht darunter.
+    assert.ok(l.texte.filter(t => t.y < l.linien[1].y && t.text !== QR_HINWEIS).every(t => t.y + t.groesse <= l.qr.y), 'QR unter dem Text');
   }
 });
 
 test('Formate: 50 x 80 mm ist 400 x 640 px und steht zwischen 50 x 50 und 50 x 100', () => {
   const f = ETIKETT_FORMATE['50x80'];
-  assert.deepEqual([f.breite, f.hoehe, f.rand, f.name], [400, 640, 18, '50 × 80 mm']);
+  assert.deepEqual([f.breite, f.hoehe, f.rand, f.name], [400, 640, 32, '50 × 80 mm']);
   assert.equal(etikettFormat('50x80'), f);
   assert.deepEqual(Object.keys(ETIKETT_FORMATE), ['50x50', '50x80', '50x100']);
 });
@@ -262,12 +303,13 @@ test('tinte: Akzente ueber Grossbuchstaben und Unterlaengen werden mitgerechnet'
 });
 
 test('layoutProbleme: meldet Ueberlappen, Rand, Kuerzung, Mini-Schrift und fehlenden QR-Code', () => {
-  const t = (text, y, groesse = 20) => ({ text, x: 18, y, groesse, fett: false });
-  assert.deepEqual(layoutProbleme({ texte: [t('Eins', 18), t('Zwei', 60)], linien: [], qr: null }, mass), []);
-  assert.match(layoutProbleme({ texte: [t('Eins', 18), t('Zwei', 30)] }, mass).join(), /berührt/);
-  assert.match(layoutProbleme({ texte: [t('Eins', 390)] }, mass).join(), /Rand/);
-  assert.match(layoutProbleme({ texte: [t('Ein…', 18)] }, mass).join(), /gekürzt/);
-  assert.match(layoutProbleme({ texte: [t('Eins', 18, 10)] }, mass).join(), /kleiner als 12/);
+  const t = (text, y, groesse = 20) => ({ text, x: 32, y, groesse, fett: false });
+  assert.deepEqual(layoutProbleme({ texte: [t('Eins', 32), t('Zwei', 74)], linien: [], qr: null }, mass), []);
+  assert.match(layoutProbleme({ texte: [t('Eins', 32), t('Zwei', 44)] }, mass).join(), /berührt/);
+  assert.match(layoutProbleme({ texte: [t('Eins', 360)] }, mass).join(), /Rand/);
+  assert.match(layoutProbleme({ texte: [{ ...t('Eins', 32), x: 20 }] }, mass).join(), /Rand/, '4 mm Rand auch links');
+  assert.match(layoutProbleme({ texte: [t('Ein…', 32)] }, mass).join(), /gekürzt/);
+  assert.match(layoutProbleme({ texte: [t('Eins', 32, 10)] }, mass).join(), /kleiner als 12/);
   assert.match(layoutProbleme({ texte: [] }, mass, ETIKETT, 'https://x').join(), /QR/);
   assert.match(layoutProbleme({ texte: [], qr: { x: 100, y: 100, groesse: 20 } }, mass, ETIKETT, 'https://x').join(), /zu klein/);
 });
@@ -278,8 +320,10 @@ const woerter = t => String(t).split(/\s+/).filter(Boolean);
 function vollstaendigUndFrei(e, l, format) {
   assert.ok(l.passt, `${format.format}: ${l.probleme.join(' | ')}`);
   assert.deepEqual(layoutProbleme(l, mass, format, e.url), []);
-  const soll = ['www.teppich-paradies.net', ...woerter(e.serie), ...woerter(e.farbe), ...(e.sku ? ['Art.-Nr.', e.sku] : []), ...e.technik.flatMap(z => [...woerter(z.label), ...woerter(z.wert)])];
-  assert.deepEqual(l.texte.flatMap(t => woerter(t.text)).sort(), soll.sort(), 'jedes Wort ganz und genau einmal');
+  const hinweis = l.texte.some(t => t.text === QR_HINWEIS) ? [QR_HINWEIS] : [];
+  assert.deepEqual(l.zeilen.filter(z => !z.zusatz), e.technik.filter(z => !z.zusatz), 'feste Technikzeilen stehen immer da');
+  const soll = worte(['www.teppich-paradies.net', e.serie, e.farbe, ...(e.sku ? ['Art.-Nr.', e.sku] : []), ...l.zeilen.flatMap(z => [z.label, z.wert]), ...hinweis]);
+  assert.deepEqual(worte(l.texte).sort(), soll.sort(), 'jedes Wort ganz und genau einmal');
   assert.ok(l.texte.every(t => t.groesse >= MIN_SCHRIFT));
   if (e.url) assert.ok(l.qr.groesse >= qrMindest(e.url));
 }
@@ -288,13 +332,43 @@ test('Testetikett Teppichboden mit Farbnummer auf 50 x 50 und 50 x 80: vollstaen
   const p = { handle: 'testwerk-lorena-teppichboden-400cm-500cm', titel: 'Testwerk Lorena Teppichboden 400cm 500cm', eigenschaften: { marke: 'Testwerk', florhoehe: '5,3 mm' },
     varianten: [{ sku: 'TW-LORENA-3N55-400', farbe: 'Marineblau Hell (3N55)' }, { sku: 'TW-LORENA-3N55-500', farbe: 'Marineblau Hell (3N55)' }] };
   const e = etikettFuerPosition({ istMuster: true, farbe: 'Marineblau Hell (3N55)', handle: p.handle, musterQuelle: { sku: 'TW-LORENA-3N55-400' } }, p);
-  assert.deepEqual([e.serie, e.farbe, e.sku, e.technik.length], ['Testwerk Lorena', 'Marineblau Hell (3N55)', 'TW-LORENA-3N55-400', 0]);
+  assert.deepEqual([e.serie, e.farbe, e.sku, e.technik.map(z => z.label)], ['Testwerk Lorena', 'Marineblau Hell (3N55)', 'TW-LORENA-3N55-400', ['Florhöhe']]);
   const klein = layout(e, mass, ETIKETT), mittel = layout(e, mass, ETIKETT_FORMATE['50x80']);
   vollstaendigUndFrei(e, klein, ETIKETT);
   vollstaendigUndFrei(e, mittel, ETIKETT_FORMATE['50x80']);
-  assert.ok(mittel.texte[1].groesse > klein.texte[1].groesse, 'Serie auf 50 x 80 groesser');
+  // Der Name bleibt auf beiden Rollen einzeilig - lieber gleich gross als auf 50 x 80 zweizeilig (Foto Inhaber 26.10.).
+  assert.ok(mittel.texte[1].groesse >= klein.texte[1].groesse, 'Serie auf 50 x 80 mindestens so gross');
+  assert.deepEqual([klein, mittel].map(l => l.texte.filter(t => t.y > l.texte[0].y && t.y < l.linien[0].y).length), [2, 2], 'Serie und Farbe je eine Zeile');
   assert.ok(mittel.qr.groesse > klein.qr.groesse, 'QR-Code auf 50 x 80 groesser');
-  assert.ok(mittel.texte.filter(t => !t.text.startsWith('Art.-Nr.')).every(t => t.y + t.groesse <= mittel.qr.y), 'QR unter dem Namen');
+  assert.ok(mittel.texte.filter(t => t.y < mittel.linien[0].y).every(t => t.y + t.groesse <= mittel.qr.y), 'QR unter dem Namen');
+  assert.ok(mittel.texte.some(t => t.text === QR_HINWEIS && t.y > mittel.qr.y + mittel.qr.groesse), 'auf 50 x 80 steht unter dem QR-Code, wofuer er ist');
+  assert.ok(!klein.texte.some(t => t.text === QR_HINWEIS), 'auf 50 x 50 ist dafuer kein Platz');
+});
+
+test('layout Eckdaten: Zusatzzeilen nur, wo Platz ist - dafuer wird nichts kleiner', () => {
+  const eck = [['Material', 'Polyamid'], ['Breite', '400 / 500 cm'], ['Florhöhe', '5,3 mm'], ['Nutzungsklasse', '32'], ['Fußbodenheizung', 'ja']].map(([label, wert]) => ({ label, wert, zusatz: true }));
+  const ohne = etikett({ serie: 'Testwerk Lorena', farbe: 'Marineblau Hell (3N55)', sku: 'TW-LORENA-3N55-400', handle: 'testwerk-lorena-teppichboden' });
+  const mit = { ...ohne, technik: eck };
+  for (const format of Object.values(ETIKETT_FORMATE)) {
+    const a = layout(ohne, mass, format), b = layout(mit, mass, format);
+    vollstaendigUndFrei(mit, b, format);
+    assert.ok(b.zeilen.length >= 3, `${format.format}: ${b.zeilen.length} Eckdaten`);
+    assert.deepEqual(b.zeilen, eck.filter(z => b.zeilen.includes(z)), 'Reihenfolge bleibt');
+    assert.ok(b.masse.serie >= Math.min(a.masse.serie, Math.round(40 * format.faktor)), `${format.format}: Serie ${a.masse.serie} -> ${b.masse.serie}`);
+    assert.equal(b.masse.skala, a.masse.skala, 'nichts wird insgesamt verkleinert');
+    assert.ok(b.qr.groesse >= 100);
+  }
+  assert.equal(layout(mit, mass, ETIKETT_FORMATE['50x80']).zeilen.length, 5, 'auf 50 x 80 ist fuer alle Platz');
+  // Eine Zusatzzeile, die nicht passt, faellt allein weg - die folgenden stehen trotzdem da.
+  const sperrig = { ...ohne, technik: [eck[0], { label: 'Rücken', wert: 'W'.repeat(60), zusatz: true }, ...eck.slice(1)] };
+  for (const format of Object.values(ETIKETT_FORMATE)) {
+    const l = layout(sperrig, mass, format);
+    assert.ok(l.passt);
+    assert.ok(!l.zeilen.some(z => z.label === 'Rücken') && l.zeilen.some(z => z.label === 'Breite'), format.format);
+  }
+  // Feste Zeilen (Paketware) bleiben, auch wenn danach keine Zusatzzeile mehr passt.
+  const paket = { ...ohne, technik: [{ label: 'Art', wert: 'Klickvinyl' }, { label: 'Format', wert: '122 × 18 cm' }, ...eck] };
+  assert.deepEqual(layout(paket, mass).zeilen.slice(0, 2).map(z => z.label), ['Art', 'Format']);
 });
 
 test('layout kurz bis sehr lang: in 50 x 50, 50 x 80 und 50 x 100 ueberlappt nichts und nichts wird abgeschnitten', () => {
@@ -303,9 +377,11 @@ test('layout kurz bis sehr lang: in 50 x 50, 50 x 80 und 50 x 100 ueberlappt nic
   const wahl = a => a[Math.floor(rnd() * a.length)];
   const teile = ['Eiche', 'Ölbraun', 'Grün', 'Élégance', 'gypsy', '(3N55)', 'Anthrazit', 'Marineblau', 'Hell', 'Teppichbodenfliesen', 'WWW', 'Klickvinyl', '5 mm', '23 / 33', '122 × 18 cm', 'Vinyl von der Rolle', 'Q'];
   const satz = (a, b) => Array.from({ length: a + Math.floor(rnd() * (b - a + 1)) }, () => wahl(teile)).join(' ');
-  const labels = ['Art', 'Auch als', 'Stärke / Nutzschicht', 'Nutzungsklasse', 'Format'];
+  const labels = ['Art', 'Auch als', 'Stärke / Nutzschicht', 'Nutzungsklasse', 'Format', 'Material', 'Breite', 'Florhöhe', 'Fußbodenheizung'];
   for (let i = 0; i < 400; i++) {
-    const technik = rnd() < 0.4 ? [] : Array.from({ length: 1 + Math.floor(rnd() * 5) }, () => ({ label: wahl(labels), wert: satz(1, rnd() < 0.8 ? 2 : 5) }));
+    // Feste Zeilen (Paketware) und Zusatzzeilen (Eckdaten) gemischt, wie technikZeilen() sie liefert.
+    const technik = rnd() < 0.4 ? [] : Array.from({ length: 1 + Math.floor(rnd() * 5) }, () => ({ label: wahl(labels), wert: satz(1, rnd() < 0.8 ? 2 : 5), ...(rnd() < 0.5 ? { zusatz: true } : {}) }))
+      .sort((a, b) => Number(Boolean(a.zusatz)) - Number(Boolean(b.zusatz)));
     const e = etikett({ serie: satz(1, rnd() < 0.2 ? 10 : 3), farbe: satz(1, rnd() < 0.2 ? 8 : 3), sku: rnd() < 0.1 ? '' : `TW-${i}-${'X'.repeat(Math.floor(rnd() * 14))}`,
       handle: `test-${'a'.repeat(Math.floor(rnd() * 90))}`, technik });
     for (const format of Object.values(ETIKETT_FORMATE)) vollstaendigUndFrei(e, layout(e, mass, format), format);

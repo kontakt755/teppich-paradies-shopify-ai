@@ -100,3 +100,43 @@
 .mp-filterzahl { font-weight: 700; }
 .mp-arbeitsleer { padding: 16px 0; color: var(--text-2); }
 @media (max-width: 760px) { .mp-arbeitsfilter { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Baby-einfach (#1701): je Umschlag drei Schritte, nur der aktuelle leuchtet. */
+.mp-schritte { list-style: none; margin: 12px 0 4px; padding: 0; display: grid; gap: 6px; }
+.mp-schritte > li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text-3); }
+.mp-schritte > .mp-jetzt { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+.mp-schritte > .mp-erledigt { color: var(--text-2); }
+.mp-schritte > .mp-erledigt .mp-schritt-titel::after { content: ' ✓'; color: var(--text-2); }
+.mp-schritt-titel { font-weight: 700; min-width: 11em; }
+.mp-schritt-tun { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.mp-bilanz { color: inherit; }
+.mp-mehr { margin-top: 10px; }
+.mp-mehr > summary { cursor: pointer; color: var(--text-2); padding: 4px 0; min-height: 32px; }
+.mp-mehr .mp-aktionen { margin-top: 6px; }
+
+/* Reiter "Muster kommt an": ein grosses Feld, darunter grosse Karten. */
+.mp-hand { margin: 0 0 14px; }
+.mp-hand-label { display: block; font-family: var(--serif); font-size: 1.25rem; margin-bottom: 6px; }
+.mp-hand-feld { width: 100%; min-height: 52px; padding: 10px 14px; font: inherit; font-size: 1.2rem; border: 2px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+.mp-hand-feld:focus { outline: 2px solid var(--focus); outline-offset: 2px; border-color: var(--accent); }
+.mp-hand p { margin: 6px 0 0; }
+.mp-meldung { margin: 0 0 14px; }
+.mp-komplett { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.mp-titel.mp-ohne-pfeil::before { content: none; }
+.mp-karten { display: grid; gap: 12px; margin: 8px 0 16px; }
+.mp-karte { display: grid; grid-template-columns: 140px minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'bild vorher ziel' 'bild aktionen aktionen'; gap: 10px 18px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow-wrap: anywhere; }
+.mp-karte-erste { border-color: var(--accent); }
+.mp-karte > .mp-bild { grid-area: bild; }
+.mp-karte > .mp-vorher { grid-area: vorher; }
+.mp-karte-ziel { grid-area: ziel; display: grid; gap: 2px; justify-items: start; }
+.mp-karte-aktionen { grid-area: aktionen; display: flex; flex-wrap: wrap; gap: 10px; }
+.mp-karte-name { font-size: 1.1rem; color: var(--text); }
+.mp-bild-gross { width: 140px; height: 140px; }
+.mp-gross { min-height: 48px; padding: 10px 20px; font-size: 1.05rem; }
+@media (max-width: 760px) {
+  .mp-schritt-titel { min-width: 0; flex: 1 1 100%; }
+  .mp-schritt-tun .btn { flex: 1 1 100%; min-height: 44px; }
+  .mp-karte { grid-template-columns: 96px minmax(0, 1fr); grid-template-areas: 'bild vorher' 'ziel ziel' 'aktionen aktionen'; }
+  .mp-karte .mp-bild-gross { width: 96px; height: 96px; }
+  .mp-gross { flex: 1 1 100%; }
+}

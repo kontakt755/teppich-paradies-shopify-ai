@@ -1,5 +1,5 @@
 /** Etikettenauswahl aus dem Produktlexikon, ohne Bestellung oder Drucker. */
-import { andereArten, etikett, originalHandle, serieUndFarbe, technikZeilen } from './muster-etiketten.mjs';
+import { andereArten, breitenAus, etikett, originalHandle, serieUndFarbe, technikZeilen } from './muster-etiketten.mjs';
 
 const text = v => v === null || v === undefined || ['–', '-', 'UNGEKLAERT', 'Default Title'].includes(String(v).trim()) ? '' : String(v).trim();
 const norm = v => text(v).toLowerCase();
@@ -52,7 +52,7 @@ function ausVariante(produkt, variante, fehlt = []) {
     && text(produkt?.titel) && text(produkt?.produktgruppe)) {
     sf = { serie: text(produkt.eigenschaften?.marke) || text(produkt.produktgruppe), farbe: text(produkt.titel) };
   }
-  const e = etikett({ ...sf, sku: variante?.sku, handle: produkt?.handle, technik: technikZeilen(produkt?.eigenschaften, andereArten(produkt)) });
+  const e = etikett({ ...sf, sku: variante?.sku, handle: produkt?.handle, technik: technikZeilen(produkt?.eigenschaften, andereArten(produkt), breitenAus(produkt, farbeOderAusfuehrung(variante))) });
   if (Object.hasOwn(produkt || {}, 'onlineStoreUrl') && (!text(produkt.onlineStoreUrl) || produkt.onlineStoreUrl !== e.url)) fehlt.push('Veröffentlichte Produktseite');
   e.fehlt = [...new Set([...e.fehlt, ...fehlt])];
   return e;

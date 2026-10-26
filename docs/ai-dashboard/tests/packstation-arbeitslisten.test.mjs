@@ -21,7 +21,7 @@ test('Standard zeigt alle offenen Umschlaege sofort, Packbereit zuerst, Gepackte
   const reihe = [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
   assert.deepEqual(reihe, ['order3', 'order2', 'order1']);
   assert.match(html, /aria-current="page">Alle offenen <span class="mp-filterzahl">3</);
-  assert.match(html, /Wareneingang nach Partnerladen/);
+  assert.match(html, /aria-current="page">Bestellung packen<[\s\S]*>Muster kommt an</);
   assert.equal((html.match(/mp-filterzahl/g) || []).length, 5);
   assert.doesNotMatch(html, /data-mp-kunde="[^"]*"[^>]* open/, 'ohne Suche oder Direktlink bleibt alles zu');
   const leer = ansicht('tab=muster', [kunde(5, 'gepackt')]);
@@ -91,40 +91,86 @@ test('Packer-Info: Herstelleretiketten ab, ausser bei Vorwerk und JAB (Inhaber 2
   assert.equal((ansicht('tab=muster&mp=laden', [k]).match(/mp-packer-info/g) || []).length, 1, 'auch im Wareneingang wird aufgeklebt');
 });
 
-test('Neu etikettieren: jedes Muster hat seinen eigenen Druckknopf, auch gepackte Umschlaege drucken erneut', () => {
+test('Neu etikettieren: einzelnes Muster leise nachdrucken, gepackte Umschlaege alle Aufkleber erneut', () => {
   const k = kunde(1, 'warten');
   k.muster = [{ ...k.muster[0], anzahl: 2 }, { ...k.muster[0], lineItemId: 'line1b', fehlt: ['Serie'] }];
   const html = ansicht('tab=muster&umschlag=order1', [k]);
-  assert.match(html, /data-mp-drucken-muster="line1">Aufkleber drucken \(2\)</);
+  assert.match(html, /btn btn-sm btn-ghost mp-druck1" data-mp-drucken-muster="line1">Nur diesen nachdrucken \(2\)</);
   assert.doesNotMatch(html, /data-mp-drucken-muster="line1b"/, 'ohne Zuordnung kein Aufkleber');
   const gepackt = ansicht('tab=muster&umschlag=order2', [kunde(2, 'gepackt')]);
-  assert.match(gepackt, /data-mp-drucken-muster="line2">Aufkleber drucken</);
-  assert.match(gepackt, /data-mp-drucken="order2">Aufkleber erneut drucken \(2\)</);
+  assert.match(gepackt, /data-mp-drucken-muster="line2">Nur diesen nachdrucken</);
+  assert.match(gepackt, /class="mp-mehr"[\s\S]*data-mp-drucken="order2" data-mp-alle-aufkleber="1">Alle Aufkleber erneut drucken \(2\)</);
 });
 
-test('Alle eingelegt – Umschlag gepackt: ein Klick bei offenen Haken, Hauptaktion nur wenn packbereit', () => {
-  const packen = ansicht('tab=muster&umschlag=order1', [kunde(1, 'packen')]);
-  assert.match(packen, /btn btn-sm btn-primary" data-mp-alle-eingelegt="order1">Alle 1 Muster eingelegt – Umschlag gepackt</);
-  const warten = ansicht('tab=muster&umschlag=order2', [kunde(2, 'warten')]);
-  assert.match(warten, /class="btn btn-sm" data-mp-alle-eingelegt="order2">/);
-  const fertig = kunde(3, 'packen');
-  fertig.muster = [{ ...fertig.muster[0], abgehakt: { zeit: '2026-10-26T08:00:00Z' } }];
-  const abgehakt = ansicht('tab=muster&umschlag=order3', [fertig]);
-  assert.doesNotMatch(abgehakt, /data-mp-alle-eingelegt/);
-  assert.match(abgehakt, /data-mp-aktion="gepackt"[^>]*>Umschlag gepackt</);
-  assert.doesNotMatch(ansicht('tab=muster&umschlag=order4', [kunde(4, 'klaeren')]), /data-mp-alle-eingelegt/, 'zu klaeren packt nie mit einem Klick');
+const schritt = html => (html.match(/<li class="mp-jetzt"><span class="mp-schritt-titel">([^<]+)</) || [])[1];
+// Nur im Umschlag zaehlen; Ansichtswahl und Arbeitsfilter markieren die Auswahl ebenfalls mit btn-primary.
+const hauptknoepfe = html => (html.slice(html.indexOf('<details class="mp-kunde')).match(/class="btn[^"]*btn-primary"[^>]*>[^<]+/g) || []).map(x => x.replace(/^.*>/, ''));
+
+test('Bestellung packen in drei Schritten: drucken, was ist da, zukleben – genau ein Hauptknopf', () => {
+  // 1 · Nichts gedruckt, nichts abgehakt: nur "drucken" leuchtet, Packen steht unter "Mehr".
+  const neu = kunde(1, 'packen');
+  neu.muster = [neu.muster[0], { ...neu.muster[0], lineItemId: 'line1b' }];
+  const eins = ansicht('tab=muster&umschlag=order1', [neu]);
+  assert.equal(schritt(eins), '1 · Bestellung drucken');
+  assert.deepEqual(hauptknoepfe(eins), ['Aufkleber und Adresse drucken (3)']);
+  assert.match(eins, /data-mp-gedruckt="order1">Schon gedruckt – weiter</);
+  assert.match(eins, /<strong>Da: 0 von 2<\/strong> · Fehlt: Test, Test/);
+  assert.doesNotMatch(eins, /data-mp-aktion="gepackt"/);
+  assert.match(eins, /class="mp-mehr"[\s\S]*data-mp-alle-eingelegt="order1">Alle 2 da – Umschlag gepackt</);
+  // 2 · Ein Muster abgehakt: was ist da / was fehlt, Antworten ohne Hauptknopf.
+  const halb = { ...neu, muster: [{ ...neu.muster[0], abgehakt: { zeit: 'x' } }, { ...neu.muster[1], vorher: { produktname: 'Herstellerware', farbnummer: '30' } }] };
+  const zwei = ansicht('tab=muster&umschlag=order1', [halb]);
+  assert.equal(schritt(zwei), '2 · Was ist da?');
+  assert.deepEqual(hauptknoepfe(zwei), []);
+  assert.match(zwei, /<strong>Da: 1 von 2<\/strong> · Fehlt: Herstellerware \(Farbnr\. 30\)</);
+  assert.match(zwei, /data-mp-aktion="klaeren"[^>]*>Fehlt noch – zurücklegen \(1\)</);
+  assert.match(zwei, /data-mp-alle-eingelegt="order1">Alle 2 da – Umschlag gepackt</);
+  // 3 · Alles abgehakt: nur noch "Umschlag gepackt".
+  const voll = { ...neu, muster: neu.muster.map(m => ({ ...m, abgehakt: { zeit: 'x' } })) };
+  const drei = ansicht('tab=muster&umschlag=order1', [voll]);
+  assert.equal(schritt(drei), '3 · Zukleben');
+  assert.deepEqual(hauptknoepfe(drei), ['Umschlag gepackt']);
+  assert.match(drei, /data-mp-drucken="order1">Adressaufkleber drucken</, 'Muster einzeln eingelegt: Adresse fehlt noch');
+  assert.match(drei, /class="mp-mehr"[\s\S]*Alle Aufkleber erneut drucken \(2\)/, 'Zahl aus dem Server (Fixture)');
 });
 
-test('Wareneingang: Haken und Aufkleber direkt in der Zeile, Suche auch hier; Wechsel hebt die Suche auf', () => {
-  const k = { ...kunde(6, 'warten'), muster: [{ ...kunde(6, 'warten').muster[0], lieferant: 'Partner A' }] };
-  const waren = ansicht('tab=muster&mp=laden', [k]);
-  assert.match(waren, /mp-sortzeile[\s\S]*data-mp-haken="line6"[\s\S]*data-mp-drucken-muster="line6"/);
-  assert.match(waren, /input type="search" data-param="mpq"/);
-  assert.match(waren, /aria-current="page">Wareneingang nach Partnerladen</);
-  const gesucht = ansicht('tab=muster&mp=laden&mpq=TEST6', [k, kunde(7, 'packen')]);
-  assert.match(gesucht, /data-mp-kunde="order6"[^>]* open/);
-  assert.doesNotMatch(gesucht, /data-mp-kunde="order7"/);
-  assert.match(gesucht, /href="#\/kunden\?tab=muster&amp;mp=laden">Wareneingang nach Partnerladen</, 'Wechsel ohne mpq');
+test('Zu klaeren und Gepackt: ein Hauptknopf fuer das Naechstliegende, Rest unter "Mehr"', () => {
+  const kl = { ...kunde(4, 'klaeren'), klaeren: { fehlt: ['line4'], zeit: '2026-10-26T08:00:00Z' } };
+  const klaeren = ansicht('tab=muster&umschlag=order4', [kl]);
+  assert.deepEqual(hauptknoepfe(klaeren), ['Fehlendes ist da – weiter packen']);
+  assert.doesNotMatch(klaeren, /data-mp-alle-eingelegt|mp-schritte/);
+  const adresse = { ...kunde(5, 'klaeren'), adressFehlt: ['PLZ'] };
+  assert.deepEqual(hauptknoepfe(ansicht('tab=muster&umschlag=order5', [adresse])), ['#TEST5 – Lieferadresse prüfen']);
+  const sonst = ansicht('tab=muster&umschlag=order6', [kunde(6, 'klaeren')]);
+  assert.deepEqual(hauptknoepfe(sonst), ['#TEST6 – Bestellstand prüfen']);
+  const gepackt = ansicht('tab=muster&umschlag=order2', [kunde(2, 'gepackt')]);
+  assert.deepEqual(hauptknoepfe(gepackt), ['Großbrief vorbereiten']);
+  assert.match(gepackt, /class="mp-mehr"[\s\S]*data-mp-wert="0">Zurücknehmen</);
+});
+
+test('Muster kommt an: ein Feld, eine Karte mit Ziel-Umschlag; ohne Eingabe der Wareneingang je Laden', () => {
+  const k = { ...kunde(6, 'warten'), muster: [{ ...kunde(6, 'warten').muster[0], lieferant: 'Partner A', vorher: { produktname: 'Herstellerware Modena', farbnummer: '3N55' } }] };
+  const leer = ansicht('tab=muster&mp=laden', [k]);
+  assert.match(leer, /aria-current="page">Muster kommt an</);
+  assert.match(leer, /<label class="mp-hand-label" for="mpHandFeld">Was steht auf dem Muster\?<\/label>[\s\S]*id="mpHandFeld" type="search" class="mp-hand-feld" data-param="mh"/);
+  assert.match(leer, /mp-sortzeile[\s\S]*data-mp-haken="line6"[\s\S]*data-mp-drucken-muster="line6">Aufkleber drucken</);
+  const andere = { ...kunde(7, 'packen'), muster: [{ ...kunde(7, 'packen').muster[0], vorher: { produktname: 'Herstellerware Modena', farbnummer: '3N55' } }] };
+  const gesucht = ansicht('tab=muster&mp=laden&mh=modena%203n55', [k, andere]);
+  assert.match(gesucht, /2 offene Muster passen – ältere Bestellung zuerst/);
+  assert.equal((gesucht.match(/<article class="mp-karte/g) || []).length, 2);
+  assert.match(gesucht, /mp-karte mp-karte-erste[\s\S]*Gehört in · wartet am längsten[\s\S]*#TEST6/);
+  assert.match(gesucht, /data-mp-drucken-muster="line6">Aufkleber drucken<[\s\S]*data-mp-eingelegt="line6">Eingelegt ✓</);
+  assert.match(gesucht, /letztes offenes Muster – danach komplett/);
+  assert.doesNotMatch(gesucht, /mp-sortzeile/, 'mit Eingabe nur die Karten');
+  const eingelegt = { ...k, muster: [{ ...k.muster[0], abgehakt: { zeit: 'x' } }] };
+  const schon = ansicht('tab=muster&mp=laden&mh=3N55', [eingelegt]);
+  assert.match(schon, /Schon eingelegt[\s\S]*#TEST6[\s\S]*liegt schon im Umschlag/);
+  assert.doesNotMatch(schon, /data-mp-eingelegt/);
+  assert.match(ansicht('tab=muster&mp=laden&mh=gibtsnicht', [k]), /Nichts gefunden\. Weniger Wörter versuchen/);
+  // Die alte Suche (mpq) zeigt weiter die Umschlaege; der Wechsel hebt sie auf.
+  const alt = ansicht('tab=muster&mp=laden&mpq=TEST6', [k, kunde(7, 'packen')]);
+  assert.match(alt, /data-mp-kunde="order6"[^>]* open/);
+  assert.match(alt, /href="#\/kunden\?tab=muster&amp;mp=laden">Muster kommt an</);
 });
 
 test('Suche zeigt passende Musterbestellungen ausserhalb der Packliste mit Grund und Link, ohne Aktion', () => {

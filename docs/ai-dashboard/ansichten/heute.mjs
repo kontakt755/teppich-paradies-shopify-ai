@@ -55,6 +55,7 @@ import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
 import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
 import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
+import { aufraeumenBlock } from './heute/aufraeumen.mjs';
 
 const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
 const SPALTE_SICHTBAR = 8;
@@ -180,6 +181,7 @@ function viewShop() {
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
     ${musterAutomatikBlock(kunden.bestellungen)}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
+    ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
     ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, pack: kunden.musterPacken,
       nachfassen: nf.alle, texte: heuteDaten.musterTexte })}
     ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}

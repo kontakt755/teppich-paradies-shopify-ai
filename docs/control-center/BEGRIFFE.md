@@ -71,7 +71,12 @@ gebraeuchlich), Erfassen.
 - **Zu klaeren** = fehlende Muster gemeldet oder Aufkleber/Adresse nicht eindeutig.
 - **Aufkleber drucken** (je Muster) = nur dieses Muster neu etikettieren; **Aufkleber erneut drucken** = ganzer gepackter Umschlag samt Adresse (26.10.2026).
 - **Alle n Muster eingelegt – Umschlag gepackt** = alle offenen Muster abhaken und den Umschlag packen in einem Schritt.
+- **Versatz waagerecht / senkrecht** (Drucker-Einstellungen) = Druckbild um bis zu 3 mm verschieben, wenn der Drucker nicht mittig auf das Etikett druckt; gilt je Rechner, die Vorschau bleibt mittig (26.10.2026).
 - **Außerhalb der Packliste** = Suchtreffer in Musterbestellungen, die hier nicht gepackt werden (Zahlung offen, geschlossen, storniert, schon versandt oder erledigt).
+- **Bestellung packen** / **Muster kommt an** = die zwei Reiter der Packstation (26.10.2026); vorher „Nach Kunde packen“ / „Wareneingang nach Partnerladen“.
+- **Schritte im Umschlag:** 1 · Bestellung drucken („Aufkleber und Adresse drucken“), 2 · Was ist da? („Da: x von n · Fehlt: …“), 3 · Zukleben („Umschlag gepackt“).
+- **Fehlt noch – zurücklegen** = Umschlag geht nach „Zu klären“, bis „Fehlendes ist da – weiter packen“.
+- **Eingelegt ✓** = Muster liegt überklebt im Umschlag (derselbe Haken wie in der Liste).
 - **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
 - **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
 - Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.
@@ -111,3 +116,16 @@ gebraeuchlich), Erfassen.
 - **Versandt, Empfang noch nicht belegt** = vorhandener Versandstand ohne bestätigte
   Zustellung oder dokumentierten Empfang; kein Beweis eines Verlusts.
 - **Hausknopf** = zurück zur Shop-Übersicht; **Mehr** öffnet weitere vorhandene Arbeitswege.
+
+## Aufräumen (#1698)
+
+- **Alte Bestellungen aufräumen** = Block auf der Shop-Übersicht, nur sichtbar, wenn es Fälle gibt:
+  offene Bestellungen ohne Bewegung (Muster ab 14, Ware ab 30 Tagen), bei denen nichts belegt, dass sie
+  fertig sind.
+- **Keine Bewegung** = seit dem Tag hat niemand etwas erfasst (Bestellt, Angekommen, Notiz, Packstation …).
+- **Abschließen** = alle offenen Artikel auf „Erledigt“ mit dem Vorschlag als Vermerk; in Shopify als
+  versendet gebucht, ohne Mail an den Kunden (wie „Kunde fertig“).
+- **Läuft noch** = die Bestellung bleibt offen; das Dashboard merkt sich das als Notiz und fragt nach
+  14 Tagen (Ware 30) wieder.
+- **Belegt fertig** = in Shopify versendet, storniert, archiviert oder voll erstattet, oder im Dashboard
+  abgeschlossen; fällt ohne Klick aus den Listen.

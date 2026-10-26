@@ -234,7 +234,8 @@ function betragText(z) {
  * Bereich "Erledigt" - gemeinsam fuer alle, ohne Shopify-Buchung (das macht "Kunde fertig").
  */
 /** Erledigt: von Hand abgehakt oder in Shopify/Auftragsfluss abgeschlossen (Abgleich laeuft serverseitig). */
-function automatischErledigt(z) { return z.fertig || z.fulfillmentstatus === 'FULFILLED'; }
+// Auch in Shopify archiviert oder voll erstattet (#1698) - ausgeblendet ohne den eigenen Haken.
+function automatischErledigt(z) { return bestellungAusgeblendet({ ...z, abgehakt: null }); }
 function istErledigt(z) { return z.warenarbeit ? z.warenarbeit.abgeschlossen : bestellungAusgeblendet(z); }
 export function bestellungenOffen({ art = 'alle' } = {}) {
   if (art === 'ware') return shopBestellarbeit(kunden.bestellungen).offen;

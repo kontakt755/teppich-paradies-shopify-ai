@@ -12,6 +12,80 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** keine; die Info gilt fuer alle Umschlaege, eine Kennzeichnung je Muster gibt es nicht.
 - **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
 
+## 2026-10-26 · Musteraufkleber: 4 mm Rand, ruhiger Aufbau, Eckdaten, Druckversatz einstellbar
+
+- **Geaendert:** Nach den ersten vier Ausdrucken (Foto Inhaber: letzte Ziffer der Art.-Nr. rechts halb weg, einmal
+  die Shopadresse oben, „mittiger und besser angeordnet“, danach „noch besser und professioneller“): Rand rundum
+  4 mm statt 2,25 mm (B1-Druckkopf nur 48 mm, Rolle sitzt nicht auf den Millimeter). Neuer Aufbau mit einer
+  Stimme je Ebene: Shopadresse klein und normal, Serie gross und fett, Farbe normal, duenne Linie, Mittelteil,
+  duenne Linie, „Art.-Nr.“ normal und die Nummer fett in einer Zeile. Paketware zeigt die Technik als Tabelle
+  (Bezeichnung links, Wert fett rechtsbuendig; Staerke und Nutzschicht je eine Zeile) - auf 50 × 50 neben dem
+  QR-Code, dadurch bleibt die Serie gross statt auf 24 px zu schrumpfen. Namen nehmen lieber eine kleinere Schrift
+  als eine Zeile mehr („Vorwerk Modena“ auf 50 × 80 einzeilig statt zweizeilig). QR-Code hoechstens 20 mm
+  (50 × 50); auf 50 × 80 steht bei genug Platz „Produkt im Shop ansehen“ darunter. Neu unter
+  „Drucker-Einstellungen“: Versatz waagerecht/senkrecht bis 3 mm in 0,5-mm-Schritten, je Rechner gemerkt; er
+  verschiebt nur das Druckbild, die Vorschau bleibt mittig. Eckdaten (Inhaber: „wenn so viel Platz ist, ein paar
+  Eckdaten auch zu den anderen Sachen … Qualitaet und verfuegbare Meterbreite“): Teppichboden und andere Ware ohne
+  Paket zeigen Material, Breite (Rollenbreiten der Farbe aus den Varianten, z. B. „400 / 500 cm“), Florhoehe
+  (sonst Staerke) und Nutzungsklasse, alle Ware dazu „Fußbodenheizung: ja“, wenn im Lexikon belegt. Diese Zeilen
+  sind Zusatz: `layout()` nimmt sie der Reihe nach nur, solange Serie und Technik dafuer nicht kleiner werden -
+  auf 50 × 80 meist alle, auf 50 × 50 so viele, wie neben den QR-Code passen. Druckbild jetzt genau so breit
+  wie der B1-Druckkopf (384 statt 400 px, mittig ausgeschnitten - es fallen nur weisse Randspalten weg);
+  bisher legte die Firmware das zu breite Bild nach eigenem Gutduenken auf den Kopf.
+- **Getestet:** `muster-etiketten.test.mjs` angepasst (zwei Linien, Art.-Nr. normal/Nummer fett in einer Zeile,
+  Tabelle, Name einzeilig auf 50 × 50 und 50 × 80, Hinweis nur auf 50 × 80, 4-mm-Rand links/rechts/oben/unten);
+  Eckdaten nur wo Platz, Reihenfolge, sperrige Zeile faellt allein weg, feste Zeilen bleiben, `breitenAus`;
+  Zufallstest mischt feste und Zusatzzeilen). Klicktest gegen die Datenkopie: Versatz 1 mm links/0,5 mm unten
+  gemerkt, auch nach Neuladen, Hinweis „Versatz eingestellt“, Vorschau bleibt mittig (32/32 px), 390 px ohne
+  seitliches Scrollen, keine JS-Fehler; `dashboard:pruefen` 38 Ansichten ohne Ueberlauf. Druckbild Modena 3N55
+  50 × 80 in Chrome mit niimbluelib kodiert: 384 × 640 Punkte, alle 42 324 schwarzen Punkte der Vorschau
+  enthalten, je 24 Punkte Rand links/rechts auf dem Kopf. Pixelpruefung in Chrome (Arial, jedes Teil einzeln
+  gezeichnet): alle 20 675 verschiedenen Etiketten des Lexikon-Exports passen im neuen Aufbau in 50 × 50,
+  50 × 80 und 50 × 100, 0 Beruehrungen, keine Tinte ausserhalb des 4-mm-Rands; 800 Zufallsadressen ebenso.
+  `npm run -s pruefen`: alle 9 Schritte bestanden.
+- **Risiken:** Der Versatz ist eine Schaetzung je Rolle/Drucker; erst ein neues Foto zeigt, ob 4 mm Rand allein
+  reichen. Die Technik-Tabelle auf 50 × 50 setzt Werte in 16-20 px (2-2,5 mm) - lesbar, aber kleiner als vorher.
+  Bestellungen, deren Muster schon vor dem Update vorgemerkt waren, melden in „Muster vormerken“ „Produktdaten
+  geaendert“, weil das Etikett jetzt Eckdaten traegt - einmal neu vormerken.
+- **Naechste Stufe:** Vier Etiketten neu drucken, Foto; wenn noch etwas schief sitzt, Versatz einstellen.
+## 2026-10-26 · Packstation baby-einfach: Bestellung in drei Schritten, „Muster kommt an“ (#1701)
+
+- **Geaendert:** Ein geoeffneter Umschlag fuehrt in drei Schritten - Bestellung drucken (Aufkleber und
+  Adresse), Was ist da? (Da/Fehlt), Zukleben - und zeigt je Schritt genau einen Hauptknopf; Seltenes steht
+  unter „Mehr …“. Neuer Reiter „Muster kommt an“: ein grosses Feld, darunter je passendem Muster eine grosse
+  Karte mit Ziel-Umschlag, „Aufkleber drucken“ und „Eingelegt ✓“ (leert das Feld fuer das naechste Muster);
+  ohne Eingabe der Wareneingang je Partnerladen. Anlass: Inhaber 26.10. („baby einfach … ich drucke immer
+  eine Bestellung aus samt Adresse und schaue, was da ist und was fehlt“).
+- **Getestet:** `packstation-arbeitslisten.test.mjs` (Schritte 1-3 mit genau einem Hauptknopf, Zu klaeren
+  und Gepackt, Reiter „Muster kommt an“ mit Karten, Reihenfolge, Schon eingelegt, Nichts gefunden),
+  `muster-packen.test.mjs` (`handTreffer`, `aufkleberFuer` nur offene), `dashboard-abschlusskorrekturen.test.mjs`
+  („Eingelegt ✓“ leert das Feld und setzt den Fokus nur nach bestaetigtem Haken).
+- **Risiken:** Der Druckstand gilt je Geraet; nach Browserwechsel steht wieder Schritt 1 („Schon gedruckt –
+  weiter“ hilft). Ein abgehaktes Muster gilt als gedruckt.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen (nur Dashboard). Danach eine Woche Praxis, dann
+  ggf. drei Stapel statt fuenf Listen.
+
+## 2026-10-26 · Alte Bestellungen aufräumen: belegt fertige fallen heraus, der Rest per Klick (#1698)
+
+- **Geaendert:** Bestellungen, die in Shopify archiviert oder voll erstattet sind, gelten als belegt fertig
+  und fallen ohne Klick aus „Offen“ (`belegtFertigGrund`). Neu auf der Shop-Übersicht: „Alte Bestellungen
+  aufräumen“ - offene Bestellungen ohne Bewegung seit 14 Tagen (Ware 30), mit den vorhandenen Belegen und
+  einem Vorschlag; Knöpfe „Abschließen“ (wie „Kunde fertig“, Vermerk = Vorschlag, Shopify-Buchung ohne
+  Mail) und „Läuft noch“ (Notiz, fragt später wieder). Anlass: Inhaber 26.10., sehr alte Bestellungen im
+  Dashboard. Befund im echten Bestand (Kopie): Storno und Test waren schon ausgeblendet; 5 Musterbestellungen
+  vom 30.09. bis 11.10. hingen auf „bestellt“, eine davon laut Notiz „nicht verfügbar“, die übrigen
+  vermutlich direkt vom Lieferanten verschickt (Lieferziel vor dem 24.10. nicht gespeichert).
+- **Getestet:** `aufraeumen.test.mjs` (7 Tests: belegt fertig, Ausschlüsse, Grenzen 13/14 und 29/31 Tage,
+  jede Bewegungsart setzt die Uhr zurück, alle Vorschlagsarten, Block escaped und ohne Knöpfe für „lesen“,
+  API mit Uhr: Fall nach 25 Tagen, archiviert nie, „Läuft noch“ bis Tag 15). `dashboard:test` 959/959,
+  `npm run -s pruefen` 9/9. `dashboard:pruefen` heute/kunden alle Breiten OK, 0 px Überlauf. Klickstrecke
+  gegen die Datenkopie: Liste 5 → 4 („Läuft noch“, Notiz gespeichert) → 3 („Abschließen“, alle Artikel
+  erledigt mit Vermerk; Shopify-Buchung in der Prüfinstanz ohne Zugang erwartungsgemäß „nicht gebucht“).
+- **Risiken:** „Abschließen“ bucht im Betrieb in Shopify als versendet (ohne Mail) - gewollt nach
+  Abschnitt 24, aber nicht in der Prüfinstanz nachweisbar. Die Notizerkennung „nicht verfügbar“ ist ein
+  Vorschlag, kein Beleg; entschieden wird per Klick.
+- **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen (nur Dashboard und `scripts/`, kein `operations/`).
+
 ## 2026-10-26 · Packstation: alles finden, je Muster neu etikettieren, mit einem Klick packen (#1694)
 
 - **Geaendert:** Die Suche steht auch im Wareneingang und findet zusaetzlich Musterbestellungen ausserhalb

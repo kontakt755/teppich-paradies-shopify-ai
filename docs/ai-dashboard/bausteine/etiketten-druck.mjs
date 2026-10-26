@@ -38,7 +38,18 @@ const FORMAT_SCHLUESSEL = 'tp-etikett-format';
 function gemerktesFormat() { try { return etikettFormat(localStorage.getItem(FORMAT_SCHLUESSEL)).format; } catch { return ETIKETT.format; } }
 function formatMerken(name) { try { localStorage.setItem(FORMAT_SCHLUESSEL, name); } catch { /* ohne Speicher gilt die Wahl nur bis zum Neuladen */ } }
 
-const druck = { format: gemerktesFormat(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true, abbruch: false, kontext: null };
+// Druckversatz je Rechner (Foto Inhaber 26.10.: Druck sass rechts und oben nicht mittig). Gegensteuern bis
+// 3 mm in jede Richtung; bei 4 mm Etikettrand bleibt auch verschoben alles auf dem Bild. 8 px = 1 mm (203 dpi).
+const VERSATZ_SCHLUESSEL = 'tp-etikett-versatz';
+const VERSATZ_MM = Array.from({ length: 13 }, (_, i) => (i - 6) / 2);
+const versatzWert = v => (VERSATZ_MM.includes(Number(v)) ? Number(v) : 0);
+function gemerkterVersatz() { try { const v = JSON.parse(localStorage.getItem(VERSATZ_SCHLUESSEL) || '{}'); return { x: versatzWert(v?.x), y: versatzWert(v?.y) }; } catch { return { x: 0, y: 0 }; } }
+function versatzMerken(v) { try { localStorage.setItem(VERSATZ_SCHLUESSEL, JSON.stringify(v)); } catch { /* ohne Speicher gilt der Versatz nur bis zum Neuladen */ } }
+// Festes Leerzeichen: <summary> ist ein Flex-Container und verschluckt ein fuehrendes normales Leerzeichen.
+const versatzHinweis = () => (druck.versatz.x || druck.versatz.y ? '\u00a0· Versatz eingestellt' : '');
+const versatzOptionen = (wert, minus, plus) => VERSATZ_MM.map(v => `<option value="${v}"${v === wert ? ' selected' : ''}>${v === 0 ? 'keiner (Standard)' : `${String(Math.abs(v)).replace('.', ',')} mm ${v < 0 ? minus : plus}`}</option>`).join('');
+
+const druck = { format: gemerktesFormat(), versatz: gemerkterVersatz(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true, abbruch: false, kontext: null };
 let sitzung = 0;
 const aktuell = k => !!k && druck.kontext === k && !k.beendet && k.sitzung === sitzung && k.element?.isConnected;
 const qrBereit = () => typeof window.qrcode === 'function';
@@ -66,12 +77,16 @@ function etikettLayout(e) {
 const maengel = e => [...e.fehlt, ...(etikettLayout(e).passt ? [] : [`passt nicht auf ${etikettFormat(druck.format).name}`])];
 const unvollstaendig = () => druck.etiketten.some(e => maengel(e).length);
 
-/** Zeichnet ein Etikett schwarz auf weiss in eine Canvas (400 x 400, 400 x 640 bzw. 400 x 800). */
-function zeichne(canvas, e) {
+/**
+ * Zeichnet ein Etikett schwarz auf weiss in eine Canvas (400 x 400, 400 x 640 bzw. 400 x 800).
+ * `versatz` (mm) nur beim Druck - die Vorschau zeigt das Etikett, wie es sitzen soll.
+ */
+function zeichne(canvas, e, versatz = null) {
   const format = etikettFormat(druck.format);
   canvas.width = format.breite; canvas.height = format.hoehe;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (versatz) ctx.translate(Math.round(versatz.x * 8), Math.round(versatz.y * 8));
   ctx.fillStyle = '#000'; ctx.textBaseline = 'top';
   const { texte, linien, qr } = etikettLayout(e);
   for (const t of texte) { ctx.font = font(t.groesse, t.fett); ctx.fillText(t.text, t.x, t.y); }
@@ -83,6 +98,21 @@ function zeichne(canvas, e) {
     const ab = qr.y + (qr.groesse - modul * n);
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) ctx.fillRect(qr.x + c * modul, ab + r * modul, modul, modul);
   }
+}
+
+/**
+ * Druckbild auf die Breite des Druckkopfs (B1: 384 px = 48 mm, Etikett 50 mm). Ein breiteres Bild legt die
+ * Firmware nach eigenem Gutduenken auf den Kopf - auf den ersten Ausdrucken fehlte rechts die letzte Ziffer
+ * (26.10.). Deshalb geht genau die Kopfbreite raus, mittig ausgeschnitten: rechts und links fallen je 8 px
+ * weg, die bei 32 px Etikettrand immer weiss sind.
+ */
+export function aufDruckkopf(quelle, ziel, kopf, richtung = 'top') {
+  if (richtung !== 'top' || !(kopf > 0) || quelle.width <= kopf) return quelle;
+  ziel.width = kopf; ziel.height = quelle.height;
+  const ctx = ziel.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, ziel.width, ziel.height);
+  ctx.drawImage(quelle, -Math.floor((quelle.width - kopf) / 2), 0);
+  return ziel;
 }
 
 const umgebungsHinweis = () => {
@@ -114,7 +144,7 @@ function zeichneVorschau() {
   const verbunden = !!druck.client?.isConnected?.();
   const verbindungOffen = !!druck.verbindung;
   const wartet = $('#etkVerbindungWartet'); if (wartet) wartet.hidden = !verbindungOffen || k.verbindet || druck.laeuft;
-  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkDichte, #etkFormat')) e.disabled = beschaeftigt;
+  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkDichte, #etkFormat, #etkVersatzX, #etkVersatzY')) e.disabled = beschaeftigt;
   const weg = $('#etkWeg'); if (weg) weg.disabled = beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || verbunden;
   const verbindenKnopf = $('#etkVerbinden');
   if (verbindenKnopf) { verbindenKnopf.textContent = verbunden ? 'Drucker verbunden' : k.verbindet ? 'Verbinde …' : 'Drucker verbinden'; verbindenKnopf.disabled = verbunden || k.verbindet || verbindungOffen || druck.trennt || beschaeftigt || !!umgebungsHinweis(); }
@@ -219,7 +249,7 @@ async function drucken() {
     pruefeAbbruch();
     const lib = window.niimbluelib, meta = client.getModelMetadata?.();
     const art = client.getPrintTaskType?.() ?? 'B1', richtung = meta?.printDirection ?? 'top';
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement('canvas'), kopfBild = document.createElement('canvas');
     for (const block of druckBloecke(etiketten)) {
       pruefeAbbruch();
       task = client.protocol.newPrintTask(art, { totalPages: block.etiketten.length, density: dichte, labelType: 1 });
@@ -228,8 +258,8 @@ async function drucken() {
       for (const [i, e] of block.etiketten.entries()) {
         pruefeAbbruch();
         status(`Drucke Aufkleber ${block.start + i + 1} von ${etiketten.length} …`, k);
-        zeichne(canvas, e);
-        await task.printPage(lib.ImageEncoder.encodeCanvas(canvas, 0, richtung), 1);
+        zeichne(canvas, e, druck.versatz);
+        await task.printPage(lib.ImageEncoder.encodeCanvas(aufDruckkopf(canvas, kopfBild, meta?.printheadPixels, richtung), 0, richtung), 1);
         pruefeAbbruch();
       }
       pruefeAbbruch();
@@ -364,8 +394,11 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
         <button type="submit" class="btn btn-sm" id="etkUebernehmen">Hinzufügen</button>
       </form>
     </details>` : ''}
-    <details class="etk-einstellungen"><summary>Drucker-Einstellungen</summary><div class="etk-optionen">
+    <details class="etk-einstellungen"><summary>Drucker-Einstellungen<span id="etkVersatzHinweis">${versatzHinweis()}</span></summary><div class="etk-optionen">
       <label>Druckdichte <select id="etkDichte">${[1, 2, 3, 4, 5].map(d => `<option value="${d}"${d === ETIKETT.dichteStandard ? ' selected' : ''}>${d}${d === ETIKETT.dichteStandard ? ' (Standard)' : ''}</option>`).join('')}</select></label>
+      <label>Versatz waagerecht <select id="etkVersatzX">${versatzOptionen(druck.versatz.x, 'nach links', 'nach rechts')}</select></label>
+      <label>Versatz senkrecht <select id="etkVersatzY">${versatzOptionen(druck.versatz.y, 'nach oben', 'nach unten')}</select></label>
+      <p class="small muted etk-versatz-hilfe">Sitzt der Druck nicht mittig auf dem Etikett, hier gegensteuern – steht z. B. alles zu weit rechts: 1 mm nach links. Gilt für diesen Rechner; die Vorschau bleibt mittig.</p>
       <label>Verbindung <select id="etkWeg"><option value="bluetooth"${!navigator.bluetooth && hatUsb ? ' disabled' : ''}>Bluetooth</option>${hatUsb ? `<option value="usb"${!navigator.bluetooth ? ' selected' : ''}>USB-Kabel</option>` : ''}</select></label>
     </div></details>
     <p id="etkVerbindungWartet" class="small muted" role="status" hidden>Vorherige Geräteauswahl schließen und das Trennen abwarten. Danach kannst du erneut verbinden.</p>
@@ -405,6 +438,14 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     formatMerken(druck.format);
     zeichneVorschau();
   });
+  for (const [id, achse] of [['#etkVersatzX', 'x'], ['#etkVersatzY', 'y']]) {
+    $(id)?.addEventListener('change', ev => {
+      if (!aktuell(k) || druck.laeuft) return;
+      druck.versatz = { ...druck.versatz, [achse]: versatzWert(ev.target.value) };
+      versatzMerken(druck.versatz);
+      $('#etkVersatzHinweis').textContent = versatzHinweis();
+    });
+  }
   $('#etkListe').addEventListener('click', ev => {
     if (!aktuell(k)) return;
     const bearbeiten = ev.target.closest('[data-etk-bearbeiten]');

@@ -1752,6 +1752,24 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   in 2-%-Schritten kleiner. Passt es auch in Mindestschrift nicht (z. B. Artikelnummer mit 50 Zeichen
   ohne Leerzeichen), zeigt die Vorschau „Passt nicht auf …“ und Druck sowie PNG bleiben gesperrt.
   Technikwerte und Adresszeilen brechen an Wortgrenzen um, bevor sie zu klein werden.
+- **Rand, Aufbau und Druckversatz (26.10., nach den ersten Ausdrucken):** Der B1 hat nur 48 mm Druckkopf,
+  Rolle und Druckanfang sitzen nicht auf den Millimeter (NiimBlue #92) - mit 2,25 mm Rand fehlten auf
+  echten Etiketten die letzte Ziffer der Art.-Nr. und einmal die Shopadresse oben halb. Deshalb 4 mm Rand
+  rundum (32 px, `ETIKETT.rand`, gilt auch fuer Adressaufkleber). Aufbau der Musteraufkleber: Shopadresse
+  klein und normal, Serie gross und fett, Farbe normal, eine Linie, Mittelteil (QR-Code, bei Paketware
+  mit Technik als Tabelle: Bezeichnung links, Wert fett rechtsbuendig; „Stärke / Nutzschicht“ als zwei
+  Zeilen), eine Linie, unten „Art.-Nr.“ normal und die Nummer fett in einer Zeile. Namen nehmen lieber
+  eine kleinere Schrift als eine Zeile mehr. Im Hochformat steht bei genug Platz „Produkt im Shop
+  ansehen“ unter dem QR-Code (`QR_HINWEIS`). Eckdaten: Ware ohne Paket (Teppichboden, Sauberlauf,
+  Linoleum …) bekommt Material, Breite (`breitenAus`: Option „Breite“ der Farbe, sonst
+  `custom.rollenbreite`), Florhoehe bzw. Staerke und Nutzungsklasse, alle Ware „Fußbodenheizung: ja“, wenn
+  belegt - als Zeilen mit `zusatz: true`. `layout()` setzt sie der Reihe nach nur, solange Serie und Technik
+  nicht kleiner werden (Serie bis 40 px, Technik bis 18 px in 50 x 50), und meldet in `zeilen`, was wirklich
+  draufsteht. Sitzt der Druck trotzdem schief, stellt man unter
+  „Drucker-Einstellungen“ einen Versatz ein (bis 3 mm je Richtung, je Rechner in `localStorage`
+  `tp-etikett-versatz`); er verschiebt nur das Druckbild, nicht Vorschau oder PNG. An den Drucker geht genau
+  die Kopfbreite aus `getModelMetadata().printheadPixels` (B1: 384 px), mittig aus dem 400 px breiten Bild
+  geschnitten (`aufDruckkopf`); ein breiteres Bild legte die Firmware nicht mittig auf den Kopf.
 - **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
   Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
   im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt
@@ -1985,6 +2003,28 @@ Wunsch: „alles finden“ und Kundenbestellungen „sehr einfach packen und neu
   (sonst 409, nichts geschrieben), und prueft danach dieselben Sperren wie beim normalen Packen
   (fehlende Angaben, Direktversand, Hinweise, Klaerung). Der Wareneingang hat den Haken direkt in der
   Zeile; die Rueckmeldung nennt den Umschlag und wie viele Muster dort noch offen sind.
+
+**Baby-einfach: Bestellung in drei Schritten, „Muster kommt an“ (26.10.2026, #1701).**
+Ablauf des Packers (Inhaber 26.10.): eine Bestellung samt Adresse ausdrucken, dann schauen, was da ist
+und was fehlt. Zwei Reiter: „Bestellung packen“ (Standard, bisher „Nach Kunde packen“) und „Muster kommt an“
+(`mp=laden`, bisher „Wareneingang nach Partnerladen“; alte Links gelten weiter).
+- *Ein Umschlag, drei Schritte, ein Hauptknopf:* 1 · Bestellung drucken („Aufkleber und Adresse drucken“,
+  nur noch nicht abgehakte Muster plus Adresse - `aufkleberFuer(k, { nurOffen: true })`), 2 · Was ist da?
+  („Da: x von n · Fehlt: …“, Haken je Muster; Antworten „Fehlt noch – zurücklegen“ = Zu klären und
+  „Alle n da – Umschlag gepackt“), 3 · Zukleben („Umschlag gepackt“, davor bei Bedarf „Adressaufkleber
+  drucken“). Schritt 1 gilt als erledigt, sobald auf diesem Geraet gedruckt wurde (Druckdialog nach
+  „Drucken“ geschlossen oder „Schon gedruckt – weiter“) oder ein Muster abgehakt ist. Der Druckstand liegt
+  nur im Browser (`localStorage` `tp-mp-gedruckt`, 14 Tage) und entscheidet allein, welcher Knopf
+  leuchtet - kein gemeinsamer Packstand. Zu klaeren: der Hauptknopf ist das Naechstliegende (Fehlendes ist
+  da, Lieferadresse, Musterzuordnung, Restumfang, sonst Bestellstand); Gepackt: „Großbrief vorbereiten“.
+  Alles Weitere steht unter „Mehr …“. Je Muster bleibt ein leises „Nur diesen nachdrucken“.
+- *Muster kommt an:* ein grosses Feld („Was steht auf dem Muster?“, Parameter `mh`). `handTreffer` liefert
+  die passenden, noch nicht eingelegten Muster offener Umschlaege in Packreihenfolge als grosse Karten
+  (Bild, Farbnummer, „Gehört in #…“, „Aufkleber drucken“, „Eingelegt ✓“; bei mehreren ist die aelteste
+  Bestellung markiert), getrennt davon „Schon eingelegt“ und Treffer ausserhalb der Packliste. „Eingelegt ✓“
+  setzt den Haken, leert das Feld und setzt den Fokus fuer das naechste Muster; die Rueckmeldung nennt den
+  Umschlag und was noch offen ist, bei komplettem Umschlag mit Link „Zum Umschlag“. Ohne Eingabe steht
+  darunter der Wareneingang je Partnerladen wie bisher.
 
 Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shopify-Status;
 keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
@@ -2239,3 +2279,53 @@ Vorher kannte nur die Bestellmail das Ziel: solche Aufträge warteten auf „bei
 werden nicht umgeschrieben (welches Ziel die Mail damals hatte, ist nicht gespeichert). Wer weiss, dass sie
 direkt gingen, nimmt „Etwas anderes ist passiert …“ → „An den Kunden verschickt – von uns oder direkt vom
 Lieferanten“.
+
+## Alte Bestellungen aufräumen (Inhaber 26.10.2026, #1698)
+
+Inhaber 26.10.: „schaue, welche Bestellungen fertig oder storniert sind, damit sie nicht mehr im Dashboard
+stehen – und eine Funktion, die automatisiert prüft, was fertig ist und was nicht; da sind noch sehr alte
+Bestellungen drin.“ Entscheidung: Was belegt fertig ist, fällt automatisch heraus; alte Bestellungen ohne
+Beleg kommen in eine Aufräumliste mit Vorschlag und werden per Klick abgehakt.
+
+**Belegt fertig (ohne Klick).** `belegtFertigGrund()` in `lib/bestellarbeit.mjs`: in Shopify archiviert
+(`closedAt`, Regel vom 21.10.) oder voll erstattet (`REFUNDED`/`VOIDED`). `bestellungAusgeblendet()` zählt
+das jetzt mit; vorher stand eine archivierte, nicht versandte Bestellung in Kunden › Bestellungen weiter
+unter „Offen“. Storniert, Test, in Shopify versendet und im Auftragsfluss abgeschlossen galten schon.
+
+**Aufräumliste.** Regeln in `lib/aufraeumen.mjs` (Browser und Server, ohne DOM). `kundenBestellungen()`
+hängt an jede Zeile `aufraeumen` (`aufraeumFall()`), Packstation-Stand aus `muster-packen.json` als
+zusätzlicher Beleg (kaputte Ablage = Beleg fehlt, Liste bleibt). Ein Fall ist eine offene, nicht belegt
+fertige Bestellung, deren **letzte Bewegung** mindestens 14 Tage (Muster) bzw. 30 Tage (Ware) zurückliegt.
+Bewegung = Bestelldatum, jeder Positionsstand (`aktualisiertAm`, `<status>Am`), Zeitleiste und Notizen,
+Haken/Bestellmarke, Packstation (gepackt, Muster abgehakt, zu klären). Jeder Fall nennt die Belege
+(bestellt am, angekommen, gepackt, in Shopify zurückgehalten, letzte Notiz, spätere Bestellung) und einen
+Vorschlag mit Vermerk:
+
+| Beleg | Vorschlag |
+|---|---|
+| Letzte Notiz sagt „nicht verfügbar/lieferbar/vorrätig“ oder „ausverkauft“ | Muster nicht verfügbar, Kunde informiert |
+| Spätere Warenbestellung desselben Kunden (Zeitleiste) | Kunde hat danach bestellt |
+| Alle Muster angekommen oder Umschlag gepackt | Waren da, Versand nur nicht erfasst |
+| Nie beim Lieferanten bestellt | beim Kunden nachfragen oder abschließen |
+| Teil angekommen | beim Lieferanten nachfragen oder abschließen |
+| Bestellt vor dem 24.10., nie angekommen | wohl direkt vom Lieferanten an den Kunden (Lieferziel damals nicht gespeichert, Abschnitt „Muster direkt …“) |
+| sonst | Muster kamen nie an |
+
+Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt niemand nebenbei), nur
+„Ansehen“ und „Läuft noch“.
+
+**Anzeige und Knöpfe.** `ansichten/heute/aufraeumen.mjs`, Block „Alte Bestellungen aufräumen · N“ auf der
+Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar. Kein
+eigener Schreibpfad:
+- **Abschließen** (Rückfrage mit Vermerk) = `POST /api/kunden/bestellung-fertig` mit den offenen
+  Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Bucht wie jedes „Erledigt“ in Shopify als
+  versendet, ohne Mail (Abschnitt 24); scheitert die Buchung, steht die Bestellung unter „In Shopify noch
+  offen“ zum Nachbuchen. Bewusst nicht der Schritt „Muster nicht verfügbar“: der sperrte die Farbe heute
+  im Shop, obwohl die Notiz Wochen alt ist.
+- **Läuft noch** = Zeitleisten-Schritt `notiz` („Läuft noch – beim Aufräumen bestätigt“) über
+  `POST /api/einkauf/auftragsstatus`; die Notiz ist eine neue Bewegung, die Liste fragt nach 14 bzw. 30
+  Tagen wieder.
+- Rolle „lesen“ sieht nur „Ansehen“; beide Endpunkte stehen schon in der Schreibliste.
+
+Die Liste schließt nie selbst ab. Tests: `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Regeln, Grenzen,
+Bewegungen, Vorschläge, Block, API mit Uhr), `bestellarbeit`- und `shop-start`-Tests.

@@ -92,3 +92,47 @@ test('abgebrochene Restumfang-Pruefung setzt keine Packmarke und laesst den Knop
   assert.equal(bestaetigungen, 1);
   assert.equal(knopf.disabled, false);
 });
+
+test('Eingelegt im Reiter "Muster kommt an": Haken speichern, Feld leeren, Rueckmeldung merken, Fokus zurueck ins Feld', async () => {
+  const muster = abgehakt => ({ lineItemId: 'L1', abgehakt: abgehakt ? { zeit: 'x' } : null });
+  const daten = abgehakt => ({ verfuegbar: true, kunden: [{ packSchluessel: 'A', muster: [muster(abgehakt)] }] });
+  const kunden = { musterPacken: daten(false) };
+  const state = { route: { view: 'kunden', params: new URLSearchParams('tab=muster&mp=laden&mh=3n55') } };
+  const geschrieben = [], adressen = [];
+  let fokus = 0, gezeichnet = 0;
+  const knopf = { dataset: { mpEingelegt: 'L1' }, disabled: false };
+  const api = ladeAnsicht('muster-packen.mjs', {
+    state, kunden, toast() {}, render: () => { gezeichnet++; },
+    orgSchreiben: async (_, d) => { geschrieben.push(d); },
+    fetchEinkauf: async () => daten(true),
+    history: { replaceState: (_, __, url) => adressen.push(url) },
+    parseRoute: () => { state.route.params = new URLSearchParams(adressen.at(-1).split('?')[1]); },
+    document: { addEventListener() {}, getElementById: id => (id === 'mpHandFeld' ? { focus: () => { fokus++; } } : null) },
+  }, '({ musterPackenKlick, meldung: () => handMeldung })');
+  assert.equal(api.musterPackenKlick({ target: { closest: s => (s === '[data-mp-eingelegt]' ? knopf : null) }, preventDefault() {} }), true);
+  assert.equal(knopf.disabled, true);
+  await new Promise(r => setImmediate(r));
+  // Objekte aus der vm-Sandbox haben einen anderen Prototyp: als JSON vergleichen.
+  assert.equal(JSON.stringify(geschrieben), JSON.stringify([{ packSchluessel: 'A', aktion: 'haken', lineItemIds: ['L1'], an: true }]));
+  assert.deepEqual(adressen, ['#/kunden?tab=muster&mp=laden']);
+  assert.equal(api.meldung(), 'A');
+  assert.equal(fokus, 1);
+  assert.ok(gezeichnet >= 1);
+});
+
+test('Eingelegt ohne bestaetigten Haken laesst Suchtext und Meldung stehen', async () => {
+  const kunden = { musterPacken: { verfuegbar: true, kunden: [{ packSchluessel: 'A', muster: [{ lineItemId: 'L1', abgehakt: null }] }] } };
+  const state = { route: { view: 'kunden', params: new URLSearchParams('tab=muster&mp=laden&mh=3n55') } };
+  let geleert = false;
+  const api = ladeAnsicht('muster-packen.mjs', {
+    state, kunden, toast() {}, render() {},
+    orgSchreiben: async () => { throw new Error('Netz weg'); },
+    fetchEinkauf: async () => kunden.musterPacken,
+    history: { replaceState: () => { geleert = true; } }, parseRoute() {},
+    document: { addEventListener() {}, getElementById: () => null },
+  }, '({ musterPackenKlick, meldung: () => handMeldung })');
+  api.musterPackenKlick({ target: { closest: s => (s === '[data-mp-eingelegt]' ? { dataset: { mpEingelegt: 'L1' } } : null) }, preventDefault() {} });
+  await new Promise(r => setImmediate(r));
+  assert.equal(geleert, false);
+  assert.equal(api.meldung(), null);
+});

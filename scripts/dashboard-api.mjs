@@ -89,6 +89,7 @@ import { bestaetigeBeschaffung, arbeitsuebernahme, BeschaffungFehler } from '../
 import { darfWeiter, beschaffungsStand } from '../docs/ai-dashboard/lib/beschaffung.mjs';
 import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
+import { aufraeumFall } from '../docs/ai-dashboard/lib/aufraeumen.mjs';
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
@@ -1686,7 +1687,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { katalog = this._lexikonProdukte(); } catch { /* Optionale Kaufquelle unlesbar: keine Links, Bestellliste bleibt nutzbar. */ }
       const haken = leseBestellmarken(bestellmarkenPfad(dir));
       const musterAutomatik = musterAutomatikAnzeige(dir, { modell, statusAlle, stammdaten: leseStammdaten(stammdatenPfad(dir)) }, katalog, now());
-      return { verfuegbar: true, musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+      // Packstation als Beleg fuers Aufraeumen (#1698); ist ihre Ablage kaputt, fehlt nur dieser Beleg.
+      let packen = null;
+      try { packen = leseMusterPackStand(musterPackenPfad(dir)); } catch { /* Fehler meldet die Packstation selbst. */ }
+      const jetzt = now().getTime();
+      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
+      return { verfuegbar: true, musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
     },
 
     /** Rein lesende Aggregate, ohne Kundennamen oder zweite Bestellablage. */
