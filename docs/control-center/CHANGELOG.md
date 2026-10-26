@@ -44,6 +44,9 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Entscheidungen Zähler 4 = Liste 4 = Karten 4; Sonderposten-Hinweis; Hilfe und Begriffe;
   „Alle anderen Geräte abmelden“ (8 abgemeldet, eigenes Gerät bleibt, Stempel für die
   Social-Zentrale geschrieben). Instanz danach beendet, Datenkopie entfernt.
+- **Nachgebessert (Prüfung):** Eine direkt geöffnete Kundenakte lädt jetzt den Positionsstand
+  nach; vorher behielt ein schon bestellter Lieferant dort seinen Knopf „Bestellmail öffnen“
+  und stand in der Rückfrage „Ware ist bestellt…“ (Test in `zeitleiste-bestellweg`).
 - **Risiken:** Ob `tailscale serve` `X-Forwarded-For` mitschickt, ist im Betrieb nicht
   nachgemessen; ohne den Kopf gilt das Tailscale-Konto, ohne beides bleibt es bei 127.0.0.1
   wie bisher. Die Social-Zentrale übernimmt Abdruck und Abmeldestempel erst nach ihrem

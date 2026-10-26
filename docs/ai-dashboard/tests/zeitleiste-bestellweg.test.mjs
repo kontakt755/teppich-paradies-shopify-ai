@@ -24,11 +24,36 @@ const POSITIONEN = [
   { lineItemId: 'L6', titel: 'Ohne Zuordnung', lieferant: 'UNGEKLAERT' },
 ];
 
-function vorbereiten({ rolle = 'mitarbeiter', stand = null } = {}) {
+// Ohne Angabe: Positionsstand geladen, aber leer (sonst laedt zeitleisteBlock ihn nach).
+function vorbereiten({ rolle = 'mitarbeiter', stand = { verfuegbar: true, positionen: {} } } = {}) {
   state.session = { benutzer: { name: 'Test', rolle } };
   einkauf.lieferanten = { verfuegbar: true, lieferanten: [{ id: 'A', name: 'Testlieferant Nord' }, { id: 'C', stammdaten: { name: 'Testlieferant Sued' } }] };
   einkauf.auftragsstatus = stand;
 }
+
+test('Direkt geoeffnete Kundenakte laedt den Positionsstand nach; ein schon bestellter Lieferant verliert seinen Knopf', async () => {
+  vorbereiten({ stand: null });
+  einkauf.loadingAuftragsstatus = false;
+  const route = state.route;
+  const echtesFetch = globalThis.fetch;
+  state.route = { view: 'test-ohne-zeichnen', params: new URLSearchParams() };
+  const abrufe = [];
+  globalThis.fetch = async pfad => {
+    abrufe.push(pfad);
+    return { ok: true, json: async () => ({ verfuegbar: true, positionen: { 'gid://shopify/Order/9001::L1': { status: 'bestellt' } } }) };
+  };
+  try {
+    assert.match(zeitleisteBlock(ware(POSITIONEN)), /data-lf-mail="C"/, 'vor dem Laden: noch alle offenen Lieferanten');
+    assert.deepEqual(abrufe, ['/api/einkauf/auftragsstatus']);
+    await new Promise(r => setTimeout(r, 0));
+    const html = zeitleisteBlock(ware(POSITIONEN));
+    assert.doesNotMatch(html, /data-lf-mail="C"/);
+    assert.match(html, /data-lf-mail="A"/);
+  } finally {
+    globalThis.fetch = echtesFetch;
+    state.route = route;
+  }
+});
 
 test('Schritt "bestellen": je Lieferant "Bestellmail öffnen" mit Namen, "Ware ist bestellt…" erst danach und ohne Sofort-Schritt', () => {
   vorbereiten();

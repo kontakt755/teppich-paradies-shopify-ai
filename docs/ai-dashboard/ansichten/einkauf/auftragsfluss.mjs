@@ -146,7 +146,8 @@ export function ensureEinkaufAuftragsstatus() {
   einkauf.loadingAuftragsstatus = true;
   fetchEinkauf('/api/einkauf/auftragsstatus').then(d => {
     einkauf.auftragsstatus = d; einkauf.loadingAuftragsstatus = false;
-    if (['heute', 'einkauf'].includes(state.route.view)) render();
+    // "kunden": die Kundenakte blendet damit schon bestellte Lieferanten aus (zeitleiste.mjs).
+    if (['heute', 'einkauf', 'kunden'].includes(state.route.view)) render();
   });
 }
 

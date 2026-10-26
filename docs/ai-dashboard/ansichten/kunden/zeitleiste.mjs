@@ -14,7 +14,7 @@ import { $, esc, fmtDate, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
-import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, ensureEinkaufAuftragsstatus, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
@@ -165,6 +165,9 @@ export function zeitleisteBlock(a, { kontakt = false } = {}) {
   if (!a?.verlauf?.length) return '';
   // Lieferantennamen aus den Stammdaten (sonst stuende "Lieferant A" statt des Namens).
   if ((a.positionen || []).some(p => gesetzt(p.lieferant))) ensureEinkaufLieferanten();
+  // Positionsstand fuer den Bestellweg: ohne ihn bekaeme ein schon bestellter Lieferant in einer
+  // direkt geoeffneten Kundenakte weiter "Bestellmail öffnen" (bestellLieferanten).
+  if (a.auftragsart === 'ware' && a.naechsterSchritt?.aktion === 'bestellt') ensureEinkaufAuftragsstatus();
   const kunde = a.details?.kunde || null;
   const lesend = istNurLesend();
   const notizen = a.verlaufNotizen || [];
