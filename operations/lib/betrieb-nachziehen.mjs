@@ -174,10 +174,11 @@ export function moduleTauschen(repo, { head, umbenennen = fs.renameSync } = {}) 
 }
 
 /**
- * Reste eines abgebrochenen Laufs. Fehlt node_modules mitten im Tausch, oder wurde getauscht,
- * aber nicht vorgespult (HEAD steht noch auf der Marke), kommen die alten Bibliotheken zurueck.
+ * Reste eines abgebrochenen Laufs. Fehlt node_modules mitten im Tausch, kommt der alte Stand
+ * sofort zurueck. Wurde getauscht, aber nicht vorgespult (HEAD steht noch auf der Marke), erst
+ * wenn `darfTauschen()` Ruhe meldet - sonst bleibt alles liegen und das Ergebnis ist 'wartet'.
  */
-export function moduleReste(repo, { head } = {}) {
+export function moduleReste(repo, { head, darfTauschen = () => true } = {}) {
   const live = path.join(repo, 'node_modules'), neu = path.join(repo, MODULE_NEU), vorher = path.join(repo, MODULE_VORHER);
   const marke = path.join(repo, MODULE_HEAD);
   if (fs.existsSync(vorher)) {
@@ -185,12 +186,14 @@ export function moduleReste(repo, { head } = {}) {
     try { vorHead = fs.readFileSync(marke, 'utf8').trim(); } catch {}
     if (!fs.existsSync(live)) fs.renameSync(vorher, live);
     else if (head && vorHead === head) {
+      if (!darfTauschen()) return 'wartet';
       fs.rmSync(neu, { recursive: true, force: true });
       fs.renameSync(live, neu);
       fs.renameSync(vorher, live);
     }
   }
   for (const d of [MODULE_NEU, MODULE_VORHER, MODULE_HEAD]) fs.rmSync(path.join(repo, d), { recursive: true, force: true });
+  return null;
 }
 
 /** Testsuiten, die vor dem Uebernehmen in der Probekopie laufen. */

@@ -18,7 +18,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Tausch, Warten ohne Ruhe, Rueckweg; derselbe Test scheitert gegen den alten Ablauf.
   Codex-Review Runde 1 (0 P1, 2 P2) behoben: Abbruch nach dem Tausch vor dem Vorspulen
   (Marke mit dem HEAD von vorher) und scheiterndes zweites Umbenennen (sofort zurueck),
-  beide Faelle mit Test.
+  beide Faelle mit Test. Runde 3 (nach #1711, 1 P2): das Zuruecknehmen nach einem Abbruch
+  wartet jetzt ebenfalls auf Ruhe (laufende Claude-Routine), mit Ablauf-Test.
 - **Risiken:** Probe und Dienst-Checkout muessen auf demselben Laufwerk liegen, sonst kopiert
   die Probe (`cpSync`) statt umzubenennen. Wartet ein Lauf mit neuen Bibliotheken auf Ruhe,
   installiert und testet der naechste erneut (rund 30 s).

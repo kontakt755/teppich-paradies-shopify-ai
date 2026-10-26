@@ -205,7 +205,10 @@ export async function nachziehen({
   try {
     const aktuellerZweig = git(repo, ['symbolic-ref', '--quiet', '--short', 'HEAD'], { erlaubt: [0, 1] }).out;
     if (aktuellerZweig !== zweig) return ende({ stand: 'haengt', art: 'zweig', grund: `Arbeitskopie steht auf „${aktuellerZweig || 'losgelöst'}“ statt „${zweig}“` });
-    moduleReste(repo, { head: git(repo, ['rev-parse', 'HEAD']).out });
+    // Zuruecktauschen nach einem Abbruch trifft laufende Dienste wie ein Tausch: nur in Ruhe.
+    if (moduleReste(repo, { head: git(repo, ['rev-parse', 'HEAD']).out, darfTauschen: () => ruhe().ruhig }) === 'wartet') {
+      return ende({ stand: 'wartet', grund: 'Bibliotheken eines abgebrochenen Laufs warten auf eine ruhige Minute' });
+    }
     try { git(repo, ['fetch', '--quiet', 'origin']); }
     catch (e) { return ende({ stand: 'wartet', grund: `main nicht erreichbar (${e.message.slice(0, 120)})` }); }
     const head = git(repo, ['rev-parse', 'HEAD']).out;

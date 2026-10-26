@@ -301,10 +301,14 @@ test('Bibliotheken: Tausch per Umbenennen, Rueckweg ohne Netz, Reste eines Abbru
   assert.deepEqual(fs.readdirSync(repo), ['node_modules']);
 
   // Abbruch nach dem Tausch, aber vor dem Vorspulen: HEAD steht noch auf der Marke.
+  // Zurueckgetauscht wird erst in Ruhe (laufende Routine, #1711); bis dahin bleibt alles liegen.
   fs.writeFileSync(path.join(repo, 'node_modules', 'stand.txt'), 'alt');
   lege(MODULE_NEU, 'neu');
   moduleTauschen(repo, { head: 'aaaa' });
-  moduleReste(repo, { head: 'aaaa' });
+  assert.equal(moduleReste(repo, { head: 'aaaa', darfTauschen: () => false }), 'wartet');
+  assert.equal(lies('node_modules'), 'neu');
+  assert.ok(fs.existsSync(path.join(repo, MODULE_VORHER)) && fs.existsSync(path.join(repo, MODULE_HEAD)), 'nichts geloescht, solange es nicht ruhig ist');
+  assert.equal(moduleReste(repo, { head: 'aaaa', darfTauschen: () => true }), null);
   assert.equal(lies('node_modules'), 'alt', 'neue Bibliotheken unter altem Stand werden zurueckgenommen');
   assert.deepEqual(fs.readdirSync(repo), ['node_modules']);
   // Abbruch nach dem Vorspulen: die neuen Bibliotheken passen zum neuen HEAD und bleiben.
@@ -373,4 +377,24 @@ test('Ablauf: neue Bibliotheken kommen getestet aus der Probe, nie per npm ci im
   assert.equal(herkunft(), zwei);
   assert.deepEqual(reste(), []);
   assert.equal(g(u.betrieb, 'status', '--porcelain', '--untracked-files=no'), '');
+});
+
+test('Ablauf: Reste eines abgebrochenen Tauschs werden erst in Ruhe zurueckgenommen', async () => {
+  const u = aufbau();
+  const stand = () => fs.readFileSync(path.join(u.betrieb, 'node_modules', 'stand.txt'), 'utf8');
+  fs.mkdirSync(path.join(u.betrieb, 'node_modules'));
+  fs.writeFileSync(path.join(u.betrieb, 'node_modules', 'stand.txt'), 'alt');
+  fs.mkdirSync(path.join(u.betrieb, MODULE_NEU));
+  fs.writeFileSync(path.join(u.betrieb, MODULE_NEU, 'stand.txt'), 'neu');
+  // Lauf stuerzt nach dem Tausch ab, bevor er vorspult: HEAD steht noch auf der Marke.
+  moduleTauschen(u.betrieb, { head: u.kopf() });
+  const s = steuerung();
+  const w = await lauf(u, s, { ruhe: () => ({ ruhig: false, grund: 'Claude-Routine fehlermeldungen läuft' }) });
+  assert.equal(w.stand, 'wartet');
+  assert.match(w.grund, /abgebrochenen Laufs/);
+  assert.equal(stand(), 'neu', 'waehrend einer Routine wird nichts getauscht');
+  assert.equal((await lauf(u, s)).stand, 'aktuell');
+  assert.equal(stand(), 'alt');
+  assert.deepEqual(fs.readdirSync(u.betrieb).filter(d => d.startsWith('.nachziehen-')), []);
+  assert.equal(s.neustarts.length, 0);
 });
