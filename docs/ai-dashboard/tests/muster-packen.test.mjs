@@ -109,6 +109,20 @@ test('Adresslayout: jede Zeile passt in die Druckbreite, auch lange Orte; ohne B
   }
 });
 
+test('Adresslayout: auch ellenlange Zeilen brechen um statt abzuschneiden, nichts beruehrt sich', () => {
+  const mass = (t, g, fett) => t.length * g * (fett ? 0.6 : 0.55);
+  const lang = 'Sehr Lange Beispielstraße Mit Vielen Woertern Hinter Dem Gartenhaus';
+  const e = adressEtikett(adresse('Anna-Katharina Testfrau-Beispiel von und zu Musterhausen am Testsee', { strasse: `${lang} 115, ${lang}`, ort: 'Bad Musterstadt Ortsteil Langenachbarort' }), []);
+  for (const format of Object.values(ETIKETT_FORMATE)) {
+    const l = adressLayout(e, mass, format);
+    assert.ok(l.passt, `${format.format}: ${l.probleme.join(' | ')}`);
+    const woerter = t => t.split(/\s+/).filter(Boolean);
+    assert.deepEqual(l.texte.flatMap(t => woerter(t.text)).sort(), [...ABSENDER, ...e.empfaenger.map(z => z.text)].flatMap(woerter).sort(), 'jedes Wort ganz da');
+    assert.ok(l.texte.every(t => t.groesse >= 12));
+  }
+  assert.equal(adressLayout(adressEtikett(adresse('X'.repeat(90)), []), mass).passt, false, 'ein Wort breiter als das Etikett wird gesperrt');
+});
+
 test('Erkennen: Farbbild nur fuer genau diese Farbe, Lieferant mit Namen, verwechselbare Muster markiert', () => {
   const zweiFarben = { ...boden, bild: 'https://cdn.example/produkt.jpg', varianten: [
     { ...boden.varianten[0], bild: 'https://cdn.example/sand.jpg', einkauf: { ...boden.varianten[0].einkauf, lieferant: 'A', kollektion: 'Lieferantenware' } },
