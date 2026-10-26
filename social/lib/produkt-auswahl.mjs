@@ -11,6 +11,7 @@
  */
 
 import { vergleichJeEinheit } from './shop-quelle.mjs';
+import { kurzTitel } from './werkstatt.mjs';
 
 const TAG = 24 * 60 * 60 * 1000;
 
@@ -46,13 +47,33 @@ function tageSeit(iso, jetzt) {
   return Number.isNaN(t) ? Infinity : (jetzt.getTime() - t) / TAG;
 }
 
+const RANG = { raum: 0, detail: 1, produkt: 2 };
+const nachRang = (a, b) => RANG[a.rolle] - RANG[b.rolle] || (b.breite * b.hoehe) - (a.breite * a.hoehe);
+
 /** Die Bilder eines Beitrags: Raumbilder zuerst, dann Details, dann Produktflaechen. */
 export function besteBilder(produkt, grenze = 6) {
-  const rang = { raum: 0, detail: 1, produkt: 2 };
   return produkt.bilder
     .filter(b => b.tauglich)
-    .sort((a, b) => rang[a.rolle] - rang[b.rolle] || (b.breite * b.hoehe) - (a.breite * a.hoehe))
+    .sort(nachRang)
     .slice(0, grenze);
+}
+
+const regexTeil = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Beschriftung einer Serienfolie: ohne Rollenbreite und ohne die Warengruppe am Ende (die steht im
+ * Titelbild). Der Familienname faellt weg ("Solenta Eiche Hell" -> "Eiche Hell"), ausser er ist nur
+ * der Anfang der Marke: "JAB Anstoetz Savanna Teppichboden 400cm" bleibt "JAB Anstoetz Savanna"
+ * (Rundgang 26.10.2026: aus "JAB Anstoetz" war "Anstoetz" geworden).
+ */
+export function serienBeschriftung(produkt, familienName) {
+  const titel = kurzTitel(produkt.titel);
+  const marke = String(produkt.marke ?? '').trim();
+  const markeBleibt = marke.length > String(familienName).length && titel.startsWith(`${marke} `);
+  const ohneFamilie = markeBleibt ? titel : titel.replace(familienName, '').replace(/^[\s–-]+/, '').trim();
+  const typ = String(produkt.typ ?? '').trim();
+  const ohneTyp = typ ? ohneFamilie.replace(new RegExp(`\\s+${regexTeil(typ)}$`, 'i'), '').trim() : ohneFamilie;
+  return ohneTyp || ohneFamilie;
 }
 
 function familien(produkte) {
@@ -75,7 +96,9 @@ export function findeKandidaten({ produkte, stand = new Map(), preise = new Map(
   const monat = jetzt.toISOString().slice(0, 7);
   const kandidaten = [];
 
-  const brauchbar = produkte.filter(p => p.verfuegbar && !p.zubehoer && p.bilder.some(b => b.tauglich));
+  // Auslaufware schlaegt der Scout nicht vor (Novaris, Armonia, Ambrosia im Oktober 2026). Ob sie spaeter
+  // mit Hinweis beworben werden darf, entscheidet der Inhaber - bis dahin bleibt sie draussen.
+  const brauchbar = produkte.filter(p => p.verfuegbar && !p.zubehoer && !p.auslauf && p.bilder.some(b => b.tauglich));
 
   for (const fam of familien(brauchbar).values()) {
     const mitglieder = fam.mitglieder;
@@ -126,7 +149,7 @@ export function findeKandidaten({ produkte, stand = new Map(), preise = new Map(
       const anzahl = mitglieder.length;
       dazu('produkt_neu', 55 + Math.min(anzahl, 6), anzahl > 1 ? `neue Serie mit ${anzahl} Designs` : 'neu im Shop', {
         serie: anzahl > 1,
-        serienBilder: anzahl > 1 ? mitglieder.map(p => ({ ...besteBilder(p, 1)[0], beschriftung: p.titel.replace(fam.name, '').replace(/^[\s–-]+/, '').trim() || p.titel })).filter(b => b.src).slice(0, 10) : [],
+        serienBilder: anzahl > 1 ? mitglieder.map(p => ({ ...besteBilder(p, 1)[0], beschriftung: serienBeschriftung(p, fam.name) || p.titel })).filter(b => b.src).slice(0, 10) : [],
       });
       continue;
     }
@@ -137,9 +160,15 @@ export function findeKandidaten({ produkte, stand = new Map(), preise = new Map(
       if (!Array.isArray(alt) || !alt.length) continue;
       const hinzu = p.farben.filter(f => !alt.includes(f));
       if (hinzu.length) {
+        // Ein Farbbeitrag zeigt die angekuendigte Farbe (Alvento 21.10.2026: angekuendigt Basalt und
+        // Jeansblau, im Bild Senf). Ohne taugliches Bild der neuen Farbe gibt es keinen solchen Anlass;
+        // die Farbe bleibt "neu", bis der Shop ein Bild dazu hat.
+        const neuBilder = p.bilder.filter(b => b.tauglich && hinzu.includes(b.farbe)).sort(nachRang);
+        if (!neuBilder.length) continue;
         dazu('produkt_farben', 50, `${hinzu.length} neue Farbe(n): ${hinzu.slice(0, 4).join(', ')}`, {
           hauptHandle: p.handle, titel: p.titel, url: p.url, neueFarben: hinzu,
-          farbBilder: p.bilder.filter(b => b.tauglich && hinzu.includes(b.farbe)).map(b => ({ ...b, beschriftung: b.farbe })),
+          bilder: [...neuBilder, ...besteBilder(p).filter(b => !neuBilder.includes(b))].slice(0, 6),
+          farbBilder: neuBilder.map(b => ({ ...b, beschriftung: b.farbe })),
         });
         break;
       }
@@ -156,7 +185,7 @@ export function findeKandidaten({ produkte, stand = new Map(), preise = new Map(
         farbBilder: jeFarbe.slice(0, 9).map(b => ({ ...b, beschriftung: b.farbe })),
       });
     } else if (mitglieder.length >= regeln.farbenAb) {
-      const dekore = mitglieder.map(p => ({ ...besteBilder(p, 1)[0], beschriftung: p.titel.replace(fam.name, '').replace(/^[\s–-]+/, '').trim() })).filter(b => b.src && b.beschriftung);
+      const dekore = mitglieder.map(p => ({ ...besteBilder(p, 1)[0], beschriftung: serienBeschriftung(p, fam.name) })).filter(b => b.src && b.beschriftung);
       if (dekore.length >= regeln.farbenAb) {
         dazu('produkt_farben', 35 + Math.min(dekore.length, 10), `${mitglieder.length} Dekore`, { farbAnzahl: mitglieder.length, farbBilder: dekore.slice(0, 9), serie: true });
       }

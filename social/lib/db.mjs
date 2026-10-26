@@ -18,6 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { anlassFamilien } from './doppelungen.mjs';
 import { dbPfad, pruefePrivat } from './pfade.mjs';
 import { BEITRAG_STATUS, INHALT_STATUS, pruefeBeitragWechsel, pruefeInhaltWechsel, TYPEN } from './status.mjs';
 
@@ -255,9 +256,54 @@ export function oeffne(datei = dbPfad(), { jetzt = () => new Date() } = {}) {
     veroeffentlichtSeit(seit) {
       return lies('beitrag', 'WHERE veroeffentlicht_am IS NOT NULL AND veroeffentlicht_am >= ?', iso(seit));
     },
-    /** Shop-Anlaesse einer Familie und Art, die seit `seit` angelegt wurden (ausser wegen veralteter Bilder verworfene). */
+    /**
+     * Shop-Anlaesse einer Familie und Art, die seit `seit` angelegt wurden (ausser wegen veralteter Bilder verworfene).
+     * Farben zaehlen je Qualitaet: Teppichboden und Teppich nach Mass derselben Qualitaet sind eine Neuigkeit
+     * (Zafira, Belcanto, Alvento kamen im Oktober je zweimal - doppelungen.mjs).
+     */
     shopAnlassSeit(familie, typ, seit) {
-      return sql.prepare("SELECT COUNT(*) n FROM inhalt WHERE quelle = 'shopify' AND typ = ? AND json_extract(daten, '$.familie') = ? AND erstellt >= ? AND (schluessel IS NULL OR schluessel NOT LIKE '%:veraltet:%')").get(typ, familie, iso(seit)).n > 0;
+      const familien = typ === 'produkt_farben' ? anlassFamilien(familie) : [familie];
+      return sql.prepare(`SELECT COUNT(*) n FROM inhalt WHERE quelle = 'shopify' AND typ = ? AND json_extract(daten, '$.familie') IN (${familien.map(() => '?').join(',')}) AND erstellt >= ? AND (schluessel IS NULL OR schluessel NOT LIKE '%:veraltet:%')`).get(typ, ...familien, iso(seit)).n > 0;
+    },
+    /**
+     * Neue Farben, die seit `seit` schon als Anlass "neue Farbe" angelegt wurden - je Qualitaet
+     * (anlassFamilien). Was bei Teppich nach Mass angekuendigt ist, ist beim Teppichboden derselben
+     * Qualitaet keine Neuigkeit mehr (und umgekehrt).
+     * @returns Set der Farbnamen
+     */
+    angekuendigteFarben(familie, seit) {
+      const familien = anlassFamilien(familie);
+      const zeilen = sql.prepare(`SELECT json_extract(daten, '$.neueFarben') AS farben FROM inhalt WHERE quelle = 'shopify' AND typ = 'produkt_farben' AND json_extract(daten, '$.familie') IN (${familien.map(() => '?').join(',')}) AND erstellt >= ? AND (schluessel IS NULL OR schluessel NOT LIKE '%:veraltet:%')`).all(...familien, iso(seit));
+      return new Set(zeilen.flatMap(z => {
+        try { const f = JSON.parse(z.farben ?? '[]'); return Array.isArray(f) ? f : []; } catch { return []; }
+      }));
+    },
+    /** Produkt-Reels, die noch nicht erschienen sind (Freigabe, geplant, in Arbeit): Map handle -> [{id, status, geplant_am}]. */
+    reelsOffen() {
+      const zeilen = sql.prepare(`SELECT i.produkt_handle AS handle, b.id, b.status, b.geplant_am FROM beitrag b JOIN inhalt i ON i.id = b.inhalt_id
+        WHERE i.typ = 'produkt_reel' AND b.status IN (?, ?, ?) ORDER BY b.id`).all(BEITRAG_STATUS.FREIGABE, BEITRAG_STATUS.GEPLANT, BEITRAG_STATUS.IN_ARBEIT);
+      const aus = new Map();
+      for (const z of zeilen) {
+        if (!z.handle) continue;
+        if (!aus.has(z.handle)) aus.set(z.handle, []);
+        aus.get(z.handle).push({ id: z.id, status: z.status, geplant_am: z.geplant_am });
+      }
+      return aus;
+    },
+    /**
+     * Wurde der Beitrag zurueckgeholt oder vom Publisher gesperrt, ohne dass ihn danach ein Mensch
+     * freigegeben hat? Dann gibt ihn die Automatik nicht wieder frei (26.10.: elf zurueckgeholte Beitraege
+     * waren eine Minute spaeter wieder eingeplant). Automatische Freigaben zaehlen dabei nicht.
+     * @returns {{aktion, akteur, grund, zeit}|null}
+     */
+    zurueckgehalten(id) {
+      const zeilen = sql.prepare(`SELECT zeit, akteur, aktion, details FROM ereignis WHERE objekt = ?
+        AND (aktion IN ('beitrag-zurueckgeholt', 'gesperrt') OR (aktion = 'beitrag-freigegeben' AND COALESCE(akteur, '') <> 'automatisch'))
+        ORDER BY id DESC LIMIT 1`).all(`beitrag:${id}`);
+      const z = raus('ereignis', zeilen[0]);
+      if (!z || z.aktion === 'beitrag-freigegeben') return null;
+      const grund = z.details?.grund ?? (Array.isArray(z.details?.sperren) ? z.details.sperren.join(' · ') : null);
+      return { aktion: z.aktion, akteur: z.akteur, grund, zeit: z.zeit };
     },
     /** Faellige, freigegebene Beitraege - die Arbeitsliste des Publishers. */
     faellige(zeitpunkt = jetzt()) {

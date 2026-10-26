@@ -18,7 +18,7 @@ const PRODUKTE = { amara: { id: 222, title: 'Amara Eiche' }, lyra: { id: 333, ti
 /** Meta- und Shop-Ersatz. `berechtigt`: Instagram Shopping freigeschaltet; `tagsAblehnen`: Meta lehnt product_tags ab. */
 function schein({ berechtigt = true, katalog = true, tagsAblehnen = false } = {}) {
   const aufrufe = []; let n = 0;
-  const ok = daten => ({ ok: true, status: 200, json: async () => daten });
+  const ok = daten => ({ ok: true, status: 200, json: async () => daten, text: async () => JSON.stringify(daten) });
   const holen = async (url, init = {}) => {
     const u = new URL(url);
     if (u.origin === SHOP) {

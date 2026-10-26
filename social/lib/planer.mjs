@@ -9,11 +9,25 @@
  * Reine Funktion, ohne Datenbank und ohne Uhr - beides kommt als Argument.
  */
 
+import { BILD_RUHE_TAGE } from './doppelungen.mjs';
 import { RASTER } from './konfig.mjs';
 import { TYPEN } from './status.mjs';
 
 const STUNDE = 60 * 60 * 1000;
 const TAG = 24 * STUNDE;
+
+/**
+ * Bildruhe: dasselbe Quellbild aus einem anderen Inhalt hoechstens einmal in 14 Tagen (Eichwald 29. und
+ * 31.10., Zafira 28.10. und 05.11. mit demselben Raumbild). Story und Karussell desselben Inhalts duerfen
+ * dasselbe Bild zeigen - das ist gewollt.
+ * @param termine [{zeit: Date, inhalt, bilder: string[]}]
+ */
+function bildFrei(b, zeit, termine, ruheTage = BILD_RUHE_TAGE) {
+  if (!b.bilder?.length) return true;
+  return !termine.some(t => t.inhalt !== b.inhalt && t.bilder?.length
+    && Math.abs(t.zeit.getTime() - zeit.getTime()) < ruheTage * TAG
+    && t.bilder.some(k => b.bilder.includes(k)));
+}
 
 /** Kalenderwoche als Schluessel "2026-W40" (ISO 8601). */
 export function woche(datum) {
@@ -102,13 +116,15 @@ export function dringlichkeit(b, jetzt, lernstand = null) {
 }
 
 /**
- * @param offen   Beitraege ohne gueltigen Termin: {id, typ, quelle, format, punkte, erstellt}
- * @param belegt  bereits feststehende Termine: {geplantAm, typ, format}
+ * @param offen   Beitraege ohne gueltigen Termin: {id, typ, quelle, format, punkte, erstellt, inhalt?, bilder?}
+ * @param belegt  bereits feststehende Termine: {geplantAm, typ, format, inhalt?, bilder?}
  * @returns Map id -> Date
  */
 export function plane({ offen = [], belegt = [], jetzt = new Date(), raster = RASTER, lernstand = null } = {}) {
   const plan = new Map();
   const istStory = b => b.format === 'story';
+  // Alle Termine mit ihren Quellbildern - Feed und Storys zusammen, auch was dieser Lauf neu vergibt.
+  const bildTermine = belegt.filter(b => b.geplantAm).map(b => ({ zeit: new Date(b.geplantAm), inhalt: b.inhalt, bilder: b.bilder ?? [] }));
 
   // --- Beitraege (Feed, Karussell, Reel) --------------------------------
   const beitraege = offen.filter(b => !istStory(b)).map(b => ({ ...b, prio: dringlichkeit(b, jetzt, lernstand) })).sort((a, b) => b.prio - a.prio || a.id - b.id);
@@ -136,7 +152,7 @@ export function plane({ offen = [], belegt = [], jetzt = new Date(), raster = RA
     const danach = [...kalender].filter(k => k.zeit > slot.zeit).sort((a, b) => a.zeit - b.zeit)[0];
     const nachbarn = new Set([davor, danach].filter(Boolean).map(k => gruppeVon(k.typ)));
 
-    const erlaubt = b => !(b.typ === 'angebot' && (angeboteJeWoche[w] ?? 0) >= raster.maxAngeboteJeWoche);
+    const erlaubt = b => !(b.typ === 'angebot' && (angeboteJeWoche[w] ?? 0) >= raster.maxAngeboteJeWoche) && bildFrei(b, slot.zeit, bildTermine);
     const kandidaten = beitraege.filter(erlaubt);
     if (!kandidaten.length) continue;
     // Nicht zweimal hintereinander dasselbe Thema - ausser es gibt nichts anderes.
@@ -145,6 +161,7 @@ export function plane({ offen = [], belegt = [], jetzt = new Date(), raster = RA
     plan.set(wahl.id, slot.zeit);
     beitraege.splice(beitraege.indexOf(wahl), 1);
     kalender.push({ zeit: slot.zeit, typ: wahl.typ });
+    bildTermine.push({ zeit: slot.zeit, inhalt: wahl.inhalt, bilder: wahl.bilder ?? [] });
     tagBelegt.add(tag);
     jeWoche[w] = (jeWoche[w] ?? 0) + 1;
     if (wahl.typ === 'angebot') angeboteJeWoche[w] = (angeboteJeWoche[w] ?? 0) + 1;
@@ -156,7 +173,11 @@ export function plane({ offen = [], belegt = [], jetzt = new Date(), raster = RA
   for (const slot of termine(raster.story, jetzt, { tage: 14, vorlaufStunden: 1 })) {
     if (!storys.length) break;
     if (storyBelegt.has(slot.zeit.getTime())) continue;
-    plan.set(storys.shift().id, slot.zeit);
+    const wahl = storys.find(s => bildFrei(s, slot.zeit, bildTermine));
+    if (!wahl) continue;
+    storys.splice(storys.indexOf(wahl), 1);
+    plan.set(wahl.id, slot.zeit);
+    bildTermine.push({ zeit: slot.zeit, inhalt: wahl.inhalt, bilder: wahl.bilder ?? [] });
   }
   return plan;
 }
