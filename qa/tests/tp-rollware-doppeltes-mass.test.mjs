@@ -56,7 +56,7 @@ function aufbau(korb) {
   vm.runInContext("var doppeltFreigabe = '';", context);
   vm.runInContext(slice('  function fehlendesFeld() {', '\n  var target ='), context);
   vm.runInContext(slice("  cta.addEventListener('click', function () {", '\n\n  // Eine direkt geoeffnete Varianten-URL'), context);
-  return { adds, ctaHint, klick: async () => { listeners.click(); await tick(); } };
+  return { adds, cta, ctaHint, klick: async () => { listeners.click(); await tick(); } };
 }
 
 const gleicheZeile = { variant_id: 4711, quantity: 16, properties: { 'Art': 'Raummaß', 'Ihre Breite': '380 cm', 'Aus Rolle': '400 cm', 'Gewünschte Länge': '420 cm', 'Fläche (aufgerundet)': '16,00 m²' } };
@@ -67,6 +67,17 @@ test('leerer Warenkorb: der erste Klick legt das Stueck hinein', async () => {
   assert.equal(r.adds.length, 1);
   assert.equal(r.adds[0].quantity, 16);
   assert.equal(r.ctaHint.hidden, true);
+  // Rundgang R2 #76: gesperrt ohne echtes disabled, der Knopf behaelt den Fokus.
+  assert.equal(r.cta.tpGesperrt, true);
+  assert.equal(r.cta.disabled, false);
+});
+
+test('Mass liegt schon im Korb: nach dem Hinweis ist der Knopf frei und nie disabled', async () => {
+  const r = aufbau([gleicheZeile]);
+  await r.klick();
+  assert.equal(r.adds.length, 0);
+  assert.equal(r.cta.tpGesperrt, false);
+  assert.equal(r.cta.disabled, false);
 });
 
 test('gleiches Mass liegt schon im Korb: Hinweis statt Bestellung, zweiter Klick bestellt', async () => {

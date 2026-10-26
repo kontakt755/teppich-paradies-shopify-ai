@@ -1127,8 +1127,11 @@
     background: var(--tp-hauptaktion, #B0303F); color: #fff; font: inherit; font-size: var(--tp-fs-md); font-weight: 700; cursor: pointer;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta[hidden] { display: none; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: var(--tp-hauptaktion-hover, #962836); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled, .is-busy) { background: var(--tp-hauptaktion-hover, #962836); }
+  /* .is-busy: gesperrt waehrend des Warenkorb-Aufrufs, sieht aus wie :disabled,
+     behaelt aber den Tastaturfokus (Rundgang R2 #76, siehe Klick-Handler). */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-busy { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
 
   /* Unvollstaendig heisst gedaempft, nicht unsichtbar: der Button bleibt als
      Ziel erkennbar und sagt beim Klick, was fehlt. */
@@ -1307,6 +1310,9 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip:hover .tp-rwc-tip__text,
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip:focus-within .tp-rwc-tip__text { opacity: 1; visibility: visible; }
+  /* Esc blendet den Hinweis aus, bis der Fokus den Knopf verlaesst
+     (Rundgang R2 #76) - er liegt sonst ueber Breite, Laenge und Fussleiste. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip.is-zu .tp-rwc-tip__text { opacity: 0; visibility: hidden; }
 
   /* Eingeklappte Erklaertexte in der Kaufstrecke. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-info { margin: 4px 0 0; font-size: var(--tp-fs-xs); color: var(--tp-rwc-muted); }
@@ -2604,13 +2610,14 @@ function tpRwcInit{{ tp_rc_id }}() {
 
     // Der Button bleibt stehen. Bereit oder nicht steckt in aria-disabled und
     // der Klasse - so bleibt er fokussierbar und sein Klick meldet, was fehlt.
-    // Waehrend eines laufenden /cart/add.js setzt der Klick-Handler ein echtes
-    // disabled; das darf calculate() nicht ueberschreiben.
+    // Waehrend eines laufenden /cart/add.js sperrt der Klick-Handler den Knopf
+    // (cta.tpGesperrt, aria-disabled, .is-busy); das darf calculate() nicht
+    // ueberschreiben.
     // TP-003: eine angehakte, aber unvollstaendige Fussleiste darf den
     // Hauptkauf nicht kaufbereit erscheinen lassen - sonst faellt das
     // ausdruecklich gewaehlte Zubehoer beim Absenden kommentarlos weg.
     var ctaReady = !!(valid && ok) && !(extras && (extras.leisteInvalid || extras.holzInvalid));
-    if (!cta.disabled) {
+    if (!cta.tpGesperrt) {
       cta.setAttribute('aria-disabled', ctaReady ? 'false' : 'true');
       cta.classList.toggle('is-incomplete', !ctaReady);
     }
@@ -2714,6 +2721,24 @@ function tpRwcInit{{ tp_rc_id }}() {
     }
   });
 
+  // Rundgang R2 #76: Der Hinweis "Mehr dazu" erscheint bei Zeiger oder Fokus
+  // (CSS) und liegt dann ueber Breite, Laenge und Fussleiste. Esc blendet ihn
+  // aus (.is-zu), bis der Fokus den Knopf verlaesst oder der Zeiger neu
+  // darauf zeigt. Ohne Esc aendert sich nichts.
+  var tips = Array.prototype.slice.call(root.querySelectorAll('.tp-rwc-tip'));
+  tips.forEach(function (tip) {
+    tip.addEventListener('focusout', function (e) {
+      if (!(e.relatedTarget instanceof Node && tip.contains(e.relatedTarget))) tip.classList.remove('is-zu');
+    });
+    tip.addEventListener('mouseenter', function () { tip.classList.remove('is-zu'); });
+  });
+  if (tips.length) document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    tips.forEach(function (tip) {
+      if (tip.matches(':hover, :focus-within')) tip.classList.add('is-zu');
+    });
+  });
+
   // #3: Die Verlegeanfrage nimmt die schon eingegebenen Masse mit - die
   // Kontaktseite liest breite und laenge_cm (assets/tp-sample-request.js).
   var verlegungLink = root.querySelector('[data-rwc-verlegung]');
@@ -2728,8 +2753,22 @@ function tpRwcInit{{ tp_rc_id }}() {
   });
 
   cta.addEventListener('click', function () {
-    // Echtes disabled gibt es nur waehrend eines laufenden Warenkorb-Aufrufs.
-    if (inFlight || cta.disabled) return;
+    // Gesperrt ist der Knopf nur waehrend eines laufenden Warenkorb-Aufrufs
+    // und 3 s danach ("... m² hinzugefuegt").
+    if (inFlight || cta.tpGesperrt) return;
+
+    // Rundgang R2 #76: Sperre ohne echtes disabled. Ein disabled-Knopf
+    // verliert den Tastaturfokus; der Warenkorb-Dialog merkte sich dann
+    // <body> als Ruecksprungziel, und nach Esc stand der Fokus am
+    // Seitenanfang statt wieder auf "In den Warenkorb". aria-disabled sagt
+    // Vorleseprogrammen und der Kaufleiste (assets/sticky-add-to-cart.js)
+    // dasselbe wie disabled, .is-busy sieht aus wie :disabled.
+    // Freigeben setzt aria-disabled nicht zurueck - das macht calculate().
+    function sperren(an) {
+      cta.tpGesperrt = an;
+      cta.classList.toggle('is-busy', an);
+      if (an) cta.setAttribute('aria-disabled', 'true');
+    }
 
     // Jeder Abbruchgrund bekommt eine sichtbare Antwort. Vorher kehrten alle
     // vier Pruefungen stumm zurueck - ein Klick tat dann schlicht nichts.
@@ -2856,11 +2895,11 @@ function tpRwcInit{{ tp_rc_id }}() {
     var massSig = massSignatur(target.id, properties);
     if (doppeltFreigabe !== massSig) {
       inFlight = true;
-      cta.disabled = true;
+      sperren(true);
       cta.textContent = 'Wird hinzugefügt …';
       liegtSchonImKorb(massSig).then(function (schon) {
         inFlight = false;
-        cta.disabled = false;
+        sperren(false);
         if (!schon) { senden(); return; }
         calculate();
         doppeltFreigabe = massSig;
@@ -2881,7 +2920,7 @@ function tpRwcInit{{ tp_rc_id }}() {
 
     function senden() {
     inFlight = true;
-    cta.disabled = true;
+    sperren(true);
     cta.textContent = 'Wird hinzugefügt …';
     cartLink.hidden = true;
 
@@ -2923,14 +2962,31 @@ function tpRwcInit{{ tp_rc_id }}() {
         }));
 
         var tpRwcDrawer = document.querySelector('cart-drawer-component');
-        if (tpRwcDrawer && typeof tpRwcDrawer.open === 'function') tpRwcDrawer.open();
+        if (tpRwcDrawer && typeof tpRwcDrawer.open === 'function') {
+          // Rundgang R2 #76: Kam der Kauf ueber die klebende Kaufleiste, ist
+          // deren Knopf waehrend der Sperre disabled. Der Dialog kennt dann
+          // kein Ruecksprungziel, und der Fokus fiele beim Schliessen auf
+          // <body> (direkt nach dem Schliessen steht er noch im geschlossenen
+          // Dialog). Dann zurueck auf den Kaufknopf im Rechner. Gerollt wird
+          // nur bei Tastaturbedienung (:focus-visible) - mit der Maus aendert
+          // sich nichts.
+          tpRwcDrawer.addEventListener('dialog:close', function () {
+            var aktiv = document.activeElement;
+            if (aktiv && aktiv !== document.body && !tpRwcDrawer.contains(aktiv)) return;
+            cta.focus({ preventScroll: true });
+            try {
+              if (cta.matches(':focus-visible')) cta.scrollIntoView({ block: 'center' });
+            } catch (e) { /* Browser ohne :focus-visible: Fokus steht trotzdem */ }
+          }, { once: true });
+          tpRwcDrawer.open();
+        }
 
         // Neu rechnen statt alten Text zuruecksetzen: hat der Kunde inzwischen
         // die Laenge geaendert, stuende sonst 3 s lang die alte Flaeche im Button.
         setTimeout(function () {
           cta.classList.remove('is-done');
-          cta.disabled = false;
-          // Nach dem echten disabled den Zustand neu bestimmen, sonst bliebe
+          sperren(false);
+          // Nach der Sperre den Zustand neu bestimmen, sonst bliebe
           // aria-disabled auf dem Stand von vor dem Warenkorb-Aufruf stehen.
           calculate();
         }, 3000);
@@ -2941,7 +2997,7 @@ function tpRwcInit{{ tp_rc_id }}() {
         cta.classList.add('is-error');
         setTimeout(function () {
           cta.classList.remove('is-error');
-          cta.disabled = false;
+          sperren(false);
           calculate();
         }, 3000);
       });

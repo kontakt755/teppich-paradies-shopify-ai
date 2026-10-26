@@ -36,12 +36,16 @@ class HeaderMenu extends Component {
     // danach nur einen hasAttribute-Aufruf.
     this.addEventListener('pointerover', this.#revealImages, { capture: true });
     this.addEventListener('focus', this.#revealImages, { capture: true });
+    this.addEventListener('keydown', this.#onKeydown);
+    this.addEventListener('focusout', this.#onFocusout);
     window.addEventListener('resize', this.#resizeListener);
     this.overflowMenu?.addEventListener('pointerleave', this.#overflowSubmenuListener);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this.removeEventListener('keydown', this.#onKeydown);
+    this.removeEventListener('focusout', this.#onFocusout);
     window.removeEventListener('resize', this.#resizeListener);
     document.body.removeEventListener('pointermove', this.#onPointerMove);
     if (this.#state.activeItem) {
@@ -60,6 +64,39 @@ class HeaderMenu extends Component {
 
   #overflowSubmenuListener = () => {
     this.#deactivate();
+  };
+
+  /**
+   * TP (Rundgang R2 #77): Esc schliesst das offene Untermenue und setzt den
+   * Fokus auf den Hauptpunkt. Horizon oeffnet das Untermenue beim Fokus
+   * (on:focus="/activate"); ohne Sperre oeffnete der zurueckgesetzte Fokus
+   * es sofort wieder. Die Sperre gilt nur fuer Fokus-Ereignisse dieses
+   * Hauptpunkts und endet, sobald der Fokus ihn verlaesst - der naechste
+   * Tab geht dann zum naechsten Hauptpunkt, weil das geschlossene
+   * Untermenue unsichtbar und damit nicht fokussierbar ist. Maus und
+   * Zeiger bleiben unberuehrt.
+   * @type {HTMLElement | null}
+   */
+  #escClosedItem = null;
+
+  /**
+   * @param {KeyboardEvent} event
+   */
+  #onKeydown = (event) => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    const item = this.#state.activeItem;
+    if (!item) return;
+    event.preventDefault();
+    this.#escClosedItem = item;
+    this.#deactivate(item);
+    if (document.activeElement !== item) item.focus();
+  };
+
+  /**
+   * @param {FocusEvent} event
+   */
+  #onFocusout = (event) => {
+    if (this.#escClosedItem && event.target === this.#escClosedItem) this.#escClosedItem = null;
   };
 
   /**
@@ -183,6 +220,9 @@ class HeaderMenu extends Component {
     let item = findMenuItem(event.target);
 
     if (!item || item == this.#state.activeItem) return;
+
+    // Nach Esc oeffnet der Fokus auf demselben Hauptpunkt nicht erneut.
+    if (event.type === 'focus' && item === this.#escClosedItem) return;
 
     const isDefaultSlot = event.target.slot === '';
 

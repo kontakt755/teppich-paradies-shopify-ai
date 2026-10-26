@@ -1173,6 +1173,60 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   }
 }
 
+/* Cookie-Banner und Einstellungsdialog per Tastatur (Rundgang R2 #83, 2026-10-26).
+   ------------------------------------------------------------------
+   Shopify zeichnet den Fokus als hellblauen Ring rgb(158, 218, 250) auf Weiss,
+   rund 1,5:1 - unter den noetigen 3:1. Hier ein 2 px dunkler Rahmen wie im
+   restlichen Shop (snippets/tp-gestaltung.liquid). Nur :focus-visible: Shopify
+   setzt seinen Ring auf :focus, der bleibt bei Mausklick unveraendert.
+   Die id-Selektoren schlagen Shopifys Klassenregeln
+   (.shopify-pc__banner__dialog button:focus = 0,2,1), ohne !important. */
+#shopify-pc__banner :is(button, a):focus-visible,
+#shopify-pc__prefs__dialog button:focus-visible {
+  outline: 2px solid #1d1a17;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+/* "Einstellungen verwalten": Shopify legt den Ring auf das innere span. */
+#shopify-pc__banner .shopify-pc__banner__btn-manage-prefs:focus-visible span {
+  outline: none;
+}
+/* Kaestchen im Dialog: das echte input ist unsichtbar, gezeigt wird das svg. */
+#shopify-pc__prefs__dialog .shopify-pc__prefs__option input:focus-visible ~ span {
+  background-color: #fff;
+}
+#shopify-pc__prefs__dialog .shopify-pc__prefs__option input:focus-visible ~ span svg {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1d1a17;
+}
+
+/* Tippflaechen im Dialog: "Alle akzeptieren", "Alle ablehnen" und "Meine
+   Auswahl speichern" waren 41 px hoch, das Schliessen-Kreuz 24 x 24 px.
+   Das Kreuz waechst um 10 px je Seite; der negative Rand haelt das Symbol
+   an seinem Platz (Shopify setzt top/right je Breite in eigenen Media Queries). */
+#shopify-pc__prefs__dialog .shopify-pc__prefs__header-actions button {
+  min-height: 44px;
+}
+#shopify-pc__prefs__dialog .shopify-pc__prefs__header-close {
+  width: 44px;
+  height: 44px;
+  margin: -10px -10px 0 0;
+  align-items: center;
+}
+
+/* hCaptcha-Hinweis (Shopify, am Seitenende mit Formular): liegt bis auf das
+   Logo ausserhalb des Bildes und faehrt nur bei Zeigerkontakt herein. Per Tab
+   landeten die Links "Datenschutz" und "Allgemeine Geschaeftsbedingungen"
+   unsichtbar bei x = 1452 bzw. 1523 (1440 px breit). Bei Fokus faehrt er
+   jetzt genauso herein; die Links bekommen einen sichtbaren Rahmen (der
+   Baustein setzt alles mit all: unset zurueck, auch den Fokus). */
+#shop-hcaptcha-badge-container:focus-within {
+  transform: translateX(calc(-100% + 56px));
+}
+#shop-hcaptcha-badge-container a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 /* Vorab-Hauptebene, bis die Hydration den vollen Drawer einsetzt (snippets/header-drawer.liquid) */
 .tp-dn--vorab .tp-dn-vorab__link {
   display: block;
