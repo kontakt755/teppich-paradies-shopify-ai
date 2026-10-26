@@ -14,7 +14,8 @@ import { $, esc, fmtDate, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
-import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
+import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
 import { musterKurz, fuelleText, mailtoLink, NICHT_VERFUEGBAR_VORLAGE } from '../../lib/muster-nachfassen.mjs';
@@ -43,7 +44,9 @@ const GESETZT_TEXT = {
 };
 
 const tagMonat = iso => iso ? new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '';
-const gesetzt = v => v !== null && v !== undefined && v !== '' && v !== '–' && v !== 'UNGEKLAERT';
+// "Default Title" ist Shopifys Variantenname fuer Artikel ohne Varianten - nie ein Wert fuer den Laden.
+const gesetzt = v => v !== null && v !== undefined && v !== '' && v !== '–' && v !== 'UNGEKLAERT' && v !== 'Default Title';
+const lieferantText = id => lieferantAnzeige(id, einkauf.lieferanten?.lieferanten || []);
 
 function verlaufZeile(s, naechster) {
   const teile = [];
@@ -88,9 +91,18 @@ function naechsterKarte(a, kunde, lesend) {
   const anruf = n.aktion === 'nachgefasst' && n.stufe === 'faellig' && tel ? `<a class="btn" href="tel:${esc(tel)}">Kunden anrufen</a>` : '';
   // Muster noch beim Lieferanten zu bestellen? Oft liegen sie hier - dann gar nicht bestellen.
   const haben = a.auftragsart === 'muster' && n.aktion === 'bestellt' ? `<button type="button" class="btn" data-muster-herkunft="${esc(a.id)}" title="Muster/Katalog selbst vorrätig: verschicken oder vorbeibringen">Haben wir da…</button>` : '';
+  // Ware bestellen (Rundgang 26.10.): zuerst der Bestellweg - je Lieferant die fertige Bestellmail
+  // aus "Bestellen" (derselbe Dialog wie dort, auf diesen Auftrag gefiltert, mit "Als bestellt
+  // markieren" je Lieferant). "Ware ist bestellt" steht danach und fragt zurueck; vorher setzte ein
+  // Klick ohne Rueckfrage alle Artikel aller Lieferanten auf bestellt.
+  const bestellweg = a.auftragsart === 'ware' && n.aktion === 'bestellt' ? bestellLieferanten(a) : null;
+  const hauptknopf = bestellweg
+    ? `${bestellweg.map((id, i) => `<button type="button" class="btn${i === 0 ? ' btn-primary' : ''}" data-lf-mail="${esc(id)}" data-lf-art="ware" data-lf-auftrag="${esc(a.id)}">Bestellmail öffnen (${esc(lieferantText(id))})</button>`).join('')}
+      <button type="button" class="btn${bestellweg.length ? '' : ' btn-primary'}" data-zl-bestellt="${esc(a.id)}">${esc(n.knopf)}…</button>`
+    : `<button type="button" class="btn ${n.stufe === 'warten' ? '' : 'btn-primary'}" data-zl-schritt="${esc(n.aktion)}" data-zl-order="${esc(a.id)}">${esc(n.knopf)}</button>`;
   const knoepfe = lesend ? '' : `
     ${n.href === '#/heute?mn=1' ? `<div class="zl-knoepfe no-print"><a class="btn" href="${esc(n.href)}">${esc(n.knopf || 'Nachfragen prüfen')}</a></div>` : n.aktion ? `<div class="zl-knoepfe no-print">
-      <button type="button" class="btn ${n.stufe === 'warten' ? '' : 'btn-primary'}" data-zl-schritt="${esc(n.aktion)}" data-zl-order="${esc(a.id)}">${esc(n.knopf)}</button>${anruf}${haben}
+      ${hauptknopf}${anruf}${haben}
     </div>` : ''}
     <button type="button" class="zl-anders no-print" data-zl-anders="${esc(a.id)}">Etwas anderes ist passiert …</button>`;
   return `<div class="zl-next ${esc(n.stufe)}">
@@ -102,13 +114,24 @@ function naechsterKarte(a, kunde, lesend) {
   </div>`;
 }
 
+/**
+ * Lieferanten, bei denen fuer diesen Auftrag noch Ware zu bestellen ist (ohne Muster, Eigenleistung
+ * und ungeklaerte Zuordnung). Ist der Positionsstand geladen, fallen schon bestellte Artikel weg.
+ */
+function bestellLieferanten(a) {
+  const stand = einkauf.auftragsstatus?.positionen || null;
+  const offen = (a.positionen || []).filter(p => p.lineItemId && !p.istMuster && !p.eigenleistung && gesetzt(p.lieferant)
+    && !(stand && stand[`${a.id}::${p.lineItemId}`]?.status));
+  return [...new Set(offen.map(p => p.lieferant))];
+}
+
 function worumKarte(a) {
   const zeilen = (a.positionen || []).map(p => {
     const artikel = p.handle && !p.istMuster ? `<a href="#/lexikon?${new URLSearchParams({ handle: p.handle })}">${esc(p.titel)}</a>` : esc(p.titel);
     const menge = p.kundenmenge || p.menge;
     return `<dl>
       <dt>Artikel</dt><dd>${artikel}${gesetzt(p.farbe) ? ` · ${esc(p.farbe)}` : ''}${gesetzt(menge) ? ` <span class="small muted">(${esc(menge)})</span>` : ''}</dd>
-      ${p.eigenleistung ? '<dt>Einkauf</dt><dd>Eigenleistung – nichts beim Lieferanten</dd>' : `<dt>Lieferant</dt><dd>${gesetzt(p.lieferant) ? `Lieferant ${esc(p.lieferant)}` : '<span class="zl-fehlt">nicht zugeordnet</span>'}</dd>
+      ${p.eigenleistung ? '<dt>Einkauf</dt><dd>Eigenleistung – nichts beim Lieferanten</dd>' : `<dt>Lieferant</dt><dd>${gesetzt(p.lieferant) ? esc(lieferantText(p.lieferant)) : '<span class="zl-fehlt">nicht zugeordnet</span>'}</dd>
       <dt>Art.-Nr.</dt><dd>${gesetzt(p.grosshaendlerId) ? esc(p.grosshaendlerId) : '<span class="zl-fehlt">fehlt</span>'}</dd>`}
     </dl>`;
   });
@@ -140,6 +163,8 @@ function kontaktKarte(kunde) {
  */
 export function zeitleisteBlock(a, { kontakt = false } = {}) {
   if (!a?.verlauf?.length) return '';
+  // Lieferantennamen aus den Stammdaten (sonst stuende "Lieferant A" statt des Namens).
+  if ((a.positionen || []).some(p => gesetzt(p.lieferant))) ensureEinkaufLieferanten();
   const kunde = a.details?.kunde || null;
   const lesend = istNurLesend();
   const notizen = a.verlaufNotizen || [];
@@ -342,6 +367,33 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
   });
 }
 
+/**
+ * "Ware ist bestellt…": Rueckfrage, bevor alle Artikel des Auftrags auf bestellt gehen. Bei
+ * mehreren Lieferanten steht dabei, wie man nur einen Lieferanten abhakt (Bestellmail-Dialog).
+ */
+function oeffneBestelltDialog(orderId) {
+  const a = findeAuftrag(orderId);
+  if (!a) return;
+  const lieferanten = bestellLieferanten(a);
+  const namen = lieferanten.map(id => `<b>${esc(lieferantText(id))}</b>`);
+  const frage = namen.length > 1 ? `Hast du die Bestellung bei ${namen.slice(0, -1).join(', ')} und ${namen.at(-1)} abgeschickt?`
+    : namen.length ? `Hast du die Bestellung bei ${namen[0]} abgeschickt?` : 'Ist die Ware beim Lieferanten bestellt?';
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="zlBestelltTitel" data-dialog>
+    <h2 id="zlBestelltTitel">Ware ist bestellt · ${esc(a.name)}</h2>
+    <p>${frage} Dann trägt das alle noch offenen Artikel dieser Bestellung als bestellt ein.</p>
+    ${lieferanten.length > 1 ? '<p class="small muted">Erst bei einem Lieferanten bestellt? Dann dort „Bestellmail öffnen“ und in der Mail „Als bestellt markieren“ – das trägt nur dessen Artikel ein.</p>' : ''}
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Ja, ist bestellt</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('[type=submit]')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const knopf = form.querySelector('[type=submit]');
+    knopf.disabled = true;
+    if (await setzeSchritt(orderId, 'bestellt')) $('#dialogRoot').innerHTML = ''; else knopf.disabled = false;
+  });
+}
+
 /** Klicks der Zeitleiste. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function zeitleisteKlick(e) {
   const kettler=e.target.closest('[data-kettelversand]');
@@ -355,6 +407,8 @@ export function zeitleisteKlick(e) {
     setzeSchritt(haupt.dataset.zlOrder, haupt.dataset.zlSchritt).then(ok => { if (!ok) haupt.disabled = false; });
     return true;
   }
+  const bestellt = e.target.closest('[data-zl-bestellt]');
+  if (bestellt) { e.preventDefault(); if (!istNurLesend()) oeffneBestelltDialog(bestellt.dataset.zlBestellt); return true; }
   const anders = e.target.closest('[data-zl-anders]');
   if (anders) { e.preventDefault(); oeffneDialog(anders.dataset.zlAnders); return true; }
   return false;

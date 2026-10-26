@@ -22,6 +22,7 @@ import path from 'node:path';
 import {
   leseBenutzer, benutzerDateiExistiert, authentifiziere, benutzerDateiPfad, findeAktivenBenutzer,
 } from '../operations/lib/benutzer.mjs';
+import { passwortAbdruck } from '../operations/lib/anmeldeschutz.mjs';
 
 export const SESSION_COOKIE = 'tp_dashboard_sid';
 export const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 Stunden (ohne "angemeldet bleiben")
@@ -89,7 +90,11 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
   const required = Boolean(password) || hatBenutzerdatei();
   // Schluessel ist der SHA-256 des Sitzungscookies, nie der Cookie selbst -
   // wer die Datei liest, kann sich damit nicht anmelden.
-  const sessions = new Map(); // sidHash -> { expiresAt, benutzer }
+  const sessions = new Map(); // sidHash -> { expiresAt, benutzer, pw? }
+  // Notzugang-Sitzungen tragen den Abdruck des Passworts, mit dem sie entstanden (pw).
+  // Ein neues Passwort macht sie damit wertlos (Rundgang 26.10., Massnahme 58).
+  let abdruckWert;
+  const abdruck = () => (abdruckWert === undefined ? (abdruckWert = passwortAbdruck(password)) : abdruckWert);
   ladeSitzungen();
   const attempts = new Map(); // schluessel (ip::name) -> { count, firstFailAt, lockedUntil }
 
@@ -99,9 +104,16 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     try {
       const roh = JSON.parse(fs.readFileSync(sessionFilePath(), 'utf8'));
       const now = Date.now();
+      let uebernommen = false;
       for (const [hash, eintrag] of Object.entries(roh?.sitzungen ?? {})) {
-        if (eintrag?.expiresAt > now) sessions.set(hash, eintrag);
+        if (!(eintrag?.expiresAt > now)) continue;
+        // Notzugang-Sitzungen von vor dem Abdruck: sie uebernehmen beim ersten Start das jetzt
+        // gueltige Passwort - niemand wird durch das Update abgemeldet, ein spaeterer
+        // Passwortwechsel trifft sie aber wie jede andere.
+        if (!eintrag.benutzer?.kuerzel && !eintrag.pw && abdruck()) { eintrag.pw = abdruck(); uebernommen = true; }
+        sessions.set(hash, eintrag);
       }
+      if (uebernommen) speichereSitzungen();
     } catch { /* keine Datei, unlesbar oder kaputt - dann eben neu anmelden */ }
   }
 
@@ -153,7 +165,8 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
   function createSession(benutzer, { lang = false } = {}) {
     purgeExpiredSessions();
     const sid = crypto.randomBytes(32).toString('hex');
-    sessions.set(sidHash(sid), { expiresAt: Date.now() + (lang ? SESSION_TTL_LANG_MS : SESSION_TTL_MS), benutzer });
+    const notzugang = !benutzer?.kuerzel;
+    sessions.set(sidHash(sid), { expiresAt: Date.now() + (lang ? SESSION_TTL_LANG_MS : SESSION_TTL_MS), benutzer, ...(notzugang ? { pw: abdruck() } : {}) });
     speichereSitzungen();
     return sid;
   }
@@ -166,7 +179,8 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
    * nichts geschehen. Jetzt entscheidet die Datei, nicht die Erinnerung.
    *
    * Rueckgabe: { gueltig, benutzer }. Der Notzugang (Einzelpasswort, kein
-   * Benutzereintrag) hat kein Kuerzel und bleibt unveraendert gueltig.
+   * Benutzereintrag) hat kein Kuerzel; er gilt, solange das Passwort dasselbe ist
+   * wie bei der Anmeldung (Abdruck pw).
    */
   function loeseSitzungAuf(sid) {
     if (!sid) return { gueltig: false, benutzer: null };
@@ -175,7 +189,12 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     if (!eintrag) return { gueltig: false, benutzer: null };
 
     const kuerzel = eintrag.benutzer?.kuerzel || null;
-    if (!kuerzel) return { gueltig: true, benutzer: eintrag.benutzer || null };   // Notzugang
+    if (!kuerzel) {                                                               // Notzugang
+      if (abdruck() && eintrag.pw === abdruck()) return { gueltig: true, benutzer: eintrag.benutzer || null };
+      // Passwort geaendert oder entfernt: die Sitzung ist wertlos und verschwindet.
+      if (sessions.delete(sidHash(sid))) speichereSitzungen();
+      return { gueltig: false, benutzer: null };
+    }
 
     let liste;
     try {
@@ -226,6 +245,26 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     return weg;
   }
 
+  /**
+   * "Alle anderen Geraete abmelden" (Zugaenge): jede Sitzung ausser der eigenen endet -
+   * auch Notzugang-Sitzungen, die sitzungenVerwerfen() mangels Kuerzel nie erreicht.
+   */
+  function andereSitzungenBeenden(eigeneSid) {
+    const behalten = eigeneSid ? sidHash(eigeneSid) : null;
+    let weg = 0;
+    for (const hash of [...sessions.keys()]) {
+      if (hash !== behalten) { sessions.delete(hash); weg += 1; }
+    }
+    if (weg) speichereSitzungen();
+    return weg;
+  }
+
+  /** Wie viele Geraete gerade angemeldet sind - ohne abgelaufene und ohne Notzugang mit altem Passwort. */
+  function sitzungenAnzahl() {
+    purgeExpiredSessions();
+    return [...sessions.values()].filter(e => e.benutzer?.kuerzel || (abdruck() && e.pw === abdruck())).length;
+  }
+
   function rateState(key) {
     let s = attempts.get(key);
     if (!s) { s = { count: 0, firstFailAt: 0, lockedUntil: 0 }; attempts.set(key, s); }
@@ -260,6 +299,8 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     sessionBenutzer,
     destroySession,
     sitzungenVerwerfen,
+    andereSitzungenBeenden,
+    sitzungenAnzahl,
     isLocked,
     registerFailure,
     registerSuccess,

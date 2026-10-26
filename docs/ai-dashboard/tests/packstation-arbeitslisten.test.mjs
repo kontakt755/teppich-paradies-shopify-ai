@@ -201,3 +201,15 @@ test('Suche zeigt passende Musterbestellungen ausserhalb der Packliste mit Grund
   assert.doesNotMatch(html.slice(html.indexOf('Außerhalb der Packliste')), /data-mp-(haken|drucken|aktion|alle)/);
   assert.match(ansicht('tab=muster&mpq=gibtsnicht', [kunde(1, 'packen')], aussen), /Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen/);
 });
+
+test('Als fehlend gemeldet, laut Bestand aber da: "nicht eingelegt · im Regal suchen" statt "fehlt · angekommen" (Rundgang 26.10.)', () => {
+  const k = kunde(11, 'klaeren');
+  k.klaeren = { fehlt: ['line11', 'line11b'], zeit: '2026-10-26T08:00:00Z' };
+  k.muster = [{ ...k.muster[0], stand: 'da' }, { ...k.muster[0], lineItemId: 'line11b', stand: 'bestellt' }];
+  const html = ansicht('tab=muster&umschlag=order11', [k]);
+  assert.match(html, /<strong class="mp-fehlt">nicht eingelegt<\/strong> · <span class="muted">laut Bestand da – im Regal suchen<\/span>/);
+  assert.match(html, /<strong class="mp-fehlt">fehlt<\/strong> · <span class="muted">beim Lieferanten bestellt<\/span>/);
+  assert.doesNotMatch(html, /fehlt<\/strong> · <span class="muted">angekommen/);
+  // Ohne Fehlmeldung bleibt es beim gewohnten Stand.
+  assert.match(ansicht('tab=muster&umschlag=order12', [{ ...kunde(12, 'packen'), muster: [{ ...kunde(12, 'packen').muster[0], stand: 'da' }] }]), /<span class="muted">angekommen<\/span>/);
+});

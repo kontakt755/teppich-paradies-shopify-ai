@@ -32,7 +32,8 @@ import { istNurLesend } from '../kern/sitzung.mjs';
 import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
-import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, anzeigeWert, kundeUndOrt } from './einkauf/auftragsfluss.mjs';
+import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, kundeUndOrt } from './einkauf/auftragsfluss.mjs';
+import { lieferantName as lieferantAnzeige } from '../lib/einkauf-lieferanten.mjs';
 import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
@@ -56,6 +57,7 @@ import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
 import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock } from './heute/aufraeumen.mjs';
+import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
 
 const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
 const SPALTE_SICHTBAR = 8;
@@ -103,9 +105,7 @@ function kundentermine() {
 
 /** Anzeigename je Lieferant aus den Stammdaten; ohne Stammdaten der neutrale Ersatz. */
 function lieferantName(id) {
-  const treffer = (heuteDaten.lieferanten?.lieferanten || []).find(l => l.id === id);
-  if (treffer?.name) return treffer.name;
-  return !id || id === 'UNGEKLAERT' ? 'Lieferant nicht zugeordnet' : anzeigeWert(id);
+  return lieferantAnzeige(id, heuteDaten.lieferanten?.lieferanten || []);
 }
 
 /** Link auf Heute mit geaendertem Parameter - die gewaehlte Sicht bleibt erhalten. */
@@ -168,7 +168,7 @@ export function viewHeute() {
 
 function viewShop() {
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufBestellungen();
-  ensureHeuteLieferanten(); ensureMusterPacken(); ensureAktualisierung();
+  ensureHeuteLieferanten(); ensureMusterPacken(); ensureAktualisierung(); ensureServiceanfragen();
   const nf = nachfassStand('laden');
   // Versandfehler und vorhandene Nachfragen sind Kerngeschaeft, auch ohne allgemeine Aufgaben.
   ensureHeuteMusterTexte();
@@ -179,6 +179,7 @@ function viewShop() {
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
     </header>
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
+    ${inhaberUeberblick()}
     ${musterAutomatikBlock(kunden.bestellungen)}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
     ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
@@ -189,7 +190,7 @@ function viewShop() {
       <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
     </section>
     <div class="heute-hintergrund">${datenstandZeile('shop')}</div>
-    <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik</summary>
+    <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik${nebenbereichZusatz(kunden.serviceanfragen)}</summary>
       <nav class="chips" aria-label="Weitere Bereiche">
         <a class="chip" href="#/heute?sicht=laden">Laden &amp; Anfragen</a>
         <a class="chip" href="#/organisation">Aufgaben</a>
@@ -198,6 +199,18 @@ function viewShop() {
       </nav>
     </details>
   </div>`;
+}
+
+/** Inhaber: Shop, Umsatz, Entscheidungen und Frist in einer Zeile; Kennzahlen klappen darunter auf. */
+function inhaberUeberblick() {
+  if (!istInhaber()) return '';
+  ensureEinkaufKennzahlen();
+  if (darfAnsicht('shopwache')) ensureShopwache();
+  const kzOffen = Boolean(state.route.params.get('kz'));
+  return inhaberZeile({
+    shop: darfAnsicht('shopwache') ? shopwache.daten : undefined, kennzahlen: einkauf.kennzahlen,
+    tasks: state.tasks, aufgabenGeladen: Boolean(state.raw), kzOffen,
+  }) + (kzOffen ? kennzahlenBlock() : '');
 }
 
 function viewAlltag() {
@@ -378,7 +391,9 @@ function hintergrund(nf, wartet, sicht) {
 function datenstandZeile(sicht) {
   const a = einkauf.aktualisierung;
   if (!a) return '';
-  const health = aktualisierungHealth();
+  // Rueckmeldungen aus „Ideen & Fragen“ zaehlen hier nicht: kein Shop-Datenstand, und belegt
+  // waren sie nie - die Zeile stand dauerhaft auf „1 Stand noch nicht belegt“. Sie stehen unter Kennzahlen.
+  const health = aktualisierungHealth().filter(h => h.quelle !== 'werkbank');
   const probleme = health.filter(h => h.level === 'warn' || h.level === 'crit');
   const unbelegt = health.filter(h => h.level === 'info');
   const auffaellig = [...probleme, ...unbelegt];

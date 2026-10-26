@@ -33,10 +33,11 @@ import { leseVersandtarife } from '../operations/lib/versandtarife.mjs';
 import { createLadenZahlen } from './laden-zahlen.mjs';
 import {
   createAuth, loadConfiguredPassword, parseCookies, sessionCookieHeader,
-  clearedCookieHeader, renderLoginPage, sleep, SESSION_COOKIE,
+  clearedCookieHeader, renderLoginPage, sleep, SESSION_COOKIE, privatDir,
 } from './dashboard-auth.mjs';
 import { leseBenutzer, benutzerDateiExistiert, benutzerDateiPfad } from '../operations/lib/benutzer.mjs';
-import { protokollPfad, letzteEintraege } from '../operations/lib/protokoll.mjs';
+import { protokollPfad, letzteEintraege, protokolliere } from '../operations/lib/protokoll.mjs';
+import { anmeldeGeraet, setzeAbmeldeStand } from '../operations/lib/anmeldeschutz.mjs';
 import { logFehler, pfadOhneAbfrage } from './dashboard-log.mjs';
 import { beimEndeLoeschen } from './dashboard-datenkopie.mjs';
 import { dienstversion } from './dashboard-version.mjs';
@@ -305,6 +306,8 @@ const NUR_INHABER = new Set([
   'benutzer',
   'team/liste',
   'team/aendern',
+  // Meldet alle anderen Geraete ab - auch die Ladenrechner (Rundgang 26.10.).
+  'sitzungen/abmelden',
   // Ein neuer Upload-Link oeffnet einen Weg von aussen ins Haus.
   'social/link-neu',
   'social/sperren',
@@ -336,7 +339,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|version|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/kettelversand|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-packen|kunden\/musterwirkung|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/bestellung-abhaken|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|sonderposten\/bestand|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|version|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/kettelversand|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-packen|kunden\/musterwirkung|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/bestellung-abhaken|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|sitzungen\/abmelden|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|sonderposten\/bestand|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -346,7 +349,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = (simple === 'kunden/musteretiketten' && req.method === 'POST') || (simple === 'kunden/muster-packen' && req.method === 'POST') || (simple === 'lexikon/druckliste' && req.method === 'POST') || (simple === 'prozesse/links' && req.method === 'POST') || simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'einkauf/belege' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/bestellung-abhaken' || simple === 'kunden/nachfassen-abmelden' || simple === 'kunden/nachfassen-senden' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'sonderposten/bestand', 'akquise/aendern', 'akquise/referenz', 'einkauf/kundentermin', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = (simple === 'kunden/musteretiketten' && req.method === 'POST') || (simple === 'kunden/muster-packen' && req.method === 'POST') || (simple === 'lexikon/druckliste' && req.method === 'POST') || (simple === 'prozesse/links' && req.method === 'POST') || simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'einkauf/belege' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/bestellung-abhaken' || simple === 'kunden/nachfassen-abmelden' || simple === 'kunden/nachfassen-senden' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'sonderposten/bestand', 'akquise/aendern', 'akquise/referenz', 'einkauf/kundentermin', 'fehler/melden', 'sitzungen/abmelden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     // Lesen darf jeder. Einrichtungsziele aendern ausschliesslich der Inhaber
     // oder der bestehende Einzelpasswort-Zugang; kein neues Benutzerkonto noetig.
@@ -453,8 +456,9 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'social/zugaenge') result = api.socialZugaenge();
     else if (simple === 'social/sperren') result = api.socialSperren(await readJson(req), { benutzer });
     else if (simple === 'social/link-neu') result = api.socialLinkNeu(await readJson(req), { benutzer });
-    else if (simple === 'team/liste') result = api.teamListe();
-    else if (simple === 'team/aendern') result = api.teamAendern(await readJson(req), { benutzer });
+    else if (simple === 'team/liste') result = { ...api.teamListe(), angemeldeteGeraete: auth.required ? auth.sitzungenAnzahl() : null };
+    else if (simple === 'sitzungen/abmelden') result = andereGeraeteAbmelden(req, benutzer);
+    else if (simple === 'team/aendern') result = { ...api.teamAendern(await readJson(req), { benutzer }), angemeldeteGeraete: auth.required ? auth.sitzungenAnzahl() : null };
     else if (simple === 'mein-passwort') result = api.eigenesPasswort(await readJson(req), { benutzer });
     else if (simple === 'org/analyse') result = api.orgAnalyse({ text: (await readJson(req))?.text || '', benutzer });
     else if (simple === 'org/neu') result = api.orgNeu(await readJson(req), { benutzer });
@@ -549,8 +553,22 @@ export async function handleStatic(req, res, pathname) {
   }
 }
 
-function clientIp(req) {
-  return req.socket?.remoteAddress || 'unbekannt';
+/**
+ * "Alle anderen Geraete abmelden" (Zugaenge, nur Inhaber): im Control Center endet jede
+ * Sitzung ausser der eigenen; die Social-Zentrale (eigener Prozess) beachtet den
+ * Zeitstempel im privaten Ordner und meldet alles ab, was davor angemeldet war.
+ */
+function andereGeraeteAbmelden(req, benutzer) {
+  const abgemeldet = auth.andereSitzungenBeenden(parseCookies(req)[SESSION_COOKIE]);
+  let social = true;
+  try { setzeAbmeldeStand(privatDir()); } catch (e) {
+    social = false;
+    logFehler('anmeldung', `Social-Zentrale nicht abgemeldet: ${String(e?.message || e).split('\n')[0]}`);
+  }
+  try {
+    protokolliere(protokollPfad(), { benutzer: benutzer?.name || 'Inhaber', aktion: 'Alle anderen Geräte abgemeldet', objekt: `${abgemeldet} Sitzungen`, jetzt: new Date() });
+  } catch { /* Protokoll darf das Abmelden nicht verhindern */ }
+  return { ok: true, abgemeldet, social, angemeldeteGeraete: auth.sitzungenAnzahl() };
 }
 
 function isAuthed(req) {
@@ -569,7 +587,10 @@ function sessionBenutzer(req) {
 async function handleLogin(req, res) {
   if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
   if (!sameOrigin(req)) { send(res, 403, { error: herkunftFehler(req) }); return; }
-  const ip = clientIp(req);
+  // Sperrschluessel je Geraet: hinter `tailscale serve` kaemen sonst alle als 127.0.0.1
+  // an, und fuenf Tippfehler eines Mitarbeiters sperrten jedes Geraet (Massnahme 58).
+  const geraet = anmeldeGeraet(req);
+  const ip = geraet.schluessel;
   let body;
   try { body = await readJson(req); } catch (e) {
     if (e instanceof ApiError) { send(res, e.status, { error: e.message }); return; }
@@ -582,7 +603,7 @@ async function handleLogin(req, res) {
   const rateKey = `${ip}::${name.toLowerCase() || 'unbekannt'}`;
   if (auth.isLocked(rateKey) || auth.isLocked(ip)) {
     // Name und Passwort nie ins Protokoll - nur, dass und von wo.
-    logFehler('anmeldung', `429 gesperrt nach Fehlversuchen (${ip})`);
+    logFehler('anmeldung', `429 gesperrt nach Fehlversuchen (${geraet.anzeige})`);
     send(res, 429, { error: 'Zu viele Fehlversuche. Kurz warten und erneut versuchen.' });
     return;
   }
@@ -600,7 +621,7 @@ async function handleLogin(req, res) {
   if (!benutzer) {
     auth.registerFailure(rateKey);
     auth.registerFailure(ip);
-    logFehler('anmeldung', `401 Name oder Passwort falsch (${ip})`);
+    logFehler('anmeldung', `401 Name oder Passwort falsch (${geraet.anzeige})`);
     send(res, 401, { error: 'Name oder Passwort falsch' });
     return;
   }

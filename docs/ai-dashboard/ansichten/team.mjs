@@ -66,12 +66,59 @@ export function viewTeam() {
     </div>
     ${hinweis}
     ${liste}
+    ${geraeteBlock(d)}
     <h2 style="margin:24px 0 8px">Was die Rollen dürfen</h2>
     <div class="rows">
       <div class="row"><div><div class="t">Inhaber</div><div class="m">Alles – dazu Technik, Entscheidungen, Kennzahlen und diese Seite.</div></div></div>
       <div class="row"><div><div class="t">Mitarbeiter</div><div class="m">Kunden, Bestellungen, Aufgaben, Notizen, Baustellenfotos, Lexikon, Bestellen und Genossenschaften. Nicht: Zugänge, Technik, Entscheidungen.</div></div></div>
       <div class="row"><div><div class="t">Nur lesen</div><div class="m">Sieht dieselben Seiten wie ein Mitarbeiter, kann aber nichts ändern – für Aushilfen oder zum Zuschauen.</div></div></div>
     </div>`;
+}
+
+/**
+ * Angemeldete Geraete (Rundgang 26.10., Massnahme 58): Handy verloren, Mitarbeiter weg,
+ * gemeinsames Passwort geaendert - ein Knopf meldet alle anderen Geraete ab, im Control
+ * Center und in der Social-Zentrale. Ohne Anmeldung (Betrieb nur am Mac) entfaellt der Block.
+ */
+function geraeteBlock(d) {
+  if (d.angemeldeteGeraete === null || d.angemeldeteGeraete === undefined) return '';
+  const n = d.angemeldeteGeraete;
+  return `<h2 style="margin:24px 0 8px">Angemeldete Geräte</h2>
+    <div class="rows"><div class="row">
+      <div>
+        <div class="t">${n === 1 ? 'Nur dieses Gerät ist angemeldet' : `${n} Geräte angemeldet`}</div>
+        <div class="m">Handy verloren oder jemand arbeitet nicht mehr hier? Dann alle anderen Geräte abmelden – im Control Center und in der Social-Zentrale. Wird das gemeinsame Passwort geändert, sind die Geräte mit dem alten Passwort nach dem nächsten Neustart des Dienstes von selbst abgemeldet.</div>
+      </div>
+      <div class="r"><button type="button" class="btn btn-sm" data-team-geraete-abmelden${n > 1 ? '' : ' disabled'}>Alle anderen Geräte abmelden…</button></div>
+    </div></div>`;
+}
+
+function openGeraeteAbmelden() {
+  const root = $('#dialogRoot');
+  const n = Math.max(0, (team.daten?.angemeldeteGeraete ?? 1) - 1);
+  root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="tmGeraeteTitel" style="max-width:480px">
+    <h2 id="tmGeraeteTitel">Alle anderen Geräte abmelden?</h2>
+    <p>${n === 1 ? 'Ein anderes Gerät muss' : `${n} andere Geräte müssen`} sich danach neu anmelden – auch der Ladenrechner. Du bleibst an diesem Gerät angemeldet.</p>
+    <p class="small muted">In der Social-Zentrale meldest auch du dich neu an.</p>
+    <div class="dialog-actions">
+      <button type="button" class="btn" data-close-dialog>Abbrechen</button>
+      <button type="button" class="btn btn-primary" id="tmGeraeteJa">Ja, abmelden</button>
+    </div>
+  </div></div>`;
+  $('#tmGeraeteJa')?.focus();
+  // An den Dialog binden, nicht an #dialogRoot (siehe openMeinPasswort).
+  root.querySelector('.dialog').addEventListener('click', async (e) => {
+    const ja = e.target.closest('#tmGeraeteJa');
+    if (!ja || ja.disabled) return;
+    ja.disabled = true;
+    try {
+      const r = await orgSchreiben('/api/sitzungen/abmelden', {});
+      root.innerHTML = '';
+      if (team.daten) team.daten = { ...team.daten, angemeldeteGeraete: r.angemeldeteGeraete };
+      toast(`${r.abgemeldet === 1 ? 'Ein Gerät' : `${r.abgemeldet} Geräte`} abgemeldet${r.social ? '' : ' – die Social-Zentrale aber nicht, bitte Fehler melden'}`, r.social ? undefined : 'warn');
+      render();
+    } catch (err) { ja.disabled = false; toast(`Fehler: ${err.message}`, 'crit'); }
+  });
 }
 
 async function teamSchreiben(nutzlast, meldung) {
@@ -200,6 +247,8 @@ function openTeamPasswort(kuerzel) {
 export function teamKlick(e) {
   const tn = e.target.closest('[data-team-neu]');
   if (tn) { e.preventDefault(); openTeamNeu(); return true; }
+  const ga = e.target.closest('[data-team-geraete-abmelden]');
+  if (ga) { e.preventDefault(); openGeraeteAbmelden(); return true; }
   const tp = e.target.closest('[data-team-passwort]');
   if (tp) { e.preventDefault(); openTeamPasswort(tp.dataset.teamPasswort); return true; }
   const ts = e.target.closest('[data-team-sperren]');

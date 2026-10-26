@@ -257,7 +257,7 @@ export function musterNachLaden(kundenListe = []) {
     const umschlag = umschlagKennung(k);
     for (const m of k.muster) {
       if (m.abgehakt) continue;
-      const laden = m.lieferant || 'Partnerladen nicht hinterlegt';
+      const laden = m.lieferant || 'Lieferant nicht hinterlegt';
       if (!laeden.has(laden)) laeden.set(laden, []);
       laeden.get(laden).push({ muster: m, kunde: k.name, bestellung: m.orderName, umschlag, packSchluessel: k.packSchluessel });
     }

@@ -150,13 +150,16 @@ export function ensureEinkaufAuftragsstatus() {
   });
 }
 
-/** Stammdaten je Lieferant (Bestellweg, Kontakt, Lieferzeit) - fuer die Lieferanten-Karten im Einkauf. */
+/**
+ * Stammdaten je Lieferant (Bestellweg, Kontakt, Lieferzeit) - fuer die Lieferanten-Karten im
+ * Einkauf und die Lieferantennamen in der Kundenakte (Zeitleiste, Ansicht "kunden").
+ */
 export function ensureEinkaufLieferanten() {
   if (einkauf.lieferanten || einkauf.loadingLieferanten) return;
   einkauf.loadingLieferanten = true;
   fetchEinkauf('/api/einkauf/lieferanten').then(d => {
     einkauf.lieferanten = d; einkauf.loadingLieferanten = false;
-    if (state.route.view === 'einkauf') render();
+    if (['einkauf', 'kunden'].includes(state.route.view)) render();
   });
 }
 
@@ -245,9 +248,15 @@ async function ladeKundenArbeitsstandNeu() {
       if (d?.verfuegbar) kunden[feld] = d;
     } catch { /* Der bestaetigte Status bleibt gespeichert; die letzte lesbare Liste bleibt sichtbar. */ }
   };
+  // Offene Kundenakte: der Bestellmail-Dialog geht seit dem Rundgang 26.10. auch von dort auf -
+  // nach "Als bestellt markieren" muss die Zeitleiste den naechsten Schritt zeigen.
+  const key = kunden.detailKey;
+  const akte = key && kunden.detail ? fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`)
+    .then(d => { if (kunden.detailKey === key && d?.verfuegbar) kunden.detail = d; }).catch(() => {}) : null;
   await Promise.all([
     lesen('bestellungen', '/api/kunden/bestellungen'),
     lesen('musterPacken', '/api/kunden/muster-packen'),
+    akte,
   ]);
 }
 

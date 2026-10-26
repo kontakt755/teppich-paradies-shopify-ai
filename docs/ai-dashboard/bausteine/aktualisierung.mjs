@@ -94,7 +94,10 @@ export function aktualisierungHealth() {
       if (s.status === 'wartet') return { level: 'warn', title: `Dashboard-Update wartet seit ${fmtDateTime(s.wartetSeit)}`, detail: 'Es kam keine ruhige Minute (gerade Eingaben im Dashboard oder ein Codex-Lauf). Der nächste Versuch kommt von selbst.' };
       return { level: 'ok', title: `Dashboard-Updates: aktuell${s.zuletztNachgezogen ? ` · zuletzt übernommen ${fmtDateTime(s.zuletztNachgezogen)}` : ''}`, detail: '' };
     }
+    // quelle: Heute laesst diese Zeile aus der Datenzeile weg (Rundgang 26.10.) - sie betrifft
+    // keine Shop-Daten und war dort ein Dauerhinweis, den niemand aufloesen konnte.
     if (quelle === 'werkbank') return {
+      quelle,
       level: s.status === 'fehler' ? 'warn' : 'info',
       title: `Rückmeldungen aus „Ideen & Fragen“: ${s.status === 'fehler' ? 'lokaler Stand nicht lesbar' : s.letzteLokaleRueckmeldung ? `letzte lokale Rückmeldung ${fmtDateTime(s.letzteLokaleRueckmeldung)}` : 'letzte lokale Rückmeldung unbekannt'}${s.lokalerStatus === 'alt' ? ' – seit über 48 Stunden keine neue lokale Rückmeldung' : ''}`,
       detail: 'Der vollständige automatische Abgleich mit „Ideen & Fragen“ ist noch nicht belegt.'

@@ -81,5 +81,6 @@ test('Hilfe beginnt mit "In 1 Minute erklärt" und den drei Ablaeufen', async ()
   const { viewHilfe } = await import('../ansichten/hilfe.mjs');
   const h = viewHilfe();
   assert.ok(h.indexOf('In 1 Minute erklärt') < h.indexOf('Morgens'));
-  for (const s of ['Kunde bestellt', 'Muster rausgeben', 'Genossenschaft anschreiben', 'Genossenschaften', 'Lexikon', 'Bestellen']) assert.ok(h.includes(s), s);
+  // "Muster rausgeben" heisst seit der Packstation "Muster packen" (Rundgang 26.10.).
+  for (const s of ['Kunde bestellt', 'Muster packen', 'Packstation', 'Genossenschaft anschreiben', 'Genossenschaften', 'Lexikon', 'Bestellen']) assert.ok(h.includes(s), s);
 });

@@ -2464,3 +2464,46 @@ Schreiber (das jeweilige Skript), eine kaputte Datei gilt als Fehler.
 Tests: `operations/tests/routinen.test.mjs`, `routine-wache.test.mjs`, `claude-lauf.test.mjs`
 (mit einem falschen `claude`: fehlendes Pflichtwerkzeug, Zeitlimit mit Enkelprozess, Werkzeugprobe),
 `datenstand-pruefen.test.mjs`, `todos.test.mjs`, `api.test.mjs`.
+
+## 29. Rundgang 26.10.2026 (Paket P5 Control Center)
+
+**Doppelte Sendungsnummer (#30).** `andereBestellungenMitSendung` (`operations/lib/versand.mjs`) sucht
+in `auftragsstatus.json`, ob dieselbe Nummer (ohne Leerzeichen, gross geschrieben) schon an einer
+anderen Bestellung steht. `pruefeSendungFrei` (`scripts/dashboard-api.mjs`) laeuft vor jedem
+Schreiben, im Schritt „raus“ und beim Status je Position: Treffer = 409 mit
+`doppelteSendung { nummer, bestellungen }`. Erst `versand.trotzDoppelt: true` bucht, mit
+Protokolleintrag „Sendungsnummer trotz Doppelung eingetragen“. Der Dialog zeigt die Warnung und
+macht den Knopf zu „Trotzdem buchen“ – nur fuer genau diese Nummer. Nachgetragene Versaende
+(`versandNachholen`) pruefen nicht erneut. Test: `versand-api.test.mjs`.
+
+**Bestellweg in der Kundenakte (#40).** Im Schritt „Ware beim Lieferanten bestellen“ je offenem
+Lieferanten „Bestellmail öffnen (Name)“ (derselbe Dialog wie unter Bestellen), danach
+„Ware ist bestellt…“ mit Rueckfrage. Namen ueber `lieferantName(id, quelle)`
+(`lib/einkauf-lieferanten.mjs`) aus den privaten Stammdaten; UNGEKLAERT = „Lieferant nicht
+zugeordnet“, ohne Namen „Lieferant A“. „Default Title“ wird nicht als Farbe gezeigt.
+Test: `zeitleiste-bestellweg.test.mjs`.
+
+**Inhaberzeile (#44).** `ansichten/heute/inhaber-zeile.mjs` (reine Funktionen): Shop-Kontrolle,
+7-Tage-Umsatz (Knopf `kz` klappt `kennzahlenBlock` auf), offene Entscheidungen, naechste Frist
+offener Aufgaben. Nur Inhaber; dafuer laedt die Shop-Übersicht beim Inhaber zusaetzlich
+Kennzahlen und Shop-Kontrolle, fuer alle die Service-Anfragen (Zahl an „Weitere Bereiche“).
+Tests: `inhaber-ueberblick.test.mjs`, `shop-start.test.mjs`.
+
+**Entscheidungen (#43).** Zaehler in der Seitenleiste und Liste nutzen `offeneEntscheidungen`
+(`lib/model.mjs`). Die Werkbank-Fragen bleiben in „Ideen & Fragen“; das Control Center zeigt nur
+den Link (https-Ziel aus `capabilities.dashboards.werkbank`).
+
+**Anmeldung (#58).** `operations/lib/anmeldeschutz.mjs`, genutzt von `scripts/dashboard-auth.mjs`,
+`scripts/serve-dashboard.mjs` und `social/scripts/server.mjs`:
+- Notzugang-Sitzungen tragen `pw`, einen scrypt-Abdruck des gemeinsamen Passworts. Passt er nach
+  einem Neustart nicht mehr (Passwort geaendert oder entfernt), ist die Sitzung weg. Alte Sitzungen
+  ohne `pw` uebernehmen beim ersten Start den Abdruck des jetzigen Passworts – das Update meldet
+  niemanden ab.
+- Sperre nach Fehlversuchen je Geraet: von 127.0.0.1 (tailscale serve) gilt der letzte Eintrag von
+  `X-Forwarded-For`, sonst `Tailscale-User-Login`; von jeder anderen Adresse werden die Koepfe
+  ignoriert. Am Mac selbst ohne Kopf bleibt es 127.0.0.1.
+- `POST /api/sitzungen/abmelden` (nur Inhaber, Schreibliste): beendet jede Control-Center-Sitzung
+  ausser der eigenen und schreibt `$TP_PRIVAT_DIR/geraete-abgemeldet.json`. Die Social-Zentrale
+  liest den Zeitstempel (je Anfrage ein `stat`) und verwirft alle davor angemeldeten Sitzungen.
+  Knopf unter Zugänge › „Angemeldete Geräte“ (`team/liste` liefert `angemeldeteGeraete`).
+Tests: `auth.test.mjs`, `social/tests/server.test.mjs`.

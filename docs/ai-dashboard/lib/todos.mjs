@@ -17,6 +17,7 @@ import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaff
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
 import { sichereUrl } from './akquise.mjs';
+import { lieferantName as lieferantAnzeige } from './einkauf-lieferanten.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -194,7 +195,8 @@ function kontext(quellen, opt) {
   const statusAlle = quellen.statusAlle || {};
   const schwellen = { ...SCHWELLEN, ...(quellen.schwellen || {}) };
   const rueckrufJeOrder = new Map((quellen.rueckrufe || []).map(r => [r.orderId, r]));
-  const lieferantName = opt.lieferantName || (id => (id === UNGEKLAERT || !id ? 'Lieferant nicht zugeordnet' : `Lieferant ${id}`));
+  // Ohne Stammdaten (Tests, Pages): dieselbe Ersatzanzeige wie ueberall - "Lieferant A" bzw. "Lieferant nicht zugeordnet".
+  const lieferantName = opt.lieferantName || (id => lieferantAnzeige(id));
   const klartext = opt.klartext || (h => h);
   return { jetzt, heute: alsTag(jetzt), statusAlle, schwellen, rueckrufJeOrder, lieferantName, klartext };
 }

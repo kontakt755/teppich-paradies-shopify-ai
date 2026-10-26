@@ -44,6 +44,9 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Werkbank | **Ideen & Fragen** | Link zur eigenen Anwendung |
 | GitHub synchronisieren | **Aufgaben neu laden** | |
 | Packliste (lokale Datei) | **Packstation** (Arbeitsgang: „Muster packen“) | Reiter unter Kunden (#1572); „Umschlag gepackt“ ist der gemeinsame Stand, das Abhaken je Muster nur eine Packhilfe am Gerät |
+| Einkauf & Wareneingang (Menuepunkt) | **Bestellen** | Menuepunkt unter „Kunden & Einkauf“, wie der Seitentitel (Rundgang 26.10.2026) |
+| Partnerladen | **Lieferant** | Packstation, Reiter „Muster kommt an“ („Lieferant nicht hinterlegt“) |
+| Wareneingang nach Partnerladen | **Muster kommt an** | Reiter der Packstation; auch in Leerzustaenden und Rueckweg-Knoepfen |
 
 ## Bleibt bewusst
 
@@ -145,3 +148,20 @@ gebraeuchlich), Erfassen.
   das Dashboard läuft auf dem bisherigen Stand weiter. Dann Claude im Chat Bescheid geben.
 - **wartet** = eine neue Version ist getestet, wird aber erst übernommen, wenn gerade niemand
   eingibt und kein Codex-Lauf arbeitet; erst nach über einer Stunde Warten wird das gemeldet.
+
+## Rundgang 26.10.2026
+
+- **Sendungsnummer schon vergeben** = Hinweis im Versanddialog, wenn dieselbe Nummer schon an einer
+  anderen Bestellung steht; gebucht wird erst nach **Trotzdem buchen** (nur wenn wirklich beide
+  Bestellungen im selben Paket sind).
+- **Bestellmail öffnen (Lieferant)** / **Ware ist bestellt…** = die zwei Knoepfe im Schritt „Ware beim
+  Lieferanten bestellen“ der Kundenakte; der zweite fragt nach, ob wirklich alles bestellt ist.
+- **Lieferant nicht zugeordnet** = statt „UNGEKLAERT“; ohne Stammdaten-Namen „Lieferant A“ usw.
+- **Inhaberzeile** = eine Zeile unter den Warenbestellungen, nur Inhaber: „Shop in Ordnung · 7 Tage … €
+  Umsatz · N Entscheidungen offen · nächste Frist TT.MM.“; der Umsatz klappt die Kennzahlen auf.
+- **Ideen & Fragen öffnen ↗** = Link unter „Entscheidungen“; die Werkbank-Fragen bleiben dort.
+- **nicht eingelegt · laut Bestand da – im Regal suchen** = Packstation: als fehlend gemeldet, laut
+  Auftragsfluss aber angekommen (vorher „fehlt · angekommen“).
+- **Shopify ist nicht verbunden** = Sonderposten ohne Shop-Zugang, mit „Fehler melden“.
+- **Alle anderen Geräte abmelden…** = Knopf unter Zugänge › Angemeldete Geräte (nur Inhaber); meldet
+  im Control Center und in der Social-Zentrale ab, das eigene Gerät bleibt angemeldet.

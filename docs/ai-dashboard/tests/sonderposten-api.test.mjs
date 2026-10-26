@@ -26,12 +26,14 @@ function apiMit(a) {
   return createApi({ root, now: () => JETZT, shopifyZugang: async () => ({ proxy: a.proxy, art: 'client-credentials' }) });
 }
 
-test('Liste: ohne Zugang derselbe Hinweis wie bei den anderen Quellen, kein Abruf', async () => {
+test('Liste: ohne Zugang ein Satz fuer den Laden, kein Abruf; Einrichtungsanleitung nur im Dienstprotokoll', async () => {
   const root = wegwerfOrdner('tp-sonderposten-root-');
   const api = createApi({ root, env: {} });
   const d = await api.sonderpostenListe();
   assert.equal(d.verfuegbar, false);
-  assert.match(d.hinweis, /^Kein Zugang zu Shopify/);
+  assert.equal(d.keinZugang, true);
+  assert.match(d.hinweis, /^Geht an diesem Rechner nicht – der Shopify-Zugang fehlt\. Bitte dem Inhaber Bescheid geben\.$/);
+  assert.doesNotMatch(JSON.stringify(d), /\.env\.local|npm run|SHOPIFY_CLIENT/);
 });
 
 test('Liste: Sonderposten ohne Vorlage, mit Knopf-Regel', async () => {

@@ -150,7 +150,7 @@ export function viewKundenServiceanfragen() {
     return `<p><a href="#/kunden?tab=service">Alle offenen Service-Anfragen</a></p>
       ${e ? `<div class="rows">${zeileHtml(e)}</div>
         ${statusKnoepfe(e)}
-        ${!ABGESCHLOSSEN.includes(e.status) ? `<p class="small muted">Wiedervorlagen werden in der bestehenden Laden-Ansicht gepflegt. ${laden ? `<a href="${esc(laden)}" target="_blank" rel="noopener">Laden-Ansicht öffnen</a>` : ''}</p>` : ''}`
+        ${!ABGESCHLOSSEN.includes(e.status) ? `<p class="small muted">Wann ihr euch wieder beim Kunden meldet, tragt ihr in der Auftrags-App ein (Laden-Ansicht). ${laden ? `<a href="${esc(laden)}" target="_blank" rel="noopener">Laden-Ansicht öffnen ↗</a>` : ''}</p>` : ''}`
         : emptyState('Diese Anfrage wurde nicht gefunden.', 'Zur offenen Liste wechseln und den aktuellen Stand prüfen.')}`;
   }
   const filterRaw = state.route.params.get('sf');

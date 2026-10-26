@@ -18,6 +18,7 @@ import { state } from '../../kern/zustand.mjs';
 import { $, esc, ago, fmtDate, plural, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
+import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ART_LABEL, ART_KURZ, STAND_LABEL, SHOPIFY_LABEL, FREEMAIL, adresseVon, belegArbeit as arbeitAus } from '../../lib/lieferbelege.mjs';
@@ -48,7 +49,8 @@ export function ensureBelege({ neu = false } = {}) {
 
 // -- Bausteine --------------------------------------------------------------------
 
-const lieferantName = id => (id ? belege.daten?.lieferanten?.[id] || `Lieferant ${id}` : null);
+// Name aus den Stammdaten; ohne Zuordnung "Lieferant nicht zugeordnet" statt des Markers UNGEKLAERT.
+const lieferantName = id => (id ? lieferantAnzeige(id, belege.daten?.lieferanten || {}) : null);
 const absenderText = b => lieferantName(b.lieferant) || (FREEMAIL.includes(b.domain) ? b.von || b.domain : b.domain || b.von) || 'unbekannter Absender';
 const auftrag = id => belege.daten?.auftraege?.[id] || null;
 const auftragText = (id) => {
