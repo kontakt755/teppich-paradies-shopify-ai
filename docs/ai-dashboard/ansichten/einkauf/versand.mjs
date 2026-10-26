@@ -38,8 +38,10 @@ function artikelText(p) {
  * @param {object} [opt]
  * @param {string} [opt.lineItemId]  angeklickte Position (Einkauf) - sonst ganzer Auftrag
  * @param {string} [opt.notiz]       aus "Etwas anderes ist passiert ..." mitgebracht
+ * @param {boolean} [opt.mailVorab]  Versandmail vorab an/aus; ohne Angabe wie bisher (aus bei Uebergabe/Abholung)
+ * @param {Function} [opt.danach]    nach erfolgreicher Buchung, z. B. die Aufraeumliste neu laden
  */
-export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = null } = {}) {
+export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = null, mailVorab = null, danach = null } = {}) {
   if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return; }
   // Stand und Positionen koennen fehlen, wenn der Klick von "Heute" kommt.
   if (!einkauf.auftragsstatus?.positionen) {
@@ -78,6 +80,7 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
   const uebergabe = istUebergabe(geklickt ? [geklickt] : position ? [position] : kandidaten);
   // Abholung im Laden: Mail vorab aus (eine Mail "ist unterwegs" passt nicht).
   const abholung = /abhol|pick.?up|selbst/i.test(String(auftrag?.details?.versandart || ''));
+  const mailAn = typeof mailVorab === 'boolean' ? mailVorab : !(uebergabe || abholung);
   const dienst = letzterDienst();
   const sperre = gesperrt.length ? `<div class="notice warn" role="status"><p><b>${nurGesperrt ? 'Noch nicht versandbereit' : 'Nicht alles ist versandbereit'}</b> – der Wareneingang ist unvollständig.</p>
       ${gesperrt.map(x => `<p>${esc(artikelText(x.p))}: ${esc(beschaffungText(x.e))}. <button type="button" class="btn btn-sm" data-beschaffung data-af-status="geliefert" data-af-order="${esc(orderId)}" data-af-item="${esc(x.p.lineItemId)}">Wareneingang ergänzen…</button></p>`).join('')}
@@ -104,7 +107,7 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     ${sperre}
     ${liste}
     ${nichtsOffen || nurGesperrt ? '' : `${sendung}
-    <fieldset class="zl-wahl"><label><input type="checkbox" name="mail"${uebergabe || abholung ? '' : ' checked'}> Kunde bekommt die Versandmail von Shopify</label></fieldset>
+    <fieldset class="zl-wahl"><label><input type="checkbox" name="mail"${mailAn ? ' checked' : ''}> Kunde bekommt die Versandmail von Shopify</label></fieldset>
     <p class="small muted">Die Artikel werden in Shopify als versendet gebucht.</p>`}
     <p data-vs-fehler class="notice crit" role="alert" tabindex="-1" hidden></p>
     <div class="actions"><button type="button" class="btn" data-close-dialog>${nichtsOffen || nurGesperrt ? 'Schließen' : 'Abbrechen'}</button>${nichtsOffen || nurGesperrt ? '' : `<button type="submit" class="btn btn-primary">Als ${wort} buchen</button>`}</div>
@@ -145,6 +148,7 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     const r = versandRueckmeldung(`Als ${wort} eingetragen`, antwort.shopify);
     toast(r.text, r.ton, { dauer: r.ton ? 9000 : 5000 });
     await ladeStandNeu();
+    if (danach) await danach();
   });
 }
 

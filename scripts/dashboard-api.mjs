@@ -1047,7 +1047,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
   /** Zeitleisten aller Auftraege (orderId -> { auftragsart, verlauf, naechsterSchritt, ... }). */
   function zeitleisten(dir, modell, statusAlle) {
-    return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), jetzt: now() });
+    // Gepackte Umschlaege aendern nur den Text des naechsten Schritts (#1709). Eine beschaedigte
+    // Packablage meldet die Packstation selbst; die Zeitleisten laufen dann ohne diese Angabe.
+    let gepackt = {};
+    try { gepackt = leseMusterPackStand(musterPackenPfad(dir)).gepackt; } catch { /* siehe oben */ }
+    return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), gepackt, jetzt: now() });
   }
 
   /** Die additiven Zeitleisten-Felder eines Auftrags fuer die Antwort. */
