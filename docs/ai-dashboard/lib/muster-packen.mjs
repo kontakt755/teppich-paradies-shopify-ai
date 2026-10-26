@@ -14,6 +14,8 @@ import { adressEtikett } from './adress-etiketten.mjs';
 export const WARTET_AB_TAGEN = 2;
 
 const FERTIG = new Set(['raus', 'erledigt']);
+/** So traegt die automatische Musterbestellung (operations/lib/muster-bestellautomatik.mjs) ein. */
+const MUSTERAUTOMATIK = 'Musterautomatik';
 const text = v => (v === null || v === undefined ? '' : String(v).trim());
 const belegt = v => !!text(v) && !['UNGEKLAERT', '–', '-'].includes(text(v));
 const TAG = 24 * 60 * 60 * 1000;
@@ -55,13 +57,16 @@ function vorherIndex(produkte) {
       for (const sku of new Set([text(v.sku), text(e.artikelnummer)].filter(Boolean))) {
         const wert = { produktname: belegt(e.produktname) ? text(e.produktname) : null, farbnummer: belegt(e.farbnummer) ? text(e.farbnummer) : null, url: belegt(e.url) ? text(e.url) : null,
           kollektion: belegt(e.kollektion) ? text(e.kollektion) : null, lieferant: belegt(e.lieferant) ? text(e.lieferant) : null };
+        // Nur fuer die Suche (Herstellername auf dem Muster); entscheiden nicht ueber "mehrdeutig".
+        const such = { hersteller: belegt(e.hersteller) ? text(e.hersteller) : null, artikelnummer: belegt(e.artikelnummer) ? text(e.artikelnummer) : null };
         const bild = farbBild(p, v);
         const alt = je.get(sku);
         // Dieselbe SKU in mehreren Breiten traegt oft je ein eigenes Bild derselben Farbe: das Bild
         // entscheidet nicht ueber "mehrdeutig"; bei verschiedenen Bildern gilt das erste.
         if (alt === 'mehrdeutig') continue;
-        if (alt && JSON.stringify({ ...alt, bild: null }) !== JSON.stringify({ ...wert, bild: null })) { je.set(sku, 'mehrdeutig'); continue; }
-        je.set(sku, { ...wert, bild: alt?.bild || bild });
+        const vergleich = w => JSON.stringify([w.produktname, w.farbnummer, w.url, w.kollektion, w.lieferant]);
+        if (alt && vergleich(alt) !== vergleich(wert)) { je.set(sku, 'mehrdeutig'); continue; }
+        je.set(sku, { ...wert, bild: alt?.bild || bild, hersteller: alt?.hersteller || such.hersteller, artikelnummer: alt?.artikelnummer || such.artikelnummer });
       }
     }
   }
@@ -73,13 +78,18 @@ function vorherIndex(produkte) {
  * @param {object[]} p.auftraege        Auftraege des Bestellmodells (details.lieferadresse, positionen)
  * @param {Map} p.produkte              Lexikon je Handle
  * @param {(orderId, lineItemId) => string|null} [p.statusVon]  Auftragsfluss-Status der Position
+ * @param {(orderId, lineItemId) => object|null} [p.eintragVon] ganzer Auftragsfluss-Eintrag (bestelltAm,
+ *                                      bestelltVon, ueber) fuer die Anmerkung; ersetzt dann statusVon
  * @param {(auftrag) => string} [p.schluesselVon]               Kundenidentitaet (kundensuche.kundenSchluessel)
  * @param {object} [p.gepackt]          Ablage muster-packen.json: { [packSchluessel]: { zeit, von } }
  * @param {object} [p.haken]            { [lineItemId]: { zeit, von } } - Muster ist überklebt und liegt im Umschlag
  * @param {object} [p.klaeren]          { [Kundenschluessel]: { zeit, von, fehlt: [lineItemId], notiz } }
  * @param {(id) => string} [p.lieferantVon]  Lieferanten-Kuerzel -> Anzeigename (private Stammdaten)
  */
-export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon = () => null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, lieferantVon = id => `Lieferant ${id}`, jetzt = new Date() } = {}) {
+export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, lieferantVon = id => `Lieferant ${id}`, jetzt = new Date() } = {}) {
+  const statusVon = eintragVon ? (o, l) => eintragVon(o, l)?.status || null : statusAllein;
+  // Vom Lieferanten direkt an den Kunden (#1680): wird nicht bei uns gepackt.
+  const direkt = (a, p) => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT') || eintragVon?.(a.id, p.lineItemId)?.ueber === 'kunde';
   const vorher = vorherIndex(produkte);
   const gruppen = new Map();
   const ausschluesse = { zahlungOffen: 0, geschlossen: 0 };
@@ -103,9 +113,9 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     if (!gruppen.has(key)) gruppen.set(key, { schluessel: basis, name: '', adresse: null, bestellungen: [], muster: [], hinweise: new Set(), teilweiseErstattet: false, direktversand: false });
     const g = gruppen.get(key);
     if (a.bezahlt === 'PARTIALLY_REFUNDED') g.teilweiseErstattet = true;
-    if (positionen.some(p => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT'))) g.direktversand = true;
+    if (positionen.some(p => direkt(a, p))) g.direktversand = true;
     if (a.bezahlt === 'PARTIALLY_REFUNDED') g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.');
-    if (positionen.some(p => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT'))) g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.');
+    if (positionen.some(p => direkt(a, p))) g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.');
     g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null });
     // Die neueste Bestellung traegt die aktuellste Anschrift.
     if (!g.adresse || (a.datum || '') >= (g.adresse.datum || '')) {
@@ -115,6 +125,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     zeilen.forEach((z, i) => {
       const p = positionen[i];
       const v = z.etikett?.sku ? vorher(z.etikett.sku) : null;
+      const eintrag = eintragVon?.(a.id, p.lineItemId) || null;
+      const stand = standVon(statusVon(a.id, p.lineItemId), p);
       g.muster.push({
         orderId: a.id, orderName: text(a.name), lineItemId: z.lineItemId,
         anzahl: Number.isInteger(z.anzahl) ? z.anzahl : null, etikett: z.etikett, fehlt: z.fehlt,
@@ -123,7 +135,10 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
         lieferant: v?.lieferant ? lieferantVon(v.lieferant) : null,
         bild: v?.bild || null,
         abgehakt: haken[z.lineItemId] ? { zeit: haken[z.lineItemId].zeit || null, von: haken[z.lineItemId].von || null } : null,
-        stand: standVon(statusVon(a.id, p.lineItemId), p),
+        stand,
+        // Fuer die Anmerkung "bestellt am …": nur solange das Muster noch beim Lieferanten ist.
+        bestelltAm: stand === 'bestellt' && belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
+        automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
       });
     });
   }
@@ -218,4 +233,50 @@ export function musterNachLaden(kundenListe = []) {
   return [...laeden.entries()]
     .map(([laden, eintraege]) => ({ laden, eintraege: eintraege.sort((a, b) => sortName(a).localeCompare(sortName(b), 'de')) }))
     .sort((a, b) => b.eintraege.length - a.eintraege.length || a.laden.localeCompare(b.laden, 'de'));
+}
+
+// -- Suche: welches Muster gehoert in welchen Umschlag? -----------------
+// Wer ein Muster in der Hand haelt, tippt ab, was darauf steht ("Vorwerk Modena TSU 3N55"). Auf
+// dem Muster stehen Herstellername, Produkt und Farbnummer - nicht unser Aufkleber. Deshalb zaehlt
+// jedes Wort einzeln; gezeigt werden die Umschlaege mit den meisten passenden Woertern. Ein Wort,
+// das nirgends vorkommt (z. B. ein Rueckencode), verhindert so keinen Treffer.
+const norm = v => text(v).toLowerCase().replaceAll('ä', 'ae').replaceAll('ö', 'oe').replaceAll('ü', 'ue').replaceAll('ß', 'ss');
+const kompakt = v => v.replace(/[^a-z0-9]/g, '');
+
+export function suchWoerter(eingabe) {
+  return [...new Set(norm(eingabe).split(/\s+/).filter(Boolean))];
+}
+
+function passendeWoerter(woerter, felder) {
+  const heu = felder.map(norm).filter(Boolean);
+  const heuKompakt = heu.map(kompakt);
+  // Ohne Satzzeichen nur ab drei Zeichen ("3N-55" = "3N55"); sonst passte "#2" auf jede 2.
+  return woerter.filter(w => heu.some(h => h.includes(w)) || (kompakt(w).length >= 3 && heuKompakt.some(h => h.includes(kompakt(w)))));
+}
+
+/**
+ * @returns {{woerter: string[], treffer: {packSchluessel: string, muster: string[]}[], fehlen: string[]}}
+ *   `treffer` in der Reihenfolge der Liste, `muster` = lineItemIds der passenden Muster (leer, wenn nur
+ *   Kunde/Bestellnummer passen), `fehlen` = Woerter, die in keinem Treffer vorkommen.
+ */
+export function packSuche(kundenListe = [], eingabe = '') {
+  const woerter = suchWoerter(eingabe);
+  if (!woerter.length) return { woerter, treffer: [], fehlen: [] };
+  const bewertet = kundenListe.map(k => {
+    const umschlag = passendeWoerter(woerter, [k.name, umschlagKennung(k), ...(k.bestellungen || []).map(b => b.orderName)]);
+    const muster = (k.muster || []).map(m => {
+      const v = m.vorher || {}, e = m.etikett || {};
+      const passt = new Set([...umschlag, ...passendeWoerter(woerter, [m.bestellt?.titel, m.bestellt?.farbe, e.serie, e.farbe, e.sku,
+        v.produktname, v.kollektion, v.farbnummer, v.hersteller, v.artikelnummer, m.lieferant])]);
+      return { id: m.lineItemId, passt };
+    });
+    const bestes = Math.max(umschlag.length, ...muster.map(m => m.passt.size));
+    return { k, bestes, muster: muster.filter(m => m.passt.size === bestes && m.passt.size > umschlag.length).map(m => m.id),
+      passt: new Set([...umschlag, ...muster.filter(m => m.passt.size === bestes).flatMap(m => [...m.passt])]) };
+  });
+  const max = Math.max(0, ...bewertet.map(b => b.bestes));
+  if (!max) return { woerter, treffer: [], fehlen: woerter };
+  const beste = bewertet.filter(b => b.bestes === max);
+  const gefunden = new Set(beste.flatMap(b => [...b.passt]));
+  return { woerter, treffer: beste.map(b => ({ packSchluessel: b.k.packSchluessel, muster: b.muster })), fehlen: woerter.filter(w => !gefunden.has(w)) };
 }
