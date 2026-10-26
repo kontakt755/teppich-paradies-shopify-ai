@@ -275,6 +275,34 @@
 
 {%- endif -%}
 
+{%- comment -%}
+  Nach jeder Warenkorbaenderung neu waehlen (Codex-Review #1729):
+  component-cart-items.js rendert nur die Warenkorb-Sections neu, ohne diese
+  Marke blieben nach dem Entfernen der letzten Ware die Empfehlungen beim
+  reinen Musterkorb stehen. Die Marke steht ausserhalb der Bedingung oben,
+  damit eine ausgeblendete Liste wieder erscheinen kann.
+{%- endcomment -%}
+{%- if section.settings.tp_warenkorb_inhalt -%}
+  <span hidden data-tp-wk-inhalt="{{ section.id }}"></span>
+{%- endif -%}
+
+{% javascript %}
+  (function () {
+    document.addEventListener('cart:update', function () {
+      var marken = document.querySelectorAll('[data-tp-wk-inhalt]');
+      if (!marken.length) return;
+      import('@theme/section-renderer')
+        .then(function (modul) {
+          Array.prototype.forEach.call(marken, function (marke) {
+            var id = marke.getAttribute('data-tp-wk-inhalt');
+            if (id) modul.sectionRenderer.renderSection(id, { cache: false }).catch(function () {});
+          });
+        })
+        .catch(function () {});
+    });
+  })();
+{% endjavascript %}
+
 {% stylesheet %}
   /* Unterlagen statt Kollektion: "Alle ansehen" fuehrte sonst zu den Leisten. */
   .section-resource-list.tp-wk-unterlagen .section-resource-list__header a { display: none; }

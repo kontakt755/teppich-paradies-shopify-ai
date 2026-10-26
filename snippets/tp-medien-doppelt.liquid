@@ -1,5 +1,7 @@
 {%- doc -%}
-  Steckt dasselbe Foto schon in der Liste? Gibt "ja" aus oder nichts.
+  Steckt dasselbe Foto schon in der Liste? Gibt die Medien-ID des Treffers in
+  der Liste aus (das Medium, das stehen bleibt), sonst nichts. Bei einer Kopie
+  ist das eine andere ID als die von media (Codex-Review #1729).
   Gleiche Medien-ID zaehlt, ausserdem der Dateistamm (snippets/tp-medien-dateistamm): Shopify haengt
   beim erneuten Hochladen derselben Datei "_<uuid>" an den Namen, die
   Medien-ID ist dann eine andere (Rundgang 2026-10-26, #29).
@@ -19,7 +21,7 @@
         render 'tp-medien-dateistamm', media: tmdp_m
       endcapture
       if tmdp_m.id == media.id or tmdp_stamm != blank and tmdp_m_stamm == tmdp_stamm
-        echo 'ja'
+        echo tmdp_m.id
         break
       endif
     endfor

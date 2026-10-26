@@ -97,7 +97,12 @@
           endcapture
           assign tp_sr_fest_handles = tp_sr_fest_handles | strip | split: ','
           for tp_sr_fh in tp_sr_fest_handles
-            if tp_sr_fh != blank and pages[tp_sr_fh] != blank
+            # "refund-policy" ist die Widerrufsbelehrung (Richtlinie, keine Seite).
+            if tp_sr_fh == 'refund-policy'
+              if shop.refund_policy != blank
+                assign tp_sr_fest = tp_sr_fest | append: tp_sr_fh | append: '|'
+              endif
+            elsif tp_sr_fh != blank and pages[tp_sr_fh] != blank
               assign tp_sr_fest = tp_sr_fest | append: tp_sr_fh | append: '|'
             endif
           endfor
@@ -110,7 +115,12 @@
             <h2 class="tp-sr-ziele__titel" id="tp-sr-seiten-titel">Seiten &amp; Service</h2>
             <ul class="tp-sr-ziele__liste">
               {% for tp_sr_fh in tp_sr_fest_liste %}
-                <li><a href="{{ pages[tp_sr_fh].url | escape }}">{{ pages[tp_sr_fh].title | escape }}</a></li>
+                {%- if tp_sr_fh == 'refund-policy' -%}
+                  {%- assign tp_sr_fs = shop.refund_policy -%}
+                {%- else -%}
+                  {%- assign tp_sr_fs = pages[tp_sr_fh] -%}
+                {%- endif -%}
+                <li><a href="{{ tp_sr_fs.url | escape }}">{{ tp_sr_fs.title | escape }}</a></li>
               {% endfor %}
               {% for tp_sr_s in tp_sr_seiten %}
                 {%- assign tp_sr_skey = '|' | append: tp_sr_s.handle | append: '|' -%}

@@ -62,3 +62,41 @@ test('bei Unterlagen fuehrt kein "Alle ansehen" zu den Leisten', () => {
   assert.match(section, /{% if tp_wk_modus == 'unterlagen' %}tp-wk-unterlagen{% endif %}/);
   assert.match(section, /\.section-resource-list\.tp-wk-unterlagen \.section-resource-list__header a \{ display: none; \}/);
 });
+
+// Codex-Review #1729: component-cart-items.js rendert nur die Warenkorb-Sections
+// neu. Ohne eigene Aktualisierung blieben nach dem Entfernen der letzten Ware
+// die Empfehlungen beim reinen Musterkorb stehen.
+test('Marke fuer die Aktualisierung steht auch bei ausgeblendeter Liste', async () => {
+  const marke = section.slice(section.indexOf('{%- if section.settings.tp_warenkorb_inhalt -%}'), section.indexOf('{% javascript %}'));
+  assert.ok(section.lastIndexOf('{%- endif -%}', section.indexOf('{%- if section.settings.tp_warenkorb_inhalt -%}')) > section.indexOf("{%- elsif tp_wk_modus == 'aus' -%}"),
+    'Marke steht nach dem Ende der Ausblend-Bedingung');
+  const html = (an) => new Liquid().parseAndRender(marke, { section: { id: 'template--1__product_list_x', settings: { tp_warenkorb_inhalt: an } } });
+  assert.match(await html(true), /<span hidden data-tp-wk-inhalt="template--1__product_list_x"><\/span>/);
+  assert.equal((await html(false)).trim(), '');
+});
+
+test('bei cart:update rendert die Liste sich ueber die Section Rendering API neu', async () => {
+  const code = section.split('{% javascript %}')[1].split('{% endjavascript %}')[0];
+  const vm = await import('node:vm');
+  let horcher = null;
+  const marken = [{ getAttribute: () => 'template--1__product_list_x' }];
+  const document = {
+    querySelectorAll: (sel) => (sel === '[data-tp-wk-inhalt]' ? marken : []),
+    addEventListener: (typ, fn) => { if (typ === 'cart:update') horcher = fn; },
+  };
+  const aufrufe = [];
+  const modul = { sectionRenderer: { renderSection: (id, opt) => { aufrufe.push([id, opt]); return Promise.resolve(''); } } };
+  // import() ist im vm-Kontext nicht verfuegbar: durch eine Funktion ersetzen.
+  const ersetzt = code.replace("import('@theme/section-renderer')", "__import('@theme/section-renderer')");
+  assert.notEqual(ersetzt, code, 'laedt den Section-Renderer des Themes');
+  vm.runInNewContext(ersetzt, { document, Array, __import: (name) => { assert.equal(name, '@theme/section-renderer'); return Promise.resolve(modul); } });
+  assert.equal(typeof horcher, 'function');
+  horcher();
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(JSON.stringify(aufrufe), JSON.stringify([['template--1__product_list_x', { cache: false }]]));
+  // Ohne Marke (andere Seiten) kein Abruf.
+  marken.length = 0;
+  horcher();
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(aufrufe.length, 1);
+});

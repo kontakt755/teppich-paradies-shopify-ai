@@ -5,6 +5,8 @@
   Verlegekeile (Rundgang 2026-10-26, Kundin am Handy).
 
   Gibt die Handles der passenden Seiten mit Komma getrennt aus, sonst nichts.
+  Sonderfall "refund-policy": die Widerrufsbelehrung ist eine Shopify-Richtlinie
+  (shop.refund_policy, /policies/refund-policy), keine Seite.
   Aufrufer: snippets/tp-suche-ergebnisse.liquid (Schnellsuche, Dropdown und
   Suchfenster) und sections/search-results.liquid (Ergebnisseite).
 
@@ -26,6 +28,21 @@
   for tp_sz_wort in tp_sz_verlegung
     if tp_sz_text contains tp_sz_wort
       assign tp_sz_handles = tp_sz_handles | append: 'liefer-verlegeservice,'
+      break
+    endif
+  endfor
+
+  # Widerruf, Ruecksendung, Reklamation (Rundgang 2026-10-26, Runde 2, #82):
+  # Vertrag widerrufen, die Belehrung (eine Richtlinie, keine Seite: Kennung
+  # "refund-policy", die Aufrufer nehmen dafuer shop.refund_policy) und die
+  # Kontaktseite, bis es eine eigene Reklamationsseite gibt.
+  assign tp_sz_widerruf = 'widerruf,rucksend,ruecksend,ruckgabe,rueckgabe,retour,umtausch,zuruckgeb,zurueckgeb,reklam,mangel,beschadig,beschaedig' | split: ','
+  for tp_sz_wort in tp_sz_widerruf
+    if tp_sz_text contains tp_sz_wort
+      assign tp_sz_handles = tp_sz_handles | append: 'vertrag-widerrufen,refund-policy,'
+      unless tp_sz_handles contains 'kontakt,'
+        assign tp_sz_handles = tp_sz_handles | append: 'kontakt,'
+      endunless
       break
     endif
   endfor
