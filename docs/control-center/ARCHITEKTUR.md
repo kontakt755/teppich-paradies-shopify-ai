@@ -1752,6 +1752,24 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   in 2-%-Schritten kleiner. Passt es auch in Mindestschrift nicht (z. B. Artikelnummer mit 50 Zeichen
   ohne Leerzeichen), zeigt die Vorschau „Passt nicht auf …“ und Druck sowie PNG bleiben gesperrt.
   Technikwerte und Adresszeilen brechen an Wortgrenzen um, bevor sie zu klein werden.
+- **Rand, Aufbau und Druckversatz (26.10., nach den ersten Ausdrucken):** Der B1 hat nur 48 mm Druckkopf,
+  Rolle und Druckanfang sitzen nicht auf den Millimeter (NiimBlue #92) - mit 2,25 mm Rand fehlten auf
+  echten Etiketten die letzte Ziffer der Art.-Nr. und einmal die Shopadresse oben halb. Deshalb 4 mm Rand
+  rundum (32 px, `ETIKETT.rand`, gilt auch fuer Adressaufkleber). Aufbau der Musteraufkleber: Shopadresse
+  klein und normal, Serie gross und fett, Farbe normal, eine Linie, Mittelteil (QR-Code, bei Paketware
+  mit Technik als Tabelle: Bezeichnung links, Wert fett rechtsbuendig; „Stärke / Nutzschicht“ als zwei
+  Zeilen), eine Linie, unten „Art.-Nr.“ normal und die Nummer fett in einer Zeile. Namen nehmen lieber
+  eine kleinere Schrift als eine Zeile mehr. Im Hochformat steht bei genug Platz „Produkt im Shop
+  ansehen“ unter dem QR-Code (`QR_HINWEIS`). Eckdaten: Ware ohne Paket (Teppichboden, Sauberlauf,
+  Linoleum …) bekommt Material, Breite (`breitenAus`: Option „Breite“ der Farbe, sonst
+  `custom.rollenbreite`), Florhoehe bzw. Staerke und Nutzungsklasse, alle Ware „Fußbodenheizung: ja“, wenn
+  belegt - als Zeilen mit `zusatz: true`. `layout()` setzt sie der Reihe nach nur, solange Serie und Technik
+  nicht kleiner werden (Serie bis 40 px, Technik bis 18 px in 50 x 50), und meldet in `zeilen`, was wirklich
+  draufsteht. Sitzt der Druck trotzdem schief, stellt man unter
+  „Drucker-Einstellungen“ einen Versatz ein (bis 3 mm je Richtung, je Rechner in `localStorage`
+  `tp-etikett-versatz`); er verschiebt nur das Druckbild, nicht Vorschau oder PNG. An den Drucker geht genau
+  die Kopfbreite aus `getModelMetadata().printheadPixels` (B1: 384 px), mittig aus dem 400 px breiten Bild
+  geschnitten (`aufDruckkopf`); ein breiteres Bild legte die Firmware nicht mittig auf den Kopf.
 - **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
   Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
   im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt

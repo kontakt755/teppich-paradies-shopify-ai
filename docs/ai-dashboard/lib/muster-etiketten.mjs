@@ -7,11 +7,11 @@
  * darunter "Auch als", wenn das Lexikon denselben Dekor in einer anderen Vinyl-Art belegt
  * (gleicherDekor, operations/lib/lexikon.mjs).
  *
- * Layout (Inhaber 2026-10-20, 400 x 400 px, schwarz/weiss): oben der Shopname als Absender,
- * darunter Serie gross, Farbe, bei Paketware (Vinyl/Designboden) eine Trennlinie und links
- * Staerke/Nutzschicht, Nutzungsklassen und Format, rechts der QR-Code zur Produktseite; sonst
- * steht der QR-Code groesser in der Mitte. Unten "Art.-Nr." mit der SKU der echten Produktvariante -
- * nie die SKU des Musterartikels, nie ein Lieferantenname.
+ * Layout (Inhaber 2026-10-20, 400 x 400 px, schwarz/weiss; ueberarbeitet 26.10.): oben der Shopname als
+ * Absender, darunter Serie gross, Farbe, eine Linie; dazwischen bei Paketware (Vinyl/Designboden) links
+ * Art, Staerke, Nutzschicht, Nutzungsklassen und Format, rechts der QR-Code zur Produktseite; sonst
+ * steht der QR-Code in der Mitte. Unter einer zweiten Linie "Art.-Nr." mit der SKU der echten
+ * Produktvariante - nie die SKU des Musterartikels, nie ein Lieferantenname.
  *
  * Nur was Bestellung und Produktlexikon hergeben. Fehlt etwas, bleibt das Feld leer (Technikzeile
  * faellt weg) und die Vorschau markiert es.
@@ -24,13 +24,17 @@ import { musterTitel } from './bestellinhalt.mjs';
 
 export const SHOP_URL = 'https://www.teppich-paradies.net';
 export const ABSENDER = 'www.teppich-paradies.net';
+/** Unter dem QR-Code, wo Platz ist (50 x 80, 50 x 100): wofuer der Code ist. */
+export const QR_HINWEIS = 'Produkt im Shop ansehen';
 
 /**
  * 50 x 50 mm bei 203 dpi = 400 x 400 px (NiimBlue-Vorgabe fuer B1 50 x 50). Druckrichtung "top"
- * laut niimbluelib (printer_models): das Bild geht ungedreht raus. Der Druckkopf hat 384 px -
- * der Rand von 18 px haelt alles Wichtige im bedruckbaren Bereich.
+ * laut niimbluelib (printer_models): das Bild geht ungedreht raus. Der Druckkopf hat nur 384 px
+ * (48 mm), und Rolle wie Druckanfang sitzen nicht auf den Millimeter genau (NiimBlue #92). Mit 2,25 mm
+ * Rand war auf echten Etiketten die letzte Ziffer der Art.-Nr. rechts und einmal die Shopadresse oben
+ * halb weg (Foto Inhaber 26.10.) - deshalb 4 mm Rand rundum (32 px).
  */
-export const ETIKETT = { format: '50x50', name: '50 × 50 mm', breite: 400, hoehe: 400, rand: 18, faktor: 1, dichteStandard: 3, dichteMin: 1, dichteMax: 5 };
+export const ETIKETT = { format: '50x50', name: '50 × 50 mm', breite: 400, hoehe: 400, rand: 32, faktor: 1, dichteStandard: 3, dichteMin: 1, dichteMax: 5 };
 
 /**
  * Etikettengroessen fuer den B1. Der Druckkopf bleibt 50 mm breit, die Laenge laeuft in
@@ -87,7 +91,7 @@ export function originalHandle(handle) {
   return /^[a-z0-9][a-z0-9-]*$/i.test(h) ? h : '';
 }
 
-const WARENGRUPPE = /\s+(Teppichboden|Teppichfliesen?|Teppich|Vinylboden|Vinyl|Designboden|Designbelag|Klickvinyl|Klick-Vinyl|Laminat|Linoleum|PVC-Boden|PVC|Parkett|Kork(boden)?|Nadelvlies|Sauberlaufmatte|Läufer)\b.*$/i;
+const WARENGRUPPE = /\s+(Teppichboden|Teppichfliesen?|Teppich|Vinylboden|Vinyl|Designboden|Designbelag|Klickvinyl|Klick-Vinyl|Laminat|Linoleum(boden)?|Kautschuk(boden)?|PVC-Boden|PVC|Parkett|Kork(boden)?|Nadelvlies|Sauberlaufmatte|Läufer)\b.*$/i;
 
 /**
  * Serie und Farbe aus Produkttitel, Farbe und Marke (custom.marke): "Solenta Eiche Dunkelbraun –
@@ -128,26 +132,65 @@ export function andereArten(produkt) {
 }
 
 /**
- * Technikzeilen aus den Lexikon-Eigenschaften; fehlende Zeilen fallen weg. Paketware bekommt alle
- * Zeilen, Vinyl von der Rolle nur die Art (und "Auch als"), alles andere keine.
+ * Rollenbreiten aus den Varianten (Option "Breite", z. B. "400 cm"), bei bekannter Farbe nur deren Breiten;
+ * ohne solche Option custom.rollenbreite (in m). Ergebnis "400 / 500 cm", sonst leer - "Wunschmaß" und
+ * Millimeterwerte (Profile) sind keine Rollenbreite.
  */
-export function technikZeilen(eig = {}, auchAls = []) {
+export function breitenAus(produkt, farbe = '') {
+  const varianten = produkt?.varianten || [];
+  const f = text(farbe).toLowerCase();
+  const eigene = f ? varianten.filter(v => text(v.farbe).toLowerCase() === f) : [];
+  const cm = new Set();
+  for (const v of eigene.length ? eigene : varianten) {
+    for (const o of v.optionen || []) {
+      const m = /^breite$/i.test(text(o.name)) && /^(\d+(?:[.,]\d+)?)\s*cm$/i.exec(text(o.wert));
+      if (m) cm.add(Number(m[1].replace(',', '.')));
+    }
+  }
+  const rolle = Number(String(produkt?.eigenschaften?.rollenbreite ?? '').replace(',', '.'));
+  if (!cm.size && rolle > 0 && rolle <= 10) cm.add(Math.round(rolle * 100));
+  return cm.size ? `${[...cm].sort((x, y) => x - y).map(z => String(z).replace('.', ',')).join(' / ')} cm` : '';
+}
+
+/**
+ * Technikzeilen aus den Lexikon-Eigenschaften; fehlende Zeilen fallen weg. Paketware bekommt Art, Staerke/
+ * Nutzschicht, Nutzungsklassen und Format, Vinyl von der Rolle die Art (und "Auch als").
+ *
+ * Eckdaten (Inhaber 26.10.: "wenn so viel Platz ist, ein paar Eckdaten auch zu den anderen Sachen"):
+ * Teppichboden und alle andere Ware ohne Paket bekommen Material, Breite, Florhoehe (sonst Staerke) und
+ * Nutzungsklasse, alle dazu "Fußbodenheizung: ja", wenn belegt. Diese Zeilen tragen `zusatz: true` -
+ * layout() setzt sie nur, solange dafuer nichts kleiner wird.
+ */
+export function technikZeilen(eig = {}, auchAls = [], breiten = '') {
   // custom.arten (Metaobjekt-Liste, im Lexikon schon Klartext): "Klickvinyl" oder mehrere.
   const art = text(eig?.arten).split(/\s*,\s*/).filter(Boolean).join(' / ');
   const paket = !leer(eig?.qmProPaket);
-  if (!paket && !/vinyl/i.test(art)) return [];
-  const z = [];
-  if (art) z.push({ label: 'Art', wert: art });
-  const auch = [...new Set((auchAls || []).map(a => text(a)).filter(Boolean))];
-  if (auch.length) z.push({ label: 'Auch als', wert: auch.join(' / ') });
-  if (!paket) return z;
-  const st = text(eig.gesamtstaerke), ns = text(eig.nutzschicht);
-  if (st || ns) z.push({ label: st && ns ? 'Stärke / Nutzschicht' : st ? 'Stärke' : 'Nutzschicht', wert: [st, ns].filter(Boolean).join(' / ') });
-  const kl = klassenNummern(eig.nutzungsklasse);
-  if (kl) z.push({ label: 'Nutzungsklasse', wert: kl });
-  const fo = text(eig.format);
-  if (fo) z.push({ label: 'Format', wert: fo });
-  return z;
+  const z = [], zusatz = [];
+  if (paket || /vinyl/i.test(art)) {
+    if (art) z.push({ label: 'Art', wert: art });
+    const auch = [...new Set((auchAls || []).map(a => text(a)).filter(Boolean))];
+    if (auch.length) z.push({ label: 'Auch als', wert: auch.join(' / ') });
+  }
+  const st = text(eig?.gesamtstaerke), ns = text(eig?.nutzschicht);
+  const staerke = st || ns ? { label: st && ns ? 'Stärke / Nutzschicht' : st ? 'Stärke' : 'Nutzschicht', wert: [st, ns].filter(Boolean).join(' / ') } : null;
+  const kl = klassenNummern(eig?.nutzungsklasse);
+  if (paket) {
+    if (staerke) z.push(staerke);
+    if (kl) z.push({ label: 'Nutzungsklasse', wert: kl });
+    const fo = text(eig.format);
+    if (fo) z.push({ label: 'Format', wert: fo });
+  } else {
+    // Lange Materialangaben ("Polyethylen-Monofilament (glatt) und …") gehoeren nicht aufs Muster.
+    const material = [text(eig?.fasermaterial), text(eig?.material)].find(Boolean);
+    if (material && material.length <= 40) zusatz.push({ label: 'Material', wert: material });
+    if (text(breiten)) zusatz.push({ label: 'Breite', wert: text(breiten) });
+    const flor = text(eig?.florhoehe);
+    if (flor) zusatz.push({ label: 'Florhöhe', wert: flor });
+    else if (staerke) zusatz.push(staerke);
+    if (kl) zusatz.push({ label: 'Nutzungsklasse', wert: kl });
+  }
+  if (/^ja$/i.test(text(eig?.fussbodenheizung))) zusatz.push({ label: 'Fußbodenheizung', wert: 'ja' });
+  return [...z, ...zusatz.map(r => ({ ...r, zusatz: true }))];
 }
 
 /** Ein Etikett aus Werten (Bestellposition oder Eingabe von Hand). `fehlt` nennt leere Pflichtfelder; ohne SKU entfaellt die Art.-Nr.-Zeile ohne Hinweis. */
@@ -186,7 +229,7 @@ export function etikettFuerPosition(p, produkt = null) {
     farbe: sf.farbe,
     sku: text(variante?.sku) || text(p?.musterQuelle?.sku),
     handle: handleFuerPosition(p),
-    technik: technikZeilen(produkt?.eigenschaften, andereArten(produkt)),
+    technik: technikZeilen(produkt?.eigenschaften, andereArten(produkt), breitenAus(produkt, farbe)),
   });
 }
 
@@ -297,109 +340,218 @@ export function layoutProbleme({ texte = [], linien = [], qr = null }, mass, for
  * Was wo steht, in Pixeln des Etiketts. `mass(text, groesse, fett)` misst Text (Canvas: measureText).
  * Zuerst in der Groesse des Formats; meldet layoutProbleme etwas, wird das ganze Etikett in Schritten von
  * 2 % kleiner gesetzt, bis zur Mindestschrift. `passt: false` heisst: auch dann nicht - so nicht drucken.
- * @returns {{texte: {text: string, x: number, y: number, groesse: number, fett: boolean}[], linien: {x1: number, x2: number, y: number}[], qr: {x: number, y: number, groesse: number}|null, passt: boolean, probleme: string[]}}
+ * `zeilen`: die Technikzeilen, die wirklich auf dem Etikett stehen (Zusatzzeilen nur, wo Platz war).
+ * @returns {{texte: {text: string, x: number, y: number, groesse: number, fett: boolean}[], linien: {x1: number, x2: number, y: number}[], qr: {x: number, y: number, groesse: number}|null, passt: boolean, probleme: string[], zeilen: {label: string, wert: string, zusatz?: boolean}[]}}
  */
 export function layout(e, mass, format = ETIKETT) {
+  const technik = e.technik || [];
+  const fest = technik.filter(z => !z.zusatz);
+  const basis = layoutMit({ ...e, technik: fest }, mass, format);
+  // Zusatzzeilen der Reihe nach dazu, jede nur, wenn dafuer nichts schrumpft: gleiche Skala, Serie und
+  // Technik nicht kleiner als ohne - ausser wo sie ohne Zusatz groesser sind als noetig (Serie ueber 40 px,
+  // Technik ueber 18 px in 50 x 50; auf langen Rollen entsprechend mehr). Passt eine Zeile nicht, kommt
+  // die naechste dran.
+  let gewaehlt = basis, zeilen = fest;
+  const f = format.faktor || 1;
+  const serieMin = Math.min(basis.masse.serie, Math.round(40 * f));
+  const technikMin = Math.min(basis.masse.technik, Math.round(18 * f));
+  for (const z of technik.filter(r => r.zusatz)) {
+    if (!basis.passt) break;
+    const versuch = layoutMit({ ...e, technik: [...zeilen, z] }, mass, format);
+    const m = versuch.masse;
+    if (versuch.passt && m.skala === basis.masse.skala && m.serie >= serieMin && (!fest.length || m.technik >= technikMin)) {
+      gewaehlt = versuch; zeilen = [...zeilen, z];
+    }
+  }
+  return gewaehlt;
+}
+
+function layoutMit(e, mass, format) {
   let l;
   for (let skala = format.faktor || 1; ; skala = Math.round((skala - 0.02) * 100) / 100) {
     l = entwurf(e, mass, format, skala);
     l.probleme.push(...layoutProbleme(l, mass, format, e.url));
     if (!l.probleme.length || skala * 16 <= MIN_SCHRIFT) break;
   }
-  return { ...l, passt: !l.probleme.length };
+  return { ...l, passt: !l.probleme.length, zeilen: e.technik || [] };
 }
 
-/** Ein Layout in Skala `skala` (1 = 50 x 50); prueft selbst nur, ob Woerter getrennt werden mussten. */
+/**
+ * Ein Layout in Skala `skala` (1 = 50 x 50); prueft selbst nur, ob Woerter getrennt werden mussten.
+ *
+ * Aufbau (Inhaber 26.10.: "professioneller, mittiger, besser angeordnet"): eine Stimme pro Ebene statt
+ * alles fett. Oben die Shopadresse klein und normal, darunter die Serie gross und fett, die Farbe normal.
+ * Zwei duenne Linien rahmen den Mittelteil (QR-Code, bei Paketware mit Technik), unten "Art.-Nr." normal
+ * und die Nummer fett in einer Zeile. Mittige Zeilen halten 1 mm mehr Abstand zum Rand als die Linien.
+ */
 function entwurf(e, mass, format, skala) {
   const { breite, hoehe, rand } = format;
   const px = n => Math.round(n * skala);
   const innen = breite - 2 * rand;
-  // Hochformat (50 x 80, 50 x 100): Technik ueber die volle Breite, QR-Code darunter.
+  const satz = innen - 2 * px(8);
+  // Hochformat (50 x 80, 50 x 100): Technik als Tabelle ueber die volle Breite, QR-Code darunter.
   const hoch = hoehe > breite;
   const technik = e.technik || [];
   const probleme = [];
   const mittig = (g, f) => z => Math.round((breite - mass(z, g, f)) / 2);
+  const luft = px(10);
+  const unterkante = t => t.y + tinte(t.text, t.groesse).unten;
+  const oberkante = t => t.y - tinte(t.text, t.groesse).oben;
 
-  const absender = einpassen(ABSENDER, innen, px(20), MIN_SCHRIFT, true, mass);
-  const kopf = stapeln(absender.zeilen, absender.g, true, { y: rand }, 0, mittig(absender.g, true));
+  const absender = einpassen(ABSENDER, satz, px(18), MIN_SCHRIFT, false, mass);
+  const kopf = stapeln(absender.zeilen, absender.g, false, { y: rand }, 0, mittig(absender.g, false));
 
-  // Unten die Artikelnummer; was dazwischen frei ist, bekommen Namen, Technik und QR-Code.
+  // Unten die Artikelnummer: "Art.-Nr." und Nummer in einer Zeile, sonst untereinander.
   let artikel = [];
   if (e.sku) {
-    const a = einpassen(`Art.-Nr. ${e.sku}`, innen, px(24), MIN_SCHRIFT, true, mass);
-    if (a.zuLang) probleme.push(`„Art.-Nr. ${e.sku}“ ist zu lang`);
-    const z = stapeln(a.zeilen, a.g, true, { y: 0 }, 0, mittig(a.g, true));
-    const ab = hoehe - rand - Math.max(px(24), z.at(-1).y + a.g);
-    artikel = z.map(t => ({ ...t, y: t.y + ab }));
+    const LABEL = 'Art.-Nr.';
+    let g = px(20);
+    const breiteBei = k => mass(LABEL, k, false) + Math.round(k * 0.3) + mass(e.sku, k, true);
+    while (g > MIN_SCHRIFT && breiteBei(g) > satz) g--;
+    if (breiteBei(g) <= satz) {
+      const x = Math.round((breite - breiteBei(g)) / 2);
+      const y = hoehe - rand - g;
+      artikel = [{ text: LABEL, x, y, groesse: g, fett: false }, { text: e.sku, x: Math.round(x + mass(LABEL, g, false) + g * 0.3), y, groesse: g, fett: true }];
+    } else {
+      const n = einpassen(e.sku, satz, px(20), MIN_SCHRIFT, true, mass);
+      if (n.zuLang) probleme.push(`„Art.-Nr. ${e.sku}“ ist zu lang`);
+      const z = stapeln([LABEL], n.g, false, { y: 0 }, 0, mittig(n.g, false));
+      z.push(...stapeln(n.zeilen, n.g, true, z[0], Math.round(n.g * 1.15), mittig(n.g, true)));
+      const ab = hoehe - rand - (z.at(-1).y + n.g);
+      artikel = z.map(t => ({ ...t, y: t.y + ab }));
+    }
   }
-  const unten = (artikel.length ? artikel[0].y - tinte(artikel[0].text, artikel[0].groesse).oben : hoehe - rand) - px(8);
+  const mitteUnten = artikel.length ? Math.min(...artikel.map(oberkante)) - luft - 2 - luft : hoehe - rand;
 
   const qrMin = e.url ? qrMindest(e.url) : 0;
   const qrPlatz = e.url ? Math.max(px(100), qrMin) : 0;
+  const qrMax = Math.min(px(160), innen);
   // Der QR-Code rechts nimmt hoechstens die halbe Breite, sonst bleibt fuer die Technik nichts.
   const qrRechts = e.url && !hoch ? Math.min(px(140), Math.floor(innen / 2)) : 0;
-  /** Technik linksbuendig in einer Spalte, Bezeichnung in Schrift l, Wert fett und px(4) groesser; y ab 0. */
-  const wPlus = px(24) - px(20);
-  const technikSetzen = (l, spalte) => {
+  const lMin = Math.max(MIN_SCHRIFT, px(16));
+  const wPlus = px(4);
+  const zeilen = technik.map(({ label, wert }) => [text(label), text(wert)]);
+  // In der Tabelle bekommt "Stärke / Nutzschicht" mit "10 mm / 0,55 mm" je eine eigene Zeile.
+  const tabelle = zeilen.flatMap(([a, b]) => {
+    const as = a.split(' / '), bs = b.split(' / ');
+    return as.length > 1 && as.length === bs.length ? as.map((x, i) => [x, bs[i]]) : [[a, b]];
+  });
+  const hoeheVon = texte => (texte.length ? Math.max(...texte.map(t => t.y + t.groesse)) : 0);
+  /**
+   * Technik als Tabelle ab y = 0: Bezeichnung links, Wert fett rechtsbuendig an der Spalte, gleiche Schrift
+   * und Grundlinie. null, wenn eine Zeile nicht in die Spalte passt.
+   */
+  const tabelleSetzen = (l, spalte) => {
+    if (!tabelle.every(([a, b]) => mass(a, l, false) + px(16) + mass(b, l, true) <= spalte)) return null;
+    const texte = [];
+    let vorige = null;
+    for (const [a, b] of tabelle) {
+      const ink = [a, b].filter(Boolean).map(t => tinte(t, l));
+      const oben = Math.max(0, ...ink.map(i => i.oben));
+      const y = vorige ? vorige.y + Math.max(Math.round(l * 1.5), vorige.unten + oben + 2) : oben;
+      if (a) texte.push({ text: a, x: rand, y, groesse: l, fett: false });
+      if (b) texte.push({ text: b, x: Math.floor(rand + spalte - mass(b, l, true)), y, groesse: l, fett: true });
+      vorige = { y, unten: Math.max(0, ...ink.map(i => i.unten)) };
+    }
+    return { texte, zuLang: [], hoehe: hoeheVon(texte), l };
+  };
+  /** Technik untereinander ab y = 0 (lange Werte, z. B. mehrere "Auch als"): Bezeichnung in Schrift l, darunter der Wert fett und px(4) groesser. */
+  const stapelSetzen = (l, spalte) => {
     const texte = [], zuLang = [];
-    for (const { label, wert } of technik) {
+    for (const [label, wert] of zeilen) {
       for (const [t, g, gMin, fett] of [[label, l, MIN_SCHRIFT, false], [wert, l + wPlus, Math.max(MIN_SCHRIFT, Math.round((l + wPlus) * 0.75)), true]]) {
-        if (!text(t)) continue;
-        const p = einpassen(text(t), spalte, g, gMin, fett, mass);
+        if (!t) continue;
+        const p = einpassen(t, spalte, g, gMin, fett, mass);
         if (p.zuLang) zuLang.push(`„${t}“ ist zu lang`);
         const vorige = texte.at(-1) || { y: 0 };
         texte.push(...stapeln(p.zeilen, p.g, fett, vorige, vorige.groesse + (fett ? 1 : 3), rand));
       }
     }
-    const letzte = texte.at(-1);
-    return { texte, zuLang, hoehe: letzte ? letzte.y + letzte.groesse : 0 };
+    return { texte, zuLang, hoehe: hoeheVon(texte), l };
   };
-  const lMin = Math.max(MIN_SCHRIFT, px(16));
-  const technikMin = technik.length ? technikSetzen(lMin, innen - (qrRechts ? qrRechts + px(12) : 0)).hoehe : 0;
-  const reserve = !technik.length ? qrPlatz : hoch ? technikMin + (e.url ? px(8) + qrPlatz : 0) : Math.max(technikMin, qrPlatz);
+  /** Lieber Tabelle (kompakt, ruhig) als untereinander - jeweils in der groessten Schrift, die in `platz` passt. */
+  const technikSetzen = (spalte, platz) => {
+    for (let l = px(20); l >= lMin; l--) { const t = tabelleSetzen(l, spalte); if (t && t.hoehe <= platz) return t; }
+    let l = px(20), block = stapelSetzen(l, spalte);
+    while (l > lMin && block.hoehe > platz) block = stapelSetzen(--l, spalte);
+    return block;
+  };
+  const spalteQuer = innen - (qrRechts ? qrRechts + px(12) : 0);
+  const spalteMin = hoch ? innen : spalteQuer;
+  const technikMin = technik.length ? Math.min(tabelleSetzen(lMin, spalteMin)?.hoehe ?? Infinity, stapelSetzen(lMin, spalteMin).hoehe) : 0;
+  const reserve = !technik.length ? qrPlatz : hoch ? technikMin + (e.url ? luft + qrPlatz : 0) : Math.max(technikMin, qrPlatz);
+  const mitteDa = Boolean(e.url || technik.length);
 
   // Ganze Namen erhalten, auch bei Einzeldekoren ohne Technik: so gross, wie der reservierte Platz zulaesst.
   // Das Etikett wird nur laenger, nicht breiter: kein Wort darf getrennt werden muessen.
+  // Lieber kleiner als mehr Zeilen (Foto Inhaber 26.10.: vierzeiliger Kopf wirkte unruhig): die wenigsten
+  // Zeilen, die bis hinunter zu `boden` erreichbar sind, und dafuer die groesste Schrift.
+  const zeilenFuer = (t, g, fett, boden) => {
+    if (!t) return { g, zeilen: [] };
+    const zeilenBei = k => (mass(t, k, fett) <= satz ? [t] : umbrechen(t, satz, x => mass(x, k, fett), Infinity));
+    let best = { g, zeilen: zeilenBei(g) };
+    for (let k = g - 1; k >= Math.max(MIN_SCHRIFT, boden) && best.zeilen.length > 1; k--) {
+      const z = zeilenBei(k);
+      if (z.length < best.zeilen.length) best = { g: k, zeilen: z };
+    }
+    return best;
+  };
   const sMin = Math.max(MIN_SCHRIFT, px(18));
-  let namen = [], start = 0, getrennt = false;
+  let namen = [], mitteOben = 0, getrennt = false, serieG = 0;
   for (let s = px(44); s >= sMin; s--) {
-    const f = Math.max(MIN_SCHRIFT, Math.round(30 * s / 44));
-    getrennt = !woerterPassen(e.serie, innen, s, true, mass) || !woerterPassen(e.farbe, innen, f, true, mass);
+    const sz = zeilenFuer(e.serie, s, true, Math.min(Math.round(s * 0.7), px(28)));
+    const fz = zeilenFuer(e.farbe, Math.max(MIN_SCHRIFT, Math.round(30 * sz.g / 44)), false, Math.min(Math.round(30 * sz.g / 44 * 0.7), px(20)));
+    getrennt = !woerterPassen(e.serie, satz, sz.g, true, mass) || !woerterPassen(e.farbe, satz, fz.g, false, mass);
     if (getrennt && s > sMin) continue;
-    const serie = stapeln(umbrechen(e.serie, innen, t => mass(t, s, true), Infinity), s, true, kopf.at(-1), Math.round(absender.g * 1.15) + px(8), mittig(s, true));
-    const farbe = stapeln(umbrechen(e.farbe, innen, t => mass(t, f, true), Infinity), f, true, serie.at(-1) || kopf.at(-1), Math.round(s * 1.15), mittig(f, true));
+    const serie = stapeln(sz.zeilen, sz.g, true, kopf.at(-1), Math.round(absender.g * 1.15) + px(10), mittig(sz.g, true));
+    const farbe = stapeln(fz.zeilen, fz.g, false, serie.at(-1) || kopf.at(-1), Math.round(sz.g * 1.15), mittig(fz.g, false));
     namen = [...serie, ...farbe];
-    const letzte = namen.at(-1) || kopf.at(-1);
-    start = letzte.y + Math.round(letzte.groesse * 1.15);
-    if (unten - start - (technik.length ? px(4) + px(10) : px(8)) >= reserve) break;
+    serieG = sz.g;
+    mitteOben = unterkante(namen.at(-1) || kopf.at(-1)) + (mitteDa ? luft + 2 + luft : 0);
+    if (mitteUnten - mitteOben >= reserve) break;
   }
   if (getrennt) probleme.push(`„${[e.serie, e.farbe].filter(Boolean).join(' ')}“ hat ein zu langes Wort`);
 
   const texte = [...kopf, ...namen, ...artikel];
   const linien = [];
-  let qr = null;
-  let y = start;
+  if (mitteDa) linien.push({ x1: rand, x2: breite - rand, y: mitteOben - luft - 2 });
+  if (artikel.length) linien.push({ x1: rand, x2: breite - rand, y: mitteUnten + luft });
+  const platz = mitteUnten - mitteOben;
+  let qr = null, technikG = 0;
+  /**
+   * QR-Code mittig unter einem Block der Hoehe `ueber` (Abstand `abstand`), alles als Gruppe mittig zwischen
+   * den Linien. Bleibt im Hochformat genug Luft, steht darunter klein, wofuer der Code ist. Gibt die
+   * Oberkante der Gruppe zurueck.
+   */
+  const qrMitHinweis = (ueber, abstand) => {
+    const g = e.url ? Math.min(qrMax, platz - ueber - abstand) : 0;
+    const mitQr = g > 0 && g >= qrMin;
+    const hg = Math.max(MIN_SCHRIFT, px(16));
+    const hinweis = hoch && mitQr && platz - ueber - abstand - g >= 3 * luft + hg && mass(QR_HINWEIS, hg, false) <= satz;
+    const gruppe = ueber + (mitQr ? abstand + g : 0) + (hinweis ? luft + hg : 0);
+    const ab = mitteOben + Math.max(0, Math.floor((platz - gruppe) / 2));
+    if (mitQr) qr = { x: Math.round((breite - g) / 2), y: ab + ueber + abstand, groesse: g };
+    if (hinweis) texte.push({ text: QR_HINWEIS, x: mittig(hg, false)(QR_HINWEIS), y: qr.y + g + luft, groesse: hg, fett: false });
+    return ab;
+  };
   if (technik.length) {
-    y += px(4);
-    linien.push({ x1: rand, x2: breite - rand, y });
-    y += px(10);
-    const qrGroesse = Math.max(0, Math.min(qrRechts, unten - y));
-    const spalte = innen - (qrGroesse ? qrGroesse + px(12) : 0);
-    const platz = unten - y - (hoch && e.url ? px(8) + qrPlatz : 0);
-    let l = px(20), block = technikSetzen(l, spalte);
-    while (l > lMin && block.hoehe > platz) block = technikSetzen(--l, spalte);
-    texte.push(...block.texte.map(t => ({ ...t, y: t.y + y })));
+    const qrGroesse = hoch ? 0 : Math.max(0, Math.min(qrRechts, platz));
+    const spalte = hoch ? innen : innen - (qrGroesse ? qrGroesse + px(12) : 0);
+    const technikPlatz = platz - (hoch && e.url ? luft + qrPlatz : 0);
+    const block = technikSetzen(spalte, technikPlatz);
+    technikG = block.l;
     probleme.push(...block.zuLang);
-    if (qrGroesse && qrGroesse >= qrMin) qr = { x: breite - rand - qrGroesse, y, groesse: qrGroesse };
-    if (hoch && e.url) {
-      const qy = y + block.hoehe + px(8);
-      const g = Math.min(px(180), innen, unten - qy);
-      if (g >= qrMin) qr = { x: Math.round((breite - g) / 2), y: qy + Math.floor((unten - qy - g) / 2), groesse: g };
+    if (hoch) {
+      const ab = qrMitHinweis(block.hoehe, block.hoehe ? luft : 0);
+      texte.push(...block.texte.map(t => ({ ...t, y: t.y + ab })));
+    } else {
+      // Querformat: Technik und QR-Code nebeneinander, gemeinsam mittig zwischen den Linien.
+      const ab = mitteOben + Math.max(0, Math.floor((platz - Math.max(block.hoehe, qrGroesse)) / 2));
+      texte.push(...block.texte.map(t => ({ ...t, y: t.y + ab })));
+      if (qrGroesse && qrGroesse >= qrMin) qr = { x: breite - rand - qrGroesse, y: ab, groesse: qrGroesse };
     }
   } else if (e.url) {
-    y += px(8);
-    const g = Math.min(px(180), innen, unten - y);
-    if (g >= qrMin) qr = { x: Math.round((breite - g) / 2), y: y + Math.floor((unten - y - g) / 2), groesse: g };
+    qrMitHinweis(0, 0);
   }
-  return { texte, linien, qr, probleme };
+  return { texte, linien, qr, probleme, masse: { skala, serie: serieG, technik: technikG } };
 }
