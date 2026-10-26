@@ -56,10 +56,20 @@
   endif
 -%}
 
-{%- comment -%} TP: leere Kollektion optional ganz ausblenden (Startseite "Stark reduziert", 2026-09-24) {%- endcomment -%}
+{%- comment -%}
+  TP: leere Liste optional ganz ausblenden (Startseite "Stark reduziert",
+  2026-09-24). Leer heisst seit 2026-10-26 (Rundgang #69): keine Karte
+  gezeigt - nicht nur "Kollektion ohne Produkte". Die Reiter in
+  "Aktuelle Angebote" lesen dieselbe Kollektion mit verschiedenen Vorlagen
+  (Rolle, Fliese); ein Reiter ohne passende Karte zeigte sonst Kopf und
+  "Alle ansehen" ohne Inhalt. Statt der Liste steht dann nur die Marke
+  data-tp-liste-leer, an der sections/tp-start-tabs den Reiter ausblendet.
+{%- endcomment -%}
 {%- if section.settings.tp_leer_ausblenden and section.settings.collection.products_count == 0 -%}
+<div data-tp-liste-leer hidden></div>
 {%- elsif tp_wk_modus == 'aus' -%}
 {%- else -%}
+{%- capture tp_pl_ausgabe -%}
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
   data-testid="product-list"
@@ -125,6 +135,16 @@
             if section.settings.collection.template_suffix == 'sonderposten'
               assign tp_ln_ohne_sp = false
             endif
+            # Nur sichtbare Angebote (Startseite "Aktuelle Angebote", Rundgang
+            # 2026-10-26 #69): dieselbe Regel wie Menuepunkt und Tag-Abgleich
+            # (snippets/tp-angebot-sichtbar - Streichpreis sichtbar oder zentrale
+            # Aktion, nie Sonderposten). Die angebote-*-Kollektionen fragen nur
+            # "Preis reduziert" ohne Datum; nach Aktionsende stuenden dort sonst
+            # Karten ohne Rabatt. Hoechstens 48 Pruefungen je Liste: nach Ende
+            # einer Aktion faellt jede Karte durch, und die Startseite soll dann
+            # nicht 250 Produkte durchrechnen.
+            assign tp_ln_nur_angebote = section.settings.tp_nur_angebote
+            assign tp_ln_geprueft = 0
           -%}
           {%- comment -%}
             Auslaufartikel (Tag "auslauf") ans Ende, wie in den Kategorien
@@ -159,6 +179,18 @@
                 if tp_ln_sp contains 'ja'
                   continue
                 endif
+              endif
+              if tp_ln_nur_angebote
+                if tp_ln_geprueft >= 48
+                  break
+                endif
+                assign tp_ln_geprueft = tp_ln_geprueft | plus: 1
+                capture tp_ln_angebot
+                  render 'tp-angebot-sichtbar', product: product
+                endcapture
+                unless tp_ln_angebot contains 'ja'
+                  continue
+                endunless
               endif
               assign tp_ln_gezeigt = tp_ln_gezeigt | append: tp_ln_marke
               assign tp_ln_zahl = tp_ln_zahl | plus: 1
@@ -233,6 +265,13 @@
     {%- content_for 'blocks' -%}
   </div>
 </div>
+{%- endcapture -%}
+{%- assign tp_pl_karten = list_items | strip -%}
+{%- if section.settings.tp_leer_ausblenden and tp_pl_karten == blank -%}
+<div data-tp-liste-leer hidden></div>
+{%- else -%}
+{{ tp_pl_ausgabe }}
+{%- endif -%}
 
 {%- endif -%}
 
@@ -266,6 +305,7 @@
       "type": "checkbox",
       "id": "tp_leer_ausblenden",
       "label": "Ohne Produkte ausblenden",
+      "info": "Auch wenn nach den Filtern unten keine Karte übrig bleibt.",
       "default": false
     },
     {
@@ -287,6 +327,13 @@
       "id": "tp_nur_vorlage",
       "label": "Nur Produktvorlage (z. B. rolle)",
       "info": "Zeigt nur Produkte mit dieser Produktvorlage, damit keine verschiedenen Kartenarten nebeneinander stehen. Wirkt mit \"Je Produktlinie nur ein Dekor\"."
+    },
+    {
+      "type": "checkbox",
+      "id": "tp_nur_angebote",
+      "label": "Nur sichtbare Angebote",
+      "info": "Zeigt nur Produkte, die gerade einen Rabatt anzeigen (wie der Menüpunkt Angebote), nie Sonderposten. Wirkt mit \"Je Produktlinie nur ein Dekor\".",
+      "default": false
     },
     {
       "type": "collection",
