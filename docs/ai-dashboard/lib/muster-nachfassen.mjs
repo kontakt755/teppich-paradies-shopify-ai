@@ -409,7 +409,8 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
     .trim();
   const block = `${mehrere ? 'Ihre gewählten Produkte' : 'Ihr gewähltes Produkt'}:\n${auswahl}\n\nFragen zum Maß? Wir beraten Sie gern.`;
   const mitAuswahl = auswahl && !vorlage.text.includes('{Link Produkt}')
-    ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
+    // \n+ nimmt die Leerzeile vor dem Gruss mit - sonst stuenden zwei Leerzeilen vor dem Block.
+    ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n+((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
   // Der Betreff hat keine Zeile, die wegfallen koennte: ein unbekannter Platzhalter bleibt stehen,
   // damit platzhalterFrei() ihn sieht und der Versandlauf die Mail zurueckhaelt (statt „Ihre Muster,“ zu schicken).
   return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitAuswahl };

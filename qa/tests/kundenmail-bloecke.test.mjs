@@ -104,10 +104,11 @@ test('#25 Lieferzeit je Warenposition aus service.lieferzeit, nur wenn gepflegt'
     mitLz(line('Kettelservice', 'KETTEL', { 'Kante umlaufend': '11,20 m' }, 'je 0,01 laufender Meter'), ''),
     line('Testleiste', 'TEST_1'),
     mitLz(line('Muster Testvelours', 'M-TEST_036'), 'ca. 2 Werktage'),
+    mitLz(line('Muster ohne Muster-SKU', '', { _Muster_ID: 'x' }), 'ca. 3 Werktage'),
   ] });
   assert.match(html, /Lieferzeit laut Produktseite/);
   assert.match(html, /<li>Testvelours Teppich nach Maß – Sandbeige \(036\): ca\. 5–8 Werktage inkl\. Ketteln<\/li>/);
-  assert.doesNotMatch(html, /Kettelservice[^<]*:|Testleiste[^<]*:|ca\. 2 Werktage/);
+  assert.doesNotMatch(html, /Kettelservice[^<]*:|Testleiste[^<]*:|ca\. 2 Werktage|ca\. 3 Werktage/);
   const ohne = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [line('Testleiste', 'TEST_1')] });
   assert.doesNotMatch(ohne, /Lieferzeit/);
   // Shopify liefert das Metafeld als Objekt mit .value

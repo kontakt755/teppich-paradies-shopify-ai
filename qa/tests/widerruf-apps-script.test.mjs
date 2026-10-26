@@ -119,6 +119,7 @@ test('#59 Tagesgrenze: ueber alle Stunden hoechstens 100 Einsendungen mit Einzel
   }
   assert.equal(gesendet, 100);
   assert.equal(u.mails.filter(m => /Tagesgrenze erreicht/.test(m.subject)).length, 1, 'die vierte Stunde: ein Sammelhinweis');
+  assert.match(u.mails.find(m => /Tagesgrenze erreicht/.test(m.subject)).body, /Weitere Einsendungen von heute werden nur noch im Protokoll erfasst/);
   assert.match(u.zeilen.at(-1)[8], /Tagesgrenze erreicht/);
   assert.equal(JSON.parse(u.props.get('TAGESZAEHLER')).n, 100, 'ueber der Grenze wird nicht mehr geschrieben');
 

@@ -214,7 +214,7 @@ function sammelText_(grenze, zeile) {
   return [
     'Am Widerrufsformular im Shop ist die ' + (grenze === 'tag' ? 'Tagesgrenze (' + MAX_GESAMT_TAG + ' Einsendungen)' : 'Stundengrenze (' + MAX_GESAMT_STUNDE + ' Einsendungen)') + ' erreicht.',
     '',
-    'Weitere Einsendungen dieser Stunde werden nur noch im Protokoll erfasst – ohne Eingangsbestätigung an die eingegebene Adresse und ohne Einzelkopie an uns.',
+    'Weitere Einsendungen ' + (grenze === 'tag' ? 'von heute' : 'dieser Stunde') + ' werden nur noch im Protokoll erfasst – ohne Eingangsbestätigung an die eingegebene Adresse und ohne Einzelkopie an uns.',
     'Dieser Hinweis kommt höchstens einmal je Stunde.',
     '',
     'Bitte das Protokoll prüfen (Spalte „Bestätigung Kunde“: „NICHT GESENDET“) und echte Widerrufe von Hand bestätigen:',

@@ -351,6 +351,8 @@ test('Allgemeine Vorlage: Linkliste auf eigenen Zeilen mit Leerzeile, Mehrzahl b
   assert.match(zwei.text, /Ihre gewählten Produkte finden Sie hier:\nTestboden · Grau\n.+variant=101\n\nTestboden · Sand\n.+variant=102\n\nWeitere Muster: /);
   const anhang = fuelleText(t.erinnerung, { kundenname: 'Testkunde', absender: 'Anna', produkte: [link(1, 'Testboden', 'Grau'), link(2, 'Testboden', 'Sand')] });
   assert.match(anhang.text, /Ihre gewählten Produkte:\nTestboden · Grau/, 'Vorlage ohne {Link Produkt}: Block mit Mehrzahl');
+  assert.match(anhang.text, /entschieden\?\n\nIhre gewählten Produkte:\n/, 'genau eine Leerzeile vor dem angehaengten Block');
+  assert.doesNotMatch(anhang.text, /\n{3,}/);
   assert.doesNotMatch(anhang.text, /Böden/);
 });
 

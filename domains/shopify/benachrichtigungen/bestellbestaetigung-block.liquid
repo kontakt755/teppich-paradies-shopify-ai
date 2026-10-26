@@ -156,6 +156,12 @@
       {%- for line in line_items -%}
         {%- assign tp_k_kopf = line.sku | slice: 0, 2 -%}
         {%- if tp_k_kopf == 'M-' or line.sku == 'TP-MUSTER-000' -%}{%- continue -%}{%- endif -%}
+        {%- comment -%}Muster wie oben auch an _Muster_ID erkennen - sonst stuende ein Muster in der Liste{%- endcomment -%}
+        {%- assign tp_k_ist_muster = false -%}
+        {%- for p in line.properties -%}
+          {%- if p.first == '_Muster_ID' and p.last != blank -%}{%- assign tp_k_ist_muster = true -%}{%- endif -%}
+        {%- endfor -%}
+        {%- if tp_k_ist_muster -%}{%- continue -%}{%- endif -%}
         {%- assign tp_k_lz_feld = line.product.metafields.service.lieferzeit -%}
         {%- assign tp_k_lz = tp_k_lz_feld.value | default: tp_k_lz_feld | strip -%}
         {%- if tp_k_lz == blank -%}{%- continue -%}{%- endif -%}
