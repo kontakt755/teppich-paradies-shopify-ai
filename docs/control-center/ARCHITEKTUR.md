@@ -1123,6 +1123,10 @@ GET /api/fehler/liste ──> Dialog zeigt „Gemeldet“ / „Bei der Technik�
   Klicks jetzt durch (`pointer-events`); vorher war „Fehler melden“ unten links dahinter nicht klickbar.
 - **Grenze:** Der Lauf ist eine geplante Aufgabe der Claude-App auf dem Mac. Ist die App zu, wartet die
   Meldung im Dialog sichtbar auf „Gemeldet“ und wird beim nächsten Lauf übertragen.
+- **Seit 2026-10-26 als Mac-Dienst** (`net.teppich-paradies.fehler-vorpruefung`, Abschnitt 28): alle
+  15 Minuten prüft ein Skript ohne KI, Claude startet nur bei neuen Meldungen (laufende höchstens alle
+  zwei Stunden). Die App-Aufgabe wird beim Einschalten pausiert (nie parallel: sonst doppelte
+  Einträge); Rückfall bei „Mac-Dienst gestört“: sie wieder aktivieren.
 
 ## 16. Robustheit des Dienstes (seit 2026-10-12)
 
@@ -2420,3 +2424,27 @@ Wechseln). `betriebszustand()` liefert daraus `nachziehen`; der Systemzustand ze
 „Dashboard-Updates: aktuell“. Offene Seiten bemerken die neue Version wie bisher ueber
 `/api/version` („Neue Version verfügbar“). Eine Sperrdatei verhindert zwei gleichzeitige Laeufe,
 auch wenn jemand `npm run -s betrieb:nachziehen` von Hand startet.
+
+## 28. Routinen als Mac-Dienst (Inhaber 26.10.2026)
+
+Fehlermeldungen → Werkbank, Postfach (Lieferbelege, Service-Anfragen) und die stündliche Prüfung des
+Datenstands laufen per launchd statt als geplante Aufgaben der Claude-App: Skript zuerst, Claude
+(`claude -p`, Sonnet, feste Werkzeugliste, Wache als PreToolUse-Hook) nur bei echter Arbeit, der
+Datenstand ganz ohne Claude. Das Nachziehen von `~/tp-dashboard` macht `net.teppich-paradies.nachziehen`
+(Abschnitt oben); es wartet, solange eine Routine-Sperre frisch ist (`routineLaeuft`), und eine
+Routine startet nicht, solange dessen Sperre frisch ist. Einzelheiten, Werkzeuglisten und
+Ein-/Abschalten: `operations/README.md`, Abschnitt „Routinen als Mac-Dienst“.
+
+**Im Control Center:** `/api/shopwache/status` liefert `routinen` mit (`operations/lib/routinen.mjs`,
+`routinenStand`): je eingerichteter Routine (Plist unter `~/Library/LaunchAgents`) `ok`, `meldung`,
+`zeit`, `seit`, `letzterErfolg`, `hinweis` und `stumm`/`stummText` aus
+`$TP_PRIVAT_DIR/routinen/*/status*.json`. Stumm = zu lange kein erfolgreicher Lauf, gezählt nur im
+Zeitfenster (Fehlermeldungen 2 Std., Postfach 5 Std. Mo–Sa 7–19 Uhr, Datenstand 3 Std. rund um die
+Uhr), ab dem letzten Erfolg, frühestens ab der Einrichtung – so fallen auch nie gestartete und
+dauernd übersprungene Dienste auf. `lib/todos.mjs` (`ausRoutinen`) macht daraus ein rotes
+Website-To-do „Mac-Dienst gestört: …“. Rot, weil sonst Mails nicht ankommen oder Meldungen liegen
+bleiben; deshalb sieht es der Inhaber auf seiner Startseite. Jede Statusdatei hat genau einen
+Schreiber (das jeweilige Skript), eine kaputte Datei gilt als Fehler.
+Tests: `operations/tests/routinen.test.mjs`, `routine-wache.test.mjs`, `claude-lauf.test.mjs`
+(mit einem falschen `claude`: fehlendes Pflichtwerkzeug, Zeitlimit mit Enkelprozess, Werkzeugprobe),
+`datenstand-pruefen.test.mjs`, `todos.test.mjs`, `api.test.mjs`.

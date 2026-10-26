@@ -12,6 +12,40 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** keine; die Info gilt fuer alle Umschlaege, eine Kennzeichnung je Muster gibt es nicht.
 - **Naechste Stufe:** Nach Merge `~/tp-dashboard` nachziehen.
 
+## 2026-10-26 · Routinen als Mac-Dienst: Fehlermeldungen, Postfach, Datenstand (Inhaber 26.10.)
+
+- **Geaendert:** Drei launchd-Dienste ersetzen teure App-Aufgaben (je Start ~105k Tokens). `claude-lauf.mjs
+  fehlermeldungen` prueft alle 15 Min. ohne KI und startet `claude -p` (Sonnet, dontAsk, feste Werkzeugliste)
+  nur bei neuen Meldungen bzw. hoechstens alle 2 Std. fuer laufende; `claude-lauf.mjs postfach` alle 2 Std.
+  zwei getrennte Laeufe (Lieferbelege, Service-Anfragen), Gmail nur lesend; `datenstand-pruefen.mjs`
+  prueft stuendlich `aktualisierung.json` (ohne KI). Eine Wache (PreToolUse-Hook per `--settings`,
+  `lib/routine-wache.mjs`) lehnt jeden Aufruf ausserhalb der festen Liste ab, auch kuenftige Freigaben aus
+  `~/.claude/settings.json`; Werkbank nur per Adresse aus dem privaten Auftragstext, ohne Loeschen.
+  `claude -p` laeuft mit `USER` und `CLAUDE_CODE_ENTRYPOINT=claude-desktop` (sonst fehlen Anmeldung bzw.
+  Artifact/ArtifactData); das init-Ereignis wird gegen die Pflichtwerkzeuge geprueft, sonst Abbruch
+  „werkzeug-fehlt“. Auftragstexte privat unter `routinen/auftraege/` (einmalig kopiert). Zusammenspiel mit
+  #1715: `routineLaeuft` in dessen Ruhe-Pruefung (eine Zeile in `betrieb-nachziehen.mjs`), Routinen
+  warten auf `betrieb-nachziehen.lock`. Sperre verfaellt nach Zeitlimit plus Puffer; Ueberspringen
+  schreibt ein Lebenszeichen; die Stumm-Pruefung kennt das Zeitfenster und meldet auch nie gestartete
+  Dienste. Rotes To-do „Mac-Dienst gestört“ auf Heute. `dienste-einrichten.sh --routinen` nutzt
+  `vorlage_einrichten`, prueft Skripte und Werkzeuge und laedt erst dann. Der fruehere Nachzieh-Teil
+  (`dienst-aktualisieren.mjs`) ist gestrichen - das macht #1715.
+- **Getestet:** `routinen.test.mjs` (Zeitfenster, Werkzeuglisten, Bewertung, Pflichtwerkzeuge, Vorpruefung,
+  Status, Stumm-Pruefung mit Fenster, Sperre mit Altersgrenze und EPERM, `routineLaeuft`), `routine-wache.test.mjs`
+  (Bash-Zerlegung, beide Laeufe, Hook-Skript inkl. Notbremse), `claude-lauf.test.mjs` (u. a. Nachziehen-Wartezeit,
+  falsches `claude` fuer fehlendes Werkzeug, Zeitlimit mit Enkelprozess, Werkzeugprobe), `datenstand-pruefen.test.mjs`,
+  `todos.test.mjs`, `api.test.mjs`, `betrieb-nachziehen.test.mjs` unveraendert gruen. Echt unter `env -i` wie in
+  der Plist: Werkzeugprobe beider Laeufe (alle Pflichtwerkzeuge da), Wache lehnt `ls /` unter `--restricted`
+  und `mcp__claude_ai_Gmail__list_labels` im Postfach ab, `fehlermeldungen --erzwingen` → „nichts zu tun“,
+  0 Ablehnungen, 3 Runden, 53k Tokens.
+- **Risiken:** `CLAUDE_CODE_ENTRYPOINT=claude-desktop` ist undokumentiert (die Pflichtpruefung faengt eine
+  Aenderung ab). Die echten Postfach-Laeufe und der Bildschirmfoto-Upload sind nur trocken bzw. per Probe
+  geprueft; wo `claude -p` grosse Gmail-Ergebnisse ablegt, ist aus dem Programm gelesen
+  (`~/.claude/projects/<Dienst>/…/tool-results/`), nicht im Lauf beobachtet - liegt es anderswo, lehnt die
+  Wache das Lesen ab und der Lauf meldet sich als gestört.
+- **Naechste Stufe:** Einschalten nach der Schrittliste (App-Aufgaben pausieren, `--routinen`), ersten
+  Postfach-Lauf im Log ansehen.
+
 ## 2026-10-26 · Gepackte Umschläge ohne Versandvermerk: richtiger nächster Schritt, nach 3 Tagen aufräumen (#1709)
 
 - **Geaendert:**

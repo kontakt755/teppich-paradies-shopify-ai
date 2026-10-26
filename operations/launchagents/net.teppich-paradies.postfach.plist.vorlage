@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.postfach</string>
+
+  <!-- Postfach als Mac-Dienst (operations/scripts/claude-lauf.mjs, Inhaber 2026-10-26): ersetzt
+       die App-Aufgaben "lieferbelege-postfach" und "serviceanfragen-postfach" (beim Einschalten
+       pausieren). Alle zwei Stunden Mo-Sa zwei getrennte claude -p-Laeufe nacheinander: erst
+       Lieferbelege, dann Service-Anfragen; Gmail nur lesend.
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-routinen -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/operations/scripts/claude-lauf.mjs</string>
+    <string>postfach</string>
+  </array>
+  <key>WorkingDirectory</key><string>__REPO_PFAD__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>TP_DIENST_DIR</key><string>__REPO_PFAD__</string>
+    <key>PATH</key><string>__NODE_DIR__:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+
+  <!-- 7:35, 9:35 ... 19:35; Sonntag endet der Lauf sofort (das Skript prueft die Zeit). -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>11</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>13</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>35</integer></dict>
+    <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>35</integer></dict>
+  </array>
+  <key>RunAtLoad</key><false/>
+  <key>ProcessType</key><string>Standard</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/teppich-paradies-analyse/routinen/postfach/dienst.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/teppich-paradies-analyse/routinen/postfach/dienst.log</string>
+</dict>
+</plist>
