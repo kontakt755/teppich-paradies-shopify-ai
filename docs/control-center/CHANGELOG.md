@@ -16,6 +16,9 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Tausch 0/27 Luecken, 0/10 Importfehler; Tausch plus Rueckweg 6 ms, 0/9 Importfehler.
   Neue Tests mit echter lokaler Bibliothek (offline installiert, Marke aus der Probe):
   Tausch, Warten ohne Ruhe, Rueckweg; derselbe Test scheitert gegen den alten Ablauf.
+  Codex-Review Runde 1 (0 P1, 2 P2) behoben: Abbruch nach dem Tausch vor dem Vorspulen
+  (Marke mit dem HEAD von vorher) und scheiterndes zweites Umbenennen (sofort zurueck),
+  beide Faelle mit Test.
 - **Risiken:** Probe und Dienst-Checkout muessen auf demselben Laufwerk liegen, sonst kopiert
   die Probe (`cpSync`) statt umzubenennen. Wartet ein Lauf mit neuen Bibliotheken auf Ruhe,
   installiert und testet der naechste erneut (rund 30 s).

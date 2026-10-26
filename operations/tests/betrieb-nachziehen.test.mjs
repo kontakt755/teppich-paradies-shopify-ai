@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
-  automationLesen, codexArbeitet, letzterLaufmarker, MODULE_NEU, MODULE_VORHER, moduleReste, moduleTauschen,
+  automationLesen, codexArbeitet, letzterLaufmarker, MODULE_HEAD, MODULE_NEU, MODULE_VORHER, moduleReste, moduleTauschen,
   nachziehStand, neustartNoetig, privatRuhe, probeTests, prZeilen, zustandNach,
 } from '../lib/betrieb-nachziehen.mjs';
 import { betriebszustand } from '../lib/betriebszustand.mjs';
@@ -299,6 +299,28 @@ test('Bibliotheken: Tausch per Umbenennen, Rueckweg ohne Netz, Reste eines Abbru
   moduleReste(repo);
   assert.equal(lies('node_modules'), 'neu');
   assert.deepEqual(fs.readdirSync(repo), ['node_modules']);
+
+  // Abbruch nach dem Tausch, aber vor dem Vorspulen: HEAD steht noch auf der Marke.
+  fs.writeFileSync(path.join(repo, 'node_modules', 'stand.txt'), 'alt');
+  lege(MODULE_NEU, 'neu');
+  moduleTauschen(repo, { head: 'aaaa' });
+  moduleReste(repo, { head: 'aaaa' });
+  assert.equal(lies('node_modules'), 'alt', 'neue Bibliotheken unter altem Stand werden zurueckgenommen');
+  assert.deepEqual(fs.readdirSync(repo), ['node_modules']);
+  // Abbruch nach dem Vorspulen: die neuen Bibliotheken passen zum neuen HEAD und bleiben.
+  lege(MODULE_NEU, 'neu');
+  moduleTauschen(repo, { head: 'aaaa' });
+  moduleReste(repo, { head: 'bbbb' });
+  assert.equal(lies('node_modules'), 'neu');
+  assert.deepEqual(fs.readdirSync(repo), ['node_modules']);
+
+  // Scheitert das zweite Umbenennen, steht sofort wieder der alte Ordner da.
+  lege(MODULE_NEU, 'kaputt');
+  let n = 0;
+  const umbenennen = (a, b) => { if (++n === 2) throw Object.assign(new Error('EIO'), { code: 'EIO' }); fs.renameSync(a, b); };
+  assert.throws(() => moduleTauschen(repo, { head: 'bbbb', umbenennen }), /EIO/);
+  assert.equal(lies('node_modules'), 'neu');
+  assert.ok(!fs.existsSync(path.join(repo, MODULE_HEAD)));
 });
 
 test('Ablauf: neue Bibliotheken kommen getestet aus der Probe, nie per npm ci im laufenden Betrieb', async () => {

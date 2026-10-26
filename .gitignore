@@ -30,7 +30,7 @@ cookies*.json
 # Dependencies and package-manager noise
 node_modules/
 # Bibliothekstausch des Nachzieh-Dienstes (operations/lib/betrieb-nachziehen.mjs), nur waehrend eines Laufs
-/.nachziehen-module-*/
+/.nachziehen-module-*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -142,30 +142,55 @@ export function neustartNoetig(geaendert = []) {
  */
 export const MODULE_NEU = '.nachziehen-module-neu';
 export const MODULE_VORHER = '.nachziehen-module-vorher';
+// HEAD vor dem Tausch: so erkennt der naechste Lauf, ob nach einem Abbruch noch vorgespult wurde.
+export const MODULE_HEAD = '.nachziehen-module-head';
 
-/** Tauscht node_modules gegen die getesteten Bibliotheken; liefert den Weg zurueck. */
-export function moduleTauschen(repo) {
+/**
+ * Tauscht node_modules gegen die getesteten Bibliotheken; liefert den Weg zurueck.
+ * `head` ist der Commit vor dem Vorspulen; `umbenennen` nur fuer Tests.
+ */
+export function moduleTauschen(repo, { head, umbenennen = fs.renameSync } = {}) {
   const live = path.join(repo, 'node_modules'), neu = path.join(repo, MODULE_NEU), vorher = path.join(repo, MODULE_VORHER);
+  const marke = path.join(repo, MODULE_HEAD);
   if (!fs.existsSync(neu)) throw new Error('getestete Bibliotheken aus der Probe fehlen');
   fs.rmSync(vorher, { recursive: true, force: true });
+  if (head) fs.writeFileSync(marke, head);
   const hatte = fs.existsSync(live);
-  if (hatte) fs.renameSync(live, vorher);
-  fs.renameSync(neu, live);
+  if (hatte) umbenennen(live, vorher);
+  try { umbenennen(neu, live); }
+  catch (e) { if (hatte) umbenennen(vorher, live); fs.rmSync(marke, { force: true }); throw e; }
   return {
     zurueck() {
-      fs.renameSync(live, neu);
-      if (hatte) fs.renameSync(vorher, live);
+      umbenennen(live, neu);
+      if (hatte) umbenennen(vorher, live);
       fs.rmSync(neu, { recursive: true, force: true });
+      fs.rmSync(marke, { force: true });
     },
-    aufraeumen() { fs.rmSync(vorher, { recursive: true, force: true }); },
+    aufraeumen() {
+      fs.rmSync(vorher, { recursive: true, force: true });
+      fs.rmSync(marke, { force: true });
+    },
   };
 }
 
-/** Reste eines abgebrochenen Laufs; fehlt node_modules mitten im Tausch, kommt der alte Stand zurueck. */
-export function moduleReste(repo) {
-  const live = path.join(repo, 'node_modules'), vorher = path.join(repo, MODULE_VORHER);
-  if (!fs.existsSync(live) && fs.existsSync(vorher)) fs.renameSync(vorher, live);
-  for (const d of [MODULE_NEU, MODULE_VORHER]) fs.rmSync(path.join(repo, d), { recursive: true, force: true });
+/**
+ * Reste eines abgebrochenen Laufs. Fehlt node_modules mitten im Tausch, oder wurde getauscht,
+ * aber nicht vorgespult (HEAD steht noch auf der Marke), kommen die alten Bibliotheken zurueck.
+ */
+export function moduleReste(repo, { head } = {}) {
+  const live = path.join(repo, 'node_modules'), neu = path.join(repo, MODULE_NEU), vorher = path.join(repo, MODULE_VORHER);
+  const marke = path.join(repo, MODULE_HEAD);
+  if (fs.existsSync(vorher)) {
+    let vorHead = null;
+    try { vorHead = fs.readFileSync(marke, 'utf8').trim(); } catch {}
+    if (!fs.existsSync(live)) fs.renameSync(vorher, live);
+    else if (head && vorHead === head) {
+      fs.rmSync(neu, { recursive: true, force: true });
+      fs.renameSync(live, neu);
+      fs.renameSync(vorher, live);
+    }
+  }
+  for (const d of [MODULE_NEU, MODULE_VORHER, MODULE_HEAD]) fs.rmSync(path.join(repo, d), { recursive: true, force: true });
 }
 
 /** Testsuiten, die vor dem Uebernehmen in der Probekopie laufen. */

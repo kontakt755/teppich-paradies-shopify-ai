@@ -2412,8 +2412,9 @@ Neue Staende von main kamen bis zum 26.10. nur per Hand oder KI-Lauf hinein (Ski
    Der Dashboard-Start baut zuerst `issues.json`; scheitert der GitHub-Abruf, startet er mit der
    bisherigen Datei (`--weiter-mit-alten-daten`), deshalb bis zu 4 Minuten Startzeit.
 6. Fehler nach dem Vorspulen: `git reset --keep` auf den Commit von vorher, alte Bibliotheken
-   zurueckgetauscht (ohne Netz), Dienste erneut, „haengt“ mit dem Grund. Ein Abbruch mitten im
-   Tausch wird beim naechsten Lauf erkannt (`moduleReste`). Konflikt, rote Probe und gescheiterter Neustart
+   zurueckgetauscht (ohne Netz), Dienste erneut, „haengt“ mit dem Grund. Vor dem Tausch liegt der
+   HEAD von vorher in `.nachziehen-module-head`; nach einem Abbruch holt `moduleReste` die alten
+   Bibliotheken zurueck, wenn node_modules fehlt oder HEAD noch auf dieser Marke steht. Konflikt, rote Probe und gescheiterter Neustart
    sperren genau diesen main-Stand, bis main weiterzieht; eine schmutzige Arbeitskopie oder ein
    falscher Zweig wird bei jedem Lauf neu geprueft.
 

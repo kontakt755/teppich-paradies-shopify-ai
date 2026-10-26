@@ -203,7 +203,7 @@ export async function nachziehen({
   try {
     const aktuellerZweig = git(repo, ['symbolic-ref', '--quiet', '--short', 'HEAD'], { erlaubt: [0, 1] }).out;
     if (aktuellerZweig !== zweig) return ende({ stand: 'haengt', art: 'zweig', grund: `Arbeitskopie steht auf „${aktuellerZweig || 'losgelöst'}“ statt „${zweig}“` });
-    moduleReste(repo);
+    moduleReste(repo, { head: git(repo, ['rev-parse', 'HEAD']).out });
     try { git(repo, ['fetch', '--quiet', 'origin']); }
     catch (e) { return ende({ stand: 'wartet', grund: `main nicht erreichbar (${e.message.slice(0, 120)})` }); }
     const head = git(repo, ['rev-parse', 'HEAD']).out;
@@ -265,11 +265,11 @@ export async function nachziehen({
       }
       return null;
     };
-    // Bibliotheken vor dem Vorspulen tauschen: bricht der Lauf dazwischen ab, sieht der
-    // naechste einen alten HEAD und installiert erneut, statt neuen Code mit alten Modulen zu fahren.
+    // Bibliotheken vor dem Vorspulen tauschen: bricht der Lauf dazwischen ab, findet der
+    // naechste HEAD noch auf der Marke, holt die alten Bibliotheken zurueck und versucht es neu.
     let tausch = null;
     try {
-      if (lockGeaendert) tausch = moduleTauschen(repo);
+      if (lockGeaendert) tausch = moduleTauschen(repo, { head });
       git(repo, ['merge', '--ff-only', '--quiet', commit]);
     } catch (e) { tausch?.zurueck(); throw e; }
     log(`übernommen ${kurz(head)} → ${kurz(commit)}${tausch ? ', Bibliotheken getauscht' : ''}${prs.length ? ` (${prs.join('; ')})` : ''}`);
