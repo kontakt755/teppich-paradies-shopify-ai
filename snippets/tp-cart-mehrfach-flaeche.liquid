@@ -1,0 +1,33 @@
+{%- doc -%}
+  Mengentext einer Rollenware-Zeile ohne custom.preis_pro_001_qm (Menge =
+  ganze m2). Die Property "Fläche (aufgerundet)" nennt EIN Stueck. Legt der
+  Kunde dasselbe Mass zweimal in den Warenkorb, fasst Shopify beide Zeilen
+  zusammen - die Menge verdoppelt sich, die Property nicht (Rundgang
+  2026-10-26, #20: 380 x 420 zweimal, Zeile zeigte 16,00 m2 bei 32 m2 Preis).
+
+  Glattes Vielfaches: "2 × 16,00 m²", sonst die echte Menge ("20,00 m²").
+  Alle anderen Zeilen bekommen ihren Text unveraendert zurueck; Flaechenware
+  in 0,01 m2 zeigt snippets/tp-cart-flaeche.liquid (dort dieselbe Regel).
+  Spiegel im Browser: kundeneinheit() in assets/tp-cart-gruppen.js.
+
+  @param {object} line_item - Warenkorbposition
+  @param {string} text - Flaechentext der Zeile (Property)
+{%- enddoc -%}
+{%- liquid
+  assign tcmf_text = text
+  assign tcmf_prop = line_item.properties['Fläche (aufgerundet)']
+  if tcmf_prop != blank and line_item.product.metafields.custom.preis_pro_001_qm.value != true
+    assign tcmf_einzeln = tcmf_prop | remove: 'm²' | remove: '.' | replace: ',', '.' | strip | times: 100 | round
+    assign tcmf_menge = line_item.quantity | times: 100
+    if tcmf_einzeln > 0 and tcmf_menge != tcmf_einzeln
+      assign tcmf_rest = tcmf_menge | modulo: tcmf_einzeln
+      if tcmf_menge > tcmf_einzeln and tcmf_rest == 0
+        assign tcmf_stueck = tcmf_menge | divided_by: tcmf_einzeln
+        assign tcmf_text = tcmf_stueck | append: ' × ' | append: tcmf_text
+      else
+        assign tcmf_text = line_item.quantity | append: ',00 m²'
+      endif
+    endif
+  endif
+  echo tcmf_text
+-%}

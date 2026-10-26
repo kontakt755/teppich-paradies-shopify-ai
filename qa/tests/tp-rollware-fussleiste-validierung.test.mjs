@@ -103,6 +103,8 @@ async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400,
     roundedHundredthsQty: (w, l) => Math.round((w * l) / 100),
     rateOf: (v) => (v ? ((opts.cmExact ?? false) ? parseFloat(v.price) : parseFloat(v.price) / 100) : 0),
     clearInvalid() {}, calculate() {}, setTimeout() {},
+    // Doppeltes-Mass-Pruefung (#20) hat ihren eigenen Test; hier leerer Korb.
+    doppeltFreigabe: '', massSignatur: () => '', liegtSchonImKorb: async () => false,
     // Bahnen aus dem Raummass-Helfer: hier keine (Vermerk "Zuschnitt" entfaellt).
     bahnenAktiv: () => null,
     document: { dispatchEvent() {}, querySelector: () => null },

@@ -127,6 +127,10 @@
   - name = Metaobject-Feld "name" verwenden
   - value = direkten Wert/String verwenden
   - optik / fasermaterial / nutzungsklasse / brandverhalten = entsprechendes Feld verwenden
+  Nutzschicht (Vinyl): dasselbe Metafeld wie auf der Karte (blocks/tp-card-specs,
+  custom.nutzschicht, Text wie "0,55 mm"). Ohne Wert entfaellt die Zeile
+  (Rundgang 2026-10-26, #6). Rutschhemmung fehlt bewusst: dafuer gibt es noch
+  kein Metafeld.
 {% endcomment %}
 {% capture table_config %}
 Marke::marke::name|
@@ -139,6 +143,7 @@ Aufbau::aufbau::name|
 Rücken::ruckenausstattung::name|
 Florhöhe::florhohe::name|
 Gesamtstärke::gesamtstarke::name|
+Nutzschicht::nutzschicht::value|
 Poleneinsatzgewicht::poleneinsatzgewicht::name|
 Nutzungsklasse (EN ISO 10874)::nutzungsklassen::nutzungsklasse|
 Komfortklasse::komfortklasse::name|

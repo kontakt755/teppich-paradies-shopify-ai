@@ -31,7 +31,14 @@
   function zahl(input) {
     var roh = String(input.value || '').trim();
     if (!roh) return { wert: 0, fehler: '' };
-    if (/[.,]/.test(roh)) return { wert: 0, fehler: 'Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 170.' };
+    // Komma oder Punkt: auf ganze Zentimeter aufrunden wie der Konfigurator der
+    // Produktseite, aber sichtbar ("200,5 → 201 cm"). Vorher lehnte nur diese
+    // Seite "200,5" ab (Rundgang 2026-10-26).
+    if (/^\d+[.,]\d+$/.test(roh)) {
+      var dezimal = parseFloat(roh.replace(',', '.'));
+      var auf = Math.ceil(dezimal);
+      return { wert: auf, fehler: '', dezimal: true, gerundet: auf !== dezimal ? roh.replace('.', ',') : '' };
+    }
     var n = parseInt(roh, 10);
     if (!(n > 0) || String(n) !== roh.replace(/^0+/, '')) return { wert: 0, fehler: 'Bitte nur Zahlen in Zentimetern eingeben.' };
     return { wert: n, fehler: '' };
@@ -44,7 +51,10 @@
     if (!f && (!b.wert || !l.wert)) f = 'Bitte Breite und Länge in Zentimetern eingeben.';
     if (!f && (b.wert < MIN_CM || l.wert < MIN_CM)) f = 'Beide Seiten mindestens ' + MIN_CM + ' cm.';
     if (!f && (b.wert > MAX_EINGABE_CM || l.wert > MAX_EINGABE_CM)) f = 'Bitte ein Maß bis ' + MAX_EINGABE_CM + ' cm eingeben.';
-    return { w: b.wert, l: l.wert, fehler: f };
+    var gerundet = [];
+    if (b.gerundet) gerundet.push(b.gerundet + ' → ' + b.wert + ' cm');
+    if (l.gerundet) gerundet.push(l.gerundet + ' → ' + l.wert + ' cm');
+    return { w: b.wert, l: l.wert, fehler: f, dezimal: !!(b.dezimal || l.dezimal), hinweis: gerundet.length ? 'aufgerundet: ' + gerundet.join(', ') : '' };
   }
 
   function lesenGespeichert() {
@@ -159,13 +169,17 @@
       fehler.hidden = !text;
     }
 
+    function ergebnisVerbergen() {
+      ergebnis.hidden = true;
+      document.documentElement.classList.remove('tp-rechner-aktiv');
+    }
+
     function zuruecksetzen() {
       inW.value = '';
       inL.value = '';
       fehlerZeigen('');
       speichern(0, 0);
-      ergebnis.hidden = true;
-      document.documentElement.classList.remove('tp-rechner-aktiv');
+      ergebnisVerbergen();
       while (liste.firstChild) liste.removeChild(liste.firstChild);
     }
 
@@ -214,7 +228,7 @@
       return li;
     }
 
-    function anwenden(w, l, scrollen) {
+    function anwenden(w, l, scrollen, hinweis) {
       var passend = [];
       var andere = [];
       teppiche.forEach(function (t) {
@@ -226,10 +240,17 @@
       passend.concat(andere).forEach(function (x) { liste.appendChild(karte(x.t, x.r, w, l)); });
 
       if (zusammenfassung) {
+        var masstext = w + ' × ' + l + ' cm' + (hinweis ? ' (' + hinweis + ')' : '');
         zusammenfassung.textContent = passend.length
-          ? passend.length + ' von ' + teppiche.length + ' Qualitäten gibt es in ' + w + ' × ' + l + ' cm – ab ' + euro(passend[0].r.summe) + ', günstigste zuerst.'
-          : 'Für ' + w + ' × ' + l + ' cm passt keine Qualität. Probieren Sie ein kleineres Maß oder rufen Sie uns an.';
+          ? passend.length + ' von ' + teppiche.length + ' Qualitäten gibt es in ' + masstext + ' – ab ' + euro(passend[0].r.summe) + ', günstigste zuerst.'
+          : 'Für ' + masstext + ' passt keine Qualität. Probieren Sie ein kleineres Maß oder rufen Sie uns an.';
       }
+      // Querverweise auf JAB, Vorwerk und Sisal mit Bordüre (snippets/tp-mass-querverweise)
+      // nehmen das Mass mit; die Zielkollektion gibt es an die Produktseite weiter.
+      root.querySelectorAll('[data-tp-mass-link]').forEach(function (link) {
+        var basis = link.getAttribute('data-tp-mass-link');
+        link.href = basis + (basis.indexOf('?') < 0 ? '?' : '&') + 'breite=' + w + '&laenge=' + l;
+      });
       ergebnis.hidden = false;
       document.documentElement.classList.add('tp-rechner-aktiv');
       speichern(w, l);
@@ -243,8 +264,18 @@
       e.preventDefault();
       var mass = massPruefen(inW, inL);
       fehlerZeigen(mass.fehler);
-      if (mass.fehler) return;
-      anwenden(mass.w, mass.l, true);
+      if (mass.fehler) {
+        // Das alte Ergebnis nicht neben der Fehlermeldung stehen lassen: es nannte
+        // weiter das vorige Mass (Rundgang 2026-10-26). Das Raster kommt zurueck.
+        ergebnisVerbergen();
+        return;
+      }
+      // Im Feld steht danach das Mass, mit dem gerechnet wird (wie auf der Produktseite).
+      if (mass.dezimal) {
+        inW.value = String(mass.w);
+        inL.value = String(mass.l);
+      }
+      anwenden(mass.w, mass.l, true, mass.hinweis);
     });
     // "oder alle Qualitaeten ansehen": Mass verwerfen, der Link springt dann zum normalen Raster.
     root.querySelectorAll('[data-tp-rechner-alle]').forEach(function (link) {

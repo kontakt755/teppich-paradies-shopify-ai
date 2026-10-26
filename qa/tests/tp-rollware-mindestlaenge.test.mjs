@@ -91,6 +91,8 @@ async function klick(eingabe, minCm, breiteCm = 200) {
     updateExtras: () => ({ items: [], rows: [], sum: 0 }),
     inFlight: false, cta, ctaHint: { hidden: true }, cartLink: { hidden: true, setAttribute() {} }, errMin: { hidden: true }, errMax: null,
     clearInvalid() {}, markInvalid() {}, zeigeFehlerfeld() {}, calculate() {}, setTimeout() {},
+    // Doppeltes-Mass-Pruefung (#20) hat ihren eigenen Test; hier leerer Korb.
+    doppeltFreigabe: '', massSignatur: () => '', liegtSchonImKorb: async () => false,
     document: { dispatchEvent() {}, querySelector: () => null }, CustomEvent: class {},
     fetch: async (url, options) => { requests.push(JSON.parse(options.body)); return { ok: true, json: async () => ({}) }; },
   });
