@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.datenstand</string>
+
+  <!-- Datenstand des Sync-Dienstes pruefen (operations/scripts/datenstand-pruefen.mjs, Inhaber
+       2026-10-26): stuendlich aktualisierung.json - Alter, Erfolg je Teil. Ohne KI-Kontingent.
+       Ersetzt den Datenteil der App-Aufgabe "shop-zahlen-export".
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-routinen -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/operations/scripts/datenstand-pruefen.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>__REPO_PFAD__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>PATH</key><string>__NODE_DIR__:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict><key>Minute</key><integer>20</integer></dict>
+  <key>RunAtLoad</key><true/>
+  <key>ProcessType</key><string>Background</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/teppich-paradies-analyse/routinen/datenstand/dienst.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/teppich-paradies-analyse/routinen/datenstand/dienst.log</string>
+</dict>
+</plist>

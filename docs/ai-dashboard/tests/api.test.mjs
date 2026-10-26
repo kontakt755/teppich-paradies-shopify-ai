@@ -952,6 +952,27 @@ test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', 
   assert.equal(r.tailscale.status, 'nicht-geprueft');
 });
 
+test('shopwacheStatus liefert den Stand der Routinen (Mac-Dienst) mit - auch ohne Shop-Wache, nur eingerichtete', async () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  const agents = path.join(root, 'LaunchAgents');
+  fs.mkdirSync(agents);
+  const jetzt = new Date('2026-10-26T09:40:00Z');
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, launchAgentsDir: agents, now: () => jetzt });
+  fs.mkdirSync(path.join(dir, 'routinen', 'postfach'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'routinen', 'postfach', 'status-lieferbelege.json'), JSON.stringify({
+    schema: 1, id: 'lieferbelege', ok: false, art: 'abgelehnt', meldung: 'Werkzeug abgelehnt: Write', zeit: '2026-10-26T09:35:00Z', seit: '2026-10-26T07:35:00Z',
+  }));
+  assert.deepEqual((await api.shopwacheStatus()).routinen, [], 'ohne Plist gilt der Dienst als nicht eingerichtet');
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.postfach.plist'), '<plist/>');
+  const r = await api.shopwacheStatus();
+  assert.equal(r.verfuegbar, false);
+  assert.deepEqual(r.routinen.map(x => [x.id, x.ok, x.meldung, x.stumm]), [
+    ['lieferbelege', false, 'Werkzeug abgelehnt: Write', false],
+    ['serviceanfragen', true, '', false],
+  ]);
+});
+
 test('shopwacheStatus meldet Tailscale - auch wenn die Shop-Wache noch nie lief; hoechstens eine Abfrage je Minute', async () => {
   const root = tmpRoot();
   const dir = privatFixture(root);

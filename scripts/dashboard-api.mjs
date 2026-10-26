@@ -22,6 +22,7 @@ import { createHash } from 'node:crypto';
 import { musterAutomatikLauf, musterAutomatikAnzeige } from '../operations/lib/muster-bestellautomatik.mjs';
 import { vorbereitungStand } from '../operations/lib/bestellvorbereitung.mjs';
 import { arbeitsstand } from '../operations/lib/arbeitsstand.mjs';
+import { routinenStand } from '../operations/lib/routinen.mjs';
 import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffung.mjs';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -627,7 +628,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null } = {}) {
   const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -3834,10 +3835,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const ausschreibungen = aus2?.geprueftAm
         ? { geprueftAm: aus2.geprueftAm, treffer: aus2.treffer || [], neu: aus2.neu || [], ausfaelle: aus2.ausfaelle || [] }
         : null;
+      // Routinen als Mac-Dienst (operations/lib/routinen.mjs): Stand je Routine, gestoerte werden ein rotes To-do.
+      // Eingerichtet = Plist unter ~/Library/LaunchAgents; Tests geben einen eigenen Ordner mit.
+      const routinen = routinenStand(dir, { jetzt: now(), ...(launchAgentsDir ? { agentsDir: launchAgentsDir } : {}) });
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen, routinen };
       }
-      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen, routinen };
     },
 
     /**
