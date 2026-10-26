@@ -45,6 +45,8 @@ import { existsSync, realpathSync, mkdirSync, readFileSync, writeFileSync } from
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright-core';
+import { resolveBrowserExecutable } from '../qa/browser-resolver.mjs';
 
 /** Dieselbe Version wie beim Ausgangswert vom 2026-09-22. */
 export const LIGHTHOUSE_VERSION = '13.5.0';
@@ -67,8 +69,6 @@ export const AUSGANGSWERT = {
   kollektion: { score: 68, lcp: 10.1 },
   pdp: { score: 64, lcp: 7.7 },
 };
-
-const CHROME_MAC = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 // ─── reine Funktionen (getestet in qa/tests/lighthouse-messung.test.mjs) ────
 
@@ -182,8 +182,19 @@ async function vorpruefung(seiten) {
   return [...pfade][0];
 }
 
-function lighthouseLauf(url, ausgabe, ohneBanner) {
-  const chrome = process.env.CHROME_PATH ?? (existsSync(CHROME_MAC) ? CHROME_MAC : undefined);
+/**
+ * Derselbe Browser wie bei den QA-Skripten (qa/browser-resolver.mjs): das
+ * Test-Chromium von Playwright, Google Chrome nur als letzter Ausweg. Google
+ * Chrome legt auf macOS je Lauf eine 2-GB-Programmkopie (code_sign_clone) im
+ * Temp-Ordner ab, die liegen bleibt. CHROME_PATH bleibt als expliziter Pfad.
+ */
+function browserWaehlen() {
+  const wahl = resolveBrowserExecutable({ configuredPath: process.env.CHROME_PATH || 'auto', playwrightChromium: chromium });
+  if (!wahl.executablePath) throw new Error(`${wahl.error}. Einrichten: npx playwright-core install --no-shell chromium`);
+  return wahl;
+}
+
+function lighthouseLauf(url, ausgabe, ohneBanner, chrome) {
   const args = [
     '--yes', `lighthouse@${LIGHTHOUSE_VERSION}`, url,
     '--preset=perf', '--output=json', `--output-path=${ausgabe}`,
@@ -191,7 +202,7 @@ function lighthouseLauf(url, ausgabe, ohneBanner) {
     // Variante "ohne": Shopify-Cookie-Banner nicht laden, damit sein Text nicht das LCP-Element wird.
     ...(ohneBanner ? ['--blocked-url-patterns=*privacy-banner*'] : []),
   ];
-  const r = spawnSync('npx', args, { encoding: 'utf8', env: { ...process.env, ...(chrome ? { CHROME_PATH: chrome } : {}) } });
+  const r = spawnSync('npx', args, { encoding: 'utf8', env: { ...process.env, CHROME_PATH: chrome } });
   if (r.status !== 0) throw new Error(`Lighthouse-Lauf fehlgeschlagen (${r.status}): ${(r.stderr || r.stdout).slice(0, 400)}`);
   return JSON.parse(readFileSync(ausgabe, 'utf8'));
 }
@@ -245,6 +256,8 @@ async function main() {
   const varianten = banner === 'beides' ? ['mit', 'ohne'] : [banner];
 
   console.log('Vorpruefung:');
+  const browser = browserWaehlen();
+  console.log(`  OK  Browser ${browser.source}: ${browser.executablePath}`);
   const theme = await vorpruefung(planSeiten);
   if (nurPruefen) return console.log('\nVorpruefung bestanden, kein Lauf gestartet.');
 
@@ -257,11 +270,11 @@ async function main() {
   const laeufe = [];
   for (const [i, { runde, seite, variante }] of plan.entries()) {
     const url = BASIS + seite.pfad;
-    const lhr = lighthouseLauf(url, join(ordner, `roh-${seite.id}-${variante}-${runde}.json`), variante === 'ohne');
+    const lhr = lighthouseLauf(url, join(ordner, `roh-${seite.id}-${variante}-${runde}.json`), variante === 'ohne', browser.executablePath);
     const k = { seiteId: seite.id, variante, runde, ...kennzahlen(lhr, url) };
     laeufe.push(k);
     console.log(`  ${String(i + 1).padStart(2)}/${plan.length} ${seite.id.padEnd(10)} ${variante.padEnd(4)} Runde ${runde}  Score ${k.score}  LCP ${sek(k.lcp)} s  ${k.lcpIstBanner ? '[Banner ist LCP] ' : ''}${k.sauber ? '' : 'UNSAUBER ' + k.warnungen.join(' | ')}`);
-    writeFileSync(join(ordner, 'laeufe.json'), JSON.stringify({ theme, laeufe }, null, 1));
+    writeFileSync(join(ordner, 'laeufe.json'), JSON.stringify({ theme, browser: browser.source, laeufe }, null, 1));
   }
   const zus = zusammenfassen(laeufe);
   const md = bericht(zus, { datum, theme, runden, seiten: planSeiten, varianten });
