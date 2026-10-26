@@ -11,6 +11,7 @@ import path from 'node:path';
 import {
   ausFormularMail, leistungAus, pruefeFelder, auswertung, kalenderwoche, wochenStart, ServiceanfrageFehler,
   automatischUebernehmbar, istAnzeige, BETREFF_SERVICE, BETREFF_STARTSEITE, BETREFF_KEIN_SERVICE,
+  MAILFELDER, ANLIEGEN_SERVICE, ANLIEGEN_KEIN_SERVICE,
 } from '../lib/serviceanfragen.mjs';
 
 const REPO = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..');
@@ -113,6 +114,38 @@ test('Jeder Betreff aus den Theme-Templates ist eingeordnet (Service oder bewuss
   // Feste Betreffe anderer Formulare im Theme
   const theme = ['sections/tp-boden-finder.liquid', 'snippets/tp-muster-beratungsanfrage.liquid'].map(d => fs.readFileSync(path.join(REPO, d), 'utf8')).join('\n');
   for (const [, wert] of theme.matchAll(/name="contact\[Betreff\]" value="([^"{]+)"/g)) assert.ok(bekannt.has(wert), `Betreff „${wert}“ einordnen`);
+});
+
+test('Formular-Mail: Wunschzeitraum landet in der Notiz, "mehrere Wohnungen" ist Verlegeservice', () => {
+  const mail = `Betreff:\n${BETREFF_STARTSEITE}\n\nName:\nA B\n\nPlz:\n16515\n\nE-Mail:\na@example.com\n\nTelefon:\n\nAnliegen:\nMieterwechsel / mehrere Wohnungen\n\nWunschzeitraum:\nab 1. Dezember\n\nText:\nDrei Wohnungen, je 60 m².`;
+  const r = ausFormularMail(mail);
+  assert.equal(r.felder.leistung, 'verlegeservice');
+  assert.equal(r.felder.notiz, 'Anliegen: Mieterwechsel / mehrere Wohnungen\nWunschzeitraum: ab 1. Dezember\nDrei Wohnungen, je 60 m².');
+  assert.equal(r.felder.email, 'a@example.com');
+  assert.deepEqual(automatischUebernehmbar(r), { ok: true });
+  // leer gelassen: keine leere Zeile in der Notiz
+  const leer = ausFormularMail(mail.replace('ab 1. Dezember', ''));
+  assert.equal(leer.felder.notiz, 'Anliegen: Mieterwechsel / mehrere Wohnungen\nDrei Wohnungen, je 60 m².');
+  // aus der Gmail-Ansicht kopiert: Feld und Wert in einer Zeile
+  const zeile = ausFormularMail('Betreff: Anfrage Treppenverlegung\nName: A B\nE-Mail: a@example.com\nWunschzeitraum: KW 50\nText: 12 Stufen');
+  assert.equal(zeile.felder.notiz, 'Wunschzeitraum: KW 50\n12 Stufen');
+});
+
+test('Theme: jedes Feld und jedes Anliegen des Anfrageformulars kennt der Mail-Leser', () => {
+  const quelle = fs.readFileSync(path.join(REPO, 'sections/tp-start-kontakt.liquid'), 'utf8');
+  // So benennt Shopify die Felder in der Mail "Neue Kundennachricht".
+  const standard = { name: 'Name', email: 'E-Mail', body: 'Text' };
+  const mailName = feld => standard[feld] || feld.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  const felder = [...quelle.matchAll(/name="contact\[([^\]]+)\]"/g)].map(m => mailName(m[1]));
+  assert.ok(felder.includes('Wunschzeitraum') && felder.includes('Plz') && felder.includes('Telefon'), felder.join(', '));
+  for (const f of felder) assert.ok(MAILFELDER.includes(f), `Formularfeld „${f}“ in MAILFELDER (lib/serviceanfragen.mjs) eintragen`);
+  // Body steht in der Mail zuletzt; ein Feld dahinter laege im Kundentext.
+  assert.equal(felder.at(-1), 'Text', 'Nachricht bleibt das letzte Feld');
+  const liste = /assign tp_kon_anliegen = '([^']+)'/.exec(quelle);
+  assert.ok(liste, 'Auswahl "Ich möchte" gefunden');
+  for (const a of liste[1].split('|')) {
+    assert.ok(ANLIEGEN_SERVICE.includes(a) || ANLIEGEN_KEIN_SERVICE.includes(a), `Anliegen „${a}“ in lib/serviceanfragen.mjs einordnen`);
+  }
 });
 
 test('Theme: Herkunft-Feld liest nur die Adresse, speichert nichts, schickt keine Klick-ID', () => {

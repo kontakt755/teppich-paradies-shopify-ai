@@ -100,6 +100,16 @@
     }
   }
 
+  // JAB und Vorwerk: Muster kommt direkt vom Hersteller (statt "ca. A5").
+  function showHerstellerHinweis() {
+    if (!core.isHerstellerMuster(product)) return;
+    var infoEl = root.querySelector('[data-sample-info]');
+    var herstellerEl = root.querySelector('[data-sample-hersteller]');
+    if (!herstellerEl) return;
+    if (infoEl) infoEl.hidden = true;
+    herstellerEl.hidden = false;
+  }
+
   function updateCount() {
     var status = core.getSelectionStatus(cartSampleCount, selected.size, limitMax, limitWord);
     countEl.textContent = status.message;
@@ -407,6 +417,7 @@
 
         applyCart(cart);
         showVinylLimit();
+        showHerstellerHinweis();
 
         productImageEl.src = product.featured_image || '';
         productNameEl.textContent = product.title;

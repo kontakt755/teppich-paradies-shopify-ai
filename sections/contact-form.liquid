@@ -132,6 +132,22 @@
   [data-tp-sample-request][data-mode="sample"] [data-sample-field] {
     display: block;
   }
+  /* Verlege- und Angebotsanfrage von der Produktseite: PLZ (Einzugsgebiet)
+     und Telefon (Termin fuers Aufmass) zeigen, beide freiwillig. Setzt
+     assets/tp-sample-request.js bei ?thema=verlegung bzw. angebot. */
+  [data-tp-sample-request][data-anfrage-felder] [data-anfrage-feld] {
+    display: block;
+  }
+  /* Felder in einer Huelle (Adresse, PLZ, Telefon) stehen wie Name und
+     E-Mail untereinander und volle Breite, statt Beschriftung und Feld
+     nebeneinander. */
+  .kontakt-formular [data-sample-field] > label {
+    display: block;
+  }
+  .kontakt-formular [data-sample-field] > input {
+    box-sizing: border-box;
+    width: 100%;
+  }
   [data-tp-sample-request][data-needs-product="true"] [data-tp-produktwahl] {
     display: block;
   }
@@ -483,7 +499,7 @@
         <input type="text" id="ContactFormStreet" name="contact[Straße und Hausnummer]" autocomplete="street-address">
       </div>
 
-      <div data-sample-field>
+      <div data-sample-field data-anfrage-feld>
         <label for="ContactFormZip">PLZ</label>
         <input type="text" id="ContactFormZip" name="contact[PLZ]" autocomplete="postal-code" inputmode="numeric">
       </div>
@@ -493,7 +509,7 @@
         <input type="text" id="ContactFormCity" name="contact[Ort]" autocomplete="address-level2">
       </div>
 
-      <div data-sample-field>
+      <div data-sample-field data-anfrage-feld>
         <label for="ContactFormPhone">Telefon (optional)</label>
         <input type="tel" id="ContactFormPhone" name="contact[phone]" value="{{ form.phone }}" autocomplete="tel">
       </div>

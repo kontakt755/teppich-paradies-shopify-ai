@@ -32,8 +32,10 @@
 
 {% stylesheet %}
   .tp-trust { border-top: 1px solid #e6e0d8; border-bottom: 1px solid #e6e0d8; background: #fff; }
-  .tp-trust__wrap { display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; padding-top: 18px; padding-bottom: 18px; }
-  .tp-trust__wrap--ohne-rating { grid-template-columns: 1fr; }
+  /* .tp-trust davor: .tp-s-wrap aus tp-startseite.css laedt spaeter und setzte
+     den Innenabstand oben und unten sonst auf 0 (Text klebte an den Linien). */
+  .tp-trust .tp-trust__wrap { display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; padding-top: 18px; padding-bottom: 18px; }
+  .tp-trust .tp-trust__wrap--ohne-rating { grid-template-columns: 1fr; }
   .tp-trust__list { list-style: none; margin: 0; padding: 0; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
   .tp-trust__list li { display: flex; align-items: center; gap: 10px; font-size: var(--tp-fs-md); font-weight: 500; color: #4a443f; }
   .tp-trust__list svg { width: 20px; height: 20px; color: #1d1a17; flex: none; }
@@ -43,7 +45,7 @@
   .tp-trust__stars { color: #e5a51c; }
   .tp-trust__rating small { color: var(--tp-muted, #655e57); font-size: var(--tp-fs-xs); }
   @media (max-width: 767px) {
-    .tp-trust__wrap { grid-template-columns: 1fr; gap: 14px; padding-top: 16px; padding-bottom: 16px; }
+    .tp-trust .tp-trust__wrap { grid-template-columns: 1fr; gap: 14px; padding-top: 16px; padding-bottom: 16px; }
     .tp-trust__rating { border-right: 0; padding-right: 0; border-bottom: 1px solid #e6e0d8; padding-bottom: 14px; }
     .tp-trust__list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .tp-trust__list li { font-size: var(--tp-fs-sm); }

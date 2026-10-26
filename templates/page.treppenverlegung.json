@@ -136,7 +136,7 @@
           "settings": {
             "image": "shopify://shop_images/20230327_132924.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Gewendelte Treppe mit dunkelblauem Teppichboden auf den Stufen"
           }
         },
         "kundenbild_c8rQxK": {
@@ -144,7 +144,7 @@
           "settings": {
             "image": "shopify://shop_images/20220920_113832.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Offene Holztreppe mit hellem Teppich auf den Trittstufen"
           }
         },
         "kundenbild_FxWpW4": {
@@ -152,7 +152,7 @@
           "settings": {
             "image": "shopify://shop_images/20220920_113826.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Unterer Lauf einer offenen Holztreppe, Trittstufen mit hellem Teppich belegt"
           }
         },
         "kundenbild_g6HVpi": {
@@ -160,7 +160,7 @@
           "settings": {
             "image": "shopify://shop_images/IMG_20220919_105242.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Monteur belegt die Stufen einer Treppe mit hellem Teppich"
           }
         },
         "kundenbild_TtFkWU": {
@@ -168,7 +168,7 @@
           "settings": {
             "image": "shopify://shop_images/inCollage_20200316_204204021_3229.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Treppe vorher mit abgenutzten Stufen und nachher mit hellem Teppich belegt"
           }
         },
         "kundenbild_mcJqdp": {
@@ -176,7 +176,7 @@
           "settings": {
             "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-27_3.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Roter Treppenläufer mit Messingstangen am Treppenantritt"
           }
         },
         "kundenbild_QrzDE9": {
@@ -184,7 +184,7 @@
           "settings": {
             "image": "shopify://shop_images/PHOTO-2024-10-01-13-51-26.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Gewendelte Treppe mit naturfarbenem Läufer, von oben gesehen"
           }
         },
         "kundenbild_kNQ6Jz": {
@@ -192,7 +192,7 @@
           "settings": {
             "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-28_1.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Gerade Treppe mit rotem Läufer und Messingstangen, von oben gesehen"
           }
         },
         "kundenbild_AtADGP": {
@@ -200,7 +200,7 @@
           "settings": {
             "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-27_1.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Treppenpodest und Stufen mit rotem Läufer am Holzgeländer"
           }
         }
       },
@@ -369,6 +369,7 @@
         "spalte_kokos": "Kokos",
         "spalte_sisal": "Sisal",
         "spalte_teppich": "Teppichboden",
+        "spalte_teppich_kurz": "Teppich",
         "spalte_vinyl": "Vinyl",
         "matrix_zeigen": true,
         "matrix_titel": "Welche Ausführung geht mit welchem Belag?",
