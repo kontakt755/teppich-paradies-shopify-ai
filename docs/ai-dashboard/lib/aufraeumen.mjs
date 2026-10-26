@@ -13,6 +13,9 @@ import { bestellungAusgeblendet } from './bestellarbeit.mjs';
 
 // Ab so vielen Tagen ohne Bewegung fragt die Liste nach. Ware wartet oft Wochen auf den Lieferanten.
 export const AUFRAEUMEN_AB_TAGEN = Object.freeze({ muster: 14, ware: 30 });
+// Gepackt ist noch nicht versandt: ein gepackter Umschlag ohne Versandvermerk faellt schon nach so
+// vielen Tagen ohne Bewegung auf (#1709) - vorher standen #1043-#1047 vier Tage unbemerkt.
+export const GEPACKT_OHNE_VERSAND_AB_TAGEN = 3;
 // Bis zum 24.10. speicherte "Als bestellt markieren" nicht, ob der Lieferant direkt an den Kunden schickt (#1680).
 export const LIEFERZIEL_GESPEICHERT_AB = '2026-10-24';
 const TAG_MS = 86_400_000;
@@ -101,6 +104,28 @@ function musterBefund(z, packen) {
   return { belege, vorschlag };
 }
 
+/** Umschlag gepackt, aber kein Artikel als verschickt eingetragen (und nicht in Shopify versendet). */
+function gepacktOhneVersand(z, packen) {
+  const pos = positionen(z);
+  return Boolean(pos.length && packBefund(z, packen).gepacktAm && pos.every(p => (STUFE[z.positionsstatus?.[p.lineItemId]?.status] || 0) < STUFE.raus));
+}
+
+/**
+ * Ruhe seit dem Packen: Umschlag, Klaerung, Notizen ("Liegt noch hier") und Zeitleistenschritte ab
+ * dem Versand. Ein nachgetragenes "bestellt"/"angekommen" ist Buchhaltung, keine Bewegung - sonst
+ * startete die Uhr bei jedem Nachtrag (#1706 trug am 26.10. Wareneingaenge vom 22.10. nach) neu.
+ */
+function ruheSeitPacken(z, packen) {
+  const p = packBefund(z, packen);
+  const schritte = (z?.verlauf || []).filter(s => !['angefragt', 'bestellt', 'geliefert'].includes(s?.schritt)).map(s => s?.am);
+  return spaetester([p.gepacktAm, p.klaeren?.am, ...(z?.verlaufNotizen || []).map(n => n?.am), ...schritte]);
+}
+
+/** Nach wie vielen ruhigen Tagen dieser Fall (wieder) in der Liste steht. */
+export function aufraeumenAbTagen(fall) {
+  return fall?.grund === 'gepackt' ? GEPACKT_OHNE_VERSAND_AB_TAGEN : AUFRAEUMEN_AB_TAGEN[fall?.art === 'ware' ? 'ware' : 'muster'];
+}
+
 /** Ware: kein Abschluss-Vorschlag - eine bezahlte Bestellung schliesst niemand nebenbei. */
 function warenBefund(z) {
   const belege = [];
@@ -119,13 +144,19 @@ export function aufraeumFall(z, { jetzt = Date.now(), packen = null } = {}) {
   if (!z || z.testbestellung || z.storniert || z.offen === false || z.zeitleisteAbgeschlossen) return null;
   if (bestellungAusgeblendet(z) || z.fortschritt?.unklar) return null;
   const art = z.auftragsart === 'muster' ? 'muster' : 'ware';
-  const seit = letzteBewegung(z, { packen });
+  const grund = art === 'muster' && gepacktOhneVersand(z, packen) ? 'gepackt' : 'ruhe';
+  const seit = grund === 'gepackt' ? ruheSeitPacken(z, packen) : letzteBewegung(z, { packen });
   if (!seit) return null;
   const tage = Math.floor((jetzt - Date.parse(seit)) / TAG_MS);
-  if (tage < AUFRAEUMEN_AB_TAGEN[art]) return null;
-  const { belege, vorschlag } = art === 'muster' ? musterBefund(z, packen) : warenBefund(z);
+  if (tage < aufraeumenAbTagen({ art, grund })) return null;
+  const befund = art === 'muster' ? musterBefund(z, packen) : warenBefund(z);
   const offen = positionen(z).filter(p => z.positionsstatus?.[p.lineItemId]?.status !== 'erledigt').map(p => p.lineItemId);
-  return { art, seit, tage, belege, vorschlag, lineItemIds: art === 'muster' ? offen : [] };
+  // Gepackt: nicht abschliessen, sondern den Versand eintragen - sonst entfiele das Nachfassen beim Kunden.
+  const vorschlag = grund === 'gepackt'
+    ? { text: 'Der Umschlag ist gepackt, aber nicht als verschickt eingetragen. Ist er raus: eintragen. Sonst zur Post bringen.',
+      notiz: `Umschlag gepackt am ${tagText(packBefund(z, packen).gepacktAm)}, Versand beim Aufräumen eingetragen` }
+    : befund.vorschlag;
+  return { art, grund, seit, tage, belege: befund.belege, vorschlag, lineItemIds: art === 'muster' ? offen : [] };
 }
 
 /** Alle Faelle, wer am laengsten ruht zuerst. Erwartet Zeilen mit angehaengtem `aufraeumen`. */

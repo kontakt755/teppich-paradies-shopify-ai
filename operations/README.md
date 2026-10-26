@@ -514,7 +514,7 @@ Die Datei ist Teil von `npm run daten:sichern`.
   Bestelldaten erkannt, nicht geklickt (`quelle` nennt woher).
 - Je Kunde der dringendste Schritt, mit `orderId`/`orderName`: `kunde.naechsterSchritt`
   in `GET /api/kunden/detail` und `treffer[].naechsterSchritt` in `GET /api/kunden/suche`.
-- Für eine eigene Auswertung (z. B. Startseite): `zeitleistenFuerModell(modell, {statusAlle, verlaufAlle, jetzt})`
+- Für eine eigene Auswertung (z. B. Startseite): `zeitleistenFuerModell(modell, {statusAlle, verlaufAlle, gepackt, jetzt})` (`gepackt` = Packstand aus `muster-packen.json`, optional)
   liefert `Map<orderId, zeitleiste>`; `dringendsterSchritt(liste)` wählt aus.
 
 **Schreiben.** `POST /api/einkauf/auftragsstatus` mit `aktion: "schritt"` (Rollen
