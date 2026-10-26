@@ -125,3 +125,47 @@ export async function pruefe(holen, { basis, stichproben = [], jetzt = new Date(
     befunde,
   };
 }
+
+// --- Stoerungsverlauf ------------------------------------------------------------
+// status.json wird stuendlich ueberschrieben; bis 2026-10-26 liess sich deshalb nicht sagen,
+// wann und wie lange der Shop gestoert war. Die Wache haelt jetzt den Beginn einer Stoerung
+// in status.json fest (`stoerungSeit`) und schreibt bei jedem Ampelwechsel eine Zeile in
+// shopwache/verlauf.jsonl. Genauigkeit: ein Lauf je Stunde.
+
+/** Seiten, die im Lauf nicht antworteten (Fehler oder HTTP >= 400). */
+function gestoerteSeiten(ergebnis) {
+  return (ergebnis?.seiten || []).filter(s => s.fehler || !s.status || s.status >= 400).map(s => s.name);
+}
+
+/** Beginn der laufenden Stoerung: vom Vorlauf uebernommen oder jetzt; bei gruen null. */
+export function stoerungSeit(vorher, nachher) {
+  if (nachher.ampel === 'gruen') return null;
+  if (vorher && vorher.ampel && vorher.ampel !== 'gruen') return vorher.stoerungSeit || vorher.geprueftAm || nachher.geprueftAm;
+  return nachher.geprueftAm;
+}
+
+/**
+ * Eine Verlaufszeile bei einem Ampelwechsel, sonst null.
+ *   art 'beginn'  gruen (oder erster Lauf) -> gelb/rot
+ *   art 'wechsel' gelb <-> rot
+ *   art 'ende'    gelb/rot -> gruen, mit Beginn und Dauer in Minuten
+ * Erwartet `nachher.stoerungSeit` bereits gesetzt (stoerungSeit()).
+ */
+export function verlaufEintrag(vorher, nachher) {
+  const von = vorher?.ampel || null;
+  if (von === nachher.ampel) return null;
+  if (!von && nachher.ampel === 'gruen') return null;
+  const basis = { zeit: nachher.geprueftAm, von, nach: nachher.ampel };
+  if (nachher.ampel === 'gruen') {
+    const beginn = vorher.stoerungSeit || vorher.geprueftAm || null;
+    const dauer = beginn ? Math.round((Date.parse(nachher.geprueftAm) - Date.parse(beginn)) / 60000) : null;
+    return { ...basis, art: 'ende', beginn, dauerMinuten: Number.isFinite(dauer) ? dauer : null, zuletzt: (vorher.befunde || []).map(b => b.titel) };
+  }
+  return {
+    ...basis,
+    art: !von || von === 'gruen' ? 'beginn' : 'wechsel',
+    beginn: nachher.stoerungSeit || nachher.geprueftAm,
+    seiten: gestoerteSeiten(nachher),
+    befunde: (nachher.befunde || []).map(b => `${b.art}: ${b.titel}`),
+  };
+}

@@ -986,6 +986,29 @@ löschen (ohne Plist zeigt das Control Center die Routine nicht mehr). **Rückfa
 gestört“, der sich nicht gleich beheben lässt: Dienst abschalten und die pausierte App-Aufgabe
 wieder aktivieren.
 
+## Shop-Wache und Aufgabenwaechter (Mac-Dienste ohne Vorlage)
+
+`npm run shop:wache` (Dienst `net.teppich-paradies.shopwache`, stuendlich zur Minute 5) prueft den
+oeffentlichen Shop von aussen (Pflichtseiten, Preisstichprobe) und schreibt
+`$TP_PRIVAT_DIR/shopwache/status.json`; das Control Center zeigt sie unter „Shop-Kontrolle“.
+Seit 2026-10-26:
+
+- Jede Logzeile (`~/teppich-paradies-analyse/shopwache.log`) beginnt mit der Uhrzeit (ISO, UTC,
+  `lib/zeitstempel.mjs`).
+- Bei jedem Ampelwechsel steht eine Zeile in `shopwache/verlauf.jsonl`: `beginn` (mit den
+  gestoerten Seiten und Befunden), `wechsel` (gelb ↔ rot) und `ende` (mit Beginn und Dauer in
+  Minuten). Den Beginn der laufenden Stoerung traegt `status.json` als `stoerungSeit`. Genauigkeit:
+  ein Lauf je Stunde. Der Verlauf ist im Tagesarchiv.
+- Feld `speicher`: freier Speicher der Platte (`lib/speicher.mjs`), gelb unter 40 GiB, rot unter
+  20 GiB, eigenes To-do im Control Center. Er zaehlt nicht zur Shop-Ampel.
+
+`npm run aufgaben:pruefen` (Dienst `net.teppich-paradies.aufgaben`, taeglich 9:30) prueft
+Betriebsaufgaben mit maschinell pruefbarer Vorgabe und legt faellige Wiederholungen an. Auch hier
+beginnt jede Logzeile (`aufgaben-waechter.log`) mit der Uhrzeit. Stand 26.10.2026 gibt es keine
+solche Aufgabe; alle 31 Laeufe meldeten „0 geprueft“. Den Dienst pausiert man ohne Loeschen mit
+`launchctl bootout gui/$(id -u)/net.teppich-paradies.aufgaben` (die Plist bleibt liegen). Wieder
+einschalten: `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.teppich-paradies.aufgaben.plist`.
+
 ## Ausfall des Mac mini: nach einem Neustart pruefen, wiederherstellen, Plan B
 
 Der Mac mini ist der einzige Rechner mit Control Center, Sync, Social-Upload, Sicherung und den
