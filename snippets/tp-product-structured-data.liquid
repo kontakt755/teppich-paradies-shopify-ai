@@ -79,6 +79,10 @@
   LimitedAvailability statt InStock - die Restbestaende sind begrenzt, und
   der Hersteller stellt die Kollektion ein. Nicht lieferbare bleiben OutOfStock.
 
+  Restrollen nur auf Anfrage (Vorlage "rolle-anfrage", 2026-10-26): Bestand 0
+  sperrt nur den Sofortkauf, die Ware ist begrenzt vorhanden - deshalb
+  LimitedAvailability statt OutOfStock.
+
   Rueckgabe und Versand im Offer (Werkbank w-117, Freigabetabelle in
   docs/weiterentwicklung/produkt-json-ld-rueckgabe-versand.md):
   - hasMerchantReturnPolicy aus der Widerrufsbelehrung (Rechtstext
@@ -519,7 +523,7 @@
             },
             {%- endif -%}
             "itemCondition": {{ tp_sd_zustand | json }},
-            "availability": {% if tp_sd_variant.available and tp_sd_sp_gesperrt == false %}{% if tp_sd_auslauf %}"https://schema.org/LimitedAvailability"{% else %}"https://schema.org/InStock"{% endif %}{% else %}"https://schema.org/OutOfStock"{% endif %},
+            "availability": {% if tp_sd_variant.available and tp_sd_sp_gesperrt == false %}{% if tp_sd_auslauf %}"https://schema.org/LimitedAvailability"{% else %}"https://schema.org/InStock"{% endif %}{% elsif product_resource.template_suffix == 'rolle-anfrage' %}"https://schema.org/LimitedAvailability"{% else %}"https://schema.org/OutOfStock"{% endif %},
             {%- if tp_sd_rueckgabe_json != blank -%}
             "hasMerchantReturnPolicy": {{ tp_sd_rueckgabe_json }},
             {%- endif -%}

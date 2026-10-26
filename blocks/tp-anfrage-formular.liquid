@@ -1,0 +1,189 @@
+{% doc %}
+  Restrollen nur auf Anfrage (Inhaber 2026-10-26): statt Rollenrechner und
+  Warenkorb ein Hinweis und ein Anfrageformular. Steht nur in
+  templates/product.rolle-anfrage.json.
+
+  Warum: Die Restlaengen der Rollen sind nicht gemessen und aendern sich durch
+  den Ladenverkauf. Eine Sofortbestellung koennte auf Ware treffen, die schon
+  weg ist. Der Kunde fragt an, der Laden prueft die Rolle und schickt ein
+  festes Angebot.
+
+  Das Formular schickt ueber das Shopify-Kontaktformular eine als ANFRAGE
+  gekennzeichnete E-Mail an die Shop-Adresse (Produkt, SKU, Link, Wunschmass,
+  Ausfuehrung). Es entsteht keine Bestellung.
+
+  Kaufsperre: Die Rollen-Variante hat Bestand 0 bei gesperrtem Ueberverkauf,
+  damit kauft auch ein Warenkorb-Link sie nicht. Zurueck auf Sofortkauf:
+  Produkt wieder auf die Vorlage "rolle" stellen (Bestand vorher messen).
+{% enddoc %}
+
+{%- liquid
+  assign tp_af_p = closest.product
+  assign tp_af_v = tp_af_p.selected_or_first_available_variant
+  assign tp_af_id = 'tp-anfrage-' | append: block.id | downcase | replace: '_', ''
+  assign tp_af_link = shop.url | append: tp_af_p.url
+-%}
+
+<div class="tp-af" {{ block.shopify_attributes }}>
+  <div class="tp-af__hinweis">
+    <p class="tp-af__titel">{{ block.settings.titel }}</p>
+    <div class="tp-af__text">{{ block.settings.hinweis }}</div>
+  </div>
+
+  {%- form 'contact', id: tp_af_id, class: 'tp-af__form' -%}
+    {%- if form.posted_successfully? -%}
+      <p class="tp-af__ok" role="status">
+        <b>Danke, Ihre Anfrage ist angekommen.</b>
+        Wir prüfen die Rolle im Laden und melden uns mit einem festen Angebot.
+      </p>
+    {%- else -%}
+      <p class="tp-af__form-titel">Verfügbarkeit anfragen</p>
+      {%- if form.errors -%}
+        <p class="tp-af__err" role="alert">Bitte Name und E-Mail prüfen.</p>
+      {%- endif -%}
+      <input type="hidden" name="contact[Betreff]" value="ANFRAGE Restrolle – {{ tp_af_p.title | escape }}">
+      <input type="hidden" name="contact[Produkt]" value="{{ tp_af_p.title | escape }}">
+      <input type="hidden" name="contact[SKU]" value="{{ tp_af_v.sku | escape }}">
+      <input type="hidden" name="contact[Link]" value="{{ tp_af_link | escape }}">
+      <label class="tp-af__feld">
+        Ausführung
+        <select name="contact[Ausführung]">
+          <option>Meterware von der Rolle (volle Rollenbreite)</option>
+          <option>Raummaß (auf meinen Raum zugeschnitten)</option>
+          <option>Teppich nach Maß, gekettelt</option>
+          <option>Noch unklar – bitte beraten</option>
+        </select>
+      </label>
+      <label class="tp-af__feld">
+        Wunschmaß <em>(optional)</em>
+        <input type="text" name="contact[Wunschmaß]" maxlength="120" placeholder="z. B. 4,00 × 3,50 m">
+      </label>
+      <label class="tp-af__feld">
+        Name
+        <input type="text" name="contact[name]" autocomplete="name" required value="{{ form.name }}">
+      </label>
+      <label class="tp-af__feld">
+        E-Mail
+        <input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}">
+      </label>
+      <label class="tp-af__feld">
+        Telefon <em>(optional, für Rückfragen)</em>
+        <input type="tel" name="contact[Telefon]" autocomplete="tel" inputmode="tel" pattern="[0-9 +()/.-]{6,}">
+      </label>
+      <label class="tp-af__feld">
+        Nachricht <em>(optional)</em>
+        <textarea name="contact[body]" rows="2" maxlength="500">{{ form.body }}</textarea>
+      </label>
+      <p class="tp-af__note">
+        Es entsteht keine Bestellung. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der
+        Anfrage zu.
+      </p>
+      <button type="submit" class="button tp-af__btn">Verfügbarkeit anfragen</button>
+    {%- endif -%}
+  {%- endform -%}
+</div>
+
+{% stylesheet %}
+  .tp-af {
+    display: grid;
+    gap: 1rem;
+    inline-size: 100%;
+  }
+  .tp-af__hinweis {
+    padding: 0.75rem 0.875rem;
+    border-inline-start: 3px solid var(--tp-ink, currentColor);
+    background: rgb(from var(--color-foreground) r g b / 0.04);
+    border-radius: 4px;
+  }
+  .tp-af__titel {
+    margin: 0 0 0.25rem;
+    font-weight: 600;
+  }
+  .tp-af__text {
+    font-size: var(--tp-fs-sm);
+  }
+  .tp-af__text p {
+    margin: 0;
+  }
+  .tp-af__text p + p {
+    margin-block-start: 0.4rem;
+  }
+  .tp-af__form {
+    border: 1px solid var(--color-border);
+    border-radius: var(--style-border-radius-inputs, 6px);
+    padding: 0.875rem;
+  }
+  .tp-af__form-titel {
+    margin: 0 0 0.75rem;
+    font-weight: 600;
+  }
+  .tp-af__feld {
+    display: grid;
+    gap: 0.25rem;
+    margin-block-end: 0.6rem;
+    font-size: var(--tp-fs-sm);
+    font-weight: 500;
+  }
+  .tp-af__feld em {
+    font-style: normal;
+    font-weight: 400;
+    color: rgb(from var(--color-foreground) r g b / 0.6);
+  }
+  .tp-af__feld input,
+  .tp-af__feld select,
+  .tp-af__feld textarea {
+    inline-size: 100%;
+    min-block-size: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-input-border, var(--color-border));
+    border-radius: var(--style-border-radius-inputs, 4px);
+    font: inherit;
+    font-weight: 400;
+    background: var(--color-input-background, #fff);
+  }
+  .tp-af__note {
+    margin: 0 0 0.6rem;
+    font-size: var(--tp-fs-xs);
+    color: rgb(from var(--color-foreground) r g b / 0.7);
+  }
+  .tp-af__btn {
+    inline-size: 100%;
+  }
+  .tp-af__ok {
+    margin: 0;
+    padding: 0.75rem 0.875rem;
+    border-radius: 6px;
+    background: #e8f4ec;
+    color: #1d5b3a;
+  }
+  .tp-af__err {
+    margin: 0 0 0.5rem;
+    color: var(--color-error, #b3261e);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Anfrageformular",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Restrolle – Menge stark begrenzt"
+    },
+    {
+      "type": "richtext",
+      "id": "hinweis",
+      "label": "Hinweis",
+      "default": "<p>Diese Rolle verkaufen wir auch in unserem Laden, die Restmenge ändert sich laufend. Bitte fragen Sie kurz an, ob Ihr Wunschmaß noch da ist. Sie bekommen von uns ein festes Angebot.</p><p>Der Preis gilt je m² Meterware in voller Rollenbreite. Zuschnitt auf Raummaß oder Ketteln bieten wir Ihnen gern mit an.</p>"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Anfrageformular"
+    }
+  ]
+}
+{% endschema %}
