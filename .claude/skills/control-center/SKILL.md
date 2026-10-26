@@ -130,48 +130,33 @@ kann dafuer weg?
 7. `docs/control-center/CHANGELOG.md` (Format: Geaendert · Getestet ·
    Risiken · Naechste Stufe), bei neuem Verhalten auch `ARCHITEKTUR.md`.
 8. PR mit `Closes #<n>`, danach `npm run task -- review <n> --note "PR #…"`.
-9. Nach dem Merge den Dienst nachziehen – main hineinmergen, nie umschalten.
-   Ist `net.teppich-paradies.dienst-aktualisieren` geladen, passiert das einmal taeglich ab 6 Uhr
-   von selbst (`operations/scripts/dienst-aktualisieren.mjs`, testet vorher in einer Pruefkopie);
-   wer die Aenderung sofort braucht, zieht wie unten von Hand nach.
-   `~/tp-dashboard` steht auf dem Zweig `dashboard-betrieb` (Upstream `origin/main`),
-   weil `main` dem Deploy-Worktree gehoert. `--ff-only` schlaegt fehl, der Zweig traegt
-   eigene Merge-Commits. Inhaltlich ist er seit 2026-10-24 gleich `main`:
-   `einrichten.sh` (Starter „Dashboard einrichten“ auf dem Schreibtisch) und
-   `start-dashboard.sh` liegen jetzt in main - nicht entfernen; die App „Teppich
-   Dashboard“ startet `scripts/dashboard-app-starten.sh`. Zeitpunkt: direkt nach
-   einem Lauf der Codex-Automation „Neue Muster automatisch bestellen“ (alle 15 min,
-   arbeitet in `~/tp-dashboard`; letzter Lauf = Aenderungszeit ihres Threads unter
-   `~/.codex/sessions`).
+9. Nach dem Merge zieht der Dienst `net.teppich-paradies.nachziehen` den Betrieb selbst
+   nach (seit 2026-10-26, #1710; Ablauf: `operations/README.md`, „Dienst-Checkout
+   automatisch nachziehen“): alle 5 Minuten, erst in einer Probekopie getestet, nach
+   einem Codex-Musterlauf und zwei Minuten ohne Eingabe, mit Neustart der betroffenen
+   Dienste und Rueckweg. Die Sitzung macht nur noch:
    ```
-   cd ~/tp-dashboard && git fetch -q origin
-   git merge-tree --write-tree HEAD origin/main   # Exit 0 = konfliktfrei
-   git merge origin/main -m "merge: <PR-Titel> (#<n>)"
-   git diff --quiet HEAD@{1} HEAD -- package-lock.json || npm ci --no-audit --no-fund
-   npm run dashboard:test
-   launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.dashboard
-   git diff --stat origin/main HEAD      # muss leer sein, sonst traegt der Betrieb eigenen Code
+   cd ~/tp-dashboard && npm run -s betrieb:nachziehen -- --status
    ```
-   Nicht pushen: der Betriebszweig traegt nur Merge-Commits ohne eigenen Inhalt,
-   gesichert ist alles ueber main (der Classifier sperrt den Push als Veroeffentlichung).
-   Der Dienst baut nach dem Start erst `issues.json`, ein paar Sekunden warten.
-   Dann `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8001/login` → 200
-   und `git rev-list --count HEAD..origin/main` → 0. Im Browser einmal hart neu
-   laden, sonst zeigt der Cache die alte `app.js`.
-   - Exit 1 bei `merge-tree` heisst Konflikt: nicht mergen, melden. Der Dienst
-     laeuft unveraendert weiter.
-   - Aendert der Merge `operations/` (Lexikon, Bestelluebersicht, Export), zusaetzlich
-     `launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.sync`. Der Dienst laedt
-     den Code nur beim Start und ueberschreibt sonst beim naechsten Lauf die frischen
-     Exporte mit dem alten Code (2026-10-12: Lexikon fiel so auf den Stand vor dem Fix zurueck).
-   - Aendert der Merge `social/`, zusaetzlich
-     `launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.social`
-     (Kontrolle: `curl -I http://127.0.0.1:8020/api/status` → 401).
-   - Vorher `git status --porcelain` ansehen. Eine uncommittete Aenderung an einer
-     Datei, die main ebenfalls aendert, laesst `git merge` ohne Folgen abbrechen.
-     Ist es nur npm-Rauschen in `package-lock.json`: `git merge --autostash …`,
-     danach `npm install --package-lock-only` (npm schreibt den Lockfile wieder
-     passend). Alles andere melden, nicht auf Umwegen verwerfen.
+   Soll es sofort gehen: `npm run -s betrieb:nachziehen` (wartet selbst auf Ruhe, startet
+   nicht doppelt). Danach im Browser einmal neu laden (der Hinweis „Neue Version
+   verfügbar“ erscheint von selbst).
+   - **Haengt** (Status bzw. Systemzustand „Dashboard-Update hängt“): der Dienst laeuft
+     auf dem alten Stand weiter. Grund beheben (Konflikt, rote Probe, eigene Aenderungen
+     im Dienst-Ordner), nicht am Automaten vorbei mergen. Ein gesperrter main-Stand wird
+     von selbst wieder versucht, sobald main weiterzieht.
+   - Wer den Dashboard-Dienst fuer einen Nachholschritt anhaelt, prueft vorher `--status`;
+     der Automat startet nur geladene Dienste neu und wartet auf Schreibruhe im Privatordner.
+   - `~/tp-dashboard` bleibt auf `dashboard-betrieb` (gehoert nicht `main`, der dem
+     Deploy-Worktree gehoert); `einrichten.sh`, `start-dashboard.sh` und
+     `scripts/dashboard-app-starten.sh` liegen in main - nicht entfernen.
+   - Nur wenn der Automat nicht laeuft (anderer Rechner, Dienst nicht eingerichtet), von
+     Hand wie bisher: `git fetch -q origin`, `git merge-tree --write-tree HEAD origin/main`
+     (Exit 1 = Konflikt, melden), `git merge origin/main -m "merge: <PR-Titel> (#<n>)"`,
+     bei geaendertem `package-lock.json` `npm ci --no-audit --no-fund`, `npm run
+     dashboard:test`, `launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.dashboard`
+     (bei `operations/` auch `…sync`, bei `social/` auch `…social`), `/login` → 200,
+     `git rev-list --count HEAD..origin/main` → 0. Nie pushen.
 
 ## Fallstricke (alle schon passiert)
 

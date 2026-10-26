@@ -19,10 +19,13 @@
  *
  * Bei einem Fehler bleibt die alte Datei unangetastet und der Prozess endet
  * mit Exit-Code 1 - ein leeres oder halbes issues.json wird nie geschrieben.
+ * Mit --weiter-mit-alten-daten (Start des Dienstes, `npm run dashboard`) endet er
+ * stattdessen mit 0, sobald eine alte Datei da ist: ein GitHub-Ausfall darf den
+ * Neustart nach einem Update nicht verhindern, die Aufgaben sind dann nur aelter.
  */
 
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, mkdirSync, renameSync } from 'node:fs';
+import { existsSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBody } from '../docs/ai-dashboard/lib/model.mjs';
@@ -115,6 +118,13 @@ export function buildPayload({ issues, labels, repo = REPO, now = new Date() }) 
   };
 }
 
+/** Exit-Code und Meldung, wenn der GitHub-Abruf scheitert; die alte Datei bleibt immer stehen. */
+export function abrufFehler(error, { weiter = false, vorhanden = false } = {}) {
+  const grund = String(error?.message || error).split('\n')[0];
+  if (weiter && vorhanden) return { code: 0, meldung: `GitHub-Abruf fehlgeschlagen, das Dashboard startet mit den bisherigen Aufgaben (${OUT}): ${grund}` };
+  return { code: 1, meldung: `GitHub-Abruf fehlgeschlagen, ${OUT} bleibt unveraendert: ${grund}` };
+}
+
 function main() {
   let issues;
   let labels;
@@ -122,8 +132,9 @@ function main() {
     issues = parsePaginated(gh(['api', '--paginate', `repos/${REPO}/issues?state=all&per_page=100&sort=updated&direction=desc`]));
     labels = parsePaginated(gh(['api', '--paginate', `repos/${REPO}/labels?per_page=100`])).map(l => l.name);
   } catch (error) {
-    console.error(`GitHub-Abruf fehlgeschlagen, ${OUT} bleibt unveraendert: ${error.message.split('\n')[0]}`);
-    process.exit(1);
+    const r = abrufFehler(error, { weiter: process.argv.includes('--weiter-mit-alten-daten'), vorhanden: existsSync(OUT) });
+    console.error(r.meldung);
+    process.exit(r.code);
   }
 
   const payload = buildPayload({ issues, labels });

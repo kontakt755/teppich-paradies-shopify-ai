@@ -129,3 +129,12 @@ gebraeuchlich), Erfassen.
   14 Tagen (Ware 30) wieder.
 - **Belegt fertig** = in Shopify versendet, storniert, archiviert oder voll erstattet, oder im Dashboard
   abgeschlossen; fällt ohne Klick aus den Listen.
+
+## Dashboard-Updates (#1710)
+
+- **Dashboard-Update** = eine neue Version des Control Centers. Sie kommt von selbst (alle
+  5 Minuten geprüft, vorher getestet); offene Seiten zeigen dann „Neue Version verfügbar“.
+- **Dashboard-Update hängt** = Zeile im Systemzustand: die neue Version wurde nicht übernommen,
+  das Dashboard läuft auf dem bisherigen Stand weiter. Dann Claude im Chat Bescheid geben.
+- **wartet** = eine neue Version ist getestet, wird aber erst übernommen, wenn gerade niemand
+  eingibt und kein Codex-Lauf arbeitet; erst nach über einer Stunde Warten wird das gemeldet.
