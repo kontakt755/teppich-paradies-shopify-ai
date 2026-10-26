@@ -57,6 +57,7 @@ import { altePruefOrdnerLoeschen, pruefOrdnerAnlegen, pruefOrdnerBehalten } from
 import { benutzerAnlegen, schreibeBenutzer } from '../operations/lib/benutzer.mjs';
 import { datenkopieAnlegen, datenkopieLoeschen, verwaisteDatenkopien } from './dashboard-datenkopie.mjs';
 import { pruefLauf } from './dashboard-pruefung-lauf.mjs';
+import { ladePuppeteer } from './puppeteer-laden.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
@@ -155,9 +156,8 @@ async function main() {
   // Eigene alte Screenshot-Ordner nur bereinigen, wenn sie nachweislich nicht mehr benutzt werden.
   const altePruefungen = altePruefOrdnerLoeschen({ aus: args.aus });
   if (altePruefungen.length) console.log(`${altePruefungen.length} Screenshot-Ordner frueherer Laeufe (aelter als 3 Tage) geloescht.`);
-  let puppeteer;
-  try { puppeteer = (await import('puppeteer')).default; }
-  catch { throw new Error('puppeteer fehlt - im Repository-Root `npm install` ausfuehren (Worktree: node_modules verlinken).'); }
+  // Eigenes node_modules, sonst das des Dienst-Checkouts (scripts/puppeteer-laden.mjs).
+  const { puppeteer } = await ladePuppeteer();
 
   erzeugteDateien();
   const verwaist = verwaisteDatenkopien();

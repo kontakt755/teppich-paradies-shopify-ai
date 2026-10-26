@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pruefe, seitenBefunde, preisBefunde, PFLICHTSEITEN, LANGSAM_MS } from '../lib/shopwache.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { pruefe, seitenBefunde, preisBefunde, PFLICHTSEITEN, LANGSAM_MS, stoerungSeit, verlaufEintrag } from '../lib/shopwache.mjs';
+import { ergebnisAblegen } from '../scripts/shopwache.mjs';
+import { mitZeitstempel } from '../lib/zeitstempel.mjs';
 
 const JETZT = new Date('2026-09-24T12:00:00Z');
 
@@ -61,4 +66,64 @@ test('Preisstichprobe laeuft ueber die .js-Antwort des Shops', async () => {
 
 test('ohne basis wirft pruefe - ein leerer Lauf waere schlimmer als ein Fehler', async () => {
   await assert.rejects(() => pruefe(holerMit({}), {}), /basis/);
+});
+
+// -- Stoerungsverlauf (Rundgang 26.10.2026: 13 rote Laeufe ohne Datum) -----------
+
+const lauf = (zeit, ampel, kaputt = []) => ({
+  geprueftAm: zeit, ampel,
+  seiten: PFLICHTSEITEN.map(p => ({ name: p.name, status: kaputt.includes(p.name) ? 503 : 200, fehler: null })),
+  befunde: kaputt.map(n => ({ art: 'kritisch', titel: `${n} antwortet mit 503` })),
+});
+
+test('Verlauf: Beginn mit Seiten, Wechsel, Ende mit Dauer; gleiche Ampel schreibt nichts', () => {
+  const a = lauf('2026-10-26T08:05:00.000Z', 'gruen');
+  assert.equal(verlaufEintrag(null, a), null, 'erster Lauf, alles gruen: nichts zu melden');
+  const b = lauf('2026-10-26T09:05:00.000Z', 'rot', ['Impressum', 'AGB']);
+  b.stoerungSeit = stoerungSeit(a, b);
+  assert.equal(b.stoerungSeit, '2026-10-26T09:05:00.000Z');
+  assert.deepEqual(verlaufEintrag(a, b), {
+    zeit: '2026-10-26T09:05:00.000Z', von: 'gruen', nach: 'rot', art: 'beginn', beginn: '2026-10-26T09:05:00.000Z',
+    seiten: ['Impressum', 'AGB'], befunde: ['kritisch: Impressum antwortet mit 503', 'kritisch: AGB antwortet mit 503'],
+  });
+  const c = lauf('2026-10-26T10:05:00.000Z', 'rot', ['Impressum']);
+  c.stoerungSeit = stoerungSeit(b, c);
+  assert.equal(c.stoerungSeit, '2026-10-26T09:05:00.000Z', 'der Beginn bleibt');
+  assert.equal(verlaufEintrag(b, c), null, 'rot bleibt rot');
+  const d = lauf('2026-10-26T11:05:00.000Z', 'gelb');
+  d.stoerungSeit = stoerungSeit(c, d);
+  assert.equal(verlaufEintrag(c, d).art, 'wechsel');
+  const e = lauf('2026-10-26T12:05:00.000Z', 'gruen');
+  e.stoerungSeit = stoerungSeit(d, e);
+  assert.equal(e.stoerungSeit, null);
+  const ende = verlaufEintrag(d, e);
+  assert.equal(ende.art, 'ende');
+  assert.equal(ende.beginn, '2026-10-26T09:05:00.000Z');
+  assert.equal(ende.dauerMinuten, 180);
+});
+
+test('ergebnisAblegen: status.json mit stoerungSeit, verlauf.jsonl nur bei Wechsel', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-shopwache-'));
+  const ziel = path.join(dir, 'shopwache', 'status.json');
+  const verlauf = path.join(dir, 'shopwache', 'verlauf.jsonl');
+  assert.equal(ergebnisAblegen(ziel, lauf('2026-10-26T08:05:00.000Z', 'gruen')), null);
+  assert.ok(!fs.existsSync(verlauf));
+  assert.equal(ergebnisAblegen(ziel, lauf('2026-10-26T09:05:00.000Z', 'rot', ['Startseite'])).art, 'beginn');
+  assert.equal(ergebnisAblegen(ziel, lauf('2026-10-26T10:05:00.000Z', 'rot', ['Startseite'])), null);
+  assert.equal(JSON.parse(fs.readFileSync(ziel, 'utf8')).stoerungSeit, '2026-10-26T09:05:00.000Z');
+  assert.equal(ergebnisAblegen(ziel, lauf('2026-10-26T11:05:00.000Z', 'gruen')).dauerMinuten, 120);
+  const zeilen = fs.readFileSync(verlauf, 'utf8').trim().split('\n').map(z => JSON.parse(z));
+  assert.deepEqual(zeilen.map(z => z.art), ['beginn', 'ende']);
+  assert.deepEqual(zeilen[0].seiten, ['Startseite']);
+  // Kaputter Vorstand: neu anfangen statt abzustuerzen.
+  fs.writeFileSync(ziel, '{kaputt');
+  assert.equal(ergebnisAblegen(ziel, lauf('2026-10-26T12:05:00.000Z', 'gelb')).art, 'beginn');
+});
+
+test('Logzeilen der Wache beginnen mit der Uhrzeit (ISO, UTC)', () => {
+  const zeilen = [];
+  const p = mitZeitstempel({ log: z => zeilen.push(z), error: z => zeilen.push(z) }, () => new Date('2026-10-26T12:05:00.000Z'));
+  p.log('Shop-Wache: GRUEN');
+  p.error('Fehler: x');
+  assert.deepEqual(zeilen, ['2026-10-26T12:05:00.000Z Shop-Wache: GRUEN', '2026-10-26T12:05:00.000Z Fehler: x']);
 });

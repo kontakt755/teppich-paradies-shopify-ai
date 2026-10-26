@@ -14,7 +14,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { BODENARTEN, ORTE, RAEUME, TAETIGKEITEN } from './konfig.mjs';
-import { medienDir, socialDir, zugaengePfad } from './pfade.mjs';
+import { medienDir, socialDir, uploadZaehlerPfad, zugaengePfad } from './pfade.mjs';
 
 export class EingangFehler extends Error {}
 
@@ -28,12 +28,25 @@ export const DATEITYPEN = Object.freeze({
   'video/quicktime': { endung: 'mov', art: 'video' },
 });
 
+const GIB = 1024 ** 3;
+
 export const GRENZEN = Object.freeze({
   maxDateien: 25,
   maxBildBytes: 40 * 1024 * 1024,
   maxVideoBytes: 400 * 1024 * 1024,
   maxGesamtBytes: 1536 * 1024 * 1024,   // je Upload - ein verlorener Link soll die Platte nicht fuellen koennen
+  // Je Link-Name und Tag. Bis 2026-10-26 zaehlte nur die Zahl der Uploads (30) und nur im
+  // Speicher: 30 x 1,5 GB = 45 GB am Tag, nach jedem Neustart von vorn - bei 23 GiB freier Platte.
+  maxUploadsJeTag: 30,
+  maxBytesJeTag: 5 * GIB,
+  // Darunter nimmt der Upload nichts mehr an (operations/lib/speicher.mjs, UPLOAD_MIN_FREI_GIB):
+  // der Rest gehoert Sync, Sicherung und Control Center.
+  minFreiBytes: 15 * GIB,
 });
+
+/** Upload-Links laufen ab: ein weitergeleiteter Link (WhatsApp-Verlauf) soll nicht ewig gelten. */
+export const LINK_GUELTIG_TAGE = 180;
+const TAG_MS = 24 * 60 * 60 * 1000;
 
 const VORHER_NACHHER = ['', 'vorher', 'nachher', 'beides'];
 
@@ -136,14 +149,32 @@ function schreibZugaenge(liste, datei) {
   fs.writeFileSync(datei, JSON.stringify({ zugaenge: liste }, null, 2), { mode: 0o600 });
 }
 
-export function zugangAnlegen(name, { datei = zugaengePfad(), jetzt = new Date() } = {}) {
+/**
+ * Bis wann gilt ein Zugang? Neue Zugaenge tragen `ablauf`; aeltere (vor 2026-10-26 angelegt)
+ * gelten LINK_GUELTIG_TAGE ab `angelegt`. Ohne beides: unbegrenzt (nichts zum Rechnen).
+ */
+export function ablaufVon(z) {
+  if (z?.ablauf && Number.isFinite(Date.parse(z.ablauf))) return new Date(Date.parse(z.ablauf)).toISOString();
+  const seit = Date.parse(z?.angelegt);
+  return Number.isFinite(seit) ? new Date(seit + LINK_GUELTIG_TAGE * TAG_MS).toISOString() : null;
+}
+
+/** Aktiv und nicht abgelaufen. */
+export function zugangGueltig(z, jetzt = new Date()) {
+  if (!z?.aktiv) return false;
+  const bis = ablaufVon(z);
+  return !bis || Date.parse(bis) > jetzt.getTime();
+}
+
+export function zugangAnlegen(name, { datei = zugaengePfad(), jetzt = new Date(), gueltigTage = LINK_GUELTIG_TAGE } = {}) {
   const sauber = kurz(name, 40);
   if (!sauber) throw new EingangFehler('Name fehlt');
   const token = crypto.randomBytes(18).toString('base64url');
   const liste = liesZugaenge(datei);
-  liste.push({ name: sauber, tokenHash: hash(token), aktiv: true, angelegt: jetzt.toISOString() });
+  const ablauf = new Date(jetzt.getTime() + gueltigTage * TAG_MS).toISOString();
+  liste.push({ name: sauber, tokenHash: hash(token), aktiv: true, angelegt: jetzt.toISOString(), ablauf });
   schreibZugaenge(liste, datei);
-  return { name: sauber, token };
+  return { name: sauber, token, ablauf };
 }
 
 export function zugangSperren(name, { datei = zugaengePfad() } = {}) {
@@ -154,15 +185,50 @@ export function zugangSperren(name, { datei = zugaengePfad() } = {}) {
   return n;
 }
 
-export function findeZugang(token, liste = liesZugaenge()) {
+export function findeZugang(token, liste = liesZugaenge(), { jetzt = new Date() } = {}) {
   if (typeof token !== 'string' || token.length < 16) return null;
   const h = Buffer.from(hash(token), 'hex');
   for (const z of liste) {
-    if (!z.aktiv) continue;
+    if (!zugangGueltig(z, jetzt)) continue;
     const vergleich = Buffer.from(z.tokenHash, 'hex');
     if (vergleich.length === h.length && crypto.timingSafeEqual(vergleich, h)) return z;
   }
   return null;
+}
+
+// --- Tageszaehler ------------------------------------------------------------
+// Wie viele Uploads und Bytes je Link-Name heute angekommen sind. Liegt als Datei neben den
+// Zugaengen, damit ein Neustart des Dienstes die Grenze nicht zuruecksetzt. Es zaehlt nur der
+// laufende Tag (UTC); ein neuer Tag beginnt mit einer leeren Datei.
+
+export function tagVon(jetzt = new Date()) { return jetzt.toISOString().slice(0, 10); }
+
+/** Stand des Tages: { uploads, bytes } je Name. Unlesbare Datei = leer (die naechste Zaehlung schreibt sie neu). */
+export function liesTageszaehler(tag, datei = uploadZaehlerPfad()) {
+  try {
+    const d = JSON.parse(fs.readFileSync(datei, 'utf8'));
+    return d?.tag === tag && d.je && typeof d.je === 'object' ? d.je : {};
+  } catch (e) {
+    if (e?.code !== 'ENOENT') console.error(`[upload] Tageszaehler unlesbar, beginnt neu: ${e.message}`);
+    return {};
+  }
+}
+
+export function standHeute(name, tag, datei = uploadZaehlerPfad()) {
+  const e = liesTageszaehler(tag, datei)[name] || {};
+  return { uploads: Number(e.uploads) || 0, bytes: Number(e.bytes) || 0 };
+}
+
+/** Zaehlt dazu und schreibt atomar (Rechte 600). Gibt den neuen Stand des Namens zurueck. */
+export function zaehleHeute(name, tag, { uploads = 0, bytes = 0 } = {}, datei = uploadZaehlerPfad()) {
+  const je = liesTageszaehler(tag, datei);
+  const alt = je[name] || {};
+  je[name] = { uploads: (Number(alt.uploads) || 0) + uploads, bytes: (Number(alt.bytes) || 0) + bytes };
+  fs.mkdirSync(path.dirname(datei), { recursive: true });
+  const tmp = `${datei}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ tag, je }, null, 2), { mode: 0o600 });
+  fs.renameSync(tmp, datei);
+  return je[name];
 }
 
 // --- Ablage -------------------------------------------------------------------

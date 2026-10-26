@@ -1,6 +1,8 @@
 {%- comment -%}
   TP Kontakt: drei Wege - Anrufen, WhatsApp, Anfrage per Shopify-Kontaktformular.
-  Das Formular ist kurz (Name, PLZ, Telefon/E-Mail, Anliegen, Nachricht).
+  Das Formular ist kurz (Name, PLZ, Telefon/E-Mail, Anliegen, Wunschzeitraum, Nachricht).
+  Die Mail liest das Control Center (docs/ai-dashboard/lib/serviceanfragen.mjs):
+  ein neues Feld oder Anliegen dort mit eintragen, der Test dazu meldet es sonst.
   Auf dem Telefon ist es eingeklappt, bis "Anfrage schreiben" getippt wird.
 {%- endcomment -%}
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
@@ -22,7 +24,8 @@
           <label>PLZ<input type="text" name="contact[PLZ]" inputmode="numeric" maxlength="5" autocomplete="postal-code"></label>
           <label>E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
           <label>Telefon (optional)<input type="tel" name="contact[Telefon]" autocomplete="tel"></label>
-          <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]">{%- if section.settings.anliegen != blank -%}<option selected>{{ section.settings.anliegen | escape }}</option>{%- endif -%}{%- assign tp_kon_anliegen = 'Boden verlegen lassen|Aufmaß und Angebot|Beratung zum Produkt|Muster bestellen|Rückruf' | split: '|' -%}{%- for tp_kon_a in tp_kon_anliegen -%}{%- unless tp_kon_a == section.settings.anliegen -%}<option>{{ tp_kon_a }}</option>{%- endunless -%}{%- endfor -%}</select></label>
+          <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]">{%- if section.settings.anliegen != blank -%}<option selected>{{ section.settings.anliegen | escape }}</option>{%- endif -%}{%- assign tp_kon_anliegen = 'Boden verlegen lassen|Aufmaß und Angebot|Mieterwechsel / mehrere Wohnungen|Beratung zum Produkt|Muster bestellen|Rückruf' | split: '|' -%}{%- for tp_kon_a in tp_kon_anliegen -%}{%- unless tp_kon_a == section.settings.anliegen -%}<option>{{ tp_kon_a }}</option>{%- endunless -%}{%- endfor -%}</select></label>
+          <label class="tp-kon__full">Wunschzeitraum (optional)<input type="text" name="contact[Wunschzeitraum]" maxlength="80"></label>
           <label class="tp-kon__full">{{ section.settings.nachricht_label | default: 'Nachricht (Raum, Fläche, Wunschboden)' | escape }}<textarea name="contact[body]" rows="3">{{ form.body }}</textarea></label>
           <p class="tp-s-note tp-kon__full">{{ section.settings.foto_hinweis | default: 'Fotos oder Grundrisse schicken Sie uns am einfachsten per WhatsApp.' | escape }} Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
           <button class="tp-s-btn tp-s-btn--primary tp-kon__full" type="submit">Anfrage senden</button>

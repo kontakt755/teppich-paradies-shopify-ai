@@ -186,7 +186,7 @@ test('Upload: falsche Links sperren den richtigen nicht; zwei Sendungen zugleich
   const dir = tmpDir(t); const db = testDb(t);
   process.env.TP_SOCIAL_DIR = dir; t.after(() => { delete process.env.TP_SOCIAL_DIR; });
   const { token } = zugangAnlegen('Mehmet');
-  const basis = await starte(t, erstelleUpload({ db, dir, nachUpload: () => [] }));
+  const basis = await starte(t, erstelleUpload({ db, dir, freierSpeicher: () => null, nachUpload: () => [] }));
   for (let i = 0; i < 15; i += 1) assert.equal((await fetch(`${basis}/u/${'y'.repeat(24)}`)).status, 404);
   assert.equal((await fetch(`${basis}/u/${token}`)).status, 200);
 

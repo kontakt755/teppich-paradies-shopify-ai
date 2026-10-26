@@ -41,6 +41,17 @@
     return VINYL_TYPES.indexOf(String(product.type || '').trim().toLowerCase()) !== -1;
   }
 
+  // Muster dieser Marken verschickt der Hersteller selbst und direkt an den
+  // Kunden (Inhaber 15.10.2026: Vorwerk-Teppichboden, JAB-Teppichboden auch
+  // nach Mass, JAB-Vinyl). Die Musterseite sagt das dazu - der Kunde bekommt
+  // sonst Post von einem Absender, den er nicht erwartet.
+  var HERSTELLER_MUSTER = ['vorwerk', 'jab anstoetz'];
+
+  function isHerstellerMuster(product) {
+    if (!product) return false;
+    return HERSTELLER_MUSTER.indexOf(String(product.vendor || '').trim().toLowerCase()) !== -1;
+  }
+
   // Der Konfigurator listet die Werte EINER Produktoption als Muster. Welche
   // Option das ist, heisst je nach Sortiment anders: Teppich- und Vinylboden
   // fuehren "Farbe", folierte Sockelleisten "Dekor". Dieselbe Liste steht in
@@ -365,6 +376,7 @@
     HAS_BONUS: HAS_BONUS,
     VINYL_MAX: VINYL_MAX,
     isVinyl: isVinyl,
+    isHerstellerMuster: isHerstellerMuster,
     getLimit: getLimit,
     canSample: canSample,
     getUniqueColors: getUniqueColors,

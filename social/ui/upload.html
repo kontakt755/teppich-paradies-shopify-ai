@@ -129,6 +129,9 @@ function pruefe() { $('senden').disabled = !gewaehlt.length; }
 
 function zeigeFehler(t) { $('fehler').textContent = t; $('fehler').hidden = false; $('formular').hidden = false; $('laeuft').hidden = true; window.scrollTo(0, document.body.scrollHeight); }
 
+/** Eine Ablehnung (falscher Dateityp, zu gross, Tagesgrenze, Platte fast voll: 507) wird durch Wiederholen nicht besser. */
+function endgueltig(status) { return (status >= 400 && status < 500 && status !== 409) || status === 507; }
+
 /** Eine Datei senden - mit zwei Wiederholungen, weil das Netz auf Baustellen selten gut ist. */
 function sendeDatei(url, datei, beiFortschritt) {
   const einmal = () => new Promise((ok, fehler) => {
@@ -137,8 +140,7 @@ function sendeDatei(url, datei, beiFortschritt) {
     x.onload = () => {
       if (x.status === 200) return ok();
       const e = new Error((() => { try { return JSON.parse(x.responseText).error; } catch { return 'Fehler ' + x.status; } })());
-      // Eine Ablehnung (falscher Dateityp, zu gross) wird durch Wiederholen nicht besser.
-      e.endgueltig = x.status >= 400 && x.status < 500 && x.status !== 409;
+      e.endgueltig = endgueltig(x.status);
       fehler(e);
     };
     x.onerror = () => fehler(new Error('Keine Verbindung'));
@@ -156,7 +158,7 @@ $('senden').addEventListener('click', async () => {
       taetigkeit: wahl('taetigkeit'), vorherNachher: wahl('vorherNachher')[0] || '', produkt: $('produkt').value, auftrag: $('auftrag').value, besonderheit: $('besonderheit').value,
     }) });
     const s = await start.json();
-    if (!start.ok) throw new Error(s.error || 'Start fehlgeschlagen');
+    if (!start.ok) { const f = new Error(s.error || 'Start fehlgeschlagen'); f.endgueltig = endgueltig(start.status); throw f; }
     const gesamt = gewaehlt.reduce((a, f) => a + f.size, 0); let erledigt = 0;
     for (let i = 0; i < gewaehlt.length; i += 1) {
       $('stand').textContent = 'Datei ' + (i + 1) + ' von ' + gewaehlt.length + ' – bitte die Seite offen lassen.';
@@ -167,7 +169,8 @@ $('senden').addEventListener('click', async () => {
     const e = await ende.json().catch(() => ({}));
     $('laeuft').hidden = true; $('fertig').hidden = false;
     $('ergebnis').textContent = gewaehlt.length + (gewaehlt.length === 1 ? ' Datei' : ' Dateien') + ' gesendet.' + (s.ortVerworfen ? ' Die Adresse haben wir nicht gespeichert – nur der Ort zählt.' : '');
-  } catch (e) { zeigeFehler(e.message + ' – bitte noch einmal senden.'); }
+  // Nach einer endgueltigen Ablehnung (Tagesgrenze, Platte voll, Link abgelaufen) hilft erneutes Senden nicht.
+  } catch (e) { zeigeFehler(e.message + (e.endgueltig ? '' : ' – bitte noch einmal senden.')); }
 });
 </script>
 </body>

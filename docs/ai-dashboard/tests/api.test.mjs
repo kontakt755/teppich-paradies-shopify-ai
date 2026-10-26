@@ -942,12 +942,14 @@ test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', 
   fs.writeFileSync(path.join(dir, 'shopwache', 'status.json'), JSON.stringify({
     geprueftAm: '2026-09-24T12:00:00Z', basis: 'https://shop.example', ampel: 'gelb',
     kritisch: 0, warnungen: 1, seiten: [], preise: [], befunde: [{ art: 'warnung', titel: 'Suche laedt langsam', text: '3.4 s' }],
+    speicher: { ampel: 'gelb', freiGiB: 23, belegtProzent: 95, gemessenAm: '2026-09-24T12:00:00Z' },
   }));
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   const r = await api.shopwacheStatus();
   assert.equal(r.verfuegbar, true);
   assert.equal(r.ampel, 'gelb');
   assert.equal(r.befunde.length, 1);
+  assert.equal(r.speicher.freiGiB, 23, 'der freie Speicher (Shop-Wache) kommt unveraendert mit');
   // Im Test fragt niemand den Rechner (TP_TAILSCALE_PRUEFEN=0 in _testumgebung.mjs).
   assert.equal(r.tailscale.status, 'nicht-geprueft');
 });

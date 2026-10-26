@@ -27,7 +27,7 @@ import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffun
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
-import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, vorlageFuer, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs';
 import { grenzeFuer } from '../docs/ai-dashboard/lib/datenstand.mjs';
 import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
@@ -68,7 +68,7 @@ import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
-import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../social/lib/eingang.mjs';
+import { ablaufVon, findeZugang, liesZugaenge, zugangAnlegen, zugangGueltig, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
@@ -2089,7 +2089,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           ergebnis.uebersprungen.push({ ...kurz, grund: e.kontakt.weg === 'rueckruf' ? 'Rückruf gewünscht – anrufen' : 'keine E-Mail-Adresse' });
           continue;
         }
-        const mail = fuelleText(vorlage.texte[e.stufe], { kundenname: e.kundenname, absender: unterschrift, produkte: e.produkte });
+        const mail = fuelleText(vorlageFuer(vorlage.texte, e), { kundenname: e.kundenname, absender: unterschrift, produkte: e.produkte });
         if (!platzhalterFrei(mail)) {
           ergebnis.fehler.push({ ...kurz, fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.` });
           continue;
@@ -2194,7 +2194,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         mail = { betreff: String(payload.betreff ?? '').trim(), text: String(payload.text).replace(/\r\n/g, '\n').trim() };
       } else {
         const vorlage = this.kundenMusterTexte();
-        mail = vorlage.verfuegbar ? fuelleText(vorlage.texte[e.stufe], { kundenname: e.kundenname, absender: actor, produkte: e.produkte }) : null;
+        mail = vorlage.verfuegbar ? fuelleText(vorlageFuer(vorlage.texte, e), { kundenname: e.kundenname, absender: actor, produkte: e.produkte }) : null;
         if (!mail) throw new ApiError(409, vorlage.hinweis || `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.`);
       }
       if (!mail.betreff || /[\r\n]/.test(mail.betreff) || mail.betreff.length > 200) throw new ApiError(400, 'Bitte einen Betreff in einer Zeile angeben (höchstens 200 Zeichen).');
@@ -3496,15 +3496,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const liste = liesZugaenge(path.join(dir, 'upload-zugaenge.json'));
       const basis = this._uploadBasis();
       const gemerkt = this._uploadLinks();
-      const namen = [...new Set(liste.filter(z => z.aktiv).map(z => z.name))];
+      // Gueltig = aktiv und nicht abgelaufen (Links gelten 180 Tage, social/lib/eingang.mjs).
+      const jetzt = now();
+      const gueltig = liste.filter(z => zugangGueltig(z, jetzt));
+      const namen = [...new Set(gueltig.map(z => z.name))];
       const zugaenge = namen.map(name => {
-        const aktive = liste.filter(z => z.aktiv && z.name === name);
+        const aktive = gueltig.filter(z => z.name === name);
         // Juengster noch gueltiger gemerkter Link dieses Namens.
-        const treffer = gemerkt.filter(l => l.name === name && findeZugang(l.token, aktive))
+        const treffer = gemerkt.filter(l => l.name === name && findeZugang(l.token, aktive, { jetzt }))
           .sort((a, b) => String(b.angelegt).localeCompare(String(a.angelegt)))[0];
         return {
           name,
           seit: aktive.map(z => z.angelegt).sort()[0] || null,
+          // Bis wann der laengste noch gueltige Link dieses Namens gilt - danach ist ein neuer faellig.
+          bis: aktive.map(ablaufVon).filter(Boolean).sort().at(-1) || null,
           link: treffer && basis ? `${basis}/u/${treffer.token}` : null,
         };
       });

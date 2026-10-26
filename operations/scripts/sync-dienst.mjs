@@ -38,6 +38,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ladeEnvLocal, hatZugangsdaten, KEIN_ZUGANG } from '../sync/zugang.mjs';
 import { aktualisiere } from './aktualisieren.mjs';
+import { mitZeitstempel } from '../lib/zeitstempel.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -112,11 +113,9 @@ export function erzeugeLauf({ lexikonMinuten = leseLexikonMinuten(), bestandMinu
   };
 }
 
-/** Protokoll mit Uhrzeit vor jeder Zeile (ISO, UTC) - fuer das Dienstprotokoll von launchd. */
-export function mitZeitstempel(ziel = console, jetzt = () => new Date()) {
-  const zeile = (art) => (text) => ziel[art]?.(`${jetzt().toISOString()} ${text}`);
-  return { log: zeile('log'), warn: zeile('warn'), error: zeile('error') };
-}
+// Protokoll mit Uhrzeit vor jeder Zeile: liegt seit 2026-10-26 in operations/lib/zeitstempel.mjs
+// (auch Shop-Wache und Aufgabenwaechter); hier weiter exportiert fuer bestehende Aufrufer.
+export { mitZeitstempel };
 
 function warteStandard(ms, signal) {
   return new Promise((resolve) => {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer, request } from 'node:http';
 import path from 'node:path';
 import test from 'node:test';
 import { zugangAnlegen } from '../lib/eingang.mjs';
@@ -26,7 +26,8 @@ test('Upload: ohne gueltigen Link gibt es nichts, mit Link den ganzen Weg bis zu
   const { token } = zugangAnlegen('Mehmet');
   // Die echte Messung braucht sips und echte Bilder - hier zaehlt der Ablauf.
   const messe = () => ({ breite: 3000, hoehe: 4000, helligkeit: 120, schaerfe: 500, dhash: 'abcdef0123456789' });
-  const basis = await starte(t, erstelleUpload({ db, dir, nachUpload: nur => verarbeiteEingang(db, { dir, messe, nur }) }));
+  // Freier Platz fest vorgegeben: der Test darf nicht davon abhaengen, wie voll die Platte des Rechners ist.
+  const basis = await starte(t, erstelleUpload({ db, dir, freierSpeicher: () => 100 * 1024 ** 3, nachUpload: nur => verarbeiteEingang(db, { dir, messe, nur }) }));
 
   assert.equal((await fetch(`${basis}/u/${'x'.repeat(24)}`)).status, 404);
   assert.equal((await fetch(`${basis}/`)).status, 404);
@@ -51,6 +52,124 @@ test('Upload: ohne gueltigen Link gibt es nichts, mit Link den ganzen Weg bis zu
   assert.ok(fs.existsSync(path.join(dir, medien[0].pfad)));
   assert.deepEqual(fs.readdirSync(path.join(dir, 'medien', String(inhalt.id), 'original')), ['01.jpg'], 'die abgelehnte Datei liegt nicht herum');
   assert.equal((await put(JPEG)).status, 410, 'nach dem Abschluss ist der Upload zu');
+});
+
+test('Upload: Tagesmenge je Link ueberlebt den Neustart, fast volle Platte nimmt nichts an', async (t) => {
+  const dir = tmpDir(t); const db = testDb(t);
+  process.env.TP_SOCIAL_DIR = dir; t.after(() => { delete process.env.TP_SOCIAL_DIR; });
+  const { token } = zugangAnlegen('Mehmet');
+  const GIB = 1024 ** 3;
+  const platz = { frei: 100 * GIB };
+  const jetzt = () => Date.parse('2026-10-26T10:00:00Z');
+  const neuerDienst = () => starte(t, erstelleUpload({ db, dir, jetzt, freierSpeicher: () => platz.frei, nachUpload: () => [] }));
+  const starten = basis => fetch(`${basis}/u/${token}/start`, json({ einwilligung: true }));
+
+  // Heute schon fast 5 GB von diesem Link - so steht es nach einem Neustart in der Datei.
+  const zaehler = path.join(dir, 'upload-tageszaehler.json');
+  fs.writeFileSync(zaehler, JSON.stringify({ tag: '2026-10-26', je: { Mehmet: { uploads: 3, bytes: 5 * GIB - 100 } } }));
+  let basis = await neuerDienst();
+  const start = await (await starten(basis)).json();
+  const zuGross = await fetch(`${basis}/u/${token}/datei/${start.upload}`, { method: 'PUT', body: JPEG });
+  assert.equal(zuGross.status, 429, 'die Datei passt nicht mehr in die Tagesmenge');
+  assert.match((await zuGross.json()).error, /genug hochgeladen/);
+  assert.equal(JSON.parse(fs.readFileSync(zaehler, 'utf8')).je.Mehmet.uploads, 4, 'der Start zaehlt mit');
+
+  // Neuer Dienst (Neustart), gleiche Datei: die Grenze gilt weiter.
+  fs.writeFileSync(zaehler, JSON.stringify({ tag: '2026-10-26', je: { Mehmet: { uploads: 4, bytes: 5 * GIB } } }));
+  basis = await neuerDienst();
+  assert.equal((await starten(basis)).status, 429);
+  // Ein neuer Tag beginnt bei null.
+  fs.writeFileSync(zaehler, JSON.stringify({ tag: '2026-10-25', je: { Mehmet: { uploads: 30, bytes: 9 * GIB } } }));
+  const frisch = await starten(basis);
+  assert.equal(frisch.status, 200);
+  const { upload } = await frisch.json();
+  assert.equal((await fetch(`${basis}/u/${token}/datei/${upload}`, { method: 'PUT', body: JPEG })).status, 200);
+  assert.deepEqual(JSON.parse(fs.readFileSync(zaehler, 'utf8')), { tag: '2026-10-26', je: { Mehmet: { uploads: 1, bytes: JPEG.length } } });
+
+  // Unter 15 GiB frei: weder Start noch Datei.
+  platz.frei = 15 * GIB - 1;
+  const voll = await fetch(`${basis}/u/${token}/datei/${upload}`, { method: 'PUT', body: JPEG });
+  assert.equal(voll.status, 507);
+  assert.match((await voll.json()).error, /Speicher im Büro/);
+  assert.equal((await starten(basis)).status, 507);
+  // Knapp ueber der Grenze: eine Datei, die den Rest sprengen wuerde, wird abgebrochen und nicht abgelegt.
+  platz.frei = 15 * GIB + 100;
+  const knapp = await fetch(`${basis}/u/${token}/datei/${upload}`, { method: 'PUT', body: JPEG });
+  assert.equal(knapp.status, 507);
+  // Nicht messbar (null): dann entscheidet nur die Tagesmenge.
+  platz.frei = null;
+  assert.equal((await fetch(`${basis}/u/${token}/datei/${upload}`, { method: 'PUT', body: JPEG })).status, 200);
+});
+
+test('Upload: gleichzeitige Sendungen teilen sich Tagesmenge, Speicherreserve und Startzahl', async (t) => {
+  const dir = tmpDir(t); const db = testDb(t);
+  process.env.TP_SOCIAL_DIR = dir; t.after(() => { delete process.env.TP_SOCIAL_DIR; });
+  const mehmet = zugangAnlegen('Mehmet').token; const ali = zugangAnlegen('Ali').token;
+  const GIB = 1024 ** 3; const L = JPEG.length;
+  const platz = { frei: 100 * GIB };
+  const zaehler = path.join(dir, 'upload-tageszaehler.json');
+  const setzeZaehler = je => fs.writeFileSync(zaehler, JSON.stringify({ tag: '2026-10-26', je }));
+  const upload = erstelleUpload({ db, dir, jetzt: () => Date.parse('2026-10-26T10:00:00Z'), freierSpeicher: () => platz.frei, nachUpload: () => [] });
+  // Meldet, wenn der Dienst eine Anfrage angenommen hat (sein synchroner Teil ist dann gelaufen).
+  let angenommen = () => {};
+  const basis = await starte(t, (req, res) => { angenommen(); return upload(req, res); });
+  const starten = async token => (await (await fetch(`${basis}/u/${token}/start`, json({ einwilligung: true }))).json()).upload;
+  const put = (token, id) => fetch(`${basis}/u/${token}/datei/${id}`, { method: 'PUT', body: JPEG });
+  // Schickt die Kopfzeilen sofort, den Koerper erst auf weiter(): so laeuft die Sendung noch, waehrend die zweite kommt.
+  async function haengend(pfad, methode, koerper, kopf = {}) {
+    const da = new Promise(r => { angenommen = r; });
+    const anfrage = request(`${basis}${pfad}`, { method: methode, agent: false, headers: { 'Content-Length': koerper.length, ...kopf } });
+    t.after(() => anfrage.destroy());   // bricht ein roter Test vor weiter() ab, haelt die offene Sendung sonst den Lauf fest
+    const antwort = new Promise((ok, fehler) => {
+      anfrage.on('error', fehler);
+      anfrage.on('response', r => { let s = ''; r.on('data', d => { s += d; }); r.on('end', () => ok({ status: r.statusCode, text: s })); });
+    });
+    anfrage.flushHeaders();
+    await da; angenommen = () => {};
+    return { weiter: () => { anfrage.end(koerper); return antwort; } };
+  }
+
+  // Tagesmenge: noch Platz fuer anderthalb Dateien. Zwei gleichzeitige Dateien desselben Links passen nicht beide.
+  setzeZaehler({ Mehmet: { uploads: 3, bytes: 5 * GIB - Math.floor(1.5 * L) } });
+  const [a, b] = [await starten(mehmet), await starten(mehmet)];
+  const erste = await haengend(`/u/${mehmet}/datei/${a}`, 'PUT', JPEG);
+  const zweite = await put(mehmet, b);
+  assert.equal(zweite.status, 429, 'die laufende erste Datei haelt ihren Anteil an der Tagesmenge fest');
+  assert.equal((await erste.weiter()).status, 200);
+  assert.ok(JSON.parse(fs.readFileSync(zaehler, 'utf8')).je.Mehmet.bytes <= 5 * GIB, 'die Tagesmenge ist nicht ueberschritten');
+
+  // Speicherreserve (fuer alle Links gemeinsam): noch Platz fuer anderthalb Dateien ueber 15 GiB.
+  setzeZaehler({});
+  platz.frei = 15 * GIB + Math.floor(1.5 * L);
+  const [c, d] = [await starten(ali), await starten(mehmet)];
+  const dritte = await haengend(`/u/${ali}/datei/${c}`, 'PUT', JPEG);
+  const vierte = await put(mehmet, d);
+  assert.equal(vierte.status, 507, 'die laufende Datei eines anderen Links zaehlt gegen den freien Platz');
+  assert.equal((await dritte.weiter()).status, 200);
+  // Nach dem Ende gibt die Sendung ihren Anteil wieder frei (der Ersatz misst hier nicht nach).
+  assert.equal((await put(mehmet, d)).status, 200, 'kein Anteil bleibt haengen');
+
+  // Startzahl: beim 30. Upload des Tages kommen zwei gleichzeitige Starts nicht beide durch.
+  platz.frei = 100 * GIB;
+  setzeZaehler({ Mehmet: { uploads: 29, bytes: 0 } });
+  const koerper = Buffer.from(JSON.stringify({ einwilligung: true }));
+  const fuenfte = await haengend(`/u/${mehmet}/start`, 'POST', koerper, { 'Content-Type': 'application/json' });
+  assert.equal((await fetch(`${basis}/u/${mehmet}/start`, json({ einwilligung: true }))).status, 200);
+  assert.equal((await fuenfte.weiter()).status, 429, 'der zweite Start sieht den ersten');
+  assert.equal(JSON.parse(fs.readFileSync(zaehler, 'utf8')).je.Mehmet.uploads, 30);
+});
+
+test('Upload: ein abgelaufener Link fuehrt nirgends mehr hin', async (t) => {
+  const dir = tmpDir(t); const db = testDb(t);
+  process.env.TP_SOCIAL_DIR = dir; t.after(() => { delete process.env.TP_SOCIAL_DIR; });
+  const { token, ablauf } = zugangAnlegen('Mehmet', { jetzt: new Date('2026-04-01T08:00:00Z') });
+  assert.equal(ablauf, '2026-09-28T08:00:00.000Z', '180 Tage');
+  const vorher = await starte(t, erstelleUpload({ db, dir, jetzt: () => Date.parse('2026-09-28T07:59:00Z'), freierSpeicher: () => null, nachUpload: () => [] }));
+  assert.equal((await fetch(`${vorher}/u/${token}`)).status, 200);
+  const danach = await starte(t, erstelleUpload({ db, dir, jetzt: () => Date.parse('2026-09-28T08:00:00Z'), freierSpeicher: () => null, nachUpload: () => [] }));
+  const seite = await fetch(`${danach}/u/${token}`);
+  assert.equal(seite.status, 404);
+  assert.match(await seite.text(), /nicht \(mehr\) gültig/);
 });
 
 test('Zentrale: Host-Pruefung, Anmeldung und Rollen', async (t) => {

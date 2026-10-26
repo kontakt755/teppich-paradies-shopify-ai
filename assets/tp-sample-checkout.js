@@ -100,6 +100,16 @@
     }
   }
 
+  // JAB und Vorwerk: Muster kommt direkt vom Hersteller (statt "ca. A5").
+  function showHerstellerHinweis() {
+    if (!core.isHerstellerMuster(product)) return;
+    var infoEl = root.querySelector('[data-sample-info]');
+    var herstellerEl = root.querySelector('[data-sample-hersteller]');
+    if (!herstellerEl) return;
+    if (infoEl) infoEl.hidden = true;
+    herstellerEl.hidden = false;
+  }
+
   function updateCount() {
     var status = core.getSelectionStatus(cartSampleCount, selected.size, limitMax, limitWord);
     countEl.textContent = status.message;
@@ -370,6 +380,10 @@
       product = results[0];
       if (!core.canSample(product)) {
         loadingEl.hidden = true;
+        // Kein Muster ueber diese Seite: die Zeile "Muster ca. A5 ..." passt
+        // dann nicht zum Hinweis darunter (Laminat, Parkett, Kork, ohne Muster).
+        var infoEl = root.querySelector('[data-sample-info]');
+        if (infoEl) infoEl.hidden = true;
         if (musterAufAnfrage(product)) {
           // Laminat, Parkett, Kork: kostenlos, aber nur auf Anfrage
           // (Inhaber 14.10.2026, blocks/tp-muster-cta). Alte Links landen hier.
@@ -407,6 +421,7 @@
 
         applyCart(cart);
         showVinylLimit();
+        showHerstellerHinweis();
 
         productImageEl.src = product.featured_image || '';
         productNameEl.textContent = product.title;

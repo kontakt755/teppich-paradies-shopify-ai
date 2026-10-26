@@ -517,6 +517,31 @@ function ausTailscale(quellen) {
   }];
 }
 
+/**
+ * Freier Speicher am Mac mini (operations/lib/speicher.mjs, gemessen von der Shop-Wache):
+ * gelb unter 40 GiB, rot unter 20 GiB. Ist die Platte voll, stehen Sync, Sicherung und
+ * Monteur-Upload gleichzeitig still. Text an einer Stelle: To-do und Shop-Kontrolle sagen dasselbe.
+ */
+export function speicherHinweis(stand) {
+  if (!stand || !['gelb', 'rot'].includes(stand.ampel) || !Number.isFinite(stand.freiGiB)) return null;
+  return {
+    ton: stand.ampel === 'rot' ? 'crit' : 'warn',
+    titel: stand.ampel === 'rot' ? 'Mac mini: Speicher fast voll' : 'Mac mini: Speicher wird knapp',
+    text: `nur noch ${stand.freiGiB} GiB frei (${stand.belegtProzent} % belegt)`,
+    handlung: 'Ist die Platte voll, stehen Datenabgleich, Sicherung und Foto-Upload still. Alte Bildordner auslagern (nach Rückfrage).',
+  };
+}
+
+function ausSpeicher(quellen, jetzt) {
+  const h = speicherHinweis(quellen.shopwache?.speicher);
+  if (!h) return [];
+  return [{
+    id: 'speicher', art: 'speicher', bereich: 'website', ton: h.ton, alterTage: tageSeit(quellen.shopwache.speicher.gemessenAm, jetzt),
+    titel: h.titel, kontext: `${h.text} · ${h.handlung}`,
+    knopf: { text: 'Ansehen', href: '#/shopwache' },
+  }];
+}
+
 /** Die Auslauf-Pruefung laeuft montags; ab 9 Tagen ohne neuen Stand ist sie ausgefallen. */
 export const AUSLAUF_STUMM_TAGE = 9;
 
@@ -664,6 +689,7 @@ function alleTodos(quellen, opt) {
     ...ausAkquise(quellen),
     ...ausKundenterminen(quellen, k),
     ...ausTailscale(quellen),
+    ...ausSpeicher(quellen, k.jetzt),
     ...ausRoutinen(quellen, k.jetzt),
   ];
 }
