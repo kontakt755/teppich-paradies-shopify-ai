@@ -39,6 +39,10 @@
   <div class="tp-raster-preisangabe">
     {%- render 'tp-preisangabe' -%}
   </div>
+  {%- comment -%} Mass aus dem Querverweis von Teppich nach Mass an die Produktlinks weitergeben {%- endcomment -%}
+  {%- if collection.handle contains 'nach-mass' or collection.title contains 'nach Maß' -%}
+    {%- render 'tp-mass-weitergabe' -%}
+  {%- endif -%}
 
   <div
     class="collection-wrapper grid gap-style{% if section.settings.product_grid_width == 'full-width' %} collection-wrapper--grid-full-width{% endif %}"

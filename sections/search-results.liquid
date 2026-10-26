@@ -85,12 +85,49 @@
           endif
         endif
       -%}
+      {%- liquid
+        # Feste Service-Seiten wie in der Schnellsuche (snippets/tp-suche-service-ziele):
+        # "Oeffnungszeiten" fuehrt zur Kontaktseite, auch wenn Shopify sie nicht findet.
+        # Gibt es eine, steht der Abschnitt "Seiten & Service" ganz oben, vor dem
+        # Hinweis und den Produkten - sonst wie bisher nach dem Filter.
+        assign tp_sr_fest = '|'
+        if paginate.current_page == 1 and search.terms != blank
+          capture tp_sr_fest_handles
+            render 'tp-suche-service-ziele', begriff: search.terms
+          endcapture
+          assign tp_sr_fest_handles = tp_sr_fest_handles | strip | split: ','
+          for tp_sr_fh in tp_sr_fest_handles
+            if tp_sr_fh != blank and pages[tp_sr_fh] != blank
+              assign tp_sr_fest = tp_sr_fest | append: tp_sr_fh | append: '|'
+            endif
+          endfor
+        endif
+        assign tp_sr_fest_liste = tp_sr_fest | remove_first: '|' | split: '|'
+      -%}
+      {%- capture tp_sr_seiten_html -%}
+        {% if tp_sr_seiten.size > 0 or tp_sr_fest_liste.size > 0 %}
+          <section class="tp-sr-ziele" aria-labelledby="tp-sr-seiten-titel">
+            <h2 class="tp-sr-ziele__titel" id="tp-sr-seiten-titel">Seiten &amp; Service</h2>
+            <ul class="tp-sr-ziele__liste">
+              {% for tp_sr_fh in tp_sr_fest_liste %}
+                <li><a href="{{ pages[tp_sr_fh].url | escape }}">{{ pages[tp_sr_fh].title | escape }}</a></li>
+              {% endfor %}
+              {% for tp_sr_s in tp_sr_seiten %}
+                {%- assign tp_sr_skey = '|' | append: tp_sr_s.handle | append: '|' -%}
+                {%- if tp_sr_fest contains tp_sr_skey -%}{%- continue -%}{%- endif -%}
+                <li><a href="{{ tp_sr_s.url | escape }}">{{ tp_sr_s.title | escape }}</a></li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+      {%- endcapture -%}
+      {%- if tp_sr_fest_liste.size > 0 -%}{{ tp_sr_seiten_html }}{%- endif -%}
       {% if search.results_count > 0 %}
         {% if tp_sr_unsicher %}
           {% render 'tp-suche-leer', begriff: search.terms %}
         {% endif %}
         {% if tp_sr_produkte.size > 0 %}
-          {% content_for 'block', type: 'filters', id: 'filters', results: search, results_size: tp_sr_produkte.size %}
+          {% content_for 'block', type: 'filters', id: 'filters', results: search, results_size: tp_sr_produkte.size, tp_unsicher: tp_sr_unsicher %}
         {% endif %}
         {% assign products = tp_sr_produkte %}
       {% else %}
@@ -104,16 +141,7 @@
         {% assign title = blank %}
       {% endif %}
 
-      {% if tp_sr_seiten.size > 0 %}
-        <section class="tp-sr-ziele" aria-labelledby="tp-sr-seiten-titel">
-          <h2 class="tp-sr-ziele__titel" id="tp-sr-seiten-titel">Seiten &amp; Service</h2>
-          <ul class="tp-sr-ziele__liste">
-            {% for tp_sr_s in tp_sr_seiten %}
-              <li><a href="{{ tp_sr_s.url | escape }}">{{ tp_sr_s.title | escape }}</a></li>
-            {% endfor %}
-          </ul>
-        </section>
-      {% endif %}
+      {%- unless tp_sr_fest_liste.size > 0 -%}{{ tp_sr_seiten_html }}{%- endunless -%}
 
       {% if tp_sr_kategorien.size > 0 %}
         <section class="tp-sr-ziele" aria-labelledby="tp-sr-kategorien-titel">
@@ -176,6 +204,13 @@
   .tp-sr-ziele {
     grid-column: 1 / -1;
     margin: 8px 0 24px;
+  }
+
+  /* Mobil reicht .collection-wrapper bis an den Rand (wie .tp-suche-leer--hinweis) */
+  @media screen and (max-width: 749px) {
+    .tp-sr-ziele {
+      margin-inline: var(--page-margin, 16px);
+    }
   }
 
   .tp-sr-ziele__titel {

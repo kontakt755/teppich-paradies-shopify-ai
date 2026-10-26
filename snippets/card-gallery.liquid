@@ -74,6 +74,11 @@
   # und verdoppelte den LCP. 24 px = Seitenrand plus halber Spaltenabstand.
   if section.settings.mobile_product_card_size != blank and section.settings.mobile_product_card_size != 'large'
     assign image_sizes = image_sizes | replace: ', 100vw', ', calc(50vw - 24px)'
+  elsif section.settings.mobile_product_card_size == 'large' and section.settings.full_width_on_mobile != true
+    # Eine Karte je Zeile mit Seitenrand (2 x 16 px): "100vw" holte fuer die
+    # eager geladene erste Reihe 1440 px statt 1080 px (iPhone, 358-px-Karte,
+    # /collections/teppiche, Rundgang 2026-10-26).
+    assign image_sizes = image_sizes | replace: ', 100vw', ', calc(100vw - 32px)'
   endif
 
   # Kartenbilder brauchen nie mehr als ~1.400 px. Die Horizon-Standardliste

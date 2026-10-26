@@ -96,6 +96,8 @@
         <button type="button" class="tp-tep-rechner__loeschen" data-tp-rechner-loeschen>Maß löschen</button>
       </div>
       <ul class="tp-tep-rechner__liste" role="list" data-tp-rechner-liste></ul>
+      {%- comment -%} Marken und Sisal mit Borduere stehen in eigenen Kollektionen; der Rechner haengt das Mass an die Links {%- endcomment -%}
+      {%- render 'tp-mass-querverweise' -%}
     </div>
     {%- comment -%} Daten kommen nach dem Laden aus templates/collection.teppiche-rechner (Renderzeit) {%- endcomment -%}
     <script type="application/json" data-tp-rechner-daten data-tp-rechner-quelle="{{ collection.url }}?view=teppiche-rechner"></script>

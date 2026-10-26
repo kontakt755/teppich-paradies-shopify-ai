@@ -105,6 +105,45 @@ test('Rechner uebersteht zwei 503 und rechnet nach dem dritten Versuch', async (
   assert.equal(h.requests.length, 3); assert.deepEqual(h.storage(), { w: 350, l: 350 }); assert.equal(h.form.navigations || 0, 0);
 });
 
+test('Fehleingabe nach gueltigem Mass verbirgt das alte Ergebnis', async () => {
+  for (const [w, l] of [['30', '30'], ['abc', '300'], ['', '300']]) {
+    const h = rechnerHarness(null); h.w.value = '200'; h.l.value = '300'; h.form.requestSubmit(); await h.answer();
+    const ergebnis = h.root.querySelector('[data-tp-rechner-ergebnis]');
+    assert.equal(ergebnis.hidden, false); assert.equal(h.doc.documentElement.classList.contains('tp-rechner-aktiv'), true);
+    h.w.value = w; h.l.value = l; h.form.requestSubmit();
+    assert.equal(h.root.querySelector('[data-tp-rechner-fehler]').hidden, false, `${w} x ${l}: Fehlermeldung`);
+    assert.equal(ergebnis.hidden, true, `${w} x ${l}: altes Ergebnis 200 x 300 verborgen`);
+    assert.equal(h.doc.documentElement.classList.contains('tp-rechner-aktiv'), false, 'Raster wieder sichtbar');
+    h.w.value = '250'; h.l.value = '300'; h.form.requestSubmit();
+    assert.equal(ergebnis.hidden, false); assert.match(h.root.querySelector('[data-tp-rechner-summe]').textContent, /250 × 300 cm/);
+  }
+});
+test('Komma und Punkt: auf ganze cm aufgerundet und sichtbar gesagt, wie auf der Produktseite', async () => {
+  const h = rechnerHarness(null); h.w.value = '200,5'; h.l.value = '300.2'; h.form.requestSubmit(); await h.answer();
+  assert.equal(h.root.querySelector('[data-tp-rechner-fehler]').hidden, true);
+  assert.equal(h.w.value, '201'); assert.equal(h.l.value, '301');
+  const summe = h.root.querySelector('[data-tp-rechner-summe]').textContent;
+  assert.match(summe, /201 × 301 cm \(aufgerundet: 200,5 → 201 cm, 300,2 → 301 cm\)/);
+  assert.deepEqual(h.storage(), { w: 201, l: 301 });
+  const glatt = rechnerHarness(null); glatt.w.value = '200,0'; glatt.l.value = '300'; glatt.form.requestSubmit(); await glatt.answer();
+  assert.equal(glatt.w.value, '200');
+  assert.doesNotMatch(glatt.root.querySelector('[data-tp-rechner-summe]').textContent, /aufgerundet/);
+  for (const falsch of ['200,', ',5', '2,0,0', '200 cm']) {
+    const f = rechnerHarness(null); f.w.value = falsch; f.l.value = '300'; f.form.requestSubmit(); await f.answer();
+    assert.equal(f.root.querySelector('[data-tp-rechner-fehler]').hidden, false, falsch);
+  }
+});
+
+test('Querverweise unter dem Ergebnis nehmen das gerechnete Mass mit', async () => {
+  const h = rechnerHarness(null);
+  const ergebnis = h.root.querySelector('[data-tp-rechner-ergebnis]');
+  const link = ergebnis.appendChild(h.node('a', { 'data-tp-mass-link': '/collections/jab-anstoetz-teppiche-nach-mass' }));
+  h.w.value = '200'; h.l.value = '300'; h.form.requestSubmit(); await h.answer();
+  assert.equal(link.href, '/collections/jab-anstoetz-teppiche-nach-mass?breite=200&laenge=300');
+  h.w.value = '250,4'; h.form.requestSubmit();
+  assert.equal(link.href, '/collections/jab-anstoetz-teppiche-nach-mass?breite=251&laenge=300');
+});
+
 function reihenHarness() {
   const h = documentHarness(); const row = h.doc.body.appendChild(h.node('section', { class: 'tp-zubehoer-produkte--teppich-gruppe', 'data-tp-reihe-gruppe': 'weich', 'data-tp-reihe-nachladen': '/rows' }));
   function cards(count) {
@@ -115,6 +154,7 @@ function reihenHarness() {
       // der spaetere CTA kann mit derselben Zieladresse wirklich Fokus tragen.
       card.appendChild(h.node('a', { href: '/product-' + i, style: 'display: contents' }));
       card.appendChild(h.node('a', { href: '/product-' + i, class: 'qa-visible-cta' }));
+      card.appendChild(h.node('img', { src: '/bild.jpg?width=3840', srcset: '/bild.jpg?width=600 600w, /bild.jpg?width=1440 1440w', loading: 'lazy', sizes: 'auto, (min-width: 750px) 25.0vw, 50vw' }));
     }
     area.appendChild(h.node('button', { 'data-tp-gruppe-mehr': '' })); return area;
   }
@@ -136,6 +176,21 @@ test('Reihen: wiederholter 503 laesst Retry und Liste erreichbar, Erfolg beendet
   h.retry.focus(); h.click(h.retry); await h.answer(false); assert.equal(h.retry.hidden, false);
   h.click(h.retry); await h.answer(); assert.equal(h.requests.length, 3); assert.equal(h.fallback.hidden, true);
   assert.equal(h.row.querySelectorAll('.resource-list__item').length, 7); assert.equal(h.doc.activeElement.getAttribute('href'), '/product-0');
+});
+test('Reihen: nachgeladene Kartenbilder kommen ohne sizes=auto (kein 1440-px-Abruf vor dem Layout)', async () => {
+  const h = reihenHarness();
+  assert.equal(h.row.querySelectorAll('img')[0].getAttribute('sizes'), 'auto, (min-width: 750px) 25.0vw, 50vw');
+  await h.answer();
+  const bilder = h.row.querySelectorAll('img');
+  assert.equal(bilder.length, 7);
+  for (const img of bilder) {
+    assert.equal(img.getAttribute('sizes'), '(min-width: 750px) 25.0vw, 50vw');
+    // importNode kopiert in Attributreihenfolge: srcset erst nach loading und sizes.
+    const reihenfolge = Object.keys(img.attrs);
+    assert.deepEqual(reihenfolge.slice(-2), ['src', 'srcset']);
+    assert.ok(reihenfolge.indexOf('loading') < reihenfolge.indexOf('srcset'));
+    assert.equal(img.getAttribute('srcset'), '/bild.jpg?width=600 600w, /bild.jpg?width=1440 1440w');
+  }
 });
 test('Reihen: fokussierter vorhandener Produktlink bleibt nach Ersatz beim selben Produkt', async () => {
   const h = reihenHarness(); h.row.querySelectorAll('.qa-visible-cta')[2].focus(); await h.answer();
