@@ -8,7 +8,7 @@ import { esc, fmtDateTime, NICHT_HINTERLEGT, fmtPreis } from '../kern/helfer.mjs
 import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
-import { tailscaleHinweis } from '../lib/todos.mjs';
+import { tailscaleHinweis, speicherHinweis } from '../lib/todos.mjs';
 
 export const shopwache = { daten: null, laedt: false };
 
@@ -30,6 +30,9 @@ export function viewShopwache() {
   // Nur wenn Tailscale nicht laeuft - im Normalfall steht hier nichts.
   const ts = tailscaleHinweis(d?.tailscale);
   const tailscale = ts ? `<p class="notice warn" role="status"><b>${esc(ts.titel)}.</b> ${esc(ts.handlung)}</p>` : '';
+  // Freier Speicher am Mac mini - ebenfalls nur, wenn er knapp wird.
+  const sp = speicherHinweis(d?.speicher);
+  const speicher = sp ? `<p class="notice ${sp.ton === 'crit' ? 'crit' : 'warn'}" role="status"><b>${esc(sp.titel)}:</b> ${esc(sp.text)}. ${esc(sp.handlung)}</p>` : '';
   if (!d || !d.verfuegbar) {
     return kopf + tailscale + emptyState('Die Shop-Kontrolle ist noch nie gelaufen.', `Auf dem Mac starten: ${d?.befehl || 'npm run shop:wache'}`);
   }
@@ -49,7 +52,7 @@ export function viewShopwache() {
     <td>${p.imShop === null ? NICHT_HINTERLEGT : `${esc(fmtPreis(p.imShop))} €`}</td>
     <td><span class="badge ${p.inOrdnung ? 'ok' : 'crit'}">${p.inOrdnung ? 'gleich' : 'weicht ab'}</span></td>
   </tr>`;
-  return kopf + tailscale + `
+  return kopf + tailscale + speicher + `
     <p class="small muted" style="margin:0 0 12px">Zuletzt geprüft: ${esc(fmtDateTime(d.geprueftAm))} · ${esc(d.basis)}</p>
     ${d.ampel === 'gruen'
       ? `<p class="notice ok">Alles in Ordnung: jede Pflichtseite antwortet, keine Preisabweichung.</p>`

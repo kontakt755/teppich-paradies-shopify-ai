@@ -9,6 +9,11 @@
  * Ergebnis: $TP_PRIVAT_DIR/shopwache/status.json - das Control Center liest
  * genau diese Datei. Es werden nur oeffentliche Seiten abgerufen, keine
  * Anmeldung, kein Schreibzugriff.
+ *
+ * Nebenbei misst die Wache den freien Speicher der Platte, auf der $TP_PRIVAT_DIR
+ * liegt (operations/lib/speicher.mjs): Feld `speicher` mit eigener Ampel. Er zaehlt
+ * nicht zur Shop-Ampel - ein voller Mac ist kein kaputter Shop -, das Control
+ * Center zeigt ihn als eigenes To-do.
  */
 
 import fs from 'node:fs';
@@ -16,6 +21,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pruefe } from '../lib/shopwache.mjs';
+import { speicherStand, speicherText } from '../lib/speicher.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const STANDARD_BASIS = 'https://www.teppich-paradies.net';
@@ -87,10 +93,11 @@ async function main() {
   const stichproben = stichprobenAus(lexikon, a.stichproben);
 
   const ergebnis = await pruefe(holen, { basis: a.basis, stichproben });
+  ergebnis.speicher = speicherStand(dir);
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
   fs.writeFileSync(ziel, JSON.stringify(ergebnis, null, 2));
 
-  console.log(`Shop-Wache: ${ergebnis.ampel.toUpperCase()} · ${ergebnis.kritisch} kritisch, ${ergebnis.warnungen} Warnungen · ${ziel}`);
+  console.log(`Shop-Wache: ${ergebnis.ampel.toUpperCase()} · ${ergebnis.kritisch} kritisch, ${ergebnis.warnungen} Warnungen · Speicher ${speicherText(ergebnis.speicher)} · ${ziel}`);
   for (const b of ergebnis.befunde) console.log(`  [${b.art}] ${b.titel}: ${b.text}`);
   if (!stichproben.length) console.log('  (keine Preisstichprobe - Lexikon-Export fehlt)');
   process.exitCode = ergebnis.kritisch ? 2 : 0;

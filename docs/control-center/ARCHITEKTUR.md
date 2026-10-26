@@ -752,6 +752,7 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Team-Aufgabe | `/api/org/liste?bereich=alle-aufgaben` | Dringlichkeit „überfällig" (rot) oder „jetzt" (gelb), nicht wartend/zurückgestellt |
 | Freigabe | Entwicklungsaufgaben (`issues.json`) | Status Freigabe oder Review durch Mensch; nur Inhaber |
 | Shop-Wache | `/api/shopwache/status` | Ampel gelb/rot; nur Inhaber |
+| Speicher am Mac mini | `/api/shopwache/status`, Feld `speicher` | gelb unter 40 GiB frei, rot unter 20 GiB (`operations/lib/speicher.mjs`, stündlich von der Shop-Wache gemessen); nur Inhaber, Website-Sicht (seit 2026-10-26) |
 | Neue Service-Anfrage | `/api/kunden/serviceanfragen` | Status „neu“; gelb ab 1, rot ab 3 Tagen (seit 2026-10-19) |
 | Storno vom Lieferanten | `/api/einkauf/belege` | Storno-Beleg zu einer Shop-Bestellung, nicht erledigt; immer rot (§ 25) |
 | Lieferschein da – Ware angekommen? | `/api/einkauf/belege` | Lieferschein, bei uns noch „bestellt“; gelb (§ 25) |

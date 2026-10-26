@@ -26,10 +26,11 @@ import { fileURLToPath } from 'node:url';
 import { authentifiziere, benutzerDateiExistiert, leseBenutzer } from '../../operations/lib/benutzer.mjs';
 import { clientAus, ladeLernstand, planeOffene } from '../lib/ablauf.mjs';
 import { oeffne } from '../lib/db.mjs';
-import { DATEITYPEN, EingangFehler, erkenneTyp, findeZugang, GRENZEN, legeBaustelleAn, pruefeAngaben, trageDateiEin } from '../lib/eingang.mjs';
+import { DATEITYPEN, EingangFehler, erkenneTyp, findeZugang, GRENZEN, legeBaustelleAn, pruefeAngaben, standHeute, tagVon, trageDateiEin, zaehleHeute } from '../lib/eingang.mjs';
 import { bearbeiten, freigeben, FreigabeFehler, holeGeplanteZurueck, pruefe, medienZuBeitrag, verwerfen, zurueckholen } from '../lib/freigabe.mjs';
 import { BODENARTEN, ORTE, RAEUME, TAETIGKEITEN } from '../lib/konfig.mjs';
-import { medienDir, privatDir, sitzungenPfad, socialDir } from '../lib/pfade.mjs';
+import { medienDir, privatDir, sitzungenPfad, socialDir, uploadZaehlerPfad } from '../lib/pfade.mjs';
+import { messeSpeicher } from '../../operations/lib/speicher.mjs';
 import { verarbeiteEingang } from '../lib/pruefung.mjs';
 import { rendere } from '../lib/rendern.mjs';
 import { BEITRAG_STATUS, INHALT_STATUS, STATUS_LABEL, StatusFehler, TYPEN } from '../lib/status.mjs';
@@ -277,18 +278,39 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
 
 // --- Upload ---------------------------------------------------------------------
 
-export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now(), nachUpload = inhaltId => verarbeiteEingang(db, { dir, nur: inhaltId }) } = {}) {
+/**
+ * @param {object} opt
+ *   freierSpeicher  () => freie Bytes der Platte oder null (nicht messbar); Tests geben einen Ersatz
+ *   zaehlerDatei    Uploads und Bytes je Link-Name und Tag (ueberlebt einen Neustart)
+ */
+export function erstelleUpload({
+  db, dir = socialDir(), jetzt = () => Date.now(), nachUpload = inhaltId => verarbeiteEingang(db, { dir, nur: inhaltId }),
+  freierSpeicher = () => messeSpeicher(dir)?.freiBytes ?? null, zaehlerDatei = uploadZaehlerPfad(dir),
+} = {}) {
   const laufend = new Map();       // uploadId -> { inhaltId, ordner, name, dateien, bytes, belegt, bis }
-  const jeTag = new Map();         // name|tag -> Anzahl Uploads
 
   // Bewusst keine Sperre nach Fehlversuchen: der Link hat 144 Bit Zufall und ist
   // nicht zu erraten. Eine Sperre je Adresse wuerde hinter einem Proxy (Funnel)
   // alle Monteure gemeinsam treffen - zehn Aufrufe eines Fremden genuegten.
   function zugang(token) {
-    const z = findeZugang(token);
+    const z = findeZugang(token, undefined, { jetzt: new Date(jetzt()) });
     if (!z) throw new HttpFehler(404, 'Dieser Link ist nicht (mehr) gültig. Bitte im Büro einen neuen geben lassen.');
     return z;
   }
+
+  /**
+   * Wie viel darf noch auf die Platte? null = nicht messbar (dann entscheidet nur die Tagesgrenze).
+   * Unter GRENZEN.minFreiBytes nimmt der Upload nichts mehr an - eine volle Platte haelt
+   * Control Center, Datenabgleich und Sicherung an, nicht nur den Upload.
+   */
+  function platzRest() {
+    const frei = freierSpeicher();
+    if (frei === null || frei === undefined || !Number.isFinite(frei)) return null;
+    const rest = frei - GRENZEN.minFreiBytes;
+    if (rest <= 0) throw new HttpFehler(507, 'Der Speicher im Büro ist fast voll – bitte im Büro Bescheid geben.');
+    return rest;
+  }
+  const TAGESGRENZE = 'Für heute ist genug hochgeladen – bitte im Büro melden.';
 
   /**
    * Schreibt den Anfragekoerper direkt auf die Platte - ein 300-MB-Video darf
@@ -296,13 +318,13 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
    * Platte) und um jeden Fehler auf beiden Seiten: volle Platte, abgerissene
    * Verbindung. Ohne das beendete ein Schreibfehler den ganzen Dienst.
    */
-  async function speichere(req, ziel, max) {
+  async function speichere(req, ziel, max, zuViel = () => new HttpFehler(413, 'Datei zu groß')) {
     let groesse = 0; let kopf = Buffer.alloc(0);
     const waechter = new Transform({
       transform(stueck, _kodierung, weiter) {
         groesse += stueck.length;
         if (kopf.length < 16) kopf = Buffer.concat([kopf, stueck]).subarray(0, 16);
-        weiter(groesse > max ? new HttpFehler(413, 'Datei zu groß') : null, stueck);
+        weiter(groesse > max ? zuViel() : null, stueck);
       },
     });
     try {
@@ -333,13 +355,16 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
       }
 
       if (aktion === 'start' && req.method === 'POST') {
-        const tag = `${z.name}|${new Date(jetzt()).toISOString().slice(0, 10)}`;
-        if ((jeTag.get(tag) ?? 0) >= 30) throw new HttpFehler(429, 'Für heute sind es genug Uploads – bitte im Büro melden.');
+        const tag = tagVon(new Date(jetzt()));
+        const heute = standHeute(z.name, tag, zaehlerDatei);
+        if (heute.uploads >= GRENZEN.maxUploadsJeTag) throw new HttpFehler(429, 'Für heute sind es genug Uploads – bitte im Büro melden.');
+        if (heute.bytes >= GRENZEN.maxBytesJeTag) throw new HttpFehler(429, TAGESGRENZE);
+        platzRest();
         const angaben = pruefeAngaben(await liesJson(req));
         const { id, ordner } = legeBaustelleAn(db, angaben, { von: z.name, jetzt: new Date(jetzt()), dir });
         const neu = crypto.randomBytes(8).toString('hex');
         laufend.set(neu, { inhaltId: id, ordner, name: z.name, dateien: 0, bytes: 0, belegt: false, bis: jetzt() + 2 * 60 * 60 * 1000 });
-        jeTag.set(tag, (jeTag.get(tag) ?? 0) + 1);
+        zaehleHeute(z.name, tag, { uploads: 1 }, zaehlerDatei);
         return sende(res, 200, { upload: neu, ortVerworfen: angaben.ortVerworfen });
       }
 
@@ -353,10 +378,18 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
         // Eine Datei nach der anderen: zwei gleichzeitige Sendungen wuerden sich
         // Nummer und Groessenzaehler teilen. Die Seite sendet ohnehin der Reihe nach.
         if (lauf.belegt) throw new HttpFehler(409, 'Es läuft noch eine Übertragung – bitte kurz warten.');
+        // Tagesmenge je Link (ueberlebt einen Neustart) und freier Platz: die kleinere Grenze gilt.
+        const tag = tagVon(new Date(jetzt()));
+        const restTag = GRENZEN.maxBytesJeTag - standHeute(lauf.name, tag, zaehlerDatei).bytes;
+        if (restTag <= 0) throw new HttpFehler(429, TAGESGRENZE);
+        const restPlatz = platzRest();
+        const max = Math.min(GRENZEN.maxVideoBytes, rest, restTag, restPlatz ?? Infinity);
+        const zuViel = () => (max === restPlatz ? new HttpFehler(507, 'Der Speicher im Büro ist fast voll – bitte im Büro Bescheid geben.')
+          : max === restTag ? new HttpFehler(429, TAGESGRENZE) : new HttpFehler(413, 'Datei zu groß'));
         lauf.belegt = true;
         try {
           const tmp = path.join(lauf.ordner, `${crypto.randomBytes(6).toString('hex')}.teil`);
-          const { groesse, kopf } = await speichere(req, tmp, Math.min(GRENZEN.maxVideoBytes, rest));
+          const { groesse, kopf } = await speichere(req, tmp, max, zuViel);
           const typ = erkenneTyp(kopf);
           const info = DATEITYPEN[typ];
           if (!info || (info.art === 'bild' && groesse > GRENZEN.maxBildBytes)) {
@@ -367,6 +400,7 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
           fs.renameSync(tmp, ziel);
           lauf.dateien += 1;
           lauf.bytes += groesse;
+          zaehleHeute(lauf.name, tag, { bytes: groesse }, zaehlerDatei);
           trageDateiEin(db, lauf.inhaltId, { datei: ziel, typ, dir });
           return sende(res, 200, { ok: true, art: info.art, nummer: lauf.dateien });
         } finally {

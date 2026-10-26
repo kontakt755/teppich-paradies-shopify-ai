@@ -40,7 +40,7 @@ import { clientAus, holeKennzahlen, importiereReferenzen, planeOffene, shopAbgle
 import { oeffne } from '../lib/db.mjs';
 import { seitenZugang } from '../lib/meta.mjs';
 import { baue, HIGHLIGHTS } from '../lib/vorlagen.mjs';
-import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../lib/eingang.mjs';
+import { ablaufVon, findeZugang, liesZugaenge, zugangAnlegen, zugangGueltig, zugangSperren } from '../lib/eingang.mjs';
 import { ersetzeBild } from '../lib/bearbeitung.mjs';
 import { freigeben, freigebenAutomatisch, holeGeplanteZurueck, verwerfen } from '../lib/freigabe.mjs';
 import { medienPfad, socialDir } from '../lib/pfade.mjs';
@@ -260,7 +260,7 @@ async function main(argv) {
           const z = zugangAnlegen(rest[1]);
           const basis = env.SOCIAL_UPLOAD_BASIS_URL || 'http://<adresse-des-mac-mini>:8021';
           // Der Link wird genau einmal gezeigt - gespeichert ist nur sein Hash.
-          console.log(`Zugang für ${z.name} angelegt. Link (nur jetzt sichtbar, an das Handy schicken):\n${basis}/u/${z.token}`);
+          console.log(`Zugang für ${z.name} angelegt, gültig bis ${new Date(z.ablauf).toLocaleDateString('de-DE')}. Link (nur jetzt sichtbar, an das Handy schicken):\n${basis}/u/${z.token}`);
         } else if (rest[0] === 'sperren') {
           console.log(`${zugangSperren(rest[1])} Zugang/Zugänge gesperrt.`);
         } else if (rest[0] === 'pruefen') {
@@ -268,7 +268,11 @@ async function main(argv) {
         } else {
           const liste = liesZugaenge();
           if (!liste.length) console.log('Noch keine Zugänge. Anlegen: npm run social -- zugang anlegen "Name"');
-          for (const z of liste) console.log(`${z.aktiv ? 'aktiv   ' : 'gesperrt'} ${z.name} (seit ${new Date(z.angelegt).toLocaleDateString('de-DE')})`);
+          for (const z of liste) {
+            const bis = ablaufVon(z);
+            const zustand = !z.aktiv ? 'gesperrt  ' : zugangGueltig(z) ? 'aktiv     ' : 'abgelaufen';
+            console.log(`${zustand} ${z.name} (seit ${new Date(z.angelegt).toLocaleDateString('de-DE')}${bis ? `, gültig bis ${new Date(bis).toLocaleDateString('de-DE')}` : ''})`);
+          }
         }
         break;
       }

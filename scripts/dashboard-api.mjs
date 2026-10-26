@@ -68,7 +68,7 @@ import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
-import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../social/lib/eingang.mjs';
+import { ablaufVon, findeZugang, liesZugaenge, zugangAnlegen, zugangGueltig, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
@@ -3462,15 +3462,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const liste = liesZugaenge(path.join(dir, 'upload-zugaenge.json'));
       const basis = this._uploadBasis();
       const gemerkt = this._uploadLinks();
-      const namen = [...new Set(liste.filter(z => z.aktiv).map(z => z.name))];
+      // Gueltig = aktiv und nicht abgelaufen (Links gelten 180 Tage, social/lib/eingang.mjs).
+      const jetzt = now();
+      const gueltig = liste.filter(z => zugangGueltig(z, jetzt));
+      const namen = [...new Set(gueltig.map(z => z.name))];
       const zugaenge = namen.map(name => {
-        const aktive = liste.filter(z => z.aktiv && z.name === name);
+        const aktive = gueltig.filter(z => z.name === name);
         // Juengster noch gueltiger gemerkter Link dieses Namens.
-        const treffer = gemerkt.filter(l => l.name === name && findeZugang(l.token, aktive))
+        const treffer = gemerkt.filter(l => l.name === name && findeZugang(l.token, aktive, { jetzt }))
           .sort((a, b) => String(b.angelegt).localeCompare(String(a.angelegt)))[0];
         return {
           name,
           seit: aktive.map(z => z.angelegt).sort()[0] || null,
+          // Bis wann der laengste noch gueltige Link dieses Namens gilt - danach ist ein neuer faellig.
+          bis: aktive.map(ablaufVon).filter(Boolean).sort().at(-1) || null,
           link: treffer && basis ? `${basis}/u/${treffer.token}` : null,
         };
       });
