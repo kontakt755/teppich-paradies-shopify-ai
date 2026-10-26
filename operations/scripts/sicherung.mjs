@@ -141,6 +141,7 @@ export const NICHT_GESICHERT = Object.freeze({
   'benutzer.json': 'Zugaenge zum Control Center - neu anlegen (npm run benutzer)',
   'dashboard-passwort.txt': 'Notpasswort des Control Centers - neu anlegen',
   'dashboard-sitzungen.json': 'Anmeldungen - entstehen neu',
+  'geraete-abgemeldet.json': 'Zeitpunkt von "Alle anderen Geraete abmelden" - nach einer Wiederherstellung meldet sich ohnehin jedes Geraet neu an',
   'social/zugang.env': 'Meta-Zugang und Upload-Adresse - neu anlegen (social/META-EINRICHTUNG.md)',
   'social/upload-links.json': 'Upload-Links im Klartext - nach Ausfall neue Links anlegen',
   'social/zentrale-sitzungen.json': 'Anmeldungen der Social-Zentrale - entstehen neu',

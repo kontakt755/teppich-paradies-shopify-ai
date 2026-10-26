@@ -26,7 +26,7 @@ export function telLink(telefon) {
 
 function kundenPositionZeile(p) {
   return `<tr>
-    <td data-l="Artikel">${esc(p.titel)}${p.farbe ? `<br><span class="small muted">${esc(p.farbe)}</span>` : ''}</td>
+    <td data-l="Artikel">${esc(p.titel)}${p.farbe && !['–', 'Default Title'].includes(p.farbe) ? `<br><span class="small muted">${esc(p.farbe)}</span>` : ''}</td>
     <td data-l="Unsere SKU">${esc(p.sku === 'UNGEKLAERT' ? 'nicht zugeordnet' : p.sku || '–')}</td>
     <td data-l="Lieferanten-Art.-Nr.">${esc(p.lieferantenArtikelnummer === 'UNGEKLAERT' ? 'nicht zugeordnet' : p.lieferantenArtikelnummer || '–')}</td>
     <td data-l="Menge">${esc(p.kundenmasse || p.menge)}</td>

@@ -137,7 +137,11 @@ export function viewSonderposten() {
 
   if (!d && sonderposten.laedt) return kopf + suche + `<div class="empty">Lade Sonderposten aus Shopify …</div>`;
   if (d?.fehler) return kopf + stoerungState(d, 'Die Sonderposten');
-  if (!d || !d.verfuegbar) return kopf + emptyState('Shopify ist nicht verbunden.', `${d?.hinweis || ''}`);
+  if (!d || !d.verfuegbar) {
+    // Ohne Zugang derselbe Satz wie im Einkauf, dazu der Weg zur Technik - keine Dateinamen, kein Befehl.
+    return kopf + `<div class="empty"><strong>Shopify ist nicht verbunden.</strong> ${esc(d?.hinweis || '')}
+      <button type="button" class="btn btn-sm" data-fehler-melden style="margin-left:8px">Fehler melden</button></div>`;
+  }
 
   const treffer = d.eintraege.filter(e => passtZurSuche(e, q));
   const da = treffer.filter(e => e.verkaufbar);

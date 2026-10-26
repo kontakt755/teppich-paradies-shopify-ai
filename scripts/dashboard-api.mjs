@@ -36,7 +36,7 @@ import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
-import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
+import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
@@ -736,6 +736,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return lauf;
   }
 
+  /**
+   * Sonderposten ohne Shopify-Zugang: die Oberflaeche bekommt den Satz fuer den Laden, die
+   * Einrichtungsanleitung (.env.local, Befehl) nur das Dienstprotokoll - einmal je Prozess.
+   * Rundgang 26.10.: Mitarbeiter sahen Dateinamen und einen Terminalbefehl.
+   */
+  let sonderpostenOhneZugangGemeldet = false;
+  function sonderpostenOhneZugang() {
+    if (!sonderpostenOhneZugangGemeldet) { sonderpostenOhneZugangGemeldet = true; logFehler('sonderposten', KEIN_ZUGANG); }
+    return { verfuegbar: false, keinZugang: true, hinweis: 'Geht an diesem Rechner nicht – der Shopify-Zugang fehlt. Bitte dem Inhaber Bescheid geben.' };
+  }
+
   /** Angaben aus dem Versand-Dialog, begrenzt und ohne fremde Felder. */
   function versandAngaben(v) {
     const roh = v && typeof v === 'object' ? v : {};
@@ -745,6 +756,27 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       versanddienst: nummer && VERSANDDIENSTE.includes(roh.versanddienst) ? roh.versanddienst : null,
       benachrichtigen: typeof roh.benachrichtigen === 'boolean' ? roh.benachrichtigen : null,
     };
+  }
+
+  /**
+   * Haengt die Sendungsnummer schon an einer anderen Bestellung? Dann wird nichts geschrieben:
+   * 409 mit den Bestellnummern, gebucht wird erst, wenn im Dialog ausdruecklich bestaetigt ist
+   * (versand.trotzDoppelt). Ein Tippfehler oder der Einlieferungsbeleg statt der Paketnummer
+   * schickte sonst zwei Kunden denselben Verfolgungslink (15.10.). Aufrufen, bevor etwas
+   * geschrieben wird.
+   */
+  function pruefeSendungFrei({ dir, orderId, angaben, roh, modell, benutzer, actor }) {
+    if (!angaben.sendungsnummer) return;
+    const andere = andereBestellungenMitSendung(leseAuftragsstatus(auftragsstatusPfad(dir)), { orderId, sendungsnummer: angaben.sendungsnummer });
+    if (!andere.length) return;
+    const alle = modell ? [...modell.auftraege, ...modell.testauftraege] : [];
+    const namen = andere.map(id => alle.find(a => a.id === id)?.name || 'eine andere Bestellung');
+    if (roh?.trotzDoppelt === true) {
+      merke(benutzer, actor, 'Sendungsnummer trotz Doppelung eingetragen', `${orderId}: ${angaben.sendungsnummer} steht auch an ${namen.join(', ')}`);
+      return;
+    }
+    throw new ApiError(409, `Die Sendungsnummer ${angaben.sendungsnummer} steht schon an ${namen.join(', ')}. Jedes Paket hat seine eigene Nummer – bitte mit dem Paketaufkleber vergleichen.`,
+      { doppelteSendung: { nummer: angaben.sendungsnummer, bestellungen: namen } });
   }
 
   /** Auftrag aus dem Bestellmodell; fehlt er (Export aelter als die Bestellung), reicht die ID fuer Shopify. */
@@ -1095,6 +1127,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const positionen = auswahl ? allePositionen.filter(p => auswahl.has(p.lineItemId)) : allePositionen;
     if (auswahl && !positionen.length) throw new ApiError(400, 'Bitte mindestens einen Artikel dieser Bestellung auswählen');
     const angaben = versandAngaben(payload?.versand);
+    if (schritt === 'raus') pruefeSendungFrei({ dir, orderId, angaben, roh: payload?.versand, modell, benutzer, actor });
     // "Muster nicht verfuegbar": die angekreuzten Muster werden im Shop gesperrt; die Notiz nennt
     // ihre Farben (Pflicht - aus den Kaestchen, dazu der Freitext).
     let notizText = notiz;
@@ -2698,6 +2731,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const vorLager = status === 'raus' ? auftragFuerLager(dir, orderId) : null;
       const angaben = versandAngaben(payload?.versand);
       const modell = ladeBestellModell(dir);
+      if (status === 'raus') pruefeSendungFrei({ dir, orderId, angaben, roh: payload?.versand, modell, benutzer, actor });
       const p = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].flatMap(a => a.positionen || []).find(p => p.orderId === orderId && p.lineItemId === lineItemId);
       const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)];
       let eintrag;
@@ -4150,12 +4184,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { zugang = await shopify(); } catch (e) {
         return { verfuegbar: false, fehler: true, hinweis: mitHinweis(String(e?.message || e).split('\n')[0]) };
       }
-      if (zugang?.art === 'sammeln') {
-        return { verfuegbar: false, hinweis: KEIN_ZUGANG, befehl: 'npm run operations:verbindung' };
-      }
+      if (zugang?.art === 'sammeln') return sonderpostenOhneZugang();
       try {
         const daten = await leseSonderposten(zugang.proxy, { jetzt: now() });
-        if (!daten) return { verfuegbar: false, hinweis: KEIN_ZUGANG, befehl: 'npm run operations:verbindung' };
+        if (!daten) return sonderpostenOhneZugang();
         return { verfuegbar: true, ...daten };
       } catch (e) {
         const msg = String(e?.message || e).split('\n')[0].slice(0, 300);

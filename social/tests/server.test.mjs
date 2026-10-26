@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { createServer, request } from 'node:http';
 import path from 'node:path';
@@ -6,6 +7,7 @@ import test from 'node:test';
 import { zugangAnlegen } from '../lib/eingang.mjs';
 import { verarbeiteEingang } from '../lib/pruefung.mjs';
 import { erstelleAnmeldung, erstelleUpload, erstelleZentrale, hostErlaubt } from '../scripts/server.mjs';
+import { setzeAbmeldeStand } from '../../operations/lib/anmeldeschutz.mjs';
 import { scheinRendern, testDb, tmpDir } from './_hilfe.mjs';
 
 async function starte(t, handler) {
@@ -241,6 +243,36 @@ test('Anmeldung: Notpasswort gilt, Sitzung ueberlebt den Neustart, falsches Pass
   assert.equal(erstelleAnmeldung({ env, datei }).benutzer(sid).name, 'Inhaber');
   a.beenden(sid);
   assert.equal(erstelleAnmeldung({ env, datei }).benutzer(sid), null);
+});
+
+test('Anmeldung: neues Passwort und "Alle anderen Geraete abmelden" beenden Notzugang-Sitzungen (Rundgang 26.10.)', (t) => {
+  const dir = tmpDir(t); const datei = path.join(dir, 'sitzungen.json');
+  let jetzt = Date.parse('2026-10-26T08:00:00Z');
+  const uhr = () => jetzt;
+  const env = { TP_PRIVAT_DIR: dir, TP_DASHBOARD_PASSWORT: 'nur-fuer-den-test' };
+  const a = erstelleAnmeldung({ env, datei, jetzt: uhr });
+  const sid = a.neueSitzung(a.pruefe({ passwort: 'nur-fuer-den-test' }));
+  assert.equal(fs.readFileSync(datei, 'utf8').includes('nur-fuer-den-test'), false, 'das Passwort steht nie in der Datei');
+  assert.equal(erstelleAnmeldung({ env, datei, jetzt: uhr }).benutzer(sid).name, 'Inhaber');
+  assert.equal(erstelleAnmeldung({ env: { ...env, TP_DASHBOARD_PASSWORT: 'neues-test-passwort' }, datei, jetzt: uhr }).benutzer(sid), null, 'neues Passwort: abgemeldet');
+
+  // Alte Sitzung ohne Abdruck uebernimmt das jetzige Passwort.
+  const altSid = 'b'.repeat(43);
+  const hash = crypto.createHash('sha256').update(altSid).digest('hex');
+  fs.writeFileSync(datei, JSON.stringify({ sitzungen: { [hash]: { benutzer: { name: 'Inhaber', kuerzel: null, rolle: 'inhaber' }, bis: jetzt + 86_400_000 } } }));
+  const b = erstelleAnmeldung({ env, datei, jetzt: uhr });
+  assert.equal(b.benutzer(altSid).name, 'Inhaber', 'niemand wird durch das Update abgemeldet');
+
+  // "Alle anderen Geraete abmelden" im Control Center: alles davor Angemeldete endet, Neues gilt.
+  const vorher = b.neueSitzung(b.pruefe({ passwort: 'nur-fuer-den-test' }));
+  jetzt += 60_000;
+  setzeAbmeldeStand(dir, jetzt);
+  jetzt += 60_000;
+  assert.equal(b.benutzer(vorher), null);
+  assert.equal(b.benutzer(altSid), null);
+  const nachher = b.neueSitzung(b.pruefe({ passwort: 'nur-fuer-den-test' }));
+  assert.equal(b.benutzer(nachher).name, 'Inhaber');
+  assert.equal(erstelleAnmeldung({ env, datei, jetzt: uhr }).benutzer(vorher), null, 'auch nach einem Neustart');
 });
 
 test('Eingangspruefung: HEIC wird gewandelt, Unscharfes und Dubletten fallen heraus, leere Baustellen werden verworfen', (t) => {

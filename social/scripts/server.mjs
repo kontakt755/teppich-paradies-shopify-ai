@@ -23,6 +23,7 @@ import path from 'node:path';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
+import { abmeldeStandLeser, anmeldeGeraet, passwortAbdruck } from '../../operations/lib/anmeldeschutz.mjs';
 import { authentifiziere, benutzerDateiExistiert, leseBenutzer } from '../../operations/lib/benutzer.mjs';
 import { clientAus, ladeLernstand, planeOffene } from '../lib/ablauf.mjs';
 import { oeffne } from '../lib/db.mjs';
@@ -99,13 +100,26 @@ function ladePasswort(env) {
 export function erstelleAnmeldung({ env = process.env, datei = sitzungenPfad(), jetzt = () => Date.now() } = {}) {
   const passwort = ladePasswort(env);
   const sha = t => crypto.createHash('sha256').update(String(t)).digest();
+  // Wie im Control Center (operations/lib/anmeldeschutz.mjs): Notzugang-Sitzungen tragen den
+  // Abdruck ihres Passworts (pw); "Alle anderen Geraete abmelden" setzt einen Zeitstempel im
+  // privaten Ordner, vor dem angemeldete Sitzungen nicht mehr gelten.
+  const abdruck = passwortAbdruck(passwort);
+  const abgemeldetAb = abmeldeStandLeser(privatDir(env));
   const sitzungen = new Map();
-  try {
-    for (const [h, s] of Object.entries(JSON.parse(fs.readFileSync(datei, 'utf8')).sitzungen ?? {})) if (s.bis > jetzt()) sitzungen.set(h, s);
-  } catch { /* keine Datei - dann neu anmelden */ }
   const speichere = () => {
     try { fs.mkdirSync(path.dirname(datei), { recursive: true }); fs.writeFileSync(datei, JSON.stringify({ sitzungen: Object.fromEntries(sitzungen) }), { mode: 0o600 }); } catch { /* Sitzungen ueberleben dann keinen Neustart */ }
   };
+  try {
+    let uebernommen = false;
+    for (const [h, s] of Object.entries(JSON.parse(fs.readFileSync(datei, 'utf8')).sitzungen ?? {})) {
+      if (!(s.bis > jetzt())) continue;
+      // Alte Notzugang-Sitzungen uebernehmen beim ersten Start das jetzige Passwort.
+      if (!s.benutzer?.kuerzel && !s.pw && abdruck) { s.pw = abdruck; uebernommen = true; }
+      sitzungen.set(h, s);
+    }
+    if (uebernommen) speichere();
+  } catch { /* keine Datei - dann neu anmelden */ }
+  const verwerfen = h => { if (sitzungen.delete(h)) speichere(); return null; };
   const fehlversuche = new Map();
   return {
     noetig: () => Boolean(passwort) || benutzerDateiExistiert(),
@@ -129,18 +143,22 @@ export function erstelleAnmeldung({ env = process.env, datei = sitzungenPfad(), 
     },
     neueSitzung(benutzer) {
       const sid = crypto.randomBytes(32).toString('base64url');
-      sitzungen.set(sha(sid).toString('hex'), { benutzer, bis: jetzt() + SITZUNG_MS });
+      sitzungen.set(sha(sid).toString('hex'), { benutzer, bis: jetzt() + SITZUNG_MS, seit: jetzt(), ...(benutzer?.kuerzel ? {} : { pw: abdruck }) });
       speichere();
       return sid;
     },
     benutzer(sid) {
       if (!sid) return null;
-      const s = sitzungen.get(sha(sid).toString('hex'));
+      const h = sha(sid).toString('hex');
+      const s = sitzungen.get(h);
       if (!s || s.bis <= jetzt()) return null;
-      // Notzugang (ohne Kuerzel) bleibt, wie er ist. Alle anderen bei jedem Zugriff
-      // frisch aus benutzer.json: wer deaktiviert oder herabgestuft wird, verliert
-      // seine Rechte sofort - nicht erst, wenn die Sitzung nach 30 Tagen ablaeuft.
-      if (!s.benutzer.kuerzel) return s.benutzer;
+      // "Alle anderen Geraete abmelden" im Control Center: alles davor Angemeldete endet.
+      const ab = abgemeldetAb();
+      if (ab && (s.seit ?? s.bis - SITZUNG_MS) < ab) return verwerfen(h);
+      // Notzugang (ohne Kuerzel) gilt, solange das Passwort dasselbe ist. Alle anderen bei
+      // jedem Zugriff frisch aus benutzer.json: wer deaktiviert oder herabgestuft wird,
+      // verliert seine Rechte sofort - nicht erst, wenn die Sitzung nach 30 Tagen ablaeuft.
+      if (!s.benutzer.kuerzel) return abdruck && s.pw === abdruck ? s.benutzer : verwerfen(h);
       const aktuell = benutzerDateiExistiert() ? leseBenutzer().find(b => b.kuerzel === s.benutzer.kuerzel && b.aktiv !== false) : null;
       return aktuell ? { name: aktuell.name, kuerzel: aktuell.kuerzel, rolle: aktuell.rolle } : null;
     },
@@ -233,7 +251,8 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
         const body = await liesJson(req);
         // Zwei Zaehler: je Adresse und je Adresse+Name. Das Notpasswort gilt mit
         // jedem Namen - nur nach Namen zu zaehlen liesse es unbegrenzt raten.
-        const adresse = String(req.socket?.remoteAddress);
+        // Je Geraet, auch hinter `tailscale serve` (sonst kaeme alles als 127.0.0.1 an).
+        const adresse = anmeldeGeraet(req).schluessel;
         const schluessel = `${adresse}::${String(body.name ?? '').toLowerCase()}`;
         if (anmeldung.gesperrt(schluessel) || anmeldung.gesperrt(adresse)) throw new HttpFehler(429, 'Zu viele Fehlversuche – bitte fünf Minuten warten.');
         const b = anmeldung.pruefe(body);

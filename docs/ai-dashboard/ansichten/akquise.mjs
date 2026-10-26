@@ -172,7 +172,7 @@ function ausschreibungen(a, tag) {
   const neu = new Set((a.neu || []).map(x => x.id || x));
   return `<section class="card akq-aus">${kopf}<ul class="akq-aus-liste">${t.map(x => {
     const n = tageBis(x.frist, tag);
-    const [ampel, hinweis] = n === null ? ['', 'Frist unbekannt – in der Bekanntmachung nachsehen'] : n <= 7 ? ['crit', `noch ${n} ${n === 1 ? 'Tag' : 'Tage'} – zu knapp, nur zur Kenntnis`] : n <= 21 ? ['warn', `noch ${n} Tage – dem Inhaber zeigen`] : ['', `noch ${n} Tage – Zeit genug`];
+    const [ampel, hinweis] = n === null ? ['', 'Frist unbekannt – in der Bekanntmachung nachsehen'] : n <= 7 ? ['crit', `noch ${n} ${n === 1 ? 'Tag' : 'Tage'} – sehr knapp, ob wir bieten, entscheidet der Inhaber`] : n <= 21 ? ['warn', `noch ${n} Tage – dem Inhaber zeigen`] : ['', `noch ${n} Tage – Zeit genug`];
     // Link kommt aus einem fremden Feed: nur http(s) wird zum Link (kein javascript: im href).
     const link = sichereUrl(x.link);
     return `<li><span class="akq-ampel ${ampel}" aria-hidden="true"></span><div>

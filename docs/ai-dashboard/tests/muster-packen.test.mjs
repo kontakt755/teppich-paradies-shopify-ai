@@ -187,7 +187,7 @@ test('nach Partnerladen: nur offene, nicht eingelegte Muster, mit Ziel-Umschlag'
   assert.deepEqual(r.map(l => [l.laden, l.eintraege.map(e => `${e.muster.vorher.farbnummer}>${e.kunde}@${e.umschlag}`)]), [
     ['Laden Nord', ['5>Berta@b', '22>Anna@a']],
     ['Laden Süd', ['7>Carl@c']],
-    ['Partnerladen nicht hinterlegt', ['1>Berta@b']],
+    ['Lieferant nicht hinterlegt', ['1>Berta@b']],
   ]);
 });
 

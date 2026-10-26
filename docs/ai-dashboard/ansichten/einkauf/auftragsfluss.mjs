@@ -146,17 +146,21 @@ export function ensureEinkaufAuftragsstatus() {
   einkauf.loadingAuftragsstatus = true;
   fetchEinkauf('/api/einkauf/auftragsstatus').then(d => {
     einkauf.auftragsstatus = d; einkauf.loadingAuftragsstatus = false;
-    if (['heute', 'einkauf'].includes(state.route.view)) render();
+    // "kunden": die Kundenakte blendet damit schon bestellte Lieferanten aus (zeitleiste.mjs).
+    if (['heute', 'einkauf', 'kunden'].includes(state.route.view)) render();
   });
 }
 
-/** Stammdaten je Lieferant (Bestellweg, Kontakt, Lieferzeit) - fuer die Lieferanten-Karten im Einkauf. */
+/**
+ * Stammdaten je Lieferant (Bestellweg, Kontakt, Lieferzeit) - fuer die Lieferanten-Karten im
+ * Einkauf und die Lieferantennamen in der Kundenakte (Zeitleiste, Ansicht "kunden").
+ */
 export function ensureEinkaufLieferanten() {
   if (einkauf.lieferanten || einkauf.loadingLieferanten) return;
   einkauf.loadingLieferanten = true;
   fetchEinkauf('/api/einkauf/lieferanten').then(d => {
     einkauf.lieferanten = d; einkauf.loadingLieferanten = false;
-    if (state.route.view === 'einkauf') render();
+    if (['einkauf', 'kunden'].includes(state.route.view)) render();
   });
 }
 
@@ -245,9 +249,15 @@ async function ladeKundenArbeitsstandNeu() {
       if (d?.verfuegbar) kunden[feld] = d;
     } catch { /* Der bestaetigte Status bleibt gespeichert; die letzte lesbare Liste bleibt sichtbar. */ }
   };
+  // Offene Kundenakte: der Bestellmail-Dialog geht seit dem Rundgang 26.10. auch von dort auf -
+  // nach "Als bestellt markieren" muss die Zeitleiste den naechsten Schritt zeigen.
+  const key = kunden.detailKey;
+  const akte = key && kunden.detail ? fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`)
+    .then(d => { if (kunden.detailKey === key && d?.verfuegbar) kunden.detail = d; }).catch(() => {}) : null;
   await Promise.all([
     lesen('bestellungen', '/api/kunden/bestellungen'),
     lesen('musterPacken', '/api/kunden/muster-packen'),
+    akte,
   ]);
 }
 
@@ -259,11 +269,8 @@ async function ladeKundenArbeitsstandNeu() {
 export async function ladeStandNeu({ bestellungen = false } = {}) {
   const auftraege = [fetchEinkauf('/api/einkauf/auftragsstatus').then(d => { if (d?.verfuegbar) einkauf.auftragsstatus = d; })];
   if (bestellungen) auftraege.push(fetchEinkauf('/api/einkauf/bestellungen').then(d => { if (d?.verfuegbar) einkauf.bestellungen = d; }));
+  // Laedt auch die offene Kundenakte (einmal - vorher holte ladeStandNeu sie ein zweites Mal).
   auftraege.push(ladeKundenArbeitsstandNeu());
-  if (kunden.detailKey && kunden.detail) {
-    const key = kunden.detailKey;
-    auftraege.push(fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`).then(d => { if (kunden.detailKey === key && d?.verfuegbar) kunden.detail = d; }));
-  }
   kunden.faelle = null;
   await Promise.all(auftraege);
   render();

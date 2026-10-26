@@ -41,7 +41,8 @@ function moechte(positionen) {
   const teile = [];
   for (const p of positionen ?? []) {
     const menge = p.kundenmenge || (p.menge ? `${p.menge}×` : '');
-    const farbe = p.farbe && p.farbe !== '–' ? ` (${p.farbe})` : '';
+    // "Default Title" ist Shopifys Variantenname fuer Artikel ohne Varianten, keine Farbe.
+    const farbe = p.farbe && !['–', 'Default Title'].includes(p.farbe) ? ` (${p.farbe})` : '';
     teile.push(`${menge ? `${menge} ` : ''}${p.titel}${farbe}`.trim());
   }
   return teile;

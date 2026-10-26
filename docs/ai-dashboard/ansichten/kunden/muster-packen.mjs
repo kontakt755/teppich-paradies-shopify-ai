@@ -184,7 +184,10 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
   const v = m.vorher || {};
   // Der Produktname steht so auf dem Lieferantenetikett; die Kollektion nur, wenn er fehlt.
   const name = v.produktname || v.kollektion || m.bestellt.titel;
-  const stand = standText(m);
+  // Als fehlend gemeldet, laut Bestand aber da: nicht "fehlt · angekommen" (Widerspruch), sondern
+  // sagen, was zu tun ist (Rundgang 26.10.).
+  const imRegal = fehltHervor && m.stand === 'da';
+  const stand = imRegal ? 'laut Bestand da – im Regal suchen' : standText(m);
   const link = v.url ? ` · <a href="${esc(v.url)}" target="_blank" rel="noopener">Lieferantenseite</a>` : '';
   const haken = !!m.abgehakt;
   return `<li class="mp-zeile${haken ? ' mp-ab' : ''}${fehltHervor ? ' mp-fehlend' : ''}${treffer ? ' mp-treffer' : ''}">
@@ -200,7 +203,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="mp-fehlt">Zuordnung fehlt: ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
       : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
-    <div class="mp-stand small">${fehltHervor ? '<strong class="mp-fehlt">fehlt</strong> · ' : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}<span class="${m.stand === 'offen' ? 'wait-warn' : 'muted'}">${esc(stand)}</span>${link}</div>
+    <div class="mp-stand small">${fehltHervor ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}<span class="${m.stand === 'offen' ? 'wait-warn' : 'muted'}">${esc(stand)}</span>${link}</div>
   </li>`;
 }
 
@@ -216,7 +219,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
   const muster = k.bereich === 'klaeren' ? [...k.muster].sort((a, b) => fehlend.has(b.lineItemId) - fehlend.has(a.lineItemId)) : k.muster;
   const pk = esc(k.packSchluessel);
   const rueckLaden = state.route.params.get('laden');
-  const rueckweg = rueckLaden ? `<a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden&amp;laden=${encodeURIComponent(rueckLaden)}">Zurück zum Wareneingang</a>` : '';
+  const rueckweg = rueckLaden ? `<a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden&amp;laden=${encodeURIComponent(rueckLaden)}">Zurück zu „Muster kommt an“</a>` : '';
   const bestellLink = (b, klasse = 'btn btn-sm btn-ghost') => `<a class="${klasse}" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Bestellstand prüfen</a>`;
   const erneutDrucken = druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}" data-mp-alle-aufkleber="1">Alle Aufkleber erneut drucken (${k.aufkleber})</button>` : '';
   // Je Umschlag leuchtet genau ein Knopf: der naechste Schritt. Alles Seltene steht unter "Mehr …".
@@ -356,7 +359,7 @@ export function viewKundenMusterPacken() {
   // Kein Hauptknopf: in der Liste leuchtet erst der Schritt im geoeffneten Umschlag.
   const druck = ['packen', 'offen'].includes(aktiv) && aufkleber ? `<div class="mp-summe"><button type="button" class="btn" data-mp-alle>Alle Packbereiten drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button></div>` : '';
   const leerText = suche ? (gefunden.ausserhalb.length ? 'Kein offener Umschlag passt – siehe unten.' : 'Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen. Weniger Wörter versuchen, z. B. nur die Farbnummer.') : aktiv === 'offen' ? 'Gerade keine offene Musterbestellung.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : 'Keine gepackten Umschläge.';
-  const leer = `<div class="mp-arbeitsleer"><p>${leerText}</p>${['packen', 'offen'].includes(aktiv) && !suche ? `<p>Prüfe eingetroffene Muster unter <a href="#/kunden?tab=muster&amp;mp=laden">Wareneingang nach Partnerladen</a> oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
+  const leer = `<div class="mp-arbeitsleer"><p>${leerText}</p>${['packen', 'offen'].includes(aktiv) && !suche ? `<p>Eingetroffene Muster legst du unter <a href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a> ein, oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
   const titel = aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1];
   return `${umschalter}${kopf}${filter}${ausschlussHinweis}
     ${suchfeld}
@@ -460,7 +463,7 @@ function handMeldungHtml(d) {
     <a class="btn btn-sm btn-primary" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(k.packSchluessel)}">Zum Umschlag</a></p>`;
 }
 
-/** Wareneingang: ein Paket eines Partnerladens auf die richtigen Umschlaege verteilen. */
+/** "Muster kommt an": ein Paket eines Lieferanten auf die richtigen Umschlaege verteilen. */
 function viewNachLaden(d) {
   const laeden = musterNachLaden(d.kunden);
   if (!laeden.length) return emptyState('Nichts zu sortieren.', 'Alle offenen Muster sind schon eingelegt.');
@@ -478,7 +481,7 @@ function viewNachLaden(d) {
         <span><strong>${esc(e.kunde)}</strong></span><span class="small muted">${esc(e.bestellung)}</span>${druckEinzelnHtml(m)}</div>
     </li>`;
   }).join('');
-  return `<p class="sub mp-hier">Oder ein ganzes Paket nach Partnerladen abarbeiten: Muster an Bild und Farbnummer erkennen, Aufkleber drucken, aufkleben, auf den Stapel mit der Bestellnummer legen und abhaken – abgehakte Muster verschwinden aus der Liste.</p>
+  return `<p class="sub mp-hier">Oder ein ganzes Paket eines Lieferanten abarbeiten: Muster an Bild und Farbnummer erkennen, Aufkleber drucken, aufkleben, auf den Stapel mit der Bestellnummer legen und abhaken – abgehakte Muster verschwinden aus der Liste.</p>
     <div class="mp-laeden">${chips}</div>
     <h2 class="mp-titel">${esc(gewaehlt.laden)} <span class="muted">· ${plural(gewaehlt.eintraege.length, 'Muster', 'Muster')}</span></h2>
     <ul class="mp-sortliste">${zeilen}</ul>`;

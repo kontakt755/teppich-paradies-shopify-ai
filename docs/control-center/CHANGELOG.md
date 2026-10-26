@@ -2,6 +2,72 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-26 · Rundgang: Versand, Kundenakte, Inhaberzeile, Hilfe, Anmeldung (Paket P5)
+
+- **Geaendert:** Versand: steht dieselbe Sendungsnummer schon an einer anderen Bestellung, bucht
+  der Dialog nicht, sondern nennt die Bestellung; erst „Trotzdem buchen“ trägt sie ein (mit
+  Protokoll). Der Server prüft das, bevor er etwas schreibt (#30).
+- **Geaendert:** Kundenakte, Schritt „Ware beim Lieferanten bestellen“: je offenem Lieferanten
+  „Bestellmail öffnen (Name)“, danach „Ware ist bestellt…“ mit Rückfrage statt Ein-Klick für
+  alle Lieferanten. Lieferantennamen aus den Stammdaten über eine gemeinsame Funktion
+  (Kundenakte, Heute, Lieferantenpost, Je Auftrag); UNGEKLAERT heißt „Lieferant nicht
+  zugeordnet“, „Default Title“ erscheint nicht mehr als Farbe (#40).
+- **Geaendert:** Shop-Übersicht, nur Inhaber: eine Zeile unter den Warenbestellungen „Shop in
+  Ordnung · 7 Tage … € Umsatz · N Entscheidungen offen · nächste Frist“, jeder Teil verlinkt;
+  der Umsatz klappt die Kennzahlen auf. „Weitere Bereiche“ zeigt Zahl und Alter der offenen
+  Anfragen (#44). Entscheidungen: Zähler und Liste zählen dieselben Einträge; Link zu „Ideen &
+  Fragen“; Genossenschaften sagt bei knapper Frist nicht mehr „nur zur Kenntnis“ (#43).
+- **Geaendert:** Hilfe nach der heutigen Seitenleiste (Bestellungen, Muster bestellen,
+  Packstation mit „Bestellung packen“/„Muster kommt an“, Lieferantenpost, Fehler melden), neuer
+  Ablauf „Muster packen“; „nie automatisch bestellt“ korrigiert (kostenlose Muster bestellt das
+  Dashboard selbst). Menüpunkt „Bestellen“ statt „Einkauf & Wareneingang“, „Lieferant“ statt
+  „Partnerladen“, Packstation „nicht eingelegt · laut Bestand da – im Regal suchen“ (#41).
+- **Geaendert:** Heute sagt bei frischen Shop-Daten „Daten aktuell“ (Werkbank-Rückmeldung zählt
+  nicht mehr mit); Sonderposten ohne Shopify-Zugang: verständlicher Satz und „Fehler melden“,
+  die Einrichtungsanleitung nur im Dienstprotokoll (#34).
+- **Geaendert:** Anmeldung: ein neues gemeinsames Passwort meldet alle damit angemeldeten Geräte
+  ab (Abdruck je Sitzung, bestehende Sitzungen übernehmen das jetzige Passwort); Sperre nach
+  Fehlversuchen je Gerät auch hinter `tailscale serve`; Zugänge › „Alle anderen Geräte
+  abmelden…“ für Control Center und Social-Zentrale (#58).
+- **Getestet:** `npm test` 4.188 Tests grün (Dashboard 1.004, darin neu `hilfe-menue`,
+  `inhaber-ueberblick`, `zeitleiste-bestellweg`, 5 Anmeldetests, Doppelnummer-Test; Social
+  1 neuer Test); `npm run -s pruefen` alle 9 Schritte grün. `dashboard:pruefen --rollen`
+  (GH_TOKEN gesperrt) über alle Ansichten: 479 von 485 OK, kein seitlicher Überlauf bei
+  1440/1024/800/390/360 px; die 5 Fehler auf „Verlauf“ kommen von der gesperrten GitHub-Anmeldung
+  (`/api/activity` antwortet „Bad credentials“, Code unverändert), einer war ein
+  Ladezeit-Ausreißer auf „Vorbereiten“. Nachlauf der geänderten und betroffenen Ansichten
+  (12 Ansichten, 3 Rollen, 5 Breiten): 150 von 150 OK. Klickstrecken gegen die Datenkopie
+  (Playwright headless, 1440 und 390 px): 59 von 59 Prüfpunkten – doppelte Nummer warnt und
+  schreibt nichts (auch mit Leerzeichen und Kleinschreibung), „Trotzdem buchen“ trägt ein und
+  protokolliert; Kundenakte „Bestellmail öffnen“ öffnet den Dialog (nichts gesendet), „Ware ist
+  bestellt…“ fragt zurück und setzt erst nach „Ja“; Inhaberzeile und Kennzahlen auf/zu;
+  Entscheidungen Zähler 4 = Liste 4 = Karten 4; Sonderposten-Hinweis; Hilfe und Begriffe;
+  „Alle anderen Geräte abmelden“ (8 abgemeldet, eigenes Gerät bleibt, Stempel für die
+  Social-Zentrale geschrieben). Instanz danach beendet, Datenkopie entfernt.
+- **Nachgebessert (Prüfung):** Eine direkt geöffnete Kundenakte lädt jetzt den Positionsstand
+  nach; vorher behielt ein schon bestellter Lieferant dort seinen Knopf „Bestellmail öffnen“
+  und stand in der Rückfrage „Ware ist bestellt…“ (Test in `zeitleiste-bestellweg`).
+- **Nachgebessert (Codex-Review Runde 1):** „Rückgängig“ direkt nach „Als bestellt markieren“ im
+  Bestellmail-Dialog lädt jetzt Kundenakte und Bestellliste nach; vorher blieb die Zeitleiste beim
+  Wareneingang stehen und „Bestellmail öffnen“ fehlte (Test in `bestellvorbereitung-dialog`).
+  `ladeStandNeu` holt die offene Kundenakte nur noch einmal statt doppelt
+  (`auftragsfluss-arbeitslisten`). „Alle anderen Geräte abmelden…“ ist nicht mehr gesperrt, wenn im
+  Control Center nur dieses Gerät angemeldet ist – ein Handy nur mit Social-Zugang ließ sich sonst
+  nicht abmelden; Dialog und Rückmeldung sagen dann, dass nur die Social-Zentrale abgemeldet wird
+  (`team-geraete`, Servertest in `auth`). Getestet: die neuen Tests schlagen mit dem alten Code fehl;
+  `dashboard:test` 1.012 grün; `dashboard:pruefen --rollen` auf Zugänge, Kunden, Bestellungen,
+  Bestellen und Shop-Übersicht 80 von 80 OK; Klickstrecken gegen die Datenkopie bei 1440 und 390 px
+  38 von 38 (alter Code: Akte blieb nach „Rückgängig“ bei „Lieferant liefert die Ware an uns“, der
+  Abmeldeknopf war bei einem Gerät gesperrt).
+- **Risiken:** Ob `tailscale serve` `X-Forwarded-For` mitschickt, ist im Betrieb nicht
+  nachgemessen; ohne den Kopf gilt das Tailscale-Konto, ohne beides bleibt es bei 127.0.0.1
+  wie bisher. Die Social-Zentrale übernimmt Abdruck und Abmeldestempel erst nach ihrem
+  Neustart. Die Shop-Übersicht lädt beim Inhaber zwei Abrufe mehr (Kennzahlen, Shop-Kontrolle),
+  für alle die Service-Anfragen.
+- **Naechste Stufe:** Werkbank-/Issue-Bereinigung aus #43 (Verweise, Label, neue Frage)
+  entscheidet der Inhaber; Richtigstellung an die Kunden mit derselben Sendungsnummer (#30)
+  ebenfalls.
+
 ## 2026-10-26 · Speicher am Mac mini, Upload-Links mit Ablaufdatum (Rundgang P7)
 
 - **Geaendert:** Die Shop-Wache misst stuendlich den freien Speicher (`operations/lib/speicher.mjs`)

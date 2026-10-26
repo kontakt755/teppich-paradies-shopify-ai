@@ -576,6 +576,16 @@ export const SORTS = Object.freeze({
   aktualisiert:  { label: 'Zuletzt aktualisiert', compare: (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '') },
 });
 
+/**
+ * Offene Entscheidungen fuer den Inhaber: Status "Warten auf Freigabe" oder als Entscheidung
+ * angelegt. Liste (#/freigaben), Zaehler an "Entscheidungen"/"Verwaltung"/"Mehr" und die
+ * Inhaber-Zeile auf Heute zaehlen genau diese Menge - bis 26.10. zeigte der Zaehler 2,
+ * die Liste 4 (Rundgang, Massnahme 43).
+ */
+export function offeneEntscheidungen(tasks = []) {
+  return tasks.filter(t => t.open && (t.status === 'freigabe' || t.isDecision));
+}
+
 export function summarize(tasks, { now = new Date() } = {}) {
   const weekAgo = new Date(now.getTime() - 7 * DAY).toISOString();
   const open = tasks.filter(t => t.open);

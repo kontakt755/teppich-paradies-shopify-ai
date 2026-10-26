@@ -429,6 +429,23 @@ export function versandNachzuholen(auftrag, statusAlle = {}) {
   };
 }
 
+/**
+ * Bestellungen, an denen dieselbe Sendungsnummer schon haengt - ausser `orderId` selbst
+ * (zweites Paket derselben Bestellung ist kein Fehler). Am 15.10. bekamen zwei verschiedene
+ * Musterbestellungen binnen zwei Minuten dieselbe Nummer, und Shopify schickte beiden Kunden
+ * denselben Verfolgungslink. Leerzeichen und Gross/klein zaehlen nicht. Leer = frei.
+ */
+export function andereBestellungenMitSendung(statusAlle = {}, { orderId = null, sendungsnummer = null } = {}) {
+  const norm = v => String(v ?? '').replace(/\s+/g, '').toUpperCase();
+  const ziel = norm(sendungsnummer);
+  if (!ziel) return [];
+  const treffer = new Set();
+  for (const e of Object.values(statusAlle || {})) {
+    if (e?.orderId && e.orderId !== String(orderId) && norm(e.sendungsnummer) === ziel) treffer.add(e.orderId);
+  }
+  return [...treffer];
+}
+
 /** Sind alle Positionen ab "raus" laut Vermerk in Shopify gebucht (oder waren es schon)? */
 export function versandGebucht(auftrag, statusAlle = {}) {
   const ab = (auftrag?.positionen ?? []).filter(p => p?.lineItemId)

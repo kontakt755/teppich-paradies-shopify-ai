@@ -8,31 +8,41 @@ function hilfeKarte(titel, inhalt) {
   return `<section class="card" style="margin-bottom:14px"><div class="card-head"><h2>${esc(titel)}</h2></div>${inhalt}</section>`;
 }
 
-/** Je Menuepunkt ein Satz - dieselben Woerter wie im Menue (docs/control-center/BEGRIFFE.md). */
-const MENUE_KURZ = [
+/**
+ * Je Menuepunkt ein Satz - dieselben Woerter wie in der Seitenleiste (index.html, BEGRIFFE.md).
+ * tests/hilfe-menue.test.mjs prueft jeden Namen gegen index.html; wer das Menue umbenennt, muss
+ * auch hier nachziehen (Rundgang 26.10.: die Hilfe kannte die Packstation noch nicht).
+ */
+export const MENUE_KURZ = [
   ['Heute', 'Was heute zu tun ist, das Dringendste oben. Ein Knopf je Zeile führt direkt hin.'],
-  ['Kunden', 'Kunden suchen, Bestellungen und Anfragen ansehen, zurückrufen.'],
-  ['Bestellen', 'Ware und Muster beim Lieferanten bestellen und abhaken, wenn sie da sind.'],
-  ['Genossenschaften', 'Wohnungsgenossenschaften und Hausverwaltungen anschreiben und nachfassen.'],
+  ['Bestellungen', 'Alle Bestellungen der Kunden: was offen ist und was als Nächstes dran ist.'],
+  ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen.'],
+  ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Kunde ein Umschlag. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
-  ['Hilfe', 'Diese Seite.'],
+  ['Kunden & Einkauf', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften.'],
+  ['Shop & Inhalte', 'Sonderposten, Bildrechte, Social Media – nur mit Büro- oder Inhaberzugang.'],
+  ['Verwaltung', 'Aufgaben, Zugänge und diese Hilfe. Was du siehst, hängt von deinem Zugang ab.'],
+  ['Fehler melden', 'Ganz unten in der Seitenleiste: kurz schreiben, was nicht stimmt. Die Technik bekommt die Seite mit.'],
 ];
 
-/** Die drei Ablaeufe, die jeden Tag vorkommen - Schritt fuer Schritt, mit den Woertern der Knoepfe. */
+/** Die Ablaeufe, die jeden Tag vorkommen - Schritt fuer Schritt, mit den Woertern der Knoepfe. */
 const ABLAEUFE = [
   ['Kunde bestellt – bis die Ware beim Kunden ist', [
-    'Auf <b>Heute</b> steht „Ware bei … bestellen“ – Knopf drücken.',
-    'Unter <b>Bestellen</b> die Bestellmail öffnen, selbst abschicken, dann <b>Als bestellt markieren</b>.',
-    'Ist die Ware da, steht auf <b>Heute</b> „Ware ist da – an … rausgeben“.',
-    'Kunde anrufen oder schreiben, dann <b>Kunde informiert</b> bzw. <b>Rausgeben</b> drücken.',
+    'Unter <b>Bestellungen</b> (oder auf <b>Heute</b>) steht „Ware beim Lieferanten bestellen“. Bestellung öffnen.',
+    'Je Lieferant ein Knopf <b>Bestellmail öffnen</b>: Mail prüfen, selbst abschicken, dann <b>Als bestellt markieren</b>.',
+    'Kommt die Ware: <b>Ware ist angekommen</b> drücken und den Kunden anrufen oder anschreiben.',
+    'Geht die Ware raus: <b>An Kunden raus…</b> – die Sendungsnummer vom Paketaufkleber eintragen. Jedes Paket hat seine eigene Nummer.',
   ]],
-  ['Muster rausgeben', [
-    'Auf <b>Heute</b> steht „Muster ist da – an … rausgeben“ oder „Muster verschicken an …“.',
-    'Muster einpacken oder bereitlegen, dann den Knopf in der Zeile drücken.',
+  ['Muster packen', [
+    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Kunde ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet.',
+    '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>.',
+    '<b>2 · Was ist da?</b> Jedes Muster überkleben, in den Umschlag legen und abhaken. Fehlt eins: <b>Fehlt noch – zurücklegen</b>.',
+    '<b>3 · Zukleben</b>: Umschlag zukleben, dann <b>Umschlag gepackt</b>. Gepackt heißt noch nicht verschickt.',
+    'Kommt ein Paket Muster vom Lieferanten: Reiter <b>Muster kommt an</b>. Eintippen, was auf dem Muster steht – die Karte sagt, in welchen Umschlag es gehört.',
   ]],
   ['Genossenschaft anschreiben', [
-    'Links auf <b>Genossenschaften</b>: oben steht „Als Nächstes“ mit der Firma, die jetzt dran ist.',
-    '<b>E-Mail öffnen</b> (der Text steht schon drin) und selbst abschicken – oder <b>Anrufen</b>. Hier wird nie etwas automatisch gesendet.',
+    'Unter <b>Kunden &amp; Einkauf</b> auf <b>Genossenschaften</b>: oben steht „Als Nächstes“ mit der Firma, die jetzt dran ist.',
+    '<b>E-Mail öffnen</b> (der Text steht schon drin) und selbst abschicken – oder <b>Anrufen</b>.',
     'Danach <b>Erledigt: angeschrieben</b> drücken. Zum Nachfassen erscheint die Firma rechtzeitig wieder.',
   ]],
 ];
@@ -74,14 +84,15 @@ export function viewHilfe() {
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Links auf <b>Bestellen</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
+        <li>Unter <b>Kunden &amp; Einkauf</b> auf <b>Bestellen</b>, Reiter <b>Je Lieferant</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
-        <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – abschicken tust du selbst, hier wird nie etwas gesendet. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
+        <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – Warenbestellungen schickst du selbst ab. Nur vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen – die stehen dann schon als „bestellt“ da. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
         <li><b>Positionen bearbeiten</b> klappt die einzelnen Artikel auf: Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen.</li>
         <li>Versehentlich „bestellt“ geklickt? <b>Rückgängig</b> direkt danach, oder später <b>Zurück auf offen…</b> am Artikel bzw. <b>Alle zurück auf offen…</b> an der Karte.</li>
         <li>Muster selbst da (Katalog, Musterlager)? <b>Haben wir da…</b> am Muster oder in der Kundenakte: dann wird es nicht bestellt, sondern erscheint als „Muster vorbeibringen“ bzw. „Muster verschicken“ – mit Ort des Kunden.</li>
       </ol>
+      <p style="margin-top:8px"><b>Lieferantenpost</b> (Reiter unter <b>Bestellen</b>): was die Lieferanten geschickt haben – Auftragsbestätigung, Lieferschein, Storno – und ob es zu unserem Stand passt. Den Schritt setzt trotzdem immer ein Mensch.</p>
       <p class="small muted" style="margin-top:8px">Gelb heißt: seit 7 Tagen bestellt, bitte nachhaken. Rot: seit 14 Tagen. Ein Klick auf den Namen zeigt Kontakt, Lieferzeit und Verlauf des Lieferanten.</p>`)}
 
     ${hilfeKarte('Was die Kennzeichen bedeuten', `
@@ -108,7 +119,7 @@ export function viewHilfe() {
         <li><b>Anhänge</b>: Bilder, PDF oder Text bis 10 MB direkt an der Aufgabe.</li>
         <li><b>Jetzt prüfen</b> misst Aufgaben mit hinterlegtem Erfolgskriterium am echten Shop – automatisch auch jeden Morgen um 9:30.</li>
       </ul>
-      <p class="small muted" style="margin-top:8px">Der Bereich <b>Technik</b> unter „Mehr" ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub-Aufgaben). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
+      <p class="small muted" style="margin-top:8px">Der Bereich <b>Technik</b> (unter „Verwaltung“, nur für den Inhaber) ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub-Aufgaben). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
 
     ${hilfeKarte('Aufgaben aus ChatGPT oder von einem Zettel übernehmen', `
       <p>Im Bereich <b>Aufgaben</b> oben auf <b>Liste einfügen</b>. Eine Zeile je Aufgabe – Aufzählungszeichen, Nummerierung und Kästchen werden automatisch entfernt, Überschriften übersprungen.</p>
