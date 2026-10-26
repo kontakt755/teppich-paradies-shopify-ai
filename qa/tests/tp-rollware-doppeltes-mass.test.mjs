@@ -101,3 +101,11 @@ test('/cart.js nicht erreichbar: Kauf geht ohne Hinweis weiter', async () => {
   await r.klick();
   assert.equal(r.adds.length, 1);
 });
+
+test('#56 Bestellfelder sagen Bestellmass, die Zugabe passt zum Raummass-Helfer', () => {
+  assert.match(rechner, />Breite des Stücks \(Bestellmaß\)</);
+  assert.match(rechner, />Länge des Stücks</);
+  // tp-raummass.js rechnet ZUGABE_CM = 10 auf Breite und Laenge (350 -> 360).
+  assert.match(rechner, /Zimmermaß gemessen\? Breite und Länge je etwa 10&nbsp;cm zugeben/);
+  assert.match(readFileSync(new URL('../../assets/tp-raummass.js', import.meta.url), 'utf8'), /var ZUGABE_CM = 10;/);
+});
