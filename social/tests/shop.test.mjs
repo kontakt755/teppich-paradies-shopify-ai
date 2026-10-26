@@ -43,7 +43,11 @@ test('Neue Serie wird ein Anlass statt sieben', () => {
   assert.match(k[0].schluessel, /^shopify:produkt_neu:wohnwelt-kollektion\|teppich:2026-10$/);
 });
 
-test('Ohne taugliches Bild, als Zubehoer oder ausverkauft: kein Anlass', () => {
+test('Ohne taugliches Bild, als Zubehoer, ausverkauft oder Auslauf: kein Anlass', () => {
+  assert.ok(findeKandidaten({ produkte: [n()], jetzt: JETZT }).length > 0, 'das Grundprodukt ist ein Anlass');
+  // Auslaufware schlaegt der Scout nicht vor (Armonia, Ambrosia, Piumera im Oktober 2026) - Tag in jeder Schreibweise.
+  assert.equal(findeKandidaten({ produkte: [n({ tags: ['raum: wohnzimmer', 'Auslauf'] })], jetzt: JETZT }).length, 0);
+  assert.equal(findeKandidaten({ produkte: [n({ tags: 'raum: wohnzimmer, auslauf' })], jetzt: JETZT }).length, 0);
   assert.equal(findeKandidaten({ produkte: [n({ images: [{ src: 'https://x/s.jpg', width: 397, height: 1590, variant_ids: [] }] })], jetzt: JETZT }).length, 0);
   assert.equal(findeKandidaten({ produkte: [n({ product_type: 'Bauchemie' })], jetzt: JETZT }).length, 0);
   assert.equal(findeKandidaten({ produkte: [n({ variants: [{ id: 1, price: '9', available: false }] })], jetzt: JETZT }).length, 0);
