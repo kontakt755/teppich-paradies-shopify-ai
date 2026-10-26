@@ -170,3 +170,26 @@ test('#26 Bestellbestaetigung: Mengenspalte der Standardliste zeigt Stueckzahl s
   const out = await eng.parseAndRender(standardListe, { line_items: items });
   assert.equal(out, '[Testvelours Teppich nach Maß × 1][Kettelservice × 1][Testunterlage, Rollenware × 3][Testkante nach Maß × 3][Testvelours Teppichboden × 1][Gekettelte Fußleiste × 1][Holzleiste × 2][Kostenloses Muster × 1]');
 });
+
+// Codex-Review Runde 1 (P2): Anzahl ist frei setzbar, die Stueckzahl kommt aus der Menge
+test('#26 Bestellbestaetigung: Laengenware zaehlt aus Menge / Laenge je Stueck, HTML in Anzahl landet nie in line_display', async () => {
+  const items = [
+    { title: 'Testkante A', quantity: 285, properties: P({ 'Länge je Stück': '95 cm', Anzahl: '<img src=x onerror=alert(1)>' }) },
+    { title: 'Testkante B', quantity: 285, properties: P({ 'Länge je Stück': '95 cm', Anzahl: '7 Stück' }) },
+    { title: 'Testkante C', quantity: 285, properties: P({ 'Länge je Stück': '<b>95</b>', Anzahl: '<b>3</b>' }) },
+  ];
+  const out = await eng.parseAndRender(standardListe, { line_items: items });
+  assert.doesNotMatch(out, /<img|<b>/);
+  assert.equal(out, '[Testkante A × 3][Testkante B × 3][Testkante C × 285]');
+});
+
+test('#26 Versandbestaetigung: Teillieferung von Laengenware zeigt die versandten Stuecke', async () => {
+  const kante = (quantity) => ({ quantity, line_item: { title: 'Testkante nach Maß', quantity: 285, variant_title: 'Silber', properties: P({ 'Länge je Stück': '95 cm', Anzahl: '3' }) } });
+  const teil = await eng.parseAndRender(versand, vctx([kante(95)]));
+  assert.match(teil, /<li>1 × Testkante nach Maß – Silber \(je 95 cm\)<\/li>/);
+  assert.doesNotMatch(teil, /3 ×/);
+  const zwei = await eng.parseAndRender(versand, vctx([kante(190)]));
+  assert.match(zwei, /<li>2 × Testkante nach Maß – Silber \(je 95 cm\)<\/li>/);
+  const krumm = await eng.parseAndRender(versand, vctx([kante(100)]));
+  assert.match(krumm, /<li>Testkante nach Maß – Silber \(insgesamt 100 cm\)<\/li>/);
+});

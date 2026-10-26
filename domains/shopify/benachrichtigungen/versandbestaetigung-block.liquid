@@ -70,6 +70,8 @@
         0,01 m oder cm). Statt "775 x Teppich" steht dann "1 x Teppich (Masse,
         Flaeche)", der Kettelservice als "Kante umlaufend 11,20 m". Gelesen wird
         nur, was der Kunde im Warenkorb selbst gesehen hat (Properties ohne _).
+        Laengenware: Stueck = versandte Menge / "Laenge je Stueck" (Menge in cm),
+        damit eine Teillieferung nur die versandten Stuecke nennt.
       {%- endcomment -%}
       {%- liquid
         assign tp_v_li = line.line_item
@@ -82,7 +84,6 @@
         assign tp_v_kante = ''
         assign tp_v_zu = ''
         assign tp_v_je_stueck = ''
-        assign tp_v_anzahl = ''
         for p in tp_v_li.properties
           assign tp_v_w = p.last | strip
           if tp_v_w == blank
@@ -109,8 +110,6 @@
               assign tp_v_zu = tp_v_w
             when 'Länge je Stück'
               assign tp_v_je_stueck = tp_v_w
-            when 'Anzahl'
-              assign tp_v_anzahl = tp_v_w | remove: 'Stück' | strip
           endcase
         endfor
         if tp_v_mass == ''
@@ -127,7 +126,19 @@
           assign tp_v_variante = ' – ' | append: tp_v_li.variant_title
         endif
         if tp_v_je_stueck != ''
-          assign tp_v_zeile = tp_v_anzahl | default: '1' | append: ' × ' | append: tp_v_li.title | append: tp_v_variante | append: ' (je ' | append: tp_v_je_stueck | append: ')'
+          assign tp_v_stueck = 0
+          assign tp_v_je_cm = tp_v_je_stueck | remove: 'cm' | strip | plus: 0
+          if tp_v_je_cm > 0
+            assign tp_v_rest = line.quantity | modulo: tp_v_je_cm
+            if tp_v_rest == 0
+              assign tp_v_stueck = line.quantity | divided_by: tp_v_je_cm
+            endif
+          endif
+          if tp_v_stueck > 0
+            assign tp_v_zeile = tp_v_stueck | append: ' × ' | append: tp_v_li.title | append: tp_v_variante | append: ' (je ' | append: tp_v_je_stueck | append: ')'
+          else
+            assign tp_v_zeile = tp_v_li.title | append: tp_v_variante | append: ' (insgesamt ' | append: line.quantity | append: ' cm)'
+          endif
         elsif tp_v_kante != '' and tp_v_mass == '' and tp_v_flaeche == ''
           assign tp_v_zeile = tp_v_li.title
           if tp_v_zu != ''

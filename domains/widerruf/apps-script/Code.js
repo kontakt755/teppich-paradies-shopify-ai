@@ -8,6 +8,7 @@
  *   2. Eingangsbestaetigung an den Kunden: Inhalt, Datum, Uhrzeit (dauerhafter Datentraeger)
  *   3. Kopie an kontakt@, Antworten gehen direkt an den Kunden
  *      (ueber der Stunden- oder Tagesgrenze statt Einzelkopien ein Sammelhinweis je Stunde)
+ * ok:true nur, wenn der Widerruf dauerhaft gespeichert ist (Protokollzeile oder Kopie an uns).
  *
  * Keine Geheimnisse im Code: die Protokoll-ID steht in den Script-Properties.
  * Bereitstellen: siehe README.md in diesem Ordner.
@@ -31,6 +32,8 @@ var MAX_GESAMT_TAG = 100;
 // (u. a. den Terminerinnerungen der Auftrags-App). Vor jedem Senden pruefen:
 // bleiben nicht mehr als so viele Mails uebrig, sendet das Formular nichts mehr.
 var MAIL_RESERVE = 200;
+
+var OHNE_PROTOKOLL = 'Dieser Widerruf steht NICHT im Protokoll (Tabelle nicht erreichbar). Diese Mail ist der einzige Nachweis - bitte aufbewahren.';
 
 var GRENZEN = { name: 120, bestellnummer: 40, email: 254, bestelldatum: 40, artikel: 2000 };
 
@@ -95,6 +98,7 @@ function doPost(e) {
     // Grenzen und solange das Kontingent reicht. Darueber steht der Widerruf nur im
     // Protokoll, und kontakt@ bekommt hoechstens einen Sammelhinweis je Stunde.
     // Scheitert eine Mail, ist der Widerruf trotzdem protokolliert - dem Kunden keinen Fehler melden.
+    var kopieOk = false;
     if (einzeln) {
       if (kontingentFrei_()) try {
         MailApp.sendEmail({
@@ -102,9 +106,11 @@ function doPost(e) {
           replyTo: d.email,
           name: 'Shop – Widerrufsfunktion',
           subject: 'Widerruf eingegangen: Bestellung ' + d.bestellnummer + ' (' + d.name + ')' + (kundeOk ? '' : ' – OHNE BESTÄTIGUNG AN KUNDEN'),
-          body: mailText_(d, true) + (kundeOk ? '' : '\n\nACHTUNG: ' + grund + ' Bitte prüfen und den Kunden ggf. anders erreichen.'),
-          htmlBody: mailHtml_(d, true)
+          body: mailText_(d, true) + (kundeOk ? '' : '\n\nACHTUNG: ' + grund + ' Bitte prüfen und den Kunden ggf. anders erreichen.') +
+            (zeile ? '' : '\n\nACHTUNG: ' + OHNE_PROTOKOLL),
+          htmlBody: mailHtml_(d, true) + (zeile ? '' : '<p style="font-family:Arial,Helvetica,sans-serif;color:#b3261e"><strong>ACHTUNG:</strong> ' + OHNE_PROTOKOLL + '</p>')
         });
+        kopieOk = true;
       } catch (err) {
         console.error('Kopie: ' + (err && err.stack || err));
       }
@@ -119,6 +125,12 @@ function doPost(e) {
       } catch (err) {
         console.error('Sammelhinweis: ' + (err && err.stack || err));
       }
+    }
+
+    // Weder Protokollzeile noch Kopie an uns: der Widerruf waere verloren. Dann kein ok:true
+    // (und nichts zwischenspeichern), damit der Kunde es erneut versucht oder uns schreibt.
+    if (!zeile && !kopieOk) {
+      return json_({ ok: false, fehler: 'server', meldung: 'Ihr Widerruf konnte gerade nicht gespeichert werden. Bitte versuchen Sie es erneut oder erklären Sie Ihren Widerruf per E-Mail an ' + KOPIE_AN + '.' });
     }
 
     var antwort = JSON.stringify({ ok: true, ref: d.ref, datum: d.datum, uhrzeit: d.uhrzeit.slice(0, 5), mail: kundeOk });

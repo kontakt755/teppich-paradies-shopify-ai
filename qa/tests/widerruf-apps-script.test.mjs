@@ -24,6 +24,7 @@ function umgebung({ kontingent = 1500, start = '2026-10-26T08:05:00Z' } = {}) {
   const zeilen = [];
   const mails = [];
   const quota = { rest: kontingent };
+  const stoerung = { sheet: false };
   class Uhr extends Date {
     constructor(...a) { if (a.length) super(...a); else super(uhr.jetzt.getTime()); }
     static now() { return uhr.jetzt.getTime(); }
@@ -47,7 +48,10 @@ function umgebung({ kontingent = 1500, start = '2026-10-26T08:05:00Z' } = {}) {
     CacheService: { getScriptCache: () => ({ get: (k) => (cache.has(k) ? cache.get(k) : null), put: (k, v) => { cache.set(k, String(v)); } }) },
     LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (props.has(k) ? props.get(k) : null), setProperty: (k, v) => { props.set(k, String(v)); } }) },
-    SpreadsheetApp: { openById: () => ({ getSheets: () => [blatt], getId: () => 'test-protokoll' }), create: () => { throw new Error('nicht erwartet'); } },
+    SpreadsheetApp: {
+      openById: () => { if (stoerung.sheet) throw new Error('Tabelle nicht erreichbar'); return { getSheets: () => [blatt], getId: () => 'test-protokoll' }; },
+      create: () => { throw new Error('nicht erwartet'); },
+    },
     MailApp: {
       sendEmail: (m) => { if (quota.rest <= 0) throw new Error('Kontingent erschoepft'); quota.rest -= 1; mails.push(m); },
       getRemainingDailyQuota: () => quota.rest,
@@ -72,7 +76,7 @@ function umgebung({ kontingent = 1500, start = '2026-10-26T08:05:00Z' } = {}) {
     return JSON.parse(antwort.inhalt);
   };
   const an = (adr) => mails.filter(m => m.to === adr);
-  return { uhr, mails, zeilen, quota, props, senden, an, KOPIE: 'kontakt@teppich-paradies.net' };
+  return { uhr, mails, zeilen, quota, props, stoerung, senden, an, KOPIE: 'kontakt@teppich-paradies.net' };
 }
 
 test('#59 normale Einsendung: Bestaetigung an den Kunden, Kopie an uns, Zeile im Protokoll', () => {
@@ -154,4 +158,41 @@ test('#59 je Adresse hoechstens 3 pro Stunde (abgewiesen), Honigtopf: keine Kund
   assert.equal(v.an('kunde1@example.invalid').length, 0);
   assert.equal(v.an(v.KOPIE).length, 1);
   assert.match(v.an(v.KOPIE)[0].subject, /OHNE BESTÄTIGUNG AN KUNDEN/);
+});
+
+// Codex-Review Runde 1 (P1): ohne dauerhafte Speicherung kein ok:true
+test('#59 Sheet-Ausfall ueber der Grenze: Fehler statt ok:true, Antwort nicht zwischengespeichert', () => {
+  const u = umgebung();
+  for (let i = 0; i < 40; i += 1) assert.equal(u.senden().ok, true);
+  u.stoerung.sheet = true;
+  const r = u.senden({ id: 'wiederholung-0042' });
+  assert.equal(r.ok, false, 'weder Protokoll noch Einzelmail - der Widerruf waere verloren');
+  assert.equal(r.fehler, 'server');
+  assert.match(r.meldung, /erneut|kontakt@teppich-paradies\.net/);
+  assert.equal(u.zeilen.length, 40);
+  assert.equal(u.mails.filter(m => m.to !== u.KOPIE).length, 40, 'keine Kundenmail ueber der Grenze');
+  assert.equal(u.mails.filter(m => /Stundengrenze erreicht/.test(m.subject)).length, 1, 'der Sammelhinweis geht trotzdem raus');
+  u.stoerung.sheet = false;
+  const wieder = u.senden({ id: 'wiederholung-0042' });
+  assert.equal(wieder.ok, true, 'gleiche id nach Behebung: wird jetzt verarbeitet');
+  assert.equal(u.zeilen.length, 41);
+});
+
+test('#59 Sheet-Ausfall innerhalb der Grenzen: Kopie an uns ist der Nachweis, ohne Kopie Fehler', () => {
+  const u = umgebung();
+  u.stoerung.sheet = true;
+  const r = u.senden();
+  assert.equal(r.ok, true);
+  const kopie = u.an(u.KOPIE);
+  assert.equal(kopie.length, 1);
+  assert.match(kopie[0].body, /Bestellnummer: #T1/);
+  assert.match(kopie[0].body, /NICHT im Protokoll/);
+  assert.match(kopie[0].htmlBody, /NICHT im Protokoll/);
+
+  const v = umgebung({ kontingent: 200 });
+  v.stoerung.sheet = true;
+  const f = v.senden();
+  assert.equal(f.ok, false, 'kein Protokoll und keine Kopie (Reserve) - Fehler');
+  assert.equal(f.fehler, 'server');
+  assert.equal(v.mails.length, 0);
 });

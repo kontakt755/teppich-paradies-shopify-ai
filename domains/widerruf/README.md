@@ -49,6 +49,11 @@ Firmenkonto kostet nichts und verschickt von kontakt@.
   prueft das Skript `MailApp.getRemainingDailyQuota()` und laesst 200 Mails fuer andere Skripte im
   Konto frei (Terminerinnerungen der Auftrags-App). Der Tageszaehler steht in den Script-Properties
   (`TAGESZAEHLER`), weil der Cache nach 6 Stunden verfaellt.
+- `ok:true` nur mit dauerhafter Speicherung: Protokollzeile oder Kopie an kontakt@. Ist die Tabelle
+  nicht erreichbar, traegt die Kopie den Vermerk „NICHT im Protokoll“. Gibt es weder Zeile noch Kopie
+  (etwa ueber den Grenzen oder bei aufgebrauchter Reserve), antwortet das Skript mit `fehler: 'server'`
+  und einer Meldung fuer das Formular; die Antwort wird nicht zwischengespeichert, ein erneuter Versuch
+  mit derselben `id` wird also wieder verarbeitet.
 - Tests ohne Google-Konto: `qa/tests/widerruf-apps-script.test.mjs` (VM mit nachgebauten Diensten).
 - Ob die bereitgestellte Version diesem Stand entspricht, laesst sich nur im Apps-Script-Editor
   pruefen (Bereitstellungen verwalten → Version). `GET <exec>` zeigt nur, dass die Web-App laeuft.

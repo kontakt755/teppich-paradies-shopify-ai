@@ -5,9 +5,12 @@
   Laengenware steckt das Mass in der Menge (0,01 m2, 0,01 m oder cm). Die
   Standardliste zeigt deshalb "Rivena Teppich nach Mass x 775". Dieses Stueck
   setzt line_display fuer solche Zeilen auf die echte Stueckzahl: 1 Teppich,
-  1 Kettelservice, bei Laengenware die "Anzahl". Mass, Flaeche und Kante
-  stehen darunter weiter als Eigenschaften der Zeile (seit 2026-09-16 sichtbar).
-  Alle anderen Zeilen bleiben unveraendert.
+  1 Kettelservice, bei Laengenware Menge / "Laenge je Stueck" (Menge in cm =
+  Laenge x Anzahl). Die Property "Anzahl" wird nicht gelesen: sie ist frei
+  setzbar, und line_display landet ungeescaped in der Standardvorlage. Geht
+  die Rechnung nicht glatt auf, bleibt line_display unveraendert. Mass,
+  Flaeche und Kante stehen darunter weiter als Eigenschaften der Zeile (seit
+  2026-09-16 sichtbar). Alle anderen Zeilen bleiben unveraendert.
 
   Einsetzen: Admin -> Einstellungen -> Benachrichtigungen ->
   Kundenbenachrichtigungen -> "Bestellbestaetigung" -> Code bearbeiten.
@@ -29,7 +32,7 @@
   assign tp_mz_laenge = false
   assign tp_mz_zu = false
   assign tp_mz_je_stueck = false
-  assign tp_mz_anzahl = ''
+  assign tp_mz_je_cm = 0
   for tp_mz_p in line.properties
     assign tp_mz_w = tp_mz_p.last | strip
     if tp_mz_w == blank
@@ -46,8 +49,7 @@
         assign tp_mz_zu = true
       when 'Länge je Stück'
         assign tp_mz_je_stueck = true
-      when 'Anzahl'
-        assign tp_mz_anzahl = tp_mz_w | remove: 'Stück' | strip
+        assign tp_mz_je_cm = tp_mz_w | remove: 'cm' | strip | plus: 0
     endcase
   endfor
   if tp_mz_breite and tp_mz_laenge
@@ -57,7 +59,12 @@
     assign tp_mz_eins = true
   endif
   if tp_mz_je_stueck
-    assign line_display = tp_mz_anzahl | default: '1'
+    if tp_mz_je_cm > 0
+      assign tp_mz_rest = line.quantity | modulo: tp_mz_je_cm
+      if tp_mz_rest == 0
+        assign line_display = line.quantity | divided_by: tp_mz_je_cm
+      endif
+    endif
   elsif tp_mz_eins
     assign line_display = 1
   endif
