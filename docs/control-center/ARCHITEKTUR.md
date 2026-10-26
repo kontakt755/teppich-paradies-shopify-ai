@@ -1935,6 +1935,18 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
   geleert. Gepackte Umschläge bekommen keinen Vermerk (409) und zeigen keinen. Der Vermerk ändert die
   Arbeitsliste nicht: die Kopfzeile zeigt in jedem offenen Bereich „Umschlag vorbereitet · TT.MM.“,
   Schritt 1 „gedruckt TT.MM., hh:mm · Person“, „Zu klären“ einen Satz im Umschlag.
+- **Was schon auf dem Packtisch liegt (#1720, 26.10.):**
+  - `stempelHtml(k)` setzt unter den Namen jedes offenen Umschlags Marken, in der Liste wie in der
+    Karte von „Muster kommt an“:
+    - `.mp-stempel` „Umschlag vorbereitet · TT.MM.“
+    - `.mp-stempel-drin` „x von n Mustern schon im Umschlag“
+  - Ein Umschlag mit mindestens einem Haken (`angefangen(k)`) trägt `mp-angefangen`, das ist der
+    Bernstein-Balken links. In jeder Gruppe steht er oben (`reihe` in `viewKundenMusterPacken`, nach
+    `RANG`).
+  - Bernstein, weil ein angefangener Umschlag offene Arbeit ist. „Vorbereitet“ ist nur ein Stand und
+    bleibt neutral.
+  - „Schon gedruckt“ steht in Schritt 1 am Schritt, sonst (zu klären oder schon ein Haken) unter
+    „Mehr …“.
 
 ### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
 
