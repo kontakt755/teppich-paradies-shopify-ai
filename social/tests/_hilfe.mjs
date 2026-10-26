@@ -49,7 +49,9 @@ export function feedProdukt(extra = {}) {
 
 /**
  * Shop-Ersatz fuer die Live-Pruefung vor dem Posten: /products/<handle>.js und die Produktseite.
- * Je Handle einstellbar: {status, location} (404, 301), tags, preis (Cent), farben, seite (HTML).
+ * Je Handle einstellbar: {status, location} (404, 301), tags, preis (Cent), farben, varianten
+ * (ganze Varianten wie in der .js, z. B. mit unit_price), seite (HTML). Die Standardseite traegt den
+ * Preisblock wie das Theme (<product-price data-product-id>), damit nur er als Shoppreis zaehlt.
  * Unbekannte Handles sind aktive Produkte ohne Besonderheiten - die Tests gehen nie ins Netz.
  */
 export function scheinShop(produkte = {}) {
@@ -67,11 +69,11 @@ export function scheinShop(produkte = {}) {
       return antwort(200, JSON.stringify({
         id: 1, handle, title: handle, type: 'Teppichboden', available: true, tags: p.tags ?? [],
         options: p.farben ? [{ name: 'Farbe', position: 1, values: p.farben }] : [{ name: 'Title', position: 1, values: ['Default Title'] }],
-        variants: [{ id: 11, title: 'Default Title', price: preis, compare_at_price: null, available: true }],
+        variants: p.varianten ?? [{ id: 11, title: 'Default Title', price: preis, compare_at_price: null, available: true }],
       }));
     }
     const euro = (preis / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return antwort(200, p.seite ?? `<html><main><h1>${handle}</h1><p>${euro}&nbsp;€/m²</p></main></html>`);
+    return antwort(200, p.seite ?? `<html><main><h1>${handle}</h1><product-price data-product-id="1"><span class="price-with-unit__current">${euro}&nbsp;€/m²</span></product-price></main></html>`);
   };
   return { holen, aufrufe };
 }

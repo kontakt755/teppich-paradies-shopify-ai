@@ -62,7 +62,9 @@ export function quellBilder(beitrag, inhalt, medien = []) {
 /**
  * Farb- und Designzahlen vom Tag des Entwurfs - aus dem letzten Shop-Abgleich (produkt_stand),
  * nicht aus den Daten des Anlasses und nie aus der Beschreibung.
- * @param stand Map handle -> {familie, farben, zuletzt_gesehen} (db.produktStand)
+ * Die Farbzahl kommt aus dem tatsaechlichen Farbbestand (`farben_im_shop`), nicht aus `farben`: dort
+ * haelt der Abgleich eine neue Farbe ohne Anlass bewusst zurueck (Pruefung PR #1734).
+ * @param stand Map handle -> {familie, farben, farben_im_shop, zuletzt_gesehen} (db.produktStand)
  * @returns {{stand?: string, farben?: number, designs?: number, aktiv?: (handle) => boolean}}
  */
 export function zahlenAmBautag(stand, inhalt) {
@@ -83,7 +85,8 @@ export function zahlenAmBautag(stand, inhalt) {
     if (familie.length) aus.designs = familie.filter(s => aktiv(s.handle)).length;
   }
   const p = stand.get(inhalt.produkt_handle);
-  if (!d.serie && aktiv(inhalt.produkt_handle) && Array.isArray(p.farben) && p.farben.length) aus.farben = p.farben.length;
+  const farben = Array.isArray(p?.farben_im_shop) ? p.farben_im_shop : p?.farben;
+  if (!d.serie && aktiv(inhalt.produkt_handle) && Array.isArray(farben) && farben.length) aus.farben = farben.length;
   return aus;
 }
 

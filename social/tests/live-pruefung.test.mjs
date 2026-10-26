@@ -6,7 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { holeVerschwundeneZurueck, planeOffene, veroeffentlicheFaellige } from '../lib/ablauf.mjs';
 import { freigeben, freigebenAutomatisch, zurueckholen } from '../lib/freigabe.mjs';
-import { gedruckterPreis, m2Preise, produktHandles, produktLive, pruefeBeitragLive } from '../lib/live-pruefung.mjs';
+import { gedruckterPreis, m2Preise, preisBlock, produktHandles, produktLive, pruefeBeitragLive } from '../lib/live-pruefung.mjs';
 import { erstelleClient } from '../lib/meta.mjs';
 import { normalisiere } from '../lib/shop-quelle.mjs';
 import { scheinShop, testDb, tmpDir } from './_hilfe.mjs';
@@ -35,6 +35,15 @@ function geplant(t, db, dir, { typ = 'produkt_farben', handle, produkte = [handl
   freigeben(db, b, { von: 'automatisch' });
   return b;
 }
+
+// Produktseite einer Paketware wie im Shop (Preisblock aus snippets/tp-price-per-sqm.liquid), dazu ein Verlegepreis im Seitentext.
+const NOVIRA_SEITE = '<html><main><h1>Novira Sauberlauf-Fliesen 50 × 50 cm</h1><product-price data-product-id="1"><div class="tp-price-per-sqm"><div class="tp-price-per-sqm__unit"><span class="tp-price-per-sqm__amount">90,50</span> <span class="tp-price-per-sqm__label">€/m²</span></div><div class="tp-price-per-sqm__package">271,51&nbsp;€ pro Originalpaket</div><div class="tp-price-per-sqm__content">1 Paket = 3,00&nbsp;m²</div></div></product-price><p>Faire Festpreise: lose Verlegung 8,95 €/m²</p></main></html>';
+const M2 = menge => ({ measured_type: 'area', quantity_value: menge, quantity_unit: 'm2', reference_value: 1, reference_unit: 'm2' });
+/** Prueft nur den gedruckten Preis eines Beitrags gegen den Shop-Ersatz. */
+const preisSperren = async (shop, handle, preis, preisAlt = null, text = '') => (await pruefeBeitragLive(
+  { beitrag: { vorlage: 'produkt', medien: [{ preis, preisAlt }], text }, inhalt: { produkt_handle: handle, daten: {} } },
+  { holen: shop.holen, pauseMs: 0 },
+)).sperren;
 
 const lauf = (db, dir, shop, m = meta(), jetzt = JETZT) => veroeffentlicheFaellige(db, { client: m.client, jetzt, dir, holen: shop.holen, shopPauseMs: 0 });
 
@@ -84,7 +93,7 @@ test('Armonia und Ambrosia (#74, #75): Tag auslauf - "Neu bei uns" geht nicht ra
 
 test('Novira (#49): 90,69 €/m² im Bild, der Shop zeigt 90,50 €/m² - gesperrt; mit gleichem Preis geht er raus', async (t) => {
   const db = testDb(t, () => JETZT); const dir = tmpDir(t);
-  const seite = '<html><main><h1>Novira Sauberlauf-Fliesen 50 × 50 cm</h1><p>90,50&nbsp;€/m²</p><p>271,51 € pro Originalpaket</p><p>1 Paket = 3,00 m²</p><p>Faire Festpreise: lose Verlegung 8,95 €/m²</p></main></html>';
+  const seite = NOVIRA_SEITE;
   const shop = scheinShop({ 'novira-sauberlauf-fliesen-50-50-cm': { preis: 27151, farben: ['Schwarz', 'Anthrazit', 'Grau', 'Mokka', 'Schiefer'], seite } });
   const daten = { preisJeEinheit: { betrag: 90.69, einheit: 'm2' }, serie: false };
   const text = 'Neu im Shop: die Sauberlauf-Fliesen Novira im Format 50 × 50 cm für Eingangsbereiche. Erhältlich in fünf Farben.';
@@ -97,6 +106,36 @@ test('Novira (#49): 90,69 €/m² im Bild, der Shop zeigt 90,50 €/m² - gesper
   const richtig = geplant(t, db, dir, { typ: 'produkt_neu', handle: 'novira-sauberlauf-fliesen-50-50-cm', format: 'feed', daten: { ...daten, preisJeEinheit: { betrag: 90.5, einheit: 'm2' } }, text, termin: '2026-10-27T16:31:00.000Z' });
   const r2 = await lauf(db, dir, shop);
   assert.deepEqual(r2.veroeffentlicht.map(v => v.id), [richtig], JSON.stringify(r2));
+});
+
+test('Preispruefung (Pruefung PR #1734): nur Grundpreise des Produkts - kein Paketpreis, kein Verlegepreis, kein Preis je 0,01 m²', async () => {
+  const paket = { preis: 27151, seite: NOVIRA_SEITE, varianten: [{ id: 11, price: 27151, compare_at_price: null, unit_price: 9050, unit_price_measurement: M2('3.0') }] };
+  const nachMass = {
+    varianten: [{ id: 21, price: 50, compare_at_price: 53, unit_price: 5000, unit_price_measurement: M2('0.01') }],
+    // Teppich nach Mass zeigt im Preisblock den Einstiegspreis in Euro, keinen Quadratmeterpreis (snippets/tp-teppich-ab-preis.liquid).
+    seite: '<html><main><product-price data-product-id="1"><span>ab Aktionspreis 147,40 €</span> <s class="tp-ab-preis__alt"><span class="visually-hidden">statt </span>151 €</s></product-price></main></html>',
+  };
+  const shop = scheinShop({ novira: paket, 'novira-ohne-grundpreis': { ...paket, varianten: [{ id: 11, price: 27151, compare_at_price: null }] }, zafira: nachMass });
+  for (const h of ['novira', 'novira-ohne-grundpreis']) {
+    assert.deepEqual(await preisSperren(shop, h, '90,50 €/m²'), [], h);
+    assert.deepEqual(await preisSperren(shop, h, '271,51 €/m²'), ['Preis im Bild 271,51 €/m², der Shop zeigt 90,50 €/m²'], `${h}: der Paketpreis ist kein Quadratmeterpreis`);
+    assert.deepEqual(await preisSperren(shop, h, '8,95 €/m²'), ['Preis im Bild 8,95 €/m², der Shop zeigt 90,50 €/m²'], `${h}: ein Verlegepreis im Seitentext ist kein Produktpreis`);
+    assert.equal((await preisSperren(shop, h, null, null, 'Lose verlegt ab 8,95 €/m².')).length, 1, `${h}: auch nicht im Beitragstext`);
+  }
+  assert.deepEqual(await preisSperren(shop, 'zafira', '50,00 €/m²', '53,00 €/m²'), [], 'nach Mass: Grundpreis und Streichpreis je m² aus der .js');
+  assert.equal((await preisSperren(shop, 'zafira', '0,50 €/m²')).length, 1, 'nach Mass: der Preis je 0,01 m² ist kein Quadratmeterpreis');
+  assert.equal((await preisSperren(shop, 'zafira', '50,00 €/m²', '0,53 €/m²')).length, 1);
+});
+
+test('Preispruefung (Pruefung PR #1734): der Streichpreis einer Breite sperrt nicht den gleich hohen Preis einer anderen', async () => {
+  const varianten = [
+    { id: 1, title: '400 cm', price: 4990, compare_at_price: null, unit_price: 4990, unit_price_measurement: M2('1.0') },
+    { id: 2, title: '500 cm', price: 3990, compare_at_price: 4990, unit_price: 3990, unit_price_measurement: M2('1.0') },
+  ];
+  const shop = scheinShop({ breiten: { preis: 4990, varianten } });
+  assert.deepEqual(await preisSperren(shop, 'breiten', '49,90 €/m²'), []);
+  assert.deepEqual(await preisSperren(shop, 'breiten', '39,90 €/m²', '49,90 €/m²'), []);
+  assert.equal((await preisSperren(shop, 'breiten', '45,00 €/m²')).length, 1);
 });
 
 test('Rapidia (#117): Text nennt 11 Farben, der Shop hat 9 - gesperrt', async (t) => {
@@ -140,9 +179,18 @@ test('Gedruckter Preis: aus dem Beitrag, sonst wie im Standardaufbau; Quadratmet
   assert.equal(gedruckterPreis({ vorlage: 'farben_titel', medien: [{}] }, inhalt), null);
   assert.equal(gedruckterPreis({ vorlage: 'produkt', medien: [{ preis: null }] }, inhalt), null, 'neuer Beitrag ohne Preisschild');
   assert.deepEqual(gedruckterPreis({ vorlage: 'angebot', medien: [{ preis: '20,50 €/m²', preisAlt: '23,90 €/m²' }] }, inhalt), { preis: '20,50 €/m²', preisAlt: '23,90 €/m²' });
-  const p = m2Preise('Angebotspreis 20,50 €/m² Normaler Preis 23,90 €/m² −14 % 23,90 €/m² 20,50 €/m² lose Verlegung 8,95 €/m²');
-  assert.ok(p.aktuell.includes('20,50') && !p.aktuell.includes('23,90')); assert.deepEqual(p.vergleich, ['23,90']); assert.equal(p.erster, '20,50');
-  assert.ok(m2Preise('49,90 €/m²', { variants: [{ price: 3690 }, { price: 4990 }] }).aktuell.includes('36,90'), 'Meterware: guenstigere Breite zaehlt');
+  // Preisblock wie blocks/price_custom.liquid: Streichpreis als __compare, verborgene Teile zeigt der Shop nicht.
+  const html = '<main><product-price data-product-id="7"><span class="tp-rabatt-badge">−14&nbsp;%</span><span class="price-with-unit__compare">23,90&nbsp;€/m²</span> <span class="price-with-unit__current">20,50&nbsp;€/m²</span><span class="price-with-unit__compare" hidden>19,00&nbsp;€/m²</span></product-price>'
+    + '<p>lose Verlegung 8,95 €/m²</p><product-price data-product-id="8"><span>12,00 €/m²</span></product-price></main>';
+  assert.equal(preisBlock(html, 7), '−14 % statt 23,90 €/m² 20,50 €/m²');
+  assert.deepEqual(m2Preise(preisBlock(html, 7)), { aktuell: ['20,50'], vergleich: ['23,90'], erster: '20,50' });
+  assert.deepEqual(m2Preise('Angebotspreis 20,50 €/m² Normaler Preis 23,90 €/m²').vergleich, ['23,90'], 'Sticky-Leiste: "Normaler Preis"');
+  assert.deepEqual(m2Preise('49,90 €/m²', { variants: [{ price: 3690 }, { price: 4990 }] }).aktuell, ['49,90', '36,90'], 'Meterware: guenstigere Breite zaehlt');
+  assert.deepEqual(m2Preise('90,50 €/m²', { variants: [{ price: 27151 }] }).aktuell, ['90,50'], 'Paketware ohne Grundpreis: Variantenpreis zaehlt nicht');
+  // Grundpreis je 10 m² (Bezugsmenge): auf 1 m² umgerechnet, Streichpreis ebenso.
+  const je10 = { quantity_value: '3.0', quantity_unit: 'm2', reference_value: 10, reference_unit: 'm2' };
+  assert.deepEqual(m2Preise('', { variants: [{ price: 27000, compare_at_price: 30000, unit_price: 90000, unit_price_measurement: je10 }] }), { aktuell: ['90,00'], vergleich: ['100,00'], erster: '90,00' });
+  assert.equal(preisBlock('<product-price><span class="preis hidden-mobile">20,50 €/m²</span><span hidden="">19,00 €/m²</span></product-price>'), '20,50 €/m²', 'nur das Attribut hidden blendet aus');
   assert.deepEqual(produktHandles({ produkt_handle: 'a', daten: { produkte: ['a', 'b', null] } }), ['a', 'b']);
 });
 

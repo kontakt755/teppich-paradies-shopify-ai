@@ -11,7 +11,9 @@
  *   medium        Bilder und Videos dazu, mit Pruef- und Datenschutzurteil
  *   beitrag       was daraus veroeffentlicht wird (Feed, Karussell, Story, Reel)
  *   kennzahl      Messwerte je Beitrag und Plattform
- *   produkt_stand letzter bekannter Shop-Stand je Produkt (fuer "neu", "neue Farbe")
+ *   produkt_stand letzter bekannter Shop-Stand je Produkt (fuer "neu", "neue Farbe"); `farben` ist der
+ *                 Ankuendigungsstand (eine neue Farbe ohne Anlass bleibt dort offen), `farben_im_shop`
+ *                 der tatsaechliche Farbbestand des letzten Abgleichs (Farbzahl in Bild und Text)
  *   ereignis      wer hat wann was getan
  */
 
@@ -113,7 +115,7 @@ const JSON_SPALTEN = {
   medium: [],
   beitrag: ['plattformen', 'medien', 'hinweise', 'ergebnis'],
   kennzahl: ['roh'],
-  produkt_stand: ['farben'],
+  produkt_stand: ['farben', 'farben_im_shop'],
   ereignis: ['details'],
 };
 
@@ -131,6 +133,12 @@ export function oeffne(datei = dbPfad(), { jetzt = () => new Date() } = {}) {
     sql.exec('BEGIN');
     for (const anweisung of SCHEMA) sql.exec(anweisung);
     sql.exec('PRAGMA user_version = 1; COMMIT');
+  }
+  if (version < 2) {
+    // Tatsaechlicher Farbbestand getrennt vom Ankuendigungsstand (Pruefung PR #1734).
+    sql.exec('BEGIN');
+    sql.exec('ALTER TABLE produkt_stand ADD COLUMN farben_im_shop TEXT');
+    sql.exec('PRAGMA user_version = 2; COMMIT');
   }
 
   const spalten = {};
