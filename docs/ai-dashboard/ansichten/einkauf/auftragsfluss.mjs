@@ -269,11 +269,8 @@ async function ladeKundenArbeitsstandNeu() {
 export async function ladeStandNeu({ bestellungen = false } = {}) {
   const auftraege = [fetchEinkauf('/api/einkauf/auftragsstatus').then(d => { if (d?.verfuegbar) einkauf.auftragsstatus = d; })];
   if (bestellungen) auftraege.push(fetchEinkauf('/api/einkauf/bestellungen').then(d => { if (d?.verfuegbar) einkauf.bestellungen = d; }));
+  // Laedt auch die offene Kundenakte (einmal - vorher holte ladeStandNeu sie ein zweites Mal).
   auftraege.push(ladeKundenArbeitsstandNeu());
-  if (kunden.detailKey && kunden.detail) {
-    const key = kunden.detailKey;
-    auftraege.push(fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`).then(d => { if (kunden.detailKey === key && d?.verfuegbar) kunden.detail = d; }));
-  }
   kunden.faelle = null;
   await Promise.all(auftraege);
   render();

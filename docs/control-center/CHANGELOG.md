@@ -47,6 +47,18 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Nachgebessert (Prüfung):** Eine direkt geöffnete Kundenakte lädt jetzt den Positionsstand
   nach; vorher behielt ein schon bestellter Lieferant dort seinen Knopf „Bestellmail öffnen“
   und stand in der Rückfrage „Ware ist bestellt…“ (Test in `zeitleiste-bestellweg`).
+- **Nachgebessert (Codex-Review Runde 1):** „Rückgängig“ direkt nach „Als bestellt markieren“ im
+  Bestellmail-Dialog lädt jetzt Kundenakte und Bestellliste nach; vorher blieb die Zeitleiste beim
+  Wareneingang stehen und „Bestellmail öffnen“ fehlte (Test in `bestellvorbereitung-dialog`).
+  `ladeStandNeu` holt die offene Kundenakte nur noch einmal statt doppelt
+  (`auftragsfluss-arbeitslisten`). „Alle anderen Geräte abmelden…“ ist nicht mehr gesperrt, wenn im
+  Control Center nur dieses Gerät angemeldet ist – ein Handy nur mit Social-Zugang ließ sich sonst
+  nicht abmelden; Dialog und Rückmeldung sagen dann, dass nur die Social-Zentrale abgemeldet wird
+  (`team-geraete`, Servertest in `auth`). Getestet: die neuen Tests schlagen mit dem alten Code fehl;
+  `dashboard:test` 1.012 grün; `dashboard:pruefen --rollen` auf Zugänge, Kunden, Bestellungen,
+  Bestellen und Shop-Übersicht 80 von 80 OK; Klickstrecken gegen die Datenkopie bei 1440 und 390 px
+  38 von 38 (alter Code: Akte blieb nach „Rückgängig“ bei „Lieferant liefert die Ware an uns“, der
+  Abmeldeknopf war bei einem Gerät gesperrt).
 - **Risiken:** Ob `tailscale serve` `X-Forwarded-For` mitschickt, ist im Betrieb nicht
   nachgemessen; ohne den Kopf gilt das Tailscale-Konto, ohne beides bleibt es bei 127.0.0.1
   wie bisher. Die Social-Zentrale übernimmt Abdruck und Abmeldestempel erst nach ihrem

@@ -464,5 +464,13 @@ test('Sperre je Geraet hinter tailscale serve; "Alle anderen Geraete abmelden" n
     assert.ok(Date.parse(JSON.parse(fs.readFileSync(path.join(privat, 'geraete-abgemeldet.json'), 'utf8')).ab) > 0, 'Zeitstempel fuer die Social-Zentrale');
     const protokoll = await (await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieChef } })).json();
     assert.ok(protokoll.eintraege.some(e => e.aktion === 'Alle anderen Geräte abgemeldet' && e.objekt === '2 Sitzungen'));
+
+    // Nur noch das eigene Geraet im Control Center: die Aktion bleibt moeglich, denn ein Handy
+    // kann allein in der Social-Zentrale angemeldet sein (Codex-Review #1731).
+    const stempelVorher = Date.parse(JSON.parse(fs.readFileSync(path.join(privat, 'geraete-abgemeldet.json'), 'utf8')).ab);
+    const nochmal = await (await fetch(`${base}/api/sitzungen/abmelden`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieChef }, body: '{}' })).json();
+    assert.deepEqual({ abgemeldet: nochmal.abgemeldet, social: nochmal.social, angemeldeteGeraete: nochmal.angemeldeteGeraete }, { abgemeldet: 0, social: true, angemeldeteGeraete: 1 });
+    assert.ok(Date.parse(JSON.parse(fs.readFileSync(path.join(privat, 'geraete-abgemeldet.json'), 'utf8')).ab) >= stempelVorher, 'neuer Zeitstempel fuer die Social-Zentrale');
+    assert.equal((await fetch(`${base}/api/capabilities`, { headers: { cookie: cookieChef } })).status, 200);
   });
 });

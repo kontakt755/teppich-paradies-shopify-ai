@@ -166,4 +166,5 @@ gebraeuchlich), Erfassen.
   Auftragsfluss aber angekommen (vorher „fehlt · angekommen“).
 - **Shopify ist nicht verbunden** = Sonderposten ohne Shop-Zugang, mit „Fehler melden“.
 - **Alle anderen Geräte abmelden…** = Knopf unter Zugänge › Angemeldete Geräte (nur Inhaber); meldet
-  im Control Center und in der Social-Zentrale ab, das eigene Gerät bleibt angemeldet.
+  im Control Center und in der Social-Zentrale ab, das eigene Gerät bleibt im Control Center angemeldet.
+  Immer klickbar, auch wenn im Control Center nur dieses Gerät zählt (die Social-Zentrale zählt dort nicht mit).

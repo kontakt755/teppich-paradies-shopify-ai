@@ -23,7 +23,7 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import {
   einkauf, afEintragFuer, anzeigeWert, afWarteText, markiereAlsBestellt,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, ensureEinkaufLieferanten,
-  setzeZurueckAufOffen, zurueckGruppen, openMusterHerkunftDialog, kundeUndOrt, musterSchrittKnopf,
+  setzeZurueckAufOffen, ladeStandNeu, zurueckGruppen, openMusterHerkunftDialog, kundeUndOrt, musterSchrittKnopf,
 } from './auftragsfluss.mjs';
 
 // Welche Karten ihre Positionen zeigen. Als Zustand im Modul (nicht <details>): jede
@@ -657,7 +657,9 @@ async function macheMarkierenRueckgaengig(i, knopf) {
   const ok = await setzeZurueckAufOffen(positionen, 'Rückgängig direkt nach „Als bestellt markieren"');
   toast(ok === positionen.length ? `${plural(ok, 'Artikel', 'Artikel')} zurück auf offen` : `Nur ${ok} von ${positionen.length} Artikeln zurück auf offen`, ok === positionen.length ? '' : 'crit');
   if (ok) { dialog.markiert.delete(i); dialog.gesetzt.delete(i); }
-  render();
+  // Kundenakte und Bestellliste mitziehen (wie nach "Als bestellt markieren"): sonst bleibt die
+  // Zeitleiste beim Wareneingang stehen und der Knopf "Bestellmail öffnen" fehlt (Codex-Review #1731).
+  if (ok) await ladeStandNeu(); else render();
   zeichneDialog();
 }
 

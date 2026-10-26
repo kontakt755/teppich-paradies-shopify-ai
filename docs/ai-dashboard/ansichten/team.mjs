@@ -83,13 +83,16 @@ export function viewTeam() {
 function geraeteBlock(d) {
   if (d.angemeldeteGeraete === null || d.angemeldeteGeraete === undefined) return '';
   const n = d.angemeldeteGeraete;
+  // Die Zahl kennt nur das Control Center. Die Social-Zentrale ist ein eigener Dienst - ein Handy,
+  // das nur dort angemeldet ist, muss sich trotzdem abmelden lassen. Deshalb ist der Knopf nie
+  // gesperrt, auch wenn hier nur dieses Geraet zaehlt (Codex-Review #1731).
   return `<h2 style="margin:24px 0 8px">Angemeldete Geräte</h2>
     <div class="rows"><div class="row">
       <div>
-        <div class="t">${n === 1 ? 'Nur dieses Gerät ist angemeldet' : `${n} Geräte angemeldet`}</div>
+        <div class="t">${n === 1 ? 'Im Control Center ist nur dieses Gerät angemeldet' : `Im Control Center sind ${n} Geräte angemeldet`}</div>
         <div class="m">Handy verloren oder jemand arbeitet nicht mehr hier? Dann alle anderen Geräte abmelden – im Control Center und in der Social-Zentrale. Wird das gemeinsame Passwort geändert, sind die Geräte mit dem alten Passwort nach dem nächsten Neustart des Dienstes von selbst abgemeldet.</div>
       </div>
-      <div class="r"><button type="button" class="btn btn-sm" data-team-geraete-abmelden${n > 1 ? '' : ' disabled'}>Alle anderen Geräte abmelden…</button></div>
+      <div class="r"><button type="button" class="btn btn-sm" data-team-geraete-abmelden>Alle anderen Geräte abmelden…</button></div>
     </div></div>`;
 }
 
@@ -98,8 +101,9 @@ function openGeraeteAbmelden() {
   const n = Math.max(0, (team.daten?.angemeldeteGeraete ?? 1) - 1);
   root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="tmGeraeteTitel" style="max-width:480px">
     <h2 id="tmGeraeteTitel">Alle anderen Geräte abmelden?</h2>
-    <p>${n === 1 ? 'Ein anderes Gerät muss' : `${n} andere Geräte müssen`} sich danach neu anmelden – auch der Ladenrechner. Du bleibst an diesem Gerät angemeldet.</p>
-    <p class="small muted">In der Social-Zentrale meldest auch du dich neu an.</p>
+    ${n === 0 ? '<p>Im Control Center ist sonst kein Gerät angemeldet. In der Social-Zentrale müssen sich danach alle neu anmelden – auch du.</p>'
+      : `<p>${n === 1 ? 'Ein anderes Gerät muss' : `${n} andere Geräte müssen`} sich danach neu anmelden – auch der Ladenrechner. Du bleibst an diesem Gerät angemeldet.</p>
+    <p class="small muted">In der Social-Zentrale meldest auch du dich neu an.</p>`}
     <div class="dialog-actions">
       <button type="button" class="btn" data-close-dialog>Abbrechen</button>
       <button type="button" class="btn btn-primary" id="tmGeraeteJa">Ja, abmelden</button>
@@ -115,7 +119,8 @@ function openGeraeteAbmelden() {
       const r = await orgSchreiben('/api/sitzungen/abmelden', {});
       root.innerHTML = '';
       if (team.daten) team.daten = { ...team.daten, angemeldeteGeraete: r.angemeldeteGeraete };
-      toast(`${r.abgemeldet === 1 ? 'Ein Gerät' : `${r.abgemeldet} Geräte`} abgemeldet${r.social ? '' : ' – die Social-Zentrale aber nicht, bitte Fehler melden'}`, r.social ? undefined : 'warn');
+      const cc = r.abgemeldet ? `${r.abgemeldet === 1 ? 'Ein Gerät' : `${r.abgemeldet} Geräte`} abgemeldet` : 'Im Control Center war kein anderes Gerät angemeldet';
+      toast(r.social ? (r.abgemeldet ? cc : `${cc} · Social-Zentrale abgemeldet`) : `${cc} – die Social-Zentrale aber nicht, bitte Fehler melden`, r.social ? undefined : 'warn');
       render();
     } catch (err) { ja.disabled = false; toast(`Fehler: ${err.message}`, 'crit'); }
   });
