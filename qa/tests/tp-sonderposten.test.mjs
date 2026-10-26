@@ -156,6 +156,18 @@ test('Kaufleiste und JSON-LD fragen denselben Kaufstatus', () => {
   assert.match(sd, /"availability": \{% if tp_sd_variant\.available and tp_sd_sp_gesperrt == false %\}/);
 });
 
+test('Restrollen nur auf Anfrage: Vorlage ohne Kaufweg, Karte und JSON-LD nicht "ausverkauft"', () => {
+  const vorlage = lies('templates/product.rolle-anfrage.json');
+  for (const typ of ['buy-buttons', 'add-to-cart', 'accelerated-checkout', 'tp-rollware-rechner', 'tp-muster-cta', 'tp-vertrauen']) {
+    assert.doesNotMatch(vorlage, new RegExp(`"type": "${typ}"`), `${typ} gehoert nicht in die Anfrage-Vorlage`);
+  }
+  assert.match(vorlage, /"type": "tp-anfrage-formular"/);
+  assert.match(vorlage, /"enable_sticky_add_to_cart": false/);
+  assert.match(lies('blocks/tp-anfrage-formular.liquid'), /form 'contact'/);
+  assert.match(lies('blocks/_product-card-gallery.liquid'), /template_suffix == 'rolle-anfrage' -%\}[\s\S]*?Auf Anfrage/);
+  assert.match(lies('snippets/tp-product-structured-data.liquid'), /elsif product_resource\.template_suffix == 'rolle-anfrage' %\}"https:\/\/schema\.org\/LimitedAvailability"/);
+});
+
 // --- Streichpreis: Beleg muss zu genau diesem Stueck passen -----------------
 
 const rolle = (preis = 2590, extra = {}) => ({

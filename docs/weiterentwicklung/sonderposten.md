@@ -245,3 +245,28 @@ wenn alles davon belegt ist:
 
 Fehlt einer der Punkte, bleibt das Produkt im Status Entwurf. Massenanlage auf Verdacht gibt es
 nicht.
+
+## 10. Restrollen nur auf Anfrage (seit 2026-10-26)
+
+Restrollen aus dem Laden (Rollenware mit Tag `sonderposten`, Vorbereitung vom 23.10.) haben
+keine gemessene Restlänge, und dieselben Rollen werden im Laden verkauft. Der Inhaber hat
+deshalb entschieden: **vorerst nur auf Anfrage**, bis feststeht, ob sie Sofortkauf werden.
+
+| Was | Wert | Wirkung |
+|---|---|---|
+| Theme-Vorlage | `rolle-anfrage` (`templates/product.rolle-anfrage.json`) | Bilder, Titel, Preis je m², Hinweis und Anfrageformular (`blocks/tp-anfrage-formular.liquid`); kein Rechner, kein Warenkorb, keine Kaufleiste, kein Musterknopf |
+| Bestand | Rollen-Variante verfolgt, Menge 0, Überverkauf gesperrt | kaufen geht auch über einen Warenkorb-Link nicht |
+| Produktkarte | Schild „Auf Anfrage“ statt „Ausverkauft“ (`blocks/_product-card-gallery.liquid`) | |
+| JSON-LD | `LimitedAvailability` statt `OutOfStock` (`snippets/tp-product-structured-data.liquid`) | |
+| Vertriebskanal | nur Onlineshop, nicht Google & YouTube | Google lehnt Produkte ohne Kaufmöglichkeit ab |
+| Anfrage | Shopify-Kontaktformular, Betreff „ANFRAGE Restrolle – <Titel>“ mit Produkt, SKU, Link, Ausführung, Wunschmaß | keine Bestellung; der Laden prüft die Rolle und schickt ein Angebot |
+
+Das einzige Merkmal ist die Vorlage. Zurück auf Sofortkauf: Restlänge messen, Bestand in m²
+setzen (Abschnitt 6, Restrollen im Control Center), Vorlage wieder `rolle`.
+
+**Kollektion „Reste & Sonderposten“:** Damit die Restrollen dort stehen, gilt seit dem Livegang
+die Regel *Tag = `sonderposten`* statt *Typ = Sonderposten und Bestand > 0* (Rückweg: alte
+Regeln wieder setzen). Folge für spätere Einzelstücke (Abschnitt 2): Sie brauchen ebenfalls den
+Tag `sonderposten`, und ein verkauftes Stück verschwindet nicht mehr von selbst aus der
+Kollektion, sondern steht dort als „Verkauft“, bis es archiviert ist. Offen, sobald die ersten
+Einzelstücke kommen.
