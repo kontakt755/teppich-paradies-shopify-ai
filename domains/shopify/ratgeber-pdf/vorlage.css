@@ -219,16 +219,18 @@ td:last-child { color: var(--rot-dunkel); width: 26%; }
 .qr span { font-size: 7pt; line-height: 1.3; text-align: center; color: rgba(255,255,255,.8); }
 
 .unterlagen {
-  margin-top: 4.4mm;
+  margin-top: 3.6mm;
   border: .3mm dashed var(--sand); border-radius: 3mm;
-  padding: 3.4mm 4.4mm 4.2mm;
+  padding: 3.2mm 4.4mm 3.6mm;
 }
-.unterlagen h3 { font-size: 8.6pt; display: flex; align-items: center; gap: 2mm; margin-bottom: 3mm; }
+.unterlagen h3 { font-size: 8.6pt; display: flex; align-items: center; gap: 2mm; margin-bottom: 2.2mm; }
 .unterlagen h3 svg { width: 4.2mm; height: 4.2mm; color: var(--rot); }
 .unterlagen h3 span { font-weight: 400; color: var(--grau); }
-.felder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5mm; }
-.feld { border-bottom: .3mm solid var(--grau); padding-top: 5.5mm; font-size: 7pt; color: var(--grau); position: relative; }
+/* Druck je Bestellung fuellt die Felder vor (vorlage.mjs); sonst bleiben sie zum Ausfuellen leer */
+.felder { display: grid; grid-template-columns: .75fr 1.9fr 1fr .85fr; gap: 5mm; }
+.feld { border-bottom: .3mm solid var(--grau); height: 8.4mm; font-size: 7pt; color: var(--grau); position: relative; min-width: 0; }
 .feld span { position: absolute; top: 0; left: 0; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.feld b { position: absolute; left: 0; right: 0; bottom: .9mm; font-size: 8.4pt; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .rechtlich { font-size: 7.4pt; color: var(--grau); margin-top: 4mm; line-height: 1.4; }
 
