@@ -365,6 +365,31 @@ export function nameSchreibweise(name) {
 }
 
 /**
+ * Pflichtangaben einer GmbH in geschaeftlichen Mails (Werkbank w-172, Inhaber 2026-10-28),
+ * Stand Impressum 2026-10-28. Steht unter dem Gruss jeder Nachfass-Mail und vor dem
+ * Abmelde-Hinweis; aendern sich Anschrift oder Geschaeftsfuehrung, hier und im Impressum.
+ */
+export const FIRMENANGABEN = [
+  'Teppich Paradies Oranienburg GmbH · Saarlandstraße 73–81 · 16515 Oranienburg',
+  'Telefon 03301 573 37 20 · kontakt@teppich-paradies.net · www.teppich-paradies.net',
+  'Sitz: Oranienburg · Amtsgericht Neuruppin, HRB 9141 NP · Geschäftsführerin: Suzan Karakaya',
+].join('\n');
+
+/**
+ * Haengt die Firmenangaben als eigenen Absatz hinter den Gruss (Absatz mit "Freundliche
+ * Grüße" o. ae.), damit der Abmelde-Hinweis die letzte Zeile bleibt. Ohne Gruss stehen sie
+ * am Ende. Eine Vorlage, die sie schon traegt (Registernummer), bekommt sie nicht doppelt.
+ */
+export function mitFirmenangaben(text) {
+  const t = String(text ?? '');
+  if (!t.trim() || t.includes('HRB 9141')) return t;
+  const absaetze = t.split(/\n{2,}/);
+  const gruss = absaetze.findIndex(a => /^(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(a.trim()));
+  absaetze.splice(gruss >= 0 ? gruss + 1 : absaetze.length, 0, FIRMENANGABEN);
+  return absaetze.join('\n\n');
+}
+
+/**
  * Fuellt die Vorlage fuer einen Kunden. Was sich nicht sicher fuellen laesst, faellt mit
  * seiner Zeile weg - ein stehengebliebener Platzhalter darf nie beim Kunden ankommen.
  *
@@ -410,7 +435,7 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
     ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n+((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
   // Der Betreff hat keine Zeile, die wegfallen koennte: ein unbekannter Platzhalter bleibt stehen,
   // damit platzhalterFrei() ihn sieht und der Versandlauf die Mail zurueckhaelt (statt „Ihre Muster,“ zu schicken).
-  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitAuswahl };
+  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitFirmenangaben(mitAuswahl) };
 }
 
 /** mailto:-Link mit Betreff und Text - oeffnet das Mailprogramm, sendet nichts. */
