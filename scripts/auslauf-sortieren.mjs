@@ -18,7 +18,8 @@
  * Reihenfolge aller anderen unveraendert. Paginierung und Filter bleiben
  * Shopifys eigene. Bewertet wird, was Kunden sehen: nur aktive, im Onlineshop
  * veroeffentlichte Produkte (istSichtbar); archivierte und Entwuerfe zaehlen
- * nicht mit.
+ * nicht mit. Hat eine Kollektion Produkte, aber kein sichtbares, warnt der
+ * Lauf und endet mit Exit 1 (pruefeKollektionen).
  *
  * Bestseller-sortierte Kollektionen (Vinylboden, Angebote, Teppichfliesen)
  * bleiben bewusst, wie sie sind: Umstellen auf MANUAL wuerde die
@@ -118,6 +119,64 @@ export function bewerte(produkte, auslauf) {
     erster: sichtbar.findIndex(id => auslauf.has(id)) + 1,
     zuege: relevant && planeZuege(sichtbar, auslauf).length > 0 ? planeZuege(reihenfolge, auslauf) : [],
   };
+}
+
+/**
+ * Bewertet alle Kollektionen und sammelt die Meldungen. Eine Kollektion mit
+ * Produkten, von denen keins als sichtbar zaehlt, wird nicht still
+ * uebersprungen: Kaemen ueber die CLI einmal kein Status oder keine
+ * onlineStoreUrl an, saehe jede Kollektion leer aus und der Lauf meldete
+ * "Nichts zu tun" mit Exit 0 (Review 2026-10-28). Am 28.10. hatte keine
+ * manuell sortierte Kollektion mit Produkten 0 sichtbare.
+ * @param {{id: string, handle: string}[]} kollektionen
+ * @param {(id: string) => {id: string, status: string, onlineStoreUrl: string|null}[]} produkteVon
+ * @param {Set<string>} auslauf IDs mit Tag "auslauf"
+ */
+export function pruefeKollektionen(kollektionen, produkteVon, auslauf) {
+  const zeilen = [];
+  const offen = [];
+  const ohneSichtbare = [];
+  for (const k of kollektionen) {
+    const b = bewerte(produkteVon(k.id), auslauf);
+    if (b.gesamt === 0 && b.ausgeblendet > 0) {
+      zeilen.push(`WARN ${k.handle}: ${b.ausgeblendet} Produkte, aber keins aktiv und im Onlineshop - nicht bewertet`);
+      ohneSichtbare.push(k.handle);
+      continue;
+    }
+    if (!b.relevant) continue;
+    const verborgen = b.ausgeblendet ? `, dazu ${b.ausgeblendet} nicht sichtbar` : '';
+    if (b.zuege.length === 0) {
+      zeilen.push(`ok   ${k.handle}: ${b.anzahl} Auslaufartikel stehen hinten (${b.gesamt} sichtbare Produkte${verborgen})`);
+      continue;
+    }
+    zeilen.push(`TUN  ${k.handle}: ${b.anzahl} Auslaufartikel, der erste auf Platz ${b.erster} von ${b.gesamt} sichtbaren${verborgen}`);
+    offen.push({ ...k, reihenfolge: b.reihenfolge, zuege: b.zuege });
+  }
+  return { zeilen, offen, ohneSichtbare };
+}
+
+/**
+ * Schlussmeldung und Exit-Code nach der Bewertung. Exit 1, wenn etwas
+ * umzusortieren ist (nur pruefen) oder eine Kollektion ohne sichtbares
+ * Produkt nicht bewertet werden konnte (auch beim Schreiben).
+ * @returns {{ meldungen: string[], exitCode: number, schreiben: boolean }}
+ */
+export function abschluss({ offen, ohneSichtbare, schreiben }) {
+  const meldungen = [];
+  let exitCode = 0;
+  if (ohneSichtbare.length) {
+    meldungen.push(`\nWARNUNG: ${ohneSichtbare.length} Kollektion(en) haben Produkte, aber keins zaehlt als sichtbar (${ohneSichtbare.join(', ')}). Dort ist nichts geprueft - kommen Status und onlineStoreUrl ueber die CLI an?`);
+    exitCode = 1;
+  }
+  if (offen.length === 0) {
+    if (!ohneSichtbare.length) meldungen.push('Nichts zu tun.');
+    return { meldungen, exitCode, schreiben: false };
+  }
+  if (!schreiben) {
+    meldungen.push(`\n${offen.length} Kollektion(en) umzusortieren. Schreiben mit: npm run -s auslauf:sortieren -- --schreiben`);
+    return { meldungen, exitCode: 1, schreiben: false };
+  }
+  return { meldungen, exitCode, schreiben: true };
 }
 
 /** Zuege, die eine gespeicherte Reihenfolge wiederherstellen (Rollback). */
@@ -262,28 +321,12 @@ function main() {
   const kollektionen = manuelleKollektionen(a.kollektionen);
   console.log(`${auslauf.size} Produkte mit Tag "${TAG}", ${kollektionen.length} manuell sortierte Kollektionen.`);
 
-  const offen = [];
-  for (const k of kollektionen) {
-    const b = bewerte(produkteVon(k.id), auslauf);
-    if (!b.relevant) continue;
-    const verborgen = b.ausgeblendet ? `, dazu ${b.ausgeblendet} nicht sichtbar` : '';
-    if (b.zuege.length === 0) {
-      console.log(`ok   ${k.handle}: ${b.anzahl} Auslaufartikel stehen hinten (${b.gesamt} sichtbare Produkte${verborgen})`);
-      continue;
-    }
-    console.log(`TUN  ${k.handle}: ${b.anzahl} Auslaufartikel, der erste auf Platz ${b.erster} von ${b.gesamt} sichtbaren${verborgen}`);
-    offen.push({ ...k, reihenfolge: b.reihenfolge, zuege: b.zuege });
-  }
-
-  if (offen.length === 0) {
-    console.log('Nichts zu tun.');
-    return;
-  }
-  if (!a.schreiben) {
-    console.log(`\n${offen.length} Kollektion(en) umzusortieren. Schreiben mit: npm run -s auslauf:sortieren -- --schreiben`);
-    process.exitCode = 1;
-    return;
-  }
+  const { zeilen, offen, ohneSichtbare } = pruefeKollektionen(kollektionen, produkteVon, auslauf);
+  for (const z of zeilen) console.log(z);
+  const s = abschluss({ offen, ohneSichtbare, schreiben: a.schreiben });
+  for (const m of s.meldungen) console.log(m);
+  if (s.exitCode) process.exitCode = s.exitCode;
+  if (!s.schreiben) return;
 
   const zeit = new Date().toISOString();
   const ordner = path.join(privatDir(), 'auslauf');
