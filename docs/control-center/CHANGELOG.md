@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Speicher: Bremse für Bildläufe, Mac-Mitteilung bei Rot
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 1, Teile 2 und 3). Die Platte stand bei 12 bis 17 GiB
+  frei, der Monteur-Upload sperrte schon zeitweise. Die Warnung gab es nur im Control Center, und
+  Bildläufe hatten keine Bremse.
+  - `npm run -s speicher:pruefen` (`operations/scripts/speicher-pruefen.mjs`, `bildlaufFrei` in
+    `operations/lib/speicher.mjs`): Exit 1 unter 20 GiB frei, `--min <GiB>` für eine eigene Grenze,
+    nicht messbar = darf starten. Die Bildlauf-Skripte liegen privat unter `$TP_PRIVAT_DIR`; Skill
+    `raumbilder-recherche`, Skill `werkzeuge` und `operations/README.md` schreiben den Aufruf vor jedem
+    Lauf vor (aus Python per `subprocess.run`).
+  - Shop-Wache: bei Rot zusätzlich eine Mac-Mitteilung, höchstens einmal je Berliner Kalendertag
+    (`speicherMelden`, Tag in `shopwache/speicher-mitteilung.json`). Die Mitteilung liegt jetzt in
+    `operations/lib/mac-mitteilung.mjs`; `claude-lauf.mjs` exportiert sie unverändert weiter.
+- **Getestet:** `freier-speicher.test.mjs` neu (Bremse unter/über 20 GiB, eigene Grenze, Messfehler,
+  Befehl mit Exit-Codes und falschen Optionen, Mitteilung nur bei Rot, einmal je Tag, Tageswechsel
+  23:30 UTC = nächster Berliner Tag, kaputte Merkdatei). Echter Aufruf auf dem Mac:
+  „Speicher: 19 GiB frei (96 % belegt, ROT) · Bildlauf NICHT starten“, Exit 1; mit `--min 10` Exit 0.
+  Die Mac-Mitteilung selbst nicht ausgelöst (gleiche Funktion wie bei den Routinen).
+- **Risiken:** Die privaten Bildlauf-Skripte rufen die Prüfung erst, wenn sie die eine Zeile
+  bekommen; bis dahin bremst nur die Anweisung im Skill.
+- **Naechste Stufe:** Aufräumen nach w-170 (anderer Chat); die privaten Skripte um den Aufruf ergänzen.
+
 ## 2026-10-28 · Adressaufkleber auf 50 × 80 quer
 
 - **Geaendert:** Inhaber: „die Adresse soll quer sein bei 50 × 80, nicht hoch“.

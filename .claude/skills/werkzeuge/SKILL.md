@@ -33,6 +33,7 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
 | `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht statt in der Theme-Einstellung |
 | `npm run lighthouse:messen` | **bevor jemand "schneller/langsamer" sagt**: Lighthouse gegen Live, 3 Seiten mit und ohne Cookie-Banner, 5 Runden reihum (rund 25 min); `-- --pruefen` nur Vorpruefung |
+| `npm run -s speicher:pruefen [-- --min <GiB>]` | **vor jedem Bildlauf** (Raumbilder, Schaerfe, Bild-Downloads): Exit 1 unter 20 GiB frei - dann nicht starten. Bei Rot meldet die Shop-Wache zusaetzlich einmal am Tag per Mac-Mitteilung |
 | `npm run -s kurz -- <art>` | Theme-Rollen, Push-Ergebnis, Worktrees gefiltert statt als Rohdump |
 | `npm run -s handoff` | Uebergabetext fuer die naechste Sitzung aus dem Git-Stand |
 | `npm run -s ki:frag -- codex\|claude "Frage"` | direkte, nur lesende Rueckfrage an die andere KI; `weiter <ki>` setzt fort, Diff per stdin → Skill `codex` |

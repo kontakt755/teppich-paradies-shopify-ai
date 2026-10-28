@@ -17,7 +17,8 @@
  * Nebenbei misst die Wache den freien Speicher der Platte, auf der $TP_PRIVAT_DIR
  * liegt (operations/lib/speicher.mjs): Feld `speicher` mit eigener Ampel. Er zaehlt
  * nicht zur Shop-Ampel - ein voller Mac ist kein kaputter Shop -, das Control
- * Center zeigt ihn als eigenes To-do.
+ * Center zeigt ihn als eigenes To-do. Bei Rot kommt zusaetzlich hoechstens einmal am Tag
+ * eine Mac-Mitteilung (speicherMelden, Tag in shopwache/speicher-mitteilung.json).
  */
 
 import fs from 'node:fs';
@@ -25,7 +26,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pruefe, stoerungSeit, verlaufEintrag } from '../lib/shopwache.mjs';
-import { speicherStand, speicherText } from '../lib/speicher.mjs';
+import { speicherStand, speicherText, speicherMelden } from '../lib/speicher.mjs';
+import { mitteilung } from '../lib/mac-mitteilung.mjs';
 import { mitZeitstempel } from '../lib/zeitstempel.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -118,6 +120,9 @@ async function main() {
   const wechsel = ergebnisAblegen(ziel, ergebnis);
 
   protokoll.log(`Shop-Wache: ${ergebnis.ampel.toUpperCase()} · ${ergebnis.kritisch} kritisch, ${ergebnis.warnungen} Warnungen · Speicher ${speicherText(ergebnis.speicher)} · ${ziel}`);
+  if (speicherMelden(ergebnis.speicher, { datei: path.join(path.dirname(ziel), 'speicher-mitteilung.json'), melde: mitteilung })) {
+    protokoll.log('  Speicher rot: Mac-Mitteilung verschickt (naechste fruehestens morgen)');
+  }
   for (const b of ergebnis.befunde) protokoll.log(`  [${b.art}] ${b.titel}: ${b.text}`);
   if (!stichproben.length) protokoll.log('  (keine Preisstichprobe - Lexikon-Export fehlt)');
   if (wechsel?.art === 'ende') protokoll.log(`  Stoerung beendet nach ${wechsel.dauerMinuten ?? '?'} Minuten (seit ${wechsel.beginn})`);

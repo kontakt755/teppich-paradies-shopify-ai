@@ -92,6 +92,7 @@
     "probleme:payload": "node scripts/probleme-payload.mjs",
     "bodenwissen:daten": "node scripts/build-bodenwissen-data.mjs",
     "shop:wache": "node operations/scripts/shopwache.mjs",
+    "speicher:pruefen": "node operations/scripts/speicher-pruefen.mjs",
     "verbrauch:sammeln": "node operations/scripts/claude-verbrauch.mjs",
     "auslauf:pruefen": "node operations/scripts/auslauf-pruefen.mjs",
     "bestand:abgleich": "node operations/scripts/bestand-abgleich.mjs",

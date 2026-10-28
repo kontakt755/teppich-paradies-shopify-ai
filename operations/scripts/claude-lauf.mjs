@@ -34,6 +34,7 @@ import {
   nimmSperre, sperrPfad, sperrAlterMs, neuerSammler, sammle, abschliessen, pruefeWerkzeuge,
 } from '../lib/routinen.mjs';
 import { werkbankAus } from '../lib/routine-wache.mjs';
+import { mitteilung } from '../lib/mac-mitteilung.mjs';
 import { sperreVerwaist } from './betrieb-nachziehen.mjs';
 
 const PROTOKOLL_TAGE = 14;
@@ -77,15 +78,8 @@ export function claudeUmgebung(env, lauf, teil) {
   return { ...sauber, USER: nutzer, LOGNAME: env.LOGNAME || nutzer, CLAUDE_CODE_ENTRYPOINT: 'claude-desktop', TP_ROUTINE: `${lauf}/${teil.id}` };
 }
 
-/** macOS-Mitteilung; der Text geht als Argument, nie in den AppleScript-Quelltext. */
-export function mitteilung(titel, text, { ausfuehren = execFileSync } = {}) {
-  try {
-    ausfuehren('osascript', [
-      '-e', 'on run argv', '-e', 'display notification (item 2 of argv) with title "Teppich Paradies – Mac-Dienst" subtitle (item 1 of argv)', '-e', 'end run',
-      String(titel).slice(0, 80), String(text).slice(0, 220),
-    ], { stdio: 'ignore', timeout: 10_000 });
-  } catch { /* ohne Mitteilung bleibt das To-do im Control Center */ }
-}
+/** macOS-Mitteilung (operations/lib/mac-mitteilung.mjs, auch von der Shop-Wache genutzt). */
+export { mitteilung };
 
 function stempel(jetzt) {
   return jetzt.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
