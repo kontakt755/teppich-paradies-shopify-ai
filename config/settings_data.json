@@ -88,11 +88,6 @@
         "type": "shopify://apps/globo-mega-menu/blocks/app-embed/7a00835e-fe40-45a5-a615-2eb4ab697b58",
         "disabled": false,
         "settings": {}
-      },
-      "7723936516661205774": {
-        "type": "shopify://apps/options-price-calculator/blocks/product_calculator_main/46eaac1e-1432-4cdd-814e-d2c707255110",
-        "disabled": false,
-        "settings": {}
       }
     },
     "color_schemes": {
