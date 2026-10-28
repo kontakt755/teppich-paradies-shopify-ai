@@ -2,6 +2,30 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Aus der Bestellung entfernt, beim Lieferanten bestellt: rotes To-do
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 4). Bei #1056 wurden drei Positionen nach dem Vermerk
+  „bestellt“ aus der Bestellung genommen (Menge 0). Im Dashboard blieben sie still, weil Positionen
+  mit Menge 0 überall herausfallen; die Bestellung ist in Shopify außerdem schon geschlossen.
+  - `operations/lib/shopify-abgleich.mjs`: `shopifyPositionen` kennt `entfernt` (bestellt war mehr als
+    0, aktuelle Menge 0). Neu `entfernteBestellt()`: Positionen mit Status „bestellt“, die aus der
+    Bestellung entfernt sind, je Bestellung eine Zeile; ohne stornierte Bestellungen und Tests.
+  - `GET /api/einkauf/shopify-abgleich` liefert sie als `entfernt` mit Titel, Farbe und Lieferant.
+  - „Heute“ (Laden): rotes To-do „Aus Bestellung entfernt: #… – Lieferantenbestellung stornieren?“ mit
+    Kunde, Lieferant, Bestelldatum und Artikeln. „Abhaken…“ fragt, was mit der Lieferantenbestellung
+    ist (Pflicht), und setzt die Artikel über die vorhandene Aktion „zurück auf offen“ zurück – ohne
+    Shopify, der Vermerk bleibt im Verlauf. Rolle „lesen“ bekommt nur „Ansehen“.
+- **Getestet:** `shopify-abgleich.test.mjs` neu (entfernt/nicht entfernt, alter Export ohne aktuelle
+  Menge, storniert, Test, schon abgehakt, nach dem Zurücksetzen leer), `shopify-abgleich-api.test.mjs`
+  neu (steht im Abgleich, Rolle „lesen“ 403, Abhaken ohne Shopify-Aufruf, die verbliebene Position
+  bleibt). Klickstrecke gegen die Datenkopie (`dashboard:pruefen --offen`, Puppeteer, `#/heute?sicht=laden`):
+  1 To-do #1056 mit 3 Artikeln, Dialog, nach „Abhaken“ To-do weg, 3 Positionen in der Kopie mit
+  Notiz zurück auf offen, keine JS-Fehler. `dashboard:pruefen` Heute 360–1440 px ohne Überlauf.
+- **Risiken:** Die Standard-Startseite „Shop-Übersicht“ zeigt seit dem Rundgang vom 26.10. keine
+  To-do-Liste; das To-do steht unter „Weitere Bereiche → Laden & Anfragen“ bzw. „Bisherige
+  Gesamtübersicht“ (wie alle anderen To-dos). Ware, die schon geliefert ist, meldet es nicht.
+- **Naechste Stufe:** Rote To-dos auch auf der Shop-Übersicht zeigen (gilt für alle To-dos).
+
 ## 2026-10-28 · Adressaufkleber auf 50 × 80 quer
 
 - **Geaendert:** Inhaber: „die Adresse soll quer sein bei 50 × 80, nicht hoch“.

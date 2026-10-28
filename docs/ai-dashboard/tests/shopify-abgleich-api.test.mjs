@@ -166,6 +166,22 @@ test('Abweichungsliste: Zahl = Zeilen; "In Shopify nachbuchen" bucht ohne Mail, 
   assert.equal(u.api.einkaufShopifyAbgleich().abweichungen.length, 0);
 });
 
+test('Aus der Bestellung entfernt, beim Lieferanten bestellt: steht im Abgleich; Abhaken (zurueck auf offen) fragt Shopify nie', async () => {
+  const entfernt = { ...ware(2, { offen: 0 }), quantity: 2, currentQuantity: 0 };
+  const u = umgebung({ zeilen: [ware(1), entfernt, kettel(3)], status: { ...pos(1, 'bestellt'), ...pos(2, 'bestellt', { bestelltAm: '2026-10-12T10:00:00Z' }) } });
+  const a = u.api.einkaufShopifyAbgleich();
+  assert.equal(a.abweichungen.length, 0);
+  assert.equal(a.entfernt.length, 1);
+  assert.deepEqual(a.entfernt[0].lineItemIds, [li(2)]);
+  assert.deepEqual([a.entfernt[0].orderName, a.entfernt[0].positionen[0].titel, a.entfernt[0].seit], ['#T5001', 'Testartikel 2', '2026-10-12T10:00:00Z']);
+  await assert.rejects(() => u.setze({ aktion: 'zurueckAufOffen', positionen: [{ orderId: BESTELLUNG, lineItemId: li(2) }], notiz: 'x' }, { name: 'Leser', rolle: 'lesen' }), e => e instanceof ApiError && e.status === 403);
+  const r = await u.setze({ aktion: 'zurueckAufOffen', positionen: [{ orderId: BESTELLUNG, lineItemId: li(2) }], notiz: 'Aus der Bestellung entfernt: storniert' });
+  assert.equal(r.anzahl, 1);
+  assert.equal(u.api.einkaufShopifyAbgleich().entfernt.length, 0);
+  assert.equal(u.eintrag(1).status, 'bestellt', 'die verbliebene Position bleibt unberuehrt');
+  assert.equal(u.z.attrappe.aufrufe.length, 0);
+});
+
 test('Beschaedigte Ablage: der Abgleich schreibt nichts, die Liste meldet den Fehler statt "alles gleich"', async () => {
   const u = umgebung({ zeilen: [ware(1, { offen: 0 })] });
   fs.writeFileSync(path.join(u.dir, 'auftragsstatus.json'), '{ kaputt');

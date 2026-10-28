@@ -5,16 +5,22 @@
  * Shopify nachbuchen" (ohne Mail an den Kunden). shopifyAbgleichBlock bleibt fuer andere Ansichten.
  *
  * Die Gegenrichtung (in Shopify versendet -> hier mindestens "raus") macht der Dienst selbst nach
- * jedem neuen Bestellexport; dafuer gibt es nichts zu klicken. Regeln:
+ * jedem neuen Bestellexport; dafuer gibt es nichts zu klicken.
+ *
+ * Dazu Positionen, die aus der Kundenbestellung entfernt wurden, beim Lieferanten aber bestellt
+ * sind (`entfernt`, Fehlersuche 28.10.2026, #1056): rotes To-do "Lieferantenbestellung
+ * stornieren?". "Abhaken…" setzt sie mit Notiz ueber die vorhandene Aktion "zurueckAufOffen"
+ * zurueck (ohne Shopify); mit Menge 0 fallen sie danach ueberall heraus. Regeln:
  * operations/lib/shopify-abgleich.mjs, Endpunkte GET /api/einkauf/shopify-abgleich und
  * POST /api/einkauf/auftragsstatus mit aktion "shopifyNachbuchen".
  */
-import { esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
+import { $, esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { render } from '../../kern/render.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
 
 // Wie die anderen Daten auf "Heute": nach einer halben Minute beim naechsten Zeichnen still nachladen.
@@ -54,11 +60,31 @@ function zeile(z, lesend) {
   </div>`;
 }
 
+const tageSeit = (iso, jetzt) => {
+  const t = iso ? Math.max(0, Math.floor((jetzt - Date.parse(iso)) / 86400000)) : null;
+  return Number.isFinite(t) ? t : null;
+};
+
+/** Aus der Kundenbestellung entfernt, beim Lieferanten bestellt: je Bestellung ein rotes To-do. */
+function entferntTodos(liste, jetzt, lieferantName) {
+  return (liste || []).map((z) => {
+    const artikel = z.positionen.slice(0, 2).map(artikelText).join(', ') + (z.positionen.length > 2 ? ` +${z.positionen.length - 2}` : '');
+    const bei = [...new Set(z.positionen.map(p => p.lieferant).filter(Boolean))].map(id => lieferantName(id)).join(', ');
+    return {
+      id: `entfernt:${z.orderId}`, art: 'entfernt', bereich: 'laden', ton: 'crit', alterTage: tageSeit(z.seit, jetzt),
+      titel: `Aus Bestellung entfernt: ${z.orderName || 'Bestellung'} – Lieferantenbestellung stornieren?`,
+      kontext: [z.kunde, `${plural(z.positionen.length, 'Artikel', 'Artikel')} nicht mehr in der Bestellung, aber ${bei ? `bei ${bei} ` : ''}bestellt${z.seit ? ` am ${fmtDate(z.seit)}` : ''}`, artikel].filter(Boolean).join(' · '),
+      knopf: { text: 'Abhaken…', abhaken: z.orderId, href: `#/kunden?${new URLSearchParams({ tab: 'bestellungen', bfilter: 'alle', bq: z.orderName || z.orderId })}` },
+    };
+  });
+}
+
 /**
  * Zeilen fuer die eine Arbeitsliste auf "Heute" (seit 2026-10-19, #1427): je Bestellung ein To-do
- * mit "In Shopify nachbuchen" in der Zeile. Leer, solange nichts abweicht. Bereich Laden.
+ * mit "In Shopify nachbuchen" in der Zeile, dazu die aus der Bestellung entfernten Positionen.
+ * Leer, solange nichts abweicht. Bereich Laden.
  */
-export function shopifyAbgleichTodos(jetzt = Date.now()) {
+export function shopifyAbgleichTodos(jetzt = Date.now(), { lieferantName = id => lieferantAnzeige(id) } = {}) {
   const d = shopifyAbgleich.daten;
   // Der Server konnte nicht abgleichen (fehler als Text): eine Zeile. Ein gescheiterter Abruf
   // (fehler: true aus fetchEinkauf) steht auf "Heute" als "Liste unvollstaendig" - nicht doppelt.
@@ -67,17 +93,16 @@ export function shopifyAbgleichTodos(jetzt = Date.now()) {
       titel: 'Abgleich mit Shopify nicht möglich', kontext: d.fehler, knopf: { text: 'Bestellen', href: '#/einkauf' } }];
   }
   if (!d?.verfuegbar || d.fehler) return [];
-  return (d.abweichungen || []).map((z) => {
+  return [...entferntTodos(d.entfernt, jetzt, lieferantName), ...(d.abweichungen || []).map((z) => {
     const stufe = z.positionen.every(p => p.status === 'erledigt') ? 'erledigt' : 'raus';
     const artikel = z.positionen.slice(0, 2).map(artikelText).join(', ') + (z.positionen.length > 2 ? ` +${z.positionen.length - 2}` : '');
-    const tage = z.seit ? Math.max(0, Math.floor((jetzt - Date.parse(z.seit)) / 86400000)) : null;
     return {
-      id: `shopify-abgleich:${z.orderId}`, art: 'shopify_abgleich', bereich: 'laden', ton: 'warn', alterTage: Number.isFinite(tage) ? tage : null,
+      id: `shopify-abgleich:${z.orderId}`, art: 'shopify_abgleich', bereich: 'laden', ton: 'warn', alterTage: tageSeit(z.seit, jetzt),
       titel: `In Shopify noch offen: ${z.orderName || 'Bestellung'}${z.kunde ? ` · ${z.kunde}` : ''}`,
       kontext: `${plural(z.positionen.length, 'Artikel', 'Artikel')} im Dashboard ${STATUS_TEXT[stufe]}${z.seit ? ` seit ${fmtDate(z.seit)}` : ''} · ${artikel}`,
       knopf: { text: 'In Shopify nachbuchen', nachbuchen: z.orderId, href: `#/einkauf?${new URLSearchParams({ auftrag: z.orderId })}` },
     };
-  });
+  })];
 }
 
 /** Block fuer "Heute". Leer, solange nichts abweicht - eine 0 ist kein Arbeitsauftrag. */
@@ -120,8 +145,50 @@ async function nachbuchen(knopf) {
   await ladeStandNeu();
 }
 
-/** Klick "In Shopify nachbuchen". Gibt true zurueck, wenn der Klick damit erledigt ist. */
+/**
+ * "Abhaken…" an einer aus der Bestellung entfernten Position: fragt, was mit der
+ * Lieferantenbestellung ist (Pflicht), und setzt die Artikel mit dieser Notiz zurueck.
+ */
+function abhakenDialog(orderId) {
+  if (istNurLesend()) return;
+  const z = (shopifyAbgleich.daten?.entfernt || []).find(x => x.orderId === orderId);
+  if (!z) return;
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="entTitel" data-dialog>
+    <h2 id="entTitel">Aus Bestellung entfernt · ${esc(z.orderName || 'Bestellung')}</h2>
+    <p class="small muted">Diese Artikel stehen nicht mehr in der Kundenbestellung, sind aber beim Lieferanten bestellt. Erst die Lieferantenbestellung stornieren, dann hier abhaken. Die Artikel verschwinden danach aus den Listen; der Vermerk bleibt im Verlauf.</p>
+    <ul class="small" style="margin:0;padding-left:18px">${z.positionen.map(p => `<li>${esc(artikelText(p))}</li>`).join('')}</ul>
+    <div class="field"><label for="entNotiz">Was ist mit der Lieferantenbestellung? (Pflicht)</label><textarea id="entNotiz" name="notiz" required maxlength="500" placeholder="z. B. am 29.10. telefonisch storniert"></textarea></div>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Abhaken</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('textarea')?.focus();
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const notiz = String(new FormData(form).get('notiz') || '').trim();
+    if (!notiz) return;
+    const knopf = form.querySelector('[type=submit]');
+    knopf.disabled = true;
+    try {
+      const j = await orgSchreiben('/api/einkauf/auftragsstatus', {
+        aktion: 'zurueckAufOffen', notiz: `Aus der Bestellung entfernt: ${notiz}`,
+        positionen: z.lineItemIds.map(lineItemId => ({ orderId: z.orderId, lineItemId })),
+      });
+      $('#dialogRoot').innerHTML = '';
+      toast(`${z.orderName || 'Bestellung'}: ${plural(j.anzahl || 0, 'Artikel', 'Artikel')} abgehakt`);
+    } catch (e) {
+      toast(`Nicht abgehakt: ${e.message}`, 'crit', { dauer: 9000 });
+      knopf.disabled = false;
+      return;
+    }
+    ensureShopifyAbgleich({ neu: true });
+    await ladeStandNeu();
+  });
+}
+
+/** Klick "In Shopify nachbuchen" oder "Abhaken…". Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function shopifyAbgleichKlick(e) {
+  const abhaken = e.target.closest('[data-entfernt-abhaken]');
+  if (abhaken) { e.preventDefault(); abhakenDialog(abhaken.dataset.entferntAbhaken); return true; }
   const knopf = e.target.closest('[data-shopify-nachbuchen]');
   if (!knopf) return false;
   e.preventDefault();

@@ -38,7 +38,7 @@ import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { ratgeberFuerBestellung, ratgeberHtml, kurzTitel as ratgeberKurzTitel } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
-import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
+import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
@@ -1054,16 +1054,24 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
   /** Abweichungsliste "im Dashboard abgehakt, in Shopify offen" (je Bestellung), mit Artikeltexten aus dem Modell. */
   function abweichungsListe(dir) {
+    return abgleichListe(dir, shopifyAbweichungen);
+  }
+
+  /**
+   * Gemeinsamer Weg der Abgleichslisten: Export und Auftragsstatus lesen, die Liste bilden und je
+   * Position Titel, Farbe und Lieferant aus dem Bestellmodell dazulegen. null ohne Export.
+   */
+  function abgleichListe(dir, bilde) {
     const daten = readJsonIfExists(path.join(dir, 'bestelluebersicht', 'orders.json'));
     const orders = exportOrders(daten);
     if (!orders) return null;
     const modell = ladeBestellModell(dir);
     const auftraege = new Map([...(modell?.auftraege || []), ...(modell?.testauftraege || [])].map(a => [a.id, a]));
-    return shopifyAbweichungen(leseAuftragsstatus(auftragsstatusPfad(dir)), orders, { exportiertAm: daten.exportiertAm || null }).map(z => {
+    return bilde(leseAuftragsstatus(auftragsstatusPfad(dir)), orders, { exportiertAm: daten.exportiertAm || null }).map(z => {
       const a = auftraege.get(z.orderId);
       const artikel = z.positionen.map(p => {
         const m = (a?.positionen || []).find(x => x.lineItemId === p.lineItemId);
-        return { ...p, titel: m?.titel || null, farbe: m?.farbe && m.farbe !== '–' ? m.farbe : null };
+        return { ...p, titel: m?.titel || null, farbe: m?.farbe && m.farbe !== '–' ? m.farbe : null, lieferant: m?.lieferant || null };
       });
       return { ...z, positionen: artikel, exportiertAm: daten.exportiertAm || null };
     });
@@ -2636,12 +2644,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const quelle = path.join(dir, 'bestelluebersicht', 'orders.json');
       const lauf = shopifyAbgleichen(dir);
       let liste;
-      try { liste = abweichungsListe(dir); } catch (e) {
+      let entfernt;
+      try {
+        liste = abweichungsListe(dir);
+        // Aus der Kundenbestellung entfernt, beim Lieferanten bestellt: stornieren (#1056).
+        entfernt = liste ? abgleichListe(dir, entfernteBestellt) : null;
+      } catch (e) {
         // Beschaedigte Ablage: sichtbar als Stoerung, nie als "alles gleich".
-        return { verfuegbar: true, fehler: String(e?.message || e).split('\n')[0], abweichungen: [], letzterAbgleich: lauf || null };
+        return { verfuegbar: true, fehler: String(e?.message || e).split('\n')[0], abweichungen: [], entfernt: [], letzterAbgleich: lauf || null };
       }
       if (!liste) return { verfuegbar: false, quelle, hinweis: leseFehler(quelle) || 'orders.json fehlt.' };
-      return { verfuegbar: true, fehler: null, abweichungen: liste, letzterAbgleich: lauf || null };
+      return { verfuegbar: true, fehler: null, abweichungen: liste, entfernt: entfernt || [], letzterAbgleich: lauf || null };
     },
 
     /** Fuer den Zeitgeber im Dienst: Shopify -> Dashboard nach jedem neuen Export, auch ohne offene Seite. */
