@@ -458,3 +458,51 @@ test('Doppelte Muster-SKU: Freigabe nach abgebrochener Sperre laesst die nie ang
   assert.deepEqual([stand3(tb), stand3(nm)], [[false, 'DENY', 1], [true, 'CONTINUE', 2]], 'die zweite war nie gesperrt und bleibt unveraendert');
   assert.ok(a.mutationen().slice(vorher).every(m => !JSON.stringify(m.variables).includes(`"${nm.inventoryItemId}"`) && !JSON.stringify(m.variables).includes(`"${nm.id}"`)));
 });
+
+test('Altes Ereignis mit Vorstand ohne variantId: spaetere Sperre mit Variante behaelt den frueheren Rueckweg (Codex-Review #1749)', async () => {
+  const ursprung = { tracked: false, policy: 'DENY', menge: 3 };
+  // Der alte, unklare Versuch hat die Variante ganz gesperrt (-> "bereits") bzw. nur den Bestand gesetzt.
+  for (const danach of [{ tracked: true, menge: 0 }, { tracked: false, menge: 0 }]) {
+    const v = variante('M-OHNEID', danach);
+    const a = attrappe({ varianten: [v] });
+    const ev = [ereignis({ sku: 'M-OHNEID', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'),
+      shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher: ursprung } })];
+    const r = await sperreImShop(a.proxy, { sku: 'M-OHNEID' }); // weitere Bestellung, neuer Code
+    ev.push(ereignis({ sku: 'M-OHNEID', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('11:00'),
+      shopify: { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, vorher: r.vorher, nachher: r.nachher, varianten: r.varianten } }));
+    const s = stand(ev).get('M-OHNEID');
+    assert.deepEqual(s.varianten.map(x => [x.variantId, x.vorher, x.betroffen]), [[v.id, ursprung, true]], JSON.stringify(danach));
+    await freigebenImShop(a.proxy, { sku: 'M-OHNEID', vorher: s.vorher, varianten: s.varianten });
+    assert.deepEqual(stand3(v), [false, 'DENY', 3], 'urspruenglich unverfolgt mit 3, nicht verfolgt/1');
+  }
+});
+
+test('Freigabe liest bekannte Varianten per ID: geaenderte SKU wird mit freigegeben, geloeschte uebergangen (Codex-Review #1749)', async () => {
+  const gesperrtMit = r => stand([ereignis({ sku: 'M-DOP-439', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'), shopify: { geschrieben: true, varianten: r.varianten } })]).get('M-DOP-439');
+  const { tb, nm, a } = doppelt();
+  const s = gesperrtMit(await sperreImShop(a.proxy, { sku: 'M-DOP-439' }));
+  nm.sku = 'M-DOP-439-NEU'; // SKU im Shop inzwischen geaendert - per SKU waere sie nicht mehr zu finden
+  const f = await freigebenImShop(a.proxy, { sku: 'M-DOP-439', vorher: s.vorher, varianten: s.varianten });
+  assert.deepEqual([f.status, f.varianten.map(v => [v.variantId, v.verfuegbar])], ['frei', [[tb.id, true], [nm.id, true]]]);
+  assert.deepEqual([stand3(tb), stand3(nm)], [[false, 'DENY', 1], [true, 'CONTINUE', 2]]);
+  assert.equal(a.aufrufe.filter(x => x.name === 'MustersperreVariantenNachId').length, 2, 'lesen und gegenpruefen per ID');
+
+  const b = doppelt();
+  const s2 = gesperrtMit(await sperreImShop(b.a.proxy, { sku: 'M-DOP-439' }));
+  b.a.varianten.splice(b.a.varianten.indexOf(b.nm), 1); // Variante geloescht: nichts mehr freizugeben
+  const f2 = await freigebenImShop(b.a.proxy, { sku: 'M-DOP-439', varianten: s2.varianten });
+  assert.deepEqual([f2.status, f2.variantId, stand3(b.tb)], ['frei', b.tb.id, [false, 'DENY', 1]]);
+});
+
+test('Aelteste Ablage ohne variantId, inzwischen zwei Mustervarianten: nur die nicht bestellbare wird freigegeben', async () => {
+  const gesperrt = variante('M-URALT', { handle: 'muster-testlinie-teppichboden-400cm', tracked: true });
+  const neu = variante('M-URALT', { handle: 'muster-testlinie-teppich-nach-mass' });
+  const a = attrappe({ varianten: [gesperrt, neu] });
+  const s = stand([ereignis({ sku: 'M-URALT', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'),
+    shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher: { tracked: false, policy: 'DENY', menge: 3 } } })]).get('M-URALT');
+  assert.deepEqual([s.varianten, s.shopPruefen], [[], true]);
+  const f = await freigebenImShop(a.proxy, { sku: 'M-URALT', vorher: s.vorher, varianten: s.varianten });
+  assert.equal(f.status, 'frei');
+  assert.deepEqual([stand3(gesperrt), stand3(neu)], [[false, 'DENY', 3], [false, 'DENY', 0]]);
+  assert.ok(a.mutationen().every(m => !JSON.stringify(m.variables).includes(`"${neu.inventoryItemId}"`) && !JSON.stringify(m.variables).includes(`"${neu.id}"`)));
+});

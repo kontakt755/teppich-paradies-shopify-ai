@@ -1502,7 +1502,9 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis mit bestaetigter oder moeglicher Aenderung –
   je Variante (`stand().varianten`): eine schon vorher gesperrte oder sicher nicht angefasste Variante legt
   keinen Rückweg fest, auch wenn im selben Versuch eine andere geschrieben wurde. `betroffen` heißt: gesperrt
-  vorgefunden oder womöglich angefasst – nur betroffene Varianten gibt „Wieder verfügbar“ frei.
+  vorgefunden oder womöglich angefasst – nur betroffene Varianten gibt „Wieder verfügbar“ frei, gelesen per
+  ID (`nodes(ids:)`), damit eine inzwischen geänderte SKU keine vergessen lässt. Ein sehr alter Vorstand ohne
+  `variantId` gehört zur Variante von damals und geht einem späteren Lesestand vor.
   Ein ausdruecklich sicher ungeschriebener Versuch friert keinen Vorstand ein; vor einer spaeteren
   echten Sperre zaehlt dann die frisch gelesene Ausgangslage. Dieselbe SKU
   für denselben Auftrag noch einmal = nichts zu tun. Nur eine fehlende Datei gilt als leer; eine

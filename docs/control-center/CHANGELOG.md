@@ -18,7 +18,13 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     Variante (`variantId`/`vorher` direkt unter `shopify`) liest `variantenVon()` als Liste mit einer.
   - „Wieder verfügbar“ stellt jede gesperrte Variante auf ihren eigenen Vorstand zurück. Varianten
     derselben SKU, die keine Sperre angefasst hat (später angelegt oder nach einem Abbruch nie erreicht),
-    bleiben unberührt (`stand().varianten[].betroffen`).
+    bleiben unberührt (`stand().varianten[].betroffen`). Die betroffenen liest die Freigabe per ID
+    (`leseVariantenNachId`, `nodes(ids:)`): auch nach einer SKU-Änderung wird keine vergessen, eine
+    gelöschte ist nichts mehr freizugeben (Codex-Review Runde 1, P2).
+  - Sehr alte Ereignisse mit Vorstand, aber ohne `variantId`: der Vorstand geht als früherer Rückweg an
+    die Variante von damals (die eine, die ein späteres Ereignis nennt, oder die eine schon gesperrte) und
+    wird nicht von einem späteren Lesestand verdrängt (Codex-Review Runde 1, P2). Ohne jede bekannte
+    Variante gibt die Freigabe bei mehreren Varianten nur die nicht bestellbaren frei.
   - Musterlager: bei mehreren Varianten führt „In Shopify öffnen“ zur Produktsuche nach der SKU.
 - **Getestet:**
   - `mustersperre.test.mjs` (Proxy-Attrappe): zwei Mustervarianten mit verschiedenem Ausgangsstand
@@ -26,7 +32,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     Variante (eine bleibt bestellbar → kein Erfolg; Freigabe halb → Wiederholung schreibt nur den Rest);
     Vorbedingung einer Variante verletzt → keine gesperrt; zweite Variante abgelehnt → nur die erste legt
     einen Rückweg fest, und „Wieder verfügbar“ lässt die nie angefasste zweite Variante, wie sie ist;
-    fremder Treffer → Abbruch ohne Schreiben; altes Einzel-Ereignis bleibt lesbar
+    Freigabe per ID trotz geänderter SKU, gelöschte Variante übergangen; alter Vorstand ohne
+    `variantId` bleibt Rückweg; fremder Treffer → Abbruch ohne Schreiben; altes Einzel-Ereignis bleibt lesbar
     und freigebbar; zu viele Treffer → Abbruch.
   - `mustersperre-api.test.mjs`: Schritt im Dashboard sperrt beide, Ereignis nennt beide, Liste zeigt
     die Produktsuche, „Wieder verfügbar“ gibt beide frei; fremder Treffer → „im Shop noch zu sperren“,
