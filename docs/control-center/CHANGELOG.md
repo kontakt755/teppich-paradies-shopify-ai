@@ -15,6 +15,20 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Ein echter Hänger fällt jetzt erst nach 30 statt nach 8 s auf.
 - **Naechste Stufe:** keine.
 
+## 2026-10-28 · Etiketten drucken: nur ausgewählte Motive
+
+- **Geaendert:** In der Druckvorschau hat jedes Motiv ein Häkchen „drucken“ (gilt für alle Kopien),
+  darüber „alle wählen“ / „keine“. Der Druckknopf zählt nur die ausgewählten Aufkleber, abgewählte
+  sind in der Vorschau blass. Ein Teildruck markiert nichts als gedruckt (kein `druckFertig`, keine
+  Bestätigung): erledigt ist ein Auftrag erst mit dem vollständigen Lauf. Anlass: der Inhaber wollte
+  eine fehlende Reihe nachdrucken, ohne alles neu zu drucken.
+- **Getestet:** `npm run dashboard:test` ohne Fehler (die abgebrochenen `laden-zahlen`-Tests brechen in
+  der Remote-Sitzung auch auf main ab). Playwright gegen die Vorschau mit 4 Aufklebern/3 Motiven bei
+  390 px: Abwählen 4 → 3, „keine“ → 0 und Knopf gesperrt, „alle wählen“ → 4, kein seitliches Scrollen.
+- **Risiken:** Druck selbst nicht getestet (kein Drucker in der Remote-Sitzung). Motive jenseits der
+  Vorschaugrenze lassen sich nur über „keine“ abwählen.
+- **Naechste Stufe:** keine geplant.
+
 ## 2026-10-28 · Aufräumliste: „direkt an den Kunden“ nur noch mit Beleg (#1740)
 
 - **Geaendert:** Am 26.10. wurde #1033 über die Aufräumliste mit „wohl direkt vom Lieferanten an den
