@@ -162,7 +162,8 @@ kein doppelter manueller Preisschreibzugriff auf hunderte Varianten alle zwei Wo
 
 ## Offene Entscheidungen fuer den Inhaber
 
-- Prozentsaetze je Aktion und Rhythmus (Start/Ende je Welle) - Geschaeftsentscheidung.
+- ~~Prozentsaetze je Aktion und Rhythmus (Start/Ende je Welle)~~ - entschieden 26.10.2026
+  (w-151): 15 % je Welle, Termine und Kollektionen wie im Jahreskalender unten.
 - Welche Sortimente/Kollektionen pro Welle - und ob Muster, Zubehoer (Kettelleiste,
   Haftunterlage), Musterservice und Verlegeservice **ausdruecklich ausgenommen**
   bleiben (die Nicht-Kombinierbarkeit mit dem kostenlosen Liefer-/Verlegeservice ist
@@ -236,11 +237,17 @@ trotzdem ab); Google-Feed bekommt keinen sale_price (Merchant-Promotions waeren 
 
 ## Jahreskalender vorbereiten (23.10.2026)
 
-`npm run -s aktion:plan` zeigt die vorgeschlagenen sieben Wellen aus
-`domains/shopify/aktionskalender.json`. Kollektionen und Termine sind Vorschlaege,
-keine bereits freigegebenen Kampagnen. Jede Welle bleibt mit `prozent: null` und
-`freigegeben: false` gesperrt. Es gibt keinen geplanten Schreiblauf und keinen
+`npm run -s aktion:plan` zeigt die sieben Wellen aus
+`domains/shopify/aktionskalender.json`. Es gibt keinen geplanten Schreiblauf und keinen
 automatisch angelegten Rabatt.
+
+**Freigabe Inhaber (Werkbank w-151):** Am 26.10.2026 alle sieben Wellen mit je 15 % auf
+die vorgeschlagene Kollektion, bereits reduzierte Ware ausgenommen (`prozent: 15`,
+`freigegeben: true`, `ausnahmen_alle`). Am 28.10.2026 zur 30-Tage-Regel: Die
+Teppichboeden aus dem Dauerrabatt bis 01.11.2026 bleiben aus der Black Week 2026 heraus
+(Ausnahme mit `"jahr": 2026` an der Welle; Liste im Privatordner). Die Freigabe betrifft
+Prozent, Termine und Zielkollektion - den echten Rabatt legt weiterhin erst jemand nach
+dem Ablauf unten an.
 
 Erst wenn Prozent, Zielkollektion und Ausnahmen je Welle feststehen, beide Felder
 entsprechend pflegen. Vor der Freigabe die Zielkollektion im Admin lesen und bereits
