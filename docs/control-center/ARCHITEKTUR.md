@@ -2559,8 +2559,9 @@ arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten un
   (`{ ebene: 'verwaltung'|'objekt'|'angebot', verwaltungId, objektId, id, daten, entfernen }`, Schreibliste,
   Fehler 400 mit Klartext). Kaputtes JSON bricht ab und wird nie überschrieben (`_privatJson`). Jede
   Änderung steht im lokalen Protokoll („Hausverwaltung angelegt“ …).
-- **Heute:** fällige Wiedervorlagen als To-do „Hausverwaltungen: N wieder melden“ (Büro), bei genau einer
-  Verwaltung führt der Knopf direkt zu ihr (`?hv=<id>`).
+- **Heute:** fällige Wiedervorlagen als To-do „Hausverwaltungen: N wieder melden“ (Bereich Büro, also in der
+  Gesamtübersicht `#/heute?sicht=inhaber` wie das To-do der Genossenschaften, nicht auf der Shop-Übersicht);
+  bei genau einer Verwaltung führt der Knopf direkt zu ihr (`?hv=<id>`).
 - **Grenzen:** Lexware und Auftrags-App sind nur Felder, es wird nichts abgefragt oder verbunden, keine
   Mail versendet. Die Wiedervorlage gilt der Ansprache der Verwaltung, nicht dem einzelnen Vorgang –
   Vorgänge und ihre Wiedervorlagen bleiben in der Auftrags-App (Abschnitt 20).

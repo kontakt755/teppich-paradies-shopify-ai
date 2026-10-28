@@ -1,7 +1,8 @@
 /* Hausverwaltungen (ansichten/hausverwaltungen.mjs). Nur Tokens aus app.css - keine festen Farben. */
 .hv-liste .row { cursor: default; grid-template-columns: 1fr; }
 .hv-zeile .t a { overflow-wrap: anywhere; }
-.hv-zeile .m, .hv-kopf { overflow-wrap: anywhere; }
+.hv-kontakt { color: var(--text-2); }
+.hv-kontakt, .hv-kopf { overflow-wrap: anywhere; }
 .hv-faellig, .hv-fehlt { color: var(--warn); font-weight: 600; }
 .hv-fehler { margin: 0; color: var(--crit); font-weight: 600; }
 .hv-ohne { margin-top: 14px; }
@@ -17,6 +18,8 @@
 .hv-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
 .hv-objekt { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
 .hv-objekt-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+/* Der Knopf neben einer langen Adresse darf nicht mitten im Wort umbrechen (390 px). */
+.hv-objekt-kopf .btn { flex: none; white-space: nowrap; overflow-wrap: normal; }
 .hv-adresse { overflow-wrap: anywhere; }
 .hv-angebote { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); display: grid; gap: 6px; }
 .hv-angebot { display: grid; gap: 2px; justify-items: start; }

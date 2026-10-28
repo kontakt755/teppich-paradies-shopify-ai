@@ -82,7 +82,7 @@ function zeile(v, faellig, tag) {
   return `<div class="row hv-zeile">
     <div>
       <div class="t"><a href="#/hausverwaltungen?hv=${esc(v.id)}">${esc(v.name)}</a> ${statusChip(v, faellig)}</div>
-      <div class="m">${kontaktZeile(v)}</div>
+      <div class="small hv-kontakt">${kontaktZeile(v)}</div>
       <div class="small">${esc(zahlenZeile(v))}${wv ? ` · ${wv}` : ''}</div>
     </div>
   </div>`;
@@ -206,6 +206,8 @@ function dialog(titel, inhalt, ziel) {
     ev.preventDefault();
     const knopf = form.querySelector('[type=submit]');
     knopf.disabled = true;
+    // Eine Meldung vom letzten Versuch darf nicht stehen bleiben, wenn dieser klappt.
+    fehler('');
     const ok = await speichere({ ...ziel, daten: Object.fromEntries(new FormData(form)) }, fehler);
     if (ok) $('#dialogRoot').innerHTML = '';
     else knopf.disabled = false;

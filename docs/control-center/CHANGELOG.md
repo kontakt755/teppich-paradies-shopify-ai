@@ -14,13 +14,21 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     „Wieder melden am“), darunter die Objekte (Adresse, Wohnungen, Ansprechpartner vor Ort) und je Objekt
     die Angebote bzw. Aufträge (Lexware-Nummer, Auftrag in der Auftrags-App, Datum, Stand). Offene Angebote
     ab 14 Tagen: „seit N Tagen offen – nachfassen“.
-  - Auf „Heute“ (Büro) das To-do „Hausverwaltungen: N wieder melden“.
+  - Auf „Heute“ in der Gesamtübersicht (`#/heute?sicht=inhaber`, wie das To-do der Genossenschaften) das
+    To-do „Hausverwaltungen: N wieder melden“; bei genau einer Verwaltung führt „Ansehen“ direkt zu ihr.
   - Gespeichert lokal unter `$TP_PRIVAT_DIR/hausverwaltungen/verwaltungen.json`, in der nächtlichen Sicherung.
   - Die Seite „Genossenschaften“ verweist mit einem Satz auf den neuen Bereich; Hilfe, Zugänge-Text und
     Befehlspalette nennen ihn.
-- **Getestet:** `tests/hausverwaltungen.test.mjs` 9 neu (Regeln, Doppelname, Entfernen-Schutz, Wiedervorlage,
-  To-do, API mit kaputtem JSON, Rollen lesen 403 / Mitarbeiter 200, Ansicht escaped); `dashboard:test`
-  1040 grün; Sichtprüfung und Klickstrecke in der Datenkopie (Ergebnis im PR).
+- **Getestet:**
+  - `tests/hausverwaltungen.test.mjs` 9 neu (Regeln, Doppelname, Entfernen-Schutz, Wiedervorlage, To-do, API mit
+    kaputtem JSON, Rollen lesen 403 / Mitarbeiter 200, Ansicht escaped); `dashboard:test` 1040 grün.
+  - `dashboard:pruefen -- --rollen`: 500 Zeilen OK (100 Ansichten × 5 Breiten, je Rolle), 0 px seitlicher Überlauf.
+  - Klickstrecke in der Datenkopie (Mitarbeiter 390 px, Inhaber 1440 px, Rolle lesen), nur ausgedachte Daten:
+    Leerzustand → „Name fehlt“ → Verwaltung angelegt (angeschrieben, Wiedervorlage +14 Tage) → Objekt →
+    Angebot ohne Angabe abgelehnt → Angebot gespeichert → Objekt mit Angebot entfernen abgelehnt → Liste mit
+    fälliger Verwaltung oben und „1 Verwaltung ohne Interesse“ zugeklappt → To-do in der Gesamtübersicht →
+    Rolle lesen: keine Knöpfe, Schreiben 403. Datei mit Rechten 600, 5 Protokollzeilen, keine JS-Fehler.
+  - Dabei gefunden und behoben: alte Fehlermeldung blieb im Dialog stehen; „Bearbeiten“ brach am Handy im Wort um.
 - **Risiken:** Der Bereich ist wie „Genossenschaften“ für Mitarbeiter offen (Menütest angepasst). Soll ihn nur
   der Inhaber sehen: `hausverwaltungen: 'inhaber'` in `ANSICHT_ROLLEN` und `data-nur-inhaber` am Menüpunkt.
   Lexware und Auftrags-App sind nur Textfelder, es gibt keine Prüfung, ob die Nummer existiert.
