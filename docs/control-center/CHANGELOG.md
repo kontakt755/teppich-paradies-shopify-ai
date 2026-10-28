@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Ratgeber zum Beilegen drucken (#1763)
+
+- **Geaendert:** Ware mit Kurz-Ratgeber (Teppich, Teppichboden, Vinyl, Klickvinyl, Klebevinyl, Laminat,
+  Parkett) bekommt in Kunden → Bestellungen, aufgeklappte Zeile, den Knopf „Ratgeber drucken“. Er öffnet
+  im neuen Tab ein PDF zum Ausdrucken, zwei Seiten je Bodenart. Bestellnummer, Produkt und Farbe, Maß
+  und Kaufdatum sind schon eingetragen. Der Dialog „An Kunden raus“/„Übergeben“ zeigt „Bitte beilegen:
+  Ratgeber …“ mit demselben Knopf, aber nur wenn die Ware bei uns liegt („Geliefert an uns“) oder
+  abgeholt wird. Bei Direktversand vom Lieferanten packt niemand von uns, deshalb kein Hinweis. Die
+  Zuordnung steht am Bestellmodell (`auftrag.ratgeber`), wie in der Bestellbestätigung über den
+  Produkttyp, Muster zählen nicht. Das PDF liefert `GET /api/kunden/ratgeber-druck?orderId=…`, rein lesend.
+  Chromium startet erst beim Klick (`domains/shopify/ratgeber-pdf/pdf.mjs`).
+- **Getestet:** `ratgeber-druck-api.test.mjs` 4/4 (Zuordnung, PDF-Inhalt mit Ersatz-Drucker, 400/404/405
+  über HTTP), `dashboard:test` 1026/1026, `dashboard:pruefen` 38 Ansichten ohne Überlauf. Klickstrecke
+  gegen die Kopie: 12 von 77 Bestellungen mit Ratgeber, PDF in 1,6 s (2 Seiten A4, Schriften eingebettet).
+  Der Knopf öffnet einen neuen Tab, am Handy bleibt die Seite 390 px breit. Der Dialog zeigt den Hinweis
+  erst, nachdem #1070 in der Kopie auf „Geliefert an uns“ stand. Geschlossen wurde ohne Buchung, JS-Fehler
+  gab es keine.
+- **Risiken:** Braucht Chrome auf dem Dienst-Mac (wie `dashboard:pruefen`). Fehlt er, kommt die übliche
+  Fehlermeldung, der Grund steht im Protokoll. Ob der Ratgeber wirklich beigelegt wurde, merkt sich das
+  Dashboard nicht.
+- **Naechste Stufe:** Bei Direktversand per Brief nachschicken, falls der Inhaber das will.
+
 ## 2026-10-28 · Auslauf-Prüfung meldet Farben ohne Handmuster (#1755)
 
 - **Geaendert:** Lieferant A führt einzelne Farben mit dem Zusatz „(nur in Format)“ in der Kurzbeschreibung

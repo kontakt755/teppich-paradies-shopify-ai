@@ -23,7 +23,7 @@ Sauberlauf, Dekofell sowie alles Zubehör.
   Raumklima, Akklimatisierung, Ebenheit und 27 °C stammen aus den
   Ratgeber-Artikeln im Shop; was je Hersteller abweicht, steht als
   „laut Verpackung/Anleitung“ drin. Keine Marken- oder Lieferantennamen.
-- `vorlage.css` – Druckvorlage; `scripts/ratgeber-pdf.mjs` baut daraus das HTML.
+- `vorlage.css` – Druckvorlage; `vorlage.mjs` baut daraus das HTML, `pdf.mjs` das PDF.
 - `logo.png` – Shop-Logo (`shop_images/logo.webp`, 500 px).
 - `inter-400/500/700.woff` – Inter, SIL Open Font License 1.1, von Google Fonts.
   Nicht die Dateien aus dem Shopify-Font-CDN nehmen: denen fehlt die
@@ -49,6 +49,22 @@ Neuer Ratgeber oder neuer Produkttyp: in `inhalte.mjs` **und** in
 Benachrichtigungen kann keine Dateien aus dem Repository lesen).
 `qa/tests/kundenmail-bloecke.test.mjs` rendert jeden Produkttyp aus
 `inhalte.mjs` gegen die Vorlage und schlägt fehl, wenn beide auseinanderlaufen.
+
+## Ausdrucken und beilegen
+
+Für die Ware, die durch unsere Hände geht (Abholung, eigene Lieferung, Ware im Laden),
+gibt es dieselben Ratgeber als Druck je Bestellung: Kopf und „Für Ihre Unterlagen“ sind
+ausgefüllt (Bestellnummer, Produkt und Farbe, beim Teppich Maß und Kaufdatum).
+
+- **Control Center:** Kunden → Bestellungen, Zeile aufklappen → „Ratgeber drucken“
+  (PDF im neuen Tab). Der Dialog „An Kunden raus“ erinnert daran, wenn die Ware bei uns
+  liegt oder abgeholt wird.
+- **Kommandozeile:** `npm run -s ratgeber:pdf -- --bestellung 1070 --oeffnen` schreibt
+  `$TP_PRIVAT_DIR/ratgeber-druck/1070.pdf` und öffnet es in Vorschau.
+
+Beidseitig drucken, dann liegt der Ratgeber auf einem Blatt. Kundendaten kommen nur aus
+dem lokalen Bestellexport und landen nie im Repository. `vorlage.mjs` baut das HTML ohne
+Browser, `pdf.mjs` macht daraus das PDF (Chromium).
 
 ## In Shopify
 
