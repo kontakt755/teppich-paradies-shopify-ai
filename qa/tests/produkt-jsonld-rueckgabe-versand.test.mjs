@@ -223,6 +223,8 @@ test('Bearbeitungszeit: handlingTime nur mit Einstellung, Summe bleibt die Liefe
   assert.deepEqual(await zeiten(produkt({ suffix: 'zubehoer', lieferzeit: '3 Werktage' }), '3–4 Werktage'), { bearbeitung: undefined, transport: [3, 3] });
   assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' }), 'morgen'), { bearbeitung: undefined, transport: [2, 5] });
   assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' }), '2 Tage'), { bearbeitung: undefined, transport: [2, 5] });
+  // Vertauschte Spanne ("2–1") waere ein ungueltiges handlingTime (min > max).
+  assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' }), '2–1 Werktage'), { bearbeitung: undefined, transport: [2, 5] });
 });
 
 test('Bearbeitungszeit allein erzeugt kein shippingDetails', async () => {

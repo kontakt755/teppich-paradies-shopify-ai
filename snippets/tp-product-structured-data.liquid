@@ -252,7 +252,7 @@
   assign tp_sd_tr_min = tp_sd_lz_min | minus: tp_sd_bz_min
   assign tp_sd_tr_max = tp_sd_lz_max | minus: tp_sd_bz_max
   assign tp_sd_bz_ok = false
-  if tp_sd_bz_teile.size == 2 and tp_sd_lz_max > 0 and tp_sd_tr_min >= 0 and tp_sd_tr_max >= tp_sd_tr_min
+  if tp_sd_bz_teile.size == 2 and tp_sd_bz_min <= tp_sd_bz_max and tp_sd_lz_max > 0 and tp_sd_tr_min >= 0 and tp_sd_tr_max >= tp_sd_tr_min
     assign tp_sd_bz_ok = true
   else
     assign tp_sd_tr_min = tp_sd_lz_min
