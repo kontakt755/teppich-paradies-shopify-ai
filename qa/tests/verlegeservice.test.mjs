@@ -371,9 +371,11 @@ test('das am Telefon ausgeblendete Einstiegsbild wird dort nicht geladen', () =>
 test('Service-Einstieg bietet die bestehende schriftliche Anfrage vor dem Sortiment an', () => {
   const code = lesen('sections', 'tp-verlegeservice.liquid');
   const hero = code.slice(code.indexOf('<div class="tp-vs__aktionen">'), code.indexOf('tp-vs__vertrauen'));
-  assert.ok(hero.indexOf('href="{{ vs_anfrage }}"') < hero.indexOf('href="{{ vs_produkte }}"'));
-  assert.match(hero, /tp-vs-knopf--primaer" href="{{ vs_anfrage }}"/);
-  assert.match(hero, /tp-vs-knopf--zweit" href="{{ vs_produkte }}"/);
+  // w-111: die Anfrage ist die eine Hauptaktion (gemeinsamer Baustein der
+  // Serviceseiten), die Sortimente folgen als Textlinks.
+  assert.ok(hero.indexOf("render 'tp-service-hauptaktion'") < hero.indexOf('href="{{ vs_produkte }}"'));
+  assert.match(hero, /render 'tp-service-hauptaktion', label: section\.settings\.anfrage_knopf, ziel: vs_anfrage/);
+  assert.match(hero, /<p class="tp-vs__sortiment">[\s\S]*href="{{ vs_produkte }}"/);
   const settings = vorlage('page.verlegeservice').sections.tp_verlegeservice.settings;
   assert.equal(settings.anfrage_link, '/pages/liefer-verlegeservice#tp-anfrage');
   assert.equal(settings.anfrage_knopf, 'Aufmaß & Verlegung anfragen');

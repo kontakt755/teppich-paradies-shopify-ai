@@ -12,7 +12,14 @@
   Ereignisse: tp_lead_call, tp_lead_whatsapp, tp_lead_mail,
   tp_lead_contact_click, tp_lead_form_submit.
   Nutzdaten: page (Pfad), label (Linktext), target (Nummer/Adresse), form.
-  Keine personenbezogenen Daten - Formularinhalte werden nicht gelesen.
+  tp_lead_form_submit traegt seit w-111 (2026-10-28) zusaetzlich herkunft
+  (Kampagnenfeld aus w-030, z. B. "Google-Anzeige · Kampagne ...") und
+  anliegen (Auswahl aus der festen Liste). Beides wird beim Absenden kurz in
+  sessionStorage gelegt, weil die Bestaetigungsseite ohne die Adresse mit
+  den Kampagnenparametern kommt, und beim Melden sofort geloescht.
+  Keine personenbezogenen Daten - Name, E-Mail, Telefon und Nachricht werden
+  nicht gelesen. Gezaehlt wird nur die von Shopify bestaetigte Anfrage, nie
+  der Klick auf "Anfrage senden".
 
   Anleitung fuer den Pixel: docs/analyse/service-funnel-events.md
 {% enddoc %}
@@ -63,13 +70,26 @@
         var form = marker.closest('form');
         if (!form) return;
         var pending = '';
+        var info = {};
         try {
           pending = sessionStorage.getItem('tp_contact_pending_' + form.id) || '';
           sessionStorage.removeItem('tp_contact_pending_' + form.id);
         } catch (error) { pending = 'lead'; }
         if (!pending) return;
-        var name = pending === 'sample' ? 'tp_sample_form_submit' : 'tp_lead_form_submit';
-        publish(name, { form: form.id || '' });
+        // Eigener try: ein kaputter Eintrag darf keine Anfrage erfinden.
+        try {
+          info = JSON.parse(sessionStorage.getItem('tp_contact_info_' + form.id) || '{}') || {};
+          sessionStorage.removeItem('tp_contact_info_' + form.id);
+        } catch (error) { info = {}; }
+        if (pending === 'sample') {
+          publish('tp_sample_form_submit', { form: form.id || '' });
+          return;
+        }
+        publish('tp_lead_form_submit', {
+          form: form.id || '',
+          herkunft: String(info.herkunft || '').slice(0, 100),
+          anliegen: String(info.anliegen || '').slice(0, 60)
+        });
       });
       document.querySelectorAll('[data-tp-sample-success]').forEach(function (marker) {
         var form = marker.closest('form');
@@ -91,6 +111,12 @@
         var sampleRequest = form.closest('[data-tp-sample-request][data-mode="sample"]');
         sessionStorage.setItem('tp_contact_pending_' + form.id,
           sampleRequest || selectedSample ? 'sample' : 'lead');
+        // Kampagnenfeld (w-030) und Anliegen fuer die Bestaetigungsseite merken.
+        var herkunft = form.querySelector('[data-tp-herkunft]');
+        sessionStorage.setItem('tp_contact_info_' + form.id, JSON.stringify({
+          herkunft: herkunft ? herkunft.value : '',
+          anliegen: request ? request.value : ''
+        }));
       } catch (error) {}
     }, true);
     if (document.readyState === 'loading') {

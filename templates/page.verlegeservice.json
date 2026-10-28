@@ -158,7 +158,8 @@
         "form_text": "Für Aufmaß, Lieferung und Verlegung. Wir melden uns am nächsten Werktag.",
         "nachricht_label": "Nachricht (Räume, ungefähre Fläche, Wunschboden)",
         "wa_text": "Fotos vom Raum und vom Untergrund schicken – wir antworten in den Öffnungszeiten.",
-        "foto_hinweis": "Fotos vom Raum oder einen Grundriss schicken Sie uns am einfachsten per WhatsApp."
+        "foto_hinweis": "Fotos vom Raum oder einen Grundriss schicken Sie uns am einfachsten per WhatsApp.",
+        "formular_zuerst": true
       }
     },
     "tp_bewertung": {

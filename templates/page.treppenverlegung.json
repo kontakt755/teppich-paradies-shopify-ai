@@ -231,7 +231,8 @@
         "phone_text": "Oder telefonisch unter",
         "phone_number": "+4933015733720",
         "phone_display": "03301 573 37 20"
-      }
+      },
+      "disabled": true
     },
     "tp_verlegegebiet": {
       "type": "tp-verlegegebiet",
@@ -393,7 +394,8 @@
         "form_text": "Für Aufmaß, Angebot und Belag Ihrer Treppe. Wir melden uns am nächsten Werktag.",
         "nachricht_label": "Nachricht (Anzahl Stufen, Treppenform, Wunschbelag)",
         "wa_text": "Fotos der Treppe schicken (ganz und eine Stufe nah) – wir antworten in den Öffnungszeiten.",
-        "foto_hinweis": "Fotos Ihrer Treppe schicken Sie uns am einfachsten per WhatsApp."
+        "foto_hinweis": "Fotos Ihrer Treppe schicken Sie uns am einfachsten per WhatsApp.",
+        "formular_zuerst": true
       }
     },
     "tp_bewertung": {
