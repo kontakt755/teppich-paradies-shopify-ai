@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { aktionAusMetaobjekt, ausAdminKnoten, heuteBerlin, istAngebot, plan, rabattSichtbar } from '../lib/angebote-abgleich.mjs';
+import { aktionAusMetaobjekt, ausAdminKnoten, heuteBerlin, istAngebot, istSonderposten, plan, rabattSichtbar } from '../lib/angebote-abgleich.mjs';
 
 const HEUTE = '2026-10-08';
 const v = (preis, vergleichspreis, optionen = ['Grau'], kaufbar = true, titel = optionen.join(' / ')) => ({ preis, vergleichspreis, optionen, kaufbar, titel });
@@ -44,6 +44,30 @@ test('Rollenware mit Raummass: nur wenn alle regulaeren Varianten reduziert sind
 
 test('Sonderposten sind nie ein Angebot', () => {
   assert.equal(istAngebot(p({ aktion_klasse: 'preisanker' }, [v('89.00', '243.46')], { typ: 'Sonderposten' }), { heute: HEUTE }), false);
+});
+
+test('Sonderposten am Tag: Reststueck mit dem Typ der Ursprungsware ist nie ein Angebot (Yasmin, #69)', () => {
+  // Wie live am 26.10.: Typ Teppichboden (Zuschnittrechner), Dauerrabatt ohne Ende, 41,95 statt 63,99
+  const yasmin = p({ aktion_klasse: 'preisanker' }, [v('41.95', '63.99', ['Default Title'])], { tags: ['angebot', 'sonderposten'] });
+  assert.equal(istSonderposten(yasmin), true);
+  assert.equal(rabattSichtbar(yasmin, HEUTE), true, 'der Streichpreis selbst bleibt sichtbar');
+  assert.equal(istAngebot(yasmin, { heute: HEUTE }), false);
+  assert.equal(istAngebot(yasmin, { heute: '2026-11-02' }), false);
+  // Ohne den Tag bliebe dasselbe Produkt ein Angebot - genau das war der Fehler
+  assert.equal(istAngebot({ ...yasmin, tags: ['angebot'] }, { heute: HEUTE }), true);
+  // Gross-/Kleinschreibung wie Liquid (contains): nur der Tag "sonderposten" zaehlt
+  assert.equal(istSonderposten({ ...yasmin, tags: ['sonderposten-vorschau'] }), false);
+  assert.equal(istSonderposten({ typ: 'Teppichboden' }), false);
+});
+
+test('Plan: der Tag "angebot" geht am Sonderposten mit Tag weg, auch wenn eine Aktion fuer seine Kollektion laeuft', () => {
+  const aktion = { aktiv: true, start: '2026-10-01', ende: '2026-10-14', kollektion: 'k', prozent: 15 };
+  const yasmin = { ...p({ aktion_klasse: 'preisanker' }, [v('41.95', '63.99')]), id: 'y', tags: ['angebot', 'sonderposten'], kollektionen: ['k'] };
+  const normal = { ...p({ aktion_klasse: 'preisanker' }, [v('20.00', '25.00')]), id: 'n', tags: ['angebot'] };
+  const r = plan([yasmin, normal], { heute: HEUTE, aktionen: [aktion] });
+  assert.deepEqual(r.entfernen.map((x) => x.id), ['y']);
+  assert.deepEqual(r.setzen.map((x) => x.id), []);
+  assert.equal(r.angebote, 1);
 });
 
 test('zentrale Aktion tp_aktion: aktiv, im Zeitraum, Produkt in der Aktionskollektion', () => {

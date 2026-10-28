@@ -161,6 +161,16 @@
         {% endfor %}
       {% endcapture %}
 
+      {%- comment -%}
+        Rundgang R2 #77 (2026-10-26): Sprung hinter die Produktliste. Mit
+        Endlos-Laden laedt die Liste beim Tabben immer weiter nach; Impressum,
+        Kontakt und Widerruf in der Fusszeile lagen rund 2.000 Tabs entfernt.
+        Der Link steht hinter den Filtern und vor der ersten Karte, sichtbar
+        nur bei Fokus (Gestaltung aus snippets/skip-to-content-link).
+      {%- endcomment -%}
+      {%- if collection.products.size > 0 -%}
+        <a class="skip-to-content-link button-secondary" href="#tp-nach-produktliste-{{ section.id }}">Produktliste überspringen</a>
+      {%- endif -%}
       {% render 'product-grid',
         section: section,
         children: children,
@@ -171,8 +181,13 @@
     {% endpaginate %}
   </div>
 </results-list>
+<div id="tp-nach-produktliste-{{ section.id }}" class="tp-nach-produktliste" tabindex="-1"></div>
 
 {% stylesheet %}
+  /* Sprungziel hinter der Produktliste: kein Rahmen um die leere Flaeche. */
+  .tp-nach-produktliste:focus {
+    outline: none;
+  }
   .tp-raster-preisangabe {
     text-align: right;
     margin-block-end: 8px;

@@ -41,12 +41,19 @@ test('die Theme-Leiste findet den Kaufweg und bleibt ohne Ziel aus', () => {
 });
 
 // Der Kaufknopf bleibt sichtbar und meldet beim Klick, was fehlt (#301) -
-// echtes disabled gibt es nur waehrend des laufenden Warenkorb-Aufrufs.
-test('der Kaufknopf bleibt sichtbar; disabled nur waehrend /cart/add.js', () => {
+// gesperrt ist er nur waehrend des laufenden Warenkorb-Aufrufs. Seit Rundgang
+// R2 #76 ohne echtes disabled: ein disabled-Knopf verliert den Tastaturfokus,
+// und nach dem Schliessen des Warenkorbs stand der Fokus am Seitenanfang.
+test('der Kaufknopf bleibt sichtbar; gesperrt nur waehrend /cart/add.js, ohne disabled', () => {
   // Nur echte Zuweisungen zaehlen - der Liquid-Kommentar nennt das alte Verhalten.
   assert.doesNotMatch(rechner, /^\s*cta\.hidden\s*=/m);
-  assert.match(rechner, /if \(inFlight \|\| cta\.disabled\) return;/);
-  assert.match(rechner, /inFlight = true;\s*\n\s*cta\.disabled = true;/);
+  assert.doesNotMatch(rechner, /^\s*cta\.disabled\s*=/m);
+  assert.match(rechner, /if \(inFlight \|\| cta\.tpGesperrt\) return;/);
+  assert.match(rechner, /inFlight = true;\s*\n\s*sperren\(true\);/);
+  // Sperre = aria-disabled (Vorleseprogramm, Kaufleiste) plus Optik von :disabled.
+  assert.match(rechner, /cta\.classList\.toggle\('is-busy', an\);\s*\n\s*if \(an\) cta\.setAttribute\('aria-disabled', 'true'\);/);
+  assert.match(rechner, /\.tp-rwc-cta\.is-busy \{[^}]*cursor: not-allowed/);
+  assert.match(sticky, /target\.getAttribute\('aria-disabled'\) === 'true'/);
 });
 
 // Live-Gegenprobe w-061: Die Leiste las das Stueck aus [data-stueck-mass],

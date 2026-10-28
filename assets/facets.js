@@ -21,6 +21,37 @@ function renderFacetsSection(sectionId) {
   });
 }
 
+/**
+ * TP (Rundgang R2 #77): Der Section-Morph ersetzt das bediente Filterfeld,
+ * weil sich seine id aendert (Endung "true" nach dem Anhaken). Der Fokus stand
+ * danach auf <body>, der naechste Tab begann wieder bei "Verfuegbarkeit".
+ * Gemerkt werden deshalb name und value, nicht die id.
+ * @param {Element} root
+ * @returns {{ name: string, value: string, type: string } | null}
+ */
+function rememberFacetFocus(root) {
+  const element = document.activeElement;
+  if (!(element instanceof HTMLInputElement) || !element.name || !root.contains(element)) return null;
+  return { name: element.name, value: element.value, type: element.type };
+}
+
+/**
+ * Setzt den Fokus auf dasselbe Feld, falls er beim Neuladen verloren ging.
+ * Hat der Kunde inzwischen woanders hin getabbt, bleibt der Fokus dort.
+ * @param {{ name: string, value: string, type: string } | null} remembered
+ */
+function restoreFacetFocus(remembered) {
+  if (!remembered) return;
+  const active = document.activeElement;
+  if (active && active !== document.body && active.isConnected) return;
+  const byValue = remembered.type === 'checkbox' || remembered.type === 'radio';
+  const selector = `input[name="${CSS.escape(remembered.name)}"]${byValue ? `[value="${CSS.escape(remembered.value)}"]` : ''}`;
+  const target = Array.from(document.querySelectorAll(selector)).find(
+    (input) => input instanceof HTMLInputElement && input.type === remembered.type && input.checkVisibility?.() !== false
+  );
+  if (target instanceof HTMLInputElement) target.focus({ preventScroll: true });
+}
+
 function restoreFilterDialogFocus() {
   const dialog = document.querySelector('#filters-drawer dialog[open]');
   if (dialog && !dialog.contains(document.activeElement)) {
@@ -126,11 +157,16 @@ class FacetsFormComponent extends Component {
    */
   #updateSection() {
     const viewTransition = !this.closest('dialog');
+    const focused = rememberFacetFocus(this);
+    const render = () => renderFacetsSection(this.sectionId).then((result) => {
+      restoreFacetFocus(focused);
+      return result;
+    });
 
     if (viewTransition) {
-      return startViewTransition(() => renderFacetsSection(this.sectionId), ['product-grid']);
+      return startViewTransition(render, ['product-grid']);
     } else {
-      return renderFacetsSection(this.sectionId);
+      return render();
     }
   }
 

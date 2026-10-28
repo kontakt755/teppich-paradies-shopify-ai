@@ -18,6 +18,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { bildSchluessel } from './doppelungen.mjs';
 import { autoFreigabeMoeglich, pruefe } from './freigabe.mjs';
 import { BETRIEB } from './konfig.mjs';
 import { medienDir, privatDir, REPO, socialDir } from './pfade.mjs';
@@ -99,10 +100,7 @@ export function werbeFreigabe(zeile) {
 }
 
 /** Dateiname eines Shopify-Bildes ohne Abfrage und ohne den Zusatz, den Shopify bei gleichen Namen anhaengt. */
-export function bildName(src) {
-  return String(src ?? '').split('?')[0].split('/').pop().toLowerCase()
-    .replace(/_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.\w+$)/, '');
-}
+export const bildName = bildSchluessel;
 
 // --- Kandidaten ---------------------------------------------------------------
 
@@ -111,8 +109,11 @@ const AKTION = ['auslauf', 'angebot'];
 /**
  * Welche Produkte taugen gerade fuer ein Reel? Aus dem Produktfeed (products.json), der
  * Bildrechte-Liste und dem Stand der Datenbank (wann zuletzt beworben).
+ * `belegt` (db.reelsOffen): Produkte mit einem Reel, das noch in der Freigabe liegt oder geplant ist -
+ * zuletzt_beworben setzt erst der Publisher, deshalb standen Fjordia und Lund am 26.10. ein zweites Mal
+ * oben und wurden zwei Tage nach dem ersten Reel noch einmal eingeplant.
  */
-export function reelKandidaten({ feed, bildrechte, stand = new Map(), nachfrage = new Map(), jetzt = new Date(), regeln = REEL_REGELN }) {
+export function reelKandidaten({ feed, bildrechte, stand = new Map(), belegt = new Map(), nachfrage = new Map(), jetzt = new Date(), regeln = REEL_REGELN }) {
   const aus = [];
   for (const p of feed) {
     const tags = (p.tags ?? []).map(t => String(t).toLowerCase());
@@ -125,6 +126,7 @@ export function reelKandidaten({ feed, bildrechte, stand = new Map(), nachfrage 
     if (n.zubehoer) continue;
     const zuletzt = stand.get(p.handle)?.zuletzt_beworben;
     if (zuletzt && jetzt.getTime() - new Date(zuletzt).getTime() < regeln.ruheTage * TAG) continue;
+    if (belegt.has(p.handle)) continue;
 
     const imShop = new Map((p.images ?? []).map(b => [bildName(b.src), b]));
     const bilder = [];
@@ -405,6 +407,13 @@ export async function erstelleProduktReel(db, { auftrag, text, plattformen = PLA
 } = {}) {
   const fehler = pruefeAuftrag(auftrag);
   if (fehler.length) throw new ReelFehler(`Auftrag unvollständig: ${fehler.join(' · ')}`);
+  // Hoechstens ein Reel je Produkt in 45 Tagen - auch wenn das erste noch nicht erschienen ist.
+  const offen = db.reelsOffen().get(auftrag.handle);
+  if (offen?.length) throw new ReelFehler(`Zu ${auftrag.handle} gibt es schon ein Reel (#${offen.map(o => o.id).join(', #')}, noch nicht erschienen) – höchstens eins in ${REEL_REGELN.ruheTage} Tagen; ein altes erst verwerfen, wenn es ersetzt werden soll`);
+  const beworben = db.produktStand().get(auftrag.handle)?.zuletzt_beworben;
+  if (beworben && jetzt.getTime() - new Date(beworben).getTime() < REEL_REGELN.ruheTage * TAG) {
+    throw new ReelFehler(`${auftrag.handle} wurde am ${new Date(beworben).toLocaleDateString('de-DE')} zuletzt gezeigt – höchstens alle ${REEL_REGELN.ruheTage} Tage`);
+  }
   const live = await liveDaten(auftrag.handle, { holen, pauseMs });
   const abweichung = pruefeLive(auftrag, live);
   if (abweichung.length) throw new ReelFehler(`Live-Prüfung: ${abweichung.join(' · ')}`);

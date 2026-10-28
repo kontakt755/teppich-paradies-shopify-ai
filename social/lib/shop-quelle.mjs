@@ -96,11 +96,16 @@ export function normalisiere(p, { basis = BETRIEB.shop } = {}) {
   });
   const typ = p.product_type || '';
   const fam = familie(p.title, typ);
+  const tags = Array.isArray(p.tags) ? p.tags : String(p.tags ?? '').split(',').map(t => t.trim()).filter(Boolean);
   return {
     handle: p.handle,
     titel: p.title,
     typ,
-    tags: p.tags ?? [],
+    // Marke, wie sie im Shop steht (vendor) - bei Vinyl ist das oft nur der Linienname.
+    marke: p.vendor || null,
+    tags,
+    // Ausgelaufenes wird nie beworben (AGENTS.md, Inhaber 13.10.2026).
+    auslauf: tags.some(t => String(t).toLowerCase() === 'auslauf'),
     erstellt: p.created_at,
     veroeffentlicht: p.published_at,
     url: `${basis}/products/${p.handle}`,
@@ -112,9 +117,9 @@ export function normalisiere(p, { basis = BETRIEB.shop } = {}) {
     rabattProzent: rabatte.length ? Math.max(...rabatte) : 0,
     aktionVollstaendig,
     vergleichFaktor,
-    starkReduziert: (p.tags ?? []).includes('stark-reduziert'),
+    starkReduziert: tags.includes('stark-reduziert'),
     verfuegbar: varianten.some(v => v.available),
-    zubehoer: ZUBEHOER.test(typ) || (p.tags ?? []).some(t => /^zubehoer/.test(t)),
+    zubehoer: ZUBEHOER.test(typ) || tags.some(t => /^zubehoer/.test(t)),
     familie: fam.schluessel,
     familienName: fam.name,
   };

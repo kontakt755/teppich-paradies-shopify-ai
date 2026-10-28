@@ -36,8 +36,18 @@
   Die Regel greift nur mit der Klasse tp-js, die das Einzeiler-Skript setzt:
   ohne JavaScript bleibt es bei "alle Listen sichtbar". Im Theme-Editor bleibt
   alles sichtbar, damit die Sections auswaehlbar sind.
+
+  Leere Listen (Rundgang 2026-10-26, #69): Zeigt eine Liste keine Karte,
+  steht dort statt der Liste nur die Marke data-tp-liste-leer
+  (sections/product-list, "Ohne Produkte ausblenden"). Dann verschwindet ihr
+  Reiter, und sind alle Listen leer, der ganze Abschnitt - per CSS :has()
+  schon beim Aufbau der Seite, ohne Springen. Ist die erste Liste leer, zeigt
+  CSS bis zum Skript die erste Liste mit Karten (sonst stuende bis dahin nur
+  die Reiterleiste da). Das Skript unten prueft dasselbe noch einmal an den
+  Karten selbst (auch fuer Browser ohne :has()).
 {%- endcomment -%}
 {%- assign tp_tabs_prefix = section.id | split: '__' | first -%}
+{%- assign tp_tabs_alle_leer = '' -%}
 <script>document.documentElement.classList.add('tp-js');</script>
 <style>
   {%- for block in section.blocks -%}
@@ -46,9 +56,21 @@
       #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} .section { --page-content-width: calc(var(--tp-container) - 2 * var(--tp-pad)); --page-width: calc(var(--page-content-width) + var(--page-margin) * 2); }
       {%- unless forloop.first or request.design_mode -%}
         .tp-js #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }}:not([data-tp-tab-aktiv]) { display: none; }
+        {%- comment -%} Sind alle Listen davor leer, steht bis zum Skript diese Liste statt einer leeren ersten {%- endcomment -%}
+        {%- if tp_tabs_alle_leer != blank -%}
+          html.tp-js{{ tp_tabs_alle_leer }}:not(:has([data-tp-tab-aktiv])) #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} { display: block; }
+        {%- endif -%}
+      {%- endunless -%}
+      {%- unless request.design_mode -%}
+        {%- capture tp_tabs_leer -%}:has(#shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} [data-tp-liste-leer]){%- endcapture -%}
+        html{{ tp_tabs_leer }} #tp-tabs-{{ section.id }} [data-tp-target="{{ tp_tabs_key }}"] { display: none; }
+        {%- assign tp_tabs_alle_leer = tp_tabs_alle_leer | append: tp_tabs_leer -%}
       {%- endunless -%}
     {%- endif -%}
   {%- endfor -%}
+  {%- if tp_tabs_alle_leer != blank -%}
+    html{{ tp_tabs_alle_leer }} #shopify-section-{{ section.id }} { display: none; }
+  {%- endif -%}
 </style>
 
 {% stylesheet %}
@@ -68,16 +90,39 @@
 
 {% javascript %}
   (function () {
+    function liste(t) {
+      var key = t.getAttribute('data-tp-target');
+      if (!key) return null;
+      return document.querySelector('.shopify-section[id$="__' + key + '"]') || document.getElementById('shopify-section-' + key);
+    }
     document.querySelectorAll('[data-tp-tabs]').forEach(function (root) {
-      var tabs = root.querySelectorAll('.tp-tabs__tab');
-      if (!tabs.length) return;
+      var alle = Array.prototype.slice.call(root.querySelectorAll('.tp-tabs__tab'));
+      if (!alle.length) return;
+      // Nur Reiter, deren Liste wirklich Karten zeigt (#69). Im Theme-Editor
+      // bleiben alle stehen, damit jede Liste auswaehlbar bleibt.
+      var editor = !!(window.Shopify && window.Shopify.designMode);
+      var tabs = alle.filter(function (t) {
+        var sec = liste(t);
+        var voll = !!(sec && sec.querySelector('.resource-list__item'));
+        if (!voll && !editor) {
+          t.hidden = true;
+          t.setAttribute('aria-selected', 'false');
+          if (sec) sec.hidden = true;
+        }
+        return voll || editor;
+      });
+      if (!tabs.length) {
+        var abschnitt = root.closest('.shopify-section') || root;
+        abschnitt.hidden = true;
+        abschnitt.style.display = 'none';
+        return;
+      }
       function show(active) {
         tabs.forEach(function (t) {
           var on = t === active;
           t.setAttribute('aria-selected', on ? 'true' : 'false');
           t.setAttribute('tabindex', on ? '0' : '-1');
-          var key = t.getAttribute('data-tp-target');
-          var sec = document.querySelector('.shopify-section[id$="__' + key + '"]') || document.getElementById('shopify-section-' + key);
+          var sec = liste(t);
           if (!sec) return;
           sec.hidden = !on;
           // Die CSS-Regel oben blendet die Listen der uebrigen Reiter aus, bis sie aktiv sind

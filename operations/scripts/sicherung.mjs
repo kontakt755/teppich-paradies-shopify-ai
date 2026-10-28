@@ -188,6 +188,9 @@ function datumSlug(datum) {
  * Kopiert die Plists der Mac-Dienste nach $TP_PRIVAT_DIR/dienste/, damit sie mit ins Archiv gehen.
  * Nur net.teppich-paradies.*.plist; eine Plist, die einen Schluessel mit TOKEN, SECRET, PASSW
  * oder API_KEY im Namen traegt, bleibt draussen (Zugaenge gehoeren nicht ins Archiv).
+ * Der Abzug zeigt nur die Dienste von heute: Kopien geloeschter, umbenannter oder inzwischen
+ * ausgelassener Dienste raeumt jeder Lauf weg - sonst kaemen sie mit jedem neuen Archiv mit
+ * und wuerden nach dem README wieder eingerichtet. Andere Dateien im Ordner bleiben.
  * Fehlt der Ordner (anderer Rechner, Tests), passiert nichts.
  */
 export function dienstPlistsAbziehen(launchAgentsDir, privatDir) {
@@ -195,13 +198,21 @@ export function dienstPlistsAbziehen(launchAgentsDir, privatDir) {
   const ausgelassen = [];
   if (!launchAgentsDir || !fs.existsSync(launchAgentsDir)) return { kopiert, ausgelassen };
   const ziel = path.join(privatDir, DIENSTE_ORDNER);
+  const istDienst = name => /^net\.teppich-paradies\.[a-z0-9-]+\.plist$/.test(name);
   for (const name of fs.readdirSync(launchAgentsDir).sort()) {
-    if (!/^net\.teppich-paradies\.[a-z0-9-]+\.plist$/.test(name)) continue;
+    if (!istDienst(name)) continue;
     const inhalt = fs.readFileSync(path.join(launchAgentsDir, name));
     if (/<key>[^<]*(TOKEN|SECRET|PASSW|API_KEY)[^<]*<\/key>/i.test(inhalt.toString('latin1'))) { ausgelassen.push(name); continue; }
     fs.mkdirSync(ziel, { recursive: true, mode: 0o700 });
     fs.writeFileSync(path.join(ziel, name), inhalt, { mode: 0o600 });
     kopiert.push(name);
+  }
+  if (fs.existsSync(ziel)) {
+    for (const name of fs.readdirSync(ziel)) {
+      if (istDienst(name) && !kopiert.includes(name)) fs.rmSync(path.join(ziel, name), { force: true });
+    }
+    // Leerer Abzug: kein leerer Ordner im Archiv.
+    if (fs.readdirSync(ziel).length === 0) fs.rmdirSync(ziel);
   }
   return { kopiert, ausgelassen };
 }

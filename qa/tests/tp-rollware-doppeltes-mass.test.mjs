@@ -23,11 +23,15 @@ function slice(a, b) {
 const tick = () => new Promise((r) => setImmediate(r));
 
 // korb: Zeilen fuer /cart.js oder 'fehler' (Netz weg).
-function aufbau(korb) {
+// fokus: wo der Fokus nach der Pruefung steht - 'body' (Klick kam ueber die
+// Kaufleiste, deren Knopf disabled wurde) oder 'anderes'.
+function aufbau(korb, fokus = 'anderes') {
   const adds = [];
   const listeners = {};
   const cta = { textContent: '', disabled: false, addEventListener: (t, f) => { listeners[t] = f; }, setAttribute() {}, removeAttribute() {},
-    classList: { add() {}, remove() {}, toggle() {} }, getBoundingClientRect: () => ({ top: 10, bottom: 50 }), scrollIntoView() {} };
+    classList: { add() {}, remove() {}, toggle() {} }, getBoundingClientRect: () => ({ top: 10, bottom: 50 }), scrollIntoView() {},
+    focus(optionen) { cta.fokussiert = optionen; } };
+  const body = {};
   const ctaHint = { hidden: true, textContent: '' };
   const context = vm.createContext({
     ART: globalThis.TPRollwareArt, einheitAktiv: 'cm', MIN_BESTELL_CM: 0, MAX_LENGTH_CM: 5000,
@@ -41,7 +45,7 @@ function aufbau(korb) {
     inFlight: false, cta, ctaHint, cartLink: { hidden: true }, errMin: { hidden: true }, errMax: null,
     holzBox: null, markInvalid() {}, zeigeFehlerfeld() {}, calculate() {}, setTimeout() {},
     window: { innerHeight: 800 },
-    document: { dispatchEvent() {}, querySelector: () => null }, CustomEvent: class {},
+    document: { dispatchEvent() {}, querySelector: () => null, body, activeElement: fokus === 'body' ? body : {} }, CustomEvent: class {},
     fetch: async (url, options) => {
       if (url === '/cart.js') {
         if (korb === 'fehler') throw new Error('offline');
@@ -56,7 +60,7 @@ function aufbau(korb) {
   vm.runInContext("var doppeltFreigabe = '';", context);
   vm.runInContext(slice('  function fehlendesFeld() {', '\n  var target ='), context);
   vm.runInContext(slice("  cta.addEventListener('click', function () {", '\n\n  // Eine direkt geoeffnete Varianten-URL'), context);
-  return { adds, ctaHint, klick: async () => { listeners.click(); await tick(); } };
+  return { adds, cta, ctaHint, klick: async () => { listeners.click(); await tick(); } };
 }
 
 const gleicheZeile = { variant_id: 4711, quantity: 16, properties: { 'Art': 'Raummaß', 'Ihre Breite': '380 cm', 'Aus Rolle': '400 cm', 'Gewünschte Länge': '420 cm', 'Fläche (aufgerundet)': '16,00 m²' } };
@@ -67,6 +71,34 @@ test('leerer Warenkorb: der erste Klick legt das Stueck hinein', async () => {
   assert.equal(r.adds.length, 1);
   assert.equal(r.adds[0].quantity, 16);
   assert.equal(r.ctaHint.hidden, true);
+  // Rundgang R2 #76: gesperrt ohne echtes disabled, der Knopf behaelt den Fokus.
+  assert.equal(r.cta.tpGesperrt, true);
+  assert.equal(r.cta.disabled, false);
+});
+
+test('Mass liegt schon im Korb: nach dem Hinweis ist der Knopf frei und nie disabled', async () => {
+  const r = aufbau([gleicheZeile]);
+  await r.klick();
+  assert.equal(r.adds.length, 0);
+  assert.equal(r.cta.tpGesperrt, false);
+  assert.equal(r.cta.disabled, false);
+});
+
+// Pruefung PR #1735: Kam der Klick ueber die Kaufleiste, war deren Knopf
+// waehrend der Pruefung disabled und der Fokus stand danach auf <body>.
+test('Kaufleiste, Mass liegt schon im Korb: der Fokus kommt auf den Kaufknopf zurueck', async () => {
+  const r = aufbau([gleicheZeile], 'body');
+  await r.klick();
+  assert.equal(r.ctaHint.hidden, false);
+  // Objekt aus dem vm-Kontext: Feld einzeln pruefen statt deepEqual.
+  assert.equal(r.cta.fokussiert?.preventScroll, true);
+});
+
+test('Mass liegt schon im Korb, Fokus steht woanders: der Hinweis zieht ihn nicht weg', async () => {
+  const r = aufbau([gleicheZeile], 'anderes');
+  await r.klick();
+  assert.equal(r.ctaHint.hidden, false);
+  assert.equal(r.cta.fokussiert, undefined);
 });
 
 test('gleiches Mass liegt schon im Korb: Hinweis statt Bestellung, zweiter Klick bestellt', async () => {

@@ -152,13 +152,18 @@
   # Kopie am Teppich: Shopify haengt beim erneuten Hochladen "_<uuid>" an den
   # Dateinamen, die Medien-ID ist dann eine andere (Rundgang 2026-10-26, #29:
   # Marken-Teppiche nach Mass zeigten dasselbe Bild zweimal).
+  # Bleibt die Kopie stehen, traegt sie das Etikett "Echtes Materialfoto"
+  # (snippets/tp-serena-galerie-label vergleicht mit tp_serena_material_id).
   capture tp_serena_doppelt
     render 'tp-medien-doppelt', media: tp_serena_material.first, liste: sorted_media
   endcapture
+  assign tp_serena_doppelt = tp_serena_doppelt | strip
   if tp_serena_material.size > 0
-    unless tp_serena_doppelt contains 'ja'
+    if tp_serena_doppelt == blank
       assign sorted_media = sorted_media | concat: tp_serena_material
-    endunless
+    else
+      assign tp_serena_material_id = tp_serena_doppelt | plus: 0
+    endif
   endif
 
   # Variant-specific media can reduce the visible gallery to one item.

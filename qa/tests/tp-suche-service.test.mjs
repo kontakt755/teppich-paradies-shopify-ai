@@ -35,8 +35,19 @@ test('Service-Woerter fuehren zu Kontakt und Verlegeservice', async () => {
   }
 });
 
+// Runde 2, #82: Wer zurueckgeben oder reklamieren will, bekam nur Produkte.
+test('Widerruf, Ruecksendung und Reklamation fuehren zu Widerruf, Belehrung und Kontakt', async () => {
+  const woerter = ['reklamation', 'Rücksendung', 'retoure', 'Umtausch', 'mangel', 'zurückgeben', 'Rückgabe',
+    'widerrufsbelehrung', 'Widerruf', 'ware beschädigt', 'rueckgabe', 'zurueckgeben'];
+  for (const b of woerter) {
+    assert.equal(await ziele(b), 'vertrag-widerrufen,refund-policy,kontakt,', b);
+  }
+  // Kontakt nur einmal, auch wenn beide Gruppen passen.
+  assert.equal(await ziele('adresse für reklamation'), 'kontakt,vertrag-widerrufen,refund-policy,');
+});
+
 test('Produktsuchen bleiben ohne feste Seitentreffer', async () => {
-  for (const b of ['teppichboden grau', 'klickvinyl', 'verlegekeile', 'sockelleiste weiß', 'kettelband', '']) {
+  for (const b of ['teppichboden grau', 'klickvinyl', 'verlegekeile', 'sockelleiste weiß', 'kettelband', 'rückenkissen', 'teppich rund', '']) {
     assert.equal(await ziele(b), '', b);
   }
 });
@@ -44,13 +55,17 @@ test('Produktsuchen bleiben ohne feste Seitentreffer', async () => {
 const seiten = {
   kontakt: { handle: 'kontakt', url: '/pages/kontakt', title: 'Kontakt' },
   'liefer-verlegeservice': { handle: 'liefer-verlegeservice', url: '/pages/liefer-verlegeservice', title: 'Liefer- & Verlegeservice' },
+  'vertrag-widerrufen': { handle: 'vertrag-widerrufen', url: '/pages/vertrag-widerrufen', title: 'Vertrag widerrufen' },
 };
 
-async function schnellsuche(begriff, { pages = [], queries = [] } = {}) {
+const widerrufsrecht = { url: '/policies/refund-policy', title: 'Widerrufsrecht' };
+
+async function schnellsuche(begriff, { pages = [], queries = [], shop = { refund_policy: widerrufsrecht } } = {}) {
   const code = ohneStylesheet(ohneDoc(lies('snippets/tp-suche-ergebnisse.liquid')));
   return engine.parseAndRender(code, {
     predictive_search: { terms: begriff, resources: { products: [], collections: [], pages, articles: [], queries } },
     pages: seiten,
+    shop,
     collections: {},
     routes: { search_url: '/search' },
   });
@@ -73,6 +88,26 @@ test('Schnellsuche: dieselbe Seite steht nicht doppelt da', async () => {
   assert.equal(html.match(/href="\/pages\/kontakt"/g).length, 1);
   // Kein leerer zweiter Service-Block, wenn Shopify nur die feste Seite fand.
   assert.equal(html.match(/>Service</g).length, 1);
+});
+
+test('Schnellsuche: Reklamation zeigt Vertrag widerrufen, Widerrufsrecht und Kontakt', async () => {
+  const html = await schnellsuche('reklamation');
+  assert.doesNotMatch(html, /nichts Passendes gefunden/);
+  const reihe = ['/pages/vertrag-widerrufen', '/policies/refund-policy', '/pages/kontakt'].map((u) => html.indexOf('href="' + u + '"'));
+  assert.ok(reihe.every((i) => i > -1), 'alle drei verlinkt');
+  assert.ok(reihe[0] < reihe[1] && reihe[1] < reihe[2], 'in dieser Reihenfolge');
+  assert.match(html, />Widerrufsrecht</);
+  // Ohne Richtlinie im Shop bleibt nur der Seitentreffer, kein leerer Link.
+  const ohne = await schnellsuche('reklamation', { shop: {} });
+  assert.doesNotMatch(ohne, /refund-policy|href=""/);
+  assert.match(ohne, /href="\/pages\/vertrag-widerrufen"/);
+});
+
+test('Ergebnisseite: Widerrufsbelehrung kommt aus shop.refund_policy', () => {
+  const sektion = lies('sections/search-results.liquid');
+  assert.match(sektion, /if tp_sr_fh == 'refund-policy'\s+if shop\.refund_policy != blank/);
+  assert.match(sektion, /assign tp_sr_fs = shop\.refund_policy/);
+  assert.doesNotMatch(sektion, /pages\[tp_sr_fh\]\.url/);
 });
 
 test('Ergebnisseite: feste Seiten im Abschnitt Seiten & Service, Trefferzahl nur bei sicherer Suche', () => {

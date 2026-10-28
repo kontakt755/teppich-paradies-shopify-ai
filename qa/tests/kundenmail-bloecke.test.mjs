@@ -193,3 +193,13 @@ test('#26 Versandbestaetigung: Teillieferung von Laengenware zeigt die versandte
   const krumm = await eng.parseAndRender(versand, vctx([kante(100)]));
   assert.match(krumm, /<li>Testkante nach Maß – Silber \(insgesamt 100 cm\)<\/li>/);
 });
+
+// Codex-Review #1724 (P2): Teillieferung der Fussleiste nennt nur die versandten Meter
+test('#26 Versandbestaetigung: Teillieferung der Fussleiste zeigt die versandte Laenge', async () => {
+  const leiste = (quantity) => ({ quantity, line_item: { title: 'Gekettelte Fußleiste', quantity: 12, variant_title: '6 cm', properties: P({ 'Zu Teppichboden': 'Testvelours', 'Höhe': '6 cm', 'Länge': '12 m' }) } });
+  const teil = await eng.parseAndRender(versand, vctx([leiste(6)]));
+  assert.match(teil, /<li>Gekettelte Fußleiste – 6 cm \(6 m\)<\/li>/);
+  assert.doesNotMatch(teil, /12 m/);
+  const voll = await eng.parseAndRender(versand, vctx([leiste(12)]));
+  assert.match(voll, /<li>Gekettelte Fußleiste – 6 cm \(12 m\)<\/li>/);
+});

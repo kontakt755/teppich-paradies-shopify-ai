@@ -8,13 +8,16 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Liquid } from 'liquidjs';
-import { rabattSichtbar } from '../lib/angebote-abgleich.mjs';
+import { istAngebot, rabattSichtbar } from '../lib/angebote-abgleich.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const lies = (d) => readFileSync(path.join(root, d), 'utf8').replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '');
 const engine = new Liquid({ templates: {
   'tp-rabatt-sichtbar': lies('snippets/tp-rabatt-sichtbar.liquid'),
   'tp-aktion-aktiv': lies('snippets/tp-aktion-aktiv.liquid'),
+  'tp-angebot-sichtbar': lies('snippets/tp-angebot-sichtbar.liquid'),
+  // Ohne shop.metaobjects laeuft keine zentrale Aktion - hier geht es nur um Streichpreis und Sonderposten.
+  'tp-aktion-laufend': lies('snippets/tp-aktion-laufend.liquid'),
   // Kommt mit dem Sonderposten-Paket (#977); bis dahin fragt tp-rabatt-sichtbar nicht danach.
   ...(existsSync(path.join(root, 'snippets/tp-ist-sonderposten.liquid')) ? { 'tp-ist-sonderposten': lies('snippets/tp-ist-sonderposten.liquid') } : {}),
 } });
@@ -50,6 +53,39 @@ for (const [name, [aktion, varianten]] of Object.entries(FAELLE)) {
       mf: { aktion_start: aktion.start ?? '', aktion_ende: aktion.ende ?? '', aktion_klasse: aktion.klasse ?? '' },
       varianten: varianten.map((x) => ({ titel: x.titel, optionen: x.opts, preis: x.preis / 100, vergleichspreis: x.vergleich / 100, kaufbar: true })),
     }, HEUTE);
+    assert.equal(js, liquid);
+  });
+}
+
+// Gleichlauf fuer "Angebot" (Tag-Abgleich gegen snippets/tp-angebot-sichtbar.liquid):
+// Sonderposten zaehlen nie - am Typ wie am Tag (Rundgang 2026-10-26, #69).
+const ANGEBOT_FAELLE = {
+  'Dauerrabatt sichtbar': ['Teppichboden', [], { klasse: 'preisanker' }],
+  'Dauerrabatt vorbei': ['Teppichboden', [], { klasse: 'preisanker', ende: tagPlus(-3) }],
+  'Typ Sonderposten': ['Sonderposten', [], { klasse: 'preisanker' }],
+  'Tag sonderposten, Typ der Ursprungsware (Yasmin)': ['Teppichboden', ['angebot', 'sonderposten'], { klasse: 'preisanker' }],
+  'aehnlicher Tag zaehlt nicht': ['Teppichboden', ['sonderposten-vorschau'], { klasse: 'preisanker' }],
+};
+
+for (const [name, [typ, tags, aktion]] of Object.entries(ANGEBOT_FAELLE)) {
+  test(`Gleichlauf Angebot Liquid/JS: ${name}`, async () => {
+    const variante = { title: 'Default Title', option1: 'Default Title', option2: '', option3: '', price: 4195, compare_at_price: 6399 };
+    const product = {
+      type: typ,
+      tags,
+      metafields: { aktion: Object.fromEntries(Object.entries(aktion).map(([k, w]) => [k, { value: w }])), sonderposten: {} },
+      variants: [variante],
+      selected_or_first_available_variant: variante,
+      collections: [],
+    };
+    const liquid = (await engine.parseAndRender("{% render 'tp-angebot-sichtbar', product: product %}", { product })).trim() === 'ja';
+    const js = istAngebot({
+      typ,
+      tags,
+      kollektionen: [],
+      mf: { aktion_start: aktion.start ?? '', aktion_ende: aktion.ende ?? '', aktion_klasse: aktion.klasse ?? '' },
+      varianten: [{ titel: 'Default Title', optionen: ['Default Title'], preis: 41.95, vergleichspreis: 63.99, kaufbar: true }],
+    }, { heute: HEUTE });
     assert.equal(js, liquid);
   });
 }
