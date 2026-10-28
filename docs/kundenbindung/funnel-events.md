@@ -52,6 +52,11 @@ Besuch -> Produkt angesehen -> Farbe gewaehlt -> Masse eingegeben
 
 ## Custom Pixel (fertig zum Einfuegen)
 
+> **Stand 28.10.:** Dieses Pixel ist nicht angelegt. Live laeuft „TP Funnel und
+> Musterbestellung“ aus `domains/marketing/tracking-pixel-vorlage.md`; es reicht
+> `customData` komplett weiter. Dort fehlte `tp_ratgeber_cta_klick` (Nachtrag
+> 28.10. in jener Datei) - massgeblich fuer Aenderungen ist jene Vorlage.
+
 Einstellungen -> Kundenereignisse -> Custom Pixel hinzufuegen, Name
 „TP Funnel-Ereignisse", Datenschutz: Analytics (plus Marketing, falls die
 Farb-/Rechner-Ereignisse auch fuer Werbezielgruppen genutzt werden sollen).
@@ -84,7 +89,7 @@ events.forEach((name) => {
     gtag('event', name, {
       page_path: d.page, product_handle: d.product_handle, variant_id: d.variant_id,
       rechner: d.rechner, erfolg: d.erfolg, quelle: d.quelle, ziel: d.ziel,
-      cta_typ: d.cta_typ, anzahl: d.anzahl,
+      cta_typ: d.cta_typ, anzahl: d.anzahl, ort: d.ort,
     });
   });
 });

@@ -46,6 +46,15 @@ doppelt wird nichts gezählt, solange das GTM-Pixel getrennt bleibt.
 Gegenprobe ohne Testkauf: echte Bestellungen (Admin API) gegen GA4-Ereignisse
 (`purchase`, `sample_order`, `tp_bestellung_typ`) abgleichen.
 
+**Nachtrag 28.10. (Fehlersuche, PR #1785):** `tp_ratgeber_cta_klick` fehlte in
+`themeEvents` - Klicks aus den Ratgebern kamen deshalb nie in GA4 an (Admin
+gelesen 28.10.: Code = diese Vorlage ohne die letzte Zeile der Liste). Unten ist
+das Ereignis ergänzt; im Admin muss es der Inhaber eintragen und speichern.
+Weil das Pixel `customData` komplett weiterreicht, kommen die Felder `ziel`,
+`cta_typ` und `ort` (Ratgeber) bzw. `ort` (Muster, ab PR #1789) ohne weitere
+Änderung mit. Sichtbar in GA4-Berichten erst als benutzerdefinierte Dimension
+(Ereignisbereich).
+
 Shopify-Admin → Einstellungen → Kundenereignisse → Pixel **„TP Funnel und
 Musterbestellung“** (angelegt, noch leer und nicht verbunden). Einwilligung:
 Erforderlich, Marketing + Analysen. Code einfügen → Speichern → Verbinden.
@@ -85,7 +94,8 @@ function istMuster(li) {
 
 const themeEvents = ['tp_farbe_gewaehlt', 'tp_masse_eingegeben', 'tp_muster_cta_klick', 'tp_muster_im_warenkorb',
   'tp_in_den_warenkorb_konfiguriert', 'tp_lead_call', 'tp_lead_whatsapp', 'tp_lead_mail', 'tp_lead_form_submit',
-  'tp_beratung_ja', 'tp_beratung_nein', 'tp_masspruefung_ja', 'tp_verlegung_angefragt', 'tp_newsletter_anmeldung_erfolg'];
+  'tp_beratung_ja', 'tp_beratung_nein', 'tp_masspruefung_ja', 'tp_verlegung_angefragt', 'tp_newsletter_anmeldung_erfolg',
+  'tp_ratgeber_cta_klick'];
 themeEvents.forEach(function (name) {
   analytics.subscribe(name, function (e) { gtag('event', name, e.customData || {}); });
 });
