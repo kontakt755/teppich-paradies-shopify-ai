@@ -2,6 +2,29 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Sicherung: Uhrzeit im Log, Fehlervermerk und To-do bei Ausfall
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 3). Die Lücke vom 22.10. war nur in der Datenzeile
+  des Systemzustands zu sehen. Das Log der Sicherung hatte keine Uhrzeit, ein gescheiterter Lauf
+  stand nirgends.
+  - `operations/scripts/sicherung.mjs`: jede Logzeile mit Uhrzeit und eine Schlusszeile („fertig“
+    bzw. „mit Fehler beendet“). Scheitert der Lauf, steht `letzterFehler` (Zeit, Meldung) in
+    `sicherungsstand.json`. `letzterErfolg` bleibt unverändert, der nächste Erfolg entfernt den Vermerk.
+  - Die Prüfung gab es schon (`sicherungsstand()` in `operations/lib/betriebszustand.mjs`: verpasst =
+    nach 23:00 Uhr keine Sicherung vom selben Abend, also strenger als 26 Std.). Sie liefert jetzt
+    auch `letzterFehler` und kommt mit `/api/shopwache/status` auf „Heute“.
+  - Neues To-do (Website, der Inhaber sieht es, sobald es rot ist): gelb „Sicherung der Betriebsdaten
+    überfällig“ nach einem verpassten Termin, rot ab 48 Std. ohne Sicherung, rot „fehlgeschlagen“ mit
+    der Meldung, rot bei unlesbarem Stand.
+- **Getestet:** `sicherung.test.mjs` neu (Fehlervermerk mit und ohne bisherigen Stand, Rechte 0600,
+  älterer Fehler zählt nicht, Erfolg löscht den Vermerk, kaputter Stand bleibt unangetastet),
+  `todos.test.mjs` neu (gelb/rot/nichts, Laden ohne, Inhaber nur rot), `api.test.mjs` neu (Stand kommt
+  mit der Shop-Wache). Lesend gegen den echten Stand: jetzt kein To-do; 26 Std. später ohne neuen
+  Lauf „Sicherung der Betriebsdaten überfällig · letzte Sicherung Di., 27.10., 22:30“.
+- **Risiken:** Ist der Mac um 22:30 Uhr aus, startet launchd die Sicherung beim nächsten Einschalten.
+  Bis dahin steht das gelbe To-do.
+- **Naechste Stufe:** Kopie außer Haus (w-163) nach der Entscheidung des Inhabers.
+
 ## 2026-10-28 · Adressaufkleber auf 50 × 80 quer
 
 - **Geaendert:** Inhaber: „die Adresse soll quer sein bei 50 × 80, nicht hoch“.

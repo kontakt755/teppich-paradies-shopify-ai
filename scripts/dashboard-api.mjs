@@ -92,7 +92,7 @@ import { darfWeiter, beschaffungsStand } from '../docs/ai-dashboard/lib/beschaff
 import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
 import { aufraeumFall } from '../docs/ai-dashboard/lib/aufraeumen.mjs';
-import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
+import { betriebszustand, sicherungsstand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
 import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
@@ -3916,10 +3916,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Routinen als Mac-Dienst (operations/lib/routinen.mjs): Stand je Routine, gestoerte werden ein rotes To-do.
       // Eingerichtet = Plist unter ~/Library/LaunchAgents; Tests geben einen eigenen Ordner mit.
       const routinen = routinenStand(dir, { jetzt: now(), ...(launchAgentsDir ? { agentsDir: launchAgentsDir } : {}) });
+      // Betriebsdaten-Sicherung (operations/scripts/sicherung.mjs): verpasst oder gescheitert wird ein To-do.
+      const sicherung = sicherungsstand(path.join(dir, 'sicherungsstand.json'), now());
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen, routinen };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen, routinen, sicherung };
       }
-      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen, routinen };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen, routinen, sicherung };
     },
 
     /**

@@ -659,6 +659,36 @@ function ausRoutinen(quellen, jetzt) {
   }];
 }
 
+const SICHERUNG_ZEIT = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+/**
+ * Betriebsdaten-Sicherung (operations/scripts/sicherung.mjs, taeglich 22:30 Uhr). Den Stand
+ * rechnet operations/lib/betriebszustand.mjs (sicherungsstand), er kommt mit der Shop-Wache.
+ * Bis 28.10.2026 stand ein verpasster Termin nur in der Datenzeile des Systemzustands - die
+ * Luecke vom 22.10. fiel erst bei der Fehlersuche auf. Rot: Lauf gescheitert, Stand nicht
+ * lesbar oder seit ueber 48 Std. keine Sicherung; gelb: ein Termin verpasst.
+ */
+function ausSicherung(quellen, jetzt) {
+  const s = quellen.shopwache?.sicherung;
+  if (!s) return [];
+  const fehler = s.letzterFehler;
+  if (!fehler && s.status !== 'alt' && s.status !== 'fehler') return [];
+  const zuletzt = s.letzterErfolg ? `letzte Sicherung ${SICHERUNG_ZEIT.format(new Date(s.letzterErfolg))}` : 'noch keine erfolgreiche Sicherung';
+  const lange = !s.letzterErfolg || jetzt.getTime() - Date.parse(s.letzterErfolg) > 48 * 3600000;
+  const basis = { id: 'sicherung', art: 'sicherung', bereich: 'website', alterTage: tageSeit(s.letzterErfolg, jetzt) };
+  if (fehler) {
+    return [{ ...basis, ton: 'crit', titel: 'Sicherung der Betriebsdaten fehlgeschlagen', kontext: [fehler.meldung, zuletzt, 'Claude Bescheid geben: „Sicherung fehlgeschlagen“'].filter(Boolean).join(' · ') }];
+  }
+  if (s.status === 'fehler') {
+    return [{ ...basis, ton: 'crit', titel: 'Stand der Sicherung nicht lesbar', kontext: 'Claude Bescheid geben: „Sicherungsstand nicht lesbar“' }];
+  }
+  return [{
+    ...basis, ton: lange ? 'crit' : 'warn',
+    titel: 'Sicherung der Betriebsdaten überfällig',
+    kontext: `${zuletzt} · sie läuft täglich um 22:30 Uhr, wenn der Mac an ist`,
+  }];
+}
+
 /**
  * Akquise Verlegeauftraege (#1447): faellige Wiedervorlagen als ein To-do im Buero.
  * `quellen.akquise` = Liste der faelligen Firmen (lib/akquise.mjs faelligeWiedervorlagen).
@@ -707,6 +737,7 @@ function alleTodos(quellen, opt) {
     ...ausTailscale(quellen),
     ...ausSpeicher(quellen, k.jetzt),
     ...ausRoutinen(quellen, k.jetzt),
+    ...ausSicherung(quellen, k.jetzt),
   ];
 }
 

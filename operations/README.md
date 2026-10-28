@@ -831,6 +831,15 @@ Shopify-Exporte, die der Sync-Dienst neu holt, und die Fotos des Social-Moduls.
 `tests/sicherung.test.mjs` sucht im Code nach `path.join(<Privatordner>, '…')` und schlaegt fehl,
 solange eine neue Ablage in keiner der beiden Listen steht.
 
+**Stand und Ueberwachung.** Jede Logzeile (`~/Library/Logs/teppich-paradies-sicherung.log`) traegt
+die Uhrzeit, die letzte heisst „Sicherung fertig“ bzw. „mit Fehler beendet“. Scheitert der Lauf,
+vermerkt er `letzterFehler` (Zeit, Meldung) in `sicherungsstand.json`, ohne `letzterErfolg` zu
+aendern; der naechste Erfolg schreibt den Stand ohne diesen Vermerk neu. `sicherungsstand()` in
+`lib/betriebszustand.mjs` rechnet daraus den Stand (verpasst = nach 23:00 Uhr keine Sicherung vom
+selben Abend). Das Control Center zeigt ihn als To-do auf „Heute“ (seit 28.10.2026): gelb
+„Sicherung überfällig“ nach einem verpassten Termin, rot ab 48 Std., bei „fehlgeschlagen“ und bei
+unlesbarem Stand.
+
 **Zweite Kopie ausser Haus (vorbereitet, Entscheidung beim Inhaber).** Das Skript kann jedes
 fertige Tagesarchiv zusaetzlich in einen zweiten Ordner legen:
 

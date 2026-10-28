@@ -954,6 +954,15 @@ test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', 
   assert.equal(r.tailscale.status, 'nicht-geprueft');
 });
 
+test('shopwacheStatus liefert den Stand der Sicherung mit (fuer das To-do auf Heute)', async () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, now: () => new Date('2026-10-28T08:00:00Z') });
+  fs.writeFileSync(path.join(dir, 'sicherungsstand.json'), JSON.stringify({ letzterErfolg: '2026-10-26T20:30:00Z', letzterFehler: { am: '2026-10-27T20:30:00Z', meldung: 'tar: Fehler' } }));
+  const s = (await api.shopwacheStatus()).sicherung;
+  assert.deepEqual([s.status, s.letzterErfolg, s.letzterFehler.meldung], ['alt', '2026-10-26T20:30:00.000Z', 'tar: Fehler']);
+});
+
 test('shopwacheStatus liefert den Stand der Routinen (Mac-Dienst) mit - auch ohne Shop-Wache, nur eingerichtete', async () => {
   const root = tmpRoot();
   const dir = privatFixture(root);

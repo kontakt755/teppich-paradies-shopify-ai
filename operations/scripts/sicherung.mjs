@@ -305,6 +305,23 @@ export function kopieVermerken(privatDir, vermerk) {
   fs.renameSync(tmp, stand);
 }
 
+/**
+ * Haelt einen gescheiterten Lauf in sicherungsstand.json fest (`letzterFehler`), ohne den
+ * letzten Erfolg zu aendern - die Oberflaeche zeigt so den Grund, nicht nur ein Alter
+ * (Fehlersuche 28.10.2026: das Log hatte keine Uhrzeit, ein Fehlschlag stand nirgends).
+ * Der naechste Erfolg schreibt den Stand neu, ohne diesen Vermerk.
+ */
+export function fehlerVermerken(privatDir, vermerk) {
+  const stand = path.join(privatDir, 'sicherungsstand.json');
+  let roh = {};
+  try { roh = JSON.parse(fs.readFileSync(stand, 'utf8')); } catch (e) { if (e?.code !== 'ENOENT') return; }
+  const tmp = `${stand}.${process.pid}.tmp`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify({ ...roh, letzterFehler: vermerk }), { mode: 0o600 });
+    fs.renameSync(tmp, stand);
+  } catch { fs.rmSync(tmp, { force: true }); /* volle Platte: das Log behaelt den Fehler */ }
+}
+
 /** Loescht Sicherungsdateien <datum>.tar.gz, deren Datum aelter als aufbewahrenTage ist. */
 export function alteSicherungenAufraeumen({ ziel, aufbewahrenTage = STANDARD_AUFBEWAHRUNG_TAGE, jetzt = new Date() }) {
   if (!fs.existsSync(ziel)) return { geloescht: [] };
@@ -327,18 +344,21 @@ async function main() {
   const { privatDir, ziel, kopie, aufbewahrenTage, jetzt } = parseArgs(process.argv.slice(2));
   const zielDir = ziel || path.join(privatDir, 'sicherungen');
 
-  console.log(`Sichere Betriebsdaten aus ${privatDir} nach ${zielDir} ...`);
+  // Jede Zeile mit Uhrzeit: das launchd-Log sammelt alle Laeufe in einer Datei.
+  const zeit = () => new Date().toISOString();
+  console.log(`${zeit()} Sichere Betriebsdaten aus ${privatDir} nach ${zielDir} ...`);
   let ergebnis;
   try {
     ergebnis = sichern({ privatDir, ziel: zielDir, jetzt, launchAgentsDir: path.join(os.homedir(), 'Library', 'LaunchAgents') });
   } catch (err) {
-    console.error(`Sicherung fehlgeschlagen: ${err.message}`);
+    console.error(`${zeit()} Sicherung fehlgeschlagen: ${err.message}`);
+    fehlerVermerken(privatDir, { am: jetzt.toISOString(), meldung: String(err.message).slice(0, 300) });
     process.exitCode = 1;
     return;
   }
 
   const mb = (ergebnis.bytes / (1024 * 1024)).toFixed(2);
-  console.log(`Archiv geschrieben: ${ergebnis.archiv} (${mb} MB)`);
+  console.log(`${zeit()} Archiv geschrieben: ${ergebnis.archiv} (${mb} MB)`);
   console.log(`Enthalten: ${ergebnis.quellen.join(', ')}`);
   if (ergebnis.uebersprungen.length > 0) {
     console.log(`Uebersprungen (nicht vorhanden): ${ergebnis.uebersprungen.join(', ')}`);
@@ -363,10 +383,11 @@ async function main() {
       if (alt.length) console.log(`Alte Kopien geloescht (> ${aufbewahrenTage} Tage): ${alt.join(', ')}`);
     } catch (err) {
       kopieVermerken(privatDir, { ziel: path.resolve(kopie), ok: false, am: jetzt.toISOString(), fehler: err.message });
-      console.error(`Kopie fehlgeschlagen (Tagesarchiv ist trotzdem geschrieben): ${err.message}`);
+      console.error(`${zeit()} Kopie fehlgeschlagen (Tagesarchiv ist trotzdem geschrieben): ${err.message}`);
       process.exitCode = 1;
     }
   }
+  console.log(`${zeit()} Sicherung ${process.exitCode ? 'mit Fehler beendet' : 'fertig'}.`);
 }
 
 const istDirekterAufruf = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
