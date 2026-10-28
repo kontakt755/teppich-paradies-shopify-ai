@@ -30,7 +30,7 @@ test('Warenbestellung mit Beratung, Masspruefung und Verlegung bestaetigt alle d
   assert.match(html, /rufen Sie vormittags unter 0176 1234567 an/);
   assert.match(html, /prüfen Ihre Maße/);
   assert.match(html, /Aufmaß oder Verlegung/);
-  assert.match(html, /Bestellstatus ansehen/);
+  assert.doesNotMatch(html, /Bestellstatus ansehen/, 'die Standardvorlage hat schon "Bestellung ansehen"');
 });
 
 test('Mischbestellung und Bestellung ohne Angaben', async () => {
