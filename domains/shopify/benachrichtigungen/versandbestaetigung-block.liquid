@@ -72,6 +72,8 @@
         nur, was der Kunde im Warenkorb selbst gesehen hat (Properties ohne _).
         Laengenware: Stueck = versandte Menge / "Laenge je Stueck" (Menge in cm),
         damit eine Teillieferung nur die versandten Stuecke nennt.
+        Fussleiste ("Zu ..." mit "Laenge" in m): Menge = Meter, deshalb kommt
+        die Laenge aus der versandten Menge, nicht aus der Bestellzeile.
       {%- endcomment -%}
       {%- liquid
         assign tp_v_li = line.line_item
@@ -153,6 +155,10 @@
           assign tp_v_klammer = tp_v_klammer | append: tp_v_flaeche
           assign tp_v_zeile = '1 × ' | append: tp_v_li.title | append: tp_v_variante | append: ' (' | append: tp_v_klammer | append: ')'
         elsif tp_v_zu != '' and tp_v_laenge != ''
+          assign tp_v_einheit = tp_v_laenge | split: ' ' | last
+          if tp_v_einheit == 'm'
+            assign tp_v_laenge = line.quantity | append: ' m'
+          endif
           assign tp_v_zeile = tp_v_li.title | append: tp_v_variante | append: ' (' | append: tp_v_laenge | append: ')'
         else
           assign tp_v_zeile = line.quantity | append: ' × ' | append: tp_v_li.title | append: tp_v_variante

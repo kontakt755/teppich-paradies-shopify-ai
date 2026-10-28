@@ -294,6 +294,28 @@ test('Plists der Mac-Dienste kommen mit ins Archiv, solche mit Zugangsdaten nich
   assert.deepEqual(sichern({ privatDir: beispielPrivatDir(), jetzt: new Date('2026-10-26T21:30:00Z') }).dienste, { kopiert: [], ausgelassen: [] });
 });
 
+// Codex-Review #1731 (P2): der Abzug spiegelt die Dienste von heute, nicht alle, die es je gab.
+test('ein entfernter Dienst faellt aus dem Abzug und aus dem naechsten Archiv', () => {
+  const dir = beispielPrivatDir();
+  const agents = tmpDir();
+  const plist = (env = '') => `<?xml version="1.0"?><plist version="1.0"><dict><key>Label</key><string>x</string>${env}</dict></plist>`;
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.shopwache.plist'), plist());
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.alt.plist'), plist());
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.dashboard.plist'), plist());
+  const erste = sichern({ privatDir: dir, jetzt: new Date('2026-10-26T21:30:00Z'), launchAgentsDir: agents });
+  assert.ok(execFileSync('tar', ['-tzf', erste.archiv], { encoding: 'utf8' }).split('\n').includes('dienste/net.teppich-paradies.alt.plist'));
+  // Zwischen den Laeufen: ein Dienst wird geloescht, einer bekommt einen Zugang in die Plist.
+  fs.rmSync(path.join(agents, 'net.teppich-paradies.alt.plist'));
+  fs.writeFileSync(path.join(agents, 'net.teppich-paradies.dashboard.plist'), plist('<key>EnvironmentVariables</key><dict><key>SHOPIFY_ADMIN_TOKEN</key><string>test-platzhalter</string></dict>'));
+  fs.writeFileSync(path.join(dir, 'dienste', 'notiz.txt'), 'nicht von der Sicherung');
+  const zweite = sichern({ privatDir: dir, jetzt: new Date('2026-10-27T21:30:00Z'), launchAgentsDir: agents });
+  assert.deepEqual(zweite.dienste, { kopiert: ['net.teppich-paradies.shopwache.plist'], ausgelassen: ['net.teppich-paradies.dashboard.plist'] });
+  const liste = execFileSync('tar', ['-tzf', zweite.archiv], { encoding: 'utf8' }).split('\n');
+  assert.ok(liste.includes('dienste/net.teppich-paradies.shopwache.plist'));
+  assert.ok(!liste.some(e => e.includes('teppich-paradies.alt') || e.includes('teppich-paradies.dashboard')), 'keine alte Kopie im neuen Archiv');
+  assert.deepEqual(fs.readdirSync(path.join(dir, 'dienste')).sort(), ['net.teppich-paradies.shopwache.plist', 'notiz.txt'], 'nur Dienst-Plists werden aufgeraeumt');
+});
+
 test('ein falscher Datenordner wird auch mit Dienst-Plists nicht zur Sicherung', () => {
   const leer = tmpDir();
   const agents = tmpDir();

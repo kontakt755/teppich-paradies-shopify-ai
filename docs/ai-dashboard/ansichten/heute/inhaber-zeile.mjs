@@ -48,7 +48,9 @@ function entscheidungTeil(tasks, geladen) {
 function fristTeil(tasks, jetzt) {
   const naechste = tasks.filter(t => t.open && t.due).sort((a, b) => String(a.due).localeCompare(String(b.due)))[0];
   if (!naechste) return null;
-  const heute = jetzt.toISOString().slice(0, 10);
+  // Fristen sind Kalendertage im Laden: um 00:30 Uhr ist der Vortag vorbei, in UTC noch nicht
+  // (gleiche Rechnung wie lib/einkauf-lieferanten.mjs, wartetage).
+  const heute = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(jetzt);
   const ueber = naechste.due < heute;
   const tage = Math.round((Date.parse(naechste.due) - Date.parse(heute)) / 86_400_000);
   return {

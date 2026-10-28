@@ -81,3 +81,14 @@ test('nebenbereichZusatz: Zahl der offenen Anfragen und Alter der aeltesten, son
   assert.equal(nebenbereichZusatz(d, JETZT), ' · 2 offene Anfragen, älteste seit 10 Tagen');
   assert.equal(nebenbereichZusatz({ eintraege: [{ id: 's4', status: 'neu', erstelltAm: '2026-10-26T08:00:00Z' }] }, JETZT), ' · 1 offene Anfrage');
 });
+
+// Codex-Review #1731 (P2): Fristen sind Kalendertage in Oranienburg, nicht in UTC.
+test('Inhaberzeile: um 00:30 Uhr ist die Frist von gestern ueberschritten (Berliner Kalendertag)', () => {
+  const frist = jetzt => teile(inhaberZeile({ tasks: [aufgabe(7, { due: '2026-10-26' })], jetzt })).at(-1);
+  // 27.10. 00:30 Uhr in Berlin (Winterzeit) = 26.10. 23:30 UTC.
+  assert.equal(frist(new Date('2026-10-26T23:30:00Z')), 'Frist überschritten 26.10.');
+  // 26.10. 23:30 Uhr in Berlin: die Frist laeuft noch.
+  assert.equal(frist(new Date('2026-10-26T22:30:00Z')), 'nächste Frist 26.10.');
+  // Sommerzeit: 02.07. 00:30 Uhr in Berlin = 01.07. 22:30 UTC.
+  assert.equal(teile(inhaberZeile({ tasks: [aufgabe(8, { due: '2026-07-01' })], jetzt: new Date('2026-07-01T22:30:00Z') })).at(-1), 'Frist überschritten 01.07.');
+});

@@ -159,6 +159,75 @@ test('Upload: gleichzeitige Sendungen teilen sich Tagesmenge, Speicherreserve un
   assert.equal(JSON.parse(fs.readFileSync(zaehler, 'utf8')).je.Mehmet.uploads, 30);
 });
 
+// Codex-Review #1726 (P2): gelesen ist nicht geschrieben. Haengt die Platte, steht die erste
+// Datei schon ganz im Strom, aber noch nicht auf der Platte - ihr Anteil muss bis dahin gelten.
+test('Upload: Speicherreserve gilt, bis die Platte die Bytes wirklich abgelegt hat', async (t) => {
+  const dir = tmpDir(t); const db = testDb(t);
+  process.env.TP_SOCIAL_DIR = dir; t.after(() => { delete process.env.TP_SOCIAL_DIR; });
+  const mehmet = zugangAnlegen('Mehmet').token; const ali = zugangAnlegen('Ali').token;
+  const GIB = 1024 ** 3; const L = JPEG.length;
+  // Der Ersatz misst nicht nach: der freie Platz sinkt erst, wenn jemand ihn senkt.
+  const platz = { frei: 15 * GIB + Math.floor(1.5 * L) };
+  let freigeben; const tor = new Promise(r => { freigeben = r; });
+  t.after(() => freigeben());   // ein roter Test darf die haengende Datei nicht offen lassen
+  let meldeSchreiben; const schreibtGerade = new Promise(r => { meldeSchreiben = r; });
+  let erster = true;
+  // Die erste Datei bleibt beim Schreiben haengen, bis das Tor aufgeht (langsame Platte).
+  const oeffneZiel = (ziel) => {
+    const ws = fs.createWriteStream(ziel, { mode: 0o600 });
+    if (!erster) return ws;
+    erster = false;
+    const schreibe = ws._write.bind(ws);
+    ws._write = (stueck, kodierung, fertig) => { meldeSchreiben(); tor.then(() => schreibe(stueck, kodierung, fertig)); };
+    return ws;
+  };
+  const basis = await starte(t, erstelleUpload({ db, dir, jetzt: () => Date.parse('2026-10-26T10:00:00Z'), freierSpeicher: () => platz.frei, nachUpload: () => [], oeffneZiel }));
+  const starten = async token => (await (await fetch(`${basis}/u/${token}/start`, json({ einwilligung: true }))).json()).upload;
+  const [a, b] = [await starten(ali), await starten(mehmet)];
+  const erste = fetch(`${basis}/u/${ali}/datei/${a}`, { method: 'PUT', body: JPEG });
+  await schreibtGerade;
+  const zweite = await fetch(`${basis}/u/${mehmet}/datei/${b}`, { method: 'PUT', body: JPEG });
+  assert.equal(zweite.status, 507, 'die erste Datei ist gelesen, aber noch nicht geschrieben - ihr Anteil gilt weiter');
+  freigeben();
+  assert.equal((await erste).status, 200);
+  assert.equal((await fetch(`${basis}/u/${mehmet}/datei/${b}`, { method: 'PUT', body: JPEG })).status, 200, 'nach dem Schreiben ist der Anteil frei');
+});
+
+// Codex-Review #1726 (P2): eine Datei, die vor Mitternacht beginnt und danach fertig wird,
+// darf den Zaehler des neuen Tages nicht durch den alten ersetzen.
+test('Upload: Datei ueber Mitternacht zaehlt in den neuen Tag, ohne ihn zu ueberschreiben', async (t) => {
+  const dir = tmpDir(t); const db = testDb(t);
+  process.env.TP_SOCIAL_DIR = dir; t.after(() => { delete process.env.TP_SOCIAL_DIR; });
+  const { token } = zugangAnlegen('Mehmet');
+  const L = JPEG.length;
+  const uhr = { jetzt: Date.parse('2026-10-26T23:59:00Z') };
+  const zaehler = path.join(dir, 'upload-tageszaehler.json');
+  const upload = erstelleUpload({ db, dir, jetzt: () => uhr.jetzt, freierSpeicher: () => 100 * 1024 ** 3, nachUpload: () => [] });
+  let angenommen = () => {};
+  const basis = await starte(t, (req, res) => { angenommen(); return upload(req, res); });
+  const starten = async () => (await (await fetch(`${basis}/u/${token}/start`, json({ einwilligung: true }))).json()).upload;
+
+  // 23:59: Upload beginnt, die Datei kommt ueber langsames Netz (Koerper erst nach Mitternacht).
+  const a = await starten();
+  const da = new Promise(r => { angenommen = r; });
+  const anfrage = request(`${basis}/u/${token}/datei/${a}`, { method: 'PUT', agent: false, headers: { 'Content-Length': L } });
+  t.after(() => anfrage.destroy());
+  const antwort = new Promise((ok, fehler) => { anfrage.on('error', fehler); anfrage.on('response', r => { r.resume(); r.on('end', () => ok(r.statusCode)); }); });
+  anfrage.flushHeaders();
+  await da; angenommen = () => {};
+
+  // 00:01: derselbe Link schickt am neuen Tag einen zweiten Upload.
+  uhr.jetzt = Date.parse('2026-10-27T00:01:00Z');
+  const b = await starten();
+  assert.equal((await fetch(`${basis}/u/${token}/datei/${b}`, { method: 'PUT', body: JPEG })).status, 200);
+  assert.deepEqual(JSON.parse(fs.readFileSync(zaehler, 'utf8')), { tag: '2026-10-27', je: { Mehmet: { uploads: 1, bytes: L } } });
+
+  // Jetzt wird die Datei von 23:59 fertig: sie zaehlt in den Tag, der gerade gilt.
+  anfrage.end(JPEG);
+  assert.equal(await antwort, 200);
+  assert.deepEqual(JSON.parse(fs.readFileSync(zaehler, 'utf8')), { tag: '2026-10-27', je: { Mehmet: { uploads: 1, bytes: 2 * L } } }, 'der neue Tag bleibt stehen');
+});
+
 test('Upload: ein abgelaufener Link fuehrt nirgends mehr hin', async (t) => {
   const dir = tmpDir(t); const db = testDb(t);
   process.env.TP_SOCIAL_DIR = dir; t.after(() => { delete process.env.TP_SOCIAL_DIR; });
