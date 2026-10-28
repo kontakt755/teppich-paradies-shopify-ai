@@ -1,3 +1,4 @@
+import { kalendertage } from './kalendertage.mjs';
 /** Kundenidentität statt Anzeigename: gleichnamige Personen bleiben getrennt. */
 export const bestellKundenKey = z => String(z.kundenSchluessel || (z.email ? `email:${z.email.toLocaleLowerCase('de')}` : `auftrag:${z.orderId}`));
 
@@ -19,7 +20,6 @@ export function gruppiereBestellzeilenNachKunde(zeilen) {
   return gruppen;
 }
 
-const TAG_MS = 24 * 60 * 60 * 1000;
 const BEZAHLT = new Set(['PAID', 'PARTIALLY_REFUNDED']);
 // Nur Versand fehlt: das ist Stufe 2 (alles unterwegs), kein "es fehlt etwas".
 const NUR_VERSAND = new Set(['Noch nicht versendet']);
@@ -33,7 +33,7 @@ const NUR_VERSAND = new Set(['Noch nicht versendet']);
  * `grund` sagt in einer Zeile, warum die Bestellung dort steht.
  */
 export function wichtigkeit(z, jetzt = new Date()) {
-  const tage = z.datum ? Math.max(0, Math.floor((jetzt - new Date(z.datum)) / TAG_MS)) : null;
+  const tage = kalendertage(z.datum, jetzt);
   const seit = tage === null ? '' : tage === 0 ? 'seit heute' : `wartet seit ${tage} ${tage === 1 ? 'Tag' : 'Tagen'}`;
   const mit = (rang, text) => ({ rang, tage, grund: [seit, text].filter(Boolean).join(' · ') });
   if (z.storniert) return { rang: 4, tage, grund: 'storniert' };

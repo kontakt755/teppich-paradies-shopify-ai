@@ -2,6 +2,20 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · „wartet seit“ zählt überall Kalendertage
+
+- **Geaendert:** Die Wartezeiten zählten volle 24 Stunden seit der Bestellung. Eine Bestellung vom 19.10.
+  nachmittags stand am 28.10. mittags bei „8 Tagen“ statt 9 (Rückmeldung Inhaber: „muss immer stimmen“).
+  Neu `lib/kalendertage.mjs` (Kalendertage in Berlin), verwendet in Packstation (`muster-packen`),
+  Bestellungen (`kunden-bestellgruppen`, `shop-bestellarbeit`), Start/Bestellarbeit, Lieferanten-Wartetage
+  (`einkauf-lieferanten`), Lieferbelege und Muster-Nachfassen. Das Datum selbst kommt unverändert aus
+  Shopify bzw. dem Auftragsfluss.
+- **Getestet:** `kalendertage.test.mjs` (Nachmittag, kurz vor Mitternacht, Zeitumstellung, ohne Datum),
+  neuer Fall in `muster-packen.test.mjs`; `npm run dashboard:test` und `npm run -s pruefen -- --ohne themecheck`.
+- **Risiken:** Schwellen der Aufräumliste und der To-dos rechnen weiter in 24 Stunden (nicht angezeigt).
+  Manche Zahlen springen um 1 nach oben, und Warnfarben können einen Tag früher kommen.
+- **Naechste Stufe:** keine.
+
 ## 2026-10-28 · Etiketten drucken: nur ausgewählte Motive
 
 - **Geaendert:** In der Druckvorschau hat jedes Motiv ein Häkchen „drucken“ (gilt für alle Kopien),
