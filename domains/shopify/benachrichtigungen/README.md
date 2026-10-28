@@ -214,6 +214,25 @@ Stand 2026-10-28: Die Bestellbestätigung verlinkt je Warenposition den passende
 Kurz-Ratgeber als PDF („Ihr Ratgeber zur Bestellung“, Zuordnung über den
 Produkttyp). Inhalte, Druck und Zuordnung: `../ratgeber-pdf/README.md`.
 
+### Was im Admin wirklich steht (abgeglichen 2026-10-28)
+
+- **Bestellbestätigung:** `bestellbestaetigung-block.liquid` steht 1:1 im Admin
+  (vorher lag dort noch der Stand vom 22.09.: Zusage „E-Mail mit
+  Sendungsverfolgung“, kein Abholtext, keine Herstellermuster, keine Lieferzeit).
+  `bestellbestaetigung-menge.liquid` ist an allen drei `line_display`-Stellen
+  eingesetzt, die Fußzeile ist in Sie-Form. Den eigenen Knopf „Bestellstatus
+  ansehen“ gibt es nicht, weil die Standardvorlage „Bestellung ansehen“ zeigt.
+- **Versandbestätigung:** Im Admin steht eine bewusst gekürzte Fassung des
+  Blocks vom 22.09. – ohne Tracking-Teil, ohne „Inhalt dieser Sendung“, ohne
+  Bestellstatus-Link, dafür mit „Fragen zur Lieferung? Rufen Sie uns an“. Der
+  Repo-Block mit Maßzeilen (#26) ist dort also nicht aktiv. Offen: die
+  Standardliste dort zeigt Maßware weiter mit der Menge (z. B. „× 775“), und die
+  Fußzeile steht noch in Du-Form.
+
+Abgleich ohne Abschreiben: im Editor den Block über den Kopfkommentar suchen
+und gegen `raw.githubusercontent.com/<repo>/<commit>/…` vergleichen
+(Zeilen-Diff im Browser), dann nur ersetzen, wenn der Anker genau einmal trifft.
+
 Tests: `qa/tests/kundenmail-bloecke.test.mjs`,
 `qa/tests/bestellmail-beratung.test.mjs`. Nach dem Einsetzen im Admin die
 Testbenachrichtigung senden und eine Testbestellung (Tag `TESTBESTELLUNG`)
