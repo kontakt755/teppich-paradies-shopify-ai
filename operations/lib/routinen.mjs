@@ -181,6 +181,11 @@ export const LAEUFE = Object.freeze({
     // Projekteinstellungen des Dienst-Checkouts (Bash ganz frei) bleiben aussen vor. Was die
     // Benutzereinstellungen sonst freigeben, faengt die Wache ab.
     modus: ['--setting-sources', 'user'],
+    // Die Benutzereinstellungen bringen alle MCP-Server des Kontos mit (28.10.: 304 Werkzeuge
+    // von 8 Servern, Gmail davon 6). --strict-mcp-config entfernt auch die claude.ai-Konnektoren
+    // samt Gmail; deshalb sperrt der Lauf alle anderen Server einzeln (mcpSperren), deren Namen
+    // eine Werkzeugprobe vor dem Start liefert. Gemessen: 29.472 statt 20.391 Tokens Kontext je Runde.
+    nurMcp: ['claude.ai Gmail'],
     teile: [
       { id: 'lieferbelege', aufgabe: 'lieferbelege-postfach', titel: 'Lieferbelege aus dem Postfach' },
       { id: 'serviceanfragen', aufgabe: 'serviceanfragen-postfach', titel: 'Service-Anfragen aus dem Postfach' },
@@ -260,7 +265,7 @@ export function wacheEinstellungen(lauf, { privat, dienst, node = process.execPa
  * Argumente fuer `claude -p`. Der Prompt kommt als letztes Argument (nach `--`), damit ein
  * Auftragstext, der mit "-" beginnt, nie als Option gelesen wird.
  */
-export function claudeArgumente(lauf, { dienst, arbeit, privat, prompt, modell = 'sonnet', effort = 'medium', node, skript }) {
+export function claudeArgumente(lauf, { dienst, arbeit, privat, prompt, modell = 'sonnet', effort = 'medium', node, skript, mcpGesperrt = [] }) {
   const def = LAEUFE[lauf];
   const ctx = { dienst, arbeit, privat };
   return [
@@ -271,7 +276,7 @@ export function claudeArgumente(lauf, { dienst, arbeit, privat, prompt, modell =
     '--settings', wacheEinstellungen(lauf, { privat, dienst, node, skript }),
     '--tools', def.werkzeuge.join(','),
     '--allowedTools', ...def.freigaben(ctx),
-    '--disallowedTools', ...def.sperren(ctx),
+    '--disallowedTools', ...def.sperren(ctx), ...mcpGesperrt,
     ...def.zusatzOrdner(ctx).flatMap(d => ['--add-dir', d]),
     '--permission-mode', 'dontAsk',
     '--permission-prompts', 'none',
@@ -376,6 +381,33 @@ export function pruefeWerkzeuge(init, pflicht = []) {
   const wartend = new Set((init?.mcp || []).filter(m => m.status === 'pending').map(m => `mcp__${mcpName(m.name)}__`));
   const hart = fehlt.filter(t => ![...wartend].some(p => t.startsWith(p)));
   return { ok: hart.length === 0, fehlt: hart, wartet: fehlt.filter(t => !hart.includes(t)) };
+}
+
+/**
+ * Sperrregeln fuer alle MCP-Server aus dem init-Ereignis, die der Lauf nicht braucht
+ * (`behalten`: Servernamen wie im init-Ereignis, z. B. "claude.ai Gmail"). Eine Regel
+ * `mcp__<server>` nimmt alle Werkzeuge des Servers aus der Liste (gemessen 28.10.2026).
+ */
+export function mcpSperren(init, behalten = []) {
+  const bleibt = new Set(behalten.map(mcpName));
+  return [...new Set((init?.mcp || []).map(m => mcpName(m.name)).filter(n => n && !bleibt.has(n)))].map(n => `mcp__${n}`);
+}
+
+/**
+ * Eine Ablehnung, die nur einen Dateipfad betraf (Write/Read ausserhalb des Arbeitsordners -
+ * 28.10.: Claude wollte zuerst in sein Scratchpad schreiben und nahm dann den Arbeitsordner),
+ * ist kein Fehler, wenn das Ergebnis nachweislich da ist. Jede andere Ablehnung (Bash, MCP)
+ * bleibt ein Fehler: dort koennten fremde Daten etwas anderes gewollt haben.
+ */
+export function harmloseAblehnung(bewertung, ergebnisBelegt) {
+  if (!bewertung || bewertung.art !== 'abgelehnt' || !ergebnisBelegt) return bewertung;
+  const nurPfade = bewertung.ablehnungen?.length && bewertung.ablehnungen.every(a => /^(Write|Read) \(/.test(a));
+  if (!nurPfade) return bewertung;
+  return {
+    ...bewertung, ok: true, art: null,
+    meldung: bewertung.abschluss || 'fertig',
+    hinweis: `${bewertung.ablehnungen.length} Dateizugriff(e) außerhalb des Arbeitsordners abgelehnt, Ergebnis trotzdem übernommen`,
+  };
 }
 
 /** Letzte nicht leere Zeile - die ABSCHLUSS-Zeile des Auftrags. */

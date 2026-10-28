@@ -2,6 +2,41 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Postfach-Lauf: Claude nur bei neuer Mail, nur mit Gmail
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 5). Der Postfach-Dienst startete alle zwei Stunden
+  Claude für beide Teile, auch ohne neue Mail, und lud dabei alle 14 MCP-Server des Kontos (304
+  Werkzeuge, davon 6 von Gmail).
+  - Vorprüfung ohne KI (`operations/lib/postfach-vorpruefung.mjs`, `imap-lesen.mjs`): Der Dienst fragt
+    per IMAP nur lesend die Kennungen der Mails ab, die dieselben Gmail-Suchen finden wie die
+    Auftragstexte. Claude startet je Teil nur bei einer unbekannten Kennung, nach einem Fehlschlag,
+    nach einem unvollständigen Belege-Lauf, bei geänderten Lieferanten-Domains und einmal am Tag.
+    Geht die Vorprüfung nicht, startet Claude wie bisher. Abschalten: `TP_POSTFACH_VORPRUEFUNG=aus`.
+  - Nur Gmail: Eine init-Probe ohne Modellaufruf liest die Serverliste, die übrigen 13 Server werden
+    per `--disallowedTools mcp__<server>` gesperrt.
+  - Wache: Lehnt sie nur Lese-/Schreibzugriffe außerhalb des Arbeitsordners ab und das Ergebnis ist
+    trotzdem da (neuer Belege-Lauf bzw. Übernahme oder „nichts Neues“), gilt der Lauf als erfolgreich
+    mit Hinweis. „FEHLER“ nur noch, wenn das Ergebnis fehlt.
+- **Tokens** (gemessen in den `laeufe/`-Protokollen 26.–28.10., je 16 Läufe):
+  - Vorher: Lieferbelege Ø 410.152 Tokens (12,8 Runden), Service Ø 136.259 (4,5 Runden), 7 Takte am
+    Tag → rund 3,8 Mio. Tokens je Tag.
+  - Grundlast je Runde gemessen (Aufruf „Antworte nur mit: OK“): alle Server 29.472, nur Gmail 20.391
+    → 9.081 weniger je Runde (−31 %). Lieferbelege also ~294k je Lauf, Service ~95k.
+  - Starts: Lieferbelege hatte 12 von 16 Läufen Neues (→ ~5–6 Läufe je Tag), Service 2 von 16
+    (→ ~2 Läufe je Tag mit Tageslauf).
+  - Nachher rund 1,7–1,9 Mio. Tokens je Tag, also etwa −2 Mio. je Tag (−50 bis −55 %). IMAP und
+    init-Probe kosten keine Tokens.
+- **Getestet:** `operations/tests/postfach-vorpruefung.test.mjs` neu (15 Tests: IMAP mit falschem
+  Server, nur EXAMINE und X-GM-MSGID, Literale, abgelehnte Anmeldung ohne Passwort im Text,
+  Startregeln, Tageswechsel Berlin, MCP-Sperren, harmlose Ablehnung, Dienstablauf mit Überspringen und
+  Rückfall). Echte Werkzeugprobe `claude-lauf.mjs postfach --werkzeugprobe`: „MCP: nur claude.ai Gmail ·
+  13 andere Server gesperrt“, je Teil 6 Gmail-Werkzeuge, alle 7 Pflichtwerkzeuge da, Exit 0.
+- **Risiken:** Die Vorprüfung nutzt das App-Passwort des Nachfass-Versands jetzt auch für IMAP (nur
+  lesend). Weichen die Suchen im privaten Auftragstext von denen im Code ab, fängt das der Tageslauf
+  einmal am Tag auf; eine Mail, die nur der private Text findet, wartet bis dahin.
+- **Naechste Stufe:** Die neuen Kennungen an Claude übergeben, damit der Lauf nicht selbst suchen
+  muss (weniger Runden).
+
 ## 2026-10-28 · Adressaufkleber auf 50 × 80 quer
 
 - **Geaendert:** Inhaber: „die Adresse soll quer sein bei 50 × 80, nicht hoch“.

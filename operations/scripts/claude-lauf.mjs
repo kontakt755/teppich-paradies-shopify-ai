@@ -10,7 +10,8 @@
  *
  * Ablauf: Zeitfenster Mo-Sa 7-19 Uhr (Europe/Berlin) -> kein Nachziehen des Dienst-Checkouts
  * im Gang (#1715, betrieb-nachziehen.lock) -> Sperre gegen Doppelstart -> (fehlermeldungen)
- * `npm run -s fehler -- abgleich` ohne KI -> je Teil `claude -p` mit Sonnet, fester
+ * `npm run -s fehler -- abgleich` ohne KI, (postfach) IMAP-Abfrage der Mail-Kennungen ohne KI
+ * und Werkzeugprobe fuer die MCP-Sperren -> je Teil `claude -p` mit Sonnet, fester
  * Werkzeugliste, Wache (PreToolUse-Hook) und Zeitlimit -> Status nach $TP_PRIVAT_DIR/routinen/,
  * bei neuem Fehler eine Mitteilung auf dem Mac und ein To-do im Control Center (Heute).
  *
@@ -32,8 +33,11 @@ import {
   LAEUFE, privatDir, dienstDir, routinenDir, arbeitsOrdner, auftragPfad, imFenster, berlinZeit,
   auftragOhneKopf, promptKopf, claudeArgumente, bewerteLauf, vorpruefung, liesStatus, schreibStatus,
   nimmSperre, sperrPfad, sperrAlterMs, neuerSammler, sammle, abschliessen, pruefeWerkzeuge,
+  mcpSperren, harmloseAblehnung,
 } from '../lib/routinen.mjs';
 import { werkbankAus } from '../lib/routine-wache.mjs';
+import { postfachAbfragen, entscheide, nachErfolg } from '../lib/postfach-vorpruefung.mjs';
+import { leseBelege, lieferbelegePfad } from '../lib/lieferbelege.mjs';
 import { sperreVerwaist } from './betrieb-nachziehen.mjs';
 
 const PROTOKOLL_TAGE = 14;
@@ -210,6 +214,7 @@ export async function teilAusfuehren(lauf, teil, o) {
   const kopf = promptKopf(lauf, teil, { dienst, arbeit });
   const argsFuer = prompt => claudeArgumente(lauf, {
     dienst, arbeit, privat, prompt, modell: env.TP_ROUTINE_MODELL || 'sonnet', effort: env.TP_ROUTINE_EFFORT || 'medium', node: o.node, skript: o.skript,
+    mcpGesperrt: o.mcpGesperrt || [],
   });
   if (probe) {
     const args = argsFuer('Antworte nur mit: OK');
@@ -251,6 +256,84 @@ export async function teilAusfuehren(lauf, teil, o) {
   return { ...bewertung, start: start.toISOString() };
 }
 
+/**
+ * Welche MCP-Server der Lauf sperrt (LAEUFE[lauf].nurMcp): `claude -p` einmal nur bis zum
+ * init-Ereignis starten (kein Modellaufruf, keine Tokens) und alle anderen Server sperren.
+ * Ohne init-Ereignis: keine Sperren - der Lauf geht dann wie bisher mit allen Servern.
+ */
+export async function ermittleMcpSperren(lauf, { privat, dienst, env, starte = starteClaude }) {
+  const def = LAEUFE[lauf];
+  if (!def.nurMcp) return [];
+  const args = claudeArgumente(lauf, { dienst, arbeit: arbeitsOrdner(privat, lauf), privat, prompt: 'Antworte nur mit: OK' });
+  const r = await starte(claudeBin(env), args, { cwd: dienst, env: claudeUmgebung(env, lauf, def.teile[0]), zeitlimitMs: 120_000, pflicht: [], nurInit: true });
+  return mcpSperren(r?.init, def.nurMcp);
+}
+
+/**
+ * Gegenprobe ohne KI: hat der Teil sein Ergebnis abgeliefert? Lieferbelege: ein neuer Eintrag
+ * in `laeufe` seit dem Start (auch bei „nichts Neues“ wird eine leere Liste uebernommen).
+ * Service-Anfragen: die Uebernahme lief oder Claude endete mit „nichts Neues“.
+ */
+export function ergebnisBelegt(teilId, { privat, start, bewertung = {} }) {
+  if (teilId === 'lieferbelege') {
+    try { return leseBelege(lieferbelegePfad(privat)).laeufe.some(l => Date.parse(l?.am) >= Date.parse(start)); } catch { return false; }
+  }
+  if (teilId === 'serviceanfragen') {
+    return (bewertung.aufrufe || []).some(a => /npm run -s service -- uebernehmen/.test(a)) || /nichts Neues/i.test(bewertung.abschluss || '');
+  }
+  return false;
+}
+
+/**
+ * Postfach: Vorpruefung per IMAP (operations/lib/postfach-vorpruefung.mjs), danach je Teil
+ * Claude nur bei Bedarf. Ein Fehler in einem Teil haelt den anderen nicht auf.
+ */
+async function postfachLauf(a, o, deps) {
+  const { privat, env, aus, melde, jetzt } = o;
+  const def = LAEUFE.postfach;
+  const abgeschaltet = String(env.TP_POSTFACH_VORPRUEFUNG || '').toLowerCase() === 'aus';
+  let vp = null;
+  if (!a.trocken && !a.erzwingen && !abgeschaltet) {
+    try { vp = await (deps.postfachAbfragen || postfachAbfragen)({ privat }); } catch (e) { vp = { fehler: String(e?.message || e).slice(0, 160) }; }
+  }
+  if (!a.trocken) {
+    try { o.mcpGesperrt = await (deps.mcpSperren || ermittleMcpSperren)('postfach', { privat, dienst: o.dienst, env }); } catch { o.mcpGesperrt = []; }
+  } else {
+    aus(`Vorprüfung: ${abgeschaltet ? 'abgeschaltet (TP_POSTFACH_VORPRUEFUNG=aus)' : 'vor dem Start per IMAP nur die Mail-Kennungen der Auftragssuchen (nur im echten Lauf); Claude startet nur bei Neuem, nach einem Fehlschlag und einmal am Tag'}`);
+    aus(`MCP: nur ${def.nurMcp.join(', ')} – alle anderen Server sperrt der echte Lauf nach einer Werkzeugprobe (--disallowedTools mcp__<server>)`);
+  }
+  let alleOk = true;
+  for (const teil of def.teile) {
+    let status = {};
+    try { status = liesStatus(privat, teil.id); } catch { status = {}; }
+    const daten = vp && !vp.fehler ? vp[teil.id] : null;
+    const ent = a.erzwingen ? { starten: true, grund: 'erzwungen' }
+      : abgeschaltet ? { starten: true, grund: 'Vorprüfung abgeschaltet (TP_POSTFACH_VORPRUEFUNG=aus)' }
+        : vp?.fehler ? { starten: true, grund: `Vorprüfung nicht möglich: ${vp.fehler}` }
+          : daten ? entscheide({ ...daten, status, jetzt }) : { starten: true, grund: 'ohne Vorprüfung' };
+    if (!a.trocken) aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → ${ent.starten ? `Claude startet (${ent.grund})` : `Claude startet nicht (${ent.grund})`}${o.mcpGesperrt?.length ? ` · ${o.mcpGesperrt.length} MCP-Server gesperrt` : ''}`);
+    if (!a.trocken && !ent.starten) {
+      schreibStatus(privat, teil.id, { ok: true, art: null, meldung: 'nichts Neues (Vorprüfung ohne KI)', vorpruefungGrund: ent.grund, hinweis: null }, jetzt);
+      continue;
+    }
+    let r;
+    try { r = await teilAusfuehren('postfach', teil, o); } catch (e) { r = { ok: false, art: e.art || 'start', meldung: e.message }; aus(`${teil.id}: FEHLER ${e.message}`); }
+    if (a.trocken) continue;
+    if (r.art === 'abgelehnt') r = harmloseAblehnung(r, ergebnisBelegt(teil.id, { privat, start: r.start, bewertung: r }));
+    const ende = new Date();
+    const { mitteilen } = schreibStatus(privat, teil.id, {
+      ok: r.ok, art: r.art, meldung: r.meldung, letzterClaudeLauf: r.start || jetzt.toISOString(), tokens: r.tokens ?? null,
+      vorpruefungGrund: ent.grund, letzterClaudeOk: r.ok,
+      hinweis: r.hinweis || null,
+      ...(r.ok ? { letzterClaudeTag: nachErfolg({ jetzt }).letzterClaudeTag } : {}),
+      ...(r.ok && daten ? { vorpruefung: nachErfolg({ gefunden: daten.gefunden, merkmalNeu: daten.merkmalNeu, jetzt }).vorpruefung } : {}),
+    }, ende);
+    if (mitteilen) melde(teil.titel, r.meldung);
+    alleOk &&= r.ok;
+  }
+  return alleOk ? 0 : 1;
+}
+
 /** Laeuft gerade ein Nachziehen des Dienst-Checkouts (#1715)? Frisch = Prozess lebt, juenger als dessen SPERRE_ALT_MS. */
 export function nachziehenAktiv(privat) {
   return !sperreVerwaist(path.join(privat, 'betrieb-nachziehen.lock'));
@@ -282,7 +365,10 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
 
   if (a.werkzeugprobe) {
     let ok = true;
-    for (const teil of def.teile) ok = (await teilAusfuehren(a.lauf, teil, { ...o, probe: true })).ok && ok;
+    // Wie im echten Lauf: erst die fremden MCP-Server ermitteln und sperren, dann pruefen.
+    const mcpGesperrt = def.nurMcp ? await (deps.mcpSperren || ermittleMcpSperren)(a.lauf, { privat, dienst, env }) : [];
+    if (def.nurMcp) aus(`MCP: nur ${def.nurMcp.join(', ')} · ${mcpGesperrt.length} andere Server gesperrt${mcpGesperrt.length ? ` (${mcpGesperrt.map(s => s.replace(/^mcp__/, '')).join(', ')})` : ''}`);
+    for (const teil of def.teile) ok = (await teilAusfuehren(a.lauf, teil, { ...o, probe: true, mcpGesperrt })).ok && ok;
     return ok ? 0 : 1;
   }
   if (!a.erzwingen && !a.trocken && !imFenster(jetzt, def.fenster)) {
@@ -309,18 +395,7 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   if (!a.trocken && aktiv(privat)) { sperre.freigeben(); return ueberspringen('wartet auf Nachziehen'); }
   try {
     if (a.lauf === 'fehlermeldungen') return await fehlermeldungenLauf(a, o, deps);
-    let alleOk = true;
-    for (const teil of def.teile) {
-      let r;
-      try { r = await teilAusfuehren(a.lauf, teil, o); } catch (e) { r = { ok: false, art: e.art || 'start', meldung: e.message }; aus(`${teil.id}: FEHLER ${e.message}`); }
-      if (a.trocken) continue;
-      const { mitteilen } = schreibStatus(privat, teil.id, {
-        ok: r.ok, art: r.art, meldung: r.meldung, hinweis: null, letzterClaudeLauf: r.start || jetzt.toISOString(), tokens: r.tokens ?? null,
-      }, new Date());
-      if (mitteilen) melde(teil.titel, r.meldung);
-      alleOk &&= r.ok;
-    }
-    return alleOk ? 0 : 1;
+    return await postfachLauf(a, o, deps);
   } finally {
     sperre.freigeben();
   }
