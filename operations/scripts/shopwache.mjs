@@ -17,8 +17,8 @@
  * Nebenbei misst die Wache den freien Speicher der Platte, auf der $TP_PRIVAT_DIR
  * liegt (operations/lib/speicher.mjs): Feld `speicher` mit eigener Ampel. Er zaehlt
  * nicht zur Shop-Ampel - ein voller Mac ist kein kaputter Shop -, das Control
- * Center zeigt ihn als eigenes To-do. Bei Rot kommt zusaetzlich hoechstens einmal am Tag
- * eine Mac-Mitteilung (speicherMelden, Tag in shopwache/speicher-mitteilung.json).
+ * Center zeigt ihn als eigenes To-do. Bei Rot kommt zusaetzlich hoechstens einmal am Tag, in der
+ * Arbeitszeit, eine Mac-Mitteilung (speicherMelden, Tag in shopwache/speicher-mitteilung.json).
  */
 
 import fs from 'node:fs';
@@ -102,6 +102,15 @@ export function ergebnisAblegen(ziel, ergebnis) {
   return eintrag;
 }
 
+/**
+ * Erst den Speicher melden, dann ablegen: bei voller Platte bricht das Schreiben von
+ * status.json mit ENOSPC ab - die Mitteilung soll gerade dann noch rausgehen (Pruefung 28.10.).
+ */
+export function meldenUndAblegen(ziel, ergebnis, { melde = mitteilung, jetzt = new Date() } = {}) {
+  const gemeldet = speicherMelden(ergebnis.speicher, { datei: path.join(path.dirname(ziel), 'speicher-mitteilung.json'), melde, jetzt });
+  return { gemeldet, wechsel: ergebnisAblegen(ziel, ergebnis) };
+}
+
 async function main() {
   const protokoll = mitZeitstempel(console);
   const a = argumente(process.argv.slice(2));
@@ -117,12 +126,10 @@ async function main() {
 
   const ergebnis = await pruefe(holen, { basis: a.basis, stichproben });
   ergebnis.speicher = speicherStand(dir);
-  const wechsel = ergebnisAblegen(ziel, ergebnis);
+  const { gemeldet, wechsel } = meldenUndAblegen(ziel, ergebnis);
 
   protokoll.log(`Shop-Wache: ${ergebnis.ampel.toUpperCase()} · ${ergebnis.kritisch} kritisch, ${ergebnis.warnungen} Warnungen · Speicher ${speicherText(ergebnis.speicher)} · ${ziel}`);
-  if (speicherMelden(ergebnis.speicher, { datei: path.join(path.dirname(ziel), 'speicher-mitteilung.json'), melde: mitteilung })) {
-    protokoll.log('  Speicher rot: Mac-Mitteilung verschickt (naechste fruehestens morgen)');
-  }
+  if (gemeldet) protokoll.log('  Speicher rot: Mac-Mitteilung verschickt (naechste fruehestens morgen)');
   for (const b of ergebnis.befunde) protokoll.log(`  [${b.art}] ${b.titel}: ${b.text}`);
   if (!stichproben.length) protokoll.log('  (keine Preisstichprobe - Lexikon-Export fehlt)');
   if (wechsel?.art === 'ende') protokoll.log(`  Stoerung beendet nach ${wechsel.dauerMinuten ?? '?'} Minuten (seit ${wechsel.beginn})`);

@@ -4,11 +4,12 @@
  * oder erzeugt (Raumbilder, Schaerfe, Downloads), den freien Platz pruefen.
  *
  *   npm run -s speicher:pruefen              # Exit 1 unter 20 GiB frei - Lauf nicht starten
- *   npm run -s speicher:pruefen -- --min 30  # eigene Grenze in GiB
+ *   npm run -s speicher:pruefen -- --min 30  # eigene Grenze in GiB (falsche Angabe: Exit 2)
  *
- * Gemessen wird die Platte von $TP_PRIVAT_DIR (dort liegen die Bildarbeitsordner). Nicht
- * messbar: Exit 0 mit Hinweis. Aus Python: `subprocess.run(["npm", "run", "-s",
- * "speicher:pruefen"], cwd=<Repository>).returncode` und bei 1 abbrechen.
+ * Exit ungleich 0 heisst immer: nicht starten. Gemessen wird die Platte von $TP_PRIVAT_DIR
+ * (dort liegen die Bildarbeitsordner). Nicht messbar: Exit 0 mit Hinweis. Aus Python:
+ * `subprocess.run(["npm", "run", "-s", "speicher:pruefen"], cwd=<Repository>).returncode` und
+ * bei jedem Wert ungleich 0 abbrechen.
  */
 
 import path from 'node:path';

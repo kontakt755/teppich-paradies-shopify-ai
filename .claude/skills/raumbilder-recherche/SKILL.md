@@ -19,7 +19,7 @@ Quelle gibt. Ergebnis ist eine Zeile in `stand.tsv`, kein Upload.
   ist die Linie schon geklaert.
 - Python mit `pypdf`, `numpy`, `pillow`: `.venv/bin/python` im Arbeitsordner.
 - **Vor jedem Lauf, der Bilder holt oder erzeugt:** `npm run -s speicher:pruefen` im Repository.
-  Exit 1 (unter 20 GiB frei) heisst: nicht starten, erst Platz schaffen (Werkbank w-170). Die Platte
+  Exit ungleich 0 heisst: nicht starten (1 = unter 20 GiB frei), erst Platz schaffen (Werkbank w-170). Die Platte
   stand am 28.10. bei 12 bis 17 GiB; laeuft sie voll, stehen Sync, Sicherung und Uploads still.
 
 ## Erlaubte Bildquellen (in dieser Reihenfolge)

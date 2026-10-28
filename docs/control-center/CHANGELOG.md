@@ -8,12 +8,14 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   frei, der Monteur-Upload sperrte schon zeitweise. Die Warnung gab es nur im Control Center, und
   Bildläufe hatten keine Bremse.
   - `npm run -s speicher:pruefen` (`operations/scripts/speicher-pruefen.mjs`, `bildlaufFrei` in
-    `operations/lib/speicher.mjs`): Exit 1 unter 20 GiB frei, `--min <GiB>` für eine eigene Grenze,
-    nicht messbar = darf starten. Die Bildlauf-Skripte liegen privat unter `$TP_PRIVAT_DIR`; Skill
+    `operations/lib/speicher.mjs`): Exit ungleich 0 heißt nicht starten (1 = unter 20 GiB frei,
+    2 = falsche Angabe), `--min <GiB>` für eine eigene Grenze, nicht messbar = darf starten. Die Bildlauf-Skripte liegen privat unter `$TP_PRIVAT_DIR`; Skill
     `raumbilder-recherche`, Skill `werkzeuge` und `operations/README.md` schreiben den Aufruf vor jedem
     Lauf vor (aus Python per `subprocess.run`).
-  - Shop-Wache: bei Rot zusätzlich eine Mac-Mitteilung, höchstens einmal je Berliner Kalendertag
-    (`speicherMelden`, Tag in `shopwache/speicher-mitteilung.json`). Die Mitteilung liegt jetzt in
+  - Shop-Wache: bei Rot zusätzlich eine Mac-Mitteilung, höchstens einmal je Berliner Kalendertag und
+    nur in der Arbeitszeit Mo–Sa 7–19 Uhr (`speicherMelden`, Tag in `shopwache/speicher-mitteilung.json`).
+    Gemeldet wird vor dem Schreiben von `status.json` (`meldenUndAblegen`), damit eine volle Platte
+    die Mitteilung nicht verhindert. Die Mitteilung liegt jetzt in
     `operations/lib/mac-mitteilung.mjs`; `claude-lauf.mjs` exportiert sie unverändert weiter.
 - **Getestet:** `freier-speicher.test.mjs` neu (Bremse unter/über 20 GiB, eigene Grenze, Messfehler,
   Befehl mit Exit-Codes und falschen Optionen, Mitteilung nur bei Rot, einmal je Tag, Tageswechsel
