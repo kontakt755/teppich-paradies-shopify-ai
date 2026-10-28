@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { musterKauf, warengruppe, kundeSchluessel } from '../lib/muster-kauf.mjs';
+import { musterKauf, warengruppe, kundenSchluessel } from '../lib/muster-kauf.mjs';
 import { argumente, bericht } from '../scripts/muster-kauf.mjs';
 
 const TAG = 24 * 60 * 60 * 1000;
@@ -21,10 +21,39 @@ test('Warengruppe aus Mustertitel und Angaben', () => {
   assert.equal(warengruppe('Kostenloses Muster'), 'Sonstiges');
 });
 
-test('Kunde: Kennung vor E-Mail, ohne beides nicht zuordenbar', () => {
-  assert.equal(kundeSchluessel({ customer: { id: 'gid://shopify/Customer/1' }, email: 'a@b.de' }), 'id:gid://shopify/Customer/1');
-  assert.equal(kundeSchluessel({ customer: null, email: ' A@B.de ' }), 'mail:a@b.de');
-  assert.equal(kundeSchluessel({ customer: null, email: null }), null);
+test('Kunde: Kennung und E-Mail, ohne beides nicht zuordenbar', () => {
+  assert.deepEqual(kundenSchluessel({ customer: { id: 'gid://shopify/Customer/1' }, email: 'a@b.de' }), ['id:gid://shopify/Customer/1', 'mail:a@b.de']);
+  assert.deepEqual(kundenSchluessel({ customer: { id: 'K', email: 'A@b.de' }, email: 'a@b.de ' }), ['id:K', 'mail:a@b.de']);
+  assert.deepEqual(kundenSchluessel({ customer: null, email: ' A@B.de ' }), ['mail:a@b.de']);
+  assert.deepEqual(kundenSchluessel({ customer: null, email: null }), []);
+});
+
+test('Muster mit Kennung, Kauf nur mit E-Mail (und umgekehrt) gehoeren zusammen', () => {
+  const mitKunde = (id, email) => ({ id, email });
+  const orders = [
+    // Muster mit Kennung (Kundenkonto kennt die E-Mail), Kauf als Gast nur mit E-Mail
+    { ...bestellung('#1', 60, null, [muster('Muster Wovena Teppich nach Maß')]), customer: mitKunde('k1', 'eins@beispiel.de') },
+    bestellung('#2', 55, null, [ware('Teppich nach Maß', 300)], { email: 'EINS@beispiel.de' }),
+    // Muster als Gast, Kauf mit Kundenkonto derselben E-Mail
+    bestellung('#3', 60, null, [muster('Muster Nuvara Teppichboden')], { email: 'zwei@beispiel.de' }),
+    { ...bestellung('#4', 50, null, [ware('Teppichboden')]), customer: mitKunde('k2', null), email: 'zwei@beispiel.de' },
+  ];
+  const e = musterKauf(orders, { jetzt: JETZT });
+  assert.equal(e.gesamt.musterkunden, 2);
+  assert.equal(e.gesamt.kaufReif, 2);
+});
+
+test('Median nur aus abgeschlossenen Fenstern', () => {
+  const orders = [
+    bestellung('#1', 60, 'k1', [muster('Muster Halina Teppichboden')]),
+    bestellung('#2', 40, 'k1', [ware('Teppichboden')]), // reif, 20 Tage
+    bestellung('#3', 10, 'k2', [muster('Muster Halina Teppichboden')]),
+    bestellung('#4', 9, 'k2', [ware('Teppichboden')]), // Fenster offen, 1 Tag
+  ];
+  const e = musterKauf(orders, { jetzt: JETZT });
+  assert.equal(e.gesamt.medianTage, 20);
+  assert.deepEqual(e.gesamt.tageBisKaufOffen, [1]);
+  assert.match(bericht(e), /Median 20 Tage bis zum Kauf \(nur reife\)/);
 });
 
 test('Kauf binnen 30 Tagen zaehlt, spaeter oder vorher nicht', () => {

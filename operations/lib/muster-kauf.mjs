@@ -11,13 +11,17 @@
  * - Warenkauf: nicht stornierte Bestellung, keine Testbestellung
  *   (operations/lib/testbestellung.mjs), mit mindestens einer Position, die
  *   kein Muster und kein Service ist und nach Rabatten mehr als 0 kostet.
- * - Kunde: Shopify-Kundenkennung, sonst die E-Mail (klein). Bestellungen ohne
- *   beides lassen sich keinem Kunden zuordnen und bleiben draussen.
+ * - Kunde: Shopify-Kundenkennung und E-Mail (klein) gehoeren zusammen. Traegt
+ *   die Musterbestellung nur eine Kennung und der Kauf nur die E-Mail (oder
+ *   umgekehrt), verbindet sie eine dritte Bestellung mit beidem - oder die
+ *   Kundenangabe selbst (customer.email). Bestellungen ohne beides lassen sich
+ *   keinem Kunden zuordnen und bleiben draussen.
  * - Je Kunde zaehlt die ERSTE Musterbestellung im Zeitraum. Kauf heisst: eine
  *   Warenbestellung nach dieser Musterbestellung, hoechstens `nachTagen` spaeter.
- * - Reif ist eine Musterbestellung, deren Fenster schon ganz vorbei ist. Die
- *   Quote wird nur ueber reife Musterkunden gerechnet; juengere stehen als
- *   "Fenster offen" daneben (ein Kauf dort zaehlt trotzdem schon).
+ * - Reif ist eine Musterbestellung, deren Fenster schon ganz vorbei ist. Quote
+ *   und Median der Tage bis zum Kauf werden nur ueber reife Musterkunden
+ *   gerechnet; juengere stehen als "Fenster offen" daneben (ein Kauf dort
+ *   zaehlt trotzdem schon, seine Tage stehen getrennt in tageBisKaufOffen).
  * - Warengruppe des Musters: aus Titel und Angaben der Musterposition (Wortliste
  *   unten), die Gruppe des Kaufs aus der Produktart der gekauften Ware.
  */
@@ -61,10 +65,36 @@ function positionen(order) {
   return li.map(position);
 }
 
-export function kundeSchluessel(order) {
-  if (order.customer?.id) return `id:${order.customer.id}`;
-  const mail = String(order.email ?? order.customer?.email ?? '').trim().toLowerCase();
-  return mail ? `mail:${mail}` : null;
+/** Alle Kennzeichen einer Bestellung, die auf denselben Kunden zeigen. */
+export function kundenSchluessel(order) {
+  const schluessel = [];
+  if (order.customer?.id) schluessel.push(`id:${order.customer.id}`);
+  for (const roh of [order.email, order.customer?.email]) {
+    const mail = String(roh ?? '').trim().toLowerCase();
+    if (mail && !schluessel.includes(`mail:${mail}`)) schluessel.push(`mail:${mail}`);
+  }
+  return schluessel;
+}
+
+/** Fasst Kennungen und E-Mails zu einem Kunden zusammen (Union-Find). */
+function kundenZuordnung(orders) {
+  const eltern = new Map();
+  const wurzel = (k) => {
+    let w = k;
+    while (eltern.get(w) !== w) w = eltern.get(w);
+    eltern.set(k, w);
+    return w;
+  };
+  for (const o of orders) {
+    const [erster, ...rest] = kundenSchluessel(o);
+    if (!erster) continue;
+    for (const k of [erster, ...rest]) if (!eltern.has(k)) eltern.set(k, k);
+    for (const k of rest) eltern.set(wurzel(k), wurzel(erster));
+  }
+  return (o) => {
+    const [erster] = kundenSchluessel(o);
+    return erster ? wurzel(erster) : null;
+  };
 }
 
 function istWarenPosition(p) {
@@ -83,13 +113,14 @@ function istWarenPosition(p) {
 export function musterKauf(orders = [], { tage = 90, nachTagen = 30, jetzt = Date.now() } = {}) {
   const von = jetzt - tage * TAG_MS;
   const gueltig = orders.filter((o) => !o.cancelledAt && !istTestbestellung(o));
+  const kundeVon = kundenZuordnung(gueltig);
   const muster = new Map(); // Kunde -> erste Musterbestellung im Zeitraum
   const waren = new Map(); // Kunde -> Warenbestellungen
   let ohneKunde = 0;
   for (const o of gueltig) {
     const zeit = Date.parse(o.createdAt);
     const pos = positionen(o);
-    const kunde = kundeSchluessel(o);
+    const kunde = kundeVon(o);
     const istMuster = istNurMusterBestellung(pos);
     const ware = pos.filter(istWarenPosition);
     if (!kunde) { if (istMuster && zeit >= von) ohneKunde += 1; continue; }
@@ -107,7 +138,7 @@ export function musterKauf(orders = [], { tage = 90, nachTagen = 30, jetzt = Dat
   }
 
   const gruppen = {};
-  const leer = () => ({ musterkunden: 0, reif: 0, kaufReif: 0, fensterOffen: 0, kaufOffen: 0, tageBisKauf: [], gekauft: {} });
+  const leer = () => ({ musterkunden: 0, reif: 0, kaufReif: 0, fensterOffen: 0, kaufOffen: 0, tageBisKauf: [], tageBisKaufOffen: [], gekauft: {} });
   const summe = leer();
   for (const [kunde, m] of muster) {
     const g = (gruppen[m.gruppe] ??= leer());
@@ -119,8 +150,8 @@ export function musterKauf(orders = [], { tage = 90, nachTagen = 30, jetzt = Dat
       z.musterkunden += 1;
       if (reif) z.reif += 1; else z.fensterOffen += 1;
       if (kauf) {
-        if (reif) z.kaufReif += 1; else z.kaufOffen += 1;
-        z.tageBisKauf.push(Math.round((kauf.zeit - m.zeit) / TAG_MS));
+        const tage = Math.round((kauf.zeit - m.zeit) / TAG_MS);
+        if (reif) { z.kaufReif += 1; z.tageBisKauf.push(tage); } else { z.kaufOffen += 1; z.tageBisKaufOffen.push(tage); }
         for (const k of kauf.gruppen) z.gekauft[k] = (z.gekauft[k] ?? 0) + 1;
       }
     }
@@ -128,6 +159,7 @@ export function musterKauf(orders = [], { tage = 90, nachTagen = 30, jetzt = Dat
   const fertig = (z) => ({
     ...z,
     quote: z.reif ? Math.round((z.kaufReif / z.reif) * 1000) / 10 : null,
+    // nur abgeschlossene Fenster - sonst zieht ein frueher Kauf im offenen Fenster den Wert nach unten
     medianTage: median(z.tageBisKauf),
   });
   return {

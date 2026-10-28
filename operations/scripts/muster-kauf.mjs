@@ -49,7 +49,7 @@ export function bericht(e) {
   const zeile = (name, z) => {
     const quote = z.quote === null ? '–' : `${z.quote} %`;
     const offen = z.fensterOffen ? ` · Fenster offen: ${z.fensterOffen} (davon ${z.kaufOffen} schon gekauft)` : '';
-    const dauer = z.medianTage === null ? '' : ` · Median ${z.medianTage} Tage bis zum Kauf`;
+    const dauer = z.medianTage === null ? '' : ` · Median ${z.medianTage} Tage bis zum Kauf (nur reife)`;
     return `${name.padEnd(18)} ${String(z.musterkunden).padStart(4)} Musterkunden · reif ${z.reif}, davon gekauft ${z.kaufReif} = ${quote}${offen}${dauer}`;
   };
   const kopf = `Muster -> Kauf: Musterbestellungen ${e.zeitraum.von.slice(0, 10)} bis ${e.zeitraum.bis.slice(0, 10)}, Kauf binnen ${e.zeitraum.nachTagen} Tagen`;
