@@ -1,32 +1,38 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-26T19:05:30Z",
-    "verifiedBy": "Shopify Admin API nach workflow:live (main 2176c750, PR #1732/#1733/#1734/#1735); Rolle MAIN frisch bestaetigt."
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-26T19:05:30Z",
-    "verifiedBy": "Shopify Admin API nach workflow:live (main 2176c750, PR #1732/#1733/#1734/#1735); Rolle UNPUBLISHED frisch bestaetigt."
+    "verifiedAt": "2026-10-28T09:37:04Z",
+    "verifiedBy": "Shopify Admin API nach workflow:live (main c6207ceb, PR #1738/#1739); Rolle MAIN frisch bestaetigt."
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-28T09:37:04Z",
+    "verifiedBy": "Shopify Admin API nach workflow:live (main c6207ceb, PR #1738/#1739); Rolle UNPUBLISHED frisch bestaetigt."
   },
   "fallback": {
     "themeId": "206590509390",
     "name": "Fallback 2026-10-12 - nicht loeschen",
-    "verifiedAt": "2026-10-26T19:05:30Z",
-    "verifiedBy": "Shopify Admin API nach workflow:live (main 2176c750); Rolle UNPUBLISHED und bestehender Name frisch bestaetigt. Keine Aenderung am Theme.",
+    "verifiedAt": "2026-10-28T09:37:04Z",
+    "verifiedBy": "Shopify Admin API nach workflow:live (main c6207ceb); Rolle UNPUBLISHED und bestehender Name frisch bestaetigt. Keine Aenderung am Theme.",
     "note": "Niemals loeschen oder ueberschreiben. Ersatz fuer 204440699214, das am 2026-10-12 beim Aufraeumen im Shopify-Admin geloescht wurde (der Admin zeigt Entwicklungs-Themes nicht, dafuer dieses). Kopie des Live-Standes nach workflow:live von main da936848 - enthaelt config/settings_data.json, die im Repository nicht gepflegt wird."
   },
   "arbeit": {
     "themeId": "204965413198",
     "name": "Arbeitstheme - nie Preview, nie publishen",
-    "verifiedAt": "2026-10-26T19:05:30Z",
-    "verifiedBy": "Shopify Admin API nach workflow:live (main 2176c750); Rolle UNPUBLISHED und bestehender Name frisch bestaetigt. Keine Aenderung am Theme.",
+    "verifiedAt": "2026-10-28T09:37:04Z",
+    "verifiedBy": "Shopify Admin API nach workflow:live (main c6207ceb); Rolle UNPUBLISHED und bestehender Name frisch bestaetigt. Keine Aenderung am Theme.",
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-28",
+      "note": "Durch workflow:live (main c6207ceb, PR #1738/#1739) am 2026-10-28T09:37:04Z abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify Admin API bestaetigt."
+    },
     {
       "themeId": "204436144462",
       "name": "Kopie von preview-main-2026-09-04",
