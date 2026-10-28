@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   argumente, zielReihenfolge, sortiereBisFertig, planeZuege, planeRueckweg, wendeAn, inStuecken, istGleich, MAX_ZUEGE,
+  istSichtbar, bewerte,
 } from '../../scripts/auslauf-sortieren.mjs';
 
 const A = new Set(['a1', 'a2', 'a3']);
@@ -78,4 +79,43 @@ test('Zuege kommen nie an: nach den Versuchen FEHL, kein Endlosschleifen', () =>
   const r = sortiereBisFertig({ lies: () => ['a1', 'n1'], schiebe: () => {}, auslauf: A, versuche: 3 });
   assert.equal(r.ok, false);
   assert.equal(r.versuche, 3);
+});
+
+// Fehlersuche 2026-10-28: Mittelflor meldete "TUN", weil archivierte Produkte und
+// Entwuerfe hinter den Auslaufartikeln standen - im Shop standen diese schon hinten.
+const sichtbar = id => ({ id, status: 'ACTIVE', onlineStoreUrl: `https://shop/products/${id}` });
+const archiviert = id => ({ id, status: 'ARCHIVED', onlineStoreUrl: null });
+const entwurf = id => ({ id, status: 'DRAFT', onlineStoreUrl: null });
+
+test('Sichtbar heisst aktiv und im Onlineshop veroeffentlicht', () => {
+  assert.equal(istSichtbar(sichtbar('n1')), true);
+  assert.equal(istSichtbar(archiviert('n1')), false);
+  assert.equal(istSichtbar(entwurf('n1')), false);
+  assert.equal(istSichtbar({ id: 'n1', status: 'ACTIVE', onlineStoreUrl: null }), false, 'aktiv, aber nicht im Onlineshop');
+});
+
+test('Unsichtbare Produkte hinter den Auslaufartikeln: nichts zu tun', () => {
+  const b = bewerte([sichtbar('n1'), sichtbar('n2'), sichtbar('a1'), sichtbar('a2'), archiviert('x1'), entwurf('x2')], A);
+  assert.equal(b.relevant, true);
+  assert.deepEqual(b.zuege, []);
+  assert.equal(b.gesamt, 4);
+  assert.equal(b.ausgeblendet, 2);
+  assert.equal(b.anzahl, 2);
+  assert.equal(b.erster, 3);
+});
+
+test('Sichtbares Produkt hinter einem Auslaufartikel: Zuege auf der vollen Liste, danach stimmt auch die sichtbare', () => {
+  const produkte = [sichtbar('n1'), sichtbar('a1'), archiviert('x1'), sichtbar('n2'), entwurf('x2')];
+  const b = bewerte(produkte, A);
+  assert.equal(b.erster, 2);
+  assert.ok(b.zuege.length > 0);
+  const nachher = wendeAn(b.reihenfolge, b.zuege);
+  assert.deepEqual(nachher, zielReihenfolge(b.reihenfolge, A));
+  const ids = new Set(produkte.filter(istSichtbar).map(p => p.id));
+  assert.deepEqual(nachher.filter(id => ids.has(id)), ['n1', 'n2', 'a1']);
+});
+
+test('Nur unsichtbare Auslaufartikel oder nur Auslaufartikel sichtbar: nicht relevant', () => {
+  assert.equal(bewerte([sichtbar('n1'), { id: 'a1', status: 'ARCHIVED', onlineStoreUrl: null }, sichtbar('n2')], A).relevant, false);
+  assert.equal(bewerte([sichtbar('a1'), sichtbar('a2'), archiviert('n1')], A).relevant, false);
 });

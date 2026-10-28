@@ -16,7 +16,9 @@
  * Teppich nach Mass) sind ohnehin MANUAL sortiert; dort verschiebt
  * collectionReorderProducts nur die Auslaufartikel ans Ende und laesst die
  * Reihenfolge aller anderen unveraendert. Paginierung und Filter bleiben
- * Shopifys eigene.
+ * Shopifys eigene. Bewertet wird, was Kunden sehen: nur aktive, im Onlineshop
+ * veroeffentlichte Produkte (istSichtbar); archivierte und Entwuerfe zaehlen
+ * nicht mit.
  *
  * Bestseller-sortierte Kollektionen (Vinylboden, Angebote, Teppichfliesen)
  * bleiben bewusst, wie sie sind: Umstellen auf MANUAL wuerde die
@@ -80,6 +82,42 @@ export function planeZuege(reihenfolge, auslauf) {
   if (istGleich(reihenfolge, zielReihenfolge(reihenfolge, auslauf))) return [];
   const ende = String(reihenfolge.length);
   return reihenfolge.filter(id => auslauf.has(id)).map(id => ({ id, newPosition: ende }));
+}
+
+/**
+ * Sichtbar im Shop: aktiv und im Onlineshop veroeffentlicht. Archivierte
+ * Produkte und Entwuerfe bleiben Mitglied der Kollektion, der Shop zeigt sie
+ * aber nicht. Fehlersuche 2026-10-28: Mittelflor hatte 84 Produkte in
+ * Shopify, 76 im Shop - 4 archivierte und 4 Entwuerfe hinter den
+ * Auslaufartikeln meldeten "TUN", obwohl die Auslaufartikel im Shop schon
+ * ganz hinten standen.
+ */
+export function istSichtbar(p) {
+  return p.status === 'ACTIVE' && Boolean(p.onlineStoreUrl);
+}
+
+/**
+ * Bewertet eine Kollektion nach dem, was Kunden sehen. Die Zuege werden auf
+ * der vollen Reihenfolge geplant, weil collectionReorderProducts Positionen
+ * in der vollen Liste erwartet; alle Auslaufartikel ans Ende der vollen Liste
+ * heisst auch: ans Ende der sichtbaren.
+ * @param {{id: string, status: string, onlineStoreUrl: string|null}[]} produkte in Kollektionsreihenfolge
+ * @param {Set<string>} auslauf IDs mit Tag "auslauf"
+ */
+export function bewerte(produkte, auslauf) {
+  const reihenfolge = produkte.map(p => p.id);
+  const sichtbar = produkte.filter(istSichtbar).map(p => p.id);
+  const anzahl = sichtbar.filter(id => auslauf.has(id)).length;
+  const relevant = anzahl > 0 && anzahl < sichtbar.length;
+  return {
+    reihenfolge,
+    relevant,
+    anzahl,
+    gesamt: sichtbar.length,
+    ausgeblendet: reihenfolge.length - sichtbar.length,
+    erster: sichtbar.findIndex(id => auslauf.has(id)) + 1,
+    zuege: relevant && planeZuege(sichtbar, auslauf).length > 0 ? planeZuege(reihenfolge, auslauf) : [],
+  };
 }
 
 /** Zuege, die eine gespeicherte Reihenfolge wiederherstellen (Rollback). */
@@ -160,15 +198,20 @@ function manuelleKollektionen(nur) {
   return liste.filter(c => c.sortOrder === 'MANUAL' && (!nur || nur.includes(c.handle)));
 }
 
-function reihenfolgeVon(kollektionId) {
-  const ids = [];
+/** Produkte der Kollektion in ihrer Reihenfolge, mit Status und Shop-Adresse (fuer istSichtbar). */
+function produkteVon(kollektionId) {
+  const produkte = [];
   let nach = null;
   do {
-    const d = admin(`query($id: ID!, $nach: String) { collection(id: $id) { products(first: 250, after: $nach, sortKey: COLLECTION_DEFAULT) { nodes { id } pageInfo { hasNextPage endCursor } } } }`, nach ? { id: kollektionId, nach } : { id: kollektionId });
-    ids.push(...d.collection.products.nodes.map(n => n.id));
+    const d = admin(`query($id: ID!, $nach: String) { collection(id: $id) { products(first: 250, after: $nach, sortKey: COLLECTION_DEFAULT) { nodes { id status onlineStoreUrl } pageInfo { hasNextPage endCursor } } } }`, nach ? { id: kollektionId, nach } : { id: kollektionId });
+    produkte.push(...d.collection.products.nodes);
     nach = d.collection.products.pageInfo.hasNextPage ? d.collection.products.pageInfo.endCursor : null;
   } while (nach);
-  return ids;
+  return produkte;
+}
+
+function reihenfolgeVon(kollektionId) {
+  return produkteVon(kollektionId).map(p => p.id);
 }
 
 function warteAufJob(jobId) {
@@ -221,17 +264,15 @@ function main() {
 
   const offen = [];
   for (const k of kollektionen) {
-    const reihenfolge = reihenfolgeVon(k.id);
-    const anzahl = reihenfolge.filter(id => auslauf.has(id)).length;
-    if (anzahl === 0 || anzahl === reihenfolge.length) continue;
-    const zuege = planeZuege(reihenfolge, auslauf);
-    const erster = reihenfolge.findIndex(id => auslauf.has(id));
-    if (zuege.length === 0) {
-      console.log(`ok   ${k.handle}: ${anzahl} Auslaufartikel stehen hinten (${reihenfolge.length} Produkte)`);
+    const b = bewerte(produkteVon(k.id), auslauf);
+    if (!b.relevant) continue;
+    const verborgen = b.ausgeblendet ? `, dazu ${b.ausgeblendet} nicht sichtbar` : '';
+    if (b.zuege.length === 0) {
+      console.log(`ok   ${k.handle}: ${b.anzahl} Auslaufartikel stehen hinten (${b.gesamt} sichtbare Produkte${verborgen})`);
       continue;
     }
-    console.log(`TUN  ${k.handle}: ${anzahl} Auslaufartikel, der erste auf Platz ${erster + 1} von ${reihenfolge.length}`);
-    offen.push({ ...k, reihenfolge, zuege });
+    console.log(`TUN  ${k.handle}: ${b.anzahl} Auslaufartikel, der erste auf Platz ${b.erster} von ${b.gesamt} sichtbaren${verborgen}`);
+    offen.push({ ...k, reihenfolge: b.reihenfolge, zuege: b.zuege });
   }
 
   if (offen.length === 0) {
