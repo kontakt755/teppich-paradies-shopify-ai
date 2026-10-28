@@ -124,14 +124,29 @@ function standText(m) {
   return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}`;
 }
 
+/** "Di., 20.10." - mit Wochentag und in Berlin, wie die Wartetage (#1754). */
+const tagDatum = iso => new Date(iso).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
+const gueltig = iso => !!iso && !Number.isNaN(new Date(iso).getTime());
+
+/** Muster, die noch nicht im Haus sind, und die belegten Daten ihrer Bestellung beim Lieferanten. */
+function nochNichtDa(k) {
+  const nichtDa = k.muster.filter(m => !m.abgehakt && !['da', 'lager'].includes(m.stand));
+  const bestellt = nichtDa.filter(m => m.stand === 'bestellt');
+  return { nichtDa, bestellt, isos: bestellt.map(m => m.bestelltAm).filter(gueltig).sort() };
+}
+
+/** " am 24.10." oder " zwischen 22.10. und 24.10." - leer ohne belegtes Datum. */
+function wannText(isos, format) {
+  if (!isos.length) return '';
+  const erst = format(isos[0]), letzt = format(isos.at(-1));
+  return erst === letzt ? ` am ${erst}` : ` zwischen ${erst} und ${letzt}`;
+}
+
 /** Anmerkung fuer einen wartenden Umschlag: was fehlt noch, seit wann bestellt, wie geht es weiter. */
 function warteAnmerkung(k) {
-  const nichtDa = k.muster.filter(m => !m.abgehakt && !['da', 'lager'].includes(m.stand));
+  const { nichtDa, bestellt, isos } = nochNichtDa(k);
   if (!nichtDa.length) return '';
-  const bestellt = nichtDa.filter(m => m.stand === 'bestellt');
-  const isos = bestellt.map(m => m.bestelltAm).filter(Boolean).sort();
-  const erst = isos.length ? datumKurz(isos[0]) : '', letzt = isos.length ? datumKurz(isos.at(-1)) : '';
-  const wann = !erst ? '' : erst === letzt ? ` am ${erst}` : ` zwischen ${erst} und ${letzt}`;
+  const wann = wannText(isos, datumKurz);
   const auto = bestellt.filter(m => m.automatisch).length;
   const wie = !bestellt.length ? '' : auto === bestellt.length ? ', automatisch per Mail' : auto ? ', teils automatisch per Mail' : '';
   const ohne = nichtDa.length - bestellt.length;
@@ -139,6 +154,28 @@ function warteAnmerkung(k) {
     + `${bestellt.length ? ` Beim Lieferanten bestellt${wann}${wie}.` : ''}`
     + `${ohne ? ` ${plural(ohne, 'Muster ist', 'Muster sind')} noch nicht bestellt – unter „Bestellen“ prüfen.` : ''}`
     + ' Kommt ein Muster an: abhaken. Sind alle abgehakt, ist der Umschlag packbereit.</p>';
+}
+
+/**
+ * Kopfzeile rechts, ohne Aufklappen (Inhaber 28.10.: "an welchem Datum bestellt wurde"): Bestelldatum
+ * samt Wartezeit, bei mehreren Bestellungen die erste. Fehlt noch etwas, auch wann es beim Lieferanten
+ * bestellt wurde - bisher stand das nur aufgeklappt.
+ */
+function datumHtml(k) {
+  const tage = k.wartetTage;
+  const warn = tage !== null && tage >= WARTET_AB_TAGEN && k.bereich !== 'gepackt';
+  const bestellt = gueltig(k.seit) ? `${k.bestellungen.length > 1 ? 'erste Bestellung' : 'bestellt'} am ${tagDatum(k.seit)}` : '';
+  const wartet = tage === null ? '' : tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`;
+  const zeile = [bestellt, wartet].filter(Boolean).join(' · ');
+  const beimLieferanten = k.bereich === 'gepackt' ? [] : nochNichtDa(k).isos;
+  return `${zeile ? `<span class="${warn ? 'wait-warn' : 'small muted'}">${esc(zeile)}</span>` : ''}`
+    + `${beimLieferanten.length ? `<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
+}
+
+/** Aufgeklappt bei mehreren Bestellungen in einem Umschlag: das Datum jeder einzelnen. */
+function bestelldatenHtml(k) {
+  if (k.bestellungen.length < 2 || !k.bestellungen.some(b => gueltig(b.datum))) return '';
+  return `<p class="small muted mp-bestelldaten">${k.bestellungen.map(b => esc(`${b.orderName} bestellt am ${gueltig(b.datum) ? tagDatum(b.datum) : 'unbekannt'}`)).join(' · ')}</p>`;
 }
 
 const adresseText = a => [a?.strasse, [a?.plz, a?.ort].filter(Boolean).join(' ')].filter(v => v && v !== '–').join(', ');
@@ -211,7 +248,6 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
   const lesend = istNurLesend();
   const mehrere = k.bestellungen.length > 1;
   const nummern = k.bestellungen.map(b => b.orderName).join(' · ');
-  const tage = k.wartetTage;
   const druckbar = !k.fehlt.length;
   const offen = k.muster.filter(m => !m.abgehakt).length;
   const fehlend = new Set(k.klaeren?.fehlt || []);
@@ -279,9 +315,10 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
       </div>
       <div class="mp-meta">
         <span class="small muted">${k.muster.length} Muster · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
-        ${tage === null ? '' : `<span class="${tage >= WARTET_AB_TAGEN && k.bereich !== 'gepackt' ? 'wait-warn' : 'small muted'}">${tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`}</span>`}
+        ${datumHtml(k)}
       </div>
     </summary>
+    ${bestelldatenHtml(k)}
     ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
     ${k.altvermerk && !k.klaeren ? `<p class="small muted">${esc(k.altvermerk)}</p>` : ''}
     ${k.gedruckt && k.bereich === 'klaeren' ? `<p class="small mp-vorbereitet">Umschlag vorbereitet: Aufkleber und Adresse ${esc(gedrucktText(k.gedruckt))}. Er wartet auf die fehlenden Muster.</p>` : ''}
