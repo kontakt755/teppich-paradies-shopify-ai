@@ -1,0 +1,191 @@
+{%- comment -%}
+  TP Reklamation (Werkbank w-182, Inhaber 28.10.2026): vier Schritte, wie eine
+  Reklamation am schnellsten bearbeitet wird, die Antwortfrist und der Satz,
+  dass die gesetzlichen Rechte unberuehrt bleiben. Die Seite selbst legt der
+  Inhaber im Admin an (Handle reklamation, Vorlage "reklamation").
+  Formular: /pages/kontakt?thema=reklamation - assets/tp-sample-request.js
+  setzt dort den Betreff und blendet das Feld Bestellnummer ein.
+  WhatsApp-Nummer aus den Theme-Einstellungen (tp_vs_whatsapp), wie Boden-Finder.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign rk_kontakt = pages['kontakt'].url | default: '/pages/kontakt' | append: '?thema=reklamation'
+  assign rk_wa = settings.tp_vs_whatsapp | strip
+  assign rk_mail = section.settings.email | strip
+-%}
+
+<section class="tp-s-sec tp-rk" aria-labelledby="tp-rk-titel-{{ section.id }}">
+  <div class="tp-s-wrap">
+    <header class="tp-rk__kopf">
+      <span class="tp-s-eyebrow">Service</span>
+      <h1 id="tp-rk-titel-{{ section.id }}" class="tp-s-h2">{{ section.settings.titel | default: page.title | escape }}</h1>
+      {%- if section.settings.intro != blank -%}
+        <div class="tp-rk__intro">{{ section.settings.intro }}</div>
+      {%- endif -%}
+    </header>
+
+    {%- if section.blocks.size > 0 -%}
+      <ol class="tp-rk__schritte" role="list">
+        {%- for block in section.blocks -%}
+          <li class="tp-rk__schritt" {{ block.shopify_attributes }}>
+            <span class="tp-rk__nr" aria-hidden="true">{{ forloop.index }}</span>
+            <div class="tp-rk__inhalt">
+              <h2 class="tp-s-h3">{{ block.settings.titel | escape }}</h2>
+              <div class="tp-rk__text">{{ block.settings.text }}</div>
+            </div>
+          </li>
+        {%- endfor -%}
+      </ol>
+    {%- endif -%}
+
+    <div class="tp-rk__wege">
+      <a class="tp-s-btn tp-s-btn--primary" href="{{ rk_kontakt }}">{{ section.settings.knopf | default: 'Reklamation melden' | escape }}</a>
+      {%- if rk_wa != blank -%}
+        <a class="tp-s-btn tp-s-btn--wa" href="https://wa.me/{{ rk_wa }}?text={{ 'Reklamation zur Bestellung Nr. ' | url_encode }}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg>
+          WhatsApp<span class="visually-hidden"> (öffnet in neuem Tab)</span>
+        </a>
+      {%- endif -%}
+      {%- if rk_mail != blank -%}
+        <a class="tp-s-btn tp-s-btn--ghost" href="mailto:{{ rk_mail }}?subject={{ 'Reklamation' | url_encode }}">E-Mail</a>
+      {%- endif -%}
+    </div>
+    {%- if section.settings.wege_hinweis != blank -%}
+      <p class="tp-rk__wege-hinweis">{{ section.settings.wege_hinweis | escape }}</p>
+    {%- endif -%}
+
+    {%- if section.settings.rechte != blank -%}
+      <div class="tp-rk__rechte">{{ section.settings.rechte }}</div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-rk__kopf { max-width: 720px; margin-bottom: 32px; }
+  .tp-rk__intro { margin-top: 12px; color: var(--tp-muted, #595959); font-size: var(--tp-fs-md); }
+  .tp-rk__intro p { margin: 0; }
+  .tp-rk__schritte {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 980px;
+  }
+  .tp-rk__schritt {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 22px;
+    border: 1px solid var(--tp-line, #e6e0d8);
+    border-radius: var(--tp-r, 10px);
+    background: #fff;
+  }
+  .tp-rk__nr {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--tp-bg-2, #f6f2ec);
+    color: var(--tp-ink, #1d1a17);
+    font-weight: 700;
+    font-size: var(--tp-fs-md);
+  }
+  .tp-rk__text { margin-top: 6px; color: var(--tp-ink-2, #4a443f); font-size: var(--tp-fs-md); line-height: 1.55; }
+  .tp-rk__text p { margin: 0; }
+  .tp-rk__text p + p { margin-top: 8px; }
+  .tp-rk__wege { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .tp-rk__wege-hinweis { margin: 10px 0 0; color: var(--tp-muted, #595959); font-size: var(--tp-fs-sm); max-width: 62ch; }
+  .tp-rk__rechte {
+    margin-top: 28px;
+    max-width: 720px;
+    padding: 16px 18px;
+    border-left: 3px solid var(--tp-line-2, #d5cec4);
+    background: var(--tp-bg-2, #f6f2ec);
+    color: var(--tp-ink-2, #4a443f);
+    font-size: var(--tp-fs-sm);
+    line-height: 1.55;
+  }
+  .tp-rk__rechte p { margin: 0; }
+  .tp-rk__rechte p + p { margin-top: 8px; }
+  @media (max-width: 749px) {
+    .tp-rk__schritte { grid-template-columns: 1fr; }
+    .tp-rk__schritt { padding: 18px 16px; gap: 12px; }
+    .tp-rk__wege .tp-s-btn { flex: 1 1 100%; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Reklamation",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Reklamation melden"
+    },
+    {
+      "type": "richtext",
+      "id": "intro",
+      "label": "Einleitung"
+    },
+    {
+      "type": "text",
+      "id": "knopf",
+      "label": "Knopf zum Formular",
+      "default": "Reklamation melden"
+    },
+    {
+      "type": "text",
+      "id": "email",
+      "label": "E-Mail-Adresse",
+      "default": "kontakt@teppich-paradies.net"
+    },
+    {
+      "type": "text",
+      "id": "wege_hinweis",
+      "label": "Hinweis unter den Knöpfen"
+    },
+    {
+      "type": "richtext",
+      "id": "rechte",
+      "label": "Hinweis zu den gesetzlichen Rechten"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "schritt",
+      "name": "Schritt",
+      "settings": [
+        {
+          "type": "text",
+          "id": "titel",
+          "label": "Überschrift"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Reklamation",
+      "blocks": [
+        { "type": "schritt", "settings": { "titel": "Lieferung gleich prüfen" } },
+        { "type": "schritt", "settings": { "titel": "Vor Zuschnitt und Verlegung ausrollen" } },
+        { "type": "schritt", "settings": { "titel": "Mit Bestellnummer melden" } },
+        { "type": "schritt", "settings": { "titel": "Wir melden uns" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

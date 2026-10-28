@@ -261,6 +261,7 @@
   }
 
   // Anfragen von der Produktseite (#163): Verlegung, Angebot, Beratungstermin.
+  // Reklamation (w-182) kommt von /pages/reklamation.
   // Bis 2026-09-27 kam ?produkt= hier an und wurde ignoriert - die Anfrage
   // erreichte uns ohne Produkt und ohne Betreff.
   function anfrageVorbelegen(params) {
@@ -270,7 +271,8 @@
       verlegung: 'Verlegeanfrage',
       angebot: 'Angebotsanfrage',
       beratung: 'Beratungstermin',
-      musteranfrage: 'Musteranfrage'
+      musteranfrage: 'Musteranfrage',
+      reklamation: 'Reklamation'
     };
     var thema = params.get('thema');
     var betreff = themen[thema];
@@ -291,6 +293,13 @@
     // Aufmass einen Rueckruf: PLZ und Telefon einblenden, beide freiwillig
     // (Rundgang 26.10.2026; ob die PLZ Pflicht wird, entscheidet der Inhaber).
     if (thema === 'verlegung' || thema === 'angebot') root.setAttribute('data-anfrage-felder', '');
+    // Reklamation: Feld Bestellnummer zeigen und freischalten. Freiwillig,
+    // weil die Hinweise keine Voraussetzung fuer die Reklamation sind.
+    if (thema === 'reklamation') {
+      root.setAttribute('data-reklamation', '');
+      var bestellnummer = root.querySelector('input[name="contact[Bestellnummer]"]');
+      if (bestellnummer) bestellnummer.disabled = false;
+    }
     var handle = params.get('handle');
     if (handle && /^[a-z0-9-]+$/.test(handle)) {
       feld('Produkt-Handle', handle);
@@ -306,7 +315,9 @@
     // Nachricht nur vorbelegen, wenn sie leer ist (nach einem Fehler steht
     // dort bereits der Text des Kunden).
     var nachricht = root.querySelector('[data-message-field]');
-    if (nachricht && !nachricht.value) {
+    if (nachricht && !nachricht.value && thema === 'reklamation') {
+      nachricht.value = ['Ich möchte eine Reklamation melden.', 'Was ist nicht in Ordnung: ', 'Betroffene Ware und Maße: '].join('\n');
+    } else if (nachricht && !nachricht.value) {
       var zeilen = [];
       if (thema === 'angebot') zeilen.push('Bitte senden Sie mir ein Angebot' + (produkt ? ' für ' + produkt : '') + '.');
       else if (thema === 'beratung') zeilen.push('Ich möchte einen Beratungstermin vereinbaren' + (produkt ? ' zu ' + produkt : '') + '.');

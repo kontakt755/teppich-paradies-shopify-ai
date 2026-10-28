@@ -146,6 +146,27 @@
   [data-tp-sample-request][data-anfrage-felder] [data-anfrage-feld] {
     display: block;
   }
+  /* Reklamation (w-182): Feld Bestellnummer nur bei ?thema=reklamation.
+     Das Feld ist sonst deaktiviert und geht nicht mit jeder Nachricht mit;
+     assets/tp-sample-request.js schaltet es frei. */
+  [data-reklamation-feld] {
+    display: none;
+  }
+  [data-tp-sample-request][data-reklamation] [data-reklamation-feld] {
+    display: block;
+  }
+  .kontakt-formular [data-reklamation-feld] > label {
+    display: block;
+  }
+  .kontakt-formular [data-reklamation-feld] > input {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .tp-kontakt-feldhinweis {
+    margin: 6px 0 0;
+    color: #555;
+    font-size: var(--tp-fs-sm);
+  }
   /* Felder in einer Huelle (Adresse, PLZ, Telefon) stehen wie Name und
      E-Mail untereinander und volle Breite, statt Beschriftung und Feld
      nebeneinander. */
@@ -424,6 +445,11 @@
       <ul>
         <li><a href="/pages/liefer-verlegeservice#tp-anfrage">Liefer- &amp; Verlegeservice anfragen</a></li>
         <li><a href="/pages/teppichreinigung#tp-anfrage">Teppichreinigung anfragen</a></li>
+        {%- comment -%} Erst sichtbar, wenn die Seite im Admin angelegt ist (w-182) {%- endcomment -%}
+        {%- assign tp_reklamation_seite = pages['reklamation'] -%}
+        {%- if tp_reklamation_seite.url != blank -%}
+          <li><a href="{{ tp_reklamation_seite.url }}">Reklamation melden</a></li>
+        {%- endif -%}
       </ul>
     </div>
     <div class="tp-sample-intro">
@@ -501,6 +527,12 @@
 
       <label for="ContactFormEmail">E-Mail</label>
       <input type="email" id="ContactFormEmail" name="contact[email]" value="{{ form.email }}" required>
+
+      <div data-reklamation-feld>
+        <label for="ContactFormBestellnummer">Bestellnummer</label>
+        <input type="text" id="ContactFormBestellnummer" name="contact[Bestellnummer]" autocomplete="off" aria-describedby="ContactFormBestellnummerHinweis" disabled>
+        <p class="tp-kontakt-feldhinweis" id="ContactFormBestellnummerHinweis">Steht in Ihrer Bestellbestätigung. Fotos senden Sie bitte mit dieser Nummer per WhatsApp oder E-Mail – das Formular nimmt keine Dateien an.</p>
+      </div>
 
       <div data-sample-field>
         <label for="ContactFormStreet">Straße und Hausnummer</label>

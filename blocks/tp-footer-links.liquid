@@ -60,6 +60,20 @@
       {%- if tp_fl_gutschein.id != blank and tp_fl_gutschein.gift_card? and tp_fl_gutschein.available -%}
         <li><a href="{{ tp_fl_gutschein.url }}">Geschenkgutschein</a></li>
       {%- endif -%}
+      {%- comment -%}
+        Reklamation (w-182): erscheint, sobald die Seite im Admin angelegt ist;
+        nicht doppelt, wenn das Service-Menue sie schon fuehrt.
+      {%- endcomment -%}
+      {%- assign tp_fl_reklamation = pages['reklamation'] -%}
+      {%- if tp_fl_reklamation.url != blank -%}
+        {%- assign tp_fl_reklamation_im_menue = false -%}
+        {%- for link in tp_fl_service.links -%}
+          {%- if link.url == tp_fl_reklamation.url -%}{%- assign tp_fl_reklamation_im_menue = true -%}{%- endif -%}
+        {%- endfor -%}
+        {%- unless tp_fl_reklamation_im_menue -%}
+          <li><a href="{{ tp_fl_reklamation.url }}">Reklamation</a></li>
+        {%- endunless -%}
+      {%- endif -%}
     </ul>
   </nav>
 
