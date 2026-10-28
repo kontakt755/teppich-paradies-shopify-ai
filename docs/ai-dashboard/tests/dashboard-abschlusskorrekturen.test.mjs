@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { aufkleberFuer } from '../lib/muster-packen.mjs';
+import { plural } from '../kern/helfer.mjs';
 
 // Ansichtsmodul mit kleinen Browser-Stubs laden; getestet werden die echten Handler.
 function ladeAnsicht(datei, kontext, ausgabe) {
@@ -135,4 +137,31 @@ test('Eingelegt ohne bestaetigten Haken laesst Suchtext und Meldung stehen', asy
   await new Promise(r => setImmediate(r));
   assert.equal(geleert, false);
   assert.equal(api.meldung(), null);
+});
+
+test('"Diese Umschläge vorbereiten" druckt die gezeigten Umschläge in Listenreihenfolge und vermerkt sie danach als vorbereitet', async () => {
+  const umschlag = (pk, extra = {}) => ({ packSchluessel: pk, name: pk, bereich: 'warten', gepackt: null, gedruckt: null, fehlt: [],
+    muster: [{ lineItemId: `${pk}1`, anzahl: 1, etikett: { sku: `M-${pk}` } }], adressAufkleber: { name: pk }, ...extra });
+  // C hat inzwischen keine vollstaendige Zuordnung mehr, D wurde zwischendurch gepackt: beide fallen heraus.
+  const liste = [umschlag('A'), umschlag('B'), umschlag('C', { fehlt: ['Farbe'] }), umschlag('D', { gepackt: { zeit: 'x' } })];
+  let druck = null;
+  const vermerkt = [];
+  const klick = ladeAnsicht('muster-packen.mjs', {
+    kunden: { musterPacken: { kunden: liste } },
+    aufkleberFuer, plural,
+    oeffneEtikettenDruck: o => { druck = o; },
+    istNurLesend: () => false,
+    orgSchreiben: async (_, body) => { vermerkt.push(`${body.packSchluessel}:${body.aktion}`); },
+    fetchEinkauf: async () => null,
+    document: { querySelector: () => null },
+    render: () => {}, toast: () => {},
+  }, 'musterPackenKlick');
+  const knopf = { dataset: { mpVorbereiten: 'B A C D' } };
+  assert.equal(klick({ target: { closest: s => (s === '[data-mp-vorbereiten]' ? knopf : null) }, preventDefault() {} }), true);
+  assert.deepEqual(Array.from(druck.etiketten, e => e.sku || e.name), ['M-B', 'B', 'M-A', 'A'], 'je Umschlag erst das Muster, dann die Adresse');
+  assert.equal(druck.titel, 'Aufkleber · 2 Umschläge vorbereiten');
+  assert.deepEqual(vermerkt, [], 'vor dem Druck wird nichts vermerkt');
+  druck.druckFertig();
+  for (let i = 0; i < 3; i++) await new Promise(r => setImmediate(r));
+  assert.deepEqual(vermerkt, ['B:gedruckt', 'A:gedruckt']);
 });

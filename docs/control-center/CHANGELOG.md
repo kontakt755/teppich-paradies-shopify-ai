@@ -2,6 +2,33 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Packstation: Filter nach Umschlagstand (#1761)
+
+- **Geaendert:** Wunsch des Inhabers vom 28.10.: „packstation noch etwas besser filtern umschlag vorbereitet
+  und muss noch vorbereitet werden“. Unter den Reitern steht eine zweite Chipzeile „Umschlag:“ mit alle ·
+  noch vorbereiten · vorbereitet · Muster schon drin. Jeder Chip hat eine Zahl und wirkt zusammen mit dem
+  Reiter (`mpumschlag` neben `mpbereich`).
+  - „Noch vorbereiten“ sind die Karten, bei denen Schritt 1 „Bestellung drucken“ leuchtet.
+  - Dort druckt „Diese n Umschläge vorbereiten“ genau die gezeigten Umschläge in Listenreihenfolge und
+    vermerkt sie danach als vorbereitet.
+  - Bei Suche, Direktlink und „Gepackt“ gilt der Filter nicht.
+  - Eine leere Auswahl sagt, was los ist, und verlinkt alle Umschläge der Liste.
+- **Getestet:**
+  - `packstation-arbeitslisten.test.mjs`: Zahlen, Kombination mit dem Reiter, Knopf, Hinweis ohne
+    Zuordnung, Leertext, Ausnahmen; 17/17.
+  - `dashboard-abschlusskorrekturen.test.mjs`: Klick druckt in Listenreihenfolge ohne Gepacktes oder
+    Unzugeordnetes und vermerkt erst nach dem Druck; 8/8.
+  - `dashboard:test` 1027/1027, `pruefen` 9/9, `dashboard:pruefen` 0 px Überlauf von 360 bis 1440 px.
+  - Klickstrecke gegen die Datenkopie (Playwright, Chrome):
+    - Zahlen 19 · 0 · 18 · 2 passen zum Packstand.
+    - Druckvermerk an #1075 zurückgenommen → 1 · 17. Liste #1075, Knopf „Diesen Umschlag vorbereiten
+      (4 Aufkleber)“, Druckdialog „Aufkleber · 1 Umschlag vorbereiten“.
+    - Schließen ohne Druck: 0 Schreibaufrufe, keine JS-Fehler.
+    - Sichtprüfung 1024 und 360 px.
+- **Risiken:** Den Druck selbst habe ich nicht ausgelöst (kein Drucker). Der Vermerk danach läuft über den
+  vorhandenen `druckFertig`-Weg.
+- **Naechste Stufe:** keine.
+
 ## 2026-10-28 · Packstation: Bestelldatum auf jeder Karte (#1757)
 
 - **Geaendert:** Wunsch des Inhabers vom 28.10.: „wichtig ist auch, dass ich sehen muss, an welchem Datum
