@@ -24,6 +24,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Alt | Neu | Wo / Bemerkung |
 |---|---|---|
 | Akquise | **Genossenschaften** (Seite: „Genossenschaften & Hausverwaltungen“) | Menue, Seite, To-do „Genossenschaften: N Firmen nachfassen“; enthaelt auch Ausschreibungen. Nicht verwechseln mit „Neue Aufträge“ der Auftrags-App-Zahlen |
+| – (neu 28.10.) | **Hausverwaltungen** | Menue „Kunden & Einkauf“, Seite und To-do „Hausverwaltungen: N wieder melden“; Verwaltungen mit Ansprechpartner, Objekten und Angeboten. Die Erstansprache bleibt unter „Genossenschaften“ |
 | Einkauf | **Bestellen** | Menue und Seitentitel; gemeint ist immer: wir bestellen beim Lieferanten. Die Bestellungen der Kunden heissen weiter „Bestellungen“ |
 | Lexikon | **Lexikon** (bleibt, Inhaber/Mitarbeiter 21.10.) | Menue, Seite, Handy-Leiste |
 | Belege (Reiter) | **Lieferantenpost** | Reiter unter „Bestellen“; ein einzelnes Stueck ist ein „Schreiben“ |

@@ -2537,3 +2537,31 @@ den Link (https-Ziel aus `capabilities.dashboards.werkbank`).
   liest den Zeitstempel (je Anfrage ein `stat`) und verwirft alle davor angemeldeten Sitzungen.
   Knopf unter Zugänge › „Angemeldete Geräte“ (`team/liste` liefert `angemeldeteGeraete`).
 Tests: `auth.test.mjs`, `social/tests/server.test.mjs`.
+
+## 30. Hausverwaltungen (Inhaber 26.10.2026, Werkbank w-154, #1768)
+
+Eigener Bereich `#/hausverwaltungen` (Menü „Kunden & Einkauf“, Inhaber und Mitarbeiter; Rolle „lesen“
+sieht alles, schreibt nichts). Abgrenzung: die **Erstansprache** aus der Firmenliste bleibt unter
+„Genossenschaften“ (`#/akquise`, Abschnitt oben, #1447). Hier stehen die Verwaltungen, mit denen wir
+arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten und Angeboten.
+
+- **Daten:** `$TP_PRIVAT_DIR/hausverwaltungen/verwaltungen.json` (`{ schema: 1, verwaltungen: [...] }`,
+  Dateirechte 0600), in der nächtlichen Sicherung (`SICHERUNGSPFADE` in `operations/scripts/sicherung.mjs`).
+  Je Verwaltung: Name, Ansprechpartner, Telefon, E-Mail, Notiz, Stand (`neu`, `angeschrieben`, `antwort`,
+  `termin`, `kunde`, `kein-interesse`), „wieder melden am“, `objekte[]`. Je Objekt: Adresse, Wohnungen,
+  Ansprechpartner vor Ort, Notiz, `angebote[]`. Je Angebot: Art (`angebot`/`auftrag`), Lexware-Nummer,
+  Auftrag in der Auftrags-App, Datum, Stand (`offen`, `angenommen`, `abgelehnt`, `erledigt`), Notiz.
+- **Regeln** (`lib/hausverwaltungen.mjs`, Browser und Server): `wendeHvAenderungAn` prüft nur die
+  mitgeschickten Felder und gibt einen neuen Bestand zurück. Doppelte Namen (wie `akquiseId`) werden
+  abgelehnt. „angeschrieben“ ohne Datum setzt die Wiedervorlage auf +14 Tage, „kein Interesse“ leert sie.
+  Entfernen geht nur von unten nach oben: eine Verwaltung ohne Objekte, ein Objekt ohne Angebote.
+- **API:** `GET /api/hausverwaltungen/liste`, `POST /api/hausverwaltungen/speichern`
+  (`{ ebene: 'verwaltung'|'objekt'|'angebot', verwaltungId, objektId, id, daten, entfernen }`, Schreibliste,
+  Fehler 400 mit Klartext). Kaputtes JSON bricht ab und wird nie überschrieben (`_privatJson`). Jede
+  Änderung steht im lokalen Protokoll („Hausverwaltung angelegt“ …).
+- **Heute:** fällige Wiedervorlagen als To-do „Hausverwaltungen: N wieder melden“ (Büro), bei genau einer
+  Verwaltung führt der Knopf direkt zu ihr (`?hv=<id>`).
+- **Grenzen:** Lexware und Auftrags-App sind nur Felder, es wird nichts abgefragt oder verbunden, keine
+  Mail versendet. Die Wiedervorlage gilt der Ansprache der Verwaltung, nicht dem einzelnen Vorgang –
+  Vorgänge und ihre Wiedervorlagen bleiben in der Auftrags-App (Abschnitt 20).
+- Tests: `tests/hausverwaltungen.test.mjs` (Regeln, API, Rollen, Ansicht).

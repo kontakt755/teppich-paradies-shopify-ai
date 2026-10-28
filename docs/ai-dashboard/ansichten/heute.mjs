@@ -46,6 +46,7 @@ import { ensureServiceanfragen } from './kunden/serviceanfragen.mjs';
 import { heuteLaden, heuteMontage, ladenKachel, ensureLadenZahlen } from './heute/laden.mjs';
 import { shopwache, ensureShopwache } from './shopwache.mjs';
 import { ensureAkquise, akquiseFaellig } from './akquise.mjs';
+import { ensureHausverwaltungen, hausverwaltungenFaellig } from './hausverwaltungen.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
 import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
@@ -89,6 +90,7 @@ function quellen() {
     freigaben: istInhaber() ? state.tasks : [],
     shopwache: darfAnsicht('shopwache') ? shopwache.daten : null,
     akquise: darfAnsicht('akquise') ? akquiseFaellig() : [],
+    hausverwaltungen: darfAnsicht('hausverwaltungen') ? hausverwaltungenFaellig() : [],
     kundentermine: darfAnsicht('einkauf') ? kundentermine() : [],
   };
 }
@@ -221,6 +223,7 @@ function viewAlltag() {
   if (istInhaber()) ensureEinkaufKennzahlen();
   if (darfAnsicht('shopwache')) ensureShopwache();
   if (darfAnsicht('akquise')) ensureAkquise();
+  if (darfAnsicht('hausverwaltungen')) ensureHausverwaltungen();
   if (darfAnsicht('einkauf')) { ensureBelege(); ensureEinkaufBestellungen(); }
 
   const q = quellen();

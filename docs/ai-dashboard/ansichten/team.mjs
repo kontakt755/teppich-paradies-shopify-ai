@@ -70,7 +70,7 @@ export function viewTeam() {
     <h2 style="margin:24px 0 8px">Was die Rollen dürfen</h2>
     <div class="rows">
       <div class="row"><div><div class="t">Inhaber</div><div class="m">Alles – dazu Technik, Entscheidungen, Kennzahlen und diese Seite.</div></div></div>
-      <div class="row"><div><div class="t">Mitarbeiter</div><div class="m">Kunden, Bestellungen, Aufgaben, Notizen, Baustellenfotos, Lexikon, Bestellen und Genossenschaften. Nicht: Zugänge, Technik, Entscheidungen.</div></div></div>
+      <div class="row"><div><div class="t">Mitarbeiter</div><div class="m">Kunden, Bestellungen, Aufgaben, Notizen, Baustellenfotos, Lexikon, Bestellen, Genossenschaften und Hausverwaltungen. Nicht: Zugänge, Technik, Entscheidungen.</div></div></div>
       <div class="row"><div><div class="t">Nur lesen</div><div class="m">Sieht dieselben Seiten wie ein Mitarbeiter, kann aber nichts ändern – für Aushilfen oder zum Zuschauen.</div></div></div>
     </div>`;
 }

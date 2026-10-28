@@ -2,6 +2,31 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Eigener Bereich „Hausverwaltungen“ (Werkbank w-154, #1768)
+
+- **Geaendert:** Entscheidung des Inhabers vom 26.10.: „eigener Bereich für Hausverwaltungen mit
+  Ansprechpartnern, Objekten und Angeboten“. Neu unter „Kunden & Einkauf“ → **Hausverwaltungen**
+  (`#/hausverwaltungen`):
+  - Liste: je Verwaltung Ansprechpartner, Telefon und E-Mail (anklickbar), Stand, Zahl der Objekte,
+    Wohnungen und offenen Angebote. Wer heute wieder dran ist, steht oben („wieder melden“ in Bernstein);
+    „kein Interesse“ liegt zugeklappt darunter.
+  - Klick auf den Namen: Verwaltung mit Notiz, „Anrufen“, „E-Mail schreiben“, „Bearbeiten“ (Stand,
+    „Wieder melden am“), darunter die Objekte (Adresse, Wohnungen, Ansprechpartner vor Ort) und je Objekt
+    die Angebote bzw. Aufträge (Lexware-Nummer, Auftrag in der Auftrags-App, Datum, Stand). Offene Angebote
+    ab 14 Tagen: „seit N Tagen offen – nachfassen“.
+  - Auf „Heute“ (Büro) das To-do „Hausverwaltungen: N wieder melden“.
+  - Gespeichert lokal unter `$TP_PRIVAT_DIR/hausverwaltungen/verwaltungen.json`, in der nächtlichen Sicherung.
+  - Die Seite „Genossenschaften“ verweist mit einem Satz auf den neuen Bereich; Hilfe, Zugänge-Text und
+    Befehlspalette nennen ihn.
+- **Getestet:** `tests/hausverwaltungen.test.mjs` 9 neu (Regeln, Doppelname, Entfernen-Schutz, Wiedervorlage,
+  To-do, API mit kaputtem JSON, Rollen lesen 403 / Mitarbeiter 200, Ansicht escaped); `dashboard:test`
+  1040 grün; Sichtprüfung und Klickstrecke in der Datenkopie (Ergebnis im PR).
+- **Risiken:** Der Bereich ist wie „Genossenschaften“ für Mitarbeiter offen (Menütest angepasst). Soll ihn nur
+  der Inhaber sehen: `hausverwaltungen: 'inhaber'` in `ANSICHT_ROLLEN` und `data-nur-inhaber` am Menüpunkt.
+  Lexware und Auftrags-App sind nur Textfelder, es gibt keine Prüfung, ob die Nummer existiert.
+- **Naechste Stufe:** Suche und Seiten zu 25, sobald die Liste wächst; eine Verwaltung aus „Genossenschaften“
+  mit einem Klick übernehmen.
+
 ## 2026-10-28 · Adressaufkleber auf 50 × 80 quer
 
 - **Geaendert:** Inhaber: „die Adresse soll quer sein bei 50 × 80, nicht hoch“.
