@@ -29,6 +29,12 @@
     assign compare_per_sqm = package_compare_at_price | times: 1.0 | divided_by: sqm_per_package | round
     assign show_compare_price = true
   endif
+  # UVP des Herstellers ohne laufende Aktion: graue Zeile "UVP" statt Streichpreis (snippets/tp-uvp-zeile).
+  assign tp_pps_uvp = false
+  if tp_pps_aktion == 'uvp' and package_compare_at_price != blank and package_compare_at_price > package_price
+    assign tp_pps_uvp = true
+    assign uvp_per_sqm = package_compare_at_price | times: 1.0 | divided_by: sqm_per_package | round | money_without_currency
+  endif
 -%}
 
 <div class="tp-price-per-sqm">
@@ -41,6 +47,9 @@
     <span class="tp-price-per-sqm__amount">{% if show_compare_price %}<span class="visually-hidden">Aktionspreis </span>{% endif %}{{ price_per_sqm | money_without_currency }}</span>
     <span class="tp-price-per-sqm__label">€/m²</span>
   </div>
+  {%- if tp_pps_uvp -%}
+    {% render 'tp-uvp-zeile', betrag: uvp_per_sqm, einheit: '€/m²' %}
+  {%- endif %}
   <div class="tp-price-per-sqm__package">
     {{ package_price | money_without_currency }}&nbsp;€ pro Originalpaket
   </div>

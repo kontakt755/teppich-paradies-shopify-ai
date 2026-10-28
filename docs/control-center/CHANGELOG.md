@@ -46,7 +46,34 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** Ein Muster-SKU, die zugleich auf einem Nicht-Musterprodukt liegt, sperrt jetzt gar nicht
   mehr automatisch (vorher nur die Mustervariante). Laut Lexikon gibt es keine solche SKU.
 - **Nächste Stufe:** Die Handsperre vom 28.10. als Ereignis nachtragen, damit „Wieder verfügbar“ sie
-  kennt (nur mit Freigabe des Inhabers).
+  kennt – freigegeben am 28.10., läuft nach dem Deploy (Skript im privaten Datenordner).
+
+## 2026-10-28 · Starter-Test: Zeitlimit nur noch gegen Hänger (#1752)
+
+- **Geaendert:** Das automatische Nachziehen des Dienstes hing am 28.10. um 11:04 an einem roten Probelauf.
+  `dashboard-app-starten.test.mjs` („ausbleibender Dienst … leeres App-Fenster“) brach nach dem 8-s-Zeitlimit
+  von `spawnSync` ab (`status: null`). Normal braucht der Test unter 1 s, die ganze Testreihe lief in der
+  Probe aber 88 statt 12 s, weil der Mac ausgelastet war. Das Zeitlimit liegt jetzt bei 30 s
+  (`ZEITLIMIT_MS`). Es soll nur einen Hänger abfangen, die Startdauer misst der Test nicht.
+- **Getestet:** Die Datei 14/14, `dashboard:test` 1022/1022, `pruefen` 9/9. Die Probe von Hand
+  (`betrieb:nachziehen -- --probe`) war am 28.10. um 11:08 auf demselben Stand grün.
+- **Risiken:** Unter künstlicher Last wurde nichts nachgestellt, um den laufenden Dienst nicht zu bremsen.
+  Ein echter Hänger fällt jetzt erst nach 30 statt nach 8 s auf.
+- **Naechste Stufe:** keine.
+
+## 2026-10-28 · Etiketten drucken: nur ausgewählte Motive
+
+- **Geaendert:** In der Druckvorschau hat jedes Motiv ein Häkchen „drucken“ (gilt für alle Kopien),
+  darüber „alle wählen“ / „keine“. Der Druckknopf zählt nur die ausgewählten Aufkleber, abgewählte
+  sind in der Vorschau blass. Ein Teildruck markiert nichts als gedruckt (kein `druckFertig`, keine
+  Bestätigung): erledigt ist ein Auftrag erst mit dem vollständigen Lauf. Anlass: der Inhaber wollte
+  eine fehlende Reihe nachdrucken, ohne alles neu zu drucken.
+- **Getestet:** `npm run dashboard:test` ohne Fehler (die abgebrochenen `laden-zahlen`-Tests brechen in
+  der Remote-Sitzung auch auf main ab). Playwright gegen die Vorschau mit 4 Aufklebern/3 Motiven bei
+  390 px: Abwählen 4 → 3, „keine“ → 0 und Knopf gesperrt, „alle wählen“ → 4, kein seitliches Scrollen.
+- **Risiken:** Druck selbst nicht getestet (kein Drucker in der Remote-Sitzung). Motive jenseits der
+  Vorschaugrenze lassen sich nur über „keine“ abwählen.
+- **Naechste Stufe:** keine geplant.
 
 ## 2026-10-28 · Aufräumliste: „direkt an den Kunden“ nur noch mit Beleg (#1740)
 

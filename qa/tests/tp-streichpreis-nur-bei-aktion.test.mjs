@@ -34,7 +34,7 @@ for (const datei of mitStreichpreis) {
     assert.match(code, /render 'tp-rabatt-sichtbar'/, 'Die Datei liest compare_at_price, fragt aber nicht das gemeinsame Aktions-Snippet.');
     // Jede Vergleichsbedingung "compare... > ..." muss in derselben Zeile ein Aktions-Flag tragen.
     const offen = code.split('\n').filter((zeile) =>
-      /\bif\b.*compare_at_price[^\n]*>/.test(zeile) && !/aktion\s*==\s*'ja'/.test(zeile));
+      /\bif\b.*compare_at_price[^\n]*>/.test(zeile) && !/aktion\s*==\s*'(ja|uvp)'/.test(zeile));
     assert.deepEqual(offen.map((z) => z.trim()), [], 'Bedingung zeigt einen Streichpreis ohne aktive Aktion.');
   });
 }
@@ -56,6 +56,7 @@ const engine = new Liquid({ timezoneOffset: 0, templates: {
   'tp-sonderposten-flaeche': ohneDoc('snippets/tp-sonderposten-flaeche.liquid'),
   'tp-verkaufseinheit': ohneDoc('snippets/tp-verkaufseinheit.liquid'),
   'tp-paketinhalt': '',
+  'tp-uvp-zeile': ohneDoc('snippets/tp-uvp-zeile.liquid').replace(/{%\s*stylesheet\s*%}[\s\S]*?{%\s*endstylesheet\s*%}/, ''),
 } });
 engine.registerFilter('money_without_currency', (c) => (Number(c) / 100).toFixed(2).replace('.', ','));
 const tag = (offset) => {
@@ -63,10 +64,10 @@ const tag = (offset) => {
   datum.setUTCDate(datum.getUTCDate() + offset);
   return datum.toISOString().slice(0, 10);
 };
-const paket = (aktion) => ({
-  selected_variant: { price: 2495, compare_at_price: 2995 },
+const paket = (aktion, preis, compare_at_price = 2995) => ({
+  selected_variant: { price: 2495, compare_at_price },
   sqm_per_package: 1,
-  product: { metafields: { aktion } },
+  product: { metafields: { aktion, preis } },
 });
 
 test('Paketpreis: Streichpreis 29,95 erscheint nur mit laufender Aktion', async () => {
@@ -125,4 +126,36 @@ test('Sonderposten: Streichpreis nur mit pruefbarem Preisbeleg, unabhaengig von 
 test('tp-sonderposten-preisbeleg wird nur von tp-rabatt-sichtbar gefragt', () => {
   const nutzer = dateien.filter((datei) => /render 'tp-sonderposten-preisbeleg'/.test(readFileSync(path.join(root, datei), 'utf8')));
   assert.deepEqual(nutzer, ['snippets/tp-rabatt-sichtbar.liquid']);
+});
+
+// UVP (Inhaber 2026-10-28): Ein Vergleichspreis, der die unverbindliche Preisempfehlung des
+// Herstellers ist, bleibt nach Aktionsende stehen - aber als graue Zeile "UVP", ohne
+// Streichpreis-Optik, Badge und roten Aktionspreis.
+const UVP = { vergleich_ist_uvp: { value: true } };
+
+test('UVP: tp-rabatt-sichtbar meldet "uvp" nur ohne laufende Aktion', async () => {
+  const sichtbar = async (product) => (await engine.parseAndRender("{% render 'tp-rabatt-sichtbar', product: product %}", { product })).trim();
+  const produkt = (metafields) => ({ variants: [{ title: 'Default Title', price: 6500, compare_at_price: 6863 }], metafields });
+  assert.equal(await sichtbar(produkt({ preis: UVP })), 'uvp');
+  assert.equal(await sichtbar(produkt({ preis: UVP, aktion: { klasse: { value: 'preisanker' }, ende: { value: tag(-1) } } })), 'uvp');
+  assert.equal(await sichtbar(produkt({ preis: UVP, aktion: { klasse: { value: 'preisanker' }, ende: { value: tag(0) } } })), 'ja',
+    'laufender Dauerrabatt geht vor');
+  assert.equal(await sichtbar(produkt({ preis: { vergleich_ist_uvp: { value: false } } })), '');
+  assert.equal(await sichtbar(produkt({})), '');
+  assert.equal(await sichtbar({ type: 'Sonderposten', variants: [{ title: 'Default Title', price: 8900, compare_at_price: 24346 }],
+    metafields: { preis: UVP } }), '', 'beim Sonderposten ist der Vergleichspreis nie eine UVP');
+});
+
+test('UVP: Paketpreis zeigt nach Aktionsende "UVP 29,95 €/m²" statt Streichpreis', async () => {
+  const nachEnde = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' }, ende: { value: tag(-1) } }, UVP));
+  assert.doesNotMatch(nachEnde, /tp-price-per-sqm__compare|Aktionspreis/);
+  assert.match(nachEnde, /class="tp-uvp"[\s\S]*UVP[\s\S]*Unverbindliche Preisempfehlung des Herstellers: <\/span>29,95&nbsp;€\/m²<\/s>/);
+
+  const waehrend = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' }, ende: { value: tag(0) } }, UVP));
+  assert.match(waehrend, /tp-price-per-sqm__compare[\s\S]*29,95/);
+  assert.doesNotMatch(waehrend, /tp-uvp/, 'waehrend der Aktion nur der Streichpreis');
+
+  assert.doesNotMatch(await engine.parseAndRender(sqm, paket({}, UVP, 2495)), /tp-uvp/, 'UVP nicht ueber dem Preis: keine Zeile');
+  assert.doesNotMatch(await engine.parseAndRender(sqm, paket({}, UVP, null)), /tp-uvp/, 'ohne Vergleichspreis keine Zeile');
+  assert.doesNotMatch(await engine.parseAndRender(sqm, paket({})), /tp-uvp|tp-price-per-sqm__compare/, 'ohne Kennzeichen bleibt alles weg (S-20)');
 });

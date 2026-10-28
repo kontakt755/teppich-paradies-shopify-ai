@@ -11,6 +11,10 @@ const CHROME = '/Applications/Google Chrome.app';
 const EDGE = '/Applications/Microsoft Edge.app';
 const BENUTZER_CHROME = path.join(os.homedir(), 'Applications/Google Chrome.app');
 const BENUTZER_EDGE = path.join(os.homedir(), 'Applications/Microsoft Edge.app');
+// Nur Schutz gegen Haenger, keine Zeitmessung: ein Lauf mit 40 Startversuchen braucht sonst
+// unter einer Sekunde, auf dem ausgelasteten Mac aber ueber 8 s - am 28.10. hing deshalb das
+// Nachziehen des Dashboard-Dienstes an einem roten Probelauf (#1752).
+const ZEITLIMIT_MS = 30000;
 
 function umgebung(t, { apps = [CHROME], env = {} } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-app-start-'));
@@ -49,7 +53,7 @@ esac`);
 source "$1"`;
   const starten = extra => spawnSync('/bin/bash', ['-c', shell, 'dashboard-app-test', STARTER], {
     env: { ...variablen, PATH: `${bin}:/usr/bin:/bin`, TP_PRIVAT_DIR: privat, MOCK_LOG_DIR: logs, MOCK_APPS: apps.join('|'), ...env, ...extra },
-    encoding: 'utf8', timeout: 8000,
+    encoding: 'utf8', timeout: ZEITLIMIT_MS,
   });
   return { dir, privat, starten, aufrufe };
 }
