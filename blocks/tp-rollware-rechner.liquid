@@ -615,8 +615,11 @@
     assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
     assign tp_rc_muster_farbe = tp_rc_start_farbe | url_encode
     # Ohne Muster (Tag ohne-muster, zubehoer) liefert tp-musteroption nichts -
-    # dann nichts anhaengen, sonst entsteht ein Knopf mit kaputtem Link.
-    if tp_rc_muster_url != blank
+    # dann nichts anhaengen, sonst entsteht ein Knopf mit kaputtem Link: das
+    # relative "&farbe=130 cm" wurde zu /products/&farbe=130+cm (bis 09.10.
+    # bei Google als 404). Wie tp-muster-cta und tp-card-actions nur an eine
+    # Adresse mit ?produkt= anhaengen, nie an /pages/muster ohne Fragezeichen.
+    if tp_rc_muster_url contains '?produkt='
       assign tp_rc_muster_url = tp_rc_muster_url | append: '&farbe=' | append: tp_rc_muster_farbe
     endif
     # Vinyl-Muster hoechstens 3 je Bestellung (snippets/tp-muster-grenze):
