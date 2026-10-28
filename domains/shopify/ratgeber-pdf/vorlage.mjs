@@ -10,7 +10,7 @@ export const ORDNER = dirname(fileURLToPath(import.meta.url));
 
 export const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const datenUri = (datei, typ) => `data:${typ};base64,${readFileSync(join(ORDNER, datei)).toString('base64')}`;
-const kurzTitel = (r) => r.titel.replace(/^Ihr neuer /, '');
+export const kurzTitel = (r) => r.titel.replace(/^Ihr neuer /, '');
 
 // Strichsymbole, 24er-Raster, Farbe ueber currentColor
 const ICON = {
@@ -209,7 +209,9 @@ const datumDe = (iso) => {
  * @returns {{ r: object, persoenlich: { kopf: string, felder: object } }[]}
  */
 export function ratgeberFuerBestellung(bestellung) {
-  const zeilen = bestellung.lineItems?.nodes || bestellung.lineItems || [];
+  // Exportformen wie im Control Center: Liste, { nodes } oder { edges }
+  const li = bestellung.lineItems;
+  const zeilen = Array.isArray(li) ? li : li?.nodes || li?.edges?.map((e) => e.node).filter(Boolean) || [];
   const datum = datumDe(bestellung.createdAt);
   const kopf = datum ? `${bestellung.name} vom ${datum}` : bestellung.name;
   const jeRatgeber = new Map();

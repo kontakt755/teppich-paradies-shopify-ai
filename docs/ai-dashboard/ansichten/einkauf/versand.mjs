@@ -15,6 +15,7 @@ import { einkauf, kundeUndOrt, ladeStandNeu } from './auftragsfluss.mjs';
 import { VERSANDDIENSTE, versandKandidaten, vorauswahl, versandRueckmeldung, istUebergabe } from '../../lib/versand.mjs';
 import { beschaffungsStand, darfWeiter, beschaffungText } from '../../lib/beschaffung.mjs';
 import { shopifyAbgleichKlick } from './shopify-abgleich.mjs';
+import { ratgeberKnopf } from '../kunden/gemeinsam.mjs';
 
 // Zuletzt gewaehlter Versanddienst je Geraet - im Laden ist es fast immer derselbe.
 const DIENST_SCHLUESSEL = 'tp-versanddienst';
@@ -101,11 +102,17 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
       <div class="field"><label for="vsDienst">Versanddienst</label><select id="vsDienst" name="dienst"><option value="">–</option>${VERSANDDIENSTE.map(d => `<option${d === dienst ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></div>
     </div>`;
   const wort = uebergabe ? 'übergeben' : 'verschickt';
+  // Geht die Ware durch unsere Haende (Abholung, oder sie liegt schon bei uns), gehoert der
+  // Kurz-Ratgeber dazu. Bei Direktversand vom Lieferanten packt niemand von uns - kein Hinweis.
+  const beilegen = !nichtsOffen && !nurGesperrt && (abholung || kandidaten.some(p => status[p.lineItemId] === 'geliefert'));
+  const ratgeber = beilegen && auftrag?.ratgeber?.length
+    ? `<p class="small vs-ratgeber">Bitte beilegen: Ratgeber ${esc(auftrag.ratgeber.join(', '))} ${ratgeberKnopf(auftrag, orderId)}</p>` : '';
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="vsTitel" data-dialog>
     <h2 id="vsTitel">${uebergabe ? 'Übergeben' : 'An Kunden raus'}${auftrag?.name ? ` · ${esc(auftrag.name)}` : ''}</h2>
     ${name || ort ? `<p class="small muted">${esc([name, ort].filter(Boolean).join(' · '))}</p>` : ''}
     ${sperre}
     ${liste}
+    ${ratgeber}
     ${nichtsOffen || nurGesperrt ? '' : `${sendung}
     <fieldset class="zl-wahl"><label><input type="checkbox" name="mail"${mailAn ? ' checked' : ''}> Kunde bekommt die Versandmail von Shopify</label></fieldset>
     <p class="small muted">Die Artikel werden in Shopify als versendet gebucht.</p>`}

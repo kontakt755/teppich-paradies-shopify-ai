@@ -19,9 +19,8 @@ import { execFileSync } from 'node:child_process';
 import os from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright-core';
-import { resolveBrowserExecutable } from '../qa/browser-resolver.mjs';
 import { RATGEBER, ORDNER, ratgeberHtml, ratgeberFuerBestellung } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
+import { mitBrowser, seitenAlsPdf, ZU_VOLL_AB_PX } from '../domains/shopify/ratgeber-pdf/pdf.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -48,35 +47,21 @@ if (bestellNr) {
   auftraege = liste.map((r) => ({ html: ratgeberHtml([{ r }], { qrNeu: args.includes('--qr') }), ziel: join(ORDNER, 'pdf', r.datei), name: r.datei }));
 }
 
-const { executablePath, error } = resolveBrowserExecutable({ playwrightChromium: chromium });
-if (!executablePath) { console.error(error); process.exit(1); }
-const browser = await chromium.launch({ executablePath });
-const page = await browser.newPage();
 const tmp = join(root, 'tmp', 'ratgeber-pdf');
 mkdirSync(tmp, { recursive: true });
 let fehler = 0;
-try {
+await mitBrowser(async (page) => {
   for (const a of auftraege) {
     mkdirSync(dirname(a.ziel), { recursive: true });
     if (!bestellNr) writeFileSync(join(tmp, a.name.replace(/\.pdf$/, '.html')), a.html);
-    await page.setContent(a.html, { waitUntil: 'load' });
-    await page.evaluate(() => document.fonts.ready);
     // Ueberlauf: Inhalt darf nicht in den Fuss laufen
-    const ueber = await page.evaluate(() => [...document.querySelectorAll('.seite')].map((s, i) => {
-      const fuss = s.querySelector('.fuss').getBoundingClientRect().top;
-      const inhalt = [...s.children].filter((c) => !c.classList.contains('fuss'))
-        .reduce((m, c) => Math.max(m, c.getBoundingClientRect().bottom), 0);
-      return { seite: i + 1, luftPx: Math.round(fuss - inhalt) };
-    }));
-    const eng = ueber.filter((u) => u.luftPx < 8);
-    await page.pdf({ path: a.ziel, preferCSSPageSize: true, printBackground: true });
-    console.log(`${eng.length ? 'ZU VOLL' : 'ok     '} ${a.name}  Luft bis Fuss: ${ueber.map((u) => `S.${u.seite} ${u.luftPx}px`).join(', ')}`);
+    const { luft } = await seitenAlsPdf(page, a.html, { pfad: a.ziel });
+    const eng = luft.filter((u) => u.luftPx < ZU_VOLL_AB_PX);
+    console.log(`${eng.length ? 'ZU VOLL' : 'ok     '} ${a.name}  Luft bis Fuss: ${luft.map((u) => `S.${u.seite} ${u.luftPx}px`).join(', ')}`);
     if (eng.length) fehler++;
     if (bestellNr) console.log(a.ziel);
   }
-} finally {
-  await browser.close();
-}
+});
 if (bestellNr && args.includes('--oeffnen') && !fehler && process.platform === 'darwin') {
   execFileSync('open', ['-a', 'Preview', auftraege[0].ziel]);
 }
