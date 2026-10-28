@@ -149,6 +149,21 @@
           assign tp_pi_kaufbar = false
         endif
       -%}
+      {%- comment -%}
+        Muster in der Leiste (Fehlersuche 28.10., Idee 3). Sichtbar nur, wenn
+        die Seite selbst einen Muster-Knopf zeigt (blocks/tp-muster-cta);
+        assets/sticky-add-to-cart.js schaltet ihn und loest beim Tippen genau
+        diesen Knopf aus.
+      {%- endcomment -%}
+      <button
+        type="button"
+        class="sticky-add-to-cart__muster"
+        ref="musterButton"
+        on:click="/handleMusterClick"
+        hidden
+      >
+        Muster
+      </button>
       <button
         type="button"
         class="sticky-add-to-cart__button add-to-cart-button button"
@@ -415,6 +430,108 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+  }
+
+  /* Muster-Knopf der Leiste: Nebenknopf in der Grundfarbe, nicht rot */
+  .sticky-add-to-cart__muster {
+    flex: 0 0 auto;
+    height: var(--height-buy-buttons);
+    padding: 0 var(--padding-lg);
+    border: 1px solid var(--tp-ink, #1d1a17);
+    border-radius: var(--style-border-radius-buttons-primary);
+    background: var(--color-background);
+    color: var(--tp-ink, #1d1a17);
+    font: inherit;
+    font-size: var(--tp-fs-md);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .sticky-add-to-cart__muster[hidden] {
+    display: none;
+  }
+
+  /* Beide Knoepfe einzeilig; Platz gibt der Produktname ab */
+  .sticky-add-to-cart__bar .sticky-add-to-cart__button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* Handy (Fehlersuche 28.10., Idee 3): Knopf mit Text statt nur Symbol, auf
+     Rechner-Seiten "Masse eingeben" statt eines gesperrten Knopfs. Bild und
+     Produktname weichen dafuer - der Kunde steht auf der Produktseite. Steht
+     nach den Horizon-Regeln, damit es sie bei gleicher Gewichtung schlaegt. */
+  @media screen and (max-width: 749px) {
+    .sticky-add-to-cart__bar {
+      gap: var(--gap-sm);
+    }
+
+    .sticky-add-to-cart__bar .sticky-add-to-cart__image,
+    .sticky-add-to-cart__bar .sticky-add-to-cart__info .sticky-add-to-cart__title {
+      display: none;
+    }
+
+    .sticky-add-to-cart__bar .sticky-add-to-cart__info .sticky-add-to-cart__variant {
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: var(--tp-fs-xs);
+    }
+
+    .sticky-add-to-cart__bar .add-to-cart-icon {
+      display: none;
+    }
+
+    .sticky-add-to-cart__bar .add-to-cart-text__content {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
+      white-space: nowrap;
+      font-size: var(--tp-fs-sm);
+    }
+
+    .sticky-add-to-cart__bar .sticky-add-to-cart__button {
+      flex: 0 0 auto;
+      width: auto;
+      padding: 0 var(--padding-md);
+    }
+
+    .sticky-add-to-cart__muster {
+      padding: 0 var(--padding-md);
+      font-size: var(--tp-fs-sm);
+    }
+
+    /* Aktionspreis: nur der rote Preis, ohne Plakette und Streichpreis -
+       sonst passt der Knopf nicht mehr in die Zeile (Horizon blendet den
+       Streichpreis unter 390 px ohnehin aus). */
+    .sticky-add-to-cart__bar .tp-rabatt-badge,
+    .sticky-add-to-cart__bar .price-item__group:has(.compare-at-price) {
+      display: none;
+    }
+
+    /* Der Preis schrumpft nie (abgeschnitten hiess er "35,50 €/m"); Platz
+       gibt die Variantenzeile davor ab. */
+    .sticky-add-to-cart__bar .sticky-add-to-cart__price {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    .sticky-add-to-cart__bar .sticky-add-to-cart__price,
+    .sticky-add-to-cart__bar .sticky-add-to-cart__price * {
+      font-size: var(--tp-fs-sm);
+    }
+  }
+
+  /* Unter 390 px passen Preis, "Muster" und "In den Warenkorb legen" nicht
+     nebeneinander; dann weicht der Preis, er steht ja auf der Seite. */
+  @media screen and (max-width: 389px) {
+    .sticky-add-to-cart__bar:has(.sticky-add-to-cart__muster:not([hidden])) .sticky-add-to-cart__price {
+      display: none;
     }
   }
 {% endstylesheet %}

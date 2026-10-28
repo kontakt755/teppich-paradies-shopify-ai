@@ -30,6 +30,7 @@ import { onAnimationEnd } from '@theme/utilities';
  * @property {HTMLElement} quantityDisplay - Quantity display container
  * @property {HTMLElement} quantityNumber - Quantity number element
  * @property {HTMLImageElement} productImage - Product image element
+ * @property {HTMLButtonElement} [musterButton] - Muster-Knopf der Leiste (nur mit Muster-Knopf auf der Seite)
  */
 
 /**
@@ -272,12 +273,15 @@ class StickyAddToCartComponent extends Component {
     }
 
     const usable = !target.hidden;
-    addToCartButton.disabled = this.#targetBlocked(target);
+    const unvollstaendig = this.#targetIncomplete(target);
+    addToCartButton.disabled = !unvollstaendig && this.#targetBlocked(target);
 
     const label = addToCartButton.querySelector('.add-to-cart-text__content > span');
     if (label) {
       const text = (target.textContent || '').trim();
-      if (usable && text) {
+      if (unvollstaendig) {
+        label.textContent = 'Maße eingeben';
+      } else if (usable && text) {
         label.textContent = text;
       } else {
         label.textContent = target.closest('[data-tp-ek]') ? 'Maße eingeben' : 'Länge eingeben';
@@ -412,6 +416,12 @@ class StickyAddToCartComponent extends Component {
    */
   handleAddToCartClick = () => {
     const target = this.#targetAddToCartButton;
+    // Der Rechner markiert das fehlende Feld, nennt es und scrollt dorthin;
+    // sobald er wieder im Bild ist, blendet sich die Leiste selbst aus.
+    if (this.#targetIncomplete(target)) {
+      target?.click();
+      return;
+    }
     if (!target || this.#targetBlocked(target)) return;
 
     this.#clearPendingCartAdd();
@@ -437,6 +447,25 @@ class StickyAddToCartComponent extends Component {
   /** @param {HTMLButtonElement} target */
   #targetBlocked(target) {
     return target.hidden || target.disabled || target.getAttribute('aria-disabled') === 'true';
+  }
+
+  /**
+   * Rollenware-Rechner ohne gueltige Masse: sein Knopf traegt .is-incomplete
+   * und aria-disabled, bleibt aber anklickbar und meldet beim Klick, welches
+   * Feld fehlt (blocks/tp-rollware-rechner.liquid, #301). Die Leiste zeigte
+   * dort bis 10/2026 einen gesperrten Warenkorb-Knopf ohne Wirkung; jetzt
+   * heisst sie "Masse eingeben" und reicht den Klick an den Rechner weiter.
+   * Waehrend des Warenkorb-Aufrufs (.is-busy) bleibt sie gesperrt.
+   * @param {HTMLButtonElement | null} target
+   */
+  #targetIncomplete(target) {
+    return Boolean(
+      target &&
+        !target.hidden &&
+        target.closest('.tp-kaufweg') &&
+        target.classList.contains('is-incomplete') &&
+        !target.classList.contains('is-busy')
+    );
   }
 
   #clearPendingCartAdd() {
@@ -505,6 +534,8 @@ class StickyAddToCartComponent extends Component {
 
     // Restore visibility state after morphing
     this.refs.stickyBar.setAttribute('data-stuck', currentStuck);
+    // Der Morph setzt den Muster-Knopf auf den Serverstand (hidden) zurueck.
+    this.#syncMusterButton();
     this.dataset.variantAvailable = variantAvailable;
 
     // Update the dataset attributes with new variant info
@@ -597,11 +628,52 @@ class StickyAddToCartComponent extends Component {
   };
 
   /**
+   * Der sichtbare Muster-Knopf der Seite: im Rollenware-Rechner
+   * ([data-muster-link], traegt die gewaehlte Farbe) oder als eigener Block
+   * (blocks/tp-muster-cta.liquid). Bei Vinyl blendet assets/tp-muster-grenze.js
+   * ihn aus, sobald 3 Muster im Warenkorb liegen; dann gibt es auch in der
+   * Leiste keinen.
+   * @returns {HTMLElement | null}
+   */
+  #getMusterCta() {
+    const kandidaten = /** @type {HTMLElement[]} */ ([
+      ...document.querySelectorAll('a[data-muster-link], a[class*="tp-muster-cta__link-"]'),
+    ]);
+    return kandidaten.find((el) => !el.hidden && el.getClientRects().length > 0) ?? null;
+  }
+
+  /**
+   * Muster in der Leiste (Fehlersuche 28.10., Idee 3): nur, wenn die Seite
+   * selbst einen Muster-Knopf zeigt.
+   */
+  #syncMusterButton() {
+    const { musterButton } = this.refs;
+    if (!musterButton) return;
+    const cta = this.#getMusterCta();
+    musterButton.hidden = !cta;
+  }
+
+  /**
+   * Loest den Muster-Knopf der Seite aus - derselbe Weg wie ein Tipp darauf
+   * (Link, Farbauswahl im Einfass-Konfigurator, Musterzaehlung).
+   */
+  handleMusterClick = () => {
+    const cta = this.#getMusterCta();
+    // Inzwischen voll (3 Vinyl-Muster): Knopf weg statt Tipp ohne Wirkung
+    if (!cta) {
+      this.#syncMusterButton();
+      return;
+    }
+    cta.click();
+  };
+
+  /**
    * Shows the sticky bar with animation
    */
   #showStickyBar() {
     const { stickyBar } = this.refs;
     if (!this.#targetUsable) return;
+    this.#syncMusterButton();
     this.#isStuck = true;
     stickyBar.dataset.stuck = 'true';
   }
