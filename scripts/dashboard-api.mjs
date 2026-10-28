@@ -35,6 +35,7 @@ import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
+import { ratgeberFuerBestellung, ratgeberHtml, kurzTitel as ratgeberKurzTitel } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
@@ -341,6 +342,13 @@ function exportOrders(daten) {
 function bereiteBestellModell(daten, dir, jetzt) {
   const exportDaten = ladeExport(JSON.stringify(daten));
   const modell = mitMusterherkunft(aufbereiten(exportDaten, { jetzt }), dir);
+  // Kurz-Ratgeber zum Beilegen (domains/shopify/ratgeber-pdf): dieselbe Zuordnung wie in der
+  // Bestellbestaetigung, Muster zaehlen nicht. Leer = kein Knopf "Ratgeber drucken".
+  const roh = new Map(exportDaten.orders.map(o => [o?.id, o]));
+  for (const a of [...(modell.auftraege || []), ...(modell.testauftraege || [])]) {
+    const o = roh.get(a.id);
+    a.ratgeber = o ? ratgeberFuerBestellung(o).map(({ r }) => ratgeberKurzTitel(r)) : [];
+  }
   // Dieselbe Umrechnung, aber aktuelle Gesamtmenge: nach Versand ist die offene Menge 0,
   // die bestaetigte Lieferung bleibt trotzdem 10 von 10. Der Export selbst wird nicht veraendert.
   const sollExport = structuredClone(exportDaten);
@@ -628,7 +636,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null } = {}) {
   const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -1783,6 +1791,27 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const ergebnis = setzeBestellhaken(bestellmarkenPfad(dir), orderId, { erledigt: Boolean(erledigt), von: benutzer?.name || benutzer?.kuerzel || 'Inhaber' });
       merke(benutzer, null, 'Bestellung abgehakt', `${orderId}: ${erledigt ? 'erledigt' : 'zurückgenommen'}`);
       return { ok: true, ...ergebnis };
+    },
+
+    /**
+     * Kurz-Ratgeber zur Bestellung als PDF zum Ausdrucken und Beilegen, Bestellnummer, Produkt,
+     * Mass und Datum schon eingetragen. Rein lesend; Chromium startet erst beim Klick.
+     */
+    async kundenRatgeberDruck({ orderId = '' } = {}) {
+      if (typeof orderId !== 'string' || !orderId.trim() || orderId.length > 200) throw new ApiError(400, 'Bestellkennung fehlt.');
+      const dir = privatDirPath || privatDir();
+      const liste = exportOrders(readJsonGecacht(path.join(dir, 'bestelluebersicht', 'orders.json')));
+      if (!liste) throw new ApiError(503, 'Die Bestelldaten fehlen oder sind nicht lesbar. Bitte die Daten aktualisieren.');
+      const bestellung = liste.find(o => o?.id === orderId);
+      if (!bestellung) throw new ApiError(404, 'Bestellung nicht in den aktuellen Bestelldaten gefunden.');
+      const teile = ratgeberFuerBestellung(bestellung);
+      if (!teile.length) throw new ApiError(404, 'Zu dieser Bestellung gibt es keinen Ratgeber – sie enthält nur Muster oder Zubehör.');
+      const html = ratgeberHtml(teile, { titel: `Ratgeber zu Bestellung ${bestellung.name} – Teppich Paradies` });
+      const drucken = ratgeberPdf || (async h => {
+        const { mitBrowser, seitenAlsPdf } = await import('../domains/shopify/ratgeber-pdf/pdf.mjs');
+        return (await mitBrowser(page => seitenAlsPdf(page, h))).pdf;
+      });
+      return { inhalt: await drucken(html), typ: 'application/pdf', name: `Ratgeber ${String(bestellung.name || '').replace(/^#/, '')}.pdf` };
     },
 
     /** Rein intern und lesend: weder Shopify-Abgleich noch Kundendaten im Etikett. */

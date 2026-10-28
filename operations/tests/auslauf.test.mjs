@@ -46,6 +46,29 @@ test('bewerteSuche: nur der exakte Treffer zaehlt, Fehler sind kein Auslauf', ()
   assert.equal(bewerteSuche({ fehler: 'timeout' }).ergebnis, 'fehler');
 });
 
+test('bewerteSuche: Kurzbeschreibung von A - "nur in Format" heisst kein Handmuster, Auslauf-Woerter sind ein Hinweis', () => {
+  // Wortlaut wie in der Schnellsuche (28.10.2026), einmal ohne, einmal mit Leerzeichen vor der Klammer.
+  const ohne = bewerteSuche({ gefunden: true, text: 'Teppichboden Testa 400cm · Farbe 43(nur in Format)' });
+  assert.equal(ohne.ergebnis, 'ohne-muster');
+  assert.match(ohne.grund, /Farbe 43\(nur in Format\) - kein Handmuster, Muster sperren$/);
+  assert.equal(bewerteSuche({ gefunden: true, text: 'Teppichboden Testa 500cm · Farbe 43 (Nur in Format)' }).ergebnis, 'ohne-muster');
+  assert.equal(bewerteSuche({ gefunden: true, text: 'Spa-Board Testa ***nicht mehr lieferbar***' }).ergebnis, 'hinweis');
+  // Kollektionsnamen mit "Format" und andere Klammern sind kein Befund.
+  assert.equal(bewerteSuche({ gefunden: true, text: 'Teppichboden Testa 400 cm 028 Format Object · Farbe 99' }).ergebnis, 'ok');
+  assert.equal(bewerteSuche({ gefunden: true, text: 'Sockelleiste Testa weiss lackiert (9016)' }).ergebnis, 'ok');
+  // Nicht gefunden bleibt "fehlt", egal was im Text steht.
+  assert.equal(bewerteSuche({ gefunden: false, text: 'Farbe 43(nur in Format)' }).ergebnis, 'fehlt');
+});
+
+test('zusammenfassen: "ohne-muster" ist ein Befund und zaehlt nicht als Ausfall', () => {
+  const ok = n => Array.from({ length: n }, (_, i) => ({ kennung: `TEPTEST04_${i}`, ergebnis: 'ok' }));
+  const t = zusammenfassen('A', [...ok(9), { kennung: 'TEPTEST04_043', handles: ['testa-teppichboden'], ergebnis: 'ohne-muster', grund: 'Farbe 43(nur in Format) - kein Handmuster, Muster sperren' }]);
+  assert.equal(t.ausfall, null);
+  assert.equal(t.ohneMuster, 1);
+  assert.deepEqual(t.befunde.map(b => [b.ergebnis, b.kennung]), [['ohne-muster', 'TEPTEST04_043']]);
+  assert.equal(gesamtStand([t], { geprueftAm: '2026-10-28T00:00:00Z' }).ampel, 'gelb');
+});
+
 test('zusammenfassen: einzelne Befunde melden, ab 5 % Fehler oder Fehlmeldungen nur den Ausfall', () => {
   const ok = n => Array.from({ length: n }, (_, i) => ({ kennung: `k${i}`, ergebnis: 'ok' }));
   const einer = zusammenfassen('A', [...ok(99), { kennung: 'CVTEST_2', handles: ['testboden'], ergebnis: 'fehlt', grund: 'weg' }]);

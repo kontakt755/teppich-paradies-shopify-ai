@@ -109,6 +109,8 @@
       </p>
       <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
     {%- endif -%}
+    {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis) {%- endcomment -%}
+    {%- render 'tp-muster-hinweis', kontext: 'produkt' -%}
     {% if product.template_suffix == 'einfassung' %}
       <p class="tp-mass-beratung">Fragen zu Ihrem Maß? <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a></p>
       <style>.tp-mass-beratung{margin:8px 0 0;font-size: var(--tp-fs-sm);line-height:1.4;color:rgb(var(--color-foreground-rgb,34 34 34)/.72)}.tp-mass-beratung a{color:inherit;text-decoration:underline;text-underline-offset:2px}</style>
