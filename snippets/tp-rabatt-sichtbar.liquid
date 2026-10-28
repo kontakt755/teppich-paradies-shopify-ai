@@ -1,6 +1,7 @@
 {% doc %}
   Darf fuer dieses Produkt ein Streichpreis (compare_at_price) samt Rabattbadge
-  erscheinen? Gibt "ja" aus oder nichts. Einzige Quelle fuer die Anzeige.
+  erscheinen? Gibt "ja" aus, "uvp" oder nichts. Einzige Quelle fuer die Anzeige.
+  Wer nur auf "ja" prueft, behandelt "uvp" richtig als "keine Aktion".
 
   Drei Wege (1+2: Inhaber, 2026-09-24; 3: Sonderposten, 2026-10):
     1. Dauerrabatt: aktion.klasse == "preisanker" (Dauerrabatt, rabatt-plan.mjs). Mit dem
@@ -15,6 +16,16 @@
        Ursprungsprodukts). Ein blosser Text genuegt nicht - ohne pruefbaren Beleg
        kein Streichpreis, auch beim Reststueck nicht.
   Ohne einen der Wege zeigt ein stehen gebliebener compare_at_price nichts (S-20).
+
+  "uvp" (Inhaber 2026-10-28): Laeuft keiner der drei Wege und steht
+  preis.vergleich_ist_uvp auf true, ist der Vergleichspreis die unverbindliche
+  Preisempfehlung des Herstellers. Angezeigt wird dann nur die graue Zeile
+  "UVP ..." (snippets/tp-uvp-zeile), ohne Rabattbadge, ohne Prozent und ohne
+  roten Preis - ein UVP-Vergleich ist keine Preisermaessigung des Shops.
+  Nie beim Sonderposten (dort ist der Vergleichspreis Meterpreis x Flaeche).
+  Eine Aktion geht vor. Endet sie, muss compare_at_price wieder die UVP sein
+  (Liste: ~/teppich-paradies-analyse/uvp-wiederherstellen-2026-10-10/schutz/),
+  sonst stuende der alte Aktionspreis als "UVP" da.
   Rollenware mit Raummaß: Streichpreise nur, wenn beide Zuschnittarten über
   alle regulären Varianten reduziert sind. Ein allein reduziertes Raummaß
   darf das Produkt nicht als Aktionsprodukt erscheinen lassen.
@@ -84,5 +95,7 @@
     else
       echo 'ja'
     endif
+  elsif trs_sp != 'ja' and product.metafields.preis.vergleich_ist_uvp.value == true
+    echo 'uvp'
   endif
 -%}
