@@ -70,3 +70,21 @@ test('Unternehmen gilt deutschlandweit, Verlegung bleibt im 50-km-Kreis', () => 
   assert.match(src, /"areaServed": \{ "@type": "Country", "name": "Deutschland", "identifier": "DE" \}/);
   assert.match(src, /"makesOffer": \{[\s\S]*?"serviceType": "Bodenverlegung"[\s\S]*?"geoRadius": 50000/);
 });
+
+test('Produkt-Brotkrumen ueberspringen abgeloeste Kollektionen mit Handle auf -alt (Fehlersuche 2026-10-28)', async () => {
+  const src = lies('snippets/product-information-content.liquid');
+  const treffer = src.match(/assign tp_c_ende = tp_c\.handle \| slice: -4, 4\s+if tp_c_ende == '-alt'\s+continue/g) || [];
+  assert.equal(treffer.length, 3, 'Stufe 2, Stufe 1 und Fallback muessen -alt auslassen');
+
+  // Verhalten: den Liquid-Block der Brotkrumen mit Fortivas Kollektionen rendern
+  const start = src.indexOf('{%- liquid', src.indexOf("request.page_type == 'product'"));
+  const block = src.slice(start, src.indexOf('-%}', start) + 3);
+  const pfad = async (collections, type = 'Teppichboden') => (await eng.parseAndRender(
+    `${block}{{ tp_crumb_1.handle }}>{{ tp_crumb_2.handle }}`, { product: { type, collections }, collections: {} })).trim();
+  const tb = { handle: 'teppichboden', title: 'Teppichboden', all_products_count: 278 };
+  const alt = { handle: 'teppichboden-nadelvlies-alt', title: 'Teppichboden Nadelfilz (alt)', all_products_count: 17 };
+  const neu = { handle: 'teppichboden-nadelvlies', title: 'Teppichboden Nadelfilz', all_products_count: 13 };
+  assert.equal(await pfad([tb, alt, neu]), 'teppichboden>teppichboden-nadelvlies');
+  assert.equal(await pfad([tb, alt]), '>teppichboden', 'nur alt: Pfad Start > Teppichboden > Produkt');
+  assert.equal(await pfad([alt, tb, neu], ''), 'teppichboden>teppichboden-nadelvlies', 'Fallback ohne Produkttyp');
+});

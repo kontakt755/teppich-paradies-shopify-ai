@@ -100,8 +100,15 @@
       # Suche nach der spezifischsten Kollektion (SEO-Audit 2026-09-30, 4.2:
       # Start > Teppichboden > Angebote Teppichboden > Zafira). Sie werden in
       # beiden Stufen uebersprungen.
+      # Ebenso abgeloeste Kollektionen mit Handle auf "-alt": "Teppichboden
+      # Nadelfilz (alt)" ist laenger als "Teppichboden Nadelfilz" und stand
+      # deshalb im Pfad und im JSON-LD von Fortiva (Fehlersuche 2026-10-28).
       for tp_c in product.collections
         if tp_c.handle contains 'angebote-'
+          continue
+        endif
+        assign tp_c_ende = tp_c.handle | slice: -4, 4
+        if tp_c_ende == '-alt'
           continue
         endif
         if product.type != blank and tp_c.title contains product.type
@@ -116,6 +123,10 @@
           if tp_c.handle contains 'angebote-'
             continue
           endif
+          assign tp_c_ende = tp_c.handle | slice: -4, 4
+          if tp_c_ende == '-alt'
+            continue
+          endif
           if tp_c.handle != tp_crumb_2.handle and tp_crumb_2.title contains tp_c.title
             if tp_crumb_1 == null or tp_c.title.size < tp_crumb_1.title.size
               assign tp_crumb_1 = tp_c
@@ -128,6 +139,10 @@
         assign tp_crumb_fallback = product.collections | sort: 'all_products_count' | reverse
         for tp_c in tp_crumb_fallback
           if tp_c.handle contains 'angebote-'
+            continue
+          endif
+          assign tp_c_ende = tp_c.handle | slice: -4, 4
+          if tp_c_ende == '-alt'
             continue
           endif
           if tp_crumb_1 == null
