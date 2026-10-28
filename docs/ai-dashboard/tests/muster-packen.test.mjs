@@ -399,3 +399,14 @@ test('handTreffer: offene Muster als Karten in Packreihenfolge, Eingelegtes und 
   assert.deepEqual(handTreffer(r.kunden, '#T1').karten.map(x => x.muster.lineItemId.split('/').pop()), ['11', '12']);
   assert.deepEqual(handTreffer(r.kunden, '').karten, []);
 });
+
+test('Wartezeit zaehlt Kalendertage in Berlin, nicht volle 24 Stunden', () => {
+  // Bestellt 19.10. 18:33 Berlin, angesehen 28.10. 12:29 Berlin: 9 Tage (vorher 8).
+  const r = musterPackliste({ produkte, schluesselVon, jetzt: new Date('2026-10-28T11:29:00Z'), auftraege: [auftrag(1, '2026-10-19T16:33:35Z', 'Anna Test', [pos(11, '101')])] });
+  assert.equal(r.kunden[0].wartetTage, 9);
+  // Kurz vor Mitternacht Berlin bestellt, am naechsten Morgen: 1 Tag; am selben Abend: 0.
+  const morgen = musterPackliste({ produkte, schluesselVon, jetzt: new Date('2026-10-20T06:00:00Z'), auftraege: [auftrag(1, '2026-10-19T21:30:00Z', 'Anna Test', [pos(11, '101')])] });
+  assert.equal(morgen.kunden[0].wartetTage, 1);
+  const abend = musterPackliste({ produkte, schluesselVon, jetzt: new Date('2026-10-19T21:50:00Z'), auftraege: [auftrag(1, '2026-10-19T21:30:00Z', 'Anna Test', [pos(11, '101')])] });
+  assert.equal(abend.kunden[0].wartetTage, 0);
+});

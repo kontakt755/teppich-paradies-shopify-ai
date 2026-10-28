@@ -20,7 +20,7 @@
  */
 
 import { sichereMusterLinks } from './muster-kauf-links.mjs';
-const TAG_MS = 86400000;
+import { kalendertage } from './kalendertage.mjs';
 
 /** Erste Nachfrage ab so vielen Tagen nach Versand bzw. Uebergabe der Muster. */
 export const ERSTE_NACH_TAGEN = 4;
@@ -42,10 +42,7 @@ const FESTE_LINKS = Object.freeze({
 export const STUFE_LABEL = Object.freeze({ erste: 'Erste Nachfrage', erinnerung: 'Erinnerung' });
 
 function tageSeit(iso, jetzt) {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.max(0, Math.floor((jetzt.getTime() - t) / TAG_MS));
+  return kalendertage(iso, jetzt);
 }
 
 const gesetzt = v => v !== null && v !== undefined && v !== '' && v !== '–';
