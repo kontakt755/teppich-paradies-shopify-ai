@@ -2,6 +2,24 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Packstation: Bestelldatum auf jeder Karte (#1757)
+
+- **Geaendert:** Wunsch des Inhabers vom 28.10.: „wichtig ist auch, dass ich sehen muss, an welchem Datum
+  bestellt wurde“. Die Kopfzeile jeder Packstation-Karte zeigt jetzt ohne Aufklappen:
+  - „bestellt am Di., 20.10. · wartet seit 8 Tagen“, mit Wochentag und nach Berliner Kalendertag wie die
+    Wartetage (#1754). Bei mehreren Bestellungen in einem Umschlag steht „erste Bestellung am …“.
+  - Fehlen noch Muster und sind sie beim Lieferanten bestellt: „beim Lieferanten bestellt am …“, bei
+    verschiedenen Daten „zwischen … und …“. Das stand bisher nur aufgeklappt im Hinweis.
+  - Aufgeklappt steht bei mehreren Bestellungen das Datum jeder Bestellnummer.
+  Die Daten kamen schon vom Server (`seit`, `bestellungen[].datum`, `bestelltAm`), geändert ist nur die
+  Ansicht `ansichten/kunden/muster-packen.mjs`.
+- **Getestet:** `packstation-arbeitslisten.test.mjs` mit neuem Test (Kopfzeile ein/zwei Bestellungen,
+  Lieferantenzeile nur bei fehlenden Mustern, nicht bei Gepacktem, ohne Datum nur die Wartezeit) 16/16,
+  `dashboard:test` 1025/1025. `dashboard:pruefen` mit Datenkopie: alle Ansichten OK, kein seitliches
+  Scrollen von 360 bis 1440 px. Sichtprüfung der Packstation mit 19 offenen Umschlägen bei 1024 und 360 px.
+- **Risiken:** Auf schmalen Handys braucht die Kopfzeile eine Zeile mehr.
+- **Naechste Stufe:** keine.
+
 ## 2026-10-28 · Starter-Test: Zeitlimit nur noch gegen Hänger (#1752)
 
 - **Geaendert:** Das automatische Nachziehen des Dienstes hing am 28.10. um 11:04 an einem roten Probelauf.
