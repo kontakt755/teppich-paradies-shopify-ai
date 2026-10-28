@@ -69,8 +69,10 @@ function musterBefund(z, packen) {
   const bestellt = eintraege.filter(e => stufe(e) >= 1);
   const angekommen = eintraege.filter(e => stufe(e) >= 2);
   const bestelltAm = fruehester(bestellt.map(e => e.bestelltAm || e.aktualisiertAm));
-  // Belegt ist "direkt an den Kunden" nur mit dem Vermerk beim Bestellen (ueber: 'kunde', #1680).
-  const direkt = bestellt.length > 0 && bestellt.every(e => e.ueber === 'kunde');
+  // Belegt ist "direkt an den Kunden" nur mit dem Vermerk beim Bestellen (ueber: 'kunde', #1680) - an
+  // jeder noch offenen Position. Eine nie bestellte daneben waere sonst ohne Rueckfrage mit erledigt.
+  const offen = eintraege.filter(e => e?.status !== 'erledigt');
+  const direkt = offen.length > 0 && offen.every(e => stufe(e) >= 1 && e.ueber === 'kunde');
   const angekommenAm = spaetester(angekommen.map(e => e.geliefertAm || e.aktualisiertAm));
   const pack = packBefund(z, packen);
   const notiz = (z.verlaufNotizen || []).filter(n => n?.text).at(-1) || null;

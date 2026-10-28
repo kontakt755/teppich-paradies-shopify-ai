@@ -8,8 +8,10 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Kunden (nicht belegt)“ abgeschlossen und in Shopify gebucht. Die Muster waren aber nie verschickt: Die
   Bestellung bei Lieferant A ging an uns und wurde dort nie erfasst. Die Liste nahm „direkt“ für jede
   Musterbestellung vor dem 24.10. an, die nie angekommen war.
-  - „Direkt an den Kunden“ gilt nur noch mit dem Vermerk beim Bestellen (`ueber: 'kunde'`) an allen
-    bestellten Mustern. Dann lautet der Vorschlag „laut Bestellung“, und der Beleg steht dabei.
+  - „Direkt an den Kunden“ gilt nur noch mit dem Vermerk beim Bestellen (`ueber: 'kunde'`) an jeder
+    noch offenen Position. Dann lautet der Vorschlag „laut Bestellung“, und der Beleg steht dabei. Eine
+    nie bestellte Position daneben verhindert den Vermerk (Codex-Review: sonst würde sie ohne Rückfrage
+    mit abgeschlossen).
   - Sonst heißt es „Die Muster kamen nie an – beim Lieferanten nachfragen“ (bei Bestellungen vor dem
     24.10. mit dem Hinweis, dass das Lieferziel damals nicht gespeichert wurde). Ein Vermerk wird nicht
     vorgegeben (`notiz: null`).

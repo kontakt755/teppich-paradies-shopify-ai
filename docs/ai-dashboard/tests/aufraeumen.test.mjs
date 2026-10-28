@@ -103,6 +103,12 @@ test('Vorschlaege sagen nur, was belegt ist', () => {
   // Nur eins von zwei direkt: kein Beleg fuer den ganzen Auftrag.
   const halb = fall(zeile({ status: { [L(1)]: bestellt(25, { ueber: 'kunde' }), [L(2)]: bestellt(25) } }));
   assert.equal(halb.vorschlag.notiz, null);
+  // Eins direkt, das andere nie bestellt (Codex-Review #1741): kein Direktversand-Vermerk, sonst
+  // schloesse "Abschließen" die nie bestellte Position ohne Rueckfrage mit ab.
+  const unbestellt = fall(zeile({ status: { [L(1)]: bestellt(25, { ueber: 'kunde' }) } }));
+  assert.deepEqual(unbestellt.lineItemIds, [L(1), L(2)]);
+  assert.equal(unbestellt.vorschlag.notiz, null);
+  assert.ok(!unbestellt.belege.includes('Lieferant schickt laut Bestellung direkt an den Kunden'));
 
   // Knopf: mit Vermerk "Abschließen", ohne "Abschließen…" (fragt nach dem Grund).
   const block = f => aufraeumenBlock({ daten: { verfuegbar: true, zeilen: [{ ...zeile(), aufraeumen: f }] } });
