@@ -34,6 +34,12 @@
       "note": "War ab 2026-10-28T10:12:48Z live (main e78298dd, PR #1744); durch workflow:live (main 182579be, PR #1747) bis 2026-10-28T11:14:41Z abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify Admin API bestaetigt."
     },
     {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-28",
+      "note": "Durch workflow:live (main e78298dd, PR #1744) am 2026-10-28T10:12:48Z abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify Admin API bestaetigt."
+    },
+    {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-10-28",
