@@ -27,4 +27,10 @@
   .tp-uvp s {
     white-space: nowrap;
   }
+
+  /* Mitlaufende Kaufleiste: nur der Preis. Mit UVP blieb vom Produktnamen
+     nur "K..." (Render-Test 2026-10-28); die UVP steht oben auf der Seite. */
+  .sticky-add-to-cart__price .tp-uvp {
+    display: none;
+  }
 {% endstylesheet %}
