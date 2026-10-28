@@ -3,7 +3,8 @@
  * wenn es Faelle gibt. Regeln: lib/aufraeumen.mjs - der Server haengt `aufraeumen` an jede Zeile
  * von /api/kunden/bestellungen. Die Knoepfe nutzen vorhandene Wege, keinen eigenen Schreibpfad:
  * - "Abschließen": wie "Kunde fertig" (/api/kunden/bestellung-fertig) mit dem Vorschlag als Vermerk;
- *   bucht in Shopify als versendet, ohne Mail an den Kunden (Abschnitt 24 der Architektur).
+ *   bucht in Shopify als versendet, ohne Mail an den Kunden (Abschnitt 24 der Architektur). Ohne
+ *   belegten Vorschlag (notiz null) heisst er "Abschließen…" und fragt nach dem Grund (#1740).
  * - "Läuft noch": Notiz in der Zeitleiste - eine neue Bewegung, die Liste fragt erst spaeter wieder.
  * Gepackter Umschlag ohne Versandvermerk (#1709) statt dessen:
  * - "Ist verschickt…": der Versanddialog wie an der Zeitleiste, Versandmail vorab aus (der Kunde hat
@@ -34,7 +35,7 @@ function zeile(z, lesend) {
   const gepackt = a.grund === 'gepackt';
   const abschliessen = lesend ? ''
     : gepackt ? `<button type="button" class="btn btn-sm" data-aufraeumen-verschickt="${esc(z.orderId)}" title="Versand eintragen und in Shopify buchen – Versandmail vorab aus">Ist verschickt…</button>`
-    : a.lineItemIds.length ? `<button type="button" class="btn btn-sm" data-aufraeumen-abschliessen="${esc(z.orderId)}" title="Alle offenen Artikel auf „Erledigt“ – in Shopify als versendet gebucht, ohne Mail an den Kunden">Abschließen</button>` : '';
+    : a.lineItemIds.length ? `<button type="button" class="btn btn-sm" data-aufraeumen-abschliessen="${esc(z.orderId)}" title="Alle offenen Artikel auf „Erledigt“ – in Shopify als versendet gebucht, ohne Mail an den Kunden${a.vorschlag.notiz ? '' : '. Fragt zuerst nach dem Beleg.'}">${a.vorschlag.notiz ? 'Abschließen' : 'Abschließen…'}</button>` : '';
   const laeuft = lesend ? '' : `<button type="button" class="btn btn-sm" data-aufraeumen-laeuft="${esc(z.orderId)}" title="Bleibt offen; die Liste fragt in ${aufraeumenAbTagen(a)} Tagen wieder">${gepackt ? 'Liegt noch hier' : 'Läuft noch'}</button>`;
   return `<div class="heute-bestellzeile" data-aufraeumen="${esc(z.orderId)}"><div>
       <strong>${esc(z.kundenname || 'Kunde nicht hinterlegt')} · ${esc(z.orderName || 'Bestellung')}</strong>
@@ -72,11 +73,19 @@ async function abschliessen(knopf) {
   const z = (kunden.bestellungen?.zeilen || []).find(x => x.orderId === knopf.dataset.aufraeumenAbschliessen);
   const a = z?.aufraeumen;
   if (!a?.lineItemIds?.length || istNurLesend()) return;
-  const frage = `${z.orderName}: ${plural(a.lineItemIds.length, 'Artikel', 'Artikel')} abschließen?\n\nVermerk: ${a.vorschlag.notiz}\n\nIn Shopify wird die Bestellung als versendet gebucht – ohne Mail an den Kunden.`;
-  if (!window.confirm(frage)) return;
+  let notiz = a.vorschlag.notiz;
+  if (!notiz) {
+    // Kein belegter Vorschlag: der Grund kommt von dem, der abschliesst - nie ein geratener Text.
+    const grund = window.prompt(`${z.orderName}: Woher wissen wir, dass das erledigt ist?\n\nZum Beispiel: „Kundin hat die Muster laut Telefonat“. Der Text steht als Vermerk am Auftrag. In Shopify wird die Bestellung als versendet gebucht – ohne Mail an den Kunden.`, '');
+    if (!grund?.trim()) return;
+    notiz = `Aufgeräumt: ${grund.trim()}`;
+  } else {
+    const frage = `${z.orderName}: ${plural(a.lineItemIds.length, 'Artikel', 'Artikel')} abschließen?\n\nVermerk: ${notiz}\n\nIn Shopify wird die Bestellung als versendet gebucht – ohne Mail an den Kunden.`;
+    if (!window.confirm(frage)) return;
+  }
   knopf.disabled = true;
   try {
-    const j = await orgSchreiben('/api/kunden/bestellung-fertig', { orderId: z.orderId, lineItemIds: a.lineItemIds, notiz: a.vorschlag.notiz });
+    const j = await orgSchreiben('/api/kunden/bestellung-fertig', { orderId: z.orderId, lineItemIds: a.lineItemIds, notiz });
     const r = versandRueckmeldung(`${z.orderName} abgeschlossen`, j.shopify);
     toast(r.text, r.ton, r.ton ? { dauer: 9000 } : {});
   } catch (e) {
