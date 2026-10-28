@@ -430,12 +430,19 @@
         "team",
         "gebiet"
       ]
+    },
+    "tp_verlege_ablauf": {
+      "type": "tp-verlege-ablauf",
+      "settings": {
+        "maler": false
+      }
     }
   },
   "order": [
     "treppenverlegun_jXADaz",
     "tp_treppen_ausfuehrung",
     "main",
+    "tp_verlege_ablauf",
     "tp_verlegegebiet",
     "final_cta_service",
     "tp_bewertung",

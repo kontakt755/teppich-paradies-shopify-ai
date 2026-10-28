@@ -194,11 +194,18 @@
         "team",
         "gebiet"
       ]
+    },
+    "tp_verlege_ablauf": {
+      "type": "tp-verlege-ablauf",
+      "settings": {
+        "maler": false
+      }
     }
   },
   "order": [
     "main",
     "tp_verlegeservice",
+    "tp_verlege_ablauf",
     "tp_verlegegebiet",
     "tp_verlegeservice_kontakt",
     "tp_bewertung",

@@ -115,6 +115,8 @@
         Nacharbeit 2026-09-28: Der Satz zum Weitertransport steht jetzt direkt
         bei der Spedition, damit er nicht der eigenen Anlieferung darunter
         zugeordnet wird (die traegt ausdruecklich in die Wohnung).
+        Seit w-173 (Inhaber 28.10.2026) wie auf den Verlegeseiten: ebenerdig
+        bzw. in die Wohnung, obere Etagen gegen Aufpreis nach Absprache.
       {%- endcomment -%}
       <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an. Bei Spedition endet die Lieferung an der Bordsteinkante; der Weitertransport in die Wohnung ist dort nicht enthalten.</p>
       {%- comment -%}
@@ -123,7 +125,7 @@
       {%- endcomment -%}
       {%- if tp_sl_vs contains 'ja' and settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
         <p><strong>Oder: eigene Anlieferung durch unser Team</strong></p>
-        <p>Bis {{ settings.tp_vs_radius_basis }}&nbsp;km ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos, inklusive Hereintragen in die Wohnung.</p>
+        <p>Bis {{ settings.tp_vs_radius_basis }}&nbsp;km ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos – ebenerdig bzw. in die Wohnung, obere Etagen gegen Aufpreis nach Absprache.</p>
       {%- endif -%}
     {%- else -%}
       <p><strong>Versand in Deutschland {{ settings.tp_versand_preis }}, ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos</strong></p>

@@ -120,6 +120,21 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 32px;
 }
+/* Zweite Reihe (Laminat, Parkett): gleiche Kartenbreite wie die drei
+   Vinylkarten darueber und mittig, statt die zwei Karten auf volle Breite zu
+   ziehen. Unter 1000 px wie die obere Reihe. */
+.vinylarten-grid--fuell {
+  grid-template-columns: repeat(auto-fit, minmax(280px, calc((100% - 64px) / 3)));
+  justify-content: center;
+}
+@media screen and (max-width: 999px) {
+  .vinylarten-grid--fuell {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+.vinylarten-title--weiter {
+  margin-top: 64px;
+}
 .vinylart-card {
   background: #f9f9f9;
   border-radius: 14px;
@@ -223,6 +238,38 @@
         Verlegeservice (Freigabe 2026-09-11) - Klick- und Klebevinyl nicht,
         deshalb steht der Hinweis nur in dieser Karte. {%- endcomment -%}
       <a class="vinylart-card__service" href="{{ pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice' }}">Alle Preise im Liefer- &amp; Verlegeservice</a>
+    </div>
+
+  </div>
+
+  {%- comment -%}
+    Laminat und Parkett (Werkbank w-173, Inhaber 28.10.2026): beides verlegen
+    wir, es gab aber keinen Weg dorthin. Nur Aussagen, die auch auf den
+    Kategorieseiten stehen; Verlegeart klaeren wir beim Aufmass.
+  {%- endcomment -%}
+  <h2 class="vinylarten-title vinylarten-title--weiter">Laminat und Parkett verlegen lassen</h2>
+  <p class="vinylarten-subtitle">Auch Laminat und Parkett verlegt unser eigenes Team – Verlegeart und Untergrund klären wir beim Aufmaß.</p>
+
+  <div class="vinylarten-grid vinylarten-grid--fuell">
+
+    <div class="vinylart-card">
+      <h3>Laminat</h3>
+      <ul>
+        <li>Holz- und Steindekore</li>
+        <li>7, 8 und 10 mm Stärke im Sortiment</li>
+        <li>Untergrundprüfung beim Aufmaß inklusive</li>
+      </ul>
+      <a href="{{ collections['laminat'].url | default: '/collections/laminat' }}">Zu Laminat</a>
+    </div>
+
+    <div class="vinylart-card">
+      <h3>Parkett</h3>
+      <ul>
+        <li>Echtholz-Oberflächen</li>
+        <li>Holzart und Oberfläche nach Wunsch</li>
+        <li>Wir beraten, ob schwimmend oder verklebt verlegt wird</li>
+      </ul>
+      <a href="{{ collections['parkett'].url | default: '/collections/parkett' }}">Zu Parkett</a>
     </div>
 
   </div>
