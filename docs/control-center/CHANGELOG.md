@@ -2,6 +2,18 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Starter-Test: Zeitlimit nur noch gegen Hänger (#1752)
+
+- **Geaendert:** Das automatische Nachziehen des Dienstes hing am 28.10. um 11:04 an einem roten Probelauf.
+  `dashboard-app-starten.test.mjs` („ausbleibender Dienst … leeres App-Fenster“) brach nach dem 8-s-Zeitlimit
+  von `spawnSync` ab (`status: null`). Normal braucht der Test unter 1 s, die ganze Testreihe lief in der
+  Probe aber 88 statt 12 s, weil der Mac ausgelastet war. Das Zeitlimit liegt jetzt bei 30 s
+  (`ZEITLIMIT_MS`). Es soll nur einen Hänger abfangen, die Startdauer misst der Test nicht.
+- **Getestet:** Die Datei 14/14, `dashboard:test` 1022/1022, `pruefen` 9/9. Die Probe von Hand
+  (`betrieb:nachziehen -- --probe`) war am 28.10. um 11:08 auf demselben Stand grün.
+- **Risiken:** Unter künstlicher Last wurde nichts nachgestellt, um den laufenden Dienst nicht zu bremsen.
+  Ein echter Hänger fällt jetzt erst nach 30 statt nach 8 s auf.
+
 ## 2026-10-28 · „wartet seit“ zählt überall Kalendertage
 
 - **Geaendert:** Die Wartezeiten zählten volle 24 Stunden seit der Bestellung. Eine Bestellung vom 19.10.
@@ -14,6 +26,7 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   neuer Fall in `muster-packen.test.mjs`; `npm run dashboard:test` und `npm run -s pruefen -- --ohne themecheck`.
 - **Risiken:** Schwellen der Aufräumliste und der To-dos rechnen weiter in 24 Stunden (nicht angezeigt).
   Manche Zahlen springen um 1 nach oben, und Warnfarben können einen Tag früher kommen.
+
 - **Naechste Stufe:** keine.
 
 ## 2026-10-28 · Etiketten drucken: nur ausgewählte Motive
