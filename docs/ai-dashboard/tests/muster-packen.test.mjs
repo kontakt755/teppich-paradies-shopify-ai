@@ -97,13 +97,15 @@ test('Adresslayout: jede Zeile passt in die Druckbreite, auch lange Orte; ohne B
   const mass = (t, g, fett) => t.length * g * (fett ? 0.6 : 0.55);
   const e = adressEtikett(adresse('Anna-Katharina Testfrau-Beispiel', { strasse: 'Lange-Beispielstraße 115, Gartenhaus', plz: '00000', ort: 'Bad Musterstadt-Langenachbarort' }), ['#T1040', '#T1041', '#T1042']);
   for (const format of Object.values(ETIKETT_FORMATE)) {
-    const { texte, linien, qr } = adressLayout(e, mass, format);
+    const { texte, linien, qr, quer } = adressLayout(e, mass, format);
+    // Quer gesetzt gelten die Koordinaten im gedrehten Format.
+    const f = quer ? { ...format, breite: format.hoehe, hoehe: format.breite } : format;
     assert.equal(qr, null);
     assert.ok(linien.length === 1);
     assert.deepEqual(texte.slice(0, 2).map(t => t.text), [...ABSENDER]);
     for (const t of texte) {
-      assert.ok(t.x >= format.rand && t.x + mass(t.text, t.groesse, t.fett) <= format.breite - format.rand + 1, `${format.format}: ${t.text} zu breit`);
-      assert.ok(t.y >= 0 && t.y + t.groesse <= format.hoehe, `${format.format}: ${t.text} ausserhalb`);
+      assert.ok(t.x >= f.rand && t.x + mass(t.text, t.groesse, t.fett) <= f.breite - f.rand + 1, `${format.format}: ${t.text} zu breit`);
+      assert.ok(t.y >= 0 && t.y + t.groesse <= f.hoehe, `${format.format}: ${t.text} ausserhalb`);
     }
     assert.ok(!texte.some(t => /Bestellung|#T104/.test(t.text)), 'keine Bestellnummer auf dem Adressaufkleber');
   }
@@ -121,6 +123,25 @@ test('Adresslayout: auch ellenlange Zeilen brechen um statt abzuschneiden, nicht
     assert.ok(l.texte.every(t => t.groesse >= 12));
   }
   assert.equal(adressLayout(adressEtikett(adresse('X'.repeat(90)), []), mass).passt, false, 'ein Wort breiter als das Etikett wird gesperrt');
+});
+
+test('Adresse liegt auf hohen Rollen quer: Zeile entlang der langen Seite, Schrift waechst mit (Inhaber 28.10.)', () => {
+  const mass = (t, g, fett) => t.length * g * (fett ? 0.6 : 0.55);
+  const e = adressEtikett(adresse('Anna Test', { strasse: 'Testweg 12', plz: '00000', ort: 'Musterstadt' }), []);
+  const quadrat = adressLayout(e, mass, ETIKETT_FORMATE['50x50']);
+  assert.equal(quadrat.quer, false, '50 x 50 bleibt wie bisher');
+  for (const name of ['50x80', '50x100']) {
+    const format = ETIKETT_FORMATE[name];
+    const l = adressLayout(e, mass, format);
+    assert.equal(l.quer, true, `${name} quer`);
+    assert.ok(l.passt, `${name}: ${l.probleme.join(' | ')}`);
+    const breitester = Math.max(...l.texte.map(t => t.x + mass(t.text, t.groesse, t.fett)));
+    assert.ok(breitester > format.breite, `${name}: Zeilen nutzen die Rollenlaenge (${breitester} px)`);
+    assert.ok(breitester <= format.hoehe - format.rand + 0.01, `${name}: innerhalb der Rollenlaenge`);
+    assert.ok(Math.max(...l.texte.map(t => t.y + t.groesse)) <= format.breite - format.rand + 0.01, `${name}: innerhalb der Rollenbreite`);
+    const name1 = g => g.texte.find(t => t.text === 'Anna Test').groesse;
+    assert.ok(name1(l) > name1(quadrat), `${name}: Empfaenger groesser als auf 50 x 50`);
+  }
 });
 
 test('Erkennen: Farbbild nur fuer genau diese Farbe, Lieferant mit Namen, verwechselbare Muster markiert', () => {

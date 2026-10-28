@@ -91,7 +91,9 @@ function zeichne(canvas, e, versatz = null) {
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (versatz) ctx.translate(Math.round(versatz.x * 8), Math.round(versatz.y * 8));
   ctx.fillStyle = '#000'; ctx.textBaseline = 'top';
-  const { texte, linien, qr } = etikettLayout(e);
+  const { texte, linien, qr, quer } = etikettLayout(e);
+  // Quer gesetzte Adresse (50 x 80, 50 x 100): 90 Grad im Uhrzeigersinn auf die Rolle drehen.
+  if (quer) { ctx.translate(canvas.width, 0); ctx.rotate(Math.PI / 2); }
   for (const t of texte) { ctx.font = font(t.groesse, t.fett); ctx.fillText(t.text, t.x, t.y); }
   for (const l of linien) ctx.fillRect(l.x1, l.y, l.x2 - l.x1, 2);
   if (qr && window.qrcode) {

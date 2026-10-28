@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Adressaufkleber auf 50 × 80 quer
+
+- **Geaendert:** Inhaber: „die Adresse soll quer sein bei 50 × 80, nicht hoch“.
+  - Auf hohen Rollen (50 × 80 und 50 × 100) läuft die Adresse jetzt entlang der langen Seite.
+  - Die Empfängerschrift wächst mit (bis 47 px statt 36 px auf 50 × 80).
+  - 50 × 50 und die Musteraufkleber bleiben unverändert.
+  - Das Layout rechnet im gedrehten Format, der Druckdialog dreht das Bild um 90° auf die Rolle.
+- **Getestet:**
+  - `muster-packen.test.mjs` neu „Adresse liegt auf hohen Rollen quer“: 50 × 50 nicht quer; 50 × 80 und 50 × 100
+    quer, passend, Zeilen länger als die Rollenbreite, innerhalb der Ränder, Empfänger größer. Die beiden
+    Adresstests prüfen die Ränder im gedrehten Format.
+  - Druckdialog in der Datenkopie mit Druckerattrappe auf 50 × 80:
+    - Vorschau 400 × 640 mit querer Adresse.
+    - Druckbild 384 × 640, Tinte innerhalb von 32 px Rand.
+    - Keine JS-Fehler.
+- **Risiken:** Die Drehrichtung ist im Uhrzeigersinn (Schrift läuft von oben nach unten aus der Rolle). Soll
+  sie andersherum laufen, ist es ein Vorzeichen in `zeichne()`.
+- **Naechste Stufe:** keine geplant.
+
 ## 2026-10-28 · Ratgeber zum Beilegen drucken (#1763)
 
 - **Geaendert:** Ware mit Kurz-Ratgeber (Teppich, Teppichboden, Vinyl, Klickvinyl, Klebevinyl, Laminat,
