@@ -199,6 +199,14 @@
 
 .tp-vg__stufen--zonen {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  row-gap: 16px;
+}
+
+/* Die fuenfte Stufe "Deutschlandweit" (Versand, nicht Anfahrt) rutschte am
+   Desktop ohne Abstand unter "Bis 15 km" (Rundgang 2026-10-28). Sie bekommt
+   eine eigene Zeile ueber die volle Breite. */
+.tp-vg__stufen--zonen > .tp-vg__stufe:nth-child(5) {
+  grid-column: 1 / -1;
 }
 
 @media screen and (max-width: 989px) {
