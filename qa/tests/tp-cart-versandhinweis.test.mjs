@@ -6,6 +6,7 @@ import { Liquid } from 'liquidjs';
 const root = path.resolve(import.meta.dirname, '../..');
 const engine = new Liquid({ root: path.join(root, 'snippets'), extname: '.liquid' });
 engine.registerTag('doc', { parse(token, tokens) { while(tokens.length) { if(tokens.shift().name === 'enddoc') break; } }, render() { return ''; } });
+engine.registerTag('stylesheet', { parse(token, tokens) { while(tokens.length) { if(tokens.shift().name === 'endstylesheet') break; } }, render() { return ''; } });
 const source = fs.readFileSync(path.join(root, 'snippets/tp-cart-versandhinweis.liquid'), 'utf8');
 const item = (opts = {}) => ({ sku: opts.sample ? 'M-123' : 'B123', properties: {}, variant: {metafields:{custom:{rollenbreite:{value:opts.roll ?? null}}}}, product:{type: 'Teppich',metafields:{custom:{qm_pro_paket:{value:opts.pack ?? null}}}} });
 const render = (items, total, threshold=50) => engine.parseAndRender(source,{cart:{items,total_price:total},settings:{tp_versand_frei_ab:threshold},pages:{}});

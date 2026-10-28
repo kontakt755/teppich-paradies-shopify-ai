@@ -2361,6 +2361,24 @@
         "label": "Lieferzeit Sonderposten aus eigenem Bestand",
         "default": "5–7 Werktage",
         "info": "Gilt für Produkte mit Tag sonderposten ohne eigenes Produktfeld service.lieferzeit (Inhaber 13.10.). Leer = keine Lieferzeit."
+      },
+      {
+        "type": "header",
+        "content": "Hinweis Musterbestellungen"
+      },
+      {
+        "type": "checkbox",
+        "id": "tp_muster_hinweis_aktiv",
+        "label": "Geduld-Hinweis zu Mustern anzeigen",
+        "default": true,
+        "info": "Vorübergehend (28.10.2026): erscheint unter dem Muster-Knopf auf Produktseiten, auf der Musterseite und im Warenkorb mit Muster. Ausschalten, sobald die Muster wieder normal laufen."
+      },
+      {
+        "type": "textarea",
+        "id": "tp_muster_hinweis_text",
+        "label": "Text des Hinweises",
+        "default": "Gerade bestellen sehr viele Kunden Muster, und einige Hersteller liefern langsamer als sonst. Ihre Muster können deshalb etwas länger brauchen – danke für Ihre Geduld.",
+        "info": "Keine feste Dauer zusagen. Die Zeile „Fragen zu Ihrer Musterbestellung? …“ mit E-Mail (Shop-Kontaktdaten) und Telefon (TP Firmendaten) hängt das Theme automatisch an. Leer = ausgeblendet."
       }
     ]
   },

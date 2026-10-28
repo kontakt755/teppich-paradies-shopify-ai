@@ -96,14 +96,15 @@ async function pruefeA(ziele, dir) {
   for (const z of ziele) {
     let ergebnis;
     try {
-      let gefunden = false;
-      for (let seite = 1; seite <= 8 && !gefunden; seite++) {
+      let treffer = null;
+      for (let seite = 1; seite <= 8 && !treffer; seite++) {
         const p = a.suche(z.kennung, seite);
-        gefunden = (p.data ?? []).some(x => x.material_number === z.kennung);
+        treffer = (p.data ?? []).find(x => x.material_number === z.kennung) ?? null;
         if (seite >= (p.meta?.last_page ?? 1)) break;
         await warte(250);
       }
-      ergebnis = bewerteSuche({ gefunden });
+      // Name und Kurzbeschreibung mitgeben: dort steht z. B. "Farbe 43(nur in Format)".
+      ergebnis = bewerteSuche({ gefunden: Boolean(treffer), text: treffer ? [treffer.name, treffer.short_description].filter(Boolean).join(' · ') : '' });
     } catch (e) {
       ergebnis = bewerteSuche({ fehler: String(e.message).slice(0, 80) });
     }

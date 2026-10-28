@@ -390,6 +390,28 @@ test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden
   assert.deepEqual(mit(null), []);
 });
 
+test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eigenes To-do, kein Auslauf', () => {
+  const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
+  const ohne = { lieferant: 'A', ergebnis: 'ohne-muster', kennung: 'TEPTEST04_043', handles: ['testa-teppichboden'], grund: 'Farbe 43(nur in Format) - kein Handmuster, Muster sperren' };
+  const nur = mit({ geprueftAm: vorTagen(1), befunde: [ohne] });
+  assert.equal(nur.length, 1);
+  assert.equal(nur[0].id, 'auslauf-muster');
+  assert.equal(nur[0].ton, 'warn');
+  assert.equal(nur[0].titel, 'Muster nicht lieferbar: 1 Farbe hat beim Lieferanten kein Handmuster');
+  assert.equal(nur[0].kontext, 'TEPTEST04_043 · testa-teppichboden · Muster im Shop sperren, offene Musterbestellungen prüfen');
+  assert.equal(nur[0].knopf.href, '#/lexikon?lq=testa-teppichboden');
+  assert.doesNotMatch(nur[0].kontext, /archivieren/);
+
+  // Zusammen mit echtem Auslauf: zwei To-dos (das rote zuerst), der Auslauf zaehlt nur seine eigenen Befunde.
+  const beide = mit({ geprueftAm: vorTagen(1), befunde: [ohne, { lieferant: 'A', ergebnis: 'fehlt', handles: ['testboden-eiche'] }] });
+  assert.deepEqual(beide.map(t => t.id), ['auslauf', 'auslauf-muster']);
+  assert.match(beide[0].titel, /1 Artikel beim Lieferanten nicht mehr gefunden/);
+  assert.doesNotMatch(beide[0].kontext, /testa-teppichboden/);
+
+  // Stumme Pruefung verdeckt den Musterbefund nicht.
+  assert.deepEqual(mit({ geprueftAm: vorTagen(9), befunde: [ohne] }).map(t => t.id).sort(), ['auslauf', 'auslauf-muster']);
+});
+
 test('Neuheiten: neue Artikel unserer Linien werden ein Website-To-do, ohne Neues keins', () => {
   const mit = neuheiten => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf: { geprueftAm: vorTagen(1), befunde: [], neuheiten } } }, { sicht: 'website', jetzt: JETZT });
   const t = mit({ neu: [

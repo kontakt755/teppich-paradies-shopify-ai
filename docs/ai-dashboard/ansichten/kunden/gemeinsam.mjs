@@ -34,6 +34,17 @@ function kundenPositionZeile(p) {
   </tr>`;
 }
 
+/**
+ * Kurz-Ratgeber zur Bestellung (Teppich, Klickvinyl ...) als PDF im neuen Tab, Bestellnummer
+ * und Mass schon eingetragen - zum Ausdrucken und Beilegen. Leer, wenn keiner passt (nur Muster,
+ * Zubehoer); die Zuordnung rechnet der Server (auftrag.ratgeber).
+ */
+export function ratgeberKnopf(auftrag, orderId = auftrag?.id) {
+  const titel = auftrag?.ratgeber || [];
+  if (!titel.length || !orderId) return '';
+  return `<a class="btn btn-sm" href="/api/kunden/ratgeber-druck?${esc(new URLSearchParams({ orderId }).toString())}" target="_blank" rel="noopener" title="${esc(`Ratgeber ${titel.join(', ')} zum Beilegen – Bestellnummer und Maß sind schon eingetragen`)}">Ratgeber drucken</a>`;
+}
+
 // Auftragsstatus aus operations/lib/status.mjs - der Kunde am Telefon fragt
 // nicht nach "WARENEINGANG".
 const AUFTRAG_STATUS_TEXT = {
