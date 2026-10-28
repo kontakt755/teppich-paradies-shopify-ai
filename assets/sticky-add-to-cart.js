@@ -450,21 +450,29 @@ class StickyAddToCartComponent extends Component {
   }
 
   /**
-   * Rollenware-Rechner ohne gueltige Masse: sein Knopf traegt .is-incomplete
+   * Rollenware-Rechner, dem ein Mass fehlt: sein Knopf traegt .is-incomplete
    * und aria-disabled, bleibt aber anklickbar und meldet beim Klick, welches
-   * Feld fehlt (blocks/tp-rollware-rechner.liquid, #301). Die Leiste zeigte
-   * dort bis 10/2026 einen gesperrten Warenkorb-Knopf ohne Wirkung; jetzt
-   * heisst sie "Masse eingeben" und reicht den Klick an den Rechner weiter.
-   * Waehrend des Warenkorb-Aufrufs (.is-busy) bleibt sie gesperrt.
+   * Feld fehlt, und springt dorthin (blocks/tp-rollware-rechner.liquid, #301).
+   * Die Leiste zeigte dort bis 10/2026 einen gesperrten Warenkorb-Knopf ohne
+   * Wirkung; jetzt heisst sie "Masse eingeben" und reicht den Klick weiter.
+   *
+   * Nur wenn wirklich ein Mass fehlt: .is-incomplete steht auch bei nicht
+   * lieferbarer Breite oder fehlender Fussleiste - dort setzt der Klick nur
+   * einen Hinweis, ohne Sprung. Ob ein Mass fehlt, sagt das Stueck am Kaufweg:
+   * data-tp-laenge bleibt leer, solange Breite oder Laenge ungueltig ist.
+   * Waehrend des Warenkorb-Aufrufs (.is-busy) bleibt die Leiste gesperrt.
    * @param {HTMLButtonElement | null} target
    */
   #targetIncomplete(target) {
+    const kaufweg = target?.closest('.tp-kaufweg');
     return Boolean(
       target &&
+        kaufweg &&
         !target.hidden &&
-        target.closest('.tp-kaufweg') &&
         target.classList.contains('is-incomplete') &&
-        !target.classList.contains('is-busy')
+        !target.classList.contains('is-busy') &&
+        kaufweg.hasAttribute('data-tp-laenge') &&
+        kaufweg.getAttribute('data-tp-laenge') === ''
     );
   }
 
@@ -636,8 +644,10 @@ class StickyAddToCartComponent extends Component {
    * @returns {HTMLElement | null}
    */
   #getMusterCta() {
+    // Nur in der eigenen Produkt-Section, nicht in Empfehlungen darunter
+    const bereich = this.closest('.shopify-section') ?? document;
     const kandidaten = /** @type {HTMLElement[]} */ ([
-      ...document.querySelectorAll('a[data-muster-link], a[class*="tp-muster-cta__link-"]'),
+      ...bereich.querySelectorAll('a[data-muster-link], a[class*="tp-muster-cta__link-"]'),
     ]);
     return kandidaten.find((el) => !el.hidden && el.getClientRects().length > 0) ?? null;
   }
@@ -664,7 +674,14 @@ class StickyAddToCartComponent extends Component {
       this.#syncMusterButton();
       return;
     }
-    cta.click();
+    // Klickmessung: tp_muster_cta_klick mit ort "leiste" (snippets/tp-funnel-events.liquid
+    // liest das Attribut im selben, synchronen Klick)
+    cta.setAttribute('data-tp-klick-ort', 'leiste');
+    try {
+      cta.click();
+    } finally {
+      cta.removeAttribute('data-tp-klick-ort');
+    }
   };
 
   /**

@@ -20,7 +20,7 @@ const executable = source.replace(/^import .*;\n/gm, '').replace('  // Helper me
   testShow() { this.#showStickyBar(); }
   // Helper methods`);
 
-function fixture({ klassen = ['is-incomplete'], muster = [] } = {}) {
+function fixture({ klassen = ['is-incomplete'], muster = [], laenge = '' } = {}) {
   let TargetClass;
   class Node {
     constructor(text = '') {
@@ -47,8 +47,9 @@ function fixture({ klassen = ['is-incomplete'], muster = [] } = {}) {
     hasAttribute(name) { return this.attributes.has(name); }
     getAttribute(name) { return this.attributes.get(name) ?? null; }
     setAttribute(name, wert) { this.attributes.set(name, String(wert)); }
+    removeAttribute(name) { this.attributes.delete(name); }
     getClientRects() { return this.rects; }
-    click() { this.clicks++; }
+    click() { this.clicks++; this.ortBeimKlick = this.getAttribute('data-tp-klick-ort'); }
   }
   class Component extends Node {
     connectedCallback() {}
@@ -64,9 +65,14 @@ function fixture({ klassen = ['is-incomplete'], muster = [] } = {}) {
     link.rects = sichtbar ? [{}] : [];
     return link;
   });
+  const MUSTER = 'a[data-muster-link], a[class*="tp-muster-cta__link-"]';
+  // Muster-Knoepfe gibt es nur in der eigenen Section; die Seite traegt einen
+  // fremden (z. B. in Empfehlungen), den die Leiste nie nehmen darf.
+  const fremd = new Node('Muster eines anderen Produkts');
+  const produktSection = { querySelector: () => null, querySelectorAll: (selector) => (selector === MUSTER ? musterLinks : []) };
   const document = {
     querySelector: () => null,
-    querySelectorAll: (selector) => (selector === 'a[data-muster-link], a[class*="tp-muster-cta__link-"]' ? musterLinks : []),
+    querySelectorAll: (selector) => (selector === MUSTER ? [fremd, ...musterLinks] : []),
   };
   vm.runInNewContext(executable, {
     Component, ThemeEvents, MutationObserver, HTMLElement: Node, HTMLInputElement: Node, AbortController,
@@ -78,7 +84,10 @@ function fixture({ klassen = ['is-incomplete'], muster = [] } = {}) {
   const target = new Node('In den Warenkorb');
   for (const klasse of klassen) target.classes.add(klasse);
   target.attributes.set('aria-disabled', 'true');
-  target.ancestors.set('.tp-kaufweg', new Node());
+  // Das Stueck am Kaufweg: data-tp-laenge leer = Breite oder Laenge fehlt
+  const kaufweg = new Node();
+  kaufweg.attributes.set('data-tp-laenge', laenge);
+  target.ancestors.set('.tp-kaufweg', kaufweg);
   const knopf = new Node();
   const beschriftung = new Node();
   knopf.children.set('.add-to-cart-text__content > span', beschriftung);
@@ -90,8 +99,9 @@ function fixture({ klassen = ['is-incomplete'], muster = [] } = {}) {
     quantityDisplay: new Node(), quantityNumber: new Node(), productImage: null,
   };
   sticky.dataset.productId = 'product-1';
+  sticky.ancestors.set('.shopify-section', produktSection);
   sticky.testTarget(target);
-  return { sticky, target, knopf, beschriftung, musterKnopf, musterLinks };
+  return { sticky, target, knopf, beschriftung, musterKnopf, musterLinks, fremd };
 }
 
 test('Rechner ohne Masse: Leiste bleibt aktiv und heisst "Maße eingeben"', () => {
@@ -110,6 +120,15 @@ test('Tipp auf "Maße eingeben" geht an den Rechner, nicht in den Warenkorb', ()
 test('waehrend des Warenkorb-Aufrufs bleibt die Leiste gesperrt', () => {
   const { sticky, target, knopf } = fixture({ klassen: ['is-incomplete', 'is-busy'] });
   assert.equal(knopf.disabled, true);
+  sticky.handleAddToCartClick();
+  assert.equal(target.clicks, 0);
+});
+
+test('Masse vollstaendig, aber Breite nicht lieferbar oder Fussleiste fehlt: gesperrt wie bisher', () => {
+  // calculate() setzt is-incomplete auch dann; data-tp-laenge traegt aber das Stueck
+  const { sticky, target, knopf, beschriftung } = fixture({ laenge: '300' });
+  assert.equal(knopf.disabled, true);
+  assert.equal(beschriftung.textContent, 'In den Warenkorb');
   sticky.handleAddToCartClick();
   assert.equal(target.clicks, 0);
 });
@@ -135,6 +154,10 @@ test('Muster-Knopf nur, wenn die Seite einen sichtbaren Muster-Knopf hat', () =>
   assert.equal(mit.musterKnopf.hidden, false);
   mit.sticky.handleMusterClick();
   assert.deepEqual(mit.musterLinks.map((link) => link.clicks), [0, 1]);
+  assert.equal(mit.fremd.clicks, 0, 'nur Muster-Knoepfe der eigenen Produkt-Section');
+  // Klickmessung: ort "leiste" nur waehrend des Klicks
+  assert.equal(mit.musterLinks[1].ortBeimKlick, 'leiste');
+  assert.equal(mit.musterLinks[1].hasAttribute('data-tp-klick-ort'), false);
 
   // Waehrend die Leiste offen ist, wird das Muster-Kontingent voll
   mit.musterLinks[1].hidden = true;
@@ -147,4 +170,18 @@ test('Leiste traegt den Muster-Knopf, versteckt und mit Klick-Verdrahtung', () =
   assert.match(section, /class="sticky-add-to-cart__muster"\s+ref="musterButton"\s+on:click="\/handleMusterClick"\s+hidden/);
   // Nebenknopf in der Grundfarbe, Rot bleibt dem Warenkorb-Knopf
   assert.match(section, /\.sticky-add-to-cart__muster \{[^}]*color: var\(--tp-ink/);
+});
+
+test('Klickmessung: Muster mit ort, auch der Rechner-Link zaehlt', () => {
+  const funnel = readFileSync(new URL('../../snippets/tp-funnel-events.liquid', import.meta.url), 'utf8');
+  assert.match(funnel, /publish\('tp_muster_cta_klick', \{ product_handle: handle\(\), ort: link\.getAttribute\('data-tp-klick-ort'\) \|\| 'seite' \}\)/);
+  assert.match(funnel, /link\.hasAttribute\('data-muster-link'\)/);
+});
+
+test('Handy: Warenkorb-Knopf darf schrumpfen und umbrechen, Desktop bleibt einzeilig', () => {
+  const handy = section.slice(section.indexOf('/* Handy (Fehlersuche 28.10., Idee 3)'));
+  assert.match(handy, /\.sticky-add-to-cart__bar \.sticky-add-to-cart__button \{[^}]*flex: 0 1 auto;[^}]*min-width: 0;[^}]*white-space: normal;/);
+  assert.match(handy, /\.sticky-add-to-cart__bar \.add-to-cart-text__content \{[^}]*white-space: normal;/);
+  // Desktop: einzeilig, mit Muster breitere Leiste - nur ab 750 px, am Handy bleibt sie 100 %
+  assert.match(section, /@media screen and \(min-width: 750px\) \{\s*\.sticky-add-to-cart__bar:has\(\.sticky-add-to-cart__muster:not\(\[hidden\]\)\) \{\s*width: min\(720px/);
 });

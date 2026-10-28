@@ -39,7 +39,7 @@ Besuch -> Produkt angesehen -> Farbe gewaehlt -> Masse eingegeben
 |---|---|---|---|
 | `tp_farbe_gewaehlt` | `tp:farbe-wechsel` (color-swatch-picker.liquid), nativer Variantenwaehler bei Optionsname Farbe/Dekor/Color (deckt auch die Leisten-Farbwahl ab) | `page`, `product_handle`, `variant_id` | Farbe gewaehlt |
 | `tp_masse_eingegeben` | erste gueltige Eingabe (`change`) je Rechner und Seitenaufruf | `page`, `product_handle`, `rechner` (rollware\|paket\|wunschmass\|einfassung\|zubehoer) | Masse eingegeben |
-| `tp_muster_cta_klick` | Klick auf einen Link zu `/pages/muster` oder den Muster-Knopf (`tp-muster-cta.liquid`) | `page`, `product_handle` | Muster |
+| `tp_muster_cta_klick` | Klick auf einen Link zu `/pages/muster`, den Muster-Knopf (`tp-muster-cta.liquid`) oder den Muster-Link im Rollenware-Rechner (`data-muster-link`) | `page`, `product_handle`, `ort` (`leiste` = Knopf „Muster“ in der Kaufleiste unten, sonst `seite`) | Muster |
 | `tp_muster_im_warenkorb` | Klick auf den Musterkonfigurator-Absenden-Knopf, Bestaetigung ueber sessionStorage-Uebergabe auf `/cart`, nur mit Analyse-Einwilligung (siehe Risiken) | `page`, `anzahl` (wenn bekannt) | Muster |
 | `tp_in_den_warenkorb_konfiguriert` | `cart:update` auf einer Produktseite, hoechstens 3 s nach einer Rechner-Eingabe/einem Klick auf deren Kaufknopf | `page`, `product_handle`, `rechner` | Warenkorb (Zusatzkontext) |
 | `tp_rabattcode_eingegeben` | `submit` auf dem Rabattcode-Formular im Warenkorb | `page`, `erfolg` (true\|false\|unknown) | Warenkorb-Pflege |
@@ -84,7 +84,7 @@ events.forEach((name) => {
     gtag('event', name, {
       page_path: d.page, product_handle: d.product_handle, variant_id: d.variant_id,
       rechner: d.rechner, erfolg: d.erfolg, quelle: d.quelle, ziel: d.ziel,
-      cta_typ: d.cta_typ, anzahl: d.anzahl,
+      cta_typ: d.cta_typ, anzahl: d.anzahl, ort: d.ort,
     });
   });
 });

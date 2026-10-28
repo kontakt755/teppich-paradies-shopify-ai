@@ -453,10 +453,18 @@
     display: none;
   }
 
-  /* Beide Knoepfe einzeilig; Platz gibt der Produktname ab */
+  /* Desktop: beide Knoepfe einzeilig, Platz gibt der Produktname ab. Mit
+     "Muster" wird die Leiste breiter, damit auch lange Rechnertexte wie
+     "Nicht hinzugefuegt - erneut versuchen" in die Zeile passen. */
   .sticky-add-to-cart__bar .sticky-add-to-cart__button {
     flex: 0 0 auto;
     white-space: nowrap;
+  }
+
+  @media screen and (min-width: 750px) {
+    .sticky-add-to-cart__bar:has(.sticky-add-to-cart__muster:not([hidden])) {
+      width: min(720px, calc(100vw - 32px));
+    }
   }
 
   /* Handy (Fehlersuche 28.10., Idee 3): Knopf mit Text statt nur Symbol, auf
@@ -485,20 +493,26 @@
       display: none;
     }
 
+    /* Lange Rechnertexte brechen zweizeilig um, statt aus der Zeile zu
+       laufen; solange Platz ist, bleibt der Knopf einzeilig. */
     .sticky-add-to-cart__bar .add-to-cart-text__content {
       position: static;
       width: auto;
       height: auto;
       overflow: visible;
       clip-path: none;
-      white-space: nowrap;
+      white-space: normal;
+      line-height: 1.15;
+      text-align: center;
       font-size: var(--tp-fs-sm);
     }
 
     .sticky-add-to-cart__bar .sticky-add-to-cart__button {
-      flex: 0 0 auto;
+      flex: 0 1 auto;
+      min-width: 0;
       width: auto;
       padding: 0 var(--padding-md);
+      white-space: normal;
     }
 
     .sticky-add-to-cart__muster {
