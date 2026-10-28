@@ -26,6 +26,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { mitteilung } from '../lib/mac-mitteilung.mjs';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
@@ -34,7 +35,6 @@ import {
   nimmSperre, sperrPfad, sperrAlterMs, neuerSammler, sammle, abschliessen, pruefeWerkzeuge,
 } from '../lib/routinen.mjs';
 import { werkbankAus } from '../lib/routine-wache.mjs';
-import { mitteilung } from '../lib/mac-mitteilung.mjs';
 import { sperreVerwaist } from './betrieb-nachziehen.mjs';
 
 const PROTOKOLL_TAGE = 14;
