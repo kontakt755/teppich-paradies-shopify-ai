@@ -11,7 +11,7 @@
  */
 import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
-import { DRUCK_LIMIT, druckBloecke, druckVorschau } from '../lib/druckliste.mjs';
+import { DRUCK_LIMIT, druckBloecke, druckVorschau, motivSchluessel } from '../lib/druckliste.mjs';
 import { ETIKETT, ETIKETT_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle, schwarzWeiss } from '../lib/muster-etiketten.mjs';
 import { adressLayout } from '../lib/adress-etiketten.mjs';
 
@@ -49,7 +49,7 @@ function versatzMerken(v) { try { localStorage.setItem(VERSATZ_SCHLUESSEL, JSON.
 const versatzHinweis = () => (druck.versatz.x || druck.versatz.y ? '\u00a0· Versatz eingestellt' : '');
 const versatzOptionen = (wert, minus, plus) => VERSATZ_MM.map(v => `<option value="${v}"${v === wert ? ' selected' : ''}>${v === 0 ? 'keiner (Standard)' : `${String(Math.abs(v)).replace('.', ',')} mm ${v < 0 ? minus : plus}`}</option>`).join('');
 
-const druck = { format: gemerktesFormat(), versatz: gemerkterVersatz(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true, abbruch: false, kontext: null };
+const druck = { format: gemerktesFormat(), versatz: gemerkterVersatz(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, abgewaehlt: new Set(), allowEditing: true, abbruch: false, kontext: null };
 let sitzung = 0;
 const aktuell = k => !!k && druck.kontext === k && !k.beendet && k.sitzung === sitzung && k.element?.isConnected;
 const qrBereit = () => typeof window.qrcode === 'function';
@@ -75,7 +75,10 @@ function etikettLayout(e) {
 }
 /** Was dem Etikett fehlt - auch, dass es im gewaehlten Format nicht ohne Ueberlappen passt. */
 const maengel = e => [...e.fehlt, ...(etikettLayout(e).passt ? [] : [`passt nicht auf ${etikettFormat(druck.format).name}`])];
-const unvollstaendig = () => druck.etiketten.some(e => maengel(e).length);
+// Abgewaehlte Motive (alle Kopien) bleiben in der Liste, werden aber nicht gedruckt.
+const ausgewaehlt = () => druck.etiketten.filter(e => !druck.abgewaehlt.has(motivSchluessel(e)));
+const teildruck = () => ausgewaehlt().length < druck.etiketten.length;
+const unvollstaendig = () => ausgewaehlt().some(e => maengel(e).length);
 
 /**
  * Zeichnet ein Etikett schwarz auf weiss in eine Canvas (400 x 400, 400 x 640 bzw. 400 x 800).
@@ -129,7 +132,7 @@ const umgebungsHinweis = () => {
 function vorschauHtml() {
   return druckVorschau(druck.etiketten).eintraege.map(({ index: i, anzahl }) => { const e = druck.etiketten[i]; return `<figure class="etk-karte">
     <canvas class="etk-bild" data-etk-bild="${i}" width="${etikettFormat(druck.format).breite}" height="${etikettFormat(druck.format).hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
-    <figcaption class="small"><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(etikettFormat(druck.format).name)} – Angaben kürzen oder größere Rolle wählen</span>`}
+    <figcaption class="small"><label class="etk-wahl"><input type="checkbox" data-etk-wahl="${i}"${druck.abgewaehlt.has(motivSchluessel(e)) ? '' : ' checked'}${druck.laeuft ? ' disabled' : ''}> drucken</label><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(etikettFormat(druck.format).name)} – Angaben kürzen oder größere Rolle wählen</span>`}
       ${druck.allowEditing ? `<button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>` : ''}
       <button type="button" class="btn btn-sm" data-etk-png="${i}"${maengel(e).length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
     </figcaption>
@@ -144,7 +147,9 @@ function zeichneVorschau() {
   liste.innerHTML = druck.etiketten.length ? vorschauHtml() : '<p class="small muted">Noch kein Etikett – unten Angaben eintragen und „Hinzufügen“.</p>';
   liste.querySelectorAll('[data-etk-bild]').forEach(c => zeichne(c, druck.etiketten[Number(c.dataset.etkBild)]));
   const zusammenfassung = $('#etkZusammenfassung'), vorschau = druckVorschau(druck.etiketten);
-  if (zusammenfassung) zusammenfassung.textContent = `${druck.etiketten.length} Aufkleber insgesamt · ${vorschau.motive} verschiedene Motive.${vorschau.motive > DRUCK_LIMIT.vorschau ? ` Die Vorschau zeigt die ersten ${DRUCK_LIMIT.vorschau} Motive. Gedruckt werden alle Aufkleber.` : ''}`;
+  if (zusammenfassung) zusammenfassung.textContent = `${druck.etiketten.length} Aufkleber insgesamt · ${vorschau.motive} verschiedene Motive.${teildruck() ? ` Ausgewählt: ${ausgewaehlt().length}.` : ''}${vorschau.motive > DRUCK_LIMIT.vorschau ? ` Die Vorschau zeigt die ersten ${DRUCK_LIMIT.vorschau} Motive. Gedruckt werden alle ausgewählten Aufkleber.` : ''}`;
+  const wahl = $('#etkWahl'); if (wahl) wahl.hidden = vorschau.motive < 2;
+  for (const b of document.querySelectorAll('[data-etk-alle]')) b.disabled = druck.laeuft;
   const beschaeftigt = druck.laeuft || k.schliesst || k.bestaetigt;
   const verbunden = !!druck.client?.isConnected?.();
   const verbindungOffen = !!druck.verbindung;
@@ -156,9 +161,9 @@ function zeichneVorschau() {
   const trennen = $('#etkTrennen');
   if (trennen) { trennen.textContent = druck.laeuft ? 'Druck abbrechen' : 'Verbindung trennen'; trennen.hidden = !druck.laeuft && !druck.client?.isConnected?.(); trennen.disabled = druck.trennt || k.schliesst || k.bestaetigt; }
   const knopf = $('#etkDrucken');
-  if (knopf) { knopf.hidden = !!k.beiBestaetigen && k.transportFertig; knopf.disabled = !druck.etiketten.length || beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || druck.speichert || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = `Jetzt ${druck.etiketten.length} Aufkleber drucken`; }
+  if (knopf) { knopf.hidden = !!k.beiBestaetigen && k.transportFertig; knopf.disabled = !ausgewaehlt().length || beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || druck.speichert || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = `Jetzt ${ausgewaehlt().length} Aufkleber drucken`; }
   const bestaetigung = $('#etkBestaetigung');
-  if (bestaetigung) bestaetigung.hidden = !k.transportFertig;
+  if (bestaetigung) bestaetigung.hidden = !k.transportFertig || !!k.teilGedruckt;
   const bestaetigen = $('#etkBestaetigen'); if (bestaetigen) bestaetigen.disabled = beschaeftigt;
 }
 
@@ -233,8 +238,8 @@ function verbindungswahlBeenden(k) {
 /** Die Verbindung bleibt fuer den ganzen Sammeldruck bestehen; Bilder entstehen erst bei Bedarf. */
 async function drucken() {
   const k = druck.kontext;
-  if (!aktuell(k) || druck.laeuft || k.verbindet || druck.verbindung || druck.trennt || druck.speichert || k.schliesst || k.bestaetigt || (k.beiBestaetigen && k.transportFertig) || !druck.etiketten.length || druck.etiketten.length > DRUCK_LIMIT.etiketten || unvollstaendig() || !qrBereit()) return;
-  const etiketten = [...druck.etiketten];
+  if (!aktuell(k) || druck.laeuft || k.verbindet || druck.verbindung || druck.trennt || druck.speichert || k.schliesst || k.bestaetigt || (k.beiBestaetigen && k.transportFertig) || !ausgewaehlt().length || druck.etiketten.length > DRUCK_LIMIT.etiketten || unvollstaendig() || !qrBereit()) return;
+  const etiketten = ausgewaehlt(), teil = etiketten.length < druck.etiketten.length;
   const weg = $('#etkWeg')?.value || 'bluetooth';
   const dichte = Math.min(ETIKETT.dichteMax, Math.max(ETIKETT.dichteMin, Number($('#etkDichte')?.value) || ETIKETT.dichteStandard));
   druck.laeuft = true; druck.abbruch = false; k.transportFertig = false;
@@ -274,6 +279,13 @@ async function drucken() {
       pruefeAbbruch();
       if (art === 'B1' && beendet === false) throw new Error('Der Drucker hat den Abschluss des Druckteils noch nicht bestätigt');
       task = null;
+    }
+    // Ein Teildruck (nur ausgewaehlte Motive) markiert nichts als gedruckt: der Auftrag
+    // ist erst erledigt, wenn alle Aufkleber gedruckt sind.
+    if (teil) {
+      status(`Teildruck fertig: ${etiketten.length} von ${druck.etiketten.length} Aufklebern. Nichts wurde als gedruckt markiert.`, k);
+      toast(etiketten.length === 1 ? '1 Aufkleber gedruckt' : `${etiketten.length} Aufkleber gedruckt`);
+      return;
     }
     k.transportFertig = true;
     // Nur ein vollstaendiger Lauf zaehlt; ein Fehler im Aufrufer darf die Meldung nicht verhindern.
@@ -381,6 +393,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   druck.kontext = k;
   druck.etiketten = [...etiketten];
   druck.bearbeiten = -1;
+  druck.abgewaehlt = new Set();
   druck.allowEditing = allowEditing;
   const umgebung = umgebungsHinweis();
   const hatUsb = !!navigator.serial;
@@ -391,6 +404,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     ${umgebung ? `<p class="etk-warn">${esc(umgebung)}</p>` : ''}
     ${hinweis ? `<p class="etk-auftrag-hinweis">${esc(hinweis)}</p>` : ''}
     <p id="etkZusammenfassung" class="small"></p>
+    <p id="etkWahl" class="etk-wahl-leiste small" hidden>Zum Drucken: <button type="button" class="btn btn-sm" data-etk-alle="1">alle wählen</button> <button type="button" class="btn btn-sm" data-etk-alle="0">keine</button></p>
     <div id="etkListe" class="etk-liste"></div>
     ${allowEditing ? `<details class="etk-hand"${etiketten.length ? '' : ' open'}><summary>Etikett von Hand hinzufügen</summary>
       <form id="etkForm" class="etk-form">
@@ -454,6 +468,19 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
       $('#etkVersatzHinweis').textContent = versatzHinweis();
     });
   }
+  $('#etkListe').addEventListener('change', ev => {
+    const wahl = ev.target.closest('[data-etk-wahl]');
+    if (!wahl || !aktuell(k) || druck.laeuft) return;
+    const schluessel = motivSchluessel(druck.etiketten[Number(wahl.dataset.etkWahl)]);
+    if (wahl.checked) druck.abgewaehlt.delete(schluessel); else druck.abgewaehlt.add(schluessel);
+    zeichneVorschau();
+  });
+  $('#etkWahl').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-etk-alle]');
+    if (!b || !aktuell(k) || druck.laeuft) return;
+    druck.abgewaehlt = b.dataset.etkAlle === '1' ? new Set() : new Set(druck.etiketten.map(motivSchluessel));
+    zeichneVorschau();
+  });
   $('#etkListe').addEventListener('click', ev => {
     if (!aktuell(k)) return;
     const bearbeiten = ev.target.closest('[data-etk-bearbeiten]');
