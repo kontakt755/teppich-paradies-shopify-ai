@@ -1479,26 +1479,41 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   bestellbar. Gesperrt = Bestand 0 (`inventorySetQuantities`, Compare-and-swap, `@idempotent`),
   Richtlinie `DENY`, Verfolgung an (`inventoryItemUpdate`) – in dieser Reihenfolge, erst die Verfolgung
   macht die Sperre wirksam. Vorher: Rechte prüfen (`currentAppInstallation.accessScopes`,
-  `write_inventory` + `write_products`; einmal je Prozess bestätigt) und die Variante per SKU frisch lesen
-  (nur exakter Treffer, bei Gleichstand die aus `muster-*`). Danach Gegenprobe: `availableForSale` muss
-  `false` sein. Nie werden Varianten gelöscht, Preise/SKUs geändert oder das Quellprodukt angefasst.
+  `write_inventory` + `write_products`; einmal je Prozess bestätigt) und die Varianten per SKU frisch lesen
+  (nur exakte Treffer). Dieselbe Farbe steht oft in zwei Musterprodukten – Teppichboden-Muster
+  `muster-<linie>-teppichboden-…` und Nach-Maß-Muster `muster-<linie>-teppich-nach-mass` (Lexikon 28.10.:
+  2028 von 3911 Muster-SKUs). Seit #1745 wird dann jede dieser Mustervarianten gesperrt, jede mit eigenem
+  Vorstand; erst werden alle geprüft (Standort, lokal leer aber bestellbar), dann geschrieben – verletzt eine
+  die Vorbedingung, wird keine gesperrt. Liegt die SKU mehrfach und dabei auch außerhalb eines
+  `muster-*`-Produkts, wird nichts geschrieben (`mehrdeutig`, im Musterlager „im Shop noch zu sperren“).
+  Eine einzelne Variante gilt wie bisher auch außerhalb. Danach Gegenprobe: `availableForSale` muss bei
+  jeder Variante `false` sein. Nie werden Varianten gelöscht, Preise/SKUs geändert oder das Quellprodukt angefasst.
   Testbestellungen sperren nichts. Muster über das Sammelprodukt „Kostenloses Muster“ haben keine eigene
   Variante je Farbe (`keine-mustervariante`) – sie stehen nur in der Liste.
 - **Ablage** `$TP_PRIVAT_DIR/mustersperre.json` (nur anhängen, Teil von `daten:sichern`): je Ereignis SKU,
   Farbe, Produkt, Auftrag, wer, wann, Grund („nicht verfuegbar“ | „wieder verfuegbar“) und
-  `shopify {geschrieben, aenderungMoeglich?, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar}`.
+  `shopify {geschrieben, aenderungMoeglich?, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar, varianten?}`.
+  `varianten` nennt jede Mustervariante der SKU (`variantId`, `productId`, `handle`, `vorher`, `nachher`,
+  `verfuegbar`, `bereits?`, `aenderungMoeglich`); `variantId`/`vorher` direkt unter `shopify` stehen nur bei
+  genau einer Variante. Ereignisse vor #1745 kennen nur diese Einzelfelder – `variantenVon()` liest sie als
+  Liste mit einer Variante.
   `geschrieben` bestaetigt die Sperre; `aenderungMoeglich` erfasst auch Teilmutationen und unlesbare
   Gegenproben. Alte unklare Ereignisse, insbesondere mit gespeichertem Vorstand, bleiben pruefpflichtig. Der Stand
-  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis mit bestaetigter oder moeglicher Aenderung.
+  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis mit bestaetigter oder moeglicher Aenderung –
+  je Variante (`stand().varianten`): eine schon vorher gesperrte oder sicher nicht angefasste Variante legt
+  keinen Rückweg fest, auch wenn im selben Versuch eine andere geschrieben wurde. `betroffen` heißt: gesperrt
+  vorgefunden oder womöglich angefasst – nur betroffene Varianten gibt „Wieder verfügbar“ frei.
   Ein ausdruecklich sicher ungeschriebener Versuch friert keinen Vorstand ein; vor einer spaeteren
   echten Sperre zaehlt dann die frisch gelesene Ausgangslage. Dieselbe SKU
   für denselben Auftrag noch einmal = nichts zu tun. Nur eine fehlende Datei gilt als leer; eine
   beschädigte lehnt den Schritt ab (es wird gar nichts geschrieben) und meldet sich im Musterlager.
 - **Ohne Recht, ohne Zugang, bei Fehlern** gilt der Schritt trotzdem; die Sperre steht als „im Shop noch
   zu sperren“ samt Grund. Einkauf › Musterlager zeigt dann oben „Im Shop sperren“ mit „In Shopify öffnen“
-  (Admin-Link zur Variante, sonst Produktsuche nach der SKU), „Erneut sperren“ und „Wieder verfügbar“.
-- **Wieder verfügbar** (Einkauf › Musterlager › „Im Shop gesperrte Muster“) stellt den Stand vor der
-  Sperre her: war die Variante ohne Bestandsverfolgung, wird sie es wieder (sonst wäre sie nach der
+  (Admin-Link zur Variante, bei mehreren Varianten und ohne Variante die Produktsuche nach der SKU), „Erneut
+  sperren“ und „Wieder verfügbar“.
+- **Wieder verfügbar** (Einkauf › Musterlager › „Im Shop gesperrte Muster“) stellt je Mustervariante den
+  Stand vor der Sperre her; Varianten derselben SKU, die keine Sperre angefasst hat (z. B. später angelegt),
+  bleiben unberührt: war die Variante ohne Bestandsverfolgung, wird sie es wieder (sonst wäre sie nach der
   nächsten Musterbestellung mit Bestand 1 von selbst wieder gesperrt); war sie verfolgt, kommt die alte
   Menge zurück, mindestens 1. Erfolg verlangt den exakten Zielstand (Verfolgung, Richtlinie und
   Menge am vorhandenen Standort) plus bestaetigte Bestellbarkeit, auch beim Bereits-Pfad. Das gilt

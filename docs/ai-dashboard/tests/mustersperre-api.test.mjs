@@ -40,9 +40,9 @@ function privat() {
   return dir;
 }
 
-function umgebung({ rechte, zugang = true } = {}) {
+function umgebung({ rechte, zugang = true, varianten = null } = {}) {
   const dir = privat();
-  const shop = attrappe({ varianten: [variante('M-TEST-1'), variante('M-TEST-2'), variante('M-TEST-3')], ...(rechte ? { rechte } : {}) });
+  const shop = attrappe({ varianten: varianten || [variante('M-TEST-1'), variante('M-TEST-2'), variante('M-TEST-3')], ...(rechte ? { rechte } : {}) });
   const z = { zugang, proxy: shop.proxy };
   const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, env: {}, now: () => new Date('2026-10-16T10:00:00Z'),
     shopifyZugang: async () => (z.zugang ? { proxy: z.proxy, art: 'client-credentials' } : { proxy: { execute: async () => null }, art: 'sammeln' }) });
@@ -364,4 +364,68 @@ test('Teilweise ausgefuehrte Sperre behaelt ersten Vorstand trotz neuer Menge vo
   await api.einkaufMustersperreSetzen({ aktion: 'nachholen', sku: 'M-TEST-1' }, ICH);
   await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH);
   assert.deepEqual([shop.varianten[0].tracked, shop.varianten[0].policy, shop.varianten[0].menge], [true, 'CONTINUE', 3], 'Teilmutation muss auf echten ersten Vorstand zurueck');
+});
+
+test('Doppelte Muster-SKU (Teppichboden- und Nach-Mass-Muster): Schritt sperrt beide, Ereignis nennt beide, Wieder verfuegbar gibt beide frei', async () => {
+  const tb = variante('M-TEST-1');
+  const nm = variante('M-TEST-1', { handle: 'muster-testteppich-teppich-nach-mass', tracked: true, menge: 2 });
+  const { dir, shop, api, schritt } = umgebung({ varianten: [tb, nm, variante('M-TEST-2')] });
+  const r = await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'], notiz: 'per Mail' });
+  assert.deepEqual([r.mustersperre.status, r.mustersperre.gesperrt, r.mustersperre.meldung], ['gesperrt', 1, '1 Farbe im Shop gesperrt']);
+  assert.deepEqual([[tb.tracked, tb.menge], [nm.tracked, nm.menge], shop.varianten[2].tracked], [[true, 0], [true, 0], false]);
+
+  const [ev] = sperrDatei(dir);
+  assert.deepEqual([ev.sku, ev.shopify.geschrieben, ev.shopify.variantId, ev.shopify.vorher ?? null], ['M-TEST-1', true, null, null]);
+  assert.deepEqual(ev.shopify.varianten.map(v => [v.variantId, v.vorher]), [
+    [tb.id, { tracked: false, policy: 'DENY', menge: 0 }],
+    [nm.id, { tracked: true, policy: 'DENY', menge: 2 }],
+  ], 'das Ereignis nennt beide Varianten mit eigenem Vorstand');
+  const liste = api.einkaufMustersperre();
+  assert.deepEqual(liste.gesperrt.map(s => [s.sku, s.varianten, s.imShop]), [['M-TEST-1', 2, true]]);
+  assert.match(liste.gesperrt[0].adminLink, /products\?query=M-TEST-1$/, 'die Produktsuche zeigt beide Musterprodukte');
+
+  // Zweiter Klick fuer denselben Auftrag: nichts geschrieben.
+  const vorher = shop.mutationen().length;
+  assert.equal((await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'], notiz: 'doppelt' })).mustersperre.bereits, 1);
+  assert.equal(shop.mutationen().length, vorher);
+
+  const f = await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH);
+  assert.match(f.meldung, /wieder bestellbar/);
+  assert.deepEqual([[tb.tracked, tb.policy, tb.menge], [nm.tracked, nm.policy, nm.menge]], [[false, 'DENY', 0], [true, 'DENY', 2]]);
+  const frei = sperrDatei(dir).at(-1);
+  assert.deepEqual([frei.grund, frei.shopify.geschrieben, frei.shopify.varianten.map(v => [v.variantId, v.verfuegbar])], ['wieder verfuegbar', true, [[tb.id, true], [nm.id, true]]]);
+  assert.deepEqual([api.einkaufMustersperre().gesperrt, api.einkaufMustersperre().offen], [[], []]);
+});
+
+test('Muster-SKU auch ausserhalb eines Musterprodukts: nichts gesperrt, Sperre offen mit Grund, lokal entfernbar', async () => {
+  const muster = variante('M-TEST-1');
+  const fremd = variante('M-TEST-1', { handle: 'testteppich-meterware' });
+  const { dir, shop, api, schritt } = umgebung({ varianten: [muster, fremd] });
+  const r = await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'], notiz: 'x' });
+  assert.deepEqual([r.mustersperre.status, r.mustersperre.offen], ['offen', 1]);
+  assert.match(r.mustersperre.meldung, /außerhalb der Musterprodukte \(testteppich-meterware\)/);
+  assert.deepEqual([muster.tracked, fremd.tracked, shop.mutationen().length], [false, false, 0]);
+  assert.deepEqual([sperrDatei(dir)[0].shopify.fehlerGrund, sperrDatei(dir)[0].shopify.aenderungMoeglich], ['mehrdeutig', false]);
+  const offen = api.einkaufMustersperre().offen;
+  assert.deepEqual(offen.map(s => [s.sku, s.fehlerGrund, s.shopPruefen]), [['M-TEST-1', 'mehrdeutig', false]]);
+  const vorher = shop.aufrufe.length;
+  assert.match((await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH)).meldung, /aus der Liste genommen/);
+  assert.equal(shop.aufrufe.length, vorher, 'nichts im Shop zurueckzunehmen');
+});
+
+test('Alte Ablage (eine Variante direkt unter shopify) bleibt lesbar: Liste mit Variantenlink und Wieder verfuegbar', async () => {
+  const { dir, shop, api } = umgebung();
+  const v = shop.varianten[0];
+  v.tracked = true; // so hat die alte Sperre sie hinterlassen
+  fs.writeFileSync(path.join(dir, 'mustersperre.json'), JSON.stringify({ version: 1, ereignisse: [{
+    sku: 'M-TEST-1', farbe: 'Sand', produkt: 'Testteppich', handle: null, orderId: AUFTRAG, orderName: '#T1', von: 'Mitarbeiter 1', am: '2026-10-16T09:00:00.000Z', grund: 'nicht verfuegbar',
+    shopify: { geschrieben: true, fehler: null, variantId: v.id, productId: v.product.id, vorher: { tracked: false, policy: 'DENY', menge: 0 }, nachher: { tracked: true, policy: 'DENY', menge: 0 }, verfuegbar: false },
+  }] }));
+  const liste = api.einkaufMustersperre();
+  assert.deepEqual(liste.gesperrt.map(s => [s.sku, s.varianten]), [['M-TEST-1', 1]]);
+  assert.match(liste.gesperrt[0].adminLink, /\/products\/500\/variants\/\d+$/);
+  const f = await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH);
+  assert.match(f.meldung, /wieder bestellbar/);
+  assert.deepEqual([v.tracked, v.policy, v.menge], [false, 'DENY', 0]);
+  assert.equal(sperrDatei(dir).length, 2, 'nur angehaengt');
 });

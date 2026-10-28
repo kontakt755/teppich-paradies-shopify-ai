@@ -2,6 +2,42 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Mustersperre: doppelte Muster-SKUs sperren und freigeben (#1745)
+
+- **Geaendert:** „Muster nicht verfügbar“ sperrte nichts, sobald eine Muster-SKU auf mehr als einer
+  Variante lag („gibt es im Shop mehrfach – bitte in Shopify von Hand sperren“). Das trifft laut Lexikon
+  2028 von 3911 Muster-SKUs: dieselbe Farbe steht im Teppichboden-Muster und im Nach-Maß-Muster. Am 28.10.
+  musste deshalb eine Linie von Lieferant A (3 Farben, 6 Varianten) von Hand gesperrt werden.
+  - `operations/lib/mustersperre.mjs`: `leseVarianten()` liefert alle exakten Treffer. Liegen alle in
+    `muster-*`-Produkten, sperrt `sperreImShop()` jede Variante (je Variante eigener `@idempotent`-
+    Schlüssel) und prüft jede gegen. Erst alle prüfen, dann schreiben: verletzt eine die Vorbedingung,
+    wird keine gesperrt. Ein Treffer außerhalb der Musterprodukte bleibt ein Abbruch (`mehrdeutig`) –
+    bisher gewann dann still die Mustervariante. Mehr Treffer als eine Abfrageseite ebenfalls.
+  - Das Ereignis in `mustersperre.json` nennt alle Varianten (`shopify.varianten`, je mit Vorstand und
+    ob sie schon angefasst sein kann). `stand()` führt den Rückweg je Variante; alte Ereignisse mit einer
+    Variante (`variantId`/`vorher` direkt unter `shopify`) liest `variantenVon()` als Liste mit einer.
+  - „Wieder verfügbar“ stellt jede gesperrte Variante auf ihren eigenen Vorstand zurück. Varianten
+    derselben SKU, die keine Sperre angefasst hat (später angelegt oder nach einem Abbruch nie erreicht),
+    bleiben unberührt (`stand().varianten[].betroffen`).
+  - Musterlager: bei mehreren Varianten führt „In Shopify öffnen“ zur Produktsuche nach der SKU.
+- **Getestet:**
+  - `mustersperre.test.mjs` (Proxy-Attrappe): zwei Mustervarianten mit verschiedenem Ausgangsstand
+    gesperrt und je auf den eigenen Vorstand freigegeben, zweiter Klick schreibt nichts; Gegenprobe je
+    Variante (eine bleibt bestellbar → kein Erfolg; Freigabe halb → Wiederholung schreibt nur den Rest);
+    Vorbedingung einer Variante verletzt → keine gesperrt; zweite Variante abgelehnt → nur die erste legt
+    einen Rückweg fest, und „Wieder verfügbar“ lässt die nie angefasste zweite Variante, wie sie ist;
+    fremder Treffer → Abbruch ohne Schreiben; altes Einzel-Ereignis bleibt lesbar
+    und freigebbar; zu viele Treffer → Abbruch.
+  - `mustersperre-api.test.mjs`: Schritt im Dashboard sperrt beide, Ereignis nennt beide, Liste zeigt
+    die Produktsuche, „Wieder verfügbar“ gibt beide frei; fremder Treffer → „im Shop noch zu sperren“,
+    lokal entfernbar; alte Ablage → Liste mit Variantenlink und Freigabe.
+  - Lesend gegen den Shop (MCP): die SKU-Suche ist exakt, die gesperrte Linie liegt auf je zwei
+    Mustervarianten.
+- **Risiken:** Ein Muster-SKU, die zugleich auf einem Nicht-Musterprodukt liegt, sperrt jetzt gar nicht
+  mehr automatisch (vorher nur die Mustervariante). Laut Lexikon gibt es keine solche SKU.
+- **Nächste Stufe:** Die Handsperre vom 28.10. als Ereignis nachtragen, damit „Wieder verfügbar“ sie
+  kennt (nur mit Freigabe des Inhabers).
+
 ## 2026-10-28 · Aufräumliste: „direkt an den Kunden“ nur noch mit Beleg (#1740)
 
 - **Geaendert:** Am 26.10. wurde #1033 über die Aufräumliste mit „wohl direkt vom Lieferanten an den

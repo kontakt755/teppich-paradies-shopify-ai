@@ -10,31 +10,40 @@
  *   (inventoryPolicy DENY) + Bestand 0 am Standort.
  * Nie werden Varianten geloescht, Preise oder SKUs geaendert oder das Quellprodukt angefasst.
  *
- * "Wieder verfuegbar" stellt den Stand vor der Sperre wieder her (der steht im ersten
+ * Dieselbe Farbe steht oft in zwei Musterprodukten (Teppichboden-Muster `muster-<linie>-teppichboden-…`
+ * und Nach-Mass-Muster `muster-<linie>-teppich-nach-mass`; Lexikon 28.10.: 2028 von 3911 Muster-SKUs).
+ * Gesperrt und freigegeben wird deshalb je SKU jede Mustervariante mit dieser SKU, jede mit eigenem
+ * Vorstand. Liegt die SKU mehrfach und dabei auch ausserhalb eines Musterprodukts, ist unklar, was
+ * gemeint ist - dann wird nichts geschrieben (grund "mehrdeutig").
+ *
+ * "Wieder verfuegbar" stellt je Variante den Stand vor der Sperre wieder her (der steht im ersten
  * Sperr-Ereignis): war die Variante vorher ohne Bestandsverfolgung, wird sie es wieder - sonst
  * waere sie mit Bestand 1 nach der naechsten Musterbestellung von selbst wieder gesperrt. War sie
- * verfolgt, kommt die alte Menge zurueck, mindestens 1.
+ * verfolgt, kommt die alte Menge zurueck, mindestens 1. Varianten, die keine Sperre angefasst hat,
+ * bleiben unberuehrt.
  *
  * Feste Reihenfolge beim Schreiben (wie sonderposten.mjs):
  *   1. Rechte pruefen (currentAppInstallation.accessScopes): ohne write_inventory und
  *      write_products wird nichts geschrieben - die Sperre steht dann als "im Shop noch zu sperren".
- *   2. Variante per SKU frisch lesen - nie dem Browser glauben.
- *   3. Bestand -> 0 (Compare-and-swap, @idempotent), Richtlinie -> DENY, Verfolgung -> an.
+ *   2. Varianten per SKU frisch lesen - nie dem Browser glauben.
+ *   3. Je Variante: Bestand -> 0 (Compare-and-swap, @idempotent), Richtlinie -> DENY, Verfolgung -> an.
  *      In dieser Reihenfolge: erst die Verfolgung macht die Sperre wirksam, vorher aendert nichts
  *      die Bestellbarkeit.
- *   4. Gegenprobe: erneut lesen, availableForSale muss false sein. userErrors: [] ist kein Beleg.
- *      Kommt auf eine Mutation keine Antwort, entscheidet ebenfalls das erneute Lesen.
+ *   4. Gegenprobe: erneut lesen, availableForSale muss bei jeder Variante false sein. userErrors: []
+ *      ist kein Beleg. Kommt auf eine Mutation keine Antwort, entscheidet ebenfalls das erneute Lesen.
  *
  * Ablage $TP_PRIVAT_DIR/mustersperre.json - nur anhaengen, nie ueberschreiben. Je Ereignis: SKU,
  * Farbe, Produkt, orderId, wer, wann, Grund ("nicht verfuegbar" | "wieder verfuegbar") und ob der
- * Shopify-Stand geschrieben wurde (samt Fehler). Der Stand je SKU ergibt sich aus der Folge.
- * Protokoll und Audit schreibt der Aufrufer (scripts/dashboard-api.mjs).
+ * Shopify-Stand geschrieben wurde (samt Fehler), dazu `shopify.varianten` mit jeder Variante und ihrem
+ * Vorstand. Aeltere Ereignisse kennen nur eine Variante (variantId/vorher direkt unter `shopify`).
+ * Der Stand je SKU ergibt sich aus der Folge. Protokoll und Audit schreibt der Aufrufer
+ * (scripts/dashboard-api.mjs).
  */
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { STORE } from '../sync/zugang.mjs';
 import { STANDORT_ID } from './sonderposten.mjs';
 
@@ -93,6 +102,14 @@ export function ereignis({ sku, farbe = null, produkt = null, handle = null, ord
   if (!von) throw new MustersperreFehler(400, 'Wer gesperrt hat, fehlt', { grund: 'eingabe' });
   if (!GRUND_WERTE.includes(grund)) throw new MustersperreFehler(400, `Unbekannter Grund „${grund}"`, { grund: 'eingabe' });
   const sh = shopify || {};
+  const varianten = (Array.isArray(sh.varianten) ? sh.varianten : []).filter(v => v?.variantId).map(v => ({
+    variantId: String(v.variantId), productId: v.productId || null, handle: clip(v.handle, 200) || null,
+    ...(v.bereits ? { bereits: true } : {}),
+    ...(typeof v.aenderungMoeglich === 'boolean' ? { aenderungMoeglich: v.aenderungMoeglich } : {}),
+    ...(v.vorher ? { vorher: v.vorher } : {}),
+    ...(v.nachher ? { nachher: v.nachher } : {}),
+    ...(typeof v.verfuegbar === 'boolean' ? { verfuegbar: v.verfuegbar } : {}),
+  }));
   return {
     sku: s, farbe: clip(farbe, 120) || null, produkt: clip(produkt, 200) || null, handle: clip(handle, 200) || null,
     orderId: orderId ? String(orderId) : null, orderName: orderName ? clip(orderName, 40) : null,
@@ -108,8 +125,19 @@ export function ereignis({ sku, farbe = null, produkt = null, handle = null, ord
       ...(sh.vorher ? { vorher: sh.vorher } : {}),
       ...(sh.nachher ? { nachher: sh.nachher } : {}),
       ...(typeof sh.verfuegbar === 'boolean' ? { verfuegbar: sh.verfuegbar } : {}),
+      ...(varianten.length ? { varianten } : {}),
     },
   };
+}
+
+/**
+ * Die Varianten eines Ereignisses. Neue Ereignisse fuehren `shopify.varianten`; aeltere kennen nur
+ * eine Variante direkt unter `shopify` (variantId, vorher, bereits) - sie gelten als Liste mit einer.
+ */
+export function variantenVon(sh = {}) {
+  if (Array.isArray(sh.varianten) && sh.varianten.length) return sh.varianten.filter(v => v?.variantId);
+  if (!sh.variantId) return [];
+  return [{ variantId: sh.variantId, productId: sh.productId || null, vorher: sh.vorher || null, ...(sh.bereits ? { bereits: true } : {}) }];
 }
 
 /** Haengt Ereignisse an (tmp-Datei + rename). Liest streng: eine beschaedigte Ablage bleibt unberuehrt. */
@@ -126,8 +154,11 @@ export function haengeAn(file, neue = []) {
 /**
  * Stand je SKU aus der Ereignisfolge.
  * @returns {Map<string, {sku, farbe, produkt, handle, seit, von, auftraege: {orderId, orderName}[],
- *   imShop: boolean, shopPruefen: boolean, fehler: string|null, fehlerGrund: string|null, variantId, productId, vorher, freigabeFehler}>}
+ *   imShop: boolean, shopPruefen: boolean, fehler: string|null, fehlerGrund: string|null, variantId, productId, vorher, freigabeFehler,
+ *   varianten: {variantId, productId, handle, vorher, betroffen}[]}>}
  *   Nur aktive Sperren; "wieder verfuegbar" (erfolgreich oder sicher ohne moegliche Shop-Aenderung) nimmt sie heraus.
+ *   `varianten` traegt je Variante ihren eigenen Rueckweg; `variantId`/`vorher` direkt am Stand sind der
+ *   einvariantige Stand aelterer Ereignisse (bei mehreren Varianten null).
  */
 export function stand(ereignisse = []) {
   const aktiv = new Map();
@@ -145,7 +176,7 @@ export function stand(ereignisse = []) {
       continue;
     }
     if (!s) {
-      s = { sku: e.sku, farbe: null, produkt: null, handle: null, seit: e.am, von: e.von, auftraege: [], imShop: false, shopPruefen: false, fehler: null, fehlerGrund: null, variantId: null, productId: null, vorher: null, freigabeFehler: null };
+      s = { sku: e.sku, farbe: null, produkt: null, handle: null, seit: e.am, von: e.von, auftraege: [], imShop: false, shopPruefen: false, fehler: null, fehlerGrund: null, variantId: null, productId: null, vorher: null, freigabeFehler: null, varianten: [] };
       aktiv.set(e.sku, s);
     }
     // Alte Ereignisse koennen bereits teilweise geschrieben sein, ohne eine bestaetigte Sperre.
@@ -163,6 +194,17 @@ export function stand(ereignisse = []) {
     // Erst die erste moegliche Aenderung legt den Rueckweg fest. Ein sicher abgelehnter
     // Versuch darf spaeter frisch gelesenen Bestand nicht durch einen alten Vorstand ersetzen.
     if (!s.vorher && sh.vorher && !sh.bereits && aenderungMoeglich) s.vorher = sh.vorher;
+    // Dieselbe Regel je Variante: eine schon vorher gesperrte (bereits) oder sicher nicht angefasste
+    // Variante legt keinen Rueckweg fest - auch wenn eine andere Variante im selben Versuch geschrieben wurde.
+    for (const v of variantenVon(sh)) {
+      let k = s.varianten.find(x => x.variantId === v.variantId);
+      if (!k) { k = { variantId: v.variantId, productId: v.productId || null, handle: v.handle || null, vorher: null, betroffen: false }; s.varianten.push(k); }
+      const moeglich = typeof v.aenderungMoeglich === 'boolean' ? v.aenderungMoeglich : aenderungMoeglich;
+      if (!k.vorher && v.vorher && !v.bereits && moeglich) k.vorher = v.vorher;
+      // Betroffen = gesperrt vorgefunden oder womoeglich angefasst. Nur betroffene gibt "Wieder verfuegbar"
+      // frei; eine nach einem Abbruch nie angefasste Variante bleibt, wie sie ist.
+      k.betroffen ||= Boolean(v.bereits) || moeglich;
+    }
     if (sh.geschrieben) { s.imShop = true; s.fehler = null; s.fehlerGrund = null; s.freigabeFehler = null; }
     else if (!s.imShop) { s.fehler = sh.fehler || s.fehler; s.fehlerGrund = sh.fehlerGrund || s.fehlerGrund; }
   }
@@ -190,7 +232,8 @@ export const RECHTE_QUERY = 'query MustersperreRechte { currentAppInstallation {
 
 export const VARIANTE_QUERY = `
 query MustersperreVariante($q: String!, $locationId: ID!) {
-  productVariants(first: 10, query: $q) {
+  productVariants(first: 25, query: $q) {
+    pageInfo { hasNextPage }
     nodes {
       id sku inventoryPolicy availableForSale
       product { id handle title }
@@ -250,25 +293,45 @@ function zustand(v) {
   };
 }
 
+const istMusterprodukt = v => String(v?.product?.handle || '').startsWith('muster-');
+
 /**
- * Mustervariante per SKU frisch lesen. Nur exakte Treffer; bei mehreren gewinnt die aus einem
- * Musterprodukt (muster-*). null = keine solche Variante im Shop.
+ * Alle Varianten einer Muster-SKU frisch lesen. Nur exakte Treffer. Liegt die SKU mehrfach, gelten
+ * alle - aber nur, wenn jede in einem Musterprodukt (muster-*) liegt; ein Treffer ausserhalb macht
+ * die SKU mehrdeutig. Eine einzelne Variante gilt wie bisher auch ausserhalb. [] = keine im Shop.
  */
-export async function leseVariante(proxy, sku, { standortId = STANDORT_ID } = {}) {
+export async function leseVarianten(proxy, sku, { standortId = STANDORT_ID } = {}) {
   const s = norm(sku);
   const d = await proxy.execute(VARIANTE_QUERY, { q: `sku:"${s.replace(/"/g, '')}"`, locationId: standortId });
+  // Mehr als eine Seite: welche Varianten die SKU tragen, waere nicht vollstaendig bekannt.
+  if (d?.productVariants?.pageInfo?.hasNextPage) {
+    throw new MustersperreFehler(409, `Zur Artikelnummer ${s} findet Shopify zu viele Varianten – bitte in Shopify von Hand sperren.`, { grund: 'mehrdeutig' });
+  }
   const treffer = (d?.productVariants?.nodes || []).filter(v => norm(v?.sku) === s);
-  const muster = treffer.filter(v => String(v.product?.handle || '').startsWith('muster-'));
-  const wahl = muster.length ? muster : treffer;
-  if (wahl.length > 1) throw new MustersperreFehler(409, `Die Artikelnummer ${s} gibt es im Shop mehrfach – bitte in Shopify von Hand sperren.`, { grund: 'mehrdeutig' });
-  return wahl.length ? zustand(wahl[0]) : null;
+  if (treffer.length > 1 && !treffer.every(istMusterprodukt)) {
+    const fremd = [...new Set(treffer.filter(v => !istMusterprodukt(v)).map(v => v.product?.handle || v.id))];
+    throw new MustersperreFehler(409, `Die Artikelnummer ${s} gibt es im Shop mehrfach, auch außerhalb der Musterprodukte (${fremd.join(', ')}) – bitte in Shopify von Hand sperren.`, { grund: 'mehrdeutig' });
+  }
+  return treffer.map(zustand);
 }
 
 const istGesperrt = z => Boolean(z && z.tracked && z.policy === 'DENY' && (z.menge ?? 0) <= 0);
 const kurz = z => (z ? { tracked: z.tracked, policy: z.policy, menge: z.menge } : null);
 
+/** variantId/productId direkt am Ergebnis nur bei genau einer Variante (Ablage aelterer Form, Admin-Link). */
+const einzeln = vs => (vs.length === 1 ? { variantId: vs[0].variantId, productId: vs[0].productId } : { variantId: null, productId: null });
+
+/** Je Variante ein eigener @idempotent-Schluessel - derselbe fuer zwei verschiedene Mutationen waere falsch. */
+function schluesselFuer(schluessel, i) {
+  if (!i) return schluessel;
+  const h = createHash('sha256').update(`${schluessel}:${i}`).digest('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+}
+
+const variantenReferenz = v => `gid://shopify/ProductVariant/${String(v.variantId).split('/').pop()}`;
+
 async function leseOderNull(proxy, sku, standortId) {
-  try { return await leseVariante(proxy, sku, { standortId }); } catch { return null; }
+  try { return await leseVarianten(proxy, sku, { standortId }); } catch { return null; }
 }
 
 /**
@@ -288,7 +351,7 @@ async function fuehreAus(proxy, mutation, variablen, feld) {
   const fehler = antwort?.[feld]?.userErrors ?? [];
   if (fehler.length) {
     if (fehler.some(e => /STALE|COMPARE/i.test(e.code || ''))) {
-      throw new MustersperreFehler(409, 'Der Bestand wurde gerade gleichzeitig geändert – nichts gesperrt. Bitte noch einmal versuchen.', { grund: 'bestand' });
+      throw new MustersperreFehler(409, 'Der Bestand wurde gerade gleichzeitig geändert – bitte noch einmal versuchen.', { grund: 'bestand' });
     }
     throw new MustersperreFehler(502, `Shopify hat die Änderung abgelehnt: ${fehler.map(e => e.message).join('; ')}`, { grund: 'abgelehnt' });
   }
@@ -299,19 +362,15 @@ async function fuehreAus(proxy, mutation, variablen, feld) {
  * Stellt die Variante auf `ziel` ({tracked, policy, menge}) - in der Reihenfolge, in der jeder
  * Zwischenstand harmlos ist: beim Sperren erst Bestand und Richtlinie, zuletzt die Verfolgung;
  * beim Freigeben genauso (die Verfolgung aus macht sie sofort wieder bestellbar).
+ * `geaendert` sammelt die Varianten, an denen eine Mutation ausgefuehrt worden sein kann (auch mit
+ * verlorener Antwort) - nach einem Abbruch entscheidet das je Variante, ob ihr Vorstand als Rueckweg gilt.
  */
-async function stelleEin(proxy, v, ziel, { referenz, schluessel, standortId }) {
+async function stelleEin(proxy, v, ziel, { referenz, schluessel, standortId, geaendert }) {
   let verloren = false;
-  let aenderungMoeglich = false;
   const schreibe = async (...args) => {
-    try {
-      const weg = await fuehreAus(proxy, ...args);
-      aenderungMoeglich = true;
-      return weg;
-    } catch (e) {
-      e.extra = { ...e.extra, aenderungMoeglich };
-      throw e;
-    }
+    const weg = await fuehreAus(proxy, ...args);
+    geaendert.add(v.variantId);
+    return weg;
   };
   if (ziel.menge !== null && ziel.menge !== undefined && v.menge !== ziel.menge) {
     verloren = await schreibe(BESTAND_MUTATION, {
@@ -329,42 +388,65 @@ async function stelleEin(proxy, v, ziel, { referenz, schluessel, standortId }) {
 }
 
 /**
- * Sperrt die Mustervariante einer SKU im Shop. Wirft MustersperreFehler (grund: keine-mustervariante,
- * kein-standort, mehrdeutig, recht-fehlt, abgelehnt, bestand, unklar, gegenprobe).
- * @returns {Promise<{status: 'gesperrt'|'bereits', variantId, productId, vorher, nachher, verfuegbar, antwortVerloren}>}
+ * Sperrt alle Mustervarianten einer SKU im Shop. Erst werden alle geprueft, dann geschrieben: eine
+ * Vorbedingung, die eine Variante verletzt, sperrt keine. Wirft MustersperreFehler (grund:
+ * keine-mustervariante, kein-standort, mehrdeutig, recht-fehlt, abgelehnt, bestand, unklar, gegenprobe);
+ * `extra.varianten` nennt dann je Variante Vorstand und ob sie schon angefasst sein kann.
+ * @returns {Promise<{status: 'gesperrt'|'bereits', variantId, productId, vorher, nachher, verfuegbar, antwortVerloren,
+ *   varianten: {variantId, productId, handle, vorher, nachher, verfuegbar, bereits?, aenderungMoeglich}[]}>}
+ *   variantId/productId/vorher/nachher direkt am Ergebnis nur bei genau einer Variante, sonst null.
  */
 export async function sperreImShop(proxy, { sku, referenz = null, standortId = STANDORT_ID, schluessel = randomUUID() } = {}) {
-  let v;
-  try { v = await leseVariante(proxy, sku, { standortId }); } catch (e) {
+  let vs;
+  try { vs = await leseVarianten(proxy, sku, { standortId }); } catch (e) {
     e.extra = { ...e.extra, aenderungMoeglich: false };
     throw e;
   }
-  if (!v) {
+  if (!vs.length) {
     throw new MustersperreFehler(404, `Im Shop gibt es keine Mustervariante M-… zu dieser Farbe (${norm(sku)}) – das Muster läuft vermutlich über „Kostenloses Muster“ und lässt sich nicht je Farbe sperren.`, { grund: 'keine-mustervariante', aenderungMoeglich: false });
   }
-  const basis = { variantId: v.variantId, productId: v.productId };
-  if (istGesperrt(v)) {
-    if (!v.verfuegbar) return { status: 'bereits', ...basis, vorher: kurz(v), nachher: kurz(v), verfuegbar: false, antwortVerloren: false };
-    throw new MustersperreFehler(502, 'Gegenprobe: Trotz Bestand 0 am Standort ist das Muster weiter bestellbar – bitte weitere Standorte und die Verfügbarkeit in Shopify prüfen.', { grund: 'gegenprobe', ...basis, vorher: kurz(v), nachher: kurz(v), aenderungMoeglich: false });
+  const basis = einzeln(vs);
+  const vorher = vs.length === 1 ? kurz(vs[0]) : null;
+  const geaendert = new Set();
+  // Je Variante fuer die Ablage; `n` ist der gegengepruefte Stand (fehlt er, gibt es kein nachher).
+  const liste = (n = null) => vs.map(v => {
+    const x = n?.find(y => y.variantId === v.variantId);
+    return {
+      variantId: v.variantId, productId: v.productId, handle: v.handle, vorher: kurz(v),
+      ...(x ? { nachher: kurz(x), verfuegbar: x.verfuegbar } : {}),
+      ...(istGesperrt(v) ? { bereits: true } : {}), aenderungMoeglich: geaendert.has(v.variantId),
+    };
+  });
+  if (vs.some(v => istGesperrt(v) && v.verfuegbar)) {
+    throw new MustersperreFehler(502, 'Gegenprobe: Trotz Bestand 0 am Standort ist das Muster weiter bestellbar – bitte weitere Standorte und die Verfügbarkeit in Shopify prüfen.', { grund: 'gegenprobe', ...basis, vorher, nachher: vorher, varianten: liste(vs), aenderungMoeglich: false });
   }
-  if (!v.levelDa) {
-    throw new MustersperreFehler(409, 'Für diese Mustervariante ist am Standort kein Bestand angelegt – bitte in Shopify von Hand sperren.', { grund: 'kein-standort', ...basis, aenderungMoeglich: false });
+  const offen = vs.filter(v => !istGesperrt(v));
+  if (!offen.length) return { status: 'bereits', ...basis, vorher, nachher: vorher, verfuegbar: false, antwortVerloren: false, varianten: liste(vs) };
+  if (offen.some(v => !v.levelDa)) {
+    throw new MustersperreFehler(409, `Für ${vs.length > 1 ? 'eine der Mustervarianten' : 'diese Mustervariante'} ist am Standort kein Bestand angelegt – bitte in Shopify von Hand sperren.`, { grund: 'kein-standort', ...basis, aenderungMoeglich: false });
   }
-  let verloren;
+  let verloren = false;
   try {
-    verloren = await stelleEin(proxy, v, { menge: 0, policy: 'DENY', tracked: true }, { referenz: referenz || `gid://shopify/ProductVariant/${String(v.variantId).split('/').pop()}`, schluessel, standortId });
+    for (const [i, v] of offen.entries()) {
+      // eslint-disable-next-line no-await-in-loop -- je Variante nacheinander, hoechstens eine Handvoll.
+      verloren = await stelleEin(proxy, v, { menge: 0, policy: 'DENY', tracked: true }, { referenz: referenz || variantenReferenz(v), schluessel: schluesselFuer(schluessel, i), standortId, geaendert }) || verloren;
+    }
   } catch (e) {
-    if (e instanceof MustersperreFehler) e.extra = { ...e.extra, ...basis, vorher: kurz(v) };
+    e.extra = { ...e.extra, ...basis, vorher, aenderungMoeglich: geaendert.size > 0, varianten: liste() };
     throw e;
   }
   const n = await leseOderNull(proxy, sku, standortId);
-  if (istGesperrt(n) && !n.verfuegbar) return { status: 'gesperrt', ...basis, vorher: kurz(v), nachher: kurz(n), verfuegbar: false, antwortVerloren: verloren };
+  const nach = v => n?.find(x => x.variantId === v.variantId) || null;
+  const nachher = vs.length === 1 ? kurz(nach(vs[0])) : null;
+  if (n && vs.every(v => istGesperrt(nach(v)) && !nach(v).verfuegbar)) {
+    return { status: 'gesperrt', ...basis, vorher, nachher, verfuegbar: false, antwortVerloren: verloren, varianten: liste(n) };
+  }
   if (!n) {
-    throw new MustersperreFehler(504, 'Ob das Muster im Shop gesperrt ist, ist unklar: die Gegenprobe war nicht lesbar. Bitte in Shopify nachsehen.', { grund: 'unklar', ...basis, vorher: kurz(v), aenderungMoeglich: true });
+    throw new MustersperreFehler(504, 'Ob das Muster im Shop gesperrt ist, ist unklar: die Gegenprobe war nicht lesbar. Bitte in Shopify nachsehen.', { grund: 'unklar', ...basis, vorher, aenderungMoeglich: true, varianten: liste() });
   }
   throw new MustersperreFehler(502, verloren
     ? 'Ob das Muster im Shop gesperrt ist, ist unklar: Shopify hat nicht geantwortet und zeigt es weiter als bestellbar. Bitte noch einmal versuchen.'
-    : 'Gegenprobe: Shopify zeigt das Muster weiter als bestellbar – bitte in Shopify ansehen.', { grund: verloren ? 'unklar' : 'gegenprobe', ...basis, vorher: kurz(v), nachher: kurz(n), aenderungMoeglich: true });
+    : 'Gegenprobe: Shopify zeigt das Muster weiter als bestellbar – bitte in Shopify ansehen.', { grund: verloren ? 'unklar' : 'gegenprobe', ...basis, vorher, nachher, aenderungMoeglich: true, varianten: liste(n) });
 }
 
 /**
@@ -379,19 +461,39 @@ export function freigabeZiel(vorher) {
 }
 
 /**
- * Gibt die Mustervariante wieder frei (Stand vor der Sperre). Wirft MustersperreFehler wie sperreImShop.
- * @returns {Promise<{status: 'frei'|'bereits', variantId, productId, nachher, verfuegbar, antwortVerloren}>}
+ * Gibt die Mustervarianten einer SKU wieder frei, jede auf ihren Stand vor der Sperre. `varianten` sind
+ * die aus den Sperr-Ereignissen bekannten ({variantId, vorher, betroffen}, siehe stand().varianten) - nur
+ * betroffene werden angefasst; eine Variante derselben SKU, die keine Sperre beruehrt hat, bleibt, wie sie
+ * ist. Kennt die Ablage keine betroffene Variante, gilt `vorher` fuer jede Variante der SKU (aelteste
+ * Ablage ohne variantId). Wirft MustersperreFehler wie sperreImShop.
+ * @returns {Promise<{status: 'frei'|'bereits', variantId, productId, nachher, verfuegbar, antwortVerloren,
+ *   varianten: {variantId, productId, handle, nachher, verfuegbar}[]}>}
  */
-export async function freigebenImShop(proxy, { sku, vorher = null, referenz = null, standortId = STANDORT_ID, schluessel = randomUUID() } = {}) {
-  const v = await leseVariante(proxy, sku, { standortId });
-  if (!v) throw new MustersperreFehler(404, `Im Shop gibt es keine Mustervariante zu ${norm(sku)} mehr – nichts freizugeben.`, { grund: 'keine-mustervariante' });
-  const basis = { variantId: v.variantId, productId: v.productId };
-  const ziel = freigabeZiel(vorher);
-  const passt = z => Boolean(z) && z.tracked === ziel.tracked && z.policy === ziel.policy && (z.levelDa ? z.menge === ziel.menge : !ziel.tracked);
-  if (passt(v) && v.verfuegbar) return { status: 'bereits', ...basis, nachher: kurz(v), verfuegbar: v.verfuegbar, antwortVerloren: false };
-  // Ohne Bestandsverfolgung zaehlt die Menge nicht - dann nur zuruecksetzen, wenn sie am Standort gefuehrt wird.
-  const verloren = await stelleEin(proxy, v, { ...ziel, menge: v.levelDa ? ziel.menge : null }, { referenz: referenz || `gid://shopify/ProductVariant/${String(v.variantId).split('/').pop()}`, schluessel, standortId });
+export async function freigebenImShop(proxy, { sku, vorher = null, varianten = null, referenz = null, standortId = STANDORT_ID, schluessel = randomUUID() } = {}) {
+  const vs = await leseVarianten(proxy, sku, { standortId });
+  if (!vs.length) throw new MustersperreFehler(404, `Im Shop gibt es keine Mustervariante zu ${norm(sku)} mehr – nichts freizugeben.`, { grund: 'keine-mustervariante' });
+  const bekannt = new Map((varianten || []).filter(v => v?.variantId && v.betroffen !== false).map(v => [v.variantId, v.vorher || null]));
+  const ziele = (bekannt.size ? vs.filter(v => bekannt.has(v.variantId)) : vs)
+    .map(v => ({ v, ziel: freigabeZiel(bekannt.size ? bekannt.get(v.variantId) : vorher) }));
+  if (!ziele.length) throw new MustersperreFehler(404, `Die gesperrten Mustervarianten zu ${norm(sku)} gibt es im Shop nicht mehr – nichts freizugeben.`, { grund: 'keine-mustervariante' });
+  const basis = einzeln(ziele.map(z => z.v));
+  const passt = (z, ziel) => Boolean(z) && z.tracked === ziel.tracked && z.policy === ziel.policy && (z.levelDa ? z.menge === ziel.menge : !ziel.tracked);
+  const fertig = (z, ziel) => passt(z, ziel) && z.verfuegbar;
+  const nachIn = (n, v) => n?.find(x => x.variantId === v.variantId) || null;
+  const ergebnis = (status, n, verloren) => ({
+    status, ...basis, nachher: ziele.length === 1 ? kurz(nachIn(n, ziele[0].v)) : null, verfuegbar: true, antwortVerloren: verloren,
+    varianten: ziele.map(({ v }) => { const x = nachIn(n, v); return { variantId: v.variantId, productId: v.productId, handle: v.handle, nachher: kurz(x), verfuegbar: Boolean(x?.verfuegbar) }; }),
+  });
+  if (ziele.every(({ v, ziel }) => fertig(v, ziel))) return ergebnis('bereits', vs, false);
+  const geaendert = new Set();
+  let verloren = false;
+  for (const [i, { v, ziel }] of ziele.entries()) {
+    if (fertig(v, ziel)) continue;
+    // Ohne Bestandsverfolgung zaehlt die Menge nicht - dann nur zuruecksetzen, wenn sie am Standort gefuehrt wird.
+    // eslint-disable-next-line no-await-in-loop -- je Variante nacheinander, hoechstens eine Handvoll.
+    verloren = await stelleEin(proxy, v, { ...ziel, menge: v.levelDa ? ziel.menge : null }, { referenz: referenz || variantenReferenz(v), schluessel: schluesselFuer(schluessel, i), standortId, geaendert }) || verloren;
+  }
   const n = await leseOderNull(proxy, sku, standortId);
-  if (passt(n) && n.verfuegbar) return { status: 'frei', ...basis, nachher: kurz(n), verfuegbar: n.verfuegbar, antwortVerloren: verloren };
+  if (n && ziele.every(({ v, ziel }) => fertig(nachIn(n, v), ziel))) return ergebnis('frei', n, verloren);
   throw new MustersperreFehler(n ? 502 : 504, n ? 'Gegenprobe: Der Stand vor der Sperre ist noch nicht vollständig wiederhergestellt oder das Muster ist weiter nicht bestellbar – bitte erneut versuchen oder in Shopify ansehen.' : 'Ob das Muster wieder freigegeben ist, ist unklar: die Gegenprobe war nicht lesbar.', { grund: n ? 'gegenprobe' : 'unklar', ...basis });
 }
