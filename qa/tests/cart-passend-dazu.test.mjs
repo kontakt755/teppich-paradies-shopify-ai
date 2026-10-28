@@ -100,3 +100,58 @@ test('bei cart:update rendert die Liste sich ueber die Section Rendering API neu
   await new Promise((r) => setTimeout(r, 0));
   assert.equal(aufrufe.length, 1);
 });
+
+// Pruefung PR #1733: Zwei Warenkorbaenderungen waehrend eines laufenden Abrufs.
+// Der echte Section-Renderer (assets/section-renderer.js) gibt fuer dieselbe URL
+// die laufende Anfrage zurueck - trotz cache: false. Ohne Vormerken bliebe der
+// Stand von vor der zweiten Aenderung stehen ("Passend dazu" beim reinen Musterkorb).
+async function warenkorbBuehne() {
+  const vm = await import('node:vm');
+  const quelle = lies('assets/section-renderer.js').replace(/^import[^\n]*\n/gm, '').replace(/^export /gm, '');
+  const buehne = { korb: 'mit Ware', abrufe: [], gezeigt: [] };
+  const ctx = vm.createContext({
+    URL, AbortController,
+    Shopify: { designMode: false },
+    window: { location: { href: 'https://shop.test/cart' }, addEventListener() {} },
+    document: { getElementById: (id) => ({ id }), querySelectorAll: () => [] },
+    DOMParser: class { parseFromString(html) { return { getElementById: (id) => ({ id, html }) }; } },
+    // Jeder Abruf liefert den Warenkorb vom Zeitpunkt der Anfrage; fertig() beantwortet ihn.
+    fetch: (url) => new Promise((antwort) => {
+      const stand = buehne.korb;
+      buehne.abrufe.push({ url: String(url), fertig: () => antwort({ text: async () => `<div>${stand}</div>` }) });
+    }),
+    morph: (_alt, neu) => buehne.gezeigt.push(neu.html),
+    MORPH_OPTIONS: {},
+  });
+  vm.runInContext(`${quelle}\nglobalThis.renderer = sectionRenderer;`, ctx);
+  let horcher = null;
+  const document = {
+    querySelectorAll: (sel) => (sel === '[data-tp-wk-inhalt]' ? [{ getAttribute: () => 'template--1__product_list_x' }] : []),
+    addEventListener: (typ, fn) => { if (typ === 'cart:update') horcher = fn; },
+  };
+  const code = section.split('{% javascript %}')[1].split('{% endjavascript %}')[0].replace("import('@theme/section-renderer')", "__import('@theme/section-renderer')");
+  vm.runInNewContext(code, { document, Array, __import: () => Promise.resolve({ sectionRenderer: ctx.renderer }) });
+  const ruhe = () => new Promise((r) => setTimeout(r, 0));
+  buehne.aendern = async (stand) => { buehne.korb = stand; horcher(); await ruhe(); };
+  // Beantwortet den aeltesten offenen Abruf.
+  buehne.antworten = async () => { const a = buehne.abrufe.find((x) => !x.erledigt); a.erledigt = true; a.fertig(); await ruhe(); await ruhe(); };
+  return buehne;
+}
+
+test('zweite Warenkorbaenderung waehrend des Abrufs: danach frisch abrufen, der letzte Stand bleibt stehen', async () => {
+  const b = await warenkorbBuehne();
+  await b.aendern('Ware und Muster');
+  await b.aendern('nur Muster');
+  await b.aendern('nur Muster');
+  assert.equal(b.abrufe.length, 1, 'waehrend ein Abruf laeuft, startet kein zweiter (er bekaeme dieselbe Anfrage)');
+  await b.antworten();
+  assert.equal(b.abrufe.length, 2, 'nach dem ersten Abruf genau ein neuer fuer alle vorgemerkten Aenderungen');
+  await b.antworten();
+  assert.equal(b.abrufe.length, 2);
+  assert.equal(b.gezeigt.at(-1), '<div>nur Muster</div>');
+  // Danach wieder normal: eine Aenderung, ein Abruf.
+  await b.aendern('mit Ware');
+  assert.equal(b.abrufe.length, 3);
+  await b.antworten();
+  assert.equal(b.gezeigt.at(-1), '<div>mit Ware</div>');
+});

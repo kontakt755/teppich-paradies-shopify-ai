@@ -9,7 +9,8 @@
  *
  * Hier wird fuer jeden Beitrag mit Produkt gefragt:
  *   - /products/<handle>.js: 404 oder 301 -> nicht mehr im Shop; Tag "auslauf" -> wird nicht beworben
- *   - ein gedruckter Quadratmeterpreis (Bild, Text) muss auf der Produktseite stehen
+ *   - ein gedruckter Quadratmeterpreis (Bild, Text) muss ein Grundpreis des Produkts sein: aus dem
+ *     Preisblock der Produktseite oder dem Grundpreis je m² einer Variante (nie Paket- oder Verlegepreis)
  *   - eine Farbzahl im Text muss zu den Farben im Shop passen
  * Jede Abweichung ist eine Sperre. Ist der Shop nicht erreichbar, wartet der Beitrag (`warten`).
  *
@@ -83,36 +84,88 @@ export async function produktLive(handle, { holen = globalThis.fetch, basis = BE
   return { zustand: 'aktiv', produkt };
 }
 
-/** Sichtbarer Text der Produktseite (<main>) - dort stehen Preis und Grundpreis. */
-export async function seitenText(handle, { holen = globalThis.fetch, basis = BETRIEB.shop } = {}) {
+/**
+ * Sichtbarer Text der Produktseite (<main>) und, getrennt davon, der Preisblock des Produkts selbst.
+ * Nur der Preisblock zaehlt als Shoppreis - im uebrigen Text stehen auch Verlegepreise ("lose
+ * Verlegung 8,95 €/m²") und Preise anderer Produkte (Pruefung PR #1734).
+ */
+export async function seitenText(handle, { holen = globalThis.fetch, basis = BETRIEB.shop, produktId = null } = {}) {
   const antwort = await abrufen(holen, `${basis}/products/${handle}`, 'text/html');
   const ende = endgueltig(antwort);
   if (ende) return ende;
   if (!antwort.ok) throw new ShopNichtErreichbar(`Produktseite ${handle}: HTTP ${antwort.status}`);
-  const text = hauptText(await antwort.text());
+  const html = String(await antwort.text());
+  const text = hauptText(html);
   if (!text) throw new ShopNichtErreichbar('Produktseite ohne <main> – vermutlich Bot-Prüfung');
-  return { zustand: 'aktiv', text };
+  return { zustand: 'aktiv', text, preise: preisBlock(html, produktId) };
+}
+
+/**
+ * Text der Preisbloecke <product-price> eines Produkts (blocks/price.liquid, blocks/price_custom.liquid).
+ * Verborgenes faellt weg, Streichpreise (<s>, <del>, Klassen mit "compare" oder "__alt") tragen
+ * "statt" davor - so unterscheidet m2Preise je Betrag, was gilt und was gestrichen ist.
+ */
+export function preisBlock(html, produktId = null) {
+  const teile = [];
+  for (const m of String(html ?? '').matchAll(/<product-price\b([^>]*)>([\s\S]*?)<\/product-price>/gi)) {
+    const id = /data-product-id="(\d+)"/i.exec(m[1])?.[1];
+    if (produktId != null && id && id !== String(produktId)) continue;
+    const roh = m[2]
+      .replace(/<(\w+)\b[^>]*\shidden(?:="[^"]*")?(?=[\s>\/])[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<(s|del)\b[^>]*>([\s\S]*?)<\/\1>/gi, ' statt $2 ')
+      .replace(/<(span|div)\b[^>]*class="[^"]*(?:compare|__alt)[^"]*"[^>]*>([\s\S]*?)<\/\1>/gi, ' statt $2 ');
+    teile.push(hauptText(`<main>${roh}</main>`));
+  }
+  return teile.filter(Boolean).join(' ');
 }
 
 const euro = cent => (Number(cent) / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const M2 = /(Normaler Preis\s+)?(\d{1,3}(?:\.\d{3})*,\d{2})\s?€\s?\/\s?m²/g;
+const M2 = /(Normaler Preis\s+|statt\s+)?(\d{1,3}(?:\.\d{3})*,\d{2})\s?€\s?\/\s?m²/g;
 
 /**
- * Quadratmeterpreise, die der Shop jetzt zeigt. Auf der Seite steht der Preis der gewaehlten
- * Variante, bei einer Aktion zusaetzlich "Normaler Preis …". Bei Meterware ist der Variantenpreis
- * selbst der Quadratmeterpreis - so zaehlt auch eine guenstigere Breite ("ab …").
- * @returns {{aktuell: string[], vergleich: string[]}} Betraege wie "90,50"
+ * Menge einer Variante in m², wenn Shopify einen Grundpreis je m² fuehrt (unit_price_measurement):
+ * Paketware 3,0 m², Teppich nach Mass 0,01 m², Meterware 1,0 m². Sonst null.
  */
-export function m2Preise(text, produkt = null) {
-  const alle = []; const vergleich = new Set();
-  for (const m of String(text ?? '').matchAll(M2)) { alle.push(m[2]); if (m[1]) vergleich.add(m[2]); }
-  const aktuell = new Set(alle.filter(b => !vergleich.has(b)));
-  for (const v of produkt?.variants ?? []) {
-    if (Number(v.price) > 0) aktuell.add(euro(v.price));
-    if (Number(v.compare_at_price) > Number(v.price)) vergleich.add(euro(v.compare_at_price));
+function mengeM2(v) {
+  const m = v?.unit_price_measurement;
+  if (m?.quantity_unit !== 'm2' || m?.reference_unit !== 'm2') return null;
+  const menge = Number(m.quantity_value);
+  return menge > 0 ? menge : null;
+}
+
+/**
+ * Quadratmeterpreise, die der Shop jetzt zeigt - nur eindeutig dem Produkt zugeordnete Grundpreise:
+ *   - der Preisblock der Produktseite (`preisBlock`): Preis der gewaehlten Variante, Streichpreise mit "statt"
+ *   - je Variante der Grundpreis je m² aus der .js; der Variantenpreis selbst ist bei Paketware der
+ *     Paketpreis und bei Teppich nach Mass der Preis je 0,01 m², zaehlt dort also nicht
+ *   - Varianten ohne Grundpreis (Meterware): der Variantenpreis, aber nur, wenn der Preisblock einen
+ *     davon als Quadratmeterpreis zeigt - so zaehlt auch eine guenstigere Breite ("ab …")
+ * Aktuelle Preise und Streichpreise werden je Variante getrennt erfasst: ist 49,90 der Preis der einen
+ * und der Streichpreis der anderen Breite, ist 49,90 trotzdem ein gueltiger Preis (Pruefung PR #1734).
+ * @returns {{aktuell: string[], vergleich: string[], erster: string|null}} Betraege wie "90,50"
+ */
+export function m2Preise(preisText, produkt = null) {
+  const seite = []; const aktuell = new Set(); const vergleich = new Set();
+  for (const m of String(preisText ?? '').matchAll(M2)) {
+    if (m[1]) vergleich.add(m[2]);
+    else { aktuell.add(m[2]); seite.push(m[2]); }
   }
-  for (const b of vergleich) aktuell.delete(b);
-  return { aktuell: [...aktuell], vergleich: [...vergleich], erster: alle.find(b => !vergleich.has(b)) ?? null };
+  const varianten = produkt?.variants ?? [];
+  const ohneGrundpreis = varianten.filter(v => !mengeM2(v));
+  const meterware = ohneGrundpreis.some(v => Number(v.price) > 0 && aktuell.has(euro(v.price)));
+  for (const v of varianten) {
+    const menge = mengeM2(v);
+    const preis = Number(v.price); const alt = Number(v.compare_at_price);
+    if (menge) {
+      const grund = Number(v.unit_price) > 0 ? Number(v.unit_price) / (Number(v.unit_price_measurement.reference_value) || 1) : preis / menge;
+      if (grund > 0) aktuell.add(euro(Math.round(grund)));
+      if (alt > preis) vergleich.add(euro(Math.round(alt / menge)));
+    } else if (meterware) {
+      if (preis > 0) aktuell.add(euro(preis));
+      if (alt > preis) vergleich.add(euro(alt));
+    }
+  }
+  return { aktuell: [...aktuell], vergleich: [...vergleich], erster: seite[0] ?? [...aktuell][0] ?? null };
 }
 
 const betrag = s => /(\d{1,3}(?:\.\d{3})*,\d{2})/.exec(String(s ?? ''))?.[1] ?? null;
@@ -190,10 +243,10 @@ export async function pruefeBeitragLive({ beitrag, inhalt }, { holen = globalThi
     const imText = preiseImText(beitrag);
     if (gedruckt || imText.length) {
       try {
-        const seite = await einmal(`seite:${handles[0]}`, () => seitenText(handles[0], { holen }));
+        const seite = await einmal(`seite:${handles[0]}`, () => seitenText(handles[0], { holen, produktId: haupt.produkt.id }));
         if (seite.zustand !== 'aktiv') sperren.push(`${handles[0]}: Produktseite nicht mehr erreichbar (${seite.zustand === 'fehlt' ? '404' : `leitet um auf ${seite.ziel ?? '?'}`})`);
         else {
-          const p = m2Preise(seite.text, haupt.produkt);
+          const p = m2Preise(seite.preise, haupt.produkt);
           const shopZeigt = p.erster ? `${p.erster} €/m²` : 'keinen Quadratmeterpreis';
           if (gedruckt?.preis && !p.aktuell.includes(betrag(gedruckt.preis))) sperren.push(`Preis im Bild ${gedruckt.preis}, der Shop zeigt ${shopZeigt}`);
           if (gedruckt?.preisAlt && !p.vergleich.includes(betrag(gedruckt.preisAlt))) sperren.push(`Streichpreis im Bild ${gedruckt.preisAlt} steht nicht mehr im Shop`);

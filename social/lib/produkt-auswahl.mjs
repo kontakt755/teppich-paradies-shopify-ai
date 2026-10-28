@@ -224,6 +224,8 @@ export function standAus(produkt, alt, jetzt = new Date()) {
     erstgesehen: alt?.erstgesehen ?? jetzt.toISOString(),
     zuletzt_gesehen: jetzt.toISOString(),
     farben: produkt.farben,
+    // Bleibt immer der Shopstand, auch wenn der Abgleich `farben` fuer eine offene Ankuendigung zuruecksetzt.
+    farben_im_shop: produkt.farben,
     bilder: produkt.bilder.length,
     preis_min: produkt.preisMin,
     vergleich_max: produkt.vergleichMax,

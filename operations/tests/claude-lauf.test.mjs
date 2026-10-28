@@ -192,7 +192,7 @@ test('Laeuft schon (frische Sperre): uebersprungen, aber mit Lebenszeichen im St
   const { env } = umgebung();
   const s = nimmSperre(sperrPfad(env.TP_PRIVAT_DIR, 'fehlermeldungen'));
   let abgleich = 0;
-  assert.equal(await main(['fehlermeldungen'], { env, jetzt: new Date(), aus: () => {}, abgleich: () => { abgleich += 1; return leer; } }), 0);
+  assert.equal(await main(['fehlermeldungen'], { env, jetzt: IM_FENSTER, aus: () => {}, abgleich: () => { abgleich += 1; return leer; } }), 0);
   assert.equal(abgleich, 0);
   assert.match(liesStatus(env.TP_PRIVAT_DIR, 'fehlermeldungen').hinweis, /läuft noch/);
   s.freigeben();
