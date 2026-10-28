@@ -1,0 +1,89 @@
+{%- doc -%}
+  Hauptaktion der Serviceseiten (Werkbank w-111): ein Hauptknopf zur Anfrage
+  auf derselben Seite, daneben Anrufen und WhatsApp. Steht im Einstieg von
+  Teppichboden verlegen lassen, Vinylboden verlegen, Treppenverlegung und
+  Liefer- & Verlegeservice - vorher hatte jede Seite einen anderen Knopf
+  (gruen, schwarz, keiner) und WhatsApp fehlte oben ganz.
+
+  Ziel des Hauptknopfs: #tp-anfrage, wenn die Seite das Formular selbst hat
+  (snippets/tp-anfrage-ziel.liquid), sonst die Kontaktseite. Das Formular
+  klappt sich beim Sprung auf (sections/tp-start-kontakt.liquid).
+
+  Nummern aus den Theme-Einstellungen (Gruppe TP Verlegeservice), wie in
+  sections/tp-verlegeservice-kontakt.liquid. Gezaehlt wird nicht der Klick,
+  sondern erst die bestaetigte Anfrage (snippets/tp-lead-events.liquid).
+
+  @param {string} [label] - Text des Hauptknopfs, Standard "Verlegung anfragen"
+  @param {string} [ziel] - Linkziel des Hauptknopfs aus den Section-Einstellungen
+  @param {string} [hinweis] - kleine Zeile unter den Knoepfen
+  @param {string} [ausrichtung] - 'mitte' zentriert die Knoepfe
+{%- enddoc -%}
+
+{%- liquid
+  assign sha_label = label | default: 'Verlegung anfragen'
+  assign sha_ziel = ziel
+  if sha_ziel == blank
+    capture sha_ziel
+      render 'tp-anfrage-ziel'
+    endcapture
+    assign sha_ziel = sha_ziel | strip
+  endif
+  if sha_ziel == blank
+    assign sha_ziel = routes.root_url | append: 'pages/kontakt?thema=verlegung' | replace: '//', '/'
+  endif
+
+  assign sha_tel_text = settings.tp_vs_telefon | default: '03301 573 37 20'
+  assign sha_tel = sha_tel_text | remove: ' ' | remove: '/' | remove: '-' | remove: '(' | remove: ')'
+  assign sha_tel_erst = sha_tel | slice: 0
+  if sha_tel_erst == '0'
+    assign sha_tel = sha_tel | slice: 1, 30 | prepend: '+49'
+  endif
+  assign sha_wa = settings.tp_vs_whatsapp | default: '491792612211' | remove: ' ' | remove: '+'
+-%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+<div class="tp-sha{% if ausrichtung == 'mitte' %} tp-sha--mitte{% endif %}" data-tp-service-hauptaktion>
+  <div class="tp-sha__knoepfe">
+    <a class="tp-s-btn tp-s-btn--primary tp-sha__haupt" href="{{ sha_ziel }}">{{ sha_label | escape }}</a>
+    <a class="tp-s-btn tp-s-btn--ghost tp-sha__neben" href="tel:{{ sha_tel }}" aria-label="Anrufen: {{ sha_tel_text | escape }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+      <span class="tp-sha__kurz">Anrufen</span><span class="tp-sha__lang">{{ sha_tel_text | escape }}</span>
+    </a>
+    {%- if sha_wa != blank -%}
+      <a class="tp-s-btn tp-s-btn--wa tp-sha__neben" href="https://wa.me/{{ sha_wa }}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg>
+        WhatsApp
+      </a>
+    {%- endif -%}
+  </div>
+  {%- if hinweis != blank -%}
+    <p class="tp-sha__hinweis">{{ hinweis | escape }}</p>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .tp-sha { margin: 0; container-type: inline-size; }
+  .tp-sha__knoepfe { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .tp-sha--mitte .tp-sha__knoepfe { justify-content: center; }
+  .tp-sha .tp-sha__neben { min-height: 50px; padding: 0 18px; }
+  .tp-sha__kurz { display: none; }
+  .tp-sha__hinweis { margin: 10px 0 0; font-size: var(--tp-fs-sm); color: var(--tp-muted, #595959); }
+  .tp-sha--mitte .tp-sha__hinweis { text-align: center; }
+
+  /* Schmale Textspalte neben dem Bild (Vinyl, Treppe: rund 540 px): mit der
+     Nummer braeuchten die drei Knoepfe 563 px und WhatsApp rutschte in eine
+     zweite Zeile. Die Nummer steht am Desktop ohnehin oben in der Leiste. */
+  @container (max-width: 580px) {
+    .tp-sha__kurz { display: inline; }
+    .tp-sha__lang { display: none; }
+  }
+
+  /* Telefon: Hauptknopf ueber die ganze Breite, Anrufen und WhatsApp halb
+     und halb darunter. So bleiben alle drei im ersten Bildschirm. */
+  @media screen and (max-width: 749px) {
+    .tp-sha__knoepfe { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tp-sha .tp-sha__haupt { grid-column: 1 / -1; }
+    .tp-sha .tp-sha__neben { min-height: 46px; padding: 0 10px; }
+    .tp-sha__kurz { display: inline; }
+    .tp-sha__lang { display: none; }
+  }
+{% endstylesheet %}
