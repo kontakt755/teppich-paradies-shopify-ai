@@ -914,7 +914,9 @@ Kennungen mit dem Bekannten (`belege|service -- bekannt`) und mit `vorpruefung.g
 Claude startet je Teil nur, wenn der letzte Claude-Lauf fehlschlug, heute noch keiner erfolgreich
 war (Tageslauf: fängt Abweichungen zum privaten Auftragstext ab und bietet zurückgestellte Mails
 einmal am Tag erneut an), der letzte Belege-Lauf unvollständig war, sich die Lieferanten-Domains
-geändert haben oder eine Kennung weder bekannt noch gesehen ist. Sonst steht im Status „nichts
+geändert haben oder eine Kennung weder bekannt noch gesehen ist. Bei Service-Anfragen gilt nach
+einem Lauf nur als gesehen, was in der Ablage steht – eine nicht übernommene Mail startet den
+nächsten Takt wieder. Die MCP-Serverprobe läuft nur, wenn ein Teil wirklich startet. Sonst steht im Status „nichts
 Neues (Vorprüfung ohne KI)“ mit dem Grund in `vorpruefungGrund`. Zugang: das App-Passwort des
 Nachfass-Versands (`nachfassen/postfach.json`, gleiches Konto). Geht die Vorprüfung nicht (kein
 Zugang, Anmeldung abgelehnt, Netz), startet Claude wie bisher. Abschalten:
@@ -966,10 +968,13 @@ Auftragstext, nie im Repository), collection `items`, keine Löschung, schreiben
 Meldungsnummer. Artifact nur `read` der Werkbank und `publish` mit `asset: true` eines
 Bildschirmfotos aus `fehlermeldungen/`. Die Wache gibt nichts frei, sie lehnt nur ab; fällt sie
 aus, blockiert sie (Exit 2). Eine Ablehnung zählt als Störung („abgelehnt“, mit dem Grund).
-Ausnahme Postfach: Wurden nur `Read`/`Write` außerhalb des Arbeitsordners abgelehnt (Claude
-greift gern zum Scratchpad) und das Ergebnis ist trotzdem belegt (Lieferbelege: neuer Eintrag in
-`laeufe`; Service: `uebernehmen` aufgerufen oder „nichts Neues“), gilt der Lauf als erfolgreich
-mit `hinweis` statt Störung.
+Ausnahme Postfach: Wurden nur `Read`/`Write` in Claudes eigenem Scratchpad abgelehnt
+(`/private/tmp/claude-<uid>/<projekt>/<sitzung>/scratchpad/…`, ohne `..` und `.env`) und das
+Ergebnis steht trotzdem in der Ablage (Lieferbelege: neuer Eintrag in `laeufe`; Service: jede
+offene Kennung der Vorprüfung angelegt oder als geprüft vermerkt), gilt der Lauf als erfolgreich
+mit `hinweis` statt Störung. Jeder andere abgelehnte Pfad (`.env*`, Zugangsdateien,
+LaunchAgents, alles unter `~`) bleibt Störung mit Mitteilung – das ist das Zeichen, dass eine
+Mail Claude zu etwas anderem bringen wollte.
 
 **Ablage** (privat, `$TP_PRIVAT_DIR/routinen/<lauf>/`, Rechte 0700/0600):
 `dienst.log` (launchd-Ausgabe, je Lauf eine Zeile), `status*.json` (letzter Stand, `letzterErfolg`,

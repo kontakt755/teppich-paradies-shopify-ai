@@ -393,20 +393,34 @@ export function mcpSperren(init, behalten = []) {
   return [...new Set((init?.mcp || []).map(m => mcpName(m.name)).filter(n => n && !bleibt.has(n)))].map(n => `mcp__${n}`);
 }
 
+/** Claudes eigener Scratchpad: `claude -p` legt ihn je Sitzung unter /private/tmp/claude-<uid>/<projekt>/<sitzung>/scratchpad/ an. */
+const SCRATCHPAD = /^(?:\/private)?\/tmp\/claude-\d+\/[^/]+\/[^/]+\/scratchpad\/[^/]/;
+
+/** Liegt `pfad` in Claudes Scratchpad - ohne "..", ohne .env-Datei? */
+export function imScratchpad(pfad) {
+  const p = typeof pfad === 'string' ? pfad : '';
+  return SCRATCHPAD.test(p) && path.posix.normalize(p) === p && !p.split('/').some(t => t.startsWith('.env'));
+}
+
 /**
- * Eine Ablehnung, die nur einen Dateipfad betraf (Write/Read ausserhalb des Arbeitsordners -
- * 28.10.: Claude wollte zuerst in sein Scratchpad schreiben und nahm dann den Arbeitsordner),
- * ist kein Fehler, wenn das Ergebnis nachweislich da ist. Jede andere Ablehnung (Bash, MCP)
- * bleibt ein Fehler: dort koennten fremde Daten etwas anderes gewollt haben.
+ * Eine Ablehnung ist nur dann kein Fehler, wenn ALLE abgelehnten Aufrufe Read/Write in Claudes
+ * eigenem Scratchpad waren und das Ergebnis nachweislich da ist (28.10.: Claude wollte zuerst
+ * ins Scratchpad schreiben und nahm dann den Arbeitsordner). Jede andere Ablehnung bleibt ein
+ * Fehler mit Mitteilung - Bash, MCP und jeder Dateipfad sonst (`.env*`, Zugangsdateien,
+ * LaunchAgents, alles unter ~): genau das ist das Zeichen, dass eine Mail Claude zu etwas
+ * anderem bringen wollte (Pruefung 28.10.). Entschieden wird am vollen Pfad (`abgelehnt`),
+ * nicht am gekuerzten Text in `ablehnungen`.
  */
 export function harmloseAblehnung(bewertung, ergebnisBelegt) {
   if (!bewertung || bewertung.art !== 'abgelehnt' || !ergebnisBelegt) return bewertung;
-  const nurPfade = bewertung.ablehnungen?.length && bewertung.ablehnungen.every(a => /^(Write|Read) \(/.test(a));
-  if (!nurPfade) return bewertung;
+  const liste = bewertung.abgelehnt || [];
+  const harmlos = liste.length && liste.length === (bewertung.ablehnungen?.length ?? liste.length)
+    && liste.every(a => ['Read', 'Write'].includes(a.werkzeug) && imScratchpad(a.pfad));
+  if (!harmlos) return bewertung;
   return {
     ...bewertung, ok: true, art: null,
     meldung: bewertung.abschluss || 'fertig',
-    hinweis: `${bewertung.ablehnungen.length} Dateizugriff(e) außerhalb des Arbeitsordners abgelehnt, Ergebnis trotzdem übernommen`,
+    hinweis: `${liste.length} Dateizugriff(e) im Scratchpad abgelehnt, Ergebnis trotzdem übernommen`,
   };
 }
 
@@ -441,8 +455,10 @@ export function bewerteLauf({ exitCode, signal, stdout, ergebnis, aufrufe, wache
     return { ok: false, art: 'antwort', meldung: `Keine auswertbare Antwort von claude (Exit ${exitCode ?? signal ?? '?'}).`, aufrufe };
   }
   const ablehnungen = (j.permission_denials || []).map(ablehnungKurz);
+  // Voller Pfad je Ablehnung (ablehnungen kuerzt auf 120 Zeichen): fuer harmloseAblehnung.
+  const abgelehnt = (j.permission_denials || []).map(d => ({ werkzeug: d?.tool_name || '?', pfad: typeof d?.tool_input?.file_path === 'string' ? d.tool_input.file_path : null }));
   const zeile = abschlussZeile(j.result);
-  const basis = { tokens: tokensAus(j.usage), runden: j.num_turns ?? null, dauerSek: j.duration_ms ? Math.round(j.duration_ms / 1000) : null, abschluss: zeile, ablehnungen, wache, aufrufe };
+  const basis = { tokens: tokensAus(j.usage), runden: j.num_turns ?? null, dauerSek: j.duration_ms ? Math.round(j.duration_ms / 1000) : null, abschluss: zeile, ablehnungen, abgelehnt, wache, aufrufe };
   if (j.is_error || j.subtype !== 'success' || exitCode) {
     return { ...basis, ok: false, art: 'fehler', meldung: `claude endete mit Fehler (${j.subtype || 'unbekannt'}${exitCode ? `, Exit ${exitCode}` : ''}): ${zeile || '–'}` };
   }

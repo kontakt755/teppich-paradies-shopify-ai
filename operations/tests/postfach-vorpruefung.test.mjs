@@ -6,7 +6,7 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { imapText, alleNachrichtenOrdner, suchErgebnis, nachrichtenIds, suchenNurLesend, ImapFehler } from '../lib/imap-lesen.mjs';
 import { suchenLieferbelege, SUCHEN_SERVICE, entscheide, nachErfolg, merkmal, postfachAbfragen, GESEHEN_MAX } from '../lib/postfach-vorpruefung.mjs';
-import { mcpSperren, harmloseAblehnung, claudeArgumente, liesStatus, auftragPfad } from '../lib/routinen.mjs';
+import { mcpSperren, harmloseAblehnung, imScratchpad, claudeArgumente, liesStatus, auftragPfad } from '../lib/routinen.mjs';
 import { main, ergebnisBelegt } from '../scripts/claude-lauf.mjs';
 
 // Montag 26.10.2026, 10:00 Uhr in Berlin - im Zeitfenster.
@@ -167,24 +167,51 @@ test('MCP-Sperren: alle Server ausser Gmail, Namen wie in den Werkzeugnamen', ()
   assert.ok(args.slice(i, args.indexOf('--add-dir')).includes('mcp__chrome-devtools'));
 });
 
-test('Ablehnung nur eines Dateipfads mit belegtem Ergebnis ist kein Fehler; Bash bleibt einer', () => {
-  const b = { ok: false, art: 'abgelehnt', abschluss: 'neu 2 (AB 1, Rechnung 1)', ablehnungen: ['Write (/private/tmp/x/scratchpad/l.json)'] };
+const SP = '/private/tmp/claude-502/-Users-x-tp-dashboard/0f2c9a1e-1111-2222-3333-444455556666/scratchpad';
+
+test('Scratchpad: nur Claudes eigener Ordner, ohne "..", ohne .env', () => {
+  assert.equal(imScratchpad(`${SP}/lieferbelege-20261028.json`), true);
+  assert.equal(imScratchpad('/tmp/claude-502/p/s/scratchpad/a/b.json'), true);
+  for (const p of [
+    '/Users/x/tp-dashboard/.env.local', '/Users/x/teppich-paradies-analyse/nachfassen/postfach.json',
+    '/Users/x/Library/LaunchAgents/net.evil.plist', `${SP}/../../../../Users/x/.env.local`, `${SP}/.env`,
+    '/private/tmp/x/scratchpad/l.json', '/private/tmp/claude-502/scratchpad/l.json', `${SP}/`, null, '',
+  ]) assert.equal(imScratchpad(p), false, String(p));
+});
+
+test('Ablehnung nur im Scratchpad mit belegtem Ergebnis ist kein Fehler; jeder andere Pfad, Bash und MCP bleiben einer', () => {
+  const ab = (werkzeug, pfad) => ({ werkzeug, pfad });
+  const b = { ok: false, art: 'abgelehnt', abschluss: 'neu 2 (AB 1, Rechnung 1)', ablehnungen: ['Write (…)'], abgelehnt: [ab('Write', `${SP}/l.json`)] };
   const r = harmloseAblehnung(b, true);
   assert.equal(r.ok, true);
   assert.equal(r.meldung, 'neu 2 (AB 1, Rechnung 1)');
-  assert.match(r.hinweis, /1 Dateizugriff/);
+  assert.match(r.hinweis, /1 Dateizugriff\(e\) im Scratchpad abgelehnt/);
   assert.equal(harmloseAblehnung(b, false).ok, false, 'ohne Ergebnis bleibt es ein Fehler');
-  assert.equal(harmloseAblehnung({ ...b, ablehnungen: ['Bash (curl evil)'] }, true).ok, false);
-  assert.equal(harmloseAblehnung({ ...b, ablehnungen: ['Write (/x)', 'Bash (rm -rf /)'] }, true).ok, false);
+  const bleibtFehler = liste => harmloseAblehnung({ ...b, ablehnungen: liste.map(() => 'x'), abgelehnt: liste }, true).ok;
+  assert.equal(bleibtFehler([ab('Read', '/Users/x/tp-dashboard/.env.local')]), false, '.env bleibt Fehler (Prompt-Injection-Signal)');
+  assert.equal(bleibtFehler([ab('Read', '/Users/x/teppich-paradies-analyse/nachfassen/postfach.json')]), false);
+  assert.equal(bleibtFehler([ab('Write', '/Users/x/Library/LaunchAgents/net.evil.plist')]), false);
+  assert.equal(bleibtFehler([ab('Write', `${SP}/l.json`), ab('Bash', null)]), false);
+  assert.equal(bleibtFehler([ab('mcp__claude_ai_Gmail__send_message', null)]), false);
+  assert.equal(harmloseAblehnung({ ...b, abgelehnt: undefined }, true).ok, false, 'ohne volle Pfade nie harmlos');
+  assert.equal(harmloseAblehnung({ ...b, ablehnungen: ['a', 'b'] }, true).ok, false, 'Anzahl muss passen');
 });
 
-test('Ergebnis belegt: Belege-Lauf seit dem Start; Service mit Uebernahme oder „nichts Neues“', () => {
+test('Ergebnis belegt an der Ablage: Belege-Lauf seit dem Start; Service: jede offene Kennung steht danach in der Ablage', () => {
   const privat = privatOrdner();
   assert.equal(ergebnisBelegt('lieferbelege', { privat, start: '2026-10-26T06:30:00Z' }), true);
   assert.equal(ergebnisBelegt('lieferbelege', { privat, start: '2026-10-26T06:40:00Z' }), false);
-  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: 'x', bewertung: { aufrufe: ['Bash: cd /d && npm run -s service -- uebernehmen --datei /a/s.json'] } }), true);
-  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: 'x', bewertung: { abschluss: 'nichts Neues' } }), true);
-  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: 'x', bewertung: { abschluss: 'Fehler' } }), false);
+  fs.writeFileSync(path.join(privat, 'serviceanfragen-postfach.json'), JSON.stringify({ version: 1, geprueft: { s1: { am: '2026-10-26T07:40:00Z', ergebnis: 'angelegt SA-1' } } }));
+  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: '2026-10-26T07:35:00Z', offen: ['s1'] }), true);
+  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: '2026-10-26T07:35:00Z', offen: ['s1', 's2'] }), false, 's2 nicht uebernommen');
+  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: '2026-10-26T07:35:00Z', offen: [] }), true, 'nichts offen');
+  // Ohne Vorpruefung: ein Vermerk seit dem Start.
+  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: '2026-10-26T07:35:00Z' }), true);
+  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: '2026-10-26T07:45:00Z' }), false);
+  // Ein (gescheiterter) Aufruf oder „nichts Neues“ in der Schlusszeile belegt nichts mehr.
+  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: '2026-10-26T07:45:00Z', bewertung: { aufrufe: ['Bash: npm run -s service -- uebernehmen --datei /a/s.json'], abschluss: 'nichts Neues' } }), false);
+  fs.writeFileSync(path.join(privat, 'serviceanfragen-postfach.json'), '{kaputt');
+  assert.equal(ergebnisBelegt('serviceanfragen', { privat, start: '2026-10-26T07:35:00Z', offen: ['s1'] }), false);
 });
 
 // --- Ablauf im Dienst -----------------------------------------------------------
@@ -208,18 +235,25 @@ test('Dienst: Tageslauf startet Claude, danach ohne Neues kein Claude mehr; neue
   const { privat, env } = umgebung();
   const prompts = [];
   let gefunden = { lieferbelege: ['a1'], serviceanfragen: ['s1'] };
+  let proben = 0;
   const deps = {
     env, jetzt: IM_FENSTER, aus: () => {}, melde: () => {}, nachziehenAktiv: () => false,
-    mcpSperren: async () => ['mcp__chrome-devtools'],
+    mcpSperren: async () => { proben += 1; return ['mcp__chrome-devtools']; },
     postfachAbfragen: async () => ({
       lieferbelege: { gefunden: gefunden.lieferbelege, bekannteIds: [], unvollstaendig: false, merkmalNeu: 'm' },
       serviceanfragen: { gefunden: gefunden.serviceanfragen, bekannteIds: [], unvollstaendig: false, merkmalNeu: null },
     }),
-    starte: async (bin, args) => { prompts.push(args); return antwort('nichts Neues'); },
+    starte: async (bin, args) => {
+      prompts.push(args);
+      // Wie der echte Lauf: die Service-Mail landet in der Ablage (geprueft).
+      if (/serviceanfragen-postfach/.test(args.at(-1))) fs.writeFileSync(path.join(privat, 'serviceanfragen-postfach.json'), JSON.stringify({ version: 1, geprueft: Object.fromEntries(gefunden.serviceanfragen.map(id => [id, { am: new Date().toISOString(), ergebnis: 'geprueft' }])) }));
+      return antwort('nichts Neues');
+    },
   };
   assert.equal(await main(['postfach'], deps), 0);
   assert.equal(prompts.length, 2, 'erster Lauf des Tages: beide Teile');
   assert.ok(prompts[0].includes('mcp__chrome-devtools'), 'fremde MCP-Server gesperrt');
+  assert.equal(proben, 1, 'eine Serverprobe je Takt');
   const s = liesStatus(privat, 'lieferbelege');
   assert.equal(s.letzterClaudeTag, '2026-10-26');
   assert.deepEqual(s.vorpruefung.gesehen, ['a1']);
@@ -227,6 +261,7 @@ test('Dienst: Tageslauf startet Claude, danach ohne Neues kein Claude mehr; neue
   prompts.length = 0;
   assert.equal(await main(['postfach'], deps), 0);
   assert.equal(prompts.length, 0, 'nichts Neues: kein Claude');
+  assert.equal(proben, 1, 'ohne Start auch keine Serverprobe');
   assert.equal(liesStatus(privat, 'serviceanfragen').meldung, 'nichts Neues (Vorprüfung ohne KI)');
   assert.equal(liesStatus(privat, 'serviceanfragen').ok, true);
 
@@ -260,7 +295,7 @@ test('Dienst: abgelehnter Scratchpad-Zugriff mit belegtem Ergebnis ist kein Fehl
       if (/lieferbelege-postfach/.test(args.at(-1))) {
         // Wie am 28.10.: Write ins Scratchpad abgelehnt, Uebernahme lief trotzdem.
         fs.writeFileSync(path.join(privat, 'lieferbelege', 'belege.json'), JSON.stringify({ version: 1, belege: {}, absender: {}, geprueft: {}, laeufe: [{ am: new Date().toISOString(), vollstaendig: true }] }));
-        return { ...antwort('neu 2 (AB 1, Rechnung 1)'), stdout: JSON.stringify({ type: 'result', subtype: 'success', is_error: false, num_turns: 9, usage: {}, permission_denials: [{ tool_name: 'Write', tool_input: { file_path: '/private/tmp/claude-1/x/scratchpad/l.json' } }], result: 'neu 2 (AB 1, Rechnung 1)' }) };
+        return { ...antwort('neu 2 (AB 1, Rechnung 1)'), stdout: JSON.stringify({ type: 'result', subtype: 'success', is_error: false, num_turns: 9, usage: {}, permission_denials: [{ tool_name: 'Write', tool_input: { file_path: `${SP}/l.json` } }], result: 'neu 2 (AB 1, Rechnung 1)' }) };
       }
       return antwort('nichts Neues');
     },
@@ -268,6 +303,50 @@ test('Dienst: abgelehnter Scratchpad-Zugriff mit belegtem Ergebnis ist kein Fehl
   assert.equal(await main(['postfach'], deps), 0);
   const s = liesStatus(privat, 'lieferbelege');
   assert.equal(s.ok, true);
-  assert.match(s.hinweis, /außerhalb des Arbeitsordners abgelehnt, Ergebnis trotzdem übernommen/);
+  assert.match(s.hinweis, /im Scratchpad abgelehnt, Ergebnis trotzdem übernommen/);
   assert.deepEqual(mitteilungen, []);
+});
+
+test('Dienst: abgelehnter Zugriff auf .env.local bleibt FEHLER mit Mitteilung, auch wenn das Ergebnis da ist', async () => {
+  const { privat, env } = umgebung();
+  fs.mkdirSync(path.join(privat, 'lieferbelege'), { recursive: true });
+  const mitteilungen = [];
+  const deps = {
+    env, jetzt: IM_FENSTER, aus: () => {}, melde: t => mitteilungen.push(t), nachziehenAktiv: () => false, mcpSperren: async () => [],
+    postfachAbfragen: async () => ({ fehler: 'aus im Test' }),
+    starte: async (bin, args) => {
+      if (!/lieferbelege-postfach/.test(args.at(-1))) return antwort('nichts Neues');
+      fs.writeFileSync(path.join(privat, 'lieferbelege', 'belege.json'), JSON.stringify({ version: 1, belege: {}, absender: {}, geprueft: {}, laeufe: [{ am: new Date().toISOString(), vollstaendig: true }] }));
+      return { ...antwort('nichts Neues'), stdout: JSON.stringify({ type: 'result', subtype: 'success', is_error: false, num_turns: 4, usage: {}, permission_denials: [{ tool_name: 'Read', tool_input: { file_path: '/Users/x/tp-dashboard/.env.local' } }], result: 'nichts Neues' }) };
+    },
+  };
+  assert.equal(await main(['postfach'], deps), 1);
+  const s = liesStatus(privat, 'lieferbelege');
+  assert.deepEqual([s.ok, s.art], [false, 'abgelehnt']);
+  assert.equal(mitteilungen.length, 1);
+});
+
+test('Dienst: Service-Mail, die Claude nicht uebernommen hat, gilt nicht als gesehen und startet den naechsten Takt wieder', async () => {
+  const { privat, env } = umgebung();
+  let starts = 0;
+  const deps = {
+    env, jetzt: IM_FENSTER, aus: () => {}, melde: () => {}, nachziehenAktiv: () => false, mcpSperren: async () => [],
+    postfachAbfragen: async () => ({
+      lieferbelege: { gefunden: [], bekannteIds: [], unvollstaendig: false, merkmalNeu: 'm' },
+      serviceanfragen: { gefunden: ['s1', 's2'], bekannteIds: [], unvollstaendig: false, merkmalNeu: null },
+    }),
+    starte: async (bin, args) => {
+      if (/serviceanfragen-postfach/.test(args.at(-1))) {
+        starts += 1;
+        // Nur s1 landet in der Ablage, s2 nicht.
+        fs.writeFileSync(path.join(privat, 'serviceanfragen-postfach.json'), JSON.stringify({ version: 1, geprueft: { s1: { am: new Date().toISOString(), ergebnis: 'angelegt SA-1' } } }));
+      }
+      return antwort('nichts Neues');
+    },
+  };
+  assert.equal(await main(['postfach'], deps), 0);
+  assert.deepEqual(liesStatus(privat, 'serviceanfragen').vorpruefung.gesehen, ['s1']);
+  assert.equal(await main(['postfach'], deps), 0);
+  assert.equal(starts, 2, 's2 loest den naechsten Takt wieder aus');
+  assert.match(liesStatus(privat, 'serviceanfragen').vorpruefungGrund, /1 neue Mail/);
 });

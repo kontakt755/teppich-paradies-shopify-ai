@@ -14,9 +14,12 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     Geht die Vorprüfung nicht, startet Claude wie bisher. Abschalten: `TP_POSTFACH_VORPRUEFUNG=aus`.
   - Nur Gmail: Eine init-Probe ohne Modellaufruf liest die Serverliste, die übrigen 13 Server werden
     per `--disallowedTools mcp__<server>` gesperrt.
-  - Wache: Lehnt sie nur Lese-/Schreibzugriffe außerhalb des Arbeitsordners ab und das Ergebnis ist
-    trotzdem da (neuer Belege-Lauf bzw. Übernahme oder „nichts Neues“), gilt der Lauf als erfolgreich
-    mit Hinweis. „FEHLER“ nur noch, wenn das Ergebnis fehlt.
+  - Wache: Lehnt sie nur Lese-/Schreibzugriffe in Claudes eigenem Scratchpad ab und das Ergebnis steht
+    trotzdem in der Ablage (neuer Belege-Lauf; bei Service jede offene Kennung angelegt oder geprüft),
+    gilt der Lauf als erfolgreich mit Hinweis. Jeder andere abgelehnte Pfad (`.env*`, Zugangsdateien,
+    LaunchAgents) bleibt „FEHLER“ mit Mitteilung – das Signal für einen Prompt-Injection-Versuch.
+  - Service: als gesehen gilt nur, was in der Ablage steht; eine nicht übernommene Mail startet den
+    nächsten Takt wieder. Die MCP-Serverprobe läuft nur, wenn ein Teil wirklich startet.
 - **Tokens** (gemessen in den `laeufe/`-Protokollen 26.–28.10., je 16 Läufe):
   - Vorher: Lieferbelege Ø 410.152 Tokens (12,8 Runden), Service Ø 136.259 (4,5 Runden), 7 Takte am
     Tag → rund 3,8 Mio. Tokens je Tag.

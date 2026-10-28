@@ -38,6 +38,8 @@ import {
 import { werkbankAus } from '../lib/routine-wache.mjs';
 import { postfachAbfragen, entscheide, nachErfolg } from '../lib/postfach-vorpruefung.mjs';
 import { leseBelege, lieferbelegePfad } from '../lib/lieferbelege.mjs';
+import { leseGeprueft, postfachPfad as servicePostfachPfad } from '../lib/serviceanfragen.mjs';
+import { bekannt as serviceBekannt } from './serviceanfragen.mjs';
 import { sperreVerwaist } from './betrieb-nachziehen.mjs';
 
 const PROTOKOLL_TAGE = 14;
@@ -270,18 +272,39 @@ export async function ermittleMcpSperren(lauf, { privat, dienst, env, starte = s
 }
 
 /**
- * Gegenprobe ohne KI: hat der Teil sein Ergebnis abgeliefert? Lieferbelege: ein neuer Eintrag
- * in `laeufe` seit dem Start (auch bei „nichts Neues“ wird eine leere Liste uebernommen).
- * Service-Anfragen: die Uebernahme lief oder Claude endete mit „nichts Neues“.
+ * Gegenprobe ohne KI an der Ablage: hat der Teil sein Ergebnis abgeliefert? Lieferbelege: ein
+ * neuer Eintrag in `laeufe` seit dem Start (auch bei „nichts Neues“ wird eine leere Liste
+ * uebernommen). Service-Anfragen: jede Kennung, die die Vorpruefung als offen fand (`offen`),
+ * steht danach in der Ablage - angelegt oder als geprueft vermerkt; ohne Vorpruefung
+ * (`offen` null) mindestens ein Vermerk seit dem Start. Ein Aufruf oder eine Schlusszeile
+ * allein belegt nichts (Pruefung 28.10.: auch ein gescheiterter Aufruf zaehlte).
  */
-export function ergebnisBelegt(teilId, { privat, start, bewertung = {} }) {
-  if (teilId === 'lieferbelege') {
-    try { return leseBelege(lieferbelegePfad(privat)).laeufe.some(l => Date.parse(l?.am) >= Date.parse(start)); } catch { return false; }
-  }
-  if (teilId === 'serviceanfragen') {
-    return (bewertung.aufrufe || []).some(a => /npm run -s service -- uebernehmen/.test(a)) || /nichts Neues/i.test(bewertung.abschluss || '');
-  }
+export function ergebnisBelegt(teilId, { privat, start, offen = null }) {
+  try {
+    if (teilId === 'lieferbelege') return leseBelege(lieferbelegePfad(privat)).laeufe.some(l => Date.parse(l?.am) >= Date.parse(start));
+    if (teilId === 'serviceanfragen') {
+      if (Array.isArray(offen)) {
+        const da = new Set(serviceBekannt({ privatDir: privat }).mailIds);
+        return offen.every(id => da.has(id));
+      }
+      return Object.values(leseGeprueft(servicePostfachPfad(privat))).some(e => Date.parse(e?.am) >= Date.parse(start));
+    }
+  } catch { return false; }
   return false;
+}
+
+/**
+ * Was nach einem erfolgreichen Lauf als gesehen gilt. Service-Anfragen: nur, was jetzt in der
+ * Ablage steht - eine Mail, die Claude nicht uebernommen hat, loest den naechsten Takt wieder
+ * aus, statt still bis zum Tageslauf zu warten. Lieferbelege: alles Gefundene (zurueckgestellte
+ * unbekannte Absender bietet der Tageslauf bewusst einmal am Tag wieder an).
+ */
+function gesehenNach(teilId, gefunden, privat) {
+  if (teilId !== 'serviceanfragen') return gefunden;
+  try {
+    const da = new Set(serviceBekannt({ privatDir: privat }).mailIds);
+    return gefunden.filter(id => da.has(id));
+  } catch { return []; }
 }
 
 /**
@@ -296,9 +319,7 @@ async function postfachLauf(a, o, deps) {
   if (!a.trocken && !a.erzwingen && !abgeschaltet) {
     try { vp = await (deps.postfachAbfragen || postfachAbfragen)({ privat }); } catch (e) { vp = { fehler: String(e?.message || e).slice(0, 160) }; }
   }
-  if (!a.trocken) {
-    try { o.mcpGesperrt = await (deps.mcpSperren || ermittleMcpSperren)('postfach', { privat, dienst: o.dienst, env }); } catch { o.mcpGesperrt = []; }
-  } else {
+  if (a.trocken) {
     aus(`Vorprüfung: ${abgeschaltet ? 'abgeschaltet (TP_POSTFACH_VORPRUEFUNG=aus)' : 'vor dem Start per IMAP nur die Mail-Kennungen der Auftragssuchen (nur im echten Lauf); Claude startet nur bei Neuem, nach einem Fehlschlag und einmal am Tag'}`);
     aus(`MCP: nur ${def.nurMcp.join(', ')} – alle anderen Server sperrt der echte Lauf nach einer Werkzeugprobe (--disallowedTools mcp__<server>)`);
   }
@@ -311,22 +332,28 @@ async function postfachLauf(a, o, deps) {
       : abgeschaltet ? { starten: true, grund: 'Vorprüfung abgeschaltet (TP_POSTFACH_VORPRUEFUNG=aus)' }
         : vp?.fehler ? { starten: true, grund: `Vorprüfung nicht möglich: ${vp.fehler}` }
           : daten ? entscheide({ ...daten, status, jetzt }) : { starten: true, grund: 'ohne Vorprüfung' };
-    if (!a.trocken) aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → ${ent.starten ? `Claude startet (${ent.grund})` : `Claude startet nicht (${ent.grund})`}${o.mcpGesperrt?.length ? ` · ${o.mcpGesperrt.length} MCP-Server gesperrt` : ''}`);
     if (!a.trocken && !ent.starten) {
+      aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → Claude startet nicht (${ent.grund})`);
       schreibStatus(privat, teil.id, { ok: true, art: null, meldung: 'nichts Neues (Vorprüfung ohne KI)', vorpruefungGrund: ent.grund, hinweis: null }, jetzt);
       continue;
     }
+    // Die Serverprobe erst, wenn wirklich ein Teil startet - einmal je Takt (Pruefung 28.10.).
+    if (!a.trocken && !o.mcpGesperrt) {
+      try { o.mcpGesperrt = await (deps.mcpSperren || ermittleMcpSperren)('postfach', { privat, dienst: o.dienst, env }); } catch { o.mcpGesperrt = []; }
+    }
+    if (!a.trocken) aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → Claude startet (${ent.grund})${o.mcpGesperrt?.length ? ` · ${o.mcpGesperrt.length} MCP-Server gesperrt` : ''}`);
     let r;
     try { r = await teilAusfuehren('postfach', teil, o); } catch (e) { r = { ok: false, art: e.art || 'start', meldung: e.message }; aus(`${teil.id}: FEHLER ${e.message}`); }
     if (a.trocken) continue;
-    if (r.art === 'abgelehnt') r = harmloseAblehnung(r, ergebnisBelegt(teil.id, { privat, start: r.start, bewertung: r }));
+    const offen = daten ? daten.gefunden.filter(id => !daten.bekannteIds.includes(id)) : null;
+    if (r.art === 'abgelehnt') r = harmloseAblehnung(r, ergebnisBelegt(teil.id, { privat, start: r.start, offen }));
     const ende = new Date();
     const { mitteilen } = schreibStatus(privat, teil.id, {
       ok: r.ok, art: r.art, meldung: r.meldung, letzterClaudeLauf: r.start || jetzt.toISOString(), tokens: r.tokens ?? null,
       vorpruefungGrund: ent.grund, letzterClaudeOk: r.ok,
       hinweis: r.hinweis || null,
       ...(r.ok ? { letzterClaudeTag: nachErfolg({ jetzt }).letzterClaudeTag } : {}),
-      ...(r.ok && daten ? { vorpruefung: nachErfolg({ gefunden: daten.gefunden, merkmalNeu: daten.merkmalNeu, jetzt }).vorpruefung } : {}),
+      ...(r.ok && daten ? { vorpruefung: nachErfolg({ gefunden: gesehenNach(teil.id, daten.gefunden, privat), merkmalNeu: daten.merkmalNeu, jetzt }).vorpruefung } : {}),
     }, ende);
     if (mitteilen) melde(teil.titel, r.meldung);
     alleOk &&= r.ok;
