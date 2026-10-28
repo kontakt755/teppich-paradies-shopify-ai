@@ -2,6 +2,39 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Aufräumliste: „direkt an den Kunden“ nur noch mit Beleg (#1740)
+
+- **Geaendert:** Am 26.10. wurde #1033 über die Aufräumliste mit „wohl direkt vom Lieferanten an den
+  Kunden (nicht belegt)“ abgeschlossen und in Shopify gebucht. Die Muster waren aber nie verschickt: Die
+  Bestellung bei Lieferant A ging an uns und wurde dort nie erfasst. Die Liste nahm „direkt“ für jede
+  Musterbestellung vor dem 24.10. an, die nie angekommen war.
+  - „Direkt an den Kunden“ gilt nur noch mit dem Vermerk beim Bestellen (`ueber: 'kunde'`) an allen
+    bestellten Mustern. Dann lautet der Vorschlag „laut Bestellung“, und der Beleg steht dabei.
+  - Sonst heißt es „Die Muster kamen nie an – beim Lieferanten nachfragen“ (bei Bestellungen vor dem
+    24.10. mit dem Hinweis, dass das Lieferziel damals nicht gespeichert wurde). Ein Vermerk wird nicht
+    vorgegeben (`notiz: null`).
+  - Ohne vorgegebenen Vermerk heißt der Knopf „Abschließen…“. Er fragt, woher wir wissen, dass es
+    erledigt ist. Ohne Eingabe passiert nichts, sonst wird „Aufgeräumt: <Grund>“ der Vermerk.
+- **Getestet:**
+  - `aufraeumen.test.mjs`:
+    - ohne Vermerk kein „wohl“ und `notiz: null` (vor und nach dem 24.10.)
+    - mit Vermerk an allen Mustern „laut Bestellung“, bei nur einem von zwei nicht
+    - Knopf „Abschließen“ bzw. „Abschließen…“
+  - `dashboard:test` 1021/1021.
+  - Klickstrecke gegen die Prüf-Instanz (`--offen`):
+    - Der Knopf heißt „Abschließen…“ und fragt nach dem Grund.
+    - Abbrechen: kein Aufruf.
+    - Mit Grund: genau ein `POST /api/kunden/bestellung-fertig` mit „Aufgeräumt: <Grund>“ (abgefangen,
+      nichts geschrieben).
+    - Kein JS-Fehler.
+  - Datenkopie, heute: unverändert 7 Fälle (gepackte Umschläge vom 22.10.).
+  - Datenkopie, durchgespielt für den 10.11.: Die alte Liste hätte bei 9 Bestellungen (#1033,
+    #1049–#1060) „wohl direkt an den Kunden“ vorgeschlagen. Darunter sind #1050 und #1051, deren Muster
+    laut Avisierung an uns geliefert werden. Die neue Liste schlägt dort „nachfragen“ vor, ohne Vermerk.
+- **Risiken:** Alte Fälle lassen sich nicht mehr mit einem Klick abschließen, man muss einen Grund
+  tippen. Das ist so gewollt.
+- **Nächste Stufe:** keine.
+
 ## 2026-10-26 · Rundgang: Versand, Kundenakte, Inhaberzeile, Hilfe, Anmeldung (Paket P5)
 
 - **Geaendert:** Versand: steht dieselbe Sendungsnummer schon an einer anderen Bestellung, bucht

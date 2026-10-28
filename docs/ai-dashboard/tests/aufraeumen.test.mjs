@@ -79,15 +79,36 @@ test('jede belegte Bewegung setzt die Uhr zurueck: Status, Notiz, Zeitleiste, Pa
 });
 
 test('Vorschlaege sagen nur, was belegt ist', () => {
-  const direkt = fall(zeile({ status: { [L(1)]: bestellt(25), [L(2)]: bestellt(25) } }));
-  assert.match(direkt.vorschlag.text, /direkt vom Lieferanten an den Kunden/);
-  assert.equal(direkt.vorschlag.notiz, 'Aufgeräumt: wohl direkt vom Lieferanten an den Kunden (nicht belegt)');
-  assert.deepEqual(direkt.lineItemIds, [L(1), L(2)]);
-  assert.ok(direkt.belege.includes('Nie als angekommen erfasst'));
+  // Nie angekommen, ohne Vermerk: nie "wohl direkt an den Kunden" (#1740, Fall #1033) - nachfragen,
+  // Abschluss nur mit eigenem Grund (notiz null). Vor dem 24.10. sagt der Text, dass das Ziel fehlt.
+  const ohne = fall(zeile({ status: { [L(1)]: bestellt(25), [L(2)]: bestellt(25) } }));
+  assert.match(ohne.vorschlag.text, /kamen nie an – beim Lieferanten nachfragen/);
+  assert.match(ohne.vorschlag.text, /vor dem 24\.10\. nicht gespeichert/);
+  assert.doesNotMatch(ohne.vorschlag.text, /wohl/);
+  assert.equal(ohne.vorschlag.notiz, null);
+  assert.deepEqual(ohne.lineItemIds, [L(1), L(2)]);
+  assert.ok(ohne.belege.includes('Nie als angekommen erfasst'));
 
-  // Seit dem 24.10. ist das Lieferziel gespeichert - dann kein "wahrscheinlich direkt".
   const spaet = aufraeumFall(zeile({ datum: '2026-10-24T08:00:00Z', status: { [L(1)]: { status: 'bestellt', bestelltAm: '2026-10-24T09:00:00Z' }, [L(2)]: { status: 'bestellt', bestelltAm: '2026-10-24T09:00:00Z' } } }), { jetzt: Date.parse('2026-11-10T09:00:00Z') });
   assert.match(spaet.vorschlag.text, /kamen nie an/);
+  assert.doesNotMatch(spaet.vorschlag.text, /24\.10\./);
+  assert.equal(spaet.vorschlag.notiz, null);
+
+  // Belegt direkt: alle bestellten Muster mit Vermerk ueber=kunde.
+  const direkt = fall(zeile({ status: { [L(1)]: bestellt(25, { ueber: 'kunde' }), [L(2)]: bestellt(25, { ueber: 'kunde' }) } }));
+  assert.match(direkt.vorschlag.text, /laut Bestellung direkt an den Kunden/);
+  assert.equal(direkt.vorschlag.notiz, 'Aufgeräumt: direkt vom Lieferanten an den Kunden (laut Bestellung)');
+  assert.ok(direkt.belege.includes('Lieferant schickt laut Bestellung direkt an den Kunden'));
+  assert.ok(!direkt.belege.includes('Nie als angekommen erfasst'));
+  // Nur eins von zwei direkt: kein Beleg fuer den ganzen Auftrag.
+  const halb = fall(zeile({ status: { [L(1)]: bestellt(25, { ueber: 'kunde' }), [L(2)]: bestellt(25) } }));
+  assert.equal(halb.vorschlag.notiz, null);
+
+  // Knopf: mit Vermerk "Abschließen", ohne "Abschließen…" (fragt nach dem Grund).
+  const block = f => aufraeumenBlock({ daten: { verfuegbar: true, zeilen: [{ ...zeile(), aufraeumen: f }] } });
+  assert.match(block(direkt), />Abschließen<\/button>/);
+  assert.match(block(ohne), />Abschließen…<\/button>/);
+  assert.match(block(ohne), /Fragt zuerst nach dem Beleg/);
 
   const nv = fall(zeile({ status: { [L(1)]: bestellt(22), [L(2)]: bestellt(22) }, notizen: [{ am: vorTagen(17), text: 'Muster aktuell nicht Verfügbar, Kunde per Mail informiert' }] }));
   assert.match(nv.vorschlag.text, /nicht verfügbar/);

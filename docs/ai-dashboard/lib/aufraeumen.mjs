@@ -69,6 +69,8 @@ function musterBefund(z, packen) {
   const bestellt = eintraege.filter(e => stufe(e) >= 1);
   const angekommen = eintraege.filter(e => stufe(e) >= 2);
   const bestelltAm = fruehester(bestellt.map(e => e.bestelltAm || e.aktualisiertAm));
+  // Belegt ist "direkt an den Kunden" nur mit dem Vermerk beim Bestellen (ueber: 'kunde', #1680).
+  const direkt = bestellt.length > 0 && bestellt.every(e => e.ueber === 'kunde');
   const angekommenAm = spaetester(angekommen.map(e => e.geliefertAm || e.aktualisiertAm));
   const pack = packBefund(z, packen);
   const notiz = (z.verlaufNotizen || []).filter(n => n?.text).at(-1) || null;
@@ -77,8 +79,9 @@ function musterBefund(z, packen) {
   const belege = [];
   if (bestelltAm) belege.push(`Beim Lieferanten bestellt am ${tagText(bestelltAm)}`);
   else if (!bestellt.length) belege.push('Nie beim Lieferanten bestellt');
+  if (direkt) belege.push('Lieferant schickt laut Bestellung direkt an den Kunden');
   if (angekommen.length) belege.push(angekommen.length === gesamt ? `Alle Muster angekommen${angekommenAm ? ` (${tagText(angekommenAm)})` : ''}` : `${angekommen.length} von ${gesamt} Mustern angekommen`);
-  else if (bestellt.length) belege.push('Nie als angekommen erfasst');
+  else if (bestellt.length && !direkt) belege.push('Nie als angekommen erfasst');
   if (pack.gepacktAm) belege.push(`Gepackt am ${tagText(pack.gepacktAm)}`);
   if (pack.klaeren) belege.push(`Packstation: zu klären${pack.klaeren.notiz ? ` – ${kuerze(pack.klaeren.notiz, 60)}` : ''}`);
   if (z.fulfillmentstatus === 'ON_HOLD') belege.push('In Shopify zurückgehalten');
@@ -96,10 +99,14 @@ function musterBefund(z, packen) {
     vorschlag = { text: 'Nie beim Lieferanten bestellt – beim Kunden nachfragen oder abschließen.', notiz: 'Aufgeräumt: Muster nie bestellt' };
   } else if (angekommen.length) {
     vorschlag = { text: 'Nur ein Teil kam an – beim Lieferanten nachfragen oder abschließen.', notiz: `Aufgeräumt: nur ${angekommen.length} von ${gesamt} Mustern angekommen` };
-  } else if (bestelltAm && bestelltAm.slice(0, 10) < LIEFERZIEL_GESPEICHERT_AB) {
-    vorschlag = { text: 'Wohl direkt vom Lieferanten an den Kunden gegangen – das Lieferziel wurde damals nicht gespeichert.', notiz: 'Aufgeräumt: wohl direkt vom Lieferanten an den Kunden (nicht belegt)' };
+  } else if (direkt) {
+    vorschlag = { text: 'Der Lieferant schickt laut Bestellung direkt an den Kunden – abschließen, wenn der Kunde die Muster hat.', notiz: 'Aufgeräumt: direkt vom Lieferanten an den Kunden (laut Bestellung)' };
   } else {
-    vorschlag = { text: 'Die Muster kamen nie an – beim Lieferanten nachfragen oder abschließen.', notiz: 'Aufgeräumt: Muster nie als angekommen erfasst' };
+    // Ohne Vermerk nie "wohl direkt an den Kunden" annehmen: Musterbestellungen an Lieferant A gehen
+    // an uns. #1033 wurde am 26.10. so abgeschlossen, obwohl die Muster nie verschickt waren.
+    // Ohne Vermerk (notiz null) fragt "Abschließen…" nach dem Grund statt einen Text vorzugeben.
+    const alt = bestelltAm && bestelltAm.slice(0, 10) < LIEFERZIEL_GESPEICHERT_AB;
+    vorschlag = { text: `Die Muster kamen nie an – beim Lieferanten nachfragen.${alt ? ' Ob er direkt an den Kunden geschickt hat, wurde vor dem 24.10. nicht gespeichert.' : ''} Abschließen nur mit Beleg, dass der Kunde sie hat.`, notiz: null };
   }
   return { belege, vorschlag };
 }

@@ -2373,8 +2373,12 @@ Vorschlag mit Vermerk:
 | Alle Muster angekommen oder Umschlag gepackt | Waren da, Versand nur nicht erfasst |
 | Nie beim Lieferanten bestellt | beim Kunden nachfragen oder abschließen |
 | Teil angekommen | beim Lieferanten nachfragen oder abschließen |
-| Bestellt vor dem 24.10., nie angekommen | wohl direkt vom Lieferanten an den Kunden (Lieferziel damals nicht gespeichert, Abschnitt „Muster direkt …“) |
-| sonst | Muster kamen nie an |
+| Alle bestellten Muster mit Vermerk `ueber: 'kunde'` (Abschnitt „Muster direkt …“) | direkt vom Lieferanten an den Kunden (laut Bestellung) |
+| sonst (nie angekommen) | Muster kamen nie an – beim Lieferanten nachfragen; **kein Vermerk vorgegeben** |
+
+Ohne Vermerk wird nie „direkt an den Kunden“ angenommen, auch nicht vor dem 24.10. (#1740): Musterbestellungen
+an Lieferant A gehen an uns, #1033 wurde am 26.10. so fälschlich abgeschlossen. Fehlt der Vermerk
+(`vorschlag.notiz: null`), heißt der Knopf „Abschließen…“ und fragt nach dem Grund; ohne Eingabe passiert nichts.
 
 Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt niemand nebenbei), nur
 „Ansehen“ und „Läuft noch“.
@@ -2383,7 +2387,8 @@ Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt n
 Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar. Kein
 eigener Schreibpfad:
 - **Abschließen** (Rückfrage mit Vermerk) = `POST /api/kunden/bestellung-fertig` mit den offenen
-  Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Bucht wie jedes „Erledigt“ in Shopify als
+  Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Ohne vorgegebenen Vermerk „Abschließen…“:
+  der Vermerk ist „Aufgeräumt: <eingegebener Grund>“. Bucht wie jedes „Erledigt“ in Shopify als
   versendet, ohne Mail (Abschnitt 24); scheitert die Buchung, steht die Bestellung unter „In Shopify noch
   offen“ zum Nachbuchen. Bewusst nicht der Schritt „Muster nicht verfügbar“: der sperrte die Farbe heute
   im Shop, obwohl die Notiz Wochen alt ist.
