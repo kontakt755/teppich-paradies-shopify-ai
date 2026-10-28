@@ -22,7 +22,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** Braucht Chrome auf dem Dienst-Mac (wie `dashboard:pruefen`). Fehlt er, kommt die übliche
   Fehlermeldung, der Grund steht im Protokoll. Ob der Ratgeber wirklich beigelegt wurde, merkt sich das
   Dashboard nicht.
-- **Naechste Stufe:** Bei Direktversand per Brief nachschicken, falls der Inhaber das will.
+- **Entschieden (Inhaber, 28.10.):** Bei Direktversand vom Lieferanten schicken wir keinen Brief hinterher.
+  Dort reicht das PDF aus der Bestellbestätigung. Beigelegt wird nur, was durch unsere Hände geht.
 
 ## 2026-10-28 · Auslauf-Prüfung meldet Farben ohne Handmuster (#1755)
 
