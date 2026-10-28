@@ -92,11 +92,17 @@
       </div>
     </div>
     <div class="tp-kon__grid">
+      {%- comment -%}
+        Serviceseiten (w-111): das Formular ist dort die eine Hauptaktion am
+        Seitenende und steht am Telefon zuerst, Anrufen und WhatsApp folgen.
+        Am Desktop setzt das Raster es ohnehin rechts ueber beide Zeilen.
+      {%- endcomment -%}
+      {%- if section.settings.formular_zuerst -%}{{ tp_kon_formular }}{%- endif -%}
       <div class="tp-kon__card">
         <div class="tp-kon__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></div>
         <h3 class="tp-s-h3">Anrufen</h3>
         <p>{{ section.settings.zeiten | escape }} Sie sprechen direkt mit dem Fachgeschäft.</p>
-        <a class="tp-s-btn tp-s-btn--dark" href="tel:{{ tel_raw }}">{{ section.settings.telefon | escape }}</a>
+        <a class="tp-s-btn {% if section.settings.formular_zuerst %}tp-s-btn--ghost{% else %}tp-s-btn--dark{% endif %}" href="tel:{{ tel_raw }}">{{ section.settings.telefon | escape }}</a>
       </div>
       <div class="tp-kon__card">
         <div class="tp-kon__ico tp-kon__ico--wa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg></div>
@@ -104,7 +110,7 @@
         <p>{{ section.settings.wa_text | default: 'Foto vom Raum schicken, Frage stellen – wir antworten in den Öffnungszeiten.' | escape }}</p>
         <a class="tp-s-btn tp-s-btn--wa" href="{{ section.settings.whatsapp }}" rel="noopener" target="_blank">WhatsApp schreiben</a>
       </div>
-{{ tp_kon_formular }}    </div>
+{%- unless section.settings.formular_zuerst -%}{{ tp_kon_formular }}{%- endunless -%}    </div>
   </div>
 </section>
 {%- endif -%}
@@ -234,6 +240,7 @@
     { "type": "text", "id": "foto_hinweis", "label": "Foto-Hinweis unter dem Formular", "info": "Leer = Fotos oder Grundrisse ..." },
     { "type": "text", "id": "form_text", "label": "Text ueber dem Formular", "info": "Leer = Text der Startseite" },
     { "type": "text", "id": "nachricht_label", "label": "Beschriftung Nachricht", "info": "Leer = Nachricht (Raum, Fläche, Wunschboden)" },
+    { "type": "checkbox", "id": "formular_zuerst", "label": "Formular am Telefon zuerst", "info": "Für Serviceseiten: die Anfrage steht vor Anrufen und WhatsApp.", "default": false },
     { "type": "header", "content": "Fachgeschäft (links)" },
     { "type": "paragraph", "content": "Mit Ueberschrift wird die Section zweispaltig: links Foto, Text und Fakten, rechts Kontakt und Formular. Leer = drei Kontaktkarten wie bisher." },
     { "type": "image_picker", "id": "fh_bild", "label": "Echtes Foto (Laden, Team)" },

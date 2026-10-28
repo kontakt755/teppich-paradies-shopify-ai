@@ -1946,7 +1946,11 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
 - **Druck:** derselbe Dialog wie Abschnitt 26 (`oeffneEtikettenDruck`, `allowEditing: false`).
   Etiketten mit `art: 'adresse'` zeichnet `adressLayout` (`lib/adress-etiketten.mjs`) statt des
   Musterlayouts: Absender klein mit Linie, Empfänger so groß wie Breite und Höhe erlauben,
-  Inland ohne Land, „Bestellung #…“ unten rechts; passt in jedes Format (lange Zeilen brechen um).
+  Inland ohne Land, keine Bestellnummer (22.10.); passt in jedes Format (lange Zeilen brechen um).
+  Auf hohen Rollen (50 × 80, 50 × 100) liegt die Adresse quer (Inhaber 28.10.): `adresseQuer(format)`,
+  das Layout rechnet im gedrehten Format (Breite = Rollenlänge, Schrift bis 36 px × `faktor`) und meldet
+  `quer: true`; `zeichne()` dreht dann um 90° im Uhrzeigersinn. Vorschau und Druckbild zeigen das Etikett,
+  wie es aus der Rolle kommt.
 - **Haken und „Zu klären“ (22.10.):** zentral in `muster-packen.json` (`haken` je Bestellposition,
   `klaeren` je Kunde mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
   Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.

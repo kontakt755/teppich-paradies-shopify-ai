@@ -41,6 +41,33 @@ test('Wartender Umschlag traegt die Anmerkung mit Bestelldatum und Automatik, da
   assert.match(ansicht('tab=muster', [ohneBestellung]), /1 Muster ist noch nicht bestellt/);
 });
 
+test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die Lieferantenbestellung (Inhaber 28.10.)', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const k = kunde(1, 'warten');
+  Object.assign(k, { seit: '2026-10-20T08:00:00Z', wartetTage: 8 });
+  k.bestellungen[0].datum = k.seit;
+  k.muster = [{ ...k.muster[0], bestelltAm: '2026-10-24T07:00:00.000Z' }, { ...k.muster[0], lineItemId: 'line1b', stand: 'da' }];
+  const html = ansicht('tab=muster', [k]);
+  assert.match(kopf(html), /<span class="wait-warn">bestellt am Di\., 20\.10\. · wartet seit 8 Tagen<\/span>/);
+  assert.match(kopf(html), /beim Lieferanten bestellt am Sa\., 24\.10\./);
+  assert.doesNotMatch(html, /mp-bestelldaten/, 'eine Bestellung braucht keine Einzelaufstellung');
+
+  // Zwei Bestellungen in einem Umschlag: oben die erste, aufgeklappt jede mit Datum.
+  const zwei = kunde(2, 'packen');
+  Object.assign(zwei, { seit: '2026-10-20T08:00:00Z', wartetTage: 1 });
+  zwei.bestellungen = [{ orderId: 'order2', orderName: '#TEST2', datum: '2026-10-20T08:00:00Z' }, { orderId: 'order3', orderName: '#TEST3', datum: '2026-10-22T21:30:00Z' }];
+  zwei.muster = [{ ...zwei.muster[0], stand: 'da', abgehakt: true }];
+  const beide = ansicht('tab=muster', [zwei]);
+  assert.match(kopf(beide), /<span class="small muted">erste Bestellung am Di\., 20\.10\. · wartet seit 1 Tag<\/span>/);
+  assert.doesNotMatch(kopf(beide), /beim Lieferanten/, 'alles da: keine Lieferantenzeile');
+  assert.match(beide, /<p class="small muted mp-bestelldaten">#TEST2 bestellt am Di\., 20\.10\. · #TEST3 bestellt am Do\., 22\.10\.<\/p>/);
+
+  // Gepackt zaehlt nichts mehr als fehlend; ohne Bestelldatum bleibt es bei der Wartezeit.
+  const gepackt = { ...k, bereich: 'gepackt', gepackt: { zeit: '2026-10-28T08:00:00Z' } };
+  assert.doesNotMatch(kopf(ansicht('tab=muster&umschlag=order1', [gepackt])), /beim Lieferanten/);
+  assert.match(kopf(ansicht('tab=muster', [kunde(4, 'warten')])), /<span class="small muted">wartet seit 1 Tag<\/span>/);
+});
+
 test('Arbeitsfilter zeigt nur gewaehlten Bereich; Umschlagdirektlink oeffnet auch andere Bereiche', () => {
   const liste = [kunde(1, 'packen'), kunde(2, 'klaeren'), kunde(3, 'gepackt')];
   const html = ansicht('tab=muster&mpbereich=klaeren', liste);

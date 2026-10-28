@@ -2,6 +2,7 @@
 import { bestellArbeitsstand, bestellZahlungOffen } from './bestellarbeit.mjs';
 import { beschaffungsStand, restmenge } from './beschaffung.mjs';
 import { werWartet } from './todos.mjs';
+import { kalendertage } from './kalendertage.mjs';
 
 const positionenVon = z => Array.isArray(z?.auftrag?.positionen) ? z.auftrag.positionen.filter(Boolean) : [];
 const warenVon = z => positionenVon(z).filter(p => p.istMuster !== true);
@@ -71,8 +72,7 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
   else if (zahlungOffen && (raus || z.fulfillmentstatus === 'FULFILLED')) arbeit = { ...arbeit, naechstes: 'Zahlungseingang prüfen' };
   const zahlung = z.zahlungsstatus;
   const zahlungsRang = bezahlt ? 0 : zahlung === 'PARTIALLY_PAID' ? 1 : zahlung === 'AUTHORIZED' ? 2 : 3;
-  const datum = Date.parse(z.datum);
-  const tage = Number.isFinite(datum) ? Math.max(0, Math.floor((Number(jetzt) - datum) / 864e5)) : null;
+  const tage = kalendertage(z.datum, Number(jetzt));
   return { ...arbeit, fortschritt: fortschritt || null, waren, gemischt, unklar: Boolean(unklar),
     kontrollieren, abgeschlossen, bezahlt, zahlungOffen, zahlungsRang, tage, fehlteile: fehlteile.length };
 }

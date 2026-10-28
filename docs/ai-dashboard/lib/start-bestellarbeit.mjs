@@ -1,8 +1,8 @@
 /** Startseite: dieselben offenen Einkaufspositionen wie die Lieferantenkarten, ohne DOM. */
 import { lieferantenKarten } from './einkauf-lieferanten.mjs';
 import { blockGruende } from './einkauf-uebersicht.mjs';
+import { kalendertage } from './kalendertage.mjs';
 
-const TAG = 864e5;
 const objekt = v => v && typeof v === 'object' && !Array.isArray(v);
 const arten = fn => ({ muster: fn('muster'), ware: fn('ware') });
 
@@ -17,8 +17,7 @@ function musterBlockiert(p) {
 /** Kundenbestellungen zaehlen einmal, auch wenn mehrere Farben noch fehlen. */
 function menge(eintraege, jetzt) {
   const tage = eintraege.map(({ pos }) => {
-    const datum = pos?.orderDatum ? Date.parse(pos.orderDatum) : NaN;
-    return Number.isFinite(datum) ? Math.max(0, Math.floor((jetzt - datum) / TAG)) : null;
+    return kalendertage(pos?.orderDatum, jetzt);
   }).filter(t => t !== null);
   return {
     positionen: eintraege.length,

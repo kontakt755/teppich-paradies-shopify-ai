@@ -37,6 +37,16 @@
 
   Alle Kundeneingaben laufen durch escape (Properties und Attribute sind ueber
   die Cart-API frei setzbar).
+
+  Ratgeber zur Bestellung: je Warenposition waehlt der Produkttyp einen
+  Kurz-Ratgeber (PDF, zwei Seiten mit Logo), jeder erscheint nur einmal.
+  Quelle und Zuordnung: domains/shopify/ratgeber-pdf/inhalte.mjs (produkttypen),
+  die PDFs liegen unter Shopify-Dateien mit festem Namen ratgeber-<schluessel>.pdf.
+  Muster bekommen keinen Ratgeber. Neue Zuordnung immer an beiden Stellen
+  eintragen, der Test qa/tests/kundenmail-bloecke.test.mjs vergleicht sie.
+
+  Kein eigener Knopf "Bestellstatus ansehen": die Standardvorlage hat darunter
+  schon "Bestellung ansehen" (im Admin so entfernt, uebernommen 2026-10-28).
 {%- endcomment -%}
 
 {%- liquid
@@ -44,6 +54,7 @@
   assign tp_k_ware = 0
   assign tp_k_hersteller = 0
   assign tp_k_lieferzeiten = 0
+  assign tp_k_ratgeber = ','
   for line in line_items
     assign tp_k_ist_muster = false
     assign tp_k_kopf = line.sku | slice: 0, 2
@@ -68,6 +79,29 @@
       assign tp_k_lz = tp_k_lz_feld.value | default: tp_k_lz_feld | strip
       if tp_k_lz != blank
         assign tp_k_lieferzeiten = tp_k_lieferzeiten | plus: 1
+      endif
+      assign tp_k_pt = line.product.type
+      assign tp_k_rg = ''
+      if tp_k_pt == 'Teppichboden'
+        assign tp_k_rg = 'teppichboden'
+      elsif tp_k_pt == 'Teppich' or tp_k_pt == 'Wohnteppich' or tp_k_pt == 'Teppich nach Maß' or tp_k_pt == 'Läufer nach Maß'
+        assign tp_k_rg = 'teppich'
+      elsif tp_k_pt == 'Vinyl von der Rolle'
+        assign tp_k_rg = 'vinyl-von-der-rolle'
+      elsif tp_k_pt == 'Klickvinyl'
+        assign tp_k_rg = 'klickvinyl'
+      elsif tp_k_pt == 'Klebevinyl'
+        assign tp_k_rg = 'klebevinyl'
+      elsif tp_k_pt == 'Laminat'
+        assign tp_k_rg = 'laminat'
+      elsif tp_k_pt == 'Parkett'
+        assign tp_k_rg = 'parkett'
+      endif
+      if tp_k_rg != ''
+        assign tp_k_rg_suche = ',' | append: tp_k_rg | append: ','
+        unless tp_k_ratgeber contains tp_k_rg_suche
+          assign tp_k_ratgeber = tp_k_ratgeber | append: tp_k_rg | append: ','
+        endunless
       endif
     endif
   endfor
@@ -170,6 +204,26 @@
     </ul>
   {%- endif -%}
 
+  {%- if tp_k_ratgeber != ',' -%}
+    <div style="margin:0 0 16px;padding:14px 16px;background:#f7f3ee;border-radius:8px;">
+      <p style="margin:0 0 4px;font-weight:bold;">Ihr Ratgeber zur Bestellung</p>
+      <p style="margin:0 0 10px;">Kurz und einfach erklärt: So verlegen und pflegen Sie Ihren neuen Boden – zum Ansehen, Speichern oder Ausdrucken.</p>
+      {%- assign tp_k_rg_liste = tp_k_ratgeber | split: ',' -%}
+      {%- for tp_k_rg in tp_k_rg_liste -%}
+        {%- if tp_k_rg == blank -%}{%- continue -%}{%- endif -%}
+        {%- assign tp_k_rg_titel = 'Teppichboden' -%}
+        {%- if tp_k_rg == 'teppich' -%}{%- assign tp_k_rg_titel = 'Teppich' -%}
+        {%- elsif tp_k_rg == 'vinyl-von-der-rolle' -%}{%- assign tp_k_rg_titel = 'Vinyl von der Rolle' -%}
+        {%- elsif tp_k_rg == 'klickvinyl' -%}{%- assign tp_k_rg_titel = 'Klickvinyl' -%}
+        {%- elsif tp_k_rg == 'klebevinyl' -%}{%- assign tp_k_rg_titel = 'Klebevinyl' -%}
+        {%- elsif tp_k_rg == 'laminat' -%}{%- assign tp_k_rg_titel = 'Laminat' -%}
+        {%- elsif tp_k_rg == 'parkett' -%}{%- assign tp_k_rg_titel = 'Parkett' -%}
+        {%- endif -%}
+        <p style="margin:0 0 8px;"><a href="https://www.teppich-paradies.net/cdn/shop/files/ratgeber-{{ tp_k_rg }}.pdf" style="display:inline-block;padding:9px 16px;background:#b93841;color:#ffffff;text-decoration:none;border-radius:6px;">Ratgeber {{ tp_k_rg_titel }} (PDF)</a></p>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+
   {%- if tp_k_beratung == 'Ja' or tp_k_mass == 'Ja' or tp_k_verlegung == 'Angefragt' -%}
     <div style="margin:0 0 16px;padding:12px 14px;background:#f2f1ef;border-radius:6px;">
       <p style="margin:0 0 6px;font-weight:bold;">So geht es weiter</p>
@@ -187,7 +241,4 @@
     <p style="margin:0 0 16px;">Fragen zu Ihrer Bestellung? Rufen Sie uns an: 03301 573 37 20 (Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr) oder antworten Sie einfach auf diese E-Mail.</p>
   {%- endif -%}
 
-  {%- if order_status_url != blank -%}
-    <p style="margin:0 0 20px;"><a href="{{ order_status_url }}" style="display:inline-block;padding:10px 18px;background:#15171a;color:#ffffff;text-decoration:none;border-radius:6px;">Bestellstatus ansehen</a></p>
-  {%- endif -%}
 </div>

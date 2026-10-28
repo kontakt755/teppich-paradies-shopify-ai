@@ -1,3 +1,4 @@
+import { kalendertage } from './kalendertage.mjs';
 /**
  * Lieferantenbelege aus dem Firmenpostfach: Auftragsbestaetigung (AB), Lieferschein, Avis,
  * Storno - erkannt, einer Shop-Bestellung zugeordnet und gegen Dashboard und Shopify
@@ -515,7 +516,7 @@ export function belegArbeit(d, { jetzt = new Date() } = {}) {
 export function belegTodos(d, { jetzt = new Date(), href = '#/einkauf?tab=belege' } = {}) {
   const a = belegArbeit(d, { jetzt });
   if (!a) return [];
-  const tage = iso => (Number.isFinite(Date.parse(iso)) ? Math.max(0, Math.floor((jetzt.getTime() - Date.parse(iso)) / TAG_MS)) : null);
+  const tage = iso => kalendertage(iso, jetzt);
   const name = id => d.lieferanten?.[id] || (id ? `Lieferant ${id}` : 'Lieferant');
   const fuer = x => `${x.orderName}${x.kundenname ? ` ${x.kundenname}` : ''}`;
   const todos = a.abweichungen.map(x => (x.art === 'storno'

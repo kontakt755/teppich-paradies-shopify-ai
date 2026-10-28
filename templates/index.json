@@ -105,17 +105,6 @@
             "zahl_wort": "Böden"
           }
         },
-        "k9": {
-          "type": "kategorie",
-          "settings": {
-            "collection": "korkboden",
-            "bild": "shopify://shop_images/korkboden-beispielraum-v1.png",
-            "titel": "Korkboden",
-            "untertitel": "Klick-Kork und Klebekork",
-            "zahl_zeigen": true,
-            "zahl_wort": "Dekore"
-          }
-        },
         "k4": {
           "type": "kategorie",
           "settings": {
@@ -148,16 +137,27 @@
             "zahl_zeigen": true,
             "zahl_wort": "Artikel"
           }
+        },
+        "kt": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "teppich-nach-mass",
+            "bild": "shopify://shop_images/teppich-nach-mass-kante-massband.jpg",
+            "titel": "Teppich nach Maß",
+            "untertitel": "Zentimetergenau, rundum eingefasst",
+            "zahl_zeigen": false,
+            "zahl_wort": "Qualitäten"
+          }
         }
       },
       "block_order": [
+        "kt",
         "k1",
         "k3",
         "k0",
         "k2",
         "k7",
         "k8",
-        "k9",
         "k4",
         "k5",
         "k6"
