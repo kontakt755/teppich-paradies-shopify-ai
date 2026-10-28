@@ -295,6 +295,11 @@
     # Rabatt in Prozent, immer aus Vergleichs- und Verkaufspreis gerechnet (nie statisch)
     assign tp_pr_prozent = compare_at_price | minus: price | times: 100.0 | divided_by: compare_at_price | round
   endif
+  # UVP des Herstellers ohne laufende Aktion: eigene graue Zeile statt Streichpreis (snippets/tp-uvp-zeile).
+  assign tp_pr_uvp = false
+  if tp_pr_aktion == 'uvp' and compare_at_price != blank and compare_at_price > price
+    assign tp_pr_uvp = true
+  endif
   # Prozent-Chip nur auf der Produktseite; die Karte zeigt ihn im Bild (_product-card-gallery)
   assign tp_pr_chip = false
   assign tp_pr_badge_ab = settings.tp_rabatt_badge_ab | default: 10
@@ -377,6 +382,13 @@
           <span class="price-card-per-unit">&nbsp;€/m²</span>
         {%- endif -%}
       </div>
+      {%- if tp_pr_uvp -%}
+        {%- if is_sqm_card -%}
+          {% render 'tp-uvp-zeile', betrag: compare_at_price, einheit: '€/m²' %}
+        {%- else -%}
+          {% render 'tp-uvp-zeile', betrag: compare_at_price %}
+        {%- endif -%}
+      {%- endif -%}
     {% endif %}
   {% endif %}
   {%- if show_compare_price and product.handle != product_resource.handle -%}
