@@ -18,7 +18,7 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     Zuordnung, Leertext, Ausnahmen; 17/17.
   - `dashboard-abschlusskorrekturen.test.mjs`: Klick druckt in Listenreihenfolge ohne Gepacktes oder
     Unzugeordnetes und vermerkt erst nach dem Druck; 8/8.
-  - `dashboard:test` 1027/1027, `pruefen` 9/9, `dashboard:pruefen` 0 px Überlauf von 360 bis 1440 px.
+  - `dashboard:test` 1032/1032 (nach dem Merge von main), `pruefen` 9/9, `dashboard:pruefen` 0 px Überlauf von 360 bis 1440 px.
   - Klickstrecke gegen die Datenkopie (Playwright, Chrome):
     - Zahlen 19 · 0 · 18 · 2 passen zum Packstand.
     - Druckvermerk an #1075 zurückgenommen → 1 · 17. Liste #1075, Knopf „Diesen Umschlag vorbereiten
