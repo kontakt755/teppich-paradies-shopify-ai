@@ -1504,7 +1504,9 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   keinen Rückweg fest, auch wenn im selben Versuch eine andere geschrieben wurde. `betroffen` heißt: gesperrt
   vorgefunden oder womöglich angefasst – nur betroffene Varianten gibt „Wieder verfügbar“ frei, gelesen per
   ID (`nodes(ids:)`), damit eine inzwischen geänderte SKU keine vergessen lässt. Ein sehr alter Vorstand ohne
-  `variantId` gehört zur Variante von damals und geht einem späteren Lesestand vor.
+  `variantId` gehört zur Variante von damals und geht einem späteren Lesestand vor; lässt er sich keiner
+  sicher zuordnen (`vorherUnklar`), schreibt die Freigabe nichts, bis alle Varianten von Hand wieder
+  bestellbar sind.
   Ein ausdruecklich sicher ungeschriebener Versuch friert keinen Vorstand ein; vor einer spaeteren
   echten Sperre zaehlt dann die frisch gelesene Ausgangslage. Dieselbe SKU
   für denselben Auftrag noch einmal = nichts zu tun. Nur eine fehlende Datei gilt als leer; eine

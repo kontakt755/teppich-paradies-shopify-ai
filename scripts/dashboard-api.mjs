@@ -2863,7 +2863,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           if (zugang.hindernis) throw new ApiError(503, zugang.hindernis.fehler.replace('Im Shop nicht gesperrt', 'Im Shop nicht freigegeben').replace('die Variante über den Link in Shopify sperren', 'die Variante über den Link in Shopify freigeben'));
           try {
             // Jede gesperrte Mustervariante bekommt ihren eigenen Vorstand zurueck (Teppichboden- und Nach-Mass-Muster).
-            const r = await freigebenImShop(zugang.proxy, { sku, vorher: s.vorher, varianten: s.varianten });
+            const r = await freigebenImShop(zugang.proxy, { sku, vorher: s.vorher, varianten: s.varianten, vorherUnklar: s.vorherUnklar });
             sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, nachher: r.nachher, verfuegbar: r.verfuegbar, varianten: r.varianten };
           } catch (e) {
             const meldung = e instanceof MustersperreFehler ? e.message : `Ob das Muster wieder freigegeben ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}).`;

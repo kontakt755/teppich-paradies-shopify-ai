@@ -506,3 +506,32 @@ test('Aelteste Ablage ohne variantId, inzwischen zwei Mustervarianten: nur die n
   assert.deepEqual([stand3(gesperrt), stand3(neu)], [[false, 'DENY', 3], [false, 'DENY', 0]]);
   assert.ok(a.mutationen().every(m => !JSON.stringify(m.variables).includes(`"${neu.inventoryItemId}"`) && !JSON.stringify(m.variables).includes(`"${neu.id}"`)));
 });
+
+test('Alter Vorstand ohne variantId, danach zwei ungesperrte Varianten: Zuordnung unklar -> Freigabe pruefpflichtig (Codex-Review #1749 Runde 2)', async () => {
+  const ursprung = { tracked: false, policy: 'DENY', menge: 3 };
+  const tb = variante('M-UNKLAR', { handle: 'muster-testlinie-teppichboden-400cm' }); // alter Versuch: 3 -> 0, unverfolgt
+  const nm = variante('M-UNKLAR', { handle: 'muster-testlinie-teppich-nach-mass' });
+  const a = attrappe({ varianten: [tb, nm] });
+  const ev = [ereignis({ sku: 'M-UNKLAR', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'), shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher: ursprung } })];
+  const r = await sperreImShop(a.proxy, { sku: 'M-UNKLAR' });
+  assert.ok(r.varianten.every(v => !v.bereits), 'keine war gesperrt - welche die alte war, ist nicht zu erkennen');
+  ev.push(ereignis({ sku: 'M-UNKLAR', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('11:00'), shopify: { geschrieben: true, varianten: r.varianten } }));
+  const s = stand(ev).get('M-UNKLAR');
+  assert.equal(s.vorherUnklar, true);
+  const frei = () => freigebenImShop(a.proxy, { sku: 'M-UNKLAR', vorher: s.vorher, varianten: s.varianten, vorherUnklar: s.vorherUnklar });
+  const vorher = a.mutationen().length;
+  await assert.rejects(frei(), e => e.grund === 'vorstand-unklar' && /von Hand freigeben/.test(e.message));
+  assert.equal(a.mutationen().length, vorher, 'kein Erfolg mit Bestand 0 statt 3 - es wird nichts geschrieben');
+  // Von Hand in Shopify freigegeben: "Wieder verfuegbar" ist dann erledigt, ohne zu schreiben.
+  Object.assign(tb, { tracked: false, menge: 3 });
+  nm.tracked = false;
+  const f = await frei();
+  assert.deepEqual([f.status, f.varianten.map(v => v.verfuegbar), a.mutationen().length], ['bereits', [true, true], vorher]);
+
+  // Eindeutig bleibt eindeutig: ein alter Vorstand ohne ID nach genau einer bekannten Variante gehoert zu ihr.
+  const spaet = stand([
+    ereignis({ sku: 'M-UNKLAR', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('09:00'), shopify: { geschrieben: false, aenderungMoeglich: false, fehlerGrund: 'recht-fehlt', variantId: tb.id } }),
+    ereignis({ sku: 'M-UNKLAR', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'), shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher: ursprung } }),
+  ]).get('M-UNKLAR');
+  assert.deepEqual([spaet.vorherUnklar, spaet.varianten.map(v => [v.variantId, v.vorher, v.betroffen])], [false, [[tb.id, ursprung, true]]]);
+});

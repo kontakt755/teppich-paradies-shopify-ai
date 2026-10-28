@@ -429,3 +429,23 @@ test('Alte Ablage (eine Variante direkt unter shopify) bleibt lesbar: Liste mit 
   assert.deepEqual([v.tracked, v.policy, v.menge], [false, 'DENY', 0]);
   assert.equal(sperrDatei(dir).length, 2, 'nur angehaengt');
 });
+
+test('Alter Vorstand ohne Variante, unklar zuzuordnen: Wieder verfuegbar schreibt nichts und bleibt offen, nach Handfreigabe erledigt', async () => {
+  const tb = variante('M-TEST-1');
+  const nm = variante('M-TEST-1', { handle: 'muster-testteppich-teppich-nach-mass' });
+  const { dir, shop, api } = umgebung({ varianten: [tb, nm] });
+  const eintrag = (am, shopify) => ({ sku: 'M-TEST-1', farbe: 'Sand', produkt: 'Testteppich', handle: null, orderId: AUFTRAG, orderName: '#T1', von: 'Mitarbeiter 1', am, grund: 'nicht verfuegbar', shopify });
+  fs.writeFileSync(path.join(dir, 'mustersperre.json'), JSON.stringify({ version: 1, ereignisse: [
+    eintrag('2026-10-16T09:00:00.000Z', { geschrieben: false, fehler: 'unklar', fehlerGrund: 'unklar', vorher: { tracked: false, policy: 'DENY', menge: 3 } }),
+  ] }));
+  await api.einkaufMustersperreSetzen({ aktion: 'nachholen', sku: 'M-TEST-1' }, ICH);
+  assert.deepEqual([tb.tracked, nm.tracked], [true, true]);
+  const vorher = shop.mutationen().length;
+  await assert.rejects(api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH), e => e.status === 502 && /von Hand freigeben/.test(e.message));
+  assert.equal(shop.mutationen().length, vorher);
+  assert.match(api.einkaufMustersperre().offen[0].freigabeFehler, /keiner Mustervariante sicher zuordnen/);
+  Object.assign(tb, { tracked: false, menge: 3 });
+  nm.tracked = false;
+  assert.match((await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH)).meldung, /wieder bestellbar/);
+  assert.deepEqual([api.einkaufMustersperre().offen, api.einkaufMustersperre().gesperrt, shop.mutationen().length], [[], [], vorher]);
+});
