@@ -2363,6 +2363,12 @@
         "info": "Gilt für Produkte mit Tag sonderposten ohne eigenes Produktfeld service.lieferzeit (Inhaber 13.10.). Leer = keine Lieferzeit."
       },
       {
+        "type": "text",
+        "id": "tp_versand_bearbeitungszeit",
+        "label": "Bearbeitungszeit bis zum Versand (nur für Google)",
+        "info": "Werktage von der Bestellung, bis die Ware das Lager verlässt, z. B. „1–2 Werktage“. Teilt die Lieferzeit im Google-Markup der Produktseiten in Bearbeitung (handlingTime, dieser Wert) und Transport (transitTime, der Rest). Leer oder länger als die Lieferzeit eines Produkts = keine Aufteilung, dann steht wie bisher nur die Gesamtzeit."
+      },
+      {
         "type": "header",
         "content": "Hinweis Musterbestellungen"
       },

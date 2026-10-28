@@ -203,6 +203,34 @@ test('Lieferzeit: Metafeld vor Sonderposten-Einstellung vor Vorlage', async () =
   assert.deepEqual(await zeit(produkt({ suffix: 'zubehoer', lieferzeit: '3 Werktage' })), [3, 3]);
 });
 
+test('Bearbeitungszeit: handlingTime nur mit Einstellung, Summe bleibt die Lieferzeit', async () => {
+  const zeiten = async (p, bearbeitung) => {
+    const settings = bearbeitung === undefined ? EINSTELLUNGEN : { ...EINSTELLUNGEN, tp_versand_bearbeitungszeit: bearbeitung };
+    const [o] = await offers(p, { settings });
+    const d = o.shippingDetails.deliveryTime;
+    const spanne = (q) => q && [q.minValue, q.maxValue];
+    return { bearbeitung: spanne(d.handlingTime), transport: spanne(d.transitTime) };
+  };
+  // Ohne Eintrag wie bisher: nur die Gesamtzeit als transitTime.
+  assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' })), { bearbeitung: undefined, transport: [2, 5] });
+  assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' }), ''), { bearbeitung: undefined, transport: [2, 5] });
+  // Mit Eintrag: Transport = Lieferzeit minus Bearbeitung je Grenze.
+  assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' }), '1–2 Werktage'), { bearbeitung: [1, 2], transport: [1, 3] });
+  assert.deepEqual(await zeiten(produkt({ suffix: 'teppich' }), '1-2 Werktage'), { bearbeitung: [1, 2], transport: [2, 3] });
+  assert.deepEqual(await zeiten(produkt({ suffix: 'zubehoer', lieferzeit: 'ca. 5–8 Werktage inkl. Ketteln' }), '1 Werktag'), { bearbeitung: [1, 1], transport: [4, 7] });
+  assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' }), '0–1 Werktage'), { bearbeitung: [0, 1], transport: [2, 4] });
+  // Laenger als die Lieferzeit oder unlesbar: keine Aufteilung (fail closed).
+  assert.deepEqual(await zeiten(produkt({ suffix: 'zubehoer', lieferzeit: '3 Werktage' }), '3–4 Werktage'), { bearbeitung: undefined, transport: [3, 3] });
+  assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' }), 'morgen'), { bearbeitung: undefined, transport: [2, 5] });
+  assert.deepEqual(await zeiten(produkt({ suffix: 'rolle' }), '2 Tage'), { bearbeitung: undefined, transport: [2, 5] });
+});
+
+test('Bearbeitungszeit allein erzeugt kein shippingDetails', async () => {
+  const settings = { ...EINSTELLUNGEN, tp_versand_bearbeitungszeit: '1 Werktag' };
+  const [offer] = await offers(produkt({ per001: true, suffix: 'wunschmass-fertig' }), { settings });
+  assert.ok(!('shippingDetails' in offer));
+});
+
 test('Ohne Werktage-Spanne kein shippingDetails, Rueckgabe bleibt', async () => {
   for (const p of [
     produkt({ per001: true, suffix: 'wunschmass-fertig' }), // "ca. 14 Tage" sind Kalendertage
