@@ -666,11 +666,16 @@ const SICHERUNG_ZEIT = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berl
  * rechnet operations/lib/betriebszustand.mjs (sicherungsstand), er kommt mit der Shop-Wache.
  * Bis 28.10.2026 stand ein verpasster Termin nur in der Datenzeile des Systemzustands - die
  * Luecke vom 22.10. fiel erst bei der Fehlersuche auf. Rot: Lauf gescheitert, Stand nicht
- * lesbar oder seit ueber 48 Std. keine Sicherung; gelb: ein Termin verpasst.
+ * lesbar oder seit ueber 48 Std. keine Sicherung; gelb: ein Termin verpasst oder gar kein
+ * Stand vorhanden (`fehlt` - die Sicherung lief hier nie).
  */
 function ausSicherung(quellen, jetzt) {
   const s = quellen.shopwache?.sicherung;
   if (!s) return [];
+  if (s.fehlt) {
+    return [{ id: 'sicherung', art: 'sicherung', bereich: 'website', alterTage: null, ton: 'warn', titel: 'Sicherungsstand fehlt',
+      kontext: 'Die tägliche Sicherung hat auf diesem Mac noch keinen Stand geschrieben – läuft sie? Claude Bescheid geben: „Sicherungsstand fehlt“' }];
+  }
   const fehler = s.letzterFehler;
   if (!fehler && s.status !== 'alt' && s.status !== 'fehler') return [];
   const zuletzt = s.letzterErfolg ? `letzte Sicherung ${SICHERUNG_ZEIT.format(new Date(s.letzterErfolg))}` : 'noch keine erfolgreiche Sicherung';

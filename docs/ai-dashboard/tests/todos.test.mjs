@@ -415,6 +415,10 @@ test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eige
 test('Sicherung: verpasst wird gelb, ueber 48 Std., gescheitert oder unlesbar rot, sonst nichts', () => {
   const mit = sicherung => leiteTodosAb({ shopwache: { verfuegbar: true, sicherung } }, { sicht: 'website', jetzt: JETZT });
   for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }, { status: 'unbekannt', letzterErfolg: null }]) assert.deepEqual(mit(s), []);
+  // Gar kein Stand: die Sicherung lief hier nie - gelb, nicht still.
+  const fehlt = mit({ status: 'unbekannt', letzterErfolg: null, fehlt: true });
+  assert.deepEqual([fehlt.length, fehlt[0].ton, fehlt[0].titel], [1, 'warn', 'Sicherungsstand fehlt']);
+  assert.match(fehlt[0].kontext, /noch keinen Stand geschrieben/);
 
   const verpasst = mit({ status: 'alt', letzterErfolg: vorTagen(1), grund: 'taeglicher-solltermin-verpasst' });
   assert.equal(verpasst.length, 1);

@@ -125,10 +125,13 @@ test('ein gescheiterter Lauf steht im Stand, ohne den letzten Erfolg zu aendern;
   const dir = beispielPrivatDir();
   const f = path.join(dir, 'sicherungsstand.json');
   const jetzt = new Date('2026-10-28T08:00:00Z');
+  // Gar kein Stand: `fehlt`, damit "Sicherung laeuft nicht" ein To-do wird.
+  assert.equal(betriebszustand(dir, { jetzt }).sicherung.fehlt, true);
   // Ohne bisherigen Stand: nur der Fehler, Status bleibt unbekannt.
   fehlerVermerken(dir, { am: '2026-10-27T20:30:00Z', meldung: 'ENOSPC: no space left on device' });
   let r = betriebszustand(dir, { jetzt }).sicherung;
   assert.equal(r.status, 'unbekannt');
+  assert.equal(r.fehlt, undefined, 'der Stand existiert jetzt');
   assert.deepEqual(r.letzterFehler, { am: '2026-10-27T20:30:00.000Z', meldung: 'ENOSPC: no space left on device' });
   assert.equal((fs.statSync(f).mode & 0o777).toString(8), '600');
 

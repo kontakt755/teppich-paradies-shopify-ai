@@ -15,7 +15,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     auch `letzterFehler` und kommt mit `/api/shopwache/status` auf „Heute“.
   - Neues To-do (Website, der Inhaber sieht es, sobald es rot ist): gelb „Sicherung der Betriebsdaten
     überfällig“ nach einem verpassten Termin, rot ab 48 Std. ohne Sicherung, rot „fehlgeschlagen“ mit
-    der Meldung, rot bei unlesbarem Stand.
+    der Meldung, rot bei unlesbarem Stand, gelb „Sicherungsstand fehlt“, wenn es gar keinen Stand gibt
+    (die Sicherung lief auf diesem Mac nie).
 - **Getestet:** `sicherung.test.mjs` neu (Fehlervermerk mit und ohne bisherigen Stand, Rechte 0600,
   älterer Fehler zählt nicht, Erfolg löscht den Vermerk, kaputter Stand bleibt unangetastet),
   `todos.test.mjs` neu (gelb/rot/nichts, Laden ohne, Inhaber nur rot), `api.test.mjs` neu (Stand kommt

@@ -30,8 +30,13 @@ function sicherungsFehler(datei, letzterErfolg) {
   return { am: new Date(zeit).toISOString(), meldung: String(f.meldung || '').slice(0, 300) };
 }
 
-/** Taeglich 22:30 Uhr, mit 30 Minuten Luft fuer den Archivlauf. */
+/**
+ * Taeglich 22:30 Uhr, mit 30 Minuten Luft fuer den Archivlauf. `fehlt`: es gibt gar keinen
+ * Stand - die Sicherung lief hier nie oder schreibt nichts (Pruefung 28.10.: sonst blieb gerade
+ * "Sicherung laeuft gar nicht" still).
+ */
 export function sicherungsstand(datei, jetzt) {
+  if (!fs.existsSync(datei)) return { ...sicherungsTermin(datei, jetzt), fehlt: true };
   const ergebnis = sicherungsTermin(datei, jetzt);
   const fehler = sicherungsFehler(datei, ergebnis.letzterErfolg);
   return fehler ? { ...ergebnis, letzterFehler: fehler } : ergebnis;

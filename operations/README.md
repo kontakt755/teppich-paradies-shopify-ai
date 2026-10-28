@@ -838,7 +838,7 @@ aendern; der naechste Erfolg schreibt den Stand ohne diesen Vermerk neu. `sicher
 `lib/betriebszustand.mjs` rechnet daraus den Stand (verpasst = nach 23:00 Uhr keine Sicherung vom
 selben Abend). Das Control Center zeigt ihn als To-do auf „Heute“ (seit 28.10.2026): gelb
 „Sicherung überfällig“ nach einem verpassten Termin, rot ab 48 Std., bei „fehlgeschlagen“ und bei
-unlesbarem Stand.
+unlesbarem Stand; gelb „Sicherungsstand fehlt“, wenn `sicherungsstand.json` gar nicht existiert.
 
 **Zweite Kopie ausser Haus (vorbereitet, Entscheidung beim Inhaber).** Das Skript kann jedes
 fertige Tagesarchiv zusaetzlich in einen zweiten Ordner legen:
