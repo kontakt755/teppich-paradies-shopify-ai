@@ -13,6 +13,7 @@ const engine = new Liquid({ templates: {
   'tp-leisten-paket': liquidSource('snippets/tp-leisten-paket.liquid'),
   'tp-musteroption': liquidSource('snippets/tp-musteroption.liquid'),
   'tp-muster-grenze': '',
+  'tp-muster-hinweis': '',
   'tp-zahlung-abholung': '',
 } });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));

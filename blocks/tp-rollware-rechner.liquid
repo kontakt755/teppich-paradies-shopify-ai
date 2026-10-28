@@ -645,6 +645,8 @@
         </p>
         <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
       {%- endif -%}
+      {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis); auf Rollenware ist tp-muster-cta abgeschaltet {%- endcomment -%}
+      {%- render 'tp-muster-hinweis', kontext: 'produkt' -%}
     </div>
   {%- endif -%}
 
