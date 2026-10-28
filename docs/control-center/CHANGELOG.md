@@ -2,6 +2,27 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Auslauf-Prüfung meldet Farben ohne Handmuster (#1755)
+
+- **Geaendert:** Lieferant A führt einzelne Farben mit dem Zusatz „(nur in Format)“ in der Kurzbeschreibung
+  der Schnellsuche. Für solche Farben gibt es kein Handmuster, der Shop bot sie trotzdem gratis als Muster an.
+  Aufgefallen ist das erst, als eine Kundin auf das Muster wartete. Die Wochenprüfung hatte den Text schon,
+  sie prüfte bei A aber nur, ob die Artikelnummer gefunden wird. Jetzt wertet sie Name und Kurzbeschreibung
+  des Treffers aus: „nur in Format“ ergibt den neuen Befund `ohne-muster`, Auslauf-Wörter (wie bei
+  C/D/E) den Befund `hinweis`. Auf „Heute“ erscheint dafür ein eigenes To-do: „Muster nicht lieferbar:
+  … kein Handmuster“, Kontext Artikelnummer, Produkt und „Muster im Shop sperren, offene Musterbestellungen
+  prüfen“. Es landet nicht im Auslauf-To-do, weil die Ware bleibt und nur das Muster gesperrt wird.
+- **Getestet:** `operations/tests/auslauf.test.mjs` 9/9 (neu: Kurzbeschreibung mit und ohne Leerzeichen
+  vor der Klammer, Kollektionsname „Format Object“ und Farbcodes in Klammern bleiben `ok`), `todos.test.mjs`
+  31/31, `dashboard:test` 1023/1023. Abgleich mit den lokalen Schnellsuche-Daten (Stand 12.10.,
+  2.349 von 2.423 Musterartikeln von A): Der Zusatz steht nur bei einer Farbe, in beiden Breiten.
+  Auslauf-Wörter hat dort keiner unserer Artikel. Der erste echte Lauf bringt also ein To-do mit, kein
+  Rauschen.
+- **Risiken:** Ein Handmuster kann auch ohne diesen Zusatz fehlen, so zuletzt bei drei Farben einer
+  anderen Linie, die A nur per Mail genannt hatte. Diese Fälle findet die Prüfung nicht. Die Sperre selbst
+  bleibt Handarbeit, Grund ist das Problem mit doppelten Muster-SKUs (#1749).
+- **Naechste Stufe:** Nach #1749 kann das To-do direkt die Mustersperre auslösen.
+
 ## 2026-10-28 · Starter-Test: Zeitlimit nur noch gegen Hänger (#1752)
 
 - **Geaendert:** Das automatische Nachziehen des Dienstes hing am 28.10. um 11:04 an einem roten Probelauf.
@@ -13,6 +34,20 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   (`betrieb:nachziehen -- --probe`) war am 28.10. um 11:08 auf demselben Stand grün.
 - **Risiken:** Unter künstlicher Last wurde nichts nachgestellt, um den laufenden Dienst nicht zu bremsen.
   Ein echter Hänger fällt jetzt erst nach 30 statt nach 8 s auf.
+
+## 2026-10-28 · „wartet seit“ zählt überall Kalendertage
+
+- **Geaendert:** Die Wartezeiten zählten volle 24 Stunden seit der Bestellung. Eine Bestellung vom 19.10.
+  nachmittags stand am 28.10. mittags bei „8 Tagen“ statt 9 (Rückmeldung Inhaber: „muss immer stimmen“).
+  Neu `lib/kalendertage.mjs` (Kalendertage in Berlin), verwendet in Packstation (`muster-packen`),
+  Bestellungen (`kunden-bestellgruppen`, `shop-bestellarbeit`), Start/Bestellarbeit, Lieferanten-Wartetage
+  (`einkauf-lieferanten`), Lieferbelege und Muster-Nachfassen. Das Datum selbst kommt unverändert aus
+  Shopify bzw. dem Auftragsfluss.
+- **Getestet:** `kalendertage.test.mjs` (Nachmittag, kurz vor Mitternacht, Zeitumstellung, ohne Datum),
+  neuer Fall in `muster-packen.test.mjs`; `npm run dashboard:test` und `npm run -s pruefen -- --ohne themecheck`.
+- **Risiken:** Schwellen der Aufräumliste und der To-dos rechnen weiter in 24 Stunden (nicht angezeigt).
+  Manche Zahlen springen um 1 nach oben, und Warnfarben können einen Tag früher kommen.
+
 - **Naechste Stufe:** keine.
 
 ## 2026-10-28 · Etiketten drucken: nur ausgewählte Motive

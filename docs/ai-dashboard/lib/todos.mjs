@@ -549,19 +549,35 @@ export const AUSLAUF_STUMM_TAGE = 9;
  * Auslauf-Pruefung (Inhaberregel 2026-10-13: Ausgelaufenes wird nie angezeigt).
  * Kommt mit der Shop-Wache (quellen.shopwache.auslauf). Meldet Befunde, gestoerte
  * Lieferanten und eine Pruefung, die sich nicht mehr meldet - archiviert wird nach Gegenprobe.
+ * Farben ohne Handmuster ("ohne-muster", A fuehrt sie "nur in Format") sind kein Auslauf:
+ * eigenes To-do, das Muster wird gesperrt, die Ware bleibt.
  */
 function ausAuslauf(quellen, jetzt) {
   const d = quellen.shopwache?.auslauf;
   if (!d?.geprueftAm) return [];
   const tage = tageSeit(d.geprueftAm, jetzt);
   const basis = { id: 'auslauf', art: 'auslauf', bereich: 'website', alterTage: tage, knopf: { text: 'Lexikon', href: '#/lexikon' } };
-  const befunde = d.befunde || [];
+  const lexikon = handles => ({ text: 'Im Lexikon', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` });
+  const ohneMuster = (d.befunde || []).filter(b => b.ergebnis === 'ohne-muster');
+  const muster = ohneMuster.length ? [(() => {
+    const handles = [...new Set(ohneMuster.flatMap(b => b.handles || []))];
+    const n = ohneMuster.length;
+    return {
+      ...basis, id: 'auslauf-muster', ton: 'warn', knopf: lexikon(handles),
+      titel: `Muster nicht lieferbar: ${n} ${n === 1 ? 'Farbe hat' : 'Farben haben'} beim Lieferanten kein Handmuster`,
+      kontext: [
+        ohneMuster.slice(0, 3).map(b => b.kennung).filter(Boolean).join(', '), n > 3 ? `+${n - 3} weitere` : null,
+        handles[0] || null, 'Muster im Shop sperren, offene Musterbestellungen prüfen',
+      ].filter(Boolean).join(' · '),
+    };
+  })()] : [];
+  const befunde = (d.befunde || []).filter(b => b.ergebnis !== 'ohne-muster');
   const weg = befunde.filter(b => b.ergebnis === 'fehlt');
   if (befunde.length) {
     const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
-    return [{
+    return [...muster, {
       ...basis, ton: weg.length ? 'crit' : 'warn',
-      knopf: { text: 'Im Lexikon', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` },
+      knopf: lexikon(handles),
       titel: weg.length
         ? `Auslauf: ${weg.length} Artikel beim Lieferanten nicht mehr gefunden`
         : `Auslauf-Prüfung: ${befunde.length} ${befunde.length === 1 ? 'Seite' : 'Seiten'} auffällig`,
@@ -572,16 +588,16 @@ function ausAuslauf(quellen, jetzt) {
     }];
   }
   if (d.ausfaelle?.length) {
-    return [{
+    return [...muster, {
       ...basis, ton: 'warn',
       titel: `Auslauf-Prüfung: Lieferant ${d.ausfaelle.map(a => a.lieferant).join(', ')} nicht prüfbar`,
       kontext: d.ausfaelle[0].grund,
     }];
   }
   if (tage !== null && tage >= AUSLAUF_STUMM_TAGE) {
-    return [{ ...basis, ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` }];
+    return [...muster, { ...basis, ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` }];
   }
-  return [];
+  return muster;
 }
 
 /**

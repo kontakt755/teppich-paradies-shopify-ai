@@ -1,3 +1,4 @@
+import { kalendertage } from './kalendertage.mjs';
 /**
  * Einkauf je Lieferant: reine Regeln ohne DOM (Browser und Tests).
  *
@@ -59,8 +60,7 @@ export function wartetage(eintrag, jetzt = Date.now()) {
   }
   const seit = eintrag?.status === 'bestellt' ? eintrag.bestelltAm : eintrag?.status === 'geliefert' ? eintrag.geliefertAm : null;
   if (!seit) return null;
-  const tage = Math.floor((Number(jetzt) - new Date(seit).getTime()) / 864e5);
-  return Number.isFinite(tage) && tage >= 0 ? tage : null;
+  return kalendertage(seit, Number(jetzt));
 }
 
 /** 'crit' ab problemTage, 'warn' ab nachhakenTage, sonst null. */

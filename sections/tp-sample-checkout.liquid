@@ -27,6 +27,8 @@
     {%- endcomment -%}
     <p class="tp-sample__info" data-sample-info>Muster ca. A5 · kostenloser Versand</p>
     <p class="tp-sample__info" data-sample-hersteller hidden>Kostenloser Versand · kommt direkt vom Hersteller, eventuell in getrennten Umschlägen</p>
+    {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis) {%- endcomment -%}
+    {%- render 'tp-muster-hinweis', kontext: 'musterseite' -%}
     <p class="tp-sample__bonus" data-sample-bonus hidden>Abonnenten-Bonus: Sie können 4 statt 3 Muster bestellen.</p>
     {%- comment -%} Vinyl: hoechstens 3 Muster je Bestellung, auch mit Bonus (Inhaber 13.10.2026, assets/tp-sample-checkout-core.js) {%- endcomment -%}
     <p class="tp-sample__vinyl" data-sample-vinyl hidden>Vinyl-Muster sind kostenlos – höchstens 3 je Bestellung.</p>
