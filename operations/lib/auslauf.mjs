@@ -12,6 +12,14 @@
 export const AUSLAUF_HINWEIS = /\b(auslauf\w*|nicht mehr (lieferbar|verf[üu]gbar|erh[äa]ltlich)|ausverkauft|discontinued|abverkauf)\b/i;
 
 /**
+ * Zusatz, mit dem A eine einzelne Farbe einschraenkt - steht in der Kurzbeschreibung der
+ * Schnellsuche, z. B. "Farbe 43(nur in Format)". Dazu gibt es kein Handmuster (Musterbestellung
+ * 28.10.2026): der Shop bot die Farbe trotzdem gratis als Muster an. Kein Auslauf - das Muster
+ * muss gesperrt werden, die Ware bleibt.
+ */
+export const NUR_FORMAT = /\(\s*nur in format\s*\)/i;
+
+/**
  * Wie die Lieferanten ein fehlendes Produkt melden (beobachtet 13.10.2026):
  * C antwortet mit 500, D mit 410 ("Produkt nicht gefunden"), E mit 404.
  * A hat keine Produktseiten je Artikelnummer - dort entscheidet die Schnellsuche.
@@ -96,10 +104,17 @@ export function bewerteSeite(lieferant, { code, body = '', kennung = null } = {}
   return { ergebnis: 'ok' };
 }
 
-/** Schnellsuche von A: exakter Treffer der Artikelnummer auf irgendeiner Seite. */
-export function bewerteSuche({ gefunden, fehler } = {}) {
+/**
+ * Schnellsuche von A: exakter Treffer der Artikelnummer auf irgendeiner Seite. `text` ist
+ * Name und Kurzbeschreibung dieses Treffers - dort stehen Auslauf und Einschraenkungen.
+ */
+export function bewerteSuche({ gefunden, fehler, text = '' } = {}) {
   if (fehler) return { ergebnis: 'fehler', grund: fehler };
-  return gefunden ? { ergebnis: 'ok' } : { ergebnis: 'fehlt', grund: 'Schnellsuche findet die Artikelnummer nicht' };
+  if (!gefunden) return { ergebnis: 'fehlt', grund: 'Schnellsuche findet die Artikelnummer nicht' };
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (AUSLAUF_HINWEIS.test(t)) return { ergebnis: 'hinweis', grund: t };
+  if (NUR_FORMAT.test(t)) return { ergebnis: 'ohne-muster', grund: `${t} - kein Handmuster, Muster sperren` };
+  return { ergebnis: 'ok' };
 }
 
 /**
@@ -119,9 +134,9 @@ export function zusammenfassen(lieferant, eintraege = [], { grenze = AUSFALL_GRE
     : anteil(fehlt) > grenze ? `${fehlt} von ${geprueft} angeblich weg - eher eine Umstellung beim Lieferanten`
     : null;
   const befunde = ausfall ? [] : eintraege
-    .filter(e => ['fehlt', 'hinweis', 'verdacht'].includes(e.ergebnis))
+    .filter(e => ['fehlt', 'hinweis', 'verdacht', 'ohne-muster'].includes(e.ergebnis))
     .map(e => ({ lieferant, ergebnis: e.ergebnis, kennung: e.kennung ?? null, url: e.url ?? null, handles: e.handles || [], grund: e.grund || null }));
-  return { lieferant, geprueft, ok: zahl('ok'), fehlt, hinweis: zahl('hinweis'), verdacht: zahl('verdacht'), fehler, ausfall, befunde };
+  return { lieferant, geprueft, ok: zahl('ok'), fehlt, hinweis: zahl('hinweis'), verdacht: zahl('verdacht'), ohneMuster: zahl('ohne-muster'), fehler, ausfall, befunde };
 }
 
 /** Gesamtstand fuer status.json und das Control Center. */
