@@ -35,6 +35,16 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   tippen. Das ist so gewollt.
 - **Nächste Stufe:** keine.
 
+## 2026-10-26 · Inhaberzeile: Frist nach Berliner Kalendertag (Codex-Review #1731)
+
+- **Geaendert:** „nächste Frist“/„Frist überschritten“ vergleicht mit dem Kalendertag in
+  Europe/Berlin statt mit dem UTC-Tag. Vorher stand die Frist von gestern bis 01:00 Uhr
+  (Sommerzeit 02:00 Uhr) noch als „nächste Frist“ da.
+- **Getestet:** `tests/inhaber-ueberblick.test.mjs` mit 00:30 Uhr Winterzeit, 23:30 Uhr und
+  00:30 Uhr Sommerzeit; gruen auch mit `TZ=UTC` und `TZ=America/Los_Angeles`.
+- **Risiken:** keine; reine Funktion ohne DOM.
+- **Naechste Stufe:** –
+
 ## 2026-10-26 · Rundgang: Versand, Kundenakte, Inhaberzeile, Hilfe, Anmeldung (Paket P5)
 
 - **Geaendert:** Versand: steht dieselbe Sendungsnummer schon an einer anderen Bestellung, bucht

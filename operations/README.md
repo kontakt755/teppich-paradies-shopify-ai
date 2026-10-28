@@ -822,7 +822,8 @@ Musterautomatik. Ohne sie gingen nach einer Wiederherstellung doppelte oder uner
 Kundenmails raus. Ebenfalls im Archiv: der Stand der Auslauf-Pruefung, der Stoerungsverlauf der
 Shop-Wache, der Datenbankabzug des Social-Moduls und ein Abzug der Mac-Dienste (`dienste/`, die
 Plists `net.teppich-paradies.*` aus `~/Library/LaunchAgents`; eine Plist mit TOKEN, SECRET,
-PASSW oder API_KEY im Schluesselnamen bleibt draussen).
+PASSW oder API_KEY im Schluesselnamen bleibt draussen). Jeder Lauf baut den Abzug neu auf:
+geloeschte oder umbenannte Dienste fallen heraus.
 
 Bewusst nicht im Archiv (`NICHT_GESICHERT`, je mit Grund): Zugaenge (Firmenpostfach,
 Control-Center-Benutzer, Notpasswort, Meta-Zugang, Upload-Links im Klartext), die

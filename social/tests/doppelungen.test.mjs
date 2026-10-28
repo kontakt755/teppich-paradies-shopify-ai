@@ -139,6 +139,26 @@ test('Ein Farbbeitrag zeigt die angekuendigte neue Farbe (Alvento #81: Basalt an
   assert.match(mitBild.bilder[0].src, /basalt/);
 });
 
+test('Farbzahl vom Bautag: zurueckgehaltene neue Farbe zaehlt im Shop schon mit (Pruefung PR #1734)', async (t) => {
+  let uhr = new Date('2026-10-20T05:00:00Z');
+  const db = testDb(t, () => uhr);
+  const p = farben => feedProdukt({ title: 'Alvento Teppich nach Maß', handle: 'alvento', product_type: 'Teppich nach Maß', tags: [], published_at: '2026-01-10T10:00:00+02:00',
+    options: [{ name: 'Farbe', position: 1, values: farben }],
+    images: [{ src: 'https://cdn.shopify.com/x/alvento-senf-raum.jpg', width: 2400, height: 1800, variant_ids: [1] }],
+    variants: farben.map((f, i) => ({ id: i + 1, option1: f, price: '0.48', compare_at_price: null, available: true })) });
+  const abgleich = roh => shopAbgleich(db, { roh, jetzt: uhr, preise: new Map(), nachfrage: new Map() });
+  await abgleich([p(['Senf'])]);
+  uhr = new Date('2026-10-26T05:00:00Z');
+  // Jeansblau ist neu im Shop, hat aber kein Bild: kein Anlass, die Farbe bleibt fuer die Ankuendigung offen.
+  const r = await abgleich([p(['Senf', 'Jeansblau'])]);
+  assert.equal(r.neu.filter(n => n.neueFarben).length, 0);
+  assert.deepEqual(db.produktStand().get('alvento').farben, ['Senf'], 'Ankuendigungsstand haelt die neue Farbe zurueck');
+  const zahlen = zahlenAmBautag(db.produktStand(), { produkt_handle: 'alvento', daten: {} });
+  assert.equal(zahlen.farben, 2, 'im Shop sind es schon zwei Farben');
+  assert.deepEqual(zahlenImText('Alvento gibt es in zwei Farben.', zahlen), []);
+  assert.deepEqual(zahlenImText('Alvento gibt es in einer Farbe, jetzt in drei Farben.', zahlen), ['Text nennt „drei Farben“, im Shop sind es 2']);
+});
+
 test('Serienfolie: Marke bleibt, Rollenbreite und Warengruppe fallen weg (JAB #91)', () => {
   const p = (titel, marke, typ = 'Teppichboden') => normalisiere({ title: titel, handle: 'x', vendor: marke, product_type: typ, variants: [], images: [], options: [] });
   assert.equal(serienBeschriftung(p('JAB Anstoetz Savanna Teppichboden 400cm', 'JAB Anstoetz'), 'JAB'), 'JAB Anstoetz Savanna');

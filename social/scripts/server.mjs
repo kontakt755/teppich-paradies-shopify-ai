@@ -301,19 +301,25 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
  * @param {object} opt
  *   freierSpeicher  () => freie Bytes der Platte oder null (nicht messbar); Tests geben einen Ersatz
  *   zaehlerDatei    Uploads und Bytes je Link-Name und Tag (ueberlebt einen Neustart)
+ *   oeffneZiel      ziel => Schreibstrom fuer eine Datei; Tests verzoegern damit das Schreiben
  */
 export function erstelleUpload({
   db, dir = socialDir(), jetzt = () => Date.now(), nachUpload = inhaltId => verarbeiteEingang(db, { dir, nur: inhaltId }),
   freierSpeicher = () => messeSpeicher(dir)?.freiBytes ?? null, zaehlerDatei = uploadZaehlerPfad(dir),
+  oeffneZiel = ziel => fs.createWriteStream(ziel, { mode: 0o600 }),
 } = {}) {
   const laufend = new Map();       // uploadId -> { inhaltId, ordner, name, dateien, bytes, belegt, bis }
   // Laufende Dateien stehen weder im Tageszaehler noch ganz auf der Platte. Jede haelt ihren
   // Anteil fest, bis sie fertig ist - sonst saehen zwei gleichzeitige Sendungen dieselbe freie
   // Menge und ueberschritten zusammen Tagesgrenze und Speicherreserve.
-  const anteile = new Set();       // { name, tag, bytes, geschrieben }
-  const anteilTag = (name, tag) => [...anteile].reduce((s, a) => s + (a.name === name && a.tag === tag ? a.bytes : 0), 0);
-  // Was schon geschrieben ist, fehlt bereits in der Messung des freien Platzes.
-  const anteilPlatz = () => [...anteile].reduce((s, a) => s + Math.max(0, a.bytes - a.geschrieben), 0);
+  // Eine laufende Datei zaehlt beim Abschluss in den Tag, der dann gilt - ihr Anteil deshalb
+  // auch gegen den heutigen, wenn sie gestern begann.
+  const anteile = new Set();       // { name, bytes, strom }
+  const anteilTag = name => [...anteile].reduce((s, a) => s + (a.name === name ? a.bytes : 0), 0);
+  // Was schon auf der Platte liegt, fehlt bereits in der Messung des freien Platzes. Gezaehlt
+  // wird, was der Schreibstrom bestaetigt hat (bytesWritten), nicht was gelesen ist: haengt
+  // die Platte, steckt die ganze Datei noch im Strom und die Messung weiss nichts davon.
+  const anteilPlatz = () => [...anteile].reduce((s, a) => s + Math.max(0, a.bytes - (a.strom?.bytesWritten ?? 0)), 0);
 
   // Bewusst keine Sperre nach Fehlversuchen: der Link hat 144 Bit Zufall und ist
   // nicht zu erraten. Eine Sperre je Adresse wuerde hinter einem Proxy (Funnel)
@@ -344,18 +350,19 @@ export function erstelleUpload({
    * Platte) und um jeden Fehler auf beiden Seiten: volle Platte, abgerissene
    * Verbindung. Ohne das beendete ein Schreibfehler den ganzen Dienst.
    */
-  async function speichere(req, ziel, max, zuViel = () => new HttpFehler(413, 'Datei zu groß'), beiStueck = () => {}) {
+  async function speichere(req, ziel, max, zuViel = () => new HttpFehler(413, 'Datei zu groß'), beiStrom = () => {}) {
     let groesse = 0; let kopf = Buffer.alloc(0);
     const waechter = new Transform({
       transform(stueck, _kodierung, weiter) {
         groesse += stueck.length;
-        beiStueck(stueck.length);
         if (kopf.length < 16) kopf = Buffer.concat([kopf, stueck]).subarray(0, 16);
         weiter(groesse > max ? zuViel() : null, stueck);
       },
     });
     try {
-      await pipeline(req, waechter, fs.createWriteStream(ziel, { mode: 0o600 }));
+      const strom = oeffneZiel(ziel);
+      beiStrom(strom);
+      await pipeline(req, waechter, strom);
     } catch (e) {
       fs.rmSync(ziel, { force: true });
       if (e instanceof HttpFehler) { req.resume(); throw e; }
@@ -410,7 +417,7 @@ export function erstelleUpload({
         if (lauf.belegt) throw new HttpFehler(409, 'Es läuft noch eine Übertragung – bitte kurz warten.');
         // Tagesmenge je Link (ueberlebt einen Neustart) und freier Platz: die kleinere Grenze gilt.
         const tag = tagVon(new Date(jetzt()));
-        const restTag = GRENZEN.maxBytesJeTag - standHeute(lauf.name, tag, zaehlerDatei).bytes - anteilTag(lauf.name, tag);
+        const restTag = GRENZEN.maxBytesJeTag - standHeute(lauf.name, tag, zaehlerDatei).bytes - anteilTag(lauf.name);
         if (restTag <= 0) throw new HttpFehler(429, TAGESGRENZE);
         const platz = platzRest();
         const restPlatz = platz === null ? null : platz - anteilPlatz();
@@ -420,12 +427,13 @@ export function erstelleUpload({
           : max === restTag ? new HttpFehler(429, TAGESGRENZE) : new HttpFehler(413, 'Datei zu groß'));
         // Mit angesagter Laenge haelt die Sendung nur so viel fest, sonst die volle erlaubte Menge.
         const angesagt = Number(req.headers['content-length']);
-        const anteil = { name: lauf.name, tag, bytes: Number.isFinite(angesagt) && angesagt >= 0 ? Math.min(max, angesagt) : max, geschrieben: 0 };
+        // Der Anteil gilt bis zum Ende von pipeline (Strom fertig geschrieben oder Fehler).
+        const anteil = { name: lauf.name, bytes: Number.isFinite(angesagt) && angesagt >= 0 ? Math.min(max, angesagt) : max, strom: null };
         anteile.add(anteil);
         lauf.belegt = true;
         try {
           const tmp = path.join(lauf.ordner, `${crypto.randomBytes(6).toString('hex')}.teil`);
-          const { groesse, kopf } = await speichere(req, tmp, max, zuViel, n => { anteil.geschrieben += n; });
+          const { groesse, kopf } = await speichere(req, tmp, max, zuViel, strom => { anteil.strom = strom; });
           const typ = erkenneTyp(kopf);
           const info = DATEITYPEN[typ];
           if (!info || (info.art === 'bild' && groesse > GRENZEN.maxBildBytes)) {
@@ -436,7 +444,9 @@ export function erstelleUpload({
           fs.renameSync(tmp, ziel);
           lauf.dateien += 1;
           lauf.bytes += groesse;
-          zaehleHeute(lauf.name, tag, { bytes: groesse }, zaehlerDatei);
+          // Tag des Abschlusses, nicht des Beginns: eine Datei ueber Mitternacht schriebe sonst den
+          // Zaehler von gestern zurueck und setzte den neuen Tag auf null.
+          zaehleHeute(lauf.name, tagVon(new Date(jetzt())), { bytes: groesse }, zaehlerDatei);
           trageDateiEin(db, lauf.inhaltId, { datei: ziel, typ, dir });
           return sende(res, 200, { ok: true, art: info.art, nummer: lauf.dateien });
         } finally {

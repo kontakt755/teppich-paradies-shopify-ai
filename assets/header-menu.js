@@ -75,9 +75,13 @@ class HeaderMenu extends Component {
    * Tab geht dann zum naechsten Hauptpunkt, weil das geschlossene
    * Untermenue unsichtbar und damit nicht fokussierbar ist. Maus und
    * Zeiger bleiben unberuehrt.
+   * Im "Mehr"-Menue (Pruefung PR #1735) schliesst Esc auch, wenn der Zeiger
+   * darueber steht, und der Fokus geht auf den sichtbaren "Mehr"-Knopf -
+   * der Hauptpunkt dort ist nach dem Schliessen verborgen und nimmt keinen
+   * Fokus an. Die Sperre haengt deshalb am Element, das den Fokus bekommt.
    * @type {HTMLElement | null}
    */
-  #escClosedItem = null;
+  #escFokus = null;
 
   /**
    * @param {KeyboardEvent} event
@@ -87,16 +91,29 @@ class HeaderMenu extends Component {
     const item = this.#state.activeItem;
     if (!item) return;
     event.preventDefault();
-    this.#escClosedItem = item;
-    this.#deactivate(item);
-    if (document.activeElement !== item) item.focus();
+    const ziel = this.#escFokusZiel(item);
+    this.#escFokus = ziel;
+    this.#deactivate(item, { trotzHover: true });
+    if (document.activeElement !== ziel) ziel.focus();
   };
+
+  /**
+   * Wohin der Fokus nach Esc geht: auf den Hauptpunkt, im "Mehr"-Menue
+   * (slot="overflow") auf den "Mehr"-Knopf.
+   * @param {HTMLElement} item
+   * @returns {HTMLElement}
+   */
+  #escFokusZiel(item) {
+    if (!item.parentElement?.matches('[slot="overflow"]')) return item;
+    const mehr = this.querySelector('[slot="more"] button');
+    return mehr instanceof HTMLElement ? mehr : item;
+  }
 
   /**
    * @param {FocusEvent} event
    */
   #onFocusout = (event) => {
-    if (this.#escClosedItem && event.target === this.#escClosedItem) this.#escClosedItem = null;
+    if (this.#escFokus && event.target === this.#escFokus) this.#escFokus = null;
   };
 
   /**
@@ -221,8 +238,8 @@ class HeaderMenu extends Component {
 
     if (!item || item == this.#state.activeItem) return;
 
-    // Nach Esc oeffnet der Fokus auf demselben Hauptpunkt nicht erneut.
-    if (event.type === 'focus' && item === this.#escClosedItem) return;
+    // Nach Esc oeffnet der Fokus auf demselben Hauptpunkt (oder dem "Mehr"-Knopf) nicht erneut.
+    if (event.type === 'focus' && this.#escFokus && event.target.contains(this.#escFokus)) return;
 
     const isDefaultSlot = event.target.slot === '';
 
@@ -325,12 +342,13 @@ class HeaderMenu extends Component {
   /**
    * Deactivate the active item immediately
    * @param {HTMLElement | null} [item]
+   * @param {{ trotzHover?: boolean }} [optionen] - TP: Esc schliesst auch unter dem Zeiger
    */
-  #deactivate = (item = this.#state.activeItem) => {
+  #deactivate = (item = this.#state.activeItem, { trotzHover = false } = {}) => {
     if (!item || item != this.#state.activeItem) return;
 
     // Don't deactivate if the overflow menu or overflow list is still being hovered
-    if (this.overflowListHovered || this.overflowMenu?.matches(':hover')) return;
+    if (!trotzHover && (this.overflowListHovered || this.overflowMenu?.matches(':hover'))) return;
 
     this.headerComponent?.style.setProperty('--submenu-height', '0px');
     this.#setFullOpenHeaderHeight(0);

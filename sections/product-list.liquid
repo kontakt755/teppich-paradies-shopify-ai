@@ -140,11 +140,35 @@
             # (snippets/tp-angebot-sichtbar - Streichpreis sichtbar oder zentrale
             # Aktion, nie Sonderposten). Die angebote-*-Kollektionen fragen nur
             # "Preis reduziert" ohne Datum; nach Aktionsende stuenden dort sonst
-            # Karten ohne Rabatt. Hoechstens 48 Pruefungen je Liste: nach Ende
-            # einer Aktion faellt jede Karte durch, und die Startseite soll dann
-            # nicht 250 Produkte durchrechnen.
+            # Karten ohne Rabatt.
+            # Vorfilter statt Obergrenze (Pruefung PR #1732): Bis dahin brach die
+            # Suche nach 48 Pruefungen ab - ein gueltiges Angebot an Stelle 49
+            # fiel weg, Liste und Reiter verschwanden. Jetzt zaehlen alle
+            # geladenen Produkte (paginate by 250). Die teure Pruefung laeuft nur
+            # fuer Produkte, die ueberhaupt ein Angebot sein koennen: mit einem
+            # der beiden Rabattwege aus tp-rabatt-sichtbar (aktion.klasse
+            # "preisanker" oder aktion.start gesetzt) und aktion.ende nicht vorbei
+            # - oder heute laeuft irgendeine zentrale Aktion (tp_aktion, wie
+            # tp-aktion-laufend ohne Kollektionsabgleich). Der Vorfilter sagt nie
+            # "ja" - das entscheidet allein tp-angebot-sichtbar (Gleichlauf:
+            # qa/tests/start-angebote-liste). Aendert sich ein Rabattweg, gehoert
+            # er hier mit nach.
             assign tp_ln_nur_angebote = section.settings.tp_nur_angebote
-            assign tp_ln_geprueft = 0
+            assign tp_ln_heute = 'now' | date: '%Y%m%d' | plus: 0
+            assign tp_ln_zentral = false
+            if tp_ln_nur_angebote
+              for tp_ln_a in shop.metaobjects.tp_aktion.values
+                if tp_ln_a.aktiv.value != true or tp_ln_a.kollektion.value == blank
+                  continue
+                endif
+                assign tp_ln_von = tp_ln_a.start.value | date: '%Y%m%d' | plus: 0
+                assign tp_ln_bis = tp_ln_a.ende.value | date: '%Y%m%d' | plus: 0
+                if tp_ln_von > 0 and tp_ln_bis > 0 and tp_ln_von <= tp_ln_heute and tp_ln_heute <= tp_ln_bis
+                  assign tp_ln_zentral = true
+                  break
+                endif
+              endfor
+            endif
           -%}
           {%- comment -%}
             Auslaufartikel (Tag "auslauf") ans Ende, wie in den Kategorien
@@ -181,10 +205,18 @@
                 endif
               endif
               if tp_ln_nur_angebote
-                if tp_ln_geprueft >= 48
-                  break
-                endif
-                assign tp_ln_geprueft = tp_ln_geprueft | plus: 1
+                unless tp_ln_zentral
+                  assign tp_ln_af = product.metafields.aktion
+                  unless tp_ln_af.klasse.value == 'preisanker' or tp_ln_af.start.value != blank
+                    continue
+                  endunless
+                  if tp_ln_af.ende.value != blank
+                    assign tp_ln_bis = tp_ln_af.ende.value | date: '%Y%m%d' | plus: 0
+                    if tp_ln_heute > tp_ln_bis
+                      continue
+                    endif
+                  endif
+                endunless
                 capture tp_ln_angebot
                   render 'tp-angebot-sichtbar', product: product
                 endcapture
@@ -288,6 +320,29 @@
 
 {% javascript %}
   (function () {
+    /*
+     * Pruefung PR #1733: Kommt waehrend eines laufenden Abrufs eine weitere
+     * Warenkorbaenderung, gibt der Section-Renderer fuer dieselbe URL die
+     * laufende Anfrage zurueck - trotz cache: false - und damit den Stand von
+     * vor der Aenderung. Deshalb je Section nur ein Abruf zugleich; weitere
+     * Aenderungen werden vorgemerkt und danach mit einem frischen Abruf geholt.
+     */
+    var laufend = {};
+    function neuLaden(renderer, id) {
+      if (laufend[id]) {
+        laufend[id] = 'nochmal';
+        return;
+      }
+      laufend[id] = 'laeuft';
+      renderer
+        .renderSection(id, { cache: false })
+        .catch(function () {})
+        .then(function () {
+          var nochmal = laufend[id] === 'nochmal';
+          laufend[id] = null;
+          if (nochmal) neuLaden(renderer, id);
+        });
+    }
     document.addEventListener('cart:update', function () {
       var marken = document.querySelectorAll('[data-tp-wk-inhalt]');
       if (!marken.length) return;
@@ -295,7 +350,7 @@
         .then(function (modul) {
           Array.prototype.forEach.call(marken, function (marke) {
             var id = marke.getAttribute('data-tp-wk-inhalt');
-            if (id) modul.sectionRenderer.renderSection(id, { cache: false }).catch(function () {});
+            if (id) neuLaden(modul.sectionRenderer, id);
           });
         })
         .catch(function () {});

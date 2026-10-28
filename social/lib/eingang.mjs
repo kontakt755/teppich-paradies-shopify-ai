@@ -219,7 +219,11 @@ export function standHeute(name, tag, datei = uploadZaehlerPfad()) {
   return { uploads: Number(e.uploads) || 0, bytes: Number(e.bytes) || 0 };
 }
 
-/** Zaehlt dazu und schreibt atomar (Rechte 600). Gibt den neuen Stand des Namens zurueck. */
+/**
+ * Zaehlt dazu und schreibt atomar (Rechte 600). Gibt den neuen Stand des Namens zurueck.
+ * `tag` ist der Tag im Moment des Zaehlens, nie der eines frueheren Starts: ein anderer Tag
+ * ersetzt die Datei (so heilt sie sich auch nach einer verstellten Uhr).
+ */
 export function zaehleHeute(name, tag, { uploads = 0, bytes = 0 } = {}, datei = uploadZaehlerPfad()) {
   const je = liesTageszaehler(tag, datei);
   const alt = je[name] || {};
