@@ -104,6 +104,7 @@
     "handoff": "node scripts/handoff.mjs",
     "uebergaben": "node scripts/uebergaben.mjs",
     "worktrees:aufraeumen": "node scripts/worktrees-aufraeumen.mjs",
+    "ratgeber:pdf": "node scripts/ratgeber-pdf.mjs",
     "ki:frag": "node scripts/ki-austausch.mjs",
     "gedaechtnis:sync": "bash .claude/hooks/gedaechtnis-sync.sh --streng",
     "social": "node social/scripts/social.mjs",

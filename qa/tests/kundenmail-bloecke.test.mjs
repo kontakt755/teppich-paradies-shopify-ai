@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Liquid } from 'liquidjs';
@@ -202,4 +202,47 @@ test('#26 Versandbestaetigung: Teillieferung der Fussleiste zeigt die versandte 
   assert.doesNotMatch(teil, /12 m/);
   const voll = await eng.parseAndRender(versand, vctx([leiste(12)]));
   assert.match(voll, /<li>Gekettelte Fußleiste – 6 cm \(12 m\)<\/li>/);
+});
+
+// ---- Ratgeber zur Bestellung: Produkttyp waehlt den Kurz-Ratgeber (PDF)
+const mitTyp = (l, type) => ({ ...l, product: { type } });
+const RG_URL = 'https://www.teppich-paradies.net/cdn/shop/files/';
+const { RATGEBER } = await import('../../domains/shopify/ratgeber-pdf/inhalte.mjs');
+
+test('Ratgeber: jede Zuordnung aus inhalte.mjs verlinkt genau ihr PDF, und das PDF liegt im Repository', async () => {
+  for (const r of RATGEBER) {
+    assert.ok(existsSync(join(root, 'domains', 'shopify', 'ratgeber-pdf', 'pdf', r.datei)), `${r.datei} fehlt – npm run -s ratgeber:pdf`);
+    for (const typ of r.produkttypen) {
+      const html = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [mitTyp(line('Testware', 'T1'), typ)] });
+      const links = [...html.matchAll(/cdn\/shop\/files\/(ratgeber-[a-z-]+\.pdf)/g)].map((m) => m[1]);
+      assert.deepEqual(links, [r.datei], `Produkttyp ${typ}`);
+    }
+  }
+});
+
+test('Ratgeber: mehrere Positionen, jeder Ratgeber nur einmal, in Bestellreihenfolge', async () => {
+  const html = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [
+    mitTyp(line('Testvinyl A', 'K1'), 'Klickvinyl'),
+    mitTyp(line('Testvinyl B', 'K2'), 'Klickvinyl'),
+    mitTyp(line('Testvelours Teppich nach Maß', 'T1'), 'Teppich nach Maß'),
+    mitTyp(line('Testleiste', 'S1'), 'Sockelleisten'),
+  ] });
+  assert.match(html, /Ihr Ratgeber zur Bestellung/);
+  const links = [...html.matchAll(/href="([^"]+\.pdf)"/g)].map((m) => m[1]);
+  assert.deepEqual(links, [`${RG_URL}ratgeber-klickvinyl.pdf`, `${RG_URL}ratgeber-teppich.pdf`]);
+  assert.match(html, />Ratgeber Klickvinyl \(PDF\)<\/a>/);
+  assert.match(html, />Ratgeber Teppich \(PDF\)<\/a>/);
+});
+
+test('Ratgeber: Muster, Zubehoer und fehlender Produkttyp bekommen keinen', async () => {
+  const muster = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [
+    mitTyp(line('Muster Testvelours', 'M-TEST_036'), 'Teppichboden'),
+    mitTyp(line('Muster ohne Muster-SKU', '', { _Muster_ID: 'x' }), 'Klickvinyl'),
+  ] });
+  assert.doesNotMatch(muster, /Ratgeber|\.pdf/);
+  const zubehoer = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [mitTyp(line('Testleiste', 'S1'), 'Sockelleisten'), line('Ohne Produkt', 'X1')] });
+  assert.doesNotMatch(zubehoer, /Ratgeber|\.pdf/);
+  const misch = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [mitTyp(line('Testvelours', 'T1'), 'Teppichboden'), mitTyp(line('Muster Testvinyl', 'M-T2'), 'Klickvinyl')] });
+  assert.match(misch, /ratgeber-teppichboden\.pdf/);
+  assert.doesNotMatch(misch, /ratgeber-klickvinyl\.pdf/);
 });

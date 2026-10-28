@@ -210,6 +210,10 @@ Maß, Meterware, Kettelservice, Längenware) erscheinen in der Versandbestätigu
 mit Maß und Fläche statt als „775 ×“; für die Standardliste der Bestellbestätigung
 setzt `bestellbestaetigung-menge.liquid` die Stückzahl.
 
+Stand 2026-10-28: Die Bestellbestätigung verlinkt je Warenposition den passenden
+Kurz-Ratgeber als PDF („Ihr Ratgeber zur Bestellung“, Zuordnung über den
+Produkttyp). Inhalte, Druck und Zuordnung: `../ratgeber-pdf/README.md`.
+
 Tests: `qa/tests/kundenmail-bloecke.test.mjs`,
 `qa/tests/bestellmail-beratung.test.mjs`. Nach dem Einsetzen im Admin die
 Testbenachrichtigung senden und eine Testbestellung (Tag `TESTBESTELLUNG`)
