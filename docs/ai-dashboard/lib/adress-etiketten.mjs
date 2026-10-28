@@ -42,12 +42,22 @@ export function adressEtikett(adresse = {}, bestellungen = []) {
 const UMBRUCH_AB = 20;
 
 /**
+ * Adressen liegen quer (Inhaber 28.10.): auf hohen Rollen (50 x 80, 50 x 100) laeuft die Schrift entlang der
+ * langen Seite, so wie der Aufkleber auf den Umschlag kommt. Gerechnet wird dann im gedrehten Format
+ * (80 x 50), zeichne() im Druckdialog dreht das Bild um 90 Grad im Uhrzeigersinn auf die Rolle.
+ */
+export const adresseQuer = format => format.hoehe > format.breite;
+
+/**
  * Was wo steht, in Pixeln des Etiketts - wie layout() in muster-etiketten.mjs, mit `passt` und `probleme`.
  * `mass(text, groesse, fett)` misst Text. Eine Schrift fuer alle Empfaengerzeilen: so gross, wie Breite und
  * Hoehe zulassen; unter 20 px brechen zu lange Zeilen an Wortgrenzen um. Nie unter MIN_SCHRIFT.
+ * `quer: true` heisst: Koordinaten gelten im gedrehten Format (Breite = Rollenlaenge).
  */
 export function adressLayout(e, mass, format = ETIKETT) {
-  const { breite, hoehe, rand } = format;
+  const quer = adresseQuer(format);
+  const flaeche = quer ? { ...format, breite: format.hoehe, hoehe: format.breite } : format;
+  const { breite, hoehe, rand } = flaeche;
   const innen = breite - 2 * rand;
   const probleme = [];
   const gAbs = Math.min(...ABSENDER.map(t => einpassen(t, innen, 19, MIN_SCHRIFT, false, mass).g));
@@ -68,7 +78,8 @@ export function adressLayout(e, mass, format = ETIKETT) {
     return out;
   };
   let block = [];
-  for (let g = 36; g >= MIN_SCHRIFT; g--) {
+  // Quer ist die Zeile so lang wie die Rolle: die Schrift darf mit dem Format mitwachsen.
+  for (let g = Math.round(36 * (quer ? format.faktor || 1 : 1)); g >= MIN_SCHRIFT; g--) {
     const zeilen = zeilenFuer(g);
     if (!zeilen || (zeilen.some(z => z.getrennt) && g > MIN_SCHRIFT)) continue;
     block = [];
@@ -79,6 +90,6 @@ export function adressLayout(e, mass, format = ETIKETT) {
   const hoeheBlock = block.length ? block.at(-1).y + block.at(-1).groesse : 0;
   const ab = y + Math.max(0, Math.floor((unten - y - hoeheBlock) / 2));
   texte.push(...block.map(t => ({ ...t, y: t.y + ab })));
-  probleme.push(...layoutProbleme({ texte, linien }, mass, format));
-  return { texte, linien, qr: null, passt: !probleme.length, probleme };
+  probleme.push(...layoutProbleme({ texte, linien }, mass, flaeche));
+  return { texte, linien, qr: null, passt: !probleme.length, probleme, quer };
 }
