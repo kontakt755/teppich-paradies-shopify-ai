@@ -47,6 +47,15 @@
     <h1>{{ section.settings.hero_titel }}</h1>
     <p class="treppen-hero__lead">{{ section.settings.hero_text }}</p>
 
+    {%- comment -%}
+      Hauptaktion vor der Haekchenliste (w-111, 2026-10-28): am Telefon lag der
+      Knopf vorher 20 px unter dem ersten Bildschirm, WhatsApp fehlte oben.
+      Die Telefon-Einstellungen nutzt der Kopf seitdem nicht mehr.
+    {%- endcomment -%}
+    <div class="treppen-hero__aktion">
+      {%- render 'tp-service-hauptaktion', label: section.settings.hero_cta, ziel: section.settings.hero_cta_ziel -%}
+    </div>
+
     {%- if section.settings.hero_fakten != blank -%}
       <ul class="treppen-hero__fakten">
         {%- assign tp_tv_fakten = section.settings.hero_fakten | split: ',' -%}
@@ -59,16 +68,6 @@
       </ul>
     {%- endif -%}
 
-    <div class="treppen-hero__actions">
-      <a href="{{ section.settings.hero_cta_ziel | default: '/pages/kontakt' }}" class="treppen-button">
-        {{ section.settings.hero_cta }}
-      </a>
-      {%- if section.settings.telefon != blank -%}
-        <a href="tel:{{ section.settings.telefon | remove: ' ' | remove: '/' }}" class="treppen-hero__tel">
-          {{ section.settings.telefon_label | default: section.settings.telefon }}
-        </a>
-      {%- endif -%}
-    </div>
 
     {%- comment -%}
       Belegzeile: bleibt leer, solange keine belastbare Zahl vorliegt. Eine
@@ -248,7 +247,7 @@
   }
 
   .treppen-hero__fakten {
-    margin: 0 0 20px;
+    margin: 0;
     padding: 0;
     list-style: none;
     display: flex;
@@ -271,32 +270,8 @@
     flex: 0 0 auto;
   }
 
-  .treppen-hero__actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px 20px;
-  }
-
-  /* Der Button erbt 1.6rem aus dem alten Seiten-CSS. Im Hero brach er dadurch
-     auf dem Handy zweizeilig um und wurde 118 px hoch - er sah aus wie ein
-     Banner, nicht wie eine Schaltflaeche. */
-  .treppen-hero__actions .treppen-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
-    padding: 12px 24px;
-    font-size: var(--tp-fs-md);
-    line-height: 1.2;
-  }
-
-  .treppen-hero__tel {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    font-weight: 600;
-    color: var(--color-foreground);
+  .treppen-hero__aktion {
+    margin: 0 0 18px;
   }
 
   .treppen-hero__beleg {
