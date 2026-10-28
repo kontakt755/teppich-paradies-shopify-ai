@@ -115,6 +115,52 @@
   {%- endif -%}
 {%- endcapture -%}
 
+{%- comment -%}
+  Passend dazu: je Wert in ratgeber.cta eine kompakte Karte, danach bis zu
+  vier Produkte. data-tp-rg-cta ist der Haken fuer die Klickmessung.
+  Vor dem Artikel erfasst, weil die Karten auf Wunsch auch oben stehen
+  (Kaufbox nach der Kurzantwort, Einstellung passend_oben).
+{%- endcomment -%}
+{%- capture rg_cta_html -%}
+  {%- for rg_cta_wert in rg_cta -%}
+    {%- liquid
+      assign rg_cta_typ = rg_cta_wert | strip | downcase
+      assign rg_cta_titel = ''
+      assign rg_cta_text = ''
+      assign rg_cta_link = ''
+      case rg_cta_typ
+        when 'rechner'
+          assign rg_cta_titel = section.settings.rechner_titel
+          assign rg_cta_text = section.settings.rechner_text
+          assign rg_cta_link = rg_kollektion.url | default: section.settings.rechner_link | default: '/collections/teppichboden'
+        when 'muster'
+          assign rg_cta_titel = section.settings.muster_titel
+          assign rg_cta_text = section.settings.muster_text
+          assign rg_cta_link = section.settings.muster_link | default: '/pages/muster'
+        when 'verlegeservice'
+          assign rg_cta_titel = section.settings.verlege_titel
+          assign rg_cta_text = section.settings.verlege_text
+          assign rg_cta_link = section.settings.verlege_link | default: '/pages/liefer-verlegeservice'
+        when 'zubehoer'
+          assign rg_cta_titel = section.settings.zubehoer_titel
+          assign rg_cta_text = section.settings.zubehoer_text
+          assign rg_cta_link = rg_zubehoer.url | default: section.settings.zubehoer_link | default: '/collections/zubehoer'
+      endcase
+    -%}
+    {%- if rg_cta_titel != blank and rg_cta_link != blank -%}
+      <li class="tp-rg-cta" data-tp-rg-cta="{{ rg_cta_typ }}">
+        <a class="tp-rg-cta__link" href="{{ rg_cta_link }}">
+          <span class="tp-rg-cta__titel">{{ rg_cta_titel | escape }}</span>
+          {%- if rg_cta_text != blank -%}
+            <span class="tp-rg-cta__text">{{ rg_cta_text | escape }}</span>
+          {%- endif -%}
+        </a>
+      </li>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- assign rg_cta_html = rg_cta_html | strip -%}
+
 <article class="tp-rg-artikel">
   <div class="tp-s-wrap">
     <div class="tp-rg-spalte">
@@ -158,6 +204,18 @@
             <div class="tp-rg-fakten__punkt"><dt>Personen</dt><dd>{{ rg_personen | escape }}</dd></div>
           {%- endif -%}
         </dl>
+      {%- endif -%}
+
+      {%- comment -%}
+        Kaufbox (Fehlersuche 28.10., Idee 9): dieselben Karten wie "Passend dazu",
+        gleich nach der Kurzantwort - Leser aus der Suche sehen den naechsten
+        Schritt, ohne den ganzen Artikel zu lesen. data-tp-rg-ort trennt die
+        Klicks oben/unten in tp_ratgeber_cta_klick.
+      {%- endcomment -%}
+      {%- if section.settings.passend_oben and rg_cta_html != blank -%}
+        <nav class="tp-rg-kaufbox" aria-label="{{ section.settings.passend_heading | default: 'Passend dazu' | escape }}" data-tp-rg-ort="oben">
+          <ul class="tp-rg-passend__cta">{{ rg_cta_html }}</ul>
+        </nav>
       {%- endif -%}
 
       {%- comment -%} Material steht bei Anleitungen direkt vor dem Text, sonst gleich nach den Fakten {%- endcomment -%}
@@ -258,48 +316,6 @@
       {%- endif -%}
     </div>
 
-    {%- comment -%}
-      Passend dazu: je Wert in ratgeber.cta eine kompakte Karte, danach bis zu
-      vier Produkte. data-tp-rg-cta ist der Haken fuer die Klickmessung.
-    {%- endcomment -%}
-    {%- capture rg_cta_html -%}
-      {%- for rg_cta_wert in rg_cta -%}
-        {%- liquid
-          assign rg_cta_typ = rg_cta_wert | strip | downcase
-          assign rg_cta_titel = ''
-          assign rg_cta_text = ''
-          assign rg_cta_link = ''
-          case rg_cta_typ
-            when 'rechner'
-              assign rg_cta_titel = section.settings.rechner_titel
-              assign rg_cta_text = section.settings.rechner_text
-              assign rg_cta_link = rg_kollektion.url | default: section.settings.rechner_link | default: '/collections/teppichboden'
-            when 'muster'
-              assign rg_cta_titel = section.settings.muster_titel
-              assign rg_cta_text = section.settings.muster_text
-              assign rg_cta_link = section.settings.muster_link | default: '/pages/muster'
-            when 'verlegeservice'
-              assign rg_cta_titel = section.settings.verlege_titel
-              assign rg_cta_text = section.settings.verlege_text
-              assign rg_cta_link = section.settings.verlege_link | default: '/pages/liefer-verlegeservice'
-            when 'zubehoer'
-              assign rg_cta_titel = section.settings.zubehoer_titel
-              assign rg_cta_text = section.settings.zubehoer_text
-              assign rg_cta_link = rg_zubehoer.url | default: section.settings.zubehoer_link | default: '/collections/zubehoer'
-          endcase
-        -%}
-        {%- if rg_cta_titel != blank and rg_cta_link != blank -%}
-          <li class="tp-rg-cta" data-tp-rg-cta="{{ rg_cta_typ }}">
-            <a class="tp-rg-cta__link" href="{{ rg_cta_link }}">
-              <span class="tp-rg-cta__titel">{{ rg_cta_titel | escape }}</span>
-              {%- if rg_cta_text != blank -%}
-                <span class="tp-rg-cta__text">{{ rg_cta_text | escape }}</span>
-              {%- endif -%}
-            </a>
-          </li>
-        {%- endif -%}
-      {%- endfor -%}
-    {%- endcapture -%}
 
     {%- capture rg_produkte_html -%}
       {%- for rg_produkt in rg_produkte limit: 4 -%}
@@ -333,7 +349,7 @@
       assign rg_produkte_html = rg_produkte_html | strip
     -%}
     {%- if rg_cta_html != blank or rg_produkte_html != blank -%}
-      <section class="tp-rg-passend tp-rg-breit" aria-labelledby="tp-rg-passend-titel">
+      <section class="tp-rg-passend tp-rg-breit" aria-labelledby="tp-rg-passend-titel" data-tp-rg-ort="unten">
         <h2 class="tp-rg-abschnitt__titel" id="tp-rg-passend-titel">{{ section.settings.passend_heading | default: 'Passend dazu' | escape }}</h2>
         {%- if rg_cta_html != blank -%}
           <ul class="tp-rg-passend__cta">{{ rg_cta_html }}</ul>
@@ -540,6 +556,7 @@
     { "type": "header", "content": "Passend dazu" },
     { "type": "paragraph", "content": "Welche Karten ein Artikel zeigt, steuert sein Metafeld ratgeber.cta. Hier stehen nur Texte und Ausweichlinks." },
     { "type": "text", "id": "passend_heading", "label": "Ueberschrift", "default": "Passend dazu" },
+    { "type": "checkbox", "id": "passend_oben", "label": "Karten auch oben nach der Kurzantwort zeigen", "default": true },
     { "type": "text", "id": "rechner_titel", "label": "Rechner: Titel", "default": "Preis für Ihr Maß berechnen" },
     { "type": "text", "id": "rechner_text", "label": "Rechner: Text", "default": "Maße eingeben und Preis berechnen – direkt am Produkt." },
     { "type": "url", "id": "rechner_link", "label": "Rechner: Link", "info": "Nur wenn der Artikel keine Kollektion nennt. Leer = Teppichboden." },

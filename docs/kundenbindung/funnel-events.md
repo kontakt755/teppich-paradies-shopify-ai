@@ -45,7 +45,7 @@ Besuch -> Produkt angesehen -> Farbe gewaehlt -> Masse eingegeben
 | `tp_rabattcode_eingegeben` | `submit` auf dem Rabattcode-Formular im Warenkorb | `page`, `erfolg` (true\|false\|unknown) | Warenkorb-Pflege |
 | `tp_newsletter_anmeldung_abgeschickt` | `submit` auf `form[data-tp-newsletter-form]` | `page`, `quelle` (`data-tp-newsletter-quelle`) | Newsletter |
 | `tp_newsletter_anmeldung_erfolg` | Seitenaufruf mit `[data-tp-newsletter-erfolg]` oder `?customer_posted=true` | `page` | Newsletter |
-| `tp_ratgeber_cta_klick` | Klick auf einen Link innerhalb `[data-tp-rg-cta]` | `page`, `ziel` (Pfad ohne Query), `cta_typ` (Wert von `data-tp-rg-cta`) | Ratgeber |
+| `tp_ratgeber_cta_klick` | Klick auf einen Link innerhalb `[data-tp-rg-cta]` | `page`, `ziel` (Pfad ohne Query), `cta_typ` (Wert von `data-tp-rg-cta`), `ort` (`oben` = Kaufbox nach der Kurzantwort, `unten` = „Passend dazu“) | Ratgeber |
 | `tp_bodenwissen_problem_gewaehlt` | Klick auf `.tp-bp__link` im Problem-Finder | `page`, `belag`, `symptom`, `ziel` | Ratgeber |
 | `tp_bodenwissen_lexikon` | Aufklappen eines Fachbegriffs (`summary` ueber `[data-tp-bw-lexikon]`) oder Sprung in der Lexikon-Navigation | `page`, `begriff`, `von` (`produkt`\|`ratgeber`\|`lexikon`) | Ratgeber |
 | `tp_bodenwissen_rechner` | erster Klick auf `[data-berechnen]` im Bedarfsrechner, einmal je Seitenaufruf | `page`, `rechner` | Ratgeber |

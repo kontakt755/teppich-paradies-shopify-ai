@@ -141,7 +141,11 @@
             publish('tp_muster_cta_klick', { product_handle: handle() });
           }
           var modul = link.closest('[data-tp-rg-cta]');
-          if (modul) publish('tp_ratgeber_cta_klick', { ziel: href.split('?')[0].split('#')[0], cta_typ: modul.getAttribute('data-tp-rg-cta') || '' });
+          if (modul) {
+            // ort: oben (Kaufbox nach der Kurzantwort) oder unten (Passend dazu)
+            var rgOrt = modul.closest('[data-tp-rg-ort]');
+            publish('tp_ratgeber_cta_klick', { ziel: href.split('?')[0].split('#')[0], cta_typ: modul.getAttribute('data-tp-rg-cta') || '', ort: rgOrt ? rgOrt.getAttribute('data-tp-rg-ort') : '' });
+          }
 
           // Bodenwissen: Problem-Finder. Welches Symptom fuehrt zu welchem Artikel -
           // das ist die Liste, aus der die naechsten Themen kommen.
