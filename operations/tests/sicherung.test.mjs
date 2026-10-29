@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { sichern, alteSicherungenAufraeumen, vorhandeneQuellen, SICHERUNGSPFADE, NICHT_GESICHERT, kopieAblegen, kopieVermerken, parseArgs } from '../scripts/sicherung.mjs';
+import { sichern, alteSicherungenAufraeumen, vorhandeneQuellen, SICHERUNGSPFADE, NICHT_GESICHERT, kopieAblegen, kopieVermerken, fehlerVermerken, parseArgs } from '../scripts/sicherung.mjs';
 import { betriebszustand } from '../lib/betriebszustand.mjs';
 import { oeffne } from '../../social/lib/db.mjs';
 import { sichereDatenbank } from '../../social/lib/ablauf.mjs';
@@ -119,6 +119,41 @@ test('ein morgendlicher Anmeldelauf verdeckt keinen ausgefallenen Abendlauf', ()
   fs.writeFileSync(f, JSON.stringify({ letzterErfolg: '2026-10-23T06:00:00Z' }));
   assert.equal(betriebszustand(dir, { jetzt: new Date('2026-10-23T08:00:00Z') }).sicherung.status, 'ok');
   assert.equal(betriebszustand(dir, { jetzt: new Date('2026-10-23T21:10:00Z') }).sicherung.status, 'alt');
+});
+
+test('ein gescheiterter Lauf steht im Stand, ohne den letzten Erfolg zu aendern; der naechste Erfolg loescht ihn', () => {
+  const dir = beispielPrivatDir();
+  const f = path.join(dir, 'sicherungsstand.json');
+  const jetzt = new Date('2026-10-28T08:00:00Z');
+  // Gar kein Stand: `fehlt`, damit "Sicherung laeuft nicht" ein To-do wird.
+  assert.equal(betriebszustand(dir, { jetzt }).sicherung.fehlt, true);
+  // Ohne bisherigen Stand: nur der Fehler, Status bleibt unbekannt.
+  fehlerVermerken(dir, { am: '2026-10-27T20:30:00Z', meldung: 'ENOSPC: no space left on device' });
+  let r = betriebszustand(dir, { jetzt }).sicherung;
+  assert.equal(r.status, 'unbekannt');
+  assert.equal(r.fehlt, undefined, 'der Stand existiert jetzt');
+  assert.deepEqual(r.letzterFehler, { am: '2026-10-27T20:30:00.000Z', meldung: 'ENOSPC: no space left on device' });
+  assert.equal((fs.statSync(f).mode & 0o777).toString(8), '600');
+
+  fs.writeFileSync(f, JSON.stringify({ letzterErfolg: '2026-10-26T20:30:00Z', bytes: 1 }));
+  fehlerVermerken(dir, { am: '2026-10-27T20:30:00Z', meldung: 'tar: Fehler' });
+  assert.equal(JSON.parse(fs.readFileSync(f, 'utf8')).letzterErfolg, '2026-10-26T20:30:00Z');
+  r = betriebszustand(dir, { jetzt }).sicherung;
+  assert.deepEqual([r.status, r.letzterFehler.meldung], ['alt', 'tar: Fehler']);
+
+  // Ein Fehler vor dem letzten Erfolg zaehlt nicht mehr.
+  fs.writeFileSync(f, JSON.stringify({ letzterErfolg: '2026-10-27T21:35:00Z', letzterFehler: { am: '2026-10-26T21:30:00Z', meldung: 'alt' } }));
+  r = betriebszustand(dir, { jetzt }).sicherung;
+  assert.deepEqual([r.status, r.letzterFehler], ['ok', undefined]);
+
+  // Erfolg schreibt den Stand neu, ohne Fehlervermerk.
+  fehlerVermerken(dir, { am: '2026-10-28T07:00:00Z', meldung: 'x' });
+  sichern({ privatDir: dir, ziel: path.join(dir, 'sicherungen'), jetzt, launchAgentsDir: path.join(dir, 'keine-dienste') });
+  assert.equal(JSON.parse(fs.readFileSync(f, 'utf8')).letzterFehler, undefined);
+  // Kaputter Stand wird nicht ueberschrieben.
+  fs.writeFileSync(f, '{kaputt');
+  fehlerVermerken(dir, { am: '2026-10-28T07:00:00Z', meldung: 'x' });
+  assert.equal(fs.readFileSync(f, 'utf8'), '{kaputt');
 });
 
 test('sichern: wirft eine klare Meldung, wenn gar keine Quelle existiert', () => {
