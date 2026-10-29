@@ -2309,6 +2309,24 @@ erhalten. Mobil stehen Bestellungen, Muster bestellen, Packstation und Lexikon d
 Mehr öffnet die bestehende Seitenleiste. Der Hausknopf im Kopf führt zur Shop-Übersicht.
 Rollenrechte und die vorhandene geschützte Datenaktualisierung bleiben erhalten.
 
+**Probleme oben (w-206, 29.10.2026).** Die Shop-Übersicht zeigt direkt unter dem Titel die roten
+To-dos als Block „Probleme · N“ (`ansichten/heute/probleme.mjs`, reine Funktion; `problemeShop()` in
+`heute.mjs` sammelt). Seit dem Rundgang vom 26.10. stand die To-do-Liste nur in den Alltagssichten;
+rote Meldungen (Mac-Dienst gestört, Speicher fast voll, Sicherung fehlgeschlagen, aus der Bestellung
+entfernte Positionen, überschrittener Liefertermin) wurden hinter „Weitere Bereiche“ übersehen.
+Quellen und Ableitung sind dieselben wie in der Gesamtübersicht (`todosDerSicht()`): abgeleitete
+To-dos aus `lib/todos.mjs` plus Nachfragen, Versandfehler, Lieferantenbelege, Shopify-Abgleich und
+Datenstand. Dafür lädt die Shop-Übersicht zusätzlich Rückrufe, Shopify-Abgleich und Belege (lokal,
+zwischengespeichert; die Alltagssichten brauchen sie ohnehin). Der Inhaber sieht alles Rote (Sicht
+`alles`), Mitarbeiter ihre Sicht (`laden`), Website- und Technik-Einträge nicht. **Nicht oben** stehen
+Laden-/Treppenanfragen, Angebote aus Kundenfällen und Team-Aufgaben (`NEBENBEREICH_ARTEN`: `service`,
+`angebot`, `aufgabe`), auch wenn sie rot sind: der Inhaber hat sie am 22.10. in „Weitere Bereiche“
+geschoben, die Anfragen stehen dort mit Zahl und Alter; Kundenfälle und Aufgaben werden auf der
+Shop-Übersicht deshalb gar nicht geladen. Gelbes und Normales bleibt in den Alltagssichten, damit
+die Warenbestellungen direkt darunter zuerst kommen; drei Zeilen sichtbar, der Rest klappt auf.
+Ohne rotes To-do erscheint kein Block.
+Tests: `shop-start-probleme.test.mjs`, `shop-start.test.mjs`.
+
 Shopify-Archivierung bleibt ein ausdruecklicher bewusster Abschluss: `closedAt` wird als
 `archiviert` durch Auftragsmodell und Bestellzeile weitergereicht. Bei geklaertem finanziellem
 Endzustand erscheint der Auftrag unter Fertig/Alle, ohne daraus Versand abzuleiten. Offene
