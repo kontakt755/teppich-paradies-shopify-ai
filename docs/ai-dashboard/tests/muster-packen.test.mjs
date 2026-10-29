@@ -320,7 +320,7 @@ test('Anmerkung: Bestelldatum und Musterautomatik aus dem Auftragsfluss, Direktv
   const bea = r.kunden.find(k => k.name === 'Bea Test');
   assert.equal(bea.bereich, 'warten');
   assert.deepEqual(bea.muster.map(m => [m.stand, m.bestelltAm, m.automatisch]), [
-    ['bestellt', '2026-10-24T07:00:00.000Z', true], ['bestellt', '2026-10-23T09:00:00.000Z', false], ['da', null, false]]);
+    ['bestellt', '2026-10-24T07:00:00.000Z', true], ['bestellt', '2026-10-23T09:00:00.000Z', false], ['da', '2026-10-20T09:00:00.000Z', false]], 'das Lieferantendatum bleibt nach der Ankunft');
   const cem = r.kunden.find(k => k.name === 'Cem Test');
   assert.equal(cem.direktversand, true);
   assert.equal(cem.bereich, 'klaeren', 'geht vom Lieferanten direkt an den Kunden - nicht bei uns packen');

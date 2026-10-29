@@ -171,7 +171,9 @@ test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgeme
   assert.match(html, /Muster &amp; Packstation/);
   assert.match(html, /3 warten auf Ware/);
   assert.match(html, /4 gepackt · Versand vorbereiten/);
-  assert.equal((html.match(/Etiketten-Druckliste/g) || []).length, 1);
+  assert.equal((html.match(/Aufkleber-Druckliste/g) || []).length, 1);
   assert.doesNotMatch(html, /Kundenbestellungen|Dringendes bearbeiten|Bestellungen werden geladen/);
-  assert.match(html, /art=muster&amp;af=bestellt/);
+  // Rundgang 29.10. (T6): ein Weg fuer eingetroffene Muster - der Packstation-Reiter "Muster kommt an".
+  assert.match(html, /href="#\/kunden\?tab=muster&amp;mp=laden">Muster kommt an</);
+  assert.doesNotMatch(html, /Muster-Wareneingang|Etiketten-Druckliste/);
 });

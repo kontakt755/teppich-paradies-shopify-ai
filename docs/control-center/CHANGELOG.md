@@ -38,6 +38,54 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Ob Bänder/Cover beim Kettler ebenfalls Puffer brauchen, ist offen. Der GEL-Kostenvergleich (eigenes Ketteln gegen fertig gekettelt beziehen) aus
   #1684 fehlt noch: er braucht echte Gewichte, Verpackungsmaße und EK eines konkreten großen Teppichs.
 - **Naechste Stufe:** GEL-Vergleich an einem echten Auftrag rechnen.
+## 2026-10-29 · Ein Wort je Sache: „Aufkleber“, „Muster kommt an“, Lieferant mit Namen im Lexikon
+
+- **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde T6, T11, T8 Teil Name; vom Kritiker bestätigt).
+  - Heute › Muster & Packstation: „Muster-Wareneingang“ führte in die Bestellen-Liste, die Packstation hat
+    für dasselbe den Reiter „Muster kommt an“ (BEGRIFFE.md). Der Knopf heißt jetzt so und führt dorthin.
+  - „Etiketten-Druckliste“ / „Gemeinsame Druckliste“ heißen überall „Aufkleber-Druckliste“ (Heute,
+    Lexikon, Kundenakte, Aufkleber prüfen, Seitentitel); im Musterlager „Aufkleber“ / „Aufkleber drucken…“
+    statt „Etikett“. „Etikett“ bleibt für Rolle und Drucker.
+  - Bestellen: „Alle N angekommen“ → „Alle N als angekommen eintragen“ (der Knopf bucht).
+  - Lexikon: die Spalte „Lieferant“ zeigte das Kürzel („A“), Packstation und Bestellen den Namen aus
+    den Stammdaten. Jetzt `lieferantName()` mit `/api/einkauf/lieferanten`; ohne Stammdaten „Lieferant A“.
+    Nach dem Laden zeichnet das Lexikon neu.
+- **Getestet:** `start-bestellarbeit-ansicht.test.mjs` angepasst (Knopf „Muster kommt an“, keine alten
+  Wörter), `lexikon-lieferantenname.test.mjs` neu. `npm run -s dashboard:test` 1057/1057, `npm run -s pruefen` alle 9 Schritte grün; `dashboard:pruefen` Heute, Lexikon-Detail, Druckliste und Musterlager bei 390/1440 px ohne Überlauf.
+- **Risiken:** Wer den Weg „Muster-Wareneingang“ über die Bestellen-Liste gewohnt ist, findet ihn
+  weiter unter Bestellen › Je Lieferant; nur der Knopf auf Heute führt jetzt zur Packstation.
+- **Naechste Stufe:** Reihenfolge im Lexikon-Detail („Zum Bestellen“ weiter oben) – Werkbank.
+## 2026-10-29 · Packstation: Knopf „Verschickt – Kunde informieren“ und Reiter „Erledigt“
+
+- **Geaendert:** Ein gepackter Umschlag geht sofort raus (Benutzer 29.10.). Bisher bekam der Kunde
+  keine Mail, solange niemand den Versand separat über „Versand prüfen…“ buchte. Gepackte Umschläge
+  haben jetzt den Hauptknopf „Verschickt – Kunde informieren“; „Großbrief vorbereiten“ bleibt daneben.
+  Nach einer Rückfrage setzt der Knopf je Bestellung des Umschlags den Schritt „raus“ für genau ihre
+  Muster. Der Server bucht dabei wie der Versanddialog den Versand in Shopify mit Versandbestätigung an
+  den Kunden (ohne Sendungsnummer, Mail nach Hausregel: nicht bei „holt im Laden ab“). Danach fällt der
+  Umschlag aus der Packliste. Der neue Reiter „Erledigt“ zeigt die versandten oder erledigten
+  Musterbestellungen der letzten 14 Tage, nur zum Nachsehen, mit Link zur Bestellung.
+- **Test:** `packstation-arbeitslisten.test.mjs` (Hauptknopf bei Gepackt, Reiter Erledigt mit Zeitraum
+  und Leerzustand).
+- **Risiko:** Die Buchung selbst ist der bestehende Weg (`auftragsSchrittSetzen` → `versandBuchen`) und
+  dort getestet; der Klick gegen Shopify ist auf der Datenkopie nicht geprüft. Scheitert die Buchung,
+  zeigt die Meldung den Grund, der Schritt „raus“ bleibt gesetzt, „Versand nachholen“ greift wie bisher.
+  Der Reiter zählt nach Bestelldatum, nicht nach Versanddatum.
+- **Nächste Stufe:** Packen und Verschicken in einem Klick, falls der Inhaber den Zwischenstand nicht braucht.
+
+## 2026-10-29 · Packstation: Kopfzeile einheitlich, Lieferanten-Bestelldatum auf jeder Karte
+
+- **Geaendert:** Die Angaben rechts im Kartenkopf („N Muster · …“, „bestellt am … · wartet seit …“)
+  sprangen von Karte zu Karte, weil der Block nach einem Umbruch nach links rutschte.
+  `.mp-meta` hält ihn jetzt per `margin-left:auto` rechtsbündig (Handy bleibt linksbündig).
+  „beim Lieferanten bestellt am …“ stand nur, solange noch Muster fehlten; `lib/muster-packen.mjs`
+  behält `bestelltAm` jetzt auch nach der Ankunft, `datumHtml()` zeigt es auf jeder Karte, auch
+  packbereit und gepackt. Der Stand je Muster („beim Lieferanten bestellt am …“) bleibt nur bei
+  noch bestellten Mustern.
+- **Test:** `packstation-arbeitslisten.test.mjs` (packbereit und gepackt mit Lieferantendatum),
+  `muster-packen.test.mjs` (Datum bleibt bei Stand „da“).
+- **Risiko:** PR #1794 ändert dieselben Dateien; wer zuerst gemergt wird, der andere zieht nach.
+- **Nächste Stufe:** keine.
 
 ## 2026-10-29 · Rote Betriebsmeldungen mit Weg, Entfernt-Zeile kürzer
 

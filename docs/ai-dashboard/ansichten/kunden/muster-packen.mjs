@@ -160,8 +160,8 @@ function warteAnmerkung(k) {
 
 /**
  * Kopfzeile rechts, ohne Aufklappen (Inhaber 28.10.: "an welchem Datum bestellt wurde"): Bestelldatum
- * samt Wartezeit, bei mehreren Bestellungen die erste. Fehlt noch etwas, auch wann es beim Lieferanten
- * bestellt wurde - bisher stand das nur aufgeklappt.
+ * samt Wartezeit, bei mehreren Bestellungen die erste. Dazu auf jeder Karte, wann beim Lieferanten
+ * bestellt wurde, sobald das belegt ist - auch wenn die Muster schon da sind (29.10.: "steht nicht ueberall").
  */
 function datumHtml(k) {
   const tage = k.wartetTage;
@@ -169,7 +169,7 @@ function datumHtml(k) {
   const bestellt = gueltig(k.seit) ? `${k.bestellungen.length > 1 ? 'erste Bestellung' : 'bestellt'} am ${tagDatum(k.seit)}` : '';
   const wartet = tage === null ? '' : tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`;
   const zeile = [bestellt, wartet].filter(Boolean).join(' · ');
-  const beimLieferanten = k.bereich === 'gepackt' ? [] : nochNichtDa(k).isos;
+  const beimLieferanten = k.muster.map(m => m.bestelltAm).filter(gueltig).sort();
   return `${zeile ? `<span class="${warn ? 'wait-warn' : 'small muted'}">${esc(zeile)}</span>` : ''}`
     + `${beimLieferanten.length ? `<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
 }
@@ -290,7 +290,9 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     : k.gedruckt ? `<button type="button" class="btn btn-sm btn-ghost" data-mp-gedruckt-weg="${pk}">Druckvermerk zurücknehmen</button>`
       : k.bereich === 'klaeren' || angefangen(k) ? `<button type="button" class="btn btn-sm" data-mp-gedruckt="${pk}">Schon gedruckt – Umschlag vorbereitet</button>` : '';
   if (k.bereich === 'gepackt') {
-    unten = `<button type="button" class="btn btn-sm btn-primary" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>`;
+    // Gepackt heisst: geht heute raus (Inhaber 29.10.). "Verschickt" bucht in Shopify mit Versandmail,
+    // danach steht der Umschlag nur noch unter "Erledigt".
+    unten = `${lesend ? '' : `<button type="button" class="btn btn-sm btn-primary" data-mp-verschickt="${pk}">Verschickt – Kunde informieren</button>`}<button type="button" class="btn btn-sm" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>`;
     mehr = [erneutDrucken, lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`,
       ...k.bestellungen.map(b => `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Versand prüfen…</a>`)];
   } else if (k.bereich === 'klaeren') {
@@ -393,7 +395,8 @@ export function viewKundenMusterPacken() {
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const zielKunde = d.kunden.find(k => k.packSchluessel === ziel);
   // "Alle offenen" zuerst und als Standard: jede Musterbestellung steht sofort in der Packstation.
-  const bereiche = [['offen', 'Alle offenen'], ['packen', 'Packbereit'], ['klaeren', 'Zu klären'], ['warten', 'Wartet auf Ware'], ['gepackt', 'Gepackt']];
+  const bereiche = [['offen', 'Alle offenen'], ['packen', 'Packbereit'], ['klaeren', 'Zu klären'], ['warten', 'Wartet auf Ware'], ['gepackt', 'Gepackt'], ['erledigt', 'Erledigt']];
+  const erledigt = erledigteBestellungen(d.ausserhalb);
   const angefordert = state.route.params.get('mpbereich');
   const aktiv = suche ? 'alle' : zielKunde?.bereich || (bereiche.some(([b]) => b === angefordert) || angefordert === 'alle' ? angefordert : 'offen');
   const linkFuer = bereich => {
@@ -402,7 +405,7 @@ export function viewKundenMusterPacken() {
     p.delete('umschlag'); p.delete('mpq'); p.delete('mp');
     return `#/kunden?${p}`;
   };
-  const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => `<a class="btn${aktiv === b ? ' btn-primary' : ''}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : k.bereich === b)).length}</span></a>`).join('')}</nav>`;
+  const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => `<a class="btn${aktiv === b ? ' btn-primary' : ''}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${b === 'erledigt' ? erledigt.length : d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : k.bereich === b)).length}</span></a>`).join('')}</nav>`;
   const gefunden = suche ? packSuche(d.kunden, suche, d.ausserhalb || []) : null;
   const treffer = new Map((gefunden?.treffer || []).map(t => [t.packSchluessel, new Set(t.muster)]));
   // Offene Arbeit nach Dringlichkeit: erst Packbereites, dann zu Klaerendes, dann Wartendes; in jeder
@@ -413,7 +416,7 @@ export function viewKundenMusterPacken() {
     : aktiv === 'offen' ? d.kunden.filter(k => k.bereich !== 'gepackt').sort(reihe)
       : aktiv === 'alle' ? d.kunden : d.kunden.filter(k => k.bereich === aktiv).sort(reihe);
   // Bei Suche, Direktlink und Gepacktem gilt der Umschlagfilter nicht - dort soll nichts verschwinden.
-  const umschlagGilt = !gefunden && !zielKunde && aktiv !== 'gepackt';
+  const umschlagGilt = !gefunden && !zielKunde && !['gepackt', 'erledigt'].includes(aktiv);
   const umschlag = umschlagGilt && UMSCHLAG_PASST[state.route.params.get('mpumschlag')] ? state.route.params.get('mpumschlag') : '';
   const sichtbar = umschlag ? imReiter.filter(UMSCHLAG_PASST[umschlag]) : imReiter;
   // Wie die Reiter als Links; beide bleiben beim Wechsel des anderen erhalten.
@@ -445,13 +448,28 @@ export function viewKundenMusterPacken() {
     : ['packen', 'offen'].includes(aktiv) && !suche ? `<p>Eingetroffene Muster legst du unter <a href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a> ein, oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
   const titel = (aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1])
     + (umschlag ? ` · Umschlag ${UMSCHLAG.find(([w]) => w === umschlag)[1]}` : '');
+  if (aktiv === 'erledigt') return `${umschalter}${kopf}${filter}${ausschlussHinweis}${suchfeld}${erledigtHtml(erledigt)}`;
   return `${umschalter}${kopf}${filter}${umschlagFilter}${ausschlussHinweis}
     ${suchfeld}
     ${suche ? `<p class="small muted">Die Suche berücksichtigt alle Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>` : ''}
-    ${druck}<section class="mp-arbeitsliste" aria-label="${esc(titel)}"><h2 class="mp-titel">${esc(titel)}${aktiv === 'gepackt' ? ' – Versand noch separat' : ''}</h2>
+    ${druck}<section class="mp-arbeitsliste" aria-label="${esc(titel)}"><h2 class="mp-titel">${esc(titel)}${aktiv === 'gepackt' ? ' – nach dem Verschicken „Verschickt“ drücken' : ''}</h2>
     ${sichtbar.length ? `<div class="mp-kunden">${sichtbar.map((k, i) => kundeHtml(k, i + 1, { offenBeiSuche: aufklappen, treffer: treffer.get(k.packSchluessel) })).join('')}</div>` : leer}</section>
     ${gefunden?.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], gefunden.ausserhalb) : ''}
     <p class="small muted">Fehlt eine Bestellung? <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Bestellungen – Muster →</a>.</p>`;
+}
+
+/** Reiter "Erledigt": versandte oder erledigte Musterbestellungen der letzten Tage, nur zum Nachsehen. */
+export const ERLEDIGT_TAGE = 14;
+export function erledigteBestellungen(ausserhalb = [], jetzt = Date.now()) {
+  const ab = jetzt - ERLEDIGT_TAGE * 24 * 60 * 60 * 1000;
+  return (ausserhalb || []).filter(b => b.grund === 'erledigt' && gueltig(b.datum) && new Date(b.datum).getTime() >= ab);
+}
+
+function erledigtHtml(liste) {
+  const zeilen = liste.map(b => `<li class="mp-aussen"><div><strong>${esc(b.orderName)}</strong> · ${esc(b.name)} · ${plural(b.muster.length, 'Muster', 'Muster')}</div>`
+    + `<div class="small muted">bestellt am ${esc(fmtDate(b.datum))} · verschickt oder erledigt · <a href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">Bestellung ansehen</a></div></li>`).join('');
+  return `<section class="mp-arbeitsliste" aria-label="Erledigt"><h2 class="mp-titel">Erledigt – Musterbestellungen der letzten ${ERLEDIGT_TAGE} Tage</h2>
+    ${zeilen ? `<ul class="mp-liste">${zeilen}</ul>` : `<div class="mp-arbeitsleer"><p>In den letzten ${ERLEDIGT_TAGE} Tagen ist keine Musterbestellung erledigt worden.</p></div>`}</section>`;
 }
 
 const GRUND_TEXT = Object.freeze({
@@ -638,6 +656,38 @@ async function schreiben(daten, meldung) {
   }
 }
 
+/**
+ * "Verschickt – Kunde informieren": je Bestellung im Umschlag den Schritt "raus" fuer genau ihre Muster.
+ * Der Server bucht dabei in Shopify den Versand mit Versandmail (operations/lib/versand.mjs) - wie der
+ * Versanddialog, ohne Sendungsnummer (Brief). Danach ist der Umschlag nicht mehr in der Packliste.
+ */
+async function verschicken(k, knopf) {
+  const n = k.bestellungen.length;
+  if (!window.confirm(`Umschlag ${umschlagKennung(k)} für ${k.name} ist verschickt?\n\nShopify bucht ${n === 1 ? 'die Bestellung' : `die ${n} Bestellungen`} als versendet und schickt die Versandbestätigung an den Kunden. Danach steht der Umschlag unter „Erledigt“.`)) return;
+  packSpeichert = true;
+  knopf.disabled = true;
+  knopf.textContent = 'Wird gebucht …';
+  const meldungen = [];
+  let fehler = null;
+  for (const b of k.bestellungen) {
+    const ids = k.muster.filter(m => m.orderId === b.orderId).map(m => m.lineItemId);
+    if (!ids.length) continue;
+    try {
+      // eslint-disable-next-line no-await-in-loop -- je Bestellung nacheinander, der Server reiht ohnehin.
+      const r = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId: b.orderId, schritt: 'raus', lineItemIds: ids, notiz: 'Verschickt aus der Packstation' });
+      meldungen.push({ text: `${b.orderName}: ${r?.shopify?.meldung || 'als verschickt eingetragen.'}`, warn: !!r?.shopify && !['gebucht', 'bereits'].includes(r.shopify.status) });
+    } catch (err) { fehler = `${b.orderName}: ${err.message}`; break; }
+  }
+  try {
+    const neu = await fetchEinkauf(ENDPOINT);
+    if (neu?.verfuegbar && !neu.fehler) kunden.musterPacken = neu;
+  } catch { /* der naechste Abruf holt es nach */ }
+  packSpeichert = false;
+  if (fehler) toast(`Nicht verschickt: ${fehler}${meldungen.length ? ` – schon erledigt: ${meldungen.map(m => m.text).join(' ')}` : ''}`, 'crit');
+  else toast(`Verschickt · ${umschlagKennung(k)} ${k.name}. ${meldungen.map(m => m.text).join(' ')}`, meldungen.some(m => m.warn) ? 'warn' : undefined);
+  render();
+}
+
 /** "Eingelegt ✓": Haken setzen, Feld leeren und fuer das naechste Muster bereit machen. */
 async function eingelegt(k, lineItemId) {
   await schreiben({ packSchluessel: k.packSchluessel, aktion: 'haken', lineItemIds: [lineItemId], an: true });
@@ -673,6 +723,13 @@ export function musterPackenKlick(e) {
     return true;
   }
   const liste = kunden.musterPacken?.kunden || [];
+  const versandt = e.target.closest('[data-mp-verschickt]');
+  if (versandt) {
+    e.preventDefault();
+    const k = liste.find(x => x.packSchluessel === versandt.dataset.mpVerschickt);
+    if (k?.gepackt && !packSpeichert) verschicken(k, versandt);
+    return true;
+  }
   const grossbrief = e.target.closest('[data-mp-grossbrief]');
   if (grossbrief) {
     e.preventDefault();

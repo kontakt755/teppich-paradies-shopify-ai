@@ -35,7 +35,7 @@ function produkt(z) {
 export function viewMusterEtikettenStatus() {
   laden();
   const q = state.route.params.get('lq') || '', filter = state.route.params.get('els') || 'pruefen';
-  const kopf = `<p class="lex-druckliste-link"><a class="btn" href="#/lexikon">Lexikon</a><a class="btn" href="#/lexikon?tab=druckliste">Gemeinsame Druckliste</a></p>
+  const kopf = `<p class="lex-druckliste-link"><a class="btn" href="#/lexikon">Lexikon</a><a class="btn" href="#/lexikon?tab=druckliste">Aufkleber-Druckliste</a></p>
     <div class="page-head"><div><h1>Aufkleber prüfen</h1><p class="sub">Hier prüfst du die Muster-Aufkleber; neue Produkte und Farben kommen automatisch dazu.</p></div><button class="btn btn-sm" data-etiketten-status-neu${loading ? ' disabled' : ''}>Aktualisieren</button></div>
     <p class="small muted">Die Aufkleber entstehen aus den aktuellen Produktdaten. Hier wird nichts zur Druckliste hinzugefügt und kein Druck gestartet.</p>`;
   const suche = `<div class="toolbar search-hero"><input type="search" data-param="lq" value="${esc(q)}" aria-label="Aufkleberbestand durchsuchen" placeholder="Produkt, Farbe oder Artikelnummer …"></div>

@@ -171,8 +171,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
         bild: v?.bild || null,
         abgehakt: haken[z.lineItemId] ? { zeit: haken[z.lineItemId].zeit || null, von: haken[z.lineItemId].von || null } : null,
         stand,
-        // Fuer die Anmerkung "bestellt am …": nur solange das Muster noch beim Lieferanten ist.
-        bestelltAm: stand === 'bestellt' && belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
+        // Bleibt nach der Ankunft erhalten: die Kopfzeile nennt das Lieferanten-Bestelldatum immer (29.10.).
+        bestelltAm: belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
         automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
       });
     });

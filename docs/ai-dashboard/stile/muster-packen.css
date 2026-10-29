@@ -12,7 +12,8 @@
 .mp-wer { min-width: 0; }
 .mp-wer h3 { margin: 0 0 2px; font-family: var(--serif); font-size: 1.15rem; }
 .mp-pos { display: inline-flex; align-items: center; justify-content: center; min-width: 1.6em; height: 1.6em; margin-right: 8px; border-radius: 999px; background: var(--text); color: var(--surface); font-family: var(--font); font-size: .8rem; vertical-align: 2px; }
-.mp-meta { display: grid; justify-items: end; gap: 2px; text-align: right; }
+/* margin-left:auto haelt den Block auch nach einem Umbruch rechtsbuendig - sonst springt er je Karte. */
+.mp-meta { display: grid; justify-items: end; gap: 2px; margin-left: auto; text-align: right; }
 .mp-nr { color: var(--accent); font-size: 1.05rem; }
 .mp-kunde .notice { margin: 10px 0 0; }
 
@@ -87,7 +88,7 @@
   .mp-notiz { flex: 1 1 100%; min-height: 44px; }
   .mp-pfeil { display: none; }
   .mp-stand { padding-top: 0; }
-  .mp-meta { justify-items: start; text-align: left; }
+  .mp-meta { justify-items: start; margin-left: 0; text-align: left; }
   .mp-aktionen .btn { flex: 1 1 100%; min-height: 44px; }
 }
 

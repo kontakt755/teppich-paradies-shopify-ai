@@ -101,7 +101,7 @@ function zeileHtml(e) {
       ${e.leer || (zaehlbar(e) && nochDa(e) <= 0)
         ? `<button type="button" class="btn btn-sm" data-ml-wieder="${esc(e.id)}">Wieder da…</button>`
         : `<button type="button" class="btn btn-sm btn-ghost" data-ml-leer="${esc(e.id)}" title="Nichts mehr da – neue Musterbestellungen gehen wieder an den Lieferanten">Ist leer</button>`}
-      ${e.handle ? `<button type="button" class="btn btn-sm btn-ghost" data-ml-etikett-eintrag="${esc(e.id)}" title="Aufkleber für dieses Stück">Etikett</button>` : ''}
+      ${e.handle ? `<button type="button" class="btn btn-sm btn-ghost" data-ml-etikett-eintrag="${esc(e.id)}" title="Aufkleber für dieses Stück">Aufkleber</button>` : ''}
       <button type="button" class="btn btn-sm btn-ghost" data-ml-bearbeiten="${esc(e.id)}">Bearbeiten…</button>
     </div>`;
   return `<li class="ml-zeile${b.warn ? ' ml-knapp' : ''}">
@@ -135,7 +135,7 @@ function vorschlagHtml(v, i) {
       <div class="ml-angaben"><span>${esc(grund)}</span></div>
     </div>
     <div class="ml-aktionen">
-      ${v.handle && v.grund === 'verlegerest' ? `<button type="button" class="btn btn-sm btn-ghost" data-ml-vorschlag-etikett="${i}">Etikett</button>` : ''}
+      ${v.handle && v.grund === 'verlegerest' ? `<button type="button" class="btn btn-sm btn-ghost" data-ml-vorschlag-etikett="${i}">Aufkleber</button>` : ''}
       ${istNurLesend() ? '' : `<button type="button" class="btn btn-sm" data-ml-vorschlag="${i}">Einlagern…</button>`}
     </div>
   </li>`;
@@ -157,7 +157,7 @@ export function viewEinkaufMusterlager() {
     <p class="small muted"><b>Verlegereste:</b> Teppichboden und Vinyl von Lieferant ${esc(resteLieferanten())} – Rest immer aufheben und beschriften. Ware anderer Hersteller nur, wenn ${esc(resteLieferanten(' oder '))} sie auch führt: „Rest prüfen…“.</p></div>
     <div class="btn-row">${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button>'}
     <button type="button" class="btn" data-ml-rest-pruefen>Rest prüfen…</button>
-    <button type="button" class="btn" data-ml-etikett>Etikett drucken…</button></div>
+    <button type="button" class="btn" data-ml-etikett>Aufkleber drucken…</button></div>
   </div>`;
   // Eine Zeile mit den drei Zahlen, die vom Normalfall abweichen; 0 faellt weg.
   const zahlen = [
@@ -435,7 +435,7 @@ function oeffneBearbeiten(e, { wieder = false } = {}) {
 export function einkaufKlickMusterlager(ev) {
   if (ev.target.closest('[data-ml-neu]')) { oeffneEinlagern(); return true; }
   // Einzeletikett von Hand, z. B. fuer Muster im Lager ohne Bestellung.
-  if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Etikett drucken' }); return true; }
+  if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Aufkleber drucken' }); return true; }
   const ms = ev.target.closest('[data-ms-frei], [data-ms-nachholen]');
   if (ms) {
     const frei = 'msFrei' in ms.dataset;
@@ -461,13 +461,13 @@ export function einkaufKlickMusterlager(ev) {
   const ve = ev.target.closest('[data-ml-vorschlag-etikett]');
   if (ve) {
     const x = musterlager.daten?.vorschlaege?.[Number(ve.dataset.mlVorschlagEtikett)];
-    if (x) druckeEtiketten([{ handle: x.handle, titel: x.titel, farbe: x.farbe, sku: x.schluessel }], 'Etikett für den Verlegerest');
+    if (x) druckeEtiketten([{ handle: x.handle, titel: x.titel, farbe: x.farbe, sku: x.schluessel }], 'Aufkleber für den Verlegerest');
     return true;
   }
   const ee = ev.target.closest('[data-ml-etikett-eintrag]');
   if (ee) {
     const e = musterlager.daten?.eintraege?.find(x => x.id === ee.dataset.mlEtikettEintrag);
-    if (e) druckeEtiketten([{ handle: e.handle, titel: e.titel, farbe: e.farbe, sku: e.schluessel?.[0] }], 'Etikett');
+    if (e) druckeEtiketten([{ handle: e.handle, titel: e.titel, farbe: e.farbe, sku: e.schluessel?.[0] }], 'Aufkleber');
     return true;
   }
   const finde = id => musterlager.daten?.eintraege?.find(e => e.id === id);
@@ -543,7 +543,7 @@ function oeffneRestPruefen() {
       // Ein Reststueck je Farbe - die Rollenbreiten derselben Farbe sind dasselbe Material.
       const jeFarbe = new Map();
       for (const f of t.farben) if (farben.includes(f.farbe) && !jeFarbe.has(f.farbe)) jeFarbe.set(f.farbe, f);
-      druckeEtiketten([...jeFarbe.values()].map(f => ({ handle: t.handle, titel: t.titel, farbe: f.farbe, sku: f.sku })), 'Etikett für den Verlegerest');
+      druckeEtiketten([...jeFarbe.values()].map(f => ({ handle: t.handle, titel: t.titel, farbe: f.farbe, sku: f.sku })), 'Aufkleber für den Verlegerest');
       return;
     }
     const ort = String(box.querySelector('input[name=ort]')?.value || '').trim();

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { viewKundenMusterPacken } from '../ansichten/kunden/muster-packen.mjs';
+import { viewKundenMusterPacken, erledigteBestellungen, ERLEDIGT_TAGE } from '../ansichten/kunden/muster-packen.mjs';
 import { state } from '../kern/zustand.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 
@@ -22,7 +22,7 @@ test('Standard zeigt alle offenen Umschlaege sofort, Packbereit zuerst, Gepackte
   assert.deepEqual(reihe, ['order3', 'order2', 'order1']);
   assert.match(html, /aria-current="page">Alle offenen <span class="mp-filterzahl">3</);
   assert.match(html, /aria-current="page">Bestellung packen<[\s\S]*>Muster kommt an</);
-  assert.equal((html.match(/mp-filterzahl/g) || []).length, 5);
+  assert.equal((html.match(/mp-filterzahl/g) || []).length, 6);
   assert.doesNotMatch(html, /data-mp-kunde="[^"]*"[^>]* open/, 'ohne Suche oder Direktlink bleibt alles zu');
   const leer = ansicht('tab=muster', [kunde(5, 'gepackt')]);
   assert.match(leer, /Gerade keine offene Musterbestellung/);
@@ -52,6 +52,13 @@ test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die
   assert.match(kopf(html), /beim Lieferanten bestellt am Sa\., 24\.10\./);
   assert.doesNotMatch(html, /mp-bestelldaten/, 'eine Bestellung braucht keine Einzelaufstellung');
 
+  // Packbereit (alles da) und gepackt: das Lieferanten-Bestelldatum steht trotzdem in der Kopfzeile (29.10.).
+  for (const bereich of ['packen', 'gepackt']) {
+    const da = kunde(9, bereich);
+    da.muster = [{ ...da.muster[0], stand: 'da', abgehakt: true, bestelltAm: '2026-10-24T07:00:00.000Z' }];
+    assert.match(kopf(ansicht('tab=muster&umschlag=order9', [da])), /beim Lieferanten bestellt am Sa\., 24\.10\./, bereich);
+  }
+
   // Zwei Bestellungen in einem Umschlag: oben die erste, aufgeklappt jede mit Datum.
   const zwei = kunde(2, 'packen');
   Object.assign(zwei, { seit: '2026-10-20T08:00:00Z', wartetTage: 1 });
@@ -59,12 +66,12 @@ test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die
   zwei.muster = [{ ...zwei.muster[0], stand: 'da', abgehakt: true }];
   const beide = ansicht('tab=muster', [zwei]);
   assert.match(kopf(beide), /<span class="small muted">erste Bestellung am Di\., 20\.10\. · wartet seit 1 Tag<\/span>/);
-  assert.doesNotMatch(kopf(beide), /beim Lieferanten/, 'alles da: keine Lieferantenzeile');
+  assert.doesNotMatch(kopf(beide), /beim Lieferanten/, 'ohne belegtes Lieferantendatum keine Lieferantenzeile');
   assert.match(beide, /<p class="small muted mp-bestelldaten">#TEST2 bestellt am Di\., 20\.10\. · #TEST3 bestellt am Do\., 22\.10\.<\/p>/);
 
-  // Gepackt zaehlt nichts mehr als fehlend; ohne Bestelldatum bleibt es bei der Wartezeit.
+  // Gepackt behaelt das Lieferantendatum (29.10.); ohne Bestelldatum bleibt es bei der Wartezeit.
   const gepackt = { ...k, bereich: 'gepackt', gepackt: { zeit: '2026-10-28T08:00:00Z' } };
-  assert.doesNotMatch(kopf(ansicht('tab=muster&umschlag=order1', [gepackt])), /beim Lieferanten/);
+  assert.match(kopf(ansicht('tab=muster&umschlag=order1', [gepackt])), /beim Lieferanten bestellt am Sa\., 24\.10\./);
   assert.match(kopf(ansicht('tab=muster', [kunde(4, 'warten')])), /<span class="small muted">wartet seit 1 Tag<\/span>/);
 });
 
@@ -269,7 +276,8 @@ test('Zu klaeren und Gepackt: ein Hauptknopf fuer das Naechstliegende, Rest unte
   const sonst = ansicht('tab=muster&umschlag=order6', [kunde(6, 'klaeren')]);
   assert.deepEqual(hauptknoepfe(sonst), ['#TEST6 – Bestellstand prüfen']);
   const gepackt = ansicht('tab=muster&umschlag=order2', [kunde(2, 'gepackt')]);
-  assert.deepEqual(hauptknoepfe(gepackt), ['Großbrief vorbereiten']);
+  assert.deepEqual(hauptknoepfe(gepackt), ['Verschickt – Kunde informieren']);
+  assert.match(gepackt, /data-mp-grossbrief="order2">Großbrief vorbereiten/);
   assert.match(gepackt, /class="mp-mehr"[\s\S]*data-mp-wert="0">Zurücknehmen</);
 });
 
@@ -320,4 +328,17 @@ test('Als fehlend gemeldet, laut Bestand aber da: "nicht eingelegt · im Regal s
   assert.doesNotMatch(html, /fehlt<\/strong> · <span class="muted">angekommen/);
   // Ohne Fehlmeldung bleibt es beim gewohnten Stand.
   assert.match(ansicht('tab=muster&umschlag=order12', [{ ...kunde(12, 'packen'), muster: [{ ...kunde(12, 'packen').muster[0], stand: 'da' }] }]), /<span class="muted">angekommen<\/span>/);
+});
+
+test('Gepackt -> "Verschickt": Reiter Erledigt zeigt nur versandte Musterbestellungen der letzten Tage (Inhaber 29.10.)', () => {
+  const jetzt = Date.parse('2026-10-29T12:00:00Z');
+  const b = (nr, grund, datum) => ({ orderId: `order${nr}`, orderName: `#TEST${nr}`, name: `Testkunde ${nr}`, grund, datum, muster: [{ lineItemId: `line${nr}` }] });
+  const ausserhalb = [b(1, 'erledigt', '2026-10-28T08:00:00Z'), b(2, 'storniert', '2026-10-28T08:00:00Z'), b(3, 'erledigt', '2026-10-01T08:00:00Z'), b(4, 'erledigt', null)];
+  assert.deepEqual(erledigteBestellungen(ausserhalb, jetzt).map(x => x.orderName), ['#TEST1'], `nur erledigt, nur ${ERLEDIGT_TAGE} Tage, nur mit Datum`);
+  const html = ansicht('tab=muster&mpbereich=erledigt', [kunde(5, 'gepackt')], [b(1, 'erledigt', new Date().toISOString())]);
+  assert.match(html, /aria-current="page">Erledigt <span class="mp-filterzahl">1<\/span>/);
+  assert.match(html, /<strong>#TEST1<\/strong> · Testkunde 1 · 1 Muster/);
+  assert.match(html, /href="#\/einkauf\?auftrag=order1">Bestellung ansehen/);
+  assert.doesNotMatch(html, /Testkunde 5/, 'Gepacktes steht nicht unter Erledigt');
+  assert.match(ansicht('tab=muster&mpbereich=erledigt', []), /keine Musterbestellung erledigt worden/);
 });
