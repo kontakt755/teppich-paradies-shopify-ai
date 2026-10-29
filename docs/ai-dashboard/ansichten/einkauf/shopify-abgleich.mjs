@@ -67,13 +67,14 @@ const tageSeit = (iso, jetzt) => {
 
 /** Aus der Kundenbestellung entfernt, beim Lieferanten bestellt: je Bestellung ein rotes To-do. */
 function entferntTodos(liste, jetzt, lieferantName) {
+  // Ohne Artikelnamen (Rundgang 29.10., A1): die Zeile war am Handy 260 px hoch und schob die
+  // Warenkunden aus dem ersten Bildschirm. Die Artikel stehen im Dialog "Abhaken…".
   return (liste || []).map((z) => {
-    const artikel = z.positionen.slice(0, 2).map(artikelText).join(', ') + (z.positionen.length > 2 ? ` +${z.positionen.length - 2}` : '');
     const bei = [...new Set(z.positionen.map(p => p.lieferant).filter(Boolean))].map(id => lieferantName(id)).join(', ');
     return {
       id: `entfernt:${z.orderId}`, art: 'entfernt', bereich: 'laden', ton: 'crit', alterTage: tageSeit(z.seit, jetzt),
       titel: `Aus Bestellung entfernt: ${z.orderName || 'Bestellung'} – Lieferantenbestellung stornieren?`,
-      kontext: [z.kunde, `${plural(z.positionen.length, 'Artikel', 'Artikel')} nicht mehr in der Bestellung, aber ${bei ? `bei ${bei} ` : ''}bestellt${z.seit ? ` am ${fmtDate(z.seit)}` : ''}`, artikel].filter(Boolean).join(' · '),
+      kontext: [z.kunde, `${plural(z.positionen.length, 'Artikel', 'Artikel')} nicht mehr in der Bestellung, aber ${bei ? `bei ${bei} ` : ''}bestellt${z.seit ? ` am ${fmtDate(z.seit)}` : ''}`].filter(Boolean).join(' · '),
       knopf: { text: 'Abhaken…', abhaken: z.orderId, href: `#/kunden?${new URLSearchParams({ tab: 'bestellungen', bfilter: 'alle', bq: z.orderName || z.orderId })}` },
     };
   });
@@ -157,6 +158,7 @@ function abhakenDialog(orderId) {
     <h2 id="entTitel">Aus Bestellung entfernt · ${esc(z.orderName || 'Bestellung')}</h2>
     <p class="small muted">Diese Artikel stehen nicht mehr in der Kundenbestellung, sind aber beim Lieferanten bestellt. Erst die Lieferantenbestellung stornieren, dann hier abhaken. Die Artikel verschwinden danach aus den Listen; der Vermerk bleibt im Verlauf.</p>
     <ul class="small" style="margin:0;padding-left:18px">${z.positionen.map(p => `<li>${esc(artikelText(p))}</li>`).join('')}</ul>
+    <p class="small"><a href="${esc(`#/kunden?${new URLSearchParams({ tab: 'bestellungen', bfilter: 'alle', bq: z.orderName || z.orderId })}`)}" data-close-dialog>Bestellung ansehen</a></p>
     <div class="field"><label for="entNotiz">Was ist mit der Lieferantenbestellung? (Pflicht)</label><textarea id="entNotiz" name="notiz" required maxlength="500" placeholder="z. B. am 29.10. telefonisch storniert"></textarea></div>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Abhaken</button></div>
   </form></div>`;

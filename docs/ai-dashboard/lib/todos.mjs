@@ -528,7 +528,8 @@ export function speicherHinweis(stand) {
     ton: stand.ampel === 'rot' ? 'crit' : 'warn',
     titel: stand.ampel === 'rot' ? 'Mac mini: Speicher fast voll' : 'Mac mini: Speicher wird knapp',
     text: `nur noch ${stand.freiGiB} GiB frei (${stand.belegtProzent} % belegt)`,
-    handlung: 'Ist die Platte voll, stehen Datenabgleich, Sicherung und Foto-Upload still. Alte Bildordner auslagern (nach Rückfrage).',
+    // Aufraeumen hat der Inhaber am 28.10. an Claude gegeben (Werkbank w-170) - eine "Rueckfrage" gibt es nicht mehr.
+    handlung: 'Ist die Platte voll, stehen Datenabgleich, Sicherung und Foto-Upload still. Claude Bescheid geben: „Speicher aufräumen“ – Claude lagert nur aus, was sich wiederherstellen lässt.',
   };
 }
 
@@ -643,19 +644,29 @@ function ausAusschreibungen(quellen, jetzt) {
  * Rot, weil es jemand loesen muss (Mails kommen sonst nicht an, Meldungen bleiben liegen).
  * Kommt mit der Shop-Wache (quellen.shopwache.routinen), also nur beim Inhaber.
  */
-function ausRoutinen(quellen, jetzt) {
-  const liste = quellen.shopwache?.routinen || [];
-  const gestoert = liste.map((r) => {
+/**
+ * Gestoerte Routinen mit Text und Seit-Zeitpunkt - eine Liste fuer To-do und Shop-Kontrolle, damit
+ * beide dieselben Routinen nennen (Rundgang 29.10., A5: das To-do nannte nur die erste und "+3").
+ */
+export function gestoerteRoutinen(liste = []) {
+  return (liste || []).map((r) => {
     if (r.ok === false) return { ...r, text: r.meldung || 'Fehler' };
     if (r.stumm) return { ...r, seit: r.stummSeit || r.seit, text: r.stummText || 'zu lange kein erfolgreicher Lauf' };
     return null;
   }).filter(Boolean);
+}
+
+function ausRoutinen(quellen, jetzt) {
+  const gestoert = gestoerteRoutinen(quellen.shopwache?.routinen);
   if (!gestoert.length) return [];
   const aeltestes = gestoert.map(r => r.seit).filter(Boolean).sort()[0] || null;
   return [{
     id: 'routinen', art: 'routinen', bereich: 'website', ton: 'crit', alterTage: tageSeit(aeltestes, jetzt),
     titel: gestoert.length === 1 ? `Mac-Dienst gestört: ${gestoert[0].titel}` : `Mac-Dienst: ${gestoert.length} Routinen gestört`,
-    kontext: [gestoert[0].text, gestoert.length > 1 ? `+${gestoert.length - 1} weitere` : null].filter(Boolean).join(' · '),
+    kontext: [gestoert[0].text, gestoert.length > 1 ? `außerdem ${gestoert.slice(1).map(r => r.titel).join(', ')}` : null,
+      'Claude Bescheid geben: „Mac-Dienst gestört“'].filter(Boolean).join(' · '),
+    // Ohne Knopf war das rote To-do eine Sackgasse; die Shop-Kontrolle listet jede gestoerte Routine.
+    knopf: { text: 'Ansehen', href: '#/shopwache' },
   }];
 }
 
