@@ -162,8 +162,8 @@ function warteAnmerkung(k) {
 
 /**
  * Kopfzeile rechts, ohne Aufklappen (Inhaber 28.10.: "an welchem Datum bestellt wurde"): Bestelldatum
- * samt Wartezeit, bei mehreren Bestellungen die erste. Fehlt noch etwas, auch wann es beim Lieferanten
- * bestellt wurde - bisher stand das nur aufgeklappt.
+ * samt Wartezeit, bei mehreren Bestellungen die erste. Dazu auf jeder Karte, wann beim Lieferanten
+ * bestellt wurde, sobald das belegt ist - auch wenn die Muster schon da sind (29.10.: "steht nicht ueberall").
  */
 function datumHtml(k) {
   const tage = k.wartetTage;
@@ -171,7 +171,7 @@ function datumHtml(k) {
   const bestellt = gueltig(k.seit) ? `${k.bestellungen.length > 1 ? 'erste Bestellung' : 'bestellt'} am ${tagDatum(k.seit)}` : '';
   const wartet = tage === null ? '' : tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`;
   const zeile = [bestellt, wartet].filter(Boolean).join(' · ');
-  const beimLieferanten = k.bereich === 'gepackt' ? [] : nochNichtDa(k).isos;
+  const beimLieferanten = k.muster.map(m => m.bestelltAm).filter(gueltig).sort();
   return `${zeile ? `<span class="${warn ? 'wait-warn' : 'small muted'}">${esc(zeile)}</span>` : ''}`
     + `${beimLieferanten.length ? `<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
 }

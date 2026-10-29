@@ -52,6 +52,13 @@ test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die
   assert.match(kopf(html), /beim Lieferanten bestellt am Sa\., 24\.10\./);
   assert.doesNotMatch(html, /mp-bestelldaten/, 'eine Bestellung braucht keine Einzelaufstellung');
 
+  // Packbereit (alles da) und gepackt: das Lieferanten-Bestelldatum steht trotzdem in der Kopfzeile (29.10.).
+  for (const bereich of ['packen', 'gepackt']) {
+    const da = kunde(9, bereich);
+    da.muster = [{ ...da.muster[0], stand: 'da', abgehakt: true, bestelltAm: '2026-10-24T07:00:00.000Z' }];
+    assert.match(kopf(ansicht('tab=muster&umschlag=order9', [da])), /beim Lieferanten bestellt am Sa\., 24\.10\./, bereich);
+  }
+
   // Zwei Bestellungen in einem Umschlag: oben die erste, aufgeklappt jede mit Datum.
   const zwei = kunde(2, 'packen');
   Object.assign(zwei, { seit: '2026-10-20T08:00:00Z', wartetTage: 1 });
@@ -59,12 +66,12 @@ test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die
   zwei.muster = [{ ...zwei.muster[0], stand: 'da', abgehakt: true }];
   const beide = ansicht('tab=muster', [zwei]);
   assert.match(kopf(beide), /<span class="small muted">erste Bestellung am Di\., 20\.10\. · wartet seit 1 Tag<\/span>/);
-  assert.doesNotMatch(kopf(beide), /beim Lieferanten/, 'alles da: keine Lieferantenzeile');
+  assert.doesNotMatch(kopf(beide), /beim Lieferanten/, 'ohne belegtes Lieferantendatum keine Lieferantenzeile');
   assert.match(beide, /<p class="small muted mp-bestelldaten">#TEST2 bestellt am Di\., 20\.10\. · #TEST3 bestellt am Do\., 22\.10\.<\/p>/);
 
-  // Gepackt zaehlt nichts mehr als fehlend; ohne Bestelldatum bleibt es bei der Wartezeit.
+  // Gepackt behaelt das Lieferantendatum (29.10.); ohne Bestelldatum bleibt es bei der Wartezeit.
   const gepackt = { ...k, bereich: 'gepackt', gepackt: { zeit: '2026-10-28T08:00:00Z' } };
-  assert.doesNotMatch(kopf(ansicht('tab=muster&umschlag=order1', [gepackt])), /beim Lieferanten/);
+  assert.match(kopf(ansicht('tab=muster&umschlag=order1', [gepackt])), /beim Lieferanten bestellt am Sa\., 24\.10\./);
   assert.match(kopf(ansicht('tab=muster', [kunde(4, 'warten')])), /<span class="small muted">wartet seit 1 Tag<\/span>/);
 });
 
