@@ -42,7 +42,7 @@ const warenkorb = (items, total = 0) => engine.parseAndRender(read('snippets/tp-
 
 test('Einstellungen in TP Versand: Schalter standardmaessig an, Text ohne feste Dauer', () => {
   assert.equal(einstellung('tp_muster_hinweis_aktiv').type, 'checkbox');
-  assert.equal(einstellung('tp_muster_hinweis_aktiv').default, true);
+  assert.equal(einstellung('tp_muster_hinweis_aktiv').default, false);
   assert.equal(einstellung('tp_muster_hinweis_text').type, 'textarea');
   assert.match(STANDARDTEXT, /Geduld/);
   assert.doesNotMatch(STANDARDTEXT, /\d/, 'keine Zahl, also keine Zusage einer Dauer');
