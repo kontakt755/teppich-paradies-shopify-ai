@@ -21,6 +21,10 @@ cookies*.json
 # Shopify CLI and local authentication state
 .shopify/
 
+# clasp-Verknuepfung (scriptId) zum Live-Apps-Script des Angebotsassistenten:
+# lokal je Rechner, nie ins Repository. Vorlage: domains/lexware/angebotsassistent/.clasp.json.beispiel
+.clasp.json
+
 # Local Claude Code permission/session overrides (personal, machine-specific)
 .claude/settings.local.json
 .claude/api_usage.db
