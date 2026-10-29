@@ -1960,6 +1960,23 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
     bleibt neutral.
   - „Schon gedruckt“ steht in Schritt 1 am Schritt, sonst (zu klären oder schon ein Haken) unter
     „Mehr …“.
+- **Bestelldatum in der Kopfzeile (#1757, 28.10.):** `datumHtml(k)` zeigt ohne Aufklappen „bestellt am
+  Di., 20.10. · wartet seit n Tagen“ (bei mehreren Bestellungen „erste Bestellung am …“). Fehlen noch
+  Muster, steht dort auch „beim Lieferanten bestellt am …“ (`nochNichtDa`). Aufgeklappt zeigt
+  `bestelldatenHtml` das Datum je Bestellnummer.
+- **Filter „Umschlag:“ (#1761, 28.10.):** eine zweite Chipzeile unter den Reitern, Parameter
+  `mpumschlag` (`vorbereiten`, `vorbereitet`, `drin`). Sie wirkt zusammen mit `mpbereich`, und die
+  Chipzahlen zählen nur den gewählten Reiter.
+  - „Noch vorbereiten“ = `!istGedruckt(k) && !angefangen(k)`, also genau die Karten, bei denen
+    Schritt 1 leuchtet. Die Chips schließen sich nicht aus: Ein vorbereiteter Umschlag kann auch
+    schon Muster enthalten.
+  - Bei Suche, Direktlink (`umschlag=`) und im Reiter „Gepackt“ gilt der Filter nicht. Dort soll
+    nichts verschwinden.
+  - Bei „noch vorbereiten“ ersetzt „Diese n Umschläge vorbereiten (x Aufkleber)“
+    (`data-mp-vorbereiten`, Packschlüssel in Listenreihenfolge) den Knopf „Alle Packbereiten
+    drucken“. Der Knopf nutzt `drucken(…, { nurOffen: true })`, vermerkt nach dem vollständigen Druck
+    also selbst „vorbereitet“.
+  - Umschläge ohne vollständige Musterzuordnung druckt er nicht und nennt ihre Zahl.
 
 ### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
 

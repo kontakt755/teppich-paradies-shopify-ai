@@ -68,6 +68,48 @@ test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die
   assert.match(kopf(ansicht('tab=muster', [kunde(4, 'warten')])), /<span class="small muted">wartet seit 1 Tag<\/span>/);
 });
 
+test('Filter "Umschlag" zaehlt und zeigt noch vorzubereitende, vorbereitete und angefangene Umschlaege (Inhaber 28.10.)', () => {
+  const reihe = html => [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  const chip = (html, label) => html.match(new RegExp(`<a class="chip" href="([^"]*)"( aria-current="page")?>${label}<span class="c">(\\d+)</span>`));
+  const vorbereitet = { ...kunde(2, 'warten'), gedruckt: { zeit: '2026-10-26T09:00:00Z' } };
+  const drin = kunde(3, 'warten');
+  drin.muster = [{ ...drin.muster[0], abgehakt: true }, { ...drin.muster[0], lineItemId: 'line3b' }];
+  const liste = [kunde(1, 'packen'), vorbereitet, drin, kunde(4, 'klaeren'), kunde(5, 'gepackt')];
+
+  const alle = ansicht('tab=muster', liste);
+  assert.deepEqual(['alle', 'noch vorbereiten', 'vorbereitet', 'Muster schon drin'].map(l => Number(chip(alle, l)[3])), [4, 2, 1, 1]);
+  assert.ok(chip(alle, 'alle')[2], '"alle" ist ohne Parameter aktiv');
+  assert.match(chip(alle, 'noch vorbereiten')[1], /mpumschlag=vorbereiten/);
+  assert.match(alle, /data-mp-alle>Alle Packbereiten drucken/);
+
+  const offen = ansicht('tab=muster&mpumschlag=vorbereiten', liste);
+  assert.deepEqual(reihe(offen), ['order1', 'order4'], 'packbereit vor zu klären, wie in der Liste');
+  assert.ok(chip(offen, 'noch vorbereiten')[2]);
+  assert.match(offen, /<button type="button" class="btn" data-mp-vorbereiten="order1 order4">Diese 2 Umschläge vorbereiten \(4 Aufkleber\)<\/button>/);
+  assert.doesNotMatch(offen, /data-mp-alle>/, 'nur ein Druckknopf');
+  assert.match(offen, /<h2 class="mp-titel">Alle offenen · Umschlag noch vorbereiten/);
+
+  // Mit dem Reiter kombiniert; die Chipzahlen zaehlen nur den gewaehlten Reiter.
+  const wartend = ansicht('tab=muster&mpbereich=warten&mpumschlag=vorbereitet', liste);
+  assert.deepEqual(reihe(wartend), ['order2']);
+  assert.equal(Number(chip(wartend, 'alle')[3]), 2);
+  assert.match(chip(wartend, 'Muster schon drin')[1], /mpbereich=warten/);
+  assert.deepEqual(reihe(ansicht('tab=muster&mpumschlag=drin', liste)), ['order3']);
+
+  // Ohne vollstaendige Zuordnung kein Aufkleber, aber ein Hinweis; leere Auswahl sagt, was los ist.
+  const ohne = { ...kunde(6, 'packen'), fehlt: ['Farbe'] };
+  const teils = ansicht('tab=muster&mpumschlag=vorbereiten', [kunde(1, 'packen'), ohne]);
+  assert.match(teils, /data-mp-vorbereiten="order1">Diesen Umschlag vorbereiten \(2 Aufkleber\)/);
+  assert.match(teils, /1 Umschlag ohne vollständige Musterzuordnung – erst im Lexikon klären/);
+  const leer = ansicht('tab=muster&mpbereich=warten&mpumschlag=vorbereiten', liste);
+  assert.match(leer, /Alle Umschläge in dieser Liste sind vorbereitet\.[\s\S]*Alle 2 Umschläge dieser Liste zeigen/);
+
+  // Suche, Direktlink und Gepacktes verstecken nichts.
+  assert.doesNotMatch(ansicht('tab=muster&mpbereich=gepackt&mpumschlag=vorbereiten', liste), /mp-umschlagfilter/);
+  assert.match(ansicht('tab=muster&mpumschlag=drin&mpq=TEST1', liste), /data-mp-kunde="order1"/);
+  assert.match(ansicht('tab=muster&mpumschlag=vorbereitet&umschlag=order1', liste), /data-mp-kunde="order1"[^>]* open/);
+});
+
 test('Arbeitsfilter zeigt nur gewaehlten Bereich; Umschlagdirektlink oeffnet auch andere Bereiche', () => {
   const liste = [kunde(1, 'packen'), kunde(2, 'klaeren'), kunde(3, 'gepackt')];
   const html = ansicht('tab=muster&mpbereich=klaeren', liste);

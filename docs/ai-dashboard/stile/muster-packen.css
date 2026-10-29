@@ -108,6 +108,8 @@
 .mp-filterzahl { font-weight: 700; }
 .mp-arbeitsleer { padding: 16px 0; color: var(--text-2); }
 @media (max-width: 760px) { .mp-arbeitsfilter { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Zweite Zeile "Umschlag:" (28.10.), wirkt zusammen mit der Arbeitsliste darueber. */
+.mp-umschlagfilter { align-items: center; margin: -8px 0 16px; }
 
 /* Baby-einfach (#1701): je Umschlag drei Schritte, nur der aktuelle leuchtet. */
 .mp-schritte { list-style: none; margin: 12px 0 4px; padding: 0; display: grid; gap: 6px; }
