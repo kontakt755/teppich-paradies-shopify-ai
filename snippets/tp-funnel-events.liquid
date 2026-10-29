@@ -137,8 +137,9 @@
         var link = t.closest('a[href]');
         if (link) {
           var href = link.getAttribute('href') || '';
-          if (href.indexOf('/pages/muster') === 0 || href.indexOf('thema=muster') !== -1 || link.closest('[class*="tp-muster-cta"]')) {
-            publish('tp_muster_cta_klick', { product_handle: handle() });
+          // data-muster-link: Muster im Rollenware-Rechner, absolute Adresse - bis 10/2026 nicht gezaehlt
+          if (href.indexOf('/pages/muster') === 0 || href.indexOf('thema=muster') !== -1 || link.hasAttribute('data-muster-link') || link.closest('[class*="tp-muster-cta"]')) {
+            publish('tp_muster_cta_klick', { product_handle: handle(), ort: link.getAttribute('data-tp-klick-ort') || 'seite' });
           }
           var modul = link.closest('[data-tp-rg-cta]');
           if (modul) {
