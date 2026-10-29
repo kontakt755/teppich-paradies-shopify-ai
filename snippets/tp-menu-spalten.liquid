@@ -16,8 +16,10 @@
   einen Punkt in der Farbe der Shopify-Farbfilter (dieselben Werte wie die
   Farbmuster auf der Kategorieseite). Unbekannte Farben bleiben ohne Punkt.
 
-  Handy (w-039, Teppichboden-Menue zu lang): Arten als Kacheln in zwei Spalten
-  statt als volle Zeilen, Gruppen als Chips darunter.
+  Handy (w-039, Teppichboden-Menue zu lang): die ersten sechs Arten als
+  Kacheln in zwei Spalten, alle weiteren als Chips unter "Weitere", jede
+  Gruppe als eine Chip-Zeile zum Wischen. Die Reihenfolge kommt aus dem
+  Shopify-Menue: wer nach vorn soll, wird dort nach vorn geschoben.
 
   @param {object} parent_link - Menuepunkt der ersten Ebene
   @param {string} [kacheln] - Datensaetze der Bildkacheln (siehe tp-menu-kachel-index)
@@ -60,7 +62,7 @@
     {%- if g_t contains 'farb' -%}{%- assign g_farbe = true -%}{%- endif -%}
     <div class="tp-ms-gruppe{% if g_farbe %} tp-ms-gruppe--farbe{% endif %}">
       <p class="tp-nav-group" id="tp-ms-{{ variant | default: 'mm' }}-{{ forloop.index }}">{{ g.title | escape }}</p>
-      <ul class="{% if variant == 'drawer' %}tp-nav-chips{% else %}tp-nav-links{% endif %} list-unstyled" role="list" aria-labelledby="tp-ms-{{ variant | default: 'mm' }}-{{ forloop.index }}">
+      <ul class="{% if variant == 'drawer' %}tp-nav-chips tp-nav-chips--wisch{% else %}tp-nav-links{% endif %} list-unstyled" role="list" aria-labelledby="tp-ms-{{ variant | default: 'mm' }}-{{ forloop.index }}">
         {%- for l in g.links -%}
           {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: l -%}{%- endcapture -%}
           {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
@@ -116,17 +118,13 @@
     {%- endif -%}
   </a>
 
-  {%- comment -%} Sprungmarken (2026-10-20): Farbe, Raum, Rollenbreite lagen
-    bei 375 px erst nach einer Bildschirmhoehe Kacheln {%- endcomment -%}
-  {%- if tp_ms_gruppen > 0 -%}
-    <nav class="tp-dn-sprung" aria-label="Springen zu">
-      {%- for g in parent_link.links -%}
-        {%- unless g.links != blank and g.url == '#' -%}{%- continue -%}{%- endunless -%}
-        <button type="button" class="tp-dn-sprung__link" data-tp-ziel="tp-ms-drawer-{{ forloop.index }}">{{ g.title | escape }}</button>
-      {%- endfor -%}
-    </nav>
-  {%- endif -%}
-
+  {%- comment -%} w-039 (2026-10-26): hoechstens sechs grosse Kacheln, der Rest als
+    Chips. Vorher 14 Kacheln, das Panel war 1,5 Bildschirme hoch und Farbe,
+    Raum, Rollenbreite lagen unter dem ersten Bildschirm (Sprungmarken
+    entfallen deshalb). {%- endcomment -%}
+  {%- assign tp_ms_kacheln_max = 6 -%}
+  {%- assign tp_ms_kacheln_n = 0 -%}
+  {%- capture tp_ms_weitere_html -%}{%- endcapture -%}
   <p class="tp-nav-group" id="tp-ms-drawer-arten">Nach Art</p>
   <ul class="tp-dn-kacheln list-unstyled" role="list" aria-labelledby="tp-ms-drawer-arten">
     {%- for c in parent_link.links -%}
@@ -135,14 +133,26 @@
       {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: c -%}{%- endcapture -%}
       {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
       {%- liquid
-        capture c_img
-          render 'tp-menu-bild', link: c, kacheln: kacheln, class: 'tp-dn-kachel__img', sizes: '40px', widths: '80,120'
-        endcapture
         assign c_count = 0
         if c.type == 'collection_link'
           assign c_count = c.object.all_products_count
         endif
       -%}
+      {%- if tp_ms_kacheln_n >= tp_ms_kacheln_max -%}
+        {%- capture tp_ms_weitere_html -%}
+          {{- tp_ms_weitere_html -}}
+          <li>
+            <a class="tp-nav-chip{% if c.active %} is-current{% endif %}" href="{{ c.url }}"{% if c.active %} aria-current="page"{% endif %}>
+              <span class="tp-nav-link__text">{%- render 'tp-menu-label', link: c -%}</span>
+            </a>
+          </li>
+        {%- endcapture -%}
+        {%- continue -%}
+      {%- endif -%}
+      {%- assign tp_ms_kacheln_n = tp_ms_kacheln_n | plus: 1 -%}
+      {%- capture c_img -%}
+        {%- render 'tp-menu-bild', link: c, kacheln: kacheln, class: 'tp-dn-kachel__img', sizes: '40px', widths: '80,120' -%}
+      {%- endcapture -%}
       <li>
         <a class="tp-dn-kachel{% if c.active %} is-current{% endif %}" href="{{ c.url }}"{% if c.active %} aria-current="page"{% endif %}>
           <span class="tp-dn-kachel__media" aria-hidden="true">
@@ -158,6 +168,12 @@
       </li>
     {%- endfor -%}
   </ul>
+  {%- if tp_ms_weitere_html != blank -%}
+    <p class="tp-nav-group" id="tp-ms-drawer-weitere">Weitere</p>
+    <ul class="tp-nav-chips tp-nav-chips--weitere list-unstyled" role="list" aria-labelledby="tp-ms-drawer-weitere">
+      {{- tp_ms_weitere_html -}}
+    </ul>
+  {%- endif -%}
   <div class="tp-ms-gruppen tp-ms-gruppen--drawer">
     {{- tp_ms_gruppen_html -}}
   </div>
@@ -201,19 +217,3 @@
     {%- endif -%}
   </div>
 {%- endif -%}
-
-{% javascript %}
-  /* Sprungmarken im Handy-Menue: Knoepfe statt Links, damit das
-     Schubladenmenue offen bleibt; gescrollt wird nur das Panel */
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('.tp-dn-sprung__link');
-    if (!b) return;
-    e.preventDefault();
-    e.stopPropagation();
-    var ziel = document.getElementById(b.getAttribute('data-tp-ziel'));
-    var panel = ziel && ziel.closest('.tp-dn-panel__inner');
-    if (!panel) return;
-    var y = ziel.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 8;
-    panel.scrollTo({ top: y, behavior: 'smooth' });
-  }, true);
-{% endjavascript %}

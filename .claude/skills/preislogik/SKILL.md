@@ -43,3 +43,19 @@ Bei Paketprodukten:
 ## Preisfilter Vinylboden
 
 Der Preisfilter bei Vinylboden ist bewusst ausgeblendet, solange Shopify nach Paketpreis statt sichtbarem €/m² filtert. Diese Logik nicht versehentlich zurückbauen.
+
+## Preisfilter Teppichboden (Preis je m²)
+
+Shopifys Preisfilter rechnet ueber alle Variantenpreise; bei Teppichboden ist die
+Wunschmass-Variante je m² teurer als die Meterware, die Karte zeigt aber den
+Meterpreis - der Standardfilter zog Karten in falsche Bereiche (w-189, Rundgang
+28.10.2026). Deshalb ist er in allen Teppichboden-Kollektionen ausgeblendet
+(`snippets/tp-preisfilter-versteckt.liquid`), und Search & Discovery filtert
+stattdessen „Preis je m²“ ueber das Produkt-Metafeld `custom.meterpreis_bereich`
+(feste Bereiche: unter 30, 30 bis 40, 40 bis 60, 60 bis 80, 80 bis 100,
+100 bis 150, ab 150 €/m²; untere Grenze inklusive). Der Wert folgt dem aktuellen
+Verkaufspreis inklusive Aktion - **nach jeder Preisaenderung**
+`npm run -s preisfilter:abgleich -- --schreiben` laufen lassen (stuendlich macht
+das auch der Dienst `net.teppich-paradies.preisfilter`). Das Feld nie von Hand
+pflegen; Bereiche aendern nur im Skript `scripts/preisfilter-abgleich.mjs`
+(danach Abgleich und Sortierung des Filters in Search & Discovery pruefen).
