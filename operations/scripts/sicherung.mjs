@@ -118,6 +118,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'bildrechte/bildrechte.csv',
   // Neue Auftraege (Genossenschaften): Stand je Firma, Richtpreise, Referenzen.
   'akquise',
+  // Hausverwaltungen (w-154): Ansprechpartner, Objekte, Angebote - von Hand gepflegt, nur hier.
+  'hausverwaltungen',
   // Stoerungsverlauf der Shop-Wache (Beginn, Ende, Seiten).
   'shopwache/verlauf.jsonl',
   // Abzug der Mac-Dienste (~/Library/LaunchAgents/net.teppich-paradies.*.plist), den jeder Lauf

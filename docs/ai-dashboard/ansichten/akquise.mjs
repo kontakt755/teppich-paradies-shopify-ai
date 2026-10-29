@@ -48,6 +48,7 @@ function erklaerung(firmen) {
   return `<section class="card akq-erklaer">
     <p>Hier gewinnen wir <b>Verlegeaufträge bei Wohnungsgenossenschaften und Hausverwaltungen</b>. Die haben laufend Wohnungswechsel, bei denen neuer Boden rein muss.</p>
     <ol class="akq-schritte"><li>Firma anschreiben</li><li>nach 2 Wochen nachfassen</li><li>bei Interesse Termin oder Angebot</li></ol>
+    <p class="small">Wird eine Hausverwaltung zum festen Ansprechpartner, tragen wir sie unter <a href="#/hausverwaltungen">Hausverwaltungen</a> ein – mit Objekten und Angeboten.</p>
     <p class="akq-stand"><b>${p.angeschrieben}</b> von ${p.gesamt} angeschrieben · <b>${p.antworten}</b> ${p.antworten === 1 ? 'Antwort' : 'Antworten'} · <b>${p.auftraege}</b> ${p.auftraege === 1 ? 'Auftrag' : 'Aufträge'}${wer.length ? `<br><span class="small muted">angeschrieben von ${wer.map(([n, z]) => `${esc(n)} ${z}`).join(' · ')}</span>` : ''}</p>
   </section>`;
 }

@@ -19,7 +19,7 @@ export const MENUE_KURZ = [
   ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen.'],
   ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Kunde ein Umschlag. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
-  ['Kunden & Einkauf', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften.'],
+  ['Kunden & Einkauf', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften, Hausverwaltungen.'],
   ['Shop & Inhalte', 'Sonderposten, Bildrechte, Social Media – nur mit Büro- oder Inhaberzugang.'],
   ['Verwaltung', 'Aufgaben, Zugänge und diese Hilfe. Was du siehst, hängt von deinem Zugang ab.'],
   ['Fehler melden', 'Ganz unten in der Seitenleiste: kurz schreiben, was nicht stimmt. Die Technik bekommt die Seite mit.'],
@@ -44,6 +44,11 @@ const ABLAEUFE = [
     'Unter <b>Kunden &amp; Einkauf</b> auf <b>Genossenschaften</b>: oben steht „Als Nächstes“ mit der Firma, die jetzt dran ist.',
     '<b>E-Mail öffnen</b> (der Text steht schon drin) und selbst abschicken – oder <b>Anrufen</b>.',
     'Danach <b>Erledigt: angeschrieben</b> drücken. Zum Nachfassen erscheint die Firma rechtzeitig wieder.',
+  ]],
+  ['Hausverwaltung pflegen', [
+    'Unter <b>Kunden &amp; Einkauf</b> auf <b>Hausverwaltungen</b>. Neue Verwaltung mit <b>+ Hausverwaltung</b> – der Name genügt.',
+    'Auf den Namen klicken: dort <b>+ Objekt</b> (Adresse, Zahl der Wohnungen) und je Objekt <b>+ Angebot oder Auftrag</b> mit der Lexware-Nummer.',
+    'Über <b>Bearbeiten</b> den Stand setzen und ein Datum bei „Wieder melden am“. Ist es so weit, steht die Verwaltung oben in der Liste.',
   ]],
 ];
 

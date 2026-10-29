@@ -31,7 +31,7 @@ export function darfAnsicht(view) {
 export function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
+  const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'hausverwaltungen', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
   const view = darfAnsicht(bekannt) ? bekannt : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
