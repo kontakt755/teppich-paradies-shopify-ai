@@ -116,7 +116,7 @@ export function musteretikettenBlock(bestellung) {
     <ul class="bme-liste">${e.daten.zeilen.map(musterZeile).join('') || '<li class="small muted">Keine Musterpositionen vorhanden.</li>'}</ul>
     <div class="bme-aktionen">
       ${istNurLesend() ? '<p class="small muted">Dieser Zugang kann die Zuordnung ansehen. Ein Mitarbeiter übernimmt die Vormerkung.</p>' : `<button type="button" class="btn btn-primary" data-bq-musteretiketten-vormerken="${esc(orderId)}"${darfVormerken(e) ? '' : ' disabled'}>${e.speichert ? 'Vormerkung wird bestätigt …' : 'Aufkleber zur Druckliste vormerken'}</button>`}
-      <a class="btn" href="#/lexikon?tab=druckliste">Gemeinsame Druckliste</a>
+      <a class="btn" href="#/lexikon?tab=druckliste">Aufkleber-Druckliste</a>
     </div>
     ${!e.daten.gesperrt && !pruefen && !neue.length && aktive.length ? '<p class="small muted">Diese Musterpositionen wurden bereits zur Druckliste vorgemerkt. Für einen bewussten Nachdruck das Produkt im Lexikon öffnen.</p>' : ''}
   </section>`;

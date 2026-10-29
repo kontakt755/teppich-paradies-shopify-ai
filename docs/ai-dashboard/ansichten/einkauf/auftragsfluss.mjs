@@ -160,7 +160,7 @@ export function ensureEinkaufLieferanten() {
   einkauf.loadingLieferanten = true;
   fetchEinkauf('/api/einkauf/lieferanten').then(d => {
     einkauf.lieferanten = d; einkauf.loadingLieferanten = false;
-    if (['einkauf', 'kunden'].includes(state.route.view)) render();
+    if (['einkauf', 'kunden', 'lexikon'].includes(state.route.view)) render();
   });
 }
 
@@ -491,7 +491,7 @@ export function musterSchrittKnopf(hier, { klasse = 'btn btn-sm' } = {}) {
   const s = musterSchritt(hier, statusVon, { direktVon });
   if (s?.schritt === 'angekommen') {
     const daten = JSON.stringify(s.positionen.map(p => ({ orderId: p.orderId, lineItemId: p.lineItemId })));
-    const text = s.positionen.length === 1 ? 'Muster angekommen' : `Alle ${s.positionen.length} angekommen`;
+    const text = s.positionen.length === 1 ? 'Muster angekommen' : `Alle ${s.positionen.length} als angekommen eintragen`;
     return `<button type="button" class="${klasse}" data-muster-angekommen="${esc(daten)}" title="Die Muster sind bei uns eingetroffen">${esc(text)}</button>`;
   }
   const orderIds = [...new Set(hier.map(p => p.orderId).filter(Boolean))];

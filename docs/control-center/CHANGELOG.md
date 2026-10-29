@@ -2,6 +2,23 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · Ein Wort je Sache: „Aufkleber“, „Muster kommt an“, Lieferant mit Namen im Lexikon
+
+- **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde T6, T11, T8 Teil Name; vom Kritiker bestätigt).
+  - Heute › Muster & Packstation: „Muster-Wareneingang“ führte in die Bestellen-Liste, die Packstation hat
+    für dasselbe den Reiter „Muster kommt an“ (BEGRIFFE.md). Der Knopf heißt jetzt so und führt dorthin.
+  - „Etiketten-Druckliste“ / „Gemeinsame Druckliste“ heißen überall „Aufkleber-Druckliste“ (Heute,
+    Lexikon, Kundenakte, Aufkleber prüfen, Seitentitel); im Musterlager „Aufkleber“ / „Aufkleber drucken…“
+    statt „Etikett“. „Etikett“ bleibt für Rolle und Drucker.
+  - Bestellen: „Alle N angekommen“ → „Alle N als angekommen eintragen“ (der Knopf bucht).
+  - Lexikon: die Spalte „Lieferant“ zeigte das Kürzel („A“), Packstation und Bestellen den Namen aus
+    den Stammdaten. Jetzt `lieferantName()` mit `/api/einkauf/lieferanten`; ohne Stammdaten „Lieferant A“.
+    Nach dem Laden zeichnet das Lexikon neu.
+- **Getestet:** `start-bestellarbeit-ansicht.test.mjs` angepasst (Knopf „Muster kommt an“, keine alten
+  Wörter), `lexikon-lieferantenname.test.mjs` neu. `npm run -s dashboard:test` 1057/1057, `npm run -s pruefen` alle 9 Schritte grün; `dashboard:pruefen` Heute, Lexikon-Detail, Druckliste und Musterlager bei 390/1440 px ohne Überlauf.
+- **Risiken:** Wer den Weg „Muster-Wareneingang“ über die Bestellen-Liste gewohnt ist, findet ihn
+  weiter unter Bestellen › Je Lieferant; nur der Knopf auf Heute führt jetzt zur Packstation.
+- **Naechste Stufe:** Reihenfolge im Lexikon-Detail („Zum Bestellen“ weiter oben) – Werkbank.
 ## 2026-10-28 · Nachfass-Mails: Firmenangaben unter dem Gruß (Werkbank w-172 Punkt 2, #1772)
 
 - **Geaendert:** Die Nachfass-Mails („Muster nachfassen“) endeten ohne Rechtsform, Anschrift,
