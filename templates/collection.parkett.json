@@ -235,8 +235,8 @@
         "faq_3": {
           "type": "faq",
           "settings": {
-            "question": "Sind kostenlose Muster erhältlich?",
-            "answer": "<p>Kostenlose Muster erhalten Sie auf Anfrage. Den Anfrageweg finden Sie auf der jeweiligen Produktseite. <a href=\"/pages/kontakt\">Unsere Beratung</a> hilft bei Fragen zu einer bestimmten Oberfläche.</p>"
+            "question": "Kann ich Muster bekommen?",
+            "answer": "<p>Muster erhalten Sie auf Anfrage. Den Anfrageweg finden Sie auf der jeweiligen Produktseite. <a href=\"/pages/kontakt\">Unsere Beratung</a> hilft bei Fragen zu einer bestimmten Oberfläche.</p>"
           }
         }
       },
