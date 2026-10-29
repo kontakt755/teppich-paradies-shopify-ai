@@ -354,3 +354,16 @@ test('Gepackt -> "Verschickt": Reiter Erledigt zeigt nur versandte Musterbestell
   assert.doesNotMatch(html, /Testkunde 5/, 'Gepacktes steht nicht unter Erledigt');
   assert.match(ansicht('tab=muster&mpbereich=erledigt', []), /keine Musterbestellung erledigt worden/);
 });
+
+test('Kopfzeile sagt ohne Aufklappen, was schon hier liegt (mit Lagerort) und was noch nicht bestellt ist (Inhaber 29.10.)', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const k = kunde(1, 'packen');
+  k.muster = [{ ...k.muster[0], stand: 'lager', lagerOrt: 'Resteladen' }, { ...k.muster[0], lineItemId: 'l2', stand: 'lager', lagerOrt: 'Resteladen' },
+    { ...k.muster[0], lineItemId: 'l3', stand: 'da' }, { ...k.muster[0], lineItemId: 'l4', stand: 'da', abgehakt: { zeit: 'x' } }];
+  assert.match(kopf(ansicht('tab=muster', [k])), /<span class="small mp-hier-da">Liegt hier: 1 im Umschlag · 1 angekommen · 2 im Musterlager \(Resteladen\)<\/span>/);
+  const w = kunde(2, 'warten');
+  w.muster = [{ ...w.muster[0], stand: 'offen' }];
+  const h = kopf(ansicht('tab=muster', [w]));
+  assert.doesNotMatch(h, /Liegt hier/, 'nur Bestelltes: keine Hier-Zeile');
+  assert.match(h, /1 Muster noch nicht bestellt/);
+});

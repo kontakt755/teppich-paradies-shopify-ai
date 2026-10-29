@@ -165,6 +165,27 @@ function warteAnmerkung(k) {
  * samt Wartezeit, bei mehreren Bestellungen die erste. Dazu auf jeder Karte, wann beim Lieferanten
  * bestellt wurde, sobald das belegt ist - auch wenn die Muster schon da sind (29.10.: "steht nicht ueberall").
  */
+/**
+ * Kopfzeile, ohne Aufklappen (Inhaber 29.10.: "wichtig ist immer zu sehen, ob wir es schon hier haben oder
+ * ob es bestellt wurde"): was schon im Haus ist - im Umschlag, angekommen oder im Musterlager samt Ort.
+ * Was beim Lieferanten bestellt ist, steht in der Zeile darunter.
+ */
+function hierHtml(k) {
+  if (k.bereich === 'gepackt') return '';
+  const drin = k.muster.filter(m => m.abgehakt).length;
+  const da = k.muster.filter(m => !m.abgehakt && m.stand === 'da').length;
+  const lager = k.muster.filter(m => !m.abgehakt && m.stand === 'lager');
+  const orte = [...new Set(lager.map(m => m.lagerOrt).filter(Boolean))];
+  const offen = k.muster.filter(m => !m.abgehakt && m.stand === 'offen').length;
+  const teile = [
+    drin ? `${drin} im Umschlag` : '',
+    da ? `${da} angekommen` : '',
+    lager.length ? `${lager.length} im Musterlager${orte.length ? ` (${orte.join(', ')})` : ''}` : '',
+  ].filter(Boolean);
+  return `${teile.length ? `<span class="small mp-hier-da">${esc(`Liegt hier: ${teile.join(' · ')}`)}</span>` : ''}`
+    + `${offen ? `<span class="small wait-warn">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt`)}</span>` : ''}`;
+}
+
 function datumHtml(k) {
   const tage = k.wartetTage;
   const warn = tage !== null && tage >= WARTET_AB_TAGEN && k.bereich !== 'gepackt';
@@ -173,7 +194,8 @@ function datumHtml(k) {
   const zeile = [bestellt, wartet].filter(Boolean).join(' · ');
   const beimLieferanten = k.muster.map(m => m.bestelltAm).filter(gueltig).sort();
   return `${zeile ? `<span class="${warn ? 'wait-warn' : 'small muted'}">${esc(zeile)}</span>` : ''}`
-    + `${beimLieferanten.length ? `<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
+    + hierHtml(k)
+    + `${beimLieferanten.length ?`<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
 }
 
 /** Aufgeklappt bei mehreren Bestellungen in einem Umschlag: das Datum jeder einzelnen. */

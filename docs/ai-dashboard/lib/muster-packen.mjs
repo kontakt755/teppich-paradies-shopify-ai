@@ -206,6 +206,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           // Bleibt nach der Ankunft erhalten: die Kopfzeile nennt das Lieferanten-Bestelldatum immer (29.10.).
           bestelltAm: belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
           automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
+          // Wo es im Haus liegt (Musterlager), damit die Karte "liegt hier: …" sagen kann.
+          lagerOrt: stand === 'lager' && belegt(p.musterLager?.ort) ? text(p.musterLager.ort) : null,
         });
       });
     }

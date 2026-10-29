@@ -32,6 +32,13 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   mitgehen kann. Kommt am selben Tag eine Bestellung dazu, gilt weiter: Packmarke und Druckvermerk des
   Umschlags passen nicht mehr (wie bisher).
 - **Naechste Stufe:** keine geplant.
+- **Nachtrag (Inhaber, gleicher Tag):** „wichtig ist immer zu sehen, ob wir es schon hier haben oder ob es
+  bestellt wurde“. Die Kopfzeile jedes offenen Umschlags zeigt ohne Aufklappen „Liegt hier: x im Umschlag ·
+  x angekommen · x im Musterlager (Ort)“ und in Bernstein „x Muster noch nicht bestellt“; darunter wie
+  bisher „beim Lieferanten bestellt am …“. Anlass: #1076 stand packbereit, weil beide Muster aus
+  Probestücken im Laden kommen – das war nur aufgeklappt sichtbar. Test in
+  `packstation-arbeitslisten.test.mjs`; `dashboard:pruefen` 1440–360 px ohne Überlauf.
+
 ## 2026-10-29 · Ein Wort je Sache: „Aufkleber“, „Muster kommt an“, Lieferant mit Namen im Lexikon
 
 - **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde T6, T11, T8 Teil Name; vom Kritiker bestätigt).
