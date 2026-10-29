@@ -1,5 +1,10 @@
 # Control Center – Fortschritt
 
+> **Eingefroren seit 2026-10-29.** Neue Einträge als Datei unter [`changelog/`](./changelog/README.md)
+> (`JJJJ-MM-TT-<kurzname>.md`, Format dort); `npm run -s changelog` zeigt die letzten. Diese Datei bekommt
+> keine neue Überschrift mehr (`npm run changelog:guard`). Grund: GitHub wertet den Merge-Treiber
+> `merge=union` nicht aus – nach jedem Merge nach `main` standen alle anderen PRs mit Eintrag als CONFLICTING.
+
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
 ## 2026-10-29 · Ein Wort je Sache: „Aufkleber“, „Muster kommt an“, Lieferant mit Namen im Lexikon

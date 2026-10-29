@@ -8,6 +8,12 @@
  *                                  Historie durch leeren Merge begradigen
  *   npm run pr:doctor -- --json    maschinenlesbar
  *
+ * Konflikte rechnet er lokal (git merge-tree) UND uebernimmt die Sicht von GitHub
+ * (mergeable/mergeStateStatus aus gh pr list): GitHub wertet Merge-Treiber aus
+ * .gitattributes nicht aus, lokal sah deshalb am 2026-10-29 niemand die Konflikte,
+ * an denen sechs PRs haengen blieben. Ausserdem die vom PR geaenderten Dateien,
+ * um PRs zu melden, die noch in die eingefrorene CHANGELOG.md schreiben.
+ *
  * Arbeitet ausschliesslich mit origin/*-Refs und Wegwerf-Worktrees unter dem
  * System-Temp - nie im Checkout, aus dem er gestartet wird. Der geteilte
  * Hauptordner bleibt unberuehrt, egal auf welchem Branch er steht.
@@ -35,7 +41,7 @@ const log = (s) => { if (!JSON_OUT) console.log(s); };
 git(['fetch', 'origin', '--prune', '--quiet']);
 
 const roh = JSON.parse(gh(['pr', 'list', '--state', 'open', '--limit', '100', '--json',
-  'number,headRefName,baseRefName,isDraft,statusCheckRollup']));
+  'number,headRefName,baseRefName,isDraft,statusCheckRollup,mergeable,mergeStateStatus']));
 
 function fakten(p) {
   const head = `origin/${p.headRefName}`;
@@ -45,8 +51,10 @@ function fakten(p) {
     basisExistiert = gitOk(['rev-parse', '-q', '--verify', `origin/${p.baseRefName}`]);
     basisGemergt = basisExistiert ? gitOk(['merge-base', '--is-ancestor', `origin/${p.baseRefName}`, `origin/${HAUPT}`]) : null;
   }
-  let mergeBasen = 0, konflikte = [];
+  let mergeBasen = 0, konflikte = [], dateien = [];
   if (headExistiert) {
+    // Drei Punkte: Aenderungen seit der Merge-Basis, nicht der Abstand zu main.
+    dateien = git(['diff', '--name-only', `origin/${HAUPT}...${head}`]).split('\n').filter(Boolean);
     mergeBasen = git(['merge-base', '--all', head, `origin/${HAUPT}`]).split('\n').filter(Boolean).length;
     const mt = spawnSync('git', ['merge-tree', '--write-tree', '--name-only', head, `origin/${HAUPT}`], { encoding: 'utf8' });
     konflikte = (mt.stdout + mt.stderr).split('\n')
@@ -55,8 +63,9 @@ function fakten(p) {
   }
   return {
     nummer: p.number, head: p.headRefName, basis: p.baseRefName, draft: p.isDraft,
-    headExistiert, basisExistiert, basisGemergt, mergeBasen, konflikte,
+    headExistiert, basisExistiert, basisGemergt, mergeBasen, konflikte, dateien,
     checks: Array.isArray(p.statusCheckRollup) ? p.statusCheckRollup.length : 0,
+    githubMergeable: p.mergeable ?? null, githubStatus: p.mergeStateStatus ?? null,
   };
 }
 
@@ -102,7 +111,7 @@ if (JSON_OUT) {
   }
   console.log(
     `PR-Doctor: ${prs.length} offene PRs geprueft, ${z.konflikte} mit Konflikten, ` +
-    `${z.umzielen} umzuzielen, ${z.begradigen} zu begradigen` +
+    `${z.umzielen} umzuzielen, ${z.begradigen} zu begradigen, ${z.changelog} mit Eintrag in der eingefrorenen CHANGELOG.md` +
     (FIX ? `, ${ausgefuehrt.length} Fix(es) ausgefuehrt.` : '.')
   );
 }
