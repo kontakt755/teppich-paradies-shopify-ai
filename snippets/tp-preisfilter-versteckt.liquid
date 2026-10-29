@@ -1,0 +1,45 @@
+{%- doc -%}
+  Soll Shopifys Standard-Preisfilter (filter.v.price) in dieser Kollektion
+  ausgeblendet werden? Gibt "ja" aus, sonst nichts. Einzige Quelle dieser Frage;
+  blocks/filters.liquid liest sie per capture.
+
+  Shopify filtert nach dem tatsaechlichen Variantenpreis, die Karten zeigen aber
+  einen Preis je m2. Wo beides auseinanderlaeuft, fuehrt der Filter in die Irre:
+
+  - Paketware (Vinyl, Laminat, Parkett, Kork, Teppichfliesen): Variantenpreis
+    ist der Paketpreis, die Karte zeigt EUR/m2 (Audit 13.10.2026). Die
+    Kollektionen stehen in der Liste unten.
+  - Teppiche und Laeufer nach Mass: der Variantenpreis gilt je 0,01 m2 bzw. je
+    cm Laenge; der Filter bot "hoechster Preis 1,76 EUR" an (Rundgang 26.10.2026).
+    Neue Mass-Kollektionen fallen ueber Handle oder Titel von selbst heraus.
+  - Teppichboden (w-189, Rundgang 28.10.2026): die Wunschmass-Variante kostet je
+    m2 mehr als die Meterware, die Karte zeigt den Meterpreis - bei 40-60 EUR
+    standen 16 von 82 Treffern mit ab-Preis unter 40 EUR. Ersatz ist der
+    Search-&-Discovery-Filter "Preis je m2" auf custom.meterpreis_bereich
+    (scripts/preisfilter-abgleich.mjs). Gilt fuer jede Kollektion, deren Handle
+    "teppichboden" enthaelt (Hauptkategorie, Unterkategorien, Marken, Angebote,
+    Buero/Gewerbe), und fuer die Nadelfilz-Preisklassen.
+
+  Der Preisfilter in Search & Discovery bleibt angelegt; ausgeblendet wird nur
+  seine Darstellung. Auf der Suchseite entscheidet blocks/filters.liquid selbst.
+
+  @param {object} collection - die Kollektion (collection.handle, collection.title)
+{%- enddoc -%}
+{%- liquid
+  assign tp_pv_aus = 'vinylboden-1,vinylboden-klickvinyl,vinylboden-klebevinyl,vinylboden-fischgraet,angebote-vinylboden,auslauf-vinylboden,jab-anstoetz-designboden,laminat,parkett,korkboden,korkboden-klick,korkboden-kleben,kautschukboden,teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen,teppichboden-buero-gewerbe,angebote-teppichboden,angebote,teppich-nach-mass,marken-teppiche-nach-mass,vorwerk-teppiche-nach-mass,jab-anstoetz-teppiche-nach-mass' | split: ','
+  assign tp_pv_handle = collection.handle | default: ''
+  assign tp_pv_titel = collection.title | default: ''
+  assign tp_pv_versteckt = false
+  if tp_pv_handle != '' and tp_pv_aus contains tp_pv_handle
+    assign tp_pv_versteckt = true
+  endif
+  if tp_pv_handle contains 'nach-mass' or tp_pv_titel contains 'nach Maß'
+    assign tp_pv_versteckt = true
+  endif
+  if tp_pv_handle contains 'teppichboden' or tp_pv_handle contains 'nadelfilz'
+    assign tp_pv_versteckt = true
+  endif
+  if tp_pv_versteckt
+    echo 'ja'
+  endif
+-%}
