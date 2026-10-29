@@ -25,6 +25,11 @@
   reicht seine Variable tp_ek_lieferzeit durch, damit Preishinweis und
   Datumszeile dieselbe Quelle haben.
   Leer = keine Zeile (fail closed).
+  Ausverkauft (keine Variante kaufbar, product.available false): ebenfalls
+  keine Zeile. Der Knopf zeigt dann "Ausverkauft", ein Liefertermin daneben
+  waere eine Zusage, die der Shop nicht halten kann (Fehlersuche 2026-10-28:
+  Wohnteppiche mit allen Groessen ausverkauft zeigten "Lieferung
+  voraussichtlich ...").
 
   Kein Datum, nur die Werktage-Angabe:
   - Angaben ohne "Werktage" (z. B. "ca. 14 Tage") oder mit einer zweiten
@@ -58,6 +63,10 @@
     elsif tp_lz_text == blank
       assign tp_lz_text = text | strip
     endif
+  endif
+  # Ausverkauft: keine Lieferzeit und kein Datum (siehe oben)
+  if product != blank and product.available == false
+    assign tp_lz_text = ''
   endif
   # Grobe Vorpruefung; ob die Angabe wirklich eine Werktage-Spanne ist, prueft
   # assets/tp-lieferdatum.js (sonst bleibt der Liquid-Text stehen).
