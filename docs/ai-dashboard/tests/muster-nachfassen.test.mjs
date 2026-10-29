@@ -203,7 +203,8 @@ test('Text fuellen: Name und Links, Unbekanntes faellt mit seiner Zeile weg', ()
 
   const ohne = fuelleText(t.erinnerung, { kundenname: null, absender: null });
   assert.match(ohne.text, /^Guten Tag,/);
-  assert.match(ohne.text, /Freundliche Grüße$/);
+  // Ohne Absender faellt die Namenszeile weg; danach folgen die Firmenangaben (w-172).
+  assert.match(ohne.text, /Freundliche Grüße\n\nTeppich Paradies Oranienburg GmbH ·/);
   assert.equal(fuelleText(null, {}), null);
 });
 
