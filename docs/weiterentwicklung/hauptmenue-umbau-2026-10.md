@@ -98,3 +98,15 @@ den Bildschirmrand.
 
 Alle neun Panels ohne Scrollen, keine Konsolenfehler; Menülinks des Entwurfs
 (95, davon 29 Filterlinks) ohne leeres Raster.
+
+## Handy-Menue Teppichboden, Variante A (w-179, 2026-10-29)
+
+Inhaber-Entscheidung 28.10.: nur die ersten sechs Arten aus dem Shopify-Menue
+als Kacheln (heute Hochflor, Mittelflor, Kurzflor, Velours, Schlinge, Wolle),
+alle weiteren als Chips unter "Weitere", Farbe/Raum/Rollenbreite je eine
+Chip-Zeile zum Wischen. Gemessen bei 390 x 844: Panel 1232 px (1,46
+Bildschirme) -> 912 px (1,08), Rollenbreite beginnt bei 811 px statt 1131 px,
+33 Links vorher wie nachher. Fotos:
+`bilder/hauptmenue-2026-10/handy-teppichboden-2026-10-29-*.jpg`.
+Wer nach vorn soll, wird im Shopify-Menue nach vorn geschoben
+(`scripts/menue-umbau.mjs`), kein Theme-Code.

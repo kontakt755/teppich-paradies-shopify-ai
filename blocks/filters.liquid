@@ -29,23 +29,16 @@
   assign filters = filters | default: results.filters
   assign total_active_values = 0
 
-  # Preisfilter aus: Shopify filtert nach dem Variantenpreis (Paketpreis,
-  # bei Teppich nach Mass je 0,01 m2), die Karten zeigen dagegen den Preis
-  # je m2. Ein belastbarer, filterbarer EUR/m2-Wert existiert nicht.
-  # Betroffen sind Kollektionen mit ueberwiegend oder teilweise Paketware
-  # (Pruefung custom.qm_pro_paket, Audit 13.10.2026). Alle anderen Filter
-  # bleiben unveraendert.
-  assign tp_preisfilter_aus = 'vinylboden-1,vinylboden-klickvinyl,vinylboden-klebevinyl,vinylboden-fischgraet,angebote-vinylboden,auslauf-vinylboden,jab-anstoetz-designboden,laminat,parkett,korkboden,korkboden-klick,korkboden-kleben,kautschukboden,teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen,teppichboden-buero-gewerbe,angebote-teppichboden,angebote,teppich-nach-mass,marken-teppiche-nach-mass,vorwerk-teppiche-nach-mass,jab-anstoetz-teppiche-nach-mass' | split: ','
+  # Standard-Preisfilter ausblenden, wo Variantenpreis und Kartenpreis (EUR/m2)
+  # auseinanderlaufen: Paketware, Teppiche nach Mass und seit w-189 (29.10.2026)
+  # alle Teppichboden-Kollektionen (Wunschmass-Variante teurer als Meterware;
+  # Ersatz ist der Search-&-Discovery-Filter "Preis je m2"). Regel und Liste:
+  # snippets/tp-preisfilter-versteckt.liquid. Alle anderen Filter bleiben.
+  capture tp_preisfilter_versteckt_text
+    render 'tp-preisfilter-versteckt', collection: collection
+  endcapture
   assign tp_preisfilter_versteckt = false
-  if tp_preisfilter_aus contains collection.handle
-    assign tp_preisfilter_versteckt = true
-  endif
-  # Teppiche und Laeufer nach Mass: der Variantenpreis gilt je 0,01 m2 bzw.
-  # je cm Laenge, der Filter bot "hoechster Preis 1,76 EUR" an und fand bei
-  # echten Preisen nichts (Rundgang 2026-10-26: Sisal & Kokos, Laeufer,
-  # Designteppiche, Auslauf). Neue Mass-Kollektionen fallen ueber Handle oder
-  # Titel von selbst heraus, ohne Eintrag in der Liste oben.
-  if collection.handle contains 'nach-mass' or collection.title contains 'nach Maß'
+  if tp_preisfilter_versteckt_text contains 'ja'
     assign tp_preisfilter_versteckt = true
   endif
   assign tp_teppich_unterkategorie = false
@@ -277,17 +270,10 @@
                   {% case filter.type %}
                     {% when 'price_range' %}
                       {%- comment -%}
-                        Liste tp_preisfilter_aus und Mass-Regel oben (tp_preisfilter_versteckt). Preisfilter blendet fuer die Vinylboden-Collection
-                        bewusst aus: Shopifys nativer Preisfilter filtert nach
-                        dem tatsaechlichen Varianten-/Paketpreis, waehrend die
-                        Karten hier den €/m²-Preis zeigen (Einheiten-Mismatch,
-                        technisch nicht ohne Metafeld-Filterung sauber
-                        loesbar). Gleiches gilt fuer die Teppichfliesen-
-                        Collections: dort steht der €/m²-Preis auf der Karte,
-                        der Filter rechnet je Paket. Ebenso Teppiche nach Mass:
-                        der Variantenpreis gilt je 0,01 m2, der Filter bot
-                        "hoechster Preis 3,05 EUR" an (2026-10-12). Alle
-                        anderen Filter bleiben unveraendert.
+                        Standard-Preisfilter nur dort, wo Variantenpreis und Kartenpreis
+                        zusammenpassen - Regel in snippets/tp-preisfilter-versteckt.liquid
+                        (Paketware, Teppiche nach Mass, Teppichboden mit Wunschmass; dort
+                        ersetzt ihn der Search-&-Discovery-Filter "Preis je m2").
                       {%- endcomment -%}
                       {%- unless request.page_type == 'search' or tp_preisfilter_versteckt -%}
                         {%- liquid

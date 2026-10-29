@@ -2376,8 +2376,8 @@
         "type": "checkbox",
         "id": "tp_muster_hinweis_aktiv",
         "label": "Geduld-Hinweis zu Mustern anzeigen",
-        "default": true,
-        "info": "Vorübergehend (28.10.2026): erscheint unter dem Muster-Knopf auf Produktseiten, auf der Musterseite und im Warenkorb mit Muster. Ausschalten, sobald die Muster wieder normal laufen."
+        "default": false,
+        "info": "Standard aus (Inhaber 29.10.2026). Nur einschalten, wenn Muster vorübergehend länger brauchen: erscheint dann unter dem Muster-Knopf auf Produktseiten, auf der Musterseite und im Warenkorb mit Muster."
       },
       {
         "type": "textarea",

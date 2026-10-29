@@ -42,6 +42,23 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   „Weitere Bereiche“ (bewusst, Inhaber 22.10.); wer sie oben erwartet, findet dort nur die Zahl der
   Anfragen. Schlägt eine Quelle fehl, fehlt ihr rotes To-do oben still; die Datenzeile und die
   Alltagssichten melden den Ausfall weiter.
+## 2026-10-28 · Nachfass-Mails: Firmenangaben unter dem Gruß (Werkbank w-172 Punkt 2, #1772)
+
+- **Geaendert:** Die Nachfass-Mails („Muster nachfassen“) endeten ohne Rechtsform, Anschrift,
+  Registergericht und Geschäftsführerin; für eine GmbH gehört das in geschäftliche Mails (Inhaber
+  28.10.: ja). `fuelleText()` in `docs/ai-dashboard/lib/muster-nachfassen.mjs` hängt jetzt
+  `FIRMENANGABEN` als eigenen Absatz hinter den Gruß: Firma und Anschrift · Telefon, E-Mail, Shop ·
+  Sitz, Amtsgericht Neuruppin HRB 9141 NP, Geschäftsführerin (Stand Impressum 28.10.2026). Der
+  Abmelde-Hinweis bleibt die letzte Zeile. Weil alle Wege durch `fuelleText()` laufen, gilt das für
+  den täglichen Versand, den Knopf „Nachfassen“ und die Mail „Muster nicht verfügbar“, auch mit der
+  Inhaber-Vorlage aus dem Privatordner. Steht die Registernummer schon in einer Vorlage, kommt der
+  Block nicht doppelt. USt-ID und Fax bewusst weggelassen.
+- **Getestet:** `docs/ai-dashboard/tests/nachfassen-firmenangaben.test.mjs` neu; der Test, der „endet
+  mit Freundliche Grüße“ erwartete, prüft jetzt den Gruß mit den Firmenangaben dahinter.
+  `npm run -s dashboard:test` 1035/1035, `npm run -s dashboard:pruefen` (Datenkopie) nur OK-Zeilen.
+  Seit 29.10. im Betrieb (`betrieb:nachziehen -- --status`: Rückstand 0).
+- **Risiken:** Kein echter Versand an ein Postfach getestet. Ändern sich Anschrift, Registergericht
+  oder Geschäftsführung, muss `FIRMENANGABEN` mit dem Impressum nachgezogen werden.
 - **Naechste Stufe:** keine.
 ## 2026-10-29 · Packstation: Muster ohne eigene Einkaufsdaten zeigen Lieferant und Farbnummer
 
