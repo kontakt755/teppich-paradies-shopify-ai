@@ -49,3 +49,31 @@ wird nicht doppelt gepostet, ein wieder sauberer PR bekommt eine Entwarnung).
 Aenderungen mit dem Workflow-Token loesen auf GitHub keine weiteren Workflows
 aus — ein Begradigen aus der CI wuerde also genau die PR-Validierung nicht
 starten, die es erreichen soll. Reparieren tut eine Sitzung mit `--fix`.
+
+## GitHub wertet Merge-Treiber nicht aus (Befund 2026-10-29)
+
+**Befund:** Seit PR #1767 (28.10.) stand in `.gitattributes`
+`docs/control-center/CHANGELOG.md merge=union`, damit parallele PRs ihren Eintrag oben in
+dieselbe Datei schreiben koennen. Lokal merged git damit sauber. GitHub rechnet die
+Mergebarkeit aber ohne Merge-Treiber: nach jedem Merge nach `main` standen alle anderen
+offenen PRs mit Changelog-Eintrag als CONFLICTING, `pr-validation.yml` startete nicht, und
+eine Sitzung zog `origin/main` von Hand in jeden Branch - am 29.10. zweimal fuer sechs PRs,
+27 Nachzieh-Merges an einem Tag.
+
+**Beleg:** `git merge-tree --write-tree origin/main origin/<branch>` war wegen `union`
+blind (sauber), `npm run pr:doctor` meldete deshalb nichts. Die Sicht von GitHub liefert
+`git --attr-source=<Commit vor #1767> merge-tree --write-tree origin/main origin/<branch>`:
+Konflikt in `CHANGELOG.md`, bei 6 von 7 offenen PRs.
+
+**Folge (PR Changelog-Einzeldateien, 29.10.):** Ein Eintrag = eine Datei unter
+`docs/control-center/changelog/` (`JJJJ-MM-TT-<kurzname>.md`, Format in der README dort),
+`CHANGELOG.md` eingefroren, `merge=union` entfernt, damit `pr:doctor` wieder sieht, was
+GitHub sieht. `npm run changelog:guard` prueft Dateiname, Kopfzeile, Pflichtabschnitte und
+dass die alte Datei keine Ueberschrift nach dem Einfrierdatum bekommt; er laeuft in
+`npm run -s pruefen` und damit in der CI. `pr:doctor` uebernimmt zusaetzlich `mergeable`
+und `mergeStateStatus` von GitHub und meldet einen Konflikt auch dann, wenn der lokale
+`merge-tree` sauber ist; ein PR, der noch in `CHANGELOG.md` schreibt, bekommt eine Warnung.
+
+**Regel daraus:** Ein Merge-Treiber in `.gitattributes` loest nie ein Konfliktproblem auf
+GitHub. Wenn viele Branches dieselbe Stelle einer Datei aendern muessen, hilft nur eine
+Struktur ohne gemeinsame Zeile - eine Datei je Eintrag.

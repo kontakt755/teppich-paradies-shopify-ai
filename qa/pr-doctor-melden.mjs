@@ -59,6 +59,7 @@ const ZEILE = {
   'basis-nicht-main': f => `| Basis ist nicht \`main\` | ${f.text.replace(/^#\d+: /, '')} | \`npm run pr:doctor -- --fix\` zielt um |`,
   'mehrere-basen': f => `| ueberkreuzte Historie | ${f.text.replace(/^#\d+: /, '')} | \`npm run pr:doctor -- --fix\` begradigt |`,
   'branch-fehlt': f => `| Head-Branch fehlt | ${f.text.replace(/^#\d+: /, '')} | PR schliessen oder Branch wiederherstellen |`,
+  'changelog-datei': f => `| schreibt in die eingefrorene CHANGELOG.md | ${f.text.replace(/^#\d+: /, '')} | Eintrag als Datei unter docs/control-center/changelog/ anlegen |`,
 };
 
 export function baueKommentar({ findings, mainSha = null, runUrl = null }) {
