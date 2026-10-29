@@ -1039,7 +1039,16 @@ Seit 2026-10-26:
   Minuten). Den Beginn der laufenden Stoerung traegt `status.json` als `stoerungSeit`. Genauigkeit:
   ein Lauf je Stunde. Der Verlauf ist im Tagesarchiv.
 - Feld `speicher`: freier Speicher der Platte (`lib/speicher.mjs`), gelb unter 40 GiB, rot unter
-  20 GiB, eigenes To-do im Control Center. Er zaehlt nicht zur Shop-Ampel.
+  20 GiB, eigenes To-do im Control Center. Er zaehlt nicht zur Shop-Ampel. Bei Rot schickt die
+  Wache zusaetzlich eine Mac-Mitteilung, hoechstens einmal je Kalendertag (Tag in
+  `shopwache/speicher-mitteilung.json`), nur in der Arbeitszeit (Mo–Sa 7–19 Uhr, wie die
+  Routinen), Logzeile „Speicher rot: Mac-Mitteilung verschickt“. Gemeldet wird vor dem Schreiben
+  von `status.json` – bei voller Platte scheitert gerade das.
+- Bildlaeufe (Raumbilder, Schaerfe, Bild-Downloads; die Skripte liegen privat unter
+  `$TP_PRIVAT_DIR`) pruefen vor dem Start `npm run -s speicher:pruefen`. **Exit ungleich 0 heisst:
+  nicht starten** (1 = unter 20 GiB frei, 2 = falsche Angabe; `--min <GiB>` fuer eine eigene
+  Grenze). Aus Python: `subprocess.run(["npm", "run", "-s", "speicher:pruefen"],
+  cwd=<Repository>).returncode` und bei jedem Wert ungleich 0 abbrechen.
 
 `npm run aufgaben:pruefen` (Dienst `net.teppich-paradies.aufgaben`, taeglich 9:30) prueft
 Betriebsaufgaben mit maschinell pruefbarer Vorgabe und legt faellige Wiederholungen an. Auch hier
