@@ -121,6 +121,52 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   bleibt Handarbeit, Grund ist das Problem mit doppelten Muster-SKUs (#1749).
 - **Naechste Stufe:** Nach #1749 kann das To-do direkt die Mustersperre auslösen.
 
+## 2026-10-28 · Mustersperre: doppelte Muster-SKUs sperren und freigeben (#1745)
+
+- **Geaendert:** „Muster nicht verfügbar“ sperrte nichts, sobald eine Muster-SKU auf mehr als einer
+  Variante lag („gibt es im Shop mehrfach – bitte in Shopify von Hand sperren“). Das trifft laut Lexikon
+  2028 von 3911 Muster-SKUs: dieselbe Farbe steht im Teppichboden-Muster und im Nach-Maß-Muster. Am 28.10.
+  musste deshalb eine Linie von Lieferant A (3 Farben, 6 Varianten) von Hand gesperrt werden.
+  - `operations/lib/mustersperre.mjs`: `leseVarianten()` liefert alle exakten Treffer. Liegen alle in
+    `muster-*`-Produkten, sperrt `sperreImShop()` jede Variante (je Variante eigener `@idempotent`-
+    Schlüssel) und prüft jede gegen. Erst alle prüfen, dann schreiben: verletzt eine die Vorbedingung,
+    wird keine gesperrt. Ein Treffer außerhalb der Musterprodukte bleibt ein Abbruch (`mehrdeutig`) –
+    bisher gewann dann still die Mustervariante. Mehr Treffer als eine Abfrageseite ebenfalls.
+  - Das Ereignis in `mustersperre.json` nennt alle Varianten (`shopify.varianten`, je mit Vorstand und
+    ob sie schon angefasst sein kann). `stand()` führt den Rückweg je Variante; alte Ereignisse mit einer
+    Variante (`variantId`/`vorher` direkt unter `shopify`) liest `variantenVon()` als Liste mit einer.
+  - „Wieder verfügbar“ stellt jede gesperrte Variante auf ihren eigenen Vorstand zurück. Varianten
+    derselben SKU, die keine Sperre angefasst hat (später angelegt oder nach einem Abbruch nie erreicht),
+    bleiben unberührt (`stand().varianten[].betroffen`). Die betroffenen liest die Freigabe per ID
+    (`leseVariantenNachId`, `nodes(ids:)`): auch nach einer SKU-Änderung wird keine vergessen, eine
+    gelöschte ist nichts mehr freizugeben (Codex-Review Runde 1, P2).
+  - Sehr alte Ereignisse mit Vorstand, aber ohne `variantId`: der Vorstand geht als früherer Rückweg an
+    die Variante von damals (die eine, die ein späteres Ereignis nennt, oder die eine schon gesperrte) und
+    wird nicht von einem späteren Lesestand verdrängt (Codex-Review Runde 1, P2). Lässt er sich keiner
+    Variante sicher zuordnen, schreibt „Wieder verfügbar“ nichts und verlangt die Freigabe von Hand; sind
+    danach alle Varianten bestellbar, ist der Eintrag erledigt (`vorherUnklar`, Runde 2, P2). Ohne jede
+    bekannte Variante gibt die Freigabe bei mehreren Varianten nur die nicht bestellbaren frei.
+  - Musterlager: bei mehreren Varianten führt „In Shopify öffnen“ zur Produktsuche nach der SKU.
+- **Getestet:**
+  - `mustersperre.test.mjs` (Proxy-Attrappe): zwei Mustervarianten mit verschiedenem Ausgangsstand
+    gesperrt und je auf den eigenen Vorstand freigegeben, zweiter Klick schreibt nichts; Gegenprobe je
+    Variante (eine bleibt bestellbar → kein Erfolg; Freigabe halb → Wiederholung schreibt nur den Rest);
+    Vorbedingung einer Variante verletzt → keine gesperrt; zweite Variante abgelehnt → nur die erste legt
+    einen Rückweg fest, und „Wieder verfügbar“ lässt die nie angefasste zweite Variante, wie sie ist;
+    Freigabe per ID trotz geänderter SKU, gelöschte Variante übergangen; alter Vorstand ohne
+    `variantId` bleibt Rückweg, unklar zuzuordnen → nichts geschrieben, nach Handfreigabe erledigt;
+    fremder Treffer → Abbruch ohne Schreiben; altes Einzel-Ereignis bleibt lesbar
+    und freigebbar; zu viele Treffer → Abbruch.
+  - `mustersperre-api.test.mjs`: Schritt im Dashboard sperrt beide, Ereignis nennt beide, Liste zeigt
+    die Produktsuche, „Wieder verfügbar“ gibt beide frei; fremder Treffer → „im Shop noch zu sperren“,
+    lokal entfernbar; alte Ablage → Liste mit Variantenlink und Freigabe.
+  - Lesend gegen den Shop (MCP): die SKU-Suche ist exakt, die gesperrte Linie liegt auf je zwei
+    Mustervarianten.
+- **Risiken:** Ein Muster-SKU, die zugleich auf einem Nicht-Musterprodukt liegt, sperrt jetzt gar nicht
+  mehr automatisch (vorher nur die Mustervariante). Laut Lexikon gibt es keine solche SKU.
+- **Nächste Stufe:** Die Handsperre vom 28.10. als Ereignis nachtragen, damit „Wieder verfügbar“ sie
+  kennt – freigegeben am 28.10., läuft nach dem Deploy (Skript im privaten Datenordner).
+
 ## 2026-10-28 · Starter-Test: Zeitlimit nur noch gegen Hänger (#1752)
 
 - **Geaendert:** Das automatische Nachziehen des Dienstes hing am 28.10. um 11:04 an einem roten Probelauf.

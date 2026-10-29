@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   mustersperrePfad, leseSperren, haengeAn, ereignis, stand, schonErledigt, adminLink, pruefeRechte, sperreImShop, freigebenImShop,
-  freigabeZiel, GRUND, MustersperreFehler,
+  freigabeZiel, GRUND, MustersperreFehler, leseVarianten, variantenVon,
 } from '../lib/mustersperre.mjs';
 import { attrappe, variante } from './mustersperre-attrappe.mjs';
 
@@ -125,13 +125,16 @@ test('Sperren: verfolgt mit Bestand und CONTINUE -> Bestand 0 (Compare-and-swap)
 
 test('Sperren: keine Mustervariante, mehrdeutig, kein Bestand am Standort, Recht fehlt, abgelehnt', async () => {
   await assert.rejects(sperreImShop(attrappe({ varianten: [variante('M-ANDERS')] }).proxy, { sku: 'M-TEST-3' }), e => e.grund === 'keine-mustervariante');
-  // Gleiche SKU zweimal: die Variante des Musterprodukts gewinnt; zwei Musterprodukte = Handarbeit.
+  // Gleiche SKU auch ausserhalb eines Musterprodukts: unklar, was gemeint ist - nichts wird geschrieben
+  // (zwei Musterprodukte dagegen werden beide gesperrt, siehe "Doppelte Muster-SKU").
   const muster = variante('M-DOPPEL');
   const fremd = variante('M-DOPPEL', { handle: 'kostenloses-muster' });
   const a = attrappe({ varianten: [fremd, muster] });
-  assert.equal((await sperreImShop(a.proxy, { sku: 'M-DOPPEL' })).variantId, muster.id);
-  assert.equal(fremd.tracked, false, 'die fremde Variante bleibt unberuehrt');
-  await assert.rejects(sperreImShop(attrappe({ varianten: [variante('M-D2'), variante('M-D2')] }).proxy, { sku: 'M-D2' }), e => e.grund === 'mehrdeutig');
+  await assert.rejects(sperreImShop(a.proxy, { sku: 'M-DOPPEL' }), e => e.grund === 'mehrdeutig' && e.extra.aenderungMoeglich === false && /kostenloses-muster/.test(e.message));
+  assert.deepEqual([fremd.tracked, muster.tracked, a.mutationen().length], [false, false, 0], 'auch die Mustervariante bleibt unberuehrt');
+  await assert.rejects(sperreImShop(attrappe({ varianten: [variante('M-D2', { handle: 'teppich-a' }), variante('M-D2', { handle: 'teppich-b' })] }).proxy, { sku: 'M-D2' }), e => e.grund === 'mehrdeutig');
+  // Eine einzelne Variante gilt wie bisher auch ausserhalb eines Musterprodukts.
+  assert.equal((await sperreImShop(attrappe({ varianten: [variante('M-EINZELN', { handle: 'kostenloses-muster' })] }).proxy, { sku: 'M-EINZELN' })).status, 'gesperrt');
   await assert.rejects(sperreImShop(attrappe({ varianten: [variante('M-L', { level: false })] }).proxy, { sku: 'M-L' }), e => e.grund === 'kein-standort');
   const verweigert = attrappe({ varianten: [variante('M-R')], verweigert: true });
   await assert.rejects(sperreImShop(verweigert.proxy, { sku: 'M-R' }), e => e.grund === 'recht-fehlt' && /write_inventory/.test(e.message));
@@ -273,4 +276,262 @@ test('Stand: alte unklare, teilweise und bestaetigte Aenderungen behalten ersten
     assert.deepEqual(s.vorher, vorher);
     assert.equal(s.shopPruefen, true);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Doppelte Muster-SKU: dieselbe Farbe im Teppichboden-Muster und im Nach-Mass-Muster (Lexikon 28.10.:
+// 2028 von 3911 Muster-SKUs). Bis dahin brach die Sperre mit "mehrdeutig" ab.
+// ---------------------------------------------------------------------------
+
+/** Zwei Mustervarianten derselben SKU, mit verschiedenem Ausgangsstand, und eine Nachbar-SKU. */
+function doppelt() {
+  const tb = variante('M-DOP-439', { handle: 'muster-testlinie-teppichboden-400cm', menge: 1 });
+  const nm = variante('M-DOP-439', { handle: 'muster-testlinie-teppich-nach-mass', tracked: true, policy: 'CONTINUE', menge: 2 });
+  const nachbar = variante('M-DOP-4390', { handle: 'muster-testlinie-teppichboden-400cm' });
+  return { tb, nm, nachbar, a: attrappe({ varianten: [tb, nm, nachbar] }) };
+}
+const stand3 = z => [z.tracked, z.policy, z.menge];
+
+test('Doppelte Muster-SKU: beide Mustervarianten gesperrt und wieder auf ihren eigenen Vorstand freigegeben', async () => {
+  const { tb, nm, nachbar, a } = doppelt();
+  const r = await sperreImShop(a.proxy, { sku: 'm-dop-439', referenz: 'gid://shopify/Order/1' });
+  assert.deepEqual([r.status, r.verfuegbar], ['gesperrt', false]);
+  assert.deepEqual([r.variantId, r.productId, r.vorher, r.nachher], [null, null, null, null], 'Einzelwerte nur bei genau einer Variante');
+  assert.deepEqual(r.varianten.map(v => [v.variantId, v.handle, v.vorher, v.nachher, v.verfuegbar, v.aenderungMoeglich, Boolean(v.bereits)]), [
+    [tb.id, 'muster-testlinie-teppichboden-400cm', { tracked: false, policy: 'DENY', menge: 1 }, { tracked: true, policy: 'DENY', menge: 0 }, false, true, false],
+    [nm.id, 'muster-testlinie-teppich-nach-mass', { tracked: true, policy: 'CONTINUE', menge: 2 }, { tracked: true, policy: 'DENY', menge: 0 }, false, true, false],
+  ]);
+  assert.deepEqual([stand3(tb), stand3(nm), stand3(nachbar)], [[true, 'DENY', 0], [true, 'DENY', 0], [false, 'DENY', 0]], 'die Nachbar-SKU bleibt unberuehrt');
+  const bestand = a.mutationen().filter(m => m.name === 'MustersperreBestand');
+  assert.equal(bestand.length, 2);
+  assert.equal(new Set(bestand.map(m => m.variables.schluessel)).size, 2, 'je Variante ein eigener @idempotent-Schluessel');
+  assert.ok(bestand.every(m => m.variables.input.referenceDocumentUri === 'gid://shopify/Order/1'));
+  assert.equal(a.aufrufe.filter(x => x.name === 'MustersperreVariante').length, 2, 'einmal lesen, einmal gegenpruefen - fuer beide zusammen');
+
+  // Zweiter Lauf: beide schon gesperrt -> nichts geschrieben.
+  const vorher = a.mutationen().length;
+  const zweimal = await sperreImShop(a.proxy, { sku: 'M-DOP-439' });
+  assert.equal(zweimal.status, 'bereits');
+  assert.ok(zweimal.varianten.every(v => v.bereits && v.aenderungMoeglich === false));
+  assert.equal(a.mutationen().length, vorher);
+
+  // Freigeben: jede Variante auf ihren eigenen Stand vor der Sperre.
+  const f = await freigebenImShop(a.proxy, { sku: 'M-DOP-439', varianten: r.varianten });
+  assert.deepEqual([f.status, f.verfuegbar, f.variantId], ['frei', true, null]);
+  assert.deepEqual([stand3(tb), stand3(nm)], [[false, 'DENY', 1], [true, 'CONTINUE', 2]]);
+  assert.deepEqual(f.varianten.map(v => [v.variantId, v.verfuegbar]), [[tb.id, true], [nm.id, true]]);
+  const nachFrei = a.mutationen().length;
+  assert.equal((await freigebenImShop(a.proxy, { sku: 'M-DOP-439', varianten: r.varianten })).status, 'bereits');
+  assert.equal(a.mutationen().length, nachFrei, 'zweite Freigabe schreibt nichts');
+});
+
+test('Doppelte Muster-SKU: die Gegenprobe gilt je Variante - bleibt eine bestellbar, ist nichts bestaetigt', async () => {
+  const { tb, nm, a } = doppelt();
+  // Die Nach-Mass-Variante bleibt laut Shopify bestellbar (z. B. weiterer Standort).
+  const proxy = { async execute(q, v) {
+    const d = await a.proxy.execute(q, v);
+    for (const n of d.productVariants?.nodes || []) if (n.id === nm.id) n.availableForSale = true;
+    return d;
+  } };
+  await assert.rejects(sperreImShop(proxy, { sku: 'M-DOP-439' }), e => e.grund === 'gegenprobe' && e.extra.aenderungMoeglich === true
+    && e.extra.varianten.map(v => [v.variantId, v.verfuegbar, v.aenderungMoeglich]).join('|') === [[tb.id, false, true], [nm.id, true, true]].join('|'));
+
+  // Freigabe: eine Variante zurueck, die andere nicht -> Fehler; Wiederholung schreibt nur noch die fehlende.
+  const b = doppelt();
+  const r = await sperreImShop(b.a.proxy, { sku: 'M-DOP-439' });
+  // Die Richtlinie der Nach-Mass-Variante (DENY -> CONTINUE) kommt nie an.
+  const halb = { async execute(q, v) {
+    if (q.includes('mutation MustersperreRichtlinie')) throw new Error('timeout before write');
+    return b.a.proxy.execute(q, v);
+  } };
+  await assert.rejects(freigebenImShop(halb, { sku: 'M-DOP-439', varianten: r.varianten }), e => e.grund === 'gegenprobe');
+  assert.deepEqual([stand3(b.tb), stand3(b.nm)], [[false, 'DENY', 1], [true, 'DENY', 2]], 'die erste ist zurueck, die zweite nur zum Teil');
+  const vorher = b.a.mutationen().length;
+  const f = await freigebenImShop(b.a.proxy, { sku: 'M-DOP-439', varianten: r.varianten });
+  assert.equal(f.status, 'frei');
+  assert.deepEqual([stand3(b.tb), stand3(b.nm)], [[false, 'DENY', 1], [true, 'CONTINUE', 2]]);
+  assert.deepEqual(b.a.mutationen().slice(vorher).map(m => [m.name, m.variables.variants?.[0]?.id]), [['MustersperreRichtlinie', b.nm.id]],
+    'die Wiederholung schreibt nur, was noch fehlt');
+});
+
+test('Doppelte Muster-SKU: verletzt eine Variante die Vorbedingung, wird keine gesperrt', async () => {
+  const tb = variante('M-DOP-L', { handle: 'muster-testlinie-teppichboden-400cm' });
+  const nm = variante('M-DOP-L', { handle: 'muster-testlinie-teppich-nach-mass', level: false });
+  const a = attrappe({ varianten: [tb, nm] });
+  await assert.rejects(sperreImShop(a.proxy, { sku: 'M-DOP-L' }), e => e.grund === 'kein-standort' && e.extra.aenderungMoeglich === false && /eine der Mustervarianten/.test(e.message));
+  assert.deepEqual([tb.tracked, nm.tracked, a.mutationen().length], [false, false, 0]);
+
+  const lokalLeer = variante('M-DOP-G', { handle: 'muster-testlinie-teppichboden-400cm', tracked: true });
+  const zweite = variante('M-DOP-G', { handle: 'muster-testlinie-teppich-nach-mass' });
+  const b = attrappe({ varianten: [lokalLeer, zweite] });
+  const global = { async execute(q, v) {
+    const d = await b.proxy.execute(q, v);
+    for (const n of d.productVariants?.nodes || []) if (n.id === lokalLeer.id) n.availableForSale = true;
+    return d;
+  } };
+  await assert.rejects(sperreImShop(global, { sku: 'M-DOP-G' }), e => e.grund === 'gegenprobe' && e.extra.aenderungMoeglich === false);
+  assert.equal(b.mutationen().length, 0, 'auch die zweite Variante bleibt ungesperrt');
+});
+
+test('Doppelte Muster-SKU: zweite Variante abgelehnt -> erste bleibt pruefpflichtig mit Vorstand, zweite friert keinen ein', async () => {
+  const { tb, nm, a } = doppelt();
+  let bestand = 0;
+  const proxy = { async execute(q, v) {
+    if (q.includes('mutation MustersperreBestand') && ++bestand === 2) throw new Error('ACCESS_DENIED write_inventory');
+    return a.proxy.execute(q, v);
+  } };
+  let fehler;
+  await assert.rejects(sperreImShop(proxy, { sku: 'M-DOP-439' }), e => { fehler = e; return e.grund === 'recht-fehlt'; });
+  assert.equal(fehler.extra.aenderungMoeglich, true, 'die erste Variante ist schon gesperrt');
+  assert.deepEqual(fehler.extra.varianten.map(v => [v.variantId, v.aenderungMoeglich]), [[tb.id, true], [nm.id, false]]);
+  assert.deepEqual([stand3(tb), stand3(nm)], [[true, 'DENY', 0], [true, 'CONTINUE', 2]]);
+
+  // Ablage und Stand: Rueckweg nur fuer die angefasste Variante. Danach steigt der Bestand der zweiten,
+  // das Nachholen sperrt sie mit frischem Vorstand; die Freigabe stellt beide richtig her.
+  const ev = [ereignis({ sku: 'M-DOP-439', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'),
+    shopify: { geschrieben: false, aenderungMoeglich: true, fehlerGrund: fehler.grund, fehler: fehler.message, varianten: fehler.extra.varianten } })];
+  let s = stand(ev).get('M-DOP-439');
+  assert.equal(s.shopPruefen, true);
+  assert.deepEqual(s.varianten.map(v => [v.variantId, v.vorher]), [[tb.id, { tracked: false, policy: 'DENY', menge: 1 }], [nm.id, null]]);
+  nm.menge = 5;
+  const r = await sperreImShop(a.proxy, { sku: 'M-DOP-439' });
+  assert.deepEqual(r.varianten.map(v => [Boolean(v.bereits), v.aenderungMoeglich]), [[true, false], [false, true]]);
+  ev.push(ereignis({ sku: 'M-DOP-439', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('11:00'), shopify: { geschrieben: true, varianten: r.varianten } }));
+  s = stand(ev).get('M-DOP-439');
+  assert.deepEqual(s.varianten.map(v => v.vorher), [{ tracked: false, policy: 'DENY', menge: 1 }, { tracked: true, policy: 'CONTINUE', menge: 5 }],
+    'erste behaelt den echten Vorstand (nicht "bereits gesperrt"), zweite bekommt den frischen');
+  await freigebenImShop(a.proxy, { sku: 'M-DOP-439', varianten: s.varianten });
+  assert.deepEqual([stand3(tb), stand3(nm)], [[false, 'DENY', 1], [true, 'CONTINUE', 5]]);
+});
+
+test('Doppelte Muster-SKU: Freigabe fasst nur Varianten an, die eine Sperre beruehrt hat - alte Ablage mit einer Variante', async () => {
+  // Altes Ereignis (vor 28.10.): eine Variante, variantId und vorher direkt unter shopify.
+  const tb = variante('M-ALT-1', { handle: 'muster-testlinie-teppichboden-400cm', tracked: true });
+  const alt = ereignis({ sku: 'M-ALT-1', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'),
+    shopify: { geschrieben: true, variantId: tb.id, productId: tb.product.id, vorher: { tracked: false, policy: 'DENY', menge: 0 } } });
+  assert.equal(alt.shopify.varianten, undefined, 'altes Format bleibt, wie es war');
+  const s = stand([alt]).get('M-ALT-1');
+  assert.deepEqual([s.imShop, s.variantId, s.vorher], [true, tb.id, { tracked: false, policy: 'DENY', menge: 0 }]);
+  assert.deepEqual(s.varianten, [{ variantId: tb.id, productId: tb.product.id, handle: null, vorher: { tracked: false, policy: 'DENY', menge: 0 }, betroffen: true }]);
+  assert.deepEqual(variantenVon(alt.shopify).map(v => v.variantId), [tb.id]);
+
+  // Seitdem ist das Nach-Mass-Muster mit derselben SKU dazugekommen (gesperrt von Hand): bleibt, wie es ist.
+  const neu = variante('M-ALT-1', { handle: 'muster-testlinie-teppich-nach-mass', tracked: true });
+  const a = attrappe({ varianten: [tb, neu] });
+  const f = await freigebenImShop(a.proxy, { sku: 'M-ALT-1', vorher: s.vorher, varianten: s.varianten });
+  assert.deepEqual([f.status, f.variantId, stand3(tb), stand3(neu)], ['frei', tb.id, [false, 'DENY', 0], [true, 'DENY', 0]]);
+  assert.ok(a.mutationen().every(m => JSON.stringify(m.variables).includes(tb.inventoryItemId) || JSON.stringify(m.variables).includes(tb.id)));
+
+  // Gibt es keine der bekannten Varianten mehr, wird nichts angefasst.
+  const b = attrappe({ varianten: [neu] });
+  await assert.rejects(freigebenImShop(b.proxy, { sku: 'M-ALT-1', varianten: s.varianten }), e => e.grund === 'keine-mustervariante');
+  assert.equal(b.mutationen().length, 0);
+});
+
+test('Lesen: zu viele Treffer fuer eine Seite sind mehrdeutig, exakte Treffer aus Musterprodukten alle', async () => {
+  const { tb, nm, a } = doppelt();
+  assert.deepEqual((await leseVarianten(a.proxy, 'M-DOP-439')).map(v => v.variantId), [tb.id, nm.id]);
+  const voll = { async execute(q, v) {
+    const d = await a.proxy.execute(q, v);
+    return { productVariants: { ...d.productVariants, pageInfo: { hasNextPage: true } } };
+  } };
+  await assert.rejects(leseVarianten(voll, 'M-DOP-439'), e => e.grund === 'mehrdeutig' && /zu viele/.test(e.message));
+  await assert.rejects(sperreImShop(voll, { sku: 'M-DOP-439' }), e => e.grund === 'mehrdeutig' && e.extra.aenderungMoeglich === false);
+  assert.equal(a.mutationen().length, 0);
+});
+
+test('Doppelte Muster-SKU: Freigabe nach abgebrochener Sperre laesst die nie angefasste Variante, wie sie ist', async () => {
+  const { tb, nm, a } = doppelt();
+  let bestand = 0;
+  const proxy = { async execute(q, v) {
+    if (q.includes('mutation MustersperreBestand') && ++bestand === 2) throw new Error('ACCESS_DENIED write_inventory');
+    return a.proxy.execute(q, v);
+  } };
+  let fehler;
+  await assert.rejects(sperreImShop(proxy, { sku: 'M-DOP-439' }), e => { fehler = e; return e.grund === 'recht-fehlt'; });
+  const s = stand([ereignis({ sku: 'M-DOP-439', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'),
+    shopify: { geschrieben: false, aenderungMoeglich: true, fehlerGrund: fehler.grund, fehler: fehler.message, varianten: fehler.extra.varianten } })]).get('M-DOP-439');
+  assert.deepEqual(s.varianten.map(v => [v.variantId, v.betroffen]), [[tb.id, true], [nm.id, false]]);
+  const vorher = a.mutationen().length;
+  const f = await freigebenImShop(a.proxy, { sku: 'M-DOP-439', vorher: s.vorher, varianten: s.varianten });
+  assert.deepEqual([f.status, f.variantId], ['frei', tb.id]);
+  assert.deepEqual([stand3(tb), stand3(nm)], [[false, 'DENY', 1], [true, 'CONTINUE', 2]], 'die zweite war nie gesperrt und bleibt unveraendert');
+  assert.ok(a.mutationen().slice(vorher).every(m => !JSON.stringify(m.variables).includes(`"${nm.inventoryItemId}"`) && !JSON.stringify(m.variables).includes(`"${nm.id}"`)));
+});
+
+test('Altes Ereignis mit Vorstand ohne variantId: spaetere Sperre mit Variante behaelt den frueheren Rueckweg (Codex-Review #1749)', async () => {
+  const ursprung = { tracked: false, policy: 'DENY', menge: 3 };
+  // Der alte, unklare Versuch hat die Variante ganz gesperrt (-> "bereits") bzw. nur den Bestand gesetzt.
+  for (const danach of [{ tracked: true, menge: 0 }, { tracked: false, menge: 0 }]) {
+    const v = variante('M-OHNEID', danach);
+    const a = attrappe({ varianten: [v] });
+    const ev = [ereignis({ sku: 'M-OHNEID', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'),
+      shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher: ursprung } })];
+    const r = await sperreImShop(a.proxy, { sku: 'M-OHNEID' }); // weitere Bestellung, neuer Code
+    ev.push(ereignis({ sku: 'M-OHNEID', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('11:00'),
+      shopify: { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, vorher: r.vorher, nachher: r.nachher, varianten: r.varianten } }));
+    const s = stand(ev).get('M-OHNEID');
+    assert.deepEqual(s.varianten.map(x => [x.variantId, x.vorher, x.betroffen]), [[v.id, ursprung, true]], JSON.stringify(danach));
+    await freigebenImShop(a.proxy, { sku: 'M-OHNEID', vorher: s.vorher, varianten: s.varianten });
+    assert.deepEqual(stand3(v), [false, 'DENY', 3], 'urspruenglich unverfolgt mit 3, nicht verfolgt/1');
+  }
+});
+
+test('Freigabe liest bekannte Varianten per ID: geaenderte SKU wird mit freigegeben, geloeschte uebergangen (Codex-Review #1749)', async () => {
+  const gesperrtMit = r => stand([ereignis({ sku: 'M-DOP-439', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'), shopify: { geschrieben: true, varianten: r.varianten } })]).get('M-DOP-439');
+  const { tb, nm, a } = doppelt();
+  const s = gesperrtMit(await sperreImShop(a.proxy, { sku: 'M-DOP-439' }));
+  nm.sku = 'M-DOP-439-NEU'; // SKU im Shop inzwischen geaendert - per SKU waere sie nicht mehr zu finden
+  const f = await freigebenImShop(a.proxy, { sku: 'M-DOP-439', vorher: s.vorher, varianten: s.varianten });
+  assert.deepEqual([f.status, f.varianten.map(v => [v.variantId, v.verfuegbar])], ['frei', [[tb.id, true], [nm.id, true]]]);
+  assert.deepEqual([stand3(tb), stand3(nm)], [[false, 'DENY', 1], [true, 'CONTINUE', 2]]);
+  assert.equal(a.aufrufe.filter(x => x.name === 'MustersperreVariantenNachId').length, 2, 'lesen und gegenpruefen per ID');
+
+  const b = doppelt();
+  const s2 = gesperrtMit(await sperreImShop(b.a.proxy, { sku: 'M-DOP-439' }));
+  b.a.varianten.splice(b.a.varianten.indexOf(b.nm), 1); // Variante geloescht: nichts mehr freizugeben
+  const f2 = await freigebenImShop(b.a.proxy, { sku: 'M-DOP-439', varianten: s2.varianten });
+  assert.deepEqual([f2.status, f2.variantId, stand3(b.tb)], ['frei', b.tb.id, [false, 'DENY', 1]]);
+});
+
+test('Aelteste Ablage ohne variantId, inzwischen zwei Mustervarianten: nur die nicht bestellbare wird freigegeben', async () => {
+  const gesperrt = variante('M-URALT', { handle: 'muster-testlinie-teppichboden-400cm', tracked: true });
+  const neu = variante('M-URALT', { handle: 'muster-testlinie-teppich-nach-mass' });
+  const a = attrappe({ varianten: [gesperrt, neu] });
+  const s = stand([ereignis({ sku: 'M-URALT', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'),
+    shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher: { tracked: false, policy: 'DENY', menge: 3 } } })]).get('M-URALT');
+  assert.deepEqual([s.varianten, s.shopPruefen], [[], true]);
+  const f = await freigebenImShop(a.proxy, { sku: 'M-URALT', vorher: s.vorher, varianten: s.varianten });
+  assert.equal(f.status, 'frei');
+  assert.deepEqual([stand3(gesperrt), stand3(neu)], [[false, 'DENY', 3], [false, 'DENY', 0]]);
+  assert.ok(a.mutationen().every(m => !JSON.stringify(m.variables).includes(`"${neu.inventoryItemId}"`) && !JSON.stringify(m.variables).includes(`"${neu.id}"`)));
+});
+
+test('Alter Vorstand ohne variantId, danach zwei ungesperrte Varianten: Zuordnung unklar -> Freigabe pruefpflichtig (Codex-Review #1749 Runde 2)', async () => {
+  const ursprung = { tracked: false, policy: 'DENY', menge: 3 };
+  const tb = variante('M-UNKLAR', { handle: 'muster-testlinie-teppichboden-400cm' }); // alter Versuch: 3 -> 0, unverfolgt
+  const nm = variante('M-UNKLAR', { handle: 'muster-testlinie-teppich-nach-mass' });
+  const a = attrappe({ varianten: [tb, nm] });
+  const ev = [ereignis({ sku: 'M-UNKLAR', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'), shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher: ursprung } })];
+  const r = await sperreImShop(a.proxy, { sku: 'M-UNKLAR' });
+  assert.ok(r.varianten.every(v => !v.bereits), 'keine war gesperrt - welche die alte war, ist nicht zu erkennen');
+  ev.push(ereignis({ sku: 'M-UNKLAR', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('11:00'), shopify: { geschrieben: true, varianten: r.varianten } }));
+  const s = stand(ev).get('M-UNKLAR');
+  assert.equal(s.vorherUnklar, true);
+  const frei = () => freigebenImShop(a.proxy, { sku: 'M-UNKLAR', vorher: s.vorher, varianten: s.varianten, vorherUnklar: s.vorherUnklar });
+  const vorher = a.mutationen().length;
+  await assert.rejects(frei(), e => e.grund === 'vorstand-unklar' && /von Hand freigeben/.test(e.message));
+  assert.equal(a.mutationen().length, vorher, 'kein Erfolg mit Bestand 0 statt 3 - es wird nichts geschrieben');
+  // Von Hand in Shopify freigegeben: "Wieder verfuegbar" ist dann erledigt, ohne zu schreiben.
+  Object.assign(tb, { tracked: false, menge: 3 });
+  nm.tracked = false;
+  const f = await frei();
+  assert.deepEqual([f.status, f.varianten.map(v => v.verfuegbar), a.mutationen().length], ['bereits', [true, true], vorher]);
+
+  // Eindeutig bleibt eindeutig: ein alter Vorstand ohne ID nach genau einer bekannten Variante gehoert zu ihr.
+  const spaet = stand([
+    ereignis({ sku: 'M-UNKLAR', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('09:00'), shopify: { geschrieben: false, aenderungMoeglich: false, fehlerGrund: 'recht-fehlt', variantId: tb.id } }),
+    ereignis({ sku: 'M-UNKLAR', von: 'Test', grund: GRUND.GESPERRT, jetzt: zeit('10:00'), shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher: ursprung } }),
+  ]).get('M-UNKLAR');
+  assert.deepEqual([spaet.vorherUnklar, spaet.varianten.map(v => [v.variantId, v.vorher, v.betroffen])], [false, [[tb.id, ursprung, true]]]);
 });

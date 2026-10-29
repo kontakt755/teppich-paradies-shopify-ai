@@ -1272,11 +1272,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       else {
         try {
           const r = await sperreImShop(zugang.proxy, { sku, referenz: orderId || null });
-          sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, vorher: r.vorher, nachher: r.nachher, verfuegbar: r.verfuegbar };
+          sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, vorher: r.vorher, nachher: r.nachher, verfuegbar: r.verfuegbar, varianten: r.varianten };
         } catch (e) {
           const bekannt = e instanceof MustersperreFehler;
           sh = { geschrieben: false, aenderungMoeglich: e?.extra?.aenderungMoeglich !== false, fehler: bekannt ? e.message : `Ob das Muster im Shop gesperrt ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}). Bitte in Shopify nachsehen.`,
-            fehlerGrund: bekannt ? e.grund : 'unklar', variantId: e?.extra?.variantId, productId: e?.extra?.productId, vorher: e?.extra?.vorher, nachher: e?.extra?.nachher };
+            fehlerGrund: bekannt ? e.grund : 'unklar', variantId: e?.extra?.variantId, productId: e?.extra?.productId, vorher: e?.extra?.vorher, nachher: e?.extra?.nachher, varianten: e?.extra?.varianten };
           logFehler('mustersperre', `${sku}: ${sh.fehlerGrund} - ${sh.fehler}`);
         }
       }
@@ -1336,7 +1336,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const zeilen = [...aktiv.values()].sort((a, b) => String(b.seit).localeCompare(String(a.seit))).map(s => ({
       sku: s.sku, farbe: s.farbe, produkt: s.produkt, seit: s.seit, von: s.von, auftraege: s.auftraege,
       imShop: s.imShop, shopPruefen: s.shopPruefen, fehler: s.fehler, fehlerGrund: s.fehlerGrund, freigabeFehler: s.freigabeFehler,
-      adminLink: sperrAdminLink({ sku: s.sku, variantId: s.variantId, productId: s.productId }),
+      varianten: s.varianten.length,
+      // Mehrere Mustervarianten (Teppichboden- und Nach-Mass-Muster): die Produktsuche zeigt alle.
+      adminLink: s.varianten.length > 1 ? sperrAdminLink({ sku: s.sku }) : sperrAdminLink({ sku: s.sku, variantId: s.variantId, productId: s.productId }),
     }));
     return { fehler: null, gesperrt: zeilen.filter(x => x.imShop), offen: zeilen.filter(x => !x.imShop) };
   }
@@ -2889,8 +2891,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const zugang = await sperrZugang();
           if (zugang.hindernis) throw new ApiError(503, zugang.hindernis.fehler.replace('Im Shop nicht gesperrt', 'Im Shop nicht freigegeben').replace('die Variante über den Link in Shopify sperren', 'die Variante über den Link in Shopify freigeben'));
           try {
-            const r = await freigebenImShop(zugang.proxy, { sku, vorher: s.vorher });
-            sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, nachher: r.nachher, verfuegbar: r.verfuegbar };
+            // Jede gesperrte Mustervariante bekommt ihren eigenen Vorstand zurueck (Teppichboden- und Nach-Mass-Muster).
+            const r = await freigebenImShop(zugang.proxy, { sku, vorher: s.vorher, varianten: s.varianten, vorherUnklar: s.vorherUnklar });
+            sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, nachher: r.nachher, verfuegbar: r.verfuegbar, varianten: r.varianten };
           } catch (e) {
             const meldung = e instanceof MustersperreFehler ? e.message : `Ob das Muster wieder freigegeben ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}).`;
             sperreAnhaengen(file, [sperrEreignis({ sku, ...info, von: actor, grund: SPERR_GRUND.FREI, shopify: { geschrieben: false, fehler: meldung, fehlerGrund: e?.grund || 'unklar' }, jetzt: now() })]);
