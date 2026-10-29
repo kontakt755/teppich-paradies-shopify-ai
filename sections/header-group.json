@@ -330,9 +330,9 @@
         "tp_kachel_service_vinyl": {
           "type": "_tp-menu-kachel",
           "settings": {
-            "menu_match": "Vinylboden verlegen",
+            "menu_match": "Vinylboden verlegen || Klickvinyl, Laminat & Parkett verlegen || Verlegen lassen",
             "image": "shopify://shop_images/1752160300_0.png",
-            "subtitle": "Klick, Klebe & Rollenware"
+            "subtitle": "Aufmaß und Verlegung aus einer Hand"
           }
         },
         "tp_kachel_service_treppen": {

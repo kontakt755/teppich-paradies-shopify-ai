@@ -44,3 +44,20 @@ test('Header: jede Kachel hat ein Bild, kein Menuepunkt steht in zwei Kacheln', 
   assert.equal(new Set(punkte).size, punkte.length, 'Menuepunkt doppelt vergeben');
   for (const b of bloecke) assert.ok(b.settings.image, `${b.settings.menu_match} ohne Bild`);
 });
+
+// w-173: Der Menuepunkt "Vinylboden verlegen" wird umbenannt, und Laminat & Parkett
+// bekommt "Verlegen lassen" auf dieselbe Seite. Der Header ist mit 50 Bloecken voll,
+// deshalb bedient eine Kachel alle drei Titel - vor und nach dem Umbenennen mit Bild.
+test('Header: Verlege-Kachel traegt alten und neuen Menuetitel und "Verlegen lassen"', async () => {
+  const raw = readFileSync(new URL('sections/header-group.json', root), 'utf8');
+  const header = JSON.parse(raw.slice(raw.indexOf('{', raw.indexOf('*/')))).sections.header_section;
+  const reihe = header.block_order.filter((id) => header.blocks[id].type === '_tp-menu-kachel');
+  const echteKacheln = reihe.map((id) => `${header.blocks[id].settings.menu_match}|~|x|~|~~`).join('');
+  const position = reihe.indexOf('tp_kachel_service_vinyl') + 1;
+  const ziel = 'https://www.teppich-paradies.net/pages/vinylboden-verlegen';
+  for (const title of ['Vinylboden verlegen', 'Klickvinyl, Laminat & Parkett verlegen', 'Verlegen lassen']) {
+    const gefunden = Number((await engine.parseAndRender(quelle, { kacheln: echteKacheln, link: { title, url: ziel } })).trim());
+    assert.equal(gefunden, position, `${title} trifft nicht die Verlege-Kachel`);
+  }
+  assert.doesNotMatch(header.blocks.tp_kachel_service_vinyl.settings.subtitle, /Klebe|Rolle/, 'Kurztext muss auch unter Laminat & Parkett stimmen');
+});
