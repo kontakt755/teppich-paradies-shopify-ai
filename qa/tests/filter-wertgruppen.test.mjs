@@ -107,24 +107,28 @@ test('Theme nutzt die Wertgruppen in Liste, Chips, Zaehlung und Florhoehen-Navig
 });
 
 test('Preisfilter ist auf Paketware-Kollektionen ausgeblendet', () => {
+  const snippet = read('snippets/tp-preisfilter-versteckt.liquid');
   const block = read('blocks/filters.liquid');
-  const liste = block.match(/assign tp_preisfilter_aus = '([^']+)'/)[1].split(',');
+  const liste = snippet.match(/assign tp_pv_aus = '([^']+)'/)[1].split(',');
   for (const handle of ['laminat', 'parkett', 'korkboden', 'kautschukboden', 'vinylboden-1', 'teppichfliesen']) {
     assert.ok(liste.includes(handle), handle);
   }
+  // Teppichboden steht nicht in der Paketliste, faellt aber ueber die Handle-Regel heraus (w-189)
   assert.ok(!liste.includes('teppichboden'));
-  assert.equal((block.match(/tp_preisfilter_aus contains collection\.handle/g) ?? []).length, 1);
+  assert.equal((snippet.match(/tp_pv_aus contains tp_pv_handle/g) ?? []).length, 1);
   // Beide Preisfilter (Leiste und Filterfenster) haengen an derselben Entscheidung.
   assert.equal((block.match(/request\.page_type == 'search' or tp_preisfilter_versteckt/g) ?? []).length, 2);
 });
 
 test('Preisfilter ist auf allen Teppich- und Laeufer-nach-Mass-Kollektionen ausgeblendet', async () => {
   // Variantenpreis je 0,01 m2 bzw. je cm: der Shopify-Preisfilter rechnet dort in Cent-Betraegen.
-  const block = read('blocks/filters.liquid');
-  const kopf = block.slice(block.indexOf('assign tp_preisfilter_aus'), block.indexOf('assign tp_teppich_unterkategorie'));
+  // Regel seit w-189 im Snippet tp-preisfilter-versteckt; blocks/filters.liquid liest es per capture.
+  assert.match(read('blocks/filters.liquid'), /render 'tp-preisfilter-versteckt', collection: collection/);
   const engine = new Liquid();
+  engine.registerTag('doc', { parse(t, ts) { while (ts.length && ts.shift().name !== 'enddoc') {} }, render() { return ''; } });
+  const snippet = read('snippets/tp-preisfilter-versteckt.liquid');
   const versteckt = async (handle, title) =>
-    (await engine.parseAndRender(`{%- liquid\n${kopf}\necho tp_preisfilter_versteckt\n-%}`, { collection: { handle, title } })).trim();
+    ((await engine.parseAndRender(snippet, { collection: { handle, title } })).trim() === 'ja' ? 'true' : 'false');
   const mass = [
     ['sisal-kokos-teppiche-nach-mass', 'Sisal- & Kokosteppiche nach Maß'],
     ['laeufer-nach-mass', 'Läufer nach Maß'],
@@ -135,9 +139,11 @@ test('Preisfilter ist auf allen Teppich- und Laeufer-nach-Mass-Kollektionen ausg
     ['teppich-nach-mass', 'Teppich nach Maß'],
   ];
   for (const [handle, title] of mass) assert.equal(await versteckt(handle, title), 'true', handle);
-  for (const [handle, title] of [['teppichboden', 'Teppichboden'], ['teppiche-standardgroessen', 'Teppiche in Standardgrößen'], ['teppiche', 'Teppiche']]) {
+  for (const [handle, title] of [['teppiche-standardgroessen', 'Teppiche in Standardgrößen'], ['teppiche', 'Teppiche']]) {
     assert.equal(await versteckt(handle, title), 'false', handle);
   }
+  // w-189: Teppichboden filtert ueber "Preis je m2" (Search & Discovery), nicht ueber den Variantenpreis
+  assert.equal(await versteckt('teppichboden', 'Teppichboden'), 'true');
   assert.equal(await versteckt('laminat', 'Laminat'), 'true');
 });
 
