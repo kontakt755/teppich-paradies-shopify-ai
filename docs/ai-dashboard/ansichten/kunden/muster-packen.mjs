@@ -213,6 +213,15 @@ function stempelHtml(k) {
   return teile.length ? `<div class="mp-stempelzeile">${teile.join('')}</div>` : '';
 }
 
+/** Farbnummer vom Lieferantenmuster; widersprechen sich die Lexikonangaben, deutlich "pruefen" statt raten. */
+function farbNrHtml(v) {
+  if (v.farbnummer) return `<span class="mp-farbnr">Farbnr. ${esc(v.farbnummer)}</span>`;
+  return v.unklar ? '<span class="mp-achtung">Farbnummer unklar – prüfen</span>' : '<span class="small muted">keine Farbnummer hinterlegt</span>';
+}
+
+/** Kurzname fuer Listen: "Teppichboden Tempra 400cm Sprint 027" -> "Tempra Sprint 027" (Breite und Warengruppe sagen am Packtisch nichts). */
+const kurzName = n => String(n ?? '').replace(/^Teppichboden\s+/i, '').replace(/\s*\b\d{3}\s?cm\b/gi, '').replace(/\s+/g, ' ').trim();
+
 function bildHtml(m, { gross = false } = {}) {
   return m.bild
     ? `<img class="mp-bild${gross ? ' mp-bild-gross' : ''}" src="${esc(`${m.bild}${m.bild.includes('?') ? '&' : '?'}width=${gross ? 320 : 160}`)}" alt="" loading="lazy" width="${gross ? 140 : 72}" height="${gross ? 140 : 72}">`
@@ -248,7 +257,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-vorher">
       <span class="mp-etikett">Auf dem Muster${m.lieferant ? ` · <span class="mp-laden">${esc(m.lieferant)}</span>` : ''}${treffer ? ' · <strong class="mp-treffertext">passt zur Suche</strong>' : ''}</span>
       <span>${esc(name)}</span>
-      ${v.farbnummer ? `<span class="mp-farbnr">Farbnr. ${esc(v.farbnummer)}</span>` : '<span class="small muted">keine Farbnummer hinterlegt</span>'}
+      ${farbNrHtml(v)}
       ${m.verwechselbar ? '<span class="mp-achtung">Ähnliches Muster im selben Umschlag – Farbnummer prüfen</span>' : ''}
     </div>
     <div class="mp-pfeil" aria-hidden="true">→</div>
@@ -301,7 +310,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     // was fehlt, zukleben. "Gedruckt" gilt fuer alle Geraete (#1718); ein Haken zaehlt auch als gedruckt.
     const da = k.muster.length - offen;
     const schritt = !(istGedruckt(k) || da) ? 1 : offen ? 2 : 3;
-    const fehltNamen = k.muster.filter(m => !m.abgehakt).map(m => `${m.vorher?.produktname || m.etikett?.serie || m.bestellt.titel}${m.vorher?.farbnummer ? ` (Farbnr. ${m.vorher.farbnummer})` : ''}`);
+    const fehltNamen = k.muster.filter(m => !m.abgehakt).map(m => `${kurzName(m.vorher?.produktname) || m.etikett?.serie || m.bestellt.titel}${m.vorher?.farbnummer ? ` (Farbnr. ${m.vorher.farbnummer})` : ''}`);
     const zustand = n => (schritt === n ? 'mp-jetzt' : schritt > n ? 'mp-erledigt' : 'mp-spaeter');
     schritte = `<ol class="mp-schritte" aria-label="Schritte für diesen Umschlag">
       <li class="${zustand(1)}"><span class="mp-schritt-titel">1 · Bestellung drucken</span>${schritt === 1
@@ -510,7 +519,7 @@ function karteHtml({ kunde: k, muster: m }, { erste = false, lesend = false } = 
     <div class="mp-vorher">
       <span class="mp-etikett">Auf dem Muster${m.lieferant ? ` · <span class="mp-laden">${esc(m.lieferant)}</span>` : ''}</span>
       <span class="mp-karte-name">${esc(v.produktname || v.kollektion || m.bestellt.titel)}</span>
-      ${v.farbnummer ? `<span class="mp-farbnr">Farbnr. ${esc(v.farbnummer)}</span>` : '<span class="small muted">keine Farbnummer hinterlegt</span>'}
+      ${farbNrHtml(v)}
       ${m.verwechselbar ? '<span class="mp-achtung">Ähnliches Muster im selben Umschlag – Farbnummer prüfen</span>' : ''}
     </div>
     <div class="mp-karte-ziel">
@@ -550,7 +559,7 @@ function viewNachLaden(d) {
     return `<li class="mp-sortzeile">
       ${hakenHtml(m, lesend)}
       ${bildHtml(m)}
-      <div class="mp-vorher"><span>${esc(v.produktname || m.bestellt.titel)}</span>${v.farbnummer ? `<span class="mp-farbnr">Farbnr. ${esc(v.farbnummer)}</span>` : '<span class="small muted">keine Farbnummer hinterlegt</span>'}</div>
+      <div class="mp-vorher"><span>${esc(v.produktname || m.bestellt.titel)}</span>${farbNrHtml(v)}</div>
       <div class="mp-pfeil" aria-hidden="true">→</div>
       <div class="mp-ziel"><a class="mp-umschlag" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(e.packSchluessel)}&amp;laden=${encodeURIComponent(gewaehlt.laden)}">${esc(e.umschlag)}</a>
         <span><strong>${esc(e.kunde)}</strong></span><span class="small muted">${esc(e.bestellung)}</span>${druckEinzelnHtml(m)}</div>
