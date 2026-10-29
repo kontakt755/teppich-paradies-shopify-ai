@@ -412,6 +412,34 @@ test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eige
   assert.deepEqual(mit({ geprueftAm: vorTagen(9), befunde: [ohne] }).map(t => t.id).sort(), ['auslauf', 'auslauf-muster']);
 });
 
+test('Sicherung: verpasst wird gelb, ueber 48 Std., gescheitert oder unlesbar rot, sonst nichts', () => {
+  const mit = sicherung => leiteTodosAb({ shopwache: { verfuegbar: true, sicherung } }, { sicht: 'website', jetzt: JETZT });
+  for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }, { status: 'unbekannt', letzterErfolg: null }]) assert.deepEqual(mit(s), []);
+  // Gar kein Stand: die Sicherung lief hier nie - gelb, nicht still.
+  const fehlt = mit({ status: 'unbekannt', letzterErfolg: null, fehlt: true });
+  assert.deepEqual([fehlt.length, fehlt[0].ton, fehlt[0].titel], [1, 'warn', 'Sicherungsstand fehlt']);
+  assert.match(fehlt[0].kontext, /noch keinen Stand geschrieben/);
+
+  const verpasst = mit({ status: 'alt', letzterErfolg: vorTagen(1), grund: 'taeglicher-solltermin-verpasst' });
+  assert.equal(verpasst.length, 1);
+  assert.deepEqual([verpasst[0].id, verpasst[0].ton, verpasst[0].bereich], ['sicherung', 'warn', 'website']);
+  assert.equal(verpasst[0].titel, 'Sicherung der Betriebsdaten überfällig');
+  assert.match(verpasst[0].kontext, /^letzte Sicherung .*\d{2}\.\d{2}\..* · sie läuft täglich um 22:30 Uhr/);
+  assert.equal(mit({ status: 'alt', letzterErfolg: vorTagen(3) })[0].ton, 'crit');
+
+  const gescheitert = mit({ status: 'ok', letzterErfolg: vorTagen(1), letzterFehler: { am: vorTagen(0), meldung: 'ENOSPC: no space left on device' } });
+  assert.equal(gescheitert[0].ton, 'crit');
+  assert.equal(gescheitert[0].titel, 'Sicherung der Betriebsdaten fehlgeschlagen');
+  assert.match(gescheitert[0].kontext, /^ENOSPC: no space left on device · letzte Sicherung /);
+  assert.match(mit({ status: 'unbekannt', letzterErfolg: null, letzterFehler: { am: vorTagen(0), meldung: 'x' } })[0].kontext, /noch keine erfolgreiche Sicherung/);
+
+  assert.equal(mit({ status: 'fehler', letzterErfolg: null })[0].titel, 'Stand der Sicherung nicht lesbar');
+  // Im Laden zaehlt es nicht; der Inhaber sieht nur das Rote.
+  assert.deepEqual(leiteTodosAb({ shopwache: { sicherung: { status: 'alt', letzterErfolg: vorTagen(3) } } }, { sicht: 'laden', jetzt: JETZT }), []);
+  assert.equal(leiteTodosAb({ shopwache: { sicherung: { status: 'alt', letzterErfolg: vorTagen(3) } } }, { sicht: 'inhaber', jetzt: JETZT }).length, 1);
+  assert.equal(leiteTodosAb({ shopwache: { sicherung: { status: 'alt', letzterErfolg: vorTagen(1) } } }, { sicht: 'inhaber', jetzt: JETZT }).length, 0);
+});
+
 test('Neuheiten: neue Artikel unserer Linien werden ein Website-To-do, ohne Neues keins', () => {
   const mit = neuheiten => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf: { geprueftAm: vorTagen(1), befunde: [], neuheiten } } }, { sicht: 'website', jetzt: JETZT });
   const t = mit({ neu: [
