@@ -378,6 +378,7 @@ export function viewKundenBestellungen() {
     ${filter === 'alle' ? '<p class="small muted">Alle echten Bestellungen im Betriebsbestand: letzte 90 Tage sowie ältere mit offenem Versand oder offener Zahlung. Ältere vollständig abgeschlossene Bestellungen findest du in Shopify.</p>' : ''}
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${artWahl}
+    ${art === 'muster' ? '' : ratgeberVorlagenHtml(d.ratgeberVorlagen)}
     ${art === 'ware' ? '<p class="small muted">Warenfortschritt und nächster Schritt beziehen sich auf die Warenpositionen. Gemischte Bestellungen behalten ihre Muster in den Details; der Betrag ist der ganze Bestellwert.</p>' : ''}
     ${params.get('bq') && filter !== 'alle' ? `<p class="small muted">Die Suche gilt für „${esc(BQ_FILTER_LABEL[filter] || filter)}“. <a href="#/kunden?${esc(alleLink)}">In allen Bestellungen suchen →</a></p>` : ''}
     ${chips}
@@ -396,6 +397,15 @@ export function viewKundenBestellungen() {
       <div class="rows bq-karten">${erledigt.map(z => bestellzeileKarte(z)).join('')}</div>
     </details>` : ''}
   `;
+}
+
+/** Alle Kurz-Ratgeber als leere Druckvorlage fuer Warenbestellungen (bei "Muster" ausgeblendet) - Laden, Abholer, Beratung. */
+function ratgeberVorlagenHtml(vorlagen = []) {
+  if (!vorlagen.length) return '';
+  return `<details class="bq-ratgeber"><summary>Ratgeber zum Ausdrucken · ${vorlagen.length}</summary>
+    <p class="small muted">Leere Vorlagen je Bodenart, zwei Seiten zum beidseitigen Druck. Mit Bestellnummer und Maß ausgefüllt: in der Bestellung „Ratgeber drucken“.</p>
+    <div class="btn-row">${vorlagen.map(v => `<a class="btn btn-sm" href="/api/kunden/ratgeber-vorlage?${esc(new URLSearchParams({ schluessel: v.schluessel }).toString())}" target="_blank" rel="noopener">${esc(v.titel)}</a>`).join('')}</div>
+  </details>`;
 }
 
 const BQ_SEITE = 25;
