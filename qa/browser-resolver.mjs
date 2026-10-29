@@ -14,10 +14,14 @@ export function browsersPathCandidates(browsersPath, platform = process.platform
   if (!browsersPath) return [];
   const base = browsersPath.replace(/[\\/]+$/, '');
 
+  // Seit Playwright 1.57 sind die Revisionen Chrome-for-Testing-Builds
+  // (chrome-win64, chrome-mac-arm64 …); die alten Chromium-Ordner bleiben fuer
+  // aeltere Revisionen.
+  const testingApp = 'Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
   const layout = platform === 'win32'
-    ? ['chrome-win/chrome.exe']
+    ? ['chrome-win64/chrome.exe', 'chrome-win/chrome.exe']
     : platform === 'darwin'
-      ? ['chrome-mac/Chromium.app/Contents/MacOS/Chromium']
+      ? [`chrome-mac-arm64/${testingApp}`, `chrome-mac-x64/${testingApp}`, 'chrome-mac/Chromium.app/Contents/MacOS/Chromium']
       : ['chrome-linux/chrome', 'chrome-linux64/chrome'];
 
   // Installierte Revisionen absteigend, damit die neueste zuerst greift.
@@ -36,6 +40,16 @@ export function browsersPathCandidates(browsersPath, platform = process.platform
   for (const suffix of layout) candidates.push(`${base}/chromium/${suffix}`);
   candidates.push(`${base}/chromium`);
   return candidates;
+}
+
+// Nach einem playwright-core-Update zeigt executablePath() auf eine Revision,
+// die noch nicht installiert ist. Eine andere Revision im selben Cache-Ordner
+// ist dann besser als der Systembrowser: Google Chrome legt auf macOS bei jedem
+// Start eine 2-GB-Programmkopie (code_sign_clone) im Temp-Ordner ab, die nach
+// automatisierten Laeufen liegen bleibt.
+export function playwrightCacheDirectory(bundledPath) {
+  const match = /^(.+?)[\\/]chromium-\d+(?:[\\/]|$)/.exec(bundledPath ?? '');
+  return match ? match[1] : '';
 }
 
 export function systemBrowserCandidates(platform = process.platform) {
@@ -67,14 +81,19 @@ export function resolveBrowserExecutable({
     return { executablePath: null, source: 'explicit-missing', error: `Expliziter Browserpfad existiert nicht (${BROWSER_ENVIRONMENT_VARIABLE}/Config)` };
   }
 
+  let bundledPath = '';
   try {
-    const bundledPath = playwrightChromium?.executablePath?.();
+    bundledPath = playwrightChromium?.executablePath?.() ?? '';
     if (bundledPath && existsSync(bundledPath)) return { executablePath: bundledPath, source: 'playwright-chromium' };
   } catch {}
 
   const browsersPath = browsersPathCandidates(environment[BROWSERS_PATH_ENVIRONMENT_VARIABLE], platform, readdirSync)
     .find(candidate => existsSync(candidate));
   if (browsersPath) return { executablePath: browsersPath, source: 'playwright-browsers-path' };
+
+  const cachedPath = browsersPathCandidates(playwrightCacheDirectory(bundledPath), platform, readdirSync)
+    .find(candidate => existsSync(candidate));
+  if (cachedPath) return { executablePath: cachedPath, source: 'playwright-cache' };
 
   const systemPath = systemBrowserCandidates(platform).find(candidate => existsSync(candidate));
   if (systemPath) return { executablePath: systemPath, source: 'system-browser' };
