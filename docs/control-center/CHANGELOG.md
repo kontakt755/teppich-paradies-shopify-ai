@@ -2,6 +2,22 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · Alle Ratgeber jederzeit druckbar, fünf neue Bodenarten
+
+- **Geaendert:** Kunden → Bestellungen zeigt bei „Waren“ (auch „Waren und Muster“, nicht bei „Muster“)
+  oben den aufklappbaren Bereich „Ratgeber zum Ausdrucken · 12“. Jeder Knopf öffnet die leere
+  Druckvorlage einer Bodenart, ohne Bezug zu einer Bestellung, für Laden, Abholer und Beratung. Das ist
+  dieselbe Datei wie in Shopify, ausgeliefert über `GET /api/kunden/ratgeber-vorlage?schluessel=…`
+  (rein lesend). Die Liste kommt als `ratgeberVorlagen` mit der Bestellliste. Neu sind die Ratgeber
+  Linoleum, Kautschuk, Korkboden, Kunstrasen und Sauberlauf. Damit erscheint „Ratgeber drucken“ auch
+  bei diesen Bestellungen.
+- **Getestet:** `ratgeber-druck-api.test.mjs` 5/5 (neu: jede Vorlage liefert ein PDF, unbekannter
+  Schlüssel 404), `dashboard:test` 1056/1056, `dashboard:pruefen` 39 Ansichten ohne Überlauf.
+  Klickstrecke gegen die Kopie, Desktop und 390 px: Bei Waren sind 12 Knöpfe da, bei Muster keiner.
+  Sauberlauf lieferte 200 `application/pdf` mit 212.670 Bytes, JS-Fehler gab es keine.
+- **Risiken:** Die Vorlagen kommen aus `domains/shopify/ratgeber-pdf/pdf/`. Nach einer Textänderung
+  muss die Datei neu gebaut und auch in Shopify ersetzt werden (README dort).
+
 ## 2026-10-29 · Shop-Übersicht: rote To-dos als „Probleme“ ganz oben (w-206)
 
 - **Geaendert:** Fehlersuche vom 28.10. (Werkbank w-206). Seit dem Rundgang vom 26.10. zeigte die
