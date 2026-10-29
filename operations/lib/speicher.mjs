@@ -6,7 +6,10 @@
  * Upload gleichzeitig still - bis Oktober 2026 hat das niemand gemessen (95 % belegt, 23 GiB
  * frei). Die Shop-Wache misst stuendlich (operations/scripts/shopwache.mjs), das Control
  * Center zeigt ab Gelb ein To-do; der Monteur-Upload nimmt unter UPLOAD_MIN_FREI_GIB nichts
- * mehr an (social/scripts/server.mjs).
+ * mehr an (social/scripts/server.mjs). Seit 28.10.2026 (Fehlersuche: 12 bis 17 GiB frei, die
+ * Bildlaeufe hatten keine Bremse): bei Rot hoechstens einmal am Tag eine Mac-Mitteilung in der
+ * Arbeitszeit (speicherMelden), und Bildlaeufe pruefen vor dem Start `npm run -s speicher:pruefen`
+ * (bildlaufFrei; Exit ungleich 0 heisst: nicht starten).
  *
  * Gemessen wird per statfs der Platz, den ein normaler Benutzer noch belegen darf (bavail) -
  * dieselbe Zahl wie "Avail" bei `df -h`. Eine fehlgeschlagene Messung ist "unbekannt", nie
@@ -14,6 +17,7 @@
  */
 
 import fs from 'node:fs';
+import { imFenster } from './routinen.mjs';
 
 export const GIB = 1024 ** 3;
 /** Darunter wird es knapp (gelb): ein grosser Bildlauf braucht schnell 10 GiB. */
@@ -22,6 +26,8 @@ export const SPEICHER_GELB_GIB = 40;
 export const SPEICHER_ROT_GIB = 20;
 /** Darunter nimmt der Monteur-Upload nichts mehr an - der Rest bleibt fuer Sync, Sicherung und Logs. */
 export const UPLOAD_MIN_FREI_GIB = 15;
+/** Darunter startet kein Bildlauf (Raumbilder, Schaerfe, Downloads) - einer braucht schnell 10 GiB. */
+export const BILDLAUF_MIN_FREI_GIB = SPEICHER_ROT_GIB;
 
 /** { freiBytes, gesamtBytes } des Dateisystems, auf dem `pfad` liegt - oder null, wenn nicht messbar. */
 export function messeSpeicher(pfad, { statfs = fs.statfsSync } = {}) {
@@ -66,4 +72,35 @@ export function speicherStand(pfad, { statfs, jetzt = new Date() } = {}) {
 export function speicherText(stand) {
   if (!stand || stand.ampel === 'unbekannt' || stand.freiGiB === null) return 'Speicher nicht messbar';
   return `${stand.freiGiB} GiB frei (${stand.belegtProzent} % belegt, ${String(stand.ampel).toUpperCase()})`;
+}
+
+/**
+ * Darf ein Bildlauf starten? Nein unter `minGiB` freiem Platz. Nicht messbar heisst: starten,
+ * mit Hinweis - eine Messpanne soll keine Arbeit blockieren (gleiche Haltung wie oben).
+ */
+export function bildlaufFrei(stand, minGiB = BILDLAUF_MIN_FREI_GIB) {
+  if (!stand || !Number.isFinite(stand.freiBytes)) return { frei: true, grund: 'Speicher nicht messbar – Lauf darf trotzdem starten' };
+  if (stand.freiBytes < minGiB * GIB) return { frei: false, grund: `nur ${stand.freiGiB} GiB frei, ein Bildlauf braucht mindestens ${minGiB} GiB` };
+  return { frei: true, grund: `${stand.freiGiB} GiB frei (Grenze ${minGiB} GiB)` };
+}
+
+const berlinTag = jetzt => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(jetzt);
+
+/**
+ * Mac-Mitteilung bei rotem Speicher, hoechstens einmal je Kalendertag (Berlin) und nur in der
+ * Arbeitszeit (ARBEITSZEIT der Routinen, Mo-Sa 7-19 Uhr): die Shop-Wache laeuft stuendlich rund
+ * um die Uhr - ohne Fenster kam die Mitteilung jeden Tag um 0:05 Uhr vor dunklem Bildschirm
+ * (Pruefung 28.10.). Den Tag haelt `datei`, erst wenn wirklich gemeldet wurde.
+ * Gibt true zurueck, wenn gemeldet wurde.
+ */
+export function speicherMelden(stand, { datei, melde, jetzt = new Date(), fenster }) {
+  if (stand?.ampel !== 'rot' || !imFenster(jetzt, fenster)) return false;
+  const tag = berlinTag(jetzt);
+  let zuletzt = null;
+  try { zuletzt = JSON.parse(fs.readFileSync(datei, 'utf8'))?.tag ?? null; } catch { zuletzt = null; }
+  if (zuletzt === tag) return false;
+  melde('Speicher fast voll', `${speicherText(stand)}. Läuft die Platte voll, stehen Sync, Sicherung und Uploads still. Alte Bildordner auslagern.`);
+  // Volle Platte: dann meldet die naechste Stunde eben noch einmal - besser als gar nicht.
+  try { fs.writeFileSync(datei, JSON.stringify({ tag, am: jetzt.toISOString(), freiGiB: stand.freiGiB })); } catch { /* s. o. */ }
+  return true;
 }
