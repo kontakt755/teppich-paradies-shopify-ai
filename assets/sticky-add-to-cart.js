@@ -72,6 +72,9 @@ class StickyAddToCartComponent extends Component {
   /** @type {MutationObserver | null} */
   #targetStateObserver = null;
 
+  /** @type {MutationObserver | null} */
+  #musterObserver = null;
+
   /**
    * Der Kaufweg-Anker (Kaufblock, Paket-Rechner oder .tp-kaufweg), an dem sich
    * das Ein- und Ausblenden orientiert.
@@ -120,6 +123,7 @@ class StickyAddToCartComponent extends Component {
     document.addEventListener(ThemeEvents.quantitySelectorUpdate, this.#handleQuantityUpdate, { signal });
 
     this.#getInitialQuantity();
+    this.#setupMusterObserver();
   }
 
   disconnectedCallback() {
@@ -127,6 +131,7 @@ class StickyAddToCartComponent extends Component {
     this.#buyButtonsIntersectionObserver?.disconnect();
     this.#mainBottomObserver?.disconnect();
     this.#targetStateObserver?.disconnect();
+    this.#musterObserver?.disconnect();
     this.#abortController.abort();
     this.#clearPendingCartAdd();
     if (this.#animationTimeout) {
@@ -659,8 +664,26 @@ class StickyAddToCartComponent extends Component {
   #syncMusterButton() {
     const { musterButton } = this.refs;
     if (!musterButton) return;
-    const cta = this.#getMusterCta();
-    musterButton.hidden = !cta;
+    const verbergen = !this.#getMusterCta();
+    // Nur bei Wechsel schreiben: hidden=true erneut setzen meldet der
+    // Beobachter unten wieder als Aenderung.
+    if (musterButton.hidden !== verbergen) musterButton.hidden = verbergen;
+  }
+
+  /**
+   * Haelt den Muster-Knopf bei offener Leiste aktuell: assets/tp-muster-grenze.js
+   * schaltet den Muster-Knopf der Seite nach jeder Warenkorbaenderung per
+   * hidden um (3 Vinyl-Muster voll bzw. wieder frei).
+   */
+  #setupMusterObserver() {
+    const bereich = this.closest('.shopify-section');
+    if (!bereich) return;
+    this.#musterObserver = new MutationObserver((records) => {
+      // Aenderungen in der Leiste selbst (auch am Muster-Knopf) ignorieren
+      if (records.every((record) => this.contains(record.target))) return;
+      this.#syncMusterButton();
+    });
+    this.#musterObserver.observe(bereich, { attributes: true, attributeFilter: ['hidden'], subtree: true });
   }
 
   /**

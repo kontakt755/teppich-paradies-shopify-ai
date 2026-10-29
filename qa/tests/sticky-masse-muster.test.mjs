@@ -18,6 +18,7 @@ const section = readFileSync(new URL('../../sections/product-information.liquid'
 const executable = source.replace(/^import .*;\n/gm, '').replace('  // Helper methods', `
   testTarget(target) { this.#setTargetAddToCartButton(target); }
   testShow() { this.#showStickyBar(); }
+  testMusterBeobachter() { this.#setupMusterObserver(); }
   // Helper methods`);
 
 function fixture({ klassen = ['is-incomplete'], muster = [], laenge = '' } = {}) {
@@ -49,15 +50,18 @@ function fixture({ klassen = ['is-incomplete'], muster = [], laenge = '' } = {})
     setAttribute(name, wert) { this.attributes.set(name, String(wert)); }
     removeAttribute(name) { this.attributes.delete(name); }
     getClientRects() { return this.rects; }
+    contains(node) { return node === this || node?.parentNode === this; }
     click() { this.clicks++; this.ortBeimKlick = this.getAttribute('data-tp-klick-ort'); }
   }
   class Component extends Node {
     connectedCallback() {}
     disconnectedCallback() {}
   }
+  const beobachter = [];
   class MutationObserver {
-    observe() {}
-    disconnect() {}
+    constructor(callback) { this.callback = callback; this.ziele = []; beobachter.push(this); }
+    observe(ziel, optionen) { this.ziele.push({ ziel, optionen }); }
+    disconnect() { this.getrennt = true; }
   }
   const musterLinks = muster.map(({ hidden = false, sichtbar = true } = {}) => {
     const link = new Node('Kostenloses Muster anfragen');
@@ -93,7 +97,16 @@ function fixture({ klassen = ['is-incomplete'], muster = [], laenge = '' } = {})
   knopf.children.set('.add-to-cart-text__content > span', beschriftung);
   const musterKnopf = new Node('Muster');
   musterKnopf.hidden = true;
+  // Schreibzugriffe zaehlen: erneutes hidden=true meldet der echte Beobachter
+  // wieder als Aenderung (Schleife)
+  let musterHidden = true;
+  const schreiben = { anzahl: 0 };
+  Object.defineProperty(musterKnopf, 'hidden', {
+    get: () => musterHidden,
+    set: (wert) => { schreiben.anzahl++; musterHidden = wert; },
+  });
   const sticky = new TargetClass();
+  musterKnopf.parentNode = sticky;
   sticky.refs = {
     stickyBar: new Node(), addToCartButton: knopf, musterButton: musterKnopf,
     quantityDisplay: new Node(), quantityNumber: new Node(), productImage: null,
@@ -101,7 +114,7 @@ function fixture({ klassen = ['is-incomplete'], muster = [], laenge = '' } = {})
   sticky.dataset.productId = 'product-1';
   sticky.ancestors.set('.shopify-section', produktSection);
   sticky.testTarget(target);
-  return { sticky, target, knopf, beschriftung, musterKnopf, musterLinks, fremd };
+  return { sticky, target, knopf, beschriftung, musterKnopf, musterLinks, fremd, beobachter, produktSection, schreiben };
 }
 
 test('Rechner ohne Masse: Leiste bleibt aktiv und heisst "Maße eingeben"', () => {
@@ -184,4 +197,44 @@ test('Handy: Warenkorb-Knopf darf schrumpfen und umbrechen, Desktop bleibt einze
   assert.match(handy, /\.sticky-add-to-cart__bar \.add-to-cart-text__content \{[^}]*white-space: normal;/);
   // Desktop: einzeilig, mit Muster breitere Leiste - nur ab 750 px, am Handy bleibt sie 100 %
   assert.match(section, /@media screen and \(min-width: 750px\) \{\s*\.sticky-add-to-cart__bar:has\(\.sticky-add-to-cart__muster:not\(\[hidden\]\)\) \{\s*width: min\(720px/);
+});
+
+test('Warenkorb aendert sich bei offener Leiste: Muster-Knopf folgt ohne Einblenden oder Klick', () => {
+  // assets/tp-muster-grenze.js schaltet den Muster-Knopf der Seite per hidden um
+  const f = fixture({ muster: [{ hidden: true }] });
+  f.sticky.testMusterBeobachter();
+  f.sticky.testShow();
+  const muster = f.beobachter.find((b) => b.ziele.some(({ ziel }) => ziel === f.produktSection));
+  assert.ok(muster, 'beobachtet die eigene Produkt-Section');
+  const { optionen } = muster.ziele.find(({ ziel }) => ziel === f.produktSection);
+  assert.equal(optionen.subtree, true);
+  assert.equal(JSON.stringify(optionen.attributeFilter), '["hidden"]');
+  assert.equal(f.musterKnopf.hidden, true, 'Start: 3 Vinyl-Muster im Warenkorb');
+
+  // 3 auf 2 reduziert: Knopf erscheint sofort
+  f.musterLinks[0].hidden = false;
+  muster.callback([{ type: 'attributes', attributeName: 'hidden', target: f.musterLinks[0] }]);
+  assert.equal(f.musterKnopf.hidden, false);
+
+  // wieder voll: Knopf verschwindet sofort, ohne wirkungslosen Klick
+  f.musterLinks[0].hidden = true;
+  muster.callback([{ type: 'attributes', attributeName: 'hidden', target: f.musterLinks[0] }]);
+  assert.equal(f.musterKnopf.hidden, true);
+  assert.equal(f.musterLinks[0].clicks, 0);
+});
+
+test('Muster-Beobachter: eigene Aenderungen der Leiste loesen nichts aus, keine Schreibschleife', () => {
+  const f = fixture({ muster: [{}] });
+  f.sticky.testMusterBeobachter();
+  f.sticky.testShow();
+  const muster = f.beobachter.find((b) => b.ziele.some(({ ziel }) => ziel === f.produktSection));
+  assert.equal(f.musterKnopf.hidden, false);
+  const vorher = f.schreiben.anzahl;
+  // hidden am eigenen Muster-Knopf: wird ignoriert
+  muster.callback([{ type: 'attributes', attributeName: 'hidden', target: f.musterKnopf }]);
+  // fremde Aenderung ohne neuen Zustand: kein erneutes Schreiben
+  muster.callback([{ type: 'attributes', attributeName: 'hidden', target: f.musterLinks[0] }]);
+  assert.equal(f.schreiben.anzahl, vorher);
+  f.sticky.disconnectedCallback();
+  assert.equal(muster.getrennt, true);
 });
