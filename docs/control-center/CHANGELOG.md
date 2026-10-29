@@ -39,6 +39,21 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   einmal am Tag auf; eine Mail, die nur der private Text findet, wartet bis dahin.
 - **Naechste Stufe:** Die neuen Kennungen an Claude übergeben, damit der Lauf nicht selbst suchen
   muss (weniger Runden).
+## 2026-10-28 · Auslauf-To-do: archivierte Produkte zählen nicht mehr
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 7). Das Auslauf-To-do blieb rot bis zur nächsten
+  Montagsprüfung, obwohl alle 15 Befunde vom 26.10. am selben Tag archiviert wurden. Der Knopf „Im
+  Lexikon“ führte dabei ins Leere. Jetzt gleicht `/api/shopwache/status` die Befunde mit dem
+  Lexikon-Export ab: Steht kein Handle eines Befunds mehr darin (das Lexikon führt nur aktive und
+  unsichtbare Produkte), gilt er als erledigt und fällt weg. Die Ampel wird aus den offenen
+  Befunden neu bestimmt, `archiviert` zählt die weggefallenen. Ist nur das Hauptprodukt archiviert,
+  das Musterprodukt aber nicht, bleibt der Befund offen. Ohne Lexikon-Export bleibt alles wie bisher.
+- **Getestet:** `api.test.mjs` neu „Auslauf-Befunde archivierter Produkte fallen weg“ (ohne Lexikon,
+  teilweise archiviert, Musterprodukt noch aktiv, alles archiviert → gelb bzw. grün). Lesend gegen
+  die echten Daten: 15 Befunde → 0 offen, 15 archiviert, Ampel grün, kein Auslauf-To-do mehr.
+- **Risiken:** Hängt der Lexikon-Export nach (er läuft mit dem Sync-Dienst), erscheint ein frisch
+  archiviertes Produkt bis zum nächsten Export noch als offen.
+- **Naechste Stufe:** keine.
 
 ## 2026-10-28 · Adressaufkleber auf 50 × 80 quer
 

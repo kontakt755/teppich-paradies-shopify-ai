@@ -954,6 +954,42 @@ test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', 
   assert.equal(r.tailscale.status, 'nicht-geprueft');
 });
 
+test('shopwacheStatus: Auslauf-Befunde archivierter Produkte (nicht mehr im Lexikon) fallen weg', async () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  fs.mkdirSync(path.join(dir, 'auslauf'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'auslauf', 'status.json'), JSON.stringify({
+    geprueftAm: '2026-10-26T04:23:00Z', ampel: 'rot', ausfaelle: [], befunde: [
+      { lieferant: 'D', ergebnis: 'fehlt', handles: ['testlinie-gobi', 'muster-testlinie-gobi'] },
+      { lieferant: 'D', ergebnis: 'fehlt', handles: ['testlinie-puna'] },
+      { lieferant: 'A', ergebnis: 'hinweis', handles: ['testboden-eiche'] },
+    ],
+  }));
+  // Ohne Lexikon-Export bleibt alles stehen.
+  let r = (await api.shopwacheStatus()).auslauf;
+  assert.equal(r.befunde.length, 3);
+  assert.equal(r.archiviert, 0);
+  assert.equal(r.ampel, 'rot');
+
+  // gobi: das Hauptprodukt ist archiviert, das Musterprodukt noch nicht -> bleibt offen. puna ist ganz weg.
+  fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
+  const lexikon = handles => fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), JSON.stringify({ produkte: handles.map(handle => ({ handle, status: 'ACTIVE' })) }));
+  lexikon(['muster-testlinie-gobi', 'testboden-eiche', 'anderes-produkt']);
+  r = (await api.shopwacheStatus()).auslauf;
+  assert.deepEqual(r.befunde.map(b => b.handles[0]), ['testlinie-gobi', 'testboden-eiche']);
+  assert.equal(r.archiviert, 1);
+  assert.equal(r.ampel, 'rot');
+
+  // Alles Fehlende archiviert: nur der Hinweis bleibt, die Ampel wird gelb; ohne Befunde gruen.
+  lexikon(['testboden-eiche']);
+  r = (await api.shopwacheStatus()).auslauf;
+  assert.deepEqual([r.befunde.length, r.archiviert, r.ampel], [1, 2, 'gelb']);
+  lexikon(['ein-ganz-anderes-produkt']);   // andere Dateigroesse: der Lexikon-Zwischenspeicher prueft Groesse und Zeit
+  r = (await api.shopwacheStatus()).auslauf;
+  assert.deepEqual([r.befunde.length, r.archiviert, r.ampel], [0, 3, 'gruen']);
+});
+
 test('shopwacheStatus liefert den Stand der Routinen (Mac-Dienst) mit - auch ohne Shop-Wache, nur eingerichtete', async () => {
   const root = tmpRoot();
   const dir = privatFixture(root);
