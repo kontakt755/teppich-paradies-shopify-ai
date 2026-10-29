@@ -366,12 +366,24 @@ const LIEFERZIEL_TEXT = { laden: 'Lieferung in den Laden', kunde: 'Lieferung dir
  * Nur ein Hinweis - umgeschaltet wird mit "Kettler" oben; der Server begruendet je Position.
  */
 function kettlerHinweis(m) {
-  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Fertigmaß dorthin, wir holen sie dort ab.</p>';
+  const puffer = kettelPufferHinweis(m);
+  if (m.kettlerAutomatisch) return `<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Zuschnittmaß dorthin, wir holen sie dort ab.</p>${puffer}`;
   const liste = m.kettlerVorschlag || [];
-  if (m.art !== 'ware' || !m.kettlerMoeglich || m.lieferziel === 'kettler' || !liste.length) return '';
+  if (m.art !== 'ware' || !m.kettlerMoeglich || m.lieferziel === 'kettler' || !liste.length) return puffer;
   return `<div class="notice lf-kettler"><strong>Über unseren Kettler? (${liste.length})</strong>
     <span class="small">Dort ketteln wir günstiger und liefern selbst bis in die Wohnung bzw. verschicken von dort. „Kettler" oben wählen – der Lieferant schneidet dann nur zu.</span>
     <ul class="small">${liste.map(v => `<li>${esc([v.orderName, anzeigeWert(v.titel || '')].filter(Boolean).join(' · '))} – ${esc(v.grund)}</li>`).join('')}</ul></div>`;
+}
+
+/**
+ * Kettelpuffer direkt vor dem Bestellen (Inhaber 2026-10-25, #1684): beim Lieferanten wird das
+ * Zuschnittmass bestellt, unser Kettler kettelt auf das Fertigmass. Der Server rechnet beides.
+ */
+function kettelPufferHinweis(m) {
+  const liste = m.kettelPuffer || [];
+  if (!liste.length) return '';
+  return `<div class="notice lf-puffer"><strong>+3 cm Zuschnittpuffer je Länge und Breite für anschließendes Ketteln</strong>
+    <ul class="small">${liste.map(v => `<li>${esc([v.orderName, anzeigeWert(v.titel || '')].filter(Boolean).join(' · '))}: Fertigmaß ${esc(v.fertigmass)} → bestellt wird ${esc(v.zuschnittmass)}${v.rolleUnbekannt ? ' (Rollenbreite unbekannt – bitte prüfen, ob es aus der Rolle passt)' : ''}</li>`).join('')}</ul></div>`;
 }
 
 /**

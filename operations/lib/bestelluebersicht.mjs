@@ -18,6 +18,7 @@ import { procurementReady, GRUPPE } from './ampel.mjs';
 import { normalisiereLineItem } from '../sync/orders.mjs';
 import { istMusterPosition as musterRegel } from './muster.mjs';
 import { istTestbestellung } from './testbestellung.mjs';
+import { kettelZuschnitt, wirdGekettelt } from './kettelpuffer.mjs';
 
 export const ADMIN_ORDER_URL = 'https://admin.shopify.com/store/sjjyq1-6w/orders/';
 
@@ -476,7 +477,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         ausfuehrung: istM ? [] : ausfuehrungFuer(props, kettelDazu),
         // Rollenbreite, aus der der Konfigurator den Massteppich schneidet: daraus wird fuer
         // unseren Kettler die Meterware ohne Masszuschnitt berechnet (lieferanten.mjs).
-        ausRolleCm: massanfertigung ? (item.eingaben?.ausRolleCm ?? null) : null,
+        // Seit 14.10. schreibt der Konfigurator "_Zuschnitt aus Rolle" nicht mehr - dann gilt die
+        // Rollenbreite am Produkt (custom.rollenbreite in m), damit der Kettelpuffer pruefbar bleibt.
+        ausRolleCm: massanfertigung ? (item.eingaben?.ausRolleCm ?? produktRollenbreiteCm(item.produkt)) : null,
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
@@ -497,6 +500,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         bestellmenge: eigen ? { menge: 0, einheit: 'eigenleistung', text: 'Eigenleistung – nichts zu bestellen', grund: null } : istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge, { massanfertigung }) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
         idGrund: ghId !== UNGEKLAERT ? null : !li.variant ? "Variante geloescht" : istM ? (mq?.quellvariante ? "Quellvariante ohne ID-Metafeld" : "Muster ohne _Quellvariante_ID - Produkt/Farbe siehe Titel") : "weder lieferant.* noch grosshandel.sku gesetzt",
       };
+      // Fuer die Kopierliste im Browser: dasselbe Zuschnittmass wie in der Bestellmail.
+      pos.kettelZusatz = kettelZusatz(pos);
       // Rollenware als Komponente unter "Zuschnitt von der Rolle" ist ein
       // Bestandsabgang; das Material steht schon an der Teppichzeile.
       if (!istTest && offen && menge > 0 && !item.bundle?.bestandsabgang) (istM ? muster : einkaufPositionen).push(pos);
@@ -581,10 +586,25 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
 }
 
 /** Klartext-Bestellliste je Lieferantengruppe (zum Kopieren in Mail/Portal). */
+/** Rollenbreite am Produkt in cm (custom.rollenbreite in m); null, wenn ungeklaert. */
+function produktRollenbreiteCm(produkt) {
+  const m = Number(produkt?.rollenbreite);
+  return produkt?.rollenbreite !== UNGEKLAERT && m > 0 ? Math.round(m * 100) : null;
+}
+
+/**
+ * Gekettelter Massteppich: auch die Kopierliste (Portal, eigene Mail) nennt das Zuschnittmass fuer
+ * unseren Kettler (+3 cm je Laenge und Breite, #1684) - sonst schneidet der Lieferant im Fertigmass.
+ */
+export function kettelZusatz(p) {
+  const z = !p.istMuster && wirdGekettelt(p.ausfuehrung) ? kettelZuschnitt(p.ausfuehrung) : null;
+  return z ? ` · über unseren Kettler: Zuschnitt ${z.zuschnitt} (+3 cm je Länge und Breite)` : '';
+}
+
 export function kopierText(gruppe) {
   const kopf = `Bestellung Lieferant ${gruppe.lieferant}` + (gruppe.route && gruppe.route !== UNGEKLAERT && gruppe.route !== 'MUSTER' ? ` (${gruppe.route})` : '');
   const zeilen = gruppe.positionen.map((p, i) => {
-    const menge = p.bestellmenge.menge === UNGEKLAERT ? `UNGEKLAERT (Kunde: ${p.kundenmenge})` : p.bestellmenge.text;
+    const menge = p.bestellmenge.menge === UNGEKLAERT ? `UNGEKLAERT (Kunde: ${p.kundenmenge})` : p.bestellmenge.text + kettelZusatz(p);
     return `${i + 1}. ${p.grosshaendlerId} | ${p.titel} | ${p.farbe} | ${menge} | Kd.-Best. ${p.orderName}`;
   });
   return [kopf, ...zeilen].join('\n');
