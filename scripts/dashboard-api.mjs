@@ -224,6 +224,20 @@ export function readJsonGecacht(file) {
 }
 
 /**
+ * Auslauf-Befunde, deren Produkte schon archiviert sind, sind erledigt: kein Handle steht mehr
+ * im Lexikon-Export (der fuehrt nur aktive und unsichtbare Produkte). Sonst blieb das To-do rot
+ * bis zur naechsten Montagspruefung (Fehlersuche 28.10.2026: 15 Befunde, alle am 26.10.
+ * archiviert, und "Im Lexikon" fuehrte ins Leere). Ohne Lexikon-Export bleibt alles stehen.
+ */
+export function auslaufOffen(befunde = [], lexikon = null) {
+  const produkte = lexikon?.produkte;
+  if (!Array.isArray(produkte) || !produkte.length) return { befunde, archiviert: 0 };
+  const imShop = new Set(produkte.map(p => p?.handle).filter(Boolean));
+  const offen = befunde.filter(b => !b?.handles?.length || b.handles.some(h => imShop.has(h)));
+  return { befunde: offen, archiviert: befunde.length - offen.length };
+}
+
+/**
  * Bildrechte-Verzeichnis ($TP_PRIVAT_DIR/bildrechte/bildrechte.csv, rund 13 MB):
  * zwischengespeichert, solange sich die Datei nicht aendert - sonst laese jeder
  * Seitenwechsel in der Ansicht die ganze Datei neu. null = Datei fehlt; andere
@@ -3905,9 +3919,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Woechentliche Auslauf-Pruefung (operations/scripts/auslauf-pruefen.mjs) faehrt mit:
       // dieselbe Frage "stimmt, was der Shop zeigt?", dieselbe To-do-Quelle auf "Heute".
       const aus = readJsonIfExists(path.join(dir, 'auslauf', 'status.json'));
+      const offen = aus?.geprueftAm ? auslaufOffen(aus.befunde || [], readJsonGecacht(path.join(dir, 'lexikon', 'produkte.json'))) : null;
       const auslauf = aus?.geprueftAm
         ? {
-          geprueftAm: aus.geprueftAm, ampel: aus.ampel, befunde: aus.befunde || [], ausfaelle: aus.ausfaelle || [],
+          geprueftAm: aus.geprueftAm, befunde: offen.befunde, archiviert: offen.archiviert, ausfaelle: aus.ausfaelle || [],
+          // Ampel wie operations/lib/auslauf.mjs, aber nur aus den noch offenen Befunden.
+          ampel: !offen.archiviert ? aus.ampel
+            : offen.befunde.some(b => b.ergebnis === 'fehlt') ? 'rot' : offen.befunde.length || aus.ausfaelle?.length ? 'gelb' : 'gruen',
           neuheiten: aus.neuheiten ? { neu: aus.neuheiten.neu || [], ausfall: aus.neuheiten.ausfall || null } : null,
         }
         : null;
