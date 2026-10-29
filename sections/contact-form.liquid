@@ -52,6 +52,18 @@
   .kontakt-formular button:hover {
     background-color: #444;
   }
+  /* Datenschutz-Hinweis vor dem Absenden, wie im Boden-Finder (w-172) */
+  .tp-kontakt-datenschutz {
+    margin: 14px 0 0;
+    color: #555;
+    font-size: var(--tp-fs-sm);
+    line-height: 1.5;
+  }
+  .tp-kontakt-datenschutz a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
   .whatsapp-link {
     /* #25D366 auf Weiss hatte 2:1; #0e7a5f wie die WhatsApp-Buttons, 5,3:1 */
     color: #0e7a5f;
@@ -556,6 +568,8 @@
 
       <label for="ContactFormMessage" data-message-label>Nachricht</label>
       <textarea id="ContactFormMessage" name="contact[body]" rows="5" data-message-field required>{{ form.body }}</textarea>
+
+      <p class="tp-kontakt-datenschutz">Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu. Mehr dazu in unserer <a href="{{ shop.privacy_policy.url | default: '/policies/privacy-policy' }}" target="_blank" rel="noopener">Datenschutzerklärung<span class="visually-hidden"> (öffnet in neuem Tab)</span></a>.</p>
 
       <button type="submit">Nachricht senden</button>
     {%- endform -%}
