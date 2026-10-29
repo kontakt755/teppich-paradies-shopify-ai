@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { viewKundenMusterPacken } from '../ansichten/kunden/muster-packen.mjs';
+import { viewKundenMusterPacken, erledigteBestellungen, ERLEDIGT_TAGE } from '../ansichten/kunden/muster-packen.mjs';
 import { state } from '../kern/zustand.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 
@@ -22,7 +22,7 @@ test('Standard zeigt alle offenen Umschlaege sofort, Packbereit zuerst, Gepackte
   assert.deepEqual(reihe, ['order3', 'order2', 'order1']);
   assert.match(html, /aria-current="page">Alle offenen <span class="mp-filterzahl">3</);
   assert.match(html, /aria-current="page">Bestellung packen<[\s\S]*>Muster kommt an</);
-  assert.equal((html.match(/mp-filterzahl/g) || []).length, 5);
+  assert.equal((html.match(/mp-filterzahl/g) || []).length, 6);
   assert.doesNotMatch(html, /data-mp-kunde="[^"]*"[^>]* open/, 'ohne Suche oder Direktlink bleibt alles zu');
   const leer = ansicht('tab=muster', [kunde(5, 'gepackt')]);
   assert.match(leer, /Gerade keine offene Musterbestellung/);
@@ -276,7 +276,8 @@ test('Zu klaeren und Gepackt: ein Hauptknopf fuer das Naechstliegende, Rest unte
   const sonst = ansicht('tab=muster&umschlag=order6', [kunde(6, 'klaeren')]);
   assert.deepEqual(hauptknoepfe(sonst), ['#TEST6 – Bestellstand prüfen']);
   const gepackt = ansicht('tab=muster&umschlag=order2', [kunde(2, 'gepackt')]);
-  assert.deepEqual(hauptknoepfe(gepackt), ['Großbrief vorbereiten']);
+  assert.deepEqual(hauptknoepfe(gepackt), ['Verschickt – Kunde informieren']);
+  assert.match(gepackt, /data-mp-grossbrief="order2">Großbrief vorbereiten/);
   assert.match(gepackt, /class="mp-mehr"[\s\S]*data-mp-wert="0">Zurücknehmen</);
 });
 
@@ -339,4 +340,17 @@ test('Kopfzeile nennt weitere Umschlaege desselben Empfaengers mit Bestelldatum 
   assert.match(kopf(ansicht('tab=muster', [k])), /2 weitere Umschläge für diesen Empfänger: .*#TEST2.* · .*#TEST3 \/ #TEST4<\/a> \(gepackt\)/);
   assert.doesNotMatch(ansicht('tab=muster', [kunde(5, 'warten')]), /mp-weitere/, 'ohne weitere Umschlaege keine Zeile');
   assert.match(ansicht('tab=muster', [k]), /nur Bestellungen vom selben Tag kommen zusammen/);
+});
+
+test('Gepackt -> "Verschickt": Reiter Erledigt zeigt nur versandte Musterbestellungen der letzten Tage (Inhaber 29.10.)', () => {
+  const jetzt = Date.parse('2026-10-29T12:00:00Z');
+  const b = (nr, grund, datum) => ({ orderId: `order${nr}`, orderName: `#TEST${nr}`, name: `Testkunde ${nr}`, grund, datum, muster: [{ lineItemId: `line${nr}` }] });
+  const ausserhalb = [b(1, 'erledigt', '2026-10-28T08:00:00Z'), b(2, 'storniert', '2026-10-28T08:00:00Z'), b(3, 'erledigt', '2026-10-01T08:00:00Z'), b(4, 'erledigt', null)];
+  assert.deepEqual(erledigteBestellungen(ausserhalb, jetzt).map(x => x.orderName), ['#TEST1'], `nur erledigt, nur ${ERLEDIGT_TAGE} Tage, nur mit Datum`);
+  const html = ansicht('tab=muster&mpbereich=erledigt', [kunde(5, 'gepackt')], [b(1, 'erledigt', new Date().toISOString())]);
+  assert.match(html, /aria-current="page">Erledigt <span class="mp-filterzahl">1<\/span>/);
+  assert.match(html, /<strong>#TEST1<\/strong> · Testkunde 1 · 1 Muster/);
+  assert.match(html, /href="#\/einkauf\?auftrag=order1">Bestellung ansehen/);
+  assert.doesNotMatch(html, /Testkunde 5/, 'Gepacktes steht nicht unter Erledigt');
+  assert.match(ansicht('tab=muster&mpbereich=erledigt', []), /keine Musterbestellung erledigt worden/);
 });
