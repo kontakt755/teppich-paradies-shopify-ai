@@ -77,7 +77,7 @@ test('Produktanfrage: vorhandenen Kontext fokussieren, Felder und Nachricht unve
   assert.equal(p.fields.get('Produkt').value, 'Grandessa Eiche');
   assert.equal(p.fields.get('Produkt-Handle').value, 'grandessa-eiche');
   assert.equal(p.fields.get('Produkt-Link').value, 'https://shop.example/products/grandessa-eiche');
-  assert.match(p.message.value, /kostenloses Muster von Grandessa Eiche/);
+  assert.match(p.message.value, /ein Muster von Grandessa Eiche/);
   assert.equal(p.message.required, true);
   assert.equal(p.focus.length, 0);
   p.flush();
