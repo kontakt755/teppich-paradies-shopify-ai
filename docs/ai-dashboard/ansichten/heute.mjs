@@ -239,7 +239,7 @@ function viewAlltag() {
     ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
     ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
     // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
-    ...shopifyAbgleichTodos(),
+    ...shopifyAbgleichTodos(Date.now(), { lieferantName }),
     // Veraltete Daten: ein To-do fuer den Inhaber, bis der Sync-Dienst wieder liefert (lib/datenstand.mjs).
     ...(istInhaber() ? datenstandTodo(veralteteQuellen(einkauf.aktualisierung)) : []),
   ];
@@ -294,17 +294,20 @@ function todoZeile(t, erste) {
   // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
   // der Klick laeuft ueber zeitleisteKlick (ansichten/kunden/zeitleiste.mjs). Rolle "lesen" bekommt den Link.
   // k.nachbuchen: "In Shopify nachbuchen" direkt in der Zeile (shopifyAbgleichKlick, einkauf/shopify-abgleich.mjs).
+  // k.abhaken: aus der Bestellung entfernte Artikel abhaken (Dialog, ebenfalls einkauf/shopify-abgleich.mjs).
   // Ohne Knopf (z. B. Ausschreibung ohne gueltigen Link) keine Schaltflaeche.
   const knopf = !k ? ''
     : k.kopiertext
     ? `<button type="button" class="${klasse}" data-kopiertext="${esc(k.kopiertext)}">${esc(k.text)}</button>`
     : k.nachbuchen && !istNurLesend()
     ? `<button type="button" class="${klasse}" data-shopify-nachbuchen="${esc(k.nachbuchen)}" title="Bucht diese Artikel in Shopify als versendet – ohne Mail an den Kunden">${esc(k.text)}</button>`
+    : k.abhaken && !istNurLesend()
+    ? `<button type="button" class="${klasse}" data-entfernt-abhaken="${esc(k.abhaken)}" title="Erst beim Lieferanten stornieren, dann hier mit Notiz abhaken">${esc(k.text)}</button>`
     : k.aufgabe
     ? `<button type="button" class="${klasse}" data-open="${esc(k.aufgabe)}" data-primary="1">${esc(k.text)}</button>`
     : k.schritt && !istNurLesend()
       ? `<button type="button" class="${klasse}" data-zl-schritt="${esc(k.schritt.aktion)}" data-zl-order="${esc(k.schritt.orderId)}">${esc(k.text)}</button>`
-      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen ? 'Ansehen' : k.text)}</a>`;
+      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen || k.abhaken ? 'Ansehen' : k.text)}</a>`;
   const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage))}</span>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
     <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
