@@ -1965,6 +1965,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           if (wert && kunde.klaeren) setzeKlaeren(datei, kunde.schluessel, { klaeren: false });
           merke(benutzer, null, wert ? 'Muster gepackt' : 'Gepackt zurückgenommen', nummern);
         } else if (aktion === 'haken') {
+          // Ein gepackter Umschlag ist zu: "Verschickt" bucht seine Muster. Erst "Gepackt" zuruecknehmen.
+          if (kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist schon gepackt. Zum Ändern zuerst „Gepackt“ zurücknehmen.');
           const eigene = new Set(kunde.muster.map(m => m.lineItemId));
           const ids = Array.isArray(payload.lineItemIds) ? payload.lineItemIds.filter(id => typeof id === 'string') : [];
           if (!ids.length || ids.some(id => !eigene.has(id))) throw new ApiError(400, 'Dieses Muster gehört nicht zu diesem Kunden.');
@@ -2011,6 +2013,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === pk);
       if (!kunde) throw new ApiError(409, 'Dieser Umschlag steht nicht mehr so in der Liste – vielleicht schon verschickt. Bitte neu laden.');
       if (!kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist noch nicht gepackt.');
+      // Gebucht und in der Mail genannt wird nur, was nachweislich im Umschlag liegt (Pruefung 29.10.):
+      // ein spaeter weggenommener Haken oder ein nachtraeglich bestelltes Muster sperrt.
+      if (kunde.muster.some(m => !m.abgehakt)) throw new ApiError(409, 'Nicht verschickt, keine Mail – im Umschlag ist nicht jedes Muster abgehakt. Bitte „Gepackt“ zurücknehmen und neu packen.');
       const dir = privatDirPath || privatDir();
       const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
       const modell = ladeBestellModell(dir);
@@ -2044,15 +2049,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         const meldung = `Nicht als verschickt eingetragen: ${String(x.reason?.message || x.reason).split('\n')[0]}`;
         merke(benutzer, actor, 'Verschicken aus der Packstation gescheitert', `${b.orderName}: ${meldung}`);
         logFehler('versand', `${b.orderName}: Packstation - ${meldung}`);
-        return { orderId: b.orderId, orderName: b.orderName, status: 'fehler', meldung };
+        // Eigener Status: lokal steht nichts, in Shopify nichts - die Bestellung bleibt unter "Gepackt".
+        return { orderId: b.orderId, orderName: b.orderName, status: 'nicht-eingetragen', meldung };
       });
+      if (versand.every(v => v.status === 'nicht-eingetragen')) {
+        throw new ApiError(500, `Nicht verschickt, keine Mail – ${versand.map(v => `${v.orderName}: ${v.meldung}`).join(' · ')}`);
+      }
       // Blieb eine Bestellung stehen, bildet sie jetzt einen eigenen Umschlag: der ist gepackt und gehoert
-      // unter "Gepackt", nie zurueck ins Packen.
+      // unter "Gepackt", nie zurueck ins Packen. Nur ein Umschlag aus genau diesen Bestellungen - kam
+      // waehrend der Buchung eine neue Bestellung dazu, ist deren Muster nicht eingelegt.
       const stehen = new Set(ausgang.map((x, i) => (x.status === 'rejected' ? plan[i].b.orderId : null)).filter(Boolean));
       if (stehen.size) {
         try {
           const datei = musterPackenPfad(dir);
-          for (const rest of (this.kundenMusterPacken().kunden || []).filter(k => !k.gepackt && k.bestellungen.some(b => stehen.has(b.orderId)))) {
+          for (const rest of (this.kundenMusterPacken().kunden || []).filter(k => !k.gepackt && k.bestellungen.length && k.bestellungen.every(b => stehen.has(b.orderId)))) {
             setzeGepackt(datei, rest.packSchluessel, { gepackt: true, von: actor, jetzt: now() });
           }
         } catch (e) { logFehler('versand', `Packstation: Gepackt-Vermerk fuer den Rest nicht gesetzt (${String(e?.message || e).split('\n')[0]})`); }

@@ -31,8 +31,14 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   `muster-packen.test.mjs` (`offeneSuche`, `handTreffer`) und `packstation-arbeitslisten.test.mjs`
   (Hinweis, gebundenes `mpfertig`, Storniert bleibt sichtbar) sind angepasst. Die 22 bis zum 29.10.
   gepackten Bestellungen sind von Hand in Shopify gebucht, die 11 vom 28./29.10. mit Mail.
+  Unabhängige Prüfung des Diffs (4 Blickwinkel, jeder Befund gegengeprüft): 14 Befunde, behoben u. a.
+  Verschickt nur bei vollständig abgehaktem Umschlag, kein Haken mehr an Gepacktem, Status
+  `nicht-eingetragen` statt falscher Shopify-Meldung, 500 wenn nichts eingetragen wurde, Netzfehler
+  ohne falsche Gewissheit, Rest-Umschlag nur aus genau den stehen gebliebenen Bestellungen, Suche aus
+  Gepackt/Erledigt mit Fertigen, Fehlwörter der offenen Treffer bleiben sichtbar.
 - **Risiken:** Den Fall „ein lokaler Schritt scheitert trotz Vorprüfung“ (z. B. ein Schreibfehler)
-  deckt kein Test ab. Der Code setzt dann den Gepackt-Vermerk für den Rest-Umschlag. Der Klick gegen
+  deckt kein Test ab. Die Zahl „N fertige Bestellungen passen auch“ zählt alle Bestellungen eines
+  gepackten Umschlags und auch schwächere Treffer (bewusst grob, nur Hinweis). Der Klick gegen
   das echte Shopify ist auf der Datenkopie nicht geprüft. Die Buchung ist der bestehende Weg
   `versandBuchen`.
 - **Naechste Stufe:** Beileger zum Drucken für den Umschlag („Sind Sie zufrieden? …“). Die Texte

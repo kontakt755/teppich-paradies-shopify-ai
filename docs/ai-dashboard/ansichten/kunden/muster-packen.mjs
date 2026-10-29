@@ -411,7 +411,8 @@ export function viewKundenMusterPacken() {
   };
   const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => `<a class="btn${aktiv === b ? ' btn-primary' : ''}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${b === 'erledigt' ? erledigt.length : d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : k.bereich === b)).length}</span></a>`).join('')}</nav>`;
   // "Trotzdem zeigen" gilt nur fuer genau diese Suche (mpfertig = Suchtext) - jede neue Suche startet ohne Fertige.
-  const mitFertigen = Boolean(suche) && state.route.params.get('mpfertig') === suche;
+  // In den Reitern Gepackt und Erledigt sucht man gerade das Fertige - dort ist es immer mit drin.
+  const mitFertigen = Boolean(suche) && (['gepackt', 'erledigt'].includes(angefordert) || state.route.params.get('mpfertig') === suche);
   const gefunden = suche ? offeneSuche(d.kunden, suche, d.ausserhalb || [], { mitFertigen }) : null;
   const treffer = new Map((gefunden?.treffer || []).map(t => [t.packSchluessel, new Set(t.muster)]));
   // Offene Arbeit nach Dringlichkeit: erst Packbereites, dann zu Klaerendes, dann Wartendes; in jeder
@@ -629,7 +630,7 @@ function packFehlerHtml(d) {
   if (packFehler && d?.verfuegbar && !d.fehler && d !== packFehlerStand) {
     packFehler = null; packFehlerStand = null;
   }
-  const versand = versandProbleme.length ? `<div class="notice crit" role="alert"><p><strong>Verschickt, aber in Shopify nicht sicher als versendet gemeldet.</strong> Bestellung öffnen und prüfen – fehlt der Versand, steht dort „In Shopify buchen“.</p>
+  const versand = versandProbleme.length ? `<div class="notice crit" role="alert"><p><strong>Verschickt, aber in Shopify nicht sicher als versendet gemeldet.</strong> Bestellung öffnen und prüfen – fehlt der Versand, dort „In Shopify buchen“ (mit Mail-Wahl).</p>
       <ul>${versandProbleme.map(v => `<li><a href="#/einkauf?auftrag=${encodeURIComponent(v.orderId)}">${esc(v.orderName)}</a>: ${esc(v.meldung || 'Ergebnis unbekannt')}</li>`).join('')}</ul>
       <button type="button" class="btn btn-sm" data-mp-versand-ok>Verstanden</button></div>` : '';
   return versand + (packFehler ? `<p class="notice warn" role="alert">${esc(packFehler)} <button type="button" class="btn btn-sm" data-mp-neuladen>Packliste erneut laden</button></p>` : '');
@@ -694,28 +695,44 @@ async function verschicken(k, knopf) {
   // Ein Aufruf fuer den ganzen Umschlag: der Server prueft erst alle Bestellungen und schreibt dann
   // alle lokalen Schritte, bevor Shopify antwortet - so zerfaellt ein Umschlag mit zwei Bestellungen nie.
   let r = null;
+  let fehler = null;
   try {
     r = await orgSchreiben(ENDPOINT, { packSchluessel: k.packSchluessel, aktion: 'verschickt' });
-  } catch (err) {
-    // Die Sperrgruende des Servers beginnen schon mit "Nicht verschickt, keine Mail – #…".
-    packFehler = `${/^Nicht verschickt/.test(err.message) ? err.message : `Nicht verschickt: ${err.message}`} Der Umschlag bleibt unter „Gepackt“.`;
-  }
+  } catch (err) { fehler = err; }
   try {
     const neu = await fetchEinkauf(ENDPOINT);
     if (neu?.verfuegbar && !neu.fehler) kunden.musterPacken = neu;
   } catch { /* der naechste Abruf holt es nach */ }
-  // Der Fehler gilt fuer genau diesen Stand der Liste - erst nach dem Neuladen festhalten, sonst loescht
-  // packFehlerHtml ihn beim naechsten Zeichnen sofort wieder.
-  if (!r) packFehlerStand = kunden.musterPacken;
   packSpeichert = false;
+  if (fehler) {
+    // Nur eine Sperre des Servers (4xx, oder 500 "Nicht verschickt, keine Mail") ist sicher "nichts
+    // passiert". Bei Netzfehler/5xx sonst entscheidet die neu geladene Liste (Pruefung 29.10.).
+    const sicherNichts = /^Nicht verschickt/.test(fehler.message) || (fehler.status >= 400 && fehler.status < 500);
+    const nochDa = (kunden.musterPacken?.kunden || []).some(x => x.packSchluessel === k.packSchluessel);
+    const text = sicherNichts || nochDa
+      ? `${/^Nicht verschickt/.test(fehler.message) ? fehler.message : `Nicht verschickt: ${fehler.message}`}${nochDa ? ' Der Umschlag steht noch unter „Gepackt“.' : ''}`
+      : `Ergebnis unklar (${fehler.message}) – der Umschlag ist nicht mehr in der Liste, vermutlich verschickt. Bitte ${k.bestellungen.map(b => b.orderName).join(', ')} unter Bestellen prüfen.`;
+    // Erst nach dem Neuladen setzen: der Fehler gilt fuer genau diesen Stand der Liste, sonst loescht
+    // packFehlerHtml ihn beim naechsten Zeichnen sofort wieder.
+    packFehler = text;
+    packFehlerStand = kunden.musterPacken;
+    toast(text, 'crit', { dauer: 9000 });
+    render();
+    return;
+  }
   const versand = Array.isArray(r?.versand) ? r.versand : [];
-  // Was nicht sicher gebucht ist, bleibt oben stehen; die Texte je Bestellung kommen vom Server und
-  // passen zu jedem Ergebnis (teilweise, unklar, Fehler).
-  const probleme = versand.filter(v => !['gebucht', 'bereits'].includes(v.status));
-  if (r) {
-    const gebucht = versand.filter(v => v.status === 'gebucht');
-    toast(`Verschickt · ${umschlagKennung(k)} ${k.name}${gebucht.length ? ` · in Shopify als versendet gemeldet${gebucht.some(v => v.kundeBenachrichtigt) ? ', der Kunde bekommt die Versandmail' : ', ohne Mail'}` : ''}`);
-  } else toast(packFehler, 'crit', { dauer: 9000 });
+  // Lokal nicht eingetragen: steht weiter unter "Gepackt" und braucht einen neuen Klick, keine Shopify-Pruefung.
+  const nicht = versand.filter(v => v.status === 'nicht-eingetragen');
+  // Was lokal raus, aber in Shopify nicht sicher gebucht ist, bleibt oben stehen; die Texte je Bestellung
+  // kommen vom Server und passen zu jedem Ergebnis (teilweise, unklar, Fehler).
+  const probleme = versand.filter(v => !['gebucht', 'bereits', 'nicht-eingetragen'].includes(v.status));
+  const gebucht = versand.filter(v => v.status === 'gebucht');
+  toast(`Verschickt · ${umschlagKennung(k)} ${k.name}${gebucht.length ? ` · in Shopify als versendet gemeldet${gebucht.some(v => v.kundeBenachrichtigt) ? ', der Kunde bekommt die Versandmail' : ', ohne Mail'}` : ''}`);
+  if (nicht.length) {
+    packFehler = `Nicht verschickt: ${nicht.map(v => `${v.orderName} – ${v.meldung}`).join(' · ')} Diese Bestellung steht noch unter „Gepackt“ – dort erneut „Verschickt“ drücken.`;
+    packFehlerStand = kunden.musterPacken;
+    toast(packFehler, 'crit', { dauer: 9000 });
+  }
   if (probleme.length) {
     versandProbleme = [...versandProbleme.filter(a => !probleme.some(v => v.orderId === a.orderId)), ...probleme];
     toast(`${plural(probleme.length, 'Bestellung', 'Bestellungen')} in Shopify bitte prüfen – Hinweis oben in der Packstation.`, 'crit', { dauer: 9000 });

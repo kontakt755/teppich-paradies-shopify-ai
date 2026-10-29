@@ -88,7 +88,7 @@ test('ohne Shopify-Zugang: Schritt "raus" gespeichert, die Antwort nennt den Feh
   assert.equal(r.versand[0].status, 'fehler');
   assert.match(r.versand[0].meldung, /kein Zugang/);
   assert.equal(u.attrappe.buchungen().length, 0);
-  // Der Vermerk fuehrt die Bestellung unter "In Shopify nachbuchen" - nie still verloren.
+  // Der Vermerk fuehrt die Bestellung unter "In Shopify buchen" - nie still verloren.
   assert.equal(u.eintrag(1).status, 'raus');
   assert.equal(u.eintrag(1).shopifyVersand.status, 'fehler');
 });
@@ -168,4 +168,19 @@ test('zwei Bestellungen: beide lokal "raus", bevor Shopify antwortet - der Umsch
   u.freigabe();
   const r = await lauf;
   assert.deepEqual(r.versand.map(v => [v.orderName, v.status]), [['#T5001', 'fehler'], ['#T5002', 'fehler']]);
+});
+
+test('nur Abgehaktes geht raus: gepackter Umschlag nimmt keinen Haken mehr an, ein fehlender Haken sperrt Verschickt', async t => {
+  const u = umgebung(t);
+  const pk = u.kunde().packSchluessel;
+  await u.packen();
+  await assert.rejects(u.api.kundenMusterPackenSchreiben({ packSchluessel: pk, aktion: 'haken', lineItemIds: [li(2)], an: false }, ICH), e => e.status === 409 && /schon gepackt/.test(e.message));
+  // Veraltete Seite oder nachbestelltes Muster: der Haken fehlt trotzdem (direkt in der Ablage entfernt).
+  const datei = path.join(u.dir, 'muster-packen.json');
+  const stand = JSON.parse(fs.readFileSync(datei, 'utf8'));
+  delete stand.haken[li(2)];
+  fs.writeFileSync(datei, JSON.stringify(stand));
+  assert.equal(u.kunde().bereich, 'gepackt');
+  await assert.rejects(u.verschicken(pk), e => e.status === 409 && /nicht jedes Muster abgehakt/.test(e.message));
+  assert.equal(u.attrappe.buchungen().length, 0, 'keine Buchung, keine Mail');
 });

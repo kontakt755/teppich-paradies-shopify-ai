@@ -327,6 +327,12 @@ test('Suche zeigt passende Musterbestellungen ausserhalb der Packliste mit Grund
   assert.match(storniert, /Außerhalb der Packliste[\s\S]*storniert – nicht verschicken/, 'Warnungen bleiben in der Suche');
   // "Trotzdem zeigen" gilt nur fuer genau diese Suche.
   assert.match(ansicht('tab=muster&mpq=9G8&mpfertig=9G9', [kunde(1, 'packen')], aussen), /Nichts gefunden – weder in der Packliste/);
+  // Andere Suche, die dieselbe fertige Bestellung trifft: wieder ausgeblendet.
+  const andere = ansicht('tab=muster&mpq=T-GR&mpfertig=9G9', [kunde(1, 'packen')], aussen);
+  assert.match(andere, /1 fertige Bestellung passt auch/);
+  assert.doesNotMatch(andere, /Außerhalb der Packliste/);
+  // Aus dem Reiter Erledigt gesucht: das Fertige ist gemeint und steht gleich mit drin.
+  assert.match(ansicht('tab=muster&mpbereich=erledigt&mpq=9G9', [kunde(1, 'packen')], aussen), /Außerhalb der Packliste[\s\S]*#TEST9/);
   const html = ansicht('tab=muster&mpq=9G9&mpfertig=9G9', [kunde(1, 'packen')], aussen);
   assert.doesNotMatch(html, /data-mp-kunde="order1"/);
   assert.match(html, /Kein offener Umschlag passt – siehe unten/);

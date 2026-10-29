@@ -2045,7 +2045,12 @@ Gepackte Umschläge tragen den Hauptknopf „Verschickt – Kunde informieren“
 - **Antwort** `versand: [{ orderId, orderName, status, meldung, kundeBenachrichtigt }]`. Alles außer
   `gebucht`/`bereits` zeigt die Packstation als roten Hinweis mit Link zur Bestellung. Der Hinweis
   bleibt stehen, bis jemand „Verstanden“ klickt (`versandProbleme`), denn der Umschlag ist dann schon
-  aus der Liste. Die Bestellung steht zusätzlich unter „In Shopify nachbuchen“.
+  aus der Liste. Der Hinweis lebt nur im geöffneten Tab; dauerhaft ist der Vermerk an der Bestellung, dort
+  „In Shopify buchen“ (mit Mail-Wahl; „In Shopify nachbuchen“ in der Abgleichsliste bucht ohne Mail).
+- **Sperren:** nicht jedes Muster abgehakt (Haken weg über veraltete Seite, Muster nachbestellt) → 409;
+  Haken an gepackten Umschlägen → 409. Scheitert ein Schritt trotz Vorprüfung, heißt er
+  `nicht-eingetragen` (Umschlag bleibt unter „Gepackt“, erneut klicken); scheitern alle → 500, nichts
+  passiert. Netzfehler: die neu geladene Liste entscheidet, ob „nicht verschickt“ oder „Ergebnis unklar“.
 - **Danach:** Der Umschlag fällt aus der Packliste (`ausserhalb`, Grund `erledigt`) und steht im Reiter
   „Erledigt“. „Muster nachfassen“ (Abschnitt 23) zählt ab dem Schritt „raus“.
 

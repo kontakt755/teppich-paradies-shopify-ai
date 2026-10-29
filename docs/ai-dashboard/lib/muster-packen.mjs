@@ -356,7 +356,8 @@ export function offeneSuche(kundenListe = [], eingabe = '', ausserhalb = [], { m
   const fertig = new Set([...f.treffer.flatMap(bestellungenVon), ...f.ausserhalb.map(b => b.orderId)].filter(id => !gezeigt.has(id)));
   if (!mitFertigen) return { ...s, fertig: fertig.size };
   return { woerter: s.woerter, treffer: [...s.treffer, ...f.treffer], ausserhalb: [...s.ausserhalb, ...f.ausserhalb.filter(b => !gezeigt.has(b.orderId))],
-    fehlen: s.fehlen.filter(w => f.fehlen.includes(w)), fertig: 0 };
+    // Die offenen Treffer stehen vorn: deren Fehlwoerter gelten, sonst verschwaende ein "Nicht gefunden".
+    fehlen: s.treffer.length || s.ausserhalb.length ? s.fehlen : f.fehlen, fertig: 0 };
 }
 
 /**
