@@ -1,13 +1,19 @@
 {
-  "_hinweis": "Vorschlag fuer Jahreswellen, keine aktiven Rabatte. Datum als MM-TT; Black Week wird jaehrlich berechnet. prozent null und freigegeben false: Prozent, Zielkollektion und Ausnahmen sind noch offen. aktion:plan schreibt nur nach vollstaendiger fachlicher Freigabe lokale Mutationsentwuerfe; die Anzeige bleibt darin inaktiv. Ablauf: domains/shopify/aktionssystem-konzept.md.",
+  "_hinweis": "Jahreswellen, vom Inhaber freigegeben (Werkbank w-151: 15 % je Welle am 26.10.2026, 30-Tage-Regel fuer die Black Week am 28.10.2026). Keine aktiven Rabatte: aktion:plan schreibt nur lokale Mutationsentwuerfe, die Anzeige bleibt darin inaktiv. Datum als MM-TT; Black Week wird jaehrlich berechnet. Ablauf: domains/shopify/aktionssystem-konzept.md.",
+  "freigabe": {"am": "2026-10-26", "von": "Inhaber", "quelle": "Werkbank w-151", "nachtrag": "2026-10-28: 30-Tage-Regel Black Week"},
   "vorlauf_tage": 14,
+  "ausnahmen_alle": [
+    {"text": "Bereits reduzierte Ware ausnehmen (Streichpreis gesetzt oder in den 30 Tagen vor dem Start reduziert)"},
+    {"text": "Muster, Zubehoer und Auslauf in der Zielkollektion pruefen"}
+  ],
   "wellen": [
-    {"id": "winterschluss", "titel": "Winterschluss", "von": "01-07", "bis": "01-31", "kollektion": "teppichboden", "prozent": null, "idee": "Inventur: Rollenware und Restbestaende", "freigegeben": false},
-    {"id": "fruehjahr", "titel": "Frühjahrs-Renovierung", "von": "03-02", "bis": "03-22", "kollektion": "laminat-parkett", "prozent": null, "idee": "Hartboeden zur Renovierungssaison", "freigegeben": false},
-    {"id": "umzug", "titel": "Umzugswochen", "von": "04-20", "bis": "05-10", "kollektion": "teppiche", "prozent": null, "idee": "Neue Wohnung - Teppiche in Standardgroessen", "freigegeben": false},
-    {"id": "sommer", "titel": "Sommerdeals", "von": "06-15", "bis": "07-05", "kollektion": "sisal-kokos-teppiche-nach-mass", "prozent": null, "idee": "Sisal und Kokos, Sauberlauf", "freigegeben": false},
-    {"id": "herbst", "titel": "Herbstwärme", "von": "09-15", "bis": "10-05", "kollektion": "teppichboden-hochflor", "prozent": null, "idee": "Hochflor und Wolle vor der Heizsaison", "freigegeben": false},
-    {"id": "black-week", "titel": "Black Week", "von": "11-23", "bis": "11-30", "kollektion": "teppichboden", "prozent": null, "idee": "Staerkste Woche des Jahres; Black Friday ist der Freitag nach dem 4. Donnerstag im November", "freigegeben": false},
-    {"id": "winterdeals", "titel": "Winterdeals", "von": "12-01", "bis": "12-14", "kollektion": "teppich-nach-mass", "prozent": null, "idee": "Noch vor Weihnachten - Lieferzeit Teppich nach Mass beachten", "freigegeben": false}
+    {"id": "winterschluss", "titel": "Winterschluss", "von": "01-07", "bis": "01-31", "kollektion": "teppichboden", "prozent": 15, "idee": "Inventur: Rollenware und Restbestaende", "freigegeben": true},
+    {"id": "fruehjahr", "titel": "Frühjahrs-Renovierung", "von": "03-02", "bis": "03-22", "kollektion": "laminat-parkett", "prozent": 15, "idee": "Hartboeden zur Renovierungssaison", "freigegeben": true},
+    {"id": "umzug", "titel": "Umzugswochen", "von": "04-20", "bis": "05-10", "kollektion": "teppiche", "prozent": 15, "idee": "Neue Wohnung - Teppiche in Standardgroessen", "freigegeben": true},
+    {"id": "sommer", "titel": "Sommerdeals", "von": "06-15", "bis": "07-05", "kollektion": "sisal-kokos-teppiche-nach-mass", "prozent": 15, "idee": "Sisal und Kokos, Sauberlauf", "freigegeben": true},
+    {"id": "herbst", "titel": "Herbstwärme", "von": "09-15", "bis": "10-05", "kollektion": "teppichboden-hochflor", "prozent": 15, "idee": "Hochflor und Wolle vor der Heizsaison", "freigegeben": true},
+    {"id": "black-week", "titel": "Black Week", "von": "11-23", "bis": "11-30", "kollektion": "teppichboden", "prozent": 15, "idee": "Staerkste Woche des Jahres; Black Friday ist der Freitag nach dem 4. Donnerstag im November", "freigegeben": true,
+      "ausnahmen": [{"jahr": 2026, "text": "30-Tage-Regel: die 75 Teppichboeden aus dem Dauerrabatt bis 01.11.2026 herausnehmen (Liste im Privatordner: aktion-2026-11-02/stand-2026-10-24); die uebrigen Teppichboeden bekommen 15 %"}]},
+    {"id": "winterdeals", "titel": "Winterdeals", "von": "12-01", "bis": "12-14", "kollektion": "teppich-nach-mass", "prozent": 15, "idee": "Noch vor Weihnachten - Lieferzeit Teppich nach Mass beachten", "freigegeben": true}
   ]
 }

@@ -1,26 +1,59 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import os from 'node:os';
 import path from 'node:path';
 import { Liquid } from 'liquidjs';
-import { blackFriday, zeitraum, zeitpunktBerlin, mutationen } from '../../scripts/aktion-plan.mjs';
+import { blackFriday, zeitraum, zeitpunktBerlin, mutationen, ausnahmenFuer } from '../../scripts/aktion-plan.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const kalender = JSON.parse(readFileSync(path.join(root, 'domains/shopify/aktionskalender.json'), 'utf8'));
 const welle = overrides => ({ id: 'testwelle', titel: 'Testaktion', von: '06-15', bis: '07-05',
   kollektion: 'test-kollektion', prozent: 15, freigegeben: true, ...overrides });
 
-test('Jahreswellen bleiben ohne erfundene Rabattwerte und Freigabe gesperrt', () => {
-  assert.equal(kalender.wellen.length, 7);
+// Inhaber 26.10.2026 (Werkbank w-151): alle 7 Wellen je 15 % auf die vorgeschlagene
+// Kollektion, bereits reduzierte Ware ausnehmen; 28.10.2026: 30-Tage-Regel Black Week.
+const FREIGEGEBEN = {
+  winterschluss: 'teppichboden', fruehjahr: 'laminat-parkett', umzug: 'teppiche',
+  sommer: 'sisal-kokos-teppiche-nach-mass', herbst: 'teppichboden-hochflor',
+  'black-week': 'teppichboden', winterdeals: 'teppich-nach-mass',
+};
+
+test('Jahreswellen: vom Inhaber mit 15 % je Welle auf die vorgeschlagene Kollektion freigegeben', () => {
+  assert.deepEqual(Object.fromEntries(kalender.wellen.map(w => [w.id, w.kollektion])), FREIGEGEBEN);
   for (const w of kalender.wellen) {
-    assert.equal(w.prozent, null, w.id);
-    assert.equal(w.freigegeben, false, w.id);
-    assert.throws(() => mutationen(w, 2026), /fachlich noch nicht freigegeben/);
+    assert.equal(w.prozent, 15, w.id);
+    assert.equal(w.freigegeben, true, w.id);
+    const m = mutationen(w, 2026, { ausnahmenAlle: kalender.ausnahmen_alle });
+    assert.equal(m.rabatt.variables.d.customerGets.value.percentage, 0.15, w.id);
+    assert.equal(Object.fromEntries(m.anzeige.variables.m.fields.map(f => [f.key, f.value])).aktiv, 'false', `${w.id}: Anzeige bleibt aus`);
+    assert.match(m.hinweis, /Bereits reduzierte Ware ausnehmen/, w.id);
   }
-  const r = spawnSync(process.execPath, ['scripts/aktion-plan.mjs', '--welle', 'black-week'], { cwd: root, encoding: 'utf8' });
-  assert.equal(r.status, 1);
-  assert.match(r.stderr, /fachlich noch nicht freigegeben/);
+  assert.throws(() => mutationen(welle({ freigegeben: false }), 2026), /fachlich noch nicht freigegeben/);
+});
+
+test('30-Tage-Regel: Black Week 2026 nimmt die Teppichboeden aus dem Dauerrabatt heraus, 2027 nicht', () => {
+  const bw = kalender.wellen.find(w => w.id === 'black-week');
+  assert.match(ausnahmenFuer(bw, 2026).join(' '), /75 Teppichboeden aus dem Dauerrabatt/);
+  assert.deepEqual(ausnahmenFuer(bw, 2027), []);
+  assert.match(mutationen(bw, 2026).hinweis, /Ausnahmen .*75 Teppichboeden/);
+  assert.doesNotMatch(mutationen(bw, 2027).hinweis, /75 Teppichboeden/);
+});
+
+test('Entwurfsdatei entsteht nur lokal im Arbeitsordner und traegt die Ausnahmen', () => {
+  const ordner = mkdtempSync(path.join(os.tmpdir(), 'tp-aktion-plan-'));
+  try {
+    const r = spawnSync(process.execPath, [path.join(root, 'scripts/aktion-plan.mjs'), '--welle', 'black-week', '--jahr', '2026'], { cwd: ordner, encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /nichts in Shopify angelegt/);
+    const entwurf = JSON.parse(readFileSync(path.join(ordner, 'aktion-black-week-2026.json'), 'utf8'));
+    assert.equal(entwurf.rabatt.variables.d.startsAt, '2026-11-23T00:00:00+01:00');
+    assert.ok(entwurf.ausnahmen.some(a => /75 Teppichboeden/.test(a)));
+    assert.ok(entwurf.ausnahmen.some(a => /Bereits reduzierte Ware/.test(a)));
+  } finally {
+    rmSync(ordner, { recursive: true, force: true });
+  }
 });
 
 test('Direkter Generatoraufruf akzeptiert keine fehlenden oder ungueltigen Geschaeftswerte', () => {
