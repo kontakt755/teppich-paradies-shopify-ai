@@ -81,7 +81,7 @@
             "tile_1_button_link": "shopify://pages/teppichboden-verlegen-lassen",
             "tile_2_enabled": true,
             "tile_2_image": "shopify://shop_images/ChatGPT_Image_12._Mai_2026_16_12_29.png",
-            "tile_2_title": "Vinylboden fachgerecht legen",
+            "tile_2_title": "Vinyl, Laminat & Parkett fachgerecht legen",
             "tile_2_button_text": "Mehr erfahren",
             "tile_2_button_link": "shopify://pages/vinylboden-verlegen",
             "tile_3_enabled": true,
@@ -301,11 +301,18 @@
         "z2",
         "z3"
       ]
+    },
+    "tp_verlege_ablauf": {
+      "type": "tp-verlege-ablauf",
+      "settings": {
+        "maler": true
+      }
     }
   },
   "order": [
     "main",
     "177859431850222fa1",
+    "tp_verlege_ablauf",
     "tp_service_einstieg",
     "google_MkFfBg",
     "kundenbilder_grid_NJW4hw",

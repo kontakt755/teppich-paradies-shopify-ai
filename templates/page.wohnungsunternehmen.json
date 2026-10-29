@@ -35,7 +35,7 @@
         "step1_title": "1. Anfrage",
         "step1_text": "Sie schicken uns Adresse, Wohnung und gewünschten Zeitraum über das Kontaktformular.",
         "step2_title": "2. Besichtigung und Festpreisangebot",
-        "step2_text": "Wir sehen uns die Wohnung an und erstellen ein Festpreisangebot.",
+        "step2_text": "Wir sehen uns die Wohnung an und erstellen ein verbindliches Festpreisangebot.",
         "step3_title": "3. Termin",
         "step3_text": "Wir stimmen den Verlegetermin mit Ihnen ab und übergeben die Wohnung bezugsfertig.",
         "cta_title": "Wohnungswechsel geplant?",
@@ -50,17 +50,24 @@
         "subtitle": "Für Hausverwaltungen und Genossenschaften zählt beim Mieterwechsel vor allem ein verlässlicher Ablauf.",
         "box1_title": "Ein Ansprechpartner",
         "box1_text": "Von der Anfrage bis zur Übergabe sprechen Sie mit uns direkt.",
-        "box2_title": "Schnelle Termine",
-        "box2_text": "Unser eigenes Verlegeteam plant Termine kurzfristig ein.",
+        "box2_title": "Planbare Termine",
+        "box2_text": "Besichtigung meist innerhalb einer Woche, Verlegung in der Regel etwa 3 Wochen nach Auftrag – mit unserem eigenen Verlegeteam.",
         "box3_title": "Rahmenvereinbarung möglich",
         "box3_text": "Für wiederkehrende Aufträge vereinbaren wir feste Abläufe.",
         "box4_title": "Regional vor Ort",
         "box4_text": "Oranienburg, Oberhavel und Nord-Berlin."
       }
+    },
+    "tp_verlege_ablauf": {
+      "type": "tp-verlege-ablauf",
+      "settings": {
+        "maler": true
+      }
     }
   },
   "order": [
     "wohnungsunternehmen_hero",
+    "tp_verlege_ablauf",
     "wohnungsunternehmen_vorteile"
   ]
 }

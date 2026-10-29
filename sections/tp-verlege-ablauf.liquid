@@ -1,0 +1,101 @@
+{%- comment -%}
+  TP Termine und Angebot (Werkbank w-173, Inhaber 28.10.2026): auf allen
+  Verlegeseiten derselbe Wortlaut zu Vorlauf, Festpreisangebot und
+  Hereintragen. Die Texte stehen bewusst hier und nicht in den Vorlagen,
+  damit sie nicht wieder auseinanderlaufen. Gleicher Satz zum Hereintragen
+  in sections/tp-shipping-delivery.liquid und blocks/tp-service-links.liquid.
+  Herkunft (Mails und Angebote 2026): Aufmass meist innerhalb einer Woche,
+  Verlegung etwa 3 Wochen nach Auftrag, Lexware-Angebot mit fester
+  Gesamtsumme auch fuer Privatkunden, Tragen in obere Etagen je Auftrag
+  geschaetzt. Malerarbeiten nur auf Wohnungsunternehmen und Boden &
+  Malerarbeiten (Einstellung "Malerarbeiten nennen").
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<section class="tp-s-sec tp-s-sec--tight tp-va" aria-labelledby="tp-va-titel-{{ section.id }}">
+  <div class="tp-s-wrap">
+    <h2 id="tp-va-titel-{{ section.id }}" class="tp-s-h2">Termine und Angebot</h2>
+    <ul class="tp-va__liste" role="list">
+      <li class="tp-va__punkt">
+        <strong>Aufmaß</strong>
+        <span>Meist innerhalb einer Woche nach Ihrer Anfrage.</span>
+      </li>
+      <li class="tp-va__punkt">
+        <strong>Verbindliches Festpreisangebot</strong>
+        <span>Nach dem Aufmaß erhalten Sie ein verbindliches Festpreisangebot – auch als Privatkunde.</span>
+      </li>
+      <li class="tp-va__punkt">
+        <strong>Verlegung</strong>
+        <span>In der Regel etwa 3 Wochen nach Auftrag.</span>
+      </li>
+      <li class="tp-va__punkt">
+        <strong>Lieferung</strong>
+        <span>Ebenerdig bzw. in die Wohnung, obere Etagen gegen Aufpreis nach Absprache.</span>
+      </li>
+      {%- if section.settings.maler -%}
+        <li class="tp-va__punkt">
+          <strong>Malerarbeiten</strong>
+          <span>Auf Wunsch übernehmen wir auch Maler- und Tapezierarbeiten (innen), zum Beispiel beim Wohnungswechsel – teils zusammen mit einem Partnerbetrieb. Ihr Ansprechpartner bleiben wir.</span>
+        </li>
+      {%- endif -%}
+    </ul>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-va__liste {
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .tp-va__punkt {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 20px;
+    border: 1px solid var(--tp-line, #e6e0d8);
+    border-radius: var(--tp-r, 10px);
+    background: #fff;
+  }
+  .tp-va__punkt strong {
+    font-size: var(--tp-fs-md);
+    font-weight: 600;
+    color: var(--tp-ink, #1d1a17);
+  }
+  .tp-va__punkt span {
+    font-size: var(--tp-fs-md);
+    line-height: 1.5;
+    color: var(--tp-ink-2, #4a443f);
+  }
+  @media (max-width: 749px) {
+    .tp-va__liste { grid-template-columns: 1fr; }
+    .tp-va__punkt { padding: 14px 16px; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Termine und Angebot",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Gleicher Wortlaut auf allen Verlegeseiten (w-173). Texte im Code: sections/tp-verlege-ablauf.liquid."
+    },
+    {
+      "type": "checkbox",
+      "id": "maler",
+      "label": "Malerarbeiten nennen",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Termine und Angebot"
+    }
+  ]
+}
+{% endschema %}
