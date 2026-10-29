@@ -85,10 +85,12 @@
     "personen": "",
     "material": [],
     "cta": [
-      "verlegeservice"
+      "verlegeservice",
+      "muster",
+      "zubehoer"
     ],
-    "kollektion": "",
-    "zubehoer_kollektion": "",
+    "kollektion": "teppichboden",
+    "zubehoer_kollektion": "zubehoer-kleber-fixierung",
     "geprueft_von": "",
     "stand": ""
   },

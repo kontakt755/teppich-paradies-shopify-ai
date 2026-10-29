@@ -15,7 +15,7 @@
         "image": "shopify://shop_images/linoleumboden-kueche-salbeigruen.jpg",
         "eyebrow": "Bodenbeläge entdecken",
         "heading": "Linoleumboden",
-        "lead": "<p>Linoleum-Qualitäten mit unterschiedlichen Farbauswahlen und belegten Nutzungsklassen. Sehen Sie die Materialstruktur und wählen Sie Ihren Favoriten.</p>",
+        "lead": "<p>Linoleumboden von der Rolle mit belegten Nutzungsklassen und vielen Farbtönen. Bei den meisten Qualitäten bestellen Sie vorab ein kostenloses Muster; rund um Oranienburg verlegen wir auf Anfrage auch für Sie.</p>",
         "primary_label": "Qualitäten ansehen",
         "secondary_label": "Beratung anfragen",
         "secondary_link": "/pages/kontakt",
@@ -237,11 +237,27 @@
             "question": "Welche Rollenbreite ist erhältlich?",
             "answer": "<p>Die Rollenbreite ist am Produkt angegeben. Bereiten Sie Ihre Raummaße vor; unsere Beratung hilft bei Fragen zur passenden Qualität und benötigten Menge.</p>"
           }
+        },
+        "faq_3": {
+          "type": "faq",
+          "settings": {
+            "question": "Woraus besteht Linoleum?",
+            "answer": "<p>Linoleum wird aus Leinöl, Harzen, Holz- oder Korkmehl, Kalksteinmehl und Farbpigmenten hergestellt und auf einen Träger gewalzt. Welcher Rücken und welche Nutzungsklasse zu einer Qualität gehören, steht am Produkt.</p>"
+          }
+        },
+        "faq_4": {
+          "type": "faq",
+          "settings": {
+            "question": "Kann ich Linoleum verlegen lassen?",
+            "answer": "<p>Rund um Oranienburg verlegen wir auf Anfrage auch Linoleum. Linoleum von der Rolle wird in der Regel vollflächig verklebt; was Ihr Untergrund dafür braucht, klären wir vorab. <a href=\"/pages/kontakt\">Verlegung anfragen</a>.</p>"
+          }
         }
       },
       "block_order": [
         "faq_1",
-        "faq_2"
+        "faq_2",
+        "faq_3",
+        "faq_4"
       ]
     },
     "auswahl": {
