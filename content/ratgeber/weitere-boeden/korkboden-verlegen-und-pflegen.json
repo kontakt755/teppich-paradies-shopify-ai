@@ -1,0 +1,188 @@
+{
+  "id": "RAT-WB-003",
+  "handle": "korkboden-verlegen-und-pflegen",
+  "title": "Korkboden verlegen und pflegen: Klickkork und Klebekork",
+  "blog": "ratgeber-weitere-boeden",
+  "tags": [
+    "Verlegen"
+  ],
+  "cluster": "weitere-boeden/kork",
+  "parent": "ratgeber-weitere-boeden",
+  "intent": "anleitung",
+  "frage": "Wie verlege und pflege ich Korkboden?",
+  "begriff": "korkboden verlegen",
+  "nebenfragen": [
+    "Braucht Klickkork eine Dampfbremse?",
+    "Welches Raumklima braucht Kork beim Verlegen?",
+    "Wann wird Klebekork endlackiert?",
+    "Wie reinige ich lackierten Korkboden?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "linoleum-verlegen-und-pflegen",
+    "kautschukboden-verlegen-und-pflegen"
+  ],
+  "naechster_schritt": "sauberlauf-richtig-auslegen-und-pflegen",
+  "lexikon": [
+    "fussbodenheizung",
+    "nutzungsklasse",
+    "stuhlrolleneignung"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Produktseiten Klick-Korkboden: 10,5 mm, 3 mm Korkschicht, werkseitig lackiert, schwimmend, Nutzungsklasse 31, Warmwasser-Fußbodenheizung",
+      "url": "/collections/korkboden-klick"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Produktseiten Klebekork: 4 mm, vorgeleimt, Kontaktkleber, vorlackiert, Endlackierung vorgesehen, Nutzungsklasse 31, Warmwasser-Fußbodenheizung",
+      "url": "/collections/korkboden-kleben"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Produktseite Kork-Kontaktkleber für Klebekork (Verbrauch ca. 125 g/m² je Auftrag)",
+      "url": "/products/kork-kontaktkleber-fuer-klebekork"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Produktseite PE-Folie als Dampfbremse (0,2 mm Nennstärke, ca. 170 µm, Sd-Wert ca. 100 m, empfohlenes Zubehör Alu-Dichtband)",
+      "url": "/products/dampfbremse-pe-folie-0-2-mm"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "TKB-Merkblatt 5 Korkbeläge (Industrieverband Klebstoffe): Akklimatisieren, Raumklima, Spachtelung, Kontaktklebung innerhalb der Einlegezeit, Gummihammer und Nachwalzen, vollflächige Filmverschmelzung, Versiegelung frühestens nach 24 h",
+      "url": "https://www.klebstoffe.com/wp-content/uploads/2023/09/TKB-05-Kork-2018-02-16-Layout-2023.pdf"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Untergrund und Verlegung von Korkbelägen",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/_kork/untergrund-und-verlegung-von-korkbelaegen-151738"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Reinigung von Korkbelägen",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/_kork/reinigung-von-korkbelaegen-1000665"
+    },
+    {
+      "art": "norm",
+      "titel": "DIN 18202 Toleranzen im Hochbau, Tabelle 3 (Ebenheit, Grundlage der Spachteldicke)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/rohdecke/ebenheitstoleranzen-996781"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Klick-Korkboden (Raumklima, PE-Folie mind. 20 cm überlappt und verklebt, keine zusätzliche Trittschalldämmung, Versatz mind. 30 cm, letzte Reihe mind. 5 cm, Heizungsrohre, Fußbodenheizung vor und nach dem Verlegen abschalten, max. 28 °C, Fugen in der Heizperiode)",
+      "url": "https://www.deinetuer.at/media/wysiwyg/Datenblaetter/Wicanders/Corkloc.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Klick-Korkboden (0,2 mm PE-Folie, 30 cm Überlappung, keine zusätzliche Dämmunterlage bei integrierter Korkdämmung, Federseite zur Wand, Dehnungsprofile ab 10 m, Türübergänge, Versatz 40 cm, Ware vor dem Verlegen prüfen, Pflege, Fugen schließen sich nach der Heizperiode)",
+      "url": "https://static.koempf24.de/media/wysiwyg/Koempf24/Boden/Verlegeanleitungen/haro/HARO-Verlegeanleitung-Corkett-Lock-Connectplus.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Kork-Klickboden (keine PE-Folie auf Holz und OSB, Einbauten zuerst, Farbschwankungen)",
+      "url": "https://www.deinetuer.ch/media/wysiwyg/Datenblaetter/Wicanders/Verlegeanleitung/Verlegeanleitung-Start%20Green,%20Go,%20Essence,%20Natural,%20Resist%20Eco,%20Start%20Resist%20Eco-optimiert.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Datenblatt Dispersions-Kontaktklebstoff für Korkplatten (angeschliffene Spachtelmasse mit Vorstrich grundieren und durchtrocknen lassen, vorbeschichtete Platten, Einlegezeit dann 1–1,5 h statt 2–3 h, ablüften bis transparent, Gummihammer)",
+      "url": "https://www.bodenfuchs24.de/mediafiles/Unterlagen-Bodenbelag/KWG/WAKOL_D_3540_Produktdatenblatt.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Korkboden, Klick- und Klebevariante (Spachtelmasse vollständig trocknen lassen, Fußbodenheizung beim Verlegen ca. 18 °C, Endlackierung nach 24 h, Kleberflecken anschleifen, 1–2 Lackschichten bei vorlackiertem Kork, nur empfohlene Lacke nach Anweisung des Lacklieferanten, Schmutz wirkt wie Schleifpapier, keine Gummi- oder Latexmatten)",
+      "url": "https://media.bodenhaus.de/bh/installationmanual/as.118982557.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Reinigung und Pflege von Korkböden (Filzgleiter, Rollen Typ W, keine Scheuermilch oder Lösungsmittel, Farbveränderung durch Licht)",
+      "url": "https://www.bauer-fussboden.de/wp-content/uploads/2025/05/Cortex-Reinigung-Pflege.pdf"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Klickkork: Längsseite einsetzen und absenken",
+      "status": "offen"
+    },
+    {
+      "zweck": "PE-Folie mit Überlappung, an der Wand hochgezogen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Kontaktkleber mit kurzfloriger Walze auf dem gespachtelten Untergrund",
+      "status": "offen"
+    },
+    {
+      "zweck": "Klebekork wird endlackiert",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-10-29",
+    "grund": "Verlegeregeln für Kork sind stabil; Produktdaten, Kleber- und Lackangaben bei der Prüfung gegen den Shop abgleichen"
+  },
+  "expert_input": [
+    "Welche Randfugenbreite und welchen Mindestversatz der Kopfstöße verlangt die Verlegeanleitung unseres Klickkorks?",
+    "Hat unser Klickkork eine integrierte Dämm- bzw. Korkunterlage? Ist eine zusätzliche Trittschallunterlage erlaubt oder verboten, und welche aus dem Shop passt?",
+    "Ist unsere PE-Folie (0,2 mm Nennstärke, gemessen ca. 170 µm, Sd-Wert ca. 100 m) für unseren Klickkork zugelassen? Womit kleben Sie die Stöße ab (die Produktseite der Folie empfiehlt Alu-Dichtband)?",
+    "Heizungsrohre im Klickkork: Sägen Sie die Platte von der Bohrung zur Kante durch und kleben das Stück wieder ein? Mit welchem Kleber?",
+    "Welche Ebenheit verlangen Sie für Klickkork? Spachteln Sie bei Klebekork grundsätzlich vollflächig, und mit welcher Schichtdicke?",
+    "Kontaktkleber für Klebekork: ein oder zwei Aufträge auf den Untergrund ('125 g/m² je Auftrag')? Grundieren Sie vorher? Welche Ablüft- und Einlegezeit steht auf dem Gebinde?",
+    "Wie lange ist die Vorleimung der Klebekork-Platten haltbar, und steht ein Datum auf dem Paket?",
+    "Endlackierung Klebekork: Welchen Lack nehmen Sie, wie viele Schichten, mit Zwischenschliff? Wann dürfen Möbel und Teppiche wieder auf den Boden? Bieten wir die Endlackierung als Leistung an, und raten wir Heimwerkern davon ab?",
+    "Shop-Entscheidung PDF-Ratgeber Kork: Dort steht 'Kork dunkelt unter Sonne etwas nach', beide Herstellerquellen sagen 'Kork neigt dazu, heller zu werden'. Vorschlag für das PDF: 'Kork kann unter Sonne seine Farbe verändern, meist wird er heller. Vor starker Sonne schützen, Teppiche ab und zu verschieben.' Erst danach darf der Online-Artikel 'meist heller' übernehmen (bis dahin bleibt er bei 'verändert seine Farbe').",
+    "Federn Druckstellen bei unserem Kork zurück? Gibt es dazu eine Herstellerangabe?",
+    "Welche Pflegemittel empfehlen Sie für die werkseitig lackierte Oberfläche des Klickkorks und für den endlackierten Klebekork? Ist eine Erstpflege nötig?",
+    "Lässt sich der werkseitige Lack des Klickkorks bei Abnutzung nachlackieren, oder gilt das nur für endlackierten Klebekork?",
+    "Welche maximale Oberflächentemperatur nennt die Anleitung unserer Ware bei Fußbodenheizung? Ist elektrische Fußbodenheizung ausgeschlossen?",
+    "Verlegen Sie Kork in Bad oder Küche, und wenn ja, nur Klebekork mit Endlack?",
+    "Darf Klickkork auf alten PVC- oder Fliesenbelägen liegen bleiben, oder muss der Altbelag raus?",
+    "Legen Sie bei Holzuntergründen ebenfalls keine PE-Folie unter den Klickkork?",
+    "Werte für die Metafelder dauer, schwierigkeit und personen (je Raumgröße), getrennt nach Klick und Klebe?",
+    "Shop-Entscheidung: Die Seite /pages/boden-malerarbeiten nennt Kork nicht. Soll Kork dort ergänzt werden, damit die CTA 'verlegeservice' und der Tipp im Artikel passen?",
+    "Shop-Entscheidung: Muster bei Kork gibt es nur auf Anfrage. CTA 'muster' bleibt weg; im Text steht ein Link 'Muster anfragen' auf /pages/kontakt?thema=musteranfrage. So lassen?",
+    "Soll der Shop einen für Kork freigegebenen Endlack führen? Derzeit gibt es keinen, obwohl die Klebekork-Seiten eine Endlackierung vorsehen."
+  ],
+  "excerpt": "Klickkork schwimmend verlegen, Klebekork verkleben und endlackieren: welches Raumklima Kork braucht, was der Untergrund können muss und wie Sie die Lackoberfläche pflegen.",
+  "seo": {
+    "title": "Korkboden verlegen und pflegen: Klick- und Klebekork",
+    "description": "Klickkork schwimmend verlegen, Klebekork mit Kontaktkleber verkleben und endlackieren: Raumklima, Untergrund, Schritte und Pflege der Lackoberfläche."
+  },
+  "metafields": {
+    "kurzantwort": "Klickkork wird schwimmend und ohne Leim verlegt, auf Estrich mit einer PE-Folie als Dampfbremse und mit Wandabstand rundum. Klebekork wird auf glatt gespachteltem Untergrund vollflächig mit Kontaktkleber verklebt und frühestens 24 Stunden später endlackiert. Beim Verlegen brauchen beide mindestens 18 °C und möglichst 40 bis 65 % Luftfeuchte. Gereinigt wird trocken und höchstens nebelfeucht, ohne Dampfreiniger.",
+    "art": "Anleitung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [
+      "Stichsäge oder feinzahnige Handsäge",
+      "Winkel, Bleistift und Zollstock",
+      "Verlegeset mit Schlagklotz, Zugeisen und Abstandskeilen",
+      "Bohrmaschine mit Bohrer für die Heizungsrohre (Klickkork)",
+      "PE-Folie 0,2 mm als Dampfbremse (Klickkork auf mineralischem Untergrund)",
+      "Klebeband zum Abdichten der Folienstöße, z. B. Alu-Dichtband (Klickkork)",
+      "Grundierung bzw. Vorstrich nach Angabe von Spachtel- und Kleberhersteller (Klebekork)",
+      "Spachtelmasse und Glättkelle für den Untergrund (Klebekork)",
+      "Cuttermesser (Klebekork)",
+      "Kontaktkleber für Klebekork",
+      "kurzflorige Walze für den Kleber (Klebekork)",
+      "Gummihammer und Andrückwalze (Klebekork)",
+      "Schleifpapier für Kleberflecken vor dem Lackieren (Klebekork)",
+      "für Kork empfohlener Lack zur Endlackierung (Klebekork)"
+    ],
+    "cta": [
+      "verlegeservice",
+      "zubehoer"
+    ],
+    "kollektion": "korkboden",
+    "zubehoer_kollektion": "zubehoer",
+    "geprueft_von": "",
+    "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/quercina-kork-creme-klebekork-4mm-raum-1.jpg",
+    "alt": "Helles Schlafzimmer mit Korkboden in Creme, darauf ein Rattansessel, ein Sitzhocker und ein Bett auf einem blauen Teppich"
+  }
+}

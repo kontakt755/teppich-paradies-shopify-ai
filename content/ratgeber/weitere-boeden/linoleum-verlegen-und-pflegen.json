@@ -1,0 +1,176 @@
+{
+  "id": "RAT-WB-001",
+  "handle": "linoleum-verlegen-und-pflegen",
+  "title": "Linoleum verlegen und pflegen: Kleben, Nähte, Reifeschleier",
+  "blog": "ratgeber-weitere-boeden",
+  "tags": [
+    "Verlegen"
+  ],
+  "cluster": "weitere-boeden/linoleum",
+  "parent": "ratgeber-weitere-boeden",
+  "intent": "anleitung",
+  "frage": "Wie wird Linoleum verlegt und richtig gepflegt?",
+  "begriff": "linoleum verlegen",
+  "nebenfragen": [
+    "Muss Linoleum vollflächig geklebt werden?",
+    "Müssen die Nähte bei Linoleum verschweißt werden?",
+    "Warum ist neues Linoleum gelblich?",
+    "Welcher Reiniger ist für Linoleum geeignet?",
+    "Ist Linoleum für Fußbodenheizung geeignet?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "korkboden-verlegen-und-pflegen",
+    "kautschukboden-verlegen-und-pflegen"
+  ],
+  "naechster_schritt": "sauberlauf-richtig-auslegen-und-pflegen",
+  "lexikon": [
+    "fussbodenheizung",
+    "rollenbreite",
+    "stuhlrolleneignung"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Linoleumböden im Shop: Rollenware 200 cm, 2,5 mm, laut Produktseite fußbodenheizungsgeeignet, Muster nur für einen Teil der Linien (Abfrage 2026-10-29)",
+      "url": "/collections/linoleumboden-1"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Linoleum-Dispersionsklebstoffe im Shop (für gespachtelte, ebene, saugfähige Untergründe)",
+      "url": "/collections/zubehoer-kleber-fixierung"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "TKB-Merkblatt 4: Kleben von Linoleum-Bodenbelägen (Industrieverband Klebstoffe, Stand August 2016) – Lagerung, Akklimatisierung, Raumklima, Spachteln, Zuschnitt, Kleben, Walzen, Nähte, Verfugung, Stuhlrollen",
+      "url": "https://www.klebstoffe.com/wp-content/uploads/2020/04/TKB_4.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Linoleum-Bahnenware eines Belagherstellers (Stand 11/2025) – Reklamation vor dem Verlegen, Rollennummern, Zugabe beim Zuschnitt, 24 h Akklimatisierung, richtungsgleiche Verlegung, Fußbodenheizung max. 29 °C",
+      "url": "https://forbo.blob.core.windows.net/forbodocuments/e29ffd84-9e43-4995-9ca0-2ff9af8d973f/Forbo_Verlegeanleitung_Marmoleum-Bahnenware_202511.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Linoleum eines Belagherstellers (Stand 08/2025) – Spachteln ca. 3 mm, nicht auf Altbeläge oder nicht freigegebene Unterlagen, Kreide, kein Klebeband auf dem Belag, Nähte verfugen, gestürzte Verlegung, Fußbodenheizung max. 27 °C, Reifeschleier meist binnen 24 h, Nutzung 24 h nach dem Verschweißen, Sand und Späne",
+      "url": "https://www.heinze.de/m2/68/64068/etc/19/49858419.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Reinigungs- und Pflegeanweisung Linoleum eines Belagherstellers (Stand 09/2023) – pH 9, nebelfeucht, Erstpflege, Pflegefilmsanierung, Sand und Späne, eingefärbtes Gummi (auch Schmutzfangmatten) und Terrakotta",
+      "url": "https://www.heinze.de/m2/68/64068/etc/87/50343987.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Reinigung und Pflege Linoleum eines Belagherstellers (Stand 03/2022) – werkseitige Oberflächenvergütung, nebelfeucht, Polieren gleicht kleine Kratzer an, Staufeuchte, Gleiter, Stuhlrollen Typ W, keine Scheuerpulver, Laugen oder starken Lösungsmittel",
+      "url": "https://forbo.blob.core.windows.net/forbodocuments/28f19f35-115f-4743-aab7-40383be317dd/Forbo_Linoleum_Reinigung-Pflege_202204.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Infoblatt Trockenkammerfilm (Reifeschleier) eines Belagherstellers (Stand 05/2026) – bis 98 % nachwachsende Rohstoffe, direkte Sonne einige Stunden, schlecht beleuchtete Räume einige Wochen, Muster vor der Farbwahl ins Tageslicht",
+      "url": "https://forbo.blob.core.windows.net/forbodocuments/6d3fd4ff-462e-48fd-b175-ad39af42ebad/Forbo_Infoblatt_Trockenkammerfilm_202605.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Cleaning & Maintenance Guide Linoleum eines Belagherstellers (EN, 2016) – 3 Tage nach dem Verlegen nicht nass reinigen, Neutralreiniger, keine Scheuermittel, Polieren gleicht Kratzer an, neue Mittel an Reststück testen",
+      "url": "https://forbo.blob.core.windows.net/forbodocuments/21615/Marmoleum%20-%20cleaning%20&%20maintenance.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Produktdatenblatt Linoleum-Dispersionsklebstoff (Stand 02.03.2023) – Kleberreste, Nahtverschluss frühestens nach 24 h, Schutzabdeckung frühestens nach 72 h",
+      "url": "https://deu.sika.com/dam/dms/de-schoenox/m/pds-schoenox-linoxtreme.pdf"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen: Reifeschleier",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/_linoleum/reifeschleier-957345"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen, Glossar: Eigengeruch",
+      "url": "https://www.baunetzwissen.de/glossar/e/eigengeruch-975077"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen: Reinigung und Pflege von Linoleum (pH 9, keine Schmierseife, Feuchtwischen)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/_linoleum/reinigung-und-pflege-von-linoleum-151702"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Linoleumrolle stehend im Raum beim Akklimatisieren",
+      "status": "offen"
+    },
+    {
+      "zweck": "Bahn zur Hälfte zurückgeschlagen, Kleber mit dem Zahnspachtel aufgetragen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Naht beim Verschweißen mit Schmelzdraht",
+      "status": "offen"
+    },
+    {
+      "zweck": "Reifeschleier: belichtete und abgedeckte Stelle nebeneinander",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-10-29",
+    "grund": "Fachregeln zum Kleben von Linoleum ändern sich selten; Herstellerangaben, Kleber und Sortiment im Shop prüfen"
+  },
+  "expert_input": [
+    "Verlegerichtung: Legen Sie Linoleum-Bahnen gleichlaufend oder gestürzt (gegenläufig)? Ein Hersteller verlangt richtungsgleich, ein anderer gestürzt. Der freigegebene Kurz-Ratgeber sagt pauschal 'Alle Bahnen in derselben Richtung'. Muss das je Linie korrigiert werden? (Vorschlag Faktenprüfung für das PDF: 'Verlegerichtung nach Herstellerangabe, gleichlaufend oder gestürzt'.)",
+    "Für Inhaber/Redaktion: Der freigegebene Kurz-Ratgeber (PDF) sagt zum Reifeschleier 'Unter Tageslicht verschwindet er nach einigen Wochen'. Die Herstellerangaben nennen in direkter Sonne einige Stunden, bei Tageslicht meist binnen 24 Stunden, nur bei wenig Licht einige Wochen. Der Online-Text widerspricht dem PDF bis zur Entscheidung nicht: Er nennt nur 'direkte Sonne einige Stunden, wenig Licht einige Wochen' (Gesamtprüfung 2026-10-29); 'bei Tageslicht meist binnen 24 Stunden' (Herstellerangabe, belegt) kommt erst nach der PDF-Änderung hinzu. Soll der PDF-Satz angepasst werden (z. B. 'Unter Tageslicht verschwindet er meist innerhalb eines Tages, bei wenig Licht kann es Wochen dauern – das ist kein Mangel')? Braucht Freigabe, danach npm run ratgeber:pdf.",
+    "Fußbodenheizung: Ein Hersteller nennt höchstens 27 °C Oberflächentemperatur, ein anderer (Stand 11/2025) 29 °C. Welcher Wert gilt für unsere Linien?",
+    "Sauberlauf: Gibt es in zubehoer-sauberlauf Matten ohne eingefärbten Gummirücken, die für Linoleum geeignet sind? Dann könnte der Artikel die Zubehör-CTA auf zubehoer-sauberlauf tragen (derzeit keine CTA, weil der Kleber-Verweis nicht zur Aussage 'Kleben macht der Fachbetrieb' passt).",
+    "Verschweißen Sie die Nähte im Wohnbereich immer, oder stoßen Sie sie auch stumpf ohne Verfugung?",
+    "Wie lange warten Sie nach dem Kleben bis zum Verschweißen (24 h oder 2–3 Tage)? Ab wann dürfen Kunden den Boden belasten, Möbel stellen und erstmals feucht wischen?",
+    "Spachteln Sie vor Linoleum grundsätzlich vollflächig? Mit welcher Schichtdicke und welcher Grundierung?",
+    "Mit welchem Verfahren messen Sie die Restfeuchte, und welche Grenzwerte setzen Sie an?",
+    "Fußbodenheizung: Läuft die Heizung bei Ihnen während der Verlegung mit 18–22 °C (Fachregel, ein Hersteller) oder bleibt sie 48 h aus (anderer Hersteller)? Ist Elektro-Fußbodenheizung für unsere Linien freigegeben (ältere Shoptexte sagen ja)?",
+    "Raten Sie bei Linoleum von Dampfreinigern ab? Es fehlt ein Hersteller-Beleg, der Kurz-Ratgeber nennt es aber.",
+    "Wer macht nach der Verlegung die Bauschlussreinigung? Welches Pflegemittel empfehlen Sie Kunden, und ist der PU-Reiniger aus dem Shop dafür geeignet (pH-Wert unbekannt)?",
+    "Welchen der beiden Linoleumkleber aus dem Shop verwenden Sie für welche Linie, und ist der Kleber vom jeweiligen Belagshersteller freigegeben?",
+    "Verlegen Sie Linoleum jemals auf alte Beläge (z. B. Fliesen)? Ein Hersteller schließt das aus.",
+    "Wer sorgt für die 24 h Akklimatisierung: liefern Sie vorab, oder lagert der Kunde die Rolle?",
+    "Reifeschleier: Weisen Sie Kunden bei der Übergabe darauf hin? Gibt es einen Hausrat (z. B. Räume hell halten)?",
+    "Für Inhaber/Redaktion: Soll der Artikel die CTA 'verlegeservice' tragen? Sie führt zu /pages/liefer-verlegeservice, wo Linoleum bewusst ausgenommen ist. Derzeit nur Textlink auf /pages/boden-malerarbeiten.",
+    "Für Inhaber/Redaktion: Muster gibt es nur für 9 der 14 Linien. Soll der Artikel die Muster-CTA trotzdem tragen? Derzeit nur Textlink im Tipp zum Reifeschleier.",
+    "Für Inhaber/Redaktion: Darf der Kleberhersteller (im Shop gelistet, nicht auf der Sperrliste) als Quelle in quellen stehen? Derzeit mit neutralem Titel, Hersteller nur in der URL."
+  ],
+  "excerpt": "Linoleum-Bahnen werden vollflächig geklebt, die Nähte je nach Nutzung und Hersteller verschweißt. Der gelbliche Reifeschleier verschwindet unter Licht, gereinigt wird pH-neutral, nie mit Lauge.",
+  "seo": {
+    "title": "Linoleum verlegen und pflegen: Kleben, Nähte, Reiniger",
+    "description": "Linoleum-Bahnen werden vollflächig geklebt, Nähte oft verschweißt. Der Reifeschleier verschwindet unter Licht, gereinigt wird pH-neutral, nie mit Lauge."
+  },
+  "metafields": {
+    "kurzantwort": "Linoleum-Rollenware wird vollflächig auf einen ebenen, trockenen, saugfähigen und meist gespachtelten Untergrund geklebt. Das Kleben und das Verschweißen der Nähte übernimmt der Fachbetrieb, nachdem das Material mindestens 24 Stunden im Raum gelagert hat. Ein Gelbstich nach dem Verlegen ist meist der Reifeschleier und verschwindet unter Licht. Gereinigt wird pH-neutral, nie mit Lauge oder Schmierseife.",
+    "art": "Anleitung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [
+      "Linoleum-Dispersionsklebstoff",
+      "Grundierung und Spachtelmasse laut Merkblatt",
+      "Zahnspachtel mit der Zahnung laut Kleber (Fachregel: B1)",
+      "Kantenschneider und Hakenklinge",
+      "Nahtanreißer",
+      "Anreibebrett",
+      "schwere, mehrgliedrige Walze",
+      "Fugenfräse oder Fugenzieher",
+      "Schweißgerät mit Schnellschweißdüse und Schmelzdraht",
+      "Abstoßmesser",
+      "weiße Kreide zum Markieren"
+    ],
+    "cta": [],
+    "kollektion": "linoleumboden-1",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ibrovano-linoleumboden-200cm-taupe-raumbild.jpg?v=1791658394",
+    "alt": "Marmorierter Linoleumboden in Taupe auf einer hellen Galerie mit Glasgeländer"
+  }
+}
