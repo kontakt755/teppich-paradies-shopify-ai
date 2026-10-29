@@ -18,6 +18,10 @@ import { musterAutomatikBlock } from '../bausteine/muster-bestellanzeige.mjs';
  * Sprungfelder (die Zahlen stehen jetzt an den Sicht-Chips), die Spalte "Wir sind dran" und
  * die leeren Bloecke "Laden nicht eingerichtet"/"Montage noch nicht verbunden".
  *
+ * Shop-Übersicht (Standard ohne `sicht`): nur rote To-dos, ganz oben als "Probleme"
+ * (heute/probleme.mjs, w-206) - aus denselben Quellen wie die Gesamtübersicht, damit dort nichts
+ * Rotes steht, was hier fehlt. Gelbes und Normales bleibt hinter "Weitere Bereiche".
+ *
  * To-dos werden nicht erfasst, sondern abgeleitet - diese Datei laedt und zeichnet nur.
  */
 import {
@@ -59,6 +63,7 @@ import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
+import { problemeBlock } from './heute/probleme.mjs';
 
 const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
 const SPALTE_SICHTBAR = 8;
@@ -180,6 +185,7 @@ function viewShop() {
     <header class="heute-geschaeft-kopf shop-start-kopf"><h1>Shop-Übersicht</h1>
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
     </header>
+    ${problemeShop(nf)}
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
     ${inhaberUeberblick()}
     ${musterAutomatikBlock(kunden.bestellungen)}
@@ -201,6 +207,23 @@ function viewShop() {
       </nav>
     </details>
   </div>`;
+}
+
+/**
+ * Rote To-dos oben auf der Shop-Übersicht (w-206): dieselben Quellen wie die Gesamtübersicht,
+ * sonst fehlte hier, was dort rot steht. Der Inhaber sieht alles Rote, egal bei wem es liegt
+ * (wie seine Sicht in lib/todos.mjs fuerSicht); Mitarbeiter nur ihren Bereich - Website- und
+ * Technik-Eintraege gehoeren nicht auf ihre Liste (Wunsch 2026-10-21). Ohne Rot kein Block.
+ * Kundenfaelle und Team-Aufgaben werden hier nicht geladen: ihre To-dos gehoeren in den
+ * Nebenbereich (probleme.mjs, NEBENBEREICH_ARTEN) und wuerden hier nur Abrufe kosten.
+ */
+function problemeShop(nf) {
+  ensureKundenRueckrufe(); ensureShopifyAbgleich();
+  if (darfAnsicht('einkauf')) ensureBelege();
+  if (darfAnsicht('shopwache')) ensureShopwache();
+  const q = quellen();
+  const sicht = istInhaber() ? 'alles' : gewaehlteSicht(q.aufgaben);
+  return problemeBlock(todosDerSicht(sicht, q, nf).liste, { zeile: t => todoZeile(t, false) });
 }
 
 /** Inhaber: Shop, Umsatz, Entscheidungen und Frist in einer Zeile; Kennzahlen klappen darunter auf. */
@@ -227,27 +250,11 @@ function viewAlltag() {
   if (darfAnsicht('einkauf')) { ensureBelege(); ensureEinkaufBestellungen(); }
 
   const q = quellen();
-  const b = benutzer();
   const sicht = gewaehlteSicht(q.aufgaben);
-  // Der Inhaber sieht in jeder Sicht alles darin - nicht nur, was ihm zugewiesen ist.
-  const opt = { sicht, ich: heuteDaten.aufgaben?.ich || b?.kuerzel || b?.name || null, alle: istInhaber(), lieferantName, klartext: hinweisText };
+  const opt = todoOptionen(sicht);
   const nf = nachfassStand(sicht);
   if (nf.alleOffen.length || nf.alle.erledigt.length) ensureHeuteMusterTexte();
-
-  // Nachfragen und Lieferantenbelege gehoeren zum Laden; die Laden-Zahl am Chip zaehlt sie
-  // auch, wenn gerade die Website-Sicht offen ist.
-  const nfLaden = sicht === 'website' ? nachfassStand('laden') : nf;
-  const eigeneLaden = [
-    ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: heuteHref('mn', '1') })),
-    ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
-    ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
-    // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
-    ...shopifyAbgleichTodos(Date.now(), { lieferantName }),
-    // Veraltete Daten: ein To-do fuer den Inhaber, bis der Sync-Dienst wieder liefert (lib/datenstand.mjs).
-    ...(istInhaber() ? datenstandTodo(veralteteQuellen(einkauf.aktualisierung)) : []),
-  ];
-  const eigene = sicht === 'website' ? [] : eigeneLaden;
-  const liste = sortiereTodos([...leiteTodosAb(q, opt), ...eigene]);
+  const { liste, eigeneLaden } = todosDerSicht(sicht, q, nf, opt);
   // Chip-Zahlen zaehlen dasselbe wie die Liste: To-dos der Sicht plus Nachfragen und Belege (Laden).
   const chips = istInhaber() ? chipZahlen(q, opt, eigeneLaden.length) : null;
   const wartet = werWartet(q, { ...opt, nachfassen: new Set(nf.alleOffen.map(e => e.orderId)) });
@@ -271,6 +278,35 @@ function viewAlltag() {
     ${sicht === 'website' ? '' : ladenUndMontage()}
     ${istInhaber() ? kennzahlenBlock() : ''}
   </div>`;
+}
+
+/** Optionen der Ableitung: der Inhaber sieht in jeder Sicht alles darin - nicht nur, was ihm zugewiesen ist. */
+function todoOptionen(sicht) {
+  const b = benutzer();
+  return { sicht, ich: heuteDaten.aufgaben?.ich || b?.kuerzel || b?.name || null, alle: istInhaber(), lieferantName, klartext: hinweisText };
+}
+
+/**
+ * Die To-do-Liste einer Sicht: abgeleitete To-dos (lib/todos.mjs) plus die Zeilen, die nur diese
+ * Ansicht kennt - Nachfragen, bei denen ein Mensch ran muss, Versandfehler, Lieferantenbelege,
+ * der Abgleich mit Shopify und der veraltete Datenstand (Inhaber). Nachfragen und Belege gehoeren
+ * zum Laden; die Laden-Zahl am Chip zaehlt sie auch, wenn gerade die Website-Sicht offen ist,
+ * deshalb kommt `eigeneLaden` getrennt zurueck. Shop-Übersicht und Alltagssichten rechnen hier
+ * dasselbe - was dort rot ist, ist es auch oben auf der Startseite.
+ */
+function todosDerSicht(sicht, q, nf, opt = todoOptionen(sicht)) {
+  const nfLaden = sicht === 'website' ? nachfassStand('laden') : nf;
+  const eigeneLaden = [
+    ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: heuteHref('mn', '1') })),
+    ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
+    ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
+    // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
+    ...shopifyAbgleichTodos(Date.now(), { lieferantName }),
+    // Veraltete Daten: ein To-do fuer den Inhaber, bis der Sync-Dienst wieder liefert (lib/datenstand.mjs).
+    ...(istInhaber() ? datenstandTodo(veralteteQuellen(einkauf.aktualisierung)) : []),
+  ];
+  const eigene = sicht === 'website' ? [] : eigeneLaden;
+  return { liste: sortiereTodos([...leiteTodosAb(q, opt), ...eigene]), eigeneLaden };
 }
 
 function chipZahlen(q, opt, laden) {

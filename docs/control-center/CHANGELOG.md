@@ -18,6 +18,46 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** Die Vorlagen kommen aus `domains/shopify/ratgeber-pdf/pdf/`. Nach einer Textänderung
   muss die Datei neu gebaut und auch in Shopify ersetzt werden (README dort).
 
+## 2026-10-29 · Shop-Übersicht: rote To-dos als „Probleme“ ganz oben (w-206)
+
+- **Geaendert:** Fehlersuche vom 28.10. (Werkbank w-206). Seit dem Rundgang vom 26.10. zeigte die
+  Standard-Startseite „Shop-Übersicht“ keine To-do-Liste mehr; rote Meldungen (Mac-Dienst gestört,
+  Speicher fast voll, Sicherung fehlgeschlagen, aus der Bestellung entfernte Positionen,
+  überschrittener Liefertermin) standen nur in den Alltagssichten hinter „Weitere Bereiche“ und
+  wurden übersehen.
+  - Neuer Block „Probleme · N“ direkt unter dem Titel (`ansichten/heute/probleme.mjs`, reine
+    Funktion): nur rote To-dos, drei sichtbar, der Rest klappt auf, ohne Rot kein Block. Die Zeilen
+    zeichnet derselbe `todoZeile()` wie in der Arbeitsliste – Knöpfe und Dialoge („Abhaken…“, „In
+    Shopify nachbuchen“, „Ansehen“) bleiben dieselben.
+  - `heute.mjs`: die Ableitung der Liste einer Sicht steht jetzt einmal in `todosDerSicht()` (To-dos
+    aus `lib/todos.mjs` plus Nachfragen, Versandfehler, Belege, Shopify-Abgleich, Datenstand);
+    Shop-Übersicht und Alltagssichten rechnen dasselbe. Der Inhaber sieht alles Rote (Sicht
+    `alles`, wie seine Sicht in `fuerSicht`), Mitarbeiter ihre Sicht `laden` ohne Website/Technik.
+    Dafür lädt die Shop-Übersicht zusätzlich Rückrufe, Shopify-Abgleich und Lieferantenbelege
+    (lokal, zwischengespeichert – die Alltagssichten brauchen sie ohnehin).
+  - Nicht oben: Laden-/Treppenanfragen, Angebote aus Kundenfällen und Team-Aufgaben
+    (`NEBENBEREICH_ARTEN`), auch wenn rot. Der Inhaber hat sie am 22.10. in „Weitere Bereiche“
+    geschoben, die Anfragen stehen dort mit Zahl und Alter. In der ersten Probe auf der Datenkopie
+    waren sonst 6 von 8 „Problemen“ zwei Wochen alte Treppenanfragen, und die Warenbestellungen
+    rutschten am Handy aus dem Bild. Gelbes und Normales bleibt ebenfalls hinter „Weitere
+    Bereiche“, damit die Warenbestellungen direkt darunter zuerst kommen. Begriff „Probleme“ in
+    `BEGRIFFE.md`.
+- **Getestet:** `shop-start-probleme.test.mjs` neu (nur Rot zählt, ohne Rot kein Block, Zahl und Satz,
+  Aufklappen ab der vierten Zeile, Nebenbereich-Arten bleiben weg), `shop-start.test.mjs` erweitert
+  (Block vor den Warenbestellungen, gelb und Laden-Anfragen bleiben weg, derselbe Abhaken-Knopf,
+  Inhaber `alles`/Mitarbeiter `laden`, Shop-Kontrolle nur beim Inhaber, Kundenfälle/Aufgaben nicht
+  geladen, übrige Reihenfolge unverändert). `npm run -s dashboard:test` grün (1060 Tests, 1060 bestanden, 0 fehlgeschlagen; ein Zeitfenster-Test der Aktualisierung schlug nur einmal unter Last durch den parallelen Puppeteer-Lauf fehl, isoliert und im zweiten Lauf grün).
+  Klickprüfung gegen die Datenkopie (`dashboard:pruefen -- --offen --rollen`, Heute bei 390 und
+  1440 px, Rollen Inhaber/Mitarbeiter/lesen): Inhaber „Probleme · 3“ (Muster bei drei Lieferanten seit
+  14–30 Tagen nicht bestellt), Mitarbeiter „Probleme · 1“ („Aus Bestellung entfernt: #1056 –
+  Lieferantenbestellung stornieren?“ mit „Abhaken…“), Warenbestellungen direkt darunter, 0 px
+  Überlauf bei 390 px, keine JS-Fehler. Vor der Nebenbereich-Regel standen dort 8 Probleme, davon 6
+  Treppenanfragen. Der Puppeteer-Browser der Prüfung schloss sich unter Last zweimal nicht
+  rechtzeitig (Exit 2, 3 s Frist in `dashboard-pruefung-lauf.mjs`); die Screenshots lagen trotzdem vor.
+- **Risiken:** Eine rote Treppenanfrage oder überfällige Team-Aufgabe steht weiter nur hinter
+  „Weitere Bereiche“ (bewusst, Inhaber 22.10.); wer sie oben erwartet, findet dort nur die Zahl der
+  Anfragen. Schlägt eine Quelle fehl, fehlt ihr rotes To-do oben still; die Datenzeile und die
+  Alltagssichten melden den Ausfall weiter.
 ## 2026-10-28 · Nachfass-Mails: Firmenangaben unter dem Gruß (Werkbank w-172 Punkt 2, #1772)
 
 - **Geaendert:** Die Nachfass-Mails („Muster nachfassen“) endeten ohne Rechtsform, Anschrift,

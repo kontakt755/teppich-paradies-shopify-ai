@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.preisfilter</string>
+
+  <!-- Preisfilter Teppichboden (scripts/preisfilter-abgleich.mjs, Werkbank w-189):
+       haelt das Produkt-Metafeld custom.meterpreis_bereich ("Preis je m2", Quelle des
+       Search-&-Discovery-Filters) deckungsgleich mit dem aktuellen Meterpreis der
+       Karte. Liest alle Teppichboeden, schreibt nur Abweichungen (idempotent), prueft
+       per frischem Export gegen. Stuendlich, damit Preislaeufe (Rueckstellung,
+       Angebotswellen, Einzelpreise) hoechstens eine Stunde nachhaengen.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard (Shopify-Zugang aus dessen .env.local).
+       Einrichten: Platzhalter __HOME__ ersetzen, nach ~/Library/LaunchAgents kopieren,
+       launchctl bootstrap gui/$(id -u) <datei>. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; exec npm run -s preisfilter:abgleich -- --schreiben --still</string>
+  </array>
+
+  <!-- Jede Stunde; kein RunAtLoad: der Lauf schreibt in den Shop. --still laesst
+       Leerlaeufe ohne Protokollzeile, Stand in ~/teppich-paradies-analyse/preisfilter/stand.json. -->
+  <key>StartInterval</key><integer>3600</integer>
+  <key>RunAtLoad</key><false/>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/preisfilter/abgleich.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/preisfilter/abgleich.log</string>
+</dict>
+</plist>

@@ -100,6 +100,9 @@ gebraeuchlich), Erfassen.
 - **Muster bestellen** = offene Muster je Lieferant vorbereiten; vorhandener Dialog,
   Bestellstand erst nach bewusster Bestaetigung. Allgemeiner Einkauf bleibt unter „Kunden & Einkauf“.
 - **Weitere Aufgaben heute** = uebrige Tagesaufgaben unter der priorisierten Bestellarbeit.
+- **Probleme** (Shop-Übersicht, seit 29.10., w-206) = nur die roten To-dos, ganz oben; „Rot heißt: das muss
+  heute jemand lösen.“ Gelbes und Normales sowie Laden-Anfragen, Angebote und Team-Aufgaben bleiben
+  unter „Weitere Bereiche“.
 - **Arbeitsliste** in der Packstation = Alle offenen (Standard) oder jeweils Packbereit / Wartet auf Ware /
   Zu klaeren / Gepackt; die Suche beruecksichtigt alle vier Listen und liest auch Hersteller, Produkt und Farbnummer.
 - **Weitere Filter** = zusaetzliche Bestellfilter; vier Hauptfilter bleiben direkt sichtbar.

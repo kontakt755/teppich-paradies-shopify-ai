@@ -525,7 +525,7 @@ test('Vinyl im Finder: gleiche Bodenarten in allen Templates, Preis je m² gerec
   // Teppichboden bleibt beim Shopify-Preisfilter.
   finder.forEach(([, s]) => assert.notEqual(s.blocks.art_teppichboden.settings.budget_preis, 'rechnen'));
   // Der Preisfilter der Vinyl-Kategorie bleibt ausgeblendet.
-  assert.match(lesen('blocks/filters.liquid'), /tp_preisfilter_aus = '[^']*\bvinylboden-1\b/);
+  assert.match(lesen('snippets/tp-preisfilter-versteckt.liquid'), /tp_pv_aus = '[^']*\bvinylboden-1\b/);
 });
 
 test('Ansichten des Finders: Preise je m² in eigener Ansicht, Treffer-Seitengroesse bekannt', () => {
