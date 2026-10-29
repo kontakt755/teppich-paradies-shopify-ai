@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · Rote Betriebsmeldungen mit Weg, Entfernt-Zeile kürzer
+
+- **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde A5, A7, A1, A12, vom Kritiker bestätigt bzw.
+  teilweise bestätigt).
+  - „Mac-Dienst gestört“ (rot) hatte keinen Knopf und nannte nur die erste Routine und „+3 weitere“;
+    die Shop-Kontrolle listete keine Routinen. Jetzt: `gestoerteRoutinen()` in `lib/todos.mjs` für To-do
+    und Shop-Kontrolle; das To-do nennt alle, „Claude Bescheid geben: „Mac-Dienst gestört““ und den
+    Knopf „Ansehen“ → `#/shopwache`; dort ein roter Kasten mit jeder gestörten Routine (nur bei Störung).
+  - Speicher-Hinweis: „Alte Bildordner auslagern (nach Rückfrage)“ widersprach w-170 (Aufräumen am 28.10.
+    an Claude gegeben). Neu: „Claude Bescheid geben: „Speicher aufräumen“ – Claude lagert nur aus, was
+    sich wiederherstellen lässt.“ Gilt für To-do und Shop-Kontrolle (ein Text).
+  - „Aus Bestellung entfernt“: die Zeile führte die Artikelnamen mit und war am Handy rund 260 px hoch.
+    Jetzt nur Kunde, Anzahl, Lieferant, Datum; die Artikel stehen im Dialog „Abhaken…“, der zusätzlich
+    „Bestellung ansehen“ verlinkt (vorher nur über den Tooltip bzw. gar nicht erreichbar).
+- **Getestet:** `todos.test.mjs` angepasst und neu (Knopf, alle Routinen, Speichertext),
+  `betriebsmeldungen.test.mjs` neu (Entfernt-Zeile ohne Artikelnamen, Routinenliste in der
+  Shop-Kontrolle nur bei Störung). `npm run -s dashboard:test` 1058/1058, `npm run -s pruefen` alle 9 Schritte grün; `dashboard:pruefen` Gesamtübersicht und Shop-Kontrolle bei 390/1440 px ohne Überlauf.
+- **Risiken:** Viele gestörte Routinen machen den Kontext lang; es sind derzeit höchstens vier.
+- **Naechste Stufe:** keine.
 ## 2026-10-28 · Nachfass-Mails: Firmenangaben unter dem Gruß (Werkbank w-172 Punkt 2, #1772)
 
 - **Geaendert:** Die Nachfass-Mails („Muster nachfassen“) endeten ohne Rechtsform, Anschrift,
