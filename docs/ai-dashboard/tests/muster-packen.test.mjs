@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
+import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, offeneSuche, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
 import { adressEtikett, adressLayout, ABSENDER } from '../lib/adress-etiketten.mjs';
 import { ETIKETT_FORMATE } from '../lib/muster-etiketten.mjs';
 
@@ -385,6 +385,41 @@ test('packSuche: Bestellungen ausserhalb der Packliste nur, wenn sie mindestens 
   assert.deepEqual(packSuche(r.kunden, '#T4', r.ausserhalb).ausserhalb, [{ orderId: 'gid://shopify/Order/4', muster: [] }]);
 });
 
+test('offeneSuche: ein fertiger Kunde mit besserem Treffer verdraengt den offenen Umschlag nicht mehr', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, gepackt: { 'gid://shopify/Order/2': { zeit: 'x' } }, auftraege: [
+    auftrag(1, '2026-10-17T09:00:00Z', 'Offen Bezahlt', [pos(11, '101')]),
+    // Gepackt bzw. versandt und mit beiden Woertern ein besserer Treffer als der offene Umschlag.
+    auftrag(2, '2026-10-16T09:00:00Z', 'Schon Gepackt', [pos(21, '101'), pos(22, '102')]),
+    auftrag(4, '2026-10-15T09:00:00Z', 'Versendet', [pos(41, '102')], { erfuellt: 'FULFILLED' }),
+    auftrag(3, '2026-10-14T09:00:00Z', 'Storniert', [pos(31, '101')], { storniert: true }),
+  ] });
+  const name = t => r.kunden.find(k => k.packSchluessel === t.packSchluessel).name;
+  assert.equal(r.kunden.find(k => k.name === 'Schon Gepackt').bereich, 'gepackt');
+  // Bisher: gezeigt wird nur der beste Treffer - der gepackte Kunde und die versandte Bestellung.
+  const vorher = packSuche(r.kunden, 'sand grau', r.ausserhalb);
+  assert.deepEqual([vorher.treffer.map(name), vorher.ausserhalb.map(b => b.orderId)], [['Schon Gepackt'], ['gid://shopify/Order/4']]);
+  const s = offeneSuche(r.kunden, 'sand grau', r.ausserhalb);
+  assert.deepEqual(s.treffer.map(name), ['Offen Bezahlt']);
+  assert.deepEqual(s.ausserhalb.map(b => b.orderId), ['gid://shopify/Order/3'], 'storniert bleibt als Warnung in der Suche');
+  assert.equal(s.fertig, 2, 'gepackt und versandt passen auch');
+  const nurFertig = offeneSuche(r.kunden, 'grau 22', r.ausserhalb);
+  assert.deepEqual([nurFertig.treffer, nurFertig.ausserhalb, nurFertig.fertig], [[], [], 2]);
+  // Auf Wunsch kommen die Fertigen dazu - hinter die offenen, verdraengen koennen sie auch dann nichts.
+  const alle = offeneSuche(r.kunden, 'sand grau', r.ausserhalb, { mitFertigen: true });
+  assert.deepEqual(alle.treffer.map(name), ['Offen Bezahlt', 'Schon Gepackt']);
+  assert.deepEqual(alle.ausserhalb.map(b => b.orderId), ['gid://shopify/Order/3', 'gid://shopify/Order/4']);
+  assert.equal(alle.fertig, 0);
+});
+
+test('offeneSuche zaehlt je Bestellung: Umschlag mit zwei Bestellungen zaehlt zwei, offen Gezeigtes nicht', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, gepackt: { 'gid://shopify/Order/2,gid://shopify/Order/5': { zeit: 'x' } }, auftraege: [
+    auftrag(2, '2026-10-16T09:00:00Z', 'Zwei Bestellungen', [pos(21, '102')]),
+    auftrag(5, '2026-10-17T09:00:00Z', 'Zwei Bestellungen', [pos(51, '102')], { kundeKey: 'k:Zwei Bestellungen' }),
+  ] });
+  assert.deepEqual(r.kunden.map(k => [k.bereich, k.bestellungen.length]), [['gepackt', 2]]);
+  assert.equal(offeneSuche(r.kunden, 'grau 22', r.ausserhalb).fertig, 2);
+});
+
 test('aufkleberFuerMuster: genau dieses Muster in bestellter Anzahl, nichts bei fehlender Zuordnung', () => {
   const r = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101', { menge: 2, mengeBestellt: 2 }), pos(12, '102')])] });
   const [zwei, eins] = r.kunden[0].muster;
@@ -402,7 +437,7 @@ test('aufkleberFuer nurOffen: abgehakte Muster sind schon ueberklebt, die Adress
   assert.deepEqual(aufkleberFuer(k, { nurOffen: true }).map(e => e.art || e.sku), ['TV-GR', 'adresse']);
 });
 
-test('handTreffer: offene Muster als Karten in Packreihenfolge, Eingelegtes und Gepacktes getrennt, hoechstens max', () => {
+test('handTreffer: offene Muster als Karten in Packreihenfolge, Eingelegtes getrennt, Gepacktes nur auf Wunsch, hoechstens max', () => {
   const r = musterPackliste({ produkte, schluesselVon, jetzt, statusVon: () => 'geliefert',
     haken: { 'gid://shopify/LineItem/31': { zeit: 'x' } }, gepackt: { 'gid://shopify/Order/4': { zeit: 'x' } },
     auftraege: [
@@ -413,7 +448,10 @@ test('handTreffer: offene Muster als Karten in Packreihenfolge, Eingelegtes und 
     ] });
   const t = handTreffer(r.kunden, 'sand 11', r.ausserhalb);
   assert.deepEqual(t.karten.map(x => [x.kunde.name, x.muster.lineItemId.split('/').pop()]), [['Anna Test', '11'], ['Bea Test', '21']], 'aelteste offene Bestellung zuerst');
-  assert.deepEqual(t.eingelegt.map(x => x.kunde.name).sort(), ['Cem Test', 'Dan Test']);
+  // Gepackt ist fertig (Mitarbeiter 29.10.): Dan zaehlt nur als ausgeblendeter Treffer.
+  assert.deepEqual(t.eingelegt.map(x => x.kunde.name), ['Cem Test']);
+  assert.equal(t.fertig, 1);
+  assert.deepEqual(handTreffer(r.kunden, 'sand 11', r.ausserhalb, { mitFertigen: true }).eingelegt.map(x => x.kunde.name).sort(), ['Cem Test', 'Dan Test']);
   const knapp = handTreffer(r.kunden, 'sand 11', r.ausserhalb, { max: 1 });
   assert.deepEqual([knapp.karten.length, knapp.mehr], [1, 1]);
   // Kunde oder Bestellnummer: alle offenen Muster dieses Umschlags.

@@ -432,9 +432,10 @@ export async function handleApi(req, res, pathname, benutzer = null) {
       return;
     }
     else if (simple === 'kunden/musteretiketten' && req.method === 'GET') result = api.kundenMusteretiketten(url.searchParams.get('orderId') || '');
-    // Muster packen (#1572): GET lesend, POST setzt nur "gepackt" lokal (write-Liste, Rolle "lesen": 403).
+    // Muster packen (#1572): GET lesend, POST setzt Haken und "gepackt" lokal; `aktion: verschickt` setzt
+    // je Bestellung "raus" und bucht in Shopify mit Versandmail (#1811). write-Liste, Rolle "lesen": 403.
     else if (simple === 'kunden/muster-packen' && req.method === 'GET') result = api.kundenMusterPacken();
-    else if (simple === 'kunden/muster-packen' && req.method === 'POST') result = api.kundenMusterPackenSetzen(await readJson(req), benutzer);
+    else if (simple === 'kunden/muster-packen' && req.method === 'POST') result = await api.kundenMusterPackenSchreiben(await readJson(req), benutzer);
     else if (simple === 'kunden/musteretiketten' && req.method === 'POST') result = await api.kundenMusteretikettenVormerken(await readJson(req), benutzer);
     else if (simple === 'kunden/musterwirkung' && req.method === 'GET') result = api.kundenMusterwirkung();
     else if (simple === 'kunden/bestellungen') result = api.kundenBestellungen();
