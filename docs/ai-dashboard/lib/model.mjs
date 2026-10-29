@@ -576,14 +576,37 @@ export const SORTS = Object.freeze({
   aktualisiert:  { label: 'Zuletzt aktualisiert', compare: (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '') },
 });
 
+/** Kennungen des Inhabers: GitHub-Login, Vorname, Rolle. Leer gilt ebenfalls als Inhaber. */
+const INHABER_KENNUNGEN = Object.freeze(['kontakt755', 'ahmet', 'inhaber']);
+const fuerInhaber = wer => !wer || INHABER_KENNUNGEN.includes(String(wer).trim().toLowerCase());
+
 /**
- * Offene Entscheidungen fuer den Inhaber: Status "Warten auf Freigabe" oder als Entscheidung
- * angelegt. Liste (#/freigaben), Zaehler an "Entscheidungen"/"Verwaltung"/"Mehr" und die
- * Inhaber-Zeile auf Heute zaehlen genau diese Menge - bis 26.10. zeigte der Zaehler 2,
- * die Liste 4 (Rundgang, Massnahme 43).
+ * Entscheidungen nach Zustaendigkeit (Rundgang 29.10., A8). Kandidaten: offen und Status
+ * "Warten auf Freigabe" oder als Entscheidung angelegt - ohne "Zur Prüfung", die eine eigene
+ * Liste hat (dieselbe Entscheidung stand sonst zweimal auf der Seite).
+ *   fuerDich     liegt beim Inhaber (oder ohne Entscheider) und ist entscheidbar
+ *   vorbereitet  Entscheidungsvorlage ohne Optionen, noch nicht im Freigabe-Status
+ *   beiAnderen   Entscheider bzw. Zustaendiger ist jemand anderes
+ */
+export function entscheidungsGruppen(tasks = []) {
+  const gruppen = { fuerDich: [], vorbereitet: [], beiAnderen: [] };
+  for (const t of tasks) {
+    if (!t.open || t.status === 'review' || !(t.status === 'freigabe' || t.isDecision)) continue;
+    if (!fuerInhaber(t.decision?.decider || t.owner)) gruppen.beiAnderen.push(t);
+    else if (t.isDecision && t.status !== 'freigabe' && !t.decision?.options?.length) gruppen.vorbereitet.push(t);
+    else gruppen.fuerDich.push(t);
+  }
+  return gruppen;
+}
+
+/**
+ * Offene Entscheidungen fuer den Inhaber. Liste (#/freigaben), Zaehler an "Entscheidungen"/
+ * "Verwaltung"/"Mehr" und die Inhaber-Zeile auf Heute zaehlen genau diese Menge - bis 26.10.
+ * zeigte der Zaehler 2, die Liste 4 (Massnahme 43); bis 29.10. zaehlten auch Entscheidungen
+ * anderer, Vorlagen ohne Optionen und Eintraege unter "Zur Prüfung" mit (4 statt 1, A8).
  */
 export function offeneEntscheidungen(tasks = []) {
-  return tasks.filter(t => t.open && (t.status === 'freigabe' || t.isDecision));
+  return entscheidungsGruppen(tasks).fuerDich;
 }
 
 export function summarize(tasks, { now = new Date() } = {}) {

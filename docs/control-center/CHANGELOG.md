@@ -16,6 +16,24 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiko:** PR #1794 ändert dieselben Dateien; wer zuerst gemergt wird, der andere zieht nach.
 - **Nächste Stufe:** keine.
 
+## 2026-10-29 · Entscheidungen: nur zählen, was beim Inhaber liegt und entscheidbar ist
+
+- **Geaendert:** Rundgang mit Rollen vom 29.10. (Befund A8, vom Kritiker nachgemessen). Inhaberzeile,
+  Seitenleiste und „Mehr“ zeigten „4 Entscheidungen offen“; entscheiden konnte der Inhaber davon eine.
+  Mitgezählt wurden eine Freigabe, die bei Tobias liegt, eine Vorlage ohne Entscheider und ohne
+  Optionen und eine Entscheidung, die zugleich unter „Zur Prüfung“ stand (dort doppelt).
+  - `entscheidungsGruppen()` in `lib/model.mjs`: `fuerDich` (Inhaber oder ohne Entscheider,
+    entscheidbar), `vorbereitet` (Entscheidungsvorlage ohne Optionen, noch nicht im Freigabe-Status),
+    `beiAnderen`; Einträge mit Status „Zur Prüfung“ zählen nicht als offen. `offeneEntscheidungen()`
+    = `fuerDich`; Zähler und Liste bleiben dieselbe Menge.
+  - `#/freigaben`: neuer Abschnitt „Noch nicht für dich (N) – zählt nicht als offen“ mit Grund je
+    Zeile. Entscheider mit Klarnamen (`personName`, „Tobias“ statt GitHub-Kennung).
+- **Getestet:** `inhaber-ueberblick.test.mjs` neu (Gruppen, Zähler = Liste, Abschnitt, Klarname, keine
+  Doppelung). Gegen die aktuelle `issues.json`: vorher 4, jetzt 1 offen, 2 „noch nicht für dich“, 1 unter
+  „Zur Prüfung“. `npm run -s dashboard:test` 1056/1056, `npm run -s pruefen` alle 9 Schritte grün; `dashboard:pruefen` Entscheidungen und Heute bei 390/1440 px ohne Überlauf.
+- **Risiken:** Eine Vorlage ohne Optionen zählt erst, wenn jemand Optionen ergänzt oder sie auf
+  „Warten auf Freigabe“ setzt.
+- **Naechste Stufe:** keine.
 ## 2026-10-29 · Warenkunden zuerst: Bestellen › Je Auftrag und Warenbestellungen auf Heute
 
 - **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde T2 und T4, vom Kritiker bestätigt).
