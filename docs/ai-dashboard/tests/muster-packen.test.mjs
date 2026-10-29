@@ -492,3 +492,17 @@ test('Wartezeit zaehlt Kalendertage in Berlin, nicht volle 24 Stunden', () => {
   const abend = musterPackliste({ produkte, schluesselVon, jetzt: new Date('2026-10-19T21:50:00Z'), auftraege: [auftrag(1, '2026-10-19T21:30:00Z', 'Anna Test', [pos(11, '101')])] });
   assert.equal(abend.kunden[0].wartetTage, 0);
 });
+
+test('Muster ohne eigene Einkaufsdaten: Angaben der Meterware mit gleicher SKU, abweichende TnM-Variante stoert nicht', () => {
+  const tnm = (nr, name) => ({ handle: `tnm-${nr}`, eigenschaften: {}, varianten: [{ id: `gid://shopify/ProductVariant/9${nr}`, sku: null, farbe: 'Sand (011)', einkauf: { artikelnummer: 'TV-SA', produktname: name, farbnummer: nr } }] });
+  const mit = new Map([[boden.handle, boden], ['tnm-11', tnm('11', 'Lieferantenware SAND 500')]]);
+  const m = musterPackliste({ produkte: mit, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101')])] }).kunden[0].muster[0];
+  assert.equal(m.vorher.produktname, 'Lieferantenware SAND 400');
+  assert.equal(m.vorher.farbnummer, '11');
+  // Meterware mit dieser SKU ohne Angaben, Artikelnummer-Treffer widersprechen sich: unklar, nie raten.
+  const leer = { ...boden, varianten: [{ ...boden.varianten[0], einkauf: {} }, boden.varianten[1]] };
+  const ohne = new Map([[boden.handle, leer], ['tnm-11', tnm('11', 'A')], ['tnm-12', tnm('12', 'B')]]);
+  const u = musterPackliste({ produkte: ohne, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101')])] }).kunden[0].muster[0];
+  assert.equal(u.vorher.unklar, true);
+  assert.equal(u.vorher.farbnummer, null);
+});

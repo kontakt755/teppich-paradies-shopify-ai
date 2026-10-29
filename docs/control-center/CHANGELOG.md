@@ -32,6 +32,19 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   mitgehen kann. Kommt am selben Tag eine Bestellung dazu, gilt weiter: Packmarke und Druckvermerk des
   Umschlags passen nicht mehr (wie bisher).
 - **Naechste Stufe:** keine geplant.
+## 2026-10-29 · Packstation: Muster ohne eigene Einkaufsdaten zeigen Lieferant und Farbnummer
+
+- **Geaendert:** Muster aus "Teppich nach Maß" zeigten "kein Farbbild / keine Farbnummer hinterlegt",
+  weil die TnM-Variante dieselbe Artikelnummer mit anderem Lieferantennamen (andere Breite) fuehrt und
+  der Index die SKU dadurch als mehrdeutig verwarf. Jetzt geht die Meterware-Variante mit genau der
+  Aufkleber-SKU vor; Varianten ohne jede Einkaufsangabe zaehlen nicht mit. Widersprechen sich die
+  Angaben trotzdem, steht "Farbnummer unklar – prüfen" (nie geraten). "Was ist da?" nennt den
+  Kurznamen ohne Warengruppe und Breite, z. B. "Tempra Sprint 027 (Farbnr. 18)".
+- **Getestet:** neuer Fall in `tests/muster-packen.test.mjs` (30/30), `dashboard:test` 1055/0,
+  `npm test` ohne Fehler, `dashboard:pruefen` nur OK; gegen das echte Lexikon (nur lesend) liefert
+  das TnM-Muster der Farbe 18 Lieferant A, Farbnr. 18 und Farbbild.
+- **Risiken:** keine Schreibaktion geaendert.
+- **Naechste Stufe:** –
 
 ## 2026-10-28 · Postfach-Lauf: Claude nur bei neuer Mail, nur mit Gmail
 

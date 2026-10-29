@@ -51,19 +51,29 @@ function farbBild(p, v) {
   return farben.size <= 1 && belegt(p.bild) ? text(p.bild) : null;
 }
 
-/** Lieferantenangaben zur Aufkleber-SKU aus dem Lexikon - nur, wenn sie eindeutig sind. */
+/**
+ * Lieferantenangaben zur Aufkleber-SKU aus dem Lexikon - nur, wenn sie eindeutig sind.
+ * Muster (auch "Teppich nach Mass") tragen selbst keine Einkaufsdaten; sie kommen von der
+ * Meterware-Variante, auf die der Aufkleber zeigt. Die Variante mit genau dieser SKU geht vor;
+ * nur ohne sie zaehlen Varianten, die die SKU als Artikelnummer fuehren (z. B. TnM mit anderer
+ * Breite im Lieferantennamen). Widersprechen sich die Angaben, gilt "mehrdeutig" - nie raten.
+ */
 function vorherIndex(produkte) {
-  const je = new Map();
+  const eigen = new Map(), artikel = new Map();
   for (const p of produkte?.values?.() || []) {
     if (text(p?.handle).startsWith('muster-') || p?.status === 'ARCHIVED') continue;
     for (const v of p.varianten || []) {
       const e = v.einkauf || {};
-      for (const sku of new Set([text(v.sku), text(e.artikelnummer)].filter(Boolean))) {
-        const wert = { produktname: belegt(e.produktname) ? text(e.produktname) : null, farbnummer: belegt(e.farbnummer) ? text(e.farbnummer) : null, url: belegt(e.url) ? text(e.url) : null,
-          kollektion: belegt(e.kollektion) ? text(e.kollektion) : null, lieferant: belegt(e.lieferant) ? text(e.lieferant) : null };
-        // Nur fuer die Suche (Herstellername auf dem Muster); entscheiden nicht ueber "mehrdeutig".
-        const such = { hersteller: belegt(e.hersteller) ? text(e.hersteller) : null, artikelnummer: belegt(e.artikelnummer) ? text(e.artikelnummer) : null };
-        const bild = farbBild(p, v);
+      const wert = { produktname: belegt(e.produktname) ? text(e.produktname) : null, farbnummer: belegt(e.farbnummer) ? text(e.farbnummer) : null, url: belegt(e.url) ? text(e.url) : null,
+        kollektion: belegt(e.kollektion) ? text(e.kollektion) : null, lieferant: belegt(e.lieferant) ? text(e.lieferant) : null };
+      // Variante ohne jede Einkaufsangabe sagt nichts ueber das Muster - darf nichts "mehrdeutig" machen.
+      if (!Object.values(wert).some(Boolean)) continue;
+      // Nur fuer die Suche (Herstellername auf dem Muster); entscheiden nicht ueber "mehrdeutig".
+      const such = { hersteller: belegt(e.hersteller) ? text(e.hersteller) : null, artikelnummer: belegt(e.artikelnummer) ? text(e.artikelnummer) : null };
+      const bild = farbBild(p, v);
+      const ziele = [[eigen, text(v.sku)], [artikel, text(e.artikelnummer)]];
+      for (const [je, sku] of ziele) {
+        if (!sku) continue;
         const alt = je.get(sku);
         // Dieselbe SKU in mehreren Breiten traegt oft je ein eigenes Bild derselben Farbe: das Bild
         // entscheidet nicht ueber "mehrdeutig"; bei verschiedenen Bildern gilt das erste.
@@ -74,7 +84,12 @@ function vorherIndex(produkte) {
       }
     }
   }
-  return sku => { const w = je.get(text(sku)); return w && w !== 'mehrdeutig' ? w : null; };
+  return sku => {
+    const k = text(sku);
+    const w = eigen.has(k) ? eigen.get(k) : artikel.get(k);
+    if (w === 'mehrdeutig') return { unklar: true, produktname: null, farbnummer: null, url: null, kollektion: null, lieferant: null, bild: null, hersteller: null, artikelnummer: null };
+    return w || null;
+  };
 }
 
 /**
@@ -112,7 +127,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
         const e = z.etikett || {}, v = e.sku ? vorher(e.sku) : null;
         return { lineItemId: z.lineItemId, bestellt: { titel: text(liste[i].titel), farbe: text(liste[i].farbe) },
           etikett: { serie: text(e.serie), farbe: text(e.farbe), sku: text(e.sku) },
-          vorher: v ? { produktname: v.produktname, kollektion: v.kollektion, farbnummer: v.farbnummer, hersteller: v.hersteller, artikelnummer: v.artikelnummer } : null,
+          vorher: v ? { produktname: v.produktname, kollektion: v.kollektion, farbnummer: v.farbnummer, hersteller: v.hersteller, artikelnummer: v.artikelnummer, ...(v.unklar ? { unklar: true } : {}) } : null,
           lieferant: v?.lieferant ? lieferantVon(v.lieferant) : null };
       }) });
   };
