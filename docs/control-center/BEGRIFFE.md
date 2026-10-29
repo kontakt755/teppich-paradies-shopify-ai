@@ -82,6 +82,7 @@ gebraeuchlich), Erfassen.
 - **Fehlt noch – zurücklegen** = Umschlag geht nach „Zu klären“, bis „Fehlendes ist da – weiter packen“.
 - **Eingelegt ✓** = Muster liegt überklebt im Umschlag (derselbe Haken wie in der Liste).
 - **Ratgeber drucken** = Kurz-Ratgeber zur Bodenart als PDF (zwei Seiten, beidseitig), Bestellnummer und Maß schon eingetragen; **Bitte beilegen: Ratgeber …** steht im Dialog „An Kunden raus“, wenn die Ware bei uns liegt oder abgeholt wird (28.10.2026).
+- **Ratgeber zum Ausdrucken** = leere Vorlagen aller Bodenarten unter Kunden → Bestellungen (nur bei Waren), ohne Bestellbezug (29.10.2026).
 - **Umschlag vorbereitet** = Aufkleber und Adresse sind gedruckt, der Umschlag liegt bereit und wartet auf die
   fehlenden Muster; sichtbar auf allen Geräten, mit Datum und Person. **Schon gedruckt** trägt es von Hand nach,
   **Druckvermerk zurücknehmen** (unter „Mehr …“) nimmt es zurück (#1718, 26.10.2026).
@@ -99,6 +100,9 @@ gebraeuchlich), Erfassen.
 - **Muster bestellen** = offene Muster je Lieferant vorbereiten; vorhandener Dialog,
   Bestellstand erst nach bewusster Bestaetigung. Allgemeiner Einkauf bleibt unter „Kunden & Einkauf“.
 - **Weitere Aufgaben heute** = uebrige Tagesaufgaben unter der priorisierten Bestellarbeit.
+- **Probleme** (Shop-Übersicht, seit 29.10., w-206) = nur die roten To-dos, ganz oben; „Rot heißt: das muss
+  heute jemand lösen.“ Gelbes und Normales sowie Laden-Anfragen, Angebote und Team-Aufgaben bleiben
+  unter „Weitere Bereiche“.
 - **Arbeitsliste** in der Packstation = Alle offenen (Standard) oder jeweils Packbereit / Wartet auf Ware /
   Zu klaeren / Gepackt; die Suche beruecksichtigt alle vier Listen und liest auch Hersteller, Produkt und Farbnummer.
 - **Weitere Filter** = zusaetzliche Bestellfilter; vier Hauptfilter bleiben direkt sichtbar.
