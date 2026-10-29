@@ -6,6 +6,13 @@ const TAG_MS = 86_400_000;
 const berlin = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' });
 const tagesbeginn = d => Date.parse(`${berlin.format(d)}T00:00:00Z`);
 
+/** Kalendertag in Berlin als "JJJJ-MM-TT" (Date, ISO-Text oder ms); leer bei fehlendem/ungueltigem Datum. */
+export function kalendertag(d) {
+  if (d === null || d === undefined || d === '') return '';
+  const x = new Date(d);
+  return Number.isNaN(x.getTime()) ? '' : berlin.format(x);
+}
+
 /** Kalendertage von `von` bis `bis` (Date, ISO-Text oder ms); null bei fehlendem/ungueltigem Datum, nie negativ. */
 export function kalendertage(von, bis = new Date()) {
   if (von === null || von === undefined || von === '') return null;

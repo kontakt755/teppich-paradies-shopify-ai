@@ -92,6 +92,13 @@ gebraeuchlich), Erfassen.
 - **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
 - **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
 - Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.
+- **Ein Umschlag je Bestelltag** (Rückmeldung 29.10.2026) = Bestellungen desselben Empfängers vom
+  selben Tag kommen in einen Umschlag; eine Bestellung von einem anderen Tag ist ein eigener Umschlag mit eigener
+  Wartezeit, eigenem „x von n Mustern schon im Umschlag“ und eigener Klärung. Vorher kamen alle offenen
+  Bestellungen eines Empfängers in einen Umschlag. Ein schon gepackter oder vorbereiteter Umschlag mit Bestellungen
+  mehrerer Tage bleibt zusammen.
+- **Weiterer Umschlag für diesen Empfänger: #… (bestellt am …, Stand)** = Kopfzeile jedes Umschlags, wenn derselbe
+  Empfänger noch einen anderen offenen oder gepackten Umschlag hat; der Link öffnet ihn.
 - **Alle Bestellungen** = alle echten Bestellungen im aktuellen Export, einschliesslich Storno und Archiv; Testbestellungen bleiben gesondert.
 - **Kontrolle nötig** = unklare Artikel, offene Versandbuchung oder manueller Haken ohne nachgewiesenen Versand.
 

@@ -42,6 +42,11 @@
 .mp-stempel-drin { border-color: var(--warn); background: var(--warn); color: var(--surface); }
 .mp-angefangen { border-left: 6px solid var(--warn); }
 .mp-karte-ziel .mp-stempelzeile { margin: 2px 0; }
+/* Weitere Umschlaege desselben Empfaengers (andere Bestelltage, 29.10.): in der Kopfzeile, damit niemand die Bestellungen verwechselt. */
+.mp-weitere { margin: 2px 0 4px; color: var(--text-2); }
+.mp-weitere a { font-weight: 600; }
+/* Kopfzeile: was schon im Haus ist (Inhaber 29.10.) - neutral, aber kraeftiger als die Datumszeile. */
+.mp-hier-da { color: var(--text); font-weight: 600; }
 .mp-zahlen { font-size: 1.05rem; }
 .mp-bereich { margin-top: 14px; }
 .mp-bereich > summary { cursor: pointer; list-style: none; padding: 4px 0 8px; }

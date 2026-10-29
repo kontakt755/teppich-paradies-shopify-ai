@@ -330,6 +330,18 @@ test('Als fehlend gemeldet, laut Bestand aber da: "nicht eingelegt · im Regal s
   assert.match(ansicht('tab=muster&umschlag=order12', [{ ...kunde(12, 'packen'), muster: [{ ...kunde(12, 'packen').muster[0], stand: 'da' }] }]), /<span class="muted">angekommen<\/span>/);
 });
 
+test('Kopfzeile nennt weitere Umschlaege desselben Empfaengers mit Bestelldatum und Stand (Rueckmeldung 29.10.)', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const k = kunde(1, 'packen');
+  k.weitere = [{ packSchluessel: 'order2', bestellungen: ['#TEST2'], seit: '2026-10-20T08:00:00Z', bereich: 'warten' }];
+  const html = ansicht('tab=muster', [k]);
+  assert.match(kopf(html), /<div class="small mp-weitere">Weiterer Umschlag für diesen Empfänger: <a href="#\/kunden\?tab=muster&amp;umschlag=order2">#TEST2<\/a> \(bestellt am Di\., 20\.10\., wartet auf Ware\)<\/div>/);
+  k.weitere.push({ packSchluessel: 'order3', bestellungen: ['#TEST3', '#TEST4'], seit: null, bereich: 'gepackt' });
+  assert.match(kopf(ansicht('tab=muster', [k])), /2 weitere Umschläge für diesen Empfänger: .*#TEST2.* · .*#TEST3 \/ #TEST4<\/a> \(gepackt\)/);
+  assert.doesNotMatch(ansicht('tab=muster', [kunde(5, 'warten')]), /mp-weitere/, 'ohne weitere Umschlaege keine Zeile');
+  assert.match(ansicht('tab=muster', [k]), /nur Bestellungen vom selben Tag kommen zusammen/);
+});
+
 test('Gepackt -> "Verschickt": Reiter Erledigt zeigt nur versandte Musterbestellungen der letzten Tage (Inhaber 29.10.)', () => {
   const jetzt = Date.parse('2026-10-29T12:00:00Z');
   const b = (nr, grund, datum) => ({ orderId: `order${nr}`, orderName: `#TEST${nr}`, name: `Testkunde ${nr}`, grund, datum, muster: [{ lineItemId: `line${nr}` }] });
@@ -341,4 +353,17 @@ test('Gepackt -> "Verschickt": Reiter Erledigt zeigt nur versandte Musterbestell
   assert.match(html, /href="#\/einkauf\?auftrag=order1">Bestellung ansehen/);
   assert.doesNotMatch(html, /Testkunde 5/, 'Gepacktes steht nicht unter Erledigt');
   assert.match(ansicht('tab=muster&mpbereich=erledigt', []), /keine Musterbestellung erledigt worden/);
+});
+
+test('Kopfzeile sagt ohne Aufklappen, was schon hier liegt (mit Lagerort) und was noch nicht bestellt ist (Inhaber 29.10.)', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const k = kunde(1, 'packen');
+  k.muster = [{ ...k.muster[0], stand: 'lager', lagerOrt: 'Resteladen' }, { ...k.muster[0], lineItemId: 'l2', stand: 'lager', lagerOrt: 'Resteladen' },
+    { ...k.muster[0], lineItemId: 'l3', stand: 'da' }, { ...k.muster[0], lineItemId: 'l4', stand: 'da', abgehakt: { zeit: 'x' } }];
+  assert.match(kopf(ansicht('tab=muster', [k])), /<span class="small mp-hier-da">Liegt hier: 1 im Umschlag · 1 angekommen · 2 im Musterlager \(Resteladen\)<\/span>/);
+  const w = kunde(2, 'warten');
+  w.muster = [{ ...w.muster[0], stand: 'offen' }];
+  const h = kopf(ansicht('tab=muster', [w]));
+  assert.doesNotMatch(h, /Liegt hier/, 'nur Bestelltes: keine Hier-Zeile');
+  assert.match(h, /1 Muster noch nicht bestellt/);
 });

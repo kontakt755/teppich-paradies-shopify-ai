@@ -1,7 +1,9 @@
 /**
- * Kunden, Reiter "Muster packen" (#1572): offene, bezahlte Musterbestellungen je Kunde in
- * Packreihenfolge. Standard ist "Alle offenen" (Inhaber 26.10.2026): jede Musterbestellung steht
- * sofort hier, wartende mit Anmerkung "bestellt am …"; dazu Packbereit · Zu klären · Wartet · Gepackt.
+ * Kunden, Reiter "Muster packen" (#1572): offene, bezahlte Musterbestellungen als Umschlaege je
+ * Empfaenger und Bestelltag (29.10.2026: Bestellungen desselben Kunden von verschiedenen Tagen sind
+ * eigene Umschlaege, die Kopfzeile nennt die weiteren) in Packreihenfolge. Standard ist "Alle offenen"
+ * (Inhaber 26.10.2026): jede Musterbestellung steht sofort hier, wartende mit Anmerkung "bestellt am …";
+ * dazu Packbereit · Zu klären · Wartet · Gepackt.
  * Darunter filtert "Umschlag:" nach noch vorbereiten · vorbereitet · Muster schon drin (Inhaber 28.10.);
  * "noch vorbereiten" druckt die gezeigten Umschlaege in einem Lauf.
  * Die Suche findet ein Muster auch ueber Hersteller, Herstellerprodukt und Farbnummer (packSuche) -
@@ -163,6 +165,27 @@ function warteAnmerkung(k) {
  * samt Wartezeit, bei mehreren Bestellungen die erste. Dazu auf jeder Karte, wann beim Lieferanten
  * bestellt wurde, sobald das belegt ist - auch wenn die Muster schon da sind (29.10.: "steht nicht ueberall").
  */
+/**
+ * Kopfzeile, ohne Aufklappen (Inhaber 29.10.: "wichtig ist immer zu sehen, ob wir es schon hier haben oder
+ * ob es bestellt wurde"): was schon im Haus ist - im Umschlag, angekommen oder im Musterlager samt Ort.
+ * Was beim Lieferanten bestellt ist, steht in der Zeile darunter.
+ */
+function hierHtml(k) {
+  if (k.bereich === 'gepackt') return '';
+  const drin = k.muster.filter(m => m.abgehakt).length;
+  const da = k.muster.filter(m => !m.abgehakt && m.stand === 'da').length;
+  const lager = k.muster.filter(m => !m.abgehakt && m.stand === 'lager');
+  const orte = [...new Set(lager.map(m => m.lagerOrt).filter(Boolean))];
+  const offen = k.muster.filter(m => !m.abgehakt && m.stand === 'offen').length;
+  const teile = [
+    drin ? `${drin} im Umschlag` : '',
+    da ? `${da} angekommen` : '',
+    lager.length ? `${lager.length} im Musterlager${orte.length ? ` (${orte.join(', ')})` : ''}` : '',
+  ].filter(Boolean);
+  return `${teile.length ? `<span class="small mp-hier-da">${esc(`Liegt hier: ${teile.join(' · ')}`)}</span>` : ''}`
+    + `${offen ? `<span class="small wait-warn">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt`)}</span>` : ''}`;
+}
+
 function datumHtml(k) {
   const tage = k.wartetTage;
   const warn = tage !== null && tage >= WARTET_AB_TAGEN && k.bereich !== 'gepackt';
@@ -171,7 +194,8 @@ function datumHtml(k) {
   const zeile = [bestellt, wartet].filter(Boolean).join(' · ');
   const beimLieferanten = k.muster.map(m => m.bestelltAm).filter(gueltig).sort();
   return `${zeile ? `<span class="${warn ? 'wait-warn' : 'small muted'}">${esc(zeile)}</span>` : ''}`
-    + `${beimLieferanten.length ? `<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
+    + hierHtml(k)
+    + `${beimLieferanten.length ?`<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
 }
 
 /** Aufgeklappt bei mehreren Bestellungen in einem Umschlag: das Datum jeder einzelnen. */
@@ -181,6 +205,21 @@ function bestelldatenHtml(k) {
 }
 
 const adresseText = a => [a?.strasse, [a?.plz, a?.ort].filter(Boolean).join(' ')].filter(v => v && v !== '–').join(', ');
+
+const BEREICH_TEXT = Object.freeze({ packen: 'packbereit', warten: 'wartet auf Ware', klaeren: 'zu klären', gepackt: 'gepackt' });
+
+/**
+ * Weitere Umschlaege desselben Empfaengers (andere Bestelltage, Rueckmeldung 29.10.): ohne
+ * Aufklappen sichtbar, mit Bestelldatum und Stand - damit niemand die Bestellungen verwechselt und sieht,
+ * ob der andere Umschlag gleich mitgehen kann.
+ */
+function weitereHtml(k) {
+  const weitere = k.weitere || [];
+  if (!weitere.length) return '';
+  const eintrag = w => `<a href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(w.packSchluessel)}">${esc(w.bestellungen.join(' / '))}</a>`
+    + ` (${[gueltig(w.seit) ? `bestellt am ${tagDatum(w.seit)}` : '', BEREICH_TEXT[w.bereich] || ''].filter(Boolean).map(esc).join(', ')})`;
+  return `<div class="small mp-weitere">${weitere.length === 1 ? 'Weiterer Umschlag für diesen Empfänger' : `${weitere.length} weitere Umschläge für diesen Empfänger`}: ${weitere.map(eintrag).join(' · ')}</div>`;
+}
 
 /** Ein Umschlag, in dem schon Muster liegen: angefangene Arbeit, die nicht untergehen darf (Inhaber 26.10.). */
 const angefangen = k => k.bereich !== 'gepackt' && k.muster.some(m => m.abgehakt);
@@ -338,6 +377,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
         <h3 id="mp-k${nr}"><span class="mp-pos">${esc(umschlagKennung(k))}</span>${esc(k.name)}</h3>
         ${stempelHtml(k)}
         <div class="small muted">${esc(adresseText(k.adresse))}</div>
+        ${weitereHtml(k)}
       </div>
       <div class="mp-meta">
         <span class="small muted">${k.muster.length} Muster · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
@@ -390,7 +430,7 @@ export function viewKundenMusterPacken() {
   const suchfeld = `<div class="toolbar"><input type="search" data-param="mpq" value="${esc(state.route.params.get('mpq') || '')}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer"></div>`;
   const fehlerHinweis = packFehlerHtml(d);
   if (modus === 'laden') return umschalter + fehlerHinweis + PACKER_INFO + viewMusterKommtAn(d);
-  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt ist noch nicht versandt.</p>${PACKER_INFO}`;
+  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt ist noch nicht versandt. Bestellt ein Kunde an mehreren Tagen, hat jeder Tag seinen eigenen Umschlag – nur Bestellungen vom selben Tag kommen zusammen.</p>${PACKER_INFO}`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const zielKunde = d.kunden.find(k => k.packSchluessel === ziel);
@@ -545,6 +585,7 @@ function karteHtml({ kunde: k, muster: m }, { erste = false, lesend = false } = 
       <span class="mp-umschlag">${esc(umschlagKennung(k))}</span>
       <strong>${esc(k.name)}</strong>
       ${stempelHtml(k)}
+      ${weitereHtml(k)}
       <span class="small muted">${rest ? `danach noch ${plural(rest, 'Muster', 'Muster')} offen` : 'letztes offenes Muster – danach komplett'}</span>
       ${k.bereich === 'klaeren' ? '<span class="mp-fehlt">Umschlag ist zu klären</span>' : ''}
       ${m.fehlt.length ? '<span class="mp-fehlt">Aufkleber-Zuordnung fehlt – im Lexikon prüfen</span>' : `<span class="small">Unser Aufkleber: <strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span>`}

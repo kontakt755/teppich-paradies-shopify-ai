@@ -1,6 +1,7 @@
 /**
- * "Muster packen" (Kunden → Muster packen, #1572): alle offenen, bezahlten Musterbestellungen,
- * gruppiert nach Kunde und in Packreihenfolge (aelteste Bestellung zuerst). Je Muster steht,
+ * "Muster packen" (Kunden → Muster packen, #1572): alle offenen, bezahlten Musterbestellungen als
+ * Umschlaege je Empfaenger und Bestelltag (umschlaegeJeBestelltag), in Packreihenfolge (aelteste
+ * Bestellung zuerst). Je Muster steht,
  * was auf dem Lieferantenmuster steht (vorher) und welcher Aufkleber darauf kommt (nachher).
  * Den Versand bucht diese Liste nicht - der Schritt folgt, wenn der Versandweg entschieden ist.
  *
@@ -9,7 +10,7 @@
  */
 import { musteretikettenFuerAuftrag } from './bestellungs-musteretiketten.mjs';
 import { adressEtikett } from './adress-etiketten.mjs';
-import { kalendertage } from './kalendertage.mjs';
+import { kalendertag, kalendertage } from './kalendertage.mjs';
 
 /** Ab so vielen Tagen Wartezeit steht die Zahl in Bernstein. */
 export const WARTET_AB_TAGEN = 2;
@@ -22,6 +23,9 @@ const belegt = v => !!text(v) && !['UNGEKLAERT', '–', '-'].includes(text(v));
 
 /** Gepackt gilt fuer genau diese Bestellungen; kommt eine dazu, ist der Kunde wieder offen. */
 export const umschlagKennung = k => (k.bestellungen || []).map(b => b.orderName).filter(Boolean).join(' / ') || k.packSchluessel;
+
+/** Lieferadresse normalisiert: ein Kundenkonto kann an mehrere Empfaenger liefern, deren Umschlaege nie gemischt werden. */
+const adresseKey = adresse => JSON.stringify(['name', 'strasse', 'plz', 'ort', 'land'].map(f => text(adresse?.[f]).toLowerCase().replace(/\s+/g, ' ')));
 
 export const packSchluessel = orderIds => [...new Set(orderIds.map(text).filter(Boolean))].sort().join(',');
 
@@ -98,7 +102,8 @@ function vorherIndex(produkte) {
  * @param {(auftrag) => string} [p.schluesselVon]               Kundenidentitaet (kundensuche.kundenSchluessel)
  * @param {object} [p.gepackt]          Ablage muster-packen.json: { [packSchluessel]: { zeit, von } }
  * @param {object} [p.haken]            { [lineItemId]: { zeit, von } } - Muster ist überklebt und liegt im Umschlag
- * @param {object} [p.klaeren]          { [Kundenschluessel]: { zeit, von, fehlt: [lineItemId], notiz } }
+ * @param {object} [p.klaeren]          { [Umschlagschluessel]: { zeit, von, fehlt: [lineItemId], notiz } } - Schluessel je
+ *                                      Empfaenger und Bestelltag; aeltere je Empfaenger bzw. je Kunde gelten weiter
  * @param {(id) => string} [p.lieferantVon]  Lieferanten-Kuerzel -> Anzeigename (private Stammdaten)
  */
 export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, jetzt = new Date() } = {}) {
@@ -106,6 +111,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
   // Vom Lieferanten direkt an den Kunden (#1680): wird nicht bei uns gepackt.
   const direkt = (a, p) => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT') || eintragVon?.(a.id, p.lineItemId)?.ueber === 'kunde';
   const vorher = vorherIndex(produkte);
+  // Je Empfaenger (Kundenidentitaet und Lieferadresse) alle offenen Musterbestellungen; die Umschlaege
+  // ergeben sich daraus je Bestelltag (umschlaegeJeBestelltag).
   const gruppen = new Map();
   const ausschluesse = { zahlungOffen: 0, geschlossen: 0 };
   // Fuer die Suche: Muster, die nicht (mehr) gepackt werden - mit Grund. Wer so ein Muster in der
@@ -143,46 +150,67 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     const unbekannt = ![identitaet.email, identitaet.telefon, identitaet.name].some(belegt);
     const basis = unbekannt ? `auftrag:${a.id}` : schluesselVon(a);
     // Ein Kundenkonto kann an mehrere Empfaenger liefern; niemals deren Umschlaege mischen.
-    const adresseKey = JSON.stringify(['name', 'strasse', 'plz', 'ort', 'land'].map(f => text(a.details?.lieferadresse?.[f]).toLowerCase().replace(/\s+/g, ' ')));
-    const key = JSON.stringify([basis, adresseKey]);
-    if (!gruppen.has(key)) gruppen.set(key, { schluessel: basis, name: '', adresse: null, bestellungen: [], muster: [], hinweise: new Set(), teilweiseErstattet: false, direktversand: false });
-    const g = gruppen.get(key);
-    if (a.bezahlt === 'PARTIALLY_REFUNDED') g.teilweiseErstattet = true;
-    if (positionen.some(p => direkt(a, p))) g.direktversand = true;
-    if (a.bezahlt === 'PARTIALLY_REFUNDED') g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.');
-    if (positionen.some(p => direkt(a, p))) g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.');
-    g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null });
-    // Die neueste Bestellung traegt die aktuellste Anschrift.
-    if (!g.adresse || (a.datum || '') >= (g.adresse.datum || '')) {
-      g.adresse = { ...(a.details?.lieferadresse || {}), datum: a.datum || '' };
-      g.name = text(a.details?.lieferadresse?.name) || text(a.details?.kunde?.name) || 'Kunde';
-    }
-    zeilen.forEach((z, i) => {
-      const p = positionen[i];
-      const v = z.etikett?.sku ? vorher(z.etikett.sku) : null;
-      const eintrag = eintragVon?.(a.id, p.lineItemId) || null;
-      const stand = standVon(statusVon(a.id, p.lineItemId), p);
-      g.muster.push({
-        orderId: a.id, orderName: text(a.name), lineItemId: z.lineItemId,
-        anzahl: Number.isInteger(z.anzahl) ? z.anzahl : null, etikett: z.etikett, fehlt: z.fehlt,
-        bestellt: { titel: text(p.titel), farbe: text(p.farbe) },
-        vorher: v,
-        lieferant: v?.lieferant ? lieferantVon(v.lieferant) : null,
-        bild: v?.bild || null,
-        abgehakt: haken[z.lineItemId] ? { zeit: haken[z.lineItemId].zeit || null, von: haken[z.lineItemId].von || null } : null,
-        stand,
-        // Bleibt nach der Ankunft erhalten: die Kopfzeile nennt das Lieferanten-Bestelldatum immer (29.10.).
-        bestelltAm: belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
-        automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
-      });
-    });
+    const key = JSON.stringify([basis, adresseKey(a.details?.lieferadresse)]);
+    if (!gruppen.has(key)) gruppen.set(key, { basis, auftraege: [] });
+    gruppen.get(key).auftraege.push({ a, positionen, zeilen });
   }
 
-  const liste = [...gruppen.values()].map(g => {
-    const basis = g.schluessel;
-    // Dauerhaft adressbezogen: eine andere erledigte Bestellung darf die Klaerkennung nicht aendern.
-    g.schluessel = `${basis}|adresse:${JSON.stringify(['name', 'strasse', 'plz', 'ort', 'land'].map(f => text(g.adresse?.[f]).toLowerCase().replace(/\s+/g, ' ')))}`;
-    const altKlaerung = klaeren[basis];
+  /**
+   * Klaermarke dieses Umschlags, in dieser Reihenfolge: die eigene (je Empfaenger und Bestelltag); die des
+   * Empfaengers (bis 29.10.2026 war der ganze Empfaenger ein Umschlag) - bei mehreren Umschlaegen nur, wenn
+   * ihre fehlenden Muster hier liegen, sonst als fremde Marke; zuletzt die alte gemeinsame Marke des Kunden.
+   * Eine ausdrueckliche Freigabe (geklaert) beendet die Suche. Fremde Marken geben nur den Vermerk.
+   */
+  const klaerungFuer = ({ eigen, empfaenger, kunde }, muster, mehrere) => {
+    const ids = new Set(muster.map(m => m.lineItemId));
+    const fehltVon = e => (Array.isArray(e?.fehlt) ? e.fehlt : []);
+    const betrifft = e => !fehltVon(e).length || fehltVon(e).some(id => ids.has(id));
+    const ganzHier = e => fehltVon(e).length > 0 && fehltVon(e).every(id => ids.has(id));
+    const kandidaten = [[klaeren[eigen], false], [klaeren[empfaenger], mehrere && !ganzHier(klaeren[empfaenger])], [klaeren[kunde], true]];
+    const fremd = kandidaten.find(([e, alt]) => e && alt && !e.geklaert && betrifft(e))?.[0] || null;
+    const altvermerk = fremd ? `Frühere gemeinsame Klärung${text(fremd.notiz) ? `: ${text(fremd.notiz)}` : ' vorhanden'} – je Umschlag neu prüfen.` : null;
+    for (const [e] of kandidaten) {
+      if (!e) continue;
+      if (e.geklaert) return { eintrag: null, altvermerk };
+      if (betrifft(e)) return { eintrag: e, altvermerk };
+    }
+    return { eintrag: null, altvermerk };
+  };
+
+  /** Ein Umschlag: Bestellungen desselben Empfaengers von einem Bestelltag (oder mit bestehender Packmarke) samt Mustern. */
+  const baueUmschlag = (eintraege, { basis, mehrere }) => {
+    const g = { name: '', adresse: null, bestellungen: [], muster: [], hinweise: new Set(), teilweiseErstattet: false, direktversand: false };
+    for (const { a, positionen, zeilen } of eintraege) {
+      if (a.bezahlt === 'PARTIALLY_REFUNDED') { g.teilweiseErstattet = true; g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.'); }
+      if (positionen.some(p => direkt(a, p))) { g.direktversand = true; g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.'); }
+      g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null });
+      // Die neueste Bestellung traegt die aktuellste Anschrift.
+      if (!g.adresse || (a.datum || '') >= (g.adresse.datum || '')) {
+        g.adresse = { ...(a.details?.lieferadresse || {}), datum: a.datum || '' };
+        g.name = text(a.details?.lieferadresse?.name) || text(a.details?.kunde?.name) || 'Kunde';
+      }
+      zeilen.forEach((z, i) => {
+        const p = positionen[i];
+        const v = z.etikett?.sku ? vorher(z.etikett.sku) : null;
+        const eintrag = eintragVon?.(a.id, p.lineItemId) || null;
+        const stand = standVon(statusVon(a.id, p.lineItemId), p);
+        g.muster.push({
+          orderId: a.id, orderName: text(a.name), lineItemId: z.lineItemId,
+          anzahl: Number.isInteger(z.anzahl) ? z.anzahl : null, etikett: z.etikett, fehlt: z.fehlt,
+          bestellt: { titel: text(p.titel), farbe: text(p.farbe) },
+          vorher: v,
+          lieferant: v?.lieferant ? lieferantVon(v.lieferant) : null,
+          bild: v?.bild || null,
+          abgehakt: haken[z.lineItemId] ? { zeit: haken[z.lineItemId].zeit || null, von: haken[z.lineItemId].von || null } : null,
+          stand,
+          // Bleibt nach der Ankunft erhalten: die Kopfzeile nennt das Lieferanten-Bestelldatum immer (29.10.).
+          bestelltAm: belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
+          automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
+          // Wo es im Haus liegt (Musterlager), damit die Karte "liegt hier: …" sagen kann.
+          lagerOrt: stand === 'lager' && belegt(p.musterLager?.ort) ? text(p.musterLager.ort) : null,
+        });
+      });
+    }
     const bestellungen = g.bestellungen.sort((x, y) => text(x.datum).localeCompare(text(y.datum)));
     const seit = bestellungen[0]?.datum || null;
     const tage = kalendertage(seit, jetzt);
@@ -194,14 +222,16 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     const unvollstaendig = muster.filter(m => m.fehlt.length || !m.anzahl);
     markiereVerwechslung(muster);
     const hinweise = [...g.hinweise];
-    const altvermerk = altKlaerung ? `Frühere gemeinsame Klärung${text(altKlaerung.notiz) ? `: ${text(altKlaerung.notiz)}` : ' vorhanden'} – je Umschlag neu prüfen.` : null;
-    // Bestehende Marken bleiben erhalten; neue Teilgruppen erben keine alte Sammelmarke.
+    // Dauerhaft je Empfaenger und Bestelltag: eine andere erledigte Bestellung oder eine spaetere
+    // Bestellung desselben Kunden darf die Klaerkennung dieses Umschlags nicht aendern.
+    const empfaenger = `${basis}|adresse:${adresseKey(g.adresse)}`;
+    const schluessel = `${empfaenger}|tag:${kalendertag(seit) || 'ohne'}`;
     const istGepackt = !!gepackt[pk];
-    const eigeneKlaerung = klaeren[g.schluessel];
-    // Ohne ausdrueckliche Freigabe bleibt die bisherige gemeinsame Klaerung aktiv.
-    const kl = !istGepackt && !eigeneKlaerung?.geklaert ? (eigeneKlaerung || altKlaerung || null) : null;
+    const { eintrag: kl, altvermerk } = klaerungFuer({ eigen: schluessel, empfaenger, kunde: basis }, muster, mehrere);
+    // Gepackt erledigt jede Klaerung.
+    const klaerung = istGepackt ? null : kl;
     return {
-      schluessel: g.schluessel, packSchluessel: pk, name: g.name, adresse, bestellungen, seit, wartetTage: tage,
+      schluessel, packSchluessel: pk, name: g.name, adresse, bestellungen, seit, wartetTage: tage,
       muster, adressAufkleber, hinweise, altvermerk,
       restumfangPruefen: g.teilweiseErstattet && !g.direktversand && muster.some(m => m.anzahl > 0),
       direktversand: g.direktversand,
@@ -211,20 +241,64 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       fehlt: [...unvollstaendig.map(m => `${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`), ...adressAufkleber.fehlt.map(f => `Adresse: ${f}`)],
       nichtBestellt: muster.filter(m => m.stand === 'offen').length,
       gepackt: istGepackt ? { zeit: gepackt[pk].zeit || null, von: gepackt[pk].von || null } : null,
-      // Umschlag vorbereitet: Aufkleber und Adresse gedruckt. Kommt eine Bestellung dazu, aendert sich
-      // der packSchluessel - dann fehlen deren Aufkleber, und der Vermerk gilt nicht mehr.
+      // Umschlag vorbereitet: Aufkleber und Adresse gedruckt. Kommt am selben Tag eine Bestellung dazu,
+      // aendert sich der packSchluessel - dann fehlen deren Aufkleber, und der Vermerk gilt nicht mehr.
       gedruckt: !istGepackt && gedruckt[pk] ? { zeit: gedruckt[pk].zeit || null, von: gedruckt[pk].von || null } : null,
-      klaeren: kl ? { zeit: kl.zeit || null, von: kl.von || null, notiz: text(kl.notiz) || null,
-        fehlt: muster.filter(m => (kl.fehlt || []).includes(m.lineItemId)).map(m => m.lineItemId) } : null,
+      klaeren: klaerung ? { zeit: klaerung.zeit || null, von: klaerung.von || null, notiz: text(klaerung.notiz) || null,
+        fehlt: muster.filter(m => (klaerung.fehlt || []).includes(m.lineItemId)).map(m => m.lineItemId) } : null,
       // Ein Haken bestaetigt das physisch eingelegte Muster, sonst braucht es bestaetigten Bestand.
-      bereich: istGepackt ? 'gepackt' : kl || hinweise.length || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
+      bereich: istGepackt ? 'gepackt' : klaerung || hinweise.length || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
     };
-  });
+  };
+
+  const liste = [];
+  for (const { basis, auftraege: eigene } of gruppen.values()) {
+    const teile = umschlaegeJeBestelltag(eigene, { gepackt, gedruckt });
+    const umschlaege = teile.map(t => baueUmschlag(t, { basis, mehrere: teile.length > 1 }));
+    // Weitere Umschlaege desselben Empfaengers (andere Bestelltage): die Ansicht nennt sie in der
+    // Kopfzeile, damit niemand die Bestellungen verwechselt.
+    for (const u of umschlaege) {
+      u.weitere = umschlaege.filter(x => x !== u).map(x => ({ packSchluessel: x.packSchluessel, bestellungen: x.bestellungen.map(b => b.orderName), seit: x.seit, bereich: x.bereich }));
+    }
+    liste.push(...umschlaege);
+  }
   // Packreihenfolge: wer am laengsten wartet, zuerst; Gepacktes ans Ende.
   liste.sort((x, y) => (!!x.gepackt - !!y.gepackt) || text(x.seit).localeCompare(text(y.seit)) || x.name.localeCompare(y.name, 'de'));
   const zahl = b => liste.filter(k => k.bereich === b).length;
   ausserhalb.sort((x, y) => text(y.datum).localeCompare(text(x.datum)));
   return { kunden: liste, ausschluesse, ausserhalb, offen: liste.filter(k => !k.gepackt).length, zahlen: { warten: zahl('warten'), packen: zahl('packen'), klaeren: zahl('klaeren'), gepackt: zahl('gepackt') } };
+}
+
+/**
+ * Ein Umschlag je Bestelltag (Rueckmeldung 29.10.2026): Bestellungen desselben Empfaengers
+ * vom selben Tag (Berlin) kommen zusammen, eine Bestellung von einem anderen Tag bekommt ihren eigenen
+ * Umschlag. Bis dahin kamen alle offenen Bestellungen eines Empfaengers in einen Umschlag - dann wartete
+ * die fertige erste Bestellung auf die zweite, und "x von n im Umschlag" zaehlte beide zusammen.
+ * Ein Umschlag, der schon ueber mehrere Tage gepackt oder vorbereitet wurde (Marke mit genau diesen
+ * Bestellungen), bleibt zusammen: er liegt so auf dem Packtisch.
+ * @param {{a: object}[]} eintraege  je Bestellung ein Eintrag mit dem Auftrag `a`
+ * @returns {object[][]} Eintraege je Umschlag, aelteste Bestellung zuerst
+ */
+function umschlaegeJeBestelltag(eintraege, { gepackt = {}, gedruckt = {} } = {}) {
+  const datum = e => text(e.a.datum);
+  const offen = new Map([...eintraege].sort((x, y) => datum(x).localeCompare(datum(y))).map(e => [text(e.a.id), e]));
+  const umschlaege = [];
+  const marken = [...new Set([...Object.keys(gepackt), ...Object.keys(gedruckt)])]
+    .map(k => k.split(',')).filter(ids => ids.length > 1 && ids.every(id => offen.has(id)))
+    .sort((x, y) => y.length - x.length);
+  for (const ids of marken) {
+    if (!ids.every(id => offen.has(id))) continue; // schon einem groesseren Umschlag zugeteilt
+    umschlaege.push(ids.map(id => offen.get(id)));
+    for (const id of ids) offen.delete(id);
+  }
+  const jeTag = new Map();
+  for (const e of offen.values()) {
+    const tag = kalendertag(e.a.datum);
+    if (!jeTag.has(tag)) jeTag.set(tag, []);
+    jeTag.get(tag).push(e);
+  }
+  return [...umschlaege, ...jeTag.values()].map(u => u.sort((x, y) => datum(x).localeCompare(datum(y))))
+    .sort((x, y) => datum(x[0]).localeCompare(datum(y[0])));
 }
 
 /**
