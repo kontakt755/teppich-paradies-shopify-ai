@@ -2,6 +2,20 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · LaunchAgent-Vorlage preisfilter: XML-Kommentar ohne Doppelstrich (w-220 Teil 3)
+
+- **Geaendert:** In `operations/launchagents/net.teppich-paradies.preisfilter.plist.vorlage` stand
+  „--still“ in einem XML-Kommentar. Nach dem XML-Standard ist „--“ in Kommentaren unzulässig;
+  launchd und `plutil -lint` lesen die Datei trotzdem, strenge Parser (Python `plistlib`, expat)
+  lehnen sie ab. Der Kommentar nennt den Schalter jetzt ausgeschrieben („Der Schalter still …“).
+  Die installierte Datei unter `~/Library/LaunchAgents` wird nicht von Hand geändert; sie wird beim
+  nächsten Einrichten aus der Vorlage erneuert.
+- **Getestet:** Neuer Test `operations/tests/launchagents-vorlagen.test.mjs` prüft alle zwölf
+  Vorlagen: kein „--“ in Kommentaren, kein Kommentar auf „-“ endend, XML-Kopf und `</plist>`
+  vorhanden. Am alten Stand rot (meldet Datei und Zeile), am neuen grün; `plistlib` liest die
+  Vorlage jetzt, `plutil -lint` weiterhin OK. `npm run -s pruefen` grün.
+- **Risiken:** Keine Verhaltensänderung des Dienstes; nur Kommentartext.
+- **Naechste Stufe:** Beim nächsten `dienste-einrichten.sh`-Lauf wird die installierte plist erneuert.
 ## 2026-10-29 · Kettler-Weg: +3 cm Zuschnittpuffer je Länge und Breite (#1684)
 
 - **Geaendert:** Bestellregel des Inhabers vom 25.10. Teppiche, die der Lieferant ungekettelt an

@@ -21,8 +21,10 @@
     <string>cd "$HOME/tp-dashboard" &amp;&amp; exec npm run -s preisfilter:abgleich -- --schreiben --still</string>
   </array>
 
-  <!-- Jede Stunde; kein RunAtLoad: der Lauf schreibt in den Shop. --still laesst
-       Leerlaeufe ohne Protokollzeile, Stand in ~/teppich-paradies-analyse/preisfilter/stand.json. -->
+  <!-- Jede Stunde; kein RunAtLoad: der Lauf schreibt in den Shop. Der Schalter still (oben in
+       ProgramArguments) laesst Leerlaeufe ohne Protokollzeile; Stand in
+       ~/teppich-paradies-analyse/preisfilter/stand.json. In XML-Kommentaren nie zwei Striche
+       hintereinander schreiben: launchd liest das, strenge Parser (Python plistlib) nicht. -->
   <key>StartInterval</key><integer>3600</integer>
   <key>RunAtLoad</key><false/>
 
