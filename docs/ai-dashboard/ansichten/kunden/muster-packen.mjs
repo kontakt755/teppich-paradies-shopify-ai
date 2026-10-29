@@ -4,8 +4,9 @@
  * sofort hier, wartende mit Anmerkung "bestellt am …"; dazu Packbereit · Zu klären · Wartet · Gepackt.
  * Darunter filtert "Umschlag:" nach noch vorbereiten · vorbereitet · Muster schon drin (Inhaber 28.10.);
  * "noch vorbereiten" druckt die gezeigten Umschlaege in einem Lauf.
- * Die Suche findet ein Muster auch ueber Hersteller, Herstellerprodukt und Farbnummer (packSuche) -
+ * Die Suche findet ein Muster auch ueber Hersteller, Herstellerprodukt und Farbnummer (offeneSuche) -
  * in beiden Ansichten und auch in Bestellungen ausserhalb der Packliste (mit Grund, ohne Aktion).
+ * Schon gepackte und versandte Bestellungen zaehlen dabei nicht mit, ein Klick zeigt sie (29.10.).
  * Neu etikettieren: je Muster "Aufkleber drucken"; "Alle eingelegt – Umschlag gepackt" hakt in einem
  * Schritt ab und packt. Sind Aufkleber und Adresse gedruckt, steht der Umschlag fuer alle Geraete als
  * "Umschlag vorbereitet" in der Liste (#1718) - er wartet dann nur noch auf die Muster.
@@ -24,7 +25,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, packSuche, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, offeneSuche, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { kunden } from './gemeinsam.mjs';
@@ -32,6 +33,9 @@ import { kunden } from './gemeinsam.mjs';
 let packOffen = null;
 let packFehler = null;
 let packFehlerStand = null;
+// Bestellungen, deren Versand nach "Verschickt" nicht sicher in Shopify steht: bleibt sichtbar, bis jemand
+// "Verstanden" klickt - der Umschlag ist dann schon aus der Liste, ein Toast allein ginge unter (Pruefung 29.10.).
+let versandProbleme = [];
 let packSpeichert = false;
 let letztesPackZiel = null;
 let letzterPackModus = null;
@@ -379,7 +383,7 @@ export function viewKundenMusterPacken() {
   // Links statt Parameterknoepfe: der Wechsel hebt auch eine laufende Suche auf.
   const modusLink = m => {
     const p = new URLSearchParams(state.route.params);
-    for (const k of ['mp', 'mpq', 'mh', 'laden', 'umschlag']) p.delete(k);
+    for (const k of ['mp', 'mpq', 'mh', 'laden', 'umschlag', 'mpfertig']) p.delete(k);
     p.set('tab', 'muster'); if (m === 'laden') p.set('mp', 'laden');
     return `#/kunden?${p}`;
   };
@@ -406,7 +410,10 @@ export function viewKundenMusterPacken() {
     return `#/kunden?${p}`;
   };
   const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => `<a class="btn${aktiv === b ? ' btn-primary' : ''}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${b === 'erledigt' ? erledigt.length : d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : k.bereich === b)).length}</span></a>`).join('')}</nav>`;
-  const gefunden = suche ? packSuche(d.kunden, suche, d.ausserhalb || []) : null;
+  // "Trotzdem zeigen" gilt nur fuer genau diese Suche (mpfertig = Suchtext) - jede neue Suche startet ohne Fertige.
+  // In den Reitern Gepackt und Erledigt sucht man gerade das Fertige - dort ist es immer mit drin.
+  const mitFertigen = Boolean(suche) && (['gepackt', 'erledigt'].includes(angefordert) || state.route.params.get('mpfertig') === suche);
+  const gefunden = suche ? offeneSuche(d.kunden, suche, d.ausserhalb || [], { mitFertigen }) : null;
   const treffer = new Map((gefunden?.treffer || []).map(t => [t.packSchluessel, new Set(t.muster)]));
   // Offene Arbeit nach Dringlichkeit: erst Packbereites, dann zu Klaerendes, dann Wartendes; in jeder
   // Gruppe zuerst die Umschlaege, in denen schon Muster liegen.
@@ -443,7 +450,7 @@ export function viewKundenMusterPacken() {
   const druck = vorbereitenAufkleber || ohneZuordnung
     ? `<div class="mp-summe">${vorbereitenAufkleber ? `<button type="button" class="btn" data-mp-vorbereiten="${esc(vorbereiten.map(k => k.packSchluessel).join(' '))}">${vorbereiten.length === 1 ? 'Diesen Umschlag' : `Diese ${vorbereiten.length} Umschläge`} vorbereiten (${plural(vorbereitenAufkleber, 'Aufkleber', 'Aufkleber')})</button>` : ''}${ohneZuordnung ? `<span class="small muted">${plural(ohneZuordnung, 'Umschlag', 'Umschläge')} ohne vollständige Musterzuordnung – erst im Lexikon klären.</span>` : ''}</div>`
     : !umschlag && ['packen', 'offen'].includes(aktiv) && aufkleber ? `<div class="mp-summe"><button type="button" class="btn" data-mp-alle>Alle Packbereiten drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button></div>` : '';
-  const leerText = suche ? (gefunden.ausserhalb.length ? 'Kein offener Umschlag passt – siehe unten.' : 'Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen. Weniger Wörter versuchen, z. B. nur die Farbnummer.') : imReiter.length && umschlag ? UMSCHLAG_LEER[umschlag] : aktiv === 'offen' ? 'Gerade keine offene Musterbestellung.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : 'Keine gepackten Umschläge.';
+  const leerText = suche ? (gefunden.ausserhalb.length ? 'Kein offener Umschlag passt – siehe unten.' : gefunden.fertig ? 'Kein offener Umschlag passt – nur schon gepackte oder versandte Bestellungen.' : 'Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen. Weniger Wörter versuchen, z. B. nur die Farbnummer.') : imReiter.length && umschlag ? UMSCHLAG_LEER[umschlag] : aktiv === 'offen' ? 'Gerade keine offene Musterbestellung.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : 'Keine gepackten Umschläge.';
   const leer = `<div class="mp-arbeitsleer"><p>${leerText}</p>${imReiter.length && umschlag ? `<p><a href="${esc(umschlagLink(''))}">Alle ${plural(imReiter.length, 'Umschlag', 'Umschläge')} dieser Liste zeigen</a></p>`
     : ['packen', 'offen'].includes(aktiv) && !suche ? `<p>Eingetroffene Muster legst du unter <a href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a> ein, oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
   const titel = (aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1])
@@ -451,7 +458,7 @@ export function viewKundenMusterPacken() {
   if (aktiv === 'erledigt') return `${umschalter}${kopf}${filter}${ausschlussHinweis}${suchfeld}${erledigtHtml(erledigt)}`;
   return `${umschalter}${kopf}${filter}${umschlagFilter}${ausschlussHinweis}
     ${suchfeld}
-    ${suche ? `<p class="small muted">Die Suche berücksichtigt alle Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>` : ''}
+    ${suche ? `<p class="small muted">Die Suche berücksichtigt alle offenen Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>${fertigHinweis(gefunden.fertig, mitFertigen, suche)}` : ''}
     ${druck}<section class="mp-arbeitsliste" aria-label="${esc(titel)}"><h2 class="mp-titel">${esc(titel)}${aktiv === 'gepackt' ? ' – nach dem Verschicken „Verschickt“ drücken' : ''}</h2>
     ${sichtbar.length ? `<div class="mp-kunden">${sichtbar.map((k, i) => kundeHtml(k, i + 1, { offenBeiSuche: aufklappen, treffer: treffer.get(k.packSchluessel) })).join('')}</div>` : leer}</section>
     ${gefunden?.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], gefunden.ausserhalb) : ''}
@@ -470,6 +477,20 @@ function erledigtHtml(liste) {
     + `<div class="small muted">bestellt am ${esc(fmtDate(b.datum))} · verschickt oder erledigt · <a href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">Bestellung ansehen</a></div></li>`).join('');
   return `<section class="mp-arbeitsliste" aria-label="Erledigt"><h2 class="mp-titel">Erledigt – Musterbestellungen der letzten ${ERLEDIGT_TAGE} Tage</h2>
     ${zeilen ? `<ul class="mp-liste">${zeilen}</ul>` : `<div class="mp-arbeitsleer"><p>In den letzten ${ERLEDIGT_TAGE} Tagen ist keine Musterbestellung erledigt worden.</p></div>`}</section>`;
+}
+
+/**
+ * Fertige Treffer (schon gepackt oder versandt) blendet die Suche aus (Mitarbeiter 29.10.); ein Klick
+ * zeigt sie trotzdem (mpfertig=<Suchtext>, gilt nur fuer diese Suche), etwa um nachzusehen, wohin ein
+ * Muster schon gegangen ist. Offene Treffer stehen dann weiter zuerst.
+ */
+function fertigHinweis(anzahl, mitFertigen, suchtext) {
+  const p = new URLSearchParams(state.route.params);
+  p.set('tab', 'muster');
+  if (mitFertigen) p.delete('mpfertig'); else p.set('mpfertig', suchtext);
+  const link = `<a href="${esc(`#/kunden?${p}`)}">${mitFertigen ? 'Fertige wieder ausblenden' : 'Trotzdem zeigen'}</a>`;
+  if (mitFertigen) return `<p class="small muted mp-fertig">Schon gepackte und versandte Bestellungen sind mit drin. ${link}</p>`;
+  return anzahl ? `<p class="small muted mp-fertig">${plural(anzahl, 'fertige Bestellung passt', 'fertige Bestellungen passen')} auch – schon gepackt oder versandt, deshalb nicht gezeigt. ${link}</p>` : '';
 }
 
 const GRUND_TEXT = Object.freeze({
@@ -516,7 +537,8 @@ function viewMusterKommtAn(d) {
     </div>`;
   const meldung = handMeldungHtml(d);
   if (!q) return feld + meldung + viewNachLaden(d);
-  const t = handTreffer(d.kunden, q, d.ausserhalb || []);
+  const mitFertigen = state.route.params.get('mpfertig') === q;
+  const t = handTreffer(d.kunden, q, d.ausserhalb || [], { mitFertigen });
   const karten = t.karten.length ? `<h2 class="mp-titel mp-ohne-pfeil">${t.karten.length === 1 ? 'Gehört in' : `${t.karten.length} offene Muster passen – ältere Bestellung zuerst`}</h2>
     <div class="mp-karten">${t.karten.map((x, i) => karteHtml(x, { erste: i === 0 && t.karten.length > 1, lesend })).join('')}</div>` : '';
   const mehr = t.mehr ? `<p class="small muted">Noch ${plural(t.mehr, 'weiterer Treffer', 'weitere Treffer')} – genauer eintippen, z. B. mit Farbnummer.</p>` : '';
@@ -524,8 +546,8 @@ function viewMusterKommtAn(d) {
   const schon = t.eingelegt.length ? `<section class="mp-arbeitsliste" aria-label="Schon eingelegt"><h2 class="mp-titel mp-ohne-pfeil">Schon eingelegt</h2><ul class="mp-aussenliste">${t.eingelegt.map(({ kunde: k, muster: m }) =>
     `<li class="mp-aussen"><div><strong>${esc(umschlagKennung(k))}</strong> · ${esc(k.name)} · ${esc(m.vorher?.produktname || m.bestellt.titel)}${m.vorher?.farbnummer ? ` <strong>Farbnr. ${esc(m.vorher.farbnummer)}</strong>` : ''}</div><div class="small muted">${k.bereich === 'gepackt' ? 'Umschlag ist schon gepackt' : 'liegt schon im Umschlag'}</div></li>`).join('')}</ul></section>` : '';
   const nichts = !t.karten.length && !t.eingelegt.length && !t.ausserhalb.length
-    ? '<div class="mp-arbeitsleer"><p>Nichts gefunden. Weniger Wörter versuchen, z. B. nur die Farbnummer.</p></div>' : '';
-  return `${feld}${meldung}${fehlen}${karten}${mehr}${schon}${t.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], t.ausserhalb) : ''}${nichts}`;
+    ? `<div class="mp-arbeitsleer"><p>${t.fertig ? 'Kein offener Umschlag braucht dieses Muster – es passt nur zu schon gepackten oder versandten Bestellungen.' : 'Nichts gefunden. Weniger Wörter versuchen, z. B. nur die Farbnummer.'}</p></div>` : '';
+  return `${feld}${meldung}${fehlen}${fertigHinweis(t.fertig, mitFertigen, q)}${karten}${mehr}${schon}${t.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], t.ausserhalb) : ''}${nichts}`;
 }
 
 /** Eine grosse Karte je passendem Muster: was draufsteht, wohin es gehoert, zwei Knoepfe. */
@@ -608,7 +630,10 @@ function packFehlerHtml(d) {
   if (packFehler && d?.verfuegbar && !d.fehler && d !== packFehlerStand) {
     packFehler = null; packFehlerStand = null;
   }
-  return packFehler ? `<p class="notice warn" role="alert">${esc(packFehler)} <button type="button" class="btn btn-sm" data-mp-neuladen>Packliste erneut laden</button></p>` : '';
+  const versand = versandProbleme.length ? `<div class="notice crit" role="alert"><p><strong>Verschickt, aber in Shopify nicht sicher als versendet gemeldet.</strong> Bestellung öffnen und prüfen – fehlt der Versand, dort „In Shopify buchen“ (mit Mail-Wahl).</p>
+      <ul>${versandProbleme.map(v => `<li><a href="#/einkauf?auftrag=${encodeURIComponent(v.orderId)}">${esc(v.orderName)}</a>: ${esc(v.meldung || 'Ergebnis unbekannt')}</li>`).join('')}</ul>
+      <button type="button" class="btn btn-sm" data-mp-versand-ok>Verstanden</button></div>` : '';
+  return versand + (packFehler ? `<p class="notice warn" role="alert">${esc(packFehler)} <button type="button" class="btn btn-sm" data-mp-neuladen>Packliste erneut laden</button></p>` : '');
 }
 
 async function packlisteErneutLaden() {
@@ -667,24 +692,51 @@ async function verschicken(k, knopf) {
   packSpeichert = true;
   knopf.disabled = true;
   knopf.textContent = 'Wird gebucht …';
-  const meldungen = [];
+  // Ein Aufruf fuer den ganzen Umschlag: der Server prueft erst alle Bestellungen und schreibt dann
+  // alle lokalen Schritte, bevor Shopify antwortet - so zerfaellt ein Umschlag mit zwei Bestellungen nie.
+  let r = null;
   let fehler = null;
-  for (const b of k.bestellungen) {
-    const ids = k.muster.filter(m => m.orderId === b.orderId).map(m => m.lineItemId);
-    if (!ids.length) continue;
-    try {
-      // eslint-disable-next-line no-await-in-loop -- je Bestellung nacheinander, der Server reiht ohnehin.
-      const r = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId: b.orderId, schritt: 'raus', lineItemIds: ids, notiz: 'Verschickt aus der Packstation' });
-      meldungen.push({ text: `${b.orderName}: ${r?.shopify?.meldung || 'als verschickt eingetragen.'}`, warn: !!r?.shopify && !['gebucht', 'bereits'].includes(r.shopify.status) });
-    } catch (err) { fehler = `${b.orderName}: ${err.message}`; break; }
-  }
+  try {
+    r = await orgSchreiben(ENDPOINT, { packSchluessel: k.packSchluessel, aktion: 'verschickt' });
+  } catch (err) { fehler = err; }
   try {
     const neu = await fetchEinkauf(ENDPOINT);
     if (neu?.verfuegbar && !neu.fehler) kunden.musterPacken = neu;
   } catch { /* der naechste Abruf holt es nach */ }
   packSpeichert = false;
-  if (fehler) toast(`Nicht verschickt: ${fehler}${meldungen.length ? ` – schon erledigt: ${meldungen.map(m => m.text).join(' ')}` : ''}`, 'crit');
-  else toast(`Verschickt · ${umschlagKennung(k)} ${k.name}. ${meldungen.map(m => m.text).join(' ')}`, meldungen.some(m => m.warn) ? 'warn' : undefined);
+  if (fehler) {
+    // Nur eine Sperre des Servers (4xx, oder 500 "Nicht verschickt, keine Mail") ist sicher "nichts
+    // passiert". Bei Netzfehler/5xx sonst entscheidet die neu geladene Liste (Pruefung 29.10.).
+    const sicherNichts = /^Nicht verschickt/.test(fehler.message) || (fehler.status >= 400 && fehler.status < 500);
+    const nochDa = (kunden.musterPacken?.kunden || []).some(x => x.packSchluessel === k.packSchluessel);
+    const text = sicherNichts || nochDa
+      ? `${/^Nicht verschickt/.test(fehler.message) ? fehler.message : `Nicht verschickt: ${fehler.message}`}${nochDa ? ' Der Umschlag steht noch unter „Gepackt“.' : ''}`
+      : `Ergebnis unklar (${fehler.message}) – der Umschlag ist nicht mehr in der Liste, vermutlich verschickt. Bitte ${k.bestellungen.map(b => b.orderName).join(', ')} unter Bestellen prüfen.`;
+    // Erst nach dem Neuladen setzen: der Fehler gilt fuer genau diesen Stand der Liste, sonst loescht
+    // packFehlerHtml ihn beim naechsten Zeichnen sofort wieder.
+    packFehler = text;
+    packFehlerStand = kunden.musterPacken;
+    toast(text, 'crit', { dauer: 9000 });
+    render();
+    return;
+  }
+  const versand = Array.isArray(r?.versand) ? r.versand : [];
+  // Lokal nicht eingetragen: steht weiter unter "Gepackt" und braucht einen neuen Klick, keine Shopify-Pruefung.
+  const nicht = versand.filter(v => v.status === 'nicht-eingetragen');
+  // Was lokal raus, aber in Shopify nicht sicher gebucht ist, bleibt oben stehen; die Texte je Bestellung
+  // kommen vom Server und passen zu jedem Ergebnis (teilweise, unklar, Fehler).
+  const probleme = versand.filter(v => !['gebucht', 'bereits', 'nicht-eingetragen'].includes(v.status));
+  const gebucht = versand.filter(v => v.status === 'gebucht');
+  toast(`Verschickt · ${umschlagKennung(k)} ${k.name}${gebucht.length ? ` · in Shopify als versendet gemeldet${gebucht.some(v => v.kundeBenachrichtigt) ? ', der Kunde bekommt die Versandmail' : ', ohne Mail'}` : ''}`);
+  if (nicht.length) {
+    packFehler = `Nicht verschickt: ${nicht.map(v => `${v.orderName} – ${v.meldung}`).join(' · ')} Diese Bestellung steht noch unter „Gepackt“ – dort erneut „Verschickt“ drücken.`;
+    packFehlerStand = kunden.musterPacken;
+    toast(packFehler, 'crit', { dauer: 9000 });
+  }
+  if (probleme.length) {
+    versandProbleme = [...versandProbleme.filter(a => !probleme.some(v => v.orderId === a.orderId)), ...probleme];
+    toast(`${plural(probleme.length, 'Bestellung', 'Bestellungen')} in Shopify bitte prüfen – Hinweis oben in der Packstation.`, 'crit', { dauer: 9000 });
+  }
   render();
 }
 
@@ -708,6 +760,7 @@ function kundeMitMuster(lineItemId) {
 /** Klicks im Reiter "Muster packen". Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function musterPackenKlick(e) {
   if (e.target.closest('[data-mp-neuladen]')) { e.preventDefault(); void packlisteErneutLaden(); return true; }
+  if (e.target.closest('[data-mp-versand-ok]')) { e.preventDefault(); versandProbleme = []; render(); return true; }
   const h = e.target.closest('[data-mp-haken]');
   if (h) {
     const k = kundeMitMuster(h.dataset.mpHaken);

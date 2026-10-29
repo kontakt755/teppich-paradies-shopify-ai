@@ -132,7 +132,7 @@ test('Suche findet Umschlaege ueber alle Arbeitslisten und erklaert den Umfang',
   const html = ansicht('tab=muster&mpbereich=packen&mpq=TEST2', [kunde(1, 'packen'), kunde(2, 'warten')]);
   assert.match(html, /data-mp-kunde="order2"/);
   assert.doesNotMatch(html, /data-mp-kunde="order1"/);
-  assert.match(html, /Suche berücksichtigt alle Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller/);
+  assert.match(html, /Suche berücksichtigt alle offenen Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller/);
 });
 
 test('Suche nach dem Herstelleretikett klappt den Umschlag auf und markiert das Muster', () => {
@@ -306,12 +306,37 @@ test('Muster kommt an: ein Feld, eine Karte mit Ziel-Umschlag; ohne Eingabe der 
   assert.match(alt, /href="#\/kunden\?tab=muster&amp;mp=laden">Muster kommt an</);
 });
 
+test('Muster kommt an: passt das Muster nur zu Gepacktem, steht das da statt "Nichts gefunden" (29.10.)', () => {
+  const k = kunde(6, 'gepackt');
+  const html = ansicht('tab=muster&mp=laden&mh=TEST6', [k]);
+  assert.match(html, /Kein offener Umschlag braucht dieses Muster – es passt nur zu schon gepackten oder versandten Bestellungen/);
+  assert.doesNotMatch(html, /Nichts gefunden\. Weniger Wörter versuchen/);
+  assert.match(html, /mpfertig=TEST6">Trotzdem zeigen</);
+  assert.match(ansicht('tab=muster&mp=laden&mh=TEST6&mpfertig=TEST6', [k]), /Schon eingelegt[\s\S]*Umschlag ist schon gepackt/);
+});
+
 test('Suche zeigt passende Musterbestellungen ausserhalb der Packliste mit Grund und Link, ohne Aktion', () => {
   const aussen = [{ orderId: 'order9', orderName: '#TEST9', name: 'Testkunde Neun', datum: '2026-10-20T08:00:00Z', grund: 'erledigt',
     muster: [{ lineItemId: 'line9', bestellt: { titel: 'Testmuster', farbe: 'Grau' }, etikett: { serie: 'Test', farbe: 'Grau', sku: 'T-GR' }, vorher: { produktname: 'Herstellerware Grau', farbnummer: '9G9' }, lieferant: null }] }];
-  const html = ansicht('tab=muster&mpq=9G9', [kunde(1, 'packen')], aussen);
+  // Schon versandt ist fertig (Mitarbeiter 29.10.): standardmaessig nur gezaehlt, ein Klick zeigt es.
+  const standard = ansicht('tab=muster&mpq=9G9', [kunde(1, 'packen')], aussen);
+  assert.match(standard, /Kein offener Umschlag passt – nur schon gepackte oder versandte Bestellungen/);
+  assert.match(standard, /1 fertige Bestellung passt auch – schon gepackt oder versandt, deshalb nicht gezeigt\. <a href="#\/kunden\?tab=muster&amp;mpq=9G9&amp;mpfertig=9G9">Trotzdem zeigen</);
+  assert.doesNotMatch(standard, /Außerhalb der Packliste/);
+  const storniert = ansicht('tab=muster&mpq=9G9', [kunde(1, 'packen')], [{ ...aussen[0], grund: 'storniert' }]);
+  assert.match(storniert, /Außerhalb der Packliste[\s\S]*storniert – nicht verschicken/, 'Warnungen bleiben in der Suche');
+  // "Trotzdem zeigen" gilt nur fuer genau diese Suche.
+  assert.match(ansicht('tab=muster&mpq=9G8&mpfertig=9G9', [kunde(1, 'packen')], aussen), /Nichts gefunden – weder in der Packliste/);
+  // Andere Suche, die dieselbe fertige Bestellung trifft: wieder ausgeblendet.
+  const andere = ansicht('tab=muster&mpq=T-GR&mpfertig=9G9', [kunde(1, 'packen')], aussen);
+  assert.match(andere, /1 fertige Bestellung passt auch/);
+  assert.doesNotMatch(andere, /Außerhalb der Packliste/);
+  // Aus dem Reiter Erledigt gesucht: das Fertige ist gemeint und steht gleich mit drin.
+  assert.match(ansicht('tab=muster&mpbereich=erledigt&mpq=9G9', [kunde(1, 'packen')], aussen), /Außerhalb der Packliste[\s\S]*#TEST9/);
+  const html = ansicht('tab=muster&mpq=9G9&mpfertig=9G9', [kunde(1, 'packen')], aussen);
   assert.doesNotMatch(html, /data-mp-kunde="order1"/);
   assert.match(html, /Kein offener Umschlag passt – siehe unten/);
+  assert.match(html, /Schon gepackte und versandte Bestellungen sind mit drin\. <a href="#\/kunden\?tab=muster&amp;mpq=9G9">Fertige wieder ausblenden</);
   assert.match(html, /Außerhalb der Packliste[\s\S]*#TEST9[\s\S]*schon versandt oder erledigt[\s\S]*Farbnr\. 9G9/);
   assert.match(html, /bq=%23TEST9">#TEST9 – Bestellung ansehen</);
   assert.doesNotMatch(html.slice(html.indexOf('Außerhalb der Packliste')), /data-mp-(haken|drucken|aktion|alle)/);

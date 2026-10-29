@@ -2,6 +2,48 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · Packstation: „Verschickt“ ganz oder gar nicht, Suche ohne Fertiges (#1811)
+
+- **Geaendert:** Fortsetzung von #1810 nach Wunsch des Mitarbeiters vom 29.10.
+  - „Verschickt – Kunde informieren“ ist jetzt ein einziger Aufruf (`aktion: 'verschickt'`) statt je
+    Bestellung aus dem Browser. Der Server prüft erst alle Bestellungen des Umschlags (Fehlmenge,
+    Musterautomatik). Geht eine nicht, kommt „Nicht verschickt, keine Mail – #…“ und nichts ist
+    geschrieben. Danach stehen alle lokalen Schritte „raus“, bevor Shopify antwortet. Bisher zerfiel
+    ein Umschlag mit zwei Bestellungen nach der ersten, und der Rest stand ohne Gepackt-Vermerk wieder
+    im Packen.
+  - Was in Shopify nicht sicher als versendet gemeldet ist, bleibt als roter Hinweis oben in der
+    Packstation stehen, mit Link zur Bestellung, bis „Verstanden“ geklickt wird. Bisher kam nur ein
+    Toast, und der Umschlag war schon weg.
+  - Suche und „Muster kommt an“ zeigen nur offene Arbeit. Gepackte Umschläge und versandte
+    Bestellungen zählen nicht mehr mit. Vorher verdrängte ein fertiger Kunde mit dem besseren Treffer
+    den Kunden, der das Muster braucht. Unter der Suche steht „N fertige Bestellungen passen auch –
+    Trotzdem zeigen“. Das gilt nur für diese eine Suche, die Fertigen stehen dann hinten.
+  - Versandbestätigung im Shopify-Admin: Fußzeile in Sie-Form (README Benachrichtigungen).
+- **Getestet:** `packstation-versandmail.test.mjs` neu, 8 Tests mit der Versand-Attrappe:
+  - Gepackt bucht nichts. Verschickt bucht mit Mail.
+  - Zweiter Klick und Zurücknehmen ändern Shopify nicht.
+  - Ohne Zugang wird nachgebucht.
+  - Vorbeigebrachte Muster gehen ohne Mail raus.
+  - Rolle „lesen“ bekommt 403.
+  - Zwei Bestellungen mit Sperre ergeben 409 ohne Schreiben.
+  - Bei zwei Bestellungen stehen beide lokal auf „raus“, bevor Shopify antwortet.
+
+  `muster-packen.test.mjs` (`offeneSuche`, `handTreffer`) und `packstation-arbeitslisten.test.mjs`
+  (Hinweis, gebundenes `mpfertig`, Storniert bleibt sichtbar) sind angepasst. Die 22 bis zum 29.10.
+  gepackten Bestellungen sind von Hand in Shopify gebucht, die 11 vom 28./29.10. mit Mail.
+  Unabhängige Prüfung des Diffs (4 Blickwinkel, jeder Befund gegengeprüft): 14 Befunde, behoben u. a.
+  Verschickt nur bei vollständig abgehaktem Umschlag, kein Haken mehr an Gepacktem, Status
+  `nicht-eingetragen` statt falscher Shopify-Meldung, 500 wenn nichts eingetragen wurde, Netzfehler
+  ohne falsche Gewissheit, Rest-Umschlag nur aus genau den stehen gebliebenen Bestellungen, Suche aus
+  Gepackt/Erledigt mit Fertigen, Fehlwörter der offenen Treffer bleiben sichtbar.
+- **Risiken:** Den Fall „ein lokaler Schritt scheitert trotz Vorprüfung“ (z. B. ein Schreibfehler)
+  deckt kein Test ab. Die Zahl „N fertige Bestellungen passen auch“ zählt alle Bestellungen eines
+  gepackten Umschlags und auch schwächere Treffer (bewusst grob, nur Hinweis). Der Klick gegen
+  das echte Shopify ist auf der Datenkopie nicht geprüft. Die Buchung ist der bestehende Weg
+  `versandBuchen`.
+- **Naechste Stufe:** Beileger zum Drucken für den Umschlag („Sind Sie zufrieden? …“). Die Texte
+  entscheidet der Inhaber.
+
 ## 2026-10-29 · Kettler-Weg: +3 cm Zuschnittpuffer je Länge und Breite (#1684)
 
 - **Geaendert:** Bestellregel des Inhabers vom 25.10. Teppiche, die der Lieferant ungekettelt an

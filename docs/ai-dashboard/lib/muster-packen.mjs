@@ -339,14 +339,36 @@ export function packSuche(kundenListe = [], eingabe = '', ausserhalb = []) {
 }
 
 /**
+ * Suche nur in offener Arbeit (Mitarbeiter 29.10.): gepackte Umschlaege und schon versandte bzw.
+ * erledigte Bestellungen zaehlen nicht mit - sonst verdraengt ein fertiger Kunde mit dem besseren
+ * Treffer den Kunden, der das Muster noch braucht (packSuche zeigt nur die besten Treffer).
+ * `fertig` zaehlt die Bestellungen unter den fertigen Treffern, die nicht schon offen gezeigt sind.
+ * `mitFertigen` haengt die fertigen Treffer HINTER die offenen - verdraengen koennen sie auch dann
+ * nichts. Storniert, Zahlung offen und geschlossen bleiben immer in der Suche: das sind Warnungen.
+ */
+export function offeneSuche(kundenListe = [], eingabe = '', ausserhalb = [], { mitFertigen = false } = {}) {
+  const fertigK = k => k.bereich === 'gepackt', fertigB = b => b.grund === 'erledigt';
+  const s = packSuche(kundenListe.filter(k => !fertigK(k)), eingabe, ausserhalb.filter(b => !fertigB(b)));
+  const f = packSuche(kundenListe.filter(fertigK), eingabe, ausserhalb.filter(fertigB));
+  const je = new Map(kundenListe.map(k => [k.packSchluessel, k]));
+  const bestellungenVon = t => (je.get(t.packSchluessel)?.bestellungen || []).map(b => b.orderId);
+  const gezeigt = new Set([...s.treffer.flatMap(bestellungenVon), ...s.ausserhalb.map(b => b.orderId)]);
+  const fertig = new Set([...f.treffer.flatMap(bestellungenVon), ...f.ausserhalb.map(b => b.orderId)].filter(id => !gezeigt.has(id)));
+  if (!mitFertigen) return { ...s, fertig: fertig.size };
+  return { woerter: s.woerter, treffer: [...s.treffer, ...f.treffer], ausserhalb: [...s.ausserhalb, ...f.ausserhalb.filter(b => !gezeigt.has(b.orderId))],
+    // Die offenen Treffer stehen vorn: deren Fehlwoerter gelten, sonst verschwaende ein "Nicht gefunden".
+    fehlen: s.treffer.length || s.ausserhalb.length ? s.fehlen : f.fehlen, fertig: 0 };
+}
+
+/**
  * "Muster kommt an": welcher Umschlag braucht das Muster in der Hand? `karten` = passende, noch nicht
  * eingelegte Muster offener Umschlaege in Packreihenfolge (aelteste Bestellung zuerst), hoechstens
  * `max`; `eingelegt` = passende Muster, die schon im Umschlag liegen oder gepackt sind; dazu die
  * Bestellungen ausserhalb der Packliste. Passen nur Kunde oder Bestellnummer, zaehlen alle Muster
  * dieses Umschlags.
  */
-export function handTreffer(kundenListe = [], eingabe = '', ausserhalb = [], { max = 6 } = {}) {
-  const s = packSuche(kundenListe, eingabe, ausserhalb);
+export function handTreffer(kundenListe = [], eingabe = '', ausserhalb = [], { max = 6, mitFertigen = false } = {}) {
+  const s = offeneSuche(kundenListe, eingabe, ausserhalb, { mitFertigen });
   const je = new Map(kundenListe.map(k => [k.packSchluessel, k]));
   const alle = s.treffer.flatMap(t => {
     const k = je.get(t.packSchluessel);
@@ -356,5 +378,5 @@ export function handTreffer(kundenListe = [], eingabe = '', ausserhalb = [], { m
   });
   const offen = alle.filter(x => !x.muster.abgehakt && x.kunde.bereich !== 'gepackt');
   return { woerter: s.woerter, fehlen: s.fehlen, karten: offen.slice(0, max), mehr: Math.max(0, offen.length - max),
-    eingelegt: alle.filter(x => x.muster.abgehakt || x.kunde.bereich === 'gepackt'), ausserhalb: s.ausserhalb };
+    eingelegt: alle.filter(x => x.muster.abgehakt || x.kunde.bereich === 'gepackt'), ausserhalb: s.ausserhalb, fertig: s.fertig };
 }

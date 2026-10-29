@@ -226,8 +226,13 @@ Produkttyp). Inhalte, Druck und Zuordnung: `../ratgeber-pdf/README.md`.
   Blocks vom 22.09. – ohne Tracking-Teil, ohne „Inhalt dieser Sendung“, ohne
   Bestellstatus-Link, dafür mit „Fragen zur Lieferung? Rufen Sie uns an“. Der
   Repo-Block mit Maßzeilen (#26) ist dort also nicht aktiv. Offen: die
-  Standardliste dort zeigt Maßware weiter mit der Menge (z. B. „× 775“), und die
-  Fußzeile steht noch in Du-Form.
+  Standardliste dort zeigt Maßware weiter mit der Menge (z. B. „× 775“).
+  Seit 29.10. steht die Fußzeile in Sie-Form („Wenn Sie Fragen haben, antworten
+  Sie einfach auf diese E-Mail oder schreiben Sie uns an …“). Auch die
+  `email_title`-Varianten oben sind in Sie-Form; sie erscheinen nur im
+  HTML-Titel. Betreff im Admin: „Eine Sendung aus der Bestellung {{ name }} ist
+  unterwegs“. Die Zeile „Trackingnummer“ erscheint nur, wenn eine Nummer
+  eingetragen ist. Musterbriefe aus der Packstation haben keine (#1811).
 
 Abgleich ohne Abschreiben: im Editor den Block über den Kopfkommentar suchen
 und gegen `raw.githubusercontent.com/<repo>/<commit>/…` vergleichen
