@@ -2,6 +2,20 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · Packstation: Kopfzeile einheitlich, Lieferanten-Bestelldatum auf jeder Karte
+
+- **Geaendert:** Die Angaben rechts im Kartenkopf („N Muster · …“, „bestellt am … · wartet seit …“)
+  sprangen von Karte zu Karte, weil der Block nach einem Umbruch nach links rutschte.
+  `.mp-meta` hält ihn jetzt per `margin-left:auto` rechtsbündig (Handy bleibt linksbündig).
+  „beim Lieferanten bestellt am …“ stand nur, solange noch Muster fehlten; `lib/muster-packen.mjs`
+  behält `bestelltAm` jetzt auch nach der Ankunft, `datumHtml()` zeigt es auf jeder Karte, auch
+  packbereit und gepackt. Der Stand je Muster („beim Lieferanten bestellt am …“) bleibt nur bei
+  noch bestellten Mustern.
+- **Test:** `packstation-arbeitslisten.test.mjs` (packbereit und gepackt mit Lieferantendatum),
+  `muster-packen.test.mjs` (Datum bleibt bei Stand „da“).
+- **Risiko:** PR #1794 ändert dieselben Dateien; wer zuerst gemergt wird, der andere zieht nach.
+- **Nächste Stufe:** keine.
+
 ## 2026-10-29 · Rote Betriebsmeldungen mit Weg, Entfernt-Zeile kürzer
 
 - **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde A5, A7, A1, A12, vom Kritiker bestätigt bzw.
