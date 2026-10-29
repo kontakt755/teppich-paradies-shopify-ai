@@ -1,0 +1,165 @@
+{
+  "id": "RAT-WB-002",
+  "handle": "kautschukboden-verlegen-und-pflegen",
+  "title": "Kautschukboden verlegen und pflegen: kleben, walzen, reinigen",
+  "blog": "ratgeber-weitere-boeden",
+  "tags": [
+    "Verlegen"
+  ],
+  "cluster": "weitere-boeden/kautschuk",
+  "parent": "ratgeber-weitere-boeden",
+  "intent": "anleitung",
+  "frage": "Wie verlege und pflege ich Kautschukboden?",
+  "begriff": "kautschukboden verlegen",
+  "nebenfragen": [
+    "Wie lange muss Kautschuk vor dem Verlegen im Raum liegen?",
+    "Welcher Kleber passt zu Kautschukfliesen und Kautschuk von der Rolle?",
+    "Ab wann darf ich Möbel auf den neuen Kautschukboden stellen?",
+    "Wie reinige ich einen Noppenbelag aus Kautschuk?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "linoleum-verlegen-und-pflegen",
+    "korkboden-verlegen-und-pflegen"
+  ],
+  "naechster_schritt": "sauberlauf-richtig-auslegen-und-pflegen",
+  "lexikon": [
+    "fussbodenheizung",
+    "nutzungsklasse",
+    "stuhlrolleneignung"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Technische Daten der Kautschukböden im Shop (Format, Dicke, Nutzungsklasse, vollflächig verkleben, Fußbodenheizung, Stuhlrollen Typ W, R9, antistatisch und elektrisch ableitbar)",
+      "url": "/collections/kautschukboden"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Produktangabe Nass- und Haftklebstoff für elastische Beläge (Kautschuk-Eignung). Die Dickenangabe „bis 2,5 mm“ im Shop-Text weicht vom aktuellen Datenblatt ab und wird im Artikel nicht verwendet; Shop-Text berichtigen",
+      "url": "/products/nass-und-haftklebstoff-fuer-elastische-belaege"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Kleber und Fixierung im Shop: Kleber mit Kautschuk-Eignung laut Produkttext, Kontaktklebstoff für Kautschuk-Leisten, -Profile und -Treppenkanten",
+      "url": "/collections/zubehoer-kleber-fixierung"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Reinigungsmittel im Shop (Neutralreiniger auch für die Erstpflege von Gummibelägen, PU-Reiniger für PU-vergütete Beläge)",
+      "url": "/collections/zubehoer-reinigungsmittel"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "TKB-Merkblatt 21: Kleben von elastischen Bodenbelägen (IVK, Juli 2025) – Lagerung inkl. paarweise gelagerter Einzelelemente (4.2), Temperierung bis 3 Tage (4.3), Spachteldicke, Zahnspachtel, Fliesenplanung mit Schnurschlag und Kreuzfuge (4.4.1), Walzen von der Mitte nach außen, Nahtschnitt mit Streifen nach unten (4.4.4.1), Auslegen von Platten über 3 mm (4.4.4.3), Kontaktklebstoff überwiegend für Sockelleisten und Treppen (3.1), ableitfähiges Kleben (4.4.8), Verfugen (4.5.3), Belastbarkeit, Pflegeanweisung",
+      "url": "https://www.klebstoffe.com/wp-content/uploads/2025/08/TKB-MB-21-Elast-Bodenbelaege-Veroeffentlichung.pdf"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Untergrund und Verlegung von Kautschukbelägen (Akklimatisieren, Restfeuchte, Längenänderung, Fußbodenheizung 18 °C)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/_gummi-kautschuk/untergrund-und-verlegung-von-kautschukbelaegen-151726"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Pflege und Zubehör von Kautschukbelägen (Erstreinigung, Trennmittelreste, pH-Wert, Kontaktklebstoff für Zubehör)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/_gummi-kautschuk/pflege-und-zubehoer-von-kautschukbelaegen-151728"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Klebstoffhersteller: Referenzdokument 011 Verlegung von Elastomer-Bodenbelägen (2022) – Temperierung, Spachteldicke, Bodentemperatur, Hammerstiel",
+      "url": "https://forbo.blob.core.windows.net/forbodocuments/1615022/RD_011_Verlegung%20von%20Elastomerbel%C3%A4gen.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Produktdatenblatt eines Nass- und Haftklebstoffs für elastische Beläge, Website des Klebstoffherstellers, Stand 10.2026 (Anwendungsbereich nennt nur Kautschuk in Bahnen, Spachteldicke bei Kautschuk 2 bzw. 3 mm, Ablüft- und Einlegezeit, frische Kleberreste mit Wasser entfernen)",
+      "url": "https://ch.uzin.com/fileadmin/MAM/112155/UZIN_KE_2000_S.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Musterleistungsverzeichnis Reinigung eines Kautschukherstellers (2023) – Erstreinigung nach der Verlegung: maschinelles Nassscheuern mit weicher Scheuerbürste ohne Abrasivstoffanteil, danach mit klarem Wasser nachscheuern und absaugen",
+      "url": "https://prd-media.int.crb.ch/media/96738/332_011.41_nora_flooring_systems_ag_Reinigung.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Reinigungs- und Pflegeanleitung Kautschuk-Bodenbeläge eines Pflegemittelherstellers (07/2024) – Sauberlaufzone, stehende Nässe, Stuhlrollen und Gleiter, bleibende Verfärbung durch Weichmacherwanderung aus Gummi und Teppichunterlagen",
+      "url": "https://www.mega.de/fileadmin/0_mega.de/3.Sortiment/5.Bodenbelaege/Dr.Schutz/Kautschuk-Bodenbelaege_mit_PU_Versiegelung__Objektbereich_.pdf"
+    },
+    {
+      "art": "norm",
+      "titel": "DIN 18365 Bodenbelagarbeiten (VOB/C): schriftliche Pflegeanweisung an den Auftraggeber (nach TKB-Merkblatt 21, Abschnitt 4.6)",
+      "url": "https://www.klebstoffe.com/wp-content/uploads/2025/08/TKB-MB-21-Elast-Bodenbelaege-Veroeffentlichung.pdf"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Kleber mit 21 cm breitem Zahnspachtel auf gespachteltem Estrich aufziehen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Anwalzen mit Gliederwalze von der Mitte nach außen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Nahtschnitt an der Rollenware: obere Kante mit Lineal und Trapezklinge gerade schneiden, Streifen der unteren Bahn nach unten abziehen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Noppenbelag mit weicher Bürste nass reinigen",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-10-29",
+    "grund": "Verlegeregeln nach TKB-Merkblatt 21 sind stabil; Sortiment (Formate, Dicken) und Kleberfreigaben im Shop dabei mitprüfen"
+  },
+  "expert_input": [
+    "Klebstoff: Welchen Kleber und welche Zahnung nehmen Sie für die 3-mm-Noppenfliese (50 × 50 cm) und die 3,5-mm-Fliese (100 × 100 cm)? Der Nass- und Haftklebstoff im Shop nennt im aktuellen Datenblatt (10.2026) nur Kautschuk in Bahnen (bis 4 mm), der Shop-Text sagt dagegen „Kautschuk-Beläge bis 2,5 mm“. Welche Angabe stimmt für unsere Ware, und darf er für Fliesen verwendet werden? Dispersion im Nassbett oder Reaktionsharz?",
+    "Spachteln Sie bei Kautschuk immer vollflächig, und mit welcher Mindestdicke? Die Quellen nennen 2 mm auf saugfähigem und 3 mm auf nicht saugfähigem Untergrund.",
+    "Walzen: Nehmen Sie eine Gliederwalze von mindestens 50 kg? Walzen Sie von der Mitte nach außen oder längs und quer (Kurz-Ratgeber: „in beide Richtungen“)? Walzen Sie nach 30 bis 60 Minuten nach?",
+    "Ableitfähigkeit: Alle drei Kautschukböden (Rolle 190 cm, Noppenfliese, 100er-Fliese) sind laut Produktdaten „antistatisch, elektrisch ableitbar“. Ist das ableitfähig im Sinne von TKB-Merkblatt 21 (dann ableitfähiger Kleber, geerdetes Ableitsystem, Nähte grundsätzlich verfugen) oder nur antistatisch? Verfugen bzw. verschweißen Sie die Nähte der Rolle auch bei normaler Wohnnutzung? Ist die Rolle einschichtig (Streifen beim Nahtschnitt nach unten abziehen) oder zweischichtig (Streifen mit Hakenklinge abtrennen)?",
+    "Fliesen: Haben die Noppenfliesen und die 100er-Fliesen Laufrichtungspfeile? Verlegen Sie im Schachbrett oder in eine Richtung? Legen Sie die 100 × 100-Fliesen vorher trocken aus? Wie lagern Sie einzeln gelieferte Fliesen paarweise (TKB: „Ober- und Unterseite aufeinanderliegend“ – Oberseite auf Oberseite)? Nehmen Sie für den Schnurschlag nur weiße Kreide (TKB nennt das für Linoleum-Platten) oder Bleistift?",
+    "Akklimatisieren: Reichen 24 bis 48 Stunden, oder lassen Sie Kartons und Rollen im Winter länger liegen (TKB: bis zu 3 Tage)? Achten Sie mit Fußbodenheizung beim Verlegen auf mindestens 18 °C Bodentemperatur?",
+    "Ab wann ist der Boden begehbar, ab wann dürfen Möbel und Bürostühle darauf (TKB: volle Belastbarkeit bis zu 7 Tage)?",
+    "Erstreinigung: frühestens nach 48 Stunden? Womit (Reiniger, Pad oder weiche Bürste)? Folgt danach eine Wischpflege? Ist unsere Ware werkseitig PU-vergütet? Das entscheidet über Erstpflege und Reiniger.",
+    "Noppenbelag: Welche Bürste bzw. welchen Schrubber und welchen Reiniger empfehlen Sie Kunden für die tägliche und die gründliche Reinigung? Gilt „weiche Bürste ohne Schleifanteil“ (Herstellerangabe für die maschinelle Erstreinigung) auch für die laufende Reinigung, und sind Scheuerbürsten mit Schleifanteil auszuschließen?",
+    "Bestätigen Sie: keine Lösungsmittel, Scheuermittel, Benzin oder Öl auf Kautschuk?",
+    "Was empfehlen Sie Kunden, wenn nach der Verlegung Blasen, Hohlstellen oder klaffende Fugen auftreten (Spalte „Was jetzt hilft“ fehlt bisher)?",
+    "Riecht frisch verlegter Kautschuk bei Ihren Verlegungen, und wie lange? (Satz aus dem Kurz-Ratgeber, online bisher ohne Beleg.)"
+  ],
+  "excerpt": "Kautschukfliesen und Kautschuk von der Rolle werden vollflächig verklebt. Entscheidend sind Raumtemperatur, ein glatt gespachtelter Untergrund, der passende Kleber und gründliches Walzen; gereinigt wird mit pH-neutralem Reiniger, Noppenbelag mit weicher Bürste.",
+  "seo": {
+    "title": "Kautschukboden verlegen und pflegen: Schritt für Schritt",
+    "description": "Kautschukfliesen und Rollenware vollflächig kleben: Raumklima, Untergrund, Kleber, Walzen, Wartezeit, Erstreinigung und Pflege von Noppenbelägen."
+  },
+  "metafields": {
+    "kurzantwort": "Kautschukfliesen und Kautschuk von der Rolle werden vollflächig verklebt. Belag und Kleber müssen vorher Raumtemperatur haben, und der Untergrund wird trocken und glatt gespachtelt. Nach dem Einlegen walzen Sie den Belag mit einer schweren Walze von der Mitte nach außen in beide Richtungen an und nach 30 bis 60 Minuten noch einmal. Frühestens 48 Stunden nach dem Verlegen folgt die Erstreinigung, danach genügen Saugen und feuchtes Wischen mit pH-neutralem Reiniger, bei Noppenbelag mit weicher Bürste.",
+    "art": "Anleitung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [
+      "Grundierung und Spachtelmasse",
+      "Klebstoff, der für Belag und Dicke freigegeben ist",
+      "Zahnspachtel 18 oder 21 cm breit, Zahnung laut Datenblatt",
+      "Schnurschlag",
+      "Stahllineal, Kantenschneider oder Cuttermesser mit Trapezklinge",
+      "Korkbrett oder teppichbespannter Holzklotz",
+      "Gliederwalze ab 50 kg und Handandrückrolle",
+      "Kontaktklebstoff für Sockelleisten und Profile",
+      "Neutralreiniger und weiche Bürste"
+    ],
+    "cta": [
+      "verlegeservice",
+      "zubehoer"
+    ],
+    "kollektion": "kautschukboden",
+    "zubehoer_kollektion": "zubehoer-kleber-fixierung",
+    "geprueft_von": "",
+    "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/rondaro-rot-kautschuk-noppenfliese-3mm-raumbild.jpg?v=1791656842",
+    "alt": "Treppenhaus mit rotem Kautschuk-Noppenbelag auf Podest und Stufen"
+  }
+}

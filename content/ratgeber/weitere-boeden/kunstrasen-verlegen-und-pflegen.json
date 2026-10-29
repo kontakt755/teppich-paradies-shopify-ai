@@ -1,0 +1,176 @@
+{
+  "id": "RAT-WB-004",
+  "handle": "kunstrasen-verlegen-und-pflegen",
+  "title": "Kunstrasen verlegen und pflegen: Garten, Terrasse und Balkon",
+  "blog": "ratgeber-weitere-boeden",
+  "tags": [
+    "Verlegen"
+  ],
+  "cluster": "weitere-boeden/kunstrasen",
+  "parent": "ratgeber-weitere-boeden",
+  "intent": "anleitung",
+  "frage": "Wie verlege ich Kunstrasen im Garten, auf der Terrasse oder auf dem Balkon?",
+  "begriff": "kunstrasen verlegen",
+  "nebenfragen": [
+    "Welcher Untergrund eignet sich für Kunstrasen?",
+    "Wie verbinde ich zwei Bahnen Kunstrasen?",
+    "Wie befestige ich Kunstrasen auf dem Balkon?",
+    "Wie pflege ich Kunstrasen?",
+    "Wie heiß wird Kunstrasen in der Sonne?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "sauberlauf-richtig-auslegen-und-pflegen",
+    "kautschukboden-verlegen-und-pflegen"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [
+    "fixierung",
+    "florhoehe",
+    "fussbodenheizung",
+    "ruecken"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Kunstrasen im Shop: Breiten, Polhöhen, Fußbodenheizung und UV-Angaben aus den technischen Daten der Qualitäten",
+      "url": "/collections/kunstrasen"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Zuschnitt-Rechner auf der Produktseite: Mindestlänge 100 cm, Längenzugabe 10 cm (bei Meterware kommt die Breite von der Rolle)",
+      "url": "/products/campio-kunstrasen"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Raummaß-Helfer im Zuschnitt-Rechner: Hinweis auf leichte Farbabweichungen (Charge) bei Rollen verschiedener Breite",
+      "url": "/products/campio-kunstrasen"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Kurz-Ratgeber Kunstrasen (freigegebener PDF-Text): Farbe und Maß vor dem Zuschnitt prüfen, verdichteter Splitt als Untergrund, auf festem Grund mit Klebeband sichern",
+      "url": "https://www.teppich-paradies.net/cdn/shop/files/ratgeber-kunstrasen.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Kunstrasen (Verlegeplan, Mängelkontrolle, Sandbett 5–6 cm mit Rüttelplatte, Florrichtung, 2–3 cm Zugabe gegen Schrumpfen, Nahtspalt höchstens 4 mm, Pflege und Schäden)",
+      "url": "https://media.hornbach.de/hb/installationmanual/as.46371131.pdf"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Merkblatt Verlegung und Pflege von Kunstrasen eines Fachhändlers (Untergründe, Unkrautvlies, Stolperkante, Florrichtung, Nähte 30 cm umschlagen, Fixieren, Beschweren, Wetter, Kompost, Grill und Asche, Schnee und Eis)",
+      "url": "https://www.reinkemeier-rietberg.de/wp-content/uploads/2026/08/verlegung-und-pflege-von-kunstrasen.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Klebstoffhersteller: Technische Information Verkleben und Verlegen von Kunstrasen (KSA 1) – Ausrollen, Faserrichtung, Zuschnitt zwischen den Faserreihen, Nahtband mit Folie auf der Rückseite, Klebermenge, Temperatur, Füllmaterial, Reparatur",
+      "url": "https://stauf.de/fileadmin/masterTemplate/Resources/Public/Files/tech_info/verklebung_von_oberbelaegen/KSA_01_Verkleben_und__Verlegen_von_Kunstrasen_mit_STAUF_Produkten_DE_Ansicht.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Installation Guide Kunstrasen (Kleber auf die Oberseite des Nahtbands, kein Kleber in die Fasern, trockenes Wetter, gegen den Flor bürsten)",
+      "url": "https://www.kedel.co.uk/user/Artificial%20Grass%20Install%20Guide%202019.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Pflegeanleitung Kunstrasen (Laub, Unkraut, Absaugen, Tierkot, Bleiche und Säuren, Aufbürsten ab 15 °C, Reservestück)",
+      "url": "https://www.baumteufel24.de/bilder/royalgrass/pflegeanleitung.pdf"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Verlegeanleitung Kunstrasen eines Fachhändlers (keine Anker und kein Sandbett auf Dachterrassen und Balkonen)",
+      "url": "https://www.premium-kunstrasen.de/mediafiles/pdf/verlegeanleitung-premium-kunstrasen.pdf"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen: Entwässerung von Balkonen, Loggien und Terrassen (Gefälle mindestens 1–2 %, Ablauf oder Rinne)",
+      "url": "https://www.baunetzwissen.de/wasserkreislauf/fachwissen/entwaesserung/entwaesserung-von-balkonen-loggien-und-terrassen-8376345"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "van Huijgevoort et al., Frontiers in Sustainable Cities 2024: Oberflächentemperatur von Kunst- und Naturrasen auf Versuchsflächen in Amsterdam, 25.06.2020 (herkömmlicher Kunstrasen mit schwarzem Gummigranulat 62,5 °C, kapillar bewässerter Naturrasen 35,3 °C)",
+      "url": "https://doi.org/10.3389/frsc.2024.1399858"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Center for Sports Surface Research, Penn State University (SportsField Management 06/2011): Kühlung von Sportkunstrasen durch Wässern",
+      "url": "https://sportsfieldmanagementonline.com/2011/06/06/is-there-any-way-to-cool-synthetic-turf/4551/"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Garten: verdichtetes Sandbett mit ausgelegtem Unkrautvlies",
+      "status": "offen"
+    },
+    {
+      "zweck": "Naht: umgeschlagene Kanten, Nahtband mittig, Kleber auf der Oberseite des Bands",
+      "status": "offen"
+    },
+    {
+      "zweck": "Florrichtung: zwei Bahnen gleich ausgerichtet gegenüber einer verdrehten Bahn",
+      "status": "offen"
+    },
+    {
+      "zweck": "Balkon mit Kunstrasen, Ablauf ausgespart",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-10-29",
+    "grund": "Verlegegrundsätze sind stabil; Breiten, Polhöhen und Produktdaten des Sortiments prüfen"
+  },
+  "expert_input": [
+    "Haben unsere Kunstrasen-Qualitäten Drainagelöcher im SBR-Rücken, und wie viel Wasser lassen sie durch?",
+    "Welche Qualitäten sind für den Garten auf Sandbett geeignet, welche nur lose für Terrasse, Balkon und innen? Laut Lieferant gilt Letzteres für die 6-mm- und die 20-mm-Qualität. Sollen die Produktseiten dazu einen Hinweis bekommen? (Der Artikel bittet bis dahin, vor dem Kauf nachzufragen.)",
+    "Sind Viridea, Silvana und Lindora (30, 38 und 45 mm Polhöhe) UV-stabilisiert? In ihren technischen Daten fehlt die Angabe, bei den übrigen fünf Qualitäten steht sie. Wenn ja, die technischen Daten ergänzen.",
+    "Wie breit ist der Rand ohne Fasern an den Längskanten? Deckt eine 400-cm-Rolle eine 400 cm breite Fläche noch ab, oder soll der Artikel zur nächsten Breite raten?",
+    "Splitt als Gartenbett (Kurz-Ratgeber: „verdichteter Splitt“): Welche Körnung und welche Schichtdicke empfehlen Sie? Online steht bisher nur die Schichtdicke für Bausand (5 bis 6 cm, Herstellerangabe).",
+    "Raten wir für die Gartenqualitäten zum Einsanden mit Quarzsand? Wenn ja: welche Körnung und Menge?",
+    "Wie viele Erdnägel bzw. Anker setzen Sie an Rändern und Nähten, und in welchem Abstand?",
+    "Welchen Nahtkleber und welches Nahtband empfehlen Sie? Der Shop führt beides nicht. Sollen Nahtband, Kunstrasenkleber, Erdnägel und Quarzsand ins Sortiment, damit der CTA 'zubehoer' möglich wird?",
+    "Raten wir bei Dachterrassen mit offener Bitumen- oder Kunststoffabdichtung ab? Der Lieferant schließt sie aus.",
+    "Ist Kunstrasen auf Holzterrassen und Holzbalkonen in Ordnung, oder droht Staunässe?",
+    "Werden zwei Bahnen einer Bestellung aus derselben Charge oder Rolle geschnitten?",
+    "Tierkot: sofort entfernen (so steht es im Kurzratgeber) oder erst antrocknen lassen (so sagen es Hersteller und Lieferant)? Soll der Kurzratgeber angepasst werden?",
+    "Sind 'mit mildem Reiniger abspritzen' und 'kein Hochdruckreiniger aus kurzer Entfernung' Hausempfehlungen? Für beides gibt es keine Herstellerquelle.",
+    "Empfehlen Sie, den Rasen in der Sonne auszurollen, und wie lange soll er liegen?",
+    "Soll ein Hinweis auf Spiegelungen großer Fenster (Lupeneffekt) in den Artikel?",
+    "Welches doppelseitige Klebeband für draußen auf Fliesen und Beton? Geht es auf Mietbalkonen rückstandsfrei wieder ab? (Artikel und Kurz-Ratgeber nennen Klebeband auf festem Grund; der Artikel bittet, das Band vorher mit uns abzustimmen.)",
+    "Verlegeservice: Für Kunstrasen bieten wir nur Zuschnitt und Beratung an. Die Produktseite zeigt aber den allgemeinen Block 'Service vor Ort … Verlegung anfragen'. Soll der Block bei Kunstrasen ausgeblendet werden?"
+  ],
+  "excerpt": "Eben und fest muss der Untergrund sein, und Wasser muss ablaufen können. So bereiten Sie Garten, Terrasse und Balkon vor, verbinden Bahnen mit Nahtband und pflegen Kunstrasen.",
+  "seo": {
+    "title": "Kunstrasen verlegen und pflegen: Garten, Terrasse, Balkon",
+    "description": "Untergrund, Wasserablauf, Florrichtung und Nähte mit Nahtband: So verlegen Sie Kunstrasen im Garten und auf dem Balkon und pflegen ihn richtig."
+  },
+  "metafields": {
+    "kurzantwort": "Kunstrasen braucht einen ebenen, festen Untergrund, über den Wasser ablaufen kann: im Garten ein verdichtetes Bett aus Sand oder Splitt mit Unkrautvlies, auf Terrasse und Balkon den vorhandenen festen Belag, ohne Anker und ohne Sandbett. Alle Bahnen liegen mit derselben Florrichtung Kante an Kante, nicht überlappend, und sind auf Nahtband verklebt. Gepflegt wird mit Besen, Rechen oder Laubbläser und Wasser; Feuer, Lösungsmittel und Stahlbürsten schaden den Fasern.",
+    "art": "Anleitung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [
+      "Kunstrasen mit Zugabe",
+      "Cuttermesser",
+      "Maßband",
+      "Nahtband und Kunstrasenkleber",
+      "harter Besen",
+      "Garten: Bausand oder Splitt, Rüttelplatte, Unkrautvlies",
+      "Garten: Stahlstifte, flache Zeltheringe oder Kunstrasenanker",
+      "Terrasse und Balkon: doppelseitiges Klebeband für die Ränder"
+    ],
+    "cta": [
+      "rechner",
+      "muster"
+    ],
+    "kollektion": "kunstrasen",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/lindora-kunstrasen-detail.jpg?v=1790955496",
+    "alt": "Kunstrasen mit hohem Flor, darauf ein gefaltetes Strandtuch und eine Sonnenbrille"
+  }
+}
