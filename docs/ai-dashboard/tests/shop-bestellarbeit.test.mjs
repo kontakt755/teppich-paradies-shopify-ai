@@ -241,3 +241,18 @@ test('offene Zahlung bleibt bei archivierten Waren sichtbar und nennt Zahlung st
   assert.equal(a.zeilen[0].kontrollieren, false);
   }
 });
+
+test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eigener Arbeit und bekommt nicht den Hauptknopf', () => {
+  const wartend = zeile('wartend', [p('w')], { w: { status: 'bestellt', bestelltAm: '2026-10-21T08:00:00Z' } }, { datum: '2026-10-10T12:00:00Z' });
+  const bestellen = zeile('bestellen', [p('w')], { w: null }, { datum: '2026-10-20T12:00:00Z' });
+  const a = shopBestellarbeit(daten([wartend, bestellen]), { jetzt });
+  assert.deepEqual(ids(a), ['bestellen', 'wartend'], 'eigener Schritt vor der aelteren, wartenden Bestellung');
+  assert.equal(a.zeilen.find(z => z.zeile.orderId === 'wartend').wartet, 'lieferant');
+  assert.equal(a.zeilen.find(z => z.zeile.orderId === 'bestellen').wartet, null);
+  const html = warenbestellungenBlock({ daten: daten([wartend, bestellen]) });
+  const knoepfe = [...html.matchAll(/class="btn btn-sm( btn-primary)?"[^>]*>([^<]+)</g)].map(m => [Boolean(m[1]), m[2]]);
+  assert.deepEqual(knoepfe.slice(0, 2), [[true, 'Bestellung bearbeiten'], [false, 'Bestellung ansehen']]);
+  assert.match(html, /wartet auf Lieferant/);
+  // Nur Wartende: kein Hauptknopf, nichts zu tun.
+  assert.doesNotMatch(warenbestellungenBlock({ daten: daten([wartend]) }), /btn-primary/);
+});
