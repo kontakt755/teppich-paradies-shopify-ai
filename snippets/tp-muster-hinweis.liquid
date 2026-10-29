@@ -103,4 +103,11 @@
     text-underline-offset: 2px;
     overflow-wrap: anywhere;
   }
+
+  /* Telefonnummer am Stueck: in der schmalen Spalte der Produktseite brach sie
+     am Desktop nach "03301" um (Fehlersuche 2026-10-28). Die Mailadresse darf
+     weiter umbrechen. */
+  .tp-muster-hinweis .tp-muster-hinweis__kontakt a[href^="tel:"] {
+    white-space: nowrap;
+  }
 {% endstylesheet %}

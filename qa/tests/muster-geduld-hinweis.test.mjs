@@ -96,3 +96,9 @@ test('Eingebunden unter dem Muster-Knopf (beide Zweige) und auf der Musterseite'
   assert.ok(info > 0 && seitenAufruf > info, 'Hinweis gehoert direkt unter die Versandzeile der Musterseite');
   assert.ok(seitenAufruf < seite.indexOf('</header>'));
 });
+
+test('Telefonnummer bricht nicht um, die Mailadresse darf (Fehlersuche 2026-10-28)', () => {
+  const css = read('snippets/tp-muster-hinweis.liquid').split('{% stylesheet %}')[1];
+  assert.match(css, /\.tp-muster-hinweis__kontakt a\[href\^="tel:"\]\s*\{\s*white-space: nowrap;/);
+  assert.match(css, /\.tp-muster-hinweis__kontakt a \{[^}]*overflow-wrap: anywhere;/);
+});
