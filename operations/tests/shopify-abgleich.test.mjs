@@ -2,7 +2,7 @@
 // Nur erfundene IDs und Namen, keine echten Bestellungen; kein Test spricht Shopify.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { uebernimmAusShopify, abweichungen, shopifyPositionen, UEBERNOMMEN_NOTIZ, STORNIERT_NOTIZ, EXPORT_NACHLAUF_MS } from '../lib/shopify-abgleich.mjs';
+import { uebernimmAusShopify, abweichungen, entfernteBestellt, shopifyPositionen, UEBERNOMMEN_NOTIZ, STORNIERT_NOTIZ, EXPORT_NACHLAUF_MS } from '../lib/shopify-abgleich.mjs';
 
 const O = n => `gid://shopify/Order/${n}`;
 const L = n => `gid://shopify/LineItem/${n}`;
@@ -143,4 +143,32 @@ test('Abweichungen: im Dashboard abgehakt, in Shopify offen - je Bestellung eine
   // Uebersprungen (endgueltig, z. B. Shopify-Testbestellung) zaehlt nie.
   pos[K(2, 4)] = { ...pos[K(2, 4)], shopifyVersand: { status: 'uebersprungen' } };
   assert.deepEqual(abweichungen(pos, orders, { exportiertAm }).map(z => z.orderId), [O(1), O(6)]);
+});
+
+test('Aus der Bestellung entfernt, beim Lieferanten "bestellt": je Bestellung eine Zeile; sonst nichts', () => {
+  const zeile = (n, menge, aktuell) => ({ id: L(n), quantity: menge, currentQuantity: aktuell, unfulfilledQuantity: 0 });
+  const orders = [
+    { ...bestellung(1, []), lineItems: { nodes: [zeile(1, 2, 0), zeile(2, 1, 0), zeile(3, 3, 3), zeile(4, 1, 0), { id: L(5), quantity: 1 }] } },
+    { ...bestellung(2, [], { storniert: '2026-10-12T08:00:00Z' }), lineItems: { nodes: [zeile(6, 1, 0)] } },
+    { ...bestellung(3, [], { test: true }), lineItems: { nodes: [zeile(7, 1, 0)] } },
+  ];
+  const pos = {
+    [K(1, 1)]: eintrag(1, 1, 'bestellt', { bestelltAm: '2026-10-11T08:00:00Z', lieferantBestellnummer: 'AB-1' }),
+    [K(1, 2)]: eintrag(1, 2, 'bestellt', { bestelltAm: '2026-10-10T09:00:00Z' }),
+    [K(1, 3)]: eintrag(1, 3, 'bestellt'),            // noch in der Bestellung
+    [K(1, 4)]: eintrag(1, 4, 'erledigt'),            // schon abgehakt
+    [K(1, 5)]: eintrag(1, 5, 'bestellt'),            // alter Export ohne aktuelle Menge
+    [K(2, 6)]: eintrag(2, 6, 'bestellt'),            // storniert: erledigt uebernimmAusShopify
+    [K(3, 7)]: eintrag(3, 7, 'bestellt'),            // Testbestellung
+  };
+  const s = shopifyPositionen(orders);
+  assert.deepEqual([1, 2, 3, 5].map(n => s.get(K(1, n)).entfernt), [true, true, false, false]);
+  const r = entfernteBestellt(pos, orders);
+  assert.equal(r.length, 1);
+  assert.deepEqual(r[0].lineItemIds, [L(1), L(2)]);
+  assert.equal(r[0].seit, '2026-10-10T09:00:00Z');
+  assert.equal(r[0].kunde, 'Testkunde');
+  assert.deepEqual(r[0].positionen[0], { lineItemId: L(1), bestelltAm: '2026-10-11T08:00:00Z', lieferantBestellnummer: 'AB-1' });
+  // Zurueck auf offen (kein Status mehr): faellt heraus.
+  assert.deepEqual(entfernteBestellt({ ...pos, [K(1, 1)]: { ...pos[K(1, 1)], status: null }, [K(1, 2)]: { ...pos[K(1, 2)], status: null } }, orders), []);
 });
