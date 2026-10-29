@@ -35,8 +35,8 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
       <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=gepackt">${p.gepackt || 0} gepackt · Versand vorbereiten</a>
     </nav>` : `<p class="${packFehler ? 'notice warn' : 'muted'}" role="status">${packFehler ? 'Packstand nicht verfügbar. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>`}
     <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${packText}</a>
-      <a class="btn btn-sm btn-ghost" href="#/einkauf?tab=lieferant&amp;art=muster&amp;af=bestellt">Muster-Wareneingang</a>
-      <a class="btn btn-sm btn-ghost" href="#/lexikon?tab=druckliste">Etiketten-Druckliste</a></div>
+      <a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a>
+      <a class="btn btn-sm btn-ghost" href="#/lexikon?tab=druckliste">Aufkleber-Druckliste</a></div>
   </section>`;
   return `<section class="heute-geschaeft${offen === 0 ? ' heute-geschaeft-ohne-offen' : ''}" aria-labelledby="heuteGeschaeft">
     <div class="heute-geschaeft-kopf"><h2 id="heuteGeschaeft">${nurMuster ? 'Muster bestellen &amp; packen' : 'Muster &amp; Bestellungen'}</h2><p>Neue Musterbestellungen stehen hier automatisch, nach Lieferant gebündelt.</p></div>

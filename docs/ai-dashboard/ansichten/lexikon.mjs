@@ -8,8 +8,8 @@ import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { istNurLesend } from '../kern/sitzung.mjs';
 import { emptyState, stoerungState } from '../bausteine/karten.mjs';
-import { LIEFERWEG_LABEL } from './einkauf/auftragsfluss.mjs';
-import { telLink, gmailLink } from '../lib/einkauf-lieferanten.mjs';
+import { LIEFERWEG_LABEL, einkauf, ensureEinkaufLieferanten } from './einkauf/auftragsfluss.mjs';
+import { telLink, gmailLink, lieferantName } from '../lib/einkauf-lieferanten.mjs';
 import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
 import { suchbegriffe, lexikonTreffer } from '../lib/lexikon-suche.mjs';
 import { originalHandle } from '../lib/muster-etiketten.mjs';
@@ -141,6 +141,16 @@ function musterEtikettenBlock(produkt) {
 }
 
 function lexWert(w) { return (w === null || w === undefined || w === '') ? NICHT_HINTERLEGT : esc(String(w)); }
+
+/**
+ * Lieferant mit Namen aus den Stammdaten wie in Packstation und Bestellen (Rundgang 29.10., T8) -
+ * vorher stand hier das Kuerzel ("A"). Ohne Stammdaten bleibt "Lieferant A".
+ */
+function lieferantZelle(id) {
+  if (!id) return NICHT_HINTERLEGT;
+  ensureEinkaufLieferanten();
+  return esc(lieferantName(id, einkauf.lieferanten?.lieferanten || []));
+}
 
 /**
  * Name einer Variante in der Bestellliste. Viele Produkte unterscheiden ihre
@@ -480,7 +490,7 @@ function bestellZeile(v, passende = new Set()) {
   return `<tr${passende.has(v) ? ' class="lex-passt"' : ''}>
     <td data-l="Variante">${lexWert(variantenName(v))}${passende.has(v) ? ' <span class="badge plain">passt zur Suche</span>' : ''}</td>
     <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
-    <td data-l="Lieferant">${lexWert(e.lieferant)}</td>
+    <td data-l="Lieferant">${lieferantZelle(e.lieferant)}</td>
     <td data-l="Artikelnummer">${artikelZelle}</td>
     <td data-l="Farbnummer">${lexWert(e.farbnummer)}</td>
     <td data-l="Bestelleinheit">${lexWert(e.bestelleinheit)}</td>
@@ -557,7 +567,7 @@ function musterBestellZeile(v) {
         : `<div class="small muted">${esc(o.grund || 'kein Original hinterlegt')}</div>`;
   return `<tr>
     <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
-    <td data-l="Lieferant">${lexWert(o.lieferant)}</td>
+    <td data-l="Lieferant">${lieferantZelle(o.lieferant)}</td>
     <td data-l="Original-Artikelnummer">${artikelZelle}<div class="small muted">Original beim Lieferanten – das Muster selbst hat keine eigene Artikelnummer</div></td>
     <td data-l="Original beim Lieferanten">${linkZelle}</td>
   </tr>`;
@@ -685,7 +695,7 @@ export function viewLexikon() {
   const handle = state.route.params.get('handle');
   if (state.route.params.get('tab') === 'druckliste') return viewMusterDruckliste();
   if (state.route.params.get('tab') === 'etiketten') return viewMusterEtikettenStatus();
-  const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Gemeinsame Druckliste</a><a class="btn" href="#/lexikon?tab=etiketten">Aufkleber prüfen</a></p>';
+  const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Aufkleber-Druckliste</a><a class="btn" href="#/lexikon?tab=etiketten">Aufkleber prüfen</a></p>';
   const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Hier findest du zum Produktnamen des Kunden das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
   // Im Produkt entfaellt der erklaerende Seitenkopf: am Handy schob er Name und Preis aus dem
   // ersten Bildschirm. "Lexikon" steht weiter in der Kopfzeile.
