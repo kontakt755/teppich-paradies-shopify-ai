@@ -13,9 +13,13 @@ Kontakt. Muster und Zubehör bekommen keinen.
 | Klebevinyl | Klebevinyl | `ratgeber-klebevinyl.pdf` |
 | Laminat | Laminat | `ratgeber-laminat.pdf` |
 | Parkett | Parkett | `ratgeber-parkett.pdf` |
+| Linoleum | Linoleumboden | `ratgeber-linoleum.pdf` |
+| Kautschuk | Kautschukboden | `ratgeber-kautschuk.pdf` |
+| Korkboden | Kork | `ratgeber-kork.pdf` |
+| Kunstrasen | Kunstrasen | `ratgeber-kunstrasen.pdf` |
+| Sauberlauf | Sauberlauf | `ratgeber-sauberlauf.pdf` |
 
-Noch ohne Ratgeber (wenige Produkte): Kork, Linoleum, Kautschuk, Kunstrasen,
-Sauberlauf, Dekofell sowie alles Zubehör.
+Ohne Ratgeber: Dekofell (ein Produkt) und Zubehör – das erklärt der Ratgeber des Bodens.
 
 ## Wo was liegt
 
