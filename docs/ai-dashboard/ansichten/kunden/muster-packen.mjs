@@ -2,6 +2,8 @@
  * Kunden, Reiter "Muster packen" (#1572): offene, bezahlte Musterbestellungen je Kunde in
  * Packreihenfolge. Standard ist "Alle offenen" (Inhaber 26.10.2026): jede Musterbestellung steht
  * sofort hier, wartende mit Anmerkung "bestellt am …"; dazu Packbereit · Zu klären · Wartet · Gepackt.
+ * Darunter filtert "Umschlag:" nach noch vorbereiten · vorbereitet · Muster schon drin (Inhaber 28.10.);
+ * "noch vorbereiten" druckt die gezeigten Umschlaege in einem Lauf.
  * Die Suche findet ein Muster auch ueber Hersteller, Herstellerprodukt und Farbnummer (packSuche) -
  * in beiden Ansichten und auch in Bestellungen ausserhalb der Packliste (mit Grund, ohne Aktion).
  * Neu etikettieren: je Muster "Aufkleber drucken"; "Alle eingelegt – Umschlag gepackt" hakt in einem
@@ -182,6 +184,19 @@ const adresseText = a => [a?.strasse, [a?.plz, a?.ort].filter(Boolean).join(' ')
 
 /** Ein Umschlag, in dem schon Muster liegen: angefangene Arbeit, die nicht untergehen darf (Inhaber 26.10.). */
 const angefangen = k => k.bereich !== 'gepackt' && k.muster.some(m => m.abgehakt);
+
+/**
+ * Filter "Umschlag:" (Inhaber 28.10.). "Noch vorbereiten" sind genau die Karten, bei denen Schritt 1
+ * "Bestellung drucken" leuchtet - ein Haken zaehlt dort schon als gedruckt. Die Chips schliessen sich
+ * nicht aus: ein vorbereiteter Umschlag kann auch schon Muster enthalten.
+ */
+const UMSCHLAG = [['', 'alle'], ['vorbereiten', 'noch vorbereiten'], ['vorbereitet', 'vorbereitet'], ['drin', 'Muster schon drin']];
+const UMSCHLAG_PASST = { vorbereiten: k => !istGedruckt(k) && !angefangen(k), vorbereitet: istGedruckt, drin: angefangen };
+const UMSCHLAG_LEER = {
+  vorbereiten: 'Alle Umschläge in dieser Liste sind vorbereitet.',
+  vorbereitet: 'In dieser Liste ist noch kein Umschlag vorbereitet.',
+  drin: 'In dieser Liste liegen noch in keinem Umschlag Muster.',
+};
 
 /**
  * Was zu einem Umschlag schon auf dem Packtisch liegt: der vorbereitete Umschlag (Aufkleber gedruckt) und
@@ -385,20 +400,43 @@ export function viewKundenMusterPacken() {
   // Gruppe zuerst die Umschlaege, in denen schon Muster liegen.
   const RANG = { packen: 0, klaeren: 1, warten: 2 };
   const reihe = (x, y) => (RANG[x.bereich] ?? 3) - (RANG[y.bereich] ?? 3) || angefangen(y) - angefangen(x);
-  const sichtbar = gefunden ? d.kunden.filter(k => treffer.has(k.packSchluessel))
+  const imReiter = gefunden ? d.kunden.filter(k => treffer.has(k.packSchluessel))
     : aktiv === 'offen' ? d.kunden.filter(k => k.bereich !== 'gepackt').sort(reihe)
       : aktiv === 'alle' ? d.kunden : d.kunden.filter(k => k.bereich === aktiv).sort(reihe);
+  // Bei Suche, Direktlink und Gepacktem gilt der Umschlagfilter nicht - dort soll nichts verschwinden.
+  const umschlagGilt = !gefunden && !zielKunde && aktiv !== 'gepackt';
+  const umschlag = umschlagGilt && UMSCHLAG_PASST[state.route.params.get('mpumschlag')] ? state.route.params.get('mpumschlag') : '';
+  const sichtbar = umschlag ? imReiter.filter(UMSCHLAG_PASST[umschlag]) : imReiter;
+  // Wie die Reiter als Links; beide bleiben beim Wechsel des anderen erhalten.
+  const umschlagLink = wert => {
+    const p = new URLSearchParams(state.route.params);
+    p.set('tab', 'muster');
+    if (wert) p.set('mpumschlag', wert); else p.delete('mpumschlag');
+    p.delete('umschlag'); p.delete('mpq'); p.delete('mp');
+    return `#/kunden?${p}`;
+  };
+  const umschlagFilter = umschlagGilt ? `<nav class="chips mp-umschlagfilter" aria-label="Nach Umschlag filtern"><span class="small muted">Umschlag:</span>${UMSCHLAG.map(([w, label]) =>
+    `<a class="chip" href="${esc(umschlagLink(w))}"${umschlag === w ? ' aria-current="page"' : ''}>${label}<span class="c">${w ? imReiter.filter(UMSCHLAG_PASST[w]).length : imReiter.length}</span></a>`).join('')}</nav>` : '';
   // Wenige Treffer gleich aufklappen und das passende Muster markieren.
   const aufklappen = gefunden && sichtbar.length <= 3;
   const packen = d.kunden.filter(k => k.bereich === 'packen');
   const druckbar = packen.filter(k => !k.fehlt.length);
   const aufkleber = druckbar.reduce((summe, k) => summe + aufkleberFuer(k, { nurOffen: true }).length, 0);
+  // "Noch vorbereiten" druckt genau die gezeigten Umschlaege, in dieser Reihenfolge; ohne vollstaendige
+  // Musterzuordnung gibt es keinen Aufkleber.
+  const vorbereiten = umschlag === 'vorbereiten' ? sichtbar.filter(k => !k.fehlt.length) : [];
+  const vorbereitenAufkleber = vorbereiten.reduce((summe, k) => summe + aufkleberFuer(k, { nurOffen: true }).length, 0);
+  const ohneZuordnung = umschlag === 'vorbereiten' ? sichtbar.length - vorbereiten.length : 0;
   // Kein Hauptknopf: in der Liste leuchtet erst der Schritt im geoeffneten Umschlag.
-  const druck = ['packen', 'offen'].includes(aktiv) && aufkleber ? `<div class="mp-summe"><button type="button" class="btn" data-mp-alle>Alle Packbereiten drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button></div>` : '';
-  const leerText = suche ? (gefunden.ausserhalb.length ? 'Kein offener Umschlag passt – siehe unten.' : 'Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen. Weniger Wörter versuchen, z. B. nur die Farbnummer.') : aktiv === 'offen' ? 'Gerade keine offene Musterbestellung.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : 'Keine gepackten Umschläge.';
-  const leer = `<div class="mp-arbeitsleer"><p>${leerText}</p>${['packen', 'offen'].includes(aktiv) && !suche ? `<p>Eingetroffene Muster legst du unter <a href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a> ein, oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
-  const titel = aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1];
-  return `${umschalter}${kopf}${filter}${ausschlussHinweis}
+  const druck = vorbereitenAufkleber || ohneZuordnung
+    ? `<div class="mp-summe">${vorbereitenAufkleber ? `<button type="button" class="btn" data-mp-vorbereiten="${esc(vorbereiten.map(k => k.packSchluessel).join(' '))}">${vorbereiten.length === 1 ? 'Diesen Umschlag' : `Diese ${vorbereiten.length} Umschläge`} vorbereiten (${plural(vorbereitenAufkleber, 'Aufkleber', 'Aufkleber')})</button>` : ''}${ohneZuordnung ? `<span class="small muted">${plural(ohneZuordnung, 'Umschlag', 'Umschläge')} ohne vollständige Musterzuordnung – erst im Lexikon klären.</span>` : ''}</div>`
+    : !umschlag && ['packen', 'offen'].includes(aktiv) && aufkleber ? `<div class="mp-summe"><button type="button" class="btn" data-mp-alle>Alle Packbereiten drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button></div>` : '';
+  const leerText = suche ? (gefunden.ausserhalb.length ? 'Kein offener Umschlag passt – siehe unten.' : 'Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen. Weniger Wörter versuchen, z. B. nur die Farbnummer.') : imReiter.length && umschlag ? UMSCHLAG_LEER[umschlag] : aktiv === 'offen' ? 'Gerade keine offene Musterbestellung.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : 'Keine gepackten Umschläge.';
+  const leer = `<div class="mp-arbeitsleer"><p>${leerText}</p>${imReiter.length && umschlag ? `<p><a href="${esc(umschlagLink(''))}">Alle ${plural(imReiter.length, 'Umschlag', 'Umschläge')} dieser Liste zeigen</a></p>`
+    : ['packen', 'offen'].includes(aktiv) && !suche ? `<p>Eingetroffene Muster legst du unter <a href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a> ein, oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
+  const titel = (aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1])
+    + (umschlag ? ` · Umschlag ${UMSCHLAG.find(([w]) => w === umschlag)[1]}` : '');
+  return `${umschalter}${kopf}${filter}${umschlagFilter}${ausschlussHinweis}
     ${suchfeld}
     ${suche ? `<p class="small muted">Die Suche berücksichtigt alle Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>` : ''}
     ${druck}<section class="mp-arbeitsliste" aria-label="${esc(titel)}"><h2 class="mp-titel">${esc(titel)}${aktiv === 'gepackt' ? ' – Versand noch separat' : ''}</h2>
@@ -695,6 +733,14 @@ export function musterPackenKlick(e) {
   if (e.target.closest('[data-mp-alle]')) {
     e.preventDefault();
     drucken(liste.filter(k => k.bereich === 'packen' && !k.fehlt.length), 'Aufkleber · alle Kunden in Packreihenfolge', { nurOffen: true });
+    return true;
+  }
+  const vorb = e.target.closest('[data-mp-vorbereiten]');
+  if (vorb) {
+    e.preventDefault();
+    // Reihenfolge wie in der Liste; was inzwischen gepackt oder ohne Zuordnung ist, faellt heraus.
+    const auswahl = vorb.dataset.mpVorbereiten.split(' ').map(pk => liste.find(k => k.packSchluessel === pk)).filter(k => k && !k.gepackt && !k.fehlt.length);
+    drucken(auswahl, `Aufkleber · ${plural(auswahl.length, 'Umschlag', 'Umschläge')} vorbereiten`, { nurOffen: true });
     return true;
   }
   const a = e.target.closest('[data-mp-aktion]');
