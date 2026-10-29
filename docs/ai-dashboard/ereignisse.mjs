@@ -44,6 +44,7 @@ import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
 import { socialEingabe, socialAbsenden, socialKlick } from './ansichten/social.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
 import { akquiseKlick, akquiseAenderung } from './ansichten/akquise.mjs';
+import { hausverwaltungenKlick } from './ansichten/hausverwaltungen.mjs';
 import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
 import { prozesseKlick, prozesseEingabe, prozesseAbsenden, verwerfeProzessKontext } from './ansichten/prozesse.mjs';
@@ -122,6 +123,7 @@ export function bindEvents() {
     if (aufraeumenKlick(e)) return;
     if (sonderpostenKlick(e)) return;
     if (akquiseKlick(e)) return;
+    if (hausverwaltungenKlick(e)) return;
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;

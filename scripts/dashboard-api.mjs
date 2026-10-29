@@ -18,7 +18,7 @@ import { leseVersandtarife as kettelTarife } from '../operations/lib/versandtari
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { musterAutomatikLauf, musterAutomatikAnzeige } from '../operations/lib/muster-bestellautomatik.mjs';
 import { vorbereitungStand } from '../operations/lib/bestellvorbereitung.mjs';
 import { arbeitsstand } from '../operations/lib/arbeitsstand.mjs';
@@ -81,6 +81,7 @@ import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as ME
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefeReferenz } from '../docs/ai-dashboard/lib/akquise.mjs';
+import { wendeHvAenderungAn, leererBestand as leererHvBestand } from '../docs/ai-dashboard/lib/hausverwaltungen.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, korrigiereRollenbestand, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
@@ -4234,6 +4235,36 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       fs.writeFileSync(tmp, JSON.stringify({ firmen: stand }, null, 2), { mode: 0o600 });
       fs.renameSync(tmp, q.status);
       return { ok: true, firma: { id, ...neu } };
+    },
+
+    /**
+     * Hausverwaltungen (w-154, #1768): Verwaltungen, Objekte, Angebote - von Hand gepflegt,
+     * nur hier gespeichert ($TP_PRIVAT_DIR/hausverwaltungen/verwaltungen.json, nächtlich gesichert).
+     */
+    _hvDatei() {
+      return path.join(privatDirPath || privatDir(), 'hausverwaltungen', 'verwaltungen.json');
+    },
+    async hausverwaltungenListe() {
+      const d = this._privatJson(this._hvDatei(), leererHvBestand());
+      return { verfuegbar: true, verwaltungen: Array.isArray(d.verwaltungen) ? d.verwaltungen : [] };
+    },
+    async hausverwaltungenSpeichern(payload = {}, benutzer = null) {
+      const file = this._hvDatei();
+      // Kaputtes JSON bricht hier ab (_privatJson) - sonst schriebe der Klick eine Datei mit einem Eintrag.
+      const bestand = this._privatJson(file, leererHvBestand());
+      let r;
+      try {
+        r = wendeHvAenderungAn(bestand, payload, {
+          heute: now().toISOString().slice(0, 10),
+          neueId: () => `hv-${randomBytes(5).toString('hex')}`,
+          von: benutzer?.name || benutzer?.kuerzel || '',
+        });
+      } catch (e) { throw new ApiError(400, e.message); }
+      this._privatSchreiben(file, r.bestand);
+      const wem = r.ergebnis.verwaltung?.name || '';
+      const was = { verwaltung: 'Hausverwaltung', objekt: 'Objekt', angebot: 'Angebot' }[r.ergebnis.ebene];
+      merke(benutzer, 'Inhaber', `${was} ${r.ergebnis.entfernt ? 'entfernt' : payload.id ? 'geändert' : 'angelegt'}`, wem || null);
+      return { ok: true, ...r.ergebnis };
     },
 
     /**

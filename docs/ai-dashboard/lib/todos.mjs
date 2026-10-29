@@ -710,6 +710,21 @@ function ausAkquise(quellen) {
 }
 
 /**
+ * Hausverwaltungen (w-154): faellige Wiedervorlagen als ein To-do im Buero.
+ * `quellen.hausverwaltungen` = Liste der faelligen Verwaltungen (lib/hausverwaltungen.mjs hvFaellig).
+ */
+function ausHausverwaltungen(quellen) {
+  const v = quellen.hausverwaltungen || [];
+  if (!v.length) return [];
+  return [{
+    id: 'hausverwaltungen', art: 'hausverwaltungen', bereich: 'buero', ton: 'warn', alterTage: null,
+    titel: `Hausverwaltungen: ${v.length} wieder melden`,
+    kontext: [v.slice(0, 3).map(x => x.name).join(', '), v.length > 3 ? `+${v.length - 3} weitere` : null].filter(Boolean).join(' · '),
+    knopf: { text: 'Ansehen', href: v.length === 1 ? `#/hausverwaltungen?hv=${encodeURIComponent(v[0].id)}` : '#/hausverwaltungen' },
+  }];
+}
+
+/**
  * Termin beim Kunden morgen (Einkauf "Je Auftrag", Feld "Termin"): am Vortag ein To-do im Laden
  * mit fertigem Erinnerungstext zum Kopieren. `quellen.kundentermine` = [{ orderId, auftragName, kundeName, termin }].
  */
@@ -738,6 +753,7 @@ function alleTodos(quellen, opt) {
     ...ausNeuheiten(quellen, k.jetzt),
     ...ausAusschreibungen(quellen, k.jetzt),
     ...ausAkquise(quellen),
+    ...ausHausverwaltungen(quellen),
     ...ausKundenterminen(quellen, k),
     ...ausTailscale(quellen),
     ...ausSpeicher(quellen, k.jetzt),
@@ -768,6 +784,7 @@ function fuerSicht(todos, sicht, alle) {
  *   aufgaben       /api/org/liste?bereich=alle-aufgaben -> eintraege
  *   freigaben      Entwicklungsaufgaben (issues.json), nur beim Inhaber gefuellt
  *   akquise        faellige Wiedervorlagen (ansichten/akquise.mjs akquiseFaellig), nur beim Inhaber
+ *   hausverwaltungen faellige Wiedervorlagen (ansichten/hausverwaltungen.mjs hausverwaltungenFaellig)
  *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`, `routinen`)
  * @param {object} opt
  *   sicht          'inhaber' | 'laden' | 'website'
