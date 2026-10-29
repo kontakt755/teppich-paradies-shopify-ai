@@ -82,6 +82,7 @@ gebraeuchlich), Erfassen.
 - **Fehlt noch – zurücklegen** = Umschlag geht nach „Zu klären“, bis „Fehlendes ist da – weiter packen“.
 - **Eingelegt ✓** = Muster liegt überklebt im Umschlag (derselbe Haken wie in der Liste).
 - **Ratgeber drucken** = Kurz-Ratgeber zur Bodenart als PDF (zwei Seiten, beidseitig), Bestellnummer und Maß schon eingetragen; **Bitte beilegen: Ratgeber …** steht im Dialog „An Kunden raus“, wenn die Ware bei uns liegt oder abgeholt wird (28.10.2026).
+- **Ratgeber zum Ausdrucken** = leere Vorlagen aller Bodenarten unter Kunden → Bestellungen (nur bei Waren), ohne Bestellbezug (29.10.2026).
 - **Umschlag vorbereitet** = Aufkleber und Adresse sind gedruckt, der Umschlag liegt bereit und wartet auf die
   fehlenden Muster; sichtbar auf allen Geräten, mit Datum und Person. **Schon gedruckt** trägt es von Hand nach,
   **Druckvermerk zurücknehmen** (unter „Mehr …“) nimmt es zurück (#1718, 26.10.2026).
