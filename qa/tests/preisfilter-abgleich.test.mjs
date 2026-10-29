@@ -3,7 +3,11 @@ import test from 'node:test';
 import {
   BEREICHE, LABELS, JE_AUFRUF, bereichFuer, meterpreisCent, sollWert, planeAbgleich, rueckwegFuer,
   bauePakete, setzenAufruf, fehlerAus, argumente, ladeExport, definitionMutation, KEY, NAMESPACE,
+  laufOrdner, erwartung, vergleiche, main,
 } from '../../scripts/preisfilter-abgleich.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 // Preisfilter Teppichboden (w-189): Metafeld custom.meterpreis_bereich aus dem
 // Meterpreis der Karte ableiten, nicht aus der teureren Wunschmass-Variante.
@@ -141,6 +145,9 @@ test('Argumente: Flags, Werte und Fehler', () => {
   assert.throws(() => argumente(['--export']), /braucht einen Wert/);
   assert.throws(() => argumente(['--hoechstens', '0']), /> 0/);
   assert.throws(() => argumente(['--foo']), /Unbekanntes Argument/);
+  // Review PR #1801: ohne Live-Abruf keine Gegenprobe - nie schreiben
+  assert.throws(() => argumente(['--export', 'e.json', '--schreiben']), /schliessen sich aus/);
+  assert.throws(() => argumente(['--export', 'e.json', '--zurueck', 'r.json']), /schliessen sich aus/);
 });
 
 test('Export-Datei: Array oder { produkte }', () => {
@@ -154,4 +161,65 @@ test('Definition: Produkt-Metafeld, Text, Storefront lesbar', () => {
   assert.match(m, /metafieldDefinitionCreate/);
   assert.match(m, new RegExp(`namespace:"${NAMESPACE}", key:"${KEY}", type:"single_line_text_field", ownerType:PRODUCT`));
   assert.match(m, /storefront:PUBLIC_READ/);
+});
+
+test('Ablage: jeder Lauf bekommt einen eigenen Ordner, auch zweimal in derselben Sekunde', () => {
+  const basis = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-pf-'));
+  const t = new Date('2026-10-29T09:56:46Z');
+  const a = laufOrdner(basis, t);
+  assert.equal(a, path.join(basis, '2026-10-29', '105646'));
+  fs.mkdirSync(a, { recursive: true });
+  const b = laufOrdner(basis, t);
+  assert.notEqual(a, b);
+  assert.equal(b, path.join(basis, '2026-10-29', '105646-2'));
+  fs.rmSync(basis, { recursive: true, force: true });
+});
+
+test('Gegenprobe je Feld: Erwartung und Vergleich', () => {
+  const soll = erwartung({ setzen: [{ ownerId: 'a', neu: 'x' }], loeschen: [{ ownerId: 'b' }] });
+  assert.deepEqual([...soll], [['a', 'x'], ['b', null]]);
+  assert.deepEqual(vergleiche(soll, new Map([['a', 'x'], ['b', null]])), { gleich: 2, abweichend: [] });
+  assert.deepEqual(vergleiche(soll, new Map([['a', 'y']])).abweichend.map((e) => e.ownerId), ['a']);
+});
+
+/** Speicherbasierter Shopify-Zugang: liest aus produkte, Mutationen setzen Werte nur, wenn wirksam. */
+function mockZugang(produkte, { wirksam = true } = {}) {
+  const frage = async (q, v) => {
+    if (q.includes('nodes(ids')) return { nodes: v.ids.map((id) => { const p = produkte.find((x) => x.id === id); return p ? { id, mpb: p.mpb } : null; }) };
+    return { products: { nodes: produkte, pageInfo: { hasNextPage: false, endCursor: null } } };
+  };
+  const schreibe = async (m) => {
+    if (wirksam) {
+      for (const [, id, wert] of m.matchAll(/ownerId:"([^"]+)",namespace:"custom",key:"meterpreis_bereich",type:"single_line_text_field",value:"([^"]+)"/g)) {
+        const p = produkte.find((x) => x.id === id); if (p) p.mpb = { value: wert };
+      }
+    }
+    return { a0: { metafields: [], userErrors: [] } };
+  };
+  return { art: 'mock', frage, schreibe };
+}
+
+test('Schreiblauf: wirksame Mutation -> Exit 0, wirkungslose Mutation -> Exit 1 trotz leerer userErrors', async () => {
+  const basis = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-pf-'));
+  const env = { TP_PRIVAT_DIR: basis };
+  const still = () => {};
+  const ok = await main(['--schreiben'], { zugang: mockZugang([P()]), env, aus: still });
+  assert.equal(ok, 0);
+  const wirkungslos = await main(['--schreiben'], { zugang: mockZugang([P({ id: 'gid://shopify/Product/9' })], { wirksam: false }), env, aus: still });
+  assert.equal(wirkungslos, 1);
+  // zwei Laeufe -> zwei Rueckwege, keiner ueberschrieben
+  const tag = fs.readdirSync(path.join(basis, 'preisfilter')).find((d) => /^\d{4}-/.test(d));
+  assert.equal(fs.readdirSync(path.join(basis, 'preisfilter', tag)).length, 2);
+  fs.rmSync(basis, { recursive: true, force: true });
+});
+
+test('Rueckweg: Gegenprobe je Feld, wirkungslos -> Exit 1', async () => {
+  const basis = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-pf-'));
+  const datei = path.join(basis, 'rueckweg.json');
+  fs.writeFileSync(datei, JSON.stringify({ setzen: [{ ownerId: 'gid://shopify/Product/1', handle: 'a', neu: '40 bis 60 €/m²' }], loeschen: [] }));
+  const env = { TP_PRIVAT_DIR: basis };
+  const still = () => {};
+  assert.equal(await main(['--zurueck', datei], { zugang: mockZugang([P({ mpb: { value: '30 bis 40 €/m²' } })]), env, aus: still }), 0);
+  assert.equal(await main(['--zurueck', datei], { zugang: mockZugang([P({ mpb: { value: '30 bis 40 €/m²' } })], { wirksam: false }), env, aus: still }), 1);
+  fs.rmSync(basis, { recursive: true, force: true });
 });

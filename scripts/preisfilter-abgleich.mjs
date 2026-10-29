@@ -4,8 +4,8 @@
  *
  *   npm run -s preisfilter:abgleich                        # lesen, Plan + Pakete ablegen; Exit 1 = etwas zu tun
  *   npm run -s preisfilter:abgleich -- --schreiben         # Plan ausfuehren (Metafelder setzen/loeschen), Gegenprobe
- *   npm run -s preisfilter:abgleich -- --export <datei>    # Plan aus einem vorhandenen Export (kein Live-Abruf)
- *   npm run -s preisfilter:abgleich -- --ziel <ordner>     # Ablage (Standard $TP_PRIVAT_DIR/preisfilter/<datum>)
+ *   npm run -s preisfilter:abgleich -- --export <datei>    # Plan aus einem vorhandenen Export (kein Live-Abruf, nie mit --schreiben)
+ *   npm run -s preisfilter:abgleich -- --ziel <ordner>     # Ablage (Standard $TP_PRIVAT_DIR/preisfilter/<datum>/<uhrzeit>, je Lauf neu)
  *   npm run -s preisfilter:abgleich -- --zurueck <rueckweg.json>   # Altwerte eines Laufs wieder einspielen
  *   npm run -s preisfilter:abgleich -- --definition        # Metafeld-Definition pruefen, fehlt sie: anlegen
  *   npm run -s preisfilter:abgleich -- --still             # Dienst: nichts ausgeben, wenn nichts zu tun ist
@@ -223,7 +223,50 @@ export function argumente(argv) {
   for (const f of ['export', 'ziel', 'zurueck', 'zugang']) if (a[f] === undefined) throw new Error(`--${f} braucht einen Wert`);
   if (a.zugang && !['cli', 'token'].includes(a.zugang)) throw new Error('--zugang kennt nur cli oder token');
   if (!(a.hoechstens > 0)) throw new Error('--hoechstens muss eine Zahl > 0 sein');
+  // Ohne Live-Abruf gibt es keine Gegenprobe - und ein alter Export plant gegen einen alten Stand.
+  if (a.export && a.schreiben) throw new Error('--export und --schreiben schliessen sich aus: geschrieben wird nur nach frischem Live-Abruf');
+  if (a.export && a.zurueck) throw new Error('--export und --zurueck schliessen sich aus');
   return a;
+}
+
+/** Ablage je Lauf: <basis>/<JJJJ-MM-TT>/<HHMMSS> (Berlin) - ein zweiter Lauf am selben Tag ueberschreibt nie den Rueckweg des ersten. */
+export function laufOrdner(basis, jetzt = new Date()) {
+  const datum = jetzt.toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+  const zeit = jetzt.toLocaleTimeString('sv-SE', { timeZone: 'Europe/Berlin', hour12: false }).replace(/:/g, '');
+  let ziel = path.join(basis, datum, zeit);
+  for (let n = 2; fs.existsSync(ziel); n++) ziel = path.join(basis, datum, `${zeit}-${n}`);
+  return ziel;
+}
+
+/** Erwartete Werte nach dem Schreiben: { ownerId -> Wert | null }. */
+export function erwartung({ setzen = [], loeschen = [] }) {
+  const m = new Map();
+  for (const e of setzen) m.set(e.ownerId, e.neu);
+  for (const e of loeschen) m.set(e.ownerId, null);
+  return m;
+}
+
+/** Vergleich frisch gelesener Werte mit der Erwartung -> { gleich, abweichend: [...] }. */
+export function vergleiche(erwartet, gelesen) {
+  let gleich = 0; const abweichend = [];
+  for (const [id, soll] of erwartet) {
+    const ist = gelesen.has(id) ? gelesen.get(id) : null;
+    if (ist === soll) gleich += 1; else abweichend.push({ ownerId: id, soll, ist });
+  }
+  return { gleich, abweichend };
+}
+
+export const WERTE_ABFRAGE = `query($ids:[ID!]!){ nodes(ids:$ids){ ... on Product { id mpb:metafield(namespace:${gql(NAMESPACE)},key:${gql(KEY)}){value} } } }`;
+
+/** Metafeldwerte genau dieser Produkte frisch lesen (je 100 IDs). */
+export async function leseWerte(frage, ids) {
+  const werte = new Map();
+  for (let i = 0; i < ids.length; i += 100) {
+    // eslint-disable-next-line no-await-in-loop
+    const d = await frage(WERTE_ABFRAGE, { ids: ids.slice(i, i + 100) });
+    for (const n of d?.nodes || []) if (n?.id) werte.set(n.id, n.mpb?.value ?? null);
+  }
+  return werte;
 }
 
 export function privatDir(env = process.env) {
@@ -350,22 +393,28 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   const a = argumente(argv);
   const aus = deps.aus || console.log;
   const jetzt = deps.jetzt || new Date();
-  const datum = jetzt.toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
   const basis = path.join(privatDir(deps.env || process.env), 'preisfilter');
-  const ziel = a.ziel || path.join(basis, datum);
+  // Ordner erst anlegen, wenn etwas abgelegt wird (Leerlaeufe des Dienstes hinterlassen nichts).
+  let zielCache = a.ziel || null;
+  const zielOrdner = () => (zielCache ||= laufOrdner(basis, jetzt));
   const z = deps.zugang || await zugang(a.zugang, deps.env || process.env);
 
   if (a.definition) await sichereDefinition(z, aus);
 
   if (a.zurueck) {
     const rueckweg = JSON.parse(fs.readFileSync(a.zurueck, 'utf8'));
+    const ziel = zielOrdner();
     const pakete = bauePakete(rueckweg);
     const dateien = legePaketeAb(ziel, pakete, 'rueckweg-pakete');
     aus(`Rueckweg: ${rueckweg.setzen.length} Werte setzen, ${rueckweg.loeschen.length} loeschen (${dateien.length} Pakete, Zugang ${z.art})`);
     const ergebnisse = await fuehrePaketeAus(z, dateien, aus);
-    const fehler = ergebnisse.filter((e) => e.fehler.length);
-    schreibDatei(ziel, 'rueckweg-log.json', { zeit: new Date().toISOString(), quelle: a.zurueck, ergebnisse });
-    return fehler.length ? 1 : 0;
+    // Gegenprobe je Feld - userErrors:[] ist kein Beleg.
+    const soll = erwartung(rueckweg);
+    const probe = vergleiche(soll, await leseWerte(z.frage, [...soll.keys()]));
+    const ok = ergebnisse.every((e) => !e.fehler.length) && probe.abweichend.length === 0;
+    schreibDatei(ziel, 'rueckweg-log.json', { zeit: new Date().toISOString(), quelle: a.zurueck, ergebnisse, gegenprobe: { gleich: probe.gleich, abweichend: probe.abweichend.slice(0, 20) }, ok });
+    aus(`Gegenprobe Rueckweg: ${probe.gleich} gleich, ${probe.abweichend.length} abweichend -> ${ok ? 'OK' : 'ABWEICHUNG'}`);
+    return ok ? 0 : 1;
   }
 
   const produkte = a.export ? ladeExport(fs.readFileSync(a.export, 'utf8')) : await leseAlle(z.frage);
@@ -383,6 +432,7 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
     return 0;
   }
 
+  const ziel = zielOrdner();
   const auswahl = { setzen: plan.setzen.slice(0, a.hoechstens), loeschen: plan.loeschen.slice(0, Math.max(0, a.hoechstens - plan.setzen.length)) };
   const rueckweg = rueckwegFuer(auswahl);
   schreibDatei(ziel, 'vorher.json', produkte.map((p) => ({ ownerId: p.id, handle: p.handle, status: p.status, wert: wert(p.mpb) })));
@@ -408,20 +458,20 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
 
   const ergebnisse = await fuehrePaketeAus(z, dateien, aus);
   // Gegenprobe: frisch lesen und erneut planen - userErrors:[] ist kein Beleg.
-  const nachher = a.export ? null : await leseAlle(z.frage);
-  const probe = nachher ? planeAbgleich(nachher) : null;
-  const offenNachher = probe ? probe.setzen.length + probe.loeschen.length : null;
+  const nachher = await leseAlle(z.frage);
+  const probe = planeAbgleich(nachher);
+  const offenNachher = probe.setzen.length + probe.loeschen.length;
   const erwartetOffen = zuTun - (auswahl.setzen.length + auswahl.loeschen.length);
-  const ok = ergebnisse.every((e) => !e.fehler.length) && (probe ? offenNachher === erwartetOffen : true);
+  const felder = vergleiche(erwartung(auswahl), new Map(nachher.map((p) => [p.id, wert(p.mpb)])));
+  const ok = ergebnisse.every((e) => !e.fehler.length) && felder.abweichend.length === 0 && offenNachher === erwartetOffen;
   const log = {
     zeit: new Date().toISOString(), zugang: z.art, pakete: ergebnisse,
-    gegenprobe: probe ? { produkte: nachher.length, aktuell: probe.unveraendert, nochZuSetzen: probe.setzen.length, nochZuLoeschen: probe.loeschen.length, erwartetOffen } : 'keine (Plan aus --export)',
+    gegenprobe: { produkte: nachher.length, aktuell: probe.unveraendert, nochZuSetzen: probe.setzen.length, nochZuLoeschen: probe.loeschen.length, erwartetOffen, felderGleich: felder.gleich, felderAbweichend: felder.abweichend.slice(0, 20) },
     ok,
   };
   schreibDatei(ziel, 'write-log.json', log);
   schreibDatei(basis, 'stand.json', { ...stand, geschrieben: true, ok, gegenprobe: log.gegenprobe });
-  if (probe) aus(`Gegenprobe: ${probe.unveraendert} aktuell, ${offenNachher} noch offen (erwartet ${erwartetOffen}) -> ${ok ? 'OK' : 'ABWEICHUNG'}`);
-  else aus(`Geschrieben ohne Gegenprobe (Plan aus --export): ${ok ? 'OK' : 'FEHLER in Paketen'}`);
+  aus(`Gegenprobe: ${felder.gleich} Felder wie geplant, ${felder.abweichend.length} abweichend; ${probe.unveraendert} aktuell, ${offenNachher} noch offen (erwartet ${erwartetOffen}) -> ${ok ? 'OK' : 'ABWEICHUNG'}`);
   return ok ? 0 : 1;
 }
 
