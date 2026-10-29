@@ -894,7 +894,7 @@ Lauf. Gemessen: ein Fehlermeldungs-Lauf ohne Arbeit braucht 3 Runden, 8 s, rund 
 | Dienst (Vorlage in `launchagents/`) | Wann | Was |
 |---|---|---|
 | `net.teppich-paradies.fehler-vorpruefung` | alle 15 Min., Mo–Sa 7–19 Uhr (und beim Laden) | `claude-lauf.mjs fehlermeldungen`: `npm run -s fehler -- abgleich` ohne KI; Claude nur bei `neu`, oder für `laufend`/`kuerzlichErledigt` höchstens alle 2 Std. Nach einem Fehlschlag 1 Std. Pause. |
-| `net.teppich-paradies.postfach` | 7:35, 9:35 … 19:35, Mo–Sa | `claude-lauf.mjs postfach`: zwei getrennte `claude -p`-Aufrufe nacheinander, erst Lieferbelege, dann Service-Anfragen. Ein Fehler im ersten verhindert den zweiten nicht. |
+| `net.teppich-paradies.postfach` | 7:35, 9:35 … 19:35, Mo–Sa | `claude-lauf.mjs postfach`: erst eine IMAP-Vorprüfung ohne KI (unten), dann je Teil höchstens ein `claude -p`-Aufruf, erst Lieferbelege, dann Service-Anfragen. Ein Fehler im ersten verhindert den zweiten nicht. |
 | `net.teppich-paradies.datenstand` | stündlich :20 | `datenstand-pruefen.mjs`: `aktualisierung.json` höchstens 60 Min. alt, jeder Teil erfolgreich, Lexikon/Bestand ≤ 3 Std. Ohne KI. Ersetzt den Datenteil von `shop-zahlen-export` – die Daten holt der Sync-Dienst. |
 
 Das Nachziehen von `~/tp-dashboard` auf main macht nicht dieser Dienst, sondern
@@ -903,6 +903,24 @@ wartet, solange eine Routine-Sperre frisch ist (`routineLaeuft` aus `lib/routine
 Ruhe-Prüfung); eine Routine startet nicht, solange `betrieb-nachziehen.lock` frisch ist (bis zu
 4 Min. Warten, dann dieser Takt übersprungen mit Hinweis „wartet auf Nachziehen“, keine Störung).
 Die Routine nimmt erst die eigene Sperre und prüft dann noch einmal – so sieht immer einer den anderen.
+
+**Vorprüfung des Postfach-Laufs** (`lib/postfach-vorpruefung.mjs`, `lib/imap-lesen.mjs`, seit
+28.10.2026): Bis dahin startete Claude bei jedem Takt für beide Teile, auch ohne neue Mail
+(Service 14 von 16 Läufen leer, Lieferbelege 4 von 16). Jetzt fragt der Dienst vorher per IMAP
+(`imap.gmail.com`, nur lesend mit `EXAMINE`, nur die Kennung `X-GM-MSGID`, nie Absender, Betreff
+oder Text) dieselben Gmail-Suchen ab wie die Auftragstexte (Schritt 2) und vergleicht die
+Kennungen mit dem Bekannten (`belege|service -- bekannt`) und mit `vorpruefung.gesehen` im
+`status-<teil>.json` (alles, was der letzte erfolgreiche Lauf schon fand, höchstens 2000).
+Claude startet je Teil nur, wenn der letzte Claude-Lauf fehlschlug, heute noch keiner erfolgreich
+war (Tageslauf: fängt Abweichungen zum privaten Auftragstext ab und bietet zurückgestellte Mails
+einmal am Tag erneut an), der letzte Belege-Lauf unvollständig war, sich die Lieferanten-Domains
+geändert haben oder eine Kennung weder bekannt noch gesehen ist. Bei Service-Anfragen gilt nach
+einem Lauf nur als gesehen, was in der Ablage steht – eine nicht übernommene Mail startet den
+nächsten Takt wieder. Die MCP-Serverprobe läuft nur, wenn ein Teil wirklich startet. Sonst steht im Status „nichts
+Neues (Vorprüfung ohne KI)“ mit dem Grund in `vorpruefungGrund`. Zugang: das App-Passwort des
+Nachfass-Versands (`nachfassen/postfach.json`, gleiches Konto). Geht die Vorprüfung nicht (kein
+Zugang, Anmeldung abgelehnt, Netz), startet Claude wie bisher. Abschalten:
+`TP_POSTFACH_VORPRUEFUNG=aus`; `--erzwingen` und `--trocken` überspringen sie.
 
 **Auftragstexte** liegen privat unter `~/teppich-paradies-analyse/routinen/auftraege/<aufgabe>.md`
 (enthalten u. a. die Werkbank-Adresse). `dienste-einrichten.sh --routinen` kopiert sie einmalig aus
@@ -931,7 +949,11 @@ die Pflichtwerkzeuge des Laufs geprüft; fehlt eines, endet der Lauf sofort mit 
   `get_message`; alle 24 Gmail-Schreibwerkzeuge, Shopify-MCP, `git`, `gh`, `shopify`, `curl`, `rm`,
   `npm run -s fehler …` und Artifact* ausdrücklich gesperrt. Freigegeben: `npm run -s belege|service --
   bekannt | uebernehmen …`, `date -u …`, `jq …`, Schreiben nur im Arbeitsordner. Die Zwischendatei
-  löscht der Dienst, nicht Claude.
+  löscht der Dienst, nicht Claude. Von den MCP-Servern des Kontos bleibt nur `claude.ai Gmail`
+  (`nurMcp`): vor dem Lauf liest eine init-Probe ohne Modellaufruf die Serverliste, alle anderen
+  werden per `--disallowedTools mcp__<server>` gesperrt (`--strict-mcp-config` ginge nicht, es
+  entfernt auch Gmail). Gemessen 28.10.: Grundlast je Runde 29.472 → 20.391 Tokens.
+  `claude-lauf.mjs postfach --werkzeugprobe` zeigt die Sperren und belegt, dass Gmail bleibt.
 - *Beide:* gesperrt sind auch `cat`, `head`, `tail`, `grep`, `env`, `printenv` und `Read` auf `.env*`
   (`.env.local` im Dienst-Checkout hält die Shopify-Zugangsdaten).
 
@@ -946,6 +968,13 @@ Auftragstext, nie im Repository), collection `items`, keine Löschung, schreiben
 Meldungsnummer. Artifact nur `read` der Werkbank und `publish` mit `asset: true` eines
 Bildschirmfotos aus `fehlermeldungen/`. Die Wache gibt nichts frei, sie lehnt nur ab; fällt sie
 aus, blockiert sie (Exit 2). Eine Ablehnung zählt als Störung („abgelehnt“, mit dem Grund).
+Ausnahme Postfach: Wurden nur `Read`/`Write` in Claudes eigenem Scratchpad abgelehnt
+(`/private/tmp/claude-<uid>/<projekt>/<sitzung>/scratchpad/…`, ohne `..` und `.env`) und das
+Ergebnis steht trotzdem in der Ablage (Lieferbelege: neuer Eintrag in `laeufe`; Service: jede
+offene Kennung der Vorprüfung angelegt oder als geprüft vermerkt), gilt der Lauf als erfolgreich
+mit `hinweis` statt Störung. Jeder andere abgelehnte Pfad (`.env*`, Zugangsdateien,
+LaunchAgents, alles unter `~`) bleibt Störung mit Mitteilung – das ist das Zeichen, dass eine
+Mail Claude zu etwas anderem bringen wollte.
 
 **Ablage** (privat, `$TP_PRIVAT_DIR/routinen/<lauf>/`, Rechte 0700/0600):
 `dienst.log` (launchd-Ausgabe, je Lauf eine Zeile), `status*.json` (letzter Stand, `letzterErfolg`,
