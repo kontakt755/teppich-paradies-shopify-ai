@@ -52,6 +52,18 @@
   .kontakt-formular button:hover {
     background-color: #444;
   }
+  /* Datenschutz-Hinweis vor dem Absenden, wie im Boden-Finder (w-172) */
+  .tp-kontakt-datenschutz {
+    margin: 14px 0 0;
+    color: #555;
+    font-size: var(--tp-fs-sm);
+    line-height: 1.5;
+  }
+  .tp-kontakt-datenschutz a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
   .whatsapp-link {
     /* #25D366 auf Weiss hatte 2:1; #0e7a5f wie die WhatsApp-Buttons, 5,3:1 */
     color: #0e7a5f;
@@ -64,6 +76,14 @@
   .whatsapp-icon {
     width: 18px;
     height: 18px;
+  }
+  /* Telefon und WhatsApp als Tippflaeche mit 44 px Hoehe statt 20/26 px
+     (Rundgang 2026-10-26, #63). */
+  .kontakt-info a[href^="tel:"],
+  .kontakt-info .whatsapp-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
 
   /* Musterbestellung: eigener, kompakter Zustand oberhalb des Formulars.
@@ -131,6 +151,43 @@
 
   [data-tp-sample-request][data-mode="sample"] [data-sample-field] {
     display: block;
+  }
+  /* Verlege- und Angebotsanfrage von der Produktseite: PLZ (Einzugsgebiet)
+     und Telefon (Termin fuers Aufmass) zeigen, beide freiwillig. Setzt
+     assets/tp-sample-request.js bei ?thema=verlegung bzw. angebot. */
+  [data-tp-sample-request][data-anfrage-felder] [data-anfrage-feld] {
+    display: block;
+  }
+  /* Reklamation (w-182): Feld Bestellnummer nur bei ?thema=reklamation.
+     Das Feld ist sonst deaktiviert und geht nicht mit jeder Nachricht mit;
+     assets/tp-sample-request.js schaltet es frei. */
+  [data-reklamation-feld] {
+    display: none;
+  }
+  [data-tp-sample-request][data-reklamation] [data-reklamation-feld] {
+    display: block;
+  }
+  .kontakt-formular [data-reklamation-feld] > label {
+    display: block;
+  }
+  .kontakt-formular [data-reklamation-feld] > input {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .tp-kontakt-feldhinweis {
+    margin: 6px 0 0;
+    color: #555;
+    font-size: var(--tp-fs-sm);
+  }
+  /* Felder in einer Huelle (Adresse, PLZ, Telefon) stehen wie Name und
+     E-Mail untereinander und volle Breite, statt Beschriftung und Feld
+     nebeneinander. */
+  .kontakt-formular [data-sample-field] > label {
+    display: block;
+  }
+  .kontakt-formular [data-sample-field] > input {
+    box-sizing: border-box;
+    width: 100%;
   }
   [data-tp-sample-request][data-needs-product="true"] [data-tp-produktwahl] {
     display: block;
@@ -400,6 +457,11 @@
       <ul>
         <li><a href="/pages/liefer-verlegeservice#tp-anfrage">Liefer- &amp; Verlegeservice anfragen</a></li>
         <li><a href="/pages/teppichreinigung#tp-anfrage">Teppichreinigung anfragen</a></li>
+        {%- comment -%} Erst sichtbar, wenn die Seite im Admin angelegt ist (w-182) {%- endcomment -%}
+        {%- assign tp_reklamation_seite = pages['reklamation'] -%}
+        {%- if tp_reklamation_seite.url != blank -%}
+          <li><a href="{{ tp_reklamation_seite.url }}">Reklamation melden</a></li>
+        {%- endif -%}
       </ul>
     </div>
     <div class="tp-sample-intro">
@@ -478,12 +540,18 @@
       <label for="ContactFormEmail">E-Mail</label>
       <input type="email" id="ContactFormEmail" name="contact[email]" value="{{ form.email }}" required>
 
+      <div data-reklamation-feld>
+        <label for="ContactFormBestellnummer">Bestellnummer</label>
+        <input type="text" id="ContactFormBestellnummer" name="contact[Bestellnummer]" autocomplete="off" aria-describedby="ContactFormBestellnummerHinweis" disabled>
+        <p class="tp-kontakt-feldhinweis" id="ContactFormBestellnummerHinweis">Steht in Ihrer Bestellbestätigung. Fotos senden Sie bitte mit dieser Nummer per WhatsApp oder E-Mail – das Formular nimmt keine Dateien an.</p>
+      </div>
+
       <div data-sample-field>
         <label for="ContactFormStreet">Straße und Hausnummer</label>
         <input type="text" id="ContactFormStreet" name="contact[Straße und Hausnummer]" autocomplete="street-address">
       </div>
 
-      <div data-sample-field>
+      <div data-sample-field data-anfrage-feld>
         <label for="ContactFormZip">PLZ</label>
         <input type="text" id="ContactFormZip" name="contact[PLZ]" autocomplete="postal-code" inputmode="numeric">
       </div>
@@ -493,13 +561,15 @@
         <input type="text" id="ContactFormCity" name="contact[Ort]" autocomplete="address-level2">
       </div>
 
-      <div data-sample-field>
+      <div data-sample-field data-anfrage-feld>
         <label for="ContactFormPhone">Telefon (optional)</label>
         <input type="tel" id="ContactFormPhone" name="contact[phone]" value="{{ form.phone }}" autocomplete="tel">
       </div>
 
       <label for="ContactFormMessage" data-message-label>Nachricht</label>
       <textarea id="ContactFormMessage" name="contact[body]" rows="5" data-message-field required>{{ form.body }}</textarea>
+
+      <p class="tp-kontakt-datenschutz">Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu. Mehr dazu in unserer <a href="{{ shop.privacy_policy.url | default: '/policies/privacy-policy' }}" target="_blank" rel="noopener">Datenschutzerklärung<span class="visually-hidden"> (öffnet in neuem Tab)</span></a>.</p>
 
       <button type="submit">Nachricht senden</button>
     {%- endform -%}

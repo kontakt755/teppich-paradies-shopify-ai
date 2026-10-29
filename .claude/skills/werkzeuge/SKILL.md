@@ -29,10 +29,12 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run -s muster:nachfassen [-- --probe]` | **taeglich automatisch (Mo-Sa 9:30)**: faellige Muster-Nachfragen (Text 1 nach 4 Tagen, Erinnerung nach 10) vom Firmenpostfach verschicken, Zeitleiste „nachgefasst (automatisch)“; `--probe` listet nur. Braucht `$TP_PRIVAT_DIR/nachfassen/postfach.json` (600), sonst verschickt er nichts → `docs/control-center/ARCHITEKTUR.md` Abschnitt 23 |
 | `npm run -s auslauf:sortieren [-- --schreiben]` | **nach jedem neuen Tag `auslauf` und jedem Import in Teppichboden/Teppiche**: Auslaufartikel ans Ende der manuell sortierten Kategorien (Shopify haengt Neues hinten an, also hinter sie); ohne `--schreiben` nur pruefen (Exit 1 = zu tun), mit Rollback-Datei und Gegenprobe |
 | `npm run -s import:pruefen` | **nach jedem Import**: neue Produkte (Standard 7 Tage) auf Veroeffentlichung, Bilder, Kategorie, SKU, Muster und uebliche Filterfelder der Produktart; nur lesend |
+| `npm run -s muster:kauf [-- --tage 90 --nach 30]` | **monatlich**: wie viele Musterkunden binnen 30 Tagen Ware kaufen, je Warengruppe des Musters; Quote nur ueber Muster mit abgelaufenem Fenster, gibt keine Kundendaten aus; nur lesend |
 | `npm run -s teppich:basis-daten` | **nach jedem Teppich-Import**: prueft `custom.teppich_basis_daten` (Gruppe, Qualitaetszeile, Breiten) gegen die Live-Regeln; `-- --pakete <ordner>` legt Schreibpakete + Rollback an → `docs/lessons/renderzeit-kollektionsseite.md` |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
 | `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht statt in der Theme-Einstellung |
 | `npm run lighthouse:messen` | **bevor jemand "schneller/langsamer" sagt**: Lighthouse gegen Live, 3 Seiten mit und ohne Cookie-Banner, 5 Runden reihum (rund 25 min); `-- --pruefen` nur Vorpruefung |
+| `npm run -s speicher:pruefen [-- --min <GiB>]` | **vor jedem Bildlauf** (Raumbilder, Schaerfe, Bild-Downloads): Exit ungleich 0 heisst nicht starten (1 = unter 20 GiB frei). Bei Rot meldet die Shop-Wache zusaetzlich einmal am Tag in der Arbeitszeit per Mac-Mitteilung |
 | `npm run -s kurz -- <art>` | Theme-Rollen, Push-Ergebnis, Worktrees gefiltert statt als Rohdump |
 | `npm run -s handoff` | Uebergabetext fuer die naechste Sitzung aus dem Git-Stand |
 | `npm run -s ki:frag -- codex\|claude "Frage"` | direkte, nur lesende Rueckfrage an die andere KI; `weiter <ki>` setzt fort, Diff per stdin → Skill `codex` |
@@ -57,3 +59,9 @@ und `npm ci` - sonst fehlt der passende Browser, und Social-Rendering,
 `dashboard:pruefen` und `auslauf:pruefen` scheitern erst im Betrieb.
 `npm install-scripts ls` zeigt, was noch ungeprueft ist. Danach
 `npm run -s pruefen` (startet auch den Browsertest der Betriebssuite).
+
+Fehlen Bibliotheken (leeres `node_modules`, frischer Worktree), brechen
+`qa:unit:test` und `operations:test` sofort mit „FEHLER: Bibliotheken fehlen …“
+und dem Befehl `npm ci` ab (`scripts/abhaengigkeiten.mjs`), statt dutzende
+rote Tests zu zeigen. `dashboard:pruefen` nimmt puppeteer dann ersatzweise aus
+dem Dienst-Checkout `~/tp-dashboard` (`scripts/puppeteer-laden.mjs`) und sagt das.

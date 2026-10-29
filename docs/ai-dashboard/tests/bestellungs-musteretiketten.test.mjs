@@ -169,3 +169,28 @@ test('Massartikel ohne eigene SKU: belegte Artikelnummer und Farbe waehlen genau
   assert.deepEqual(zeilen([pos('704', { sku: 'M-TV-SA' })], produkte)[0].etikett.sku, 'TV-SA');
   assert.ok(zeilen([pos('704', { sku: 'M-TV-GR' })], produkte)[0].fehlt.includes('Originalzuordnung'));
 });
+
+test('Massartikel: gleiche Lieferanten-Artikelnummer genuegt, auch wenn die Shop-SKU sie anders schreibt', () => {
+  const schlinge = { handle: 'testschlinge-teppichboden', titel: 'Testschlinge Teppichboden', eigenschaften: {}, varianten: [
+    { id: 'gid://shopify/ProductVariant/111', sku: 'TS04_43', farbe: 'Espresso', titel: 'Espresso / 400cm', einkauf: { artikelnummer: 'TS04_043' } },
+    { id: 'gid://shopify/ProductVariant/112', sku: 'TS04_44', farbe: 'Mokka', titel: 'Mokka / 400cm', einkauf: { artikelnummer: 'TS04_044' } },
+  ] };
+  const muster = { handle: 'muster-testschlinge-nach-mass', titel: 'Muster Testschlinge Teppich nach Maß', varianten: [
+    { id: '611', sku: 'M-TS04_43', farbe: 'Espresso', original: { produktHandle: schlinge.handle, variantenId: 'gid://shopify/ProductVariant/111', sku: 'TS04_43' } },
+    { id: '612', sku: 'M-TS04_44', farbe: 'Mokka', original: { produktHandle: schlinge.handle, variantenId: 'gid://shopify/ProductVariant/112', sku: 'TS04_44' } },
+  ] };
+  const mass = { handle: 'testschlinge-nach-mass', titel: 'Testschlinge Teppich nach Maß', muster: { handle: muster.handle }, varianten: [
+    { id: 'gid://shopify/ProductVariant/711', sku: null, farbe: 'Espresso', einkauf: { artikelnummer: 'TS04_043' } },
+    { id: 'gid://shopify/ProductVariant/712', sku: null, farbe: 'Mokka', einkauf: { artikelnummer: 'TS04_043' } },
+    { id: 'gid://shopify/ProductVariant/713', sku: null, farbe: 'Espresso', einkauf: { artikelnummer: 'TS04_099' } },
+  ] };
+  const produkte = karte(schlinge, muster, mass);
+  const pos = quellvariante => position({ handle: muster.handle, sku: 'M-TS04_43', musterQuelle: { quellvariante, produktHandle: mass.handle } });
+  const [espresso] = zeilen([pos('711')], produkte);
+  // Die Shop-SKU bleibt auf dem Etikett; die Lieferantennummer dient nur der Zuordnung.
+  assert.deepEqual([espresso.etikett.sku, espresso.etikett.farbe, espresso.fehlt], ['TS04_43', 'Espresso', []]);
+  assert.equal(espresso.produktHandle, schlinge.handle);
+  assert.ok(!JSON.stringify(espresso.etikett).includes('TS04_043'));
+  // Gleiche Nummer bei anderer Farbe oder passende Farbe mit fremder Nummer: nie raten.
+  for (const id of ['712', '713']) assert.ok(zeilen([pos(id)], produkte)[0].fehlt.includes('Originalzuordnung'), id);
+});

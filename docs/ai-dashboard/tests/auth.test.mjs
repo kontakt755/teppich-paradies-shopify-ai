@@ -5,6 +5,8 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import { anmeldeGeraet } from '../../../operations/lib/anmeldeschutz.mjs';
 import { createAuth, loadConfiguredPassword, passwordFilePath, parseCookies, renderLoginPage, sessionCookieHeader, sessionFilePath, SESSION_COOKIE, SESSION_TTL_LANG_MS } from '../../../scripts/dashboard-auth.mjs';
 
 // Isoliertes Privatverzeichnis, unabhaengig davon, was auf dem jeweiligen Rechner liegt.
@@ -344,4 +346,131 @@ test('Anmeldeseite zeigt das Namensfeld nur, wenn es Mitarbeiterzugaenge gibt', 
   assert.match(ohne, /angemeldet bleiben/i);
   const mit = renderLoginPage({ mitBenutzern: true });
   assert.match(mit, /id="name"/);
+});
+
+// ---------------------------------------------------------------------------
+// Rundgang 26.10., Massnahme 58: Passwortwechsel meldet ab, Sperre je Geraet,
+// "Alle anderen Geraete abmelden".
+// ---------------------------------------------------------------------------
+
+function mitPrivatDir(praefix, run) {
+  const privat = fs.mkdtempSync(path.join(os.tmpdir(), praefix));
+  const alt = process.env.TP_PRIVAT_DIR;
+  process.env.TP_PRIVAT_DIR = privat;
+  try { return run(privat); } finally {
+    if (alt === undefined) delete process.env.TP_PRIVAT_DIR; else process.env.TP_PRIVAT_DIR = alt;
+  }
+}
+const INHABER = { name: 'Inhaber', kuerzel: null, rolle: 'inhaber' };
+const hashVon = sid => crypto.createHash('sha256').update(sid, 'utf8').digest('hex');
+
+test('Notzugang: ein neues gemeinsames Passwort meldet alle damit angemeldeten Geraete ab', () => mitPrivatDir('tp-auth-abdruck-', () => {
+  const sid = createAuth({ password: 'test-passwort-example' }).createSession(INHABER, { lang: true });
+  assert.equal(createAuth({ password: 'test-passwort-example' }).validSession(sid), true, 'gleiches Passwort: bleibt angemeldet');
+  const inhalt = fs.readFileSync(sessionFilePath(), 'utf8');
+  assert.equal(inhalt.includes('test-passwort-example'), false, 'das Passwort selbst steht nie in der Sitzungsdatei');
+  const neu = createAuth({ password: 'test-passwort-dummy' });
+  assert.equal(neu.validSession(sid), false, 'neues Passwort: alte Sitzung ungueltig');
+  assert.equal(fs.readFileSync(sessionFilePath(), 'utf8').includes(hashVon(sid)), false, 'und aus der Datei entfernt');
+  assert.equal(createAuth({ password: 'test-passwort-example' }).validSession(sid), false, 'auch zurueck zum alten Passwort kommt sie nicht wieder');
+  assert.equal(createAuth({ password: null }).validSession(sid), false);
+}));
+
+test('Notzugang-Sitzungen von vor dem Update bleiben gueltig und uebernehmen das jetzige Passwort', () => mitPrivatDir('tp-auth-altbestand-', () => {
+  const sid = 'a'.repeat(64);
+  const bis = Date.now() + 24 * 60 * 60 * 1000;
+  fs.writeFileSync(sessionFilePath(), JSON.stringify({ sitzungen: { [hashVon(sid)]: { expiresAt: bis, benutzer: INHABER } } }));
+  const auth = createAuth({ password: 'test-passwort-sample' });
+  assert.equal(auth.validSession(sid), true, 'niemand wird durch das Update abgemeldet');
+  const eintrag = JSON.parse(fs.readFileSync(sessionFilePath(), 'utf8')).sitzungen[hashVon(sid)];
+  assert.match(eintrag.pw, /^[0-9a-f]{24}$/, 'der Abdruck steht schon nach dem Start in der Datei');
+  assert.equal(createAuth({ password: 'test-passwort-sample' }).validSession(sid), true);
+  assert.equal(createAuth({ password: 'test-passwort-placeholder' }).validSession(sid), false, 'ein spaeterer Wechsel trifft auch sie');
+}));
+
+test('andereSitzungenBeenden: alle anderen Geraete enden, das eigene bleibt; sitzungenAnzahl zaehlt nur gueltige', () => mitPrivatDir('tp-auth-andere-', () => {
+  const auth = createAuth({ password: 'test-passwort' });
+  const eigene = auth.createSession(INHABER, { lang: true });
+  const laden = auth.createSession(INHABER, { lang: true });
+  const handy = auth.createSession(INHABER);
+  assert.equal(auth.sitzungenAnzahl(), 3);
+  assert.equal(auth.andereSitzungenBeenden(eigene), 2);
+  assert.equal(auth.validSession(eigene), true);
+  assert.equal(auth.validSession(laden), false);
+  assert.equal(auth.validSession(handy), false);
+  assert.equal(auth.sitzungenAnzahl(), 1);
+  assert.equal(createAuth({ password: 'test-passwort' }).validSession(laden), false, 'auch nach einem Neustart');
+  // Mit neuem Passwort zaehlt die alte Notzugang-Sitzung nicht mehr mit.
+  assert.equal(createAuth({ password: 'test-passwort-dummy' }).sitzungenAnzahl(), 0);
+}));
+
+test('anmeldeGeraet: Tailscale-Kopf nur von 127.0.0.1, letzter X-Forwarded-For-Eintrag, sonst die Adresse', () => {
+  const req = (remoteAddress, headers = {}) => ({ socket: { remoteAddress }, headers });
+  assert.deepEqual(anmeldeGeraet(req('127.0.0.1', { 'x-forwarded-for': '100.101.1.2' })), { schluessel: 'tailnet:100.101.1.2', anzeige: '100.101.1.2' });
+  assert.equal(anmeldeGeraet(req('::ffff:127.0.0.1', { 'x-forwarded-for': '1.2.3.4, 100.101.1.3' })).schluessel, 'tailnet:100.101.1.3', 'mitgeschickte Eintraege davor zaehlen nicht');
+  assert.equal(anmeldeGeraet(req('127.0.0.1', { 'tailscale-user-login': 'Test@Example.org' })).schluessel, 'tailnet-konto:test@example.org');
+  assert.equal(anmeldeGeraet(req('127.0.0.1', { 'tailscale-user-login': 'test@example.org' })).anzeige, 'Tailnet', 'das Konto landet nicht im Protokoll');
+  assert.equal(anmeldeGeraet(req('127.0.0.1')).schluessel, '127.0.0.1', 'am Mac selbst wie bisher');
+  assert.equal(anmeldeGeraet(req('127.0.0.1', { 'x-forwarded-for': 'kein-ip' })).schluessel, '127.0.0.1');
+  assert.equal(anmeldeGeraet(req('127.0.0.1', { 'x-forwarded-for': '127.0.0.1' })).schluessel, '127.0.0.1');
+  // Von jeder anderen Adresse ist der Kopf faelschbar und bleibt unbeachtet.
+  assert.equal(anmeldeGeraet(req('192.168.2.40', { 'x-forwarded-for': '100.101.1.2', 'tailscale-user-login': 'test@example.org' })).schluessel, '192.168.2.40');
+});
+
+test('Sperre je Geraet hinter tailscale serve; "Alle anderen Geraete abmelden" nur fuer den Inhaber', async () => {
+  const { schreibeBenutzer, benutzerAnlegen } = await import('../../../operations/lib/benutzer.mjs');
+  const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-auth-geraete-'));
+  process.env.TP_PRIVAT_DIR = privat;
+  process.env.TP_DASHBOARD_PASSWORT = 'notzugang-testpasswort';
+  process.env.TP_DASHBOARD_HOST = '192.168.2.224';
+  schreibeBenutzer(benutzerAnlegen([], { name: 'Mona Mitarbeiter', kuerzel: 'mona', passwort: 'platzhalter-mitarbeiter-2', rolle: 'mitarbeiter' }), path.join(privat, 'benutzer.json'));
+  const mod = await import(`../../../scripts/serve-dashboard.mjs?case=geraete`);
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  delete process.env.TP_DASHBOARD_HOST;
+
+  await withServer(mod.requestHandler, async base => {
+    const anmelden = (body, headers = {}) => fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
+    // Ein Handy vertippt sich fuenfmal ...
+    const handyA = { 'x-forwarded-for': '100.101.7.1' };
+    for (let i = 0; i < 5; i += 1) assert.equal((await anmelden({ name: 'mona', passwort: 'falsch' }, handyA)).status, 401);
+    assert.equal((await anmelden({ name: 'mona', passwort: 'platzhalter-mitarbeiter-2' }, handyA)).status, 429, 'dieses Geraet wartet');
+    // ... die anderen Geraete und der Mac selbst kommen weiter herein.
+    const handyB = await anmelden({ name: 'mona', passwort: 'platzhalter-mitarbeiter-2' }, { 'x-forwarded-for': '100.101.7.2' });
+    assert.equal(handyB.status, 200);
+    const cookieMona = handyB.headers.get('set-cookie').split(';')[0];
+    const amMac = await anmelden({ passwort: 'notzugang-testpasswort' });
+    assert.equal(amMac.status, 200);
+    const cookieChef = amMac.headers.get('set-cookie').split(';')[0];
+    const laden = await anmelden({ passwort: 'notzugang-testpasswort' }, { 'x-forwarded-for': '100.101.7.3' });
+    const cookieLaden = laden.headers.get('set-cookie').split(';')[0];
+
+    // Zugaenge zeigen, wie viele Geraete angemeldet sind.
+    const liste = await (await fetch(`${base}/api/team/liste`, { headers: { cookie: cookieChef } })).json();
+    assert.equal(liste.angemeldeteGeraete, 3);
+
+    // Mitarbeiter duerfen nicht alle abmelden; GET schreibt nichts.
+    assert.equal((await fetch(`${base}/api/sitzungen/abmelden`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieMona }, body: '{}' })).status, 403);
+    assert.equal((await fetch(`${base}/api/sitzungen/abmelden`, { headers: { cookie: cookieChef } })).status, 405);
+    assert.equal((await fetch(`${base}/api/sitzungen/abmelden`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieChef, origin: 'https://evil.example' }, body: '{}' })).status, 403);
+    assert.equal(fs.existsSync(path.join(privat, 'geraete-abgemeldet.json')), false);
+
+    const r = await fetch(`${base}/api/sitzungen/abmelden`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieChef }, body: '{}' });
+    assert.equal(r.status, 200);
+    const j = await r.json();
+    assert.deepEqual({ abgemeldet: j.abgemeldet, social: j.social, angemeldeteGeraete: j.angemeldeteGeraete }, { abgemeldet: 2, social: true, angemeldeteGeraete: 1 });
+    assert.equal((await fetch(`${base}/api/capabilities`, { headers: { cookie: cookieChef } })).status, 200, 'das eigene Geraet bleibt angemeldet');
+    assert.equal((await fetch(`${base}/api/capabilities`, { headers: { cookie: cookieMona } })).status, 401);
+    assert.equal((await fetch(`${base}/api/capabilities`, { headers: { cookie: cookieLaden } })).status, 401);
+    assert.ok(Date.parse(JSON.parse(fs.readFileSync(path.join(privat, 'geraete-abgemeldet.json'), 'utf8')).ab) > 0, 'Zeitstempel fuer die Social-Zentrale');
+    const protokoll = await (await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieChef } })).json();
+    assert.ok(protokoll.eintraege.some(e => e.aktion === 'Alle anderen Geräte abgemeldet' && e.objekt === '2 Sitzungen'));
+
+    // Nur noch das eigene Geraet im Control Center: die Aktion bleibt moeglich, denn ein Handy
+    // kann allein in der Social-Zentrale angemeldet sein (Codex-Review #1731).
+    const stempelVorher = Date.parse(JSON.parse(fs.readFileSync(path.join(privat, 'geraete-abgemeldet.json'), 'utf8')).ab);
+    const nochmal = await (await fetch(`${base}/api/sitzungen/abmelden`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieChef }, body: '{}' })).json();
+    assert.deepEqual({ abgemeldet: nochmal.abgemeldet, social: nochmal.social, angemeldeteGeraete: nochmal.angemeldeteGeraete }, { abgemeldet: 0, social: true, angemeldeteGeraete: 1 });
+    assert.ok(Date.parse(JSON.parse(fs.readFileSync(path.join(privat, 'geraete-abgemeldet.json'), 'utf8')).ab) >= stempelVorher, 'neuer Zeitstempel fuer die Social-Zentrale');
+    assert.equal((await fetch(`${base}/api/capabilities`, { headers: { cookie: cookieChef } })).status, 200);
+  });
 });

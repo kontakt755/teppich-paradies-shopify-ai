@@ -16,7 +16,7 @@
  * mit Sperre oder einem Hinweis, der einen Menschen braucht.
  */
 
-import { BEITRAG_STATUS, PLATTFORMEN } from './status.mjs';
+import { BEITRAG_STATUS, INHALT_STATUS, PLATTFORMEN } from './status.mjs';
 import { pruefeText } from './texte.mjs';
 
 export class FreigabeFehler extends Error {}
@@ -30,6 +30,9 @@ export function pruefe({ beitrag, inhalt, medien }) {
   const text = pruefeText(beitrag.text, { hashtags: String(beitrag.hashtags ?? '').split(/\s+/).filter(Boolean) });
   sperren.push(...text.fehler);
   hinweise.push(...text.hinweise);
+  // Verworfenes Material sperrt auch die Freigabe, nicht nur den Publisher - sonst gab die
+  // Automatik es beim naechsten Takt wieder frei (26.10.2026, Novaris und Aalborg).
+  if (inhalt.status === INHALT_STATUS.VERWORFEN) sperren.push('Das Material wurde verworfen.');
 
   // Bedenken sperren immer - egal woher das Bild stammt.
   const bedenken = medien.filter(m => m.datenschutz === 'bedenken');
@@ -94,7 +97,8 @@ export function freigebenAutomatisch(db, { env = process.env, jetzt = new Date()
   for (const b of db.beitraege({ status: BEITRAG_STATUS.FREIGABE })) {
     if (!b.geplant_am || new Date(b.geplant_am) <= jetzt) continue;
     const inhalt = db.inhalt(b.inhalt_id);
-    const darf = autoFreigabeMoeglich({ beitrag: b, inhalt, medien: medienZuBeitrag(db, b) }, env);
+    // Was ein Mensch, der Shop-Abgleich oder der Publisher zurueckgeholt hat, gibt nur ein Mensch wieder frei.
+    const darf = !db.zurueckgehalten(b.id) && autoFreigabeMoeglich({ beitrag: b, inhalt, medien: medienZuBeitrag(db, b) }, env);
     if (Boolean(b.auto_freigabe) !== darf) db.beitragAendern(b.id, { auto_freigabe: darf });
     if (!darf) continue;
     freigeben(db, b.id, { von: 'automatisch', jetzt });
@@ -129,10 +133,14 @@ export function verwerfen(db, id, { von = null, grund = '' } = {}) {
   return aus;
 }
 
-/** Zurueck in die Freigabe - etwa um einen geplanten Beitrag noch einmal anzufassen. */
-export function zurueckholen(db, id, { von = null } = {}) {
-  const aus = db.beitragAendern(id, { status: BEITRAG_STATUS.FREIGABE });
-  db.ereignis(von, 'beitrag-zurueckgeholt', `beitrag:${id}`);
+/**
+ * Zurueck in die Freigabe - etwa um einen geplanten Beitrag noch einmal anzufassen. Die
+ * automatische Freigabe gibt ihn danach nicht wieder frei (db.zurueckgehalten); das tut ein Mensch.
+ */
+export function zurueckholen(db, id, { von = null, grund = '' } = {}) {
+  const text = String(grund ?? '').trim().slice(0, 300);
+  const aus = db.beitragAendern(id, { status: BEITRAG_STATUS.FREIGABE, ...(text ? { fehler: text } : {}) });
+  db.ereignis(von, 'beitrag-zurueckgeholt', `beitrag:${id}`, text ? { grund: text } : null);
   return aus;
 }
 

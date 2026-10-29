@@ -30,6 +30,7 @@ import { onAnimationEnd } from '@theme/utilities';
  * @property {HTMLElement} quantityDisplay - Quantity display container
  * @property {HTMLElement} quantityNumber - Quantity number element
  * @property {HTMLImageElement} productImage - Product image element
+ * @property {HTMLButtonElement} [musterButton] - Muster-Knopf der Leiste (nur mit Muster-Knopf auf der Seite)
  */
 
 /**
@@ -70,6 +71,9 @@ class StickyAddToCartComponent extends Component {
 
   /** @type {MutationObserver | null} */
   #targetStateObserver = null;
+
+  /** @type {MutationObserver | null} */
+  #musterObserver = null;
 
   /**
    * Der Kaufweg-Anker (Kaufblock, Paket-Rechner oder .tp-kaufweg), an dem sich
@@ -119,6 +123,7 @@ class StickyAddToCartComponent extends Component {
     document.addEventListener(ThemeEvents.quantitySelectorUpdate, this.#handleQuantityUpdate, { signal });
 
     this.#getInitialQuantity();
+    this.#setupMusterObserver();
   }
 
   disconnectedCallback() {
@@ -126,6 +131,7 @@ class StickyAddToCartComponent extends Component {
     this.#buyButtonsIntersectionObserver?.disconnect();
     this.#mainBottomObserver?.disconnect();
     this.#targetStateObserver?.disconnect();
+    this.#musterObserver?.disconnect();
     this.#abortController.abort();
     this.#clearPendingCartAdd();
     if (this.#animationTimeout) {
@@ -272,12 +278,15 @@ class StickyAddToCartComponent extends Component {
     }
 
     const usable = !target.hidden;
-    addToCartButton.disabled = this.#targetBlocked(target);
+    const unvollstaendig = this.#targetIncomplete(target);
+    addToCartButton.disabled = !unvollstaendig && this.#targetBlocked(target);
 
     const label = addToCartButton.querySelector('.add-to-cart-text__content > span');
     if (label) {
       const text = (target.textContent || '').trim();
-      if (usable && text) {
+      if (unvollstaendig) {
+        label.textContent = 'Maße eingeben';
+      } else if (usable && text) {
         label.textContent = text;
       } else {
         label.textContent = target.closest('[data-tp-ek]') ? 'Maße eingeben' : 'Länge eingeben';
@@ -365,7 +374,19 @@ class StickyAddToCartComponent extends Component {
     const galleryImage = section?.querySelector('media-gallery slideshow-slide img');
     const stickyImage = this.querySelector('.sticky-add-to-cart__image img');
     if (!galleryImage || !stickyImage) return;
-    stickyImage.src = galleryImage.currentSrc || galleryImage.src;
+    // Das Vorschaubild ist 52 px gross. Nach einem Farbwechsel ist currentSrc
+    // des frisch eingesetzten Galeriebilds noch leer, src traegt bei Horizon
+    // width=3840 - die Leiste lud dann das Original (bis 2,8 MB, Rundgang
+    // 2026-10-26, #46). Deshalb immer die Bild-URL mit width=160 (3x Pixeldichte).
+    const quelle = galleryImage.currentSrc || galleryImage.src;
+    if (!quelle) return;
+    try {
+      const url = new URL(quelle, window.location.href);
+      url.searchParams.set('width', '160');
+      stickyImage.src = url.href;
+    } catch {
+      stickyImage.src = quelle;
+    }
     stickyImage.alt = galleryImage.alt;
     stickyImage.removeAttribute('srcset');
   }
@@ -400,6 +421,12 @@ class StickyAddToCartComponent extends Component {
    */
   handleAddToCartClick = () => {
     const target = this.#targetAddToCartButton;
+    // Der Rechner markiert das fehlende Feld, nennt es und scrollt dorthin;
+    // sobald er wieder im Bild ist, blendet sich die Leiste selbst aus.
+    if (this.#targetIncomplete(target)) {
+      target?.click();
+      return;
+    }
     if (!target || this.#targetBlocked(target)) return;
 
     this.#clearPendingCartAdd();
@@ -425,6 +452,33 @@ class StickyAddToCartComponent extends Component {
   /** @param {HTMLButtonElement} target */
   #targetBlocked(target) {
     return target.hidden || target.disabled || target.getAttribute('aria-disabled') === 'true';
+  }
+
+  /**
+   * Rollenware-Rechner, dem ein Mass fehlt: sein Knopf traegt .is-incomplete
+   * und aria-disabled, bleibt aber anklickbar und meldet beim Klick, welches
+   * Feld fehlt, und springt dorthin (blocks/tp-rollware-rechner.liquid, #301).
+   * Die Leiste zeigte dort bis 10/2026 einen gesperrten Warenkorb-Knopf ohne
+   * Wirkung; jetzt heisst sie "Masse eingeben" und reicht den Klick weiter.
+   *
+   * Nur wenn wirklich ein Mass fehlt: .is-incomplete steht auch bei nicht
+   * lieferbarer Breite oder fehlender Fussleiste - dort setzt der Klick nur
+   * einen Hinweis, ohne Sprung. Ob ein Mass fehlt, sagt das Stueck am Kaufweg:
+   * data-tp-laenge bleibt leer, solange Breite oder Laenge ungueltig ist.
+   * Waehrend des Warenkorb-Aufrufs (.is-busy) bleibt die Leiste gesperrt.
+   * @param {HTMLButtonElement | null} target
+   */
+  #targetIncomplete(target) {
+    const kaufweg = target?.closest('.tp-kaufweg');
+    return Boolean(
+      target &&
+        kaufweg &&
+        !target.hidden &&
+        target.classList.contains('is-incomplete') &&
+        !target.classList.contains('is-busy') &&
+        kaufweg.hasAttribute('data-tp-laenge') &&
+        kaufweg.getAttribute('data-tp-laenge') === ''
+    );
   }
 
   #clearPendingCartAdd() {
@@ -493,6 +547,8 @@ class StickyAddToCartComponent extends Component {
 
     // Restore visibility state after morphing
     this.refs.stickyBar.setAttribute('data-stuck', currentStuck);
+    // Der Morph setzt den Muster-Knopf auf den Serverstand (hidden) zurueck.
+    this.#syncMusterButton();
     this.dataset.variantAvailable = variantAvailable;
 
     // Update the dataset attributes with new variant info
@@ -585,11 +641,79 @@ class StickyAddToCartComponent extends Component {
   };
 
   /**
+   * Der sichtbare Muster-Knopf der Seite: im Rollenware-Rechner
+   * ([data-muster-link], traegt die gewaehlte Farbe) oder als eigener Block
+   * (blocks/tp-muster-cta.liquid). Bei Vinyl blendet assets/tp-muster-grenze.js
+   * ihn aus, sobald 3 Muster im Warenkorb liegen; dann gibt es auch in der
+   * Leiste keinen.
+   * @returns {HTMLElement | null}
+   */
+  #getMusterCta() {
+    // Nur in der eigenen Produkt-Section, nicht in Empfehlungen darunter
+    const bereich = this.closest('.shopify-section') ?? document;
+    const kandidaten = /** @type {HTMLElement[]} */ ([
+      ...bereich.querySelectorAll('a[data-muster-link], a[class*="tp-muster-cta__link-"]'),
+    ]);
+    return kandidaten.find((el) => !el.hidden && el.getClientRects().length > 0) ?? null;
+  }
+
+  /**
+   * Muster in der Leiste (Fehlersuche 28.10., Idee 3): nur, wenn die Seite
+   * selbst einen Muster-Knopf zeigt.
+   */
+  #syncMusterButton() {
+    const { musterButton } = this.refs;
+    if (!musterButton) return;
+    const verbergen = !this.#getMusterCta();
+    // Nur bei Wechsel schreiben: hidden=true erneut setzen meldet der
+    // Beobachter unten wieder als Aenderung.
+    if (musterButton.hidden !== verbergen) musterButton.hidden = verbergen;
+  }
+
+  /**
+   * Haelt den Muster-Knopf bei offener Leiste aktuell: assets/tp-muster-grenze.js
+   * schaltet den Muster-Knopf der Seite nach jeder Warenkorbaenderung per
+   * hidden um (3 Vinyl-Muster voll bzw. wieder frei).
+   */
+  #setupMusterObserver() {
+    const bereich = this.closest('.shopify-section');
+    if (!bereich) return;
+    this.#musterObserver = new MutationObserver((records) => {
+      // Aenderungen in der Leiste selbst (auch am Muster-Knopf) ignorieren
+      if (records.every((record) => this.contains(record.target))) return;
+      this.#syncMusterButton();
+    });
+    this.#musterObserver.observe(bereich, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+  }
+
+  /**
+   * Loest den Muster-Knopf der Seite aus - derselbe Weg wie ein Tipp darauf
+   * (Link, Farbauswahl im Einfass-Konfigurator, Musterzaehlung).
+   */
+  handleMusterClick = () => {
+    const cta = this.#getMusterCta();
+    // Inzwischen voll (3 Vinyl-Muster): Knopf weg statt Tipp ohne Wirkung
+    if (!cta) {
+      this.#syncMusterButton();
+      return;
+    }
+    // Klickmessung: tp_muster_cta_klick mit ort "leiste" (snippets/tp-funnel-events.liquid
+    // liest das Attribut im selben, synchronen Klick)
+    cta.setAttribute('data-tp-klick-ort', 'leiste');
+    try {
+      cta.click();
+    } finally {
+      cta.removeAttribute('data-tp-klick-ort');
+    }
+  };
+
+  /**
    * Shows the sticky bar with animation
    */
   #showStickyBar() {
     const { stickyBar } = this.refs;
     if (!this.#targetUsable) return;
+    this.#syncMusterButton();
     this.#isStuck = true;
     stickyBar.dataset.stuck = 'true';
   }

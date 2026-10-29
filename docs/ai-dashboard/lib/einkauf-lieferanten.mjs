@@ -1,3 +1,4 @@
+import { kalendertage } from './kalendertage.mjs';
 /**
  * Einkauf je Lieferant: reine Regeln ohne DOM (Browser und Tests).
  *
@@ -59,8 +60,7 @@ export function wartetage(eintrag, jetzt = Date.now()) {
   }
   const seit = eintrag?.status === 'bestellt' ? eintrag.bestelltAm : eintrag?.status === 'geliefert' ? eintrag.geliefertAm : null;
   if (!seit) return null;
-  const tage = Math.floor((Number(jetzt) - new Date(seit).getTime()) / 864e5);
-  return Number.isFinite(tage) && tage >= 0 ? tage : null;
+  return kalendertage(seit, Number(jetzt));
 }
 
 /** 'crit' ab problemTage, 'warn' ab nachhakenTage, sonst null. */
@@ -74,9 +74,26 @@ export function warnstufe(tage, schwellen = SCHWELLEN_STANDARD) {
 // eigen: offene Muster aus dem eigenen Bestand - vorbeibringen/verschicken statt bestellen.
 const leereStufen = () => ({ zuBestellen: [], bestellt: [], eingetroffen: [], erledigt: [], eigen: [] });
 
+export const NICHT_ZUGEORDNET = 'Lieferant nicht zugeordnet';
+
+/**
+ * Anzeigename eines Lieferanten - eine Regel fuer alle Ansichten (Kundenakte, Heute,
+ * Lieferantenpost, Je Auftrag): der Name aus den privaten Stammdaten, sonst "Lieferant A".
+ * Der Marker UNGEKLAERT erscheint nie, sondern "Lieferant nicht zugeordnet".
+ * @param {string} id
+ * @param {object[]|Object<string,string>} [quelle]  Liste aus /api/einkauf/lieferanten
+ *   ({ id, name } bzw. { id, stammdaten: { name } }) oder Zuordnung id -> Name (Lieferantenpost)
+ */
+export function lieferantName(id, quelle = []) {
+  if (!id || id === UNGEKLAERT) return NICHT_ZUGEORDNET;
+  const eintrag = Array.isArray(quelle) ? quelle.find(l => l?.id === id) : null;
+  const name = Array.isArray(quelle) ? eintrag?.name || eintrag?.stammdaten?.name : quelle?.[id];
+  return name || `Lieferant ${id}`;
+}
+
 function leereStammdaten(id) {
   return {
-    id, name: id === UNGEKLAERT ? 'Lieferant nicht zugeordnet' : `Lieferant ${id}`, anzeigename: null, kundennummer: null,
+    id, name: id === UNGEKLAERT ? NICHT_ZUGEORDNET : `Lieferant ${id}`, anzeigename: null, kundennummer: null,
     ware: { weg: null, portalUrl: null, mail: null, telefon: null },
     muster: { weg: null, ansprechperson: null, mail: null, telefon: null, portalUrl: null, lieferung: null },
     lieferzeitWerktage: null, mindestmenge: null, hinweise: null, fehlend: [], hinterlegt: false,

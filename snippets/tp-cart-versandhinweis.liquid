@@ -2,13 +2,18 @@
   Versandkostenhinweis fuer jeden gefuellten Warenkorb. Die Speditionsart
   wird getrennt ermittelt; Varianten-Rollenbreiten sind die aktuelle Quelle.
   Muster verwenden die gemeinsame Mustererkennung und ihr kostenloses Profil.
+  Liegt mindestens ein Muster im Warenkorb (auch gemischt mit Ware), folgt
+  der voruebergehende Geduld-Hinweis (snippets/tp-muster-hinweis).
 {%- endcomment -%}
 {%- if cart.items.size > 0 -%}
   {%- assign tp_cart_only_samples = true -%}
   {%- assign tp_cart_has_spedition_item = false -%}
+  {%- assign tp_cart_has_sample = false -%}
   {%- for item in cart.items -%}
     {%- capture tp_cart_sample -%}{%- render 'tp-muster-position', line_item: item -%}{%- endcapture -%}
-    {%- unless tp_cart_sample contains 'ja' -%}
+    {%- if tp_cart_sample contains 'ja' -%}
+      {%- assign tp_cart_has_sample = true -%}
+    {%- else -%}
       {%- liquid
         assign tp_cart_only_samples = false
         assign tp_cart_roll_width = item.variant.metafields.custom.rollenbreite.value | default: item.product.metafields.custom.rollenbreite.value | times: 1
@@ -17,7 +22,7 @@
           assign tp_cart_has_spedition_item = true
         endif
       -%}
-    {%- endunless -%}
+    {%- endif -%}
   {%- endfor -%}
   {%- assign tp_cart_versandfrei_cent = settings.tp_versand_frei_ab | times: 100 -%}
   <p class="tp-cart-shipping-note">
@@ -25,6 +30,14 @@
       <strong>Kostenloser Musterversand innerhalb Deutschlands.</strong>
     {%- elsif cart.total_price >= tp_cart_versandfrei_cent -%}
       <strong>Versandkostenfrei in Deutschland.</strong>
+    {%- elsif settings.tp_versand_preis != blank -%}
+      {%- comment -%}
+        Unter der Schwelle Versandbetrag und Rest nennen (Rundgang 2026-10-26,
+        #17) - wie die Zeile zur Anlieferung darunter. Vorher erfuhr man die
+        Versandkosten erst im Checkout. Beide Werte aus "TP Versand".
+      {%- endcomment -%}
+      {%- assign tp_cart_versand_rest = tp_cart_versandfrei_cent | minus: cart.total_price -%}
+      <strong>Versand {{ settings.tp_versand_preis }}, noch {{ tp_cart_versand_rest | money }} bis versandkostenfrei</strong> (in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert).
     {%- else -%}
       <strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert.</strong>
     {%- endif -%}
@@ -33,4 +46,7 @@
     {%- endif %}
     <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand und Lieferung</a>
   </p>
+  {%- if tp_cart_has_sample -%}
+    {%- render 'tp-muster-hinweis', kontext: 'warenkorb' -%}
+  {%- endif -%}
 {%- endif -%}

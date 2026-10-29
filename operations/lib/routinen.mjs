@@ -181,6 +181,11 @@ export const LAEUFE = Object.freeze({
     // Projekteinstellungen des Dienst-Checkouts (Bash ganz frei) bleiben aussen vor. Was die
     // Benutzereinstellungen sonst freigeben, faengt die Wache ab.
     modus: ['--setting-sources', 'user'],
+    // Die Benutzereinstellungen bringen alle MCP-Server des Kontos mit (28.10.: 304 Werkzeuge
+    // von 8 Servern, Gmail davon 6). --strict-mcp-config entfernt auch die claude.ai-Konnektoren
+    // samt Gmail; deshalb sperrt der Lauf alle anderen Server einzeln (mcpSperren), deren Namen
+    // eine Werkzeugprobe vor dem Start liefert. Gemessen: 29.472 statt 20.391 Tokens Kontext je Runde.
+    nurMcp: ['claude.ai Gmail'],
     teile: [
       { id: 'lieferbelege', aufgabe: 'lieferbelege-postfach', titel: 'Lieferbelege aus dem Postfach' },
       { id: 'serviceanfragen', aufgabe: 'serviceanfragen-postfach', titel: 'Service-Anfragen aus dem Postfach' },
@@ -260,7 +265,7 @@ export function wacheEinstellungen(lauf, { privat, dienst, node = process.execPa
  * Argumente fuer `claude -p`. Der Prompt kommt als letztes Argument (nach `--`), damit ein
  * Auftragstext, der mit "-" beginnt, nie als Option gelesen wird.
  */
-export function claudeArgumente(lauf, { dienst, arbeit, privat, prompt, modell = 'sonnet', effort = 'medium', node, skript }) {
+export function claudeArgumente(lauf, { dienst, arbeit, privat, prompt, modell = 'sonnet', effort = 'medium', node, skript, mcpGesperrt = [] }) {
   const def = LAEUFE[lauf];
   const ctx = { dienst, arbeit, privat };
   return [
@@ -271,7 +276,7 @@ export function claudeArgumente(lauf, { dienst, arbeit, privat, prompt, modell =
     '--settings', wacheEinstellungen(lauf, { privat, dienst, node, skript }),
     '--tools', def.werkzeuge.join(','),
     '--allowedTools', ...def.freigaben(ctx),
-    '--disallowedTools', ...def.sperren(ctx),
+    '--disallowedTools', ...def.sperren(ctx), ...mcpGesperrt,
     ...def.zusatzOrdner(ctx).flatMap(d => ['--add-dir', d]),
     '--permission-mode', 'dontAsk',
     '--permission-prompts', 'none',
@@ -378,6 +383,47 @@ export function pruefeWerkzeuge(init, pflicht = []) {
   return { ok: hart.length === 0, fehlt: hart, wartet: fehlt.filter(t => !hart.includes(t)) };
 }
 
+/**
+ * Sperrregeln fuer alle MCP-Server aus dem init-Ereignis, die der Lauf nicht braucht
+ * (`behalten`: Servernamen wie im init-Ereignis, z. B. "claude.ai Gmail"). Eine Regel
+ * `mcp__<server>` nimmt alle Werkzeuge des Servers aus der Liste (gemessen 28.10.2026).
+ */
+export function mcpSperren(init, behalten = []) {
+  const bleibt = new Set(behalten.map(mcpName));
+  return [...new Set((init?.mcp || []).map(m => mcpName(m.name)).filter(n => n && !bleibt.has(n)))].map(n => `mcp__${n}`);
+}
+
+/** Claudes eigener Scratchpad: `claude -p` legt ihn je Sitzung unter /private/tmp/claude-<uid>/<projekt>/<sitzung>/scratchpad/ an. */
+const SCRATCHPAD = /^(?:\/private)?\/tmp\/claude-\d+\/[^/]+\/[^/]+\/scratchpad\/[^/]/;
+
+/** Liegt `pfad` in Claudes Scratchpad - ohne "..", ohne .env-Datei? */
+export function imScratchpad(pfad) {
+  const p = typeof pfad === 'string' ? pfad : '';
+  return SCRATCHPAD.test(p) && path.posix.normalize(p) === p && !p.split('/').some(t => t.startsWith('.env'));
+}
+
+/**
+ * Eine Ablehnung ist nur dann kein Fehler, wenn ALLE abgelehnten Aufrufe Read/Write in Claudes
+ * eigenem Scratchpad waren und das Ergebnis nachweislich da ist (28.10.: Claude wollte zuerst
+ * ins Scratchpad schreiben und nahm dann den Arbeitsordner). Jede andere Ablehnung bleibt ein
+ * Fehler mit Mitteilung - Bash, MCP und jeder Dateipfad sonst (`.env*`, Zugangsdateien,
+ * LaunchAgents, alles unter ~): genau das ist das Zeichen, dass eine Mail Claude zu etwas
+ * anderem bringen wollte (Pruefung 28.10.). Entschieden wird am vollen Pfad (`abgelehnt`),
+ * nicht am gekuerzten Text in `ablehnungen`.
+ */
+export function harmloseAblehnung(bewertung, ergebnisBelegt) {
+  if (!bewertung || bewertung.art !== 'abgelehnt' || !ergebnisBelegt) return bewertung;
+  const liste = bewertung.abgelehnt || [];
+  const harmlos = liste.length && liste.length === (bewertung.ablehnungen?.length ?? liste.length)
+    && liste.every(a => ['Read', 'Write'].includes(a.werkzeug) && imScratchpad(a.pfad));
+  if (!harmlos) return bewertung;
+  return {
+    ...bewertung, ok: true, art: null,
+    meldung: bewertung.abschluss || 'fertig',
+    hinweis: `${liste.length} Dateizugriff(e) im Scratchpad abgelehnt, Ergebnis trotzdem übernommen`,
+  };
+}
+
 /** Letzte nicht leere Zeile - die ABSCHLUSS-Zeile des Auftrags. */
 export function abschlussZeile(text) {
   const zeilen = String(text || '').split('\n').map(z => z.trim()).filter(Boolean);
@@ -409,8 +455,10 @@ export function bewerteLauf({ exitCode, signal, stdout, ergebnis, aufrufe, wache
     return { ok: false, art: 'antwort', meldung: `Keine auswertbare Antwort von claude (Exit ${exitCode ?? signal ?? '?'}).`, aufrufe };
   }
   const ablehnungen = (j.permission_denials || []).map(ablehnungKurz);
+  // Voller Pfad je Ablehnung (ablehnungen kuerzt auf 120 Zeichen): fuer harmloseAblehnung.
+  const abgelehnt = (j.permission_denials || []).map(d => ({ werkzeug: d?.tool_name || '?', pfad: typeof d?.tool_input?.file_path === 'string' ? d.tool_input.file_path : null }));
   const zeile = abschlussZeile(j.result);
-  const basis = { tokens: tokensAus(j.usage), runden: j.num_turns ?? null, dauerSek: j.duration_ms ? Math.round(j.duration_ms / 1000) : null, abschluss: zeile, ablehnungen, wache, aufrufe };
+  const basis = { tokens: tokensAus(j.usage), runden: j.num_turns ?? null, dauerSek: j.duration_ms ? Math.round(j.duration_ms / 1000) : null, abschluss: zeile, ablehnungen, abgelehnt, wache, aufrufe };
   if (j.is_error || j.subtype !== 'success' || exitCode) {
     return { ...basis, ok: false, art: 'fehler', meldung: `claude endete mit Fehler (${j.subtype || 'unbekannt'}${exitCode ? `, Exit ${exitCode}` : ''}): ${zeile || '–'}` };
   }

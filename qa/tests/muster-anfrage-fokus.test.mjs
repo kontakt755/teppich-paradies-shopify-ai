@@ -13,6 +13,7 @@ function seite(options = {}) {
   const listeners = new Map();
   const fields = new Map();
   const attributes = new Map();
+  const rootAttributes = new Map();
   const document = {
     body: {}, documentElement: {},
     querySelector: selector => selector === '[data-tp-sample-request]' ? root : null,
@@ -34,7 +35,7 @@ function seite(options = {}) {
   const error = { focus() { focus.push({ target: 'error' }); document.activeElement = error; } };
   const success = { focus() { focus.push({ target: 'success' }); document.activeElement = success; } };
   const root = {
-    setAttribute() {},
+    setAttribute(name, value) { rootAttributes.set(name, value); },
     querySelector(selector) {
       if (selector === '[data-tp-anfrage-hinweis]') return options.noHint ? null : hint;
       if (selector === '[data-message-field]') return message;
@@ -61,7 +62,7 @@ function seite(options = {}) {
   const run = () => vm.runInNewContext(source, context);
   run();
   return {
-    window, document, hint, focus, scroll, message, fields, frames, run,
+    window, document, hint, focus, scroll, message, fields, frames, run, rootAttributes,
     flush() { while (frames.length) frames.shift()(); },
     event(name) { for (const listener of listeners.get(name) || []) listener(); },
     listenerCount() { return [...listeners.values()].reduce((sum, handlers) => sum + handlers.size, 0); },
@@ -76,7 +77,7 @@ test('Produktanfrage: vorhandenen Kontext fokussieren, Felder und Nachricht unve
   assert.equal(p.fields.get('Produkt').value, 'Grandessa Eiche');
   assert.equal(p.fields.get('Produkt-Handle').value, 'grandessa-eiche');
   assert.equal(p.fields.get('Produkt-Link').value, 'https://shop.example/products/grandessa-eiche');
-  assert.match(p.message.value, /kostenloses Muster von Grandessa Eiche/);
+  assert.match(p.message.value, /ein Muster von Grandessa Eiche/);
   assert.equal(p.message.required, true);
   assert.equal(p.focus.length, 0);
   p.flush();
@@ -189,4 +190,20 @@ test('Vorhandener Hinweis ist fokussierbar, ohne Eingabe-Autofokus oder neuen Ta
   assert.match(markup, /<p[^>]*data-tp-anfrage-hinweis[^>]*tabindex="-1"[^>]*hidden/);
   assert.match(markup, /\.tp-anfrage-hinweis\s*\{\s*scroll-margin-top:\s*calc\(var\(--header-height,/);
   assert.doesNotMatch(markup, /\sautofocus(?:\s|=|>)/);
+});
+
+test('Verlege- und Angebotsanfrage blenden PLZ und Telefon ein, andere Themen nicht', () => {
+  for (const thema of ['verlegung', 'angebot']) {
+    const p = seite({ search: '?thema=' + thema + '&produkt=Eiche%20Hell' });
+    assert.equal(p.rootAttributes.has('data-anfrage-felder'), true, thema);
+  }
+  for (const thema of ['beratung', 'musteranfrage', '', 'muster']) {
+    const p = seite({ search: thema ? '?thema=' + thema : '' });
+    assert.equal(p.rootAttributes.has('data-anfrage-felder'), false, thema);
+  }
+  // Im Markup tragen genau PLZ und Telefon die Markierung, beide ohne required.
+  const felder = [...markup.matchAll(/<div data-sample-field data-anfrage-feld>\s*<label for="(\w+)"[\s\S]*?<input([^>]*)>/g)];
+  assert.deepEqual(felder.map(m => m[1]), ['ContactFormZip', 'ContactFormPhone']);
+  for (const m of felder) assert.doesNotMatch(m[2], /required/);
+  assert.match(markup, /\[data-tp-sample-request\]\[data-anfrage-felder\] \[data-anfrage-feld\] \{\s*display: block;/);
 });

@@ -79,6 +79,13 @@
 
 .tp-rg-abschnitt__titel { margin: 0; font-size: var(--tp-fs-xl); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); }
 
+/* Kaufbox: dieselben Karten wie "Passend dazu", kompakt nach der Kurzantwort */
+.tp-rg-kaufbox { margin: 20px 0 28px; }
+.tp-rg-kaufbox .tp-rg-passend__cta { margin: 0; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.tp-rg-kaufbox .tp-rg-cta__link { min-height: 48px; padding: 12px 40px 12px 14px; background: #fff; }
+.tp-rg-kaufbox .tp-rg-cta__link::after { right: 14px; top: 12px; }
+.tp-rg-kaufbox .tp-rg-cta__text { display: none; }
+
 .tp-rg-passend { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--tp-line, #e6e0d8); }
 .tp-rg-passend__cta { list-style: none; margin: 20px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
 .tp-rg-cta { margin: 0; padding: 0; }

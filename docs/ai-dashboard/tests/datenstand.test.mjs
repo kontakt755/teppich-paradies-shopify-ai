@@ -64,12 +64,12 @@ test('Seiten mit Betriebsdaten haben eine Quelle fuer "Stand"', () => {
   assert.equal(quelleFuerSeite('hilfe'), null);
 });
 
-test('Menue fuer Mitarbeiter: nur Heute, Kunden, Bestellen, Genossenschaften, Lexikon, Hilfe', () => {
+test('Menue fuer Mitarbeiter: nur Heute, Kunden, Bestellen, Genossenschaften, Hausverwaltungen, Lexikon, Hilfe', () => {
   const html = fs.readFileSync(path.join(hier, '..', 'index.html'), 'utf8');
   const side = html.slice(html.indexOf('id="mainnav"'), html.indexOf('id="navDashboards"'));
   const links = [...side.matchAll(/<a href="#\/([a-z]+)" data-nav="\1"([^>]*)>/g)];
   const sichtbar = links.filter(([, , attr]) => !/data-nur-inhaber|data-nicht-mitarbeiter/.test(attr)).map(([, n]) => n);
-  assert.deepEqual(sichtbar.sort(), ['akquise', 'einkauf', 'heute', 'hilfe', 'kunden', 'lexikon']);
+  assert.deepEqual(sichtbar.sort(), ['akquise', 'einkauf', 'hausverwaltungen', 'heute', 'hilfe', 'kunden', 'lexikon']);
   assert.match(html, /data-nav-gruppe="verwaltung"/);
   assert.ok(!html.includes('id="navMore"'), 'keine pauschale Mehr-Gruppe mehr');
   assert.match(html, /id="datenstandLeiste"/);
@@ -81,5 +81,6 @@ test('Hilfe beginnt mit "In 1 Minute erklärt" und den drei Ablaeufen', async ()
   const { viewHilfe } = await import('../ansichten/hilfe.mjs');
   const h = viewHilfe();
   assert.ok(h.indexOf('In 1 Minute erklärt') < h.indexOf('Morgens'));
-  for (const s of ['Kunde bestellt', 'Muster rausgeben', 'Genossenschaft anschreiben', 'Genossenschaften', 'Lexikon', 'Bestellen']) assert.ok(h.includes(s), s);
+  // "Muster rausgeben" heisst seit der Packstation "Muster packen" (Rundgang 26.10.).
+  for (const s of ['Kunde bestellt', 'Muster packen', 'Packstation', 'Genossenschaft anschreiben', 'Genossenschaften', 'Hausverwaltungen', 'Lexikon', 'Bestellen']) assert.ok(h.includes(s), s);
 });

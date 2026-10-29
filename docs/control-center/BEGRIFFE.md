@@ -24,6 +24,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Alt | Neu | Wo / Bemerkung |
 |---|---|---|
 | Akquise | **Genossenschaften** (Seite: „Genossenschaften & Hausverwaltungen“) | Menue, Seite, To-do „Genossenschaften: N Firmen nachfassen“; enthaelt auch Ausschreibungen. Nicht verwechseln mit „Neue Aufträge“ der Auftrags-App-Zahlen |
+| – (neu 28.10.) | **Hausverwaltungen** | Menue „Kunden & Einkauf“, Seite und To-do „Hausverwaltungen: N wieder melden“; Verwaltungen mit Ansprechpartner, Objekten und Angeboten. Die Erstansprache bleibt unter „Genossenschaften“ |
 | Einkauf | **Bestellen** | Menue und Seitentitel; gemeint ist immer: wir bestellen beim Lieferanten. Die Bestellungen der Kunden heissen weiter „Bestellungen“ |
 | Lexikon | **Lexikon** (bleibt, Inhaber/Mitarbeiter 21.10.) | Menue, Seite, Handy-Leiste |
 | Belege (Reiter) | **Lieferantenpost** | Reiter unter „Bestellen“; ein einzelnes Stueck ist ein „Schreiben“ |
@@ -44,6 +45,9 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Werkbank | **Ideen & Fragen** | Link zur eigenen Anwendung |
 | GitHub synchronisieren | **Aufgaben neu laden** | |
 | Packliste (lokale Datei) | **Packstation** (Arbeitsgang: „Muster packen“) | Reiter unter Kunden (#1572); „Umschlag gepackt“ ist der gemeinsame Stand, das Abhaken je Muster nur eine Packhilfe am Gerät |
+| Einkauf & Wareneingang (Menuepunkt) | **Bestellen** | Menuepunkt unter „Kunden & Einkauf“, wie der Seitentitel (Rundgang 26.10.2026) |
+| Partnerladen | **Lieferant** | Packstation, Reiter „Muster kommt an“ („Lieferant nicht hinterlegt“) |
+| Wareneingang nach Partnerladen | **Muster kommt an** | Reiter der Packstation; auch in Leerzustaenden und Rueckweg-Knoepfen |
 
 ## Bleibt bewusst
 
@@ -77,6 +81,7 @@ gebraeuchlich), Erfassen.
 - **Schritte im Umschlag:** 1 · Bestellung drucken („Aufkleber und Adresse drucken“), 2 · Was ist da? („Da: x von n · Fehlt: …“), 3 · Zukleben („Umschlag gepackt“).
 - **Fehlt noch – zurücklegen** = Umschlag geht nach „Zu klären“, bis „Fehlendes ist da – weiter packen“.
 - **Eingelegt ✓** = Muster liegt überklebt im Umschlag (derselbe Haken wie in der Liste).
+- **Ratgeber drucken** = Kurz-Ratgeber zur Bodenart als PDF (zwei Seiten, beidseitig), Bestellnummer und Maß schon eingetragen; **Bitte beilegen: Ratgeber …** steht im Dialog „An Kunden raus“, wenn die Ware bei uns liegt oder abgeholt wird (28.10.2026).
 - **Umschlag vorbereitet** = Aufkleber und Adresse sind gedruckt, der Umschlag liegt bereit und wartet auf die
   fehlenden Muster; sichtbar auf allen Geräten, mit Datum und Person. **Schon gedruckt** trägt es von Hand nach,
   **Druckvermerk zurücknehmen** (unter „Mehr …“) nimmt es zurück (#1718, 26.10.2026).
@@ -147,3 +152,21 @@ gebraeuchlich), Erfassen.
   das Dashboard läuft auf dem bisherigen Stand weiter. Dann Claude im Chat Bescheid geben.
 - **wartet** = eine neue Version ist getestet, wird aber erst übernommen, wenn gerade niemand
   eingibt und kein Codex-Lauf arbeitet; erst nach über einer Stunde Warten wird das gemeldet.
+
+## Rundgang 26.10.2026
+
+- **Sendungsnummer schon vergeben** = Hinweis im Versanddialog, wenn dieselbe Nummer schon an einer
+  anderen Bestellung steht; gebucht wird erst nach **Trotzdem buchen** (nur wenn wirklich beide
+  Bestellungen im selben Paket sind).
+- **Bestellmail öffnen (Lieferant)** / **Ware ist bestellt…** = die zwei Knoepfe im Schritt „Ware beim
+  Lieferanten bestellen“ der Kundenakte; der zweite fragt nach, ob wirklich alles bestellt ist.
+- **Lieferant nicht zugeordnet** = statt „UNGEKLAERT“; ohne Stammdaten-Namen „Lieferant A“ usw.
+- **Inhaberzeile** = eine Zeile unter den Warenbestellungen, nur Inhaber: „Shop in Ordnung · 7 Tage … €
+  Umsatz · N Entscheidungen offen · nächste Frist TT.MM.“; der Umsatz klappt die Kennzahlen auf.
+- **Ideen & Fragen öffnen ↗** = Link unter „Entscheidungen“; die Werkbank-Fragen bleiben dort.
+- **nicht eingelegt · laut Bestand da – im Regal suchen** = Packstation: als fehlend gemeldet, laut
+  Auftragsfluss aber angekommen (vorher „fehlt · angekommen“).
+- **Shopify ist nicht verbunden** = Sonderposten ohne Shop-Zugang, mit „Fehler melden“.
+- **Alle anderen Geräte abmelden…** = Knopf unter Zugänge › Angemeldete Geräte (nur Inhaber); meldet
+  im Control Center und in der Social-Zentrale ab, das eigene Gerät bleibt im Control Center angemeldet.
+  Immer klickbar, auch wenn im Control Center nur dieses Gerät zählt (die Social-Zentrale zählt dort nicht mit).

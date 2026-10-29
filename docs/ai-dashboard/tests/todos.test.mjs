@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, tonNachAlter, alterText, tageSeit,
-  tailscaleHinweis,
+  tailscaleHinweis, speicherHinweis,
 } from '../lib/todos.mjs';
 
 // Nur erfundene Daten: Testkunden und Lieferanten-Pseudonyme.
@@ -347,6 +347,25 @@ test('Tailscale gestoppt oder abgemeldet: ein To-do in der Website-Sicht, sonst 
   assert.equal(zaehleTodos({ shopwache: { tailscale: { status: 'gestoppt' } } }, { jetzt: JETZT }).website, 1);
 });
 
+test('Speicher am Mac mini: gelb und rot werden ein Website-To-do, gruen und unbekannt nichts', () => {
+  const stand = (ampel, freiGiB, belegtProzent) => ({ ampel, freiGiB, belegtProzent, gemessenAm: JETZT.toISOString() });
+  const gelb = leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: JETZT.toISOString(), befunde: [], speicher: stand('gelb', 23, 95) } }, { sicht: 'website', jetzt: JETZT });
+  assert.equal(gelb.length, 1);
+  assert.equal(gelb[0].id, 'speicher');
+  assert.equal(gelb[0].ton, 'warn');
+  assert.match(gelb[0].titel, /Speicher wird knapp/);
+  assert.match(gelb[0].kontext, /nur noch 23 GiB frei \(95 % belegt\)/);
+  const rot = leiteTodosAb({ shopwache: { verfuegbar: false, speicher: stand('rot', 12, 97) } }, { sicht: 'website', jetzt: JETZT });
+  assert.equal(rot[0].ton, 'crit');
+  assert.match(rot[0].titel, /fast voll/);
+  for (const s of [stand('gruen', 120, 74), { ampel: 'unbekannt', freiGiB: null }, null]) {
+    assert.deepEqual(leiteTodosAb({ shopwache: { verfuegbar: false, speicher: s } }, { sicht: 'website', jetzt: JETZT }), []);
+    assert.equal(speicherHinweis(s), null);
+  }
+  // Im Laden zaehlt es nicht.
+  assert.deepEqual(leiteTodosAb({ shopwache: { speicher: stand('rot', 12, 97) } }, { sicht: 'laden', jetzt: JETZT }), []);
+});
+
 test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden ein Website-To-do', () => {
   const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
   const weg = mit({ geprueftAm: vorTagen(1), befunde: [
@@ -369,6 +388,56 @@ test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden
   assert.match(mit({ geprueftAm: vorTagen(9), befunde: [] })[0].titel, /meldet sich nicht/);
   assert.deepEqual(mit({ geprueftAm: vorTagen(2), befunde: [] }), []);
   assert.deepEqual(mit(null), []);
+});
+
+test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eigenes To-do, kein Auslauf', () => {
+  const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
+  const ohne = { lieferant: 'A', ergebnis: 'ohne-muster', kennung: 'TEPTEST04_043', handles: ['testa-teppichboden'], grund: 'Farbe 43(nur in Format) - kein Handmuster, Muster sperren' };
+  const nur = mit({ geprueftAm: vorTagen(1), befunde: [ohne] });
+  assert.equal(nur.length, 1);
+  assert.equal(nur[0].id, 'auslauf-muster');
+  assert.equal(nur[0].ton, 'warn');
+  assert.equal(nur[0].titel, 'Muster nicht lieferbar: 1 Farbe hat beim Lieferanten kein Handmuster');
+  assert.equal(nur[0].kontext, 'TEPTEST04_043 · testa-teppichboden · Muster im Shop sperren, offene Musterbestellungen prüfen');
+  assert.equal(nur[0].knopf.href, '#/lexikon?lq=testa-teppichboden');
+  assert.doesNotMatch(nur[0].kontext, /archivieren/);
+
+  // Zusammen mit echtem Auslauf: zwei To-dos (das rote zuerst), der Auslauf zaehlt nur seine eigenen Befunde.
+  const beide = mit({ geprueftAm: vorTagen(1), befunde: [ohne, { lieferant: 'A', ergebnis: 'fehlt', handles: ['testboden-eiche'] }] });
+  assert.deepEqual(beide.map(t => t.id), ['auslauf', 'auslauf-muster']);
+  assert.match(beide[0].titel, /1 Artikel beim Lieferanten nicht mehr gefunden/);
+  assert.doesNotMatch(beide[0].kontext, /testa-teppichboden/);
+
+  // Stumme Pruefung verdeckt den Musterbefund nicht.
+  assert.deepEqual(mit({ geprueftAm: vorTagen(9), befunde: [ohne] }).map(t => t.id).sort(), ['auslauf', 'auslauf-muster']);
+});
+
+test('Sicherung: verpasst wird gelb, ueber 48 Std., gescheitert oder unlesbar rot, sonst nichts', () => {
+  const mit = sicherung => leiteTodosAb({ shopwache: { verfuegbar: true, sicherung } }, { sicht: 'website', jetzt: JETZT });
+  for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }, { status: 'unbekannt', letzterErfolg: null }]) assert.deepEqual(mit(s), []);
+  // Gar kein Stand: die Sicherung lief hier nie - gelb, nicht still.
+  const fehlt = mit({ status: 'unbekannt', letzterErfolg: null, fehlt: true });
+  assert.deepEqual([fehlt.length, fehlt[0].ton, fehlt[0].titel], [1, 'warn', 'Sicherungsstand fehlt']);
+  assert.match(fehlt[0].kontext, /noch keinen Stand geschrieben/);
+
+  const verpasst = mit({ status: 'alt', letzterErfolg: vorTagen(1), grund: 'taeglicher-solltermin-verpasst' });
+  assert.equal(verpasst.length, 1);
+  assert.deepEqual([verpasst[0].id, verpasst[0].ton, verpasst[0].bereich], ['sicherung', 'warn', 'website']);
+  assert.equal(verpasst[0].titel, 'Sicherung der Betriebsdaten überfällig');
+  assert.match(verpasst[0].kontext, /^letzte Sicherung .*\d{2}\.\d{2}\..* · sie läuft täglich um 22:30 Uhr/);
+  assert.equal(mit({ status: 'alt', letzterErfolg: vorTagen(3) })[0].ton, 'crit');
+
+  const gescheitert = mit({ status: 'ok', letzterErfolg: vorTagen(1), letzterFehler: { am: vorTagen(0), meldung: 'ENOSPC: no space left on device' } });
+  assert.equal(gescheitert[0].ton, 'crit');
+  assert.equal(gescheitert[0].titel, 'Sicherung der Betriebsdaten fehlgeschlagen');
+  assert.match(gescheitert[0].kontext, /^ENOSPC: no space left on device · letzte Sicherung /);
+  assert.match(mit({ status: 'unbekannt', letzterErfolg: null, letzterFehler: { am: vorTagen(0), meldung: 'x' } })[0].kontext, /noch keine erfolgreiche Sicherung/);
+
+  assert.equal(mit({ status: 'fehler', letzterErfolg: null })[0].titel, 'Stand der Sicherung nicht lesbar');
+  // Im Laden zaehlt es nicht; der Inhaber sieht nur das Rote.
+  assert.deepEqual(leiteTodosAb({ shopwache: { sicherung: { status: 'alt', letzterErfolg: vorTagen(3) } } }, { sicht: 'laden', jetzt: JETZT }), []);
+  assert.equal(leiteTodosAb({ shopwache: { sicherung: { status: 'alt', letzterErfolg: vorTagen(3) } } }, { sicht: 'inhaber', jetzt: JETZT }).length, 1);
+  assert.equal(leiteTodosAb({ shopwache: { sicherung: { status: 'alt', letzterErfolg: vorTagen(1) } } }, { sicht: 'inhaber', jetzt: JETZT }).length, 0);
 });
 
 test('Neuheiten: neue Artikel unserer Linien werden ein Website-To-do, ohne Neues keins', () => {

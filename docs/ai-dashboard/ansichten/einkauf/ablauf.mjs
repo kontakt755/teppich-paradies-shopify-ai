@@ -15,14 +15,14 @@ import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { auftragsAblauf, einordnung, kundenNachricht, nachfrageNachricht, VERZUG_WERKTAGE } from '../../lib/auftrags-ablauf.mjs';
 import { referenzKnopf } from './referenz.mjs';
+import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import {
   einkauf, afEintragFuer, aktiveAuftraege, anzeigeWert, kundeUndOrt,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, ensureEinkaufLieferanten, musterSchrittKnopf,
 } from './auftragsfluss.mjs';
 
 function lieferantName(id) {
-  const l = (einkauf.lieferanten?.lieferanten || []).find(x => x.id === id);
-  return l?.stammdaten?.name || (id === 'UNGEKLAERT' ? 'Lieferant ungeklärt' : `Lieferant ${id}`);
+  return lieferantAnzeige(id, einkauf.lieferanten?.lieferanten || []);
 }
 
 const titelVon = p => [anzeigeWert(p.titel || ''), p.farbe].filter(Boolean).join(' · ');

@@ -15,6 +15,7 @@ import { einkauf, kundeUndOrt, ladeStandNeu } from './auftragsfluss.mjs';
 import { VERSANDDIENSTE, versandKandidaten, vorauswahl, versandRueckmeldung, istUebergabe } from '../../lib/versand.mjs';
 import { beschaffungsStand, darfWeiter, beschaffungText } from '../../lib/beschaffung.mjs';
 import { shopifyAbgleichKlick } from './shopify-abgleich.mjs';
+import { ratgeberKnopf } from '../kunden/gemeinsam.mjs';
 
 // Zuletzt gewaehlter Versanddienst je Geraet - im Laden ist es fast immer derselbe.
 const DIENST_SCHLUESSEL = 'tp-versanddienst';
@@ -101,19 +102,36 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
       <div class="field"><label for="vsDienst">Versanddienst</label><select id="vsDienst" name="dienst"><option value="">–</option>${VERSANDDIENSTE.map(d => `<option${d === dienst ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></div>
     </div>`;
   const wort = uebergabe ? 'übergeben' : 'verschickt';
+  // Geht die Ware durch unsere Haende (Abholung, oder sie liegt schon bei uns), gehoert der
+  // Kurz-Ratgeber dazu. Bei Direktversand vom Lieferanten packt niemand von uns - kein Hinweis.
+  const beilegen = !nichtsOffen && !nurGesperrt && (abholung || kandidaten.some(p => status[p.lineItemId] === 'geliefert'));
+  const ratgeber = beilegen && auftrag?.ratgeber?.length
+    ? `<p class="small vs-ratgeber">Bitte beilegen: Ratgeber ${esc(auftrag.ratgeber.join(', '))} ${ratgeberKnopf(auftrag, orderId)}</p>` : '';
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="vsTitel" data-dialog>
     <h2 id="vsTitel">${uebergabe ? 'Übergeben' : 'An Kunden raus'}${auftrag?.name ? ` · ${esc(auftrag.name)}` : ''}</h2>
     ${name || ort ? `<p class="small muted">${esc([name, ort].filter(Boolean).join(' · '))}</p>` : ''}
     ${sperre}
     ${liste}
+    ${ratgeber}
     ${nichtsOffen || nurGesperrt ? '' : `${sendung}
     <fieldset class="zl-wahl"><label><input type="checkbox" name="mail"${mailAn ? ' checked' : ''}> Kunde bekommt die Versandmail von Shopify</label></fieldset>
     <p class="small muted">Die Artikel werden in Shopify als versendet gebucht.</p>`}
+    <p data-vs-doppelt class="notice warn" role="alert" tabindex="-1" hidden></p>
     <p data-vs-fehler class="notice crit" role="alert" tabindex="-1" hidden></p>
     <div class="actions"><button type="button" class="btn" data-close-dialog>${nichtsOffen || nurGesperrt ? 'Schließen' : 'Abbrechen'}</button>${nichtsOffen || nurGesperrt ? '' : `<button type="submit" class="btn btn-primary">Als ${wort} buchen</button>`}</div>
   </form></div>`;
   const form = $('#dialogRoot form');
   ((nurGesperrt && form.querySelector('[data-beschaffung]')) || form.querySelector('#vsNummer') || form.querySelector('[type=submit]') || form.querySelector('[data-close-dialog].btn'))?.focus();
+  // Sendungsnummer schon an einer anderen Bestellung (Server: 409 doppelteSendung): erst nach
+  // ausdruecklicher Bestaetigung buchen. Eine geaenderte Nummer wird wieder normal geprueft.
+  let bestaetigteNummer = null;
+  const doppelt = form.querySelector('[data-vs-doppelt]');
+  const knopfText = form.querySelector('[type=submit]')?.textContent || '';
+  form.querySelector('#vsNummer')?.addEventListener('input', () => {
+    if (bestaetigteNummer === null) return;
+    bestaetigteNummer = null; doppelt.hidden = true;
+    form.querySelector('[type=submit]').textContent = knopfText;
+  });
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     const daten = new FormData(form);
@@ -124,7 +142,8 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     const nummer = String(daten.get('nummer') || '').trim();
     const gewaehlt = String(daten.get('dienst') || '');
     const rumpf = { aktion: 'schritt', orderId, schritt: 'raus', notiz: notiz || null,
-      versand: { sendungsnummer: nummer || null, versanddienst: nummer ? gewaehlt || null : null, benachrichtigen: daten.get('mail') === 'on' } };
+      versand: { sendungsnummer: nummer || null, versanddienst: nummer ? gewaehlt || null : null, benachrichtigen: daten.get('mail') === 'on',
+        ...(nummer && bestaetigteNummer === nummer ? { trotzDoppelt: true } : {}) } };
     if (ids) rumpf.lineItemIds = ids;
     const knopf = form.querySelector('[type=submit]');
     const text = knopf.textContent;
@@ -134,6 +153,16 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     try {
       antwort = await orgSchreiben('/api/einkauf/auftragsstatus', rumpf);
     } catch (e) {
+      const d = e.daten?.doppelteSendung;
+      if (e.status === 409 && d) {
+        // Nichts gespeichert, nichts gebucht: der Server hat vor dem ersten Schreiben abgelehnt.
+        bestaetigteNummer = nummer;
+        doppelt.innerHTML = `<b>Diese Sendungsnummer ist schon vergeben.</b> ${esc(d.nummer)} steht bereits an ${esc(d.bestellungen.join(', '))}. Jedes Paket hat seine eigene Nummer – bitte mit dem Paketaufkleber vergleichen und die Nummer korrigieren. Nur wenn wirklich beide Bestellungen im selben Paket sind: „Trotzdem buchen“.`;
+        doppelt.hidden = false; doppelt.focus();
+        knopf.disabled = false;
+        knopf.textContent = 'Trotzdem buchen';
+        return;
+      }
       // Der Server setzt erst den Schritt und bucht dann; ohne Antwort ist beides offen.
       // Der Grund bleibt im Dialog stehen - ein Toast war weg, bevor jemand ihn las.
       toast(`Nicht gespeichert: ${e.message}`, 'crit');

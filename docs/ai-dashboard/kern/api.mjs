@@ -55,7 +55,9 @@ export async function orgSchreiben(pfad, rumpf) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
     meldeApiFehler('POST', pfad, r.status, [j.error, j.technisch].filter(Boolean).join(' | '));
-    throw new Error(j.error || `HTTP ${r.status}`);
+    // Status und Antwort bleiben am Fehler: manche Ablehnung ist eine Rueckfrage
+    // (z. B. Sendungsnummer schon an einer anderen Bestellung, versand.mjs).
+    throw Object.assign(new Error(j.error || `HTTP ${r.status}`), { status: r.status, daten: j });
   }
   return j;
 }

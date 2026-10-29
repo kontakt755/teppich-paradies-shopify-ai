@@ -4,9 +4,72 @@
   assign max_items = section.settings.max_products
 %}
 
-{%- comment -%} TP: leere Kollektion optional ganz ausblenden (Startseite "Stark reduziert", 2026-09-24) {%- endcomment -%}
+{%- comment -%}
+  TP: Warenkorb "Passend dazu" nach Inhalt (Rundgang 2026-10-26, #16). Vorher
+  standen immer vier Sockelleisten da - auch bei einem losen Teppich und bei
+  einer reinen Musterbestellung. Jetzt:
+  - nur Muster im Warenkorb: keine Liste
+  - Teppich (nach Mass, Laeufer, Wohnteppich) ohne Bodenbelag: die Unterlagen
+    aus dem Unterlagen-Tipp (snippets/tp-cart-unterlage-hinweis, Inhaber
+    2026-10-12), nur lieferbare
+  - sonst (Teppichboden, Vinyl, Laminat ... oder nur Zubehoer): die
+    eingestellte Kollektion wie bisher
+  Musterzeilen erkennt allein snippets/tp-muster-position.
+{%- endcomment -%}
+{%- liquid
+  assign tp_wk_modus = ''
+  assign tp_wk_unterlagen = ''
+  if section.settings.tp_warenkorb_inhalt and cart.item_count > 0
+    assign tp_wk_ware = 0
+    assign tp_wk_teppich = false
+    assign tp_wk_boden = false
+    assign tp_wk_teppich_typen = 'teppich nach maß|läufer nach maß|teppich|wohnteppich' | split: '|'
+    assign tp_wk_boden_typen = 'teppichboden|vinyl von der rolle|klickvinyl|klebevinyl|laminat|parkett|kork|linoleumboden|kautschukboden' | split: '|'
+    for tp_wk_item in cart.items
+      capture tp_wk_muster
+        render 'tp-muster-position', line_item: tp_wk_item
+      endcapture
+      if tp_wk_muster contains 'ja'
+        continue
+      endif
+      assign tp_wk_ware = tp_wk_ware | plus: 1
+      assign tp_wk_typ = tp_wk_item.product.type | strip | downcase
+      if tp_wk_teppich_typen contains tp_wk_typ
+        assign tp_wk_teppich = true
+      elsif tp_wk_boden_typen contains tp_wk_typ
+        assign tp_wk_boden = true
+      endif
+    endfor
+    if tp_wk_ware == 0
+      assign tp_wk_modus = 'aus'
+    elsif tp_wk_teppich and tp_wk_boden == false
+      assign tp_wk_kandidaten = 'antirutsch-unterlage-fuer-teppiche-rollenware,teppichbremse-fuer-teppiche-rollenware,teppichbremse-fuer-teppiche-abgepasst' | split: ','
+      for tp_wk_handle in tp_wk_kandidaten
+        if all_products[tp_wk_handle].available
+          assign tp_wk_unterlagen = tp_wk_unterlagen | append: tp_wk_handle | append: ','
+        endif
+      endfor
+      if tp_wk_unterlagen != blank
+        assign tp_wk_modus = 'unterlagen'
+      endif
+    endif
+  endif
+-%}
+
+{%- comment -%}
+  TP: leere Liste optional ganz ausblenden (Startseite "Stark reduziert",
+  2026-09-24). Leer heisst seit 2026-10-26 (Rundgang #69): keine Karte
+  gezeigt - nicht nur "Kollektion ohne Produkte". Die Reiter in
+  "Aktuelle Angebote" lesen dieselbe Kollektion mit verschiedenen Vorlagen
+  (Rolle, Fliese); ein Reiter ohne passende Karte zeigte sonst Kopf und
+  "Alle ansehen" ohne Inhalt. Statt der Liste steht dann nur die Marke
+  data-tp-liste-leer, an der sections/tp-start-tabs den Reiter ausblendet.
+{%- endcomment -%}
 {%- if section.settings.tp_leer_ausblenden and section.settings.collection.products_count == 0 -%}
+<div data-tp-liste-leer hidden></div>
+{%- elsif tp_wk_modus == 'aus' -%}
 {%- else -%}
+{%- capture tp_pl_ausgabe -%}
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
   data-testid="product-list"
@@ -17,6 +80,7 @@
     section-resource-list
     spacing-style
     gap-style
+    {% if tp_wk_modus == 'unterlagen' %}tp-wk-unterlagen{% endif %}
   "
   style="
     {% render 'spacing-style', settings: section.settings %}
@@ -28,7 +92,19 @@
   </div>
 
   {% capture list_items %}
-    {% if section.settings.collection != blank and shop.products_count != 0 %}
+    {% if tp_wk_modus == 'unterlagen' %}
+      {%- assign tp_wk_liste = tp_wk_unterlagen | split: ',' -%}
+      {%- for tp_wk_handle in tp_wk_liste -%}
+        <div class="resource-list__item">
+          {% # theme-check-disable UniqueStaticBlockId %}
+            {% content_for 'block', type: '_product-card', id: 'static-product-card', closest.product: all_products[tp_wk_handle], card_index: forloop.index0 %}
+          {% # theme-check-enable UniqueStaticBlockId %}
+        </div>
+        {% unless forloop.last %}
+          <!--@list/split-->
+        {% endunless %}
+      {%- endfor -%}
+    {% elsif section.settings.collection != blank and shop.products_count != 0 %}
       {%- if section.settings.tp_je_linie_eins -%}
         {%- comment -%}
           TP A1: je Produktlinie nur ein Dekor (Linie = erstes Wort des Titels,
@@ -58,6 +134,40 @@
             assign tp_ln_ohne_sp = true
             if section.settings.collection.template_suffix == 'sonderposten'
               assign tp_ln_ohne_sp = false
+            endif
+            # Nur sichtbare Angebote (Startseite "Aktuelle Angebote", Rundgang
+            # 2026-10-26 #69): dieselbe Regel wie Menuepunkt und Tag-Abgleich
+            # (snippets/tp-angebot-sichtbar - Streichpreis sichtbar oder zentrale
+            # Aktion, nie Sonderposten). Die angebote-*-Kollektionen fragen nur
+            # "Preis reduziert" ohne Datum; nach Aktionsende stuenden dort sonst
+            # Karten ohne Rabatt.
+            # Vorfilter statt Obergrenze (Pruefung PR #1732): Bis dahin brach die
+            # Suche nach 48 Pruefungen ab - ein gueltiges Angebot an Stelle 49
+            # fiel weg, Liste und Reiter verschwanden. Jetzt zaehlen alle
+            # geladenen Produkte (paginate by 250). Die teure Pruefung laeuft nur
+            # fuer Produkte, die ueberhaupt ein Angebot sein koennen: mit einem
+            # der beiden Rabattwege aus tp-rabatt-sichtbar (aktion.klasse
+            # "preisanker" oder aktion.start gesetzt) und aktion.ende nicht vorbei
+            # - oder heute laeuft irgendeine zentrale Aktion (tp_aktion, wie
+            # tp-aktion-laufend ohne Kollektionsabgleich). Der Vorfilter sagt nie
+            # "ja" - das entscheidet allein tp-angebot-sichtbar (Gleichlauf:
+            # qa/tests/start-angebote-liste). Aendert sich ein Rabattweg, gehoert
+            # er hier mit nach.
+            assign tp_ln_nur_angebote = section.settings.tp_nur_angebote
+            assign tp_ln_heute = 'now' | date: '%Y%m%d' | plus: 0
+            assign tp_ln_zentral = false
+            if tp_ln_nur_angebote
+              for tp_ln_a in shop.metaobjects.tp_aktion.values
+                if tp_ln_a.aktiv.value != true or tp_ln_a.kollektion.value == blank
+                  continue
+                endif
+                assign tp_ln_von = tp_ln_a.start.value | date: '%Y%m%d' | plus: 0
+                assign tp_ln_bis = tp_ln_a.ende.value | date: '%Y%m%d' | plus: 0
+                if tp_ln_von > 0 and tp_ln_bis > 0 and tp_ln_von <= tp_ln_heute and tp_ln_heute <= tp_ln_bis
+                  assign tp_ln_zentral = true
+                  break
+                endif
+              endfor
             endif
           -%}
           {%- comment -%}
@@ -93,6 +203,26 @@
                 if tp_ln_sp contains 'ja'
                   continue
                 endif
+              endif
+              if tp_ln_nur_angebote
+                unless tp_ln_zentral
+                  assign tp_ln_af = product.metafields.aktion
+                  unless tp_ln_af.klasse.value == 'preisanker' or tp_ln_af.start.value != blank
+                    continue
+                  endunless
+                  if tp_ln_af.ende.value != blank
+                    assign tp_ln_bis = tp_ln_af.ende.value | date: '%Y%m%d' | plus: 0
+                    if tp_ln_heute > tp_ln_bis
+                      continue
+                    endif
+                  endif
+                endunless
+                capture tp_ln_angebot
+                  render 'tp-angebot-sichtbar', product: product
+                endcapture
+                unless tp_ln_angebot contains 'ja'
+                  continue
+                endunless
               endif
               assign tp_ln_gezeigt = tp_ln_gezeigt | append: tp_ln_marke
               assign tp_ln_zahl = tp_ln_zahl | plus: 1
@@ -167,10 +297,70 @@
     {%- content_for 'blocks' -%}
   </div>
 </div>
+{%- endcapture -%}
+{%- assign tp_pl_karten = list_items | strip -%}
+{%- if section.settings.tp_leer_ausblenden and tp_pl_karten == blank -%}
+<div data-tp-liste-leer hidden></div>
+{%- else -%}
+{{ tp_pl_ausgabe }}
+{%- endif -%}
 
 {%- endif -%}
 
+{%- comment -%}
+  Nach jeder Warenkorbaenderung neu waehlen (Codex-Review #1729):
+  component-cart-items.js rendert nur die Warenkorb-Sections neu, ohne diese
+  Marke blieben nach dem Entfernen der letzten Ware die Empfehlungen beim
+  reinen Musterkorb stehen. Die Marke steht ausserhalb der Bedingung oben,
+  damit eine ausgeblendete Liste wieder erscheinen kann.
+{%- endcomment -%}
+{%- if section.settings.tp_warenkorb_inhalt -%}
+  <span hidden data-tp-wk-inhalt="{{ section.id }}"></span>
+{%- endif -%}
+
+{% javascript %}
+  (function () {
+    /*
+     * Pruefung PR #1733: Kommt waehrend eines laufenden Abrufs eine weitere
+     * Warenkorbaenderung, gibt der Section-Renderer fuer dieselbe URL die
+     * laufende Anfrage zurueck - trotz cache: false - und damit den Stand von
+     * vor der Aenderung. Deshalb je Section nur ein Abruf zugleich; weitere
+     * Aenderungen werden vorgemerkt und danach mit einem frischen Abruf geholt.
+     */
+    var laufend = {};
+    function neuLaden(renderer, id) {
+      if (laufend[id]) {
+        laufend[id] = 'nochmal';
+        return;
+      }
+      laufend[id] = 'laeuft';
+      renderer
+        .renderSection(id, { cache: false })
+        .catch(function () {})
+        .then(function () {
+          var nochmal = laufend[id] === 'nochmal';
+          laufend[id] = null;
+          if (nochmal) neuLaden(renderer, id);
+        });
+    }
+    document.addEventListener('cart:update', function () {
+      var marken = document.querySelectorAll('[data-tp-wk-inhalt]');
+      if (!marken.length) return;
+      import('@theme/section-renderer')
+        .then(function (modul) {
+          Array.prototype.forEach.call(marken, function (marke) {
+            var id = marke.getAttribute('data-tp-wk-inhalt');
+            if (id) neuLaden(modul.sectionRenderer, id);
+          });
+        })
+        .catch(function () {});
+    });
+  })();
+{% endjavascript %}
+
 {% stylesheet %}
+  /* Unterlagen statt Kollektion: "Alle ansehen" fuehrte sonst zu den Leisten. */
+  .section-resource-list.tp-wk-unterlagen .section-resource-list__header a { display: none; }
   .tp-linie-item { display: flex; flex-direction: column; }
   .tp-linie-mehr { align-self: flex-start; margin-top: 6px; font-size: var(--tp-fs-sm); font-weight: 500; color: var(--tp-ink, #1d1a17); text-decoration: underline; text-underline-offset: 3px; }
 {% endstylesheet %}
@@ -198,6 +388,14 @@
       "type": "checkbox",
       "id": "tp_leer_ausblenden",
       "label": "Ohne Produkte ausblenden",
+      "info": "Auch wenn nach den Filtern unten keine Karte übrig bleibt.",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "tp_warenkorb_inhalt",
+      "label": "Im Warenkorb nach Inhalt wählen",
+      "info": "Nur Muster: keine Liste. Teppich ohne Bodenbelag: Unterlagen. Sonst die Kollektion.",
       "default": false
     },
     {
@@ -212,6 +410,13 @@
       "id": "tp_nur_vorlage",
       "label": "Nur Produktvorlage (z. B. rolle)",
       "info": "Zeigt nur Produkte mit dieser Produktvorlage, damit keine verschiedenen Kartenarten nebeneinander stehen. Wirkt mit \"Je Produktlinie nur ein Dekor\"."
+    },
+    {
+      "type": "checkbox",
+      "id": "tp_nur_angebote",
+      "label": "Nur sichtbare Angebote",
+      "info": "Zeigt nur Produkte, die gerade einen Rabatt anzeigen (wie der Menüpunkt Angebote), nie Sonderposten. Wirkt mit \"Je Produktlinie nur ein Dekor\".",
+      "default": false
     },
     {
       "type": "collection",

@@ -9,10 +9,18 @@
 //     = Dauerrabatt (aktion.klasse = preisanker, bis aktion.ende)
 //       ODER befristete Aktion (tp-aktion-aktiv: aktion.start <= heute <= aktion.ende)
 //       Rollenware mit Raummass: nur wenn alle regulaeren Varianten reduziert sind.
-//   Sonderposten sind nie ein Angebot.
+//   Sonderposten sind nie ein Angebot - erkannt am Produkttyp "Sonderposten" oder am
+//   Tag "sonderposten" (Reststuecke mit dem Typ der Ursprungsware, z. B. Yasmin;
+//   angebote.md Abschnitt 3, Rundgang 2026-10-26 #69).
 // "Heute" ist der Kalendertag in Europe/Berlin, wie im Shop (Zeitzone des Shops).
 
 export const TAG = 'angebot';
+export const SONDERPOSTEN_TAG = 'sonderposten';
+
+/** snippets/tp-ist-sonderposten.liquid (Typ) plus Tag - wie in snippets/tp-angebot-sichtbar.liquid. */
+export function istSonderposten(produkt) {
+  return produkt?.typ === 'Sonderposten' || (produkt?.tags ?? []).includes(SONDERPOSTEN_TAG);
+}
 
 /** JJJJ-MM-TT in Europe/Berlin. */
 export function heuteBerlin(jetzt = new Date()) {
@@ -80,7 +88,7 @@ export function aktionLaufend(produkt, aktionen, heute) {
 
 /** snippets/tp-angebot-sichtbar.liquid */
 export function istAngebot(produkt, { heute, aktionen = [] } = {}) {
-  if (produkt.typ === 'Sonderposten') return false;
+  if (istSonderposten(produkt)) return false;
   const v = angezeigteVariante(produkt);
   if (rabattSichtbar(produkt, heute) && v && geld(v.vergleichspreis) > geld(v.preis)) return true;
   return aktionLaufend(produkt, aktionen, heute);

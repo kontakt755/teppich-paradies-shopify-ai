@@ -9,6 +9,7 @@
  */
 
 import path from 'node:path';
+import { bildSchluessel, mediumSchluessel, neueFarbeGezeigt, zahlenAmBautag, zahlenImText } from './doppelungen.mjs';
 import { medienDir, medienPfad, socialDir } from './pfade.mjs';
 import { autoFreigabeMoeglich, pruefe } from './freigabe.mjs';
 import { INHALT_STATUS, PLATTFORMEN } from './status.mjs';
@@ -66,8 +67,13 @@ export function reelBauplan(inhalt, medien) {
   };
 }
 
-/** Vorschlag fuer die Folien eines Beitrags, wenn die Redaktion nichts vorgibt. */
-export function standardBauplan(inhalt, medien, format = 'feed') {
+/**
+ * Vorschlag fuer die Folien eines Beitrags, wenn die Redaktion nichts vorgibt.
+ * @param zahlen Farb- und Designzahlen vom Tag des Entwurfs (doppelungen.zahlenAmBautag) - sie gehen
+ *   den Zahlen vor, die der Shop-Scout beim Anlegen des Anlasses gemerkt hat ("72 Designs" am 12.10.,
+ *   aktiv waren am 26.10. noch 68).
+ */
+export function standardBauplan(inhalt, medien, format = 'feed', zahlen = {}) {
   if (format === 'reel') return reelBauplan(inhalt, medien);
   const d = inhalt.daten ?? {};
 
@@ -77,11 +83,15 @@ export function standardBauplan(inhalt, medien, format = 'feed') {
     const gruppe = d.gruppe || inhalt.bodenart || '';
     const name = d.serie ? d.familienName : kurzTitel(inhalt.produkt_titel || inhalt.titel);
     const kicker = { produkt_neu: d.serie ? 'Neue Serie im Shop' : 'Neu im Shop', produkt_woche: 'Produkt der Woche', raumidee: 'Wohnidee', angebot: 'Angebot' }[inhalt.typ] ?? '';
-    const anzahl = d.farbAnzahl ? ` · ${d.farbAnzahl} ${d.serie ? 'Dekore' : 'Farben'}` : (d.serie && d.produkte?.length > 1 ? ` · ${d.produkte.length} Designs` : '');
+    const farbZahl = (d.serie ? zahlen.designs : zahlen.farben) || d.farbAnzahl;
+    const designZahl = zahlen.designs || d.produkte?.length;
+    const anzahl = d.farbAnzahl ? ` · ${farbZahl} ${d.serie ? 'Dekore' : 'Farben'}` : (d.serie && designZahl > 1 ? ` · ${designZahl} Designs` : '');
+    // Neue Farbe: das Titelbild zeigt sie (Alvento #81 kuendigte Basalt an und zeigte Senf).
+    const titelBild = d.neueFarben?.length && d.farbBilder?.length ? d.farbBilder[0] : bilder[0];
     const produkt = {
       vorlage: 'produkt',
       daten: {
-        bild: { quelle: bilder[0].src }, kicker, titel: name, zeile: `${gruppe}${anzahl}`,
+        bild: { quelle: titelBild.src }, kicker, titel: name, zeile: `${gruppe}${anzahl}`,
         // Eine Wohnidee oder eine ganze Serie traegt kein Preisschild - der Preis steht im Shop.
         preis: ['angebot', 'produkt_woche', 'produkt_neu'].includes(inhalt.typ) && !d.serie ? preisText(d.preisJeEinheit) : null,
         abzeichen: inhalt.typ === 'angebot' && d.rabattProzent ? `−${d.rabattProzent} %` : null,
@@ -95,7 +105,7 @@ export function standardBauplan(inhalt, medien, format = 'feed') {
       const titelbild = {
         vorlage: 'farben_titel',
         // Der Familienname genuegt als Ueberschrift - die Warengruppe steht in der Zeile darunter.
-        daten: { bilder: farben.slice(0, 6).map(b => ({ quelle: b.src })), kicker: d.neueFarben ? 'Neue Farben' : 'Farbvorstellung', titel: d.familienName || name, zeile: `${gruppe} in ${d.farbAnzahl ?? farben.length} ${d.serie ? 'Dekoren' : 'Farben'}` },
+        daten: { bilder: farben.slice(0, 6).map(b => ({ quelle: b.src })), kicker: d.neueFarben ? 'Neue Farben' : 'Farbvorstellung', titel: d.familienName || name, zeile: `${gruppe} in ${(d.serie ? zahlen.designs : zahlen.farben) || d.farbAnzahl || farben.length} ${d.serie ? 'Dekoren' : 'Farben'}` },
       };
       const einzeln = farben.slice(0, 9).map((b, i, alle) => ({ vorlage: 'farbe', daten: { bild: { quelle: b.src }, name: farbName(b.beschriftung), zaehler: `${i + 1} / ${alle.length}` } }));
       return { format, folien: [titelbild, ...einzeln] };
@@ -130,15 +140,19 @@ export function standardBauplan(inhalt, medien, format = 'feed') {
   return { format: folien.length > 1 ? 'karussell' : 'feed', folien };
 }
 
-/** Ersetzt {medium: id} in den Foliendaten durch die echte Bildquelle und merkt sich, welche Medien benutzt werden. */
-function loeseAuf(wert, medienNachId, inhalt, quellen, dir) {
-  if (Array.isArray(wert)) return wert.map(w => loeseAuf(w, medienNachId, inhalt, quellen, dir));
+/**
+ * Ersetzt {medium: id} in den Foliendaten durch die echte Bildquelle und merkt sich, welche Medien
+ * benutzt werden (`quellen`) und welche Quellbilder die Folie zeigt (`bilder`, fuer die Bildruhe im Planer).
+ */
+function loeseAuf(wert, medienNachId, inhalt, quellen, dir, bilder = new Set()) {
+  if (Array.isArray(wert)) return wert.map(w => loeseAuf(w, medienNachId, inhalt, quellen, dir, bilder));
   if (!wert || typeof wert !== 'object') return wert;
   if ('medium' in wert) {
     const m = medienNachId.get(Number(wert.medium));
     if (!m) throw new WerkstattFehler(`Medium ${wert.medium} gehört nicht zu diesem Inhalt`);
     if (m.datenschutz === 'bedenken') throw new WerkstattFehler(`Medium ${m.id} hat Datenschutz-Bedenken und darf nicht verwendet werden`);
     quellen.add(m.id);
+    bilder.add(mediumSchluessel(m));
     const { medium, ...rest } = wert;
     return {
       quelle: m.pfad ? medienPfad(m.pfad, dir) : m.url,
@@ -149,7 +163,8 @@ function loeseAuf(wert, medienNachId, inhalt, quellen, dir) {
       ...rest,
     };
   }
-  return Object.fromEntries(Object.entries(wert).map(([k, v]) => [k, loeseAuf(v, medienNachId, inhalt, quellen, dir)]));
+  if (typeof wert.quelle === 'string' && /^https?:\/\//.test(wert.quelle)) bilder.add(bildSchluessel(wert.quelle));
+  return Object.fromEntries(Object.entries(wert).map(([k, v]) => [k, loeseAuf(v, medienNachId, inhalt, quellen, dir, bilder)]));
 }
 
 /**
@@ -161,7 +176,10 @@ export async function erstelleEntwurf(db, { inhaltId, format = null, folien = nu
   let inhalt = db.inhalt(inhaltId);
   if (!inhalt) throw new WerkstattFehler(`Inhalt ${inhaltId} gibt es nicht`);
   const medien = db.medien(inhaltId);
-  const plan = folien ? { format: format ?? (folien.length > 1 ? 'karussell' : 'feed'), folien } : standardBauplan(inhalt, medien, format ?? 'karussell');
+  // Zahlen vom Tag des Entwurfs (letzter Shop-Abgleich), nicht vom Tag, an dem der Anlass entstand.
+  const zahlen = inhalt.quelle === 'shopify' ? zahlenAmBautag(db.produktStand(), inhalt) : {};
+  if (inhalt.daten?.serie && zahlen.designs === 0) throw new WerkstattFehler('Kein Produkt dieser Serie ist mehr im Shop (letzter Shop-Abgleich) – Anlass verwerfen.');
+  const plan = folien ? { format: format ?? (folien.length > 1 ? 'karussell' : 'feed'), folien } : standardBauplan(inhalt, medien, format ?? 'karussell', zahlen);
   if (!plan.folien.length) throw new WerkstattFehler('Bauplan ohne Folien');
   if (plan.format === 'karussell' && plan.folien.length < 2) plan.format = 'feed';
   if (plan.format === 'feed' || plan.format === 'story') plan.folien = plan.folien.slice(0, 1);
@@ -174,6 +192,9 @@ export async function erstelleEntwurf(db, { inhaltId, format = null, folien = nu
   const tags = plan.format === 'story' ? [] : hashtags({ ort: ortFuerTags, bodenart: inhalt.bodenart || inhalt.daten?.gruppe || '', typ: inhalt.typ });
   const textPruefung = pruefeText(beitragText, { hashtags: tags });
   if (!textPruefung.ok) throw new WerkstattFehler(`Text abgelehnt: ${textPruefung.fehler.join(' · ')}`);
+  // "insgesamt in 11 Farben" stand in der Beschreibung, der Shop fuehrt 9 (Rapidia #117).
+  const zahlFehler = zahlenImText([beitragText, textFacebook].filter(Boolean).join('\n'), { farben: zahlen.farben, designs: zahlen.designs });
+  if (zahlFehler.length) throw new WerkstattFehler(`Text abgelehnt: ${zahlFehler.join(' · ')} (Shop-Abgleich vom ${new Date(zahlen.stand).toLocaleDateString('de-DE')}) – Zahl anpassen oder weglassen.`);
 
   const nummer = db.beitraegeZuInhalt(inhaltId).length + 1;
   const ordner = path.join(medienDir(dir), String(inhaltId), `beitrag-${nummer}`);
@@ -181,13 +202,22 @@ export async function erstelleEntwurf(db, { inhaltId, format = null, folien = nu
   const medienNachId = new Map(medien.map(m => [m.id, m]));
   const auftraege = []; const eintraege = [];
   plan.folien.forEach((folie, i) => {
-    const quellen = new Set();
-    const daten = loeseAuf(folie.daten, medienNachId, inhalt, quellen, dir);
+    const quellen = new Set(); const bilder = new Set();
+    const daten = loeseAuf(folie.daten, medienNachId, inhalt, quellen, dir, bilder);
     // Die Einzelbilder eines Reels ('rahmen') werden nie selbst veroeffentlicht, nur geschnitten.
     const datei = path.join(ordner, `${reel ? 'rahmen-' : ''}${String(i + 1).padStart(2, '0')}.jpg`);
     auftraege.push({ ...baue(folie.vorlage, daten, groesse), datei });
-    eintraege.push({ pfad: path.relative(dir, datei), art: reel ? 'rahmen' : 'bild', vorlage: folie.vorlage, quellen: [...quellen] });
+    // bilder: Quellbilder fuer die Bildruhe des Planers; preis/preisAlt: was im Bild steht, damit der
+    // Publisher es vor dem Posten gegen den Shop pruefen kann (live-pruefung.mjs).
+    eintraege.push({
+      pfad: path.relative(dir, datei), art: reel ? 'rahmen' : 'bild', vorlage: folie.vorlage, quellen: [...quellen], bilder: [...bilder],
+      preis: typeof daten?.preis === 'string' ? daten.preis : null, ...(typeof daten?.preisAlt === 'string' ? { preisAlt: daten.preisAlt } : {}),
+    });
   });
+  const gezeigt = new Set(eintraege.flatMap(e => e.bilder));
+  if (!neueFarbeGezeigt(inhalt, gezeigt, medien)) {
+    throw new WerkstattFehler(`Der Beitrag kündigt ${inhalt.daten.neueFarben.join(', ')} an, zeigt aber kein Bild davon – ein Bild der neuen Farbe wählen (farbBilder) oder den Anlass verwerfen.`);
+  }
   try {
     await rendere(auftraege);
   } catch (e) {
@@ -202,7 +232,7 @@ export async function erstelleEntwurf(db, { inhaltId, format = null, folien = nu
   if (reel) {
     const video = path.join(ordner, 'reel.mp4');
     await schneide(auftraege.map(a => a.datei), video);
-    eintraege.unshift({ pfad: path.relative(dir, video), art: 'video', vorlage: 'reel', quellen: [...new Set(eintraege.flatMap(e => e.quellen))] });
+    eintraege.unshift({ pfad: path.relative(dir, video), art: 'video', vorlage: 'reel', quellen: [...new Set(eintraege.flatMap(e => e.quellen))], bilder: [...gezeigt] });
   }
 
   const ziel = inhalt.daten?.url ?? (inhalt.produkt_handle ? `${BETRIEB.shop}/products/${inhalt.produkt_handle}` : null);

@@ -38,6 +38,9 @@
     line-height: 1.6;
   }
 
+  .verlege-hero-aktion {
+    margin-top: 28px;
+  }
   .verlege-hero-img {
     flex: 1 1 520px;
     border-radius: 18px;
@@ -100,6 +103,13 @@
     .verlege-hero-section {
       flex-direction: column;
       gap: 40px;
+      margin-top: 40px;
+    }
+    .verlege-hero-title {
+      margin-bottom: 16px;
+    }
+    .verlege-hero-aktion {
+      margin-top: 20px;
     }
 
     .verlegepreise-bereich h2 {
@@ -112,6 +122,10 @@
   <div class="verlege-hero-text">
     <h1 class="verlege-hero-title">Ihr Teppichboden. Fachgerecht verlegt. Persönlich beraten.</h1>
     <p class="verlege-hero-sub">Wir liefern Ihren Teppichboden und verlegen ihn bei Ihnen zu Hause – rund um unseren Showroom in Oranienburg. Persönlich. Fair. Transparent.</p>
+    {%- comment -%} Bis w-111 (2026-10-28) stand hier kein Knopf: der erste kam nach 5,7 Bildschirmen. {%- endcomment -%}
+    <div class="verlege-hero-aktion">
+      {%- render 'tp-service-hauptaktion', hinweis: 'Unverbindlich · Antwort am nächsten Werktag' -%}
+    </div>
   </div>
   <div class="verlege-hero-img">
     {%- assign hero_ratio = section.settings.image.aspect_ratio | default: 1.5 -%}

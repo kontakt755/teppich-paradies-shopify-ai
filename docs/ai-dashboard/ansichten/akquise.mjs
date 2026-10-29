@@ -48,6 +48,7 @@ function erklaerung(firmen) {
   return `<section class="card akq-erklaer">
     <p>Hier gewinnen wir <b>Verlegeaufträge bei Wohnungsgenossenschaften und Hausverwaltungen</b>. Die haben laufend Wohnungswechsel, bei denen neuer Boden rein muss.</p>
     <ol class="akq-schritte"><li>Firma anschreiben</li><li>nach 2 Wochen nachfassen</li><li>bei Interesse Termin oder Angebot</li></ol>
+    <p class="small">Wird eine Hausverwaltung zum festen Ansprechpartner, tragen wir sie unter <a href="#/hausverwaltungen">Hausverwaltungen</a> ein – mit Objekten und Angeboten.</p>
     <p class="akq-stand"><b>${p.angeschrieben}</b> von ${p.gesamt} angeschrieben · <b>${p.antworten}</b> ${p.antworten === 1 ? 'Antwort' : 'Antworten'} · <b>${p.auftraege}</b> ${p.auftraege === 1 ? 'Auftrag' : 'Aufträge'}${wer.length ? `<br><span class="small muted">angeschrieben von ${wer.map(([n, z]) => `${esc(n)} ${z}`).join(' · ')}</span>` : ''}</p>
   </section>`;
 }
@@ -172,7 +173,7 @@ function ausschreibungen(a, tag) {
   const neu = new Set((a.neu || []).map(x => x.id || x));
   return `<section class="card akq-aus">${kopf}<ul class="akq-aus-liste">${t.map(x => {
     const n = tageBis(x.frist, tag);
-    const [ampel, hinweis] = n === null ? ['', 'Frist unbekannt – in der Bekanntmachung nachsehen'] : n <= 7 ? ['crit', `noch ${n} ${n === 1 ? 'Tag' : 'Tage'} – zu knapp, nur zur Kenntnis`] : n <= 21 ? ['warn', `noch ${n} Tage – dem Inhaber zeigen`] : ['', `noch ${n} Tage – Zeit genug`];
+    const [ampel, hinweis] = n === null ? ['', 'Frist unbekannt – in der Bekanntmachung nachsehen'] : n <= 7 ? ['crit', `noch ${n} ${n === 1 ? 'Tag' : 'Tage'} – sehr knapp, ob wir bieten, entscheidet der Inhaber`] : n <= 21 ? ['warn', `noch ${n} Tage – dem Inhaber zeigen`] : ['', `noch ${n} Tage – Zeit genug`];
     // Link kommt aus einem fremden Feed: nur http(s) wird zum Link (kein javascript: im href).
     const link = sichereUrl(x.link);
     return `<li><span class="akq-ampel ${ampel}" aria-hidden="true"></span><div>

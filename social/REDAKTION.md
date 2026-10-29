@@ -159,6 +159,10 @@ den Boden und sind verworfen. Kein KI-Hinweis im Bild.
    Produkt ohne Aktion und Auslauf, mit einem Raumbild, das laut Bildrechte-Liste
    auch für Werbung freigegeben ist (lange Kante ab 2000 px), echte Fotos zuerst.
    `vorlage` ist ein fertiger Auftragsvorschlag; als temporäre JSON-Datei ablegen.
+   Produkte, zu denen schon ein Reel in der Freigabe liegt oder geplant ist, fehlen
+   in der Liste; `produkt-reel` lehnt ein zweites Reel desselben Produkts innerhalb
+   von 45 Tagen ab (Fjordia und Lund standen am 26.10. doppelt im Plan). Soll ein
+   altes Reel ersetzt werden: erst `verwerfen <beitragId>`.
 2. Auftrag ergänzen – **nur, was so auf der Produktseite steht**:
    - `zeilen.kicker` (Warengruppe · Bauart), `zeilen.name` (Name mit Farbe, ohne
      Maße), `zeilen.merkmale` (zwei, drei Angaben mit „·“), bei Rollenware
@@ -194,6 +198,33 @@ der Publisher Preis und Angaben noch einmal live; weicht etwas ab oder ist der
 Preisstand älter als 21 Tage, geht das Reel zurück in die Freigabe – dann neu
 bauen, nicht freigeben.
 
+### 3d. Was das System gegen Doppelungen und Veraltetes prüft (Rundgang 26.10.2026)
+
+- **Vor jedem Beitrag mit Produkt** (Story, Feed, Karussell) fragt der Publisher
+  den Shop: Antwortet `/products/<handle>.js` mit 404 oder 301, trägt das Produkt
+  den Tag `auslauf`, steht der Preis aus dem Bild nicht auf der Produktseite oder
+  nennt der Text eine andere Farbzahl als der Shop, geht der Beitrag mit Grund
+  zurück in die Freigabe. Ist der Shop nicht erreichbar, wartet er auf den nächsten
+  Takt. Der tägliche `lauf` holt geplante Beiträge zurück, deren Produkt nicht mehr
+  im Produktfeed steht oder Auslauf ist. Solche Beiträge neu bauen oder verwerfen.
+- **Zurückgeholt bleibt zurückgeholt:** `zurueckholen <beitragId> --grund "…"` legt
+  einen geplanten Beitrag zurück in die Freigabe; die automatische Freigabe gibt ihn
+  danach nicht wieder frei, das tut nur ein Mensch. Was endgültig nicht kommen soll:
+  `verwerfen <beitragId> --grund "…"`.
+- **Zahlen vom Bautag:** Farb- und Designzahlen in Text und Bild kommen aus
+  `zahlenHeute` (`offen --json`, letzter Shop-Abgleich), nie aus der Beschreibung
+  oder dem Tag, an dem der Anlass entstand. Nennt der Text eine andere Zahl, lehnt
+  `entwurf` ihn ab (JAB „72 Designs“, aktiv 68; Rapidia „11 Farben“, im Shop 9).
+- **Neue Farbe zeigt die neue Farbe:** Ein Anlass „neue Farbe“ entsteht nur, wenn
+  der Shop ein Bild dieser Farbe hat, und der Entwurf muss es zeigen – sonst lehnt
+  `entwurf` ab (Alvento 21.10.: Basalt angekündigt, Senf im Bild).
+- **Eine Neuigkeit, ein Beitrag:** Teppichboden und Teppich nach Maß derselben
+  Qualität zählen für die Farb-Anlässe als eine Familie. Dasselbe Quellbild kommt
+  aus verschiedenen Inhalten höchstens einmal in 14 Tagen; der Planer lässt den
+  zweiten Beitrag so lange ohne Termin.
+- **Auslaufware** schlägt der Scout nicht vor. Ob sie später mit Hinweis beworben
+  werden darf, entscheidet der Inhaber.
+
 ### 4. Texte
 
 Die Stilregeln stehen in der Ausgabe von `offen --json` und sind verbindlich.
@@ -204,6 +235,7 @@ Das Wichtigste:
 - Sie-Form, kein Werbeton, keine Floskeln, höchstens ein Emoji.
 - Ort nur, wenn `ortBekannt` nicht `false` ist. Nie Straße oder Name.
 - Preise nur als Euro je Quadratmeter aus `preisJeEinheit` – im Zweifel weglassen.
+- Farb- und Designzahlen nur aus `zahlenHeute`, nie aus der Beschreibung (3d).
 - Bei Produkten ein Fachdetail aus `beschreibung`, das beim Aussuchen hilft.
 - Hashtags und Link setzt das System selbst.
 

@@ -1,0 +1,32 @@
+/* Hausverwaltungen (ansichten/hausverwaltungen.mjs). Nur Tokens aus app.css - keine festen Farben. */
+.hv-liste .row { cursor: default; grid-template-columns: 1fr; }
+.hv-zeile .t a { overflow-wrap: anywhere; }
+.hv-kontakt { color: var(--text-2); }
+.hv-kontakt, .hv-kopf { overflow-wrap: anywhere; }
+.hv-faellig, .hv-fehlt { color: var(--warn); font-weight: 600; }
+.hv-fehler { margin: 0; color: var(--crit); font-weight: 600; }
+.hv-ohne { margin-top: 14px; }
+.hv-ohne summary { cursor: pointer; color: var(--text-2); }
+.hv-ohne .rows { margin-top: 8px; }
+.hv-zurueck { margin: 0 0 10px; }
+.hv-kopf, .hv-objekte { margin-bottom: 14px; display: grid; gap: 8px; }
+.hv-kopf { border-left: 3px solid var(--accent); }
+.hv-kopf-zeile { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 12px; }
+.hv-name { margin: 0; font-size: 1.25rem; overflow-wrap: anywhere; }
+.hv-kopf p { margin: 0; }
+.hv-notiz { white-space: pre-line; overflow-wrap: anywhere; color: var(--text-2); }
+.hv-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+.hv-objekt { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.hv-objekt-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+/* Der Knopf neben einer langen Adresse darf nicht mitten im Wort umbrechen (390 px). */
+.hv-objekt-kopf .btn { flex: none; white-space: nowrap; overflow-wrap: normal; }
+.hv-adresse { overflow-wrap: anywhere; }
+.hv-angebote { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); display: grid; gap: 6px; }
+.hv-angebot { display: grid; gap: 2px; justify-items: start; }
+.hv-leer { margin: 0; }
+.hv-zwei { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hv-dialog .actions .hv-entfernen { margin-right: auto; color: var(--crit); }
+@media (max-width: 560px) {
+  .hv-zwei { grid-template-columns: 1fr; }
+  .hv-knoepfe .btn { flex: 1 1 40%; text-align: center; }
+}

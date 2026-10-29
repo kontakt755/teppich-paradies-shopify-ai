@@ -47,6 +47,33 @@
     --font-size--5xl: var(--tp-fs-2xl);
     --font-size--6xl: var(--tp-fs-2xl);
   }
+  /* Fokusrahmen (Rundgang R2 #72, 2026-10-26): Horizon zeichnet den Fokus
+     als 1,5 px Linie in der Schriftfarbe (assets/base.css, currentcolor).
+     Bei Knoepfen mit weisser Schrift - "In den Warenkorb" im Rollenrechner,
+     "Nachricht senden", "Boden-Finder starten" - war der Rahmen damit weiss
+     auf weissem Grund, im Bildvergleich aenderte sich kein Pixel.
+     Jetzt: 2 px dunkle Linie mit 2 px weissem Innenring. Die dunkle Linie
+     traegt auf hellem Grund, der weisse Ring auf dunklem Grund und direkt
+     am farbigen Knopf - sichtbar auf jedem Hintergrund (> 3:1).
+     Nur Ziele, die bei Mausklick kein :focus-visible bekommen (Links,
+     Knoepfe, summary, tabindex >= 0). Textfelder, Auswahllisten, Checkboxen
+     und Radios bleiben wie bisher - sie haben eigene Fokusregeln, und ein
+     Textfeld bekommt :focus-visible auch beim Klick.
+     Horizon-Knoepfe (.button, .button-secondary) behalten ihren Rahmen:
+     ihr Rand ist ein box-shadow, den der Ring sonst ueberschriebe.
+     .focus-inset (Rahmen nach innen, z. B. in Rollbereichen) bleibt ebenso.
+     Spezifitaet wie die Horizon-Regel (0,1,0): jede eigene :focus-visible-
+     Regel eines Bausteins geht weiter vor. */
+  :root {
+    --tp-fokus-linie: #1d1a17;
+    --tp-fokus-ring: #ffffff;
+  }
+  :where(a[href], button, summary, [role='button'], [tabindex]:not([tabindex='-1'])):where(:not(.button, .button-secondary, .focus-inset)):focus-visible {
+    outline: 2px solid var(--tp-fokus-linie);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--tp-fokus-ring);
+  }
+
   /* Ueberschriften brechen ausgeglichen um - mit der Skala rutschte sonst
      z. B. "zu" aus "Mass eingeben, wir schneiden zu" allein in Zeile zwei. */
   main :is(h1, h2, h3, h4, [role='heading']) { text-wrap: balance; }

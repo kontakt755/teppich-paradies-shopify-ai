@@ -233,7 +233,9 @@ Dashboard ist dann unter `https://<name>.ts.net` erreichbar, auch am Handy über
 
 **Grenze.** Geht der Mac mini aus oder ist das Internet im Laden weg, ist das Dashboard weg – die Daten
 liegen dort und nirgendwo sonst. Das ist gewollt (keine Kundendaten in fremder Hand), aber es heißt: der
-Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz.
+Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz. Was nach einem Neustart zu prüfen ist, wie
+man aus dem Tagesarchiv wiederherstellt und wie es ohne den Mac mini weitergeht, steht in
+`operations/README.md`, Abschnitt „Ausfall des Mac mini“.
 
 **Wache (seit 2026-10-12).** Ist Tailscale am Mac mini gestoppt oder abgemeldet, merkt das im Laden
 niemand. Der Server fragt deshalb mit der Shop-Wache (`GET /api/shopwache/status`, Feld `tailscale`)
@@ -752,6 +754,7 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Team-Aufgabe | `/api/org/liste?bereich=alle-aufgaben` | Dringlichkeit „überfällig" (rot) oder „jetzt" (gelb), nicht wartend/zurückgestellt |
 | Freigabe | Entwicklungsaufgaben (`issues.json`) | Status Freigabe oder Review durch Mensch; nur Inhaber |
 | Shop-Wache | `/api/shopwache/status` | Ampel gelb/rot; nur Inhaber |
+| Speicher am Mac mini | `/api/shopwache/status`, Feld `speicher` | gelb unter 40 GiB frei, rot unter 20 GiB (`operations/lib/speicher.mjs`, stündlich von der Shop-Wache gemessen); nur Inhaber, Website-Sicht (seit 2026-10-26) |
 | Neue Service-Anfrage | `/api/kunden/serviceanfragen` | Status „neu“; gelb ab 1, rot ab 3 Tagen (seit 2026-10-19) |
 | Storno vom Lieferanten | `/api/einkauf/belege` | Storno-Beleg zu einer Shop-Bestellung, nicht erledigt; immer rot (§ 25) |
 | Lieferschein da – Ware angekommen? | `/api/einkauf/belege` | Lieferschein, bei uns noch „bestellt“; gelb (§ 25) |
@@ -1397,8 +1400,11 @@ Styles `stile/serviceanfragen.css`.
 - **Formular-Mail einfügen:** Shopify schickt jede Formularanfrage als „Neue Kundennachricht vom …“
   von `mailer@shopify.com`; der Mailtext enthält `Betreff:` (je Serviceseite fest gesetzt im Abschnitt
   `tp-start-kontakt`, z. B. „Anfrage Treppenverlegung“), `Name:`, `Plz:`, `E-Mail:`, `Telefon:`,
-  `Anliegen:`, `Text:`. `ausFormularMail()` füllt daraus den Dialog; Leistung zuerst aus dem Betreff,
-  sonst aus dem Anliegen. Musteranfragen (`Id: ContactForm-sample`) werden abgelehnt.
+  `Anliegen:`, `Wunschzeitraum:` (freiwillig, seit 2026-10-26, kommt in die Notiz), `Text:`.
+  `ausFormularMail()` füllt daraus den Dialog; Leistung zuerst aus dem Betreff, sonst aus dem Anliegen
+  („Mieterwechsel / mehrere Wohnungen“ zählt als Verlegeservice). Musteranfragen
+  (`Id: ContactForm-sample`) werden abgelehnt. Ein Test prüft, dass jedes Feld und jedes Anliegen des
+  Formulars im Mail-Leser eingeordnet ist.
 - **Auswertung oben:** letzte 8 Kalenderwochen inklusive der laufenden, je Woche und je Quelle
   (mit gewonnen/verloren); beide zählen dieselbe Menge.
 - **Automatische Übernahme (seit 2026-10-16, Inhaber: ja):** Der Dienst liest kein Postfach. Das tut
@@ -1407,7 +1413,7 @@ Styles `stile/serviceanfragen.css`.
   Mails von `mailer@shopify.com`, legt sie als JSON in sein Scratchpad und ruft
   `npm run -s service -- uebernehmen --datei <json>` (`operations/scripts/serviceanfragen.mjs`).
   Übernommen wird nur, was `automatischUebernehmbar()` erlaubt: die festen Betreffe der Serviceseiten
-  (`BETREFF_SERVICE`) und die Startseite mit Anliegen Verlegen/Aufmaß/Treppe. Eine Mail nie zweimal
+  (`BETREFF_SERVICE`) und die Startseite mit Anliegen Verlegen/Aufmaß/Mieterwechsel/Treppe. Eine Mail nie zweimal
   (`mailId`), eine schon von Hand erfasste Anfrage nicht noch einmal (gleiche E-Mail oder Telefonnummer
   innerhalb von 7 Tagen). Übersprungene Mails merkt sich `serviceanfragen-postfach.json` (schreibt nur
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
@@ -1473,26 +1479,45 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   bestellbar. Gesperrt = Bestand 0 (`inventorySetQuantities`, Compare-and-swap, `@idempotent`),
   Richtlinie `DENY`, Verfolgung an (`inventoryItemUpdate`) – in dieser Reihenfolge, erst die Verfolgung
   macht die Sperre wirksam. Vorher: Rechte prüfen (`currentAppInstallation.accessScopes`,
-  `write_inventory` + `write_products`; einmal je Prozess bestätigt) und die Variante per SKU frisch lesen
-  (nur exakter Treffer, bei Gleichstand die aus `muster-*`). Danach Gegenprobe: `availableForSale` muss
-  `false` sein. Nie werden Varianten gelöscht, Preise/SKUs geändert oder das Quellprodukt angefasst.
+  `write_inventory` + `write_products`; einmal je Prozess bestätigt) und die Varianten per SKU frisch lesen
+  (nur exakte Treffer). Dieselbe Farbe steht oft in zwei Musterprodukten – Teppichboden-Muster
+  `muster-<linie>-teppichboden-…` und Nach-Maß-Muster `muster-<linie>-teppich-nach-mass` (Lexikon 28.10.:
+  2028 von 3911 Muster-SKUs). Seit #1745 wird dann jede dieser Mustervarianten gesperrt, jede mit eigenem
+  Vorstand; erst werden alle geprüft (Standort, lokal leer aber bestellbar), dann geschrieben – verletzt eine
+  die Vorbedingung, wird keine gesperrt. Liegt die SKU mehrfach und dabei auch außerhalb eines
+  `muster-*`-Produkts, wird nichts geschrieben (`mehrdeutig`, im Musterlager „im Shop noch zu sperren“).
+  Eine einzelne Variante gilt wie bisher auch außerhalb. Danach Gegenprobe: `availableForSale` muss bei
+  jeder Variante `false` sein. Nie werden Varianten gelöscht, Preise/SKUs geändert oder das Quellprodukt angefasst.
   Testbestellungen sperren nichts. Muster über das Sammelprodukt „Kostenloses Muster“ haben keine eigene
   Variante je Farbe (`keine-mustervariante`) – sie stehen nur in der Liste.
 - **Ablage** `$TP_PRIVAT_DIR/mustersperre.json` (nur anhängen, Teil von `daten:sichern`): je Ereignis SKU,
   Farbe, Produkt, Auftrag, wer, wann, Grund („nicht verfuegbar“ | „wieder verfuegbar“) und
-  `shopify {geschrieben, aenderungMoeglich?, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar}`.
+  `shopify {geschrieben, aenderungMoeglich?, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar, varianten?}`.
+  `varianten` nennt jede Mustervariante der SKU (`variantId`, `productId`, `handle`, `vorher`, `nachher`,
+  `verfuegbar`, `bereits?`, `aenderungMoeglich`); `variantId`/`vorher` direkt unter `shopify` stehen nur bei
+  genau einer Variante. Ereignisse vor #1745 kennen nur diese Einzelfelder – `variantenVon()` liest sie als
+  Liste mit einer Variante.
   `geschrieben` bestaetigt die Sperre; `aenderungMoeglich` erfasst auch Teilmutationen und unlesbare
   Gegenproben. Alte unklare Ereignisse, insbesondere mit gespeichertem Vorstand, bleiben pruefpflichtig. Der Stand
-  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis mit bestaetigter oder moeglicher Aenderung.
+  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis mit bestaetigter oder moeglicher Aenderung –
+  je Variante (`stand().varianten`): eine schon vorher gesperrte oder sicher nicht angefasste Variante legt
+  keinen Rückweg fest, auch wenn im selben Versuch eine andere geschrieben wurde. `betroffen` heißt: gesperrt
+  vorgefunden oder womöglich angefasst – nur betroffene Varianten gibt „Wieder verfügbar“ frei, gelesen per
+  ID (`nodes(ids:)`), damit eine inzwischen geänderte SKU keine vergessen lässt. Ein sehr alter Vorstand ohne
+  `variantId` gehört zur Variante von damals und geht einem späteren Lesestand vor; lässt er sich keiner
+  sicher zuordnen (`vorherUnklar`), schreibt die Freigabe nichts, bis alle Varianten von Hand wieder
+  bestellbar sind.
   Ein ausdruecklich sicher ungeschriebener Versuch friert keinen Vorstand ein; vor einer spaeteren
   echten Sperre zaehlt dann die frisch gelesene Ausgangslage. Dieselbe SKU
   für denselben Auftrag noch einmal = nichts zu tun. Nur eine fehlende Datei gilt als leer; eine
   beschädigte lehnt den Schritt ab (es wird gar nichts geschrieben) und meldet sich im Musterlager.
 - **Ohne Recht, ohne Zugang, bei Fehlern** gilt der Schritt trotzdem; die Sperre steht als „im Shop noch
   zu sperren“ samt Grund. Einkauf › Musterlager zeigt dann oben „Im Shop sperren“ mit „In Shopify öffnen“
-  (Admin-Link zur Variante, sonst Produktsuche nach der SKU), „Erneut sperren“ und „Wieder verfügbar“.
-- **Wieder verfügbar** (Einkauf › Musterlager › „Im Shop gesperrte Muster“) stellt den Stand vor der
-  Sperre her: war die Variante ohne Bestandsverfolgung, wird sie es wieder (sonst wäre sie nach der
+  (Admin-Link zur Variante, bei mehreren Varianten und ohne Variante die Produktsuche nach der SKU), „Erneut
+  sperren“ und „Wieder verfügbar“.
+- **Wieder verfügbar** (Einkauf › Musterlager › „Im Shop gesperrte Muster“) stellt je Mustervariante den
+  Stand vor der Sperre her; Varianten derselben SKU, die keine Sperre angefasst hat (z. B. später angelegt),
+  bleiben unberührt: war die Variante ohne Bestandsverfolgung, wird sie es wieder (sonst wäre sie nach der
   nächsten Musterbestellung mit Bestand 1 von selbst wieder gesperrt); war sie verfolgt, kommt die alte
   Menge zurück, mindestens 1. Erfolg verlangt den exakten Zielstand (Verfolgung, Richtlinie und
   Menge am vorhandenen Standort) plus bestaetigte Bestellbarkeit, auch beim Bereits-Pfad. Das gilt
@@ -1740,7 +1765,10 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   wird weggelassen. Nicht hinterlegte technische Eigenschaften werden nicht erfunden.
   Explizite fehlende/mehrdeutige Quellen-IDs oder Quell-SKUs sperren die Zuordnung. Echte
   Einzeldekore ohne Farboption behalten ihren vollstaendigen Produkttitel; Massartikel verwenden
-  nur das belegte eigene Muster oder Basisprodukt. Die Uebersicht aktualisiert beim Betreten,
+  nur das belegte eigene Muster oder Basisprodukt. Deren Farbe waehlt die Artikelnummer der
+  Massvariante zusammen mit der Farbe; die Nummer darf zur Shop-SKU oder zur Lieferanten-
+  Artikelnummer der Quellvariante passen (Schreibweisen wie `_043`/`_43`). Gedruckt wird immer
+  die Shop-SKU, keine SKU wird geaendert (#1723). Die Uebersicht aktualisiert beim Betreten,
   bei Fokus/Tab-Rueckkehr und alle 30 Sekunden, solange dort niemand tippt.
 - **Vorschau und Korrektur:** „Als PNG speichern“ gibt das 400×400-Bild aus. „Angaben bearbeiten“
   ersetzt das ausgewaehlte Etikett (samt identischen Kopien); waehrend des Abrufs bleiben weitere
@@ -1918,7 +1946,11 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
 - **Druck:** derselbe Dialog wie Abschnitt 26 (`oeffneEtikettenDruck`, `allowEditing: false`).
   Etiketten mit `art: 'adresse'` zeichnet `adressLayout` (`lib/adress-etiketten.mjs`) statt des
   Musterlayouts: Absender klein mit Linie, Empfänger so groß wie Breite und Höhe erlauben,
-  Inland ohne Land, „Bestellung #…“ unten rechts; passt in jedes Format (lange Zeilen brechen um).
+  Inland ohne Land, keine Bestellnummer (22.10.); passt in jedes Format (lange Zeilen brechen um).
+  Auf hohen Rollen (50 × 80, 50 × 100) liegt die Adresse quer (Inhaber 28.10.): `adresseQuer(format)`,
+  das Layout rechnet im gedrehten Format (Breite = Rollenlänge, Schrift bis 36 px × `faktor`) und meldet
+  `quer: true`; `zeichne()` dreht dann um 90° im Uhrzeigersinn. Vorschau und Druckbild zeigen das Etikett,
+  wie es aus der Rolle kommt.
 - **Haken und „Zu klären“ (22.10.):** zentral in `muster-packen.json` (`haken` je Bestellposition,
   `klaeren` je Kunde mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
   Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.
@@ -1947,6 +1979,23 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
     bleibt neutral.
   - „Schon gedruckt“ steht in Schritt 1 am Schritt, sonst (zu klären oder schon ein Haken) unter
     „Mehr …“.
+- **Bestelldatum in der Kopfzeile (#1757, 28.10.):** `datumHtml(k)` zeigt ohne Aufklappen „bestellt am
+  Di., 20.10. · wartet seit n Tagen“ (bei mehreren Bestellungen „erste Bestellung am …“). Fehlen noch
+  Muster, steht dort auch „beim Lieferanten bestellt am …“ (`nochNichtDa`). Aufgeklappt zeigt
+  `bestelldatenHtml` das Datum je Bestellnummer.
+- **Filter „Umschlag:“ (#1761, 28.10.):** eine zweite Chipzeile unter den Reitern, Parameter
+  `mpumschlag` (`vorbereiten`, `vorbereitet`, `drin`). Sie wirkt zusammen mit `mpbereich`, und die
+  Chipzahlen zählen nur den gewählten Reiter.
+  - „Noch vorbereiten“ = `!istGedruckt(k) && !angefangen(k)`, also genau die Karten, bei denen
+    Schritt 1 leuchtet. Die Chips schließen sich nicht aus: Ein vorbereiteter Umschlag kann auch
+    schon Muster enthalten.
+  - Bei Suche, Direktlink (`umschlag=`) und im Reiter „Gepackt“ gilt der Filter nicht. Dort soll
+    nichts verschwinden.
+  - Bei „noch vorbereiten“ ersetzt „Diese n Umschläge vorbereiten (x Aufkleber)“
+    (`data-mp-vorbereiten`, Packschlüssel in Listenreihenfolge) den Knopf „Alle Packbereiten
+    drucken“. Der Knopf nutzt `drucken(…, { nurOffen: true })`, vermerkt nach dem vollständigen Druck
+    also selbst „vorbereitet“.
+  - Umschläge ohne vollständige Musterzuordnung druckt er nicht und nennt ihre Zahl.
 
 ### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
 
@@ -2364,8 +2413,12 @@ Vorschlag mit Vermerk:
 | Alle Muster angekommen oder Umschlag gepackt | Waren da, Versand nur nicht erfasst |
 | Nie beim Lieferanten bestellt | beim Kunden nachfragen oder abschließen |
 | Teil angekommen | beim Lieferanten nachfragen oder abschließen |
-| Bestellt vor dem 24.10., nie angekommen | wohl direkt vom Lieferanten an den Kunden (Lieferziel damals nicht gespeichert, Abschnitt „Muster direkt …“) |
-| sonst | Muster kamen nie an |
+| Alle bestellten Muster mit Vermerk `ueber: 'kunde'` (Abschnitt „Muster direkt …“) | direkt vom Lieferanten an den Kunden (laut Bestellung) |
+| sonst (nie angekommen) | Muster kamen nie an – beim Lieferanten nachfragen; **kein Vermerk vorgegeben** |
+
+Ohne Vermerk wird nie „direkt an den Kunden“ angenommen, auch nicht vor dem 24.10. (#1740): Musterbestellungen
+an Lieferant A gehen an uns, #1033 wurde am 26.10. so fälschlich abgeschlossen. Fehlt der Vermerk
+(`vorschlag.notiz: null`), heißt der Knopf „Abschließen…“ und fragt nach dem Grund; ohne Eingabe passiert nichts.
 
 Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt niemand nebenbei), nur
 „Ansehen“ und „Läuft noch“.
@@ -2374,7 +2427,8 @@ Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt n
 Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar. Kein
 eigener Schreibpfad:
 - **Abschließen** (Rückfrage mit Vermerk) = `POST /api/kunden/bestellung-fertig` mit den offenen
-  Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Bucht wie jedes „Erledigt“ in Shopify als
+  Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Ohne vorgegebenen Vermerk „Abschließen…“:
+  der Vermerk ist „Aufgeräumt: <eingegebener Grund>“. Bucht wie jedes „Erledigt“ in Shopify als
   versendet, ohne Mail (Abschnitt 24); scheitert die Buchung, steht die Bestellung unter „In Shopify noch
   offen“ zum Nachbuchen. Bewusst nicht der Schritt „Muster nicht verfügbar“: der sperrte die Farbe heute
   im Shop, obwohl die Notiz Wochen alt ist.
@@ -2476,3 +2530,75 @@ Schreiber (das jeweilige Skript), eine kaputte Datei gilt als Fehler.
 Tests: `operations/tests/routinen.test.mjs`, `routine-wache.test.mjs`, `claude-lauf.test.mjs`
 (mit einem falschen `claude`: fehlendes Pflichtwerkzeug, Zeitlimit mit Enkelprozess, Werkzeugprobe),
 `datenstand-pruefen.test.mjs`, `todos.test.mjs`, `api.test.mjs`.
+
+## 29. Rundgang 26.10.2026 (Paket P5 Control Center)
+
+**Doppelte Sendungsnummer (#30).** `andereBestellungenMitSendung` (`operations/lib/versand.mjs`) sucht
+in `auftragsstatus.json`, ob dieselbe Nummer (ohne Leerzeichen, gross geschrieben) schon an einer
+anderen Bestellung steht. `pruefeSendungFrei` (`scripts/dashboard-api.mjs`) laeuft vor jedem
+Schreiben, im Schritt „raus“ und beim Status je Position: Treffer = 409 mit
+`doppelteSendung { nummer, bestellungen }`. Erst `versand.trotzDoppelt: true` bucht, mit
+Protokolleintrag „Sendungsnummer trotz Doppelung eingetragen“. Der Dialog zeigt die Warnung und
+macht den Knopf zu „Trotzdem buchen“ – nur fuer genau diese Nummer. Nachgetragene Versaende
+(`versandNachholen`) pruefen nicht erneut. Test: `versand-api.test.mjs`.
+
+**Bestellweg in der Kundenakte (#40).** Im Schritt „Ware beim Lieferanten bestellen“ je offenem
+Lieferanten „Bestellmail öffnen (Name)“ (derselbe Dialog wie unter Bestellen), danach
+„Ware ist bestellt…“ mit Rueckfrage. Namen ueber `lieferantName(id, quelle)`
+(`lib/einkauf-lieferanten.mjs`) aus den privaten Stammdaten; UNGEKLAERT = „Lieferant nicht
+zugeordnet“, ohne Namen „Lieferant A“. „Default Title“ wird nicht als Farbe gezeigt.
+Test: `zeitleiste-bestellweg.test.mjs`.
+
+**Inhaberzeile (#44).** `ansichten/heute/inhaber-zeile.mjs` (reine Funktionen): Shop-Kontrolle,
+7-Tage-Umsatz (Knopf `kz` klappt `kennzahlenBlock` auf), offene Entscheidungen, naechste Frist
+offener Aufgaben. Nur Inhaber; dafuer laedt die Shop-Übersicht beim Inhaber zusaetzlich
+Kennzahlen und Shop-Kontrolle, fuer alle die Service-Anfragen (Zahl an „Weitere Bereiche“).
+Tests: `inhaber-ueberblick.test.mjs`, `shop-start.test.mjs`.
+
+**Entscheidungen (#43).** Zaehler in der Seitenleiste und Liste nutzen `offeneEntscheidungen`
+(`lib/model.mjs`). Die Werkbank-Fragen bleiben in „Ideen & Fragen“; das Control Center zeigt nur
+den Link (https-Ziel aus `capabilities.dashboards.werkbank`).
+
+**Anmeldung (#58).** `operations/lib/anmeldeschutz.mjs`, genutzt von `scripts/dashboard-auth.mjs`,
+`scripts/serve-dashboard.mjs` und `social/scripts/server.mjs`:
+- Notzugang-Sitzungen tragen `pw`, einen scrypt-Abdruck des gemeinsamen Passworts. Passt er nach
+  einem Neustart nicht mehr (Passwort geaendert oder entfernt), ist die Sitzung weg. Alte Sitzungen
+  ohne `pw` uebernehmen beim ersten Start den Abdruck des jetzigen Passworts – das Update meldet
+  niemanden ab.
+- Sperre nach Fehlversuchen je Geraet: von 127.0.0.1 (tailscale serve) gilt der letzte Eintrag von
+  `X-Forwarded-For`, sonst `Tailscale-User-Login`; von jeder anderen Adresse werden die Koepfe
+  ignoriert. Am Mac selbst ohne Kopf bleibt es 127.0.0.1.
+- `POST /api/sitzungen/abmelden` (nur Inhaber, Schreibliste): beendet jede Control-Center-Sitzung
+  ausser der eigenen und schreibt `$TP_PRIVAT_DIR/geraete-abgemeldet.json`. Die Social-Zentrale
+  liest den Zeitstempel (je Anfrage ein `stat`) und verwirft alle davor angemeldeten Sitzungen.
+  Knopf unter Zugänge › „Angemeldete Geräte“ (`team/liste` liefert `angemeldeteGeraete`).
+Tests: `auth.test.mjs`, `social/tests/server.test.mjs`.
+
+## 30. Hausverwaltungen (Inhaber 26.10.2026, Werkbank w-154, #1768)
+
+Eigener Bereich `#/hausverwaltungen` (Menü „Kunden & Einkauf“, Inhaber und Mitarbeiter; Rolle „lesen“
+sieht alles, schreibt nichts). Abgrenzung: die **Erstansprache** aus der Firmenliste bleibt unter
+„Genossenschaften“ (`#/akquise`, Abschnitt oben, #1447). Hier stehen die Verwaltungen, mit denen wir
+arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten und Angeboten.
+
+- **Daten:** `$TP_PRIVAT_DIR/hausverwaltungen/verwaltungen.json` (`{ schema: 1, verwaltungen: [...] }`,
+  Dateirechte 0600), in der nächtlichen Sicherung (`SICHERUNGSPFADE` in `operations/scripts/sicherung.mjs`).
+  Je Verwaltung: Name, Ansprechpartner, Telefon, E-Mail, Notiz, Stand (`neu`, `angeschrieben`, `antwort`,
+  `termin`, `kunde`, `kein-interesse`), „wieder melden am“, `objekte[]`. Je Objekt: Adresse, Wohnungen,
+  Ansprechpartner vor Ort, Notiz, `angebote[]`. Je Angebot: Art (`angebot`/`auftrag`), Lexware-Nummer,
+  Auftrag in der Auftrags-App, Datum, Stand (`offen`, `angenommen`, `abgelehnt`, `erledigt`), Notiz.
+- **Regeln** (`lib/hausverwaltungen.mjs`, Browser und Server): `wendeHvAenderungAn` prüft nur die
+  mitgeschickten Felder und gibt einen neuen Bestand zurück. Doppelte Namen (wie `akquiseId`) werden
+  abgelehnt. „angeschrieben“ ohne Datum setzt die Wiedervorlage auf +14 Tage, „kein Interesse“ leert sie.
+  Entfernen geht nur von unten nach oben: eine Verwaltung ohne Objekte, ein Objekt ohne Angebote.
+- **API:** `GET /api/hausverwaltungen/liste`, `POST /api/hausverwaltungen/speichern`
+  (`{ ebene: 'verwaltung'|'objekt'|'angebot', verwaltungId, objektId, id, daten, entfernen }`, Schreibliste,
+  Fehler 400 mit Klartext). Kaputtes JSON bricht ab und wird nie überschrieben (`_privatJson`). Jede
+  Änderung steht im lokalen Protokoll („Hausverwaltung angelegt“ …).
+- **Heute:** fällige Wiedervorlagen als To-do „Hausverwaltungen: N wieder melden“ (Bereich Büro, also in der
+  Gesamtübersicht `#/heute?sicht=inhaber` wie das To-do der Genossenschaften, nicht auf der Shop-Übersicht);
+  bei genau einer Verwaltung führt der Knopf direkt zu ihr (`?hv=<id>`).
+- **Grenzen:** Lexware und Auftrags-App sind nur Felder, es wird nichts abgefragt oder verbunden, keine
+  Mail versendet. Die Wiedervorlage gilt der Ansprache der Verwaltung, nicht dem einzelnen Vorgang –
+  Vorgänge und ihre Wiedervorlagen bleiben in der Auftrags-App (Abschnitt 20).
+- Tests: `tests/hausverwaltungen.test.mjs` (Regeln, API, Rollen, Ansicht).

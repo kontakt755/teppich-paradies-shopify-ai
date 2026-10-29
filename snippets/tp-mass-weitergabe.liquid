@@ -1,0 +1,66 @@
+{%- doc -%}
+  Mass aus der Adresse (?breite=&laenge=, gesetzt vom Querverweis
+  snippets/tp-mass-querverweise.liquid) an die Produktlinks dieser Kollektion
+  weitergeben. Der Konfigurator der Produktseite liest genau diese Parameter
+  (assets/tp-einfass-konfigurator.js, massAusUrl) und zeigt sofort den
+  Endpreis. Ohne gueltiges Mass in der Adresse passiert nichts.
+
+  Ausgabe nur auf Mass-Kollektionen (sections/main-collection.liquid). Die
+  Produktlinks dieser Section werden gleich beim Laden umgeschrieben, danach
+  jeder Link, den Horizon nachlaedt oder aendert (Endlos-Scroll, Filter,
+  Farbwahl auf der Karte). So tragen auch Mittelklick und "Link in neuem Tab
+  oeffnen" das Mass (Codex-Review #1727). Der Klick bleibt als Rueckfallweg.
+{%- enddoc -%}
+<span hidden data-tp-mass-weitergabe></span>
+
+{% javascript %}
+  (function () {
+    function start() {
+      var marke = document.querySelector('[data-tp-mass-weitergabe]');
+      if (!marke) return;
+      var sp = new URLSearchParams(window.location.search);
+      var breite = sp.get('breite');
+      var laenge = sp.get('laenge');
+      var gueltig = /^\d{2,4}$/;
+      if (!gueltig.test(breite || '') || !gueltig.test(laenge || '')) return;
+      var AUSWAHL = 'a[href*="/products/"]';
+      function setzen(link) {
+        var ziel = new URL(link.href, window.location.href);
+        if (ziel.origin !== window.location.origin) return;
+        ziel.searchParams.set('breite', breite);
+        ziel.searchParams.set('laenge', laenge);
+        var neu = ziel.toString();
+        // Nur bei Aenderung schreiben: sonst meldet der Beobachter die eigene
+        // Aenderung immer wieder.
+        if (link.href !== neu) link.href = neu;
+      }
+      function alleIn(knoten) {
+        if (!knoten || typeof knoten.querySelectorAll !== 'function') return;
+        if (typeof knoten.matches === 'function' && knoten.matches(AUSWAHL)) setzen(knoten);
+        Array.prototype.forEach.call(knoten.querySelectorAll(AUSWAHL), setzen);
+      }
+      // Nur die Produktliste dieser Section, nicht Kopf, Suche oder Warenkorb.
+      var bereich = (typeof marke.closest === 'function' && marke.closest('.shopify-section')) || document.body;
+      alleIn(bereich);
+      if (typeof MutationObserver === 'function') {
+        new MutationObserver(function (eintraege) {
+          eintraege.forEach(function (e) {
+            if (e.type === 'attributes') alleIn(e.target);
+            else Array.prototype.forEach.call(e.addedNodes, alleIn);
+          });
+        }).observe(bereich, { childList: true, subtree: true, attributes: true, attributeFilter: ['href'] });
+      }
+      // Erfassungsphase: vor assets/product-card.js, das bei Klicks neben einen
+      // Link selbst zur Adresse des Kartenlinks navigiert.
+      document.addEventListener('click', function (event) {
+        if (!(event.target instanceof Element) || !bereich.contains(event.target)) return;
+        var link = event.target.closest(AUSWAHL);
+        var karte = event.target.closest('product-card');
+        if (link) setzen(link);
+        if (karte) Array.prototype.forEach.call(karte.querySelectorAll(AUSWAHL), setzen);
+      }, true);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  })();
+{% endjavascript %}

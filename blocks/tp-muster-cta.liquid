@@ -16,10 +16,11 @@
   Kein zweites Regelwerk, das auseinanderlaufen koennte.
 
   Zwei Zusaetze nach dem Vertretergespraech mit dem Hauptlieferanten (12.10.2026):
-  - Laminat, Parkett, Kork: Muster kostenlos wie alle, aber wegen des hoeheren
-    Musterwerts nur auf Anfrage (Inhaber 14.10.2026). Der Knopf fuehrt zum
-    Kontaktformular (thema=musteranfrage, assets/tp-sample-request.js) statt
-    in den Musterkonfigurator.
+  - Laminat, Parkett, Kork: wegen des hoeheren Musterwerts nur auf Anfrage
+    (Inhaber 14.10.2026). Der Knopf fuehrt zum Kontaktformular
+    (thema=musteranfrage, assets/tp-sample-request.js) statt in den
+    Musterkonfigurator. Knopftext "Muster anfragen" ohne "kostenlos"
+    (Inhaber 28.10.2026, Werkbank w-161).
   - Tag muster-klebevariante (Klickvinyl dieses Lieferanten): Das Muster gibt es
     nur als Klebe-Ausfuehrung im gleichen Dekor; das sagt die Zusatzzeile direkt
     im Knopf (auch mobil sichtbar). Dieselbe Zeile zeigt der Musterkonfigurator
@@ -85,8 +86,8 @@
     {%- endcomment -%}
     <a class="tp-muster-cta__link-{{ tp_mc_id }}" href="{{ tp_mc_url }}"{% if tp_mc_farbindex >= 0 %} data-tp-ek-muster="{{ product.id }}" data-tp-ek-muster-farbindex="{{ tp_mc_farbindex }}"{% endif %}{% if tp_mc_grenze != blank %} data-tp-mg-offen{% endif %}{% if tp_mc_grenze == 'voll' %} hidden{% endif %}>
       {%- if tp_mc_anfrage -%}
-        Kostenloses Muster anfragen
-        <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Kostenlos wie alle unsere Muster. Weil diese Muster wertiger sind, senden wir sie nach kurzer Anfrage zu – wir stimmen Ihr Dekor mit Ihnen ab.</small>
+        Muster anfragen
+        <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Weil diese Muster wertiger sind, senden wir sie nach kurzer Anfrage zu – wir stimmen Ihr Dekor mit Ihnen ab.</small>
       {%- else -%}
         {{ block.settings.label | default: 'Kostenloses Muster anfragen' | escape }}
         {%- if tp_mc_grenze != blank -%}
@@ -109,6 +110,8 @@
       </p>
       <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
     {%- endif -%}
+    {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis) {%- endcomment -%}
+    {%- render 'tp-muster-hinweis', kontext: 'produkt' -%}
     {% if product.template_suffix == 'einfassung' %}
       <p class="tp-mass-beratung">Fragen zu Ihrem Maß? <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a></p>
       <style>.tp-mass-beratung{margin:8px 0 0;font-size: var(--tp-fs-sm);line-height:1.4;color:rgb(var(--color-foreground-rgb,34 34 34)/.72)}.tp-mass-beratung a{color:inherit;text-decoration:underline;text-underline-offset:2px}</style>

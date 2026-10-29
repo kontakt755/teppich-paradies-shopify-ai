@@ -32,7 +32,8 @@ import { istNurLesend } from '../kern/sitzung.mjs';
 import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
-import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, anzeigeWert, kundeUndOrt } from './einkauf/auftragsfluss.mjs';
+import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, kundeUndOrt } from './einkauf/auftragsfluss.mjs';
+import { lieferantName as lieferantAnzeige } from '../lib/einkauf-lieferanten.mjs';
 import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
@@ -45,6 +46,7 @@ import { ensureServiceanfragen } from './kunden/serviceanfragen.mjs';
 import { heuteLaden, heuteMontage, ladenKachel, ensureLadenZahlen } from './heute/laden.mjs';
 import { shopwache, ensureShopwache } from './shopwache.mjs';
 import { ensureAkquise, akquiseFaellig } from './akquise.mjs';
+import { ensureHausverwaltungen, hausverwaltungenFaellig } from './hausverwaltungen.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
 import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
@@ -56,6 +58,7 @@ import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
 import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock } from './heute/aufraeumen.mjs';
+import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
 
 const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
 const SPALTE_SICHTBAR = 8;
@@ -87,6 +90,7 @@ function quellen() {
     freigaben: istInhaber() ? state.tasks : [],
     shopwache: darfAnsicht('shopwache') ? shopwache.daten : null,
     akquise: darfAnsicht('akquise') ? akquiseFaellig() : [],
+    hausverwaltungen: darfAnsicht('hausverwaltungen') ? hausverwaltungenFaellig() : [],
     kundentermine: darfAnsicht('einkauf') ? kundentermine() : [],
   };
 }
@@ -103,9 +107,7 @@ function kundentermine() {
 
 /** Anzeigename je Lieferant aus den Stammdaten; ohne Stammdaten der neutrale Ersatz. */
 function lieferantName(id) {
-  const treffer = (heuteDaten.lieferanten?.lieferanten || []).find(l => l.id === id);
-  if (treffer?.name) return treffer.name;
-  return !id || id === 'UNGEKLAERT' ? 'Lieferant nicht zugeordnet' : anzeigeWert(id);
+  return lieferantAnzeige(id, heuteDaten.lieferanten?.lieferanten || []);
 }
 
 /** Link auf Heute mit geaendertem Parameter - die gewaehlte Sicht bleibt erhalten. */
@@ -168,7 +170,7 @@ export function viewHeute() {
 
 function viewShop() {
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufBestellungen();
-  ensureHeuteLieferanten(); ensureMusterPacken(); ensureAktualisierung();
+  ensureHeuteLieferanten(); ensureMusterPacken(); ensureAktualisierung(); ensureServiceanfragen();
   const nf = nachfassStand('laden');
   // Versandfehler und vorhandene Nachfragen sind Kerngeschaeft, auch ohne allgemeine Aufgaben.
   ensureHeuteMusterTexte();
@@ -179,6 +181,7 @@ function viewShop() {
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
     </header>
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
+    ${inhaberUeberblick()}
     ${musterAutomatikBlock(kunden.bestellungen)}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
     ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
@@ -189,7 +192,7 @@ function viewShop() {
       <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
     </section>
     <div class="heute-hintergrund">${datenstandZeile('shop')}</div>
-    <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik</summary>
+    <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik${nebenbereichZusatz(kunden.serviceanfragen)}</summary>
       <nav class="chips" aria-label="Weitere Bereiche">
         <a class="chip" href="#/heute?sicht=laden">Laden &amp; Anfragen</a>
         <a class="chip" href="#/organisation">Aufgaben</a>
@@ -200,6 +203,18 @@ function viewShop() {
   </div>`;
 }
 
+/** Inhaber: Shop, Umsatz, Entscheidungen und Frist in einer Zeile; Kennzahlen klappen darunter auf. */
+function inhaberUeberblick() {
+  if (!istInhaber()) return '';
+  ensureEinkaufKennzahlen();
+  if (darfAnsicht('shopwache')) ensureShopwache();
+  const kzOffen = Boolean(state.route.params.get('kz'));
+  return inhaberZeile({
+    shop: darfAnsicht('shopwache') ? shopwache.daten : undefined, kennzahlen: einkauf.kennzahlen,
+    tasks: state.tasks, aufgabenGeladen: Boolean(state.raw), kzOffen,
+  }) + (kzOffen ? kennzahlenBlock() : '');
+}
+
 function viewAlltag() {
   ensureMusterPacken();
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureKundenRueckrufe(); ensureKundenFaelle();
@@ -208,6 +223,7 @@ function viewAlltag() {
   if (istInhaber()) ensureEinkaufKennzahlen();
   if (darfAnsicht('shopwache')) ensureShopwache();
   if (darfAnsicht('akquise')) ensureAkquise();
+  if (darfAnsicht('hausverwaltungen')) ensureHausverwaltungen();
   if (darfAnsicht('einkauf')) { ensureBelege(); ensureEinkaufBestellungen(); }
 
   const q = quellen();
@@ -226,7 +242,7 @@ function viewAlltag() {
     ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
     ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
     // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
-    ...shopifyAbgleichTodos(),
+    ...shopifyAbgleichTodos(Date.now(), { lieferantName }),
     // Veraltete Daten: ein To-do fuer den Inhaber, bis der Sync-Dienst wieder liefert (lib/datenstand.mjs).
     ...(istInhaber() ? datenstandTodo(veralteteQuellen(einkauf.aktualisierung)) : []),
   ];
@@ -281,17 +297,20 @@ function todoZeile(t, erste) {
   // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
   // der Klick laeuft ueber zeitleisteKlick (ansichten/kunden/zeitleiste.mjs). Rolle "lesen" bekommt den Link.
   // k.nachbuchen: "In Shopify nachbuchen" direkt in der Zeile (shopifyAbgleichKlick, einkauf/shopify-abgleich.mjs).
+  // k.abhaken: aus der Bestellung entfernte Artikel abhaken (Dialog, ebenfalls einkauf/shopify-abgleich.mjs).
   // Ohne Knopf (z. B. Ausschreibung ohne gueltigen Link) keine Schaltflaeche.
   const knopf = !k ? ''
     : k.kopiertext
     ? `<button type="button" class="${klasse}" data-kopiertext="${esc(k.kopiertext)}">${esc(k.text)}</button>`
     : k.nachbuchen && !istNurLesend()
     ? `<button type="button" class="${klasse}" data-shopify-nachbuchen="${esc(k.nachbuchen)}" title="Bucht diese Artikel in Shopify als versendet – ohne Mail an den Kunden">${esc(k.text)}</button>`
+    : k.abhaken && !istNurLesend()
+    ? `<button type="button" class="${klasse}" data-entfernt-abhaken="${esc(k.abhaken)}" title="Erst beim Lieferanten stornieren, dann hier mit Notiz abhaken">${esc(k.text)}</button>`
     : k.aufgabe
     ? `<button type="button" class="${klasse}" data-open="${esc(k.aufgabe)}" data-primary="1">${esc(k.text)}</button>`
     : k.schritt && !istNurLesend()
       ? `<button type="button" class="${klasse}" data-zl-schritt="${esc(k.schritt.aktion)}" data-zl-order="${esc(k.schritt.orderId)}">${esc(k.text)}</button>`
-      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen ? 'Ansehen' : k.text)}</a>`;
+      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen || k.abhaken ? 'Ansehen' : k.text)}</a>`;
   const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage))}</span>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
     <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
@@ -378,7 +397,9 @@ function hintergrund(nf, wartet, sicht) {
 function datenstandZeile(sicht) {
   const a = einkauf.aktualisierung;
   if (!a) return '';
-  const health = aktualisierungHealth();
+  // Rueckmeldungen aus „Ideen & Fragen“ zaehlen hier nicht: kein Shop-Datenstand, und belegt
+  // waren sie nie - die Zeile stand dauerhaft auf „1 Stand noch nicht belegt“. Sie stehen unter Kennzahlen.
+  const health = aktualisierungHealth().filter(h => h.quelle !== 'werkbank');
   const probleme = health.filter(h => h.level === 'warn' || h.level === 'crit');
   const unbelegt = health.filter(h => h.level === 'info');
   const auffaellig = [...probleme, ...unbelegt];

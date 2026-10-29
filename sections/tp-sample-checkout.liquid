@@ -19,6 +19,16 @@
   <header class="tp-sample__header">
     <p class="tp-sample__eyebrow">Kostenloser Musterservice</p>
     <h1>Bis zu <span data-sample-max>3</span> <span data-sample-term="plural">Farben</span> zu Hause vergleichen</h1>
+    {%- comment -%}
+      Groesse und Versand (Rundgang 26.10.2026; A5 = Zuschnitt laut Inhaber 15.10., w-091).
+      Muster von JAB und Vorwerk schickt der Hersteller selbst (Inhaber 15.10.) - dann
+      tauscht assets/tp-sample-checkout.js die Zeile. Eine Ankunftszeit steht hier erst,
+      wenn der Inhaber sie festgelegt hat.
+    {%- endcomment -%}
+    <p class="tp-sample__info" data-sample-info>Muster ca. A5 · kostenloser Versand</p>
+    <p class="tp-sample__info" data-sample-hersteller hidden>Kostenloser Versand · kommt direkt vom Hersteller, eventuell in getrennten Umschlägen</p>
+    {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis) {%- endcomment -%}
+    {%- render 'tp-muster-hinweis', kontext: 'musterseite' -%}
     <p class="tp-sample__bonus" data-sample-bonus hidden>Abonnenten-Bonus: Sie können 4 statt 3 Muster bestellen.</p>
     {%- comment -%} Vinyl: hoechstens 3 Muster je Bestellung, auch mit Bonus (Inhaber 13.10.2026, assets/tp-sample-checkout-core.js) {%- endcomment -%}
     <p class="tp-sample__vinyl" data-sample-vinyl hidden>Vinyl-Muster sind kostenlos – höchstens 3 je Bestellung.</p>
@@ -103,11 +113,11 @@
       {%- endif -%}
     {%- endfor -%}
 
-    {%- comment -%} Laminat, Parkett, Kork: kostenlos, aber nur auf Anfrage (Inhaber 14.10.2026, blocks/tp-muster-cta) {%- endcomment -%}
+    {%- comment -%} Laminat, Parkett, Kork: nur auf Anfrage (Inhaber 14.10.2026, blocks/tp-muster-cta), Knopf "Muster anfragen" ohne "kostenlos" (w-161, 28.10.2026) {%- endcomment -%}
     <section class="tp-sample__gruppe">
       <h2 class="tp-sample__gruppe-titel">Parkett, Laminat und Kork</h2>
       <p class="tp-sample__gruppe-hinweis">
-        Auch diese Muster sind kostenlos. Weil sie wertiger sind, senden wir sie nach kurzer Anfrage zu: Öffnen Sie den Boden und tippen Sie dort auf „Kostenloses Muster anfragen“ –
+        Diese Muster sind wertiger, deshalb senden wir sie nach kurzer Anfrage zu: Öffnen Sie den Boden und tippen Sie dort auf „Muster anfragen“ –
         oder <a href="/pages/kontakt?thema=musteranfrage">nennen Sie uns Boden und Dekor</a>.
       </p>
     </section>

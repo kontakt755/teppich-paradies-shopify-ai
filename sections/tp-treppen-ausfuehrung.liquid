@@ -113,7 +113,14 @@
         <h3 class="tp-treppen-ausf__matrix-titel">{{ section.settings.matrix_titel }}</h3>
       {%- endif -%}
 
-      <div class="tp-treppen-ausf__matrix-scroll">
+      {%- comment -%}
+        Am Handy (390 px) schnitt die Tabelle "Teppichboden" ab und Vinyl fehlte
+        (Rundgang 26.10.2026). Jetzt: kurze Spaltenkoepfe, schmalere erste Spalte;
+        wird es trotzdem zu eng, erscheint der Wisch-Hinweis (Skript unten).
+        Der Scroll-Kasten ist per Tastatur erreichbar.
+      {%- endcomment -%}
+      <p class="tp-treppen-ausf__wisch" data-tp-wisch hidden>Tabelle seitlich wischen, um alle Beläge zu sehen.</p>
+      <div class="tp-treppen-ausf__matrix-scroll" data-tp-matrix-scroll tabindex="0" role="region" aria-label="{{ section.settings.matrix_titel | default: 'Ausführung und Belag' | strip_html | escape }}">
         <table class="tp-treppen-ausf__matrix">
           <thead>
             <tr>
@@ -125,7 +132,15 @@
                 <th scope="col">{{ section.settings.spalte_sisal }}</th>
               {%- endif -%}
               {%- if section.settings.spalte_teppich != blank -%}
-                <th scope="col">{{ section.settings.spalte_teppich }}</th>
+                {%- assign ta_teppich_kurz = section.settings.spalte_teppich_kurz | strip -%}
+                <th scope="col">
+                  {%- if ta_teppich_kurz != blank and ta_teppich_kurz != section.settings.spalte_teppich -%}
+                    <span class="tp-treppen-ausf__spalte-lang">{{ section.settings.spalte_teppich }}</span>
+                    <span class="tp-treppen-ausf__spalte-kurz" aria-hidden="true">{{ ta_teppich_kurz }}</span>
+                  {%- else -%}
+                    {{ section.settings.spalte_teppich }}
+                  {%- endif -%}
+                </th>
               {%- endif -%}
               {%- if section.settings.spalte_vinyl != blank -%}
                 <th scope="col">{{ section.settings.spalte_vinyl }}</th>
@@ -200,6 +215,21 @@
 
 
 
+{% javascript %}
+  /* Wisch-Hinweis nur zeigen, wenn die Tabelle wirklich breiter ist als ihr Kasten. */
+  (function () {
+    function pruefen() {
+      document.querySelectorAll('[data-tp-matrix-scroll]').forEach(function (box) {
+        var hinweis = box.parentNode && box.parentNode.querySelector('[data-tp-wisch]');
+        if (hinweis) hinweis.hidden = box.scrollWidth <= box.clientWidth + 1;
+      });
+    }
+    pruefen();
+    window.addEventListener('resize', pruefen);
+    document.addEventListener('shopify:section:load', pruefen);
+  })();
+{% endjavascript %}
+
 {% schema %}
 {
   "name": "Treppe: Ausführungen",
@@ -249,6 +279,13 @@
       "id": "spalte_teppich",
       "label": "Spalte 3",
       "default": "Teppichboden"
+    },
+    {
+      "type": "text",
+      "id": "spalte_teppich_kurz",
+      "label": "Spalte 3, kurz am Handy",
+      "info": "Kopf der Tabelle am Telefon, z. B. Teppich. Leer = wie Spalte 3.",
+      "default": "Teppich"
     },
     {
       "type": "text",

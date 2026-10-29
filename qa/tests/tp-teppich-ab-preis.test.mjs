@@ -360,6 +360,20 @@ test('Kopf der Produktseite: Preis je m2 der gewaehlten Farbe, Hinweis auf den K
   assert.doesNotMatch(html, /tp-ab-preis__qualitaet/);
 });
 
+// Fehlersuche 2026-10-28: ausverkauft (keine Variante kaufbar) verspricht keine
+// Lieferzeit - wie snippets/tp-lieferzeit. Der Preis bleibt stehen.
+for (const available of [true, false]) {
+  test(`Kopf, Produkt ${available ? 'kaufbar' : 'ausverkauft'}: Lieferzeit ${available ? 'steht da' : 'entfaellt'}`, async () => {
+    const p = produkt({ einheitCent: 271, art: 'Cover', mindest: 271 });
+    p.available = available;
+    p.metafields.service.lieferzeit = { value: 'ca. 2–3 Wochen (Fertigung beim Hersteller)' };
+    const html = await render(p, kettelOk, { price: 271 }, true);
+    assert.equal(m2Cent(html), 27100);
+    if (available) assert.match(html, /tp-ab-preis__lieferzeit[\s\S]*Lieferzeit ca\. 2–3 Wochen/);
+    else assert.doesNotMatch(html, /Lieferzeit|tp-ab-preis__lieferzeit/);
+  });
+}
+
 test('Kopf bei eigener Kettelung je lfm: ab-Preis bleibt (m2-Preis waere nur ein Teil)', async () => {
   const html = await render(produkt({ einheitCent: 92 }), kettelOk, { price: 92 }, true);
   assert.equal(m2Cent(html), null);

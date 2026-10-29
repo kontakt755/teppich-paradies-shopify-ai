@@ -1,0 +1,51 @@
+{%- doc -%}
+  Feste Seitentreffer fuer typische Service-Suchen. Shopify findet die Seiten
+  nur ueber ihren eigenen Wortlaut ("kontakt", "verlegeservice"); wer
+  "Oeffnungszeiten" oder "Verlegung" tippt, bekam Sauberlaufmatten und
+  Verlegekeile (Rundgang 2026-10-26, Kundin am Handy).
+
+  Gibt die Handles der passenden Seiten mit Komma getrennt aus, sonst nichts.
+  Sonderfall "refund-policy": die Widerrufsbelehrung ist eine Shopify-Richtlinie
+  (shop.refund_policy, /policies/refund-policy), keine Seite.
+  Aufrufer: snippets/tp-suche-ergebnisse.liquid (Schnellsuche, Dropdown und
+  Suchfenster) und sections/search-results.liquid (Ergebnisseite).
+
+  @param {string} begriff - Suchbegriff, roh oder HTML-escaped
+{%- enddoc -%}
+{%- liquid
+  assign tp_sz_text = begriff | downcase | replace: 'ä', 'a' | replace: 'ö', 'o' | replace: 'ü', 'u' | replace: 'ß', 'ss'
+  assign tp_sz_handles = ''
+
+  assign tp_sz_kontakt = 'offnungszeit,oeffnungszeit,geoffnet,geoeffnet,adresse,anschrift,anfahrt' | split: ','
+  for tp_sz_wort in tp_sz_kontakt
+    if tp_sz_text contains tp_sz_wort
+      assign tp_sz_handles = tp_sz_handles | append: 'kontakt,'
+      break
+    endif
+  endfor
+
+  assign tp_sz_verlegung = 'verlegung,verlegen lassen,aufmass' | split: ','
+  for tp_sz_wort in tp_sz_verlegung
+    if tp_sz_text contains tp_sz_wort
+      assign tp_sz_handles = tp_sz_handles | append: 'liefer-verlegeservice,'
+      break
+    endif
+  endfor
+
+  # Widerruf, Ruecksendung, Reklamation (Rundgang 2026-10-26, Runde 2, #82):
+  # Vertrag widerrufen, die Belehrung (eine Richtlinie, keine Seite: Kennung
+  # "refund-policy", die Aufrufer nehmen dafuer shop.refund_policy) und die
+  # Kontaktseite, bis es eine eigene Reklamationsseite gibt.
+  assign tp_sz_widerruf = 'widerruf,rucksend,ruecksend,ruckgabe,rueckgabe,retour,umtausch,zuruckgeb,zurueckgeb,reklam,mangel,beschadig,beschaedig' | split: ','
+  for tp_sz_wort in tp_sz_widerruf
+    if tp_sz_text contains tp_sz_wort
+      assign tp_sz_handles = tp_sz_handles | append: 'vertrag-widerrufen,refund-policy,'
+      unless tp_sz_handles contains 'kontakt,'
+        assign tp_sz_handles = tp_sz_handles | append: 'kontakt,'
+      endunless
+      break
+    endif
+  endfor
+
+  echo tp_sz_handles
+-%}

@@ -49,6 +49,11 @@ export function attrappe({ varianten = [], rechte = ['write_inventory', 'write_p
         // Shopify sucht unscharf: auch Treffer mit anderer SKU kommen zurueck.
         return { productVariants: { nodes: varianten.filter(v => v.sku.startsWith(sku.slice(0, 4))).map(knoten) } };
       }
+      if (name === 'MustersperreVariantenNachId') {
+        if (variables.locationId !== STANDORT_ID) throw new Error('falscher Standort');
+        // Wie Shopify: unbekannte (geloeschte) IDs kommen als null zurueck.
+        return { nodes: variables.ids.map(id => varianten.find(v => v.id === id)).map(v => (v ? knoten(v) : null)) };
+      }
       if (verweigert) throw new Error('Shopify GraphQL: Access denied for this field. Required access: `write_inventory` access scope.');
       const fertig = (feld, inhalt) => {
         if (abgelehnt === name) return { [feld]: { ...inhalt, userErrors: [{ field: ['x'], message: 'abgelehnt (Test)' }] } };

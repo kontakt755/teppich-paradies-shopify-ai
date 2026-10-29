@@ -1,0 +1,29 @@
+{%- doc -%}
+  Dateiname eines Mediums ohne Pfad, Abfrage, Endung und ohne die Endung
+  "_<uuid>", die Shopify beim erneuten Hochladen derselben Datei anhaengt:
+  ".../files/2F84_STRATO_Vorschau_90cfb484-912c-479f-aa14-dfee38dea49e.jpg?v=1"
+  und ".../files/2F84_STRATO_Vorschau.jpg" ergeben beide "2F84_STRATO_Vorschau".
+  Gibt nichts aus, wenn das Medium kein Vorschaubild hat.
+
+  Aufruf: capture x / render 'tp-medien-dateistamm', media: media / endcapture
+
+  @param {object} media - Produktmedium
+{%- enddoc -%}
+{%- liquid
+  assign tmd_name = media.preview_image.src | default: '' | split: '?' | first | split: '/' | last
+  if tmd_name contains '.'
+    assign tmd_endung = tmd_name | split: '.' | last
+    assign tmd_name = tmd_name | remove_last: tmd_endung | remove_last: '.'
+  endif
+  # "_" + UUID (36 Zeichen mit 4 Bindestrichen) am Ende abschneiden.
+  if tmd_name.size > 37
+    assign tmd_rest = tmd_name | slice: -37, 37
+    assign tmd_erstes = tmd_rest | slice: 0, 1
+    assign tmd_striche = tmd_rest | split: '-' | size
+    if tmd_erstes == '_' and tmd_striche == 5
+      assign tmd_laenge = tmd_name.size | minus: 37
+      assign tmd_name = tmd_name | slice: 0, tmd_laenge
+    endif
+  endif
+  echo tmd_name
+-%}

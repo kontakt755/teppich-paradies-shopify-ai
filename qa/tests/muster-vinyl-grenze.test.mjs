@@ -124,7 +124,8 @@ const block = read('blocks/tp-muster-cta.liquid')
   .replace(/\{% schema %\}[\s\S]*?\{% endschema %\}/, '')
   .replace(/\{% stylesheet %\}[\s\S]*?\{% endstylesheet %\}/, '')
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
-  .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze');
+  .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze')
+  .replace("render 'tp-muster-hinweis', kontext: 'produkt'", "echo ''");
 
 const cta = (tp_test_grenze) => liquid.parseAndRender(block, {
   product: { template_suffix: '', title: 'Eiche Klick', type: 'Klickvinyl', handle: 'eiche-klick', tags: [] },
@@ -334,9 +335,9 @@ const rcLiquid = rechner.slice(rcStart, rechner.indexOf('-%}', rcStart) + 3)
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
   .replace("render 'tp-muster-grenze', product: product", "echo ''");
 
-async function rcKnopf(product) {
+async function rcKnopf(product, url = '/pages/muster?produkt=x') {
   const out = await liquid.parseAndRender(rcLiquid + '{{ tp_rc_muster_text }}|{{ tp_rc_muster_url }}', {
-    product, block: { settings: { muster_label: 'Kostenloses Muster in {farbe}' } }, tp_test_url: '/pages/muster?produkt=x',
+    product, block: { settings: { muster_label: 'Kostenloses Muster in {farbe}' } }, tp_test_url: url,
   });
   return out.trim();
 }
@@ -349,6 +350,17 @@ test('Rollenrechner: Musterknopf nennt die Farbe, nicht die Breite', async () =>
   assert.match(await rcKnopf(breiteFarbe), /^Kostenloses Muster in Eiche Beige\|/);
   const farbeBreite = { options_with_values: [{ name: 'Farbe' }, { name: 'Breite' }], selected_or_first_available_variant: { options: ['Grau Anthrazit', '200 cm'] }, tags: [] };
   assert.match(await rcKnopf(farbeBreite), /^Kostenloses Muster in Grau Anthrazit\|/);
+});
+
+// Sauberlauf von der Rolle (Tag ohne-muster) bekam bis 09.10. als Musterziel
+// nur "&farbe=130 cm"; der Browser machte daraus /products/&farbe=130+cm,
+// Google fuehrt fuenf solcher 404-Adressen. Ohne Muster-URL bleibt das Ziel
+// leer (kein Knopf), und angehaengt wird nur an eine Adresse mit ?produkt=.
+test('Rollenrechner: ohne Muster-URL kein relativer Link "&farbe=..."', async () => {
+  const sauberlauf = { options_with_values: [{ name: 'Breite' }, { name: 'Farbe' }], selected_or_first_available_variant: { options: ['130 cm', 'Grau'] }, tags: ['ohne-muster'] };
+  assert.equal((await rcKnopf(sauberlauf, '')).split('|')[1], '');
+  assert.equal((await rcKnopf(sauberlauf, '/pages/muster')).split('|')[1], '/pages/muster');
+  assert.equal((await rcKnopf(sauberlauf)).split('|')[1], '/pages/muster?produkt=x&farbe=Grau');
 });
 
 const KLICK_FARBEN = {

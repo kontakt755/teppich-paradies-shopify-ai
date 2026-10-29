@@ -15,8 +15,8 @@
       "settings": {
         "hero_bild": "shopify://shop_images/20231005_135521.jpg",
         "hero_bild_alt": "Von uns verlegter Vinylboden",
-        "hero_titel": "Vinylboden fachgerecht verlegen lassen",
-        "hero_text": "Wir prüfen den Untergrund, beraten zu Klick-, Klebe- oder Rollenvinyl und verlegen fachgerecht.",
+        "hero_titel": "Vinyl, Laminat & Parkett fachgerecht verlegen lassen",
+        "hero_text": "Wir prüfen den Untergrund, beraten zu Klick-, Klebe- oder Rollenvinyl, Laminat und Parkett und verlegen fachgerecht.",
         "hero_fakten": "Kostenloses Aufmaß vor Ort, Oranienburg und 50 km Umkreis – weiter auf Anfrage, Untergrundprüfung inklusive, Verlegung durch unser eigenes Team",
         "hero_cta": "Verlegung anfragen",
         "hero_cta_ziel": "/pages/vinylboden-verlegen#tp-anfrage",
@@ -85,7 +85,7 @@
           "settings": {
             "image": "shopify://shop_images/5e604b3d-3659-4a43-8ab5-ff5b1b738a4e.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Wohnzimmer mit hellem Teppich auf neuem Boden in Fischgrät-Holzoptik"
           }
         },
         "kundenbild_c8rQxK": {
@@ -93,7 +93,7 @@
           "settings": {
             "image": "shopify://shop_images/image-4-compressed.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Neuer Boden in Holzoptik während der Verlegung in einem schmalen Raum"
           }
         },
         "kundenbild_FxWpW4": {
@@ -101,7 +101,7 @@
           "settings": {
             "image": "shopify://shop_images/20231005_135521.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Leeres Zimmer mit neu verlegtem grauem Boden in Holzoptik"
           }
         },
         "kundenbild_g6HVpi": {
@@ -109,7 +109,7 @@
           "settings": {
             "image": "shopify://shop_images/image-0-compressed.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Bodenleger verlegt Boden in dunkler Fliesenoptik"
           }
         },
         "kundenbild_TtFkWU": {
@@ -117,7 +117,7 @@
           "settings": {
             "image": "shopify://shop_images/1000008940.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Neuer Boden in grauer Steinoptik während der Verlegung, am Rand noch die alten Fliesen"
           }
         },
         "kundenbild_mcJqdp": {
@@ -125,7 +125,7 @@
           "settings": {
             "image": "shopify://shop_images/20230914_113814.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Helles Zimmer mit neu verlegtem Boden in Holzoptik"
           }
         },
         "kundenbild_QrzDE9": {
@@ -133,7 +133,7 @@
           "settings": {
             "image": "shopify://shop_images/20221104_122103.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Flur am Treppenabgang mit neu verlegtem Boden in Holzoptik"
           }
         },
         "kundenbild_kNQ6Jz": {
@@ -141,7 +141,7 @@
           "settings": {
             "image": "shopify://shop_images/image-5-compressed.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Sockelleiste mit sauberem Gehrungsschnitt an einer Wandecke, Boden in heller Holzoptik"
           }
         },
         "kundenbild_AtADGP": {
@@ -149,7 +149,7 @@
           "settings": {
             "image": "shopify://shop_images/20220905_122131.jpg",
             "caption": "",
-            "alt": ""
+            "alt": "Schmaler Raum mit Ziegelwand und neu verlegtem dunklem Boden in Holzoptik"
           }
         }
       },
@@ -170,8 +170,8 @@
     "final_cta_service": {
       "type": "final-cta",
       "settings": {
-        "heading": "Vinylboden verlegen lassen?",
-        "text": "Wir prüfen den Untergrund, beraten zu Klick-, Klebe- oder Rollenvinyl und verlegen fachgerecht – in Oranienburg, Berlin und Umgebung.",
+        "heading": "Vinyl, Laminat oder Parkett verlegen lassen?",
+        "text": "Wir prüfen den Untergrund, beraten zu Vinyl, Laminat und Parkett und verlegen fachgerecht – in Oranienburg, Berlin und Umgebung.",
         "primary_label": "Angebot anfragen",
         "primary_link": "/pages/vinylboden-verlegen#tp-anfrage",
         "call_label": "Direkt anrufen",
@@ -180,7 +180,8 @@
         "phone_text": "Oder telefonisch unter",
         "phone_number": "+4933015733720",
         "phone_display": "03301 573 37 20"
-      }
+      },
+      "disabled": true
     },
     "tp_verlegegebiet": {
       "type": "tp-verlegegebiet",
@@ -223,17 +224,18 @@
     "tp_anfrage": {
       "type": "tp-start-kontakt",
       "settings": {
-        "heading": "Vinylboden verlegen lassen",
+        "heading": "Vinyl, Laminat oder Parkett verlegen lassen",
         "text": "Rufen Sie an, schicken Sie Fotos per WhatsApp oder schreiben Sie uns – wir melden uns am nächsten Werktag und vereinbaren das kostenlose Aufmaß.",
         "telefon": "03301 573 37 20",
         "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
         "whatsapp": "https://wa.me/491792612211",
         "anliegen": "Boden verlegen lassen",
         "betreff": "Anfrage Vinylboden verlegen",
-        "form_text": "Für Aufmaß, Angebot und Verlegung von Vinylboden. Wir melden uns am nächsten Werktag.",
+        "form_text": "Für Aufmaß, Angebot und Verlegung von Vinyl, Laminat und Parkett. Wir melden uns am nächsten Werktag.",
         "nachricht_label": "Nachricht (Räume, ungefähre Fläche, Wunschboden)",
         "wa_text": "Fotos vom Raum und vom Untergrund schicken – wir antworten in den Öffnungszeiten.",
-        "foto_hinweis": "Fotos vom Raum oder einen Grundriss schicken Sie uns am einfachsten per WhatsApp."
+        "foto_hinweis": "Fotos vom Raum oder einen Grundriss schicken Sie uns am einfachsten per WhatsApp.",
+        "formular_zuerst": true
       }
     },
     "tp_bewertung": {
@@ -268,11 +270,18 @@
         "team",
         "gebiet"
       ]
+    },
+    "tp_verlege_ablauf": {
+      "type": "tp-verlege-ablauf",
+      "settings": {
+        "maler": false
+      }
     }
   },
   "order": [
     "vinylboden_verlegen_8thyEt",
     "main",
+    "tp_verlege_ablauf",
     "tp_verlegegebiet",
     "final_cta_service",
     "tp_bewertung",

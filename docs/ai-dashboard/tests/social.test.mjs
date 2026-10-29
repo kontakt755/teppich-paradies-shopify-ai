@@ -99,6 +99,8 @@ test('Upload-Links: lesen 403, Mitarbeiter sieht und kopiert, nur Inhaber legt a
       const j = await neu.json();
       assert.equal(j.zugaenge.length, 1);
       assert.match(j.zugaenge[0].link, /^https:\/\/upload\.beispiel\.test:8443\/u\/[A-Za-z0-9_-]{20,}$/);
+      const tageBis = (Date.parse(j.zugaenge[0].bis) - Date.now()) / 86400000;
+      assert.ok(tageBis > 179 && tageBis <= 180, `der Link gilt 180 Tage (${tageBis})`);
 
       // Der Mitarbeiter sieht denselben Link; der Klartext liegt nur im Privatordner, Rechte 600.
       const mona = await (await holen(keksMona)).json();
@@ -124,6 +126,13 @@ test('Upload-Links: lesen 403, Mitarbeiter sieht und kopiert, nur Inhaber legt a
       await anlegen(keksChef, 'Bodenleger');
       const { zugangSperren } = await import('../../../social/lib/eingang.mjs');
       zugangSperren('Bodenleger', { datei: path.join(privat, 'social', 'upload-zugaenge.json') });
+      assert.deepEqual((await (await holen(keksMona)).json()).zugaenge, []);
+
+      // Abgelaufen (alter Eintrag ohne Ablaufdatum, vor ueber 180 Tagen angelegt): taucht nicht mehr auf.
+      const zDatei = path.join(privat, 'social', 'upload-zugaenge.json');
+      const alt = JSON.parse(fs.readFileSync(zDatei, 'utf8'));
+      alt.zugaenge.push({ name: 'Altlink', tokenHash: '0'.repeat(64), aktiv: true, angelegt: '2025-01-01T08:00:00.000Z' });
+      fs.writeFileSync(zDatei, JSON.stringify(alt));
       assert.deepEqual((await (await holen(keksMona)).json()).zugaenge, []);
     });
   } finally {

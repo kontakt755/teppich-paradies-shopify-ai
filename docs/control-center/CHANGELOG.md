@@ -2,6 +2,521 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-28 · Postfach-Lauf: Claude nur bei neuer Mail, nur mit Gmail
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 5). Der Postfach-Dienst startete alle zwei Stunden
+  Claude für beide Teile, auch ohne neue Mail, und lud dabei alle 14 MCP-Server des Kontos (304
+  Werkzeuge, davon 6 von Gmail).
+  - Vorprüfung ohne KI (`operations/lib/postfach-vorpruefung.mjs`, `imap-lesen.mjs`): Der Dienst fragt
+    per IMAP nur lesend die Kennungen der Mails ab, die dieselben Gmail-Suchen finden wie die
+    Auftragstexte. Claude startet je Teil nur bei einer unbekannten Kennung, nach einem Fehlschlag,
+    nach einem unvollständigen Belege-Lauf, bei geänderten Lieferanten-Domains und einmal am Tag.
+    Geht die Vorprüfung nicht, startet Claude wie bisher. Abschalten: `TP_POSTFACH_VORPRUEFUNG=aus`.
+  - Nur Gmail: Eine init-Probe ohne Modellaufruf liest die Serverliste, die übrigen 13 Server werden
+    per `--disallowedTools mcp__<server>` gesperrt.
+  - Wache: Lehnt sie nur Lese-/Schreibzugriffe in Claudes eigenem Scratchpad ab und das Ergebnis steht
+    trotzdem in der Ablage (neuer Belege-Lauf; bei Service jede offene Kennung angelegt oder geprüft),
+    gilt der Lauf als erfolgreich mit Hinweis. Jeder andere abgelehnte Pfad (`.env*`, Zugangsdateien,
+    LaunchAgents) bleibt „FEHLER“ mit Mitteilung – das Signal für einen Prompt-Injection-Versuch.
+  - Service: als gesehen gilt nur, was in der Ablage steht; eine nicht übernommene Mail startet den
+    nächsten Takt wieder. Die MCP-Serverprobe läuft nur, wenn ein Teil wirklich startet.
+- **Tokens** (gemessen in den `laeufe/`-Protokollen 26.–28.10., je 16 Läufe):
+  - Vorher: Lieferbelege Ø 410.152 Tokens (12,8 Runden), Service Ø 136.259 (4,5 Runden), 7 Takte am
+    Tag → rund 3,8 Mio. Tokens je Tag.
+  - Grundlast je Runde gemessen (Aufruf „Antworte nur mit: OK“): alle Server 29.472, nur Gmail 20.391
+    → 9.081 weniger je Runde (−31 %). Lieferbelege also ~294k je Lauf, Service ~95k.
+  - Starts: Lieferbelege hatte 12 von 16 Läufen Neues (→ ~5–6 Läufe je Tag), Service 2 von 16
+    (→ ~2 Läufe je Tag mit Tageslauf).
+  - Nachher rund 1,7–1,9 Mio. Tokens je Tag, also etwa −2 Mio. je Tag (−50 bis −55 %). IMAP und
+    init-Probe kosten keine Tokens.
+- **Getestet:** `operations/tests/postfach-vorpruefung.test.mjs` neu (15 Tests: IMAP mit falschem
+  Server, nur EXAMINE und X-GM-MSGID, Literale, abgelehnte Anmeldung ohne Passwort im Text,
+  Startregeln, Tageswechsel Berlin, MCP-Sperren, harmlose Ablehnung, Dienstablauf mit Überspringen und
+  Rückfall). Echte Werkzeugprobe `claude-lauf.mjs postfach --werkzeugprobe`: „MCP: nur claude.ai Gmail ·
+  13 andere Server gesperrt“, je Teil 6 Gmail-Werkzeuge, alle 7 Pflichtwerkzeuge da, Exit 0.
+- **Risiken:** Die Vorprüfung nutzt das App-Passwort des Nachfass-Versands jetzt auch für IMAP (nur
+  lesend). Weichen die Suchen im privaten Auftragstext von denen im Code ab, fängt das der Tageslauf
+  einmal am Tag auf; eine Mail, die nur der private Text findet, wartet bis dahin.
+- **Naechste Stufe:** Die neuen Kennungen an Claude übergeben, damit der Lauf nicht selbst suchen
+  muss (weniger Runden).
+## 2026-10-28 · Auslauf-To-do: archivierte Produkte zählen nicht mehr
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 7). Das Auslauf-To-do blieb rot bis zur nächsten
+  Montagsprüfung, obwohl alle 15 Befunde vom 26.10. am selben Tag archiviert wurden. Der Knopf „Im
+  Lexikon“ führte dabei ins Leere. Jetzt gleicht `/api/shopwache/status` die Befunde mit dem
+  Lexikon-Export ab: Steht kein Handle eines Befunds mehr darin (das Lexikon führt nur aktive und
+  unsichtbare Produkte), gilt er als erledigt und fällt weg. Die Ampel wird aus den offenen
+  Befunden neu bestimmt, `archiviert` zählt die weggefallenen. Ist nur das Hauptprodukt archiviert,
+  das Musterprodukt aber nicht, bleibt der Befund offen. Ohne Lexikon-Export bleibt alles wie bisher.
+- **Getestet:** `api.test.mjs` neu „Auslauf-Befunde archivierter Produkte fallen weg“ (ohne Lexikon,
+  teilweise archiviert, Musterprodukt noch aktiv, alles archiviert → gelb bzw. grün). Lesend gegen
+  die echten Daten: 15 Befunde → 0 offen, 15 archiviert, Ampel grün, kein Auslauf-To-do mehr.
+- **Risiken:** Hängt der Lexikon-Export nach (er läuft mit dem Sync-Dienst), erscheint ein frisch
+  archiviertes Produkt bis zum nächsten Export noch als offen.
+- **Naechste Stufe:** keine.
+## 2026-10-28 · Sicherung: Uhrzeit im Log, Fehlervermerk und To-do bei Ausfall
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 3). Die Lücke vom 22.10. war nur in der Datenzeile
+  des Systemzustands zu sehen. Das Log der Sicherung hatte keine Uhrzeit, ein gescheiterter Lauf
+  stand nirgends.
+  - `operations/scripts/sicherung.mjs`: jede Logzeile mit Uhrzeit und eine Schlusszeile („fertig“
+    bzw. „mit Fehler beendet“). Scheitert der Lauf, steht `letzterFehler` (Zeit, Meldung) in
+    `sicherungsstand.json`. `letzterErfolg` bleibt unverändert, der nächste Erfolg entfernt den Vermerk.
+  - Die Prüfung gab es schon (`sicherungsstand()` in `operations/lib/betriebszustand.mjs`: verpasst =
+    nach 23:00 Uhr keine Sicherung vom selben Abend, also strenger als 26 Std.). Sie liefert jetzt
+    auch `letzterFehler` und kommt mit `/api/shopwache/status` auf „Heute“.
+  - Neues To-do (Website, der Inhaber sieht es, sobald es rot ist): gelb „Sicherung der Betriebsdaten
+    überfällig“ nach einem verpassten Termin, rot ab 48 Std. ohne Sicherung, rot „fehlgeschlagen“ mit
+    der Meldung, rot bei unlesbarem Stand, gelb „Sicherungsstand fehlt“, wenn es gar keinen Stand gibt
+    (die Sicherung lief auf diesem Mac nie).
+- **Getestet:** `sicherung.test.mjs` neu (Fehlervermerk mit und ohne bisherigen Stand, Rechte 0600,
+  älterer Fehler zählt nicht, Erfolg löscht den Vermerk, kaputter Stand bleibt unangetastet),
+  `todos.test.mjs` neu (gelb/rot/nichts, Laden ohne, Inhaber nur rot), `api.test.mjs` neu (Stand kommt
+  mit der Shop-Wache). Lesend gegen den echten Stand: jetzt kein To-do; 26 Std. später ohne neuen
+  Lauf „Sicherung der Betriebsdaten überfällig · letzte Sicherung Di., 27.10., 22:30“.
+- **Risiken:** Ist der Mac um 22:30 Uhr aus, startet launchd die Sicherung beim nächsten Einschalten.
+  Bis dahin steht das gelbe To-do.
+- **Naechste Stufe:** Kopie außer Haus (w-163) nach der Entscheidung des Inhabers.
+## 2026-10-28 · Aus der Bestellung entfernt, beim Lieferanten bestellt: rotes To-do
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 4). Bei #1056 wurden drei Positionen nach dem Vermerk
+  „bestellt“ aus der Bestellung genommen (Menge 0). Im Dashboard blieben sie still, weil Positionen
+  mit Menge 0 überall herausfallen; die Bestellung ist in Shopify außerdem schon geschlossen.
+  - `operations/lib/shopify-abgleich.mjs`: `shopifyPositionen` kennt `entfernt` (bestellt war mehr als
+    0, aktuelle Menge 0). Neu `entfernteBestellt()`: Positionen mit Status „bestellt“, die aus der
+    Bestellung entfernt sind, je Bestellung eine Zeile; ohne stornierte Bestellungen und Tests.
+  - `GET /api/einkauf/shopify-abgleich` liefert sie als `entfernt` mit Titel, Farbe und Lieferant.
+  - „Heute“ (Laden): rotes To-do „Aus Bestellung entfernt: #… – Lieferantenbestellung stornieren?“ mit
+    Kunde, Lieferant, Bestelldatum und Artikeln. „Abhaken…“ fragt, was mit der Lieferantenbestellung
+    ist (Pflicht), und setzt die Artikel über die vorhandene Aktion „zurück auf offen“ zurück – ohne
+    Shopify, der Vermerk bleibt im Verlauf. Rolle „lesen“ bekommt nur „Ansehen“.
+- **Getestet:** `shopify-abgleich.test.mjs` neu (entfernt/nicht entfernt, alter Export ohne aktuelle
+  Menge, storniert, Test, schon abgehakt, nach dem Zurücksetzen leer), `shopify-abgleich-api.test.mjs`
+  neu (steht im Abgleich, Rolle „lesen“ 403, Abhaken ohne Shopify-Aufruf, die verbliebene Position
+  bleibt). Klickstrecke gegen die Datenkopie (`dashboard:pruefen --offen`, Puppeteer, `#/heute?sicht=laden`):
+  1 To-do #1056 mit 3 Artikeln, Dialog, nach „Abhaken“ To-do weg, 3 Positionen in der Kopie mit
+  Notiz zurück auf offen, keine JS-Fehler. `dashboard:pruefen` Heute 360–1440 px ohne Überlauf.
+- **Risiken:** Die Standard-Startseite „Shop-Übersicht“ zeigt seit dem Rundgang vom 26.10. keine
+  To-do-Liste; das To-do steht unter „Weitere Bereiche → Laden & Anfragen“ bzw. „Bisherige
+  Gesamtübersicht“ (wie alle anderen To-dos). Ware, die schon geliefert ist, meldet es nicht.
+- **Naechste Stufe:** Rote To-dos auch auf der Shop-Übersicht zeigen (gilt für alle To-dos).
+## 2026-10-28 · Speicher: Bremse für Bildläufe, Mac-Mitteilung bei Rot
+
+- **Geaendert:** Fehlersuche vom 28.10. (Punkt 1, Teile 2 und 3). Die Platte stand bei 12 bis 17 GiB
+  frei, der Monteur-Upload sperrte schon zeitweise. Die Warnung gab es nur im Control Center, und
+  Bildläufe hatten keine Bremse.
+  - `npm run -s speicher:pruefen` (`operations/scripts/speicher-pruefen.mjs`, `bildlaufFrei` in
+    `operations/lib/speicher.mjs`): Exit ungleich 0 heißt nicht starten (1 = unter 20 GiB frei,
+    2 = falsche Angabe), `--min <GiB>` für eine eigene Grenze, nicht messbar = darf starten. Die Bildlauf-Skripte liegen privat unter `$TP_PRIVAT_DIR`; Skill
+    `raumbilder-recherche`, Skill `werkzeuge` und `operations/README.md` schreiben den Aufruf vor jedem
+    Lauf vor (aus Python per `subprocess.run`).
+  - Shop-Wache: bei Rot zusätzlich eine Mac-Mitteilung, höchstens einmal je Berliner Kalendertag und
+    nur in der Arbeitszeit Mo–Sa 7–19 Uhr (`speicherMelden`, Tag in `shopwache/speicher-mitteilung.json`).
+    Gemeldet wird vor dem Schreiben von `status.json` (`meldenUndAblegen`), damit eine volle Platte
+    die Mitteilung nicht verhindert. Die Mitteilung liegt jetzt in
+    `operations/lib/mac-mitteilung.mjs`; `claude-lauf.mjs` exportiert sie unverändert weiter.
+- **Getestet:** `freier-speicher.test.mjs` neu (Bremse unter/über 20 GiB, eigene Grenze, Messfehler,
+  Befehl mit Exit-Codes und falschen Optionen, Mitteilung nur bei Rot, einmal je Tag, Tageswechsel
+  23:30 UTC = nächster Berliner Tag, kaputte Merkdatei). Echter Aufruf auf dem Mac:
+  „Speicher: 19 GiB frei (96 % belegt, ROT) · Bildlauf NICHT starten“, Exit 1; mit `--min 10` Exit 0.
+  Die Mac-Mitteilung selbst nicht ausgelöst (gleiche Funktion wie bei den Routinen).
+- **Risiken:** Die privaten Bildlauf-Skripte rufen die Prüfung erst, wenn sie die eine Zeile
+  bekommen; bis dahin bremst nur die Anweisung im Skill.
+- **Naechste Stufe:** Aufräumen nach w-170 (anderer Chat); die privaten Skripte um den Aufruf ergänzen.
+## 2026-10-28 · Eigener Bereich „Hausverwaltungen“ (Werkbank w-154, #1768)
+
+- **Geaendert:** Entscheidung des Inhabers vom 26.10.: „eigener Bereich für Hausverwaltungen mit
+  Ansprechpartnern, Objekten und Angeboten“. Neu unter „Kunden & Einkauf“ → **Hausverwaltungen**
+  (`#/hausverwaltungen`):
+  - Liste: je Verwaltung Ansprechpartner, Telefon und E-Mail (anklickbar), Stand, Zahl der Objekte,
+    Wohnungen und offenen Angebote. Wer heute wieder dran ist, steht oben („wieder melden“ in Bernstein);
+    „kein Interesse“ liegt zugeklappt darunter.
+  - Klick auf den Namen: Verwaltung mit Notiz, „Anrufen“, „E-Mail schreiben“, „Bearbeiten“ (Stand,
+    „Wieder melden am“), darunter die Objekte (Adresse, Wohnungen, Ansprechpartner vor Ort) und je Objekt
+    die Angebote bzw. Aufträge (Lexware-Nummer, Auftrag in der Auftrags-App, Datum, Stand). Offene Angebote
+    ab 14 Tagen: „seit N Tagen offen – nachfassen“.
+  - Auf „Heute“ in der Gesamtübersicht (`#/heute?sicht=inhaber`, wie das To-do der Genossenschaften) das
+    To-do „Hausverwaltungen: N wieder melden“; bei genau einer Verwaltung führt „Ansehen“ direkt zu ihr.
+  - Gespeichert lokal unter `$TP_PRIVAT_DIR/hausverwaltungen/verwaltungen.json`, in der nächtlichen Sicherung.
+  - Die Seite „Genossenschaften“ verweist mit einem Satz auf den neuen Bereich; Hilfe, Zugänge-Text und
+    Befehlspalette nennen ihn.
+- **Getestet:**
+  - `tests/hausverwaltungen.test.mjs` 9 neu (Regeln, Doppelname, Entfernen-Schutz, Wiedervorlage, To-do, API mit
+    kaputtem JSON, Rollen lesen 403 / Mitarbeiter 200, Ansicht escaped); `dashboard:test` 1040 grün.
+  - `dashboard:pruefen -- --rollen`: 500 Zeilen OK (100 Ansichten × 5 Breiten, je Rolle), 0 px seitlicher Überlauf.
+  - Klickstrecke in der Datenkopie (Mitarbeiter 390 px, Inhaber 1440 px, Rolle lesen), nur ausgedachte Daten:
+    Leerzustand → „Name fehlt“ → Verwaltung angelegt (angeschrieben, Wiedervorlage +14 Tage) → Objekt →
+    Angebot ohne Angabe abgelehnt → Angebot gespeichert → Objekt mit Angebot entfernen abgelehnt → Liste mit
+    fälliger Verwaltung oben und „1 Verwaltung ohne Interesse“ zugeklappt → To-do in der Gesamtübersicht →
+    Rolle lesen: keine Knöpfe, Schreiben 403. Datei mit Rechten 600, 5 Protokollzeilen, keine JS-Fehler.
+  - Dabei gefunden und behoben: alte Fehlermeldung blieb im Dialog stehen; „Bearbeiten“ brach am Handy im Wort um.
+- **Risiken:** Der Bereich ist wie „Genossenschaften“ für Mitarbeiter offen (Menütest angepasst). Soll ihn nur
+  der Inhaber sehen: `hausverwaltungen: 'inhaber'` in `ANSICHT_ROLLEN` und `data-nur-inhaber` am Menüpunkt.
+  Lexware und Auftrags-App sind nur Textfelder, es gibt keine Prüfung, ob die Nummer existiert.
+- **Naechste Stufe:** Suche und Seiten zu 25, sobald die Liste wächst; eine Verwaltung aus „Genossenschaften“
+  mit einem Klick übernehmen.
+
+## 2026-10-28 · Adressaufkleber auf 50 × 80 quer
+
+- **Geaendert:** Inhaber: „die Adresse soll quer sein bei 50 × 80, nicht hoch“.
+  - Auf hohen Rollen (50 × 80 und 50 × 100) läuft die Adresse jetzt entlang der langen Seite.
+  - Die Empfängerschrift wächst mit (bis 47 px statt 36 px auf 50 × 80).
+  - 50 × 50 und die Musteraufkleber bleiben unverändert.
+  - Das Layout rechnet im gedrehten Format, der Druckdialog dreht das Bild um 90° auf die Rolle.
+- **Getestet:**
+  - `muster-packen.test.mjs` neu „Adresse liegt auf hohen Rollen quer“: 50 × 50 nicht quer; 50 × 80 und 50 × 100
+    quer, passend, Zeilen länger als die Rollenbreite, innerhalb der Ränder, Empfänger größer. Die beiden
+    Adresstests prüfen die Ränder im gedrehten Format.
+  - Druckdialog in der Datenkopie mit Druckerattrappe auf 50 × 80:
+    - Vorschau 400 × 640 mit querer Adresse.
+    - Druckbild 384 × 640, Tinte innerhalb von 32 px Rand.
+    - Keine JS-Fehler.
+- **Risiken:** Die Drehrichtung ist im Uhrzeigersinn (Schrift läuft von oben nach unten aus der Rolle). Soll
+  sie andersherum laufen, ist es ein Vorzeichen in `zeichne()`.
+- **Naechste Stufe:** keine geplant.
+## 2026-10-28 · Packstation: Filter nach Umschlagstand (#1761)
+
+- **Geaendert:** Wunsch des Inhabers vom 28.10.: „packstation noch etwas besser filtern umschlag vorbereitet
+  und muss noch vorbereitet werden“. Unter den Reitern steht eine zweite Chipzeile „Umschlag:“ mit alle ·
+  noch vorbereiten · vorbereitet · Muster schon drin. Jeder Chip hat eine Zahl und wirkt zusammen mit dem
+  Reiter (`mpumschlag` neben `mpbereich`).
+  - „Noch vorbereiten“ sind die Karten, bei denen Schritt 1 „Bestellung drucken“ leuchtet.
+  - Dort druckt „Diese n Umschläge vorbereiten“ genau die gezeigten Umschläge in Listenreihenfolge und
+    vermerkt sie danach als vorbereitet.
+  - Bei Suche, Direktlink und „Gepackt“ gilt der Filter nicht.
+  - Eine leere Auswahl sagt, was los ist, und verlinkt alle Umschläge der Liste.
+- **Getestet:**
+  - `packstation-arbeitslisten.test.mjs`: Zahlen, Kombination mit dem Reiter, Knopf, Hinweis ohne
+    Zuordnung, Leertext, Ausnahmen; 17/17.
+  - `dashboard-abschlusskorrekturen.test.mjs`: Klick druckt in Listenreihenfolge ohne Gepacktes oder
+    Unzugeordnetes und vermerkt erst nach dem Druck; 8/8.
+  - `dashboard:test` 1032/1032 (nach dem Merge von main), `pruefen` 9/9, `dashboard:pruefen` 0 px Überlauf von 360 bis 1440 px.
+  - Klickstrecke gegen die Datenkopie (Playwright, Chrome):
+    - Zahlen 19 · 0 · 18 · 2 passen zum Packstand.
+    - Druckvermerk an #1075 zurückgenommen → 1 · 17. Liste #1075, Knopf „Diesen Umschlag vorbereiten
+      (4 Aufkleber)“, Druckdialog „Aufkleber · 1 Umschlag vorbereiten“.
+    - Schließen ohne Druck: 0 Schreibaufrufe, keine JS-Fehler.
+    - Sichtprüfung 1024 und 360 px.
+- **Risiken:** Den Druck selbst habe ich nicht ausgelöst (kein Drucker). Der Vermerk danach läuft über den
+  vorhandenen `druckFertig`-Weg.
+- **Naechste Stufe:** keine.
+
+## 2026-10-28 · Packstation: Bestelldatum auf jeder Karte (#1757)
+
+- **Geaendert:** Wunsch des Inhabers vom 28.10.: „wichtig ist auch, dass ich sehen muss, an welchem Datum
+  bestellt wurde“. Die Kopfzeile jeder Packstation-Karte zeigt jetzt ohne Aufklappen:
+  - „bestellt am Di., 20.10. · wartet seit 8 Tagen“, mit Wochentag und nach Berliner Kalendertag wie die
+    Wartetage (#1754). Bei mehreren Bestellungen in einem Umschlag steht „erste Bestellung am …“.
+  - Fehlen noch Muster und sind sie beim Lieferanten bestellt: „beim Lieferanten bestellt am …“, bei
+    verschiedenen Daten „zwischen … und …“. Das stand bisher nur aufgeklappt im Hinweis.
+  - Aufgeklappt steht bei mehreren Bestellungen das Datum jeder Bestellnummer.
+  Die Daten kamen schon vom Server (`seit`, `bestellungen[].datum`, `bestelltAm`), geändert ist nur die
+  Ansicht `ansichten/kunden/muster-packen.mjs`.
+- **Getestet:** `packstation-arbeitslisten.test.mjs` mit neuem Test (Kopfzeile ein/zwei Bestellungen,
+  Lieferantenzeile nur bei fehlenden Mustern, nicht bei Gepacktem, ohne Datum nur die Wartezeit) 16/16,
+  `dashboard:test` 1025/1025. `dashboard:pruefen` mit Datenkopie: alle Ansichten OK, kein seitliches
+  Scrollen von 360 bis 1440 px. Sichtprüfung der Packstation mit 19 offenen Umschlägen bei 1024 und 360 px.
+- **Risiken:** Auf schmalen Handys braucht die Kopfzeile eine Zeile mehr.
+- **Naechste Stufe:** keine.
+
+## 2026-10-28 · Ratgeber zum Beilegen drucken (#1763)
+
+- **Geaendert:** Ware mit Kurz-Ratgeber (Teppich, Teppichboden, Vinyl, Klickvinyl, Klebevinyl, Laminat,
+  Parkett) bekommt in Kunden → Bestellungen, aufgeklappte Zeile, den Knopf „Ratgeber drucken“. Er öffnet
+  im neuen Tab ein PDF zum Ausdrucken, zwei Seiten je Bodenart. Bestellnummer, Produkt und Farbe, Maß
+  und Kaufdatum sind schon eingetragen. Der Dialog „An Kunden raus“/„Übergeben“ zeigt „Bitte beilegen:
+  Ratgeber …“ mit demselben Knopf, aber nur wenn die Ware bei uns liegt („Geliefert an uns“) oder
+  abgeholt wird. Bei Direktversand vom Lieferanten packt niemand von uns, deshalb kein Hinweis. Die
+  Zuordnung steht am Bestellmodell (`auftrag.ratgeber`), wie in der Bestellbestätigung über den
+  Produkttyp, Muster zählen nicht. Das PDF liefert `GET /api/kunden/ratgeber-druck?orderId=…`, rein lesend.
+  Chromium startet erst beim Klick (`domains/shopify/ratgeber-pdf/pdf.mjs`).
+- **Getestet:** `ratgeber-druck-api.test.mjs` 4/4 (Zuordnung, PDF-Inhalt mit Ersatz-Drucker, 400/404/405
+  über HTTP), `dashboard:test` 1026/1026, `dashboard:pruefen` 38 Ansichten ohne Überlauf. Klickstrecke
+  gegen die Kopie: 12 von 77 Bestellungen mit Ratgeber, PDF in 1,6 s (2 Seiten A4, Schriften eingebettet).
+  Der Knopf öffnet einen neuen Tab, am Handy bleibt die Seite 390 px breit. Der Dialog zeigt den Hinweis
+  erst, nachdem #1070 in der Kopie auf „Geliefert an uns“ stand. Geschlossen wurde ohne Buchung, JS-Fehler
+  gab es keine.
+- **Risiken:** Braucht Chrome auf dem Dienst-Mac (wie `dashboard:pruefen`). Fehlt er, kommt die übliche
+  Fehlermeldung, der Grund steht im Protokoll. Ob der Ratgeber wirklich beigelegt wurde, merkt sich das
+  Dashboard nicht.
+- **Entschieden (Inhaber, 28.10.):** Bei Direktversand vom Lieferanten schicken wir keinen Brief hinterher.
+  Dort reicht das PDF aus der Bestellbestätigung. Beigelegt wird nur, was durch unsere Hände geht.
+
+## 2026-10-28 · Auslauf-Prüfung meldet Farben ohne Handmuster (#1755)
+
+- **Geaendert:** Lieferant A führt einzelne Farben mit dem Zusatz „(nur in Format)“ in der Kurzbeschreibung
+  der Schnellsuche. Für solche Farben gibt es kein Handmuster, der Shop bot sie trotzdem gratis als Muster an.
+  Aufgefallen ist das erst, als eine Kundin auf das Muster wartete. Die Wochenprüfung hatte den Text schon,
+  sie prüfte bei A aber nur, ob die Artikelnummer gefunden wird. Jetzt wertet sie Name und Kurzbeschreibung
+  des Treffers aus: „nur in Format“ ergibt den neuen Befund `ohne-muster`, Auslauf-Wörter (wie bei
+  C/D/E) den Befund `hinweis`. Auf „Heute“ erscheint dafür ein eigenes To-do: „Muster nicht lieferbar:
+  … kein Handmuster“, Kontext Artikelnummer, Produkt und „Muster im Shop sperren, offene Musterbestellungen
+  prüfen“. Es landet nicht im Auslauf-To-do, weil die Ware bleibt und nur das Muster gesperrt wird.
+- **Getestet:** `operations/tests/auslauf.test.mjs` 9/9 (neu: Kurzbeschreibung mit und ohne Leerzeichen
+  vor der Klammer, Kollektionsname „Format Object“ und Farbcodes in Klammern bleiben `ok`), `todos.test.mjs`
+  31/31, `dashboard:test` 1023/1023. Abgleich mit den lokalen Schnellsuche-Daten (Stand 12.10.,
+  2.349 von 2.423 Musterartikeln von A): Der Zusatz steht nur bei einer Farbe, in beiden Breiten.
+  Auslauf-Wörter hat dort keiner unserer Artikel. Der erste echte Lauf bringt also ein To-do mit, kein
+  Rauschen.
+- **Risiken:** Ein Handmuster kann auch ohne diesen Zusatz fehlen, so zuletzt bei drei Farben einer
+  anderen Linie, die A nur per Mail genannt hatte. Diese Fälle findet die Prüfung nicht. Die Sperre selbst
+  bleibt Handarbeit, Grund ist das Problem mit doppelten Muster-SKUs (#1749).
+- **Naechste Stufe:** Nach #1749 kann das To-do direkt die Mustersperre auslösen.
+
+## 2026-10-28 · Mustersperre: doppelte Muster-SKUs sperren und freigeben (#1745)
+
+- **Geaendert:** „Muster nicht verfügbar“ sperrte nichts, sobald eine Muster-SKU auf mehr als einer
+  Variante lag („gibt es im Shop mehrfach – bitte in Shopify von Hand sperren“). Das trifft laut Lexikon
+  2028 von 3911 Muster-SKUs: dieselbe Farbe steht im Teppichboden-Muster und im Nach-Maß-Muster. Am 28.10.
+  musste deshalb eine Linie von Lieferant A (3 Farben, 6 Varianten) von Hand gesperrt werden.
+  - `operations/lib/mustersperre.mjs`: `leseVarianten()` liefert alle exakten Treffer. Liegen alle in
+    `muster-*`-Produkten, sperrt `sperreImShop()` jede Variante (je Variante eigener `@idempotent`-
+    Schlüssel) und prüft jede gegen. Erst alle prüfen, dann schreiben: verletzt eine die Vorbedingung,
+    wird keine gesperrt. Ein Treffer außerhalb der Musterprodukte bleibt ein Abbruch (`mehrdeutig`) –
+    bisher gewann dann still die Mustervariante. Mehr Treffer als eine Abfrageseite ebenfalls.
+  - Das Ereignis in `mustersperre.json` nennt alle Varianten (`shopify.varianten`, je mit Vorstand und
+    ob sie schon angefasst sein kann). `stand()` führt den Rückweg je Variante; alte Ereignisse mit einer
+    Variante (`variantId`/`vorher` direkt unter `shopify`) liest `variantenVon()` als Liste mit einer.
+  - „Wieder verfügbar“ stellt jede gesperrte Variante auf ihren eigenen Vorstand zurück. Varianten
+    derselben SKU, die keine Sperre angefasst hat (später angelegt oder nach einem Abbruch nie erreicht),
+    bleiben unberührt (`stand().varianten[].betroffen`). Die betroffenen liest die Freigabe per ID
+    (`leseVariantenNachId`, `nodes(ids:)`): auch nach einer SKU-Änderung wird keine vergessen, eine
+    gelöschte ist nichts mehr freizugeben (Codex-Review Runde 1, P2).
+  - Sehr alte Ereignisse mit Vorstand, aber ohne `variantId`: der Vorstand geht als früherer Rückweg an
+    die Variante von damals (die eine, die ein späteres Ereignis nennt, oder die eine schon gesperrte) und
+    wird nicht von einem späteren Lesestand verdrängt (Codex-Review Runde 1, P2). Lässt er sich keiner
+    Variante sicher zuordnen, schreibt „Wieder verfügbar“ nichts und verlangt die Freigabe von Hand; sind
+    danach alle Varianten bestellbar, ist der Eintrag erledigt (`vorherUnklar`, Runde 2, P2). Ohne jede
+    bekannte Variante gibt die Freigabe bei mehreren Varianten nur die nicht bestellbaren frei.
+  - Musterlager: bei mehreren Varianten führt „In Shopify öffnen“ zur Produktsuche nach der SKU.
+- **Getestet:**
+  - `mustersperre.test.mjs` (Proxy-Attrappe): zwei Mustervarianten mit verschiedenem Ausgangsstand
+    gesperrt und je auf den eigenen Vorstand freigegeben, zweiter Klick schreibt nichts; Gegenprobe je
+    Variante (eine bleibt bestellbar → kein Erfolg; Freigabe halb → Wiederholung schreibt nur den Rest);
+    Vorbedingung einer Variante verletzt → keine gesperrt; zweite Variante abgelehnt → nur die erste legt
+    einen Rückweg fest, und „Wieder verfügbar“ lässt die nie angefasste zweite Variante, wie sie ist;
+    Freigabe per ID trotz geänderter SKU, gelöschte Variante übergangen; alter Vorstand ohne
+    `variantId` bleibt Rückweg, unklar zuzuordnen → nichts geschrieben, nach Handfreigabe erledigt;
+    fremder Treffer → Abbruch ohne Schreiben; altes Einzel-Ereignis bleibt lesbar
+    und freigebbar; zu viele Treffer → Abbruch.
+  - `mustersperre-api.test.mjs`: Schritt im Dashboard sperrt beide, Ereignis nennt beide, Liste zeigt
+    die Produktsuche, „Wieder verfügbar“ gibt beide frei; fremder Treffer → „im Shop noch zu sperren“,
+    lokal entfernbar; alte Ablage → Liste mit Variantenlink und Freigabe.
+  - Lesend gegen den Shop (MCP): die SKU-Suche ist exakt, die gesperrte Linie liegt auf je zwei
+    Mustervarianten.
+- **Risiken:** Ein Muster-SKU, die zugleich auf einem Nicht-Musterprodukt liegt, sperrt jetzt gar nicht
+  mehr automatisch (vorher nur die Mustervariante). Laut Lexikon gibt es keine solche SKU.
+- **Nächste Stufe:** Die Handsperre vom 28.10. als Ereignis nachtragen, damit „Wieder verfügbar“ sie
+  kennt – freigegeben am 28.10., läuft nach dem Deploy (Skript im privaten Datenordner).
+
+## 2026-10-28 · Starter-Test: Zeitlimit nur noch gegen Hänger (#1752)
+
+- **Geaendert:** Das automatische Nachziehen des Dienstes hing am 28.10. um 11:04 an einem roten Probelauf.
+  `dashboard-app-starten.test.mjs` („ausbleibender Dienst … leeres App-Fenster“) brach nach dem 8-s-Zeitlimit
+  von `spawnSync` ab (`status: null`). Normal braucht der Test unter 1 s, die ganze Testreihe lief in der
+  Probe aber 88 statt 12 s, weil der Mac ausgelastet war. Das Zeitlimit liegt jetzt bei 30 s
+  (`ZEITLIMIT_MS`). Es soll nur einen Hänger abfangen, die Startdauer misst der Test nicht.
+- **Getestet:** Die Datei 14/14, `dashboard:test` 1022/1022, `pruefen` 9/9. Die Probe von Hand
+  (`betrieb:nachziehen -- --probe`) war am 28.10. um 11:08 auf demselben Stand grün.
+- **Risiken:** Unter künstlicher Last wurde nichts nachgestellt, um den laufenden Dienst nicht zu bremsen.
+  Ein echter Hänger fällt jetzt erst nach 30 statt nach 8 s auf.
+
+## 2026-10-28 · „wartet seit“ zählt überall Kalendertage
+
+- **Geaendert:** Die Wartezeiten zählten volle 24 Stunden seit der Bestellung. Eine Bestellung vom 19.10.
+  nachmittags stand am 28.10. mittags bei „8 Tagen“ statt 9 (Rückmeldung Inhaber: „muss immer stimmen“).
+  Neu `lib/kalendertage.mjs` (Kalendertage in Berlin), verwendet in Packstation (`muster-packen`),
+  Bestellungen (`kunden-bestellgruppen`, `shop-bestellarbeit`), Start/Bestellarbeit, Lieferanten-Wartetage
+  (`einkauf-lieferanten`), Lieferbelege und Muster-Nachfassen. Das Datum selbst kommt unverändert aus
+  Shopify bzw. dem Auftragsfluss.
+- **Getestet:** `kalendertage.test.mjs` (Nachmittag, kurz vor Mitternacht, Zeitumstellung, ohne Datum),
+  neuer Fall in `muster-packen.test.mjs`; `npm run dashboard:test` und `npm run -s pruefen -- --ohne themecheck`.
+- **Risiken:** Schwellen der Aufräumliste und der To-dos rechnen weiter in 24 Stunden (nicht angezeigt).
+  Manche Zahlen springen um 1 nach oben, und Warnfarben können einen Tag früher kommen.
+
+- **Naechste Stufe:** keine.
+
+## 2026-10-28 · Etiketten drucken: nur ausgewählte Motive
+
+- **Geaendert:** In der Druckvorschau hat jedes Motiv ein Häkchen „drucken“ (gilt für alle Kopien),
+  darüber „alle wählen“ / „keine“. Der Druckknopf zählt nur die ausgewählten Aufkleber, abgewählte
+  sind in der Vorschau blass. Ein Teildruck markiert nichts als gedruckt (kein `druckFertig`, keine
+  Bestätigung): erledigt ist ein Auftrag erst mit dem vollständigen Lauf. Anlass: der Inhaber wollte
+  eine fehlende Reihe nachdrucken, ohne alles neu zu drucken.
+- **Getestet:** `npm run dashboard:test` ohne Fehler (die abgebrochenen `laden-zahlen`-Tests brechen in
+  der Remote-Sitzung auch auf main ab). Playwright gegen die Vorschau mit 4 Aufklebern/3 Motiven bei
+  390 px: Abwählen 4 → 3, „keine“ → 0 und Knopf gesperrt, „alle wählen“ → 4, kein seitliches Scrollen.
+- **Risiken:** Druck selbst nicht getestet (kein Drucker in der Remote-Sitzung). Motive jenseits der
+  Vorschaugrenze lassen sich nur über „keine“ abwählen.
+- **Naechste Stufe:** keine geplant.
+
+## 2026-10-28 · Aufräumliste: „direkt an den Kunden“ nur noch mit Beleg (#1740)
+
+- **Geaendert:** Am 26.10. wurde #1033 über die Aufräumliste mit „wohl direkt vom Lieferanten an den
+  Kunden (nicht belegt)“ abgeschlossen und in Shopify gebucht. Die Muster waren aber nie verschickt: Die
+  Bestellung bei Lieferant A ging an uns und wurde dort nie erfasst. Die Liste nahm „direkt“ für jede
+  Musterbestellung vor dem 24.10. an, die nie angekommen war.
+  - „Direkt an den Kunden“ gilt nur noch mit dem Vermerk beim Bestellen (`ueber: 'kunde'`) an jeder
+    noch offenen Position. Dann lautet der Vorschlag „laut Bestellung“, und der Beleg steht dabei. Eine
+    nie bestellte Position daneben verhindert den Vermerk (Codex-Review: sonst würde sie ohne Rückfrage
+    mit abgeschlossen).
+  - Sonst heißt es „Die Muster kamen nie an – beim Lieferanten nachfragen“ (bei Bestellungen vor dem
+    24.10. mit dem Hinweis, dass das Lieferziel damals nicht gespeichert wurde). Ein Vermerk wird nicht
+    vorgegeben (`notiz: null`).
+  - Ohne vorgegebenen Vermerk heißt der Knopf „Abschließen…“. Er fragt, woher wir wissen, dass es
+    erledigt ist. Ohne Eingabe passiert nichts, sonst wird „Aufgeräumt: <Grund>“ der Vermerk.
+- **Getestet:**
+  - `aufraeumen.test.mjs`:
+    - ohne Vermerk kein „wohl“ und `notiz: null` (vor und nach dem 24.10.)
+    - mit Vermerk an allen Mustern „laut Bestellung“, bei nur einem von zwei nicht
+    - Knopf „Abschließen“ bzw. „Abschließen…“
+  - `dashboard:test` 1021/1021.
+  - Klickstrecke gegen die Prüf-Instanz (`--offen`):
+    - Der Knopf heißt „Abschließen…“ und fragt nach dem Grund.
+    - Abbrechen: kein Aufruf.
+    - Mit Grund: genau ein `POST /api/kunden/bestellung-fertig` mit „Aufgeräumt: <Grund>“ (abgefangen,
+      nichts geschrieben).
+    - Kein JS-Fehler.
+  - Datenkopie, heute: unverändert 7 Fälle (gepackte Umschläge vom 22.10.).
+  - Datenkopie, durchgespielt für den 10.11.: Die alte Liste hätte bei 9 Bestellungen (#1033,
+    #1049–#1060) „wohl direkt an den Kunden“ vorgeschlagen. Darunter sind #1050 und #1051, deren Muster
+    laut Avisierung an uns geliefert werden. Die neue Liste schlägt dort „nachfragen“ vor, ohne Vermerk.
+- **Risiken:** Alte Fälle lassen sich nicht mehr mit einem Klick abschließen, man muss einen Grund
+  tippen. Das ist so gewollt.
+- **Nächste Stufe:** keine.
+
+## 2026-10-26 · Inhaberzeile: Frist nach Berliner Kalendertag (Codex-Review #1731)
+
+- **Geaendert:** „nächste Frist“/„Frist überschritten“ vergleicht mit dem Kalendertag in
+  Europe/Berlin statt mit dem UTC-Tag. Vorher stand die Frist von gestern bis 01:00 Uhr
+  (Sommerzeit 02:00 Uhr) noch als „nächste Frist“ da.
+- **Getestet:** `tests/inhaber-ueberblick.test.mjs` mit 00:30 Uhr Winterzeit, 23:30 Uhr und
+  00:30 Uhr Sommerzeit; gruen auch mit `TZ=UTC` und `TZ=America/Los_Angeles`.
+- **Risiken:** keine; reine Funktion ohne DOM.
+- **Naechste Stufe:** –
+
+## 2026-10-26 · Rundgang: Versand, Kundenakte, Inhaberzeile, Hilfe, Anmeldung (Paket P5)
+
+- **Geaendert:** Versand: steht dieselbe Sendungsnummer schon an einer anderen Bestellung, bucht
+  der Dialog nicht, sondern nennt die Bestellung; erst „Trotzdem buchen“ trägt sie ein (mit
+  Protokoll). Der Server prüft das, bevor er etwas schreibt (#30).
+- **Geaendert:** Kundenakte, Schritt „Ware beim Lieferanten bestellen“: je offenem Lieferanten
+  „Bestellmail öffnen (Name)“, danach „Ware ist bestellt…“ mit Rückfrage statt Ein-Klick für
+  alle Lieferanten. Lieferantennamen aus den Stammdaten über eine gemeinsame Funktion
+  (Kundenakte, Heute, Lieferantenpost, Je Auftrag); UNGEKLAERT heißt „Lieferant nicht
+  zugeordnet“, „Default Title“ erscheint nicht mehr als Farbe (#40).
+- **Geaendert:** Shop-Übersicht, nur Inhaber: eine Zeile unter den Warenbestellungen „Shop in
+  Ordnung · 7 Tage … € Umsatz · N Entscheidungen offen · nächste Frist“, jeder Teil verlinkt;
+  der Umsatz klappt die Kennzahlen auf. „Weitere Bereiche“ zeigt Zahl und Alter der offenen
+  Anfragen (#44). Entscheidungen: Zähler und Liste zählen dieselben Einträge; Link zu „Ideen &
+  Fragen“; Genossenschaften sagt bei knapper Frist nicht mehr „nur zur Kenntnis“ (#43).
+- **Geaendert:** Hilfe nach der heutigen Seitenleiste (Bestellungen, Muster bestellen,
+  Packstation mit „Bestellung packen“/„Muster kommt an“, Lieferantenpost, Fehler melden), neuer
+  Ablauf „Muster packen“; „nie automatisch bestellt“ korrigiert (kostenlose Muster bestellt das
+  Dashboard selbst). Menüpunkt „Bestellen“ statt „Einkauf & Wareneingang“, „Lieferant“ statt
+  „Partnerladen“, Packstation „nicht eingelegt · laut Bestand da – im Regal suchen“ (#41).
+- **Geaendert:** Heute sagt bei frischen Shop-Daten „Daten aktuell“ (Werkbank-Rückmeldung zählt
+  nicht mehr mit); Sonderposten ohne Shopify-Zugang: verständlicher Satz und „Fehler melden“,
+  die Einrichtungsanleitung nur im Dienstprotokoll (#34).
+- **Geaendert:** Anmeldung: ein neues gemeinsames Passwort meldet alle damit angemeldeten Geräte
+  ab (Abdruck je Sitzung, bestehende Sitzungen übernehmen das jetzige Passwort); Sperre nach
+  Fehlversuchen je Gerät auch hinter `tailscale serve`; Zugänge › „Alle anderen Geräte
+  abmelden…“ für Control Center und Social-Zentrale (#58).
+- **Getestet:** `npm test` 4.188 Tests grün (Dashboard 1.004, darin neu `hilfe-menue`,
+  `inhaber-ueberblick`, `zeitleiste-bestellweg`, 5 Anmeldetests, Doppelnummer-Test; Social
+  1 neuer Test); `npm run -s pruefen` alle 9 Schritte grün. `dashboard:pruefen --rollen`
+  (GH_TOKEN gesperrt) über alle Ansichten: 479 von 485 OK, kein seitlicher Überlauf bei
+  1440/1024/800/390/360 px; die 5 Fehler auf „Verlauf“ kommen von der gesperrten GitHub-Anmeldung
+  (`/api/activity` antwortet „Bad credentials“, Code unverändert), einer war ein
+  Ladezeit-Ausreißer auf „Vorbereiten“. Nachlauf der geänderten und betroffenen Ansichten
+  (12 Ansichten, 3 Rollen, 5 Breiten): 150 von 150 OK. Klickstrecken gegen die Datenkopie
+  (Playwright headless, 1440 und 390 px): 59 von 59 Prüfpunkten – doppelte Nummer warnt und
+  schreibt nichts (auch mit Leerzeichen und Kleinschreibung), „Trotzdem buchen“ trägt ein und
+  protokolliert; Kundenakte „Bestellmail öffnen“ öffnet den Dialog (nichts gesendet), „Ware ist
+  bestellt…“ fragt zurück und setzt erst nach „Ja“; Inhaberzeile und Kennzahlen auf/zu;
+  Entscheidungen Zähler 4 = Liste 4 = Karten 4; Sonderposten-Hinweis; Hilfe und Begriffe;
+  „Alle anderen Geräte abmelden“ (8 abgemeldet, eigenes Gerät bleibt, Stempel für die
+  Social-Zentrale geschrieben). Instanz danach beendet, Datenkopie entfernt.
+- **Nachgebessert (Prüfung):** Eine direkt geöffnete Kundenakte lädt jetzt den Positionsstand
+  nach; vorher behielt ein schon bestellter Lieferant dort seinen Knopf „Bestellmail öffnen“
+  und stand in der Rückfrage „Ware ist bestellt…“ (Test in `zeitleiste-bestellweg`).
+- **Nachgebessert (Codex-Review Runde 1):** „Rückgängig“ direkt nach „Als bestellt markieren“ im
+  Bestellmail-Dialog lädt jetzt Kundenakte und Bestellliste nach; vorher blieb die Zeitleiste beim
+  Wareneingang stehen und „Bestellmail öffnen“ fehlte (Test in `bestellvorbereitung-dialog`).
+  `ladeStandNeu` holt die offene Kundenakte nur noch einmal statt doppelt
+  (`auftragsfluss-arbeitslisten`). „Alle anderen Geräte abmelden…“ ist nicht mehr gesperrt, wenn im
+  Control Center nur dieses Gerät angemeldet ist – ein Handy nur mit Social-Zugang ließ sich sonst
+  nicht abmelden; Dialog und Rückmeldung sagen dann, dass nur die Social-Zentrale abgemeldet wird
+  (`team-geraete`, Servertest in `auth`). Getestet: die neuen Tests schlagen mit dem alten Code fehl;
+  `dashboard:test` 1.012 grün; `dashboard:pruefen --rollen` auf Zugänge, Kunden, Bestellungen,
+  Bestellen und Shop-Übersicht 80 von 80 OK; Klickstrecken gegen die Datenkopie bei 1440 und 390 px
+  38 von 38 (alter Code: Akte blieb nach „Rückgängig“ bei „Lieferant liefert die Ware an uns“, der
+  Abmeldeknopf war bei einem Gerät gesperrt).
+- **Risiken:** Ob `tailscale serve` `X-Forwarded-For` mitschickt, ist im Betrieb nicht
+  nachgemessen; ohne den Kopf gilt das Tailscale-Konto, ohne beides bleibt es bei 127.0.0.1
+  wie bisher. Die Social-Zentrale übernimmt Abdruck und Abmeldestempel erst nach ihrem
+  Neustart. Die Shop-Übersicht lädt beim Inhaber zwei Abrufe mehr (Kennzahlen, Shop-Kontrolle),
+  für alle die Service-Anfragen.
+- **Naechste Stufe:** Werkbank-/Issue-Bereinigung aus #43 (Verweise, Label, neue Frage)
+  entscheidet der Inhaber; Richtigstellung an die Kunden mit derselben Sendungsnummer (#30)
+  ebenfalls.
+
+## 2026-10-26 · Speicher am Mac mini, Upload-Links mit Ablaufdatum (Rundgang P7)
+
+- **Geaendert:** Die Shop-Wache misst stuendlich den freien Speicher (`operations/lib/speicher.mjs`)
+  und liefert ihn als Feld `speicher` ueber `/api/shopwache/status`. Unter 40 GiB steht auf „Heute“
+  (Website-Sicht, nur Inhaber) das To-do „Mac mini: Speicher wird knapp“, unter 20 GiB „… fast
+  voll“ (rot). Derselbe Text steht als Hinweis oben in der Shop-Kontrolle. Unter „Social Media“
+  steht je Upload-Link „Gültig bis …“: Links laufen nach 180 Tagen ab, abgelaufene verschwinden
+  aus der Liste.
+- **Getestet:** `npm run dashboard:test` (neue Faelle in `todos.test.mjs`, `api.test.mjs`,
+  `social.test.mjs`). `npm run dashboard:pruefen -- --ansichten heute,shopwache,social,insights
+  --breiten 390,1440`: alle OK, 0 px Ueberlauf. Mit `--offen` und einem eingespielten Stand
+  „23 GiB frei, gelb“ in der Datenkopie zeigen Heute und Shop-Kontrolle den Hinweis bei 390 und
+  1440 px, ohne JS-Fehler. Social zeigt beim Link vom 30.09. „Gültig seit 30.9.2026 bis 29.3.2027“.
+- **Risiken:** Die Messung kommt mit der Shop-Wache; laeuft sie nicht, bleibt der letzte Stand
+  stehen (dafuer gibt es das To-do „Shop-Kontrolle meldet sich nicht“). Kein Hinweis vor dem
+  Ablauf eines Upload-Links; das Datum steht nur unter „Social Media“.
+- **Naechste Stufe:** keine geplant.
+
+## 2026-10-26 · Service-Anfragen: Wunschzeitraum und „Mieterwechsel / mehrere Wohnungen“
+
+- **Geaendert:** Das Anfrageformular der Serviceseiten (`sections/tp-start-kontakt.liquid`) fragt jetzt
+  freiwillig einen Wunschzeitraum ab und bietet unter „Ich möchte“ die Auswahl „Mieterwechsel / mehrere
+  Wohnungen“ (Rundgang 26.10., Vermieter mit mehreren Objekten). Der Mail-Leser
+  (`docs/ai-dashboard/lib/serviceanfragen.mjs`) kennt das Feld `Wunschzeitraum` und schreibt es in die Notiz
+  („Wunschzeitraum: …“). Die neue Auswahl zählt als Verlegeservice und wird von der Startseite automatisch
+  übernommen.
+- **Getestet:** neue Tests für Mail mit und ohne Wunschzeitraum, Feld und Wert in einer Zeile, Postfach-Übernahme
+  einer Startseiten-Mail; ein Theme-Test prüft, dass jedes Feld und jedes Anliegen aus dem Formular im Mail-Leser
+  eingeordnet ist (neue Felder fallen so beim nächsten Testlauf auf).
+- **Risiken:** Den Feldnamen „Wunschzeitraum“ in der Shopify-Mail kennen wir noch nicht aus einer echten Mail;
+  Shopify übernimmt Feldnamen bisher unverändert (nur Großschreibung wie „Plz“).
+- **Naechste Stufe:** keine geplant.
+
+## 2026-10-26 · Musteretiketten: Maßartikel auch über die Lieferanten-Artikelnummer (#1723)
+
+- **Geaendert:** Bestellung #1051 stand in der Packstation unter „Zu klären“, weil ein Muster als
+  „Originalzuordnung fehlt“ galt. Grund: Die Maßvariante trägt die Einkaufsnummer von Lieferant A
+  (`…_043`), die Shop-SKU des Teppichbodens schreibt dieselbe Nummer ohne führende Null (`…_43`).
+  Die Zuordnung verglich nur mit der Shop-SKU.
+  - `etikettenAusLexikon` gibt je Zeile zusätzlich `artikelnummer` mit, die Einkaufsnummer der
+    Quellvariante. Sie wird nicht gedruckt.
+  - Bei Maßartikeln passt eine Zeile jetzt, wenn die Artikelnummer der Maßvariante zur Shop-SKU
+    **oder** zu dieser Einkaufsnummer passt. Die Farbe muss weiterhin übereinstimmen.
+  - Keine SKU geändert, das Etikett zeigt weiter die Shop-SKU.
+- **Getestet:**
+  - Neuer Test in `bestellungs-musteretiketten.test.mjs`: Schreibweise `_043` gegen `_43` wird
+    zugeordnet. Gleiche Nummer bei anderer Farbe bleibt offen, ebenso passende Farbe mit fremder Nummer.
+  - Gegenprobe: Mit dem alten Code schlägt genau dieser Test fehl.
+  - `dashboard:test` 986/986.
+  - Datenkopie, alle 136 Musterzeilen: #1051 wird zugeordnet („Espresso (43) · TEPLORN04_43“), sonst
+    keine Änderung. Offen bleiben wie vorher 6 Zeilen aus #1005 bis #1008 (andere Ursache).
+  - Alle Maßartikel-Farben im Lexikon: 985 → 1023 zugeordnet. Das sind genau die 38 Farben von fünf
+    Linien von Lieferant A mit dieser Schreibweise.
+- **Risiken:** Keine neuen. Zwei passende Zeilen ergeben weiter „fehlt“ statt einer Auswahl.
+- **Nächste Stufe:** keine.
+
 ## 2026-10-26 · Packstation: vorbereitete und angefangene Umschläge stark sichtbar (#1720)
 
 - **Geaendert:** Inhaber zu einem vorbereiteten Umschlag, in dem schon ein Muster lag: „solche Sachen

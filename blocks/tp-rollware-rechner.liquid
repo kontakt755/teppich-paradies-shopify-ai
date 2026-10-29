@@ -270,19 +270,26 @@
   </div>
 
   <div class="tp-rwc-field tp-rwc-wunsch" data-wunsch-box hidden>
-    <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Raumbreite</label>
+    {%- comment -%}
+      Rundgang 2026-10-26 (#56): Das Feld heisst nach dem, was geschnitten wird.
+      "Raumbreite" stand hier und im Raummasse-Helfer darueber fuer zwei
+      verschiedene Masse - wer das Zimmermass eintrug, bekam ein Stueck ohne
+      Zugabe. Die Warenkorb-Property bleibt "Ihre Breite".
+    {%- endcomment -%}
+    <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Breite des Stücks (Bestellmaß)</label>
     <div class="tp-rwc-input-wrap">
-      <input type="text" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" autocomplete="off" placeholder="z. B. 250" aria-describedby="tp-rwc-wb-grenze-{{ tp_rc_id }} tp-rwc-wb-echo-{{ tp_rc_id }} tp-rwc-wb-error-{{ tp_rc_id }}" data-wunsch-input>
+      <input type="text" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" autocomplete="off" placeholder="z. B. 250" aria-describedby="tp-rwc-wb-grenze-{{ tp_rc_id }} tp-rwc-wb-echo-{{ tp_rc_id }} tp-rwc-wb-error-{{ tp_rc_id }} tp-rwc-wb-zugabe-{{ tp_rc_id }}" data-wunsch-input>
       <span class="tp-rwc-unit" data-mass-unit>cm</span>
     </div>
     <p class="tp-rwc-note" id="tp-rwc-wb-grenze-{{ tp_rc_id }}" data-wunsch-hint></p>
+    <p class="tp-rwc-note tp-rwc-note-mess" id="tp-rwc-wb-zugabe-{{ tp_rc_id }}">Zimmermaß gemessen? Breite und Länge je etwa 10&nbsp;cm zugeben{% if tp_rc_helfer %} – oder oben „Raummaße eingeben“ nutzen{% endif %}.</p>
     <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-wb-echo-{{ tp_rc_id }}" data-wunsch-echo hidden></p>
     <p class="tp-rwc-note tp-rwc-note-error" id="tp-rwc-wb-error-{{ tp_rc_id }}" data-wunsch-error hidden></p>
   </div>
 
   <div class="tp-rwc-mode-panel" data-mode-panel="length">
     <div class="tp-rwc-field">
-      <label class="tp-rwc-label" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
+      <label class="tp-rwc-label" for="tp-rwc-len-{{ tp_rc_id }}">Länge des Stücks</label>
       <div class="tp-rwc-input-wrap">
         <input
           type="text"
@@ -515,6 +522,33 @@
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
   {%- comment -%}
+    Verlegung im Kaufweg (Rundgang 2026-10-26, #3): eine leise Zeile direkt
+    unter Kaufknopf und Warenkorb-Link, nur bei Rollenware mit Verlegeservice
+    (tp-vs-berechtigt). Bewusst NICHT zwischen Zubehoer und Preis: dort steht
+    nach den Massen sofort Preis und Kaufknopf (Inhaber 2026-09-21 und
+    2026-10-05, siehe Reihenfolge oben). Der Satz steht wortgleich im Hinweis
+    unter dem Produkt (blocks/tp-verlegeservice-hinweis), alle Zahlen aus den
+    Theme-Einstellungen. Laeuft eine Preisaktion, gilt das Kostenlos-Versprechen
+    nicht (Inhaber 2026-09-20, snippets/tp-aktion-aktiv) - dann bleibt nur der
+    Link. Die Masse haengt das Skript beim Klick an (data-rwc-verlegung).
+  {%- endcomment -%}
+  {%- liquid
+    capture tp_rc_vs
+      render 'tp-vs-berechtigt', product: product
+    endcapture
+    capture tp_rc_vs_aktion
+      render 'tp-aktion-aktiv', product: product
+    endcapture
+  -%}
+  {%- if tp_rc_vs contains 'ja' -%}
+    <p class="tp-rwc-verlegung" data-rwc-body>
+      <b>Verlegung gewünscht?</b>
+      {%- unless tp_rc_vs_aktion contains 'ja' %} Ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert: Lieferung &amp; lose Verlegung bis {{ settings.tp_vs_radius_basis }}&nbsp;km kostenlos.{% endunless %}
+      <a href="/pages/kontakt?thema=verlegung&amp;produkt={{ product.title | url_encode }}&amp;handle={{ product.handle | url_encode }}" data-rwc-verlegung>Verlegung anfragen</a>
+    </p>
+  {%- endif -%}
+
+  {%- comment -%}
     Reihenfolge (Inhaber 2026-10-05): Farbe > Breite > Laenge > Zubehoer >
     Preis > Visualisierer. Die Skizze steht deshalb unter Kaufknopf und
     Warenkorb-Link; sie erscheint weiterhin erst nach gueltiger Laenge.
@@ -581,8 +615,11 @@
     assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
     assign tp_rc_muster_farbe = tp_rc_start_farbe | url_encode
     # Ohne Muster (Tag ohne-muster, zubehoer) liefert tp-musteroption nichts -
-    # dann nichts anhaengen, sonst entsteht ein Knopf mit kaputtem Link.
-    if tp_rc_muster_url != blank
+    # dann nichts anhaengen, sonst entsteht ein Knopf mit kaputtem Link: das
+    # relative "&farbe=130 cm" wurde zu /products/&farbe=130+cm (bis 09.10.
+    # bei Google als 404). Wie tp-muster-cta und tp-card-actions nur an eine
+    # Adresse mit ?produkt= anhaengen, nie an /pages/muster ohne Fragezeichen.
+    if tp_rc_muster_url contains '?produkt='
       assign tp_rc_muster_url = tp_rc_muster_url | append: '&farbe=' | append: tp_rc_muster_farbe
     endif
     # Vinyl-Muster hoechstens 3 je Bestellung (snippets/tp-muster-grenze):
@@ -611,6 +648,8 @@
         </p>
         <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
       {%- endif -%}
+      {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis); auf Rollenware ist tp-muster-cta abgeschaltet {%- endcomment -%}
+      {%- render 'tp-muster-hinweis', kontext: 'produkt' -%}
     </div>
   {%- endif -%}
 
@@ -1093,8 +1132,11 @@
     background: var(--tp-hauptaktion, #B0303F); color: #fff; font: inherit; font-size: var(--tp-fs-md); font-weight: 700; cursor: pointer;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta[hidden] { display: none; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: var(--tp-hauptaktion-hover, #962836); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled, .is-busy) { background: var(--tp-hauptaktion-hover, #962836); }
+  /* .is-busy: gesperrt waehrend des Warenkorb-Aufrufs, sieht aus wie :disabled,
+     behaelt aber den Tastaturfokus (Rundgang R2 #76, siehe Klick-Handler). */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-busy { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
 
   /* Unvollstaendig heisst gedaempft, nicht unsichtbar: der Button bleibt als
      Ziel erkennbar und sagt beim Klick, was fehlt. */
@@ -1257,6 +1299,10 @@
 
   /* K4: Zubehoer sichtbar, Tooltip statt Aufklapptext. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer { margin: 4px 0 12px; border-top: 1px solid var(--tp-rwc-line); border-bottom: 1px solid var(--tp-rwc-line); }
+  /* #3: Verlegung als leise Zeile unter Kaufknopf und Warenkorb-Link. Der
+     Link ist mindestens 44 px hoch (Tippflaeche wie #63). */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-verlegung { margin: 12px 0 0; font-size: var(--tp-fs-sm); line-height: 1.45; color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-verlegung a { display: inline-flex; align-items: center; min-height: 44px; color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf { min-height: 44px; margin: 0; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__optional { margin-left: -4px; font-size: var(--tp-fs-sm); color: #595959; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer .tp-rwc-extra { margin: 0 0 10px; }
@@ -1269,6 +1315,9 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip:hover .tp-rwc-tip__text,
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip:focus-within .tp-rwc-tip__text { opacity: 1; visibility: visible; }
+  /* Esc blendet den Hinweis aus, bis der Fokus den Knopf verlaesst
+     (Rundgang R2 #76) - er liegt sonst ueber Breite, Laenge und Fussleiste. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip.is-zu .tp-rwc-tip__text { opacity: 0; visibility: hidden; }
 
   /* Eingeklappte Erklaertexte in der Kaufstrecke. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-info { margin: 4px 0 0; font-size: var(--tp-fs-xs); color: var(--tp-rwc-muted); }
@@ -1472,6 +1521,9 @@ function tpRwcInit{{ tp_rc_id }}() {
   var aktionProzent = Number(data.aktion_prozent) || 0;
   var cta = root.querySelector('[data-cta]');
   var ctaHint = root.querySelector('[data-cta-hint]');
+  // Mass, das schon im Warenkorb liegt und nach dem Hinweis bewusst ein
+  // zweites Mal bestellt werden darf (siehe liegtSchonImKorb).
+  var doppeltFreigabe = '';
   var messRaum = root.querySelector('[data-mess-raum]');
   var cartLink = root.querySelector('[data-cart-link]');
   var musterLink = root.querySelector('[data-muster-link]');
@@ -1522,6 +1574,27 @@ function tpRwcInit{{ tp_rc_id }}() {
       markInvalid(holzBox.querySelector('[data-holz-variante]'), false);
     }
     if (ctaHint) { ctaHint.textContent = ''; ctaHint.hidden = true; }
+  }
+
+  // Dasselbe Mass noch einmal in den Warenkorb (Rundgang 2026-10-26, #20):
+  // Shopify fasst gleiche Zeilen zusammen und verdoppelt still die Menge -
+  // die Kundin zahlt zwei Stuecke, die Zeile nannte nur eines. Verglichen
+  // werden Variante, Art und beide Masse, nicht _Gruppe: mit Zubehoer
+  // entsteht eine zweite Zeile, doppelt bestellt waere das Stueck trotzdem.
+  // Faellt /cart.js aus, geht der Kauf ohne Hinweis weiter wie bisher.
+  function massSignatur(variantId, p) {
+    p = p || {};
+    return [String(variantId), p['Art'] || '', p['Ihre Breite'] || p['Rollenbreite'] || '', p['Gewünschte Länge'] || ''].join('|');
+  }
+  function liegtSchonImKorb(sig) {
+    return fetch('/cart.js', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (korb) {
+        return !!(korb && korb.items && korb.items.some(function (it) {
+          return massSignatur(it.variant_id, it.properties) === sig;
+        }));
+      })
+      .catch(function () { return false; });
   }
 
   // Welches Pflichtfeld fehlt? Reihenfolge wie im Formular, damit der Fokus
@@ -2383,6 +2456,9 @@ function tpRwcInit{{ tp_rc_id }}() {
   }
 
   function calculate() {
+    // Die Freigabe fuer ein zweites Stueck desselben Masses gilt nur, solange
+    // der Hinweis dazu steht - jede neue Eingabe fragt wieder nach.
+    doppeltFreigabe = '';
     syncArtUi();
     zeigeBahnen();
     var w = selectedWidth();
@@ -2539,13 +2615,14 @@ function tpRwcInit{{ tp_rc_id }}() {
 
     // Der Button bleibt stehen. Bereit oder nicht steckt in aria-disabled und
     // der Klasse - so bleibt er fokussierbar und sein Klick meldet, was fehlt.
-    // Waehrend eines laufenden /cart/add.js setzt der Klick-Handler ein echtes
-    // disabled; das darf calculate() nicht ueberschreiben.
+    // Waehrend eines laufenden /cart/add.js sperrt der Klick-Handler den Knopf
+    // (cta.tpGesperrt, aria-disabled, .is-busy); das darf calculate() nicht
+    // ueberschreiben.
     // TP-003: eine angehakte, aber unvollstaendige Fussleiste darf den
     // Hauptkauf nicht kaufbereit erscheinen lassen - sonst faellt das
     // ausdruecklich gewaehlte Zubehoer beim Absenden kommentarlos weg.
     var ctaReady = !!(valid && ok) && !(extras && (extras.leisteInvalid || extras.holzInvalid));
-    if (!cta.disabled) {
+    if (!cta.tpGesperrt) {
       cta.setAttribute('aria-disabled', ctaReady ? 'false' : 'true');
       cta.classList.toggle('is-incomplete', !ctaReady);
     }
@@ -2649,9 +2726,54 @@ function tpRwcInit{{ tp_rc_id }}() {
     }
   });
 
+  // Rundgang R2 #76: Der Hinweis "Mehr dazu" erscheint bei Zeiger oder Fokus
+  // (CSS) und liegt dann ueber Breite, Laenge und Fussleiste. Esc blendet ihn
+  // aus (.is-zu), bis der Fokus den Knopf verlaesst oder der Zeiger neu
+  // darauf zeigt. Ohne Esc aendert sich nichts.
+  var tips = Array.prototype.slice.call(root.querySelectorAll('.tp-rwc-tip'));
+  tips.forEach(function (tip) {
+    tip.addEventListener('focusout', function (e) {
+      if (!(e.relatedTarget instanceof Node && tip.contains(e.relatedTarget))) tip.classList.remove('is-zu');
+    });
+    tip.addEventListener('mouseenter', function () { tip.classList.remove('is-zu'); });
+  });
+  if (tips.length) document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    tips.forEach(function (tip) {
+      if (tip.matches(':hover, :focus-within')) tip.classList.add('is-zu');
+    });
+  });
+
+  // #3: Die Verlegeanfrage nimmt die schon eingegebenen Masse mit - die
+  // Kontaktseite liest breite und laenge_cm (assets/tp-sample-request.js).
+  var verlegungLink = root.querySelector('[data-rwc-verlegung]');
+  if (verlegungLink) verlegungLink.addEventListener('click', function () {
+    var ziel = new URL(verlegungLink.getAttribute('href'), window.location.origin);
+    // Nur gueltige Masse - fehlendesFeld() prueft Breite und Laenge wie der Kaufknopf.
+    if (!fehlendesFeld()) {
+      ziel.searchParams.set('breite', selectedWidth() + ' cm');
+      ziel.searchParams.set('laenge_cm', String(getEffectiveLengthCm()));
+    }
+    verlegungLink.href = ziel.pathname + ziel.search;
+  });
+
   cta.addEventListener('click', function () {
-    // Echtes disabled gibt es nur waehrend eines laufenden Warenkorb-Aufrufs.
-    if (inFlight || cta.disabled) return;
+    // Gesperrt ist der Knopf nur waehrend eines laufenden Warenkorb-Aufrufs
+    // und 3 s danach ("... m² hinzugefuegt").
+    if (inFlight || cta.tpGesperrt) return;
+
+    // Rundgang R2 #76: Sperre ohne echtes disabled. Ein disabled-Knopf
+    // verliert den Tastaturfokus; der Warenkorb-Dialog merkte sich dann
+    // <body> als Ruecksprungziel, und nach Esc stand der Fokus am
+    // Seitenanfang statt wieder auf "In den Warenkorb". aria-disabled sagt
+    // Vorleseprogrammen und der Kaufleiste (assets/sticky-add-to-cart.js)
+    // dasselbe wie disabled, .is-busy sieht aus wie :disabled.
+    // Freigeben setzt aria-disabled nicht zurueck - das macht calculate().
+    function sperren(an) {
+      cta.tpGesperrt = an;
+      cta.classList.toggle('is-busy', an);
+      if (an) cta.setAttribute('aria-disabled', 'true');
+    }
 
     // Jeder Abbruchgrund bekommt eine sichtbare Antwort. Vorher kehrten alle
     // vier Pruefungen stumm zurueck - ein Klick tat dann schlicht nichts.
@@ -2772,8 +2894,44 @@ function tpRwcInit{{ tp_rc_id }}() {
     }
     var addedCount = qty + extras.items.reduce(function (sum, it) { return sum + it.quantity; }, 0);
 
+    // Erster Klick auf ein Mass, das schon im Warenkorb liegt: nicht
+    // hinzufuegen, sondern fragen. Erst der zweite Klick bestellt ein
+    // weiteres Stueck (doppeltFreigabe, zurueckgesetzt in calculate).
+    var massSig = massSignatur(target.id, properties);
+    if (doppeltFreigabe !== massSig) {
+      inFlight = true;
+      sperren(true);
+      cta.textContent = 'Wird hinzugefügt …';
+      liegtSchonImKorb(massSig).then(function (schon) {
+        inFlight = false;
+        sperren(false);
+        if (!schon) { senden(); return; }
+        calculate();
+        doppeltFreigabe = massSig;
+        if (ctaHint) {
+          ctaHint.textContent = 'Dieses Maß (' + w + ' × ' + len + ' cm) liegt schon im Warenkorb. Brauchen Sie ein zweites Stück, tippen Sie noch einmal auf „In den Warenkorb“.';
+          ctaHint.hidden = false;
+        }
+        cartLink.hidden = false;
+        // Kam der Klick ueber die Kaufleiste unten, steht der Hinweis sonst
+        // ausserhalb des Bildschirms.
+        var lage = cta.getBoundingClientRect();
+        if (lage.top < 0 || lage.bottom > window.innerHeight) cta.scrollIntoView({ block: 'center' });
+        // Rundgang R2 #76: Der Knopf der Kaufleiste ist waehrend der Pruefung
+        // disabled und verliert dabei den Fokus (er stand danach auf <body>).
+        // Dann zurueck auf den Kaufknopf hier - der naechste Druck auf Enter
+        // bestellt das zweite Stueck. Steht der Fokus woanders, bleibt er dort.
+        var aktiv = document.activeElement;
+        if (!aktiv || aktiv === document.body) cta.focus({ preventScroll: true });
+      });
+      return;
+    }
+    doppeltFreigabe = '';
+    senden();
+
+    function senden() {
     inFlight = true;
-    cta.disabled = true;
+    sperren(true);
     cta.textContent = 'Wird hinzugefügt …';
     cartLink.hidden = true;
 
@@ -2815,14 +2973,31 @@ function tpRwcInit{{ tp_rc_id }}() {
         }));
 
         var tpRwcDrawer = document.querySelector('cart-drawer-component');
-        if (tpRwcDrawer && typeof tpRwcDrawer.open === 'function') tpRwcDrawer.open();
+        if (tpRwcDrawer && typeof tpRwcDrawer.open === 'function') {
+          // Rundgang R2 #76: Kam der Kauf ueber die klebende Kaufleiste, ist
+          // deren Knopf waehrend der Sperre disabled. Der Dialog kennt dann
+          // kein Ruecksprungziel, und der Fokus fiele beim Schliessen auf
+          // <body> (direkt nach dem Schliessen steht er noch im geschlossenen
+          // Dialog). Dann zurueck auf den Kaufknopf im Rechner. Gerollt wird
+          // nur bei Tastaturbedienung (:focus-visible) - mit der Maus aendert
+          // sich nichts.
+          tpRwcDrawer.addEventListener('dialog:close', function () {
+            var aktiv = document.activeElement;
+            if (aktiv && aktiv !== document.body && !tpRwcDrawer.contains(aktiv)) return;
+            cta.focus({ preventScroll: true });
+            try {
+              if (cta.matches(':focus-visible')) cta.scrollIntoView({ block: 'center' });
+            } catch (e) { /* Browser ohne :focus-visible: Fokus steht trotzdem */ }
+          }, { once: true });
+          tpRwcDrawer.open();
+        }
 
         // Neu rechnen statt alten Text zuruecksetzen: hat der Kunde inzwischen
         // die Laenge geaendert, stuende sonst 3 s lang die alte Flaeche im Button.
         setTimeout(function () {
           cta.classList.remove('is-done');
-          cta.disabled = false;
-          // Nach dem echten disabled den Zustand neu bestimmen, sonst bliebe
+          sperren(false);
+          // Nach der Sperre den Zustand neu bestimmen, sonst bliebe
           // aria-disabled auf dem Stand von vor dem Warenkorb-Aufruf stehen.
           calculate();
         }, 3000);
@@ -2833,10 +3008,11 @@ function tpRwcInit{{ tp_rc_id }}() {
         cta.classList.add('is-error');
         setTimeout(function () {
           cta.classList.remove('is-error');
-          cta.disabled = false;
+          sperren(false);
           calculate();
         }, 3000);
       });
+    }
   });
 
   // Eine direkt geoeffnete Varianten-URL ist eine ausdrueckliche Auswahl:

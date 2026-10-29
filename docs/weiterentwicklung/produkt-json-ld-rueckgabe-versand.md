@@ -64,7 +64,13 @@ Typ `Musterservice` und bleiben ohne JSON-LD.
   `templates/product*.json` mit dem Markup und schlägt fehl, sobald eine
   Vorlage eine andere Lieferzeit zeigt.
 - Nur eine Werktage-Spanne wird ausgezeichnet; die Gesamtangabe steht als
-  `transitTime` (Einheit `DAY`), `handlingTime` bleibt weg.
+  `transitTime` (Einheit `DAY`). `handlingTime` erscheint erst, wenn die
+  Theme-Einstellung „Bearbeitungszeit bis zum Versand“
+  (`tp_versand_bearbeitungszeit`, Bereich TP Versand) eine Werktage-Spanne
+  trägt: dann Bearbeitung = dieser Wert, Transport = Lieferzeit minus
+  Bearbeitung je Grenze (z. B. Lieferzeit 2–5, Bearbeitung 1–2 → Transport
+  1–3). Ist die Bearbeitung länger als die Lieferzeit eines Produkts, bleibt
+  es dort bei der Gesamtzeit.
 - **Fail closed:** kein `shippingDetails` bei anderer Währung als EUR,
   unlesbaren Versandkosten, Varianten ohne Versand, gesperrten Sonderposten
   und Produkten ohne Werktage-Lieferzeit. Die Rückgabeangabe bleibt dann
@@ -135,6 +141,12 @@ Angebots: `price` plus die neuen Felder.
 4. **Bearbeitungs- und Transportzeit:** Die Werktage-Angabe ist die
    Gesamtzeit bis zur Lieferung. Sie steht als `transitTime`; eine
    Aufteilung in `handlingTime` und `transitTime` ist nicht belegt.
+   Search Console meldet deshalb „Feld handlingTime fehlt“ (27.10.: 123
+   Händlereinträge, nur ein Hinweis, kein Fehler). Seit der Einstellung
+   „Bearbeitungszeit bis zum Versand“ genügt ein Eintrag im Theme-Editor
+   (z. B. „1–2 Werktage“), sobald der Inhaber die Zeit bis zum Versand
+   bestätigt; das Merchant Center führt ebenfalls nur die Gesamtzeit
+   („5–7 Werktage“, manuell).
 5. **„ca. 14 Tage“** (Design-Teppich nach Maß, Kokosmatte nach Maß) sind
    Kalendertage. Ohne Werktage-Angabe gibt es dort kein `shippingDetails`.
    Wird die Angabe in Werktagen gepflegt, greift das Markup automatisch.

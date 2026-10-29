@@ -1,0 +1,113 @@
+{%- doc -%}
+  Voruebergehender Geduld-Hinweis zu Musterbestellungen (Benutzer 28.10.2026):
+  Viele Musterbestellungen, einige Hersteller liefern langsamer. Bewusst ohne
+  feste Dauer - eine Ankunftszeit nennt der Shop erst, wenn der Inhaber sie
+  festgelegt hat (sections/tp-sample-checkout).
+
+  Ein- und ausschalten ohne Deploy: Theme-Einstellungen "TP Versand",
+  tp_muster_hinweis_aktiv und tp_muster_hinweis_text. Kontakt kommt aus den
+  vorhandenen Daten: E-Mail aus den Shop-Kontaktdaten (shop.email), Telefon
+  aus "TP Firmendaten" (tp_telefon_schema, Festnetz wie im LocalBusiness-Schema).
+
+  Eingebunden an drei Stellen:
+  - unter dem Muster-Knopf der Produktseite: blocks/tp-muster-cta (auch bei
+    Musteranfrage) und blocks/tp-rollware-rechner (Rollenware, dort ist
+    tp-muster-cta abgeschaltet)
+  - sections/tp-sample-checkout (Kopf der Musterseite)
+  - snippets/tp-cart-versandhinweis (Warenkorb und Drawer mit mindestens einem Muster)
+
+  @param {string} [kontext] - 'produkt', 'musterseite' oder 'warenkorb' (nur Abstand)
+{%- enddoc -%}
+{%- if settings.tp_muster_hinweis_aktiv and settings.tp_muster_hinweis_text != blank -%}
+  {%- liquid
+    assign tpmh_tel = settings.tp_telefon_schema | strip
+    assign tpmh_tel_href = tpmh_tel | remove: ' ' | remove: '/' | remove: '-'
+    # Anzeige wie ueberall im Shop: "+49 3301 5733720" -> "03301 573 37 20"
+    assign tpmh_teile = tpmh_tel | split: ' '
+    assign tpmh_nr = tpmh_teile[2] | default: ''
+    if tpmh_teile.size == 3 and tpmh_teile[0] == '+49' and tpmh_nr.size == 7
+      assign tpmh_tel_text = '0' | append: tpmh_teile[1]
+      assign tpmh_nr_a = tpmh_nr | slice: 0, 3
+      assign tpmh_nr_b = tpmh_nr | slice: 3, 2
+      assign tpmh_nr_c = tpmh_nr | slice: 5, 2
+      assign tpmh_tel_text = tpmh_tel_text | append: ' ' | append: tpmh_nr_a | append: ' ' | append: tpmh_nr_b | append: ' ' | append: tpmh_nr_c
+    else
+      assign tpmh_tel_text = tpmh_tel | replace_first: '+49 ', '0'
+    endif
+    assign tpmh_mail = shop.email | strip
+  -%}
+  <div class="tp-muster-hinweis tp-muster-hinweis--{{ kontext | default: 'produkt' }}" role="note">
+    <svg class="tp-muster-hinweis__symbol" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <div class="tp-muster-hinweis__inhalt">
+      <p class="tp-muster-hinweis__text">{{ settings.tp_muster_hinweis_text | escape | newline_to_br }}</p>
+      {%- if tpmh_mail != blank or tpmh_tel != blank -%}
+        <p class="tp-muster-hinweis__kontakt">
+          {%- comment -%} Nicht nur "Fragen?": auf Rollenware steht darunter schon die allgemeine Zeile "Fragen? Telefon/WhatsApp" {%- endcomment -%}
+          Fragen zu Ihrer Musterbestellung?
+          {%- if tpmh_mail != blank %} Schreiben Sie uns an <a href="mailto:{{ tpmh_mail }}">{{ tpmh_mail }}</a>{% endif -%}
+          {%- if tpmh_mail != blank and tpmh_tel != blank %} oder rufen Sie an: {% elsif tpmh_tel != blank %} Rufen Sie uns an: {% endif -%}
+          {%- if tpmh_tel != blank -%}<a href="tel:{{ tpmh_tel_href }}">{{ tpmh_tel_text }}</a>{%- endif -%}.
+        </p>
+      {%- endif -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Doppelte Klasse: .tp-sample__header p (Musterseite) setzt Rand und Farbe
+     fuer jedes p im Kopf und wuerde sonst gewinnen. */
+  .tp-muster-hinweis.tp-muster-hinweis {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border: 1px solid rgb(29 26 23 / 0.14);
+    border-left: 3px solid #1d1a17;
+    border-radius: var(--style-border-radius-inputs, 4px);
+    background: #f6f2ec;
+    color: #1d1a17;
+    text-align: left;
+  }
+
+  .tp-muster-hinweis--musterseite.tp-muster-hinweis--musterseite {
+    margin: 4px 0 12px;
+  }
+
+  .tp-muster-hinweis--warenkorb.tp-muster-hinweis--warenkorb {
+    margin: 8px 0 0;
+  }
+
+  .tp-muster-hinweis__symbol {
+    flex: 0 0 auto;
+    margin-top: 1px;
+  }
+
+  .tp-muster-hinweis .tp-muster-hinweis__text,
+  .tp-muster-hinweis .tp-muster-hinweis__kontakt {
+    margin: 0;
+    font-size: var(--tp-fs-sm);
+    font-weight: 400;
+    line-height: 1.45;
+    color: inherit;
+  }
+
+  .tp-muster-hinweis .tp-muster-hinweis__kontakt {
+    margin-top: 4px;
+  }
+
+  .tp-muster-hinweis .tp-muster-hinweis__kontakt a {
+    color: inherit;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Telefonnummer am Stueck: in der schmalen Spalte der Produktseite brach sie
+     am Desktop nach "03301" um (Fehlersuche 2026-10-28). Die Mailadresse darf
+     weiter umbrechen. */
+  .tp-muster-hinweis .tp-muster-hinweis__kontakt a[href^="tel:"] {
+    white-space: nowrap;
+  }
+{% endstylesheet %}

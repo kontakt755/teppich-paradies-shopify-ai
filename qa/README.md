@@ -18,11 +18,19 @@ Sales lässt sich eng auswählen: `npm run sales:check -- --desktop --package`, 
 
 Alle Browser-Checks verwenden dieselbe Reihenfolge:
 
-1. expliziter Pfad über `TP_BROWSER_EXECUTABLE` (oder vorhandene Script-Config),
+1. expliziter Pfad über `TP_BROWSER_EXECUTABLE` (oder vorhandene Script-Config; bei `lighthouse:messen` auch `CHROME_PATH`),
 2. Playwright-Bundled-Chromium, wenn lokal installiert,
-3. geeigneter Chrome-/Chromium-/Edge-Systembrowser als plattformabhängiger Fallback.
+3. eine installierte Revision unter `PLAYWRIGHT_BROWSERS_PATH`, sonst im Playwright-Cache (nach einem `playwright-core`-Update),
+4. geeigneter Chrome-/Chromium-/Edge-Systembrowser als plattformabhängiger Fallback.
 
-Es wird keine Browserinstallation automatisch gestartet.
+Es wird keine Browserinstallation automatisch gestartet. Einmal je Rechner (und nach jedem `playwright-core`-Update) einrichten:
+
+```
+npx playwright-core install --no-shell chromium
+```
+
+Ohne Test-Chromium landen die Checks beim Systembrowser. Google Chrome legt auf macOS dann bei jedem Start eine 2-GB-Programmkopie (`code_sign_clone.*`) im Temp-Ordner ab, die nach automatisierten Läufen liegen bleibt.
+
 Der optionale Wert `TP_BROWSER_EXECUTABLE` wird pro Rechner gesetzt und nicht mit einem lokalen absoluten Pfad eingecheckt; das gilt gleichermaßen für Windows, macOS und Linux.
 
 ## Berichte

@@ -80,6 +80,15 @@
         <p class="tp-vs__sub">{{ section.settings.sub | escape }}</p>
       {%- endif -%}
 
+      {%- comment -%}
+        Hauptaktion vor der Angebotsbox (w-111, 2026-10-28): vorher standen hier
+        vier gleich starke Knoepfe (Anfrage, zwei Sortimente, Telefon) unter der
+        Box, am Telefon erst bei 876 px. Die Sortimente sind jetzt Textlinks.
+      {%- endcomment -%}
+      <div class="tp-vs__aktionen">
+        {%- render 'tp-service-hauptaktion', label: section.settings.anfrage_knopf, ziel: vs_anfrage -%}
+      </div>
+
       <div class="tp-vs__angebot">
         <span class="tp-vs__angebot-zeichen">{% render 'tp-vs-icon', name: 'check' %}</span>
         <div>
@@ -98,19 +107,13 @@
         </div>
       </div>
 
-      <div class="tp-vs__aktionen">
-        <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vs_anfrage }}">{{ section.settings.anfrage_knopf | default: 'Aufmaß & Verlegung anfragen' | escape }}</a>
-        <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vs_produkte }}">{{ section.settings.knopf | default: 'Teppichboden entdecken' | escape }}</a>
+      <p class="tp-vs__sortiment">
+        Boden selbst aussuchen:
+        <a href="{{ vs_produkte }}">{{ section.settings.knopf | default: 'Teppichboden entdecken' | escape }}</a>
         {%- if section.settings.knopf_2 != blank -%}
-          <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vs_produkte_2 }}">{{ section.settings.knopf_2 | escape }}</a>
+          <span aria-hidden="true"> · </span><a href="{{ vs_produkte_2 }}">{{ section.settings.knopf_2 | escape }}</a>
         {%- endif -%}
-        {%- if vs_tel != blank -%}
-          <a class="tp-vs__tel" href="tel:{{ vs_tel }}">
-            {%- render 'tp-vs-icon', name: 'phone' -%}
-            Beratung: {{ settings.tp_vs_telefon | escape }}
-          </a>
-        {%- endif -%}
-      </div>
+      </p>
 
       {%- if section.settings.vertrauen != blank -%}
         <ul class="tp-vs__vertrauen" role="list">

@@ -5,6 +5,15 @@
  *   npm run daten:sichern
  *   npm run daten:sichern -- --ziel /pfad/zu/sicherungen
  *   npm run daten:sichern -- --aufbewahren 14
+ *   npm run daten:sichern -- --kopie /Volumes/<Platte>/teppich-paradies-sicherungen
+ *
+ * --kopie (oder TP_SICHERUNG_KOPIE) legt jedes fertige Tagesarchiv zusaetzlich in einen
+ * zweiten Ordner, z. B. auf einer externen, verschluesselten Platte. Der Ordner muss schon
+ * existieren: ist die Platte nicht angesteckt, entsteht sonst unter /Volumes ein
+ * gleichnamiger Ordner auf der internen Platte - eine Kopie, die keine ist. Scheitert die
+ * Kopie, bleibt das Tagesarchiv gueltig; der Lauf endet mit Exit 1 und vermerkt den Fehler
+ * in sicherungsstand.json (`kopie`). Das Skript verschluesselt nicht selbst.
+ * Wiederherstellen: operations/README.md, Abschnitt "Wiederherstellen nach einem Ausfall".
  *
  * Der Auftragsstatus (operations/lib/auftragsstatus.mjs, "wer hat was
  * bestellt") existiert NUR lokal unter $TP_PRIVAT_DIR/auftragsstatus.json -
@@ -75,14 +84,99 @@ export const SICHERUNGSPFADE = Object.freeze([
   // Fotos selbst (social/medien) sind zu gross fuer das Tagesarchiv.
   'social/sicherung.db',
   'social/upload-zugaenge.json',
+  // ... wie weit die WhatsApp-Gruppe schon eingelesen ist (sonst kommt alles doppelt) und
+  // Schrift und Logo fuer die Reels (social/lib/produkt-reel.mjs, zusammen unter 1 MB).
+  'social/whatsapp-stand.json',
+  'social/werkzeug',
+  // Highlights: die Bereichszahlen traegt die Redaktion von Hand ein, dazu die schon einsortierten
+  // Storys (social/lib/highlights.mjs) - beides steht nicht in der Datenbank.
+  'social/highlights.json',
+  // Muster-Nachfassen (operations/lib/nachfass-versand.mjs): wer schon angeschrieben wurde und
+  // wer nie wieder angeschrieben werden darf - ohne beides gingen nach einer Wiederherstellung
+  // doppelte oder unerwuenschte Kundenmails raus. Dazu die Textvorlage. postfach.json
+  // (Zugangsdaten) bleibt draussen, siehe NICHT_GESICHERT.
+  'nachfassen/versand.json',
+  'nachfassen/stoppliste.json',
+  'muster-nachfassen-texte.md',
+  // Musterautomatik: Freigabe, Versandprotokoll der Bestellmails an Lieferanten, Laufstand.
+  'muster-bestellung',
+  // Aenderungsprotokoll des Control Centers: wer hat wann was getan.
+  'protokoll.jsonl',
+  // Auslauf-Pruefung: letzter Stand samt der beim Lieferanten neu gesehenen Artikel.
+  'auslauf/status.json',
+  // Betriebsaufgaben (Aufgaben & Organisation), Rueckrufe und Fallmarken gibt es nur hier.
+  'organisation',
+  'rueckrufe.json',
+  'fallmarken.json',
+  // Lieferanten-Stammdaten (Bestellweg, Ansprechperson, Kundennummer), die Basisadresse von
+  // Lieferant A und die privaten Versandtarife - von Hand gepflegt, nirgends sonst.
+  'lieferanten/stammdaten.json',
+  'lieferantendaten/lieferant-a.env',
+  'versandkosten/tarife.json',
+  'versandkosten/portale.json',
+  // Bildrechte: die von Hand gepflegten Spalten (Quelle, Lizenz, Freigabe) gibt es nur hier.
+  'bildrechte/bildrechte.csv',
+  // Neue Auftraege (Genossenschaften): Stand je Firma, Richtpreise, Referenzen.
+  'akquise',
+  // Hausverwaltungen (w-154): Ansprechpartner, Objekte, Angebote - von Hand gepflegt, nur hier.
+  'hausverwaltungen',
+  // Stoerungsverlauf der Shop-Wache (Beginn, Ende, Seiten).
+  'shopwache/verlauf.jsonl',
+  // Abzug der Mac-Dienste (~/Library/LaunchAgents/net.teppich-paradies.*.plist), den jeder Lauf
+  // vor dem Archivieren auffrischt (dienstPlistsAbziehen). Vier davon gibt es ohne Vorlage im
+  // Repository (Dashboard, Shop-Wache, Aufgabenwaechter, Lieferantenseiten).
+  'dienste',
 ]);
 
-function parseArgs(argv) {
-  const out = { privatDir: process.env.TP_PRIVAT_DIR || STANDARD_PRIVAT_DIR, ziel: null, aufbewahrenTage: STANDARD_AUFBEWAHRUNG_TAGE, jetzt: new Date() };
+/** Ordner unter $TP_PRIVAT_DIR fuer den Abzug der Mac-Dienste. */
+export const DIENSTE_ORDNER = 'dienste';
+
+/**
+ * Lokale Ablagen unter $TP_PRIVAT_DIR, die bewusst NICHT ins Tagesarchiv gehoeren - mit Grund.
+ * Jede Ablage, die der Code anlegt, steht entweder in SICHERUNGSPFADE oder hier;
+ * operations/tests/sicherung.test.mjs sucht im Code nach neuen und schlaegt fehl, solange eine
+ * in keiner der beiden Listen steht. Zugaenge werden nach einem Ausfall neu angelegt
+ * (operations/README.md, "Wiederherstellen nach einem Ausfall").
+ */
+export const NICHT_GESICHERT = Object.freeze({
+  'nachfassen/postfach.json': 'Zugang zum Firmenpostfach - neu anlegen',
+  'benutzer.json': 'Zugaenge zum Control Center - neu anlegen (npm run benutzer)',
+  'dashboard-passwort.txt': 'Notpasswort des Control Centers - neu anlegen',
+  'dashboard-sitzungen.json': 'Anmeldungen - entstehen neu',
+  'geraete-abgemeldet.json': 'Zeitpunkt von "Alle anderen Geraete abmelden" - nach einer Wiederherstellung meldet sich ohnehin jedes Geraet neu an',
+  'social/zugang.env': 'Meta-Zugang und Upload-Adresse - neu anlegen (social/META-EINRICHTUNG.md)',
+  'social/upload-links.json': 'Upload-Links im Klartext - nach Ausfall neue Links anlegen',
+  'social/zentrale-sitzungen.json': 'Anmeldungen der Social-Zentrale - entstehen neu',
+  'social/upload-tageszaehler.json': 'Uploadmenge des laufenden Tages',
+  'social/social.db': 'laufende Datenbank; gesichert wird ihr stimmiger Abzug social/sicherung.db',
+  'social/medien': 'Fotos und Videos - zu gross fuer das Tagesarchiv',
+  'social/lernstand.json': 'wird aus der Datenbank neu berechnet',
+  'social/highlights': 'Titelbilder der Highlights - entstehen neu (npm run social -- highlights)',
+  'anreicherung': 'Plan- und Batchdateien der Anreicherung - jeder Lauf schreibt sie neu (npm run daten:anreichern)',
+  'lieferant-i/bestand-status.json': 'Stand des letzten Bestandsabgleichs - der naechste Lauf schreibt ihn neu',
+  'teppich-nach-mass-feed': 'erzeugter Zusatzfeed - entsteht neu (npm run feed:teppich-nach-mass)',
+  'betrieb-nachziehen.lock': 'Sperre eines laufenden Nachziehens - darf nach einer Wiederherstellung nicht zurueckkommen',
+  'angebote': 'Export aus Shopify (Sync-Dienst)',
+  'bestand': 'Export aus Shopify (Sync-Dienst)',
+  'erfuellung': 'Export aus Shopify (Sync-Dienst)',
+  'kunden': 'Export aus Shopify (Sync-Dienst)',
+  'warenkoerbe': 'Export aus Shopify (Sync-Dienst)',
+  'verbrauch': 'Claude-Verbrauch - wird neu gerechnet',
+  'shopwache/status.json': 'stuendlich neu (Shop-Wache)',
+  'ausschreibungen/status.json': 'woechentlich neu; danach gelten alle Treffer einmal als neu',
+  'routinen': 'Laufstand der Mac-Dienste; Auftragstexte liegen in den App-Aufgaben',
+  'betrieb-nachziehen.json': 'Stand des Nachziehens - entsteht neu',
+  'sicherungsstand.json': 'Beleg der Sicherung selbst',
+  'sicherungen': 'die Sicherungen selbst',
+});
+
+export function parseArgs(argv, env = process.env) {
+  const out = { privatDir: env.TP_PRIVAT_DIR || STANDARD_PRIVAT_DIR, ziel: null, kopie: env.TP_SICHERUNG_KOPIE || null, aufbewahrenTage: STANDARD_AUFBEWAHRUNG_TAGE, jetzt: new Date() };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--privat-dir') out.privatDir = argv[++i];
     else if (a === '--ziel') out.ziel = argv[++i];
+    else if (a === '--kopie') out.kopie = argv[++i];
     else if (a === '--aufbewahren') out.aufbewahrenTage = Number(argv[++i]);
   }
   return out;
@@ -90,6 +184,39 @@ function parseArgs(argv) {
 
 function datumSlug(datum) {
   return datum.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+/**
+ * Kopiert die Plists der Mac-Dienste nach $TP_PRIVAT_DIR/dienste/, damit sie mit ins Archiv gehen.
+ * Nur net.teppich-paradies.*.plist; eine Plist, die einen Schluessel mit TOKEN, SECRET, PASSW
+ * oder API_KEY im Namen traegt, bleibt draussen (Zugaenge gehoeren nicht ins Archiv).
+ * Der Abzug zeigt nur die Dienste von heute: Kopien geloeschter, umbenannter oder inzwischen
+ * ausgelassener Dienste raeumt jeder Lauf weg - sonst kaemen sie mit jedem neuen Archiv mit
+ * und wuerden nach dem README wieder eingerichtet. Andere Dateien im Ordner bleiben.
+ * Fehlt der Ordner (anderer Rechner, Tests), passiert nichts.
+ */
+export function dienstPlistsAbziehen(launchAgentsDir, privatDir) {
+  const kopiert = [];
+  const ausgelassen = [];
+  if (!launchAgentsDir || !fs.existsSync(launchAgentsDir)) return { kopiert, ausgelassen };
+  const ziel = path.join(privatDir, DIENSTE_ORDNER);
+  const istDienst = name => /^net\.teppich-paradies\.[a-z0-9-]+\.plist$/.test(name);
+  for (const name of fs.readdirSync(launchAgentsDir).sort()) {
+    if (!istDienst(name)) continue;
+    const inhalt = fs.readFileSync(path.join(launchAgentsDir, name));
+    if (/<key>[^<]*(TOKEN|SECRET|PASSW|API_KEY)[^<]*<\/key>/i.test(inhalt.toString('latin1'))) { ausgelassen.push(name); continue; }
+    fs.mkdirSync(ziel, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(path.join(ziel, name), inhalt, { mode: 0o600 });
+    kopiert.push(name);
+  }
+  if (fs.existsSync(ziel)) {
+    for (const name of fs.readdirSync(ziel)) {
+      if (istDienst(name) && !kopiert.includes(name)) fs.rmSync(path.join(ziel, name), { force: true });
+    }
+    // Leerer Abzug: kein leerer Ordner im Archiv.
+    if (fs.readdirSync(ziel).length === 0) fs.rmdirSync(ziel);
+  }
+  return { kopiert, ausgelassen };
 }
 
 /** Welche der SICHERUNGSPFADE existieren tatsaechlich unter privatDir (Dateien und Ordner). */
@@ -103,15 +230,18 @@ export function vorhandeneQuellen(privatDir, pfade = SICHERUNGSPFADE) {
  * einzige Quelle existiert (nichts zu sichern waere ein stiller Datenverlust,
  * kein normaler Zustand).
  */
-export function sichern({ privatDir = STANDARD_PRIVAT_DIR, ziel = null, jetzt = new Date(), tar = execFileSync } = {}) {
+export function sichern({ privatDir = STANDARD_PRIVAT_DIR, ziel = null, jetzt = new Date(), tar = execFileSync, launchAgentsDir = null } = {}) {
   const zielDir = ziel || path.join(privatDir, 'sicherungen');
   fs.mkdirSync(zielDir, { recursive: true, mode: 0o700 });
 
-  const quellen = vorhandeneQuellen(privatDir);
-  const uebersprungen = SICHERUNGSPFADE.filter((p) => !quellen.includes(p));
-  if (quellen.length === 0) {
+  // Erst pruefen, ob unter privatDir ueberhaupt Betriebsdaten liegen - der Abzug der Dienste
+  // allein darf einen falschen Ordner nicht zu einer "erfolgreichen" Sicherung machen.
+  if (vorhandeneQuellen(privatDir).filter((p) => p !== DIENSTE_ORDNER).length === 0) {
     throw new Error(`Keine Betriebsdaten unter ${privatDir} gefunden - nichts zu sichern (geprueft: ${SICHERUNGSPFADE.join(', ')}).`);
   }
+  const dienste = dienstPlistsAbziehen(launchAgentsDir, privatDir);
+  const quellen = vorhandeneQuellen(privatDir);
+  const uebersprungen = SICHERUNGSPFADE.filter((p) => !quellen.includes(p));
 
   const archiv = path.join(zielDir, `${datumSlug(jetzt)}.tar.gz`);
   const tmp = `${archiv}.${process.pid}.tmp`;
@@ -137,7 +267,61 @@ export function sichern({ privatDir = STANDARD_PRIVAT_DIR, ziel = null, jetzt = 
   const standTmp = `${stand}.${process.pid}.tmp`;
   fs.writeFileSync(standTmp, JSON.stringify({ letzterErfolg: jetzt.toISOString(), bytes, quellenAnzahl: quellen.length }), { mode: 0o600 });
   fs.renameSync(standTmp, stand);
-  return { archiv, quellen, uebersprungen, bytes };
+  return { archiv, quellen, uebersprungen, bytes, dienste };
+}
+
+/**
+ * Legt ein fertiges Archiv zusaetzlich in `kopieDir` (zweites Ziel, z. B. externe Platte).
+ * Der Ordner muss existieren - er wird nie angelegt (siehe Kopf: nicht angesteckte Platte).
+ * Schreibt erst eine temporaere Datei, prueft die Groesse und benennt dann um.
+ * Gibt { ziel, bytes } zurueck oder wirft mit einer klaren Meldung.
+ */
+export function kopieAblegen(archiv, kopieDir) {
+  const dir = path.resolve(kopieDir);
+  let st;
+  try { st = fs.statSync(dir); } catch { st = null; }
+  if (!st?.isDirectory()) throw new Error(`Kopie-Ziel ${dir} nicht erreichbar - Platte angesteckt und Ordner angelegt?`);
+  const ziel = path.join(dir, path.basename(archiv));
+  if (path.resolve(ziel) === path.resolve(archiv)) throw new Error('Kopie-Ziel ist derselbe Ordner wie die Sicherung');
+  const tmp = `${ziel}.${process.pid}.tmp`;
+  try {
+    fs.copyFileSync(archiv, tmp);
+    fs.chmodSync(tmp, 0o600);
+    const soll = fs.statSync(archiv).size;
+    const ist = fs.statSync(tmp).size;
+    if (ist !== soll) throw new Error(`Kopie unvollstaendig (${ist} von ${soll} Bytes)`);
+    fs.renameSync(tmp, ziel);
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+  return { ziel, bytes: fs.statSync(ziel).size };
+}
+
+/** Haelt das Ergebnis der Kopie im Erfolgsbeleg fest, ohne den Beleg der Sicherung selbst zu aendern. */
+export function kopieVermerken(privatDir, vermerk) {
+  const stand = path.join(privatDir, 'sicherungsstand.json');
+  let roh = {};
+  try { roh = JSON.parse(fs.readFileSync(stand, 'utf8')); } catch { return; }
+  const tmp = `${stand}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ ...roh, kopie: vermerk }), { mode: 0o600 });
+  fs.renameSync(tmp, stand);
+}
+
+/**
+ * Haelt einen gescheiterten Lauf in sicherungsstand.json fest (`letzterFehler`), ohne den
+ * letzten Erfolg zu aendern - die Oberflaeche zeigt so den Grund, nicht nur ein Alter
+ * (Fehlersuche 28.10.2026: das Log hatte keine Uhrzeit, ein Fehlschlag stand nirgends).
+ * Der naechste Erfolg schreibt den Stand neu, ohne diesen Vermerk.
+ */
+export function fehlerVermerken(privatDir, vermerk) {
+  const stand = path.join(privatDir, 'sicherungsstand.json');
+  let roh = {};
+  try { roh = JSON.parse(fs.readFileSync(stand, 'utf8')); } catch (e) { if (e?.code !== 'ENOENT') return; }
+  const tmp = `${stand}.${process.pid}.tmp`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify({ ...roh, letzterFehler: vermerk }), { mode: 0o600 });
+    fs.renameSync(tmp, stand);
+  } catch { fs.rmSync(tmp, { force: true }); /* volle Platte: das Log behaelt den Fehler */ }
 }
 
 /** Loescht Sicherungsdateien <datum>.tar.gz, deren Datum aelter als aufbewahrenTage ist. */
@@ -159,24 +343,30 @@ export function alteSicherungenAufraeumen({ ziel, aufbewahrenTage = STANDARD_AUF
 }
 
 async function main() {
-  const { privatDir, ziel, aufbewahrenTage, jetzt } = parseArgs(process.argv.slice(2));
+  const { privatDir, ziel, kopie, aufbewahrenTage, jetzt } = parseArgs(process.argv.slice(2));
   const zielDir = ziel || path.join(privatDir, 'sicherungen');
 
-  console.log(`Sichere Betriebsdaten aus ${privatDir} nach ${zielDir} ...`);
+  // Jede Zeile mit Uhrzeit: das launchd-Log sammelt alle Laeufe in einer Datei.
+  const zeit = () => new Date().toISOString();
+  console.log(`${zeit()} Sichere Betriebsdaten aus ${privatDir} nach ${zielDir} ...`);
   let ergebnis;
   try {
-    ergebnis = sichern({ privatDir, ziel: zielDir, jetzt });
+    ergebnis = sichern({ privatDir, ziel: zielDir, jetzt, launchAgentsDir: path.join(os.homedir(), 'Library', 'LaunchAgents') });
   } catch (err) {
-    console.error(`Sicherung fehlgeschlagen: ${err.message}`);
+    console.error(`${zeit()} Sicherung fehlgeschlagen: ${err.message}`);
+    fehlerVermerken(privatDir, { am: jetzt.toISOString(), meldung: String(err.message).slice(0, 300) });
     process.exitCode = 1;
     return;
   }
 
   const mb = (ergebnis.bytes / (1024 * 1024)).toFixed(2);
-  console.log(`Archiv geschrieben: ${ergebnis.archiv} (${mb} MB)`);
+  console.log(`${zeit()} Archiv geschrieben: ${ergebnis.archiv} (${mb} MB)`);
   console.log(`Enthalten: ${ergebnis.quellen.join(', ')}`);
   if (ergebnis.uebersprungen.length > 0) {
     console.log(`Uebersprungen (nicht vorhanden): ${ergebnis.uebersprungen.join(', ')}`);
+  }
+  if (ergebnis.dienste.ausgelassen.length > 0) {
+    console.log(`Mac-Dienste mit Zugangsdaten nicht gesichert: ${ergebnis.dienste.ausgelassen.join(', ')}`);
   }
 
   const { geloescht } = alteSicherungenAufraeumen({ ziel: zielDir, aufbewahrenTage, jetzt });
@@ -185,6 +375,21 @@ async function main() {
   } else {
     console.log(`Keine Sicherungen aelter als ${aufbewahrenTage} Tage.`);
   }
+
+  if (kopie) {
+    try {
+      const k = kopieAblegen(ergebnis.archiv, kopie);
+      kopieVermerken(privatDir, { ziel: path.resolve(kopie), ok: true, am: jetzt.toISOString(), bytes: k.bytes });
+      console.log(`Kopie geschrieben: ${k.ziel}`);
+      const alt = alteSicherungenAufraeumen({ ziel: path.resolve(kopie), aufbewahrenTage, jetzt }).geloescht;
+      if (alt.length) console.log(`Alte Kopien geloescht (> ${aufbewahrenTage} Tage): ${alt.join(', ')}`);
+    } catch (err) {
+      kopieVermerken(privatDir, { ziel: path.resolve(kopie), ok: false, am: jetzt.toISOString(), fehler: err.message });
+      console.error(`${zeit()} Kopie fehlgeschlagen (Tagesarchiv ist trotzdem geschrieben): ${err.message}`);
+      process.exitCode = 1;
+    }
+  }
+  console.log(`${zeit()} Sicherung ${process.exitCode ? 'mit Fehler beendet' : 'fertig'}.`);
 }
 
 const istDirekterAufruf = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

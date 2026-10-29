@@ -82,8 +82,11 @@ export function pruefeFelder(roh = {}, { teil = false } = {}) {
  * Feldnamen, wie Shopify sie in die Mail "Neue Kundennachricht" schreibt
  * (geprueft an echten Mails vom 29.09.-09.10.2026). Nur diese gelten als
  * Feldanfang - eine Zeile "Folgendes:" im Kundentext bleibt Text.
+ * "Wunschzeitraum" kam am 26.10.2026 ins Anfrageformular (noch ohne echte
+ * Mail geprueft). tests/serviceanfragen.test.mjs prueft, dass jedes Feld aus
+ * sections/tp-start-kontakt.liquid hier steht.
  */
-const MAILFELDER = ['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Anliegen', 'Text', 'Nachricht'];
+export const MAILFELDER = Object.freeze(['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Anliegen', 'Wunschzeitraum', 'Text', 'Nachricht']);
 const FELD_ZEILE = new RegExp(`^\\s*(${MAILFELDER.map(f => f.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')).join('|')})\\s*:\\s*(.*)$`);
 
 /**
@@ -116,6 +119,8 @@ export function leistungAus({ betreff = '', anliegen = '' } = {}) {
   const a = anliegen.toLowerCase();
   if (a.includes('treppe')) return 'treppe';
   if (a.includes('verlegen')) return 'verlegeservice';
+  // "Mieterwechsel / mehrere Wohnungen" (seit 26.10.2026): Boeden fuer Vermieter
+  if (a.includes('wohnung')) return 'verlegeservice';
   if (a.includes('aufmaß') || a.includes('aufmass')) return 'aufmass';
   return 'sonstiges';
 }
@@ -147,8 +152,10 @@ export function ausFormularMail(roh) {
   // Feld "Herkunft" setzt das Anfrageformular seit 16.10.2026 selbst
   // (sections/tp-start-kontakt.liquid), z. B. "Google-Anzeige · Kampagne Treppen".
   const kampagne = wert('Herkunft');
+  // Freiwilliges Feld im Anfrageformular seit 26.10.2026 - landet in der Notiz.
+  const zeitraum = wert('Wunschzeitraum');
   const nachricht = wert('Text') || wert('Nachricht');
-  const notiz = [anliegen && `Anliegen: ${anliegen}`, nachricht].filter(Boolean).join('\n');
+  const notiz = [anliegen && `Anliegen: ${anliegen}`, zeitraum && `Wunschzeitraum: ${zeitraum}`, nachricht].filter(Boolean).join('\n');
   return {
     erkannt: true,
     betreff, anliegen,
@@ -188,7 +195,9 @@ export const BETREFF_SERVICE = Object.freeze([
 ]);
 /** Startseite: Formular ohne eigenen Betreff - Service nur bei diesem Anliegen. */
 export const BETREFF_STARTSEITE = 'Anfrage von der Startseite';
-export const ANLIEGEN_SERVICE = Object.freeze(['Boden verlegen lassen', 'Aufmaß und Angebot', 'Treppe belegen lassen']);
+export const ANLIEGEN_SERVICE = Object.freeze(['Boden verlegen lassen', 'Aufmaß und Angebot', 'Mieterwechsel / mehrere Wohnungen', 'Treppe belegen lassen']);
+/** Auswahl "Ich moechte" im Formular, die bewusst keine Service-Anfrage ist. */
+export const ANLIEGEN_KEIN_SERVICE = Object.freeze(['Beratung zum Produkt', 'Muster bestellen', 'Rückruf']);
 /** Bekannte Betreffe ohne Service-Anfrage (Reinigung, Boden-Finder, Musterberatung). */
 export const BETREFF_KEIN_SERVICE = Object.freeze(['Anfrage Teppichreinigung', 'Boden-Finder: persönliche Vorschläge', 'RÜCKRUF – Musterberatung']);
 

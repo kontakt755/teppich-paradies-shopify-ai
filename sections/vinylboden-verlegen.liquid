@@ -19,6 +19,16 @@
       <p class="vinyl-hero-subtext">{{ section.settings.hero_text }}</p>
 
       {%- comment -%}
+        Hauptaktion vor der Haekchenliste (w-111, 2026-10-28): vorher stand der
+        gruene Knopf unter Bild und Liste, am Telefon erst bei 1029 px, am
+        Desktop bei 1636 px - in beiden Faellen ausserhalb des ersten Bildschirms.
+        Die Telefon-Einstellungen unten nutzt der Kopf seitdem nicht mehr.
+      {%- endcomment -%}
+      <div class="vinyl-hero-aktion">
+        {%- render 'tp-service-hauptaktion', label: section.settings.hero_cta, ziel: section.settings.hero_cta_ziel -%}
+      </div>
+
+      {%- comment -%}
         Ort und kostenloses Aufmass gehoeren in den ersten Bildschirm: ueber
         Google Ads landet man mit "Vinylboden verlegen lassen" direkt hier und
         muss sofort sehen, ob wir zu einem kommen. Siehe
@@ -36,48 +46,53 @@
         </ul>
       {%- endif -%}
 
-      <div class="vinyl-hero-actions">
-        <a href="{{ section.settings.hero_cta_ziel | default: '/pages/kontakt' }}" class="vinyl-hero-button">{{ section.settings.hero_cta }}</a>
-        {%- if section.settings.telefon != blank -%}
-          <a href="tel:{{ section.settings.telefon | remove: ' ' | remove: '/' }}" class="vinyl-hero-tel">
-            {{ section.settings.telefon_label | default: section.settings.telefon }}
-          </a>
-        {%- endif -%}
-      </div>
     </div>
   </div>
 </section>
 
 <style>
+/* Bild und Text nebeneinander wie auf der Treppenseite (w-111): vorher stand
+   das Bild in voller Breite ueber dem Text und fuellte am Desktop den ganzen
+   ersten Bildschirm. */
 .vinyl-hero-section {
   background: #f7f7f7;
-  padding: 80px 20px 60px;
-  text-align: center;
+  padding: 40px 20px 48px;
+}
+.vinyl-hero-wrapper {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: center;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 .vinyl-hero-title {
   font-size: var(--tp-fs-2xl);
-  margin-bottom: 24px;
+  line-height: 1.15;
+  margin: 0 0 12px;
   color: #2a2a2a;
 }
 .vinyl-hero-subtext {
-  font-size: var(--tp-fs-xl);
-  color: #555;
-  max-width: 700px;
-  margin: 0 auto 36px;
-}
-.vinyl-hero-button {
-  display: inline-block;
-  background: #2e7d32;
-  color: white;
-  padding: 16px 32px;
-  border-radius: 6px;
-  font-weight: 600;
-  text-decoration: none;
   font-size: var(--tp-fs-lg);
-  transition: background 0.2s ease;
+  line-height: 1.5;
+  color: #555;
+  max-width: 46ch;
+  margin: 0 0 20px;
 }
-.vinyl-hero-button:hover {
-  background: #1b5e20;
+.vinyl-hero-aktion {
+  margin-bottom: 20px;
+}
+@media screen and (max-width: 899px) {
+  .vinyl-hero-section {
+    padding: 18px 16px 32px;
+  }
+  .vinyl-hero-wrapper {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .vinyl-hero-subtext {
+    font-size: var(--tp-fs-md);
+  }
 }
 </style>
 
@@ -104,6 +119,21 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 32px;
+}
+/* Zweite Reihe (Laminat, Parkett): gleiche Kartenbreite wie die drei
+   Vinylkarten darueber und mittig, statt die zwei Karten auf volle Breite zu
+   ziehen. Unter 1000 px wie die obere Reihe. */
+.vinylarten-grid--fuell {
+  grid-template-columns: repeat(auto-fit, minmax(280px, calc((100% - 64px) / 3)));
+  justify-content: center;
+}
+@media screen and (max-width: 999px) {
+  .vinylarten-grid--fuell {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+.vinylarten-title--weiter {
+  margin-top: 64px;
 }
 .vinylart-card {
   background: #f9f9f9;
@@ -211,6 +241,38 @@
     </div>
 
   </div>
+
+  {%- comment -%}
+    Laminat und Parkett (Werkbank w-173, Inhaber 28.10.2026): beides verlegen
+    wir, es gab aber keinen Weg dorthin. Nur Aussagen, die auch auf den
+    Kategorieseiten stehen; Verlegeart klaeren wir beim Aufmass.
+  {%- endcomment -%}
+  <h2 class="vinylarten-title vinylarten-title--weiter">Laminat und Parkett verlegen lassen</h2>
+  <p class="vinylarten-subtitle">Auch Laminat und Parkett verlegt unser eigenes Team – Verlegeart und Untergrund klären wir beim Aufmaß.</p>
+
+  <div class="vinylarten-grid vinylarten-grid--fuell">
+
+    <div class="vinylart-card">
+      <h3>Laminat</h3>
+      <ul>
+        <li>Holz- und Steindekore</li>
+        <li>7, 8 und 10 mm Stärke im Sortiment</li>
+        <li>Untergrundprüfung beim Aufmaß inklusive</li>
+      </ul>
+      <a href="{{ collections['laminat'].url | default: '/collections/laminat' }}">Zu Laminat</a>
+    </div>
+
+    <div class="vinylart-card">
+      <h3>Parkett</h3>
+      <ul>
+        <li>Echtholz-Oberflächen</li>
+        <li>Holzart und Oberfläche nach Wunsch</li>
+        <li>Wir beraten, ob schwimmend oder verklebt verlegt wird</li>
+      </ul>
+      <a href="{{ collections['parkett'].url | default: '/collections/parkett' }}">Zu Parkett</a>
+    </div>
+
+  </div>
 </section>
 
 
@@ -272,6 +334,12 @@
     aspect-ratio: 4 / 3;
   }
 
+  @media screen and (max-width: 899px) {
+    .vinyl-hero-bild {
+      aspect-ratio: 16 / 10;
+    }
+  }
+
   .vinyl-hero-bild img {
     width: 100%;
     height: 100%;
@@ -279,18 +347,13 @@
     display: block;
   }
 
-  /* Der alte Hero zentriert alles. Eine Haekchenliste zentriert zu lesen ist
-     muehsam - jede Zeile faengt woanders an. Deshalb bleibt der Block mittig,
-     der Text darin aber linksbuendig. */
   .vinyl-hero-fakten {
-    margin: 0 auto 20px;
+    margin: 0;
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    text-align: left;
-    width: fit-content;
   }
 
   .vinyl-hero-fakten li {
@@ -306,35 +369,6 @@
     color: #008a2e;
     font-weight: 700;
     flex: 0 0 auto;
-  }
-
-  .vinyl-hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 12px 20px;
-  }
-
-  /* Wie auf der Treppenseite: der Button erbt eine grosse Schriftgroesse aus
-     dem alten Seiten-CSS und braucht eine feste Hoehe, sonst wird er auf dem
-     Handy zum Banner. */
-  .vinyl-hero-actions .vinyl-hero-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
-    padding: 12px 24px;
-    font-size: var(--tp-fs-md);
-    line-height: 1.2;
-  }
-
-  .vinyl-hero-tel {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    font-weight: 600;
-    color: var(--color-foreground);
   }
 {% endstylesheet %}
 

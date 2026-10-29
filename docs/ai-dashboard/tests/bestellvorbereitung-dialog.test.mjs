@@ -22,7 +22,7 @@ function knopf({ index = 0, href = null, target = '', text } = {}) {
 
 function umgebung(optionen = {}) {
   const config = { lesend: false, konflikt: false, popupBlockiert: false, clipboardFehler: false, modern: true, geste: true, execFehler: false, ...optionen };
-  const posts = [], gets = [], kopien = [], clipboardStarts = [], fenster = [], statuswrites = [], toasts = [], fallback = [];
+  const posts = [], gets = [], kopien = [], clipboardStarts = [], fenster = [], statuswrites = [], toasts = [], fallback = [], ablauf = [];
   const browser = { location: { href: '' } };
   const root = { innerHTML: '' }, warnung = { hidden: true }, neu = { hidden: true };
   const fragen = new Map(), elemente = [];
@@ -47,9 +47,11 @@ function umgebung(optionen = {}) {
     uebernahmeBlock: () => config.lesend ? '' : '<button data-einkauf-uebernahme="freigeben">Freigeben</button><button data-einkauf-uebernahme="uebernehmen">Als Inhaber übernehmen</button>',
     anzeigeWert: v => v,
     gmailLink: () => ({ url: 'https://mail.google.com/test' }), telLink: n => `tel:${n}`,
-    toast: (...args) => toasts.push(args), render() {},
+    toast: (...args) => toasts.push(args), render() { ablauf.push('render'); },
     afEintragFuer: () => ({ status: 'bestellt' }), kundeUndOrt: () => ({ name: 'Testkunde', ort: 'Testort' }),
     markiereAlsBestellt: async (positionen, nr, opt) => { statuswrites.push({ positionen, nr, opt }); return positionen.length; },
+    setzeZurueckAufOffen: async (positionen, notiz) => { ablauf.push('zurueck'); statuswrites.push({ zurueck: positionen, notiz }); return config.zurueckFehler ? 0 : positionen.length; },
+    ladeStandNeu: async () => { ablauf.push('nachladen'); },
     fetchEinkauf: async pfad => { gets.push(pfad); return pfad.startsWith('/api/einkauf/bestellmail') ? daten() : { verfuegbar: true, positionen: { frisch: true } }; },
     orgSchreiben: async (pfad, payload) => {
       posts.push({ pfad, payload });
@@ -80,7 +82,7 @@ function umgebung(optionen = {}) {
       },
     },
   });
-  return { ...modul, config, posts, gets, kopien, clipboardStarts, fenster, statuswrites, toasts, fallback, browser, root, warnung, neu, fragen, elemente, einkauf,
+  return { ...modul, config, posts, gets, kopien, clipboardStarts, fenster, statuswrites, toasts, fallback, ablauf, browser, root, warnung, neu, fragen, elemente, einkauf,
     async oeffnen() { modul.openBestellmailDialog('TEST', 'muster'); await tick(); },
     geschlossen() { root.innerHTML = ''; },
   };
@@ -346,4 +348,29 @@ test('dauerhafte Clipboard-Verweigerung laesst sichtbare manuelle Auswahl mit Er
   assert.ok(u.toasts.some(t => /⌘C oder Strg\+C/.test(t[0])));
   assert.equal(u.statuswrites.length, 0);
   assert.equal(u.fragen.size, 0, 'unbestaetigtes manuelles Kopieren ist keine erfolgte Uebergabe');
+});
+
+test('"Rückgängig" nach "Als bestellt markieren" laedt Kundenakte und Bestellliste nach (Codex-Review #1731)', async () => {
+  // Vorher setzte "Rückgängig" nur den Positionsstatus zurueck: die offene Kundenakte blieb beim
+  // Wareneingang stehen und zeigte keinen Knopf "Bestellmail öffnen" mehr.
+  const u = umgebung(); await u.oeffnen();
+  await u.markiereMail(0, knopf());
+  assert.match(u.root.innerHTML, /data-lf-rueckgaengig="0"/);
+  u.ablauf.length = 0;
+  const rueck = { dataset: { lfRueckgaengig: '0' }, disabled: false };
+  assert.equal(u.einkaufKlickLieferanten({ target: { closest: selector => selector === '[data-lf-rueckgaengig]' ? rueck : null }, preventDefault() {} }), true);
+  await tick();
+  assert.deepEqual(u.ablauf, ['zurueck', 'nachladen'], 'erst zuruecksetzen, dann alles nachladen, was den Stand zeigt');
+  assert.equal(u.statuswrites.at(-1).zurueck[0].lineItemId, 'test-item-0');
+  assert.match(u.root.innerHTML, /data-lf-markieren="0"/, 'der Dialog bietet das Markieren wieder an');
+  assert.doesNotMatch(u.root.innerHTML, /data-lf-rueckgaengig/);
+
+  // Schlaegt das Zuruecksetzen fehl, wird nichts nachgeladen, nur neu gezeichnet.
+  const f = umgebung({ zurueckFehler: true }); await f.oeffnen();
+  await f.markiereMail(0, knopf());
+  f.ablauf.length = 0;
+  f.einkaufKlickLieferanten({ target: { closest: selector => selector === '[data-lf-rueckgaengig]' ? { dataset: { lfRueckgaengig: '0' } } : null }, preventDefault() {} });
+  await tick();
+  assert.deepEqual(f.ablauf, ['zurueck', 'render']);
+  assert.match(f.root.innerHTML, /data-lf-rueckgaengig="0"/);
 });

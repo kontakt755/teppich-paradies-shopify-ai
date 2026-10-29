@@ -21,8 +21,27 @@ function ortszeit(zeit) {
   return { tag: `${p.year}-${p.month}-${p.day}`, minuten: Number(p.hour) * 60 + Number(p.minute) };
 }
 
-/** Taeglich 22:30 Uhr, mit 30 Minuten Luft fuer den Archivlauf. */
+/** Gescheiterter Lauf nach dem letzten Erfolg (operations/scripts/sicherung.mjs, fehlerVermerken). */
+function sicherungsFehler(datei, letzterErfolg) {
+  let f;
+  try { f = JSON.parse(fs.readFileSync(datei, 'utf8'))?.letzterFehler; } catch { return null; }
+  const zeit = typeof f?.am === 'string' ? Date.parse(f.am) : NaN;
+  if (!Number.isFinite(zeit) || (letzterErfolg && zeit <= Date.parse(letzterErfolg))) return null;
+  return { am: new Date(zeit).toISOString(), meldung: String(f.meldung || '').slice(0, 300) };
+}
+
+/**
+ * Taeglich 22:30 Uhr, mit 30 Minuten Luft fuer den Archivlauf. `fehlt`: es gibt gar keinen
+ * Stand - die Sicherung lief hier nie oder schreibt nichts (Pruefung 28.10.: sonst blieb gerade
+ * "Sicherung laeuft gar nicht" still).
+ */
 export function sicherungsstand(datei, jetzt) {
+  if (!fs.existsSync(datei)) return { ...sicherungsTermin(datei, jetzt), fehlt: true };
+  const ergebnis = sicherungsTermin(datei, jetzt);
+  const fehler = sicherungsFehler(datei, ergebnis.letzterErfolg);
+  return fehler ? { ...ergebnis, letzterFehler: fehler } : ergebnis;
+}
+function sicherungsTermin(datei, jetzt) {
   const aktuell = stand(datei, 'letzterErfolg', jetzt, 48);
   if (aktuell.status !== 'ok') return aktuell;
   const heute = ortszeit(jetzt);

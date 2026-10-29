@@ -17,6 +17,7 @@ import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaff
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
 import { sichereUrl } from './akquise.mjs';
+import { lieferantName as lieferantAnzeige } from './einkauf-lieferanten.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -194,7 +195,8 @@ function kontext(quellen, opt) {
   const statusAlle = quellen.statusAlle || {};
   const schwellen = { ...SCHWELLEN, ...(quellen.schwellen || {}) };
   const rueckrufJeOrder = new Map((quellen.rueckrufe || []).map(r => [r.orderId, r]));
-  const lieferantName = opt.lieferantName || (id => (id === UNGEKLAERT || !id ? 'Lieferant nicht zugeordnet' : `Lieferant ${id}`));
+  // Ohne Stammdaten (Tests, Pages): dieselbe Ersatzanzeige wie ueberall - "Lieferant A" bzw. "Lieferant nicht zugeordnet".
+  const lieferantName = opt.lieferantName || (id => lieferantAnzeige(id));
   const klartext = opt.klartext || (h => h);
   return { jetzt, heute: alsTag(jetzt), statusAlle, schwellen, rueckrufJeOrder, lieferantName, klartext };
 }
@@ -515,6 +517,31 @@ function ausTailscale(quellen) {
   }];
 }
 
+/**
+ * Freier Speicher am Mac mini (operations/lib/speicher.mjs, gemessen von der Shop-Wache):
+ * gelb unter 40 GiB, rot unter 20 GiB. Ist die Platte voll, stehen Sync, Sicherung und
+ * Monteur-Upload gleichzeitig still. Text an einer Stelle: To-do und Shop-Kontrolle sagen dasselbe.
+ */
+export function speicherHinweis(stand) {
+  if (!stand || !['gelb', 'rot'].includes(stand.ampel) || !Number.isFinite(stand.freiGiB)) return null;
+  return {
+    ton: stand.ampel === 'rot' ? 'crit' : 'warn',
+    titel: stand.ampel === 'rot' ? 'Mac mini: Speicher fast voll' : 'Mac mini: Speicher wird knapp',
+    text: `nur noch ${stand.freiGiB} GiB frei (${stand.belegtProzent} % belegt)`,
+    handlung: 'Ist die Platte voll, stehen Datenabgleich, Sicherung und Foto-Upload still. Alte Bildordner auslagern (nach Rückfrage).',
+  };
+}
+
+function ausSpeicher(quellen, jetzt) {
+  const h = speicherHinweis(quellen.shopwache?.speicher);
+  if (!h) return [];
+  return [{
+    id: 'speicher', art: 'speicher', bereich: 'website', ton: h.ton, alterTage: tageSeit(quellen.shopwache.speicher.gemessenAm, jetzt),
+    titel: h.titel, kontext: `${h.text} · ${h.handlung}`,
+    knopf: { text: 'Ansehen', href: '#/shopwache' },
+  }];
+}
+
 /** Die Auslauf-Pruefung laeuft montags; ab 9 Tagen ohne neuen Stand ist sie ausgefallen. */
 export const AUSLAUF_STUMM_TAGE = 9;
 
@@ -522,19 +549,35 @@ export const AUSLAUF_STUMM_TAGE = 9;
  * Auslauf-Pruefung (Inhaberregel 2026-10-13: Ausgelaufenes wird nie angezeigt).
  * Kommt mit der Shop-Wache (quellen.shopwache.auslauf). Meldet Befunde, gestoerte
  * Lieferanten und eine Pruefung, die sich nicht mehr meldet - archiviert wird nach Gegenprobe.
+ * Farben ohne Handmuster ("ohne-muster", A fuehrt sie "nur in Format") sind kein Auslauf:
+ * eigenes To-do, das Muster wird gesperrt, die Ware bleibt.
  */
 function ausAuslauf(quellen, jetzt) {
   const d = quellen.shopwache?.auslauf;
   if (!d?.geprueftAm) return [];
   const tage = tageSeit(d.geprueftAm, jetzt);
   const basis = { id: 'auslauf', art: 'auslauf', bereich: 'website', alterTage: tage, knopf: { text: 'Lexikon', href: '#/lexikon' } };
-  const befunde = d.befunde || [];
+  const lexikon = handles => ({ text: 'Im Lexikon', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` });
+  const ohneMuster = (d.befunde || []).filter(b => b.ergebnis === 'ohne-muster');
+  const muster = ohneMuster.length ? [(() => {
+    const handles = [...new Set(ohneMuster.flatMap(b => b.handles || []))];
+    const n = ohneMuster.length;
+    return {
+      ...basis, id: 'auslauf-muster', ton: 'warn', knopf: lexikon(handles),
+      titel: `Muster nicht lieferbar: ${n} ${n === 1 ? 'Farbe hat' : 'Farben haben'} beim Lieferanten kein Handmuster`,
+      kontext: [
+        ohneMuster.slice(0, 3).map(b => b.kennung).filter(Boolean).join(', '), n > 3 ? `+${n - 3} weitere` : null,
+        handles[0] || null, 'Muster im Shop sperren, offene Musterbestellungen prüfen',
+      ].filter(Boolean).join(' · '),
+    };
+  })()] : [];
+  const befunde = (d.befunde || []).filter(b => b.ergebnis !== 'ohne-muster');
   const weg = befunde.filter(b => b.ergebnis === 'fehlt');
   if (befunde.length) {
     const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
-    return [{
+    return [...muster, {
       ...basis, ton: weg.length ? 'crit' : 'warn',
-      knopf: { text: 'Im Lexikon', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` },
+      knopf: lexikon(handles),
       titel: weg.length
         ? `Auslauf: ${weg.length} Artikel beim Lieferanten nicht mehr gefunden`
         : `Auslauf-Prüfung: ${befunde.length} ${befunde.length === 1 ? 'Seite' : 'Seiten'} auffällig`,
@@ -545,16 +588,16 @@ function ausAuslauf(quellen, jetzt) {
     }];
   }
   if (d.ausfaelle?.length) {
-    return [{
+    return [...muster, {
       ...basis, ton: 'warn',
       titel: `Auslauf-Prüfung: Lieferant ${d.ausfaelle.map(a => a.lieferant).join(', ')} nicht prüfbar`,
       kontext: d.ausfaelle[0].grund,
     }];
   }
   if (tage !== null && tage >= AUSLAUF_STUMM_TAGE) {
-    return [{ ...basis, ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` }];
+    return [...muster, { ...basis, ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` }];
   }
-  return [];
+  return muster;
 }
 
 /**
@@ -616,6 +659,41 @@ function ausRoutinen(quellen, jetzt) {
   }];
 }
 
+const SICHERUNG_ZEIT = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+/**
+ * Betriebsdaten-Sicherung (operations/scripts/sicherung.mjs, taeglich 22:30 Uhr). Den Stand
+ * rechnet operations/lib/betriebszustand.mjs (sicherungsstand), er kommt mit der Shop-Wache.
+ * Bis 28.10.2026 stand ein verpasster Termin nur in der Datenzeile des Systemzustands - die
+ * Luecke vom 22.10. fiel erst bei der Fehlersuche auf. Rot: Lauf gescheitert, Stand nicht
+ * lesbar oder seit ueber 48 Std. keine Sicherung; gelb: ein Termin verpasst oder gar kein
+ * Stand vorhanden (`fehlt` - die Sicherung lief hier nie).
+ */
+function ausSicherung(quellen, jetzt) {
+  const s = quellen.shopwache?.sicherung;
+  if (!s) return [];
+  if (s.fehlt) {
+    return [{ id: 'sicherung', art: 'sicherung', bereich: 'website', alterTage: null, ton: 'warn', titel: 'Sicherungsstand fehlt',
+      kontext: 'Die tägliche Sicherung hat auf diesem Mac noch keinen Stand geschrieben – läuft sie? Claude Bescheid geben: „Sicherungsstand fehlt“' }];
+  }
+  const fehler = s.letzterFehler;
+  if (!fehler && s.status !== 'alt' && s.status !== 'fehler') return [];
+  const zuletzt = s.letzterErfolg ? `letzte Sicherung ${SICHERUNG_ZEIT.format(new Date(s.letzterErfolg))}` : 'noch keine erfolgreiche Sicherung';
+  const lange = !s.letzterErfolg || jetzt.getTime() - Date.parse(s.letzterErfolg) > 48 * 3600000;
+  const basis = { id: 'sicherung', art: 'sicherung', bereich: 'website', alterTage: tageSeit(s.letzterErfolg, jetzt) };
+  if (fehler) {
+    return [{ ...basis, ton: 'crit', titel: 'Sicherung der Betriebsdaten fehlgeschlagen', kontext: [fehler.meldung, zuletzt, 'Claude Bescheid geben: „Sicherung fehlgeschlagen“'].filter(Boolean).join(' · ') }];
+  }
+  if (s.status === 'fehler') {
+    return [{ ...basis, ton: 'crit', titel: 'Stand der Sicherung nicht lesbar', kontext: 'Claude Bescheid geben: „Sicherungsstand nicht lesbar“' }];
+  }
+  return [{
+    ...basis, ton: lange ? 'crit' : 'warn',
+    titel: 'Sicherung der Betriebsdaten überfällig',
+    kontext: `${zuletzt} · sie läuft täglich um 22:30 Uhr, wenn der Mac an ist`,
+  }];
+}
+
 /**
  * Akquise Verlegeauftraege (#1447): faellige Wiedervorlagen als ein To-do im Buero.
  * `quellen.akquise` = Liste der faelligen Firmen (lib/akquise.mjs faelligeWiedervorlagen).
@@ -628,6 +706,21 @@ function ausAkquise(quellen) {
     titel: `Genossenschaften: ${f.length} ${f.length === 1 ? 'Firma' : 'Firmen'} nachfassen`,
     kontext: [f.slice(0, 3).map(x => x.name).join(', '), f.length > 3 ? `+${f.length - 3} weitere` : null].filter(Boolean).join(' · '),
     knopf: { text: 'Ansehen', href: '#/akquise?as=faellig' },
+  }];
+}
+
+/**
+ * Hausverwaltungen (w-154): faellige Wiedervorlagen als ein To-do im Buero.
+ * `quellen.hausverwaltungen` = Liste der faelligen Verwaltungen (lib/hausverwaltungen.mjs hvFaellig).
+ */
+function ausHausverwaltungen(quellen) {
+  const v = quellen.hausverwaltungen || [];
+  if (!v.length) return [];
+  return [{
+    id: 'hausverwaltungen', art: 'hausverwaltungen', bereich: 'buero', ton: 'warn', alterTage: null,
+    titel: `Hausverwaltungen: ${v.length} wieder melden`,
+    kontext: [v.slice(0, 3).map(x => x.name).join(', '), v.length > 3 ? `+${v.length - 3} weitere` : null].filter(Boolean).join(' · '),
+    knopf: { text: 'Ansehen', href: v.length === 1 ? `#/hausverwaltungen?hv=${encodeURIComponent(v[0].id)}` : '#/hausverwaltungen' },
   }];
 }
 
@@ -660,9 +753,12 @@ function alleTodos(quellen, opt) {
     ...ausNeuheiten(quellen, k.jetzt),
     ...ausAusschreibungen(quellen, k.jetzt),
     ...ausAkquise(quellen),
+    ...ausHausverwaltungen(quellen),
     ...ausKundenterminen(quellen, k),
     ...ausTailscale(quellen),
+    ...ausSpeicher(quellen, k.jetzt),
     ...ausRoutinen(quellen, k.jetzt),
+    ...ausSicherung(quellen, k.jetzt),
   ];
 }
 
@@ -688,6 +784,7 @@ function fuerSicht(todos, sicht, alle) {
  *   aufgaben       /api/org/liste?bereich=alle-aufgaben -> eintraege
  *   freigaben      Entwicklungsaufgaben (issues.json), nur beim Inhaber gefuellt
  *   akquise        faellige Wiedervorlagen (ansichten/akquise.mjs akquiseFaellig), nur beim Inhaber
+ *   hausverwaltungen faellige Wiedervorlagen (ansichten/hausverwaltungen.mjs hausverwaltungenFaellig)
  *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`, `routinen`)
  * @param {object} opt
  *   sicht          'inhaber' | 'laden' | 'website'

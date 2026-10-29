@@ -240,7 +240,7 @@
     {%- assign hero_ratio = section.settings.image.aspect_ratio | default: 1.5 -%}
     <img
       src="{{ section.settings.image | image_url: width: 900 }}"
-      alt="{{ section.settings.image.alt | escape }}"
+      alt="{{ section.settings.image_alt | default: section.settings.image.alt | escape }}"
       width="900"
       height="{{ 900 | divided_by: hero_ratio | round }}"
       loading="eager"
@@ -322,7 +322,8 @@
 {
   "name": "B2B",
   "settings": [
-    { "type": "image_picker", "id": "image", "label": "Hero Bild" },
+    { "type": "image_picker", "id": "image", "label": "Hero Bild", "info": "Nur echte Projektfotos, keine KI-Bilder mit Text oder Wasserzeichen." },
+    { "type": "text", "id": "image_alt", "label": "Alt-Text Hero Bild", "info": "Was ist auf dem Foto zu sehen? Leer = Alt-Text der Datei." },
 
     { "type": "text", "id": "hero_title", "label": "Hero Titel", "default": "Innenausbau für Praxen & Gewerbe – Boden und Wand aus einer Hand" },
     { "type": "textarea", "id": "hero_sub", "label": "Hero Untertext", "default": "Wir unterstützen Praxen, Steuerberater, Kanzleien und Gewerbebetriebe in Berlin & Brandenburg bei Renovierungen und Umgestaltungen. Von hochwertigen Bodenbelägen über Spachtelarbeiten bis hin zu professionellen Maler- und Tapezierarbeiten – zuverlässig geplant und sauber umgesetzt." },

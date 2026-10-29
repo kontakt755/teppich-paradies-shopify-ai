@@ -41,6 +41,75 @@ test('Wartender Umschlag traegt die Anmerkung mit Bestelldatum und Automatik, da
   assert.match(ansicht('tab=muster', [ohneBestellung]), /1 Muster ist noch nicht bestellt/);
 });
 
+test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die Lieferantenbestellung (Inhaber 28.10.)', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const k = kunde(1, 'warten');
+  Object.assign(k, { seit: '2026-10-20T08:00:00Z', wartetTage: 8 });
+  k.bestellungen[0].datum = k.seit;
+  k.muster = [{ ...k.muster[0], bestelltAm: '2026-10-24T07:00:00.000Z' }, { ...k.muster[0], lineItemId: 'line1b', stand: 'da' }];
+  const html = ansicht('tab=muster', [k]);
+  assert.match(kopf(html), /<span class="wait-warn">bestellt am Di\., 20\.10\. · wartet seit 8 Tagen<\/span>/);
+  assert.match(kopf(html), /beim Lieferanten bestellt am Sa\., 24\.10\./);
+  assert.doesNotMatch(html, /mp-bestelldaten/, 'eine Bestellung braucht keine Einzelaufstellung');
+
+  // Zwei Bestellungen in einem Umschlag: oben die erste, aufgeklappt jede mit Datum.
+  const zwei = kunde(2, 'packen');
+  Object.assign(zwei, { seit: '2026-10-20T08:00:00Z', wartetTage: 1 });
+  zwei.bestellungen = [{ orderId: 'order2', orderName: '#TEST2', datum: '2026-10-20T08:00:00Z' }, { orderId: 'order3', orderName: '#TEST3', datum: '2026-10-22T21:30:00Z' }];
+  zwei.muster = [{ ...zwei.muster[0], stand: 'da', abgehakt: true }];
+  const beide = ansicht('tab=muster', [zwei]);
+  assert.match(kopf(beide), /<span class="small muted">erste Bestellung am Di\., 20\.10\. · wartet seit 1 Tag<\/span>/);
+  assert.doesNotMatch(kopf(beide), /beim Lieferanten/, 'alles da: keine Lieferantenzeile');
+  assert.match(beide, /<p class="small muted mp-bestelldaten">#TEST2 bestellt am Di\., 20\.10\. · #TEST3 bestellt am Do\., 22\.10\.<\/p>/);
+
+  // Gepackt zaehlt nichts mehr als fehlend; ohne Bestelldatum bleibt es bei der Wartezeit.
+  const gepackt = { ...k, bereich: 'gepackt', gepackt: { zeit: '2026-10-28T08:00:00Z' } };
+  assert.doesNotMatch(kopf(ansicht('tab=muster&umschlag=order1', [gepackt])), /beim Lieferanten/);
+  assert.match(kopf(ansicht('tab=muster', [kunde(4, 'warten')])), /<span class="small muted">wartet seit 1 Tag<\/span>/);
+});
+
+test('Filter "Umschlag" zaehlt und zeigt noch vorzubereitende, vorbereitete und angefangene Umschlaege (Inhaber 28.10.)', () => {
+  const reihe = html => [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  const chip = (html, label) => html.match(new RegExp(`<a class="chip" href="([^"]*)"( aria-current="page")?>${label}<span class="c">(\\d+)</span>`));
+  const vorbereitet = { ...kunde(2, 'warten'), gedruckt: { zeit: '2026-10-26T09:00:00Z' } };
+  const drin = kunde(3, 'warten');
+  drin.muster = [{ ...drin.muster[0], abgehakt: true }, { ...drin.muster[0], lineItemId: 'line3b' }];
+  const liste = [kunde(1, 'packen'), vorbereitet, drin, kunde(4, 'klaeren'), kunde(5, 'gepackt')];
+
+  const alle = ansicht('tab=muster', liste);
+  assert.deepEqual(['alle', 'noch vorbereiten', 'vorbereitet', 'Muster schon drin'].map(l => Number(chip(alle, l)[3])), [4, 2, 1, 1]);
+  assert.ok(chip(alle, 'alle')[2], '"alle" ist ohne Parameter aktiv');
+  assert.match(chip(alle, 'noch vorbereiten')[1], /mpumschlag=vorbereiten/);
+  assert.match(alle, /data-mp-alle>Alle Packbereiten drucken/);
+
+  const offen = ansicht('tab=muster&mpumschlag=vorbereiten', liste);
+  assert.deepEqual(reihe(offen), ['order1', 'order4'], 'packbereit vor zu klären, wie in der Liste');
+  assert.ok(chip(offen, 'noch vorbereiten')[2]);
+  assert.match(offen, /<button type="button" class="btn" data-mp-vorbereiten="order1 order4">Diese 2 Umschläge vorbereiten \(4 Aufkleber\)<\/button>/);
+  assert.doesNotMatch(offen, /data-mp-alle>/, 'nur ein Druckknopf');
+  assert.match(offen, /<h2 class="mp-titel">Alle offenen · Umschlag noch vorbereiten/);
+
+  // Mit dem Reiter kombiniert; die Chipzahlen zaehlen nur den gewaehlten Reiter.
+  const wartend = ansicht('tab=muster&mpbereich=warten&mpumschlag=vorbereitet', liste);
+  assert.deepEqual(reihe(wartend), ['order2']);
+  assert.equal(Number(chip(wartend, 'alle')[3]), 2);
+  assert.match(chip(wartend, 'Muster schon drin')[1], /mpbereich=warten/);
+  assert.deepEqual(reihe(ansicht('tab=muster&mpumschlag=drin', liste)), ['order3']);
+
+  // Ohne vollstaendige Zuordnung kein Aufkleber, aber ein Hinweis; leere Auswahl sagt, was los ist.
+  const ohne = { ...kunde(6, 'packen'), fehlt: ['Farbe'] };
+  const teils = ansicht('tab=muster&mpumschlag=vorbereiten', [kunde(1, 'packen'), ohne]);
+  assert.match(teils, /data-mp-vorbereiten="order1">Diesen Umschlag vorbereiten \(2 Aufkleber\)/);
+  assert.match(teils, /1 Umschlag ohne vollständige Musterzuordnung – erst im Lexikon klären/);
+  const leer = ansicht('tab=muster&mpbereich=warten&mpumschlag=vorbereiten', liste);
+  assert.match(leer, /Alle Umschläge in dieser Liste sind vorbereitet\.[\s\S]*Alle 2 Umschläge dieser Liste zeigen/);
+
+  // Suche, Direktlink und Gepacktes verstecken nichts.
+  assert.doesNotMatch(ansicht('tab=muster&mpbereich=gepackt&mpumschlag=vorbereiten', liste), /mp-umschlagfilter/);
+  assert.match(ansicht('tab=muster&mpumschlag=drin&mpq=TEST1', liste), /data-mp-kunde="order1"/);
+  assert.match(ansicht('tab=muster&mpumschlag=vorbereitet&umschlag=order1', liste), /data-mp-kunde="order1"[^>]* open/);
+});
+
 test('Arbeitsfilter zeigt nur gewaehlten Bereich; Umschlagdirektlink oeffnet auch andere Bereiche', () => {
   const liste = [kunde(1, 'packen'), kunde(2, 'klaeren'), kunde(3, 'gepackt')];
   const html = ansicht('tab=muster&mpbereich=klaeren', liste);
@@ -239,4 +308,16 @@ test('Suche zeigt passende Musterbestellungen ausserhalb der Packliste mit Grund
   assert.match(html, /bq=%23TEST9">#TEST9 – Bestellung ansehen</);
   assert.doesNotMatch(html.slice(html.indexOf('Außerhalb der Packliste')), /data-mp-(haken|drucken|aktion|alle)/);
   assert.match(ansicht('tab=muster&mpq=gibtsnicht', [kunde(1, 'packen')], aussen), /Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen/);
+});
+
+test('Als fehlend gemeldet, laut Bestand aber da: "nicht eingelegt · im Regal suchen" statt "fehlt · angekommen" (Rundgang 26.10.)', () => {
+  const k = kunde(11, 'klaeren');
+  k.klaeren = { fehlt: ['line11', 'line11b'], zeit: '2026-10-26T08:00:00Z' };
+  k.muster = [{ ...k.muster[0], stand: 'da' }, { ...k.muster[0], lineItemId: 'line11b', stand: 'bestellt' }];
+  const html = ansicht('tab=muster&umschlag=order11', [k]);
+  assert.match(html, /<strong class="mp-fehlt">nicht eingelegt<\/strong> · <span class="muted">laut Bestand da – im Regal suchen<\/span>/);
+  assert.match(html, /<strong class="mp-fehlt">fehlt<\/strong> · <span class="muted">beim Lieferanten bestellt<\/span>/);
+  assert.doesNotMatch(html, /fehlt<\/strong> · <span class="muted">angekommen/);
+  // Ohne Fehlmeldung bleibt es beim gewohnten Stand.
+  assert.match(ansicht('tab=muster&umschlag=order12', [{ ...kunde(12, 'packen'), muster: [{ ...kunde(12, 'packen').muster[0], stand: 'da' }] }]), /<span class="muted">angekommen<\/span>/);
 });

@@ -8,7 +8,15 @@
   ("Wir bereiten deine Bestellung fuer den Versand vor ...") loeschen, weil er
   fuer Muster nicht passt. Betreff (Feld "E-Mail-Betreff"):
     {% if order.tags contains 'TYP-MUSTER' %}Vielen Dank für Ihre Musterbestellung{% else %}Vielen Dank für Ihre Bestellung {{ name }}{% endif %}
-  (Tags setzt Shopify Flow; ohne Flow greift der Standardbetreff.)
+  (Den Tag TYP-MUSTER setzt nur Shopify Flow, und Flow ist nicht installiert.
+  Ohne Tag greift der zweite Teil - "Vielen Dank fuer Ihre Bestellung #1234" -
+  fuer jede Bestellung. Das ist gewollt und passt auch fuer Muster.)
+
+  Fusszeile der Standardvorlage auf "Sie" umstellen (#25): den Satz
+    Wenn du Fragen hast, antworte auf diese E-Mail oder kontaktiere uns unter ...
+  ersetzen durch
+    Wenn Sie Fragen haben, antworten Sie einfach auf diese E-Mail oder schreiben Sie uns an ...
+  (den Link mit {{ shop.email }} dahinter unveraendert lassen).
 
   Was der Block macht: erkennt Muster / Ware / Mischbestellung an den
   Positionen (SKU "M-..." oder "TP-MUSTER-000" oder Property _Muster_ID),
@@ -16,13 +24,37 @@
   und Verlegeanfrage aus den Bestellattributen und erklaert die naechsten
   Schritte. Keine internen Daten (keine Lieferanten, keine Grosshaendler-IDs).
 
+  Zusagen nur, die gelten (#25):
+  - Abholung im Laden (delivery_method 'pick-up'): eigener Text mit Adresse
+    und Oeffnungszeiten, Abholung erst nach unserer Nachricht.
+  - Ware: keine Sendungsverfolgung versprechen (Ware kommt oft direkt vom
+    Lieferanten, meist ohne Sendungsnummer), nur "wir melden uns".
+  - Herstellermuster (SKU M-VW-..., M-JAB-...) schickt der Hersteller direkt,
+    auch in getrennten Umschlaegen. Fuer sie steht kein Zeitrahmen da, bis der
+    Inhaber einen festlegt.
+  - Je Warenposition die Lieferzeit aus dem Produktfeld service.lieferzeit,
+    nur wenn es gepflegt ist (sonst nichts, nichts erfinden).
+
   Alle Kundeneingaben laufen durch escape (Properties und Attribute sind ueber
   die Cart-API frei setzbar).
+
+  Ratgeber zur Bestellung: je Warenposition waehlt der Produkttyp einen
+  Kurz-Ratgeber (PDF, zwei Seiten mit Logo), jeder erscheint nur einmal.
+  Quelle und Zuordnung: domains/shopify/ratgeber-pdf/inhalte.mjs (produkttypen),
+  die PDFs liegen unter Shopify-Dateien mit festem Namen ratgeber-<schluessel>.pdf.
+  Muster bekommen keinen Ratgeber. Neue Zuordnung immer an beiden Stellen
+  eintragen, der Test qa/tests/kundenmail-bloecke.test.mjs vergleicht sie.
+
+  Kein eigener Knopf "Bestellstatus ansehen": die Standardvorlage hat darunter
+  schon "Bestellung ansehen" (im Admin so entfernt, uebernommen 2026-10-28).
 {%- endcomment -%}
 
 {%- liquid
   assign tp_k_muster = 0
   assign tp_k_ware = 0
+  assign tp_k_hersteller = 0
+  assign tp_k_lieferzeiten = 0
+  assign tp_k_ratgeber = ','
   for line in line_items
     assign tp_k_ist_muster = false
     assign tp_k_kopf = line.sku | slice: 0, 2
@@ -36,10 +68,47 @@
     endfor
     if tp_k_ist_muster
       assign tp_k_muster = tp_k_muster | plus: 1
+      assign tp_k_sku5 = line.sku | slice: 0, 5
+      assign tp_k_sku6 = line.sku | slice: 0, 6
+      if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-'
+        assign tp_k_hersteller = tp_k_hersteller | plus: 1
+      endif
     else
       assign tp_k_ware = tp_k_ware | plus: 1
+      assign tp_k_lz_feld = line.product.metafields.service.lieferzeit
+      assign tp_k_lz = tp_k_lz_feld.value | default: tp_k_lz_feld | strip
+      if tp_k_lz != blank
+        assign tp_k_lieferzeiten = tp_k_lieferzeiten | plus: 1
+      endif
+      assign tp_k_pt = line.product.type
+      assign tp_k_rg = ''
+      if tp_k_pt == 'Teppichboden'
+        assign tp_k_rg = 'teppichboden'
+      elsif tp_k_pt == 'Teppich' or tp_k_pt == 'Wohnteppich' or tp_k_pt == 'Teppich nach Maß' or tp_k_pt == 'Läufer nach Maß'
+        assign tp_k_rg = 'teppich'
+      elsif tp_k_pt == 'Vinyl von der Rolle'
+        assign tp_k_rg = 'vinyl-von-der-rolle'
+      elsif tp_k_pt == 'Klickvinyl'
+        assign tp_k_rg = 'klickvinyl'
+      elsif tp_k_pt == 'Klebevinyl'
+        assign tp_k_rg = 'klebevinyl'
+      elsif tp_k_pt == 'Laminat'
+        assign tp_k_rg = 'laminat'
+      elsif tp_k_pt == 'Parkett'
+        assign tp_k_rg = 'parkett'
+      endif
+      if tp_k_rg != ''
+        assign tp_k_rg_suche = ',' | append: tp_k_rg | append: ','
+        unless tp_k_ratgeber contains tp_k_rg_suche
+          assign tp_k_ratgeber = tp_k_ratgeber | append: tp_k_rg | append: ','
+        endunless
+      endif
     endif
   endfor
+  assign tp_k_abholung = false
+  if delivery_method == 'pick-up'
+    assign tp_k_abholung = true
+  endif
   if tp_k_muster > 0 and tp_k_ware == 0
     assign tp_k_typ = 'muster'
   elsif tp_k_muster == 0
@@ -65,7 +134,11 @@
 
   {%- if tp_k_typ == 'muster' -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Musterbestellung bei Teppich Paradies.</p>
-    <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) gehen in den nächsten Werktagen kostenlos per Post an Sie raus. So holen Sie das meiste heraus:</p>
+    {%- if tp_k_hersteller > 0 -%}
+      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) kommen kostenlos per Post zu Ihnen. Muster mit dem Hinweis „direkt vom Hersteller“ schickt der Hersteller selbst an Sie – auch in getrennten Umschlägen und zu unterschiedlichen Zeiten. So holen Sie das meiste heraus:</p>
+    {%- else -%}
+      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) gehen in den nächsten Werktagen kostenlos per Post an Sie raus. So holen Sie das meiste heraus:</p>
+    {%- endif -%}
     <ul style="margin:0 0 16px;padding-left:20px;">
       <li>Legen Sie die Muster dort aus, wo der Boden später liegt – und schauen Sie sie bei Tageslicht und bei Kunstlicht an.</li>
       <li>Vergleichen Sie die Muster neben Möbeln, Wand- und Türfarbe.</li>
@@ -84,16 +157,71 @@
         <li>
           {%- if tp_k_link != blank -%}<a href="{{ tp_k_link | escape }}" style="color:#15171a;">{{ line.title | escape }}</a>{%- else -%}{{ line.title | escape }}{%- endif -%}
           {%- if tp_k_farbe != blank %} – {{ tp_k_farbe | escape }}{% endif -%}
+          {%- assign tp_k_sku5 = line.sku | slice: 0, 5 -%}
+          {%- assign tp_k_sku6 = line.sku | slice: 0, 6 -%}
+          {%- if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-' %} (direkt vom Hersteller){% endif -%}
         </li>
       {%- endfor -%}
     </ul>
     <p style="margin:0 0 16px;">Gefällt Ihnen ein Muster? Über die Links oben kommen Sie direkt zurück zum Produkt und können Ihre Maße eingeben.</p>
   {%- elsif tp_k_typ == 'misch' -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>
-    <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster gehen vorab per Post raus, die Ware bereiten wir für den Versand vor. Sie erhalten eine weitere E-Mail, sobald die Ware unterwegs ist.</p>
+    {%- if tp_k_abholung -%}
+      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster kommen per Post zu Ihnen{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware holen Sie bei uns im Laden ab. Wir melden uns, sobald sie zur Abholung bereitliegt – bitte kommen Sie erst nach unserer Nachricht.</p>
+    {%- else -%}
+      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster gehen vorab per Post raus{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware bereiten wir für den Versand vor. Wir melden uns, sobald die Ware unterwegs ist.</p>
+    {%- endif -%}
   {%- else -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>
-    <p style="margin:0 0 12px;">Wir haben Ihre Bestellung {{ name | escape }} erhalten und bereiten sie für den Versand vor. Sie erhalten eine weitere E-Mail mit Sendungsverfolgung, sobald die Ware unterwegs ist.</p>
+    {%- if tp_k_abholung -%}
+      <p style="margin:0 0 12px;">Wir haben Ihre Bestellung {{ name | escape }} erhalten. Sie holen die Ware bei uns im Laden ab. Wir melden uns, sobald sie zur Abholung bereitliegt – bitte kommen Sie erst nach unserer Nachricht.</p>
+    {%- else -%}
+      <p style="margin:0 0 12px;">Wir haben Ihre Bestellung {{ name | escape }} erhalten und bereiten sie für den Versand vor. Wir melden uns, sobald Ihre Ware unterwegs ist.</p>
+    {%- endif -%}
+  {%- endif -%}
+
+  {%- if tp_k_abholung and tp_k_ware > 0 -%}
+    <p style="margin:0 0 16px;"><strong>Abholung:</strong> Teppich Paradies, Saarlandstraße 73–81, 16515 Oranienburg<br>Öffnungszeiten: Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr</p>
+  {%- endif -%}
+
+  {%- if tp_k_lieferzeiten > 0 -%}
+    <p style="margin:0 0 6px;font-weight:bold;">Lieferzeit laut Produktseite</p>
+    <ul style="margin:0 0 16px;padding-left:20px;">
+      {%- for line in line_items -%}
+        {%- assign tp_k_kopf = line.sku | slice: 0, 2 -%}
+        {%- if tp_k_kopf == 'M-' or line.sku == 'TP-MUSTER-000' -%}{%- continue -%}{%- endif -%}
+        {%- comment -%}Muster wie oben auch an _Muster_ID erkennen - sonst stuende ein Muster in der Liste{%- endcomment -%}
+        {%- assign tp_k_ist_muster = false -%}
+        {%- for p in line.properties -%}
+          {%- if p.first == '_Muster_ID' and p.last != blank -%}{%- assign tp_k_ist_muster = true -%}{%- endif -%}
+        {%- endfor -%}
+        {%- if tp_k_ist_muster -%}{%- continue -%}{%- endif -%}
+        {%- assign tp_k_lz_feld = line.product.metafields.service.lieferzeit -%}
+        {%- assign tp_k_lz = tp_k_lz_feld.value | default: tp_k_lz_feld | strip -%}
+        {%- if tp_k_lz == blank -%}{%- continue -%}{%- endif -%}
+        <li>{{ line.title | escape }}{% if line.variant_title != blank and line.variant_title != 'Default Title' %} – {{ line.variant_title | escape }}{% endif %}: {{ tp_k_lz | escape }}</li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+
+  {%- if tp_k_ratgeber != ',' -%}
+    <div style="margin:0 0 16px;padding:14px 16px;background:#f7f3ee;border-radius:8px;">
+      <p style="margin:0 0 4px;font-weight:bold;">Ihr Ratgeber zur Bestellung</p>
+      <p style="margin:0 0 10px;">Kurz und einfach erklärt: So verlegen und pflegen Sie Ihren neuen Boden – zum Ansehen, Speichern oder Ausdrucken.</p>
+      {%- assign tp_k_rg_liste = tp_k_ratgeber | split: ',' -%}
+      {%- for tp_k_rg in tp_k_rg_liste -%}
+        {%- if tp_k_rg == blank -%}{%- continue -%}{%- endif -%}
+        {%- assign tp_k_rg_titel = 'Teppichboden' -%}
+        {%- if tp_k_rg == 'teppich' -%}{%- assign tp_k_rg_titel = 'Teppich' -%}
+        {%- elsif tp_k_rg == 'vinyl-von-der-rolle' -%}{%- assign tp_k_rg_titel = 'Vinyl von der Rolle' -%}
+        {%- elsif tp_k_rg == 'klickvinyl' -%}{%- assign tp_k_rg_titel = 'Klickvinyl' -%}
+        {%- elsif tp_k_rg == 'klebevinyl' -%}{%- assign tp_k_rg_titel = 'Klebevinyl' -%}
+        {%- elsif tp_k_rg == 'laminat' -%}{%- assign tp_k_rg_titel = 'Laminat' -%}
+        {%- elsif tp_k_rg == 'parkett' -%}{%- assign tp_k_rg_titel = 'Parkett' -%}
+        {%- endif -%}
+        <p style="margin:0 0 8px;"><a href="https://www.teppich-paradies.net/cdn/shop/files/ratgeber-{{ tp_k_rg }}.pdf" style="display:inline-block;padding:9px 16px;background:#b93841;color:#ffffff;text-decoration:none;border-radius:6px;">Ratgeber {{ tp_k_rg_titel }} (PDF)</a></p>
+      {%- endfor -%}
+    </div>
   {%- endif -%}
 
   {%- if tp_k_beratung == 'Ja' or tp_k_mass == 'Ja' or tp_k_verlegung == 'Angefragt' -%}
@@ -113,7 +241,4 @@
     <p style="margin:0 0 16px;">Fragen zu Ihrer Bestellung? Rufen Sie uns an: 03301 573 37 20 (Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr) oder antworten Sie einfach auf diese E-Mail.</p>
   {%- endif -%}
 
-  {%- if order_status_url != blank -%}
-    <p style="margin:0 0 20px;"><a href="{{ order_status_url }}" style="display:inline-block;padding:10px 18px;background:#15171a;color:#ffffff;text-decoration:none;border-radius:6px;">Bestellstatus ansehen</a></p>
-  {%- endif -%}
 </div>

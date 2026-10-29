@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import test from 'node:test';
-import { browsersPathCandidates, resolveBrowserExecutable, systemBrowserCandidates } from '../browser-resolver.mjs';
+import { browsersPathCandidates, playwrightCacheDirectory, resolveBrowserExecutable, systemBrowserCandidates } from '../browser-resolver.mjs';
 import { closeBrowserSafely, installHardProcessTimeout, OperationTimeoutError, withTimeout } from '../browser-lifecycle.mjs';
 
 test('explicit environment path has highest priority', () => {
@@ -35,6 +35,31 @@ test('installed revision under PLAYWRIGHT_BROWSERS_PATH covers playwright revisi
 test('browsers path prefers the newest installed revision', () => {
   const candidates = browsersPathCandidates('/opt/pw-browsers', 'linux', () => ['chromium-1181', 'chromium-1194']);
   assert.equal(candidates[0], '/opt/pw-browsers/chromium-1194/chrome-linux/chrome');
+});
+
+test('browsers path knows the Chrome for Testing layout on macOS', () => {
+  const candidates = browsersPathCandidates('/cache/ms-playwright', 'darwin', () => ['chromium-1248']);
+  assert.equal(candidates[0], '/cache/ms-playwright/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing');
+});
+
+test('cache directory is derived from the expected Playwright revision path', () => {
+  assert.equal(playwrightCacheDirectory('/Users/x/Library/Caches/ms-playwright/chromium-1250/chrome-mac-arm64/x'), '/Users/x/Library/Caches/ms-playwright');
+  assert.equal(playwrightCacheDirectory('C:\\Users\\x\\AppData\\Local\\ms-playwright\\chromium-1250\\chrome-win64\\chrome.exe'), 'C:\\Users\\x\\AppData\\Local\\ms-playwright');
+  assert.equal(playwrightCacheDirectory('/missing'), '');
+  assert.equal(playwrightCacheDirectory(undefined), '');
+});
+
+test('older revision in the Playwright cache wins over Google Chrome after a playwright-core update', () => {
+  const installed = '/cache/ms-playwright/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
+  const systemChrome = systemBrowserCandidates('darwin')[0];
+  const result = resolveBrowserExecutable({
+    environment: {},
+    platform: 'darwin',
+    existsSync: value => value === installed || value === systemChrome,
+    readdirSync: base => (base === '/cache/ms-playwright' ? ['chromium-1248', 'ffmpeg-1013'] : []),
+    playwrightChromium: { executablePath: () => '/cache/ms-playwright/chromium-1250/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing' },
+  });
+  assert.deepEqual(result, { executablePath: installed, source: 'playwright-cache' });
 });
 
 test('browsers path stays empty without the environment variable', () => {

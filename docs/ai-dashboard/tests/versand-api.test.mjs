@@ -61,6 +61,37 @@ test('Dialog-Schritt "raus" mit Auswahl: nur die angekreuzte Position, in Shopif
   assert.equal(r.versandNachholen, null);
 });
 
+test('Sendungsnummer schon an einer anderen Bestellung: 409 ohne Schreiben, erst nach Bestaetigung gebucht', async () => {
+  const u = umgebung();
+  await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(1)], versand: { sendungsnummer: 'ZZ99 99TEST', versanddienst: 'Deutsche Post (DE)' } });
+  // Zweites Paket derselben Bestellung mit derselben Nummer ist kein Fehler.
+  await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(2)], versand: { sendungsnummer: 'ZZ9999TEST' } });
+  assert.equal(u.eintrag(2).status, 'raus');
+  const vorher = fs.readFileSync(path.join(u.dir, 'auftragsstatus.json'), 'utf8');
+  const buchungenVorher = u.z.attrappe.buchungen().length;
+  // Andere Bestellung, gleiche Nummer (andere Schreibweise): abgelehnt, nichts geschrieben, nichts gebucht.
+  await assert.rejects(() => u.setze({ aktion: 'schritt', orderId: TEST, schritt: 'raus', versand: { sendungsnummer: 'zz9999test' } }), e => {
+    assert.ok(e instanceof ApiError);
+    assert.equal(e.status, 409);
+    assert.deepEqual(e.extra.doppelteSendung, { nummer: 'zz9999test', bestellungen: ['#T5001'] });
+    assert.match(e.message, /steht schon an #T5001/);
+    return true;
+  });
+  // Derselbe Riegel im Einzelweg (Status je Position).
+  await assert.rejects(() => u.setze({ orderId: TEST, lineItemId: li(7), status: 'raus', versand: { sendungsnummer: 'ZZ9999TEST' } }), e => e.status === 409);
+  assert.equal(fs.readFileSync(path.join(u.dir, 'auftragsstatus.json'), 'utf8'), vorher, 'kein Schreibvorgang');
+  assert.equal(u.z.attrappe.buchungen().length, buchungenVorher);
+  // Ausdruecklich bestaetigt: eingetragen, mit Protokollzeile.
+  const r = await u.setze({ aktion: 'schritt', orderId: TEST, schritt: 'raus', versand: { sendungsnummer: 'ZZ9999TEST', trotzDoppelt: true } });
+  assert.equal(r.positionen, 1);
+  assert.equal(u.stand()[`${TEST}::${li(7)}`].sendungsnummer, 'ZZ9999TEST');
+  assert.ok(letzteEintraege(protokollPfad(), 10).some(e => e.aktion === 'Sendungsnummer trotz Doppelung eingetragen' && /#T5001/.test(e.objekt)));
+  // Ohne Nummer prueft nichts.
+  const ohne = umgebung();
+  await ohne.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(1)] });
+  await ohne.setze({ aktion: 'schritt', orderId: TEST, schritt: 'raus' });
+});
+
 test('Einzelweg (Status je Position, z. B. alte Oberflaeche in einer Schleife) bucht nie je Artikel: "ausstehend", dann ein Paket', async () => {
   const u = umgebung();
   const a = await u.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' });

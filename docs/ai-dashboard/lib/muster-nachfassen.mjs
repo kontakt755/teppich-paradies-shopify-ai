@@ -13,10 +13,14 @@
  *
  * Reine Funktionen ohne DOM und ohne Dateizugriff - der Server nutzt texteAusMarkdown(),
  * der Browser den Rest. Kundendaten kommen nur zur Laufzeit aus den lokalen Daten.
+ *
+ * Zwei Fassungen (Rundgang 2026-10-26, #7): Muster nur zu Teppich nach Mass bekommen die
+ * Teppich-Fassung (Wunschmass, Form, Einfassung, Lieferzeit laut Produktseite), alle anderen
+ * die allgemeine Vorlage des Inhabers mit Rollenbreite und Verlegung. vorlageFuer() waehlt.
  */
 
 import { sichereMusterLinks } from './muster-kauf-links.mjs';
-const TAG_MS = 86400000;
+import { kalendertage } from './kalendertage.mjs';
 
 /** Erste Nachfrage ab so vielen Tagen nach Versand bzw. Uebergabe der Muster. */
 export const ERSTE_NACH_TAGEN = 4;
@@ -38,10 +42,7 @@ const FESTE_LINKS = Object.freeze({
 export const STUFE_LABEL = Object.freeze({ erste: 'Erste Nachfrage', erinnerung: 'Erinnerung' });
 
 function tageSeit(iso, jetzt) {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.max(0, Math.floor((jetzt.getTime() - t) / TAG_MS));
+  return kalendertage(iso, jetzt);
 }
 
 const gesetzt = v => v !== null && v !== undefined && v !== '' && v !== '–';
@@ -63,6 +64,19 @@ export function musterKurz(positionen) {
     if (gesetzt(p.farbe) && !titel.includes(p.farbe) && !farben.includes(p.farbe)) farben.push(p.farbe);
   }
   return [...jeProdukt].map(([titel, farben]) => (farben.length ? `${titel}: ${farben.join(', ')}` : titel));
+}
+
+/** Muster zu "Teppich nach Mass" oder "Laeufer nach Mass" (am Titel; "Teppichboden" zaehlt nicht). */
+const TEPPICH_TITEL = /\b(?:Teppich|Läufer)\b.*\bnach\s+Ma(?:ß|ss)/i;
+
+/**
+ * Welche Fassung der Nachfrage passt? 'teppich', wenn alle Muster der Bestellung zu einem
+ * Teppich (oder Laeufer) nach Mass gehoeren - dort zaehlen Mass, Form, Einfassung und Lieferzeit,
+ * nicht Rollenbreite und Verlegung. Sonst 'boden' (allgemeine Vorlage des Inhabers).
+ */
+export function musterArt(positionen) {
+  const muster = (positionen || []).filter(p => p?.istMuster);
+  return muster.length > 0 && muster.every(p => TEPPICH_TITEL.test(String(p.titel || ''))) ? 'teppich' : 'boden';
 }
 
 /**
@@ -107,6 +121,7 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
       kundenSchluessel: z.kundenSchluessel || null,
       datum: z.datum || null,
       muster: musterKurz(z.auftrag?.positionen),
+      art: musterArt(z.auftrag?.positionen),
       produkte: sichereMusterLinks(z.musterKaufLinks),
       kontakt: kontaktweg(z),
     };
@@ -245,6 +260,73 @@ Freundliche Grüße
 Teppich Paradies`,
 });
 
+/**
+ * Teppich-Fassung (Rundgang 2026-10-26, #7): fuer Bestellungen, deren Muster alle zu einem
+ * Teppich nach Mass gehoeren. Gilt, solange die Vorlage des Inhabers keine eigenen Abschnitte
+ * "Text 1 Teppich" und "Erinnerung Teppich" hat. Ohne Verlege-Absatz (der gilt fuer Bodenbelaege
+ * von der Rolle). {Lieferzeit} kommt aus service.lieferzeit des Produkts; fehlt sie oder
+ * unterscheidet sie sich je Produkt, faellt die Zeile weg - nichts wird geraten.
+ */
+export const TEPPICH_VORLAGEN = Object.freeze({
+  erste: Object.freeze({
+    betreff: 'Ihre Muster von Teppich Paradies – passt die Farbe?',
+    text: `Guten Tag {Anrede} {Nachname},
+
+Ihre Muster sollten inzwischen bei Ihnen angekommen sein. Wir hoffen, sie helfen Ihnen bei der Entscheidung.
+
+Ein paar Tipps zum Vergleichen:
+- Legen Sie die Muster dort aus, wo der Teppich später liegen soll.
+- Schauen Sie sie bei Tageslicht und am Abend bei Lampenlicht an – die Farbe wirkt jeweils etwas anders.
+- Halten Sie sie neben Möbel, Türen oder Wandfarbe.
+
+Ihr Teppich wird in Ihrem Wunschmaß gefertigt. Auf der Produktseite geben Sie Maß und Form ein, wählen – je nach Modell – die Einfassung, zum Beispiel gekettelt, und sehen sofort den Preis.
+Lieferzeit laut Produktseite: {Lieferzeit}
+
+Wenn Sie Fragen haben – zum passenden Maß, zur Form, zur Einfassung oder zu einer anderen Farbe – melden Sie sich gern. Wir beraten Sie persönlich:
+
+- Telefon: 03301 573 37 20 (Mo–Fr 8:30–18:00, Sa 8:30–14:30)
+- Oder einfach auf diese E-Mail antworten.
+
+Ihr gewähltes Produkt finden Sie hier: {Link Produkt}
+Weitere Muster können Sie jederzeit kostenlos nachbestellen: {Link Muster}
+
+Freundliche Grüße
+{Name}
+Teppich Paradies Oranienburg
+
+Sie möchten keine solchen Nachfragen mehr erhalten? Antworten Sie kurz mit „Abmelden“, dann schreiben wir Ihnen nicht mehr.`,
+  }),
+  erinnerung: Object.freeze({
+    betreff: 'Noch Fragen zu Ihrem Teppich?',
+    text: `Guten Tag {Anrede} {Nachname},
+
+haben Sie sich schon für eine Farbe entschieden? Wenn Sie noch unsicher sind – beim Maß, bei der Form oder bei der Einfassung –, helfen wir Ihnen gern: telefonisch unter 03301 573 37 20 oder per Antwort auf diese E-Mail.
+
+Ihr gewähltes Produkt finden Sie hier: {Link Produkt}
+
+Freundliche Grüße
+{Name}
+Teppich Paradies Oranienburg
+
+Keine weiteren Nachfragen gewünscht? Antworten Sie mit „Abmelden“.`,
+  }),
+});
+
+/**
+ * Vorlage fuer eine faellige Nachfrage: bei reinen Teppich-Mustern (e.art === 'teppich') die
+ * Teppich-Abschnitte der Inhaber-Vorlage, sonst die eingebaute Teppich-Fassung; alle anderen
+ * bekommen die allgemeine Vorlage ihrer Stufe.
+ *
+ * @param {{erste?, erinnerung?, teppich?: {erste?, erinnerung?}}|null} texte  texteAusMarkdown()
+ * @param {{stufe: 'erste'|'erinnerung', art?: string}} e  Eintrag aus musterNachfassen().offen
+ */
+export function vorlageFuer(texte, e) {
+  const stufe = e?.stufe;
+  if (!texte || (stufe !== 'erste' && stufe !== 'erinnerung')) return null;
+  if (e.art === 'teppich') return texte.teppich?.[stufe] || TEPPICH_VORLAGEN[stufe];
+  return texte[stufe] || null;
+}
+
 export function texteAusMarkdown(md) {
   const abschnitte = String(md || '').split(/^##\s+/m).slice(1).map((a) => {
     const [kopf, ...rest] = a.split('\n');
@@ -259,10 +341,52 @@ export function texteAusMarkdown(md) {
     return text ? { betreff: m[1].trim(), text } : null;
   };
   const nichtVerfuegbar = abschnitte.find(a => /nicht\s+verf[uü]e?gbar/i.test(a.kopf));
-  const erinnerung = abschnitte.find(a => a !== nichtVerfuegbar && /erinnerung/i.test(a.kopf));
-  const erste = abschnitte.find(a => a !== erinnerung && a !== nichtVerfuegbar && /^text\s*1\b/i.test(a.kopf))
-    || abschnitte.find(a => a !== erinnerung && a !== nichtVerfuegbar && /e-?mail/i.test(a.kopf));
-  return { erste: lies(erste), erinnerung: lies(erinnerung), nichtVerfuegbar: lies(nichtVerfuegbar) };
+  // "Text 1 Teppich" / "Erinnerung Teppich" (Rundgang #7) - "Teppich Paradies" im Kopf zaehlt nicht.
+  const istTeppich = a => /\bteppich\b(?!\s+paradies)/i.test(a.kopf);
+  const waehle = (liste) => {
+    const erinnerung = liste.find(a => a !== nichtVerfuegbar && /erinnerung/i.test(a.kopf));
+    const erste = liste.find(a => a !== erinnerung && a !== nichtVerfuegbar && /^text\s*1\b/i.test(a.kopf))
+      || liste.find(a => a !== erinnerung && a !== nichtVerfuegbar && /e-?mail/i.test(a.kopf));
+    return { erste: lies(erste), erinnerung: lies(erinnerung) };
+  };
+  const allgemein = waehle(abschnitte.filter(a => !istTeppich(a)));
+  const teppich = waehle(abschnitte.filter(istTeppich));
+  return { ...allgemein, nichtVerfuegbar: lies(nichtVerfuegbar), teppich };
+}
+
+/**
+ * Kundenname fuer die Anrede: ganz klein oder ganz gross eingetippte Namen ("anna-lena muster",
+ * "ANNA MUSTER") je Wortanfang gross; gemischte Schreibweise ("Anna von Muster") bleibt.
+ */
+export function nameSchreibweise(name) {
+  const s = String(name ?? '').trim().replace(/\s+/g, ' ');
+  if (!/\p{L}/u.test(s) || (s !== s.toLowerCase() && s !== s.toUpperCase())) return s;
+  return s.toLowerCase().replace(/(^|[\s\-'’])(\p{L})/gu, (m, vor, b) => vor + b.toUpperCase());
+}
+
+/**
+ * Pflichtangaben einer GmbH in geschaeftlichen Mails (Werkbank w-172, Inhaber 2026-10-28),
+ * Stand Impressum 2026-10-28. Steht unter dem Gruss jeder Nachfass-Mail und vor dem
+ * Abmelde-Hinweis; aendern sich Anschrift oder Geschaeftsfuehrung, hier und im Impressum.
+ */
+export const FIRMENANGABEN = [
+  'Teppich Paradies Oranienburg GmbH · Saarlandstraße 73–81 · 16515 Oranienburg',
+  'Telefon 03301 573 37 20 · kontakt@teppich-paradies.net · www.teppich-paradies.net',
+  'Sitz: Oranienburg · Amtsgericht Neuruppin, HRB 9141 NP · Geschäftsführerin: Suzan Karakaya',
+].join('\n');
+
+/**
+ * Haengt die Firmenangaben als eigenen Absatz hinter den Gruss (Absatz mit "Freundliche
+ * Grüße" o. ae.), damit der Abmelde-Hinweis die letzte Zeile bleibt. Ohne Gruss stehen sie
+ * am Ende. Eine Vorlage, die sie schon traegt (Registernummer), bekommt sie nicht doppelt.
+ */
+export function mitFirmenangaben(text) {
+  const t = String(text ?? '');
+  if (!t.trim() || t.includes('HRB 9141')) return t;
+  const absaetze = t.split(/\n{2,}/);
+  const gruss = absaetze.findIndex(a => /^(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(a.trim()));
+  absaetze.splice(gruss >= 0 ? gruss + 1 : absaetze.length, 0, FIRMENANGABEN);
+  return absaetze.join('\n\n');
 }
 
 /**
@@ -284,25 +408,34 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
   if (farbZeilen.length) werte.Farben = farbZeilen.map(f => `– ${f}`).join('\n');
   const links = sichereMusterLinks(produkte);
   const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${p.url}`).join('\n\n');
-  if (links.length) werte['Link Produkt'] = auswahl;
+  // Die Linkliste steht auf eigenen Zeilen, danach eine Leerzeile - sonst klebt der naechste Satz am letzten Link.
+  if (links.length) werte['Link Produkt'] = `\n${auswahl}\n`;
+  // Lieferzeit laut Produktseite nur, wenn sie fuer alle verlinkten Produkte gleich ist.
+  const lieferzeiten = [...new Set(links.map(p => String(p.lieferzeit ?? '').replace(/[{}\r\n]/g, ' ').trim()).filter(Boolean))];
+  if (lieferzeiten.length === 1 && links.every(p => gesetzt(p.lieferzeit))) werte.Lieferzeit = lieferzeiten[0];
   if (gesetzt(absender)) werte.Name = String(absender).trim();
+  const anrede = gesetzt(kundenname) ? nameSchreibweise(kundenname) : '';
+  const mehrere = links.length > 1;
   const ersetze = s => String(s)
     // Die Anrede (Herr/Frau) steht nicht in den Bestelldaten - "Guten Tag Vorname Nachname," ist korrekt.
-    .replace(/[ \t]*\{Anrede\}[ \t]*\{Nachname\}/g, gesetzt(kundenname) ? ` ${String(kundenname).trim()}` : '')
+    .replace(/[ \t]*\{Anrede\}[ \t]*\{Nachname\}/g, anrede ? ` ${anrede}` : '')
     .replace(/\{([^{}\n]+)\}/g, (ganz, name) => (Object.hasOwn(werte, name) ? werte[name] : ganz));
-  const text = ersetze(vorlage.text)
+  const vorlageText = mehrere ? String(vorlage.text).replace(/Ihr gewähltes Produkt\b/g, 'Ihre gewählten Produkte') : vorlage.text;
+  const text = ersetze(vorlageText)
     .replace(/<[^>]+>/g, '')            // <small> u. a. - die Mail ist reiner Text
     .split('\n')
     .filter(zeile => !/\{[^{}\n]+\}/.test(zeile))
     .join('\n')
+    .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-  const block = `Ihre gewählten Böden:\n${auswahl}\n\nFragen zum Maß? Wir beraten Sie gern.`;
+  const block = `${mehrere ? 'Ihre gewählten Produkte' : 'Ihr gewähltes Produkt'}:\n${auswahl}\n\nFragen zum Maß? Wir beraten Sie gern.`;
   const mitAuswahl = auswahl && !vorlage.text.includes('{Link Produkt}')
-    ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
+    // \n+ nimmt die Leerzeile vor dem Gruss mit - sonst stuenden zwei Leerzeilen vor dem Block.
+    ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n+((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
   // Der Betreff hat keine Zeile, die wegfallen koennte: ein unbekannter Platzhalter bleibt stehen,
   // damit platzhalterFrei() ihn sieht und der Versandlauf die Mail zurueckhaelt (statt „Ihre Muster,“ zu schicken).
-  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitAuswahl };
+  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitFirmenangaben(mitAuswahl) };
 }
 
 /** mailto:-Link mit Betreff und Text - oeffnet das Mailprogramm, sendet nichts. */

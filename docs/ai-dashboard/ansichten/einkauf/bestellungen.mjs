@@ -300,7 +300,7 @@ export function viewEinkaufBestellungen() {
       <p class="small muted" style="margin:6px 0">Tag „TESTBESTELLUNG" oder Shopify-Feld test=true. Fließen nicht in Auftragsampel, Einkauf oder Shop-Zahlen ein.</p>
       <div class="rows">${d.testauftraege.map(einkaufAuftragZeile).join('')}</div>
     </details>` : ''}
-    <p class="small muted" style="margin-top:12px">Stand der Bestellungen: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Wartezeit: gelb ab 7 Tagen (nachhaken), rot ab 14. Hier wird nie etwas automatisch bestellt oder versendet.</p>`;
+    <p class="small muted" style="margin-top:12px">Stand der Bestellungen: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Wartezeit: gelb ab 7 Tagen (nachhaken), rot ab 14. Ware bestellst du selbst. Nur vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen – die stehen dann schon als „bestellt“ da.</p>`;
 }
 
 /**

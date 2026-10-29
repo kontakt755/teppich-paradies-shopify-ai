@@ -11,3 +11,7 @@
 *.woff binary
 *.woff2 binary
 *.zip binary
+
+# Viele parallele PRs schreiben ihren Eintrag oben in dieselbe Datei.
+# union behält bei einem Merge beide Seiten statt eines Konflikts.
+docs/control-center/CHANGELOG.md merge=union

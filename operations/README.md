@@ -812,6 +812,57 @@ einen ausgebliebenen Tag bereits als alt; die Berechnung verwendet Europe/Berlin
 einschliesslich Sommer-/Winterzeit. Der 48-Stunden-Schutz bleibt zusaetzlich.
 Eine Sicherung auf derselben Platte ersetzt keine unabhaengige externe Kopie.
 
+**Was im Archiv steht** (`SICHERUNGSPFADE` in `scripts/sicherung.mjs`, seit 2026-10-26 vollstaendig):
+alles, was es nur auf diesem Mac gibt. Dazu gehoeren Auftragsstatus und Zeitleisten, Musterlager,
+Pack- und Druckhaken, Service-Anfragen, Lieferbelege und Fehlermeldungen. Ausserdem
+Betriebsaufgaben, Rueckrufe, Fallmarken, Lieferanten-Stammdaten, Versandtarife, die gepflegten
+Spalten der Bildrechte, Akquise und das Aenderungsprotokoll (`protokoll.jsonl`). Fuer die
+automatischen Mails: Versandprotokoll und Stoppliste der Muster-Nachfassmails und die
+Musterautomatik. Ohne sie gingen nach einer Wiederherstellung doppelte oder unerwuenschte
+Kundenmails raus. Ebenfalls im Archiv: der Stand der Auslauf-Pruefung, der Stoerungsverlauf der
+Shop-Wache, der Datenbankabzug des Social-Moduls und ein Abzug der Mac-Dienste (`dienste/`, die
+Plists `net.teppich-paradies.*` aus `~/Library/LaunchAgents`; eine Plist mit TOKEN, SECRET,
+PASSW oder API_KEY im Schluesselnamen bleibt draussen). Jeder Lauf baut den Abzug neu auf:
+geloeschte oder umbenannte Dienste fallen heraus.
+
+Bewusst nicht im Archiv (`NICHT_GESICHERT`, je mit Grund): Zugaenge (Firmenpostfach,
+Control-Center-Benutzer, Notpasswort, Meta-Zugang, Upload-Links im Klartext), die
+Shopify-Exporte, die der Sync-Dienst neu holt, und die Fotos des Social-Moduls.
+`tests/sicherung.test.mjs` sucht im Code nach `path.join(<Privatordner>, '…')` und schlaegt fehl,
+solange eine neue Ablage in keiner der beiden Listen steht.
+
+**Stand und Ueberwachung.** Jede Logzeile (`~/Library/Logs/teppich-paradies-sicherung.log`) traegt
+die Uhrzeit, die letzte heisst „Sicherung fertig“ bzw. „mit Fehler beendet“. Scheitert der Lauf,
+vermerkt er `letzterFehler` (Zeit, Meldung) in `sicherungsstand.json`, ohne `letzterErfolg` zu
+aendern; der naechste Erfolg schreibt den Stand ohne diesen Vermerk neu. `sicherungsstand()` in
+`lib/betriebszustand.mjs` rechnet daraus den Stand (verpasst = nach 23:00 Uhr keine Sicherung vom
+selben Abend). Das Control Center zeigt ihn als To-do auf „Heute“ (seit 28.10.2026): gelb
+„Sicherung überfällig“ nach einem verpassten Termin, rot ab 48 Std., bei „fehlgeschlagen“ und bei
+unlesbarem Stand; gelb „Sicherungsstand fehlt“, wenn `sicherungsstand.json` gar nicht existiert.
+
+**Zweite Kopie ausser Haus (vorbereitet, Entscheidung beim Inhaber).** Das Skript kann jedes
+fertige Tagesarchiv zusaetzlich in einen zweiten Ordner legen:
+
+```
+npm run daten:sichern -- --kopie "/Volumes/<Platte>/teppich-paradies-sicherungen"
+TP_SICHERUNG_KOPIE="/Volumes/<Platte>/teppich-paradies-sicherungen" npm run daten:sichern
+```
+
+- Der Ordner muss schon existieren. Das Skript legt ihn nie an: ist die Platte nicht angesteckt,
+  entstuende unter `/Volumes` sonst ein gleichnamiger Ordner auf der internen Platte.
+- Geschrieben wird erst eine temporaere Datei, dann wird die Groesse geprueft und umbenannt
+  (Rechte `0600`). Alte Kopien werden nach derselben Frist geloescht.
+- Scheitert die Kopie, bleibt das Tagesarchiv gueltig. Der Lauf endet dann mit Exit 1 und
+  vermerkt den Fehler in `sicherungsstand.json` (Feld `kopie`).
+- Das Skript verschluesselt nicht. Das Ziel muss selbst verschluesselt sein: externe Platte als
+  „APFS (verschluesselt)“ oder ein verschluesselter Cloud-Ordner. Die Archive enthalten Kundendaten.
+
+Eingerichtet wird das erst nach der Entscheidung des Inhabers (externe SSD mit Time Machine oder
+Kopie der Archive): Eintrag `TP_SICHERUNG_KOPIE` unter `EnvironmentVariables` in
+`launchagents/net.teppich-paradies.sicherung.plist.vorlage`, danach
+`bash operations/scripts/dienste-einrichten.sh --nur-sicherung`. Danach einmal das
+Zurueckspielen ueben (Abschnitt „Ausfall des Mac mini“).
+
 ### Dienst-Checkout automatisch nachziehen (seit 2026-10-26, #1710)
 
 `npm run -s betrieb:nachziehen` bringt `~/tp-dashboard` (Zweig `dashboard-betrieb`) auf den
@@ -852,7 +903,7 @@ Lauf. Gemessen: ein Fehlermeldungs-Lauf ohne Arbeit braucht 3 Runden, 8 s, rund 
 | Dienst (Vorlage in `launchagents/`) | Wann | Was |
 |---|---|---|
 | `net.teppich-paradies.fehler-vorpruefung` | alle 15 Min., Mo–Sa 7–19 Uhr (und beim Laden) | `claude-lauf.mjs fehlermeldungen`: `npm run -s fehler -- abgleich` ohne KI; Claude nur bei `neu`, oder für `laufend`/`kuerzlichErledigt` höchstens alle 2 Std. Nach einem Fehlschlag 1 Std. Pause. |
-| `net.teppich-paradies.postfach` | 7:35, 9:35 … 19:35, Mo–Sa | `claude-lauf.mjs postfach`: zwei getrennte `claude -p`-Aufrufe nacheinander, erst Lieferbelege, dann Service-Anfragen. Ein Fehler im ersten verhindert den zweiten nicht. |
+| `net.teppich-paradies.postfach` | 7:35, 9:35 … 19:35, Mo–Sa | `claude-lauf.mjs postfach`: erst eine IMAP-Vorprüfung ohne KI (unten), dann je Teil höchstens ein `claude -p`-Aufruf, erst Lieferbelege, dann Service-Anfragen. Ein Fehler im ersten verhindert den zweiten nicht. |
 | `net.teppich-paradies.datenstand` | stündlich :20 | `datenstand-pruefen.mjs`: `aktualisierung.json` höchstens 60 Min. alt, jeder Teil erfolgreich, Lexikon/Bestand ≤ 3 Std. Ohne KI. Ersetzt den Datenteil von `shop-zahlen-export` – die Daten holt der Sync-Dienst. |
 
 Das Nachziehen von `~/tp-dashboard` auf main macht nicht dieser Dienst, sondern
@@ -861,6 +912,24 @@ wartet, solange eine Routine-Sperre frisch ist (`routineLaeuft` aus `lib/routine
 Ruhe-Prüfung); eine Routine startet nicht, solange `betrieb-nachziehen.lock` frisch ist (bis zu
 4 Min. Warten, dann dieser Takt übersprungen mit Hinweis „wartet auf Nachziehen“, keine Störung).
 Die Routine nimmt erst die eigene Sperre und prüft dann noch einmal – so sieht immer einer den anderen.
+
+**Vorprüfung des Postfach-Laufs** (`lib/postfach-vorpruefung.mjs`, `lib/imap-lesen.mjs`, seit
+28.10.2026): Bis dahin startete Claude bei jedem Takt für beide Teile, auch ohne neue Mail
+(Service 14 von 16 Läufen leer, Lieferbelege 4 von 16). Jetzt fragt der Dienst vorher per IMAP
+(`imap.gmail.com`, nur lesend mit `EXAMINE`, nur die Kennung `X-GM-MSGID`, nie Absender, Betreff
+oder Text) dieselben Gmail-Suchen ab wie die Auftragstexte (Schritt 2) und vergleicht die
+Kennungen mit dem Bekannten (`belege|service -- bekannt`) und mit `vorpruefung.gesehen` im
+`status-<teil>.json` (alles, was der letzte erfolgreiche Lauf schon fand, höchstens 2000).
+Claude startet je Teil nur, wenn der letzte Claude-Lauf fehlschlug, heute noch keiner erfolgreich
+war (Tageslauf: fängt Abweichungen zum privaten Auftragstext ab und bietet zurückgestellte Mails
+einmal am Tag erneut an), der letzte Belege-Lauf unvollständig war, sich die Lieferanten-Domains
+geändert haben oder eine Kennung weder bekannt noch gesehen ist. Bei Service-Anfragen gilt nach
+einem Lauf nur als gesehen, was in der Ablage steht – eine nicht übernommene Mail startet den
+nächsten Takt wieder. Die MCP-Serverprobe läuft nur, wenn ein Teil wirklich startet. Sonst steht im Status „nichts
+Neues (Vorprüfung ohne KI)“ mit dem Grund in `vorpruefungGrund`. Zugang: das App-Passwort des
+Nachfass-Versands (`nachfassen/postfach.json`, gleiches Konto). Geht die Vorprüfung nicht (kein
+Zugang, Anmeldung abgelehnt, Netz), startet Claude wie bisher. Abschalten:
+`TP_POSTFACH_VORPRUEFUNG=aus`; `--erzwingen` und `--trocken` überspringen sie.
 
 **Auftragstexte** liegen privat unter `~/teppich-paradies-analyse/routinen/auftraege/<aufgabe>.md`
 (enthalten u. a. die Werkbank-Adresse). `dienste-einrichten.sh --routinen` kopiert sie einmalig aus
@@ -889,7 +958,11 @@ die Pflichtwerkzeuge des Laufs geprüft; fehlt eines, endet der Lauf sofort mit 
   `get_message`; alle 24 Gmail-Schreibwerkzeuge, Shopify-MCP, `git`, `gh`, `shopify`, `curl`, `rm`,
   `npm run -s fehler …` und Artifact* ausdrücklich gesperrt. Freigegeben: `npm run -s belege|service --
   bekannt | uebernehmen …`, `date -u …`, `jq …`, Schreiben nur im Arbeitsordner. Die Zwischendatei
-  löscht der Dienst, nicht Claude.
+  löscht der Dienst, nicht Claude. Von den MCP-Servern des Kontos bleibt nur `claude.ai Gmail`
+  (`nurMcp`): vor dem Lauf liest eine init-Probe ohne Modellaufruf die Serverliste, alle anderen
+  werden per `--disallowedTools mcp__<server>` gesperrt (`--strict-mcp-config` ginge nicht, es
+  entfernt auch Gmail). Gemessen 28.10.: Grundlast je Runde 29.472 → 20.391 Tokens.
+  `claude-lauf.mjs postfach --werkzeugprobe` zeigt die Sperren und belegt, dass Gmail bleibt.
 - *Beide:* gesperrt sind auch `cat`, `head`, `tail`, `grep`, `env`, `printenv` und `Read` auf `.env*`
   (`.env.local` im Dienst-Checkout hält die Shopify-Zugangsdaten).
 
@@ -904,6 +977,13 @@ Auftragstext, nie im Repository), collection `items`, keine Löschung, schreiben
 Meldungsnummer. Artifact nur `read` der Werkbank und `publish` mit `asset: true` eines
 Bildschirmfotos aus `fehlermeldungen/`. Die Wache gibt nichts frei, sie lehnt nur ab; fällt sie
 aus, blockiert sie (Exit 2). Eine Ablehnung zählt als Störung („abgelehnt“, mit dem Grund).
+Ausnahme Postfach: Wurden nur `Read`/`Write` in Claudes eigenem Scratchpad abgelehnt
+(`/private/tmp/claude-<uid>/<projekt>/<sitzung>/scratchpad/…`, ohne `..` und `.env`) und das
+Ergebnis steht trotzdem in der Ablage (Lieferbelege: neuer Eintrag in `laeufe`; Service: jede
+offene Kennung der Vorprüfung angelegt oder als geprüft vermerkt), gilt der Lauf als erfolgreich
+mit `hinweis` statt Störung. Jeder andere abgelehnte Pfad (`.env*`, Zugangsdateien,
+LaunchAgents, alles unter `~`) bleibt Störung mit Mitteilung – das ist das Zeichen, dass eine
+Mail Claude zu etwas anderem bringen wollte.
 
 **Ablage** (privat, `$TP_PRIVAT_DIR/routinen/<lauf>/`, Rechte 0700/0600):
 `dienst.log` (launchd-Ausgabe, je Lauf eine Zeile), `status*.json` (letzter Stand, `letzterErfolg`,
@@ -944,3 +1024,152 @@ npm run -s datenstand:pruefen -- --trocken
 löschen (ohne Plist zeigt das Control Center die Routine nicht mehr). **Rückfall** bei „Mac-Dienst
 gestört“, der sich nicht gleich beheben lässt: Dienst abschalten und die pausierte App-Aufgabe
 wieder aktivieren.
+
+## Shop-Wache und Aufgabenwaechter (Mac-Dienste ohne Vorlage)
+
+`npm run shop:wache` (Dienst `net.teppich-paradies.shopwache`, stuendlich zur Minute 5) prueft den
+oeffentlichen Shop von aussen (Pflichtseiten, Preisstichprobe) und schreibt
+`$TP_PRIVAT_DIR/shopwache/status.json`; das Control Center zeigt sie unter „Shop-Kontrolle“.
+Seit 2026-10-26:
+
+- Jede Logzeile (`~/teppich-paradies-analyse/shopwache.log`) beginnt mit der Uhrzeit (ISO, UTC,
+  `lib/zeitstempel.mjs`).
+- Bei jedem Ampelwechsel steht eine Zeile in `shopwache/verlauf.jsonl`: `beginn` (mit den
+  gestoerten Seiten und Befunden), `wechsel` (gelb ↔ rot) und `ende` (mit Beginn und Dauer in
+  Minuten). Den Beginn der laufenden Stoerung traegt `status.json` als `stoerungSeit`. Genauigkeit:
+  ein Lauf je Stunde. Der Verlauf ist im Tagesarchiv.
+- Feld `speicher`: freier Speicher der Platte (`lib/speicher.mjs`), gelb unter 40 GiB, rot unter
+  20 GiB, eigenes To-do im Control Center. Er zaehlt nicht zur Shop-Ampel. Bei Rot schickt die
+  Wache zusaetzlich eine Mac-Mitteilung, hoechstens einmal je Kalendertag (Tag in
+  `shopwache/speicher-mitteilung.json`), nur in der Arbeitszeit (Mo–Sa 7–19 Uhr, wie die
+  Routinen), Logzeile „Speicher rot: Mac-Mitteilung verschickt“. Gemeldet wird vor dem Schreiben
+  von `status.json` – bei voller Platte scheitert gerade das.
+- Bildlaeufe (Raumbilder, Schaerfe, Bild-Downloads; die Skripte liegen privat unter
+  `$TP_PRIVAT_DIR`) pruefen vor dem Start `npm run -s speicher:pruefen`. **Exit ungleich 0 heisst:
+  nicht starten** (1 = unter 20 GiB frei, 2 = falsche Angabe; `--min <GiB>` fuer eine eigene
+  Grenze). Aus Python: `subprocess.run(["npm", "run", "-s", "speicher:pruefen"],
+  cwd=<Repository>).returncode` und bei jedem Wert ungleich 0 abbrechen.
+
+`npm run aufgaben:pruefen` (Dienst `net.teppich-paradies.aufgaben`, taeglich 9:30) prueft
+Betriebsaufgaben mit maschinell pruefbarer Vorgabe und legt faellige Wiederholungen an. Auch hier
+beginnt jede Logzeile (`aufgaben-waechter.log`) mit der Uhrzeit. Stand 26.10.2026 gibt es keine
+solche Aufgabe; alle 31 Laeufe meldeten „0 geprueft“. Den Dienst pausiert man ohne Loeschen mit
+`launchctl bootout gui/$(id -u)/net.teppich-paradies.aufgaben` (die Plist bleibt liegen). Wieder
+einschalten: `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.teppich-paradies.aufgaben.plist`.
+
+## Ausfall des Mac mini: nach einem Neustart pruefen, wiederherstellen, Plan B
+
+Der Mac mini ist der einzige Rechner mit Control Center, Sync, Social-Upload, Sicherung und den
+Routinen. Stand 26.10.2026 startet er nach einem Stromausfall von selbst neu und meldet sich an.
+Alle Dienste mit `RunAtLoad` kommen dann allein zurueck, darunter Dashboard, Sync, Social,
+Shop-Wache, Sicherung und Nachziehen. Die geplanten Aufgaben der Claude-App laufen nur, wenn die App offen ist.
+
+### Nach einem Neustart pruefen
+
+Im Dienst-Checkout (`cd ~/tp-dashboard`):
+
+1. `launchctl list | grep teppich-paradies`: eine Zeile je Dienst. Dashboard, Sync und Social
+   laufen dauerhaft und haben eine Prozessnummer in der ersten Spalte.
+2. `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8001/login` ergibt `200` (Control
+   Center). Dasselbe fuer `http://127.0.0.1:8020/` (Social-Zentrale).
+3. `node operations/scripts/datenstand-pruefen.mjs --trocken` meldet
+   „Datenstand: ok – Datenstand frisch“. Der Sync-Dienst holt gleich nach seinem Start neue
+   Daten; ein paar Minuten nach dem Neustart sollte die Zeile also stimmen.
+4. Tailscale: `tailscale status` zeigt den Mac mini verbunden. `tailscale funnel status` zeigt
+   `:8443 (Funnel on)` mit Ziel `http://127.0.0.1:8021` (Monteur-Upload). Die CLI liegt unter
+   `/Applications/Tailscale.app/Contents/MacOS/Tailscale` (`docs/control-center/ARCHITEKTUR.md`, 1d).
+5. Die Claude-App ist offen und angemeldet. In Systemeinstellungen → Allgemein → Anmeldeobjekte
+   sollte „Claude“ stehen, sonst laufen die App-Aufgaben erst, wenn jemand die App oeffnet. Das
+   prueft und aendert ein Mensch.
+6. Im Control Center auf „Heute“ (Inhaber) darf kein rotes To-do stehen: weder „Mac-Dienst
+   gestoert“ noch „Shop-Kontrolle meldet sich nicht“ oder „Mac mini: Speicher …“.
+
+### Wiederherstellen nach einem Ausfall
+
+Gebraucht wird ein Tagesarchiv `<datum>.tar.gz`, entweder aus `~/teppich-paradies-analyse/sicherungen/`
+des alten Macs oder aus der zweiten Kopie (Abschnitt „Taegliche Betriebssicherung“). Ohne Archiv
+fehlen alle lokalen Staende (Auftragsstatus, Musterlager, Stoppliste …). Die Shopify-Daten holt der
+Sync-Dienst neu.
+
+1. **Mac vorbereiten:** Benutzer anlegen, am besten mit demselben Namen wie vorher. Die Plists in
+   `dienste/` enthalten absolute Pfade. Dann Homebrew, Node (`brew install node`), `gh auth login`,
+   Tailscale (`ARCHITEKTUR.md`, 1d) und die Claude-App installieren.
+2. **Code holen:**
+   ```
+   git clone https://github.com/kontakt755/teppich-paradies-shopify-ai.git ~/teppich-paradies-shopify-ai
+   git clone https://github.com/kontakt755/teppich-paradies-shopify-ai.git ~/tp-dashboard
+   cd ~/tp-dashboard && git switch -c dashboard-betrieb origin/main && npm ci --no-audit --no-fund
+   ```
+   Der Dienst-Checkout entsteht neu aus `main`; das Nachziehen (`--nur-nachziehen`) haelt ihn danach
+   aktuell.
+3. **Daten zurueckspielen.** Die Pfade im Archiv sind relativ zu `$TP_PRIVAT_DIR`, weil das Skript
+   mit `tar -C <Privatordner>` packt. Der Social-Dienst oeffnet `social/social.db`; im Archiv steht
+   nur ihr taeglicher Abzug `social/sicherung.db`. Er muss vor dem ersten Start des Dienstes
+   (Schritt 5) nach `social.db` kopiert werden. Sonst legt der Dienst eine leere Datenbank an.
+   Die letzte Zeile zaehlt zur Kontrolle die Inhalte, Medien und Beitraege. Keine davon darf
+   unerwartet 0 sein.
+   ```
+   mkdir -p ~/teppich-paradies-analyse && chmod 700 ~/teppich-paradies-analyse
+   tar -tzf <datum>.tar.gz | head                       # Inhalt ansehen
+   tar -xzf <datum>.tar.gz -C ~/teppich-paradies-analyse
+   cd ~/teppich-paradies-analyse/social
+   [ -e social.db ] || cp sicherung.db social.db         # nie ueber eine vorhandene social.db
+   chmod 600 social.db
+   node -e "const d = new (require('node:sqlite').DatabaseSync)('social.db', { readOnly: true }); for (const t of ['inhalt', 'medium', 'beitrag']) console.log(t, d.prepare('SELECT COUNT(*) AS n FROM ' + t).get().n)"
+   ```
+   Gibt es `social.db` schon, lief ein Social-Dienst bereits. Dann alle drei stoppen
+   (`launchctl bootout gui/$(id -u)/<dienst>` fuer `net.teppich-paradies.social`, `…social-takt` und
+   `…social-lauf`), die leere `social.db` samt
+   `social.db-wal` und `social.db-shm` beiseitelegen und den Block ab `cd` wiederholen. Ebenfalls im
+   Archiv und ohne weiteren Schritt wieder da: `social/highlights.json`, der von Hand eingetragene
+   Stand der Instagram-Highlights.
+4. **Zugaenge neu anlegen.** Sie stehen absichtlich nicht im Archiv:
+
+   | Zugang | Ort | Anleitung |
+   |---|---|---|
+   | Shopify, Laden-Zahlen, Links zur Auftrags-App | `~/tp-dashboard/.env.local` | Abschnitt „Zugang einrichten (einmalig)“, Pruefung `npm run operations:verbindung`; Laden: `ARCHITEKTUR.md`, Abschnitt 9 |
+   | Benutzer des Control Centers | `benutzer.json` | `npm run benutzer -- anlegen` (`ARCHITEKTUR.md`, 1e) |
+   | Notpasswort (wahlweise) | `dashboard-passwort.txt` | eine Zeile, Rechte 600 (`ARCHITEKTUR.md`, 1c) |
+   | Firmenpostfach (Nachfassen, Musterautomatik) | `nachfassen/postfach.json` | Rechte 600; ohne Datei geht keine Mail raus (`ARCHITEKTUR.md`, 23) |
+   | Meta-Zugang, Upload-Adresse | `social/zugang.env` | `social/META-EINRICHTUNG.md` |
+   | Upload-Links | – | Die alten gelten weiter (`upload-zugaenge.json` ist im Archiv). Zum Kopieren unter „Social Media“ einen neuen anlegen. |
+
+5. **Dienste einrichten.** Ist der Benutzername gleich, gehen die Dienste aus dem Abzug zurueck.
+   Erst die Pfade in den Plists pruefen, dann je Datei laden:
+   ```
+   cp ~/teppich-paradies-analyse/dienste/*.plist ~/Library/LaunchAgents/
+   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.teppich-paradies.<dienst>.plist
+   ```
+   Sonst aus den Vorlagen im Repository:
+   - `bash operations/scripts/dienste-einrichten.sh` fuer den Sync.
+   - Dasselbe Skript mit `--nur-sicherung`, `--nur-nachziehen` und `--routinen`. Vor `--routinen`
+     die App-Aufgaben pausieren (Abschnitt „Routinen als Mac-Dienst“).
+   - `bash social/scripts/dienste-einrichten.sh` fuer das Social-Modul.
+   - Die uebrigen Vorlagen unter `launchagents/` (Angebote, Auslauf, Ausschreibungen,
+     Lieferant I, Nachfassen) wie in ihrem Kopf beschrieben.
+   - Ohne Vorlage gibt es Dashboard, Shop-Wache, Aufgabenwaechter und Lieferantenseiten. Sie
+     laufen alle mit `bash -lc "cd $HOME/tp-dashboard && exec npm run …"`. Die Vorlage ist die
+     jeweilige Plist im Abzug `dienste/`.
+6. **Tailscale:** anmelden, `tailscale serve --bg 8001`, Funnel nur fuer den Upload-Port 8021
+   (`social/PLAN.md`) und „Disable key expiry“ setzen (`ARCHITEKTUR.md`, 1d). Den Tailnet-Namen in
+   die Dashboard-Plist eintragen (`TP_DASHBOARD_EXTRA_HOSTS`).
+7. Danach die Pruefliste „Nach einem Neustart pruefen“ durchgehen.
+
+### Plan B: der Mac mini faellt laenger aus
+
+- **Weiter wie gewohnt:** Der Shop laeuft bei Shopify. Bestellungen, Versand und Kundenmails gehen
+  im Browser ueber den Shopify-Admin. Die Auftrags-App der Monteure ist eine Google-Apps-Script-App
+  und haengt nicht am Mac mini. Baustellenfotos gehen an die WhatsApp-Gruppe statt ueber den
+  Upload-Link (`social/WHATSAPP.md`).
+- **Faellt weg:** das Control Center (Auftragsstatus, Bestellen, Packstation, Produktsuche) und der
+  Sync. Ebenso die automatischen Muster-Nachfassmails, die Musterbestellungen an Lieferanten, die
+  Shop-Wache, die Routinen und die Sicherung.
+- **In der Zwischenzeit:** Lieferanten von Hand aus dem Shopify-Admin bestellen. Jede Bestellung,
+  jedes Muster und jede Kundenzusage auf einer Liste festhalten und danach im Control Center
+  nachtragen.
+- **Ersatzrechner:** Jeder Mac taugt, mit den Schritten oben. Fuer den Anfang reicht das Control
+  Center nur auf diesem Rechner: `npm run dashboard`, erreichbar unter `http://127.0.0.1:8001`,
+  ohne Netzmodus und ohne Dienste.
+- **Ohne zweite Kopie ausser Haus** sind bei einem Plattenschaden, einem Diebstahl oder einer
+  vollen Platte Original und Sicherung zugleich weg. Das ist eine Entscheidung des Inhabers
+  (Abschnitt „Taegliche Betriebssicherung“).

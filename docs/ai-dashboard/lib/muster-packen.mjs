@@ -9,6 +9,7 @@
  */
 import { musteretikettenFuerAuftrag } from './bestellungs-musteretiketten.mjs';
 import { adressEtikett } from './adress-etiketten.mjs';
+import { kalendertage } from './kalendertage.mjs';
 
 /** Ab so vielen Tagen Wartezeit steht die Zahl in Bernstein. */
 export const WARTET_AB_TAGEN = 2;
@@ -18,7 +19,6 @@ const FERTIG = new Set(['raus', 'erledigt']);
 const MUSTERAUTOMATIK = 'Musterautomatik';
 const text = v => (v === null || v === undefined ? '' : String(v).trim());
 const belegt = v => !!text(v) && !['UNGEKLAERT', '–', '-'].includes(text(v));
-const TAG = 24 * 60 * 60 * 1000;
 
 /** Gepackt gilt fuer genau diese Bestellungen; kommt eine dazu, ist der Kunde wieder offen. */
 export const umschlagKennung = k => (k.bestellungen || []).map(b => b.orderName).filter(Boolean).join(' / ') || k.packSchluessel;
@@ -170,7 +170,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     const altKlaerung = klaeren[basis];
     const bestellungen = g.bestellungen.sort((x, y) => text(x.datum).localeCompare(text(y.datum)));
     const seit = bestellungen[0]?.datum || null;
-    const tage = seit ? Math.max(0, Math.floor((jetzt - new Date(seit)) / TAG)) : null;
+    const tage = kalendertage(seit, jetzt);
     const pk = packSchluessel(bestellungen.map(b => b.orderId));
     const { datum, ...adresse } = g.adresse || {};
     const nr = bestellungen.map(b => b.orderName);
@@ -257,7 +257,7 @@ export function musterNachLaden(kundenListe = []) {
     const umschlag = umschlagKennung(k);
     for (const m of k.muster) {
       if (m.abgehakt) continue;
-      const laden = m.lieferant || 'Partnerladen nicht hinterlegt';
+      const laden = m.lieferant || 'Lieferant nicht hinterlegt';
       if (!laeden.has(laden)) laeden.set(laden, []);
       laeden.get(laden).push({ muster: m, kunde: k.name, bestellung: m.orderName, umschlag, packSchluessel: k.packSchluessel });
     }

@@ -7,7 +7,10 @@ import { oeffne } from '../lib/db.mjs';
 import { erkenntnisse, lernstand, punkte, vereinheitliche } from '../lib/auswertung.mjs';
 import { erstelleClient, MetaFehler, ordneFehler, seitenZugang, veroeffentliche } from '../lib/meta.mjs';
 import { setzeEnvWerte } from '../lib/zugang.mjs';
-import { feedProdukt, testDb, tmpDir } from './_hilfe.mjs';
+import { feedProdukt, scheinShop, testDb, tmpDir } from './_hilfe.mjs';
+
+// Die Live-Pruefung vor dem Posten fragt den Shop - hier der Ersatz, damit kein Test ins Netz geht.
+const SHOP = { holen: scheinShop().holen, shopPauseMs: 0 };
 
 /** Meta-Ersatz: beantwortet Graph-Aufrufe und merkt sie sich. */
 function scheinMeta({ igFehler = null } = {}) {
@@ -110,7 +113,7 @@ test('Reel: Video geht direkt an Instagram (resumable) und an die Seite, die Ein
 test('Publisher ohne Zugang: nichts veroeffentlicht, nichts veraendert', async (t) => {
   const db = testDb(t); const dir = tmpDir(t);
   const b = beitragMitDatei(t, db, dir);
-  const r = await veroeffentlicheFaellige(db, { env: {}, jetzt: new Date('2026-10-01T08:00:00Z'), dir });
+  const r = await veroeffentlicheFaellige(db, { env: {}, jetzt: new Date('2026-10-01T08:00:00Z'), dir, ...SHOP });
   assert.deepEqual(r.uebersprungen, [b]); assert.match(r.hinweis, /Kein Meta-Zugang/);
   assert.equal(db.beitrag(b).status, 'GEPLANT');
 });
@@ -120,7 +123,7 @@ test('Publisher: veroeffentlicht Faelliges, merkt die Bewerbung je Produkt, hoec
   const a = beitragMitDatei(t, db, dir); const zweiter = beitragMitDatei(t, db, dir, { geplant: '2026-10-01T07:30:00.000Z' });
   const spaeter = beitragMitDatei(t, db, dir, { geplant: '2026-10-03T07:00:00.000Z' });
   const meta = scheinMeta();
-  const r = await veroeffentlicheFaellige(db, { client: client(meta), jetzt: new Date('2026-10-01T08:00:00Z'), dir });
+  const r = await veroeffentlicheFaellige(db, { client: client(meta), jetzt: new Date('2026-10-01T08:00:00Z'), dir, ...SHOP });
   assert.equal(r.veroeffentlicht.length, 1); assert.deepEqual(r.uebersprungen, [zweiter]);
   const fertig = db.beitrag(a);
   assert.equal(fertig.status, 'VEROEFFENTLICHT'); assert.ok(fertig.ergebnis.instagram.id && fertig.ergebnis.facebook.id);
@@ -134,23 +137,23 @@ test('Publisher: veroeffentlicht Faelliges, merkt die Bewerbung je Produkt, hoec
 test('Publisher: verpasster Termin geht zurueck in die Freigabe, fehlende Datei und Zugangsfehler enden als Fehler', async (t) => {
   const db = testDb(t); const dir = tmpDir(t);
   const alt = beitragMitDatei(t, db, dir, { geplant: '2026-09-28T07:00:00.000Z' });
-  const r1 = await veroeffentlicheFaellige(db, { client: client(scheinMeta()), jetzt: new Date('2026-10-01T08:00:00Z'), dir });
+  const r1 = await veroeffentlicheFaellige(db, { client: client(scheinMeta()), jetzt: new Date('2026-10-01T08:00:00Z'), dir, ...SHOP });
   assert.deepEqual(r1.zurueck, [alt]); assert.equal(db.beitrag(alt).status, 'FREIGABE'); assert.match(db.beitrag(alt).fehler, /Termin verpasst/);
 
   const ohneDatei = beitragMitDatei(t, db, dir);
   fs.rmSync(path.join(dir, db.beitrag(ohneDatei).medien[0].pfad));
-  await veroeffentlicheFaellige(db, { client: client(scheinMeta()), jetzt: new Date('2026-10-01T08:00:00Z'), dir });
+  await veroeffentlicheFaellige(db, { client: client(scheinMeta()), jetzt: new Date('2026-10-01T08:00:00Z'), dir, ...SHOP });
   assert.equal(db.beitrag(ohneDatei).status, 'FEHLER');
 
   const b = beitragMitDatei(t, db, dir, { plattformen: ['instagram'] });
-  const r3 = await veroeffentlicheFaellige(db, { client: client(scheinMeta({ igFehler: { code: 190, message: 'Token abgelaufen' } })), jetzt: new Date('2026-10-01T08:00:00Z'), dir });
+  const r3 = await veroeffentlicheFaellige(db, { client: client(scheinMeta({ igFehler: { code: 190, message: 'Token abgelaufen' } })), jetzt: new Date('2026-10-01T08:00:00Z'), dir, ...SHOP });
   assert.equal(db.beitrag(b).status, 'FEHLER'); assert.match(r3.hinweis, /Token prüfen/);
 });
 
 test('Publisher: voruebergehende Fehler werden bis zu dreimal wiederholt', async (t) => {
   const db = testDb(t); const dir = tmpDir(t);
   const b = beitragMitDatei(t, db, dir, { plattformen: ['instagram'] });
-  const lauf = () => veroeffentlicheFaellige(db, { client: client(scheinMeta({ igFehler: { code: 2, message: 'kurz weg', is_transient: true } })), jetzt: new Date('2026-10-01T08:00:00Z'), dir });
+  const lauf = () => veroeffentlicheFaellige(db, { client: client(scheinMeta({ igFehler: { code: 2, message: 'kurz weg', is_transient: true } })), jetzt: new Date('2026-10-01T08:00:00Z'), dir, ...SHOP });
   await lauf(); assert.equal(db.beitrag(b).status, 'GEPLANT'); assert.equal(db.beitrag(b).versuche, 1);
   await lauf(); await lauf();
   assert.equal(db.beitrag(b).status, 'FEHLER'); assert.equal(db.beitrag(b).versuche, 3);
@@ -197,7 +200,7 @@ test('Auswertung: Klicks und Profilbesuche wiegen schwer, Likes kaum; wenige Bei
   const db = testDb(t); const dir = tmpDir(t);
   const b = beitragMitDatei(t, db, dir);
   const meta = scheinMeta();
-  await veroeffentlicheFaellige(db, { client: client(meta), jetzt: new Date('2026-10-01T08:00:00Z'), dir });
+  await veroeffentlicheFaellige(db, { client: client(meta), jetzt: new Date('2026-10-01T08:00:00Z'), dir, ...SHOP });
   const r = await holeKennzahlen(db, { client: client(meta), jetzt: new Date('2026-10-02T08:00:00Z'), dir });
   assert.equal(r.gemessen, 2);
   const ig = db.letzteKennzahlen().find(k => k.plattform === 'instagram');

@@ -50,7 +50,8 @@ const zahl = v => (v === null || v === undefined || v === '' ? null : Number.isF
  * - erfuellt: bestellt (aktuelle Menge) > 0 und nichts mehr offen
  * - offen:    bestellt > 0 und noch etwas offen
  * Fehlt eine Menge (alter Export), ist beides false - dann wird nichts entschieden.
- * Eine aus der Bestellung entfernte Zeile (aktuelle Menge 0) ist weder erfuellt noch offen.
+ * Eine aus der Bestellung entfernte Zeile (aktuelle Menge 0) ist weder erfuellt noch offen,
+ * sondern `entfernt` (bestellt war mehr als 0).
  */
 export function shopifyPositionen(orders = []) {
   const stand = new Map();
@@ -74,6 +75,7 @@ export function shopifyPositionen(orders = []) {
         test,
         erfuellt: bekannt && offenMenge === 0,
         offen: bekannt && offenMenge > 0,
+        entfernt: li.currentQuantity !== undefined && li.currentQuantity !== null && bestellt === 0 && zahl(li.quantity) > 0,
         erfuelltAm,
       });
     }
@@ -206,6 +208,34 @@ export function abweichungen(positionen = {}, orders = [], { exportiertAm = null
     const am = e[`${e.status}Am`] || e.aktualisiertAm || null;
     z.lineItemIds.push(s.lineItemId);
     z.positionen.push({ lineItemId: s.lineItemId, status: e.status, am, versand: v?.status || null });
+    if (am && (!z.seit || am < z.seit)) z.seit = am;
+  }
+  return [...jeAuftrag.values()].sort((a, b) => String(a.seit || '').localeCompare(String(b.seit || '')));
+}
+
+/**
+ * Aus der Kundenbestellung entfernt, beim Lieferanten aber bestellt (Fehlersuche 28.10.2026,
+ * #1056: drei Positionen nach dem Vermerk "bestellt" aus der Bestellung genommen, Menge 0 -
+ * im Dashboard still, weil Positionen mit Menge 0 ueberall herausfallen). Kommt die Ware, braucht
+ * sie kein Kunde: die Lieferantenbestellung stornieren. Je Bestellung eine Zeile, aelteste
+ * zuerst; nicht dabei: stornierte Bestellungen (die erledigt uebernimmAusShopify) und Tests.
+ *
+ * @returns {{ orderId, orderName, kunde, lineItemIds: string[], positionen: object[], seit: string|null }[]}
+ */
+export function entfernteBestellt(positionen = {}, orders = []) {
+  const jeAuftrag = new Map();
+  const kopf = new Map((orders || []).filter(o => o?.id).map(o => [o.id, o]));
+  for (const [key, s] of shopifyPositionen(orders)) {
+    const e = positionen[key];
+    if (!s.entfernt || s.storniert || s.test || e?.status !== 'bestellt') continue;
+    if (!jeAuftrag.has(s.orderId)) {
+      const o = kopf.get(s.orderId);
+      jeAuftrag.set(s.orderId, { orderId: s.orderId, orderName: s.orderName, kunde: o?.shippingAddress?.name || o?.customer?.displayName || null, lineItemIds: [], positionen: [], seit: null });
+    }
+    const z = jeAuftrag.get(s.orderId);
+    const am = e.bestelltAm || e.aktualisiertAm || null;
+    z.lineItemIds.push(s.lineItemId);
+    z.positionen.push({ lineItemId: s.lineItemId, bestelltAm: am, lieferantBestellnummer: e.lieferantBestellnummer || null });
     if (am && (!z.seit || am < z.seit)) z.seit = am;
   }
   return [...jeAuftrag.values()].sort((a, b) => String(a.seit || '').localeCompare(String(b.seit || '')));

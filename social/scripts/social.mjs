@@ -13,6 +13,7 @@
  *   npm run social -- planen
  *   npm run social -- freigeben <beitragId> [--am 2026-10-06T18:00]
  *   npm run social -- verwerfen <beitragId> [--grund "…"]
+ *   npm run social -- zurueckholen <beitragId> --grund "…"   (geplanten Beitrag in die Freigabe; die Automatik gibt ihn nicht wieder frei)
  *   npm run social -- veroeffentlichen [--trocken]
  *   npm run social -- kennzahlen
  *   npm run social -- referenzen --input export.json
@@ -40,9 +41,10 @@ import { clientAus, holeKennzahlen, importiereReferenzen, planeOffene, shopAbgle
 import { oeffne } from '../lib/db.mjs';
 import { seitenZugang } from '../lib/meta.mjs';
 import { baue, HIGHLIGHTS } from '../lib/vorlagen.mjs';
-import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../lib/eingang.mjs';
+import { ablaufVon, findeZugang, liesZugaenge, zugangAnlegen, zugangGueltig, zugangSperren } from '../lib/eingang.mjs';
 import { ersetzeBild } from '../lib/bearbeitung.mjs';
-import { freigeben, freigebenAutomatisch, holeGeplanteZurueck, verwerfen } from '../lib/freigabe.mjs';
+import { zahlenAmBautag } from '../lib/doppelungen.mjs';
+import { freigeben, freigebenAutomatisch, holeGeplanteZurueck, verwerfen, zurueckholen } from '../lib/freigabe.mjs';
 import { medienPfad, socialDir } from '../lib/pfade.mjs';
 import { planAnsicht } from '../lib/planer.mjs';
 import { verarbeiteEingang } from '../lib/pruefung.mjs';
@@ -97,6 +99,7 @@ export function zeigeStatus(db, { jetzt = new Date(), tage = 14, schreibe = cons
 
 /** Was die Redaktion zu tun hat: Inhalte ohne Entwurf, mit allem, was sie zum Sichten braucht. */
 function offeneInhalte(db, dir) {
+  const stand = db.produktStand();
   return db.inhalte({ status: [INHALT_STATUS.NEU, INHALT_STATUS.IN_PRUEFUNG] })
     .filter(i => !(i.quelle === 'baustelle' && i.status === INHALT_STATUS.NEU))   // erst technisch pruefen
     .map(i => ({
@@ -106,6 +109,8 @@ function offeneInhalte(db, dir) {
       vorherNachher: i.daten?.vorherNachher ?? null, grund: i.notiz, punkte: i.punkte,
       preisJeEinheit: i.daten?.preisJeEinheit ?? null, beschreibung: i.daten?.beschreibung ?? null,
       farbAnzahl: i.daten?.farbAnzahl ?? null, rabattProzent: i.daten?.rabattProzent ?? null,
+      // Zahlen vom letzten Shop-Abgleich - nur diese gehoeren in Text und Bild, nie die aus der Beschreibung.
+      zahlenHeute: i.quelle === 'shopify' ? (({ farben = null, designs = null, stand = null }) => ({ farben, designs, stand }))(zahlenAmBautag(stand, i)) : null,
       farbBilder: (i.daten?.farbBilder ?? i.daten?.serienBilder ?? []).map(b => ({ src: b.src, name: b.beschriftung })),
       reelMoeglich: reelMoeglich(db.medien(i.id)),
       medien: db.medien(i.id).filter(m => ['ok', 'unsicher'].includes(m.pruefung)).map(m => ({
@@ -131,6 +136,8 @@ async function main(argv) {
         const r = await shopAbgleich(db);
         console.log(`${r.produkte} Produkte gelesen, ${r.kandidaten} Anlässe gefunden, ${r.neu.length} neu in den Vorrat:`);
         for (const n of r.neu) console.log(`  #${n.id} ${TYPEN[n.art]?.label ?? n.art}: ${n.titel} (${Math.round(n.punkte)} P.) – ${n.grund}`);
+        if (r.zurueck.length) console.log(`Zurück in die Freigabe (Produkt nicht mehr im Shop oder Auslauf): ${r.zurueck.map(id => `#${id}`).join(' ')}`);
+        if (r.hinweis) console.log(r.hinweis);
         break;
       }
 
@@ -230,10 +237,18 @@ async function main(argv) {
         break;
       }
 
+      case 'zurueckholen': {
+        if (typeof flags.grund !== 'string' || !flags.grund.trim()) throw new Error('zurueckholen <beitragId> --grund "…" – der Grund steht danach in der Freigabe');
+        const b = zurueckholen(db, Number(rest[0]), { von: typeof flags.von === 'string' ? flags.von : 'redaktion', grund: flags.grund });
+        console.log(`Beitrag #${b.id} liegt wieder in der Freigabe – die automatische Freigabe gibt ihn nicht wieder frei.`);
+        break;
+      }
+
       case 'veroeffentlichen': {
         const r = await veroeffentlicheFaellige(db, { env, trocken: Boolean(flags.trocken), dir, melde: console.log });
-        console.log(`${r.faellig} fällig · ${r.veroeffentlicht.length} ${r.trocken ? 'im Trockenlauf durchgespielt' : 'veröffentlicht'} · ${r.fehler.length} Fehler · ${r.zurueck.length} zurück in die Freigabe · ${r.uebersprungen.length} warten`);
+        console.log(`${r.faellig} fällig · ${r.veroeffentlicht.length} ${r.trocken ? 'im Trockenlauf durchgespielt' : 'veröffentlicht'} · ${r.fehler.length} Fehler · ${r.zurueck.length} zurück in die Freigabe · ${r.uebersprungen.length + r.wartet.length} warten`);
         for (const f of r.fehler) console.log(`  #${f.id}: ${f.meldung}`);
+        for (const w of r.wartet) console.log(`  #${w.id} wartet: Shop nicht erreichbar (${w.grund})`);
         if (r.hinweis) console.log(r.hinweis);
         break;
       }
@@ -260,7 +275,7 @@ async function main(argv) {
           const z = zugangAnlegen(rest[1]);
           const basis = env.SOCIAL_UPLOAD_BASIS_URL || 'http://<adresse-des-mac-mini>:8021';
           // Der Link wird genau einmal gezeigt - gespeichert ist nur sein Hash.
-          console.log(`Zugang für ${z.name} angelegt. Link (nur jetzt sichtbar, an das Handy schicken):\n${basis}/u/${z.token}`);
+          console.log(`Zugang für ${z.name} angelegt, gültig bis ${new Date(z.ablauf).toLocaleDateString('de-DE')}. Link (nur jetzt sichtbar, an das Handy schicken):\n${basis}/u/${z.token}`);
         } else if (rest[0] === 'sperren') {
           console.log(`${zugangSperren(rest[1])} Zugang/Zugänge gesperrt.`);
         } else if (rest[0] === 'pruefen') {
@@ -268,7 +283,11 @@ async function main(argv) {
         } else {
           const liste = liesZugaenge();
           if (!liste.length) console.log('Noch keine Zugänge. Anlegen: npm run social -- zugang anlegen "Name"');
-          for (const z of liste) console.log(`${z.aktiv ? 'aktiv   ' : 'gesperrt'} ${z.name} (seit ${new Date(z.angelegt).toLocaleDateString('de-DE')})`);
+          for (const z of liste) {
+            const bis = ablaufVon(z);
+            const zustand = !z.aktiv ? 'gesperrt  ' : zugangGueltig(z) ? 'aktiv     ' : 'abgelaufen';
+            console.log(`${zustand} ${z.name} (seit ${new Date(z.angelegt).toLocaleDateString('de-DE')}${bis ? `, gültig bis ${new Date(bis).toLocaleDateString('de-DE')}` : ''})`);
+          }
         }
         break;
       }
@@ -308,7 +327,7 @@ async function main(argv) {
       case 'reel-kandidaten': {
         const [feed, bildrechte] = [await ladeProdukte(), ladeBildrechte()];
         const lexikon = ladeLexikonPreise();
-        const liste = reelKandidaten({ feed, bildrechte, stand: db.produktStand(), nachfrage: ladeMusterNachfrage() })
+        const liste = reelKandidaten({ feed, bildrechte, stand: db.produktStand(), belegt: db.reelsOffen(), nachfrage: ladeMusterNachfrage() })
           .slice(0, Number(flags.anzahl) || 10)
           .map(k => ({ ...k, vorlage: auftragVorlage(k, k.bilder[0], { lexikon }) }));
         if (flags.json) { console.log(JSON.stringify(liste, null, 2)); break; }
@@ -413,7 +432,7 @@ async function main(argv) {
         for (const b of verarbeiteEingang(db, { dir })) console.log(`Eingang #${b.inhalt}: ${b.brauchbar}/${b.gesamt} brauchbar`);
         try {
           const r = await shopAbgleich(db);
-          console.log(`Shop: ${r.produkte} Produkte, ${r.neu.length} neue Anlässe`);
+          console.log(`Shop: ${r.produkte} Produkte, ${r.neu.length} neue Anlässe${r.zurueck.length ? `, zurück in die Freigabe (Produkt weg oder Auslauf): ${r.zurueck.map(id => `#${id}`).join(' ')}` : ''}${r.hinweis ? ` – ${r.hinweis}` : ''}`);
         } catch (e) { console.log(`Shop-Abgleich ausgefallen: ${e.message}`); }
         console.log(`Planer: ${planeOffene(db, { dir }).length} Terminvorschläge`);
         const auto = freigebenAutomatisch(db, { env });
@@ -437,7 +456,7 @@ async function main(argv) {
         const auto = freigebenAutomatisch(db, { env });
         if (auto.length) console.log(`${new Date().toISOString()} automatisch freigegeben: ${auto.map(id => `#${id}`).join(' ')}`);
         const r = await veroeffentlicheFaellige(db, { env, dir });
-        const zeile = `${new Date().toISOString()} whatsapp=${wa?.neu.length ?? '-'} eingang=${eingang.length} faellig=${r.faellig} veroeffentlicht=${r.veroeffentlicht.length} fehler=${r.fehler.length}${r.hinweis ? ` hinweis="${r.hinweis}"` : ''}`;
+        const zeile = `${new Date().toISOString()} whatsapp=${wa?.neu.length ?? '-'} eingang=${eingang.length} faellig=${r.faellig} veroeffentlicht=${r.veroeffentlicht.length} fehler=${r.fehler.length} zurueck=${r.zurueck.length} wartet=${r.wartet.length}${r.hinweis ? ` hinweis="${r.hinweis}"` : ''}`;
         if (eingang.length || r.faellig || wa?.neu.length) console.log(zeile);
         break;
       }

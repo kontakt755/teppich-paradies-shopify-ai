@@ -1,0 +1,63 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "tp-reklamation",
+      "blocks": {
+        "lieferung": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Lieferung gleich prüfen",
+            "text": "<p>Sehen Sie sich die Ware bei der Anlieferung an. Ist die Verpackung oder die Ware beschädigt, lassen Sie das bitte direkt beim Fahrer auf dem Lieferschein vermerken.</p>"
+          }
+        },
+        "ausrollen": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Vor Zuschnitt und Verlegung ausrollen",
+            "text": "<p>Rollen Sie Teppichboden und andere Rollenware vor dem Zuschneiden oder Verlegen aus und prüfen Sie Farbe, Oberfläche und Maße. So fällt ein Fehler auf, bevor Kosten für Zuschnitt oder Verlegung entstehen.</p>"
+          }
+        },
+        "melden": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Mit Bestellnummer melden",
+            "text": "<p>Schicken Sie uns Ihre Bestellnummer, Fotos vom Fehler und vom Rollenetikett sowie die Maße der Ware – über das Formular, per WhatsApp oder per E-Mail.</p>"
+          }
+        },
+        "antwort": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Wir melden uns innerhalb von 2 Werktagen",
+            "text": "<p>Wir prüfen Ihre Meldung und melden uns innerhalb von 2 Werktagen mit dem weiteren Vorgehen bei Ihnen.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "lieferung",
+        "ausrollen",
+        "melden",
+        "antwort"
+      ],
+      "settings": {
+        "titel": "Reklamation melden",
+        "intro": "<p>Ist mit Ihrer Bestellung etwas nicht in Ordnung? Mit diesen vier Schritten können wir Ihnen am schnellsten helfen.</p>",
+        "knopf": "Reklamation melden",
+        "email": "kontakt@teppich-paradies.net",
+        "wege_hinweis": "Fotos senden Sie am einfachsten per WhatsApp oder E-Mail – das Formular nimmt keine Dateien an.",
+        "rechte": "<p>Ihre gesetzlichen Rechte bleiben unberührt. Die Hinweise oben helfen uns, schneller zu helfen – sie sind keine Voraussetzung für Ihre Reklamation.</p>"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

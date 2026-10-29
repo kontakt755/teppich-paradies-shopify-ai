@@ -102,8 +102,10 @@
     ein Stueck, Rollenware 1 m bzw. Mindestlaenge ueber die Rollenbreite,
     Mass-Ware Mindestseite bzw. Mindestpreis) - so steht nie Gratisversand
     im Markup, den der Checkout nicht gibt. Lieferzeit aus derselben Quelle
-    wie snippets/tp-lieferzeit; die Gesamtangabe steht als transitTime,
-    eine Aufteilung in Bearbeitung und Transport ist nicht belegt.
+    wie snippets/tp-lieferzeit; die Gesamtangabe steht als transitTime.
+    Erst wenn die Theme-Einstellung settings.tp_versand_bearbeitungszeit
+    eine Werktage-Spanne traegt, steht sie als handlingTime und der Rest als
+    transitTime (Summe = Gesamtzeit). Leer = keine Aufteilung.
   - Geschenkgutscheine, Varianten ohne Versand und gesperrte Sonderposten
     bekommen keine Versandangabe; Gutscheine auch keine Rueckgabeangabe.
 
@@ -225,27 +227,36 @@
   endif
 
   # Nur eine Werktage-Spanne ("2–5 Werktage", "ca. 5–8 Werktage inkl.
-  # Ketteln") wird zur Zahl. "ca. 14 Tage" sind Kalendertage und bleiben
-  # draussen (keine Umrechnung erfinden), dann gibt es kein shippingDetails.
-  assign tp_sd_lz_min = 0
-  assign tp_sd_lz_max = 0
-  assign tp_sd_lz_klein = tp_sd_lz | downcase
-  if tp_sd_lz_klein contains 'werktag'
-    assign tp_sd_lz_spanne = tp_sd_lz_klein | split: 'werktag' | first | remove: 'ca.' | replace: ' bis ', '–' | replace: '-', '–' | strip
-    assign tp_sd_lz_teile = tp_sd_lz_spanne | split: '–'
-    if tp_sd_lz_teile.size == 1 or tp_sd_lz_teile.size == 2
-      assign tp_sd_lz_von = tp_sd_lz_teile.first | strip
-      assign tp_sd_lz_bis = tp_sd_lz_teile.last | strip
-      assign tp_sd_lz_rest = tp_sd_lz_von | append: tp_sd_lz_bis
-      for tp_sd_ziffer in (0..9)
-        assign tp_sd_ziffer_text = tp_sd_ziffer | append: ''
-        assign tp_sd_lz_rest = tp_sd_lz_rest | remove: tp_sd_ziffer_text
-      endfor
-      if tp_sd_lz_rest == blank and tp_sd_lz_von != blank and tp_sd_lz_bis != blank
-        assign tp_sd_lz_min = tp_sd_lz_von | plus: 0
-        assign tp_sd_lz_max = tp_sd_lz_bis | plus: 0
-      endif
-    endif
+  # Ketteln") wird zur Zahl (snippets/tp-werktage-spanne, Ausgabe "von|bis").
+  # "ca. 14 Tage" sind Kalendertage und bleiben draussen (keine Umrechnung
+  # erfinden), dann gibt es kein shippingDetails.
+  capture tp_sd_lz_zahl
+    render 'tp-werktage-spanne', text: tp_sd_lz
+  endcapture
+  assign tp_sd_lz_teile = tp_sd_lz_zahl | strip | split: '|'
+  assign tp_sd_lz_min = tp_sd_lz_teile[0] | plus: 0
+  assign tp_sd_lz_max = tp_sd_lz_teile[1] | plus: 0
+
+  # Bearbeitungszeit (Idee 11 aus der Fehlersuche 28.10., Folge von w-117):
+  # Ist settings.tp_versand_bearbeitungszeit eine Werktage-Spanne, steht sie
+  # als handlingTime und der Rest der Lieferzeit als transitTime - je Grenze
+  # Lieferzeit minus Bearbeitungszeit, damit die Summe wieder die belegte
+  # Gesamtzeit ergibt. Leer, unlesbar oder laenger als die Lieferzeit: keine
+  # Aufteilung, die Gesamtzeit bleibt allein transitTime.
+  capture tp_sd_bz_zahl
+    render 'tp-werktage-spanne', text: settings.tp_versand_bearbeitungszeit
+  endcapture
+  assign tp_sd_bz_teile = tp_sd_bz_zahl | strip | split: '|'
+  assign tp_sd_bz_min = tp_sd_bz_teile[0] | plus: 0
+  assign tp_sd_bz_max = tp_sd_bz_teile[1] | plus: 0
+  assign tp_sd_tr_min = tp_sd_lz_min | minus: tp_sd_bz_min
+  assign tp_sd_tr_max = tp_sd_lz_max | minus: tp_sd_bz_max
+  assign tp_sd_bz_ok = false
+  if tp_sd_bz_teile.size == 2 and tp_sd_bz_min <= tp_sd_bz_max and tp_sd_lz_max > 0 and tp_sd_tr_min >= 0 and tp_sd_tr_max >= tp_sd_tr_min
+    assign tp_sd_bz_ok = true
+  else
+    assign tp_sd_tr_min = tp_sd_lz_min
+    assign tp_sd_tr_max = tp_sd_lz_max
   endif
 
   # Versandkosten Deutschland aus den Theme-Einstellungen ("4,99 €" -> 499
@@ -541,10 +552,18 @@
               },
               "deliveryTime": {
                 "@type": "ShippingDeliveryTime",
+                {%- if tp_sd_bz_ok -%}
+                "handlingTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": {{ tp_sd_bz_min }},
+                  "maxValue": {{ tp_sd_bz_max }},
+                  "unitCode": "DAY"
+                },
+                {%- endif -%}
                 "transitTime": {
                   "@type": "QuantitativeValue",
-                  "minValue": {{ tp_sd_lz_min }},
-                  "maxValue": {{ tp_sd_lz_max }},
+                  "minValue": {{ tp_sd_tr_min }},
+                  "maxValue": {{ tp_sd_tr_max }},
                   "unitCode": "DAY"
                 }
               }

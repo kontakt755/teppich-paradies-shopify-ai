@@ -23,13 +23,15 @@ import path from 'node:path';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
+import { abmeldeStandLeser, anmeldeGeraet, passwortAbdruck } from '../../operations/lib/anmeldeschutz.mjs';
 import { authentifiziere, benutzerDateiExistiert, leseBenutzer } from '../../operations/lib/benutzer.mjs';
 import { clientAus, ladeLernstand, planeOffene } from '../lib/ablauf.mjs';
 import { oeffne } from '../lib/db.mjs';
-import { DATEITYPEN, EingangFehler, erkenneTyp, findeZugang, GRENZEN, legeBaustelleAn, pruefeAngaben, trageDateiEin } from '../lib/eingang.mjs';
+import { DATEITYPEN, EingangFehler, erkenneTyp, findeZugang, GRENZEN, legeBaustelleAn, pruefeAngaben, standHeute, tagVon, trageDateiEin, zaehleHeute } from '../lib/eingang.mjs';
 import { bearbeiten, freigeben, FreigabeFehler, holeGeplanteZurueck, pruefe, medienZuBeitrag, verwerfen, zurueckholen } from '../lib/freigabe.mjs';
 import { BODENARTEN, ORTE, RAEUME, TAETIGKEITEN } from '../lib/konfig.mjs';
-import { medienDir, privatDir, sitzungenPfad, socialDir } from '../lib/pfade.mjs';
+import { medienDir, privatDir, sitzungenPfad, socialDir, uploadZaehlerPfad } from '../lib/pfade.mjs';
+import { messeSpeicher } from '../../operations/lib/speicher.mjs';
 import { verarbeiteEingang } from '../lib/pruefung.mjs';
 import { rendere } from '../lib/rendern.mjs';
 import { BEITRAG_STATUS, INHALT_STATUS, STATUS_LABEL, StatusFehler, TYPEN } from '../lib/status.mjs';
@@ -98,13 +100,26 @@ function ladePasswort(env) {
 export function erstelleAnmeldung({ env = process.env, datei = sitzungenPfad(), jetzt = () => Date.now() } = {}) {
   const passwort = ladePasswort(env);
   const sha = t => crypto.createHash('sha256').update(String(t)).digest();
+  // Wie im Control Center (operations/lib/anmeldeschutz.mjs): Notzugang-Sitzungen tragen den
+  // Abdruck ihres Passworts (pw); "Alle anderen Geraete abmelden" setzt einen Zeitstempel im
+  // privaten Ordner, vor dem angemeldete Sitzungen nicht mehr gelten.
+  const abdruck = passwortAbdruck(passwort);
+  const abgemeldetAb = abmeldeStandLeser(privatDir(env));
   const sitzungen = new Map();
-  try {
-    for (const [h, s] of Object.entries(JSON.parse(fs.readFileSync(datei, 'utf8')).sitzungen ?? {})) if (s.bis > jetzt()) sitzungen.set(h, s);
-  } catch { /* keine Datei - dann neu anmelden */ }
   const speichere = () => {
     try { fs.mkdirSync(path.dirname(datei), { recursive: true }); fs.writeFileSync(datei, JSON.stringify({ sitzungen: Object.fromEntries(sitzungen) }), { mode: 0o600 }); } catch { /* Sitzungen ueberleben dann keinen Neustart */ }
   };
+  try {
+    let uebernommen = false;
+    for (const [h, s] of Object.entries(JSON.parse(fs.readFileSync(datei, 'utf8')).sitzungen ?? {})) {
+      if (!(s.bis > jetzt())) continue;
+      // Alte Notzugang-Sitzungen uebernehmen beim ersten Start das jetzige Passwort.
+      if (!s.benutzer?.kuerzel && !s.pw && abdruck) { s.pw = abdruck; uebernommen = true; }
+      sitzungen.set(h, s);
+    }
+    if (uebernommen) speichere();
+  } catch { /* keine Datei - dann neu anmelden */ }
+  const verwerfen = h => { if (sitzungen.delete(h)) speichere(); return null; };
   const fehlversuche = new Map();
   return {
     noetig: () => Boolean(passwort) || benutzerDateiExistiert(),
@@ -128,18 +143,22 @@ export function erstelleAnmeldung({ env = process.env, datei = sitzungenPfad(), 
     },
     neueSitzung(benutzer) {
       const sid = crypto.randomBytes(32).toString('base64url');
-      sitzungen.set(sha(sid).toString('hex'), { benutzer, bis: jetzt() + SITZUNG_MS });
+      sitzungen.set(sha(sid).toString('hex'), { benutzer, bis: jetzt() + SITZUNG_MS, seit: jetzt(), ...(benutzer?.kuerzel ? {} : { pw: abdruck }) });
       speichere();
       return sid;
     },
     benutzer(sid) {
       if (!sid) return null;
-      const s = sitzungen.get(sha(sid).toString('hex'));
+      const h = sha(sid).toString('hex');
+      const s = sitzungen.get(h);
       if (!s || s.bis <= jetzt()) return null;
-      // Notzugang (ohne Kuerzel) bleibt, wie er ist. Alle anderen bei jedem Zugriff
-      // frisch aus benutzer.json: wer deaktiviert oder herabgestuft wird, verliert
-      // seine Rechte sofort - nicht erst, wenn die Sitzung nach 30 Tagen ablaeuft.
-      if (!s.benutzer.kuerzel) return s.benutzer;
+      // "Alle anderen Geraete abmelden" im Control Center: alles davor Angemeldete endet.
+      const ab = abgemeldetAb();
+      if (ab && (s.seit ?? s.bis - SITZUNG_MS) < ab) return verwerfen(h);
+      // Notzugang (ohne Kuerzel) gilt, solange das Passwort dasselbe ist. Alle anderen bei
+      // jedem Zugriff frisch aus benutzer.json: wer deaktiviert oder herabgestuft wird,
+      // verliert seine Rechte sofort - nicht erst, wenn die Sitzung nach 30 Tagen ablaeuft.
+      if (!s.benutzer.kuerzel) return abdruck && s.pw === abdruck ? s.benutzer : verwerfen(h);
       const aktuell = benutzerDateiExistiert() ? leseBenutzer().find(b => b.kuerzel === s.benutzer.kuerzel && b.aktiv !== false) : null;
       return aktuell ? { name: aktuell.name, kuerzel: aktuell.kuerzel, rolle: aktuell.rolle } : null;
     },
@@ -232,7 +251,8 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
         const body = await liesJson(req);
         // Zwei Zaehler: je Adresse und je Adresse+Name. Das Notpasswort gilt mit
         // jedem Namen - nur nach Namen zu zaehlen liesse es unbegrenzt raten.
-        const adresse = String(req.socket?.remoteAddress);
+        // Je Geraet, auch hinter `tailscale serve` (sonst kaeme alles als 127.0.0.1 an).
+        const adresse = anmeldeGeraet(req).schluessel;
         const schluessel = `${adresse}::${String(body.name ?? '').toLowerCase()}`;
         if (anmeldung.gesperrt(schluessel) || anmeldung.gesperrt(adresse)) throw new HttpFehler(429, 'Zu viele Fehlversuche – bitte fünf Minuten warten.');
         const b = anmeldung.pruefe(body);
@@ -277,18 +297,52 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
 
 // --- Upload ---------------------------------------------------------------------
 
-export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now(), nachUpload = inhaltId => verarbeiteEingang(db, { dir, nur: inhaltId }) } = {}) {
+/**
+ * @param {object} opt
+ *   freierSpeicher  () => freie Bytes der Platte oder null (nicht messbar); Tests geben einen Ersatz
+ *   zaehlerDatei    Uploads und Bytes je Link-Name und Tag (ueberlebt einen Neustart)
+ *   oeffneZiel      ziel => Schreibstrom fuer eine Datei; Tests verzoegern damit das Schreiben
+ */
+export function erstelleUpload({
+  db, dir = socialDir(), jetzt = () => Date.now(), nachUpload = inhaltId => verarbeiteEingang(db, { dir, nur: inhaltId }),
+  freierSpeicher = () => messeSpeicher(dir)?.freiBytes ?? null, zaehlerDatei = uploadZaehlerPfad(dir),
+  oeffneZiel = ziel => fs.createWriteStream(ziel, { mode: 0o600 }),
+} = {}) {
   const laufend = new Map();       // uploadId -> { inhaltId, ordner, name, dateien, bytes, belegt, bis }
-  const jeTag = new Map();         // name|tag -> Anzahl Uploads
+  // Laufende Dateien stehen weder im Tageszaehler noch ganz auf der Platte. Jede haelt ihren
+  // Anteil fest, bis sie fertig ist - sonst saehen zwei gleichzeitige Sendungen dieselbe freie
+  // Menge und ueberschritten zusammen Tagesgrenze und Speicherreserve.
+  // Eine laufende Datei zaehlt beim Abschluss in den Tag, der dann gilt - ihr Anteil deshalb
+  // auch gegen den heutigen, wenn sie gestern begann.
+  const anteile = new Set();       // { name, bytes, strom }
+  const anteilTag = name => [...anteile].reduce((s, a) => s + (a.name === name ? a.bytes : 0), 0);
+  // Was schon auf der Platte liegt, fehlt bereits in der Messung des freien Platzes. Gezaehlt
+  // wird, was der Schreibstrom bestaetigt hat (bytesWritten), nicht was gelesen ist: haengt
+  // die Platte, steckt die ganze Datei noch im Strom und die Messung weiss nichts davon.
+  const anteilPlatz = () => [...anteile].reduce((s, a) => s + Math.max(0, a.bytes - (a.strom?.bytesWritten ?? 0)), 0);
 
   // Bewusst keine Sperre nach Fehlversuchen: der Link hat 144 Bit Zufall und ist
   // nicht zu erraten. Eine Sperre je Adresse wuerde hinter einem Proxy (Funnel)
   // alle Monteure gemeinsam treffen - zehn Aufrufe eines Fremden genuegten.
   function zugang(token) {
-    const z = findeZugang(token);
+    const z = findeZugang(token, undefined, { jetzt: new Date(jetzt()) });
     if (!z) throw new HttpFehler(404, 'Dieser Link ist nicht (mehr) gültig. Bitte im Büro einen neuen geben lassen.');
     return z;
   }
+
+  /**
+   * Wie viel darf noch auf die Platte? null = nicht messbar (dann entscheidet nur die Tagesgrenze).
+   * Unter GRENZEN.minFreiBytes nimmt der Upload nichts mehr an - eine volle Platte haelt
+   * Control Center, Datenabgleich und Sicherung an, nicht nur den Upload.
+   */
+  function platzRest() {
+    const frei = freierSpeicher();
+    if (frei === null || frei === undefined || !Number.isFinite(frei)) return null;
+    const rest = frei - GRENZEN.minFreiBytes;
+    if (rest <= 0) throw new HttpFehler(507, 'Der Speicher im Büro ist fast voll – bitte im Büro Bescheid geben.');
+    return rest;
+  }
+  const TAGESGRENZE = 'Für heute ist genug hochgeladen – bitte im Büro melden.';
 
   /**
    * Schreibt den Anfragekoerper direkt auf die Platte - ein 300-MB-Video darf
@@ -296,17 +350,19 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
    * Platte) und um jeden Fehler auf beiden Seiten: volle Platte, abgerissene
    * Verbindung. Ohne das beendete ein Schreibfehler den ganzen Dienst.
    */
-  async function speichere(req, ziel, max) {
+  async function speichere(req, ziel, max, zuViel = () => new HttpFehler(413, 'Datei zu groß'), beiStrom = () => {}) {
     let groesse = 0; let kopf = Buffer.alloc(0);
     const waechter = new Transform({
       transform(stueck, _kodierung, weiter) {
         groesse += stueck.length;
         if (kopf.length < 16) kopf = Buffer.concat([kopf, stueck]).subarray(0, 16);
-        weiter(groesse > max ? new HttpFehler(413, 'Datei zu groß') : null, stueck);
+        weiter(groesse > max ? zuViel() : null, stueck);
       },
     });
     try {
-      await pipeline(req, waechter, fs.createWriteStream(ziel, { mode: 0o600 }));
+      const strom = oeffneZiel(ziel);
+      beiStrom(strom);
+      await pipeline(req, waechter, strom);
     } catch (e) {
       fs.rmSync(ziel, { force: true });
       if (e instanceof HttpFehler) { req.resume(); throw e; }
@@ -333,13 +389,19 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
       }
 
       if (aktion === 'start' && req.method === 'POST') {
-        const tag = `${z.name}|${new Date(jetzt()).toISOString().slice(0, 10)}`;
-        if ((jeTag.get(tag) ?? 0) >= 30) throw new HttpFehler(429, 'Für heute sind es genug Uploads – bitte im Büro melden.');
-        const angaben = pruefeAngaben(await liesJson(req));
+        // Erst die (kleinen) Angaben lesen, dann pruefen und zaehlen ohne await dazwischen:
+        // sonst kaemen zwei gleichzeitige Starts beide an der Tagesgrenze vorbei.
+        const roh = await liesJson(req);
+        const tag = tagVon(new Date(jetzt()));
+        const heute = standHeute(z.name, tag, zaehlerDatei);
+        if (heute.uploads >= GRENZEN.maxUploadsJeTag) throw new HttpFehler(429, 'Für heute sind es genug Uploads – bitte im Büro melden.');
+        if (heute.bytes >= GRENZEN.maxBytesJeTag) throw new HttpFehler(429, TAGESGRENZE);
+        platzRest();
+        const angaben = pruefeAngaben(roh);
         const { id, ordner } = legeBaustelleAn(db, angaben, { von: z.name, jetzt: new Date(jetzt()), dir });
         const neu = crypto.randomBytes(8).toString('hex');
         laufend.set(neu, { inhaltId: id, ordner, name: z.name, dateien: 0, bytes: 0, belegt: false, bis: jetzt() + 2 * 60 * 60 * 1000 });
-        jeTag.set(tag, (jeTag.get(tag) ?? 0) + 1);
+        zaehleHeute(z.name, tag, { uploads: 1 }, zaehlerDatei);
         return sende(res, 200, { upload: neu, ortVerworfen: angaben.ortVerworfen });
       }
 
@@ -353,10 +415,25 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
         // Eine Datei nach der anderen: zwei gleichzeitige Sendungen wuerden sich
         // Nummer und Groessenzaehler teilen. Die Seite sendet ohnehin der Reihe nach.
         if (lauf.belegt) throw new HttpFehler(409, 'Es läuft noch eine Übertragung – bitte kurz warten.');
+        // Tagesmenge je Link (ueberlebt einen Neustart) und freier Platz: die kleinere Grenze gilt.
+        const tag = tagVon(new Date(jetzt()));
+        const restTag = GRENZEN.maxBytesJeTag - standHeute(lauf.name, tag, zaehlerDatei).bytes - anteilTag(lauf.name);
+        if (restTag <= 0) throw new HttpFehler(429, TAGESGRENZE);
+        const platz = platzRest();
+        const restPlatz = platz === null ? null : platz - anteilPlatz();
+        if (restPlatz !== null && restPlatz <= 0) throw new HttpFehler(507, 'Der Speicher im Büro ist fast voll – bitte im Büro Bescheid geben.');
+        const max = Math.min(GRENZEN.maxVideoBytes, rest, restTag, restPlatz ?? Infinity);
+        const zuViel = () => (max === restPlatz ? new HttpFehler(507, 'Der Speicher im Büro ist fast voll – bitte im Büro Bescheid geben.')
+          : max === restTag ? new HttpFehler(429, TAGESGRENZE) : new HttpFehler(413, 'Datei zu groß'));
+        // Mit angesagter Laenge haelt die Sendung nur so viel fest, sonst die volle erlaubte Menge.
+        const angesagt = Number(req.headers['content-length']);
+        // Der Anteil gilt bis zum Ende von pipeline (Strom fertig geschrieben oder Fehler).
+        const anteil = { name: lauf.name, bytes: Number.isFinite(angesagt) && angesagt >= 0 ? Math.min(max, angesagt) : max, strom: null };
+        anteile.add(anteil);
         lauf.belegt = true;
         try {
           const tmp = path.join(lauf.ordner, `${crypto.randomBytes(6).toString('hex')}.teil`);
-          const { groesse, kopf } = await speichere(req, tmp, Math.min(GRENZEN.maxVideoBytes, rest));
+          const { groesse, kopf } = await speichere(req, tmp, max, zuViel, strom => { anteil.strom = strom; });
           const typ = erkenneTyp(kopf);
           const info = DATEITYPEN[typ];
           if (!info || (info.art === 'bild' && groesse > GRENZEN.maxBildBytes)) {
@@ -367,10 +444,14 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
           fs.renameSync(tmp, ziel);
           lauf.dateien += 1;
           lauf.bytes += groesse;
+          // Tag des Abschlusses, nicht des Beginns: eine Datei ueber Mitternacht schriebe sonst den
+          // Zaehler von gestern zurueck und setzte den neuen Tag auf null.
+          zaehleHeute(lauf.name, tagVon(new Date(jetzt())), { bytes: groesse }, zaehlerDatei);
           trageDateiEin(db, lauf.inhaltId, { datei: ziel, typ, dir });
           return sende(res, 200, { ok: true, art: info.art, nummer: lauf.dateien });
         } finally {
           lauf.belegt = false;
+          anteile.delete(anteil);
         }
       }
 

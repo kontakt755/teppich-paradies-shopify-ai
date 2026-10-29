@@ -1,0 +1,35 @@
+{%- doc -%}
+  Liest eine Werktage-Spanne als Zahlen fuer das Produkt-Markup
+  (snippets/tp-product-structured-data): "2–5 Werktage" -> "2|5",
+  "ca. 5–8 Werktage inkl. Ketteln" -> "5|8", "1 Werktag" -> "1|1".
+
+  Nur eine Werktage-Angabe zaehlt. "ca. 14 Tage" sind Kalendertage, eine
+  zweite Zeitangabe ("2–3 Wochen, Muster in 2 Werktagen") ist keine Spanne:
+  dann gibt es keine Ausgabe (fail closed, keine Umrechnung erfinden).
+
+  Ausgelagert, damit das Markup-Snippet unter Theme Checks Grenze fuer
+  Liquid-Komplexitaet bleibt (Lieferzeit und Bearbeitungszeit nutzen beide
+  diese Regel).
+
+  @param {string} [text] - z. B. "2–5 Werktage"
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_ws_klein = text | downcase
+  if tp_ws_klein contains 'werktag'
+    assign tp_ws_spanne = tp_ws_klein | split: 'werktag' | first | remove: 'ca.' | replace: ' bis ', '–' | replace: '-', '–' | strip
+    assign tp_ws_teile = tp_ws_spanne | split: '–'
+    if tp_ws_teile.size == 1 or tp_ws_teile.size == 2
+      assign tp_ws_von = tp_ws_teile.first | strip
+      assign tp_ws_bis = tp_ws_teile.last | strip
+      assign tp_ws_rest = tp_ws_von | append: tp_ws_bis
+      for tp_ws_ziffer in (0..9)
+        assign tp_ws_ziffer_text = tp_ws_ziffer | append: ''
+        assign tp_ws_rest = tp_ws_rest | remove: tp_ws_ziffer_text
+      endfor
+      if tp_ws_rest == blank and tp_ws_von != blank and tp_ws_bis != blank
+        echo tp_ws_von | plus: 0 | append: '|' | append: tp_ws_bis
+      endif
+    endif
+  endif
+-%}

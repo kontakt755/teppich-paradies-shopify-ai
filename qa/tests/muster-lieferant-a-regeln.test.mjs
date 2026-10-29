@@ -24,7 +24,8 @@ const block = read('blocks/tp-muster-cta.liquid')
   .replace(/\{% schema %\}[\s\S]*?\{% endschema %\}/, '')
   .replace(/\{% stylesheet %\}[\s\S]*?\{% endstylesheet %\}/, '')
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
-  .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze');
+  .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze')
+  .replace("render 'tp-muster-hinweis', kontext: 'produkt'", "echo ''");
 assert.ok(block.includes('echo tp_test_url'), 'Snippet-Aufruf im Block nicht gefunden');
 assert.ok(block.includes('echo tp_test_grenze'), 'Grenze-Aufruf im Block nicht gefunden');
 
@@ -38,11 +39,12 @@ async function cta(product) {
   });
 }
 
-test('Laminat, Parkett, Kork: kostenloses Muster nur per Anfrage zum Kontaktformular', async () => {
+test('Laminat, Parkett, Kork: Muster nur per Anfrage zum Kontaktformular, Knopf ohne "kostenlos" (w-161)', async () => {
   const html = await cta({ handle: 'eiche-natur-parkett', type: 'Parkett', tags: [], title: 'Eiche Natur Parkett' });
   assert.match(html, /href="\/pages\/kontakt\?thema=musteranfrage&produkt=Eiche\+Natur\+Parkett&handle=eiche-natur-parkett"/);
-  assert.match(html, /Kostenloses Muster anfragen/);
+  assert.match(html, />\s*Muster anfragen\s*</);
   assert.match(html, /nach kurzer Anfrage/);
+  assert.doesNotMatch(html, /[Kk]ostenlos/, 'Inhaber 28.10.2026: ohne "kostenlos"');
   assert.doesNotMatch(html, /pages\/muster\?/);
   for (const type of ['Laminat', 'Kork']) {
     const h = await cta({ handle: 'beispiel', type, tags: [], title: 'Beispiel' });
@@ -91,4 +93,15 @@ test('Kontaktformular kennt das Thema musteranfrage', () => {
   const js = read('assets/tp-sample-request.js');
   assert.match(js, /musteranfrage: 'Musteranfrage'/);
   assert.match(js, /thema === 'musteranfrage'/);
+});
+
+test('Musterseite und Anfragetext nennen bei Laminat, Parkett, Kork kein "kostenlos" (w-161)', () => {
+  const seite = read('sections/tp-sample-checkout.liquid');
+  const gruppe = seite.slice(seite.indexOf('Parkett, Laminat und Kork</h2>'), seite.indexOf('</section>', seite.indexOf('Parkett, Laminat und Kork</h2>')));
+  assert.match(gruppe, /„Muster anfragen“/);
+  assert.doesNotMatch(gruppe, /[Kk]ostenlos/);
+  const skript = read('assets/tp-sample-request.js');
+  const zeile = skript.split('\n').find(z => z.includes("thema === 'musteranfrage') zeilen.push"));
+  assert.ok(zeile, 'Vorbelegung fuer musteranfrage fehlt');
+  assert.doesNotMatch(zeile, /kostenlos/);
 });

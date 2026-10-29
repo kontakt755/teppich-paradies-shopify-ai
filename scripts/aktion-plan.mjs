@@ -75,15 +75,27 @@ export function status(z, heute) {
   return `in ${Math.round((Date.parse(z.von) - Date.parse(heute)) / 864e5)} Tagen`;
 }
 
-export function mutationen(welle, jahr) {
+/**
+ * Ausnahmen einer Welle fuer ein Jahr: die fuer alle Wellen (ausnahmen_alle) und die der
+ * Welle selbst; ein Eintrag mit "jahr" gilt nur in diesem Jahr (z. B. 30-Tage-Regel 2026).
+ */
+export function ausnahmenFuer(welle, jahr, alle = []) {
+  return [...(alle || []), ...(welle.ausnahmen || [])]
+    .filter((a) => a && typeof a.text === 'string' && a.text.trim() && (a.jahr == null || a.jahr === jahr))
+    .map((a) => a.text.trim());
+}
+
+export function mutationen(welle, jahr, { ausnahmenAlle = [] } = {}) {
   if (welle.freigegeben !== true) throw new Error('Aktionswelle ist fachlich noch nicht freigegeben: Prozent, Kollektion und Ausnahmen klaeren.');
   if (!Number.isInteger(welle.prozent) || welle.prozent < 1 || welle.prozent > 50) throw new Error('Prozentsatz muss eine ganze Zahl von 1 bis 50 sein.');
   if (!/^[a-z0-9][a-z0-9-]*$/.test(welle.kollektion || '')) throw new Error('Gueltiger Kollektions-Handle fehlt.');
   const z = zeitraum(welle, jahr);
   const titel = `${welle.titel} ${jahr}`;
+  const ausnahmen = ausnahmenFuer(welle, jahr, ausnahmenAlle);
   return {
-    hinweis: `Nur Vorbereitung, keine Aktivierung: {{KOLLEKTION_GID}} fuer "${welle.kollektion}" nachschlagen und Sortiment auf bereits reduzierte Ware, Muster, Zubehoer und Auslauf pruefen. Erst den Rabatt anlegen und mit Prozent, Ziel und Berliner Zeitgrenzen zuruecklesen. Die Anzeige wird absichtlich inaktiv angelegt; erst nach passendem Rabatt und Gegenprobe von Produktseite/Rechner/Warenkorb aktivieren, danach die Topbar freischalten. Bei Fehlern keine Anzeige aktivieren.`,
+    hinweis: `Nur Vorbereitung, keine Aktivierung: {{KOLLEKTION_GID}} fuer "${welle.kollektion}" nachschlagen und Sortiment auf bereits reduzierte Ware, Muster, Zubehoer und Auslauf pruefen. Erst den Rabatt anlegen und mit Prozent, Ziel und Berliner Zeitgrenzen zuruecklesen. Die Anzeige wird absichtlich inaktiv angelegt; erst nach passendem Rabatt und Gegenprobe von Produktseite/Rechner/Warenkorb aktivieren, danach die Topbar freischalten. Bei Fehlern keine Anzeige aktivieren.${ausnahmen.length ? ` Ausnahmen (vor dem Anlegen aus der Zielmenge nehmen): ${ausnahmen.join(' · ')}.` : ''}`,
     kollektion_handle: welle.kollektion,
+    ausnahmen,
     rabatt: {
       query: 'mutation($d: DiscountAutomaticBasicInput!) { discountAutomaticBasicCreate(automaticBasicDiscount: $d) { automaticDiscountNode { id } userErrors { field message } } }',
       variables: {
@@ -135,7 +147,7 @@ function main() {
   if (a.welle) {
     const w = kal.wellen.find((x) => x.id === a.welle);
     if (!w) { console.error(`Welle "${a.welle}" steht nicht im Kalender.`); process.exit(2); }
-    const entwurf = mutationen(w, jahr);
+    const entwurf = mutationen(w, jahr, { ausnahmenAlle: kal.ausnahmen_alle });
     const datei = `aktion-${w.id}-${jahr}.json`;
     writeFileSync(datei, JSON.stringify(entwurf, null, 2) + '\n', { flag: 'wx' });
     console.log(`${datei} geschrieben - nichts in Shopify angelegt.`);
@@ -153,7 +165,9 @@ function main() {
     const warn = imVorlauf && (w.freigegeben !== true || !w.prozent) ? '  ← Prozent, Kollektion und Ausnahmen offen' : '';
     if (warn) fehlt++;
     console.log(`  ${z.von} – ${z.bis}  ${w.titel.padEnd(22)} ${w.kollektion.padEnd(32)} ${pr.padEnd(14)} ${s}${warn}`);
+    for (const text of ausnahmenFuer(w, jahr)) console.log(`      Ausnahme: ${text}`);
   }
+  for (const text of ausnahmenFuer({}, jahr, kal.ausnahmen_alle)) console.log(`  Fuer alle Wellen: ${text}`);
   if (fehlt) process.exit(1);
 }
 

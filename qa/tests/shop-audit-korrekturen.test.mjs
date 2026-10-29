@@ -13,6 +13,7 @@ const engine = new Liquid({ templates: {
   'tp-leisten-paket': liquidSource('snippets/tp-leisten-paket.liquid'),
   'tp-musteroption': liquidSource('snippets/tp-musteroption.liquid'),
   'tp-muster-grenze': '',
+  'tp-muster-hinweis': '',
   'tp-zahlung-abholung': '',
 } });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
@@ -32,7 +33,9 @@ test('Produkttext beschreibt dieselbe Fuenferstaffel wie der Warenkorb, ohne alt
   });
   assert.match(html, /Für je 5 Pakete Klick- oder Klebevinyl erhalten Sie 5 Sockelleisten/);
   assert.match(html, /je 11,90&nbsp;€ Nachlass/);
-  assert.match(html, /Höchstens 100 rabattierte Stangen/);
+  // Inhaber 2026-10-09: bei Sockelleisten "Leisten", nie "Stangen" (Rundgang 2026-10-26, #63).
+  assert.match(html, /Höchstens 100 rabattierte Leisten/);
+  assert.doesNotMatch(html, /Stangen/);
   assert.doesNotMatch(html, /Ab 10|je Paket eine|Höchstens 60|50\s*%/);
   for (const [quantity, expected] of [[4, 0], [5, 5], [6, 5], [9, 5], [10, 10], [105, 100], [200, 100]]) {
     const cartHtml = await engine.parseAndRender(cart, {

@@ -390,6 +390,11 @@ class TpSucheLeiste extends HTMLElement {
     this.panel.querySelectorAll('a[role="option"]').forEach((el, i) => {
       el.id = `${this.optionPraefix}-${i}`;
       el.removeAttribute('aria-selected');
+      // Rundgang R2 #77: Vorschlaege sind keine Tab-Stopps. Erreichbar mit
+      // Pfeil hoch/runter (aria-activedescendant), Enter oeffnet; die Maus
+      // klickt sie wie bisher. Vorher lagen 15 Vorschlaege zwischen Suchfeld
+      // und Hauptmenue in der Tab-Folge.
+      el.tabIndex = -1;
     });
   }
 

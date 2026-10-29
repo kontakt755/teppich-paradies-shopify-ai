@@ -9,13 +9,26 @@
  * Ergebnis: $TP_PRIVAT_DIR/shopwache/status.json - das Control Center liest
  * genau diese Datei. Es werden nur oeffentliche Seiten abgerufen, keine
  * Anmeldung, kein Schreibzugriff.
+ *
+ * Jede Ausgabezeile beginnt mit der Uhrzeit (ISO, UTC) - launchd schreibt sie ohne Datum
+ * ins Log. Bei jedem Ampelwechsel kommt eine Zeile nach shopwache/verlauf.jsonl (Beginn,
+ * Ende, Dauer, Seiten); den Beginn der laufenden Stoerung traegt status.json (`stoerungSeit`).
+ *
+ * Nebenbei misst die Wache den freien Speicher der Platte, auf der $TP_PRIVAT_DIR
+ * liegt (operations/lib/speicher.mjs): Feld `speicher` mit eigener Ampel. Er zaehlt
+ * nicht zur Shop-Ampel - ein voller Mac ist kein kaputter Shop -, das Control
+ * Center zeigt ihn als eigenes To-do. Bei Rot kommt zusaetzlich hoechstens einmal am Tag, in der
+ * Arbeitszeit, eine Mac-Mitteilung (speicherMelden, Tag in shopwache/speicher-mitteilung.json).
  */
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pruefe } from '../lib/shopwache.mjs';
+import { pruefe, stoerungSeit, verlaufEintrag } from '../lib/shopwache.mjs';
+import { speicherStand, speicherText, speicherMelden } from '../lib/speicher.mjs';
+import { mitteilung } from '../lib/mac-mitteilung.mjs';
+import { mitZeitstempel } from '../lib/zeitstempel.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const STANDARD_BASIS = 'https://www.teppich-paradies.net';
@@ -74,7 +87,32 @@ async function holen(url, { zeitgrenzeMs = 15000 } = {}) {
   }
 }
 
+/**
+ * Schreibt status.json und haengt bei einem Ampelwechsel eine Zeile an verlauf.jsonl (gleicher Ordner).
+ * Gibt die Verlaufszeile zurueck (oder null). Ein unlesbarer Vorstand gilt als "kein Vorstand".
+ */
+export function ergebnisAblegen(ziel, ergebnis) {
+  let vorher = null;
+  try { vorher = JSON.parse(fs.readFileSync(ziel, 'utf8')); } catch { vorher = null; }
+  ergebnis.stoerungSeit = stoerungSeit(vorher, ergebnis);
+  fs.mkdirSync(path.dirname(ziel), { recursive: true });
+  fs.writeFileSync(ziel, JSON.stringify(ergebnis, null, 2));
+  const eintrag = verlaufEintrag(vorher, ergebnis);
+  if (eintrag) fs.appendFileSync(path.join(path.dirname(ziel), 'verlauf.jsonl'), `${JSON.stringify(eintrag)}\n`);
+  return eintrag;
+}
+
+/**
+ * Erst den Speicher melden, dann ablegen: bei voller Platte bricht das Schreiben von
+ * status.json mit ENOSPC ab - die Mitteilung soll gerade dann noch rausgehen (Pruefung 28.10.).
+ */
+export function meldenUndAblegen(ziel, ergebnis, { melde = mitteilung, jetzt = new Date() } = {}) {
+  const gemeldet = speicherMelden(ergebnis.speicher, { datei: path.join(path.dirname(ziel), 'speicher-mitteilung.json'), melde, jetzt });
+  return { gemeldet, wechsel: ergebnisAblegen(ziel, ergebnis) };
+}
+
 async function main() {
+  const protokoll = mitZeitstempel(console);
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) {
     console.log('npm run shop:wache -- [--basis <url>] [--stichproben <n>] [--ziel <datei>]');
@@ -87,15 +125,18 @@ async function main() {
   const stichproben = stichprobenAus(lexikon, a.stichproben);
 
   const ergebnis = await pruefe(holen, { basis: a.basis, stichproben });
-  fs.mkdirSync(path.dirname(ziel), { recursive: true });
-  fs.writeFileSync(ziel, JSON.stringify(ergebnis, null, 2));
+  ergebnis.speicher = speicherStand(dir);
+  const { gemeldet, wechsel } = meldenUndAblegen(ziel, ergebnis);
 
-  console.log(`Shop-Wache: ${ergebnis.ampel.toUpperCase()} · ${ergebnis.kritisch} kritisch, ${ergebnis.warnungen} Warnungen · ${ziel}`);
-  for (const b of ergebnis.befunde) console.log(`  [${b.art}] ${b.titel}: ${b.text}`);
-  if (!stichproben.length) console.log('  (keine Preisstichprobe - Lexikon-Export fehlt)');
+  protokoll.log(`Shop-Wache: ${ergebnis.ampel.toUpperCase()} · ${ergebnis.kritisch} kritisch, ${ergebnis.warnungen} Warnungen · Speicher ${speicherText(ergebnis.speicher)} · ${ziel}`);
+  if (gemeldet) protokoll.log('  Speicher rot: Mac-Mitteilung verschickt (naechste fruehestens morgen)');
+  for (const b of ergebnis.befunde) protokoll.log(`  [${b.art}] ${b.titel}: ${b.text}`);
+  if (!stichproben.length) protokoll.log('  (keine Preisstichprobe - Lexikon-Export fehlt)');
+  if (wechsel?.art === 'ende') protokoll.log(`  Stoerung beendet nach ${wechsel.dauerMinuten ?? '?'} Minuten (seit ${wechsel.beginn})`);
+  else if (wechsel) protokoll.log(`  Ampelwechsel ${wechsel.von || 'neu'} -> ${wechsel.nach} (Verlauf: shopwache/verlauf.jsonl)`);
   process.exitCode = ergebnis.kritisch ? 2 : 0;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch(err => { console.error(`Fehler: ${err.message}`); process.exit(1); });
+  main().catch(err => { mitZeitstempel(console).error(`Fehler: ${err.message}`); process.exit(1); });
 }

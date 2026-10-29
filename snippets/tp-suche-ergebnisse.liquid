@@ -119,10 +119,41 @@
     assign tp_se_k_anzahl = 6
   endif
 
-  assign tp_se_s_anzahl = predictive_search.resources.pages.size
-  if tp_se_s_anzahl > 2
-    assign tp_se_s_anzahl = 2
-  endif
+  # Feste Service-Seiten (snippets/tp-suche-service-ziele): "Oeffnungszeiten"
+  # fuehrt zur Kontaktseite, "Verlegung" zum Verlegeservice, "Reklamation" zu
+  # Widerruf, Widerrufsbelehrung und Kontakt. Sie stehen oben,
+  # vor Vorschlaegen und Produkten; dieselbe Seite nicht noch einmal unten.
+  capture tp_se_fest_handles
+    render 'tp-suche-service-ziele', begriff: tp_se_begriff_roh
+  endcapture
+  assign tp_se_fest_handles = tp_se_fest_handles | strip | split: ','
+  assign tp_se_fest = '|'
+  assign tp_se_fest_anzahl = 0
+  for tp_se_fh in tp_se_fest_handles
+    if tp_se_fh == blank
+      continue
+    endif
+    # "refund-policy" ist die Widerrufsbelehrung (Richtlinie, keine Seite).
+    if tp_se_fh == 'refund-policy'
+      if shop.refund_policy == blank
+        continue
+      endif
+    elsif pages[tp_se_fh] == blank
+      continue
+    endif
+    assign tp_se_fest = tp_se_fest | append: tp_se_fh | append: '|'
+    assign tp_se_fest_anzahl = tp_se_fest_anzahl | plus: 1
+  endfor
+  assign tp_se_fest_liste = tp_se_fest | remove_first: '|' | split: '|'
+
+  # Seiten von Shopify: hoechstens 2, ohne die festen Seiten von oben.
+  assign tp_se_s_anzahl = 0
+  for tp_se_s in predictive_search.resources.pages limit: 2
+    assign tp_se_skey = '|' | append: tp_se_s.handle | append: '|'
+    unless tp_se_fest contains tp_se_skey
+      assign tp_se_s_anzahl = tp_se_s_anzahl | plus: 1
+    endunless
+  endfor
 
   # Ratgeber-Artikel: hoechstens 3, Shopify liefert hier nur veroeffentlichte
   # Artikel, deshalb keine weitere Tag-Filterung noetig (anders als bei Produkten oben).
@@ -131,7 +162,7 @@
     assign tp_se_a_anzahl = 3
   endif
 
-  assign tp_se_gesamt = tp_se_p_anzahl | plus: tp_se_k_anzahl | plus: tp_se_s_anzahl | plus: tp_se_q_anzahl | plus: tp_se_a_anzahl
+  assign tp_se_gesamt = tp_se_p_anzahl | plus: tp_se_k_anzahl | plus: tp_se_s_anzahl | plus: tp_se_q_anzahl | plus: tp_se_a_anzahl | plus: tp_se_fest_anzahl
 -%}
 
 <div class="tp-se" role="listbox" aria-label="Suchvorschläge" data-tp-begriff="{{ tp_se_begriff_roh | escape }}" data-tp-produkte="{{ tp_se_p_anzahl }}">
@@ -151,12 +182,27 @@
       <p class="tp-se__leer-hilfe">Wir helfen auch persönlich: <a href="tel:+4933015733720">03301 573 37 20</a></p>
     </div>
   {%- else -%}
-    {%- if tp_se_q_anzahl > 0 -%}
+    {%- if tp_se_q_anzahl > 0 or tp_se_fest_anzahl > 0 -%}
       <div class="tp-se__block tp-se__block--vorschlaege" role="group" aria-label="Suchvorschläge">
-        <h3 class="tp-se__h">Vorschläge</h3>
-        <ul class="tp-se__liste tp-se__liste--chips predictive-search-results__list" role="presentation">
-          {{ tp_se_vorschlaege }}
-        </ul>
+        {%- if tp_se_fest_anzahl > 0 -%}
+          <h3 class="tp-se__h">Service</h3>
+          <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
+            {%- for tp_se_fh in tp_se_fest_liste -%}
+              {%- if tp_se_fh == 'refund-policy' -%}
+                {%- assign tp_se_fs = shop.refund_policy -%}
+              {%- else -%}
+                {%- assign tp_se_fs = pages[tp_se_fh] -%}
+              {%- endif -%}
+              <li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__link" data-tp-typ="seite" href="{{ tp_se_fs.url }}"><span data-tp-titel>{{ tp_se_fs.title | escape }}</span></a></li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+        {%- if tp_se_q_anzahl > 0 -%}
+          <h3 class="tp-se__h">Vorschläge</h3>
+          <ul class="tp-se__liste tp-se__liste--chips predictive-search-results__list" role="presentation">
+            {{ tp_se_vorschlaege }}
+          </ul>
+        {%- endif -%}
       </div>
     {%- endif -%}
 
@@ -252,6 +298,8 @@
           <h3 class="tp-se__h">Service</h3>
           <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
             {%- for tp_se_s in predictive_search.resources.pages limit: 2 -%}
+              {%- assign tp_se_skey = '|' | append: tp_se_s.handle | append: '|' -%}
+              {%- if tp_se_fest contains tp_se_skey -%}{%- continue -%}{%- endif -%}
               <li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__link" data-tp-typ="seite" href="{{ tp_se_s.url }}"><span data-tp-titel>{{ tp_se_s.title | escape }}</span></a></li>
             {%- endfor -%}
           </ul>

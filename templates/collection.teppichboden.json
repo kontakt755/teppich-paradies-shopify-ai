@@ -1208,7 +1208,7 @@
             "filter_style": "vertical",
             "filter_width": "centered",
             "text_label_case": "default",
-            "show_swatch_label": false,
+            "show_swatch_label": true,
             "show_filter_label": false,
             "enable_sorting": true,
             "enable_grid_density": false,
@@ -1386,13 +1386,37 @@
             "question": "Kann ich den Teppichboden auch verlegen lassen?",
             "answer": "<p>Rund um Oranienburg bieten wir Aufmaß und Verlegung an. <a href=\"/pages/teppichboden-verlegen-lassen\">Verlegeservice ansehen</a>.</p>"
           }
+        },
+        "raum": {
+          "type": "frage",
+          "settings": {
+            "question": "Welcher Teppichboden passt in welchen Raum?",
+            "answer": "<p>Velours ist dicht geschoren und fühlt sich weich an, Schlinge ist strapazierfähig und eignet sich für Flure und viel genutzte Räume. Ob ein Boden zu Ihrem Raum passt, steht am Produkt (Zimmer, Nutzungsklasse, Florhöhe); in der Liste filtern Sie danach. Zu den Unterkategorien: <a href=\"/collections/teppichboden-velours\">Velours</a>, <a href=\"/collections/teppichboden-schlinge\">Schlinge</a>, <a href=\"/collections/teppichboden-wolle\">Wolle</a>.</p>"
+          }
+        },
+        "fliesen": {
+          "type": "frage",
+          "settings": {
+            "question": "Kann ich Teppichboden auf Fliesen verlegen?",
+            "answer": "<p>Oft ja – lose mit Verlegeband, fixiert oder vollflächig verklebt. Entscheidend sind der Untergrund und der Teppichrücken. Die Schritte stehen im Ratgeber <a href=\"/blogs/ratgeber-teppichboden/teppichboden-auf-fliesen\">Teppichboden auf Fliesen verlegen</a>; die Menge ermitteln Sie mit <a href=\"/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen\">Teppichboden richtig ausmessen</a>.</p>"
+          }
+        },
+        "wellen": {
+          "type": "frage",
+          "settings": {
+            "question": "Mein Teppichboden wirft Wellen – was tun?",
+            "answer": "<p>Meist hat sich der Belag durch Temperatur oder Feuchte bewegt und ist nicht fest genug befestigt. Ursachen und Abhilfe stehen im Ratgeber <a href=\"/blogs/ratgeber-teppichboden/teppichboden-wirft-wellen\">Teppichboden wirft Wellen</a>. Neu verlegen oder nachspannen lassen können Sie über unseren <a href=\"/pages/teppichboden-verlegen-lassen\">Verlegeservice</a>.</p>"
+          }
         }
       },
       "block_order": [
         "menge",
         "muster",
         "versand",
-        "verlegung"
+        "verlegung",
+        "raum",
+        "fliesen",
+        "wellen"
       ],
       "settings": {}
     },

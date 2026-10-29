@@ -10,7 +10,8 @@
  *
  * Ablauf: Zeitfenster Mo-Sa 7-19 Uhr (Europe/Berlin) -> kein Nachziehen des Dienst-Checkouts
  * im Gang (#1715, betrieb-nachziehen.lock) -> Sperre gegen Doppelstart -> (fehlermeldungen)
- * `npm run -s fehler -- abgleich` ohne KI -> je Teil `claude -p` mit Sonnet, fester
+ * `npm run -s fehler -- abgleich` ohne KI, (postfach) IMAP-Abfrage der Mail-Kennungen ohne KI
+ * und Werkzeugprobe fuer die MCP-Sperren -> je Teil `claude -p` mit Sonnet, fester
  * Werkzeugliste, Wache (PreToolUse-Hook) und Zeitlimit -> Status nach $TP_PRIVAT_DIR/routinen/,
  * bei neuem Fehler eine Mitteilung auf dem Mac und ein To-do im Control Center (Heute).
  *
@@ -26,14 +27,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { mitteilung } from '../lib/mac-mitteilung.mjs';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   LAEUFE, privatDir, dienstDir, routinenDir, arbeitsOrdner, auftragPfad, imFenster, berlinZeit,
   auftragOhneKopf, promptKopf, claudeArgumente, bewerteLauf, vorpruefung, liesStatus, schreibStatus,
   nimmSperre, sperrPfad, sperrAlterMs, neuerSammler, sammle, abschliessen, pruefeWerkzeuge,
+  mcpSperren, harmloseAblehnung,
 } from '../lib/routinen.mjs';
 import { werkbankAus } from '../lib/routine-wache.mjs';
+import { postfachAbfragen, entscheide, nachErfolg } from '../lib/postfach-vorpruefung.mjs';
+import { leseBelege, lieferbelegePfad } from '../lib/lieferbelege.mjs';
+import { leseGeprueft, postfachPfad as servicePostfachPfad } from '../lib/serviceanfragen.mjs';
+import { bekannt as serviceBekannt } from './serviceanfragen.mjs';
 import { sperreVerwaist } from './betrieb-nachziehen.mjs';
 
 const PROTOKOLL_TAGE = 14;
@@ -77,15 +84,8 @@ export function claudeUmgebung(env, lauf, teil) {
   return { ...sauber, USER: nutzer, LOGNAME: env.LOGNAME || nutzer, CLAUDE_CODE_ENTRYPOINT: 'claude-desktop', TP_ROUTINE: `${lauf}/${teil.id}` };
 }
 
-/** macOS-Mitteilung; der Text geht als Argument, nie in den AppleScript-Quelltext. */
-export function mitteilung(titel, text, { ausfuehren = execFileSync } = {}) {
-  try {
-    ausfuehren('osascript', [
-      '-e', 'on run argv', '-e', 'display notification (item 2 of argv) with title "Teppich Paradies – Mac-Dienst" subtitle (item 1 of argv)', '-e', 'end run',
-      String(titel).slice(0, 80), String(text).slice(0, 220),
-    ], { stdio: 'ignore', timeout: 10_000 });
-  } catch { /* ohne Mitteilung bleibt das To-do im Control Center */ }
-}
+/** macOS-Mitteilung (operations/lib/mac-mitteilung.mjs, auch von der Shop-Wache genutzt). */
+export { mitteilung };
 
 function stempel(jetzt) {
   return jetzt.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
@@ -210,6 +210,7 @@ export async function teilAusfuehren(lauf, teil, o) {
   const kopf = promptKopf(lauf, teil, { dienst, arbeit });
   const argsFuer = prompt => claudeArgumente(lauf, {
     dienst, arbeit, privat, prompt, modell: env.TP_ROUTINE_MODELL || 'sonnet', effort: env.TP_ROUTINE_EFFORT || 'medium', node: o.node, skript: o.skript,
+    mcpGesperrt: o.mcpGesperrt || [],
   });
   if (probe) {
     const args = argsFuer('Antworte nur mit: OK');
@@ -251,6 +252,109 @@ export async function teilAusfuehren(lauf, teil, o) {
   return { ...bewertung, start: start.toISOString() };
 }
 
+/**
+ * Welche MCP-Server der Lauf sperrt (LAEUFE[lauf].nurMcp): `claude -p` einmal nur bis zum
+ * init-Ereignis starten (kein Modellaufruf, keine Tokens) und alle anderen Server sperren.
+ * Ohne init-Ereignis: keine Sperren - der Lauf geht dann wie bisher mit allen Servern.
+ */
+export async function ermittleMcpSperren(lauf, { privat, dienst, env, starte = starteClaude }) {
+  const def = LAEUFE[lauf];
+  if (!def.nurMcp) return [];
+  const args = claudeArgumente(lauf, { dienst, arbeit: arbeitsOrdner(privat, lauf), privat, prompt: 'Antworte nur mit: OK' });
+  const r = await starte(claudeBin(env), args, { cwd: dienst, env: claudeUmgebung(env, lauf, def.teile[0]), zeitlimitMs: 120_000, pflicht: [], nurInit: true });
+  return mcpSperren(r?.init, def.nurMcp);
+}
+
+/**
+ * Gegenprobe ohne KI an der Ablage: hat der Teil sein Ergebnis abgeliefert? Lieferbelege: ein
+ * neuer Eintrag in `laeufe` seit dem Start (auch bei „nichts Neues“ wird eine leere Liste
+ * uebernommen). Service-Anfragen: jede Kennung, die die Vorpruefung als offen fand (`offen`),
+ * steht danach in der Ablage - angelegt oder als geprueft vermerkt; ohne Vorpruefung
+ * (`offen` null) mindestens ein Vermerk seit dem Start. Ein Aufruf oder eine Schlusszeile
+ * allein belegt nichts (Pruefung 28.10.: auch ein gescheiterter Aufruf zaehlte).
+ */
+export function ergebnisBelegt(teilId, { privat, start, offen = null }) {
+  try {
+    if (teilId === 'lieferbelege') return leseBelege(lieferbelegePfad(privat)).laeufe.some(l => Date.parse(l?.am) >= Date.parse(start));
+    if (teilId === 'serviceanfragen') {
+      if (Array.isArray(offen)) {
+        const da = new Set(serviceBekannt({ privatDir: privat }).mailIds);
+        return offen.every(id => da.has(id));
+      }
+      return Object.values(leseGeprueft(servicePostfachPfad(privat))).some(e => Date.parse(e?.am) >= Date.parse(start));
+    }
+  } catch { return false; }
+  return false;
+}
+
+/**
+ * Was nach einem erfolgreichen Lauf als gesehen gilt. Service-Anfragen: nur, was jetzt in der
+ * Ablage steht - eine Mail, die Claude nicht uebernommen hat, loest den naechsten Takt wieder
+ * aus, statt still bis zum Tageslauf zu warten. Lieferbelege: alles Gefundene (zurueckgestellte
+ * unbekannte Absender bietet der Tageslauf bewusst einmal am Tag wieder an).
+ */
+function gesehenNach(teilId, gefunden, privat) {
+  if (teilId !== 'serviceanfragen') return gefunden;
+  try {
+    const da = new Set(serviceBekannt({ privatDir: privat }).mailIds);
+    return gefunden.filter(id => da.has(id));
+  } catch { return []; }
+}
+
+/**
+ * Postfach: Vorpruefung per IMAP (operations/lib/postfach-vorpruefung.mjs), danach je Teil
+ * Claude nur bei Bedarf. Ein Fehler in einem Teil haelt den anderen nicht auf.
+ */
+async function postfachLauf(a, o, deps) {
+  const { privat, env, aus, melde, jetzt } = o;
+  const def = LAEUFE.postfach;
+  const abgeschaltet = String(env.TP_POSTFACH_VORPRUEFUNG || '').toLowerCase() === 'aus';
+  let vp = null;
+  if (!a.trocken && !a.erzwingen && !abgeschaltet) {
+    try { vp = await (deps.postfachAbfragen || postfachAbfragen)({ privat }); } catch (e) { vp = { fehler: String(e?.message || e).slice(0, 160) }; }
+  }
+  if (a.trocken) {
+    aus(`Vorprüfung: ${abgeschaltet ? 'abgeschaltet (TP_POSTFACH_VORPRUEFUNG=aus)' : 'vor dem Start per IMAP nur die Mail-Kennungen der Auftragssuchen (nur im echten Lauf); Claude startet nur bei Neuem, nach einem Fehlschlag und einmal am Tag'}`);
+    aus(`MCP: nur ${def.nurMcp.join(', ')} – alle anderen Server sperrt der echte Lauf nach einer Werkzeugprobe (--disallowedTools mcp__<server>)`);
+  }
+  let alleOk = true;
+  for (const teil of def.teile) {
+    let status = {};
+    try { status = liesStatus(privat, teil.id); } catch { status = {}; }
+    const daten = vp && !vp.fehler ? vp[teil.id] : null;
+    const ent = a.erzwingen ? { starten: true, grund: 'erzwungen' }
+      : abgeschaltet ? { starten: true, grund: 'Vorprüfung abgeschaltet (TP_POSTFACH_VORPRUEFUNG=aus)' }
+        : vp?.fehler ? { starten: true, grund: `Vorprüfung nicht möglich: ${vp.fehler}` }
+          : daten ? entscheide({ ...daten, status, jetzt }) : { starten: true, grund: 'ohne Vorprüfung' };
+    if (!a.trocken && !ent.starten) {
+      aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → Claude startet nicht (${ent.grund})`);
+      schreibStatus(privat, teil.id, { ok: true, art: null, meldung: 'nichts Neues (Vorprüfung ohne KI)', vorpruefungGrund: ent.grund, hinweis: null }, jetzt);
+      continue;
+    }
+    // Die Serverprobe erst, wenn wirklich ein Teil startet - einmal je Takt (Pruefung 28.10.).
+    if (!a.trocken && !o.mcpGesperrt) {
+      try { o.mcpGesperrt = await (deps.mcpSperren || ermittleMcpSperren)('postfach', { privat, dienst: o.dienst, env }); } catch { o.mcpGesperrt = []; }
+    }
+    if (!a.trocken) aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → Claude startet (${ent.grund})${o.mcpGesperrt?.length ? ` · ${o.mcpGesperrt.length} MCP-Server gesperrt` : ''}`);
+    let r;
+    try { r = await teilAusfuehren('postfach', teil, o); } catch (e) { r = { ok: false, art: e.art || 'start', meldung: e.message }; aus(`${teil.id}: FEHLER ${e.message}`); }
+    if (a.trocken) continue;
+    const offen = daten ? daten.gefunden.filter(id => !daten.bekannteIds.includes(id)) : null;
+    if (r.art === 'abgelehnt') r = harmloseAblehnung(r, ergebnisBelegt(teil.id, { privat, start: r.start, offen }));
+    const ende = new Date();
+    const { mitteilen } = schreibStatus(privat, teil.id, {
+      ok: r.ok, art: r.art, meldung: r.meldung, letzterClaudeLauf: r.start || jetzt.toISOString(), tokens: r.tokens ?? null,
+      vorpruefungGrund: ent.grund, letzterClaudeOk: r.ok,
+      hinweis: r.hinweis || null,
+      ...(r.ok ? { letzterClaudeTag: nachErfolg({ jetzt }).letzterClaudeTag } : {}),
+      ...(r.ok && daten ? { vorpruefung: nachErfolg({ gefunden: gesehenNach(teil.id, daten.gefunden, privat), merkmalNeu: daten.merkmalNeu, jetzt }).vorpruefung } : {}),
+    }, ende);
+    if (mitteilen) melde(teil.titel, r.meldung);
+    alleOk &&= r.ok;
+  }
+  return alleOk ? 0 : 1;
+}
+
 /** Laeuft gerade ein Nachziehen des Dienst-Checkouts (#1715)? Frisch = Prozess lebt, juenger als dessen SPERRE_ALT_MS. */
 export function nachziehenAktiv(privat) {
   return !sperreVerwaist(path.join(privat, 'betrieb-nachziehen.lock'));
@@ -282,7 +386,10 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
 
   if (a.werkzeugprobe) {
     let ok = true;
-    for (const teil of def.teile) ok = (await teilAusfuehren(a.lauf, teil, { ...o, probe: true })).ok && ok;
+    // Wie im echten Lauf: erst die fremden MCP-Server ermitteln und sperren, dann pruefen.
+    const mcpGesperrt = def.nurMcp ? await (deps.mcpSperren || ermittleMcpSperren)(a.lauf, { privat, dienst, env }) : [];
+    if (def.nurMcp) aus(`MCP: nur ${def.nurMcp.join(', ')} · ${mcpGesperrt.length} andere Server gesperrt${mcpGesperrt.length ? ` (${mcpGesperrt.map(s => s.replace(/^mcp__/, '')).join(', ')})` : ''}`);
+    for (const teil of def.teile) ok = (await teilAusfuehren(a.lauf, teil, { ...o, probe: true, mcpGesperrt })).ok && ok;
     return ok ? 0 : 1;
   }
   if (!a.erzwingen && !a.trocken && !imFenster(jetzt, def.fenster)) {
@@ -309,18 +416,7 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   if (!a.trocken && aktiv(privat)) { sperre.freigeben(); return ueberspringen('wartet auf Nachziehen'); }
   try {
     if (a.lauf === 'fehlermeldungen') return await fehlermeldungenLauf(a, o, deps);
-    let alleOk = true;
-    for (const teil of def.teile) {
-      let r;
-      try { r = await teilAusfuehren(a.lauf, teil, o); } catch (e) { r = { ok: false, art: e.art || 'start', meldung: e.message }; aus(`${teil.id}: FEHLER ${e.message}`); }
-      if (a.trocken) continue;
-      const { mitteilen } = schreibStatus(privat, teil.id, {
-        ok: r.ok, art: r.art, meldung: r.meldung, hinweis: null, letzterClaudeLauf: r.start || jetzt.toISOString(), tokens: r.tokens ?? null,
-      }, new Date());
-      if (mitteilen) melde(teil.titel, r.meldung);
-      alleOk &&= r.ok;
-    }
-    return alleOk ? 0 : 1;
+    return await postfachLauf(a, o, deps);
   } finally {
     sperre.freigeben();
   }

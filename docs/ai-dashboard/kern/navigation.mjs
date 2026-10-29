@@ -10,6 +10,7 @@
 import { state } from './zustand.mjs';
 import { $, esc } from './helfer.mjs';
 import { darfAnsicht } from './router.mjs';
+import { offeneEntscheidungen } from '../lib/model.mjs';
 
 const GRUPPEN_KEY = 'tp-nav-gruppe-v2';
 
@@ -65,7 +66,7 @@ export function aktualisiereNavigation() {
     if (a.dataset.nav === view && tabPasst && einkaufPasst) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
-  const freigaben = darfAnsicht('freigaben') ? state.tasks.filter(t => t.status === 'freigabe').length : 0;
+  const freigaben = darfAnsicht('freigaben') ? offeneEntscheidungen(state.tasks).length : 0;
   setzeZahl($('#navFreigaben'), freigaben);
   // Entscheidungen bleiben auch in der geschlossenen Verwaltungsgruppe sichtbar.
   setzeZahl($('#navMoreCount'), freigaben);

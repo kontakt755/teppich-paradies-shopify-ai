@@ -26,6 +26,8 @@ export const medienDir = (dir = socialDir()) => path.join(dir, 'medien');
 export const zugaengePfad = (dir = socialDir()) => path.join(dir, 'upload-zugaenge.json');
 export const lernstandPfad = (dir = socialDir()) => path.join(dir, 'lernstand.json');
 export const sitzungenPfad = (dir = socialDir()) => path.join(dir, 'zentrale-sitzungen.json');
+/** Upload-Menge je Link und Tag - ueberlebt einen Neustart des Dienstes (social/scripts/server.mjs). */
+export const uploadZaehlerPfad = (dir = socialDir()) => path.join(dir, 'upload-tageszaehler.json');
 
 /** Liegt ein Pfad im Repository? Dann darf dort nichts Privates entstehen. */
 export function imRepository(pfad, repo = REPO) {

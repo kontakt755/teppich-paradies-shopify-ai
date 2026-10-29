@@ -5,9 +5,10 @@ import { state } from '../kern/zustand.mjs';
 import { esc, fmtDate, since, newIssueUrl } from '../kern/helfer.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
 import { prioBadge, statusBadge, taskLink, taskRow, echterSchritt } from '../bausteine/aufgaben.mjs';
+import { offeneEntscheidungen } from '../lib/model.mjs';
 
 export function viewFreigaben() {
-  const open = state.tasks.filter(t => t.open && (t.status === 'freigabe' || (t.isDecision && t.open))).sort((a, b) => a.priorityRank - b.priorityRank);
+  const open = offeneEntscheidungen(state.tasks).sort((a, b) => a.priorityRank - b.priorityRank);
   const reviews = state.tasks.filter(t => t.status === 'review');
   const history = state.tasks.filter(t => !t.open && (t.isDecision || t.labels.includes('reviewer:mensch'))).sort((a, b) => (b.closedAt || '').localeCompare(a.closedAt || '')).slice(0, 15);
   return `
@@ -15,6 +16,7 @@ export function viewFreigaben() {
       <a class="btn" href="${newIssueUrl({ template: 'entscheidung.yml' })}" target="_blank" rel="noopener">Entscheidung anlegen ↗</a></div>
     <section class="card"><div class="card-head"><h2>Offen (${open.length})</h2></div>
       ${open.length ? `<div class="grid grid-2">${open.map(decisionCard).join('')}</div>` : emptyState('Nichts zu entscheiden.', 'Wenn eine Entscheidung ansteht, lege sie mit Frage, Optionen und Empfehlung an.', { href: newIssueUrl({ template: 'entscheidung.yml' }), text: 'Entscheidung anlegen ↗' })}
+      ${werkbankHinweis()}
     </section>
     <section class="card section"><div class="card-head"><h2>Zur Prüfung (${reviews.length})</h2><a class="more" href="#/arbeit?view=review">Als Liste</a></div>
       ${reviews.length ? `<div class="rows">${reviews.map(t => taskRow(t)).join('')}</div>` : emptyState('Nichts zu prüfen.', '')}
@@ -22,6 +24,18 @@ export function viewFreigaben() {
     <section class="card section"><div class="card-head"><h2>Verlauf</h2><span class="more muted">abgeschlossene Entscheidungen</span></div>
       ${history.length ? `<div class="rows">${history.map(t => `<div class="row" data-open="${t.number}" tabindex="0" role="button"><div><div class="t">${esc(t.title)}</div><div class="m"><span>${statusBadge(t)}</span><span>${t.decision?.outcome ? `Ergebnis: ${esc(t.decision.outcome)}` : 'Ergebnis im Issue-Verlauf'}</span><span>${fmtDate(t.closedAt)}</span></div></div></div>`).join('')}</div>` : '<p class="small muted">Noch keine abgeschlossenen Entscheidungen. Der vollständige Verlauf jeder Entscheidung liegt unveränderbar im GitHub-Issue.</p>'}
     </section>`;
+}
+
+/**
+ * Fragen zu Shop & Technik stehen mit Optionen und Empfehlung in „Ideen & Fragen“ (Werkbank,
+ * eigene Anwendung). Das Control Center kennt deren Inhalt nicht - es zeigt nur den Weg dorthin,
+ * damit „Entscheidungen“ nicht wie die vollstaendige Liste wirkt (Rundgang 26.10.).
+ */
+function werkbankHinweis() {
+  let href = null;
+  try { const u = new URL(String(state.capabilities?.dashboards?.werkbank || '')); href = u.protocol === 'https:' ? u.toString() : null; } catch { href = null; }
+  if (!href) return '';
+  return `<p class="small muted" style="margin:12px 0 0">Weitere Fragen zu Shop und Technik – mit Optionen und Empfehlung – beantwortest du in „Ideen &amp; Fragen“. <a href="${esc(href)}" target="_blank" rel="noopener">Ideen &amp; Fragen öffnen ↗</a></p>`;
 }
 
 function decisionCard(t) {

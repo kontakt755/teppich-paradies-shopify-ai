@@ -18,6 +18,11 @@
   Kartenbreite ab - die kennt nur der Browser. Deshalb rechnet Liquid fuer
   jede moegliche Platzzahl den Rest vor (data-rest-N, Klasse --eng-N) und
   eine Container Query auf die Feldzeile waehlt die passende Stufe.
+
+  Keine Tab-Stopps (Rundgang R2 #77, 2026-10-26): Die Felder tragen
+  tabindex="-1". Mit Maus und Finger bleiben sie Links; per Tastatur waehlt
+  man die Farbe auf der Produktseite. Vorher hatte jede Karte bis zu sieben
+  Tab-Stopps, die Fusszeile einer Kategorie lag rund 2.000 Tabs entfernt.
 {% enddoc %}
 
 {%- liquid
@@ -118,6 +123,7 @@
           class="tp-card-color-thumbs__item tp-card-color-thumbs__item--farbe{% if tp_ct_ist_aktiv %} tp-card-color-thumbs__item--aktiv{% endif %}"
           {% if tp_ct_ist_aktiv %}aria-current="true"{% endif %}
           href="{{ tp_ct_fallback.url }}"
+          tabindex="-1"
           title="{{ tp_ct_value | escape }}"
           aria-label="{{ tp_ct_value | escape }}"
           style="--tp-ct-farbe: {{ tp_ct_swatch }}"
@@ -128,6 +134,7 @@
           class="tp-card-color-thumbs__item{% if tp_ct_ist_aktiv %} tp-card-color-thumbs__item--aktiv{% endif %}"
           {% if tp_ct_ist_aktiv %}aria-current="true"{% endif %}
           href="{{ tp_ct_match.url }}"
+          tabindex="-1"
           title="{{ tp_ct_value | escape }}"
           aria-label="{{ tp_ct_value | escape }}"
         >
