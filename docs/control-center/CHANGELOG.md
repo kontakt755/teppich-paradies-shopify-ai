@@ -2,6 +2,26 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · Warenkunden zuerst: Bestellen › Je Auftrag und Warenbestellungen auf Heute
+
+- **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde T2 und T4, vom Kritiker bestätigt).
+  - Bestellen › Je Auftrag: „Jetzt zu tun“ stand nur nach Datum sortiert; der erste zahlende
+    Warenauftrag stand auf Platz 21 hinter 20 Karten „Muster verschicken“. Jetzt zuerst Aufträge mit
+    bestellen, klären, Kunde informieren oder nachfragen, danach reiner Musterversand, darin älteste
+    zuerst (`jetztRang()` in `lib/auftrags-ablauf.mjs`). Der Einleitungssatz sagt das.
+  - Heute › Warenbestellungen: Eine Bestellung, bei der die Ware nur noch beim Lieferanten unterwegs
+    ist, stand ganz oben und trug den Hauptknopf. `shopBestellarbeit()` gibt jetzt `wartet`
+    (`lieferant` | `kunde`) mit; innerhalb gleicher Zahlungslage stehen Zeilen mit eigenem Schritt
+    vorn. Wartende zeigen „wartet auf Lieferant/Kunde“ und „Bestellung ansehen“, der Hauptknopf sitzt
+    auf der ersten Zeile mit eigenem Schritt. Prüf-, Zahlungs- und Klärfälle gelten nie als wartend.
+- **Getestet:** `shop-bestellarbeit.test.mjs` neu (wartende ältere Bestellung hinter eigener Arbeit,
+  Hauptknopf und Text, nur Wartende ohne Hauptknopf), `auftrags-ablauf.test.mjs` neu (`jetztRang`).
+  `dashboard:pruefen` Heute und Bestellen bei 390 und 1440 px auf der Datenkopie: 0 px Überlauf,
+  keine Fehler; Heute zeigt vier Bestellungen mit „Ware bestellen“ vor der wartenden, Je Auftrag die
+  vier Warenaufträge vor 23 Musterkarten. `npm run -s dashboard:test` 1057/1057, `npm run -s pruefen` alle 9 Schritte grün.
+- **Risiken:** Eine wartende Bestellung mit offener Zahlung bleibt wegen `zahlungsRang` hinter
+  bezahlten mit eigenem Schritt – wie bisher.
+- **Naechste Stufe:** keine.
 ## 2026-10-29 · Packstation: Muster ohne eigene Einkaufsdaten zeigen Lieferant und Farbnummer
 
 - **Geaendert:** Muster aus "Teppich nach Maß" zeigten "kein Farbbild / keine Farbnummer hinterlegt",
