@@ -19,6 +19,24 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** Wer den Weg „Muster-Wareneingang“ über die Bestellen-Liste gewohnt ist, findet ihn
   weiter unter Bestellen › Je Lieferant; nur der Knopf auf Heute führt jetzt zur Packstation.
 - **Naechste Stufe:** Reihenfolge im Lexikon-Detail („Zum Bestellen“ weiter oben) – Werkbank.
+## 2026-10-29 · Packstation: Knopf „Verschickt – Kunde informieren“ und Reiter „Erledigt“
+
+- **Geaendert:** Ein gepackter Umschlag geht sofort raus (Benutzer 29.10.). Bisher bekam der Kunde
+  keine Mail, solange niemand den Versand separat über „Versand prüfen…“ buchte. Gepackte Umschläge
+  haben jetzt den Hauptknopf „Verschickt – Kunde informieren“; „Großbrief vorbereiten“ bleibt daneben.
+  Nach einer Rückfrage setzt der Knopf je Bestellung des Umschlags den Schritt „raus“ für genau ihre
+  Muster. Der Server bucht dabei wie der Versanddialog den Versand in Shopify mit Versandbestätigung an
+  den Kunden (ohne Sendungsnummer, Mail nach Hausregel: nicht bei „holt im Laden ab“). Danach fällt der
+  Umschlag aus der Packliste. Der neue Reiter „Erledigt“ zeigt die versandten oder erledigten
+  Musterbestellungen der letzten 14 Tage, nur zum Nachsehen, mit Link zur Bestellung.
+- **Test:** `packstation-arbeitslisten.test.mjs` (Hauptknopf bei Gepackt, Reiter Erledigt mit Zeitraum
+  und Leerzustand).
+- **Risiko:** Die Buchung selbst ist der bestehende Weg (`auftragsSchrittSetzen` → `versandBuchen`) und
+  dort getestet; der Klick gegen Shopify ist auf der Datenkopie nicht geprüft. Scheitert die Buchung,
+  zeigt die Meldung den Grund, der Schritt „raus“ bleibt gesetzt, „Versand nachholen“ greift wie bisher.
+  Der Reiter zählt nach Bestelldatum, nicht nach Versanddatum.
+- **Nächste Stufe:** Packen und Verschicken in einem Klick, falls der Inhaber den Zwischenstand nicht braucht.
+
 ## 2026-10-29 · Packstation: Kopfzeile einheitlich, Lieferanten-Bestelldatum auf jeder Karte
 
 - **Geaendert:** Die Angaben rechts im Kartenkopf („N Muster · …“, „bestellt am … · wartet seit …“)
