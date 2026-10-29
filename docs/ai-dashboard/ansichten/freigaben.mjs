@@ -5,10 +5,12 @@ import { state } from '../kern/zustand.mjs';
 import { esc, fmtDate, since, newIssueUrl } from '../kern/helfer.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
 import { prioBadge, statusBadge, taskLink, taskRow, echterSchritt } from '../bausteine/aufgaben.mjs';
-import { offeneEntscheidungen } from '../lib/model.mjs';
+import { entscheidungsGruppen } from '../lib/model.mjs';
+import { personName } from '../kern/konfig.mjs';
 
 export function viewFreigaben() {
-  const open = offeneEntscheidungen(state.tasks).sort((a, b) => a.priorityRank - b.priorityRank);
+  const gruppen = entscheidungsGruppen(state.tasks);
+  const open = gruppen.fuerDich.sort((a, b) => a.priorityRank - b.priorityRank);
   const reviews = state.tasks.filter(t => t.status === 'review');
   const history = state.tasks.filter(t => !t.open && (t.isDecision || t.labels.includes('reviewer:mensch'))).sort((a, b) => (b.closedAt || '').localeCompare(a.closedAt || '')).slice(0, 15);
   return `
@@ -18,6 +20,7 @@ export function viewFreigaben() {
       ${open.length ? `<div class="grid grid-2">${open.map(decisionCard).join('')}</div>` : emptyState('Nichts zu entscheiden.', 'Wenn eine Entscheidung ansteht, lege sie mit Frage, Optionen und Empfehlung an.', { href: newIssueUrl({ template: 'entscheidung.yml' }), text: 'Entscheidung anlegen ↗' })}
       ${werkbankHinweis()}
     </section>
+    ${nochNichtReif(gruppen)}
     <section class="card section"><div class="card-head"><h2>Zur Prüfung (${reviews.length})</h2><a class="more" href="#/arbeit?view=review">Als Liste</a></div>
       ${reviews.length ? `<div class="rows">${reviews.map(t => taskRow(t)).join('')}</div>` : emptyState('Nichts zu prüfen.', '')}
     </section>
@@ -38,9 +41,24 @@ function werkbankHinweis() {
   return `<p class="small muted" style="margin:12px 0 0">Weitere Fragen zu Shop und Technik – mit Optionen und Empfehlung – beantwortest du in „Ideen &amp; Fragen“. <a href="${esc(href)}" target="_blank" rel="noopener">Ideen &amp; Fragen öffnen ↗</a></p>`;
 }
 
+/**
+ * Was nicht beim Inhaber liegt oder noch keine Optionen hat, zaehlt nicht als offen (A8) - bleibt
+ * aber sichtbar, damit nichts verschwindet. Je Zeile ein Satz, warum es hier steht.
+ */
+function nochNichtReif({ vorbereitet, beiAnderen }) {
+  const zeilen = [
+    ...vorbereitet.map(t => [t, 'Optionen fehlen noch – wird vorbereitet']),
+    ...beiAnderen.map(t => [t, `entscheidet ${personName(t.decision?.decider || t.owner)}`]),
+  ];
+  if (!zeilen.length) return '';
+  return `<section class="card section"><div class="card-head"><h2>Noch nicht für dich (${zeilen.length})</h2><span class="more muted">zählt nicht als offen</span></div>
+    <div class="rows">${zeilen.map(([t, grund]) => `<div class="row" data-open="${t.number}" tabindex="0" role="button"><div><div class="t">${esc(t.title)}</div><div class="m"><span>${esc(grund)}</span><span>wartet ${since(t.updatedAt)}</span></div></div></div>`).join('')}</div>
+  </section>`;
+}
+
 function decisionCard(t) {
   const d = t.decision || {};
-  const decider = d.decider || t.owner || null;
+  const decider = personName(d.decider || t.owner || null) || null;
   // Ohne Optionen ist die Vorlage unvollstaendig: dann ist "Rueckfrage" der naheliegende Schritt.
   const vollstaendig = Boolean(d.options?.length);
   return `<article class="card" style="box-shadow:none">

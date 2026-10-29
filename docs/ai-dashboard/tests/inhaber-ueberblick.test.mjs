@@ -92,3 +92,27 @@ test('Inhaberzeile: um 00:30 Uhr ist die Frist von gestern ueberschritten (Berli
   // Sommerzeit: 02.07. 00:30 Uhr in Berlin = 01.07. 22:30 UTC.
   assert.equal(teile(inhaberZeile({ tasks: [aufgabe(8, { due: '2026-07-01' })], jetzt: new Date('2026-07-01T22:30:00Z') })).at(-1), 'Frist überschritten 01.07.');
 });
+
+test('Rundgang 29.10. (A8): nur Entscheidungen des Inhabers mit Optionen zaehlen; der Rest bleibt sichtbar, aber nicht doppelt', async () => {
+  const { entscheidungsGruppen } = await import('../lib/model.mjs');
+  const liste = [
+    aufgabe(10, { status: 'freigabe', isDecision: true, owner: 'kontakt755', decision: { decider: 'Ahmet', options: ['A', 'B'] } }),
+    aufgabe(11, { status: 'eingang', isDecision: true, decision: { decider: null, options: [] } }),
+    aufgabe(12, { status: 'freigabe', owner: 'tobiaski737-coder' }),
+    aufgabe(13, { status: 'review', isDecision: true, owner: 'kontakt755', decision: { decider: 'kontakt755', options: [] } }),
+  ];
+  const g = entscheidungsGruppen(liste);
+  assert.deepEqual(g.fuerDich.map(t => t.number), [10]);
+  assert.deepEqual(g.vorbereitet.map(t => t.number), [11], 'Vorlage ohne Optionen wird noch vorbereitet');
+  assert.deepEqual(g.beiAnderen.map(t => t.number), [12]);
+  assert.deepEqual(offeneEntscheidungen(liste).map(t => t.number), [10], 'Zaehler = Liste "Offen"');
+  state.tasks = liste;
+  const html = viewFreigaben();
+  assert.match(html, /<h2>Offen \(1\)<\/h2>/);
+  assert.match(html, /<h2>Noch nicht für dich \(2\)<\/h2>/);
+  assert.match(html, /Optionen fehlen noch – wird vorbereitet/);
+  assert.match(html, /entscheidet Tobias/, 'Klarname statt GitHub-Kennung');
+  assert.equal((html.match(/data-open="13"/g) || []).length, 1, '"Zur Prüfung" zeigt sie einmal, "Offen" nicht noch einmal');
+  assert.doesNotMatch(html, /tobiaski737-coder/);
+  state.tasks = [];
+});
