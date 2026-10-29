@@ -57,11 +57,15 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
   const statusAlle = Object.fromEntries(eintraege.filter(x => x.p.lineItemId && x.eintrag)
     .map(x => [`${z.orderId}::${x.p.lineItemId}`, x.eintrag]));
   // Dieselben Handlungs-/Warteregeln wie auf Heute, hier ausschliesslich fuer Warenpositionen.
+  // wartet: 'lieferant' | 'kunde', wenn gerade andere dran sind (Rundgang 29.10., T4) - solche
+  // Zeilen stehen hinter denen mit eigenem Schritt und bekommen nicht den Hauptknopf.
+  let wartet = null;
   if (!unklar && mitStatus && !abgeschlossen && z.offen) {
     const zeile = { ...quelle, auftrag: { ...z.auftrag, positionen: waren, ampel: warenKlaerung.length ? 'rot' : 'gruen' } };
     const warten = werWartet({ bestellzeilen: [zeile], statusAlle }, { jetzt: new Date(jetzt) });
     const n = [...warten.wir, ...warten.lieferant, ...warten.kunde][0];
     if (n) arbeit = { ...arbeit, naechstes: n.schritt };
+    if (!warten.wir.length) wartet = warten.lieferant.length ? 'lieferant' : warten.kunde.length ? 'kunde' : null;
   }
   if (archiviert) arbeit = { stand: 'In Shopify archiviert', naechstes: finanziellAbgeschlossen ? 'Bewusst abgeschlossen; kein Versand daraus abgeleitet' : 'Zahlungseingang prüfen' };
   else if (unklar) arbeit = { stand: 'Warenstand prüfen', naechstes: 'Warenpositionen und aktuellen Bestellstand prüfen' };
@@ -73,7 +77,9 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
   const zahlung = z.zahlungsstatus;
   const zahlungsRang = bezahlt ? 0 : zahlung === 'PARTIALLY_PAID' ? 1 : zahlung === 'AUTHORIZED' ? 2 : 3;
   const tage = kalendertage(z.datum, Number(jetzt));
-  return { ...arbeit, fortschritt: fortschritt || null, waren, gemischt, unklar: Boolean(unklar),
+  // Jede Pruef-/Zahlungsaufgabe von oben ist unser Schritt, auch wenn der Lieferant noch liefert.
+  if (archiviert || unklar || kontrollieren || zahlungOffen) wartet = null;
+  return { ...arbeit, wartet, fortschritt: fortschritt || null, waren, gemischt, unklar: Boolean(unklar),
     kontrollieren, abgeschlossen, bezahlt, zahlungOffen, zahlungsRang, tage, fehlteile: fehlteile.length };
 }
 
@@ -86,7 +92,8 @@ export function shopBestellarbeit(daten, { jetzt = Date.now() } = {}) {
   const zeilen = daten.zeilen.filter(z => z && !z.testbestellung && !z.storniert && bestellArtPasst(z, 'ware'))
     .map(z => ({ zeile: z, ...warenArbeitsstand(z, { jetzt }) }))
     .filter(z => !z.abgeschlossen)
-    .sort((a, b) => a.zahlungsRang - b.zahlungsRang || Number(b.kontrollieren) - Number(a.kontrollieren)
+    .sort((a, b) => a.zahlungsRang - b.zahlungsRang || Number(Boolean(a.wartet)) - Number(Boolean(b.wartet))
+      || Number(b.kontrollieren) - Number(a.kontrollieren)
       || (b.tage ?? -1) - (a.tage ?? -1) || String(a.zeile.orderId).localeCompare(String(b.zeile.orderId)));
   return { verfuegbar: true, laedt: false, zeilen, offen: zeilen.length,
     bezahlt: zeilen.filter(z => z.bezahlt).length, kontrolle: zeilen.filter(z => z.kontrollieren).length };

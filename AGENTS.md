@@ -93,7 +93,7 @@ lokal auf dem Mac; unbekannte Flags brechen ab.
 
 ## Werkzeuge
 
-Alle `npm run`-Werkzeuge mit Zweck: Skill `werkzeuge`. Feste Zeitpunkte: `workflow:doctor` vor jedem Deploy, `-s deploy:frei` vor jedem Merge nach main, `-s import:pruefen` nach jedem Import, `-s teppich:basis-daten` nach jedem Teppich-Import, `-s auslauf:sortieren` nach jedem neuen Tag `auslauf` und jedem Import in Teppichboden/Teppiche, `lighthouse:messen` bevor jemand „schneller/langsamer“ sagt.
+Alle `npm run`-Werkzeuge mit Zweck: Skill `werkzeuge`. Feste Zeitpunkte: `workflow:doctor` vor jedem Deploy, `-s deploy:frei` vor jedem Merge nach main, `-s import:pruefen` nach jedem Import, `-s teppich:basis-daten` nach jedem Teppich-Import, `-s auslauf:sortieren` nach jedem neuen Tag `auslauf` und jedem Import in Teppichboden/Teppiche, `-s preisfilter:abgleich -- --schreiben` nach jedem Preislauf bei Teppichboden (Rückstellung, Angebotswelle, Einzelpreise), `lighthouse:messen` bevor jemand „schneller/langsamer“ sagt.
 
 ## Produktdaten
 

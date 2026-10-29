@@ -85,3 +85,16 @@ test('HTTP: Route bekannt, nur GET, Fehler als Klartext statt Absturz', async (t
   assert.equal((await fetch(url(''))).status, 400);
   assert.equal((await fetch(url(WARE), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, 405);
 });
+
+test('Leere Vorlagen: Liste an der Bestellliste, PDF je Bodenart, Unbekanntes 404', () => {
+  const { api } = umgebung();
+  const vorlagen = api.kundenBestellungen().ratgeberVorlagen;
+  assert.ok(vorlagen.length >= 12);
+  assert.ok(vorlagen.some((v) => v.schluessel === 'sauberlauf' && v.titel === 'Sauberlauf'));
+  for (const v of vorlagen) {
+    const pdf = api.kundenRatgeberVorlage({ schluessel: v.schluessel });
+    assert.equal(String(pdf.inhalt.subarray(0, 5)), '%PDF-', v.schluessel);
+    assert.equal(pdf.typ, 'application/pdf');
+  }
+  assert.throws(() => api.kundenRatgeberVorlage({ schluessel: '../x' }), (e) => e.status === 404);
+});

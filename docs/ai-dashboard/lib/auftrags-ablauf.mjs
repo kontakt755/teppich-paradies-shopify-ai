@@ -137,6 +137,16 @@ export function einordnung(ab, informiert = null, jetzt = new Date()) {
   return { gruppe, gruende: g, verzug, wareDa };
 }
 
+/**
+ * Reihenfolge in "Jetzt zu tun" (Rundgang 29.10., T2): Auftraege, bei denen wir bestellen,
+ * klaeren, den Kunden informieren oder nachfragen muessen, vor reinem Musterversand - sonst
+ * standen zahlende Warenkunden hinter 20 Musterkarten (Inhaber 22.10.: Warenkunden zuerst).
+ * 0 = eigener Schritt ausser Muster verschicken, 1 = nur Muster verschicken.
+ */
+export function jetztRang(e) {
+  return (e?.gruende || []).some(g => g !== 'muster_da') ? 0 : 1;
+}
+
 const datumDe = iso => (iso ? String(iso).slice(0, 10).split('-').reverse().join('.') : '');
 
 /** Fertiger Text an den Kunden: Ware ist da, Termin abstimmen. Versendet wird nichts. */

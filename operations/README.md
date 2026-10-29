@@ -21,9 +21,12 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
   `blocks/tp-zubehoer-menge.liquid`, `assets/tp-masstepich-rechnung.js`) stehen.
 - **Waren-Einkauf bleibt ein Entwurf** (D8). Ausnahme nach Inhaberauftrag vom 23.10.2026: explizit freigegebene kostenlose Muster werden durch `lib/muster-bestellautomatik.mjs` bestellt. Private Empfänger-/Produktgruppenfreigabe, Startzeit und Versandjournal sind Pflicht; kostenpflichtige oder unklare Fälle bleiben offen.
 - Shopify-Schreibzugriff nur auf Order-Metafelder `ops.*` und Tags; nie auf
-  Produkte, Preise oder Varianten aus diesem Modul. **Einzige Ausnahme:** der
+  Produkte, Preise oder Varianten aus diesem Modul. **Ausnahmen:** der
   Angebote-Abgleich setzt und entfernt am Produkt genau den Tag `angebot`
-  (Inhaber, 2026-10-08) – nie Preise, Vergleichspreise, Varianten oder andere Tags.
+  (Inhaber, 2026-10-08), und der Preisfilter-Abgleich (`scripts/preisfilter-abgleich.mjs`,
+  Dienst `net.teppich-paradies.preisfilter`) setzt genau das Produkt-Metafeld
+  `custom.meterpreis_bereich` (w-189, 2026-10-29) – nie Preise, Vergleichspreise,
+  Varianten oder andere Tags und Felder.
 
 ## Module
 
@@ -721,6 +724,32 @@ Regel und Tests: `lib/angebote-abgleich.mjs`, `tests/angebote-abgleich.test.mjs`
 - Rückweg: Tag `angebot` entfernen (der Lauf entfernt ihn überall dort, wo kein Rabatt
   angezeigt wird; zum vollständigen Abschalten den Dienst entladen und `tagsRemove` je
   Produkt aus der Sicherung `~/teppich-paradies-analyse/angebote/abgleich-2026-10-08/vorher.json`).
+
+## Preisfilter Teppichboden (stündlich)
+
+`npm run -s preisfilter:abgleich` hält das Produkt-Metafeld `custom.meterpreis_bereich`
+(„Preis je m²“, Quelle des gleichnamigen Search-&-Discovery-Filters) deckungsgleich mit
+dem Preis, den die Karte als „ab“ zeigt: bei Rollenware der niedrigste Meterware-Preis
+(ohne Wunschmaß), bei Paketware der Paketpreis je m². Hintergrund Werkbank w-189: Shopifys
+Preisfilter rechnet über alle Variantenpreise, die Wunschmaß-Variante ist je m² teurer und
+zog Karten in falsche Bereiche. Regel, Bereiche und Tests: `scripts/preisfilter-abgleich.mjs`,
+`qa/tests/preisfilter-abgleich.test.mjs`.
+
+- Ohne Argument: lesen, Plan und Pakete unter `$TP_PRIVAT_DIR/preisfilter/<datum>/` ablegen,
+  Exit 1 wenn etwas zu tun ist. `--schreiben` setzt und löscht Werte und prüft per frischem
+  Export gegen (Exit 1 bei Abweichung). `--zurueck <rueckweg.json>` spielt die Altwerte
+  eines Laufs zurück, `--definition` prüft bzw. legt die Metafeld-Definition an.
+- Zugang: Token aus `.env.local` (wie der Sync-Dienst) oder, ohne Token, die Shopify-CLI
+  (`--zugang cli`; Schreiben dann mit `--allow-mutations`, Pakete liegen auch einzeln unter
+  `<ziel>/pakete/`).
+- Dienst: Vorlage `launchagents/net.teppich-paradies.preisfilter.plist.vorlage`
+  (`__HOME__` ersetzen, nach `~/Library/LaunchAgents/` kopieren, `launchctl bootstrap`).
+  Läuft stündlich aus `~/tp-dashboard`, Protokoll `~/teppich-paradies-analyse/preisfilter/abgleich.log`,
+  Stand `stand.json` daneben. Nach jedem Preislauf (Rückstellung, Angebotswelle, Einzelpreise)
+  zusätzlich sofort `npm run -s preisfilter:abgleich -- --schreiben` – sonst zeigt der Filter
+  bis zu eine Stunde alte Bereiche (`docs/angebotswelle.md`).
+- Grenze: dieser Lauf schreibt genau das eine Produkt-Metafeld `custom.meterpreis_bereich`;
+  nie Preise, Vergleichspreise, Varianten oder andere Felder.
 
 ## Sync-Dienst (häufigere Aktualisierung)
 

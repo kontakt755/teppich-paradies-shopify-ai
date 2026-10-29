@@ -102,3 +102,12 @@ test('Zahlen fuer Heute zaehlen je Auftrag wie die Liste', () => {
   const z = einkaufZahlen([{ id: 'o1' }, { id: 'o2' }], d, stand({ b1: 'geliefert' }), () => null, JETZT);
   assert.deepEqual(z, { bestellen: 1, informieren: 1, verzug: 0 });
 });
+
+test('Rundgang 29.10. (T2): Bestellen, Klaeren, Informieren und Nachfragen vor reinem Musterversand', async () => {
+  const { jetztRang } = await import('../lib/auftrags-ablauf.mjs');
+  assert.equal(jetztRang({ gruende: ['muster_da'] }), 1);
+  for (const g of ['bestellen', 'ungeklaert', 'informieren', 'verzug']) assert.equal(jetztRang({ gruende: [g] }), 0, g);
+  assert.equal(jetztRang({ gruende: ['muster_da', 'bestellen'] }), 0, 'gemischt: der Warenschritt zaehlt');
+  assert.equal(jetztRang({ gruende: [] }), 1);
+  assert.equal(jetztRang(null), 1);
+});

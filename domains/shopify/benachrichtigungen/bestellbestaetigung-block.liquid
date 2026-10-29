@@ -96,6 +96,16 @@
         assign tp_k_rg = 'laminat'
       elsif tp_k_pt == 'Parkett'
         assign tp_k_rg = 'parkett'
+      elsif tp_k_pt == 'Linoleumboden'
+        assign tp_k_rg = 'linoleum'
+      elsif tp_k_pt == 'Kautschukboden'
+        assign tp_k_rg = 'kautschuk'
+      elsif tp_k_pt == 'Kork'
+        assign tp_k_rg = 'kork'
+      elsif tp_k_pt == 'Kunstrasen'
+        assign tp_k_rg = 'kunstrasen'
+      elsif tp_k_pt == 'Sauberlauf'
+        assign tp_k_rg = 'sauberlauf'
       endif
       if tp_k_rg != ''
         assign tp_k_rg_suche = ',' | append: tp_k_rg | append: ','
@@ -218,6 +228,11 @@
         {%- elsif tp_k_rg == 'klebevinyl' -%}{%- assign tp_k_rg_titel = 'Klebevinyl' -%}
         {%- elsif tp_k_rg == 'laminat' -%}{%- assign tp_k_rg_titel = 'Laminat' -%}
         {%- elsif tp_k_rg == 'parkett' -%}{%- assign tp_k_rg_titel = 'Parkett' -%}
+        {%- elsif tp_k_rg == 'linoleum' -%}{%- assign tp_k_rg_titel = 'Linoleum' -%}
+        {%- elsif tp_k_rg == 'kautschuk' -%}{%- assign tp_k_rg_titel = 'Kautschuk' -%}
+        {%- elsif tp_k_rg == 'kork' -%}{%- assign tp_k_rg_titel = 'Korkboden' -%}
+        {%- elsif tp_k_rg == 'kunstrasen' -%}{%- assign tp_k_rg_titel = 'Kunstrasen' -%}
+        {%- elsif tp_k_rg == 'sauberlauf' -%}{%- assign tp_k_rg_titel = 'Sauberlauf' -%}
         {%- endif -%}
         <p style="margin:0 0 8px;"><a href="https://www.teppich-paradies.net/cdn/shop/files/ratgeber-{{ tp_k_rg }}.pdf" style="display:inline-block;padding:9px 16px;background:#b93841;color:#ffffff;text-decoration:none;border-radius:6px;">Ratgeber {{ tp_k_rg_titel }} (PDF)</a></p>
       {%- endfor -%}

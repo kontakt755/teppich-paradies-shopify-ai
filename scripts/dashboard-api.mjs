@@ -35,7 +35,7 @@ import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { ratgeberFuerBestellung, ratgeberHtml, kurzTitel as ratgeberKurzTitel } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
+import { ratgeberFuerBestellung, ratgeberHtml, kurzTitel as ratgeberKurzTitel, RATGEBER, ORDNER as RATGEBER_ORDNER } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
@@ -1794,7 +1794,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { packen = leseMusterPackStand(musterPackenPfad(dir)); } catch { /* Fehler meldet die Packstation selbst. */ }
       const jetzt = now().getTime();
       const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
-      return { verfuegbar: true, musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
+      return { verfuegbar: true, ratgeberVorlagen: RATGEBER.map(r => ({ schluessel: r.schluessel, titel: ratgeberKurzTitel(r) })), musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
     },
 
     /** Rein lesende Aggregate, ohne Kundennamen oder zweite Bestellablage. */
@@ -1837,6 +1837,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         return (await mitBrowser(page => seitenAlsPdf(page, h))).pdf;
       });
       return { inhalt: await drucken(html), typ: 'application/pdf', name: `Ratgeber ${String(bestellung.name || '').replace(/^#/, '')}.pdf` };
+    },
+
+    /** Leere Druckvorlage eines Ratgebers (dieselbe Datei wie in Shopify), ohne Bestellbezug. */
+    kundenRatgeberVorlage({ schluessel = '' } = {}) {
+      const r = RATGEBER.find(x => x.schluessel === schluessel);
+      if (!r) throw new ApiError(404, 'Diesen Ratgeber gibt es nicht.');
+      return { inhalt: fs.readFileSync(path.join(RATGEBER_ORDNER, 'pdf', r.datei)), typ: 'application/pdf', name: `Ratgeber ${ratgeberKurzTitel(r)}.pdf` };
     },
 
     /** Rein intern und lesend: weder Shopify-Abgleich noch Kundendaten im Etikett. */

@@ -32,6 +32,99 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   mitgehen kann. Kommt am selben Tag eine Bestellung dazu, gilt weiter: Packmarke und Druckvermerk des
   Umschlags passen nicht mehr (wie bisher).
 - **Naechste Stufe:** keine geplant.
+## 2026-10-29 · Warenkunden zuerst: Bestellen › Je Auftrag und Warenbestellungen auf Heute
+
+- **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde T2 und T4, vom Kritiker bestätigt).
+  - Bestellen › Je Auftrag: „Jetzt zu tun“ stand nur nach Datum sortiert; der erste zahlende
+    Warenauftrag stand auf Platz 21 hinter 20 Karten „Muster verschicken“. Jetzt zuerst Aufträge mit
+    bestellen, klären, Kunde informieren oder nachfragen, danach reiner Musterversand, darin älteste
+    zuerst (`jetztRang()` in `lib/auftrags-ablauf.mjs`). Der Einleitungssatz sagt das.
+  - Heute › Warenbestellungen: Eine Bestellung, bei der die Ware nur noch beim Lieferanten unterwegs
+    ist, stand ganz oben und trug den Hauptknopf. `shopBestellarbeit()` gibt jetzt `wartet`
+    (`lieferant` | `kunde`) mit; innerhalb gleicher Zahlungslage stehen Zeilen mit eigenem Schritt
+    vorn. Wartende zeigen „wartet auf Lieferant/Kunde“ und „Bestellung ansehen“, der Hauptknopf sitzt
+    auf der ersten Zeile mit eigenem Schritt. Prüf-, Zahlungs- und Klärfälle gelten nie als wartend.
+- **Getestet:** `shop-bestellarbeit.test.mjs` neu (wartende ältere Bestellung hinter eigener Arbeit,
+  Hauptknopf und Text, nur Wartende ohne Hauptknopf), `auftrags-ablauf.test.mjs` neu (`jetztRang`).
+  `dashboard:pruefen` Heute und Bestellen bei 390 und 1440 px auf der Datenkopie: 0 px Überlauf,
+  keine Fehler; Heute zeigt vier Bestellungen mit „Ware bestellen“ vor der wartenden, Je Auftrag die
+  vier Warenaufträge vor 23 Musterkarten. `npm run -s dashboard:test` 1057/1057, `npm run -s pruefen` alle 9 Schritte grün.
+- **Risiken:** Eine wartende Bestellung mit offener Zahlung bleibt wegen `zahlungsRang` hinter
+  bezahlten mit eigenem Schritt – wie bisher.
+## 2026-10-29 · Alle Ratgeber jederzeit druckbar, fünf neue Bodenarten
+
+- **Geaendert:** Kunden → Bestellungen zeigt bei „Waren“ (auch „Waren und Muster“, nicht bei „Muster“)
+  oben den aufklappbaren Bereich „Ratgeber zum Ausdrucken · 12“. Jeder Knopf öffnet die leere
+  Druckvorlage einer Bodenart, ohne Bezug zu einer Bestellung, für Laden, Abholer und Beratung. Das ist
+  dieselbe Datei wie in Shopify, ausgeliefert über `GET /api/kunden/ratgeber-vorlage?schluessel=…`
+  (rein lesend). Die Liste kommt als `ratgeberVorlagen` mit der Bestellliste. Neu sind die Ratgeber
+  Linoleum, Kautschuk, Korkboden, Kunstrasen und Sauberlauf. Damit erscheint „Ratgeber drucken“ auch
+  bei diesen Bestellungen.
+- **Getestet:** `ratgeber-druck-api.test.mjs` 5/5 (neu: jede Vorlage liefert ein PDF, unbekannter
+  Schlüssel 404), `dashboard:test` 1056/1056, `dashboard:pruefen` 39 Ansichten ohne Überlauf.
+  Klickstrecke gegen die Kopie, Desktop und 390 px: Bei Waren sind 12 Knöpfe da, bei Muster keiner.
+  Sauberlauf lieferte 200 `application/pdf` mit 212.670 Bytes, JS-Fehler gab es keine.
+- **Risiken:** Die Vorlagen kommen aus `domains/shopify/ratgeber-pdf/pdf/`. Nach einer Textänderung
+  muss die Datei neu gebaut und auch in Shopify ersetzt werden (README dort).
+
+## 2026-10-29 · Shop-Übersicht: rote To-dos als „Probleme“ ganz oben (w-206)
+
+- **Geaendert:** Fehlersuche vom 28.10. (Werkbank w-206). Seit dem Rundgang vom 26.10. zeigte die
+  Standard-Startseite „Shop-Übersicht“ keine To-do-Liste mehr; rote Meldungen (Mac-Dienst gestört,
+  Speicher fast voll, Sicherung fehlgeschlagen, aus der Bestellung entfernte Positionen,
+  überschrittener Liefertermin) standen nur in den Alltagssichten hinter „Weitere Bereiche“ und
+  wurden übersehen.
+  - Neuer Block „Probleme · N“ direkt unter dem Titel (`ansichten/heute/probleme.mjs`, reine
+    Funktion): nur rote To-dos, drei sichtbar, der Rest klappt auf, ohne Rot kein Block. Die Zeilen
+    zeichnet derselbe `todoZeile()` wie in der Arbeitsliste – Knöpfe und Dialoge („Abhaken…“, „In
+    Shopify nachbuchen“, „Ansehen“) bleiben dieselben.
+  - `heute.mjs`: die Ableitung der Liste einer Sicht steht jetzt einmal in `todosDerSicht()` (To-dos
+    aus `lib/todos.mjs` plus Nachfragen, Versandfehler, Belege, Shopify-Abgleich, Datenstand);
+    Shop-Übersicht und Alltagssichten rechnen dasselbe. Der Inhaber sieht alles Rote (Sicht
+    `alles`, wie seine Sicht in `fuerSicht`), Mitarbeiter ihre Sicht `laden` ohne Website/Technik.
+    Dafür lädt die Shop-Übersicht zusätzlich Rückrufe, Shopify-Abgleich und Lieferantenbelege
+    (lokal, zwischengespeichert – die Alltagssichten brauchen sie ohnehin).
+  - Nicht oben: Laden-/Treppenanfragen, Angebote aus Kundenfällen und Team-Aufgaben
+    (`NEBENBEREICH_ARTEN`), auch wenn rot. Der Inhaber hat sie am 22.10. in „Weitere Bereiche“
+    geschoben, die Anfragen stehen dort mit Zahl und Alter. In der ersten Probe auf der Datenkopie
+    waren sonst 6 von 8 „Problemen“ zwei Wochen alte Treppenanfragen, und die Warenbestellungen
+    rutschten am Handy aus dem Bild. Gelbes und Normales bleibt ebenfalls hinter „Weitere
+    Bereiche“, damit die Warenbestellungen direkt darunter zuerst kommen. Begriff „Probleme“ in
+    `BEGRIFFE.md`.
+- **Getestet:** `shop-start-probleme.test.mjs` neu (nur Rot zählt, ohne Rot kein Block, Zahl und Satz,
+  Aufklappen ab der vierten Zeile, Nebenbereich-Arten bleiben weg), `shop-start.test.mjs` erweitert
+  (Block vor den Warenbestellungen, gelb und Laden-Anfragen bleiben weg, derselbe Abhaken-Knopf,
+  Inhaber `alles`/Mitarbeiter `laden`, Shop-Kontrolle nur beim Inhaber, Kundenfälle/Aufgaben nicht
+  geladen, übrige Reihenfolge unverändert). `npm run -s dashboard:test` grün (1060 Tests, 1060 bestanden, 0 fehlgeschlagen; ein Zeitfenster-Test der Aktualisierung schlug nur einmal unter Last durch den parallelen Puppeteer-Lauf fehl, isoliert und im zweiten Lauf grün).
+  Klickprüfung gegen die Datenkopie (`dashboard:pruefen -- --offen --rollen`, Heute bei 390 und
+  1440 px, Rollen Inhaber/Mitarbeiter/lesen): Inhaber „Probleme · 3“ (Muster bei drei Lieferanten seit
+  14–30 Tagen nicht bestellt), Mitarbeiter „Probleme · 1“ („Aus Bestellung entfernt: #1056 –
+  Lieferantenbestellung stornieren?“ mit „Abhaken…“), Warenbestellungen direkt darunter, 0 px
+  Überlauf bei 390 px, keine JS-Fehler. Vor der Nebenbereich-Regel standen dort 8 Probleme, davon 6
+  Treppenanfragen. Der Puppeteer-Browser der Prüfung schloss sich unter Last zweimal nicht
+  rechtzeitig (Exit 2, 3 s Frist in `dashboard-pruefung-lauf.mjs`); die Screenshots lagen trotzdem vor.
+- **Risiken:** Eine rote Treppenanfrage oder überfällige Team-Aufgabe steht weiter nur hinter
+  „Weitere Bereiche“ (bewusst, Inhaber 22.10.); wer sie oben erwartet, findet dort nur die Zahl der
+  Anfragen. Schlägt eine Quelle fehl, fehlt ihr rotes To-do oben still; die Datenzeile und die
+  Alltagssichten melden den Ausfall weiter.
+## 2026-10-28 · Nachfass-Mails: Firmenangaben unter dem Gruß (Werkbank w-172 Punkt 2, #1772)
+
+- **Geaendert:** Die Nachfass-Mails („Muster nachfassen“) endeten ohne Rechtsform, Anschrift,
+  Registergericht und Geschäftsführerin; für eine GmbH gehört das in geschäftliche Mails (Inhaber
+  28.10.: ja). `fuelleText()` in `docs/ai-dashboard/lib/muster-nachfassen.mjs` hängt jetzt
+  `FIRMENANGABEN` als eigenen Absatz hinter den Gruß: Firma und Anschrift · Telefon, E-Mail, Shop ·
+  Sitz, Amtsgericht Neuruppin HRB 9141 NP, Geschäftsführerin (Stand Impressum 28.10.2026). Der
+  Abmelde-Hinweis bleibt die letzte Zeile. Weil alle Wege durch `fuelleText()` laufen, gilt das für
+  den täglichen Versand, den Knopf „Nachfassen“ und die Mail „Muster nicht verfügbar“, auch mit der
+  Inhaber-Vorlage aus dem Privatordner. Steht die Registernummer schon in einer Vorlage, kommt der
+  Block nicht doppelt. USt-ID und Fax bewusst weggelassen.
+- **Getestet:** `docs/ai-dashboard/tests/nachfassen-firmenangaben.test.mjs` neu; der Test, der „endet
+  mit Freundliche Grüße“ erwartete, prüft jetzt den Gruß mit den Firmenangaben dahinter.
+  `npm run -s dashboard:test` 1035/1035, `npm run -s dashboard:pruefen` (Datenkopie) nur OK-Zeilen.
+  Seit 29.10. im Betrieb (`betrieb:nachziehen -- --status`: Rückstand 0).
+- **Risiken:** Kein echter Versand an ein Postfach getestet. Ändern sich Anschrift, Registergericht
+  oder Geschäftsführung, muss `FIRMENANGABEN` mit dem Impressum nachgezogen werden.
+- **Naechste Stufe:** keine.
 ## 2026-10-29 · Packstation: Muster ohne eigene Einkaufsdaten zeigen Lieferant und Farbnummer
 
 - **Geaendert:** Muster aus "Teppich nach Maß" zeigten "kein Farbbild / keine Farbnummer hinterlegt",

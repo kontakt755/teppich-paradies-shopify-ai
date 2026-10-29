@@ -203,6 +203,9 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
 .shop-start-kopf h1 { margin-bottom: 6px; }
 .shop-start-kopf p { color: var(--text-2); margin: 0; }
 .shop-start .heute-geschaeft { margin-bottom: 24px; }
+/* Probleme (rote To-dos) ganz oben, nur wenn es welche gibt; die Zeilen tragen das Rot, der Kopf bleibt ruhig. */
+.shop-start .heute-probleme { margin-bottom: 24px; }
+.shop-start .heute-probleme .heute-geschaeft-kopf p { margin-bottom: 10px; }
 .shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-weiter { grid-template-columns: minmax(0, 1fr); }
 .shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .shop-nacharbeit { margin: 20px 0; }
