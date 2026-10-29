@@ -17,11 +17,16 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
 5. **Schreiben** per `bulkOperationRunMutation`: `varianten.jsonl` mit
    `productVariantsBulkUpdate`, `metafelder.jsonl` mit `metafieldsSet`. Gegenprobe per
    erneutem Export - `userErrors: []` ist kein Beleg (Skill `shopify-massendaten`).
+   **Danach sofort** `npm run -s preisfilter:abgleich -- --schreiben`: der Filter
+   „Preis je m²“ bei Teppichboden liest das Metafeld `custom.meterpreis_bereich`, das
+   dem aktuellen Verkaufspreis folgt (w-189); ohne diesen Schritt zeigt er bis zu eine
+   Stunde alte Bereiche (Dienst `net.teppich-paradies.preisfilter`).
 6. **Ende:** Der Shop blendet den Streichpreis nach `aktion.ende` selbst aus
    (`snippets/tp-aktion-aktiv.liquid`, `tp-rabatt-sichtbar.liquid`). Am Tag danach
    frischen Export ziehen und
    `npm run -s angebot -- ende export.jsonl <ordner> --stichtag <ende+1>` →
-   `rueckstellen.jsonl` schreiben. Das gilt auch fuer den Dauerrabatt
+   `rueckstellen.jsonl` schreiben. Nach dem Schreiben ebenfalls
+   `npm run -s preisfilter:abgleich -- --schreiben` (Preisfilter Teppichboden). Das gilt auch fuer den Dauerrabatt
    (`--klasse preisanker`). `rueckstellen.csv` zeigt je Variante Zuschnitt,
    Aktionspreis, Vergleichspreis und Zielpreis (zur Freigabe).
    Liegt der Export als zwei JSON-Arrays vor (Varianten nur mit `product.id`, Produkte
