@@ -2,6 +2,42 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · Kettler-Weg: +3 cm Zuschnittpuffer je Länge und Breite (#1684)
+
+- **Geaendert:** Bestellregel des Inhabers vom 25.10. Teppiche, die der Lieferant ungekettelt an
+  unseren Kettler schickt, werden im Zuschnittmaß bestellt: Fertigmaß + 3 cm je Länge und Breite,
+  einmal je Dimension und je Stück (180 × 250 → 183 × 253 cm, rund Ø 200 → Ø 203 cm).
+  - Zentral in `operations/lib/kettelpuffer.mjs` (`kettelZuschnitt`, `wirdGekettelt`,
+    `KETTEL_PUFFER_CM`): die Bestellmail an den Lieferanten nennt nur „Zuschnittmaß: 183 × 253 cm“
+    und „bitte genau im Zuschnittmaß zuschneiden, nicht ketteln“; die Kopierliste (Portal, eigene
+    Mail) hängt „über unseren Kettler: Zuschnitt 183 × 253 cm (+3 cm je Länge und Breite)“ an.
+    Gerechnet wird immer vom Fertigmaß aus – erneutes Öffnen oder Erzeugen schlägt nichts doppelt auf.
+  - Nur echtes Ketteln („Einfassung: Gekettelt“). Raummaß („ohne Einfassung“), Matten
+    („Zugeschnitten“), „Fertig eingefasst“ und Bänder bleiben im Fertigmaß.
+  - Maße nur in cm als „B × L“ oder „Ø D“ (auch „180x250“, Dezimalkomma, Zeilenumbruch); Meter oder
+    ein einzelnes Maß ohne Ø gelten als unlesbar und werden geklärt statt falsch gerechnet.
+  - Fertigmaß bleibt in den Auftragsdaten (Kettler, Packhilfe, Kunde); Kundenpreise und bestehende
+    Bestellungen ändern sich nicht.
+  - Kettelt der Lieferant selbst (Ziel Laden/Kunde, kein Kettler hinterlegt) oder wird nicht
+    gekettelt, bleibt es beim Fertigmaß ohne Puffer.
+  - Klärung statt stiller Kürzung: passt das Zuschnittmaß nicht mehr in die Rolle, aus der
+    zugeschnitten wird (kürzere Seite + 3 cm > Rollenbreite), oder fehlt ein lesbares Fertigmaß, steht
+    die Position unter „fehlt“ mit Grund und geht nicht in die Mail. Rollenbreite: „_Zuschnitt aus
+    Rolle“ (schreibt der Konfigurator seit 14.10. nicht mehr), sonst `custom.rollenbreite`; ist keine
+    bekannt, sagt der Dialog „Rollenbreite unbekannt – bitte prüfen“.
+  - Bestelldialog: Hinweis „+3 cm Zuschnittpuffer je Länge und Breite für anschließendes Ketteln“
+    mit Fertigmaß → Zuschnittmaß je Teppich, direkt über dem Mailtext.
+- **Getestet:** `operations/tests/lieferanten.test.mjs` 61/61 (10 neue Tests: Rechnung, 180 × 250 →
+  183 × 253 auch bei Wiederholung, Lieferant kettelt selbst, Ware ohne Ketteln, Raummaß/Matte/Band,
+  Schreibweisen, Kopierliste, rund, Rollenbreite inkl. gedreht passend und unbekannt),
+  `kettelpuffer-hinweis.test.mjs` 2/2, `npm run -s pruefen` alle 9 Schritte grün. Zwei unabhängige
+  Prüfer (Regel, Nebenwirkungen) – ihre Befunde sind eingearbeitet.
+- **Risiken:** Lieferanten-Schrittmaße (Zuschnitt nur in 5-cm-Schritten o. ä.) sind nicht hinterlegt und
+  werden nicht geprüft. Unverändert seit 19.10.: die automatische Kettler-Weiche nimmt jede Einfassung,
+  also auch Raummaß „ohne Einfassung“ und „Fertig eingefasst“ (Inhaber-Frage, nicht Teil dieses PRs).
+  Ob Bänder/Cover beim Kettler ebenfalls Puffer brauchen, ist offen. Der GEL-Kostenvergleich (eigenes Ketteln gegen fertig gekettelt beziehen) aus
+  #1684 fehlt noch: er braucht echte Gewichte, Verpackungsmaße und EK eines konkreten großen Teppichs.
+- **Naechste Stufe:** GEL-Vergleich an einem echten Auftrag rechnen.
 ## 2026-10-29 · Ein Wort je Sache: „Aufkleber“, „Muster kommt an“, Lieferant mit Namen im Lexikon
 
 - **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde T6, T11, T8 Teil Name; vom Kritiker bestätigt).
