@@ -85,6 +85,7 @@
     "rabatt:plan": "node operations/scripts/rabatt-plan.mjs",
     "angebot": "node operations/scripts/angebotswelle.mjs",
     "import:pruefen": "node operations/scripts/import-pruefen.mjs",
+    "muster:kauf": "node operations/scripts/muster-kauf.mjs",
     "feed:titel": "node operations/scripts/feed-titel.mjs",
     "feed:teppich-nach-mass": "node scripts/teppich-nach-mass-feed.mjs",
     "bodenwissen:guard": "node scripts/bodenwissen-guard.mjs",
