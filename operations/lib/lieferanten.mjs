@@ -28,6 +28,9 @@ import { UNGEKLAERT, formatDe } from './umrechnung.mjs';
 import { ROUTE } from './route.mjs';
 import { positionKey, filterGruppe } from './auftragsstatus.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
+import { KETTEL_PUFFER_CM, kettelZuschnitt, wirdGekettelt } from './kettelpuffer.mjs';
+
+export { KETTEL_PUFFER_CM, kettelZuschnitt };
 
 export const BESTELLWEGE = Object.freeze(['portal', 'mail', 'telefon']);
 export const MUSTER_LIEFERUNG = Object.freeze(['kunde', 'laden']);
@@ -524,8 +527,8 @@ function artikelKopf(p, { nachBezeichnung = false } = {}) {
 
 function positionsZeilen(p, nr, { mitKunde = true, nachBezeichnung = false } = {}) {
   const ausfuehrung = p.ausfuehrung ?? [];
-  // Massanfertigung: "1 Stueck nach Mass", das Fertigmass steht in der Zeile darunter.
-  const massStueck = ausfuehrung.some(z => z.startsWith('Fertigmaß:')) && p.einheit === 'stueck';
+  // Massanfertigung: "1 Stueck nach Mass", Fertig- bzw. Zuschnittmass steht in der Zeile darunter.
+  const massStueck = ausfuehrung.some(z => z.startsWith('Fertigmaß:') || z.startsWith('Zuschnittmaß:')) && p.einheit === 'stueck';
   const menge = massStueck ? `${p.menge} Stück nach Maß` : mailMenge(p.mengeText ?? `${p.menge} ${p.einheit}`);
   const zeilen = [`${nr}. ${artikelKopf(p, { nachBezeichnung })}`, `   Menge: ${menge}`, ...ausfuehrung.map(z => `   ${z}`)];
   if (p.orderName) zeilen.push(`   Kommission: ${[p.orderName, mitKunde ? p.kunde : null].filter(Boolean).join(' · ')}`);
@@ -623,15 +626,37 @@ export function kettlerGrund(p, adresse) {
 }
 
 /**
- * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann im Fertigmass,
- * nur ohne Einfassung: der Lieferant berechnet beim Raummass nur die echte Flaeche (Beleg AB
- * 19.10.), Meterware aus voller Rollenbreite waere mehr Flaeche als noetig (Inhaber 2026-10-20).
- * Ketteln macht der Kettler.
+ * Was vor einer Bestellung ueber den Kettler geklaert sein muss: ohne lesbares Fertigmass gibt
+ * es kein Zuschnittmass, und passt das Zuschnittmass nicht mehr in die Rolle, aus der
+ * zugeschnitten wird, faellt es nicht still auf das Fertigmass zurueck.
+ */
+function kettelPufferGruende(p) {
+  if (!wirdGekettelt(p.ausfuehrung)) return [];
+  const z = kettelZuschnitt(p.ausfuehrung);
+  if (!z) return [`Kein lesbares Fertigmaß (Breite × Länge in cm) – Zuschnitt mit +${KETTEL_PUFFER_CM} cm Kettelpuffer von Hand klären`];
+  const rolle = Number(p.ausRolleCm);
+  if (rolle > 0 && Math.min(z.breiteCm, z.laengeCm) > rolle) {
+    return [`Zuschnittmaß ${z.zuschnitt} (Fertigmaß + ${KETTEL_PUFFER_CM} cm Kettelpuffer) passt nicht in die Rollenbreite ${rolle} cm – vor der Bestellung klären`];
+  }
+  return [];
+}
+
+/**
+ * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann im
+ * Zuschnittmass (Fertigmass + Kettelpuffer), nur ohne Einfassung: der Lieferant berechnet beim
+ * Raummass nur die echte Flaeche (Beleg AB 19.10.), Meterware aus voller Rollenbreite waere
+ * mehr Flaeche als noetig (Inhaber 2026-10-20). Der Lieferant sieht nur das Zuschnittmass, damit
+ * er nicht versehentlich im Fertigmass schneidet. Ketteln macht der Kettler - auf das Fertigmass.
  */
 function fuerKettler(p) {
   const ausfuehrung = p.ausfuehrung ?? [];
   if (!ausfuehrung.some(istEinfassung)) return p;
-  return { ...p, ausfuehrung: [...ausfuehrung.filter(z => !istEinfassung(z)), 'Ohne Einfassung – bitte im Fertigmaß zuschneiden, nicht ketteln (Ketteln macht unser Kettelservice)'] };
+  const ohne = ausfuehrung.filter(x => !istEinfassung(x));
+  const z = wirdGekettelt(ausfuehrung) ? kettelZuschnitt(ausfuehrung) : null;
+  // Nicht gekettelt (Raummass, Matte, Band ...): wie bisher im Fertigmass, ohne Puffer.
+  if (!z) return { ...p, ausfuehrung: [...ohne, 'Ohne Einfassung – bitte im Fertigmaß zuschneiden, nicht ketteln (Ketteln macht unser Kettelservice)'] };
+  const zeilen = ohne.map(x => (x.startsWith('Fertigmaß:') ? `Zuschnittmaß: ${z.zuschnitt}${z.form ? ` (${z.form})` : ''}` : x));
+  return { ...p, ausfuehrung: [...zeilen, 'Ohne Einfassung – bitte genau im Zuschnittmaß zuschneiden, nicht ketteln (Ketteln macht unser Kettelservice)'] };
 }
 
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false }) {
@@ -659,8 +684,16 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
     if (direkt && !adresseOk(zielAdresse)) gruende.push('Lieferanschrift des Kunden fehlt');
     if (anKunden && !adresseOk(adressen.get(p.orderId))) gruende.push('Lieferanschrift des Kunden fehlt');
     if (anKettler && !adresseOk(kettler)) gruende.push('Anschrift unseres Kettelservice fehlt (Stammdaten absender.kettelservice)');
+    if (anKettler) gruende.push(...kettelPufferGruende(p));
     if (gruende.length) fehlt.push(fehltEintrag(p, gruende)); else aufgenommen.push(p);
   }
+  // Fuer den Dialog: Fertig- und Zuschnittmass je Teppich nebeneinander, direkt vor dem Senden.
+  const kettelPuffer = anKettler
+    ? aufgenommen.map(p => ({ p, z: wirdGekettelt(p.ausfuehrung) ? kettelZuschnitt(p.ausfuehrung) : null })).filter(x => x.z)
+      .map(({ p, z }) => ({ orderName: p.orderName, lineItemId: p.lineItemId, titel: p.titel, fertigmass: z.fertig, zuschnittmass: z.zuschnitt,
+        // Ohne bekannte Rollenbreite kann der Server nicht pruefen, ob das Zuschnittmass passt.
+        rolleUnbekannt: !(Number(p.ausRolleCm) > 0) }))
+    : [];
   const { anrede, gruss } = rahmen({ st, absender, anredeStandard: 'Sehr geehrte Damen und Herren,' });
   const du = st.mail.duzen;
   // Die Kommission (#Shop-Bestellnummer) in der AB macht die automatische Zuordnung moeglich (lib/lieferbelege.mjs).
@@ -723,6 +756,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       kettlerVorschlag,
       // Nach der Regel "gekettelt zum Kettler" abgetrennt, nicht von Hand gewaehlt.
       kettlerAutomatisch: automatisch,
+      kettelPuffer,
       bereitsBestellt: alle.length - offen.length,
     },
   });

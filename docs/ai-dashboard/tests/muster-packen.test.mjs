@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
+import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, offeneSuche, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
 import { adressEtikett, adressLayout, ABSENDER } from '../lib/adress-etiketten.mjs';
 import { ETIKETT_FORMATE } from '../lib/muster-etiketten.mjs';
 
@@ -21,20 +21,73 @@ const auftrag = (id, datum, kunde, positionen, extra = {}) => ({ id: `gid://shop
 const schluesselVon = a => a.kundeKey;
 const jetzt = new Date('2026-10-21T12:00:00Z');
 
-test('mehrere Bestellungen eines Kunden werden ein Umschlag; aelteste Wartezeit zuerst', () => {
+test('Bestellungen eines Kunden vom selben Tag werden ein Umschlag, ein anderer Bestelltag ein eigener (Rueckmeldung 29.10.); aelteste Wartezeit zuerst', () => {
   const r = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [
     auftrag(3, '2026-10-20T09:00:00Z', 'Berta Beispiel', [pos(31, '102')]),
     auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101')]),
-    auftrag(2, '2026-10-19T09:00:00Z', 'Anna Test', [pos(21, '102'), pos(22, '101')]),
+    auftrag(2, '2026-10-17T16:30:00Z', 'Anna Test', [pos(21, '102'), pos(22, '101')]),
+    auftrag(4, '2026-10-19T09:00:00Z', 'Anna Test', [pos(41, '102')]),
   ] });
-  assert.deepEqual(r.kunden.map(k => [k.name, k.bestellungen.map(b => b.orderName)]), [['Anna Test', ['#T1', '#T2']], ['Berta Beispiel', ['#T3']]]);
-  const anna = r.kunden[0];
+  assert.deepEqual(r.kunden.map(k => [k.name, k.bestellungen.map(b => b.orderName)]), [['Anna Test', ['#T1', '#T2']], ['Anna Test', ['#T4']], ['Berta Beispiel', ['#T3']]]);
+  const [anna, annaSpaeter, berta] = r.kunden;
   assert.equal(anna.wartetTage, 4);
   assert.equal(anna.muster.length, 3);
   assert.equal(anna.aufkleber, 4, 'drei Muster plus Adresse');
-  assert.equal(r.offen, 2);
+  assert.equal(r.offen, 3);
   assert.deepEqual(aufkleberFuer(anna).map(e => e.art || e.sku), ['TV-SA', 'TV-GR', 'TV-SA', 'adresse']);
   assert.deepEqual(anna.adressAufkleber.bestellungen, ['#T1', '#T2']);
+  // Der spaetere Umschlag wartet fuer sich, mit eigener Adresse und Klaermarke; beide nennen einander.
+  assert.equal(annaSpaeter.wartetTage, 2);
+  assert.deepEqual(annaSpaeter.adressAufkleber.bestellungen, ['#T4']);
+  assert.notEqual(anna.schluessel, annaSpaeter.schluessel);
+  assert.deepEqual(anna.weitere, [{ packSchluessel: annaSpaeter.packSchluessel, bestellungen: ['#T4'], seit: '2026-10-19T09:00:00Z', bereich: 'warten' }]);
+  assert.deepEqual(annaSpaeter.weitere.map(w => w.bestellungen), [['#T1', '#T2']]);
+  assert.deepEqual(berta.weitere, []);
+  // Der Tag wechselt in Berlin, nicht in UTC: 23:30 Z am 17.10. ist hier schon der 18.10.
+  const nacht = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101')]), auftrag(2, '2026-10-17T23:30:00Z', 'Anna Test', [pos(21, '102')])] });
+  assert.equal(nacht.kunden.length, 2);
+});
+
+test('ein ueber mehrere Tage gepackter oder vorbereiteter Umschlag bleibt zusammen, eine dritte Bestellung kommt daneben', () => {
+  const a1 = auftrag(1, '2026-10-15T09:00:00Z', 'Anna Test', [pos(11, '101')]);
+  const a2 = auftrag(2, '2026-10-17T09:00:00Z', 'Anna Test', [pos(21, '102')]);
+  const a3 = auftrag(3, '2026-10-19T09:00:00Z', 'Anna Test', [pos(31, '101')]);
+  const pk = packSchluessel([a1.id, a2.id]);
+  const nummern = r => r.kunden.map(k => k.bestellungen.map(b => b.orderName)).sort((x, y) => x[0].localeCompare(y[0]));
+  assert.deepEqual(nummern(musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [a1, a2, a3] })), [['#T1'], ['#T2'], ['#T3']], 'ohne Marke je Tag ein Umschlag');
+  for (const marke of ['gepackt', 'gedruckt']) {
+    const r = musterPackliste({ produkte, schluesselVon, jetzt, [marke]: { [pk]: { zeit: '2026-10-18T10:00:00Z', von: 'Laden' } }, auftraege: [a1, a2, a3] });
+    assert.deepEqual(nummern(r), [['#T1', '#T2'], ['#T3']], marke);
+    assert.ok(r.kunden.find(k => k.packSchluessel === pk)[marke], `${marke} bleibt am Umschlag`);
+  }
+});
+
+test('Klaermarke je Empfaenger (Stand bis 29.10.) gilt dem Umschlag, dessen Muster fehlen; Freigabe nur fuer diesen Umschlag', () => {
+  const a1 = auftrag(1, '2026-10-11T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')]);
+  const a2 = auftrag(2, '2026-10-20T09:00:00Z', 'Anna Test', [pos(21, '101')]);
+  const haken = Object.fromEntries(a1.positionen.map(p => [p.lineItemId, { zeit: '2026-10-21T08:00:00Z' }]));
+  const [erster] = musterPackliste({ produkte, schluesselVon, jetzt, haken, auftraege: [a1] }).kunden;
+  const empfaenger = erster.schluessel.replace(/\|tag:.*$/, '');
+  // Marke aus der Zeit, als beide Bestellungen ein Umschlag waren: es fehlten die Muster der zweiten.
+  const klaeren = { [empfaenger]: { zeit: '2026-10-21T09:00:00Z', von: 'Laden', fehlt: [a2.positionen[0].lineItemId], notiz: 'zweite Lieferung fehlt' } };
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren, auftraege: [a1, a2] });
+  const [u1, u2] = r.kunden;
+  assert.equal(u1.bereich, 'packen', 'alle Muster drin - die Marke betrifft diesen Umschlag nicht');
+  assert.equal(u1.klaeren, null);
+  assert.equal(u1.altvermerk, null);
+  assert.equal(u2.bereich, 'klaeren');
+  assert.equal(u2.klaeren.notiz, 'zweite Lieferung fehlt');
+  assert.deepEqual(u2.klaeren.fehlt, [a2.positionen[0].lineItemId]);
+  assert.equal(u2.altvermerk, null, 'alle fehlenden Muster liegen hier: eigene Marke, kein Fremdvermerk');
+  const frei = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren: { ...klaeren, [u2.schluessel]: { geklaert: true } }, auftraege: [a1, a2] });
+  assert.deepEqual(frei.kunden.map(k => [k.bereich, k.klaeren]), [['packen', null], ['warten', null]]);
+  // Ohne Positionsangabe gilt die Marke beiden Umschlaegen als fremde Marke mit Vermerk.
+  const ohne = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren: { [empfaenger]: { notiz: 'gemeinsam' } }, auftraege: [a1, a2] });
+  assert.ok(ohne.kunden.every(k => k.bereich === 'klaeren' && /gemeinsam/.test(k.altvermerk)));
+  // Ein einzelner Umschlag nimmt die Empfaengermarke als eigene, ohne Vermerk.
+  const allein = musterPackliste({ produkte, schluesselVon, jetzt, klaeren: { [empfaenger]: { notiz: 'nur einer', fehlt: [] } }, auftraege: [a1] });
+  assert.equal(allein.kunden[0].klaeren.notiz, 'nur einer');
+  assert.equal(allein.kunden[0].altvermerk, null);
 });
 
 test('nur offen, bezahlt, nicht versendet, keine Testbestellung; erledigte Muster fallen weg', () => {
@@ -64,17 +117,25 @@ test('vorher = Lieferantenangaben aus dem Lexikon, Stand nur aus belegtem Auftra
   assert.ok(Object.keys(STAND_TEXT).every(k => STAND_TEXT[k]));
 });
 
-test('gepackt gilt nur fuer genau diese Bestellungen; eine neue Bestellung oeffnet den Kunden wieder', () => {
+test('gepackt gilt nur fuer genau diese Bestellungen; ein anderer Tag wird ein eigener Umschlag, derselbe Tag oeffnet den Umschlag wieder', () => {
   const a1 = auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101')]);
   const a2 = auftrag(2, '2026-10-20T09:00:00Z', 'Anna Test', [pos(21, '101')]);
+  const a3 = auftrag(3, '2026-10-17T15:00:00Z', 'Anna Test', [pos(31, '102')]);
   const pk = packSchluessel([a1.id]);
   const gepackt = { [pk]: { zeit: '2026-10-21T10:00:00Z', von: 'Laden' } };
   const vorher = musterPackliste({ produkte, schluesselVon, jetzt, gepackt, auftraege: [a1] });
   assert.deepEqual(vorher.kunden[0].gepackt, { zeit: '2026-10-21T10:00:00Z', von: 'Laden' });
   assert.equal(vorher.offen, 0);
-  const nachher = musterPackliste({ produkte, schluesselVon, jetzt, gepackt, auftraege: [a1, a2] });
-  assert.equal(nachher.kunden[0].gepackt, null);
-  assert.equal(nachher.offen, 1);
+  // Anderer Tag: der gepackte Umschlag bleibt gepackt, die neue Bestellung bekommt ihren eigenen.
+  const spaeter = musterPackliste({ produkte, schluesselVon, jetzt, gepackt, auftraege: [a1, a2] });
+  assert.deepEqual(spaeter.kunden.map(k => [k.bestellungen.map(b => b.orderName), !!k.gepackt]), [[['#T2'], false], [['#T1'], true]]);
+  assert.equal(spaeter.offen, 1);
+  assert.deepEqual(spaeter.kunden[0].weitere.map(w => [w.bestellungen, w.bereich]), [[['#T1'], 'gepackt']]);
+  // Selber Tag: ein Umschlag fuer beide, die alte Packmarke passt nicht mehr.
+  const selberTag = musterPackliste({ produkte, schluesselVon, jetzt, gepackt, auftraege: [a1, a3] });
+  assert.equal(selberTag.kunden.length, 1);
+  assert.equal(selberTag.kunden[0].gepackt, null);
+  assert.equal(selberTag.offen, 1);
   assert.equal(packSchluessel(['b', 'a', 'a']), 'a,b');
 });
 
@@ -385,6 +446,41 @@ test('packSuche: Bestellungen ausserhalb der Packliste nur, wenn sie mindestens 
   assert.deepEqual(packSuche(r.kunden, '#T4', r.ausserhalb).ausserhalb, [{ orderId: 'gid://shopify/Order/4', muster: [] }]);
 });
 
+test('offeneSuche: ein fertiger Kunde mit besserem Treffer verdraengt den offenen Umschlag nicht mehr', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, gepackt: { 'gid://shopify/Order/2': { zeit: 'x' } }, auftraege: [
+    auftrag(1, '2026-10-17T09:00:00Z', 'Offen Bezahlt', [pos(11, '101')]),
+    // Gepackt bzw. versandt und mit beiden Woertern ein besserer Treffer als der offene Umschlag.
+    auftrag(2, '2026-10-16T09:00:00Z', 'Schon Gepackt', [pos(21, '101'), pos(22, '102')]),
+    auftrag(4, '2026-10-15T09:00:00Z', 'Versendet', [pos(41, '102')], { erfuellt: 'FULFILLED' }),
+    auftrag(3, '2026-10-14T09:00:00Z', 'Storniert', [pos(31, '101')], { storniert: true }),
+  ] });
+  const name = t => r.kunden.find(k => k.packSchluessel === t.packSchluessel).name;
+  assert.equal(r.kunden.find(k => k.name === 'Schon Gepackt').bereich, 'gepackt');
+  // Bisher: gezeigt wird nur der beste Treffer - der gepackte Kunde und die versandte Bestellung.
+  const vorher = packSuche(r.kunden, 'sand grau', r.ausserhalb);
+  assert.deepEqual([vorher.treffer.map(name), vorher.ausserhalb.map(b => b.orderId)], [['Schon Gepackt'], ['gid://shopify/Order/4']]);
+  const s = offeneSuche(r.kunden, 'sand grau', r.ausserhalb);
+  assert.deepEqual(s.treffer.map(name), ['Offen Bezahlt']);
+  assert.deepEqual(s.ausserhalb.map(b => b.orderId), ['gid://shopify/Order/3'], 'storniert bleibt als Warnung in der Suche');
+  assert.equal(s.fertig, 2, 'gepackt und versandt passen auch');
+  const nurFertig = offeneSuche(r.kunden, 'grau 22', r.ausserhalb);
+  assert.deepEqual([nurFertig.treffer, nurFertig.ausserhalb, nurFertig.fertig], [[], [], 2]);
+  // Auf Wunsch kommen die Fertigen dazu - hinter die offenen, verdraengen koennen sie auch dann nichts.
+  const alle = offeneSuche(r.kunden, 'sand grau', r.ausserhalb, { mitFertigen: true });
+  assert.deepEqual(alle.treffer.map(name), ['Offen Bezahlt', 'Schon Gepackt']);
+  assert.deepEqual(alle.ausserhalb.map(b => b.orderId), ['gid://shopify/Order/3', 'gid://shopify/Order/4']);
+  assert.equal(alle.fertig, 0);
+});
+
+test('offeneSuche zaehlt je Bestellung: Umschlag mit zwei Bestellungen zaehlt zwei, offen Gezeigtes nicht', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, gepackt: { 'gid://shopify/Order/2,gid://shopify/Order/5': { zeit: 'x' } }, auftraege: [
+    auftrag(2, '2026-10-16T09:00:00Z', 'Zwei Bestellungen', [pos(21, '102')]),
+    auftrag(5, '2026-10-17T09:00:00Z', 'Zwei Bestellungen', [pos(51, '102')], { kundeKey: 'k:Zwei Bestellungen' }),
+  ] });
+  assert.deepEqual(r.kunden.map(k => [k.bereich, k.bestellungen.length]), [['gepackt', 2]]);
+  assert.equal(offeneSuche(r.kunden, 'grau 22', r.ausserhalb).fertig, 2);
+});
+
 test('aufkleberFuerMuster: genau dieses Muster in bestellter Anzahl, nichts bei fehlender Zuordnung', () => {
   const r = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101', { menge: 2, mengeBestellt: 2 }), pos(12, '102')])] });
   const [zwei, eins] = r.kunden[0].muster;
@@ -402,7 +498,7 @@ test('aufkleberFuer nurOffen: abgehakte Muster sind schon ueberklebt, die Adress
   assert.deepEqual(aufkleberFuer(k, { nurOffen: true }).map(e => e.art || e.sku), ['TV-GR', 'adresse']);
 });
 
-test('handTreffer: offene Muster als Karten in Packreihenfolge, Eingelegtes und Gepacktes getrennt, hoechstens max', () => {
+test('handTreffer: offene Muster als Karten in Packreihenfolge, Eingelegtes getrennt, Gepacktes nur auf Wunsch, hoechstens max', () => {
   const r = musterPackliste({ produkte, schluesselVon, jetzt, statusVon: () => 'geliefert',
     haken: { 'gid://shopify/LineItem/31': { zeit: 'x' } }, gepackt: { 'gid://shopify/Order/4': { zeit: 'x' } },
     auftraege: [
@@ -413,7 +509,10 @@ test('handTreffer: offene Muster als Karten in Packreihenfolge, Eingelegtes und 
     ] });
   const t = handTreffer(r.kunden, 'sand 11', r.ausserhalb);
   assert.deepEqual(t.karten.map(x => [x.kunde.name, x.muster.lineItemId.split('/').pop()]), [['Anna Test', '11'], ['Bea Test', '21']], 'aelteste offene Bestellung zuerst');
-  assert.deepEqual(t.eingelegt.map(x => x.kunde.name).sort(), ['Cem Test', 'Dan Test']);
+  // Gepackt ist fertig (Mitarbeiter 29.10.): Dan zaehlt nur als ausgeblendeter Treffer.
+  assert.deepEqual(t.eingelegt.map(x => x.kunde.name), ['Cem Test']);
+  assert.equal(t.fertig, 1);
+  assert.deepEqual(handTreffer(r.kunden, 'sand 11', r.ausserhalb, { mitFertigen: true }).eingelegt.map(x => x.kunde.name).sort(), ['Cem Test', 'Dan Test']);
   const knapp = handTreffer(r.kunden, 'sand 11', r.ausserhalb, { max: 1 });
   assert.deepEqual([knapp.karten.length, knapp.mehr], [1, 1]);
   // Kunde oder Bestellnummer: alle offenen Muster dieses Umschlags.

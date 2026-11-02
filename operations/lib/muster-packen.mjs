@@ -3,11 +3,12 @@
  *
  * Rein lokale Ablage unter $TP_PRIVAT_DIR/muster-packen.json, gleiche Bauart wie
  * operations/lib/fallmarken.mjs: atomares Schreiben, "last write wins" je Schluessel.
- * Schluessel sind die sortierten Bestell-IDs eines Kunden (packSchluessel) - kommt eine
- * Bestellung dazu, gilt der Umschlag nicht mehr als gepackt. In Shopify aendert sich nichts.
+ * Schluessel sind die sortierten Bestell-IDs eines Umschlags (packSchluessel; seit 29.10.2026 ein
+ * Umschlag je Empfaenger und Bestelltag) - kommt am selben Tag eine Bestellung dazu, gilt der Umschlag
+ * nicht mehr als gepackt. In Shopify aendert sich nichts.
  *
  * Daneben (gleiche Datei): `haken` je Bestellposition (Muster ueberklebt, liegt im Umschlag),
- * `klaeren` je Kunde (Umschlag unvollstaendig: welche Positionen fehlen, kurze Notiz) und
+ * `klaeren` je Umschlag (unvollstaendig: welche Positionen fehlen, kurze Notiz) und
  * `gedruckt` je Umschlag (Aufkleber und Adresse gedruckt: Umschlag vorbereitet, wartet auf Muster).
  */
 

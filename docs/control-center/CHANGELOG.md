@@ -7,6 +7,169 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-29 · LaunchAgent-Vorlage preisfilter: XML-Kommentar ohne Doppelstrich (w-220 Teil 3)
+
+- **Geaendert:** In `operations/launchagents/net.teppich-paradies.preisfilter.plist.vorlage` stand
+  „--still“ in einem XML-Kommentar. Nach dem XML-Standard ist „--“ in Kommentaren unzulässig;
+  launchd und `plutil -lint` lesen die Datei trotzdem, strenge Parser (Python `plistlib`, expat)
+  lehnen sie ab. Der Kommentar nennt den Schalter jetzt ausgeschrieben („Der Schalter still …“).
+  Die installierte Datei unter `~/Library/LaunchAgents` wird nicht von Hand geändert; sie wird beim
+  nächsten Einrichten aus der Vorlage erneuert.
+- **Getestet:** Neuer Test `operations/tests/launchagents-vorlagen.test.mjs` prüft alle zwölf
+  Vorlagen: kein „--“ in Kommentaren, kein Kommentar auf „-“ endend, XML-Kopf und `</plist>`
+  vorhanden. Am alten Stand rot (meldet Datei und Zeile), am neuen grün; `plistlib` liest die
+  Vorlage jetzt, `plutil -lint` weiterhin OK. `npm run -s pruefen` grün.
+- **Risiken:** Keine Verhaltensänderung des Dienstes; nur Kommentartext.
+- **Naechste Stufe:** Beim nächsten `dienste-einrichten.sh`-Lauf wird die installierte plist erneuert.
+## 2026-10-29 · Packstation: „Verschickt“ ganz oder gar nicht, Suche ohne Fertiges (#1811)
+
+- **Geaendert:** Fortsetzung von #1810 nach Wunsch des Mitarbeiters vom 29.10.
+  - „Verschickt – Kunde informieren“ ist jetzt ein einziger Aufruf (`aktion: 'verschickt'`) statt je
+    Bestellung aus dem Browser. Der Server prüft erst alle Bestellungen des Umschlags (Fehlmenge,
+    Musterautomatik). Geht eine nicht, kommt „Nicht verschickt, keine Mail – #…“ und nichts ist
+    geschrieben. Danach stehen alle lokalen Schritte „raus“, bevor Shopify antwortet. Bisher zerfiel
+    ein Umschlag mit zwei Bestellungen nach der ersten, und der Rest stand ohne Gepackt-Vermerk wieder
+    im Packen.
+  - Was in Shopify nicht sicher als versendet gemeldet ist, bleibt als roter Hinweis oben in der
+    Packstation stehen, mit Link zur Bestellung, bis „Verstanden“ geklickt wird. Bisher kam nur ein
+    Toast, und der Umschlag war schon weg.
+  - Suche und „Muster kommt an“ zeigen nur offene Arbeit. Gepackte Umschläge und versandte
+    Bestellungen zählen nicht mehr mit. Vorher verdrängte ein fertiger Kunde mit dem besseren Treffer
+    den Kunden, der das Muster braucht. Unter der Suche steht „N fertige Bestellungen passen auch –
+    Trotzdem zeigen“. Das gilt nur für diese eine Suche, die Fertigen stehen dann hinten.
+  - Versandbestätigung im Shopify-Admin: Fußzeile in Sie-Form (README Benachrichtigungen).
+- **Getestet:** `packstation-versandmail.test.mjs` neu, 8 Tests mit der Versand-Attrappe:
+  - Gepackt bucht nichts. Verschickt bucht mit Mail.
+  - Zweiter Klick und Zurücknehmen ändern Shopify nicht.
+  - Ohne Zugang wird nachgebucht.
+  - Vorbeigebrachte Muster gehen ohne Mail raus.
+  - Rolle „lesen“ bekommt 403.
+  - Zwei Bestellungen mit Sperre ergeben 409 ohne Schreiben.
+  - Bei zwei Bestellungen stehen beide lokal auf „raus“, bevor Shopify antwortet.
+
+  `muster-packen.test.mjs` (`offeneSuche`, `handTreffer`) und `packstation-arbeitslisten.test.mjs`
+  (Hinweis, gebundenes `mpfertig`, Storniert bleibt sichtbar) sind angepasst. Die 22 bis zum 29.10.
+  gepackten Bestellungen sind von Hand in Shopify gebucht, die 11 vom 28./29.10. mit Mail.
+  Unabhängige Prüfung des Diffs (4 Blickwinkel, jeder Befund gegengeprüft): 14 Befunde, behoben u. a.
+  Verschickt nur bei vollständig abgehaktem Umschlag, kein Haken mehr an Gepacktem, Status
+  `nicht-eingetragen` statt falscher Shopify-Meldung, 500 wenn nichts eingetragen wurde, Netzfehler
+  ohne falsche Gewissheit, Rest-Umschlag nur aus genau den stehen gebliebenen Bestellungen, Suche aus
+  Gepackt/Erledigt mit Fertigen, Fehlwörter der offenen Treffer bleiben sichtbar.
+- **Risiken:** Den Fall „ein lokaler Schritt scheitert trotz Vorprüfung“ (z. B. ein Schreibfehler)
+  deckt kein Test ab. Die Zahl „N fertige Bestellungen passen auch“ zählt alle Bestellungen eines
+  gepackten Umschlags und auch schwächere Treffer (bewusst grob, nur Hinweis). Der Klick gegen
+  das echte Shopify ist auf der Datenkopie nicht geprüft. Die Buchung ist der bestehende Weg
+  `versandBuchen`.
+- **Naechste Stufe:** Beileger zum Drucken für den Umschlag („Sind Sie zufrieden? …“). Die Texte
+  entscheidet der Inhaber.
+## 2026-10-29 · Packstation: ein Umschlag je Bestelltag (#1791)
+
+- **Geaendert:** Rückmeldung vom Packtisch zu #1033/#1050: zwei Musterbestellungen desselben Kunden
+  (11.10. und 20.10.) standen als ein Umschlag „3 von 6 Mustern schon im Umschlag · wartet seit 18 Tagen“
+  – obwohl die erste Bestellung komplett im Umschlag lag und nur die zweite noch beim Lieferanten war.
+  Bisher kamen alle offenen Musterbestellungen eines Empfängers in einen Umschlag.
+  - `lib/muster-packen.mjs`: ein Umschlag je Empfänger **und Bestelltag** (Kalendertag in Berlin,
+    `kalendertag` in `lib/kalendertage.mjs`). Bestellungen vom selben Tag bleiben zusammen (#1041/#1042,
+    #1068/#1069, #1073/#1074 unverändert). Ein schon gepackter oder vorbereiteter Umschlag, dessen Marke
+    Bestellungen mehrerer Tage nennt, bleibt zusammen.
+  - Klärmarken je Umschlag (`…|adresse:…|tag:JJJJ-MM-TT`). Die bisherige Marke je Empfänger gilt weiter:
+    bei mehreren Umschlägen dem, in dem ihre fehlenden Muster liegen (so wandert die Klärung von #1033/#1050
+    zu #1050); ohne Positionsangabe allen als „Frühere gemeinsame Klärung … je Umschlag neu prüfen“.
+  - Kopfzeile: „Weiterer Umschlag für diesen Empfänger: #… (bestellt am …, Stand)“ mit Link, auch auf der
+    Karte in „Muster kommt an“. Hinweissatz oben und Hilfe angepasst, Begriffe in `BEGRIFFE.md`.
+  - Wirkung mit den echten Daten: #1033 steht packbereit („Alle 3 Muster im Umschlag“, wartet seit
+    18 Tagen), #1050 für sich „zu klären“ mit dem wieder sichtbaren „Umschlag vorbereitet · 26.10.“ (die
+    Marke galt für #1050 allein und war durch die Zusammenlegung verdeckt). Zahlen 21 → 22 offene Umschläge,
+    Packbereit 1 → 2.
+- **Getestet:** `muster-packen.test.mjs` (selber Tag zusammen, anderer Tag getrennt, Tageswechsel in Berlin,
+  Mehrtages-Marke hält zusammen, Klärmarke je Empfänger wandert zum richtigen Umschlag, Freigabe nur dort),
+  `muster-packen-api.test.mjs` (zwei Bestelltage: Klärung und Packen des einen lassen den anderen unberührt),
+  `packstation-arbeitslisten.test.mjs` (Kopfzeile mit weiteren Umschlägen); `npm run dashboard:test` und
+  `npm run -s pruefen` grün. `dashboard:pruefen` Packstation bei 1440/1024/800/390/360 px ohne Überlauf,
+  Sichtprüfung Desktop und Handy mit Datenkopie (Screenshots vorher/nachher).
+- **Risiken:** Zwei Bestellungen eines Kunden an zwei Tagen sind jetzt zwei Briefe (je 1,80 €), außer man
+  legt sie am Packtisch bewusst zusammen; der Hinweis in der Kopfzeile zeigt, ob der andere Umschlag gleich
+  mitgehen kann. Kommt am selben Tag eine Bestellung dazu, gilt weiter: Packmarke und Druckvermerk des
+  Umschlags passen nicht mehr (wie bisher).
+- **Naechste Stufe:** keine geplant.
+- **Nachtrag (Inhaber, gleicher Tag):** „wichtig ist immer zu sehen, ob wir es schon hier haben oder ob es
+  bestellt wurde“. Die Kopfzeile jedes offenen Umschlags zeigt ohne Aufklappen „Liegt hier: x im Umschlag ·
+  x angekommen · x im Musterlager (Ort)“ und in Bernstein „x Muster noch nicht bestellt“; darunter wie
+  bisher „beim Lieferanten bestellt am …“. Anlass: #1076 stand packbereit, weil beide Muster aus
+  Probestücken im Laden kommen – das war nur aufgeklappt sichtbar. Test in
+  `packstation-arbeitslisten.test.mjs`; `dashboard:pruefen` 1440–360 px ohne Überlauf.
+
+## 2026-10-29 · Kettler-Weg: +3 cm Zuschnittpuffer je Länge und Breite (#1684)
+
+- **Geaendert:** Bestellregel des Inhabers vom 25.10. Teppiche, die der Lieferant ungekettelt an
+  unseren Kettler schickt, werden im Zuschnittmaß bestellt: Fertigmaß + 3 cm je Länge und Breite,
+  einmal je Dimension und je Stück (180 × 250 → 183 × 253 cm, rund Ø 200 → Ø 203 cm).
+  - Zentral in `operations/lib/kettelpuffer.mjs` (`kettelZuschnitt`, `wirdGekettelt`,
+    `KETTEL_PUFFER_CM`): die Bestellmail an den Lieferanten nennt nur „Zuschnittmaß: 183 × 253 cm“
+    und „bitte genau im Zuschnittmaß zuschneiden, nicht ketteln“; die Kopierliste (Portal, eigene
+    Mail) hängt „über unseren Kettler: Zuschnitt 183 × 253 cm (+3 cm je Länge und Breite)“ an.
+    Gerechnet wird immer vom Fertigmaß aus – erneutes Öffnen oder Erzeugen schlägt nichts doppelt auf.
+  - Nur echtes Ketteln („Einfassung: Gekettelt“). Raummaß („ohne Einfassung“), Matten
+    („Zugeschnitten“), „Fertig eingefasst“ und Bänder bleiben im Fertigmaß.
+  - Maße nur in cm als „B × L“ oder „Ø D“ (auch „180x250“, Dezimalkomma, Zeilenumbruch); Meter oder
+    ein einzelnes Maß ohne Ø gelten als unlesbar und werden geklärt statt falsch gerechnet.
+  - Fertigmaß bleibt in den Auftragsdaten (Kettler, Packhilfe, Kunde); Kundenpreise und bestehende
+    Bestellungen ändern sich nicht.
+  - Kettelt der Lieferant selbst (Ziel Laden/Kunde, kein Kettler hinterlegt) oder wird nicht
+    gekettelt, bleibt es beim Fertigmaß ohne Puffer.
+  - Klärung statt stiller Kürzung: passt das Zuschnittmaß nicht mehr in die Rolle, aus der
+    zugeschnitten wird (kürzere Seite + 3 cm > Rollenbreite), oder fehlt ein lesbares Fertigmaß, steht
+    die Position unter „fehlt“ mit Grund und geht nicht in die Mail. Rollenbreite: „_Zuschnitt aus
+    Rolle“ (schreibt der Konfigurator seit 14.10. nicht mehr), sonst `custom.rollenbreite`; ist keine
+    bekannt, sagt der Dialog „Rollenbreite unbekannt – bitte prüfen“.
+  - Bestelldialog: Hinweis „+3 cm Zuschnittpuffer je Länge und Breite für anschließendes Ketteln“
+    mit Fertigmaß → Zuschnittmaß je Teppich, direkt über dem Mailtext.
+- **Getestet:** `operations/tests/lieferanten.test.mjs` 61/61 (10 neue Tests: Rechnung, 180 × 250 →
+  183 × 253 auch bei Wiederholung, Lieferant kettelt selbst, Ware ohne Ketteln, Raummaß/Matte/Band,
+  Schreibweisen, Kopierliste, rund, Rollenbreite inkl. gedreht passend und unbekannt),
+  `kettelpuffer-hinweis.test.mjs` 2/2, `npm run -s pruefen` alle 9 Schritte grün. Zwei unabhängige
+  Prüfer (Regel, Nebenwirkungen) – ihre Befunde sind eingearbeitet.
+- **Risiken:** Lieferanten-Schrittmaße (Zuschnitt nur in 5-cm-Schritten o. ä.) sind nicht hinterlegt und
+  werden nicht geprüft. Unverändert seit 19.10.: die automatische Kettler-Weiche nimmt jede Einfassung,
+  also auch Raummaß „ohne Einfassung“ und „Fertig eingefasst“ (Inhaber-Frage, nicht Teil dieses PRs).
+  Ob Bänder/Cover beim Kettler ebenfalls Puffer brauchen, ist offen. Der GEL-Kostenvergleich (eigenes Ketteln gegen fertig gekettelt beziehen) aus
+  #1684 fehlt noch: er braucht echte Gewichte, Verpackungsmaße und EK eines konkreten großen Teppichs.
+- **Naechste Stufe:** GEL-Vergleich an einem echten Auftrag rechnen.
+## 2026-10-29 · Ein Wort je Sache: „Aufkleber“, „Muster kommt an“, Lieferant mit Namen im Lexikon
+
+- **Geaendert:** Rundgang mit Rollen vom 29.10. (Befunde T6, T11, T8 Teil Name; vom Kritiker bestätigt).
+  - Heute › Muster & Packstation: „Muster-Wareneingang“ führte in die Bestellen-Liste, die Packstation hat
+    für dasselbe den Reiter „Muster kommt an“ (BEGRIFFE.md). Der Knopf heißt jetzt so und führt dorthin.
+  - „Etiketten-Druckliste“ / „Gemeinsame Druckliste“ heißen überall „Aufkleber-Druckliste“ (Heute,
+    Lexikon, Kundenakte, Aufkleber prüfen, Seitentitel); im Musterlager „Aufkleber“ / „Aufkleber drucken…“
+    statt „Etikett“. „Etikett“ bleibt für Rolle und Drucker.
+  - Bestellen: „Alle N angekommen“ → „Alle N als angekommen eintragen“ (der Knopf bucht).
+  - Lexikon: die Spalte „Lieferant“ zeigte das Kürzel („A“), Packstation und Bestellen den Namen aus
+    den Stammdaten. Jetzt `lieferantName()` mit `/api/einkauf/lieferanten`; ohne Stammdaten „Lieferant A“.
+    Nach dem Laden zeichnet das Lexikon neu.
+- **Getestet:** `start-bestellarbeit-ansicht.test.mjs` angepasst (Knopf „Muster kommt an“, keine alten
+  Wörter), `lexikon-lieferantenname.test.mjs` neu. `npm run -s dashboard:test` 1057/1057, `npm run -s pruefen` alle 9 Schritte grün; `dashboard:pruefen` Heute, Lexikon-Detail, Druckliste und Musterlager bei 390/1440 px ohne Überlauf.
+- **Risiken:** Wer den Weg „Muster-Wareneingang“ über die Bestellen-Liste gewohnt ist, findet ihn
+  weiter unter Bestellen › Je Lieferant; nur der Knopf auf Heute führt jetzt zur Packstation.
+- **Naechste Stufe:** Reihenfolge im Lexikon-Detail („Zum Bestellen“ weiter oben) – Werkbank.
+## 2026-10-29 · Packstation: Knopf „Verschickt – Kunde informieren“ und Reiter „Erledigt“
+
+- **Geaendert:** Ein gepackter Umschlag geht sofort raus (Benutzer 29.10.). Bisher bekam der Kunde
+  keine Mail, solange niemand den Versand separat über „Versand prüfen…“ buchte. Gepackte Umschläge
+  haben jetzt den Hauptknopf „Verschickt – Kunde informieren“; „Großbrief vorbereiten“ bleibt daneben.
+  Nach einer Rückfrage setzt der Knopf je Bestellung des Umschlags den Schritt „raus“ für genau ihre
+  Muster. Der Server bucht dabei wie der Versanddialog den Versand in Shopify mit Versandbestätigung an
+  den Kunden (ohne Sendungsnummer, Mail nach Hausregel: nicht bei „holt im Laden ab“). Danach fällt der
+  Umschlag aus der Packliste. Der neue Reiter „Erledigt“ zeigt die versandten oder erledigten
+  Musterbestellungen der letzten 14 Tage, nur zum Nachsehen, mit Link zur Bestellung.
+- **Test:** `packstation-arbeitslisten.test.mjs` (Hauptknopf bei Gepackt, Reiter Erledigt mit Zeitraum
+  und Leerzustand).
+- **Risiko:** Die Buchung selbst ist der bestehende Weg (`auftragsSchrittSetzen` → `versandBuchen`) und
+  dort getestet; der Klick gegen Shopify ist auf der Datenkopie nicht geprüft. Scheitert die Buchung,
+  zeigt die Meldung den Grund, der Schritt „raus“ bleibt gesetzt, „Versand nachholen“ greift wie bisher.
+  Der Reiter zählt nach Bestelldatum, nicht nach Versanddatum.
+- **Nächste Stufe:** Packen und Verschicken in einem Klick, falls der Inhaber den Zwischenstand nicht braucht.
+
 ## 2026-10-29 · Packstation: Kopfzeile einheitlich, Lieferanten-Bestelldatum auf jeder Karte
 
 - **Geaendert:** Die Angaben rechts im Kartenkopf („N Muster · …“, „bestellt am … · wartet seit …“)

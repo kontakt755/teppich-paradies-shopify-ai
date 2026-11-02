@@ -1,4 +1,4 @@
-/** Gemeinsame Druckliste: auswaehlen, zusammen drucken, den Ausdruck bewusst bestaetigen. */
+/** Aufkleber-Druckliste (bis 29.10. "Gemeinsame Druckliste"): auswaehlen, zusammen drucken, den Ausdruck bewusst bestaetigen. */
 import { state } from '../kern/zustand.mjs';
 import { esc, fmtDateTime, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../kern/api.mjs';
@@ -143,7 +143,7 @@ function auftragBlock(id, eintraege) {
 }
 export function viewMusterDruckliste() {
   if (!liste.versucht && !liste.loading) void laden();
-  const kopf = `<div class="page-head"><div><h1>Gemeinsame Druckliste</h1><p class="sub">Hier sammelst du Muster-Aufkleber, prüfst die Vorschau und druckst gemeinsam.</p></div></div>
+  const kopf = `<div class="page-head"><div><h1>Aufkleber-Druckliste</h1><p class="sub">Hier sammelst du Muster-Aufkleber, prüfst die Vorschau und druckst gemeinsam.</p></div></div>
     <div class="md-navigation"><a class="btn" href="#/lexikon">Weitere Muster vormerken</a><button type="button" class="btn" data-md-aktualisieren${liste.busy || liste.loading || liste.entferntLaeuft ? ' disabled' : ''}>Liste aktualisieren</button></div>`;
   if (!liste.daten) return kopf + (liste.ladeFehler ? `<p class="notice crit" role="alert">${esc(liste.ladeFehler)} Bitte erneut aktualisieren.</p>` : '<p class="empty" role="status">Lade gemeinsame Druckliste …</p>');
   const offen = offeneEintraege(), auswahl = druckauswahl(), anzahl = menge(auswahl);

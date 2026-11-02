@@ -1952,8 +1952,18 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
   `quer: true`; `zeichne()` dreht dann um 90° im Uhrzeigersinn. Vorschau und Druckbild zeigen das Etikett,
   wie es aus der Rolle kommt.
 - **Haken und „Zu klären“ (22.10.):** zentral in `muster-packen.json` (`haken` je Bestellposition,
-  `klaeren` je Kunde mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
+  `klaeren` je Umschlag mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
   Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.
+- **Ein Umschlag je Bestelltag (29.10.):** `umschlaegeJeBestelltag` in `lib/muster-packen.mjs` teilt die
+  offenen Bestellungen eines Empfängers (Kundenidentität + Lieferadresse) nach Kalendertag in Berlin
+  (`kalendertag`). Bis dahin war der ganze Empfänger ein Umschlag: eine fertige erste Bestellung wartete
+  auf die zweite, und „x von n im Umschlag“ sowie die Wartetage zählten beide zusammen (#1033/#1050).
+  Eine Pack- oder Druckmarke (`eintraege`/`gedruckt`), deren Bestellungen alle noch offen sind, hält
+  diese Bestellungen auch über mehrere Tage zusammen (der Umschlag liegt so auf dem Packtisch).
+  Klärmarken tragen den Schlüssel `<kunde>|adresse:<…>|tag:<JJJJ-MM-TT>`; ältere Marken je Empfänger
+  (`…|adresse:<…>`) gelten weiter – bei mehreren Umschlägen dem, in dem ihre fehlenden Muster liegen,
+  ohne Positionsangabe allen als fremde Marke mit Vermerk; die älteste Form je Kunde nur als Vermerk.
+  Jeder Umschlag kennt die `weitere` desselben Empfängers (Nummern, Datum, Bereich) für die Kopfzeile.
 - **Wareneingang (`mp=laden`):** `musterNachLaden` verteilt die noch nicht eingelegten Muster je
   Partnerladen auf die Umschlag-Nummern aus „Zu packen“.
 - **Umschlag vorbereitet (#1718, 26.10.):** Inhaber druckt Aufkleber und Adresse oft, bevor alle
@@ -2021,6 +2031,47 @@ und nach 14 Tagen einen Fall in „Alte Bestellungen aufräumen“.
   gepackte Umschläge aus der Zeit davor an (Vermerk „Aus der Packstation übernommen: … am TT.MM.“).
   Die Funktion hat keinen HTTP-Weg und läuft nur bei angehaltenem Dienst, damit `auftragsstatus.json`
   einen Schreiber behält. Ein zweiter Lauf ändert nichts.
+
+### Verschickt meldet den Versand in Shopify (#1810, #1811, Mitarbeiter 29.10.2026)
+
+Gepackte Umschläge tragen den Hauptknopf „Verschickt – Kunde informieren“. Er sendet einen einzigen
+`POST kunden/muster-packen` mit `{ packSchluessel, aktion: 'verschickt' }`
+(`kundenMusterPackenSchreiben`, alle anderen Aktionen gehen unverändert an `kundenMusterPackenSetzen`).
+„Umschlag gepackt“ allein bucht nichts. So bleibt „Großbrief vorbereiten“ dazwischen möglich.
+
+- **Je Bestellung des Umschlags** der Schritt „raus“ für ihre Muster, die noch nicht raus sind
+  (`auftragsSchrittSetzen`, Notiz „Verschickt aus der Packstation“). Dazu der Lagerabgang und in Shopify
+  die Buchung als versendet mit Versandbestätigung, ohne Sendungsnummer. Die Mail-Ausnahme ist dieselbe
+  wie beim Schritt „raus“: persönlich vorbeigebrachte Muster ohne Mail. Testbestellungen bucht
+  `versandBuchen` nie.
+- **Ganz oder gar nicht:** Der Packschlüssel ergibt sich aus den noch offenen Bestellungen. Bis #1811
+  rief der Browser je Bestellung einzeln auf. Ein Umschlag mit zwei Bestellungen zerfiel, sobald die
+  erste „raus“ war, und scheiterte die zweite, stand ihr Rest ohne Gepackt-Vermerk wieder im Packen.
+  Jetzt prüft der Server zuerst alle Bestellungen (`darfWeiter`, `bereiteStatusPositionenVor`:
+  Musterautomatik, Fehlmenge). Geht eine nicht, kommt 409 „Nicht verschickt, keine Mail – #…“, und
+  nichts ist geschrieben. Danach startet er alle Schritte, ohne auf den vorigen zu warten. Jeder
+  schreibt seinen lokalen Stand synchron, bevor die erste Shopify-Buchung abgewartet wird. Fällt eine
+  Bestellung trotzdem heraus, bekommt ihr Rest-Umschlag den Gepackt-Vermerk und bleibt unter „Gepackt“.
+- **Antwort** `versand: [{ orderId, orderName, status, meldung, kundeBenachrichtigt }]`. Alles außer
+  `gebucht`/`bereits` zeigt die Packstation als roten Hinweis mit Link zur Bestellung. Der Hinweis
+  bleibt stehen, bis jemand „Verstanden“ klickt (`versandProbleme`), denn der Umschlag ist dann schon
+  aus der Liste. Der Hinweis lebt nur im geöffneten Tab; dauerhaft ist der Vermerk an der Bestellung, dort
+  „In Shopify buchen“ (mit Mail-Wahl; „In Shopify nachbuchen“ in der Abgleichsliste bucht ohne Mail).
+- **Sperren:** nicht jedes Muster abgehakt (Haken weg über veraltete Seite, Muster nachbestellt) → 409;
+  Haken an gepackten Umschlägen → 409. Scheitert ein Schritt trotz Vorprüfung, heißt er
+  `nicht-eingetragen` (Umschlag bleibt unter „Gepackt“, erneut klicken); scheitern alle → 500, nichts
+  passiert. Netzfehler: die neu geladene Liste entscheidet, ob „nicht verschickt“ oder „Ergebnis unklar“.
+- **Danach:** Der Umschlag fällt aus der Packliste (`ausserhalb`, Grund `erledigt`) und steht im Reiter
+  „Erledigt“. „Muster nachfassen“ (Abschnitt 23) zählt ab dem Schritt „raus“.
+
+**Suche nur in offener Arbeit (Mitarbeiter 29.10.):** `offeneSuche()` in `lib/muster-packen.mjs` sucht
+in den offenen Umschlägen und den Warnungen außerhalb der Packliste (storniert, Zahlung offen,
+geschlossen). Gepackte Umschläge und versandte bzw. erledigte Bestellungen zählen nicht mit. Vorher
+verdrängte ein fertiger Kunde mit dem besseren Treffer den Kunden, der das Muster noch braucht, weil
+`packSuche` nur die besten Treffer zeigt. Die Zahl der ausgeblendeten Bestellungen steht unter der Suche
+(„N fertige Bestellungen passen auch … Trotzdem zeigen“). Der Klick setzt `mpfertig=<Suchtext>`, das
+gilt also nur für genau diese Suche. Die fertigen Treffer stehen dann hinter den offenen. Gleiches gilt
+in „Muster kommt an“ (`handTreffer(…, { mitFertigen })`).
 
 ### Großbrief vorbereiten (#1591)
 

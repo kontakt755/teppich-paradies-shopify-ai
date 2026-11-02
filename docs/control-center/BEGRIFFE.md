@@ -77,7 +77,8 @@ gebraeuchlich), Erfassen.
 - **Alle n Muster eingelegt – Umschlag gepackt** = alle offenen Muster abhaken und den Umschlag packen in einem Schritt.
 - **Versatz waagerecht / senkrecht** (Drucker-Einstellungen) = Druckbild um bis zu 3 mm verschieben, wenn der Drucker nicht mittig auf das Etikett druckt; gilt je Rechner, die Vorschau bleibt mittig (26.10.2026).
 - **Außerhalb der Packliste** = Suchtreffer in Musterbestellungen, die hier nicht gepackt werden (Zahlung offen, geschlossen, storniert, schon versandt oder erledigt).
-- **Bestellung packen** / **Muster kommt an** = die zwei Reiter der Packstation (26.10.2026); vorher „Nach Kunde packen“ / „Wareneingang nach Partnerladen“.
+- **Bestellung packen** / **Muster kommt an** = die zwei Reiter der Packstation (26.10.2026); vorher „Nach Kunde packen“ / „Wareneingang nach Partnerladen“. Seit 29.10. führt auch der Knopf auf Heute (vorher „Muster-Wareneingang“ in die Bestellen-Liste) zu „Muster kommt an“.
+- **Aufkleber-Druckliste** (29.10.) = vorher „Etiketten-Druckliste“ bzw. „Gemeinsame Druckliste“; Knöpfe im Musterlager „Aufkleber“ / „Aufkleber drucken…“ statt „Etikett“. „Etikett“ bleibt nur für das Druckmaterial (Etikettenrolle, Drucker).
 - **Schritte im Umschlag:** 1 · Bestellung drucken („Aufkleber und Adresse drucken“), 2 · Was ist da? („Da: x von n · Fehlt: …“), 3 · Zukleben („Umschlag gepackt“).
 - **Fehlt noch – zurücklegen** = Umschlag geht nach „Zu klären“, bis „Fehlendes ist da – weiter packen“.
 - **Eingelegt ✓** = Muster liegt überklebt im Umschlag (derselbe Haken wie in der Liste).
@@ -91,6 +92,13 @@ gebraeuchlich), Erfassen.
 - **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
 - **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
 - Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.
+- **Ein Umschlag je Bestelltag** (Rückmeldung 29.10.2026) = Bestellungen desselben Empfängers vom
+  selben Tag kommen in einen Umschlag; eine Bestellung von einem anderen Tag ist ein eigener Umschlag mit eigener
+  Wartezeit, eigenem „x von n Mustern schon im Umschlag“ und eigener Klärung. Vorher kamen alle offenen
+  Bestellungen eines Empfängers in einen Umschlag. Ein schon gepackter oder vorbereiteter Umschlag mit Bestellungen
+  mehrerer Tage bleibt zusammen.
+- **Weiterer Umschlag für diesen Empfänger: #… (bestellt am …, Stand)** = Kopfzeile jedes Umschlags, wenn derselbe
+  Empfänger noch einen anderen offenen oder gepackten Umschlag hat; der Link öffnet ihn.
 - **Alle Bestellungen** = alle echten Bestellungen im aktuellen Export, einschliesslich Storno und Archiv; Testbestellungen bleiben gesondert.
 - **Kontrolle nötig** = unklare Artikel, offene Versandbuchung oder manueller Haken ohne nachgewiesenen Versand.
 
