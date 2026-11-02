@@ -85,7 +85,7 @@ test('Seite nutzt die Safe-Area und folgt ohne eigene Wahl dem Geraet', () => {
 test('Shop-Hauptwege und vier standardgeschlossene Bereichsgruppen ohne Linkverlust', () => {
   const nav = teil('<nav class="mainnav"', '</nav>');
   const haupt = [...nav.matchAll(/<a [^>]*class="nav-haupt"[^>]*>[\s\S]*?<span>([^<]+)<\/span>/g)].map(m => m[1]);
-  assert.deepEqual(haupt, ['Heute', 'Bestellungen', 'Muster bestellen', 'Packstation', 'Lexikon']);
+  assert.deepEqual(haupt, ['Heute', 'Bestellungen', 'Muster bestellen', 'Packstation', 'Lexikon', 'Muster Lagerbestand', 'Eigene Aufkleber drucken']);
   const gruppen = [...nav.matchAll(/<details class="nav-gruppe"([^>]*)>/g)];
   assert.equal(gruppen.length, 4);
   assert.ok(gruppen.every(m => !/\bopen\b/.test(m[1])));

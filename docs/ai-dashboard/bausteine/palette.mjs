@@ -95,6 +95,7 @@ function paletteItems(q) {
     ['Bestellungen', 'kunden', { tab: 'bestellungen', bart: 'ware', bsort: 'wichtigkeit' }],
     ['Packstation', 'kunden', { tab: 'muster' }],
     ['Muster bestellen', 'einkauf', { tab: 'lieferant', art: 'muster', af: 'offen' }],
+    ['Muster Lagerbestand', 'einkauf', { tab: 'musterlager' }],
     ['Lexikon', 'lexikon', {}],
     ['Musterwirkung und spätere Käufe', 'kunden', { tab: 'musterwirkung' }],
   ]) if (darfAnsicht(view)) items.push({ kind: 'Ansicht', label, run: () => navigate(view, params) });

@@ -19,6 +19,8 @@ export const MENUE_KURZ = [
   ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen.'],
   ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Bestelltag ein Umschlag, Bestellungen eines Kunden vom selben Tag zusammen. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
+  ['Muster Lagerbestand', 'Welche Muster wir selbst dahaben, nach Lieferant geordnet, mit Anzahl und Lagerplatz. Hier einlagern und korrigieren.'],
+  ['Eigene Aufkleber drucken', 'Aufkleber mit frei getipptem Text, ohne Produkt, zum Beispiel Wegweiser fürs Lager.'],
   ['Kunden & Einkauf', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften, Hausverwaltungen.'],
   ['Shop & Inhalte', 'Sonderposten, Bildrechte, Social Media – nur mit Büro- oder Inhaberzugang.'],
   ['Verwaltung', 'Aufgaben, Zugänge und diese Hilfe. Was du siehst, hängt von deinem Zugang ab.'],
