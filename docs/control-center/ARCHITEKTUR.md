@@ -1927,6 +1927,12 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
 - **Fremdcode:** `@mmote/niimbluelib@0.47.1` (UMD) und `qrcode-generator@1.4.4` werden erst im Dialog
   von cdn.jsdelivr.net geladen, fest gepinnt mit SRI-Prüfsumme. Ohne Internet: Vorschau ohne QR,
   Drucken nicht möglich.
+- **Eigene Aufkleber (02.11., #1825):** Freier Text ohne Produkt, Knopf in Packstation und Musterlager
+  (`lib/freie-etiketten.mjs`, `oeffneEtikettenDruck({ freierText: true })`). Nur dieser Dialog kennt 50 × 20 mm und
+  „Eigene Größe…“ (20 bis 50 × 10 bis 200 mm, 8 px je mm) und merkt sie unter eigenen Schlüsseln; der Musterdruck bleibt
+  bei seinen drei Größen. Schriftgröße, Schriftstärke, Ausrichtung und Drehen gelten für den ganzen Dialog und stehen im
+  Layout-Cache-Schlüssel. Schmale Bilder füllt `aufDruckkopf()` mittig auf die Kopfbreite auf. Nichts wird gespeichert
+  oder als gedruckt vermerkt.
 - **Offen:** Belegte Klick-/Klebe-Zuordnung bei Lieferant A (verschiedene Shop-Namen je Linie).
 
 ## 27. Muster packen (seit 2026-10-21, #1572)
