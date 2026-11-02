@@ -268,6 +268,7 @@ const posKey = (orderId, lineItemId) => `${orderId}::${lineItemId}`;
  * - `musterHerkunft`     'eigen_versand' bei automatischer Zuordnung (wie die Wahl "haben wir da")
  * - `musterHerkunftQuelle` 'lager' bei automatischer Zuordnung
  * - `musterLagerLeer`    {id, artLabel, ort} - steht im Lager, ist aber leer bzw. aufgebraucht
+ * - `musterLagerReserviert` true bei ausdruecklicher Wahl "haben wir da", wenn ein Stueck dafuer zurueckliegt
  *
  * Automatisch zugeordnet wird nur, was noch offen ist: Muster ohne Auftragsfluss-Stand und
  * ohne ausdrueckliche Wahl, in offenen Auftraegen. Die aelteste Bestellung kommt zuerst dran,
@@ -320,17 +321,16 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
       const key = musterSchluessel(p);
       const passend = key ? jeSchluessel.get(key) : null;
       if (!passend) continue;
-      // Ausdrueckliche Wahl "haben wir da": nur den Lagerplatz dazuschreiben.
-      if (p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei') {
-        const e = passend.find(x => !x.leer) || null;
+      const gewaehlt = p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei';
+      if (p.musterHerkunft && !gewaehlt) continue; // "Beim Lieferanten bestellen" gewaehlt
+      // Status gesetzt, in Shopify schon versendet (offene Menge 0) oder Auftrag zu: nichts mehr zu verschicken.
+      if (statusAlle[posKey(a.id, p.lineItemId)]?.status || a.offen === false || (p.menge ?? 1) <= 0) {
+        // Die Wahl "haben wir da" behaelt den Lagerplatz als Auskunft, belegt aber kein Stueck.
+        const e = gewaehlt ? passend.find(x => !x.leer) || null : null;
         if (e) { p.musterLager = lagerInfo(e); gesetzt.set(posKey(a.id, p.lineItemId), { musterLager: p.musterLager }); }
         continue;
       }
-      if (p.musterHerkunft) continue; // "Beim Lieferanten bestellen" gewaehlt
-      if (statusAlle[posKey(a.id, p.lineItemId)]?.status) continue;
-      // In Shopify schon versendet (offene Menge 0) oder Auftrag zu: nichts mehr zu verschicken.
-      if (a.offen === false || (p.menge ?? 1) <= 0) continue;
-      kandidaten.push({ a, p, test, passend, datum: String(p.orderDatum || a.datum || '') });
+      kandidaten.push({ a, p, test, passend, gewaehlt, datum: String(p.orderDatum || a.datum || '') });
     }
   }
 
@@ -338,9 +338,12 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
   const rest = new Map();
   for (const e of eintraege) if (ZAEHLBAR.includes(e.art)) rest.set(e.id, Math.max(0, (e.anzahl ?? 0) - stand.get(e.id).verbraucht));
 
-  kandidaten.sort((x, y) => x.datum.localeCompare(y.datum));
-  for (const { a, p, test, passend } of kandidaten) {
+  // Wer ausdruecklich "haben wir da" gewaehlt hat, nimmt ein Stueck in die Hand - das geht vor, sonst
+  // wuerde dasselbe letzte Muster zweimal versprochen. Danach die aelteste Bestellung zuerst.
+  kandidaten.sort((x, y) => y.gewaehlt - x.gewaehlt || x.datum.localeCompare(y.datum));
+  for (const { a, p, test, passend, gewaehlt } of kandidaten) {
     const e = passend.find(x => !x.leer && (!ZAEHLBAR.includes(x.art) || rest.get(x.id) > 0)) || null;
+    if (!e && gewaehlt) continue; // Die Wahl bleibt, aus dem Lager kommt dieses Muster aber nicht.
     if (!e) {
       const leer = passend[0];
       p.musterLagerLeer = { id: leer.id, artLabel: LAGER_ARTEN[leer.art], ort: leer.ort || null };
@@ -349,12 +352,13 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
     }
     if (ZAEHLBAR.includes(e.art) && !test) rest.set(e.id, rest.get(e.id) - 1);
     if (!test) stand.get(e.id).reserviert += 1;
-    const felder = {
+    const info = lagerInfo(e, ZAEHLBAR.includes(e.art) ? rest.get(e.id) : null);
+    const felder = gewaehlt ? { musterLager: info, musterLagerReserviert: true } : {
       musterHerkunft: 'eigen_versand',
       musterHerkunftQuelle: 'lager',
       musterHerkunftAm: e.geaendertAm || e.angelegtAm || null,
       musterHerkunftVon: 'Musterlager',
-      musterLager: lagerInfo(e, ZAEHLBAR.includes(e.art) ? rest.get(e.id) : null),
+      musterLager: info,
     };
     Object.assign(p, felder);
     gesetzt.set(posKey(a.id, p.lineItemId), felder);
@@ -375,6 +379,14 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
 }
 
 /**
+ * Fuer diese Musterposition liegt ein Stueck im Lager zurueck und ist noch nicht verschickt. Solange das
+ * gilt, wird sie nicht beim Lieferanten bestellt (Inhaber 02.11.: nichts doppelt, bis der Bestand 0 ist).
+ */
+export function lagerGedeckt(p) {
+  return !!(p?.istMuster && p.musterLager?.id && !p.musterLagerId && (p.musterHerkunftQuelle === 'lager' || p.musterLagerReserviert));
+}
+
+/**
  * Musterpositionen, die beim Verschicken festgeschrieben werden muessen: automatisch aus dem
  * Lager zugeordnet, noch ohne Ereignis. Der Server haengt fuer jede ein musterherkunft-Ereignis
  * mit `lagerId` an.
@@ -382,7 +394,7 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
  * @param {string[]|null} [lineItemIds]  nur diese Positionen; null = alle
  */
 export function festzuschreiben(auftrag, lineItemIds = null) {
-  return (auftrag?.positionen ?? []).filter(p => p.istMuster && p.lineItemId && p.musterHerkunftQuelle === 'lager'
+  return (auftrag?.positionen ?? []).filter(p => p.istMuster && p.lineItemId && lagerGedeckt(p)
     && p.musterLager?.id && !p.musterLagerId && (!lineItemIds || lineItemIds.includes(p.lineItemId)));
 }
 
