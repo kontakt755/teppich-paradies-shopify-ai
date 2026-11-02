@@ -85,14 +85,15 @@ export function kontaktPasst(felder, suchtext) {
 /**
  * Erste bestellte Position, zu deren Produktname, Farbe oder SKU alle Woerter passen - fuer
  * "Kunde nennt nur das Produkt": wer hat Cameo bestellt? Zahlen wie im Lexikon ("73" findet
- * "(073)", aber nicht "8H73"). null = kein Treffer.
+ * "(073)", aber nicht "8H73"). `einkaufText` ergaenzt, was beim Lieferanten dazu steht
+ * (positionSuchtext). null = kein Treffer.
  */
-function produktTreffer(k, suchtext) {
+function produktTreffer(k, suchtext, einkaufText) {
   const begriffe = suchbegriffe(suchtext);
   for (const a of k.auftraege) {
     for (const p of a.positionen || []) {
       if (p.eigenleistung) continue;
-      const text = feldText([p.titel, p.farbe, p.sku]);
+      const text = feldText([p.titel, p.farbe, p.sku, einkaufText?.(p)]);
       if (begriffe.every(b => passtBegriff(b, text))) return { titel: p.titel, farbe: p.farbe && p.farbe !== '–' ? p.farbe : null, bestellung: a.name };
     }
   }
@@ -104,7 +105,7 @@ function produktTreffer(k, suchtext) {
  * Kontakt, Anschrift und Bestellnummer zaehlen zuerst; danach Kunden, die ein passendes
  * Produkt bestellt haben (Feld `trefferProdukt`, damit die Liste sagt, warum sie dasteht).
  */
-export function sucheKunden(modell, suchtext, { statusAlle = {} } = {}) {
+export function sucheKunden(modell, suchtext, { statusAlle = {}, einkaufText = null } = {}) {
   const q = String(suchtext ?? '').trim().toLowerCase();
   if (q.length < 2) return [];
   const alle = kundenIndex(modell, { statusAlle });
@@ -119,7 +120,7 @@ export function sucheKunden(modell, suchtext, { statusAlle = {} } = {}) {
       ...k.auftraege.map(a => a.name),
     ];
     if (kontaktPasst(felder, q)) { direkt.push(k); continue; }
-    const t = produktTreffer(k, q);
+    const t = produktTreffer(k, q, einkaufText);
     if (t) ueberProdukt.push({ ...k, trefferProdukt: t });
   }
   return [...direkt.sort(neuesteZuerst), ...ueberProdukt.sort(neuesteZuerst)];

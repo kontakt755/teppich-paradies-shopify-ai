@@ -1,0 +1,6 @@
+## 2026-11-02 · Suche oben findet Warenbestellungen über den Lieferantennamen (#1831)
+
+- **Geaendert:** Die Kundensuche gleicht jede bestellte Position jetzt auch mit den Lieferantenangaben aus dem Lexikon ab: Produktname, Farbnummer, Kollektion, Hersteller, Artikelnummer. Die Suche oben (⌘K) und die Kundensuche zeigen damit den Kunden samt „bestellt: Shopname · Farbe“. Wunschmaß-Artikel haben keine SKU, dort zählen Produkt und Farbe. Alle Wörter müssen an derselben Position stehen; das Lieferantenkürzel zählt nicht mit.
+- **Getestet:** Datenkopie, 36 Warenpositionen, Text aus den Lieferantenangaben eingegeben: Kunde vorher bei 0 von 32 gefunden, nachher bei 32 von 32, davon 12 Wunschmaß. Die übrigen 4 Positionen stehen nicht im Lexikon und bleiben über den Shopnamen auffindbar. Klicktest Desktop und 390 px: Kundenzeile öffnet die Kundenakte, Muster-Zeile weiter die Packstation, 0 JS-Fehler, kein seitliches Scrollen. Neuer Test in `offene-bestellungen-produkt`; `npm run -s pruefen` grün.
+- **Risiken/Annahmen:** Die Suche oben zeigt weiter höchstens 5 Kunden. Bei einem Artikel mit mehr Käufern fällt der älteste Kunde heraus (Datenkopie: 6 Käufer eines Zubehörartikels). Die Bestellliste unter „Bestellungen“ sucht unverändert nur über ihre eigenen Felder.
+- **Naechste Stufe:** Keine geplant.
