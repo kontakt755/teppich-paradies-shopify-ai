@@ -98,7 +98,7 @@ import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
 import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
 import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
-import { suchbegriffe, lexikonTreffer, nurUeberTitel } from '../docs/ai-dashboard/lib/lexikon-suche.mjs';
+import { suchbegriffe, lexikonTreffer, nurUeberTitel, positionSuchtext } from '../docs/ai-dashboard/lib/lexikon-suche.mjs';
 import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
 import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
@@ -1717,7 +1717,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Ab zwei Zeichen bleibt es Freitextsuche, mit demselben Filter drauf.
       const q2 = String(q ?? '').trim();
       const roh = q2.length >= 2
-        ? sucheKunden(modell, q2, { statusAlle }).map(k => kundenListenEintrag(k, { statusAlle })).filter(passtZuKundenFilter(filter))
+        ? sucheKunden(modell, q2, { statusAlle, einkaufText: this._positionSuchtext() }).map(k => kundenListenEintrag(k, { statusAlle })).filter(passtZuKundenFilter(filter))
         : alleKunden(modell, { statusAlle, filter });
       const stamm = stammKontakte(dir);
       // Additiv: der dringendste naechste Schritt je Kunde (Zeitleiste) - fuer Listen und die Heute-Seite.
@@ -3621,6 +3621,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const file = path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json');
       const daten = readJsonGecacht(file);
       return Array.isArray(daten?.produkte) ? daten.produkte : [];
+    },
+
+    /** Lieferantenangaben je Bestellposition; ein kaputtes Lexikon darf die Kundensuche am Telefon nicht stoppen. */
+    _positionSuchtext() {
+      try { return positionSuchtext(this._lexikonProdukte()); } catch { return null; }
     },
 
     /**
