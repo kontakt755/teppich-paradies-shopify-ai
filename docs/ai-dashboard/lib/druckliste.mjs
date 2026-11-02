@@ -13,7 +13,7 @@ export function neueKennung(krypto = globalThis.crypto) {
 
 /** Identische Kopien erhalten eine gemeinsame Vorschau; gedruckt wird weiterhin jedes Stueck. */
 /** Gleiche Angaben = gleiches Motiv; Vorschau und Auswahl zum Drucken fassen damit Kopien zusammen. */
-export const motivSchluessel = e => JSON.stringify([e.serie, e.farbe, e.sku, e.url, e.technik, e.fehlt]);
+export const motivSchluessel = e => JSON.stringify([e.serie, e.farbe, e.sku, e.url, e.technik, e.fehlt, ...(e.schriften ? [e.schriften] : [])]);
 
 export function druckVorschau(etiketten = []) {
   const je = new Map();
