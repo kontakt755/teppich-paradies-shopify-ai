@@ -611,6 +611,7 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
 - **Rest prüfen:** Dialog für Ware, die nicht über den Shop läuft (direkt beim Hersteller bestellt):
   Hersteller, Qualität, Farbnummer → Treffer bei A/C mit Farben, „Als Verlegerest einlagern“ und
   „Etikett“ (ein Aufkleber je Farbe, Lexikon-Etikett ohne Lieferantennamen).
+- **Lexikon und Gruppierung (02.11.):** Der Bereich „Im Musterlager“ auf der Produktseite (`ansichten/lexikon-musterlager.mjs`) schreibt über denselben Endpunkt; beide Ansichten rechnen mit `lib/musterlager-bestand.mjs`, weil `anzahl` die Gesamtzahl inklusive Verschicktem ist und `stand.rest` die Reservierten nicht enthält. Jeder Lagereintrag trägt `lieferant {id, name}` (`lieferantJeSchluessel()`: Artikelnummern gegen `einkauf.lieferant` im Lexikon, Ware vor Musterprodukt), die Ansicht ordnet mit `nachLieferant()`.
 - **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest/reichtNoch,
   offene Bestellungen je Eintrag samt `wartetAufLieferant`, Mustergröße, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
   Lexikon-Produkts samt Schlüssel), `GET /api/einkauf/reste-abgleich?hersteller=&qualitaet=&farbnummer=`
