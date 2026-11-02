@@ -1,22 +1,25 @@
 /**
- * Befehlspalette (Cmd+K, Ctrl+K oder /): Ansichten, Aufgaben, Kunden und Produkte finden,
- * Befehle ausloesen.
+ * Befehlspalette (Cmd+K, Ctrl+K oder /): Ansichten, Aufgaben, Kunden, Muster und Produkte finden,
+ * Befehle ausloesen. Muster sucht sie mit derselben Funktion und auf demselben Stand wie das Suchfeld
+ * der Packstation (offeneSuche) - ein Treffer fuehrt dorthin und zeigt dort dasselbe.
  */
 import { AREAS, SAVED_VIEWS } from '../lib/model.mjs';
 import { REPO_URL, personName } from '../kern/konfig.mjs';
 import { state } from '../kern/zustand.mjs';
-import { $, esc, newIssueUrl } from '../kern/helfer.mjs';
+import { $, esc, newIssueUrl, plural } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { darfAnsicht, navigate, openTask } from '../kern/router.mjs';
 import { refresh } from '../kern/daten.mjs';
 import { syncNow } from './aktualisierung.mjs';
 import { openFehlerMelden } from './fehler-melden.mjs';
 import { openOrgSchnell, openOrgListe } from '../ansichten/organisation/dialoge.mjs';
+import { ensureMusterPacken } from '../ansichten/kunden/muster-packen.mjs';
+import { offeneSuche, umschlagKennung } from '../lib/muster-packen.mjs';
 
 // Treffer aus den Betriebsdaten - Kunden und Produkte. Die Suche ist fuer
 // viele der schnellste Weg ueberhaupt ("Kunde am Telefon, Produktname
 // genannt"), deshalb muss sie mehr finden als GitHub-Aufgaben.
-const paletteFern = { q: '', kunden: [], produkte: [] };
+const paletteFern = { q: '', kunden: [], produkte: [], packliste: null };
 let paletteTimer = null;
 
 /**
@@ -28,11 +31,11 @@ let paletteTimer = null;
 function paletteFernSuche(q, fertig) {
   const query = String(q || '').trim();
   // Ein Treffer zum vorigen Namen darf waehrend des Tippens nicht als neue Auswahl gelten.
-  if (paletteFern.q !== query) { paletteFern.kunden = []; paletteFern.produkte = []; }
+  if (paletteFern.q !== query) { paletteFern.kunden = []; paletteFern.produkte = []; paletteFern.packliste = null; }
   paletteFern.q = query;
   clearTimeout(paletteTimer);
   if (query.length < 2 || state.capabilities.mode !== 'local') {
-    paletteFern.kunden = []; paletteFern.produkte = [];
+    paletteFern.kunden = []; paletteFern.produkte = []; paletteFern.packliste = null;
     fertig();
     return;
   }
@@ -40,13 +43,50 @@ function paletteFernSuche(q, fertig) {
     Promise.all([
       fetchEinkauf(`/api/kunden/suche?${new URLSearchParams({ q: query, filter: 'alle' })}`),
       fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q: query })}`),
-    ]).then(([k, l]) => {
+      darfAnsicht('kunden') ? ensureMusterPacken() : null,
+    ]).then(([k, l, d]) => {
       if (paletteFern.q !== query) return; // Antwort einer aelteren Eingabe
       paletteFern.kunden = (k?.treffer || []).slice(0, 5);
       paletteFern.produkte = (l?.treffer?.items || []).slice(0, 5);
+      paletteFern.packliste = d?.verfuegbar && !d.fehler ? d : null;
       fertig();
     }).catch(() => { /* Suche bleibt bei den lokalen Treffern */ });
   }, 150);
+}
+
+/**
+ * Muster zur Eingabe. Passen alle Woerter und sind es wenige Umschlaege, steht jeder einzeln da; sonst
+ * eine Zeile mit der Zusammenfassung. `rang` ordnet: das Muster-Produkt zuerst; passt nur der Kundenname,
+ * bleibt die Kundenzeile vorn (Telefon); nur teilweise Passendes unter genannten Arbeitswegen.
+ */
+function musterZeilen(q) {
+  const d = paletteFern.packliste;
+  const suchtext = String(q || '').trim();
+  if (!d || paletteFern.q !== suchtext) return [];
+  const s = offeneSuche(d.kunden || [], suchtext, d.ausserhalb || []);
+  const anzahl = s.treffer.length + s.ausserhalb.length;
+  const oeffnen = mitFertigen => {
+    const ziel = { tab: 'muster', mpq: suchtext, ...(mitFertigen ? { mpfertig: suchtext } : {}) };
+    return () => navigate('kunden', ziel);
+  };
+  const fertig = () => plural(s.fertig, 'fertige Bestellung', 'fertige Bestellungen');
+  if (s.fertig && (!anzahl || s.fertigGenauer)) {
+    return [{ kind: 'Muster', label: `${fertig()} zu „${suchtext}“`, sub: 'schon gepackt oder versandt – in der Packstation zeigen', rang: 5, run: oeffnen(true) }];
+  }
+  if (!anzahl) return [];
+  if (s.fehlen.length) {
+    return [{ kind: 'Muster', label: `Packstation: „${suchtext}“`, sub: `${plural(anzahl, 'Bestellung passt', 'Bestellungen passen')} teilweise, nicht gefunden: ${s.fehlen.join(', ')}`, rang: 2, run: oeffnen(false) }];
+  }
+  if (anzahl > 3 || s.ausserhalb.length) {
+    return [{ kind: 'Muster', label: `Packstation: „${suchtext}“`, sub: plural(anzahl, 'Bestellung passt', 'Bestellungen passen'), rang: 5, run: oeffnen(false) }];
+  }
+  return s.treffer.flatMap(t => {
+    const k = d.kunden.find(x => x.packSchluessel === t.packSchluessel);
+    if (!k) return [];
+    const m = k.muster.find(x => t.muster.includes(x.lineItemId));
+    const auf = m?.vorher?.produktname ? `Auf dem Muster: ${[m.vorher.produktname, m.vorher.farbnummer].filter(Boolean).join(' · ')}` : null;
+    return [{ kind: 'Muster', label: `${umschlagKennung(k)} ${k.name}`, sub: auf || 'in der Packstation öffnen', rang: m ? 6 : 5, run: oeffnen(false) }];
+  });
 }
 
 function paletteItems(q) {
@@ -68,6 +108,7 @@ function paletteItems(q) {
     const bestellt = k.trefferProdukt ? `bestellt: ${[k.trefferProdukt.titel, k.trefferProdukt.farbe].filter(Boolean).join(' · ')}` : null;
     items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [bestellt, k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { kunde: k.key }) });
   }
+  items.push(...musterZeilen(q));
   for (const p of paletteFern.produkte) {
     const offen = p.offeneBestellungen ? `${p.offeneBestellungen} offene Bestellung${p.offeneBestellungen === 1 ? '' : 'en'}` : null;
     items.push({ kind: 'Produkt', label: p.titel, sub: [offen, p.produktgruppe].filter(Boolean).join(' · ') || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
@@ -103,7 +144,7 @@ function paletteItems(q) {
   const scored = items.map(i => ({
     i,
     // Kunden/Produkte kommen schon gefiltert vom Server und stehen oben.
-    s: i.treffer ? 5 : !ql ? 1 : i.label.toLowerCase().includes(ql) ? 2 + (i.label.toLowerCase().startsWith(ql) ? 1 : 0) : ql.split(/\s+/).every(p => i.label.toLowerCase().includes(p)) ? 1 : 0,
+    s: i.rang && ql ? i.rang : i.treffer ? 5 : !ql ? 1 : i.label.toLowerCase().includes(ql) ? 2 + (i.label.toLowerCase().startsWith(ql) ? 1 : 0) : ql.split(/\s+/).every(p => i.label.toLowerCase().includes(p)) ? 1 : 0,
   })).filter(x => x.s > 0);
   return scored.sort((a, b) => b.s - a.s).slice(0, 14).map(x => x.i);
 }
@@ -113,7 +154,7 @@ export function openPalette() {
   paletteFern.q = ''; paletteFern.kunden = []; paletteFern.produkte = [];
   let sel = 0; let items = paletteItems('');
   const draw = () => { root.querySelector('ul').innerHTML = items.map((it, k) => `<li role="option" aria-selected="${k === sel}" data-k="${k}"><span class="k">${esc(it.kind)}</span><span>${esc(it.label)}</span>${it.sub ? `<span class="s">${esc(it.sub)}</span>` : ''}</li>`).join('') || '<li class="muted">Nichts gefunden.</li>'; };
-  root.innerHTML = `<div class="palette-backdrop" data-close-palette><div class="palette" role="combobox" aria-expanded="true"><input type="text" placeholder="Kunde, Produkt, Aufgabe, Ansicht … (Esc schließt)" aria-label="Suche" autocomplete="off"><ul role="listbox"></ul></div></div>`;
+  root.innerHTML = `<div class="palette-backdrop" data-close-palette><div class="palette" role="combobox" aria-expanded="true"><input type="text" placeholder="Kunde, Muster, Produkt, Aufgabe … (Esc schließt)" aria-label="Suche" autocomplete="off"><ul role="listbox"></ul></div></div>`;
   draw();
   const input = root.querySelector('input'); input.focus();
   const run = () => { const it = items[sel]; closePalette(); it?.run(); };

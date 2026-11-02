@@ -109,14 +109,19 @@ async function alteVermerkeUebernehmen(d) {
 /** Zuletzt im Reiter "Muster kommt an" eingelegt: Rueckmeldung, wohin es kam und was noch fehlt. */
 let handMeldung = null;
 
+// Die Suche oben (Palette) wartet auf denselben Abruf, damit beide Leisten denselben Stand durchsuchen.
+let packAbruf = null;
 export function ensureMusterPacken() {
-  if (kunden.musterPacken || kunden.loadingMusterPacken) return;
+  if (kunden.musterPacken) return Promise.resolve(kunden.musterPacken);
+  if (kunden.loadingMusterPacken) return packAbruf;
   kunden.loadingMusterPacken = true;
-  fetchEinkauf(ENDPOINT).then(d => {
-    kunden.musterPacken = d; kunden.loadingMusterPacken = false;
+  packAbruf = fetchEinkauf(ENDPOINT).then(d => {
+    kunden.musterPacken = d; kunden.loadingMusterPacken = false; packAbruf = null;
     if (['kunden', 'heute'].includes(state.route.view)) render();
     void alteVermerkeUebernehmen(d);
+    return d;
   });
+  return packAbruf;
 }
 
 /** Zahl am Reiter: alle offenen Umschlaege (packbereit, zu klaeren, wartend), ohne Gepacktes. */
@@ -498,7 +503,7 @@ export function viewKundenMusterPacken() {
   if (aktiv === 'erledigt') return `${umschalter}${kopf}${filter}${ausschlussHinweis}${suchfeld}${erledigtHtml(erledigt)}`;
   return `${umschalter}${kopf}${filter}${umschlagFilter}${ausschlussHinweis}
     ${suchfeld}
-    ${suche ? `<p class="small muted">Die Suche berücksichtigt alle offenen Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>${fertigHinweis(gefunden.fertig, mitFertigen, suche)}` : ''}
+    ${suche ? `<p class="small muted">Die Suche berücksichtigt alle offenen Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer. Alle Kunden und Produkte findest du über die Suche oben.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>${fertigHinweis(gefunden.fertig, mitFertigen, suche, gefunden.fertigGenauer)}` : ''}
     ${druck}<section class="mp-arbeitsliste" aria-label="${esc(titel)}"><h2 class="mp-titel">${esc(titel)}${aktiv === 'gepackt' ? ' – nach dem Verschicken „Verschickt“ drücken' : ''}</h2>
     ${sichtbar.length ? `<div class="mp-kunden">${sichtbar.map((k, i) => kundeHtml(k, i + 1, { offenBeiSuche: aufklappen, treffer: treffer.get(k.packSchluessel) })).join('')}</div>` : leer}</section>
     ${gefunden?.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], gefunden.ausserhalb) : ''}
@@ -524,13 +529,15 @@ function erledigtHtml(liste) {
  * zeigt sie trotzdem (mpfertig=<Suchtext>, gilt nur fuer diese Suche), etwa um nachzusehen, wohin ein
  * Muster schon gegangen ist. Offene Treffer stehen dann weiter zuerst.
  */
-function fertigHinweis(anzahl, mitFertigen, suchtext) {
+function fertigHinweis(anzahl, mitFertigen, suchtext, genauer = false) {
   const p = new URLSearchParams(state.route.params);
   p.set('tab', 'muster');
   if (mitFertigen) p.delete('mpfertig'); else p.set('mpfertig', suchtext);
   const link = `<a href="${esc(`#/kunden?${p}`)}">${mitFertigen ? 'Fertige wieder ausblenden' : 'Trotzdem zeigen'}</a>`;
   if (mitFertigen) return `<p class="small muted mp-fertig">Schon gepackte und versandte Bestellungen sind mit drin. ${link}</p>`;
-  return anzahl ? `<p class="small muted mp-fertig">${plural(anzahl, 'fertige Bestellung passt', 'fertige Bestellungen passen')} auch – schon gepackt oder versandt, deshalb nicht gezeigt. ${link}</p>` : '';
+  if (!anzahl) return '';
+  if (genauer) return `<p class="notice warn mp-fertig">${plural(anzahl, 'fertige Bestellung passt', 'fertige Bestellungen passen')} genauer als die Umschläge hier – schon gepackt oder versandt, deshalb nicht gezeigt. ${link}</p>`;
+  return `<p class="small muted mp-fertig">${plural(anzahl, 'fertige Bestellung passt', 'fertige Bestellungen passen')} auch – schon gepackt oder versandt, deshalb nicht gezeigt. ${link}</p>`;
 }
 
 const GRUND_TEXT = Object.freeze({
@@ -587,7 +594,7 @@ function viewMusterKommtAn(d) {
     `<li class="mp-aussen"><div><strong>${esc(umschlagKennung(k))}</strong> · ${esc(k.name)} · ${esc(m.vorher?.produktname || m.bestellt.titel)}${m.vorher?.farbnummer ? ` <strong>Farbnr. ${esc(m.vorher.farbnummer)}</strong>` : ''}</div><div class="small muted">${k.bereich === 'gepackt' ? 'Umschlag ist schon gepackt' : 'liegt schon im Umschlag'}</div></li>`).join('')}</ul></section>` : '';
   const nichts = !t.karten.length && !t.eingelegt.length && !t.ausserhalb.length
     ? `<div class="mp-arbeitsleer"><p>${t.fertig ? 'Kein offener Umschlag braucht dieses Muster – es passt nur zu schon gepackten oder versandten Bestellungen.' : 'Nichts gefunden. Weniger Wörter versuchen, z. B. nur die Farbnummer.'}</p></div>` : '';
-  return `${feld}${meldung}${fehlen}${fertigHinweis(t.fertig, mitFertigen, q)}${karten}${mehr}${schon}${t.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], t.ausserhalb) : ''}${nichts}`;
+  return `${feld}${meldung}${fehlen}${fertigHinweis(t.fertig, mitFertigen, q, t.fertigGenauer)}${karten}${mehr}${schon}${t.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], t.ausserhalb) : ''}${nichts}`;
 }
 
 /** Eine grosse Karte je passendem Muster: was draufsteht, wohin es gehoert, zwei Knoepfe. */

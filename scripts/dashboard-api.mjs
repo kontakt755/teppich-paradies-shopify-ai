@@ -44,7 +44,7 @@ import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlage
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
-import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt, kundenSchluessel } from '../operations/lib/kundensuche.mjs';
+import { sucheKunden, kontaktPasst, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt, kundenSchluessel } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
 import { bestellmarkenPfad, leseAlle as leseBestellmarken, setzeHaken as setzeBestellhaken } from '../operations/lib/bestellmarken.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
@@ -1730,7 +1730,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const alleKeys = new Set(ausBestellungen.map(t => t.key));
       const nurStamm = stammOhneBestellung(dir, alleKeys)
         .filter(passtZuKundenFilter(filter))
-        .filter(t => q2.length < 2 || [t.name, t.email, t.telefon, t.ort].filter(Boolean).some(f => String(f).toLowerCase().includes(q2.toLowerCase())));
+        .filter(t => q2.length < 2 || kontaktPasst([t.name, t.email, t.telefon, t.ort], q2));
       const treffer = [...ausBestellungen, ...nurStamm];
       return { verfuegbar: true, treffer, gesamt: treffer.length };
     },

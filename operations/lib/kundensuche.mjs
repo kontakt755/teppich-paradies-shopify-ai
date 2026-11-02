@@ -16,6 +16,7 @@
 
 import { kundenFortschritt, fortschritt } from './bestellliste.mjs';
 import { positionKey, STATUS_LABEL } from './auftragsstatus.mjs';
+import { normalisieren, passtBegriff, suchbegriffe } from '../../docs/ai-dashboard/lib/lexikon-suche.mjs';
 
 function leer(v) {
   return v === undefined || v === null || String(v).trim() === '' || v === '–';
@@ -73,19 +74,26 @@ function summarisieren(eintrag, statusAlle = {}) {
   };
 }
 
-function feldTreffer(felder, q) {
-  return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(q));
+const feldText = felder => felder.filter(f => typeof f === 'string').map(normalisieren).join(' | ');
+
+/** Jedes Wort muss irgendwo stehen ("Hans Mueller" findet "Müller, Hans"); Telefon und PLZ auch als Teil. */
+export function kontaktPasst(felder, suchtext) {
+  const text = feldText(felder), begriffe = suchbegriffe(suchtext);
+  return begriffe.length > 0 && begriffe.every(b => text.includes(b));
 }
 
 /**
- * Erste bestellte Position, deren Produktname oder SKU zum Suchtext passt - fuer
- * "Kunde nennt nur das Produkt": wer hat Cameo bestellt? null = kein Treffer.
+ * Erste bestellte Position, zu deren Produktname, Farbe oder SKU alle Woerter passen - fuer
+ * "Kunde nennt nur das Produkt": wer hat Cameo bestellt? Zahlen wie im Lexikon ("73" findet
+ * "(073)", aber nicht "8H73"). null = kein Treffer.
  */
-function produktTreffer(k, q) {
+function produktTreffer(k, suchtext) {
+  const begriffe = suchbegriffe(suchtext);
   for (const a of k.auftraege) {
     for (const p of a.positionen || []) {
       if (p.eigenleistung) continue;
-      if (feldTreffer([p.titel, p.sku], q)) return { titel: p.titel, farbe: p.farbe && p.farbe !== '–' ? p.farbe : null, bestellung: a.name };
+      const text = feldText([p.titel, p.farbe, p.sku]);
+      if (begriffe.every(b => passtBegriff(b, text))) return { titel: p.titel, farbe: p.farbe && p.farbe !== '–' ? p.farbe : null, bestellung: a.name };
     }
   }
   return null;
@@ -110,7 +118,7 @@ export function sucheKunden(modell, suchtext, { statusAlle = {} } = {}) {
       k.rechnungsadresse?.strasse, k.rechnungsadresse?.ort, k.rechnungsadresse?.plz,
       ...k.auftraege.map(a => a.name),
     ];
-    if (feldTreffer(felder, q)) { direkt.push(k); continue; }
+    if (kontaktPasst(felder, q)) { direkt.push(k); continue; }
     const t = produktTreffer(k, q);
     if (t) ueberProdukt.push({ ...k, trefferProdukt: t });
   }

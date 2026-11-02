@@ -31,8 +31,15 @@ function passtTeil(teil, text) {
   return text.includes(teil);
 }
 
-function passtBegriff(begriff, text) {
-  if (/^\d{1,3}$/.test(begriff)) return passtTeil(begriff, text);
+// Als eigenes Suchwort ist eine kurze Zahl auch kein Stueck eines Farbcodes: "73" nicht in "8H73",
+// "3" nicht in "3N55" - an den Liniennamen geklebt zaehlt sie weiter ("27" in "Linie027").
+function passtZahl(zahl, text) {
+  const ohneNullen = zahl.replace(/^0+(?=\d)/, '');
+  return new RegExp(`(?<!\\d)(?<!\\d\\p{L})0*${ohneNullen}(?!\\d)(?!\\p{L}\\d)`, 'u').test(text);
+}
+
+export function passtBegriff(begriff, text) {
+  if (/^\d{1,3}$/.test(begriff)) return passtZahl(begriff, text);
   if (text.includes(begriff)) return true;
   // "linie027" -> "linie" + "027", "a-4712" -> "a" + "4712"
   const teile = begriff.match(/\p{L}+|\p{N}+/gu) || [];
