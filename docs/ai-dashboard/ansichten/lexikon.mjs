@@ -16,6 +16,7 @@ import { originalHandle } from '../lib/muster-etiketten.mjs';
 import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
 import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
 import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-etiketten-status.mjs';
+import { musterlagerBlock } from './lexikon-musterlager.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
@@ -681,6 +682,7 @@ function viewLexikonDetail(handle) {
   return `${zurueck}
     ${offeneBestellungenBlock(d.offeneBestellungen, d.wartendeKunden)}
     ${produktKarte(p, normaleVarianten)}
+    ${musterlagerBlock(p.handle)}
     ${musterEtikettenBlock(p)}
     ${fuersKundengespraech(p, normaleVarianten)}
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Zum Bestellen</h2></div>${bestellTabelle}</section>
