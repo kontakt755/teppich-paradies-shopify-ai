@@ -622,7 +622,7 @@
     if tp_rc_muster_url contains '?produkt='
       assign tp_rc_muster_url = tp_rc_muster_url | append: '&farbe=' | append: tp_rc_muster_farbe
     endif
-    # Vinyl-Muster hoechstens 3 je Bestellung (snippets/tp-muster-grenze):
+    # Vinyl-Muster hoechstens 2 je Bestellung (snippets/tp-muster-grenze):
     # "vinyl" = Hinweis unter dem Knopf, "voll" = Knopf deaktiviert.
     capture tp_rc_muster_grenze
       render 'tp-muster-grenze', product: product
@@ -639,12 +639,12 @@
         {{- tp_rc_muster_text | escape -}}
       </a>
       {%- if tp_rc_muster_grenze != blank -%}
-        <p class="tp-rwc-muster-grenze" data-tp-mg-offen{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>Kostenlos, höchstens 3 Vinyl-Muster je Bestellung</p>
+        <p class="tp-rwc-muster-grenze" data-tp-mg-offen{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>Kostenlos, höchstens 2 Vinyl-Muster je Bestellung</p>
         <button class="tp-rwc-muster" type="button" disabled aria-describedby="tp-rwc-muster-grenze-{{ tp_rc_id }}" data-tp-mg-voll{% unless tp_rc_muster_grenze == 'voll' %} hidden{% endunless %}>
           {{- tp_rc_muster_text | escape -}}
         </button>
         <p class="tp-rwc-muster-grenze tp-rwc-muster-grenze--voll" id="tp-rwc-muster-grenze-{{ tp_rc_id }}" data-tp-mg-voll{% unless tp_rc_muster_grenze == 'voll' %} hidden{% endunless %}>
-          3 von 3 Vinyl-Mustern im Warenkorb – mehr sind je Bestellung nicht möglich. <a href="{{ routes.cart_url }}">Zum Warenkorb</a>
+          2 von 2 Vinyl-Mustern im Warenkorb – mehr sind je Bestellung nicht möglich. <a href="{{ routes.cart_url }}">Zum Warenkorb</a>
         </p>
         <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
       {%- endif -%}
@@ -1247,7 +1247,7 @@
     color: var(--tp-rwc-ink); background: transparent; font-size: var(--tp-fs-md); font-weight: 600; text-align: center; text-decoration: none;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster:hover { background: rgb(0 0 0 / 0.04); }
-  /* Vinyl-Grenze (snippets/tp-muster-grenze): Hinweis darunter, bei 3 von 3 deaktiviert */
+  /* Vinyl-Grenze (snippets/tp-muster-grenze): Hinweis darunter, bei 2 von 2 deaktiviert */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster:disabled { width: 100%; font-family: inherit; background: transparent; opacity: .5; cursor: not-allowed; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster-grenze { margin: 6px 0 0; font-size: var(--tp-fs-sm); line-height: 1.4; text-align: center; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster-grenze--voll { color: var(--tp-rwc-ink); }

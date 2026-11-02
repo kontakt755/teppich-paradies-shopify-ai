@@ -321,7 +321,7 @@
               "disabled": true,
               "settings": {
                 "label": "Kostenloses Muster anfragen",
-                "hinweis": "Bis zu 3 Farben, versandkostenfrei"
+                "hinweis": "Bis zu 2 Farben, versandkostenfrei"
               }
             },
             "tp_zubehoer_empfehlung": {

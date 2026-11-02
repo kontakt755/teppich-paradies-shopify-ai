@@ -225,10 +225,10 @@ test('Ablauf: gesperrte Farbe sichtbar, deaktiviert, mit Hinweis - nie im Warenk
 test('Ablauf: gesperrte Farbe zaehlt nicht zur Auswahlgrenze', async () => {
   const r = await konfigurator({
     muster: musterProdukt([{ id: 602, option1: 'Beige', available: false }]),
-    waehlen: ['Beige', 'Grau', 'Rot'],
+    waehlen: ['Beige', 'Grau'],
   });
-  assert.equal(r.zeilen.length, 2);
-  assert.equal(r.zaehler, '2 von 3 Mustern insgesamt ausgewählt · noch 1 weiteres möglich');
+  assert.equal(r.zeilen.length, 1);
+  assert.equal(r.zaehler, '1 von 2 Mustern insgesamt ausgewählt · noch 1 weiteres möglich');
   assert.equal(r.karte('Beige').querySelector('input[type="checkbox"]').disabled, true);
 });
 

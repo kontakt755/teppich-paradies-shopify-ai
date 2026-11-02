@@ -1,5 +1,5 @@
 /*
- * Vinyl-Muster hoechstens 3 je Bestellung (Inhaber 13.10.2026).
+ * Vinyl-Muster hoechstens 2 je Bestellung (Inhaber 02.11.2026).
  *
  * Die Produktseite rendert den Musterknopf fuer Vinyl in beiden Zustaenden
  * (snippets/tp-muster-grenze, blocks/tp-muster-cta, blocks/tp-rollware-rechner):
@@ -13,7 +13,7 @@
  */
 (function () {
   if (window.TPMusterGrenze) return;
-  var VINYL_MAX = 3;
+  var VINYL_MAX = 2;
   window.TPMusterGrenze = { VINYL_MAX: VINYL_MAX };
 
   function vinylMuster(cart) {

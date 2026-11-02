@@ -1,6 +1,6 @@
 {% comment %}
   Mobiler Musterkonfigurator: laedt Quellprodukt, kostenlosen Musterartikel
-  und Warenkorb ueber die Shopify Ajax APIs und baut bis zu vier eindeutige
+  und Warenkorb ueber die Shopify Ajax APIs und baut bis zu zwei eindeutige
   Farbauswahlen als getrennte Warenkorbpositionen. Reine Domainlogik lebt in
   assets/tp-sample-checkout-core.js.
 
@@ -9,16 +9,13 @@
 {% endcomment %}
 
 {{ 'tp-sample-checkout.css' | asset_url | stylesheet_tag }}
-{%- if customer and customer.accepts_marketing -%}
-  <script>window.TPMusterBonus = true;</script>
-{%- endif -%}
 <script src="{{ 'tp-sample-checkout-core.js' | asset_url }}" defer></script>
 <script src="{{ 'tp-sample-checkout.js' | asset_url }}" defer></script>
 
 <section class="tp-sample" data-tp-sample-checkout>
   <header class="tp-sample__header">
     <p class="tp-sample__eyebrow">Kostenloser Musterservice</p>
-    <h1>Bis zu <span data-sample-max>3</span> <span data-sample-term="plural">Farben</span> zu Hause vergleichen</h1>
+    <h1>Bis zu <span data-sample-max>2</span> <span data-sample-term="plural">Farben</span> zu Hause vergleichen</h1>
     {%- comment -%}
       Groesse und Versand (Rundgang 26.10.2026; A5 = Zuschnitt laut Inhaber 15.10., w-091).
       Muster von JAB und Vorwerk schickt der Hersteller selbst (Inhaber 15.10.) - dann
@@ -29,9 +26,8 @@
     <p class="tp-sample__info" data-sample-hersteller hidden>Kostenloser Versand · kommt direkt vom Hersteller, eventuell in getrennten Umschlägen</p>
     {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis) {%- endcomment -%}
     {%- render 'tp-muster-hinweis', kontext: 'musterseite' -%}
-    <p class="tp-sample__bonus" data-sample-bonus hidden>Abonnenten-Bonus: Sie können 4 statt 3 Muster bestellen.</p>
-    {%- comment -%} Vinyl: hoechstens 3 Muster je Bestellung, auch mit Bonus (Inhaber 13.10.2026, assets/tp-sample-checkout-core.js) {%- endcomment -%}
-    <p class="tp-sample__vinyl" data-sample-vinyl hidden>Vinyl-Muster sind kostenlos – höchstens 3 je Bestellung.</p>
+    {%- comment -%} Vinyl: hoechstens 2 Muster je Bestellung (Inhaber 02.11.2026, assets/tp-sample-checkout-core.js) {%- endcomment -%}
+    <p class="tp-sample__vinyl" data-sample-vinyl hidden>Vinyl-Muster sind kostenlos – höchstens 2 je Bestellung.</p>
     <p data-sample-intro>Wählen Sie Ihre <span data-sample-term="plural">Farben</span> aus. Die Nummer wird automatisch übernommen.</p>
   </header>
   {% comment %}
@@ -43,7 +39,7 @@
       Bis 2026-09-15 stand hier nur eine Anleitung ("Oeffnen Sie einen Bodenbelag
       und waehlen Sie dort ...") plus Kategorielinks. Das war eine Sackgasse an
       der meistbeworbenen Stelle des Shops: Die Top-Leiste wirbt auf JEDER Seite
-      mit "Bis zu 3 Muster kostenlos" und verlinkt genau hierher. Wer klickte,
+      mit "Bis zu 2 Muster kostenlos" und verlinkt genau hierher. Wer klickte,
       wurde weggeschickt, statt bestellen zu koennen.
 
       Jetzt stehen die Produkte direkt hier. Ein Tipp fuehrt in den
