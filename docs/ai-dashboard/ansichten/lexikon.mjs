@@ -16,7 +16,7 @@ import { originalHandle } from '../lib/muster-etiketten.mjs';
 import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
 import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
 import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-etiketten-status.mjs';
-import { musterlagerBlock } from './lexikon-musterlager.mjs';
+import { musterlagerBlock, musterlagerEingabe } from './lexikon-musterlager.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
@@ -32,6 +32,7 @@ if (typeof window !== 'undefined') window.addEventListener('tp-sitzung-beendet',
 
 /** Eingabe vor jedem Neuzeichnen erhalten, auch wenn danach eine andere Farbe gewaehlt wird. */
 export function lexikonEingabe(e) {
+  if (musterlagerEingabe(e)) return true;
   if (!e.target?.matches?.('[data-lex-etikett-anzahl]')) return false;
   lexikon.etikettAnzahl = e.target.value;
   return true;

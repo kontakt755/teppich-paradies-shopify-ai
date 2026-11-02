@@ -31,7 +31,7 @@ import { referenzKlick } from './ansichten/einkauf/referenz.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { einkaufKlickBelege } from './ansichten/einkauf/belege.mjs';
 import { lexikonKlick, lexikonEingabe } from './ansichten/lexikon.mjs';
-import { musterlagerAbsenden } from './ansichten/lexikon-musterlager.mjs';
+import { musterlagerAbsenden, musterlagerRouteGeaendert } from './ansichten/lexikon-musterlager.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
 import { musterNachfassenKlick, musterNachfassenEingabe } from './ansichten/heute/muster-nachfassen.mjs';
 import { aufraeumenKlick } from './ansichten/heute/aufraeumen.mjs';
@@ -214,6 +214,6 @@ export function bindEvents() {
   $('#syncChip').addEventListener('click', () => navigate(darfAnsicht('insights') ? 'insights' : 'heute'));
   bindeNavigation();
   folgeGeraet();
-  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); if (prev === 'prozesse' && state.route.view !== 'prozesse') verwerfeProzessKontext(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { await ladeAktivitaetsdaten(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
+  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); musterlagerRouteGeaendert(); if (prev === 'prozesse' && state.route.view !== 'prozesse') verwerfeProzessKontext(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { await ladeAktivitaetsdaten(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }
