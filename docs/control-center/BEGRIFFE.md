@@ -78,6 +78,7 @@ gebraeuchlich), Erfassen.
 - **Versatz waagerecht / senkrecht** (Drucker-Einstellungen) = Druckbild um bis zu 3 mm verschieben, wenn der Drucker nicht mittig auf das Etikett druckt; gilt je Rechner, die Vorschau bleibt mittig (26.10.2026).
 - **Außerhalb der Packliste** = Suchtreffer in Musterbestellungen, die hier nicht gepackt werden (Zahlung offen, geschlossen, storniert, schon versandt oder erledigt).
 - **Bestellung packen** / **Muster kommt an** = die zwei Reiter der Packstation (26.10.2026); vorher „Nach Kunde packen“ / „Wareneingang nach Partnerladen“. Seit 29.10. führt auch der Knopf auf Heute (vorher „Muster-Wareneingang“ in die Bestellen-Liste) zu „Muster kommt an“.
+- **Noch da** (Musterlager, 02.11.) = was physisch liegt, inklusive Reservierter; **reserviert** = schon für eine offene Musterbestellung vergeben, liegt aber noch im Lager; **Lieferant unbekannt** = keine Artikelnummer des Eintrags hat im Lexikon einen Lieferanten.
 - **Aufkleber-Druckliste** (29.10.) = vorher „Etiketten-Druckliste“ bzw. „Gemeinsame Druckliste“; Knöpfe im Musterlager „Aufkleber“ / „Aufkleber drucken…“ statt „Etikett“. „Etikett“ bleibt nur für das Druckmaterial (Etikettenrolle, Drucker).
 - **Schritte im Umschlag:** 1 · Bestellung drucken („Aufkleber und Adresse drucken“), 2 · Was ist da? („Da: x von n · Fehlt: …“), 3 · Zukleben („Umschlag gepackt“).
 - **Fehlt noch – zurücklegen** = Umschlag geht nach „Zu klären“, bis „Fehlendes ist da – weiter packen“.

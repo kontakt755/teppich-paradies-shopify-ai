@@ -71,6 +71,16 @@
 .ml-sperren a.btn { color: var(--text); }
 .ml-sperren a.btn:hover { text-decoration: none; }
 
+.ml-lieferant + .ml-lieferant { margin-top: 18px; }
+.ml-lieferant > .section-title { margin-bottom: 8px; overflow-wrap: anywhere; }
+/* Lexikon: Lagerzeile direkt korrigieren. Bricht am Handy in mehrere Reihen um. */
+.lex-lager-zeile { padding: 10px 0; }
+.lex-lager-zeile.ml-knapp { padding-inline: 10px; border-radius: 8px; }
+.lex-lager-zeile form { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
+.lex-lager-zeile .ml-was { flex: 1 1 200px; align-self: center; }
+.lex-lager-da input { width: 5rem; }
+.lex-lager-ort { flex: 0 1 16rem; min-width: 0; }
+.lex-lager-ort input { width: 100%; box-sizing: border-box; }
 .ml-vorschlaege { margin-top: 22px; }
 .ml-vorschlaege .ml-liste { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 

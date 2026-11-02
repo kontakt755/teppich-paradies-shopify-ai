@@ -40,7 +40,7 @@ import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as sch
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
-import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
+import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, lieferantJeSchluessel as lagerLieferantJeSchluessel, lieferantVonEintrag as lagerLieferantVon, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
@@ -64,7 +64,7 @@ import {
   benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN, pruefePasswort,
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
-import { leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff } from '../operations/lib/lieferanten.mjs';
+import { leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff, kennungAusLexikon } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
@@ -2942,6 +2942,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       const gruppen = new Map(this._lexikonProdukte().map(x => [x.handle, x.produktgruppe || null]));
       const { index: acIndex, jeSku } = this._resteIndex();
+      // Lieferant je Eintrag ueber die Artikelnummern, der Name kommt aus den privaten Stammdaten.
+      const lieferantJe = lagerLieferantJeSchluessel(this._lexikonProdukte(), kennungAusLexikon);
+      const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      const lieferantVon = e => { const id = lagerLieferantVon(e, lieferantJe); return id ? { id, name: stammdatenFuer(stammdaten, id).name || `Lieferant ${id}` } : null; };
       return {
         verfuegbar: true,
         arten: LAGER_ARTEN,
@@ -2951,7 +2955,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         probestueckPreis: PROBESTUECK_PREIS,
         bestellungenStand: modell?.erstellt || null,
         eintraege: lager.eintraege.map(e => ({
-          id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, schluessel: e.schluessel, art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
+          id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, schluessel: e.schluessel, lieferant: lieferantVon(e), art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
           ort: e.ort, notiz: e.notiz, leer: !!e.leer, angelegtAm: e.angelegtAm, angelegtVon: e.angelegtVon, geaendertAm: e.geaendertAm, geaendertVon: e.geaendertVon,
           stand: stand.get(e.id) || { verbraucht: 0, reserviert: 0, rest: null, reichtNoch: null, jeStueck: null },
           offeneBestellungen: offen.get(e.id) || [],
@@ -3117,7 +3121,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
             ziele = [{ titel, farbe, handle: handle || null, schluessel }];
           } else throw new ApiError(400, 'Produkt und Farbe wählen', { missing: ['handle', 'farben'] });
           if (ziele.length > 60) throw new ApiError(400, 'Höchstens 60 Farben auf einmal');
-          const ergebnisse = ziele.map(z => lagerEinlagern(file, { ...z, art, anzahl, ort, notiz, actor, jetzt: now() }));
+          // Nur wenn ein leeres Einzelmuster aufgefuellt wird, wird das schon Verschickte gebraucht.
+          const verbrauchtVon = id => ladeBestellModell(dir)?.musterlagerStand?.get(id)?.verbraucht ?? 0;
+          const ergebnisse = ziele.map(z => lagerEinlagern(file, { ...z, art, anzahl, ort, notiz, actor, jetzt: now(), verbrauchtVon }));
           audit({ actor, action: 'musterlager-einlagern', anzahl: ergebnisse.length });
           merke(benutzer, actor, 'Musterlager', `eingelagert: ${ziele.map(z => [z.titel, z.farbe].filter(Boolean).join(' ')).slice(0, 5).join(', ')}${ziele.length > 5 ? ' …' : ''}`);
           return { ok: true, anzahl: ergebnisse.length, neu: ergebnisse.filter(r => r.neu).length, eintraege: ergebnisse.map(r => r.eintrag) };

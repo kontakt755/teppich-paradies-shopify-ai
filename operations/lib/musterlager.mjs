@@ -157,7 +157,7 @@ function verlaufMit(e, eintrag) {
  * zweimal in der Liste stehen.
  * @returns {{eintrag: object, neu: boolean}}
  */
-export function einlagern(file, { titel, farbe, handle = null, schluessel = [], art, anzahl = 1, ort = null, notiz = null, actor, jetzt = new Date() } = {}) {
+export function einlagern(file, { titel, farbe, handle = null, schluessel = [], art, anzahl = 1, ort = null, notiz = null, actor, jetzt = new Date(), verbrauchtVon = () => 0 } = {}) {
   if (!actor) throw new MusterlagerFehler('actor ist Pflicht');
   if (!LAGER_ART_WERTE.includes(art)) throw new MusterlagerFehler(`Unbekannte Art „${art}"`);
   const keys = [...new Set((schluessel || []).map(norm).filter(k => k && k !== UNGEKLAERT))];
@@ -172,7 +172,10 @@ export function einlagern(file, { titel, farbe, handle = null, schluessel = [], 
     vorhanden.schluessel = [...new Set([...vorhanden.schluessel, ...keys])];
     // Leeres Zuschnitt-Stueck: das Neue ersetzt den Rest, und Abgeschnittenes zaehlt ab jetzt neu.
     const ersetzt = vorhanden.leer && !ZAEHLBAR.includes(art);
-    vorhanden.anzahl = ersetzt ? n : (vorhanden.anzahl ?? 0) + n;
+    // Leeres Einzelmuster: in der Schublade lag nichts, die alte Gesamtzahl darf nicht wieder aufleben.
+    // Gesamt = schon verschickt + neu, sonst stuende mehr als "da", als wirklich liegt.
+    const aufgefuellt = vorhanden.leer && ZAEHLBAR.includes(art);
+    vorhanden.anzahl = ersetzt ? n : aufgefuellt ? verbrauchtVon(vorhanden.id) + n : (vorhanden.anzahl ?? 0) + n;
     if (ersetzt) vorhanden.basisAm = am;
     if (clip(ort, 80)) vorhanden.ort = clip(ort, 80);
     if (clip(notiz, 300)) vorhanden.notiz = clip(notiz, 300);
@@ -417,6 +420,32 @@ export function wartetAufLieferant(auftrag, statusAlle = {}) {
   return (auftrag?.positionen ?? []).some(p => p?.istMuster && p.lineItemId && (p.menge ?? 1) > 0
     && !p.musterLager && !musterEigen(p)
     && LIEFERANT_UNTERWEGS.includes(statusAlle[posKey(auftrag.id, p.lineItemId)]?.status));
+}
+
+/**
+ * Lieferant je Muster-Schluessel aus den Lexikon-Varianten (`einkauf.lieferant`). Die Ware geht vor dem
+ * Musterprodukt: Das Musterprodukt fuehrt oft keinen eigenen Lieferanten.
+ * @param {object[]} produkte  Lexikon-Produkte
+ * @param {(wert: string) => (string|null)} kennungVon  gueltige Kennung aus dem Lexikon-Wert, sonst null
+ * @returns {Map<string, string>} Schluessel -> Lieferant-Kennung
+ */
+export function lieferantJeSchluessel(produkte = [], kennungVon = w => w || null) {
+  const je = new Map();
+  const istMuster = p => p?.produktgruppe === 'Musterservice';
+  for (const p of [...produkte.filter(x => !istMuster(x)), ...produkte.filter(istMuster)]) {
+    for (const v of p?.varianten ?? []) {
+      const k = musterSchluessel({ sku: v?.sku });
+      const id = k ? kennungVon(v?.einkauf?.lieferant) : null;
+      if (id && !je.has(k)) je.set(k, id);
+    }
+  }
+  return je;
+}
+
+/** Lieferant eines Lagereintrags: der erste Schluessel mit Treffer; null = unbekannt. */
+export function lieferantVonEintrag(eintrag, jeSchluessel) {
+  for (const k of eintrag?.schluessel ?? []) if (jeSchluessel.has(k)) return jeSchluessel.get(k);
+  return null;
 }
 
 /** Titel ohne angehaengte Rollenbreiten ("Vellana Teppichboden 400cm 500cm" -> "Vellana Teppichboden"). */
