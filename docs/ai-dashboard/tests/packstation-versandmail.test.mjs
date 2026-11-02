@@ -120,7 +120,7 @@ function zweiBestellungen(t, vorStatus = null) {
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'));
   fs.mkdirSync(path.join(dir, 'lexikon'));
-  const zweite = { ...bestellung, id: 'gid://shopify/Order/5002', name: '#T5002', createdAt: '2026-10-19T06:00:00Z', lineItems: { nodes: [muster(3)] } };
+  const zweite = { ...bestellung, id: 'gid://shopify/Order/5002', name: '#T5002', createdAt: '2026-10-18T08:00:00Z', lineItems: { nodes: [muster(3)] } };
   fs.writeFileSync(path.join(dir, 'bestelluebersicht/orders.json'), JSON.stringify({ orders: [{ ...bestellung, lineItems: { nodes: [muster(1)] } }, zweite], quellvarianten: [quelle] }));
   fs.writeFileSync(path.join(dir, 'lexikon/produkte.json'), JSON.stringify({ produkte: [{ handle: 'testlinea-sand', titel: 'Testlinea Sand – Klickvinyl', eigenschaften: { marke: 'Testlinea' },
     varianten: [{ id: quelle.id, sku: quelle.sku, farbe: 'Sand', titel: 'Sand', einkauf: { produktname: 'Lieferant Sand 2mm', farbnummer: '7' } }] }] }));
