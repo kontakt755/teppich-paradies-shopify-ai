@@ -17,7 +17,7 @@ export const MENUE_KURZ = [
   ['Heute', 'Was heute zu tun ist, das Dringendste oben. Ein Knopf je Zeile führt direkt hin.'],
   ['Bestellungen', 'Alle Bestellungen der Kunden: was offen ist und was als Nächstes dran ist.'],
   ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen.'],
-  ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Kunde ein Umschlag. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
+  ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Bestelltag ein Umschlag, Bestellungen eines Kunden vom selben Tag zusammen. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
   ['Kunden & Einkauf', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften, Hausverwaltungen.'],
   ['Shop & Inhalte', 'Sonderposten, Bildrechte, Social Media – nur mit Büro- oder Inhaberzugang.'],
@@ -34,7 +34,7 @@ const ABLAEUFE = [
     'Geht die Ware raus: <b>An Kunden raus…</b> – die Sendungsnummer vom Paketaufkleber eintragen. Jedes Paket hat seine eigene Nummer.',
   ]],
   ['Muster packen', [
-    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Kunde ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet.',
+    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Bestelltag ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet.',
     '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>.',
     '<b>2 · Was ist da?</b> Jedes Muster überkleben, in den Umschlag legen und abhaken. Fehlt eins: <b>Fehlt noch – zurücklegen</b>.',
     '<b>3 · Zukleben</b>: Umschlag zukleben, dann <b>Umschlag gepackt</b>. Gepackt heißt noch nicht verschickt.',

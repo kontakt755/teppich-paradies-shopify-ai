@@ -36,7 +36,7 @@ import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { ratgeberFuerBestellung, ratgeberHtml, kurzTitel as ratgeberKurzTitel, RATGEBER, ORDNER as RATGEBER_ORDNER } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, bereiteStatusPositionenVor, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
@@ -1965,6 +1965,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           if (wert && kunde.klaeren) setzeKlaeren(datei, kunde.schluessel, { klaeren: false });
           merke(benutzer, null, wert ? 'Muster gepackt' : 'Gepackt zurückgenommen', nummern);
         } else if (aktion === 'haken') {
+          // Ein gepackter Umschlag ist zu: "Verschickt" bucht seine Muster. Erst "Gepackt" zuruecknehmen.
+          if (kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist schon gepackt. Zum Ändern zuerst „Gepackt“ zurücknehmen.');
           const eigene = new Set(kunde.muster.map(m => m.lineItemId));
           const ids = Array.isArray(payload.lineItemIds) ? payload.lineItemIds.filter(id => typeof id === 'string') : [];
           if (!ids.length || ids.some(id => !eigene.has(id))) throw new ApiError(400, 'Dieses Muster gehört nicht zu diesem Kunden.');
@@ -1987,6 +1989,85 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       } catch (e) { throw e instanceof ApiError ? e : new ApiError(500, e.message); }
       if (eingang?.anzahl) merke(benutzer, null, 'Wareneingang aus der Packstation', `${nummern}: ${eingang.anzahl} Muster angekommen`);
       return { ok: true, ...ergebnis, ...(eingang ? { wareneingang: eingang } : {}) };
+    },
+
+    /**
+     * Schreibweg der Packstation (POST kunden/muster-packen). Alle Aktionen wie kundenMusterPackenSetzen;
+     * dazu `aktion: 'verschickt'` fuer einen gepackten Umschlag (#1810, Knopf "Verschickt – Kunde
+     * informieren"): je Bestellung des Umschlags der Schritt "raus" fuer deren Muster - lokal, Lagerabgang
+     * und in Shopify als versendet mit Versandbestaetigung (Ausnahme wie beim Schritt "raus": persoenlich
+     * vorbeigebrachte Muster ohne Mail).
+     *
+     * Auf dem Server statt je Bestellung aus dem Browser (Pruefung 29.10.): der Packschluessel ergibt sich
+     * aus den noch offenen Bestellungen. Bei zwei Bestellungen zerfiel der Umschlag, sobald die erste
+     * "raus" war; scheiterte die zweite, stand ihr Rest wieder als "packbereit" da - ohne Gepackt-Vermerk.
+     * Deshalb: erst fuer ALLE Bestellungen pruefen, ob "raus" geht (sonst 409, nichts geschrieben), dann
+     * alle lokalen Schritte schreiben, bevor die erste Shopify-Buchung abgewartet wird. `versand` sagt je
+     * Bestellung, was in Shopify passiert ist.
+     */
+    async kundenMusterPackenSchreiben(payload = {}, benutzer = null) {
+      if (payload?.aktion !== 'verschickt') return this.kundenMusterPackenSetzen(payload, benutzer);
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
+      const pk = typeof payload.packSchluessel === 'string' ? payload.packSchluessel.trim() : '';
+      if (!pk) throw new ApiError(400, 'Kein Kunde angegeben.');
+      const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === pk);
+      if (!kunde) throw new ApiError(409, 'Dieser Umschlag steht nicht mehr so in der Liste – vielleicht schon verschickt. Bitte neu laden.');
+      if (!kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist noch nicht gepackt.');
+      // Gebucht und in der Mail genannt wird nur, was nachweislich im Umschlag liegt (Pruefung 29.10.):
+      // ein spaeter weggenommener Haken oder ein nachtraeglich bestelltes Muster sperrt.
+      if (kunde.muster.some(m => !m.abgehakt)) throw new ApiError(409, 'Nicht verschickt, keine Mail – im Umschlag ist nicht jedes Muster abgehakt. Bitte „Gepackt“ zurücknehmen und neu packen.');
+      const dir = privatDirPath || privatDir();
+      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      const modell = ladeBestellModell(dir);
+      const statusDatei = auftragsstatusPfad(dir);
+      const alle = leseAktuellenStatus(statusDatei, modell);
+      // Nur, was noch nicht raus ist: der Schritt "raus" auf schon Erledigtes waere eine Korrektur zurueck.
+      // Testbestellungen stehen in testauftraege, nicht in auftraege.
+      const plan = kunde.bestellungen.map(b => ({ b, auftrag: [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === b.orderId) || null,
+        ids: kunde.muster.filter(m => m.orderId === b.orderId && STATUS_ORDER.indexOf(alle[positionKey(b.orderId, m.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus')).map(m => m.lineItemId) }));
+      for (const { b, auftrag, ids } of plan) {
+        const blockiert = ids.map(id => alle[positionKey(b.orderId, id)]).find(e => !darfWeiter(e, 'raus'));
+        try {
+          if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
+          bereiteStatusPositionenVor(statusDatei, ids.map(id => {
+            const p = auftrag?.positionen?.find(x => x.lineItemId === id);
+            return { orderId: b.orderId, lineItemId: id, status: 'raus', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, jetzt: now() };
+          }));
+        } catch (e) {
+          throw new ApiError(e.status || 409, `Nicht verschickt, keine Mail – ${b.orderName}: ${String(e?.message || e).split('\n')[0]}`);
+        }
+      }
+      // Ohne await gestartet: jeder Aufruf schreibt seinen lokalen Schritt synchron, bevor irgendeine
+      // Shopify-Buchung abgewartet wird.
+      const laeufe = plan.map(({ b, ids }) => (ids.length
+        ? auftragsSchrittSetzen({ orderId: b.orderId, schritt: 'raus', lineItemIds: ids, notiz: 'Verschickt aus der Packstation' }, benutzer, actor)
+        : Promise.resolve({ shopify: { status: 'bereits', meldung: 'Schon als versendet vermerkt – nichts erneut gebucht.' } })));
+      const ausgang = await Promise.allSettled(laeufe);
+      const versand = ausgang.map((x, i) => {
+        const { b } = plan[i];
+        if (x.status === 'fulfilled') return { orderId: b.orderId, orderName: b.orderName, status: x.value?.shopify?.status || null, meldung: x.value?.shopify?.meldung || null, kundeBenachrichtigt: x.value?.shopify?.kundeBenachrichtigt === true };
+        const meldung = `Nicht als verschickt eingetragen: ${String(x.reason?.message || x.reason).split('\n')[0]}`;
+        merke(benutzer, actor, 'Verschicken aus der Packstation gescheitert', `${b.orderName}: ${meldung}`);
+        logFehler('versand', `${b.orderName}: Packstation - ${meldung}`);
+        // Eigener Status: lokal steht nichts, in Shopify nichts - die Bestellung bleibt unter "Gepackt".
+        return { orderId: b.orderId, orderName: b.orderName, status: 'nicht-eingetragen', meldung };
+      });
+      if (versand.every(v => v.status === 'nicht-eingetragen')) {
+        throw new ApiError(500, `Nicht verschickt, keine Mail – ${versand.map(v => `${v.orderName}: ${v.meldung}`).join(' · ')}`);
+      }
+      // Blieb eine Bestellung stehen, bildet sie jetzt einen eigenen Umschlag: der ist gepackt und gehoert
+      // unter "Gepackt", nie zurueck ins Packen. Nur ein Umschlag aus genau diesen Bestellungen - kam
+      // waehrend der Buchung eine neue Bestellung dazu, ist deren Muster nicht eingelegt.
+      const stehen = new Set(ausgang.map((x, i) => (x.status === 'rejected' ? plan[i].b.orderId : null)).filter(Boolean));
+      if (stehen.size) {
+        try {
+          const datei = musterPackenPfad(dir);
+          for (const rest of (this.kundenMusterPacken().kunden || []).filter(k => !k.gepackt && k.bestellungen.length && k.bestellungen.every(b => stehen.has(b.orderId)))) {
+            setzeGepackt(datei, rest.packSchluessel, { gepackt: true, von: actor, jetzt: now() });
+          }
+        } catch (e) { logFehler('versand', `Packstation: Gepackt-Vermerk fuer den Rest nicht gesetzt (${String(e?.message || e).split('\n')[0]})`); }
+      }
+      return { ok: true, packSchluessel: pk, versand };
     },
 
     /**
