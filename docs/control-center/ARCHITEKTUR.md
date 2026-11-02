@@ -1952,8 +1952,18 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
   `quer: true`; `zeichne()` dreht dann um 90° im Uhrzeigersinn. Vorschau und Druckbild zeigen das Etikett,
   wie es aus der Rolle kommt.
 - **Haken und „Zu klären“ (22.10.):** zentral in `muster-packen.json` (`haken` je Bestellposition,
-  `klaeren` je Kunde mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
+  `klaeren` je Umschlag mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
   Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.
+- **Ein Umschlag je Bestelltag (29.10.):** `umschlaegeJeBestelltag` in `lib/muster-packen.mjs` teilt die
+  offenen Bestellungen eines Empfängers (Kundenidentität + Lieferadresse) nach Kalendertag in Berlin
+  (`kalendertag`). Bis dahin war der ganze Empfänger ein Umschlag: eine fertige erste Bestellung wartete
+  auf die zweite, und „x von n im Umschlag“ sowie die Wartetage zählten beide zusammen (#1033/#1050).
+  Eine Pack- oder Druckmarke (`eintraege`/`gedruckt`), deren Bestellungen alle noch offen sind, hält
+  diese Bestellungen auch über mehrere Tage zusammen (der Umschlag liegt so auf dem Packtisch).
+  Klärmarken tragen den Schlüssel `<kunde>|adresse:<…>|tag:<JJJJ-MM-TT>`; ältere Marken je Empfänger
+  (`…|adresse:<…>`) gelten weiter – bei mehreren Umschlägen dem, in dem ihre fehlenden Muster liegen,
+  ohne Positionsangabe allen als fremde Marke mit Vermerk; die älteste Form je Kunde nur als Vermerk.
+  Jeder Umschlag kennt die `weitere` desselben Empfängers (Nummern, Datum, Bereich) für die Kopfzeile.
 - **Wareneingang (`mp=laden`):** `musterNachLaden` verteilt die noch nicht eingelegten Muster je
   Partnerladen auf die Umschlag-Nummern aus „Zu packen“.
 - **Umschlag vorbereitet (#1718, 26.10.):** Inhaber druckt Aufkleber und Adresse oft, bevor alle

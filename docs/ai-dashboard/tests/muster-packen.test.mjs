@@ -21,20 +21,73 @@ const auftrag = (id, datum, kunde, positionen, extra = {}) => ({ id: `gid://shop
 const schluesselVon = a => a.kundeKey;
 const jetzt = new Date('2026-10-21T12:00:00Z');
 
-test('mehrere Bestellungen eines Kunden werden ein Umschlag; aelteste Wartezeit zuerst', () => {
+test('Bestellungen eines Kunden vom selben Tag werden ein Umschlag, ein anderer Bestelltag ein eigener (Rueckmeldung 29.10.); aelteste Wartezeit zuerst', () => {
   const r = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [
     auftrag(3, '2026-10-20T09:00:00Z', 'Berta Beispiel', [pos(31, '102')]),
     auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101')]),
-    auftrag(2, '2026-10-19T09:00:00Z', 'Anna Test', [pos(21, '102'), pos(22, '101')]),
+    auftrag(2, '2026-10-17T16:30:00Z', 'Anna Test', [pos(21, '102'), pos(22, '101')]),
+    auftrag(4, '2026-10-19T09:00:00Z', 'Anna Test', [pos(41, '102')]),
   ] });
-  assert.deepEqual(r.kunden.map(k => [k.name, k.bestellungen.map(b => b.orderName)]), [['Anna Test', ['#T1', '#T2']], ['Berta Beispiel', ['#T3']]]);
-  const anna = r.kunden[0];
+  assert.deepEqual(r.kunden.map(k => [k.name, k.bestellungen.map(b => b.orderName)]), [['Anna Test', ['#T1', '#T2']], ['Anna Test', ['#T4']], ['Berta Beispiel', ['#T3']]]);
+  const [anna, annaSpaeter, berta] = r.kunden;
   assert.equal(anna.wartetTage, 4);
   assert.equal(anna.muster.length, 3);
   assert.equal(anna.aufkleber, 4, 'drei Muster plus Adresse');
-  assert.equal(r.offen, 2);
+  assert.equal(r.offen, 3);
   assert.deepEqual(aufkleberFuer(anna).map(e => e.art || e.sku), ['TV-SA', 'TV-GR', 'TV-SA', 'adresse']);
   assert.deepEqual(anna.adressAufkleber.bestellungen, ['#T1', '#T2']);
+  // Der spaetere Umschlag wartet fuer sich, mit eigener Adresse und Klaermarke; beide nennen einander.
+  assert.equal(annaSpaeter.wartetTage, 2);
+  assert.deepEqual(annaSpaeter.adressAufkleber.bestellungen, ['#T4']);
+  assert.notEqual(anna.schluessel, annaSpaeter.schluessel);
+  assert.deepEqual(anna.weitere, [{ packSchluessel: annaSpaeter.packSchluessel, bestellungen: ['#T4'], seit: '2026-10-19T09:00:00Z', bereich: 'warten' }]);
+  assert.deepEqual(annaSpaeter.weitere.map(w => w.bestellungen), [['#T1', '#T2']]);
+  assert.deepEqual(berta.weitere, []);
+  // Der Tag wechselt in Berlin, nicht in UTC: 23:30 Z am 17.10. ist hier schon der 18.10.
+  const nacht = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101')]), auftrag(2, '2026-10-17T23:30:00Z', 'Anna Test', [pos(21, '102')])] });
+  assert.equal(nacht.kunden.length, 2);
+});
+
+test('ein ueber mehrere Tage gepackter oder vorbereiteter Umschlag bleibt zusammen, eine dritte Bestellung kommt daneben', () => {
+  const a1 = auftrag(1, '2026-10-15T09:00:00Z', 'Anna Test', [pos(11, '101')]);
+  const a2 = auftrag(2, '2026-10-17T09:00:00Z', 'Anna Test', [pos(21, '102')]);
+  const a3 = auftrag(3, '2026-10-19T09:00:00Z', 'Anna Test', [pos(31, '101')]);
+  const pk = packSchluessel([a1.id, a2.id]);
+  const nummern = r => r.kunden.map(k => k.bestellungen.map(b => b.orderName)).sort((x, y) => x[0].localeCompare(y[0]));
+  assert.deepEqual(nummern(musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [a1, a2, a3] })), [['#T1'], ['#T2'], ['#T3']], 'ohne Marke je Tag ein Umschlag');
+  for (const marke of ['gepackt', 'gedruckt']) {
+    const r = musterPackliste({ produkte, schluesselVon, jetzt, [marke]: { [pk]: { zeit: '2026-10-18T10:00:00Z', von: 'Laden' } }, auftraege: [a1, a2, a3] });
+    assert.deepEqual(nummern(r), [['#T1', '#T2'], ['#T3']], marke);
+    assert.ok(r.kunden.find(k => k.packSchluessel === pk)[marke], `${marke} bleibt am Umschlag`);
+  }
+});
+
+test('Klaermarke je Empfaenger (Stand bis 29.10.) gilt dem Umschlag, dessen Muster fehlen; Freigabe nur fuer diesen Umschlag', () => {
+  const a1 = auftrag(1, '2026-10-11T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')]);
+  const a2 = auftrag(2, '2026-10-20T09:00:00Z', 'Anna Test', [pos(21, '101')]);
+  const haken = Object.fromEntries(a1.positionen.map(p => [p.lineItemId, { zeit: '2026-10-21T08:00:00Z' }]));
+  const [erster] = musterPackliste({ produkte, schluesselVon, jetzt, haken, auftraege: [a1] }).kunden;
+  const empfaenger = erster.schluessel.replace(/\|tag:.*$/, '');
+  // Marke aus der Zeit, als beide Bestellungen ein Umschlag waren: es fehlten die Muster der zweiten.
+  const klaeren = { [empfaenger]: { zeit: '2026-10-21T09:00:00Z', von: 'Laden', fehlt: [a2.positionen[0].lineItemId], notiz: 'zweite Lieferung fehlt' } };
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren, auftraege: [a1, a2] });
+  const [u1, u2] = r.kunden;
+  assert.equal(u1.bereich, 'packen', 'alle Muster drin - die Marke betrifft diesen Umschlag nicht');
+  assert.equal(u1.klaeren, null);
+  assert.equal(u1.altvermerk, null);
+  assert.equal(u2.bereich, 'klaeren');
+  assert.equal(u2.klaeren.notiz, 'zweite Lieferung fehlt');
+  assert.deepEqual(u2.klaeren.fehlt, [a2.positionen[0].lineItemId]);
+  assert.equal(u2.altvermerk, null, 'alle fehlenden Muster liegen hier: eigene Marke, kein Fremdvermerk');
+  const frei = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren: { ...klaeren, [u2.schluessel]: { geklaert: true } }, auftraege: [a1, a2] });
+  assert.deepEqual(frei.kunden.map(k => [k.bereich, k.klaeren]), [['packen', null], ['warten', null]]);
+  // Ohne Positionsangabe gilt die Marke beiden Umschlaegen als fremde Marke mit Vermerk.
+  const ohne = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren: { [empfaenger]: { notiz: 'gemeinsam' } }, auftraege: [a1, a2] });
+  assert.ok(ohne.kunden.every(k => k.bereich === 'klaeren' && /gemeinsam/.test(k.altvermerk)));
+  // Ein einzelner Umschlag nimmt die Empfaengermarke als eigene, ohne Vermerk.
+  const allein = musterPackliste({ produkte, schluesselVon, jetzt, klaeren: { [empfaenger]: { notiz: 'nur einer', fehlt: [] } }, auftraege: [a1] });
+  assert.equal(allein.kunden[0].klaeren.notiz, 'nur einer');
+  assert.equal(allein.kunden[0].altvermerk, null);
 });
 
 test('nur offen, bezahlt, nicht versendet, keine Testbestellung; erledigte Muster fallen weg', () => {
@@ -64,17 +117,25 @@ test('vorher = Lieferantenangaben aus dem Lexikon, Stand nur aus belegtem Auftra
   assert.ok(Object.keys(STAND_TEXT).every(k => STAND_TEXT[k]));
 });
 
-test('gepackt gilt nur fuer genau diese Bestellungen; eine neue Bestellung oeffnet den Kunden wieder', () => {
+test('gepackt gilt nur fuer genau diese Bestellungen; ein anderer Tag wird ein eigener Umschlag, derselbe Tag oeffnet den Umschlag wieder', () => {
   const a1 = auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101')]);
   const a2 = auftrag(2, '2026-10-20T09:00:00Z', 'Anna Test', [pos(21, '101')]);
+  const a3 = auftrag(3, '2026-10-17T15:00:00Z', 'Anna Test', [pos(31, '102')]);
   const pk = packSchluessel([a1.id]);
   const gepackt = { [pk]: { zeit: '2026-10-21T10:00:00Z', von: 'Laden' } };
   const vorher = musterPackliste({ produkte, schluesselVon, jetzt, gepackt, auftraege: [a1] });
   assert.deepEqual(vorher.kunden[0].gepackt, { zeit: '2026-10-21T10:00:00Z', von: 'Laden' });
   assert.equal(vorher.offen, 0);
-  const nachher = musterPackliste({ produkte, schluesselVon, jetzt, gepackt, auftraege: [a1, a2] });
-  assert.equal(nachher.kunden[0].gepackt, null);
-  assert.equal(nachher.offen, 1);
+  // Anderer Tag: der gepackte Umschlag bleibt gepackt, die neue Bestellung bekommt ihren eigenen.
+  const spaeter = musterPackliste({ produkte, schluesselVon, jetzt, gepackt, auftraege: [a1, a2] });
+  assert.deepEqual(spaeter.kunden.map(k => [k.bestellungen.map(b => b.orderName), !!k.gepackt]), [[['#T2'], false], [['#T1'], true]]);
+  assert.equal(spaeter.offen, 1);
+  assert.deepEqual(spaeter.kunden[0].weitere.map(w => [w.bestellungen, w.bereich]), [[['#T1'], 'gepackt']]);
+  // Selber Tag: ein Umschlag fuer beide, die alte Packmarke passt nicht mehr.
+  const selberTag = musterPackliste({ produkte, schluesselVon, jetzt, gepackt, auftraege: [a1, a3] });
+  assert.equal(selberTag.kunden.length, 1);
+  assert.equal(selberTag.kunden[0].gepackt, null);
+  assert.equal(selberTag.offen, 1);
   assert.equal(packSchluessel(['b', 'a', 'a']), 'a,b');
 });
 
