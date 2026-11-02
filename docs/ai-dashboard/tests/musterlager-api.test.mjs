@@ -194,3 +194,59 @@ test('Rest pruefen (Regel 2026-10-21): Abgleich gegen A/C, Einlagern als Verlege
   assert.deepEqual(lager.reste.lieferanten, ['A', 'C']);
   assert.equal(api.einkaufResteAbgleich({ qualitaet: 'Orbis', farbnummer: '33' }).treffer[0].farben[0].imLager, true);
 });
+
+test('Nichts doppelt bis Bestand 0 (Inhaber 02.11.): Lagerware laesst sich nicht bestellen, leer gesetzt wieder schon', async () => {
+  const { api, position } = umgebung();
+  const r = await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'testteppich-teppichboden-400cm-500cm', farben: ['Grau'], art: 'einzel', anzahl: 1 }, MONA);
+  const id = r.eintraege[0].id;
+  const li11 = 'gid://shopify/LineItem/11', li21 = 'gid://shopify/LineItem/21';
+  const abgelehnt = versuch => assert.rejects(versuch, e => e instanceof ApiError && e.status === 409 && /Musterlager/.test(e.message));
+
+  await abgelehnt(api.einkaufAuftragsstatusSetzen({ orderId: ALT, lineItemId: li11, status: 'bestellt' }, MONA));
+  await abgelehnt(api.einkaufAuftragsstatusSetzen({ aktion: 'schritt', orderId: ALT, schritt: 'bestellt' }, MONA));
+  await abgelehnt(api.einkaufAuftragsstatusSetzen({ aktion: 'musterHerkunft', orderId: ALT, lineItemId: li11, herkunft: 'lieferant' }, MONA));
+  assert.equal(position(ALT, 11).musterHerkunftQuelle, 'lager', 'bleibt Lagerware');
+  assert.equal(api.einkaufMusterlager().eintraege[0].stand.reserviert, 1);
+
+  // Das letzte Stueck ist vergeben: die neuere Bestellung darf zum Lieferanten.
+  await api.einkaufAuftragsstatusSetzen({ orderId: NEU, lineItemId: li21, status: 'bestellt' }, MONA);
+
+  // Leer gesetzt, z. B. Muster beschaedigt: wieder normal bestellbar.
+  await api.einkaufMusterlagerSetzen({ aktion: 'aendern', id, leer: true }, MONA);
+  await api.einkaufAuftragsstatusSetzen({ orderId: ALT, lineItemId: li11, status: 'bestellt' }, MONA);
+  assert.equal(position(ALT, 11).musterLager, undefined);
+});
+
+test('Gemischter Sammelschritt "bestellt": nur was nicht im Lager liegt', async () => {
+  const { api } = umgebung();
+  // Beide Grau-Muster und Blau offen, zwei Grau im Lager: in #T2 ist nur Blau zu bestellen.
+  await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'testteppich-teppichboden-400cm-500cm', farben: ['Grau'], art: 'einzel', anzahl: 2 }, MONA);
+  await api.einkaufAuftragsstatusSetzen({ aktion: 'schritt', orderId: NEU, schritt: 'bestellt' }, MONA);
+  const status = api.einkaufAuftragsstatus().positionen ?? api.einkaufAuftragsstatus();
+  const von = li => Object.entries(status).find(([k]) => k.endsWith(`LineItem/${li}`))?.[1]?.status;
+  assert.equal(von(22), 'bestellt');
+  assert.equal(von(21), undefined, 'Grau kommt aus dem Lager');
+});
+
+test('Jeder Abgang zaehlt ab: "Kunde fertig" und Einzelstatus "erledigt"', async () => {
+  const { api } = umgebung();
+  await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'testteppich-teppichboden-400cm-500cm', farben: ['Grau'], art: 'einzel', anzahl: 3 }, MONA);
+  await api.kundenBestellungFertig({ orderId: ALT, lineItemIds: ['gid://shopify/LineItem/11'] }, MONA);
+  assert.deepEqual(api.einkaufMusterlager().eintraege[0].stand, { verbraucht: 1, reserviert: 1, rest: 1, reichtNoch: null, jeStueck: null });
+  await api.einkaufAuftragsstatusSetzen({ orderId: NEU, lineItemId: 'gid://shopify/LineItem/21', status: 'erledigt' }, MONA);
+  assert.deepEqual(api.einkaufMusterlager().eintraege[0].stand, { verbraucht: 2, reserviert: 0, rest: 1, reichtNoch: null, jeStueck: null });
+});
+
+test('Wahl "haben wir da" belegt ein Stueck und zaehlt beim Verschicken ab', async () => {
+  const { dir, api, position } = umgebung();
+  await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'testteppich-teppichboden-400cm-500cm', farben: ['Grau'], art: 'einzel', anzahl: 1 }, MONA);
+  // Die neuere Bestellung nimmt ausdruecklich das letzte Stueck: die aeltere bekommt es nicht ein zweites Mal versprochen.
+  await api.einkaufAuftragsstatusSetzen({ aktion: 'musterHerkunft', orderId: NEU, lineItemId: 'gid://shopify/LineItem/21', herkunft: 'eigen_versand' }, MONA);
+  assert.equal(position(NEU, 21).musterLagerReserviert, true);
+  assert.equal(position(ALT, 11).musterHerkunft, undefined);
+  assert.ok(position(ALT, 11).musterLagerLeer);
+  await api.einkaufAuftragsstatusSetzen({ orderId: NEU, lineItemId: 'gid://shopify/LineItem/21', status: 'raus' }, MONA);
+  const e = JSON.parse(fs.readFileSync(path.join(dir, 'musterherkunft.json'), 'utf8')).ereignisse;
+  assert.equal(e.filter(x => x.lagerId).length, 1);
+  assert.deepEqual(api.einkaufMusterlager().eintraege[0].stand, { verbraucht: 1, reserviert: 0, rest: 0, reichtNoch: null, jeStueck: null });
+});
