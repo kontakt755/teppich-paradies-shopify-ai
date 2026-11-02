@@ -157,7 +157,8 @@ export function viewEinkaufMusterlager() {
     <p class="small muted"><b>Verlegereste:</b> Teppichboden und Vinyl von Lieferant ${esc(resteLieferanten())} – Rest immer aufheben und beschriften. Ware anderer Hersteller nur, wenn ${esc(resteLieferanten(' oder '))} sie auch führt: „Rest prüfen…“.</p></div>
     <div class="btn-row">${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button>'}
     <button type="button" class="btn" data-ml-rest-pruefen>Rest prüfen…</button>
-    <button type="button" class="btn" data-ml-etikett>Aufkleber drucken…</button></div>
+    <button type="button" class="btn" data-ml-etikett>Aufkleber drucken…</button>
+    <button type="button" class="btn" data-ml-eigene>Eigene Aufkleber…</button></div>
   </div>`;
   // Eine Zeile mit den drei Zahlen, die vom Normalfall abweichen; 0 faellt weg.
   const zahlen = [
@@ -436,6 +437,7 @@ export function einkaufKlickMusterlager(ev) {
   if (ev.target.closest('[data-ml-neu]')) { oeffneEinlagern(); return true; }
   // Einzeletikett von Hand, z. B. fuer Muster im Lager ohne Bestellung.
   if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Aufkleber drucken' }); return true; }
+  if (ev.target.closest('[data-ml-eigene]')) { oeffneEtikettenDruck({ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }); return true; }
   const ms = ev.target.closest('[data-ms-frei], [data-ms-nachholen]');
   if (ms) {
     const frei = 'msFrei' in ms.dataset;
