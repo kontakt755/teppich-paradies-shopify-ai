@@ -2945,7 +2945,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         probestueckPreis: PROBESTUECK_PREIS,
         bestellungenStand: modell?.erstellt || null,
         eintraege: lager.eintraege.map(e => ({
-          id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
+          id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, schluessel: e.schluessel, art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
           ort: e.ort, notiz: e.notiz, leer: !!e.leer, angelegtAm: e.angelegtAm, angelegtVon: e.angelegtVon, geaendertAm: e.geaendertAm, geaendertVon: e.geaendertVon,
           stand: stand.get(e.id) || { verbraucht: 0, reserviert: 0, rest: null, reichtNoch: null, jeStueck: null },
           offeneBestellungen: offen.get(e.id) || [],

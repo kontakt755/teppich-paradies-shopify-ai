@@ -31,6 +31,7 @@ import { referenzKlick } from './ansichten/einkauf/referenz.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { einkaufKlickBelege } from './ansichten/einkauf/belege.mjs';
 import { lexikonKlick, lexikonEingabe } from './ansichten/lexikon.mjs';
+import { musterlagerAbsenden } from './ansichten/lexikon-musterlager.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
 import { musterNachfassenKlick, musterNachfassenEingabe } from './ansichten/heute/muster-nachfassen.mjs';
 import { aufraeumenKlick } from './ansichten/heute/aufraeumen.mjs';
@@ -57,7 +58,7 @@ export function bindEvents() {
     try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
   }, true);
   fotosEreignisseBinden();
-  document.addEventListener('submit', e => { if (prozesseAbsenden(e)) return; socialAbsenden(e); });
+  document.addEventListener('submit', e => { if (musterlagerAbsenden(e)) return; if (prozesseAbsenden(e)) return; socialAbsenden(e); });
   window.addEventListener('pagehide', verwerfeProzessKontext);
   window.addEventListener('tp-sitzung-beendet', verwerfeProzessKontext);
   document.addEventListener('click', e => {
