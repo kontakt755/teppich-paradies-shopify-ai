@@ -644,7 +644,7 @@ class StickyAddToCartComponent extends Component {
    * Der sichtbare Muster-Knopf der Seite: im Rollenware-Rechner
    * ([data-muster-link], traegt die gewaehlte Farbe) oder als eigener Block
    * (blocks/tp-muster-cta.liquid). Bei Vinyl blendet assets/tp-muster-grenze.js
-   * ihn aus, sobald 3 Muster im Warenkorb liegen; dann gibt es auch in der
+   * ihn aus, sobald 2 Muster im Warenkorb liegen; dann gibt es auch in der
    * Leiste keinen.
    * @returns {HTMLElement | null}
    */
@@ -673,7 +673,7 @@ class StickyAddToCartComponent extends Component {
   /**
    * Haelt den Muster-Knopf bei offener Leiste aktuell: assets/tp-muster-grenze.js
    * schaltet den Muster-Knopf der Seite nach jeder Warenkorbaenderung per
-   * hidden um (3 Vinyl-Muster voll bzw. wieder frei).
+   * hidden um (2 Vinyl-Muster voll bzw. wieder frei).
    */
   #setupMusterObserver() {
     const bereich = this.closest('.shopify-section');
@@ -692,7 +692,7 @@ class StickyAddToCartComponent extends Component {
    */
   handleMusterClick = () => {
     const cta = this.#getMusterCta();
-    // Inzwischen voll (3 Vinyl-Muster): Knopf weg statt Tipp ohne Wirkung
+    // Inzwischen voll (2 Vinyl-Muster): Knopf weg statt Tipp ohne Wirkung
     if (!cta) {
       this.#syncMusterButton();
       return;

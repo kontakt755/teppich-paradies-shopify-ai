@@ -33,14 +33,6 @@
   var limitWord = 'Muster';
   var submitting = false;
 
-  if (window.TPSampleCheckoutCore && window.TPSampleCheckoutCore.HAS_BONUS) {
-    root.querySelectorAll('[data-sample-max]').forEach(function (el) {
-      el.textContent = String(window.TPSampleCheckoutCore.MAX_SAMPLES);
-    });
-    var bonusEl = root.querySelector('[data-sample-bonus]');
-    if (bonusEl) bonusEl.hidden = false;
-  }
-
   function showError(message) {
     errorEl.textContent = message;
     errorEl.hidden = false;
@@ -86,7 +78,7 @@
     limitWord = limit.word;
   }
 
-  // Vinyl: Hinweis auf die Grenze von 3 je Bestellung, auch bei Bonus.
+  // Vinyl: Hinweis auf die Grenze von 2 je Bestellung.
   function showVinylLimit() {
     if (!core.isVinyl(product)) return;
     root.querySelectorAll('[data-sample-max]').forEach(function (el) {
@@ -94,10 +86,6 @@
     });
     var vinylEl = root.querySelector('[data-sample-vinyl]');
     if (vinylEl) vinylEl.hidden = false;
-    var bonusEl = root.querySelector('[data-sample-bonus]');
-    if (bonusEl && core.HAS_BONUS) {
-      bonusEl.textContent = 'Abonnenten-Bonus: 4 statt 3 Muster je Bestellung – davon höchstens ' + core.VINYL_MAX + ' Vinyl-Muster.';
-    }
   }
 
   // JAB und Vorwerk: Muster kommt direkt vom Hersteller (statt "ca. A5").
