@@ -16,7 +16,8 @@ const bestellung = (n, datum) => ({ id: `gid://shopify/Order/${n}`, name: `#T${n
   shippingAddress: { name: 'Testkunde Packen', address1: 'Testweg 7', address2: null, zip: '00000', city: 'Musterstadt', country: 'Germany' },
   totalPriceSet: { shopMoney: { amount: '0', currencyCode: 'EUR' } }, fulfillments: [], lineItems: { nodes: [muster(n * 10 + 1)] } });
 
-function umgebung(t, orders = [bestellung(801, '2026-10-18T06:00:00Z'), bestellung(802, '2026-10-20T06:00:00Z')]) {
+// Zwei Bestellungen desselben Kunden vom selben Tag: ein Umschlag (seit 29.10. nur noch dann).
+function umgebung(t, orders = [bestellung(801, '2026-10-18T06:00:00Z'), bestellung(802, '2026-10-18T09:00:00Z')]) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-muster-packen-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'));
@@ -28,7 +29,7 @@ function umgebung(t, orders = [bestellung(801, '2026-10-18T06:00:00Z'), bestellu
   return { dir, api: createApi({ root: dir, privatDirPath: dir, gh: verboten, rebuild: verboten, shopifyZugang: verboten, now: () => new Date('2026-10-21T12:00:00Z') }) };
 }
 
-test('GET buendelt beide Bestellungen des Kunden mit Anschrift, Aufklebern und vorher/nachher', t => {
+test('GET buendelt beide Bestellungen des Kunden vom selben Tag mit Anschrift, Aufklebern und vorher/nachher', t => {
   const { api, dir } = umgebung(t);
   const r = api.kundenMusterPacken();
   assert.equal(r.verfuegbar, true);
@@ -203,7 +204,8 @@ test('Grossbrief: andere Adresse, Inhalt oder Bestellgruppe erbt keine Messungen
   for (const aendern of [
     d => { for (const o of d.orders) o.shippingAddress.address1 = 'Anderer Testweg 3'; },
     d => { d.orders[0].lineItems.nodes[0].currentQuantity = 2; d.orders[0].lineItems.nodes[0].unfulfilledQuantity = 2; },
-    d => { d.orders.push(bestellung(803, '2026-10-21T06:00:00Z')); },
+    // Dritte Bestellung vom selben Tag: sie kommt in diesen Umschlag, die Bestellgruppe aendert sich.
+    d => { d.orders.push(bestellung(803, '2026-10-18T12:00:00Z')); },
   ]) {
     const d = structuredClone(original); aendern(d); fs.writeFileSync(file, JSON.stringify(d));
     const neu = createApi({ root: dir, privatDirPath: dir });
@@ -262,6 +264,21 @@ test('Alle eingelegt: hakt genau die gezeigten offenen Muster ab und packt; vera
   api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: false }, laden);
   api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, aktion: 'haken', lineItemIds: [zweites], an: false }, laden);
   assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true }, laden), e => e.status === 409);
+});
+
+test('Zwei Bestelltage sind zwei Umschlaege; Klaerung und Packen des einen lassen den anderen unberuehrt (Rueckmeldung 29.10.)', t => {
+  const { api } = umgebung(t, [bestellung(801, '2026-10-11T06:00:00Z'), bestellung(802, '2026-10-20T06:00:00Z')]);
+  const laden = { name: 'Laden', rolle: 'mitarbeiter' };
+  const r = api.kundenMusterPacken();
+  assert.deepEqual(r.kunden.map(k => [k.bestellungen.map(b => b.orderName), k.wartetTage, k.weitere.map(w => w.bestellungen[0])]), [[['#T801'], 10, ['#T802']], [['#T802'], 1, ['#T801']]]);
+  const [alt, neu] = r.kunden;
+  api.kundenMusterPackenSetzen({ packSchluessel: neu.packSchluessel, aktion: 'klaeren', klaeren: true, notiz: 'fehlt' }, laden);
+  assert.deepEqual(api.kundenMusterPacken().kunden.map(k => k.bereich), ['warten', 'klaeren']);
+  api.kundenMusterPackenSetzen({ packSchluessel: alt.packSchluessel, aktion: 'haken', lineItemIds: alt.muster.map(m => m.lineItemId), an: true }, laden);
+  api.kundenMusterPackenSetzen({ packSchluessel: alt.packSchluessel, gepackt: true }, laden);
+  assert.deepEqual(api.kundenMusterPacken().kunden.map(k => [k.bestellungen[0].orderName, k.bereich]), [['#T802', 'klaeren'], ['#T801', 'gepackt']]);
+  api.kundenMusterPackenSetzen({ packSchluessel: neu.packSchluessel, aktion: 'klaeren', klaeren: false }, laden);
+  assert.deepEqual(api.kundenMusterPacken().kunden.map(k => k.bereich), ['warten', 'gepackt']);
 });
 
 test('GET liefert Musterbestellungen ausserhalb der Packliste mit Grund fuer die Suche', t => {
