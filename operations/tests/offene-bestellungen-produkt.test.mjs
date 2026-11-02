@@ -86,3 +86,14 @@ test('sucheKunden: Treffer ueber Kontakt stehen vor Treffern ueber das Produkt',
   assert.ok(ueberProdukt.length >= 4);
   assert.ok(ueberProdukt.every(k => k.trefferProdukt?.titel === 'Testteppich Wolke'));
 });
+
+test('sucheKunden: Wortweise wie die Packstation - Reihenfolge, Umlaute, Farbe im Produkt', () => {
+  const modell = { auftraege: [{ id: 'o1', name: '#T1', datum: '2026-10-20', details: { kunde: { name: 'Müller, Hans', email: 'test@example.com', telefon: '0300' } },
+    positionen: [{ lineItemId: 'l1', titel: 'Muster Testprodukt', farbe: 'Hellgrau (073)', sku: 'SKU_1', menge: 1 }, { lineItemId: 'l2', titel: 'Muster Anderes', farbe: 'Grau (8H73)', sku: 'SKU_2', menge: 1 }] }] };
+  for (const q of ['Hans Müller', 'hans mueller', 'mueller #T1']) assert.equal(sucheKunden(modell, q).length, 1, q);
+  assert.equal(sucheKunden(modell, 'Hans Meier').length, 0);
+  const produkt = sucheKunden(modell, 'Testprodukt 73');
+  assert.equal(produkt[0].trefferProdukt.farbe, 'Hellgrau (073)');
+  assert.equal(sucheKunden(modell, 'Anderes 73').length, 0, '73 passt nicht auf 8H73');
+  assert.equal(sucheKunden(modell, 'Anderes 74').length, 0);
+});

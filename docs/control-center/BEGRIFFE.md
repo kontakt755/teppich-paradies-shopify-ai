@@ -112,7 +112,7 @@ gebraeuchlich), Erfassen.
   heute jemand lösen.“ Gelbes und Normales sowie Laden-Anfragen, Angebote und Team-Aufgaben bleiben
   unter „Weitere Bereiche“.
 - **Arbeitsliste** in der Packstation = Alle offenen (Standard) oder jeweils Packbereit / Wartet auf Ware /
-  Zu klaeren / Gepackt; die Suche beruecksichtigt alle vier Listen und liest auch Hersteller, Produkt und Farbnummer.
+  Zu klaeren / Gepackt; die Suche beruecksichtigt alle vier Listen und liest auch Hersteller, Produkt und Farbnummer. Die Suche oben (⌘K) findet dieselben Muster, dazu alle Kunden und Produkte; ein Muster-Treffer fuehrt in die Packstation.
 - **Weitere Filter** = zusaetzliche Bestellfilter; vier Hauptfilter bleiben direkt sichtbar.
 
 ## Shopfokus (#1624)

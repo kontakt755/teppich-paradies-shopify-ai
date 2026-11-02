@@ -392,3 +392,19 @@ test('Kopfzeile sagt ohne Aufklappen, was schon hier liegt (mit Lagerort) und wa
   assert.doesNotMatch(h, /Liegt hier/, 'nur Bestelltes: keine Hier-Zeile');
   assert.match(h, /1 Muster noch nicht bestellt/);
 });
+
+test('Kurze Zahl passt nur als ganze Zahl, und eine genauer passende fertige Bestellung faellt auf', () => {
+  const mit = (k, titel, farbe, nummer) => { k.muster = [{ ...k.muster[0], bestellt: { titel, farbe }, etikett: { serie: titel, farbe, sku: 'SKU' }, vorher: { produktname: titel, farbnummer: nummer } }]; return k; };
+  const offenVerwandt = mit(kunde(1, 'warten'), 'Andere Ware', 'Grau (8H73)', '8H73');
+  const offenRichtig = mit(kunde(2, 'warten'), 'Andere Ware', 'Grau (073)', '073');
+  const treffer = ansicht('tab=muster&mpq=Andere%2073', [offenVerwandt, offenRichtig]);
+  assert.match(treffer, /data-mp-kunde="order2"/);
+  assert.doesNotMatch(treffer, /data-mp-kunde="order1"/, '73 passt nicht auf 8H73');
+  const fertig = mit(kunde(3, 'gepackt'), 'Gesuchte Ware', 'Blau (051)', '051');
+  const offen = mit(kunde(4, 'warten'), 'Gesuchte Linie', 'Rot (099)', '099');
+  const html = ansicht('tab=muster&mpq=Gesuchte%20Ware%2051', [fertig, offen]);
+  assert.match(html, /<p class="notice warn mp-fertig">1 fertige Bestellung passt genauer als die Umschläge hier/);
+  assert.match(html, /Nicht gefunden: „ware“, „51“/);
+  // Mit den Fertigen steht das Wort da: dann darf es nicht mehr als "nicht gefunden" gelten.
+  assert.doesNotMatch(ansicht('tab=muster&mpq=Gesuchte%20Ware%2051&mpfertig=Gesuchte%20Ware%2051', [fertig, offen]), /Nicht gefunden: /);
+});

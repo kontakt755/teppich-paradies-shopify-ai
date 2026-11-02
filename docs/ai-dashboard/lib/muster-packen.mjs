@@ -10,6 +10,7 @@
  */
 import { musteretikettenFuerAuftrag } from './bestellungs-musteretiketten.mjs';
 import { adressEtikett } from './adress-etiketten.mjs';
+import { passtBegriff } from './lexikon-suche.mjs';
 import { kalendertag, kalendertage } from './kalendertage.mjs';
 
 /** Ab so vielen Tagen Wartezeit steht die Zahl in Bernstein. */
@@ -372,8 +373,9 @@ export function suchWoerter(eingabe) {
 function passendeWoerter(woerter, felder) {
   const heu = felder.map(norm).filter(Boolean);
   const heuKompakt = heu.map(kompakt);
+  // Zahlen wie im Lexikon (passtBegriff): "73" findet "073", aber nicht "8H73", "373" oder "#1173".
   // Ohne Satzzeichen nur ab drei Zeichen ("3N-55" = "3N55"); sonst passte "#2" auf jede 2.
-  return woerter.filter(w => heu.some(h => h.includes(w)) || (kompakt(w).length >= 3 && heuKompakt.some(h => h.includes(kompakt(w)))));
+  return woerter.filter(w => heu.some(h => passtBegriff(w, h)) || (!/^\d+$/.test(w) && kompakt(w).length >= 3 && heuKompakt.some(h => h.includes(kompakt(w)))));
 }
 
 /** Wie viele Suchwoerter passen zu einem Umschlag bzw. einer Bestellung und zu welchen Mustern. */
@@ -419,6 +421,8 @@ export function packSuche(kundenListe = [], eingabe = '', ausserhalb = []) {
  * `fertig` zaehlt die Bestellungen unter den fertigen Treffern, die nicht schon offen gezeigt sind.
  * `mitFertigen` haengt die fertigen Treffer HINTER die offenen - verdraengen koennen sie auch dann
  * nichts. Storniert, Zahlung offen und geschlossen bleiben immer in der Suche: das sind Warnungen.
+ * `fertigGenauer`: offene Umschlaege passen, eine fertige Bestellung aber mit mehr Woertern - dann
+ * liegt das Muster in der Hand vermutlich bei der fertigen, und das muss man sehen.
  */
 export function offeneSuche(kundenListe = [], eingabe = '', ausserhalb = [], { mitFertigen = false } = {}) {
   const fertigK = k => k.bereich === 'gepackt', fertigB = b => b.grund === 'erledigt';
@@ -428,10 +432,11 @@ export function offeneSuche(kundenListe = [], eingabe = '', ausserhalb = [], { m
   const bestellungenVon = t => (je.get(t.packSchluessel)?.bestellungen || []).map(b => b.orderId);
   const gezeigt = new Set([...s.treffer.flatMap(bestellungenVon), ...s.ausserhalb.map(b => b.orderId)]);
   const fertig = new Set([...f.treffer.flatMap(bestellungenVon), ...f.ausserhalb.map(b => b.orderId)].filter(id => !gezeigt.has(id)));
-  if (!mitFertigen) return { ...s, fertig: fertig.size };
+  const fertigGenauer = gezeigt.size > 0 && fertig.size > 0 && f.fehlen.length < s.fehlen.length;
+  if (!mitFertigen) return { ...s, fertig: fertig.size, fertigGenauer };
   return { woerter: s.woerter, treffer: [...s.treffer, ...f.treffer], ausserhalb: [...s.ausserhalb, ...f.ausserhalb.filter(b => !gezeigt.has(b.orderId))],
-    // Die offenen Treffer stehen vorn: deren Fehlwoerter gelten, sonst verschwaende ein "Nicht gefunden".
-    fehlen: s.treffer.length || s.ausserhalb.length ? s.fehlen : f.fehlen, fertig: 0 };
+    // Beide Gruppen stehen da: "nicht gefunden" ist nur, was in keiner von beiden vorkommt.
+    fehlen: s.fehlen.filter(w => f.fehlen.includes(w)), fertig: 0, fertigGenauer: false };
 }
 
 /**
@@ -452,5 +457,5 @@ export function handTreffer(kundenListe = [], eingabe = '', ausserhalb = [], { m
   });
   const offen = alle.filter(x => !x.muster.abgehakt && x.kunde.bereich !== 'gepackt');
   return { woerter: s.woerter, fehlen: s.fehlen, karten: offen.slice(0, max), mehr: Math.max(0, offen.length - max),
-    eingelegt: alle.filter(x => x.muster.abgehakt || x.kunde.bereich === 'gepackt'), ausserhalb: s.ausserhalb, fertig: s.fertig };
+    eingelegt: alle.filter(x => x.muster.abgehakt || x.kunde.bereich === 'gepackt'), ausserhalb: s.ausserhalb, fertig: s.fertig, fertigGenauer: s.fertigGenauer };
 }
