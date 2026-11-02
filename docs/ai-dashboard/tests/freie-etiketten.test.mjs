@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { eigeneGroesseFehler, eigenesFormat, eigenerRand, freieEtiketten, freiLayout, freiStil, FORMAT_EIGEN, FREI_MAX_ANZAHL, FREI_SCHRIFT_MM, versatzGrenze } from '../lib/freie-etiketten.mjs';
+import { produktEntwurf, zeilenSchluessel, eigeneGroesseFehler, eigenesFormat, eigenerRand, freieEtiketten, freiLayout, freiStil, FORMAT_EIGEN, FREI_MAX_ANZAHL, FREI_SCHRIFT_MM, versatzGrenze } from '../lib/freie-etiketten.mjs';
 import { aufDruckkopf } from '../bausteine/etiketten-druck.mjs';
 import { ETIKETT_FORMATE, FREIE_FORMATE, etikettFormat } from '../lib/muster-etiketten.mjs';
 import { motivSchluessel } from '../lib/druckliste.mjs';
@@ -208,4 +208,52 @@ test('Druckkopf: genau passend, ohne Kopfangabe oder bei anderer Druckrichtung b
     assert.equal(aufDruckkopf(q, z, kopf, richtung), q);
     assert.deepEqual(z.zuege, []);
   }
+});
+
+test('Schrift je Zeile: feste Zeile bleibt, die automatische teilt sich den Rest', () => {
+  const e = freieEtiketten('GROSS\nklein', 1, { zeilenSchrift: { [zeilenSchluessel(0, 1)]: 3 } })[0];
+  assert.deepEqual(e.schriften, [0, 3]);
+  const l = freiLayout(e, mass, ETIKETT_FORMATE['50x50']);
+  assert.equal(l.texte[1].groesse, 24);
+  assert.ok(l.texte[0].groesse > 24);
+  assert.equal(l.passt, true);
+});
+
+test('Schrift je Zeile geht vor der Schrift aller Zeilen und meldet, was nicht passt', () => {
+  const e = freieEtiketten('A\nB', 1, { zeilenSchrift: { '0:0': 5 } })[0];
+  const l = freiLayout(e, mass, ETIKETT_FORMATE['50x50'], { schrift: 3 });
+  assert.deepEqual(l.texte.map(t => t.groesse), [40, 24]);
+  const zuGross = freieEtiketten('AB\nCD', 1, { zeilenSchrift: { '0:0': 30, '0:1': 30 } })[0];
+  assert.equal(freiLayout(zuGross, mass, ETIKETT_FORMATE['50x50']).passt, false);
+});
+
+test('unbekannte Schrift je Zeile zaehlt nicht; verschiedene Schrift = eigenes Motiv', () => {
+  assert.equal(freieEtiketten('A', 1, { zeilenSchrift: { '0:0': 11 } })[0].schriften, null);
+  const [a] = freieEtiketten('A'), [b] = freieEtiketten('A', 1, { zeilenSchrift: { '0:0': 5 } });
+  assert.notEqual(motivSchluessel(a), motivSchluessel(b));
+});
+
+const produkt = { serie: 'Solenta', farbe: 'Eiche Dunkelbraun', sku: 'ABC-1', url: 'https://www.teppich-paradies.net/products/solenta', technik: [{ label: 'Art', wert: 'Klickvinyl' }, { label: 'Material', wert: 'Wolle', zusatz: true }] };
+
+test('Produktentwurf: Angaben als Text, Eckdaten nur von Hand', () => {
+  const v = produktEntwurf(produkt);
+  assert.deepEqual(v.text.split('\n'), ['www.teppich-paradies.net', 'Solenta', 'Eiche Dunkelbraun', 'Art: Klickvinyl', 'Art.-Nr. ABC-1']);
+  assert.equal(v.url, produkt.url);
+  assert.equal(v.zeilenSchrift['0:1'], undefined);
+  assert.equal(v.zeilenSchrift['0:4'], 3);
+});
+
+test('Produktentwurf passt samt QR-Code auf alle drei Rollen, QR ueberlappt nichts', () => {
+  const v = produktEntwurf(produkt);
+  const e = freieEtiketten(v.text, 1, v)[0];
+  for (const name of ['50x50', '50x80', '50x100']) {
+    const l = freiLayout(e, mass, ETIKETT_FORMATE[name]);
+    assert.deepEqual(l.probleme, [], name);
+    assert.ok(l.qr, name);
+  }
+});
+
+test('QR-Code auf der schmalen Rolle wird gemeldet statt still weggelassen', () => {
+  const e = freieEtiketten('A', 1, { url: produkt.url })[0];
+  assert.equal(freiLayout(e, mass, schmal).passt, false);
 });

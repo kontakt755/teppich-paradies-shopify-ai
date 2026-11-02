@@ -2,7 +2,7 @@
  * Eigene Aufkleber mit freiem Text (Wunsch Mitarbeiter 02.11.), z. B. Wegweiser fuers Lager. Rein rechnend.
  * Sie haengen an keinem Produkt und keiner Bestellung: es wird nichts gespeichert und nichts als gedruckt vermerkt.
  */
-import { ETIKETT, MIN_SCHRIFT, layoutProbleme, tinte } from './muster-etiketten.mjs';
+import { ABSENDER, ETIKETT, MIN_SCHRIFT, layoutProbleme, qrRaster, tinte } from './muster-etiketten.mjs';
 import { DRUCK_LIMIT } from './druckliste.mjs';
 
 /** Mehr Text passt auch auf 50 x 100 nicht lesbar; die Grenze haelt die Vorschau beim Tippen schnell. */
@@ -73,25 +73,53 @@ export function freiStil({ schrift, fett, ausrichtung, quer } = {}) {
   };
 }
 
+/** Die Aufkleber im Eingabefeld als Zeilen: jede Zeile eine Zeile auf dem Aufkleber, eine Leerzeile beginnt den naechsten. */
+export function freieZeilen(eingabe) {
+  return String(eingabe ?? '').slice(0, FREI_MAX_ZEICHEN).split(/\r?\n(?:[ \t]*\r?\n)+/)
+    .map(b => b.split(/\r?\n/).map(z => z.trim()).filter(Boolean))
+    .filter(zeilen => zeilen.length);
+}
+/** Schluessel einer Zeile in `zeilenSchrift`: Aufkleber und Zeile, beide ab 0. */
+export const zeilenSchluessel = (motiv, zeile) => `${motiv}:${zeile}`;
+
 /**
- * Text aus dem Eingabefeld: jede Zeile eine Zeile auf dem Aufkleber, eine Leerzeile beginnt den naechsten.
+ * Text aus dem Eingabefeld als Aufkleber.
+ * `zeilenSchrift`: feste Schrift in mm je Zeile (zeilenSchluessel), sie geht vor der Schrift aus den Einstellungen.
+ * `url`: Produktadresse fuer den QR-Code, gilt fuer jeden Aufkleber im Dialog.
  * @returns {object[]} je Aufkleber `anzahl` Kopien, hoechstens DRUCK_LIMIT.etiketten
  */
-export function freieEtiketten(eingabe, anzahl = 1) {
+export function freieEtiketten(eingabe, anzahl = 1, { zeilenSchrift = {}, url = '' } = {}) {
   const kopien = Math.min(FREI_MAX_ANZAHL, Math.max(1, Math.trunc(Number(anzahl)) || 1));
-  const bloecke = String(eingabe ?? '').slice(0, FREI_MAX_ZEICHEN).split(/\r?\n(?:[ \t]*\r?\n)+/);
-  const motive = bloecke
-    .map(b => b.split(/\r?\n/).map(z => z.trim()).filter(Boolean))
-    .filter(zeilen => zeilen.length)
-    .map(zeilen => ({ art: 'frei', zeilen, fehlt: [], serie: zeilen.join(' · '), farbe: '', sku: '', url: '', technik: [] }));
+  const motive = freieZeilen(eingabe).map((zeilen, m) => {
+    const schriften = zeilen.map((_, z) => { const mm = Number(zeilenSchrift[zeilenSchluessel(m, z)]); return FREI_SCHRIFT_MM.includes(mm) ? mm : 0; });
+    return { art: 'frei', zeilen, schriften: schriften.some(Boolean) ? schriften : null, fehlt: [], serie: zeilen.join(' · '), farbe: '', sku: '', url, technik: [] };
+  });
   return motive.flatMap(e => Array.from({ length: kopien }, () => e)).slice(0, DRUCK_LIMIT.etiketten);
+}
+
+/**
+ * Vorbefuellter Entwurf aus einem fertigen Produktetikett (etikett() in muster-etiketten.mjs): dieselben Angaben wie
+ * auf dem Musteraufkleber, aber als aenderbarer Text. Serie und Farbe bleiben automatisch gross; Absender, Technik und
+ * Art.-Nr. stehen fest klein wie auf dem Musteraufkleber. Die Eckdaten mit `zusatz` setzt auch layout() nur bei Platz,
+ * sie bleiben hier weg und koennen von Hand dazu.
+ * @returns {{text: string, zeilenSchrift: object, url: string}}
+ */
+export function produktEntwurf(e) {
+  const zeilen = [[ABSENDER, 2], [e.serie, 0], [e.farbe, 0],
+    ...(e.technik || []).filter(t => !t.zusatz).map(t => [`${t.label}: ${t.wert}`, 2]),
+    [e.sku ? `Art.-Nr. ${e.sku}` : '', 3]].filter(([t]) => t);
+  const zeilenSchrift = {};
+  zeilen.forEach(([, mm], i) => { if (mm) zeilenSchrift[zeilenSchluessel(0, i)] = mm; });
+  return { text: zeilen.map(([t]) => t).join('\n'), zeilenSchrift, url: e.url || '' };
 }
 
 /**
  * Was wo steht, in Pixeln des Etiketts - wie layout() in muster-etiketten.mjs, mit `passt` und `probleme`.
  * Automatisch ist jede Zeile so gross, wie Breite und Hoehe zulassen. Lange Zeilen werden nur kleiner, nie
  * umbrochen: wo die Zeile endet, bestimmt, wer den Aufkleber schreibt. Eine feste Schrift aendert nichts von selbst:
- * passt sie nicht, meldet layoutProbleme das und der Druck bleibt gesperrt.
+ * passt sie nicht, meldet layoutProbleme das und der Druck bleibt gesperrt. Das gilt auch fuer die Schrift je Zeile
+ * (`e.schriften`); automatische Zeilen daneben teilen sich den Platz, der uebrig bleibt.
+ * Mit `e.url` steht unten mittig der QR-Code, der Text bekommt die Hoehe darueber.
  * `quer: true` heisst wie bei adressLayout: Koordinaten gelten im gedrehten Format (Breite = Rollenlaenge),
  * zeichne() im Druckdialog dreht das Bild um 90 Grad im Uhrzeigersinn auf die Rolle.
  */
@@ -101,9 +129,14 @@ export function freiLayout(e, mass, format, einstellungen) {
   const { breite, hoehe, rand } = flaeche;
   const innen = breite - 2 * rand, hoch = hoehe - 2 * rand;
   const zeilen = e.zeilen || [];
-  const fest = schrift === 'auto' ? 0 : schrift * PX_JE_MM;
-  const passend = zeilen.map(t => {
-    if (fest) return fest;
+  const allgemein = schrift === 'auto' ? 0 : schrift * PX_JE_MM;
+  const feste = zeilen.map((_, i) => (e.schriften?.[i] || 0) * PX_JE_MM || allgemein);
+  const allesFest = feste.every(Boolean);
+  const qrFlaeche = e.url ? qrRaster(e.url, Math.min(innen, Math.round(hoch * 0.4))) : 0;
+  const qr = qrFlaeche ? { x: Math.round((breite - qrFlaeche) / 2), y: hoehe - rand - qrFlaeche, groesse: qrFlaeche } : null;
+  const textHoch = qr ? hoch - qrFlaeche - 8 : hoch;
+  const passend = zeilen.map((t, i) => {
+    if (feste[i]) return feste[i];
     let g = G_MAX;
     while (g > MIN_SCHRIFT && mass(t, g, fett) > innen) g--;
     return g;
@@ -112,7 +145,7 @@ export function freiLayout(e, mass, format, einstellungen) {
   const stapel = obergrenze => {
     const out = [];
     zeilen.forEach((text, i) => {
-      const groesse = Math.min(obergrenze, passend[i]), v = out.at(-1);
+      const groesse = feste[i] || Math.min(obergrenze, passend[i]), v = out.at(-1);
       const y = v ? v.y + tinte(v.text, v.groesse).unten + tinte(text, groesse).oben + Math.max(3, Math.round(v.groesse * 0.1)) : tinte(text, groesse).oben;
       out.push({ text, groesse, y, x: xVon(mass(text, groesse, fett)), fett });
     });
@@ -120,14 +153,14 @@ export function freiLayout(e, mass, format, einstellungen) {
   };
   const hoeheVon = s => s.at(-1).y + s.at(-1).groesse;
   let texte = [];
-  for (let obergrenze = fest || G_MAX; obergrenze >= MIN_SCHRIFT && zeilen.length; obergrenze--) {
+  for (let obergrenze = G_MAX; obergrenze >= MIN_SCHRIFT && zeilen.length; obergrenze--) {
     texte = stapel(obergrenze);
-    if (fest || hoeheVon(texte) <= hoch) break;
+    if (allesFest || hoeheVon(texte) <= textHoch) break;
   }
   if (texte.length) {
-    const ab = rand + Math.max(0, Math.floor((hoch - hoeheVon(texte)) / 2));
+    const ab = rand + Math.max(0, Math.floor((textHoch - hoeheVon(texte)) / 2));
     texte = texte.map(t => ({ ...t, y: t.y + ab }));
   }
-  const probleme = layoutProbleme({ texte, linien: [] }, mass, flaeche);
-  return { texte, linien: [], qr: null, passt: !probleme.length, probleme, quer };
+  const probleme = layoutProbleme({ texte, linien: [], qr }, mass, flaeche, e.url);
+  return { texte, linien: [], qr, passt: !probleme.length, probleme, quer };
 }

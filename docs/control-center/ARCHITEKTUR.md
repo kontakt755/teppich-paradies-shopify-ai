@@ -2682,3 +2682,5 @@ arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten un
   Mail versendet. Die Wiedervorlage gilt der Ansprache der Verwaltung, nicht dem einzelnen Vorgang –
   Vorgänge und ihre Wiedervorlagen bleiben in der Auftrags-App (Abschnitt 20).
 - Tests: `tests/hausverwaltungen.test.mjs` (Regeln, API, Rollen, Ansicht).
+
+Aufkleber aendern (2026-11-02): `produktEntwurf()` in `lib/freie-etiketten.mjs` macht aus einem Produktetikett aenderbaren Text; `e.schriften` traegt die Schrift je Zeile, `e.url` den QR-Code. Nichts davon wird gespeichert.

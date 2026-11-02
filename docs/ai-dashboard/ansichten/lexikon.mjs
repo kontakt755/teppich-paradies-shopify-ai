@@ -13,6 +13,7 @@ import { telLink, gmailLink, lieferantName } from '../lib/einkauf-lieferanten.mj
 import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
 import { suchbegriffe, lexikonTreffer } from '../lib/lexikon-suche.mjs';
 import { originalHandle } from '../lib/muster-etiketten.mjs';
+import { produktEntwurf } from '../lib/freie-etiketten.mjs';
 import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
 import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
 import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-etiketten-status.mjs';
@@ -134,6 +135,7 @@ function musterEtikettenBlock(produkt) {
       <label>Anzahl<input id="lexEtikettAnzahl" type="number" min="1" max="20" step="1" value="${esc(lexikon.etikettAnzahl)}" data-lex-etikett-anzahl data-focus-erhalten inputmode="numeric"></label>
       ${istNurLesend() ? '' : `<button type="button" class="btn btn-primary" data-lex-etikett-vormerken${auswahl.etikett.fehlt.length || lexikon.vormerkenLaeuft ? ' disabled' : ''}>${lexikon.vormerkenLaeuft ? 'Wird vorgemerkt …' : 'Zum Drucken vormerken'}</button>`}
       <button type="button" class="btn btn-ghost" data-lex-etikett-drucken>Aufkleber ansehen</button>
+      <button type="button" class="btn btn-ghost" data-lex-etikett-aendern>Ändern und drucken…</button>
     </div>
     ${lexikon.vorgemerkt?.handle === produkt.handle ? `<div class="lex-vorgemerkt" role="status"><p><strong>Vorgemerkt:</strong> ${esc(lexikon.vorgemerkt.anzahl)} × ${esc(lexikon.vorgemerkt.bezeichnung)}</p><div class="md-aktionen"><a class="btn" href="#/lexikon" data-lex-weiteres-muster>Weiteres Muster suchen</a><a class="btn" href="#/lexikon?tab=druckliste">Druckliste öffnen</a></div></div>` : ''}
     ${lexikon.vormerkFehler ? `<p class="notice warn" role="alert">${esc(lexikon.vormerkFehler)}</p>` : ''}
@@ -697,7 +699,7 @@ export function viewLexikon() {
   const handle = state.route.params.get('handle');
   if (state.route.params.get('tab') === 'druckliste') return viewMusterDruckliste();
   if (state.route.params.get('tab') === 'etiketten') return viewMusterEtikettenStatus();
-  const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Aufkleber-Druckliste</a><a class="btn" href="#/lexikon?tab=etiketten">Aufkleber prüfen</a></p>';
+  const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Aufkleber-Druckliste</a><a class="btn" href="#/lexikon?tab=etiketten">Aufkleber prüfen</a><button type="button" class="btn" data-lex-eigene>Eigene Aufkleber…</button></p>';
   const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Hier findest du zum Produktnamen des Kunden das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
   // Im Produkt entfaellt der erklaerende Seitenkopf: am Handy schob er Name und Preis aus dem
   // ersten Bildschirm. "Lexikon" steht weiter in der Kopfzeile.
@@ -708,7 +710,8 @@ export function viewLexikon() {
 export function lexikonKlick(e) {
   if (musterEtikettenStatusKlick(e)) return true;
   if (musterDrucklisteKlick(e)) return true;
-  const etikettKnopf = e.target.closest('[data-lex-etikett-drucken],[data-lex-etikett-vormerken]');
+  if (e.target.closest('[data-lex-eigene]')) { oeffneEtikettenDruck({ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }); return true; }
+  const etikettKnopf = e.target.closest('[data-lex-etikett-drucken],[data-lex-etikett-vormerken],[data-lex-etikett-aendern]');
   if (etikettKnopf) {
     e.preventDefault();
     const wrap = etikettKnopf.closest('[data-lex-etiketten]');
@@ -735,6 +738,8 @@ export function lexikonKlick(e) {
       });
       return true;
     }
+    // Aenderungen gelten nur fuer diesen Ausdruck: nichts wird im Produkt gespeichert oder als gedruckt vermerkt.
+    if (etikettKnopf.hasAttribute('data-lex-etikett-aendern')) { oeffneEtikettenDruck({ titel: 'Aufkleber ändern und drucken', allowEditing: false, freierText: true, entwurf: produktEntwurf(auswahl.etikett), entwurfAnzahl: anzahl }); return true; }
     oeffneEtikettenDruck({ etiketten: Array.from({ length: anzahl }, () => auswahl.etikett), titel: 'Musteretikett drucken' });
     return true;
   }
