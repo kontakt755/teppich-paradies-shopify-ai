@@ -40,7 +40,7 @@ import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as sch
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
-import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
+import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, lieferantJeSchluessel as lagerLieferantJeSchluessel, lieferantVonEintrag as lagerLieferantVon, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
@@ -64,7 +64,7 @@ import {
   benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN, pruefePasswort,
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
-import { leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff } from '../operations/lib/lieferanten.mjs';
+import { leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff, kennungAusLexikon } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
@@ -1183,7 +1183,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const stufe = p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status);
       // Nur Positionen, die noch nicht so weit sind. Sind alle schon weiter, ist der Klick eine
       // bewusste Korrektur zurueck - dann gilt er fuer alle.
-      const dahinter = positionen.filter(p => stufe(p) < ziel);
+      const dahinter = positionen.filter(p => stufe(p) < ziel && !(status === 'bestellt' && lagerGedeckt(p)));
+      if (status === 'bestellt' && !dahinter.length && positionen.some(lagerGedeckt)) throw new ApiError(409, LAGER_NICHT_BESTELLEN);
       const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel);
       const blockiert = positionen.map(p => alle[positionKey(orderId, p.lineItemId)]).find(e => !darfWeiter(e, status));
       if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
@@ -1424,6 +1425,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return modell ? [...modell.auftraege, ...modell.testauftraege].find(a => a.id === orderId) || null : null;
   }
 
+  const LAGER_NICHT_BESTELLEN = 'Dieses Muster liegt noch im Musterlager und wird nicht nachbestellt. Ist es beschädigt oder weg: erst im Musterlager auf „Ist leer“ klicken.';
+
   /** "Muster haben wir da": Wahl je Musterbestellung (ohne lineItemId) oder Musterposition, nur anhaengen. */
   function musterHerkunftSetzen(payload, benutzer, actor) {
     const { orderId, lineItemId, herkunft, notiz } = payload || {};
@@ -1435,6 +1438,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     if (!auftrag) throw new ApiError(404, 'Bestellung nicht gefunden – Bestelldaten evtl. inzwischen aktualisiert.');
     const muster = auftrag.positionen.filter(p => p.istMuster && (!lineItemId || p.lineItemId === lineItemId));
     if (!muster.length) throw new ApiError(400, lineItemId ? 'Diese Position ist kein Muster' : 'Diese Bestellung enthält keine Muster');
+    if (herkunft === 'lieferant' && muster.some(lagerGedeckt)) throw new ApiError(409, LAGER_NICHT_BESTELLEN);
     let ereignis;
     try {
       ereignis = haengeWahlAn(musterherkunftPfad(dir), { orderId, lineItemId: lineItemId || null, herkunft, actor, notiz, jetzt: now() });
@@ -2406,6 +2410,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
         throw e;
       }
+      if (auftrag) lagerAbgangFestschreiben(dir, auftrag, neuErledigt, actor);
       audit({ actor, action: 'auftragsstatus-kunde-fertig', orderId, anzahl: eintraege.length });
       merke(benutzer, actor, 'Kunde fertig', `${auftrag?.name || orderId}: ${eintraege.length} Artikel`);
       const shopifyErgebnis = await erledigtBuchen({ dir, auftrag: auftrag || auftragFuerVersand(dir, String(orderId)), lineItemIds: neuErledigt, benutzer, actor });
@@ -2875,12 +2880,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);
       // Stand vor dem Wechsel: danach hat die Position einen Status und gilt nicht mehr als offen.
-      const vorLager = status === 'raus' ? auftragFuerLager(dir, orderId) : null;
+      const vorLager = ['raus', 'erledigt'].includes(status) ? auftragFuerLager(dir, orderId) : null;
       const angaben = versandAngaben(payload?.versand);
       const modell = ladeBestellModell(dir);
       if (status === 'raus') pruefeSendungFrei({ dir, orderId, angaben, roh: payload?.versand, modell, benutzer, actor });
       const p = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].flatMap(a => a.positionen || []).find(p => p.orderId === orderId && p.lineItemId === lineItemId);
       const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)];
+      if (status === 'bestellt' && lagerGedeckt(p)) throw new ApiError(409, LAGER_NICHT_BESTELLEN);
       let eintrag;
       try {
         eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, lieferantBestellnummer, notiz, ueber, jetzt: now(),
@@ -2936,6 +2942,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       const gruppen = new Map(this._lexikonProdukte().map(x => [x.handle, x.produktgruppe || null]));
       const { index: acIndex, jeSku } = this._resteIndex();
+      // Lieferant je Eintrag ueber die Artikelnummern, der Name kommt aus den privaten Stammdaten.
+      const lieferantJe = lagerLieferantJeSchluessel(this._lexikonProdukte(), kennungAusLexikon);
+      const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      const lieferantVon = e => { const id = lagerLieferantVon(e, lieferantJe); return id ? { id, name: stammdatenFuer(stammdaten, id).name || `Lieferant ${id}` } : null; };
       return {
         verfuegbar: true,
         arten: LAGER_ARTEN,
@@ -2945,7 +2955,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         probestueckPreis: PROBESTUECK_PREIS,
         bestellungenStand: modell?.erstellt || null,
         eintraege: lager.eintraege.map(e => ({
-          id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, schluessel: e.schluessel, art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
+          id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, schluessel: e.schluessel, lieferant: lieferantVon(e), art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
           ort: e.ort, notiz: e.notiz, leer: !!e.leer, angelegtAm: e.angelegtAm, angelegtVon: e.angelegtVon, geaendertAm: e.geaendertAm, geaendertVon: e.geaendertVon,
           stand: stand.get(e.id) || { verbraucht: 0, reserviert: 0, rest: null, reichtNoch: null, jeStueck: null },
           offeneBestellungen: offen.get(e.id) || [],
@@ -3111,7 +3121,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
             ziele = [{ titel, farbe, handle: handle || null, schluessel }];
           } else throw new ApiError(400, 'Produkt und Farbe wählen', { missing: ['handle', 'farben'] });
           if (ziele.length > 60) throw new ApiError(400, 'Höchstens 60 Farben auf einmal');
-          const ergebnisse = ziele.map(z => lagerEinlagern(file, { ...z, art, anzahl, ort, notiz, actor, jetzt: now() }));
+          // Nur wenn ein leeres Einzelmuster aufgefuellt wird, wird das schon Verschickte gebraucht.
+          const verbrauchtVon = id => ladeBestellModell(dir)?.musterlagerStand?.get(id)?.verbraucht ?? 0;
+          const ergebnisse = ziele.map(z => lagerEinlagern(file, { ...z, art, anzahl, ort, notiz, actor, jetzt: now(), verbrauchtVon }));
           audit({ actor, action: 'musterlager-einlagern', anzahl: ergebnisse.length });
           merke(benutzer, actor, 'Musterlager', `eingelagert: ${ziele.map(z => [z.titel, z.farbe].filter(Boolean).join(' ')).slice(0, 5).join(', ')}${ziele.length > 5 ? ' …' : ''}`);
           return { ok: true, anzahl: ergebnisse.length, neu: ergebnisse.filter(r => r.neu).length, eintraege: ergebnisse.map(r => r.eintrag) };

@@ -593,7 +593,12 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
   wir da“: nicht in der Bestellmail (Grund „aus dem Musterlager (Regal B) – wird von uns verschickt“), nicht
   „Muster noch zu bestellen“, To-do „Muster verschicken an …“. Die älteste Bestellung bekommt das letzte
   Einzelmuster; die nächste geht an den Lieferanten und trägt `musterLagerLeer` („Musterlager: … leer“).
-  Die Wahl „Woher? ändern…“ geht immer vor.
+  Eine schon gespeicherte Wahl „Woher? ändern…“ geht vor.
+- **Nichts doppelt, bis der Bestand 0 ist (Inhaber 02.11.2026):** Für eine Position, für die ein Stück zurückliegt
+  (`lagerGedeckt()`), lehnt der Server „bestellt“ und die neue Wahl „beim Lieferanten“ mit 409 ab; der Sammelschritt
+  „bestellt“ überspringt sie. Erst „leer“ im Musterlager gibt sie frei. Die Wahl „haben wir da“ belegt ein Stück
+  (`musterLagerReserviert`) und zählt beim Verschicken ab. Auch „Kunde fertig“ und der Einzelstatus „erledigt“ zählen ab.
+  Grenze: Direkt in Shopify Versendetes ohne Schritt im Dashboard zählt nicht ab.
 - **Festschreiben beim Verschicken:** Erreicht eine so zugeordnete Position „An Kunden raus“ (Einzelstatus,
   Schritt `raus` oder `kunde_hat_muster`), hängt der Server ein `musterherkunft`-Ereignis mit `lagerId` an.
   So zählt das Muster als verschickt, auch wenn der Lagereintrag später leer gesetzt oder entfernt wird.
@@ -606,6 +611,7 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
 - **Rest prüfen:** Dialog für Ware, die nicht über den Shop läuft (direkt beim Hersteller bestellt):
   Hersteller, Qualität, Farbnummer → Treffer bei A/C mit Farben, „Als Verlegerest einlagern“ und
   „Etikett“ (ein Aufkleber je Farbe, Lexikon-Etikett ohne Lieferantennamen).
+- **Lexikon und Gruppierung (02.11.):** Der Bereich „Im Musterlager“ auf der Produktseite (`ansichten/lexikon-musterlager.mjs`) schreibt über denselben Endpunkt; beide Ansichten rechnen mit `lib/musterlager-bestand.mjs`, weil `anzahl` die Gesamtzahl inklusive Verschicktem ist und `stand.rest` die Reservierten nicht enthält. Jeder Lagereintrag trägt `lieferant {id, name}` (`lieferantJeSchluessel()`: Artikelnummern gegen `einkauf.lieferant` im Lexikon, Ware vor Musterprodukt), die Ansicht ordnet mit `nachLieferant()`.
 - **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest/reichtNoch,
   offene Bestellungen je Eintrag samt `wartetAufLieferant`, Mustergröße, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
   Lexikon-Produkts samt Schlüssel), `GET /api/einkauf/reste-abgleich?hersteller=&qualitaet=&farbnummer=`

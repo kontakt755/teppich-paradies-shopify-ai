@@ -33,6 +33,7 @@ import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
 import { oeffneEtikettenDruck, etikettenFuerBestellung } from '../../bausteine/etiketten-druck.mjs';
+import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar } from '../../lib/musterlager-bestand.mjs';
 
 export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -60,9 +61,7 @@ const arten = () => musterlager.daten?.arten || ARTEN_STANDARD;
 const zaehlbar = e => (musterlager.daten?.zaehlbar || ['einzel']).includes(e.art);
 
 /** Physisch noch da (Einzelmuster): eingelagert minus verschickt. Reservierte liegen noch in der Schublade. */
-function nochDa(e) {
-  return Math.max(0, (e.anzahl ?? 0) - (e.stand?.verbraucht ?? 0));
-}
+const nochDa = nochDaZaehlbar;
 
 /** Bestand in Worten - und ob er Aufmerksamkeit braucht (leer, aufgebraucht). */
 function bestandVon(e) {
@@ -86,7 +85,7 @@ function bestandVon(e) {
 const musterGroesse = () => musterlager.daten?.musterGroesse?.name || 'A5';
 const resteLieferanten = (trenner = ' und ') => (musterlager.daten?.reste?.lieferanten || ['A', 'C']).join(trenner);
 
-const passt = (e, q) => !q || [e.titel, e.farbe, e.ort, e.notiz, e.artLabel].some(v => String(v || '').toLowerCase().includes(q));
+const passt = (e, q) => !q || [e.titel, e.farbe, e.ort, e.notiz, e.artLabel, e.lieferant?.name].some(v => String(v || '').toLowerCase().includes(q));
 
 function zeileHtml(e) {
   const b = bestandVon(e);
@@ -173,13 +172,19 @@ export function viewEinkaufMusterlager() {
   } else if (!eintraege.length) {
     liste = emptyState(`Nichts passt zu „${q}“.`, 'Suche leeren oder anders suchen.');
   } else {
-    // Je Produkt eine Gruppe, darin die Farben.
-    const je = new Map();
-    for (const e of eintraege) { if (!je.has(e.titel)) je.set(e.titel, []); je.get(e.titel).push(e); }
+    // Je Lieferant ein Abschnitt mit Summe (Wunsch 02.11.), darin je Produkt eine Gruppe mit den Farben.
     const namen = new Intl.Collator('de', { sensitivity: 'base', numeric: true });
-    liste = [...je].sort(([a], [b]) => namen.compare(a, b)).map(([titel, l]) => `<section class="ml-gruppe">
-      <h3>${esc(titel)} <span class="small muted">${esc(plural(l.length, 'Farbe', 'Farben'))}</span></h3>
-      <ul class="ml-liste">${[...l].sort((a, b) => namen.compare(a.farbe || '', b.farbe || '')).map(zeileHtml).join('')}</ul>
+    const produkte = l => {
+      const je = new Map();
+      for (const e of l) { if (!je.has(e.titel)) je.set(e.titel, []); je.get(e.titel).push(e); }
+      return [...je].sort(([a], [b]) => namen.compare(a, b)).map(([titel, farben]) => `<section class="ml-gruppe">
+      <h3>${esc(titel)} <span class="small muted">${esc(plural(farben.length, 'Farbe', 'Farben'))}</span></h3>
+      <ul class="ml-liste">${[...farben].sort((a, b) => namen.compare(a.farbe || '', b.farbe || '')).map(zeileHtml).join('')}</ul>
+    </section>`).join('');
+    };
+    liste = nachLieferant(eintraege, d.zaehlbar).map(g => `<section class="ml-lieferant">
+      <h2 class="section-title">${esc(g.name)} <span class="small muted">${esc(plural(g.eintraege.length, 'Muster', 'Muster'))} · ${esc(g.stueck)} Stück</span></h2>
+      ${produkte(g.eintraege)}
     </section>`).join('');
   }
 
@@ -259,7 +264,7 @@ async function schreibeSperre(body) {
 
 // -- Schreiben ---------------------------------------------------------------
 
-async function schreibe(body) {
+export async function schreibe(body) {
   try {
     const r = await fetch('/api/einkauf/musterlager', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
@@ -269,7 +274,7 @@ async function schreibe(body) {
 }
 
 /** Nach jeder Aenderung: Lager und alles, was die Herkunft der Muster zeigt (Einkauf, Kunden, Heute). */
-function nachladen() {
+export function nachladen() {
   ensureMusterlager({ neu: true });
   ladeStandNeu({ bestellungen: true });
 }
@@ -420,7 +425,7 @@ function oeffneBearbeiten(e, { wieder = false } = {}) {
     const art = fd.get('art');
     // Einzelmuster: eingetippt wird, was in der Schublade liegt; gespeichert wird die Gesamtzahl
     // (schon verschickte + noch da), damit das Abzaehlen weiter stimmt.
-    const anzahl = eingabe === '' ? undefined : zaehlbar({ art }) ? Number(eingabe) + (e.stand?.verbraucht ?? 0) : Number(eingabe);
+    const anzahl = eingabe === '' ? undefined : zaehlbar({ art }) ? gesamtAusNochDa(eingabe, e) : Number(eingabe);
     const body = { aktion: 'aendern', id: e.id, art, ort: (fd.get('ort') || '').trim(), notiz: (fd.get('notiz') || '').trim() };
     if (wieder) body.leer = false;
     if (anzahl !== undefined) body.anzahl = anzahl;
