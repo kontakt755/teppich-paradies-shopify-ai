@@ -10,8 +10,8 @@ Einkauf einen Klick verschluckt, ist ein Fehlschlag.
 
 **Zuerst:** `.claude/skills/control-center/SKILL.md` vollstaendig lesen und
 danach arbeiten – Regeln, Gestaltung, Ablauf und Fallstricke stehen dort.
-Dann `docs/control-center/ARCHITEKTUR.md` und die letzten Eintraege in
-`docs/control-center/CHANGELOG.md`.
+Dann `docs/control-center/ARCHITEKTUR.md` und die letzten Changelog-Eintraege
+(`npm run -s changelog`; eine Datei je Eintrag unter `docs/control-center/changelog/`).
 
 So gehst du vor:
 
@@ -25,7 +25,9 @@ So gehst du vor:
 5. Nachweisen, dass es geht: `dashboard:test`, `npm test` (Ergebnis abwarten),
    `dashboard:pruefen` nur `OK`, Klickstrecke gegen die Datenkopie fuer jede
    geaenderte Aktion.
-6. CHANGELOG, PR mit `Closes #n`, Aufgabe auf Review.
+6. Changelog-Eintrag als eigene Datei unter `docs/control-center/changelog/`
+   (Format: `changelog/README.md`; nie in die eingefrorene `CHANGELOG.md`),
+   PR mit `Closes #n`, Aufgabe auf Review.
 
 Grenzen:
 - Keine echten Daten veraendern, nicht im geteilten Checkout arbeiten, keine

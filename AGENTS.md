@@ -82,7 +82,7 @@ Jeder Punkt hat eine komplette Sitzung gekostet. Vor dem Loslegen lesen. Die Vor
 ## Vor jedem Commit
 
 ```
-npm run -s pruefen      # alle Testsuiten, Liquid-/Schema-/Template-/Theme-/Schrift-Guard, Theme Check gegen die Baseline, Secret-Scan
+npm run -s pruefen      # alle Testsuiten, Liquid-/Schema-/Template-/Theme-/Schrift-/Changelog-Guard, Theme Check gegen die Baseline, Secret-Scan
 ```
 
 Die PR-Validierung fuehrt genau denselben Befehl aus: was lokal gruen ist, ist

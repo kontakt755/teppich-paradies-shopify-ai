@@ -18,7 +18,7 @@ test('jeder npm-Schritt existiert in package.json', () => {
 
 test('jeder Guard aus package.json, den AGENTS.md vor dem Commit verlangt, ist ein Schritt', () => {
   const npm = new Set(SCHRITTE.map((s) => s.npm).filter(Boolean));
-  for (const g of ['test', 'liquid:guard', 'schema:guard', 'template:guard', 'theme:guard', 'schrift:guard', 'themecheck:guard', 'secret:scan']) {
+  for (const g of ['test', 'liquid:guard', 'schema:guard', 'template:guard', 'theme:guard', 'schrift:guard', 'changelog:guard', 'themecheck:guard', 'secret:scan']) {
     assert.ok(npm.has(g), `${g} fehlt in pruefen`);
   }
 });

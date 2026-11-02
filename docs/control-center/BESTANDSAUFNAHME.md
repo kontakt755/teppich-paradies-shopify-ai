@@ -4,7 +4,8 @@ Stand der ursprünglichen Aufnahme: 2026-09-08 · Branch `feature/control-center
 
 > **Aktualisierung 2026-09-26:** Die Abschnitte ab „Was heute existiert“ dokumentieren den damaligen
 > Ausgangspunkt und bleiben als Entscheidungsverlauf erhalten. Der aktuelle Betriebsstand steht direkt
-> hier; laufende Änderungen werden im [`CHANGELOG.md`](./CHANGELOG.md) festgehalten.
+> hier; laufende Änderungen stehen als eine Datei je Eintrag unter [`changelog/`](./changelog/README.md)
+> (bis 2026-10-29 in [`CHANGELOG.md`](./CHANGELOG.md), seitdem eingefroren).
 
 ## Aktueller Betriebsstand 2026-09-26
 

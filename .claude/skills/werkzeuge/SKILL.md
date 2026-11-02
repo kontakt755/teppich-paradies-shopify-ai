@@ -23,8 +23,10 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run menu:guard` | Menuelinks auf leeres Raster oder ins Nichts (braucht Netz) |
 | `npm run unmerged:guard` | Bloecke/Templates auf ungemergten Branches |
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise vor dem Push |
-| `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte |
+| `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte (lokal und laut GitHub - der sieht keine Merge-Treiber), PRs, die noch in die eingefrorene `CHANGELOG.md` schreiben |
 | `npm run pr:doctor:melden` | dasselbe als idempotenter PR-Kommentar (CI: Push auf `main`, alle 6 h) |
+| `npm run changelog:guard` | Changelog des Control Centers (laeuft in `pruefen`): Dateiname `JJJJ-MM-TT-<kurzname>.md`, Kopfzeile mit Datum, Pflichtabschnitte unter `docs/control-center/changelog/`; `CHANGELOG.md` eingefroren seit 2026-10-29 |
+| `npm run -s changelog [-- --letzte N \| --namen]` | die letzten Changelog-Eintraege des Control Centers lesen (Standard 10, neueste zuerst) |
 | `npm run auslauf:pruefen` | **woechentlich automatisch**: gibt es jeden Artikel noch beim Lieferanten (A Schnellsuche, C/D/E Produktseite; B nur offline)? Schreibt `$TP_PRIVAT_DIR/auslauf/status.json`, Befunde als To-do; nur lesend |
 | `npm run -s muster:nachfassen [-- --probe]` | **taeglich automatisch (Mo-Sa 9:30)**: faellige Muster-Nachfragen (Text 1 nach 4 Tagen, Erinnerung nach 10) vom Firmenpostfach verschicken, Zeitleiste „nachgefasst (automatisch)“; `--probe` listet nur. Braucht `$TP_PRIVAT_DIR/nachfassen/postfach.json` (600), sonst verschickt er nichts → `docs/control-center/ARCHITEKTUR.md` Abschnitt 23 |
 | `npm run -s auslauf:sortieren [-- --schreiben]` | **nach jedem neuen Tag `auslauf` und jedem Import in Teppichboden/Teppiche**: Auslaufartikel ans Ende der manuell sortierten Kategorien (Shopify haengt Neues hinten an, also hinter sie); ohne `--schreiben` nur pruefen (Exit 1 = zu tun), mit Rollback-Datei und Gegenprobe |
