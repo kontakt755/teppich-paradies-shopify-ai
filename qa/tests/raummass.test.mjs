@@ -210,6 +210,6 @@ test('leereRaeume: Raum 2 ohne Maße wird gemeldet, halb ausgefuellte nicht', ()
 test('Rollenrechner stellt Mengen- und Bestellmass-Abfrage fuer den Helfer bereit', async () => {
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(new URL('../../blocks/tp-rollware-rechner.liquid', import.meta.url), 'utf8');
-  assert.match(src, /root\.tpRwcBerechnetM2 = function \(wCm, lenCm\)/);
+  assert.match(src, /root\.tpRwcBerechnetM2 = function \(wCm, lenCm, art\)/);
   assert.match(src, /root\.tpRwcBestellmass = function \(\)/);
 });
