@@ -41,19 +41,30 @@
     assign tp_dl_cta_label = parent_link.title | escape | append: ' im Überblick'
   endif
 
+  # Knopf nur, wenn sein Ziel etwas zeigt (leere Angebotsseite, Nr. 27)
+  capture tp_dl_cta_sichtbar
+    if tp_dl_all_i > 0
+      render 'tp-menu-link-sichtbar', link: tp_dl_all, ziel_pruefen: true
+    else
+      render 'tp-menu-link-sichtbar', link: parent_link, ziel_pruefen: true
+    endif
+  endcapture
+
   assign tp_dl_count = 0
   if parent_link.type == 'collection_link'
     assign tp_dl_count = parent_link.object.all_products_count
   endif
 -%}
 
-<a class="tp-dn-cta" href="{{ tp_dl_cta_url }}">
-  <span class="tp-dn-cta__text">{{ tp_dl_cta_label }}</span>
-  {%- if tp_dl_count > 0 -%}
-    <span class="tp-dn-cta__count" aria-hidden="true">{{ tp_dl_count }}</span>
-    <span class="visually-hidden">{%- render 'tp-produktzahl', anzahl: tp_dl_count -%}</span>
-  {%- endif -%}
-</a>
+{%- unless tp_dl_cta_sichtbar contains 'nein' -%}
+  <a class="tp-dn-cta" href="{{ tp_dl_cta_url }}">
+    <span class="tp-dn-cta__text">{{ tp_dl_cta_label }}</span>
+    {%- if tp_dl_count > 0 -%}
+      <span class="tp-dn-cta__count" aria-hidden="true">{{ tp_dl_count }}</span>
+      <span class="visually-hidden">{%- render 'tp-produktzahl', anzahl: tp_dl_count -%}</span>
+    {%- endif -%}
+  </a>
+{%- endunless -%}
 
 <ul class="tp-dn-list" role="list">
   {%- for c in parent_link.links -%}

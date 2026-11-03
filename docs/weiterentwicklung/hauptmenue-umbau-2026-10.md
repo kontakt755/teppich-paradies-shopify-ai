@@ -72,7 +72,8 @@ node scripts/menue-umbau.mjs --alt docs/weiterentwicklung/sicherung/2026-10-15-h
 
 - „Angebote & Reste“ führt zur Angebotskollektion. Ohne sichtbares Angebot
   fehlt nur der Unterpunkt „Aktuelle Angebote“; der Oberpunkt bleibt wegen
-  „Reste & Sonderposten“.
+  „Reste & Sonderposten“. Zwischen zwei Aktionen zeigt der Oberpunkt auf die Reste
+  (Pläne und Ablauf: `angebote.md`, Abschnitt 6).
 - Die Gliederungen `tp-linoleum-nav` (Linoleum-Produkte als Karten) und
   `tp-leisten-nav` (Bodenleisten nach Material und Höhe) greifen nur, wenn
   Linoleum bzw. Bodenleisten Hauptpunkte sind. Nach dem Umbau sind sie

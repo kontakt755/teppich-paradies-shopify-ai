@@ -34,7 +34,7 @@
           "settings": {
             "marker_type": "icon",
             "emoji": "⌁",
-            "text": "Bis zu 2 Muster kostenlos"
+            "text": "Bis zu zwei Muster je Bestellung kostenlos"
           }
         }
       },
@@ -288,7 +288,7 @@
           "type": "step",
           "settings": {
             "title": "Qualität wählen",
-            "text": "Nach Florhöhe und Farbton. Bis zu zwei Muster schicken wir kostenlos."
+            "text": "Nach Florhöhe und Farbton. Bis zu zwei Muster je Bestellung kostenlos."
           }
         },
         "s2": {
@@ -348,7 +348,7 @@
           "type": "frage",
           "settings": {
             "question": "Kann ich den Kunstrasen vorher ansehen?",
-            "answer": "<p>Ja. Bis zu zwei Muster sind kostenlos. Wählen Sie die Qualität am Produkt oder auf der <a href=\"/pages/muster\">Musterseite</a>.</p>"
+            "answer": "<p>Ja. Bis zu zwei Muster je Bestellung kostenlos. Wählen Sie die Qualität am Produkt oder auf der <a href=\"/pages/muster\">Musterseite</a>.</p>"
           }
         },
         "versand": {

@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { katalogJsonl, katalogProdukte, katalogHash, pruefeUmfang, datei, metaZeilen, metaDatei, META_KOPF, vorbereiten, verifizierteEntnahmen, diagnoseZeilen } from '../scripts/feed-tnm-abruf.mjs';
+import { katalogJsonl, katalogProdukte, katalogHash, pruefeUmfang, datei, metaZeilen, metaDatei, META_KOPF, vorbereiten, verifizierteEntnahmen, diagnoseZeilen, istRestvorlage } from '../scripts/feed-tnm-abruf.mjs';
 
 const seite = (nodes, endCursor = null) => ({ products: { pageInfo: { hasNextPage: Boolean(endCursor), endCursor }, nodes } });
 const produkt = (id = 1, variants = [{ id: 'gid://shopify/ProductVariant/11', price: '0.85', compareAtPrice: null, availableForSale: true }]) => ({
@@ -138,6 +138,48 @@ test('der eine bestehende Workflow nutzt Proxy-Entry und veroeffentlicht beide Q
   assert.match(yml, /git add tp-tnm-preise\.txt tp-tnm-meta\.tsv tp-tnm-pruefung\.json/);
   assert.match(yml, /name: Vollstaendiges Pruefprotokoll sichern\n\s+if: always\(\)\n\s+uses: actions\/upload-artifact@v\d+/);
   assert.match(yml, /path: tp-tnm-pruefung\.json\n\s+if-no-files-found: warn\n\s+retention-days: 7/);
-  assert.doesNotMatch(yml.slice(yml.indexOf('- name: Auf feed-daten veroeffentlichen')), /if: always\(\)|if: failure\(\)/);
+  assert.doesNotMatch(yml.slice(yml.indexOf('- name: Auf feed-daten veroeffentlichen'), yml.indexOf('\n  alarm:')), /if: always\(\)|if: failure\(\)/);
   assert.doesNotMatch(yml, /shopify store execute|tnmPreisZeilen|erster Lauf/);
+});
+
+test('Restvorlagen fehlen im Katalog und blockieren den Lauf nicht, auch wenn sie sich aendern', async () => {
+  let zaehler = 0;
+  const rest = () => ({ ...produkt(9), handle: 'restvorlage-tpr0095-raummass', updatedAt: new Date(zaehler++).toISOString() });
+  const normal = produkt();
+  let gesehen;
+  const r = await vorbereiten({
+    proxy: { execute: async () => seite([normal, rest()]) }, vorher, metaVorher,
+    erzeugen: async (katalog) => { gesehen = katalog.map((p) => p.handle); return erzeugt(); },
+  });
+  assert.equal(gesehen.includes('restvorlage-tpr0095-raummass'), false);
+  assert.equal(r.pruefung.ausgelassen.length, 0);
+  assert.ok(zaehler >= 2, 'Restvorlage hat sich zwischen den Abrufen geaendert');
+});
+
+test('nur der exakte Handle-Anfang zaehlt: aehnliche Produkte bleiben streng geprueft', async () => {
+  assert.equal(istRestvorlage({ handle: 'restvorlage-tpr0095-raummass' }), true);
+  for (const handle of ['meine-restvorlage-x', 'restvorlagen-x', 'restvorlage', undefined]) assert.equal(istRestvorlage({ handle }), false);
+  const aehnlich = { ...produkt(), handle: 'meine-restvorlage-x' };
+  const jsonl = await katalogJsonl({ execute: async () => seite([aehnlich]) });
+  assert.equal(katalogProdukte(jsonl)[0].handle, 'meine-restvorlage-x');
+  await assert.rejects(vorbereiten({
+    proxy: { execute: async () => seite([aehnlich]) }, vorher, metaVorher,
+    erzeugen: async () => ({ zeilen: [], pruefung: { varianten: 1, ausgelassen: [{ handle: 'meine-restvorlage-x', grund: 'keine Beispielgroesse' }] } }),
+  }), /keine Feeddatei ersetzt/);
+});
+
+test('eine frueher gefuehrte aktive Restvorlage darf als belegte Entnahme entfallen, andere aktive Produkte nicht', async () => {
+  const antwort = (handle) => ({ execute: async () => ({ nodes: [{ id: 'gid://shopify/ProductVariant/12', product: { id: 'gid://shopify/Product/9', status: 'ACTIVE', productType: 'Teppich nach Maß', handle } }] }) });
+  const r = await verifizierteEntnahmen(antwort('restvorlage-tpr0095-raummass'), ['gid://shopify/ProductVariant/12']);
+  assert.equal(r[0].status, 'RESTVORLAGE');
+  await assert.rejects(verifizierteEntnahmen(antwort('wunschteppich'), ['gid://shopify/ProductVariant/12']), /aktiver Teppich nach Mass fehlt/);
+});
+
+test('Fehllauf meldet sich in einem Issue: eigener Job, nur bei failure, offenes wird wiederverwendet', () => {
+  const yml = readFileSync(new URL('../../.github/workflows/feed-tnm-preise.yml', import.meta.url), 'utf8');
+  const alarm = yml.slice(yml.indexOf('\n  alarm:'));
+  assert.match(alarm, /needs: preise\n\s+if: \$\{\{ failure\(\) \}\}/);
+  assert.match(alarm, /permissions:\n\s+issues: write/);
+  assert.match(alarm, /gh issue list --state open/);
+  assert.ok(alarm.indexOf('gh issue comment') < alarm.indexOf('gh issue create'), 'erst wiederverwenden, dann anlegen');
 });
