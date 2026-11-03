@@ -69,3 +69,25 @@ test('Hero-Rechner: Mass aus der Adresse gilt nur vollstaendig und im erlaubten 
   assert.equal(lesenAusAdresse('?breite=2x0&laenge=300'), null);
   assert.equal(lesenAusAdresse(''), null);
 });
+
+const startBereinigen = src.indexOf('  function adresseBereinigen(');
+const endeBereinigen = src.indexOf('\n  }\n', startBereinigen) + 4;
+function bereinigen(href, weitergabe) {
+  const geschrieben = [];
+  const fn = vm.runInNewContext('(' + src.slice(startBereinigen, endeBereinigen).trim().replace(/^function adresseBereinigen/, 'function') + ')', {
+    URL,
+    document: { querySelector: () => (weitergabe ? {} : null) },
+    window: { location: { href }, history: { state: null, replaceState: (_, __, ziel) => geschrieben.push(ziel) } },
+  });
+  fn();
+  return geschrieben;
+}
+
+test('Hero-Rechner: Mass verlaesst die Adresse, andere Parameter bleiben', () => {
+  assert.deepEqual(bereinigen('https://shop.example/collections/teppich-nach-mass?breite=200&laenge=300&utm_source=google#auswahl'), ['/collections/teppich-nach-mass?utm_source=google#auswahl']);
+  assert.deepEqual(bereinigen('https://shop.example/collections/teppich-nach-mass?breite=200&laenge=300'), ['/collections/teppich-nach-mass']);
+});
+
+test('Hero-Rechner: Kollektion mit Mass-Weitergabe behaelt das Mass in der Adresse', () => {
+  assert.deepEqual(bereinigen('https://shop.example/collections/x?breite=200&laenge=300', true), []);
+});

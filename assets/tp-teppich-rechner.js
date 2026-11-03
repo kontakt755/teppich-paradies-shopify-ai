@@ -77,6 +77,17 @@
     return { w: w, l: l };
   }
 
+  // Nach dem ersten Lesen raus aus der Adresse: ab dann gilt der Speicher, sonst kaeme
+  // das Mass beim Neuladen oder Zurueck gegen spaetere Eingaben des Kunden wieder.
+  // Nicht auf Kollektionen, die es per snippets/tp-mass-weitergabe noch weitergeben.
+  function adresseBereinigen() {
+    if (document.querySelector('[data-tp-mass-weitergabe]')) return;
+    var ziel = new URL(window.location.href);
+    ziel.searchParams.delete('breite');
+    ziel.searchParams.delete('laenge');
+    window.history.replaceState(window.history.state, '', ziel.pathname + ziel.search + ziel.hash);
+  }
+
   function speichern(w, l) {
     try {
       if (w && l) sessionStorage.setItem(SPEICHER, JSON.stringify({ w: w, l: l }));
@@ -312,6 +323,7 @@
       inL.value = alt.l;
       anwenden(alt.w, alt.l, !!ausAdresse);
     }
+    if (ausAdresse) adresseBereinigen();
     root.setAttribute('data-tp-rechner-bereit', '1');
     return true;
   }
