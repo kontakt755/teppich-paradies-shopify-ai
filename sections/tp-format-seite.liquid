@@ -1,0 +1,77 @@
+{%- comment -%}
+  Format-Seite "Teppich 200 x 300 cm" (Nr. 149, Vollanalyse 2026-11-03): gefragte
+  Masse, die es nicht als fertige Standardgroesse gibt, gehen ueber Teppich nach Mass.
+  Das Mass steht im Handle der Seite (teppich-200x300), damit eine neue Seite keinen
+  Theme-Code braucht. Der Knopf oeffnet den Mass-Rechner der Kategorie mit diesem Mass
+  (assets/tp-teppich-rechner.js, lesenAusAdresse); Preise rechnet nur der Rechner.
+{%- endcomment -%}
+{%- liquid
+  assign tp_fs_mass = page.handle | remove: 'teppich-' | split: 'x'
+  assign tp_fs_b = tp_fs_mass[0] | times: 1
+  assign tp_fs_l = tp_fs_mass[1] | times: 1
+  assign tp_fs_flaeche = tp_fs_b | times: tp_fs_l
+  assign tp_fs_rest = tp_fs_flaeche | modulo: 10000
+  if tp_fs_rest == 0
+    assign tp_fs_qm = tp_fs_flaeche | divided_by: 10000
+  else
+    assign tp_fs_qm = tp_fs_flaeche | divided_by: 10000.0 | round: 2 | replace: '.', ','
+  endif
+  assign tp_fs_param = 'breite=' | append: tp_fs_b | append: '&laenge=' | append: tp_fs_l
+  assign tp_fs_titel = tp_fs_b | append: ' × ' | append: tp_fs_l | append: ' cm'
+  assign tp_fs_ziele = 'jab-anstoetz-teppiche-nach-mass|JAB Anstoetz,vorwerk-teppiche-nach-mass|Vorwerk,sisal-kokos-teppiche-nach-mass|Sisal mit Bordüre' | split: ','
+-%}
+<section class="tp-format section section--page-width" aria-labelledby="tp-format-{{ section.id }}">
+  <div class="tp-format__inhalt">
+  <p class="tp-format__kicker">Zentimetergenau nach Ihrem Maß</p>
+  <h1 id="tp-format-{{ section.id }}">{{ page.title | escape }}</h1>
+  {%- if tp_fs_b > 0 and tp_fs_l > 0 -%}
+    <p class="tp-format__lead">Das Maß {{ tp_fs_titel }} ({{ tp_fs_qm }} m²) fertigen wir als Teppich nach Maß. Sie wählen Qualität und Farbe und sehen den Preis für genau dieses Maß, die günstigste Qualität zuerst.</p>
+    <a class="button tp-format__knopf" href="{{ collections['teppich-nach-mass'].url }}?{{ tp_fs_param }}">Qualitäten und Preise für {{ tp_fs_titel }}</a>
+    <ul class="tp-format__punkte" role="list">
+      <li>Rundum eingefasst</li>
+      <li>Bis zu zwei Muster je Bestellung kostenlos</li>
+      <li>Die Lieferzeit steht bei jeder Qualität auf der Produktseite</li>
+    </ul>
+    <h2>Auch in {{ tp_fs_titel }}</h2>
+    <ul class="tp-format__links" role="list">
+      {%- for tp_fs_ziel in tp_fs_ziele -%}
+        {%- assign tp_fs_teile = tp_fs_ziel | split: '|' -%}
+        {%- assign tp_fs_coll = collections[tp_fs_teile[0]] -%}
+        {%- if tp_fs_coll != blank and tp_fs_coll.products_count > 0 -%}
+          <li><a href="{{ tp_fs_coll.url }}?{{ tp_fs_param }}">{{ tp_fs_teile[1] | escape }}</a></li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+    <h2>Lieber ein fertiges Format?</h2>
+    {%- if tp_fs_b == 200 and tp_fs_l == 300 -%}
+      <p>Das nächste fertige Format ist <a href="{{ collections['teppiche-standardgroessen'].url }}?filter.v.option.größe={{ '200 × 290 cm' | url_encode }}">200 × 290 cm</a>.</p>
+    {%- else -%}
+      <p>Fertige Formate finden Sie unter <a href="{{ collections['teppiche-standardgroessen'].url }}">Teppiche in Standardgrößen</a>.</p>
+    {%- endif -%}
+    <div class="tp-format__andere">{% render 'tp-format-links', text: 'Weitere Maße:' %}</div>
+  {%- endif -%}
+  {%- if page.content != blank -%}
+    <div class="tp-format__text rte">{{ page.content }}</div>
+  {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-format { padding-block: 32px 48px; }
+  .tp-format__inhalt { max-width: 760px; }
+  .tp-format__kicker { margin: 0 0 8px; font-size: var(--tp-fs-sm); font-weight: 500; color: #595959; }
+  .tp-format h1 { margin: 0 0 16px; font-size: var(--tp-fs-2xl); font-weight: 700; }
+  .tp-format h2 { margin: 32px 0 8px; font-size: var(--tp-fs-lg); font-weight: 600; }
+  .tp-format__lead { margin: 0 0 20px; font-size: var(--tp-fs-md); }
+  .tp-format__knopf { display: inline-block; }
+  .tp-format__punkte { margin: 20px 0 0; padding-left: 20px; font-size: var(--tp-fs-sm); }
+  .tp-format__links { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; padding: 0; list-style: none; }
+  .tp-format a:not(.button) { color: var(--tp-ink); text-decoration: underline; text-underline-offset: 2px; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Format-Seite",
+  "settings": []
+}
+{% endschema %}

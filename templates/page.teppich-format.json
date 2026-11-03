@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "main": {
+      "type": "tp-format-seite",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
