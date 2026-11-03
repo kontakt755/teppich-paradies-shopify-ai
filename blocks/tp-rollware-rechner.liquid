@@ -1806,6 +1806,8 @@ function tpRwcInit{{ tp_rc_id }}() {
     var current = headlinePrice.querySelector('.price-with-unit__current');
     var compare = headlinePrice.querySelector('.price-with-unit__compare');
     var badge = headlinePrice.querySelector('[data-tp-rollware-rabatt]');
+    var uvp = headlinePrice.querySelector('[data-tp-uvp-kopf]');
+    if (uvp) uvp.hidden = String(v.id) !== uvp.dataset.variante;
     var rate = rateOf(v);
     var oldRate = compareRateOf(v);
     if (current) current.textContent = fmt(rate) + '\u00a0€/m²';
