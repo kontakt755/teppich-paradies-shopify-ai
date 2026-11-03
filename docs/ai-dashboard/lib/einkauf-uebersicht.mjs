@@ -15,6 +15,13 @@ const UNGEKLAERT = 'UNGEKLAERT';
 const leer = v => v === null || v === undefined || String(v).trim() === '' || v === '–' || v === UNGEKLAERT;
 
 /**
+ * Gekettelter Direktversand: beim Bestellen ist zu vermerken, wer kettelt, sonst belegt nichts den
+ * Weg. Dasselbe Kriterium wie wirdGekettelt() in operations/lib/kettelpuffer.mjs.
+ */
+export const kettelwegNoetig = p => p?.route === 'SUPPLIER_DIRECT'
+  && (p.ausfuehrung ?? []).some(z => /^Einfassung:/.test(z) && /gekettelt/i.test(z));
+
+/**
  * Warum eine Position so nicht bestellt werden kann. Leer = bestellbar. Nur, was die Bestellung
  * wirklich aufhaelt (Artikelnummer, Menge); ein fehlender Link zur Produktseite haelt nichts auf.
  */
