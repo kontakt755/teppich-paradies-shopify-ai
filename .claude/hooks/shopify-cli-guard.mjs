@@ -117,7 +117,7 @@ function grobePruefung(befehl, abschnitte, ordner, leseDatei, opt) {
   const text = texte.join('\n');
   const treffer = [...NAMEN].find(n => new RegExp(`\\b${n}\\s*[({]`).test(text));
   if (treffer) return LOESCHGRUND(treffer);
-  return pruefe({ query: text }, opt);
+  return /\bmutation\b/.test(text) ? pruefe({ query: text }, opt) : null;
 }
 
 const LOESCHGRUND = name => `${name} loescht Daten - Loeschen braucht die ausdrueckliche Freigabe des Inhabers (AGENTS.md "NIEMALS ohne ausdrueckliche Freigabe"). Ausgelaufenes wird archiviert, nicht geloescht`;
@@ -134,18 +134,24 @@ export function pruefeBefehl(befehl, { cwd = process.cwd(), leseDatei = p => rea
   }
   let ordner = cwd;
   for (const worte of abschnitte) {
-    if (worte[0]?.text === 'cd' && worte[1] && !worte[1].offen) ordner = path.resolve(ordner, worte[1].text);
+    if (worte[0]?.text === 'cd') {
+      const ziel = worte.slice(1).find(w => !w.text.startsWith('-'));
+      if (ziel && !ziel.offen) ordner = path.resolve(ordner, ziel.text);
+    }
     // Befehl in einem Wort: bash -c '...', x="$(...)", Backticks.
     if (tiefe < 3) {
+      const shell = /(^|\/)(bash|sh|zsh|eval)$/.test(worte[0]?.text || '');
       for (const w of worte) {
-        if (!/shopify\s+store\s+execute/.test(w.text)) continue;
+        // Reiner Text (echo '...') wird nicht ausgefuehrt.
+        if ((!shell && !w.offen) || !/shopify\s+store\s+execute/.test(w.text)) continue;
         const grund = pruefeBefehl(w.text.replaceAll('`', ' ; '), { cwd: ordner, leseDatei, fallbackId, tiefe: tiefe + 1 });
         if (grund) return grund;
       }
     }
     if (!istStoreExecute(worte)) continue;
     const { query, variablen, offen } = aufrufDaten(worte, ordner, leseDatei);
-    if (query) {
+    // Lesen darf auch das Fallback-Theme; ohne das Wort mutation ist es eine Abfrage.
+    if (query && /\bmutation\b/.test(query)) {
       const grund = pruefe({ query, variables: variablen }, opt);
       if (grund) return grund;
       let treffer;

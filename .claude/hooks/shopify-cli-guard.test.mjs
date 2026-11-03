@@ -89,6 +89,13 @@ test('Review-Faelle: Umgebungsvariable, Klammern, verschachtelt, offene Variable
   assert.match(pruefe(`for f in vs/*.json; do ${BASIS} --query-file ${q} --variable-file "$f"; done`), /Fallback/);
 });
 
+test('cd mit Optionen, Lesen des Fallback-Themes, Befehl nur als Text', () => {
+  assert.match(pruefe(`cd -- . && ${BASIS} --query-file weg.graphql`), /productVariantsBulkDelete/);
+  assert.match(pruefe(`cd -P tief && ${BASIS} --query-file x.graphql`), /productVariantsBulkDelete/);
+  assert.equal(pruefe(`shopify store execute -s s --query 'query { theme(id: "gid://shopify/OnlineStoreTheme/${FALLBACK}") { id } }'`), null);
+  assert.equal(pruefe(`echo 'shopify store execute --allow-mutations --query "mutation { productDelete(input: {id: 1}) { deletedProductId } }"'`), null);
+});
+
 test('zweiter Aufruf in einer Kette wird mitgeprueft; Trenner im Text trennen nicht', () => {
   const gut = datei('gut.graphql', 'mutation { metafieldsSet(metafields: []) { userErrors { message } } }');
   assert.match(pruefe(`${BASIS} --query-file ${gut} && ${BASIS} --query 'mutation { fileDelete(fileIds: ["a"]) { deletedFileIds } }'`), /fileDelete/);
