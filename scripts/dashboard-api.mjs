@@ -32,7 +32,7 @@ import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs
 import { grenzeFuer } from '../docs/ai-dashboard/lib/datenstand.mjs';
 import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, hinweisePfad, leseHinweise, merkeAbgleich, aktuelleHinweise, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
 import { postfachAbgleich } from '../operations/lib/nachfass-antworten.mjs';
-import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
+import { sendeMail as smtpSenden, adresse } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
@@ -2254,13 +2254,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         const neue = [];
         try {
           for (const a of eintraege) {
+            // Eine unbrauchbare Absenderadresse darf den Lauf nicht jeden Tag abbrechen: Dorthin geht ohnehin nichts.
+            if (!adresse(a.email)) continue;
             if (stoppliste.has(a.email) || neue.some(n => n.email === a.email)) continue;
             neue.push(a);
             if (!probe) trageAbmeldungEin(stopplistePfad(dir), { email: a.email, von: AUTOMATISCH, grund: a.grund, orderId: a.orderId, jetzt });
           }
           if (!probe) merkeAbgleich(hinweisePfad(dir), { neu: abgleich.hinweise, jetzt });
         } catch (e) {
-          return abbruch('stoerung', `Stoppliste nicht geschrieben – nichts verschickt: ${String(e?.message || e).slice(0, 160)}`);
+          const grund = `Stoppliste nicht geschrieben – nichts verschickt: ${String(e?.message || e).slice(0, 160)}`;
+          if (!probe) { try { merkeAbgleich(hinweisePfad(dir), { fehler: grund, jetzt }); } catch { /* der Abbruch unten zaehlt */ } }
+          return abbruch('stoerung', grund);
         }
         // Die Probe schreibt nichts, rechnet aber so, als waere eingetragen.
         for (const a of neue) stoppliste.set(a.email, { am: jetzt.toISOString(), von: AUTOMATISCH });

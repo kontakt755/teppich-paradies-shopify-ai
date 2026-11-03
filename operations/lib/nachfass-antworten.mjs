@@ -184,7 +184,7 @@ export function eigenerText(text) {
   return aus.join('\n').replace(EIGENER_SATZ, ' ').trim();
 }
 
-const SIGNATUR = /^(?:--\s*$|(?:mit\s+)?(?:freundlich\w*|best\w*|herzlich\w*|lieb\w*|viele|schöne\w*)\s+gr(?:ü|ue)(?:ß|ss)\w*|mfg\b|lg\b|vg\b|gr(?:ü|ue)(?:ß|ss)\w*\b|gesendet\s+(?:von|mit|über)\b|von\s+meinem\b|sent\s+from\b|get\s+outlook\b)/i;
+const SIGNATUR = /^(?:--\s*$|(?:mit\s+)?(?:freundlich\w*|best\w*|herzlich\w*|lieb\w*|viele|schöne\w*)\s+gr(?:ü|ue)(?:ß|ss)\w*|mfg\b|lg\b|vg\b|gr(?:ü|ue)(?:ß|ss)\w*\b|gesendet\s+(?:von|mit|über)\b|von\s+meinem\s+(?:iphone|ipad|android|samsung|galaxy|smartphone|handy|mobil\w*|tablet)\b|sent\s+from\b|get\s+outlook\b)/i;
 /** Hoeflichkeit zaehlt nicht als weiterer Text. */
 const FUELLWORTE = new Set('abmelden abmeldung bitte danke dankeschön vielen dank hallo guten tag morgen abend moin sehr geehrte geehrter geehrtes damen und herren liebes liebe lieber team ich mich möchte moechte will mir mein meine von der dem den die das hiermit gern gerne sie uns wir ihnen'.split(' '));
 

@@ -290,3 +290,8 @@ test('IMAP holen: fehlender Papierkorb wird genannt, fehlendes "Alle Nachrichten
   // Mail ausgewaehlt, Rumpf kommt nicht: das ist eine gescheiterte Suche, nicht "nichts gefunden".
   await assert.rejects(nachrichtenNurLesend(ZUGANG, ['x'], { verbinden: falscherServer({ mails, suche: { '[Gmail]/All Mail': [11] }, ohneRumpf: true }).verbinden }), /nicht lesbar/);
 });
+
+test('„Von meinem“ ist nur mit einem Geraet eine Signatur', () => {
+  assert.equal(erkenneAbmeldung('Von meinem Verteiler bitte abmelden').abmeldung, true);
+  assert.equal(erkenneAbmeldung('Danke\n\nVon meinem iPhone gesendet\nNewsletter abmelden').abmeldung, false);
+});
