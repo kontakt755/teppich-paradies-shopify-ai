@@ -54,10 +54,16 @@
       im Bild - die Rabatt-Plakette sitzt rechts oben. Vorher eine eigene
       Textzeile unter dem Titel, die die Zeilen der Karte gegenueber den
       Nachbarkarten verschob (Shopvergleich 2026-10-15).
+      Sonderposten (Tag "sonderposten") zeigen dieselbe Plakette, damit sie
+      in den normalen Kategorien auffallen (Inhaber 2026-11-03).
     {%- endcomment -%}
     {%- if product.tags contains 'auslauf' -%}
       <div class="product-badges product-badges--bottom-left tp-auslauf-plakette-ort">
         <span class="tp-auslauf-plakette">Auslaufkollektion</span>
+      </div>
+    {%- elsif product.tags contains 'sonderposten' -%}
+      <div class="product-badges product-badges--bottom-left tp-auslauf-plakette-ort">
+        <span class="tp-auslauf-plakette">Sonderposten</span>
       </div>
     {%- endif -%}
     {%  if settings.quick_add or settings.mobile_quick_add %}
