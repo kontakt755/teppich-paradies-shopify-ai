@@ -1562,7 +1562,7 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   Mail ab, schickt der nächste keine zweite, sondern trägt nur die Zeitleiste nach (`nachgetragen`).
   Übersprungen: Stoppliste, Rückrufwunsch (der Laden ruft an), keine Adresse. Nichts geht raus, wenn die
   Vorlage fehlt (`keine-vorlage`), das Postfach nicht eingerichtet ist (`kein-zugang`), Stoppliste oder
-  Protokoll unlesbar sind (`stoerung`) oder ein Platzhalter stehen bliebe (Fehler je Kunde).
+  Protokoll unlesbar sind oder die Postfach-Suche scheitert (`stoerung`) oder ein Platzhalter stehen bliebe (Fehler je Kunde).
   {Name} füllt die `unterschrift` aus dem Postfach, sonst „Ihr Team von Teppich Paradies“.
 - **Postfach** `$TP_PRIVAT_DIR/nachfassen/postfach.json` (legt der Inhaber an, `chmod 600`; für andere
   lesbar = es wird nichts verschickt): `host`, `port` (465 → `tls`, 587 → `starttls`), `benutzer`,
@@ -1580,6 +1580,23 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   Die Antwort trägt den frischen Kartenstand (`stand`), die Karte zeichnet ohne zweiten Abruf neu. Ein
   Kunde auf der Liste erscheint unter „Abgemeldet“ statt „offen“ und wird weder vom Lauf noch per Klick
   angeschrieben. Eine beschädigte Liste stoppt den ganzen Lauf.
+- **Postfach-Abgleich vor jedem Lauf** (seit 2026-11-03, `operations/lib/nachfass-antworten.mjs`): Der Lauf
+  sucht per IMAP nur lesend (`EXAMINE`, `BODY.PEEK`, Gmail-Suche 60 Tage, auch Papierkorb und Spam) nach
+  Antworten mit „Abmelden“ und nach Unzustellbar-Meldungen und trägt die Adressen in die Stoppliste ein
+  (`von: automatisch`, Grund „Antwort …“ oder „Unzustellbar (5.1.1)“). Gesperrt wird nur bei einem Status, der gegen die
+  Adresse spricht (5.1.1, 5.1.2, 5.1.3, 5.1.6, 5.1.10); andere 5.x.x (etwa 5.7.x Richtlinie, 5.2.2 Postfach voll) oder
+  ein fehlender Status werden nur Hinweis in der Karte. Eine Mail zählt nur, wenn sie
+  nachweislich zu einer Nachfassmail gehört (Message-ID, sonst Absender plus Betreff; bei Unzustellbar die
+  fehlgeschlagene Adresse plus Message-ID oder Betreff der Originalmail). Zitate und unser eigener
+  Abmelde-Satz zählen nie, im Fuß nur eine Zeile, die aus nichts anderem besteht; „delayed“ und 4.x.x sperren nicht. Abmelden mit weiterem Text sperrt ebenfalls und
+  steht 7 Tage als Hinweis in der Karte (`nachfassen/hinweise.json`, nur ein Auszug). Scheitert die Suche oder
+  das Eintragen oder hat `stoppliste.json` oder `versand.json` nicht die erwartete Form, geht nichts raus (`stoerung`), die Karte sagt es. Antworten ohne das Wort bleiben beim Menschen.
+  Eine Bestätigungsmail an den Kunden gibt es nicht. `--probe` liest das Postfach auch, schreibt aber nichts.
+- **Bündelung** (seit 2026-11-03, `nachfragenBuendeln()`, `mitMusterListe()`): je Empfängeradresse höchstens eine
+  Mail je Lauf, Groß/Klein egal. Der Text nennt dann alle Bestellungen und Muster; Protokoll und Zeitleiste bleiben
+  je Bestellung, die Sendungen tragen dieselbe Message-ID. Fallen Stufen zusammen, gilt die erste Nachfrage.
+  Über Läufe hinweg gibt es keine Sperre: wird die zweite Bestellung einen Tag später fällig, kommt am Folgetag
+  eine eigene Mail.
 - **Versandprotokoll** `$TP_PRIVAT_DIR/nachfassen/versand.json`: `ersterVersandAm`, `letzterLauf {am,
   verschickt, nachgetragen, uebersprungen, fehler, kopie}`, `sendungen[]` (Bestellung, Stufe, Adresse,
   Betreff, Kopie, Status `sendet|gesendet|vermerkt|fehler`, Message-ID; die letzten 500). Ein Fehlversuch

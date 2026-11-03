@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import { zerlegeMail, kopfText, parameterZerlegen, quotedPrintable } from '../lib/mime.mjs';
-import { mitNurLesen, nachrichtenDaten, ImapFehler } from '../lib/imap-lesen.mjs';
+import { mitNurLesen, nachrichtenDaten, verbinde, ordnerMitKennzeichen, alleNachrichtenOrdner, ImapFehler } from '../lib/imap-lesen.mjs';
 
 const b64 = b => Buffer.from(b).toString('base64').replace(/(.{76})/g, '$1\r\n');
 // Bytes, die UTF-8 nicht ueberleben wuerden.
@@ -132,6 +132,44 @@ test('IMAP nur lesend: ohne [READ-ONLY] vom Server wird nichts geholt', async ()
   await assert.rejects(mitNurLesen({ benutzer: 'a', passwort: 'b' }, async () => { geholt = true; }, { verbinden: s.verbinden }), ImapFehler);
   assert.equal(geholt, false);
   assert.ok(!s.befehle.some(c => c.includes('FETCH')));
+});
+
+test('IMAP-Antwort liefert flache literale und eintraege je Zeile, grosse Literale nur als Bytes', async () => {
+  const gross = Buffer.alloc(5000, 0xe4);
+  const klein = Buffer.from('A: UID 999\r\n');
+  const sock = new EventEmitter();
+  sock.destroy = () => {};
+  sock.end = () => {};
+  sock.write = (z) => {
+    const marke = z.split(' ')[0];
+    const antwort = Buffer.concat([
+      Buffer.from(`* 1 FETCH (UID 5 X-GM-MSGID 255 BODY[HEADER] {${klein.length}}\r\n`), klein,
+      Buffer.from(` BODY[] {${gross.length}}\r\n`), gross,
+      Buffer.from(`)\r\n* 2 FETCH (UID 6 X-GM-MSGID 256)\r\n${marke} OK\r\n`),
+    ]);
+    setImmediate(() => { for (let i = 0; i < antwort.length; i += 7) sock.emit('data', antwort.subarray(i, i + 7)); });
+  };
+  setImmediate(() => sock.emit('data', Buffer.from('* OK bereit\r\n')));
+  const v = await verbinde({ host: 'x', verbinden: () => sock });
+  const a = await v.befehl('UID FETCH 5,6 (X)');
+  assert.equal(a.literale.length, 2);
+  assert.ok(a.literale[0].equals(klein));
+  assert.ok(a.literale[1].equals(gross));
+  assert.equal(a.eintraege.length, 2);
+  assert.equal(a.eintraege[0].aussen, '* 1 FETCH (UID 5 X-GM-MSGID 255 BODY[HEADER] {} BODY[] {})');
+  assert.equal(a.eintraege[0].literale[1], a.literale[1]);
+  assert.deepEqual(a.eintraege[1].literale, []);
+  assert.match(a.zeilen[0], /"\[5000 Bytes\]"/);
+  assert.match(a.zeilen[0], /"A: UID 999 "/);
+  await v.schliessen().catch(() => {});
+  sock.emit('close');
+});
+
+test('IMAP: Ordner je Kennzeichen, alleNachrichtenOrdner bleibt gleich', () => {
+  const liste = ['* LIST (\\HasNoChildren \\All) "/" "[Gmail]/Alle"', '* LIST (\\Trash) "/" "[Gmail]/Papierkorb"'];
+  assert.equal(alleNachrichtenOrdner(liste), '[Gmail]/Alle');
+  assert.equal(ordnerMitKennzeichen(liste, '\\Trash'), '[Gmail]/Papierkorb');
+  assert.equal(ordnerMitKennzeichen(liste, '\\Junk'), null);
 });
 
 test('IMAP-Leser enthaelt keinen aendernden Befehl', () => {

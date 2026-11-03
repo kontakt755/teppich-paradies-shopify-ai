@@ -99,6 +99,7 @@ export const SICHERUNGSPFADE = Object.freeze([
   // (Zugangsdaten) bleibt draussen, siehe NICHT_GESICHERT.
   'nachfassen/versand.json',
   'nachfassen/stoppliste.json',
+  'nachfassen/hinweise.json',
   'muster-nachfassen-texte.md',
   // Musterautomatik: Freigabe, Versandprotokoll der Bestellmails an Lieferanten, Laufstand.
   'muster-bestellung',
