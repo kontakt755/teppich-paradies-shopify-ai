@@ -147,6 +147,20 @@ test('Schreiben: Zuruecknehmen, Teilstand, Fehlerfaelle', async () => {
   await fehler({ orderId: MUSTER, schritt: 'zurueck' }, 400);
 });
 
+test('Schritt bestellt: Kettelweg je Artikel wird vermerkt, ohne Angabe bleibt der Eintrag ohne Vermerk', async () => {
+  const { api, schritt } = umgebung();
+  const item = 'gid://shopify/LineItem/3';
+  const stand = a => a.einkaufAuftragsstatus().positionen[`${WARE}::${item}`];
+  await schritt(WARE, 'bestellt', { kettelwege: { [item]: 'kunde' } });
+  assert.equal(stand(api).status, 'bestellt');
+  assert.equal(stand(api).ueber, 'kunde');
+  await schritt(WARE, 'geliefert', { kettelwege: { [item]: 'kettler' } });
+  assert.equal(stand(api).ueber, 'kunde', 'nur der Schritt bestellt setzt den Vermerk');
+  const ohne = umgebung();
+  await ohne.schritt(WARE, 'bestellt');
+  assert.equal(stand(ohne.api).ueber, undefined);
+});
+
 test('Abwaertskompatibel: der bestehende Aufruf ohne aktion verhaelt sich wie bisher', async () => {
   const { api } = umgebung();
   const r = await api.einkaufAuftragsstatusSetzen({ orderId: WARE, lineItemId: 'gid://shopify/LineItem/3', status: 'bestellt', lieferantBestellnummer: 'AB-1' }, { name: 'Mitarbeiter 1' });

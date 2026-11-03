@@ -44,8 +44,10 @@ npm run -s ki:frag -- review-stand <PR>  # muss "Review aktuell: ..." melden (Ex
 - `offen` (P1): auf dem PR-Branch beheben (wie in Schritt 3) und neu pruefen
   lassen; haelt Claude den P1 fuer falsch, entscheidet der Benutzer.
 - `veraltet`: seit dem Review kam ein Commit dazu - neues `review`.
-- Hoechstens drei Runden. Exit 3 (Kontingent erschoepft): nicht wiederholen,
-  nicht mergen, dem Benutzer melden.
+- Hoechstens drei Runden. Exit 3 (Kontingent erschoepft): nicht wiederholen.
+  Ersatzweise `/code-review` auf Stufe high, Ergebnis dem Benutzer vorlegen und
+  seine Bestaetigung fuer genau diesen PR einholen; im PR als Claude-Pruefung
+  kennzeichnen, nie als Codex-Review (Inhaber 2026-11-03).
 - Hat Codex den PR umgesetzt („Umgesetzt von Codex, geprueft von Claude“),
   prueft Claude mit `/code-review` statt Codex am eigenen Ergebnis.
 

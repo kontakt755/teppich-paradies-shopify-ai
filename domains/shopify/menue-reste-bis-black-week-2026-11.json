@@ -1,0 +1,15 @@
+{
+  "_zweck": "Nr. 27 (Inhaber 03.11.2026): Hauptpunkt \"Angebote & Reste\" zeigt bis zur Black Week auf reste-sonderposten. Die Fusszeile liest main-menu und folgt. Alle anderen Punkte unveraendert. Anwenden nur mit scripts/menue-umbau.mjs --plan, erst nach dem Theme-Deploy. Ablauf: docs/weiterentwicklung/angebote.md, Abschnitt 6.",
+  "menu": "gid://shopify/Menu/268032508238",
+  "oben": [
+    {"id":"gid://shopify/MenuItem/730052297038","_titel":"Teppichboden"},
+    {"id":"gid://shopify/MenuItem/871684145486","_titel":"Teppiche"},
+    {"id":"gid://shopify/MenuItem/871137182030","_titel":"Teppichfliesen"},
+    {"id":"gid://shopify/MenuItem/859123319118","_titel":"Vinylboden"},
+    {"id":"gid://shopify/MenuItem/890032816462","_titel":"Laminat & Parkett"},
+    {"id":"gid://shopify/MenuItem/890032849230","_titel":"Linoleum & Kautschuk"},
+    {"id":"gid://shopify/MenuItem/868583539022","_titel":"Zubehör & Leisten"},
+    {"id":"gid://shopify/MenuItem/887189668174","_titel":"Angebote & Reste","ziel":{"type":"COLLECTION","resourceId":"gid://shopify/Collection/705477607758"}},
+    {"id":"gid://shopify/MenuItem/734281072974","_titel":"Service & Verlegung"}
+  ]
+}

@@ -59,3 +59,25 @@ test('Oberpunkte mit Unterpunkten werden nie ausgeblendet', () => {
   const text = readFileSync(path.join(root, 'snippets/tp-menu-link-sichtbar.liquid'), 'utf8');
   assert.match(text, /if tmls_handle == 'angebote' and link\.links == blank/);
 });
+
+// Nr. 27 (03.11.2026): "Angebote & Reste" fuehrte seit Aktionsende auf eine leere Seite.
+test('Knopf im Handy-Menue erscheint nur, wenn sein Ziel etwas zeigt', () => {
+  const text = readFileSync(path.join(root, 'snippets/tp-drawer-liste.liquid'), 'utf8');
+  assert.match(text, /render 'tp-menu-link-sichtbar', link: tp_dl_all, ziel_pruefen: true/);
+  assert.match(text, /render 'tp-menu-link-sichtbar', link: parent_link, ziel_pruefen: true/);
+  const knopf = text.indexOf('<a class="tp-dn-cta"');
+  assert.ok(knopf > text.indexOf("unless tp_dl_cta_sichtbar contains 'nein'"), 'Knopf steht innerhalb der Pruefung');
+  assert.match(readFileSync(path.join(root, 'snippets/tp-menu-link-sichtbar.liquid'), 'utf8'), /elsif tmls_handle == 'angebote' and ziel_pruefen/);
+});
+
+test('leere Angebotsseite zeigt Hinweis und Link zu Reste & Sonderposten', () => {
+  const text = readFileSync(path.join(root, 'snippets/product-grid.liquid'), 'utf8');
+  const stelle = text.indexOf("collection.handle == 'angebote'");
+  assert.ok(stelle > 0, 'Fall fehlt');
+  assert.match(text.slice(stelle, stelle + 600), /Gerade laufen keine Angebote[\s\S]*\/reste-sonderposten/);
+});
+
+test('Schnellsuche ueberspringt leere Kollektionen', () => {
+  const text = readFileSync(path.join(root, 'snippets/tp-suche-ergebnisse.liquid'), 'utf8');
+  assert.match(text, /for tp_se_k in predictive_search\.resources\.collections\n\s+if tp_se_k\.all_products_count == 0\n\s+continue/);
+});

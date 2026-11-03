@@ -934,6 +934,7 @@ Lauf. Gemessen: ein Fehlermeldungs-Lauf ohne Arbeit braucht 3 Runden, 8 s, rund 
 | `net.teppich-paradies.fehler-vorpruefung` | alle 15 Min., Mo–Sa 7–19 Uhr (und beim Laden) | `claude-lauf.mjs fehlermeldungen`: `npm run -s fehler -- abgleich` ohne KI; Claude nur bei `neu`, oder für `laufend`/`kuerzlichErledigt` höchstens alle 2 Std. Nach einem Fehlschlag 1 Std. Pause. |
 | `net.teppich-paradies.postfach` | 7:35, 9:35 … 19:35, Mo–Sa | `claude-lauf.mjs postfach`: erst eine IMAP-Vorprüfung ohne KI (unten), dann je Teil höchstens ein `claude -p`-Aufruf, erst Lieferbelege, dann Service-Anfragen. Ein Fehler im ersten verhindert den zweiten nicht. |
 | `net.teppich-paradies.datenstand` | stündlich :20 | `datenstand-pruefen.mjs`: `aktualisierung.json` höchstens 60 Min. alt, jeder Teil erfolgreich, Lexikon/Bestand ≤ 3 Std. Ohne KI. Ersetzt den Datenteil von `shop-zahlen-export` – die Daten holt der Sync-Dienst. |
+| `net.teppich-paradies.ki-stand` | stündlich :50 | `ki-stand.mjs`: ohne KI Codex-Kontingent (ab 80 % Woche oder nicht lesbar ein To-do) und native Musterautomatik; montags Claude-Version und Werkzeugprobe (neue Version: gelbes To-do, Update nie selbst); monatlich höchstens ein Sonnet-Lauf ohne Werkzeuge, der bis zu 3 Vorschläge nach `routinen/ki-stand/` schreibt |
 
 Das Nachziehen von `~/tp-dashboard` auf main macht nicht dieser Dienst, sondern
 `net.teppich-paradies.nachziehen` (#1715, Abschnitt oben). Zusammenspiel: Das Nachziehen
@@ -959,6 +960,38 @@ Neues (Vorprüfung ohne KI)“ mit dem Grund in `vorpruefungGrund`. Zugang: das 
 Nachfass-Versands (`nachfassen/postfach.json`, gleiches Konto). Geht die Vorprüfung nicht (kein
 Zugang, Anmeldung abgelehnt, Netz), startet Claude wie bisher. Abschalten:
 `TP_POSTFACH_VORPRUEFUNG=aus`; `--erzwingen` und `--trocken` überspringen sie.
+
+**Postfach-Entwürfe** (`net.teppich-paradies.postfach-entwuerfe`, stündlich :05, Mo–Sa 7–19 Uhr, Inhaber 03.11.2026;
+eigener Schalter `dienste-einrichten.sh --postfach-entwuerfe`, nicht Teil von `--routinen`): Claude
+ordnet neue Mails ein und legt in den freigegebenen Klassen einen Antwort-Entwurf am Verlauf an, den
+ein Mensch prüft und selbst sendet. Vorprüfung per IMAP nur mit Kennungen, From und Reply-To (nie Betreff oder Text); ohne neue Kennung startet
+Claude nicht, auch nicht einmal am Tag. Geht die Vorprüfung nicht, startet Claude ebenfalls nicht
+(Störung „vorpruefung“). Höchstens 15 Verläufe je Lauf, der Rest kommt im nächsten Takt.
+
+- *Nie senden:* Gmail-Werkzeuge nur `search_threads`, `get_thread`, `get_message`, `list_drafts`,
+  `create_draft`, `label_thread`. `create_draft` kann nicht senden und hängt mit `replyToMessageId` am
+  Verlauf; `reply` würde sofort senden und bleibt mit `send_message`, `forward`, `update_draft`,
+  `trash_*` und Spam gesperrt. Die anderen Läufe behalten ihre Sperre.
+- *Wache:* `create_draft` nur am Verlauf, genau ein Empfänger (Absender oder Antwort-an der Mail
+  laut Vorprüfung, als Prüfsumme in `absender.json`; nie das Formular, nie die eigene Domain), nur
+  reiner Text, Anfang „Guten Tag“, mit Gruß und Firmensignatur, keine Beträge (auch ohne
+  Währungszeichen), Liefertermine, KI-Sätze, Bankverbindungen, Links und Adressen nur von
+  teppich-paradies.net, je Mail einmal, höchstens 15 je Lauf. Abgelehnter Wortlaut, den Claude
+  korrigiert, ist keine Störung; Empfänger und fremde Links bleiben eine. `label_thread` nur die festen Labels aus
+  `lib/routinen.mjs`; die Kennungen stehen in `routinen/postfach-entwuerfe/labels.json`. Das Label
+  `Auftrag` nie: daraus legt die Monteur-App sofort einen Auftrag an (eigene Sperre in der Wache).
+- *Bremse:* Solange `routinen/postfach-entwuerfe/aus` existiert, wird der Lauf übersprungen (auch mit
+  `--erzwingen`), ohne Störung.
+- *Messung:* `routinen/postfach-entwuerfe/messung.jsonl`, je Mail eine Zeile ohne Inhalte. Ein
+  Entwurf zählt, wenn die Wache den Aufruf gesehen hat (`entwurf-spuren.jsonl`: Kennung, Länge,
+  Prüfsumme, kein Text) und Claude ihn als angelegt meldet. Scheitert `create_draft`, meldet der
+  Lauf eine Störung und versucht es im nächsten Takt noch einmal; danach steht die Mail mit
+  `entwurf-gescheitert` in der Messung und bleibt beim Menschen. KLAR wird nur gezählt und als
+  Entwurf angelegt, nie gesendet.
+- *Auswertung:* `npm run -s entwuerfe -- auswerten` zeigt die Zahlen je Klasse und per IMAP, in wie
+  vielen Verläufen danach eine Antwort gesendet wurde. Das sagt nicht, ob der Entwurf benutzt wurde.
+  Den Wortlaut liefert der IMAP-Leser nicht; dafür bekommt `npm run -s entwuerfe -- vergleichen
+  --datei X` eine Liste `[{mailId, text}]` mit dem gesendeten Text und zählt unverändert/geändert.
 
 **Auftragstexte** liegen privat unter `~/teppich-paradies-analyse/routinen/auftraege/<aufgabe>.md`
 (enthalten u. a. die Werkbank-Adresse). `dienste-einrichten.sh --routinen` kopiert sie einmalig aus
@@ -1053,6 +1086,32 @@ npm run -s datenstand:pruefen -- --trocken
 löschen (ohne Plist zeigt das Control Center die Routine nicht mehr). **Rückfall** bei „Mac-Dienst
 gestört“, der sich nicht gleich beheben lässt: Dienst abschalten und die pausierte App-Aufgabe
 wieder aktivieren.
+
+## Rechnungs-Archiv und Druck-PDF (von Hand, seit 03.11.2026)
+
+Originale bleiben digital, gedruckt wird nur noch eine sortierte Kopie. Kein Dienst: die Befehle
+laufen von Hand, einmal im Monat.
+
+```
+npm run -s belege:monat -- --monat 2026-10              # Probelauf: liest, schreibt nichts
+npm run -s belege:monat -- --monat 2026-10 --schreiben  # legt ab und baut das Druck-PDF
+npm run -s belege:bank -- <kontoauszug.csv|camt053.xml> # Liste je Empfaenger, grobe Zuordnung
+```
+
+- **Postfach nur lesend:** `lib/imap-lesen.mjs` oeffnet mit `EXAMINE`, holt nur per `BODY.PEEK` und
+  bricht ab, wenn der Server nicht `[READ-ONLY]` meldet. Zugang: `nachfassen/postfach.json`.
+- **Ablage:** `$TP_PRIVAT_DIR/belege-archiv/JJJJ/MM/`: Originale (schreibgeschuetzt, sha256 im Manifest,
+  nie ueberschrieben), eingebettete oder beigelegte XML als eigene Datei, `manifest.json`,
+  `druck-JJJJ-MM.pdf`. Anzeigenamen der Anbieter privat in `belege-archiv/anbieter.json` (Absender
+  oder Domain -> Name); nach einem Namenswechsel entsteht ein neuer Dateiname, das alte Original bleibt.
+- **Einordnung** (`lib/belege.mjs`): eigene Mails, Versandmarken, Avise, Lieferscheine und
+  Zahlungsdienste fallen heraus; was nicht eindeutig ist, wird „unklar“ und steht im Deckblatt.
+  Betrag und Rechnungsnummer nur aus XML oder als einziger Wert hinter einem Stichwort im PDF-Text,
+  sonst leer und „Prüfen“. Die Summe sagt ausdruecklich, wenn sie deshalb unvollstaendig ist.
+- **Bank** (`lib/belege-bank.mjs`): CSV-Export oder CAMT.053, Ergebnis nur unter
+  `belege-archiv/bank/`. Guete der Zuordnung: `nummer`, `betrag-und-name`, `nur-betrag` (nur Hinweis).
+- **Werkzeuge:** `~/.venvs/analyse` (pypdf, `TP_ANALYSE_PYTHON`), `weasyprint` fuer das Deckblatt.
+- Die Konsolenausgabe nennt nur Zahlen. Ein vollstaendiger Lauf dauert rund 7 Minuten.
 
 ## Shop-Wache und Aufgabenwaechter (Mac-Dienste ohne Vorlage)
 

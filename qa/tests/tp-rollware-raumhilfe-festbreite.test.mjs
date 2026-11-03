@@ -12,7 +12,7 @@ const end = source.indexOf('\n  };', start) + 5;
 assert.ok(start >= 0 && end > start);
 
 function preis({ wIdx = -1, fallbackWidthCm = 400, cmExact = false, raumAnfrage = false } = {}) {
-  const context = vm.createContext({ root: {}, wIdx, fallbackWidthCm, cmExact, raumAnfrage,
+  const context = vm.createContext({ root: {}, wIdx, fallbackWidthCm, cmExact, raumAnfrage, raumFest: raumAnfrage,
     raumVariant: () => ({ rate: 75 }),
     variantFor: (_options, width) => ({ rate: width === 500 ? 60 : 41.95 }),
     baseOptions: () => [], byWidth: w => w, rateOf: v => v?.rate || 0,

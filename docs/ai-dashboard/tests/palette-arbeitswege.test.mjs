@@ -28,6 +28,7 @@ test('Packstation, Bestellungen und Muster bestellen sind auch fuer Mitarbeiter 
     ['Lexikon', 'lexikon', {}],
     ['Bestellungen', 'kunden', { tab: 'bestellungen', bart: 'ware', bsort: 'wichtigkeit' }],
     ['Muster bestellen', 'einkauf', { tab: 'lieferant', art: 'muster', af: 'offen' }],
+    ['Musterlager', 'einkauf', { tab: 'musterlager' }],
   ]) {
     const u = palette(), item = u.paletteItems(q)[0];
     assert.equal(item.label, q, 'genau benannter Arbeitsweg steht vor der allgemeinen Aufgabensuche');

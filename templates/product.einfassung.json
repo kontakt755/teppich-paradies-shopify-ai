@@ -214,7 +214,8 @@
               "name": "TP Schritt-Überschrift",
               "settings": {
                 "number": 1,
-                "label": "Farbe"
+                "label": "Farbe",
+                "nur_mit_farboption": true
               },
               "blocks": {}
             },
@@ -337,7 +338,7 @@
               "type": "tp-muster-cta",
               "settings": {
                 "label": "Kostenloses Muster anfragen",
-                "hinweis": "Bis zu 2 Farben, versandkostenfrei"
+                "hinweis": "Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei"
               }
             },
             "tp_teppich_struktur_1": {

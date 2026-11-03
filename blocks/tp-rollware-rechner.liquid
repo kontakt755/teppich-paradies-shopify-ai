@@ -186,6 +186,15 @@
   if product.tags contains 'ohne-raummass'
     assign tp_rc_ohne_raum = true
   endif
+
+  # Restrolle: Raummass-Angebot als JSON oder 'null', siehe Snippet.
+  assign tp_rc_rest_raum = 'null'
+  if tp_rc_bestand_gefuehrt and tp_rc_ohne_raum == false
+    capture tp_rc_rest_raum
+      render 'tp-rollware-rest-raum', product: product
+    endcapture
+    assign tp_rc_rest_raum = tp_rc_rest_raum | strip | default: 'null'
+  endif
 -%}
 {%- comment -%}
   data-tp-breite / data-tp-laenge: das Stueck fuer die klebende Kaufleiste
@@ -739,13 +748,15 @@
 
 {% render 'tp-produktberatung', product: product %}
 
+{%- if tp_rc_rest_raum != 'null' -%}<script src="{{ 'tp-zuschnitt-abgleich.js' | asset_url }}" defer></script>{%- endif -%}
 <script type="application/json" data-rwc-data-{{ tp_rc_id }}>
 {
   "options": {{ product.options_with_values | json }},
   "selected_options": {{ product.selected_or_first_available_variant.options | json }},
   "fallback_width_cm": {{ tp_rc_fallback_width_cm | json }},
   "cm_exact": {{ tp_rc_cm_exact | json }},
-  "raummass_anfrage": {% if product.handle == 'vorwerk-passion-yasmin-anthrazit-teppichboden-400-cm-sonderposten' and product.variants.size == 1 and tp_rc_bestand_gefuehrt %}true{% else %}false{% endif %},
+  "raummass_anfrage": {% if tp_rc_rest_raum == 'null' and product.handle == 'vorwerk-passion-yasmin-anthrazit-teppichboden-400-cm-sonderposten' and product.variants.size == 1 and tp_rc_bestand_gefuehrt %}true{% else %}false{% endif %},
+  "rest_raum": {{ tp_rc_rest_raum }},
   "product_handle": {{ product.handle | json }},
   "meter_tipp": {{ block.settings.meterware_tipp_anzeigen | json }},
   "aktion_prozent": {{ tp_rc_aktion_prozent | default: 0 }},
@@ -1375,15 +1386,43 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Reservierung fehlt, darf dieser Zweig niemals /cart/add.js erreichen.
   var raumAnfrage = data.raummass_anfrage === true && wIdx === -1 &&
     variants.length === 1 && !cmExact && fallbackWidthCm > 0;
+  // Restrolle: Raummass hier im Rechner, abgerechnet ueber das versteckte
+  // Raummass-Produkt in 0,01-m2-Einheiten, der Bestand geht ueber eine Variante
+  // des Zuschnitt-Bundles von der Rolle ab (wie im Einfass-Konfigurator). Der
+  // Zuschnitt traegt genau eine Einheit des Stuecks, sonst kein Angebot.
+  var restRaum = (!raumAnfrage && data.rest_raum && wIdx === -1 && variants.length === 1 &&
+    !cmExact && fallbackWidthCm > 0) ? data.rest_raum : null;
+  var restZuschnitte = restRaum ? (restRaum.zuschnitt || []).filter(Boolean) : [];
+  if (restRaum && (!restZuschnitte.length || !(restRaum.price > 0) || !(restRaum.max_laenge_cm > 0) ||
+    restZuschnitte.some(function (z) { return z.price !== restRaum.price; }))) restRaum = null;
+  var raumFest = raumAnfrage || !!restRaum;
   var raumAngebot = raumAnfrage ? Object.assign({}, variants[0], {
     id: null, quote_only: true, einfassen: "", kettelung: false,
     price: Math.round(Number(variants[0].price) * 1.35 / 100) * 100,
     compare_at_price: 0
+  }) : restRaum ? Object.assign({}, variants[0], {
+    id: restRaum.id, rest_raum: true, einfassen: "", kettelung: false,
+    price: restRaum.price * 100,
+    compare_at_price: 0
   }) : null;
   function raumMoeglich(v) {
-    return v && v.quote_only === true
-      ? raumAnfrage && v === raumAngebot && v.available === true && v.price > 0
+    return v && (v.quote_only === true || v.rest_raum === true)
+      ? raumFest && v === raumAngebot && v.available === true && v.price > 0
       : ART.wunschOk(v, wIdx);
+  }
+  // Einheiten (0,01 m2) des Stuecks, mindestens der Mindestpreis.
+  function restRaumMenge(wCm, lenCm) {
+    var mindest = restRaum.mindest_cent > 0 ? Math.ceil(restRaum.mindest_cent / restRaum.price - 1e-9) : 0;
+    return Math.max(Math.round((wCm * lenCm) / 100), mindest);
+  }
+  // Kleinste kaufbare Bundle-Variante, die die Laenge deckt (Schnitt laengs).
+  function restZuschnittFuer(lenCm) {
+    var passend = null;
+    if (!(lenCm <= restRaum.max_laenge_cm)) return null;
+    restZuschnitte.forEach(function (z) {
+      if (z.available === true && z.cm >= lenCm && (!passend || z.cm < passend.cm)) passend = z;
+    });
+    return passend;
   }
 
   var widths;
@@ -1584,7 +1623,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Faellt /cart.js aus, geht der Kauf ohne Hinweis weiter wie bisher.
   function massSignatur(variantId, p) {
     p = p || {};
-    return [String(variantId), p['Art'] || '', p['Ihre Breite'] || p['Rollenbreite'] || '', p['Gewünschte Länge'] || ''].join('|');
+    return [String(variantId), p['Art'] || '', p['Ihre Breite'] || p['Rollenbreite'] || p['Maße'] || '', p['Gewünschte Länge'] || ''].join('|');
   }
   function liegtSchonImKorb(sig) {
     return fetch('/cart.js', { headers: { Accept: 'application/json' } })
@@ -1646,21 +1685,23 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (!(wCm > 0) || !(lenCm > 0)) return 0;
     // Feste Rollenbreite ohne Breitenoption: wie im Hauptrechner verwenden.
     // Ohne Anfrageangebot gibt es hier kein Raummass; fremde Rollenbreiten bleiben ausgeschlossen.
-    if (wIdx === -1 && (art === 'raum' ? !raumAnfrage : wCm !== fallbackWidthCm)) return 0;
+    if (wIdx === -1 && (art === 'raum' ? !raumFest : wCm !== fallbackWidthCm)) return 0;
     var v = art === 'raum' ? raumVariant() : variantFor(baseOptions(), byWidth(wCm));
     if (art === 'raum' && !raumMoeglich(v)) return 0;
     var rate = rateOf(v);
     if (!(rate > 0)) return 0;
     var qty = cmExact ? roundedHundredthsQty(wCm, lenCm) : Math.ceil((wCm * lenCm) / 10000);
     if (v && v.quote_only) return Math.round(wCm * lenCm / 10000 * rate * 100) / 100;
+    if (v && v.rest_raum) return restZuschnittFuer(lenCm) ? restRaumMenge(wCm, lenCm) * restRaum.price / 100 : 0;
     return (cmExact ? qty / 100 : qty) * rate;
   };
 
   // Fuer die Anzeige im Raummass-Helfer (Shop-Analyse 13.10.): berechnete
   // Menge in m² wie in der Preisbox gerundet, und das Mass, das gerade im
   // Rechner steht (= das, was in den Warenkorb ginge). Rechnet keinen Preis.
-  root.tpRwcBerechnetM2 = function (wCm, lenCm) {
+  root.tpRwcBerechnetM2 = function (wCm, lenCm, art) {
     if (!(wCm > 0) || !(lenCm > 0)) return 0;
+    if (art === 'raum' && restRaum) return restRaumMenge(wCm, lenCm) / 100;
     return cmExact ? roundedHundredthsQty(wCm, lenCm) / 100 : Math.ceil((wCm * lenCm) / 10000);
   };
   root.tpRwcBestellmass = function () {
@@ -1672,7 +1713,7 @@ function tpRwcInit{{ tp_rc_id }}() {
 
   // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
   function selectedWidth() {
-    if (wIdx === -1 && !raumAnfrage) return widths[0];
+    if (wIdx === -1 && !raumFest) return widths[0];
     if (artMode() === 'raum') {
       // Ganze cm aus cm- oder m-Eingabe. Eine absurd grosse Zahl bleibt
       // "zu breit" (pruefeBreite meldet es), statt als leer zu gelten.
@@ -1728,12 +1769,12 @@ function tpRwcInit{{ tp_rc_id }}() {
   }
   function findVariant(w) {
     var t = baseOptions();
-    if (raumAnfrage && artMode() === 'raum') return raumAngebot;
+    if (raumFest && artMode() === 'raum') return raumAngebot;
     if (wIdx !== -1 && artMode() === 'raum') return variantFor(t, ART.isWunsch);
     return variantFor(t, byWidth(w));
   }
   function raumVariant() {
-    return raumAnfrage ? raumAngebot : (wIdx === -1 ? null : variantFor(baseOptions(), ART.isWunsch));
+    return raumFest ? raumAngebot : (wIdx === -1 ? null : variantFor(baseOptions(), ART.isWunsch));
   }
   // EUR je m² aus dem Variantenpreis - im cm-genauen Modus steht dort der
   // Preis je 0,01 m².
@@ -1765,6 +1806,8 @@ function tpRwcInit{{ tp_rc_id }}() {
     var current = headlinePrice.querySelector('.price-with-unit__current');
     var compare = headlinePrice.querySelector('.price-with-unit__compare');
     var badge = headlinePrice.querySelector('[data-tp-rollware-rabatt]');
+    var uvp = headlinePrice.querySelector('[data-tp-uvp-kopf]');
+    if (uvp) uvp.hidden = String(v.id) !== uvp.dataset.variante;
     var rate = rateOf(v);
     var oldRate = compareRateOf(v);
     if (current) current.textContent = fmt(rate) + '\u00a0€/m²';
@@ -1807,7 +1850,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   }
 
   function syncArtUi() {
-    if (wIdx === -1 && !raumAnfrage) {
+    if (wIdx === -1 && !raumFest) {
       if (artField) artField.hidden = true;
       if (widthField) widthField.hidden = false;
       if (widthStep) widthStep.hidden = true;
@@ -1877,8 +1920,8 @@ function tpRwcInit{{ tp_rc_id }}() {
     var cmp = ART.meterwareGuenstiger(w, len, rateRaum, farbBreiten, function (rolle) {
       return rateOf(variantFor(t, byWidth(rolle)));
     }, cmExact ? function (a) { return Math.round(a * 100 + 1e-9) / 100; } : Math.ceil);
-    if (cmp && raumAnfrage) {
-      cmp.totalRaum = Math.round(w * len / 10000 * rateRaum * 100) / 100;
+    if (cmp && raumFest) {
+      cmp.totalRaum = restRaum ? restRaumMenge(w, len) * restRaum.price / 100 : Math.round(w * len / 10000 * rateRaum * 100) / 100;
       cmp.guenstiger = cmp.totalMeter < cmp.totalRaum;
     }
     if (!cmp || !cmp.guenstiger) { meterTipp.hidden = true; return; }
@@ -2519,6 +2562,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     target = findVariant(w);
     syncHeadlinePrice(target);
     var ok = !!(target && target.available) && (!raum || raumMoeglich(target));
+    // Laenger als das Zuschnitt-Bundle reicht: nur als Meterware moeglich.
+    var restZuLang = !!(raum && target && target.rest_raum && len > 0 && !restZuschnittFuer(len));
+    if (restZuLang) ok = false;
     updateEinfassChips();
     updateMuster();
 
@@ -2529,6 +2575,9 @@ function tpRwcInit{{ tp_rc_id }}() {
       errStock.hidden = false;
     } else if (!target.available) {
       errStock.textContent = 'Diese Breite ist derzeit nicht lieferbar.';
+      errStock.hidden = false;
+    } else if (restZuLang) {
+      errStock.textContent = 'Für diese Länge reicht die Rolle als Raummaß nicht. Bitte kürzer wählen oder als Meterware bestellen.';
       errStock.hidden = false;
     } else {
       errStock.hidden = true;
@@ -2557,17 +2606,27 @@ function tpRwcInit{{ tp_rc_id }}() {
       var qty = cmExact ? roundedHundredthsQty(w, len) : Math.ceil(area);
       var billedArea = target.quote_only ? area : (cmExact ? qty / 100 : qty);
       var total = target.quote_only ? Math.round(billedArea * rate * 100) / 100 : billedArea * rate;
+      var restMindest = false;
+      if (target.rest_raum) {
+        var restMenge = restRaumMenge(w, len);
+        restMindest = restMenge > Math.round((w * len) / 100);
+        billedArea = restMenge / 100;
+        total = restMenge * restRaum.price / 100;
+      }
 
       formulaArea.textContent = w + ' cm × ' + len + ' cm = ' + fmt(area) + ' m²';
 
       // Nur der aufrundende Modus braucht einen Hinweis - sonst stuende dort
       // eine Gleichung, die fuer den Kunden nicht aufgeht.
       if (formulaRound) {
-        var isRounded = !target.quote_only && !cmExact && qty > area + 0.0001;
+        var isRounded = !target.quote_only && !target.rest_raum && !cmExact && qty > area + 0.0001;
         if (isRounded) {
           formulaRound.textContent = 'Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf ' + qty + ' m².';
         }
-        formulaRound.hidden = !isRounded;
+        if (restMindest) {
+          formulaRound.textContent = 'Mindestpreis ' + fmt(restRaum.mindest_cent / 100) + ' € für kleine Zuschnitte.';
+        }
+        formulaRound.hidden = !(isRounded || restMindest);
       }
       formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
@@ -2859,6 +2918,40 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (bahnen) properties['Zuschnitt'] = bahnen.text || (bahnen.n + ' Bahnen à ' + bahnen.laenge + ' cm, einzeln gerollt');
     // Farbnummer (intern) mitgeben - siehe domains/shopify/farbverwaltung.md.
     // Unterstrich-Property sieht nur der Admin, "Farbnummer" auch der Kunde im Warenkorb.
+    // Restrolle: dieselben Zeilen wie im Einfass-Konfigurator, damit Warenkorb-
+    // sperre, Bestellmail und Control Center den Zuschnitt erkennen. Die
+    // Hauptzeile hat eine Einheit weniger, die traegt die Zuschnittzeile.
+    var restZeile = null;
+    if (target.rest_raum) {
+      var restStueck = restRaumMenge(w, len);
+      var restZs = restZuschnittFuer(len);
+      if (!restZs || restStueck <= 1) {
+        if (ctaHint) {
+          ctaHint.textContent = 'Für diese Länge reicht die Rolle als Raummaß nicht. Bitte kürzer wählen oder als Meterware bestellen.';
+          ctaHint.hidden = false;
+        }
+        return;
+      }
+      var restMass = w + ' × ' + len + ' cm';
+      var restMitMindest = restStueck > Math.round((w * len) / 100);
+      billedArea = restStueck / 100;
+      qty = restStueck - 1;
+      properties = {
+        'Art': 'Raummaß',
+        'Einfassung': 'ohne Einfassung',
+        'Form': 'Rechteck',
+        'Maße': restMass,
+        'Fläche (abgerechnet)': restMitMindest
+          ? fmt(billedArea) + ' m² (Mindestpreis, gewünscht ' + fmt(area) + ' m²)'
+          : fmt(area) + ' m²',
+        '_Einheit im Zuschnitt': '1',
+        '_Rollenzuschnitt': String(restZs.cm)
+      };
+      if (restMitMindest) properties['Mindestpreis'] = 'angewendet';
+      if (angehobenVon) properties['Mindestbestellmenge'] = fmtMeter(MIN_BESTELL_CM) + ' (eingegeben ' + fmtMeter(angehobenVon) + ')';
+      properties['_Zuschnitt'] = [restRaum.produkt, restMass, 'ohne Einfassung', properties['Fläche (abgerechnet)']].join(' · ');
+      restZeile = { id: restZs.id, quantity: 1, properties: { 'Zu Teppich': restRaum.produkt, 'Rollenzuschnitt': restZs.cm + ' cm' } };
+    }
     if (target.farbnummer) properties['Farbnummer'] = target.farbnummer;
     if (target.farbe_intern) properties['_Farbe intern'] = target.farbe_intern;
 
@@ -2884,15 +2977,16 @@ function tpRwcInit{{ tp_rc_id }}() {
     }
 
     var payload = { id: target.id, quantity: qty, properties: properties };
-    if (extras.items.length) {
-      var gruppe = 'T' + Date.now().toString(36);
+    var zusatzZeilen = restZeile ? extras.items.concat([restZeile]) : extras.items;
+    if (zusatzZeilen.length) {
+      var gruppe = (restZeile ? 'K' + Math.random().toString(36).slice(2, 5) : 'T') + Date.now().toString(36);
       properties['_Gruppe'] = gruppe;
-      extras.items.forEach(function (it) { it.properties['_Gruppe'] = gruppe; });
+      zusatzZeilen.forEach(function (it) { it.properties['_Gruppe'] = gruppe; });
       // Shopify stellt neue Zeilen im Warenkorb in umgekehrter Request-Reihenfolge
       // dar. Hauptprodukt zuletzt senden, damit es im Dialog vor Zubehoer steht.
-      payload = { items: extras.items.concat([{ id: target.id, quantity: qty, properties: properties }]) };
+      payload = { items: zusatzZeilen.concat([{ id: target.id, quantity: qty, properties: properties }]) };
     }
-    var addedCount = qty + extras.items.reduce(function (sum, it) { return sum + it.quantity; }, 0);
+    var addedCount = qty + zusatzZeilen.reduce(function (sum, it) { return sum + it.quantity; }, 0);
 
     // Erster Klick auf ein Mass, das schon im Warenkorb liegt: nicht
     // hinzufuegen, sondern fragen. Erst der zweite Klick bestellt ein
@@ -2943,6 +3037,12 @@ function tpRwcInit{{ tp_rc_id }}() {
       .then(function (r) {
         if (!r.ok) throw new Error('add failed');
         return r.json();
+      })
+      .then(function (addedItem) {
+        // Restrolle: Zuschnitt-Attribut vor dem Oeffnen abgleichen. Scheitert es,
+        // sperrt der Warenkorb den Checkout und bietet den Abgleich selbst an.
+        if (!restZeile || !window.TPZuschnitt) return addedItem;
+        return window.TPZuschnitt.abgleichen().then(function () { return addedItem; }, function () { return addedItem; });
       })
       .then(function (addedItem) {
         inFlight = false;

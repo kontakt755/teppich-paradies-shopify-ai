@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.postfach-entwuerfe</string>
+
+  <!-- Postfach einordnen und Antwort-Entwuerfe in Gmail anlegen (operations/scripts/claude-lauf.mjs,
+       Inhaber 2026-11-03). Sendet nie: die Wache laesst nur create_draft und feste Labels zu.
+       Stuendlich, Claude nur bei neuen Mails. Bremse: Datei routinen/postfach-entwuerfe/aus.
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-postfach-entwuerfe -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/operations/scripts/claude-lauf.mjs</string>
+    <string>postfach-entwuerfe</string>
+  </array>
+  <key>WorkingDirectory</key><string>__REPO_PFAD__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>TP_DIENST_DIR</key><string>__REPO_PFAD__</string>
+    <key>PATH</key><string>__NODE_DIR__:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+
+  <!-- Stuendlich zur Minute 5; ausserhalb Mo-Sa 7-19 Uhr endet der Lauf sofort (das Skript prueft die Zeit). -->
+  <key>StartCalendarInterval</key>
+  <dict><key>Minute</key><integer>5</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>ProcessType</key><string>Standard</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/teppich-paradies-analyse/routinen/postfach-entwuerfe/dienst.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/teppich-paradies-analyse/routinen/postfach-entwuerfe/dienst.log</string>
+</dict>
+</plist>

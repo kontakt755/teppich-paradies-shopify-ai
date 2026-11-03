@@ -60,10 +60,10 @@ export function aktualisiereNavigation() {
   const kundenTab = !state.route.params.get('kunde') ? state.route.params.get('tab') : null;
   const kundenHauptpunkt = ['bestellungen', 'muster'].includes(kundenTab) ? kundenTab : null;
   const musterBestellen = state.route.params.get('tab') === 'lieferant' && state.route.params.get('art') === 'muster' && state.route.params.get('af') === 'offen';
-  const einkaufHauptpunkt = musterBestellen ? 'muster' : state.route.params.get('tab') === 'musterlager' ? 'musterlager' : null;
+  const einkaufPunkt = musterBestellen ? 'muster' : state.route.params.get('tab') === 'musterlager' ? 'lager' : null;
   document.querySelectorAll('[data-nav]').forEach(a => {
     const tabPasst = view !== 'kunden' || (a.dataset.navTab || null) === kundenHauptpunkt;
-    const einkaufPasst = view !== 'einkauf' || (a.dataset.navEinkauf || null) === einkaufHauptpunkt;
+    const einkaufPasst = view !== 'einkauf' || (a.dataset.navEinkauf || null) === einkaufPunkt;
     if (a.dataset.nav === view && tabPasst && einkaufPasst) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });

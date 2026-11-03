@@ -22,7 +22,8 @@ export const STATUS_ORDER = Object.freeze(['bestellt', 'geliefert', 'raus', 'erl
 /**
  * Vermerk "ueber" beim Bestellen: wohin der Lieferant liefert, wenn es nicht der Laden ist.
  * 'kettler' = Ware geht erst an unseren Kettelservice (#1453), 'kunde' = der Lieferant schickt
- * die Muster direkt an den Kunden (Herstellermuster, Lieferziel "Kunden" in der Bestellmail).
+ * direkt an den Kunden: Muster (Herstellermuster, Lieferziel "Kunden" in der Bestellmail) oder
+ * ein Teppich, den er selbst kettelt (Wahl im Bestelldialog).
  */
 export const UEBER_WERTE = Object.freeze(['kettler', 'kunde']);
 

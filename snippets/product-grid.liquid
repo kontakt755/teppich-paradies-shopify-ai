@@ -127,6 +127,22 @@
           <a href="{{ routes.collections_url }}/angebote" class="main-collection-grid__empty-link">aktuellen Angebote</a>.
         </p>
       </div>
+    {%- comment -%}
+      TP: Angebotskollektion ohne Produkte (zwischen zwei Aktionen, Nr. 27):
+      Hinweis und Weg zu den Resten statt leerer Seite
+      (docs/weiterentwicklung/angebote.md, Abschnitt 4).
+    {%- endcomment -%}
+    {% elsif products.size == 0
+      and collection.handle == 'angebote'
+      and collection.all_products_count == 0
+    %}
+      <div class="main-collection-grid__empty">
+        <h2 class="main-collection-grid__empty-title h4">Gerade laufen keine Angebote</h2>
+        <p>
+          Sobald die nächste Aktion startet, finden Sie die reduzierten Produkte hier. Bis dahin lohnt sich ein Blick auf unsere
+          <a href="{{ routes.collections_url }}/reste-sonderposten" class="main-collection-grid__empty-link">Reste &amp; Sonderposten</a>.
+        </p>
+      </div>
     {% elsif products.size == 0 %}
       <div class="main-collection-grid__empty">
         <h2 class="main-collection-grid__empty-title h2">

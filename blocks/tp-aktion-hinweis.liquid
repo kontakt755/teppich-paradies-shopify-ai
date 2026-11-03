@@ -9,7 +9,8 @@
 
   Darunter, unabhaengig von einer Aktion: der Hinweis fuer Auslaufkollektionen
   (Produkt-Tag "auslauf") und fuer Sonderposten von der Rolle (Produkt-Tag
-  "sonderposten") mit dem echten Restbestand aus Shopify.
+  "sonderposten") mit dem echten Restbestand aus Shopify, ausserdem der Verweis
+  normaler Teppichboeden auf Restrollen desselben Herstellers.
 {% enddoc %}
 {%- liquid
   assign tah_produkt = closest.product | default: product
@@ -105,7 +106,63 @@
   {%- endif -%}
 {%- endif -%}
 
+{%- comment -%}
+  Normaler Teppichboden eines Herstellers verweist auf dessen Restrollen
+  (Inhaber 2026-11-03). Nur bei gleichem Hersteller: der Hausname
+  TeppichParadies sagt nichts ueber die Herkunft, dort erscheint nichts.
+  Die gleiche Linie steht vorn, hoechstens zwei Rollen mit Restbestand.
+{%- endcomment -%}
+{%- if tah_produkt.type == 'Teppichboden' and tah_produkt.vendor != 'TeppichParadies' -%}
+  {%- unless tah_produkt.tags contains 'sonderposten' -%}
+    {%- liquid
+      assign tah_linie = tah_produkt.title | remove_first: tah_produkt.vendor | strip | split: ' ' | first | downcase
+      assign tah_rollen_zahl = 0
+    -%}
+    {%- capture tah_rollen -%}
+      {%- for tah_runde in (1..2) -%}
+        {%- for tah_r in collections['reste-sonderposten'].products -%}
+          {%- liquid
+            if tah_r.template_suffix != 'rolle' or tah_r.vendor != tah_produkt.vendor or tah_r.available != true or tah_rollen_zahl >= 2
+              continue
+            endif
+            assign tah_r_linie = tah_r.title | remove_first: tah_r.vendor | strip | split: ' ' | first | downcase
+            if tah_runde == 1 and tah_r_linie != tah_linie
+              continue
+            endif
+            if tah_runde == 2 and tah_r_linie == tah_linie
+              continue
+            endif
+            assign tah_rollen_zahl = tah_rollen_zahl | plus: 1
+            assign tah_r_titel = tah_r.title | split: ' – ' | first
+          -%}
+          <li><a href="{{ tah_r.url }}">{{ tah_r_titel | escape }}</a> · {{ tah_r.price | money }}/m²</li>
+        {%- endfor -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if tah_rollen != blank -%}
+      <div class="tp-restposten-hinweis">
+        <p class="tp-restposten-hinweis__titel">Von {{ tah_produkt.vendor | escape }} auch als Restposten</p>
+        <ul>{{ tah_rollen }}</ul>
+      </div>
+    {%- endif -%}
+  {%- endunless -%}
+{%- endif -%}
+
 {% stylesheet %}
+  .tp-restposten-hinweis {
+    padding: 10px 12px;
+    border-left: 3px solid #595959;
+    border-radius: 4px;
+    background: #f5f5f4;
+    font-size: var(--tp-fs-sm);
+    line-height: 1.45;
+  }
+
+  .tp-restposten-hinweis p { margin: 0; }
+  .tp-restposten-hinweis__titel { font-weight: 600; }
+  .tp-restposten-hinweis ul { margin: 2px 0 0; padding: 0; list-style: none; }
+  .tp-restposten-hinweis a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
   .tp-auslauf-hinweis {
     margin: 0;
     padding: 10px 12px;

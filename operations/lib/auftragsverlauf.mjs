@@ -42,6 +42,7 @@ import { positionKey, STATUS_ORDER } from './auftragsstatus.mjs';
 import { WARTE_NACHHAKEN_TAGE, WARTE_PROBLEM_TAGE, warnstufe } from './lieferanten.mjs';
 import { kundenSchluessel } from './kundensuche.mjs';
 import { ROUTE } from './route.mjs';
+import { wirdGekettelt } from './kettelpuffer.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 
 /** Kompatibler Export: die Frist stammt aus dem vorhandenen Nachfassmodell (ab Versand). */
@@ -342,7 +343,8 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
     else if (erledigt.getan) schritte.push({ schritt: 'ergebnis', ergebnis: 'erledigt', label: label.erledigt, getan: true, am: erledigt.am, von: erledigt.von, notiz: erledigt.notiz, automatisch: false, quelle: 'manuell', teil: null });
     else schritte.push({ schritt: 'ergebnis', ergebnis: null, label: label.ergebnis, getan: false, am: null, von: null, notiz: null, automatisch: false, quelle: null, teil: null });
   } else {
-    const ware = positionen.filter(p => !p.istMuster);
+    // Eine mitgekaufte Eigenleistung (Kettelservice) hat keine Route und reist nicht mit.
+    const ware = positionen.filter(p => !p.istMuster && !p.eigenleistung);
     // Ueber unseren Kettler bestellte Ware (ueber: 'kettler', #1453) kommt erst zu uns zurueck,
     // auch wenn der Lieferant sonst direkt verschickt.
     const ueberKettler = p => statusAlle[positionKey(auftrag.id, p.lineItemId)]?.ueber === 'kettler';
@@ -488,6 +490,17 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
     default:
       return null;
   }
+}
+
+/**
+ * Wer einen schon bestellten gekettelten Teppich kettelt, fuer die Kundenakte. Belegt ist das nur
+ * durch den Vermerk beim Bestellen; fehlt er bei Direktversand, sagt die Akte genau das.
+ */
+export function kettelwegText(p, eintrag) {
+  if (!wirdGekettelt(p?.ausfuehrung) || !eintrag?.status) return null;
+  if (eintrag.ueber === 'kettler') return 'Unser Kettler';
+  if (eintrag.ueber === 'kunde') return 'Lieferant, direkt an den Kunden';
+  return p.route === ROUTE.SUPPLIER_DIRECT ? 'Nicht vermerkt, bitte klären' : null;
 }
 
 /** Name und Ort (Stadt der Lieferadresse) - damit man "Kunde in der Naehe" erkennt. */

@@ -35,6 +35,10 @@
           endcapture
         endif
         assign tg_k = tg_k | strip | default: 'rest'
+        # Sonderposten stehen in einer eigenen Reihe und zaehlen nicht zu den Gruppen
+        if tg_p.tags contains 'sonderposten'
+          assign tg_k = 'sonderposten'
+        endif
         assign tg_keys = tg_keys | append: tg_k | append: ','
         if tg_p.featured_image != blank
           case tg_k

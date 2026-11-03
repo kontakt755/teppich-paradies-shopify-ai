@@ -21,7 +21,7 @@ test('Jeder Name in „In 1 Minute erklärt“ steht so in der Seitenleiste', ()
 });
 
 test('Jeder Hauptpunkt der Seitenleiste und jede Gruppe kommt in der Hilfe vor', () => {
-  assert.deepEqual(hauptpunkte, ['Heute', 'Bestellungen', 'Muster bestellen', 'Packstation', 'Lexikon', 'Muster Lagerbestand', 'Eigene Aufkleber drucken']);
+  assert.deepEqual(hauptpunkte, ['Heute', 'Bestellungen', 'Muster bestellen', 'Packstation', 'Lexikon']);
   const gruppen = [...seitenleiste.matchAll(/<summary class="nav-more-kopf"><span>([^<]+)<\/span>/g)].map(m => ent(m[1]))
     .filter(g => g !== 'Weitere Dashboards');
   const namen = MENUE_KURZ.map(([n]) => n);

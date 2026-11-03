@@ -29,7 +29,13 @@
   pruefen auch die Schleifen ueber Unterpunkte (mega-menu-list,
   tp-drawer-liste, tp-menu-spalten).
 
+  Der Knopf "... ansehen" im Handy-Menue (tp-dn-cta, snippets/tp-drawer-liste)
+  fuehrt zum Ziel des Oberpunkts oder seines Einstiegs. Er fragt deshalb mit
+  ziel_pruefen: true - dann zaehlt nur das Ziel, auch bei einem Punkt mit
+  Unterpunkten (Nr. 27, 03.11.2026: Knopf fuehrte auf die leere Angebotsseite).
+
   @param {object} link - der Menuepunkt
+  @param {boolean} [ziel_pruefen] - Ziel auch bei Punkten mit Unterpunkten pruefen
 {%- enddoc -%}
 {%- liquid
   assign tmls_handle = ''
@@ -39,7 +45,14 @@
     assign tmls_handle = link.url | split: '/collections/' | last | split: '?' | first | split: '/' | first | split: '#' | first
   endif
 
+  assign tmls_pruefen = false
   if tmls_handle == 'angebote' and link.links == blank
+    assign tmls_pruefen = true
+  elsif tmls_handle == 'angebote' and ziel_pruefen
+    assign tmls_pruefen = true
+  endif
+
+  if tmls_pruefen
     assign tmls_ja = false
     for tmls_p in collections['angebote'].products limit: 6
       capture tmls_angebot

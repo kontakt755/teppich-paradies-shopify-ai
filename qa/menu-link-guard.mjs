@@ -33,7 +33,7 @@
  */
 
 /** Erkennt die Leermeldung des Rasters in den Sprachen, die der Shop faehrt. */
-const LEER_MARKER = /no products found|keine produkte|nichts gefunden/i;
+const LEER_MARKER = /no products found|keine produkte|nichts gefunden|gerade laufen keine angebote/i;
 
 /** Menuelinks aus dem gerenderten Kopfbereich. */
 export function extractMenuLinks(html) {

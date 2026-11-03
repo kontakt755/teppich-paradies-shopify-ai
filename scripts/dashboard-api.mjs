@@ -13,7 +13,7 @@
  * `gh` ist injizierbar (Tests). Alle Funktionen sind frei von HTTP-Details.
  */
 
-import { leseKettelversand, aendereKettelversand, kettelPosition, packVergleich } from '../operations/lib/kettelversand.mjs';
+import { leseKettelversand, aendereKettelversand, beimKettler, kettelAuftragSichtbar, packVergleich } from '../operations/lib/kettelversand.mjs';
 import { leseVersandtarife as kettelTarife } from '../operations/lib/versandtarife.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,11 +27,12 @@ import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffun
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
-import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, vorlageFuer, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { texteAusMarkdown, musterKurz, musterNachfassen, nachfragenBuendeln, mitMusterListe, fuelleText, platzhalterFrei, vorlageFuer, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs';
 import { grenzeFuer } from '../docs/ai-dashboard/lib/datenstand.mjs';
-import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
-import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
+import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, hinweisePfad, leseHinweise, merkeAbgleich, aktuelleHinweise, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
+import { postfachAbgleich } from '../operations/lib/nachfass-antworten.mjs';
+import { sendeMail as smtpSenden, adresse } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
@@ -42,7 +43,7 @@ import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBest
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, lieferantJeSchluessel as lagerLieferantJeSchluessel, lieferantVonEintrag as lagerLieferantVon, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
-import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
+import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, kettelwegText, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
 import { sucheKunden, kontaktPasst, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt, kundenSchluessel } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
@@ -98,7 +99,7 @@ import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
 import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
 import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
-import { suchbegriffe, lexikonTreffer, nurUeberTitel } from '../docs/ai-dashboard/lib/lexikon-suche.mjs';
+import { suchbegriffe, lexikonTreffer, nurUeberTitel, positionSuchtext } from '../docs/ai-dashboard/lib/lexikon-suche.mjs';
 import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
 import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
@@ -651,7 +652,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), nachfassPostfachLesen = null, sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null } = {}) {
   const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -1117,6 +1118,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), gepackt, jetzt: now() });
   }
 
+  /** Wer kettelt und ob der Kettler-Dialog gilt: fuer die Zeitleiste in Kundenakte und Bestellungen. */
+  function kettelFelder(a, statusAlle) {
+    const eintrag = p => statusAlle[positionKey(a.id, p.lineItemId)];
+    return { positionen: (a.positionen ?? []).map(p => ({ ...p, kettelweg: kettelwegText(p, eintrag(p)) })), kettelAuftrag: kettelAuftragSichtbar(a.positionen, eintrag) };
+  }
+
   /** Die additiven Zeitleisten-Felder eines Auftrags fuer die Antwort. */
   function zeitleistenFelder(z) {
     if (!z) return { auftragsart: null, verlauf: [], verlaufNotizen: [], naechsterSchritt: null, zeitleisteAbgeschlossen: false };
@@ -1138,7 +1145,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    *   (auftragsverlauf.json, nur anhaengen). Ein Ergebnis schliesst zusaetzlich die Positionen ab.
    */
   async function auftragsSchrittSetzen(payload, benutzer, actor) {
-    const { orderId, schritt, notiz, bezug, lieferantBestellnummer, lineItemIds } = payload || {};
+    const { orderId, schritt, notiz, bezug, lieferantBestellnummer, lineItemIds, kettelwege } = payload || {};
     if (!orderId || !schritt) throw new ApiError(400, 'orderId und schritt sind Pflicht', { missing: ['orderId', 'schritt'] });
     if (!SCHRITT_WERTE.includes(schritt)) throw new ApiError(400, `Unbekannter Schritt „${schritt}"`);
     const dir = privatDirPath || privatDir();
@@ -1189,6 +1196,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const blockiert = positionen.map(p => alle[positionKey(orderId, p.lineItemId)]).find(e => !darfWeiter(e, status));
       if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
       setzeStatusPositionen(statusDatei, betroffen.map(p => ({ orderId, lineItemId: p.lineItemId, status, actor, bestellmenge: p.bestellSoll || p.bestellmenge || null, lieferantBestellnummer, notiz: text, jetzt: now(),
+        ...(status === 'bestellt' && kettelwege?.[p.lineItemId] ? { ueber: kettelwege[p.lineItemId] } : {}),
         ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}) })));
       return betroffen.map(p => p.lineItemId);
     };
@@ -1717,7 +1725,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Ab zwei Zeichen bleibt es Freitextsuche, mit demselben Filter drauf.
       const q2 = String(q ?? '').trim();
       const roh = q2.length >= 2
-        ? sucheKunden(modell, q2, { statusAlle }).map(k => kundenListenEintrag(k, { statusAlle })).filter(passtZuKundenFilter(filter))
+        ? sucheKunden(modell, q2, { statusAlle, einkaufText: this._positionSuchtext() }).map(k => kundenListenEintrag(k, { statusAlle })).filter(passtZuKundenFilter(filter))
         : alleKunden(modell, { statusAlle, filter });
       const stamm = stammKontakte(dir);
       // Additiv: der dringendste naechste Schritt je Kunde (Zeitleiste) - fuer Listen und die Heute-Seite.
@@ -1750,7 +1758,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (gefunden) {
         // Additiv je Bestellung: auftragsart, verlauf, verlaufNotizen, naechsterSchritt (operations/lib/auftragsverlauf.mjs).
         const zl = zeitleisten(dir, modell, statusAlle);
-        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, ...zeitleistenFelder(zl.get(a.id)), ...versandFelder(a, statusAlle) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
+        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, ...kettelFelder(a, statusAlle), ...zeitleistenFelder(zl.get(a.id)), ...versandFelder(a, statusAlle) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
         return { verfuegbar: true, kunde };
       }
       // Kunde aus dem Shopify-Stamm ohne Bestellung in dieser Datei: die
@@ -1797,7 +1805,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let packen = null;
       try { packen = leseMusterPackStand(musterPackenPfad(dir)); } catch { /* Fehler meldet die Packstation selbst. */ }
       const jetzt = now().getTime();
-      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
+      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, auftrag: z.auftrag ? { ...z.auftrag, ...kettelFelder(z.auftrag, statusAlle) } : z.auftrag, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
       return { verfuegbar: true, ratgeberVorlagen: RATGEBER.map(r => ({ schluessel: r.schluessel, titel: ratgeberKurzTitel(r) })), musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
     },
 
@@ -1892,9 +1900,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { stand = leseMusterPackStand(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
       // Lieferantennamen nur aus den privaten Stammdaten; ohne Eintrag bleibt das Kuerzel.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      const katalog = this._lexikonProdukte();
+      // Warum die Automatik ein Muster zurueckhaelt - stand bis 03.11. nur unter den Bestellungen.
+      const automatik = musterAutomatikAnzeige(dir, { modell, statusAlle: status, stammdaten }, katalog, now());
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
-        produkte: new Map(this._lexikonProdukte().map(p => [p.handle, p])),
+        produkte: new Map(katalog.map(p => [p.handle, p])),
+        automatikGrundVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId))?.grund || null,
         // Ganzer Eintrag: Bestelldatum und "Musterautomatik" fuer die Anmerkung beim Warten.
         eintragVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)] || null,
         schluesselVon: kundenSchluessel,
@@ -2134,10 +2146,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const zusatz = () => {
         let abgemeldet = [];
         let stopplisteFehler = null;
-        try { abgemeldet = Object.entries(leseStoppliste(stopplistePfad(dir))).map(([email, e]) => ({ email, am: e.am || null, von: e.von || null })); }
+        try { abgemeldet = Object.entries(leseStoppliste(stopplistePfad(dir))).map(([email, e]) => ({ email, am: e.am || null, von: e.von || null, grund: e.grund || null })); }
         catch (e) { stopplisteFehler = e.message; }
         const versand = nachfassVersandStand(dir, { jetzt: now() });
-        return { versand: stopplisteFehler ? { ...versand, hinweis: versand.hinweis || stopplisteFehler } : versand, abgemeldet };
+        // Postfach-Abgleich: Antworten mit mehr als "Abmelden" und eine gescheiterte Suche. Liest nur;
+        // eine kaputte Datei stoppt den Lauf (dort wirft sie), die Karte zeigt sie als Abgleich-Fehler.
+        let postfach = { antwortHinweise: [], abgleichFehler: null };
+        try {
+          const h = leseHinweise(hinweisePfad(dir));
+          postfach = { antwortHinweise: aktuelleHinweise(h.hinweise, { jetzt: now() }), abgleichFehler: h.abgleich?.fehler || null };
+        } catch (e) { postfach.abgleichFehler = e.message; }
+        return { versand: stopplisteFehler ? { ...versand, hinweis: versand.hinweis || stopplisteFehler } : versand, abgemeldet, ...postfach };
       };
       // "Muster nicht verfuegbar" gibt es immer: aus der Vorlage, wenn sie den Abschnitt hat, sonst der eingebaute Vorschlag.
       let md;
@@ -2183,15 +2202,22 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * bzw. Erinnerung aus der Vorlage, Versand ueber das Firmenpostfach, danach der
      * Zeitleisten-Schritt "nachgefasst" mit von = "automatisch".
      *
-     * Reihenfolge je Kunde: erst der Vermerk "sendet" im Versandprotokoll, dann die Mail, dann
+     * Vor dem Versand sucht der Lauf lesend im Postfach nach Antworten "Abmelden" und
+     * Unzustellbar-Meldungen und traegt die Adressen in die Stoppliste ein (nachfass-antworten.mjs).
+     * Geht die Suche nicht, geht nichts raus. Je Empfaengeradresse hoechstens eine Mail je Lauf,
+     * auch bei mehreren Bestellungen (nachfragenBuendeln); Protokoll und Zeitleiste bleiben je
+     * Bestellung, der Doppelschutz (schonVerschickt) gilt also fuer jede einzeln.
+     *
+     * Reihenfolge je Mail: erst der Vermerk "sendet" im Versandprotokoll, dann die Mail, dann
      * "gesendet", dann die Zeitleiste, dann "vermerkt". Bricht der Lauf dazwischen ab, schickt
      * der naechste keine zweite Mail, sondern holt nur den Zeitleisten-Schritt nach.
      *
      * Nichts geht raus, wenn: die Vorlage fehlt, das Postfach nicht eingerichtet ist, die
-     * Stoppliste nicht lesbar ist, ein Platzhalter stehen bliebe. --probe listet nur.
+     * Stoppliste nicht lesbar ist, die Postfach-Suche scheitert, ein Platzhalter stehen bliebe.
+     * --probe listet nur: sie sucht auch im Postfach, schreibt das Ergebnis aber nirgends hin.
      *
      * @param {object} [p]
-     * @param {boolean} [p.probe]   nur auflisten, nichts senden, nichts schreiben
+     * @param {boolean} [p.probe]   nur auflisten, nichts senden, nichts schreiben (Postfach wird gelesen)
      * @param {Function} [p.senden] Versandfunktion (Tests: Fake-Server oder Attrappe)
      */
     async kundenNachfassenSenden({ probe = false, senden = smtpSenden } = {}) {
@@ -2214,6 +2240,48 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         // Stoppliste oder Protokoll unlesbar: lieber niemanden anschreiben als einen Abgemeldeten.
         return abbruch('stoerung', e.message);
       }
+
+      // Postfach-Abgleich VOR dem Versand. Ohne Postfach (nur in der Probe moeglich) gibt es nichts zu suchen.
+      if (pf.zugang) {
+        let abgleich;
+        try {
+          abgleich = await postfachAbgleich({ zugang: pf.zugang, sendungen: versand.sendungen, ...(nachfassPostfachLesen ? { lesen: nachfassPostfachLesen } : {}) });
+        } catch (e) {
+          const grund = String(e?.message || e).slice(0, 160);
+          if (!probe) { try { merkeAbgleich(hinweisePfad(dir), { fehler: grund, jetzt }); } catch { /* der Abbruch unten zaehlt */ } }
+          return abbruch('stoerung', `Postfach-Suche fehlgeschlagen – nichts verschickt: ${grund}`);
+        }
+        // Die Suche dauert. Was der Knopf "Abgemeldet" oder "Jetzt senden" inzwischen geschrieben hat, darf nicht verloren gehen.
+        try {
+          stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+          versand = leseVersand(versandPfad(dir));
+        } catch (e) {
+          return abbruch('stoerung', e.message);
+        }
+        const eintraege = [
+          ...abgleich.abmeldungen.map(a => ({ ...a, grund: 'Antwort „Abmelden“' })),
+          ...abgleich.unzustellbar.map(u => ({ ...u, grund: `Unzustellbar${u.status ? ` (${u.status})` : ''}` })),
+        ];
+        const neue = [];
+        try {
+          for (const a of eintraege) {
+            // Eine unbrauchbare Absenderadresse darf den Lauf nicht jeden Tag abbrechen: Dorthin geht ohnehin nichts.
+            if (!adresse(a.email)) continue;
+            if (stoppliste.has(a.email) || neue.some(n => n.email === a.email)) continue;
+            neue.push(a);
+            if (!probe) trageAbmeldungEin(stopplistePfad(dir), { email: a.email, von: AUTOMATISCH, grund: a.grund, orderId: a.orderId, jetzt });
+          }
+          if (!probe) merkeAbgleich(hinweisePfad(dir), { neu: abgleich.hinweise, jetzt });
+        } catch (e) {
+          const grund = `Stoppliste nicht geschrieben – nichts verschickt: ${String(e?.message || e).slice(0, 160)}`;
+          if (!probe) { try { merkeAbgleich(hinweisePfad(dir), { fehler: grund, jetzt }); } catch { /* der Abbruch unten zaehlt */ } }
+          return abbruch('stoerung', grund);
+        }
+        // Die Probe schreibt nichts, rechnet aber so, als waere eingetragen.
+        for (const a of neue) stoppliste.set(a.email, { am: jetzt.toISOString(), von: AUTOMATISCH });
+        ergebnis.abgleich = { geprueft: true, gelesen: abgleich.gelesen, ohneOrdner: abgleich.ohneOrdner, neu: neue.map(a => ({ email: a.email, orderName: a.orderName, grund: a.grund })), hinweise: abgleich.hinweise.length };
+      } else ergebnis.abgleich = { geprueft: false };
+
       const bestellungen = this.kundenBestellungen();
       if (!bestellungen.verfuegbar) return abbruch('keine-daten', bestellungen.hinweis || 'Bestelldaten fehlen.');
 
@@ -2229,24 +2297,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       );
       const sichern = () => { if (!probe) schreibeVersand(versandPfad(dir), versand); };
 
+      // Erst je Bestellung aussortieren und nachtragen, dann je Adresse senden (hoechstens eine Mail je Lauf).
+      const zuSenden = [];
       for (const e of offen) {
         const kurz = { orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname };
         if (e.kontakt.weg !== 'email') {
           ergebnis.uebersprungen.push({ ...kurz, grund: e.kontakt.weg === 'rueckruf' ? 'Rückruf gewünscht – anrufen' : 'keine E-Mail-Adresse' });
           continue;
         }
-        const mail = fuelleText(vorlageFuer(vorlage.texte, e), { kundenname: e.kundenname, absender: unterschrift, produkte: e.produkte });
-        if (!platzhalterFrei(mail)) {
-          ergebnis.fehler.push({ ...kurz, fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.` });
-          continue;
-        }
-        const an = e.kontakt.email;
         const vorher = schonVerschickt(versand, e.orderId, e.stufe);
         if (vorher) {
           // Mail ging schon raus, nur der Zeitleisten-Schritt fehlt (Abbruch im letzten Lauf): nachtragen, nicht neu senden.
           if (probe) { ergebnis.nachgetragen.push({ ...kurz, am: vorher.am }); continue; }
           try {
-            await schrittSetzen(e, vorher.betreff || mail.betreff);
+            await schrittSetzen(e, vorher.betreff || STUFE_LABEL[e.stufe]);
             vorher.status = 'vermerkt';
             ergebnis.nachgetragen.push({ ...kurz, am: vorher.am });
           } catch (err) {
@@ -2255,30 +2319,51 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           sichern();
           continue;
         }
+        zuSenden.push(e);
+      }
+
+      for (const b of nachfragenBuendeln(zuSenden)) {
+        const kurzVon = e => ({ orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname });
+        const mail = mitMusterListe(fuelleText(vorlageFuer(vorlage.texte, b), { kundenname: b.kundenname, absender: unterschrift, produkte: b.produkte }), b);
+        if (!platzhalterFrei(mail)) {
+          for (const e of b.eintraege) ergebnis.fehler.push({ ...kurzVon(e), fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[b.stufe]}“ fehlt.` });
+          continue;
+        }
+        const an = b.an;
+        // Eine Zeile je Mail; bei einer Sammelmail nennt sie alle Bestellungen.
+        const kurz = { ...kurzVon(b.eintraege[0]), orderName: b.eintraege.map(e => e.orderName).join(', '), stufe: b.stufe, bestellungen: b.eintraege.length };
         if (probe) { ergebnis.geplant.push({ ...kurz, an, betreff: mail.betreff, text: mail.text }); continue; }
 
-        const eintrag = { am: jetzt.toISOString(), orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, status: 'sendet', messageId: null, fehler: null };
-        versand.sendungen.push(eintrag);
+        // Je Bestellung ein Eintrag VOR dem Senden: bricht der Lauf danach ab, geht fuer keine eine zweite Mail raus.
+        const posten = b.eintraege.map((e) => {
+          const eintrag = { am: jetzt.toISOString(), orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, status: 'sendet', messageId: null, fehler: null };
+          versand.sendungen.push(eintrag);
+          return { e, eintrag };
+        });
         sichern();
         try {
           const r = await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [an], bcc: kopieAn ? [kopieAn] : [], betreff: mail.betreff, text: mail.text, datum: jetzt });
-          eintrag.status = 'gesendet';
-          eintrag.messageId = r?.messageId || null;
+          for (const { eintrag } of posten) { eintrag.status = 'gesendet'; eintrag.messageId = r?.messageId || null; }
           if (!versand.ersterVersandAm) versand.ersterVersandAm = jetzt.toISOString();
         } catch (err) {
-          eintrag.status = 'fehler';
-          eintrag.fehler = String(err?.message || err).slice(0, 300);
+          const fehler = String(err?.message || err).slice(0, 300);
+          for (const { e, eintrag } of posten) {
+            eintrag.status = 'fehler';
+            eintrag.fehler = fehler;
+            ergebnis.fehler.push({ ...kurzVon(e), fehler });
+          }
           sichern();
-          ergebnis.fehler.push({ ...kurz, fehler: eintrag.fehler });
           continue;
         }
         sichern();
-        try {
-          await schrittSetzen(e, mail.betreff);
-          eintrag.status = 'vermerkt';
-        } catch (err) {
-          // Die Mail ist raus - das bleibt im Protokoll stehen, der naechste Lauf traegt die Zeitleiste nach.
-          ergebnis.fehler.push({ ...kurz, fehler: `E-Mail verschickt, Zeitleiste nicht geschrieben: ${err?.message || err}` });
+        for (const { e, eintrag } of posten) {
+          try {
+            await schrittSetzen(e, mail.betreff);
+            eintrag.status = 'vermerkt';
+          } catch (err) {
+            // Die Mail ist raus - das bleibt im Protokoll stehen, der naechste Lauf traegt die Zeitleiste nach.
+            ergebnis.fehler.push({ ...kurzVon(e), fehler: `E-Mail verschickt, Zeitleiste nicht geschrieben: ${err?.message || err}` });
+          }
         }
         sichern();
         ergebnis.verschickt.push({ ...kurz, an, betreff: mail.betreff, kopie: kopieAn });
@@ -2694,14 +2779,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Fertige Bestellung (Ware je Gruppe bzw. offene Muster) als Mailtext + mailto:-Link. Sendet nichts. */
-    einkaufBestellmail({ lieferant = '', art = 'ware', gruppe = '', ziel = '', auftrag = '' } = {}) {
+    einkaufBestellmail({ lieferant = '', art = 'ware', gruppe = '', ziel = '', auftrag = '', kettelwege = '' } = {}) {
       const k = this._lieferantenKontext();
       if (!k.modell) return { verfuegbar: false, hinweis: k.hinweis, stammdatenDatei: k.stammdatenDatei, mails: [] };
       try {
         return {
           verfuegbar: true,
           stammdatenDatei: k.stammdatenDatei,
-          ...bestellmail({ modell: filtereAuftrag(k.modell, auftrag), lieferant, art, gruppe: gruppe || null, ziel: ziel || null, statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() }),
+          ...bestellmail({ modell: filtereAuftrag(k.modell, auftrag), lieferant, art, gruppe: gruppe || null, ziel: ziel || null, kettelwege, statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() }),
         };
       } catch (e) {
         if (e instanceof LieferantenFehler) throw new ApiError(400, e.message);
@@ -2725,7 +2810,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let portale={};
       try { const p=readJsonIfExists(path.join(dir,'versandkosten','portale.json')); for(const name of ['GLS','GEL']) if(typeof p?.[name]==='string' && /^https:\/\//.test(p[name])) portale[name]=p[name]; } catch { /* Optionaler Portalzugang */ }
       return {verfuegbar:true,orderId,name:auftrag.name,revision:stand.revision,
-        positionen:auftrag.positionen.filter(kettelPosition).map(p=>{
+        positionen:auftrag.positionen.filter(p=>beimKettler(p,k.statusAlle[positionKey(auftrag.id,p.lineItemId)])).map(p=>{
           const produkte = p.handle ? katalog.filter(x => x?.handle === p.handle) : [];
           const roh = rohPositionen.filter(x => x?.id === p.lineItemId);
           return {id:p.lineItemId,titel:p.titel,farbe:p.farbe,ausfuehrung:p.ausfuehrung,stand:stand.positionen[p.lineItemId] || {},
@@ -2782,7 +2867,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       if (['bestellVorbereitung', 'bestellPruefen'].includes(payload?.aktion)) {
         // Kein Shopify-Abgleich: diese Aktionen bereiten nur vor bzw. lesen frisch gegen.
-        const scope = Object.fromEntries(['lieferant', 'art', 'gruppe', 'ziel', 'auftrag'].map(k => [k, payload[k] ?? (k === 'art' ? 'ware' : '')]));
+        const scope = Object.fromEntries(['lieferant', 'art', 'gruppe', 'ziel', 'auftrag', 'kettelwege'].map(k => [k, payload[k] ?? (k === 'art' ? 'ware' : '')]));
         if (Object.values(scope).some(v => typeof v !== 'string')) throw new ApiError(400, 'Bestellparameter müssen Text sein.');
         const vorlage = this.einkaufBestellmail(scope);
         if (!vorlage.verfuegbar) throw new ApiError(409, vorlage.hinweis || 'Bestelldaten fehlen.');
@@ -3621,6 +3706,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const file = path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json');
       const daten = readJsonGecacht(file);
       return Array.isArray(daten?.produkte) ? daten.produkte : [];
+    },
+
+    /** Lieferantenangaben je Bestellposition; ein kaputtes Lexikon darf die Kundensuche am Telefon nicht stoppen. */
+    _positionSuchtext() {
+      try { return positionSuchtext(this._lexikonProdukte()); } catch { return null; }
     },
 
     /**

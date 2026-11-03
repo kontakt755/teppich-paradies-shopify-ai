@@ -159,3 +159,30 @@ test('UVP: Paketpreis zeigt nach Aktionsende "UVP 29,95 €/m²" statt Streichpr
   assert.doesNotMatch(await engine.parseAndRender(sqm, paket({}, UVP, null)), /tp-uvp/, 'ohne Vergleichspreis keine Zeile');
   assert.doesNotMatch(await engine.parseAndRender(sqm, paket({})), /tp-uvp|tp-price-per-sqm__compare/, 'ohne Kennzeichen bleibt alles weg (S-20)');
 });
+
+test('Restrollen: UVP-Kopfzeile mit Abstand, im Rechner nur bei Meterware', () => {
+  const block = readFileSync(new URL('../../blocks/price_custom.liquid', import.meta.url), 'utf8');
+  assert.match(block, /tp_pc_aktion == 'uvp' and product_resource\.tags contains 'sonderposten'/);
+  assert.match(block, /data-tp-uvp-kopf data-variante="\{\{ selected_variant\.id \}\}"/);
+  const rechner = readFileSync(new URL('../../blocks/tp-rollware-rechner.liquid', import.meta.url), 'utf8');
+  assert.match(rechner, /uvp\.hidden = String\(v\.id\) !== uvp\.dataset\.variante/);
+  const zeile = readFileSync(new URL('../../snippets/tp-uvp-zeile.liquid', import.meta.url), 'utf8');
+  assert.match(zeile, /% unter UVP/);
+  assert.doesNotMatch(zeile, /tp-rabatt-badge/);
+});
+
+test('Restrollen: Band auf der Startseite, Restmenge auf Karten, Herstellerhinweis', () => {
+  const lesen = datei => readFileSync(path.join(root, datei), 'utf8');
+  const start = JSON.parse(lesen('templates/index.json').replace(/^\/\*[\s\S]*?\*\//, ''));
+  const band = start.sections.start_restrollen;
+  assert.equal(band.settings.collection, 'reste-sonderposten');
+  assert.equal(band.settings.tp_nur_vorlage, 'rolle');
+  // Ohne "je Linie" greift der Vorlagenfilter nicht, ohne "alle Dekore" fielen Antigua und Vorwerk zusammen
+  assert.equal(band.settings.tp_je_linie_eins, true);
+  assert.equal(band.settings.tp_alle_dekore, true);
+  assert.ok(start.order.includes('start_restrollen'));
+  assert.match(lesen('blocks/tp-card-aktion.liquid'), /render 'tp-rollenrest'/);
+  const hinweis = lesen('blocks/tp-aktion-hinweis.liquid');
+  assert.match(hinweis, /tah_produkt\.vendor != 'TeppichParadies'/);
+  assert.match(hinweis, /tah_r\.template_suffix != 'rolle'/);
+});

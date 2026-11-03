@@ -558,6 +558,7 @@
         "min_seite_cm": {{ tp_ek_min_cm | json }},
         "wort": {{ tp_ek_wort | json }},
         "mindestpreis_cent": {{ tp_ek_mindest_cent | json }},
+        "erster_schritt": {% if product.has_only_default_variant %}1{% else %}2{% endif %},
         {%- comment -%} Preis je 0,01 lfm Kante, Rollenbreiten in cm {%- endcomment -%}
         "kettel": {% if tp_ek_kettel_v %}{ "id": {{ tp_ek_kettel_v.id | json }}, "price": {{ tp_ek_kettel_v.price | json }} }{% else %}null{% endif %},
         "kettel_service_failed": {{ tp_ek_kettel_service_failed | json }},

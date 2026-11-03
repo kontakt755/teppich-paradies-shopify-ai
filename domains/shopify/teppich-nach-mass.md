@@ -103,6 +103,10 @@ Der Muster-Aufruf führt auf `/pages/muster?produkt=<handle>`. Gibt es kein `mus
 Musterkonfigurator das Musterprodukt des Teppichbodens (`service.einfass_basis`), sofern es die Farbe führt, erst
 danach `kostenloses-muster`. Details: `domains/shopify/benachrichtigungen/musterartikel.md`.
 
+Bestellt der Lieferant Muster nach seiner Bezeichnung (`muster.nachBezeichnung` in den Stammdaten), braucht jede
+Variante `einkauf.farbname`, sonst hält die Musterautomatik das Muster zurück. Kein Importweg setzt das Feld von
+selbst; `npm run -s import:pruefen` meldet fehlende Werte (Regel `muster-bezeichnung`: neue Produkte als Fehler, Altbestand als eine Hinweiszeile).
+
 ## Werkzeuge
 
 ```

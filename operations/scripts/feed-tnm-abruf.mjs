@@ -34,6 +34,14 @@ export const ABFRAGE = `query($nach: String) {
   }
 }`;
 
+/**
+ * Restvorlagen (operations/lib/restposten-entwurf.mjs) sind Arbeitskopien fuer den
+ * Ladenbestand, kein Sortiment: Sie gehoeren nie in den Feed und duerfen ihn nie
+ * blockieren (5 Fehllaeufe 30.10.-03.11.2026). Bewusst nur der exakte Handle-Anfang;
+ * fuer jedes andere Produkt bleibt jede Auslassung ein Abbruch.
+ */
+export const istRestvorlage = (p) => typeof p?.handle === 'string' && p.handle.startsWith('restvorlage-');
+
 /** Derselbe Katalogabruf wie bisher, mit den benoetigten Endpreis-/Meta-Feldern. */
 export async function katalogJsonl(proxy) {
   const zeilen = [];
@@ -44,6 +52,8 @@ export async function katalogJsonl(proxy) {
     const seite = data?.products;
     if (!seite?.nodes || !seite.pageInfo) throw new Error('Admin API lieferte keine products - Zugriff pruefen.');
     for (const p of seite.nodes) {
+      // Vor dem Hash: Aenderungen an Restvorlagen sind auch keine Katalogaenderung.
+      if (istRestvorlage(p)) continue;
       if (!p.variants?.nodes || p.variants.pageInfo?.hasNextPage !== false) throw new Error(`${p.id}: Varianten unvollstaendig oder mehr als 250.`);
       const { variants, featuredMedia, ...rest } = p;
       zeilen.push(JSON.stringify({ ...rest, bild: featuredMedia?.preview?.image?.url ?? null }));
@@ -124,7 +134,7 @@ export function pruefeUmfang(zeilen, vorherText, entnahmen = []) {
 }
 
 const ENTNAHMEN_QUERY = `query TnmEntnahmen($ids: [ID!]!) {
-  nodes(ids: $ids) { ... on ProductVariant { id product { id status productType } } }
+  nodes(ids: $ids) { ... on ProductVariant { id product { id status productType handle } } }
 }`;
 
 /** Sortimentsentnahmen zulassen, aber nie einen unvollstaendigen Aktivkatalog. */
@@ -141,6 +151,8 @@ export async function verifizierteEntnahmen(proxy, ids) {
       const p = n.product;
       if (['ARCHIVED', 'DRAFT'].includes(p.status) || !istTnm(p)) {
         result.push({ variantId: n.id, productId: p.id, status: p.status === 'ACTIVE' ? 'NOT_TNM' : p.status });
+      } else if (istRestvorlage(p)) {
+        result.push({ variantId: n.id, productId: p.id, status: 'RESTVORLAGE' });
       } else throw new Error(`${n.id}: aktiver Teppich nach Mass fehlt im neuen Feed.`);
     }
   }

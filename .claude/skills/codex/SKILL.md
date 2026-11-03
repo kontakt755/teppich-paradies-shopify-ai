@@ -115,4 +115,5 @@ npm run -s ki:frag -- umsetzen einstieg-rest "Korrektur: ..."                   
 - Anmeldefehler bei Codex: Benutzer startet die ChatGPT-App bzw. `codex login`.
 - Kontingent erschoepft: das Skript erkennt Limit-/429-Meldungen und endet mit
   **Exit 3**. Nicht wiederholen - Stand sichern (`npm run -s handoff`), allein
-  weiterarbeiten oder aufhoeren und den Benutzer informieren.
+  weiterarbeiten oder aufhoeren und den Benutzer informieren. Kritische Merges
+  dann mit `/code-review` auf Stufe high und Bestaetigung (AGENTS.md, „Review“).

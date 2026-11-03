@@ -19,6 +19,7 @@ import { normalisiereLineItem } from '../sync/orders.mjs';
 import { istMusterPosition as musterRegel } from './muster.mjs';
 import { istTestbestellung } from './testbestellung.mjs';
 import { kettelZuschnitt, wirdGekettelt } from './kettelpuffer.mjs';
+import { ROUTE } from './route.mjs';
 
 export const ADMIN_ORDER_URL = 'https://admin.shopify.com/store/sjjyq1-6w/orders/';
 
@@ -598,7 +599,11 @@ function produktRollenbreiteCm(produkt) {
  */
 export function kettelZusatz(p) {
   const z = !p.istMuster && wirdGekettelt(p.ausfuehrung) ? kettelZuschnitt(p.ausfuehrung) : null;
-  return z ? ` · über unseren Kettler: Zuschnitt ${z.zuschnitt} (+3 cm je Länge und Breite)` : '';
+  if (!z) return '';
+  // Beim Direktversand steht der Weg nicht fest. Ob der Lieferant selbst ketteln kann, steht nur in
+  // den Stammdaten - die Liste nennt deshalb beide Masse und legt niemanden auf einen Weg fest.
+  if (p.route === ROUTE.SUPPLIER_DIRECT) return ` · gekettelt, Weg vor der Bestellung klären: Fertigmaß ${z.fertig}, für unseren Kettler Zuschnitt ${z.zuschnitt}`;
+  return ` · über unseren Kettler: Zuschnitt ${z.zuschnitt} (+3 cm je Länge und Breite)`;
 }
 
 export function kopierText(gruppe) {

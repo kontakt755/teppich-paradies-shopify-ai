@@ -40,7 +40,7 @@ const entwurfSchluessel = (orderId, stufe) => `${orderId}|${stufe}`;
 /** Stoppliste aus der zuletzt geladenen Antwort von /api/kunden/muster-texte (Adresse -> { am }). */
 function stoppliste() {
   const liste = heuteDaten.musterTexte?.abgemeldet;
-  return new Map((Array.isArray(liste) ? liste : []).map(e => [String(e.email).toLowerCase(), { am: e.am || null }]));
+  return new Map((Array.isArray(liste) ? liste : []).map(e => [String(e.email).toLowerCase(), { am: e.am || null, grund: e.grund || null }]));
 }
 
 /** Offene, abgemeldete und kuerzlich erledigte Nachfragen aus den geladenen Bestellzeilen. */
@@ -125,9 +125,18 @@ function fertigZeile(e) {
 }
 
 function abgemeldetZeile(e) {
+  const unzustellbar = /^Unzustellbar/.test(e.abgemeldetGrund || '');
   return `<div class="heute-mn-fertig">
     <a href="${esc(kundenLink(e))}">${esc(e.kundenname || e.orderName)}</a>
-    <span>${esc(e.orderName)} · abgemeldet${e.abgemeldetAm ? ` am ${esc(fmtDate(e.abgemeldetAm))}` : ''} – keine Nachfragen mehr</span>
+    <span>${esc(e.orderName)} · ${unzustellbar ? 'E-Mail nicht zustellbar' : 'abgemeldet'}${e.abgemeldetAm ? ` am ${esc(fmtDate(e.abgemeldetAm))}` : ''} – keine Nachfragen mehr</span>
+  </div>`;
+}
+
+/** Abmeldung mit weiterem Text oder abgelehnte Zustellung ohne Sperre: das sollte jemand lesen. */
+function antwortZeile(h) {
+  return `<div class="heute-mn-fertig">
+    <strong>${esc(h.orderName || h.email)}</strong>
+    <span>${esc(h.email)}${h.am ? ` · ${esc(fmtDate(h.am))}` : ''}: ${h.art === 'zustellung' ? esc(h.auszug) : `„${esc(h.auszug)}“`}</span>
   </div>`;
 }
 
@@ -152,8 +161,10 @@ function versandZeile(v, offen) {
  */
 export function musterNachfassenBlock(stand) {
   const abgemeldet = stand.abgemeldet || [];
-  if (!stand.offen.length && !stand.erledigt.length && !abgemeldet.length) return '';
   const t = heuteDaten.musterTexte;
+  const antworten = t?.antwortHinweise || [];
+  const abgleichFehler = t?.abgleichFehler || null;
+  if (!stand.offen.length && !stand.erledigt.length && !abgemeldet.length && !antworten.length && !abgleichFehler) return '';
   const texte = t?.verfuegbar ? t.texte : null;
   const automatisch = Boolean(t?.versand?.eingerichtet);
   const lesend = istNurLesend();
@@ -163,6 +174,8 @@ export function musterNachfassenBlock(stand) {
     <div class="heute-block-kopf"><h2 id="heuteMuster">Muster nachfassen</h2><span>${stand.offen.length ? `${plural(stand.offen.length, 'Kunde', 'Kunden')} offen` : 'alles nachgefasst'}</span></div>
     <p class="heute-mn-regel">Erste E-Mail ab ${ERSTE_NACH_TAGEN} Tagen nach dem Versand, höchstens eine Erinnerung ${ERINNERUNG_NACH_TAGEN} Tage danach. Anrufen nur bei Rückrufwunsch.</p>
     ${versandZeile(t?.versand, stand.offen.length)}
+    ${abgleichFehler ? `<p class="notice warn">Postfach-Suche fehlgeschlagen: ${esc(abgleichFehler)}. Solange das so ist, verschickt der Lauf nichts.</p>` : ''}
+    ${antworten.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Aus dem Postfach – bitte lesen</p>${antworten.map(antwortZeile).join('')}</div>` : ''}
     ${stand.offen.length ? `<div class="heute-mn-liste">${stand.offen.map((e, i) => zeile(e, texte, lesend, i === 0, automatisch)).join('')}</div>` : ''}
     ${hinweis}
     ${abgemeldet.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Abgemeldet</p>${abgemeldet.map(abgemeldetZeile).join('')}</div>` : ''}
