@@ -28,6 +28,18 @@ test('Codex: letzter Stand aus dem Protokoll, kaputte und andere Zeilen zaehlen 
   assert.equal(Object.keys(l).includes('inhalt'), false, 'keine Chatinhalte im Ergebnis');
 });
 
+test('Codex: neuester Stand nach Ereigniszeit, nicht nach Dateizeit', () => {
+  const codex = tmp();
+  const ordner = path.join(codex, 'sessions', '2026', '11', '03');
+  fs.mkdirSync(ordner, { recursive: true });
+  const zeile = (woche, min) => `${JSON.stringify({ ...tokenZeile(woche), timestamp: vorMin(min) })}\n`;
+  fs.writeFileSync(path.join(ordner, 'neu.jsonl'), zeile(100, 5));
+  fs.writeFileSync(path.join(ordner, 'alt.jsonl'), zeile(30, 300));
+  fs.utimesSync(path.join(ordner, 'neu.jsonl'), new Date(JETZT.getTime() - 3_600_000), new Date(JETZT.getTime() - 3_600_000));
+  fs.utimesSync(path.join(ordner, 'alt.jsonl'), JETZT, JETZT);
+  assert.equal(letzteCodexLimits(codex, JETZT).woche, 100);
+});
+
 test('Codex ohne Protokoll, mit fremdem Format oder altem Stand: nicht lesbar, nie ok', () => {
   assert.equal(letzteCodexLimits(tmp(), JETZT), null);
   assert.equal(bewerteCodex(null, JETZT).art, 'nicht-lesbar');
@@ -43,6 +55,7 @@ test('Codex: Grenzen bei 80 und 100 %, gemeldetes Limit zaehlt auch darunter', (
   assert.equal(bewerteCodex(limits(80), JETZT).art, 'woche-80');
   assert.equal(bewerteCodex(limits(100), JETZT).art, 'limit');
   assert.equal(bewerteCodex(limits(50, { erreicht: 'primary' }), JETZT).art, 'limit');
+  assert.equal(bewerteCodex(limits(30, { fuenfStunden: 100 }), JETZT).art, 'limit', 'Fuenf-Stunden-Limit bei niedriger Wochenlast');
 });
 
 test('Musterautomatik: aus, unklare Sendung, stehender Lauf, Hinweis, gut', () => {

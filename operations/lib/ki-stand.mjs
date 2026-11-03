@@ -31,23 +31,31 @@ function rolloutDateien(codexDir, jetzt) {
 
 /** Letzter Kontingent-Stand aus den Codex-Protokollen; liest nur das Feld rate_limits, keine Chatinhalte. */
 export function letzteCodexLimits(codexDir, jetzt = new Date()) {
+  let neuester = null;
   for (const datei of rolloutDateien(codexDir, jetzt).slice(0, 8)) {
-    const groesse = fs.statSync(datei).size;
-    const puffer = Buffer.alloc(Math.min(groesse, LESE_BYTES));
-    const fd = fs.openSync(datei, 'r');
-    try { fs.readSync(fd, puffer, 0, puffer.length, groesse - puffer.length); } finally { fs.closeSync(fd); }
-    const zeilen = puffer.toString('utf8').split('\n').filter(z => z.includes('"rate_limits"'));
-    for (const zeile of zeilen.reverse()) {
-      let e;
-      try { e = JSON.parse(zeile); } catch { continue; }
-      const r = e?.payload?.rate_limits;
-      if (!r?.secondary || !Number.isFinite(r.secondary.used_percent)) continue;
-      return {
-        zeit: e.timestamp, woche: r.secondary.used_percent, fuenfStunden: r.primary?.used_percent ?? null,
-        resetWoche: Number.isFinite(r.secondary.resets_at) ? new Date(r.secondary.resets_at * 1000).toISOString() : null,
-        plan: r.plan_type || null, erreicht: r.rate_limit_reached_type || null,
-      };
-    }
+    const treffer = letzterStandInDatei(datei);
+    // Die Dateizeit reicht nicht: spaetere Aktivitaet einer Sitzung kann einen alten Stand nach vorn holen.
+    if (treffer && (!neuester || Date.parse(treffer.zeit) > Date.parse(neuester.zeit))) neuester = treffer;
+  }
+  return neuester;
+}
+
+function letzterStandInDatei(datei) {
+  const groesse = fs.statSync(datei).size;
+  const puffer = Buffer.alloc(Math.min(groesse, LESE_BYTES));
+  const fd = fs.openSync(datei, 'r');
+  try { fs.readSync(fd, puffer, 0, puffer.length, groesse - puffer.length); } finally { fs.closeSync(fd); }
+  const zeilen = puffer.toString('utf8').split('\n').filter(z => z.includes('"rate_limits"'));
+  for (const zeile of zeilen.reverse()) {
+    let e;
+    try { e = JSON.parse(zeile); } catch { continue; }
+    const r = e?.payload?.rate_limits;
+    if (!r?.secondary || !Number.isFinite(r.secondary.used_percent) || !Number.isFinite(Date.parse(e.timestamp))) continue;
+    return {
+      zeit: e.timestamp, woche: r.secondary.used_percent, fuenfStunden: r.primary?.used_percent ?? null,
+      resetWoche: Number.isFinite(r.secondary.resets_at) ? new Date(r.secondary.resets_at * 1000).toISOString() : null,
+      plan: r.plan_type || null, erreicht: r.rate_limit_reached_type || null,
+    };
   }
   return null;
 }
@@ -60,7 +68,7 @@ export function bewerteCodex(l, jetzt = new Date()) {
   const alter = (jetzt.getTime() - Date.parse(l.zeit)) / 3_600_000;
   if (!(alter <= CODEX_DATEN_MAX_STUNDEN)) return { ok: false, art: 'nicht-lesbar', meldung: `Codex-Kontingent nicht lesbar: letzter Stand ist ${Math.round(alter)} Stunden alt.` };
   const stand = `Woche ${l.woche} %, 5 Std. ${l.fuenfStunden ?? '?'} %, Reset ${tag(l.resetWoche)}, Plan ${l.plan || 'unbekannt'}`;
-  if (l.woche >= 100 || l.erreicht) return { ok: false, art: 'limit', meldung: `Codex am Limit: Automationen laufen leer und melden trotzdem "fertig". ${stand}.` };
+  if (l.woche >= 100 || l.fuenfStunden >= 100 || l.erreicht) return { ok: false, art: 'limit', meldung: `Codex am Limit: Automationen laufen leer und melden trotzdem "fertig". ${stand}.` };
   if (l.woche >= CODEX_WARN_PROZENT) return { ok: false, art: 'woche-80', meldung: `Codex-Wochenkontingent fast verbraucht. ${stand}.` };
   return { ok: true, art: null, meldung: `Codex: ${stand}.` };
 }
