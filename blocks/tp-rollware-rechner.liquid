@@ -1699,8 +1699,9 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Fuer die Anzeige im Raummass-Helfer (Shop-Analyse 13.10.): berechnete
   // Menge in m² wie in der Preisbox gerundet, und das Mass, das gerade im
   // Rechner steht (= das, was in den Warenkorb ginge). Rechnet keinen Preis.
-  root.tpRwcBerechnetM2 = function (wCm, lenCm) {
+  root.tpRwcBerechnetM2 = function (wCm, lenCm, art) {
     if (!(wCm > 0) || !(lenCm > 0)) return 0;
+    if (art === 'raum' && restRaum) return restRaumMenge(wCm, lenCm) / 100;
     return cmExact ? roundedHundredthsQty(wCm, lenCm) / 100 : Math.ceil((wCm * lenCm) / 10000);
   };
   root.tpRwcBestellmass = function () {

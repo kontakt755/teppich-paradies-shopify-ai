@@ -56,6 +56,17 @@ test('Raumhelfer bekommt keinen Preis fuer eine Laenge, die der Rechner sperrt',
   assert.equal(c.root.tpRwcPreis('raum', 210, 510), 0);
 });
 
+test('Raumhelfer zeigt beim Raummass die abgerechnete Flaeche, bei Meterware weiter volle m2', () => {
+  const beginn = source.indexOf('  root.tpRwcBerechnetM2 = function');
+  const ende = source.indexOf('\n  };', beginn) + 5;
+  const c = angebot({ root: {}, roundedHundredthsQty: (w, l) => Math.round(w * l / 100) });
+  vm.runInContext(source.slice(beginn, ende), c);
+  assert.equal(c.root.tpRwcBerechnetM2(210, 300, 'raum'), 6.3);
+  assert.equal(c.root.tpRwcBerechnetM2(50, 100, 'raum'), 2.11, 'Mindestpreis');
+  assert.equal(c.root.tpRwcBerechnetM2(210, 300, 'meter'), 7);
+  assert.equal(c.root.tpRwcBerechnetM2(210, 300), 7);
+});
+
 test('Fail closed: abweichender Zuschnittpreis, kein Bundle, andere Rollenart', () => {
   for (const opt of [
     { rest: { zuschnitt: [{ id: 1, cm: 100, price: 48, available: true }] } },
