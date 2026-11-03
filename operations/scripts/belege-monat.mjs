@@ -29,12 +29,35 @@ import {
 const HIER = path.dirname(fileURLToPath(import.meta.url));
 const VORMONATE = 3;
 const MAILS_JE_SITZUNG = 25;
+const HELFER_ZEITLIMIT_MS = 300_000;
 const PYTHON = process.env.TP_ANALYSE_PYTHON || path.join(os.homedir(), '.venvs', 'analyse', 'bin', 'python');
 const PFAD_MIT_WERKZEUGEN = `${process.env.PATH || ''}${path.delimiter}/opt/homebrew/bin${path.delimiter}/usr/local/bin`;
 
+/**
+ * Eingabe als schon geloeschte Datei statt per `input`: im Echtlauf blieb spawnSync einmal 9 Minuten
+ * haengen, weil die Pipe nie zuging (Python wartete auf das Ende der Eingabe). Dazu ein Zeitlimit.
+ */
+function eingabeFd(eingabe) {
+  if (eingabe === undefined) return 'ignore';
+  const ordner = fs.mkdtempSync(path.join(os.tmpdir(), 'belege-'));
+  try {
+    const datei = path.join(ordner, 'eingabe');
+    fs.writeFileSync(datei, eingabe, { mode: 0o600 });
+    return fs.openSync(datei, 'r');
+  } finally {
+    fs.rmSync(ordner, { recursive: true, force: true });
+  }
+}
+
 function pythonHelfer(befehl, { eingabe, arg } = {}) {
-  const r = spawnSync(PYTHON, [path.join(HIER, 'belege_pdf.py'), befehl, ...(arg ? [arg] : [])], { input: eingabe, maxBuffer: 512 * 1024 * 1024 });
-  if (r.error) throw new Error(`PDF-Helfer nicht startbar (${r.error.code || r.error.message})`);
+  const stdin = eingabeFd(eingabe);
+  let r;
+  try {
+    r = spawnSync(PYTHON, [path.join(HIER, 'belege_pdf.py'), befehl, ...(arg ? [arg] : [])], { stdio: [stdin, 'pipe', 'pipe'], maxBuffer: 512 * 1024 * 1024, timeout: HELFER_ZEITLIMIT_MS });
+  } finally {
+    if (typeof stdin === 'number') fs.closeSync(stdin);
+  }
+  if (r.error) throw new Error(`PDF-Helfer nicht startbar oder Zeitlimit (${r.error.code || r.error.message})`);
   if (r.status !== 0) throw new Error(`PDF-Helfer fehlgeschlagen: ${String(r.stderr).trim().split('\n').at(-1)}`);
   return JSON.parse(String(r.stdout));
 }

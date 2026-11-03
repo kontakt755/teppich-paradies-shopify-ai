@@ -9,7 +9,7 @@ import {
   archivName, sichererName, dublettenMarkieren, druckReihenfolge, summenJeAnbieter, wiederkehrend, pruefKandidaten,
   manifestZusammenfuehren, monatsGrenzen, monatDavor, berlinTag, anbieterSchluessel, anbieterName, sha256,
 } from '../lib/belege.mjs';
-import { mailAuswerten, lauf, deckblattHtml } from '../scripts/belege-monat.mjs';
+import { mailAuswerten, lauf, deckblattHtml, pdfAnalyse } from '../scripts/belege-monat.mjs';
 
 const ANBIETER = { name: 'Muster Anbieter GmbH', adresse: 'rechnung@post.muster-anbieter.example' };
 const CII = `<?xml version="1.0"?><rsm:CrossIndustryInvoice xmlns:rsm="x" xmlns:ram="y"><rsm:ExchangedDocument><ram:ID>RE-2026-77</ram:ID><ram:TypeCode>380</ram:TypeCode><ram:IssueDateTime><udt:DateTimeString format="102">20261015</udt:DateTimeString></ram:IssueDateTime></rsm:ExchangedDocument><ram:SellerTradeParty><ram:Name>Muster Anbieter GmbH</ram:Name></ram:SellerTradeParty><ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode><ram:SpecifiedTradeSettlementHeaderMonetarySummation><ram:TaxBasisTotalAmount>100.00</ram:TaxBasisTotalAmount><ram:TaxTotalAmount currencyID="EUR">19.00</ram:TaxTotalAmount><ram:GrandTotalAmount>119.00</ram:GrandTotalAmount></ram:SpecifiedTradeSettlementHeaderMonetarySummation></rsm:CrossIndustryInvoice>`;
@@ -250,6 +250,7 @@ test('PDF-Helfer: eingebettete XML, Seitenzahl, Zusammenfuegen', { skip: !fs.exi
   assert.equal(a.eingebettet[0].name, 'factur-x.xml');
   assert.equal(Buffer.from(a.eingebettet[0].inhalt, 'base64').toString(), '<x/>');
   assert.equal(JSON.parse(spawnSync(PY, [HELFER, 'analyse'], { input: Buffer.from('%PDF-kaputt') }).stdout).lesbar, false);
+  assert.equal(pdfAnalyse(fs.readFileSync(p)).seiten, 2, 'Weg ueber die geloeschte Eingabedatei');
   const ziel = path.join(dir, 'z.pdf');
   const f = JSON.parse(spawnSync(PY, [HELFER, 'fuegen'], { input: JSON.stringify({ ausgabe: ziel, teile: [{ pfad: p, titel: 'A' }, { pfad: path.join(dir, 'fehlt.pdf') }, { pfad: p }] }) }).stdout);
   assert.equal(f.seiten, 4);
