@@ -133,6 +133,7 @@ export function musterPackenOffen() {
 /** "bestellt am 24.10. (automatisch)" - ohne belegtes Datum bleibt es beim Standtext. */
 const datumKurz = iso => fmtDate(iso).slice(0, 6);
 function standText(m) {
+  if (m.automatikGrund) return `${STAND_TEXT.offen}: ${m.automatikGrund}`;
   if (m.stand !== 'bestellt' || !m.bestelltAm) return STAND_TEXT[m.stand] || '';
   return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}`;
 }
@@ -185,14 +186,16 @@ function hierHtml(k) {
   const da = k.muster.filter(m => !m.abgehakt && m.stand === 'da').length;
   const lager = k.muster.filter(m => !m.abgehakt && m.stand === 'lager');
   const orte = [...new Set(lager.map(m => m.lagerOrt).filter(Boolean))];
-  const offen = k.muster.filter(m => !m.abgehakt && m.stand === 'offen').length;
+  const offeneMuster = k.muster.filter(m => !m.abgehakt && m.stand === 'offen');
+  const offen = offeneMuster.length;
+  const gruende = [...new Set(offeneMuster.map(m => m.automatikGrund).filter(Boolean))];
   const teile = [
     drin ? `${drin} im Umschlag` : '',
     da ? `${da} angekommen` : '',
     lager.length ? `${lager.length} im Musterlager${orte.length ? ` (${orte.join(', ')})` : ''}` : '',
   ].filter(Boolean);
   return `${teile.length ? `<span class="small mp-hier-da">${esc(`Liegt hier: ${teile.join(' · ')}`)}</span>` : ''}`
-    + `${offen ? `<span class="small wait-warn">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt`)}</span>` : ''}`;
+    + `${offen ? `<span class="small wait-warn">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt${gruende.length ? `: ${gruende.join('; ')}` : ''}`)}</span>` : ''}`;
 }
 
 function datumHtml(k) {

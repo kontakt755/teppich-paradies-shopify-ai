@@ -44,3 +44,19 @@ test('Echter API-Pfad: aus Shopify-Export Muster bestellen und ohne Handarbeit j
   await api.musterBestellungenAutomatisch({ senden: async () => anzahl++ });
   assert.equal(anzahl, 1);
 });
+
+test('Packstation nennt den Grund der Automatik beim Muster, Bestellungen nennen die Position', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-muster-api-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const { orderId, lineItemId } = testDaten(dir);
+  const konfig = path.join(dir, 'muster-bestellung/konfiguration.json');
+  const k = JSON.parse(fs.readFileSync(konfig, 'utf8'));
+  k.lieferanten.A.kostenlos = false; // Plan haelt zurueck: "Musterweg oder Kosten noch zu klaeren"
+  fs.writeFileSync(konfig, JSON.stringify(k));
+  const api = createApi({ root: dir, privatDirPath: dir, gh: async () => '' });
+  const z = api.kundenBestellungen().zeilen.find(x => x.orderId === orderId);
+  assert.deepEqual(z.musterAutomatik.klaeren[0].lineItemIds, [lineItemId]);
+  const m = api.kundenMusterPacken().kunden[0].muster[0];
+  assert.equal(m.stand, 'offen');
+  assert.match(m.automatikGrund, /Musterweg/);
+});

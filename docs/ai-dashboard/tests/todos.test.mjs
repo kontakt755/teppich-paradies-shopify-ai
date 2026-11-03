@@ -567,3 +567,34 @@ test('Rundgang 29.10.: gestoerteRoutinen nennt alle; Speicher-Handlung ohne uebe
   assert.doesNotMatch(h.handlung, /Rückfrage/);
   assert.match(h.handlung, /Claude Bescheid geben: „Speicher aufräumen“/);
 });
+
+test('Musterautomatik: laenger als einen Werktag aus demselben Grund wird ein rotes To-do statt "bestellen"', () => {
+  // 01.10.2026 ist ein Donnerstag: Di 29.09. -> 2 Werktage, Mi 30.09. -> 1 Werktag.
+  const muster = (z, grund, seit, i = 0) => { (z.musterAutomatik ||= { klaeren: [] }).klaeren.push({ lineItemIds: [z.auftrag.positionen[i].lineItemId], grund, seit }); return z; };
+  const pos = { istMuster: true, lieferant: 'E', titel: 'Muster: Testvelours' };
+  const a = muster(zeile({ name: 'Kunde Eins', tage: 2, positionen: [pos] }), 'Testgrund fehlt', '2026-09-29T09:00:00');
+  const b = muster(zeile({ name: 'Kunde Zwei', tage: 3, positionen: [pos] }), 'Testgrund fehlt', '2026-09-28T09:00:00');
+  const frisch = muster(zeile({ name: 'Kunde Drei', tage: 1, positionen: [pos] }), 'Testgrund fehlt', '2026-09-30T09:00:00');
+  const todos = leiteTodosAb({ bestellzeilen: [a, b, frisch] }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(arten(todos).sort(), ['bestellen', 'muster_klaeren']);
+  const t = todos.find(x => x.art === 'muster_klaeren');
+  assert.equal(t.ton, 'crit');
+  assert.equal(t.titel, '2 Muster hängen: Testgrund fehlt');
+  assert.match(t.kontext, /Kunde Eins, Kunde Zwei · .*seit 3 Werktagen/);
+  assert.deepEqual(t.knopf, { text: 'Ansehen', href: '#/kunden?tab=bestellungen&bart=muster' });
+  assert.match(todos.find(x => x.art === 'bestellen').kontext, /Kunde Drei/, 'erst ein Werktag: bleibt normales Bestellen');
+});
+
+test('Musterautomatik: von Hand bestellt, Wochenende und Faelle ohne Position erzeugen kein To-do', () => {
+  const pos = { istMuster: true, lieferant: 'E', titel: 'Muster: Testvelours' };
+  const klaeren = (z, seit) => { z.musterAutomatik = { klaeren: [{ lineItemIds: [z.auftrag.positionen[0].lineItemId], grund: 'Testgrund', seit }] }; return z; };
+  const bestellt = klaeren(zeile({ tage: 9, positionen: [pos] }), vorTagen(9));
+  const statusAlle = stand(bestellt, 0, { status: 'bestellt', bestelltAm: vorTagen(1) });
+  assert.deepEqual(arten(leiteTodosAb({ bestellzeilen: [bestellt], statusAlle }, { sicht: 'laden', jetzt: JETZT })), []);
+  // Sa 03.10. bis Mo 05.10.: nur ein Werktag.
+  const wochenende = klaeren(zeile({ tage: 0, positionen: [pos] }), '2026-10-03T09:00:00');
+  assert.ok(!arten(leiteTodosAb({ bestellzeilen: [wochenende] }, { sicht: 'laden', jetzt: new Date('2026-10-05T10:00:00') })).includes('muster_klaeren'));
+  const ohnePosition = zeile({ tage: 5, positionen: [pos] });
+  ohnePosition.musterAutomatik = { klaeren: [{ grund: 'Bestellumfang geändert', seit: vorTagen(5) }] };
+  assert.ok(!arten(leiteTodosAb({ bestellzeilen: [ohnePosition] }, { sicht: 'laden', jetzt: JETZT })).includes('muster_klaeren'));
+});
