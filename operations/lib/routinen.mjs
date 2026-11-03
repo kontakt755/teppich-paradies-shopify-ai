@@ -490,18 +490,19 @@ export function imScratchpad(pfad) {
  * Fehler mit Mitteilung - Bash, MCP und jeder Dateipfad sonst (`.env*`, Zugangsdateien,
  * LaunchAgents, alles unter ~): genau das ist das Zeichen, dass eine Mail Claude zu etwas
  * anderem bringen wollte (Pruefung 28.10.). Entschieden wird am vollen Pfad (`abgelehnt`),
- * nicht am gekuerzten Text in `ablehnungen`.
+ * nicht am gekuerzten Text in `ablehnungen`. `auchHarmlos`: was ein Lauf zusaetzlich so sieht
+ * (postfach-entwuerfe: abgelehnter Wortlaut, den Claude laut Auftrag korrigiert).
  */
-export function harmloseAblehnung(bewertung, ergebnisBelegt) {
+export function harmloseAblehnung(bewertung, ergebnisBelegt, auchHarmlos = () => false) {
   if (!bewertung || bewertung.art !== 'abgelehnt' || !ergebnisBelegt) return bewertung;
   const liste = bewertung.abgelehnt || [];
   const harmlos = liste.length && liste.length === (bewertung.ablehnungen?.length ?? liste.length)
-    && liste.every(a => ['Read', 'Write'].includes(a.werkzeug) && imScratchpad(a.pfad));
+    && liste.every(a => (['Read', 'Write'].includes(a.werkzeug) && imScratchpad(a.pfad)) || auchHarmlos(a));
   if (!harmlos) return bewertung;
   return {
     ...bewertung, ok: true, art: null,
     meldung: bewertung.abschluss || 'fertig',
-    hinweis: `${liste.length} Dateizugriff(e) im Scratchpad abgelehnt, Ergebnis trotzdem übernommen`,
+    hinweis: liste.every(a => a.pfad) ? `${liste.length} Dateizugriff(e) im Scratchpad abgelehnt, Ergebnis trotzdem übernommen` : `${liste.length} Aufruf(e) abgelehnt (Scratchpad oder Entwurfstext), Ergebnis trotzdem übernommen`,
   };
 }
 
@@ -537,7 +538,8 @@ export function bewerteLauf({ exitCode, signal, stdout, ergebnis, aufrufe, wache
   }
   const ablehnungen = (j.permission_denials || []).map(ablehnungKurz);
   // Voller Pfad je Ablehnung (ablehnungen kuerzt auf 120 Zeichen): fuer harmloseAblehnung.
-  const abgelehnt = (j.permission_denials || []).map(d => ({ werkzeug: d?.tool_name || '?', pfad: typeof d?.tool_input?.file_path === 'string' ? d.tool_input.file_path : null }));
+  // Beim Entwurf auch die Eingabe, nur fuer diese Pruefung; sie geht nie in Status oder Mitteilung.
+  const abgelehnt = (j.permission_denials || []).map(d => ({ werkzeug: d?.tool_name || '?', pfad: typeof d?.tool_input?.file_path === 'string' ? d.tool_input.file_path : null, ...(d?.tool_name === GMAIL_ENTWURF ? { eingabe: d.tool_input } : {}) }));
   const zeile = abschlussZeile(j.result);
   const basis = { tokens: tokensAus(j.usage), runden: j.num_turns ?? null, dauerSek: j.duration_ms ? Math.round(j.duration_ms / 1000) : null, abschluss: zeile, ablehnungen, abgelehnt, wache, aufrufe };
   if (j.is_error || j.subtype !== 'success' || exitCode) {

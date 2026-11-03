@@ -17,7 +17,8 @@
  * Geht die Vorpruefung nicht (kein Zugang, IMAP abgelehnt, Netz), startet Claude wie bisher.
  * Abschalten: TP_POSTFACH_VORPRUEFUNG=aus.
  *
- * Gelesen werden nur Kennungen (imap-lesen.mjs), nie Absender, Betreff oder Text.
+ * Gelesen werden nur Kennungen (imap-lesen.mjs), nie Betreff oder Text; postfach-entwuerfe
+ * zusaetzlich From und Reply-To fuer die Empfaengerpruefung der Wache.
  */
 
 import path from 'node:path';
@@ -25,7 +26,7 @@ import { createHash } from 'node:crypto';
 import { berlinZeit } from './routinen.mjs';
 import { bekannt as belegeBekannt, leseBelege, lieferbelegePfad } from './lieferbelege.mjs';
 import { lesePostfach } from './nachfass-versand.mjs';
-import { suchenNurLesend } from './imap-lesen.mjs';
+import { absenderNurLesend, suchenNurLesend } from './imap-lesen.mjs';
 import { bekannt as serviceBekannt } from '../scripts/serviceanfragen.mjs';
 import { lieferantenDomains } from '../scripts/lieferbelege.mjs';
 
@@ -70,13 +71,13 @@ export function entscheideEntwuerfe({ gefunden = [], bekannteIds = [] } = {}) {
   return { starten: false, grund: `nichts Neues (${new Set(gefunden).size} Mails in der Suche, alle eingeordnet)` };
 }
 
-/** IMAP-Abfrage der Kennungen fuer postfach-entwuerfe; { gefunden } oder { fehler }. */
-export async function entwuerfeAbfragen({ privat, suchen = suchenNurLesend, zugangLesen = lesePostfach } = {}) {
+/** IMAP-Abfrage fuer postfach-entwuerfe; { gefunden, absender: [{ id, adressen }] } oder { fehler }. */
+export async function entwuerfeAbfragen({ privat, suchen = absenderNurLesend, zugangLesen = lesePostfach } = {}) {
   const zugang = zugangLesen(postfachZugangPfad(privat));
   if (!zugang.zugang) return { fehler: `kein Postfach-Zugang (${zugang.hinweis || 'nachfassen/postfach.json'})` };
   try {
-    const [gefunden] = await suchen(zugang.zugang, [SUCHE_ENTWUERFE]);
-    return { gefunden: gefunden || [] };
+    const absender = await suchen(zugang.zugang, SUCHE_ENTWUERFE);
+    return { gefunden: absender.map(a => a.id), absender };
   } catch (e) { return { fehler: String(e?.message || e).slice(0, 160) }; }
 }
 

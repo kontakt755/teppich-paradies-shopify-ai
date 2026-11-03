@@ -16,8 +16,10 @@
  *    ein Bildschirmfoto aus $TP_PRIVAT_DIR/fehlermeldungen/.
  *  - ToolSearch und die lesenden Gmail-Werkzeuge ohne weitere Pruefung.
  *  - create_draft (nur Lauf postfach-entwuerfe): nur als Antwort am Verlauf, genau ein Empfaenger,
- *    reiner Text ohne Anhang, Kopie oder HTML, Anfang "Guten Tag", Gruss, keine Euro-Betraege,
- *    keine KI-Saetze, je Mail nur einmal, hoechstens ENTWUERFE_MAX_VERLAEUFE je Lauf.
+ *    und zwar Absender oder Antwort-an der Mail laut Vorpruefung (absender.json), reiner Text ohne
+ *    Anhang, Kopie oder HTML, Anfang "Guten Tag", Gruss, keine Betraege, Liefertermine, KI-Saetze,
+ *    fremden Links oder Bankverbindungen, je Mail nur einmal, hoechstens ENTWUERFE_MAX_VERLAEUFE
+ *    je Lauf.
  *  - label_thread (nur Lauf postfach-entwuerfe): nur die festen Labels aus routinen.mjs.
  */
 
@@ -207,8 +209,92 @@ function pruefeArtifact(e, ctx) {
 
 const ENTWURF_FELDER = new Set(['to', 'subject', 'body', 'replyToMessageId', 'includeSignature']);
 const ADRESSE = /^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/;
-const KI_SATZ = /hier ist (eine|ein|der|die)\b|formulierung\s*:|als ki\b|ki-modell|sprachmodell|\bclaude\b/i;
-const BETRAG = /€|\bEUR\b|\bEuro\b/i;
+// Nur Saetze ueber den Entwurf selbst: "Hier ist die Adresse" und ein Kunde namens Claude sind normal.
+const KI_SATZ = /hier ist (eine|ein|der|die)\s+(\S+\s+)?(formulierung|antwort|entwurf|vorschlag|text|e-?mail|nachricht|fassung)\b|formulierung\s*:|als ki\b|ki-modell|sprachmodell|ich bin (eine |ein )?(ki\b|claude\b)|anthropic/i;
+// Auch ohne Waehrungszeichen. Masse wie "4,50 x 3,20 m" bleiben erlaubt, sie stammen vom Kunden.
+const BETRAEGE = Object.freeze([
+  /€|\bEUR\b|\bEuro\b/i,
+  /\b\d{1,3}(?:\.\d{3})*,\d{2}\b(?!\s*(?:x\b|×|mm\b|cm\b|m\b|m²|qm\b|lfm\b|meter\b|quadratmeter\b))/i,
+  /\b\d+,[-–—]/,
+  /\b\d+\s*(?:pro|je|\/)\s*(?:m²|qm\b|m\b|lfm\b|meter\b|quadratmeter\b|stück\b|paket\b|rolle\b)/i,
+  /\b(?:preis\w*|kostet|kosten|betr[aä]gt|rabatt)\b\D{0,20}\d/i,
+  /\d\s*(?:%|prozent\b)/i,
+]);
+// Der Platzhalter "[Lieferzeit prüfen]" ist gewollt; darum ohne eckige Klammern geprueft.
+const LIEFERTERMIN = /\bliefer(?:termin|zeit|datum)\b|\b\d+\s*(?:(?:-|–|bis)\s*\d+\s*)?(?:werktag|arbeitstag|woche)/i;
+const IBAN = /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,}/;
+const EIGENE_HOSTS = new Set(['teppich-paradies.net', 'www.teppich-paradies.net']);
+const URL_SCHEMA = /\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+/gi;
+const MAIL_IM_TEXT = /[^\s<>,;:"'()[\]]+@[^\s<>,;:"'()[\]]+/g;
+const DOMAIN_FORM = /(?<![\w@.-])(?:[a-z0-9-]+\.)+[a-z]{2,}(?![\w-])/gi;
+
+/** Erster Link, erste Mailadresse oder Domain im Text, die nicht uns gehoert; sonst null. */
+export function fremdesZiel(text) {
+  let rest = String(text ?? '');
+  const eigen = (u) => {
+    try {
+      const a = new URL(u);
+      return ['http:', 'https:'].includes(a.protocol) && !a.username && !a.password && EIGENE_HOSTS.has(a.hostname.toLowerCase());
+    } catch { return false; }
+  };
+  for (const m of rest.match(URL_SCHEMA) || []) if (!eigen(m)) return m;
+  rest = rest.replace(URL_SCHEMA, ' ');
+  for (const m of rest.match(MAIL_IM_TEXT) || []) if (!EIGENE_HOSTS.has(m.split('@').pop().replace(/[.!?]+$/, '').toLowerCase())) return m;
+  rest = rest.replace(MAIL_IM_TEXT, ' ');
+  for (const m of rest.match(DOMAIN_FORM) || []) if (!EIGENE_HOSTS.has(m.toLowerCase())) return m;
+  return null;
+}
+
+/** Was eine Mail Claude untergeschoben haben kann: bleibt immer eine Stoerung (Pruefung 03.11.). */
+function entwurfZielFehler(e) {
+  if (fremdesZiel(e.body) || fremdesZiel(e.subject)) return 'nur Links und Adressen von teppich-paradies.net im Entwurf';
+  if (IBAN.test(String(e.body ?? ''))) return 'keine Bankverbindung im Entwurf';
+  return null;
+}
+
+/** Was Claude selbst korrigieren soll, ohne dass es auf eine fremde Mail hindeutet. */
+function entwurfTextFehler(e) {
+  const text = typeof e.body === 'string' ? e.body : '';
+  if (!/^\s*Guten Tag\b/.test(text)) return 'Text beginnt mit „Guten Tag“';
+  if (!text.includes('Mit freundlichen Grüßen') || !text.includes('Teppich Paradies')) return 'Text endet mit Gruß und Firmensignatur';
+  if (KI_SATZ.test(text)) return 'keine KI-Sätze im Entwurf';
+  if (BETRAEGE.some(b => b.test(text))) return 'keine Preise im Entwurf';
+  if (LIEFERTERMIN.test(text.replace(/\[[^\]]*\]/g, ' '))) return 'keine Liefertermine im Entwurf, nur der Platzhalter [Lieferzeit prüfen]';
+  return null;
+}
+
+/**
+ * Lehnt die Wache nur den Wortlaut ab, korrigiert Claude ihn laut Auftrag; das ist keine Stoerung
+ * (fuer harmloseAblehnung). Empfaenger, fremde Links und alles andere bleiben eine.
+ */
+export function entwurfNurTextAbgelehnt(a) {
+  if (a?.werkzeug !== GMAIL_ENTWURF || !a.eingabe) return false;
+  return Boolean(entwurfTextFehler(a.eingabe)) && !entwurfZielFehler(a.eingabe);
+}
+
+/** Merkmal einer Adresse: Der Vergleich braucht die Adresse nicht im Klartext. */
+export function adressMerkmal(adresse) {
+  return createHash('sha256').update(String(adresse ?? '').trim().toLowerCase()).digest('hex');
+}
+
+export function absenderPfad(privat) {
+  return path.join(entwuerfeOrdner(privat), 'absender.json');
+}
+
+/** Legt fuer die Wache ab, an wen je Mail geantwortet werden darf. Jeder Lauf ersetzt die Datei. */
+export function schreibeAbsender(privat, absender) {
+  const aus = {};
+  for (const { id, adressen } of absender) aus[id] = adressen.map(adressMerkmal);
+  fs.mkdirSync(path.dirname(absenderPfad(privat)), { recursive: true, mode: 0o700 });
+  const tmp = `${absenderPfad(privat)}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(aus), { mode: 0o600 });
+  fs.renameSync(tmp, absenderPfad(privat));
+}
+
+/** Kaputt oder fehlend heisst leer: Dann gibt es keinen Entwurf, nie einen Entwurf ohne Pruefung. */
+function liesAbsender(privat) {
+  try { return JSON.parse(fs.readFileSync(absenderPfad(privat), 'utf8')) || {}; } catch { return {}; }
+}
 
 function pruefeEntwurf(e, ctx) {
   for (const k of Object.keys(e)) if (!ENTWURF_FELDER.has(k)) return `Feld „${k}“ ist im Entwurf nicht erlaubt`;
@@ -216,11 +302,11 @@ function pruefeEntwurf(e, ctx) {
   if (!Array.isArray(e.to) || e.to.length !== 1 || !ADRESSE.test(String(e.to[0]))) return 'genau ein Empfänger';
   const an = String(e.to[0]).toLowerCase();
   if (an === 'mailer@shopify.com' || an.endsWith('@teppich-paradies.net')) return 'Empfänger ist die Kundenadresse, nie das Formular oder die eigene Adresse';
-  const text = typeof e.body === 'string' ? e.body : '';
-  if (!/^\s*Guten Tag\b/.test(text)) return 'Text beginnt mit „Guten Tag“';
-  if (!text.includes('Mit freundlichen Grüßen') || !text.includes('Teppich Paradies')) return 'Text endet mit Gruß und Firmensignatur';
-  if (KI_SATZ.test(text)) return 'keine KI-Sätze im Entwurf';
-  if (BETRAG.test(text)) return 'keine Preise im Entwurf';
+  const absender = ctx.absender?.[e.replyToMessageId.toLowerCase()];
+  if (!Array.isArray(absender)) return 'diese Mail steht nicht in der Vorprüfung des Laufs';
+  if (!absender.includes(adressMerkmal(an))) return 'Empfänger ist nicht Absender oder Antwort-an-Adresse dieser Mail';
+  const fehler = entwurfZielFehler(e) || entwurfTextFehler(e);
+  if (fehler) return fehler;
   const spuren = ctx.entwurfSpuren || [];
   if (spuren.some(s => s.mailId === e.replyToMessageId)) return 'zu dieser Mail gibt es schon einen Entwurf';
   const inDiesemLauf = spuren.filter(s => !ctx.laufSeit || s.zeit >= ctx.laufSeit).length;
@@ -251,16 +337,41 @@ export function spurPfad(privat) {
   return path.join(entwuerfeOrdner(privat), 'entwurf-spuren.jsonl');
 }
 
-/** Spuren der Entwuerfe: Kennung, Zeit, Laenge und Pruefsumme - nie der Text. */
-export function liesSpuren(privat) {
+function liesSpurZeilen(privat) {
   let text;
   try { text = fs.readFileSync(spurPfad(privat), 'utf8'); } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
   return text.split('\n').filter(Boolean).map(z => JSON.parse(z));
 }
 
 /**
+ * Spuren der Entwuerfe: Kennung, Zeit, Laenge und Pruefsumme - nie der Text. Ohne Versuche, die
+ * uebernehmen() als gescheitert vermerkt hat.
+ */
+export function liesSpuren(privat) {
+  const aktiv = [];
+  for (const z of liesSpurZeilen(privat)) {
+    if (!z.gescheitert) { aktiv.push(z); continue; }
+    for (let i = aktiv.length - 1; i >= 0; i -= 1) if (aktiv[i].mailId === z.mailId) aktiv.splice(i, 1);
+  }
+  return aktiv;
+}
+
+/** Vermerkt, dass der Versuch zu dieser Mail keinen Entwurf ergab. Gibt die Zahl der Fehlversuche zurueck. */
+export function merkeGescheitert(privat, mailId, jetzt = new Date()) {
+  fs.appendFileSync(spurPfad(privat), `${JSON.stringify({ zeit: jetzt.toISOString(), mailId, gescheitert: true })}\n`, { mode: 0o600 });
+  return liesSpurZeilen(privat).filter(z => z.gescheitert && z.mailId === mailId).length;
+}
+
+/** Wie viele Entwurfsversuche seit `start` scheiterten (fuer den Status des Laufs). */
+export function gescheitertSeit(privat, start) {
+  const ab = Date.parse(start);
+  return liesSpurZeilen(privat).filter(z => z.gescheitert && Date.parse(z.zeit) >= ab).length;
+}
+
+/**
  * Nur die Wache sieht den Text, der wirklich an create_draft geht. Sie vermerkt die Spur, bevor
- * das Werkzeug laeuft - scheitert es danach, bleibt die Mail lieber ohne zweiten Versuch als doppelt.
+ * das Werkzeug laeuft: Die Spur heisst "versucht" und sperrt einen zweiten Versuch im selben Lauf.
+ * Ob der Entwurf entstand, klaert uebernehmen() (postfach-entwuerfe.mjs).
  */
 export function merkeEntwurf(aufruf, ctx, jetzt = new Date()) {
   if (aufruf?.tool_name !== GMAIL_ENTWURF) return;
@@ -284,6 +395,7 @@ export function wacheKontext(lauf, { privat, dienst, home = os.homedir() }) {
   const ctx = { lauf, privat, dienst, arbeit, werkbank, bilder: path.join(privat, 'fehlermeldungen'), ergebnisse: werkzeugErgebnisOrdner(dienst, home) };
   if (lauf === 'postfach-entwuerfe') {
     ctx.labels = entwuerfeLabels(privat);
+    ctx.absender = liesAbsender(privat);
     ctx.entwurfSpuren = liesSpuren(privat);
     try { ctx.laufSeit = JSON.parse(fs.readFileSync(sperrPfad(privat, lauf), 'utf8')).seit || null; } catch { ctx.laufSeit = null; }
   }

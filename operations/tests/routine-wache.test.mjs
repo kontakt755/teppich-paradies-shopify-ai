@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { pruefeAufruf, wacheKontext, befehlsTeile, werkbankAus, woerter, liesSpuren, entwurfSha } from '../lib/routine-wache.mjs';
+import { pruefeAufruf, wacheKontext, befehlsTeile, werkbankAus, woerter, liesSpuren, entwurfSha, absenderPfad, schreibeAbsender, entwurfNurTextAbgelehnt } from '../lib/routine-wache.mjs';
 import { auftragPfad, arbeitsOrdner, sperrPfad, entwuerfeOrdner, ENTWUERFE_LABELS, ENTWUERFE_LABELS_NIE, ENTWUERFE_MAX_VERLAEUFE, GMAIL_LESEN, GMAIL_SCHREIBEN } from '../lib/routinen.mjs';
 
 const WERKBANK = 'https://claude.ai/artifact/TESTWERKBANK1';
@@ -131,8 +131,58 @@ function entwurfUmgebung() {
   const u = umgebung();
   fs.mkdirSync(entwuerfeOrdner(u.privat), { recursive: true });
   fs.writeFileSync(path.join(entwuerfeOrdner(u.privat), 'labels.json'), JSON.stringify({ [ENTWUERFE_LABELS[0]]: 'Label_85', [ENTWUERFE_LABELS[1]]: 'Label_83' }));
+  const ids = [ENTWURF.replyToMessageId, 'bbbbbb', ...Array.from({ length: ENTWUERFE_MAX_VERLAEUFE }, (_, i) => `aaaaaa${i}`)];
+  schreibeAbsender(u.privat, ids.map(id => ({ id, adressen: ['kunde@example.org', 'antwort@example.org'] })));
   return u;
 }
+
+test('Wache Entwuerfe: Empfaenger nur Absender oder Antwort-an der Mail aus der Vorpruefung', () => {
+  const u = entwurfUmgebung();
+  const p = e => pruefeAufruf('postfach-entwuerfe', { tool_name: `${P}create_draft`, tool_input: e }, wacheKontext('postfach-entwuerfe', u));
+  ja(p({ ...ENTWURF, to: ['Antwort@Example.org'] }));
+  nein(p({ ...ENTWURF, to: ['angreifer@evil.example'] }), /nicht Absender/);
+  nein(p({ ...ENTWURF, replyToMessageId: 'cccccc1' }), /nicht in der Vorprüfung/);
+  fs.writeFileSync(absenderPfad(u.privat), '{kaputt');
+  nein(p(ENTWURF), /nicht in der Vorprüfung/);
+  fs.rmSync(absenderPfad(u.privat));
+  nein(p(ENTWURF), /nicht in der Vorprüfung/);
+});
+
+test('Wache Entwuerfe: fremde Links, Adressen und Bankverbindungen nie, eigene schon', () => {
+  const u = entwurfUmgebung();
+  const p = e => pruefeAufruf('postfach-entwuerfe', { tool_name: `${P}create_draft`, tool_input: e }, wacheKontext('postfach-entwuerfe', u));
+  const koerper = zusatz => ({ ...ENTWURF, body: TEXT.replace('vielen Dank.', `vielen Dank. ${zusatz}`) });
+  for (const gut of ['Muster: https://www.teppich-paradies.net/pages/muster.', 'https://teppich-paradies.net/x?y=1', 'www.teppich-paradies.net', 'teppich-paradies.net/pages/muster', 'kontakt@teppich-paradies.net', 'Mo.-Fr. 8:30, z.B. u.a. bzw. Nr. 12']) ja(p(koerper(gut)));
+  for (const schlecht of [
+    'https://evil.example/login', 'http://1.2.3.4/a', 'ftp://evil.example', 'www.evil.example', 'evil.example/login', 'EVIL.EXAMPLE',
+    'https://www.teppich-paradies.net.evil.example/', 'https://www.teppich-paradies.net@evil.example/', 'teppich-paradies.net.evil.example',
+    'angreifer@evil.example', 'mailto:angreifer@evil.example',
+  ]) nein(p(koerper(schlecht)), /nur Links und Adressen/);
+  nein(p({ ...ENTWURF, subject: 'Re: https://evil.example' }), /nur Links und Adressen/);
+  nein(p(koerper('Bitte an DE89 3704 0044 0532 0130 00 zahlen.')), /Bankverbindung/);
+});
+
+test('Wache Entwuerfe: Preise auch ohne Waehrung, Liefertermine, kein Fehlalarm bei Massen und Namen', () => {
+  const u = entwurfUmgebung();
+  const p = e => pruefeAufruf('postfach-entwuerfe', { tool_name: `${P}create_draft`, tool_input: e }, wacheKontext('postfach-entwuerfe', u));
+  const koerper = zusatz => ({ ...ENTWURF, body: TEXT.replace('vielen Dank.', `vielen Dank. ${zusatz}`) });
+  for (const preis of ['Der Preis ist 49,90 pro m².', 'Das sind 49,90.', 'nur 49,- für alles', '49 pro m²', '12 je lfm', 'Der Preis liegt bei 49', 'es kostet 120', '10 % Nachlass']) nein(p(koerper(preis)), /Preise/);
+  for (const termin of ['Liefertermin Freitag.', 'Die Lieferzeit ist kurz.', 'in 3 Werktagen', 'etwa 2-3 Wochen']) nein(p(koerper(termin)), /Liefertermine/);
+  for (const gut of [
+    'Ihr Raum misst 4,50 x 3,20 m.', 'Das sind 14,40 m².', '[Lieferzeit prüfen]', 'kostenloses Aufmaß', 'Hier ist die Adresse unseres Ladens.',
+    'Saarlandstraße 73–81, Telefon 03301 573 37 20, Mo–Fr 8:30–18:00', 'Herr Claude hat angerufen.',
+  ]) ja(p(koerper(gut)));
+  ja(p({ ...ENTWURF, body: TEXT.replace('Frau Muster', 'Frau Claude') }));
+});
+
+test('Abgelehnter Entwurf: nur Wortlaut gilt als harmlos', () => {
+  const a = body => entwurfNurTextAbgelehnt({ werkzeug: `${P}create_draft`, eingabe: { ...ENTWURF, body } });
+  assert.equal(a(`${TEXT}\n30 €`), true);
+  assert.equal(a(`${TEXT}\nhttps://evil.example`), false);
+  assert.equal(a(`${TEXT}\nhttps://evil.example 30 €`), false);
+  assert.equal(a(TEXT), false, 'Text in Ordnung: abgelehnt wegen Empfaenger oder Doppel, also keine Korrektur');
+  assert.equal(entwurfNurTextAbgelehnt({ werkzeug: 'Bash', eingabe: { body: '30 €' } }), false);
+});
 
 test('Wache Entwuerfe: kann nie senden, Entwurf nur am Verlauf, Labels nur aus der festen Liste', () => {
   const u = entwurfUmgebung();

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { imapText, alleNachrichtenOrdner, suchErgebnis, nachrichtenIds, suchenNurLesend, ImapFehler } from '../lib/imap-lesen.mjs';
+import { imapText, alleNachrichtenOrdner, suchErgebnis, nachrichtenIds, suchenNurLesend, absenderAus, adressenAusKopf, ImapFehler } from '../lib/imap-lesen.mjs';
 import { suchenLieferbelege, SUCHEN_SERVICE, SUCHE_ENTWUERFE, entscheide, entscheideEntwuerfe, entwuerfeAbfragen, nachErfolg, merkmal, postfachAbfragen, GESEHEN_MAX } from '../lib/postfach-vorpruefung.mjs';
 import { mcpSperren, harmloseAblehnung, imScratchpad, claudeArgumente, liesStatus, auftragPfad } from '../lib/routinen.mjs';
 import { main, ergebnisBelegt } from '../scripts/claude-lauf.mjs';
@@ -128,7 +128,8 @@ test('Entwuerfe-Vorpruefung: ohne Neues kein Claude, auch kein Tageslauf; IMAP-F
   assert.deepEqual(entscheideEntwuerfe({ gefunden: ['a', 'b'], bekannteIds: ['a'] }).neu, ['b']);
   assert.match(SUCHE_ENTWUERFE, /-in:sent -from:teppich-paradies\.net$/);
   const zugangLesen = () => ({ zugang: { benutzer: 'a', passwort: 'test-passwort' } });
-  assert.deepEqual(await entwuerfeAbfragen({ privat: '/x', zugangLesen, suchen: async () => [['a']] }), { gefunden: ['a'] });
+  const absender = [{ id: 'a', adressen: ['kunde@example.org'] }];
+  assert.deepEqual(await entwuerfeAbfragen({ privat: '/x', zugangLesen, suchen: async () => absender }), { gefunden: ['a'], absender });
   assert.match((await entwuerfeAbfragen({ privat: '/x', zugangLesen, suchen: async () => { throw new ImapFehler('IMAP: weg'); } })).fehler, /weg/);
   assert.match((await entwuerfeAbfragen({ privat: '/x', zugangLesen: () => ({ fehlt: true }) })).fehler, /kein Postfach-Zugang/);
 });
@@ -368,4 +369,17 @@ test('Dienst: Service-Mail, die Claude nicht uebernommen hat, gilt nicht als ges
   assert.equal(await main(['postfach'], deps), 0);
   assert.equal(starts, 2, 's2 loest den naechsten Takt wieder aus');
   assert.match(liesStatus(privat, 'serviceanfragen').vorpruefungGrund, /1 neue Mail/);
+});
+
+test('Absender aus den Kopfzeilen: From und Reply-To, Anzeigenamen zaehlen nie', () => {
+  const zeile = (kopf, id = '1880656186574834134') => `* 1 FETCH (X-GM-MSGID ${id} UID 4 BODY[HEADER.FIELDS (FROM REPLY-TO)] "${kopf.replace(/[\\\\"]/g, c => `\\${c}`)}")`;
+  // So liefert Gmail es fuer das Shop-Formular (Aufbau am 03.11.2026 gelesen): Reply-To ohne Klammern.
+  assert.deepEqual(absenderAus([zeile('From: "TeppichParadies (Shopify)" <mailer@shopify.com> Reply-To: Kunde@Example.org ')]), [{ id: BigInt('1880656186574834134').toString(16), adressen: ['mailer@shopify.com', 'kunde@example.org'] }]);
+  assert.deepEqual(adressenAusKopf('From: "angreifer@evil.example" <kunde@example.org> '), ['kunde@example.org']);
+  assert.deepEqual(adressenAusKopf('From: angreifer@evil.example <kunde@example.org> '), ['kunde@example.org']);
+  assert.deepEqual(adressenAusKopf('From: "x Reply-To: angreifer@evil.example" <kunde@example.org> '), ['kunde@example.org']);
+  assert.deepEqual(adressenAusKopf(''), []);
+  // Die Kennung kommt nie aus dem, was der Absender schreibt.
+  assert.equal(absenderAus([zeile('From: "X-GM-MSGID 255" <kunde@example.org> ', '16')])[0].id, '10');
+  assert.deepEqual(absenderAus(['* 2 EXISTS', '* 1 FETCH (FLAGS ())']), []);
 });

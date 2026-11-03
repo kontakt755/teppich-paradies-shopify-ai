@@ -1,11 +1,12 @@
 /**
  * Kleinster IMAP-Leser fuer Gmail: findet Nachrichten per Gmail-Suche (X-GM-RAW) und gibt
- * nur ihre Kennungen zurueck - nie Betreff, Absender oder Text. Grundlage der Vorpruefung des
+ * ihre Kennungen zurueck - nie Betreff oder Text. Grundlage der Vorpruefung des
  * Postfach-Laufs (operations/lib/postfach-vorpruefung.mjs): Claude startet nur, wenn es
- * Nachrichten gibt, die noch kein Lauf gesehen hat.
+ * Nachrichten gibt, die noch kein Lauf gesehen hat. absenderNurLesend liefert zusaetzlich die
+ * Adressen aus From und Reply-To, damit die Wache den Empfaenger eines Entwurfs pruefen kann.
  *
  * Nur lesend: das Postfach wird mit EXAMINE geoeffnet (Nur-Lese-Modus, setzt kein \Seen),
- * abgefragt wird nur X-GM-MSGID. Die Kennung ist dieselbe wie die Nachrichten-ID der Gmail-API
+ * abgefragt werden nur X-GM-MSGID und per BODY.PEEK diese zwei Kopfzeilen. Die Kennung ist dieselbe wie die Nachrichten-ID der Gmail-API
  * (dort als Hexadezimalzahl), die die Routinen in lieferbelege/serviceanfragen ablegen.
  *
  * Zugang: derselbe wie der Nachfass-Versand (nachfassen/postfach.json, App-Passwort des
@@ -53,6 +54,37 @@ export function nachrichtenIds(zeilen) {
     if (m) ids.push(BigInt(m[1]).toString(16));
   }
   return ids;
+}
+
+/**
+ * Adressen aus den Kopfzeilen From und Reply-To (eine Zeichenkette, Zeilenumbrueche sind
+ * Leerzeichen). Anzeigenamen zaehlen nie: Sie stehen in Anfuehrungszeichen oder vor <Adresse>,
+ * und ein Absender kann dort jede Adresse hineinschreiben.
+ */
+export function adressenAusKopf(kopf) {
+  const ohneNamen = String(kopf ?? '').replace(/"(?:[^"\\]|\\.)*"/g, ' ');
+  const adressen = [];
+  for (const teil of ohneNamen.split(/(?:^|\s)(?:from|reply-to):\s*/i)) {
+    const spitz = [...teil.matchAll(/<([^<>\s]+@[^<>\s]+)>/g)].map(m => m[1]);
+    const nackt = teil.match(/[^\s<>,;()]+@[^\s<>,;()]+/g) || [];
+    adressen.push(...(spitz.length ? spitz : nackt));
+  }
+  return [...new Set(adressen.map(a => a.toLowerCase()))];
+}
+
+/**
+ * Kennung und Adressen aus "* n FETCH (X-GM-MSGID 1 UID 4 BODY[HEADER.FIELDS (FROM REPLY-TO)] "…")".
+ * Die Kennung wird nur ausserhalb der Kopfzeilen gesucht: Deren Inhalt bestimmt der Absender.
+ */
+export function absenderAus(zeilen) {
+  const aus = [];
+  for (const z of zeilen) {
+    if (!/^\* \d+ FETCH \(/i.test(z)) continue;
+    const id = /\bX-GM-MSGID (\d+)/i.exec(z.replace(/"(?:[^"\\]|\\.)*"/g, '""'));
+    const kopf = /BODY\[HEADER\.FIELDS[^\]]*\]\s+"((?:[^"\\]|\\.)*)"/i.exec(z);
+    if (id) aus.push({ id: BigInt(id[1]).toString(16), adressen: kopf ? adressenAusKopf(kopf[1].replace(/\\(.)/g, '$1')) : [] });
+  }
+  return aus;
 }
 
 /**
@@ -145,6 +177,32 @@ function pruefe(antwort, was) {
   return antwort;
 }
 
+/** Meldet an und oeffnet "Alle Nachrichten" nur lesend. Das Passwort geht nur in den LOGIN-Befehl. */
+async function oeffneNurLesend(v, zugang) {
+  const anmeldung = await v.befehl(`LOGIN ${imapText(zugang.benutzer)} ${imapText(zugang.passwort)}`);
+  if (anmeldung.status !== 'OK') throw new ImapFehler('IMAP-Anmeldung abgelehnt (App-Passwort oder IMAP im Postfach nicht freigegeben)');
+  const ordner = alleNachrichtenOrdner(pruefe(await v.befehl('LIST "" "*"'), 'LIST').zeilen);
+  if (!ordner) throw new ImapFehler('IMAP: Ordner „Alle Nachrichten“ nicht gefunden');
+  pruefe(await v.befehl(`EXAMINE ${imapText(ordner)}`), 'EXAMINE');
+}
+
+/** Eine Gmail-Suche: je Treffer { id, adressen } (From und Reply-To, siehe absenderAus). */
+export async function absenderNurLesend(zugang, suche, { host = 'imap.gmail.com', port = 993, verbinden, zeitLimitMs } = {}) {
+  const v = await verbinde({ host, port, verbinden, zeitLimitMs });
+  try {
+    await oeffneNurLesend(v, zugang);
+    const uids = suchErgebnis(pruefe(await v.befehl(`UID SEARCH X-GM-RAW ${imapText(suche)}`), 'SEARCH').zeilen);
+    const aus = [];
+    for (let i = 0; i < uids.length; i += 200) {
+      const teil = uids.slice(i, i + 200).join(',');
+      aus.push(...absenderAus(pruefe(await v.befehl(`UID FETCH ${teil} (X-GM-MSGID BODY.PEEK[HEADER.FIELDS (FROM REPLY-TO)])`), 'FETCH').zeilen));
+    }
+    return aus;
+  } finally {
+    await v.schliessen();
+  }
+}
+
 /**
  * Meldet an, oeffnet "Alle Nachrichten" nur lesend und fuehrt die Gmail-Suchen aus.
  * Ergebnis: je Suche die Liste der Nachrichten-IDs (hexadezimal). Das Passwort geht nur in den
@@ -153,11 +211,7 @@ function pruefe(antwort, was) {
 export async function suchenNurLesend(zugang, suchen, { host = 'imap.gmail.com', port = 993, verbinden, zeitLimitMs } = {}) {
   const v = await verbinde({ host, port, verbinden, zeitLimitMs });
   try {
-    const anmeldung = await v.befehl(`LOGIN ${imapText(zugang.benutzer)} ${imapText(zugang.passwort)}`);
-    if (anmeldung.status !== 'OK') throw new ImapFehler('IMAP-Anmeldung abgelehnt (App-Passwort oder IMAP im Postfach nicht freigegeben)');
-    const ordner = alleNachrichtenOrdner(pruefe(await v.befehl('LIST "" "*"'), 'LIST').zeilen);
-    if (!ordner) throw new ImapFehler('IMAP: Ordner „Alle Nachrichten“ nicht gefunden');
-    pruefe(await v.befehl(`EXAMINE ${imapText(ordner)}`), 'EXAMINE');
+    await oeffneNurLesend(v, zugang);
     const ergebnis = [];
     for (const suche of suchen) {
       // Eine Suche ist eine Gmail-Suche als Text oder { thread, roh }: nur innerhalb eines Verlaufs (Kennung hexadezimal).

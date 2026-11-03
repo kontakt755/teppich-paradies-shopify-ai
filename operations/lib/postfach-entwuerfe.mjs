@@ -1,14 +1,14 @@
 /**
  * Messung des Laufs postfach-entwuerfe fuer die 4-Wochen-Probe (Inhaber 03.11.2026): je Mail eine
- * Zeile in $TP_PRIVAT_DIR/routinen/postfach-entwuerfe/messung.jsonl, ohne Inhalte. Ob wirklich ein
- * Entwurf entstand, entscheidet die Spur der Wache (entwurf-spuren.jsonl), nicht die Angabe von
- * Claude.
+ * Zeile in $TP_PRIVAT_DIR/routinen/postfach-entwuerfe/messung.jsonl, ohne Inhalte. Ein Entwurf
+ * zaehlt nur, wenn beides stimmt: Die Wache hat den Aufruf gesehen (entwurf-spuren.jsonl) und
+ * Claude meldet ihn als angelegt. Die Spur allein reicht nicht, sie entsteht vor dem Werkzeug.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { entwuerfeOrdner } from './routinen.mjs';
-import { entwurfNormal, entwurfSha, liesSpuren } from './routine-wache.mjs';
+import { entwurfNormal, entwurfSha, liesSpuren, merkeGescheitert } from './routine-wache.mjs';
 
 export const KLASSEN = Object.freeze([
   'K1', 'K2', 'K6', 'E1', 'E2', 'E3', 'E4', 'E5', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'N1', 'N2', 'N3', 'N4', 'X1',
@@ -23,6 +23,14 @@ const STUFE_DER_KLASSE = (k) => {
 };
 /** Warum es trotz passender Stufe keinen Entwurf gibt: feste Werte, nie freier Text. */
 export const GRUENDE = Object.freeze(['schon-beantwortet', 'schon-entwurf', 'folgemail', 'unsicher']);
+/** Nach so vielen gescheiterten Versuchen bleibt die Mail beim Menschen (Stoerung ist gemeldet). */
+export const ENTWURF_VERSUCHE = 2;
+/** Grund, den nur uebernehmen() setzt. */
+export const GRUND_GESCHEITERT = 'entwurf-gescheitert';
+/** Die Suche reicht 3 Tage zurueck; ein Tag Puffer, denn erfasst liegt nie vor dem Eingang. */
+export const BEKANNT_MAILS_TAGE = 4;
+/** So lange zaehlt ein Verlauf als schon bearbeitet; danach darf eine neue Mail wieder einen Entwurf bekommen. */
+export const BEKANNT_VERLAEUFE_TAGE = 30;
 
 export function messungPfad(privat) {
   return path.join(entwuerfeOrdner(privat), 'messung.jsonl');
@@ -45,6 +53,20 @@ export function bekannt(privat) {
   return { mailIds: [...new Set(m.map(z => z.mailId))], threadsMitEntwurf: [...new Set(m.filter(z => z.entwurf).map(z => z.threadId))] };
 }
 
+/**
+ * Was Claude bei jedem Start bekommt: nur, was die Suche noch treffen kann. Sonst waechst die
+ * Ausgabe mit jedem Lauf (663 Mails in 28 Tagen) und wird irgendwann gekuerzt - dann galten alte
+ * Mails wieder als neu. Dienst und Vorpruefung lesen weiter die ganze Messung.
+ */
+export function bekanntAktuell(privat, jetzt = new Date()) {
+  const seit = tage => jetzt.getTime() - tage * 86_400_000;
+  const m = liesMessung(privat);
+  return {
+    mailIds: [...new Set(m.filter(z => Date.parse(z.erfasst) >= seit(BEKANNT_MAILS_TAGE)).map(z => z.mailId))],
+    threadsMitEntwurf: [...new Set(m.filter(z => z.entwurf && Date.parse(z.erfasst) >= seit(BEKANNT_VERLAEUFE_TAGE)).map(z => z.threadId))],
+  };
+}
+
 const KENNUNG = /^[0-9a-f]{6,32}$/i;
 
 /**
@@ -63,8 +85,13 @@ export function pruefeZeile(z) {
 }
 
 /**
- * Haengt die Zeilen an. `entwurf` kommt aus der Spur der Wache; widerspricht Claude ihr, zaehlt
- * die Spur und die Abweichung steht in der Ausgabe. Schon bekannte Mails werden uebersprungen.
+ * Haengt die Zeilen an; schon bekannte Mails werden uebersprungen. Claude kann keinen Entwurf
+ * behaupten, zu dem die Wache keine Spur hat (steht als Abweichung in der Ausgabe).
+ *
+ * Spur, aber Claude meldet keinen Entwurf: Das Werkzeug ist gescheitert. Sagt Claude
+ * "schon-entwurf", hat es den Entwurf in list_drafts gesehen, der gilt dann als angelegt. Sonst
+ * wird die Spur aufgehoben und die Mail bekommt noch keine Zeile, damit der naechste Takt es neu
+ * versucht. Beim letzten Versuch entsteht die Zeile mit grund "entwurf-gescheitert".
  */
 export function uebernehmen(privat, zeilen, jetzt = new Date()) {
   if (!Array.isArray(zeilen)) throw new Error('Erwartet wird eine Liste.');
@@ -72,21 +99,28 @@ export function uebernehmen(privat, zeilen, jetzt = new Date()) {
   const spuren = new Set(liesSpuren(privat).map(s => s.mailId));
   const raus = [];
   const abgelehnt = [];
+  const gescheitert = [];
   let abweichungen = 0;
   for (const roh of zeilen) {
     const { zeile, fehler } = pruefeZeile(roh);
     if (fehler) { abgelehnt.push(fehler); continue; }
     if (schon.has(zeile.mailId)) continue;
     schon.add(zeile.mailId);
-    const entwurf = spuren.has(zeile.mailId);
-    if (Boolean(roh.entwurf) !== entwurf) abweichungen += 1;
+    const spur = spuren.has(zeile.mailId);
+    const entwurf = spur && (roh.entwurf === true || zeile.grund === 'schon-entwurf');
+    if (roh.entwurf === true && !spur) abweichungen += 1;
+    if (spur && !entwurf) {
+      gescheitert.push(zeile.mailId);
+      if (merkeGescheitert(privat, zeile.mailId, jetzt) < ENTWURF_VERSUCHE) continue;
+      zeile.grund = GRUND_GESCHEITERT;
+    }
     raus.push({ datum: String(roh.datum || '').slice(0, 10) || jetzt.toISOString().slice(0, 10), erfasst: jetzt.toISOString(), ...zeile, entwurf });
   }
   if (raus.length) {
     fs.mkdirSync(path.dirname(messungPfad(privat)), { recursive: true, mode: 0o700 });
     fs.appendFileSync(messungPfad(privat), raus.map(z => `${JSON.stringify(z)}\n`).join(''), { mode: 0o600 });
   }
-  return { neu: raus.length, abgelehnt, abweichungen };
+  return { neu: raus.length, abgelehnt, abweichungen, gescheitert: gescheitert.length };
 }
 
 /** Zahlen je Klasse und Stufe; KLAR wird nie gesendet, sondern hier nur gezaehlt. */

@@ -964,7 +964,7 @@ Zugang, Anmeldung abgelehnt, Netz), startet Claude wie bisher. Abschalten:
 **Postfach-Entwürfe** (`net.teppich-paradies.postfach-entwuerfe`, stündlich :05, Mo–Sa 7–19 Uhr, Inhaber 03.11.2026;
 eigener Schalter `dienste-einrichten.sh --postfach-entwuerfe`, nicht Teil von `--routinen`): Claude
 ordnet neue Mails ein und legt in den freigegebenen Klassen einen Antwort-Entwurf am Verlauf an, den
-ein Mensch prüft und selbst sendet. Vorprüfung per IMAP nur mit Kennungen; ohne neue Kennung startet
+ein Mensch prüft und selbst sendet. Vorprüfung per IMAP nur mit Kennungen, From und Reply-To (nie Betreff oder Text); ohne neue Kennung startet
 Claude nicht, auch nicht einmal am Tag. Geht die Vorprüfung nicht, startet Claude ebenfalls nicht
 (Störung „vorpruefung“). Höchstens 15 Verläufe je Lauf, der Rest kommt im nächsten Takt.
 
@@ -972,16 +972,22 @@ Claude nicht, auch nicht einmal am Tag. Geht die Vorprüfung nicht, startet Clau
   `create_draft`, `label_thread`. `create_draft` kann nicht senden und hängt mit `replyToMessageId` am
   Verlauf; `reply` würde sofort senden und bleibt mit `send_message`, `forward`, `update_draft`,
   `trash_*` und Spam gesperrt. Die anderen Läufe behalten ihre Sperre.
-- *Wache:* `create_draft` nur am Verlauf, genau ein Empfänger (nie das Formular, nie die eigene
-  Domain), nur reiner Text, Anfang „Guten Tag“, mit Gruß und Firmensignatur, keine Euro-Beträge,
-  keine KI-Sätze, je Mail einmal, höchstens 15 je Lauf. `label_thread` nur die festen Labels aus
+- *Wache:* `create_draft` nur am Verlauf, genau ein Empfänger (Absender oder Antwort-an der Mail
+  laut Vorprüfung, als Prüfsumme in `absender.json`; nie das Formular, nie die eigene Domain), nur
+  reiner Text, Anfang „Guten Tag“, mit Gruß und Firmensignatur, keine Beträge (auch ohne
+  Währungszeichen), Liefertermine, KI-Sätze, Bankverbindungen, Links und Adressen nur von
+  teppich-paradies.net, je Mail einmal, höchstens 15 je Lauf. Abgelehnter Wortlaut, den Claude
+  korrigiert, ist keine Störung; Empfänger und fremde Links bleiben eine. `label_thread` nur die festen Labels aus
   `lib/routinen.mjs`; die Kennungen stehen in `routinen/postfach-entwuerfe/labels.json`. Das Label
   `Auftrag` nie: daraus legt die Monteur-App sofort einen Auftrag an (eigene Sperre in der Wache).
 - *Bremse:* Solange `routinen/postfach-entwuerfe/aus` existiert, wird der Lauf übersprungen (auch mit
   `--erzwingen`), ohne Störung.
-- *Messung:* `routinen/postfach-entwuerfe/messung.jsonl`, je Mail eine Zeile ohne Inhalte. Ob ein
-  Entwurf entstand, zählt nach der Spur der Wache (`entwurf-spuren.jsonl`: Kennung, Länge,
-  Prüfsumme, kein Text). KLAR wird nur gezählt und als Entwurf angelegt, nie gesendet.
+- *Messung:* `routinen/postfach-entwuerfe/messung.jsonl`, je Mail eine Zeile ohne Inhalte. Ein
+  Entwurf zählt, wenn die Wache den Aufruf gesehen hat (`entwurf-spuren.jsonl`: Kennung, Länge,
+  Prüfsumme, kein Text) und Claude ihn als angelegt meldet. Scheitert `create_draft`, meldet der
+  Lauf eine Störung und versucht es im nächsten Takt noch einmal; danach steht die Mail mit
+  `entwurf-gescheitert` in der Messung und bleibt beim Menschen. KLAR wird nur gezählt und als
+  Entwurf angelegt, nie gesendet.
 - *Auswertung:* `npm run -s entwuerfe -- auswerten` zeigt die Zahlen je Klasse und per IMAP, in wie
   vielen Verläufen danach eine Antwort gesendet wurde. Das sagt nicht, ob der Entwurf benutzt wurde.
   Den Wortlaut liefert der IMAP-Leser nicht; dafür bekommt `npm run -s entwuerfe -- vergleichen

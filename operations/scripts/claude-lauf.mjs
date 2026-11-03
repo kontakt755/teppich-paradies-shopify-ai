@@ -37,7 +37,7 @@ import {
   nimmSperre, sperrPfad, sperrAlterMs, neuerSammler, sammle, abschliessen, pruefeWerkzeuge,
   mcpSperren, harmloseAblehnung, entwuerfeBremsePfad, entwuerfeLabels, ENTWUERFE_LABELS,
 } from '../lib/routinen.mjs';
-import { werkbankAus } from '../lib/routine-wache.mjs';
+import { entwurfNurTextAbgelehnt, gescheitertSeit, liesSpuren, schreibeAbsender, werkbankAus } from '../lib/routine-wache.mjs';
 import { postfachAbfragen, entscheide, nachErfolg, entwuerfeAbfragen, entscheideEntwuerfe } from '../lib/postfach-vorpruefung.mjs';
 import { bekannt as entwuerfeBekannt, zeilenSeit as messungSeit } from '../lib/postfach-entwuerfe.mjs';
 import { leseBelege, lieferbelegePfad } from '../lib/lieferbelege.mjs';
@@ -376,21 +376,26 @@ async function entwuerfeLauf(a, o, deps) {
   const labels = entwuerfeLabels(privat);
   const fehlen = ENTWUERFE_LABELS.filter(n => !labels[n]);
   if (a.trocken) {
-    aus('Vorprüfung: vor dem Start per IMAP nur die Mail-Kennungen; Claude startet nur, wenn eine noch nicht in der Messung steht');
+    aus('Vorprüfung: vor dem Start per IMAP nur Mail-Kennungen sowie From und Reply-To für die Wache; Claude startet nur, wenn eine noch nicht in der Messung steht');
     aus(`Labels: ${fehlen.length ? `FEHLEN in labels.json: ${fehlen.join(', ')}` : 'alle zugeordnet'}`);
     aus(`MCP: nur ${def.nurMcp.join(', ')} – alle anderen Server sperrt der echte Lauf nach einer Werkzeugprobe`);
     try { await teilAusfuehren('postfach-entwuerfe', teil, o); } catch (e) { aus(`${teil.id}: FEHLER ${e.message}`); return 1; }
     return 0;
   }
   if (fehlen.length) return stoerung('labels-fehlen', `Label-Kennungen fehlen in routinen/postfach-entwuerfe/labels.json: ${fehlen.join(', ')}`);
-  let ent = { starten: true, grund: 'erzwungen' };
-  let neu = null;
-  if (!a.erzwingen) {
-    const vp = await (deps.entwuerfeAbfragen || entwuerfeAbfragen)({ privat });
-    if (vp.fehler) return stoerung('vorpruefung', `Vorprüfung nicht möglich: ${vp.fehler}`);
-    ent = entscheideEntwuerfe({ gefunden: vp.gefunden, bekannteIds: entwuerfeBekannt(privat).mailIds });
-    neu = ent.neu || null;
+  // Auch mit --erzwingen: Ohne diese Abfrage kennt die Wache die Absender nicht und lehnt jeden Entwurf ab.
+  const vp = await (deps.entwuerfeAbfragen || entwuerfeAbfragen)({ privat });
+  if (vp.fehler) return stoerung('vorpruefung', `Vorprüfung nicht möglich: ${vp.fehler}`);
+  let ent;
+  try {
+    liesSpuren(privat);
+    const bekannteIds = entwuerfeBekannt(privat).mailIds;
+    schreibeAbsender(privat, vp.absender || []);
+    ent = a.erzwingen ? { starten: true, grund: 'erzwungen' } : entscheideEntwuerfe({ gefunden: vp.gefunden, bekannteIds });
+  } catch (e) {
+    return stoerung('ablage-kaputt', `Messung, Spuren oder Absender nicht nutzbar: ${String(e?.message || e).slice(0, 120)}`);
   }
+  const neu = ent.neu || null;
   if (!ent.starten) {
     aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → Claude startet nicht (${ent.grund})`);
     schreibStatus(privat, teil.id, { ok: true, art: null, meldung: 'nichts Neues (Vorprüfung ohne KI)', vorpruefungGrund: ent.grund, hinweis: null }, jetzt);
@@ -400,7 +405,12 @@ async function entwuerfeLauf(a, o, deps) {
   aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → Claude startet (${ent.grund})`);
   let r;
   try { r = await teilAusfuehren('postfach-entwuerfe', teil, o); } catch (e) { r = { ok: false, art: e.art || 'start', meldung: e.message, start: jetzt.toISOString() }; }
-  if (r.art === 'abgelehnt') r = harmloseAblehnung(r, ergebnisBelegt(teil.id, { privat, start: r.start }));
+  if (r.art === 'abgelehnt') r = harmloseAblehnung(r, ergebnisBelegt(teil.id, { privat, start: r.start }), entwurfNurTextAbgelehnt);
+  if (r.ok) {
+    let n = 0;
+    try { n = gescheitertSeit(privat, r.start); } catch { n = 1; }
+    if (n) r = { ...r, ok: false, art: 'entwurf-gescheitert', meldung: `${n} Entwurf/Entwürfe nicht angelegt; die Mail kommt noch einmal dran oder bleibt beim Menschen · ${r.meldung}` };
+  }
   // Gegenprobe ohne KI: wer Neues hatte, muss mindestens eine Zeile in die Messung geschrieben haben.
   if (r.ok && neu?.length && !ergebnisBelegt(teil.id, { privat, start: r.start })) {
     r = { ...r, ok: false, art: 'nicht-uebernommen', meldung: `${neu.length} neue Mail(s), aber keine Zeile in der Messung · ${r.meldung}` };

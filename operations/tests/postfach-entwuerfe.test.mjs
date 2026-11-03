@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { bekannt, gesendetZaehlen, liesMessung, messungPfad, nachDerMail, pruefeZeile, uebernehmen, vergleichen, zahlen } from '../lib/postfach-entwuerfe.mjs';
-import { merkeEntwurf, spurPfad } from '../lib/routine-wache.mjs';
+import { bekannt, bekanntAktuell, BEKANNT_VERLAEUFE_TAGE, GRUND_GESCHEITERT, gesendetZaehlen, liesMessung, messungPfad, nachDerMail, pruefeZeile, uebernehmen, vergleichen, zahlen } from '../lib/postfach-entwuerfe.mjs';
+import { absenderPfad, adressMerkmal, liesSpuren, merkeEntwurf, spurPfad } from '../lib/routine-wache.mjs';
 import { auftragPfad, entwuerfeBremsePfad, entwuerfeOrdner, ENTWUERFE_LABELS, liesStatus, sperrPfad } from '../lib/routinen.mjs';
 import { main as lauf } from '../scripts/claude-lauf.mjs';
 import { main as skript } from '../scripts/postfach-entwuerfe.mjs';
@@ -44,10 +44,51 @@ test('Uebernehmen: Entwurf zaehlt nach der Spur der Wache, Bekanntes nur einmal,
   assert.throws(() => liesMessung(privat), 'kaputt nie still als leer');
 });
 
+test('Gescheiterter Entwurf: zaehlt nicht, zweiter Versuch im naechsten Takt, danach beim Menschen', () => {
+  const privat = tmp();
+  spur(privat, 'aaaaaa1');
+  const r1 = uebernehmen(privat, [zeile({ entwurf: false, grund: 'unsicher' })], IM_FENSTER);
+  assert.deepEqual([r1.neu, r1.gescheitert], [0, 1], 'noch keine Zeile: die Mail bleibt neu');
+  assert.deepEqual(liesSpuren(privat), [], 'die Spur sperrt den naechsten Versuch nicht');
+  assert.deepEqual(bekannt(privat).threadsMitEntwurf, []);
+  spur(privat, 'aaaaaa1');
+  const r2 = uebernehmen(privat, [zeile({ entwurf: false, grund: 'unsicher' })], IM_FENSTER);
+  assert.deepEqual([r2.neu, r2.gescheitert], [1, 1]);
+  const [z] = liesMessung(privat);
+  assert.deepEqual([z.entwurf, z.grund], [false, GRUND_GESCHEITERT]);
+  assert.deepEqual(bekannt(privat).threadsMitEntwurf, [], 'kein Verlauf "mit Entwurf" ohne Entwurf');
+  assert.equal(zahlen(liesMessung(privat)).entwuerfe, 0);
+});
+
+test('Spur aus abgebrochenem Lauf: Entwurf in list_drafts gesehen zaehlt als angelegt, ohne neuen Versuch', () => {
+  const privat = tmp();
+  spur(privat, 'aaaaaa1');
+  const r = uebernehmen(privat, [zeile({ entwurf: false, grund: 'schon-entwurf' })], IM_FENSTER);
+  assert.deepEqual([r.neu, r.gescheitert], [1, 0]);
+  assert.equal(liesMessung(privat)[0].entwurf, true);
+  assert.equal(liesSpuren(privat).length, 1);
+});
+
+test('Bekannt fuer Claude bleibt klein: Mails nur im Suchfenster, Verlaeufe begrenzt; der Dienst kennt alles', () => {
+  const privat = tmp();
+  const zeilen = [];
+  for (let i = 0; i < 3000; i += 1) {
+    const erfasst = new Date(IM_FENSTER.getTime() - i * 3_600_000).toISOString();
+    zeilen.push(JSON.stringify({ erfasst, mailId: `a${i.toString(16).padStart(15, '0')}`, threadId: `b${i.toString(16).padStart(15, '0')}`, entwurf: i % 3 === 0, klasse: 'E1', stufe: 'ENTWURF', vertrauen: 1 }));
+  }
+  fs.mkdirSync(path.dirname(messungPfad(privat)), { recursive: true });
+  fs.writeFileSync(messungPfad(privat), `${zeilen.join('\n')}\n`);
+  const b = bekanntAktuell(privat, IM_FENSTER);
+  assert.equal(b.mailIds.length, 97, '4 Tage je Stunde eine Mail');
+  assert.equal(b.threadsMitEntwurf.length, Math.ceil((BEKANNT_VERLAEUFE_TAGE * 24 + 1) / 3));
+  assert.ok(JSON.stringify(b).length < 8000, 'bleibt weit unter der Grenze der Bash-Ausgabe');
+  assert.equal(bekannt(privat).mailIds.length, 3000, 'Vorpruefung und Doppelschutz sehen weiter alles');
+});
+
 test('Zahlen je Klasse und Stufe; Antwort nach dem Entwurf per Kennung', async () => {
   const privat = tmp();
   spur(privat, 'aaaaaa1');
-  uebernehmen(privat, [zeile(), zeile({ mailId: 'aaaaaa2', threadId: 'bbbbbb2', klasse: 'N1', stufe: 'NUR-MENSCH', vertrauen: 0.5 })], IM_FENSTER);
+  uebernehmen(privat, [zeile({ entwurf: true }), zeile({ mailId: 'aaaaaa2', threadId: 'bbbbbb2', klasse: 'N1', stufe: 'NUR-MENSCH', vertrauen: 0.5 })], IM_FENSTER);
   const m = liesMessung(privat);
   const z = zahlen(m);
   assert.deepEqual([z.mails, z.entwuerfe], [2, 1]);
@@ -65,7 +106,7 @@ test('Vergleichen: Anfang wie Entwurf = unveraendert, auch mit Signatur und Zita
   const privat = tmp();
   spur(privat, 'aaaaaa1');
   spur(privat, 'aaaaaa2');
-  uebernehmen(privat, [zeile(), zeile({ mailId: 'aaaaaa2', klasse: 'E2' })], IM_FENSTER);
+  uebernehmen(privat, [zeile({ entwurf: true }), zeile({ mailId: 'aaaaaa2', klasse: 'E2', entwurf: true })], IM_FENSTER);
   const r = vergleichen(privat, [
     { mailId: 'aaaaaa1', text: `${TEXT.replace('   ', ' ')}\n\nAm 26.10. schrieb Kunde:\n> Frage` },
     { mailId: 'aaaaaa2', text: 'Guten Tag,\n\nvielen Dank für alles.\n\nMit freundlichen Grüßen\nTeppich Paradies' },
@@ -83,7 +124,7 @@ test('Skript: auswerten ohne Postfach und bekannt geben nur Zahlen und Kennungen
   const j = JSON.parse(a[0]);
   assert.equal(j.mails, 1);
   assert.match(j.unveraendertGesendet, /vergleichen/);
-  await skript(['bekannt'], { privat, aus: t => a.push(t) });
+  await skript(['bekannt'], { privat, aus: t => a.push(t), jetzt: IM_FENSTER });
   assert.deepEqual(JSON.parse(a[1]).mailIds, ['aaaaaa1']);
   await assert.rejects(skript(['nix'], { privat, aus: () => {} }), /Befehl/);
 });
@@ -173,6 +214,57 @@ test('Lauf: keine Zeile in der Messung trotz neuer Mail ist Stoerung; abgelehnte
   const b = abhaengig(v, { starte: () => { uebernehmen(v.privat, [zeile()]); return antwort('neu 1', [{ tool_name: 'mcp__claude_ai_Gmail__send_message', tool_input: {} }]); } });
   assert.equal(await lauf(['postfach-entwuerfe'], b.deps), 1);
   assert.equal(liesStatus(v.privat, 'postfach-entwuerfe').art, 'abgelehnt');
+});
+
+test('Lauf: gescheiterter Entwurf ist Stoerung, auch wenn Claude sauber endet', async () => {
+  const u = umgebung();
+  const melde = [];
+  const a = abhaengig(u, { melde: t => melde.push(t), starte: () => {
+    spur(u.privat, 'aaaaaa1');
+    uebernehmen(u.privat, [zeile({ entwurf: false, grund: 'unsicher' })]);
+    return antwort('neu 1');
+  } });
+  assert.equal(await lauf(['postfach-entwuerfe'], a.deps), 1);
+  assert.equal(liesStatus(u.privat, 'postfach-entwuerfe').art, 'entwurf-gescheitert');
+  assert.equal(melde.length, 1);
+});
+
+test('Lauf: kaputte Messung ist Stoerung mit Status, Claude startet nicht', async () => {
+  const u = umgebung();
+  fs.writeFileSync(messungPfad(u.privat), '{kaputt\n');
+  const melde = [];
+  const a = abhaengig(u, { melde: t => melde.push(t) });
+  assert.equal(await lauf(['postfach-entwuerfe'], a.deps), 1);
+  assert.equal(a.starts.length, 0);
+  assert.equal(liesStatus(u.privat, 'postfach-entwuerfe').art, 'ablage-kaputt');
+  assert.equal(melde.length, 1);
+  assert.ok(!fs.existsSync(sperrPfad(u.privat, 'postfach-entwuerfe')));
+});
+
+test('Lauf: Absender stehen nur als Pruefsumme in der Ablage, jeder Lauf ersetzt sie', async () => {
+  const u = umgebung();
+  const a = abhaengig(u, { abfragen: async () => ({ gefunden: ['aaaaaa1'], absender: [{ id: 'aaaaaa1', adressen: ['kunde@example.org'] }] }), starte: () => { uebernehmen(u.privat, [zeile()]); return antwort('neu 1'); } });
+  await lauf(['postfach-entwuerfe'], a.deps);
+  const roh = fs.readFileSync(absenderPfad(u.privat), 'utf8');
+  assert.ok(!roh.includes('example.org'));
+  assert.deepEqual(JSON.parse(roh), { aaaaaa1: [adressMerkmal('KUNDE@example.org')] });
+  assert.equal(fs.statSync(absenderPfad(u.privat)).mode & 0o777, 0o600);
+});
+
+test('Lauf: abgelehnter Wortlaut ist bei belegtem Ergebnis keine Stoerung, fremder Link und Empfaenger schon', async () => {
+  const P = 'mcp__claude_ai_Gmail__create_draft';
+  const fall = async (eingabe) => {
+    const u = umgebung();
+    const a = abhaengig(u, { starte: () => { uebernehmen(u.privat, [zeile()]); return antwort('neu 1', [{ tool_name: P, tool_input: eingabe }]); } });
+    await lauf(['postfach-entwuerfe'], a.deps);
+    return liesStatus(u.privat, 'postfach-entwuerfe');
+  };
+  const entwurf = { to: ['kunde@example.org'], subject: 'Re: x', replyToMessageId: 'aaaaaa1' };
+  const s = await fall({ ...entwurf, body: `${TEXT}\nDer Preis ist 49,90 pro m².` });
+  assert.equal(s.ok, true);
+  assert.doesNotMatch(JSON.stringify(s), /49,90/, 'kein Entwurfstext im Status');
+  assert.equal((await fall({ ...entwurf, body: `${TEXT}\nhttps://evil.example/login` })).art, 'abgelehnt');
+  assert.equal((await fall({ ...entwurf, body: `${TEXT}\nhttps://evil.example/login 30 €` })).art, 'abgelehnt', 'Mischung bleibt Stoerung');
 });
 
 test('Spurdatei liegt privat im Ordner des Laufs', () => {
