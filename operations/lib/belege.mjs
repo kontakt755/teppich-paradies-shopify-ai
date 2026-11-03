@@ -185,7 +185,7 @@ export function betragLesen(text) {
   return (m[1] || m[4]) ? -n : n;
 }
 
-const STICHWORT_BRUTTO = /(rechnungsbetrag|rechnungssumme|rechnungsendbetrag|gesamtbetrag|gesamt\s*brutto|bruttobetrag|bruttosumme|brutto\s*gesamt|summe\s*brutto|endbetrag|endsumme|gesamtsumme|zu\s*zahlen|zahlbetrag|gutschriftsbetrag|invoice\s*total|total\s*amount|amount\s*due|total\s*due|total\s*inkl|^\s*brutto(?=\s*:?\s*(?:€|eur)?\s*-?\d))/i;
+const STICHWORT_BRUTTO = /(rechnungsbetrag|rechnungssumme|rechnungsendbetrag|gesamtbetrag|gesamt\s*brutto|bruttobetrag|bruttosumme|brutto\s*gesamt|summe\s*brutto|endbetrag|endsumme|gesamtsumme|zu\s*zahlen|zahlbetrag|gutschriftsbetrag|invoice\s*total|total\s*amount|amount\s*due|total\s*due|total(?=\s*inkl)|rechnungswert|gesamt\s*eur|^\s*brutto(?=\s*:?\s*(?:€|eur)?\s*-?\d))/i;
 const NICHT_BRUTTO = /netto|zwischensumme|mwst|ust\b|umsatzsteuer|skonto|nachlass|rabatt|fracht|steuerbetrag|anzahlung|bereits|gewicht/i;
 const INKL_STEUER = /inkl\.?\s*(?:der\s*)?(?:mwst|ust|umsatzsteuer)/gi;
 const STICHWORT_NUMMER = /(?:rechnungs?\s*-?\s*(?:nummer|nr\.?|no\.?)|rechnung\s*(?:nr\.?|no\.?|#)|invoice\s*(?:number|no\.?|nr\.?|#)|gutschrifts?\s*-?\s*(?:nummer|nr\.?)|beleg\s*-?\s*(?:nummer|nr\.?)|faktura\s*-?\s*(?:nummer|nr\.?))\s*[:.#]?\s*([A-Z0-9][A-Z0-9/._-]*)/gi;
@@ -209,6 +209,8 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
   for (const zeile of roh.split(/\r?\n/)) {
     const treffer = STICHWORT_BRUTTO.exec(zeile);
     if (!treffer) continue;
+    // Skonto-Zeile nennt den Betrag nach Abzug („bleibt zu zahlen“), nicht den Rechnungsbetrag.
+    if (/skonto/i.test(zeile)) continue;
     // Stichwort „Zahlbetrag“ o. ae. kann mit Netto-Spalten in einer Zeile stehen: nur danach lesen.
     // Davor zaehlt nur das Wort direkt am Stichwort („Netto Gesamtbetrag“), nicht eine andere Spalte.
     const rest = zeile.slice(treffer.index + treffer[0].length).replace(/\s+/g, ' ');
@@ -222,12 +224,17 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
   const betrag = einziger(betraege);
   const nummern = [];
   for (const m of roh.matchAll(STICHWORT_NUMMER)) {
-    const n = m[1].replace(/[.,:;/-]+$/, '');
+    let n = m[1].replace(/[.,:;/-]+$/, '');
+    // „921 812 398“: Nummer in Dreiergruppen, sonst bliebe nur der Anfang stehen.
+    const gruppen = /^\d{1,3}$/.test(n) ? /^(?: \d{3})+(?=\s|$)/.exec(roh.slice(m.index + m[0].length)) : null;
+    if (gruppen) n += gruppen[0].replace(/ /g, '');
     if (/\d/.test(n) && n.length >= 3) nummern.push(n);
   }
   let nummer = einziger(nummern);
-  // Aus Betreff oder Dateiname und im Text bestaetigt: schlaegt eine Bezugsnummer im Text (Gutschrift nennt ihre Rechnung).
-  if (hinweisNummer && new RegExp(`(^|[^A-Za-z0-9])${hinweisNummer.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^A-Za-z0-9])`).test(roh)) {
+  // Aus Betreff oder Dateiname und im Text bestaetigt (Leerzeichen zwischen Ziffern zaehlen nicht):
+  // schlaegt eine Bezugsnummer im Text (Gutschrift nennt ihre Rechnung).
+  const hinweisMuster = hinweisNummer ? [...hinweisNummer].map(z => z.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('\\s?') : null;
+  if (hinweisMuster && new RegExp(`(^|[^A-Za-z0-9])${hinweisMuster}($|[^A-Za-z0-9])`).test(roh)) {
     nummer = { wert: hinweisNummer };
   }
   const daten = [];
@@ -250,6 +257,11 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
 export function nummerAusBetreff(...texte) {
   for (const t of texte) {
     const m = /(?:rechnung|invoice|faktura|gutschrift|ausgangsrechnung)[^A-Za-z0-9]{0,12}(?:nr\.?\s*)?([A-Z]{0,4}\d[A-Z0-9/-]{3,})/i.exec(String(t ?? ''));
+    if (m) return m[1];
+  }
+  // Dateiname nur aus Ziffern (0201399548.PDF): zaehlt ebenfalls nur, wenn er im Text steht.
+  for (const t of texte) {
+    const m = /^(\d{6,})\.[a-z]+$/i.exec(String(t ?? '').trim());
     if (m) return m[1];
   }
   return null;

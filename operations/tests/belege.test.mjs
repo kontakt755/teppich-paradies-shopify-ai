@@ -289,3 +289,24 @@ test('Einordnung: Quittungs-Betreff mit Invoice-Anhang ist Rechnung, RE- und RG-
   assert.equal(rolleAnhang({ name: 'RG Firma 9.2.2026.pdf' }), 'rechnung');
   assert.equal(rolleAnhang({ name: 'Rezept.pdf' }), 'beilage');
 });
+
+test('Nummer: Dreiergruppen bleiben ganz, Dateiname aus Ziffern zaehlt nur, wenn er im Text steht', () => {
+  assert.equal(pdfTextLesen('Rechnungsnummer 921 812 398 und Kundennummer 202 167 bitte angeben').nummer, '921812398');
+  assert.equal(pdfTextLesen('Rechnung: 921 812 398', { hinweisNummer: '921812398' }).nummer, '921812398');
+  assert.equal(pdfTextLesen('Rechnung Nr. 1174491 2010593').nummer, '1174491');
+  const text = 'Rechnung\n0201399548\nGesamtbetrag: 10,00';
+  assert.equal(belegFelder({ text, name: '0201399548.PDF' }).nummer, '0201399548');
+  assert.equal(belegFelder({ text: 'Rechnung\nGesamtbetrag: 10,00', name: '0201399548.PDF' }).nummer, null);
+});
+
+test('Betrag: Rechnungswert, Total inkl. Steuer und Gesamt EUR zaehlen, Skonto-Zeilen und Netto nicht', () => {
+  assert.equal(pdfTextLesen('Warenwert : 99,15 EUR\n19,00 % MwSt. : 18,84 EUR\nRechnungswert : 117,99 EUR').brutto, 117.99);
+  assert.equal(pdfTextLesen('Total exkl 100,00\n  Total inkl Mwst € 119,00').brutto, 119);
+  assert.equal(pdfTextLesen('Warenwert 333,92 EUR 19,0% MWSt 63,44 EUR Gesamt EUR 397,36').brutto, 397.36);
+  const skonto = 'Gesamt EUR 737,49\nSKONTO BIS ZUM 26/10 ( -4.00 %): 29,50 EUR bleibt zu zahlen 707,99 EUR.\nSKONTO BIS ZUM 16/11 ( -2.25 %): 16,59 EUR bleibt zu zahlen 720,90 EUR.';
+  const r = pdfTextLesen(skonto);
+  assert.equal(r.brutto, 737.49);
+  assert.equal(r.betragMehrdeutig, false);
+  assert.equal(pdfTextLesen('Gesamt EUR ohne MwSt 100,00').brutto, null);
+  assert.equal(pdfTextLesen('Rechnungswert netto 100,00').brutto, null);
+});
