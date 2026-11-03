@@ -17,13 +17,13 @@ const eingabe = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'git 
 const lauf = (cmd, cwd, projekt) => spawnSync('sh', ['-c', cmd], { cwd, input: eingabe, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: projekt } });
 
 test('alle Sperr-Guards blocken im Fehlerfall, der Deploy-Hinweis nicht', () => {
-  for (const n of ['git-gh-guard', 'theme-delete-guard', 'shopify-mcp-guard']) assert.equal(guard(n).onFailure, 'block', n);
+  for (const n of ['git-gh-guard', 'theme-delete-guard', 'shopify-mcp-guard', 'shopify-cli-guard']) assert.equal(guard(n).onFailure, 'block', n);
   assert.equal(guard('deploy-command-guard').onFailure, undefined);
 });
 
 test('git- und Theme-Sperre gelten fuer alle Werkzeuge, die Shell-Befehle ausfuehren', () => {
   const gruppe = einstellungen.hooks.PreToolUse.find(g => g.hooks.some(h => h.command.includes('git-gh-guard')));
-  assert.ok(gruppe.hooks.some(h => h.command.includes('theme-delete-guard')));
+  for (const n of ['theme-delete-guard', 'shopify-cli-guard']) assert.ok(gruppe.hooks.some(h => h.command.includes(n)), n);
   const treffer = new RegExp(`^(?:${gruppe.matcher})$`);
   for (const w of ['Bash', 'Monitor', 'mcp__terminal__run_in_terminal']) assert.ok(treffer.test(w), w);
   assert.equal(treffer.test('Read'), false);
