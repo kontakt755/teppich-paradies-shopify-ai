@@ -21,6 +21,14 @@ test('alle Sperr-Guards blocken im Fehlerfall, der Deploy-Hinweis nicht', () => 
   assert.equal(guard('deploy-command-guard').onFailure, undefined);
 });
 
+test('git- und Theme-Sperre gelten fuer alle Werkzeuge, die Shell-Befehle ausfuehren', () => {
+  const gruppe = einstellungen.hooks.PreToolUse.find(g => g.hooks.some(h => h.command.includes('git-gh-guard')));
+  assert.ok(gruppe.hooks.some(h => h.command.includes('theme-delete-guard')));
+  const treffer = new RegExp(`^(?:${gruppe.matcher})$`);
+  for (const w of ['Bash', 'Monitor', 'mcp__terminal__run_in_terminal']) assert.ok(treffer.test(w), w);
+  assert.equal(treffer.test('Read'), false);
+});
+
 test('falscher Projektordner: der Guard wird ueber das Arbeitsverzeichnis gefunden und sperrt', () => {
   const r = lauf(guard('git-gh-guard').command, REPO, os.tmpdir());
   assert.equal(r.status, 0, r.stderr);
