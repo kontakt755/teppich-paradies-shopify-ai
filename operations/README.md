@@ -751,6 +751,35 @@ zog Karten in falsche Bereiche. Regel, Bereiche und Tests: `scripts/preisfilter-
 - Grenze: dieser Lauf schreibt genau das eine Produkt-Metafeld `custom.meterpreis_bereich`;
   nie Preise, Vergleichspreise, Varianten oder andere Felder.
 
+## Google-Bewertung im Shop (monatlich)
+
+`npm run -s google-bewertung -- --schreiben` holt Note und Anzahl aus der Datenquelle des
+Bewertungs-Widgets und schreibt sie ins Shop-Metafeld `custom.google_bewertung`. Das Theme liest
+das Metafeld zuerst, ein Theme-Deploy ist dafür nicht nötig. Ohne Metafeld gilt die
+Theme-Einstellung „TP Google-Bewertung“. Die Rezensionen im Widget selbst aktualisiert Elfsight;
+dieser Lauf betrifft nur Note und Anzahl.
+
+- Ohne `--schreiben`: nur lesen und vergleichen. Exit 1 = auffällig, Exit 2 = Fehler.
+- Auffällige Sprünge (Note um mehr als 0,2, Anzahl um mehr als 10 herunter oder 60 hinauf)
+  werden nicht übernommen. Bei Google nachsehen; stimmt der Wert, mit `--schreiben --trotzdem`
+  übernehmen.
+- Die Quelle ist nicht dokumentiert. Antwortet sie nicht mehr, bleibt der letzte Wert im Shop
+  stehen und im Control Center erscheint ein To-do. Offizieller Ersatz wäre die Places API von
+  Google (eigener Schlüssel mit Abrechnungskonto).
+- To-do: Ein gescheiterter Abruf steht zuerst gelb unter „Website“ und „Alles“. Rot und damit
+  auch in der Inhaber-Sicht auf „Heute“ steht es bei einem auffälligen Wert und ab 35 Tagen ohne
+  Erfolg (der größte normale Abstand sind 33 Tage).
+- Dienst: Vorlage `launchagents/net.teppich-paradies.google-bewertung.plist.vorlage`
+  (`__HOME__` ersetzen, nach `~/Library/LaunchAgents/` kopieren, Ordner
+  `~/teppich-paradies-analyse/google-bewertung` anlegen, `launchctl bootstrap`). Läuft am 1., 2.
+  und 3. jedes Monats um 6:40 aus `~/tp-dashboard` und tut nach dem ersten Erfolg im Monat nichts
+  mehr. Protokoll `lauf.log`, Stand `status.json` im selben Ordner.
+- Zurück: zuerst den Dienst abmelden (`launchctl bootout gui/$(id -u)/net.teppich-paradies.google-bewertung`,
+  Plist aus `~/Library/LaunchAgents/` entfernen), dann das Metafeld `custom.google_bewertung` am Shop
+  löschen. Dann gilt wieder die Theme-Einstellung. Bleibt der Dienst geladen, legt ihn der nächste
+  Monatslauf neu an, mangels Vergleichswert auch ohne Sprungprüfung.
+- Grenze: Der Lauf schreibt genau dieses eine Metafeld.
+
 ## Sync-Dienst (häufigere Aktualisierung)
 
 `operations/scripts/sync-dienst.mjs` führt `aktualisieren()` in einer

@@ -570,6 +570,36 @@ function ausSpeicher(quellen, jetzt) {
   }];
 }
 
+/** Der Monatslauf versucht es am 1., 2. und 3.; ab 35 Tagen ohne Erfolg ist er ausgefallen. */
+export const GOOGLE_BEWERTUNG_STUMM_TAGE = 35;
+const GOOGLE_PROFIL = 'https://maps.google.com/?cid=787042219843486388';
+
+/**
+ * Google-Bewertung im Shop (scripts/google-bewertung.mjs). Kommt mit der Shop-Wache
+ * (quellen.shopwache.googleBewertung). Der Shop zeigt dann weiter den letzten Wert: nichts ist
+ * falsch beschriftet, aber die Zahl altert, und in der Inhaber-Sicht steht nur Rotes.
+ * Rot ist darum, was allein nicht mehr heilt: ein auffaelliger Wert (ein Mensch muss nachsehen)
+ * und ein Monat ohne Erfolg (genau so war die Zahl von Hand veraltet). Ein einzelner gescheiterter
+ * Abruf bleibt Bernstein, der Lauf versucht es am 1., 2. und 3. selbst noch einmal.
+ */
+function ausGoogleBewertung(quellen, jetzt) {
+  const d = quellen.shopwache?.googleBewertung;
+  if (!d?.geprueftAm) return [];
+  const basis = { id: 'google-bewertung', art: 'google-bewertung', bereich: 'website' };
+  const tage = tageSeit(d.letzterErfolg || d.geprueftAm, jetzt);
+  const stumm = tage !== null && tage >= GOOGLE_BEWERTUNG_STUMM_TAGE;
+  if (d.ampel === 'gelb') {
+    return [{ ...basis, ton: 'crit', alterTage: tageSeit(d.geprueftAm, jetzt), titel: 'Google-Bewertung: Wert auffällig, nicht übernommen', kontext: `${d.meldung} · Der Shop zeigt weiter den alten Wert. Bei Google nachsehen; stimmt es, Claude Bescheid geben.`, knopf: { text: 'Bei Google ansehen', href: GOOGLE_PROFIL } }];
+  }
+  if (d.ampel === 'rot') {
+    return [{ ...basis, ton: stumm ? 'crit' : 'warn', alterTage: tageSeit(d.geprueftAm, jetzt), titel: 'Google-Bewertung: Abruf gescheitert', kontext: `${d.meldung} · Der Shop zeigt weiter den alten Wert. Der Lauf versucht es am 1., 2. und 3. des Monats, sonst Claude Bescheid geben.` }];
+  }
+  if (stumm) {
+    return [{ ...basis, ton: 'crit', alterTage: tage, titel: 'Google-Bewertung: Monatslauf meldet sich nicht', kontext: `letzter Erfolg vor ${tage} Tagen – er läuft sonst am Monatsanfang. Claude Bescheid geben.` }];
+  }
+  return [];
+}
+
 /** Die Auslauf-Pruefung laeuft montags; ab 9 Tagen ohne neuen Stand ist sie ausgefallen. */
 export const AUSLAUF_STUMM_TAGE = 9;
 
@@ -796,6 +826,7 @@ function alleTodos(quellen, opt) {
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
     ...ausAuslauf(quellen, k.jetzt),
+    ...ausGoogleBewertung(quellen, k.jetzt),
     ...ausNeuheiten(quellen, k.jetzt),
     ...ausAusschreibungen(quellen, k.jetzt),
     ...ausAkquise(quellen),

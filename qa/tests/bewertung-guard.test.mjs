@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { befundeIn, stripHeader, GEPRUEFTE_FELDER } from '../bewertung-guard.mjs';
+import { befundeIn, befundeImCode, stripHeader, GEPRUEFTE_FELDER, METAFELD } from '../bewertung-guard.mjs';
 
 const huelle = (blockTyp, settings) => JSON.stringify({
   sections: { main: { type: 'main-product', blocks: { b1: { type: blockTyp, settings } } } },
@@ -45,4 +45,11 @@ test('stripHeader entfernt den Shopify-Kommentarkopf', () => {
 
 test('geprueft werden die drei bekannten Traeger', () => {
   assert.deepEqual(Object.keys(GEPRUEFTE_FELDER).sort(), ['tp-bewertungsbeleg', 'tp-start-hero', 'tp-start-trust']);
+});
+
+test('Liquid, das nur die Einstellung liest, zeigt nicht den Monatsstand', () => {
+  assert.equal(befundeImCode('{{ settings.tp_google_wert }}', 'x.liquid').length, 1);
+  assert.equal(befundeImCode('{{ settings.tp_google_anzahl }}', 'x.liquid').length, 1);
+  assert.equal(befundeImCode(`{{ ${METAFELD}.value.wert | default: settings.tp_google_wert }}`, 'x.liquid').length, 0);
+  assert.equal(befundeImCode('{{ settings.tp_google_link }}', 'x.liquid').length, 0, 'der Link kommt nicht aus dem Monatslauf');
 });
