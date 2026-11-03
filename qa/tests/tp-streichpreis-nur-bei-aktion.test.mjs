@@ -159,3 +159,14 @@ test('UVP: Paketpreis zeigt nach Aktionsende "UVP 29,95 €/m²" statt Streichpr
   assert.doesNotMatch(await engine.parseAndRender(sqm, paket({}, UVP, null)), /tp-uvp/, 'ohne Vergleichspreis keine Zeile');
   assert.doesNotMatch(await engine.parseAndRender(sqm, paket({})), /tp-uvp|tp-price-per-sqm__compare/, 'ohne Kennzeichen bleibt alles weg (S-20)');
 });
+
+test('Restrollen: UVP-Kopfzeile mit Abstand, im Rechner nur bei Meterware', () => {
+  const block = readFileSync(new URL('../../blocks/price_custom.liquid', import.meta.url), 'utf8');
+  assert.match(block, /tp_pc_aktion == 'uvp' and product_resource\.tags contains 'sonderposten'/);
+  assert.match(block, /data-tp-uvp-kopf data-variante="\{\{ selected_variant\.id \}\}"/);
+  const rechner = readFileSync(new URL('../../blocks/tp-rollware-rechner.liquid', import.meta.url), 'utf8');
+  assert.match(rechner, /uvp\.hidden = String\(v\.id\) !== uvp\.dataset\.variante/);
+  const zeile = readFileSync(new URL('../../snippets/tp-uvp-zeile.liquid', import.meta.url), 'utf8');
+  assert.match(zeile, /% unter UVP/);
+  assert.doesNotMatch(zeile, /tp-rabatt-badge/);
+});

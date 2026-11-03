@@ -23,6 +23,10 @@ Vor einer Änderung der Shopify-Variantenpreise oder Vergleichspreise ist eine
 konkrete Produkttabelle zu prüfen und die ausdrückliche Freigabe des Inhabers
 einzuholen. Produkttexte dürfen keinen abweichenden Rabatt versprechen.
 
+## Restrollen: UVP mit Abstand
+
+Restrollen (Tag `sonderposten`, Typ Teppichboden) zeigen ihre UVP wie alle anderen über `preis.vergleich_ist_uvp`, zusätzlich mit „40 % unter UVP“, abgerundet, ohne Rot und ohne Rabattbadge (Inhaber 2026-11-03). Sie bekommen kein `aktion.klasse`, weil sie nie zum Vergleichspreis verkauft wurden. Die UVP gilt nur für die Meterware: Beim Wechsel auf Raummaß blendet der Rechner die Zeile aus, Kettelteppiche und Raummaß-Produkte haben keine.
+
 ## Gekettelte Fußleiste
 
 Gekettelte Fußleiste: Meterpreis inklusive Material = Fertigung + Höhe ×
