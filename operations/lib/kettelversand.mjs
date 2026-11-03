@@ -2,7 +2,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { berechneVersand } from '../../docs/ai-dashboard/lib/versandkosten.mjs';
+import { ROUTE } from './route.mjs';
 export const kettelPosition = p => !p.istMuster && !p.eigenleistung && p.ausfuehrung?.some(x => /gekettelt/i.test(x));
+/** Direktversand kommt nur mit Vermerk zum Kettler; sonst kettelt der Lieferant, auch neben einem Kettler-Teppich derselben Bestellung. */
+export const beimKettler = (p, eintrag) => kettelPosition(p) && (p.route !== ROUTE.SUPPLIER_DIRECT || eintrag?.ueber === 'kettler');
 export function leseKettelversand(dir) {
   try {
     const d = JSON.parse(fs.readFileSync(path.join(dir, 'kettelversand.json'), 'utf8'));
@@ -23,7 +26,7 @@ const text = (x,n=500) => String(x||'').trim().slice(0,n);
 const leer = () => ({revision:0,positionen:{},pakete:[]});
 export function aendereKettelversand(dir, payload, { auftrag, statusAlle, actor, tarif, abholPlz, jetzt = new Date() }) {
   if (!actor || !auftrag || auftrag.storniert || auftrag.testbestellung) throw new Error('Gültiger Auftrag und handelnde Person erforderlich.');
-  const erlaubt = new Map(auftrag.positionen.filter(kettelPosition).map(p => [p.lineItemId,p]));
+  const erlaubt = new Map(auftrag.positionen.filter(p => beimKettler(p, statusAlle[`${auftrag.id}::${p.lineItemId}`])).map(p => [p.lineItemId,p]));
   if (!erlaubt.size) throw new Error('Keine gekettelten Warenpositionen in diesem Auftrag.');
   const datei=path.join(dir,'kettelversand.json'), sperre=datei+'.lock';
   const fd=fs.openSync(sperre,'wx',0o600);

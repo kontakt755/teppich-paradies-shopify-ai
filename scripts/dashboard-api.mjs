@@ -13,7 +13,7 @@
  * `gh` ist injizierbar (Tests). Alle Funktionen sind frei von HTTP-Details.
  */
 
-import { leseKettelversand, aendereKettelversand, kettelPosition, packVergleich } from '../operations/lib/kettelversand.mjs';
+import { leseKettelversand, aendereKettelversand, beimKettler, packVergleich } from '../operations/lib/kettelversand.mjs';
 import { leseVersandtarife as kettelTarife } from '../operations/lib/versandtarife.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -2729,7 +2729,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let portale={};
       try { const p=readJsonIfExists(path.join(dir,'versandkosten','portale.json')); for(const name of ['GLS','GEL']) if(typeof p?.[name]==='string' && /^https:\/\//.test(p[name])) portale[name]=p[name]; } catch { /* Optionaler Portalzugang */ }
       return {verfuegbar:true,orderId,name:auftrag.name,revision:stand.revision,
-        positionen:auftrag.positionen.filter(kettelPosition).map(p=>{
+        positionen:auftrag.positionen.filter(p=>beimKettler(p,k.statusAlle[positionKey(auftrag.id,p.lineItemId)])).map(p=>{
           const produkte = p.handle ? katalog.filter(x => x?.handle === p.handle) : [];
           const roh = rohPositionen.filter(x => x?.id === p.lineItemId);
           return {id:p.lineItemId,titel:p.titel,farbe:p.farbe,ausfuehrung:p.ausfuehrung,stand:stand.positionen[p.lineItemId] || {},
