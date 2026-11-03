@@ -121,7 +121,7 @@ nachziehen_einrichten() {
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-nachziehen.log"
 }
 
-ROUTINEN_LABELS=(net.teppich-paradies.fehler-vorpruefung net.teppich-paradies.postfach net.teppich-paradies.datenstand)
+ROUTINEN_LABELS=(net.teppich-paradies.fehler-vorpruefung net.teppich-paradies.postfach net.teppich-paradies.datenstand net.teppich-paradies.ki-stand)
 ROUTINEN_AUFGABEN=(fehlermeldungen-werkbank lieferbelege-postfach serviceanfragen-postfach)
 
 routinen_einrichten() {
@@ -132,7 +132,7 @@ routinen_einrichten() {
     return 1
   fi
   local datei
-  for datei in operations/scripts/claude-lauf.mjs operations/scripts/routine-wache.mjs operations/scripts/datenstand-pruefen.mjs operations/lib/routinen.mjs operations/lib/routine-wache.mjs; do
+  for datei in operations/scripts/claude-lauf.mjs operations/scripts/routine-wache.mjs operations/scripts/datenstand-pruefen.mjs operations/scripts/ki-stand.mjs operations/lib/ki-stand.mjs operations/lib/routinen.mjs operations/lib/routine-wache.mjs; do
     if [[ ! -f "${REPO}/${datei}" ]]; then
       fehler "${REPO} hat ${datei} noch nicht - erst main nachziehen (npm run -s betrieb:nachziehen -- --status)."
       return 1
@@ -143,7 +143,7 @@ routinen_einrichten() {
     return 1
   fi
   local analyse="${HOME}/teppich-paradies-analyse/routinen"
-  mkdir -p "${analyse}/fehlermeldungen" "${analyse}/postfach" "${analyse}/datenstand" "${analyse}/auftraege"
+  mkdir -p "${analyse}/fehlermeldungen" "${analyse}/postfach" "${analyse}/datenstand" "${analyse}/ki-stand" "${analyse}/auftraege"
   chmod 700 "${analyse}" "${analyse}/auftraege"
 
   # Auftragstexte einmalig aus den App-Aufgaben kopieren (privat: enthalten u. a. die
@@ -183,7 +183,7 @@ routinen_einrichten() {
     ok "Eingerichtet und geladen."
   done
   hinweis ""
-  hinweis "Logs: ${analyse}/{fehlermeldungen,postfach,datenstand}/dienst.log"
+  hinweis "Logs: ${analyse}/{fehlermeldungen,postfach,datenstand,ki-stand}/dienst.log"
   hinweis "Die App-Aufgaben fehlermeldungen-werkbank, lieferbelege-postfach und serviceanfragen-postfach"
   hinweis "muessen pausiert sein (nicht geloescht) - sonst laufen beide doppelt."
   hinweis "Abschalten: launchctl bootout gui/$(id -u)/<label>, dann ~/Library/LaunchAgents/<label>.plist loeschen."

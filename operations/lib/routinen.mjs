@@ -513,6 +513,9 @@ export const STATUS_DATEIEN = Object.freeze([
   { id: 'lieferbelege', datei: 'postfach/status-lieferbelege.json', titel: 'Lieferbelege aus dem Postfach', label: LAEUFE.postfach.label, fenster: ARBEITSZEIT, stummNachMin: 300 },
   { id: 'serviceanfragen', datei: 'postfach/status-serviceanfragen.json', titel: 'Service-Anfragen aus dem Postfach', label: LAEUFE.postfach.label, fenster: ARBEITSZEIT, stummNachMin: 300 },
   { id: 'daten-gesundheit', datei: 'datenstand/status.json', titel: 'Datenstand des Sync-Dienstes', label: 'net.teppich-paradies.datenstand', fenster: null, stummNachMin: 180 },
+  { id: 'codex-stand', datei: 'ki-stand/codex.json', titel: 'Codex-Kontingent', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 180 },
+  { id: 'muster-versand', datei: 'ki-stand/muster.json', titel: 'Musterautomatik', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 180 },
+  { id: 'claude-stand', datei: 'ki-stand/claude.json', titel: 'Claude-Code-Stand', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 12_000 },
 ]);
 
 export function statusPfad(privat, id) {

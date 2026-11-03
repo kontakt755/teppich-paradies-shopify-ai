@@ -11,6 +11,8 @@
 | `hooks/git-gh-guard.mjs`, `theme-delete-guard.mjs` | harte Grenzen (`deny`) für Bash-Befehle |
 | `hooks/deploy-command-guard.mjs` | Hinweis auf `workflow:doctor` bzw. die Troubleshooting-Datei, nur bei Befehlen, die wirklich deployen (`npm run workflow:preview\|live`, `node workflow/cli.mjs preview\|live`, `shopify theme push\|publish`), nicht bei grep/sed/echo/PR-Texten, die die Wörter enthalten |
 | `hooks/shopify-mcp-guard.mjs` | harte Grenze (`deny`) für den Shopify-MCP (`mcp__*__graphql_mutation`): `themeDelete`, jede Mutation mit der Fallback-Theme-ID, Löschmutationen mit IDs (`productDelete`, `productVariantsBulkDelete`, `collectionDelete`, `menuDelete`, `discountCodeDelete`, `fileDelete`); Preise, `productSet`, Metafelder, Veröffentlichen laufen durch |
+| `settings.json`, Sperr-Hooks | Die drei Sperr-Guards tragen `onFailure: block`: faellt ein Guard aus, wird der Befehl geblockt statt durchgelassen. Der Pfad nimmt `$CLAUDE_PROJECT_DIR`, sonst das Repository des Arbeitsordners (noetig, wenn die Sitzung ausserhalb startete und spaeter hierher wechselte) |
+| `workflows/aufbau-pruefen.js` | vierteljaehrliche Pruefung des Aufbaus mit Neuerungen, von Hand gestartet (`/aufbau-pruefen`), nur lesend |
 | `hooks/*.test.mjs` | Tests der Hooks (`npm run hooks:test`, Teil von `npm test`); weitere unter `qa/tests/` (`theme-delete-guard`, `shopify-mcp-guard`, `deploy-command-guard`, `git-hook-skripte`) |
 | `skills/deploy/SKILL.md` | Deploy-Kette main → Preview → Live, Gates, Wegwerf-Themes |
 | `skills/control-center/SKILL.md` | Regeln, Gestaltung, Ablauf und Fallstricke für das Control Center |
