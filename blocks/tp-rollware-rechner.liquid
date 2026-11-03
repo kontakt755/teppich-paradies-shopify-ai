@@ -755,7 +755,7 @@
   "selected_options": {{ product.selected_or_first_available_variant.options | json }},
   "fallback_width_cm": {{ tp_rc_fallback_width_cm | json }},
   "cm_exact": {{ tp_rc_cm_exact | json }},
-  "raummass_anfrage": {% if product.handle == 'vorwerk-passion-yasmin-anthrazit-teppichboden-400-cm-sonderposten' and product.variants.size == 1 and tp_rc_bestand_gefuehrt %}true{% else %}false{% endif %},
+  "raummass_anfrage": {% if tp_rc_rest_raum == 'null' and product.handle == 'vorwerk-passion-yasmin-anthrazit-teppichboden-400-cm-sonderposten' and product.variants.size == 1 and tp_rc_bestand_gefuehrt %}true{% else %}false{% endif %},
   "rest_raum": {{ tp_rc_rest_raum }},
   "product_handle": {{ product.handle | json }},
   "meter_tipp": {{ block.settings.meterware_tipp_anzeigen | json }},
