@@ -94,6 +94,10 @@ test('cd mit Optionen, Lesen des Fallback-Themes, Befehl nur als Text', () => {
   assert.match(pruefe(`cd -P tief && ${BASIS} --query-file x.graphql`), /productVariantsBulkDelete/);
   assert.equal(pruefe(`shopify store execute -s s --query 'query { theme(id: "gid://shopify/OnlineStoreTheme/${FALLBACK}") { id } }'`), null);
   assert.equal(pruefe(`echo 'shopify store execute --allow-mutations --query "mutation { productDelete(input: {id: 1}) { deletedProductId } }"'`), null);
+  assert.equal(pruefe(`echo shopify store execute --query 'mutation { productDelete(input: {id: "x"}) { deletedProductId } }'`), null);
+  assert.match(pruefe(`(cd tief && pwd); ${BASIS} --query-file weg.graphql`), /productVariantsBulkDelete/);
+  assert.match(pruefe(`FOO=1 ${BASIS} --query-file weg.graphql`), /productVariantsBulkDelete/);
+  assert.match(pruefe(`ls | xargs ${BASIS} --query-file weg.graphql`), /productVariantsBulkDelete/);
 });
 
 test('zweiter Aufruf in einer Kette wird mitgeprueft; Trenner im Text trennen nicht', () => {

@@ -74,9 +74,16 @@ function wertVon(worte, i, lang, kurz) {
   return null;
 }
 
+const VORSATZ = new Set(['npx', 'pnpm', 'dlx', 'exec', 'command', 'env', 'sudo', 'time', 'nohup', 'do', 'then', 'else', '{', '!']);
+
+/** Nur an Befehlsposition: `echo shopify store execute ...` fuehrt nichts aus. */
 function istStoreExecute(worte) {
   const t = worte.map(w => w.text);
-  return t.some((x, i) => /(^|\/)shopify$/.test(x) && t.slice(i + 1).filter(y => !y.startsWith('-')).slice(0, 2).join(' ') === 'store execute');
+  let i = 0;
+  if (t[0] === 'xargs') i = t.findIndex(x => /(^|\/)shopify$/.test(x));
+  else while (i < t.length && (VORSATZ.has(t[i]) || /^\w+=/.test(t[i]))) i += 1;
+  if (i < 0 || !/(^|\/)shopify$/.test(t[i] || '')) return false;
+  return t.slice(i + 1).filter(y => !y.startsWith('-')).slice(0, 2).join(' ') === 'store execute';
 }
 
 /** Liest Abfrage und Variablen eines Aufrufs; `offen` nennt den Grund, wenn das nicht geht. */
@@ -117,7 +124,7 @@ function grobePruefung(befehl, abschnitte, ordner, leseDatei, opt) {
   const text = texte.join('\n');
   const treffer = [...NAMEN].find(n => new RegExp(`\\b${n}\\s*[({]`).test(text));
   if (treffer) return LOESCHGRUND(treffer);
-  return /\bmutation\b/.test(text) ? pruefe({ query: text }, opt) : null;
+  return /\bmutation\b|--allow-mutations|SHOPIFY_FLAG_ALLOW_MUTATIONS/.test(text) ? pruefe({ query: text }, opt) : null;
 }
 
 const LOESCHGRUND = name => `${name} loescht Daten - Loeschen braucht die ausdrueckliche Freigabe des Inhabers (AGENTS.md "NIEMALS ohne ausdrueckliche Freigabe"). Ausgelaufenes wird archiviert, nicht geloescht`;
@@ -132,11 +139,13 @@ export function pruefeBefehl(befehl, { cwd = process.cwd(), leseDatei = p => rea
     const grund = grobePruefung(befehl, [], cwd, leseDatei, opt);
     if (grund) return grund;
   }
-  let ordner = cwd;
+  // Jeder bekannte Ordner zaehlt: ob ein cd in einer Klammer noch gilt, sieht der Hook nicht.
+  const ordner = new Set([cwd]);
+  let aktuell = cwd;
   for (const worte of abschnitte) {
     if (worte[0]?.text === 'cd') {
       const ziel = worte.slice(1).find(w => !w.text.startsWith('-'));
-      if (ziel && !ziel.offen) ordner = path.resolve(ordner, ziel.text);
+      if (ziel && !ziel.offen) { aktuell = path.resolve(aktuell, ziel.text); ordner.add(aktuell); }
     }
     // Befehl in einem Wort: bash -c '...', x="$(...)", Backticks.
     if (tiefe < 3) {
@@ -144,27 +153,29 @@ export function pruefeBefehl(befehl, { cwd = process.cwd(), leseDatei = p => rea
       for (const w of worte) {
         // Reiner Text (echo '...') wird nicht ausgefuehrt.
         if ((!shell && !w.offen) || !/shopify\s+store\s+execute/.test(w.text)) continue;
-        const grund = pruefeBefehl(w.text.replaceAll('`', ' ; '), { cwd: ordner, leseDatei, fallbackId, tiefe: tiefe + 1 });
+        const grund = pruefeBefehl(w.text.replaceAll('`', ' ; '), { cwd: aktuell, leseDatei, fallbackId, tiefe: tiefe + 1 });
         if (grund) return grund;
       }
     }
     if (!istStoreExecute(worte)) continue;
-    const { query, variablen, offen } = aufrufDaten(worte, ordner, leseDatei);
-    // Lesen darf auch das Fallback-Theme; ohne das Wort mutation ist es eine Abfrage.
-    if (query && /\bmutation\b/.test(query)) {
-      const grund = pruefe({ query, variables: variablen }, opt);
-      if (grund) return grund;
-      let treffer;
-      try {
-        treffer = aufrufe(query, variablen, NAMEN)[0]?.name;
-      } catch {
-        treffer = [...NAMEN].find(n => new RegExp(`\\b${n}\\s*[({]`).test(query));
+    for (const o of ordner) {
+      const { query, variablen, offen } = aufrufDaten(worte, o, leseDatei);
+      // Lesen darf auch das Fallback-Theme; ohne das Wort mutation ist es eine Abfrage.
+      if (query && /\bmutation\b/.test(query)) {
+        const grund = pruefe({ query, variables: variablen }, opt);
+        if (grund) return grund;
+        let treffer;
+        try {
+          treffer = aufrufe(query, variablen, NAMEN)[0]?.name;
+        } catch {
+          treffer = [...NAMEN].find(n => new RegExp(`\\b${n}\\s*[({]`).test(query));
+        }
+        if (treffer) return LOESCHGRUND(treffer);
       }
-      if (treffer) return LOESCHGRUND(treffer);
-    }
-    if (offen) {
-      const grund = grobePruefung(befehl, abschnitte, ordner, leseDatei, opt);
-      if (grund) return grund;
+      if (offen) {
+        const grund = grobePruefung(befehl, abschnitte, o, leseDatei, opt);
+        if (grund) return grund;
+      }
     }
   }
   return null;
