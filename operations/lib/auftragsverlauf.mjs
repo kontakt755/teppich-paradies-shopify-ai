@@ -343,7 +343,8 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
     else if (erledigt.getan) schritte.push({ schritt: 'ergebnis', ergebnis: 'erledigt', label: label.erledigt, getan: true, am: erledigt.am, von: erledigt.von, notiz: erledigt.notiz, automatisch: false, quelle: 'manuell', teil: null });
     else schritte.push({ schritt: 'ergebnis', ergebnis: null, label: label.ergebnis, getan: false, am: null, von: null, notiz: null, automatisch: false, quelle: null, teil: null });
   } else {
-    const ware = positionen.filter(p => !p.istMuster);
+    // Eine mitgekaufte Eigenleistung (Kettelservice) hat keine Route und reist nicht mit.
+    const ware = positionen.filter(p => !p.istMuster && !p.eigenleistung);
     // Ueber unseren Kettler bestellte Ware (ueber: 'kettler', #1453) kommt erst zu uns zurueck,
     // auch wenn der Lieferant sonst direkt verschickt.
     const ueberKettler = p => statusAlle[positionKey(auftrag.id, p.lineItemId)]?.ueber === 'kettler';
@@ -496,9 +497,9 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
  * oder ohne Vermerk: null, die Akte behauptet dann nichts.
  */
 export function kettelwegText(p, eintrag) {
-  if (!wirdGekettelt(p?.ausfuehrung)) return null;
-  if (eintrag?.ueber === 'kettler') return 'Unser Kettler';
-  return eintrag?.status && p.route === ROUTE.SUPPLIER_DIRECT ? 'Lieferant, direkt an den Kunden' : null;
+  if (!wirdGekettelt(p?.ausfuehrung) || !eintrag?.status) return null;
+  if (eintrag.ueber === 'kettler') return 'Unser Kettler';
+  return p.route === ROUTE.SUPPLIER_DIRECT ? 'Lieferant, direkt an den Kunden' : null;
 }
 
 /** Name und Ort (Stadt der Lieferadresse) - damit man "Kunde in der Naehe" erkennt. */
