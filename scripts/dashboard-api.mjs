@@ -1798,7 +1798,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let packen = null;
       try { packen = leseMusterPackStand(musterPackenPfad(dir)); } catch { /* Fehler meldet die Packstation selbst. */ }
       const jetzt = now().getTime();
-      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
+      // Gesperrte Muster je Bestellung fuers To-do "Kunde informieren"; ist die Ablage kaputt, meldet das das Musterlager.
+      let sperren = new Map();
+      try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* siehe oben */ }
+      const gesperrteMuster = z => (z.auftrag?.positionen || []).filter(p => p.istMuster && p.sku && sperren.has(p.sku)).map(p => p.lineItemId);
+      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, gesperrteMuster: gesperrteMuster(z), musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
       return { verfuegbar: true, ratgeberVorlagen: RATGEBER.map(r => ({ schluessel: r.schluessel, titel: ratgeberKurzTitel(r) })), musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
     },
 

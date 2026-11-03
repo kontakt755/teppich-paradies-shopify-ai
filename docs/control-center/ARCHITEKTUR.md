@@ -751,9 +751,13 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 
 | To-do | Quelle | Regel |
 |---|---|---|
-| Ware/Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant und Art ein To-do; gelb ab 3, rot ab 7 Tagen |
+| Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant ein To-do; gelb ab 3, rot ab 7 Tagen |
+| Ware bestellen | dieselben + `/api/einkauf/belege` | bezahlt, Position ohne Stand; **je Bestellung** ein To-do, damit kein Kunde in einer Sammelzeile verschwindet; gelb ab 1, rot ab 3 Tagen (seit 2026-11-03). Ohne geladene Belege fehlt nur der Zusatz „kein Beleg im Postfach“ |
+| Laut Beleg bestellt, abhaken | dieselben | wie „Ware bestellen“, aber AB, Lieferschein oder Avis ist sicher zugeordnet: per Mail bestellt, nicht abgehakt. Gelb, ab 4 Tagen nach dem Lieferschein rot (noch nicht raus) |
+| Keine Bestätigung vom Lieferanten | dieselben | Ware „bestellt“ seit ≥ 3 Tagen, ohne Beleg und ohne Liefertermin; rot ab 7. Ab 10 Werktagen übernimmt „Nachhaken“. Nur bei geladenen Belegen |
+| Muster nicht lieferbar | `/api/kunden/bestellungen`, Feld `gesperrteMuster` (Mustersperre) | SKU gesperrt, Position ohne Stand oder „bestellt“; immer rot, bis der Schritt „nicht verfügbar“ die Position abschließt |
 | Nachhaken | dieselben, Schwellen aus `/api/einkauf/lieferanten` | Stand „bestellt" seit ≥ 7 Tagen gelb, ≥ 14 Tagen rot; je Lieferant |
-| Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 7, rot ab 14 Tagen |
+| Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 2, rot ab 5 Tagen (seit 2026-11-03) |
 | Zuerst klären | Ampel „rot" der Bestellung | immer rot; die Positionen erscheinen nicht zusätzlich unter „bestellen" |
 | Zurückrufen | `/api/kunden/rueckrufe` | nicht erledigt und Wiedervorlage heute oder früher; gelb ab 2, rot ab 7 Tagen |
 | Angebot nachfassen | `/api/kunden/faelle` | Angebot seit ≥ 7 Tagen offen; rot ab 14 |
