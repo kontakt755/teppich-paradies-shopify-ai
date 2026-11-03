@@ -13,7 +13,7 @@
  * `gh` ist injizierbar (Tests). Alle Funktionen sind frei von HTTP-Details.
  */
 
-import { leseKettelversand, aendereKettelversand, beimKettler, packVergleich } from '../operations/lib/kettelversand.mjs';
+import { leseKettelversand, aendereKettelversand, beimKettler, kettelAuftragSichtbar, packVergleich } from '../operations/lib/kettelversand.mjs';
 import { leseVersandtarife as kettelTarife } from '../operations/lib/versandtarife.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -1117,10 +1117,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), gepackt, jetzt: now() });
   }
 
+  /** Wer kettelt und ob der Kettler-Dialog gilt: fuer die Zeitleiste in Kundenakte und Bestellungen. */
+  function kettelFelder(a, statusAlle) {
+    const eintrag = p => statusAlle[positionKey(a.id, p.lineItemId)];
+    return { positionen: (a.positionen ?? []).map(p => ({ ...p, kettelweg: kettelwegText(p, eintrag(p)) })), kettelAuftrag: kettelAuftragSichtbar(a.positionen, eintrag) };
+  }
+
   /** Die additiven Zeitleisten-Felder eines Auftrags fuer die Antwort. */
   function zeitleistenFelder(z) {
     if (!z) return { auftragsart: null, verlauf: [], verlaufNotizen: [], naechsterSchritt: null, zeitleisteAbgeschlossen: false };
-    return { auftragsart: z.auftragsart, verlauf: z.verlauf, verlaufNotizen: z.verlaufNotizen, naechsterSchritt: z.naechsterSchritt, zeitleisteAbgeschlossen: z.abgeschlossen, direktversand: z.direktversand };
+    return { auftragsart: z.auftragsart, verlauf: z.verlauf, verlaufNotizen: z.verlaufNotizen, naechsterSchritt: z.naechsterSchritt, zeitleisteAbgeschlossen: z.abgeschlossen };
   }
 
   /** Dringendster naechster Schritt ueber die echten Bestellungen eines Kunden, mit Bezug zur Bestellung. */
@@ -1750,7 +1756,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (gefunden) {
         // Additiv je Bestellung: auftragsart, verlauf, verlaufNotizen, naechsterSchritt (operations/lib/auftragsverlauf.mjs).
         const zl = zeitleisten(dir, modell, statusAlle);
-        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, positionen: (a.positionen ?? []).map(p => ({ ...p, kettelweg: kettelwegText(p, statusAlle[positionKey(a.id, p.lineItemId)]) })), ...zeitleistenFelder(zl.get(a.id)), ...versandFelder(a, statusAlle) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
+        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, ...kettelFelder(a, statusAlle), ...zeitleistenFelder(zl.get(a.id)), ...versandFelder(a, statusAlle) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
         return { verfuegbar: true, kunde };
       }
       // Kunde aus dem Shopify-Stamm ohne Bestellung in dieser Datei: die
@@ -1797,7 +1803,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let packen = null;
       try { packen = leseMusterPackStand(musterPackenPfad(dir)); } catch { /* Fehler meldet die Packstation selbst. */ }
       const jetzt = now().getTime();
-      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
+      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, auftrag: z.auftrag ? { ...z.auftrag, ...kettelFelder(z.auftrag, statusAlle) } : z.auftrag, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
       return { verfuegbar: true, ratgeberVorlagen: RATGEBER.map(r => ({ schluessel: r.schluessel, titel: ratgeberKurzTitel(r) })), musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
     },
 

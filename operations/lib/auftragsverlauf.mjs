@@ -493,13 +493,14 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
 }
 
 /**
- * Wer einen schon bestellten gekettelten Teppich kettelt, fuer die Kundenakte. Vor der Bestellung
- * oder ohne Vermerk: null, die Akte behauptet dann nichts.
+ * Wer einen schon bestellten gekettelten Teppich kettelt, fuer die Kundenakte. Belegt ist das nur
+ * durch den Vermerk beim Bestellen; fehlt er bei Direktversand, sagt die Akte genau das.
  */
 export function kettelwegText(p, eintrag) {
   if (!wirdGekettelt(p?.ausfuehrung) || !eintrag?.status) return null;
   if (eintrag.ueber === 'kettler') return 'Unser Kettler';
-  return p.route === ROUTE.SUPPLIER_DIRECT ? 'Lieferant, direkt an den Kunden' : null;
+  if (eintrag.ueber === 'kunde') return 'Lieferant, direkt an den Kunden';
+  return p.route === ROUTE.SUPPLIER_DIRECT ? 'Nicht vermerkt, bitte klären' : null;
 }
 
 /** Name und Ort (Stadt der Lieferadresse) - damit man "Kunde in der Naehe" erkennt. */

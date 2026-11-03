@@ -1073,5 +1073,5 @@ test('Kettelweg: Ware, die sonst zu uns kommt, wird nicht gefragt und waehlt ihr
 
 test('Kettelweg: die Kopierliste legt sich bei Direktversand nicht auf den Kettler fest', () => {
   const m = direktTeppich();
-  assert.equal(m.gruppen[0].positionen[0].kettelZusatz, ' · gekettelt, Weg klären: Lieferant kettelt 250 × 220 cm oder Zuschnitt 253 × 223 cm für unseren Kettler');
+  assert.equal(m.gruppen[0].positionen[0].kettelZusatz, ' · gekettelt, Weg vor der Bestellung klären: Fertigmaß 250 × 220 cm, für unseren Kettler Zuschnitt 253 × 223 cm');
 });

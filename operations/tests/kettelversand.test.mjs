@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { aendereKettelversand, beimKettler, leseKettelversand, packVergleich } from '../lib/kettelversand.mjs';
+import { aendereKettelversand, beimKettler, kettelAuftragSichtbar, leseKettelversand, packVergleich } from '../lib/kettelversand.mjs';
 const auftrag={id:'auftrag-test',details:{lieferadresse:{plz:'16515'}},positionen:['a','b'].map(lineItemId=>({lineItemId,ausfuehrung:['Einfassung: Gekettelt']}))};
 const config={auftrag,statusAlle:{},actor:'Testperson',jetzt:new Date('2026-10-22T12:00:00Z')};
 function umgebung(t){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'kettelversand-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));return dir;}
@@ -70,15 +70,21 @@ test('Dashboard-API liefert neuen Dialog und erzwingt Leserolle',async t=>{
 import {SICHERUNGSPFADE} from '../scripts/sicherung.mjs';
 test('Kettlernachweise und Packstücke sind in der Datensicherung enthalten',()=>assert(SICHERUNGSPFADE.includes('kettelversand.json')));
 
-test('beimKettler: Direktversand nur mit Kettler-Vermerk, Mischfall in einer Bestellung getrennt', () => {
+test('beimKettler: nur der Vermerk Lieferant schliesst aus, Mischfall in einer Bestellung getrennt', () => {
   const gekettelt = { ausfuehrung: ['Einfassung: Gekettelt'] };
-  assert.equal(beimKettler({ ...gekettelt, route: 'SUPPLIER_DIRECT' }, { status: 'bestellt' }), false);
+  assert.equal(beimKettler({ ...gekettelt, route: 'SUPPLIER_DIRECT' }, { status: 'bestellt', ueber: 'kunde' }), false);
   assert.equal(beimKettler({ ...gekettelt, route: 'SUPPLIER_DIRECT' }, { status: 'bestellt', ueber: 'kettler' }), true);
-  assert.equal(beimKettler({ ...gekettelt, route: 'SUPPLIER_DIRECT' }, null), false);
+  assert.equal(beimKettler({ ...gekettelt, route: 'SUPPLIER_DIRECT' }, { status: 'bestellt' }), true, 'ohne Vermerk kann die Ware beim Kettler liegen');
   assert.equal(beimKettler({ ...gekettelt, route: 'SUPPLIER_TO_TP' }, null), true);
+  const sichtbar = (route, eintrag, ausfuehrung = gekettelt.ausfuehrung) => kettelAuftragSichtbar([{ route, ausfuehrung }], () => eintrag);
+  assert.equal(sichtbar('SUPPLIER_DIRECT', null), false, 'vor der Bestellung ist bei Direktversand nichts entschieden');
+  assert.equal(sichtbar('SUPPLIER_DIRECT', { status: 'bestellt' }), true);
+  assert.equal(sichtbar('SUPPLIER_DIRECT', { status: 'bestellt', ueber: 'kunde' }), false);
+  assert.equal(sichtbar('SUPPLIER_TO_TP', null), true);
+  assert.equal(sichtbar('SUPPLIER_TO_TP', null, ['Einfassung: ohne Einfassung']), false);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kv-misch-'));
   const auftrag = { id: 'o', positionen: [{ ...gekettelt, lineItemId: 'a', route: 'SUPPLIER_DIRECT' }, { ...gekettelt, lineItemId: 'b', route: 'SUPPLIER_DIRECT' }] };
-  const statusAlle = { 'o::a': { status: 'bestellt', ueber: 'kettler' }, 'o::b': { status: 'bestellt' } };
+  const statusAlle = { 'o::a': { status: 'bestellt', ueber: 'kettler' }, 'o::b': { status: 'bestellt', ueber: 'kunde' } };
   const kontext = { auftrag, statusAlle, actor: 'Test', tarif: null, abholPlz: null };
   assert.throws(() => aendereKettelversand(dir, { revision: 0, aktion: 'angekommen', lineItemId: 'b', beleg: 'x' }, kontext), /gehört nicht zum Kettelauftrag/);
   aendereKettelversand(dir, { revision: 0, aktion: 'angekommen', lineItemId: 'a', beleg: 'x' }, kontext);

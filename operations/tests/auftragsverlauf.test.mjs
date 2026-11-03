@@ -403,7 +403,8 @@ test('Eigenbestand: Postversand fuehrt nur zum Versanddialog, persoenliche Ueber
 test('kettelwegText: nur bei gekettelter, bestellter Ware und nie geraten', () => {
   const p = { route: 'SUPPLIER_DIRECT', ausfuehrung: ['Fertigmaß: 250 × 220 cm', 'Einfassung: Gekettelt'] };
   assert.equal(kettelwegText(p, { status: 'bestellt', ueber: 'kettler' }), 'Unser Kettler');
-  assert.equal(kettelwegText(p, { status: 'bestellt' }), 'Lieferant, direkt an den Kunden');
+  assert.equal(kettelwegText(p, { status: 'bestellt', ueber: 'kunde' }), 'Lieferant, direkt an den Kunden');
+  assert.equal(kettelwegText(p, { status: 'bestellt' }), 'Nicht vermerkt, bitte klären', 'ohne Vermerk ist der Weg nicht belegt');
   assert.equal(kettelwegText(p, null), null, 'vor der Bestellung ist noch nichts entschieden');
   assert.equal(kettelwegText(p, { status: null, ueber: 'kettler' }), null, 'nach Rueckgaengig zaehlt der alte Vermerk nicht');
   assert.equal(kettelwegText({ ...p, route: 'SUPPLIER_TO_TP' }, { status: 'bestellt' }), null);

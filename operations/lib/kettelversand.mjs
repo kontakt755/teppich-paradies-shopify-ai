@@ -4,8 +4,13 @@ import path from 'node:path';
 import { berechneVersand } from '../../docs/ai-dashboard/lib/versandkosten.mjs';
 import { ROUTE } from './route.mjs';
 export const kettelPosition = p => !p.istMuster && !p.eigenleistung && p.ausfuehrung?.some(x => /gekettelt/i.test(x));
-/** Direktversand kommt nur mit Vermerk zum Kettler; sonst kettelt der Lieferant, auch neben einem Kettler-Teppich derselben Bestellung. */
-export const beimKettler = (p, eintrag) => kettelPosition(p) && (p.route !== ROUTE.SUPPLIER_DIRECT || eintrag?.ueber === 'kettler');
+/** Nur der Vermerk "kunde" schliesst den Kettler aus. Ohne Vermerk ist der Weg nicht belegt, die Ware kann dort liegen. */
+export const beimKettler = (p, eintrag) => kettelPosition(p) && eintrag?.ueber !== 'kunde';
+/** Knopf "Kettler & Versand": bei Direktversand erst nach der Bestellung, vorher ist der Weg noch nicht entschieden. */
+export const kettelAuftragSichtbar = (positionen = [], eintragVon = () => null) => positionen.some(p => {
+  const eintrag = eintragVon(p);
+  return beimKettler(p, eintrag) && (p.route !== ROUTE.SUPPLIER_DIRECT || Boolean(eintrag?.status));
+});
 export function leseKettelversand(dir) {
   try {
     const d = JSON.parse(fs.readFileSync(path.join(dir, 'kettelversand.json'), 'utf8'));

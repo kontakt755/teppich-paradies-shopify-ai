@@ -666,7 +666,8 @@ async function markiereMail(i, knopf) {
   // Vermerk zum Lieferweg, damit der Auftragsfluss den richtigen naechsten Schritt zeigt: Ware an
   // den Kettler ("unterwegs zum Kettler"), Muster direkt an den Kunden (kein "angekommen" bei uns).
   // Jede andere Mail nimmt einen alten Vermerk zurueck.
-  const ueber = m.art === 'ware' ? (m.lieferziel === 'kettler' ? 'kettler' : null) : (m.lieferziel === 'kunde' ? 'kunde' : null);
+  // Kettelt der Lieferant nach der Wahl selbst, wird das vermerkt: nur so kann die Kundenakte es belegen.
+  const ueber = m.art === 'ware' ? (m.lieferziel === 'kettler' ? 'kettler' : m.kettelnBeimLieferanten ? 'kunde' : null) : (m.lieferziel === 'kunde' ? 'kunde' : null);
   const ok = await markiereAlsBestellt(m.positionen, nr, { ueber });
   if (ok) { dialog.markiert.add(i); dialog.gesetzt.set(i, m.positionen.filter(p => afEintragFuer(p)?.status === 'bestellt')); }
   // Karten und Zahlen dahinter nachziehen. Der Dialog bleibt offen - mit "Rückgängig", falls der

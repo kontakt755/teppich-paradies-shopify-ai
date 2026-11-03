@@ -600,8 +600,9 @@ function produktRollenbreiteCm(produkt) {
 export function kettelZusatz(p) {
   const z = !p.istMuster && wirdGekettelt(p.ausfuehrung) ? kettelZuschnitt(p.ausfuehrung) : null;
   if (!z) return '';
-  // Beim Direktversand steht der Weg nicht fest: je Teppich klaeren (Inhaber 2026-11-03).
-  if (p.route === ROUTE.SUPPLIER_DIRECT) return ` · gekettelt, Weg klären: Lieferant kettelt ${z.fertig} oder Zuschnitt ${z.zuschnitt} für unseren Kettler`;
+  // Beim Direktversand steht der Weg nicht fest. Ob der Lieferant selbst ketteln kann, steht nur in
+  // den Stammdaten - die Liste nennt deshalb beide Masse und legt niemanden auf einen Weg fest.
+  if (p.route === ROUTE.SUPPLIER_DIRECT) return ` · gekettelt, Weg vor der Bestellung klären: Fertigmaß ${z.fertig}, für unseren Kettler Zuschnitt ${z.zuschnitt}`;
   return ` · über unseren Kettler: Zuschnitt ${z.zuschnitt} (+3 cm je Länge und Breite)`;
 }
 
