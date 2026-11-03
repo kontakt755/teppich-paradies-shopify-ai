@@ -150,3 +150,29 @@ test('Hausknopf fuehrt aus jeder Ansicht direkt zur Shop-Uebersicht und steht st
   assert.ok(!/data-nur-inhaber|data-nicht-mitarbeiter|data-nicht-lesen|\shidden(?:=|\s|>)/.test(kopf.match(/<a [^>]*class="kopf-start"[^>]*>/)[0]));
   assert.ok(!untereLeiste.includes('data-nav="heute"'), 'Hausknopf belegt keinen mobilen Arbeitslistenplatz');
 });
+
+test('Musterlager ist direkt im Menue, auch am Handy im Blatt Mehr, und markiert nur sich selbst', () => {
+  const html = fs.readFileSync(path.join(WURZEL, 'index.html'), 'utf8');
+  const zeile = html.match(/<a href="#\/einkauf\?tab=musterlager"[^>]*>/)?.[0];
+  assert.ok(zeile, 'Menuepunkt fehlt');
+  assert.doesNotMatch(zeile, /nav-haupt/, 'nav-haupt waere im Handy-Blatt ausgeblendet');
+  assert.doesNotMatch(html.slice(html.indexOf('id="tabbar"')), /tab=musterlager/, 'Handyleiste bleibt bei ihren Punkten');
+  const node = dataset => ({ dataset, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, removeAttribute(k) { delete this.attrs[k]; } });
+  const lager = node({ nav: 'einkauf', navEinkauf: 'lager' });
+  const muster = node({ nav: 'einkauf', navEinkauf: 'muster' });
+  const einkauf = node({ nav: 'einkauf' });
+  const state = { route: { view: 'einkauf', params: new URLSearchParams('tab=musterlager') }, tasks: [] };
+  const text = fs.readFileSync(path.join(WURZEL, 'kern/navigation.mjs'), 'utf8').replace(/^import.*;\n/gm, '').replace(/^export /gm, '');
+  const zeichne = vm.runInNewContext(text + '\naktualisiereNavigation', {
+    state, URLSearchParams, darfAnsicht: () => false, $: () => null, localStorage: { getItem: () => null },
+    document: { body: { classList: { remove() {} } }, querySelectorAll: sel => sel === '[data-nav]' ? [lager, muster, einkauf] : [], querySelector: () => null },
+  });
+  zeichne();
+  assert.equal(lager.attrs['aria-current'], 'page');
+  assert.equal(muster.attrs['aria-current'], undefined);
+  assert.equal(einkauf.attrs['aria-current'], undefined);
+  state.route.params = new URLSearchParams('tab=ablauf');
+  zeichne();
+  assert.equal(lager.attrs['aria-current'], undefined);
+  assert.equal(einkauf.attrs['aria-current'], 'page');
+});
