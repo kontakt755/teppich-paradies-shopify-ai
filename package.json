@@ -4,6 +4,7 @@
   "scripts": {
     "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test && npm run lexware:test",
     "pruefen": "node scripts/pruefen.mjs",
+    "restrolle:plan": "node operations/restrolle-neu.mjs",
     "qa": "node qa/run-qa.mjs",
     "themecheck:guard": "node qa/run-themecheck-guard.mjs",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",

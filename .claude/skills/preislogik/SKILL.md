@@ -29,6 +29,8 @@ Restrollen (Tag `sonderposten`, Typ Teppichboden) zeigen ihre UVP wie alle ander
 
 Restrollen stehen wie normaler Teppichboden im Kanal Google & YouTube, mit Grundpreis 1 m² an der Variante (Inhaber 2026-11-03). Karten zeigen die Restmenge aus dem Bestand („Noch 80 m²“, `blocks/tp-card-aktion`), die Startseite ein eigenes Band (`start_restrollen`). Normale Teppichböden mit echtem Hersteller verweisen auf dessen Restrollen (`blocks/tp-aktion-hinweis`), beim Hausnamen TeppichParadies erscheint nichts.
 
+Neue Restrolle: `npm run -s restrolle:plan` erzeugt aus Name, Maßen, Preis, UVP mit Beleg und Foto den Plan für alle vier Produkte samt Ablaufliste; Bestand und Längen folgen der gemessenen Länge. Die Anlage läuft danach über den Shopify-MCP.
+
 ## Gekettelte Fußleiste
 
 Gekettelte Fußleiste: Meterpreis inklusive Material = Fertigung + Höhe ×
