@@ -49,7 +49,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|Monitor|mcp__terminal__run_in_terminal",
         "hooks": [
           {
             "type": "command",
