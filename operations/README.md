@@ -961,6 +961,32 @@ Nachfass-Versands (`nachfassen/postfach.json`, gleiches Konto). Geht die Vorprü
 Zugang, Anmeldung abgelehnt, Netz), startet Claude wie bisher. Abschalten:
 `TP_POSTFACH_VORPRUEFUNG=aus`; `--erzwingen` und `--trocken` überspringen sie.
 
+**Postfach-Entwürfe** (`net.teppich-paradies.postfach-entwuerfe`, stündlich :05, Mo–Sa 7–19 Uhr, Inhaber 03.11.2026;
+eigener Schalter `dienste-einrichten.sh --postfach-entwuerfe`, nicht Teil von `--routinen`): Claude
+ordnet neue Mails ein und legt in den freigegebenen Klassen einen Antwort-Entwurf am Verlauf an, den
+ein Mensch prüft und selbst sendet. Vorprüfung per IMAP nur mit Kennungen; ohne neue Kennung startet
+Claude nicht, auch nicht einmal am Tag. Geht die Vorprüfung nicht, startet Claude ebenfalls nicht
+(Störung „vorpruefung“). Höchstens 15 Verläufe je Lauf, der Rest kommt im nächsten Takt.
+
+- *Nie senden:* Gmail-Werkzeuge nur `search_threads`, `get_thread`, `get_message`, `list_drafts`,
+  `create_draft`, `label_thread`. `create_draft` kann nicht senden und hängt mit `replyToMessageId` am
+  Verlauf; `reply` würde sofort senden und bleibt mit `send_message`, `forward`, `update_draft`,
+  `trash_*` und Spam gesperrt. Die anderen Läufe behalten ihre Sperre.
+- *Wache:* `create_draft` nur am Verlauf, genau ein Empfänger (nie das Formular, nie die eigene
+  Domain), nur reiner Text, Anfang „Guten Tag“, mit Gruß und Firmensignatur, keine Euro-Beträge,
+  keine KI-Sätze, je Mail einmal, höchstens 15 je Lauf. `label_thread` nur die festen Labels aus
+  `lib/routinen.mjs`; die Kennungen stehen in `routinen/postfach-entwuerfe/labels.json`. Das Label
+  `Auftrag` nie: daraus legt die Monteur-App sofort einen Auftrag an (eigene Sperre in der Wache).
+- *Bremse:* Solange `routinen/postfach-entwuerfe/aus` existiert, wird der Lauf übersprungen (auch mit
+  `--erzwingen`), ohne Störung.
+- *Messung:* `routinen/postfach-entwuerfe/messung.jsonl`, je Mail eine Zeile ohne Inhalte. Ob ein
+  Entwurf entstand, zählt nach der Spur der Wache (`entwurf-spuren.jsonl`: Kennung, Länge,
+  Prüfsumme, kein Text). KLAR wird nur gezählt und als Entwurf angelegt, nie gesendet.
+- *Auswertung:* `npm run -s entwuerfe -- auswerten` zeigt die Zahlen je Klasse und per IMAP, in wie
+  vielen Verläufen danach eine Antwort gesendet wurde. Das sagt nicht, ob der Entwurf benutzt wurde.
+  Den Wortlaut liefert der IMAP-Leser nicht; dafür bekommt `npm run -s entwuerfe -- vergleichen
+  --datei X` eine Liste `[{mailId, text}]` mit dem gesendeten Text und zählt unverändert/geändert.
+
 **Auftragstexte** liegen privat unter `~/teppich-paradies-analyse/routinen/auftraege/<aufgabe>.md`
 (enthalten u. a. die Werkbank-Adresse). `dienste-einrichten.sh --routinen` kopiert sie einmalig aus
 `~/.claude/scheduled-tasks/<aufgabe>/SKILL.md`; danach liest der Dienst nur diese Kopie, eine

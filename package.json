@@ -65,6 +65,7 @@
     "datenstand:pruefen": "node operations/scripts/datenstand-pruefen.mjs",
     "service": "node operations/scripts/serviceanfragen.mjs",
     "belege": "node operations/scripts/lieferbelege.mjs",
+    "entwuerfe": "node operations/scripts/postfach-entwuerfe.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
     "operations:band": "node operations/server.mjs",

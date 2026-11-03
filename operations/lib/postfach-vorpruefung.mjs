@@ -33,20 +33,52 @@ export const EIGENE_DOMAIN = 'teppich-paradies.net';
 /** So viele gesehene Kennungen merkt sich der Status hoechstens (aelteste fallen weg). */
 export const GESEHEN_MAX = 2000;
 
+/** Die Labels, unter denen Belege liegen (Namen wie in list_labels; ersetzen inbox-ls-ab und inbox-spedition). */
+const LABEL_AB = 'label:"07 AB und Lieferscheine"';
+const LABEL_SPEDITION = 'label:"99 Altbestand/Spedition"';
+
 /**
  * Die Suchen des Lieferbelege-Auftrags (Schritt 2, A bis C). Eigene und gesendete Mails nimmt
  * schon die Suche heraus - der Auftrag sortiert sie erst danach aus.
  */
 export function suchenLieferbelege({ domains = [], letzterLauf = null } = {}) {
   const z = letzterLauf ? '3d' : '30d';
-  const s = [`label:inbox-ls-ab newer_than:${z}`, `label:inbox-spedition newer_than:${z}`];
-  for (let i = 0; i < domains.length; i += 20) s.push(`from:(${domains.slice(i, i + 20).join(' OR ')}) newer_than:${z} -label:inbox-ls-ab`);
-  s.push(`in:inbox (storniert OR stornierung OR storno OR "nicht lieferbar" OR "nicht mehr lieferbar" OR ausverkauft) newer_than:${z} -label:inbox-ls-ab`);
+  const s = [`${LABEL_AB} newer_than:${z}`, `${LABEL_SPEDITION} newer_than:${z}`];
+  for (let i = 0; i < domains.length; i += 20) s.push(`from:(${domains.slice(i, i + 20).join(' OR ')}) newer_than:${z} -${LABEL_AB}`);
+  s.push(`in:inbox (storniert OR stornierung OR storno OR "nicht lieferbar" OR "nicht mehr lieferbar" OR ausverkauft) newer_than:${z} -${LABEL_AB}`);
   return s.map(q => `${q} -in:sent -from:${EIGENE_DOMAIN}`);
 }
 
 /** Die Suche des Service-Auftrags (Schritt 2). */
 export const SUCHEN_SERVICE = Object.freeze(['from:mailer@shopify.com subject:"Neue Kundennachricht" newer_than:30d']);
+
+/**
+ * Die Suche des Laufs postfach-entwuerfe: alles Eingegangene der letzten Tage, auch schon
+ * archiviert, ohne Eigenes. 3 Tage ueberbruecken den Sonntag; was aelter ist, bleibt beim Menschen.
+ */
+export const SUCHE_ENTWUERFE = `newer_than:3d -in:sent -from:${EIGENE_DOMAIN}`;
+
+/**
+ * Entscheidung fuer postfach-entwuerfe: Claude startet nur, wenn eine Kennung noch nicht in der
+ * Messung steht. Bewusst kein Tageslauf - ohne Neues kein Start. Was ueber die 15 Verlaeufe
+ * hinausging, steht nicht in der Messung und startet den naechsten Takt von selbst.
+ */
+export function entscheideEntwuerfe({ gefunden = [], bekannteIds = [] } = {}) {
+  const schon = new Set(bekannteIds);
+  const neu = [...new Set(gefunden)].filter(id => !schon.has(id));
+  if (neu.length) return { starten: true, grund: `${neu.length} neue Mail(s)`, neu };
+  return { starten: false, grund: `nichts Neues (${new Set(gefunden).size} Mails in der Suche, alle eingeordnet)` };
+}
+
+/** IMAP-Abfrage der Kennungen fuer postfach-entwuerfe; { gefunden } oder { fehler }. */
+export async function entwuerfeAbfragen({ privat, suchen = suchenNurLesend, zugangLesen = lesePostfach } = {}) {
+  const zugang = zugangLesen(postfachZugangPfad(privat));
+  if (!zugang.zugang) return { fehler: `kein Postfach-Zugang (${zugang.hinweis || 'nachfassen/postfach.json'})` };
+  try {
+    const [gefunden] = await suchen(zugang.zugang, [SUCHE_ENTWUERFE]);
+    return { gefunden: gefunden || [] };
+  } catch (e) { return { fehler: String(e?.message || e).slice(0, 160) }; }
+}
 
 /** Kurzer Fingerabdruck einer Liste (Domains): aendert sie sich, startet Claude. */
 export function merkmal(liste = []) {

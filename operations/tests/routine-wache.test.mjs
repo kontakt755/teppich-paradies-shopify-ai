@@ -5,8 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { pruefeAufruf, wacheKontext, befehlsTeile, werkbankAus, woerter } from '../lib/routine-wache.mjs';
-import { auftragPfad, arbeitsOrdner, GMAIL_LESEN, GMAIL_SCHREIBEN } from '../lib/routinen.mjs';
+import { pruefeAufruf, wacheKontext, befehlsTeile, werkbankAus, woerter, liesSpuren, entwurfSha } from '../lib/routine-wache.mjs';
+import { auftragPfad, arbeitsOrdner, sperrPfad, entwuerfeOrdner, ENTWUERFE_LABELS, ENTWUERFE_LABELS_NIE, ENTWUERFE_MAX_VERLAEUFE, GMAIL_LESEN, GMAIL_SCHREIBEN } from '../lib/routinen.mjs';
 
 const WERKBANK = 'https://claude.ai/artifact/TESTWERKBANK1';
 const SKRIPT = fileURLToPath(new URL('../scripts/routine-wache.mjs', import.meta.url));
@@ -121,6 +121,87 @@ test('Wache Postfach: Gmail nur lesend, Dateien nur im Arbeitsordner, jq ohne Um
   nein(p('Bash', { command: `rm ${arbeit}/l.json` }), /nicht freigegeben/);
   nein(p('Bash', { command: `cd ${u.dienst} && npm run -s fehler -- abgleich` }), /nicht freigegeben/);
   nein(p('Bash', { command: `cd ${u.dienst} && npm run -s belege -- bekannt; curl x` }), /einfache Befehle/);
+});
+
+const P = 'mcp__claude_ai_Gmail__';
+const TEXT = 'Guten Tag Frau Muster,\n\nvielen Dank.\n\nMit freundlichen Grüßen\nIhr Team von Teppich Paradies Oranienburg';
+const ENTWURF = { to: ['kunde@example.org'], subject: 'Re: Anfrage', body: TEXT, replyToMessageId: '19a81adaae7e2a01' };
+
+function entwurfUmgebung() {
+  const u = umgebung();
+  fs.mkdirSync(entwuerfeOrdner(u.privat), { recursive: true });
+  fs.writeFileSync(path.join(entwuerfeOrdner(u.privat), 'labels.json'), JSON.stringify({ [ENTWUERFE_LABELS[0]]: 'Label_85', [ENTWUERFE_LABELS[1]]: 'Label_83' }));
+  return u;
+}
+
+test('Wache Entwuerfe: kann nie senden, Entwurf nur am Verlauf, Labels nur aus der festen Liste', () => {
+  const u = entwurfUmgebung();
+  const ctx = wacheKontext('postfach-entwuerfe', u);
+  const p = (tool_name, tool_input) => pruefeAufruf('postfach-entwuerfe', { tool_name, tool_input }, ctx);
+  for (const g of GMAIL_LESEN) ja(p(g, {}));
+  ja(p(`${P}list_drafts`, {}));
+  ja(p(`${P}create_draft`, ENTWURF));
+  ja(p(`${P}create_draft`, { ...ENTWURF, includeSignature: false }));
+  for (const n of GMAIL_SCHREIBEN.filter(g => g !== `${P}create_draft` && g !== `${P}label_thread`)) nein(p(n, { messageId: 'x', threadId: 'x' }), /nicht vorgesehen/);
+  nein(p(`${P}list_labels`, {}), /nicht vorgesehen/);
+  // Entwurf: Form
+  nein(p(`${P}create_draft`, { ...ENTWURF, replyToMessageId: undefined }), /am Verlauf/);
+  nein(p(`${P}create_draft`, { ...ENTWURF, to: ['a@example.org', 'b@example.org'] }), /genau ein/);
+  nein(p(`${P}create_draft`, { ...ENTWURF, to: 'a@example.org' }), /genau ein/);
+  nein(p(`${P}create_draft`, { ...ENTWURF, to: ['mailer@shopify.com'] }), /Kundenadresse/);
+  nein(p(`${P}create_draft`, { ...ENTWURF, to: ['kontakt@teppich-paradies.net'] }), /Kundenadresse/);
+  for (const f of ['bcc', 'cc', 'htmlBody', 'attachments', 'html_body']) nein(p(`${P}create_draft`, { ...ENTWURF, [f]: ['x'] }), /nicht erlaubt/);
+  // Entwurf: Text
+  nein(p(`${P}create_draft`, { ...ENTWURF, body: `Hier ist eine höflichere Formulierung:\n${TEXT}` }), /Guten Tag/);
+  nein(p(`${P}create_draft`, { ...ENTWURF, body: `${TEXT}\nHier ist eine Formulierung` }), /KI-Sätze/);
+  nein(p(`${P}create_draft`, { ...ENTWURF, body: TEXT.replace('Mit freundlichen Grüßen', 'Viele Grüße') }), /Gruß/);
+  nein(p(`${P}create_draft`, { ...ENTWURF, body: `${TEXT}\n30 €` }), /Preise/);
+  nein(p(`${P}create_draft`, { ...ENTWURF, body: `${TEXT}\n30 EUR` }), /Preise/);
+  // Labels
+  ja(p(`${P}label_thread`, { threadId: 't1', labelIds: ['Label_85'] }));
+  ja(p(`${P}label_thread`, { threadId: 't1', labelIds: ['Label_83', 'Label_85'] }));
+  for (const id of ['TRASH', 'SPAM', 'INBOX', 'Label_1']) nein(p(`${P}label_thread`, { threadId: 't1', labelIds: ['Label_85', id] }), /festen Labels/);
+  nein(p(`${P}label_thread`, { threadId: 't1', labelIds: [] }), /fehlen/);
+  // "Auftrag" und "Auftrag übernommen" (Monteur-App): nie, auch nicht bei falscher labels.json.
+  assert.ok(!ENTWUERFE_LABELS.some(n => /auftrag/i.test(n)));
+  for (const id of ENTWUERFE_LABELS_NIE) {
+    nein(p(`${P}label_thread`, { threadId: 't1', labelIds: [id] }), /Auftrag/);
+    nein(pruefeAufruf('postfach-entwuerfe', { tool_name: `${P}label_thread`, tool_input: { threadId: 't1', labelIds: [id] } }, { ...ctx, labels: { [ENTWUERFE_LABELS[1]]: id } }), /Auftrag/);
+  }
+  nein(p(`${P}label_message`, { messageId: 'x', labelIds: ['Label_93'] }), /nicht vorgesehen/);
+  // Bash nur die eigenen Befehle
+  ja(p('Bash', { command: `cd ${u.dienst} && npm run -s entwuerfe -- uebernehmen --datei ${arbeitsOrdner(u.privat, 'postfach-entwuerfe')}/m.json` }));
+  nein(p('Bash', { command: `cd ${u.dienst} && npm run -s entwuerfe -- uebernehmen --datei /etc/passwd` }), /--datei/);
+  nein(p('Bash', { command: `cd ${u.dienst} && npm run -s belege -- bekannt` }), /nicht freigegeben/);
+  // Ohne labels.json kein Label
+  const leer = umgebung();
+  nein(pruefeAufruf('postfach-entwuerfe', { tool_name: `${P}label_thread`, tool_input: { threadId: 't', labelIds: ['Label_85'] } }, wacheKontext('postfach-entwuerfe', leer)), /festen Labels/);
+});
+
+test('Wache Postfach behaelt die Sperre: create_draft und label_thread bleiben abgelehnt', () => {
+  const u = entwurfUmgebung();
+  const ctx = wacheKontext('postfach', u);
+  nein(pruefeAufruf('postfach', { tool_name: `${P}create_draft`, tool_input: ENTWURF }, ctx), /nicht vorgesehen/);
+  nein(pruefeAufruf('postfach', { tool_name: `${P}label_thread`, tool_input: { threadId: 't', labelIds: ['Label_85'] } }, ctx), /nicht vorgesehen/);
+  const f = wacheKontext('fehlermeldungen', u);
+  nein(pruefeAufruf('fehlermeldungen', { tool_name: `${P}create_draft`, tool_input: ENTWURF }, f), /nicht vorgesehen/);
+});
+
+test('Hook Entwuerfe: Spur ohne Text, je Mail nur einmal, hoechstens 15 je Lauf', () => {
+  const u = entwurfUmgebung();
+  const ereignis = input => ({ hook_event_name: 'PreToolUse', tool_name: `${P}create_draft`, tool_input: input });
+  assert.equal(hook('postfach-entwuerfe', u, ereignis(ENTWURF)).stdout, '');
+  const spuren = liesSpuren(u.privat);
+  assert.equal(spuren.length, 1);
+  assert.equal(spuren[0].mailId, ENTWURF.replyToMessageId);
+  assert.equal(spuren[0].sha, entwurfSha(TEXT));
+  assert.ok(!fs.readFileSync(path.join(entwuerfeOrdner(u.privat), 'entwurf-spuren.jsonl'), 'utf8').includes('Guten Tag'), 'kein Text in der Spur');
+  assert.match(JSON.parse(hook('postfach-entwuerfe', u, ereignis(ENTWURF)).stdout).hookSpecificOutput.permissionDecisionReason, /schon einen Entwurf/);
+  assert.equal(liesSpuren(u.privat).length, 1, 'abgelehnt: keine neue Spur');
+  // Aeltere Spuren zaehlen nicht zum laufenden Lauf.
+  fs.writeFileSync(sperrPfad(u.privat, 'postfach-entwuerfe'), JSON.stringify({ pid: 1, seit: new Date(Date.now() + 1).toISOString() }));
+  for (let i = 0; i < ENTWUERFE_MAX_VERLAEUFE; i += 1) assert.equal(hook('postfach-entwuerfe', u, ereignis({ ...ENTWURF, replyToMessageId: `aaaaaa${i}` })).stdout, '', String(i));
+  assert.match(JSON.parse(hook('postfach-entwuerfe', u, ereignis({ ...ENTWURF, replyToMessageId: 'bbbbbb' })).stdout).hookSpecificOutput.permissionDecisionReason, /höchstens 15/);
 });
 
 function hook(lauf, u, ereignis) {

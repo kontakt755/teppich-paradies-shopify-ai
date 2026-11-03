@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { imapText, alleNachrichtenOrdner, suchErgebnis, nachrichtenIds, suchenNurLesend, ImapFehler } from '../lib/imap-lesen.mjs';
-import { suchenLieferbelege, SUCHEN_SERVICE, entscheide, nachErfolg, merkmal, postfachAbfragen, GESEHEN_MAX } from '../lib/postfach-vorpruefung.mjs';
+import { suchenLieferbelege, SUCHEN_SERVICE, SUCHE_ENTWUERFE, entscheide, entscheideEntwuerfe, entwuerfeAbfragen, nachErfolg, merkmal, postfachAbfragen, GESEHEN_MAX } from '../lib/postfach-vorpruefung.mjs';
 import { mcpSperren, harmloseAblehnung, imScratchpad, claudeArgumente, liesStatus, auftragPfad } from '../lib/routinen.mjs';
 import { main, ergebnisBelegt } from '../scripts/claude-lauf.mjs';
 
@@ -99,7 +99,10 @@ test('Suchen wie im Auftrag: 30 Tage ohne letzten Lauf, sonst 3; Domains in Grup
   const ohne = suchenLieferbelege({ domains, letzterLauf: null });
   assert.equal(ohne.length, 2 + 2 + 1);
   assert.ok(ohne.every(q => q.includes('newer_than:30d') && q.endsWith('-in:sent -from:teppich-paradies.net')));
-  assert.match(ohne[2], /^from:\(d0\.example OR .* OR d19\.example\) newer_than:30d -label:inbox-ls-ab/);
+  assert.match(ohne[0], /^label:"07 AB und Lieferscheine" newer_than:30d/);
+  assert.match(ohne[1], /^label:"99 Altbestand\/Spedition" newer_than:30d/);
+  assert.match(ohne[2], /^from:\(d0\.example OR .* OR d19\.example\) newer_than:30d -label:"07 AB und Lieferscheine"/);
+  assert.ok(!ohne.join(' ').includes('inbox-'), 'keine veralteten Labels');
   assert.match(ohne[3], /^from:\(d20\.example OR d21\.example OR d22\.example\)/);
   assert.ok(suchenLieferbelege({ domains: [], letzterLauf: '2026-10-26T08:00:00Z' }).every(q => q.includes('newer_than:3d')));
   assert.match(SUCHEN_SERVICE[0], /from:mailer@shopify\.com subject:"Neue Kundennachricht"/);
@@ -118,6 +121,22 @@ test('Entscheidung: Fehlschlag, Tageslauf, unvollstaendig, Domains, neue Mail - 
   const nichts = entscheide({ status: heute, jetzt: IM_FENSTER, gefunden: ['a', 'b', 'b'], bekannteIds: ['a'], merkmalNeu: 'm1' });
   assert.equal(nichts.starten, false);
   assert.match(nichts.grund, /nichts Neues \(2 Mails/);
+});
+
+test('Entwuerfe-Vorpruefung: ohne Neues kein Claude, auch kein Tageslauf; IMAP-Fehler wird gemeldet', async () => {
+  assert.deepEqual(entscheideEntwuerfe({ gefunden: ['a', 'a'], bekannteIds: ['a'] }).starten, false);
+  assert.deepEqual(entscheideEntwuerfe({ gefunden: ['a', 'b'], bekannteIds: ['a'] }).neu, ['b']);
+  assert.match(SUCHE_ENTWUERFE, /-in:sent -from:teppich-paradies\.net$/);
+  const zugangLesen = () => ({ zugang: { benutzer: 'a', passwort: 'test-passwort' } });
+  assert.deepEqual(await entwuerfeAbfragen({ privat: '/x', zugangLesen, suchen: async () => [['a']] }), { gefunden: ['a'] });
+  assert.match((await entwuerfeAbfragen({ privat: '/x', zugangLesen, suchen: async () => { throw new ImapFehler('IMAP: weg'); } })).fehler, /weg/);
+  assert.match((await entwuerfeAbfragen({ privat: '/x', zugangLesen: () => ({ fehlt: true }) })).fehler, /kein Postfach-Zugang/);
+});
+
+test('IMAP: Suche innerhalb eines Verlaufs per X-GM-THRID (dezimal)', async () => {
+  const s = falscherServer({ suchErgebnisse: [[7]] });
+  await suchenNurLesend({ benutzer: 'a', passwort: 'test-passwort' }, [{ thread: 'ff', roh: 'in:sent' }], { verbinden: s.verbinden });
+  assert.ok(s.befehle.includes('UID SEARCH X-GM-THRID 255 X-GM-RAW "in:sent"'));
 });
 
 test('Nach Erfolg: Tag in Berlin, gesehen begrenzt, Merkmal bleibt', () => {

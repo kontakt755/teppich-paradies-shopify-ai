@@ -111,6 +111,49 @@ export const GMAIL_SCHREIBEN = Object.freeze([
   'apply_sensitive_message_label', 'apply_sensitive_thread_label',
 ].map(n => GMAIL_PREFIX + n));
 
+/**
+ * Der Lauf "postfach-entwuerfe" darf als einziger zusaetzlich Entwuerfe anlegen und Labels einer
+ * festen Liste setzen. create_draft kann nicht senden; `reply` wuerde sofort senden und bleibt
+ * gesperrt - am Verlauf haengt der Entwurf ueber create_draft mit replyToMessageId.
+ */
+export const GMAIL_ENTWURF = GMAIL_PREFIX + 'create_draft';
+export const GMAIL_LABEL_SETZEN = GMAIL_PREFIX + 'label_thread';
+const GMAIL_ENTWUERFE_LESEN = Object.freeze([...GMAIL_LESEN, GMAIL_PREFIX + 'list_drafts']);
+
+/**
+ * Die einzigen Labels, die der Lauf setzen darf. Die Gmail-Kennungen dazu stehen privat in
+ * $TP_PRIVAT_DIR/routinen/postfach-entwuerfe/labels.json ({ "<Name>": "Label_…" }); die Wache
+ * prueft gegen diese Zuordnung, Systemlabels (TRASH, SPAM, INBOX …) kommen nie hinein.
+ */
+export const ENTWUERFE_LABEL_DRINGEND = '90 Bearbeitung/KI/Dringend';
+export const ENTWUERFE_LABEL_ENTWURF = '90 Bearbeitung/KI/Antwort prüfen';
+export const ENTWUERFE_LABELS = Object.freeze([ENTWUERFE_LABEL_DRINGEND, ENTWUERFE_LABEL_ENTWURF]);
+/**
+ * Nie setzen, auch nicht bei falscher labels.json: aus "Auftrag" legt die Monteur-App sofort einen
+ * Auftrag an, "Auftrag übernommen" gehoert ihr. Kennungen aus list_labels (03.11.2026).
+ */
+export const ENTWUERFE_LABELS_NIE = Object.freeze(['Label_93', 'Label_94']);
+/** Hoechstens so viele Verlaeufe je Lauf; der Rest bleibt unbekannt und kommt im naechsten Takt. */
+export const ENTWUERFE_MAX_VERLAEUFE = 15;
+
+export function entwuerfeOrdner(privat) {
+  return path.join(routinenDir(privat), 'postfach-entwuerfe');
+}
+
+/** Bremse: Solange diese Datei existiert, wird der Lauf uebersprungen (Rueckfall bei Ausfaellen). */
+export function entwuerfeBremsePfad(privat) {
+  return path.join(entwuerfeOrdner(privat), 'aus');
+}
+
+/** Name -> Kennung aus labels.json, nur die festen Namen und nur Benutzerlabels; sonst {}. */
+export function entwuerfeLabels(privat) {
+  let roh;
+  try { roh = JSON.parse(fs.readFileSync(path.join(entwuerfeOrdner(privat), 'labels.json'), 'utf8')); } catch { return {}; }
+  const aus = {};
+  for (const name of ENTWUERFE_LABELS) if (/^Label_\d+$/.test(String(roh?.[name]))) aus[name] = roh[name];
+  return aus;
+}
+
 /** Was in keinem Lauf vorkommt - Schutz zusaetzlich zu dontAsk und Wache, falls eine Einstellung es doch freigibt. */
 const IMMER_GESPERRT = Object.freeze([
   'Bash(git *)', 'Bash(gh *)', 'Bash(shopify *)', 'Bash(curl *)', 'Bash(rm *)', 'Bash(launchctl *)',
@@ -217,6 +260,44 @@ export const LAEUFE = Object.freeze({
       'Die Zwischendatei NICHT selbst löschen (Schritt „rm …“ entfällt): der Dienst leert den Arbeitsordner nach dem Lauf.',
     ],
   },
+  'postfach-entwuerfe': {
+    titel: 'Postfach: Einordnung und Antwort-Entwürfe',
+    label: 'net.teppich-paradies.postfach-entwuerfe',
+    fenster: ARBEITSZEIT,
+    zeitlimitMin: 20,
+    // Wie der Postfach-Lauf: nur die Benutzereinstellungen (Gmail-Konnektor), fremde MCP-Server gesperrt.
+    modus: ['--setting-sources', 'user'],
+    nurMcp: ['claude.ai Gmail'],
+    teile: [{ id: 'postfach-entwuerfe', aufgabe: 'postfach-entwuerfe', titel: 'Postfach: Einordnung und Antwort-Entwürfe' }],
+    werkzeuge: ['Bash', 'Read', 'Write', 'ToolSearch'],
+    pflicht: ['Bash', 'Read', 'Write', 'ToolSearch', ...GMAIL_ENTWUERFE_LESEN, GMAIL_ENTWURF, GMAIL_LABEL_SETZEN],
+    erlaubt: ['Bash', 'Read', 'Write', 'ToolSearch', ...GMAIL_ENTWUERFE_LESEN, GMAIL_ENTWURF, GMAIL_LABEL_SETZEN],
+    freigaben: ({ dienst, arbeit }) => [
+      `Bash(cd ${dienst})`,
+      'Bash(npm run -s entwuerfe -- bekannt)',
+      'Bash(npm run -s entwuerfe -- uebernehmen *)',
+      'Bash(date -u *)',
+      'Bash(jq *)',
+      ...GMAIL_ENTWUERFE_LESEN, GMAIL_ENTWURF, GMAIL_LABEL_SETZEN,
+      `Edit(${absolut(arbeit)}/**)`,
+    ],
+    sperren: ({ dienst }) => [
+      ...IMMER_GESPERRT, `Read(${absolut(dienst)}/.env*)`,
+      ...GMAIL_SCHREIBEN.filter(n => n !== GMAIL_ENTWURF && n !== GMAIL_LABEL_SETZEN),
+      'Bash(npm run -s fehler *)', 'Artifact', 'ArtifactData', 'ArtifactComments',
+    ],
+    zusatzOrdner: ({ arbeit }) => [arbeit],
+    kopfZeilen: ({ privat } = {}) => {
+      const labels = privat ? entwuerfeLabels(privat) : {};
+      const namen = [...GMAIL_ENTWUERFE_LESEN, GMAIL_ENTWURF, GMAIL_LABEL_SETZEN];
+      return [
+        `Gmail-Werkzeuge heißen hier ${namen.join(', ')} (per ToolSearch „select:${namen.join(',')}“ laden). Alle anderen Gmail-Werkzeuge sind gesperrt. Es gibt in diesem Lauf keinen Weg zu senden.`,
+        `Label-Kennungen für label_thread: ${ENTWUERFE_LABELS.map(n => `„${n}“ = ${labels[n] || 'FEHLT'}`).join(' · ')}. Andere Labels lehnt die Wache ab.`,
+        `Höchstens ${ENTWUERFE_MAX_VERLAEUFE} Verläufe je Lauf; was übrig bleibt, nicht übernehmen – es kommt im nächsten Lauf wieder.`,
+        'Die Zwischendatei NICHT selbst löschen: der Dienst leert den Arbeitsordner nach dem Lauf.',
+      ];
+    },
+  },
 });
 
 export function arbeitsOrdner(privat, lauf) {
@@ -231,7 +312,7 @@ export function auftragOhneKopf(text) {
 }
 
 /** Was der Dienst jedem Auftrag voranstellt: wo er laeuft und was dort anders ist als in der App. */
-export function promptKopf(lauf, teil, { dienst, arbeit }) {
+export function promptKopf(lauf, teil, { dienst, arbeit, privat }) {
   const def = LAEUFE[lauf];
   return [
     'LAUFUMGEBUNG (vom Mac-Dienst vorangestellt; gilt zusätzlich zum Auftrag unten):',
@@ -239,7 +320,7 @@ export function promptKopf(lauf, teil, { dienst, arbeit }) {
     '- Die Wochenlimit-Bremse aus ~/.claude/CLAUDE.md gilt für diesen Lauf nicht (kritische Routine): kein get_usage laden, direkt mit dem Auftrag beginnen.',
     `- Arbeitsverzeichnis ist der Dienst-Checkout ${dienst}. Befehle genau so ausführen, wie der Auftrag sie nennt – freigegeben sind nur diese; andere Optionen, Pipes oder zusätzliche Befehle werden abgelehnt.`,
     `- Arbeitsordner für Zwischendateien: ${arbeit} . Wo der Auftrag „dein Scratchpad-Verzeichnis“ nennt, nimm genau diesen Ordner. Er existiert schon (nicht anlegen); nie /tmp, nie das Repository.`,
-    ...def.kopfZeilen().map(z => `- ${z}`),
+    ...def.kopfZeilen({ privat }).map(z => `- ${z}`),
     '- Deine Antwort endet mit genau der ABSCHLUSS-Zeile aus dem Auftrag.',
     '',
     'AUFTRAG:',
@@ -512,6 +593,7 @@ export const STATUS_DATEIEN = Object.freeze([
   { id: 'fehlermeldungen', datei: 'fehlermeldungen/status.json', titel: 'Fehlermeldungen → Werkbank', label: LAEUFE.fehlermeldungen.label, fenster: ARBEITSZEIT, stummNachMin: 120 },
   { id: 'lieferbelege', datei: 'postfach/status-lieferbelege.json', titel: 'Lieferbelege aus dem Postfach', label: LAEUFE.postfach.label, fenster: ARBEITSZEIT, stummNachMin: 300 },
   { id: 'serviceanfragen', datei: 'postfach/status-serviceanfragen.json', titel: 'Service-Anfragen aus dem Postfach', label: LAEUFE.postfach.label, fenster: ARBEITSZEIT, stummNachMin: 300 },
+  { id: 'postfach-entwuerfe', datei: 'postfach-entwuerfe/status.json', titel: 'Postfach: Einordnung und Antwort-Entwürfe', label: LAEUFE['postfach-entwuerfe'].label, fenster: ARBEITSZEIT, stummNachMin: 300 },
   { id: 'daten-gesundheit', datei: 'datenstand/status.json', titel: 'Datenstand des Sync-Dienstes', label: 'net.teppich-paradies.datenstand', fenster: null, stummNachMin: 180 },
   { id: 'codex-stand', datei: 'ki-stand/codex.json', titel: 'Codex-Kontingent', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 180 },
   { id: 'muster-versand', datei: 'ki-stand/muster.json', titel: 'Musterautomatik', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 180 },

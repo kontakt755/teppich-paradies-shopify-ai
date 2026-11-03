@@ -160,7 +160,9 @@ export async function suchenNurLesend(zugang, suchen, { host = 'imap.gmail.com',
     pruefe(await v.befehl(`EXAMINE ${imapText(ordner)}`), 'EXAMINE');
     const ergebnis = [];
     for (const suche of suchen) {
-      const uids = suchErgebnis(pruefe(await v.befehl(`UID SEARCH X-GM-RAW ${imapText(suche)}`), 'SEARCH').zeilen);
+      // Eine Suche ist eine Gmail-Suche als Text oder { thread, roh }: nur innerhalb eines Verlaufs (Kennung hexadezimal).
+      const auswahl = typeof suche === 'string' ? `X-GM-RAW ${imapText(suche)}` : `X-GM-THRID ${BigInt(`0x${suche.thread}`)} X-GM-RAW ${imapText(suche.roh)}`;
+      const uids = suchErgebnis(pruefe(await v.befehl(`UID SEARCH ${auswahl}`), 'SEARCH').zeilen);
       const ids = [];
       for (let i = 0; i < uids.length; i += 200) {
         const teil = uids.slice(i, i + 200).join(',');

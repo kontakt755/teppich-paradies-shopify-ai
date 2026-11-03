@@ -14,13 +14,21 @@
  *    "items", keine Loeschung; Dateien nur im Arbeitsordner.
  *  - Artifact: nur `read` der Werkbank und `publish` mit asset: true auf die Werkbank, Datei nur
  *    ein Bildschirmfoto aus $TP_PRIVAT_DIR/fehlermeldungen/.
- *  - ToolSearch und die drei lesenden Gmail-Werkzeuge ohne weitere Pruefung.
+ *  - ToolSearch und die lesenden Gmail-Werkzeuge ohne weitere Pruefung.
+ *  - create_draft (nur Lauf postfach-entwuerfe): nur als Antwort am Verlauf, genau ein Empfaenger,
+ *    reiner Text ohne Anhang, Kopie oder HTML, Anfang "Guten Tag", Gruss, keine Euro-Betraege,
+ *    keine KI-Saetze, je Mail nur einmal, hoechstens ENTWUERFE_MAX_VERLAEUFE je Lauf.
+ *  - label_thread (nur Lauf postfach-entwuerfe): nur die festen Labels aus routinen.mjs.
  */
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { LAEUFE, arbeitsOrdner, auftragPfad } from './routinen.mjs';
+import { createHash } from 'node:crypto';
+import {
+  LAEUFE, arbeitsOrdner, auftragPfad, entwuerfeLabels, entwuerfeOrdner, sperrPfad,
+  ENTWUERFE_LABELS_NIE, ENTWUERFE_MAX_VERLAEUFE, GMAIL_ENTWURF, GMAIL_LABEL_SETZEN,
+} from './routinen.mjs';
 
 /** Adresse eines claude.ai-Artefakts (Werkbank) im Auftragstext. */
 // Ohne `?` geschrieben: der Geheimnis-Scan (automation/core/secret-scan.mjs) liest sonst eine Abfrage hinein.
@@ -195,6 +203,72 @@ function pruefeArtifact(e, ctx) {
   return null;
 }
 
+// --- Entwuerfe (nur Lauf postfach-entwuerfe) ---------------------------------
+
+const ENTWURF_FELDER = new Set(['to', 'subject', 'body', 'replyToMessageId', 'includeSignature']);
+const ADRESSE = /^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/;
+const KI_SATZ = /hier ist (eine|ein|der|die)\b|formulierung\s*:|als ki\b|ki-modell|sprachmodell|\bclaude\b/i;
+const BETRAG = /€|\bEUR\b|\bEuro\b/i;
+
+function pruefeEntwurf(e, ctx) {
+  for (const k of Object.keys(e)) if (!ENTWURF_FELDER.has(k)) return `Feld „${k}“ ist im Entwurf nicht erlaubt`;
+  if (typeof e.replyToMessageId !== 'string' || !/^[0-9a-f]{6,32}$/i.test(e.replyToMessageId)) return 'Entwurf nur als Antwort am Verlauf (replyToMessageId)';
+  if (!Array.isArray(e.to) || e.to.length !== 1 || !ADRESSE.test(String(e.to[0]))) return 'genau ein Empfänger';
+  const an = String(e.to[0]).toLowerCase();
+  if (an === 'mailer@shopify.com' || an.endsWith('@teppich-paradies.net')) return 'Empfänger ist die Kundenadresse, nie das Formular oder die eigene Adresse';
+  const text = typeof e.body === 'string' ? e.body : '';
+  if (!/^\s*Guten Tag\b/.test(text)) return 'Text beginnt mit „Guten Tag“';
+  if (!text.includes('Mit freundlichen Grüßen') || !text.includes('Teppich Paradies')) return 'Text endet mit Gruß und Firmensignatur';
+  if (KI_SATZ.test(text)) return 'keine KI-Sätze im Entwurf';
+  if (BETRAG.test(text)) return 'keine Preise im Entwurf';
+  const spuren = ctx.entwurfSpuren || [];
+  if (spuren.some(s => s.mailId === e.replyToMessageId)) return 'zu dieser Mail gibt es schon einen Entwurf';
+  const inDiesemLauf = spuren.filter(s => !ctx.laufSeit || s.zeit >= ctx.laufSeit).length;
+  if (inDiesemLauf >= ENTWUERFE_MAX_VERLAEUFE) return `höchstens ${ENTWUERFE_MAX_VERLAEUFE} Entwürfe je Lauf`;
+  return null;
+}
+
+function pruefeLabelSetzen(e, ctx) {
+  for (const k of Object.keys(e)) if (k !== 'threadId' && k !== 'labelIds') return `Feld „${k}“ nicht erlaubt`;
+  if (typeof e.threadId !== 'string' || !e.threadId) return 'threadId fehlt';
+  const erlaubt = new Set(Object.values(ctx.labels || {}));
+  if (!Array.isArray(e.labelIds) || !e.labelIds.length) return 'labelIds fehlen';
+  if (e.labelIds.some(id => ENTWUERFE_LABELS_NIE.includes(id))) return 'das Label Auftrag setzt nie der Lauf';
+  if (!e.labelIds.every(id => erlaubt.has(id))) return 'nur die festen Labels des Laufs';
+  return null;
+}
+
+/** Was vor dem Vergleich zaehlt: Leerraum vereinheitlicht, sonst der Wortlaut. */
+export function entwurfNormal(text) {
+  return String(text ?? '').replace(/\s+/g, ' ').trim();
+}
+
+export function entwurfSha(text) {
+  return createHash('sha256').update(entwurfNormal(text)).digest('hex');
+}
+
+export function spurPfad(privat) {
+  return path.join(entwuerfeOrdner(privat), 'entwurf-spuren.jsonl');
+}
+
+/** Spuren der Entwuerfe: Kennung, Zeit, Laenge und Pruefsumme - nie der Text. */
+export function liesSpuren(privat) {
+  let text;
+  try { text = fs.readFileSync(spurPfad(privat), 'utf8'); } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
+  return text.split('\n').filter(Boolean).map(z => JSON.parse(z));
+}
+
+/**
+ * Nur die Wache sieht den Text, der wirklich an create_draft geht. Sie vermerkt die Spur, bevor
+ * das Werkzeug laeuft - scheitert es danach, bleibt die Mail lieber ohne zweiten Versuch als doppelt.
+ */
+export function merkeEntwurf(aufruf, ctx, jetzt = new Date()) {
+  if (aufruf?.tool_name !== GMAIL_ENTWURF) return;
+  const e = aufruf.tool_input;
+  fs.mkdirSync(path.dirname(spurPfad(ctx.privat)), { recursive: true, mode: 0o700 });
+  fs.appendFileSync(spurPfad(ctx.privat), `${JSON.stringify({ zeit: jetzt.toISOString(), mailId: e.replyToMessageId, laenge: entwurfNormal(e.body).length, sha: entwurfSha(e.body) })}\n`, { mode: 0o600 });
+}
+
 /**
  * Kontext eines Laufs fuer die Wache. Die Werkbank-Adresse kommt zur Laufzeit aus dem privaten
  * Auftragstext - sie steht nie im Repository.
@@ -207,7 +281,13 @@ export function wacheKontext(lauf, { privat, dienst, home = os.homedir() }) {
   if (lauf === 'fehlermeldungen') {
     try { werkbank = werkbankAus(fs.readFileSync(auftragPfad(privat, def.teile[0].aufgabe), 'utf8')); } catch { werkbank = null; }
   }
-  return { lauf, privat, dienst, arbeit, werkbank, bilder: path.join(privat, 'fehlermeldungen'), ergebnisse: werkzeugErgebnisOrdner(dienst, home) };
+  const ctx = { lauf, privat, dienst, arbeit, werkbank, bilder: path.join(privat, 'fehlermeldungen'), ergebnisse: werkzeugErgebnisOrdner(dienst, home) };
+  if (lauf === 'postfach-entwuerfe') {
+    ctx.labels = entwuerfeLabels(privat);
+    ctx.entwurfSpuren = liesSpuren(privat);
+    try { ctx.laufSeit = JSON.parse(fs.readFileSync(sperrPfad(privat, lauf), 'utf8')).seit || null; } catch { ctx.laufSeit = null; }
+  }
+  return ctx;
 }
 
 /**
@@ -229,5 +309,7 @@ export function pruefeAufruf(lauf, aufruf, ctx) {
     if (!innerhalb(e.file_path, ctx.arbeit) || ENV_DATEI.test(String(e.file_path))) grund = 'schreiben nur im Arbeitsordner';
   } else if (name === 'ArtifactData') grund = pruefeArtifactData(e, ctx);
   else if (name === 'Artifact') grund = pruefeArtifact(e, ctx);
+  else if (name === GMAIL_ENTWURF) grund = pruefeEntwurf(e, ctx);
+  else if (name === GMAIL_LABEL_SETZEN) grund = pruefeLabelSetzen(e, ctx);
   return grund ? nein(grund) : { erlaubt: true };
 }

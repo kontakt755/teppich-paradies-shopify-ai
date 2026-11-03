@@ -8,6 +8,7 @@ import {
   schreibStatus, liesStatus, routinenStand, nimmSperre, sperreBesetzt, pruefeGesundheit, fensterMinuten,
   GMAIL_LESEN, GMAIL_SCHREIBEN, LAEUFE, arbeitsOrdner, leseAusgabe, neuerSammler, sammle, abschliessen,
   routineLaeuft, sperrPfad, sperrAlterMs, pruefeWerkzeuge, wacheEinstellungen, WACHE_SKRIPT, auftragPfad,
+  entwuerfeLabels, entwuerfeOrdner, ENTWUERFE_LABELS,
 } from '../lib/routinen.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'tp-routinen-'));
@@ -104,6 +105,44 @@ test('claude-Argumente Postfach: Gmail nur lesend, alle Schreibwerkzeuge gesperr
   assert.ok(args.includes('--settings'), 'Wache auch im Postfach');
   for (const g of GMAIL_LESEN) assert.ok(LAEUFE.postfach.pflicht.includes(g) && LAEUFE.postfach.erlaubt.includes(g), g);
   assert.ok(!LAEUFE.postfach.erlaubt.some(n => GMAIL_SCHREIBEN.includes(n)));
+});
+
+test('claude-Argumente Entwuerfe: nur create_draft und label_thread dazu, Senden gesperrt; andere Laeufe unveraendert', () => {
+  const arbeit = arbeitsOrdner(ctx.privat, 'postfach-entwuerfe');
+  const args = claudeArgumente('postfach-entwuerfe', { ...ctx, arbeit, prompt: 'x' });
+  const frei = liste(args, '--allowedTools');
+  const gesperrt = liste(args, '--disallowedTools');
+  const P = 'mcp__claude_ai_Gmail__';
+  assert.deepEqual(frei.filter(f => f.startsWith(P)).sort(), [...GMAIL_LESEN, `${P}list_drafts`, `${P}create_draft`, `${P}label_thread`].sort());
+  for (const n of ['send_message', 'reply', 'forward', 'trash_message', 'trash_thread', 'update_draft', 'delete_draft', 'delete_label', 'mark_message_spam', 'mark_thread_spam', 'label_message', 'update_message_labels', 'create_label']) {
+    assert.ok(gesperrt.includes(P + n), n);
+    assert.ok(!LAEUFE['postfach-entwuerfe'].erlaubt.includes(P + n), n);
+  }
+  for (const n of ['create_draft', 'label_thread']) {
+    assert.ok(!gesperrt.includes(P + n), n);
+    assert.ok(LAEUFE['postfach-entwuerfe'].pflicht.includes(P + n), n);
+  }
+  // Die anderen Laeufe behalten ihre Sperre.
+  const postfach = claudeArgumente('postfach', { ...ctx, arbeit: '/a', prompt: 'x' });
+  for (const n of ['create_draft', 'label_thread']) {
+    assert.ok(liste(postfach, '--disallowedTools').includes(P + n), n);
+    assert.ok(!LAEUFE.postfach.erlaubt.includes(P + n), n);
+    assert.ok(!LAEUFE.fehlermeldungen.erlaubt.includes(P + n), n);
+  }
+  assert.ok(!frei.some(f => /belege|service|fehler/.test(f)), 'nur die eigenen npm-Befehle');
+  assert.ok(!frei.includes('Bash(npm run -s entwuerfe -- auswerten)'));
+});
+
+test('Entwuerfe: Labels nur die festen Namen und nur Benutzerlabels, Kennungen im Prompt-Kopf', () => {
+  const privat = tmp();
+  assert.deepEqual(entwuerfeLabels(privat), {});
+  fs.mkdirSync(entwuerfeOrdner(privat), { recursive: true });
+  fs.writeFileSync(path.join(entwuerfeOrdner(privat), 'labels.json'), JSON.stringify({ [ENTWUERFE_LABELS[0]]: 'Label_85', [ENTWUERFE_LABELS[1]]: 'TRASH', Fremd: 'Label_1' }));
+  assert.deepEqual(entwuerfeLabels(privat), { [ENTWUERFE_LABELS[0]]: 'Label_85' });
+  const k = promptKopf('postfach-entwuerfe', LAEUFE['postfach-entwuerfe'].teile[0], { dienst: ctx.dienst, arbeit: '/a', privat });
+  assert.match(k, /= Label_85/);
+  assert.match(k, /= FEHLT/);
+  assert.match(k, /keinen Weg zu senden/);
 });
 
 test('Wache-Einstellungen: Pfade sicher gequotet, Hook fuer jedes Werkzeug', () => {

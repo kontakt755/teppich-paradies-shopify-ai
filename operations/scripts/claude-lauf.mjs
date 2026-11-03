@@ -5,6 +5,7 @@
  *   node operations/scripts/claude-lauf.mjs fehlermeldungen               # Vorpruefung; Claude nur bei echter Arbeit
  *   node operations/scripts/claude-lauf.mjs fehlermeldungen --erzwingen   # Claude auch ohne Arbeit/ausserhalb der Zeit
  *   node operations/scripts/claude-lauf.mjs postfach                      # Lieferbelege, danach Service-Anfragen
+ *   node operations/scripts/claude-lauf.mjs postfach-entwuerfe            # Mails einordnen, Antwort-Entwuerfe anlegen, nie senden
  *   node operations/scripts/claude-lauf.mjs <lauf> --trocken              # Befehl, Werkzeuglisten, Prompt-Kopf; startet nichts
  *   node operations/scripts/claude-lauf.mjs <lauf> --werkzeugprobe        # startet claude -p nur bis zum init-Ereignis
  *
@@ -34,10 +35,11 @@ import {
   LAEUFE, privatDir, dienstDir, routinenDir, arbeitsOrdner, auftragPfad, imFenster, berlinZeit,
   auftragOhneKopf, promptKopf, claudeArgumente, bewerteLauf, vorpruefung, liesStatus, schreibStatus,
   nimmSperre, sperrPfad, sperrAlterMs, neuerSammler, sammle, abschliessen, pruefeWerkzeuge,
-  mcpSperren, harmloseAblehnung,
+  mcpSperren, harmloseAblehnung, entwuerfeBremsePfad, entwuerfeLabels, ENTWUERFE_LABELS,
 } from '../lib/routinen.mjs';
 import { werkbankAus } from '../lib/routine-wache.mjs';
-import { postfachAbfragen, entscheide, nachErfolg } from '../lib/postfach-vorpruefung.mjs';
+import { postfachAbfragen, entscheide, nachErfolg, entwuerfeAbfragen, entscheideEntwuerfe } from '../lib/postfach-vorpruefung.mjs';
+import { bekannt as entwuerfeBekannt, zeilenSeit as messungSeit } from '../lib/postfach-entwuerfe.mjs';
 import { leseBelege, lieferbelegePfad } from '../lib/lieferbelege.mjs';
 import { leseGeprueft, postfachPfad as servicePostfachPfad } from '../lib/serviceanfragen.mjs';
 import { bekannt as serviceBekannt } from './serviceanfragen.mjs';
@@ -207,7 +209,7 @@ export async function teilAusfuehren(lauf, teil, o) {
   const def = LAEUFE[lauf];
   const arbeit = arbeitsOrdner(privat, lauf);
   const bin = claudeBin(env);
-  const kopf = promptKopf(lauf, teil, { dienst, arbeit });
+  const kopf = promptKopf(lauf, teil, { dienst, arbeit, privat });
   const argsFuer = prompt => claudeArgumente(lauf, {
     dienst, arbeit, privat, prompt, modell: env.TP_ROUTINE_MODELL || 'sonnet', effort: env.TP_ROUTINE_EFFORT || 'medium', node: o.node, skript: o.skript,
     mcpGesperrt: o.mcpGesperrt || [],
@@ -283,6 +285,7 @@ export function ergebnisBelegt(teilId, { privat, start, offen = null }) {
       }
       return Object.values(leseGeprueft(servicePostfachPfad(privat))).some(e => Date.parse(e?.am) >= Date.parse(start));
     }
+    if (teilId === 'postfach-entwuerfe') return messungSeit(privat, start).length > 0;
   } catch { return false; }
   return false;
 }
@@ -355,6 +358,61 @@ async function postfachLauf(a, o, deps) {
   return alleOk ? 0 : 1;
 }
 
+/**
+ * Postfach-Entwuerfe: Vorpruefung per IMAP; Claude nur bei Kennungen, die noch nicht in der
+ * Messung stehen. Geht die Vorpruefung nicht, startet Claude hier NICHT (anders als im
+ * Postfach-Lauf): die Entwuerfe koennen warten, die Stoerung ist sichtbar.
+ */
+async function entwuerfeLauf(a, o, deps) {
+  const { privat, aus, melde, jetzt } = o;
+  const def = LAEUFE['postfach-entwuerfe'];
+  const teil = def.teile[0];
+  const stoerung = (art, meldung) => {
+    aus(`${jetzt.toISOString()} ${teil.id}: FEHLER (${art}) · ${meldung}`);
+    const { mitteilen } = schreibStatus(privat, teil.id, { ok: false, art, meldung, hinweis: null }, jetzt);
+    if (mitteilen) melde(teil.titel, meldung);
+    return 1;
+  };
+  const labels = entwuerfeLabels(privat);
+  const fehlen = ENTWUERFE_LABELS.filter(n => !labels[n]);
+  if (a.trocken) {
+    aus('Vorprüfung: vor dem Start per IMAP nur die Mail-Kennungen; Claude startet nur, wenn eine noch nicht in der Messung steht');
+    aus(`Labels: ${fehlen.length ? `FEHLEN in labels.json: ${fehlen.join(', ')}` : 'alle zugeordnet'}`);
+    aus(`MCP: nur ${def.nurMcp.join(', ')} – alle anderen Server sperrt der echte Lauf nach einer Werkzeugprobe`);
+    try { await teilAusfuehren('postfach-entwuerfe', teil, o); } catch (e) { aus(`${teil.id}: FEHLER ${e.message}`); return 1; }
+    return 0;
+  }
+  if (fehlen.length) return stoerung('labels-fehlen', `Label-Kennungen fehlen in routinen/postfach-entwuerfe/labels.json: ${fehlen.join(', ')}`);
+  let ent = { starten: true, grund: 'erzwungen' };
+  let neu = null;
+  if (!a.erzwingen) {
+    const vp = await (deps.entwuerfeAbfragen || entwuerfeAbfragen)({ privat });
+    if (vp.fehler) return stoerung('vorpruefung', `Vorprüfung nicht möglich: ${vp.fehler}`);
+    ent = entscheideEntwuerfe({ gefunden: vp.gefunden, bekannteIds: entwuerfeBekannt(privat).mailIds });
+    neu = ent.neu || null;
+  }
+  if (!ent.starten) {
+    aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → Claude startet nicht (${ent.grund})`);
+    schreibStatus(privat, teil.id, { ok: true, art: null, meldung: 'nichts Neues (Vorprüfung ohne KI)', vorpruefungGrund: ent.grund, hinweis: null }, jetzt);
+    return 0;
+  }
+  try { o.mcpGesperrt = await (deps.mcpSperren || ermittleMcpSperren)('postfach-entwuerfe', { privat, dienst: o.dienst, env: o.env }); } catch { o.mcpGesperrt = []; }
+  aus(`${jetzt.toISOString()} ${teil.id}: Vorprüfung → Claude startet (${ent.grund})`);
+  let r;
+  try { r = await teilAusfuehren('postfach-entwuerfe', teil, o); } catch (e) { r = { ok: false, art: e.art || 'start', meldung: e.message, start: jetzt.toISOString() }; }
+  if (r.art === 'abgelehnt') r = harmloseAblehnung(r, ergebnisBelegt(teil.id, { privat, start: r.start }));
+  // Gegenprobe ohne KI: wer Neues hatte, muss mindestens eine Zeile in die Messung geschrieben haben.
+  if (r.ok && neu?.length && !ergebnisBelegt(teil.id, { privat, start: r.start })) {
+    r = { ...r, ok: false, art: 'nicht-uebernommen', meldung: `${neu.length} neue Mail(s), aber keine Zeile in der Messung · ${r.meldung}` };
+  }
+  const { mitteilen } = schreibStatus(privat, teil.id, {
+    ok: r.ok, art: r.art, meldung: r.meldung, letzterClaudeLauf: r.start || jetzt.toISOString(), letzterClaudeOk: r.ok,
+    tokens: r.tokens ?? null, vorpruefungGrund: ent.grund, hinweis: r.hinweis || null,
+  }, new Date());
+  if (mitteilen) melde(teil.titel, r.meldung);
+  return r.ok ? 0 : 1;
+}
+
 /** Laeuft gerade ein Nachziehen des Dienst-Checkouts (#1715)? Frisch = Prozess lebt, juenger als dessen SPERRE_ALT_MS. */
 export function nachziehenAktiv(privat) {
   return !sperreVerwaist(path.join(privat, 'betrieb-nachziehen.lock'));
@@ -396,6 +454,12 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
     aus(`${jetzt.toISOString()} ${a.lauf}: ausserhalb der Zeit (${z.datum} ${String(z.stunde).padStart(2, '0')}:${String(z.minute).padStart(2, '0')}, Mo–Sa ${def.fenster.von}–${def.fenster.bis} Uhr) – nichts zu tun.`);
     return 0;
   }
+  // Bremse des Entwurfs-Laufs: gilt auch fuer --erzwingen. Gewollt, also keine Stoerung.
+  if (a.lauf === 'postfach-entwuerfe' && fs.existsSync(entwuerfeBremsePfad(privat))) {
+    aus(`${jetzt.toISOString()} ${a.lauf}: Bremse aktiv (${entwuerfeBremsePfad(privat)}) – übersprungen.`);
+    if (!a.trocken) schreibStatus(privat, a.lauf, { ok: true, art: null, meldung: 'Bremse aktiv – Lauf übersprungen', hinweis: 'Bremse aktiv' }, jetzt);
+    return 0;
+  }
   if (a.trocken) aus(`Zeitfenster: ${imFenster(jetzt, def.fenster) ? 'innerhalb' : 'ausserhalb'} (Mo–Sa ${def.fenster.von}–${def.fenster.bis} Uhr, jetzt ${z.datum} ${z.stunde}:${String(z.minute).padStart(2, '0')})`);
 
   // Uebersprungen ist kein Fehler: nur ein Lebenszeichen mit Grund. Bleibt der Erfolg zu lange
@@ -416,6 +480,7 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   if (!a.trocken && aktiv(privat)) { sperre.freigeben(); return ueberspringen('wartet auf Nachziehen'); }
   try {
     if (a.lauf === 'fehlermeldungen') return await fehlermeldungenLauf(a, o, deps);
+    if (a.lauf === 'postfach-entwuerfe') return await entwuerfeLauf(a, o, deps);
     return await postfachLauf(a, o, deps);
   } finally {
     sperre.freigeben();
