@@ -65,6 +65,7 @@
     "datenstand:pruefen": "node operations/scripts/datenstand-pruefen.mjs",
     "service": "node operations/scripts/serviceanfragen.mjs",
     "belege": "node operations/scripts/lieferbelege.mjs",
+    "entwuerfe": "node operations/scripts/postfach-entwuerfe.mjs",
     "belege:monat": "node operations/scripts/belege-monat.mjs",
     "belege:bank": "node operations/scripts/belege-bank.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",

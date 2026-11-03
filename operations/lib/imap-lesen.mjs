@@ -1,12 +1,14 @@
 /**
  * Kleinster IMAP-Leser fuer Gmail: findet Nachrichten per Gmail-Suche (X-GM-RAW) und gibt
- * nur ihre Kennungen zurueck - nie Betreff, Absender oder Text. Grundlage der Vorpruefung des
+ * ihre Kennungen zurueck - nie Betreff oder Text. Grundlage der Vorpruefung des
  * Postfach-Laufs (operations/lib/postfach-vorpruefung.mjs): Claude startet nur, wenn es
- * Nachrichten gibt, die noch kein Lauf gesehen hat.
+ * Nachrichten gibt, die noch kein Lauf gesehen hat. absenderNurLesend liefert zusaetzlich die
+ * Adressen aus From und Reply-To, damit die Wache den Empfaenger eines Entwurfs pruefen kann.
  *
  * Nur lesend: das Postfach wird mit EXAMINE geoeffnet (Nur-Lese-Modus, setzt kein \Seen),
- * abgefragt wird nur X-GM-MSGID. Die Kennung ist dieselbe wie die Nachrichten-ID der Gmail-API
- * (dort als Hexadezimalzahl), die die Routinen in lieferbelege/serviceanfragen ablegen.
+ * abgefragt werden nur X-GM-MSGID und per BODY.PEEK diese zwei Kopfzeilen. Die Kennung ist
+ * dieselbe wie die Nachrichten-ID der Gmail-API (dort als Hexadezimalzahl), die die Routinen in
+ * lieferbelege/serviceanfragen ablegen.
  *
  * Zugang: derselbe wie der Nachfass-Versand (nachfassen/postfach.json, App-Passwort des
  * Firmenpostfachs), Host imap.gmail.com statt smtp.gmail.com.
@@ -67,6 +69,43 @@ export function nachrichtenIds(zeilen) {
     if (m) ids.push(BigInt(m[1]).toString(16));
   }
   return ids;
+}
+
+/**
+ * Adressen aus den Kopfzeilen From und Reply-To (eine Zeichenkette, Zeilenumbrueche sind
+ * Leerzeichen). Anzeigenamen zaehlen nie: Sie stehen in Anfuehrungszeichen oder vor <Adresse>,
+ * und ein Absender kann dort jede Adresse hineinschreiben.
+ */
+export function adressenAusKopf(kopf) {
+  const ohneNamen = String(kopf ?? '').replace(/"(?:[^"\\]|\\.)*"/g, ' ');
+  const adressen = [];
+  for (const teil of ohneNamen.split(/(?:^|\s)(?:from|reply-to):\s*/i)) {
+    const spitz = [...teil.matchAll(/<([^<>\s]+@[^<>\s]+)>/g)].map(m => m[1]);
+    const nackt = teil.match(/[^\s<>,;()]+@[^\s<>,;()]+/g) || [];
+    adressen.push(...(spitz.length ? spitz : nackt));
+  }
+  return [...new Set(adressen.map(a => a.toLowerCase()))];
+}
+
+/**
+ * Kennung und Adressen je FETCH-Antwort. Ein Eintrag ist eine Antwortzeile aus antwort.eintraege
+ * ({ aussen, literale }: so liefert Gmail die Kopfzeilen) oder eine Zeile mit den Kopfzeilen in
+ * Anfuehrungszeichen. Die Kennung wird nur ausserhalb der Kopfzeilen gesucht: Deren Inhalt
+ * bestimmt der Absender. Die Bytes statt des Zeilentexts, weil der ab LITERAL_IN_ZEILE_MAX
+ * abgeschnitten ist - ein langer Anzeigename duerfte die Adresse sonst nicht verschwinden lassen.
+ */
+export function absenderAus(zeilen) {
+  const aus = [];
+  for (const z of zeilen) {
+    const { aussen, literale = [] } = typeof z === 'string' ? { aussen: z } : z;
+    if (!/^\* \d+ FETCH \(/i.test(aussen)) continue;
+    const [id] = nachrichtenIds([aussen.replace(/"(?:[^"\\]|\\.)*"/g, '""')]);
+    if (!id) continue;
+    const zitiert = /BODY\[HEADER\.FIELDS[^\]]*\]\s+"((?:[^"\\]|\\.)*)"/i.exec(aussen);
+    const kopf = literale[0] ? literale[0].toString('utf8').replace(/[\r\n]+/g, ' ') : zitiert ? zitiert[1].replace(/\\(.)/g, '$1') : '';
+    aus.push({ id, adressen: adressenAusKopf(kopf) });
+  }
+  return aus;
 }
 
 /**
@@ -240,7 +279,9 @@ export async function suchenNurLesend(zugang, suchen, { host = 'imap.gmail.com',
     await oeffneNurLesend(v, zugang);
     const ergebnis = [];
     for (const suche of suchen) {
-      const uids = suchErgebnis(pruefe(await v.befehl(`UID SEARCH X-GM-RAW ${imapText(suche)}`), 'SEARCH').zeilen);
+      // Eine Suche ist eine Gmail-Suche als Text oder { thread, roh }: nur innerhalb eines Verlaufs (Kennung hexadezimal).
+      const auswahl = typeof suche === 'string' ? `X-GM-RAW ${imapText(suche)}` : `X-GM-THRID ${BigInt(`0x${suche.thread}`)} X-GM-RAW ${imapText(suche.roh)}`;
+      const uids = suchErgebnis(pruefe(await v.befehl(`UID SEARCH ${auswahl}`), 'SEARCH').zeilen);
       const ids = [];
       for (let i = 0; i < uids.length; i += 200) {
         const teil = uids.slice(i, i + 200).join(',');
@@ -310,7 +351,8 @@ export async function nachrichtenNurLesend(zugang, suchen, { auswahl = () => tru
 
 /**
  * Arbeitet in einer nur lesenden Sitzung: `arbeit` bekommt suche(q) -> UIDs,
- * daten(uids) -> Kennungen und Labels, kopf(uid) und nachricht(uid) -> Bytes. Nur BODY.PEEK,
+ * daten(uids) -> Kennungen und Labels, absender(uids) -> { id, adressen }, kopf(uid) und
+ * nachricht(uid) -> Bytes. Nur BODY.PEEK,
  * Gmail setzt dadurch kein \Seen. Oeffnet der Server das Postfach nicht nachweislich
  * schreibgeschuetzt ([READ-ONLY]), bricht die Sitzung ab, bevor etwas geholt wird.
  */
@@ -324,20 +366,30 @@ export async function mitNurLesen(zugang, arbeit, { host = 'imap.gmail.com', por
       if (a.literale.length) return a.literale[a.literale.length - 1];
       throw new ImapFehler(`IMAP: Nachricht ${Number(uid)} nicht geliefert`);
     };
+    const jeGruppe = async (uids, felder, auswerten) => {
+      const aus = [];
+      for (let i = 0; i < uids.length; i += 200) {
+        const teil = uids.slice(i, i + 200).map(Number).join(',');
+        aus.push(...auswerten(pruefe(await v.befehl(`UID FETCH ${teil} (${felder})`), 'FETCH')));
+      }
+      return aus;
+    };
     return await arbeit({
       suche: async q => suchErgebnis(pruefe(await v.befehl(`UID SEARCH X-GM-RAW ${imapText(q)}`), 'SEARCH').zeilen),
-      daten: async (uids) => {
-        const daten = [];
-        for (let i = 0; i < uids.length; i += 200) {
-          const teil = uids.slice(i, i + 200).map(Number).join(',');
-          daten.push(...nachrichtenDaten(pruefe(await v.befehl(`UID FETCH ${teil} (X-GM-MSGID X-GM-THRID X-GM-LABELS INTERNALDATE)`), 'FETCH').zeilen));
-        }
-        return daten;
-      },
+      daten: uids => jeGruppe(uids, 'X-GM-MSGID X-GM-THRID X-GM-LABELS INTERNALDATE', a => nachrichtenDaten(a.zeilen)),
+      absender: uids => jeGruppe(uids, 'X-GM-MSGID BODY.PEEK[HEADER.FIELDS (FROM REPLY-TO)]', a => absenderAus(a.eintraege)),
       kopf: uid => holeBytes(uid, 'HEADER'),
       nachricht: uid => holeBytes(uid, ''),
     });
   } finally {
     await v.schliessen();
   }
+}
+
+/**
+ * Eine Gmail-Suche: je Treffer { id, adressen } (From und Reply-To, siehe absenderAus), in einer
+ * Sitzung von mitNurLesen. Das Passwort geht nur in den LOGIN-Befehl, nie in eine Meldung.
+ */
+export function absenderNurLesend(zugang, suche, { host = 'imap.gmail.com', port = 993, verbinden, zeitLimitMs = 30_000 } = {}) {
+  return mitNurLesen(zugang, async s => s.absender(await s.suche(suche)), { host, port, verbinden, zeitLimitMs });
 }

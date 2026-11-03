@@ -13,7 +13,7 @@
  * Aufruf; jeder andere Fehler-Exit liesse ihn durch.
  */
 
-import { pruefeAufruf, wacheKontext } from '../lib/routine-wache.mjs';
+import { merkeEntwurf, pruefeAufruf, wacheKontext } from '../lib/routine-wache.mjs';
 
 function ablehnen(grund) {
   process.stdout.write(JSON.stringify({
@@ -36,8 +36,10 @@ process.stdin.on('data', (d) => { eingabe += d; });
 process.stdin.on('end', () => {
   try {
     const ereignis = JSON.parse(eingabe);
-    const r = pruefeAufruf(lauf, ereignis, wacheKontext(lauf, { privat, dienst }));
+    const ctx = wacheKontext(lauf, { privat, dienst });
+    const r = pruefeAufruf(lauf, ereignis, ctx);
     if (!r.erlaubt) ablehnen(r.grund);
+    else merkeEntwurf(ereignis, ctx);
   } catch (e) {
     notbremse(e);
   }
