@@ -1370,7 +1370,7 @@
           "type": "frage",
           "settings": {
             "question": "Kann ich die Farbe vorher zu Hause prüfen?",
-            "answer": "<p>Ja. Bis zu zwei Muster sind kostenlos. Wählen Sie Ihre Wunschfarbe am Produkt oder auf der <a href=\"/pages/muster\">Musterseite</a>.</p>"
+            "answer": "<p>Ja. Bis zu zwei Muster je Bestellung kostenlos. Wählen Sie Ihre Wunschfarbe am Produkt oder auf der <a href=\"/pages/muster\">Musterseite</a>.</p>"
           }
         },
         "versand": {

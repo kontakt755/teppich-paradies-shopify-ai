@@ -77,3 +77,27 @@ jobs:
           if git diff --cached --quiet; then echo "keine Preisaenderung"; exit 0; fi
           git commit -q -m "Teppich-nach-Mass-Beispiel-Endpreise $(date -u +%F)"
           git push -q origin feed-daten
+
+  # Fehllaeufe blieben unbemerkt (30.10.-03.11.2026): Jeder Fehllauf meldet sich
+  # im selben offenen Issue, Weg wie datenschutz-pruefung.yml. Eigener Job, damit
+  # nur er Issues schreiben darf; das Issue nach der Behebung von Hand schliessen.
+  alarm:
+    needs: preise
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Fehllauf als Issue melden
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          LAUF_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          titel="Feed Teppich nach Mass: Tageslauf fehlgeschlagen"
+          nummer=$(gh issue list --state open --search "\"$titel\" in:title" --json number,title --jq "map(select(.title == \"$titel\")) | .[0].number // empty")
+          if [ -n "$nummer" ]; then
+            gh issue comment "$nummer" --body "Weiterer Fehllauf am $(date -u +%F): $LAUF_URL"
+          else
+            gh issue create --title "$titel" --label "priority:p1" --body "$(printf 'Der Tageslauf von .github/workflows/feed-tnm-preise.yml ist fehlgeschlagen: %s\n\nDer bisherige Feed auf dem Zweig feed-daten bleibt unveraendert, seine Preise veralten aber. Gruende stehen im Lauf-Protokoll (Zeilen TNM-Pruefung) und im Artefakt tnm-pruefung. Weitere Fehllaeufe kommen als Kommentar hierher. Nach der Behebung den Lauf von Hand starten und dieses Issue schliessen.' "$LAUF_URL")"
+          fi

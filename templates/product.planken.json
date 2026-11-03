@@ -328,7 +328,7 @@
               "type": "tp-muster-cta",
               "settings": {
                 "label": "Kostenloses Muster anfragen",
-                "hinweis": "Bis zu 2 Farben, versandkostenfrei"
+                "hinweis": "Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei"
               }
             },
             "tp_zubehoer_empfehlung": {
