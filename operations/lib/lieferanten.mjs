@@ -876,10 +876,17 @@ function kettelRegelGilt(gruppe, kontext) {
 /** Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail. */
 const istOffen = (p, kontext) => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
 
+/**
+ * Nur bei Direktversand: nur dort heisst "Lieferant kettelt" sicher auch "direkt an den Kunden",
+ * in der Mail und im Auftragsfluss. Andere Ware waehlt ihr Ziel weiter mit den Knoepfen im Dialog.
+ */
+function kettelnJeFall(gruppe, kontext) {
+  return gruppe.route === ROUTE.SUPPLIER_DIRECT && kontext.st.ware.kettelnMoeglich && kettelRegelGilt(gruppe, kontext);
+}
+
 /** Teppich, bei dem vor der Bestellung zu entscheiden ist, wer kettelt. Ohne Fertigmass gibt es keinen Zuschnitt. */
 function kettelwegFaellig(p, gruppe, kontext) {
-  return kettelRegelGilt(gruppe, kontext) && kontext.st.ware.kettelnMoeglich
-    && wirdGekettelt(p.ausfuehrung) && kuerzereSeiteCm(p.ausfuehrung) !== null && istOffen(p, kontext);
+  return kettelnJeFall(gruppe, kontext) && wirdGekettelt(p.ausfuehrung) && kuerzereSeiteCm(p.ausfuehrung) !== null && istOffen(p, kontext);
 }
 
 function kettelwegFrage(p, gruppe, kontext) {
@@ -897,7 +904,7 @@ function kettelwegFrage(p, gruppe, kontext) {
  */
 function wareMailsFuer(gruppe, kontext) {
   if (!kettelRegelGilt(gruppe, kontext)) return [wareMail(gruppe, kontext)];
-  const jeFall = kontext.st.ware.kettelnMoeglich;
+  const jeFall = kettelnJeFall(gruppe, kontext);
   const positionen = gruppe.positionen ?? [];
   const faellig = p => kettelwegFaellig(p, gruppe, kontext);
   const zumKettler = p => (jeFall ? faellig(p) && kontext.kettelwege[p.lineItemId] === 'kettler' : kettlerAutomatisch(p) && istOffen(p, kontext));

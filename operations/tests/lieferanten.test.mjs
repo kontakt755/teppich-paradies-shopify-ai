@@ -1061,6 +1061,16 @@ test('Kettelweg: Baustelle und Muster werden nie gefragt, unbekannte Wahl gilt a
   assert.equal(bestellmail({ modell: m, lieferant: 'A', kettelwege: `${idVon(m)}=quatsch`, stammdaten: STAMM_KETTELT, jetzt: JETZT }).mails.length, 0);
 });
 
+test('Kettelweg: Ware, die sonst zu uns kommt, wird nicht gefragt und waehlt ihr Ziel wie bisher', () => {
+  const m = massteppichModell({ masse: '250 × 220 cm' });
+  const r = bestellmail({ modell: m, lieferant: 'A', kettelwege: `${idVon(m)}=lieferant`, stammdaten: STAMM_KETTELT, jetzt: JETZT });
+  assert.deepEqual(r.kettelwege, []);
+  assert.equal(r.mails[0].lieferziel, 'kettler');
+  assert.equal(r.mails[0].kettelnBeimLieferanten, false);
+  assert.equal(r.mails[0].zielWaehlbar, true);
+  assert.equal(bestellmail({ modell: m, lieferant: 'A', ziel: 'kunde', stammdaten: STAMM_KETTELT, jetzt: JETZT }).mails[0].lieferziel, 'kunde');
+});
+
 test('Kettelweg: die Kopierliste legt sich bei Direktversand nicht auf den Kettler fest', () => {
   const m = direktTeppich();
   assert.equal(m.gruppen[0].positionen[0].kettelZusatz, ' · gekettelt, Weg klären: Lieferant kettelt 250 × 220 cm oder Zuschnitt 253 × 223 cm für unseren Kettler');
