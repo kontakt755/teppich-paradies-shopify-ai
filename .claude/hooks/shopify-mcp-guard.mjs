@@ -36,7 +36,7 @@ import { readFileSync } from 'node:fs';
 
 // Mutation -> Name des Arguments, dessen Liste die zu loeschenden IDs traegt.
 // null: Einzelloeschung, jede ID im Argument zaehlt.
-const LOESCHEN = {
+export const LOESCHEN = {
   productDelete: null,
   productVariantsBulkDelete: 'variantsIds',
   collectionDelete: null,
@@ -45,7 +45,7 @@ const LOESCHEN = {
   fileDelete: 'fileIds',
 };
 
-const THEME_IMMER = new Set(['themeDelete']);
+export const THEME_IMMER = new Set(['themeDelete']);
 
 function fallbackThemeId() {
   try {
@@ -144,7 +144,7 @@ function ids(w) {
  * gleichnamiger Operationsname ("mutation productDelete($id: ID!)") ist kein
  * Aufruf und wird uebersprungen.
  */
-function aufrufe(query, variablen, namen) {
+export function aufrufe(query, variablen, namen) {
   const tk = tokens(query);
   const out = [];
   for (let i = 0; i < tk.length; i += 1) {
