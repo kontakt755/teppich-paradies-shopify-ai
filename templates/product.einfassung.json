@@ -214,7 +214,8 @@
               "name": "TP Schritt-Überschrift",
               "settings": {
                 "number": 1,
-                "label": "Farbe"
+                "label": "Farbe",
+                "nur_mit_farboption": true
               },
               "blocks": {}
             },

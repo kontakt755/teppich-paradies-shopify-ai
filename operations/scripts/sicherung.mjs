@@ -73,6 +73,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'serviceanfragen.json',
   // ... und welche Formular-Mails der Postfach-Abgleich schon geprueft hat.
   'serviceanfragen-postfach.json',
+  // Rechnungs-Archiv (belege:monat): die Originale muessen digital bleiben, gedruckt wird nur eine Kopie.
+  'belege-archiv',
   // Lieferantenbelege aus dem Postfach (AB, Lieferschein, Storno) samt Zuordnung und Haken.
   'lieferbelege',
   // "Fehler melden": Meldungen der Mitarbeiter und ihr Stand in der Werkbank.

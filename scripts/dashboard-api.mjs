@@ -1893,9 +1893,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { stand = leseMusterPackStand(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
       // Lieferantennamen nur aus den privaten Stammdaten; ohne Eintrag bleibt das Kuerzel.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      const katalog = this._lexikonProdukte();
+      // Warum die Automatik ein Muster zurueckhaelt - stand bis 03.11. nur unter den Bestellungen.
+      const automatik = musterAutomatikAnzeige(dir, { modell, statusAlle: status, stammdaten }, katalog, now());
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
-        produkte: new Map(this._lexikonProdukte().map(p => [p.handle, p])),
+        produkte: new Map(katalog.map(p => [p.handle, p])),
+        automatikGrundVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId))?.grund || null,
         // Ganzer Eintrag: Bestelldatum und "Musterautomatik" fuer die Anmerkung beim Warten.
         eintragVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)] || null,
         schluesselVon: kundenSchluessel,

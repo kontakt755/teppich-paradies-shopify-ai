@@ -20,6 +20,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { pruefeImporte, jsonlZuProdukten, bericht } from '../lib/import-pruefung.mjs';
+import { leseStammdaten } from '../lib/lieferanten.mjs';
 
 export const BULK_QUERY = `
 {
@@ -39,6 +40,8 @@ export const BULK_QUERY = `
               image { url }
               selectedOptions { name value }
               metafields(namespace: "custom") { edges { node { key value } } }
+              einkaufLieferant: metafield(namespace: "einkauf", key: "lieferant") { reference { ... on Metaobject { kuerzel: field(key: "kuerzel") { value } } } }
+              einkaufFarbname: metafield(namespace: "einkauf", key: "farbname") { value }
             }
           }
         }
@@ -56,6 +59,11 @@ const BULK_STATUS = `
 query ImportPruefungStatus($id: ID!) {
   node(id: $id) { ... on BulkOperation { id status errorCode url } }
 }`;
+
+/** Lieferanten, die Muster nach ihrer Bezeichnung bestellen - nur aus den privaten Stammdaten. */
+export function lieferantenNachBezeichnung(stammdaten) {
+  return new Set(Object.entries(stammdaten?.lieferanten ?? {}).filter(([, l]) => l?.muster?.nachBezeichnung === true).map(([id]) => id));
+}
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 const MIT_WERT = ['tage', 'seit', 'handles', 'json', 'jsonl', 'speichern'];
@@ -119,7 +127,9 @@ async function main() {
   if (o.speichern) fs.writeFileSync(o.speichern, text);
   const produkte = jsonlZuProdukten(text);
   if (!produkte.length) throw new Error('keine Produkte geladen');
-  const ergebnis = pruefeImporte({ produkte, seit: o.seit, handles: o.handles ?? null });
+  const nachBezeichnung = lieferantenNachBezeichnung(leseStammdaten());
+  if (!nachBezeichnung.size) console.log('Hinweis: keine Stammdaten mit muster.nachBezeichnung gefunden - einkauf.farbname wird nicht geprueft.');
+  const ergebnis = pruefeImporte({ produkte, seit: o.seit, handles: o.handles ?? null, nachBezeichnung });
   console.log(bericht(ergebnis, { seit: o.handles ? null : o.seit }));
   if (o.json) fs.writeFileSync(o.json, JSON.stringify({ seit: o.seit, ...ergebnis }, null, 2));
   if (ergebnis.befunde.some((b) => b.stufe === 'fehler')) process.exitCode = 1;

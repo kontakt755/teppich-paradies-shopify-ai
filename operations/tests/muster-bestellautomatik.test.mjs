@@ -153,3 +153,44 @@ test('formal gueltiges JSON mit verlorenem Musterlager-Inhalt sperrt statt nachz
   const u = umgebung(t); u.datei('musterlager.json', { eintraege: {} });
   await assert.rejects(u.lauf(), /Musterlager/); assert.equal(u.mails.length, 0);
 });
+
+test('Klaerfall: nennt Position und Bestelldatum, der Lauf merkt sich seit wann, neuer Grund startet die Uhr neu', async t => {
+  const u = umgebung(t);
+  u.p.musterQuelle.farbnummer = 'UNGEKLAERT';
+  const anzeige = () => musterAutomatikAnzeige(u.dir, u.kontext(), u.katalog).auftraege.o1.klaeren[0];
+  assert.deepEqual([anzeige().lineItemIds, anzeige().grund, anzeige().seit], [['p1'], 'Farbnummer fehlt', u.a.datum], 'vor dem ersten Lauf zaehlt das Bestelldatum');
+  await u.lauf();
+  assert.equal(anzeige().seit, JETZT.toISOString());
+  const spaeter = new Date(JETZT.getTime() + 864e5);
+  fs.utimesSync(u.exportFile, spaeter, spaeter);
+  await u.lauf({ jetzt: spaeter });
+  assert.equal(anzeige().seit, JETZT.toISOString(), 'derselbe Grund: die Uhr laeuft weiter');
+  u.p.musterQuelle.farbnummer = '050'; u.p.bestellmenge = { menge: 9 };
+  await u.lauf({ jetzt: spaeter });
+  assert.deepEqual([anzeige().grund, anzeige().seit], ['Mustermenge prüfen', spaeter.toISOString()], 'anderer Grund: neue Uhr');
+});
+test('Klaerstand: Probe schreibt nichts, unlesbar sperrt den Versand nicht, erledigte Faelle verschwinden', async t => {
+  const u = umgebung(t);
+  const datei = path.join(u.dir, 'muster-bestellung/klaerstand.json');
+  u.p.musterQuelle.farbnummer = 'UNGEKLAERT';
+  await u.lauf({ probe: true });
+  assert.equal(fs.existsSync(datei), false);
+  await u.lauf();
+  assert.equal(Object.keys(JSON.parse(fs.readFileSync(datei, 'utf8')).faelle).length, 1);
+  fs.writeFileSync(datei, '{kaputt');
+  await u.lauf();
+  assert.equal(Object.keys(JSON.parse(fs.readFileSync(datei, 'utf8')).faelle).length, 1, 'kaputte Stoppuhr wird neu geschrieben');
+  fs.writeFileSync(datei, '{kaputt');
+  u.p.musterQuelle.farbnummer = '050';
+  assert.equal((await u.lauf()).verschickt, 1, 'kaputte Stoppuhr sperrt den Versand nicht');
+  fs.writeFileSync(datei, JSON.stringify({ faelle: { alt: { grund: 'x', seit: JETZT.toISOString() } } }));
+  await u.lauf();
+  assert.deepEqual(JSON.parse(fs.readFileSync(datei, 'utf8')).faelle, {});
+});
+test('Mailversand unklar: der Klaerfall nennt die betroffenen Positionen', async t => {
+  const u = umgebung(t);
+  await u.lauf({ senden: async () => { throw new Error('SMTP'); } });
+  const k = musterAutomatikAnzeige(u.dir, u.kontext(), u.katalog).auftraege.o1.klaeren[0];
+  assert.deepEqual(k.lineItemIds, ['p1']);
+  assert.equal(k.seit, JETZT.toISOString());
+});
