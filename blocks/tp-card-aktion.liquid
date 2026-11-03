@@ -6,6 +6,9 @@
   Inhaberentscheidung 2026-09-22: kein Streichpreis, sondern Hinweis mit Prozent und
   Enddatum; der Rabatt wird im Warenkorb vom automatischen Shopify-Rabatt abgezogen.
   Der Kartenpreis bleibt deshalb der normale Preis.
+
+  Restrollen (Tag "sonderposten") zeigen hier ihre Restmenge aus Shopify
+  (snippets/tp-rollenrest, Inhaber 2026-11-03). Ohne gesicherten Bestand keine Angabe.
 {% enddoc %}
 {%- liquid
   capture tp_ca_raw
@@ -15,7 +18,18 @@
   capture tp_ca_leiste
     render 'tp-leisten-paket', product: closest.product
   endcapture
+  assign tp_ca_rest_qm = 0
+  if closest.product.tags contains 'sonderposten'
+    capture tp_ca_rest
+      render 'tp-rollenrest', product: closest.product
+    endcapture
+    assign tp_ca_rest = tp_ca_rest | strip | split: '|'
+    assign tp_ca_rest_qm = tp_ca_rest[2] | times: 1
+  endif
 -%}
+{%- if tp_ca_rest_qm > 0 -%}
+  <p class="tp-card-aktion tp-card-aktion--rest" {{ block.shopify_attributes }}>Noch {{ tp_ca_rest_qm }}&nbsp;m²</p>
+{%- endif -%}
 {%- if tp_ca_raw != blank or tp_ca_leiste contains 'ja' -%}
   <div class="tp-card-aktion__gruppe" {{ block.shopify_attributes }}>
 {%- endif -%}
@@ -53,6 +67,11 @@
     margin: 0;
     font-size: var(--tp-fs-xs);
     line-height: 1.3;
+  }
+
+  .tp-card-aktion--rest {
+    font-weight: 600;
+    color: var(--tp-ink);
   }
 
   .tp-card-aktion__badge {
