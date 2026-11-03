@@ -804,9 +804,11 @@ launchctl load ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
 Beenden/Deinstallieren: `launchctl unload
 ~/Library/LaunchAgents/net.teppich-paradies.sync.plist` (danach optional
 `rm`). Log liegt unter `~/Library/Logs/teppich-paradies-sync.log`. `launchd`
-startet den Dienst bei jedem nicht-erfolgreichen Beenden neu (`KeepAlive`,
-`ThrottleInterval` 60s) - auch ohne Zugang, dann wiederholt sich die
-Fehlermeldung im Log, bis `.env.local` eingerichtet ist.
+startet den Dienst nach jedem Ende neu, auch nach einem sauberen SIGTERM
+(`KeepAlive`, `ThrottleInterval` 60s). Bewusst anhalten geht deshalb nur per
+`launchctl unload` oder `bootout`, nicht per `kill` oder `launchctl stop`. Auch
+ohne Zugang startet er neu, dann wiederholt sich die Fehlermeldung im Log, bis
+`.env.local` eingerichtet ist.
 
 Ersetzt keine geplante Aufgabe, die den Rechner nicht ständig am Laufen hat -
 der Dienst braucht wie die geplante Aufgabe einen eingeschalteten,
