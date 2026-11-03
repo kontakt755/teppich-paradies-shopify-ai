@@ -595,6 +595,8 @@ const ZIEL_JE_AUFTRAG = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE])
 
 /** Kettel-/Einfassungszeile aus der Kundenbestellung ("Einfassung: Gekettelt, umlaufend ..."). */
 const istEinfassung = z => /^Einfassung:/.test(z);
+/** Muss wirklich eingefasst werden: nicht "ohne Einfassung", "Zugeschnitten" oder "Fertig eingefasst" (Inhaber 03.11.2026, w-226). */
+const mussEingefasstWerden = z => istEinfassung(z) && !/ohne Einfassung|zugeschnitten|fertig eingefasst/i.test(z);
 
 /** Kuerzere Seite des Fertigmasses in cm ("200 × 300 cm", "Ø 160 cm"); null, wenn keins da ist. */
 export function kuerzereSeiteCm(ausfuehrung = []) {
@@ -611,7 +613,7 @@ export function kuerzereSeiteCm(ausfuehrung = []) {
  * kann der Lieferant nicht zuschneiden - dann bleibt es beim normalen Weg.
  */
 export function kettlerAutomatisch(p) {
-  if (!(p.ausfuehrung ?? []).some(istEinfassung)) return false;
+  if (!(p.ausfuehrung ?? []).some(mussEingefasstWerden)) return false;
   return kuerzereSeiteCm(p.ausfuehrung) !== null;
 }
 
@@ -648,7 +650,7 @@ export function leseKettelwege(roh) {
  * der Kunde in der Naehe wohnt (wir liefern selbst bis in die Wohnung).
  */
 export function kettlerGrund(p, adresse) {
-  if (!(p.ausfuehrung ?? []).some(istEinfassung)) return null;
+  if (!(p.ausfuehrung ?? []).some(mussEingefasstWerden)) return null;
   if (kettlerAutomatisch(p)) return 'gekettelt – Ketteln beim Kettler';
   if (adresse?.plz && KETTLER_NAH_PLZ.test(String(adresse.plz).trim())) return `Kunde in der Nähe (${String(adresse.plz).trim()} ${adresse.ort ?? ''}`.trim() + ') – wir liefern selbst';
   return null;

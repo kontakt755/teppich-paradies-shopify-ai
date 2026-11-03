@@ -341,7 +341,8 @@ test('Teppich-Fassung: Wunschmass, Form, Einfassung, Lieferzeit - keine Rollenbr
   assert.match(mail.text, /Wunschmaß/);
   assert.match(mail.text, /Maß und Form/);
   assert.match(mail.text, /Einfassung, zum Beispiel gekettelt/);
-  assert.match(mail.text, /\nLieferzeit laut Produktseite: ca\. 5–8 Werktage inkl\. Ketteln\n/);
+  assert.match(mail.text, /\nDie Lieferzeit finden Sie auf der Produktseite\.\n/);
+  assert.doesNotMatch(mail.text, /Werktage/, 'keine feste Zahl (w-246)');
   assert.doesNotMatch(mail.text, /Rollenbreite|verlege|Verlegeteam|von der Rolle|Boden/i);
   assert.match(mail.text, new RegExp(`Ihre gewählten Produkte finden Sie hier:\\nTestvelours Teppich nach Maß · Sand\\n${SHOP_URL}/products/test-teppich-1\\?variant=101\\n\\nTestvelours`));
   assert.match(mail.text, /variant=103\n\nWeitere Muster können Sie jederzeit kostenlos nachbestellen: /, 'Leerzeile nach der Linkliste');
@@ -354,9 +355,9 @@ test('Teppich-Fassung: Wunschmass, Form, Einfassung, Lieferzeit - keine Rollenbr
   assert.match(ein.text, /Ihr gewähltes Produkt finden Sie hier:\nTestvelours/);
 
   const ohneLz = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde', absender: 'Team', produkte: [link(1, 'A Teppich nach Maß', 'Sand', LZ), link(2, 'B Teppich nach Maß', 'Grau')] });
-  assert.doesNotMatch(ohneLz.text, /Lieferzeit/, 'nicht fuer alle bekannt: Zeile faellt weg');
+  assert.match(ohneLz.text, /Die Lieferzeit finden Sie auf der Produktseite/, 'Verweis auch ohne gepflegte Zahl');
   const verschieden = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde', absender: 'Team', produkte: [link(1, 'A Teppich nach Maß', 'Sand', LZ), link(2, 'B Teppich nach Maß', 'Grau', 'ca. 14 Tage')] });
-  assert.doesNotMatch(verschieden.text, /Lieferzeit/, 'verschiedene Lieferzeiten: nichts raten');
+  assert.doesNotMatch(verschieden.text, /Werktage/, 'verschiedene Lieferzeiten: keine Zahl');
   const ohneLinks = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde', absender: 'Team', produkte: [] });
   assert.doesNotMatch(ohneLinks.text, /Lieferzeit|gewählte/);
   assert.ok(platzhalterFrei(ohneLinks));

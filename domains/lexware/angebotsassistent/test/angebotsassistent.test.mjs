@@ -127,17 +127,17 @@ test('Einzelraum bis 12 m² nutzt die Lexware-Pauschale, mehrere Räume den m²-
 
 /* ---------- Daemmung, Pakete, Sockelleisten, Silikon, Profile ---------- */
 
-test('Dämmunterlage: Netto ohne extra Verschnitt, auf halbe Rolle aufgerundet, Rollenanzahl in der Beschreibung', () => {
+test('Dämmunterlage: Netto plus 5 % Verschnitt, auf halbe Rolle aufgerundet, Rollenanzahl in der Beschreibung', () => {
   const v = teppichVorgang([]);
   v.raeume = [{ name: 'WZ', nettoM2: 39.5, laengeM: 7.9, breiteM: 5, bodenart: 'klebevinyl', belag: { ref: { id: '5ce6248b-f867-4e72-b88c-254bd53b698f' }, verschnittProzent: 8 }, verlegeart: 'verklebt',
     daemmung: { ref: { id: '77794d96-76a3-4415-b1ba-b66f00511cd6' } }, silikon: { zusatzLfm: 1 }, keineProfile: true }];
   const erg = rechne(v);
   const d = pos(erg, '77794d96-76a3-4415-b1ba-b66f00511cd6');
-  assert.equal(d.menge, 42.25); // 39,5 / 6,5 = 6,08 -> 6,5 Rollen (Entscheidung 14.10.: kein extra Verschnitt)
-  assert.match(d.beschreibung, /entspricht ca\. 6,5 Rollen à 6,50 m² \(Netto-Verlegefläche 39,50 m²\)/);
+  assert.equal(d.menge, 42.25); // 39,5 × 1,05 / 6,5 = 6,38 -> 6,5 Rollen (Entscheidung 03.11.: 5 %)
+  assert.match(d.beschreibung, /entspricht ca\. 6,5 Rollen à 6,50 m² \(Netto-Verlegefläche 39,50 m² \+ 5 % Verschnitt\)/);
   assert.ok(!stufen(erg, 'konflikt').length);
-  v.raeume[0].nettoM2 = 39; // 6,0 Rollen genau -> keine Aufrundung
-  assert.equal(pos(rechne(v), '77794d96-76a3-4415-b1ba-b66f00511cd6').menge, 39);
+  v.raeume[0].nettoM2 = 39; // 39 × 1,05 / 6,5 = 6,3 -> 6,5 Rollen
+  assert.equal(pos(rechne(v), '77794d96-76a3-4415-b1ba-b66f00511cd6').menge, 42.25);
   v.raeume[0].nettoM2 = 39.5;
   v.raeume[0].daemmung.nurGanzeRollen = true;
   assert.equal(pos(rechne(v), '77794d96-76a3-4415-b1ba-b66f00511cd6').menge, 45.5);

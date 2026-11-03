@@ -950,6 +950,12 @@ test('Kettler-Regel und Vorschlag: gekettelt mit Fertigmass automatisch, ohne Fe
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 400 × 500 cm', 'Einfassung: Gekettelt'] }), true, 'auch ueber 2 m');
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: Ø 300 cm (Rund)', 'Einfassung: Gekettelt'] }), true, 'auch rund');
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 100 × 150 cm'] }), false, 'ohne Einfassung kein Kettler');
+  for (const einfassung of ['ohne Einfassung', 'Zugeschnitten', 'Fertig eingefasst']) {
+    assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 100 × 150 cm', `Einfassung: ${einfassung}`] }), false, einfassung);
+  }
+  for (const einfassung of ['Einfassband', 'Paspelband', 'Cover']) {
+    assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 100 × 150 cm', `Einfassung: ${einfassung}`] }), true, einfassung);
+  }
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Einfassung: Gekettelt'] }), false, 'ohne Fertigmass kann der Lieferant nicht zuschneiden');
   // Ziel im Dialog von Hand gewaehlt: die gekettelte Position wird fuer den Kettler vorgeschlagen.
   const gross = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'laden', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
