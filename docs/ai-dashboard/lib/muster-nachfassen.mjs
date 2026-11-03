@@ -15,7 +15,7 @@
  * der Browser den Rest. Kundendaten kommen nur zur Laufzeit aus den lokalen Daten.
  *
  * Zwei Fassungen (Rundgang 2026-10-26, #7): Muster nur zu Teppich nach Mass bekommen die
- * Teppich-Fassung (Wunschmass, Form, Einfassung, Lieferzeit laut Produktseite), alle anderen
+ * Teppich-Fassung (Wunschmass, Form, Einfassung, Verweis auf die Lieferzeit der Produktseite), alle anderen
  * die allgemeine Vorlage des Inhabers mit Rollenbreite und Verlegung. vorlageFuer() waehlt.
  */
 
@@ -317,7 +317,7 @@ Teppich Paradies`,
  * Teppich-Fassung (Rundgang 2026-10-26, #7): fuer Bestellungen, deren Muster alle zu einem
  * Teppich nach Mass gehoeren. Gilt, solange die Vorlage des Inhabers keine eigenen Abschnitte
  * "Text 1 Teppich" und "Erinnerung Teppich" hat. Ohne Verlege-Absatz (der gilt fuer Bodenbelaege
- * von der Rolle). {Lieferzeit} kommt aus service.lieferzeit des Produkts; fehlt sie oder
+ * von der Rolle). {LieferzeitHinweis} verweist nur auf die Produktseite, ohne Zahl (w-246); ohne Links oder
  * unterscheidet sie sich je Produkt, faellt die Zeile weg - nichts wird geraten.
  */
 export const TEPPICH_VORLAGEN = Object.freeze({
@@ -333,7 +333,7 @@ Ein paar Tipps zum Vergleichen:
 - Halten Sie sie neben Möbel, Türen oder Wandfarbe.
 
 Ihr Teppich wird in Ihrem Wunschmaß gefertigt. Auf der Produktseite geben Sie Maß und Form ein, wählen – je nach Modell – die Einfassung, zum Beispiel gekettelt, und sehen sofort den Preis.
-Lieferzeit laut Produktseite: {Lieferzeit}
+{LieferzeitHinweis}
 
 Wenn Sie Fragen haben – zum passenden Maß, zur Form, zur Einfassung oder zu einer anderen Farbe – melden Sie sich gern. Wir beraten Sie persönlich:
 
@@ -463,9 +463,8 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
   const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${p.url}`).join('\n\n');
   // Die Linkliste steht auf eigenen Zeilen, danach eine Leerzeile - sonst klebt der naechste Satz am letzten Link.
   if (links.length) werte['Link Produkt'] = `\n${auswahl}\n`;
-  // Lieferzeit laut Produktseite nur, wenn sie fuer alle verlinkten Produkte gleich ist.
-  const lieferzeiten = [...new Set(links.map(p => String(p.lieferzeit ?? '').replace(/[{}\r\n]/g, ' ').trim()).filter(Boolean))];
-  if (lieferzeiten.length === 1 && links.every(p => gesetzt(p.lieferzeit))) werte.Lieferzeit = lieferzeiten[0];
+  // Keine feste Zahl in Mails, nur der Verweis auf die Produktseite (Inhaber 03.11.2026, w-246).
+  if (links.length) werte.LieferzeitHinweis = 'Die Lieferzeit finden Sie auf der Produktseite.';
   if (gesetzt(absender)) werte.Name = String(absender).trim();
   const anrede = gesetzt(kundenname) ? nameSchreibweise(kundenname) : '';
   const mehrere = links.length > 1;
