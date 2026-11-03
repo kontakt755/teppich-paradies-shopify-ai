@@ -366,6 +366,29 @@ test('Speicher am Mac mini: gelb und rot werden ein Website-To-do, gruen und unb
   assert.deepEqual(leiteTodosAb({ shopwache: { speicher: stand('rot', 12, 97) } }, { sicht: 'laden', jetzt: JETZT }), []);
 });
 
+test('Google-Bewertung: auffaellig, gescheitert und stumm werden ein To-do, Normalfall bleibt still', () => {
+  const mit = googleBewertung => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], googleBewertung } }, { sicht: 'website', jetzt: JETZT });
+  assert.equal(mit(null).length, 0);
+  assert.equal(mit({ geprueftAm: vorTagen(3), ampel: 'gruen', meldung: '4,9 aus 246', letzterErfolg: vorTagen(3) }).length, 0);
+  const gelb = mit({ geprueftAm: vorTagen(1), ampel: 'gelb', meldung: 'Note springt von 4,9 auf 4,2', letzterErfolg: vorTagen(30) });
+  assert.equal(gelb[0].id, 'google-bewertung');
+  assert.equal(gelb[0].ton, 'crit', 'ein Mensch muss nachsehen, von allein heilt das nicht');
+  assert.match(gelb[0].kontext, /Note springt/);
+  assert.match(gelb[0].knopf.href, /^https:\/\/maps\.google\.com\//);
+  const rot = mit({ geprueftAm: vorTagen(1), ampel: 'rot', meldung: 'Quelle antwortet mit HTTP 400', letzterErfolg: vorTagen(30) });
+  assert.match(rot[0].titel, /Abruf gescheitert/);
+  assert.equal(rot[0].ton, 'warn', 'ein einzelner Fehlversuch: der Lauf versucht es selbst noch einmal');
+  assert.equal(rot[0].knopf, undefined);
+  const rotAlt = mit({ geprueftAm: vorTagen(1), ampel: 'rot', meldung: 'Quelle antwortet mit HTTP 400', letzterErfolg: vorTagen(35) });
+  assert.equal(rotAlt[0].ton, 'crit', 'einen Monat ohne Erfolg muss der Inhaber sehen');
+  const stumm = mit({ geprueftAm: vorTagen(35), ampel: 'gruen', meldung: '4,9 aus 246', letzterErfolg: vorTagen(35) });
+  assert.match(stumm[0].titel, /meldet sich nicht/);
+  assert.equal(stumm[0].ton, 'crit');
+  const inhaber = leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], googleBewertung: { geprueftAm: vorTagen(35), ampel: 'gruen', letzterErfolg: vorTagen(35) } } }, { sicht: 'inhaber', jetzt: JETZT });
+  assert.ok(inhaber.some(t => t.id === 'google-bewertung'), 'steht auch in der Inhaber-Sicht auf Heute');
+  assert.equal(mit({ geprueftAm: vorTagen(34), ampel: 'gruen', meldung: '4,9 aus 246', letzterErfolg: vorTagen(34) }).length, 0);
+});
+
 test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden ein Website-To-do', () => {
   const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
   const weg = mit({ geprueftAm: vorTagen(1), befunde: [

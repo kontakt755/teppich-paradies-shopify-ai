@@ -4138,15 +4138,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const ausschreibungen = aus2?.geprueftAm
         ? { geprueftAm: aus2.geprueftAm, treffer: aus2.treffer || [], neu: aus2.neu || [], ausfaelle: aus2.ausfaelle || [] }
         : null;
+      // Monatslauf Google-Bewertung (scripts/google-bewertung.mjs), dieselbe To-do-Quelle.
+      const gb = readJsonIfExists(path.join(dir, 'google-bewertung', 'status.json'));
+      const googleBewertung = gb?.geprueftAm
+        ? { geprueftAm: gb.geprueftAm, ampel: gb.ampel, meldung: gb.meldung || '', letzterErfolg: gb.letzterErfolg || null }
+        : null;
       // Routinen als Mac-Dienst (operations/lib/routinen.mjs): Stand je Routine, gestoerte werden ein rotes To-do.
       // Eingerichtet = Plist unter ~/Library/LaunchAgents; Tests geben einen eigenen Ordner mit.
       const routinen = routinenStand(dir, { jetzt: now(), ...(launchAgentsDir ? { agentsDir: launchAgentsDir } : {}) });
       // Betriebsdaten-Sicherung (operations/scripts/sicherung.mjs): verpasst oder gescheitert wird ein To-do.
       const sicherung = sicherungsstand(path.join(dir, 'sicherungsstand.json'), now());
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen, routinen, sicherung };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen, googleBewertung, routinen, sicherung };
       }
-      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen, routinen, sicherung };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen, googleBewertung, routinen, sicherung };
     },
 
     /**

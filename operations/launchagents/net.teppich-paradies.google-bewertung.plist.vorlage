@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.google-bewertung</string>
+
+  <!-- Google-Bewertung im Shop (scripts/google-bewertung.mjs): Note und Anzahl einmal im
+       Monat ins Shop-Metafeld custom.google_bewertung. Auffaellige Spruenge und Fehler ergeben
+       ein To-do im Control Center, der Shop zeigt dann weiter den letzten Wert.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard (Shopify-Zugang aus dessen .env.local).
+       Einrichten: Platzhalter __HOME__ ersetzen, nach ~/Library/LaunchAgents kopieren,
+       Ordner __HOME__/teppich-paradies-analyse/google-bewertung anlegen,
+       launchctl bootstrap gui/$(id -u) <datei>. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; exec npm run -s google-bewertung -- --schreiben --monatlich</string>
+  </array>
+
+  <!-- Am 1., 2. und 3. um 6:40: faellt der Mac oder die Quelle am Ersten aus, wird es nachgeholt.
+       Nach dem ersten Erfolg im Monat tut der Lauf nichts mehr. Kein RunAtLoad: Er schreibt in
+       den Shop. In XML-Kommentaren nie zwei Striche hintereinander schreiben. -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Day</key><integer>1</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>40</integer></dict>
+    <dict><key>Day</key><integer>2</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>40</integer></dict>
+    <dict><key>Day</key><integer>3</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>40</integer></dict>
+  </array>
+  <key>RunAtLoad</key><false/>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/google-bewertung/lauf.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/google-bewertung/lauf.log</string>
+</dict>
+</plist>

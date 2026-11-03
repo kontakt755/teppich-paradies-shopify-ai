@@ -5,10 +5,11 @@
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   # Google-Bewertung aus einer Quelle - siehe sections/tp-start-hero.liquid.
-  assign tp_rating_wert = section.settings.rating_wert | strip | default: settings.tp_google_wert
+  assign tp_gb = shop.metafields.custom.google_bewertung.value
+  assign tp_rating_wert = section.settings.rating_wert | strip | default: tp_gb.wert | default: settings.tp_google_wert
   assign tp_rating_link = section.settings.rating_link | default: settings.tp_google_link
   capture tp_rating_standard
-    echo settings.tp_google_anzahl
+    echo tp_gb.anzahl | default: settings.tp_google_anzahl
     echo ' Bewertungen · Google-Unternehmensprofil'
   endcapture
   assign tp_rating_text = section.settings.rating_text | strip | default: tp_rating_standard | strip

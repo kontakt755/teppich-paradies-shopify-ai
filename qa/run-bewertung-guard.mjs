@@ -3,6 +3,10 @@ import { pruefe } from './bewertung-guard.mjs';
 
 const { geprueft, befunde } = pruefe(process.cwd());
 for (const b of befunde) {
+  if (b.typ === 'code') {
+    console.log(`FEHLER ${b.datei}: liest ${b.feld} ${b.wert} - zeigt sonst nicht den Monatsstand`);
+    continue;
+  }
   console.log(`FEHLER ${b.datei} [${b.typ}] ${b.feld} = ${JSON.stringify(b.wert)} - gehoert in die Theme-Einstellung "TP Google-Bewertung", nicht ins Template.`);
 }
 console.log(`Bewertung-Guard: ${geprueft} Templates geprueft, ${befunde.length} Fehler.`);

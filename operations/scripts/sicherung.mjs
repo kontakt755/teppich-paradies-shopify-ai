@@ -107,6 +107,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'protokoll.jsonl',
   // Auslauf-Pruefung: letzter Stand samt der beim Lieferanten neu gesehenen Artikel.
   'auslauf/status.json',
+  // Monatslauf Google-Bewertung: ohne Stand bliebe ein ausgefallener Dienst nach einer Wiederherstellung unbemerkt.
+  'google-bewertung/status.json',
   // Betriebsaufgaben (Aufgaben & Organisation), Rueckrufe und Fallmarken gibt es nur hier.
   'organisation',
   'rueckrufe.json',

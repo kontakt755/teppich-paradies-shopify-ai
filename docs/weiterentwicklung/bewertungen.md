@@ -19,7 +19,9 @@ Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phase 6). Stand 2026-10-08.
   (`sections/header.liquid`: fremde Google-Bewertungen als eigene auszuzeichnen verstößt
   gegen die Google-Richtlinien).
 - **Google-Unternehmensbewertung:** `blocks/tp-bewertungsbeleg.liquid` zeigt Note und Anzahl
-  aus der Theme-Einstellung „TP Google-Bewertung“ mit Link zum Google-Profil.
+  aus dem Shop-Metafeld `custom.google_bewertung` (seit 2026-11 monatlich per
+  `scripts/google-bewertung.mjs`, Ablauf in `operations/README.md`), ohne Metafeld aus der
+  Theme-Einstellung „TP Google-Bewertung“, mit Link zum Google-Profil.
   `npm run bewertung:guard` verhindert abweichende Werte in Vorlagen. Das bleibt
   unverändert und ist **keine** Produktbewertung.
 

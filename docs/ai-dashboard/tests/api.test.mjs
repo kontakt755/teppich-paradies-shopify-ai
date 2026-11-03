@@ -954,6 +954,20 @@ test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', 
   assert.equal(r.tailscale.status, 'nicht-geprueft');
 });
 
+test('shopwacheStatus: Stand des Monatslaufs Google-Bewertung faehrt mit, ohne Datei null', async () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  assert.equal((await api.shopwacheStatus()).googleBewertung, null);
+  fs.mkdirSync(path.join(dir, 'google-bewertung'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'google-bewertung', 'status.json'), JSON.stringify({
+    geprueftAm: '2026-11-01T05:40:00Z', ampel: 'rot', meldung: 'Quelle antwortet mit HTTP 400', letzterErfolg: '2026-10-01T05:40:00Z',
+  }));
+  assert.deepEqual((await api.shopwacheStatus()).googleBewertung, {
+    geprueftAm: '2026-11-01T05:40:00Z', ampel: 'rot', meldung: 'Quelle antwortet mit HTTP 400', letzterErfolg: '2026-10-01T05:40:00Z',
+  });
+});
+
 test('shopwacheStatus: Auslauf-Befunde archivierter Produkte (nicht mehr im Lexikon) fallen weg', async () => {
   const root = tmpRoot();
   const dir = privatFixture(root);

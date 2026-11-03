@@ -108,6 +108,7 @@
     "muster:nachfassen": "node scripts/muster-nachfassen-senden.mjs",
     "auslauf:sortieren": "node scripts/auslauf-sortieren.mjs",
     "preisfilter:abgleich": "node scripts/preisfilter-abgleich.mjs",
+    "google-bewertung": "node scripts/google-bewertung.mjs",
     "aufgaben:pruefen": "node operations/scripts/aufgaben-pruefen.mjs",
     "daten:bulk": "node operations/scripts/bulk-zu-eingabe.mjs",
     "kurz": "node scripts/kurz.mjs",

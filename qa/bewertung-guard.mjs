@@ -52,12 +52,33 @@ export function befundeIn(raw, datei) {
   return treffer;
 }
 
-/** Prueft alle Templates eines Verzeichnisses. */
+/**
+ * Seit 2026-11 traegt der Monatslauf (scripts/google-bewertung.mjs) Note und Anzahl
+ * ins Shop-Metafeld ein. Wer nur die Theme-Einstellung liest, zeigt still den alten
+ * Stand - genau die Drift, gegen die dieser Guard steht.
+ */
+export const METAFELD = 'shop.metafields.custom.google_bewertung';
+const LIEST_EINSTELLUNG = /settings\.tp_google_(wert|anzahl)\b/;
+
+export function befundeImCode(inhalt, datei) {
+  if (!LIEST_EINSTELLUNG.test(inhalt) || inhalt.includes(METAFELD)) return [];
+  return [{ datei, typ: 'code', feld: 'settings.tp_google_*', wert: `ohne ${METAFELD}` }];
+}
+
+/** Prueft alle Templates eines Verzeichnisses und jeden Liquid-Code, der die Einstellung liest. */
 export function pruefe(wurzel) {
+  const code = [];
+  for (const teil of ['sections', 'blocks', 'snippets', 'layout']) {
+    const dir = path.join(wurzel, teil);
+    if (!fs.existsSync(dir)) continue;
+    for (const name of fs.readdirSync(dir).filter((n) => n.endsWith('.liquid'))) {
+      code.push(...befundeImCode(fs.readFileSync(path.join(dir, name), 'utf8'), `${teil}/${name}`));
+    }
+  }
   const ordner = path.join(wurzel, 'templates');
-  if (!fs.existsSync(ordner)) return { geprueft: 0, befunde: [] };
+  if (!fs.existsSync(ordner)) return { geprueft: 0, befunde: code };
   const dateien = fs.readdirSync(ordner).filter((n) => n.endsWith('.json'));
-  const befunde = [];
+  const befunde = [...code];
   for (const name of dateien) {
     const raw = fs.readFileSync(path.join(ordner, name), 'utf8');
     try {
