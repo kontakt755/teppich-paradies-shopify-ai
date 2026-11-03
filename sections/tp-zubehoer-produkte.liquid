@@ -133,6 +133,10 @@
         {%- capture tp_tg -%}{%- render 'tp-teppich-gruppe', product: item -%}{%- endcapture -%}
       {%- endif -%}
       {%- assign tp_tg = tp_tg | strip | default: 'rest' -%}
+      {%- comment -%} Sonderposten stehen gesammelt in ihrer eigenen Reihe, unabhaengig von Bauart und Flor (Inhaber 2026-11-03) {%- endcomment -%}
+      {%- if item.tags contains 'sonderposten' -%}
+        {%- assign tp_tg = 'sonderposten' -%}
+      {%- endif -%}
       {%- if tp_tg != tp_tg_filter -%}
         {%- continue -%}
       {%- endif -%}
@@ -483,6 +487,7 @@
       "info": "Zeigt nur die Teppiche einer Gruppe, abgeleitet aus Konstruktion, Florhöhe und Faser des Teppichbodens bzw. Einfassart Fertig.",
       "options": [
         { "value": "alle", "label": "Alle Produkte" },
+        { "value": "sonderposten", "label": "Sonderposten (Tag sonderposten)" },
         { "value": "flauschig", "label": "Extra flauschig (Velours ab 10 mm Flor)" },
         { "value": "weich", "label": "Weich (Velours)" },
         { "value": "robust", "label": "Fest & robust (Schlinge, Nadelvlies)" },

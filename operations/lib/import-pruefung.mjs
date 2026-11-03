@@ -109,6 +109,15 @@ export function ueblicheFelder(produkte, { ab = UEBLICH_AB, min = MIN_VERGLEICH 
   return ergebnis;
 }
 
+/**
+ * Lieferanten mit muster.nachBezeichnung kennen unsere Artikelnummer nicht: ohne einkauf.farbname an der
+ * Quellvariante haelt die Musterautomatik das Muster zurueck (Stillstand 31.10., 17 Muster).
+ */
+function ohneBezeichnung(p, nachBezeichnung) {
+  return (p.variants ?? []).filter((v) => nachBezeichnung.has(v.einkaufLieferant) && !v.einkaufFarbname);
+}
+const lieferantenVon = (varianten) => [...new Set(varianten.map((v) => v.einkaufLieferant))].sort().join(', ');
+
 function befund(p, stufe, regel, text) {
   return { handle: p.handle, titel: p.title, produktart: p.productType || '', stufe, regel, text };
 }
@@ -128,7 +137,7 @@ function musterFarbBefund(p, muster, option) {
  * @param {string[]} [eingabe.handles] statt `seit` genau diese Produkte pruefen
  * @returns {{geprueft:number, befunde:object[]}}
  */
-export function pruefeImporte({ produkte, seit, handles = null }) {
+export function pruefeImporte({ produkte, seit, handles = null, nachBezeichnung = new Set() }) {
   const nachHandle = new Map(produkte.map((p) => [p.handle, p]));
   const neu = handles
     ? handles.map((h) => nachHandle.get(h)).filter(Boolean)
@@ -209,6 +218,9 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
       }
     }
 
+    const ohneName = musterMoeglich(p) ? ohneBezeichnung(p, nachBezeichnung) : [];
+    if (ohneName.length) befunde.push(befund(p, 'fehler', 'muster-bezeichnung', `${ohneName.length} Variante(n) von Lieferant ${lieferantenVon(ohneName)} ohne einkauf.farbname - die Musterautomatik bestellt deren Muster nicht`));
+
     if (option && musterMoeglich(p) && p.status !== 'DRAFT') {
       const muster = nachHandle.get(MUSTER_PRAEFIX + p.handle);
       if (!muster) {
@@ -223,12 +235,22 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
   // nicht mit (Alvento/Zafira/Cortessa, Fehleranalyse 13.10.). Deshalb den
   // Musterabgleich fuer alle aktiven Produkte, nicht nur fuer die neuen.
   if (!handles) {
+    const altOhneName = [];
     for (const p of produkte) {
       if (neuSet.has(p) || p.status !== 'ACTIVE' || istMusterProdukt(p) || !musterMoeglich(p)) continue;
+      if (!istHilfsprodukt(p)) {
+        const ohne = ohneBezeichnung(p, nachBezeichnung);
+        if (ohne.length) altOhneName.push({ handle: p.handle, ohne });
+      }
       const option = farbOption(p);
       const muster = option && nachHandle.get(MUSTER_PRAEFIX + p.handle);
       const b = muster && musterFarbBefund(p, muster, option);
       if (b) befunde.push(b);
+    }
+    // Eine Zeile statt hunderter: der Altbestand soll den Bericht zum neuen Import nicht zudecken.
+    if (altOhneName.length) {
+      const varianten = altOhneName.flatMap((a) => a.ohne);
+      befunde.push(befund({ handle: 'altbestand' }, 'hinweis', 'muster-bezeichnung', `${varianten.length} Varianten in ${altOhneName.length} aktiven Produkten von Lieferant ${lieferantenVon(varianten)} ohne einkauf.farbname - deren Muster haelt die Musterautomatik zurueck (z. B. ${altOhneName.slice(0, 3).map((a) => a.handle).join(', ')})`));
     }
   }
   // Ein Entwurf ist im Shop unsichtbar: seine Luecken sind Arbeitsstand
@@ -270,7 +292,8 @@ export function jsonlZuProdukten(text) {
     if (!o.__parentId && id.includes('/Product/')) {
       produkte.set(id, normalisiereProdukt(o));
     } else if (id.includes('/ProductVariant/')) {
-      const v = { id, sku: o.sku ?? '', title: o.title ?? '', price: o.price, image: o.image?.url ?? null, selectedOptions: o.selectedOptions ?? [], custom: {} };
+      const v = { id, sku: o.sku ?? '', title: o.title ?? '', price: o.price, image: o.image?.url ?? null, selectedOptions: o.selectedOptions ?? [], custom: {},
+        einkaufLieferant: o.einkaufLieferant?.reference?.kuerzel?.value ?? null, einkaufFarbname: String(o.einkaufFarbname?.value ?? '').trim() || null };
       varianten.set(id, v);
       produkte.get(o.__parentId)?.variants.push(v);
     } else if (id.includes('/Collection/')) {

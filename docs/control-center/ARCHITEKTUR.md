@@ -2444,6 +2444,8 @@ Vor SMTP wird der Versuch dauerhaft in `muster-bestellung/versand.json` reservie
 
 Kunden → Bestellungen zeigt ohne Aufklappen: Muster bestellt, Zeitpunkt, Artikel/Farbe/Menge, Empfaenger und Lieferziel; daneben getrennte Klaerfaelle. Mailbestellung bestaetigt weder physischen Eingang noch Kundenversand. Keine Shopify-Schreibwirkung.
 
+Klaerfaelle tragen die betroffenen Positionen (`lineItemIds`) und `seit`. Die Packstation nennt den Grund bei jedem Muster mit Stand „noch nicht bestellt“ (`automatikGrund`). Seit wann derselbe Grund gilt, merkt sich der Lauf in `muster-bestellung/klaerstand.json`; ein neuer Grund startet die Uhr neu, ohne Eintrag zaehlt das Bestelldatum. Die Datei ist nur eine Stoppuhr: unlesbar gilt sie als leer und sperrt nie den Versand. Haengt ein noch nicht bestelltes Muster laenger als einen Werktag (`MUSTER_KLAER_WERKTAGE`, Mo-Fr, Tag des Beginns zaehlt nicht), entsteht je Grund ein rotes To-do „n Muster haengen: Grund“ (`muster_klaeren` in `lib/todos.mjs`) anstelle von „Muster bei … bestellen“; es steht damit auch unter „Probleme“ auf der Shop-Uebersicht. Klaerfaelle ohne Position (Bestellumfang oder Zahlung nach dem Mailversand geaendert) betreffen bereits bestellte Muster und erzeugen kein To-do.
+
 ## Muster direkt vom Lieferanten an den Kunden (24.10.2026, #1680)
 
 Wählt jemand in der Bestellmail für Muster das Lieferziel „Kunden“ (Regel des Inhabers vom 15.10. für
