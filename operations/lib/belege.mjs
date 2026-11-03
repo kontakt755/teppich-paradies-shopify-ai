@@ -233,10 +233,10 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
   let nummer = einziger(nummern);
   // Aus Betreff oder Dateiname und im Text bestaetigt (Leerzeichen zwischen Ziffern zaehlen nicht):
   // schlaegt eine Bezugsnummer im Text (Gutschrift nennt ihre Rechnung).
-  const hinweisMuster = hinweisNummer ? [...hinweisNummer].map(z => z.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('\\s?') : null;
-  if (hinweisMuster && new RegExp(`(^|[^A-Za-z0-9])${hinweisMuster}($|[^A-Za-z0-9])`).test(roh)) {
-    nummer = { wert: hinweisNummer };
-  }
+  // Fuehrende Nullen des Dateinamens fehlen im Beleg oft; es gilt die Schreibweise im Beleg.
+  const hinweisMuster = hinweisNummer ? [...hinweisNummer.replace(/^0+(?=\d)/, '')].map(z => z.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('\\s?') : null;
+  const bestaetigt = hinweisMuster ? new RegExp(`(?:^|[^A-Za-z0-9])(0*${hinweisMuster})(?:$|[^A-Za-z0-9])`).exec(roh) : null;
+  if (bestaetigt) nummer = { wert: bestaetigt[1].replace(/\s/g, '') };
   const daten = [];
   for (const m of roh.matchAll(STICHWORT_DATUM)) {
     const j = m[3].length === 2 ? `20${m[3]}` : m[3];

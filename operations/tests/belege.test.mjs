@@ -297,6 +297,8 @@ test('Nummer: Dreiergruppen bleiben ganz, Dateiname aus Ziffern zaehlt nur, wenn
   const text = 'Rechnung\n0201399548\nGesamtbetrag: 10,00';
   assert.equal(belegFelder({ text, name: '0201399548.PDF' }).nummer, '0201399548');
   assert.equal(belegFelder({ text: 'Rechnung\nGesamtbetrag: 10,00', name: '0201399548.PDF' }).nummer, null);
+  assert.equal(belegFelder({ text: 'Rechnung\nNummer 201399548 Musterstrasse\nGesamtbetrag: 10,00', name: '0201399548.PDF' }).nummer, '201399548');
+  assert.equal(belegFelder({ text: 'Nummer 1201399548\nGesamtbetrag: 10,00', name: '0201399548.PDF' }).nummer, null);
 });
 
 test('Betrag: Rechnungswert, Total inkl. Steuer und Gesamt EUR zaehlen, Skonto-Zeilen und Netto nicht', () => {
