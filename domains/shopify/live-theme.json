@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-11-03T11:12:06Z",
-    "verifiedBy": "Storefront Shopify.theme role main nach workflow:live (main cfeddd9f, PR #1835)."
+    "verifiedAt": "2026-11-03T14:54:02Z",
+    "verifiedBy": "Admin API role MAIN nach workflow:live (main ecaed948, PR #1850)."
   },
   "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-11-03T11:12:06Z",
-    "verifiedBy": "Bisheriges Live-Theme, nach workflow:live (main cfeddd9f) als Preview getauscht."
+    "verifiedAt": "2026-11-03T14:54:02Z",
+    "verifiedBy": "Bisheriges Live-Theme, nach workflow:live (main ecaed948) als Preview getauscht."
   },
   "fallback": {
     "themeId": "206590509390",

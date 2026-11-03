@@ -12,7 +12,8 @@
   Zuordnung ueber Namen oder Titel, nur Varianten mit service.einfassen
   exakt "Verfuegbar". Rendert nichts, wenn es nichts zu wechseln gibt.
   Gerichtete Restrollenangebote wechseln als Chips nur zwischen Raummass und
-  Ketteln derselben freigegebenen Quelle mit demselben Zuschnitt-Bundle.
+  Ketteln derselben freigegebenen Quelle mit demselben Zuschnitt-Bundle; dazu
+  der Link zurueck zur Meterware, sobald die Quelle freigegeben ist.
 {% enddoc %}
 
 {%- liquid
@@ -78,8 +79,13 @@
         assign tp_ew_andere = tp_ew_andere | plus: 1
       endif
     endfor
-    if tp_ew_streng == false and tp_ew_basis and tp_ew_basis.available
-      assign tp_ew_anzahl = tp_ew_anzahl | plus: 1
+    # Restrolle: der Kettelteppich fuehrt wie jeder Teppich zurueck zur Meterware.
+    assign tp_ew_basis_link = false
+    if tp_ew_basis and tp_ew_basis.available
+      if tp_ew_streng == false or tp_ew_rollenmodus
+        assign tp_ew_basis_link = true
+        assign tp_ew_anzahl = tp_ew_anzahl | plus: 1
+      endif
     endif
   endif
   # Seit 2026-10-12 waehlt der Konfigurator die Kante als Bildkacheln mit Preis
@@ -137,7 +143,7 @@
       {%- endfor -%}
     </div>
     {%- endif -%}
-    {%- if tp_ew_streng == false and tp_ew_basis and tp_ew_basis.available -%}
+    {%- if tp_ew_basis_link -%}
       {%- comment -%}
         Vorher "Lieber als Meterware von der Rolle" - fuer Kunden nicht zu verstehen (Inhaber
         2026-09-20). Jetzt erst die Frage, dann der Link mit dem, was dahinter liegt.

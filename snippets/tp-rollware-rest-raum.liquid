@@ -1,0 +1,52 @@
+{% doc %}
+  Restrolle als ein Artikel (Inhaber 2026-11-03): gibt das Raummass-Angebot fuer
+  den Rollenrechner als JSON aus, sonst nichts. Abgerechnet wird ueber das
+  versteckte Raummass-Produkt aus service.einfass_gruppe, der Bestand geht ueber
+  dessen Zuschnitt-Bundle von dieser Rolle ab. Fehlt eine Bedingung, fehlt das
+  Angebot und damit die Raummass-Karte (fail closed).
+
+  @param {product} product - die Rollenware
+{% enddoc %}
+{%- liquid
+  assign trr_raum = nil
+  for trr_p in product.metafields.service.einfass_gruppe.value
+    assign trr_art = trr_p.metafields.service.einfassung.value | strip | downcase | replace: 'ß', 'ss'
+    if trr_art == 'raummass' and trr_p.metafields.service.einfass_basis.value.id == product.id and trr_p.metafields.custom.preis_pro_001_qm.value == true
+      capture trr_frei
+        render 'tp-restrolle-freigegeben', product: trr_p
+      endcapture
+      assign trr_frei = trr_frei | strip
+      assign trr_v = trr_p.variants.first
+      if trr_frei == 'ja' and trr_v.available and trr_v.price > 0 and trr_v.metafields.service.einfassen.value == 'Verfügbar' and trr_v.metafields.service.basisvariante.value.id == product.variants.first.id
+        assign trr_raum = trr_p
+        break
+      endif
+    endif
+  endfor
+  if trr_raum
+    assign trr_mindest = trr_raum.metafields.service.mindestpreis.value
+    if trr_mindest.amount
+      assign trr_mindest_cent = trr_mindest.amount | times: 100 | round
+    else
+      assign trr_mindest_cent = trr_mindest | times: 100 | round
+    endif
+  endif
+-%}
+{%- if trr_raum -%}
+  {
+    "id": {{ trr_v.id | json }},
+    "price": {{ trr_v.price | json }},
+    "mindest_cent": {{ trr_mindest_cent | json }},
+    "max_laenge_cm": {{ trr_raum.metafields.service.max_laenge_cm.value | times: 1 | json }},
+    "produkt": {{ trr_raum.title | json }},
+    "zuschnitt": [
+      {%- for trr_zv in trr_raum.metafields.custom.zuschnitt_von_rolle.value.variants -%}
+        {%- assign trr_cm = trr_zv.option1 | remove: 'cm' | strip | times: 1 -%}
+        {%- if trr_cm > 0 -%}
+          { "id": {{ trr_zv.id | json }}, "cm": {{ trr_cm | json }}, "price": {{ trr_zv.price | json }}, "available": {{ trr_zv.available | json }} },
+        {%- endif -%}
+      {%- endfor -%}
+      null
+    ]
+  }
+{%- endif -%}

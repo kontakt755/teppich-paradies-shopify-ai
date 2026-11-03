@@ -261,8 +261,9 @@
       return varianten.filter(function (x) { return x.available; })[0] || null;
     }
 
+    // Ohne Farbwahl (Restrolle, nur eine Farbe) entfaellt Schritt "Farbe".
     function nummerieren() {
-      var n = 2;
+      var n = parseInt(d.erster_schritt, 10) || 2;
       root.querySelectorAll('[data-schritt]').forEach(function (s) {
         if (s.hidden || (s.closest('[data-konfig]') && konfig.hidden)) return;
         var num = s.querySelector('.tp-step-heading__number');
@@ -860,7 +861,7 @@
       // und liess 500 × 390 unmoeglich aussehen, obwohl es zulaessig ist.
       grenzen.textContent = rund
         ? 'Möglich: Ø ' + minCm + ' bis ' + maxW + ' cm'
-        : rollenRichtung === 'laengs' ? 'Breite quer zur Rolle bis ' + maxW + ' cm; Länge entlang der Rolle bis ' + maxL + ' cm. Der Zuschnitt wird nicht gedreht.'
+        : rollenRichtung === 'laengs' ? 'Möglich: Breite bis ' + maxW + ' cm, Länge bis ' + maxL + ' cm.'
         : 'Möglich: kürzere Seite bis ' + maxW + ' cm, längere bis ' + maxL + ' cm (Reihenfolge egal)';
       groessenAufbauen(rund ? 'rund' : 'eckig');
 
