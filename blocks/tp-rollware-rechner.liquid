@@ -1692,7 +1692,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (!(rate > 0)) return 0;
     var qty = cmExact ? roundedHundredthsQty(wCm, lenCm) : Math.ceil((wCm * lenCm) / 10000);
     if (v && v.quote_only) return Math.round(wCm * lenCm / 10000 * rate * 100) / 100;
-    if (v && v.rest_raum) return restRaumMenge(wCm, lenCm) * restRaum.price / 100;
+    if (v && v.rest_raum) return restZuschnittFuer(lenCm) ? restRaumMenge(wCm, lenCm) * restRaum.price / 100 : 0;
     return (cmExact ? qty / 100 : qty) * rate;
   };
 

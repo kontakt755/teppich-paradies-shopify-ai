@@ -47,6 +47,15 @@ test('Angebotsgrenze service.max_laenge_cm gilt auch bei laengerem Bundle', () =
   assert.equal(c.restZuschnittFuer(301), null);
 });
 
+test('Raumhelfer bekommt keinen Preis fuer eine Laenge, die der Rechner sperrt', () => {
+  const beginn = source.indexOf('  root.tpRwcPreis = function (art, wCm, lenCm) {');
+  const ende = source.indexOf('\n  };', beginn) + 5;
+  const c = angebot({ rest: { max_laenge_cm: 300, zuschnitt: [{ id: 1, cm: 1000, price: 47, available: true }] }, root: {}, baseOptions: () => [], byWidth: w => w, variantFor: () => null, roundedHundredthsQty: (w, l) => Math.round(w * l / 100) });
+  vm.runInContext('function raumVariant() { return raumAngebot; } function rateOf(v) { return v.price / 100; }' + source.slice(beginn, ende), c);
+  assert.equal(c.root.tpRwcPreis('raum', 210, 300), 296.1);
+  assert.equal(c.root.tpRwcPreis('raum', 210, 510), 0);
+});
+
 test('Fail closed: abweichender Zuschnittpreis, kein Bundle, andere Rollenart', () => {
   for (const opt of [
     { rest: { zuschnitt: [{ id: 1, cm: 100, price: 48, available: true }] } },
