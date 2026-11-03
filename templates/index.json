@@ -1506,8 +1506,7 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {},
-              "disabled": true
+              "blocks": {}
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
@@ -1652,7 +1651,8 @@
         "padding-block-start": 48,
         "padding-block-end": 48,
         "tp_leer_ausblenden": true,
-        "tp_je_linie_eins": false,
+        "tp_je_linie_eins": true,
+        "tp_alle_dekore": true,
         "tp_nur_angebote": false,
         "tp_nur_vorlage": "rolle"
       }

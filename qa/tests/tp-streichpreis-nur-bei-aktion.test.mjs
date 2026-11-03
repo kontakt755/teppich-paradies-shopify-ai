@@ -170,3 +170,19 @@ test('Restrollen: UVP-Kopfzeile mit Abstand, im Rechner nur bei Meterware', () =
   assert.match(zeile, /% unter UVP/);
   assert.doesNotMatch(zeile, /tp-rabatt-badge/);
 });
+
+test('Restrollen: Band auf der Startseite, Restmenge auf Karten, Herstellerhinweis', () => {
+  const lesen = datei => readFileSync(path.join(root, datei), 'utf8');
+  const start = JSON.parse(lesen('templates/index.json').replace(/^\/\*[\s\S]*?\*\//, ''));
+  const band = start.sections.start_restrollen;
+  assert.equal(band.settings.collection, 'reste-sonderposten');
+  assert.equal(band.settings.tp_nur_vorlage, 'rolle');
+  // Ohne "je Linie" greift der Vorlagenfilter nicht, ohne "alle Dekore" fielen Antigua und Vorwerk zusammen
+  assert.equal(band.settings.tp_je_linie_eins, true);
+  assert.equal(band.settings.tp_alle_dekore, true);
+  assert.ok(start.order.includes('start_restrollen'));
+  assert.match(lesen('blocks/tp-card-aktion.liquid'), /render 'tp-rollenrest'/);
+  const hinweis = lesen('blocks/tp-aktion-hinweis.liquid');
+  assert.match(hinweis, /tah_produkt\.vendor != 'TeppichParadies'/);
+  assert.match(hinweis, /tah_r\.template_suffix != 'rolle'/);
+});

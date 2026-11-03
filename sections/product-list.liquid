@@ -122,6 +122,9 @@
                 continue
               endif
               assign tp_ln_key = tp_ln_p.title | split: ' ' | first | downcase
+              if section.settings.tp_alle_dekore
+                assign tp_ln_key = tp_ln_p.handle
+              endif
               assign tp_ln_alle = tp_ln_alle | append: '|' | append: tp_ln_key | append: '|'
             endfor
             assign tp_ln_gezeigt = '|'
@@ -189,6 +192,9 @@
                 continue
               endif
               assign tp_ln_key = product.title | split: ' ' | first | downcase
+              if section.settings.tp_alle_dekore
+                assign tp_ln_key = product.handle
+              endif
               assign tp_ln_marke = '|' | append: tp_ln_key | append: '|'
               if tp_ln_gezeigt contains tp_ln_marke
                 continue
@@ -403,6 +409,13 @@
       "id": "tp_je_linie_eins",
       "label": "Je Produktlinie nur ein Dekor",
       "info": "Linie = erstes Wort im Titel. Weitere Dekore erscheinen als +N Farben.",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "tp_alle_dekore",
+      "label": "Trotzdem jedes Produkt einzeln zeigen",
+      "info": "Fuer Einzelstuecke wie Restrollen: gleiche Anfangswoerter werden nicht zusammengefasst. Wirkt mit \"Je Produktlinie nur ein Dekor\".",
       "default": false
     },
     {
