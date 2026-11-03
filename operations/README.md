@@ -1055,6 +1055,32 @@ löschen (ohne Plist zeigt das Control Center die Routine nicht mehr). **Rückfa
 gestört“, der sich nicht gleich beheben lässt: Dienst abschalten und die pausierte App-Aufgabe
 wieder aktivieren.
 
+## Rechnungs-Archiv und Druck-PDF (von Hand, seit 03.11.2026)
+
+Originale bleiben digital, gedruckt wird nur noch eine sortierte Kopie. Kein Dienst: die Befehle
+laufen von Hand, einmal im Monat.
+
+```
+npm run -s belege:monat -- --monat 2026-10              # Probelauf: liest, schreibt nichts
+npm run -s belege:monat -- --monat 2026-10 --schreiben  # legt ab und baut das Druck-PDF
+npm run -s belege:bank -- <kontoauszug.csv|camt053.xml> # Liste je Empfaenger, grobe Zuordnung
+```
+
+- **Postfach nur lesend:** `lib/imap-lesen.mjs` oeffnet mit `EXAMINE`, holt nur per `BODY.PEEK` und
+  bricht ab, wenn der Server nicht `[READ-ONLY]` meldet. Zugang: `nachfassen/postfach.json`.
+- **Ablage:** `$TP_PRIVAT_DIR/belege-archiv/JJJJ/MM/`: Originale (schreibgeschuetzt, sha256 im Manifest,
+  nie ueberschrieben), eingebettete oder beigelegte XML als eigene Datei, `manifest.json`,
+  `druck-JJJJ-MM.pdf`. Anzeigenamen der Anbieter privat in `belege-archiv/anbieter.json` (Absender
+  oder Domain -> Name); nach einem Namenswechsel entsteht ein neuer Dateiname, das alte Original bleibt.
+- **Einordnung** (`lib/belege.mjs`): eigene Mails, Versandmarken, Avise, Lieferscheine und
+  Zahlungsdienste fallen heraus; was nicht eindeutig ist, wird „unklar“ und steht im Deckblatt.
+  Betrag und Rechnungsnummer nur aus XML oder als einziger Wert hinter einem Stichwort im PDF-Text,
+  sonst leer und „Prüfen“. Die Summe sagt ausdruecklich, wenn sie deshalb unvollstaendig ist.
+- **Bank** (`lib/belege-bank.mjs`): CSV-Export oder CAMT.053, Ergebnis nur unter
+  `belege-archiv/bank/`. Guete der Zuordnung: `nummer`, `betrag-und-name`, `nur-betrag` (nur Hinweis).
+- **Werkzeuge:** `~/.venvs/analyse` (pypdf, `TP_ANALYSE_PYTHON`), `weasyprint` fuer das Deckblatt.
+- Die Konsolenausgabe nennt nur Zahlen. Ein vollstaendiger Lauf dauert rund 7 Minuten.
+
 ## Shop-Wache und Aufgabenwaechter (Mac-Dienste ohne Vorlage)
 
 `npm run shop:wache` (Dienst `net.teppich-paradies.shopwache`, stuendlich zur Minute 5) prueft den
