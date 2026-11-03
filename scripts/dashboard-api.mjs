@@ -1145,7 +1145,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    *   (auftragsverlauf.json, nur anhaengen). Ein Ergebnis schliesst zusaetzlich die Positionen ab.
    */
   async function auftragsSchrittSetzen(payload, benutzer, actor) {
-    const { orderId, schritt, notiz, bezug, lieferantBestellnummer, lineItemIds } = payload || {};
+    const { orderId, schritt, notiz, bezug, lieferantBestellnummer, lineItemIds, kettelwege } = payload || {};
     if (!orderId || !schritt) throw new ApiError(400, 'orderId und schritt sind Pflicht', { missing: ['orderId', 'schritt'] });
     if (!SCHRITT_WERTE.includes(schritt)) throw new ApiError(400, `Unbekannter Schritt „${schritt}"`);
     const dir = privatDirPath || privatDir();
@@ -1196,6 +1196,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const blockiert = positionen.map(p => alle[positionKey(orderId, p.lineItemId)]).find(e => !darfWeiter(e, status));
       if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
       setzeStatusPositionen(statusDatei, betroffen.map(p => ({ orderId, lineItemId: p.lineItemId, status, actor, bestellmenge: p.bestellSoll || p.bestellmenge || null, lieferantBestellnummer, notiz: text, jetzt: now(),
+        ...(status === 'bestellt' && kettelwege?.[p.lineItemId] ? { ueber: kettelwege[p.lineItemId] } : {}),
         ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}) })));
       return betroffen.map(p => p.lineItemId);
     };

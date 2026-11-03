@@ -13,7 +13,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterEigen, stufeVon, wartetage } from '../../lib/einkauf-lieferanten.mjs';
-import { musterSchritt } from '../../lib/einkauf-uebersicht.mjs';
+import { kettelwegNoetig, musterSchritt } from '../../lib/einkauf-uebersicht.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
 
 export { musterEigen };
@@ -189,16 +189,28 @@ export async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer 
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
 }
 
+/** Pflichtfrage je gekettelten Direktversand, dieselben Begriffe wie im Bestelldialog. */
+export function kettelwegFelder(positionen = []) {
+  return positionen.map(p => `<fieldset class="zl-wahl"><legend>Wer kettelt? · ${esc(anzeigeWert(p.titel))}${p.farbe ? ` · ${esc(p.farbe)}` : ''}</legend>
+    <label><input type="radio" name="kettelweg:${esc(p.lineItemId)}" value="kunde" required> Lieferant kettelt, direkt an Kunden</label>
+    <label><input type="radio" name="kettelweg:${esc(p.lineItemId)}" value="kettler" required> Unser Kettler</label>
+  </fieldset>`).join('');
+}
+export const kettelwegGewaehlt = (fd, p) => fd.get(`kettelweg:${p.lineItemId}`);
+
 function openAuftragsstatusDialog(pos, status) {
   // Kettler nur anbieten, wenn seine Anschrift in den Stammdaten steht (kommt mit /api/einkauf/lieferanten).
   const kettler = einkauf.lieferanten?.kettelservice;
   const bisher = afEintragFuer(pos);
+  // Der Knopf traegt nur Anzeige-Angaben; Weg und Ausfuehrung stehen im Auftrag.
+  const fragePos = alleAuftraege().find(a => a.id === pos.orderId)?.positionen?.find(p => p.lineItemId === pos.lineItemId);
+  const frage = kettelwegNoetig(fragePos);
   const kettlerFeld = kettler ? `<label class="field" style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="kettler"${istUeberKettler(bisher) ? ' checked' : ''}> Ware geht an unseren Kettler${kettler.ort ? ` (${esc(kettler.ort)})` : ''}</label>` : '';
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="afTitle" data-dialog>
     <h2 id="afTitle">Bestellt · ${esc(pos.orderName)}</h2>
     <p class="small muted">${esc(pos.titel)} · ${esc(pos.farbe)}<br>Beim Lieferanten bestellt – Bestellnummer des Lieferanten notieren (optional, hilft bei Rückfragen).</p>
     <div class="field"><label for="afNr">Lieferanten-Bestellnummer</label><input id="afNr" name="nr" placeholder="z. B. 2026-4711" maxlength="200"></div>
-    ${kettlerFeld}
+    ${frage ? kettelwegFelder([pos]) : kettlerFeld}
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Übernehmen</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
@@ -207,7 +219,7 @@ function openAuftragsstatusDialog(pos, status) {
     ev.preventDefault();
     form.querySelector('[type=submit]').disabled = true;
     const fd = new FormData(form);
-    const ueber = kettler ? (fd.get('kettler') ? 'kettler' : null) : undefined;
+    const ueber = frage ? kettelwegGewaehlt(fd, pos) : kettler ? (fd.get('kettler') ? 'kettler' : null) : undefined;
     const ok = await setzeAuftragsstatus(pos, status, { lieferantBestellnummer: (fd.get('nr') || '').trim() || null, ueber });
     if (ok) $('#dialogRoot').innerHTML = '';
     else form.querySelector('[type=submit]').disabled = false;
@@ -432,12 +444,14 @@ function openSammelBestelltDialog(id) {
   const positionen = g.positionen.filter(p => !afEintragFuer(p)?.status && !musterEigen(p));
   if (!positionen.length) { toast('Alle Artikel dieser Gruppe sind bereits bestellt.'); return; }
   const luecken = positionen.filter(positionUnvollstaendig).length;
+  const fragen = positionen.filter(kettelwegNoetig);
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="sbTitle" data-dialog>
     <h2 id="sbTitle">Als bestellt markieren · ${esc(g.titel)}</h2>
     <p class="small muted">Setzt ${plural(positionen.length, 'Artikel', 'Artikel')} auf „Bestellt" – nur verwenden, wenn die Bestellung beim Lieferanten wirklich raus ist.</p>
     <ul class="small" style="margin:0;padding-left:18px;max-height:200px;overflow:auto">${positionen.map(p => `<li>${esc(anzeigeWert(p.titel))} · ${esc(p.farbe)} · ${esc(p.orderName)}</li>`).join('')}</ul>
     ${luecken ? `<p class="notice warn">${plural(luecken, 'Artikel hat', 'Artikel haben')} fehlende Angaben (in der Liste markiert).</p>` : ''}
     <div class="field"><label for="sbNr">Lieferanten-Bestellnummer (optional, gilt für alle)</label><input id="sbNr" name="nr" placeholder="z. B. 2026-4711" maxlength="200"></div>
+    ${kettelwegFelder(fragen)}
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">${plural(positionen.length, 'Artikel', 'Artikel')} als bestellt markieren</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
@@ -445,8 +459,9 @@ function openSammelBestelltDialog(id) {
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     form.querySelector('[type=submit]').disabled = true;
-    const nr = (new FormData(form).get('nr') || '').trim() || null;
-    await markiereAlsBestellt(positionen, nr);
+    const fd = new FormData(form);
+    const nr = (fd.get('nr') || '').trim() || null;
+    await markiereAlsBestellt(positionen, nr, { ueberVon: p => (kettelwegNoetig(p) ? kettelwegGewaehlt(fd, p) : undefined) });
     $('#dialogRoot').innerHTML = '';
     render();
   });
@@ -457,9 +472,9 @@ function openSammelBestelltDialog(id) {
  * "Alle als bestellt markieren…" und die Rueckfrage nach der Bestellmail. Gibt die Zahl der
  * gesetzten Positionen zurueck; gezeichnet wird vom Aufrufer.
  */
-export async function markiereAlsBestellt(positionen, lieferantBestellnummer = null, { ueber } = {}) {
+export async function markiereAlsBestellt(positionen, lieferantBestellnummer = null, { ueber, ueberVon = () => ueber } = {}) {
   let ok = 0;
-  for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer, ueber, still: true, nachladen: false })) ok += 1;
+  for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer, ueber: ueberVon(p), still: true, nachladen: false })) ok += 1;
   if (ok) await ladeKundenArbeitsstandNeu();
   toast(ok === positionen.length ? `${plural(ok, 'Artikel', 'Artikel')} als bestellt markiert` : `Nur ${ok} von ${positionen.length} Artikeln als bestellt markiert`, ok === positionen.length ? '' : 'crit');
   return ok;

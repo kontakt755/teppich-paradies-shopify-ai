@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blockGruende, mengeText, ausfuehrungKurz, jeKommission, musterSchritt } from '../lib/einkauf-uebersicht.mjs';
+import { blockGruende, kettelwegNoetig, mengeText, ausfuehrungKurz, jeKommission, musterSchritt } from '../lib/einkauf-uebersicht.mjs';
 
 // Nur erfundene Daten.
 const pos = (extra = {}) => ({ titel: 'Testvelours Teppichboden', farbe: 'Sand', grosshaendlerId: 'TV-100', bestellmenge: { menge: 4, text: '4,00 lfm × 4,00 m' }, ...extra });
@@ -13,6 +13,15 @@ test('blockGruende: Artikelnummer und Menge halten auf, fehlender Link nicht', (
   assert.deepEqual(blockGruende(pos({ bestellmenge: { menge: 'UNGEKLAERT' } })), ['Menge ungeklärt']);
   // Muster werden ueber die Bestellmail mit eigener Pruefung bestellt.
   assert.deepEqual(blockGruende(pos({ istMuster: true, grosshaendlerId: 'UNGEKLAERT' })), []);
+});
+
+test('kettelwegNoetig: nur gekettelter Direktversand, nicht Einfassung ohne Ketteln oder anderer Weg', () => {
+  const gekettelt = ['Fertigmaß: 250 × 220 cm', 'Einfassung: Gekettelt, Ton in Ton'];
+  assert.equal(kettelwegNoetig({ route: 'SUPPLIER_DIRECT', ausfuehrung: gekettelt }), true);
+  assert.equal(kettelwegNoetig({ route: 'SUPPLIER_TO_TP', ausfuehrung: gekettelt }), false);
+  assert.equal(kettelwegNoetig({ route: 'SUPPLIER_DIRECT', ausfuehrung: ['Einfassung: ohne Einfassung'] }), false);
+  assert.equal(kettelwegNoetig({ route: 'SUPPLIER_DIRECT' }), false);
+  assert.equal(kettelwegNoetig(undefined), false);
 });
 
 test('mengeText: ungeklaert und leer ergeben keinen Text', () => {
