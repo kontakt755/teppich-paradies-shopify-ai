@@ -132,7 +132,7 @@ export function mailAuswerten({ roh, id, thread, eingang, labels, analyse = pdfA
 }
 
 /** Anbieter mit Rechnungs-Betreff je Vormonat, nur aus den Koepfen. */
-async function historieLesen(sitzung, monat) {
+async function historieLesen(sitzung, monat, aliase) {
   const historie = {};
   const namen = {};
   for (let s = 1; s <= VORMONATE; s += 1) {
@@ -153,7 +153,7 @@ async function historieLesen(sitzung, monat) {
       if ((e && e.klasse !== 'portal') || !WORT_RECHNUNG.test(k.betreff)) continue;
       const sch = anbieterSchluessel(k.von.adresse);
       je.add(sch);
-      namen[sch] = namen[sch] || anbieterName(k.von);
+      namen[sch] = namen[sch] || anbieterName(k.von, aliase);
     }
     historie[m] = je;
   }
@@ -302,7 +302,7 @@ export async function lauf({ monat, schreiben = false, privat, zugang, sitzungOe
       }
     }
   }
-  const hist = await historieLesen(sitzung, monat);
+  const hist = await historieLesen(sitzung, monat, aliase);
 
   const neu = roheBelege.map(b => b.meta);
   dublettenMarkieren(neu);

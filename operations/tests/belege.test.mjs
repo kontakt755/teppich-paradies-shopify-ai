@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
-  einordnen, einordnenKopf, xmlRechnungLesen, pdfTextLesen, betragLesen, belegFelder, ablegenUnveraenderlich,
+  einordnen, einordnenKopf, rolleAnhang, xmlRechnungLesen, pdfTextLesen, betragLesen, belegFelder, ablegenUnveraenderlich,
   archivName, sichererName, dublettenMarkieren, druckReihenfolge, summenJeAnbieter, wiederkehrend, pruefKandidaten,
   manifestZusammenfuehren, monatsGrenzen, monatDavor, berlinTag, anbieterSchluessel, anbieterName, sha256,
 } from '../lib/belege.mjs';
@@ -256,4 +256,35 @@ test('PDF-Helfer: eingebettete XML, Seitenzahl, Zusammenfuegen', { skip: !fs.exi
   assert.equal(f.fehler.length, 1);
   assert.equal(JSON.parse(spawnSync(PY, [HELFER, 'seiten', ziel]).stdout).seiten, 4);
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('PDF-Text: Betrag direkt am Stichwort, andere Spalten und AGB-Text stoeren nicht', () => {
+  assert.equal(pdfTextLesen('Gesamtgewicht netto: 245,76 kg   Endbetrag in EUR.:   4.634,69').brutto, 4634.69);
+  assert.equal(pdfTextLesen('Gesamtbetrag EUR ohne MwSt. 217,84\n   Gesamtbetrag EUR inkl. MwSt. 259,23').brutto, 259.23);
+  assert.equal(pdfTextLesen('Brutto 619,80 €').brutto, 619.8);
+  assert.equal(pdfTextLesen('Brutto Gewicht (KG) 375,61').brutto, null);
+  assert.equal(pdfTextLesen('Netto Gesamtbetrag 100,00').brutto, null);
+  assert.equal(pdfTextLesen('Rechnungsbetrag 477,98 EUR\nDer Rechnungsbetrag erhoeht sich um zehn Prozent, mindestens jedoch um vierzig Euro (40,00 €)').brutto, 477.98);
+});
+
+test('Nummer: aus Dateiname und im Text bestaetigt schlaegt die Bezugsnummer einer Gutschrift', () => {
+  const r = pdfTextLesen('Gutschrift GS161927\nRechnungsnummer: 1681610FHS', { hinweisNummer: 'GS161927' });
+  assert.equal(r.nummer, 'GS161927');
+});
+
+test('Anbieter: Freemail faellt nicht zusammen, Funktionsnamen weichen der Domain', () => {
+  assert.equal(anbieterSchluessel('a@web.de'), 'a@web.de');
+  assert.notEqual(anbieterSchluessel('a@gmx.de'), anbieterSchluessel('b@gmx.de'));
+  assert.equal(anbieterName({ name: 'BITTE NICHT ANTWORTEN - Rechnungsversand', adresse: 'x@firma.example' }), 'firma.example');
+  assert.equal(anbieterName({ name: 'Muster KG', adresse: 'x@firma.example' }), 'Muster KG');
+});
+
+test('Einordnung: Quittungs-Betreff mit Invoice-Anhang ist Rechnung, RE- und RG-Dateien sehen nach Beleg aus', () => {
+  const pdf = name => ({ name, pdf: true, text: '' });
+  const e = einordnen({ von: { adresse: 'x@firma.example' }, betreff: 'Your Firma receipt', labels: ['W'], anhaenge: [pdf('Invoice-1.pdf'), pdf('Receipt-1.pdf')] });
+  assert.equal(e.klasse, 'rechnung');
+  assert.deepEqual(e.rollen, ['rechnung', 'beilage']);
+  assert.equal(rolleAnhang({ name: ' RE-4790 01.10.pdf' }), 'rechnung');
+  assert.equal(rolleAnhang({ name: 'RG Firma 9.2.2026.pdf' }), 'rechnung');
+  assert.equal(rolleAnhang({ name: 'Rezept.pdf' }), 'beilage');
 });

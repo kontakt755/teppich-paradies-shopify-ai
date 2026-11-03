@@ -38,7 +38,7 @@ export const PORTALE = Object.freeze([
   { name: 'Lexware', absender: /@app\.lexware\.de$/, betreff: /rechnung/i, wo: 'Lexware: Einstellungen > Vertrag und Rechnungen' },
 ]);
 
-export const WORT_RECHNUNG = /rechnung|invoice|faktura|factuur|abrechnung|gutschrift|credit note/i;
+export const WORT_RECHNUNG = /rechnung|invoice|receipt|faktura|factuur|abrechnung|gutschrift|credit note/i;
 const ANTWORT = /^\s*(aw|re|wg|fw|fwd|antwort)\s*:/i;
 const BESCHEINIGUNG_BEILAGE = /(^|[^a-z])(agb|widerruf|datenschutz|lieferschein|verzending|packing|delivery|receipt|quittung|zahlungsbeleg|abnahme|versandbeleg)/i;
 
@@ -72,9 +72,15 @@ export function berlinTag(iso) {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
+const FREEMAIL = /^(web\.de|gmx\.(de|net|at|ch)|gmail\.com|googlemail\.com|t-online\.de|hotmail\.[a-z]+|outlook\.[a-z]+|live\.[a-z]+|yahoo\.[a-z]+|icloud\.com|freenet\.de|aol\.[a-z]+)$/;
+/** Absendernamen, die nur die Funktion nennen, sagen nicht, wer der Anbieter ist. */
+const FUNKTIONSNAME = /@|no.?reply|nicht antworten|rechnung|invoice|billing|document|buchhaltung|debitoren/i;
+
 /** Domain ohne Subdomains: rechnung.anbieter.de und info@anbieter.de sind ein Anbieter. */
 export function anbieterSchluessel(adresse) {
   const domain = klein(adresse).split('@')[1] || '';
+  // Bei Freemail ist die Domain kein Anbieter: fremde Absender duerfen nicht zusammenfallen.
+  if (FREEMAIL.test(domain)) return klein(adresse);
   const teile = domain.split('.').filter(Boolean);
   return teile.length > 2 ? teile.slice(-2).join('.') : domain;
 }
@@ -88,7 +94,7 @@ export function anbieterName(von, aliase = {}) {
   if (aliase[voll]) return aliase[voll];
   if (aliase[domain]) return aliase[domain];
   const name = String(von?.name || '').trim();
-  return name && !/@|no.?reply/i.test(name) ? name : (domain || 'unbekannt');
+  return name && !FUNKTIONSNAME.test(name) ? name : (domain || 'unbekannt');
 }
 
 export const istEigen = adresse => EIGENE_DOMAINS.includes(klein(adresse).split('@')[1] || '');
@@ -179,8 +185,9 @@ export function betragLesen(text) {
   return (m[1] || m[4]) ? -n : n;
 }
 
-const STICHWORT_BRUTTO = /(rechnungsbetrag|rechnungssumme|rechnungsendbetrag|gesamtbetrag|gesamt\s*brutto|bruttobetrag|bruttosumme|brutto\s*gesamt|summe\s*brutto|endbetrag|endsumme|gesamtsumme|zu\s*zahlen|zahlbetrag|gutschriftsbetrag|invoice\s*total|total\s*amount|amount\s*due|total\s*due)/i;
-const NICHT_BRUTTO = /netto|zwischensumme|mwst|ust\b|umsatzsteuer|skonto|nachlass|rabatt|fracht|steuerbetrag|anzahlung|bereits/i;
+const STICHWORT_BRUTTO = /(rechnungsbetrag|rechnungssumme|rechnungsendbetrag|gesamtbetrag|gesamt\s*brutto|bruttobetrag|bruttosumme|brutto\s*gesamt|summe\s*brutto|endbetrag|endsumme|gesamtsumme|zu\s*zahlen|zahlbetrag|gutschriftsbetrag|invoice\s*total|total\s*amount|amount\s*due|total\s*due|total\s*inkl|^\s*brutto(?=\s*:?\s*(?:€|eur)?\s*-?\d))/i;
+const NICHT_BRUTTO = /netto|zwischensumme|mwst|ust\b|umsatzsteuer|skonto|nachlass|rabatt|fracht|steuerbetrag|anzahlung|bereits|gewicht/i;
+const INKL_STEUER = /inkl\.?\s*(?:der\s*)?(?:mwst|ust|umsatzsteuer)/gi;
 const STICHWORT_NUMMER = /(?:rechnungs?\s*-?\s*(?:nummer|nr\.?|no\.?)|rechnung\s*(?:nr\.?|no\.?|#)|invoice\s*(?:number|no\.?|nr\.?|#)|gutschrifts?\s*-?\s*(?:nummer|nr\.?)|beleg\s*-?\s*(?:nummer|nr\.?)|faktura\s*-?\s*(?:nummer|nr\.?))\s*[:.#]?\s*([A-Z0-9][A-Z0-9/._-]*)/gi;
 const STICHWORT_DATUM = /(?:rechnungsdatum|rechnungs-datum|belegdatum|invoice\s*date|datum\s*der\s*rechnung)\s*[:.]?\s*(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{2,4})/gi;
 const BETRAG_IN_ZEILE = /-?\s?\d{1,3}(?:[.,' ]\d{3})*[.,]\d{2}(?:\s?-)?(?!\d)|-?\s?\d+[.,]\d{2}(?:\s?-)?(?!\d)/g;
@@ -203,10 +210,12 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
     const treffer = STICHWORT_BRUTTO.exec(zeile);
     if (!treffer) continue;
     // Stichwort „Zahlbetrag“ o. ae. kann mit Netto-Spalten in einer Zeile stehen: nur danach lesen.
-    const rest = zeile.slice(treffer.index + treffer[0].length);
-    if (NICHT_BRUTTO.test(zeile.slice(0, treffer.index)) || NICHT_BRUTTO.test(rest)) continue;
+    // Davor zaehlt nur das Wort direkt am Stichwort („Netto Gesamtbetrag“), nicht eine andere Spalte.
+    const rest = zeile.slice(treffer.index + treffer[0].length).replace(/\s+/g, ' ');
+    if (NICHT_BRUTTO.test(zeile.slice(Math.max(0, treffer.index - 12), treffer.index)) || NICHT_BRUTTO.test(rest.replace(INKL_STEUER, ' '))) continue;
     const zahlen = rest.match(BETRAG_IN_ZEILE);
-    if (!zahlen) continue;
+    // Der Betrag steht direkt hinter dem Stichwort; im Fliesstext (AGB) ist es kein Rechnungsbetrag.
+    if (!zahlen || rest.indexOf(zahlen[0]) > 25) continue;
     const n = betragLesen(zahlen[zahlen.length - 1].replace(/\s/g, ''));
     if (n !== null) betraege.push(n);
   }
@@ -217,7 +226,8 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
     if (/\d/.test(n) && n.length >= 3) nummern.push(n);
   }
   let nummer = einziger(nummern);
-  if (!nummer.wert && hinweisNummer && new RegExp(`(^|[^A-Za-z0-9])${hinweisNummer.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^A-Za-z0-9])`).test(roh)) {
+  // Aus Betreff oder Dateiname und im Text bestaetigt: schlaegt eine Bezugsnummer im Text (Gutschrift nennt ihre Rechnung).
+  if (hinweisNummer && new RegExp(`(^|[^A-Za-z0-9])${hinweisNummer.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^A-Za-z0-9])`).test(roh)) {
     nummer = { wert: hinweisNummer };
   }
   const daten = [];
@@ -287,7 +297,7 @@ export function rolleAnhang({ name, text = '', xml = false, einzigerAnhang = fal
   if (xml) return 'rechnung';
   const n = String(name ?? '');
   if (BESCHEINIGUNG_BEILAGE.test(n)) return 'beilage';
-  if (/(rechnung|invoice|faktura|factuur|gutschrift|credit|abrechnung)/i.test(n)) return 'rechnung';
+  if (/(rechnung|invoice|faktura|factuur|gutschrift|credit|abrechnung)|(^|[^a-z])rg([^a-z]|$)|(^|[^a-z])re[-_ ]?\d/i.test(n)) return 'rechnung';
   if (/rechnungs?\s*-?\s*(nummer|nr)|invoice\s*(no|number|nr)|gutschrift|rechnung\s*(nr|no)/i.test(text)) return 'rechnung';
   return rechnungsMail && einzigerAnhang ? 'rechnung' : 'beilage';
 }
