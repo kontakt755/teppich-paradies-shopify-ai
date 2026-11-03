@@ -11,7 +11,7 @@ const end = source.indexOf('\n  var widths;', start);
 const zuschnitt = [25, 50, 100, 300, 1000].map((cm, i) => ({ id: 900 + i, cm, price: 47, available: cm <= 300 }));
 
 function angebot({ rest = {}, ...overrides } = {}) {
-  const data = { rest_raum: { id: 77, price: 47, mindest_cent: 9900, produkt: 'Antigua Raummaß', zuschnitt: [...zuschnitt, null], ...rest } };
+  const data = { rest_raum: { id: 77, price: 47, mindest_cent: 9900, max_laenge_cm: 1000, produkt: 'Antigua Raummaß', zuschnitt: [...zuschnitt, null], ...rest } };
   const c = vm.createContext({ data, wIdx: -1, variants: [{ id: 123, price: 3495, compare_at_price: 0, available: true }], cmExact: false, fallbackWidthCm: 400, ART: { wunschOk: () => false }, ...overrides });
   vm.runInContext(source.slice(start, end), c);
   return c;
@@ -40,11 +40,19 @@ test('Kleinste kaufbare Zuschnittlaenge deckt die Laenge, sonst kein Angebot', (
   assert.equal(c.restZuschnittFuer(301), null, 'die 1000-cm-Variante ist nicht verfuegbar');
 });
 
+test('Angebotsgrenze service.max_laenge_cm gilt auch bei laengerem Bundle', () => {
+  const lang = [{ id: 1, cm: 1000, price: 47, available: true }];
+  const c = angebot({ rest: { max_laenge_cm: 300, zuschnitt: lang } });
+  assert.equal(c.restZuschnittFuer(300).cm, 1000);
+  assert.equal(c.restZuschnittFuer(301), null);
+});
+
 test('Fail closed: abweichender Zuschnittpreis, kein Bundle, andere Rollenart', () => {
   for (const opt of [
     { rest: { zuschnitt: [{ id: 1, cm: 100, price: 48, available: true }] } },
     { rest: { zuschnitt: [null] } },
     { rest: { price: 0 } },
+    { rest: { max_laenge_cm: 0 } },
     { wIdx: 1 },
     { cmExact: true },
     { fallbackWidthCm: 0 },

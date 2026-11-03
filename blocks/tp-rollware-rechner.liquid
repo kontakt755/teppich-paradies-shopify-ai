@@ -1393,7 +1393,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   var restRaum = (!raumAnfrage && data.rest_raum && wIdx === -1 && variants.length === 1 &&
     !cmExact && fallbackWidthCm > 0) ? data.rest_raum : null;
   var restZuschnitte = restRaum ? (restRaum.zuschnitt || []).filter(Boolean) : [];
-  if (restRaum && (!restZuschnitte.length || !(restRaum.price > 0) ||
+  if (restRaum && (!restZuschnitte.length || !(restRaum.price > 0) || !(restRaum.max_laenge_cm > 0) ||
     restZuschnitte.some(function (z) { return z.price !== restRaum.price; }))) restRaum = null;
   var raumFest = raumAnfrage || !!restRaum;
   var raumAngebot = raumAnfrage ? Object.assign({}, variants[0], {
@@ -1418,6 +1418,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Kleinste kaufbare Bundle-Variante, die die Laenge deckt (Schnitt laengs).
   function restZuschnittFuer(lenCm) {
     var passend = null;
+    if (!(lenCm <= restRaum.max_laenge_cm)) return null;
     restZuschnitte.forEach(function (z) {
       if (z.available === true && z.cm >= lenCm && (!passend || z.cm < passend.cm)) passend = z;
     });

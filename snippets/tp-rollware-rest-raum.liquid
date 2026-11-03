@@ -37,6 +37,7 @@
     "id": {{ trr_v.id | json }},
     "price": {{ trr_v.price | json }},
     "mindest_cent": {{ trr_mindest_cent | json }},
+    "max_laenge_cm": {{ trr_raum.metafields.service.max_laenge_cm.value | times: 1 | json }},
     "produkt": {{ trr_raum.title | json }},
     "zuschnitt": [
       {%- for trr_zv in trr_raum.metafields.custom.zuschnitt_von_rolle.value.variants -%}
