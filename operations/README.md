@@ -934,6 +934,7 @@ Lauf. Gemessen: ein Fehlermeldungs-Lauf ohne Arbeit braucht 3 Runden, 8 s, rund 
 | `net.teppich-paradies.fehler-vorpruefung` | alle 15 Min., Mo–Sa 7–19 Uhr (und beim Laden) | `claude-lauf.mjs fehlermeldungen`: `npm run -s fehler -- abgleich` ohne KI; Claude nur bei `neu`, oder für `laufend`/`kuerzlichErledigt` höchstens alle 2 Std. Nach einem Fehlschlag 1 Std. Pause. |
 | `net.teppich-paradies.postfach` | 7:35, 9:35 … 19:35, Mo–Sa | `claude-lauf.mjs postfach`: erst eine IMAP-Vorprüfung ohne KI (unten), dann je Teil höchstens ein `claude -p`-Aufruf, erst Lieferbelege, dann Service-Anfragen. Ein Fehler im ersten verhindert den zweiten nicht. |
 | `net.teppich-paradies.datenstand` | stündlich :20 | `datenstand-pruefen.mjs`: `aktualisierung.json` höchstens 60 Min. alt, jeder Teil erfolgreich, Lexikon/Bestand ≤ 3 Std. Ohne KI. Ersetzt den Datenteil von `shop-zahlen-export` – die Daten holt der Sync-Dienst. |
+| `net.teppich-paradies.ki-stand` | stündlich :50 | `ki-stand.mjs`: ohne KI Codex-Kontingent (ab 80 % Woche oder nicht lesbar ein To-do) und native Musterautomatik; montags Claude-Version und Werkzeugprobe (neue Version: gelbes To-do, Update nie selbst); monatlich höchstens ein Sonnet-Lauf ohne Werkzeuge, der bis zu 3 Vorschläge nach `routinen/ki-stand/` schreibt |
 
 Das Nachziehen von `~/tp-dashboard` auf main macht nicht dieser Dienst, sondern
 `net.teppich-paradies.nachziehen` (#1715, Abschnitt oben). Zusammenspiel: Das Nachziehen

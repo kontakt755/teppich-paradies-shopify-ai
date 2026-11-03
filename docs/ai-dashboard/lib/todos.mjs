@@ -670,6 +670,14 @@ function ausRoutinen(quellen, jetzt) {
   }];
 }
 
+/** Neue Claude-Version oder Monatsvorschlaege (operations/lib/ki-stand.mjs): gelb, kein Ausfall. */
+function ausKiStand(quellen) {
+  const r = (quellen.shopwache?.routinen || []).find(x => x.id === 'claude-stand' && x.ok !== false && x.hinweis);
+  if (!r) return [];
+  return [{ id: 'ki-stand', art: 'routinen', bereich: 'website', ton: 'warn', alterTage: null, titel: 'Claude Code: Neuerungen ansehen',
+    kontext: `${r.hinweis} · Claude Bescheid geben: „Claude-Stand“` }];
+}
+
 const SICHERUNG_ZEIT = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 /**
@@ -769,6 +777,7 @@ function alleTodos(quellen, opt) {
     ...ausTailscale(quellen),
     ...ausSpeicher(quellen, k.jetzt),
     ...ausRoutinen(quellen, k.jetzt),
+    ...ausKiStand(quellen),
     ...ausSicherung(quellen, k.jetzt),
   ];
 }

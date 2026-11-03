@@ -53,12 +53,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-gh-guard.mjs\"",
-            "statusMessage": "git/gh-Befehl pruefen"
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/git-gh-guard.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; node \"$d/.claude/hooks/git-gh-guard.mjs\"",
+            "statusMessage": "git/gh-Befehl pruefen",
+            "onFailure": "block"
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/theme-delete-guard.mjs\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/theme-delete-guard.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; node \"$d/.claude/hooks/theme-delete-guard.mjs\"",
+            "onFailure": "block"
           }
         ]
       },
@@ -67,8 +69,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/shopify-mcp-guard.mjs\"",
-            "statusMessage": "Shopify-Mutation pruefen"
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/shopify-mcp-guard.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; node \"$d/.claude/hooks/shopify-mcp-guard.mjs\"",
+            "statusMessage": "Shopify-Mutation pruefen",
+            "onFailure": "block"
           }
         ]
       },
@@ -77,7 +80,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/deploy-command-guard.mjs\" PreToolUse \"Shopify-Deploy-Befehl erkannt: zuerst npm run workflow:doctor laufen lassen - der meldet alle Blocker in einem Durchlauf statt sechsmal nacheinander. Bei Fehlern zusaetzlich .ai/DEPLOYMENT-TROUBLESHOOTING.md lesen, dort stehen bereits geloeste Faelle mit funktionierendem Fix.\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/deploy-command-guard.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; node \"$d/.claude/hooks/deploy-command-guard.mjs\" PreToolUse \"Shopify-Deploy-Befehl erkannt: zuerst npm run workflow:doctor laufen lassen - der meldet alle Blocker in einem Durchlauf statt sechsmal nacheinander. Bei Fehlern zusaetzlich .ai/DEPLOYMENT-TROUBLESHOOTING.md lesen, dort stehen bereits geloeste Faelle mit funktionierendem Fix.\""
           }
         ]
       }
@@ -88,7 +91,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/deploy-command-guard.mjs\" PostToolUseFailure \"Dieser Shopify-Deploy-Befehl ist fehlgeschlagen. Zuerst .ai/DEPLOYMENT-TROUBLESHOOTING.md pruefen, ob der Fehler dort schon dokumentiert ist. Falls nicht: nach dem Beheben dort als neuen Eintrag ergaenzen (Fehlercode, Ursache, funktionierender Fix) - Format wie die bestehenden Eintraege.\""
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/deploy-command-guard.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; node \"$d/.claude/hooks/deploy-command-guard.mjs\" PostToolUseFailure \"Dieser Shopify-Deploy-Befehl ist fehlgeschlagen. Zuerst .ai/DEPLOYMENT-TROUBLESHOOTING.md pruefen, ob der Fehler dort schon dokumentiert ist. Falls nicht: nach dem Beheben dort als neuen Eintrag ergaenzen (Fehlercode, Ursache, funktionierender Fix) - Format wie die bestehenden Eintraege.\""
           }
         ]
       }
