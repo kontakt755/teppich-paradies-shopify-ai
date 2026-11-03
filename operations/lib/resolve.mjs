@@ -100,6 +100,15 @@ export function parseMasse(text) {
 }
 
 /**
+ * Alte Freitexte in grosshandel.sku tragen den Zusatz "ungekettelt", auch bei Teppichen, die der
+ * Kunde gekettelt gekauft hat (Shop-Bestellung 1078). Ob gekettelt wird, steht allein in der Kundenbestellung
+ * (Einfassung) - die Artikelangabe darf dem weder in der Anzeige noch in der Mail widersprechen.
+ */
+function artikelText(wert) {
+  return leer(wert) ? '' : String(wert).replace(/\s*\bungekettelt\b/giu, '').trim();
+}
+
+/**
  * Grosshaendler-ID-Kaskade: einkauf.artikelnummer (Variante) ->
  * lieferant.lieferant_a_artikelnummer -> lieferant_b_artikelnummer ->
  * grosshandel.sku (Produkt) -> Muster-SKU ohne "M-" (nur ohne Bindestrich).
@@ -107,14 +116,14 @@ export function parseMasse(text) {
 export function grosshaendlerId({ variantMetafelder, produktMetafelder, sku }) {
   // Seit dem Befuellen der Einkaufsfelder (2026-09-23) steht die gepruefte
   // Artikelnummer direkt an der Variante; sie geht den Altfeldern vor.
-  const e = variantMetafelder?.einkauf?.artikelnummer;
-  if (!leer(e)) return { id: String(e).trim(), quelle: 'einkauf.artikelnummer' };
-  const a = variantMetafelder?.lieferant?.lieferant_a_artikelnummer;
-  if (!leer(a)) return { id: String(a).trim(), quelle: 'lieferant.lieferant_a_artikelnummer' };
-  const b = variantMetafelder?.lieferant?.lieferant_b_artikelnummer;
-  if (!leer(b)) return { id: String(b).trim(), quelle: 'lieferant.lieferant_b_artikelnummer' };
-  const g = produktMetafelder?.grosshandel?.sku;
-  if (!leer(g)) return { id: String(g).trim(), quelle: 'grosshandel.sku' };
+  const e = artikelText(variantMetafelder?.einkauf?.artikelnummer);
+  if (e) return { id: e, quelle: 'einkauf.artikelnummer' };
+  const a = artikelText(variantMetafelder?.lieferant?.lieferant_a_artikelnummer);
+  if (a) return { id: a, quelle: 'lieferant.lieferant_a_artikelnummer' };
+  const b = artikelText(variantMetafelder?.lieferant?.lieferant_b_artikelnummer);
+  if (b) return { id: b, quelle: 'lieferant.lieferant_b_artikelnummer' };
+  const g = artikelText(produktMetafelder?.grosshandel?.sku);
+  if (g) return { id: g, quelle: 'grosshandel.sku' };
   if (typeof sku === 'string' && sku.startsWith('M-')) {
     const rest = sku.slice(2);
     if (rest && !rest.includes('-')) return { id: rest, quelle: 'muster-sku' };

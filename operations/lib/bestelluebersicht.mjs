@@ -19,6 +19,7 @@ import { normalisiereLineItem } from '../sync/orders.mjs';
 import { istMusterPosition as musterRegel } from './muster.mjs';
 import { istTestbestellung } from './testbestellung.mjs';
 import { kettelZuschnitt, wirdGekettelt } from './kettelpuffer.mjs';
+import { ROUTE } from './route.mjs';
 
 export const ADMIN_ORDER_URL = 'https://admin.shopify.com/store/sjjyq1-6w/orders/';
 
@@ -598,7 +599,10 @@ function produktRollenbreiteCm(produkt) {
  */
 export function kettelZusatz(p) {
   const z = !p.istMuster && wirdGekettelt(p.ausfuehrung) ? kettelZuschnitt(p.ausfuehrung) : null;
-  return z ? ` · über unseren Kettler: Zuschnitt ${z.zuschnitt} (+3 cm je Länge und Breite)` : '';
+  if (!z) return '';
+  // Beim Direktversand steht der Weg nicht fest: je Teppich klaeren (Inhaber 2026-11-03).
+  if (p.route === ROUTE.SUPPLIER_DIRECT) return ` · gekettelt, Weg klären: Lieferant kettelt ${z.fertig} oder Zuschnitt ${z.zuschnitt} für unseren Kettler`;
+  return ` · über unseren Kettler: Zuschnitt ${z.zuschnitt} (+3 cm je Länge und Breite)`;
 }
 
 export function kopierText(gruppe) {

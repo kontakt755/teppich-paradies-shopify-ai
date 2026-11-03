@@ -42,6 +42,7 @@ import { positionKey, STATUS_ORDER } from './auftragsstatus.mjs';
 import { WARTE_NACHHAKEN_TAGE, WARTE_PROBLEM_TAGE, warnstufe } from './lieferanten.mjs';
 import { kundenSchluessel } from './kundensuche.mjs';
 import { ROUTE } from './route.mjs';
+import { wirdGekettelt } from './kettelpuffer.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 
 /** Kompatibler Export: die Frist stammt aus dem vorhandenen Nachfassmodell (ab Versand). */
@@ -488,6 +489,16 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
     default:
       return null;
   }
+}
+
+/**
+ * Wer einen schon bestellten gekettelten Teppich kettelt, fuer die Kundenakte. Vor der Bestellung
+ * oder ohne Vermerk: null, die Akte behauptet dann nichts.
+ */
+export function kettelwegText(p, eintrag) {
+  if (!wirdGekettelt(p?.ausfuehrung)) return null;
+  if (eintrag?.ueber === 'kettler') return 'Unser Kettler';
+  return eintrag?.status && p.route === ROUTE.SUPPLIER_DIRECT ? 'Lieferant, direkt an den Kunden' : null;
 }
 
 /** Name und Ort (Stadt der Lieferadresse) - damit man "Kunde in der Naehe" erkennt. */

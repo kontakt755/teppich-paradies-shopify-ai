@@ -129,8 +129,12 @@ function worumKarte(a) {
   const zeilen = (a.positionen || []).map(p => {
     const artikel = p.handle && !p.istMuster ? `<a href="#/lexikon?${new URLSearchParams({ handle: p.handle })}">${esc(p.titel)}</a>` : esc(p.titel);
     const menge = p.kundenmenge || p.menge;
+    // Einfassung aus der Kundenbestellung: was der Kunde gekauft hat, nicht was im Artikelfeld steht.
+    const einfassung = (p.ausfuehrung || []).find(z => z.startsWith('Einfassung:'))?.slice('Einfassung:'.length).trim();
     return `<dl>
       <dt>Artikel</dt><dd>${artikel}${gesetzt(p.farbe) ? ` · ${esc(p.farbe)}` : ''}${gesetzt(menge) ? ` <span class="small muted">(${esc(menge)})</span>` : ''}</dd>
+      ${einfassung ? `<dt>Einfassung</dt><dd>${esc(einfassung)}</dd>` : ''}
+      ${p.kettelweg ? `<dt>Kettelt</dt><dd>${esc(p.kettelweg)}</dd>` : ''}
       ${p.eigenleistung ? '<dt>Einkauf</dt><dd>Eigenleistung – nichts beim Lieferanten</dd>' : `<dt>Lieferant</dt><dd>${gesetzt(p.lieferant) ? esc(lieferantText(p.lieferant)) : '<span class="zl-fehlt">nicht zugeordnet</span>'}</dd>
       <dt>Art.-Nr.</dt><dd>${gesetzt(p.grosshaendlerId) ? esc(p.grosshaendlerId) : '<span class="zl-fehlt">fehlt</span>'}</dd>`}
     </dl>`;
@@ -176,7 +180,7 @@ export function zeitleisteBlock(a, { kontakt = false } = {}) {
     <div class="zl-raster">
       <div class="zl-spalte">
         ${naechsterKarte(a, kunde, lesend)}
-        ${a.auftragsart === 'ware' ? `<p><button type="button" class="btn" data-kettelversand="${esc(a.id)}">Kettler & Versand</button></p>` : ''}
+        ${a.auftragsart === 'ware' && !a.direktversand ? `<p><button type="button" class="btn" data-kettelversand="${esc(a.id)}">Kettler & Versand</button></p>` : ''}
         <div class="card zl-verlauf"><p class="zl-titel">Verlauf</p>
           <ol class="zl-liste">${a.verlauf.map(s => verlaufZeile(s, a.naechsterSchritt)).join('')}</ol>
           ${notizen.length ? `<div class="zl-notizen">${notizen.map(n => `<p><span class="muted">${esc(tagMonat(n.am))}${n.von ? ` · ${esc(n.von)}` : ''}:</span> ${esc(n.text)}</p>`).join('')}</div>` : ''}

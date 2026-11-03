@@ -11,6 +11,7 @@ import {
   auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleiste, naechsterSchritt, zeitleistenFuerModell, folgebestellung,
   auftragsart, dringendsterSchritt, setzbareSchritte, AuftragsverlaufFehler, gepacktAmFuer,
   NACHFASSEN_NACH_TAGEN, MUSTER_ANGEKOMMEN_ANNAHME_TAGE, ERGEBNIS_KLAEREN_NACH_TAGEN,
+  kettelwegText,
 } from '../lib/auftragsverlauf.mjs';
 
 // Nur erfundene Daten: Pseudonym-Lieferant A, Testkunden.
@@ -397,4 +398,13 @@ test('Eigenbestand: Postversand fuehrt nur zum Versanddialog, persoenliche Ueber
     assert.equal(z.naechsterSchritt.aktion, aktion);
     assert.equal(z.verlauf.find(s => s.schritt === 'kunde_hat_muster').zustand, 'offen');
   }
+});
+
+test('kettelwegText: nur bei gekettelter, bestellter Ware und nie geraten', () => {
+  const p = { route: 'SUPPLIER_DIRECT', ausfuehrung: ['Fertigmaß: 250 × 220 cm', 'Einfassung: Gekettelt'] };
+  assert.equal(kettelwegText(p, { status: 'bestellt', ueber: 'kettler' }), 'Unser Kettler');
+  assert.equal(kettelwegText(p, { status: 'bestellt' }), 'Lieferant, direkt an den Kunden');
+  assert.equal(kettelwegText(p, null), null, 'vor der Bestellung ist noch nichts entschieden');
+  assert.equal(kettelwegText({ ...p, route: 'SUPPLIER_TO_TP' }, { status: 'bestellt' }), null);
+  assert.equal(kettelwegText({ ...p, ausfuehrung: ['Einfassung: ohne Einfassung'] }, { status: 'bestellt' }), null);
 });

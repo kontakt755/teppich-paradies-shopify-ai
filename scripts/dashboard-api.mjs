@@ -42,7 +42,7 @@ import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBest
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, lieferantJeSchluessel as lagerLieferantJeSchluessel, lieferantVonEintrag as lagerLieferantVon, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
-import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
+import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, kettelwegText, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
 import { sucheKunden, kontaktPasst, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt, kundenSchluessel } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
@@ -1120,7 +1120,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   /** Die additiven Zeitleisten-Felder eines Auftrags fuer die Antwort. */
   function zeitleistenFelder(z) {
     if (!z) return { auftragsart: null, verlauf: [], verlaufNotizen: [], naechsterSchritt: null, zeitleisteAbgeschlossen: false };
-    return { auftragsart: z.auftragsart, verlauf: z.verlauf, verlaufNotizen: z.verlaufNotizen, naechsterSchritt: z.naechsterSchritt, zeitleisteAbgeschlossen: z.abgeschlossen };
+    return { auftragsart: z.auftragsart, verlauf: z.verlauf, verlaufNotizen: z.verlaufNotizen, naechsterSchritt: z.naechsterSchritt, zeitleisteAbgeschlossen: z.abgeschlossen, direktversand: z.direktversand };
   }
 
   /** Dringendster naechster Schritt ueber die echten Bestellungen eines Kunden, mit Bezug zur Bestellung. */
@@ -1750,7 +1750,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (gefunden) {
         // Additiv je Bestellung: auftragsart, verlauf, verlaufNotizen, naechsterSchritt (operations/lib/auftragsverlauf.mjs).
         const zl = zeitleisten(dir, modell, statusAlle);
-        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, ...zeitleistenFelder(zl.get(a.id)), ...versandFelder(a, statusAlle) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
+        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, positionen: (a.positionen ?? []).map(p => ({ ...p, kettelweg: kettelwegText(p, statusAlle[positionKey(a.id, p.lineItemId)]) })), ...zeitleistenFelder(zl.get(a.id)), ...versandFelder(a, statusAlle) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
         return { verfuegbar: true, kunde };
       }
       // Kunde aus dem Shopify-Stamm ohne Bestellung in dieser Datei: die
@@ -2698,14 +2698,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Fertige Bestellung (Ware je Gruppe bzw. offene Muster) als Mailtext + mailto:-Link. Sendet nichts. */
-    einkaufBestellmail({ lieferant = '', art = 'ware', gruppe = '', ziel = '', auftrag = '' } = {}) {
+    einkaufBestellmail({ lieferant = '', art = 'ware', gruppe = '', ziel = '', auftrag = '', kettelwege = '' } = {}) {
       const k = this._lieferantenKontext();
       if (!k.modell) return { verfuegbar: false, hinweis: k.hinweis, stammdatenDatei: k.stammdatenDatei, mails: [] };
       try {
         return {
           verfuegbar: true,
           stammdatenDatei: k.stammdatenDatei,
-          ...bestellmail({ modell: filtereAuftrag(k.modell, auftrag), lieferant, art, gruppe: gruppe || null, ziel: ziel || null, statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() }),
+          ...bestellmail({ modell: filtereAuftrag(k.modell, auftrag), lieferant, art, gruppe: gruppe || null, ziel: ziel || null, kettelwege, statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() }),
         };
       } catch (e) {
         if (e instanceof LieferantenFehler) throw new ApiError(400, e.message);
@@ -2786,7 +2786,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       if (['bestellVorbereitung', 'bestellPruefen'].includes(payload?.aktion)) {
         // Kein Shopify-Abgleich: diese Aktionen bereiten nur vor bzw. lesen frisch gegen.
-        const scope = Object.fromEntries(['lieferant', 'art', 'gruppe', 'ziel', 'auftrag'].map(k => [k, payload[k] ?? (k === 'art' ? 'ware' : '')]));
+        const scope = Object.fromEntries(['lieferant', 'art', 'gruppe', 'ziel', 'auftrag', 'kettelwege'].map(k => [k, payload[k] ?? (k === 'art' ? 'ware' : '')]));
         if (Object.values(scope).some(v => typeof v !== 'string')) throw new ApiError(400, 'Bestellparameter müssen Text sein.');
         const vorlage = this.einkaufBestellmail(scope);
         if (!vorlage.verfuegbar) throw new ApiError(409, vorlage.hinweis || 'Bestelldaten fehlen.');

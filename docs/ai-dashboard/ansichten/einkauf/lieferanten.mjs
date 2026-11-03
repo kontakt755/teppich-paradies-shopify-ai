@@ -343,7 +343,7 @@ export function lieferantenKartenHtml({ gruppeKarte, daten = einkauf.bestellunge
 let kopierFreigaben = new WeakMap();
 const KOPIERFREIGABE_MS = 10_000;
 
-const dialog = { lieferant: null, art: 'ware', auftrag: null, ziel: '', daten: null, fehler: null, abruf: 0, prueft: false, markiert: new Set(), gesetzt: new Map() };
+const dialog = { lieferant: null, art: 'ware', auftrag: null, ziel: '', kettelwege: new Map(), daten: null, fehler: null, abruf: 0, prueft: false, markiert: new Set(), gesetzt: new Map() };
 
 /** Kunde · Ort einer Bestellung als kurzer Text (Ort = Stadt der Lieferadresse). */
 function kundeOrtText(orderId) {
@@ -367,6 +367,8 @@ const LIEFERZIEL_TEXT = { laden: 'Lieferung in den Laden', kunde: 'Lieferung dir
  */
 function kettlerHinweis(m) {
   const puffer = kettelPufferHinweis(m);
+  if (m.kettelwegGewaehlt) return `<p class="small muted lf-kettler">Gewählt: Unser Kettler kettelt. Der Lieferant schickt den Teppich ungekettelt im Zuschnittmaß dorthin.</p>${puffer}`;
+  if (m.kettelnBeimLieferanten) return `<p class="small muted lf-kettler">Gewählt: Der Lieferant kettelt und liefert fertig im Fertigmaß an den Kunden.</p>${puffer}`;
   if (m.kettlerAutomatisch) return `<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Zuschnittmaß dorthin, wir holen sie dort ab.</p>${puffer}`;
   const liste = m.kettlerVorschlag || [];
   if (m.art !== 'ware' || !m.kettlerMoeglich || m.lieferziel === 'kettler' || !liste.length) return puffer;
@@ -396,6 +398,18 @@ function zielChips(m) {
     : [['kunde', 'Kunden'], ['laden', 'Laden']];
   const gedrueckt = w => (m.art === 'ware' && m.kettlerMoeglich ? dialog.ziel === w : m.lieferziel === w);
   return wahl.map(([w, l]) => `<button type="button" class="chip" data-lf-ziel="${w}" aria-pressed="${gedrueckt(w)}">${l}</button>`).join('');
+}
+
+/** Wer kettelt, je Teppich (Inhaber 2026-11-03). Bis zur Wahl steht der Teppich in keiner Mail. */
+function kettelwegWahl(fragen) {
+  if (!fragen.length) return '';
+  const offen = fragen.filter(f => !f.wahl).length;
+  const knopf = (f, weg, text) => `<button type="button" class="chip" data-lf-kettelweg="${esc(f.lineItemId)}" data-lf-weg="${weg}" aria-pressed="${f.wahl === weg}">${text}${f.empfehlung === weg ? ' (meist günstiger)' : ''}</button>`;
+  const zeile = f => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc([f.orderName, anzeigeWert(f.titel || ''), f.farbe].filter(Boolean).join(' · '))}</div><div class="s">Gekettelt gekauft${f.fertigmass ? `, ${esc(f.fertigmass)}` : ''}</div></div>
+    ${istNurLesend() ? '' : `<div class="lf-zielwahl" role="group" aria-label="Wer kettelt?">${knopf(f, 'lieferant', 'Lieferant kettelt, direkt an Kunden')}${knopf(f, 'kettler', 'Unser Kettler')}</div>`}</li>`;
+  return `<section class="lf-mail lf-kettelweg"><div class="notice${offen ? ' warn' : ''}"><strong>Wer kettelt? ${offen ? `Noch ${offen} zu entscheiden` : 'Entschieden'}</strong>
+    <p class="small" style="margin:4px 0 0">Das klären wir Fall für Fall. Über 200 cm kurzer Seite ist der Lieferant meist günstiger, weil vom Kettler sonst noch die Spedition dazukommt.${offen ? ' Erst nach der Wahl entsteht die Bestellmail.' : ''}</p></div>
+    <ul class="lf-liste">${fragen.map(zeile).join('')}</ul></section>`;
 }
 
 function mailAbschnitt(m, i, mehrere) {
@@ -456,8 +470,8 @@ function zeichneDialog() {
   if (!d) inhalt = '<p class="lf-leer">Lade Bestellung …</p>';
   else if (d.fehler) inhalt = `<p class="notice crit">Die Bestellung konnte nicht geladen werden. ${esc(d.hinweis || '')}</p>`;
   else if (!d.verfuegbar) inhalt = `<p class="notice">${esc(d.hinweis || 'Bestelldaten fehlen.')}</p>`;
-  else if (!d.mails.length) inhalt = `<p class="lf-leer">${dialog.art === 'muster' ? 'Keine offenen Muster bei diesem Lieferanten.' : 'Keine offene Ware bei diesem Lieferanten.'}</p>`;
-  else inhalt = d.mails.map((m, i) => mailAbschnitt(m, i, d.mails.length > 1)).join('');
+  else if (!d.mails.length && !d.kettelwege?.length) inhalt = `<p class="lf-leer">${dialog.art === 'muster' ? 'Keine offenen Muster bei diesem Lieferanten.' : 'Keine offene Ware bei diesem Lieferanten.'}</p>`;
+  else inhalt = kettelwegWahl(d.kettelwege || []) + d.mails.map((m, i) => mailAbschnitt(m, i, d.mails.length > 1)).join('');
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop lf-dialog-boden" data-close-dialog><div class="dialog lf-dialog" role="dialog" aria-modal="true" aria-labelledby="lfTitel">
     <h2 id="lfTitel" class="lf-name">${titel}</h2>
     <p class="notice warn" data-lf-fehler role="alert"${dialog.fehler ? '' : ' hidden'}>${esc(dialog.fehler || '')}</p>
@@ -493,13 +507,13 @@ async function ladeDialog() {
 }
 
 export function openBestellmailDialog(lieferant, art = 'ware', { auftrag = null } = {}) {
-  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', auftrag: auftrag || state.route.params.get('auftrag') || null, ziel: '', daten: null, fehler: null, prueft: false, markiert: new Set(), gesetzt: new Map() });
+  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', auftrag: auftrag || state.route.params.get('auftrag') || null, ziel: '', kettelwege: new Map(), daten: null, fehler: null, prueft: false, markiert: new Set(), gesetzt: new Map() });
   zeichneDialog();
   ladeDialog();
 }
 
 function vorbereitungsPayload() {
-  return { lieferant: dialog.lieferant, art: dialog.art, auftrag: dialog.auftrag || '', ziel: dialog.ziel || '' };
+  return { lieferant: dialog.lieferant, art: dialog.art, auftrag: dialog.auftrag || '', ziel: dialog.ziel || '', kettelwege: [...dialog.kettelwege].map(([id, weg]) => `${id}=${weg}`).join(',') };
 }
 
 function vorbereitungFehler(text) {
@@ -705,6 +719,8 @@ export function einkaufKlickLieferanten(e) {
   if (e.target.closest('[data-lf-neu]')) { e.preventDefault(); dialog.fehler = null; ladeDialog(); return true; }
   const ziel = e.target.closest('[data-lf-ziel]');
   if (ziel) { dialog.ziel = ziel.dataset.lfZiel; dialog.markiert = new Set(); ladeDialog(); return true; }
+  const kettelweg = e.target.closest('[data-lf-kettelweg]');
+  if (kettelweg) { dialog.kettelwege.set(kettelweg.dataset.lfKettelweg, kettelweg.dataset.lfWeg); dialog.markiert = new Set(); ladeDialog(); return true; }
   const rueck = e.target.closest('[data-lf-rueckgaengig]');
   if (rueck) { macheMarkierenRueckgaengig(Number(rueck.dataset.lfRueckgaengig), rueck); return true; }
   const herkunft = e.target.closest('[data-lf-herkunft]');
