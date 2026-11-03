@@ -14,6 +14,10 @@
  *
  * In der ersten Woche nach dem ersten echten Versand geht jede Mail als Blindkopie ans Buero.
  * Kunden auf der Stoppliste ($TP_PRIVAT_DIR/nachfassen/stoppliste.json) werden uebersprungen.
+ * Vor dem Versand sucht der Lauf lesend im Postfach nach Antworten "Abmelden" und Unzustellbar-
+ * Meldungen und traegt die Adressen dort ein; scheitert die Suche, geht nichts raus (Exit 2).
+ * Je Adresse hoechstens eine Mail, auch bei mehreren Bestellungen. Die Probe liest das Postfach
+ * ebenfalls, schreibt aber nichts.
  *
  * Ausgabe: eine Zeile je Kunde - nur Bestellnummer, Stufe und Adresse. Das Protokoll landet
  * im Privatordner (LaunchAgent), nie im Repository.
@@ -42,6 +46,10 @@ export function bericht(r) {
   // Echter Lauf ohne Vorlage/Postfach/lesbare Stoppliste: ein Satz, der sagt, was fehlt.
   if (r.status !== 'ok' && !r.probe) { zeilen.push(`Nichts verschickt: ${r.hinweis || r.status}`); return zeilen; }
   if (r.kopie) zeilen.push(`Blindkopie an: ${r.kopie}`);
+  if (r.abgleich?.geprueft) {
+    zeilen.push(`Postfach geprüft: ${r.abgleich.gelesen} passende Mail(s), ${r.abgleich.neu.length} neu zu sperren, ${r.abgleich.hinweise} mit weiterem Text${r.abgleich.ohneOrdner?.length ? ` · nicht per IMAP sichtbar: ${r.abgleich.ohneOrdner.join(', ')}` : ''}`);
+    for (const a of r.abgleich.neu) zeilen.push(`  ${r.probe ? 'würde sperren ' : 'gesperrt      '}  ${a.orderName || '–'}  ${a.email}  ${a.grund}`);
+  } else if (r.abgleich) zeilen.push('Postfach nicht geprüft: kein Zugang (nur im Trockenlauf möglich)');
   for (const e of r.geplant) zeilen.push(`  würde senden   ${e.orderName}  ${e.stufe === 'erinnerung' ? 'Erinnerung' : 'Erste Nachfrage'}  an ${e.an}  „${e.betreff}“`);
   for (const e of r.verschickt) zeilen.push(`  verschickt     ${e.orderName}  ${e.stufe === 'erinnerung' ? 'Erinnerung' : 'Erste Nachfrage'}  an ${e.an}`);
   for (const e of r.nachgetragen) zeilen.push(`  nachgetragen   ${e.orderName}  (Mail war schon raus am ${zeit(e.am)}, nur Zeitleiste)`);

@@ -153,6 +153,8 @@ function nachfassStand(sicht) {
     automatisch: sichtbar ? teile.automatisch : [],
     ohneWeg: sichtbar ? teile.ohneWeg : [],
     versandFehler: sichtbar && laeuft && lauf?.fehler > 0 ? lauf : null,
+    antwortHinweise: sichtbar ? t?.antwortHinweise || [] : [],
+    abgleichFehler: sichtbar ? t?.abgleichFehler || null : null,
     alleOffen: alle.offen,
   };
 }
@@ -165,6 +167,18 @@ function versandFehlerTodo(lauf) {
     kontext: `letzter Lauf ${fmtDateTime(lauf.am)} · ${lauf.verschickt || 0} verschickt`,
     knopf: { text: 'Ansehen', href: heuteHref('mn', '1') },
   };
+}
+
+/** Antworten mit mehr als "Abmelden" oder eine gescheiterte Postfach-Suche: eine Zeile, die Karte zeigt die Einzelheiten. */
+function postfachAbgleichTodo(nf) {
+  const n = nf.antwortHinweise.length;
+  if (!n && !nf.abgleichFehler) return [];
+  return [{
+    id: 'nachfassen-postfach', art: 'nachfassen_versand', bereich: 'laden', ton: 'warn', alterTage: null,
+    titel: nf.abgleichFehler ? 'Muster-Nachfragen: Postfach-Suche fehlgeschlagen, es geht nichts raus' : `Abgemeldet und noch etwas geschrieben: ${plural(n, 'Kunde', 'Kunden')}`,
+    kontext: nf.abgleichFehler || 'Die Abmeldung ist eingetragen. Bitte die Nachricht lesen.',
+    knopf: { text: 'Ansehen', href: heuteHref('mn', '1') },
+  }];
 }
 
 /** Der taegliche Einstieg ist die Shop-Arbeit; alte Alltagssichten bleiben explizit erreichbar. */
@@ -253,7 +267,8 @@ function viewAlltag() {
   const sicht = gewaehlteSicht(q.aufgaben);
   const opt = todoOptionen(sicht);
   const nf = nachfassStand(sicht);
-  if (nf.alleOffen.length || nf.alle.erledigt.length) ensureHeuteMusterTexte();
+  // Immer laden: auch ohne faellige Nachfrage kann ein Hinweis aus dem Postfach-Abgleich anstehen.
+  ensureHeuteMusterTexte();
   const { liste, eigeneLaden } = todosDerSicht(sicht, q, nf, opt);
   // Chip-Zahlen zaehlen dasselbe wie die Liste: To-dos der Sicht plus Nachfragen und Belege (Laden).
   const chips = istInhaber() ? chipZahlen(q, opt, eigeneLaden.length) : null;
@@ -299,6 +314,7 @@ function todosDerSicht(sicht, q, nf, opt = todoOptionen(sicht)) {
   const eigeneLaden = [
     ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: heuteHref('mn', '1') })),
     ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
+    ...postfachAbgleichTodo(nfLaden),
     ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
     // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
     ...shopifyAbgleichTodos(Date.now(), { lieferantName }),
@@ -397,7 +413,7 @@ function hintergrund(nf, wartet, sicht) {
   const auf = key => Boolean(state.route.params.get(key));
   const umschalten = (key, text) => `<button type="button" class="heute-hg-knopf" data-param="${key}" data-value="${auf(key) ? '' : '1'}" aria-expanded="${auf(key)}">${auf(key) ? 'Zuklappen' : text}</button>`;
 
-  if (sicht !== 'website' && (nf.alleOffen.length || nf.alle.erledigt.length || nf.alle.abgemeldet?.length)) {
+  if (sicht !== 'website' && (nf.alleOffen.length || nf.alle.erledigt.length || nf.alle.abgemeldet?.length || nf.antwortHinweise.length || nf.abgleichFehler)) {
     const lauf = heuteDaten.musterTexte?.versand?.letzterLauf;
     const teile = [];
     if (nf.laeuft === null) teile.push('Lade …');

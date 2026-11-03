@@ -10,6 +10,10 @@
  *
  * Zugang: derselbe wie der Nachfass-Versand (nachfassen/postfach.json, App-Passwort des
  * Firmenpostfachs), Host imap.gmail.com statt smtp.gmail.com.
+ *
+ * Der Nachfass-Lauf braucht zusaetzlich den Inhalt einzelner Mails (Antwort "Abmelden",
+ * Unzustellbar-Meldung): nachrichtenNurLesend() holt erst die Koepfe und nur fuer die passenden
+ * den Rumpf - ebenfalls unter EXAMINE und mit BODY.PEEK, also ohne jede Spur im Postfach.
  */
 
 import tls from 'node:tls';
@@ -26,13 +30,18 @@ export function imapText(wert) {
 /** Literal aus einer Antwort als Text in Anfuehrungszeichen (nur zum Weiterparsen, nie gesendet). */
 const imapTextLocker = s => `"${String(s).replace(/[\r\n]+/g, ' ').replace(/[\\"]/g, c => `\\${c}`)}"`;
 
-/** Name des Ordners "Alle Nachrichten" aus LIST-Antworten (Kennzeichen \All, Name je nach Sprache). */
-export function alleNachrichtenOrdner(zeilen) {
+/** Name des Ordners mit einem Kennzeichen (\All, \Trash, \Junk) aus LIST-Antworten - der Name haengt von der Sprache ab. */
+export function ordnerMitKennzeichen(zeilen, kennzeichen) {
   for (const z of zeilen) {
     const m = /^\* LIST \(([^)]*)\) (?:"[^"]*"|NIL) (?:"((?:[^"\\]|\\.)*)"|(\S+))$/i.exec(z);
-    if (m && /(^|\s)\\All(\s|$)/i.test(m[1])) return m[2] !== undefined ? m[2].replace(/\\(.)/g, '$1') : m[3];
+    if (m && m[1].split(/\s+/).some(k => k.toLowerCase() === kennzeichen.toLowerCase())) return m[2] !== undefined ? m[2].replace(/\\(.)/g, '$1') : m[3];
   }
   return null;
+}
+
+/** Name des Ordners "Alle Nachrichten" aus LIST-Antworten (Kennzeichen \All, Name je nach Sprache). */
+export function alleNachrichtenOrdner(zeilen) {
+  return ordnerMitKennzeichen(zeilen, '\\All');
 }
 
 /** UIDs aus "* SEARCH 1 2 3". */
@@ -65,6 +74,7 @@ export function verbinde({ host, port = 993, verbinden = tls.connect, zeitLimitM
     const sock = verbinden({ host, port, servername: host });
     let puffer = Buffer.alloc(0);
     let zeilen = [];
+    let eintraege = []; // je Antwortzeile: { aussen: Zeile ohne Literale, literale: Buffer[] }
     let warten = null; // { marke, resolve, reject }
     let begruesst = false;
     let nr = 0;
@@ -78,7 +88,7 @@ export function verbinde({ host, port = 993, verbinden = tls.connect, zeitLimitM
       if (warten) warten.reject(e); else if (!begruesst) reject(e);
       warten = null;
     }
-    function zeile(z) {
+    function zeile(z, roh) {
       if (!begruesst) {
         begruesst = true;
         if (!/^\* (OK|PREAUTH)\b/i.test(z)) return fehler(new ImapFehler('IMAP: unerwartete Begrüßung'));
@@ -89,15 +99,19 @@ export function verbinde({ host, port = 993, verbinden = tls.connect, zeitLimitM
       if (m && m[1] === warten.marke) {
         const w = warten;
         warten = null;
-        const antwort = { status: m[2].toUpperCase(), text: m[3], zeilen };
+        const antwort = { status: m[2].toUpperCase(), text: m[3], zeilen, eintraege };
         zeilen = [];
+        eintraege = [];
         return w.resolve(antwort);
       }
       zeilen.push(z);
+      eintraege.push(roh);
     }
     // Angefangene Zeile: ein Literal ({n} am Zeilenende, danach n Bytes) gehoert zur Zeile davor
     // und wird als Text in Anfuehrungszeichen eingesetzt; die Zeile geht danach weiter.
     let angefangen = '';
+    let aussen = '';
+    let literale = [];
     sock.on('data', (d) => {
       puffer = Buffer.concat([puffer, d]);
       for (;;) {
@@ -109,13 +123,18 @@ export function verbinde({ host, port = 993, verbinden = tls.connect, zeitLimitM
           const n = Number(lit[1]);
           if (puffer.length < i + 2 + n) break; // Literal noch nicht vollstaendig
           angefangen += stueck.slice(0, lit.index) + imapTextLocker(puffer.subarray(i + 2, i + 2 + n).toString('utf8'));
+          aussen += `${stueck.slice(0, lit.index)}{}`;
+          literale.push(Buffer.from(puffer.subarray(i + 2, i + 2 + n)));
           puffer = puffer.subarray(i + 2 + n);
           continue;
         }
         puffer = puffer.subarray(i + 2);
         const z = angefangen + stueck;
+        const roh = { aussen: aussen + stueck, literale };
         angefangen = '';
-        zeile(z);
+        aussen = '';
+        literale = [];
+        zeile(z, roh);
       }
     });
     sock.on('error', e => fehler(new ImapFehler(`IMAP: ${e.code || e.message}`)));
@@ -145,6 +164,11 @@ function pruefe(antwort, was) {
   return antwort;
 }
 
+async function anmelden(v, zugang) {
+  const anmeldung = await v.befehl(`LOGIN ${imapText(zugang.benutzer)} ${imapText(zugang.passwort)}`);
+  if (anmeldung.status !== 'OK') throw new ImapFehler('IMAP-Anmeldung abgelehnt (App-Passwort oder IMAP im Postfach nicht freigegeben)');
+}
+
 /**
  * Meldet an, oeffnet "Alle Nachrichten" nur lesend und fuehrt die Gmail-Suchen aus.
  * Ergebnis: je Suche die Liste der Nachrichten-IDs (hexadezimal). Das Passwort geht nur in den
@@ -153,8 +177,7 @@ function pruefe(antwort, was) {
 export async function suchenNurLesend(zugang, suchen, { host = 'imap.gmail.com', port = 993, verbinden, zeitLimitMs } = {}) {
   const v = await verbinde({ host, port, verbinden, zeitLimitMs });
   try {
-    const anmeldung = await v.befehl(`LOGIN ${imapText(zugang.benutzer)} ${imapText(zugang.passwort)}`);
-    if (anmeldung.status !== 'OK') throw new ImapFehler('IMAP-Anmeldung abgelehnt (App-Passwort oder IMAP im Postfach nicht freigegeben)');
+    await anmelden(v, zugang);
     const ordner = alleNachrichtenOrdner(pruefe(await v.befehl('LIST "" "*"'), 'LIST').zeilen);
     if (!ordner) throw new ImapFehler('IMAP: Ordner „Alle Nachrichten“ nicht gefunden');
     pruefe(await v.befehl(`EXAMINE ${imapText(ordner)}`), 'EXAMINE');
@@ -169,6 +192,60 @@ export async function suchenNurLesend(zugang, suchen, { host = 'imap.gmail.com',
       ergebnis.push(ids);
     }
     return ergebnis;
+  } finally {
+    await v.schliessen();
+  }
+}
+
+/**
+ * Sucht in "Alle Nachrichten" sowie Papierkorb und Spam und holt die passenden Mails - nur
+ * lesend. Papierkorb und Spam gehoeren dazu, weil dort auch Kundenantworten landen und eine
+ * Abmeldung auch dann gilt. Zeigt Gmail einen der beiden Ordner nicht per IMAP, steht er in `ohneOrdner`.
+ *
+ * @param {object} zugang  { benutzer, passwort }
+ * @param {string[]} suchen  Gmail-Suchen
+ * @param {object} [o]
+ * @param {(kopf: Buffer) => boolean} [o.auswahl]  entscheidet am Mailkopf, ob der Rumpf geholt wird
+ * @param {number} [o.maxBytes]  so viel je Mail - die Anhaenge einer Unzustellbar-Meldung braucht niemand
+ * @returns {Promise<{ nachrichten: {id: string, suche: number, roh: Buffer}[], ohneOrdner: string[] }>}
+ */
+export async function nachrichtenNurLesend(zugang, suchen, { auswahl = () => true, maxBytes = 300_000, host = 'imap.gmail.com', port = 993, verbinden, zeitLimitMs = 120_000 } = {}) {
+  const v = await verbinde({ host, port, verbinden, zeitLimitMs });
+  try {
+    await anmelden(v, zugang);
+    const liste = pruefe(await v.befehl('LIST "" "*"'), 'LIST').zeilen;
+    const ohneOrdner = [];
+    const nachrichten = [];
+    const gesehen = new Set();
+    for (const kennzeichen of ['\\All', '\\Trash', '\\Junk']) {
+      const ordner = ordnerMitKennzeichen(liste, kennzeichen);
+      if (!ordner) {
+        if (kennzeichen === '\\All') throw new ImapFehler('IMAP: Ordner „Alle Nachrichten“ nicht gefunden');
+        ohneOrdner.push(kennzeichen.slice(1));
+        continue;
+      }
+      pruefe(await v.befehl(`EXAMINE ${imapText(ordner)}`), 'EXAMINE');
+      for (const [suche, text] of suchen.entries()) {
+        const uids = suchErgebnis(pruefe(await v.befehl(`UID SEARCH X-GM-RAW ${imapText(text)}`), 'SEARCH').zeilen);
+        const passend = [];
+        for (let i = 0; i < uids.length; i += 200) {
+          const antwort = pruefe(await v.befehl(`UID FETCH ${uids.slice(i, i + 200).join(',')} (X-GM-MSGID BODY.PEEK[HEADER])`), 'FETCH');
+          for (const e of antwort.eintraege) {
+            const uid = /\bUID (\d+)/i.exec(e.aussen)?.[1];
+            const [id] = nachrichtenIds([e.aussen]);
+            if (uid && id && e.literale[0] && !gesehen.has(id) && auswahl(e.literale[0])) { gesehen.add(id); passend.push({ uid, id, suche }); }
+          }
+        }
+        for (const p of passend) {
+          const antwort = pruefe(await v.befehl(`UID FETCH ${p.uid} (X-GM-MSGID BODY.PEEK[]<0.${maxBytes}>)`), 'FETCH');
+          const roh = antwort.eintraege.find(e => e.literale[0])?.literale[0];
+          // Eine ausgewaehlte Mail, die nicht kommt, ist eine gescheiterte Suche - nicht "nichts gefunden".
+          if (!roh) throw new ImapFehler('IMAP: gefundene Mail nicht lesbar');
+          nachrichten.push({ id: p.id, suche: p.suche, roh });
+        }
+      }
+    }
+    return { nachrichten, ohneOrdner };
   } finally {
     await v.schliessen();
   }

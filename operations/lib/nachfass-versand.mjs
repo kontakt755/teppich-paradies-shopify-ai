@@ -6,6 +6,7 @@
  *   postfach.json    Zugang zum Firmenpostfach (Rechte 600; fehlt sie, wird nichts verschickt)
  *   stoppliste.json  Kunden, die mit "Abmelden" geantwortet haben - werden nie wieder angeschrieben
  *   versand.json     was wann an wen rausging (Stufe, Betreff, Kopie), letzter Lauf, erster Versand
+ *   hinweise.json    Antworten mit mehr als "Abmelden" (Auszug fuers Control Center), letzter Postfach-Abgleich
  *
  * Wer dran ist, rechnet weiterhin docs/ai-dashboard/lib/muster-nachfassen.mjs aus den
  * Bestellzeilen; der Lauf selbst steht in scripts/dashboard-api.mjs (kundenNachfassenSenden)
@@ -25,6 +26,7 @@ export const ORDNER = 'nachfassen';
 export const POSTFACH_DATEI = 'postfach.json';
 export const STOPPLISTE_DATEI = 'stoppliste.json';
 export const VERSAND_DATEI = 'versand.json';
+export const HINWEISE_DATEI = 'hinweise.json';
 
 /** In der ersten Woche nach dem ersten echten Versand geht jede Mail als Blindkopie ans Buero. */
 export const MITLESEN_TAGE = 7;
@@ -32,6 +34,8 @@ export const MITLESEN_TAGE = 7;
 export const AUTOMATISCH = 'automatisch';
 /** Fuer {Name} in der Vorlage, wenn das Postfach keine eigene Unterschrift nennt. */
 export const UNTERSCHRIFT_STANDARD = 'Ihr Team von Teppich Paradies';
+/** So lange steht eine Kundenantwort als Hinweis im Control Center - im Postfach liegt sie ohnehin. */
+export const HINWEIS_ZEIGEN_TAGE = 7;
 
 const TAG_MS = 86400000;
 
@@ -52,6 +56,7 @@ export function nachfassOrdner(privatDir) {
 export function postfachPfad(privatDir) { return path.join(nachfassOrdner(privatDir), POSTFACH_DATEI); }
 export function stopplistePfad(privatDir) { return path.join(nachfassOrdner(privatDir), STOPPLISTE_DATEI); }
 export function versandPfad(privatDir) { return path.join(nachfassOrdner(privatDir), VERSAND_DATEI); }
+export function hinweisePfad(privatDir) { return path.join(nachfassOrdner(privatDir), HINWEISE_DATEI); }
 
 function schreibeAtomar(file, daten) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -162,6 +167,38 @@ export function trageAbmeldungEin(file, { email, von, grund = 'Antwort „Abmeld
   const eintrag = { am: jetzt.toISOString(), von: String(von).trim().slice(0, 80), grund: String(grund || '').trim().slice(0, 200) || null, orderId: orderId ? String(orderId) : null };
   schreibeAtomar(file, { version: 1, eintraege: { ...alle, [key]: eintrag } });
   return { eintrag, neu: true };
+}
+
+// ---------------------------------------------------------------------------
+// Hinweise aus dem Postfach-Abgleich
+// ---------------------------------------------------------------------------
+
+/** { abgleich: {am, fehler}|null, hinweise: [{mailId, am, email, orderId, orderName, auszug}] } */
+export function leseHinweise(file) {
+  const roh = leseJson(file);
+  return {
+    abgleich: roh?.abgleich && typeof roh.abgleich === 'object' ? roh.abgleich : null,
+    hinweise: Array.isArray(roh?.hinweise) ? roh.hinweise : [],
+  };
+}
+
+/**
+ * Ergebnis des Abgleichs merken. Dieselbe Mail findet die Suche bei jedem Lauf wieder: ein
+ * Hinweis kommt je Mail nur einmal, damit er nicht jeden Tag neu auftaucht.
+ */
+export function merkeAbgleich(file, { neu = [], fehler = null, jetzt = new Date() } = {}) {
+  const alt = leseHinweise(file);
+  const bekannt = new Set(alt.hinweise.map(h => h?.mailId));
+  const dazu = neu.filter(h => !bekannt.has(h.mailId)).map(h => ({ ...h, am: jetzt.toISOString() }));
+  // Bekannte Mails bleiben bis zum Ablauf der Suche in der Liste, sonst kaemen sie wieder.
+  const hinweise = [...alt.hinweise, ...dazu].slice(-200);
+  schreibeAtomar(file, { version: 1, abgleich: { am: jetzt.toISOString(), fehler: fehler ? String(fehler).slice(0, 200) : null }, hinweise });
+  return dazu;
+}
+
+/** Fuer die Karte: nur die juengsten Hinweise, neueste zuerst. */
+export function aktuelleHinweise(hinweise = [], { jetzt = new Date() } = {}) {
+  return hinweise.filter(h => h?.am && jetzt.getTime() - new Date(h.am).getTime() < HINWEIS_ZEIGEN_TAGE * TAG_MS).reverse();
 }
 
 // ---------------------------------------------------------------------------

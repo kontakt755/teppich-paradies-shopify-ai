@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
-import { postfachPfad, stopplistePfad, versandPfad, leseVersand, schreibeVersand, leseStoppliste } from '../../../operations/lib/nachfass-versand.mjs';
+import { postfachPfad, stopplistePfad, versandPfad, hinweisePfad, leseVersand, schreibeVersand, leseStoppliste } from '../../../operations/lib/nachfass-versand.mjs';
 import { starteSmtpAttrappe, kopfzeile, rumpfText, betreffText } from '../../../operations/tests/smtp-attrappe.mjs';
 import { bericht } from '../../../scripts/muster-nachfassen-senden.mjs';
 
@@ -58,17 +58,25 @@ Freundliche Grüße
 {Name}
 `;
 
-function umgebung() {
+function umgebung({ weitere = [] } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-nachfassen-'));
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), JSON.stringify({ orders: [
     bestellung(1, [muster(1, 'Sand'), muster(2, 'Greige')], { kunde: 1 }),
     bestellung(2, [muster(3, 'Sand')], { kunde: 2 }),
     bestellung(4, [muster(4, 'Kiesel')], { kunde: 4 }),
+    ...weitere,
   ] }));
   fs.writeFileSync(path.join(dir, 'muster-nachfassen-texte.md'), VORLAGE);
   const uhr = { jetzt: new Date('2026-01-02T10:00:00Z') };
-  const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, now: () => uhr.jetzt });
+  // Kein Test spricht mit dem echten Postfach: Attrappe mit veraenderbarem Inhalt.
+  const postfachLesen = { aufrufe: 0, nachrichten: [], fehler: null };
+  const nachfassPostfachLesen = async (_zugang, _suchen, { auswahl }) => {
+    postfachLesen.aufrufe += 1;
+    if (postfachLesen.fehler) throw postfachLesen.fehler;
+    return { nachrichten: postfachLesen.nachrichten.filter(n => auswahl(n.roh)), ohneOrdner: [] };
+  };
+  const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, now: () => uhr.jetzt, nachfassPostfachLesen });
   const schritt = (orderId, s) => api.einkaufAuftragsstatusSetzen({ aktion: 'schritt', orderId, schritt: s }, { name: 'Mitarbeiter 1', rolle: 'mitarbeiter' });
   const zeile = orderId => api.kundenBestellungen().zeilen.find(z => z.orderId === orderId);
   const nachgefasst = orderId => zeile(orderId).verlauf.find(s => s.schritt === 'nachgefasst');
@@ -76,14 +84,14 @@ function umgebung() {
     fs.mkdirSync(path.dirname(postfachPfad(dir)), { recursive: true });
     fs.writeFileSync(postfachPfad(dir), JSON.stringify({ host: '127.0.0.1', port, sicherheit: 'keine', benutzer: 'kontakt@example.invalid', passwort: 'platzhalter-1', absender: 'kontakt@example.invalid', unterschrift: 'Ihr Team von Teppich Paradies', ...extra }), { mode: 0o600 });
   };
-  return { dir, uhr, api, schritt, zeile, nachgefasst, postfach };
+  return { dir, uhr, api, schritt, zeile, nachgefasst, postfach, postfachLesen };
 }
 
 /** Alle drei Musterbestellungen bis "raus" bringen, dann fuenf Tage weiterdrehen. */
-async function musterUnterwegs(u) {
-  for (const n of [1, 2, 4]) { await u.schritt(ORDER(n), 'bestellt'); await u.schritt(ORDER(n), 'geliefert'); }
+async function musterUnterwegs(u, nummern = [1, 2, 4]) {
+  for (const n of nummern) { await u.schritt(ORDER(n), 'bestellt'); await u.schritt(ORDER(n), 'geliefert'); }
   u.uhr.jetzt = new Date('2026-01-06T10:00:00Z');
-  for (const n of [1, 2, 4]) await u.schritt(ORDER(n), 'raus');
+  for (const n of nummern) await u.schritt(ORDER(n), 'raus');
   u.uhr.jetzt = new Date('2026-01-11T09:30:00Z');
 }
 
@@ -394,4 +402,174 @@ test('"kopie": false im Postfach: keine Blindkopie, weder per Knopf noch im Lauf
     const t = u.api.kundenMusterTexte();
     assert.deepEqual([t.versand.eingerichtet, t.versand.kopie, t.versand.mitlesenBis], [true, null, null]);
   } finally { await s.schliessen(); }
+});
+
+// --- Buendelung und Postfach-Abgleich (Inhaber 03.11.2026) -------------------
+
+const antwortMail = (text, { von = 'testkunde1@example.invalid', bezug = '<alt1@example.invalid>' } = {}) => Buffer.from(
+  `From: Testkunde <${von}>\r\nSubject: Re: Ihre Muster\r\nIn-Reply-To: ${bezug}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${text}\r\n`);
+const bounceMail = (an, id) => Buffer.from([
+  'From: mailer-daemon@example.invalid', 'Subject: Delivery Status Notification (Failure)', 'Content-Type: multipart/report; boundary="b1"', '',
+  '--b1', 'Content-Type: message/delivery-status', '', `Final-Recipient: rfc822; ${an}`, 'Action: failed', 'Status: 5.1.1', '',
+  '--b1', 'Content-Type: message/rfc822', '', `Message-ID: ${id}`, 'Subject: Ihre Muster', '', 'x', '', '--b1--', ''].join('\r\n'));
+// Fruehere Sendungen an Bestellungen, die hier keine Rolle spielen: nur die Antwort soll wirken.
+const fruehere = () => ({ ersterVersandAm: '2025-12-01T09:00:00.000Z', letzterLauf: null, sendungen: [
+  { am: '2025-12-01T09:00:00.000Z', orderId: 'gid://shopify/Order/901', orderName: '#A1', stufe: 'erste', an: 'testkunde1@example.invalid', betreff: 'Ihre Muster', status: 'vermerkt', messageId: '<alt1@example.invalid>' },
+  { am: '2025-12-01T09:00:00.000Z', orderId: 'gid://shopify/Order/902', orderName: '#A2', stufe: 'erste', an: 'testkunde2@example.invalid', betreff: 'Ihre Muster', status: 'vermerkt', messageId: '<alt2@example.invalid>' },
+  { am: '2025-12-01T09:00:00.000Z', orderId: 'gid://shopify/Order/904', orderName: '#A4', stufe: 'erste', an: 'testkunde4@example.invalid', betreff: 'Ihre Muster', status: 'vermerkt', messageId: '<alt4@example.invalid>' },
+] });
+
+test('Buendelung: drei Bestellungen an eine Adresse (auch in anderer Schreibweise) = eine Mail mit allen Mustern; je Bestellung Protokoll und Zeitleiste', async () => {
+  const anders = bestellung(5, [muster(5, 'Moos')], { kunde: 1 });
+  anders.customer.email = 'TestKunde1@Example.invalid';
+  const u = umgebung({ weitere: [anders, bestellung(6, [muster(6, 'Torf')], { kunde: 1 })] });
+  await musterUnterwegs(u, [1, 2, 4, 5, 6]);
+
+  const probe = await u.api.kundenNachfassenSenden({ probe: true });
+  assert.equal(probe.geplant.length, 3, 'die Probe zaehlt Mails, nicht Bestellungen');
+
+  const s = await starteSmtpAttrappe();
+  try {
+    u.postfach(s.port);
+    const r = await u.api.kundenNachfassenSenden();
+    assert.equal(r.status, 'ok');
+    // #T2, #T4 und das Buendel - nicht fuenf Mails.
+    assert.equal(s.nachrichten.length, 3);
+    const anKunde1 = s.nachrichten.filter(m => m.an.some(a => a.toLowerCase() === 'testkunde1@example.invalid'));
+    assert.equal(anKunde1.length, 1, 'eine Mail je Empfaengeradresse');
+    const text = rumpfText(anKunde1[0].daten).replace(/\r\n/g, '\n');
+    assert.match(text, /^Guten Tag Testkunde 1,\n\nDiese Nachricht gilt für alle Muster aus Ihren Bestellungen #T1, #T5, #T6:/);
+    for (const farbe of ['Sand', 'Greige', 'Moos', 'Torf']) assert.match(text, new RegExp(farbe));
+    assert.doesNotMatch(text, /[{}<>]/);
+
+    const v = leseVersand(versandPfad(u.dir));
+    const posten = v.sendungen.filter(x => ['#T1', '#T5', '#T6'].includes(x.orderName));
+    assert.equal(posten.length, 3);
+    assert.equal(new Set(posten.map(x => x.messageId)).size, 1, 'alle drei verweisen auf dieselbe Mail');
+    assert.ok(posten.every(x => x.status === 'vermerkt' && x.stufe === 'erste'));
+    for (const n of [1, 5, 6]) assert.deepEqual([u.nachgefasst(ORDER(n)).zustand, u.nachgefasst(ORDER(n)).von], ['erledigt', 'automatisch']);
+    assert.equal(r.verschickt.length, 3);
+    assert.equal(r.verschickt.find(e => e.bestellungen === 3).orderName, '#T1, #T5, #T6');
+
+    // Zweiter Lauf am selben Tag: nichts mehr.
+    const r2 = await u.api.kundenNachfassenSenden();
+    assert.deepEqual([r2.verschickt, s.nachrichten.length], [[], 3]);
+  } finally { await s.schliessen(); }
+});
+
+test('Buendelung: Postfach lehnt ab -> alle Bestellungen des Buendels bleiben offen und gehen beim naechsten Lauf zusammen raus', async () => {
+  const u = umgebung({ weitere: [bestellung(5, [muster(5, 'Moos')], { kunde: 1 })] });
+  await musterUnterwegs(u, [1, 5]);
+  u.postfach(1);
+  let versuche = 0;
+  const r = await u.api.kundenNachfassenSenden({ senden: async () => { versuche += 1; throw new Error('abgelehnt'); } });
+  assert.equal(versuche, 1);
+  assert.deepEqual(r.fehler.map(f => f.orderName).sort(), ['#T1', '#T5']);
+  assert.deepEqual(r.verschickt, []);
+  for (const n of [1, 5]) assert.equal(u.nachgefasst(ORDER(n)).zustand, 'offen');
+  const mails = [];
+  const r2 = await u.api.kundenNachfassenSenden({ senden: async (_z, m) => { mails.push(m); return { messageId: '<neu@example.invalid>' }; } });
+  assert.equal(mails.length, 1);
+  assert.deepEqual(r2.fehler, []);
+  for (const n of [1, 5]) assert.equal(u.nachgefasst(ORDER(n)).zustand, 'erledigt');
+});
+
+test('Abgleich: "Abmelden" und Unzustellbar sperren vor dem Versand; die Probe rechnet so, schreibt aber nichts; weiterer Text wird Hinweis', async () => {
+  const u = umgebung();
+  await musterUnterwegs(u);
+  schreibeVersand(versandPfad(u.dir), fruehere());
+  u.postfachLesen.nachrichten = [
+    { id: 'm1', suche: 0, roh: antwortMail('Abmelden\r\n\r\nMit freundlichen Grüßen\r\nErika Beispiel\r\n\r\n> Antworten Sie mit „Abmelden“.') },
+    { id: 'm2', suche: 1, roh: bounceMail('TESTKUNDE4@example.invalid', '<alt4@example.invalid>') },
+  ];
+  const s = await starteSmtpAttrappe();
+  try {
+    u.postfach(s.port);
+    const vorher = fs.readFileSync(versandPfad(u.dir), 'utf8');
+    const probe = await u.api.kundenNachfassenSenden({ probe: true });
+    assert.equal(s.nachrichten.length, 0);
+    assert.deepEqual(probe.abgleich.neu.map(a => [a.email, a.grund]), [['testkunde1@example.invalid', 'Antwort „Abmelden“'], ['testkunde4@example.invalid', 'Unzustellbar (5.1.1)']]);
+    assert.deepEqual(probe.geplant.map(e => e.orderName), ['#T2'], 'die Probe zeigt, was wirklich rausginge');
+    assert.equal(fs.existsSync(stopplistePfad(u.dir)), false, 'die Probe traegt nichts ein');
+    assert.equal(fs.existsSync(hinweisePfad(u.dir)), false);
+    assert.equal(fs.readFileSync(versandPfad(u.dir), 'utf8'), vorher);
+    assert.ok(bericht(probe).some(z => /würde sperren\s+#A1\s+testkunde1@example\.invalid/.test(z)));
+
+    const r = await u.api.kundenNachfassenSenden();
+    assert.deepEqual(r.verschickt.map(e => e.orderName), ['#T2']);
+    assert.equal(s.nachrichten.length, 1);
+    assert.deepEqual(r.uebersprungen.map(e => [e.orderName, e.grund]).sort(), [['#T1', 'abgemeldet'], ['#T4', 'abgemeldet']]);
+    const stopp = leseStoppliste(stopplistePfad(u.dir));
+    assert.deepEqual(Object.keys(stopp).sort(), ['testkunde1@example.invalid', 'testkunde4@example.invalid']);
+    assert.deepEqual([stopp['testkunde1@example.invalid'].von, stopp['testkunde4@example.invalid'].grund], ['automatisch', 'Unzustellbar (5.1.1)']);
+
+    // Gleiche Mails beim naechsten Lauf: keine neue Sperre, kein Fehler; ein Mensch-Eintrag bleibt stehen.
+    const r2 = await u.api.kundenNachfassenSenden();
+    assert.deepEqual([r2.abgleich.neu, r2.verschickt], [[], []]);
+
+    // Abmelden plus Frage: gesperrt und als Hinweis fuer die Karte, je Mail nur einmal.
+    u.postfachLesen.nachrichten = [{ id: 'm3', suche: 0, roh: antwortMail('Abmelden. Wo bleibt meine Rechnung?', { von: 'testkunde2@example.invalid', bezug: '<alt2@example.invalid>' }) }];
+    await u.api.kundenNachfassenSenden();
+    await u.api.kundenNachfassenSenden();
+    const t = u.api.kundenMusterTexte();
+    assert.deepEqual(t.antwortHinweise.map(h => [h.mailId, h.email, h.auszug]), [['m3', 'testkunde2@example.invalid', 'Abmelden. Wo bleibt meine Rechnung?']]);
+    assert.equal(t.abgleichFehler, null);
+    assert.ok(t.abgemeldet.some(e => e.email === 'testkunde4@example.invalid' && /^Unzustellbar/.test(e.grund)));
+    // Nach einer Woche verschwindet der Hinweis von der Karte, die Sperre bleibt.
+    u.uhr.jetzt = new Date('2026-01-19T09:30:00Z');
+    assert.deepEqual(u.api.kundenMusterTexte().antwortHinweise, []);
+    assert.ok(leseStoppliste(stopplistePfad(u.dir))['testkunde2@example.invalid']);
+  } finally { await s.schliessen(); }
+});
+
+test('Abgleich: scheitert die Suche, geht nichts raus und die Karte sagt es; kaputte Stoppliste und Hinweisdatei stoppen ebenso', async () => {
+  const u = umgebung();
+  await musterUnterwegs(u);
+  const s = await starteSmtpAttrappe();
+  try {
+    u.postfach(s.port);
+    u.postfachLesen.fehler = new Error('IMAP: ECONNRESET');
+    const r = await u.api.kundenNachfassenSenden();
+    assert.equal(r.status, 'stoerung');
+    assert.match(r.hinweis, /Postfach-Suche fehlgeschlagen.*ECONNRESET/);
+    assert.deepEqual([s.nachrichten.length, r.verschickt], [0, []]);
+    assert.equal(u.nachgefasst(ORDER(1)).zustand, 'offen');
+    assert.match(bericht(r).at(-1), /^Nichts verschickt: Postfach-Suche/);
+    assert.match(u.api.kundenMusterTexte().abgleichFehler, /ECONNRESET/);
+    // Die Probe merkt sich den Fehler nicht, sendet aber auch nichts.
+    fs.rmSync(hinweisePfad(u.dir));
+    const p = await u.api.kundenNachfassenSenden({ probe: true });
+    assert.deepEqual([p.status, p.geplant, fs.existsSync(hinweisePfad(u.dir))], ['stoerung', [], false]);
+
+    // Kaputte Stoppliste: es wird gar nicht erst gesucht.
+    u.postfachLesen.fehler = null;
+    const aufrufe = u.postfachLesen.aufrufe;
+    fs.mkdirSync(path.dirname(stopplistePfad(u.dir)), { recursive: true });
+    fs.writeFileSync(stopplistePfad(u.dir), '{kaputt');
+    const st = await u.api.kundenNachfassenSenden();
+    assert.equal(st.status, 'stoerung');
+    assert.match(st.hinweis, /stoppliste\.json ist beschädigt/);
+    assert.deepEqual([u.postfachLesen.aufrufe, s.nachrichten.length], [aufrufe, 0]);
+    fs.rmSync(stopplistePfad(u.dir));
+
+    // Kaputte Hinweisdatei: der Abgleich laesst sich nicht festhalten - nichts geht raus.
+    fs.writeFileSync(hinweisePfad(u.dir), '{kaputt');
+    const hk = await u.api.kundenNachfassenSenden();
+    assert.equal(hk.status, 'stoerung');
+    assert.equal(s.nachrichten.length, 0);
+    assert.ok(u.api.kundenMusterTexte().abgleichFehler);
+    fs.rmSync(hinweisePfad(u.dir));
+
+    // Wieder heil: Lauf geht durch, der alte Fehler ist weg.
+    const ok = await u.api.kundenNachfassenSenden();
+    assert.equal(ok.status, 'ok');
+    assert.equal(s.nachrichten.length, 3);
+    assert.equal(u.api.kundenMusterTexte().abgleichFehler, null);
+  } finally { await s.schliessen(); }
+});
+
+test('Datensicherung nimmt die Hinweise mit, die Zugangsdaten nicht', async () => {
+  const { SICHERUNGSPFADE } = await import('../../../operations/scripts/sicherung.mjs');
+  assert.ok(SICHERUNGSPFADE.includes('nachfassen/hinweise.json'));
+  assert.ok(!SICHERUNGSPFADE.includes('nachfassen/postfach.json'));
 });
