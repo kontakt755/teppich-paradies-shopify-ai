@@ -229,3 +229,11 @@ test('Rollenbestand: Komponente eines anderen Bundles bleibt normale Position', 
   assert.notEqual(r.masspruefung.status, 'bestand');
   assert.equal(r.bundle.bestandsabgang, false);
 });
+
+test('grosshaendlerId: der Zusatz "ungekettelt" im Artikeltext widerspricht nie der Kundenbestellung', () => {
+  const g = grosshaendlerId({ produktMetafelder: { grosshandel: { sku: 'Testlinie 1234 (Test) ungekettelt' } } });
+  assert.deepEqual(g, { id: 'Testlinie 1234 (Test)', quelle: 'grosshandel.sku' });
+  // Nur der Zusatz faellt weg, und ein Feld ohne Inhalt danach gilt als leer.
+  assert.equal(grosshaendlerId({ variantMetafelder: { einkauf: { artikelnummer: 'ABC_1' } } }).id, 'ABC_1');
+  assert.equal(grosshaendlerId({ variantMetafelder: { einkauf: { artikelnummer: 'Ungekettelt' } }, produktMetafelder: { grosshandel: { sku: 'XY' } } }).id, 'XY');
+});

@@ -11,6 +11,7 @@ import {
   auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleiste, naechsterSchritt, zeitleistenFuerModell, folgebestellung,
   auftragsart, dringendsterSchritt, setzbareSchritte, AuftragsverlaufFehler, gepacktAmFuer,
   NACHFASSEN_NACH_TAGEN, MUSTER_ANGEKOMMEN_ANNAHME_TAGE, ERGEBNIS_KLAEREN_NACH_TAGEN,
+  kettelwegText,
 } from '../lib/auftragsverlauf.mjs';
 
 // Nur erfundene Daten: Pseudonym-Lieferant A, Testkunden.
@@ -397,4 +398,25 @@ test('Eigenbestand: Postversand fuehrt nur zum Versanddialog, persoenliche Ueber
     assert.equal(z.naechsterSchritt.aktion, aktion);
     assert.equal(z.verlauf.find(s => s.schritt === 'kunde_hat_muster').zustand, 'offen');
   }
+});
+
+test('kettelwegText: nur bei gekettelter, bestellter Ware und nie geraten', () => {
+  const p = { route: 'SUPPLIER_DIRECT', ausfuehrung: ['Fertigmaß: 250 × 220 cm', 'Einfassung: Gekettelt'] };
+  assert.equal(kettelwegText(p, { status: 'bestellt', ueber: 'kettler' }), 'Unser Kettler');
+  assert.equal(kettelwegText(p, { status: 'bestellt', ueber: 'kunde' }), 'Lieferant, direkt an den Kunden');
+  assert.equal(kettelwegText(p, { status: 'bestellt' }), 'Nicht vermerkt, bitte klären', 'ohne Vermerk ist der Weg nicht belegt');
+  assert.equal(kettelwegText(p, null), null, 'vor der Bestellung ist noch nichts entschieden');
+  assert.equal(kettelwegText(p, { status: null, ueber: 'kettler' }), null, 'nach Rueckgaengig zaehlt der alte Vermerk nicht');
+  assert.equal(kettelwegText({ ...p, route: 'SUPPLIER_TO_TP' }, { status: 'bestellt' }), null);
+  assert.equal(kettelwegText({ ...p, ausfuehrung: ['Einfassung: ohne Einfassung'] }, { status: 'bestellt' }), null);
+});
+
+test('zeitleiste: mitgekaufter Kettelservice stoert den Direktversand nicht', () => {
+  const auftrag = { id: 'gid://shopify/Order/1', datum: '2026-01-01T10:00:00Z', auftragsart: 'ware', positionen: [
+    { lineItemId: 'gid://shopify/LineItem/1', route: 'SUPPLIER_DIRECT', menge: 1, ausfuehrung: ['Einfassung: Gekettelt'] },
+    { lineItemId: 'gid://shopify/LineItem/2', route: 'UNGEKLAERT', eigenleistung: true, menge: 0, ausfuehrung: [] },
+  ] };
+  assert.equal(zeitleiste(auftrag).direktversand, true);
+  const statusAlle = { 'gid://shopify/Order/1::gid://shopify/LineItem/1': { status: 'bestellt', ueber: 'kettler' } };
+  assert.equal(zeitleiste(auftrag, { statusAlle }).direktversand, false);
 });
