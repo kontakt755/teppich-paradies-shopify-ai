@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
-  einordnen, einordnenKopf, rolleAnhang, xmlRechnungLesen, pdfTextLesen, betragLesen, belegFelder, ablegenUnveraenderlich,
+  einordnen, einordnenKopf, rolleAnhang, xmlRechnungLesen, pdfTextLesen, betragLesen, belegFelder, belegKopfArt, nummerAusBetreff, ablegenUnveraenderlich,
   archivName, sichererName, dublettenMarkieren, druckReihenfolge, summenJeAnbieter, wiederkehrend, pruefKandidaten,
   manifestZusammenfuehren, monatsGrenzen, monatDavor, berlinTag, anbieterSchluessel, anbieterName, sha256,
 } from '../lib/belege.mjs';
@@ -260,17 +260,17 @@ test('PDF-Helfer: eingebettete XML, Seitenzahl, Zusammenfuegen', { skip: !fs.exi
 });
 
 test('PDF-Text: Betrag direkt am Stichwort, andere Spalten und AGB-Text stoeren nicht', () => {
-  assert.equal(pdfTextLesen('Gesamtgewicht netto: 245,76 kg   Endbetrag in EUR.:   4.634,69').brutto, 4634.69);
-  assert.equal(pdfTextLesen('Gesamtbetrag EUR ohne MwSt. 217,84\n   Gesamtbetrag EUR inkl. MwSt. 259,23').brutto, 259.23);
-  assert.equal(pdfTextLesen('Brutto 619,80 €').brutto, 619.8);
-  assert.equal(pdfTextLesen('Brutto Gewicht (KG) 375,61').brutto, null);
+  assert.equal(pdfTextLesen('Gesamtgewicht netto: 200,00 kg   Endbetrag in EUR.:   1.111,11').brutto, 1111.11);
+  assert.equal(pdfTextLesen('Gesamtbetrag EUR ohne MwSt. 100,00\n   Gesamtbetrag EUR inkl. MwSt. 119,00').brutto, 119);
+  assert.equal(pdfTextLesen('Brutto 222,20 €').brutto, 222.2);
+  assert.equal(pdfTextLesen('Brutto Gewicht (KG) 333,33').brutto, null);
   assert.equal(pdfTextLesen('Netto Gesamtbetrag 100,00').brutto, null);
-  assert.equal(pdfTextLesen('Rechnungsbetrag 477,98 EUR\nDer Rechnungsbetrag erhoeht sich um zehn Prozent, mindestens jedoch um vierzig Euro (40,00 €)').brutto, 477.98);
+  assert.equal(pdfTextLesen('Rechnungsbetrag 444,44 EUR\nDer Rechnungsbetrag erhoeht sich um zehn Prozent, mindestens jedoch um vierzig Euro (40,00 €)').brutto, 444.44);
 });
 
 test('Nummer: aus Dateiname und im Text bestaetigt schlaegt die Bezugsnummer einer Gutschrift', () => {
-  const r = pdfTextLesen('Gutschrift GS161927\nRechnungsnummer: 1681610FHS', { hinweisNummer: 'GS161927' });
-  assert.equal(r.nummer, 'GS161927');
+  const r = pdfTextLesen('Gutschrift GS100001\nRechnungsnummer: 7654321XY', { hinweisNummer: 'GS100001' });
+  assert.equal(r.nummer, 'GS100001');
 });
 
 test('Anbieter: Freemail faellt nicht zusammen, Funktionsnamen weichen der Domain', () => {
@@ -285,30 +285,111 @@ test('Einordnung: Quittungs-Betreff mit Invoice-Anhang ist Rechnung, RE- und RG-
   const e = einordnen({ von: { adresse: 'x@firma.example' }, betreff: 'Your Firma receipt', labels: ['W'], anhaenge: [pdf('Invoice-1.pdf'), pdf('Receipt-1.pdf')] });
   assert.equal(e.klasse, 'rechnung');
   assert.deepEqual(e.rollen, ['rechnung', 'beilage']);
-  assert.equal(rolleAnhang({ name: ' RE-4790 01.10.pdf' }), 'rechnung');
+  assert.equal(rolleAnhang({ name: ' RE-1234 01.10.pdf' }), 'rechnung');
   assert.equal(rolleAnhang({ name: 'RG Firma 9.2.2026.pdf' }), 'rechnung');
   assert.equal(rolleAnhang({ name: 'Rezept.pdf' }), 'beilage');
 });
 
 test('Nummer: Dreiergruppen bleiben ganz, Dateiname aus Ziffern zaehlt nur, wenn er im Text steht', () => {
-  assert.equal(pdfTextLesen('Rechnungsnummer 921 812 398 und Kundennummer 202 167 bitte angeben').nummer, '921812398');
-  assert.equal(pdfTextLesen('Rechnung: 921 812 398', { hinweisNummer: '921812398' }).nummer, '921812398');
-  assert.equal(pdfTextLesen('Rechnung Nr. 1174491 2010593').nummer, '1174491');
-  const text = 'Rechnung\n0201399548\nGesamtbetrag: 10,00';
-  assert.equal(belegFelder({ text, name: '0201399548.PDF' }).nummer, '0201399548');
-  assert.equal(belegFelder({ text: 'Rechnung\nGesamtbetrag: 10,00', name: '0201399548.PDF' }).nummer, null);
-  assert.equal(belegFelder({ text: 'Rechnung\nNummer 201399548 Musterstrasse\nGesamtbetrag: 10,00', name: '0201399548.PDF' }).nummer, '201399548');
-  assert.equal(belegFelder({ text: 'Nummer 1201399548\nGesamtbetrag: 10,00', name: '0201399548.PDF' }).nummer, null);
+  assert.equal(pdfTextLesen('Rechnungsnummer 111 222 333 und Kundennummer 444 555 bitte angeben').nummer, '111222333');
+  assert.equal(pdfTextLesen('Rechnung: 111 222 333', { hinweisNummer: '111222333' }).nummer, '111222333');
+  assert.equal(pdfTextLesen('Rechnung Nr. 7000001 8000002').nummer, '7000001');
+  const text = 'Rechnung\n0700012345\nGesamtbetrag: 10,00';
+  assert.equal(belegFelder({ text, name: '0700012345.PDF' }).nummer, '0700012345');
+  assert.equal(belegFelder({ text: 'Rechnung\nGesamtbetrag: 10,00', name: '0700012345.PDF' }).nummer, null);
+  assert.equal(belegFelder({ text: 'Rechnung\nNummer 700012345 Musterstrasse\nGesamtbetrag: 10,00', name: '0700012345.PDF' }).nummer, '700012345');
+  assert.equal(belegFelder({ text: 'Nummer 1700012345\nGesamtbetrag: 10,00', name: '0700012345.PDF' }).nummer, null);
 });
 
 test('Betrag: Rechnungswert, Total inkl. Steuer und Gesamt EUR zaehlen, Skonto-Zeilen und Netto nicht', () => {
-  assert.equal(pdfTextLesen('Warenwert : 99,15 EUR\n19,00 % MwSt. : 18,84 EUR\nRechnungswert : 117,99 EUR').brutto, 117.99);
+  assert.equal(pdfTextLesen('Warenwert : 100,00 EUR\n19,00 % MwSt. : 19,00 EUR\nRechnungswert : 119,00 EUR').brutto, 119);
   assert.equal(pdfTextLesen('Total exkl 100,00\n  Total inkl Mwst € 119,00').brutto, 119);
-  assert.equal(pdfTextLesen('Warenwert 333,92 EUR 19,0% MWSt 63,44 EUR Gesamt EUR 397,36').brutto, 397.36);
-  const skonto = 'Gesamt EUR 737,49\nSKONTO BIS ZUM 26/10 ( -4.00 %): 29,50 EUR bleibt zu zahlen 707,99 EUR.\nSKONTO BIS ZUM 16/11 ( -2.25 %): 16,59 EUR bleibt zu zahlen 720,90 EUR.';
+  assert.equal(pdfTextLesen('Warenwert 200,00 EUR 19,0% MWSt 38,00 EUR Gesamt EUR 238,00').brutto, 238);
+  const skonto = 'Gesamt EUR 500,00\nSKONTO BIS ZUM 26/10 ( -4.00 %): 20,00 EUR bleibt zu zahlen 480,00 EUR.\nSKONTO BIS ZUM 16/11 ( -2.00 %): 10,00 EUR bleibt zu zahlen 490,00 EUR.';
   const r = pdfTextLesen(skonto);
-  assert.equal(r.brutto, 737.49);
+  assert.equal(r.brutto, 500);
   assert.equal(r.betragMehrdeutig, false);
   assert.equal(pdfTextLesen('Gesamt EUR ohne MwSt 100,00').brutto, null);
   assert.equal(pdfTextLesen('Rechnungswert netto 100,00').brutto, null);
+});
+
+test('Betrag: ein Datum ist nie ein Betrag', () => {
+  assert.equal(pdfTextLesen('Der Rechnungsbetrag in Hoehe von 17.50 Euro wird am 15.10.2026 abgebucht').brutto, 17.5);
+  assert.equal(pdfTextLesen('Rechnungsbetrag 1.234,56 EUR zahlbar bis 31.10.2026').brutto, 1234.56);
+  assert.equal(pdfTextLesen('Rechnungsbetrag 1.234,56 EUR zahlbar bis 31.10.26').brutto, 1234.56);
+  assert.equal(pdfTextLesen('Zu zahlen bis 15.11.2026').brutto, null);
+  assert.equal(pdfTextLesen('Zu zahlen bis 15.11.').brutto, null);
+  assert.equal(pdfTextLesen('Gesamtbetrag 12.50 EUR').brutto, 12.5);
+  // Tausenderpunkt und Komma-Cent bleiben ein Betrag.
+  assert.equal(pdfTextLesen('Gesamtbetrag 10.500,00 EUR').brutto, 10500);
+});
+
+test('Gutschrift: der Belegkopf entscheidet, nicht der Betreff der Mail', () => {
+  const felder = (text, betreff, name = 'beleg.pdf') => belegFelder({ text: `Muster GmbH\nTeppich Paradies\n${text}`, betreff, name });
+  const kopf = felder('Gutschrift\n7000001\nGesamtbetrag: 90,00 EUR', 'Rechnung von Muster GmbH, 7000001', '7000001.pdf');
+  assert.deepEqual([kopf.art, kopf.brutto, kopf.pruefen], ['gutschrift', -90, []]);
+  assert.equal(felder('Gutschrift TEPPICH PARADIES GMBH\nGesamtbetrag: 90,00 EUR', 'Rechnung').art, 'gutschrift');
+  assert.equal(felder('Ihre Gutschrift\nGesamtbetrag: 90,00 EUR', 'Beleg').art, 'gutschrift');
+  // Rechnung in einer Mail, deren Betreff beide Woerter nennt: bleibt positiv.
+  const beide = felder('Rechnung Nr. 4711\nGesamtbetrag: 100,00 EUR', 'Rechnung und Gutschrift 10/2026');
+  assert.deepEqual([beide.art, beide.brutto], ['rechnung', 100]);
+  assert.deepEqual(beide.pruefen, []);
+  // Kopf schweigt, Betreff nennt beides: nicht raten, sondern melden.
+  const unklar = felder('Lieferung Oktober\nGesamtbetrag: 100,00 EUR', 'Rechnung und Gutschrift');
+  assert.equal(unklar.brutto, 100);
+  assert.ok(unklar.pruefen.includes('Betreff nennt Rechnung und Gutschrift: Art prüfen'));
+  // Betreff nennt nur Gutschrift, der Kopf Rechnung: Kopf gilt, Hinweis.
+  const streit = felder('Rechnung Nr. 4711\nGesamtbetrag: 100,00 EUR', 'Ihre Gutschrift');
+  assert.deepEqual([streit.art, streit.brutto], ['rechnung', 100]);
+  assert.ok(streit.pruefen.includes('Betreff nennt Gutschrift, Belegkopf Rechnung'));
+  assert.equal(felder('Lieferung\nGesamtbetrag: 100,00 EUR', 'Ihre Gutschrift').art, 'gutschrift');
+  assert.equal(felder('Lieferung\nGesamtbetrag: 100,00 EUR', 'Beleg', 'Verkaufsgutschrift 1.pdf').art, 'gutschrift');
+  // Fliesstext und Positionen sind kein Titel.
+  assert.equal(belegKopfArt('Gutschrift zum 18.10.2026 ohne Abzug'), null);
+  assert.equal(belegKopfArt('Gutschrift Altware -10,00'), null);
+  assert.equal(belegKopfArt('Rechnung an: Muster'), null);
+  assert.equal(belegKopfArt('Rechnungsadresse\nGutschrift'), 'gutschrift');
+});
+
+test('Nummer: Serie und laufende Nummer bleiben ganz, sonst waere es eine falsche Dublette', () => {
+  const a = belegFelder({ text: 'Invoice number ABC12XYZ 11111\nTotal due 20,00 EUR', name: 'Invoice-ABC12XYZ-11111.pdf' });
+  const b = belegFelder({ text: 'Invoice number ABC12XYZ 22222\nTotal due 20,00 EUR', name: 'Invoice-ABC12XYZ-22222.pdf' });
+  assert.equal(a.nummer, 'ABC12XYZ-11111');
+  assert.equal(b.nummer, 'ABC12XYZ-22222');
+  // Bindestrich kommt aus manchen PDFs als Nullzeichen.
+  assert.equal(pdfTextLesen('Invoice number ABC12XYZ\x000009\nDate').nummer, 'ABC12XYZ-0009');
+  const liste = [
+    { rolle: 'rechnung', datei: 'x', sha256: 'h1', anbieterSchluessel: 'a', rechnungsnummer: a.nummer, brutto: 20 },
+    { rolle: 'rechnung', datei: 'y', sha256: 'h2', anbieterSchluessel: 'a', rechnungsnummer: b.nummer, brutto: 20 },
+    { rolle: 'rechnung', datei: 'z', sha256: 'h3', anbieterSchluessel: 'a', rechnungsnummer: 'ABO1', brutto: 5, rechnungsdatum: '2026-10-01' },
+    { rolle: 'rechnung', datei: 'w', sha256: 'h4', anbieterSchluessel: 'a', rechnungsnummer: 'ABO1', brutto: 5, rechnungsdatum: '2026-10-08' },
+  ];
+  dublettenMarkieren(liste);
+  assert.deepEqual(liste.map(x => x.dublette), [null, null, null, null]);
+});
+
+test('Waehrung: nur sicheres EUR kommt in die Summe', () => {
+  const usd = belegFelder({ text: 'Teppich Paradies\nInvoice number R-100\nTotal due 20.00 USD' });
+  assert.deepEqual([usd.brutto, usd.waehrung], [20, 'USD']);
+  assert.ok(usd.pruefen.includes('Währung USD'));
+  const ohne = belegFelder({ text: 'Teppich Paradies\nRechnung Nr. R-100\nGesamtbetrag 20,00' });
+  assert.equal(ohne.waehrung, null);
+  assert.ok(ohne.pruefen.includes('Währung nicht erkannt'));
+  // Die Betragszeile schlaegt eine Erwaehnung anderswo im Beleg.
+  assert.equal(pdfTextLesen('Kurs 1 EUR = 1,10 USD\nTotal due 20.00 USD').waehrung, 'USD');
+  assert.equal(pdfTextLesen('Konto USD 1234\nGesamtbetrag 20,00 EUR').waehrung, 'EUR');
+  assert.equal(pdfTextLesen('Konto USD EUR\nGesamtbetrag 20,00').waehrung, null);
+  const s = summenJeAnbieter([
+    { rolle: 'rechnung', anbieter: 'A', anbieterSchluessel: 'a', brutto: 20, waehrung: null },
+    { rolle: 'rechnung', anbieter: 'A', anbieterSchluessel: 'a', brutto: 20, waehrung: 'USD' },
+    { rolle: 'rechnung', anbieter: 'A', anbieterSchluessel: 'a', brutto: 5, waehrung: 'EUR' },
+  ]);
+  assert.deepEqual([s[0].summe, s[0].fremdwaehrung], [5, 2]);
+});
+
+test('Nummer: Monatsangabe im Betreff ersetzt die Rechnungsnummer nicht', () => {
+  assert.equal(nummerAusBetreff('Ihre Rechnung 10/2026'), null);
+  assert.equal(nummerAusBetreff('Rechnung 2026-10'), null);
+  assert.equal(nummerAusBetreff('Ihre Rechnung 10/2026', 'Rechnung-R4711.pdf'), 'R4711');
+  assert.equal(belegFelder({ text: 'Rechnung Nr. 4711 / Abrechnung 10/2026\nGesamtbetrag 5,00 EUR', betreff: 'Ihre Rechnung 10/2026' }).nummer, '4711');
 });

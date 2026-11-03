@@ -191,6 +191,13 @@ const INKL_STEUER = /inkl\.?\s*(?:der\s*)?(?:mwst|ust|umsatzsteuer)/gi;
 const STICHWORT_NUMMER = /(?:rechnungs?\s*-?\s*(?:nummer|nr\.?|no\.?)|rechnung\s*(?:nr\.?|no\.?|#)|invoice\s*(?:number|no\.?|nr\.?|#)|gutschrifts?\s*-?\s*(?:nummer|nr\.?)|beleg\s*-?\s*(?:nummer|nr\.?)|faktura\s*-?\s*(?:nummer|nr\.?))\s*[:.#]?\s*([A-Z0-9][A-Z0-9/._-]*)/gi;
 const STICHWORT_DATUM = /(?:rechnungsdatum|rechnungs-datum|belegdatum|invoice\s*date|datum\s*der\s*rechnung)\s*[:.]?\s*(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{2,4})/gi;
 const BETRAG_IN_ZEILE = /-?\s?\d{1,3}(?:[.,' ]\d{3})*[.,]\d{2}(?:\s?-)?(?!\d)|-?\s?\d+[.,]\d{2}(?:\s?-)?(?!\d)/g;
+// Ein Datum ist kein Betrag: „31.10.2026“ wuerde sonst als 31,10 gelesen. Auch ohne Jahr („bis 15.10.“).
+const DATUM_IN_ZEILE = /(?<![\d.,])(?:0?[1-9]|[12]\d|3[01])\.(?:0?[1-9]|1[0-2])\.(?:\d{4}|\d{2})?(?!\d)/g;
+const WAEHRUNGEN = Object.freeze([
+  ['EUR', /€|\bEUR\b|\bEuro\b/i], ['USD', /\$|\bUSD\b/], ['GBP', /£|\bGBP\b/], ['CHF', /\bCHF\b/],
+  ['PLN', /\bPLN\b/], ['CZK', /\bCZK\b/], ['DKK', /\bDKK\b/], ['SEK', /\bSEK\b/], ['NOK', /\bNOK\b/],
+]);
+const waehrungenIn = text => WAEHRUNGEN.filter(([, re]) => re.test(text)).map(([code]) => code);
 
 /** Genau ein Wert ist sicher; kein oder mehrere Werte sind es nicht. */
 function einziger(werte) {
@@ -204,8 +211,10 @@ function einziger(werte) {
  * `hinweisNummer`: Nummer aus Betreff oder Dateiname; zaehlt nur, wenn sie auch im Text steht.
  */
 export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
-  const roh = String(text ?? '');
+  // Manche PDF-Schriften liefern den Bindestrich als Nullzeichen; die Nummer endete sonst dort.
+  const roh = String(text ?? '').replace(/\0/g, '-');
   const betraege = [];
+  const zeilenWaehrung = [];
   for (const zeile of roh.split(/\r?\n/)) {
     const treffer = STICHWORT_BRUTTO.exec(zeile);
     if (!treffer) continue;
@@ -213,19 +222,22 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
     if (/skonto/i.test(zeile)) continue;
     // Stichwort „Zahlbetrag“ o. ae. kann mit Netto-Spalten in einer Zeile stehen: nur danach lesen.
     // Davor zaehlt nur das Wort direkt am Stichwort („Netto Gesamtbetrag“), nicht eine andere Spalte.
-    const rest = zeile.slice(treffer.index + treffer[0].length).replace(/\s+/g, ' ');
+    const rest = zeile.slice(treffer.index + treffer[0].length).replace(DATUM_IN_ZEILE, ' ').replace(/\s+/g, ' ');
     if (NICHT_BRUTTO.test(zeile.slice(Math.max(0, treffer.index - 12), treffer.index)) || NICHT_BRUTTO.test(rest.replace(INKL_STEUER, ' '))) continue;
     const zahlen = rest.match(BETRAG_IN_ZEILE);
     // Der Betrag steht direkt hinter dem Stichwort; im Fliesstext (AGB) ist es kein Rechnungsbetrag.
     if (!zahlen || rest.indexOf(zahlen[0]) > 25) continue;
     const n = betragLesen(zahlen[zahlen.length - 1].replace(/\s/g, ''));
-    if (n !== null) betraege.push(n);
+    if (n !== null) {
+      betraege.push(n);
+      zeilenWaehrung.push(...waehrungenIn(zeile));
+    }
   }
   const betrag = einziger(betraege);
   const nummern = [];
   for (const m of roh.matchAll(STICHWORT_NUMMER)) {
     let n = m[1].replace(/[.,:;/-]+$/, '');
-    // „921 812 398“: Nummer in Dreiergruppen, sonst bliebe nur der Anfang stehen.
+    // „111 222 333“: Nummer in Dreiergruppen, sonst bliebe nur der Anfang stehen.
     const gruppen = /^\d{1,3}$/.test(n) ? /^(?: \d{3})+(?=\s|$)/.exec(roh.slice(m.index + m[0].length)) : null;
     if (gruppen) n += gruppen[0].replace(/ /g, '');
     if (/\d/.test(n) && n.length >= 3) nummern.push(n);
@@ -234,15 +246,19 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
   // Aus Betreff oder Dateiname und im Text bestaetigt (Leerzeichen zwischen Ziffern zaehlen nicht):
   // schlaegt eine Bezugsnummer im Text (Gutschrift nennt ihre Rechnung).
   // Fuehrende Nullen des Dateinamens fehlen im Beleg oft; es gilt die Schreibweise im Beleg.
-  const hinweisMuster = hinweisNummer ? [...hinweisNummer.replace(/^0+(?=\d)/, '')].map(z => z.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('\\s?') : null;
+  // Ein Bindestrich im Dateinamen steht im PDF-Text oft als Leerzeichen; es gilt dann die Form mit Bindestrich.
+  const hinweisMuster = hinweisNummer ? [...hinweisNummer.replace(/^0+(?=\d)/, '')].map(z => (z === '-' ? '[\\s-]?' : z.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'))).join('\\s?') : null;
   const bestaetigt = hinweisMuster ? new RegExp(`(?:^|[^A-Za-z0-9])(0*${hinweisMuster})(?:$|[^A-Za-z0-9])`).exec(roh) : null;
-  if (bestaetigt) nummer = { wert: bestaetigt[1].replace(/\s/g, '') };
+  if (bestaetigt) nummer = { wert: hinweisNummer.includes('-') ? hinweisNummer : bestaetigt[1].replace(/\s/g, '') };
   const daten = [];
   for (const m of roh.matchAll(STICHWORT_DATUM)) {
     const j = m[3].length === 2 ? `20${m[3]}` : m[3];
     daten.push(`${j}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`);
   }
-  const waehrung = /€|\bEUR\b/.test(roh) ? 'EUR' : null;
+  // Die Zeile mit dem Betrag zaehlt. Sagt sie nichts, muss der ganze Text eindeutig sein; sonst null.
+  const inZeilen = [...new Set(zeilenWaehrung)];
+  const imText = waehrungenIn(roh);
+  const waehrung = inZeilen.length === 1 ? inZeilen[0] : (!inZeilen.length && imText.length === 1 ? imText[0] : null);
   return {
     brutto: betrag.wert,
     betragMehrdeutig: Boolean(betrag.mehrdeutig),
@@ -257,9 +273,10 @@ export function pdfTextLesen(text, { hinweisNummer = null } = {}) {
 export function nummerAusBetreff(...texte) {
   for (const t of texte) {
     const m = /(?:rechnung|invoice|faktura|gutschrift|ausgangsrechnung)[^A-Za-z0-9]{0,12}(?:nr\.?\s*)?([A-Z]{0,4}\d[A-Z0-9/-]{3,})/i.exec(String(t ?? ''));
-    if (m) return m[1];
+    // „Rechnung 10/2026“ nennt den Monat, keine Nummer.
+    if (m && !/^(?:\d{1,2}[/-])?20\d{2}(?:[/-]\d{1,2})?$/.test(m[1])) return m[1];
   }
-  // Dateiname nur aus Ziffern (0201399548.PDF): zaehlt ebenfalls nur, wenn er im Text steht.
+  // Dateiname nur aus Ziffern (7000123456.PDF): zaehlt ebenfalls nur, wenn er im Text steht.
   for (const t of texte) {
     const m = /^(\d{6,})\.[a-z]+$/i.exec(String(t ?? '').trim());
     if (m) return m[1];
@@ -368,11 +385,44 @@ export function archivName({ tag, anbieter, hash, name }) {
   return `${tag || 'ohne-datum'}_${sichererName(anbieter, 'anbieter').slice(0, 30)}_${hash.slice(0, 12)}_${sichererName(name)}`;
 }
 
+// Belegtitel: das Wort steht am Zeilenanfang, danach nichts, Nummer oder Grossgeschriebenes.
+// „Gutschrift zum 18.10.“ oder „Rechnung an:“ sind Fliesstext, eine Zeile mit Betrag ist eine Position.
+const BELEG_TITEL = /^\s*(?:(?:Ihre|IHRE)\s+)?(?:(?:Verkaufs|VERKAUFS)\s*-?\s*)?(Gutschrift|gutschrift|GUTSCHRIFT|Credit [Nn]ote|CREDIT NOTE|Rechnung|RECHNUNG|Invoice|INVOICE)(?=\s*$|\s*[:#]\s*\S|\s+(?:Nr|No|NR|NO|Nummer|Number)\b|\s+[A-Z0-9])/;
+
+/** Was der Beleg im Kopf ueber sich sagt: 'gutschrift', 'rechnung' oder null. Der erste Titel zaehlt. */
+export function belegKopfArt(text) {
+  const zeilen = String(text ?? '').split(/\r?\n/).filter(z => z.trim()).slice(0, 40);
+  for (const z of zeilen) {
+    const m = BELEG_TITEL.exec(z);
+    if (!m || /\d[.,]\d{2}\s*(?:€|EUR)?\s*-?\s*$/.test(z)) continue;
+    return /gutschrift|credit/i.test(m[1]) ? 'gutschrift' : 'rechnung';
+  }
+  return null;
+}
+
+/**
+ * Art des Belegs. XML entscheidet, dann der Belegkopf, dann der Dateiname. Der Betreff gilt fuer die
+ * ganze Mail und sagt nichts Sicheres ueber den einzelnen Anhang: allein entscheidet er nur, wenn er
+ * eindeutig ist; widerspricht er, wird es gemeldet.
+ */
+function belegArt({ ausXml, text, betreff, name }) {
+  const wortGutschrift = /gutschrift|credit\s*note/i;
+  const wortRechnung = /(^|[^a-zäöü])(rechnung|invoice|faktura|factuur)/i; // WORT_RECHNUNG zaehlt auch Gutschrift
+  const betreffGutschrift = wortGutschrift.test(betreff);
+  const kopf = belegKopfArt(text);
+  if (ausXml) return { art: ausXml.art, hinweis: kopf && kopf !== ausXml.art ? 'Belegkopf und XML nennen verschiedene Belegarten' : null };
+  if (kopf === 'gutschrift') return { art: 'gutschrift', hinweis: null };
+  if (kopf === 'rechnung') return { art: 'rechnung', hinweis: betreffGutschrift && !wortRechnung.test(betreff) ? 'Betreff nennt Gutschrift, Belegkopf Rechnung' : null };
+  if (wortGutschrift.test(name)) return { art: 'gutschrift', hinweis: null };
+  if (!betreffGutschrift) return { art: 'rechnung', hinweis: null };
+  return wortRechnung.test(betreff) ? { art: 'rechnung', hinweis: 'Betreff nennt Rechnung und Gutschrift: Art prüfen' } : { art: 'gutschrift', hinweis: null };
+}
+
 /**
  * Felder eines Belegs aus XML und PDF-Text samt Pruef-Hinweisen. XML geht immer vor.
  * Gutschriften zaehlen negativ. Weicht der PDF-Text sicher von der XML ab, wird das gemeldet.
  */
-export function belegFelder({ xml = null, text = '', pdfLesbar = true, betreff = '', name = '', gutschriftWort = false }) {
+export function belegFelder({ xml = null, text = '', pdfLesbar = true, betreff = '', name = '' }) {
   const pruefen = [];
   const ausXml = xml ? xmlRechnungLesen(xml) : null;
   const ausText = text ? pdfTextLesen(text, { hinweisNummer: nummerAusBetreff(betreff, name) }) : null;
@@ -392,7 +442,9 @@ export function belegFelder({ xml = null, text = '', pdfLesbar = true, betreff =
   }
   if (!pdfLesbar) pruefen.push('PDF nicht lesbar');
   else if (!ausXml && !String(text).trim()) pruefen.push('Kein Text im PDF (Scan?)');
-  const gutschrift = ausXml?.art === 'gutschrift' || gutschriftWort;
+  const artInfo = belegArt({ ausXml, text, betreff, name });
+  if (artInfo.hinweis) pruefen.push(artInfo.hinweis);
+  const gutschrift = artInfo.art === 'gutschrift';
   if (felder.brutto === null) pruefen.push('Betrag fehlt');
   else {
     felder.brutto = rundeCent(gutschrift ? -Math.abs(felder.brutto) : felder.brutto);
@@ -401,6 +453,7 @@ export function belegFelder({ xml = null, text = '', pdfLesbar = true, betreff =
   }
   if (!felder.nummer) pruefen.push('Rechnungsnummer fehlt');
   if (felder.brutto !== null && felder.waehrung && felder.waehrung !== 'EUR') pruefen.push(`Währung ${felder.waehrung}`);
+  if (felder.brutto !== null && !felder.waehrung) pruefen.push('Währung nicht erkannt');
   // Eine Rechnung an uns nennt uns: fehlt der Name, stimmt vielleicht die Einordnung nicht.
   if (String(text).trim() && !/teppich\s*-?\s*paradies|tp-oranienburg/i.test(text)) pruefen.push('Empfänger im PDF nicht als Teppich Paradies erkannt');
   return { ...felder, art: gutschrift ? 'gutschrift' : 'rechnung', quelle: felder.brutto !== null || felder.nummer ? quelle : null, pruefen };
@@ -413,7 +466,8 @@ export function dublettenMarkieren(belege) {
   for (const b of belege) {
     if (b.rolle !== 'rechnung') continue;
     b.dublette = null;
-    const schluessel = b.rechnungsnummer ? `${b.anbieterSchluessel}|${b.rechnungsnummer}|${b.brutto}` : null;
+    // Das Rechnungsdatum gehoert dazu: gleiches Abo, gleicher Betrag, anderer Tag ist kein Doppel.
+    const schluessel = b.rechnungsnummer ? `${b.anbieterSchluessel}|${b.rechnungsnummer}|${b.brutto}|${b.rechnungsdatum ?? ''}` : null;
     const von = hashe.get(b.sha256) || (schluessel ? nummern.get(schluessel) : null);
     if (von) { b.dublette = von.datei; continue; }
     hashe.set(b.sha256, b);
@@ -429,7 +483,10 @@ export function druckReihenfolge(belege) {
     .sort((a, b) => String(a.anbieter).localeCompare(String(b.anbieter), 'de') || String(a.tag).localeCompare(String(b.tag)) || String(a.datei).localeCompare(String(b.datei)));
 }
 
-/** Summen je Anbieter. Belege ohne Betrag zaehlen mit, die Summe ist dann als unvollstaendig erkennbar. */
+/**
+ * Summen je Anbieter. Belege ohne Betrag zaehlen mit, die Summe ist dann als unvollstaendig erkennbar.
+ * In die Summe kommt nur, was sicher EUR ist; unbekannte Waehrung zaehlt wie fremde.
+ */
 export function summenJeAnbieter(belege) {
   const je = new Map();
   for (const b of belege) {
@@ -437,7 +494,7 @@ export function summenJeAnbieter(belege) {
     const s = je.get(b.anbieterSchluessel) || { anbieter: b.anbieter, schluessel: b.anbieterSchluessel, anzahl: 0, ohneBetrag: 0, summe: 0, fremdwaehrung: 0 };
     s.anzahl += 1;
     if (b.brutto === null || b.brutto === undefined) s.ohneBetrag += 1;
-    else if (b.waehrung && b.waehrung !== 'EUR') s.fremdwaehrung += 1;
+    else if (b.waehrung !== 'EUR') s.fremdwaehrung += 1;
     else s.summe = rundeCent(s.summe + b.brutto);
     je.set(b.anbieterSchluessel, s);
   }

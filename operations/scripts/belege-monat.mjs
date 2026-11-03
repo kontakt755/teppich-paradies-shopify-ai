@@ -129,7 +129,6 @@ export function mailAuswerten({ roh, id, thread, eingang, labels, analyse = pdfA
     const hash = sha256(a.inhalt);
     const felder = belegFelder({
       xml: a.xmlText, text: a.text, pdfLesbar: a.pdf ? a.info?.lesbar !== false : true, betreff: mail.betreff, name: a.name,
-      gutschriftWort: /gutschrift|credit note/i.test(`${mail.betreff} ${a.name}`),
     });
     const tag = berlinTag(datum);
     const meta = {
@@ -203,10 +202,10 @@ export function deckblattHtml(d) {
 <p>${d.zahlen.gefunden} Mails geprüft, ${d.zahlen.rechnungen} Rechnungen, ${d.zahlen.druckSeiten} Belegseiten. Summe erkannter Beträge: <b>${esc(eur(d.gesamt))} EUR</b>${d.zahlen.ohneBetrag ? ` – ${d.zahlen.ohneBetrag} Rechnung(en) ohne sicheren Betrag fehlen in der Summe, also Summe unvollständig` : ''}.</p>
 <h2>Summen je Lieferant</h2>
 <table><tr><th>Anbieter</th><th class="z">Belege</th><th class="z">ohne Betrag</th><th class="z">Summe EUR</th><th class="z">Anteil</th><th>Wiederkehrend</th></tr>
-${d.summen.map(s => zeile([[s.anbieter], [s.anzahl, 1], [s.ohneBetrag || '', 1], [`${eur(s.summe)}${s.fremdwaehrung ? ` (+${s.fremdwaehrung} Fremdwährung)` : ''}`, 1], [anteilBasis > 0 && s.summe > 0 ? `${Math.round(s.summe / anteilBasis * 100)} %` : '', 1], [dauer.has(s.schluessel) ? 'ja' : '']])).join('\n')}</table>
+${d.summen.map(s => zeile([[s.anbieter], [s.anzahl, 1], [s.ohneBetrag || '', 1], [`${eur(s.summe)}${s.fremdwaehrung ? ` (+${s.fremdwaehrung} nicht sicher EUR)` : ''}`, 1], [anteilBasis > 0 && s.summe > 0 ? `${Math.round(s.summe / anteilBasis * 100)} %` : '', 1], [dauer.has(s.schluessel) ? 'ja' : '']])).join('\n')}</table>
 <h2>Liste der Belege</h2>
 <table><tr><th class="z">Seite</th><th>Datum</th><th>Anbieter</th><th>Rechnungsnr.</th><th class="z">Betrag EUR</th><th>Prüfen</th></tr>
-${d.liste.map(b => zeile([[b.seite ?? 'fehlt', 1], [b.tag], [b.anbieter], [b.rechnungsnummer || ''], [b.brutto === null ? '' : `${eur(b.brutto)}${b.waehrung && b.waehrung !== 'EUR' ? ` ${b.waehrung}` : ''}`, 1], [(b.pruefen || []).join('; ')]])).join('\n')}</table>
+${d.liste.map(b => zeile([[b.seite ?? 'fehlt', 1], [b.tag], [b.anbieter], [b.rechnungsnummer || ''], [b.brutto === null ? '' : `${eur(b.brutto)}${b.waehrung !== 'EUR' ? ` ${b.waehrung || '?'}` : ''}`, 1], [(b.pruefen || []).join('; ')]])).join('\n')}</table>
 <h2>Offene Punkte</h2>
 ${liste('Portal-Belege selbst holen (liegen nicht als Anhang vor)', d.portale.map(p => `${p.name}: ${p.wo}${p.hinweise ? ` – ${p.hinweise} Hinweis-Mail(s) im Monat` : ' – keine Hinweis-Mail im Monat'}${p.belege ? `, ${p.belege} Beleg(e) kamen per Mail` : ''}`))}
 ${liste('Fehlende Monatsbelege wiederkehrender Anbieter', d.fehlend.map(f => f.anbieter))}

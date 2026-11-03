@@ -73,16 +73,23 @@ export function parameterZerlegen(wert) {
   const ende = s.indexOf(';');
   const haupt = (ende < 0 ? s : s.slice(0, ende)).trim().toLowerCase();
   const stuecke = new Map();
+  const einfach = new Map();
   const re = /;\s*([^\s=;]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^;]*))/g;
   for (const m of s.matchAll(re)) {
     const roh = m[2] !== undefined ? m[2].replace(/\\(.)/g, '$1') : m[3].trim();
     const teil = /^([^*]+)(?:\*(\d+))?(\*)?$/.exec(m[1]);
     if (!teil) continue;
     const name = teil[1].toLowerCase();
+    // filename= neben filename*=: zwei Fassungen desselben Werts, keine Fortsetzung. RFC 2231 geht vor.
+    if (!m[1].includes('*')) {
+      einfach.set(name, roh);
+      continue;
+    }
     if (!stuecke.has(name)) stuecke.set(name, []);
     stuecke.get(name).push({ nr: Number(teil[2] ?? 0), kodiert: Boolean(teil[3]), roh });
   }
   const parameter = {};
+  for (const [name, roh] of einfach) if (!stuecke.has(name)) parameter[name] = kopfText(roh);
   for (const [name, liste] of stuecke) {
     liste.sort((a, b) => a.nr - b.nr);
     if (!liste.some(t => t.kodiert)) {

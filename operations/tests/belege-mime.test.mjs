@@ -139,3 +139,10 @@ test('IMAP-Leser enthaelt keinen aendernden Befehl', () => {
   assert.doesNotMatch(code, /\b(STORE|EXPUNGE|APPEND|COPY|MOVE|SELECT|DELETE|CREATE|RENAME)\b/);
   assert.doesNotMatch(code, /BODY\[/);
 });
+
+test('Parameter: filename und filename* nebeneinander ergeben einen Namen, RFC 2231 geht vor', () => {
+  const p = parameterZerlegen("attachment; filename=\"Rechnung.pdf\"; filename*=UTF-8''Rechnung%20M%C3%A4rz.pdf");
+  assert.equal(p.parameter.filename, 'Rechnung März.pdf');
+  assert.equal(parameterZerlegen('attachment; filename="Rechnung.pdf"').parameter.filename, 'Rechnung.pdf');
+  assert.equal(parameterZerlegen('attachment; filename*0="Rech"; filename*1="nung.pdf"').parameter.filename, 'Rechnung.pdf');
+});
