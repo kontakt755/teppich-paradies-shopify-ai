@@ -75,7 +75,7 @@ function rechnerHarness(saved = { w: 200, l: 300 }) {
   for (const key of ['daten', 'fehler', 'ergebnis', 'liste', 'summe']) root.appendChild(h.node('div', { [`data-tp-rechner-${key}`]: '' }));
   root.querySelector('[data-tp-rechner-daten]').setAttribute('data-tp-rechner-quelle', '/data');
   let storage = JSON.stringify(saved);
-  const context = vm.createContext({ document: h.doc, URL, fetch: h.fetch, sessionStorage: { getItem: () => storage, setItem: (_, v) => { storage = v; }, removeItem: () => { storage = 'null'; } }, window: { location: { href: 'https://example.test/collection', replace() {} } } });
+  const context = vm.createContext({ document: h.doc, URL, URLSearchParams, fetch: h.fetch, sessionStorage: { getItem: () => storage, setItem: (_, v) => { storage = v; }, removeItem: () => { storage = 'null'; } }, window: { location: { href: 'https://example.test/collection', search: '', replace() {} } } });
   vm.runInContext(read('assets/tp-masstepich-rechnung.js'), context); vm.runInContext(rechner, context);
   return { ...h, root, form, w, l, storage: () => JSON.parse(storage), async answer(text = daten, ok = true) { h.requests.at(-1).resolve({ ok, status: ok ? 200 : 503, text: async () => text }); await tick(); } };
 }

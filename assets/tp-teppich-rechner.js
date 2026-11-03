@@ -65,6 +65,18 @@
     return null;
   }
 
+  // Mass aus der Adresse (?breite=&laenge=, z. B. von den Format-Seiten
+  // sections/tp-format-seite.liquid). Geht vor dem gespeicherten Mass.
+  function lesenAusAdresse(suche) {
+    var sp = new URLSearchParams(suche);
+    var teile = [sp.get('breite') || '', sp.get('laenge') || ''];
+    if (!/^\d{2,4}$/.test(teile[0]) || !/^\d{2,4}$/.test(teile[1])) return null;
+    var w = Number(teile[0]);
+    var l = Number(teile[1]);
+    if (w < MIN_CM || l < MIN_CM || w > MAX_EINGABE_CM || l > MAX_EINGABE_CM) return null;
+    return { w: w, l: l };
+  }
+
   function speichern(w, l) {
     try {
       if (w && l) sessionStorage.setItem(SPEICHER, JSON.stringify({ w: w, l: l }));
@@ -293,11 +305,12 @@
     // Auch eine erst teilweise eingegebene oder wieder geloeschte Eingabe gehoert
     // dem Kunden. Ein spaeter Fetch darf sie nicht durch den Speicher ersetzen.
     var bearbeitet = root.getAttribute('data-tp-rechner-bearbeitet') || inW.value || inL.value;
-    var alt = bearbeitet ? null : lesenGespeichert();
+    var ausAdresse = bearbeitet ? null : lesenAusAdresse(window.location.search);
+    var alt = bearbeitet ? null : (ausAdresse || lesenGespeichert());
     if (alt) {
       inW.value = alt.w;
       inL.value = alt.l;
-      anwenden(alt.w, alt.l, false);
+      anwenden(alt.w, alt.l, !!ausAdresse);
     }
     root.setAttribute('data-tp-rechner-bereit', '1');
     return true;

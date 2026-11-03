@@ -56,3 +56,16 @@ test('Hero-Rechner: kante_inkl - Mindestpreis allein ueber die Flaeche', () => {
   assert.equal(r.summe, Math.ceil(9900 / 89) * 89);
   assert.equal(r.mindest, true);
 });
+
+const startAdresse = src.indexOf('  function lesenAusAdresse(');
+const endeAdresse = src.indexOf('\n  }\n', startAdresse) + 4;
+const lesenAusAdresse = vm.runInNewContext('var MIN_CM = 50, MAX_EINGABE_CM = 2000; (' + src.slice(startAdresse, endeAdresse).trim().replace(/^function lesenAusAdresse/, 'function') + ')', { URLSearchParams });
+
+test('Hero-Rechner: Mass aus der Adresse gilt nur vollstaendig und im erlaubten Bereich', () => {
+  assert.equal(JSON.stringify(lesenAusAdresse('?breite=200&laenge=300')), '{"w":200,"l":300}');
+  assert.equal(lesenAusAdresse('?breite=200'), null);
+  assert.equal(lesenAusAdresse('?breite=40&laenge=300'), null);
+  assert.equal(lesenAusAdresse('?breite=2001&laenge=300'), null);
+  assert.equal(lesenAusAdresse('?breite=2x0&laenge=300'), null);
+  assert.equal(lesenAusAdresse(''), null);
+});
