@@ -207,6 +207,10 @@
               "type": "tp-card-sonderposten",
               "settings": {}
             },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            },
             "tp_card_color_thumbs": {
               "type": "tp-card-color-thumbs",
               "settings": {}
@@ -222,6 +226,7 @@
             "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_sonderposten",
+            "tp_card_aktion",
             "tp_card_color_thumbs"
           ]
         }
