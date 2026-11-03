@@ -335,10 +335,6 @@
               "type": "tp-zubehoer-empfehlung",
               "settings": {}
             },
-            "tp_boden_raumansicht": {
-              "type": "tp-boden-raumansicht",
-              "settings": {}
-            },
             "tp_bildnachweis_mobil": {
               "type": "tp-bildnachweis",
               "name": "TP Bildnachweis (Handy)",
@@ -376,7 +372,6 @@
             "tp_farbanzeige_tp1",
             "paket_auswahl_xLTafR",
             "tp_service_links_night1",
-            "tp_boden_raumansicht",
             "tp_muster_cta_1",
             "tp_bewertungsbeleg_planken",
             "tp_verlegen_lassen",

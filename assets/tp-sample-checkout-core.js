@@ -206,6 +206,27 @@
     });
   }
 
+  // Sperrliste fuer Muster ueber das Sammelprodukt (Inhaber 03.11.2026, w-194):
+  // Ohne eigenes Musterprodukt greift die Mustersperre des Control Centers
+  // nicht. Eintrag: 'produkt-handle': ['Farbe', ...]. Die Farbe erscheint dann
+  // als "Kein Muster verfuegbar" und kommt nie in den Warenkorb.
+  var MUSTER_SPERRLISTE = {};
+
+  function applySperrliste(colors, handle, liste) {
+    var gesperrt = ((liste || MUSTER_SPERRLISTE)[handle] || []).map(function (farbe) {
+      return String(farbe).trim().toLowerCase();
+    });
+    if (!gesperrt.length) return colors;
+    return colors.map(function (color) {
+      if (gesperrt.indexOf(String(color.value || '').trim().toLowerCase()) === -1) return color;
+      var copy = {};
+      Object.keys(color).forEach(function (name) { copy[name] = color[name]; });
+      copy.sampleVariantId = null;
+      copy.sampleUnavailable = true;
+      return copy;
+    });
+  }
+
   // Gesperrte Farben (sampleUnavailable) sind nie waehlbar und zaehlen nicht
   // zur Auswahlgrenze.
   function isSelectable(color) {
@@ -368,6 +389,7 @@
     basisSectionUrl: basisSectionUrl,
     parseBasisHandle: parseBasisHandle,
     parseMusterQuelle: parseMusterQuelle,
+    applySperrliste: applySperrliste,
     assignSampleVariantsWithBasis: assignSampleVariantsWithBasis,
     getSelectionStatus: getSelectionStatus,
     buildCartItems: buildCartItems,

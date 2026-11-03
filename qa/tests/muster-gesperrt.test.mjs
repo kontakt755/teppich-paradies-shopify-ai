@@ -34,6 +34,16 @@ const PRODUKT = { id: 7, handle: 'piumera', title: 'Piumera Teppichboden' };
 
 // --- Rechenkern ---
 
+test('Sperrliste sperrt einzelne Farben auch ohne Musterprodukt (w-194)', () => {
+  const liste = { 'finvara-eiche': [' grau '] };
+  const mitListe = core.applySperrliste(FARBEN, 'finvara-eiche', liste);
+  assert.equal(mitListe[0].sampleUnavailable, true);
+  assert.equal(core.isSelectable(mitListe[0]), false);
+  assert.equal(core.isSelectable(mitListe[1]), true);
+  assert.equal(core.applySperrliste(FARBEN, 'anderes-produkt', liste), FARBEN);
+  assert.equal(FARBEN[0].sampleUnavailable, undefined);
+});
+
 test('drei Faelle je Farbe: verfuegbar, Variante fehlt, Variante gesperrt', () => {
   const muster = musterProdukt([
     { id: 601, option1: 'Grau', available: true },
