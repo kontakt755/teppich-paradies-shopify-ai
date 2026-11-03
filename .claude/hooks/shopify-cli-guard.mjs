@@ -20,8 +20,10 @@
 // haette das 82 Massenlaeufe gestoppt, darunter freigegebene Rabattrueckstellungen.
 // Ein Pfad aus einer Shell-Variable ohne Platzhalter bleibt damit ungeprueft.
 //
-// Was bewusst durchlaeuft: reine Abfragen ohne --allow-mutations (die CLI lehnt
-// Mutationen dort selbst ab) und alle uebrigen Mutationen, siehe
+// Geprueft wird auch ohne sichtbares --allow-mutations, denn die CLI erlaubt
+// Mutationen ebenso per SHOPIFY_FLAG_ALLOW_MUTATIONS aus der Umgebung.
+//
+// Was bewusst durchlaeuft: Abfragen und alle uebrigen Mutationen, siehe
 // shopify-mcp-guard.mjs. Archivieren ist kein Loeschen.
 //
 // Nicht abgedeckt: Skripte, die die CLI selbst aufrufen, zum Beispiel die vom
@@ -59,7 +61,7 @@ export function zerlege(befehl) {
       i += 1;
       if (befehl[i] !== '\n' && i < befehl.length) zeichen(befehl[i]);
     } else if (z === ' ' || z === '\t') fertig();
-    else if (z === '\n' || z === ';' || z === '|' || z === '&') { fertig(); if (abschnitte.at(-1).length) abschnitte.push([]); } else zeichen(z, z === '$' || z === '`');
+    else if (z === '\n' || z === ';' || z === '|' || z === '&' || z === '(' || z === ')') { fertig(); if (abschnitte.at(-1).length) abschnitte.push([]); } else zeichen(z, z === '$' || z === '`');
   }
   fertig();
   return abschnitte.filter(a => a.length);
@@ -121,15 +123,27 @@ function grobePruefung(befehl, abschnitte, ordner, leseDatei, opt) {
 const LOESCHGRUND = name => `${name} loescht Daten - Loeschen braucht die ausdrueckliche Freigabe des Inhabers (AGENTS.md "NIEMALS ohne ausdrueckliche Freigabe"). Ausgelaufenes wird archiviert, nicht geloescht`;
 
 /** Entscheidung fuer einen Bash-Befehl: Grund (Text), wenn er verweigert wird, sonst null. */
-export function pruefeBefehl(befehl, { cwd = process.cwd(), leseDatei = p => readFileSync(p, 'utf8'), fallbackId } = {}) {
+export function pruefeBefehl(befehl, { cwd = process.cwd(), leseDatei = p => readFileSync(p, 'utf8'), fallbackId, tiefe = 0 } = {}) {
   if (typeof befehl !== 'string' || !/shopify/.test(befehl)) return null;
   const opt = fallbackId === undefined ? {} : { fallbackId };
   const abschnitte = zerlege(befehl);
+  // In $(...) und Backticks gelten eigene Anfuehrungszeichen, die zerlege nicht nachbildet.
+  if (/\$\(|`/.test(befehl) && /shopify\s+store\s+execute/.test(befehl)) {
+    const grund = grobePruefung(befehl, [], cwd, leseDatei, opt);
+    if (grund) return grund;
+  }
   let ordner = cwd;
   for (const worte of abschnitte) {
     if (worte[0]?.text === 'cd' && worte[1] && !worte[1].offen) ordner = path.resolve(ordner, worte[1].text);
+    // Befehl in einem Wort: bash -c '...', x="$(...)", Backticks.
+    if (tiefe < 3) {
+      for (const w of worte) {
+        if (!/shopify\s+store\s+execute/.test(w.text)) continue;
+        const grund = pruefeBefehl(w.text.replaceAll('`', ' ; '), { cwd: ordner, leseDatei, fallbackId, tiefe: tiefe + 1 });
+        if (grund) return grund;
+      }
+    }
     if (!istStoreExecute(worte)) continue;
-    if (!worte.some(w => w.text === '--allow-mutations' || w.text.startsWith('SHOPIFY_FLAG_ALLOW_MUTATIONS='))) continue;
     const { query, variablen, offen } = aufrufDaten(worte, ordner, leseDatei);
     if (query) {
       const grund = pruefe({ query, variables: variablen }, opt);
@@ -141,7 +155,8 @@ export function pruefeBefehl(befehl, { cwd = process.cwd(), leseDatei = p => rea
         treffer = [...NAMEN].find(n => new RegExp(`\\b${n}\\s*[({]`).test(query));
       }
       if (treffer) return LOESCHGRUND(treffer);
-    } else if (offen) {
+    }
+    if (offen) {
       const grund = grobePruefung(befehl, abschnitte, ordner, leseDatei, opt);
       if (grund) return grund;
     }

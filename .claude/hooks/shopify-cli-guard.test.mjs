@@ -74,6 +74,21 @@ test('Variablen aus einer Schleife stoeren nicht, die Abfrage bleibt geprueft', 
   assert.equal(pruefe(`${BASIS} --query 'mutation { metafieldsSet(metafields: []) { userErrors { message } } }' -v 'kein json'`), null);
 });
 
+test('Review-Faelle: Umgebungsvariable, Klammern, verschachtelt, offene Variablen', () => {
+  const weg = "--query 'mutation { productDelete(input: {id: \"x\"}) { deletedProductId } }'";
+  assert.match(pruefe(`export SHOPIFY_FLAG_ALLOW_MUTATIONS=true; shopify store execute -s s ${weg}`), /productDelete/);
+  assert.match(pruefe(`(${BASIS} ${weg})`), /productDelete/);
+  assert.match(pruefe(`{ ${BASIS} ${weg}; }`), /productDelete/);
+  assert.match(pruefe(`x="$(${BASIS} ${weg})"`), /productDelete/);
+  assert.match(pruefe(`x=\`${BASIS} ${weg}\``), /productDelete/);
+  assert.match(pruefe(`bash -c "${BASIS} --query-file weg.graphql"`), /productVariantsBulkDelete/);
+  const q = datei('thema2.graphql', 'mutation($id: ID!) { themeUpdate(id: $id, input: {name: "x"}) { theme { id } } }');
+  assert.match(pruefe(`vars='{"id":"gid://shopify/OnlineStoreTheme/${FALLBACK}"}'; ${BASIS} --query-file ${q} --variables "$vars"`), /Fallback/);
+  fs.mkdirSync(path.join(ordner, 'vs'), { recursive: true });
+  fs.writeFileSync(path.join(ordner, 'vs', 'a.json'), JSON.stringify({ id: `gid://shopify/OnlineStoreTheme/${FALLBACK}` }));
+  assert.match(pruefe(`for f in vs/*.json; do ${BASIS} --query-file ${q} --variable-file "$f"; done`), /Fallback/);
+});
+
 test('zweiter Aufruf in einer Kette wird mitgeprueft; Trenner im Text trennen nicht', () => {
   const gut = datei('gut.graphql', 'mutation { metafieldsSet(metafields: []) { userErrors { message } } }');
   assert.match(pruefe(`${BASIS} --query-file ${gut} && ${BASIS} --query 'mutation { fileDelete(fileIds: ["a"]) { deletedFileIds } }'`), /fileDelete/);
