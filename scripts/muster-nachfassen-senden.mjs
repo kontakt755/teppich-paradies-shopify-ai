@@ -47,7 +47,7 @@ export function bericht(r) {
   if (r.status !== 'ok' && !r.probe) { zeilen.push(`Nichts verschickt: ${r.hinweis || r.status}`); return zeilen; }
   if (r.kopie) zeilen.push(`Blindkopie an: ${r.kopie}`);
   if (r.abgleich?.geprueft) {
-    zeilen.push(`Postfach geprüft: ${r.abgleich.gelesen} passende Mail(s), ${r.abgleich.neu.length} neu zu sperren, ${r.abgleich.hinweise} mit weiterem Text${r.abgleich.ohneOrdner?.length ? ` · nicht per IMAP sichtbar: ${r.abgleich.ohneOrdner.join(', ')}` : ''}`);
+    zeilen.push(`Postfach geprüft: ${r.abgleich.gelesen} passende Mail(s), ${r.abgleich.neu.length} neu zu sperren, ${r.abgleich.hinweise} Hinweis(e) zum Lesen${r.abgleich.ohneOrdner?.length ? ` · nicht per IMAP sichtbar: ${r.abgleich.ohneOrdner.join(', ')}` : ''}`);
     for (const a of r.abgleich.neu) zeilen.push(`  ${r.probe ? 'würde sperren ' : 'gesperrt      '}  ${a.orderName || '–'}  ${a.email}  ${a.grund}`);
   } else if (r.abgleich) zeilen.push('Postfach nicht geprüft: kein Zugang (nur im Trockenlauf möglich)');
   for (const e of r.geplant) zeilen.push(`  würde senden   ${e.orderName}  ${e.stufe === 'erinnerung' ? 'Erinnerung' : 'Erste Nachfrage'}  an ${e.an}  „${e.betreff}“`);

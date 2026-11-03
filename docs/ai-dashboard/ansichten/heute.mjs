@@ -169,14 +169,14 @@ function versandFehlerTodo(lauf) {
   };
 }
 
-/** Antworten mit mehr als "Abmelden" oder eine gescheiterte Postfach-Suche: eine Zeile, die Karte zeigt die Einzelheiten. */
+/** Antworten mit mehr als "Abmelden", abgelehnte Zustellungen oder eine gescheiterte Postfach-Suche: eine Zeile, die Karte zeigt die Einzelheiten. */
 function postfachAbgleichTodo(nf) {
   const n = nf.antwortHinweise.length;
   if (!n && !nf.abgleichFehler) return [];
   return [{
     id: 'nachfassen-postfach', art: 'nachfassen_versand', bereich: 'laden', ton: 'warn', alterTage: null,
-    titel: nf.abgleichFehler ? 'Muster-Nachfragen: Postfach-Suche fehlgeschlagen, es geht nichts raus' : `Abgemeldet und noch etwas geschrieben: ${plural(n, 'Kunde', 'Kunden')}`,
-    kontext: nf.abgleichFehler || 'Die Abmeldung ist eingetragen. Bitte die Nachricht lesen.',
+    titel: nf.abgleichFehler ? 'Muster-Nachfragen: Postfach-Suche fehlgeschlagen, es geht nichts raus' : `Muster-Nachfragen: ${plural(n, 'Hinweis', 'Hinweise')} aus dem Postfach`,
+    kontext: nf.abgleichFehler || 'Abmeldungen sind eingetragen, abgelehnte Zustellungen nicht gesperrt. Bitte lesen.',
     knopf: { text: 'Ansehen', href: heuteHref('mn', '1') },
   }];
 }

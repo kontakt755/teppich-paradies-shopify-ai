@@ -74,6 +74,7 @@ function umgebung({ weitere = [] } = {}) {
   const nachfassPostfachLesen = async (_zugang, _suchen, { auswahl }) => {
     postfachLesen.aufrufe += 1;
     if (postfachLesen.fehler) throw postfachLesen.fehler;
+    postfachLesen.waehrend?.();
     return { nachrichten: postfachLesen.nachrichten.filter(n => auswahl(n.roh)), ohneOrdner: [] };
   };
   const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, now: () => uhr.jetzt, nachfassPostfachLesen });
@@ -519,6 +520,29 @@ test('Abgleich: "Abmelden" und Unzustellbar sperren vor dem Versand; die Probe r
     u.uhr.jetzt = new Date('2026-01-19T09:30:00Z');
     assert.deepEqual(u.api.kundenMusterTexte().antwortHinweise, []);
     assert.ok(leseStoppliste(stopplistePfad(u.dir))['testkunde2@example.invalid']);
+  } finally { await s.schliessen(); }
+});
+
+test('Abgleich: was waehrend der Suche geschrieben wurde, geht nicht verloren', async () => {
+  const u = umgebung();
+  await musterUnterwegs(u);
+  const s = await starteSmtpAttrappe();
+  try {
+    u.postfach(s.port);
+    // Die Attrappe liest bei Bedarf: "Jetzt senden" und der Knopf "Abgemeldet" schlagen waehrend der Suche zu.
+    const zwischendurch = { am: new Date().toISOString(), orderId: ORDER(1), orderName: '#T1', stufe: 'erste', an: 'testkunde1@example.invalid', betreff: 'x', status: 'vermerkt', messageId: '<z@example.invalid>' };
+    u.postfachLesen.waehrend = () => {
+      schreibeVersand(versandPfad(u.dir), { sendungen: [zwischendurch] });
+      fs.mkdirSync(path.dirname(stopplistePfad(u.dir)), { recursive: true });
+      fs.writeFileSync(stopplistePfad(u.dir), JSON.stringify({ version: 1, eintraege: { 'testkunde4@example.invalid': { am: zwischendurch.am, von: 'Mitarbeiter 1' } } }));
+    };
+    const r = await u.api.kundenNachfassenSenden();
+    assert.equal(r.status, 'ok');
+    const v = leseVersand(versandPfad(u.dir));
+    assert.ok(v.sendungen.some(x => x.messageId === '<z@example.invalid>'), 'die Sendung aus der Zwischenzeit bleibt im Protokoll');
+    assert.ok(r.uebersprungen.some(e => e.orderName === '#T4' && e.grund === 'abgemeldet'), 'die Abmeldung aus der Zwischenzeit zaehlt');
+    assert.ok(!r.verschickt.some(e => e.orderName === '#T1'), 'keine zweite Mail fuer die Sendung aus der Zwischenzeit');
+    assert.ok(!s.nachrichten.some(n => /testkunde[14]@/.test(JSON.stringify(n))), 'nur die dritte Adresse bekommt eine Mail');
   } finally { await s.schliessen(); }
 });
 

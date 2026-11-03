@@ -2240,6 +2240,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           if (!probe) { try { merkeAbgleich(hinweisePfad(dir), { fehler: grund, jetzt }); } catch { /* der Abbruch unten zaehlt */ } }
           return abbruch('stoerung', `Postfach-Suche fehlgeschlagen – nichts verschickt: ${grund}`);
         }
+        // Die Suche dauert. Was der Knopf "Abgemeldet" oder "Jetzt senden" inzwischen geschrieben hat, darf nicht verloren gehen.
+        try {
+          stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+          versand = leseVersand(versandPfad(dir));
+        } catch (e) {
+          return abbruch('stoerung', e.message);
+        }
         const eintraege = [
           ...abgleich.abmeldungen.map(a => ({ ...a, grund: 'Antwort „Abmelden“' })),
           ...abgleich.unzustellbar.map(u => ({ ...u, grund: `Unzustellbar${u.status ? ` (${u.status})` : ''}` })),

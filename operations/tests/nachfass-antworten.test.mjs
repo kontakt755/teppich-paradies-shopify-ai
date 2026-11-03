@@ -157,6 +157,51 @@ test('Abgleich: Unzustellbar nur fuer Adressen, an die wir diese Nachfassmail ge
   assert.deepEqual(werteAus([m(bounce())], [SENDUNG], ['kunde@example.invalid']).unzustellbar, []);
 });
 
+test('Unzustellbar: nur Adressfehler sperren, Richtlinie und volles Postfach werden Hinweis', () => {
+  const m = (roh, id = 'b') => ({ id, roh });
+  for (const status of ['5.1.1', '5.1.2', '5.1.3', '5.1.6', '5.1.10']) {
+    const r = werteAus([m(bounce({ status }))], [SENDUNG]);
+    assert.deepEqual([r.unzustellbar.map(u => u.status), r.hinweise], [[status], []], status);
+  }
+  for (const status of ['5.7.0', '5.7.26', '5.2.2', '5.0.0', '5.1.8']) {
+    const r = werteAus([m(bounce({ status }))], [SENDUNG]);
+    assert.deepEqual(r.unzustellbar, [], status);
+    assert.deepEqual(r.hinweise.map(h => [h.art, h.mailId, h.email]), [['zustellung', 'b', 'kunde@example.invalid']], status);
+    assert.ok(r.hinweise[0].auszug.includes(status));
+  }
+  // Fremde Meldung: weder Sperre noch Hinweis.
+  assert.deepEqual(werteAus([m(bounce({ status: '5.7.0', an: 'andere@example.invalid' }))], [SENDUNG]).hinweise, []);
+});
+
+test('Unzustellbar ohne Maschinenteil: Status aus dem Text, ohne Status keine Sperre', () => {
+  const roh = text => Buffer.from(`From: postmaster@example.invalid\r\nSubject: Undeliverable: x\r\nIn-Reply-To: ${ID}\r\nX-Failed-Recipients: kunde@example.invalid\r\nContent-Type: text/plain\r\n\r\n${text}\r\n`);
+  assert.deepEqual(werteAus([{ id: 'x', roh: roh('550 5.1.1 User unknown') }], [SENDUNG]).unzustellbar.map(u => u.status), ['5.1.1']);
+  const policy = werteAus([{ id: 'x', roh: roh('550 5.7.26 Unauthenticated sender') }], [SENDUNG]);
+  assert.deepEqual([policy.unzustellbar, policy.hinweise.length], [[], 1]);
+  const ip = werteAus([{ id: 'x', roh: roh('Server 10.5.1.1 und 5.1.1.9 sagen nein.') }], [SENDUNG]);
+  assert.deepEqual([ip.unzustellbar, ip.hinweise.length], [[], 1], 'eine IP-Adresse ist kein Status');
+  const ohne = werteAus([{ id: 'x', roh: roh('Das ging nicht.') }], [SENDUNG]);
+  assert.deepEqual([ohne.unzustellbar, ohne.hinweise.length], [[], 1]);
+});
+
+test('Unzustellbar: Weiterleitung mit Final-Recipient vor Original-Recipient findet unsere Adresse', () => {
+  const roh = Buffer.from(bounce().toString('latin1').replace('Final-Recipient: rfc822; kunde@example.invalid', 'Final-Recipient: rfc822; ziel@example.invalid\r\nOriginal-Recipient: rfc822; kunde@example.invalid'), 'latin1');
+  assert.deepEqual(werteAus([{ id: 'w', roh }], [SENDUNG]).unzustellbar.map(u => u.email), ['kunde@example.invalid']);
+});
+
+test('Abmelden im Firmenfuss oder in unserem veraenderten Satz sperrt nicht, eine eigene Zeile schon', () => {
+  for (const text of [
+    'Danke, die Muster sind angekommen.\n\nMit freundlichen Grüßen\nErika Beispiel\nNewsletter abmelden',
+    'Danke!\n-- \nFirma Beispiel GmbH\nHier abmelden: https://example.invalid/x',
+    'Danke, sehr nett.\nAntworten Sie mit ?Abmelden?, dann schreiben wir nicht mehr.',
+    'Danke, sehr nett.\nAntworten Sie mit *Abmelden*.',
+    'Danke.\nAntworten Sie kurz mit "Abmelden".',
+  ]) assert.equal(erkenneAbmeldung(text).abmeldung, false, text);
+  for (const text of ['Viele Grüße, bitte abmelden', 'Mit freundlichen Grüßen\nErika Beispiel\nBitte abmelden']) {
+    assert.equal(erkenneAbmeldung(text).abmeldung, true, text);
+  }
+});
+
 test('Kopf-Vorauswahl: Antworten auf Nachfassmails und Unzustellbar-Meldungen, sonst nichts', () => {
   const kopf = roh => roh.subarray(0, roh.indexOf('\r\n\r\n') + 4);
   assert.equal(kopfPasst(kopf(antwort('x')), [SENDUNG]), true);

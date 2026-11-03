@@ -139,12 +139,23 @@ export function lesePostfach(file) {
 
 export const normAdresse = e => String(e ?? '').trim().toLowerCase();
 
-/** Alle Abmeldungen: { "<adresse klein>": { am, von, grund, orderId } }. */
+const istObjekt = v => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
+
+/**
+ * Alle Abmeldungen: { "<adresse klein>": { am, von, grund, orderId } }. Nur eine FEHLENDE Datei
+ * ist leer. Alles andere, das nicht genau so aussieht, gilt als beschaedigt und stoppt den Lauf:
+ * sonst schriebe er Abgemeldete wieder an und der naechste Eintrag ueberschriebe die Liste.
+ */
 export function leseStoppliste(file) {
   const roh = leseJson(file);
-  const e = roh && typeof roh === 'object' && roh.eintraege && typeof roh.eintraege === 'object' ? roh.eintraege : {};
+  if (roh === null && !fs.existsSync(file)) return {};
+  const beschaedigt = () => new NachfassFehler(500, `${path.basename(file)} ist beschädigt – bitte aus der Sicherung holen`);
+  if (!istObjekt(roh) || !istObjekt(roh.eintraege)) throw beschaedigt();
   const sauber = {};
-  for (const [k, v] of Object.entries(e)) if (normAdresse(k) && v && typeof v === 'object') sauber[normAdresse(k)] = v;
+  for (const [k, v] of Object.entries(roh.eintraege)) {
+    if (!normAdresse(k).includes('@') || !istObjekt(v)) throw beschaedigt();
+    sauber[normAdresse(k)] = v;
+  }
   return sauber;
 }
 
@@ -210,6 +221,10 @@ export const SENDUNG_STATUS = Object.freeze(['sendet', 'gesendet', 'vermerkt', '
 /** { ersterVersandAm, letzterLauf, sendungen: [] } - fehlende Datei = noch nie gelaufen. */
 export function leseVersand(file) {
   const roh = leseJson(file);
+  // Ein leer gelesenes Protokoll hiesse: alle Nachfragen gehen ein zweites Mal raus.
+  if ((roh === null && fs.existsSync(file)) || (roh !== null && (!istObjekt(roh) || !Array.isArray(roh.sendungen)))) {
+    throw new NachfassFehler(500, `${path.basename(file)} ist beschädigt – bitte aus der Sicherung holen`);
+  }
   return {
     ersterVersandAm: roh?.ersterVersandAm || null,
     letzterLauf: roh?.letzterLauf && typeof roh.letzterLauf === 'object' ? roh.letzterLauf : null,

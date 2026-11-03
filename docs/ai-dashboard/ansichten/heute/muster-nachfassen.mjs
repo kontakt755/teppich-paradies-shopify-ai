@@ -132,11 +132,11 @@ function abgemeldetZeile(e) {
   </div>`;
 }
 
-/** Kunde hat sich abgemeldet und noch etwas dazu geschrieben: das sollte jemand lesen. */
+/** Abmeldung mit weiterem Text oder abgelehnte Zustellung ohne Sperre: das sollte jemand lesen. */
 function antwortZeile(h) {
   return `<div class="heute-mn-fertig">
     <strong>${esc(h.orderName || h.email)}</strong>
-    <span>${esc(h.email)}${h.am ? ` · ${esc(fmtDate(h.am))}` : ''}: „${esc(h.auszug)}“</span>
+    <span>${esc(h.email)}${h.am ? ` · ${esc(fmtDate(h.am))}` : ''}: ${h.art === 'zustellung' ? esc(h.auszug) : `„${esc(h.auszug)}“`}</span>
   </div>`;
 }
 
@@ -175,7 +175,7 @@ export function musterNachfassenBlock(stand) {
     <p class="heute-mn-regel">Erste E-Mail ab ${ERSTE_NACH_TAGEN} Tagen nach dem Versand, höchstens eine Erinnerung ${ERINNERUNG_NACH_TAGEN} Tage danach. Anrufen nur bei Rückrufwunsch.</p>
     ${versandZeile(t?.versand, stand.offen.length)}
     ${abgleichFehler ? `<p class="notice warn">Postfach-Suche fehlgeschlagen: ${esc(abgleichFehler)}. Solange das so ist, verschickt der Lauf nichts.</p>` : ''}
-    ${antworten.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Abgemeldet und noch etwas geschrieben – bitte lesen</p>${antworten.map(antwortZeile).join('')}</div>` : ''}
+    ${antworten.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Aus dem Postfach – bitte lesen</p>${antworten.map(antwortZeile).join('')}</div>` : ''}
     ${stand.offen.length ? `<div class="heute-mn-liste">${stand.offen.map((e, i) => zeile(e, texte, lesend, i === 0, automatisch)).join('')}</div>` : ''}
     ${hinweis}
     ${abgemeldet.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Abgemeldet</p>${abgemeldet.map(abgemeldetZeile).join('')}</div>` : ''}

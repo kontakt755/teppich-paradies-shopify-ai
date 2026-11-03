@@ -70,6 +70,24 @@ test('Stoppliste: eintragen, Adresse klein, zweiter Eintrag aendert nichts, besc
   assert.throws(() => trageAbmeldungEin(file, { email: 'x@example.invalid', von: 'Anna' }), /beschädigt/, 'auf eine kaputte Datei wird nicht geschrieben');
 });
 
+test('Stoppliste und Versandprotokoll: falsche Form gilt als beschaedigt, nur eine fehlende Datei ist leer', () => {
+  const dir = privat();
+  const file = stopplistePfad(dir);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  for (const inhalt of ['', 'null', '[]', '{}', '{"Eintraege":{"a@example.invalid":{}}}', '{"eintraege":["a@example.invalid"]}', '{"eintraege":{"ohne-at":{}}}', '{"eintraege":{"a@example.invalid":true}}']) {
+    fs.writeFileSync(file, inhalt);
+    assert.throws(() => leseStoppliste(file), e => e instanceof NachfassFehler && e.status === 500 && /beschädigt/.test(e.message), inhalt);
+  }
+  fs.writeFileSync(file, '{"version":1,"eintraege":{}}');
+  assert.deepEqual(leseStoppliste(file), {});
+
+  const v = versandPfad(dir);
+  for (const inhalt of ['', 'null', '[]', '{}', '{"sendungen":{}}']) {
+    fs.writeFileSync(v, inhalt);
+    assert.throws(() => leseVersand(v), /beschädigt/, inhalt);
+  }
+});
+
 test('Versandprotokoll: leer ohne Datei, Doppelschutz je Bestellung und Stufe, Kopie in der ersten Woche', () => {
   const dir = privat();
   const file = versandPfad(dir);

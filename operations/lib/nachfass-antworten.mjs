@@ -142,7 +142,8 @@ export function leseMail(roh) {
 // ---------------------------------------------------------------------------
 
 /** Unser eigener Satz aus der Vorlage - auch ungekennzeichnet zitiert und umbrochen. */
-const EIGENER_SATZ = /Antworten\s+Sie\s+(?:kurz\s+)?mit\s+[„"'»‚]?\s*Abmelden\s*[“”"'«‘]?/gi;
+// Um das Wort jedes Zeichen ausser Buchstaben: Mailprogramme machen aus „Abmelden“ auch ?Abmelden? oder *Abmelden*.
+const EIGENER_SATZ = /Antworten\s+Sie\s+(?:kurz\s+)?mit\s+[^\p{L}\d]{0,4}Abmelden[^\p{L}\d]{0,4}/giu;
 const WORT_ABMELDEN = /(?<![\p{L}])abmeld(?:en|ung)(?![\p{L}])/iu;
 
 function istEinleitung(zeilen, i) {
@@ -187,6 +188,18 @@ const SIGNATUR = /^(?:--\s*$|(?:mit\s+)?(?:freundlich\w*|best\w*|herzlich\w*|lie
 /** Hoeflichkeit zaehlt nicht als weiterer Text. */
 const FUELLWORTE = new Set('abmelden abmeldung bitte danke dankeschön vielen dank hallo guten tag morgen abend moin sehr geehrte geehrter geehrtes damen und herren liebes liebe lieber team ich mich möchte moechte will mir mein meine von der dem den die das hiermit gern gerne sie uns wir ihnen'.split(' '));
 
+/** Gruss vor dem Wort: "Viele Gruesse, bitte abmelden" ist eine Abmeldung. */
+const GRUSSWORT = /^(?:mit|freundlich\w*|best\w*|herzlich\w*|viele|gr(?:ü|ue)(?:ß|ss)\w*|mfg|lg|vg)$/;
+
+/**
+ * Das Wort steht erst im Fuss: Nur eine Zeile, die aus nichts anderem besteht, ist eine Abmeldung.
+ * "Newsletter abmelden" im Firmenfuss ist keine - sonst sperrte ein "Danke, ist angekommen".
+ */
+function abmeldungImFuss(text) {
+  return text.split('\n').some(z => WORT_ABMELDEN.test(z)
+    && (z.toLowerCase().match(/\p{L}+/gu) || []).every(w => FUELLWORTE.has(w) || GRUSSWORT.test(w)));
+}
+
 function ohneSignatur(text) {
   const zeilen = text.split('\n');
   const i = zeilen.findIndex(z => SIGNATUR.test(z.trim()));
@@ -205,6 +218,7 @@ export function erkenneAbmeldung(text) {
   const eigen = eigenerText(text);
   if (!WORT_ABMELDEN.test(eigen)) return { abmeldung: false, weitererText: null };
   const kern = ohneSignatur(eigen);
+  if (!WORT_ABMELDEN.test(kern) && !abmeldungImFuss(eigen)) return { abmeldung: false, weitererText: null };
   const worte = kern.toLowerCase().match(/\p{L}+/gu) || [];
   const weiter = worte.some(w => !FUELLWORTE.has(w));
   return { abmeldung: true, weitererText: weiter ? kern.replace(/\s+/g, ' ').trim().slice(0, AUSZUG_ZEICHEN) : null };
@@ -215,9 +229,19 @@ export function erkenneAbmeldung(text) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Nur diese Status sagen, dass es die Adresse nicht (mehr) gibt (RFC 3463): 5.1.1 Postfach,
+ * 5.1.2 Domain, 5.1.3 Schreibweise, 5.1.6 umgezogen, 5.1.10 Domain nimmt keine Mail an.
+ * Alles andere ist kein Beleg gegen die Adresse: 5.7.x (Richtlinie) kann an unserer eigenen
+ * Einrichtung liegen, 5.2.2 ist ein volles Postfach. Das sperrt nicht, sondern wird Hinweis.
+ */
+const ADRESSFEHLER = new Set(['5.1.1', '5.1.2', '5.1.3', '5.1.6', '5.1.10']);
+export const istAdressfehler = status => ADRESSFEHLER.has(status);
+
+/**
  * Endgueltig fehlgeschlagene Adressen aus einer Unzustellbar-Meldung: Maschinenteil
  * (message/delivery-status: Action failed, Status 5.x.x), sonst X-Failed-Recipients bei
- * eindeutigem Betreff. "delayed" und 4.x.x sind nur Verzoegerungen und sperren nicht.
+ * eindeutigem Betreff (Status dann aus dem Text). "delayed" und 4.x.x sind nur Verzoegerungen
+ * und zaehlen nicht. Ob gesperrt wird, entscheidet danach istAdressfehler().
  * @returns {{ email: string, status: string|null }[]}
  */
 export function fehlgeschlageneAdressen(mail) {
@@ -226,15 +250,18 @@ export function fehlgeschlageneAdressen(mail) {
   const dsn = mail.teile.filter(t => t.typ === 'message/delivery-status');
   for (const t of dsn) {
     for (const block of t.text.replace(/\r\n/g, '\n').split(/\n\s*\n/)) {
-      const email = /^(?:final|original)-recipient:\s*(?:rfc822;)?\s*<?([^\s<>;]+@[^\s<>;]+)>?/im.exec(block)?.[1];
+      // Bei Weiterleitungen stehen zwei Adressen im Block; welche unsere ist, klaert der Abgleich.
+      const adressen = [...block.matchAll(/^(?:final|original)-recipient:\s*(?:rfc822;)?\s*<?([^\s<>;]+@[^\s<>;]+)>?/gim)].map(m => normAdr(m[1]));
       const aktion = /^action:\s*(\S+)/im.exec(block)?.[1];
       const status = /^status:\s*(\d\.\d+\.\d+)/im.exec(block)?.[1];
-      if (email && /^failed$/i.test(aktion || '') && String(status || '').startsWith('5.')) aus.set(normAdr(email), { email: normAdr(email), status });
+      if (/^failed$/i.test(aktion || '') && String(status || '').startsWith('5.')) for (const email of adressen) aus.set(email, { email, status });
     }
   }
   if (!dsn.length && /undeliver|delivery.*fail|fail.*deliver|unzustellbar|nicht zugestellt/i.test(mail.betreff) && !/delay|verz(?:ö|oe)ger/i.test(mail.betreff)) {
+    // Nicht aus einer IP-Adresse lesen: "10.5.1.1" im Text ist kein Status 5.1.1.
+    const status = /(?<![\d.])5\.\d{1,3}\.\d{1,3}(?![\d]|\.\d)/.exec(mail.teile.filter(t => t.typ === 'text/plain').map(t => t.text).join('\n'))?.[0] || null;
     for (const k of mail.kopf.get('x-failed-recipients') || []) {
-      for (const a of k.split(',')) if (a.includes('@')) aus.set(normAdr(a), { email: normAdr(a), status: null });
+      for (const a of k.split(',')) if (a.includes('@')) aus.set(normAdr(a), { email: normAdr(a), status });
     }
   }
   return [...aus.values()];
@@ -298,7 +325,12 @@ export function werteAus(nachrichten, sendungen, eigene = []) {
     if (istUnzustellbarAbsender(mail.absender)) {
       for (const { email, status } of fehlgeschlageneAdressen(mail)) {
         const s = meine.has(email) ? null : sendungZurMeldung(mail, email, index);
-        if (s && !unzustellbar.has(email)) unzustellbar.set(email, { email, status, orderId: s.orderId || null, orderName: s.orderName || null, mailId: n.id });
+        if (!s) continue;
+        if (!istAdressfehler(status)) {
+          hinweise.push({ art: 'zustellung', mailId: n.id, email, orderId: s.orderId || null, orderName: s.orderName || null, auszug: `Zustellung abgelehnt (Status ${status || 'unbekannt'}). Nicht gesperrt, der Grund kann auch bei uns liegen. Bitte prüfen.` });
+          continue;
+        }
+        if (!unzustellbar.has(email)) unzustellbar.set(email, { email, status, orderId: s.orderId || null, orderName: s.orderName || null, mailId: n.id });
       }
       continue;
     }

@@ -1583,12 +1583,14 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
 - **Postfach-Abgleich vor jedem Lauf** (seit 2026-11-03, `operations/lib/nachfass-antworten.mjs`): Der Lauf
   sucht per IMAP nur lesend (`EXAMINE`, `BODY.PEEK`, Gmail-Suche 60 Tage, auch Papierkorb und Spam) nach
   Antworten mit „Abmelden“ und nach Unzustellbar-Meldungen und trägt die Adressen in die Stoppliste ein
-  (`von: automatisch`, Grund „Antwort …“ oder „Unzustellbar (5.x.x)“). Eine Mail zählt nur, wenn sie
+  (`von: automatisch`, Grund „Antwort …“ oder „Unzustellbar (5.1.1)“). Gesperrt wird nur bei einem Status, der gegen die
+  Adresse spricht (5.1.1, 5.1.2, 5.1.3, 5.1.6, 5.1.10); andere 5.x.x (etwa 5.7.x Richtlinie, 5.2.2 Postfach voll) oder
+  ein fehlender Status werden nur Hinweis in der Karte. Eine Mail zählt nur, wenn sie
   nachweislich zu einer Nachfassmail gehört (Message-ID, sonst Absender plus Betreff; bei Unzustellbar die
   fehlgeschlagene Adresse plus Message-ID oder Betreff der Originalmail). Zitate und unser eigener
-  Abmelde-Satz zählen nie; „delayed“ und 4.x.x sperren nicht. Abmelden mit weiterem Text sperrt ebenfalls und
+  Abmelde-Satz zählen nie, im Fuß nur eine Zeile, die aus nichts anderem besteht; „delayed“ und 4.x.x sperren nicht. Abmelden mit weiterem Text sperrt ebenfalls und
   steht 7 Tage als Hinweis in der Karte (`nachfassen/hinweise.json`, nur ein Auszug). Scheitert die Suche oder
-  das Eintragen, geht nichts raus (`stoerung`), die Karte sagt es. Antworten ohne das Wort bleiben beim Menschen.
+  das Eintragen oder hat `stoppliste.json` oder `versand.json` nicht die erwartete Form, geht nichts raus (`stoerung`), die Karte sagt es. Antworten ohne das Wort bleiben beim Menschen.
   Eine Bestätigungsmail an den Kunden gibt es nicht. `--probe` liest das Postfach auch, schreibt aber nichts.
 - **Bündelung** (seit 2026-11-03, `nachfragenBuendeln()`, `mitMusterListe()`): je Empfängeradresse höchstens eine
   Mail je Lauf, Groß/Klein egal. Der Text nennt dann alle Bestellungen und Muster; Protokoll und Zeitleiste bleiben
