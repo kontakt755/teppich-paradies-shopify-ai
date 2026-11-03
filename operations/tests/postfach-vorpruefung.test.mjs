@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { imapText, alleNachrichtenOrdner, suchErgebnis, nachrichtenIds, suchenNurLesend, absenderAus, adressenAusKopf, ImapFehler } from '../lib/imap-lesen.mjs';
+import { imapText, alleNachrichtenOrdner, suchErgebnis, nachrichtenIds, suchenNurLesend, absenderAus, absenderNurLesend, adressenAusKopf, ImapFehler } from '../lib/imap-lesen.mjs';
 import { suchenLieferbelege, SUCHEN_SERVICE, SUCHE_ENTWUERFE, entscheide, entscheideEntwuerfe, entwuerfeAbfragen, nachErfolg, merkmal, postfachAbfragen, GESEHEN_MAX } from '../lib/postfach-vorpruefung.mjs';
 import { mcpSperren, harmloseAblehnung, imScratchpad, claudeArgumente, liesStatus, auftragPfad } from '../lib/routinen.mjs';
 import { main, ergebnisBelegt } from '../scripts/claude-lauf.mjs';
@@ -34,7 +34,7 @@ test('IMAP-Antworten: Ordner mit \\All (auch deutscher Name), UIDs, Gmail-IDs he
 });
 
 /** Ein falscher IMAP-Server: merkt sich die Befehle, antwortet je nach Befehl. */
-function falscherServer({ anmeldungOk = true, suchErgebnisse = [], literalImList = false } = {}) {
+function falscherServer({ anmeldungOk = true, suchErgebnisse = [], literalImList = false, examineText = '[READ-ONLY]', koepfe = {} } = {}) {
   const befehle = [];
   let suche = 0;
   const verbinden = () => {
@@ -49,13 +49,14 @@ function falscherServer({ anmeldungOk = true, suchErgebnisse = [], literalImList
         senden(literalImList
           ? `* LIST (\\HasNoChildren) "/" {5}\r\nINBOX\r\n* LIST (\\All) "/" {24}\r\n[Gmail]/Alle Nachrichten\r\n${marke} OK\r\n`
           : `* LIST (\\HasNoChildren) "/" "INBOX"\r\n* LIST (\\All \\HasNoChildren) "/" "[Gmail]/All Mail"\r\n${marke} OK\r\n`);
-      } else if (cmd.startsWith('EXAMINE')) senden(`* 120 EXISTS\r\n${marke} OK [READ-ONLY]\r\n`);
+      } else if (cmd.startsWith('EXAMINE')) senden(`* 120 EXISTS\r\n${marke} OK ${examineText}\r\n`);
       else if (cmd.startsWith('UID SEARCH')) {
         const uids = suchErgebnisse[suche++] || [];
         senden(`* SEARCH${uids.length ? ` ${uids.join(' ')}` : ''}\r\n${marke} OK\r\n`);
       } else if (cmd.startsWith('UID FETCH')) {
         const uids = cmd.split(' ')[2].split(',');
-        senden(`${uids.map((u, i) => `* ${i + 1} FETCH (X-GM-MSGID ${BigInt(u) * 1000n} UID ${u})\r\n`).join('')}${marke} OK\r\n`);
+        const mitKopf = /HEADER\.FIELDS/.test(cmd);
+        senden(`${uids.map((u, i) => `* ${i + 1} FETCH (X-GM-MSGID ${BigInt(u) * 1000n} UID ${u}${mitKopf ? ` BODY[HEADER.FIELDS (FROM REPLY-TO)] {${Buffer.byteLength(koepfe[u] || '')}}\r\n${koepfe[u] || ''}` : ''})\r\n`).join('')}${marke} OK\r\n`);
       } else if (cmd.startsWith('LOGOUT')) senden(`* BYE\r\n${marke} OK\r\n`);
       else senden(`${marke} BAD unbekannt\r\n`);
       return true;
@@ -382,4 +383,31 @@ test('Absender aus den Kopfzeilen: From und Reply-To, Anzeigenamen zaehlen nie',
   // Die Kennung kommt nie aus dem, was der Absender schreibt.
   assert.equal(absenderAus([zeile('From: "X-GM-MSGID 255" <kunde@example.org> ', '16')])[0].id, '10');
   assert.deepEqual(absenderAus(['* 2 EXISTS', '* 1 FETCH (FLAGS ())']), []);
+});
+
+test('absenderNurLesend: Kopfzeilen als Literal, nur EXAMINE und BODY.PEEK, langer Anzeigename kostet keine Adresse', async () => {
+  const lang = 'x'.repeat(6000);
+  const s = falscherServer({
+    suchErgebnisse: [[10, 11]],
+    koepfe: {
+      10: 'From: "TeppichParadies (Shopify)" <mailer@shopify.com>\r\nReply-To: Kunde@Example.org\r\n\r\n',
+      11: `From: "${lang} angreifer@evil.example X-GM-MSGID 255"\r\n <kunde2@example.org>\r\n\r\n`,
+    },
+  });
+  const r = await absenderNurLesend({ benutzer: 'a', passwort: 'test-passwort' }, 'label:x', { verbinden: s.verbinden });
+  assert.deepEqual(r, [
+    { id: (10000n).toString(16), adressen: ['mailer@shopify.com', 'kunde@example.org'] },
+    { id: (11000n).toString(16), adressen: ['kunde2@example.org'] },
+  ]);
+  assert.ok(s.befehle.includes('EXAMINE "[Gmail]/All Mail"'));
+  assert.ok(s.befehle.includes('UID FETCH 10,11 (X-GM-MSGID BODY.PEEK[HEADER.FIELDS (FROM REPLY-TO)])'));
+  assert.ok(!s.befehle.some(b => /^SELECT|STORE|COPY|MOVE|EXPUNGE|APPEND/.test(b)), 'nichts Schreibendes');
+  assert.ok(!s.befehle.some(b => /\bBODY\[/.test(b)), 'nie BODY[ ohne PEEK');
+  assert.equal(s.befehle.at(-1), 'LOGOUT');
+});
+
+test('absenderNurLesend: Postfach nicht schreibgeschuetzt geoeffnet -> Abbruch vor der Suche', async () => {
+  const s = falscherServer({ examineText: 'fertig', suchErgebnisse: [[10]] });
+  await assert.rejects(absenderNurLesend({ benutzer: 'a', passwort: 'test-passwort' }, 'x', { verbinden: s.verbinden }), ImapFehler);
+  assert.ok(!s.befehle.some(b => b.startsWith('UID ')));
 });

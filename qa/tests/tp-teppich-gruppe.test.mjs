@@ -82,6 +82,17 @@ test('Vorlage collection.teppiche: Kachel und Reihe "design", Reihe vor "Weitere
   assert.deepEqual(reihe.blocks, j.sections.tp_gruppe_flauschig.blocks);
 });
 
+test('Sonderposten stehen als erste Reihe, unabhaengig von der Gruppe', () => {
+  const j = JSON.parse(readFileSync(path.join(root, 'templates/collection.teppiche.json'), 'utf8').replace(/^\s*\/\*[\s\S]*?\*\//, ''));
+  const reihe = j.sections.tp_gruppe_sonderposten;
+  assert.equal(reihe.settings.teppich_gruppe, 'sonderposten');
+  assert.equal(j.order.indexOf('tp_teppiche_gruppen') + 1, j.order.indexOf('tp_gruppe_sonderposten'));
+  assert.deepEqual(reihe.blocks, j.sections.tp_gruppe_flauschig.blocks);
+  const liquid = readFileSync(path.join(root, 'sections/tp-zubehoer-produkte.liquid'), 'utf8');
+  assert.match(liquid, /item\.tags contains 'sonderposten'/);
+  assert.match(liquid, /"value": "sonderposten"/);
+});
+
 test('Schemata bieten die Gruppe "design" an', () => {
   for (const datei of ['sections/tp-zubehoer-produkte.liquid', 'sections/tp-teppiche-gruppen.liquid']) {
     const s = readFileSync(path.join(root, datei), 'utf8');

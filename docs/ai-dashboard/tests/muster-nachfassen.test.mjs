@@ -8,7 +8,7 @@ import path from 'node:path';
 import {
   musterNachfassen, kontaktweg, texteAusMarkdown, fuelleText, mailtoLink, platzhalterFrei,
   ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN, HOECHSTENS_TAGE, ERLEDIGT_ZEIGEN_TAGE, SHOP_URL,
-  versandLaeuft, teileNachfassen, nachfassTodo,
+  versandLaeuft, teileNachfassen, nachfassTodo, nachfragenBuendeln, mitMusterListe,
   musterArt, vorlageFuer, nameSchreibweise, TEPPICH_VORLAGEN,
 } from '../lib/muster-nachfassen.mjs';
 import { musterKaufLinks } from '../lib/muster-kauf-links.mjs';
@@ -105,6 +105,29 @@ test('Stoppliste: wer "Abmelden" geantwortet hat, steht unter abgemeldet statt o
   // Auch als Set oder Liste nutzbar (ohne Datum).
   assert.equal(musterNachfassen([raus], { jetzt: JETZT, abgemeldet: new Set(['weg@example.invalid']) }).abgemeldet[0].abgemeldetAm, null);
   assert.equal(musterNachfassen([raus], { jetzt: JETZT, abgemeldet: ['weg@example.invalid'] }).offen.length, 0);
+});
+
+test('Buendeln: je Adresse ein Eintrag, Gross/Klein egal, Stufe und Vorlage passen zum ganzen Buendel', () => {
+  const e = (orderName, email, extra = {}) => ({ orderName, stufe: 'erinnerung', art: 'teppich', kundenname: 'Testkunde Eins', kontakt: { weg: 'email', email }, produkte: [{ url: `u-${orderName}` }, { url: 'u-gleich' }], muster: [`Farbe ${orderName}`, 'Gleich'], ...extra });
+  const b = nachfragenBuendeln([e('#1', 'Kunde@example.invalid'), e('#2', 'kunde@example.invalid '), e('#3', 'andere@example.invalid'), e('#4', '')]);
+  assert.deepEqual(b.map(x => x.eintraege.map(y => y.orderName)), [['#1', '#2'], ['#3']]);
+  assert.deepEqual(b[0].produkte.map(p => p.url), ['u-#1', 'u-gleich', 'u-#2']);
+  assert.deepEqual(b[0].muster, ['Farbe #1', 'Gleich', 'Farbe #2']);
+  assert.deepEqual([b[0].stufe, b[0].art], ['erinnerung', 'teppich']);
+  const gemischt = nachfragenBuendeln([e('#1', 'k@example.invalid'), e('#2', 'k@example.invalid', { stufe: 'erste', art: 'boden', kundenname: null })]);
+  assert.deepEqual([gemischt[0].stufe, gemischt[0].art, gemischt[0].kundenname], ['erste', 'boden', 'Testkunde Eins']);
+});
+
+test('Sammeltext: nennt alle Bestellungen und Muster nach der Anrede, Einzelmail bleibt unveraendert, nichts Fremdes aus den Daten', () => {
+  const mail = { betreff: 'B', text: 'Guten Tag Testkunde,\n\nwie gefallen die Muster?\n\nFreundliche Grüße' };
+  const eintraege = [{ orderName: '#1' }, { orderName: '#2' }];
+  assert.equal(mitMusterListe(mail, { eintraege: [eintraege[0]], muster: ['Sand'] }), mail);
+  assert.equal(mitMusterListe(null, { eintraege, muster: [] }), null);
+  const t = mitMusterListe(mail, { eintraege, muster: ['Sand', 'Greige {x}<b>'] }).text;
+  assert.match(t, /^Guten Tag Testkunde,\n\nDiese Nachricht gilt für alle Muster aus Ihren Bestellungen #1, #2:\n– Sand\n– Greige/);
+  assert.match(t, /wie gefallen die Muster\?\n\nFreundliche Grüße$/);
+  assert.equal(platzhalterFrei({ betreff: 'B', text: t }), true, 'ein Mustername kann keinen Platzhalter einschleusen');
+  assert.doesNotMatch(t, /[<>{}]/);
 });
 
 test('platzhalterFrei: erst ohne {…} in Betreff und Text darf eine Mail raus', () => {

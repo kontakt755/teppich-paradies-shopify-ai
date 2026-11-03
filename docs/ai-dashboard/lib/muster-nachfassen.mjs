@@ -147,7 +147,7 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
     }
     if (!faellig) continue;
     const ab = abgemeldetEintrag(basis.kontakt.email || z.email);
-    if (ab) stopp.push({ ...faellig, abgemeldetAm: ab.am || null });
+    if (ab) stopp.push({ ...faellig, abgemeldetAm: ab.am || null, abgemeldetGrund: ab.grund || null });
     else offen.push(faellig);
   }
   offen.sort((a, b) => b.tage - a.tage || String(a.datum).localeCompare(String(b.datum)));
@@ -209,7 +209,59 @@ export function nachfassTodo(e, { ansehenHref }) {
   };
 }
 
-/** Kein Platzhalter mehr in Betreff oder Text - erst dann darf eine Mail raus. */
+/**
+ * Faellige E-Mail-Nachfragen je Empfaengeradresse buendeln (Inhaber 03.11.2026): am 02.11. bekam
+ * ein Kunde mit drei Musterbestellungen drei gleiche Mails in derselben Sekunde, weil der Lauf
+ * je Bestellung eine schickte. Gross/Klein der Adresse zaehlt nicht.
+ *
+ * Ein Buendel mischt die Stufen nur, wenn zwei Bestellungen zufaellig zusammenfallen: dann gilt
+ * die erste Nachfrage (sie sagt mehr). Die Teppich-Fassung nur, wenn alles Teppich ist.
+ *
+ * @param {object[]} eintraege  Eintraege aus musterNachfassen().offen mit kontakt.email
+ * @returns {{ an: string, stufe: string, art: string, kundenname: string|null, produkte: object[], muster: string[], eintraege: object[] }[]}
+ */
+export function nachfragenBuendeln(eintraege = []) {
+  const buendel = new Map();
+  for (const e of eintraege) {
+    const key = String(e?.kontakt?.email ?? '').trim().toLowerCase();
+    if (!key) continue;
+    if (!buendel.has(key)) buendel.set(key, []);
+    buendel.get(key).push(e);
+  }
+  return [...buendel.values()].map((liste) => {
+    const urls = new Set();
+    const produkte = [];
+    for (const p of liste.flatMap(e => e.produkte || [])) {
+      if (!urls.has(p?.url)) { urls.add(p?.url); produkte.push(p); }
+    }
+    return {
+      an: liste[0].kontakt.email,
+      stufe: liste.some(e => e.stufe === 'erste') ? 'erste' : 'erinnerung',
+      art: liste.every(e => e.art === 'teppich') ? 'teppich' : 'boden',
+      kundenname: liste.find(e => e.kundenname)?.kundenname || null,
+      produkte,
+      muster: [...new Set(liste.flatMap(e => e.muster || []))],
+      eintraege: liste,
+    };
+  });
+}
+
+/**
+ * Sammelmail: nennt nach der Anrede alle Bestellungen und alle Muster. Die Linkliste reicht dafuer
+ * nicht, sie zeigt hoechstens drei Produkte und nur die lieferbaren. Bei einer einzelnen Bestellung
+ * bleibt der Text, wie er ist.
+ */
+export function mitMusterListe(mail, buendel) {
+  if (!mail || !(buendel?.eintraege?.length > 1)) return mail;
+  const sauber = s => String(s ?? '').replace(/[{}<>\r\n]/g, ' ').trim();
+  const nummern = buendel.eintraege.map(e => sauber(e.orderName)).filter(Boolean).join(', ');
+  const zeilen = (buendel.muster || []).map(m => `– ${sauber(m)}`);
+  const block = `Diese Nachricht gilt für alle Muster aus Ihren Bestellungen ${nummern}${zeilen.length ? `:\n${zeilen.join('\n')}` : '.'}`;
+  const absaetze = String(mail.text).split(/\n{2,}/);
+  absaetze.splice(/^Guten Tag\b/.test(absaetze[0]) ? 1 : 0, 0, block);
+  return { ...mail, text: absaetze.join('\n\n') };
+}
+
 /**
  * Hat seit dem letzten Abruf von /api/kunden/muster-texte ein Versandlauf stattgefunden?
  * Dann sind die Bestellzeilen im Browser veraltet (der Lauf hat "nachgefasst" gesetzt) und
@@ -221,6 +273,7 @@ export function neuerVersandlauf(alt, neu) {
   return Boolean(alt && jetzt && jetzt !== vorher);
 }
 
+/** Kein Platzhalter mehr in Betreff oder Text - erst dann darf eine Mail raus. */
 export function platzhalterFrei(mail) {
   if (!mail || typeof mail !== 'object') return false;
   const rest = /\{[^{}\n]+\}/;

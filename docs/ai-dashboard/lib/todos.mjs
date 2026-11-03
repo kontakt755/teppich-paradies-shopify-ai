@@ -17,7 +17,7 @@ import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaff
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
 import { sichereUrl } from './akquise.mjs';
-import { lieferantName as lieferantAnzeige } from './einkauf-lieferanten.mjs';
+import { lieferantName as lieferantAnzeige, werktageZwischen } from './einkauf-lieferanten.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -41,6 +41,12 @@ export const FRISTEN = Object.freeze({
 // sie bis 2026-10-19 und verschwieg damit normale Laden-Arbeit (Codex-Audit).
 export const SICHTEN = Object.freeze(['inhaber', 'laden', 'website', 'alles']);
 export const SICHT_LABEL = Object.freeze({ inhaber: 'Inhaber', laden: 'Laden', website: 'Website', alles: 'Alles' });
+
+/**
+ * Haengt ein Muster laenger als so viele Werktage aus demselben Grund bei der Musterautomatik, ist es
+ * ein Problem: am 31.10. standen 17 Muster still, ohne dass eine Aufgabe entstand.
+ */
+export const MUSTER_KLAER_WERKTAGE = 1;
 
 const TON_RANG = { crit: 0, warn: 1, '': 2 };
 
@@ -129,6 +135,13 @@ function lieferantMusterAusstehend(offen) {
 const ortVon = z => { const o = z?.auftrag?.details?.lieferadresse?.ort; return o && o !== '–' ? o : null; };
 const istBezahlt = z => BEZAHLT.includes(String(z.zahlungsstatus));
 const artWort = positionen => (positionen.every(x => x.p.istMuster) ? 'Muster' : 'Ware');
+
+/** Klaerfall der Musterautomatik, wenn diese Position zu lange aus demselben Grund haengt - sonst null. */
+function haengtBeiAutomatik(z, lineItemId, jetzt) {
+  const fall = z.musterAutomatik?.klaeren?.find(e => e.lineItemIds?.includes(lineItemId));
+  const werktage = fall ? werktageZwischen(fall.seit, jetzt) : null;
+  return werktage !== null && werktage > MUSTER_KLAER_WERKTAGE ? { grund: fall.grund, seit: fall.seit, werktage } : null;
+}
 
 function rueckrufFaellig(r, heute) {
   if (!r || r.testbestellung || r.status === 'erledigt') return false;
@@ -253,6 +266,7 @@ function ausBestellungen(quellen, k) {
   const bestellen = new Map();   // lieferant|art -> Positionen, noch nicht beim Lieferanten bestellt
   const nachhaken = new Map();   // lieferant -> Positionen, zu lange bestellt
   const eigeneMuster = new Map(); // orderId -> Muster aus eigenem Bestand, noch nicht beim Kunden
+  const haengend = new Map();    // Grund der Musterautomatik -> Muster, die zu lange daran haengen
   const wartenAufLieferant = new Set(); // orderIds: eigene Muster gehen mit denen vom Lieferanten raus
   const sammle = (map, key, wert) => { if (!map.has(key)) map.set(key, []); map.get(key).push(wert); };
 
@@ -295,7 +309,9 @@ function ausBestellungen(quellen, k) {
         continue;
       }
       // "Haben wir da": nicht beim Lieferanten bestellen, sondern vorbeibringen bzw. verschicken.
-      if (!status && musterEigen(x.p)) sammle(eigeneMuster, z.orderId, pos);
+      const haengt = !status && !musterEigen(x.p) ? haengtBeiAutomatik(z, x.p.lineItemId, k.jetzt) : null;
+      if (haengt) sammle(haengend, haengt.grund, { ...pos, ...haengt });
+      else if (!status && musterEigen(x.p)) sammle(eigeneMuster, z.orderId, pos);
       else if (!status) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|${x.p.istMuster ? 'muster' : 'ware'}`, pos);
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
@@ -361,6 +377,17 @@ function ausBestellungen(quellen, k) {
       knopf: (z.auftrag?.positionen || []).filter(p => p.istMuster).every(musterEigen)
         ? { text: vorbei ? 'Erledigt – Kunde hat Muster' : 'Muster sind verschickt…', schritt: { orderId, aktion: vorbei ? 'kunde_hat_muster' : 'raus' }, href: kundenLink(z) }
         : { text: 'Ansehen', href: kundenLink(z) },
+    });
+  }
+  // Steht statt unter "bestellen": erst der Grund muss weg, sonst bestellt auch die Automatik nicht.
+  for (const [grund, positionen] of haengend) {
+    const werktage = Math.max(...positionen.map(x => x.werktage));
+    todos.push({
+      id: `muster-klaeren:${grund}`, art: 'muster_klaeren', bereich: 'laden', ton: 'crit',
+      alterTage: Math.max(...positionen.map(x => tageSeit(x.seit, k.jetzt) ?? 0)),
+      titel: `${positionen.length === 1 ? '1 Muster hängt' : `${positionen.length} Muster hängen`}: ${grund}`,
+      kontext: [kundenKurz(positionen), musterKurz(positionen), `seit ${mehrzahl(werktage, 'Werktag', 'Werktagen')} nicht automatisch bestellt`].join(' · '),
+      knopf: { text: 'Ansehen', href: '#/kunden?tab=bestellungen&bart=muster' },
     });
   }
   for (const [lieferant, positionen] of nachhaken) {

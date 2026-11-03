@@ -186,7 +186,7 @@ test('Wechsel-Block: Laengs-Bundle bietet Raummaß ohne Kettelung und Gekettelt 
     assert.match(html, /Gekettelt/);
     assert.match(html, /aria-current="page"/);
     assert.equal((html.match(/data-ew-ziel=/g) || []).length, 1);
-    assert.doesNotMatch(html, /Als Teppichboden von der Rolle bestellen/);
+    assert.match(html, /Als Teppichboden von der Rolle bestellen/, 'Weg zurueck zur Meterware');
     assert.match(html, /\['breite', 'laenge'\]/, 'Masse werden beim Wechsel mitgenommen');
   }
 });
@@ -246,6 +246,7 @@ test('Wechsel-Block: fremde Rollenquelle, anderes Bundle und gesperrte Entwuerfe
   ]) {
     const [p, ziel] = rollenGruppe();
     aendern(ziel);
-    assert.equal((await renderWechsel(p)).trim(), '');
+    const html = await renderWechsel(p);
+    assert.equal((html.match(/data-ew-ziel=/g) || []).length, 0, 'kein Chip zum gesperrten Ziel');
   }
 });

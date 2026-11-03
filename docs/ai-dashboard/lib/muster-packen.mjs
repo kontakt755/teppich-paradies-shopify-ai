@@ -106,8 +106,9 @@ function vorherIndex(produkte) {
  * @param {object} [p.klaeren]          { [Umschlagschluessel]: { zeit, von, fehlt: [lineItemId], notiz } } - Schluessel je
  *                                      Empfaenger und Bestelltag; aeltere je Empfaenger bzw. je Kunde gelten weiter
  * @param {(id) => string} [p.lieferantVon]  Lieferanten-Kuerzel -> Anzeigename (private Stammdaten)
+ * @param {(orderId, lineItemId) => string|null} [p.automatikGrundVon]  warum die Musterautomatik zurueckhaelt
  */
-export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, jetzt = new Date() } = {}) {
+export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, automatikGrundVon = () => null, jetzt = new Date() } = {}) {
   const statusVon = eintragVon ? (o, l) => eintragVon(o, l)?.status || null : statusAllein;
   // Vom Lieferanten direkt an den Kunden (#1680): wird nicht bei uns gepackt.
   const direkt = (a, p) => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT') || eintragVon?.(a.id, p.lineItemId)?.ueber === 'kunde';
@@ -207,6 +208,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           // Bleibt nach der Ankunft erhalten: die Kopfzeile nennt das Lieferanten-Bestelldatum immer (29.10.).
           bestelltAm: belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
           automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
+          automatikGrund: stand === 'offen' ? text(automatikGrundVon(a.id, p.lineItemId)) || null : null,
           // Wo es im Haus liegt (Musterlager), damit die Karte "liegt hier: …" sagen kann.
           lagerOrt: stand === 'lager' && belegt(p.musterLager?.ort) ? text(p.musterLager.ort) : null,
         });

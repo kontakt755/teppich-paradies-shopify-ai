@@ -27,11 +27,12 @@ import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffun
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
-import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, vorlageFuer, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { texteAusMarkdown, musterKurz, musterNachfassen, nachfragenBuendeln, mitMusterListe, fuelleText, platzhalterFrei, vorlageFuer, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs';
 import { grenzeFuer } from '../docs/ai-dashboard/lib/datenstand.mjs';
-import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
-import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
+import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, hinweisePfad, leseHinweise, merkeAbgleich, aktuelleHinweise, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
+import { postfachAbgleich } from '../operations/lib/nachfass-antworten.mjs';
+import { sendeMail as smtpSenden, adresse } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
@@ -651,7 +652,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), nachfassPostfachLesen = null, sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null } = {}) {
   const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -1892,9 +1893,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { stand = leseMusterPackStand(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
       // Lieferantennamen nur aus den privaten Stammdaten; ohne Eintrag bleibt das Kuerzel.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      const katalog = this._lexikonProdukte();
+      // Warum die Automatik ein Muster zurueckhaelt - stand bis 03.11. nur unter den Bestellungen.
+      const automatik = musterAutomatikAnzeige(dir, { modell, statusAlle: status, stammdaten }, katalog, now());
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
-        produkte: new Map(this._lexikonProdukte().map(p => [p.handle, p])),
+        produkte: new Map(katalog.map(p => [p.handle, p])),
+        automatikGrundVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId))?.grund || null,
         // Ganzer Eintrag: Bestelldatum und "Musterautomatik" fuer die Anmerkung beim Warten.
         eintragVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)] || null,
         schluesselVon: kundenSchluessel,
@@ -2134,10 +2139,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const zusatz = () => {
         let abgemeldet = [];
         let stopplisteFehler = null;
-        try { abgemeldet = Object.entries(leseStoppliste(stopplistePfad(dir))).map(([email, e]) => ({ email, am: e.am || null, von: e.von || null })); }
+        try { abgemeldet = Object.entries(leseStoppliste(stopplistePfad(dir))).map(([email, e]) => ({ email, am: e.am || null, von: e.von || null, grund: e.grund || null })); }
         catch (e) { stopplisteFehler = e.message; }
         const versand = nachfassVersandStand(dir, { jetzt: now() });
-        return { versand: stopplisteFehler ? { ...versand, hinweis: versand.hinweis || stopplisteFehler } : versand, abgemeldet };
+        // Postfach-Abgleich: Antworten mit mehr als "Abmelden" und eine gescheiterte Suche. Liest nur;
+        // eine kaputte Datei stoppt den Lauf (dort wirft sie), die Karte zeigt sie als Abgleich-Fehler.
+        let postfach = { antwortHinweise: [], abgleichFehler: null };
+        try {
+          const h = leseHinweise(hinweisePfad(dir));
+          postfach = { antwortHinweise: aktuelleHinweise(h.hinweise, { jetzt: now() }), abgleichFehler: h.abgleich?.fehler || null };
+        } catch (e) { postfach.abgleichFehler = e.message; }
+        return { versand: stopplisteFehler ? { ...versand, hinweis: versand.hinweis || stopplisteFehler } : versand, abgemeldet, ...postfach };
       };
       // "Muster nicht verfuegbar" gibt es immer: aus der Vorlage, wenn sie den Abschnitt hat, sonst der eingebaute Vorschlag.
       let md;
@@ -2183,15 +2195,22 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * bzw. Erinnerung aus der Vorlage, Versand ueber das Firmenpostfach, danach der
      * Zeitleisten-Schritt "nachgefasst" mit von = "automatisch".
      *
-     * Reihenfolge je Kunde: erst der Vermerk "sendet" im Versandprotokoll, dann die Mail, dann
+     * Vor dem Versand sucht der Lauf lesend im Postfach nach Antworten "Abmelden" und
+     * Unzustellbar-Meldungen und traegt die Adressen in die Stoppliste ein (nachfass-antworten.mjs).
+     * Geht die Suche nicht, geht nichts raus. Je Empfaengeradresse hoechstens eine Mail je Lauf,
+     * auch bei mehreren Bestellungen (nachfragenBuendeln); Protokoll und Zeitleiste bleiben je
+     * Bestellung, der Doppelschutz (schonVerschickt) gilt also fuer jede einzeln.
+     *
+     * Reihenfolge je Mail: erst der Vermerk "sendet" im Versandprotokoll, dann die Mail, dann
      * "gesendet", dann die Zeitleiste, dann "vermerkt". Bricht der Lauf dazwischen ab, schickt
      * der naechste keine zweite Mail, sondern holt nur den Zeitleisten-Schritt nach.
      *
      * Nichts geht raus, wenn: die Vorlage fehlt, das Postfach nicht eingerichtet ist, die
-     * Stoppliste nicht lesbar ist, ein Platzhalter stehen bliebe. --probe listet nur.
+     * Stoppliste nicht lesbar ist, die Postfach-Suche scheitert, ein Platzhalter stehen bliebe.
+     * --probe listet nur: sie sucht auch im Postfach, schreibt das Ergebnis aber nirgends hin.
      *
      * @param {object} [p]
-     * @param {boolean} [p.probe]   nur auflisten, nichts senden, nichts schreiben
+     * @param {boolean} [p.probe]   nur auflisten, nichts senden, nichts schreiben (Postfach wird gelesen)
      * @param {Function} [p.senden] Versandfunktion (Tests: Fake-Server oder Attrappe)
      */
     async kundenNachfassenSenden({ probe = false, senden = smtpSenden } = {}) {
@@ -2214,6 +2233,48 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         // Stoppliste oder Protokoll unlesbar: lieber niemanden anschreiben als einen Abgemeldeten.
         return abbruch('stoerung', e.message);
       }
+
+      // Postfach-Abgleich VOR dem Versand. Ohne Postfach (nur in der Probe moeglich) gibt es nichts zu suchen.
+      if (pf.zugang) {
+        let abgleich;
+        try {
+          abgleich = await postfachAbgleich({ zugang: pf.zugang, sendungen: versand.sendungen, ...(nachfassPostfachLesen ? { lesen: nachfassPostfachLesen } : {}) });
+        } catch (e) {
+          const grund = String(e?.message || e).slice(0, 160);
+          if (!probe) { try { merkeAbgleich(hinweisePfad(dir), { fehler: grund, jetzt }); } catch { /* der Abbruch unten zaehlt */ } }
+          return abbruch('stoerung', `Postfach-Suche fehlgeschlagen – nichts verschickt: ${grund}`);
+        }
+        // Die Suche dauert. Was der Knopf "Abgemeldet" oder "Jetzt senden" inzwischen geschrieben hat, darf nicht verloren gehen.
+        try {
+          stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+          versand = leseVersand(versandPfad(dir));
+        } catch (e) {
+          return abbruch('stoerung', e.message);
+        }
+        const eintraege = [
+          ...abgleich.abmeldungen.map(a => ({ ...a, grund: 'Antwort „Abmelden“' })),
+          ...abgleich.unzustellbar.map(u => ({ ...u, grund: `Unzustellbar${u.status ? ` (${u.status})` : ''}` })),
+        ];
+        const neue = [];
+        try {
+          for (const a of eintraege) {
+            // Eine unbrauchbare Absenderadresse darf den Lauf nicht jeden Tag abbrechen: Dorthin geht ohnehin nichts.
+            if (!adresse(a.email)) continue;
+            if (stoppliste.has(a.email) || neue.some(n => n.email === a.email)) continue;
+            neue.push(a);
+            if (!probe) trageAbmeldungEin(stopplistePfad(dir), { email: a.email, von: AUTOMATISCH, grund: a.grund, orderId: a.orderId, jetzt });
+          }
+          if (!probe) merkeAbgleich(hinweisePfad(dir), { neu: abgleich.hinweise, jetzt });
+        } catch (e) {
+          const grund = `Stoppliste nicht geschrieben – nichts verschickt: ${String(e?.message || e).slice(0, 160)}`;
+          if (!probe) { try { merkeAbgleich(hinweisePfad(dir), { fehler: grund, jetzt }); } catch { /* der Abbruch unten zaehlt */ } }
+          return abbruch('stoerung', grund);
+        }
+        // Die Probe schreibt nichts, rechnet aber so, als waere eingetragen.
+        for (const a of neue) stoppliste.set(a.email, { am: jetzt.toISOString(), von: AUTOMATISCH });
+        ergebnis.abgleich = { geprueft: true, gelesen: abgleich.gelesen, ohneOrdner: abgleich.ohneOrdner, neu: neue.map(a => ({ email: a.email, orderName: a.orderName, grund: a.grund })), hinweise: abgleich.hinweise.length };
+      } else ergebnis.abgleich = { geprueft: false };
+
       const bestellungen = this.kundenBestellungen();
       if (!bestellungen.verfuegbar) return abbruch('keine-daten', bestellungen.hinweis || 'Bestelldaten fehlen.');
 
@@ -2229,24 +2290,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       );
       const sichern = () => { if (!probe) schreibeVersand(versandPfad(dir), versand); };
 
+      // Erst je Bestellung aussortieren und nachtragen, dann je Adresse senden (hoechstens eine Mail je Lauf).
+      const zuSenden = [];
       for (const e of offen) {
         const kurz = { orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname };
         if (e.kontakt.weg !== 'email') {
           ergebnis.uebersprungen.push({ ...kurz, grund: e.kontakt.weg === 'rueckruf' ? 'Rückruf gewünscht – anrufen' : 'keine E-Mail-Adresse' });
           continue;
         }
-        const mail = fuelleText(vorlageFuer(vorlage.texte, e), { kundenname: e.kundenname, absender: unterschrift, produkte: e.produkte });
-        if (!platzhalterFrei(mail)) {
-          ergebnis.fehler.push({ ...kurz, fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.` });
-          continue;
-        }
-        const an = e.kontakt.email;
         const vorher = schonVerschickt(versand, e.orderId, e.stufe);
         if (vorher) {
           // Mail ging schon raus, nur der Zeitleisten-Schritt fehlt (Abbruch im letzten Lauf): nachtragen, nicht neu senden.
           if (probe) { ergebnis.nachgetragen.push({ ...kurz, am: vorher.am }); continue; }
           try {
-            await schrittSetzen(e, vorher.betreff || mail.betreff);
+            await schrittSetzen(e, vorher.betreff || STUFE_LABEL[e.stufe]);
             vorher.status = 'vermerkt';
             ergebnis.nachgetragen.push({ ...kurz, am: vorher.am });
           } catch (err) {
@@ -2255,30 +2312,51 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           sichern();
           continue;
         }
+        zuSenden.push(e);
+      }
+
+      for (const b of nachfragenBuendeln(zuSenden)) {
+        const kurzVon = e => ({ orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname });
+        const mail = mitMusterListe(fuelleText(vorlageFuer(vorlage.texte, b), { kundenname: b.kundenname, absender: unterschrift, produkte: b.produkte }), b);
+        if (!platzhalterFrei(mail)) {
+          for (const e of b.eintraege) ergebnis.fehler.push({ ...kurzVon(e), fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[b.stufe]}“ fehlt.` });
+          continue;
+        }
+        const an = b.an;
+        // Eine Zeile je Mail; bei einer Sammelmail nennt sie alle Bestellungen.
+        const kurz = { ...kurzVon(b.eintraege[0]), orderName: b.eintraege.map(e => e.orderName).join(', '), stufe: b.stufe, bestellungen: b.eintraege.length };
         if (probe) { ergebnis.geplant.push({ ...kurz, an, betreff: mail.betreff, text: mail.text }); continue; }
 
-        const eintrag = { am: jetzt.toISOString(), orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, status: 'sendet', messageId: null, fehler: null };
-        versand.sendungen.push(eintrag);
+        // Je Bestellung ein Eintrag VOR dem Senden: bricht der Lauf danach ab, geht fuer keine eine zweite Mail raus.
+        const posten = b.eintraege.map((e) => {
+          const eintrag = { am: jetzt.toISOString(), orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, status: 'sendet', messageId: null, fehler: null };
+          versand.sendungen.push(eintrag);
+          return { e, eintrag };
+        });
         sichern();
         try {
           const r = await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [an], bcc: kopieAn ? [kopieAn] : [], betreff: mail.betreff, text: mail.text, datum: jetzt });
-          eintrag.status = 'gesendet';
-          eintrag.messageId = r?.messageId || null;
+          for (const { eintrag } of posten) { eintrag.status = 'gesendet'; eintrag.messageId = r?.messageId || null; }
           if (!versand.ersterVersandAm) versand.ersterVersandAm = jetzt.toISOString();
         } catch (err) {
-          eintrag.status = 'fehler';
-          eintrag.fehler = String(err?.message || err).slice(0, 300);
+          const fehler = String(err?.message || err).slice(0, 300);
+          for (const { e, eintrag } of posten) {
+            eintrag.status = 'fehler';
+            eintrag.fehler = fehler;
+            ergebnis.fehler.push({ ...kurzVon(e), fehler });
+          }
           sichern();
-          ergebnis.fehler.push({ ...kurz, fehler: eintrag.fehler });
           continue;
         }
         sichern();
-        try {
-          await schrittSetzen(e, mail.betreff);
-          eintrag.status = 'vermerkt';
-        } catch (err) {
-          // Die Mail ist raus - das bleibt im Protokoll stehen, der naechste Lauf traegt die Zeitleiste nach.
-          ergebnis.fehler.push({ ...kurz, fehler: `E-Mail verschickt, Zeitleiste nicht geschrieben: ${err?.message || err}` });
+        for (const { e, eintrag } of posten) {
+          try {
+            await schrittSetzen(e, mail.betreff);
+            eintrag.status = 'vermerkt';
+          } catch (err) {
+            // Die Mail ist raus - das bleibt im Protokoll stehen, der naechste Lauf traegt die Zeitleiste nach.
+            ergebnis.fehler.push({ ...kurzVon(e), fehler: `E-Mail verschickt, Zeitleiste nicht geschrieben: ${err?.message || err}` });
+          }
         }
         sichern();
         ergebnis.verschickt.push({ ...kurz, an, betreff: mail.betreff, kopie: kopieAn });

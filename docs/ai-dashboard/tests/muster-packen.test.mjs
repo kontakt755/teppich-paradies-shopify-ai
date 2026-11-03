@@ -544,3 +544,13 @@ test('Muster ohne eigene Einkaufsdaten: Angaben der Meterware mit gleicher SKU, 
   assert.equal(u.vorher.unklar, true);
   assert.equal(u.vorher.farbnummer, null);
 });
+
+test('Grund der Musterautomatik nur bei "noch nicht bestellt"', () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt,
+    statusVon: (_, li) => ({ 'gid://shopify/LineItem/12': 'bestellt' })[li] || null,
+    automatikGrundVon: () => 'Testgrund fehlt',
+    auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')])] });
+  const [offen, bestellt] = r.kunden[0].muster;
+  assert.equal(offen.automatikGrund, 'Testgrund fehlt');
+  assert.equal(bestellt.automatikGrund, null);
+});

@@ -160,6 +160,30 @@ test('jsonlZuProdukten haengt Varianten, Sammlungen und Metafelder richtig an', 
   assert.deepEqual(p.variants[0].custom, { farbcode: '12' });
 });
 
+test('einkauf.farbname: fehlt nur bei Lieferanten mit Musterbestellung nach Bezeichnung, auch am Altbestand', () => {
+  const v = (lieferant, farbname) => ({ id: 'v', sku: `S-${lieferant}-${farbname}`, title: 'Sand', price: '1.00', image: 'i', selectedOptions: [], custom: {}, einkaufLieferant: lieferant, einkaufFarbname: farbname });
+  const neu = produkt({ createdAt: '2026-11-01T10:00:00Z', variants: [v('E', null), v('E', 'Testquali 1Q00')] });
+  const alt = produkt({ variants: [v('D', null)] });
+  const andere = produkt({ variants: [v('A', null)] });
+  const ohneMuster = produkt({ tags: ['ohne-muster'], variants: [v('E', null)] });
+  const erg = pruefeImporte({ produkte: [...vergleich(), neu, alt, andere, ohneMuster], seit: '2026-10-30', nachBezeichnung: new Set(['D', 'E']) });
+  const treffer = erg.befunde.filter((b) => b.regel === 'muster-bezeichnung');
+  assert.deepEqual(treffer.map((b) => [b.handle, b.stufe]).sort(), [[neu.handle, 'fehler'], ['altbestand', 'hinweis']].sort());
+  assert.match(treffer.find((b) => b.handle === neu.handle).text, /1 Variante\(n\) von Lieferant E/);
+  assert.match(treffer.find((b) => b.handle === 'altbestand').text, new RegExp(`1 Varianten in 1 aktiven Produkten von Lieferant D .*${alt.handle}`));
+  assert.equal(pruefeImporte({ produkte: [neu], seit: '2026-10-30' }).befunde.filter((b) => b.regel === 'muster-bezeichnung').length, 0, 'ohne Stammdaten keine Aussage');
+});
+
+test('jsonlZuProdukten liest Lieferant und Farbname der Variante', () => {
+  const zeilen = [{ id: 'gid://shopify/Product/1', handle: 'p', title: 'P', status: 'ACTIVE' },
+    { id: 'gid://shopify/ProductVariant/5', sku: 'S', __parentId: 'gid://shopify/Product/1', einkaufLieferant: { reference: { kuerzel: { value: 'E' } } }, einkaufFarbname: { value: ' Testquali ' } },
+    { id: 'gid://shopify/ProductVariant/6', sku: 'T', __parentId: 'gid://shopify/Product/1', einkaufLieferant: null, einkaufFarbname: null },
+  ].map((z) => JSON.stringify(z)).join('\n');
+  const [p] = jsonlZuProdukten(zeilen);
+  assert.deepEqual([p.variants[0].einkaufLieferant, p.variants[0].einkaufFarbname], ['E', 'Testquali']);
+  assert.deepEqual([p.variants[1].einkaufLieferant, p.variants[1].einkaufFarbname], [null, null]);
+});
+
 test('ueblicheFelder laesst Muster und Entwuerfe aus dem Vergleich', () => {
   const liste = [...vergleich(4), produkt({ status: 'DRAFT' }), produkt({ handle: 'muster-x' })];
   assert.equal(ueblicheFelder(liste).size, 0);
