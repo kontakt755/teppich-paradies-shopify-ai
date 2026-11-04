@@ -88,6 +88,7 @@ class Plan(unittest.TestCase):
     def test_hinweis_schnittware_steht_in_jedem_angebot(self):
         rolle = modul.plane_welle1(liste(), [produkt()], KONFIG)[0]
         einzel = modul.plane_einzelmass(liste(), [produkt()], KONFIG, 'Rolle Eins', 400, 700, 700.0, 150.0)[0]
+        self.assertIn('keine Fertigmaße', modul.HINWEIS_ZUSCHNITT)
         self.assertIn(modul.HINWEIS_ZUSCHNITT, rolle['gruppe']['description'])
         self.assertIn(modul.HINWEIS_ZUSCHNITT, einzel['angebote'][0]['listingDescription'])
 

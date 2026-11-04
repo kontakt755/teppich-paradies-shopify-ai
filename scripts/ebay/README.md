@@ -66,7 +66,7 @@ Die Stückzahl jeder Länge wird aus Bestand und Restlänge gerechnet. Nach Verk
 
 ## Hinweis zur Schnittware
 
-Jede Beschreibung trägt den Satz aus `HINWEIS_ZUSCHNITT`. Er gibt die Aussage des Anwalts wieder. Die Rücknahme-Rahmenbedingung im Verkäufer-Cockpit muss dazu passen; das Skript setzt sie nicht.
+Jede Beschreibung trägt den Text aus `HINWEIS_ZUSCHNITT`: alles Zuschnitte, keine Fertigmaße. Das folgt dem Rat des Anwalts. Die Rücknahme-Rahmenbedingung im Verkäufer-Cockpit muss dazu passen; das Skript setzt sie nicht.
 
 ## Einzelmaß auf Anfrage
 
