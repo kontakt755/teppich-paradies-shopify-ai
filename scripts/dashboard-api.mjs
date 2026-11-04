@@ -24,6 +24,7 @@ import { vorbereitungStand } from '../operations/lib/bestellvorbereitung.mjs';
 import { arbeitsstand } from '../operations/lib/arbeitsstand.mjs';
 import { routinenStand } from '../operations/lib/routinen.mjs';
 import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffung.mjs';
+import { kalendertag } from '../docs/ai-dashboard/lib/kalendertage.mjs';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
@@ -4399,7 +4400,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const file = path.join(path.dirname(this._akquiseQuelle().status), 'referenzen.json');
       const d = this._privatJson(file, { referenzen: [] });
       const liste = (d.referenzen || []).filter(x => x.orderId !== r.orderId);
-      const eintrag = { ...r, am: now().toISOString().slice(0, 10), von: benutzer?.name || benutzer?.kuerzel || '' };
+      const eintrag = { ...r, am: kalendertag(now()), von: benutzer?.name || benutzer?.kuerzel || '' };
       liste.unshift(eintrag);
       this._privatSchreiben(file, { referenzen: liste });
       return { ok: true, referenz: eintrag };
@@ -4425,7 +4426,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { csv = fs.readFileSync(q.csv, 'utf8'); } catch { throw new ApiError(409, 'Die Firmenliste fehlt auf diesem Rechner.'); }
       if (!leseAkquiseCsv(csv).some(f => f.id === id)) throw new ApiError(400, 'Unbekannte Firma.');
       const stand = this._akquiseStand(q.status);
-      const heute = now().toISOString().slice(0, 10);
+      const heute = kalendertag(now());
       let neu;
       try { neu = wendeAenderungAn(stand[id] || { status: 'neu' }, payload, heute); } catch (e) { throw new ApiError(400, e.message); }
       neu.von = benutzer?.kuerzel || benutzer?.name || neu.von || '';
@@ -4457,7 +4458,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let r;
       try {
         r = wendeHvAenderungAn(bestand, payload, {
-          heute: now().toISOString().slice(0, 10),
+          heute: kalendertag(now()),
           neueId: () => `hv-${randomBytes(5).toString('hex')}`,
           von: benutzer?.name || benutzer?.kuerzel || '',
         });
