@@ -7,12 +7,16 @@
 {% endcomment %}
 <section class="google-reviews">
   <div class="elfsight-app-e64233ac-362d-4d8f-ae26-3ec4cc88789e" data-elfsight-app-lazy></div>
+  {%- comment -%} § 5b Abs. 3 UWG. Sichtbar erst mit dem Widget: ohne Marketing-Zustimmung gibt es nichts zu erklaeren {%- endcomment -%}
+  <div class="google-reviews__hinweis" hidden>{%- render 'tp-bewertungshinweis' -%}</div>
   <script>
     (function () {
       var loaded = false;
+      var hinweis = document.currentScript && document.currentScript.parentNode.querySelector('.google-reviews__hinweis');
       function loadElfsight() {
         if (loaded) return;
         loaded = true;
+        if (hinweis) hinweis.hidden = false;
         var script = document.createElement('script');
         script.src = 'https://static.elfsight.com/platform/platform.js';
         script.async = true;

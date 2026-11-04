@@ -41,9 +41,11 @@ Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phase 6). Stand 2026-10-08.
   eigene Produktsterne). Die Angabe der Plattform allein genügt laut Fachbeitrag Plutte zu OLG
   Koblenz 9 U 1015/25 ebenfalls nicht. Stand: Frankfurt und Koblenz nur aus Fachbeiträgen, keine
   anwaltliche Prüfung.
-- **Offene Rechtsfrage (Stand 2026-11-04):** Startseiten-Hero und Kampagne der Kategorie
-  Teppichboden zeigen die Note als Link zu Google ohne den Hinweis direkt daneben. Keine gelesene
-  Entscheidung behandelt genau diesen Fall.
+- **Jede Stelle mit Note oder Bewertungen trägt den Hinweis** (Inhaber 2026-11-04): Startseiten-Hero,
+  Vertrauensstreifen der Serviceseiten und Kampagne der Kategorie Teppichboden kurz, das
+  Bewertungs-Widget mit beiden Sätzen und erst sichtbar, wenn das Widget lädt. `npm run
+  bewertung:guard` meldet Liquid, das die Note liest oder das Widget einbindet und den Hinweis nicht
+  rendert.
 
 ## 2. Anforderungen (aus dem Auftrag)
 

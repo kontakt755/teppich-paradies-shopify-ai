@@ -14,6 +14,8 @@
       {%- assign tp_gb_wert = shop.metafields.custom.google_bewertung.value.wert | default: settings.tp_google_wert -%}
       {%- if tp_gb_wert != blank and settings.tp_google_link != blank -%}
         <a href="{{ settings.tp_google_link | escape }}" target="_blank" rel="noopener">{{ tp_gb_wert | escape }} ★ bei Google · Bewertungen ansehen</a>
+        {%- comment -%} § 5b Abs. 3 UWG: der Hinweis gehoert direkt zur Note {%- endcomment -%}
+        {%- render 'tp-bewertungshinweis', kurz: true -%}
       {%- endif -%}
     </div>
   </div>

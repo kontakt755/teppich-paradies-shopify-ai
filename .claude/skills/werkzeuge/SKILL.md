@@ -39,7 +39,7 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run -s belege:bank -- <datei>` | Kontoauszug (CSV, CAMT.053) je Empfaenger: Lastschrift oder Ueberweisung, grobe Zuordnung zu Belegen, Ablage nur privat |
 | `npm run -s teppich:basis-daten` | **nach jedem Teppich-Import**: prueft `custom.teppich_basis_daten` (Gruppe, Qualitaetszeile, Breiten) gegen die Live-Regeln; `-- --pakete <ordner>` legt Schreibpakete + Rollback an → `docs/lessons/renderzeit-kollektionsseite.md` |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
-| `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht oder im Liquid am Monatsstand vorbeiliest |
+| `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht, im Liquid am Monatsstand vorbeiliest oder ohne den Hinweis nach § 5b Abs. 3 UWG steht |
 | `npm run -s google-bewertung [-- --schreiben]` | Note und Anzahl von Google ins Shop-Metafeld `custom.google_bewertung`; **monatlich per Dienst**, von Hand nur, wenn das Control Center einen Fehler meldet (`--trotzdem` übernimmt gemeldete Sprünge nach eigener Prüfung) |
 | `npm run lighthouse:messen` | **bevor jemand "schneller/langsamer" sagt**: Lighthouse gegen Live, 3 Seiten mit und ohne Cookie-Banner, 5 Runden reihum (rund 25 min); `-- --pruefen` nur Vorpruefung |
 | `npm run -s speicher:pruefen [-- --min <GiB>]` | **vor jedem Bildlauf** (Raumbilder, Schaerfe, Bild-Downloads): Exit ungleich 0 heisst nicht starten (1 = unter 20 GiB frei). Bei Rot meldet die Shop-Wache zusaetzlich einmal am Tag in der Arbeitszeit per Mac-Mitteilung |
