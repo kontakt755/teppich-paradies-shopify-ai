@@ -1768,8 +1768,8 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
 Etikettendrucker Niimbot B1, Etikett 50 × 50 mm (400 × 400 px, 203 dpi, Druckrichtung „top“ –
 NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
 
-- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Etiketten drucken“ (alle Muster der
-  Bestellung, eins je Stück). Einkauf › Musterlager → „Etikett drucken…“ für ein Etikett von Hand
+- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Aufkleber drucken“ (alle Muster der
+  Bestellung, eins je Stück). Einkauf › Musterlager → „Aufkleber drucken…“ für einen Aufkleber von Hand
   (Produktlink, optional Farbe/Serie/Artikelnummer). Beide öffnen denselben Dialog mit Vorschau,
   Druckdichte (1–5, Standard 3) und Verbindung.
 - **Direkt im Lexikon (20.10., #1489):** Produkt oder Muster oeffnen → „Musteraufkleber“ →

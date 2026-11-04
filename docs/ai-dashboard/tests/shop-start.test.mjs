@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { problemeBlock } from '../ansichten/heute/probleme.mjs';
+import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
 
 const quelle = fs.readFileSync(new URL('../ansichten/heute.mjs', import.meta.url), 'utf8')
   .replace(/^import[\s\S]*?from ['"][^'"]+['"];\n/gm, '').replace(/^export\s/gm, '');
-function start(query = '', session = {}, { todos = [] } = {}) {
+function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
   const geladen = [], bloecke = [], sichten = [];
   const rolle = session.benutzer?.rolle || 'inhaber';
   // Spiegel von ANSICHT_ROLLEN (kern/router.mjs): Shop-Kontrolle, Technik und Genossenschaften nur beim Inhaber.
@@ -26,7 +27,7 @@ function start(query = '', session = {}, { todos = [] } = {}) {
     aufraeumenBlock: block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
     istNurLesend: () => false, darfAnsicht,
     // Rote To-dos oben (w-206): echte problemeBlock, die Ableitung liefert die uebergebenen To-dos.
-    problemeBlock, leiteTodosAb: (q, opt) => { sichten.push(opt.sicht); return todos; }, sortiereTodos: x => x,
+    problemeBlock, arbeitsquellenStand, shopifyAbgleich: { daten: abgleich }, leiteTodosAb: (q, opt) => { sichten.push(opt.sicht); return todos; }, sortiereTodos: x => x,
     nachfassTodo: () => ({}), belegTodos: () => [], shopifyAbgleichTodos: () => [], datenstandTodo: () => [], veralteteQuellen: () => [],
     belege: { daten: null }, akquiseFaellig: () => [], hausverwaltungenFaellig: () => [], hinweisText: x => x, sichtFuer: () => 'laden',
     esc: s => String(s ?? ''), alterText: t => `${t} Tage`,
@@ -92,4 +93,12 @@ test('mn=1 oeffnet den bestehenden Nachfassblock im Shop ohne allgemeine Aufgabe
   const r = start('mn=1');
   assert.deepEqual(r.bloecke, ['Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit', 'Vorhandener Nachfassblock']);
   assert.ok(!r.geladen.includes('HeuteAufgaben'));
+});
+
+test('w-222: gescheiterter Abgleich mit Shopify steht auf der Shop-Übersicht, gerade ladender nicht', () => {
+  const kaputt = start('', {}, { abgleich: { fehler: true } });
+  assert.match(kaputt.html, /Liste unvollständig:<\/b> Abgleich mit Shopify konnte nicht geladen werden/);
+  assert.ok(kaputt.html.indexOf('heute-probleme') < kaputt.html.indexOf('<div>Waren</div>'), 'oben, wo sonst die Probleme stehen');
+  assert.doesNotMatch(start('', {}, { abgleich: null }).html, /heute-probleme/, 'Laden ist kein Fehler');
+  assert.doesNotMatch(start('', {}, { abgleich: { verfuegbar: true, abweichungen: [] } }).html, /heute-probleme/);
 });

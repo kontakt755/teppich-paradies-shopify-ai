@@ -231,11 +231,11 @@ export function viewEinkaufAblauf() {
   if (!d && einkauf.loadingBestellungen) return '<div class="empty">Lade Bestellungen …</div>';
   if (d?.fehler) return stoerungState(d, 'Die Bestelldaten');
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
-  // Bestellen, klaeren, informieren, nachfragen vor reinem Musterversand (jetztRang), darin
+  // Warenauftraege, dann reine Musterauftraege mit eigenem Schritt, zuletzt Musterversand (jetztRang), darin
   // aeltestes zuerst: wer am laengsten wartet, ist am dringendsten.
   const liste = aktiveAuftraege(d)
     .map(a => { const ab = auftragsAblauf(a, d, afEintragFuer); return { a, ab, e: einordnung(ab, informiertFuer(a.id)) }; })
-    .sort((x, y) => jetztRang(x.e) - jetztRang(y.e) || String(x.a.datum).localeCompare(String(y.a.datum)));
+    .sort((x, y) => jetztRang(x.e, x.ab) - jetztRang(y.e, y.ab) || String(x.a.datum).localeCompare(String(y.a.datum)));
   if (!liste.length) return emptyState('Keine offenen Kundenbestellungen.', 'Neue Bestellungen aus dem Shop erscheinen hier von selbst.');
   const f = FILTER[state.route.params.get('ab')];
   if (f) {
@@ -246,7 +246,7 @@ export function viewEinkaufAblauf() {
   const jetzt = liste.filter(x => x.e.gruppe === 'jetzt');
   const zaehl = g => liste.filter(x => x.e.gruende.includes(g)).length;
   const teile = Object.keys(GRUND_TEXT).map(g => [g, zaehl(g)]).filter(([, n]) => n).map(([g, n]) => `${n} ${GRUND_TEXT[g]}`);
-  return `<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Bestellen und Klären vor Musterversand, darin älteste zuerst.</p>
+  return `<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.</p>
     ${jetzt.length ? `<h2 class="ab-titel">Jetzt zu tun</h2><div class="ab-raster">${jetzt.map(auftragKarte).join('')}</div>` : ''}
     ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – Nachfrage erst nach ${VERZUG_WERKTAGE} Werktagen`, liste.filter(x => x.e.gruppe === 'unterwegs'))}
     ${gruppe('kunde', 'Beim Kunden', 'Kunde informiert oder Ware raus – Termin bzw. Abschluss', liste.filter(x => x.e.gruppe === 'beiKunde'))}`;

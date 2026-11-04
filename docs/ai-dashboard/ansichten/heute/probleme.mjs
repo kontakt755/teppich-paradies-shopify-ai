@@ -17,7 +17,11 @@
  *
  * Reine Funktion ohne DOM: heute.mjs liefert die sortierte To-do-Liste der Sicht und den
  * Zeilen-Zeichner (todoZeile), damit Knoepfe und Dialoge dieselben bleiben wie in der Liste.
+ *
+ * Konnte eine Quelle nicht geladen werden, darf der Block nicht einfach fehlen: "kein Problem" waere
+ * dann eine Behauptung ohne Grundlage (Review 29.10., w-222). Deshalb die Zeile "Liste unvollstaendig".
  */
+import { esc } from '../../kern/helfer.mjs';
 
 /** Mehr als drei rote Zeilen schieben die Warenkunden aus dem Blick - der Rest klappt auf. */
 export const PROBLEME_SICHTBAR = 3;
@@ -34,11 +38,13 @@ export function nurProbleme(todos) {
  * @param {object[]} todos  sortierte To-dos einer Sicht (lib/todos.mjs sortiereTodos)
  * @param {object} p
  * @param {(todo: object) => string} p.zeile  zeichnet eine To-do-Zeile (heute.mjs todoZeile)
- * @returns {string} HTML oder '' ohne rotes To-do
+ * @param {string[]} [p.fehlen]  Namen der Quellen, die nicht geladen werden konnten
+ * @returns {string} HTML oder '' ohne rotes To-do und ohne fehlende Quelle
  */
-export function problemeBlock(todos, { zeile }) {
+export function problemeBlock(todos, { zeile, fehlen = [] }) {
   const rot = nurProbleme(todos);
-  if (!rot.length) return '';
+  const hinweis = fehlen.length ? `<p class="heute-unvollstaendig" role="status"><b>Liste unvollständig:</b> ${esc(fehlen.join(', '))} ${fehlen.length === 1 ? 'konnte' : 'konnten'} nicht geladen werden, ein Problem kann hier fehlen. Seite neu laden; bleibt es so, Claude Bescheid geben.</p>` : '';
+  if (!rot.length) return hinweis ? `<section class="heute-probleme" aria-label="Probleme">${hinweis}</section>` : '';
   const oben = rot.slice(0, PROBLEME_SICHTBAR);
   const rest = rot.slice(PROBLEME_SICHTBAR);
   return `<section class="heute-probleme" aria-labelledby="heuteProbleme"><div class="heute-geschaeft-kopf">
@@ -46,5 +52,6 @@ export function problemeBlock(todos, { zeile }) {
     <p>Rot heißt: das muss heute jemand lösen. Alles Weitere steht unter „Weitere Bereiche“.</p></div>
     <div class="heute-todos">${oben.map(zeile).join('')}${rest.length
     ? `<details class="heute-rest"><summary>${PROBLEME_SICHTBAR} von ${rot.length} – alle anzeigen</summary>${rest.map(zeile).join('')}</details>` : ''}</div>
+    ${hinweis}
   </section>`;
 }

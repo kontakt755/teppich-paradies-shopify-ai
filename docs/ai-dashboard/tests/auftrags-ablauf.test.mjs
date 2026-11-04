@@ -103,11 +103,23 @@ test('Zahlen fuer Heute zaehlen je Auftrag wie die Liste', () => {
   assert.deepEqual(z, { bestellen: 1, informieren: 1, verzug: 0 });
 });
 
-test('Rundgang 29.10. (T2): Bestellen, Klaeren, Informieren und Nachfragen vor reinem Musterversand', async () => {
+test('w-223: Warenauftraege vor reinen Musterauftraegen, Musterversand zuletzt', async () => {
   const { jetztRang } = await import('../lib/auftrags-ablauf.mjs');
-  assert.equal(jetztRang({ gruende: ['muster_da'] }), 1);
-  for (const g of ['bestellen', 'ungeklaert', 'informieren', 'verzug']) assert.equal(jetztRang({ gruende: [g] }), 0, g);
-  assert.equal(jetztRang({ gruende: ['muster_da', 'bestellen'] }), 0, 'gemischt: der Warenschritt zaehlt');
-  assert.equal(jetztRang({ gruende: [] }), 1);
-  assert.equal(jetztRang(null), 1);
+  const ware = { positionen: [{ art: 'ware' }] };
+  const muster = { positionen: [{ art: 'muster' }] };
+  const gemischt = { positionen: [{ art: 'muster' }, { art: 'ware' }] };
+  for (const g of ['bestellen', 'ungeklaert', 'informieren', 'verzug']) assert.equal(jetztRang({ gruende: [g] }, ware), 0, g);
+  for (const g of ['bestellen', 'ungeklaert', 'verzug']) assert.equal(jetztRang({ gruende: [g] }, muster), 1, `reines Muster: ${g}`);
+  assert.equal(jetztRang({ gruende: ['muster_da', 'bestellen'] }, gemischt), 0, 'gemischt: es gibt einen zahlenden Warenkunden');
+  assert.equal(jetztRang({ gruende: ['muster_da'] }, muster), 2);
+  assert.equal(jetztRang({ gruende: ['muster_da'] }, gemischt), 2, 'nur Muster verschicken bleibt hinten, auch im gemischten Auftrag');
+  assert.equal(jetztRang({ gruende: [] }, ware), 2);
+  assert.equal(jetztRang(null), 2);
+  // Der gemeldete Fall: juengerer Warenkunde, aelterer Musterauftrag mit Grund "bestellen".
+  const liste = [
+    { id: 'alt-muster', e: { gruende: ['bestellen'] }, ab: muster },
+    { id: 'versand', e: { gruende: ['muster_da'] }, ab: muster },
+    { id: 'neu-ware', e: { gruende: ['bestellen'] }, ab: ware },
+  ];
+  assert.deepEqual(liste.sort((x, y) => jetztRang(x.e, x.ab) - jetztRang(y.e, y.ab)).map(x => x.id), ['neu-ware', 'alt-muster', 'versand']);
 });

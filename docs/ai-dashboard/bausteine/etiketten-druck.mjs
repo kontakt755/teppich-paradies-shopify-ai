@@ -194,7 +194,7 @@ function zeichneVorschau() {
   const fehlerText = formatFehler(), fehlerZeile = $('#etkEigenFehler');
   if (fehlerZeile) { fehlerZeile.textContent = fehlerText; fehlerZeile.hidden = !fehlerText; }
   liste.innerHTML = groesseFehler() ? '<p class="small muted">Keine Vorschau, bis die Größe stimmt.</p>'
-    : druck.etiketten.length ? vorschauHtml() : `<p class="small muted">${druck.frei ? 'Noch kein Aufkleber – oben Text eintragen.' : 'Noch kein Etikett – unten Angaben eintragen und „Hinzufügen“.'}</p>`;
+    : druck.etiketten.length ? vorschauHtml() : `<p class="small muted">${druck.frei ? 'Noch kein Aufkleber – oben Text eintragen.' : 'Noch kein Aufkleber – unten Angaben eintragen und „Hinzufügen“.'}</p>`;
   liste.querySelectorAll('[data-etk-bild]').forEach(c => zeichne(c, druck.etiketten[Number(c.dataset.etkBild)]));
   const zusammenfassung = $('#etkZusammenfassung'), vorschau = druckVorschau(druck.etiketten);
   if (zusammenfassung) zusammenfassung.textContent = `${druck.etiketten.length} Aufkleber insgesamt · ${vorschau.motive} verschiedene Motive.${teildruck() ? ` Ausgewählt: ${ausgewaehlt().length}.` : ''}${vorschau.motive > DRUCK_LIMIT.vorschau ? ` Die Vorschau zeigt die ersten ${DRUCK_LIMIT.vorschau} Motive. Gedruckt werden alle ausgewählten Aufkleber.` : ''}`;
@@ -490,7 +490,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     <p id="etkZusammenfassung" class="small"></p>
     <p id="etkWahl" class="etk-wahl-leiste small" hidden>Zum Drucken: <button type="button" class="btn btn-sm" data-etk-alle="1">alle wählen</button> <button type="button" class="btn btn-sm" data-etk-alle="0">keine</button></p>
     <div id="etkListe" class="etk-liste"></div>
-    ${allowEditing ? `<details class="etk-hand"${etiketten.length ? '' : ' open'}><summary>Etikett von Hand hinzufügen</summary>
+    ${allowEditing ? `<details class="etk-hand"${etiketten.length ? '' : ' open'}><summary>Aufkleber von Hand hinzufügen</summary>
       <form id="etkForm" class="etk-form">
         <label>Produktlink oder Handle <input name="handle" autocomplete="off" placeholder="https://www.teppich-paradies.net/products/…"></label>
         <label>Farbe <input name="farbe" autocomplete="off"></label>

@@ -88,7 +88,7 @@ function entferntTodos(liste, jetzt, lieferantName) {
 export function shopifyAbgleichTodos(jetzt = Date.now(), { lieferantName = id => lieferantAnzeige(id) } = {}) {
   const d = shopifyAbgleich.daten;
   // Der Server konnte nicht abgleichen (fehler als Text): eine Zeile. Ein gescheiterter Abruf
-  // (fehler: true aus fetchEinkauf) steht auf "Heute" als "Liste unvollstaendig" - nicht doppelt.
+  // (fehler: true aus fetchEinkauf) steht in Alltagssicht und Shop-Übersicht als "Liste unvollstaendig" - nicht doppelt.
   if (typeof d?.fehler === 'string' && d.fehler) {
     return [{ id: 'shopify-abgleich-fehler', art: 'shopify_abgleich', bereich: 'laden', ton: 'warn', alterTage: null,
       titel: 'Abgleich mit Shopify nicht möglich', kontext: d.fehler, knopf: { text: 'Bestellen', href: '#/einkauf' } }];
