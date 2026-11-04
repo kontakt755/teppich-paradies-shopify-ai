@@ -79,6 +79,11 @@ export const DEFINITION = {
  * sie dort manuell in dieser Reihenfolge). Verteilung 29.10.2026 ueber 347
  * Teppichboeden: 20 / 31 / 67 / 63 / 50 / 37 / 11 (+ Paketware), deshalb keine
  * Sammelklasse "ueber 60" - dort laegen sonst 161 der 279 Rollenwaren.
+ *
+ * Die Preisklassen-Kacheln der Teppichboden-Kategorien (sections/tp-preisklassen.liquid,
+ * Inhaber 2026-11-04) buendeln diese Labels zu fuenf Klassen; die Zuordnung steht in
+ * snippets/tp-preisklassen-def.liquid. Wer hier ein Label aendert, aendert es dort mit -
+ * qa/tests/tp-preisklassen.test.mjs schlaegt sonst fehl.
  */
 export const BEREICHE = [
   { label: 'unter 30 €/m²', von: 0, bis: 3000 },

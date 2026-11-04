@@ -1,0 +1,20 @@
+{%- doc -%}
+  Preisklassen fuer Teppichboden (Inhaber 2026-11-04). Einzige Stelle, an der
+  Name, Anzeige-Bereich und die Werte des Filters "Preis je m2"
+  (custom.meterpreis_bereich) einer Klasse zusammenstehen.
+
+  Ausgabe: Klassen durch ";" getrennt, je Klasse "Name|Bereich|Wert,Wert".
+  Die Werte muessen exakt den Labels in BEREICHE von
+  scripts/preisfilter-abgleich.mjs entsprechen; jeder Bereich gehoert zu genau
+  einer Klasse. qa/tests/tp-preisklassen.test.mjs prueft beides.
+
+  Die Klassengrenzen folgen den vorhandenen Filterbereichen (40/60/80/100),
+  damit keine Produktdaten umgeschrieben werden muessen.
+{%- enddoc -%}
+{%- liquid
+  echo 'Preiswert|bis 40 €/m²|unter 30 €/m²,30 bis 40 €/m²'
+  echo ';Komfort|40 bis 60 €/m²|40 bis 60 €/m²'
+  echo ';Gehoben|60 bis 80 €/m²|60 bis 80 €/m²'
+  echo ';Premium|80 bis 100 €/m²|80 bis 100 €/m²'
+  echo ';Exklusiv|ab 100 €/m²|100 bis 150 €/m²,ab 150 €/m²'
+-%}

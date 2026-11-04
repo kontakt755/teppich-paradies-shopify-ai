@@ -64,6 +64,10 @@
         "padding_bottom": 24
       }
     },
+    "tp_preisklassen": {
+      "type": "tp-preisklassen",
+      "settings": {}
+    },
     "main": {
       "type": "main-collection",
       "blocks": {
@@ -1134,6 +1138,7 @@
   },
   "order": [
     "hero_split_kNJWrC",
+    "tp_preisklassen",
     "divider_7yWG7B",
     "main",
     "carousel_hpxcyi"

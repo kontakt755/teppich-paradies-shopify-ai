@@ -1123,6 +1123,10 @@
         "padding-block-end": 48
       }
     },
+    "tp_preisklassen": {
+      "type": "tp-preisklassen",
+      "settings": {}
+    },
     "tbk_muster": {
       "type": "tp-teppichboden-kampagne",
       "settings": {}
@@ -1457,6 +1461,7 @@
   },
   "order": [
     "section",
+    "tp_preisklassen",
     "tbk_muster",
     "main",
     "tp_fliesen_hinweis",

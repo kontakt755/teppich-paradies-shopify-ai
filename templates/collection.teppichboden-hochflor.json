@@ -65,6 +65,10 @@
         "padding_bottom": 24
       }
     },
+    "tp_preisklassen": {
+      "type": "tp-preisklassen",
+      "settings": {}
+    },
     "divider_jCthmw": {
       "type": "divider",
       "name": "t:names.divider_section",
@@ -1263,6 +1267,7 @@
   },
   "order": [
     "hero_split_LxpBek",
+    "tp_preisklassen",
     "divider_jCthmw",
     "main",
     "tp_fliesen_hinweis",

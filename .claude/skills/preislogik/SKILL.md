@@ -67,3 +67,13 @@ Verkaufspreis inklusive Aktion - **nach jeder Preisaenderung**
 das auch der Dienst `net.teppich-paradies.preisfilter`). Das Feld nie von Hand
 pflegen; Bereiche aendern nur im Skript `scripts/preisfilter-abgleich.mjs`
 (danach Abgleich und Sortierung des Filters in Search & Discovery pruefen).
+
+## Preisklassen Teppichboden
+
+Unter dem Kopf jeder Teppichboden-Kategorie stehen fuenf Kacheln (Inhaber
+2026-11-04): Preiswert bis 40, Komfort 40 bis 60, Gehoben 60 bis 80, Premium
+80 bis 100, Exklusiv ab 100 €/m². Sie sind keine eigenen Daten, sondern
+buendeln die Bereiche von `custom.meterpreis_bereich` (Filter „Preis je m²“)
+und setzen sie beim Klick als Filter. Zuordnung nur in
+`snippets/tp-preisklassen-def.liquid`; aendern sich die Bereiche im Skript,
+dort mitziehen (`qa/tests/tp-preisklassen.test.mjs` prueft das).
