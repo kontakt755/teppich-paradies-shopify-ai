@@ -146,6 +146,32 @@ class Sperren(unittest.TestCase):
             modul.hauptlauf(['--welle', '1', '--veroeffentlichen'])
 
 
+class Einrichtung(unittest.TestCase):
+    def test_rahmen_uebersicht_liest_alle_drei(self):
+        def server(anfrage):
+            if 'oauth2' in anfrage.full_url:
+                return Antwort(json.dumps({'access_token': 't'}).encode())
+            self.assertEqual(anfrage.get_method(), 'GET')
+            antwort = {
+                'fulfillmentPolicies': [{'name': 'V', 'fulfillmentPolicyId': '1'}],
+                'paymentPolicies': [{'name': 'Z', 'paymentPolicyId': '2'}],
+                'returnPolicies': [{'name': 'R', 'returnPolicyId': '3'}],
+            }
+            return Antwort(json.dumps(antwort).encode())
+        ergebnis = modul.rahmen_uebersicht(modul.Ebay('sandbox', ZUGANG, server))
+        self.assertEqual(ergebnis['returnPolicyId'], [('R', '3')])
+
+    def test_standort_braucht_adresse(self):
+        with self.assertRaises(modul.Abbruch):
+            modul.lege_standort_an(modul.Ebay('sandbox', ZUGANG, FalscherServer()), {'merchantLocationKey': 'L'})
+
+    def test_standort_wird_angelegt(self):
+        server = FalscherServer()
+        konfig = {'merchantLocationKey': 'lager', 'standort': {'city': 'Stadt', 'postalCode': '12345'}}
+        modul.lege_standort_an(modul.Ebay('sandbox', ZUGANG, server), konfig)
+        self.assertIn(('POST', '/sell/inventory/v1/location/lager'), server.aufrufe)
+
+
 class Senden(unittest.TestCase):
     def eintrag(self):
         return modul.plane_welle1(liste(), [produkt()], KONFIG)[0]

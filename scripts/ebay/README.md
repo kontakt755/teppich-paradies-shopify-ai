@@ -5,22 +5,26 @@ Es gibt Einkaufspreise und Lieferanten nie weiter und sendet nichts ohne ausdrü
 
 ## Einrichten (einmalig, durch den Inhaber)
 
-1. Konto im eBay-Entwicklerprogramm und App-Schlüssel anlegen; Benutzer-Token mit Berechtigung `sell.inventory` erzeugen.
-2. `ebay-zugang.env` im Privatordner anlegen: `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `EBAY_REFRESH_TOKEN`. Nie in den Chat oder ins Repository.
-3. Im Verkäufer-Cockpit Rahmenbedingungen für Versand, Zahlung und Rücknahme sowie einen Artikelstandort anlegen.
-4. `ebay-konfig.json` im Privatordner anlegen:
+1. Konto im eBay-Entwicklerprogramm und App-Schlüssel anlegen; die Befreiung von den Kontolöschungs-Meldungen beantragen. Benutzer-Token mit den Berechtigungen `sell.inventory` und `sell.account.readonly` erzeugen.
+2. `ebay-zugang.env` im Privatordner ausfüllen: `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `EBAY_REFRESH_TOKEN`. Nie in den Chat oder ins Repository.
+3. Im Verkäufer-Cockpit die Rahmenbedingungen aktivieren und je eine für Versand, Zahlung und Rücknahme anlegen.
+4. `ebay-konfig.json` im Privatordner ausfüllen:
 
 ```json
 {
   "fulfillmentPolicyId": "",
   "paymentPolicyId": "",
   "returnPolicyId": "",
-  "merchantLocationKey": "",
+  "merchantLocationKey": "lager-oranienburg",
+  "standort": {"city": "", "postalCode": ""},
   "marke_ersatz": "",
   "menge_bestellware": 0,
   "kategorie_teppichfliesen": ""
 }
 ```
+
+5. `--rahmen-zeigen --umgebung produktion` zeigt die drei IDs für die Konfiguration.
+6. `--standort-anlegen --umgebung produktion` legt den Artikelstandort bei eBay an. Das ist nur einmal nötig.
 
 ## Ablauf
 

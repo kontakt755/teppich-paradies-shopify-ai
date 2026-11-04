@@ -38,7 +38,7 @@ BLATT_WELLE_2 = 'Welle 2 bis 45 Euro'
 KONFIG_PFLICHT = ('fulfillmentPolicyId', 'paymentPolicyId', 'returnPolicyId', 'merchantLocationKey')
 ZUGANG_PFLICHT = ('EBAY_CLIENT_ID', 'EBAY_CLIENT_SECRET', 'EBAY_REFRESH_TOKEN')
 BASIS = {'sandbox': 'https://api.sandbox.ebay.com', 'produktion': 'https://api.ebay.com'}
-SCOPES = 'https://api.ebay.com/oauth/api_scope/sell.inventory'
+SCOPES = 'https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account.readonly'
 # Nur Eigenschaften aus dem Lexikon; fehlt ein Wert, bleibt das Merkmal weg (nie erfinden).
 MERKMALE = {
     'Material': ('fasermaterial', 'material'),
@@ -381,6 +381,34 @@ def sende(eintrag, ebay, veroeffentlichen):
     return ergebnis
 
 
+def rahmen_uebersicht(ebay):
+    """Liest die IDs fuer ebay-konfig.json aus dem Konto, aendert nichts."""
+    ergebnis = {}
+    for feld, pfad, liste_name in (
+        ('fulfillmentPolicyId', 'fulfillment_policy', 'fulfillmentPolicies'),
+        ('paymentPolicyId', 'payment_policy', 'paymentPolicies'),
+        ('returnPolicyId', 'return_policy', 'returnPolicies'),
+    ):
+        antwort = ebay.rufe('GET', f'/sell/account/v1/{pfad}?marketplace_id={MARKTPLATZ}')
+        ergebnis[feld] = [(e['name'], e[feld]) for e in antwort.get(liste_name) or []]
+    return ergebnis
+
+
+def lege_standort_an(ebay, konfig):
+    schluessel = konfig.get('merchantLocationKey')
+    standort = konfig.get('standort') or {}
+    fehlend = [k for k in ('city', 'postalCode') if not standort.get(k)]
+    if not schluessel or fehlend:
+        raise Abbruch('In ebay-konfig.json fehlt: ' + ', '.join((['merchantLocationKey'] if not schluessel else []) + [f'standort.{k}' for k in fehlend]))
+    ebay.rufe('POST', f'/sell/inventory/v1/location/{urllib.parse.quote(schluessel, safe="")}', {
+        'location': {'address': {'city': standort['city'], 'postalCode': standort['postalCode'], 'country': 'DE'}},
+        'locationTypes': ['WAREHOUSE'],
+        'merchantLocationStatus': 'ENABLED',
+        'name': schluessel,
+    })
+    return schluessel
+
+
 def lies_zugang(ordner):
     zugang = {k: os.environ.get(k, '') for k in ZUGANG_PFLICHT}
     pfad = os.path.join(ordner, 'ebay-zugang.env')
@@ -422,7 +450,9 @@ def sendesperren(args, konfig, zugang, namen):
 
 def hauptlauf(argv=None):
     p = argparse.ArgumentParser(description='Teppichboden aus der eBay-Startliste einstellen.')
-    p.add_argument('--welle', type=int, choices=(1, 2), required=True)
+    p.add_argument('--welle', type=int, choices=(1, 2))
+    p.add_argument('--rahmen-zeigen', action='store_true', help='IDs der Rahmenbedingungen aus dem Konto lesen')
+    p.add_argument('--standort-anlegen', action='store_true', help='Artikelstandort aus ebay-konfig.json bei eBay anlegen')
     p.add_argument('--nur', help='nur Produkte, deren Name diesen Text enthält')
     p.add_argument('--liste')
     p.add_argument('--lexikon')
@@ -436,6 +466,22 @@ def hauptlauf(argv=None):
         raise Abbruch('--veroeffentlichen geht nur zusammen mit --senden')
 
     ordner = privat_ordner()
+    if args.rahmen_zeigen or args.standort_anlegen:
+        zugang = lies_zugang(ordner)
+        fehlt = [k for k in ZUGANG_PFLICHT if not zugang.get(k)]
+        if fehlt:
+            raise Abbruch('Zugang fehlt: ' + ', '.join(fehlt))
+        ebay = Ebay(args.umgebung, zugang)
+        if args.standort_anlegen:
+            print(f'Standort angelegt: {lege_standort_an(ebay, lies_konfig(ordner))}')
+        if args.rahmen_zeigen:
+            for feld, eintraege in rahmen_uebersicht(ebay).items():
+                print(feld)
+                for name, nummer in eintraege:
+                    print(f'  {nummer}  {name}')
+        return 0
+    if not args.welle:
+        raise Abbruch('--welle 1 oder 2 fehlt')
     liste_pfad = args.liste or os.path.join(ordner, UNTERORDNER, STARTLISTE)
     lexikon_pfad = args.lexikon or os.path.join(ordner, 'lexikon', 'produkte.json')
     konfig, zugang, namen = lies_konfig(ordner), lies_zugang(ordner), verbotene_namen(ordner)
