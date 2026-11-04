@@ -133,6 +133,16 @@ test('API: leer ohne Datei, Speichern landet privat (nur Besitzer lesbar), kaput
   assert.equal(fs.readFileSync(datei, 'utf8'), '{kaputt');
 });
 
+test('API: "heute" ist der Kalendertag in Berlin, auch kurz nach Mitternacht', async () => {
+  const u = umgebung();
+  // 23:30 UTC ist in Berlin (Winterzeit) schon der naechste Tag.
+  const api = createApi({ root: u.dir, privatDirPath: u.privat, now: () => new Date('2026-11-04T23:30:00Z') });
+  const r = await api.hausverwaltungenSpeichern({ ebene: 'verwaltung', daten: { name: 'Muster Hausverwaltung GmbH', status: 'angeschrieben' } }, { name: 'Mona Mitarbeiter' });
+  assert.equal(r.verwaltung.angelegtAm, '2026-11-05');
+  assert.equal(r.verwaltung.letzteAktion, '2026-11-05');
+  assert.equal(r.verwaltung.wiedervorlage, '2026-11-19');
+});
+
 async function mitServer(handler, run) {
   const server = http.createServer(handler);
   await new Promise(r => server.listen(0, '127.0.0.1', r));
