@@ -489,6 +489,16 @@ test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eige
   assert.deepEqual(mit({ geprueftAm: vorTagen(9), befunde: [ohne] }).map(t => t.id).sort(), ['auslauf-muster', 'auslauf-stumm']);
 });
 
+test('Sicherung ausser Haus: still ohne Stand und bei frischer Kopie, sonst rot mit Grund', () => {
+  const mit = sicherungAusserHaus => leiteTodosAb({ shopwache: { verfuegbar: true, sicherungAusserHaus } }, { sicht: 'website', jetzt: JETZT });
+  for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }]) assert.deepEqual(mit(s), []);
+  const alt = mit({ status: 'alt', letzterErfolg: vorTagen(3) });
+  assert.deepEqual([alt.length, alt[0].id, alt[0].ton, alt[0].titel], [1, 'sicherung-ausser-haus', 'crit', 'Sicherungskopie in der Dropbox fehlt']);
+  assert.match(alt[0].kontext, /^letzte Kopie /);
+  const gescheitert = mit({ status: 'ok', letzterErfolg: vorTagen(1), letzterFehler: { am: vorTagen(0), meldung: 'Zielordner nicht erreichbar' } });
+  assert.match(gescheitert[0].kontext, /^Zielordner nicht erreichbar · letzte Kopie /);
+});
+
 test('Sicherung: verpasst wird gelb, ueber 48 Std., gescheitert oder unlesbar rot, sonst nichts', () => {
   const mit = sicherung => leiteTodosAb({ shopwache: { verfuegbar: true, sicherung } }, { sicht: 'website', jetzt: JETZT });
   for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }, { status: 'unbekannt', letzterErfolg: null }]) assert.deepEqual(mit(s), []);
@@ -674,4 +684,22 @@ test('Musterautomatik: von Hand bestellt, Wochenende und Faelle ohne Position er
   const ohnePosition = zeile({ tage: 5, positionen: [pos] });
   ohnePosition.musterAutomatik = { klaeren: [{ grund: 'Bestellumfang geändert', seit: vorTagen(5) }] };
   assert.ok(!arten(leiteTodosAb({ bestellzeilen: [ohnePosition] }, { sicht: 'laden', jetzt: JETZT })).includes('muster_klaeren'));
+});
+
+test('w-222: To-do-Liste und Zaehler teilen Entscheidungen gleich zu', async () => {
+  const { entscheidungsGruppen } = await import('../lib/model.mjs');
+  const freigaben = [
+    { number: 21, title: 'Liegt beim Inhaber', status: 'freigabe', open: true, owner: 'kontakt755', updatedAt: vorTagen(1) },
+    { number: 22, title: 'Ohne Entscheider', status: 'freigabe', open: true, updatedAt: vorTagen(1) },
+    { number: 23, title: 'Fremder Entscheider', status: 'freigabe', open: true, overdue: true, decision: { decider: 'jemand-anders' }, updatedAt: vorTagen(5) },
+    { number: 24, title: 'Fremder Zustaendiger', status: 'freigabe', open: true, owner: 'jemand-anders', updatedAt: vorTagen(1) },
+    { number: 25, title: 'Pruefung bleibt', status: 'review', reviewer: 'mensch', open: true, owner: 'jemand-anders', updatedAt: vorTagen(1) },
+    { number: 26, title: 'Geschlossen', status: 'freigabe', open: false, updatedAt: vorTagen(1) },
+  ];
+  const todos = leiteTodosAb({ freigaben }, { sicht: 'alles', jetzt: JETZT }).filter(t => t.art === 'freigabe');
+  assert.deepEqual(todos.map(t => t.id).sort(), ['freigabe:21', 'freigabe:22', 'freigabe:25']);
+  assert.ok(!todos.some(t => t.ton === 'crit'), 'die ueberfaellige fremde Entscheidung ist hier nicht rot');
+  const g = entscheidungsGruppen(freigaben);
+  assert.deepEqual(g.fuerDich.map(t => t.number), [21, 22]);
+  assert.deepEqual(g.beiAnderen.map(t => t.number), [23, 24]);
 });

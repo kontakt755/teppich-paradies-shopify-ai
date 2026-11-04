@@ -119,8 +119,13 @@ Entscheidend ist die Dateiliste aus Schritt 1; trifft beides zu, beides.
 - **Dashboard** (`docs/ai-dashboard/`, `operations/`, `social/`,
   `scripts/serve-dashboard.mjs`, `scripts/dashboard-api.mjs`): Skill
   `control-center`, Schritt 9 - zieht der Dienst `net.teppich-paradies.nachziehen`
-  binnen 5 Minuten selbst nach; pruefen mit `cd ~/tp-dashboard && npm run -s
-  betrieb:nachziehen -- --status`, sofort mit `npm run -s betrieb:nachziehen`.
+  selbst nach, bei Aenderungen mit Neustart gebuendelt: nach 15 Minuten Ruhe auf
+  main, hoechstens 30 Minuten nach dem aeltesten neuen Commit (plus Takt von
+  5 Minuten). Pruefen mit `cd ~/tp-dashboard && npm run -s betrieb:nachziehen --
+  --status`; „wartet“ mit „bündelt Neustarts“ ist dann der Normalfall: so berichten,
+  nicht als Fehler und nicht als schon ausgerollt. `npm run -s betrieb:nachziehen`
+  hebt das Buendeln auf, also nur auf Wunsch oder wenn der Stand wirklich eilt,
+  nicht routinemaessig nach jedem Merge.
 - **Nur anderes** (Skills, Doku, Skripte, Tests, Hooks): nichts auszurollen.
   Den Hauptcheckout zieht der naechste Sitzungsstart nach
   (`.claude/hooks/hauptcheckout-nachziehen.sh`).

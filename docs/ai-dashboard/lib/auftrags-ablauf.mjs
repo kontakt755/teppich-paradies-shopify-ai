@@ -16,6 +16,14 @@ export const SCHRITTE = [
   ['erledigt', 'Erledigt'],
 ];
 
+// Reine Musterauftraege: keine Waren-Worte (Rundgang 29.10.), die Schritte selbst bleiben dieselben.
+const MUSTER_LABEL = {
+  vorbereiten: 'Muster bereitstellen',
+  bestellt: 'Muster bestellt oder im Lager',
+  // Offener Schritt, solange das Muster nicht raus ist: als Aufgabe benannt, nicht als erledigt.
+  lieferung: 'Muster verschicken',
+};
+
 // Rang je Auftragsfluss-Stand (operations/lib/auftragsstatus.mjs): ohne Stand = noch zu bestellen.
 const RANG = { bestellt: 1, geliefert: 2, raus: 3, erledigt: 4 };
 const rang = status => RANG[status] || 0;
@@ -73,7 +81,8 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [] } = {
   // "Vorbereiten" und "bestellt" fallen zusammen, sobald abgehakt ist; vorher steht der Auftrag
   // auf "vorbereiten". Ware, die bei uns liegt, wartet auf Auslieferung oder Montage.
   const jetztKey = SCHRITTE.map(s => s[0]).find(k => !fertig[k]) || 'erledigt';
-  const schritte = SCHRITTE.map(([key, label]) => ({ key, label, stand: fertig[key] && key !== jetztKey ? 'fertig' : key === jetztKey ? 'jetzt' : 'offen' }));
+  const nurMuster = alle > 0 && positionen.every(x => x.art === 'muster');
+  const schritte = SCHRITTE.map(([key, label]) => ({ key, label: (nurMuster && MUSTER_LABEL[key]) || label, stand: fertig[key] && key !== jetztKey ? 'fertig' : key === jetztKey ? 'jetzt' : 'offen' }));
   const daten = positionen.map(x => x.eintrag?.bestelltAm).filter(Boolean).sort();
   return {
     schritte, jetzt: jetztKey, lieferanten, ungeklaert, positionen,
@@ -138,13 +147,17 @@ export function einordnung(ab, informiert = null, jetzt = new Date()) {
 }
 
 /**
- * Reihenfolge in "Jetzt zu tun" (Rundgang 29.10., T2): Auftraege, bei denen wir bestellen,
- * klaeren, den Kunden informieren oder nachfragen muessen, vor reinem Musterversand - sonst
- * standen zahlende Warenkunden hinter 20 Musterkarten (Inhaber 22.10.: Warenkunden zuerst).
- * 0 = eigener Schritt ausser Muster verschicken, 1 = nur Muster verschicken.
+ * Reihenfolge in "Jetzt zu tun" (Rundgang 29.10., T2; Review 29.10., w-223): zahlende Warenkunden
+ * zuerst (Inhaber 22.10.), auch vor einem reinen Musterauftrag, den wir erst bestellen muessen.
+ * 0 = Auftrag mit Ware und eigenem Schritt ausser Muster verschicken
+ * 1 = reiner Musterauftrag: bestellen, klaeren oder nachfragen
+ * 2 = nur Muster verschicken
+ * @param e   Ergebnis von einordnung()
+ * @param ab  Ergebnis von auftragsAblauf()
  */
-export function jetztRang(e) {
-  return (e?.gruende || []).some(g => g !== 'muster_da') ? 0 : 1;
+export function jetztRang(e, ab) {
+  if (!(e?.gruende || []).some(g => g !== 'muster_da')) return 2;
+  return (ab?.positionen || []).some(x => x.art === 'ware') ? 0 : 1;
 }
 
 const datumDe = iso => (iso ? String(iso).slice(0, 10).split('-').reverse().join('.') : '');

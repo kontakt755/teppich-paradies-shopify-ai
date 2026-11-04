@@ -332,7 +332,7 @@ export function lieferantenKartenHtml({ gruppeKarte, daten = einkauf.bestellunge
   const kontext = { gruppeKarte, namen, af, alleGruppen: d.gruppen || [], alleMusterGruppen: d.musterGruppen || [] };
   const stammFehler = einkauf.lieferanten?.fehler
     ? `<p class="small muted lf-fussnote">Kontakt und Bestellweg der Lieferanten konnten nicht geladen werden (${esc(einkauf.lieferanten.hinweis || 'unbekannter Fehler')}). Die Positionen stimmen trotzdem.</p>` : '';
-  return `${sicht.length ? `<div class="lf-raster">${sicht.map(k => karteHtml(k, kontext)).join('')}</div>` : emptyState(af ? 'Kein Artikel in diesem Schritt.' : 'Alles bestellt.', af ? '' : 'Bei keinem Lieferanten ist etwas offen.')}
+  return `${sicht.length ? `<div class="lf-raster">${sicht.map(k => karteHtml(k, kontext)).join('')}</div>` : emptyState(af ? 'Kein Artikel in diesem Schritt.' : 'Alles bestellt.', af ? '' : 'Bei keinem Lieferanten ist etwas offen.') + (af ? '<p class="small"><a href="#/einkauf?tab=lieferant">Alle Lieferanten ansehen →</a> · <a href="#/kunden?tab=muster">Zur Packstation →</a></p>' : '')}
     ${ruhig.length ? `<p class="small muted lf-fussnote">Nichts offen bei: ${ruhig.map(k => `<a href="${detailLink(k.id)}">${esc(k.name)}</a>`).join(' · ')}</p>` : ''}
     ${stammFehler}`;
 }

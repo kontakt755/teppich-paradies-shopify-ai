@@ -81,6 +81,17 @@ test('Seite nutzt die Safe-Area und folgt ohne eigene Wahl dem Geraet', () => {
   assert.match(css, /env\(safe-area-inset-bottom\)/);
 });
 
+test('Meldung laesst Klicks durch, bleibt aber ueber einem Schliess-Hintergrund klickfest', () => {
+  const css = fs.readFileSync(path.join(WURZEL, 'app.css'), 'utf8');
+  assert.match(css, /\.toasts \{[^}]*pointer-events: none;/);
+  // Ohne die Ausnahme traefe der Klick den Hintergrund und schloesse den Dialog samt Eingaben.
+  const regel = css.match(/body:has\(([^{]*)\) \.toast \{ pointer-events: auto; \}/);
+  assert.ok(regel, 'Ausnahme fuer offene Fenster fehlt');
+  for (const hintergrund of ['#dialogRoot .dialog-backdrop', '#sheetRoot .sheet-backdrop', '#paletteRoot .palette-backdrop']) {
+    assert.ok(regel[1].includes(hintergrund), hintergrund);
+  }
+});
+
 
 test('Shop-Hauptwege und vier standardgeschlossene Bereichsgruppen ohne Linkverlust', () => {
   const nav = teil('<nav class="mainnav"', '</nav>');

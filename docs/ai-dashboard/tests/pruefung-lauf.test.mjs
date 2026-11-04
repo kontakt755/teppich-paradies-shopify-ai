@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { datenkopieAnlegen } from '../../../scripts/dashboard-datenkopie.mjs';
-import { pruefLauf } from '../../../scripts/dashboard-pruefung-lauf.mjs';
+import { pruefLauf, WARTE_MS_STANDARD, warteMsAusUmgebung, aufraeumFehlerNurHinweis } from '../../../scripts/dashboard-pruefung-lauf.mjs';
 
 const HELFER = new URL('../../../scripts/dashboard-pruefung-lauf.mjs', import.meta.url).href;
 const BESITZ = new URL('../../../scripts/dashboard-temp-besitz.mjs', import.meta.url).href;
@@ -238,8 +238,30 @@ test('haengendes browser.close beendet den eigenen Browserprozess begrenzt vor d
   const lauf = pruefLauf({ daten, tmp, warteMs: 300 });
   lauf.browserSetzen({ process: () => browserKind, close: () => new Promise(() => {}) });
   try {
-    await assert.rejects(lauf.aufraeumen(), /Browser beendet sich nicht/);
+    // Begrenzt beendet und Kopie geloescht: nach vollstaendiger Pruefung nur ein Hinweis (w-216).
+    await assert.rejects(lauf.aufraeumen(), e => /Browser beendet sich nicht/.test(e.message)
+      && e.datenErhalten === false && aufraeumFehlerNurHinweis(e, { fertig: true }) && !aufraeumFehlerNurHinweis(e, { fertig: false }));
     assert.equal(browserKind.exitCode, 0);
     assert.equal(fs.existsSync(daten), false);
   } finally { await sicherBeenden(browserKind); }
 }));
+
+test('Beenden-Frist: Standard 15 s, per TP_DASHBOARD_PRUEF_WARTE_MS einstellbar, Unsinn bricht vorher ab (w-216)', () => {
+  assert.equal(WARTE_MS_STANDARD, 15_000);
+  assert.equal(warteMsAusUmgebung({}), 15_000);
+  assert.equal(warteMsAusUmgebung({ TP_DASHBOARD_PRUEF_WARTE_MS: ' ' }), 15_000);
+  assert.equal(warteMsAusUmgebung({ TP_DASHBOARD_PRUEF_WARTE_MS: '30000' }), 30_000);
+  for (const roh of ['0', '-5', 'abc', '1.5', '15s']) {
+    assert.throws(() => warteMsAusUmgebung({ TP_DASHBOARD_PRUEF_WARTE_MS: roh }), /TP_DASHBOARD_PRUEF_WARTE_MS/, roh);
+  }
+});
+
+test('haengendes Browserende ist nur nach vollstaendiger Pruefung mit geloeschter Kopie ein Hinweis (w-216)', () => {
+  const begrenzt = Object.assign(new Error('Pruef-Browser beendet sich nicht.'), { datenErhalten: false });
+  const erhalten = Object.assign(new Error('Pruef-Prozess wurde nicht nachweislich beendet; Datenkopie bleibt erhalten.'), { datenErhalten: true });
+  assert.equal(aufraeumFehlerNurHinweis(begrenzt, { fertig: true }), true);
+  assert.equal(aufraeumFehlerNurHinweis(begrenzt, { fertig: false }), false, 'Abbruch vor dem Bericht bleibt ein Fehler');
+  assert.equal(aufraeumFehlerNurHinweis(erhalten, { fertig: true }), false, 'liegen gebliebene Kopie bleibt ein Fehler');
+  assert.equal(aufraeumFehlerNurHinweis(new Error('x'), { fertig: true }), false, 'ohne Einordnung bleibt es ein Fehler');
+  assert.equal(aufraeumFehlerNurHinweis(null, { fertig: true }), false);
+});

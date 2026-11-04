@@ -50,6 +50,7 @@ SYNC_LABEL="net.teppich-paradies.sync"
 SYNC_VORLAGE="${REPO}/operations/launchagents/${SYNC_LABEL}.plist.vorlage"
 SYNC_PLIST="${LAUNCH_AGENTS_DIR}/${SYNC_LABEL}.plist"
 SICHERUNG_LABEL="net.teppich-paradies.sicherung"
+AUSSER_HAUS_LABEL="net.teppich-paradies.sicherung-ausser-haus"
 NACHZIEHEN_LABEL="net.teppich-paradies.nachziehen"
 
 if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" ) ]]; then
@@ -112,6 +113,14 @@ sicherung_einrichten() {
   vorlage_einrichten "${SICHERUNG_LABEL}" || return 1
   ok "Taeglich 22:30 Uhr und beim Anmelden; ohne KI-Kontingent."
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-sicherung.log"
+  # Die Kopie ausser Haus braucht Dropbox und den Schluessel im Schluesselbund; ohne beides bleibt sie aus.
+  if [[ -d "${HOME}/Dropbox/Teppich Paradies Sicherung" ]] && security find-generic-password -s "${AUSSER_HAUS_LABEL}" -a sicherung >/dev/null 2>&1; then
+    schritt "Verschluesselte Kopie in die Dropbox (${AUSSER_HAUS_LABEL})"
+    vorlage_einrichten "${AUSSER_HAUS_LABEL}" || return 1
+    ok "Taeglich 23:00 Uhr und beim Anmelden; ohne KI-Kontingent."
+  else
+    hinweis "Kopie ausser Haus nicht eingerichtet: Dropbox-Ordner oder Schluessel fehlt (operations/README.md)."
+  fi
 }
 
 nachziehen_einrichten() {

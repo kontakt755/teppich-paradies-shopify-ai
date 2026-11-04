@@ -8,7 +8,7 @@ import { esc, fmtDateTime, NICHT_HINTERLEGT, fmtPreis } from '../kern/helfer.mjs
 import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
-import { tailscaleHinweis, speicherHinweis, gestoerteRoutinen } from '../lib/todos.mjs';
+import { tailscaleHinweis, speicherHinweis, gestoerteRoutinen, sicherungsLage } from '../lib/todos.mjs';
 
 export const shopwache = { daten: null, laedt: false };
 
@@ -38,8 +38,11 @@ export function viewShopwache() {
   const routinen = rg.length ? `<div class="notice crit" role="status" style="margin:0 0 12px"><b>Mac-Dienst gestört:</b>
     <ul style="margin:4px 0 4px;padding-left:20px">${rg.map(r => `<li><b>${esc(r.titel)}</b> – ${esc(r.text)}</li>`).join('')}</ul>
     Claude Bescheid geben: „Mac-Dienst gestört“.</div>` : '';
+  // Ziel des To-dos zur Tagessicherung - nur wenn etwas nicht stimmt.
+  const sl = sicherungsLage(d?.sicherung);
+  const sicherung = sl ? `<p class="notice ${sl.ton === 'crit' ? 'crit' : 'warn'}" role="status" style="margin:0 0 12px"><b>${esc(sl.titel)}:</b> ${esc(sl.kontext)}.</p>` : '';
   if (!d || !d.verfuegbar) {
-    return kopf + tailscale + routinen + emptyState('Die Shop-Kontrolle ist noch nie gelaufen.', `Auf dem Mac starten: ${d?.befehl || 'npm run shop:wache'}`);
+    return kopf + tailscale + routinen + sicherung + emptyState('Die Shop-Kontrolle ist noch nie gelaufen.', `Auf dem Mac starten: ${d?.befehl || 'npm run shop:wache'}`);
   }
   const zeile = (s) => {
     const ok = !s.fehler && s.status >= 200 && s.status < 400;
@@ -57,7 +60,7 @@ export function viewShopwache() {
     <td>${p.imShop === null ? NICHT_HINTERLEGT : `${esc(fmtPreis(p.imShop))} €`}</td>
     <td><span class="badge ${p.inOrdnung ? 'ok' : 'crit'}">${p.inOrdnung ? 'gleich' : 'weicht ab'}</span></td>
   </tr>`;
-  return kopf + tailscale + routinen + speicher + `
+  return kopf + tailscale + routinen + sicherung + speicher + `
     <p class="small muted" style="margin:0 0 12px">Zuletzt geprüft: ${esc(fmtDateTime(d.geprueftAm))} · ${esc(d.basis)}</p>
     ${d.ampel === 'gruen'
       ? `<p class="notice ok">Alles in Ordnung: jede Pflichtseite antwortet, keine Preisabweichung.</p>`

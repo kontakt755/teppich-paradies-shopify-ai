@@ -5,6 +5,7 @@ import { vorgangsLink } from '../../lib/vorgangslink.mjs';
 
 const ALLE = '#/kunden?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit';
 const SICHTBAR = 5;
+// Pauschal nur ohne bestaetigten Termin: "Ware kommt bis 12.11." sagt mehr (a.liefertermin).
 const WARTET_TEXT = { lieferant: 'wartet auf Lieferant', kunde: 'wartet auf Kunde' };
 
 export function warenbestellungenBlock({ daten, lesend = false } = {}) {
@@ -25,7 +26,7 @@ export function warenbestellungenBlock({ daten, lesend = false } = {}) {
       : z.zahlungsstatus === 'AUTHORIZED' ? 'Zahlung autorisiert' : 'Zahlung prüfen';
     return `<div class="heute-bestellzeile"><div><strong>${esc(z.kundenname || 'Kunde nicht hinterlegt')} · ${esc(z.orderName || 'Bestellung')}</strong>
       <p>Bestellwert ${wert} · ${esc(zahlung)} · ${esc(alter)}${a.gemischt ? ' · mit Mustern' : ''}</p>
-      <p>${esc(a.stand)} · ${esc(WARTET_TEXT[a.wartet] || a.naechstes?.replaceAll('Großhändler-ID', 'Lieferanten-Artikelnummer'))}</p></div>
+      <p>${esc(a.stand)} · ${esc((a.liefertermin ? a.naechstes : WARTET_TEXT[a.wartet]) || a.naechstes?.replaceAll('Großhändler-ID', 'Lieferanten-Artikelnummer'))}</p></div>
       <a class="btn btn-sm${!lesend && i === erste ? ' btn-primary' : ''}" href="${esc(ziel)}">${lesend || a.wartet ? 'Bestellung ansehen' : 'Bestellung bearbeiten'}</a></div>`;
   };
   return `<section class="heute-geschaeft" aria-labelledby="heuteWarenbestellungen"><div class="heute-geschaeft-kopf">
