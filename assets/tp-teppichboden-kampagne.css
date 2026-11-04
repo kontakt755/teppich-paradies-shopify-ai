@@ -34,7 +34,9 @@
 .tp-tbk__facts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 22px; padding-top: 12px; border-top: 1px solid #e8ddd7; font-size: var(--tp-fs-sm); }
 .tp-tbk__facts > * { color: #554a46; }
 .tp-tbk__facts a { text-underline-offset: 3px; }
-.tp-tbk__facts .tp-bewertungshinweis { flex-basis: 100%; margin: 0; }
+.tp-tbk__beleg { display: flex; flex-direction: column; gap: 4px; }
+.tp-tbk__beleg a { color: #554a46; }
+.tp-tbk__beleg .tp-bewertungshinweis { width: 0; min-width: 100%; margin: 0; color: inherit; }
 .tp-tbk-faq-section { padding-block: 26px 60px; }
 .tp-tbk-faq { max-width: 820px; margin-inline: auto; }
 .tp-tbk-faq h2 { margin: 0 0 16px; font-size: var(--tp-fs-xl); }

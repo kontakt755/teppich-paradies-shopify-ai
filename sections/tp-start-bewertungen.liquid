@@ -16,6 +16,8 @@
       </div>
       {%- if section.settings.elfsight_id == blank and section.settings.link != blank -%}<a class="tp-s-link" href="{{ section.settings.link }}" rel="noopener noreferrer" target="_blank">{{ section.settings.link_label | default: 'Alle Bewertungen bei Google' | escape }}</a>{%- endif -%}
     </div>
+    {%- comment -%} § 5b Abs. 3 UWG, vor den Bewertungen, weil oben im Widget die Note steht {%- endcomment -%}
+    {%- render 'tp-bewertungshinweis' -%}
     {%- if section.settings.elfsight_id != blank -%}
       <div class="tp-bew__widget">
         <div class="elfsight-app-{{ section.settings.elfsight_id | escape }}" data-elfsight-app-lazy></div>
@@ -67,11 +69,11 @@
         })();
       </script>
     {%- endif -%}
-    {%- render 'tp-bewertungshinweis' -%}
   </div>
 </section>
 
 {% stylesheet %}
+  .tp-bew .tp-bewertungshinweis { margin: 0 0 14px; }
   .tp-bew__widget { min-height: 120px; }
   .tp-bew__fallback { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 26px 30px; border: 1px solid var(--tp-line); border-radius: var(--tp-r-lg); background: var(--tp-bg-2); }
   .tp-bew__fallback[hidden] { display: none; }

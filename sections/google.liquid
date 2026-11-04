@@ -6,17 +6,27 @@
   auf den drei Serviceseiten, auf denen diese Section liegt.
 {% endcomment %}
 <section class="google-reviews">
-  <div class="elfsight-app-e64233ac-362d-4d8f-ae26-3ec4cc88789e" data-elfsight-app-lazy></div>
-  {%- comment -%} § 5b Abs. 3 UWG. Sichtbar erst mit dem Widget: ohne Marketing-Zustimmung gibt es nichts zu erklaeren {%- endcomment -%}
+  {%- comment -%} § 5b Abs. 3 UWG, vor den Bewertungen, weil oben im Widget die Note steht. Sichtbar erst mit dem Widget: ohne Bewertungen gibt es nichts zu erklaeren {%- endcomment -%}
   <div class="google-reviews__hinweis" hidden>{%- render 'tp-bewertungshinweis' -%}</div>
+  <div class="elfsight-app-e64233ac-362d-4d8f-ae26-3ec4cc88789e" data-elfsight-app-lazy></div>
   <script>
     (function () {
       var loaded = false;
-      var hinweis = document.currentScript && document.currentScript.parentNode.querySelector('.google-reviews__hinweis');
+      var bereich = document.currentScript && document.currentScript.parentNode;
+      var hinweis = bereich && bereich.querySelector('.google-reviews__hinweis');
+      var widget = bereich && bereich.querySelector('[data-elfsight-app-lazy]');
       function loadElfsight() {
         if (loaded) return;
         loaded = true;
-        if (hinweis) hinweis.hidden = false;
+        if (hinweis && widget) {
+          var observer = new MutationObserver(function () {
+            if (widget.childElementCount > 0) {
+              hinweis.hidden = false;
+              observer.disconnect();
+            }
+          });
+          observer.observe(widget, { childList: true });
+        }
         var script = document.createElement('script');
         script.src = 'https://static.elfsight.com/platform/platform.js';
         script.async = true;
@@ -52,6 +62,7 @@
   margin: 80px auto;
   padding: 0 20px;
 }
+.google-reviews__hinweis { margin-bottom: 12px; }
 </style>
 
 {% schema %}

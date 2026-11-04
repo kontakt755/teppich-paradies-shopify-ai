@@ -61,6 +61,11 @@ test('Note ohne Hinweis nach § 5b UWG wird gemeldet', () => {
   assert.equal(befundeImCode(`{{ ${METAFELD}.value.wert | default: settings.tp_google_wert }} {%- ${HINWEIS}, kurz: true -%}`, 'x.liquid').length, 0);
 });
 
+test('Liquid, das nur das Metafeld liest, braucht den Hinweis ebenfalls', () => {
+  const b = befundeImCode(`{{ ${METAFELD}.value.wert }}`, 'x.liquid');
+  assert.deepEqual(b.map((x) => x.typ), ['hinweis']);
+});
+
 test('Bewertungs-Widget ohne Hinweis wird gemeldet', () => {
   const b = befundeImCode('<div class="elfsight-app-abc"></div>', 'x.liquid');
   assert.deepEqual(b.map((x) => x.typ), ['hinweis']);

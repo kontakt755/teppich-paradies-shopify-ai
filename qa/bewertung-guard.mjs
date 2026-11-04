@@ -70,11 +70,12 @@ const ZEIGT_WIDGET = /elfsight-app-/;
 
 export function befundeImCode(inhalt, datei) {
   const befunde = [];
-  const liest = LIEST_EINSTELLUNG.test(inhalt);
-  if (liest && !inhalt.includes(METAFELD)) {
+  const liestEinstellung = LIEST_EINSTELLUNG.test(inhalt);
+  const liestMetafeld = inhalt.includes(METAFELD);
+  if (liestEinstellung && !liestMetafeld) {
     befunde.push({ datei, typ: 'code', feld: 'settings.tp_google_*', wert: `ohne ${METAFELD}` });
   }
-  if ((liest || ZEIGT_WIDGET.test(inhalt)) && !inhalt.includes(HINWEIS)) {
+  if ((liestEinstellung || liestMetafeld || ZEIGT_WIDGET.test(inhalt)) && !inhalt.includes(HINWEIS)) {
     befunde.push({ datei, typ: 'hinweis', feld: 'tp-bewertungshinweis', wert: 'fehlt' });
   }
   return befunde;
