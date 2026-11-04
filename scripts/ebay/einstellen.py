@@ -41,6 +41,8 @@ UNTERORDNER = 'ebay-marktanalyse-2026-11'
 STARTLISTE = 'eBay-Startliste-2026-11-04.xlsx'
 BLATT_WELLE_1 = 'Welle 1 Sonderposten'
 BLATT_WELLE_2 = 'Welle 2 bis 45 Euro'
+# Aussage des Anwalts an den Inhaber vom 04.11.2026
+HINWEIS_ZUSCHNITT = 'Schnittware ist vom Austausch ausgeschlossen, es sei denn, sie ist fehlerhaft oder beschädigt.'
 KONFIG_PFLICHT = ('fulfillmentPolicyId', 'paymentPolicyId', 'returnPolicyId', 'merchantLocationKey')
 ZUGANG_PFLICHT = ('EBAY_CLIENT_ID', 'EBAY_CLIENT_SECRET', 'EBAY_REFRESH_TOKEN')
 BASIS = {'sandbox': 'https://api.sandbox.ebay.com', 'produktion': 'https://api.ebay.com'}
@@ -135,7 +137,7 @@ def merkmale(produkt, konfig, maengel):
 
 def beschreibung(produkt, zusatz):
     eig = produkt.get('eigenschaften') or {}
-    zeilen = [f'<p>{html.escape(t)}</p>' for t in zusatz]
+    zeilen = [f'<p>{html.escape(t)}</p>' for t in [*zusatz, HINWEIS_ZUSCHNITT]]
     punkte = [
         f'<li>{html.escape(n)}: {html.escape(v)}</li>'
         for n, s in BESCHREIBUNG.items()

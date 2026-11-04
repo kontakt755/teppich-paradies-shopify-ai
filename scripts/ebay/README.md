@@ -64,6 +64,10 @@ Den Versandweg bestimmt die kürzere Seite: bis 200 cm GLS, bis 320 cm Spedition
 
 Die Stückzahl jeder Länge wird aus Bestand und Restlänge gerechnet. Nach Verkäufen den Bestand in der Startliste anpassen und das Skript erneut laufen lassen; eBay senkt die anderen Längen nicht von selbst.
 
+## Hinweis zur Schnittware
+
+Jede Beschreibung trägt den Satz aus `HINWEIS_ZUSCHNITT`. Er gibt die Aussage des Anwalts wieder. Die Rücknahme-Rahmenbedingung im Verkäufer-Cockpit muss dazu passen; das Skript setzt sie nicht.
+
 ## Einzelmaß auf Anfrage
 
 Für andere Maße oder über 6 m entsteht ein einmaliges Angebot:
