@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { bestellzeile } from '../../../operations/lib/bestellliste.mjs';
 import { bestellArtPasst, warenArbeitsstand, shopBestellarbeit } from '../lib/shop-bestellarbeit.mjs';
 import { warenbestellungenBlock } from '../ansichten/heute/warenbestellungen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 const jetzt = Date.parse('2026-10-22T12:00:00Z');
 const p = (lineItemId, istMuster = false, extra = {}) => ({ lineItemId, istMuster, menge: 1,
@@ -154,7 +155,7 @@ test('Renderer fuehrt lesend direkt zur vorhandenen Kundenakte und maskiert Text
   assert.match(html, /Bestellung ansehen/);
   const ziel = html.match(/href="([^"]*)">Bestellung ansehen/)[1].replaceAll('&amp;', '&');
   const params = new URLSearchParams(ziel.split('?')[1]);
-  assert.equal(params.get('kunde'), z.kundenSchluessel);
+  assert.equal(params.get('kunde'), kundenLinkWert(z.kundenSchluessel));
   assert.equal(params.get('auftrag'), 'sicher');
   const fehlt = warenbestellungenBlock({ daten: { verfuegbar: false, hinweis: 'Test <fehlt>' } });
   assert.match(fehlt, /Test &lt;fehlt&gt;/);
@@ -253,6 +254,13 @@ test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eig
   const knoepfe = [...html.matchAll(/class="btn btn-sm( btn-primary)?"[^>]*>([^<]+)</g)].map(m => [Boolean(m[1]), m[2]]);
   assert.deepEqual(knoepfe.slice(0, 2), [[true, 'Bestellung bearbeiten'], [false, 'Bestellung ansehen']]);
   assert.match(html, /wartet auf Lieferant/);
+  // w-223: ein bestaetigter Termin ersetzt den Pauschaltext; ohne Termin bleibt er.
+  const termin = zeile('termin', [p('w')], { w: { status: 'bestellt', bestelltAm: '2026-10-21T08:00:00Z', beschaffung: { liefertermin: '2099-11-12' } } }, { datum: '2026-10-10T12:00:00Z' });
+  assert.equal(shopBestellarbeit(daten([termin]), { jetzt }).zeilen[0].liefertermin, '2099-11-12');
+  const mitTermin = warenbestellungenBlock({ daten: daten([termin]) });
+  assert.match(mitTermin, /Ware kommt bis 12\.11\.2099/);
+  assert.doesNotMatch(mitTermin, /wartet auf Lieferant/);
+  assert.equal(a.zeilen.find(z => z.zeile.orderId === 'wartend').liefertermin, null);
   // Nur Wartende: kein Hauptknopf, nichts zu tun.
   assert.doesNotMatch(warenbestellungenBlock({ daten: daten([wartend]) }), /btn-primary/);
 });

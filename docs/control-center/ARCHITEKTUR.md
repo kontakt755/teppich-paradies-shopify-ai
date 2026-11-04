@@ -1173,6 +1173,11 @@ Befunde einer Prüfung am 2026-10-12, alle mit Test (`tests/robustheit.test.mjs`
   der seine Kopie dann selbst löscht (`TP_DASHBOARD_DATENKOPIE`, `scripts/dashboard-datenkopie.mjs`, nur ein
   eigener markierter Ordner `tp-dashboard-daten-XXXXXX` direkt im Temp-Ordner, der zugleich `TP_PRIVAT_DIR` ist).
   `dashboard-pruefung-lauf.mjs` wartet Browserstart, Browserende und Serverende ab, bevor die Kopie verschwindet.
+  Frist je Schritt beim Beenden (Browser schließen, `SIGTERM`, `SIGKILL`): 15 s, einstellbar über
+  `TP_DASHBOARD_PRUEF_WARTE_MS` (seit 29.10.2026, w-216; vorher 3 s, die unter Last durch parallele Testläufe nicht
+  reichten). Hängt nur das Schließen des Browsers, nachdem alle Ansichten geprüft sind, schreibt der Lauf den Bericht
+  trotzdem, beendet den eigenen Browserprozess begrenzt, löscht die Kopie und meldet das als Hinweis; der Exit-Code
+  kommt weiter aus dem Prüfergebnis. Exit 2 nur bei Abbruch vor dem Bericht oder liegen gebliebener Datenkopie.
   Bei SIGINT/SIGTERM/SIGHUP endet auch ein laufender Browserstart geordnet; Puppeteers eigene Signalhandler
   bleiben aus. Verwaiste eigene Kopien werden nach einem Tag, eigene Screenshot-Ordner nach drei Tagen
   bereinigt. `dashboard-temp-besitz.mjs` bindet die Kennung an Verzeichnisidentität und Besitzer-PID;
@@ -1767,8 +1772,8 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
 Etikettendrucker Niimbot B1, Etikett 50 × 50 mm (400 × 400 px, 203 dpi, Druckrichtung „top“ –
 NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
 
-- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Etiketten drucken“ (alle Muster der
-  Bestellung, eins je Stück). Einkauf › Musterlager → „Etikett drucken…“ für ein Etikett von Hand
+- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Aufkleber drucken“ (alle Muster der
+  Bestellung, eins je Stück). Einkauf › Musterlager → „Aufkleber drucken…“ für einen Aufkleber von Hand
   (Produktlink, optional Farbe/Serie/Artikelnummer). Beide öffnen denselben Dialog mit Vorschau,
   Druckdichte (1–5, Standard 3) und Verbindung.
 - **Direkt im Lexikon (20.10., #1489):** Produkt oder Muster oeffnen → „Musteraufkleber“ →
@@ -2039,6 +2044,26 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
     drucken“. Der Knopf nutzt `drucken(…, { nurOffen: true })`, vermerkt nach dem vollständigen Druck
     also selbst „vorbereitet“.
   - Umschläge ohne vollständige Musterzuordnung druckt er nicht und nennt ihre Zahl.
+  - Die Zeile fehlt, wenn jeder Chip alles oder nichts zeigt und kein Umschlag mehr vorzubereiten ist
+    (spart Höhe am Handy). Sie bleibt, solange „noch vorbereiten“ Treffer hat, weil nur dieser Chip
+    zum Sammelknopf führt, und wenn ein Filter gesetzt ist, weil sonst kein Weg zurückführt.
+
+### Gesperrte Muster in der Packstation (seit 2026-11-04, #1899)
+
+`kundenMusterPacken()` liest `mustersperre.json` (aktive Sperren je `M-<SKU>`, auch die im Shop noch nicht
+bestätigten) und gibt je Position `gesperrt` zurück, solange das Muster weder abgehakt noch da oder im
+Musterlager ist. Ein solcher Umschlag steht unter „Zu klären“. Eine beschädigte Ablage legt die Liste nicht
+lahm: `sperrenFehler` wird als roter Hinweis gezeigt.
+
+- **„Kunde informieren…“** (`ansichten/kunden/muster-gesperrt.mjs`) sendet nichts. Nur wenn alle Muster des
+  Umschlags gesperrt sind, schließt der Dialog die Bestellung mit dem Schritt `muster_nicht_verfuegbar`
+  ab; der Schritt gilt immer für die ganze Bestellung.
+- **„Ohne dieses Muster weiter packen“** (`aktion: 'ohne-muster'`): nur diese Position wird „erledigt“ und über
+  `erledigtBuchen` ohne Kundenmail in Shopify gebucht. Sonst bliebe nach dem Verschicken ein leerer Umschlag.
+  Bei einer Bestellung mit Ware (`bestellungen[].mitWare`, gleiche Regel wie `auftragsart`) ist das der einzige Weg,
+  auch für das letzte Muster im Umschlag: der Schritt „Muster nicht verfügbar“ gehört nicht zu einer Warenbestellung.
+- **Reiter „Erledigt“:** die 14 Tage laufen ab `rausAm`/`erledigtAm`, ohne Vermerk ab Bestelldatum; `teilweise`
+  erledigte Bestellungen stehen nur in der Suche.
 
 ### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
 
@@ -2272,6 +2297,8 @@ Bestehende getrennte Versandaktionen und bewusst bestaetigte Bestellaktionen ble
 
 
 ## Kettler und Packstuecke
+
+**Bezugsweg abwaegen (Inhaber 2026-11-04):** Bei Massware aus der Rolle zeigt der Waren-Bestelldialog je Auftrag einen Hinweis. Liegt die PLZ in unserem Liefergebiet (10-14, 16; dieselbe Grenze wie beim Kettler-Vorschlag), kann die Rolle direkt beim Hersteller guenstiger sein: wir schneiden zu und liefern an. Sonst ist meist der Grosshandel besser, wegen der Speditionskosten. Es ist nur ein Hinweis (`bezugswegHinweis` in `lib/lieferanten.mjs`): keine Preise, kein Umschalten, die Bestellmail bleibt gleich.
 
 **Wer kettelt (Inhaber 2026-11-03):** Steht bei einem Lieferanten in den privaten Stammdaten `ware.kettelnMoeglich: true`, fragt der Bestelldialog bei Direktversand (`SUPPLIER_DIRECT`) je gekettelten Massteppich, ob der Lieferant kettelt und direkt liefert oder ob der Zuschnitt zu unserem Kettler geht. Bis zur Wahl steht der Teppich in keiner Bestellmail. Ueber 200 cm kurzer Seite ist der Lieferant als meist guenstiger markiert, weil vom Kettler sonst die Spedition dazukommt; das ist nur eine Empfehlung. Ohne den Eintrag und bei anderer Ware gilt weiter die Regel „gekettelt zum Kettler“, dort wählt man das Ziel wie bisher mit den Knöpfen im Dialog. Die Wahl laeuft als Parameter `kettelwege` (`<Position>=lieferant|kettler`) durch Vorlage und Vorbereitungsstand; dauerhaft gespeichert wird nur der Vermerk `ueber` beim Bestellen (`kettler` oder `kunde`). Auch die Dialoge ohne Bestellmail (Einzelartikel, „Alle als bestellt markieren“, „Ware ist bestellt“) fragen bei gekettelten Direktversand danach. Die Kundenakte nennt den Weg nur mit Vermerk; fehlt er bei Direktversand, steht dort „Nicht vermerkt, bitte klären“ und der Kettler-Dialog bleibt offen, weil die Ware dort liegen kann.
 
@@ -2579,16 +2606,20 @@ Neue Staende von main kamen bis zum 26.10. nur per Hand oder KI-Lauf hinein (Ski
 
 1. `git fetch`; ohne neuen Commit endet der Lauf still.
 2. `git merge-tree --write-tree HEAD origin/main`. Konflikt: „haengt“, nichts geaendert.
-3. `git commit-tree` legt den Merge-Commit an, ohne den Checkout zu beruehren. Genau dieser
+3. Nur der Dienst (`TP_NACHZIEHEN_DIENST=1`) und nur bei Aenderungen mit Neustart: PR-Serien
+   buendeln (`nachziehenBuendeln`, Werte in `BUENDELN`). Stand „wartet“ mit dem Grund „bündelt
+   Neustarts“, bis der neueste neue Commit 15 Minuten alt ist, hoechstens bis der aelteste
+   30 Minuten alt ist. Von Hand gestartet, `--probe` und reine Theme-Aenderungen warten nicht.
+4. `git commit-tree` legt den Merge-Commit an, ohne den Checkout zu beruehren. Genau dieser
    Commit wird in einer losgeloesten Arbeitskopie im Temp-Ordner getestet (`dashboard:test`,
    bei `operations/` bzw. `social/` auch `operations:test`/`social:test`), mit leerem
    `TP_PRIVAT_DIR`. Ein gruener Baum wird beim Warten nicht erneut getestet.
-4. Ruhe (`operations/lib/betrieb-nachziehen.mjs`): keine aktive Codex-Automation, deren Auftrag
+5. Ruhe (`operations/lib/betrieb-nachziehen.mjs`): keine aktive Codex-Automation, deren Auftrag
    diesen Checkout nennt, hat einen offenen Lauf (`task_started` ohne `task_complete` im
    Protokoll, hoechstens 30 Minuten alt), und keine Datei direkt im Privatordner wurde in den
    letzten zwei Minuten geschrieben (Unterordner des Sync-Dienstes, `*.log` und
    `aktualisierung.json` zaehlen nicht). Bis zu zehn Minuten Warten, sonst „wartet“.
-5. Bei geaendertem `package-lock.json` zuerst `node_modules` gegen die in der Probe frisch
+6. Bei geaendertem `package-lock.json` zuerst `node_modules` gegen die in der Probe frisch
    installierten und getesteten Bibliotheken tauschen (zwei `rename` im Checkout,
    `.nachziehen-module-neu`/`-vorher`; seit #1716, vorher `npm ci` im laufenden Betrieb, das
    `node_modules` erst loescht). Dann `git merge --ff-only` auf den getesteten Commit,
@@ -2598,7 +2629,7 @@ Neue Staende von main kamen bis zum 26.10. nur per Hand oder KI-Lauf hinein (Ski
    `social/`. Erfolg = neue PID und `/login` 200 (Social: `/api/status` 401).
    Der Dashboard-Start baut zuerst `issues.json`; scheitert der GitHub-Abruf, startet er mit der
    bisherigen Datei (`--weiter-mit-alten-daten`), deshalb bis zu 4 Minuten Startzeit.
-6. Fehler nach dem Vorspulen: `git reset --keep` auf den Commit von vorher, alte Bibliotheken
+7. Fehler nach dem Vorspulen: `git reset --keep` auf den Commit von vorher, alte Bibliotheken
    zurueckgetauscht (ohne Netz), Dienste erneut, „haengt“ mit dem Grund. Vor dem Tausch liegt der
    HEAD von vorher in `.nachziehen-module-head`; nach einem Abbruch holt `moduleReste` die alten
    Bibliotheken zurueck, wenn node_modules fehlt oder HEAD noch auf dieser Marke steht. Konflikt, rote Probe und gescheiterter Neustart

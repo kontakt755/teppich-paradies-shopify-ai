@@ -33,7 +33,7 @@ import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
 import { oeffneEtikettenDruck, etikettenFuerBestellung } from '../../bausteine/etiketten-druck.mjs';
-import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar } from '../../lib/musterlager-bestand.mjs';
+import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar, stueckJeArt } from '../../lib/musterlager-bestand.mjs';
 
 export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -183,7 +183,7 @@ export function viewEinkaufMusterlager() {
     </section>`).join('');
     };
     liste = nachLieferant(eintraege, d.zaehlbar).map(g => `<section class="ml-lieferant">
-      <h2 class="section-title">${esc(g.name)} <span class="small muted">${esc(plural(g.eintraege.length, 'Muster', 'Muster'))} · ${esc(g.stueck)} Stück</span></h2>
+      <h2 class="section-title">${esc(g.name)} <span class="small muted">${esc(plural(g.eintraege.length, 'Eintrag', 'Einträge'))} · ${esc(stueckJeArt(g.jeArt))}</span></h2>
       ${produkte(g.eintraege)}
     </section>`).join('');
   }
@@ -502,7 +502,7 @@ export function einkaufKlickMusterlager(ev) {
 /** Aufkleber fuer Lagerstuecke: dieselben Etiketten wie fuer Muster (Serie, Farbe, Technik aus dem Lexikon). */
 async function druckeEtiketten(stuecke, titel) {
   const positionen = stuecke.filter(x => x.handle).map(x => ({ istMuster: true, handle: x.handle, titel: x.titel, farbe: x.farbe, musterQuelle: { sku: x.sku || null, produktHandle: x.handle } }));
-  if (!positionen.length) { toast('Ohne Produkt im Lexikon kein Etikett – „Etikett drucken…“ oben füllt es von Hand.'); return; }
+  if (!positionen.length) { toast('Ohne Produkt im Lexikon kein Aufkleber – „Aufkleber drucken…“ oben füllt ihn von Hand.'); return; }
   const etiketten = await etikettenFuerBestellung(positionen);
   oeffneEtikettenDruck({ etiketten, titel });
 }
@@ -576,7 +576,7 @@ function restTrefferHtml(t, i) {
     <div class="ml-farbliste">${farben.map(f => `<label><input type="checkbox" value="${esc(f.farbe)}"${vorab ? ' checked' : ''}> ${esc(f.farbe)}${f.farbnummer && !String(f.farbe).includes(f.farbnummer) ? ` <span class="muted small">${esc(f.farbnummer)}</span>` : ''}${f.imLager ? ' <span class="muted small">(schon im Lager)</span>' : ''}</label>`).join('')}</div>
     ${lesend ? '' : `<div class="field"><label>Lagerplatz <input name="ort" maxlength="80" autocomplete="off" placeholder="z. B. Regal B, Fach 3"></label></div>`}
     <div class="btn-row">
-      <button type="button" class="btn btn-sm btn-ghost" data-ml-rest-etikett="${i}">Etikett</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-ml-rest-etikett="${i}">Aufkleber</button>
       ${lesend ? '' : `<button type="button" class="btn btn-sm btn-primary" data-ml-rest-einlagern="${i}">Als Verlegerest einlagern</button>`}
     </div>
   </section>`;

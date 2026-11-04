@@ -657,6 +657,26 @@ export function kettlerGrund(p, adresse) {
 }
 
 /**
+ * Bezugsweg je Bestellung abwaegen (Inhaber 2026-11-04): Wohnt der Kunde in der Naehe, kann die
+ * Rolle vom Hersteller guenstiger sein - wir schneiden zu und liefern selbst an. Weiter weg ist
+ * meist der Grosshandel besser, wegen der Speditionskosten. Nur Massware aus der Rolle; ohne PLZ
+ * keine Aussage. Eine feste Grenze hat der Inhaber nicht genannt: "nah" ist unser Liefergebiet.
+ */
+export function bezugswegHinweis(positionen = [], adressen = new Map()) {
+  const hinweis = { nah: [], weit: [] };
+  const gesehen = new Set();
+  for (const p of positionen) {
+    if (!(Number(p.ausRolleCm) > 0) || gesehen.has(p.orderId)) continue;
+    const plz = String(adressen.get(p.orderId)?.plz ?? '').trim();
+    if (!/^\d{5}$/.test(plz)) continue;
+    gesehen.add(p.orderId);
+    const eintrag = { orderName: p.orderName, ort: `${plz} ${adressen.get(p.orderId)?.ort ?? ''}`.trim() };
+    (KETTLER_NAH_PLZ.test(plz) ? hinweis.nah : hinweis.weit).push(eintrag);
+  }
+  return hinweis;
+}
+
+/**
  * Was vor einer Bestellung ueber den Kettler geklaert sein muss: ohne lesbares Fertigmass gibt
  * es kein Zuschnittmass, und passt das Zuschnittmass nicht mehr in die Rolle, aus der
  * zugeschnitten wird, faellt es nicht still auf das Fertigmass zurueck.
@@ -797,6 +817,8 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       kettelwegGewaehlt,
       kettelnBeimLieferanten: !anKettler && aufgenommen.some(p => kettelwege[p.lineItemId] === 'lieferant' && wirdGekettelt(p.ausfuehrung)),
       kettelPuffer,
+      // Zum Kettler oder auf die Baustelle ist der Weg schon entschieden.
+      bezugsweg: anKettler || gruppe.route === ROUTE.SUPPLIER_TO_SITE ? { nah: [], weit: [] } : bezugswegHinweis(offen, adressen),
       bereitsBestellt: alle.length - offen.length,
     },
   });

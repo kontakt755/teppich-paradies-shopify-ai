@@ -10,6 +10,9 @@
  *   npm run dashboard:pruefen -- --offen                # Instanz nach dem Lauf offen lassen
  *                                                       # (beenden mit dem ausgegebenen kill <pid>)
  *   npm run dashboard:pruefen -- --rollen               # zusaetzlich als Inhaber, Mitarbeiter und "lesen"
+ *   TP_DASHBOARD_PRUEF_WARTE_MS=30000 npm run dashboard:pruefen
+ *                                                       # Frist je Schritt beim Beenden (Browser schliessen,
+ *                                                       # SIGTERM, SIGKILL); Standard 15 s
  *
  * Ablauf:
  *  1. Kopie der privaten Daten ($TP_PRIVAT_DIR, Standard ~/teppich-paradies-analyse) in ein
@@ -28,6 +31,10 @@
  *     zeigen echte Daten: jeder Lauf loescht beim Start solche Ordner, die aelter als drei Tage
  *     sind (scripts/dashboard-pruefung-ordner.mjs).
  *     Exit-Code 1 bei JS-Fehlern, Fehlerantworten oder seitlichem Scrollen (egal bei welcher Breite).
+ *     Haengt nur das Schliessen des Browsers, nachdem alle Ansichten geprueft sind (unter Last
+ *     beobachtet), wird der eigene Browserprozess begrenzt beendet und das als Hinweis gemeldet -
+ *     der Exit-Code kommt weiter aus dem Pruefergebnis. Exit 2 nur, wenn der Lauf vorher abbricht
+ *     oder die Datenkopie nicht geloescht werden konnte.
  *
  * Mit --rollen legt das Skript in der DATENKOPIE eine benutzer.json mit drei Wegwerf-Zugaengen
  * an (inhaber, mitarbeiter, lesen; Passwoerter zufaellig, nirgends ausgegeben) und prueft jede
@@ -56,7 +63,7 @@ import { fileURLToPath } from 'node:url';
 import { altePruefOrdnerLoeschen, pruefOrdnerAnlegen, pruefOrdnerBehalten } from './dashboard-pruefung-ordner.mjs';
 import { benutzerAnlegen, schreibeBenutzer } from '../operations/lib/benutzer.mjs';
 import { datenkopieAnlegen, datenkopieLoeschen, verwaisteDatenkopien } from './dashboard-datenkopie.mjs';
-import { pruefLauf } from './dashboard-pruefung-lauf.mjs';
+import { pruefLauf, warteMsAusUmgebung, aufraeumFehlerNurHinweis } from './dashboard-pruefung-lauf.mjs';
 import { ladePuppeteer } from './puppeteer-laden.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -152,6 +159,8 @@ async function warteAufServer(url, ms = 20_000) {
 
 async function main() {
   const args = argumente(process.argv.slice(2));
+  // Vor allem anderen pruefen: eine unsinnige Frist soll keine Datenkopie hinterlassen.
+  const warteMs = warteMsAusUmgebung();
   if (args.aus) pruefOrdnerBehalten(args.aus);
   // Eigene alte Screenshot-Ordner nur bereinigen, wenn sie nachweislich nicht mehr benutzt werden.
   const altePruefungen = altePruefOrdnerLoeschen({ aus: args.aus });
@@ -165,7 +174,7 @@ async function main() {
   if (geloescht.length) console.log(`${geloescht.length} verwaiste Datenkopie(n) frueherer Laeufe geloescht.`);
   const quelle = process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
   const daten = datenkopieAnlegen();
-  const lauf = pruefLauf({ daten });
+  const lauf = pruefLauf({ daten, warteMs });
   const abbruch = new AbortController();
   let abbruchCode = null;
   process.on('exit', lauf.notaus);
@@ -179,6 +188,10 @@ async function main() {
         .finally(() => process.exit(code));
     });
   }
+  // Alle Ansichten geprueft, Bericht geschrieben: danach darf ein haengendes Browserende die
+  // Pruefung nicht mehr zum Fehlschlag machen (w-216).
+  let fertig = false;
+  let browserHinweis = null;
   try {
   kopieFuellen(quelle, daten);
   const aus = args.aus || pruefOrdnerAnlegen();
@@ -314,11 +327,15 @@ async function main() {
       await kontext.close();
     }
   } finally {
-    await lauf.browserSchliessen();
+    // Ueberschreitet browser.close() die Frist (unter Last beobachtet), darf das den Bericht
+    // nicht verhindern: merken, Bericht schreiben, am Ende einordnen. Ein Fehler aus der
+    // Schleife selbst bleibt der gemeldete Fehler.
+    try { await lauf.browserSchliessen(); } catch (e) { browserHinweis = e; }
   }
 
   const schlecht = ergebnisse.filter(e => e.fehler.length || e.ueberlauf || e.ueberstand.length).length;
-  const offen = args.offen && !schlecht;
+  // --offen nur, wenn der Browser nachweislich weg ist: sonst bliebe ein haengender Prozess stehen.
+  const offen = args.offen && !schlecht && (!browserHinweis || aufraeumFehlerNurHinweis(browserHinweis, { fertig: true }));
   const bericht = { erstellt: new Date().toISOString(), basis: offen ? basis : null, ergebnisse };
   fs.writeFileSync(path.join(aus, 'bericht.json'), JSON.stringify(bericht, null, 2));
   for (const e of ergebnisse) {
@@ -339,8 +356,17 @@ async function main() {
   const log = serverLog();
   if (/Error|Fehler/.test(log)) console.log(`\nServer-Ausgabe:\n${log.trim()}`);
   process.exitCode = schlecht ? 1 : 0;
+  fertig = true;
   } finally {
-    await lauf.aufraeumen();
+    try {
+      await lauf.aufraeumen();
+    } catch (e) {
+      if (!aufraeumFehlerNurHinweis(e, { fertig })) throw e;
+      browserHinweis = e;
+    }
+  }
+  if (browserHinweis) {
+    console.error(`\nHinweis: ${browserHinweis.message} Alle Ansichten waren da schon geprueft, der eigene Browserprozess wurde begrenzt beendet - das Pruefergebnis oben gilt. Frist je Schritt: ${warteMs} ms (TP_DASHBOARD_PRUEF_WARTE_MS).`);
   }
 }
 

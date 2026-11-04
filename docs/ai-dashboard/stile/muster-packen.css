@@ -58,6 +58,8 @@
 .mp-pfeil { padding-top: 24px; color: var(--accent); font-weight: 700; }
 .mp-sku { font-family: var(--mono); font-size: .85rem; color: var(--text-2); }
 .mp-fehlt { color: var(--warn); font-weight: 600; }
+.mp-gesperrt { color: var(--crit); font-weight: 600; }
+.mp-ohne { margin-left: 6px; }
 .mp-stand { padding-top: 6px; color: var(--text-2); }
 .mp-ab .mp-vorher, .mp-ab .mp-nachher, .mp-ab .mp-bild { opacity: .5; }
 

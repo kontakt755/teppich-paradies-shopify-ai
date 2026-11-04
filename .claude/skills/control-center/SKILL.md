@@ -138,15 +138,18 @@ kann dafuer weg?
 8. PR mit `Closes #<n>`, danach `npm run task -- review <n> --note "PR #…"`.
 9. Nach dem Merge zieht der Dienst `net.teppich-paradies.nachziehen` den Betrieb selbst
    nach (seit 2026-10-26, #1710; Ablauf: `operations/README.md`, „Dienst-Checkout
-   automatisch nachziehen“): alle 5 Minuten, erst in einer Probekopie getestet, nach
-   einem Codex-Musterlauf und zwei Minuten ohne Eingabe, mit Neustart der betroffenen
-   Dienste und Rueckweg. Die Sitzung macht nur noch:
+   automatisch nachziehen“): prueft alle 5 Minuten, buendelt Aenderungen mit Neustart
+   (15 Minuten Ruhe auf main, hoechstens 30 Minuten nach dem aeltesten neuen Commit),
+   erst in einer Probekopie getestet, nach einem Codex-Musterlauf und zwei Minuten ohne
+   Eingabe, mit Neustart der betroffenen Dienste und Rueckweg. Die Sitzung macht nur noch:
    ```
    cd ~/tp-dashboard && npm run -s betrieb:nachziehen -- --status
    ```
-   Soll es sofort gehen: `npm run -s betrieb:nachziehen` (wartet selbst auf Ruhe, startet
-   nicht doppelt). Danach im Browser einmal neu laden (der Hinweis „Neue Version
-   verfügbar“ erscheint von selbst).
+   „wartet“ mit „bündelt Neustarts“ ist der Normalfall: so berichten, nicht als Fehler und
+   nicht als schon ausgerollt. Soll es sofort gehen: `npm run -s betrieb:nachziehen` (wartet
+   selbst auf Ruhe, startet nicht doppelt). Das hebt das Buendeln auf, also nur auf Wunsch
+   oder wenn der Stand wirklich eilt, nicht routinemaessig nach jedem Merge. Danach im
+   Browser einmal neu laden (der Hinweis „Neue Version verfügbar“ erscheint von selbst).
    - **Haengt** (Status bzw. Systemzustand „Dashboard-Update hängt“): der Dienst laeuft
      auf dem alten Stand weiter. Grund beheben (Konflikt, rote Probe, eigene Aenderungen
      im Dienst-Ordner), nicht am Automaten vorbei mergen. Ein gesperrter main-Stand wird

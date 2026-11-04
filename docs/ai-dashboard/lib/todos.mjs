@@ -17,6 +17,7 @@ import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaff
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
 import { sichereUrl } from './akquise.mjs';
+import { entscheidungsGruppen } from './model.mjs';
 import { lieferantName as lieferantAnzeige, werktageZwischen } from './einkauf-lieferanten.mjs';
 import { belegMarke } from './lieferbelege.mjs';
 
@@ -206,7 +207,7 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
     const ohneTermin = bestellt.filter(x => !x.eintrag?.beschaffung?.liefertermin);
     if (!ohneTermin.length) {
       const termin = bestellt.map(x => x.eintrag.beschaffung.liefertermin).sort().at(-1);
-      return { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} kommt bis ${termin.split('-').reverse().join('.')}`, alterTage: null, positionen: bestellt };
+      return { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} kommt bis ${termin.split('-').reverse().join('.')}`, termin, alterTage: null, positionen: bestellt };
     }
     const tage = maxTage(ohneTermin, 'bestelltAm');
     // Verzug: mehr als 10 Werktage ohne Wareneingang (Inhaber 2026-10-20, wie im Einkauf "Je Auftrag").
@@ -252,6 +253,7 @@ export function werWartet(quellen = {}, opt = {}) {
       orderId: b.z.orderId,
       name: kundeVon(b.z),
       schritt: lage.schritt,
+      liefertermin: lage.termin || null,
       zusatz: lieferanten.length === 1 ? k.lieferantName(lieferanten[0]) : b.z.orderName,
       alterTage: lage.alterTage,
       ton: tonNachAlter(lage.alterTage, k.schwellen.nachhakenTage, k.schwellen.problemTage),
@@ -558,8 +560,11 @@ function ausAufgaben(quellen, { ich, jetzt }) {
 
 /** Freigaben aus den Entwicklungsaufgaben (GitHub): wartet auf die Entscheidung des Inhabers. */
 function ausFreigaben(quellen, jetzt) {
+  // Dieselbe Zuteilung wie der Zaehler "Entscheidungen" (#1804): liegt die Entscheidung bei
+  // jemand anderem, ist sie kein "wartet auf deine Entscheidung" - sonst widersprechen sich beide.
+  const deine = new Set(entscheidungsGruppen(quellen.freigaben || []).fuerDich);
   return (quellen.freigaben || [])
-    .filter(t => t.open !== false && (t.status === 'freigabe' || (t.status === 'review' && (!t.reviewer || t.reviewer === 'mensch'))))
+    .filter(t => t.open !== false && ((t.status === 'freigabe' && deine.has(t)) || (t.status === 'review' && (!t.reviewer || t.reviewer === 'mensch'))))
     .map(t => {
       const tage = tageSeit(t.updatedAt, jetzt);
       return {
@@ -851,28 +856,55 @@ const SICHERUNG_ZEIT = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berl
  * lesbar oder seit ueber 48 Std. keine Sicherung; gelb: ein Termin verpasst oder gar kein
  * Stand vorhanden (`fehlt` - die Sicherung lief hier nie).
  */
-function ausSicherung(quellen, jetzt) {
-  const s = quellen.shopwache?.sicherung;
-  if (!s) return [];
+/**
+ * Lage der Tagessicherung fuer To-do und Shop-Kontrolle: { ton, titel, kontext } oder null.
+ * Der Text sagt immer, was zu tun ist; das To-do fuehrt zur Shop-Kontrolle (wie "Mac-Dienst gestört").
+ */
+export function sicherungsLage(s, jetzt = new Date()) {
+  if (!s) return null;
   if (s.fehlt) {
-    return [{ id: 'sicherung', art: 'sicherung', bereich: 'website', alterTage: null, ton: 'warn', titel: 'Sicherungsstand fehlt',
-      kontext: 'Die tägliche Sicherung hat auf diesem Mac noch keinen Stand geschrieben – läuft sie? Claude Bescheid geben: „Sicherungsstand fehlt“' }];
+    return { ton: 'warn', titel: 'Sicherungsstand fehlt',
+      kontext: 'Die tägliche Sicherung hat auf diesem Mac noch keinen Stand geschrieben – läuft sie? Claude Bescheid geben: „Sicherungsstand fehlt“' };
   }
   const fehler = s.letzterFehler;
-  if (!fehler && s.status !== 'alt' && s.status !== 'fehler') return [];
+  if (!fehler && s.status !== 'alt' && s.status !== 'fehler') return null;
   const zuletzt = s.letzterErfolg ? `letzte Sicherung ${SICHERUNG_ZEIT.format(new Date(s.letzterErfolg))}` : 'noch keine erfolgreiche Sicherung';
   const lange = !s.letzterErfolg || jetzt.getTime() - Date.parse(s.letzterErfolg) > 48 * 3600000;
-  const basis = { id: 'sicherung', art: 'sicherung', bereich: 'website', alterTage: tageSeit(s.letzterErfolg, jetzt) };
   if (fehler) {
-    return [{ ...basis, ton: 'crit', titel: 'Sicherung der Betriebsdaten fehlgeschlagen', kontext: [fehler.meldung, zuletzt, 'Claude Bescheid geben: „Sicherung fehlgeschlagen“'].filter(Boolean).join(' · ') }];
+    return { ton: 'crit', titel: 'Sicherung der Betriebsdaten fehlgeschlagen', kontext: [fehler.meldung, zuletzt, 'Claude Bescheid geben: „Sicherung fehlgeschlagen“'].filter(Boolean).join(' · ') };
   }
   if (s.status === 'fehler') {
-    return [{ ...basis, ton: 'crit', titel: 'Stand der Sicherung nicht lesbar', kontext: 'Claude Bescheid geben: „Sicherungsstand nicht lesbar“' }];
+    return { ton: 'crit', titel: 'Stand der Sicherung nicht lesbar', kontext: 'Claude Bescheid geben: „Sicherungsstand nicht lesbar“' };
   }
-  return [{
-    ...basis, ton: lange ? 'crit' : 'warn',
+  return {
+    ton: lange ? 'crit' : 'warn',
     titel: 'Sicherung der Betriebsdaten überfällig',
-    kontext: `${zuletzt} · sie läuft täglich um 22:30 Uhr, wenn der Mac an ist`,
+    kontext: `${zuletzt} · sie läuft täglich um 22:30 Uhr, wenn der Mac an ist · Mac über Nacht anlassen; kommt sie trotzdem nicht, Claude Bescheid geben: „Sicherung überfällig“`,
+  };
+}
+
+function ausSicherung(quellen, jetzt) {
+  const s = quellen.shopwache?.sicherung;
+  const lage = sicherungsLage(s, jetzt);
+  if (!lage) return [];
+  return [{ id: 'sicherung', art: 'sicherung', bereich: 'website', alterTage: s.fehlt ? null : tageSeit(s.letzterErfolg, jetzt), ...lage,
+    knopf: { text: 'Ansehen', href: '#/shopwache' } }];
+}
+
+/**
+ * Verschluesselte Kopie der Sicherung in der Dropbox (operations/lib/betriebszustand.mjs,
+ * ausserHausStand). Kein Stand heisst: hier nicht eingerichtet, dann still.
+ */
+function ausSicherungAusserHaus(quellen, jetzt) {
+  const s = quellen.shopwache?.sicherungAusserHaus;
+  if (!s) return [];
+  const fehler = s.letzterFehler;
+  if (!fehler && s.status !== 'alt' && s.status !== 'fehler') return [];
+  const zuletzt = s.letzterErfolg ? `letzte Kopie ${SICHERUNG_ZEIT.format(new Date(s.letzterErfolg))}` : 'noch keine erfolgreiche Kopie';
+  return [{
+    id: 'sicherung-ausser-haus', art: 'sicherung', bereich: 'website', alterTage: tageSeit(s.letzterErfolg, jetzt), ton: 'crit',
+    titel: 'Sicherungskopie in der Dropbox fehlt',
+    kontext: [fehler?.meldung, zuletzt, 'Claude Bescheid geben: „Sicherung außer Haus prüfen“'].filter(Boolean).join(' · '),
   }];
 }
 
@@ -943,6 +975,7 @@ function alleTodos(quellen, opt) {
     ...ausRoutinen(quellen, k.jetzt),
     ...ausKiStand(quellen),
     ...ausSicherung(quellen, k.jetzt),
+    ...ausSicherungAusserHaus(quellen, k.jetzt),
   ];
 }
 

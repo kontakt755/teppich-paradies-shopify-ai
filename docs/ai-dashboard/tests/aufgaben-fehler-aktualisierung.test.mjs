@@ -126,7 +126,7 @@ test('Detail-Lesefehler behauptet nicht nicht gefunden und besitzt gezielten Wie
 test('wartende Kunden bleiben auch ohne aktive Faelle sichtbar, inklusive direktem Bestellweg', () => {
   const kunden = { faelle: { verfuegbar: true, faelle: [], ausgeblendet: [], wartend: 3 }, loadingFaelle: false };
   const view = vm.runInNewContext(quelltext('bausteine/karten.mjs') + '\n' + quelltext('ansichten/kunden/faelle.mjs') + '\nviewKundenFaelle', {
-    kunden, state: { route: { params: new URLSearchParams() } }, esc: v => String(v ?? ''),
+    kunden, state: { route: { params: new URLSearchParams() } }, esc: v => String(v ?? ''), kundenLinkWert: v => String(v ?? ''),
   });
   const html = view();
   assert.match(html, /3 Kunden warten/);

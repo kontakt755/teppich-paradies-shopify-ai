@@ -13,7 +13,7 @@
 .fm-technik summary { cursor: pointer; font-size: .84rem; color: var(--text-3); }
 .fm-technik ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; font-size: .82rem; color: var(--text-2); overflow-wrap: anywhere; }
 .fm-dialog .row.fm-neu { box-shadow: inset 3px 0 0 var(--ok); }
-.toast-knopf { margin-left: 12px; padding: 2px 12px; border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.toast-knopf { pointer-events: auto; margin-left: 12px; padding: 2px 12px; border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
 @media (pointer: coarse) {
   .fm-bild button { width: 32px; height: 32px; }
   .toast-knopf { min-height: 36px; }

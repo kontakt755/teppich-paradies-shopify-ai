@@ -16,7 +16,7 @@
 {%- capture tp_v_gesamtstarke -%}{{ product.metafields.custom.gesamtstarke.value }}{%- endcapture -%}
 {%- assign tp_v_gesamtstarke = tp_v_gesamtstarke | strip -%}
 {%- if tp_v_gesamtstarke != blank and tp_v_count < tp_v_max -%}
-  {%- capture tp_v_items -%}{{ tp_v_items }}|{{ tp_v_gesamtstarke }} Gesamtstärke{%- endcapture -%}
+  {%- capture tp_v_items -%}{{ tp_v_items }}|{{ tp_v_gesamtstarke }} Gesamthöhe{%- endcapture -%}
   {%- assign tp_v_count = tp_v_count | plus: 1 -%}
 {%- endif -%}
 

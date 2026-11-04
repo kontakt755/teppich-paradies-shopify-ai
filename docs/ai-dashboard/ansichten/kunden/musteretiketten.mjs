@@ -152,9 +152,9 @@ export async function bestellungsEtikettenDrucken(orderId) {
   if (eintrag(orderId).speichert) { toast('Bitte warten, bis die Vormerkung bestätigt ist.'); return; }
   const daten = await aktualisiereMusteretiketten(orderId);
   if (anfrage !== druckAnfrage || aktuelleSitzung !== sitzung || !sichtbar(orderId)) return;
-  if (!daten) { toast('Die Etiketten konnten nicht geprüft werden. Bitte die interne Zuordnung aktualisieren.'); return; }
+  if (!daten) { toast('Die Aufkleber konnten nicht geprüft werden. Bitte die interne Zuordnung aktualisieren.'); return; }
   if (!daten.zeilen.length || daten.zeilen.some(z => !z.etikett || !Array.isArray(z.fehlt) || z.fehlt.length || z.etikett.fehlt?.length || !Number.isInteger(z.bestellmenge) || z.bestellmenge <= 0)) {
-    toast('Die Etiketten sind nicht vollständig zugeordnet oder die bestellte Menge fehlt. Bitte die interne Zuordnung prüfen.');
+    toast('Die Aufkleber sind nicht vollständig zugeordnet oder die bestellte Menge fehlt. Bitte die interne Zuordnung prüfen.');
     return;
   }
   const gesamt = daten.zeilen.reduce((summe, z) => summe + z.bestellmenge, 0);

@@ -124,6 +124,19 @@ const NUR_THEME = /^(?:(?:sections|blocks|snippets|templates|assets|config|local
  * Zeitgesteuerte Dienste (Nachfassen, Shopwache, Sicherung …) laden ihren Code bei
  * jedem Lauf neu und brauchen keinen Neustart.
  */
+/**
+ * PR-Serien buendeln: jeder Merge startete den Dienst einzeln neu (29.10.: vier Neustarts in
+ * 90 Minuten, je bis 4 Minuten "nicht erreichbar"). Gewartet wird, bis main eine Weile ruhig
+ * ist, aber nie laenger als die Obergrenze seit dem aeltesten neuen Commit.
+ */
+export const BUENDELN = Object.freeze({ ruheMinuten: 15, hoechstensMinuten: 30 });
+export function nachziehenBuendeln({ neuesterMs, aeltesterMs, jetztMs, ruheMinuten = BUENDELN.ruheMinuten, hoechstensMinuten = BUENDELN.hoechstensMinuten }) {
+  if (jetztMs - aeltesterMs >= hoechstensMinuten * 60000) return { warten: false };
+  const ruhig = Math.max(0, Math.floor((jetztMs - neuesterMs) / 60000));
+  if (ruhig >= ruheMinuten) return { warten: false };
+  return { warten: true, grund: `bündelt Neustarts: letzter Merge vor ${ruhig} min, wartet auf ${ruheMinuten} min Ruhe` };
+}
+
 export function neustartNoetig(geaendert = []) {
   const abhaengigkeiten = geaendert.some(d => d === 'package.json' || d === 'package-lock.json');
   const dienste = new Set();

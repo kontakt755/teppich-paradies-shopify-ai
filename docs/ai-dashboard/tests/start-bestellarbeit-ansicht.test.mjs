@@ -23,7 +23,7 @@ test('fehlende Quellen zeigen Ladezustaende und keine erfundene Null-Erledigtmel
     assert.match(html, /(?:wird|werden) geladen/);
     assert.match(html, /Bestellungen werden geladen/);
     assert.match(html, /Packstand wird geladen/);
-    assert.doesNotMatch(html, /Gerade keine Muster|0 Bestellungen sind noch offen|0 packbereit|<span>0<\/span>/);
+    assert.doesNotMatch(html, /Gerade keine Muster|0 Bestellungen sind noch offen|0 Umschläge packbereit|<span>0 Artikel<\/span>/);
     assert.equal(vorbereiten(html).length, 0);
   }
 });
@@ -33,7 +33,7 @@ test('unverfuegbare Einkaufsdaten bleiben mit Ursache sichtbar, ohne Bestellknop
   const html = bestellarbeitBlock({ arbeit });
   assert.match(html, /notice warn/);
   assert.match(html, /Testexport &lt;fehlt&gt;/);
-  assert.doesNotMatch(html, /Gerade keine Muster|<span>0<\/span>|Testexport <fehlt>/);
+  assert.doesNotMatch(html, /Gerade keine Muster|<span>0 Artikel<\/span>|Testexport <fehlt>/);
   assert.equal(vorbereiten(html).length, 0);
   assert.equal(parameter(link(html, 'Alle ansehen').href).get('art'), 'muster');
 });
@@ -68,7 +68,7 @@ test('vier Lieferanten bleiben alle erreichbar: drei direkt und der vierte im au
 test('unbekannte und blockierte Muster verlieren ihren Prueflink nicht und erzeugen keinen irrefuehrenden Bestellknopf', () => {
   const arbeit = arbeitFuer([gruppe('UNGEKLAERT', [position(1)]), gruppe('A', [position(2, { lineItemId: null })])]);
   const html = bestellarbeitBlock({ arbeit });
-  assert.match(html, /<h3>Muster bestellen <span>2<\/span><\/h3>/);
+  assert.match(html, /<h3>Muster bestellen <span>2 Artikel<\/span><\/h3>/);
   assert.match(html, /Vor dem Bestellen müssen noch Angaben geklärt werden/);
   assert.match(html, /2 Musterartikel brauchen Klärung/);
   const ziel = parameter(link(html, 'Fehlende Angaben prüfen').href);
@@ -82,7 +82,7 @@ test('Muster mit fehlenden Bestellangaben bleiben neben vorbereitbaren Mustern s
   const arbeit = arbeitFuer([gruppe('A', [position(1), position(2, { grosshaendlerId: 'UNGEKLAERT' }),
     position(3, { bestellmenge: { menge: 0 } })])]);
   const html = bestellarbeitBlock({ arbeit });
-  assert.match(html, /<h3>Muster bestellen <span>3<\/span><\/h3>/);
+  assert.match(html, /<h3>Muster bestellen <span>3 Artikel<\/span><\/h3>/);
   assert.match(html, /1 Kundenbestellung · 1 Musterartikel/);
   assert.match(html, /2 Musterartikel brauchen Klärung/);
   assert.equal(vorbereiten(html).length, 1);
@@ -108,7 +108,7 @@ test('offene, fertige, Ware- und Packwege tragen die passenden vorhandenen Route
   const html = bestellarbeitBlock({ arbeit, offeneBestellungen: 3,
     pack: { verfuegbar: true, zahlen: { packen: 2, klaeren: 1, gepackt: 4 } } });
   assert.match(html, /3 Bestellungen sind noch offen/);
-  assert.match(html, /2 packbereit · 1 zu klären/);
+  assert.match(html, /2 Umschläge packbereit · 1 zu klären/);
   assert.equal(parameter(link(html, 'Dringendes bearbeiten').href).get('bsort'), 'wichtigkeit');
   assert.equal(parameter(link(html, 'Fertige ansehen').href).get('bfilter'), 'fertig');
   assert.equal(parameter(link(html, 'Ware beim Lieferanten bestellen').href).get('art'), 'ware');
@@ -161,7 +161,7 @@ test('fehlgeschlagene Bestell- und Packabrufe sind kein endloser Lade- oder Null
   const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), bestellQuelle: { verfuegbar: false }, pack: { verfuegbar: false } });
   assert.match(html, /Bestellungen können gerade nicht geladen werden/);
   assert.match(html, /Packstand kann gerade nicht geladen werden/);
-  assert.doesNotMatch(html, /Bestellungen werden geladen|Packstand wird geladen|0 packbereit/);
+  assert.doesNotMatch(html, /Bestellungen werden geladen|Packstand wird geladen|0 Umschläge packbereit/);
 });
 
 test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgemeinen Bestellkarte', () => {
@@ -169,8 +169,8 @@ test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgeme
   const html = bestellarbeitBlock({ arbeit, nurMuster: true,
     pack: { verfuegbar: true, zahlen: { packen: 1, klaeren: 2, warten: 3, gepackt: 4 } } });
   assert.match(html, /Muster &amp; Packstation/);
-  assert.match(html, /3 warten auf Ware/);
-  assert.match(html, /4 gepackt · Versand vorbereiten/);
+  assert.match(html, /3 Umschläge warten auf Ware/);
+  assert.match(html, /4 Umschläge gepackt · Versand vorbereiten/);
   assert.equal((html.match(/Aufkleber-Druckliste/g) || []).length, 1);
   assert.doesNotMatch(html, /Kundenbestellungen|Dringendes bearbeiten|Bestellungen werden geladen/);
   // Rundgang 29.10. (T6): ein Weg fuer eingetroffene Muster - der Packstation-Reiter "Muster kommt an".
