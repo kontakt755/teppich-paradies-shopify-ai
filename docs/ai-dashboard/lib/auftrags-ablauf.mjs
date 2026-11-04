@@ -138,13 +138,17 @@ export function einordnung(ab, informiert = null, jetzt = new Date()) {
 }
 
 /**
- * Reihenfolge in "Jetzt zu tun" (Rundgang 29.10., T2): Auftraege, bei denen wir bestellen,
- * klaeren, den Kunden informieren oder nachfragen muessen, vor reinem Musterversand - sonst
- * standen zahlende Warenkunden hinter 20 Musterkarten (Inhaber 22.10.: Warenkunden zuerst).
- * 0 = eigener Schritt ausser Muster verschicken, 1 = nur Muster verschicken.
+ * Reihenfolge in "Jetzt zu tun" (Rundgang 29.10., T2; Review 29.10., w-223): zahlende Warenkunden
+ * zuerst (Inhaber 22.10.), auch vor einem reinen Musterauftrag, den wir erst bestellen muessen.
+ * 0 = Auftrag mit Ware und eigenem Schritt ausser Muster verschicken
+ * 1 = reiner Musterauftrag: bestellen, klaeren oder nachfragen
+ * 2 = nur Muster verschicken
+ * @param e   Ergebnis von einordnung()
+ * @param ab  Ergebnis von auftragsAblauf()
  */
-export function jetztRang(e) {
-  return (e?.gruende || []).some(g => g !== 'muster_da') ? 0 : 1;
+export function jetztRang(e, ab) {
+  if (!(e?.gruende || []).some(g => g !== 'muster_da')) return 2;
+  return (ab?.positionen || []).some(x => x.art === 'ware') ? 0 : 1;
 }
 
 const datumDe = iso => (iso ? String(iso).slice(0, 10).split('-').reverse().join('.') : '');

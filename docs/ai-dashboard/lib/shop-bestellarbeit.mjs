@@ -60,12 +60,14 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
   // wartet: 'lieferant' | 'kunde', wenn gerade andere dran sind (Rundgang 29.10., T4) - solche
   // Zeilen stehen hinter denen mit eigenem Schritt und bekommen nicht den Hauptknopf.
   let wartet = null;
+  let liefertermin = null;
   if (!unklar && mitStatus && !abgeschlossen && z.offen) {
     const zeile = { ...quelle, auftrag: { ...z.auftrag, positionen: waren, ampel: warenKlaerung.length ? 'rot' : 'gruen' } };
     const warten = werWartet({ bestellzeilen: [zeile], statusAlle }, { jetzt: new Date(jetzt) });
     const n = [...warten.wir, ...warten.lieferant, ...warten.kunde][0];
     if (n) arbeit = { ...arbeit, naechstes: n.schritt };
     if (!warten.wir.length) wartet = warten.lieferant.length ? 'lieferant' : warten.kunde.length ? 'kunde' : null;
+    if (wartet === 'lieferant') liefertermin = n.liefertermin || null;
   }
   if (archiviert) arbeit = { stand: 'In Shopify archiviert', naechstes: finanziellAbgeschlossen ? 'Bewusst abgeschlossen; kein Versand daraus abgeleitet' : 'Zahlungseingang prüfen' };
   else if (unklar) arbeit = { stand: 'Warenstand prüfen', naechstes: 'Warenpositionen und aktuellen Bestellstand prüfen' };
@@ -79,7 +81,7 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
   const tage = kalendertage(z.datum, Number(jetzt));
   // Jede Pruef-/Zahlungsaufgabe von oben ist unser Schritt, auch wenn der Lieferant noch liefert.
   if (archiviert || unklar || kontrollieren || zahlungOffen) wartet = null;
-  return { ...arbeit, wartet, fortschritt: fortschritt || null, waren, gemischt, unklar: Boolean(unklar),
+  return { ...arbeit, wartet, liefertermin: wartet === 'lieferant' ? liefertermin : null, fortschritt: fortschritt || null, waren, gemischt, unklar: Boolean(unklar),
     kontrollieren, abgeschlossen, bezahlt, zahlungOffen, zahlungsRang, tage, fehlteile: fehlteile.length };
 }
 

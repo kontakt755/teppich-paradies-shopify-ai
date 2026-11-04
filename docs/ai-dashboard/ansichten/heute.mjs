@@ -237,7 +237,16 @@ function problemeShop(nf) {
   if (darfAnsicht('shopwache')) ensureShopwache();
   const q = quellen();
   const sicht = istInhaber() ? 'alles' : gewaehlteSicht(q.aufgaben);
-  return problemeBlock(todosDerSicht(sicht, q, nf).liste, { zeile: t => todoZeile(t, false) });
+  return problemeBlock(todosDerSicht(sicht, q, nf).liste, { zeile: t => todoZeile(t, false), fehlen: problemQuellenFehlen() });
+}
+
+/** Quellen der roten To-dos, deren Abruf gescheitert ist - gerade geladene zaehlen nicht. */
+function problemQuellenFehlen() {
+  const teile = [['Bestellungen', kunden.bestellungen], ['Einkaufsstand', einkauf.auftragsstatus],
+    ['Rückrufe', kunden.rueckrufe], ['Abgleich mit Shopify', shopifyAbgleich.daten]];
+  if (darfAnsicht('einkauf')) teile.push(['Lieferantenbelege', belege.daten], ['Einkaufsdaten', einkauf.bestellungen]);
+  if (darfAnsicht('shopwache')) teile.push(['Shop-Kontrolle', shopwache.daten]);
+  return arbeitsquellenStand(teile).fehlt;
 }
 
 /** Inhaber: Shop, Umsatz, Entscheidungen und Frist in einer Zeile; Kennzahlen klappen darunter auf. */

@@ -253,6 +253,13 @@ test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eig
   const knoepfe = [...html.matchAll(/class="btn btn-sm( btn-primary)?"[^>]*>([^<]+)</g)].map(m => [Boolean(m[1]), m[2]]);
   assert.deepEqual(knoepfe.slice(0, 2), [[true, 'Bestellung bearbeiten'], [false, 'Bestellung ansehen']]);
   assert.match(html, /wartet auf Lieferant/);
+  // w-223: ein bestaetigter Termin ersetzt den Pauschaltext; ohne Termin bleibt er.
+  const termin = zeile('termin', [p('w')], { w: { status: 'bestellt', bestelltAm: '2026-10-21T08:00:00Z', beschaffung: { liefertermin: '2099-11-12' } } }, { datum: '2026-10-10T12:00:00Z' });
+  assert.equal(shopBestellarbeit(daten([termin]), { jetzt }).zeilen[0].liefertermin, '2099-11-12');
+  const mitTermin = warenbestellungenBlock({ daten: daten([termin]) });
+  assert.match(mitTermin, /Ware kommt bis 12\.11\.2099/);
+  assert.doesNotMatch(mitTermin, /wartet auf Lieferant/);
+  assert.equal(a.zeilen.find(z => z.zeile.orderId === 'wartend').liefertermin, null);
   // Nur Wartende: kein Hauptknopf, nichts zu tun.
   assert.doesNotMatch(warenbestellungenBlock({ daten: daten([wartend]) }), /btn-primary/);
 });
