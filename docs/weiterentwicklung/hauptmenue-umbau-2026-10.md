@@ -135,3 +135,13 @@ die 19 entfernten IDs fehlen. Treffer der Preislinks über `custom.meterpreis_be
 (298 Teppichböden, jede Klasse belegt). `npm run menu:guard` und die Sichtprüfung bei
 1440/390 px stehen noch aus (Storefront aus Remote-Sessions gesperrt). Bis zum
 Theme-Deploy fehlt auf den Seiten Kurz- und Mittelflor die Unterkategorie-Leiste.
+
+## Restposten und Teppiche nach Zweck (2026-11-04, live)
+
+- `domains/shopify/menue-restposten-2026-11.json`: „Angebote & Reste“ → Sammelkollektion
+  `restposten`, darunter „Alle Restposten & Auslauf“, „Restrollen & Reststücke“ und die vier
+  Auslauf-Punkte (vorher in Teppichboden/Teppiche/Teppichfliesen/Vinylboden). Gegenprobe: 92 =
+  91 alte IDs + 1 neu. Sicherung davor `sicherung/2026-11-04b-hauptmenue.json`.
+- `domains/shopify/menue-teppiche-zweck-2026-11.json`: unter „Teppiche in Standardgrößen“
+  Kinderteppiche (32), Outdoor-Teppiche (71), Hochflor-Teppiche (42), Waschbare Teppiche (13).
+  Gegenprobe: 96 = 92 alte IDs + 4 neu. Sicherung davor `sicherung/2026-11-04c-hauptmenue.json`.
