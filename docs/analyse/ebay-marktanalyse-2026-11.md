@@ -68,8 +68,8 @@ ohne Mehrwertsteuer.
 | Kunstrasen | Garten & Terrasse | 13 % |
 
 Die Kategorie wählt der Verkäufer: Einzelne Teppichböden und PVC-Beläge stehen woanders. Laut derselben
-Seite gibt es Shop-Abos ab 39,95 € im Monat (400 freie Festpreisangebote), ohne Shop 0,35 € je Angebot
-über das freie Kontingent hinaus.
+Seite gibt es Shop-Abos ab 39,95 € im Monat (400 freie Festpreisangebote). Ohne Shop kostet jedes
+Festpreisangebot 0,35 €, bei fortlaufenden Angeboten jeden Monat.
 
 ## Preisvergleich
 
@@ -126,8 +126,9 @@ Verkäufer nicht sicher ausgewertet. Keiner der Verkäufer steht in unserem priv
 1. **Kein breiter Start zu Shop-Preisen.** Der Inhaber startet deshalb gezielt mit Sonderposten und Ware bis 45 €/m², siehe oben.
 2. **Einkaufspreise:** Der interne Abgleich spricht gegen einen Start. Offen sind vor allem Klickvinyl, PVC und Kunstrasen von Lieferant A, dort fehlen die Händlerpreise.
 3. **Nur falls diese Preise tragen, kleiner Test.** Nach Nachfrage und wenigen Anbietern kämen zuerst **Kunstrasen und Klickvinyl** infrage.
-4. **Vorerst nicht:** Sockelleisten und Wohnteppiche wegen Preiskampf und vieler Anbieter, Maßware und Ketteln, weil unter dem geprüften Suchbegriff kaum Nachfrage sichtbar ist; andere Begriffe sind ungeprüft.
+4. **Vorerst nicht:** Sockelleisten und Wohnteppiche wegen Preiskampf und vieler Anbieter.
 5. **Nadelfilz nur nach Prüfung:** Die Nachfrage dort ist stark durch Bastelfilz verzerrt.
+6. **Maßware und Ketteln bleiben offen:** Geprüft ist nur ein Suchbegriff, für ein Urteil reicht das nicht.
 
 Unsere Stärke im Shop (Beratung, Maß, Muster, Montage) lässt sich aus diesen Daten nicht bewerten.
 
