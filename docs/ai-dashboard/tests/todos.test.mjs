@@ -701,6 +701,9 @@ test('Ware ohne Status, aber mit Beleg: abhaken statt bestellen, Lieferschein ab
   const alt = leiteTodosAb({ bestellzeilen: [z], belegZeilen }, { sicht: 'laden', jetzt: JETZT })[0];
   assert.equal(alt.ton, 'crit');
   assert.match(alt.kontext, /noch nicht raus/);
+  const avis = leiteTodosAb({ bestellzeilen: [z], belegZeilen: [belegZeile(z, { lieferschein: { art: 'avis', datum: vorTagen(5) } })] }, { sicht: 'laden', jetzt: JETZT })[0];
+  assert.equal(avis.ton, 'warn', 'Avis kuendigt nur an: bleibt gelb');
+  assert.doesNotMatch(avis.kontext, /noch nicht raus/);
 });
 
 test('Ware bestellt ohne Beleg: ab 3 Tagen nachfragen, nicht bei Beleg, Termin oder fehlenden Belegen', () => {

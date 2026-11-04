@@ -406,7 +406,8 @@ function ausBestellungen(quellen, k) {
     // sie darf wirklich unbestellte Ware nicht unter lauter Scheinarbeit verstecken.
     for (const [lieferant, teil] of belegt) {
       const beleg = belegZu(orderId, lieferant);
-      const lsTage = beleg.lieferschein ? tageSeit(beleg.lieferschein.datum, k.jetzt) : null;
+      // Ein Avis kuendigt die Lieferung nur an: keine Frist, die Ware kann noch gar nicht da sein
+      const lsTage = beleg.lieferschein?.art === 'lieferschein' ? tageSeit(beleg.lieferschein.datum, k.jetzt) : null;
       todos.push({
         id: `bestellen:${orderId}:ware:${lieferant}`, art: 'bestellen', bereich: 'laden',
         ton: lsTage !== null ? tonNachAlter(lsTage, ...FRISTEN.lieferschein) : 'warn', alterTage: lsTage ?? Math.max(...teil.map(x => x.seitBestellung ?? 0)),

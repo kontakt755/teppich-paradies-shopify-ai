@@ -70,7 +70,7 @@ export function mustersperrePfad(privatDir) {
   return path.join(privatDir || process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse'), 'mustersperre.json');
 }
 
-const norm = v => String(v ?? '').trim().toUpperCase();
+export const norm = v => String(v ?? '').trim().toUpperCase();
 function clip(text, max) {
   const s = String(text ?? '').replace(/\s+/g, ' ').trim();
   return s.length > max ? s.slice(0, max) : s;

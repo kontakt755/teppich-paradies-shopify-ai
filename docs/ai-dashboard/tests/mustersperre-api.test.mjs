@@ -450,6 +450,15 @@ test('Alter Vorstand ohne Variante, unklar zuzuordnen: Wieder verfuegbar schreib
   assert.deepEqual([api.einkaufMustersperre().offen, api.einkaufMustersperre().gesperrt, shop.mutationen().length], [[], [], vorher]);
 });
 
+test('Gesperrte SKU: Schreibweise der Bestellposition spielt keine Rolle', async () => {
+  const { dir, api, schritt } = umgebung();
+  await schritt(ANDERER, { muster: ['gid://shopify/LineItem/3'], notiz: 'Kunde informiert' });
+  const datei = path.join(dir, 'bestelluebersicht', 'orders.json');
+  fs.writeFileSync(datei, fs.readFileSync(datei, 'utf8').replaceAll('M-TEST-3', 'M-Test-3'));
+  const zeile = api.kundenBestellungen().zeilen.find(z => z.orderName === '#T2');
+  assert.deepEqual(zeile.gesperrteMuster, ['gid://shopify/LineItem/3']);
+});
+
 test('Gesperrte SKU: offene Bestellungen melden die Position fuers To-do "Kunde informieren"', async () => {
   const { dir, api, schritt } = umgebung();
   await schritt(ANDERER, { muster: ['gid://shopify/LineItem/3'], notiz: 'Kunde informiert' });
