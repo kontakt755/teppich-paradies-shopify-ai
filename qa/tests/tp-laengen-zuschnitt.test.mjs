@@ -638,12 +638,26 @@ test('Mindestgesamtlaenge: Grenze im Zuschnitt, genau 300 geht, 299 nicht', () =
   const zuWenig = L.rechnen({ ...e, laenge: '299', anzahl: '1' });
   assert.equal(zuWenig.ok, false);
   assert.equal(zuWenig.menge, 0);
-  assert.equal(zuWenig.fehler, 'Zugeschnitten liefern wir ab 3 m Gesamtlänge je Farbe, bisher 2,99 m. Bitte Länge oder Stückzahl erhöhen oder eine ganze Stange wählen.');
+  assert.equal(zuWenig.fehler, 'Zugeschnitten liefern wir ab 3 m je Warenkorb-Position (Länge × Stückzahl), bisher 2,99 m. Bitte Länge oder Stückzahl erhöhen oder eine ganze Stange wählen.');
   // Stueckzahl zaehlt mit: 75 x 4 reicht, 75 x 3 nicht.
   assert.equal(L.rechnen({ ...e, laenge: '75', anzahl: '4' }).ok, true);
   assert.equal(L.rechnen({ ...e, laenge: '75', anzahl: '3' }).ok, false);
   // Ohne Stange an der Variante wird sie nicht als Ausweg genannt.
-  assert.equal(L.rechnen({ ...e, laenge: '299', anzahl: '1', stangeWaehlbar: false }).fehler, 'Zugeschnitten liefern wir ab 3 m Gesamtlänge je Farbe, bisher 2,99 m. Bitte Länge oder Stückzahl erhöhen.');
+  assert.equal(L.rechnen({ ...e, laenge: '299', anzahl: '1', stangeWaehlbar: false }).fehler, 'Zugeschnitten liefern wir ab 3 m je Warenkorb-Position (Länge × Stückzahl), bisher 2,99 m. Bitte Länge oder Stückzahl erhöhen.');
+});
+
+test('Mindestgesamtlaenge: gilt je Warenkorb-Zeile, der Text behauptet nichts anderes', () => {
+  const e = { preisCent: 19, minCm: 70, maxCm: 503, maxStueck: 50, art: 'zuschnitt', minGesamtCm: 300 };
+  // Gleiche Farbe, 2 x 120 und 1 x 80 cm (zusammen 3,20 m): jede Zeile zaehlt fuer sich.
+  const a = L.rechnen({ ...e, laenge: '120', anzahl: '2' });
+  const b = L.rechnen({ ...e, laenge: '80', anzahl: '1' });
+  assert.equal(a.ok, false);
+  assert.equal(b.ok, false);
+  assert.match(a.fehler, /je Warenkorb-Position \(Länge × Stückzahl\), bisher 2,40 m/);
+  assert.match(b.fehler, /je Warenkorb-Position \(Länge × Stückzahl\), bisher 0,80 m/);
+  // Fehlermeldung und Hinweis unter dem Feld duerfen keine Regel "je Farbe" nennen.
+  assert.doesNotMatch(lies('assets/tp-laengen-zuschnitt.js'), /je Farbe/);
+  assert.match(lies('assets/tp-laengen-zuschnitt.js'), /' Mindestens ' \+ gesamtGrenze\(/);
 });
 
 test('Mindestgesamtlaenge: Mindestlaenge je Stueck zuerst, leeres Feld ohne Meldung', () => {

@@ -77,7 +77,9 @@ Produkttyp `Abschlussprofile`, nur Onlineshop), 15 Farben, SKU `TKMASS_<Art.-Nr.
   Warenkorb-Zeile muss mindestens 3 m sein, sonst bleibt der Warenkorb-Knopf
   gesperrt und der Hinweis nennt, was fehlt. Die ganze Stange ist ausgenommen,
   der Läufer-Modus kennt die Grenze nicht. Geprüft wird auf der Produktseite;
-  der Warenkorb prüft die Grenze nicht nach.
+  der Warenkorb prüft die Grenze nicht nach. Zeilen werden nicht zusammengezählt:
+  verschiedene Längen oder gebohrt/ungebohrt in einer Farbe müssen je Zeile 3 m
+  erreichen. Der Kundentext sagt deshalb „je Warenkorb-Position“, nicht „je Farbe“.
 - **Sperrgut (Inhaber 2026-10-19, Grenze 2026-11-04 auf 172 cm):** Stücke über
   172 cm passen nicht in ein Paket des Lieferanten. Block-Einstellung
   `sperrgut_produkt` = `sperrgut-versand-treppenkante`

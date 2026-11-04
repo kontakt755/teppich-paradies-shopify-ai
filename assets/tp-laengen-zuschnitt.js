@@ -65,6 +65,12 @@
     return cm % 100 === 0 ? String(cm / 100) : meter(cm);
   }
 
+  // Die Grenze gilt je Warenkorb-Zeile (eine Farbe, eine Bohrung, eine Laenge x
+  // Stueckzahl), Zeilen werden nicht zusammengezaehlt. Der Text muss das sagen.
+  function gesamtGrenze(minCm) {
+    return meterKurz(minCm) + ' m je Warenkorb-Position (Länge × Stückzahl)';
+  }
+
   // Bohrungen je Profil nach dem Bohrbild des Lieferanten: randMm vom Ende
   // entfernt die erste und letzte Bohrung, dazwischen gleichmaessig mit einem
   // Abstand unter abstandMm (Lieferant G: 30 mm Rand, unter 160 mm). 100 cm ->
@@ -118,7 +124,7 @@
     if (anzahl > e.maxStueck) { erg.fehler = 'Höchstens ' + e.maxStueck + ' ' + je + ' je Bestellung – für mehr bitte kurz bei uns melden.'; return erg; }
     var minGesamt = Number(e.minGesamtCm) || 0;
     if (e.art !== 'stange' && minGesamt > 0 && laenge * anzahl < minGesamt) {
-      erg.fehler = 'Zugeschnitten liefern wir ab ' + meterKurz(minGesamt) + ' m Gesamtlänge je Farbe, bisher ' + meter(laenge * anzahl) + ' m. Bitte Länge oder Stückzahl erhöhen' + (e.stangeWaehlbar ? ' oder eine ganze Stange wählen.' : '.');
+      erg.fehler = 'Zugeschnitten liefern wir ab ' + gesamtGrenze(minGesamt) + ', bisher ' + meter(laenge * anzahl) + ' m. Bitte Länge oder Stückzahl erhöhen' + (e.stangeWaehlbar ? ' oder eine ganze Stange wählen.' : '.');
       return erg;
     }
     erg.ok = true;
@@ -323,7 +329,7 @@
         return;
       }
       var hilfe = grenzen.getAttribute('data-messhilfe') || '';
-      var gesamt = !laeufer && Number(d.min_gesamt_cm) > 0 ? ' Mindestens ' + meterKurz(Number(d.min_gesamt_cm)) + ' m Gesamtlänge je Farbe.' : '';
+      var gesamt = !laeufer && Number(d.min_gesamt_cm) > 0 ? ' Mindestens ' + gesamtGrenze(Number(d.min_gesamt_cm)) + '.' : '';
       grenzen.textContent = 'Zentimetergenau von ' + d.min_cm + ' bis ' + maxCm + ' cm je Stück' + (d.stangen ? ', in einem Stück aus einer Stange geschnitten.' : '.') + gesamt + (hilfe ? ' ' + hilfe : '');
     }
 
