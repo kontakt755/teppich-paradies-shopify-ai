@@ -431,3 +431,30 @@ test('URL-Parameter mit Objektnamen zaehlt nicht als Umschlagfilter (Review 29.1
     assert.match(html, /<a class="chip"[^>]*aria-current="page">alle</, wert);
   }
 });
+
+test('Gesperrtes Muster: rot statt "wartet", Kunde informieren zuerst, ohne-Knopf nur wenn etwas im Umschlag bleibt (w-210)', () => {
+  const gesperrt = { imShop: true, seit: '2026-10-28T09:00:00Z' };
+  const k = kunde(1, 'klaeren');
+  k.muster = [{ ...k.muster[0], stand: 'bestellt', gesperrt, bestelltAm: '2026-10-20T07:00:00Z' }, { ...k.muster[0], lineItemId: 'line1b', stand: 'bestellt' }];
+  const html = ansicht('tab=muster', [k]);
+  assert.match(html, /mp-gesperrt">1 Muster kommt nicht</, 'ohne Aufklappen');
+  assert.match(html, /class="notice crit">Dieses Muster kommt nicht: Test\./);
+  assert.match(html, /class="btn btn-sm btn-primary" data-mp-informieren="order1">Kunde informieren…/);
+  assert.match(html, /im Shop gesperrt – kommt nicht/);
+  assert.equal((html.match(/data-mp-ohne="line1"/g) || []).length, 1, 'nur am gesperrten Muster');
+  assert.doesNotMatch(html, /data-mp-ohne="line1b"/);
+
+  const allein = kunde(2, 'klaeren');
+  allein.muster = [{ ...allein.muster[0], stand: 'offen', gesperrt: { imShop: false } }];
+  const nurDas = ansicht('tab=muster', [allein]);
+  assert.match(nurDas, /als nicht lieferbar gemeldet – kommt nicht/, 'im Shop noch nicht bestaetigt');
+  assert.doesNotMatch(nurDas, /data-mp-ohne/, 'sonst nichts im Umschlag');
+  assert.doesNotMatch(nurDas, /noch nicht bestellt/, 'kommt nicht ersetzt "noch nicht bestellt"');
+  assert.match(ansicht('tab=muster&mp=laden', [allein]), /als nicht lieferbar gemeldet – kommt nicht/, 'auch im Wareneingang');
+
+  const hinweis = ansicht('tab=muster', [kunde(3, 'warten')]);
+  assert.doesNotMatch(hinweis, /Gesperrte Muster nicht lesbar/);
+  state.route.params = new URLSearchParams('tab=muster');
+  kunden.musterPacken = { verfuegbar: true, kunden: [kunde(3, 'warten')], sperrenFehler: 'mustersperre.json ist beschädigt' };
+  assert.match(viewKundenMusterPacken(), /Gesperrte Muster nicht lesbar.*mustersperre\.json ist beschädigt/);
+});
