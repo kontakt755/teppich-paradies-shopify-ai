@@ -1169,6 +1169,11 @@ Befunde einer Prüfung am 2026-10-12, alle mit Test (`tests/robustheit.test.mjs`
   der seine Kopie dann selbst löscht (`TP_DASHBOARD_DATENKOPIE`, `scripts/dashboard-datenkopie.mjs`, nur ein
   eigener markierter Ordner `tp-dashboard-daten-XXXXXX` direkt im Temp-Ordner, der zugleich `TP_PRIVAT_DIR` ist).
   `dashboard-pruefung-lauf.mjs` wartet Browserstart, Browserende und Serverende ab, bevor die Kopie verschwindet.
+  Frist je Schritt beim Beenden (Browser schließen, `SIGTERM`, `SIGKILL`): 15 s, einstellbar über
+  `TP_DASHBOARD_PRUEF_WARTE_MS` (seit 29.10.2026, w-216; vorher 3 s, die unter Last durch parallele Testläufe nicht
+  reichten). Hängt nur das Schließen des Browsers, nachdem alle Ansichten geprüft sind, schreibt der Lauf den Bericht
+  trotzdem, beendet den eigenen Browserprozess begrenzt, löscht die Kopie und meldet das als Hinweis; der Exit-Code
+  kommt weiter aus dem Prüfergebnis. Exit 2 nur bei Abbruch vor dem Bericht oder liegen gebliebener Datenkopie.
   Bei SIGINT/SIGTERM/SIGHUP endet auch ein laufender Browserstart geordnet; Puppeteers eigene Signalhandler
   bleiben aus. Verwaiste eigene Kopien werden nach einem Tag, eigene Screenshot-Ordner nach drei Tagen
   bereinigt. `dashboard-temp-besitz.mjs` bindet die Kennung an Verzeichnisidentität und Besitzer-PID;
