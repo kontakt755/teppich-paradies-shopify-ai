@@ -984,6 +984,10 @@ ohne Netz zurueck. Nie `npm ci` im laufenden Betrieb: es loescht `node_modules` 
 bis 0,3 s ohne `puppeteer`, ohne Paketquelle dauerhaft leer). Konflikt, rote Probe und gescheiterter Neustart gelten fuer diesen main-Stand als
 haengend und werden erst wieder versucht, wenn main weiterzieht. Nie pushen.
 
+PR-Serien werden gebuendelt: Der Dienst (`TP_NACHZIEHEN_DIENST=1`) wartet bei Aenderungen mit Neustart, bis
+main 15 Minuten ruhig ist, hoechstens 30 Minuten seit dem aeltesten neuen Commit (`BUENDELN`). Von Hand
+zieht `npm run -s betrieb:nachziehen` sofort nach. Reine Theme-Aenderungen warten nicht.
+
 ```
 npm run -s betrieb:nachziehen -- --status   # letzter Stand und Verlauf
 npm run -s betrieb:nachziehen -- --probe    # nur pruefen und testen, nichts uebernehmen

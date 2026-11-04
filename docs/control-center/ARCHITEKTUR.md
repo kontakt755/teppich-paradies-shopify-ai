@@ -2582,16 +2582,20 @@ Neue Staende von main kamen bis zum 26.10. nur per Hand oder KI-Lauf hinein (Ski
 
 1. `git fetch`; ohne neuen Commit endet der Lauf still.
 2. `git merge-tree --write-tree HEAD origin/main`. Konflikt: „haengt“, nichts geaendert.
-3. `git commit-tree` legt den Merge-Commit an, ohne den Checkout zu beruehren. Genau dieser
+3. Nur der Dienst (`TP_NACHZIEHEN_DIENST=1`) und nur bei Aenderungen mit Neustart: PR-Serien
+   buendeln (`nachziehenBuendeln`, Werte in `BUENDELN`). Stand „wartet“ mit dem Grund „bündelt
+   Neustarts“, bis der neueste neue Commit 15 Minuten alt ist, hoechstens bis der aelteste
+   30 Minuten alt ist. Von Hand gestartet, `--probe` und reine Theme-Aenderungen warten nicht.
+4. `git commit-tree` legt den Merge-Commit an, ohne den Checkout zu beruehren. Genau dieser
    Commit wird in einer losgeloesten Arbeitskopie im Temp-Ordner getestet (`dashboard:test`,
    bei `operations/` bzw. `social/` auch `operations:test`/`social:test`), mit leerem
    `TP_PRIVAT_DIR`. Ein gruener Baum wird beim Warten nicht erneut getestet.
-4. Ruhe (`operations/lib/betrieb-nachziehen.mjs`): keine aktive Codex-Automation, deren Auftrag
+5. Ruhe (`operations/lib/betrieb-nachziehen.mjs`): keine aktive Codex-Automation, deren Auftrag
    diesen Checkout nennt, hat einen offenen Lauf (`task_started` ohne `task_complete` im
    Protokoll, hoechstens 30 Minuten alt), und keine Datei direkt im Privatordner wurde in den
    letzten zwei Minuten geschrieben (Unterordner des Sync-Dienstes, `*.log` und
    `aktualisierung.json` zaehlen nicht). Bis zu zehn Minuten Warten, sonst „wartet“.
-5. Bei geaendertem `package-lock.json` zuerst `node_modules` gegen die in der Probe frisch
+6. Bei geaendertem `package-lock.json` zuerst `node_modules` gegen die in der Probe frisch
    installierten und getesteten Bibliotheken tauschen (zwei `rename` im Checkout,
    `.nachziehen-module-neu`/`-vorher`; seit #1716, vorher `npm ci` im laufenden Betrieb, das
    `node_modules` erst loescht). Dann `git merge --ff-only` auf den getesteten Commit,
@@ -2601,7 +2605,7 @@ Neue Staende von main kamen bis zum 26.10. nur per Hand oder KI-Lauf hinein (Ski
    `social/`. Erfolg = neue PID und `/login` 200 (Social: `/api/status` 401).
    Der Dashboard-Start baut zuerst `issues.json`; scheitert der GitHub-Abruf, startet er mit der
    bisherigen Datei (`--weiter-mit-alten-daten`), deshalb bis zu 4 Minuten Startzeit.
-6. Fehler nach dem Vorspulen: `git reset --keep` auf den Commit von vorher, alte Bibliotheken
+7. Fehler nach dem Vorspulen: `git reset --keep` auf den Commit von vorher, alte Bibliotheken
    zurueckgetauscht (ohne Netz), Dienste erneut, „haengt“ mit dem Grund. Vor dem Tausch liegt der
    HEAD von vorher in `.nachziehen-module-head`; nach einem Abbruch holt `moduleReste` die alten
    Bibliotheken zurueck, wenn node_modules fehlt oder HEAD noch auf dieser Marke steht. Konflikt, rote Probe und gescheiterter Neustart
