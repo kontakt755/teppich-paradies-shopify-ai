@@ -34,7 +34,7 @@ import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
-  codexArbeitet, MODULE_NEU, moduleReste, moduleTauschen, neustartNoetig, privatRuhe, probeTests, prZeilen,
+  BUENDELN, codexArbeitet, MODULE_NEU, moduleReste, moduleTauschen, nachziehenBuendeln, neustartNoetig, privatRuhe, probeTests, prZeilen,
   zustandLesen, zustandNach, zustandSchreiben,
 } from '../lib/betrieb-nachziehen.mjs';
 import { routineLaeuft } from '../lib/routinen.mjs';
@@ -183,6 +183,7 @@ export async function nachziehen({
   pollMs = 15000,
   log = () => {},
   jetzt = () => new Date(),
+  buendeln = null,
 } = {}) {
   fs.mkdirSync(privatDir, { recursive: true });
   const sperre = path.join(privatDir, 'betrieb-nachziehen.lock');
@@ -235,6 +236,12 @@ export async function nachziehen({
     const tree = baum.out.split('\n')[0];
     const prs = prZeilen(git(repo, ['log', '--merges', '--first-parent', '--format=%s%x09%b', 'HEAD..origin/main']).out).slice(0, 15);
     const geaendert = git(repo, ['diff', '--name-only', head, tree]).out.split('\n').filter(Boolean);
+    // Nur der Dienst buendelt; von Hand gestartet zieht sofort nach. Ohne Neustart gibt es nichts zu buendeln.
+    if (buendeln && !probe && neustartNoetig(geaendert).length) {
+      const zeiten = git(repo, ['log', '--first-parent', '--format=%ct', 'HEAD..origin/main']).out.split('\n').map(z => Number(z) * 1000);
+      const b = nachziehenBuendeln({ ...buendeln, neuesterMs: Math.max(...zeiten), aeltesterMs: Math.min(...zeiten), jetztMs: jetzt().getTime() });
+      if (b.warten) return ende({ stand: 'wartet', grund: b.grund, ...basis });
+    }
     const lockGeaendert = geaendert.includes('package-lock.json');
     const stempel = jetzt().toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'medium', timeStyle: 'short' });
     const nachricht = [`merge: main nachgezogen (automatisch, ${stempel})`, '', ...prs].join('\n');
@@ -327,7 +334,8 @@ async function cli(argv) {
   const stempel = () => new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });
   const log = text => console.log(`${stempel()}  ${text}`);
   // TP_NACHZIEHEN_ZWEIG nur fuer Tests: ein Zweig, den es nicht gibt, macht jeden Lauf harmlos.
-  const r = await nachziehen({ probe: argv.includes('--probe'), log, zweig: process.env.TP_NACHZIEHEN_ZWEIG || 'dashboard-betrieb' });
+  const buendeln = process.env.TP_NACHZIEHEN_DIENST === '1' ? BUENDELN : null;
+  const r = await nachziehen({ probe: argv.includes('--probe'), log, buendeln, zweig: process.env.TP_NACHZIEHEN_ZWEIG || 'dashboard-betrieb' });
   if (r.stand === 'laeuft-schon') { log('Ein anderer Lauf ist noch aktiv.'); return 0; }
   // Im Dienst (die Vorlage setzt TP_NACHZIEHEN_DIENST) bleiben Leerlaeufe und Wiederholungen
   // still, sonst waechst das Protokoll alle fuenf Minuten. Von Hand gibt es immer eine Antwort.

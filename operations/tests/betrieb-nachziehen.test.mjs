@@ -6,7 +6,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
   automationLesen, codexArbeitet, letzterLaufmarker, MODULE_HEAD, MODULE_NEU, MODULE_VORHER, moduleReste, moduleTauschen,
-  nachziehStand, neustartNoetig, privatRuhe, probeTests, prZeilen, zustandNach,
+  nachziehenBuendeln, nachziehStand, neustartNoetig, privatRuhe, probeTests, prZeilen, zustandNach,
 } from '../lib/betrieb-nachziehen.mjs';
 import { betriebszustand } from '../lib/betriebszustand.mjs';
 import { nachziehen, sperreNehmen, sperreVerwaist, SPERRE_ALT_MS } from '../scripts/betrieb-nachziehen.mjs';
@@ -135,6 +135,35 @@ function steuerung({ gesund = [] } = {}) {
 }
 const ruhig = () => ({ ruhig: true });
 const lauf = (u, s, extra = {}) => nachziehen({ repo: u.betrieb, privatDir: u.privat, steuerung: s, ruhe: ruhig, warteMs: 0, pollMs: 1, ...extra });
+
+test('Buendeln: wartet auf Ruhe, aber nie laenger als die Obergrenze', () => {
+  const min = 60000, jetztMs = 100 * min;
+  const b = (vorNeuest, vorAeltest) => nachziehenBuendeln({ neuesterMs: jetztMs - vorNeuest * min, aeltesterMs: jetztMs - vorAeltest * min, jetztMs });
+  assert.equal(b(5, 5).warten, true);
+  assert.match(b(5, 5).grund, /vor 5 min/);
+  assert.equal(b(15, 20).warten, false);
+  assert.equal(b(2, 30).warten, false);
+});
+
+test('Buendeln im Lauf: frischer Merge wartet ohne Probe und Neustart, von Hand und bei Theme-Aenderung nicht', async () => {
+  const u = aufbau();
+  const s = steuerung();
+  const vorher = u.kopf();
+  u.aufMain('docs/ai-dashboard/app.js', 'zwei\n');
+  const r = await lauf(u, s, { buendeln: {} });
+  assert.equal(r.stand, 'wartet');
+  assert.match(r.grund, /bündelt/);
+  assert.equal(u.kopf(), vorher);
+  assert.equal(u.probeLaeufe(), 0);
+  assert.equal(s.neustarts.length, 0);
+  // Spaeter (Uhr 20 Minuten weiter) ist main ruhig und der Lauf uebernimmt.
+  const spaeter = await lauf(u, s, { buendeln: {}, jetzt: () => new Date(Date.now() + 20 * 60000) });
+  assert.equal(spaeter.nachgezogen, true);
+  assert.deepEqual(s.neustarts, ['net.teppich-paradies.dashboard']);
+  // Reine Theme-Aenderung startet nichts neu und wartet deshalb auch nicht.
+  u.aufMain('sections/test.liquid', 'x\n');
+  assert.equal((await lauf(u, s, { buendeln: {} })).stand, 'aktuell');
+});
 
 test('Ablauf: nichts Neues bleibt still, Neuerung wird getestet, vorgespult und das Dashboard neu gestartet', async () => {
   const u = aufbau();
