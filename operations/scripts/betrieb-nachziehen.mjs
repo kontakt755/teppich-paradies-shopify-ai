@@ -12,15 +12,18 @@
  * (bash operations/scripts/dienste-einrichten.sh --nur-nachziehen). Ablauf:
  *  1. git fetch. Nichts Neues: fertig, ohne Ausgabe.
  *  2. Nur im Kopf zusammenfuehren (git merge-tree). Konflikt: haengt, der Dienst laeuft weiter.
- *  3. Den zusammengefuehrten Stand als Commit anlegen und genau diesen in einer Probekopie
+ *  3. Nur im Dienst und nur bei Aenderungen mit Neustart: PR-Serien buendeln. Wartet, bis der
+ *     neueste neue Commit 15 Minuten alt ist, hoechstens bis der aelteste 30 Minuten alt ist.
+ *     Von Hand gestartet zieht er sofort nach.
+ *  4. Den zusammengefuehrten Stand als Commit anlegen und genau diesen in einer Probekopie
  *     testen (losgeloeste Arbeitskopie, Testsuiten je nach geaenderten Ordnern). Aendert
  *     sich package-lock.json, installiert die Probe die Bibliotheken neu. Rot: haengt.
- *  4. Auf Ruhe warten: kein Codex-Lauf in diesem Checkout, zwei Minuten keine Eingabe im
+ *  5. Auf Ruhe warten: kein Codex-Lauf in diesem Checkout, zwei Minuten keine Eingabe im
  *     Dashboard. Nach zehn Minuten ohne Ruhe versucht es der naechste Lauf.
- *  5. Bei neuen Bibliotheken node_modules gegen die getesteten aus der Probe tauschen (nie
+ *  6. Bei neuen Bibliotheken node_modules gegen die getesteten aus der Probe tauschen (nie
  *     npm ci im laufenden Betrieb), den getesteten Commit vorspulen (merge --ff-only),
  *     betroffene Dienste neu starten; das Dashboard muss danach antworten.
- *  6. Antwortet es nicht: zurueck auf den Stand von vorher (reset --keep auf den Commit, der
+ *  7. Antwortet es nicht: zurueck auf den Stand von vorher (reset --keep auf den Commit, der
  *     Sekunden zuvor HEAD war; der Zweig traegt keine eigenen Inhalte), alte Bibliotheken
  *     zurueck (ohne Netz), neu starten, haengt.
  * Ein gescheiterter main-Stand wird erst wieder versucht, wenn main weiterzieht.
