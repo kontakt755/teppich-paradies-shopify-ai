@@ -54,13 +54,14 @@ class Antwort(io.BytesIO):
 
 
 class FalscherServer:
-    def __init__(self, vorhanden=False, status='UNPUBLISHED', varianten=None, mengenfehler=False):
+    def __init__(self, vorhanden=False, status='UNPUBLISHED', varianten=None, mengenfehler=False, live=None):
         self.aufrufe = []
         self.inhalte = {}
         self.vorhanden = vorhanden
         self.status = status
         self.varianten = varianten
         self.mengenfehler = mengenfehler
+        self.live = live or []
 
     def __call__(self, anfrage):
         pfad = anfrage.full_url.split('.com', 1)[1]
@@ -77,6 +78,8 @@ class FalscherServer:
             status = 400 if self.mengenfehler else 200
             skus = [r['sku'] for r in json.loads(anfrage.data)['requests']]
             return Antwort(json.dumps({'responses': [{'sku': s, 'statusCode': status} for s in skus]}).encode())
+        if anfrage.get_method() == 'GET' and any(f'sku={s}&' in pfad for s in self.live):
+            return Antwort(json.dumps({'offers': [{'offerId': 'live', 'status': 'PUBLISHED'}]}).encode())
         if anfrage.get_method() == 'GET':
             if not self.vorhanden:
                 raise urllib.error.HTTPError(pfad, 404, 'x', {}, io.BytesIO(b'{}'))
@@ -172,6 +175,11 @@ class Plan(unittest.TestCase):
                            (400, 700, 0.0, 150.0), (400, 700, 700.0, -1.0), (400, 700, 700.0, float('inf'))):
             with self.subTest(b=b, l=l, p=p, f=f), self.assertRaises(modul.Abbruch):
                 modul.plane_einzelmass(liste(), [produkt()], KONFIG, 'Rolle Eins', b, l, p, f)
+
+    def test_einzelmass_breite_null_wird_nicht_zur_rollenbreite(self):
+        rolle = [{'breite': 400}]
+        self.assertEqual(modul.einzelmass_breite(0, rolle), 0)
+        self.assertEqual(modul.einzelmass_breite(None, rolle), 400)
 
     def test_max_muss_positiv_sein(self):
         for wert in ('-1', '0'):
@@ -298,6 +306,23 @@ class Senden(unittest.TestCase):
         modul.sende(self.eintrag(), modul.Ebay('sandbox', ZUGANG, server), True)
         self.assertIn(('PUT', '/sell/inventory/v1/offer/alt'), server.aufrufe)
         self.assertNotIn(('POST', '/sell/inventory/v1/offer/get_listing_fees'), server.aufrufe)
+
+    def test_weggefallene_live_laenge_sperrt_ohne_freigabe(self):
+        server = FalscherServer(varianten=['TP-1-L600'], live=['TP-1-L600'])
+        with self.assertRaises(modul.Abbruch):
+            modul.sende(self.rolle(restlaenge=400, bestand=16), modul.Ebay('sandbox', ZUGANG, server), False)
+        self.assertFalse(any(m in ('PUT', 'POST') and 'oauth2' not in p for m, p in server.aufrufe))
+
+    def test_fehlender_bestand_ist_kein_ausverkauf(self):
+        for werte in ({'restlaenge': None}, {'bestand': None}):
+            with self.subTest(werte):
+                e = self.rolle(**werte)
+                self.assertNotIn(modul.KEIN_BESTAND, e['maengel'])
+                self.assertNotIn('schluessel', e)
+                self.assertIn('Bestand oder Restlänge fehlt in der Startliste', e['maengel'])
+
+    def test_belegter_nullbestand_ist_ausverkauf(self):
+        self.assertIn(modul.KEIN_BESTAND, self.rolle(bestand=0)['maengel'])
 
     def rolle(self, **werte):
         return modul.plane_welle1(liste(**werte), [produkt()], KONFIG)[0]

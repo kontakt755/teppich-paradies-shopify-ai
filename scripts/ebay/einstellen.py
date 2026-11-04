@@ -268,8 +268,12 @@ def plane_welle1(liste, lexikon, konfig):
             continue
         produkt = treffer[0]
         variante = produkt['varianten'][0]
+        # Fehlt ein Wert, ist nichts ueber den Bestand bekannt: das ist kein Ausverkauf
+        if zahl(zeile['restlaenge']) is None or zahl(zeile['bestand']) is None:
+            plan.append({'name': name, 'art': 'gruppe', 'maengel': maengel + ['Bestand oder Restlänge fehlt in der Startliste']})
+            continue
         breite = int(zeile['breite'])
-        rest_cm = min(zahl(zeile['restlaenge']) or 0, (zahl(zeile['bestand']) or 0) * 10000 / breite)
+        rest_cm = min(zeile['restlaenge'], zeile['bestand'] * 10000 / breite)
         laengen = [l for l in LAENGEN_CM if l <= rest_cm]
         if not laengen:
             plan.append({'name': name, 'art': 'gruppe', 'schluessel': gruppen_schluessel(produkt), 'maengel': maengel + [KEIN_BESTAND]})
@@ -511,14 +515,13 @@ class Ebay:
 
 def sende(eintrag, ebay, veroeffentlichen):
     """Legt an oder aktualisiert. Zweimal laufen lassen erzeugt keine Doppel."""
-    vorhanden = {a['sku']: ebay.angebot(a['sku']) for a in eintrag['angebote']}
+    bisher = ebay.varianten(eintrag['schluessel']) if eintrag['art'] == 'gruppe' else []
+    vorhanden = {s: ebay.angebot(s) for s in [*(a['sku'] for a in eintrag['angebote']), *bisher]}
     live = {o['offerId'] for o in vorhanden.values() if o and o.get('status') == 'PUBLISHED'}
     # Jede Aenderung an Artikel oder Angebot wirkt auf ein Live-Angebot sofort
     if live and not veroeffentlichen:
         raise Abbruch(f"{eintrag['name']} ist schon live: Änderungen nur mit --veroeffentlichen")
-    if eintrag['art'] == 'gruppe':
-        weggefallen = [s for s in ebay.varianten(eintrag['schluessel']) if s not in eintrag['artikel']]
-        ebay.menge_null(weggefallen)
+    ebay.menge_null([s for s in bisher if s not in eintrag['artikel']])
     ids = []
     for sku, inhalt in eintrag['artikel'].items():
         ebay.rufe('PUT', f'/sell/inventory/v1/inventory_item/{urllib.parse.quote(sku, safe="")}', inhalt)
@@ -620,6 +623,12 @@ def sendesperren(args, konfig, zugang, namen):
     return sperren
 
 
+def einzelmass_breite(wert, treffer):
+    if wert is not None:
+        return wert
+    return int(treffer[0]['breite']) if len(treffer) == 1 else 0
+
+
 def positive_zahl(text):
     wert = int(text)
     if wert < 1:
@@ -674,7 +683,7 @@ def hauptlauf(argv=None):
     liste, lexikon = lies_startliste(liste_pfad), lies_lexikon(lexikon_pfad)
     if args.einzelmass:
         treffer = [z for z in liste['welle1'] if args.einzelmass.lower() in z['rolle'].lower()]
-        breite = args.breite_cm or (int(treffer[0]['breite']) if len(treffer) == 1 else 0)
+        breite = einzelmass_breite(args.breite_cm, treffer)
         plan = plane_einzelmass(liste, lexikon, konfig, args.einzelmass, breite, args.laenge_cm, args.preis, args.frachtkosten)
     else:
         plan = (plane_welle1 if args.welle == 1 else plane_welle2)(liste, lexikon, konfig)
