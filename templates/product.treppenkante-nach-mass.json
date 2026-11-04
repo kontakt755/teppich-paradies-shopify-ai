@@ -252,7 +252,8 @@
                 "schrauben_packung": 200,
                 "stangen": true,
                 "sperrgut_produkt": "sperrgut-versand-treppenkante",
-                "sperrgut_ab_cm": 175,
+                "sperrgut_ab_cm": 172,
+                "min_gesamt_cm": 300,
                 "titel_masse": "Stange oder Zuschnitt"
               },
               "blocks": {}
