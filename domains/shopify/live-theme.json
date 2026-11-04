@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-11-04T07:36:28Z",
-    "verifiedBy": "Admin API role MAIN nach workflow:live (main f7cd2db1, PR #1887)."
+    "verifiedAt": "2026-11-04T08:01:21Z",
+    "verifiedBy": "Admin API role MAIN nach workflow:live (main edc7fd57, PR #1892)."
   },
   "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-11-04T07:36:28Z",
-    "verifiedBy": "Bisheriges Live-Theme, nach workflow:live (main f7cd2db1) als Preview getauscht."
+    "verifiedAt": "2026-11-04T08:01:21Z",
+    "verifiedBy": "Bisheriges Live-Theme, nach workflow:live (main edc7fd57) als Preview getauscht."
   },
   "fallback": {
     "themeId": "206590509390",
