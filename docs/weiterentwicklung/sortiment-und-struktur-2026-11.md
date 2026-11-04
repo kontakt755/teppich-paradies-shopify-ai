@@ -100,3 +100,19 @@ Herstellernamen. Vorschlag: eigener Linienname im Titel wie bisher, Hersteller u
 Herkunftsland nur in den technischen Daten („Hersteller: … (Belgien)“), keine
 Kollektionsnamen oder Farbnummern des Herstellers sichtbar. Das schafft Vertrauen, ohne
 den Preisvergleich zu öffnen.
+
+## Direktbezug-Pilot (Stand 2026-11-04)
+
+- Lieferanten im Einkauf angelegt: `lieferant-j` und `lieferant-k` (Metaobjekt `tp_lieferant`,
+  Direktversand „nein“, Bestellweg Mail). Belegte Konditionen stehen dort im Hinweis
+  (Coupon-Mindestlänge J 2 m; Couponzuschlag K 4,00 €/m² seit 01.03.2026; Rohstoffzuschlag J
+  je Polmaterial). Frachtbeträge stehen nur auf den Rechnungs-PDFs, nicht im Mailtext.
+- Theme: Block `tp-zuschnitt-laden` nach dem Rollenrechner, nur bei Tag `zuschnitt-laden`.
+  Pilot-Produkte: nur Meterware (keine Wunschmaß-Variante), Tags `zuschnitt-laden` und
+  `ohne-raummass`, `service.lieferzeit` belegt, Varianten `einkauf.route = SUPPLIER_TO_TP`,
+  `einkauf.lieferant` = J bzw. K.
+- Vorliegende Preislisten sind veraltet (J 03/2024, K 09/2022); Anfrage nach aktuellen
+  Listen, Coupon- und Frachtkonditionen, Datenblättern und Bildern liegt als Entwurf im
+  Postfach. Kandidaten (je Lieferant rund 7) nur lokal, Einkaufspreise nie im Repository.
+- Offen beim Inhaber: Preisregel (K: UVP laut Liste wie bei D/E? J: Faktor, keine UVP),
+  Auswahl der Qualitäten nach den aktuellen Listen.
