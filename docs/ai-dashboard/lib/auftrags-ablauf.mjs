@@ -20,7 +20,8 @@ export const SCHRITTE = [
 const MUSTER_LABEL = {
   vorbereiten: 'Muster bereitstellen',
   bestellt: 'Muster bestellt oder im Lager',
-  lieferung: 'Muster verschickt',
+  // Offener Schritt, solange das Muster nicht raus ist: als Aufgabe benannt, nicht als erledigt.
+  lieferung: 'Muster verschicken',
 };
 
 // Rang je Auftragsfluss-Stand (operations/lib/auftragsstatus.mjs): ohne Stand = noch zu bestellen.
