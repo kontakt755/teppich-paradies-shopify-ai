@@ -1,7 +1,9 @@
 {% doc %}
-  Bewertungsbeleg unter den Kauf-Buttons: Sternebewertung + Link zu
+  Bewertungsbeleg direkt unter Titel und Preis: Sternebewertung + Link zu
   Google-Bewertungen. Ergaenzt tp-vertrauen.liquid (das nur Fliesstext zeigt)
-  um eine konkrete, glaubwuerdige Zahl.
+  um eine konkrete, glaubwuerdige Zahl. Seit 2026-11-04 steht er in allen
+  Produktvorlagen dort (Inhaber): vorher lag er unter dem Kaufbereich, bei der
+  Rollenware sogar erst unter den technischen Daten.
 
   Die Bewertungsanzahl war lange gesperrt: "1.200+" stand hier als Platzhalter-
   Default, wurde nie durch eine echte Zahl ersetzt und am 2026-09-05 als falsche
@@ -51,8 +53,8 @@
   {%- if tp_bb_link != blank -%}
     <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">{% if tp_bb_rating != blank %}Auf Google lesen{% else %}Kundenbewertungen auf Google lesen{% endif %}</a>
   {%- endif -%}
-  {%- comment -%} § 5b Abs. 3 UWG, Wortlaut im Snippet {%- endcomment -%}
-  <div class="tp-bewertungsbeleg__hinweis">{%- render 'tp-bewertungshinweis' -%}</div>
+  {%- comment -%} § 5b Abs. 3 UWG, Wortlaut und Grenzen im Snippet. Kurz, weil Google direkt daneben steht {%- endcomment -%}
+  <div class="tp-bewertungsbeleg__hinweis">{%- render 'tp-bewertungshinweis', kurz: true -%}</div>
 </div>
 {%- endif -%}
 
@@ -61,7 +63,7 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 2px 6px;
     margin-top: 8px;
     font-size: var(--tp-fs-sm);
     color: var(--color-foreground);
@@ -70,7 +72,7 @@
   .tp-bewertungsbeleg__label { font-weight: 600; }
 
   .tp-bewertungsbeleg__hinweis { flex-basis: 100%; }
-  .tp-bewertungsbeleg__hinweis .tp-bewertungshinweis { margin-top: 0; }
+  .tp-bewertungsbeleg__hinweis .tp-bewertungshinweis { margin-top: 0; text-wrap: balance; }
 
   .tp-bewertungsbeleg__stars-{{ tp_bb_id }} {
     color: #ffb400;

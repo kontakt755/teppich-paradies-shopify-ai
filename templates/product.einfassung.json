@@ -188,15 +188,6 @@
               "settings": {},
               "blocks": {}
             },
-            "tp_bewertungsbeleg_night1": {
-              "type": "tp-bewertungsbeleg",
-              "name": "TP Bewertungsbeleg",
-              "settings": {
-                "rating": "",
-                "review_link": ""
-              },
-              "blocks": {}
-            },
             "divider_VJhene": {
               "type": "_divider",
               "name": "t:names.divider",
@@ -408,12 +399,22 @@
                 "sichtbarkeit": "desktop"
               },
               "blocks": {}
+            },
+            "tp_bewertungsbeleg_night1": {
+              "type": "tp-bewertungsbeleg",
+              "name": "TP Bewertungsbeleg",
+              "settings": {
+                "rating": "",
+                "review_link": ""
+              },
+              "blocks": {}
             }
           },
           "block_order": [
             "tp_bildnachweis_mobil",
             "group_icgrde",
             "tp_aktion_hinweis",
+            "tp_bewertungsbeleg_night1",
             "divider_VJhene",
             "tp_step_farbe_sales1",
             "color_swatch_picker_f7EyBF",
@@ -422,7 +423,6 @@
             "tp_teppich_struktur_1",
             "tp_einfass_konfigurator_1",
             "tp_einfass_wechsel_1",
-            "tp_bewertungsbeleg_night1",
             "buy_buttons_eYQEYi",
             "tp_vertrauen_sales1",
             "tp_vorteile_sales1",

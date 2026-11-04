@@ -23,7 +23,16 @@ Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phase 6). Stand 2026-10-08.
   `scripts/google-bewertung.mjs`, Ablauf in `operations/README.md`), ohne Metafeld aus der
   Theme-Einstellung „TP Google-Bewertung“, mit Link zum Google-Profil.
   `npm run bewertung:guard` verhindert abweichende Werte in Vorlagen. Das bleibt
-  unverändert und ist **keine** Produktbewertung.
+  unverändert und ist **keine** Produktbewertung. Seit 2026-11-04 steht der Block in allen
+  Produktvorlagen direkt unter Titel und Preis (Inhaber). Folgt auf den Preis unmittelbar der
+  Aktionshinweis, steht er dahinter, damit Preis und Aktion zusammenbleiben.
+- **Hinweis nach § 5b Abs. 3 UWG** (`snippets/tp-bewertungshinweis.liquid`): Auf Produktseiten
+  entfällt seit 2026-11-04 der Satz zur Quelle, weil „bei Google“ direkt daneben steht. Der Satz,
+  dass nicht geprüft wird, bleibt sichtbar beim Block. Nicht einklappen und nicht auf eine andere
+  Seite verlegen: Das LG Frankfurt (3-10 O 103/24) ließ einen aufklappbaren Hinweis unter unklarer
+  Bezeichnung nicht genügen, das OLG Frankfurt (6 U 305/25) wies die Berufung zurück. Die Angabe
+  der Plattform allein reicht ebenfalls nicht (OLG Koblenz 9 U 1015/25). Stand: Fachbeiträge,
+  nicht die Urteilstexte, und keine anwaltliche Prüfung.
 
 ## 2. Anforderungen (aus dem Auftrag)
 
