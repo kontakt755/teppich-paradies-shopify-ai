@@ -16,6 +16,14 @@ export const SCHRITTE = [
   ['erledigt', 'Erledigt'],
 ];
 
+// Reine Musterauftraege: keine Waren-Worte (Rundgang 29.10.), die Schritte selbst bleiben dieselben.
+const MUSTER_LABEL = {
+  vorbereiten: 'Muster bereitstellen',
+  bestellt: 'Muster bestellt oder im Lager',
+  // Offener Schritt, solange das Muster nicht raus ist: als Aufgabe benannt, nicht als erledigt.
+  lieferung: 'Muster verschicken',
+};
+
 // Rang je Auftragsfluss-Stand (operations/lib/auftragsstatus.mjs): ohne Stand = noch zu bestellen.
 const RANG = { bestellt: 1, geliefert: 2, raus: 3, erledigt: 4 };
 const rang = status => RANG[status] || 0;
@@ -73,7 +81,8 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [] } = {
   // "Vorbereiten" und "bestellt" fallen zusammen, sobald abgehakt ist; vorher steht der Auftrag
   // auf "vorbereiten". Ware, die bei uns liegt, wartet auf Auslieferung oder Montage.
   const jetztKey = SCHRITTE.map(s => s[0]).find(k => !fertig[k]) || 'erledigt';
-  const schritte = SCHRITTE.map(([key, label]) => ({ key, label, stand: fertig[key] && key !== jetztKey ? 'fertig' : key === jetztKey ? 'jetzt' : 'offen' }));
+  const nurMuster = alle > 0 && positionen.every(x => x.art === 'muster');
+  const schritte = SCHRITTE.map(([key, label]) => ({ key, label: (nurMuster && MUSTER_LABEL[key]) || label, stand: fertig[key] && key !== jetztKey ? 'fertig' : key === jetztKey ? 'jetzt' : 'offen' }));
   const daten = positionen.map(x => x.eintrag?.bestelltAm).filter(Boolean).sort();
   return {
     schritte, jetzt: jetztKey, lieferanten, ungeklaert, positionen,

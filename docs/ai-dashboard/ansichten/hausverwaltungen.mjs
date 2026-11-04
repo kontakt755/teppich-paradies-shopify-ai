@@ -201,7 +201,13 @@ function dialog(titel, inhalt, ziel) {
   </form></div>`;
   const form = $('#dialogRoot form');
   form.querySelector('input, select, textarea')?.focus();
-  const fehler = text => { const p = form.querySelector('.hv-fehler'); p.textContent = text; p.hidden = !text; };
+  const fehler = text => {
+    const p = form.querySelector('.hv-fehler');
+    p.textContent = text;
+    p.hidden = !text;
+    // Am Handy liegt die Meldung unter der festen Knopfleiste: "nearest" haette sie genau dahinter gestellt.
+    if (text) p.scrollIntoView({ block: 'center' });
+  };
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     const knopf = form.querySelector('[type=submit]');
