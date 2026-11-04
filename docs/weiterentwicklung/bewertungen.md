@@ -47,6 +47,11 @@ Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phase 6). Stand 2026-10-08.
   Sätzen vor den Bewertungen, weil oben im Widget die Note steht; auf den Serviceseiten erst, wenn das
   Widget geladen ist. `npm run bewertung:guard` meldet Liquid, das die Note liest oder das Widget
   einbindet und den Hinweis nicht rendert.
+- **Keine Aussage, die eine Prüfung behauptet** (Inhaber 2026-11-04, UWG Anhang Nr. 23b, keine
+  anwaltliche Prüfung): Das Abzeichen „Verifizierter Kunde“ des Widgets ist im Theme ausgeblendet
+  (`snippets/tp-bewertungshinweis.liquid`), Texte wie „echte Kunden“, „echte Rezensionen“ und „echte
+  Erfahrungen“ sind entfernt. Der `bewertung:guard` meldet solche Aussagen. Die Überschrift im Widget
+  kommt aus der Einstellung beim Anbieter und steht nicht im Repository.
 
 ## 2. Anforderungen (aus dem Auftrag)
 

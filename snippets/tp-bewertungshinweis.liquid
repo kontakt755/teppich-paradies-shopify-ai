@@ -14,6 +14,13 @@
 <p class="tp-bewertungshinweis">{% unless kurz %}Die Bewertungen stammen aus unserem Google-Unternehmensprofil. {% endunless %}Wir prüfen nicht, ob die Verfasser bei uns gekauft haben.</p>
 
 {% stylesheet %}
+  /* Das Bewertungs-Widget setzt neben fast jeden Namen ein Abzeichen, das eine Pruefung der
+     Kunden behauptet. Geprueft wird aber nichts, das widerspraeche dem Satz oben (UWG Anhang
+     Nr. 23b; Inhaber 2026-11-04). Dauerhaft abschalten laesst es sich nur beim Anbieter. */
+  .es-verified-badge {
+    display: none !important;
+  }
+
   .tp-bewertungshinweis {
     margin: 8px 0 0;
     font-size: var(--tp-fs-xs);

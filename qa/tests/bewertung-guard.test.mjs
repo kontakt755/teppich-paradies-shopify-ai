@@ -66,6 +66,17 @@ test('Liquid, das nur das Metafeld liest, braucht den Hinweis ebenfalls', () => 
   assert.deepEqual(b.map((x) => x.typ), ['hinweis']);
 });
 
+test('Aussagen, die eine Echtheitspruefung behaupten, werden gemeldet', () => {
+  for (const satz of ['Bewertet von echten Kunden bei Google', 'Echte Rezensionen aus Google', 'Lesen Sie echte Erfahrungen', 'Verifizierter Kunde']) {
+    assert.deepEqual(befundeImCode(satz, 'x.liquid').map((x) => x.typ), ['echtheit'], satz);
+  }
+  assert.equal(befundeImCode('Bewertet bei Google. Echte Ergebnisse aus unseren Projekten.', 'x.liquid').length, 0);
+});
+
+test('die Liefertage-Hilfe mit "verifizierte Lieferzeit" ist kein Befund', () => {
+  assert.equal(befundeImCode('Nur eine verifizierte Lieferzeit eintragen', 'x.liquid').length, 0);
+});
+
 test('Bewertungs-Widget ohne Hinweis wird gemeldet', () => {
   const b = befundeImCode('<div class="elfsight-app-abc"></div>', 'x.liquid');
   assert.deepEqual(b.map((x) => x.typ), ['hinweis']);

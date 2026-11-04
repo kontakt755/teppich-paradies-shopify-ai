@@ -3,6 +3,10 @@ import { pruefe } from './bewertung-guard.mjs';
 
 const { geprueft, befunde } = pruefe(process.cwd());
 for (const b of befunde) {
+  if (b.typ === 'echtheit') {
+    console.log(`FEHLER ${b.datei}: "${b.wert}" behauptet eine Pruefung, die es nicht gibt (siehe docs/weiterentwicklung/bewertungen.md)`);
+    continue;
+  }
   if (b.typ === 'hinweis') {
     console.log(`FEHLER ${b.datei}: zeigt Note oder Bewertungen ohne den Hinweis nach § 5b Abs. 3 UWG (snippets/tp-bewertungshinweis.liquid)`);
     continue;

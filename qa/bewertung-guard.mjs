@@ -68,6 +68,12 @@ const LIEST_EINSTELLUNG = /settings\.tp_google_(wert|anzahl)\b/;
 export const HINWEIS = "render 'tp-bewertungshinweis'";
 const ZEIGT_WIDGET = /elfsight-app-/;
 
+/**
+ * Wir pruefen nicht, wer bewertet. Aussagen, die das Gegenteil behaupten, stehen nicht im Shop
+ * (UWG Anhang Nr. 23b; Inhaber 2026-11-04). Bewusst eng, damit eigene Projektbilder frei bleiben.
+ */
+export const ECHTHEITSAUSSAGE = /Bewertet von echten Kunden|echte Rezensionen|echte Erfahrungen|verifizierte[rn]? (Kunde|Bewertung)/i;
+
 export function befundeImCode(inhalt, datei) {
   const befunde = [];
   const liestEinstellung = LIEST_EINSTELLUNG.test(inhalt);
@@ -78,6 +84,8 @@ export function befundeImCode(inhalt, datei) {
   if ((liestEinstellung || liestMetafeld || ZEIGT_WIDGET.test(inhalt)) && !inhalt.includes(HINWEIS)) {
     befunde.push({ datei, typ: 'hinweis', feld: 'tp-bewertungshinweis', wert: 'fehlt' });
   }
+  const aussage = inhalt.match(ECHTHEITSAUSSAGE);
+  if (aussage) befunde.push({ datei, typ: 'echtheit', feld: 'Text', wert: aussage[0] });
   return befunde;
 }
 
@@ -97,6 +105,8 @@ export function pruefe(wurzel) {
   const befunde = [...code];
   for (const name of dateien) {
     const raw = fs.readFileSync(path.join(ordner, name), 'utf8');
+    const aussage = raw.match(ECHTHEITSAUSSAGE);
+    if (aussage) befunde.push({ datei: `templates/${name}`, typ: 'echtheit', feld: 'Text', wert: aussage[0] });
     try {
       befunde.push(...befundeIn(raw, `templates/${name}`));
     } catch {
