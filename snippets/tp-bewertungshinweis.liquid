@@ -2,9 +2,15 @@
   Hinweis nach § 5b Abs. 3 UWG: ob und wie geprueft wird, dass Bewertungen von
   Kunden stammen. Wortlaut vom Inhaber freigegeben (15.10.2026, Werkbank w-095)
   - nur nach Freigabe aendern. Eine Quelle fuer Startseite und Produktseite.
+  kurz: true laesst den Satz zur Quelle weg (Inhaber 2026-11-04), nur dort, wo
+  Google direkt daneben steht. Der Satz zur Pruefung bleibt immer sichtbar bei
+  der Bewertung: nicht einklappen und nicht auf eine andere Seite verlegen (LG
+  Frankfurt 3-10 O 103/24, OLG Frankfurt 6 U 305/25). Auch eine reine
+  Durchschnittsnote zaehlt (LG Karlsruhe 14 O 41/25 KfH). Fundstellen:
+  docs/weiterentwicklung/bewertungen.md
   Aufruf: {% render 'tp-bewertungshinweis' %}
 {%- endcomment -%}
-<p class="tp-bewertungshinweis">Die Bewertungen stammen aus unserem Google-Unternehmensprofil. Wir prüfen nicht, ob die Verfasser bei uns gekauft haben.</p>
+<p class="tp-bewertungshinweis">{% unless kurz %}Die Bewertungen stammen aus unserem Google-Unternehmensprofil. {% endunless %}Wir prüfen nicht, ob die Verfasser bei uns gekauft haben.</p>
 
 {% stylesheet %}
   .tp-bewertungshinweis {
