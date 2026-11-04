@@ -133,6 +133,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   // vor dem Archivieren auffrischt (dienstPlistsAbziehen). Vier davon gibt es ohne Vorlage im
   // Repository (Dashboard, Shop-Wache, Aufgabenwaechter, Lieferantenseiten).
   'dienste',
+  // Alte Bestellexporte (operations/lib/altexporte.mjs): der einzige Beleg, was wann endgueltig geloescht wurde.
+  'altexporte-protokoll.jsonl',
 ]);
 
 /** Ordner unter $TP_PRIVAT_DIR fuer den Abzug der Mac-Dienste. */
@@ -175,6 +177,7 @@ export const NICHT_GESICHERT = Object.freeze({
   'betrieb-nachziehen.json': 'Stand des Nachziehens - entsteht neu',
   'sicherungsstand.json': 'Beleg der Sicherung selbst',
   'sicherungen': 'die Sicherungen selbst',
+  'altexporte-papierkorb': 'alte Bestellexporte auf dem Weg zur Loeschung - im Archiv lebten sie 30 Tage weiter',
 });
 
 export function parseArgs(argv, env = process.env) {

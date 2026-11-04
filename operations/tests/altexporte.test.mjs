@@ -6,7 +6,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { PAPIERKORB, PROTOKOLL, inPapierkorb, nameSperre, papierkorbLeeren, papierkorbStand, pruefeListe, zurueckholen } from '../lib/altexporte.mjs';
-import { SICHERUNGSPFADE } from '../scripts/sicherung.mjs';
+import { NICHT_GESICHERT, SICHERUNGSPFADE } from '../scripts/sicherung.mjs';
 
 const JETZT = new Date('2026-11-04T12:00:00Z');
 const vor = tage => new Date(JETZT.getTime() - tage * 86_400_000);
@@ -26,6 +26,11 @@ function aufbau() {
   return { privatDir, ordner };
 }
 const befund = (privatDir, liste = ['alt', 'jung', 'fehlt-hier']) => pruefeListe({ privatDir, liste, geschuetzt: SICHERUNGSPFADE, jetzt: JETZT });
+
+test('Das Protokoll ist gesichert, der Papierkorb bewusst nicht', () => {
+  assert.ok(SICHERUNGSPFADE.includes(PROTOKOLL));
+  assert.ok(NICHT_GESICHERT[PAPIERKORB]);
+});
 
 test('Pruefen aendert nichts und trennt faellig, zu jung und fehlend', () => {
   const { privatDir } = aufbau();

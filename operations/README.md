@@ -940,7 +940,8 @@ npm run -s altexporte -- --zurueck <Name>  # Rueckweg
 npm run -s altexporte -- --endgueltig      # Stufe 2: Papierkorb-Eintraege nach 7 Tagen entfernen, nicht rueckholbar
 ```
 
-Jeder Schritt steht in `altexporte-protokoll.jsonl` im Privatordner. Gesperrt sind Pfade, Verknuepfungen,
+Jeder Schritt steht in `altexporte-protokoll.jsonl` im Privatordner (in der Tagessicherung, der Papierkorb bewusst
+nicht). Ein zurueckgeholter Ordner zaehlt ab dem Verschieben: die 30 Tage laufen noch einmal. Gesperrt sind Pfade, Verknuepfungen,
 Dateien und alles aus der Tagessicherung. Einplanen als Dienst und jede Ausfuehrung erst nach Freigabe.
 
 ### Dienst-Checkout automatisch nachziehen (seit 2026-10-26, #1710)
