@@ -389,6 +389,19 @@ function kettelPufferHinweis(m) {
 }
 
 /**
+ * Bezugsweg abwaegen (Inhaber 2026-11-04): nur ein Hinweis vor dem Bestellen. Preise kennt der
+ * Dialog hier nicht, deshalb steht nur die Faustregel da; entschieden wird von Hand.
+ */
+function bezugswegHinweis(m) {
+  const { nah = [], weit = [] } = m.bezugsweg || {};
+  const liste = l => l.map(e => esc([e.orderName, e.ort].filter(Boolean).join(' · '))).join(', ');
+  const naheZeile = nah.length ? `<div class="notice lf-bezugsweg"><strong>Bezugsweg abwägen: Kunde in der Nähe</strong>
+    <span class="small">${liste(nah)}: Die Rolle direkt beim Hersteller kann günstiger sein als Raummaß beim Großhandel. Wir schneiden zu und liefern selbst an.</span></div>` : '';
+  const weiteZeile = weit.length ? `<p class="small muted lf-bezugsweg">Kunde weiter weg (${liste(weit)}): Meist ist der Großhandel besser, wegen der Speditionskosten.</p>` : '';
+  return naheZeile + weiteZeile;
+}
+
+/**
  * Lieferziel-Knoepfe. Mit Kettler gibt es "Automatisch" (Regel: gekettelt zum Kettler, Rest
  * normal) - die anderen Knoepfe schicken die ganze Bestellung an ein Ziel.
  */
@@ -423,7 +436,7 @@ function mailAbschnitt(m, i, mehrere) {
       ${zielChips(m)}</div>` : '';
   if (!m.text) {
     const schon = m.bereitsBestellt ? `${plural(m.bereitsBestellt, 'Artikel ist', 'Artikel sind')} schon bestellt.` : '';
-    return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${(m.fehlt || []).length ? '' : `<p class="lf-leer">Nichts mehr zu bestellen. ${esc(schon)}</p>`}${fehlt}${ohne}</section>`;
+    return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${bezugswegHinweis(m)}${(m.fehlt || []).length ? '' : `<p class="lf-leer">Nichts mehr zu bestellen. ${esc(schon)}</p>`}${fehlt}${ohne}</section>`;
   }
   const fertig = dialog.markiert.has(i);
   const vorbereitet = !lesend && !dialog.fehler && !!m.vorbereitungStand;
@@ -453,7 +466,7 @@ function mailAbschnitt(m, i, mehrere) {
         <div class="field"><label for="lfNr${i}">Bestellnummer des Lieferanten (aus der Auftragsbestätigung)</label><input id="lfNr${i}" maxlength="200" placeholder="z. B. 2026-4711"><span class="small muted">Damit die Auftragsbestätigung automatisch zugeordnet wird. Optional.</span></div>
         <div class="lf-frage-knoepfe"><button type="button" class="btn btn-primary" data-lf-markieren="${i}">${plural(n, wort, wort)} als bestellt markieren</button><button type="button" class="btn btn-ghost" data-lf-nicht="${i}">Noch nicht</button></div>
       </div>`;
-  return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}
+  return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${bezugswegHinweis(m)}
     ${uebernahmeBlock(m.positionen).replaceAll('data-einkauf-uebernahme=', 'data-lf-uebernahme=')}
     <dl class="lf-mailkopf"><dt>An</dt><dd>${an}</dd><dt>Betreff</dt><dd>${esc(m.betreff)}</dd></dl>
     <pre class="lf-mailtext" tabindex="0">${esc(m.text)}</pre>
