@@ -1,0 +1,76 @@
+{
+  "_zweck": "Wohnteppiche nach Zweck (Inhaber 2026-11-04, Fahrplan sortiment-und-struktur-2026-11.md Punkt 4): vier automatische Kollektionen aus belegten Lieferanten-Titeln (Kinder, Outdoor, Hochflor/Shaggy, waschbar) als Unterpunkte von \"Teppiche in Standardgrößen\". Anwenden auf sicherung/2026-11-04c-hauptmenue.json.",
+  "menu": "gid://shopify/Menu/268032508238",
+  "oben": [
+    {
+      "id": "gid://shopify/MenuItem/730052297038",
+      "_titel": "Teppichboden"
+    },
+    {
+      "id": "gid://shopify/MenuItem/871684145486",
+      "_titel": "Teppiche",
+      "kinder": [
+        {
+          "id": "gid://shopify/MenuItem/871684178254",
+          "_titel": "Alle Teppiche"
+        },
+        {
+          "id": "gid://shopify/MenuItem/880157360462",
+          "_titel": "Teppiche in Standardgrößen",
+          "kinder": [
+            {
+              "neu": {
+                "title": "Kinderteppiche",
+                "type": "COLLECTION",
+                "resourceId": "gid://shopify/Collection/709665685838"
+              }
+            },
+            {
+              "neu": {
+                "title": "Outdoor-Teppiche",
+                "type": "COLLECTION",
+                "resourceId": "gid://shopify/Collection/709665718606"
+              }
+            },
+            {
+              "neu": {
+                "title": "Hochflor-Teppiche",
+                "type": "COLLECTION",
+                "resourceId": "gid://shopify/Collection/709665751374"
+              }
+            },
+            {
+              "neu": {
+                "title": "Waschbare Teppiche",
+                "type": "COLLECTION",
+                "resourceId": "gid://shopify/Collection/709665784142"
+              }
+            }
+          ]
+        },
+        "*"
+      ]
+    },
+    {
+      "id": "gid://shopify/MenuItem/871137182030"
+    },
+    {
+      "id": "gid://shopify/MenuItem/859123319118"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032816462"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032849230"
+    },
+    {
+      "id": "gid://shopify/MenuItem/868583539022"
+    },
+    {
+      "id": "gid://shopify/MenuItem/887189668174"
+    },
+    {
+      "id": "gid://shopify/MenuItem/734281072974"
+    }
+  ]
+}

@@ -208,3 +208,15 @@ test('Plan Restposten 2026-11-04: Auslauf-Punkte unter Angebote & Reste, Hauptpu
     assert.ok(!flach(i.items).some((k) => /^Auslauf/.test(k.title)), `${i.title} traegt noch einen Auslauf-Punkt`);
   }
 });
+
+test('Plan Teppiche nach Zweck 2026-11-04: vier neue Unterpunkte unter Standardgroessen, Reihenfolge und IDs bleiben', () => {
+  const stand = lesen('docs/weiterentwicklung/sicherung/2026-11-04c-hauptmenue.json');
+  const plan = lesen('domains/shopify/menue-teppiche-zweck-2026-11.json');
+  const neu = umbauen(stand, plan);
+  assert.deepEqual(new Set(flach(neu.items).map((i) => i.id).filter(Boolean)), idMenge(menueAus(stand)));
+  const teppiche = neu.items.find((i) => i.id === 'gid://shopify/MenuItem/871684145486');
+  assert.deepEqual(teppiche.items.map((i) => i.id), menueAus(stand).items[1].items.map((i) => i.id), 'Reihenfolge der Teppich-Punkte bleibt');
+  const standard = teppiche.items.find((i) => i.id === 'gid://shopify/MenuItem/880157360462');
+  assert.deepEqual(standard.items.map((i) => i.title), ['Kinderteppiche', 'Outdoor-Teppiche', 'Hochflor-Teppiche', 'Waschbare Teppiche']);
+  assert.ok(standard.items.every((i) => !i.id && i.type === 'COLLECTION' && /^gid:\/\/shopify\/Collection\/\d+$/.test(i.resourceId)));
+});
