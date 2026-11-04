@@ -41,6 +41,32 @@ function signalUndWarten(kind, signal, ms) {
   });
 }
 
+/**
+ * Frist je Schritt beim Beenden (browser.close, dann SIGTERM, dann SIGKILL). 3 s reichten
+ * nicht, sobald andere Sitzungen parallel Tests fuhren: die Screenshots waren alle da, der
+ * Lauf endete trotzdem mit Exit 2 (Werkbank w-216, 29.10.2026). Einstellbar ueber
+ * TP_DASHBOARD_PRUEF_WARTE_MS (Millisekunden, positive ganze Zahl).
+ */
+export const WARTE_MS_STANDARD = 15_000;
+
+export function warteMsAusUmgebung(env = process.env) {
+  const roh = env.TP_DASHBOARD_PRUEF_WARTE_MS;
+  if (roh === undefined || String(roh).trim() === '') return WARTE_MS_STANDARD;
+  const ms = Number(roh);
+  if (!Number.isInteger(ms) || ms <= 0) throw new Error(`TP_DASHBOARD_PRUEF_WARTE_MS muss eine positive ganze Zahl in Millisekunden sein, nicht "${roh}".`);
+  return ms;
+}
+
+/**
+ * Haengt nur das Schliessen des Browsers, nachdem alle Ansichten geprueft sind, und wurde der
+ * eigene Browserprozess begrenzt beendet (Datenkopie geloescht), ist das ein Hinweis, kein
+ * Fehlschlag der Pruefung. Bleibt die Datenkopie liegen (datenErhalten) oder brach der Lauf
+ * vorher ab, bleibt es ein Fehler.
+ */
+export function aufraeumFehlerNurHinweis(fehler, { fertig = false } = {}) {
+  return Boolean(fertig && fehler && fehler.datenErhalten === false);
+}
+
 async function kindBeenden(kind, warteMs) {
   if (beendet(kind)) return;
   if (await signalUndWarten(kind, 'SIGTERM', warteMs)) return;
@@ -53,7 +79,7 @@ async function kindBeenden(kind, warteMs) {
  * Keine Suche nach fremden Prozessen oder Temp-Ordnern. aufraeumen() ist idempotent;
  * mit erzwingen:true wird auch ein zuvor erfolgreich offengelassener Lauf beendet.
  */
-export function pruefLauf({ daten, tmp, warteMs = 3000, startWarteMs = 30_000 }) {
+export function pruefLauf({ daten, tmp, warteMs = WARTE_MS_STANDARD, startWarteMs = 30_000 }) {
   if (!Number.isFinite(warteMs) || warteMs <= 0) throw new Error('warteMs muss positiv sein.');
   if (!Number.isFinite(startWarteMs) || startWarteMs <= 0) throw new Error('startWarteMs muss positiv sein.');
   let server = null;
