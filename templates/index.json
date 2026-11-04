@@ -413,8 +413,8 @@
     "tp_start_bewertungen": {
       "type": "tp-start-bewertungen",
       "settings": {
-        "heading": "Das sagen unsere Kunden",
-        "text": "Echte Rezensionen aus dem Google-Unternehmensprofil.",
+        "heading": "Das steht bei Google über uns",
+        "text": "Rezensionen aus unserem Google-Unternehmensprofil.",
         "link_label": "Alle Bewertungen bei Google",
         "link": "https://maps.google.com/?cid=787042219843486388",
         "elfsight_id": "e64233ac-362d-4d8f-ae26-3ec4cc88789e"
