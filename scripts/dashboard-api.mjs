@@ -93,6 +93,7 @@ import { bestaetigeBeschaffung, arbeitsuebernahme, BeschaffungFehler } from '../
 import { darfWeiter, beschaffungsStand } from '../docs/ai-dashboard/lib/beschaffung.mjs';
 import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
+import { kontodatenPruefen } from '../docs/ai-dashboard/lib/angebot-nachricht.mjs';
 import { aufraeumFall } from '../docs/ai-dashboard/lib/aufraeumen.mjs';
 import { betriebszustand, sicherungsstand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
@@ -4278,7 +4279,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!daten || !Array.isArray(daten.angebote)) {
         return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Angebotsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur angebote' };
       }
-      return { verfuegbar: true, quelle: file, ...daten };
+      // Kontodaten fuer den WhatsApp-Text: nur privat und nur mit gueltiger IBAN, sonst kein Text.
+      const kontodaten = kontodatenPruefen(readJsonIfExists(path.join(dir, 'angebote', 'kontodaten.json')));
+      return { verfuegbar: true, quelle: file, ...daten, kontodaten };
     },
 
     /** Abgebrochene Warenkoerbe der letzten 30 Tage - verlorener Umsatz. */

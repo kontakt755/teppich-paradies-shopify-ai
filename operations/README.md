@@ -620,6 +620,9 @@ sowie vier weitere Datenarten (Phase seit 2026-09-24):
   und Verlegeangebote (Shopify `DraftOrder`), die noch keine Bestellung sind:
   Nummer, Kunde, Betrag, Status, Positionen.
   → `$TP_PRIVAT_DIR/angebote/angebote.json`
+  Der WhatsApp-Text im Reiter „Angebote“ liest die Bankverbindung aus
+  `$TP_PRIVAT_DIR/angebote/kontodaten.json` (`{ "kontoinhaber": "…", "iban": "…" }`, nie im
+  Repository). Fehlt die Datei oder stimmt die IBAN-Prüfsumme nicht, gibt es keinen Text.
 - **Abgebrochene Warenkörbe** (`sync/abandonedCheckouts.mjs`, `lib/warenkoerbe.mjs`) -
   letzte 30 Tage, noch nicht abgeschlossen: Zeitpunkt, Kunde/E-Mail sofern
   vorhanden, Warenkorbwert, Positionen - verlorener Umsatz, den das Dashboard
