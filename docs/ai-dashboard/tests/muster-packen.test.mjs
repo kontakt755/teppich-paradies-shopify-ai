@@ -554,3 +554,73 @@ test('Grund der Musterautomatik nur bei "noch nicht bestellt"', () => {
   assert.equal(offen.automatikGrund, 'Testgrund fehlt');
   assert.equal(bestellt.automatikGrund, null);
 });
+
+test('Variante ohne Einkaufsangaben behaelt Farbbild und Herstellersuche, macht aber nichts mehrdeutig (Review 29.10.)', () => {
+  const p = { handle: 'ohne-einkauf', titel: 'Ohne Einkauf', varianten: [
+    { sku: 'OE-1', farbe: 'Sand', bild: 'https://cdn.example/sand.jpg', einkauf: {} },
+    { sku: 'OE-2', farbe: 'Grau', bild: 'https://cdn.example/grau.jpg', einkauf: { hersteller: 'Testhersteller' } },
+    { sku: 'OE-3', farbe: 'Rot', einkauf: {} },
+    // Dieselbe SKU einmal ohne, einmal mit Angaben: die Angaben gelten, kein "mehrdeutig".
+    { sku: 'OE-4', farbe: 'Blau', bild: 'https://cdn.example/blau.jpg', einkauf: {} },
+    { sku: 'OE-4', farbe: 'Blau', einkauf: { produktname: 'Lieferantenname Blau', farbnummer: '44' } },
+    // Eigene Variante ohne Angaben: die Variante mit dieser SKU als Artikelnummer liefert sie, das Bild bleibt.
+    { sku: 'OE-5', farbe: 'Gelb', bild: 'https://cdn.example/gelb.jpg', einkauf: {} },
+    { sku: 'OE-5-BREIT', farbe: 'Gelb', einkauf: { artikelnummer: 'OE-5', produktname: 'Lieferantenname Gelb', farbnummer: '55' } },
+  ] };
+  const zeile = (sku, li) => ({ lineItemId: `gid://shopify/LineItem/${li}`, istMuster: true, titel: 'Muster', farbe: sku, menge: 1, mengeBestellt: 1, sku: `M-${sku}`, handle: 'muster-x', musterQuelle: { sku, produktHandle: p.handle } });
+  const eigene = new Map([[p.handle, p]]);
+  const { kunden } = musterPackliste({ produkte: eigene, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', ['OE-1', 'OE-2', 'OE-3', 'OE-4', 'OE-5'].map((s, i) => zeile(s, i + 1)))] });
+  const je = Object.fromEntries(kunden[0].muster.map(m => [m.bestellt.farbe, m]));
+  assert.equal(je['OE-1'].bild, 'https://cdn.example/sand.jpg');
+  assert.equal(je['OE-2'].bild, 'https://cdn.example/grau.jpg');
+  assert.equal(je['OE-2'].vorher.hersteller, 'Testhersteller');
+  assert.equal(je['OE-3'].vorher, null, 'gar nichts bekannt: wie bisher');
+  assert.equal(je['OE-4'].vorher.unklar, undefined);
+  assert.equal(je['OE-4'].vorher.farbnummer, '44');
+  assert.equal(je['OE-4'].bild, 'https://cdn.example/blau.jpg');
+  assert.equal(je['OE-5'].vorher.farbnummer, '55');
+  assert.equal(je['OE-5'].bild, 'https://cdn.example/gelb.jpg');
+  assert.equal(offeneSuche(kunden, 'Testhersteller').treffer.length, 1);
+});
+
+test('Erledigt: Versanddatum aus dem Auftragsfluss; teilweise erledigte Bestellung ist markiert und bleibt in der Suche (Review 29.10.)', () => {
+  const eintrag = (o, l) => ({
+    'gid://shopify/LineItem/11': { status: 'raus', rausAm: '2026-10-20T08:00:00Z' },
+    'gid://shopify/LineItem/21': { status: 'raus', rausAm: '2026-10-19T08:00:00Z', erledigtAm: null },
+    'gid://shopify/LineItem/22': { status: 'erledigt', rausAm: '2026-10-19T08:00:00Z', erledigtAm: '2026-10-21T08:00:00Z' },
+  }[l] || null);
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, eintragVon: eintrag, auftraege: [
+    auftrag(1, '2026-10-01T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')]),
+    auftrag(2, '2026-10-02T09:00:00Z', 'Berta Beispiel', [pos(21, '101'), pos(22, '102')]),
+  ] });
+  const je = Object.fromEntries(r.ausserhalb.map(b => [b.orderName, b]));
+  assert.equal(je['#T1'].teilweise, true, 'Muster 12 liegt noch in der Packliste');
+  assert.equal(je['#T1'].erledigtAm, '2026-10-20T08:00:00Z');
+  assert.equal(je['#T2'].teilweise, false);
+  assert.equal(je['#T2'].erledigtAm, '2026-10-21T08:00:00Z', 'der letzte Schritt zaehlt');
+  assert.deepEqual(r.kunden.map(k => k.bestellungen[0].orderName), ['#T1']);
+});
+
+test('Gesperrtes Muster: Umschlag zu klaeren, kein Aufkleber im Stapeldruck; was schon da ist, zaehlt nicht als gesperrt (w-210)', () => {
+  const sperreVon = p => (p.lineItemId.endsWith('/11') || p.lineItemId.endsWith('/31') ? { imShop: true, seit: '2026-10-28T09:00:00Z' } : p.lineItemId.endsWith('/41') ? { imShop: false, seit: '2026-10-28T09:00:00Z' } : null);
+  const haken = { 'gid://shopify/LineItem/31': { zeit: '2026-10-29T09:00:00Z' } };
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, sperreVon, haken, statusVon: (o, l) => (l.endsWith('/51') ? 'geliefert' : 'bestellt'), auftraege: [
+    auftrag(1, '2026-10-15T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')], { details: { kunde: { name: 'Anna Test', email: 'anna@example.invalid' }, lieferadresse: adresse('Anna Test') } }),
+    auftrag(3, '2026-10-15T09:00:00Z', 'Carl Haken', [pos(31, '101')]),
+    auftrag(4, '2026-10-15T09:00:00Z', 'Dora Offen', [pos(41, '101')]),
+    auftrag(5, '2026-10-15T09:00:00Z', 'Emil Da', [pos(51, '101')]),
+    auftrag(6, '2026-10-15T09:00:00Z', 'Frei Test', [pos(61, '101')]),
+  ] });
+  const je = Object.fromEntries(r.kunden.map(k => [k.name, k]));
+  assert.equal(je['Anna Test'].bereich, 'klaeren');
+  assert.deepEqual(je['Anna Test'].muster.map(m => !!m.gesperrt), [true, false]);
+  assert.equal(je['Anna Test'].email, 'anna@example.invalid');
+  assert.equal(je['Carl Haken'].muster[0].gesperrt, null, 'abgehakt: es ist doch gekommen');
+  assert.equal(je['Carl Haken'].bereich, 'packen');
+  assert.deepEqual(je['Dora Offen'].muster[0].gesperrt, { imShop: false, seit: '2026-10-28T09:00:00Z' }, 'auch eine noch nicht im Shop bestaetigte Sperre kommt nicht');
+  assert.equal(je['Emil Da'].muster[0].gesperrt, null);
+  assert.equal(je['Frei Test'].bereich, 'warten');
+  assert.equal(je['Frei Test'].email, undefined, 'Mailadresse nur, wo sie gebraucht wird');
+  assert.deepEqual(aufkleberFuer(je['Anna Test'], { nurOffen: true }).map(e => e.art || e.sku), ['TV-GR', 'adresse'], 'kein Aufkleber fuer ein Muster, das nicht kommt');
+  assert.deepEqual(aufkleberFuer(je['Anna Test']).map(e => e.art || e.sku), ['TV-SA', 'TV-GR', 'adresse'], 'erneut alles drucken bleibt vollstaendig');
+});

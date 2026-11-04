@@ -320,3 +320,76 @@ test('POST gedruckt: Umschlag vorbereitet fuer alle Geraete; lesen 403, fruehere
   assert.equal(api.kundenMusterPacken().kunden[0].gedruckt, null);
   assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'gedruckt', gedruckt: true }, laden), e => e.status === 409);
 });
+
+// -- Gesperrte Muster (w-210) ------------------------------------------------------------------
+const sperrEreignis = (sku, geschrieben = true) => ({ sku, am: '2026-10-28T09:00:00Z', von: 'Laden', grund: 'nicht verfuegbar', orderId: null, shopify: { geschrieben, aenderungMoeglich: geschrieben, ...(geschrieben ? { variantId: 'gid://shopify/ProductVariant/1' } : { fehler: 'Recht fehlt', fehlerGrund: 'recht-fehlt' }) } });
+const einMuster = (id, sku) => { const m = muster(id); return { ...m, sku: `M-${sku}`, title: 'Muster Testlinea', variantTitle: sku, customAttributes: [], variant: { ...m.variant, sku: `M-${sku}`, title: sku, product: { ...m.variant.product, handle: 'muster-testlinea' } } }; };
+const zweiMuster = () => { const b = bestellung(801, '2026-10-18T06:00:00Z'); b.lineItems.nodes = [einMuster(8011, 'GESPERRT-1'), einMuster(8012, 'FREI-1')]; return b; };
+const ohneZugang = () => ({ proxy: { execute: async () => { throw new Error('kein Zugang im Test'); } }, art: 'client-credentials' });
+
+function umgebungGesperrt(t, orders) {
+  const { dir } = umgebung(t, orders);
+  fs.writeFileSync(path.join(dir, 'lexikon/produkte.json'), JSON.stringify({ produkte: [{ handle: 'testlinea-sand', titel: 'Testlinea', eigenschaften: { marke: 'Testlinea' }, varianten: [
+    { id: 'gid://shopify/ProductVariant/101', sku: 'GESPERRT-1', farbe: 'Rot', titel: 'Rot', einkauf: { produktname: 'Lieferant Rot', farbnummer: '1' } },
+    { id: 'gid://shopify/ProductVariant/102', sku: 'FREI-1', farbe: 'Blau', titel: 'Blau', einkauf: { produktname: 'Lieferant Blau', farbnummer: '2' } },
+  ] }] }));
+  fs.writeFileSync(path.join(dir, 'mustersperre.json'), JSON.stringify({ ereignisse: [sperrEreignis('M-GESPERRT-1')] }));
+  const api = createApi({ root: dir, privatDirPath: dir, gh: async () => '', rebuild: async () => null, shopifyZugang: ohneZugang, now: () => new Date('2026-10-21T12:00:00Z') });
+  return { dir, api };
+}
+
+test('Sperre aus mustersperre.json: Muster rot, Umschlag zu klaeren; freigegeben wieder normal; GET schreibt nichts', t => {
+  const { api, dir } = umgebungGesperrt(t, [zweiMuster()]);
+  const k = api.kundenMusterPacken().kunden[0];
+  assert.equal(k.bereich, 'klaeren');
+  assert.deepEqual(k.muster.map(m => m.gesperrt?.imShop ?? null), [true, null]);
+  assert.equal(k.email, 'packen@example.invalid');
+  assert.equal(fs.existsSync(path.join(dir, 'muster-packen.json')), false);
+  fs.writeFileSync(path.join(dir, 'mustersperre.json'), JSON.stringify({ ereignisse: [sperrEreignis('M-GESPERRT-1'), { sku: 'M-GESPERRT-1', am: '2026-10-29T09:00:00Z', von: 'Laden', grund: 'wieder verfuegbar', shopify: { geschrieben: true } }] }));
+  assert.equal(api.kundenMusterPacken().kunden[0].muster[0].gesperrt, null);
+  assert.equal(api.kundenMusterPacken().kunden[0].bereich, 'warten');
+});
+
+test('Beschaedigte mustersperre.json legt die Packstation nicht lahm, sagt es aber', t => {
+  const { api, dir } = umgebungGesperrt(t, [zweiMuster()]);
+  fs.writeFileSync(path.join(dir, 'mustersperre.json'), '{kaputt');
+  const r = api.kundenMusterPacken();
+  assert.equal(r.verfuegbar, true);
+  assert.match(r.sperrenFehler, /mustersperre\.json/);
+  assert.equal(r.kunden[0].muster[0].gesperrt, null);
+  assert.equal(fs.readFileSync(path.join(dir, 'mustersperre.json'), 'utf8'), '{kaputt');
+});
+
+test('Ohne dieses Muster weiter packen: nur diese Position erledigt, Rest bleibt; Rollen und Grenzen', async t => {
+  const { api, dir } = umgebungGesperrt(t, [zweiMuster()]);
+  const k = api.kundenMusterPacken().kunden[0];
+  const [gesperrt, frei] = k.muster;
+  const ich = { name: 'Laden', rolle: 'mitarbeiter' };
+  const ohne = (lineItemId, b = ich, pk = k.packSchluessel) => api.kundenMusterPackenSchreiben({ packSchluessel: pk, aktion: 'ohne-muster', lineItemId }, b);
+  await assert.rejects(ohne(gesperrt.lineItemId, { name: 'Gast', rolle: 'lesen' }), e => e.status === 403);
+  await assert.rejects(ohne(frei.lineItemId), e => e.status === 409 && /nicht gesperrt/.test(e.message), 'nicht gesperrtes Muster');
+  await assert.rejects(ohne('gid://shopify/LineItem/1'), e => e.status === 409);
+  await assert.rejects(ohne(gesperrt.lineItemId, ich, 'gid://shopify/Order/1'), e => e.status === 409);
+  await assert.rejects(ohne(''), e => e.status === 400);
+  assert.equal(fs.existsSync(path.join(dir, 'auftragsstatus.json')), false, 'abgelehnt: nichts geschrieben');
+
+  const r = await ohne(gesperrt.lineItemId);
+  assert.equal(r.ok, true);
+  assert.ok(r.shopify, 'Shopify-Ergebnis steht in der Antwort, auch wenn die Buchung scheitert');
+  const danach = api.kundenMusterPacken().kunden[0];
+  assert.deepEqual(danach.muster.map(m => m.lineItemId), [frei.lineItemId]);
+  assert.equal(danach.bereich, 'warten');
+  const stand = JSON.parse(fs.readFileSync(path.join(dir, 'auftragsstatus.json'), 'utf8'));
+  const eintraege = Object.values(stand.positionen || stand).filter(e => e?.lineItemId);
+  assert.deepEqual(eintraege.map(e => [e.lineItemId, e.status]), [[gesperrt.lineItemId, 'erledigt']]);
+  assert.match(eintraege[0].notiz || eintraege[0].erledigtNotiz || '', /nicht lieferbar/);
+});
+
+test('Ohne dieses Muster: nicht, wenn sonst nichts im Umschlag bleibt', async t => {
+  const b = bestellung(801, '2026-10-18T06:00:00Z');
+  b.lineItems.nodes = [einMuster(8011, 'GESPERRT-1')];
+  const { api } = umgebungGesperrt(t, [b]);
+  const k = api.kundenMusterPacken().kunden[0];
+  await assert.rejects(api.kundenMusterPackenSchreiben({ packSchluessel: k.packSchluessel, aktion: 'ohne-muster', lineItemId: k.muster[0].lineItemId }, { name: 'Laden', rolle: 'mitarbeiter' }),
+    e => e.status === 409 && /Kunde informieren/.test(e.message));
+});

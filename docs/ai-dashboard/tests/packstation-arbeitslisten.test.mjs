@@ -408,3 +408,26 @@ test('Kurze Zahl passt nur als ganze Zahl, und eine genauer passende fertige Bes
   // Mit den Fertigen steht das Wort da: dann darf es nicht mehr als "nicht gefunden" gelten.
   assert.doesNotMatch(ansicht('tab=muster&mpq=Gesuchte%20Ware%2051&mpfertig=Gesuchte%20Ware%2051', [fertig, offen]), /Nicht gefunden: /);
 });
+
+test('Erledigt zaehlt ab dem Versand, nicht ab der Bestellung; eine noch offene Bestellung zaehlt nicht (Review 29.10.)', () => {
+  const jetzt = Date.parse('2026-11-04T12:00:00Z');
+  const b = (name, datum, extra = {}) => ({ orderId: name, orderName: name, name: 'Test', grund: 'erledigt', datum, muster: [], ...extra });
+  const liste = [
+    b('alt-frisch-verschickt', '2026-10-01T09:00:00Z', { erledigtAm: '2026-11-03T09:00:00Z' }),
+    b('alt-lange-verschickt', '2026-10-01T09:00:00Z', { erledigtAm: '2026-10-10T09:00:00Z' }),
+    b('neu-ohne-versanddatum', '2026-11-01T09:00:00Z'),
+    b('noch-offen', '2026-11-02T09:00:00Z', { erledigtAm: '2026-11-03T09:00:00Z', teilweise: true }),
+  ];
+  assert.deepEqual(erledigteBestellungen(liste, jetzt).map(x => x.orderName), ['alt-frisch-verschickt', 'neu-ohne-versanddatum'], 'zuletzt Erledigtes zuerst');
+  const html = ansicht('tab=muster&mpbereich=erledigt', [], liste);
+  assert.match(html, /aria-current="page">Erledigt <span class="mp-filterzahl">/);
+  assert.match(html, /verschickt oder erledigt am 03\.11\.2026/);
+});
+
+test('URL-Parameter mit Objektnamen zaehlt nicht als Umschlagfilter (Review 29.10.)', () => {
+  for (const wert of ['constructor', '__proto__', 'toString']) {
+    const html = ansicht(`tab=muster&mpumschlag=${wert}`, [kunde(1, 'warten')]);
+    assert.match(html, /data-mp-kunde="order1"/, wert);
+    assert.match(html, /<a class="chip"[^>]*aria-current="page">alle</, wert);
+  }
+});

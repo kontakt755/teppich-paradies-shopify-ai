@@ -58,7 +58,11 @@ function farbBild(p, v) {
  * Meterware-Variante, auf die der Aufkleber zeigt. Die Variante mit genau dieser SKU geht vor;
  * nur ohne sie zaehlen Varianten, die die SKU als Artikelnummer fuehren (z. B. TnM mit anderer
  * Breite im Lieferantennamen). Widersprechen sich die Angaben, gilt "mehrdeutig" - nie raten.
+ * Eine Variante ganz ohne diese Angaben entscheidet nicht ueber "mehrdeutig", traegt aber Farbbild und
+ * Suchangaben bei (#1799 hatte sie ganz uebersprungen: 37 Varianten ohne Bild, Review 29.10.).
  */
+const hatAngaben = w => ['produktname', 'farbnummer', 'url', 'kollektion', 'lieferant'].some(f => w[f]);
+
 function vorherIndex(produkte) {
   const eigen = new Map(), artikel = new Map();
   for (const p of produkte?.values?.() || []) {
@@ -67,11 +71,12 @@ function vorherIndex(produkte) {
       const e = v.einkauf || {};
       const wert = { produktname: belegt(e.produktname) ? text(e.produktname) : null, farbnummer: belegt(e.farbnummer) ? text(e.farbnummer) : null, url: belegt(e.url) ? text(e.url) : null,
         kollektion: belegt(e.kollektion) ? text(e.kollektion) : null, lieferant: belegt(e.lieferant) ? text(e.lieferant) : null };
-      // Variante ohne jede Einkaufsangabe sagt nichts ueber das Muster - darf nichts "mehrdeutig" machen.
-      if (!Object.values(wert).some(Boolean)) continue;
       // Nur fuer die Suche (Herstellername auf dem Muster); entscheiden nicht ueber "mehrdeutig".
       const such = { hersteller: belegt(e.hersteller) ? text(e.hersteller) : null, artikelnummer: belegt(e.artikelnummer) ? text(e.artikelnummer) : null };
       const bild = farbBild(p, v);
+      const angaben = hatAngaben(wert);
+      // Nichts, was dem Packer hilft: die Variante bleibt draussen, damit eine andere zum Zug kommt.
+      if (!angaben && !bild && !such.hersteller && !such.artikelnummer) continue;
       const ziele = [[eigen, text(v.sku)], [artikel, text(e.artikelnummer)]];
       for (const [je, sku] of ziele) {
         if (!sku) continue;
@@ -80,14 +85,17 @@ function vorherIndex(produkte) {
         // entscheidet nicht ueber "mehrdeutig"; bei verschiedenen Bildern gilt das erste.
         if (alt === 'mehrdeutig') continue;
         const vergleich = w => JSON.stringify([w.produktname, w.farbnummer, w.url, w.kollektion, w.lieferant]);
-        if (alt && vergleich(alt) !== vergleich(wert)) { je.set(sku, 'mehrdeutig'); continue; }
-        je.set(sku, { ...wert, bild: alt?.bild || bild, hersteller: alt?.hersteller || such.hersteller, artikelnummer: alt?.artikelnummer || such.artikelnummer });
+        if (alt && angaben && hatAngaben(alt) && vergleich(alt) !== vergleich(wert)) { je.set(sku, 'mehrdeutig'); continue; }
+        je.set(sku, { ...(alt && hatAngaben(alt) ? alt : wert), bild: alt?.bild || bild, hersteller: alt?.hersteller || such.hersteller, artikelnummer: alt?.artikelnummer || such.artikelnummer });
       }
     }
   }
   return sku => {
     const k = text(sku);
-    const w = eigen.has(k) ? eigen.get(k) : artikel.get(k);
+    const e = eigen.get(k), a = artikel.get(k);
+    // Eigene Variante ohne Angaben: die Lieferantenangaben kommen ueber die Artikelnummer, ihr Bild bleibt.
+    const nurBeitrag = e && e !== 'mehrdeutig' && !hatAngaben(e) && a;
+    const w = !nurBeitrag ? e ?? a : a === 'mehrdeutig' ? a : { ...a, bild: e.bild || a.bild, hersteller: e.hersteller || a.hersteller, artikelnummer: e.artikelnummer || a.artikelnummer };
     if (w === 'mehrdeutig') return { unklar: true, produktname: null, farbnummer: null, url: null, kollektion: null, lieferant: null, bild: null, hersteller: null, artikelnummer: null };
     return w || null;
   };
@@ -107,8 +115,9 @@ function vorherIndex(produkte) {
  *                                      Empfaenger und Bestelltag; aeltere je Empfaenger bzw. je Kunde gelten weiter
  * @param {(id) => string} [p.lieferantVon]  Lieferanten-Kuerzel -> Anzeigename (private Stammdaten)
  * @param {(orderId, lineItemId) => string|null} [p.automatikGrundVon]  warum die Musterautomatik zurueckhaelt
+ * @param {(position) => {imShop: boolean, seit: string}|null} [p.sperreVon]  aktive Mustersperre dieser Position (w-210)
  */
-export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, automatikGrundVon = () => null, jetzt = new Date() } = {}) {
+export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, automatikGrundVon = () => null, sperreVon = () => null, jetzt = new Date() } = {}) {
   const statusVon = eintragVon ? (o, l) => eintragVon(o, l)?.status || null : statusAllein;
   // Vom Lieferanten direkt an den Kunden (#1680): wird nicht bei uns gepackt.
   const direkt = (a, p) => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT') || eintragVon?.(a.id, p.lineItemId)?.ueber === 'kunde';
@@ -120,10 +129,12 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
   // Fuer die Suche: Muster, die nicht (mehr) gepackt werden - mit Grund. Wer so ein Muster in der
   // Hand haelt, soll sehen, wohin es gehoert haette, statt "nichts gefunden".
   const ausserhalb = [];
-  const merkeAusserhalb = (a, grund, liste) => {
+  // Wann die Bestellung fertig wurde: der letzte Schritt im Auftragsfluss. `teilweise`: andere Muster liegen noch in der Packliste.
+  const fertigAm = (a, liste) => liste.flatMap(p => { const e = eintragVon?.(a.id, p.lineItemId); return [e?.rausAm, e?.erledigtAm]; }).filter(belegt).map(text).sort().at(-1) || null;
+  const merkeAusserhalb = (a, grund, liste, { teilweise = false } = {}) => {
     if (!liste.length) return;
     const zeilen = musteretikettenFuerAuftrag({ positionen: liste }, produkte);
-    ausserhalb.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null, grund,
+    ausserhalb.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null, grund, erledigtAm: fertigAm(a, liste), teilweise,
       name: text(a.details?.lieferadresse?.name) || text(a.details?.kunde?.name) || 'Kunde',
       muster: zeilen.map((z, i) => {
         const e = z.etikett || {}, v = e.sku ? vorher(e.sku) : null;
@@ -144,8 +155,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       merkeAusserhalb(a, grund, alleMuster);
       continue;
     }
-    merkeAusserhalb(a, 'erledigt', alleMuster.filter(fertig));
     const positionen = alleMuster.filter(p => !fertig(p));
+    merkeAusserhalb(a, 'erledigt', alleMuster.filter(fertig), { teilweise: positionen.length > 0 });
     if (!positionen.length) continue;
     const zeilen = musteretikettenFuerAuftrag({ positionen }, produkte);
     const identitaet = a.details?.kunde || {};
@@ -181,7 +192,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
 
   /** Ein Umschlag: Bestellungen desselben Empfaengers von einem Bestelltag (oder mit bestehender Packmarke) samt Mustern. */
   const baueUmschlag = (eintraege, { basis, mehrere }) => {
-    const g = { name: '', adresse: null, bestellungen: [], muster: [], hinweise: new Set(), teilweiseErstattet: false, direktversand: false };
+    const g = { name: '', email: '', adresse: null, bestellungen: [], muster: [], hinweise: new Set(), teilweiseErstattet: false, direktversand: false };
     for (const { a, positionen, zeilen } of eintraege) {
       if (a.bezahlt === 'PARTIALLY_REFUNDED') { g.teilweiseErstattet = true; g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.'); }
       if (positionen.some(p => direkt(a, p))) { g.direktversand = true; g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.'); }
@@ -190,12 +201,15 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       if (!g.adresse || (a.datum || '') >= (g.adresse.datum || '')) {
         g.adresse = { ...(a.details?.lieferadresse || {}), datum: a.datum || '' };
         g.name = text(a.details?.lieferadresse?.name) || text(a.details?.kunde?.name) || 'Kunde';
+        g.email = belegt(a.details?.kunde?.email) ? text(a.details.kunde.email) : '';
       }
       zeilen.forEach((z, i) => {
         const p = positionen[i];
         const v = z.etikett?.sku ? vorher(z.etikett.sku) : null;
         const eintrag = eintragVon?.(a.id, p.lineItemId) || null;
         const stand = standVon(statusVon(a.id, p.lineItemId), p);
+        // Nur was noch fehlt, "kommt nicht": ein Muster, das trotzdem hier liegt, wird normal gepackt.
+        const sperre = !haken[z.lineItemId] && !['da', 'lager'].includes(stand) ? sperreVon(p) : null;
         g.muster.push({
           orderId: a.id, orderName: text(a.name), lineItemId: z.lineItemId,
           anzahl: Number.isInteger(z.anzahl) ? z.anzahl : null, etikett: z.etikett, fehlt: z.fehlt,
@@ -205,6 +219,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           bild: v?.bild || null,
           abgehakt: haken[z.lineItemId] ? { zeit: haken[z.lineItemId].zeit || null, von: haken[z.lineItemId].von || null } : null,
           stand,
+          gesperrt: sperre ? { imShop: !!sperre.imShop, seit: sperre.seit || null } : null,
           // Bleibt nach der Ankunft erhalten: die Kopfzeile nennt das Lieferanten-Bestelldatum immer (29.10.).
           bestelltAm: belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
           automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
@@ -231,11 +246,14 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     const schluessel = `${empfaenger}|tag:${kalendertag(seit) || 'ohne'}`;
     const istGepackt = !!gepackt[pk];
     const { eintrag: kl, altvermerk } = klaerungFuer({ eigen: schluessel, empfaenger, kunde: basis }, muster, mehrere);
+    const gesperrt = muster.some(m => m.gesperrt);
     // Gepackt erledigt jede Klaerung.
     const klaerung = istGepackt ? null : kl;
     return {
       schluessel, packSchluessel: pk, name: g.name, adresse, bestellungen, seit, wartetTage: tage,
       muster, adressAufkleber, hinweise, altvermerk,
+      // Fuer den Textvorschlag "Kunde informieren": nur bei Umschlaegen, die ihn brauchen.
+      ...(gesperrt && g.email ? { email: g.email } : {}),
       restumfangPruefen: g.teilweiseErstattet && !g.direktversand && muster.some(m => m.anzahl > 0),
       direktversand: g.direktversand,
       adressFehlt: [...adressAufkleber.fehlt],
@@ -250,7 +268,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       klaeren: klaerung ? { zeit: klaerung.zeit || null, von: klaerung.von || null, notiz: text(klaerung.notiz) || null,
         fehlt: muster.filter(m => (klaerung.fehlt || []).includes(m.lineItemId)).map(m => m.lineItemId) } : null,
       // Ein Haken bestaetigt das physisch eingelegte Muster, sonst braucht es bestaetigten Bestand.
-      bereich: istGepackt ? 'gepackt' : klaerung || hinweise.length || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
+      bereich: istGepackt ? 'gepackt' : klaerung || gesperrt || hinweise.length || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
     };
   };
 
@@ -325,10 +343,11 @@ function markiereVerwechslung(muster) {
 
 /**
  * Aufkleber eines Kunden in Druckreihenfolge: seine Muster (je bestellte Anzahl), danach die Adresse.
- * `nurOffen`: abgehakte Muster sind schon ueberklebt und eingelegt - ihre Aufkleber nicht nochmal.
+ * `nurOffen`: abgehakte Muster sind schon ueberklebt und eingelegt - ihre Aufkleber nicht nochmal;
+ * gesperrte kommen nicht - kommt doch eins, druckt "Nur diesen nachdrucken" seinen Aufkleber.
  */
 export function aufkleberFuer(kunde, { nurOffen = false } = {}) {
-  const muster = nurOffen ? kunde.muster.filter(m => !m.abgehakt) : kunde.muster;
+  const muster = nurOffen ? kunde.muster.filter(m => !m.abgehakt && !m.gesperrt) : kunde.muster;
   return [...muster.flatMap(m => Array.from({ length: m.anzahl || 0 }, () => m.etikett)), kunde.adressAufkleber];
 }
 
