@@ -18,6 +18,9 @@
  * changeFromQuantity; hat sich ein Wert seit dem Lesen geaendert (Bestellung),
  * lehnt Shopify ab und der naechste Lauf gleicht nach.
  * Status: ~/teppich-paradies-analyse/lieferant-i/bestand-status.json
+ * Nach einem fehlerfreien Schreiblauf ohne Sperre wird zusaetzlich der Verlauf fuer die
+ * Auslauf-Pruefung fortgeschrieben (lieferant-i/auslauf-verlauf.json); ein Fehler dabei
+ * bricht den Abgleich nie ab. Planlaeufe und --datei fassen ihn nicht an.
  * Doku: domains/lieferanten/lieferant-i.md
  */
 
@@ -29,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 import { ladeEnvLocal, hatZugangsdaten, KEIN_ZUGANG, erzeugeProxy } from '../sync/zugang.mjs';
 import { wartenBeiThrottle } from '../sync/orders.mjs';
 import { leseBestandCsv, planeAbgleich, bauePakete } from '../lib/lieferanten-bestand.mjs';
+import { beobachteProdukte, fortschreibeVerlauf, verlaufDatei } from '../lib/auslauf-bestand.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const STATUS_DATEI = path.join(os.homedir(), 'teppich-paradies-analyse', 'lieferant-i', 'bestand-status.json');
@@ -36,7 +40,7 @@ export const STATUS_DATEI = path.join(os.homedir(), 'teppich-paradies-analyse', 
 const VARIANTEN_QUERY = `query($q: String!, $after: String) {
   productVariants(first: 250, after: $after, query: $q) {
     pageInfo { hasNextPage endCursor }
-    nodes { sku barcode inventoryItem { id tracked inventoryLevels(first: 3) { nodes { location { id } quantities(names: ["available"]) { quantity } } } } }
+    nodes { sku barcode product { handle status } inventoryItem { id tracked inventoryLevels(first: 3) { nodes { location { id } quantities(names: ["available"]) { quantity } } } } }
   }
 }`;
 
@@ -66,7 +70,7 @@ async function ladeVarianten(proxy, vendor, locationId) {
     for (const n of conn.nodes) {
       if (!n.sku || !n.inventoryItem?.tracked) continue;
       const level = n.inventoryItem.inventoryLevels.nodes.find((l) => l.location.id === locationId);
-      varianten.push({ sku: n.sku, barcode: n.barcode || '', inventoryItemId: n.inventoryItem.id, verfuegbar: level?.quantities?.[0]?.quantity ?? 0 });
+      varianten.push({ sku: n.sku, barcode: n.barcode || '', handle: n.product?.handle || null, status: n.product?.status || null, inventoryItemId: n.inventoryItem.id, verfuegbar: level?.quantities?.[0]?.quantity ?? 0 });
     }
     if (!conn.pageInfo.hasNextPage) break;
     after = conn.pageInfo.endCursor;
@@ -78,6 +82,26 @@ async function ladeVarianten(proxy, vendor, locationId) {
 function schreibeStatus(status) {
   fs.mkdirSync(path.dirname(STATUS_DATEI), { recursive: true });
   fs.writeFileSync(STATUS_DATEI, JSON.stringify(status, null, 2));
+}
+
+/**
+ * Verlauf fuer die Auslauf-Pruefung fortschreiben. Wirft nie: Der Bestand ist wichtiger als die
+ * Auslauf-Spur. Eine unlesbare Datei zaehlt wie keine, der Verlauf beginnt dann neu.
+ * Geschrieben wird ueber eine Zwischendatei, damit die Pruefung nie eine halbe Datei liest.
+ */
+export function aktualisiereAuslaufVerlauf(bestand, varianten, { datei, jetzt = new Date() }) {
+  try {
+    let vorher = null;
+    try { vorher = JSON.parse(fs.readFileSync(datei, 'utf8')); } catch { /* erster Lauf oder kaputt */ }
+    const verlauf = fortschreibeVerlauf(vorher, beobachteProdukte(bestand, varianten), jetzt);
+    fs.mkdirSync(path.dirname(datei), { recursive: true });
+    const zwischen = `${datei}.${process.pid}.tmp`;
+    fs.writeFileSync(zwischen, JSON.stringify(verlauf, null, 2));
+    fs.renameSync(zwischen, datei);
+    return { ok: true, produkte: Object.keys(verlauf.produkte).length };
+  } catch (e) {
+    return { ok: false, fehler: e.message };
+  }
 }
 
 async function main() {
@@ -122,6 +146,12 @@ async function main() {
     }
   } else {
     for (const x of plan.aenderungen.slice(0, 10)) console.log(`  ${x.sku}: ${x.von} -> ${x.auf}`);
+  }
+  if (a.schreiben && !a.datei && !status.fehler.length) {
+    const privat = process.env.TP_PRIVAT_DIR || path.dirname(path.dirname(STATUS_DATEI));
+    const v = aktualisiereAuslaufVerlauf(bestand, varianten, { datei: verlaufDatei(privat) });
+    status.auslaufVerlauf = v;
+    console.log(v.ok ? `Auslauf-Verlauf: ${v.produkte} aktive Produkte` : `Auslauf-Verlauf nicht geschrieben: ${v.fehler}`);
   }
   schreibeStatus(status);
   if (status.fehler.length) {

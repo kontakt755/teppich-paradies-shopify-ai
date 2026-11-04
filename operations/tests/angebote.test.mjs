@@ -51,3 +51,8 @@ test('Telefonnummer kommt aus Entwurf, Kunde oder Adresse', () => {
   assert.equal(ausAdresse.telefon, '+4930333');
   assert.equal(angebotEintrag({ id: 'gid://shopify/DraftOrder/4' }).telefon, null);
 });
+
+test('angebotEintrag: merkt sich, ob Versand im Entwurf steht', () => {
+  assert.equal(angebotEintrag(angebot(1, 'OPEN')).versandEingetragen, false);
+  assert.equal(angebotEintrag({ ...angebot(1, 'OPEN'), shippingLine: { title: 'Standard' } }).versandEingetragen, true);
+});

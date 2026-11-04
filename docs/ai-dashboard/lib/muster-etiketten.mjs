@@ -47,7 +47,16 @@ export const ETIKETT_FORMATE = Object.freeze({
   '50x80': { ...ETIKETT, format: '50x80', name: '50 × 80 mm', hoehe: 640, faktor: 1.3 },
   '50x100': { ...ETIKETT, format: '50x100', name: '50 × 100 mm', hoehe: 800, faktor: 1.6 },
 });
-export const etikettFormat = name => ETIKETT_FORMATE[name] || ETIKETT;
+/**
+ * Eigene Aufkleber (Wegweiser) gehen auch auf die schmale Rolle 50 x 20 mm: 400 x 160 px. Muster- und
+ * Adressaufkleber passen dort nicht, deshalb steht sie nur in dieser Auswahl. Rand 3 statt 4 mm, sonst
+ * blieben von 20 mm nur 12 fuer Text; so am 02.11. auf echten Etiketten gedruckt.
+ */
+export const FREIE_FORMATE = Object.freeze({
+  '50x20': { ...ETIKETT, format: '50x20', name: '50 × 20 mm', hoehe: 160, rand: 24, faktor: 0.4 },
+  ...ETIKETT_FORMATE,
+});
+export const etikettFormat = name => FREIE_FORMATE[name] || ETIKETT;
 
 /** Kleinste Schrift auf einem Etikett: 12 px = 1,5 mm. */
 export const MIN_SCHRIFT = 12;

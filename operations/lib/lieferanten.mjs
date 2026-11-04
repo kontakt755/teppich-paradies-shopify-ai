@@ -171,6 +171,8 @@ function pruefeLieferant(id, roh, fehler) {
       lieferung: p.auswahl(w.lieferung, 'ware.lieferung', MUSTER_LIEFERUNG),
       // Wie muster.nachBezeichnung: die Warenmail nennt die Bezeichnung des Herstellers.
       nachBezeichnung: w.nachBezeichnung === true,
+      // Der Lieferant kettelt auch selbst: wer kettelt, wird dann je Teppich entschieden.
+      kettelnMoeglich: w.kettelnMoeglich === true,
     },
     muster: {
       weg: p.auswahl(m.weg, 'muster.weg', BESTELLWEGE),
@@ -593,6 +595,8 @@ const ZIEL_JE_AUFTRAG = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE])
 
 /** Kettel-/Einfassungszeile aus der Kundenbestellung ("Einfassung: Gekettelt, umlaufend ..."). */
 const istEinfassung = z => /^Einfassung:/.test(z);
+/** Muss wirklich eingefasst werden: nicht "ohne Einfassung", "Zugeschnitten" oder "Fertig eingefasst" (Inhaber 03.11.2026, w-226). */
+const mussEingefasstWerden = z => istEinfassung(z) && !/ohne Einfassung|zugeschnitten|fertig eingefasst/i.test(z);
 
 /** Kuerzere Seite des Fertigmasses in cm ("200 × 300 cm", "Ø 160 cm"); null, wenn keins da ist. */
 export function kuerzereSeiteCm(ausfuehrung = []) {
@@ -609,8 +613,35 @@ export function kuerzereSeiteCm(ausfuehrung = []) {
  * kann der Lieferant nicht zuschneiden - dann bleibt es beim normalen Weg.
  */
 export function kettlerAutomatisch(p) {
-  if (!(p.ausfuehrung ?? []).some(istEinfassung)) return false;
+  if (!(p.ausfuehrung ?? []).some(mussEingefasstWerden)) return false;
   return kuerzereSeiteCm(p.ausfuehrung) !== null;
+}
+
+/** Wege eines gekettelten Teppichs, wenn der Lieferant selbst ketteln kann. */
+export const KETTELWEGE = Object.freeze(['lieferant', 'kettler']);
+/** Bis zu dieser kuerzeren Seite geht ein Teppich vom Kettler per Paket, darueber per Spedition. */
+export const KETTLER_PAKET_BIS_CM = 200;
+
+/**
+ * Wer kettelt, ist bei Lieferanten mit eigenem Ketteln keine feste Regel, sondern wird je Teppich
+ * geklaert (Inhaber 2026-11-03): Lieferant kettelt und liefert direkt, oder Zuschnitt zum Kettler.
+ * Ueber 200 cm kurze Seite ist der Lieferant meist guenstiger, weil vom Kettler sonst noch die
+ * Spedition dazukommt. Das bleibt eine Empfehlung: Preise kennt hier niemand, entschieden wird im Dialog.
+ */
+export function kettelwegEmpfehlung(p) {
+  const seite = kuerzereSeiteCm(p.ausfuehrung);
+  return seite !== null && seite > KETTLER_PAKET_BIS_CM ? 'lieferant' : null;
+}
+
+/** Wahl aus dem Dialog ("<Position>=lieferant,<Position>=kettler"); alles andere gilt als nicht gewaehlt. */
+export function leseKettelwege(roh) {
+  const wege = {};
+  for (const teil of String(roh ?? '').split(',')) {
+    const trenner = teil.lastIndexOf('=');
+    const weg = teil.slice(trenner + 1);
+    if (trenner > 0 && KETTELWEGE.includes(weg)) wege[teil.slice(0, trenner)] = weg;
+  }
+  return wege;
 }
 
 /**
@@ -619,10 +650,30 @@ export function kettlerAutomatisch(p) {
  * der Kunde in der Naehe wohnt (wir liefern selbst bis in die Wohnung).
  */
 export function kettlerGrund(p, adresse) {
-  if (!(p.ausfuehrung ?? []).some(istEinfassung)) return null;
+  if (!(p.ausfuehrung ?? []).some(mussEingefasstWerden)) return null;
   if (kettlerAutomatisch(p)) return 'gekettelt – Ketteln beim Kettler';
   if (adresse?.plz && KETTLER_NAH_PLZ.test(String(adresse.plz).trim())) return `Kunde in der Nähe (${String(adresse.plz).trim()} ${adresse.ort ?? ''}`.trim() + ') – wir liefern selbst';
   return null;
+}
+
+/**
+ * Bezugsweg je Bestellung abwaegen (Inhaber 2026-11-04): Wohnt der Kunde in der Naehe, kann die
+ * Rolle vom Hersteller guenstiger sein - wir schneiden zu und liefern selbst an. Weiter weg ist
+ * meist der Grosshandel besser, wegen der Speditionskosten. Nur Massware aus der Rolle; ohne PLZ
+ * keine Aussage. Eine feste Grenze hat der Inhaber nicht genannt: "nah" ist unser Liefergebiet.
+ */
+export function bezugswegHinweis(positionen = [], adressen = new Map()) {
+  const hinweis = { nah: [], weit: [] };
+  const gesehen = new Set();
+  for (const p of positionen) {
+    if (!(Number(p.ausRolleCm) > 0) || gesehen.has(p.orderId)) continue;
+    const plz = String(adressen.get(p.orderId)?.plz ?? '').trim();
+    if (!/^\d{5}$/.test(plz)) continue;
+    gesehen.add(p.orderId);
+    const eintrag = { orderName: p.orderName, ort: `${plz} ${adressen.get(p.orderId)?.ort ?? ''}`.trim() };
+    (KETTLER_NAH_PLZ.test(plz) ? hinweis.nah : hinweis.weit).push(eintrag);
+  }
+  return hinweis;
 }
 
 /**
@@ -659,7 +710,13 @@ function fuerKettler(p) {
   return { ...p, ausfuehrung: [...zeilen, 'Ohne Einfassung – bitte genau im Zuschnittmaß zuschneiden, nicht ketteln (Ketteln macht unser Kettelservice)'] };
 }
 
-function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false }) {
+/** Der Lieferant kettelt selbst: das steht ausdruecklich in der Mail, damit nichts ungekettelt kommt. */
+function fuerLieferantKettelt(p, wege) {
+  if (wege[p.lineItemId] !== 'lieferant' || !wirdGekettelt(p.ausfuehrung)) return p;
+  return { ...p, ausfuehrung: [...p.ausfuehrung, 'Bitte fertig gekettelt im Fertigmaß liefern.'] };
+}
+
+function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false, kettelwege = {}, kettelwegGewaehlt = false }) {
   const alle = (gruppe.positionen ?? []).filter(p => !auswahl || auswahl(p)).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
   // Die Kettler-Regel gilt auch fuer Ware, die der Lieferant sonst direkt zum Kunden schickt:
@@ -711,14 +768,14 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
     let nr = 0;
     for (const [orderId, liste] of jeAuftrag) {
       zeilen.push(`Kommission ${liste[0].orderName} – Lieferanschrift:`, ...adressZeilen(adressen.get(orderId), { telefon: true }).map(z => `   ${z}`), '');
-      for (const p of liste) { nr += 1; zeilen.push(...positionsZeilen(p, nr, { mitKunde: false, nachBezeichnung }), ''); }
+      for (const p of liste) { nr += 1; zeilen.push(...positionsZeilen(fuerLieferantKettelt(p, kettelwege), nr, { mitKunde: false, nachBezeichnung }), ''); }
     }
   } else if (anKettler) {
     // Ketteln macht der Kettelservice - der Lieferant schneidet nur zu. Kundennamen gehen
     // nicht mit: der Kettler ordnet ueber die Kommission zu.
     aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(fuerKettler(p), i + 1, { mitKunde: false, nachBezeichnung }), ''));
   } else {
-    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1, { nachBezeichnung }), ''));
+    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(fuerLieferantKettelt(p, kettelwege), i + 1, { nachBezeichnung }), ''));
   }
   if (direkt) {
     zeilen.push(gruppe.route === ROUTE.SUPPLIER_TO_SITE ? (du ? 'Bitte liefere direkt an die Baustelle:' : 'Bitte liefern Sie direkt an die Baustelle:') : (du ? 'Bitte liefere direkt an unseren Kunden:' : 'Bitte liefern Sie direkt an unseren Kunden:'));
@@ -756,7 +813,12 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       kettlerVorschlag,
       // Nach der Regel "gekettelt zum Kettler" abgetrennt, nicht von Hand gewaehlt.
       kettlerAutomatisch: automatisch,
+      // Im Dialog je Teppich gewaehlt statt nach der Regel (Inhaber 2026-11-03).
+      kettelwegGewaehlt,
+      kettelnBeimLieferanten: !anKettler && aufgenommen.some(p => kettelwege[p.lineItemId] === 'lieferant' && wirdGekettelt(p.ausfuehrung)),
       kettelPuffer,
+      // Zum Kettler oder auf die Baustelle ist der Weg schon entschieden.
+      bezugsweg: anKettler || gruppe.route === ROUTE.SUPPLIER_TO_SITE ? { nah: [], weit: [] } : bezugswegHinweis(offen, adressen),
       bereitsBestellt: alle.length - offen.length,
     },
   });
@@ -827,23 +889,58 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
   });
 }
 
+/** Gilt die Kettler-Regel fuer diese Gruppe? Ein Ziel aus dem Dialog geht ihr vor. */
+function kettelRegelGilt(gruppe, kontext) {
+  // Auch Direktversand des Lieferanten (#1453); nur Baustellenlieferungen bleiben, wie sie sind.
+  // Ein Ziel aus dem Dialog gilt nur fuer waehlbare Gruppen - Direktversand behaelt die Regel.
+  const zielGilt = Boolean(kontext.ziel) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
+  return !zielGilt && adresseOk(kontext.absender?.kettelservice) && gruppe.route !== ROUTE.SUPPLIER_TO_SITE;
+}
+
+/** Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail. */
+const istOffen = (p, kontext) => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
+
+/**
+ * Nur bei Direktversand: nur dort heisst "Lieferant kettelt" sicher auch "direkt an den Kunden",
+ * in der Mail und im Auftragsfluss. Andere Ware waehlt ihr Ziel weiter mit den Knoepfen im Dialog.
+ */
+function kettelnJeFall(gruppe, kontext) {
+  return gruppe.route === ROUTE.SUPPLIER_DIRECT && kontext.st.ware.kettelnMoeglich && kettelRegelGilt(gruppe, kontext);
+}
+
+/** Teppich, bei dem vor der Bestellung zu entscheiden ist, wer kettelt. Ohne Fertigmass gibt es keinen Zuschnitt. */
+function kettelwegFaellig(p, gruppe, kontext) {
+  return kettelnJeFall(gruppe, kontext) && wirdGekettelt(p.ausfuehrung) && kuerzereSeiteCm(p.ausfuehrung) !== null && istOffen(p, kontext);
+}
+
+function kettelwegFrage(p, gruppe, kontext) {
+  const pos = schlankePosition(p, kontext.statusAlle, kontext.jetzt);
+  return { orderId: pos.orderId, orderName: pos.orderName, lineItemId: pos.lineItemId, titel: pos.titel, farbe: pos.farbe,
+    fertigmass: kettelZuschnitt(pos.ausfuehrung)?.fertig ?? null, empfehlung: kettelwegEmpfehlung(pos), wahl: kontext.kettelwege[pos.lineItemId] ?? null };
+}
+
 /**
  * Ware einer Gruppe als Mail(s). Ohne gewaehltes Ziel gilt die Regel des Inhabers (2026-10-19):
  * gekettelte Massteppiche gehen in eine eigene Mail an unseren Kettler, der Rest wie bisher.
  * Ein Ziel aus dem Dialog (Kunden/Laden/Kettler) gilt dagegen fuer die ganze Gruppe.
+ * Kettelt der Lieferant auch selbst, entscheidet der Dialog je Teppich (2026-11-03): bis dahin
+ * steht der Teppich in keiner Mail, damit nichts versehentlich auf dem falschen Weg bestellt wird.
  */
 function wareMailsFuer(gruppe, kontext) {
-  // Auch Direktversand des Lieferanten (#1453); nur Baustellenlieferungen bleiben, wie sie sind.
-  // Ein Ziel aus dem Dialog gilt nur fuer waehlbare Gruppen - Direktversand behaelt die Regel.
-  const zielGilt = Boolean(kontext.ziel) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
-  const automatisch = !zielGilt && adresseOk(kontext.absender?.kettelservice) && gruppe.route !== ROUTE.SUPPLIER_TO_SITE;
-  // Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail.
-  const offen = p => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
-  const zumKettler = p => kettlerAutomatisch(p) && offen(p);
-  if (!automatisch || !(gruppe.positionen ?? []).some(zumKettler)) return [wareMail(gruppe, kontext)];
-  const kettler = wareMail(gruppe, { ...kontext, ziel: 'kettler', auswahl: zumKettler, automatisch: true });
-  const rest = (gruppe.positionen ?? []).some(p => !zumKettler(p)) ? [wareMail(gruppe, { ...kontext, auswahl: p => !zumKettler(p) })] : [];
-  return [kettler, ...rest];
+  if (!kettelRegelGilt(gruppe, kontext)) return [wareMail(gruppe, kontext)];
+  const jeFall = kettelnJeFall(gruppe, kontext);
+  const positionen = gruppe.positionen ?? [];
+  const faellig = p => kettelwegFaellig(p, gruppe, kontext);
+  const zumKettler = p => (jeFall ? faellig(p) && kontext.kettelwege[p.lineItemId] === 'kettler' : kettlerAutomatisch(p) && istOffen(p, kontext));
+  const unentschieden = p => faellig(p) && !KETTELWEGE.includes(kontext.kettelwege[p.lineItemId]);
+  const wartet = positionen.some(unentschieden);
+  const mitKettler = positionen.some(zumKettler);
+  if (!mitKettler && !wartet) return [wareMail(gruppe, kontext)];
+  const rest = p => !zumKettler(p) && !unentschieden(p);
+  const mails = mitKettler ? [wareMail(gruppe, { ...kontext, ziel: 'kettler', auswahl: zumKettler, automatisch: true, kettelwegGewaehlt: jeFall })] : [];
+  // Wartet noch ein Teppich auf die Wahl, zeigt eine Mail ohne Offenes nur "nichts zu bestellen".
+  if (positionen.some(p => rest(p) && (!wartet || istOffen(p, kontext)))) mails.push(wareMail(gruppe, { ...kontext, auswahl: rest }));
+  return mails;
 }
 
 export class LieferantenFehler extends Error {}
@@ -859,9 +956,10 @@ export class LieferantenFehler extends Error {}
  * @param {'kunde'|'laden'|'kettler'} [p.ziel] Muster: ueberstimmt muster.lieferung aus den Stammdaten;
  *                                 Ware: ueberstimmt ware.lieferung (Standard 'kunde' - direkt an die Kunden);
  *                                 'kettler' nur fuer Ware (Anschrift aus absender.kettelservice)
+ * @param {string} [p.kettelwege]  nur Ware: Wahl je Teppich, siehe leseKettelwege()
  * @returns {{lieferant:string, name:string, art:string, mails:object[]}}
  */
-export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, ziel = null, statusAlle = {}, stammdaten = null, jetzt = new Date() } = {}) {
+export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, ziel = null, kettelwege = '', statusAlle = {}, stammdaten = null, jetzt = new Date() } = {}) {
   const id = kennung(lieferant);
   if (!id) throw new LieferantenFehler('lieferant ist Pflicht');
   if (!['ware', 'muster'].includes(art)) throw new LieferantenFehler('art muss "ware" oder "muster" sein');
@@ -869,8 +967,9 @@ export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, zi
     throw new LieferantenFehler(art === 'ware' ? 'ziel muss "kunde", "laden" oder "kettler" sein' : 'ziel muss "kunde" oder "laden" sein');
   }
   const st = stammdatenFuer(stammdaten, id);
-  const kontext = { st, absender: stammdaten?.absender ?? null, statusAlle, adressen: kundenAdressen(modell), jetzt, ziel };
+  const kontext = { st, absender: stammdaten?.absender ?? null, statusAlle, adressen: kundenAdressen(modell), jetzt, ziel, kettelwege: leseKettelwege(kettelwege) };
   let mails;
+  let fragen = [];
   if (art === 'muster') {
     const gruppen = (modell?.musterGruppen ?? []).filter(g => g.lieferant === id);
     mails = gruppen.length ? [musterMail(gruppen, kontext)] : [];
@@ -878,10 +977,11 @@ export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, zi
     const gruppen = (modell?.gruppen ?? []).filter(g => g.lieferant === id && (!gruppe || g.schluessel === gruppe));
     if (gruppe && !gruppen.length) throw new LieferantenFehler('Gruppe nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert');
     mails = gruppen.flatMap(g => wareMailsFuer(g, kontext));
+    fragen = gruppen.flatMap(g => (g.positionen ?? []).filter(p => kettelwegFaellig(p, g, kontext)).map(p => kettelwegFrage(p, g, kontext)));
   }
   // Mails ohne offene Position (alles schon bestellt) bleiben sichtbar, aber leer - so
   // sieht die Oberflaeche "nichts mehr zu bestellen" statt eines Fehlers.
-  return { lieferant: id, name: st.name, art, automatischGesendet: false, mails };
+  return { lieferant: id, name: st.name, art, automatischGesendet: false, mails, kettelwege: fragen };
 }
 
 // ------------------------------------------------------ Schnellzugriff (Lexikon)

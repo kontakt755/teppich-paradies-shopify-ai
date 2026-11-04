@@ -9,6 +9,6 @@ export function vorbereitungStand(vorlage, scope = {}) {
     positionen: (m.positionen || []).map(p => ({ orderId: p.orderId, lineItemId: p.lineItemId,
       menge: p.menge ?? null, einheit: p.einheit ?? null, artikelnummer: p.artikelnummer ?? null })),
   }));
-  const kontext = Object.fromEntries(['lieferant', 'art', 'gruppe', 'ziel', 'auftrag'].map(k => [k, scope[k] || '']));
+  const kontext = Object.fromEntries(['lieferant', 'art', 'gruppe', 'ziel', 'auftrag', 'kettelwege'].map(k => [k, scope[k] || '']));
   return createHash('sha256').update(JSON.stringify({ version: 1, kontext, mails })).digest('hex');
 }

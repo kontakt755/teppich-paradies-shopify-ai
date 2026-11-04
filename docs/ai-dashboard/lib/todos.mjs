@@ -17,7 +17,7 @@ import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaff
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
 import { sichereUrl } from './akquise.mjs';
-import { lieferantName as lieferantAnzeige } from './einkauf-lieferanten.mjs';
+import { lieferantName as lieferantAnzeige, werktageZwischen } from './einkauf-lieferanten.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -41,6 +41,12 @@ export const FRISTEN = Object.freeze({
 // sie bis 2026-10-19 und verschwieg damit normale Laden-Arbeit (Codex-Audit).
 export const SICHTEN = Object.freeze(['inhaber', 'laden', 'website', 'alles']);
 export const SICHT_LABEL = Object.freeze({ inhaber: 'Inhaber', laden: 'Laden', website: 'Website', alles: 'Alles' });
+
+/**
+ * Haengt ein Muster laenger als so viele Werktage aus demselben Grund bei der Musterautomatik, ist es
+ * ein Problem: am 31.10. standen 17 Muster still, ohne dass eine Aufgabe entstand.
+ */
+export const MUSTER_KLAER_WERKTAGE = 1;
 
 const TON_RANG = { crit: 0, warn: 1, '': 2 };
 
@@ -129,6 +135,13 @@ function lieferantMusterAusstehend(offen) {
 const ortVon = z => { const o = z?.auftrag?.details?.lieferadresse?.ort; return o && o !== '–' ? o : null; };
 const istBezahlt = z => BEZAHLT.includes(String(z.zahlungsstatus));
 const artWort = positionen => (positionen.every(x => x.p.istMuster) ? 'Muster' : 'Ware');
+
+/** Klaerfall der Musterautomatik, wenn diese Position zu lange aus demselben Grund haengt - sonst null. */
+function haengtBeiAutomatik(z, lineItemId, jetzt) {
+  const fall = z.musterAutomatik?.klaeren?.find(e => e.lineItemIds?.includes(lineItemId));
+  const werktage = fall ? werktageZwischen(fall.seit, jetzt) : null;
+  return werktage !== null && werktage > MUSTER_KLAER_WERKTAGE ? { grund: fall.grund, seit: fall.seit, werktage } : null;
+}
 
 function rueckrufFaellig(r, heute) {
   if (!r || r.testbestellung || r.status === 'erledigt') return false;
@@ -253,6 +266,7 @@ function ausBestellungen(quellen, k) {
   const bestellen = new Map();   // lieferant|art -> Positionen, noch nicht beim Lieferanten bestellt
   const nachhaken = new Map();   // lieferant -> Positionen, zu lange bestellt
   const eigeneMuster = new Map(); // orderId -> Muster aus eigenem Bestand, noch nicht beim Kunden
+  const haengend = new Map();    // Grund der Musterautomatik -> Muster, die zu lange daran haengen
   const wartenAufLieferant = new Set(); // orderIds: eigene Muster gehen mit denen vom Lieferanten raus
   const sammle = (map, key, wert) => { if (!map.has(key)) map.set(key, []); map.get(key).push(wert); };
 
@@ -295,7 +309,9 @@ function ausBestellungen(quellen, k) {
         continue;
       }
       // "Haben wir da": nicht beim Lieferanten bestellen, sondern vorbeibringen bzw. verschicken.
-      if (!status && musterEigen(x.p)) sammle(eigeneMuster, z.orderId, pos);
+      const haengt = !status && !musterEigen(x.p) ? haengtBeiAutomatik(z, x.p.lineItemId, k.jetzt) : null;
+      if (haengt) sammle(haengend, haengt.grund, { ...pos, ...haengt });
+      else if (!status && musterEigen(x.p)) sammle(eigeneMuster, z.orderId, pos);
       else if (!status) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|${x.p.istMuster ? 'muster' : 'ware'}`, pos);
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
@@ -361,6 +377,17 @@ function ausBestellungen(quellen, k) {
       knopf: (z.auftrag?.positionen || []).filter(p => p.istMuster).every(musterEigen)
         ? { text: vorbei ? 'Erledigt – Kunde hat Muster' : 'Muster sind verschickt…', schritt: { orderId, aktion: vorbei ? 'kunde_hat_muster' : 'raus' }, href: kundenLink(z) }
         : { text: 'Ansehen', href: kundenLink(z) },
+    });
+  }
+  // Steht statt unter "bestellen": erst der Grund muss weg, sonst bestellt auch die Automatik nicht.
+  for (const [grund, positionen] of haengend) {
+    const werktage = Math.max(...positionen.map(x => x.werktage));
+    todos.push({
+      id: `muster-klaeren:${grund}`, art: 'muster_klaeren', bereich: 'laden', ton: 'crit',
+      alterTage: Math.max(...positionen.map(x => tageSeit(x.seit, k.jetzt) ?? 0)),
+      titel: `${positionen.length === 1 ? '1 Muster hängt' : `${positionen.length} Muster hängen`}: ${grund}`,
+      kontext: [kundenKurz(positionen), musterKurz(positionen), `seit ${mehrzahl(werktage, 'Werktag', 'Werktagen')} nicht automatisch bestellt`].join(' · '),
+      knopf: { text: 'Ansehen', href: '#/kunden?tab=bestellungen&bart=muster' },
     });
   }
   for (const [lieferant, positionen] of nachhaken) {
@@ -543,6 +570,36 @@ function ausSpeicher(quellen, jetzt) {
   }];
 }
 
+/** Der Monatslauf versucht es am 1., 2. und 3.; ab 35 Tagen ohne Erfolg ist er ausgefallen. */
+export const GOOGLE_BEWERTUNG_STUMM_TAGE = 35;
+const GOOGLE_PROFIL = 'https://maps.google.com/?cid=787042219843486388';
+
+/**
+ * Google-Bewertung im Shop (scripts/google-bewertung.mjs). Kommt mit der Shop-Wache
+ * (quellen.shopwache.googleBewertung). Der Shop zeigt dann weiter den letzten Wert: nichts ist
+ * falsch beschriftet, aber die Zahl altert, und in der Inhaber-Sicht steht nur Rotes.
+ * Rot ist darum, was allein nicht mehr heilt: ein auffaelliger Wert (ein Mensch muss nachsehen)
+ * und ein Monat ohne Erfolg (genau so war die Zahl von Hand veraltet). Ein einzelner gescheiterter
+ * Abruf bleibt Bernstein, der Lauf versucht es am 1., 2. und 3. selbst noch einmal.
+ */
+function ausGoogleBewertung(quellen, jetzt) {
+  const d = quellen.shopwache?.googleBewertung;
+  if (!d?.geprueftAm) return [];
+  const basis = { id: 'google-bewertung', art: 'google-bewertung', bereich: 'website' };
+  const tage = tageSeit(d.letzterErfolg || d.geprueftAm, jetzt);
+  const stumm = tage !== null && tage >= GOOGLE_BEWERTUNG_STUMM_TAGE;
+  if (d.ampel === 'gelb') {
+    return [{ ...basis, ton: 'crit', alterTage: tageSeit(d.geprueftAm, jetzt), titel: 'Google-Bewertung: Wert auffällig, nicht übernommen', kontext: `${d.meldung} · Der Shop zeigt weiter den alten Wert. Bei Google nachsehen; stimmt es, Claude Bescheid geben.`, knopf: { text: 'Bei Google ansehen', href: GOOGLE_PROFIL } }];
+  }
+  if (d.ampel === 'rot') {
+    return [{ ...basis, ton: stumm ? 'crit' : 'warn', alterTage: tageSeit(d.geprueftAm, jetzt), titel: 'Google-Bewertung: Abruf gescheitert', kontext: `${d.meldung} · Der Shop zeigt weiter den alten Wert. Der Lauf versucht es am 1., 2. und 3. des Monats, sonst Claude Bescheid geben.` }];
+  }
+  if (stumm) {
+    return [{ ...basis, ton: 'crit', alterTage: tage, titel: 'Google-Bewertung: Monatslauf meldet sich nicht', kontext: `letzter Erfolg vor ${tage} Tagen – er läuft sonst am Monatsanfang. Claude Bescheid geben.` }];
+  }
+  return [];
+}
+
 /** Die Auslauf-Pruefung laeuft montags; ab 9 Tagen ohne neuen Stand ist sie ausgefallen. */
 export const AUSLAUF_STUMM_TAGE = 9;
 
@@ -552,6 +609,11 @@ export const AUSLAUF_STUMM_TAGE = 9;
  * Lieferanten und eine Pruefung, die sich nicht mehr meldet - archiviert wird nach Gegenprobe.
  * Farben ohne Handmuster ("ohne-muster", A fuehrt sie "nur in Format") sind kein Auslauf:
  * eigenes To-do, das Muster wird gesperrt, die Ware bleibt.
+ * Lieferant I, lange nichts verfuegbar ("nicht-verfuegbar"): ebenfalls eigenes gelbes To-do,
+ * denn das ist kein Auslaufbeleg und darf nicht nach "archivieren" klingen.
+ * Befund, Ausfall und stumme Pruefung sind je ein eigenes To-do und verdecken sich nicht:
+ * nach einem Ausfall beginnen Fristen neu, das darf kein Befund eines anderen Lieferanten
+ * unsichtbar machen.
  */
 function ausAuslauf(quellen, jetzt) {
   const d = quellen.shopwache?.auslauf;
@@ -572,11 +634,25 @@ function ausAuslauf(quellen, jetzt) {
       ].filter(Boolean).join(' · '),
     };
   })()] : [];
-  const befunde = (d.befunde || []).filter(b => b.ergebnis !== 'ohne-muster');
+  const ohneBestand = (d.befunde || []).filter(b => b.ergebnis === 'nicht-verfuegbar');
+  if (ohneBestand.length) {
+    const handles = [...new Set(ohneBestand.flatMap(b => b.handles || []))];
+    const n = ohneBestand.length;
+    muster.push({
+      ...basis, id: 'auslauf-nicht-verfuegbar', ton: 'warn', knopf: lexikon(handles),
+      titel: `${n} Artikel seit mindestens 30 Tagen in keiner Größe verfügbar`,
+      kontext: [
+        handles.slice(0, 3).join(', '), handles.length > 3 ? `+${handles.length - 3} weitere` : null,
+        'kein Auslaufbeleg, beim Lieferanten nachfragen',
+      ].filter(Boolean).join(' · '),
+    });
+  }
+  const befunde = (d.befunde || []).filter(b => !['ohne-muster', 'nicht-verfuegbar'].includes(b.ergebnis));
   const weg = befunde.filter(b => b.ergebnis === 'fehlt');
+  const todos = [...muster];
   if (befunde.length) {
     const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
-    return [...muster, {
+    todos.push({
       ...basis, ton: weg.length ? 'crit' : 'warn',
       knopf: lexikon(handles),
       titel: weg.length
@@ -584,21 +660,21 @@ function ausAuslauf(quellen, jetzt) {
         : `Auslauf-Prüfung: ${befunde.length} ${befunde.length === 1 ? 'Seite' : 'Seiten'} auffällig`,
       kontext: [
         handles.slice(0, 3).join(', '), handles.length > 3 ? `+${handles.length - 3} weitere` : null,
-        'gegenprüfen, dann archivieren (AGENTS.md)',
+        'gegenprüfen, dann archivieren; fällt nur eine Variante weg, Freigabe holen (AGENTS.md)',
       ].filter(Boolean).join(' · '),
-    }];
+    });
   }
   if (d.ausfaelle?.length) {
-    return [...muster, {
-      ...basis, ton: 'warn',
+    todos.push({
+      ...basis, id: 'auslauf-ausfall', ton: 'warn',
       titel: `Auslauf-Prüfung: Lieferant ${d.ausfaelle.map(a => a.lieferant).join(', ')} nicht prüfbar`,
-      kontext: d.ausfaelle[0].grund,
-    }];
+      kontext: d.ausfaelle.map(a => `${a.lieferant}: ${a.grund}`).join(' · '),
+    });
   }
   if (tage !== null && tage >= AUSLAUF_STUMM_TAGE) {
-    return [...muster, { ...basis, ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` }];
+    todos.push({ ...basis, id: 'auslauf-stumm', ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` });
   }
-  return muster;
+  return todos;
 }
 
 /**
@@ -668,6 +744,14 @@ function ausRoutinen(quellen, jetzt) {
     // Ohne Knopf war das rote To-do eine Sackgasse; die Shop-Kontrolle listet jede gestoerte Routine.
     knopf: { text: 'Ansehen', href: '#/shopwache' },
   }];
+}
+
+/** Neue Claude-Version oder Monatsvorschlaege (operations/lib/ki-stand.mjs): gelb, kein Ausfall. */
+function ausKiStand(quellen) {
+  const r = (quellen.shopwache?.routinen || []).find(x => x.id === 'claude-stand' && x.ok !== false && x.hinweis);
+  if (!r) return [];
+  return [{ id: 'ki-stand', art: 'routinen', bereich: 'website', ton: 'warn', alterTage: null, titel: 'Claude Code: Neuerungen ansehen',
+    kontext: `${r.hinweis} · Claude Bescheid geben: „Claude-Stand“` }];
 }
 
 const SICHERUNG_ZEIT = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -761,6 +845,7 @@ function alleTodos(quellen, opt) {
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
     ...ausAuslauf(quellen, k.jetzt),
+    ...ausGoogleBewertung(quellen, k.jetzt),
     ...ausNeuheiten(quellen, k.jetzt),
     ...ausAusschreibungen(quellen, k.jetzt),
     ...ausAkquise(quellen),
@@ -769,6 +854,7 @@ function alleTodos(quellen, opt) {
     ...ausTailscale(quellen),
     ...ausSpeicher(quellen, k.jetzt),
     ...ausRoutinen(quellen, k.jetzt),
+    ...ausKiStand(quellen),
     ...ausSicherung(quellen, k.jetzt),
   ];
 }

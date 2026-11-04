@@ -34,6 +34,16 @@ const PRODUKT = { id: 7, handle: 'piumera', title: 'Piumera Teppichboden' };
 
 // --- Rechenkern ---
 
+test('Sperrliste sperrt einzelne Farben auch ohne Musterprodukt (w-194)', () => {
+  const liste = { 'finvara-eiche': [' grau '] };
+  const mitListe = core.applySperrliste(FARBEN, 'finvara-eiche', liste);
+  assert.equal(mitListe[0].sampleUnavailable, true);
+  assert.equal(core.isSelectable(mitListe[0]), false);
+  assert.equal(core.isSelectable(mitListe[1]), true);
+  assert.equal(core.applySperrliste(FARBEN, 'anderes-produkt', liste), FARBEN);
+  assert.equal(FARBEN[0].sampleUnavailable, undefined);
+});
+
 test('drei Faelle je Farbe: verfuegbar, Variante fehlt, Variante gesperrt', () => {
   const muster = musterProdukt([
     { id: 601, option1: 'Grau', available: true },
@@ -225,10 +235,10 @@ test('Ablauf: gesperrte Farbe sichtbar, deaktiviert, mit Hinweis - nie im Warenk
 test('Ablauf: gesperrte Farbe zaehlt nicht zur Auswahlgrenze', async () => {
   const r = await konfigurator({
     muster: musterProdukt([{ id: 602, option1: 'Beige', available: false }]),
-    waehlen: ['Beige', 'Grau', 'Rot'],
+    waehlen: ['Beige', 'Grau'],
   });
-  assert.equal(r.zeilen.length, 2);
-  assert.equal(r.zaehler, '2 von 3 Mustern insgesamt ausgewählt · noch 1 weiteres möglich');
+  assert.equal(r.zeilen.length, 1);
+  assert.equal(r.zaehler, '1 von 2 Mustern insgesamt ausgewählt · noch 1 weiteres möglich');
   assert.equal(r.karte('Beige').querySelector('input[type="checkbox"]').disabled, true);
 });
 

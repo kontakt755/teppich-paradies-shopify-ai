@@ -102,6 +102,9 @@ body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
 .lf-erledigt { color: var(--ok); font-weight: 600; }
 .lf-leer { color: var(--text-2); }
 .lf-zielwahl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+/* Wer kettelt: Text und Knoepfe nebeneinander nur, wenn beide Platz haben. */
+.lf-kettelweg .lf-posten { flex-wrap: wrap; }
+.lf-kettelweg .lf-posten-text { flex: 1 1 240px; }
 .lf-dialog .actions { align-items: center; justify-content: space-between; }
 
 /* ---------- Lieferant-Detail ---------- */

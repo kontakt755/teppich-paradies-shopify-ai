@@ -390,24 +390,13 @@
   line-height: 1.45;
 }
 
-.tp-sample__bonus {
-  display: inline-block;
-  margin: 0 0 8px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #f6f2ec;
-  color: #1d1a17;
-  font-size: var(--tp-fs-sm);
-  font-weight: 600;
-}
-
 /* Groesse und Versand unter der Ueberschrift (Rundgang 26.10.2026) */
 .tp-sample__header .tp-sample__info {
   margin: 0 0 8px;
   font-weight: 500;
 }
 
-/* Vinyl: hoechstens 3 Muster je Bestellung (Inhaber 13.10.2026) */
+/* Vinyl: hoechstens 2 Muster je Bestellung (Inhaber 13.10.2026) */
 .tp-sample__vinyl {
   margin: 0 0 8px;
   font-size: var(--tp-fs-sm);

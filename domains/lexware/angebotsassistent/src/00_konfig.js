@@ -36,9 +36,9 @@ var TP_KONFIG = {
   // Regel 5: Bestellmass = gemessene Laenge + Zugabe, je Bahn.
   rollenware: { zugabeM: 0.10 },
 
-  // Regel 5a: Daemmunterlagen. Entscheidung Inhaber 14.10.2026: kein extra
-  // Verschnitt (die Daemmartikel enthalten ihn bereits), weiter auf halbe Rolle runden.
-  daemmung: { verschnittProzent: 0, rundungRollen: 0.5 },
+  // Regel 5a: Daemmunterlagen. Entscheidung Inhaber 03.11.2026 (w-247): 5 % Verschnitt,
+  // weiter auf halbe Rolle runden. Ersetzt die Entscheidung vom 14.10. (0 %).
+  daemmung: { verschnittProzent: 5, rundungRollen: 0.5 },
 
   // Regel 9a: Sockelleisten-Verschnitt – Standard 10 %, festgelegt vom Inhaber
   // am 14.10.2026. Ein Wert im Vorgang geht vor.

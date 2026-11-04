@@ -1,39 +1,17 @@
 (function (global) {
   var SAMPLE_HANDLE = 'kostenloses-muster';
-  // Grundgrenze 3; Newsletter-Abonnenten bekommen ein viertes Muster als
-  // Bonus (Inhaber 2026-09-25). Erkannt wird das an window.TPMusterBonus
-  // (eingeloggter Kunde mit Werbe-Einwilligung, gesetzt in
-  // sections/tp-sample-checkout.liquid) oder am Bonus-Link aus der
-  // Willkommensmail (?muster-bonus=1), der im Browser gemerkt wird. Die
-  // Grenze ist wie bisher nur eine Browser-Grenze - Muster sind kostenlos,
-  // es gibt keine serverseitige Pruefung.
-  var BASE_SAMPLES = 3;
-  var BONUS_KEY = 'tp-muster-bonus';
-
-  function hasSampleBonus() {
-    if (global.TPMusterBonus === true) return true;
-    try {
-      if (global.location && /[?&]muster-bonus=1(&|$)/.test(global.location.search || '')) {
-        global.localStorage.setItem(BONUS_KEY, '1');
-        return true;
-      }
-      return global.localStorage && global.localStorage.getItem(BONUS_KEY) === '1';
-    } catch (error) {
-      return false;
-    }
-  }
-
-  var HAS_BONUS = hasSampleBonus();
-  var MAX_SAMPLES = BASE_SAMPLES + (HAS_BONUS ? 1 : 0);
+  // Hoechstens 2 Muster je Bestellung, fuer alle Kunden (Inhaber 02.11.2026;
+  // der Abonnenten-Bonus entfaellt). Die Grenze ist wie bisher nur eine
+  // Browser-Grenze - Muster sind kostenlos, es gibt keine serverseitige Pruefung.
+  var MAX_SAMPLES = 2;
 
   // Vinyl-Muster kosten uns Geld (Inhaber 13.10.2026): sie bleiben fuer den
-  // Kunden kostenlos, aber hoechstens 3 je Bestellung - auch mit
-  // Abonnenten-Bonus. Gezaehlt werden Warenkorbzeilen mit der Property
+  // Kunden kostenlos, aber hoechstens 2 je Bestellung. Gezaehlt werden Warenkorbzeilen mit der Property
   // _Muster_Gruppe = vinyl (setzt buildCartItems). Dieselbe Typliste steht in
   // snippets/tp-muster-grenze.liquid (Knopf auf der Produktseite).
   // Teppichboden und alle anderen Muster: unveraendert die Gesamtgrenze oben.
   var VINYL_TYPES = ['klickvinyl', 'klebevinyl', 'vinyl von der rolle'];
-  var VINYL_MAX = 3;
+  var VINYL_MAX = 2;
   var VINYL_GROUP = 'vinyl';
 
   function isVinyl(product) {
@@ -172,9 +150,9 @@
   }
 
   // Welche Grenze fuer dieses Produkt gerade bindet. Fuer Vinyl gelten zwei:
-  // die Gesamtgrenze (3, mit Bonus 4) und die Vinyl-Grenze (3). Angezeigt und
+  // die Gesamtgrenze und die Vinyl-Grenze (beide 2). Angezeigt und
   // gezaehlt wird die engere - bei gleichem Rest die Vinyl-Grenze, damit der
-  // Kunde liest, warum es nicht weitergeht ("3 von 3 Vinyl-Mustern").
+  // Kunde liest, warum es nicht weitergeht ("2 von 2 Vinyl-Mustern").
   function getLimit(product, state) {
     var total = { max: MAX_SAMPLES, inCart: state.count, remaining: Math.max(0, MAX_SAMPLES - state.count), word: 'Muster' };
     if (!isVinyl(product)) return total;
@@ -224,6 +202,27 @@
       Object.keys(color).forEach(function (name) { copy[name] = color[name]; });
       copy.sampleVariantId = hit || null;
       copy.sampleUnavailable = !hit && known[key] === true;
+      return copy;
+    });
+  }
+
+  // Sperrliste fuer Muster ueber das Sammelprodukt (Inhaber 03.11.2026, w-194):
+  // Ohne eigenes Musterprodukt greift die Mustersperre des Control Centers
+  // nicht. Eintrag: 'produkt-handle': ['Farbe', ...]. Die Farbe erscheint dann
+  // als "Kein Muster verfuegbar" und kommt nie in den Warenkorb.
+  var MUSTER_SPERRLISTE = {};
+
+  function applySperrliste(colors, handle, liste) {
+    var gesperrt = ((liste || MUSTER_SPERRLISTE)[handle] || []).map(function (farbe) {
+      return String(farbe).trim().toLowerCase();
+    });
+    if (!gesperrt.length) return colors;
+    return colors.map(function (color) {
+      if (gesperrt.indexOf(String(color.value || '').trim().toLowerCase()) === -1) return color;
+      var copy = {};
+      Object.keys(color).forEach(function (name) { copy[name] = color[name]; });
+      copy.sampleVariantId = null;
+      copy.sampleUnavailable = true;
       return copy;
     });
   }
@@ -373,7 +372,6 @@
   global.TPSampleCheckoutCore = {
     SAMPLE_HANDLE: SAMPLE_HANDLE,
     MAX_SAMPLES: MAX_SAMPLES,
-    HAS_BONUS: HAS_BONUS,
     VINYL_MAX: VINYL_MAX,
     isVinyl: isVinyl,
     isHerstellerMuster: isHerstellerMuster,
@@ -391,6 +389,7 @@
     basisSectionUrl: basisSectionUrl,
     parseBasisHandle: parseBasisHandle,
     parseMusterQuelle: parseMusterQuelle,
+    applySperrliste: applySperrliste,
     assignSampleVariantsWithBasis: assignSampleVariantsWithBasis,
     getSelectionStatus: getSelectionStatus,
     buildCartItems: buildCartItems,

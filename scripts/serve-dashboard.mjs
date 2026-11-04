@@ -399,7 +399,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'einkauf/kennzahlen') result = api.einkaufKennzahlen();
     else if (simple === 'einkauf/lieferanten') result = api.einkaufLieferanten();
     else if (simple === 'einkauf/lieferant') result = api.einkaufLieferant({ id: url.searchParams.get('id') || '' });
-    else if (simple === 'einkauf/bestellmail') result = api.einkaufBestellmail({ lieferant: url.searchParams.get('lieferant') || '', art: url.searchParams.get('art') || 'ware', gruppe: url.searchParams.get('gruppe') || '', ziel: url.searchParams.get('ziel') || '', auftrag: url.searchParams.get('auftrag') || '' });
+    else if (simple === 'einkauf/bestellmail') result = api.einkaufBestellmail({ lieferant: url.searchParams.get('lieferant') || '', art: url.searchParams.get('art') || 'ware', gruppe: url.searchParams.get('gruppe') || '', ziel: url.searchParams.get('ziel') || '', auftrag: url.searchParams.get('auftrag') || '', kettelwege: url.searchParams.get('kettelwege') || '' });
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'GET') result = api.einkaufAuftragsstatus();
     // Abgleich mit Shopify: nur lesend (nicht in der write-Liste). Nachgebucht wird ueber
     // POST einkauf/auftragsstatus (aktion "shopifyNachbuchen") - der steht in der write-Liste.
@@ -432,9 +432,10 @@ export async function handleApi(req, res, pathname, benutzer = null) {
       return;
     }
     else if (simple === 'kunden/musteretiketten' && req.method === 'GET') result = api.kundenMusteretiketten(url.searchParams.get('orderId') || '');
-    // Muster packen (#1572): GET lesend, POST setzt nur "gepackt" lokal (write-Liste, Rolle "lesen": 403).
+    // Muster packen (#1572): GET lesend, POST setzt Haken und "gepackt" lokal; `aktion: verschickt` setzt
+    // je Bestellung "raus" und bucht in Shopify mit Versandmail (#1811). write-Liste, Rolle "lesen": 403.
     else if (simple === 'kunden/muster-packen' && req.method === 'GET') result = api.kundenMusterPacken();
-    else if (simple === 'kunden/muster-packen' && req.method === 'POST') result = api.kundenMusterPackenSetzen(await readJson(req), benutzer);
+    else if (simple === 'kunden/muster-packen' && req.method === 'POST') result = await api.kundenMusterPackenSchreiben(await readJson(req), benutzer);
     else if (simple === 'kunden/musteretiketten' && req.method === 'POST') result = await api.kundenMusteretikettenVormerken(await readJson(req), benutzer);
     else if (simple === 'kunden/musterwirkung' && req.method === 'GET') result = api.kundenMusterwirkung();
     else if (simple === 'kunden/bestellungen') result = api.kundenBestellungen();

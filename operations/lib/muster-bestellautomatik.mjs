@@ -40,6 +40,26 @@ export function musterAutomatikDaten(dir) {
   return { konfig, journal };
 }
 const offen = e => !e?.status;
+
+/**
+ * Seit wann haengt ein Muster aus demselben Grund? Der Plan selbst ist zustandslos, deshalb merkt sich
+ * der Lauf den ersten Zeitpunkt je Position. Nur eine Stoppuhr: unlesbar gilt sie als leer und sperrt
+ * nie den Versand - ohne passenden Eintrag zaehlt das Bestelldatum (musterAutomatikAnzeige).
+ */
+function leseKlaerStand(dir) {
+  try {
+    const v = lesen(pfad(dir, 'klaerstand'), { faelle: {} }).faelle;
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  } catch { return {}; }
+}
+function merkeKlaerStand(dir, plan, jetzt) {
+  const alt = leseKlaerStand(dir), faelle = {};
+  for (const p of plan.klaeren) {
+    const key = positionKey(p.orderId, p.lineItemId), e = alt[key];
+    faelle[key] = e?.grund === p.grund && Number.isFinite(Date.parse(e.seit)) ? e : { grund: p.grund, seit: jetzt.toISOString() };
+  }
+  if (JSON.stringify(alt) !== JSON.stringify(faelle)) schreiben(pfad(dir, 'klaerstand'), { faelle });
+}
 function vorlageFuer(k, a, lieferant, positionen) {
   const ids = new Set(positionen.map(p => positionKey(p.orderId, p.lineItemId)));
   const modell = { ...k.modell, auftraege: [a], gruppen: [], musterGruppen: k.modell.musterGruppen.map(g => ({ ...g, positionen: g.positionen.filter(p => ids.has(positionKey(p.orderId, p.lineItemId))) })).filter(g => g.positionen.length) };
@@ -100,10 +120,15 @@ export function musterAutomatikAnzeige(dir, k, katalog, jetzt = new Date()) {
         const aktuell = a?.positionen?.find(x => x.lineItemId === p.lineItemId);
         if (['gesendet', 'vermerkt'].includes(s.status) && a?.offen && aktuell && (aktuell.bestellmenge?.menge !== p.menge || aktuell.grosshaendlerId !== p.artikelnummer)) z.klaeren.push({ grund: 'Bestellumfang nach dem Mailversand geändert. Bereits bestellte Muster vor Nachbestellung prüfen.' });
       }
-      if (!['gesendet', 'vermerkt'].includes(s.status)) z.klaeren.push({ grund: 'Mailversand nicht sicher bestätigt. Vor erneutem Bestellen im Postfach prüfen.' });
+      if (!['gesendet', 'vermerkt'].includes(s.status)) z.klaeren.push({ lineItemIds: s.positionen.map(p => p.lineItemId), seit: s.am, grund: 'Mailversand nicht sicher bestätigt. Vor erneutem Bestellen im Postfach prüfen.' });
     }
     for (const p of plan.geplant) fuer(p.orderId).geplant += p.mail.positionen.length;
-    for (const p of plan.klaeren) fuer(p.orderId).klaeren.push({ titel: p.titel, farbe: p.farbe, grund: p.grund });
+    const klaerStand = leseKlaerStand(dir);
+    const bestelltAm = new Map((k.modell?.auftraege || []).map(a => [a.id, a.datum]));
+    for (const p of plan.klaeren) {
+      const e = klaerStand[positionKey(p.orderId, p.lineItemId)];
+      fuer(p.orderId).klaeren.push({ lineItemIds: [p.lineItemId], titel: p.titel, farbe: p.farbe, grund: p.grund, seit: e?.grund === p.grund ? e.seit : bestelltAm.get(p.orderId) || null });
+    }
     return { aktiv: konfig.aktiv === true, hinweis: lauf.hinweis || journal.letzterLauf?.hinweis || null, auftraege };
   } catch (e) { return { aktiv: false, hinweis: e.message, auftraege: {} }; }
 }
@@ -159,6 +184,7 @@ export async function musterAutomatikLauf({ dir, kontext, katalog, jetzt = new D
     }
     const plan = musterAutomatikPlan(k, katalog(), konfig, journal, jetzt);
     if (probe) return { status: 'probe', geplant: plan.geplant.length, klaeren: plan.klaeren.length, verschickt: 0 };
+    merkeKlaerStand(dir, plan, jetzt);
     const pf = lesePostfach(postfachPfad(dir));
     if (!pf.zugang) { journal.letzterLauf = { am: jetzt.toISOString(), hinweis: pf.hinweis }; sichern(); return { status: 'postfach-fehlt', verschickt: 0 }; }
     let verschickt = 0;

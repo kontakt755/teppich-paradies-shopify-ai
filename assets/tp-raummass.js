@@ -554,8 +554,8 @@ if (typeof document !== 'undefined') (function () {
     function euro(n) { return RM.fmtZahl(n, 2) + ' €'; }
 
     // Berechnete m² eines Stuecks, gerundet wie die Preisbox (0 = unbekannt).
-    function berechnet(breite, laenge) {
-      return typeof rechner.tpRwcBerechnetM2 === 'function' ? rechner.tpRwcBerechnetM2(breite, laenge) : 0;
+    function berechnet(breite, laenge, art) {
+      return typeof rechner.tpRwcBerechnetM2 === 'function' ? rechner.tpRwcBerechnetM2(breite, laenge, art) : 0;
     }
 
     // Entwurf (Shop-Analyse 13.10.): Die Empfehlung ist erst nach
@@ -607,7 +607,7 @@ if (typeof document !== 'undefined') (function () {
       mass.textContent = (v.art === 'meter' ? 'Meterware ' : 'Raummaß ') + RM.fmtZahl(v.breite, 0) + ' × ' + RM.fmtZahl(v.laenge, 0) + ' cm';
       var preis = document.createElement('p');
       preis.className = 'tp-rm__preis';
-      preis.textContent = RM.flaecheText(v.m2, berechnet(v.breite, v.laenge)) + (v.preis > 0 ? ' · ' + euro(v.preis) : '');
+      preis.textContent = RM.flaecheText(v.m2, berechnet(v.breite, v.laenge, v.art)) + (v.preis > 0 ? ' · ' + euro(v.preis) : '');
       angebote.push(v);
       var info = document.createElement('p');
       info.className = 'tp-rm__info';
@@ -790,7 +790,7 @@ if (typeof document !== 'undefined') (function () {
       mass.textContent = RM.fmtZahl(e.breite, 0) + ' × ' + RM.fmtZahl(e.laenge, 0) + ' cm';
       var preis = document.createElement('p');
       preis.className = 'tp-rm__preis';
-      preis.textContent = RM.flaecheText(e.m2, berechnet(e.breite, e.laenge)) + (e.preis > 0 ? ' · ' + euro(e.preis) : '');
+      preis.textContent = RM.flaecheText(e.m2, berechnet(e.breite, e.laenge, e.art)) + (e.preis > 0 ? ' · ' + euro(e.preis) : '');
       angebote.push(e);
       if (v.teilung) angebote.push(v.teilung);
       var info = document.createElement('p');

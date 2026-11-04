@@ -10,7 +10,7 @@ import {
   pruefeStammdaten, leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail,
   bestellmail, mailtoLink, wartetage, warnstufe, LieferantenFehler,
   WARTE_NACHHAKEN_TAGE, WARTE_PROBLEM_TAGE, MAILTO_MAX,
-  kennungAusLexikon, lexikonSchnellzugriff, lexikonProduktMitSchnellzugriff, kettlerGrund, kettlerAutomatisch, kuerzereSeiteCm,
+  kennungAusLexikon, lexikonSchnellzugriff, lexikonProduktMitSchnellzugriff, kettlerGrund, bezugswegHinweis, kettlerAutomatisch, kuerzereSeiteCm, leseKettelwege,
   kettelZuschnitt, KETTEL_PUFFER_CM,
 } from '../lib/lieferanten.mjs';
 
@@ -950,6 +950,12 @@ test('Kettler-Regel und Vorschlag: gekettelt mit Fertigmass automatisch, ohne Fe
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 400 × 500 cm', 'Einfassung: Gekettelt'] }), true, 'auch ueber 2 m');
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: Ø 300 cm (Rund)', 'Einfassung: Gekettelt'] }), true, 'auch rund');
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 100 × 150 cm'] }), false, 'ohne Einfassung kein Kettler');
+  for (const einfassung of ['ohne Einfassung', 'Zugeschnitten', 'Fertig eingefasst']) {
+    assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 100 × 150 cm', `Einfassung: ${einfassung}`] }), false, einfassung);
+  }
+  for (const einfassung of ['Einfassband', 'Paspelband', 'Cover']) {
+    assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 100 × 150 cm', `Einfassung: ${einfassung}`] }), true, einfassung);
+  }
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Einfassung: Gekettelt'] }), false, 'ohne Fertigmass kann der Lieferant nicht zuschneiden');
   // Ziel im Dialog von Hand gewaehlt: die gekettelte Position wird fuer den Kettler vorgeschlagen.
   const gross = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'laden', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
@@ -971,4 +977,133 @@ test('Uebersicht: Lieferant mit ueberfaelligen Posten steht vor A-Z', () => {
   ]);
   const u = lieferantenUebersicht(m, { statusAlle, stammdaten: STAMM, jetzt: JETZT });
   assert.deepEqual(u.lieferanten.map(l => [l.id, l.ueberfaellig.problem]), [['B', 1], ['A', 0]]);
+});
+
+// ---- Wer kettelt: je Teppich, wenn der Lieferant selbst ketteln kann (Inhaber 2026-11-03)
+
+const STAMM_KETTELT = pruefeStammdaten({ ...ROH, lieferanten: { ...ROH.lieferanten, A: { ...ROH.lieferanten.A, ware: { ...ROH.lieferanten.A.ware, kettelnMoeglich: true } } } });
+const direktTeppich = (masse = '250 × 220 cm') => massteppichModell({ masse, quantity: 550, route: 'SUPPLIER_DIRECT' });
+const idVon = m => m.gruppen[0].positionen[0].lineItemId;
+
+test('Kettelweg: ohne Wahl entsteht keine Mail fuer den Teppich, der Dialog fragt', () => {
+  const r = bestellmail({ modell: direktTeppich(), lieferant: 'A', stammdaten: STAMM_KETTELT, jetzt: JETZT });
+  assert.equal(r.mails.length, 0, 'nichts darf auf einem nicht gewaehlten Weg bestellt werden');
+  assert.equal(r.kettelwege.length, 1);
+  assert.equal(r.kettelwege[0].orderName, '#T4');
+  assert.equal(r.kettelwege[0].fertigmass, '250 × 220 cm');
+  assert.equal(r.kettelwege[0].wahl, null);
+});
+
+test('Kettelweg: Lieferant kettelt - Fertigmass, Einfassung und Kundenanschrift, kein Zuschnitt', () => {
+  const m = direktTeppich();
+  const r = bestellmail({ modell: m, lieferant: 'A', kettelwege: `${idVon(m)}=lieferant`, stammdaten: STAMM_KETTELT, jetzt: JETZT });
+  assert.equal(r.mails.length, 1);
+  const mail = r.mails[0];
+  assert.equal(mail.lieferziel, 'kunde');
+  assert.equal(mail.kettelnBeimLieferanten, true);
+  assert.equal(mail.kettelwegGewaehlt, false);
+  assert.match(mail.text, /Fertigmaß: 250 × 220 cm \(Rechteck\)\n {3}Einfassung: Gekettelt, umlaufend 11,20 m, Garn Ton in Ton\n {3}Bitte fertig gekettelt im Fertigmaß liefern\./);
+  assert.match(mail.text, /direkt an unseren Kunden:\nTestkunde 4/);
+  assert.equal(/Zuschnittmaß|Ohne Einfassung|Kettelservice/.test(mail.text), false);
+  assert.deepEqual(mail.kettelPuffer, []);
+  assert.equal(r.kettelwege[0].wahl, 'lieferant', 'die Wahl bleibt sichtbar und aenderbar');
+});
+
+test('Kettelweg: unser Kettler - Zuschnittmass an den Kettler, wie gewaehlt vermerkt', () => {
+  const m = direktTeppich();
+  const mail = bestellmail({ modell: m, lieferant: 'A', kettelwege: `${idVon(m)}=kettler`, stammdaten: STAMM_KETTELT, jetzt: JETZT }).mails[0];
+  assert.equal(mail.lieferziel, 'kettler');
+  assert.equal(mail.kettelwegGewaehlt, true);
+  assert.equal(mail.kettelnBeimLieferanten, false);
+  assert.match(mail.text, /Zuschnittmaß: 253 × 223 cm \(Rechteck\)\n {3}Ohne Einfassung/);
+  assert.equal(/Testkunde 4|Bitte fertig gekettelt/.test(mail.text), false);
+});
+
+test('Kettelweg: ueber 200 cm kurzer Seite ist der Lieferant die Empfehlung, bis 200 cm gibt es keine', () => {
+  const empfehlung = masse => bestellmail({ modell: direktTeppich(masse), lieferant: 'A', stammdaten: STAMM_KETTELT, jetzt: JETZT }).kettelwege[0].empfehlung;
+  assert.equal(empfehlung('250 × 220 cm'), 'lieferant');
+  assert.equal(empfehlung('201 × 400 cm'), 'lieferant');
+  assert.equal(empfehlung('200 × 400 cm'), null);
+  assert.equal(empfehlung('150 × 230 cm'), null);
+});
+
+test('Kettelweg: anderer offener Artikel bleibt bestellbar, solange der Teppich wartet', () => {
+  const m = direktTeppich();
+  m.gruppen[0].positionen.push(...modell().gruppen.find(g => g.lieferant === 'A').positionen);
+  const r = bestellmail({ modell: m, lieferant: 'A', stammdaten: STAMM_KETTELT, jetzt: JETZT });
+  assert.equal(r.kettelwege.length, 1);
+  assert.equal(r.mails.length, 1);
+  assert.equal(r.mails[0].positionen.some(p => p.orderName === '#T4'), false);
+  assert.ok(r.mails[0].positionen.length > 0);
+});
+
+test('Kettelweg: schon bestellter Teppich wird nicht mehr gefragt', () => {
+  const m = direktTeppich();
+  const t4 = m.gruppen[0].positionen[0];
+  const statusAlle = { [positionKey(t4.orderId, t4.lineItemId)]: { status: 'bestellt', bestelltAm: '2026-01-19T10:00:00Z' } };
+  const r = bestellmail({ modell: m, lieferant: 'A', statusAlle, stammdaten: STAMM_KETTELT, jetzt: JETZT });
+  assert.deepEqual(r.kettelwege, []);
+  assert.equal(r.mails[0].text, null);
+  assert.equal(r.mails[0].bereitsBestellt, 1);
+});
+
+test('Kettelweg: ohne eigenes Ketteln des Lieferanten bleibt die Kettler-Regel, ohne Kettler keine Frage', () => {
+  const r = bestellmail({ modell: direktTeppich(), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT });
+  assert.deepEqual(r.kettelwege, []);
+  assert.equal(r.mails[0].lieferziel, 'kettler');
+  assert.equal(r.mails[0].kettelwegGewaehlt, false);
+  const ohneKettler = pruefeStammdaten({ ...ROH, absender: { ...ROH.absender, kettelservice: undefined }, lieferanten: { ...ROH.lieferanten, A: { ...ROH.lieferanten.A, ware: { ...ROH.lieferanten.A.ware, kettelnMoeglich: true } } } });
+  const direkt = bestellmail({ modell: direktTeppich(), lieferant: 'A', stammdaten: ohneKettler, jetzt: JETZT });
+  assert.deepEqual(direkt.kettelwege, []);
+  assert.equal(direkt.mails[0].lieferziel, 'kunde');
+});
+
+test('Kettelweg: Baustelle und Muster werden nie gefragt, unbekannte Wahl gilt als nicht gewaehlt', () => {
+  const bau = massteppichModell({ masse: '250 × 220 cm', route: 'SUPPLIER_TO_SITE' });
+  assert.deepEqual(bestellmail({ modell: bau, lieferant: 'A', stammdaten: STAMM_KETTELT, jetzt: JETZT }).kettelwege, []);
+  assert.deepEqual(bestellmail({ modell: direktTeppich(), lieferant: 'A', art: 'muster', stammdaten: STAMM_KETTELT, jetzt: JETZT }).kettelwege, []);
+  assert.deepEqual(leseKettelwege('gid://x/1=lieferant,gid://x/2=quatsch,=kettler,nur-text,'), { 'gid://x/1': 'lieferant' });
+  const m = direktTeppich();
+  assert.equal(bestellmail({ modell: m, lieferant: 'A', kettelwege: `${idVon(m)}=quatsch`, stammdaten: STAMM_KETTELT, jetzt: JETZT }).mails.length, 0);
+});
+
+test('Kettelweg: Ware, die sonst zu uns kommt, wird nicht gefragt und waehlt ihr Ziel wie bisher', () => {
+  const m = massteppichModell({ masse: '250 × 220 cm' });
+  const r = bestellmail({ modell: m, lieferant: 'A', kettelwege: `${idVon(m)}=lieferant`, stammdaten: STAMM_KETTELT, jetzt: JETZT });
+  assert.deepEqual(r.kettelwege, []);
+  assert.equal(r.mails[0].lieferziel, 'kettler');
+  assert.equal(r.mails[0].kettelnBeimLieferanten, false);
+  assert.equal(r.mails[0].zielWaehlbar, true);
+  assert.equal(bestellmail({ modell: m, lieferant: 'A', ziel: 'kunde', stammdaten: STAMM_KETTELT, jetzt: JETZT }).mails[0].lieferziel, 'kunde');
+});
+
+test('Kettelweg: die Kopierliste legt sich bei Direktversand nicht auf den Kettler fest', () => {
+  const m = direktTeppich();
+  assert.equal(m.gruppen[0].positionen[0].kettelZusatz, ' · gekettelt, Weg vor der Bestellung klären: Fertigmaß 250 × 220 cm, für unseren Kettler Zuschnitt 253 × 223 cm');
+});
+
+test('bezugswegHinweis: Massware aus der Rolle nach PLZ getrennt, je Auftrag einmal', () => {
+  const adressen = new Map([
+    ['o1', { plz: '16515', ort: 'Teststadt' }],
+    ['o2', { plz: '80331', ort: 'Fernstadt' }],
+    ['o3', { plz: '', ort: 'Ohneplz' }],
+    ['o4', { plz: '10115', ort: 'Berlin' }],
+  ]);
+  const hinweis = bezugswegHinweis([
+    { orderId: 'o1', orderName: '#T1', ausRolleCm: 400 },
+    { orderId: 'o1', orderName: '#T1', ausRolleCm: 400 },
+    { orderId: 'o2', orderName: '#T2', ausRolleCm: 400 },
+    { orderId: 'o3', orderName: '#T3', ausRolleCm: 400 },
+    { orderId: 'o4', orderName: '#T4', ausRolleCm: null },
+  ], adressen);
+  assert.deepEqual(hinweis.nah, [{ orderName: '#T1', ort: '16515 Teststadt' }]);
+  assert.deepEqual(hinweis.weit, [{ orderName: '#T2', ort: '80331 Fernstadt' }]);
+  assert.deepEqual(bezugswegHinweis(), { nah: [], weit: [] });
+});
+
+test('bezugsweg in der Bestellmail: zum Kettler ist der Weg schon entschieden', () => {
+  const offen = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'laden', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
+  assert.ok(Array.isArray(offen.bezugsweg.nah) && Array.isArray(offen.bezugsweg.weit));
+  const kettler = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'kettler', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
+  assert.deepEqual(kettler.bezugsweg, { nah: [], weit: [] });
 });

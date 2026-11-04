@@ -25,6 +25,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 |---|---|---|
 | Akquise | **Genossenschaften** (Seite: „Genossenschaften & Hausverwaltungen“) | Menue, Seite, To-do „Genossenschaften: N Firmen nachfassen“; enthaelt auch Ausschreibungen. Nicht verwechseln mit „Neue Aufträge“ der Auftrags-App-Zahlen |
 | – (neu 28.10.) | **Hausverwaltungen** | Menue „Kunden & Einkauf“, Seite und To-do „Hausverwaltungen: N wieder melden“; Verwaltungen mit Ansprechpartner, Objekten und Angeboten. Die Erstansprache bleibt unter „Genossenschaften“ |
+| – (neu 03.11.) | **Wer kettelt?** | Frage im Bestelldialog je gekettelten Teppich: „Lieferant kettelt, direkt an Kunden“ oder „Unser Kettler“; in der Kundenakte kurz „Kettelt“ |
 | Einkauf | **Bestellen** | Menue und Seitentitel; gemeint ist immer: wir bestellen beim Lieferanten. Die Bestellungen der Kunden heissen weiter „Bestellungen“ |
 | Lexikon | **Lexikon** (bleibt, Inhaber/Mitarbeiter 21.10.) | Menue, Seite, Handy-Leiste |
 | Belege (Reiter) | **Lieferantenpost** | Reiter unter „Bestellen“; ein einzelnes Stueck ist ein „Schreiben“ |
@@ -78,6 +79,8 @@ gebraeuchlich), Erfassen.
 - **Versatz waagerecht / senkrecht** (Drucker-Einstellungen) = Druckbild um bis zu 3 mm verschieben, wenn der Drucker nicht mittig auf das Etikett druckt; gilt je Rechner, die Vorschau bleibt mittig (26.10.2026).
 - **Außerhalb der Packliste** = Suchtreffer in Musterbestellungen, die hier nicht gepackt werden (Zahlung offen, geschlossen, storniert, schon versandt oder erledigt).
 - **Bestellung packen** / **Muster kommt an** = die zwei Reiter der Packstation (26.10.2026); vorher „Nach Kunde packen“ / „Wareneingang nach Partnerladen“. Seit 29.10. führt auch der Knopf auf Heute (vorher „Muster-Wareneingang“ in die Bestellen-Liste) zu „Muster kommt an“.
+- **Eigene Aufkleber** (02.11.) = frei getippter Text ohne Produkt, z. B. Wegweiser im Lager; auch auf der Rolle 50 × 20 mm oder in **Eigene Größe…** (Breite quer zur Rolle 20 bis 50 mm, Länge in Laufrichtung 10 bis 200 mm). Dazu Schriftgröße (Automatisch oder fest in mm), Schriftstärke, Ausrichtung und **Text drehen** (Text läuft entlang der Rolle). Knopf in Packstation und Musterlager; der Text wird nicht gespeichert, die Größe merkt sich der Rechner.
+- **Noch da** (Musterlager, 02.11.) = was physisch liegt, inklusive Reservierter; **reserviert** = schon für eine offene Musterbestellung vergeben, liegt aber noch im Lager; **Lieferant unbekannt** = keine Artikelnummer des Eintrags hat im Lexikon einen Lieferanten.
 - **Aufkleber-Druckliste** (29.10.) = vorher „Etiketten-Druckliste“ bzw. „Gemeinsame Druckliste“; Knöpfe im Musterlager „Aufkleber“ / „Aufkleber drucken…“ statt „Etikett“. „Etikett“ bleibt nur für das Druckmaterial (Etikettenrolle, Drucker).
 - **Schritte im Umschlag:** 1 · Bestellung drucken („Aufkleber und Adresse drucken“), 2 · Was ist da? („Da: x von n · Fehlt: …“), 3 · Zukleben („Umschlag gepackt“).
 - **Fehlt noch – zurücklegen** = Umschlag geht nach „Zu klären“, bis „Fehlendes ist da – weiter packen“.
@@ -92,6 +95,13 @@ gebraeuchlich), Erfassen.
 - **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
 - **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
 - Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.
+- **Ein Umschlag je Bestelltag** (Rückmeldung 29.10.2026) = Bestellungen desselben Empfängers vom
+  selben Tag kommen in einen Umschlag; eine Bestellung von einem anderen Tag ist ein eigener Umschlag mit eigener
+  Wartezeit, eigenem „x von n Mustern schon im Umschlag“ und eigener Klärung. Vorher kamen alle offenen
+  Bestellungen eines Empfängers in einen Umschlag. Ein schon gepackter oder vorbereiteter Umschlag mit Bestellungen
+  mehrerer Tage bleibt zusammen.
+- **Weiterer Umschlag für diesen Empfänger: #… (bestellt am …, Stand)** = Kopfzeile jedes Umschlags, wenn derselbe
+  Empfänger noch einen anderen offenen oder gepackten Umschlag hat; der Link öffnet ihn.
 - **Alle Bestellungen** = alle echten Bestellungen im aktuellen Export, einschliesslich Storno und Archiv; Testbestellungen bleiben gesondert.
 - **Kontrolle nötig** = unklare Artikel, offene Versandbuchung oder manueller Haken ohne nachgewiesenen Versand.
 
@@ -105,7 +115,7 @@ gebraeuchlich), Erfassen.
   heute jemand lösen.“ Gelbes und Normales sowie Laden-Anfragen, Angebote und Team-Aufgaben bleiben
   unter „Weitere Bereiche“.
 - **Arbeitsliste** in der Packstation = Alle offenen (Standard) oder jeweils Packbereit / Wartet auf Ware /
-  Zu klaeren / Gepackt; die Suche beruecksichtigt alle vier Listen und liest auch Hersteller, Produkt und Farbnummer.
+  Zu klaeren / Gepackt; die Suche beruecksichtigt alle vier Listen und liest auch Hersteller, Produkt und Farbnummer. Die Suche oben (⌘K) findet dieselben Muster, dazu alle Kunden und Produkte; ein Muster-Treffer fuehrt in die Packstation.
 - **Weitere Filter** = zusaetzliche Bestellfilter; vier Hauptfilter bleiben direkt sichtbar.
 
 ## Shopfokus (#1624)

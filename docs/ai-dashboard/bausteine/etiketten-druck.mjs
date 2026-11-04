@@ -12,8 +12,10 @@
 import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { DRUCK_LIMIT, druckBloecke, druckVorschau, motivSchluessel } from '../lib/druckliste.mjs';
-import { ETIKETT, ETIKETT_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle, schwarzWeiss } from '../lib/muster-etiketten.mjs';
+import { ETIKETT, ETIKETT_FORMATE, FREIE_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle, schwarzWeiss } from '../lib/muster-etiketten.mjs';
 import { adressLayout } from '../lib/adress-etiketten.mjs';
+import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
+import { EIGEN_BREITE, EIGEN_LAENGE, FORMAT_EIGEN, FREI_MAX_ANZAHL, FREI_MAX_ZEICHEN, FREI_SCHRIFT_MM, eigeneGroesseFehler, eigenesFormat, freiLayout, freiStil, freieEtiketten, freieZeilen, produktEntwurf, zeilenSchluessel, versatzGrenze } from '../lib/freie-etiketten.mjs';
 
 const SKRIPTE = {
   niimbluelib: { src: 'https://cdn.jsdelivr.net/npm/@mmote/niimbluelib@0.47.1/dist/umd/niimbluelib.min.js', sri: 'sha384-8mcKExXVFyg+JWnhi+HIvqG1HDZoqxglFtztk3Kv5PIGmvcvwBiuF6+Ru4/4Re5T' },
@@ -35,8 +37,22 @@ function ladeSkript(name) {
 const SCHRIFT = 'Arial, Helvetica, sans-serif';
 // Gewaehlte Etikettengroesse je Rechner merken (passt zur eingelegten Rolle); ohne Speicher 50 x 50.
 const FORMAT_SCHLUESSEL = 'tp-etikett-format';
-function gemerktesFormat() { try { return etikettFormat(localStorage.getItem(FORMAT_SCHLUESSEL)).format; } catch { return ETIKETT.format; } }
-function formatMerken(name) { try { localStorage.setItem(FORMAT_SCHLUESSEL, name); } catch { /* ohne Speicher gilt die Wahl nur bis zum Neuladen */ } }
+function gemerktesFormat() { try { return ETIKETT_FORMATE[localStorage.getItem(FORMAT_SCHLUESSEL)]?.format || ETIKETT.format; } catch { return ETIKETT.format; } }
+// Eigene Aufkleber merken ihre Groesse getrennt: die schmale Rolle darf nie in den Musterdruck geraten.
+const FORMAT_FREI_SCHLUESSEL = 'tp-etikett-format-frei';
+function gemerktesFreiFormat() { try { const f = localStorage.getItem(FORMAT_FREI_SCHLUESSEL); return f === FORMAT_EIGEN ? f : FREIE_FORMATE[f]?.format || '50x20'; } catch { return '50x20'; } }
+function formatMerken(name, frei) { try { localStorage.setItem(frei ? FORMAT_FREI_SCHLUESSEL : FORMAT_SCHLUESSEL, name); } catch { /* ohne Speicher gilt die Wahl nur bis zum Neuladen */ } }
+// Die eigene Groesse in mm, ebenfalls nur fuer eigene Aufkleber. Gemerkt wird nur, was gueltig ist.
+const EIGEN_SCHLUESSEL = 'tp-etikett-eigene-groesse';
+const EIGEN_START = Object.freeze({ breite: '50', laenge: '30' });
+function gemerkteEigeneGroesse() {
+  try {
+    const v = JSON.parse(localStorage.getItem(EIGEN_SCHLUESSEL) || 'null');
+    return v && eigenesFormat(v.breite, v.laenge) ? { breite: String(v.breite), laenge: String(v.laenge) } : EIGEN_START;
+  } catch { return EIGEN_START; }
+}
+function eigeneGroesseMerken(g) { try { localStorage.setItem(EIGEN_SCHLUESSEL, JSON.stringify(g)); } catch { /* ohne Speicher gilt die Groesse nur bis zum Neuladen */ } }
+const formatStand = { muster: gemerktesFormat(), frei: gemerktesFreiFormat(), eigen: gemerkteEigeneGroesse() };
 
 // Druckversatz je Rechner (Foto Inhaber 26.10.: Druck sass rechts und oben nicht mittig). Gegensteuern bis
 // 3 mm in jede Richtung; bei 4 mm Etikettrand bleibt auch verschoben alles auf dem Bild. 8 px = 1 mm (203 dpi).
@@ -49,10 +65,23 @@ function versatzMerken(v) { try { localStorage.setItem(VERSATZ_SCHLUESSEL, JSON.
 const versatzHinweis = () => (druck.versatz.x || druck.versatz.y ? '\u00a0· Versatz eingestellt' : '');
 const versatzOptionen = (wert, minus, plus) => VERSATZ_MM.map(v => `<option value="${v}"${v === wert ? ' selected' : ''}>${v === 0 ? 'keiner (Standard)' : `${String(Math.abs(v)).replace('.', ',')} mm ${v < 0 ? minus : plus}`}</option>`).join('');
 
-const druck = { format: gemerktesFormat(), versatz: gemerkterVersatz(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, abgewaehlt: new Set(), allowEditing: true, abbruch: false, kontext: null };
+const druck = { format: formatStand.muster, frei: false, stil: freiStil(), eigenFormat: eigenesFormat(formatStand.eigen.breite, formatStand.eigen.laenge), eigenFehler: '', zeilenSchrift: {}, freiUrl: '', produktEtiketten: [], versatz: gemerkterVersatz(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, abgewaehlt: new Set(), allowEditing: true, abbruch: false, kontext: null };
 let sitzung = 0;
 const aktuell = k => !!k && druck.kontext === k && !k.beendet && k.sitzung === sitzung && k.element?.isConnected;
 const qrBereit = () => typeof window.qrcode === 'function';
+// Nur der Dialog fuer eigene Aufkleber kennt die eigene Groesse. Steht dort gerade etwas Ungueltiges, rechnet das
+// Layout mit der letzten gueltigen Groesse weiter, gezeigt und gedruckt wird aber nichts (groesseFehler).
+const eigeneGroesseAktiv = () => druck.frei && druck.format === FORMAT_EIGEN;
+const aktuellesFormat = () => (eigeneGroesseAktiv() ? druck.eigenFormat : etikettFormat(druck.format));
+const groesseFehler = () => (eigeneGroesseAktiv() ? druck.eigenFehler : '');
+// Kleine Raender vertragen nicht jeden Druckversatz; bei eigenen Aufklebern lieber melden als still abschneiden.
+function versatzFehler() {
+  if (!druck.frei) return '';
+  const grenze = versatzGrenze(aktuellesFormat());
+  const zuViel = Math.abs(druck.versatz.x) > grenze.x ? grenze.x : Math.abs(druck.versatz.y) > grenze.y ? grenze.y : null;
+  return zuViel === null ? '' : `Der Versatz in den Drucker-Einstellungen ist für diese Größe zu groß, höchstens ${String(zuViel).replace('.', ',')} mm. So wird nichts gedruckt.`;
+}
+const formatFehler = () => groesseFehler() || versatzFehler();
 
 const font = (g, f) => `${f ? 'bold ' : ''}${g}px ${SCHRIFT}`;
 let messKontext = null;
@@ -63,18 +92,20 @@ const layoutCache = new Map();
  * gezeichnet wird gleich.
  */
 function etikettLayout(e) {
-  const format = etikettFormat(druck.format);
-  const key = JSON.stringify([format.format, e.art || '', e.serie, e.farbe, e.sku, e.url, e.technik, e.empfaenger || null]);
+  const format = aktuellesFormat();
+  const stil = e.art === 'frei' ? druck.stil : null;
+  // Eigene Groesse und Einstellungen gehoeren in den Schluessel: sonst zeigt die Vorschau den alten Stand.
+  const key = JSON.stringify([format.format, format.breite, format.hoehe, format.rand, stil, e.art || '', e.serie, e.farbe, e.sku, e.url, e.technik, e.empfaenger || null, e.zeilen || null, e.schriften || null]);
   if (!layoutCache.has(key)) {
     if (layoutCache.size > 2000) layoutCache.clear();
     messKontext ||= document.createElement('canvas').getContext('2d');
     const mass = (t, g, f) => { messKontext.font = font(g, f); return messKontext.measureText(t).width; };
-    layoutCache.set(key, (e.art === 'adresse' ? adressLayout : layout)(e, mass, format));
+    layoutCache.set(key, e.art === 'frei' ? freiLayout(e, mass, format, stil) : (e.art === 'adresse' ? adressLayout : layout)(e, mass, format));
   }
   return layoutCache.get(key);
 }
 /** Was dem Etikett fehlt - auch, dass es im gewaehlten Format nicht ohne Ueberlappen passt. */
-const maengel = e => [...e.fehlt, ...(etikettLayout(e).passt ? [] : [`passt nicht auf ${etikettFormat(druck.format).name}`])];
+const maengel = e => [...e.fehlt, ...(formatFehler() ? [formatFehler()] : []), ...(etikettLayout(e).passt ? [] : [`passt nicht auf ${aktuellesFormat().name}`])];
 // Abgewaehlte Motive (alle Kopien) bleiben in der Liste, werden aber nicht gedruckt.
 const ausgewaehlt = () => druck.etiketten.filter(e => !druck.abgewaehlt.has(motivSchluessel(e)));
 const teildruck = () => ausgewaehlt().length < druck.etiketten.length;
@@ -85,14 +116,14 @@ const unvollstaendig = () => ausgewaehlt().some(e => maengel(e).length);
  * `versatz` (mm) nur beim Druck - die Vorschau zeigt das Etikett, wie es sitzen soll.
  */
 function zeichne(canvas, e, versatz = null) {
-  const format = etikettFormat(druck.format);
+  const format = aktuellesFormat();
   canvas.width = format.breite; canvas.height = format.hoehe;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (versatz) ctx.translate(Math.round(versatz.x * 8), Math.round(versatz.y * 8));
   ctx.fillStyle = '#000'; ctx.textBaseline = 'top';
   const { texte, linien, qr, quer } = etikettLayout(e);
-  // Quer gesetzte Adresse (50 x 80, 50 x 100): 90 Grad im Uhrzeigersinn auf die Rolle drehen.
+  // Quer gesetzte Adresse (50 x 80, 50 x 100) oder gedrehter eigener Aufkleber: 90 Grad im Uhrzeigersinn auf die Rolle drehen.
   if (quer) { ctx.translate(canvas.width, 0); ctx.rotate(Math.PI / 2); }
   for (const t of texte) { ctx.font = font(t.groesse, t.fett); ctx.fillText(t.text, t.x, t.y); }
   for (const l of linien) ctx.fillRect(l.x1, l.y, l.x2 - l.x1, 2);
@@ -114,14 +145,16 @@ function zeichne(canvas, e, versatz = null) {
  * Druckbild auf die Breite des Druckkopfs (B1: 384 px = 48 mm, Etikett 50 mm). Ein breiteres Bild legt die
  * Firmware nach eigenem Gutduenken auf den Kopf - auf den ersten Ausdrucken fehlte rechts die letzte Ziffer
  * (26.10.). Deshalb geht genau die Kopfbreite raus, mittig ausgeschnitten: rechts und links fallen je 8 px
- * weg, die bei 32 px Etikettrand immer weiss sind.
+ * weg, die bei 32 px Etikettrand immer weiss sind. Ein schmaleres Bild (eigene Groesse) wird mittig auf die
+ * Kopfbreite aufgefuellt, denn schmale Rollen laufen mittig im Drucker. Die festen Formate sind alle 400 px breit
+ * und bleiben davon unberuehrt.
  */
 export function aufDruckkopf(quelle, ziel, kopf, richtung = 'top') {
-  if (richtung !== 'top' || !(kopf > 0) || quelle.width <= kopf) return quelle;
+  if (richtung !== 'top' || !(kopf > 0) || quelle.width === kopf) return quelle;
   ziel.width = kopf; ziel.height = quelle.height;
   const ctx = ziel.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, ziel.width, ziel.height);
-  ctx.drawImage(quelle, -Math.floor((quelle.width - kopf) / 2), 0);
+  ctx.drawImage(quelle, Math.trunc((kopf - quelle.width) / 2), 0);
   return ziel;
 }
 
@@ -131,10 +164,21 @@ const umgebungsHinweis = () => {
   return '';
 };
 
+// Schrift je Zeile: eine Auswahl je getippter Zeile. Ohne Wahl gilt die Schriftgroesse aller Zeilen.
+const ZEILEN_MAX = 40;
+function zeilenHtml(text) {
+  const motive = freieZeilen(text);
+  const zeilen = motive.flatMap((z, m) => z.map((t, i) => ({ t, key: zeilenSchluessel(m, i), neu: i === 0 && motive.length > 1, m })));
+  if (!zeilen.length) return '';
+  if (zeilen.length > ZEILEN_MAX) return `<p class="small muted">Bei mehr als ${ZEILEN_MAX} Zeilen gilt die Schriftgröße aller Zeilen.</p>`;
+  return `<p class="small"><strong>Schrift je Zeile</strong></p>${zeilen.map(({ t, key, neu, m }) => `${neu ? `<p class="small muted">Aufkleber ${m + 1}</p>` : ''}<label class="etk-zeile"><span>${esc(t)}</span><select data-etk-zeile="${key}" aria-label="${esc(`Schriftgröße für ${t}`)}"><option value="gleich">wie alle</option>${FREI_SCHRIFT_MM.map(mm => `<option value="${mm}"${Number(druck.zeilenSchrift[key]) === mm ? ' selected' : ''}>${mm} mm</option>`).join('')}</select></label>`).join('')}`;
+}
+
 function vorschauHtml() {
+  const format = aktuellesFormat();
   return druckVorschau(druck.etiketten).eintraege.map(({ index: i, anzahl }) => { const e = druck.etiketten[i]; return `<figure class="etk-karte">
-    <canvas class="etk-bild" data-etk-bild="${i}" width="${etikettFormat(druck.format).breite}" height="${etikettFormat(druck.format).hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
-    <figcaption class="small"><label class="etk-wahl"><input type="checkbox" data-etk-wahl="${i}"${druck.abgewaehlt.has(motivSchluessel(e)) ? '' : ' checked'}${druck.laeuft ? ' disabled' : ''}> drucken</label><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(etikettFormat(druck.format).name)} – Angaben kürzen oder größere Rolle wählen</span>`}
+    <canvas class="etk-bild${eigeneGroesseAktiv() ? ' etk-bild-eigen' : ''}" data-etk-bild="${i}" width="${format.breite}" height="${format.hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
+    <figcaption class="small"><label class="etk-wahl"><input type="checkbox" data-etk-wahl="${i}"${druck.abgewaehlt.has(motivSchluessel(e)) ? '' : ' checked'}${druck.laeuft ? ' disabled' : ''}> drucken</label><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(format.name)} – ${druck.frei ? 'Text kürzen, Schrift kleiner stellen oder größere Rolle wählen' : 'Angaben kürzen oder größere Rolle wählen'}</span>`}
       ${druck.allowEditing ? `<button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>` : ''}
       <button type="button" class="btn btn-sm" data-etk-png="${i}"${maengel(e).length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
     </figcaption>
@@ -146,7 +190,11 @@ function zeichneVorschau() {
   if (!aktuell(k)) return;
   const liste = $('#etkListe');
   if (!liste) return;
-  liste.innerHTML = druck.etiketten.length ? vorschauHtml() : '<p class="small muted">Noch kein Etikett – unten Angaben eintragen und „Hinzufügen“.</p>';
+  const eigen = $('#etkEigen'); if (eigen) eigen.hidden = !eigeneGroesseAktiv();
+  const fehlerText = formatFehler(), fehlerZeile = $('#etkEigenFehler');
+  if (fehlerZeile) { fehlerZeile.textContent = fehlerText; fehlerZeile.hidden = !fehlerText; }
+  liste.innerHTML = groesseFehler() ? '<p class="small muted">Keine Vorschau, bis die Größe stimmt.</p>'
+    : druck.etiketten.length ? vorschauHtml() : `<p class="small muted">${druck.frei ? 'Noch kein Aufkleber – oben Text eintragen.' : 'Noch kein Etikett – unten Angaben eintragen und „Hinzufügen“.'}</p>`;
   liste.querySelectorAll('[data-etk-bild]').forEach(c => zeichne(c, druck.etiketten[Number(c.dataset.etkBild)]));
   const zusammenfassung = $('#etkZusammenfassung'), vorschau = druckVorschau(druck.etiketten);
   if (zusammenfassung) zusammenfassung.textContent = `${druck.etiketten.length} Aufkleber insgesamt · ${vorschau.motive} verschiedene Motive.${teildruck() ? ` Ausgewählt: ${ausgewaehlt().length}.` : ''}${vorschau.motive > DRUCK_LIMIT.vorschau ? ` Die Vorschau zeigt die ersten ${DRUCK_LIMIT.vorschau} Motive. Gedruckt werden alle ausgewählten Aufkleber.` : ''}`;
@@ -156,7 +204,7 @@ function zeichneVorschau() {
   const verbunden = !!druck.client?.isConnected?.();
   const verbindungOffen = !!druck.verbindung;
   const wartet = $('#etkVerbindungWartet'); if (wartet) wartet.hidden = !verbindungOffen || k.verbindet || druck.laeuft;
-  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkDichte, #etkFormat, #etkVersatzX, #etkVersatzY')) e.disabled = beschaeftigt;
+  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkDichte, #etkFormat, #etkVersatzX, #etkVersatzY, #etkEigen input, #etkFrei input, #etkFrei select, #etkFrei textarea')) e.disabled = beschaeftigt;
   const weg = $('#etkWeg'); if (weg) weg.disabled = beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || verbunden;
   const verbindenKnopf = $('#etkVerbinden');
   if (verbindenKnopf) { verbindenKnopf.textContent = verbunden ? 'Drucker verbunden' : k.verbindet ? 'Verbinde …' : 'Drucker verbinden'; verbindenKnopf.disabled = verbunden || k.verbindet || verbindungOffen || druck.trennt || beschaeftigt || !!umgebungsHinweis(); }
@@ -386,7 +434,7 @@ export async function etikettenFuerBestellung(positionen = []) {
  * (Packstation: Umschlag vorbereitet). Nur die Papierfrage ruft beiBestaetigen auf. false/Fehler
  * lassen den Dialog offen, damit ein Mitarbeiter die Aktion wiederholen kann.
  */
-export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorschau', allowEditing = true, hinweis = '', vorDruck, druckVersucht, druckFertig, beiSchliessen, beiBestaetigen, schonVersucht = false } = {}) {
+export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorschau', allowEditing = true, freierText = false, entwurf = null, entwurfAnzahl = 1, hinweis = '', vorDruck, druckVersucht, druckFertig, beiSchliessen, beiBestaetigen, schonVersucht = false } = {}) {
   if (druck.laeuft || druck.speichert) { toast('Bitte warten, bis der aktuelle Vorgang fertig ist.'); return; }
   if (!Array.isArray(etiketten) || etiketten.length > DRUCK_LIMIT.etiketten) { toast(`Bitte höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Drucklauf wählen.`); return; }
   // Ein anderer Aufruf darf den alten Auftrag nicht ohne dessen Freigabe ersetzen.
@@ -397,14 +445,48 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   druck.bearbeiten = -1;
   druck.abgewaehlt = new Set();
   druck.allowEditing = allowEditing;
+  druck.frei = freierText;
+  druck.format = freierText ? formatStand.frei : formatStand.muster;
+  druck.stil = freiStil();
+  druck.eigenFormat = eigenesFormat(formatStand.eigen.breite, formatStand.eigen.laenge);
+  druck.eigenFehler = '';
+  druck.zeilenSchrift = {}; druck.freiUrl = ''; druck.produktEtiketten = [];
+  // Ein Produktentwurf startet auf der Rolle des Musterdrucks; die schmale Rolle faesst ihn nicht.
+  if (entwurf) druck.format = formatStand.muster;
   const umgebung = umgebungsHinweis();
   const hatUsb = !!navigator.serial;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog etk-dialog" role="dialog" aria-modal="true" aria-labelledby="etkTitel" data-dialog>
     <h2 id="etkTitel">${esc(titel)}</h2>
     <p class="small muted">Niimbot B1. Zuerst die passende Rolle einlegen und unten die Größe wählen, dann Drucker einschalten und „Drucker verbinden“. Erst „Jetzt drucken“ startet den Druck.</p>
-    <label class="etk-format small">Etikettengröße <select id="etkFormat">${Object.values(ETIKETT_FORMATE).map(f => `<option value="${f.format}"${f.format === druck.format ? ' selected' : ''}>${esc(f.name)}</option>`).join('')}</select></label>
+    <label class="etk-format small">Etikettengröße <select id="etkFormat">${Object.values(freierText ? FREIE_FORMATE : ETIKETT_FORMATE).map(f => `<option value="${f.format}"${f.format === druck.format ? ' selected' : ''}>${esc(f.name)}</option>`).join('')}${freierText ? `<option value="${FORMAT_EIGEN}"${druck.format === FORMAT_EIGEN ? ' selected' : ''}>Eigene Größe…</option>` : ''}</select></label>
+    ${freierText ? `<div id="etkEigen" class="etk-optionen" hidden>
+      <label>Breite in mm <input id="etkEigenBreite" type="number" inputmode="decimal" min="${EIGEN_BREITE.min}" max="${EIGEN_BREITE.max}" step="any" value="${esc(formatStand.eigen.breite)}" style="width:96px"></label>
+      <label>Länge in mm <input id="etkEigenLaenge" type="number" inputmode="decimal" min="${EIGEN_LAENGE.min}" max="${EIGEN_LAENGE.max}" step="any" value="${esc(formatStand.eigen.laenge)}" style="width:96px"></label>
+      <p class="small muted etk-versatz-hilfe">Breite ist die Seite quer zur Rolle (${EIGEN_BREITE.min} bis ${EIGEN_BREITE.max} mm), Länge die Seite in Laufrichtung (${EIGEN_LAENGE.min} bis ${EIGEN_LAENGE.max} mm). Maße der Rolle eintragen.</p>
+    </div>
+    <p id="etkEigenFehler" class="etk-warn" role="alert" hidden></p>` : ''}
     ${umgebung ? `<p class="etk-warn">${esc(umgebung)}</p>` : ''}
     ${hinweis ? `<p class="etk-auftrag-hinweis">${esc(hinweis)}</p>` : ''}
+    ${freierText ? `<form id="etkFrei" class="etk-form">
+      <div class="etk-optionen etk-produkt">
+        <label>Produkt übernehmen <input id="etkFreiProdukt" autocomplete="off" placeholder="Produktlink oder Handle"></label>
+        <button type="button" class="btn btn-sm" id="etkFreiLaden">Angaben holen</button>
+        <label id="etkFreiFarbe" hidden>Farbe / Ausführung <select id="etkFreiVariante"></select></label>
+        <p class="small muted etk-versatz-hilfe">Ersetzt den Text unten durch die Angaben des Produkts. Danach kannst du alles ändern.</p>
+      </div>
+      <label>Text <textarea id="etkFreiText" name="text" rows="4" maxlength="${FREI_MAX_ZEICHEN}" autocomplete="off" placeholder="MUSTER&#10;RESTE&#10;&#10;WARE&#10;EINGANG"></textarea></label>
+      <p class="small muted">Jede Zeile steht als eigene Zeile auf dem Aufkleber. Eine Leerzeile beginnt den nächsten Aufkleber.</p>
+      <label>Anzahl je Aufkleber <input id="etkFreiAnzahl" name="anzahl" type="number" min="1" max="${FREI_MAX_ANZAHL}" value="1" style="width:80px"></label>
+      <div id="etkZeilen" class="etk-zeilen"></div>
+      <label id="etkFreiQr" class="etk-wahl" hidden><input type="checkbox" name="qr" checked> QR-Code zum Produkt</label>
+      <div class="etk-optionen">
+        <label>Schriftgröße aller Zeilen <select name="schrift"><option value="auto">Automatisch</option>${FREI_SCHRIFT_MM.map(mm => `<option value="${mm}">${mm} mm</option>`).join('')}</select></label>
+        <label>Schriftstärke <select name="staerke"><option value="fett">Fett</option><option value="normal">Normal</option></select></label>
+        <label>Ausrichtung <select name="ausrichtung"><option value="links">Links</option><option value="mitte" selected>Mittig</option><option value="rechts">Rechts</option></select></label>
+        <label class="etk-wahl"><input type="checkbox" name="quer"> Text drehen</label>
+      </div>
+      <p class="small muted">Gilt für alle Aufkleber hier, außer eine Zeile hat oben ihre eigene Größe. Automatisch: jede Zeile so groß, wie sie passt. Feste Größe: Großbuchstaben werden etwa drei Viertel so hoch. Drehen: Der Text läuft entlang der Rolle, gut für lange Aufkleber.</p>
+    </form>` : ''}
     <p id="etkZusammenfassung" class="small"></p>
     <p id="etkWahl" class="etk-wahl-leiste small" hidden>Zum Drucken: <button type="button" class="btn btn-sm" data-etk-alle="1">alle wählen</button> <button type="button" class="btn btn-sm" data-etk-alle="0">keine</button></p>
     <div id="etkListe" class="etk-liste"></div>
@@ -439,6 +521,8 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     </div>
   </div></div>`;
   k.element = $('.etk-dialog')?.closest('.dialog-backdrop');
+  // Beim Aendern muss die Vorschau neben den Feldern sichtbar bleiben, nicht unter dem langen Formular.
+  if (freierText) { $('#etkListe').classList.add('etk-liste-frei'); $('#etkFrei').before($('#etkListe')); }
   // Einige allgemeine Dialoge ersetzen dialogRoot direkt. Den alten Kontext
   // sofort sperren; seine asynchronen Antworten duerfen den Nachfolger nie aendern.
   k.beobachter = new MutationObserver(() => {
@@ -458,16 +542,79 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   k.beobachter.observe($('#dialogRoot'), { childList: true });
   $('#etkFormat')?.addEventListener('change', ev => {
     if (!aktuell(k) || druck.laeuft) return;
-    druck.format = etikettFormat(ev.target.value).format;
-    formatMerken(druck.format);
+    druck.format = druck.frei && ev.target.value === FORMAT_EIGEN ? FORMAT_EIGEN : etikettFormat(ev.target.value).format;
+    formatStand[druck.frei ? 'frei' : 'muster'] = druck.format;
+    formatMerken(druck.format, druck.frei);
     zeichneVorschau();
   });
+  // Eigene Groesse: etwas Ungueltiges wird gemeldet und sperrt den Druck, gemerkt wird nur Gueltiges.
+  $('#etkEigen')?.addEventListener('input', () => {
+    if (!aktuell(k) || druck.laeuft) return;
+    const breite = $('#etkEigenBreite').value, laenge = $('#etkEigenLaenge').value;
+    druck.eigenFehler = eigeneGroesseFehler(breite, laenge);
+    if (!druck.eigenFehler) {
+      druck.eigenFormat = eigenesFormat(breite, laenge);
+      formatStand.eigen = { breite, laenge };
+      eigeneGroesseMerken(formatStand.eigen);
+    }
+    zeichneVorschau();
+  });
+  // Die Vorschau folgt beim Tippen; abgewaehlte Motive bleiben abgewaehlt, solange ihr Text gleich bleibt.
+  const freiUebernehmen = () => {
+    const form = $('#etkFrei'), d = new FormData(form);
+    const url = druck.freiUrl && d.get('qr') === 'on' ? druck.freiUrl : '';
+    druck.etiketten = freieEtiketten(d.get('text'), d.get('anzahl'), { zeilenSchrift: druck.zeilenSchrift, url });
+    druck.stil = freiStil({ schrift: d.get('schrift'), fett: d.get('staerke') !== 'normal', ausrichtung: d.get('ausrichtung'), quer: d.get('quer') === 'on' });
+    $('#etkFreiQr').hidden = !druck.freiUrl;
+    zeichneVorschau();
+  };
+  const entwurfSetzen = e => {
+    $('#etkFreiText').value = e.text;
+    druck.zeilenSchrift = { ...e.zeilenSchrift }; druck.freiUrl = e.url || '';
+    const qr = $('#etkFrei').elements.qr; if (qr) qr.checked = true;
+    $('#etkZeilen').innerHTML = zeilenHtml(e.text);
+    freiUebernehmen();
+  };
+  $('#etkFrei')?.addEventListener('input', ev => {
+    if (!aktuell(k) || druck.laeuft) return;
+    if (ev.target.id === 'etkFreiProdukt' || ev.target.id === 'etkFreiVariante') return;
+    if (ev.target.dataset.etkZeile) {
+      if (ev.target.value === 'gleich') delete druck.zeilenSchrift[ev.target.dataset.etkZeile];
+      else druck.zeilenSchrift[ev.target.dataset.etkZeile] = Number(ev.target.value);
+    } else if (ev.target.id === 'etkFreiText') {
+      $('#etkZeilen').innerHTML = zeilenHtml(ev.target.value);
+    }
+    freiUebernehmen();
+  });
+  $('#etkFreiVariante')?.addEventListener('change', ev => {
+    const auswahl = druck.produktEtiketten[Number(ev.target.value)];
+    if (auswahl && aktuell(k) && !druck.laeuft) entwurfSetzen(produktEntwurf(auswahl.etikett));
+  });
+  $('#etkFreiLaden')?.addEventListener('click', async () => {
+    if (!aktuell(k) || druck.laeuft) return;
+    const roh = $('#etkFreiProdukt').value.trim();
+    const handle = originalHandle((roh.match(/\/products\/([^/?#]+)/) || [])[1] || roh);
+    if (!handle) { status('Bitte einen Produktlink oder Handle eintragen.', k); return; }
+    status('Hole die Angaben …', k);
+    const produkt = await lexikonProdukt(handle);
+    if (!aktuell(k)) return;
+    druck.produktEtiketten = produkt ? etikettenAusLexikon(produkt) : [];
+    const farbe = $('#etkFreiFarbe');
+    farbe.hidden = druck.produktEtiketten.length < 2;
+    $('#etkFreiVariante').innerHTML = druck.produktEtiketten.map((x, i) => `<option value="${i}">${esc(x.bezeichnung)}</option>`).join('');
+    if (!druck.produktEtiketten.length) { status('Produkt nicht gefunden. Der Text bleibt, wie er ist.', k); return; }
+    entwurfSetzen(produktEntwurf(druck.produktEtiketten[0].etikett));
+    status(druck.produktEtiketten.length > 1 ? 'Angaben übernommen. Bitte die richtige Farbe wählen.' : 'Angaben übernommen.', k);
+  });
+  if (entwurf) { $('#etkFreiAnzahl').value = Math.max(1, Math.trunc(Number(entwurfAnzahl)) || 1); entwurfSetzen(entwurf); }
+  $('#etkFrei')?.addEventListener('submit', ev => ev.preventDefault());
   for (const [id, achse] of [['#etkVersatzX', 'x'], ['#etkVersatzY', 'y']]) {
     $(id)?.addEventListener('change', ev => {
       if (!aktuell(k) || druck.laeuft) return;
       druck.versatz = { ...druck.versatz, [achse]: versatzWert(ev.target.value) };
       versatzMerken(druck.versatz);
       $('#etkVersatzHinweis').textContent = versatzHinweis();
+      if (druck.frei) zeichneVorschau();
     });
   }
   $('#etkListe').addEventListener('change', ev => {
@@ -552,7 +699,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   $('#etkBestaetigen')?.addEventListener('click', () => { void bestaetigen(k); });
   if (druck.client?.isConnected?.()) { $('#etkWeg').value = druck.clientWeg; status('Drucker verbunden.', k); }
   zeichneVorschau();
-  const fokus = !$('#etkVerbinden').disabled ? $('#etkVerbinden') : $('#etkDrucken').disabled ? ($('#etkForm input') || $('.etk-dialog [data-close-dialog]')) : $('#etkDrucken');
+  const fokus = freierText ? $('#etkFreiText') : !$('#etkVerbinden').disabled ? $('#etkVerbinden') : $('#etkDrucken').disabled ? ($('#etkForm input') || $('.etk-dialog [data-close-dialog]')) : $('#etkDrucken');
   fokus?.focus({ preventScroll: true });
   // QR-Code nachzeichnen, sobald die Bibliothek da ist; ohne Internet bleibt die Vorschau ohne QR.
   try { await ladeSkript('qrcode'); if (aktuell(k)) zeichneVorschau(); } catch (err) { status(`${err.message} – zum Drucken mit QR-Code den Dialog erneut öffnen.`, k); }

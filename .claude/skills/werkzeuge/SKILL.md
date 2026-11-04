@@ -23,17 +23,24 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run menu:guard` | Menuelinks auf leeres Raster oder ins Nichts (braucht Netz) |
 | `npm run unmerged:guard` | Bloecke/Templates auf ungemergten Branches |
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise vor dem Push |
-| `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte |
+| `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte (lokal und laut GitHub - der sieht keine Merge-Treiber), PRs, die noch in die eingefrorene `CHANGELOG.md` schreiben |
 | `npm run pr:doctor:melden` | dasselbe als idempotenter PR-Kommentar (CI: Push auf `main`, alle 6 h) |
-| `npm run auslauf:pruefen` | **woechentlich automatisch**: gibt es jeden Artikel noch beim Lieferanten (A Schnellsuche, C/D/E Produktseite; B nur offline)? Schreibt `$TP_PRIVAT_DIR/auslauf/status.json`, Befunde als To-do; nur lesend |
+| `npm run changelog:guard` | Changelog des Control Centers (laeuft in `pruefen`): Dateiname `JJJJ-MM-TT-<kurzname>.md`, Kopfzeile mit Datum, Pflichtabschnitte unter `docs/control-center/changelog/`; `CHANGELOG.md` eingefroren seit 2026-10-29 |
+| `npm run -s ki:stand [-- --trocken]` | Codex-Kontingent, Musterautomatik, Claude-Version; **stündlich automatisch** (`net.teppich-paradies.ki-stand`). Große Aufbau-Prüfung vierteljährlich von Hand: `/aufbau-pruefen` (Workflow, nur bei Wochenlimit unter etwa 50 %) |
+| `npm run -s changelog [-- --letzte N \| --namen]` | die letzten Changelog-Eintraege des Control Centers lesen (Standard 10, neueste zuerst) |
+| `npm run auslauf:pruefen` | **woechentlich automatisch**: gibt es jeden Artikel noch beim Lieferanten (A Schnellsuche, C/D/E Produktseite, I aus dem Verlauf des Bestandsabgleichs; B nur offline)? Schreibt `$TP_PRIVAT_DIR/auslauf/status.json`, Befunde als To-do; nur lesend |
 | `npm run -s muster:nachfassen [-- --probe]` | **taeglich automatisch (Mo-Sa 9:30)**: faellige Muster-Nachfragen (Text 1 nach 4 Tagen, Erinnerung nach 10) vom Firmenpostfach verschicken, Zeitleiste „nachgefasst (automatisch)“; `--probe` listet nur. Braucht `$TP_PRIVAT_DIR/nachfassen/postfach.json` (600), sonst verschickt er nichts → `docs/control-center/ARCHITEKTUR.md` Abschnitt 23 |
 | `npm run -s auslauf:sortieren [-- --schreiben]` | **nach jedem neuen Tag `auslauf` und jedem Import in Teppichboden/Teppiche**: Auslaufartikel ans Ende der manuell sortierten Kategorien (Shopify haengt Neues hinten an, also hinter sie); ohne `--schreiben` nur pruefen (Exit 1 = zu tun), mit Rollback-Datei und Gegenprobe |
 | `npm run -s preisfilter:abgleich [-- --schreiben]` | **nach jedem Preislauf** (Rueckstellung, Angebotswelle, Einzelpreise) und stuendlich als Dienst: Produkt-Metafeld `custom.meterpreis_bereich` („Preis je m²“, Quelle des Search-&-Discovery-Filters bei Teppichboden) aus dem Meterpreis der Karte nachziehen; ohne `--schreiben` nur pruefen (Exit 1 = zu tun), mit Vorher-Stand, Rueckweg (`--zurueck`) und Gegenprobe → `operations/README.md` „Preisfilter Teppichboden“ |
-| `npm run -s import:pruefen` | **nach jedem Import**: neue Produkte (Standard 7 Tage) auf Veroeffentlichung, Bilder, Kategorie, SKU, Muster und uebliche Filterfelder der Produktart; nur lesend |
+| `npm run -s import:pruefen` | **nach jedem Import**: neue Produkte (Standard 7 Tage) auf Veroeffentlichung, Bilder, Kategorie, SKU, Muster, `einkauf.farbname` bei Musterbestellung nach Bezeichnung und uebliche Filterfelder der Produktart; nur lesend |
+| `npm run -s restrolle:plan` | Plan und Ablaufliste fuer eine neue Restrolle (vier Produkte), schreibt nichts nach Shopify |
 | `npm run -s muster:kauf [-- --tage 90 --nach 30]` | **monatlich**: wie viele Musterkunden binnen 30 Tagen Ware kaufen, je Warengruppe des Musters; Quote nur ueber Muster mit abgelaufenem Fenster, gibt keine Kundendaten aus; nur lesend |
+| `npm run -s belege:monat -- --monat JJJJ-MM [--schreiben]` | **monatlich**: Rechnungs-Archiv und Druck-PDF, Postfach nur lesend, Ablage nur privat (`operations/README.md`) |
+| `npm run -s belege:bank -- <datei>` | Kontoauszug (CSV, CAMT.053) je Empfaenger: Lastschrift oder Ueberweisung, grobe Zuordnung zu Belegen, Ablage nur privat |
 | `npm run -s teppich:basis-daten` | **nach jedem Teppich-Import**: prueft `custom.teppich_basis_daten` (Gruppe, Qualitaetszeile, Breiten) gegen die Live-Regeln; `-- --pakete <ordner>` legt Schreibpakete + Rollback an → `docs/lessons/renderzeit-kollektionsseite.md` |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
-| `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht statt in der Theme-Einstellung |
+| `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht, im Liquid am Monatsstand vorbeiliest oder ohne den Hinweis nach § 5b Abs. 3 UWG steht |
+| `npm run -s google-bewertung [-- --schreiben]` | Note und Anzahl von Google ins Shop-Metafeld `custom.google_bewertung`; **monatlich per Dienst**, von Hand nur, wenn das Control Center einen Fehler meldet (`--trotzdem` übernimmt gemeldete Sprünge nach eigener Prüfung) |
 | `npm run lighthouse:messen` | **bevor jemand "schneller/langsamer" sagt**: Lighthouse gegen Live, 3 Seiten mit und ohne Cookie-Banner, 5 Runden reihum (rund 25 min); `-- --pruefen` nur Vorpruefung |
 | `npm run -s speicher:pruefen [-- --min <GiB>]` | **vor jedem Bildlauf** (Raumbilder, Schaerfe, Bild-Downloads): Exit ungleich 0 heisst nicht starten (1 = unter 20 GiB frei). Bei Rot meldet die Shop-Wache zusaetzlich einmal am Tag in der Arbeitszeit per Mac-Mitteilung |
 | `npm run -s kurz -- <art>` | Theme-Rollen, Push-Ergebnis, Worktrees gefiltert statt als Rohdump |

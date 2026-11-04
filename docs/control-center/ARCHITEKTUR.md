@@ -593,7 +593,12 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
   wir da“: nicht in der Bestellmail (Grund „aus dem Musterlager (Regal B) – wird von uns verschickt“), nicht
   „Muster noch zu bestellen“, To-do „Muster verschicken an …“. Die älteste Bestellung bekommt das letzte
   Einzelmuster; die nächste geht an den Lieferanten und trägt `musterLagerLeer` („Musterlager: … leer“).
-  Die Wahl „Woher? ändern…“ geht immer vor.
+  Eine schon gespeicherte Wahl „Woher? ändern…“ geht vor.
+- **Nichts doppelt, bis der Bestand 0 ist (Inhaber 02.11.2026):** Für eine Position, für die ein Stück zurückliegt
+  (`lagerGedeckt()`), lehnt der Server „bestellt“ und die neue Wahl „beim Lieferanten“ mit 409 ab; der Sammelschritt
+  „bestellt“ überspringt sie. Erst „leer“ im Musterlager gibt sie frei. Die Wahl „haben wir da“ belegt ein Stück
+  (`musterLagerReserviert`) und zählt beim Verschicken ab. Auch „Kunde fertig“ und der Einzelstatus „erledigt“ zählen ab.
+  Grenze: Direkt in Shopify Versendetes ohne Schritt im Dashboard zählt nicht ab.
 - **Festschreiben beim Verschicken:** Erreicht eine so zugeordnete Position „An Kunden raus“ (Einzelstatus,
   Schritt `raus` oder `kunde_hat_muster`), hängt der Server ein `musterherkunft`-Ereignis mit `lagerId` an.
   So zählt das Muster als verschickt, auch wenn der Lagereintrag später leer gesetzt oder entfernt wird.
@@ -606,6 +611,7 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
 - **Rest prüfen:** Dialog für Ware, die nicht über den Shop läuft (direkt beim Hersteller bestellt):
   Hersteller, Qualität, Farbnummer → Treffer bei A/C mit Farben, „Als Verlegerest einlagern“ und
   „Etikett“ (ein Aufkleber je Farbe, Lexikon-Etikett ohne Lieferantennamen).
+- **Lexikon und Gruppierung (02.11.):** Der Bereich „Im Musterlager“ auf der Produktseite (`ansichten/lexikon-musterlager.mjs`) schreibt über denselben Endpunkt; beide Ansichten rechnen mit `lib/musterlager-bestand.mjs`, weil `anzahl` die Gesamtzahl inklusive Verschicktem ist und `stand.rest` die Reservierten nicht enthält. Jeder Lagereintrag trägt `lieferant {id, name}` (`lieferantJeSchluessel()`: Artikelnummern gegen `einkauf.lieferant` im Lexikon, Ware vor Musterprodukt), die Ansicht ordnet mit `nachLieferant()`.
 - **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest/reichtNoch,
   offene Bestellungen je Eintrag samt `wartetAufLieferant`, Mustergröße, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
   Lexikon-Produkts samt Schlüssel), `GET /api/einkauf/reste-abgleich?hersteller=&qualitaet=&farbnummer=`
@@ -1561,7 +1567,7 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   Mail ab, schickt der nächste keine zweite, sondern trägt nur die Zeitleiste nach (`nachgetragen`).
   Übersprungen: Stoppliste, Rückrufwunsch (der Laden ruft an), keine Adresse. Nichts geht raus, wenn die
   Vorlage fehlt (`keine-vorlage`), das Postfach nicht eingerichtet ist (`kein-zugang`), Stoppliste oder
-  Protokoll unlesbar sind (`stoerung`) oder ein Platzhalter stehen bliebe (Fehler je Kunde).
+  Protokoll unlesbar sind oder die Postfach-Suche scheitert (`stoerung`) oder ein Platzhalter stehen bliebe (Fehler je Kunde).
   {Name} füllt die `unterschrift` aus dem Postfach, sonst „Ihr Team von Teppich Paradies“.
 - **Postfach** `$TP_PRIVAT_DIR/nachfassen/postfach.json` (legt der Inhaber an, `chmod 600`; für andere
   lesbar = es wird nichts verschickt): `host`, `port` (465 → `tls`, 587 → `starttls`), `benutzer`,
@@ -1579,6 +1585,23 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   Die Antwort trägt den frischen Kartenstand (`stand`), die Karte zeichnet ohne zweiten Abruf neu. Ein
   Kunde auf der Liste erscheint unter „Abgemeldet“ statt „offen“ und wird weder vom Lauf noch per Klick
   angeschrieben. Eine beschädigte Liste stoppt den ganzen Lauf.
+- **Postfach-Abgleich vor jedem Lauf** (seit 2026-11-03, `operations/lib/nachfass-antworten.mjs`): Der Lauf
+  sucht per IMAP nur lesend (`EXAMINE`, `BODY.PEEK`, Gmail-Suche 60 Tage, auch Papierkorb und Spam) nach
+  Antworten mit „Abmelden“ und nach Unzustellbar-Meldungen und trägt die Adressen in die Stoppliste ein
+  (`von: automatisch`, Grund „Antwort …“ oder „Unzustellbar (5.1.1)“). Gesperrt wird nur bei einem Status, der gegen die
+  Adresse spricht (5.1.1, 5.1.2, 5.1.3, 5.1.6, 5.1.10); andere 5.x.x (etwa 5.7.x Richtlinie, 5.2.2 Postfach voll) oder
+  ein fehlender Status werden nur Hinweis in der Karte. Eine Mail zählt nur, wenn sie
+  nachweislich zu einer Nachfassmail gehört (Message-ID, sonst Absender plus Betreff; bei Unzustellbar die
+  fehlgeschlagene Adresse plus Message-ID oder Betreff der Originalmail). Zitate und unser eigener
+  Abmelde-Satz zählen nie, im Fuß nur eine Zeile, die aus nichts anderem besteht; „delayed“ und 4.x.x sperren nicht. Abmelden mit weiterem Text sperrt ebenfalls und
+  steht 7 Tage als Hinweis in der Karte (`nachfassen/hinweise.json`, nur ein Auszug). Scheitert die Suche oder
+  das Eintragen oder hat `stoppliste.json` oder `versand.json` nicht die erwartete Form, geht nichts raus (`stoerung`), die Karte sagt es. Antworten ohne das Wort bleiben beim Menschen.
+  Eine Bestätigungsmail an den Kunden gibt es nicht. `--probe` liest das Postfach auch, schreibt aber nichts.
+- **Bündelung** (seit 2026-11-03, `nachfragenBuendeln()`, `mitMusterListe()`): je Empfängeradresse höchstens eine
+  Mail je Lauf, Groß/Klein egal. Der Text nennt dann alle Bestellungen und Muster; Protokoll und Zeitleiste bleiben
+  je Bestellung, die Sendungen tragen dieselbe Message-ID. Fallen Stufen zusammen, gilt die erste Nachfrage.
+  Über Läufe hinweg gibt es keine Sperre: wird die zweite Bestellung einen Tag später fällig, kommt am Folgetag
+  eine eigene Mail.
 - **Versandprotokoll** `$TP_PRIVAT_DIR/nachfassen/versand.json`: `ersterVersandAm`, `letzterLauf {am,
   verschickt, nachgetragen, uebersprungen, fehler, kopie}`, `sendungen[]` (Bestellung, Stufe, Adresse,
   Betreff, Kopie, Status `sendet|gesendet|vermerkt|fehler`, Message-ID; die letzten 500). Ein Fehlversuch
@@ -1927,6 +1950,12 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
 - **Fremdcode:** `@mmote/niimbluelib@0.47.1` (UMD) und `qrcode-generator@1.4.4` werden erst im Dialog
   von cdn.jsdelivr.net geladen, fest gepinnt mit SRI-Prüfsumme. Ohne Internet: Vorschau ohne QR,
   Drucken nicht möglich.
+- **Eigene Aufkleber (02.11., #1825):** Freier Text ohne Produkt, Knopf in Packstation und Musterlager
+  (`lib/freie-etiketten.mjs`, `oeffneEtikettenDruck({ freierText: true })`). Nur dieser Dialog kennt 50 × 20 mm und
+  „Eigene Größe…“ (20 bis 50 × 10 bis 200 mm, 8 px je mm) und merkt sie unter eigenen Schlüsseln; der Musterdruck bleibt
+  bei seinen drei Größen. Schriftgröße, Schriftstärke, Ausrichtung und Drehen gelten für den ganzen Dialog und stehen im
+  Layout-Cache-Schlüssel. Schmale Bilder füllt `aufDruckkopf()` mittig auf die Kopfbreite auf. Nichts wird gespeichert
+  oder als gedruckt vermerkt.
 - **Offen:** Belegte Klick-/Klebe-Zuordnung bei Lieferant A (verschiedene Shop-Namen je Linie).
 
 ## 27. Muster packen (seit 2026-10-21, #1572)
@@ -1957,8 +1986,18 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
   `quer: true`; `zeichne()` dreht dann um 90° im Uhrzeigersinn. Vorschau und Druckbild zeigen das Etikett,
   wie es aus der Rolle kommt.
 - **Haken und „Zu klären“ (22.10.):** zentral in `muster-packen.json` (`haken` je Bestellposition,
-  `klaeren` je Kunde mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
+  `klaeren` je Umschlag mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
   Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.
+- **Ein Umschlag je Bestelltag (29.10.):** `umschlaegeJeBestelltag` in `lib/muster-packen.mjs` teilt die
+  offenen Bestellungen eines Empfängers (Kundenidentität + Lieferadresse) nach Kalendertag in Berlin
+  (`kalendertag`). Bis dahin war der ganze Empfänger ein Umschlag: eine fertige erste Bestellung wartete
+  auf die zweite, und „x von n im Umschlag“ sowie die Wartetage zählten beide zusammen (#1033/#1050).
+  Eine Pack- oder Druckmarke (`eintraege`/`gedruckt`), deren Bestellungen alle noch offen sind, hält
+  diese Bestellungen auch über mehrere Tage zusammen (der Umschlag liegt so auf dem Packtisch).
+  Klärmarken tragen den Schlüssel `<kunde>|adresse:<…>|tag:<JJJJ-MM-TT>`; ältere Marken je Empfänger
+  (`…|adresse:<…>`) gelten weiter – bei mehreren Umschlägen dem, in dem ihre fehlenden Muster liegen,
+  ohne Positionsangabe allen als fremde Marke mit Vermerk; die älteste Form je Kunde nur als Vermerk.
+  Jeder Umschlag kennt die `weitere` desselben Empfängers (Nummern, Datum, Bereich) für die Kopfzeile.
 - **Wareneingang (`mp=laden`):** `musterNachLaden` verteilt die noch nicht eingelegten Muster je
   Partnerladen auf die Umschlag-Nummern aus „Zu packen“.
 - **Umschlag vorbereitet (#1718, 26.10.):** Inhaber druckt Aufkleber und Adresse oft, bevor alle
@@ -2026,6 +2065,47 @@ und nach 14 Tagen einen Fall in „Alte Bestellungen aufräumen“.
   gepackte Umschläge aus der Zeit davor an (Vermerk „Aus der Packstation übernommen: … am TT.MM.“).
   Die Funktion hat keinen HTTP-Weg und läuft nur bei angehaltenem Dienst, damit `auftragsstatus.json`
   einen Schreiber behält. Ein zweiter Lauf ändert nichts.
+
+### Verschickt meldet den Versand in Shopify (#1810, #1811, Mitarbeiter 29.10.2026)
+
+Gepackte Umschläge tragen den Hauptknopf „Verschickt – Kunde informieren“. Er sendet einen einzigen
+`POST kunden/muster-packen` mit `{ packSchluessel, aktion: 'verschickt' }`
+(`kundenMusterPackenSchreiben`, alle anderen Aktionen gehen unverändert an `kundenMusterPackenSetzen`).
+„Umschlag gepackt“ allein bucht nichts. So bleibt „Großbrief vorbereiten“ dazwischen möglich.
+
+- **Je Bestellung des Umschlags** der Schritt „raus“ für ihre Muster, die noch nicht raus sind
+  (`auftragsSchrittSetzen`, Notiz „Verschickt aus der Packstation“). Dazu der Lagerabgang und in Shopify
+  die Buchung als versendet mit Versandbestätigung, ohne Sendungsnummer. Die Mail-Ausnahme ist dieselbe
+  wie beim Schritt „raus“: persönlich vorbeigebrachte Muster ohne Mail. Testbestellungen bucht
+  `versandBuchen` nie.
+- **Ganz oder gar nicht:** Der Packschlüssel ergibt sich aus den noch offenen Bestellungen. Bis #1811
+  rief der Browser je Bestellung einzeln auf. Ein Umschlag mit zwei Bestellungen zerfiel, sobald die
+  erste „raus“ war, und scheiterte die zweite, stand ihr Rest ohne Gepackt-Vermerk wieder im Packen.
+  Jetzt prüft der Server zuerst alle Bestellungen (`darfWeiter`, `bereiteStatusPositionenVor`:
+  Musterautomatik, Fehlmenge). Geht eine nicht, kommt 409 „Nicht verschickt, keine Mail – #…“, und
+  nichts ist geschrieben. Danach startet er alle Schritte, ohne auf den vorigen zu warten. Jeder
+  schreibt seinen lokalen Stand synchron, bevor die erste Shopify-Buchung abgewartet wird. Fällt eine
+  Bestellung trotzdem heraus, bekommt ihr Rest-Umschlag den Gepackt-Vermerk und bleibt unter „Gepackt“.
+- **Antwort** `versand: [{ orderId, orderName, status, meldung, kundeBenachrichtigt }]`. Alles außer
+  `gebucht`/`bereits` zeigt die Packstation als roten Hinweis mit Link zur Bestellung. Der Hinweis
+  bleibt stehen, bis jemand „Verstanden“ klickt (`versandProbleme`), denn der Umschlag ist dann schon
+  aus der Liste. Der Hinweis lebt nur im geöffneten Tab; dauerhaft ist der Vermerk an der Bestellung, dort
+  „In Shopify buchen“ (mit Mail-Wahl; „In Shopify nachbuchen“ in der Abgleichsliste bucht ohne Mail).
+- **Sperren:** nicht jedes Muster abgehakt (Haken weg über veraltete Seite, Muster nachbestellt) → 409;
+  Haken an gepackten Umschlägen → 409. Scheitert ein Schritt trotz Vorprüfung, heißt er
+  `nicht-eingetragen` (Umschlag bleibt unter „Gepackt“, erneut klicken); scheitern alle → 500, nichts
+  passiert. Netzfehler: die neu geladene Liste entscheidet, ob „nicht verschickt“ oder „Ergebnis unklar“.
+- **Danach:** Der Umschlag fällt aus der Packliste (`ausserhalb`, Grund `erledigt`) und steht im Reiter
+  „Erledigt“. „Muster nachfassen“ (Abschnitt 23) zählt ab dem Schritt „raus“.
+
+**Suche nur in offener Arbeit (Mitarbeiter 29.10.):** `offeneSuche()` in `lib/muster-packen.mjs` sucht
+in den offenen Umschlägen und den Warnungen außerhalb der Packliste (storniert, Zahlung offen,
+geschlossen). Gepackte Umschläge und versandte bzw. erledigte Bestellungen zählen nicht mit. Vorher
+verdrängte ein fertiger Kunde mit dem besseren Treffer den Kunden, der das Muster noch braucht, weil
+`packSuche` nur die besten Treffer zeigt. Die Zahl der ausgeblendeten Bestellungen steht unter der Suche
+(„N fertige Bestellungen passen auch … Trotzdem zeigen“). Der Klick setzt `mpfertig=<Suchtext>`, das
+gilt also nur für genau diese Suche. Die fertigen Treffer stehen dann hinter den offenen. Gleiches gilt
+in „Muster kommt an“ (`handTreffer(…, { mitFertigen })`).
 
 ### Großbrief vorbereiten (#1591)
 
@@ -2193,6 +2273,10 @@ Bestehende getrennte Versandaktionen und bewusst bestaetigte Bestellaktionen ble
 
 
 ## Kettler und Packstuecke
+
+**Bezugsweg abwaegen (Inhaber 2026-11-04):** Bei Massware aus der Rolle zeigt der Waren-Bestelldialog je Auftrag einen Hinweis. Liegt die PLZ in unserem Liefergebiet (10-14, 16; dieselbe Grenze wie beim Kettler-Vorschlag), kann die Rolle direkt beim Hersteller guenstiger sein: wir schneiden zu und liefern an. Sonst ist meist der Grosshandel besser, wegen der Speditionskosten. Es ist nur ein Hinweis (`bezugswegHinweis` in `lib/lieferanten.mjs`): keine Preise, kein Umschalten, die Bestellmail bleibt gleich.
+
+**Wer kettelt (Inhaber 2026-11-03):** Steht bei einem Lieferanten in den privaten Stammdaten `ware.kettelnMoeglich: true`, fragt der Bestelldialog bei Direktversand (`SUPPLIER_DIRECT`) je gekettelten Massteppich, ob der Lieferant kettelt und direkt liefert oder ob der Zuschnitt zu unserem Kettler geht. Bis zur Wahl steht der Teppich in keiner Bestellmail. Ueber 200 cm kurzer Seite ist der Lieferant als meist guenstiger markiert, weil vom Kettler sonst die Spedition dazukommt; das ist nur eine Empfehlung. Ohne den Eintrag und bei anderer Ware gilt weiter die Regel „gekettelt zum Kettler“, dort wählt man das Ziel wie bisher mit den Knöpfen im Dialog. Die Wahl laeuft als Parameter `kettelwege` (`<Position>=lieferant|kettler`) durch Vorlage und Vorbereitungsstand; dauerhaft gespeichert wird nur der Vermerk `ueber` beim Bestellen (`kettler` oder `kunde`). Auch die Dialoge ohne Bestellmail (Einzelartikel, „Alle als bestellt markieren“, „Ware ist bestellt“) fragen bei gekettelten Direktversand danach. Die Kundenakte nennt den Weg nur mit Vermerk; fehlt er bei Direktversand, steht dort „Nicht vermerkt, bitte klären“ und der Kettler-Dialog bleibt offen, weil die Ware dort liegen kann.
 
 Der Knopf **Kettler & Versand** in der Waren-Zeitleiste ergaenzt den bestehenden Bestell- und Versandablauf. `kettelversand.json` im Privatverzeichnis fuehrt je Auftrag und Warenposition getrennte Bestaetigungen fuer Eingang beim Kettler und fertiges Ketteln. Weder der alte Status `geliefert` noch ein digitaler Lieferschein beweisen fertiges Ketteln. Beide neuen Schritte erfordern einen Belegvermerk.
 
@@ -2385,6 +2469,8 @@ Voraussetzungen: gueltiger Export, hoechstens 20 Minuten alt, offen und bezahlt 
 Vor SMTP wird der Versuch dauerhaft in `muster-bestellung/versand.json` reserviert und die Position als von der Automatik uebernommen gesperrt. Eine Prozesssperre schuetzt parallele Laeufe. Erst SMTP-Annahme setzt die vorhandenen Positionen auf Bestellt; Statusnachtrag nach Abbruch sendet nie erneut. Unklarer SMTP-Ausgang bleibt sichtbar und wird nie blind wiederholt. Nach Postfachkontrolle kann der Inhaber die bestehende Arbeitsuebernahme bewusst uebernehmen. Ein Wiedereroeffnen erzeugt keinen zweiten Versand. Aenderungen an Menge oder Artikel nach Versand werden angezeigt. Versandjournal und Konfiguration gehoeren zur Arbeitsstand-Erkennung.
 
 Kunden → Bestellungen zeigt ohne Aufklappen: Muster bestellt, Zeitpunkt, Artikel/Farbe/Menge, Empfaenger und Lieferziel; daneben getrennte Klaerfaelle. Mailbestellung bestaetigt weder physischen Eingang noch Kundenversand. Keine Shopify-Schreibwirkung.
+
+Klaerfaelle tragen die betroffenen Positionen (`lineItemIds`) und `seit`. Die Packstation nennt den Grund bei jedem Muster mit Stand „noch nicht bestellt“ (`automatikGrund`). Seit wann derselbe Grund gilt, merkt sich der Lauf in `muster-bestellung/klaerstand.json`; ein neuer Grund startet die Uhr neu, ohne Eintrag zaehlt das Bestelldatum. Die Datei ist nur eine Stoppuhr: unlesbar gilt sie als leer und sperrt nie den Versand. Haengt ein noch nicht bestelltes Muster laenger als einen Werktag (`MUSTER_KLAER_WERKTAGE`, Mo-Fr, Tag des Beginns zaehlt nicht), entsteht je Grund ein rotes To-do „n Muster haengen: Grund“ (`muster_klaeren` in `lib/todos.mjs`) anstelle von „Muster bei … bestellen“; es steht damit auch unter „Probleme“ auf der Shop-Uebersicht. Klaerfaelle ohne Position (Bestellumfang oder Zahlung nach dem Mailversand geaendert) betreffen bereits bestellte Muster und erzeugen kein To-do.
 
 ## Muster direkt vom Lieferanten an den Kunden (24.10.2026, #1680)
 
@@ -2625,3 +2711,5 @@ arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten un
   Mail versendet. Die Wiedervorlage gilt der Ansprache der Verwaltung, nicht dem einzelnen Vorgang –
   Vorgänge und ihre Wiedervorlagen bleiben in der Auftrags-App (Abschnitt 20).
 - Tests: `tests/hausverwaltungen.test.mjs` (Regeln, API, Rollen, Ansicht).
+
+Aufkleber aendern (2026-11-02): `produktEntwurf()` in `lib/freie-etiketten.mjs` macht aus einem Produktetikett aenderbaren Text; `e.schriften` traegt die Schrift je Zeile, `e.url` den QR-Code. Nichts davon wird gespeichert.

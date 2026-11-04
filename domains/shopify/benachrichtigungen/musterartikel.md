@@ -91,7 +91,7 @@ den Handle des Teppichbodens als JSON-Text. Abgerufen wird sie nur, wenn
 Stufe 1 fehlt. Keine Antwort, kein Feld, ein ungueltiger Handle oder ein
 fehlendes Teppichboden-Muster: Stufe 3, wie bisher. Die Muster-Kennung
 (`_Muster_ID`, `_Quellprodukt`) bleibt immer die des Teppichs nach Maß – die
-Zaehlung (hoechstens 3 Muster) aendert sich dadurch nicht.
+Zaehlung (hoechstens 2 Muster) aendert sich dadurch nicht.
 
 Folge fuer die Pflege: Ein Teppich nach Maß braucht kein eigenes
 Musterprodukt, wenn der Teppichboden eins hat und die Farben gleich heissen

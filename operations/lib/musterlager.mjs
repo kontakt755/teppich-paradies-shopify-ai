@@ -157,7 +157,7 @@ function verlaufMit(e, eintrag) {
  * zweimal in der Liste stehen.
  * @returns {{eintrag: object, neu: boolean}}
  */
-export function einlagern(file, { titel, farbe, handle = null, schluessel = [], art, anzahl = 1, ort = null, notiz = null, actor, jetzt = new Date() } = {}) {
+export function einlagern(file, { titel, farbe, handle = null, schluessel = [], art, anzahl = 1, ort = null, notiz = null, actor, jetzt = new Date(), verbrauchtVon = () => 0 } = {}) {
   if (!actor) throw new MusterlagerFehler('actor ist Pflicht');
   if (!LAGER_ART_WERTE.includes(art)) throw new MusterlagerFehler(`Unbekannte Art „${art}"`);
   const keys = [...new Set((schluessel || []).map(norm).filter(k => k && k !== UNGEKLAERT))];
@@ -172,7 +172,10 @@ export function einlagern(file, { titel, farbe, handle = null, schluessel = [], 
     vorhanden.schluessel = [...new Set([...vorhanden.schluessel, ...keys])];
     // Leeres Zuschnitt-Stueck: das Neue ersetzt den Rest, und Abgeschnittenes zaehlt ab jetzt neu.
     const ersetzt = vorhanden.leer && !ZAEHLBAR.includes(art);
-    vorhanden.anzahl = ersetzt ? n : (vorhanden.anzahl ?? 0) + n;
+    // Leeres Einzelmuster: in der Schublade lag nichts, die alte Gesamtzahl darf nicht wieder aufleben.
+    // Gesamt = schon verschickt + neu, sonst stuende mehr als "da", als wirklich liegt.
+    const aufgefuellt = vorhanden.leer && ZAEHLBAR.includes(art);
+    vorhanden.anzahl = ersetzt ? n : aufgefuellt ? verbrauchtVon(vorhanden.id) + n : (vorhanden.anzahl ?? 0) + n;
     if (ersetzt) vorhanden.basisAm = am;
     if (clip(ort, 80)) vorhanden.ort = clip(ort, 80);
     if (clip(notiz, 300)) vorhanden.notiz = clip(notiz, 300);
@@ -268,6 +271,7 @@ const posKey = (orderId, lineItemId) => `${orderId}::${lineItemId}`;
  * - `musterHerkunft`     'eigen_versand' bei automatischer Zuordnung (wie die Wahl "haben wir da")
  * - `musterHerkunftQuelle` 'lager' bei automatischer Zuordnung
  * - `musterLagerLeer`    {id, artLabel, ort} - steht im Lager, ist aber leer bzw. aufgebraucht
+ * - `musterLagerReserviert` true bei ausdruecklicher Wahl "haben wir da", wenn ein Stueck dafuer zurueckliegt
  *
  * Automatisch zugeordnet wird nur, was noch offen ist: Muster ohne Auftragsfluss-Stand und
  * ohne ausdrueckliche Wahl, in offenen Auftraegen. Die aelteste Bestellung kommt zuerst dran,
@@ -320,17 +324,16 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
       const key = musterSchluessel(p);
       const passend = key ? jeSchluessel.get(key) : null;
       if (!passend) continue;
-      // Ausdrueckliche Wahl "haben wir da": nur den Lagerplatz dazuschreiben.
-      if (p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei') {
-        const e = passend.find(x => !x.leer) || null;
+      const gewaehlt = p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei';
+      if (p.musterHerkunft && !gewaehlt) continue; // "Beim Lieferanten bestellen" gewaehlt
+      // Status gesetzt, in Shopify schon versendet (offene Menge 0) oder Auftrag zu: nichts mehr zu verschicken.
+      if (statusAlle[posKey(a.id, p.lineItemId)]?.status || a.offen === false || (p.menge ?? 1) <= 0) {
+        // Die Wahl "haben wir da" behaelt den Lagerplatz als Auskunft, belegt aber kein Stueck.
+        const e = gewaehlt ? passend.find(x => !x.leer) || null : null;
         if (e) { p.musterLager = lagerInfo(e); gesetzt.set(posKey(a.id, p.lineItemId), { musterLager: p.musterLager }); }
         continue;
       }
-      if (p.musterHerkunft) continue; // "Beim Lieferanten bestellen" gewaehlt
-      if (statusAlle[posKey(a.id, p.lineItemId)]?.status) continue;
-      // In Shopify schon versendet (offene Menge 0) oder Auftrag zu: nichts mehr zu verschicken.
-      if (a.offen === false || (p.menge ?? 1) <= 0) continue;
-      kandidaten.push({ a, p, test, passend, datum: String(p.orderDatum || a.datum || '') });
+      kandidaten.push({ a, p, test, passend, gewaehlt, datum: String(p.orderDatum || a.datum || '') });
     }
   }
 
@@ -338,9 +341,12 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
   const rest = new Map();
   for (const e of eintraege) if (ZAEHLBAR.includes(e.art)) rest.set(e.id, Math.max(0, (e.anzahl ?? 0) - stand.get(e.id).verbraucht));
 
-  kandidaten.sort((x, y) => x.datum.localeCompare(y.datum));
-  for (const { a, p, test, passend } of kandidaten) {
+  // Wer ausdruecklich "haben wir da" gewaehlt hat, nimmt ein Stueck in die Hand - das geht vor, sonst
+  // wuerde dasselbe letzte Muster zweimal versprochen. Danach die aelteste Bestellung zuerst.
+  kandidaten.sort((x, y) => y.gewaehlt - x.gewaehlt || x.datum.localeCompare(y.datum));
+  for (const { a, p, test, passend, gewaehlt } of kandidaten) {
     const e = passend.find(x => !x.leer && (!ZAEHLBAR.includes(x.art) || rest.get(x.id) > 0)) || null;
+    if (!e && gewaehlt) continue; // Die Wahl bleibt, aus dem Lager kommt dieses Muster aber nicht.
     if (!e) {
       const leer = passend[0];
       p.musterLagerLeer = { id: leer.id, artLabel: LAGER_ARTEN[leer.art], ort: leer.ort || null };
@@ -349,12 +355,13 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
     }
     if (ZAEHLBAR.includes(e.art) && !test) rest.set(e.id, rest.get(e.id) - 1);
     if (!test) stand.get(e.id).reserviert += 1;
-    const felder = {
+    const info = lagerInfo(e, ZAEHLBAR.includes(e.art) ? rest.get(e.id) : null);
+    const felder = gewaehlt ? { musterLager: info, musterLagerReserviert: true } : {
       musterHerkunft: 'eigen_versand',
       musterHerkunftQuelle: 'lager',
       musterHerkunftAm: e.geaendertAm || e.angelegtAm || null,
       musterHerkunftVon: 'Musterlager',
-      musterLager: lagerInfo(e, ZAEHLBAR.includes(e.art) ? rest.get(e.id) : null),
+      musterLager: info,
     };
     Object.assign(p, felder);
     gesetzt.set(posKey(a.id, p.lineItemId), felder);
@@ -375,6 +382,14 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
 }
 
 /**
+ * Fuer diese Musterposition liegt ein Stueck im Lager zurueck und ist noch nicht verschickt. Solange das
+ * gilt, wird sie nicht beim Lieferanten bestellt (Inhaber 02.11.: nichts doppelt, bis der Bestand 0 ist).
+ */
+export function lagerGedeckt(p) {
+  return !!(p?.istMuster && p.musterLager?.id && !p.musterLagerId && (p.musterHerkunftQuelle === 'lager' || p.musterLagerReserviert));
+}
+
+/**
  * Musterpositionen, die beim Verschicken festgeschrieben werden muessen: automatisch aus dem
  * Lager zugeordnet, noch ohne Ereignis. Der Server haengt fuer jede ein musterherkunft-Ereignis
  * mit `lagerId` an.
@@ -382,7 +397,7 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
  * @param {string[]|null} [lineItemIds]  nur diese Positionen; null = alle
  */
 export function festzuschreiben(auftrag, lineItemIds = null) {
-  return (auftrag?.positionen ?? []).filter(p => p.istMuster && p.lineItemId && p.musterHerkunftQuelle === 'lager'
+  return (auftrag?.positionen ?? []).filter(p => p.istMuster && p.lineItemId && lagerGedeckt(p)
     && p.musterLager?.id && !p.musterLagerId && (!lineItemIds || lineItemIds.includes(p.lineItemId)));
 }
 
@@ -405,6 +420,32 @@ export function wartetAufLieferant(auftrag, statusAlle = {}) {
   return (auftrag?.positionen ?? []).some(p => p?.istMuster && p.lineItemId && (p.menge ?? 1) > 0
     && !p.musterLager && !musterEigen(p)
     && LIEFERANT_UNTERWEGS.includes(statusAlle[posKey(auftrag.id, p.lineItemId)]?.status));
+}
+
+/**
+ * Lieferant je Muster-Schluessel aus den Lexikon-Varianten (`einkauf.lieferant`). Die Ware geht vor dem
+ * Musterprodukt: Das Musterprodukt fuehrt oft keinen eigenen Lieferanten.
+ * @param {object[]} produkte  Lexikon-Produkte
+ * @param {(wert: string) => (string|null)} kennungVon  gueltige Kennung aus dem Lexikon-Wert, sonst null
+ * @returns {Map<string, string>} Schluessel -> Lieferant-Kennung
+ */
+export function lieferantJeSchluessel(produkte = [], kennungVon = w => w || null) {
+  const je = new Map();
+  const istMuster = p => p?.produktgruppe === 'Musterservice';
+  for (const p of [...produkte.filter(x => !istMuster(x)), ...produkte.filter(istMuster)]) {
+    for (const v of p?.varianten ?? []) {
+      const k = musterSchluessel({ sku: v?.sku });
+      const id = k ? kennungVon(v?.einkauf?.lieferant) : null;
+      if (id && !je.has(k)) je.set(k, id);
+    }
+  }
+  return je;
+}
+
+/** Lieferant eines Lagereintrags: der erste Schluessel mit Treffer; null = unbekannt. */
+export function lieferantVonEintrag(eintrag, jeSchluessel) {
+  for (const k of eintrag?.schluessel ?? []) if (jeSchluessel.has(k)) return jeSchluessel.get(k);
+  return null;
 }
 
 /** Titel ohne angehaengte Rollenbreiten ("Vellana Teppichboden 400cm 500cm" -> "Vellana Teppichboden"). */

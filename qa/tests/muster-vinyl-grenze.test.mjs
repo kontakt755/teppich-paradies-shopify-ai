@@ -1,8 +1,8 @@
-// Vinyl-Muster: kostenlos, aber hoechstens 3 je Bestellung (Inhaber 13.10.2026).
+// Vinyl-Muster: kostenlos, aber hoechstens 2 je Bestellung (Inhaber 02.11.2026).
 // Durchgesetzt im Musterkonfigurator (assets/tp-sample-checkout-core.js +
 // tp-sample-checkout.js), sichtbar gemacht auf der Produktseite
 // (snippets/tp-muster-grenze, blocks/tp-muster-cta, blocks/tp-rollware-rechner).
-// Teppichboden und alle anderen Muster: unveraendert die Gesamtgrenze 3 (Bonus 4).
+// Teppichboden und alle anderen Muster: unveraendert die Gesamtgrenze 2.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -43,8 +43,8 @@ test('Typliste und Grenze stehen in JS und Liquid gleich', () => {
   const js = coreSource.match(/VINYL_TYPES = \[([^\]]+)\]/)[1].match(/'([^']+)'/g).map((t) => t.slice(1, -1)).sort();
   const liquid = read('snippets/tp-muster-grenze.liquid').match(/if tpmg_typ == [^\n]+/)[0].match(/'([^']+)'/g).map((t) => t.slice(1, -1)).sort();
   assert.deepEqual(liquid, js);
-  assert.match(coreSource, /VINYL_MAX = 3;/);
-  assert.match(read('snippets/tp-muster-grenze.liquid'), /tpmg_anzahl >= 3/);
+  assert.match(coreSource, /VINYL_MAX = 2;/);
+  assert.match(read('snippets/tp-muster-grenze.liquid'), /tpmg_anzahl >= 2/);
 });
 
 test('Warenkorbzeilen fuer Vinyl tragen _Muster_Gruppe, andere nicht', () => {
@@ -55,50 +55,36 @@ test('Warenkorbzeilen fuer Vinyl tragen _Muster_Gruppe, andere nicht', () => {
   assert.equal('_Muster_Gruppe' in core.buildCartItems(args(TEPPICH))[0].properties, false);
 });
 
-test('Ohne Bonus: Gesamtgrenze 3, bei reinen Vinyl-Mustern zaehlt die Vinyl-Grenze', () => {
+test('Grenze 2: bei reinen Vinyl-Mustern zaehlt die Vinyl-Grenze, sonst die Gesamtgrenze', () => {
   const core = ladeCore();
-  const state = core.getSampleState({ items: [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('c', 'vinyl')] });
-  assert.equal(state.count, 3);
-  assert.equal(state.vinylCount, 3);
+  const state = core.getSampleState({ items: [muster('a', 'vinyl'), muster('b', 'vinyl')] });
+  assert.equal(state.count, 2);
+  assert.equal(state.vinylCount, 2);
   const limit = core.getLimit(KLICK, state);
-  assert.deepEqual([limit.max, limit.inCart, limit.remaining, limit.word], [3, 3, 0, 'Vinyl-Muster']);
-  // Teppichboden: Gesamtgrenze wie bisher
+  assert.deepEqual([limit.max, limit.inCart, limit.remaining, limit.word], [2, 2, 0, 'Vinyl-Muster']);
   const t = core.getLimit(TEPPICH, state);
-  assert.deepEqual([t.max, t.remaining, t.word], [3, 0, 'Muster']);
+  assert.deepEqual([t.max, t.remaining, t.word], [2, 0, 'Muster']);
 });
 
-test('Gemischter Warenkorb ohne Bonus: die Gesamtgrenze bindet zuerst', () => {
+test('Gemischter Warenkorb: die Gesamtgrenze bindet zuerst', () => {
   const core = ladeCore();
   const state = core.getSampleState({ items: [muster('t1'), muster('v1', 'vinyl')] });
   const limit = core.getLimit(KLICK, state);
-  assert.deepEqual([limit.max, limit.inCart, limit.remaining, limit.word], [3, 2, 1, 'Muster']);
+  assert.deepEqual([limit.max, limit.inCart, limit.remaining, limit.word], [2, 2, 0, 'Muster']);
 });
 
-test('Mit Abonnenten-Bonus: 4 Muster insgesamt, aber hoechstens 3 Vinyl-Muster', () => {
-  const core = ladeCore({ bonus: true });
-  assert.equal(core.MAX_SAMPLES, 4);
-  const dreiVinyl = core.getSampleState({ items: [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('c', 'vinyl')] });
-  assert.equal(core.getLimit(KLICK, dreiVinyl).remaining, 0, 'kein viertes Vinyl-Muster');
-  assert.equal(core.getLimit(TEPPICH, dreiVinyl).remaining, 1, 'Bonus-Muster bleibt fuer Teppichboden');
-  const dreiTeppich = core.getSampleState({ items: [muster('a'), muster('b'), muster('c')] });
-  assert.equal(core.getLimit(KLICK, dreiTeppich).remaining, 1, 'viertes Muster darf Vinyl sein');
-});
-
-test('Mit Bonus sperrt die Vinyl-Grenze die Auswahl (limitReached)', () => {
-  const core = ladeCore({ bonus: true });
-  assert.equal(core.getSelectionStatus(3, 0, 3, 'Vinyl-Muster').limitReached, true);
-  assert.equal(core.getSelectionStatus(2, 1, 3, 'Vinyl-Muster').limitReached, true);
-  assert.equal(core.getSelectionStatus(3, 0).limitReached, false, 'Gesamtgrenze mit Bonus: 4');
+test('Kein Bonus mehr: weder Abonnenten-Kennung noch alter Mail-Link erhoehen die Grenze', () => {
+  assert.equal(ladeCore({ bonus: true }).MAX_SAMPLES, 2);
+  assert.doesNotMatch(coreSource, /muster-bonus|TPMusterBonus|HAS_BONUS/);
 });
 
 test('Meldung nennt bei Vinyl die Vinyl-Grenze, sonst wie bisher', () => {
   const core = ladeCore();
-  assert.equal(core.getSelectionStatus(3, 0, 3, 'Vinyl-Muster').message,
-    '3 von 3 Vinyl-Mustern im Warenkorb. Entfernen Sie dort zuerst ein Vinyl-Muster, um ein anderes auszuwählen.');
-  assert.equal(core.getSelectionStatus(1, 1, 3, 'Vinyl-Muster').message, '2 von 3 Vinyl-Mustern insgesamt ausgewählt · noch 1 weiteres möglich');
-  // Aufruf ohne Grenze und Wort: unveraenderter Wortlaut
-  assert.equal(core.getSelectionStatus(0, 0).message, '0 von 3 Mustern ausgewählt');
-  assert.equal(core.getSelectionStatus(1, 0).message, '1 von 3 Mustern im Warenkorb · 2 weitere möglich');
+  assert.equal(core.getSelectionStatus(2, 0, 2, 'Vinyl-Muster').message,
+    '2 von 2 Vinyl-Mustern im Warenkorb. Entfernen Sie dort zuerst ein Vinyl-Muster, um ein anderes auszuwählen.');
+  assert.equal(core.getSelectionStatus(0, 1, 2, 'Vinyl-Muster').message, '1 von 2 Vinyl-Mustern insgesamt ausgewählt · noch 1 weiteres möglich');
+  assert.equal(core.getSelectionStatus(0, 0).message, '0 von 2 Mustern ausgewählt');
+  assert.equal(core.getSelectionStatus(1, 0).message, '1 von 2 Mustern im Warenkorb · noch 1 weiteres möglich');
 });
 
 // --- Liquid: Snippet und Knopf auf der Produktseite ---
@@ -108,11 +94,11 @@ const grenzeSource = read('snippets/tp-muster-grenze.liquid').replace(/\{%-? doc
 
 const grenze = async (type, items) => (await liquid.parseAndRender(grenzeSource, { product: { type }, cart: { items } })).trim();
 
-test('tp-muster-grenze: voll ab 3 Vinyl-Mustern, sonst vinyl; andere Belaege ohne Ausgabe', async () => {
-  const drei = [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('c', 'vinyl')];
+test('tp-muster-grenze: voll ab 2 Vinyl-Mustern, sonst vinyl; andere Belaege ohne Ausgabe', async () => {
+  const drei = [muster('a', 'vinyl'), muster('b', 'vinyl')];
   assert.equal(await grenze('Klickvinyl', drei), 'voll');
   assert.equal(await grenze('Vinyl von der Rolle', drei), 'voll');
-  assert.equal(await grenze('Klebevinyl', drei.slice(0, 2)), 'vinyl');
+  assert.equal(await grenze('Klebevinyl', drei.slice(0, 1)), 'vinyl');
   assert.equal(await grenze('Klebevinyl', [muster('t1'), muster('t2'), muster('t3')]), 'vinyl', 'Teppichmuster zaehlen nicht zur Vinyl-Grenze');
   assert.equal(await grenze('Klickvinyl', []), 'vinyl');
   assert.equal(await grenze('Teppichboden', drei), '');
@@ -132,36 +118,36 @@ const cta = (tp_test_grenze) => liquid.parseAndRender(block, {
   tp_test_url: '/pages/muster?produkt=eiche-klick',
   tp_test_grenze,
   routes: { cart_url: '/cart' },
-  block: { id: 'tp_muster_cta_1', shopify_attributes: '', settings: { label: 'Kostenloses Muster anfragen', hinweis: 'Bis zu 3 Farben, versandkostenfrei' } },
+  block: { id: 'tp_muster_cta_1', shopify_attributes: '', settings: { label: 'Kostenloses Muster anfragen', hinweis: 'Bis zu 2 Farben, versandkostenfrei' } },
 });
 
 const offenerLink = /<a class="tp-muster-cta__link-[^"]+" href="\/pages\/muster\?produkt=eiche-klick"([^>]*)>/;
 const vollKnopf = /<button class="[^"]*tp-muster-cta-voll"[^>]*disabled[^>]*>/;
 
-test('Produktseite: Vinyl unter der Grenze zeigt den Hinweis statt "Bis zu 3 Farben"', async () => {
+test('Produktseite: Vinyl unter der Grenze zeigt den Hinweis statt "Bis zu 2 Farben"', async () => {
   const html = await cta('vinyl');
   assert.doesNotMatch(html.match(offenerLink)[1], /hidden/);
-  assert.match(html, /Höchstens 3 Vinyl-Muster je Bestellung/);
-  assert.doesNotMatch(html, /Bis zu 3 Farben/);
+  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung/);
+  assert.doesNotMatch(html, /Bis zu 2 Farben/);
   assert.match(html.match(vollKnopf)[0], /hidden/, 'deaktivierter Knopf liegt verborgen bereit');
   assert.match(html, /data-tp-muster-grenze="vinyl"/);
   assert.match(html, /tp-muster-grenze\.js/);
 });
 
-test('Produktseite: bei 3 Vinyl-Mustern ist der Knopf deaktiviert und erklaert', async () => {
+test('Produktseite: bei 2 Vinyl-Mustern ist der Knopf deaktiviert und erklaert', async () => {
   const html = await cta('voll');
   assert.doesNotMatch(html.match(vollKnopf)[0], /hidden/);
   assert.match(html.match(offenerLink)[1], /hidden/, 'Link zum Konfigurator verborgen');
-  // Nach cart:update wird der Link wieder sichtbar - dann mit Vinyl-Hinweis, nicht "Bis zu 3 Farben"
-  assert.match(html, /Höchstens 3 Vinyl-Muster je Bestellung/);
-  assert.doesNotMatch(html, /Bis zu 3 Farben/);
-  assert.match(html, /<p class="tp-muster-cta-grenze"[^>]*data-tp-mg-voll>\s*3 von 3 Vinyl-Mustern im Warenkorb/);
+  // Nach cart:update wird der Link wieder sichtbar - dann mit Vinyl-Hinweis, nicht "Bis zu 2 Farben"
+  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung/);
+  assert.doesNotMatch(html, /Bis zu 2 Farben/);
+  assert.match(html, /<p class="tp-muster-cta-grenze"[^>]*data-tp-mg-voll>\s*2 von 2 Vinyl-Mustern im Warenkorb/);
   assert.match(html, /href="\/cart"/);
 });
 
 test('Produktseite: Teppichboden unveraendert', async () => {
   const html = await cta('');
-  assert.match(html, /Bis zu 3 Farben, versandkostenfrei/);
+  assert.match(html, /Bis zu 2 Farben, versandkostenfrei/);
   assert.doesNotMatch(html, /Vinyl-Muster|data-tp-m|<button|tp-muster-grenze\.js/);
 });
 
@@ -172,7 +158,7 @@ test('Rollenrechner: Musterknopf nutzt dieselbe Grenze', () => {
   assert.match(s, /data-tp-mg-offen\{% endif %\}\{% if tp_rc_muster_grenze == 'voll' %\} hidden/);
 });
 
-test('Die Zahl 3 steht in allen Vinyl-Texten gleich wie VINYL_MAX', () => {
+test('Die Zahl 2 steht in allen Vinyl-Texten gleich wie VINYL_MAX', () => {
   const max = Number(coreSource.match(/VINYL_MAX = (\d+);/)[1]);
   const dateien = ['blocks/tp-muster-cta.liquid', 'blocks/tp-rollware-rechner.liquid', 'sections/tp-sample-checkout.liquid', 'assets/tp-muster-grenze.js', 'snippets/tp-muster-grenze.liquid'];
   let treffer = 0;
@@ -202,12 +188,12 @@ test('tp-muster-grenze.js schaltet nach einer Warenkorb-Aenderung um', async () 
   };
   const window = { addEventListener() {} };
   vm.runInNewContext(read('assets/tp-muster-grenze.js'), { window, document, fetch: async () => ({ ok: false }), Promise });
-  // Drawer entfernt ein Vinyl-Muster: 2 von 3 -> Link wieder da
-  listeners['cart:update']({ detail: { resource: { items: [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('t')] } } });
+  // Drawer entfernt ein Vinyl-Muster: 1 von 2 -> Link wieder da
+  listeners['cart:update']({ detail: { resource: { items: [muster('a', 'vinyl'), muster('t')] } } });
   await new Promise((r) => setImmediate(r));
   assert.deepEqual([offen.every((e) => !e.hidden), voll.every((e) => e.hidden), box.attrs['data-tp-muster-grenze']], [true, true, 'vinyl']);
-  // wieder 3 Vinyl-Muster -> Knopf deaktiviert sichtbar
-  listeners['cart:update']({ detail: { resource: { items: [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('c', 'vinyl')] } } });
+  // wieder 2 Vinyl-Muster -> Knopf deaktiviert sichtbar
+  listeners['cart:update']({ detail: { resource: { items: [muster('a', 'vinyl'), muster('b', 'vinyl')] } } });
   await new Promise((r) => setImmediate(r));
   assert.deepEqual([offen.every((e) => e.hidden), voll.every((e) => !e.hidden), box.attrs['data-tp-muster-grenze']], [true, true, 'voll']);
 });
@@ -278,11 +264,11 @@ const ROLLE = {
   variants: [{ id: 51, option1: '200 cm', title: '200 cm', available: true }],
 };
 
-test('Konfigurator: Vinyl-Rolle mit 3 Vinyl-Mustern im Warenkorb - Auswahl gesperrt, Grenze erklaert', async () => {
-  const k = await konfigurator({ product: ROLLE, cartItems: [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('c', 'vinyl')] });
+test('Konfigurator: Vinyl-Rolle mit 2 Vinyl-Mustern im Warenkorb - Auswahl gesperrt, Grenze erklaert', async () => {
+  const k = await konfigurator({ product: ROLLE, cartItems: [muster('a', 'vinyl'), muster('b', 'vinyl')] });
   const karte = k.el('[data-sample-grid]').querySelector('[data-sample-color]');
   assert.equal(karte.querySelector('input[type="checkbox"]').disabled, true);
-  assert.match(k.el('[data-sample-count]').textContent, /3 von 3 Vinyl-Mustern im Warenkorb/);
+  assert.match(k.el('[data-sample-count]').textContent, /2 von 2 Vinyl-Mustern im Warenkorb/);
   assert.equal(k.el('[data-sample-vinyl]').hidden, false, 'Vinyl-Hinweis sichtbar');
 });
 
@@ -305,13 +291,13 @@ test('Konfigurator: in einem zweiten Tab kamen Vinyl-Muster dazu - nichts wird h
   const k = await konfigurator({
     product: ROLLE,
     cartItems: [muster('a', 'vinyl')],
-    cartNachher: [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('c', 'vinyl')],
+    cartNachher: [muster('a', 'vinyl'), muster('b', 'vinyl')],
   });
   assert.equal(k.el('[data-sample-grid]').querySelector('[data-sample-color]').querySelector('input[type="checkbox"]').checked, true);
   k.el('[data-sample-submit]').dispatch('click');
   await k.ticks();
   assert.equal(k.requests.some((r) => r.url === '/cart/add.js'), false);
-  assert.match(k.el('[data-sample-error]').textContent, /höchstens 3 Vinyl-Muster/);
+  assert.match(k.el('[data-sample-error]').textContent, /höchstens 2 Vinyl-Muster/);
 });
 
 test('Konfigurator: mehrere Farben ohne ?farbe= - nichts vorausgewaehlt', async () => {
@@ -372,17 +358,17 @@ const KLICK_FARBEN = {
   ],
 };
 
-test('Konfigurator mit Abonnenten-Bonus: nach 3 Vinyl-Mustern sind alle Karten gesperrt, Warenkorb-Link sichtbar', async () => {
-  const k = await konfigurator({ product: KLICK_FARBEN, bonus: true, cartItems: [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('c', 'vinyl')] });
+test('Konfigurator: nach 2 Vinyl-Mustern sind alle Karten gesperrt, Warenkorb-Link sichtbar', async () => {
+  const k = await konfigurator({ product: KLICK_FARBEN, cartItems: [muster('a', 'vinyl'), muster('b', 'vinyl')] });
   const karten = k.el('[data-sample-grid]').querySelectorAll('[data-sample-color]');
   assert.equal(karten.length, 2);
   assert.ok(karten.every((c) => c.querySelector('input[type="checkbox"]').disabled), 'alle Karten gesperrt');
-  assert.match(k.el('[data-sample-count]').textContent, /3 von 3 Vinyl-Mustern im Warenkorb/);
+  assert.match(k.el('[data-sample-count]').textContent, /2 von 2 Vinyl-Mustern im Warenkorb/);
   assert.equal(k.el('[data-sample-cart-link]').hidden, false);
 });
 
 test('Konfigurator: Teppichmuster im Warenkorb, Vinyl-Grenze bindet - Warenkorb-Link bleibt sichtbar', async () => {
-  const k = await konfigurator({ product: KLICK_FARBEN, bonus: true, cartItems: [muster('t1')] });
+  const k = await konfigurator({ product: KLICK_FARBEN, cartItems: [muster('t1')] });
   assert.equal(k.el('[data-sample-cart-link]').hidden, false);
 });
 
@@ -393,7 +379,7 @@ test('Konfigurator: Farbe kam in einem zweiten Tab dazu - eigene Meldung statt G
     cartNachher: [muster('rovelia-klick--eiche', 'vinyl')],
   });
   const karten = k.el('[data-sample-grid]').querySelectorAll('[data-sample-color]');
-  karten.forEach((c) => c.querySelector('input[type="checkbox"]').click());
+  karten[0].querySelector('input[type="checkbox"]').click();
   k.el('[data-sample-submit]').dispatch('click');
   await k.ticks();
   assert.equal(k.requests.some((r) => r.url === '/cart/add.js'), false);

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { aufbereiten } from '../lib/bestelluebersicht.mjs';
 import { sucheKunden, offeneBestellungenJeProdukt, kundenListenEintrag } from '../lib/kundensuche.mjs';
+import { positionSuchtext } from '../../docs/ai-dashboard/lib/lexikon-suche.mjs';
 import { positionKey } from '../lib/auftragsstatus.mjs';
 
 // Nur synthetische Testdaten: erfundene Kunden, Produkte und Bestellnummern.
@@ -85,4 +86,46 @@ test('sucheKunden: Treffer ueber Kontakt stehen vor Treffern ueber das Produkt',
   const ueberProdukt = sucheKunden(modell, 'testteppich', { statusAlle: {} });
   assert.ok(ueberProdukt.length >= 4);
   assert.ok(ueberProdukt.every(k => k.trefferProdukt?.titel === 'Testteppich Wolke'));
+});
+
+test('sucheKunden: Wortweise wie die Packstation - Reihenfolge, Umlaute, Farbe im Produkt', () => {
+  const modell = { auftraege: [{ id: 'o1', name: '#T1', datum: '2026-10-20', details: { kunde: { name: 'Müller, Hans', email: 'test@example.com', telefon: '0300' } },
+    positionen: [{ lineItemId: 'l1', titel: 'Muster Testprodukt', farbe: 'Hellgrau (073)', sku: 'SKU_1', menge: 1 }, { lineItemId: 'l2', titel: 'Muster Anderes', farbe: 'Grau (8H73)', sku: 'SKU_2', menge: 1 }] }] };
+  for (const q of ['Hans Müller', 'hans mueller', 'mueller #T1']) assert.equal(sucheKunden(modell, q).length, 1, q);
+  assert.equal(sucheKunden(modell, 'Hans Meier').length, 0);
+  const produkt = sucheKunden(modell, 'Testprodukt 73');
+  assert.equal(produkt[0].trefferProdukt.farbe, 'Hellgrau (073)');
+  assert.equal(sucheKunden(modell, 'Anderes 73').length, 0, '73 passt nicht auf 8H73');
+  assert.equal(sucheKunden(modell, 'Anderes 74').length, 0);
+});
+
+test('sucheKunden: findet Warenbestellungen ueber Lieferantenangaben, auch bei Wunschmass ohne SKU', () => {
+  const position = (lineItemId, handle, titel, farbe, sku) => ({ lineItemId, handle, titel, farbe, sku, menge: 1 });
+  const auftrag = (id, name, kunde, positionen) => ({ id, name, datum: '2026-10-20', details: { kunde: { name: kunde, email: `${id}@example.com`, telefon: '–' } }, positionen });
+  const modell = { auftraege: [
+    auftrag('o1', '#T1', 'Testkunde Rolle', [position('l1', 'shop-eins', 'Shopname Eins', 'Grau (040) / 400cm', 'SKU-1')]),
+    auftrag('o2', '#T2', 'Testkunde Wunschmass', [position('l2', 'shop-zwei', 'Shopname Zwei', 'Grau (078) / Wunschmaß', 'UNGEKLAERT')]),
+    auftrag('o3', '#T3', 'Testkunde Fremd', [position('l3', 'nicht-im-lexikon', 'Fremdware', 'Grau', 'UNGEKLAERT')]),
+  ] };
+  const produkte = [
+    { handle: 'shop-eins', titel: 'Shopname Eins', varianten: [{ sku: 'SKU-1', farbe: 'Grau (040)', titel: 'Grau (040) / 400cm', einkauf: { produktname: 'Orion 400 cm Linie 029', farbnummer: '40', lieferant: 'Z' } }] },
+    { handle: 'shop-zwei', titel: 'Shopname Zwei', varianten: [
+      { sku: 'SKU-2', farbe: 'Grau (078)', titel: 'Grau (078) / 400cm', einkauf: { produktname: 'Vega 400 cm Linie 029', farbnummer: '78' } },
+      { sku: null, farbe: 'Grau (078)', titel: 'Grau (078) / Wunschmaß', wunschmass: true, einkauf: { farbnummer: '78' } },
+      { sku: 'SKU-3', farbe: 'Rot (079)', titel: 'Rot (079) / 400cm', einkauf: { produktname: 'Mira 400 cm', farbnummer: '79' } },
+    ] },
+  ];
+  const einkaufText = positionSuchtext(produkte);
+  const namen = q => sucheKunden(modell, q, { einkaufText }).map(k => k.kunde.name);
+  assert.deepEqual(namen('Orion Linie 029 40'), ['Testkunde Rolle']);
+  assert.deepEqual(namen('Vega 78'), ['Testkunde Wunschmass'], 'Wunschmass ohne SKU: ueber Handle und Farbe');
+  assert.equal(sucheKunden(modell, 'Vega 78', { einkaufText })[0].trefferProdukt.titel, 'Shopname Zwei');
+  assert.deepEqual(namen('Linie 029').sort(), ['Testkunde Rolle', 'Testkunde Wunschmass']);
+  assert.deepEqual(namen('Mira'), [], 'andere Farbe desselben Produkts zaehlt nicht');
+  assert.deepEqual(namen('Orion 78'), [], 'alle Woerter an derselben Position');
+  assert.deepEqual(namen('Fremdware'), ['Testkunde Fremd'], 'ohne Lexikon-Eintrag bleibt der Shopname');
+  assert.equal(positionSuchtext(produkte)({ sku: 'SKU-1' }).includes('z'), false, 'das Lieferantenkuerzel zaehlt nicht mit');
+  // Ohne Quelle bleibt alles wie vorher.
+  assert.deepEqual(sucheKunden(modell, 'Vega 78').map(k => k.kunde.name), []);
+  assert.deepEqual(sucheKunden(modell, 'Shopname Eins').map(k => k.kunde.name), ['Testkunde Rolle']);
 });

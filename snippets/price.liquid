@@ -299,6 +299,10 @@
   assign tp_pr_uvp = false
   if tp_pr_aktion == 'uvp' and compare_at_price != blank and compare_at_price > price
     assign tp_pr_uvp = true
+    # Sonderposten: Abstand zur UVP mit angeben, abgerundet (Inhaber 2026-11-03)
+    if product_resource.tags contains 'sonderposten'
+      assign tp_pr_uvp_prozent = compare_at_price | minus: price | times: 100 | divided_by: compare_at_price
+    endif
   endif
   # Prozent-Chip nur auf der Produktseite; die Karte zeigt ihn im Bild (_product-card-gallery)
   assign tp_pr_chip = false
@@ -384,9 +388,9 @@
       </div>
       {%- if tp_pr_uvp -%}
         {%- if is_sqm_card -%}
-          {% render 'tp-uvp-zeile', betrag: compare_at_price, einheit: '€/m²' %}
+          {% render 'tp-uvp-zeile', betrag: compare_at_price, einheit: '€/m²', prozent: tp_pr_uvp_prozent %}
         {%- else -%}
-          {% render 'tp-uvp-zeile', betrag: compare_at_price %}
+          {% render 'tp-uvp-zeile', betrag: compare_at_price, prozent: tp_pr_uvp_prozent %}
         {%- endif -%}
       {%- endif -%}
     {% endif %}

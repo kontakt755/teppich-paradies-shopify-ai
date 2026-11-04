@@ -31,8 +31,15 @@ function passtTeil(teil, text) {
   return text.includes(teil);
 }
 
-function passtBegriff(begriff, text) {
-  if (/^\d{1,3}$/.test(begriff)) return passtTeil(begriff, text);
+// Als eigenes Suchwort ist eine kurze Zahl auch kein Stueck eines Farbcodes: "73" nicht in "8H73",
+// "3" nicht in "3N55" - an den Liniennamen geklebt zaehlt sie weiter ("27" in "Linie027").
+function passtZahl(zahl, text) {
+  const ohneNullen = zahl.replace(/^0+(?=\d)/, '');
+  return new RegExp(`(?<!\\d)(?<!\\d\\p{L})0*${ohneNullen}(?!\\d)(?!\\p{L}\\d)`, 'u').test(text);
+}
+
+export function passtBegriff(begriff, text) {
+  if (/^\d{1,3}$/.test(begriff)) return passtZahl(begriff, text);
   if (text.includes(begriff)) return true;
   // "linie027" -> "linie" + "027", "a-4712" -> "a" + "4712"
   const teile = begriff.match(/\p{L}+|\p{N}+/gu) || [];
@@ -51,6 +58,36 @@ function variantenText(v) {
   return zusammen([v.titel, v.sku, v.farbe, e.artikelnummer, e.farbnummer, e.kollektion, e.produktname, e.hersteller, e.marke,
     // Muster: Angaben des Originals, damit der Aufkleber auch das Musterprodukt findet
     o.artikelnummer, o.farbnummer, o.kollektion, o.produktTitel]);
+}
+
+// Fuer jeden Lexikon-Stand nur einmal aufbauen: die Kundensuche laeuft bei jedem Tastendruck.
+const positionsIndex = new WeakMap();
+
+/** Farbe einer Bestellposition ohne Breite: "Schwarz (078) / 400cm" -> "schwarz (078)". */
+const farbeOhneBreite = farbe => normalisieren(String(farbe ?? '').split(' / ')[0].trim());
+
+/**
+ * Was beim Lieferanten zu einer Bestellposition steht, als Suchtext - fuer die Kundensuche
+ * ("Lieferantenname vom Muster, wer hat das bestellt?"). Erst ueber die SKU; Wunschmass-Varianten
+ * haben keine, dort zaehlen Handle und Farbe. Mehrere Breiten derselben Farbe sind derselbe Artikel,
+ * ihre Texte stehen zusammen. Findet sich nichts, bleibt der Text leer - geraten wird nicht.
+ * @returns {(position: object) => string}
+ */
+export function positionSuchtext(produkte = []) {
+  let index = positionsIndex.get(produkte);
+  if (!index) {
+    index = { sku: new Map(), farbe: new Map() };
+    const dazu = (je, schluessel, text) => je.set(schluessel, je.has(schluessel) ? `${je.get(schluessel)} | ${text}` : text);
+    for (const p of produkte) {
+      for (const v of p.varianten || []) {
+        const text = variantenText(v);
+        if (v.sku) dazu(index.sku, v.sku, text);
+        dazu(index.farbe, `${p.handle}\n${farbeOhneBreite(v.farbe || v.titel)}`, text);
+      }
+    }
+    positionsIndex.set(produkte, index);
+  }
+  return pos => index.sku.get(pos?.sku) ?? index.farbe.get(`${pos?.handle}\n${farbeOhneBreite(pos?.farbe)}`) ?? '';
 }
 
 /**

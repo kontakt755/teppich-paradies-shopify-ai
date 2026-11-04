@@ -103,3 +103,30 @@ Theme-Sicherung, Bedingung „Kollektion nicht leer“).
   6/6 Nicht-Angebote keinen.
 - `--stichtag 2026-11-02` (Tag nach Dauerrabatt-Ende): 0 Angebote → Menüpunkt verschwindet von selbst.
 - Entwicklungskopie: Desktop-Menü 24 Einträge wie live, 0 Liquid-Fehler.
+
+## 6. Zwischen Aktionsende und Black Week (Inhaber 03.11.2026, Nr. 27)
+
+Seit dem Ende der Aktion ist `/collections/angebote` leer, der Hauptpunkt „Angebote & Reste“
+führte trotzdem dorthin. Bis zur Black Week zeigt er auf `/collections/reste-sonderposten`.
+Die Fußzeile braucht keine eigene Änderung: `blocks/tp-footer-links.liquid` liest
+`main-menu` und nimmt dieselbe Adresse. Der Unterpunkt „Aktuelle Angebote“ bleibt im Menü
+und erscheint von selbst wieder, sobald ein Angebot sichtbar ist.
+
+Das Theme sichert den Zeitraum zusätzlich ab, auch wenn das Menü noch den alten Stand hat:
+Der Knopf `tp-dn-cta` im Handy-Menü erscheint nur, wenn sein Ziel etwas zeigt, die leere
+Kollektion zeigt Hinweis und Link, die Schnellsuche überspringt leere Kollektionen.
+
+**Menü umstellen, erst nach dem Theme-Deploy.** Der CLI-Token darf keine Menüs lesen; die
+Mutation läuft über die Admin API (MCP), das Skript schreibt nur Dateien. Reihenfolge wie in
+`hauptmenue-umbau-2026-10.md`:
+
+1. `main-menu` mit drei Ebenen per MCP lesen, als `vorher.json` speichern.
+2. `node scripts/menue-umbau.mjs --alt vorher.json --plan domains/shopify/menue-reste-bis-black-week-2026-11.json --update update.json`
+3. `menuUpdate` mit `id`, `title` und `items` aus `update.json`.
+4. Wieder lesen als `nachher.json`; `node scripts/menue-umbau.mjs --alt vorher.json --plan domains/shopify/menue-reste-bis-black-week-2026-11.json --pruefen nachher.json` muss „verloren 0“ und 0 neue Punkte melden.
+5. `npm run menu:guard`, Shop ohne Preview-Parameter bei 1440 und 390 px ansehen.
+
+**Zurück zur Black Week (23.11.):** Erst muss die Aktion laufen (`npm run angebote:abgleich`,
+`productsCount` der Kollektion `angebote` größer 0), dann dieselben fünf Schritte mit
+`domains/shopify/menue-black-week-2026-11.json`. Vorher bleibt der Link auf den Resten, sonst
+führt er wieder auf die leere Seite. Nach der Aktion wieder der Plan `menue-reste-bis-black-week-2026-11`.

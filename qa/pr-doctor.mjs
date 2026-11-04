@@ -23,7 +23,19 @@
  *                      aufloesen im Wegwerf-Worktree, nie im geteilten
  *                      Checkout, Loeschungen von main uebernehmen, wenn der
  *                      Branch die Datei nur kosmetisch anfasste.
+ *                      Seit 2026-10-29 zaehlt auch, was GitHub sagt: steht der
+ *                      PR dort auf CONFLICTING, obwohl der lokale merge-tree
+ *                      sauber ist, ist das derselbe Befund. Der Grund war ein
+ *                      Merge-Treiber (merge=union fuer CHANGELOG.md), den
+ *                      GitHub nicht auswertet - lokal sah niemand den Konflikt,
+ *                      an dem die PR-Validierung nicht startete.
  *   branch-fehlt       Head-Branch existiert auf dem Remote nicht mehr.
+ *   changelog-datei    PR aendert docs/control-center/CHANGELOG.md. Die Datei
+ *                      ist seit 2026-10-29 eingefroren (ein Eintrag = eine
+ *                      Datei unter docs/control-center/changelog/); der Guard
+ *                      changelog:guard laesst in der CI keine neue Ueberschrift
+ *                      mehr durch, und jede Aenderung dort kollidiert wieder
+ *                      mit allen anderen PRs. Fix von Hand: Eintrag verschieben.
  *
  * Reihenfolge der Fixes ist Absicht: erst umzielen, dann begradigen. Ein
  * Begradigen gegen die falsche Basis waere Arbeit am falschen Ziel.
@@ -35,12 +47,17 @@ export const REGELN = Object.freeze({
   MEHRERE_BASEN: 'mehrere-basen',
   KONFLIKT: 'konflikt',
   KEINE_CHECKS: 'keine-checks',
+  CHANGELOG_DATEI: 'changelog-datei',
 });
 
 export const FIXES = Object.freeze({
   UMZIELEN: 'umzielen',
   BEGRADIGEN: 'begradigen',
 });
+
+/** Eingefroren seit 2026-10-29; neue Eintraege liegen als Datei unter CHANGELOG_ORDNER. */
+export const CHANGELOG_ALT = 'docs/control-center/CHANGELOG.md';
+export const CHANGELOG_ORDNER = 'docs/control-center/changelog/';
 
 /**
  * @param {object} pr
@@ -52,8 +69,11 @@ export const FIXES = Object.freeze({
  * @param {boolean|null} pr.basisExistiert   origin/<basis> vorhanden (null bei main)
  * @param {boolean|null} pr.basisGemergt     origin/<basis> ist Vorfahr von origin/main (null bei main)
  * @param {number} pr.mergeBasen      Anzahl Merge-Basen gegen origin/main
- * @param {string[]} pr.konflikte     Dateien mit Konflikt gegen origin/main
+ * @param {string[]} pr.konflikte     Dateien mit Konflikt gegen origin/main (lokaler merge-tree)
  * @param {number} pr.checks          Anzahl gemeldeter Checks
+ * @param {string|null} [pr.githubMergeable]  `mergeable` laut GitHub: MERGEABLE, CONFLICTING, UNKNOWN
+ * @param {string|null} [pr.githubStatus]     `mergeStateStatus` laut GitHub: CLEAN, DIRTY, BLOCKED, ...
+ * @param {string[]} [pr.dateien]     vom PR geaenderte Dateien (gegen die Merge-Basis)
  * @param {string} [hauptBranch='main']
  */
 export function bewerte(pr, hauptBranch = 'main') {
@@ -81,20 +101,33 @@ export function bewerte(pr, hauptBranch = 'main') {
     }
   }
 
+  const githubKonflikt = pr.githubMergeable === 'CONFLICTING';
   if (pr.konflikte.length > 0) {
     add(REGELN.KONFLIKT, 'error',
       `#${pr.nummer}: ${pr.konflikte.length} Konflikt(e) gegen ${hauptBranch}: ${pr.konflikte.join(', ')}`);
   } else if (pr.mergeBasen > 1) {
     // Nur begradigen, wenn der Merge auch sauber durchlaeuft - sonst waere
-    // der Fix selbst ein Konflikt.
+    // der Fix selbst ein Konflikt. GitHub meldet diesen Fall ebenfalls als
+    // CONFLICTING/DIRTY (#328); erst begradigen, dann neu rechnen.
     add(REGELN.MEHRERE_BASEN, 'warn',
       `#${pr.nummer}: ${pr.mergeBasen} Merge-Basen gegen ${hauptBranch}; GitHub meldet so einen PR als dirty und startet keine Validierung.`,
       { art: FIXES.BEGRADIGEN });
+  } else if (githubKonflikt) {
+    add(REGELN.KONFLIKT, 'error',
+      `#${pr.nummer}: GitHub meldet CONFLICTING (${pr.githubStatus ?? 'Status unbekannt'}), der lokale merge-tree gegen ${hauptBranch} ist sauber - ` +
+      `GitHub wertet Merge-Treiber aus .gitattributes nicht aus. Mit der GitHub-Sicht nachrechnen ` +
+      `(git --attr-source=<Commit ohne den Treiber> merge-tree --write-tree origin/${hauptBranch} origin/${pr.head}) und im Wegwerf-Worktree aufloesen.`);
   }
 
-  if (pr.basis === hauptBranch && pr.checks === 0 && pr.konflikte.length === 0 && pr.mergeBasen <= 1) {
+  if (pr.basis === hauptBranch && pr.checks === 0 && pr.konflikte.length === 0 && pr.mergeBasen <= 1 && !githubKonflikt) {
     add(REGELN.KEINE_CHECKS, 'info',
       `#${pr.nummer}: keine Checks gemeldet - Validierung laeuft vermutlich noch oder wurde nie ausgeloest.`);
+  }
+
+  if ((pr.dateien ?? []).includes(CHANGELOG_ALT)) {
+    add(REGELN.CHANGELOG_DATEI, 'warn',
+      `#${pr.nummer}: aendert ${CHANGELOG_ALT} - die Datei ist seit 2026-10-29 eingefroren und jede Aenderung dort kollidiert mit allen anderen PRs. ` +
+      `Eintrag als Datei unter ${CHANGELOG_ORDNER} anlegen (JJJJ-MM-TT-<kurzname>.md, Format in der README dort); sonst faellt changelog:guard in der CI.`);
   }
 
   return findings;
@@ -112,5 +145,6 @@ export function zusammenfassung(findings) {
     konflikte: zaehle(f => f.regel === REGELN.KONFLIKT),
     umzielen: zaehle(f => f.fix?.art === FIXES.UMZIELEN),
     begradigen: zaehle(f => f.fix?.art === FIXES.BEGRADIGEN),
+    changelog: zaehle(f => f.regel === REGELN.CHANGELOG_DATEI),
   };
 }

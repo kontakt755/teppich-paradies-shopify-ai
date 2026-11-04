@@ -71,6 +71,16 @@
 .ml-sperren a.btn { color: var(--text); }
 .ml-sperren a.btn:hover { text-decoration: none; }
 
+.ml-lieferant + .ml-lieferant { margin-top: 18px; }
+.ml-lieferant > .section-title { margin-bottom: 8px; overflow-wrap: anywhere; }
+/* Lexikon: Lagerzeile direkt korrigieren. Bricht am Handy in mehrere Reihen um. */
+.lex-lager-zeile { padding: 10px 0; }
+.lex-lager-zeile.ml-knapp { padding-inline: 10px; border-radius: 8px; }
+.lex-lager-zeile form { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
+.lex-lager-zeile .ml-was { flex: 1 1 200px; align-self: center; }
+.lex-lager-da input { width: 5rem; }
+.lex-lager-ort { flex: 0 1 16rem; min-width: 0; }
+.lex-lager-ort input { width: 100%; box-sizing: border-box; }
 .ml-vorschlaege { margin-top: 22px; }
 .ml-vorschlaege .ml-liste { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 
@@ -111,8 +121,20 @@
 .etk-form { display: grid; gap: 8px; margin-top: 8px; }
 .etk-form label, .etk-optionen label { display: grid; gap: 2px; font-size: .9rem; }
 .etk-form button { justify-self: start; }
+.etk-form textarea { width: 100%; font: inherit; }
+.etk-form label.etk-wahl { display: inline-flex; align-self: end; min-height: 32px; }
+/* Eigene Groesse: Seitenverhaeltnis bleibt, auch sehr lange Aufkleber sprengen die Karte nicht. */
+.etk-bild.etk-bild-eigen { width: auto; max-width: 100%; max-height: 420px; }
 .etk-optionen { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 4px; }
 .etk-versatz-hilfe { flex-basis: 100%; margin: 0; }
+@media (min-width: 768px) and (min-height: 700px) { .etk-liste-frei { position: sticky; top: 0; z-index: 1; padding-block: 8px; background: var(--surface); } .etk-liste-frei .etk-bild { max-height: 220px; width: auto; max-width: 100%; } }
+.etk-produkt { align-items: end; margin-top: 4px; }
+.etk-produkt label { flex: 1 1 220px; }
+.etk-zeilen { display: grid; gap: 4px; }
+.etk-zeilen p { margin: 4px 0 0; }
+.etk-form label.etk-zeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.etk-zeile span { min-width: 0; overflow-wrap: anywhere; }
+.etk-zeile select { flex: none; }
 .etk-karte figcaption { display: grid; gap: 6px; }
 .etk-karte figcaption .btn { justify-self: start; }
 .etk-wahl { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }

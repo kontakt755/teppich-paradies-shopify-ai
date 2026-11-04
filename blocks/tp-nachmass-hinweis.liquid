@@ -12,6 +12,7 @@
   Passt der Handle nicht zur Regel (Sonderposten, Kettelteppich mit eigenem
   Handle wie Passion Yasmin, 2026-10-16), gilt das erste kaufbare Produkt aus
   service.einfass_gruppe der Meterware - mit derselben Rueckverweis-Pflicht.
+  Raummass zaehlt nicht: das ist kein Teppich, sondern die Karte im Rechner.
 {% enddoc %}
 
 {%- liquid
@@ -28,7 +29,8 @@
   endif
   if tnh_ziel == nil
     for tnh_kandidat in product.metafields.service.einfass_gruppe.value
-      if tnh_kandidat.available and tnh_kandidat.metafields.service.einfass_basis.value.id == product.id
+      assign tnh_art = tnh_kandidat.metafields.service.einfassung.value | strip | downcase | replace: 'ß', 'ss'
+      if tnh_art != 'raummass' and tnh_kandidat.available and tnh_kandidat.metafields.service.einfass_basis.value.id == product.id
         assign tnh_ziel = tnh_kandidat
         break
       endif

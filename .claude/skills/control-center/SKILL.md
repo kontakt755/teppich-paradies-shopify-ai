@@ -12,8 +12,9 @@ funktionieren** – im Browser, am Handy, mit echten Daten (als Kopie).
 ## Vorher lesen
 
 - `docs/control-center/ARCHITEKTUR.md` (Betriebsarten, Netzmodus mit Passwort,
-  Einkauf, Heute, Datenaktualisierung) und die letzten Eintraege in
-  `docs/control-center/CHANGELOG.md`.
+  Einkauf, Heute, Datenaktualisierung) und die letzten Changelog-Eintraege:
+  `npm run -s changelog` (eine Datei je Eintrag unter `docs/control-center/changelog/`;
+  die alte `CHANGELOG.md` ist seit 2026-10-29 eingefroren).
 - `AGENTS.md` Abschnitt "Arbeitskopien" (issues.json/bodenwissen.json sind erzeugt, nicht im Git) und Punkt 8
   (Lieferanten nur als Pseudonym A-D).
 
@@ -127,8 +128,13 @@ kann dafuer weg?
    - Fuer geaenderte Aktionen eine Klickstrecke gegen die Kopie
      (`npm run dashboard:pruefen -- --offen`, dann Puppeteer oder Browser),
      Ergebnis mit Zahlen festhalten („Problemzahl 2 → 1").
-7. `docs/control-center/CHANGELOG.md` (Format: Geaendert · Getestet ·
-   Risiken · Naechste Stufe), bei neuem Verhalten auch `ARCHITEKTUR.md`.
+7. Changelog-Eintrag als **eigene Datei** `docs/control-center/changelog/JJJJ-MM-TT-<kurzname>.md`
+   (erste Zeile `## JJJJ-MM-TT · Titel`, dann Geaendert · Getestet · Risiken/Annahmen ·
+   Naechste Stufe; Regeln in `changelog/README.md`, Pruefung `npm run changelog:guard`,
+   laeuft in `pruefen`). Nie mehr in `CHANGELOG.md` schreiben: die Datei ist eingefroren,
+   weil GitHub den Merge-Treiber `union` nicht auswertet und jeder Merge nach `main` alle
+   anderen PRs mit Eintrag auf CONFLICTING stellte (`docs/lessons/pr-basis-und-historie.md`).
+   Bei neuem Verhalten auch `ARCHITEKTUR.md`.
 8. PR mit `Closes #<n>`, danach `npm run task -- review <n> --note "PR #…"`.
 9. Nach dem Merge zieht der Dienst `net.teppich-paradies.nachziehen` den Betrieb selbst
    nach (seit 2026-10-26, #1710; Ablauf: `operations/README.md`, „Dienst-Checkout

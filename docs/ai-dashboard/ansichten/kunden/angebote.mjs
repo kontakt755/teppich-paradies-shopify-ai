@@ -8,6 +8,8 @@ import { esc, geldText } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
+import { istNurLesend } from '../../kern/sitzung.mjs';
+import { angebotAdminLink, angebotNachricht, angebotVollstaendig, whatsappLink } from '../../lib/angebot-nachricht.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 export function ensureKundenAngebote() {
@@ -54,8 +56,23 @@ function betragText(betrag, waehrung) {
   return geldText({ betrag, waehrung });
 }
 
-function angebotZeile(a) {
-  const offen = ANGEBOT_OFFEN.has(a.status);
+/** Antwort per WhatsApp: Text und Link kommen fertig, abschicken tut immer der Mitarbeiter. */
+function whatsappKnoepfe(a, konto) {
+  if (!ANGEBOT_OFFEN.has(a.status) || istNurLesend() || !angebotVollstaendig(a)) return '';
+  const admin = angebotAdminLink(a.id);
+  const adminKnopf = admin ? `<a class="btn btn-sm" href="${esc(admin)}" target="_blank" rel="noopener" title="Nach dem Geldeingang dort als bezahlt markieren">In Shopify öffnen ↗</a>` : '';
+  const text = angebotNachricht(a, konto);
+  // Eigene Zeile ueber die volle Breite: rechts neben dem Text quetschten vier Knoepfe die Kundenangaben.
+  const zeile = inhalt => `<div class="r" style="grid-column:1 / -1">${inhalt}</div>`;
+  if (!text) return adminKnopf && zeile(adminKnopf);
+  const link = whatsappLink(a.telefon, text);
+  return zeile(`${a.versandEingetragen ? '' : '<span class="small muted">Kein Versand im Angebot eingetragen. Betrag vor dem Senden prüfen.</span>'}
+      ${link ? `<a class="btn btn-sm" href="${esc(link)}" target="_blank" rel="noopener">In WhatsApp öffnen ↗</a>` : ''}
+      <button type="button" class="btn btn-sm" data-kopiertext="${esc(text)}">Text kopieren</button>
+      ${adminKnopf}`);
+}
+
+function angebotZeile(a, konto) {
   return `<div class="row">
     <div>
       <div class="t">${esc(a.nummer)} · ${esc(a.kunde || 'ohne Kundennamen')} ${liegtSeit(a.erstelltAm)}</div>
@@ -67,6 +84,7 @@ function angebotZeile(a) {
       <div class="m">${esc(ANGEBOT_STATUS_TEXT[a.status] || a.status || 'Status unbekannt')}</div>
       ${a.rechnungUrl ? `<a class="btn btn-sm" href="${esc(a.rechnungUrl)}" target="_blank" rel="noopener">Angebot öffnen ↗</a>` : ''}
     </div>
+    ${whatsappKnoepfe(a, konto)}
   </div>`;
 }
 
@@ -90,8 +108,9 @@ export function viewKundenAngebote() {
   const rest = (d.angebote || []).filter(a => !ANGEBOT_OFFEN.has(a.status));
   return `
     <p class="small muted" style="margin:0 0 10px">Angebote sind Entwurfsbestellungen aus Shopify. „Offen" heißt: verschickt oder angelegt, aber noch nicht bezahlt – dort wartet jemand auf eine Antwort.</p>
-    <div class="rows">${offen.length ? offen.map(angebotZeile).join('') : emptyState('Kein offenes Angebot.', 'Nichts zu tun.')}</div>
-    ${rest.length ? `<details style="margin-top:14px"><summary>${rest.length} erledigte Angebote</summary><div class="rows">${rest.map(angebotZeile).join('')}</div></details>` : ''}`;
+    ${offen.length && !d.kontodaten && !istNurLesend() ? '<p class="notice warn">Für den WhatsApp-Text fehlen die Kontodaten oder die IBAN stimmt nicht. Bitte den Inhaber fragen.</p>' : ''}
+    <div class="rows">${offen.length ? offen.map(a => angebotZeile(a, d.kontodaten)).join('') : emptyState('Kein offenes Angebot.', 'Nichts zu tun.')}</div>
+    ${rest.length ? `<details style="margin-top:14px"><summary>${rest.length} erledigte Angebote</summary><div class="rows">${rest.map(a => angebotZeile(a, null)).join('')}</div></details>` : ''}`;
 }
 
 function warenkorbZeile(w) {

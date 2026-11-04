@@ -1,6 +1,6 @@
 {%- doc -%}
-  Grenze fuer kostenlose Vinyl-Muster (Inhaber 13.10.2026): hoechstens 3
-  Vinyl-Muster je Bestellung, auch mit Abonnenten-Bonus. Vinyl-Muster kosten
+  Grenze fuer kostenlose Vinyl-Muster (Inhaber 02.11.2026): hoechstens 2
+  Vinyl-Muster je Bestellung. Vinyl-Muster kosten
   uns Geld; fuer den Kunden bleiben sie kostenlos.
 
   Gezaehlt werden Warenkorbzeilen mit der Property _Muster_Gruppe = vinyl.
@@ -13,7 +13,7 @@
   die Gesamtgrenze des Konfigurators; hier wird fuer sie nichts ausgegeben.
 
   Ausgabe:
-  - "voll"  Vinylboden, 3 Vinyl-Muster liegen schon im Warenkorb
+  - "voll"  Vinylboden, 2 Vinyl-Muster liegen schon im Warenkorb
   - "vinyl" Vinylboden, Grenze noch nicht erreicht
   - nichts  kein Vinylboden
 
@@ -28,7 +28,7 @@
         assign tpmg_anzahl = tpmg_anzahl | plus: tpmg_zeile.quantity
       endif
     endfor
-    if tpmg_anzahl >= 3
+    if tpmg_anzahl >= 2
       echo 'voll'
     else
       echo 'vinyl'

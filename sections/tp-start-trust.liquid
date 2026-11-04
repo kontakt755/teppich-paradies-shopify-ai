@@ -5,10 +5,11 @@
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   # Google-Bewertung aus einer Quelle - siehe sections/tp-start-hero.liquid.
-  assign tp_rating_wert = section.settings.rating_wert | strip | default: settings.tp_google_wert
+  assign tp_gb = shop.metafields.custom.google_bewertung.value
+  assign tp_rating_wert = section.settings.rating_wert | strip | default: tp_gb.wert | default: settings.tp_google_wert
   assign tp_rating_link = section.settings.rating_link | default: settings.tp_google_link
   capture tp_rating_standard
-    echo settings.tp_google_anzahl
+    echo tp_gb.anzahl | default: settings.tp_google_anzahl
     echo ' Bewertungen · Google-Unternehmensprofil'
   endcapture
   assign tp_rating_text = section.settings.rating_text | strip | default: tp_rating_standard | strip
@@ -17,10 +18,14 @@
 <div class="tp-trust" role="region" aria-label="Warum Teppich Paradies">
   <div class="tp-s-wrap tp-trust__wrap{% if tp_rating_wert == blank %} tp-trust__wrap--ohne-rating{% endif %}">
     {%- if tp_rating_wert != blank -%}
-      <a class="tp-trust__rating" href="{{ tp_rating_link | default: '#' }}" rel="noopener" target="_blank">
-        <span class="tp-trust__g" aria-hidden="true">G</span>
-        <span><b>{{ tp_rating_wert | escape }} <span class="tp-trust__stars" aria-hidden="true">★★★★★</span></b><small>{{ tp_rating_text | escape }}</small></span>
-      </a>
+      <div class="tp-trust__beleg">
+        <a class="tp-trust__rating" href="{{ tp_rating_link | default: '#' }}" rel="noopener" target="_blank">
+          <span class="tp-trust__g" aria-hidden="true">G</span>
+          <span><b>{{ tp_rating_wert | escape }} <span class="tp-trust__stars" aria-hidden="true">★★★★★</span></b><small>{{ tp_rating_text | escape }}</small></span>
+        </a>
+        {%- comment -%} § 5b Abs. 3 UWG: der Hinweis gehoert direkt zur Note {%- endcomment -%}
+        {%- render 'tp-bewertungshinweis', kurz: true -%}
+      </div>
     {%- endif -%}
     <ul class="tp-trust__list">
       {%- for block in section.blocks -%}
@@ -39,14 +44,17 @@
   .tp-trust__list { list-style: none; margin: 0; padding: 0; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
   .tp-trust__list li { display: flex; align-items: center; gap: 10px; font-size: var(--tp-fs-md); font-weight: 500; color: #4a443f; }
   .tp-trust__list svg { width: 20px; height: 20px; color: #1d1a17; flex: none; }
-  .tp-trust__rating { display: flex; align-items: center; gap: 12px; padding-right: 32px; border-right: 1px solid #e6e0d8; text-decoration: none; color: #1d1a17; }
+  .tp-trust__beleg { padding-right: 32px; border-right: 1px solid #e6e0d8; }
+  .tp-trust__beleg .tp-bewertungshinweis { max-width: 36ch; }
+  .tp-trust__rating { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #1d1a17; }
   .tp-trust__g { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 1px solid #e6e0d8; display: grid; place-items: center; font-weight: 700; font-size: var(--tp-fs-lg); color: #4285f4; }
   .tp-trust__rating b { display: block; font-size: var(--tp-fs-md); }
   .tp-trust__stars { color: #e5a51c; }
   .tp-trust__rating small { color: var(--tp-muted, #655e57); font-size: var(--tp-fs-xs); }
   @media (max-width: 767px) {
     .tp-trust .tp-trust__wrap { grid-template-columns: 1fr; gap: 14px; padding-top: 16px; padding-bottom: 16px; }
-    .tp-trust__rating { border-right: 0; padding-right: 0; border-bottom: 1px solid #e6e0d8; padding-bottom: 14px; }
+    .tp-trust__beleg { border-right: 0; padding-right: 0; border-bottom: 1px solid #e6e0d8; padding-bottom: 14px; }
+    .tp-trust__beleg .tp-bewertungshinweis { max-width: none; }
     .tp-trust__list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .tp-trust__list li { font-size: var(--tp-fs-sm); }
   }
@@ -68,7 +76,7 @@
       "type": "aussage",
       "name": "Aussage",
       "limit": 4,
-      "settings": [ { "type": "text", "id": "text", "label": "Text", "default": "Bis zu 3 Muster kostenlos" } ]
+      "settings": [ { "type": "text", "id": "text", "label": "Text", "default": "Bis zu zwei Muster je Bestellung kostenlos" } ]
     }
   ],
   "presets": [
@@ -76,7 +84,7 @@
       "name": "TP Trust-Streifen",
       "blocks": [
         { "type": "aussage", "settings": { "text": "Deutschlandweiter Versand" } },
-        { "type": "aussage", "settings": { "text": "Bis zu 3 Muster kostenlos" } },
+        { "type": "aussage", "settings": { "text": "Bis zu zwei Muster je Bestellung kostenlos" } },
         { "type": "aussage", "settings": { "text": "Rollenware im Wunschmaß zugeschnitten" } },
         { "type": "aussage", "settings": { "text": "Eigener Verlegeservice bis 50 km" } }
       ]

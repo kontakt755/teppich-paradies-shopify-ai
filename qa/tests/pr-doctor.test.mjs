@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bewerte, bewerteAlle, zusammenfassung, REGELN, FIXES } from '../pr-doctor.mjs';
+import { bewerte, bewerteAlle, zusammenfassung, REGELN, FIXES, CHANGELOG_ALT } from '../pr-doctor.mjs';
 
 // Ein sauberer PR gegen main: keine Findings ausser hoechstens dem Hinweis auf
 // fehlende Checks.
@@ -8,6 +8,7 @@ const sauber = {
   nummer: 1, head: 'feature/a', basis: 'main', draft: false,
   headExistiert: true, basisExistiert: null, basisGemergt: null,
   mergeBasen: 1, konflikte: [], checks: 2,
+  githubMergeable: 'MERGEABLE', githubStatus: 'CLEAN', dateien: ['blocks/x.liquid'],
 };
 
 test('sauberer PR gegen main hat keinen Befund', () => {
@@ -84,5 +85,49 @@ test('Zusammenfassung zaehlt Fixes und Konflikte', () => {
     { ...sauber, nummer: 4, konflikte: ['x'] },
   ];
   const z = zusammenfassung(bewerteAlle(prs));
-  assert.deepEqual(z, { fehler: 1, warnungen: 2, konflikte: 1, umzielen: 1, begradigen: 1 });
+  assert.deepEqual(z, { fehler: 1, warnungen: 2, konflikte: 1, umzielen: 1, begradigen: 1, changelog: 0 });
+});
+
+// Der Fall vom 2026-10-29: merge=union in .gitattributes machte den lokalen merge-tree
+// blind, GitHub (ohne Merge-Treiber) meldete 6 von 7 PRs als CONFLICTING.
+test('GitHub CONFLICTING bei sauberem merge-tree ist ein Konflikt, kein Hinweis auf fehlende Checks', () => {
+  const f = bewerte({ ...sauber, checks: 0, githubMergeable: 'CONFLICTING', githubStatus: 'DIRTY' });
+  assert.equal(f.length, 1);
+  assert.equal(f[0].regel, REGELN.KONFLIKT);
+  assert.equal(f[0].schwere, 'error');
+  assert.equal(f[0].fix, null);
+  assert.match(f[0].text, /GitHub meldet CONFLICTING \(DIRTY\)/);
+  assert.match(f[0].text, /--attr-source/);
+  assert.equal(zusammenfassung(f).konflikte, 1);
+});
+
+test('GitHub CONFLICTING mit mehreren Merge-Basen: erst begradigen, dann neu rechnen', () => {
+  const f = bewerte({ ...sauber, mergeBasen: 2, githubMergeable: 'CONFLICTING', githubStatus: 'DIRTY' });
+  assert.equal(f.length, 1);
+  assert.equal(f[0].regel, REGELN.MEHRERE_BASEN);
+  assert.equal(f[0].fix?.art, FIXES.BEGRADIGEN);
+});
+
+test('lokaler Konflikt und GitHub CONFLICTING werden nicht doppelt gemeldet', () => {
+  const f = bewerte({ ...sauber, konflikte: ['a.liquid'], githubMergeable: 'CONFLICTING' });
+  assert.equal(f.filter(x => x.regel === REGELN.KONFLIKT).length, 1);
+  assert.match(f[0].text, /a\.liquid/);
+});
+
+test('GitHub UNKNOWN oder MERGEABLE, ohne Feld (alte Fakten): kein Befund', () => {
+  assert.deepEqual(bewerte({ ...sauber, githubMergeable: 'UNKNOWN', githubStatus: 'UNKNOWN' }), []);
+  const { githubMergeable, githubStatus, dateien, ...alt } = sauber;
+  assert.deepEqual(bewerte(alt), []);
+});
+
+test('PR schreibt in die eingefrorene CHANGELOG.md: Warnung mit dem Weg, kein Fix', () => {
+  const f = bewerte({ ...sauber, dateien: ['qa/x.mjs', CHANGELOG_ALT] });
+  assert.equal(f.length, 1);
+  assert.equal(f[0].regel, REGELN.CHANGELOG_DATEI);
+  assert.equal(f[0].schwere, 'warn');
+  assert.equal(f[0].fix, null);
+  assert.match(f[0].text, /docs\/control-center\/changelog\//);
+  assert.match(f[0].text, /changelog:guard/);
+  assert.equal(zusammenfassung(f).changelog, 1);
+  assert.deepEqual(bewerte({ ...sauber, dateien: ['docs/control-center/changelog/2026-10-29-a.md'] }), []);
 });

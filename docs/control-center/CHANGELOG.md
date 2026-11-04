@@ -1,6 +1,103 @@
 # Control Center – Fortschritt
 
+> **Eingefroren seit 2026-10-29.** Neue Einträge als Datei unter [`changelog/`](./changelog/README.md)
+> (`JJJJ-MM-TT-<kurzname>.md`, Format dort); `npm run -s changelog` zeigt die letzten. Diese Datei bekommt
+> keine neue Überschrift mehr (`npm run changelog:guard`). Grund: GitHub wertet den Merge-Treiber
+> `merge=union` nicht aus – nach jedem Merge nach `main` standen alle anderen PRs mit Eintrag als CONFLICTING.
+
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
+
+## 2026-10-29 · LaunchAgent-Vorlage preisfilter: XML-Kommentar ohne Doppelstrich (w-220 Teil 3)
+
+- **Geaendert:** In `operations/launchagents/net.teppich-paradies.preisfilter.plist.vorlage` stand
+  „--still“ in einem XML-Kommentar. Nach dem XML-Standard ist „--“ in Kommentaren unzulässig;
+  launchd und `plutil -lint` lesen die Datei trotzdem, strenge Parser (Python `plistlib`, expat)
+  lehnen sie ab. Der Kommentar nennt den Schalter jetzt ausgeschrieben („Der Schalter still …“).
+  Die installierte Datei unter `~/Library/LaunchAgents` wird nicht von Hand geändert; sie wird beim
+  nächsten Einrichten aus der Vorlage erneuert.
+- **Getestet:** Neuer Test `operations/tests/launchagents-vorlagen.test.mjs` prüft alle zwölf
+  Vorlagen: kein „--“ in Kommentaren, kein Kommentar auf „-“ endend, XML-Kopf und `</plist>`
+  vorhanden. Am alten Stand rot (meldet Datei und Zeile), am neuen grün; `plistlib` liest die
+  Vorlage jetzt, `plutil -lint` weiterhin OK. `npm run -s pruefen` grün.
+- **Risiken:** Keine Verhaltensänderung des Dienstes; nur Kommentartext.
+- **Naechste Stufe:** Beim nächsten `dienste-einrichten.sh`-Lauf wird die installierte plist erneuert.
+## 2026-10-29 · Packstation: „Verschickt“ ganz oder gar nicht, Suche ohne Fertiges (#1811)
+
+- **Geaendert:** Fortsetzung von #1810 nach Wunsch des Mitarbeiters vom 29.10.
+  - „Verschickt – Kunde informieren“ ist jetzt ein einziger Aufruf (`aktion: 'verschickt'`) statt je
+    Bestellung aus dem Browser. Der Server prüft erst alle Bestellungen des Umschlags (Fehlmenge,
+    Musterautomatik). Geht eine nicht, kommt „Nicht verschickt, keine Mail – #…“ und nichts ist
+    geschrieben. Danach stehen alle lokalen Schritte „raus“, bevor Shopify antwortet. Bisher zerfiel
+    ein Umschlag mit zwei Bestellungen nach der ersten, und der Rest stand ohne Gepackt-Vermerk wieder
+    im Packen.
+  - Was in Shopify nicht sicher als versendet gemeldet ist, bleibt als roter Hinweis oben in der
+    Packstation stehen, mit Link zur Bestellung, bis „Verstanden“ geklickt wird. Bisher kam nur ein
+    Toast, und der Umschlag war schon weg.
+  - Suche und „Muster kommt an“ zeigen nur offene Arbeit. Gepackte Umschläge und versandte
+    Bestellungen zählen nicht mehr mit. Vorher verdrängte ein fertiger Kunde mit dem besseren Treffer
+    den Kunden, der das Muster braucht. Unter der Suche steht „N fertige Bestellungen passen auch –
+    Trotzdem zeigen“. Das gilt nur für diese eine Suche, die Fertigen stehen dann hinten.
+  - Versandbestätigung im Shopify-Admin: Fußzeile in Sie-Form (README Benachrichtigungen).
+- **Getestet:** `packstation-versandmail.test.mjs` neu, 8 Tests mit der Versand-Attrappe:
+  - Gepackt bucht nichts. Verschickt bucht mit Mail.
+  - Zweiter Klick und Zurücknehmen ändern Shopify nicht.
+  - Ohne Zugang wird nachgebucht.
+  - Vorbeigebrachte Muster gehen ohne Mail raus.
+  - Rolle „lesen“ bekommt 403.
+  - Zwei Bestellungen mit Sperre ergeben 409 ohne Schreiben.
+  - Bei zwei Bestellungen stehen beide lokal auf „raus“, bevor Shopify antwortet.
+
+  `muster-packen.test.mjs` (`offeneSuche`, `handTreffer`) und `packstation-arbeitslisten.test.mjs`
+  (Hinweis, gebundenes `mpfertig`, Storniert bleibt sichtbar) sind angepasst. Die 22 bis zum 29.10.
+  gepackten Bestellungen sind von Hand in Shopify gebucht, die 11 vom 28./29.10. mit Mail.
+  Unabhängige Prüfung des Diffs (4 Blickwinkel, jeder Befund gegengeprüft): 14 Befunde, behoben u. a.
+  Verschickt nur bei vollständig abgehaktem Umschlag, kein Haken mehr an Gepacktem, Status
+  `nicht-eingetragen` statt falscher Shopify-Meldung, 500 wenn nichts eingetragen wurde, Netzfehler
+  ohne falsche Gewissheit, Rest-Umschlag nur aus genau den stehen gebliebenen Bestellungen, Suche aus
+  Gepackt/Erledigt mit Fertigen, Fehlwörter der offenen Treffer bleiben sichtbar.
+- **Risiken:** Den Fall „ein lokaler Schritt scheitert trotz Vorprüfung“ (z. B. ein Schreibfehler)
+  deckt kein Test ab. Die Zahl „N fertige Bestellungen passen auch“ zählt alle Bestellungen eines
+  gepackten Umschlags und auch schwächere Treffer (bewusst grob, nur Hinweis). Der Klick gegen
+  das echte Shopify ist auf der Datenkopie nicht geprüft. Die Buchung ist der bestehende Weg
+  `versandBuchen`.
+- **Naechste Stufe:** Beileger zum Drucken für den Umschlag („Sind Sie zufrieden? …“). Die Texte
+  entscheidet der Inhaber.
+## 2026-10-29 · Packstation: ein Umschlag je Bestelltag (#1791)
+
+- **Geaendert:** Rückmeldung vom Packtisch zu #1033/#1050: zwei Musterbestellungen desselben Kunden
+  (11.10. und 20.10.) standen als ein Umschlag „3 von 6 Mustern schon im Umschlag · wartet seit 18 Tagen“
+  – obwohl die erste Bestellung komplett im Umschlag lag und nur die zweite noch beim Lieferanten war.
+  Bisher kamen alle offenen Musterbestellungen eines Empfängers in einen Umschlag.
+  - `lib/muster-packen.mjs`: ein Umschlag je Empfänger **und Bestelltag** (Kalendertag in Berlin,
+    `kalendertag` in `lib/kalendertage.mjs`). Bestellungen vom selben Tag bleiben zusammen (#1041/#1042,
+    #1068/#1069, #1073/#1074 unverändert). Ein schon gepackter oder vorbereiteter Umschlag, dessen Marke
+    Bestellungen mehrerer Tage nennt, bleibt zusammen.
+  - Klärmarken je Umschlag (`…|adresse:…|tag:JJJJ-MM-TT`). Die bisherige Marke je Empfänger gilt weiter:
+    bei mehreren Umschlägen dem, in dem ihre fehlenden Muster liegen (so wandert die Klärung von #1033/#1050
+    zu #1050); ohne Positionsangabe allen als „Frühere gemeinsame Klärung … je Umschlag neu prüfen“.
+  - Kopfzeile: „Weiterer Umschlag für diesen Empfänger: #… (bestellt am …, Stand)“ mit Link, auch auf der
+    Karte in „Muster kommt an“. Hinweissatz oben und Hilfe angepasst, Begriffe in `BEGRIFFE.md`.
+  - Wirkung mit den echten Daten: #1033 steht packbereit („Alle 3 Muster im Umschlag“, wartet seit
+    18 Tagen), #1050 für sich „zu klären“ mit dem wieder sichtbaren „Umschlag vorbereitet · 26.10.“ (die
+    Marke galt für #1050 allein und war durch die Zusammenlegung verdeckt). Zahlen 21 → 22 offene Umschläge,
+    Packbereit 1 → 2.
+- **Getestet:** `muster-packen.test.mjs` (selber Tag zusammen, anderer Tag getrennt, Tageswechsel in Berlin,
+  Mehrtages-Marke hält zusammen, Klärmarke je Empfänger wandert zum richtigen Umschlag, Freigabe nur dort),
+  `muster-packen-api.test.mjs` (zwei Bestelltage: Klärung und Packen des einen lassen den anderen unberührt),
+  `packstation-arbeitslisten.test.mjs` (Kopfzeile mit weiteren Umschlägen); `npm run dashboard:test` und
+  `npm run -s pruefen` grün. `dashboard:pruefen` Packstation bei 1440/1024/800/390/360 px ohne Überlauf,
+  Sichtprüfung Desktop und Handy mit Datenkopie (Screenshots vorher/nachher).
+- **Risiken:** Zwei Bestellungen eines Kunden an zwei Tagen sind jetzt zwei Briefe (je 1,80 €), außer man
+  legt sie am Packtisch bewusst zusammen; der Hinweis in der Kopfzeile zeigt, ob der andere Umschlag gleich
+  mitgehen kann. Kommt am selben Tag eine Bestellung dazu, gilt weiter: Packmarke und Druckvermerk des
+  Umschlags passen nicht mehr (wie bisher).
+- **Naechste Stufe:** keine geplant.
+- **Nachtrag (Inhaber, gleicher Tag):** „wichtig ist immer zu sehen, ob wir es schon hier haben oder ob es
+  bestellt wurde“. Die Kopfzeile jedes offenen Umschlags zeigt ohne Aufklappen „Liegt hier: x im Umschlag ·
+  x angekommen · x im Musterlager (Ort)“ und in Bernstein „x Muster noch nicht bestellt“; darunter wie
+  bisher „beim Lieferanten bestellt am …“. Anlass: #1076 stand packbereit, weil beide Muster aus
+  Probestücken im Laden kommen – das war nur aufgeklappt sichtbar. Test in
+  `packstation-arbeitslisten.test.mjs`; `dashboard:pruefen` 1440–360 px ohne Überlauf.
 
 ## 2026-10-29 · Kettler-Weg: +3 cm Zuschnittpuffer je Länge und Breite (#1684)
 
