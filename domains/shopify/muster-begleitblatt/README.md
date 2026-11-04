@@ -9,7 +9,7 @@ Farbe prüft der Kunde am echten Muster), ohne gedruckte Preise (sie ändern sic
 
 Control Center, **Packstation**, Reiter **Bestellung packen**:
 
-- je Umschlag **Begleitblatt drucken** (bei Schritt 1, danach unter „Mehr …“)
+- je Umschlag **Begleitblatt drucken**, immer direkt unter dem Kopf des aufgeklappten Umschlags
 - über der Liste **Begleitblätter drucken (N)** für alle gezeigten, noch nicht gepackten Umschläge, in Packreihenfolge
 
 Das PDF öffnet in einem neuen Tab. Beide Seiten bei 4 und mehr Mustern gehören in denselben Umschlag.

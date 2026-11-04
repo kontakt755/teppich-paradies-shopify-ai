@@ -332,6 +332,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
 
 const blattNummern = liste => liste.filter(k => !k.direktversand).map(k => String(k.bestellungen[0]?.orderName || '').replace(/^#/, '')).filter(Boolean).join(',');
 
+// Immer an derselben Stelle direkt unter dem Kopf: unter "Mehr ..." hat ihn beim Packen niemand gefunden (Benutzer 04.11.).
 function blattKnopf(k, klasse = 'btn btn-sm') {
   const nummern = blattNummern([k]);
   return nummern ? `<button type="button" class="${klasse}" data-mp-blatt="${esc(nummern)}">Begleitblatt drucken</button>` : '';
@@ -371,7 +372,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     // Gepackt heisst: geht heute raus (Inhaber 29.10.). "Verschickt" bucht in Shopify mit Versandmail,
     // danach steht der Umschlag nur noch unter "Erledigt".
     unten = `${lesend ? '' : `<button type="button" class="btn btn-sm btn-primary" data-mp-verschickt="${pk}">Verschickt – Kunde informieren</button>`}<button type="button" class="btn btn-sm" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>`;
-    mehr = [erneutDrucken, blattKnopf(k), lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`,
+    mehr = [erneutDrucken, lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`,
       ...k.bestellungen.map(b => `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Versand prüfen…</a>`)];
   } else if (k.bereich === 'klaeren') {
     // Was zuerst geklaert werden muss, wird der Hauptknopf; der Rest wandert unter "Mehr …".
@@ -383,7 +384,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
       !lesend && k.restumfangPruefen && !offen && !k.fehlt.length && !k.klaeren ? kl => `<button type="button" class="${kl}" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1" data-mp-restumfang="1">Restumfang geprüft – Umschlag gepackt…</button>` : null,
     ].filter(Boolean);
     unten = moeglich.length ? moeglich[0]('btn btn-sm btn-primary') : bestellLink(k.bestellungen[0], 'btn btn-sm btn-primary');
-    mehr = [...moeglich.slice(1).map(f => f('btn btn-sm')), blattKnopf(k), druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Aufkleber und Adresse drucken (${aufkleberFuer(k, { nurOffen: true }).length})</button>` : '',
+    mehr = [...moeglich.slice(1).map(f => f('btn btn-sm')), druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Aufkleber und Adresse drucken (${aufkleberFuer(k, { nurOffen: true }).length})</button>` : '',
       druckvermerk,
       ...(moeglich.length ? k.bestellungen : k.bestellungen.slice(1)).map(b => bestellLink(b))];
   } else {
@@ -395,7 +396,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     const zustand = n => (schritt === n ? 'mp-jetzt' : schritt > n ? 'mp-erledigt' : 'mp-spaeter');
     schritte = `<ol class="mp-schritte" aria-label="Schritte für diesen Umschlag">
       <li class="${zustand(1)}"><span class="mp-schritt-titel">1 · Bestellung drucken</span>${schritt === 1
-        ? `<span class="mp-schritt-tun"><button type="button" class="btn btn-primary" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber und Adresse drucken (${aufkleberFuer(k, { nurOffen: true }).length})</button>${blattKnopf(k)}${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-gedruckt="${pk}">Schon gedruckt – weiter</button>`}</span>`
+        ? `<span class="mp-schritt-tun"><button type="button" class="btn btn-primary" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber und Adresse drucken (${aufkleberFuer(k, { nurOffen: true }).length})</button>${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-gedruckt="${pk}">Schon gedruckt – weiter</button>`}</span>`
         : `<span class="small muted">${k.gedruckt ? esc(gedrucktText(k.gedruckt)) : 'erledigt'}</span>`}</li>
       <li class="${zustand(2)}"><span class="mp-schritt-titel">2 · Was ist da?</span><span class="mp-bilanz"><strong>Da: ${da} von ${k.muster.length}</strong>${offen ? ` · Fehlt: ${esc(fehltNamen.join(', '))}` : ''}</span>${schritt === 2 ? '<span class="small muted">Häkchen bei jedem Muster, das überklebt im Umschlag liegt.</span>' : ''}</li>
       <li class="${zustand(3)}"><span class="mp-schritt-titel">3 · Zukleben</span>${schritt === 3 ? '<span class="small muted">Alles da – Begleitblatt einlegen, Umschlag zukleben.</span>' : ''}</li>
@@ -405,7 +406,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
          <button type="button" class="btn btn-sm" data-mp-alle-eingelegt="${pk}">Alle ${k.muster.length} da – Umschlag gepackt</button>`
       // Einzeln ueber "Muster kommt an" gefuellt: dann fehlt noch der Adressaufkleber (nurOffen = nur Adresse).
       : schritt === 3 ? `${!istGedruckt(k) && druckbar ? `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}">Adressaufkleber drucken</button>` : ''}<button type="button" class="btn btn-sm btn-primary" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1">Umschlag gepackt</button>` : '';
-    mehr = [schritt > 1 ? erneutDrucken : '', schritt > 1 ? blattKnopf(k) : '', druckvermerk,
+    mehr = [schritt > 1 ? erneutDrucken : '', druckvermerk,
       !lesend && offen ? `<input type="text" class="mp-notiz" data-mp-notiz="${pk}" maxlength="300" placeholder="Notiz zu „Fehlt noch“ (optional)" aria-label="Notiz zu fehlenden Mustern">` : '',
       !lesend && schritt === 1 && offen ? `<button type="button" class="btn btn-sm" data-mp-alle-eingelegt="${pk}">Alle ${k.muster.length} da – Umschlag gepackt</button>` : ''];
   }
@@ -424,6 +425,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
         ${datumHtml(k)}
       </div>
     </summary>
+    ${blattKnopf(k) ? `<div class="mp-aktionen mp-blatt-zeile">${blattKnopf(k)}</div>` : ''}
     ${bestelldatenHtml(k)}
     ${gesperrte.length ? `<p class="notice crit">${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : `Diese ${gesperrte.length} Muster kommen nicht`)}: ${esc(gesperrte.map(m => kurzName(m.vorher?.produktname) || m.etikett?.serie || m.bestellt.titel).join(', '))}. Der Kunde erfährt das nicht von selbst – bitte informieren.${andereBleiben ? ' Die übrigen Muster können danach ohne dieses raus.' : gesperrte.some(m => ohneMusterMoeglich(k, m)) ? ' Danach „Ohne dieses Muster weiter packen“ wählen; die Ware der Bestellung bleibt davon unberührt.' : ''}</p>` : ''}
     ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}

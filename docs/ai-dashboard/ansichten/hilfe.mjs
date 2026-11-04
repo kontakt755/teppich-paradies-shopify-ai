@@ -36,8 +36,8 @@ const ABLAEUFE = [
     'Geht die Ware raus: <b>An Kunden raus…</b> – die Sendungsnummer vom Paketaufkleber eintragen. Jedes Paket hat seine eigene Nummer.',
   ]],
   ['Muster packen', [
-    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Bestelltag ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet.',
-    '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>, dazu <b>Begleitblatt drucken</b> (A4, kommt mit in den Umschlag).',
+    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Bestelltag ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet, ganz oben steht <b>Begleitblatt drucken</b>.',
+    '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>. Das Begleitblatt (A4) kommt mit in den Umschlag.',
     '<b>2 · Was ist da?</b> Jedes Muster überkleben, in den Umschlag legen und abhaken. Fehlt eins: <b>Fehlt noch – zurücklegen</b>.',
     '<b>3 · Zukleben</b>: Umschlag zukleben, dann <b>Umschlag gepackt</b>. Gepackt heißt noch nicht verschickt.',
     'Kommt ein Paket Muster vom Lieferanten: Reiter <b>Muster kommt an</b>. Eintippen, was auf dem Muster steht – die Karte sagt, in welchen Umschlag es gehört.',
