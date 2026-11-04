@@ -102,13 +102,17 @@ function standSchreiben(privatDir, inhalt) {
   fs.renameSync(tmp, datei);
 }
 
-/** Loescht nur eigene Kopien <datum>.tar.gz.gpg jenseits der Frist; fremde Dateien bleiben. */
-export function alteKopienAufraeumen(zielDir, aufbewahrenTage, jetzt) {
+/**
+ * Loescht nur eigene Kopien <datum>.tar.gz.gpg jenseits der Frist; fremde Dateien bleiben.
+ * `behalten` bleibt immer liegen: Steht die Hauptsicherung laenger als die Frist, ist die eben
+ * abgelegte Kopie selbst aelter als die Frist.
+ */
+export function alteKopienAufraeumen(zielDir, aufbewahrenTage, jetzt, behalten = null) {
   const grenze = jetzt.getTime() - aufbewahrenTage * 86400000;
   const geloescht = [];
   for (const name of fs.readdirSync(zielDir)) {
     const m = KOPIE_MUSTER.exec(name);
-    if (m && Date.parse(`${m[1]}T00:00:00.000Z`) < grenze) {
+    if (m && name !== behalten && Date.parse(`${m[1]}T00:00:00.000Z`) < grenze) {
       fs.unlinkSync(path.join(zielDir, name));
       geloescht.push(name);
     }
@@ -119,7 +123,8 @@ export function alteKopienAufraeumen(zielDir, aufbewahrenTage, jetzt) {
 /**
  * Verschluesselt das neueste Tagesarchiv, legt es im Zielordner ab und prueft die abgelegte
  * Datei durch Entschluesseln. Zwischendateien entstehen unter `privatDir`, damit die Dropbox nur
- * fertige, verschluesselte Dateien sieht. Unveraendertes Archiv: nichts zu tun.
+ * fertige, verschluesselte Dateien sieht. Unveraendertes Archiv: nichts zu tun, nur ein alter
+ * Fehlervermerk faellt weg, denn die Kopie liegt ja vor.
  */
 export function kopieren({ privatDir, zielDir, schluessel, aufbewahrenTage = STANDARD_AUFBEWAHRUNG_TAGE, jetzt = new Date(), gpg = gpgPfad() }) {
   if (!fs.statSync(zielDir, { throwIfNoEntry: false })?.isDirectory()) throw new Error(`Zielordner ${zielDir} nicht erreichbar`);
@@ -129,6 +134,10 @@ export function kopieren({ privatDir, zielDir, schluessel, aufbewahrenTage = STA
   const summe = pruefsumme(archiv);
   const alt = standLesen(privatDir);
   if (alt.datei === name && alt.sha256 === summe && fs.existsSync(ziel)) {
+    if (alt.letzterFehler) {
+      const { letzterFehler: _erledigt, ...ohneFehler } = alt;
+      standSchreiben(privatDir, ohneFehler);
+    }
     return { datei: name, uebersprungen: true, geloescht: [] };
   }
 
@@ -149,7 +158,7 @@ export function kopieren({ privatDir, zielDir, schluessel, aufbewahrenTage = STA
     entschluesseln(ziel, probe, schluessel, gpg);
     if (pruefsumme(probe) !== summe) throw new Error(`Pruefsumme von ${name} weicht nach dem Entschluesseln ab`);
     const bytes = fs.statSync(ziel).size;
-    const geloescht = alteKopienAufraeumen(zielDir, aufbewahrenTage, jetzt);
+    const geloescht = alteKopienAufraeumen(zielDir, aufbewahrenTage, jetzt, name);
     standSchreiben(privatDir, { letzterErfolg: jetzt.toISOString(), datei: name, bytes, sha256: summe, ziel: zielDir });
     return { datei: name, bytes, uebersprungen: false, geloescht };
   } finally {

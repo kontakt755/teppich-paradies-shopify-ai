@@ -910,6 +910,11 @@ gpg (AES-256) verschluesselt in den Dropbox-Ordner `Teppich Paradies Sicherung`
 noch einmal und vergleicht die Pruefsumme. Der Stand steht in `sicherung-ausser-haus.json`;
 ein Fehlschlag oder mehr als 48 Stunden ohne Kopie werden auf „Heute“ zum roten To-do.
 
+Einrichten und Umstellen: `bash operations/scripts/dienste-einrichten.sh --nur-sicherung` **nur aus
+`~/tp-dashboard`** starten, und erst nachdem dort `main` nachgezogen ist. Das Skript schreibt den Pfad
+des aufrufenden Checkouts in die Dienste, auch in den der Hauptsicherung. Aus einem Worktree oder dem
+Hauptcheckout gestartet, haengt die Hauptsicherung an dieser Kopie und bricht, sobald sie weg ist.
+
 Der Schluessel liegt im Anmelde-Schluesselbund dieses Macs (Eintrag „Teppich Paradies Sicherung
 ausser Haus“), einmalig angelegt mit `--schluessel-anlegen`; ein vorhandener wird nie ersetzt.
 **Dieser Schluesselbund geht mit dem Mac verloren.** Der Schluessel muss deshalb zusaetzlich an

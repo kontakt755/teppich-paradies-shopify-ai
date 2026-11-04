@@ -57,6 +57,30 @@ test('unveraendertes Archiv wird nicht neu abgelegt, ein neuer Stand desselben T
   assert.equal(kopieren({ privatDir, zielDir, schluessel: SCHLUESSEL, jetzt: JETZT }).uebersprungen, false);
 });
 
+test('unveraendertes Archiv: ein erfolgreicher Lauf nimmt den alten Fehlervermerk weg', { skip: !hatGpg }, () => {
+  const { privatDir, zielDir } = aufbau();
+  const datei = path.join(privatDir, STAND_DATEI);
+  kopieren({ privatDir, zielDir, schluessel: SCHLUESSEL, jetzt: JETZT });
+  const vorher = JSON.parse(fs.readFileSync(datei, 'utf8'));
+  fehlerVermerken(privatDir, new Date('2026-11-05T07:00:00Z'), 'Zielordner nicht erreichbar');
+  const spaeter = new Date('2026-11-05T08:00:00Z');
+  assert.ok(ausserHausStand(datei, spaeter).letzterFehler, 'Fehler vor dem Lauf sichtbar');
+  assert.equal(kopieren({ privatDir, zielDir, schluessel: SCHLUESSEL, jetzt: spaeter }).uebersprungen, true);
+  assert.deepEqual(JSON.parse(fs.readFileSync(datei, 'utf8')), vorher);
+  assert.equal(ausserHausStand(datei, spaeter).letzterFehler, undefined);
+});
+
+test('Aufraeumen laesst die eben abgelegte Kopie liegen, auch wenn ihr Archiv aelter als die Frist ist', { skip: !hatGpg }, () => {
+  const { privatDir, zielDir } = aufbau();
+  const quelle = path.join(privatDir, 'sicherungen');
+  for (const n of fs.readdirSync(quelle)) fs.rmSync(path.join(quelle, n));
+  fs.writeFileSync(path.join(quelle, '2026-10-01.tar.gz'), 'alter-stand');
+  fs.writeFileSync(path.join(zielDir, '2026-09-30.tar.gz.gpg'), 'x');
+  const e = kopieren({ privatDir, zielDir, schluessel: SCHLUESSEL, jetzt: JETZT });
+  assert.deepEqual(e.geloescht, ['2026-09-30.tar.gz.gpg']);
+  assert.deepEqual(fs.readdirSync(zielDir), ['2026-10-01.tar.gz.gpg']);
+});
+
 test('fehlender Zielordner ist ein Fehler und legt nichts an', () => {
   const { privatDir, zielDir } = aufbau();
   const fehlt = path.join(zielDir, 'gibt-es-nicht');
