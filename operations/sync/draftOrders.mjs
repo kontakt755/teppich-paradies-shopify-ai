@@ -18,6 +18,7 @@ query OpsDraftOrders($first: Int!, $after: String, $query: String) {
       totalPriceSet { shopMoney { amount currencyCode } }
       subtotalPriceSet { shopMoney { amount currencyCode } }
       totalQuantityOfLineItems
+      shippingLine { title }
       lineItems(first: 50) {
         nodes {
           title quantity sku variantTitle
@@ -69,6 +70,7 @@ export const DRAFT_ORDERS_BULK_QUERY = `
         totalPriceSet { shopMoney { amount currencyCode } }
         subtotalPriceSet { shopMoney { amount currencyCode } }
         totalQuantityOfLineItems
+        shippingLine { title }
         lineItems {
           edges {
             node {
