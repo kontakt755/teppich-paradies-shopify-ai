@@ -611,6 +611,9 @@ export const AUSLAUF_STUMM_TAGE = 9;
  * eigenes To-do, das Muster wird gesperrt, die Ware bleibt.
  * Lieferant I, lange nichts verfuegbar ("nicht-verfuegbar"): ebenfalls eigenes gelbes To-do,
  * denn das ist kein Auslaufbeleg und darf nicht nach "archivieren" klingen.
+ * Befund, Ausfall und stumme Pruefung sind je ein eigenes To-do und verdecken sich nicht:
+ * nach einem Ausfall beginnen Fristen neu, das darf kein Befund eines anderen Lieferanten
+ * unsichtbar machen.
  */
 function ausAuslauf(quellen, jetzt) {
   const d = quellen.shopwache?.auslauf;
@@ -646,9 +649,10 @@ function ausAuslauf(quellen, jetzt) {
   }
   const befunde = (d.befunde || []).filter(b => !['ohne-muster', 'nicht-verfuegbar'].includes(b.ergebnis));
   const weg = befunde.filter(b => b.ergebnis === 'fehlt');
+  const todos = [...muster];
   if (befunde.length) {
     const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
-    return [...muster, {
+    todos.push({
       ...basis, ton: weg.length ? 'crit' : 'warn',
       knopf: lexikon(handles),
       titel: weg.length
@@ -658,19 +662,19 @@ function ausAuslauf(quellen, jetzt) {
         handles.slice(0, 3).join(', '), handles.length > 3 ? `+${handles.length - 3} weitere` : null,
         'gegenprüfen, dann archivieren; fällt nur eine Variante weg, Freigabe holen (AGENTS.md)',
       ].filter(Boolean).join(' · '),
-    }];
+    });
   }
   if (d.ausfaelle?.length) {
-    return [...muster, {
-      ...basis, ton: 'warn',
+    todos.push({
+      ...basis, id: 'auslauf-ausfall', ton: 'warn',
       titel: `Auslauf-Prüfung: Lieferant ${d.ausfaelle.map(a => a.lieferant).join(', ')} nicht prüfbar`,
-      kontext: d.ausfaelle[0].grund,
-    }];
+      kontext: d.ausfaelle.map(a => `${a.lieferant}: ${a.grund}`).join(' · '),
+    });
   }
   if (tage !== null && tage >= AUSLAUF_STUMM_TAGE) {
-    return [...muster, { ...basis, ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` }];
+    todos.push({ ...basis, id: 'auslauf-stumm', ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` });
   }
-  return muster;
+  return todos;
 }
 
 /**
