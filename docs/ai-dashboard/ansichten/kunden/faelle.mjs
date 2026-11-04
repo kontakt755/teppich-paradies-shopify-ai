@@ -10,6 +10,7 @@ import { render } from '../../kern/render.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { kunden } from './gemeinsam.mjs';
+import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 
 export function ensureKundenFaelle() {
   if (kunden.faelle || kunden.loadingFaelle) return;
@@ -92,9 +93,10 @@ export async function fallMarkeSetzen(schluessel, grund) {
 
 export function viewKundenFaelle() {
   ensureKundenFaelle();
-  const ziel = state.route.params.get('fall');
+  const ziel = kundenLinkWert(state.route.params.get('fall'));
+  const passtZiel = f => kundenLinkWert(f.schluessel) === ziel || kundenLinkWert(f.key) === ziel;
   const roh = kunden.faelle;
-  const d = roh && ziel ? { ...roh, faelle: (roh.faelle || []).filter(f => f.schluessel === ziel || f.key === ziel), ausgeblendet: (roh.ausgeblendet || []).filter(f => f.schluessel === ziel || f.key === ziel) } : roh;
+  const d = roh && ziel ? { ...roh, faelle: (roh.faelle || []).filter(passtZiel), ausgeblendet: (roh.ausgeblendet || []).filter(passtZiel) } : roh;
   if (!d && kunden.loadingFaelle) return `<div class="empty">Lade offene Fälle …</div>`;
   if (d?.fehler) return stoerungState(d, 'Die offenen Fälle');
   if (!d || !d.verfuegbar) return emptyState('Keine Daten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');

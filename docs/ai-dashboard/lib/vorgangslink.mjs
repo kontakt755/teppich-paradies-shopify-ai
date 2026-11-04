@@ -1,8 +1,10 @@
-/** Gezielte interne Spruenge behalten IDs unveraendert und nehmen einen festen Rueckweg mit. */
+import { kundenLinkWert } from './kunden-linkwert.mjs';
+
+/** Gezielte interne Spruenge behalten IDs unveraendert und nehmen einen festen Rueckweg mit; Kundenschluessel stehen nur als Kurzwert im Link. */
 export function vorgangsLink(view, { auftrag = null, kunde = null, fall = null, tab = null, af = null } = {}) {
   if (!['einkauf', 'kunden'].includes(view)) return '#/heute';
   const p = new URLSearchParams({ von: 'heute' });
-  for (const [k, v] of Object.entries({ auftrag, kunde, fall, tab, af })) if (v) p.set(k, String(v));
+  for (const [k, v] of Object.entries({ auftrag, kunde: kundenLinkWert(kunde), fall: kundenLinkWert(fall), tab, af })) if (v) p.set(k, String(v));
   return `#/${view}?${p}`;
 }
 export function filtereAuftrag(daten, id) {

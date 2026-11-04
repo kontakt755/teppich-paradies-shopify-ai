@@ -13,6 +13,19 @@ import { viewKundenAngebote, viewKundenWarenkoerbe } from './kunden/angebote.mjs
 import { fallMarkeSetzen, viewKundenFaelle } from './kunden/faelle.mjs';
 import { ensureServiceanfragen, serviceKlick, serviceOffenAnzahl, viewKundenServiceanfragen } from './kunden/serviceanfragen.mjs';
 import { ensureMusterPacken, musterPackenKlick, musterPackenOffen, viewKundenMusterPacken } from './kunden/muster-packen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
+
+/** Alte Links mit Klartext-Schluessel oeffnen weiter; die Adresszeile zeigt danach nur den Kurzwert. */
+function kundeImLink() {
+  const roh = state.route.params.get('kunde');
+  if (!roh) return null;
+  const wert = kundenLinkWert(roh);
+  if (wert !== roh) {
+    state.route.params.set('kunde', wert);
+    try { history.replaceState(null, '', `#/kunden?${state.route.params}`); } catch { /* Adresszeile bleibt, die Akte oeffnet trotzdem */ }
+  }
+  return wert;
+}
 
 export function viewKunden() {
   if (state.capabilities.mode !== 'local') {
@@ -23,7 +36,7 @@ export function viewKunden() {
   // sensibler URL-Parameter (automation/core/url-sanitizer.mjs) und liesse das
   // Gate auf jedem PR rot leuchten - und wuerde die Adresse in Protokollen
   // unlesbar machen, weil der Sanitizer sie schwaerzt.
-  const key = state.route.params.get('kunde');
+  const key = kundeImLink();
   if (key) return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Hier stehen Kontaktdaten, Anschriften und alle Bestellungen dieses Kunden.</p></div></div>` + viewKundenDetail(key);
   const tabRaw = state.route.params.get('tab');
   // Standard ist die Arbeitsansicht: wer wartet auf was. Einen Kunden am
@@ -91,7 +104,7 @@ function s_badge() {
 /** Kunden: Akte oeffnen/schliessen, Fall markieren, Rueckruf-Dialog. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function kundenKlickAkte(e) {
   const kundenOpen = e.target.closest('[data-kunden-open]');
-  if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('kunde', kundenOpen.dataset.kundenOpen); location.hash = `#/kunden?${p}`; return true; }
+  if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('kunde', kundenLinkWert(kundenOpen.dataset.kundenOpen)); location.hash = `#/kunden?${p}`; return true; }
   const kundenZurueck = e.target.closest('[data-kunden-zurueck]');
   if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return true; }
   const fallMarke = e.target.closest('[data-fall-marke]');

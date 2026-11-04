@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 import { offeneSuche, umschlagKennung } from '../lib/muster-packen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 const quelle = fs.readFileSync(new URL('../bausteine/palette.mjs', import.meta.url), 'utf8')
   .replace(/^import.*;\n/gm, '').replace(/^export\s/gm, '');
@@ -12,7 +13,7 @@ function palette({ packliste = null, produkte = [], kundenTreffer = [{ key: 'tes
   const fahrten = [], timer = [];
   const api = vm.runInNewContext(quelle + '\n({ paletteItems, paletteFernSuche, paletteFern })', {
     state: { capabilities: { mode: 'local' }, tasks: [] }, AREAS: [], SAVED_VIEWS: [], URLSearchParams,
-    offeneSuche, umschlagKennung, plural: (n, a, b) => `${n} ${n === 1 ? a : b}`, ensureMusterPacken: async () => packliste,
+    offeneSuche, umschlagKennung, kundenLinkWert, plural: (n, a, b) => `${n} ${n === 1 ? a : b}`, ensureMusterPacken: async () => packliste,
     darfAnsicht: view => !['arbeit', 'team'].includes(view), navigate: (...a) => fahrten.push(a),
     setTimeout: fn => { timer.push(fn); return timer.length; }, clearTimeout() {},
     fetchEinkauf: async pfad => pfad.startsWith('/api/kunden')
@@ -44,6 +45,17 @@ test('Aufgabensuche uebernimmt den eingegebenen Text in die vorhandene Teamliste
   assert.ok(item);
   item.run();
   assert.deepEqual(JSON.parse(JSON.stringify(u.fahrten[0])), ['organisation', { ob: 'team-aufgaben', oa: 'alle', og: 'alles', oq: q }]);
+});
+
+test('Kundentreffer fuehrt mit dem Kurzwert in die Akte, nie mit dem Klartext-Schluessel', async () => {
+  const key = 'email:test.kunde@example.invalid';
+  const u = palette({ kundenTreffer: [{ key, name: 'Synthetischer Kunde' }] });
+  u.paletteFernSuche('Synthetisch', () => {});
+  u.timer.shift()();
+  await tick();
+  u.paletteItems('Synthetisch').find(i => i.kind === 'Kunde').run();
+  assert.deepEqual(JSON.parse(JSON.stringify(u.fahrten[0])), ['kunden', { kunde: kundenLinkWert(key) }]);
+  assert.doesNotMatch(JSON.stringify(u.fahrten[0]), /example|email/);
 });
 
 test('waehrend einer neuen Suche erscheinen keine Kunden zum alten Suchwort', async () => {

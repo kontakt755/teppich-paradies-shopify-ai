@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 import {
   leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, tonNachAlter, alterText, tageSeit,
   tailscaleHinweis, speicherHinweis,
@@ -280,7 +281,7 @@ test('Wer wartet auf was: jede laufende Bestellung genau einmal, in der Spalte d
   ]);
   assert.equal(w.gesamt, 10);
   const ziel = new URLSearchParams(w.wir[0].href.split('?')[1]);
-  assert.equal(ziel.get('kunde'), rot.kundenSchluessel); assert.equal(ziel.get('auftrag'), rot.orderId);
+  assert.equal(ziel.get('kunde'), kundenLinkWert(rot.kundenSchluessel)); assert.equal(ziel.get('auftrag'), rot.orderId);
   assert.equal(w.kunde[1].href, '#/kunden?tab=angebote');
 });
 

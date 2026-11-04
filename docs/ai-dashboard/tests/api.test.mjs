@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { wegwerfOrdner } from '../../../scripts/test-temp.mjs';
 import { createApi, ApiError, buildComment, readJsonGecacht } from '../../../scripts/dashboard-api.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 /** Fake-gh: merkt sich Aufrufe, liefert Issue/Labels/User. */
 function fakeGh({ issue, labels = ['status:geplant', 'status:in-arbeit', 'status:review', 'status:blockiert', 'status:fertig', 'reviewer:mensch'], user = 'tobias' } = {}) {
@@ -928,6 +929,11 @@ test('kundenDetail zeigt auch einen Kunden ohne Bestellung in dieser Datei', () 
   assert.equal(r.kunde.kunde.name, 'Erika Musterfrau');
   assert.equal(r.kunde.lieferadresse.ort, 'Oranienburg');
   assert.match(r.kunde.hinweis, /ausserhalb der hier exportierten Daten/);
+  // Links tragen nur den Kurzwert; er fuehrt zur selben Akte und nennt den echten Schluessel
+  const ueberLink = api.kundenDetail({ key: kundenLinkWert('email:erika@example.test') });
+  assert.equal(ueberLink.kunde.kunde.name, 'Erika Musterfrau');
+  assert.equal(ueberLink.kunde.key, 'email:erika@example.test');
+  assert.equal(api.kundenDetail({ key: kundenLinkWert('email:gibtsnicht@example.test') }).verfuegbar, false);
   // Unbekannter Schluessel bleibt eine ehrliche Fehlanzeige
   assert.equal(api.kundenDetail({ key: 'email:gibtsnicht@example.test' }).verfuegbar, false);
 });
