@@ -334,7 +334,8 @@ async function main() {
   }
 
   const schlecht = ergebnisse.filter(e => e.fehler.length || e.ueberlauf || e.ueberstand.length).length;
-  const offen = args.offen && !schlecht;
+  // --offen nur, wenn der Browser nachweislich weg ist: sonst bliebe ein haengender Prozess stehen.
+  const offen = args.offen && !schlecht && (!browserHinweis || aufraeumFehlerNurHinweis(browserHinweis, { fertig: true }));
   const bericht = { erstellt: new Date().toISOString(), basis: offen ? basis : null, ergebnisse };
   fs.writeFileSync(path.join(aus, 'bericht.json'), JSON.stringify(bericht, null, 2));
   for (const e of ergebnisse) {
