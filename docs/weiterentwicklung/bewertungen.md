@@ -41,9 +41,12 @@ Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phase 6). Stand 2026-10-08.
   eigene Produktsterne). Die Angabe der Plattform allein genügt laut Fachbeitrag Plutte zu OLG
   Koblenz 9 U 1015/25 ebenfalls nicht. Stand: Frankfurt und Koblenz nur aus Fachbeiträgen, keine
   anwaltliche Prüfung.
-- **Offene Rechtsfrage (Stand 2026-11-04):** Startseiten-Hero und Kampagne der Kategorie
-  Teppichboden zeigen die Note als Link zu Google ohne den Hinweis direkt daneben. Keine gelesene
-  Entscheidung behandelt genau diesen Fall.
+- **Jede Stelle mit Note oder Bewertungen trägt den Hinweis** (Inhaber 2026-11-04): direkt an der
+  Note und in Kurzform im Startseiten-Hero, im Vertrauensstreifen (Serviceseiten, Kontakt) und in der
+  Kampagne (Kategorie Teppichboden, Markenkategorien). Beim Bewertungs-Widget steht er mit beiden
+  Sätzen vor den Bewertungen, weil oben im Widget die Note steht; auf den Serviceseiten erst, wenn das
+  Widget geladen ist. `npm run bewertung:guard` meldet Liquid, das die Note liest oder das Widget
+  einbindet und den Hinweis nicht rendert.
 
 ## 2. Anforderungen (aus dem Auftrag)
 

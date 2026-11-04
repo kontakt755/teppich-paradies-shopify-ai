@@ -3,6 +3,10 @@ import { pruefe } from './bewertung-guard.mjs';
 
 const { geprueft, befunde } = pruefe(process.cwd());
 for (const b of befunde) {
+  if (b.typ === 'hinweis') {
+    console.log(`FEHLER ${b.datei}: zeigt Note oder Bewertungen ohne den Hinweis nach § 5b Abs. 3 UWG (snippets/tp-bewertungshinweis.liquid)`);
+    continue;
+  }
   if (b.typ === 'code') {
     console.log(`FEHLER ${b.datei}: liest ${b.feld} ${b.wert} - zeigt sonst nicht den Monatsstand`);
     continue;

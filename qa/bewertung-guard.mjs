@@ -60,9 +60,25 @@ export function befundeIn(raw, datei) {
 export const METAFELD = 'shop.metafields.custom.google_bewertung';
 const LIEST_EINSTELLUNG = /settings\.tp_google_(wert|anzahl)\b/;
 
+/**
+ * Note und Bewertungen duerfen nicht ohne den Hinweis nach § 5b Abs. 3 UWG stehen. Bis
+ * 2026-11-04 fehlte er im Startseiten-Hero, im Vertrauensstreifen, in der Teppichboden-
+ * Kampagne und im Widget der Serviceseiten, ohne dass es jemandem auffiel.
+ */
+export const HINWEIS = "render 'tp-bewertungshinweis'";
+const ZEIGT_WIDGET = /elfsight-app-/;
+
 export function befundeImCode(inhalt, datei) {
-  if (!LIEST_EINSTELLUNG.test(inhalt) || inhalt.includes(METAFELD)) return [];
-  return [{ datei, typ: 'code', feld: 'settings.tp_google_*', wert: `ohne ${METAFELD}` }];
+  const befunde = [];
+  const liestEinstellung = LIEST_EINSTELLUNG.test(inhalt);
+  const liestMetafeld = inhalt.includes(METAFELD);
+  if (liestEinstellung && !liestMetafeld) {
+    befunde.push({ datei, typ: 'code', feld: 'settings.tp_google_*', wert: `ohne ${METAFELD}` });
+  }
+  if ((liestEinstellung || liestMetafeld || ZEIGT_WIDGET.test(inhalt)) && !inhalt.includes(HINWEIS)) {
+    befunde.push({ datei, typ: 'hinweis', feld: 'tp-bewertungshinweis', wert: 'fehlt' });
+  }
+  return befunde;
 }
 
 /** Prueft alle Templates eines Verzeichnisses und jeden Liquid-Code, der die Einstellung liest. */

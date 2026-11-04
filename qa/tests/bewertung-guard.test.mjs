@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { befundeIn, befundeImCode, stripHeader, GEPRUEFTE_FELDER, METAFELD } from '../bewertung-guard.mjs';
+import { befundeIn, befundeImCode, stripHeader, GEPRUEFTE_FELDER, HINWEIS, METAFELD } from '../bewertung-guard.mjs';
 
 const huelle = (blockTyp, settings) => JSON.stringify({
   sections: { main: { type: 'main-product', blocks: { b1: { type: blockTyp, settings } } } },
@@ -48,8 +48,30 @@ test('geprueft werden die drei bekannten Traeger', () => {
 });
 
 test('Liquid, das nur die Einstellung liest, zeigt nicht den Monatsstand', () => {
-  assert.equal(befundeImCode('{{ settings.tp_google_wert }}', 'x.liquid').length, 1);
-  assert.equal(befundeImCode('{{ settings.tp_google_anzahl }}', 'x.liquid').length, 1);
-  assert.equal(befundeImCode(`{{ ${METAFELD}.value.wert | default: settings.tp_google_wert }}`, 'x.liquid').length, 0);
-  assert.equal(befundeImCode('{{ settings.tp_google_link }}', 'x.liquid').length, 0, 'der Link kommt nicht aus dem Monatslauf');
+  const code = (inhalt) => befundeImCode(`${inhalt} {% ${HINWEIS} %}`, 'x.liquid');
+  assert.equal(code('{{ settings.tp_google_wert }}').length, 1);
+  assert.equal(code('{{ settings.tp_google_anzahl }}').length, 1);
+  assert.equal(code(`{{ ${METAFELD}.value.wert | default: settings.tp_google_wert }}`).length, 0);
+  assert.equal(code('{{ settings.tp_google_link }}').length, 0, 'der Link kommt nicht aus dem Monatslauf');
+});
+
+test('Note ohne Hinweis nach § 5b UWG wird gemeldet', () => {
+  const b = befundeImCode(`{{ ${METAFELD}.value.wert | default: settings.tp_google_wert }}`, 'x.liquid');
+  assert.deepEqual(b.map((x) => x.typ), ['hinweis']);
+  assert.equal(befundeImCode(`{{ ${METAFELD}.value.wert | default: settings.tp_google_wert }} {%- ${HINWEIS}, kurz: true -%}`, 'x.liquid').length, 0);
+});
+
+test('Liquid, das nur das Metafeld liest, braucht den Hinweis ebenfalls', () => {
+  const b = befundeImCode(`{{ ${METAFELD}.value.wert }}`, 'x.liquid');
+  assert.deepEqual(b.map((x) => x.typ), ['hinweis']);
+});
+
+test('Bewertungs-Widget ohne Hinweis wird gemeldet', () => {
+  const b = befundeImCode('<div class="elfsight-app-abc"></div>', 'x.liquid');
+  assert.deepEqual(b.map((x) => x.typ), ['hinweis']);
+  assert.equal(befundeImCode(`<div class="elfsight-app-abc"></div> {% ${HINWEIS} %}`, 'x.liquid').length, 0);
+});
+
+test('ein reiner Link zum Google-Profil braucht keinen Hinweis', () => {
+  assert.equal(befundeImCode('<a href="{{ settings.tp_google_link }}">Google</a>', 'x.liquid').length, 0);
 });
