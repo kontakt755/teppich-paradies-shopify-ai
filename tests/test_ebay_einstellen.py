@@ -15,6 +15,7 @@ spec.loader.exec_module(modul)
 KONFIG = {
     'fulfillmentPolicyId': 'F', 'paymentPolicyId': 'P', 'returnPolicyId': 'R', 'merchantLocationKey': 'L',
     'marke_ersatz': 'Markenlos', 'menge_bestellware': 50,
+    'versand_gls_kosten': 10, 'versand_spedition_kosten': 80, 'versand_xxl_kosten': 130, 'stueck_mindestmarge': 0,
 }
 
 
@@ -36,9 +37,11 @@ def produkt(titel='Rolle Eins – Restposten, 400 cm', tag='sonderposten', varia
     }
 
 
-def liste(einkauf=10.0, marge=9.0):
-    return {'aufschlag': 0, 'ziel': 5, 'welle2': [{'produkt': 'Boden Zwei', 'status': 'Welle 2'}],
-            'welle1': [{'rolle': 'Rolle Eins', 'bestand': 80, 'preis': 30.0, 'einkauf': einkauf, 'marge': marge}]}
+def liste(einkauf=10.0, preis=30.0, restlaenge=2000, bestand=80):
+    return {'aufschlag': 0, 'ziel': 5, 'provision': 0.14, 'steuer': 0.19, 'fest': 0.45,
+            'welle2': [{'produkt': 'Boden Zwei', 'status': 'Welle 2'}],
+            'welle1': [{'rolle': 'Rolle Eins', 'breite': 400, 'restlaenge': restlaenge, 'bestand': bestand,
+                        'preis': preis, 'einkauf': einkauf}]}
 
 
 class Antwort(io.BytesIO):
@@ -77,17 +80,74 @@ class Plan(unittest.TestCase):
     def test_vollstaendige_rolle_ist_bereit(self):
         e = modul.plane_welle1(liste(), [produkt()], KONFIG)[0]
         self.assertEqual(e['maengel'], [])
-        self.assertEqual(e['schluessel'], 'TP-1')
-        self.assertEqual(e['angebote'][0]['availableQuantity'], 80)
-        self.assertEqual(e['angebote'][0]['pricingSummary']['price']['value'], '30.00')
+        self.assertEqual(e['schluessel'], 'TPG-99')
+        self.assertEqual(len(e['artikel']), 26)
+        self.assertIn('TP-1-L100', e['artikel'])
+        self.assertIn('TP-1-L600', e['artikel'])
+
+    def test_laengen_in_20_cm_schritten_bis_6_m(self):
+        self.assertEqual(modul.LAENGEN_CM[:3], (100, 120, 140))
+        self.assertEqual(modul.LAENGEN_CM[-1], 600)
+        self.assertEqual(len(modul.LAENGEN_CM), 26)
+
+    def test_preis_und_menge_je_laenge(self):
+        e = modul.plane_welle1(liste(preis=40.0), [produkt()], KONFIG)[0]
+        angebot = next(a for a in e['angebote'] if a['sku'] == 'TP-1-L300')
+        self.assertEqual(angebot['pricingSummary']['price']['value'], '480.00')
+        self.assertEqual(angebot['availableQuantity'], 6)
+
+    def test_laengen_enden_an_der_restlaenge(self):
+        e = modul.plane_welle1(liste(restlaenge=400, bestand=16), [produkt()], KONFIG)[0]
+        self.assertIn('TP-1-L400', e['artikel'])
+        self.assertNotIn('TP-1-L420', e['artikel'])
+
+    def test_bestand_begrenzt_auch_ohne_restlaenge(self):
+        e = modul.plane_welle1(liste(restlaenge=2000, bestand=8), [produkt()], KONFIG)[0]
+        self.assertIn('TP-1-L200', e['artikel'])
+        self.assertNotIn('TP-1-L220', e['artikel'])
 
     def test_ohne_einkauf_gesperrt(self):
-        e = modul.plane_welle1(liste(einkauf=None, marge='EK fehlt'), [produkt()], KONFIG)[0]
+        e = modul.plane_welle1(liste(einkauf=None), [produkt()], KONFIG)[0]
         self.assertIn('Einkauf fehlt in der Startliste', e['maengel'])
 
-    def test_marge_unter_ziel_gesperrt(self):
-        e = modul.plane_welle1(liste(marge=2.0), [produkt()], KONFIG)[0]
-        self.assertTrue(any('unter Ziel' in m for m in e['maengel']))
+    def test_ohne_versandkosten_gesperrt(self):
+        konfig = {k: v for k, v in KONFIG.items() if k != 'versand_xxl_kosten'}
+        e = modul.plane_welle1(liste(), [produkt()], konfig)[0]
+        self.assertIn('versand_xxl_kosten fehlt in der Konfiguration', e['maengel'])
+
+    def test_versandweg_haengt_an_der_kuerzeren_seite(self):
+        self.assertEqual(modul.versandkosten(400, 200, KONFIG), 10)
+        self.assertEqual(modul.versandkosten(400, 220, KONFIG), 80)
+        self.assertEqual(modul.versandkosten(400, 320, KONFIG), 80)
+        self.assertEqual(modul.versandkosten(400, 340, KONFIG), 130)
+        self.assertEqual(modul.versandkosten(400, 600, KONFIG), 130)
+
+    def test_mischpreis_haelt_stueck_und_schnitt(self):
+        daten = liste()
+        p = modul.mischpreis(25.0, 400, modul.LAENGEN_CM, 10.0, daten, KONFIG)
+        margen = []
+        for l in modul.LAENGEN_CM:
+            a = 400 * l / 10000
+            margen.append((modul.stueckmarge(p, a, modul.versandkosten(400, l, KONFIG), 10.0, daten), a))
+        self.assertGreaterEqual(min(m for m, _ in margen), 0)
+        self.assertGreaterEqual(sum(m / a for m, a in margen) / len(margen), 5)
+
+    def test_mischpreis_nie_unter_listenpreis(self):
+        self.assertEqual(modul.mischpreis(50.0, 400, modul.LAENGEN_CM, 10.0, liste(), KONFIG), 50.0)
+
+    def test_einzelmass_auch_ueber_6_m(self):
+        e = modul.plane_einzelmass(liste(), [produkt()], KONFIG, 'Rolle Eins', 400, 700, 700.0, 150.0)[0]
+        self.assertEqual(e['maengel'], [])
+        self.assertEqual(e['angebote'][0]['availableQuantity'], 1)
+        self.assertIn('TP-1-E400X700', e['artikel'])
+
+    def test_einzelmass_unter_mindestmarge_gesperrt(self):
+        e = modul.plane_einzelmass(liste(), [produkt()], KONFIG, 'Rolle Eins', 400, 700, 100.0, 150.0)[0]
+        self.assertTrue(any('Mindestmarge' in m for m in e['maengel']))
+
+    def test_einzelmass_nicht_laenger_als_rolle(self):
+        with self.assertRaises(modul.Abbruch):
+            modul.plane_einzelmass(liste(restlaenge=400, bestand=16), [produkt()], KONFIG, 'Rolle Eins', 400, 500, 500.0, 150.0)
 
     def test_einkauf_und_lieferant_nie_im_angebot(self):
         e = modul.plane_welle1(liste(), [produkt()], KONFIG)[0]
@@ -186,7 +246,7 @@ class Senden(unittest.TestCase):
         server = FalscherServer()
         ergebnis = modul.sende(self.eintrag(), modul.Ebay('sandbox', ZUGANG, server), True)
         self.assertEqual(ergebnis['listingId'], '123')
-        self.assertIn(('POST', '/sell/inventory/v1/offer/neu/publish'), server.aufrufe)
+        self.assertIn(('POST', '/sell/inventory/v1/offer/publish_by_inventory_item_group'), server.aufrufe)
 
     def test_zweiter_lauf_erzeugt_kein_doppel(self):
         server = FalscherServer(vorhanden=True)

@@ -18,6 +18,7 @@ import base64
 import datetime
 import html
 import json
+import math
 import os
 import re
 import sys
@@ -31,6 +32,11 @@ MAX_TITEL = 80
 MAX_VARIANTEN = 250
 MAX_BILDER = 12
 PREIS_GRENZE = 45.0
+# Sonderposten: Laengen in cm. Ueber 6 m nur auf Anfrage, wegen Gewicht (Inhaber 04.11.2026).
+LAENGEN_CM = tuple(range(100, 601, 20))
+GRENZE_GLS_CM = 200
+GRENZE_STANDARD_CM = 320
+VERSAND_FELDER = ('versand_gls_kosten', 'versand_spedition_kosten', 'versand_xxl_kosten')
 UNTERORDNER = 'ebay-marktanalyse-2026-11'
 STARTLISTE = 'eBay-Startliste-2026-11-04.xlsx'
 BLATT_WELLE_1 = 'Welle 1 Sonderposten'
@@ -68,17 +74,21 @@ def lies_startliste(pfad):
     import openpyxl
 
     mappe = openpyxl.load_workbook(pfad, data_only=True)
-    aufschlag = zahl(mappe['Annahmen']['B9'].value) or 0
-    ziel = zahl(mappe['Annahmen']['B8'].value)
+    annahmen = mappe['Annahmen']
+    aufschlag = zahl(annahmen['B9'].value) or 0
+    ziel = zahl(annahmen['B8'].value)
+    provision = zahl(annahmen['B5'].value)
+    steuer = zahl(annahmen['B6'].value)
+    fest = zahl(annahmen['B7'].value)
     welle1 = []
     for z in mappe[BLATT_WELLE_1].iter_rows(min_row=5, values_only=True):
         if z[0] and z[0] != 'Summe':
-            welle1.append({'rolle': z[0], 'bestand': z[4], 'preis': z[6], 'einkauf': z[8], 'marge': z[9]})
+            welle1.append({'rolle': z[0], 'breite': z[2], 'restlaenge': z[3], 'bestand': z[4], 'preis': z[6], 'einkauf': z[8]})
     welle2 = []
     for z in mappe[BLATT_WELLE_2].iter_rows(min_row=5, values_only=True):
         if z[0]:
             welle2.append({'produkt': z[0], 'status': z[13]})
-    return {'aufschlag': aufschlag, 'ziel': ziel, 'welle1': welle1, 'welle2': welle2}
+    return {'aufschlag': aufschlag, 'ziel': ziel, 'provision': provision, 'steuer': steuer, 'fest': fest, 'welle1': welle1, 'welle2': welle2}
 
 
 def lies_lexikon(pfad):
@@ -176,50 +186,169 @@ def bilder_von(produkt, varianten):
     return gesehen
 
 
+def versandkosten(breite_cm, laenge_cm, konfig):
+    """Gerollt wird ueber die kuerzere Seite; die entscheidet ueber den Versandweg."""
+    kurz = min(breite_cm, laenge_cm)
+    if kurz <= GRENZE_GLS_CM:
+        return konfig['versand_gls_kosten']
+    if kurz <= GRENZE_STANDARD_CM:
+        return konfig['versand_spedition_kosten']
+    return konfig['versand_xxl_kosten']
+
+
+def nettofaktor(liste):
+    return 1 / (1 + liste['steuer']) - liste['provision']
+
+
+def stueckmarge(preis_m2, flaeche, kosten, einkauf, liste):
+    return preis_m2 * flaeche * nettofaktor(liste) - liste['fest'] - einkauf * flaeche - kosten
+
+
+def mischpreis(listenpreis, breite_cm, laengen, einkauf, liste, konfig):
+    """Ein Preis je m² fuer alle Laengen: Kleine Stuecke tragen die teure Fracht mit.
+
+    Der Schnitt ueber alle Laengen erreicht die Zielmarge, kein Stueck faellt unter
+    die Mindestmarge. Der Preis faellt nie unter den Listenpreis.
+    """
+    faktor = nettofaktor(liste)
+    mindest = konfig.get('stueck_mindestmarge', 0)
+    bedarf_stueck, bedarf_schnitt = 0, 0
+    for laenge in laengen:
+        flaeche = breite_cm * laenge / 10000
+        kosten = versandkosten(breite_cm, laenge, konfig) + liste['fest']
+        bedarf_stueck = max(bedarf_stueck, (mindest + kosten) / flaeche + einkauf)
+        bedarf_schnitt += kosten / flaeche
+    bedarf_schnitt = bedarf_schnitt / len(laengen) + einkauf + liste['ziel']
+    noetig = max(bedarf_stueck, bedarf_schnitt) / faktor
+    if noetig <= listenpreis:
+        return listenpreis
+    return math.ceil((noetig + 0.05) * 2) / 2 - 0.05
+
+
+def euro(wert):
+    return f'{wert:.2f}'.replace('.', ',')
+
+
+def text_laenge(cm):
+    return f'{cm / 100:.2f} m'.replace('.', ',')
+
+
+def rollen_mangel(zeile, konfig, liste):
+    maengel = []
+    if zahl(zeile['einkauf']) is None:
+        maengel.append('Einkauf fehlt in der Startliste')
+    if zahl(zeile['preis']) is None or None in (liste['ziel'], liste['provision'], liste['steuer'], liste['fest']):
+        maengel.append('Werte nicht berechnet: Startliste in Excel öffnen und speichern')
+    maengel += [f'{k} fehlt in der Konfiguration' for k in VERSAND_FELDER if zahl(konfig.get(k)) is None]
+    return maengel
+
+
+def finde_rolle(name, lexikon):
+    return [
+        p for p in lexikon
+        if p['produktgruppe'] == 'Teppichboden' and 'sonderposten' in tags(p) and p['titel'].startswith(name)
+    ]
+
+
 def plane_welle1(liste, lexikon, konfig):
     plan = []
     for zeile in liste['welle1']:
         name = zeile['rolle']
-        maengel = []
-        if zahl(zeile['einkauf']) is None:
-            maengel.append('Einkauf fehlt in der Startliste')
-        elif zahl(zeile['marge']) is None:
-            maengel.append('Marge nicht berechnet: Startliste in Excel öffnen und speichern')
-        elif liste['ziel'] is not None and zeile['marge'] < liste['ziel']:
-            maengel.append(f"Marge {zeile['marge']:.2f} unter Ziel {liste['ziel']:.2f}")
-        menge = int(zahl(zeile['bestand']) or 0)
-        if menge < 1:
-            maengel.append('kein Bestand')
-        treffer = [
-            p for p in lexikon
-            if p['produktgruppe'] == 'Teppichboden' and 'sonderposten' in tags(p) and p['titel'].startswith(name)
-        ]
+        maengel = rollen_mangel(zeile, konfig, liste)
+        treffer = finde_rolle(name, lexikon)
         if len(treffer) != 1:
-            plan.append({'name': name, 'art': 'einzel', 'maengel': maengel + [f'{len(treffer)} Treffer im Lexikon']})
+            plan.append({'name': name, 'art': 'gruppe', 'maengel': maengel + [f'{len(treffer)} Treffer im Lexikon']})
             continue
         produkt = treffer[0]
         variante = produkt['varianten'][0]
-        breite = int(variante['rollenbreiteM'] * 100) if variante.get('rollenbreiteM') else None
-        preis = zahl(zeile['preis'])
-        if preis is None:
-            maengel.append('Preis nicht berechnet: Startliste in Excel öffnen und speichern')
-            preis = 0
-        hinweis = f'Restposten, Bestand begrenzt auf {menge} m². Die Menge beim Kauf ist die Fläche in m².'
-        if breite:
-            hinweis += f' Rollenbreite {breite} cm.'
-        text = beschreibung(produkt, [hinweis])
+        breite = int(zeile['breite'])
+        rest_cm = min(zahl(zeile['restlaenge']) or 0, (zahl(zeile['bestand']) or 0) * 10000 / breite)
+        laengen = [l for l in LAENGEN_CM if l <= rest_cm]
+        if not laengen:
+            plan.append({'name': name, 'art': 'gruppe', 'maengel': maengel + ['kein Bestand']})
+            continue
+        if maengel:
+            preis_m2 = zahl(zeile['preis']) or 0
+        else:
+            preis_m2 = mischpreis(zeile['preis'], breite, laengen, zeile['einkauf'], liste, konfig)
+        zeilen, posten, angebote, margen = [], {}, [], []
         aspekte = merkmale(produkt, konfig, maengel)
         ueberschrift = titel(name, breite)
         bilder = bilder_von(produkt, [variante])
         if not bilder:
             maengel.append('kein Bild')
-        sku = eigene_sku(variante)
-        plan.append({
-            'name': name, 'art': 'einzel', 'maengel': maengel, 'schluessel': sku,
-            'artikel': {sku: artikel(ueberschrift, text, bilder, aspekte, menge)},
-            'angebote': [angebot_grund(sku, preis, menge, KATEGORIE_TEPPICHBODEN, text, konfig)],
-        })
+        for laenge in laengen:
+            flaeche = breite * laenge / 10000
+            preis = round(preis_m2 * flaeche, 2)
+            zeilen.append(f'{text_laenge(breite)} × {text_laenge(laenge)} = {euro(flaeche)} m²: {euro(preis)} EUR')
+            if not rollen_mangel(zeile, konfig, liste):
+                margen.append((laenge, stueckmarge(preis_m2, flaeche, versandkosten(breite, laenge, konfig), zeile['einkauf'], liste)))
+        text = beschreibung(produkt, [
+            f'Restposten, zugeschnitten von der Rolle. Rollenbreite {text_laenge(breite)}, Preis {euro(preis_m2)} EUR je m².',
+            'Lieferbar: ' + '; '.join(zeilen) + '.',
+            'Anderes Maß oder länger als 6 m? Schreiben Sie uns über eBay eine Nachricht, wir erstellen ein passendes Angebot.',
+        ])
+        for laenge in laengen:
+            flaeche = breite * laenge / 10000
+            sku = f'{eigene_sku(variante)}-L{laenge}'
+            menge = int(rest_cm // laenge)
+            posten[sku] = artikel(ueberschrift, text, bilder, dict(aspekte, Länge=[text_laenge(laenge)]), menge)
+            angebote.append(angebot_grund(sku, round(preis_m2 * flaeche, 2), menge, KATEGORIE_TEPPICHBODEN, text, konfig))
+        eintrag = {
+            'name': name, 'art': 'gruppe', 'maengel': maengel, 'schluessel': gruppen_schluessel(produkt),
+            'artikel': posten, 'angebote': angebote,
+            'gruppe': {
+                'title': ueberschrift, 'description': text, 'aspects': aspekte, 'imageUrls': bilder[:MAX_BILDER],
+                'variantSKUs': list(posten),
+                'variesBy': {'specifications': [{'name': 'Länge', 'values': [text_laenge(l) for l in laengen]}]},
+            },
+        }
+        if margen:
+            eintrag['rechnung'] = {
+                'listenpreis_m2': zeile['preis'], 'mischpreis_m2': preis_m2,
+                'schnitt_marge_m2': round(sum(m / (breite * l / 10000) for l, m in margen) / len(margen), 2),
+                'kleinste_marge_stueck': round(min(m for _, m in margen), 2),
+            }
+        plan.append(eintrag)
     return plan
+
+
+def plane_einzelmass(liste, lexikon, konfig, name, breite_cm, laenge_cm, preis, frachtkosten):
+    """Einmaliges Angebot auf Kundenanfrage, auch ueber 6 m."""
+    treffer = [z for z in liste['welle1'] if name.lower() in z['rolle'].lower()]
+    if len(treffer) != 1:
+        raise Abbruch(f'{len(treffer)} Rollen passen zu "{name}"')
+    zeile = treffer[0]
+    maengel = rollen_mangel(zeile, dict(konfig, **{k: 0 for k in VERSAND_FELDER}), liste)
+    gefunden = finde_rolle(zeile['rolle'], lexikon)
+    if len(gefunden) != 1:
+        raise Abbruch(f"{len(gefunden)} Treffer im Lexikon für {zeile['rolle']}")
+    if breite_cm > zeile['breite']:
+        raise Abbruch('Breite ist größer als die Rolle')
+    if laenge_cm > min(zahl(zeile['restlaenge']) or 0, (zahl(zeile['bestand']) or 0) * 10000 / zeile['breite']):
+        raise Abbruch('So viel Länge ist nicht mehr auf der Rolle')
+    flaeche = breite_cm * laenge_cm / 10000
+    marge = None
+    if not maengel:
+        marge = stueckmarge(preis / flaeche, flaeche, frachtkosten, zeile['einkauf'], liste)
+        if marge < konfig.get('stueck_mindestmarge', 0):
+            maengel.append(f'Marge {marge:.2f} EUR unter der Mindestmarge')
+    produkt = gefunden[0]
+    variante = produkt['varianten'][0]
+    sku = f'{eigene_sku(variante)}-E{breite_cm}X{laenge_cm}'
+    aspekte = merkmale(produkt, konfig, maengel)
+    groesse = f'{text_laenge(breite_cm)} × {text_laenge(laenge_cm)}'
+    text = beschreibung(produkt, [f'Zuschnitt nach Ihrer Anfrage: {groesse}, {euro(flaeche)} m². Restposten.'])
+    ueberschrift = titel(zeile['rolle'], None)[:MAX_TITEL - len(groesse) - 1] + ' ' + groesse
+    bilder = bilder_von(produkt, [variante])
+    if not bilder:
+        maengel.append('kein Bild')
+    return [{
+        'name': f"{zeile['rolle']} {groesse}", 'art': 'einzel', 'maengel': maengel, 'schluessel': sku,
+        'artikel': {sku: artikel(ueberschrift, text, bilder, dict(aspekte, Länge=[text_laenge(laenge_cm)]), 1)},
+        'angebote': [angebot_grund(sku, preis, 1, KATEGORIE_TEPPICHBODEN, text, konfig)],
+        'rechnung': {'marge_stueck': None if marge is None else round(marge, 2)},
+    }]
 
 
 def kategorie_fuer(produkt, konfig, maengel):
@@ -454,6 +583,11 @@ def hauptlauf(argv=None):
     p.add_argument('--rahmen-zeigen', action='store_true', help='IDs der Rahmenbedingungen aus dem Konto lesen')
     p.add_argument('--standort-anlegen', action='store_true', help='Artikelstandort aus ebay-konfig.json bei eBay anlegen')
     p.add_argument('--nur', help='nur Produkte, deren Name diesen Text enthält')
+    p.add_argument('--einzelmass', help='einmaliges Angebot auf Anfrage: Name der Rolle')
+    p.add_argument('--breite-cm', type=int)
+    p.add_argument('--laenge-cm', type=int)
+    p.add_argument('--preis', type=float, help='Gesamtpreis des Einzelmaßes in EUR')
+    p.add_argument('--frachtkosten', type=float, help='eigene Versandkosten des Einzelmaßes in EUR')
     p.add_argument('--liste')
     p.add_argument('--lexikon')
     p.add_argument('--senden', action='store_true', help='Entwürfe bei eBay anlegen oder aktualisieren')
@@ -480,13 +614,20 @@ def hauptlauf(argv=None):
                 for name, nummer in eintraege:
                     print(f'  {nummer}  {name}')
         return 0
-    if not args.welle:
-        raise Abbruch('--welle 1 oder 2 fehlt')
+    if not args.welle and not args.einzelmass:
+        raise Abbruch('--welle 1, --welle 2 oder --einzelmass fehlt')
+    if args.einzelmass and None in (args.laenge_cm, args.preis, args.frachtkosten):
+        raise Abbruch('--einzelmass braucht --laenge-cm, --preis und --frachtkosten')
     liste_pfad = args.liste or os.path.join(ordner, UNTERORDNER, STARTLISTE)
     lexikon_pfad = args.lexikon or os.path.join(ordner, 'lexikon', 'produkte.json')
     konfig, zugang, namen = lies_konfig(ordner), lies_zugang(ordner), verbotene_namen(ordner)
     liste, lexikon = lies_startliste(liste_pfad), lies_lexikon(lexikon_pfad)
-    plan = (plane_welle1 if args.welle == 1 else plane_welle2)(liste, lexikon, konfig)
+    if args.einzelmass:
+        treffer = [z for z in liste['welle1'] if args.einzelmass.lower() in z['rolle'].lower()]
+        breite = args.breite_cm or (int(treffer[0]['breite']) if len(treffer) == 1 else 0)
+        plan = plane_einzelmass(liste, lexikon, konfig, args.einzelmass, breite, args.laenge_cm, args.preis, args.frachtkosten)
+    else:
+        plan = (plane_welle1 if args.welle == 1 else plane_welle2)(liste, lexikon, konfig)
     if args.nur:
         plan = [e for e in plan if args.nur.lower() in e['name'].lower()]
     for eintrag in plan:
@@ -494,11 +635,17 @@ def hauptlauf(argv=None):
         if fund:
             eintrag['maengel'].append(f'verbotener Name im Angebot ({len(fund)})')
 
-    ziel = os.path.join(ordner, UNTERORDNER, f'einstellplan-welle{args.welle}.json')
+    ziel = os.path.join(ordner, UNTERORDNER, 'einstellplan-einzelmass.json' if args.einzelmass else f'einstellplan-welle{args.welle}.json')
     with open(ziel, 'w', encoding='utf-8') as datei:
         json.dump(plan, datei, ensure_ascii=False, indent=1)
     bereit = [e for e in plan if not e['maengel']]
-    print(f'Welle {args.welle}: {len(plan)} Angebote im Plan, {len(bereit)} bereit. Plan: {ziel}')
+    print(f'{"Einzelmaß" if args.einzelmass else f"Welle {args.welle}"}: {len(plan)} Angebote im Plan, {len(bereit)} bereit. Plan: {ziel}')
+    for eintrag in plan:
+        r = eintrag.get('rechnung')
+        if r and 'mischpreis_m2' in r:
+            print(f"  {eintrag['name']}: Liste {r['listenpreis_m2']:.2f}, Misch {r['mischpreis_m2']:.2f} EUR/m²; Schnitt {r['schnitt_marge_m2']:.2f} EUR/m², kleinstes Stück {r['kleinste_marge_stueck']:.2f} EUR")
+        elif r and r.get('marge_stueck') is not None:
+            print(f"  {eintrag['name']}: Marge {r['marge_stueck']:.2f} EUR")
     gruende = {}
     for eintrag in plan:
         for m in eintrag['maengel']:
