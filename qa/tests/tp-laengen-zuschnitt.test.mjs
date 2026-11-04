@@ -638,7 +638,7 @@ test('Mindestgesamtlaenge: Grenze im Zuschnitt, genau 300 geht, 299 nicht', () =
   const zuWenig = L.rechnen({ ...e, laenge: '299', anzahl: '1' });
   assert.equal(zuWenig.ok, false);
   assert.equal(zuWenig.menge, 0);
-  assert.equal(zuWenig.fehler, 'Zugeschnitten liefern wir ab 3 m je Warenkorb-Position (Länge × Stückzahl), bisher 2,99 m. Bitte Länge oder Stückzahl erhöhen oder eine ganze Stange wählen.');
+  assert.equal(zuWenig.fehler, 'Zugeschnitten liefern wir ab 3 m je Warenkorb-Position (Länge × Stückzahl), bisher 2,99 m. Bitte Länge oder Stückzahl erhöhen oder eine ganze Stange wählen. Bei gemischten Längen bitte kurz bei uns melden.');
   // Stueckzahl zaehlt mit: 75 x 4 reicht, 75 x 3 nicht.
   assert.equal(L.rechnen({ ...e, laenge: '75', anzahl: '4' }).ok, true);
   assert.equal(L.rechnen({ ...e, laenge: '75', anzahl: '3' }).ok, false);
