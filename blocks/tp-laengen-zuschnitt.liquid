@@ -37,6 +37,11 @@
   Lieferanten stueckweise in dieser Laenge oder auf Wunsch zugeschnitten (dann
   hoechstens Stangenlaenge, auch wenn service.max_laenge_cm groesser ist).
 
+  Mindestgesamtlaenge im Zuschnitt (Einstellung min_gesamt_cm, 0 = keine Grenze):
+  Laenge je Stueck x Stueckzahl je Warenkorb-Zeile. Darunter sperrt der Rechenkern
+  den Warenkorb-Knopf und nennt, was fehlt. Die ganze Stange ist ausgenommen, der
+  Laeufer-Modus kennt die Grenze nicht.
+
   Sperrgut (Einstellung sperrgut_produkt, Service-Produkt mit dem Zuschlag):
   ist ein Stueck laenger als sperrgut_ab_cm, kommt der Zuschlag einmal je
   Warenkorb dazu.
@@ -80,14 +85,16 @@
   # Profile: ganze Stangen und Sperrgut-Zuschlag (nur ausserhalb des Laeufer-Modus).
   assign tp_lz_stangen = false
   assign tp_lz_sperrgut = false
+  assign tp_lz_min_gesamt = 0
   if tp_lz_laeufer == false
+    assign tp_lz_min_gesamt = block.settings.min_gesamt_cm | default: 0 | times: 1
     if block.settings.stangen
       assign tp_lz_stangen = true
     endif
     assign tp_lz_sg = block.settings.sperrgut_produkt.selected_or_first_available_variant
     if block.settings.sperrgut_produkt != blank and tp_lz_sg.available and tp_lz_sg.price > 0
       assign tp_lz_sperrgut = true
-      assign tp_lz_sg_ab = block.settings.sperrgut_ab_cm | default: 175 | times: 1
+      assign tp_lz_sg_ab = block.settings.sperrgut_ab_cm | default: 172 | times: 1
     endif
   endif
   # Breite des Laeufers = Wert der Option "Breite" (zum Abgleich mit der Einfassung).
@@ -239,6 +246,7 @@
         ],
         {%- endif %}
         "stangen": {{ tp_lz_stangen | json }},
+        "min_gesamt_cm": {{ tp_lz_min_gesamt | json }},
         {%- if tp_lz_sperrgut %}
         "sperrgut": { "id": {{ tp_lz_sg.id | json }}, "price": {{ tp_lz_sg.price | json }}, "ab_cm": {{ tp_lz_sg_ab | json }} },
         {%- endif %}
@@ -379,6 +387,13 @@
       "default": false
     },
     {
+      "type": "number",
+      "id": "min_gesamt_cm",
+      "label": "Profil: Mindestgesamtlänge im Zuschnitt (cm)",
+      "info": "Länge je Stück × Stückzahl je Warenkorb-Zeile. Darunter ist der Warenkorb-Knopf gesperrt. Ganze Stangen sind ausgenommen. 0 oder leer = keine Grenze.",
+      "default": 0
+    },
+    {
       "type": "product",
       "id": "sperrgut_produkt",
       "label": "Profil: Sperrgut-Zuschlag",
@@ -389,10 +404,10 @@
       "id": "sperrgut_ab_cm",
       "label": "Profil: Sperrgut ab Stücklänge über",
       "min": 100,
-      "max": 300,
-      "step": 5,
+      "max": 200,
+      "step": 1,
       "unit": "cm",
-      "default": 175
+      "default": 172
     },
     {
       "type": "text",

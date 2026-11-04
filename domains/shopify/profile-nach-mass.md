@@ -18,7 +18,7 @@ in Cent je Zentimeter abbilden.
 | Vorlage | `treppenkante-nach-mass` (Kaufknöpfe aus, Block `tp-laengen-zuschnitt`) |
 | `custom.preis_pro_001_lfm` | `true` – Variantenpreis gilt je 0,01 lfm |
 | `service.max_laenge_cm` | größte Länge je Stück (Versandgrenze beachten, siehe unten) |
-| `service.min_seite_cm` | optional, kleinste Länge je Stück (sonst 10 cm) |
+| `service.min_seite_cm` | optional, kleinste Länge je Stück (sonst 10 cm); Treppenkanten: 70 cm |
 | `service.bohrung` | Liste der lieferbaren Ausführungen, z. B. `["gebohrt", "ungebohrt"]`; der erste Wert ist vorgewählt |
 | Option `Farbe` | Oberfläche, z. B. „Messing poliert“, „Silber eloxiert“ |
 
@@ -71,9 +71,17 @@ Produkttyp `Abschlussprofile`, nur Onlineshop), 15 Farben, SKU `TKMASS_<Art.-Nr.
   (`service.max_laenge_cm` = 503). Abgerechnet wird gleich: Meterpreis ×
   Länge; die Warenkorbzeile trägt zusätzlich `Zuschnitt` („ganze Stange“ /
   „nach Maß“).
-- **Sperrgut (Inhaber 2026-10-19):** Stücke über 175 cm passen nicht in ein
-  DPD-Paket. Block-Einstellung `sperrgut_produkt` = `sperrgut-versand-treppenkante`
-  (Service, UNLISTED, 39,90 €), `sperrgut_ab_cm` = 175: der Zuschlag kommt
+- **Mindestgesamtlänge im Zuschnitt (Inhaber 2026-11-04):** Lieferant G berechnet
+  bei jedem Zuschnitt die volle Stange, kleine Mengen machen Verlust.
+  Block-Einstellung `min_gesamt_cm` = 300: Länge je Stück × Stückzahl je
+  Warenkorb-Zeile muss mindestens 3 m sein, sonst bleibt der Warenkorb-Knopf
+  gesperrt und der Hinweis nennt, was fehlt. Die ganze Stange ist ausgenommen,
+  der Läufer-Modus kennt die Grenze nicht. Geprüft wird auf der Produktseite;
+  der Warenkorb prüft die Grenze nicht nach.
+- **Sperrgut (Inhaber 2026-10-19, Grenze 2026-11-04 auf 172 cm):** Stücke über
+  172 cm passen nicht in ein Paket des Lieferanten. Block-Einstellung
+  `sperrgut_produkt` = `sperrgut-versand-treppenkante`
+  (Service, UNLISTED, 39,90 €), `sperrgut_ab_cm` = 172: der Zuschlag kommt
   einmal je Warenkorb als Zeile derselben `_Gruppe` dazu (steht er schon im
   Warenkorb, nicht noch einmal). Im Einkauf gilt er als Eigenleistung
   (nichts zu bestellen).

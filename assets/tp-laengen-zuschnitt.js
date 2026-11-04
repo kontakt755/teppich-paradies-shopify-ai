@@ -22,6 +22,11 @@
   auf Wunsch zugeschnitten - dann hoechstens so lang wie die Stange. Abgerechnet
   wird gleich (Menge = Laenge x Stueckzahl in cm).
 
+  Mindestgesamtlaenge im Zuschnitt (Block-Einstellung min_gesamt_cm, 0 = keine
+  Grenze): Lieferant G berechnet bei jedem Zuschnitt die volle Stange. Darunter
+  bleibt der Warenkorb-Knopf gesperrt; die ganze Stange ist ausgenommen, Laeufer
+  sind nicht betroffen.
+
   Sperrgut (Block-Einstellung sperrgut_produkt): ist ein Stueck laenger als
   sperrgut_ab_cm, kommt der Zuschlag einmal je Warenkorb als Zeile derselben
   _Gruppe dazu; steht er schon im Warenkorb, nicht noch einmal.
@@ -53,6 +58,11 @@
     var r = String(cm % 100);
     if (r.length < 2) r = '0' + r;
     return m + ',' + r;
+  }
+
+  // 300 cm -> "3", 250 cm -> "2,50"
+  function meterKurz(cm) {
+    return cm % 100 === 0 ? String(cm / 100) : meter(cm);
   }
 
   // Bohrungen je Profil nach dem Bohrbild des Lieferanten: randMm vom Ende
@@ -89,7 +99,10 @@
   // sonst je Schraube; ebenfalls ohne Streichpreis. e.sperrgut: {preisCent,
   // abCm, schonDa} - Zuschlag einmal, sobald ein Stueck laenger als abCm ist
   // (schonDa: steht schon im Warenkorb, dann 0). e.je: Wort fuer ein Stueck in
-  // den Fehlertexten (Standard "Stück", Laeufer "Läufer").
+  // den Fehlertexten (Standard "Stück", Laeufer "Läufer"). e.minGesamtCm:
+  // kleinste Gesamtlaenge (Laenge x Stueckzahl) im Zuschnitt, 0 = keine Grenze;
+  // gilt nicht fuer e.art "stange". e.stangeWaehlbar: der Hinweis darf die ganze
+  // Stange als Ausweg nennen.
   function rechnen(e) {
     var erg = { ok: false, fehler: '', menge: 0, summeCent: 0, meterpreisCent: 0, altSummeCent: 0, materialCent: 0, zusatzCent: 0, loecher: 0, schraubenStueck: 0, schraubenPackungen: 0, schraubenCent: 0, sperrgut: false, sperrgutCent: 0 };
     var laenge = ganzzahl(e.laenge);
@@ -103,6 +116,11 @@
     if (laenge > e.maxCm) { erg.fehler = 'Höchstens ' + e.maxCm + ' cm je ' + je + '.'; return erg; }
     if (anzahl === null || anzahl < 1) { erg.fehler = e.je ? 'Bitte die Anzahl angeben.' : 'Bitte die Stückzahl angeben.'; return erg; }
     if (anzahl > e.maxStueck) { erg.fehler = 'Höchstens ' + e.maxStueck + ' ' + je + ' je Bestellung – für mehr bitte kurz bei uns melden.'; return erg; }
+    var minGesamt = Number(e.minGesamtCm) || 0;
+    if (e.art !== 'stange' && minGesamt > 0 && laenge * anzahl < minGesamt) {
+      erg.fehler = 'Zugeschnitten liefern wir ab ' + meterKurz(minGesamt) + ' m Gesamtlänge je Farbe, bisher ' + meter(laenge * anzahl) + ' m. Bitte Länge oder Stückzahl erhöhen' + (e.stangeWaehlbar ? ' oder eine ganze Stange wählen.' : '.');
+      return erg;
+    }
     erg.ok = true;
     erg.laenge = laenge;
     erg.anzahl = anzahl;
@@ -305,7 +323,8 @@
         return;
       }
       var hilfe = grenzen.getAttribute('data-messhilfe') || '';
-      grenzen.textContent = 'Zentimetergenau von ' + d.min_cm + ' bis ' + maxCm + ' cm je Stück' + (d.stangen ? ', in einem Stück aus einer Stange geschnitten.' : '.') + (hilfe ? ' ' + hilfe : '');
+      var gesamt = !laeufer && Number(d.min_gesamt_cm) > 0 ? ' Mindestens ' + meterKurz(Number(d.min_gesamt_cm)) + ' m Gesamtlänge je Farbe.' : '';
+      grenzen.textContent = 'Zentimetergenau von ' + d.min_cm + ' bis ' + maxCm + ' cm je Stück' + (d.stangen ? ', in einem Stück aus einer Stange geschnitten.' : '.') + gesamt + (hilfe ? ' ' + hilfe : '');
     }
 
     // Wie im Einfass-Konfigurator: Farbwahl meldet ihre Variante per
@@ -433,6 +452,9 @@
         minCm: d.min_cm,
         maxCm: lg.maxCm,
         maxStueck: d.max_stueck,
+        art: a,
+        minGesamtCm: laeufer ? 0 : d.min_gesamt_cm,
+        stangeWaehlbar: !!(d.stangen && v && Number(v.stange_cm) > 0),
         je: laeufer ? 'Läufer' : ''
       });
       fehler.textContent = erg.fehler;
