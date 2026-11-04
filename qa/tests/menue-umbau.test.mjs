@@ -220,3 +220,11 @@ test('Plan Teppiche nach Zweck 2026-11-04: vier neue Unterpunkte unter Standardg
   assert.deepEqual(standard.items.map((i) => i.title), ['Kinderteppiche', 'Outdoor-Teppiche', 'Hochflor-Teppiche', 'Waschbare Teppiche']);
   assert.ok(standard.items.every((i) => !i.id && i.type === 'COLLECTION' && /^gid:\/\/shopify\/Collection\/\d+$/.test(i.resourceId)));
 });
+
+test('Plan Runde Teppiche 2026-11-04: fuenfter Unterpunkt unter Standardgroessen, keine ID verloren', () => {
+  const stand = lesen('docs/weiterentwicklung/sicherung/2026-11-04d-hauptmenue.json');
+  const neu = umbauen(stand, lesen('domains/shopify/menue-runde-teppiche-2026-11.json'));
+  assert.deepEqual(new Set(flach(neu.items).map((i) => i.id).filter(Boolean)), idMenge(menueAus(stand)));
+  const standard = neu.items[1].items.find((i) => i.id === 'gid://shopify/MenuItem/880157360462');
+  assert.deepEqual(standard.items.map((i) => i.title), ['Kinderteppiche', 'Outdoor-Teppiche', 'Hochflor-Teppiche', 'Waschbare Teppiche', 'Runde Teppiche']);
+});

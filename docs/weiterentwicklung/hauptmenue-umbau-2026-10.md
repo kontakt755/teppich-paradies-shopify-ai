@@ -145,3 +145,5 @@ Theme-Deploy fehlt auf den Seiten Kurz- und Mittelflor die Unterkategorie-Leiste
 - `domains/shopify/menue-teppiche-zweck-2026-11.json`: unter „Teppiche in Standardgrößen“
   Kinderteppiche (32), Outdoor-Teppiche (71), Hochflor-Teppiche (42), Waschbare Teppiche (13).
   Gegenprobe: 96 = 92 alte IDs + 4 neu. Sicherung davor `sicherung/2026-11-04c-hauptmenue.json`.
+- `domains/shopify/menue-runde-teppiche-2026-11.json`: Runde Teppiche (184, Variante mit „rund“)
+  als fünfter Punkt. Gegenprobe: 97 = 96 alte IDs + 1 neu. Sicherung davor `sicherung/2026-11-04d-hauptmenue.json`.
