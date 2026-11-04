@@ -23,7 +23,7 @@ const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /** Reihenfolge = Ausgabe. `npm` ist ein Skript aus package.json, `befehl` ein direkter Aufruf. */
 export const SCHRITTE = [
   { name: 'tests', npm: 'test' },
-  { name: 'python', befehl: ['python3', '-m', 'unittest', 'tests/test_bild_qualitaetstest.py'] },
+  { name: 'python', befehl: ['python3', '-m', 'unittest', 'tests/test_bild_qualitaetstest.py', 'tests/test_ebay_einstellen.py'] },
   { name: 'liquid', npm: 'liquid:guard' },
   { name: 'schema', npm: 'schema:guard' },
   { name: 'template', npm: 'template:guard' },
