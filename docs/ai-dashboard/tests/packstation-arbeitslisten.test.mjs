@@ -410,8 +410,18 @@ test('Kurze Zahl passt nur als ganze Zahl, und eine genauer passende fertige Bes
 });
 
 test('Umschlag-Filterzeile erscheint nur, wenn sie etwas unterscheidet', () => {
-  const gleich = [kunde(1, 'packen'), kunde(2, 'packen')];
+  const gedruckt = nr => ({ ...kunde(nr, 'packen'), gedruckt: { zeit: '2026-10-26T09:00:00Z' } });
+  const gleich = [gedruckt(1), gedruckt(2)];
   assert.doesNotMatch(ansicht('tab=muster', gleich), /mp-umschlagfilter/);
   // Ein gesetzter Filter bleibt sichtbar, sonst fuehrt kein Weg zurueck.
   assert.match(ansicht('tab=muster&mpumschlag=drin', gleich), /mp-umschlagfilter/);
+});
+
+test('Sind alle Umschlaege noch vorzubereiten, fuehrt die Filterzeile weiter zum Sammeldruck (Inhaber 28.10.)', () => {
+  const frisch = [kunde(1, 'warten'), kunde(2, 'warten'), kunde(3, 'warten')];
+  const liste = ansicht('tab=muster&mpbereich=warten', frisch);
+  assert.match(liste, /<a class="chip" href="[^"]*mpumschlag=vorbereiten[^"]*">noch vorbereiten<span class="c">3<\/span>/);
+  assert.match(ansicht('tab=muster&mpbereich=warten&mpumschlag=vorbereiten', frisch), /data-mp-vorbereiten="order1 order2 order3">Diese 3 Umschläge vorbereiten \(6 Aufkleber\)/);
+  assert.match(ansicht('tab=muster', [kunde(1, 'klaeren')]), /mp-umschlagfilter/, 'auch fuer einen einzelnen Umschlag');
+  assert.doesNotMatch(ansicht('tab=muster', []), /mp-umschlagfilter/, 'leere Liste braucht keine Zeile');
 });

@@ -483,7 +483,9 @@ export function viewKundenMusterPacken() {
     return `#/kunden?${p}`;
   };
   // Zeigt jeder Filter alles oder nichts, unterscheidet die Zeile nichts und kostet nur Hoehe (Handy).
-  const umschlagUnterscheidet = umschlag || UMSCHLAG.some(([w]) => w && ![0, imReiter.length].includes(imReiter.filter(UMSCHLAG_PASST[w]).length));
+  // Ausnahme "noch vorbereiten": nur dieser Chip fuehrt zum Sammelknopf "Diese n Umschlaege vorbereiten".
+  const umschlagUnterscheidet = umschlag || imReiter.some(UMSCHLAG_PASST.vorbereiten)
+    || UMSCHLAG.some(([w]) => w && ![0, imReiter.length].includes(imReiter.filter(UMSCHLAG_PASST[w]).length));
   const umschlagFilter = umschlagGilt && umschlagUnterscheidet ? `<nav class="chips mp-umschlagfilter" aria-label="Nach Umschlag filtern"><span class="small muted">Umschlag:</span>${UMSCHLAG.map(([w, label]) =>
     `<a class="chip" href="${esc(umschlagLink(w))}"${umschlag === w ? ' aria-current="page"' : ''}>${label}<span class="c">${w ? imReiter.filter(UMSCHLAG_PASST[w]).length : imReiter.length}</span></a>`).join('')}</nav>` : '';
   // Wenige Treffer gleich aufklappen und das passende Muster markieren.
