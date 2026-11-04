@@ -449,3 +449,23 @@ test('Alter Vorstand ohne Variante, unklar zuzuordnen: Wieder verfuegbar schreib
   assert.match((await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH)).meldung, /wieder bestellbar/);
   assert.deepEqual([api.einkaufMustersperre().offen, api.einkaufMustersperre().gesperrt, shop.mutationen().length], [[], [], vorher]);
 });
+
+test('Gesperrte SKU: Schreibweise der Bestellposition spielt keine Rolle', async () => {
+  const { dir, api, schritt } = umgebung();
+  await schritt(ANDERER, { muster: ['gid://shopify/LineItem/3'], notiz: 'Kunde informiert' });
+  const datei = path.join(dir, 'bestelluebersicht', 'orders.json');
+  fs.writeFileSync(datei, fs.readFileSync(datei, 'utf8').replaceAll('M-TEST-3', 'M-Test-3'));
+  const zeile = api.kundenBestellungen().zeilen.find(z => z.orderName === '#T2');
+  assert.deepEqual(zeile.gesperrteMuster, ['gid://shopify/LineItem/3']);
+});
+
+test('Gesperrte SKU: offene Bestellungen melden die Position fuers To-do "Kunde informieren"', async () => {
+  const { dir, api, schritt } = umgebung();
+  await schritt(ANDERER, { muster: ['gid://shopify/LineItem/3'], notiz: 'Kunde informiert' });
+  assert.ok(sperrDatei(dir).some(e => e.sku === 'M-TEST-3'));
+  const zeile = name => api.kundenBestellungen().zeilen.find(z => z.orderName === name);
+  assert.deepEqual(zeile('#T1').gesperrteMuster, [], 'andere SKU: nichts');
+  assert.deepEqual(zeile('#T2').gesperrteMuster, ['gid://shopify/LineItem/3']);
+  assert.ok(!todosFuer(api, '#T2').some(t => t.art === 'muster_gesperrt'), 'mit dem Schritt abgeschlossen: kein To-do');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
