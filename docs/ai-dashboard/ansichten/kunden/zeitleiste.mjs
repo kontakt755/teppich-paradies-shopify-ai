@@ -227,7 +227,7 @@ async function ladeNeu() {
 /** Noch nicht bestellter gekettelter Direktversand: `kettelweg` kommt vom Server erst mit Status. */
 const offeneKettelwege = a => (a?.auftragsart === 'ware' ? a.positionen ?? [] : []).filter(p => p.lineItemId && kettelwegNoetig(p) && !p.kettelweg);
 
-async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null } = {}) {
+export async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null } = {}) {
   let antwort;
   try {
     antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug, ...(muster ? { muster } : {}), ...(kettelwege ? { kettelwege } : {}) });

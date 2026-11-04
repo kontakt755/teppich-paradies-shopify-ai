@@ -2041,6 +2041,23 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
     also selbst „vorbereitet“.
   - Umschläge ohne vollständige Musterzuordnung druckt er nicht und nennt ihre Zahl.
 
+### Gesperrte Muster in der Packstation (seit 2026-11-04, #1899)
+
+`kundenMusterPacken()` liest `mustersperre.json` (aktive Sperren je `M-<SKU>`, auch die im Shop noch nicht
+bestätigten) und gibt je Position `gesperrt` zurück, solange das Muster weder abgehakt noch da oder im
+Musterlager ist. Ein solcher Umschlag steht unter „Zu klären“. Eine beschädigte Ablage legt die Liste nicht
+lahm: `sperrenFehler` wird als roter Hinweis gezeigt.
+
+- **„Kunde informieren…“** (`ansichten/kunden/muster-gesperrt.mjs`) sendet nichts. Nur wenn alle Muster des
+  Umschlags gesperrt sind, schließt der Dialog die Bestellung mit dem Schritt `muster_nicht_verfuegbar`
+  ab; der Schritt gilt immer für die ganze Bestellung.
+- **„Ohne dieses Muster weiter packen“** (`aktion: 'ohne-muster'`): nur diese Position wird „erledigt“ und über
+  `erledigtBuchen` ohne Kundenmail in Shopify gebucht. Sonst bliebe nach dem Verschicken ein leerer Umschlag.
+  Bei einer Bestellung mit Ware (`bestellungen[].mitWare`, gleiche Regel wie `auftragsart`) ist das der einzige Weg,
+  auch für das letzte Muster im Umschlag: der Schritt „Muster nicht verfügbar“ gehört nicht zu einer Warenbestellung.
+- **Reiter „Erledigt“:** die 14 Tage laufen ab `rausAm`/`erledigtAm`, ohne Vermerk ab Bestelldatum; `teilweise`
+  erledigte Bestellungen stehen nur in der Suche.
+
 ### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
 
 Ein Muster, das in der Packstation eingelegt (Haken) oder mit dem Umschlag gepackt wird, ist

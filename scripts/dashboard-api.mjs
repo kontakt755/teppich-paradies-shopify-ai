@@ -107,7 +107,7 @@ import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten
 import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
 import { musterwirkung } from '../operations/lib/musterwirkung.mjs';
 import { packhilfeDaten } from '../operations/lib/packhilfe-daten.mjs';
-import { musterPackliste } from '../docs/ai-dashboard/lib/muster-packen.mjs';
+import { musterPackliste, ohneMusterMoeglich } from '../docs/ai-dashboard/lib/muster-packen.mjs';
 import { musterPackenPfad, setzeGedruckt, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
 const execFileP = promisify(execFile);
@@ -1905,10 +1905,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const katalog = this._lexikonProdukte();
       // Warum die Automatik ein Muster zurueckhaelt - stand bis 03.11. nur unter den Bestellungen.
       const automatik = musterAutomatikAnzeige(dir, { modell, statusAlle: status, stammdaten }, katalog, now());
+      // Gesperrte Muster kommen nicht (w-210). Eine kaputte Ablage legt die Packstation nicht lahm, die Seite sagt es aber.
+      let sperren = new Map(), sperrenFehler = null;
+      try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch (e) { sperrenFehler = e.message; logFehler('mustersperre', `Packstation: ${sperrenFehler}`); }
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
         produkte: new Map(katalog.map(p => [p.handle, p])),
         automatikGrundVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId))?.grund || null,
+        sperreVon: p => { const k = musterSchluessel(p); return k ? sperren.get(`M-${k}`) || null : null; },
         // Ganzer Eintrag: Bestelldatum und "Musterautomatik" fuer die Anmerkung beim Warten.
         eintragVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)] || null,
         schluesselVon: kundenSchluessel,
@@ -1918,7 +1922,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       });
       try {
         const gespeicherte = leseGrossbriefe(grossbriefPfad(dir));
-        return { verfuegbar: true, ...liste, kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte) })) };
+        return { verfuegbar: true, ...liste, ...(sperrenFehler ? { sperrenFehler } : {}), kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte) })) };
       } catch (e) { throw new ApiError(500, e.message); }
     },
 
@@ -2022,8 +2026,45 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Deshalb: erst fuer ALLE Bestellungen pruefen, ob "raus" geht (sonst 409, nichts geschrieben), dann
      * alle lokalen Schritte schreiben, bevor die erste Shopify-Buchung abgewartet wird. `versand` sagt je
      * Bestellung, was in Shopify passiert ist.
+     *
+     * `aktion: 'ohne-muster'` { lineItemId } (w-210): ein gesperrtes Muster kommt nicht, die uebrigen sollen
+     * raus. Nur diese Position wird "erledigt" und in Shopify ohne Kundenmail gebucht - sonst bliebe die
+     * Bestellung dort offen und nach dem Verschicken ein leerer Umschlag stehen. Der Schritt "Muster nicht
+     * verfuegbar" taugt dafuer nicht: er schliesst die ganze Bestellung ab, auch die Muster, die noch raus sollen.
+     * Eine Bestellung mit Ware kennt den Schritt gar nicht: dort geht das Muster immer so weg, auch als letztes
+     * im Umschlag; die Ware bleibt unberuehrt.
      */
     async kundenMusterPackenSchreiben(payload = {}, benutzer = null) {
+      if (payload?.aktion === 'ohne-muster') {
+        if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
+        const lineItemId = typeof payload.lineItemId === 'string' ? payload.lineItemId.trim() : '';
+        if (!lineItemId) throw new ApiError(400, 'Kein Muster angegeben.');
+        const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === payload.packSchluessel);
+        const m = kunde?.muster.find(x => x.lineItemId === lineItemId);
+        if (!m) throw new ApiError(409, 'Dieses Muster steht nicht mehr so in der Liste. Bitte neu laden.');
+        if (!m.gesperrt) throw new ApiError(409, 'Dieses Muster ist nicht gesperrt. Bitte neu laden.');
+        if (!ohneMusterMoeglich(kunde, m)) throw new ApiError(409, 'Sonst liegt kein Muster in diesem Umschlag – bitte „Kunde informieren…“ und die Bestellung dort abschließen.');
+        const dir = privatDirPath || privatDir();
+        const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+        const modell = ladeBestellModell(dir);
+        const auftrag = modell?.auftraege?.find(a => a.id === m.orderId) || null;
+        if (!auftrag) throw new ApiError(404, 'Bestellung nicht gefunden – Bestelldaten evtl. inzwischen aktualisiert.');
+        const statusDatei = auftragsstatusPfad(dir);
+        const eintrag = leseAktuellenStatus(statusDatei, modell)[positionKey(m.orderId, lineItemId)];
+        if (!darfWeiter(eintrag, 'erledigt')) throw new ApiError(409, eintrag.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
+        const p = auftrag.positionen?.find(x => x.lineItemId === lineItemId);
+        try {
+          setzeStatusPositionen(statusDatei, [{ orderId: m.orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: 'Muster nicht lieferbar – ohne dieses Muster weiter gepackt', jetzt: now() }]);
+        } catch (e) {
+          if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status || 400, e.message);
+          throw e;
+        }
+        audit({ actor, action: 'muster-ohne', orderId: m.orderId, lineItemId });
+        merke(benutzer, actor, 'Ohne gesperrtes Muster weiter gepackt', `${m.orderName}: ${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`);
+        // Der lokale Schritt steht; was Shopify antwortet, zeigt die Rueckmeldung.
+        const shopify = await erledigtBuchen({ dir, auftrag, lineItemIds: [lineItemId], benutzer, actor });
+        return { ok: true, packSchluessel: kunde.packSchluessel, lineItemId, shopify };
+      }
       if (payload?.aktion !== 'verschickt') return this.kundenMusterPackenSetzen(payload, benutzer);
       if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
       const pk = typeof payload.packSchluessel === 'string' ? payload.packSchluessel.trim() : '';
