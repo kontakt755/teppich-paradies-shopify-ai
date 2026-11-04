@@ -12,6 +12,9 @@ nicht bewertet. Der interne Abgleich mit den Einkaufspreisen (2026-11-04, privat
 dieses öffentlichen Berichts) bestätigt das: Wo Einkaufspreise vorliegen, bleibt zum eBay-Preis fast
 nirgends ein auskömmlicher Rohertrag. Für einen Teil der Ware von Lieferant A und C fehlen sie noch.
 
+**Entscheidung des Inhabers (2026-11-04):** eBay wird trotzdem angegangen, Warenumschlag geht vor Marge.
+Zuerst Sonderposten, danach Ware bis 45 €/m². Eingestellt ist noch nichts.
+
 ## Datengrundlage
 
 - **Quelle:** eBay-Produktrecherche im Verkäufer-Cockpit, Reiter „Verkauft“, ebay.de, letztes Jahr, Abruf 2026-11-04.
@@ -117,7 +120,7 @@ Verkäufer nicht sicher ausgewertet. Keiner der Verkäufer steht in unserem priv
 
 ## Empfehlung für den Start
 
-1. **Kein breiter Start zu Shop-Preisen.**
+1. **Kein breiter Start zu Shop-Preisen.** Der Inhaber startet deshalb gezielt mit Sonderposten und Ware bis 45 €/m², siehe oben.
 2. **Einkaufspreise:** Der interne Abgleich spricht gegen einen Start. Offen sind vor allem Klickvinyl, PVC und Kunstrasen von Lieferant A, dort fehlen die Händlerpreise.
 3. **Nur falls diese Preise tragen, kleiner Test.** Nach Nachfrage und wenigen Anbietern kämen zuerst **Kunstrasen und Klickvinyl** infrage.
 4. **Vorerst nicht:** Sockelleisten und Wohnteppiche wegen Preiskampf und vieler Anbieter, Maßware und Ketteln mangels sichtbarer Nachfrage.
