@@ -20,7 +20,7 @@
   {%- capture tp_cs_staerke -%}{{ tp_cs_product.metafields.custom.gesamtstarke.value }}{%- endcapture -%}
   {%- assign tp_cs_staerke = tp_cs_staerke | strip -%}
   {%- if tp_cs_staerke != blank and tp_cs_count < tp_cs_max -%}
-    {%- capture tp_cs_items -%}{{ tp_cs_items }}|{{ tp_cs_staerke }} Stärke{%- endcapture -%}
+    {%- capture tp_cs_items -%}{{ tp_cs_items }}|{{ tp_cs_staerke }} Höhe{%- endcapture -%}
     {%- assign tp_cs_count = tp_cs_count | plus: 1 -%}
   {%- endif -%}
 

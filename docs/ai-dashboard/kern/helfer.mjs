@@ -46,7 +46,10 @@ export function toast(text, kind = '', { dauer = null } = {}) {
     knopf.dataset.fehlerMelden = '';
     el.append(knopf);
   }
-  $('#toastRoot').appendChild(el);
+  const ablage = $('#toastRoot');
+  ablage.appendChild(el);
+  // Hoechstens drei auf einmal, sonst stapeln sie sich bis ueber die Dialogfelder.
+  while (ablage.children.length > 3) ablage.firstElementChild.remove();
   setTimeout(() => el.remove(), dauer || (melden ? 9000 : 4200));
 }
 

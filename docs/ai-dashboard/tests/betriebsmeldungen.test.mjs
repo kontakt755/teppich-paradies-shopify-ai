@@ -34,3 +34,25 @@ test('Shop-Kontrolle listet jede gestoerte Routine, sonst nichts dazu', () => {
   assert.doesNotMatch(viewShopwache(), /Mac-Dienst gestört/);
   shopwache.daten = null;
 });
+
+test('w-222: Sicherungs-To-do fuehrt zur Shop-Kontrolle, dort steht derselbe Grund', async () => {
+  const { leiteTodosAb } = await import('../lib/todos.mjs');
+  const jetzt = new Date('2026-10-29T09:00:00Z');
+  const staende = [
+    { fehlt: true, status: 'unbekannt', letzterErfolg: null },
+    { status: 'alt', letzterErfolg: '2026-10-28T20:30:00Z' },
+    { status: 'alt', letzterErfolg: '2026-10-20T20:30:00Z' },
+    { status: 'fehler', letzterErfolg: null },
+    { status: 'ok', letzterErfolg: '2026-10-28T20:30:00Z', letzterFehler: { am: '2026-10-28T20:31:00Z', meldung: 'Testfehler' } },
+  ];
+  for (const sicherung of staende) {
+    const [t] = leiteTodosAb({ shopwache: { verfuegbar: true, sicherung } }, { sicht: 'website', jetzt });
+    assert.deepEqual(t.knopf, { text: 'Ansehen', href: '#/shopwache' }, t.titel);
+    assert.match(t.kontext, /Claude Bescheid geben/, t.titel);
+    shopwache.daten = { verfuegbar: true, ampel: 'gruen', geprueftAm: '2026-10-29T08:00:00Z', basis: 'https://shop.example.invalid', seiten: [], preise: [], befunde: [], sicherung };
+    assert.ok(viewShopwache().includes(`<b>${t.titel}:</b>`), t.titel);
+  }
+  shopwache.daten = { verfuegbar: true, ampel: 'gruen', geprueftAm: '2026-10-29T08:00:00Z', basis: 'https://shop.example.invalid', seiten: [], preise: [], befunde: [], sicherung: { status: 'ok', letzterErfolg: new Date().toISOString() } };
+  assert.doesNotMatch(viewShopwache(), /Sicherung/, 'im Normalfall steht dazu nichts');
+  shopwache.daten = null;
+});

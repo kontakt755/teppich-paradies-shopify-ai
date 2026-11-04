@@ -18,6 +18,8 @@
  * "Nach Partnerladen" (mp=laden): Wareneingang sortieren - je Laden alle noch nicht eingelegten
  * Muster mit Ziel-Umschlag, Aufkleber und Haken direkt in der Zeile.
  * Porto und Versandbuchung folgen, wenn der Versandweg entschieden ist.
+ * Im Shop gesperrte Muster (w-210) kommen nicht: rot, Umschlag unter "Zu klaeren", dazu "Kunde
+ * informieren…" (muster-gesperrt.mjs, sendet nichts) und "Ohne dieses Muster weiter packen".
  * In beiden Ansichten steht oben fuer den Packer, welche Herstelleretiketten abkommen (PACKER_INFO).
  */
 import { state } from '../../kern/zustand.mjs';
@@ -27,9 +29,11 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, offeneSuche, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
+import { versandRueckmeldung } from '../../lib/versand.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
+import { GESPERRT_KURZ, oeffneKundeInformieren } from './muster-gesperrt.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 let packOffen = null;
@@ -130,9 +134,12 @@ export function musterPackenOffen() {
   return d?.verfuegbar ? (d.offen ?? 0) : 0;
 }
 
+const gesperrtText = m => GESPERRT_KURZ[m.gesperrt.imShop ? 'imShop' : 'gemeldet'];
+
 /** "bestellt am 24.10. (automatisch)" - ohne belegtes Datum bleibt es beim Standtext. */
 const datumKurz = iso => fmtDate(iso).slice(0, 6);
 function standText(m) {
+  if (m.gesperrt) return gesperrtText(m);
   if (m.automatikGrund) return `${STAND_TEXT.offen}: ${m.automatikGrund}`;
   if (m.stand !== 'bestellt' || !m.bestelltAm) return STAND_TEXT[m.stand] || '';
   return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}`;
@@ -186,7 +193,8 @@ function hierHtml(k) {
   const da = k.muster.filter(m => !m.abgehakt && m.stand === 'da').length;
   const lager = k.muster.filter(m => !m.abgehakt && m.stand === 'lager');
   const orte = [...new Set(lager.map(m => m.lagerOrt).filter(Boolean))];
-  const offeneMuster = k.muster.filter(m => !m.abgehakt && m.stand === 'offen');
+  const offeneMuster = k.muster.filter(m => !m.abgehakt && m.stand === 'offen' && !m.gesperrt);
+  const kommtNicht = k.muster.filter(m => m.gesperrt).length;
   const offen = offeneMuster.length;
   const gruende = [...new Set(offeneMuster.map(m => m.automatikGrund).filter(Boolean))];
   const teile = [
@@ -195,6 +203,7 @@ function hierHtml(k) {
     lager.length ? `${lager.length} im Musterlager${orte.length ? ` (${orte.join(', ')})` : ''}` : '',
   ].filter(Boolean);
   return `${teile.length ? `<span class="small mp-hier-da">${esc(`Liegt hier: ${teile.join(' · ')}`)}</span>` : ''}`
+    + `${kommtNicht ? `<span class="small mp-gesperrt">${esc(`${plural(kommtNicht, 'Muster kommt', 'Muster kommen')} nicht`)}</span>` : ''}`
     + `${offen ? `<span class="small wait-warn">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt${gruende.length ? `: ${gruende.join('; ')}` : ''}`)}</span>` : ''}`;
 }
 
@@ -291,7 +300,7 @@ function hakenHtml(m, lesend) {
   return `<label class="mp-haken"><input type="checkbox" data-mp-haken="${esc(m.lineItemId)}"${m.abgehakt ? ' checked' : ''}${lesend ? ' disabled' : ''}><span class="visually-hidden">${esc(`${e.serie || name} ${e.farbe || ''} überklebt und eingelegt`)}</span></label>`;
 }
 
-function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffer = false } = {}) {
+function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffer = false, ohneMoeglich = false } = {}) {
   const e = m.etikett || {};
   const v = m.vorher || {};
   // Der Produktname steht so auf dem Lieferantenetikett; die Kollektion nur, wenn er fehlt.
@@ -315,7 +324,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="mp-fehlt">Zuordnung fehlt: ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
       : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
-    <div class="mp-stand small">${fehltHervor ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}<span class="${m.stand === 'offen' ? 'wait-warn' : 'muted'}">${esc(stand)}</span>${link}</div>
+    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}<span class="${m.gesperrt ? 'mp-gesperrt' : m.stand === 'offen' ? 'wait-warn' : 'muted'}">${esc(stand)}</span>${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}</div>
   </li>`;
 }
 
@@ -329,6 +338,10 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
   // In "Zu klären" stehen die fehlenden Muster oben.
   const muster = k.bereich === 'klaeren' ? [...k.muster].sort((a, b) => fehlend.has(b.lineItemId) - fehlend.has(a.lineItemId)) : k.muster;
   const pk = esc(k.packSchluessel);
+  const gesperrte = k.muster.filter(m => m.gesperrt);
+  // Bleibt nichts im Umschlag, gibt es nichts weiter zu packen: dann schliesst "Kunde informieren…" die Bestellung ab.
+  // Ausnahme Bestellung mit Ware: die bleibt offen, das Muster geht einzeln weg (ohneMusterMoeglich).
+  const andereBleiben = gesperrte.length > 0 && gesperrte.length < k.muster.length;
   const rueckLaden = state.route.params.get('laden');
   const rueckweg = rueckLaden ? `<a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden&amp;laden=${encodeURIComponent(rueckLaden)}">Zurück zu „Muster kommt an“</a>` : '';
   const bestellLink = (b, klasse = 'btn btn-sm btn-ghost') => `<a class="${klasse}" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Bestellstand prüfen</a>`;
@@ -349,6 +362,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
   } else if (k.bereich === 'klaeren') {
     // Was zuerst geklaert werden muss, wird der Hauptknopf; der Rest wandert unter "Mehr …".
     const moeglich = [
+      gesperrte.length ? kl => `<button type="button" class="${kl}" data-mp-informieren="${pk}">Kunde informieren…</button>` : null,
       !lesend && k.klaeren ? kl => `<button type="button" class="${kl}" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Fehlendes ist da – weiter packen</button>` : null,
       (k.adressFehlt || []).length ? kl => k.bestellungen.map(b => `<a class="${kl}" href="#/kunden?tab=bestellungen&amp;bfilter=alle&amp;bq=${encodeURIComponent(b.orderName || '')}">${esc(b.orderName)} – Lieferadresse prüfen</a>`).join('') : null,
       (k.zuordnungFehlt || []).length ? kl => `<a class="${kl}" href="#/lexikon">Musterzuordnung prüfen</a>` : null,
@@ -397,6 +411,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
       </div>
     </summary>
     ${bestelldatenHtml(k)}
+    ${gesperrte.length ? `<p class="notice crit">${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : `Diese ${gesperrte.length} Muster kommen nicht`)}: ${esc(gesperrte.map(m => kurzName(m.vorher?.produktname) || m.etikett?.serie || m.bestellt.titel).join(', '))}. Der Kunde erfährt das nicht von selbst – bitte informieren.${andereBleiben ? ' Die übrigen Muster können danach ohne dieses raus.' : gesperrte.some(m => ohneMusterMoeglich(k, m)) ? ' Danach „Ohne dieses Muster weiter packen“ wählen; die Ware der Bestellung bleibt davon unberührt.' : ''}</p>` : ''}
     ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
     ${k.altvermerk && !k.klaeren ? `<p class="small muted">${esc(k.altvermerk)}</p>` : ''}
     ${k.gedruckt && k.bereich === 'klaeren' ? `<p class="small mp-vorbereitet">Umschlag vorbereitet: Aufkleber und Adresse ${esc(gedrucktText(k.gedruckt))}. Er wartet auf die fehlenden Muster.</p>` : ''}
@@ -404,7 +419,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     ${(k.adressFehlt || []).length ? `<p class="notice warn">Lieferadresse unvollständig: ${esc(k.adressFehlt.join(', '))}. Bitte die Lieferadresse in der Bestellung prüfen.</p>` : ''}
     ${(k.zuordnungFehlt || []).length ? `<p class="notice warn">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
     ${schritte}
-    <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId), treffer: treffer.has(m.lineItemId) })).join('')}</ul>
+    <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId), treffer: treffer.has(m.lineItemId), ohneMoeglich: ohneMusterMoeglich(k, m) })).join('')}</ul>
     ${k.bereich === 'warten' ? warteAnmerkung(k) : ''}
     ${unten ? `<div class="mp-aktionen">${unten}</div>` : ''}${mehrHtml}
   </details>`;
@@ -472,7 +487,8 @@ export function viewKundenMusterPacken() {
       : aktiv === 'alle' ? d.kunden : d.kunden.filter(k => k.bereich === aktiv).sort(reihe);
   // Bei Suche, Direktlink und Gepacktem gilt der Umschlagfilter nicht - dort soll nichts verschwinden.
   const umschlagGilt = !gefunden && !zielKunde && !['gepackt', 'erledigt'].includes(aktiv);
-  const umschlag = umschlagGilt && UMSCHLAG_PASST[state.route.params.get('mpumschlag')] ? state.route.params.get('mpumschlag') : '';
+  // Object.hasOwn: "constructor" aus der Adresszeile ist kein Filter (TypeError beim Seitentitel, Review 29.10.).
+  const umschlag = umschlagGilt && Object.hasOwn(UMSCHLAG_PASST, state.route.params.get('mpumschlag') ?? '') ? state.route.params.get('mpumschlag') : '';
   const sichtbar = umschlag ? imReiter.filter(UMSCHLAG_PASST[umschlag]) : imReiter;
   // Wie die Reiter als Links; beide bleiben beim Wechsel des anderen erhalten.
   const umschlagLink = wert => {
@@ -518,12 +534,17 @@ export function viewKundenMusterPacken() {
 export const ERLEDIGT_TAGE = 14;
 export function erledigteBestellungen(ausserhalb = [], jetzt = Date.now()) {
   const ab = jetzt - ERLEDIGT_TAGE * 24 * 60 * 60 * 1000;
-  return (ausserhalb || []).filter(b => b.grund === 'erledigt' && gueltig(b.datum) && new Date(b.datum).getTime() >= ab);
+  // Die Frist laeuft ab dem Versand: nach "Verschickt" steht auch eine alte Bestellung hier, wie der Dialog
+  // verspricht. Ohne Vermerk im Auftragsfluss (in Shopify gebucht) zaehlt das Bestelldatum. Eine teilweise
+  // erledigte Bestellung steht noch in der Packliste und zaehlt erst, wenn alles fertig ist (Review 29.10.).
+  const wann = b => (gueltig(b.erledigtAm) ? b.erledigtAm : b.datum);
+  return (ausserhalb || []).filter(b => b.grund === 'erledigt' && !b.teilweise && gueltig(wann(b)) && new Date(wann(b)).getTime() >= ab)
+    .sort((x, y) => new Date(wann(y)) - new Date(wann(x)));
 }
 
 function erledigtHtml(liste) {
   const zeilen = liste.map(b => `<li class="mp-aussen"><div><strong>${esc(b.orderName)}</strong> · ${esc(b.name)} · ${plural(b.muster.length, 'Muster', 'Muster')}</div>`
-    + `<div class="small muted">bestellt am ${esc(fmtDate(b.datum))} · verschickt oder erledigt · <a href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">Bestellung ansehen</a></div></li>`).join('');
+    + `<div class="small muted">bestellt am ${esc(fmtDate(b.datum))} · verschickt oder erledigt${gueltig(b.erledigtAm) ? ` am ${esc(fmtDate(b.erledigtAm))}` : ''} · <a href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">Bestellung ansehen</a></div></li>`).join('');
   return `<section class="mp-arbeitsliste" aria-label="Erledigt"><h2 class="mp-titel">Erledigt – Musterbestellungen der letzten ${ERLEDIGT_TAGE} Tage</h2>
     ${zeilen ? `<ul class="mp-liste">${zeilen}</ul>` : `<div class="mp-arbeitsleer"><p>In den letzten ${ERLEDIGT_TAGE} Tagen ist keine Musterbestellung erledigt worden.</p></div>`}</section>`;
 }
@@ -620,6 +641,7 @@ function karteHtml({ kunde: k, muster: m }, { erste = false, lesend = false } = 
       ${stempelHtml(k)}
       ${weitereHtml(k)}
       <span class="small muted">${rest ? `danach noch ${plural(rest, 'Muster', 'Muster')} offen` : 'letztes offenes Muster – danach komplett'}</span>
+      ${m.gesperrt ? `<span class="mp-gesperrt">${esc(gesperrtText(m))}</span>` : ''}
       ${k.bereich === 'klaeren' ? '<span class="mp-fehlt">Umschlag ist zu klären</span>' : ''}
       ${m.fehlt.length ? '<span class="mp-fehlt">Aufkleber-Zuordnung fehlt – im Lexikon prüfen</span>' : `<span class="small">Unser Aufkleber: <strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span>`}
     </div>
@@ -651,7 +673,7 @@ function viewNachLaden(d) {
     return `<li class="mp-sortzeile">
       ${hakenHtml(m, lesend)}
       ${bildHtml(m)}
-      <div class="mp-vorher"><span>${esc(v.produktname || m.bestellt.titel)}</span>${farbNrHtml(v)}</div>
+      <div class="mp-vorher"><span>${esc(v.produktname || m.bestellt.titel)}</span>${farbNrHtml(v)}${m.gesperrt ? `<span class="small mp-gesperrt">${esc(gesperrtText(m))}</span>` : ''}</div>
       <div class="mp-pfeil" aria-hidden="true">→</div>
       <div class="mp-ziel"><a class="mp-umschlag" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(e.packSchluessel)}&amp;laden=${encodeURIComponent(gewaehlt.laden)}">${esc(e.umschlag)}</a>
         <span><strong>${esc(e.kunde)}</strong></span><span class="small muted">${esc(e.bestellung)}</span>${druckEinzelnHtml(m)}</div>
@@ -685,7 +707,8 @@ function packFehlerHtml(d) {
   const versand = versandProbleme.length ? `<div class="notice crit" role="alert"><p><strong>Verschickt, aber in Shopify nicht sicher als versendet gemeldet.</strong> Bestellung öffnen und prüfen – fehlt der Versand, dort „In Shopify buchen“ (mit Mail-Wahl).</p>
       <ul>${versandProbleme.map(v => `<li><a href="#/einkauf?auftrag=${encodeURIComponent(v.orderId)}">${esc(v.orderName)}</a>: ${esc(v.meldung || 'Ergebnis unbekannt')}</li>`).join('')}</ul>
       <button type="button" class="btn btn-sm" data-mp-versand-ok>Verstanden</button></div>` : '';
-  return versand + (packFehler ? `<p class="notice warn" role="alert">${esc(packFehler)} <button type="button" class="btn btn-sm" data-mp-neuladen>Packliste erneut laden</button></p>` : '');
+  const sperren = d?.sperrenFehler ? `<p class="notice crit" role="alert">Gesperrte Muster nicht lesbar – ein gesperrtes Muster kann gerade als „wartet auf Ware“ erscheinen: ${esc(d.sperrenFehler)}</p>` : '';
+  return versand + sperren + (packFehler ? `<p class="notice warn" role="alert">${esc(packFehler)} <button type="button" class="btn btn-sm" data-mp-neuladen>Packliste erneut laden</button></p>` : '');
 }
 
 async function packlisteErneutLaden() {
@@ -701,6 +724,25 @@ async function packlisteErneutLaden() {
   } finally {
     packSpeichert = false; kunden.loadingMusterPacken = false; render();
   }
+}
+
+/** "Ohne dieses Muster weiter packen": schliesst genau diese Position ab; bucht in Shopify ohne Mail. */
+async function ohneMuster(k, m, knopf) {
+  const name = `${m.vorher?.produktname || m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`;
+  if (!window.confirm(`Ohne dieses Muster weiter packen?\n\n${name}\n\nEs wird für ${m.orderName} abgeschlossen und bekommt keinen Aufkleber mehr. Der Kunde erfährt davon nichts von selbst – „Kunde informieren…“ zeigt den Text.`)) return;
+  packSpeichert = true;
+  knopf.disabled = true;
+  let r = null;
+  try {
+    r = await orgSchreiben(ENDPOINT, { packSchluessel: k.packSchluessel, aktion: 'ohne-muster', lineItemId: m.lineItemId });
+    const v = versandRueckmeldung('Ohne dieses Muster weiter', r.shopify);
+    toast(v.text, v.ton, v.ton ? { dauer: 9000 } : {});
+  } catch (err) {
+    toast(`Nicht gespeichert: ${err.message}`, 'crit');
+  }
+  packSpeichert = false;
+  // Beide Wege laden neu: auch eine Ablehnung heisst meist, dass die Seite nicht mehr stimmt.
+  await packlisteErneutLaden();
 }
 
 async function schreiben(daten, meldung) {
@@ -828,6 +870,21 @@ export function musterPackenKlick(e) {
     return true;
   }
   const liste = kunden.musterPacken?.kunden || [];
+  const informieren = e.target.closest('[data-mp-informieren]');
+  if (informieren) {
+    e.preventDefault();
+    const k = liste.find(x => x.packSchluessel === informieren.dataset.mpInformieren);
+    if (k) oeffneKundeInformieren(k, { lesend: istNurLesend(), danach: packlisteErneutLaden });
+    return true;
+  }
+  const ohne = e.target.closest('[data-mp-ohne]');
+  if (ohne) {
+    e.preventDefault();
+    const k = kundeMitMuster(ohne.dataset.mpOhne);
+    const m = k?.muster.find(x => x.lineItemId === ohne.dataset.mpOhne);
+    if (m && !packSpeichert) void ohneMuster(k, m, ohne);
+    return true;
+  }
   const versandt = e.target.closest('[data-mp-verschickt]');
   if (versandt) {
     e.preventDefault();

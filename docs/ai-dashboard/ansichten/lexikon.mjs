@@ -684,13 +684,15 @@ function viewLexikonDetail(handle) {
       ${wunschmassVarianten.length ? `<p class="small muted" style="margin:10px 0 0">Wunschmaß (${wunschmassVarianten.length} Variante${wunschmassVarianten.length === 1 ? '' : 'n'}): wird erst beim Zuschnitt bestellt, deshalb hier ohne eigene Artikelnummer – keine fehlende Angabe.</p>` : ''}
       ${mengenhilfeWidget(p, zielVariante, normaleVarianten)}`;
 
-  return `${zurueck}
+  // Der Sprung ersetzt das Scrollen; die Reihenfolge bleibt, das Kundengespraech am Telefon steht vorn.
+  const zumBestellen = `<p class="no-print small" style="margin:6px 0 0"><a href="#" onclick="event.preventDefault();document.getElementById('lexBestellen').scrollIntoView()">Zum Bestellen springen ↓</a></p>`;
+  return `${zurueck}${zumBestellen}
     ${offeneBestellungenBlock(d.offeneBestellungen, d.wartendeKunden)}
     ${produktKarte(p, normaleVarianten)}
     ${musterlagerBlock(p.handle)}
     ${musterEtikettenBlock(p)}
     ${fuersKundengespraech(p, normaleVarianten)}
-    <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Zum Bestellen</h2></div>${bestellTabelle}</section>
+    <section class="card" id="lexBestellen" style="margin-bottom:16px"><div class="card-head"><h2>Zum Bestellen</h2></div>${bestellTabelle}</section>
     ${internesDetails(p)}`;
 }
 

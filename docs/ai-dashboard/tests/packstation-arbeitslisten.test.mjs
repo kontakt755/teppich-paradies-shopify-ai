@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { viewKundenMusterPacken, erledigteBestellungen, ERLEDIGT_TAGE } from '../ansichten/kunden/muster-packen.mjs';
 import { state } from '../kern/zustand.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
+import { oeffneKundeInformieren } from '../ansichten/kunden/muster-gesperrt.mjs';
 
 const kunde = (nr, bereich) => ({ name: `Testkunde ${nr}`, schluessel: `kunde${nr}`, packSchluessel: `order${nr}`, bereich,
   adresse: {}, bestellungen: [{ orderId: `order${nr}`, orderName: `#TEST${nr}` }], wartetTage: 1,
@@ -10,7 +11,7 @@ const kunde = (nr, bereich) => ({ name: `Testkunde ${nr}`, schluessel: `kunde${n
   fehlt: [], aufkleber: 2, gepackt: bereich === 'gepackt' ? { zeit: '2026-10-22T08:00:00Z' } : null });
 
 function ansicht(query, liste, ausserhalb = []) {
-  globalThis.document ||= { addEventListener() {} };
+  globalThis.document ||= { addEventListener() {}, querySelector() {} };
   state.route.params = new URLSearchParams(query);
   kunden.musterPacken = { verfuegbar: true, kunden: liste, ausserhalb };
   return viewKundenMusterPacken();
@@ -407,4 +408,87 @@ test('Kurze Zahl passt nur als ganze Zahl, und eine genauer passende fertige Bes
   assert.match(html, /Nicht gefunden: „ware“, „51“/);
   // Mit den Fertigen steht das Wort da: dann darf es nicht mehr als "nicht gefunden" gelten.
   assert.doesNotMatch(ansicht('tab=muster&mpq=Gesuchte%20Ware%2051&mpfertig=Gesuchte%20Ware%2051', [fertig, offen]), /Nicht gefunden: /);
+});
+
+test('Erledigt zaehlt ab dem Versand, nicht ab der Bestellung; eine noch offene Bestellung zaehlt nicht (Review 29.10.)', t => {
+  const jetzt = Date.parse('2026-11-04T12:00:00Z');
+  // Die Ansicht rechnet mit der Uhr: festgesetzt, sonst faellt der Eintrag nach 14 Tagen aus dem Fenster.
+  t.mock.method(Date, 'now', () => jetzt);
+  const b = (name, datum, extra = {}) => ({ orderId: name, orderName: name, name: 'Test', grund: 'erledigt', datum, muster: [], ...extra });
+  const liste = [
+    b('alt-frisch-verschickt', '2026-10-01T09:00:00Z', { erledigtAm: '2026-11-03T09:00:00Z' }),
+    b('alt-lange-verschickt', '2026-10-01T09:00:00Z', { erledigtAm: '2026-10-10T09:00:00Z' }),
+    b('neu-ohne-versanddatum', '2026-11-01T09:00:00Z'),
+    b('noch-offen', '2026-11-02T09:00:00Z', { erledigtAm: '2026-11-03T09:00:00Z', teilweise: true }),
+  ];
+  assert.deepEqual(erledigteBestellungen(liste, jetzt).map(x => x.orderName), ['alt-frisch-verschickt', 'neu-ohne-versanddatum'], 'zuletzt Erledigtes zuerst');
+  const html = ansicht('tab=muster&mpbereich=erledigt', [], liste);
+  assert.match(html, /aria-current="page">Erledigt <span class="mp-filterzahl">/);
+  assert.match(html, /verschickt oder erledigt am 03\.11\.2026/);
+});
+
+test('URL-Parameter mit Objektnamen zaehlt nicht als Umschlagfilter (Review 29.10.)', () => {
+  for (const wert of ['constructor', '__proto__', 'toString']) {
+    const html = ansicht(`tab=muster&mpumschlag=${wert}`, [kunde(1, 'warten')]);
+    assert.match(html, /data-mp-kunde="order1"/, wert);
+    assert.match(html, /<a class="chip"[^>]*aria-current="page">alle</, wert);
+  }
+});
+
+test('Gesperrtes Muster: rot statt "wartet", Kunde informieren zuerst, ohne-Knopf nur wenn etwas im Umschlag bleibt (w-210)', () => {
+  const gesperrt = { imShop: true, seit: '2026-10-28T09:00:00Z' };
+  const k = kunde(1, 'klaeren');
+  k.muster = [{ ...k.muster[0], stand: 'bestellt', gesperrt, bestelltAm: '2026-10-20T07:00:00Z' }, { ...k.muster[0], lineItemId: 'line1b', stand: 'bestellt' }];
+  const html = ansicht('tab=muster', [k]);
+  assert.match(html, /mp-gesperrt">1 Muster kommt nicht</, 'ohne Aufklappen');
+  assert.match(html, /class="notice crit">Dieses Muster kommt nicht: Test\./);
+  assert.match(html, /class="btn btn-sm btn-primary" data-mp-informieren="order1">Kunde informieren…/);
+  assert.match(html, /im Shop gesperrt – kommt nicht/);
+  assert.equal((html.match(/data-mp-ohne="line1"/g) || []).length, 1, 'nur am gesperrten Muster');
+  assert.doesNotMatch(html, /data-mp-ohne="line1b"/);
+
+  const allein = kunde(2, 'klaeren');
+  allein.muster = [{ ...allein.muster[0], stand: 'offen', gesperrt: { imShop: false } }];
+  const nurDas = ansicht('tab=muster', [allein]);
+  assert.match(nurDas, /als nicht lieferbar gemeldet – kommt nicht/, 'im Shop noch nicht bestaetigt');
+  assert.doesNotMatch(nurDas, /data-mp-ohne/, 'sonst nichts im Umschlag');
+  assert.doesNotMatch(nurDas, /noch nicht bestellt/, 'kommt nicht ersetzt "noch nicht bestellt"');
+  assert.match(ansicht('tab=muster&mp=laden', [allein]), /als nicht lieferbar gemeldet – kommt nicht/, 'auch im Wareneingang');
+
+  // Mit Ware in der Bestellung kein Abschluss, aber das Muster geht einzeln weg - sonst bliebe der Umschlag haengen.
+  const mitWare = kunde(4, 'klaeren');
+  mitWare.muster = [{ ...mitWare.muster[0], orderId: 'order4', stand: 'offen', gesperrt: { imShop: true } }];
+  mitWare.bestellungen[0].mitWare = true;
+  const gemischt = ansicht('tab=muster', [mitWare]);
+  assert.match(gemischt, /data-mp-ohne="line4"/);
+  assert.match(gemischt, /die Ware der Bestellung bleibt davon unberührt/);
+
+  const hinweis = ansicht('tab=muster', [kunde(3, 'warten')]);
+  assert.doesNotMatch(hinweis, /Gesperrte Muster nicht lesbar/);
+  state.route.params = new URLSearchParams('tab=muster');
+  kunden.musterPacken = { verfuegbar: true, kunden: [kunde(3, 'warten')], sperrenFehler: 'mustersperre.json ist beschädigt' };
+  assert.match(viewKundenMusterPacken(), /Gesperrte Muster nicht lesbar.*mustersperre\.json ist beschädigt/);
+});
+
+test('Kunde informieren: Abschliessen nur ohne Ware und ohne lieferbares Muster im Umschlag (Review 04.11.)', t => {
+  // Kleinster Ersatz fuer den Dialog-Knoten; die Vorlage bleibt der eingebaute Vorschlag.
+  const form = { addEventListener() {}, querySelector: () => null, isConnected: false };
+  const wurzel = { innerHTML: '' };
+  globalThis.document ||= { addEventListener() {}, querySelector() {} };
+  t.mock.method(globalThis, 'fetch', async () => { throw new Error('kein Netz im Test'); });
+  t.mock.method(document, 'querySelector', sel => (sel.endsWith('form') ? form : wurzel));
+  const dialog = (mitWare, weitere = []) => {
+    const k = kunde(1, 'klaeren');
+    k.muster = [{ ...k.muster[0], orderId: 'order1', gesperrt: { imShop: true } }, ...weitere];
+    if (mitWare) k.bestellungen[0].mitWare = true;
+    oeffneKundeInformieren(k);
+    return wurzel.innerHTML;
+  };
+  assert.match(dialog(false), /Kunde ist informiert – abschließen/);
+  const gemischt = dialog(true);
+  assert.doesNotMatch(gemischt, /type="submit"/, 'Ware wird hier nie abgeschlossen');
+  assert.match(gemischt, /Zu #TEST1 gehört auch Ware, sie bleibt davon unberührt/);
+  const mitAnderem = dialog(false, [{ lineItemId: 'line2', bestellt: { titel: 'Frei' } }]);
+  assert.doesNotMatch(mitAnderem, /type="submit"/);
+  assert.match(mitAnderem, /Die übrigen Muster bleiben im Umschlag/);
 });
