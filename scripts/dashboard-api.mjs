@@ -95,7 +95,7 @@ import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
 import { kontodatenPruefen } from '../docs/ai-dashboard/lib/angebot-nachricht.mjs';
 import { aufraeumFall } from '../docs/ai-dashboard/lib/aufraeumen.mjs';
-import { betriebszustand, sicherungsstand } from '../operations/lib/betriebszustand.mjs';
+import { betriebszustand, sicherungsstand, ausserHausStand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
 import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
@@ -4149,10 +4149,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const routinen = routinenStand(dir, { jetzt: now(), ...(launchAgentsDir ? { agentsDir: launchAgentsDir } : {}) });
       // Betriebsdaten-Sicherung (operations/scripts/sicherung.mjs): verpasst oder gescheitert wird ein To-do.
       const sicherung = sicherungsstand(path.join(dir, 'sicherungsstand.json'), now());
+      const sicherungAusserHaus = ausserHausStand(path.join(dir, 'sicherung-ausser-haus.json'), now());
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen, googleBewertung, routinen, sicherung };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen, googleBewertung, routinen, sicherung, sicherungAusserHaus };
       }
-      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen, googleBewertung, routinen, sicherung };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen, googleBewertung, routinen, sicherung, sicherungAusserHaus };
     },
 
     /**

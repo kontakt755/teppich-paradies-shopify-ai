@@ -903,7 +903,24 @@ selben Abend). Das Control Center zeigt ihn als To-do auf „Heute“ (seit 28.1
 „Sicherung überfällig“ nach einem verpassten Termin, rot ab 48 Std., bei „fehlgeschlagen“ und bei
 unlesbarem Stand; gelb „Sicherungsstand fehlt“, wenn `sicherungsstand.json` gar nicht existiert.
 
-**Zweite Kopie ausser Haus (vorbereitet, Entscheidung beim Inhaber).** Das Skript kann jedes
+**Verschluesselte Kopie in der Dropbox (Entscheidung Inhaber 26.10.2026, w-163).** Der Dienst
+`net.teppich-paradies.sicherung-ausser-haus` legt taeglich um 23:00 Uhr das neueste Tagesarchiv mit
+gpg (AES-256) verschluesselt in den Dropbox-Ordner `Teppich Paradies Sicherung`
+(`scripts/sicherung-ausser-haus.mjs`, 14 Tage Frist). Jeder Lauf entschluesselt die abgelegte Datei
+noch einmal und vergleicht die Pruefsumme. Der Stand steht in `sicherung-ausser-haus.json`;
+ein Fehlschlag oder mehr als 48 Stunden ohne Kopie werden auf „Heute“ zum roten To-do.
+
+Der Schluessel liegt im Anmelde-Schluesselbund dieses Macs (Eintrag „Teppich Paradies Sicherung
+ausser Haus“), einmalig angelegt mit `--schluessel-anlegen`; ein vorhandener wird nie ersetzt.
+**Dieser Schluesselbund geht mit dem Mac verloren.** Der Schluessel muss deshalb zusaetzlich an
+einem zweiten Ort liegen (Passwortmanager oder Ausdruck im Tresor), sonst ist die Kopie nach einem
+Totalausfall wertlos. Nie in die Dropbox, ins Repository oder in einen Chat.
+
+Wiederherstellen aus der Dropbox: `brew install gnupg`, dann
+`gpg --output <datum>.tar.gz --decrypt <datum>.tar.gz.gpg`, den Schluessel eingeben und weiter wie
+unter „Wiederherstellen nach einem Ausfall“, Schritt 3.
+
+**Weitere Kopie, z. B. auf externer Platte (vorbereitet).** Das Skript kann jedes
 fertige Tagesarchiv zusaetzlich in einen zweiten Ordner legen:
 
 ```

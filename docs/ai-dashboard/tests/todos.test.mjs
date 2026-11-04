@@ -489,6 +489,16 @@ test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eige
   assert.deepEqual(mit({ geprueftAm: vorTagen(9), befunde: [ohne] }).map(t => t.id).sort(), ['auslauf-muster', 'auslauf-stumm']);
 });
 
+test('Sicherung ausser Haus: still ohne Stand und bei frischer Kopie, sonst rot mit Grund', () => {
+  const mit = sicherungAusserHaus => leiteTodosAb({ shopwache: { verfuegbar: true, sicherungAusserHaus } }, { sicht: 'website', jetzt: JETZT });
+  for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }]) assert.deepEqual(mit(s), []);
+  const alt = mit({ status: 'alt', letzterErfolg: vorTagen(3) });
+  assert.deepEqual([alt.length, alt[0].id, alt[0].ton, alt[0].titel], [1, 'sicherung-ausser-haus', 'crit', 'Sicherungskopie in der Dropbox fehlt']);
+  assert.match(alt[0].kontext, /^letzte Kopie /);
+  const gescheitert = mit({ status: 'ok', letzterErfolg: vorTagen(1), letzterFehler: { am: vorTagen(0), meldung: 'Zielordner nicht erreichbar' } });
+  assert.match(gescheitert[0].kontext, /^Zielordner nicht erreichbar · letzte Kopie /);
+});
+
 test('Sicherung: verpasst wird gelb, ueber 48 Std., gescheitert oder unlesbar rot, sonst nichts', () => {
   const mit = sicherung => leiteTodosAb({ shopwache: { verfuegbar: true, sicherung } }, { sicht: 'website', jetzt: JETZT });
   for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }, { status: 'unbekannt', letzterErfolg: null }]) assert.deepEqual(mit(s), []);

@@ -53,6 +53,17 @@ function sicherungsTermin(datei, jetzt) {
   }
   return aktuell;
 }
+/**
+ * Verschluesselte Kopie ausser Haus (operations/scripts/sicherung-ausser-haus.mjs, taeglich 23 Uhr).
+ * Ohne Stand ist sie hier nicht eingerichtet: anderer Rechner, kein To-do. Ein Mac, der eine Nacht
+ * aus war, ist kein Befund, deshalb erst ab 48 Std. `alt`.
+ */
+export function ausserHausStand(datei, jetzt) {
+  if (!fs.existsSync(datei)) return null;
+  const ergebnis = stand(datei, 'letzterErfolg', jetzt, 48);
+  const fehler = sicherungsFehler(datei, ergebnis.letzterErfolg);
+  return fehler ? { ...ergebnis, letzterFehler: fehler } : ergebnis;
+}
 export function betriebszustand(dir, { jetzt = new Date() } = {}) {
   const lokal = stand(path.join(dir, 'fehlermeldungen-abgleich.json'), 'aktualisiertAm', jetzt, 48);
   return {
