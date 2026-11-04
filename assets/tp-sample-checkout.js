@@ -402,7 +402,7 @@
       // Beschriftungen an das Sortiment anpassen: "Farben" oder "Dekore".
       optionName = core.getOptionName(product);
       return ladeMuster(sectionHtml).then(function (muster) {
-        colors = core.assignSampleVariantsWithBasis(colors, muster[0], muster[1], optionName);
+        colors = core.applySperrliste(core.assignSampleVariantsWithBasis(colors, muster[0], muster[1], optionName), product.handle);
         root.querySelectorAll('[data-sample-term]').forEach(function (el) {
           el.textContent = core.getOptionTerm(product, el.getAttribute('data-sample-term'));
         });

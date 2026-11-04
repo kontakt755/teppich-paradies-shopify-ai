@@ -642,6 +642,36 @@ function ausSpeicher(quellen, jetzt) {
   }];
 }
 
+/** Der Monatslauf versucht es am 1., 2. und 3.; ab 35 Tagen ohne Erfolg ist er ausgefallen. */
+export const GOOGLE_BEWERTUNG_STUMM_TAGE = 35;
+const GOOGLE_PROFIL = 'https://maps.google.com/?cid=787042219843486388';
+
+/**
+ * Google-Bewertung im Shop (scripts/google-bewertung.mjs). Kommt mit der Shop-Wache
+ * (quellen.shopwache.googleBewertung). Der Shop zeigt dann weiter den letzten Wert: nichts ist
+ * falsch beschriftet, aber die Zahl altert, und in der Inhaber-Sicht steht nur Rotes.
+ * Rot ist darum, was allein nicht mehr heilt: ein auffaelliger Wert (ein Mensch muss nachsehen)
+ * und ein Monat ohne Erfolg (genau so war die Zahl von Hand veraltet). Ein einzelner gescheiterter
+ * Abruf bleibt Bernstein, der Lauf versucht es am 1., 2. und 3. selbst noch einmal.
+ */
+function ausGoogleBewertung(quellen, jetzt) {
+  const d = quellen.shopwache?.googleBewertung;
+  if (!d?.geprueftAm) return [];
+  const basis = { id: 'google-bewertung', art: 'google-bewertung', bereich: 'website' };
+  const tage = tageSeit(d.letzterErfolg || d.geprueftAm, jetzt);
+  const stumm = tage !== null && tage >= GOOGLE_BEWERTUNG_STUMM_TAGE;
+  if (d.ampel === 'gelb') {
+    return [{ ...basis, ton: 'crit', alterTage: tageSeit(d.geprueftAm, jetzt), titel: 'Google-Bewertung: Wert auffällig, nicht übernommen', kontext: `${d.meldung} · Der Shop zeigt weiter den alten Wert. Bei Google nachsehen; stimmt es, Claude Bescheid geben.`, knopf: { text: 'Bei Google ansehen', href: GOOGLE_PROFIL } }];
+  }
+  if (d.ampel === 'rot') {
+    return [{ ...basis, ton: stumm ? 'crit' : 'warn', alterTage: tageSeit(d.geprueftAm, jetzt), titel: 'Google-Bewertung: Abruf gescheitert', kontext: `${d.meldung} · Der Shop zeigt weiter den alten Wert. Der Lauf versucht es am 1., 2. und 3. des Monats, sonst Claude Bescheid geben.` }];
+  }
+  if (stumm) {
+    return [{ ...basis, ton: 'crit', alterTage: tage, titel: 'Google-Bewertung: Monatslauf meldet sich nicht', kontext: `letzter Erfolg vor ${tage} Tagen – er läuft sonst am Monatsanfang. Claude Bescheid geben.` }];
+  }
+  return [];
+}
+
 /** Die Auslauf-Pruefung laeuft montags; ab 9 Tagen ohne neuen Stand ist sie ausgefallen. */
 export const AUSLAUF_STUMM_TAGE = 9;
 
@@ -651,6 +681,11 @@ export const AUSLAUF_STUMM_TAGE = 9;
  * Lieferanten und eine Pruefung, die sich nicht mehr meldet - archiviert wird nach Gegenprobe.
  * Farben ohne Handmuster ("ohne-muster", A fuehrt sie "nur in Format") sind kein Auslauf:
  * eigenes To-do, das Muster wird gesperrt, die Ware bleibt.
+ * Lieferant I, lange nichts verfuegbar ("nicht-verfuegbar"): ebenfalls eigenes gelbes To-do,
+ * denn das ist kein Auslaufbeleg und darf nicht nach "archivieren" klingen.
+ * Befund, Ausfall und stumme Pruefung sind je ein eigenes To-do und verdecken sich nicht:
+ * nach einem Ausfall beginnen Fristen neu, das darf kein Befund eines anderen Lieferanten
+ * unsichtbar machen.
  */
 function ausAuslauf(quellen, jetzt) {
   const d = quellen.shopwache?.auslauf;
@@ -671,11 +706,25 @@ function ausAuslauf(quellen, jetzt) {
       ].filter(Boolean).join(' · '),
     };
   })()] : [];
-  const befunde = (d.befunde || []).filter(b => b.ergebnis !== 'ohne-muster');
+  const ohneBestand = (d.befunde || []).filter(b => b.ergebnis === 'nicht-verfuegbar');
+  if (ohneBestand.length) {
+    const handles = [...new Set(ohneBestand.flatMap(b => b.handles || []))];
+    const n = ohneBestand.length;
+    muster.push({
+      ...basis, id: 'auslauf-nicht-verfuegbar', ton: 'warn', knopf: lexikon(handles),
+      titel: `${n} Artikel seit mindestens 30 Tagen in keiner Größe verfügbar`,
+      kontext: [
+        handles.slice(0, 3).join(', '), handles.length > 3 ? `+${handles.length - 3} weitere` : null,
+        'kein Auslaufbeleg, beim Lieferanten nachfragen',
+      ].filter(Boolean).join(' · '),
+    });
+  }
+  const befunde = (d.befunde || []).filter(b => !['ohne-muster', 'nicht-verfuegbar'].includes(b.ergebnis));
   const weg = befunde.filter(b => b.ergebnis === 'fehlt');
+  const todos = [...muster];
   if (befunde.length) {
     const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
-    return [...muster, {
+    todos.push({
       ...basis, ton: weg.length ? 'crit' : 'warn',
       knopf: lexikon(handles),
       titel: weg.length
@@ -683,21 +732,21 @@ function ausAuslauf(quellen, jetzt) {
         : `Auslauf-Prüfung: ${befunde.length} ${befunde.length === 1 ? 'Seite' : 'Seiten'} auffällig`,
       kontext: [
         handles.slice(0, 3).join(', '), handles.length > 3 ? `+${handles.length - 3} weitere` : null,
-        'gegenprüfen, dann archivieren (AGENTS.md)',
+        'gegenprüfen, dann archivieren; fällt nur eine Variante weg, Freigabe holen (AGENTS.md)',
       ].filter(Boolean).join(' · '),
-    }];
+    });
   }
   if (d.ausfaelle?.length) {
-    return [...muster, {
-      ...basis, ton: 'warn',
+    todos.push({
+      ...basis, id: 'auslauf-ausfall', ton: 'warn',
       titel: `Auslauf-Prüfung: Lieferant ${d.ausfaelle.map(a => a.lieferant).join(', ')} nicht prüfbar`,
-      kontext: d.ausfaelle[0].grund,
-    }];
+      kontext: d.ausfaelle.map(a => `${a.lieferant}: ${a.grund}`).join(' · '),
+    });
   }
   if (tage !== null && tage >= AUSLAUF_STUMM_TAGE) {
-    return [...muster, { ...basis, ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` }];
+    todos.push({ ...basis, id: 'auslauf-stumm', ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` });
   }
-  return muster;
+  return todos;
 }
 
 /**
@@ -868,6 +917,7 @@ function alleTodos(quellen, opt) {
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
     ...ausAuslauf(quellen, k.jetzt),
+    ...ausGoogleBewertung(quellen, k.jetzt),
     ...ausNeuheiten(quellen, k.jetzt),
     ...ausAusschreibungen(quellen, k.jetzt),
     ...ausAkquise(quellen),

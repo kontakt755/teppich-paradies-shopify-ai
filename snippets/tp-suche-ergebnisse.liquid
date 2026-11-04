@@ -91,9 +91,13 @@
 
   # Kategorien: erst die von Shopify gefundenen Kollektionen, dann die
   # Kollektionen der Treffer. Handles als Liste, damit nichts doppelt steht.
+  # Leere Kollektionen entfallen (Angebote ausserhalb einer Aktion, Nr. 27).
   assign tp_se_k_aus = '|all|frontpage|'
   assign tp_se_k_handles = '|'
   for tp_se_k in predictive_search.resources.collections
+    if tp_se_k.all_products_count == 0
+      continue
+    endif
     assign tp_se_kkey = '|' | append: tp_se_k.handle | append: '|'
     if tp_se_k_aus contains tp_se_kkey or tp_se_k_handles contains tp_se_kkey
       continue

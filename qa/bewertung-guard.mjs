@@ -52,14 +52,61 @@ export function befundeIn(raw, datei) {
   return treffer;
 }
 
-/** Prueft alle Templates eines Verzeichnisses. */
-export function pruefe(wurzel) {
-  const ordner = path.join(wurzel, 'templates');
-  if (!fs.existsSync(ordner)) return { geprueft: 0, befunde: [] };
-  const dateien = fs.readdirSync(ordner).filter((n) => n.endsWith('.json'));
+/**
+ * Seit 2026-11 traegt der Monatslauf (scripts/google-bewertung.mjs) Note und Anzahl
+ * ins Shop-Metafeld ein. Wer nur die Theme-Einstellung liest, zeigt still den alten
+ * Stand - genau die Drift, gegen die dieser Guard steht.
+ */
+export const METAFELD = 'shop.metafields.custom.google_bewertung';
+const LIEST_EINSTELLUNG = /settings\.tp_google_(wert|anzahl)\b/;
+
+/**
+ * Note und Bewertungen duerfen nicht ohne den Hinweis nach § 5b Abs. 3 UWG stehen. Bis
+ * 2026-11-04 fehlte er im Startseiten-Hero, im Vertrauensstreifen, in der Teppichboden-
+ * Kampagne und im Widget der Serviceseiten, ohne dass es jemandem auffiel.
+ */
+export const HINWEIS = "render 'tp-bewertungshinweis'";
+const ZEIGT_WIDGET = /elfsight-app-/;
+
+/**
+ * Wir pruefen nicht, wer bewertet. Aussagen, die das Gegenteil behaupten, stehen nicht im Shop
+ * (UWG Anhang Nr. 23b; Inhaber 2026-11-04). Bewusst eng, damit eigene Projektbilder frei bleiben.
+ */
+export const ECHTHEITSAUSSAGE = /Bewertet von echten Kunden|echte Rezensionen|echte Erfahrungen|verifizierte[rn]? (Kunde|Bewertung)/i;
+
+export function befundeImCode(inhalt, datei) {
   const befunde = [];
+  const liestEinstellung = LIEST_EINSTELLUNG.test(inhalt);
+  const liestMetafeld = inhalt.includes(METAFELD);
+  if (liestEinstellung && !liestMetafeld) {
+    befunde.push({ datei, typ: 'code', feld: 'settings.tp_google_*', wert: `ohne ${METAFELD}` });
+  }
+  if ((liestEinstellung || liestMetafeld || ZEIGT_WIDGET.test(inhalt)) && !inhalt.includes(HINWEIS)) {
+    befunde.push({ datei, typ: 'hinweis', feld: 'tp-bewertungshinweis', wert: 'fehlt' });
+  }
+  const aussage = inhalt.match(ECHTHEITSAUSSAGE);
+  if (aussage) befunde.push({ datei, typ: 'echtheit', feld: 'Text', wert: aussage[0] });
+  return befunde;
+}
+
+/** Prueft alle Templates eines Verzeichnisses und jeden Liquid-Code, der die Einstellung liest. */
+export function pruefe(wurzel) {
+  const code = [];
+  for (const teil of ['sections', 'blocks', 'snippets', 'layout']) {
+    const dir = path.join(wurzel, teil);
+    if (!fs.existsSync(dir)) continue;
+    for (const name of fs.readdirSync(dir).filter((n) => n.endsWith('.liquid'))) {
+      code.push(...befundeImCode(fs.readFileSync(path.join(dir, name), 'utf8'), `${teil}/${name}`));
+    }
+  }
+  const ordner = path.join(wurzel, 'templates');
+  if (!fs.existsSync(ordner)) return { geprueft: 0, befunde: code };
+  const dateien = fs.readdirSync(ordner).filter((n) => n.endsWith('.json'));
+  const befunde = [...code];
   for (const name of dateien) {
     const raw = fs.readFileSync(path.join(ordner, name), 'utf8');
+    const aussage = raw.match(ECHTHEITSAUSSAGE);
+    if (aussage) befunde.push({ datei: `templates/${name}`, typ: 'echtheit', feld: 'Text', wert: aussage[0] });
     try {
       befunde.push(...befundeIn(raw, `templates/${name}`));
     } catch {

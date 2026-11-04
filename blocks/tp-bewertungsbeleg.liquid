@@ -1,7 +1,11 @@
 {% doc %}
-  Bewertungsbeleg unter den Kauf-Buttons: Sternebewertung + Link zu
+  Bewertungsbeleg oben in der Produktspalte: Sternebewertung + Link zu
   Google-Bewertungen. Ergaenzt tp-vertrauen.liquid (das nur Fliesstext zeigt)
-  um eine konkrete, glaubwuerdige Zahl.
+  um eine konkrete, glaubwuerdige Zahl. Seit 2026-11-04 steht er in allen
+  Produktvorlagen ab 750 px direkt unter Titel und Preis, am Telefon direkt
+  unter der Galerie (Inhaber): Dort stehen nur Titel, Preis und Aktionshinweis
+  vor den Bildern (snippets/product-information-content.liquid). Vorher lag er
+  unter dem Kaufbereich, bei der Rollenware erst unter den technischen Daten.
 
   Die Bewertungsanzahl war lange gesperrt: "1.200+" stand hier als Platzhalter-
   Default, wurde nie durch eine echte Zahl ersetzt und am 2026-09-05 als falsche
@@ -19,19 +23,21 @@
 
 {%- liquid
   assign tp_bb_id = block.id | replace: '_', '' | downcase
-  # Eine Quelle: steht am Block selbst nichts, gilt die Theme-Einstellung
+  # Eine Quelle: steht am Block selbst nichts, gilt das Shop-Metafeld (monatlich:
+  # scripts/google-bewertung.mjs), ohne Metafeld die Theme-Einstellung
   # (Theme-Einstellungen > TP Google-Bewertung). Bis 2026-09-16 wurde der Wert
   # in acht Produktvorlagen einzeln gepflegt und war auseinandergelaufen -
   # sieben nannten 4,9, product.einfassung 4.8. Das Feld am Block bleibt als
   # Ausnahme moeglich, der Normalfall ist leer.
-  assign tp_bb_rating = block.settings.rating | strip | default: settings.tp_google_wert
-  assign tp_bb_count = block.settings.review_count | strip | default: settings.tp_google_anzahl
+  assign tp_gb = shop.metafields.custom.google_bewertung.value
+  assign tp_bb_rating = block.settings.rating | strip | default: tp_gb.wert | default: settings.tp_google_wert
+  assign tp_bb_count = block.settings.review_count | strip | default: tp_gb.anzahl | default: settings.tp_google_anzahl
   assign tp_bb_link = block.settings.review_link | default: settings.tp_google_link
 -%}
 
 {%- if tp_bb_rating != blank or tp_bb_link != blank -%}
 <div class="tp-bewertungsbeleg-{{ tp_bb_id }}" {{ block.shopify_attributes }}>
-  {%- comment -%} D5: klar als Bewertung des Shops, nicht des Produkts {%- endcomment -%}
+  {%- comment -%} D5: klar als Bewertung des Shops, nicht des Produkts. Bleibt Pflicht, weil der Block nahe an Preis und Bildern steht {%- endcomment -%}
   <span class="tp-bewertungsbeleg__label">Shopbewertung bei Google</span>
   {%- if tp_bb_rating != blank -%}
     <span class="tp-bewertungsbeleg__stars-{{ tp_bb_id }}" aria-label="{{ tp_bb_rating }} von 5 Sternen">
@@ -49,8 +55,8 @@
   {%- if tp_bb_link != blank -%}
     <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">{% if tp_bb_rating != blank %}Auf Google lesen{% else %}Kundenbewertungen auf Google lesen{% endif %}</a>
   {%- endif -%}
-  {%- comment -%} § 5b Abs. 3 UWG, Wortlaut im Snippet {%- endcomment -%}
-  <div class="tp-bewertungsbeleg__hinweis">{%- render 'tp-bewertungshinweis' -%}</div>
+  {%- comment -%} § 5b Abs. 3 UWG, Wortlaut und Grenzen im Snippet. Kurz, weil Google direkt daneben steht {%- endcomment -%}
+  <div class="tp-bewertungsbeleg__hinweis">{%- render 'tp-bewertungshinweis', kurz: true -%}</div>
 </div>
 {%- endif -%}
 
@@ -59,7 +65,7 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 2px 6px;
     margin-top: 8px;
     font-size: var(--tp-fs-sm);
     color: var(--color-foreground);

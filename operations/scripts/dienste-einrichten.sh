@@ -12,6 +12,11 @@
 #   bash operations/scripts/dienste-einrichten.sh --nur-sicherung
 #   bash operations/scripts/dienste-einrichten.sh --nur-nachziehen
 #   bash operations/scripts/dienste-einrichten.sh --routinen
+#   bash operations/scripts/dienste-einrichten.sh --postfach-entwuerfe
+#
+# --postfach-entwuerfe richtet net.teppich-paradies.postfach-entwuerfe einzeln ein (Antwort-
+# Entwuerfe in Gmail, nie senden). Gehoert bewusst nicht zu --routinen: Ein erneutes --routinen
+# soll diesen Lauf nicht nebenbei einschalten. Bremse: Datei routinen/postfach-entwuerfe/aus.
 #
 # --nur-nachziehen richtet net.teppich-paradies.nachziehen ein: zieht den Dienst-Checkout
 # alle 5 Minuten getestet auf main nach (operations/scripts/betrieb-nachziehen.mjs).
@@ -47,8 +52,8 @@ SYNC_PLIST="${LAUNCH_AGENTS_DIR}/${SYNC_LABEL}.plist"
 SICHERUNG_LABEL="net.teppich-paradies.sicherung"
 NACHZIEHEN_LABEL="net.teppich-paradies.nachziehen"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe]\n' >&2
   exit 1
 fi
 
@@ -189,6 +194,39 @@ routinen_einrichten() {
   hinweis "Abschalten: launchctl bootout gui/$(id -u)/<label>, dann ~/Library/LaunchAgents/<label>.plist loeschen."
 }
 
+postfach_entwuerfe_einrichten() {
+  local label="net.teppich-paradies.postfach-entwuerfe"
+  local ordner="${HOME}/teppich-paradies-analyse/routinen"
+  schritt "Postfach: Einordnung und Antwort-Entwuerfe (${label})"
+  if [[ "$(git -C "${REPO}" symbolic-ref --quiet --short HEAD 2>/dev/null)" != "dashboard-betrieb" ]]; then
+    fehler "Nur aus dem Dienst-Checkout (Zweig dashboard-betrieb) einrichten, nicht aus ${REPO}."
+    return 1
+  fi
+  if [[ ! -f "${ordner}/auftraege/postfach-entwuerfe.md" ]]; then
+    fehler "Auftragstext fehlt: ${ordner}/auftraege/postfach-entwuerfe.md"
+    return 1
+  fi
+  if [[ ! -f "${ordner}/postfach-entwuerfe/labels.json" ]]; then
+    fehler "Label-Zuordnung fehlt: ${ordner}/postfach-entwuerfe/labels.json"
+    return 1
+  fi
+  chmod 700 "${ordner}/postfach-entwuerfe"
+  if ! (cd "${REPO}" && env -i HOME="${HOME}" PATH="$(dirname "${NODE_PFAD}"):/usr/bin:/bin:/usr/sbin:/sbin" TZ=Europe/Berlin \
+      TP_PRIVAT_DIR="${HOME}/teppich-paradies-analyse" TP_DIENST_DIR="${REPO}" \
+      "${NODE_PFAD}" operations/scripts/claude-lauf.mjs postfach-entwuerfe --werkzeugprobe); then
+    fehler "Werkzeugprobe postfach-entwuerfe fehlgeschlagen - Dienst nicht geladen."
+    return 1
+  fi
+  vorlage_einrichten "${label}" || return 1
+  ok "Eingerichtet und geladen: stuendlich Mo-Sa 7-19 Uhr, Claude nur bei neuen Mails."
+  hinweis "Bremse: touch ${ordner}/postfach-entwuerfe/aus  (loeschen schaltet wieder ein)"
+  hinweis "Auswertung: npm run -s entwuerfe -- auswerten"
+}
+
+if [[ "${1:-}" == "--postfach-entwuerfe" ]]; then
+  postfach_entwuerfe_einrichten
+  exit 0
+fi
 if [[ "${1:-}" == "--nur-sicherung" ]]; then
   sicherung_einrichten
   exit 0

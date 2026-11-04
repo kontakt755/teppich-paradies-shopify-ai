@@ -19,9 +19,39 @@ Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phase 6). Stand 2026-10-08.
   (`sections/header.liquid`: fremde Google-Bewertungen als eigene auszuzeichnen verstößt
   gegen die Google-Richtlinien).
 - **Google-Unternehmensbewertung:** `blocks/tp-bewertungsbeleg.liquid` zeigt Note und Anzahl
-  aus der Theme-Einstellung „TP Google-Bewertung“ mit Link zum Google-Profil.
+  aus dem Shop-Metafeld `custom.google_bewertung` (seit 2026-11 monatlich per
+  `scripts/google-bewertung.mjs`, Ablauf in `operations/README.md`), ohne Metafeld aus der
+  Theme-Einstellung „TP Google-Bewertung“, mit Link zum Google-Profil.
   `npm run bewertung:guard` verhindert abweichende Werte in Vorlagen. Das bleibt
-  unverändert und ist **keine** Produktbewertung.
+  unverändert und ist **keine** Produktbewertung. Seit 2026-11-04 steht der Block in allen
+  Produktvorlagen oben in der Produktspalte (Inhaber): ab 750 px direkt unter Titel und Preis, am
+  Telefon direkt unter der Galerie, weil dort nur Titel, Preis und Aktionshinweis vor den Bildern
+  stehen (`snippets/product-information-content.liquid`). Direkt zum Preis gehörende Angaben
+  (Aktionshinweis, Kurzinfo der Leisten) stehen davor.
+- **Beschriftung „Shopbewertung bei Google“** bleibt Pflicht, gerade an dieser Stelle: Das LG
+  Frankfurt (2-06 O 133/26, laut Fachbeitrag Plutte) beanstandete Sterne einer Gesamtbewertung
+  direkt unter Produktbildern, weil Kunden nicht erkennen konnten, was bewertet wurde. Der Fall lag
+  anders (Marktplatz, keine Kennzeichnung genannt), entscheidend bleibt der Gesamteindruck.
+- **Hinweis nach § 5b Abs. 3 UWG** (`snippets/tp-bewertungshinweis.liquid`): Auf Produktseiten
+  entfällt seit 2026-11-04 der Satz zur Quelle, weil „bei Google“ direkt daneben steht. Der Satz,
+  dass nicht geprüft wird, bleibt sichtbar beim Block. Nicht einklappen und nicht auf eine andere
+  Seite verlegen: Das LG Frankfurt (3-10 O 103/24) ließ einen aufklappbaren Hinweis unter unklarer
+  Bezeichnung nicht genügen, das OLG Frankfurt (6 U 305/25) wies die Berufung zurück. Auch eine
+  reine Durchschnittsnote zählt als Bewertung (LG Karlsruhe 14 O 41/25 KfH, Volltext gelesen, dort
+  eigene Produktsterne). Die Angabe der Plattform allein genügt laut Fachbeitrag Plutte zu OLG
+  Koblenz 9 U 1015/25 ebenfalls nicht. Stand: Frankfurt und Koblenz nur aus Fachbeiträgen, keine
+  anwaltliche Prüfung.
+- **Jede Stelle mit Note oder Bewertungen trägt den Hinweis** (Inhaber 2026-11-04): direkt an der
+  Note und in Kurzform im Startseiten-Hero, im Vertrauensstreifen (Serviceseiten, Kontakt) und in der
+  Kampagne (Kategorie Teppichboden, Markenkategorien). Beim Bewertungs-Widget steht er mit beiden
+  Sätzen vor den Bewertungen, weil oben im Widget die Note steht; auf den Serviceseiten erst, wenn das
+  Widget geladen ist. `npm run bewertung:guard` meldet Liquid, das die Note liest oder das Widget
+  einbindet und den Hinweis nicht rendert.
+- **Keine Aussage, die eine Prüfung behauptet** (Inhaber 2026-11-04, UWG Anhang Nr. 23b, keine
+  anwaltliche Prüfung): Das Abzeichen „Verifizierter Kunde“ des Widgets ist im Theme ausgeblendet
+  (`snippets/tp-bewertungshinweis.liquid`), Texte wie „echte Kunden“, „echte Rezensionen“ und „echte
+  Erfahrungen“ sind entfernt. Der `bewertung:guard` meldet solche Aussagen. Die Überschrift im Widget
+  kommt aus der Einstellung beim Anbieter und steht nicht im Repository.
 
 ## 2. Anforderungen (aus dem Auftrag)
 

@@ -1,0 +1,33 @@
+{%- doc -%}
+  Links auf die Format-Seiten (sections/tp-format-seite.liquid): gefragte Masse, die
+  es nicht als fertige Standardgroesse gibt. Nur Seiten, die im Shop veroeffentlicht
+  sind; ohne eine einzige Seite entfaellt die Zeile.
+
+  @param {string} [text] - Text vor den Links, Standard "Häufige Maße:"
+{%- enddoc -%}
+{%- liquid
+  assign tp_fl_handles = 'teppich-200x300,teppich-200x200,teppich-300x300,teppich-200x250,teppich-250x300,teppich-250x350' | split: ','
+  assign tp_fl_links = ''
+  for tp_fl_handle in tp_fl_handles
+    assign tp_fl_seite = pages[tp_fl_handle]
+    if tp_fl_seite == blank or tp_fl_handle == page.handle
+      continue
+    endif
+    assign tp_fl_mass = tp_fl_handle | remove: 'teppich-' | replace: 'x', ' × '
+    capture tp_fl_link
+      echo '<a href="' | append: tp_fl_seite.url | append: '">' | append: tp_fl_mass | append: '</a>'
+    endcapture
+    assign tp_fl_links = tp_fl_links | append: tp_fl_link
+  endfor
+-%}
+{%- if tp_fl_links != blank -%}
+  <p class="tp-format-links">
+    <span>{{ text | default: 'Häufige Maße:' }}</span>
+    {{ tp_fl_links }}
+  </p>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-format-links { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 12px 0 0; font-size: var(--tp-fs-sm); color: #595959; }
+  .tp-format-links a { color: var(--tp-ink); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+{% endstylesheet %}

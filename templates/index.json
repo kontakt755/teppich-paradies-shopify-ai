@@ -250,7 +250,7 @@
         "t2": {
           "type": "aussage",
           "settings": {
-            "text": "Bis zu 2 Muster kostenlos"
+            "text": "Bis zu zwei Muster je Bestellung kostenlos"
           }
         },
         "t3": {
@@ -284,7 +284,7 @@
         "online_eyebrow": "Online-Shop · deutschlandweit",
         "online_titel": "Boden aussuchen, Maß eingeben, liefern lassen",
         "online_text": "Rollenware im Wunschmaß zugeschnitten, Paketware nach Fläche berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. In Deutschland ab [versandfrei] € Bestellwert versandkostenfrei.",
-        "online_punkte": "Rollenware im Wunschmaß, Bis zu 2 Muster kostenlos, Versand deutschlandweit",
+        "online_punkte": "Rollenware im Wunschmaß, Bis zu zwei Muster je Bestellung kostenlos, Versand deutschlandweit",
         "online_cta": "Zum Sortiment",
         "service_eyebrow": "Verlegeservice · bis 50 km um Oranienburg",
         "service_titel": "Aufmaß, Lieferung, Untergrund, Verlegung, Leisten",
@@ -413,8 +413,8 @@
     "tp_start_bewertungen": {
       "type": "tp-start-bewertungen",
       "settings": {
-        "heading": "Das sagen unsere Kunden",
-        "text": "Echte Rezensionen aus dem Google-Unternehmensprofil.",
+        "heading": "Das steht bei Google über uns",
+        "text": "Rezensionen aus unserem Google-Unternehmensprofil.",
         "link_label": "Alle Bewertungen bei Google",
         "link": "https://maps.google.com/?cid=787042219843486388",
         "elfsight_id": "e64233ac-362d-4d8f-ae26-3ec4cc88789e"
@@ -488,7 +488,7 @@
           "type": "frage",
           "settings": {
             "frage": "Kann ich vorher ein Muster bekommen?",
-            "antwort": "<p>Bis zu zwei Farben eines Produkts schicken wir kostenlos zu Ihnen. Die Muster wählen Sie direkt auf der Produktseite oder über „Muster bestellen“.</p>"
+            "antwort": "<p>Bis zu zwei Muster je Bestellung kostenlos. Die Muster wählen Sie direkt auf der Produktseite oder über „Muster bestellen“.</p>"
           }
         },
         "q3": {
@@ -576,7 +576,7 @@
           "type": "schritt",
           "settings": {
             "titel": "Zu Hause vergleichen",
-            "text": "Bis zu zwei Farben kommen zu Ihnen – in Ruhe im eigenen Raum vergleichen."
+            "text": "Bis zu zwei Muster je Bestellung kostenlos – in Ruhe im eigenen Raum vergleichen."
           }
         }
       },
@@ -588,10 +588,10 @@
       "settings": {
         "eyebrow": "Kostenloser Musterservice",
         "titel": "Farbe zu Hause sehen, dann entscheiden",
-        "text": "Bildschirme zeigen Farben unterschiedlich. Bestellen Sie bis zu zwei Muster kostenlos nach Hause und vergleichen Sie sie in Ihrem eigenen Licht.",
+        "text": "Bildschirme zeigen Farben unterschiedlich. Bis zu zwei Muster je Bestellung kostenlos: nach Hause bestellen und in Ihrem eigenen Licht vergleichen.",
         "cta_text": "Muster bestellen",
         "cta_link": "/pages/muster",
-        "hinweis": "Bis zu 2 Muster kostenlos · Versand innerhalb Deutschlands"
+        "hinweis": "Bis zu zwei Muster je Bestellung kostenlos · Versand innerhalb Deutschlands"
       },
       "disabled": true
     },
@@ -1445,6 +1445,217 @@
         "tp_nur_angebote": true
       }
     },
+    "start_restrollen": {
+      "type": "product-list",
+      "blocks": {
+        "static-header": {
+          "type": "_product-list-content",
+          "name": "t:names.header",
+          "static": true,
+          "settings": {
+            "content_direction": "row",
+            "vertical_on_mobile": false,
+            "horizontal_alignment": "space-between",
+            "vertical_alignment": "flex-end",
+            "align_baseline": true,
+            "horizontal_alignment_flex_direction_column": "flex-start",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 12,
+            "width": "fill",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "custom_height": 100,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "background_media": "none",
+            "video_position": "cover",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "product_list_text_YFtzcL": {
+              "type": "_product-list-text",
+              "name": "t:names.collection_title",
+              "settings": {
+                "text": "<h3>Restrollen, solange der Vorrat reicht</h3>",
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "h3",
+                "font": "var(--font-body--family)",
+                "font_size": "",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_list_button_MWeP9V": {
+              "type": "_product-list-button",
+              "name": "t:names.product_list_button",
+              "settings": {
+                "label": "Alle Restrollen ansehen",
+                "open_in_new_tab": false,
+                "style_class": "link",
+                "width": "fit-content",
+                "custom_width": 100,
+                "width_mobile": "fit-content",
+                "custom_width_mobile": 100
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "product_list_text_YFtzcL",
+            "product_list_button_MWeP9V"
+          ]
+        },
+        "static-product-card": {
+          "type": "_product-card",
+          "name": "t:names.product_card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "product_card_gallery_677WP3": {
+              "type": "_product-card-gallery",
+              "name": "t:names.product_card_media",
+              "settings": {
+                "image_ratio": "square",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_YXxMTj": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_JQzVV4": {
+              "type": "price",
+              "name": "t:names.product_price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_specs_home_teppich": {
+              "type": "tp-card-specs",
+              "name": "TP Card-Merkmale",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_aktion_home_rest": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "product_card_gallery_677WP3",
+            "product_title_YXxMTj",
+            "price_JQzVV4",
+            "tp_card_aktion_home_rest",
+            "tp_card_specs_home_teppich"
+          ]
+        }
+      },
+      "name": "Restrollen",
+      "settings": {
+        "collection": "reste-sonderposten",
+        "layout_type": "carousel",
+        "carousel_on_mobile": true,
+        "max_products": 8,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "60cqw",
+        "columns_gap": 8,
+        "rows_gap": 24,
+        "icons_style": "arrow",
+        "icons_shape": "none",
+        "section_width": "page-width",
+        "horizontal_alignment": "flex-start",
+        "gap": 28,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 48,
+        "padding-block-end": 48,
+        "tp_leer_ausblenden": true,
+        "tp_je_linie_eins": true,
+        "tp_alle_dekore": true,
+        "tp_nur_angebote": false,
+        "tp_nur_vorlage": "rolle"
+      }
+    },
     "tp_angebote_tabs": {
       "type": "tp-start-tabs",
       "settings": {
@@ -1719,7 +1930,7 @@
             "bild_alt": "Teppichmuster in mehreren Farben neben einem Maßband",
             "fokus": "object-position: 50% 50%",
             "titel": "Muster bestellen",
-            "text": "<p>Bis zu zwei Farben eines Produkts kostenlos nach Hause bestellen und im eigenen Licht vergleichen.</p>",
+            "text": "<p>Bis zu zwei Muster je Bestellung kostenlos nach Hause bestellen und im eigenen Licht vergleichen.</p>",
             "link_label": "Muster bestellen",
             "link": "/pages/muster"
           }
@@ -1808,6 +2019,7 @@
     "tp_start_trust",
     "tp_start_kategorien",
     "tp_boden_finder",
+    "start_restrollen",
     "tp_angebote_tabs",
     "angebote_teppichboden",
     "angebote_fliesen",

@@ -286,10 +286,10 @@
           },
           "block_order": [
             "teppich_header_group",
+            "tp_bewertungsbeleg_teppich",
             "tp_teppich_vorteile_main",
             "divider_teppich_main",
             "variant_picker_teppich_main",
-            "tp_bewertungsbeleg_teppich",
             "buy_buttons_teppich_main",
             "tp_teppich_auf_einen_blick_main",
             "tp_teppich_description_style",

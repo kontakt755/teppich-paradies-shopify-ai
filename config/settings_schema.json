@@ -2617,20 +2617,20 @@
     "settings": [
       {
         "type": "paragraph",
-        "content": "Wert und Anzahl standen bis 2026-09-16 an zehn Stellen einzeln: in zwei Startseiten-Abschnitten und in acht Produktvorlagen. Sie waren bereits auseinandergelaufen – sieben Vorlagen nannten 4,9, eine 4.8. Hier eingetragen gilt der Wert überall, wo am Abschnitt selbst nichts steht."
+        "content": "Wert und Anzahl standen bis 2026-09-16 an zehn Stellen einzeln: in zwei Startseiten-Abschnitten und in acht Produktvorlagen. Sie waren bereits auseinandergelaufen – sieben Vorlagen nannten 4,9, eine 4.8. Note und Anzahl trägt seit 2026-11 einmal im Monat der Monatslauf ein (Shop-Metafeld custom.google_bewertung). Bewertung und Anzahl hier gelten nur, solange dieses Metafeld fehlt. Der Link gilt immer."
       },
       {
         "type": "text",
         "id": "tp_google_wert",
         "label": "Bewertung, z. B. 4,9",
-        "info": "Aus dem Google-Unternehmensprofil abschreiben, nicht schätzen oder runden.",
+        "info": "Rückfallwert, wenn das Metafeld fehlt. Aus dem Google-Unternehmensprofil abschreiben, nicht schätzen oder runden.",
         "default": "4,9"
       },
       {
         "type": "text",
         "id": "tp_google_anzahl",
         "label": "Anzahl, z. B. über 240",
-        "info": "Ohne Anzahl könnten 4,9 auch drei Bewertungen sein. Beim Ablesen des Werts mit aktualisieren.",
+        "info": "Rückfallwert, wenn das Metafeld fehlt. Ohne Anzahl könnten 4,9 auch drei Bewertungen sein.",
         "default": "über 240"
       },
       {
@@ -2644,7 +2644,7 @@
         "type": "text",
         "id": "tp_google_stand",
         "label": "Zuletzt abgelesen am",
-        "info": "Datum im Format 2026-09-16. Nur zur eigenen Erinnerung, erscheint nicht im Shop.",
+        "info": "Datum im Format 2026-09-16. Gilt nur für die Felder hier, erscheint nicht im Shop. Den Stand des Monatslaufs trägt das Metafeld selbst.",
         "default": "2026-09-12"
       }
     ]

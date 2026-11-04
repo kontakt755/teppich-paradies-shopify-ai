@@ -31,8 +31,8 @@ test('Produkttext beschreibt dieselbe Fuenferstaffel wie der Warenkorb, ohne alt
   const html = await engine.parseAndRender(leisten, {
     product: { type: 'Klickvinyl' }, block, collections: { bodenleisten: { url: '/collections/bodenleisten' } },
   });
-  assert.match(html, /Für je 5 Pakete Klick- oder Klebevinyl erhalten Sie 5 Sockelleisten/);
-  assert.match(html, /je 11,90&nbsp;€ Nachlass/);
+  assert.match(html, /Je 5 Pakete Klick- oder Klebevinyl: 5 weiße Sockelleisten/);
+  assert.match(html, /Je Leiste 11,90&nbsp;€ Nachlass/);
   // Inhaber 2026-10-09: bei Sockelleisten "Leisten", nie "Stangen" (Rundgang 2026-10-26, #63).
   assert.match(html, /Höchstens 100 rabattierte Leisten/);
   assert.doesNotMatch(html, /Stangen/);

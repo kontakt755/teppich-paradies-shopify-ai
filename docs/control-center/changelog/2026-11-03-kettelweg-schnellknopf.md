@@ -1,0 +1,6 @@
+## 2026-11-03 · Auch ohne Bestellmail wird gefragt, wer kettelt (#1858)
+
+- **Geaendert:** Entscheidung des Inhabers: „Als bestellt markieren“ ohne Bestellmail fragt bei gekettelten Direktversand jetzt ebenfalls, wer kettelt. Das gilt für den Einzelartikel, für „Alle als bestellt markieren…“ und für „Ware ist bestellt“ in der Kundenakte, auch über „Etwas anderes“. Die Wahl ist Pflicht und wird als Vermerk `ueber` gespeichert, je Artikel. So bleibt in der Akte kein neuer Fall auf „Nicht vermerkt, bitte klären“. Andere Ware fragt nichts Neues.
+- **Getestet:** Neue Tests in `einkauf-uebersicht` und `zeitleiste-api`; `npm run -s pruefen` grün; Klicktest gegen die Datenkopie mit dieser Bestellung bei 1440 und 390 px: alle Wege zeigen die Frage, ohne Wahl wird nichts gespeichert, der Vermerk `kunde` oder `kettler` kommt an; kein Überlauf, keine JS-Fehler. Einzel- und Sammeldialog wurden über einen Testknopf mit echten Positionsdaten geöffnet.
+- **Risiken/Annahmen:** Die Frage hängt am Weg `SUPPLIER_DIRECT` und an der Einfassung, nicht am Eintrag `ware.kettelnMoeglich`: Auch bei anderen Lieferanten muss belegt sein, wer kettelt. Die Schnittstelle selbst verlangt den Vermerk nicht; ohne ihn zeigt die Akte weiter „Nicht vermerkt, bitte klären“.
+- **Naechste Stufe:** keine.

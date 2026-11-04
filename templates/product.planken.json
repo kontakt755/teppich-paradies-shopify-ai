@@ -314,29 +314,15 @@
               "settings": {},
               "blocks": {}
             },
-            "tp_bewertungsbeleg_planken": {
-              "type": "tp-bewertungsbeleg",
-              "name": "TP Bewertungsbeleg",
-              "settings": {
-                "rating": "",
-                "review_count": "",
-                "review_link": ""
-              },
-              "blocks": {}
-            },
             "tp_muster_cta_1": {
               "type": "tp-muster-cta",
               "settings": {
                 "label": "Kostenloses Muster anfragen",
-                "hinweis": "Bis zu 2 Farben, versandkostenfrei"
+                "hinweis": "Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei"
               }
             },
             "tp_zubehoer_empfehlung": {
               "type": "tp-zubehoer-empfehlung",
-              "settings": {}
-            },
-            "tp_boden_raumansicht": {
-              "type": "tp-boden-raumansicht",
               "settings": {}
             },
             "tp_bildnachweis_mobil": {
@@ -362,11 +348,22 @@
               "settings": {
                 "aktiv": true
               }
+            },
+            "tp_bewertungsbeleg_planken": {
+              "type": "tp-bewertungsbeleg",
+              "name": "TP Bewertungsbeleg",
+              "settings": {
+                "rating": "",
+                "review_count": "",
+                "review_link": ""
+              },
+              "blocks": {}
             }
           },
           "block_order": [
             "tp_bildnachweis_mobil",
             "group_icgrde",
+            "tp_bewertungsbeleg_planken",
             "tp_vorteile_night1",
             "tp_aktion_hinweis",
             "tp_leisten_paket_hinweis",
@@ -376,9 +373,7 @@
             "tp_farbanzeige_tp1",
             "paket_auswahl_xLTafR",
             "tp_service_links_night1",
-            "tp_boden_raumansicht",
             "tp_muster_cta_1",
-            "tp_bewertungsbeleg_planken",
             "tp_verlegen_lassen",
             "tp_zubehoer_empfehlung",
             "buy_buttons_eYQEYi",

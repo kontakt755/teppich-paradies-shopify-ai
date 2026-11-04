@@ -15,6 +15,7 @@ import { suchbegriffe, lexikonTreffer } from '../lib/lexikon-suche.mjs';
 import { originalHandle } from '../lib/muster-etiketten.mjs';
 import { produktEntwurf } from '../lib/freie-etiketten.mjs';
 import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
+import { schliesseMehr } from '../kern/navigation.mjs';
 import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
 import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-etiketten-status.mjs';
 import { musterlagerBlock, musterlagerEingabe } from './lexikon-musterlager.mjs';
@@ -711,6 +712,8 @@ export function viewLexikon() {
 export function lexikonKlick(e) {
   if (musterEtikettenStatusKlick(e)) return true;
   if (musterDrucklisteKlick(e)) return true;
+  // Menuepunkt in der Seitenleiste: oeffnet nur den Dialog, die Seite bleibt, wo sie ist.
+  if (e.target.closest('[data-nav-eigene]')) { e.preventDefault(); schliesseMehr(); oeffneEtikettenDruck({ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }); return true; }
   if (e.target.closest('[data-lex-eigene]')) { oeffneEtikettenDruck({ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }); return true; }
   const etikettKnopf = e.target.closest('[data-lex-etikett-drucken],[data-lex-etikett-vormerken],[data-lex-etikett-aendern]');
   if (etikettKnopf) {

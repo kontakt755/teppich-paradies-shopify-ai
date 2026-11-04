@@ -299,16 +299,6 @@
               },
               "blocks": {}
             },
-            "tp_bewertungsbeleg_zubehoer": {
-              "type": "tp-bewertungsbeleg",
-              "name": "TP Bewertungsbeleg",
-              "settings": {
-                "rating": "",
-                "review_count": "",
-                "review_link": ""
-              },
-              "blocks": {}
-            },
             "text_aEtTtq": {
               "type": "text",
               "name": "Product description",
@@ -334,11 +324,22 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
+            },
+            "tp_bewertungsbeleg_zubehoer": {
+              "type": "tp-bewertungsbeleg",
+              "name": "TP Bewertungsbeleg",
+              "settings": {
+                "rating": "",
+                "review_count": "",
+                "review_link": ""
+              },
+              "blocks": {}
             }
           },
           "block_order": [
             "group_icgrde",
             "tp_aktion_hinweis",
+            "tp_bewertungsbeleg_zubehoer",
             "divider_VJhene",
             "tp_groessen_auswahl",
             "ai_gen_block_b888d9b_CJbJ8X",
@@ -348,7 +349,6 @@
             "tp_laengen_zuschnitt",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
-            "tp_bewertungsbeleg_zubehoer",
             "text_aEtTtq"
           ]
         }

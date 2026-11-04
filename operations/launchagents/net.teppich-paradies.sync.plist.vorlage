@@ -58,16 +58,15 @@
     <string>10</string>
   </dict>
 
-  <!-- Beim Anmelden starten und bei einem Absturz neu starten - nicht bei
-       normalem Exit-Code 0, den gibt es hier ohnehin nicht (der Dienst laeuft
-       endlos, bis SIGTERM/SIGINT kommt). -->
+  <!-- Beim Anmelden starten und nach jedem Ende neu starten, auch nach einem
+       sauberen Ende: SIGTERM endet mit Exit-Code 0. Ohne diesen Neustart blieb
+       der Dienst am 03.11.2026 stehen, die Bestelldaten veralteten und die
+       Musterautomatik bestellte nicht mehr. Bewusst anhalten nur per
+       `launchctl unload` oder `bootout`. -->
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
-  <dict>
-    <key>SuccessfulExit</key>
-    <false/>
-  </dict>
+  <true/>
 
   <!-- Mindestabstand zwischen Neustarts, falls der Dienst sofort wieder
        beendet (z. B. fehlender Zugang) - verhindert eine Neustart-Schleife

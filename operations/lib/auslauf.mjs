@@ -36,6 +36,9 @@ export const AUSFALL_GRENZE = 0.05;
 /** Lieferanten, die online pruefbar sind. B hat nur Kataloge und Datenlisten. */
 export const PRUEFBAR = ['A', 'C', 'D', 'E'];
 
+/** Lieferanten, deren Teil aus dem Verlauf der Bestandsdatei kommt, ohne Netz (operations/lib/auslauf-bestand.mjs). */
+export const AUS_BESTANDSDATEI = ['I'];
+
 /**
  * Pruefziele aus dem Lexikon-Export ($TP_PRIVAT_DIR/lexikon/produkte.json).
  * Archivierte Produkte zaehlen nicht - die sind schon weg.
@@ -49,7 +52,7 @@ export function pruefziele(produkte = []) {
     for (const v of p.varianten || []) {
       const e = v.einkauf || {};
       const lf = e.lieferant;
-      if (!lf) continue;
+      if (!lf || AUS_BESTANDSDATEI.includes(lf)) continue;
       if (lf === 'A') {
         if (!e.artikelnummer) continue;
         const z = ziele.A.get(e.artikelnummer) || { kennung: e.artikelnummer, handles: new Set() };
@@ -134,9 +137,9 @@ export function zusammenfassen(lieferant, eintraege = [], { grenze = AUSFALL_GRE
     : anteil(fehlt) > grenze ? `${fehlt} von ${geprueft} angeblich weg - eher eine Umstellung beim Lieferanten`
     : null;
   const befunde = ausfall ? [] : eintraege
-    .filter(e => ['fehlt', 'hinweis', 'verdacht', 'ohne-muster'].includes(e.ergebnis))
+    .filter(e => ['fehlt', 'hinweis', 'verdacht', 'ohne-muster', 'nicht-verfuegbar'].includes(e.ergebnis))
     .map(e => ({ lieferant, ergebnis: e.ergebnis, kennung: e.kennung ?? null, url: e.url ?? null, handles: e.handles || [], grund: e.grund || null }));
-  return { lieferant, geprueft, ok: zahl('ok'), fehlt, hinweis: zahl('hinweis'), verdacht: zahl('verdacht'), ohneMuster: zahl('ohne-muster'), fehler, ausfall, befunde };
+  return { lieferant, geprueft, ok: zahl('ok'), fehlt, hinweis: zahl('hinweis'), verdacht: zahl('verdacht'), ohneMuster: zahl('ohne-muster'), nichtVerfuegbar: zahl('nicht-verfuegbar'), fehler, ausfall, befunde };
 }
 
 /** Gesamtstand fuer status.json und das Control Center. */

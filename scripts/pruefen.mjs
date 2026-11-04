@@ -30,6 +30,7 @@ export const SCHRITTE = [
   { name: 'theme', npm: 'theme:guard' },
   { name: 'schrift', npm: 'schrift:guard' },
   { name: 'changelog', npm: 'changelog:guard' },
+  { name: 'bewertung', npm: 'bewertung:guard' },
   { name: 'themecheck', npm: 'themecheck:guard' },
   { name: 'secrets', npm: 'secret:scan' },
 ];

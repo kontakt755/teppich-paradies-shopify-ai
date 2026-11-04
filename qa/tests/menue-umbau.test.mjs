@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { umbauen, alsEingabe, idMenge, pruefen } from '../../scripts/menue-umbau.mjs';
+import { umbauen, alsEingabe, idMenge, menueAus, pruefen } from '../../scripts/menue-umbau.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const lesen = (p) => JSON.parse(readFileSync(root + p, 'utf8'));
@@ -100,3 +100,19 @@ test('Plan 2026-10-19: "Vorwerk & JAB nach Maß" wird zu zwei Punkten, alle IDs 
   const eingabe = alsEingabe(neu.items, { mitIds: true })[1].items.find((i) => i.id === vorwerk.id);
   assert.equal(eingabe.url, undefined, 'altes Ziel darf nicht mitgeschickt werden');
 });
+
+// Nr. 27 (03.11.2026): nur das Ziel von "Angebote & Reste" wechselt, ID und Unterpunkte bleiben.
+for (const [datei, ziel] of [['menue-reste-bis-black-week-2026-11', 'gid://shopify/Collection/705477607758'], ['menue-black-week-2026-11', 'gid://shopify/Collection/705490485582']]) {
+  test(`Plan ${datei}: nur der Hauptlink wechselt, keine ID geht verloren`, () => {
+    const stand = lesen('docs/weiterentwicklung/sicherung/2026-10-19-hauptmenue.json');
+    const neu = umbauen(stand, lesen(`domains/shopify/${datei}.json`));
+    assert.deepEqual(new Set(flach(neu.items).map((i) => i.id)), idMenge(menueAus(stand)));
+    const punkt = neu.items.find((i) => i.id === 'gid://shopify/MenuItem/887189668174');
+    assert.equal(punkt.resourceId, ziel);
+    assert.equal(punkt.type, 'COLLECTION');
+    assert.equal(punkt.url, undefined);
+    assert.ok(punkt.items.length >= 2, 'Unterpunkte bleiben');
+    const andere = (m) => JSON.stringify(menueAus(m).items.filter((i) => i.id !== punkt.id).map((i) => [i.id, i.resourceId ?? i.url]));
+    assert.equal(andere({ items: neu.items }), andere(stand));
+  });
+}

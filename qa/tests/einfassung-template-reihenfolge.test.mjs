@@ -36,7 +36,7 @@ test('Muster-Aufruf behaelt seine Einstellungen (nur die Position aendert sich)'
   const id = order[index('tp-muster-cta')];
   assert.deepEqual(details.blocks[id].settings, {
     label: 'Kostenloses Muster anfragen',
-    hinweis: 'Bis zu 2 Farben, versandkostenfrei',
+    hinweis: 'Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei',
   });
 });
 

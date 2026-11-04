@@ -14,7 +14,8 @@ import { $, esc, fmtDate, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
-import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, ensureEinkaufAuftragsstatus, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
+import { kettelwegNoetig } from '../../lib/einkauf-uebersicht.mjs';
+import { einkauf, kettelwegFelder, kettelwegGewaehlt, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, ensureEinkaufAuftragsstatus, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
@@ -129,8 +130,12 @@ function worumKarte(a) {
   const zeilen = (a.positionen || []).map(p => {
     const artikel = p.handle && !p.istMuster ? `<a href="#/lexikon?${new URLSearchParams({ handle: p.handle })}">${esc(p.titel)}</a>` : esc(p.titel);
     const menge = p.kundenmenge || p.menge;
+    // Einfassung aus der Kundenbestellung: was der Kunde gekauft hat, nicht was im Artikelfeld steht.
+    const einfassung = (p.ausfuehrung || []).find(z => z.startsWith('Einfassung:'))?.slice('Einfassung:'.length).trim();
     return `<dl>
       <dt>Artikel</dt><dd>${artikel}${gesetzt(p.farbe) ? ` · ${esc(p.farbe)}` : ''}${gesetzt(menge) ? ` <span class="small muted">(${esc(menge)})</span>` : ''}</dd>
+      ${einfassung ? `<dt>Einfassung</dt><dd>${esc(einfassung)}</dd>` : ''}
+      ${p.kettelweg ? `<dt>Kettelt</dt><dd>${esc(p.kettelweg)}</dd>` : ''}
       ${p.eigenleistung ? '<dt>Einkauf</dt><dd>Eigenleistung – nichts beim Lieferanten</dd>' : `<dt>Lieferant</dt><dd>${gesetzt(p.lieferant) ? esc(lieferantText(p.lieferant)) : '<span class="zl-fehlt">nicht zugeordnet</span>'}</dd>
       <dt>Art.-Nr.</dt><dd>${gesetzt(p.grosshaendlerId) ? esc(p.grosshaendlerId) : '<span class="zl-fehlt">fehlt</span>'}</dd>`}
     </dl>`;
@@ -176,7 +181,7 @@ export function zeitleisteBlock(a, { kontakt = false } = {}) {
     <div class="zl-raster">
       <div class="zl-spalte">
         ${naechsterKarte(a, kunde, lesend)}
-        ${a.auftragsart === 'ware' ? `<p><button type="button" class="btn" data-kettelversand="${esc(a.id)}">Kettler & Versand</button></p>` : ''}
+        ${a.auftragsart === 'ware' && a.kettelAuftrag ? `<p><button type="button" class="btn" data-kettelversand="${esc(a.id)}">Kettler & Versand</button></p>` : ''}
         <div class="card zl-verlauf"><p class="zl-titel">Verlauf</p>
           <ol class="zl-liste">${a.verlauf.map(s => verlaufZeile(s, a.naechsterSchritt)).join('')}</ol>
           ${notizen.length ? `<div class="zl-notizen">${notizen.map(n => `<p><span class="muted">${esc(tagMonat(n.am))}${n.von ? ` · ${esc(n.von)}` : ''}:</span> ${esc(n.text)}</p>`).join('')}</div>` : ''}
@@ -219,10 +224,13 @@ async function ladeNeu() {
   if (['kunden', 'heute'].includes(state.route.view)) render();
 }
 
-async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null } = {}) {
+/** Noch nicht bestellter gekettelter Direktversand: `kettelweg` kommt vom Server erst mit Status. */
+const offeneKettelwege = a => (a?.auftragsart === 'ware' ? a.positionen ?? [] : []).filter(p => p.lineItemId && kettelwegNoetig(p) && !p.kettelweg);
+
+async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null } = {}) {
   let antwort;
   try {
-    antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug, ...(muster ? { muster } : {}) });
+    antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug, ...(muster ? { muster } : {}), ...(kettelwege ? { kettelwege } : {}) });
   } catch (e) {
     toast(`Nicht gespeichert: ${e.message}`, 'crit');
     return false;
@@ -363,6 +371,8 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     }
     // "raus" bucht in Shopify und schickt die Versandmail - dafuer gibt es den eigenen Dialog.
     if (wert === 'raus') { oeffneVersandDialog(orderId, { notiz }); return; }
+    // Gekettelter Direktversand: erst fragen, wer kettelt.
+    if (wert === 'bestellt' && offeneKettelwege(a).length) { oeffneBestelltDialog(orderId, { notiz }); return; }
     const ok = wert.startsWith('zurueck:')
       ? await setzeSchritt(orderId, 'zurueck', { bezug: wert.slice('zurueck:'.length), notiz })
       : await setzeSchritt(orderId, wert, { notiz, muster: nvMuster });
@@ -374,17 +384,19 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
  * "Ware ist bestellt…": Rueckfrage, bevor alle Artikel des Auftrags auf bestellt gehen. Bei
  * mehreren Lieferanten steht dabei, wie man nur einen Lieferanten abhakt (Bestellmail-Dialog).
  */
-function oeffneBestelltDialog(orderId) {
+function oeffneBestelltDialog(orderId, { notiz = null } = {}) {
   const a = findeAuftrag(orderId);
   if (!a) return;
   const lieferanten = bestellLieferanten(a);
   const namen = lieferanten.map(id => `<b>${esc(lieferantText(id))}</b>`);
   const frage = namen.length > 1 ? `Hast du die Bestellung bei ${namen.slice(0, -1).join(', ')} und ${namen.at(-1)} abgeschickt?`
     : namen.length ? `Hast du die Bestellung bei ${namen[0]} abgeschickt?` : 'Ist die Ware beim Lieferanten bestellt?';
+  const fragen = offeneKettelwege(a);
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="zlBestelltTitel" data-dialog>
     <h2 id="zlBestelltTitel">Ware ist bestellt · ${esc(a.name)}</h2>
     <p>${frage} Dann trägt das alle noch offenen Artikel dieser Bestellung als bestellt ein.</p>
     ${lieferanten.length > 1 ? '<p class="small muted">Erst bei einem Lieferanten bestellt? Dann dort „Bestellmail öffnen“ und in der Mail „Als bestellt markieren“ – das trägt nur dessen Artikel ein.</p>' : ''}
+    ${kettelwegFelder(fragen)}
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Ja, ist bestellt</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
@@ -393,7 +405,9 @@ function oeffneBestelltDialog(orderId) {
     ev.preventDefault();
     const knopf = form.querySelector('[type=submit]');
     knopf.disabled = true;
-    if (await setzeSchritt(orderId, 'bestellt')) $('#dialogRoot').innerHTML = ''; else knopf.disabled = false;
+    const fd = new FormData(form);
+    const kettelwege = fragen.length ? Object.fromEntries(fragen.map(p => [p.lineItemId, kettelwegGewaehlt(fd, p)])) : null;
+    if (await setzeSchritt(orderId, 'bestellt', { notiz, kettelwege })) $('#dialogRoot').innerHTML = ''; else knopf.disabled = false;
   });
 }
 
