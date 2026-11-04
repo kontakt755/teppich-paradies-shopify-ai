@@ -15,6 +15,7 @@ import { openFehlerMelden } from './fehler-melden.mjs';
 import { openOrgSchnell, openOrgListe } from '../ansichten/organisation/dialoge.mjs';
 import { ensureMusterPacken } from '../ansichten/kunden/muster-packen.mjs';
 import { offeneSuche, umschlagKennung } from '../lib/muster-packen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 // Treffer aus den Betriebsdaten - Kunden und Produkte. Die Suche ist fuer
 // viele der schnellste Weg ueberhaupt ("Kunde am Telefon, Produktname
@@ -107,7 +108,7 @@ function paletteItems(q) {
   for (const k of paletteFern.kunden) {
     // Ueber den Produktnamen gefunden: sagen, was der Kunde bestellt hat - sonst wirkt der Treffer zufaellig.
     const bestellt = k.trefferProdukt ? `bestellt: ${[k.trefferProdukt.titel, k.trefferProdukt.farbe].filter(Boolean).join(' · ')}` : null;
-    items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [bestellt, k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { kunde: k.key }) });
+    items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [bestellt, k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { kunde: kundenLinkWert(k.key) }) });
   }
   items.push(...musterZeilen(q));
   for (const p of paletteFern.produkte) {
