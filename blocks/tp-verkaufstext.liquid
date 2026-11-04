@@ -37,7 +37,7 @@
 {%- capture tp_vt_gesamtstarke -%}{{ product.metafields.custom.gesamtstarke.value }}{%- endcapture -%}
 {%- assign tp_vt_gesamtstarke = tp_vt_gesamtstarke | strip -%}
 {%- if tp_vt_gesamtstarke != blank -%}
-  {%- capture tp_vt_sentences -%}{{ tp_vt_sentences }}|Mit {{ tp_vt_gesamtstarke }} Gesamtstärke bietet dieser Boden eine robuste, alltagstaugliche Basis.{%- endcapture -%}
+  {%- capture tp_vt_sentences -%}{{ tp_vt_sentences }}|Mit {{ tp_vt_gesamtstarke }} Gesamthöhe bietet dieser Boden eine robuste, alltagstaugliche Basis.{%- endcapture -%}
   {%- assign tp_vt_count = tp_vt_count | plus: 1 -%}
 {%- endif -%}
 
