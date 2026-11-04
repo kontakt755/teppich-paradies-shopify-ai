@@ -62,7 +62,14 @@ Der Schnitt zählt jede Länge gleich. Er sagt also nichts darüber, welche Län
 
 Den Versandweg bestimmt die kürzere Seite: bis 200 cm GLS, bis 320 cm Spedition, darüber Spedition XXL.
 
-Die Stückzahl jeder Länge wird aus Bestand und Restlänge gerechnet. Nach Verkäufen den Bestand in der Startliste anpassen und das Skript erneut laufen lassen; eBay senkt die anderen Längen nicht von selbst.
+Die Stückzahl jeder Länge wird aus Bestand und Restlänge gerechnet. eBay senkt die anderen Längen nach einem Verkauf nicht von selbst. Deshalb nach Verkäufen den Bestand in der Startliste anpassen und das Skript für alle Rollen laufen lassen:
+
+`--welle 1 --senden --veroeffentlichen --rechtlich-geklaert --umgebung produktion --max 10`
+
+- Längen, die nicht mehr auf die Rolle passen, gehen auf Menge null.
+- Eine Rolle ohne Bestand geht ganz auf null. Das läuft schon mit `--senden` und zählt nicht gegen `--max`.
+- Ist ein Angebot live, ändert das Skript es nur mit `--veroeffentlichen`. Ohne den Schalter bricht es vor der ersten Änderung ab.
+- Eine Rolle, die in Shopify archiviert ist, findet das Skript nicht mehr. Ihr Angebot von Hand beenden.
 
 ## Hinweis zur Schnittware
 

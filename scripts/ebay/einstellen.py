@@ -46,6 +46,8 @@ HINWEIS_ZUSCHNITT = (
     'Alle Angebote sind Zuschnitte von der Rolle, keine Fertigmaße. Wir schneiden erst nach Ihrer Bestellung. '
     'Schnittware ist vom Austausch ausgeschlossen, es sei denn, sie ist fehlerhaft oder beschädigt.'
 )
+KEIN_BESTAND = 'kein Bestand'
+MAX_MENGEN_JE_AUFRUF = 25
 KONFIG_PFLICHT = ('fulfillmentPolicyId', 'paymentPolicyId', 'returnPolicyId', 'merchantLocationKey')
 ZUGANG_PFLICHT = ('EBAY_CLIENT_ID', 'EBAY_CLIENT_SECRET', 'EBAY_REFRESH_TOKEN')
 BASIS = {'sandbox': 'https://api.sandbox.ebay.com', 'produktion': 'https://api.ebay.com'}
@@ -270,7 +272,7 @@ def plane_welle1(liste, lexikon, konfig):
         rest_cm = min(zahl(zeile['restlaenge']) or 0, (zahl(zeile['bestand']) or 0) * 10000 / breite)
         laengen = [l for l in LAENGEN_CM if l <= rest_cm]
         if not laengen:
-            plan.append({'name': name, 'art': 'gruppe', 'maengel': maengel + ['kein Bestand']})
+            plan.append({'name': name, 'art': 'gruppe', 'schluessel': gruppen_schluessel(produkt), 'maengel': maengel + [KEIN_BESTAND]})
             continue
         if maengel:
             preis_m2 = zahl(zeile['preis']) or 0
@@ -324,6 +326,10 @@ def plane_einzelmass(liste, lexikon, konfig, name, breite_cm, laenge_cm, preis, 
     if len(treffer) != 1:
         raise Abbruch(f'{len(treffer)} Rollen passen zu "{name}"')
     zeile = treffer[0]
+    if not all(math.isfinite(w) and w > 0 for w in (breite_cm, laenge_cm, preis)):
+        raise Abbruch('Breite, Länge und Preis müssen größer als null sein')
+    if not (math.isfinite(frachtkosten) and frachtkosten >= 0):
+        raise Abbruch('Frachtkosten dürfen nicht negativ sein')
     maengel = rollen_mangel(zeile, dict(konfig, **{k: 0 for k in VERSAND_FELDER}), liste)
     gefunden = finde_rolle(zeile['rolle'], lexikon)
     if len(gefunden) != 1:
@@ -481,28 +487,53 @@ class Ebay:
             raise Abbruch(f'{methode} {pfad}: HTTP {fehler.code}: {fehler.read().decode(errors="replace")[:800]}')
         return json.loads(roh) if roh else {}
 
-    def offer_id(self, sku):
+    def angebot(self, sku):
         pfad = f'/sell/inventory/v1/offer?sku={urllib.parse.quote(sku, safe="")}&marketplace_id={MARKTPLATZ}'
         antwort = self.rufe('GET', pfad, erlaubt=(404,))
         angebote = (antwort or {}).get('offers') or []
-        return angebote[0]['offerId'] if angebote else None
+        return angebote[0] if angebote else None
+
+    def varianten(self, schluessel):
+        antwort = self.rufe('GET', f'/sell/inventory/v1/inventory_item_group/{schluessel}', erlaubt=(404,))
+        return (antwort or {}).get('variantSKUs') or []
+
+    def menge_null(self, skus):
+        for start in range(0, len(skus), MAX_MENGEN_JE_AUFRUF):
+            teil = skus[start:start + MAX_MENGEN_JE_AUFRUF]
+            antwort = self.rufe('POST', '/sell/inventory/v1/bulk_update_price_quantity', {
+                'requests': [{'sku': s, 'shipToLocationAvailability': {'quantity': 0}} for s in teil],
+            })
+            # Teilfehler kommen als 207 mit Status je Artikel
+            fehler = [r.get('sku') for r in antwort.get('responses') or [] if r.get('statusCode') != 200]
+            if fehler:
+                raise Abbruch('Menge nicht auf null gesetzt: ' + ', '.join(map(str, fehler)))
 
 
 def sende(eintrag, ebay, veroeffentlichen):
     """Legt an oder aktualisiert. Zweimal laufen lassen erzeugt keine Doppel."""
+    vorhanden = {a['sku']: ebay.angebot(a['sku']) for a in eintrag['angebote']}
+    live = {o['offerId'] for o in vorhanden.values() if o and o.get('status') == 'PUBLISHED'}
+    # Jede Aenderung an Artikel oder Angebot wirkt auf ein Live-Angebot sofort
+    if live and not veroeffentlichen:
+        raise Abbruch(f"{eintrag['name']} ist schon live: Änderungen nur mit --veroeffentlichen")
+    if eintrag['art'] == 'gruppe':
+        weggefallen = [s for s in ebay.varianten(eintrag['schluessel']) if s not in eintrag['artikel']]
+        ebay.menge_null(weggefallen)
     ids = []
     for sku, inhalt in eintrag['artikel'].items():
         ebay.rufe('PUT', f'/sell/inventory/v1/inventory_item/{urllib.parse.quote(sku, safe="")}', inhalt)
     if eintrag['art'] == 'gruppe':
         ebay.rufe('PUT', f"/sell/inventory/v1/inventory_item_group/{eintrag['schluessel']}", eintrag['gruppe'])
     for angebot in eintrag['angebote']:
-        vorhanden = ebay.offer_id(angebot['sku'])
-        if vorhanden:
-            ebay.rufe('PUT', f'/sell/inventory/v1/offer/{vorhanden}', angebot)
-            ids.append(vorhanden)
+        alt = vorhanden[angebot['sku']]
+        if alt:
+            ebay.rufe('PUT', f"/sell/inventory/v1/offer/{alt['offerId']}", angebot)
+            ids.append(alt['offerId'])
         else:
             ids.append(ebay.rufe('POST', '/sell/inventory/v1/offer', angebot)['offerId'])
-    gebuehren = ebay.rufe('POST', '/sell/inventory/v1/offer/get_listing_fees', {'offers': [{'offerId': i} for i in ids[:250]]})
+    # Gebuehren gibt eBay nur fuer noch nicht veroeffentlichte Angebote aus
+    neu = [i for i in ids if i not in live]
+    gebuehren = ebay.rufe('POST', '/sell/inventory/v1/offer/get_listing_fees', {'offers': [{'offerId': i} for i in neu[:250]]}) if neu else None
     ergebnis = {'schluessel': eintrag['schluessel'], 'offerIds': ids, 'gebuehren': gebuehren}
     if veroeffentlichen:
         if eintrag['art'] == 'gruppe':
@@ -513,6 +544,13 @@ def sende(eintrag, ebay, veroeffentlichen):
             antwort = ebay.rufe('POST', f'/sell/inventory/v1/offer/{ids[0]}/publish', {})
         ergebnis['listingId'] = antwort.get('listingId')
     return ergebnis
+
+
+def ausverkauft(eintrag, ebay):
+    """Rolle ohne Bestand: vorhandene Angebote auf null, damit nichts mehr verkauft wird."""
+    skus = ebay.varianten(eintrag['schluessel'])
+    ebay.menge_null(skus)
+    return skus
 
 
 def rahmen_uebersicht(ebay):
@@ -582,6 +620,13 @@ def sendesperren(args, konfig, zugang, namen):
     return sperren
 
 
+def positive_zahl(text):
+    wert = int(text)
+    if wert < 1:
+        raise argparse.ArgumentTypeError('muss mindestens 1 sein')
+    return wert
+
+
 def hauptlauf(argv=None):
     p = argparse.ArgumentParser(description='Teppichboden aus der eBay-Startliste einstellen.')
     p.add_argument('--welle', type=int, choices=(1, 2))
@@ -599,7 +644,7 @@ def hauptlauf(argv=None):
     p.add_argument('--veroeffentlichen', action='store_true', help='Angebote wirklich veröffentlichen')
     p.add_argument('--rechtlich-geklaert', action='store_true')
     p.add_argument('--umgebung', choices=tuple(BASIS), default='sandbox')
-    p.add_argument('--max', type=int, default=1, help='höchstens so viele Angebote je Lauf senden')
+    p.add_argument('--max', type=positive_zahl, default=1, help='höchstens so viele Angebote je Lauf senden')
     args = p.parse_args(argv)
     if args.veroeffentlichen and not args.senden:
         raise Abbruch('--veroeffentlichen geht nur zusammen mit --senden')
@@ -668,6 +713,13 @@ def hauptlauf(argv=None):
     if sperren:
         raise Abbruch('Nicht gesendet:\n  ' + '\n  '.join(sperren))
     ebay = Ebay(args.umgebung, zugang)
+    # Senkt nur Mengen, deshalb ohne --max und ohne Veroeffentlichungs-Freigabe
+    for eintrag in plan:
+        if KEIN_BESTAND in eintrag['maengel'] and eintrag.get('schluessel'):
+            skus = ausverkauft(eintrag, ebay)
+            if skus:
+                protokolliere(ordner, {'name': eintrag['name'], 'umgebung': args.umgebung, 'auf_null': skus})
+                print(f"  auf null gesetzt: {eintrag['name']}")
     for eintrag in bereit[:args.max]:
         ergebnis = sende(eintrag, ebay, args.veroeffentlichen)
         protokolliere(ordner, dict(ergebnis, name=eintrag['name'], umgebung=args.umgebung))

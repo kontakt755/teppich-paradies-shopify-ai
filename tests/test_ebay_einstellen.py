@@ -1,6 +1,7 @@
 """Tests fuer scripts/ebay/einstellen.py: Plan, Sperren und Sendeablauf ohne Netz."""
 
 import importlib.util
+import contextlib
 import io
 import json
 import os
@@ -53,19 +54,33 @@ class Antwort(io.BytesIO):
 
 
 class FalscherServer:
-    def __init__(self, vorhanden=False):
+    def __init__(self, vorhanden=False, status='UNPUBLISHED', varianten=None, mengenfehler=False):
         self.aufrufe = []
+        self.inhalte = {}
         self.vorhanden = vorhanden
+        self.status = status
+        self.varianten = varianten
+        self.mengenfehler = mengenfehler
 
     def __call__(self, anfrage):
         pfad = anfrage.full_url.split('.com', 1)[1]
         self.aufrufe.append((anfrage.get_method(), pfad))
+        if anfrage.data and 'oauth2' not in pfad:
+            self.inhalte.setdefault(pfad, []).append(json.loads(anfrage.data))
         if 'oauth2/token' in pfad:
             return Antwort(json.dumps({'access_token': 't'}).encode())
+        if anfrage.get_method() == 'GET' and 'inventory_item_group' in pfad:
+            if self.varianten is None:
+                raise urllib.error.HTTPError(pfad, 404, 'x', {}, io.BytesIO(b'{}'))
+            return Antwort(json.dumps({'variantSKUs': self.varianten}).encode())
+        if 'bulk_update_price_quantity' in pfad:
+            status = 400 if self.mengenfehler else 200
+            skus = [r['sku'] for r in json.loads(anfrage.data)['requests']]
+            return Antwort(json.dumps({'responses': [{'sku': s, 'statusCode': status} for s in skus]}).encode())
         if anfrage.get_method() == 'GET':
             if not self.vorhanden:
                 raise urllib.error.HTTPError(pfad, 404, 'x', {}, io.BytesIO(b'{}'))
-            return Antwort(json.dumps({'offers': [{'offerId': 'alt'}]}).encode())
+            return Antwort(json.dumps({'offers': [{'offerId': 'alt', 'status': self.status}]}).encode())
         if pfad.endswith('/offer'):
             return Antwort(json.dumps({'offerId': 'neu'}).encode())
         if 'publish' in pfad:
@@ -151,6 +166,17 @@ class Plan(unittest.TestCase):
     def test_einzelmass_unter_mindestmarge_gesperrt(self):
         e = modul.plane_einzelmass(liste(), [produkt()], KONFIG, 'Rolle Eins', 400, 700, 100.0, 150.0)[0]
         self.assertTrue(any('Mindestmarge' in m for m in e['maengel']))
+
+    def test_einzelmass_lehnt_unsinnige_werte_ab(self):
+        for b, l, p, f in ((400, 0, 700.0, 150.0), (-400, -700, 700.0, 150.0), (400, 700, float('nan'), 150.0),
+                           (400, 700, 0.0, 150.0), (400, 700, 700.0, -1.0), (400, 700, 700.0, float('inf'))):
+            with self.subTest(b=b, l=l, p=p, f=f), self.assertRaises(modul.Abbruch):
+                modul.plane_einzelmass(liste(), [produkt()], KONFIG, 'Rolle Eins', b, l, p, f)
+
+    def test_max_muss_positiv_sein(self):
+        for wert in ('-1', '0'):
+            with self.subTest(wert=wert), self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+                modul.hauptlauf(['--welle', '1', '--max', wert])
 
     def test_einzelmass_nicht_laenger_als_rolle(self):
         with self.assertRaises(modul.Abbruch):
@@ -260,6 +286,47 @@ class Senden(unittest.TestCase):
         modul.sende(self.eintrag(), modul.Ebay('sandbox', ZUGANG, server), False)
         self.assertNotIn(('POST', '/sell/inventory/v1/offer'), server.aufrufe)
         self.assertIn(('PUT', '/sell/inventory/v1/offer/alt'), server.aufrufe)
+
+    def test_live_angebot_bleibt_ohne_freigabe_unveraendert(self):
+        server = FalscherServer(vorhanden=True, status='PUBLISHED')
+        with self.assertRaises(modul.Abbruch):
+            modul.sende(self.eintrag(), modul.Ebay('sandbox', ZUGANG, server), False)
+        self.assertFalse(any(m in ('PUT', 'POST') and 'oauth2' not in p for m, p in server.aufrufe))
+
+    def test_live_angebot_aendert_sich_nur_mit_freigabe(self):
+        server = FalscherServer(vorhanden=True, status='PUBLISHED')
+        modul.sende(self.eintrag(), modul.Ebay('sandbox', ZUGANG, server), True)
+        self.assertIn(('PUT', '/sell/inventory/v1/offer/alt'), server.aufrufe)
+        self.assertNotIn(('POST', '/sell/inventory/v1/offer/get_listing_fees'), server.aufrufe)
+
+    def rolle(self, **werte):
+        return modul.plane_welle1(liste(**werte), [produkt()], KONFIG)[0]
+
+    def test_weggefallene_laenge_geht_auf_null(self):
+        e = self.rolle(restlaenge=400, bestand=16)
+        server = FalscherServer(varianten=['TP-1-L400', 'TP-1-L600'])
+        modul.sende(e, modul.Ebay('sandbox', ZUGANG, server), False)
+        inhalt = server.inhalte['/sell/inventory/v1/bulk_update_price_quantity'][0]
+        self.assertEqual(inhalt['requests'], [{'sku': 'TP-1-L600', 'shipToLocationAvailability': {'quantity': 0}}])
+
+    def test_rolle_ohne_bestand_geht_ganz_auf_null(self):
+        e = self.rolle(restlaenge=50)
+        self.assertIn(modul.KEIN_BESTAND, e['maengel'])
+        server = FalscherServer(varianten=[f'TP-1-L{l}' for l in modul.LAENGEN_CM])
+        skus = modul.ausverkauft(e, modul.Ebay('sandbox', ZUGANG, server))
+        self.assertEqual(len(skus), 26)
+        aufrufe = server.inhalte['/sell/inventory/v1/bulk_update_price_quantity']
+        self.assertEqual([len(a['requests']) for a in aufrufe], [25, 1])
+
+    def test_rolle_ohne_angebot_sendet_nichts(self):
+        server = FalscherServer()
+        self.assertEqual(modul.ausverkauft(self.rolle(restlaenge=50), modul.Ebay('sandbox', ZUGANG, server)), [])
+        self.assertNotIn('/sell/inventory/v1/bulk_update_price_quantity', server.inhalte)
+
+    def test_nicht_gesenkte_menge_bricht_ab(self):
+        server = FalscherServer(varianten=['TP-1-L100'], mengenfehler=True)
+        with self.assertRaises(modul.Abbruch):
+            modul.ausverkauft(self.rolle(restlaenge=50), modul.Ebay('sandbox', ZUGANG, server))
 
     def test_gruppe_nutzt_gruppenveroeffentlichung(self):
         p = produkt('Boden Zwei', 'art: teppichboden')
