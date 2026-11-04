@@ -83,3 +83,27 @@ Erzeugungsskript und Rohdaten liegen lokal unter
 `~/teppich-paradies-analyse/lieferantendaten/lieferant-i/`. Neue Artikelliste → Skript erneut
 laufen lassen, nur neue Handles anlegen. Faellt ein Artikel auf „Auslaufware“, gilt die
 Auslauf-Regel aus AGENTS.md (archivieren + 301).
+
+### Auslauf-Pruefung aus der Bestandsdatei (Freigabe Inhaber 2026-11-04)
+
+Die Bestandsdatei ist die einzige laufende Quelle zu diesem Lieferanten; die woechentliche
+`npm run auslauf:pruefen` liest dafuer ohne Netz einen Verlauf
+(`operations/lib/auslauf-bestand.mjs`, Tests in `operations/tests/auslauf-bestand.test.mjs`).
+
+- **Verlauf:** `~/teppich-paradies-analyse/lieferant-i/auslauf-verlauf.json`, je aktivem Produkt
+  seit wann durchgehend nichts verfuegbar ist und seit wann eine Variante in der Datei fehlt.
+  Fortgeschrieben nach jedem fehlerfreien Schreiblauf ohne Sperre; Planlaeufe und `--datei`
+  fassen ihn nicht an. Ein Fehler in der Auslauf-Spur bricht den Bestandsabgleich nie ab
+  (steht dann in `bestand-status.json` unter `auslaufVerlauf`).
+- **Beginn:** Der Verlauf beginnt beim ersten Lauf, erste Hinweise „nichts verfuegbar“ also
+  fruehestens 30 Tage danach. Fehlende Varianten erscheinen schon in der naechsten Pruefung.
+- **Nichts verfuegbar:** Ist ein Produkt 30 Tage ununterbrochen in keiner Groesse verfuegbar,
+  entsteht Ergebnis `nicht-verfuegbar` (Ampel gelb, eigenes To-do). Das ist kein Auslaufbeleg:
+  beim Lieferanten nachfragen. Einmal verfuegbar setzt die Frist zurueck.
+- **Fehlende Variante:** Ergebnis `fehlt` (Ampel rot) je Produkt, mit den SKUs. Fallen nur
+  einzelne Varianten weg, ist das eine Variantenaenderung und braucht Freigabe (AGENTS.md).
+- **Stoerung statt Befund:** Fehlt mehr als 5 % der aktiven Produkte auf einmal
+  (`AUSFALL_GRENZE`), meldet die Pruefung einen Ausfall. Dasselbe gilt, wenn der Verlauf fehlt,
+  unlesbar oder aelter als 3 Tage ist. Nach einer solchen Luecke beginnen alle Fristen neu,
+  weil „ununterbrochen“ nicht mehr belegt ist.
+- **Es wird nie automatisch archiviert.** Den Beleg prueft eine Sitzung (AGENTS.md, Produktdaten).

@@ -77,6 +77,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'belege-archiv',
   // Lieferantenbelege aus dem Postfach (AB, Lieferschein, Storno) samt Zuordnung und Haken.
   'lieferbelege',
+  // Auslauf-Pruefung Lieferant I: die 30-Tage-Fristen stehen nur hier (operations/lib/auslauf-bestand.mjs).
+  'lieferant-i/auslauf-verlauf.json',
   // "Fehler melden": Meldungen der Mitarbeiter und ihr Stand in der Werkbank.
   'fehlermeldungen.json',
   'fehlermeldungen-abgleich.json',

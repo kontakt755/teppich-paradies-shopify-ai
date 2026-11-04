@@ -406,11 +406,65 @@ test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden
   assert.equal(nurHinweis[0].ton, 'warn');
 
   const gestoert = mit({ geprueftAm: vorTagen(1), befunde: [], ausfaelle: [{ lieferant: 'D', grund: '90 von 100 Abrufen gescheitert' }] });
+  assert.equal(gestoert[0].id, 'auslauf-ausfall');
   assert.match(gestoert[0].titel, /Lieferant D nicht prüfbar/);
+  assert.equal(gestoert[0].kontext, 'D: 90 von 100 Abrufen gescheitert');
 
-  assert.match(mit({ geprueftAm: vorTagen(9), befunde: [] })[0].titel, /meldet sich nicht/);
+  const stumm = mit({ geprueftAm: vorTagen(9), befunde: [] });
+  assert.equal(stumm[0].id, 'auslauf-stumm');
+  assert.match(stumm[0].titel, /meldet sich nicht/);
   assert.deepEqual(mit({ geprueftAm: vorTagen(2), befunde: [] }), []);
   assert.deepEqual(mit(null), []);
+});
+
+test('Auslauf-Pruefung: Befund, Ausfall und stumme Pruefung verdecken sich nicht', () => {
+  const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
+  const ausfallI = { lieferant: 'I', grund: 'Bestandsverlauf zuletzt am 2026-09-20 fortgeschrieben' };
+  const ausfallD = { lieferant: 'D', grund: '104 von 1030 angeblich weg' };
+
+  // Ausfall von I neben einem Befund von A, je Befundart (fehlt rot, hinweis und verdacht gelb).
+  for (const ergebnis of ['fehlt', 'hinweis', 'verdacht']) {
+    const todos = mit({ geprueftAm: vorTagen(1), ausfaelle: [ausfallI], befunde: [{ lieferant: 'A', ergebnis, kennung: 'X', handles: ['testboden-eiche'] }] });
+    assert.deepEqual(todos.map(t => t.id).sort(), ['auslauf', 'auslauf-ausfall'], ergebnis);
+    const ausfall = todos.find(t => t.id === 'auslauf-ausfall');
+    assert.match(ausfall.titel, /Lieferant I nicht prüfbar/);
+    assert.match(ausfall.kontext, /Bestandsverlauf zuletzt/);
+  }
+
+  // Umgekehrt: eine fehlende Variante von I verdeckt den Ausfall bei D nicht.
+  const umgekehrt = mit({ geprueftAm: vorTagen(1), ausfaelle: [ausfallD], befunde: [{ lieferant: 'I', ergebnis: 'fehlt', kennung: 'S1', handles: ['testteppich'] }] });
+  assert.equal(umgekehrt.find(t => t.id === 'auslauf-ausfall').titel, 'Auslauf-Prüfung: Lieferant D nicht prüfbar');
+
+  // Mehrere Ausfaelle: jeder nennt seinen eigenen Grund, nicht nur der erste.
+  const zwei = mit({ geprueftAm: vorTagen(1), ausfaelle: [ausfallD, ausfallI], befunde: [] });
+  assert.equal(zwei.length, 1);
+  assert.match(zwei[0].titel, /Lieferant D, I nicht prüfbar/);
+  assert.equal(zwei[0].kontext, `D: ${ausfallD.grund} · I: ${ausfallI.grund}`);
+
+  // Alte Befunde und alte Ausfaelle verdecken nicht, dass die Pruefung sich nicht mehr meldet.
+  const alle = mit({ geprueftAm: vorTagen(9), ausfaelle: [ausfallI], befunde: [{ lieferant: 'A', ergebnis: 'fehlt', handles: ['testboden-eiche'] }] });
+  assert.deepEqual(alle.map(t => t.id).sort(), ['auslauf', 'auslauf-ausfall', 'auslauf-stumm']);
+  assert.equal(new Set(alle.map(t => t.id)).size, alle.length);
+});
+
+test('Auslauf-Pruefung: lange nichts verfuegbar wird ein eigenes gelbes To-do und klingt nicht nach Archivieren', () => {
+  const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
+  const nv = h => ({ lieferant: 'I', ergebnis: 'nicht-verfuegbar', kennung: h, handles: [h], grund: 'Seit 31 Tagen in keiner Groesse verfuegbar' });
+  const nur = mit({ geprueftAm: vorTagen(1), befunde: [nv('testteppich-a'), nv('testteppich-b')] });
+  assert.equal(nur.length, 1);
+  assert.equal(nur[0].id, 'auslauf-nicht-verfuegbar');
+  assert.equal(nur[0].ton, 'warn');
+  assert.equal(nur[0].titel, '2 Artikel seit mindestens 30 Tagen in keiner Größe verfügbar');
+  assert.equal(nur[0].kontext, 'testteppich-a, testteppich-b · kein Auslaufbeleg, beim Lieferanten nachfragen');
+  assert.doesNotMatch(nur[0].kontext, /archivieren/);
+  assert.equal(nur[0].knopf.href, '#/lexikon?lq=testteppich-a');
+
+  // Daneben zaehlt der echte Befund nur sich selbst; eine fehlende Variante nennt die Freigabe.
+  const beide = mit({ geprueftAm: vorTagen(1), befunde: [nv('testteppich-a'), { lieferant: 'I', ergebnis: 'fehlt', kennung: 'S1', handles: ['testteppich-c'] }] });
+  assert.deepEqual(beide.map(t => t.id).sort(), ['auslauf', 'auslauf-nicht-verfuegbar']);
+  const rot = beide.find(t => t.id === 'auslauf');
+  assert.match(rot.titel, /1 Artikel/);
+  assert.match(rot.kontext, /^testteppich-c · gegenprüfen.*Variante weg, Freigabe holen/);
 });
 
 test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eigenes To-do, kein Auslauf', () => {
@@ -432,7 +486,7 @@ test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eige
   assert.doesNotMatch(beide[0].kontext, /testa-teppichboden/);
 
   // Stumme Pruefung verdeckt den Musterbefund nicht.
-  assert.deepEqual(mit({ geprueftAm: vorTagen(9), befunde: [ohne] }).map(t => t.id).sort(), ['auslauf', 'auslauf-muster']);
+  assert.deepEqual(mit({ geprueftAm: vorTagen(9), befunde: [ohne] }).map(t => t.id).sort(), ['auslauf-muster', 'auslauf-stumm']);
 });
 
 test('Sicherung: verpasst wird gelb, ueber 48 Std., gescheitert oder unlesbar rot, sonst nichts', () => {

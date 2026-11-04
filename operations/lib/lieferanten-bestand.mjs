@@ -41,6 +41,11 @@ export function leseBestandCsv(text) {
   return { nachSku, nachEan, zeilen: nachSku.size };
 }
 
+/** Eintrag der Bestandsdatei zu einer Variante: per SKU, Ersatz per EAN. */
+export function trefferFuer(bestand, v) {
+  return bestand.nachSku.get(v.sku) || (v.barcode ? bestand.nachEan.get(v.barcode) : undefined);
+}
+
 /**
  * Plant die Aenderungen. varianten: [{sku, barcode, inventoryItemId, verfuegbar}]
  * (verfuegbar = aktueller Shopify-Wert am Standort). Varianten, die in der
@@ -51,7 +56,7 @@ export function planeAbgleich(bestand, varianten, { minZeilen = MIN_ZEILEN, maxF
   const fehlend = [];
   let aufNull = 0;
   for (const v of varianten) {
-    const treffer = bestand.nachSku.get(v.sku) || (v.barcode ? bestand.nachEan.get(v.barcode) : undefined);
+    const treffer = trefferFuer(bestand, v);
     if (!treffer) fehlend.push(v.sku);
     const soll = treffer ? treffer.verfuegbar : 0;
     if (soll === 0) aufNull++;
