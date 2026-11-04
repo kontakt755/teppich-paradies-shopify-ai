@@ -23,6 +23,17 @@ const text = v => (v === null || v === undefined ? '' : String(v).trim());
 const belegt = v => !!text(v) && !['UNGEKLAERT', '–', '-'].includes(text(v));
 
 /** Gepackt gilt fuer genau diese Bestellungen; kommt eine dazu, ist der Kunde wieder offen. */
+/**
+ * Geht dieses gesperrte Muster einzeln weg ("Ohne dieses Muster weiter packen")? Ja, wenn andere Muster im
+ * Umschlag bleiben oder seine Bestellung Ware enthaelt: die laeuft weiter, nur das Muster wird erledigt.
+ * Sonst nicht: dann schliesst "Kunde informieren…" die reine Musterbestellung ab.
+ */
+export const ohneMusterMoeglich = (k, m) => !!m?.gesperrt
+  && (k.muster.some(x => !x.gesperrt) || k.bestellungen.some(b => b.orderId === m.orderId && b.mitWare));
+
+/** Darf "Kunde informieren…" abschliessen? Der Schritt gilt je ganze Bestellung, also nie, wo Ware oder ein lieferbares Muster dranhaengt. */
+export const umschlagAbschliessbar = k => k.muster.every(m => m.gesperrt) && !k.bestellungen.some(b => b.mitWare);
+
 export const umschlagKennung = k => (k.bestellungen || []).map(b => b.orderName).filter(Boolean).join(' / ') || k.packSchluessel;
 
 /** Lieferadresse normalisiert: ein Kundenkonto kann an mehrere Empfaenger liefern, deren Umschlaege nie gemischt werden. */
@@ -196,7 +207,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     for (const { a, positionen, zeilen } of eintraege) {
       if (a.bezahlt === 'PARTIALLY_REFUNDED') { g.teilweiseErstattet = true; g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.'); }
       if (positionen.some(p => direkt(a, p))) { g.direktversand = true; g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.'); }
-      g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null });
+      // Gleiche Regel wie auftragsart(): mit Ware kennt die Bestellung den Schritt "Muster nicht verfuegbar" nicht.
+      g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null, ...((a.positionen || []).some(p => p?.istMuster !== true) ? { mitWare: true } : {}) });
       // Die neueste Bestellung traegt die aktuellste Anschrift.
       if (!g.adresse || (a.datum || '') >= (g.adresse.datum || '')) {
         g.adresse = { ...(a.details?.lieferadresse || {}), datum: a.datum || '' };

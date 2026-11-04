@@ -2048,6 +2048,8 @@ lahm: `sperrenFehler` wird als roter Hinweis gezeigt.
   ab; der Schritt gilt immer für die ganze Bestellung.
 - **„Ohne dieses Muster weiter packen“** (`aktion: 'ohne-muster'`): nur diese Position wird „erledigt“ und über
   `erledigtBuchen` ohne Kundenmail in Shopify gebucht. Sonst bliebe nach dem Verschicken ein leerer Umschlag.
+  Bei einer Bestellung mit Ware (`bestellungen[].mitWare`, gleiche Regel wie `auftragsart`) ist das der einzige Weg,
+  auch für das letzte Muster im Umschlag: der Schritt „Muster nicht verfügbar“ gehört nicht zu einer Warenbestellung.
 - **Reiter „Erledigt“:** die 14 Tage laufen ab `rausAm`/`erledigtAm`, ohne Vermerk ab Bestelldatum; `teilweise`
   erledigte Bestellungen stehen nur in der Suche.
 

@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
+import { ohneMusterMoeglich, umschlagAbschliessbar } from '../lib/muster-packen.mjs';
 
 // Ausschliesslich synthetische Kunden, Anschriften und Artikel.
 const quelle = { id: 'gid://shopify/ProductVariant/100', sku: 'ORIG-B', title: 'Sand', metafields: { nodes: [] }, product: { id: 'gid://shopify/Product/100', handle: 'testlinea-sand', title: 'Testlinea Sand – Klickvinyl', productType: 'Klickvinyl', metafields: { nodes: [] } } };
@@ -392,4 +393,48 @@ test('Ohne dieses Muster: nicht, wenn sonst nichts im Umschlag bleibt', async t 
   const k = api.kundenMusterPacken().kunden[0];
   await assert.rejects(api.kundenMusterPackenSchreiben({ packSchluessel: k.packSchluessel, aktion: 'ohne-muster', lineItemId: k.muster[0].lineItemId }, { name: 'Laden', rolle: 'mitarbeiter' }),
     e => e.status === 409 && /Kunde informieren/.test(e.message));
+});
+
+test('Bestellung mit Ware, alle Muster gesperrt: das Muster geht einzeln weg, die Ware bleibt offen (Review 04.11.)', async t => {
+  const b = bestellung(801, '2026-10-18T06:00:00Z');
+  const ware = { ...muster(8019), sku: 'ORIG-B', title: 'Testlinea Sand – Klickvinyl', variantTitle: 'Sand', customAttributes: [], originalUnitPriceSet: { shopMoney: { amount: '25', currencyCode: 'EUR' } }, variant: quelle };
+  b.lineItems.nodes = [einMuster(8011, 'GESPERRT-1'), ware];
+  const { api, dir } = umgebungGesperrt(t, [b]);
+  const ich = { name: 'Laden', rolle: 'mitarbeiter' };
+  const k = api.kundenMusterPacken().kunden[0];
+  assert.deepEqual(k.muster.map(m => m.lineItemId), ['gid://shopify/LineItem/8011'], 'Ware steht nicht im Umschlag');
+  assert.equal(k.bestellungen[0].mitWare, true);
+  assert.equal(umschlagAbschliessbar(k), false, 'Dialog bietet keinen Abschluss an');
+  assert.equal(ohneMusterMoeglich(k, k.muster[0]), true);
+  await assert.rejects(api.einkaufAuftragsstatusSetzen({ aktion: 'schritt', orderId: b.id, schritt: 'muster_nicht_verfuegbar', muster: [k.muster[0].lineItemId] }, ich),
+    e => e.status === 400, 'der Schritt bleibt fuer Warenbestellungen gesperrt');
+
+  await api.kundenMusterPackenSchreiben({ packSchluessel: k.packSchluessel, aktion: 'ohne-muster', lineItemId: k.muster[0].lineItemId }, ich);
+  assert.deepEqual(api.kundenMusterPacken().kunden, [], 'Umschlag ist weg, nichts haengt unter "Zu klaeren"');
+  const stand = JSON.parse(fs.readFileSync(path.join(dir, 'auftragsstatus.json'), 'utf8'));
+  const eintraege = Object.values(stand.positionen || stand).filter(e => e?.lineItemId);
+  assert.deepEqual(eintraege.map(e => [e.lineItemId, e.status]), [[k.muster[0].lineItemId, 'erledigt']], 'nur das Muster, nie die Ware');
+  const z = api.kundenBestellungen().zeilen.find(x => x.orderId === b.id);
+  assert.equal(z.auftragsart, 'ware');
+  assert.equal(z.zeitleisteAbgeschlossen, false, 'Warenbestellung laeuft weiter');
+});
+
+test('Reine Musterbestellung und Bestellung mit Ware im selben Umschlag: erst das Muster bei der Ware, dann abschliessen', async t => {
+  const rein = bestellung(801, '2026-10-18T06:00:00Z');
+  rein.lineItems.nodes = [einMuster(8011, 'GESPERRT-1')];
+  const gemischt = bestellung(802, '2026-10-18T09:00:00Z');
+  gemischt.lineItems.nodes = [einMuster(8021, 'GESPERRT-1'), { ...muster(8029), sku: 'ORIG-B', title: 'Testlinea Sand – Klickvinyl', customAttributes: [], variant: quelle }];
+  const { api } = umgebungGesperrt(t, [rein, gemischt]);
+  const ich = { name: 'Laden', rolle: 'mitarbeiter' };
+  const k = api.kundenMusterPacken().kunden[0];
+  assert.equal(k.muster.length, 2);
+  assert.equal(umschlagAbschliessbar(k), false);
+  const [ohneWare, beiWare] = k.muster;
+  assert.equal(ohneMusterMoeglich(k, ohneWare), false);
+  assert.equal(ohneMusterMoeglich(k, beiWare), true);
+  await assert.rejects(api.kundenMusterPackenSchreiben({ packSchluessel: k.packSchluessel, aktion: 'ohne-muster', lineItemId: ohneWare.lineItemId }, ich), e => e.status === 409);
+  await api.kundenMusterPackenSchreiben({ packSchluessel: k.packSchluessel, aktion: 'ohne-muster', lineItemId: beiWare.lineItemId }, ich);
+  const danach = api.kundenMusterPacken().kunden[0];
+  assert.deepEqual(danach.muster.map(m => m.lineItemId), [ohneWare.lineItemId]);
+  assert.equal(umschlagAbschliessbar(danach), true, 'jetzt schliesst der Dialog die reine Musterbestellung ab');
 });

@@ -4,11 +4,13 @@
  * oeffnet das Mailprogramm - gesendet wird hier nichts.
  * Liegt sonst nichts im Umschlag, schliesst er die Bestellung mit dem vorhandenen Schritt "Muster nicht
  * verfuegbar" ab. Sonst nicht: der Schritt gilt fuer die ganze Bestellung und nimmt auch die Muster mit,
- * die noch raus sollen - dann folgt am Muster "Ohne dieses Muster weiter packen".
+ * die noch raus sollen - dann folgt am Muster "Ohne dieses Muster weiter packen". Genauso bei einer Bestellung
+ * mit Ware: sie kennt den Schritt nicht und wird hier nie abgeschlossen.
  */
 import { $, esc } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { state } from '../../kern/zustand.mjs';
+import { umschlagAbschliessbar } from '../../lib/muster-packen.mjs';
 import { musterKurz, fuelleText, mailtoLink, NICHT_VERFUEGBAR_VORLAGE } from '../../lib/muster-nachfassen.mjs';
 import { setzeSchritt } from './zeitleiste.mjs';
 
@@ -26,7 +28,8 @@ export function oeffneKundeInformieren(k, { lesend = false, danach } = {}) {
   if (!gesperrte.length) return;
   const farben = musterKurz(gesperrte.map(m => ({ istMuster: true, titel: m.bestellt.titel, farbe: m.bestellt.farbe })));
   const mail = () => fuelleText(vorlage || NICHT_VERFUEGBAR_VORLAGE, { kundenname: k.name, absender: state.session?.benutzer?.name || null, farben }) || {};
-  const alleGesperrt = gesperrte.length === k.muster.length;
+  const abschliessbar = umschlagAbschliessbar(k);
+  const mitWare = k.bestellungen.filter(b => b.mitWare).map(b => b.orderName);
   const erste = mail();
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="mpInfoTitel" data-dialog>
     <h2 id="mpInfoTitel">Kunde informieren · ${esc(k.name)}</h2>
@@ -36,10 +39,12 @@ export function oeffneKundeInformieren(k, { lesend = false, danach } = {}) {
     <textarea id="mpInfoText" readonly rows="9">${esc(erste.text || '')}</textarea>
     <div class="zl-nv-knoepfe"><button type="button" class="btn btn-sm" data-kopieren="mpInfoText">Text kopieren</button>
       ${k.email ? `<a class="btn btn-sm" data-mp-info-mailto href="${esc(mailtoLink(k.email, erste))}">E-Mail öffnen</a>` : '<span class="small muted">Keine E-Mail-Adresse hinterlegt.</span>'}</div>
-    <p class="small muted">${alleGesperrt
+    <p class="small muted">${abschliessbar
     ? `Danach abschließen: ${esc(k.bestellungen.map(b => b.orderName).join(', '))} ${k.bestellungen.length === 1 ? 'gilt' : 'gelten'} dann als „Muster nicht verfügbar“ und ${k.bestellungen.length === 1 ? 'verschwindet' : 'verschwinden'} aus der Packstation.`
-    : 'Die übrigen Muster bleiben im Umschlag. Danach am gesperrten Muster „Ohne dieses Muster weiter packen“ wählen.'}</p>
-    <div class="actions"><button type="button" class="btn" data-close-dialog>Schließen</button>${alleGesperrt && !lesend ? '<button type="submit" class="btn btn-primary">Kunde ist informiert – abschließen</button>' : ''}</div>
+    : gesperrte.length === k.muster.length
+      ? `Zu ${esc(mitWare.join(', '))} gehört auch Ware, sie bleibt davon unberührt. Danach dort am gesperrten Muster „Ohne dieses Muster weiter packen“ wählen.`
+      : 'Die übrigen Muster bleiben im Umschlag. Danach am gesperrten Muster „Ohne dieses Muster weiter packen“ wählen.'}</p>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Schließen</button>${abschliessbar && !lesend ? '<button type="submit" class="btn btn-primary">Kunde ist informiert – abschließen</button>' : ''}</div>
   </form></div>`;
   const form = $('#dialogRoot form');
   form.querySelector('[data-kopieren]')?.focus();
@@ -57,7 +62,7 @@ export function oeffneKundeInformieren(k, { lesend = false, danach } = {}) {
   }
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
-    if (!alleGesperrt || lesend) return;
+    if (!abschliessbar || lesend) return;
     const knopf = form.querySelector('[type=submit]');
     knopf.disabled = true;
     let alleOk = true;

@@ -29,7 +29,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, offeneSuche, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
@@ -340,7 +340,8 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
   const pk = esc(k.packSchluessel);
   const gesperrte = k.muster.filter(m => m.gesperrt);
   // Bleibt nichts im Umschlag, gibt es nichts weiter zu packen: dann schliesst "Kunde informieren…" die Bestellung ab.
-  const ohneMoeglich = gesperrte.length > 0 && gesperrte.length < k.muster.length;
+  // Ausnahme Bestellung mit Ware: die bleibt offen, das Muster geht einzeln weg (ohneMusterMoeglich).
+  const andereBleiben = gesperrte.length > 0 && gesperrte.length < k.muster.length;
   const rueckLaden = state.route.params.get('laden');
   const rueckweg = rueckLaden ? `<a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden&amp;laden=${encodeURIComponent(rueckLaden)}">Zurück zu „Muster kommt an“</a>` : '';
   const bestellLink = (b, klasse = 'btn btn-sm btn-ghost') => `<a class="${klasse}" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Bestellstand prüfen</a>`;
@@ -410,7 +411,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
       </div>
     </summary>
     ${bestelldatenHtml(k)}
-    ${gesperrte.length ? `<p class="notice crit">${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : `Diese ${gesperrte.length} Muster kommen nicht`)}: ${esc(gesperrte.map(m => kurzName(m.vorher?.produktname) || m.etikett?.serie || m.bestellt.titel).join(', '))}. Der Kunde erfährt das nicht von selbst – bitte informieren.${ohneMoeglich ? ' Die übrigen Muster können danach ohne dieses raus.' : ''}</p>` : ''}
+    ${gesperrte.length ? `<p class="notice crit">${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : `Diese ${gesperrte.length} Muster kommen nicht`)}: ${esc(gesperrte.map(m => kurzName(m.vorher?.produktname) || m.etikett?.serie || m.bestellt.titel).join(', '))}. Der Kunde erfährt das nicht von selbst – bitte informieren.${andereBleiben ? ' Die übrigen Muster können danach ohne dieses raus.' : gesperrte.some(m => ohneMusterMoeglich(k, m)) ? ' Danach „Ohne dieses Muster weiter packen“ wählen; die Ware der Bestellung bleibt davon unberührt.' : ''}</p>` : ''}
     ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
     ${k.altvermerk && !k.klaeren ? `<p class="small muted">${esc(k.altvermerk)}</p>` : ''}
     ${k.gedruckt && k.bereich === 'klaeren' ? `<p class="small mp-vorbereitet">Umschlag vorbereitet: Aufkleber und Adresse ${esc(gedrucktText(k.gedruckt))}. Er wartet auf die fehlenden Muster.</p>` : ''}
@@ -418,7 +419,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     ${(k.adressFehlt || []).length ? `<p class="notice warn">Lieferadresse unvollständig: ${esc(k.adressFehlt.join(', '))}. Bitte die Lieferadresse in der Bestellung prüfen.</p>` : ''}
     ${(k.zuordnungFehlt || []).length ? `<p class="notice warn">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
     ${schritte}
-    <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId), treffer: treffer.has(m.lineItemId), ohneMoeglich })).join('')}</ul>
+    <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId), treffer: treffer.has(m.lineItemId), ohneMoeglich: ohneMusterMoeglich(k, m) })).join('')}</ul>
     ${k.bereich === 'warten' ? warteAnmerkung(k) : ''}
     ${unten ? `<div class="mp-aktionen">${unten}</div>` : ''}${mehrHtml}
   </details>`;

@@ -105,7 +105,7 @@ import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten
 import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
 import { musterwirkung } from '../operations/lib/musterwirkung.mjs';
 import { packhilfeDaten } from '../operations/lib/packhilfe-daten.mjs';
-import { musterPackliste } from '../docs/ai-dashboard/lib/muster-packen.mjs';
+import { musterPackliste, ohneMusterMoeglich } from '../docs/ai-dashboard/lib/muster-packen.mjs';
 import { musterPackenPfad, setzeGedruckt, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
 const execFileP = promisify(execFile);
@@ -2029,6 +2029,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * raus. Nur diese Position wird "erledigt" und in Shopify ohne Kundenmail gebucht - sonst bliebe die
      * Bestellung dort offen und nach dem Verschicken ein leerer Umschlag stehen. Der Schritt "Muster nicht
      * verfuegbar" taugt dafuer nicht: er schliesst die ganze Bestellung ab, auch die Muster, die noch raus sollen.
+     * Eine Bestellung mit Ware kennt den Schritt gar nicht: dort geht das Muster immer so weg, auch als letztes
+     * im Umschlag; die Ware bleibt unberuehrt.
      */
     async kundenMusterPackenSchreiben(payload = {}, benutzer = null) {
       if (payload?.aktion === 'ohne-muster') {
@@ -2039,7 +2041,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         const m = kunde?.muster.find(x => x.lineItemId === lineItemId);
         if (!m) throw new ApiError(409, 'Dieses Muster steht nicht mehr so in der Liste. Bitte neu laden.');
         if (!m.gesperrt) throw new ApiError(409, 'Dieses Muster ist nicht gesperrt. Bitte neu laden.');
-        if (kunde.muster.every(x => x.gesperrt)) throw new ApiError(409, 'Sonst liegt kein Muster in diesem Umschlag – bitte „Kunde informieren…“ und die Bestellung dort abschließen.');
+        if (!ohneMusterMoeglich(kunde, m)) throw new ApiError(409, 'Sonst liegt kein Muster in diesem Umschlag – bitte „Kunde informieren…“ und die Bestellung dort abschließen.');
         const dir = privatDirPath || privatDir();
         const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
         const modell = ladeBestellModell(dir);
