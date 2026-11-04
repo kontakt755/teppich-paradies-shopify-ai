@@ -1,0 +1,7 @@
+{
+  "hinweis": "Nur reine Rohexporte mit Kundendaten. Nicht aufnehmen: Ordner mit Belegen oder laufender Arbeit. Liste aendern nur per PR, Bedeutung in operations/README.md, Abschnitt Alte Bestellexporte.",
+  "ordner": [
+    "mcp-roh",
+    "lauf-2026-10-18-1410"
+  ]
+}

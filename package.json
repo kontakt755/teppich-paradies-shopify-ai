@@ -83,6 +83,7 @@
     "daten:sync-dienst": "node operations/scripts/sync-dienst.mjs",
     "betrieb:nachziehen": "node operations/scripts/betrieb-nachziehen.mjs",
     "daten:sichern": "node operations/scripts/sicherung.mjs",
+    "altexporte": "node operations/scripts/altexporte.mjs",
     "daten:anreichern": "node operations/scripts/anreicherung.mjs",
     "lieferantenseiten:holen": "node operations/scripts/lieferantenseiten-holen.mjs",
     "operations:einrichten": "bash operations/scripts/app-einrichten.sh",
