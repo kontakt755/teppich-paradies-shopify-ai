@@ -52,10 +52,36 @@ für den Flur (8), Kinder-Teppichboden mit Druckmotiv, günstige Velours/Frisé 
 | Unterkategorien nur Teppichboden | Shopify-Kollektionen (4 Bedingungen) | live seit 2026-11-04 |
 | Preisklassen-Kacheln | `sections/tp-preisklassen.liquid`, `snippets/tp-preisklassen-def.liquid`, 10 Vorlagen `collection.teppichboden*.json` | PR, Deploy lokal |
 
+## Empfehlungen je Preisklasse (live seit 2026-11-04)
+
+Freigegeben vom Inhaber (Vorwerk Bingo statt Nuvara). Metafeld `custom.empfehlung`
+(boolean, Storefront lesbar) = true; Plakette „Unsere Empfehlung“ auf der Karte
+(`blocks/_product-card-gallery.liquid`, erscheint mit dem Theme-Deploy). In der
+manuellen Kollektion `teppichboden` stehen die 15 auf Platz 1–15, gemischt nach der
+Regel Mitte, Einstieg, Mitte, gehoben; Premium ab Platz 9. Wer eine Preisklasse
+antippt, sieht deren drei zuerst.
+
+| Klasse | Empfehlungen |
+|---|---|
+| Preiswert | Vallora, Rivena, Vorwerk Bingo |
+| Komfort | Vorwerk Modena, Ophelia, Vorwerk Nutria Melange |
+| Gehoben | Wovena, Torvana, Kontura |
+| Premium | JAB Anstoetz Punto, JAB Anstoetz Clarity, Vorwerk Lyrica |
+| Exklusiv | Regalia, Vorwerk Safira, Vorwerk Romance |
+
+**Auswahl:** Musterstücke der letzten 12 Monate (Teppichboden und Teppich nach Maß
+derselben Qualität) × 3, Einstiege direkt auf die Produktseite in 90 Tagen ÷ 5, Farben
+(höchstens 20) ÷ 4, +2 wenn das erste Bild ein Raumbild ist. Ausgeschlossen: Auslauf,
+Sonderposten, ohne Raumbild. Höchstens zwei je Marke (Vorwerk, JAB) pro Klasse. Die
+Datenlage ist dünn (214 Musterstücke im Jahr); nach drei Monaten neu rechnen.
+
+**Rückweg:** Metafelder löschen (`metafieldsDelete`) bzw. auf false setzen; Reihenfolge aus
+`sicherung/2026-11-04-teppichboden-reihenfolge.json` (Ablauf steht in der Datei).
+
 ## Fahrplan
 
-1. Preisklassen live; danach je Klasse drei Empfehlungen vorn (Kriterien: Musterbestellungen,
-   Farbanzahl, Raumbild vorhanden; Vorschlag zur Sichtung, kein Automatismus).
+1. Preisklassen live (PR #1905); Empfehlungen je Klasse sind gesetzt (siehe oben), nach drei
+   Monaten mit neuen Zahlen pruefen.
 2. Menü Teppichboden auf rund 12 Links: Nach Preis, Nach Art, Nach Raum, Marken. Farbe,
    Rollenbreite, Kurz-/Mittelflor nur als Filter. Umbau nur mit `scripts/menue-umbau.mjs`.
 3. Sonderposten-Bereich: Restrollen mit gemessener Länge auf Sofortkauf, drei Schilder
