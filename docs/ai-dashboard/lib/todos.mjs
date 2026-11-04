@@ -609,6 +609,8 @@ export const AUSLAUF_STUMM_TAGE = 9;
  * Lieferanten und eine Pruefung, die sich nicht mehr meldet - archiviert wird nach Gegenprobe.
  * Farben ohne Handmuster ("ohne-muster", A fuehrt sie "nur in Format") sind kein Auslauf:
  * eigenes To-do, das Muster wird gesperrt, die Ware bleibt.
+ * Lieferant I, lange nichts verfuegbar ("nicht-verfuegbar"): ebenfalls eigenes gelbes To-do,
+ * denn das ist kein Auslaufbeleg und darf nicht nach "archivieren" klingen.
  */
 function ausAuslauf(quellen, jetzt) {
   const d = quellen.shopwache?.auslauf;
@@ -629,7 +631,20 @@ function ausAuslauf(quellen, jetzt) {
       ].filter(Boolean).join(' · '),
     };
   })()] : [];
-  const befunde = (d.befunde || []).filter(b => b.ergebnis !== 'ohne-muster');
+  const ohneBestand = (d.befunde || []).filter(b => b.ergebnis === 'nicht-verfuegbar');
+  if (ohneBestand.length) {
+    const handles = [...new Set(ohneBestand.flatMap(b => b.handles || []))];
+    const n = ohneBestand.length;
+    muster.push({
+      ...basis, id: 'auslauf-nicht-verfuegbar', ton: 'warn', knopf: lexikon(handles),
+      titel: `${n} Artikel seit mindestens 30 Tagen in keiner Größe verfügbar`,
+      kontext: [
+        handles.slice(0, 3).join(', '), handles.length > 3 ? `+${handles.length - 3} weitere` : null,
+        'kein Auslaufbeleg, beim Lieferanten nachfragen',
+      ].filter(Boolean).join(' · '),
+    });
+  }
+  const befunde = (d.befunde || []).filter(b => !['ohne-muster', 'nicht-verfuegbar'].includes(b.ergebnis));
   const weg = befunde.filter(b => b.ergebnis === 'fehlt');
   if (befunde.length) {
     const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
@@ -641,7 +656,7 @@ function ausAuslauf(quellen, jetzt) {
         : `Auslauf-Prüfung: ${befunde.length} ${befunde.length === 1 ? 'Seite' : 'Seiten'} auffällig`,
       kontext: [
         handles.slice(0, 3).join(', '), handles.length > 3 ? `+${handles.length - 3} weitere` : null,
-        'gegenprüfen, dann archivieren (AGENTS.md)',
+        'gegenprüfen, dann archivieren; fällt nur eine Variante weg, Freigabe holen (AGENTS.md)',
       ].filter(Boolean).join(' · '),
     }];
   }

@@ -13,7 +13,8 @@
  *
  * Lieferantenadressen stehen nicht im Repository: A kommt aus
  * $TP_PRIVAT_DIR/lieferantendaten/lieferant-a.env, C/D/E aus den
- * Einkaufslinks des Lexikons.
+ * Einkaufslinks des Lexikons. Lieferant I kommt ohne Netz aus dem Verlauf,
+ * den der Bestandsabgleich schreibt (operations/lib/auslauf-bestand.mjs).
  */
 
 import fs from 'node:fs';
@@ -22,20 +23,22 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import {
-  PRUEFBAR, AUSFALL_GRENZE, pruefziele, bewerteSeite, bewerteSuche, zusammenfassen, gesamtStand,
+  PRUEFBAR, AUS_BESTANDSDATEI, AUSFALL_GRENZE, pruefziele, bewerteSeite, bewerteSuche, zusammenfassen, gesamtStand,
   neuheitenZiele, neueArtikel, neuSeitVorlauf,
 } from '../lib/auslauf.mjs';
+import { teilAusVerlauf, verlaufDatei } from '../lib/auslauf-bestand.mjs';
 
 const PAUSE_MS = 300;
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36';
 const warte = ms => new Promise(r => setTimeout(r, ms));
+const ALLE = [...PRUEFBAR, ...AUS_BESTANDSDATEI];
 
 export function privatDir() {
   return process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
 }
 
 export function argumente(argv) {
-  const a = { nur: PRUEFBAR, hoechstens: Infinity, ziel: null, neuheiten: true, hilfe: false };
+  const a = { nur: ALLE, hoechstens: Infinity, ziel: null, neuheiten: true, hilfe: false };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--nur') a.nur = String(argv[++i] || '').toUpperCase().split(',').filter(Boolean);
@@ -45,8 +48,8 @@ export function argumente(argv) {
     else if (k === '--help' || k === '-h') a.hilfe = true;
     else throw new Error(`Unbekanntes Argument: ${k}`);
   }
-  const falsch = a.nur.filter(l => !PRUEFBAR.includes(l));
-  if (falsch.length) throw new Error(`--nur kennt nur ${PRUEFBAR.join(',')} (nicht ${falsch.join(',')})`);
+  const falsch = a.nur.filter(l => !ALLE.includes(l));
+  if (falsch.length) throw new Error(`--nur kennt nur ${ALLE.join(',')} (nicht ${falsch.join(',')})`);
   if (!(a.hoechstens > 0)) throw new Error('--hoechstens muss eine Zahl > 0 sein');
   return a;
 }
@@ -148,6 +151,11 @@ async function pruefeNeuheitenA(produkte, dir, vorlauf, hoechstens) {
   return { geprueft: liste.length, fehler, ausfall: null, kandidaten, neu: neuSeitVorlauf(kandidaten, vorlauf) };
 }
 
+/** Lieferant I: Verlauf lesen. Fehlt er oder ist er kaputt, meldet teilAusVerlauf eine Stoerung. */
+function leseVerlauf(dir) {
+  try { return JSON.parse(fs.readFileSync(verlaufDatei(dir), 'utf8')); } catch { return null; }
+}
+
 /**
  * D lehnt Abrufe ohne Browser ab ("Request Rejected"). Ein Headless-Browser
  * oeffnet die Startseite und ruft die Produktseiten von dort per fetch ab.
@@ -185,7 +193,7 @@ async function pruefeD(ziele) {
 export async function main(argv = process.argv.slice(2)) {
   const a = argumente(argv);
   if (a.hilfe) {
-    console.log('npm run auslauf:pruefen [-- --nur A,C,D,E] [--hoechstens N] [--ziel datei]');
+    console.log('npm run auslauf:pruefen [-- --nur A,C,D,E,I] [--hoechstens N] [--ziel datei]');
     return;
   }
   const dir = privatDir();
@@ -196,10 +204,15 @@ export async function main(argv = process.argv.slice(2)) {
   const ziele = pruefziele(lex.produkte);
   const teile = [];
   for (const lf of a.nur) {
-    const liste = ziele[lf].slice(0, a.hoechstens);
     const t0 = Date.now();
-    const erg = lf === 'A' ? await pruefeA(liste, dir) : lf === 'D' ? await pruefeD(liste) : await pruefeSeiten(lf, liste);
-    const teil = zusammenfassen(lf, erg);
+    let teil;
+    if (AUS_BESTANDSDATEI.includes(lf)) {
+      teil = teilAusVerlauf(leseVerlauf(dir));
+    } else {
+      const liste = ziele[lf].slice(0, a.hoechstens);
+      const erg = lf === 'A' ? await pruefeA(liste, dir) : lf === 'D' ? await pruefeD(liste) : await pruefeSeiten(lf, liste);
+      teil = zusammenfassen(lf, erg);
+    }
     teile.push(teil);
     console.log(`${new Date().toISOString()} ${lf}: ${teil.geprueft} geprueft, ${teil.befunde.length} Befunde, ${teil.fehler} Fehler${teil.ausfall ? ` - AUSFALL: ${teil.ausfall}` : ''} (${Math.round((Date.now() - t0) / 1000)} s)`);
   }

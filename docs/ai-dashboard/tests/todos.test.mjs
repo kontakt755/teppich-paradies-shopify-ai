@@ -413,6 +413,26 @@ test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden
   assert.deepEqual(mit(null), []);
 });
 
+test('Auslauf-Pruefung: lange nichts verfuegbar wird ein eigenes gelbes To-do und klingt nicht nach Archivieren', () => {
+  const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
+  const nv = h => ({ lieferant: 'I', ergebnis: 'nicht-verfuegbar', kennung: h, handles: [h], grund: 'Seit 31 Tagen in keiner Groesse verfuegbar' });
+  const nur = mit({ geprueftAm: vorTagen(1), befunde: [nv('testteppich-a'), nv('testteppich-b')] });
+  assert.equal(nur.length, 1);
+  assert.equal(nur[0].id, 'auslauf-nicht-verfuegbar');
+  assert.equal(nur[0].ton, 'warn');
+  assert.equal(nur[0].titel, '2 Artikel seit mindestens 30 Tagen in keiner Größe verfügbar');
+  assert.equal(nur[0].kontext, 'testteppich-a, testteppich-b · kein Auslaufbeleg, beim Lieferanten nachfragen');
+  assert.doesNotMatch(nur[0].kontext, /archivieren/);
+  assert.equal(nur[0].knopf.href, '#/lexikon?lq=testteppich-a');
+
+  // Daneben zaehlt der echte Befund nur sich selbst; eine fehlende Variante nennt die Freigabe.
+  const beide = mit({ geprueftAm: vorTagen(1), befunde: [nv('testteppich-a'), { lieferant: 'I', ergebnis: 'fehlt', kennung: 'S1', handles: ['testteppich-c'] }] });
+  assert.deepEqual(beide.map(t => t.id).sort(), ['auslauf', 'auslauf-nicht-verfuegbar']);
+  const rot = beide.find(t => t.id === 'auslauf');
+  assert.match(rot.titel, /1 Artikel/);
+  assert.match(rot.kontext, /^testteppich-c · gegenprüfen.*Variante weg, Freigabe holen/);
+});
+
 test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eigenes To-do, kein Auslauf', () => {
   const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
   const ohne = { lieferant: 'A', ergebnis: 'ohne-muster', kennung: 'TEPTEST04_043', handles: ['testa-teppichboden'], grund: 'Farbe 43(nur in Format) - kein Handmuster, Muster sperren' };
