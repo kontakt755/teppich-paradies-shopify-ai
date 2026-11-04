@@ -63,16 +63,18 @@ export const LIEFERANT_UNBEKANNT = 'Lieferant unbekannt';
 /**
  * Lagereintraege je Lieferant, mit Summe je Gruppe. Der Server traegt `lieferant: {id, name}` ein
  * (Zuordnung ueber die Artikelnummern); der Name kommt aus den privaten Stammdaten.
- * @returns {{id: string|null, name: string, eintraege: object[], stueck: number}[]}
+ * @returns {{id: string|null, name: string, eintraege: object[], stueck: number, jeArt: Object<string, number>}[]}
  */
 export function nachLieferant(eintraege = [], zaehlbar = ZAEHLBAR_STANDARD) {
   const je = new Map();
   for (const e of eintraege) {
     const id = e?.lieferant?.id || null;
-    if (!je.has(id)) je.set(id, { id, name: id ? e.lieferant.name || `Lieferant ${id}` : LIEFERANT_UNBEKANNT, eintraege: [], stueck: 0 });
+    if (!je.has(id)) je.set(id, { id, name: id ? e.lieferant.name || `Lieferant ${id}` : LIEFERANT_UNBEKANNT, eintraege: [], stueck: 0, jeArt: {} });
     const g = je.get(id);
     g.eintraege.push(e);
-    g.stueck += lagerNochDa(e, zaehlbar);
+    const da = lagerNochDa(e, zaehlbar);
+    g.stueck += da;
+    g.jeArt[e?.art] = (g.jeArt[e?.art] || 0) + da;
   }
   const rang = g => {
     if (!g.id) return LIEFERANTEN_ZUERST.length + 1;
@@ -80,4 +82,15 @@ export function nachLieferant(eintraege = [], zaehlbar = ZAEHLBAR_STANDARD) {
     return i < 0 ? LIEFERANTEN_ZUERST.length : i;
   };
   return [...je.values()].sort((a, b) => rang(a) - rang(b) || a.name.localeCompare(b.name, 'de'));
+}
+
+const ART_WOERTER = [['einzel', 'Einzelmuster', 'Einzelmuster'], ['probestueck', 'Probestück', 'Probestücke'], ['bahn', 'Bahn', 'Bahnen'], ['rest', 'Verlegerest', 'Verlegereste']];
+
+/** Summe einer Lieferantengruppe je Art: Einzelmuster, Probestuecke und Bahnen sind nicht dasselbe "Stueck". */
+export function stueckJeArt(jeArt = {}) {
+  const bekannt = new Set(ART_WOERTER.map(([art]) => art));
+  const teile = ART_WOERTER.filter(([art]) => jeArt[art] > 0).map(([art, eins, viele]) => `${jeArt[art]} ${jeArt[art] === 1 ? eins : viele}`);
+  const sonst = Object.entries(jeArt).filter(([art]) => !bekannt.has(art)).reduce((summe, [, n]) => summe + n, 0);
+  if (sonst > 0) teile.push(`${sonst} Stück`);
+  return teile.join(' · ') || '0 Stück';
 }

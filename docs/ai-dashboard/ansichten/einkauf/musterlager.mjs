@@ -33,7 +33,7 @@ import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
 import { oeffneEtikettenDruck, etikettenFuerBestellung } from '../../bausteine/etiketten-druck.mjs';
-import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar } from '../../lib/musterlager-bestand.mjs';
+import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar, stueckJeArt } from '../../lib/musterlager-bestand.mjs';
 
 export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -183,7 +183,7 @@ export function viewEinkaufMusterlager() {
     </section>`).join('');
     };
     liste = nachLieferant(eintraege, d.zaehlbar).map(g => `<section class="ml-lieferant">
-      <h2 class="section-title">${esc(g.name)} <span class="small muted">${esc(plural(g.eintraege.length, 'Muster', 'Muster'))} · ${esc(g.stueck)} Stück</span></h2>
+      <h2 class="section-title">${esc(g.name)} <span class="small muted">${esc(plural(g.eintraege.length, 'Eintrag', 'Einträge'))} · ${esc(stueckJeArt(g.jeArt))}</span></h2>
       ${produkte(g.eintraege)}
     </section>`).join('');
   }
