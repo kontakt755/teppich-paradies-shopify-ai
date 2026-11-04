@@ -124,7 +124,7 @@
     if (anzahl > e.maxStueck) { erg.fehler = 'Höchstens ' + e.maxStueck + ' ' + je + ' je Bestellung – für mehr bitte kurz bei uns melden.'; return erg; }
     var minGesamt = Number(e.minGesamtCm) || 0;
     if (e.art !== 'stange' && minGesamt > 0 && laenge * anzahl < minGesamt) {
-      erg.fehler = 'Zugeschnitten liefern wir ab ' + gesamtGrenze(minGesamt) + ', bisher ' + meter(laenge * anzahl) + ' m. Bitte Länge oder Stückzahl erhöhen' + (e.stangeWaehlbar ? ' oder eine ganze Stange wählen.' : '.');
+      erg.fehler = 'Zugeschnitten liefern wir ab ' + gesamtGrenze(minGesamt) + ', bisher ' + meter(laenge * anzahl) + ' m. Bitte Länge oder Stückzahl erhöhen' + (e.stangeWaehlbar ? ' oder eine ganze Stange wählen.' : '.') + ' Bei gemischten Längen bitte kurz bei uns melden.';
       return erg;
     }
     erg.ok = true;
