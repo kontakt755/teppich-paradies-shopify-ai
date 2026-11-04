@@ -172,6 +172,21 @@ test('API: nur ein Umschlag ohne Kaufseite ist ein Fehler mit Grund; Falsches wi
   assert.equal(gedruckt.length, 0);
 });
 
+test('API: Gesperrtes Muster steht nicht auf dem Blatt; ist keins mehr uebrig, gibt es keins', async t => {
+  const { api, gedruckt } = umgebung(t);
+  const echt = api.kundenMusterPacken.bind(api);
+  const mitSperre = gesperrt => () => {
+    const liste = echt();
+    return { ...liste, kunden: liste.kunden.map(k => ({ ...k, muster: k.muster.flatMap(m => (gesperrt ? [m, { ...m, lineItemId: 'weg', gesperrt: { imShop: true }, bestellt: { ...m.bestellt, titel: 'Muster Gesperrt' } }] : [{ ...m, gesperrt: { imShop: true } }])) })) };
+  };
+  api.kundenMusterPacken = mitSperre(true);
+  await api.kundenMusterBegleitblatt({ nummern: '801' });
+  assert.doesNotMatch(gedruckt[0], /Gesperrt/);
+  assert.match(gedruckt[0], /Ihr Muster ist da\./);
+  api.kundenMusterPacken = mitSperre(false);
+  await assert.rejects(api.kundenMusterBegleitblatt({ nummern: '801' }), e => e.status === 422 && /kein Muster mehr/.test(e.message));
+});
+
 test('API: Ohne Produktdaten sagt die Meldung das, statt alle Muster fuer ausgelaufen zu halten', async t => {
   const { dir, api, gedruckt } = umgebung(t);
   fs.rmSync(path.join(dir, 'lexikon/produkte.json'));

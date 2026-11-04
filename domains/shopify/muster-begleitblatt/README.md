@@ -28,6 +28,7 @@ Direktversand vom Hersteller bekommt kein Blatt.
   `_Quellvariante_ID` der Bestellposition), geprüft gegen das Lexikon (`lexikon/produkte.json`, kein Abruf beim
   Druck). Ist die Farbe nicht verfügbar oder passt sie nicht, gibt es für diesen Umschlag kein Blatt, und die Packstation sagt warum: Ein QR-Code
   auf eine tote Seite wäre schlimmer als kein Blatt.
+- **Gesperrte Muster** kommen nicht in den Umschlag und stehen deshalb nicht auf dem Blatt.
 - **In Ihrer Nähe:** nur, wenn die ganze Postleitzahl laut `assets/tp-verlegegebiet-orte.json` innerhalb von
   50 km liegt, weil dort „Aufmaß kostenlos“ zugesagt wird. Sonst „Wir liefern deutschlandweit“.
 - **Google-Note:** aus dem Monatslauf (`$TP_PRIVAT_DIR/google-bewertung/status.json`, dieselben Zahlen wie

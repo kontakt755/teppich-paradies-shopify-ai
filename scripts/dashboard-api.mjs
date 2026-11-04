@@ -1897,7 +1897,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (!nr.some(n => gewuenscht.has(String(n).replace(/^#/, '')))) continue;
         try {
           if (k.direktversand) throw new BlattFehler('Die Muster gehen direkt vom Hersteller an den Kunden.');
-          const muster = k.muster.filter(x => x.anzahl !== 0).map(m => musterZiel(m, positionen.get(m.lineItemId), produkte));
+          // Gesperrte Muster kommen nicht in den Umschlag, also auch nicht aufs Blatt.
+          const muster = k.muster.filter(x => x.anzahl !== 0 && !x.gesperrt).map(m => musterZiel(m, positionen.get(m.lineItemId), produkte));
           if (!muster.length) throw new BlattFehler('In diesem Umschlag liegt kein Muster mehr.');
           umschlaege.push({ nummern: nr, name: blattName(k.name), nah: istNah(k.adresse?.plz), muster,
             tag: new Date(k.bestellungen[0].datum).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }) });
