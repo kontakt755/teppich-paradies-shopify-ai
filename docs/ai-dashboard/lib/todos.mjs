@@ -790,6 +790,23 @@ function ausSicherung(quellen, jetzt) {
 }
 
 /**
+ * Verschluesselte Kopie der Sicherung in der Dropbox (operations/lib/betriebszustand.mjs,
+ * ausserHausStand). Kein Stand heisst: hier nicht eingerichtet, dann still.
+ */
+function ausSicherungAusserHaus(quellen, jetzt) {
+  const s = quellen.shopwache?.sicherungAusserHaus;
+  if (!s) return [];
+  const fehler = s.letzterFehler;
+  if (!fehler && s.status !== 'alt' && s.status !== 'fehler') return [];
+  const zuletzt = s.letzterErfolg ? `letzte Kopie ${SICHERUNG_ZEIT.format(new Date(s.letzterErfolg))}` : 'noch keine erfolgreiche Kopie';
+  return [{
+    id: 'sicherung-ausser-haus', art: 'sicherung', bereich: 'website', alterTage: tageSeit(s.letzterErfolg, jetzt), ton: 'crit',
+    titel: 'Sicherungskopie in der Dropbox fehlt',
+    kontext: [fehler?.meldung, zuletzt, 'Claude Bescheid geben: „Sicherung außer Haus prüfen“'].filter(Boolean).join(' · '),
+  }];
+}
+
+/**
  * Akquise Verlegeauftraege (#1447): faellige Wiedervorlagen als ein To-do im Buero.
  * `quellen.akquise` = Liste der faelligen Firmen (lib/akquise.mjs faelligeWiedervorlagen).
  */
@@ -856,6 +873,7 @@ function alleTodos(quellen, opt) {
     ...ausRoutinen(quellen, k.jetzt),
     ...ausKiStand(quellen),
     ...ausSicherung(quellen, k.jetzt),
+    ...ausSicherungAusserHaus(quellen, k.jetzt),
   ];
 }
 
