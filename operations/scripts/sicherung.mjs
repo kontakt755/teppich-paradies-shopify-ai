@@ -52,6 +52,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'musterherkunft.json',
   // Gemeinsame Packhaken und manuell abgehakte Bestellungen gibt es nur lokal.
   'muster-packen.json', 'muster-grossbrief.json',
+  // WhatsApp-Nummer auf dem Begleitblatt (domains/shopify/muster-begleitblatt): nur hier, nie im Repository.
+  'muster-begleitblatt/einstellungen.json',
   'bestellmarken.json',
   // Musterlager: welche Muster wir selbst da haben (operations/lib/musterlager.mjs).
   'musterlager.json',

@@ -39,6 +39,7 @@ import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { ratgeberFuerBestellung, ratgeberHtml, kurzTitel as ratgeberKurzTitel, RATGEBER, ORDNER as RATGEBER_ORDNER } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
+import { BlattFehler, anzeigename as blattName, bewertungText, blaetterHtml, istNah, musterZiel, whatsappNummer } from '../domains/shopify/muster-begleitblatt/vorlage.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, bereiteStatusPositionenVor, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
@@ -655,7 +656,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), nachfassPostfachLesen = null, sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), nachfassPostfachLesen = null, sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null, begleitblattPdf = null, begleitblattQr = undefined } = {}) {
   const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -1868,6 +1869,63 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const r = RATGEBER.find(x => x.schluessel === schluessel);
       if (!r) throw new ApiError(404, 'Diesen Ratgeber gibt es nicht.');
       return { inhalt: fs.readFileSync(path.join(RATGEBER_ORDNER, 'pdf', r.datei)), typ: 'application/pdf', name: `Ratgeber ${ratgeberKurzTitel(r)}.pdf` };
+    },
+
+    /**
+     * A4-Begleitblaetter fuer die genannten Umschlaege als ein PDF. `nummern` sind Bestellnummern ohne "#",
+     * damit kein Kundenbezug in der Adresse steht. Rein lesend; Chromium startet erst beim Klick.
+     * Ein Umschlag ohne sichere Kaufseite wird ausgelassen und gemeldet, die uebrigen kommen trotzdem.
+     */
+    async kundenMusterBegleitblatt({ nummern = '' } = {}) {
+      if (typeof nummern !== 'string' || !/^\d{1,10}(,\d{1,10}){0,99}$/.test(nummern)) throw new ApiError(400, 'Bestellnummer fehlt oder es sind zu viele auf einmal.');
+      const liste = this.kundenMusterPacken();
+      if (!liste.verfuegbar) throw new ApiError(503, liste.hinweis);
+      const dir = privatDirPath || privatDir();
+      const positionen = new Map((exportOrders(readJsonGecacht(path.join(dir, 'bestelluebersicht', 'orders.json'))) || [])
+        .flatMap(o => (Array.isArray(o.lineItems) ? o.lineItems : o.lineItems?.nodes || o.lineItems?.edges?.map(e => e.node) || []))
+        .map(p => [p.id, p]));
+      // Lexikon statt Shop-Abfragen: Der Shop weist schnelle Serien ab, gerade beim Sammeldruck.
+      const katalog = this._lexikonProdukte();
+      if (!katalog.length) throw new ApiError(503, 'Die Produktdaten fehlen. Bitte „Jetzt aktualisieren“ und danach erneut drucken.');
+      const produkte = new Map(katalog.map(p => [p.handle, p]));
+      const gewuenscht = new Set(nummern.split(','));
+      const umschlaege = [];
+      const ausgelassen = [];
+      // Packreihenfolge der Liste, nicht die der Anfrage: so liegen Blaetter und Umschlaege gleich.
+      for (const k of liste.kunden) {
+        const nr = k.bestellungen.map(b => b.orderName);
+        if (!nr.some(n => gewuenscht.has(String(n).replace(/^#/, '')))) continue;
+        try {
+          if (k.direktversand) throw new BlattFehler('Die Muster gehen direkt vom Hersteller an den Kunden.');
+          const muster = k.muster.filter(x => x.anzahl !== 0).map(m => musterZiel(m, positionen.get(m.lineItemId), produkte));
+          if (!muster.length) throw new BlattFehler('In diesem Umschlag liegt kein Muster mehr.');
+          umschlaege.push({ nummern: nr, name: blattName(k.name), nah: istNah(k.adresse?.plz), muster,
+            tag: new Date(k.bestellungen[0].datum).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }) });
+        } catch (e) {
+          if (!(e instanceof BlattFehler)) throw e;
+          ausgelassen.push({ nummer: nr.join(' / '), grund: e.message });
+        }
+      }
+      if (!umschlaege.length && !ausgelassen.length) throw new ApiError(404, 'Dieser Umschlag steht nicht mehr in der Packliste. Bitte neu laden.');
+      let pdf = null;
+      if (umschlaege.length) {
+        let whatsapp;
+        try { whatsapp = whatsappNummer(readJsonIfExists(path.join(dir, 'muster-begleitblatt', 'einstellungen.json'))?.whatsapp); }
+        catch (e) { throw new ApiError(500, e.message); }
+        // Stand des Monatslaufs: dieselben Zahlen wie im Shop. Der Pflichtsatz steht in der Vorlage direkt darunter.
+        const bewertung = bewertungText(readJsonIfExists(path.join(dir, 'google-bewertung', 'status.json'))?.meldung);
+        const html = blaetterHtml(umschlaege, { whatsapp, bewertung, ...(begleitblattQr ? { qr: begleitblattQr } : {}) });
+        const drucken = begleitblattPdf || (async h => (await import('../domains/shopify/muster-begleitblatt/pdf.mjs')).blaetterAlsPdf(h));
+        const ergebnis = await drucken(html);
+        pdf = ergebnis.pdf;
+        for (const nummer of ergebnis.zuVoll) {
+          const u = umschlaege.find(x => x.nummern[0] === nummer);
+          ausgelassen.push({ nummer: u.nummern.join(' / '), grund: 'Der Text passt nicht auf das Blatt.' });
+        }
+      }
+      if (!pdf) throw new ApiError(422, ausgelassen.map(a => `${a.nummer}: ${a.grund}`).join(' '));
+      const name = gewuenscht.size === 1 ? `Begleitblatt ${[...gewuenscht][0]}.pdf` : 'Begleitblaetter.pdf';
+      return { inhalt: pdf, typ: 'application/pdf', name, ausgelassen };
     },
 
     /** Rein intern und lesend: weder Shopify-Abgleich noch Kundendaten im Etikett. */
