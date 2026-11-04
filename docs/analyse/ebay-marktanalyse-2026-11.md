@@ -52,7 +52,7 @@ Was daraus folgt:
 - **Größte Umsätze:** Sockelleisten und Wohnteppiche, beide mit über 1.000 Verkäufern und sehr niedrigen Preisen.
 - **Klar gefragt bei wenigen Anbietern:** Kunstrasen und Klickvinyl.
 - **Klein:** Teppichboden als Meterware mit 15 Verkäufern. Bei Klebevinyl, PVC und Resten ist in dieser Stichprobe wenig Umsatz sichtbar.
-- **Kaum Markt:** Ketteln und Maßanfertigung, nur ein einziges Angebot.
+- **Ketteln und Maßanfertigung:** Unter „teppich nach maß ketteln“ nur ein einziges Angebot. Andere Suchbegriffe sind nicht geprüft, das Marktvolumen ist also offen.
 - **Produktart:** Bei Teppichboden, PVC und Kunstrasen dominiert Meterware, bei Teppichfliesen und Sockelleisten feste Größen oder Stückzahlen. Pakete nennt fast kein Titel; Klickvinyl wirbt stattdessen mit „ab … €/m²“.
 
 ## Gebühren und Kategorien
@@ -75,23 +75,26 @@ Seite gibt es Shop-Abos ab 39,95 € im Monat (400 freie Festpreisangebote), ohn
 
 Unsere Werte: aktive, verfügbare Varianten aus dem Lexikon-Export vom 2026-11-03, inkl. USt.
 „Nötig“ ist der eBay-Preis, bei dem nach Provision so viel bleibt wie der Shop-Median, ohne festen
-Anteil je Bestellung und ohne unsere Shop-Kosten.
+Anteil je Bestellung und ohne unsere Shop-Kosten. Die Nettoprovision wird auf den Bruttopreis
+berechnet: Median / (1 − 1,19 × Provision).
 
 | Warengruppe | Unser P10 | Unser Median | Nötig auf eBay | eBay-Beleg |
 |---|---:|---:|---:|---|
-| Teppichboden, €/m² | 36,90 | 69,90 | 81,28 | Titel: Schlinge 11,99–23,99; Velours 13,99–24,99 |
-| Nadelfilz, €/m² | 21,90 | 38,90 | 45,23 | Titel: 9,99–15,99 |
-| Teppichfliesen, €/m² | 44,90 | 69,00 | 80,23 | Schätzung aus Stückpreis 1,65–3,16 € je 50 × 50 cm: etwa 7–13 |
-| Restrollen, Variantenpreis | 29,95 | 34,95 | 40,64 | Titel: 7–8 €/m² |
-| PVC von der Rolle, €/m² | 19,99 | 23,99 | 27,57 | Titel: 12; ein weiteres Angebot ab 18,99 |
-| Klickvinyl, €/m² | 39,99 | 52,99 | 60,91 | Titel: ab 10,99, ab 12,90, 16,99 |
-| Klebevinyl, €/m² | 30,99 | 39,99 | 45,97 | Titel: 23,90 |
-| Kunstrasen, €/m² | 24,90 | 40,90 | 47,01 | ab 7,99 und ab 12,99, Einheit nicht geprüft |
-| Sockelleisten, € je Variante | 11,90 | 18,00 | 20,69 | ab 1,79, Länge nicht vergleichbar |
+| Teppichboden, €/m² | 36,90 | 69,90 | 83,87 | Titel: Schlinge 11,99–23,99; Velours 13,99–24,99 |
+| Nadelfilz, €/m² | 21,90 | 38,90 | 46,68 | Titel: 9,99–15,99 |
+| Teppichfliesen, €/m² | 44,90 | 69,00 | 82,79 | Schätzung aus Stückpreis 1,65–3,16 € je 50 × 50 cm: etwa 7–13 |
+| Restrollen, Variantenpreis | 29,95 | 34,95 | 41,94 | Titel: 7–8 €/m² |
+| PVC von der Rolle, €/m² | 19,99 | 23,99 | 28,38 | Titel: 12; ein weiteres Angebot ab 18,99 |
+| Klickvinyl, €/m² | 39,99 | 52,99 | 62,69 | Titel: ab 10,99, ab 12,90, 16,99 |
+| Klebevinyl, €/m² | 30,99 | 39,99 | 47,31 | Titel: 23,90 |
+| Kunstrasen, €/m² | 24,90 | 40,90 | 48,39 | ab 7,99 und ab 12,99, Einheit nicht geprüft |
+| Sockelleisten, € je Variante | 11,90 | 18,00 | 21,29 | ab 1,79, Länge nicht vergleichbar |
 
 Der Beleg ist schmal: **eine Handvoll Titel und Angebote, keine vollständige €/m²-Auswertung.** Die
 Produktrecherche liefert keinen Grundpreis. „Ab“-Preise sind oft die günstigste Variante; bei einem
-Klickvinyl-Angebot steht auch 24,99 €/m². Der Abstand ist aber in allen Warengruppen groß.
+Klickvinyl-Angebot steht auch 24,99 €/m². In den Gruppen mit vergleichbarem €/m²-Preis ist der
+Abstand trotzdem groß. Kein Preisurteil gibt es für Restrollen (Variantenpreis gegen €/m²),
+Sockelleisten (Längen nicht vergleichbar) und Kunstrasen (Einheit nicht geprüft).
 
 ## Konkurrenten
 
@@ -123,7 +126,7 @@ Verkäufer nicht sicher ausgewertet. Keiner der Verkäufer steht in unserem priv
 1. **Kein breiter Start zu Shop-Preisen.** Der Inhaber startet deshalb gezielt mit Sonderposten und Ware bis 45 €/m², siehe oben.
 2. **Einkaufspreise:** Der interne Abgleich spricht gegen einen Start. Offen sind vor allem Klickvinyl, PVC und Kunstrasen von Lieferant A, dort fehlen die Händlerpreise.
 3. **Nur falls diese Preise tragen, kleiner Test.** Nach Nachfrage und wenigen Anbietern kämen zuerst **Kunstrasen und Klickvinyl** infrage.
-4. **Vorerst nicht:** Sockelleisten und Wohnteppiche wegen Preiskampf und vieler Anbieter, Maßware und Ketteln mangels sichtbarer Nachfrage.
+4. **Vorerst nicht:** Sockelleisten und Wohnteppiche wegen Preiskampf und vieler Anbieter, Maßware und Ketteln, weil unter dem geprüften Suchbegriff kaum Nachfrage sichtbar ist; andere Begriffe sind ungeprüft.
 5. **Nadelfilz nur nach Prüfung:** Die Nachfrage dort ist stark durch Bastelfilz verzerrt.
 
 Unsere Stärke im Shop (Beratung, Maß, Muster, Montage) lässt sich aus diesen Daten nicht bewerten.
