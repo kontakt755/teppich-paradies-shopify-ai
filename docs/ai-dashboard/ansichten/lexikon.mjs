@@ -19,6 +19,7 @@ import { schliesseMehr } from '../kern/navigation.mjs';
 import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
 import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-etiketten-status.mjs';
 import { musterlagerBlock, musterlagerEingabe } from './lexikon-musterlager.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
@@ -641,7 +642,7 @@ function offeneBestellungenBlock(offene = [], wartende = []) {
   const bekannt = new Set(offene.map(o => o.bestellung));
   const uebrige = wartende.filter(w => !w.bezug || !bekannt.has(w.bezug));
   if (!ware.length && !muster.length && !uebrige.length) return '';
-  const kundeLink = o => `<a href="#/kunden?kunde=${encodeURIComponent(o.kundenKey)}"><b>${esc(o.kunde)}</b></a>`;
+  const kundeLink = o => `<a href="#/kunden?kunde=${kundenLinkWert(o.kundenKey)}"><b>${esc(o.kunde)}</b></a>`;
   const zeile = o => {
     const schritt = schrittJeBestellung.get(o.bestellung);
     return `<li>${kundeLink(o)} · ${esc(o.bestellung)} vom ${esc(fmtDate(o.datum))}${o.farbe ? ` · ${esc(o.farbe)}` : ''}${o.menge && !o.istMuster ? ` · ${esc(o.menge)}` : ''} – ${esc(o.stand)}${schritt ? ` <span class="small muted">(als Nächstes: ${esc(schritt)})</span>` : ''}</li>`;

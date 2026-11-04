@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { bestellzeile } from '../../../operations/lib/bestellliste.mjs';
 import { bestellArtPasst, warenArbeitsstand, shopBestellarbeit } from '../lib/shop-bestellarbeit.mjs';
 import { warenbestellungenBlock } from '../ansichten/heute/warenbestellungen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 const jetzt = Date.parse('2026-10-22T12:00:00Z');
 const p = (lineItemId, istMuster = false, extra = {}) => ({ lineItemId, istMuster, menge: 1,
@@ -154,7 +155,7 @@ test('Renderer fuehrt lesend direkt zur vorhandenen Kundenakte und maskiert Text
   assert.match(html, /Bestellung ansehen/);
   const ziel = html.match(/href="([^"]*)">Bestellung ansehen/)[1].replaceAll('&amp;', '&');
   const params = new URLSearchParams(ziel.split('?')[1]);
-  assert.equal(params.get('kunde'), z.kundenSchluessel);
+  assert.equal(params.get('kunde'), kundenLinkWert(z.kundenSchluessel));
   assert.equal(params.get('auftrag'), 'sicher');
   const fehlt = warenbestellungenBlock({ daten: { verfuegbar: false, hinweis: 'Test <fehlt>' } });
   assert.match(fehlt, /Test &lt;fehlt&gt;/);

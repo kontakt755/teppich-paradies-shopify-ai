@@ -24,6 +24,7 @@ import { vorbereitungStand } from '../operations/lib/bestellvorbereitung.mjs';
 import { arbeitsstand } from '../operations/lib/arbeitsstand.mjs';
 import { routinenStand } from '../operations/lib/routinen.mjs';
 import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffung.mjs';
+import { istKundenLinkWert, kundenSchluesselZu } from '../docs/ai-dashboard/lib/kunden-linkwert.mjs';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
@@ -1749,12 +1750,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Kunden-Detailansicht: Kontakt, Anschriften, alle Bestellungen mit Positionen. */
-    kundenDetail({ key = '' } = {}) {
+    kundenDetail({ key: linkWert = '' } = {}) {
       const dir = privatDirPath || privatDir();
       shopifyAbgleichen(dir);
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
+      // Links tragen nur den Kurzwert (lib/kunden-linkwert.mjs), alte Links noch den Klartext.
+      const key = istKundenLinkWert(linkWert)
+        ? kundenSchluesselZu(linkWert, [...kundenIndex(modell, { statusAlle }).map(k => k.key), ...stammOhneBestellung(dir, new Set()).map(k => k.key)])
+        : linkWert;
+      if (key === null) return { verfuegbar: false, hinweis: 'Kunde nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert.' };
       const gefunden = findeKunde(modell, key, { statusAlle });
       if (gefunden) {
         // Additiv je Bestellung: auftragsart, verlauf, verlaufNotizen, naechsterSchritt (operations/lib/auftragsverlauf.mjs).

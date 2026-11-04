@@ -20,6 +20,7 @@ import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterNachfassen, fuelleText, mailtoLink, vorlageFuer, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
 import { heuteDaten, ladeBestellzeilenNeu } from './daten.mjs';
+import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 
 /** Steht in der Zeitleiste als "von", wenn der Versandlauf nachgefasst hat (operations/lib/nachfass-versand.mjs). */
 const AUTOMATISCH = 'automatisch';
@@ -28,7 +29,7 @@ const tageText = n => (n === 0 ? 'heute' : n === 1 ? 'vor 1 Tag' : `vor ${n} Tag
 // Bestell-IDs sind gid://-Adressen - als HTML-id nur Buchstaben und Ziffern.
 const textId = orderId => `mnText-${String(orderId).replace(/[^A-Za-z0-9_-]/g, '')}`;
 const betreffId = orderId => `mnBetreff-${String(orderId).replace(/[^A-Za-z0-9_-]/g, '')}`;
-const kundenLink = e => (e.kundenSchluessel ? `#/kunden?kunde=${encodeURIComponent(e.kundenSchluessel)}` : '#/kunden?tab=bestellungen');
+const kundenLink = e => (e.kundenSchluessel ? `#/kunden?kunde=${kundenLinkWert(e.kundenSchluessel)}` : '#/kunden?tab=bestellungen');
 
 /**
  * Angepasste Texte je Bestellung und Stufe, damit ein Neuzeichnen (Sync, anderer Klick) die
