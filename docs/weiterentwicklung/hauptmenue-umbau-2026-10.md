@@ -111,3 +111,20 @@ Bildschirme) -> 912 px (1,08), Rollenbreite beginnt bei 811 px statt 1131 px,
 `bilder/hauptmenue-2026-10/handy-teppichboden-2026-10-29-*.jpg`.
 Wer nach vorn soll, wird im Shopify-Menue nach vorn geschoben
 (`scripts/menue-umbau.mjs`), kein Theme-Code.
+
+## Teppichboden entschlackt (2026-11-04)
+
+Plan `domains/shopify/menue-teppichboden-2026-11.json` (Inhaber 04.11., Befund in
+`sortiment-und-struktur-2026-11.md`): Arten als Kacheln (Hochflor, Velours, Schlinge,
+Wolle, Sisal, Nadelfilz; Weitere: Büro & Gewerbe, Kunstrasen), Spalten Preisklasse
+(fünf Links auf den Filter „Preis je m²“, gleiche Bündelung wie die Kacheln
+`sections/tp-preisklassen.liquid`), Raum (vier) und Marken (Vorwerk, JAB Anstoetz).
+33 Links → 20. Entfernt (19 Punkte, im Plan einzeln genannt): Kurz- und Mittelflor
+(Filter Florhöhe), „Auch als Teppichfliesen“ (eigener Hauptpunkt), Spalten Farbe und
+Rollenbreite (Filter), Raum Arbeitszimmer und Büro. „Auslauf“ steht jetzt unter
+Angebote & Reste. Kurz- und Mittelflor-Seiten behalten die Unterkategorie-Leiste über
+den Rückfall in `snippets/tp-unterkategorien-leiste.liquid`.
+
+Sicherung vorher: `sicherung/2026-11-04-hauptmenue.json`. Zurück:
+`node scripts/menue-umbau.mjs --alt docs/weiterentwicklung/sicherung/2026-11-04-hauptmenue.json --plan domains/shopify/menue-teppichboden-2026-11.json --zurueck zurueck.json`,
+dann `menuUpdate` mit `zurueck.json` (entfernte Punkte kommen ohne alte ID zurück).

@@ -116,3 +116,81 @@ for (const [datei, ziel] of [['menue-reste-bis-black-week-2026-11', 'gid://shopi
     assert.equal(andere({ items: neu.items }), andere(stand));
   });
 }
+
+// Teppichboden-Menue 2026-11-04: vier klare Fragen (Art, Preisklasse, Raum, Marken),
+// Farbe/Rollenbreite/Kurz- und Mittelflor fallen ausdruecklich weg.
+const stand1104 = lesen('docs/weiterentwicklung/sicherung/2026-11-04-hauptmenue.json');
+const plan1104 = lesen('domains/shopify/menue-teppichboden-2026-11.json');
+
+test('Plan 2026-11-04: nur die ausdruecklich entfernten IDs fehlen, alle anderen bleiben genau einmal', () => {
+  const neu = umbauen(stand1104, plan1104);
+  const ids = flach(neu.items).map((i) => i.id).filter(Boolean);
+  assert.equal(new Set(ids).size, ids.length);
+  const entfernt = new Set(plan1104.entfernen.map((e) => e.id));
+  assert.equal(entfernt.size, 19);
+  assert.deepEqual(new Set(ids), new Set([...idMenge(menueAus(stand1104))].filter((id) => !entfernt.has(id))));
+  assert.deepEqual(new Set(neu.entfernt), entfernt);
+});
+
+test('Plan 2026-11-04: Teppichboden zeigt Arten, dann Preisklasse, Raum, Marken', () => {
+  const tb = umbauen(stand1104, plan1104).items[0];
+  assert.deepEqual(tb.items.map((i) => i.title), [
+    'Alle Teppichböden', 'Hochflor', 'Velours', 'Schlinge', 'Wolle', 'Sisal', 'Nadelfilz', 'Büro & Gewerbe', 'Kunstrasen',
+    'Preisklasse', 'Raum', 'Marken',
+  ]);
+  const klickbar = flach(tb.items).filter((i) => i.url !== '#');
+  assert.equal(klickbar.length, 20, 'vorher 33 Links');
+  const marken = tb.items.find((i) => i.title === 'Marken');
+  assert.deepEqual(marken.items.map((i) => [i.title, i.resourceId]), [
+    ['Vorwerk', 'gid://shopify/Collection/705754497358'], ['JAB Anstoetz', 'gid://shopify/Collection/705754530126'],
+  ]);
+});
+
+test('Plan 2026-11-04: Preisklassen-Links buendeln dieselben Filterbereiche wie die Kacheln', async () => {
+  const { Liquid } = await import('liquidjs');
+  const def = readFileSync(root + 'snippets/tp-preisklassen-def.liquid', 'utf8').replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/, '');
+  const klassen = (await new Liquid().parseAndRender(def)).trim().split(';').map((k) => k.split('|'));
+  const spalte = umbauen(stand1104, plan1104).items[0].items.find((i) => i.title === 'Preisklasse');
+  assert.equal(spalte.url, '#');
+  assert.equal(spalte.items.length, klassen.length);
+  spalte.items.forEach((link, i) => {
+    const [name, , werte] = klassen[i];
+    assert.ok(link.title.startsWith(name), `${link.title} passt nicht zu ${name}`);
+    const u = new URL(link.url, 'https://x.test');
+    assert.equal(u.pathname, '/collections/teppichboden');
+    assert.deepEqual(u.searchParams.getAll('filter.p.m.custom.meterpreis_bereich'), werte.split(','));
+  });
+});
+
+test('Plan 2026-11-04: Auslauf Teppichboden zieht unter Angebote & Reste um', () => {
+  const neu = umbauen(stand1104, plan1104);
+  const reste = neu.items.find((i) => i.id === 'gid://shopify/MenuItem/887189668174');
+  const auslauf = reste.items.find((i) => i.id === 'gid://shopify/MenuItem/884473921870');
+  assert.equal(auslauf.title, 'Auslauf Teppichboden');
+  assert.equal(auslauf.resourceId, 'gid://shopify/Collection/705205076302');
+});
+
+test('Entfernen ohne die Unterpunkte bricht ab', () => {
+  const kaputt = structuredClone(plan1104);
+  kaputt.entfernen = kaputt.entfernen.filter((e) => !e._titel.startsWith('Farbe ›'));
+  assert.throws(() => umbauen(stand1104, kaputt), /Unterpunkt eines entfernten Punkts/);
+});
+
+test('Gegenprobe 2026-11-04: entfernte muessen fehlen, alle anderen bleiben', () => {
+  const neu = umbauen(stand1104, plan1104);
+  const anzahlNeu = flach(neu.items).length - (idMenge(menueAus(stand1104)).size - neu.entfernt.length);
+  assert.equal(anzahlNeu, 7);
+  assert.equal(pruefen(stand1104, neu, anzahlNeu, neu.entfernt).ok, true);
+  const nochDa = structuredClone(neu);
+  nochDa.items[0].items.push({ id: neu.entfernt[0], title: 'x', items: [] });
+  const r = pruefen(stand1104, nochDa, anzahlNeu, neu.entfernt);
+  assert.equal(r.ok, false);
+  assert.equal(r.nochDa.length, 1);
+});
+
+test('Rueckweg 2026-11-04 legt entfernte Punkte ohne ID an', () => {
+  const neu = umbauen(stand1104, plan1104);
+  const zurueck = flach(alsEingabe(menueAus(stand1104).items, { mitIds: true, ohneIds: new Set(neu.entfernt) }));
+  assert.equal(zurueck.length, 103);
+  assert.equal(zurueck.filter((i) => !i.id).length, 19);
+});
