@@ -926,6 +926,23 @@ Kopie der Archive): Eintrag `TP_SICHERUNG_KOPIE` unter `EnvironmentVariables` in
 `bash operations/scripts/dienste-einrichten.sh --nur-sicherung`. Danach einmal das
 Zurueckspielen ueben (Abschnitt „Ausfall des Mac mini“).
 
+### Alte Bestellexporte (w-169, Inhaber 28.10.: 30-Tage-Loeschung)
+
+`npm run -s altexporte` zeigt fuer die feste Liste `operations/altexporte-ordner.json`, was faellig
+ist (30 Tage seit der juengsten Datei im Ordner), und aendert nichts. Kein Dienst startet den Lauf.
+
+Die Tagessicherung ist **kein** Rueckweg: Diese Ordner gehoeren nicht zu `SICHERUNGSPFADE`. Darum zwei Stufen:
+
+```
+npm run -s altexporte                      # Trockenlauf
+npm run -s altexporte -- --verschieben     # Stufe 1: faellige Ordner nach altexporte-papierkorb/ (nur Eigentuemer)
+npm run -s altexporte -- --zurueck <Name>  # Rueckweg
+npm run -s altexporte -- --endgueltig      # Stufe 2: Papierkorb-Eintraege nach 7 Tagen entfernen, nicht rueckholbar
+```
+
+Jeder Schritt steht in `altexporte-protokoll.jsonl` im Privatordner. Gesperrt sind Pfade, Verknuepfungen,
+Dateien und alles aus der Tagessicherung. Einplanen als Dienst und jede Ausfuehrung erst nach Freigabe.
+
 ### Dienst-Checkout automatisch nachziehen (seit 2026-10-26, #1710)
 
 `npm run -s betrieb:nachziehen` bringt `~/tp-dashboard` (Zweig `dashboard-betrieb`) auf den
