@@ -128,3 +128,10 @@ den Rückfall in `snippets/tp-unterkategorien-leiste.liquid`.
 Sicherung vorher: `sicherung/2026-11-04-hauptmenue.json`. Zurück:
 `node scripts/menue-umbau.mjs --alt docs/weiterentwicklung/sicherung/2026-11-04-hauptmenue.json --plan domains/shopify/menue-teppichboden-2026-11.json --zurueck zurueck.json`,
 dann `menuUpdate` mit `zurueck.json` (entfernte Punkte kommen ohne alte ID zurück).
+
+**Live seit 2026-11-04** (`menuUpdate` per MCP). Gegenprobe aus frischem Lesen: 91 Punkte
+= 84 bestehende mit alter ID + 7 neue (Spalten Preisklasse und Marken, fünf Preislinks);
+die 19 entfernten IDs fehlen. Treffer der Preislinks über `custom.meterpreis_bereich`
+(298 Teppichböden, jede Klasse belegt). `npm run menu:guard` und die Sichtprüfung bei
+1440/390 px stehen noch aus (Storefront aus Remote-Sessions gesperrt). Bis zum
+Theme-Deploy fehlt auf den Seiten Kurz- und Mittelflor die Unterkategorie-Leiste.
