@@ -509,3 +509,17 @@ test('Kunde informieren: Abschliessen nur ohne Ware und ohne lieferbares Muster 
   assert.doesNotMatch(mitAnderem, /type="submit"/);
   assert.match(mitAnderem, /Die übrigen Muster bleiben im Umschlag/);
 });
+
+test('Begleitblatt: in jedem Umschlag direkt unter dem Kopf und nie unter "Mehr", Direktversand ohne Knopf', () => {
+  for (const [bereich, query] of [['packen', 'tab=muster&mpbereich=packen'], ['warten', 'tab=muster&mpbereich=warten'], ['klaeren', 'tab=muster&mpbereich=klaeren'], ['gepackt', 'tab=muster&mpbereich=gepackt']]) {
+    const html = ansicht(query, [kunde(9, bereich)]);
+    const kopf = html.indexOf('class="mp-kopf"');
+    const knopf = html.indexOf('data-mp-blatt="TEST9"', kopf);
+    assert.ok(kopf >= 0 && knopf > html.indexOf('</summary>', kopf), `${bereich}: im aufgeklappten Teil`);
+    assert.ok(knopf < html.indexOf('class="mp-liste"', kopf), `${bereich}: vor den Mustern`);
+    const mehr = html.indexOf('class="mp-mehr"', kopf);
+    assert.ok(mehr < 0 || knopf < mehr, `${bereich}: nicht unter "Mehr"`);
+  }
+  const direkt = { ...kunde(10, 'warten'), direktversand: true };
+  assert.doesNotMatch(ansicht('tab=muster&mpbereich=warten', [direkt]), /data-mp-blatt/);
+});
