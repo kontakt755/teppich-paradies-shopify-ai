@@ -410,7 +410,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
       </div>
     </summary>
     ${bestelldatenHtml(k)}
-    ${gesperrte.length ? `<p class="notice crit">${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : `Diese ${gesperrte.length} Muster kommen nicht`)}: ${esc(gesperrte.map(m => kurzName(m.vorher?.produktname) || m.etikett?.serie || m.bestellt.titel).join(', '))}. Der Kunde weiß es noch nicht von selbst – bitte informieren.${ohneMoeglich ? ' Die übrigen Muster können danach ohne dieses raus.' : ''}</p>` : ''}
+    ${gesperrte.length ? `<p class="notice crit">${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : `Diese ${gesperrte.length} Muster kommen nicht`)}: ${esc(gesperrte.map(m => kurzName(m.vorher?.produktname) || m.etikett?.serie || m.bestellt.titel).join(', '))}. Der Kunde erfährt das nicht von selbst – bitte informieren.${ohneMoeglich ? ' Die übrigen Muster können danach ohne dieses raus.' : ''}</p>` : ''}
     ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
     ${k.altvermerk && !k.klaeren ? `<p class="small muted">${esc(k.altvermerk)}</p>` : ''}
     ${k.gedruckt && k.bereich === 'klaeren' ? `<p class="small mp-vorbereitet">Umschlag vorbereitet: Aufkleber und Adresse ${esc(gedrucktText(k.gedruckt))}. Er wartet auf die fehlenden Muster.</p>` : ''}
