@@ -10,7 +10,7 @@ import {
   pruefeStammdaten, leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail,
   bestellmail, mailtoLink, wartetage, warnstufe, LieferantenFehler,
   WARTE_NACHHAKEN_TAGE, WARTE_PROBLEM_TAGE, MAILTO_MAX,
-  kennungAusLexikon, lexikonSchnellzugriff, lexikonProduktMitSchnellzugriff, kettlerGrund, kettlerAutomatisch, kuerzereSeiteCm, leseKettelwege,
+  kennungAusLexikon, lexikonSchnellzugriff, lexikonProduktMitSchnellzugriff, kettlerGrund, bezugswegHinweis, kettlerAutomatisch, kuerzereSeiteCm, leseKettelwege,
   kettelZuschnitt, KETTEL_PUFFER_CM,
 } from '../lib/lieferanten.mjs';
 
@@ -1080,4 +1080,30 @@ test('Kettelweg: Ware, die sonst zu uns kommt, wird nicht gefragt und waehlt ihr
 test('Kettelweg: die Kopierliste legt sich bei Direktversand nicht auf den Kettler fest', () => {
   const m = direktTeppich();
   assert.equal(m.gruppen[0].positionen[0].kettelZusatz, ' · gekettelt, Weg vor der Bestellung klären: Fertigmaß 250 × 220 cm, für unseren Kettler Zuschnitt 253 × 223 cm');
+});
+
+test('bezugswegHinweis: Massware aus der Rolle nach PLZ getrennt, je Auftrag einmal', () => {
+  const adressen = new Map([
+    ['o1', { plz: '16515', ort: 'Teststadt' }],
+    ['o2', { plz: '80331', ort: 'Fernstadt' }],
+    ['o3', { plz: '', ort: 'Ohneplz' }],
+    ['o4', { plz: '10115', ort: 'Berlin' }],
+  ]);
+  const hinweis = bezugswegHinweis([
+    { orderId: 'o1', orderName: '#T1', ausRolleCm: 400 },
+    { orderId: 'o1', orderName: '#T1', ausRolleCm: 400 },
+    { orderId: 'o2', orderName: '#T2', ausRolleCm: 400 },
+    { orderId: 'o3', orderName: '#T3', ausRolleCm: 400 },
+    { orderId: 'o4', orderName: '#T4', ausRolleCm: null },
+  ], adressen);
+  assert.deepEqual(hinweis.nah, [{ orderName: '#T1', ort: '16515 Teststadt' }]);
+  assert.deepEqual(hinweis.weit, [{ orderName: '#T2', ort: '80331 Fernstadt' }]);
+  assert.deepEqual(bezugswegHinweis(), { nah: [], weit: [] });
+});
+
+test('bezugsweg in der Bestellmail: zum Kettler ist der Weg schon entschieden', () => {
+  const offen = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'laden', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
+  assert.ok(Array.isArray(offen.bezugsweg.nah) && Array.isArray(offen.bezugsweg.weit));
+  const kettler = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'kettler', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
+  assert.deepEqual(kettler.bezugsweg, { nah: [], weit: [] });
 });
