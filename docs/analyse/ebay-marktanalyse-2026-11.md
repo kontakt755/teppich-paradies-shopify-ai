@@ -15,7 +15,7 @@ dieses öffentlichen Berichts.
 
 - **Quelle:** eBay-Produktrecherche im Verkäufer-Cockpit, Reiter „Verkauft“, ebay.de, letztes Jahr, Abruf 2026-11-04.
 - **Umfang:** bis zu 50 Angebote je Begriff (erste Ergebnisseite). 12 von 12 Begriffen ausgewertet.
-- **Angebotsseiten:** 13 meistverkaufte Angebote für Verkäufer und Kategorie. Dazu 5 Shop-Seiten.
+- **Angebotsseiten:** 14 meistverkaufte Angebote für Verkäufer und Kategorie. Dazu 5 Shop-Seiten.
 - **Vorgeschichte:** Der automatische Abruf der öffentlichen Suche per curl und Playwright war gesperrt (HTTP 403) und wurde nicht fortgesetzt. Die Auswertung lief danach im angemeldeten Konto.
 
 Einschränkungen:
@@ -110,7 +110,7 @@ Bewertungen stammen aus der Verkäuferkarte, „verkauft“ von der Shop-Seite. 
 | floor4all | 2.239 | 94,1 % | – | Klickvinyl |
 | Shop „vidaxl“ | – | 94,1 % | – | Zuordnung zum Händler nicht geprüft |
 
-Nicht ermittelt: „Teppichboden und PVC Beläge Online“ (Konto nicht gefunden), teppichwelt_2002 (Seite
+Nicht ermittelt: „Teppichboden und PVC Beläge Online“ (Kontoname unbekannt, nicht gesucht), teppichwelt_2002 (Seite
 ohne Kennzahlen lesbar). Versandkosten stehen oben je Suchbegriff; Muster und Zuschnitt wurden je
 Verkäufer nicht sicher ausgewertet. Keiner der Verkäufer steht in unserem privaten Lieferantenschlüssel.
 
