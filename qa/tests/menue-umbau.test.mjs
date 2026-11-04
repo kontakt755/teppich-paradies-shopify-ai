@@ -102,7 +102,7 @@ test('Plan 2026-10-19: "Vorwerk & JAB nach Maß" wird zu zwei Punkten, alle IDs 
 });
 
 // Nr. 27 (03.11.2026): nur das Ziel von "Angebote & Reste" wechselt, ID und Unterpunkte bleiben.
-for (const [datei, ziel] of [['menue-reste-bis-black-week-2026-11', 'gid://shopify/Collection/705477607758'], ['menue-black-week-2026-11', 'gid://shopify/Collection/705490485582']]) {
+for (const [datei, ziel] of [['menue-reste-bis-black-week-2026-11', 'gid://shopify/Collection/709641208142'], ['menue-black-week-2026-11', 'gid://shopify/Collection/705490485582']]) {
   test(`Plan ${datei}: nur der Hauptlink wechselt, keine ID geht verloren`, () => {
     const stand = lesen('docs/weiterentwicklung/sicherung/2026-10-19-hauptmenue.json');
     const neu = umbauen(stand, lesen(`domains/shopify/${datei}.json`));
@@ -193,4 +193,18 @@ test('Rueckweg 2026-11-04 legt entfernte Punkte ohne ID an', () => {
   const zurueck = flach(alsEingabe(menueAus(stand1104).items, { mitIds: true, ohneIds: new Set(neu.entfernt) }));
   assert.equal(zurueck.length, 103);
   assert.equal(zurueck.filter((i) => !i.id).length, 19);
+});
+
+test('Plan Restposten 2026-11-04: Auslauf-Punkte unter Angebote & Reste, Hauptpunkt auf restposten, keine ID verloren', () => {
+  const stand = lesen('docs/weiterentwicklung/sicherung/2026-11-04b-hauptmenue.json');
+  const plan = lesen('domains/shopify/menue-restposten-2026-11.json');
+  const neu = umbauen(stand, plan);
+  assert.deepEqual(new Set(flach(neu.items).map((i) => i.id).filter(Boolean)), idMenge(menueAus(stand)));
+  const reste = neu.items.find((i) => i.id === 'gid://shopify/MenuItem/887189668174');
+  assert.equal(reste.resourceId, 'gid://shopify/Collection/709641208142');
+  assert.deepEqual(reste.items.map((i) => i.title), ['Aktuelle Angebote', 'Alle Restposten & Auslauf', 'Restrollen & Reststücke',
+    'Auslauf Teppichboden', 'Auslauf Teppich nach Maß', 'Auslauf Teppichfliesen', 'Auslauf Vinylboden']);
+  for (const i of neu.items.filter((x) => x !== reste)) {
+    assert.ok(!flach(i.items).some((k) => /^Auslauf/.test(k.title)), `${i.title} traegt noch einen Auslauf-Punkt`);
+  }
 });

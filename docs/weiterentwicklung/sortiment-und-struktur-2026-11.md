@@ -82,9 +82,9 @@ Datenlage ist dünn (214 Musterstücke im Jahr); nach drei Monaten neu rechnen.
 
 1. Preisklassen live (PR #1905); Empfehlungen je Klasse sind gesetzt (siehe oben), nach drei
    Monaten mit neuen Zahlen pruefen.
-2. Menü Teppichboden auf rund 12 Links: Nach Preis, Nach Art, Nach Raum, Marken. Farbe,
+2. **Erledigt 2026-11-04** (20 statt 33 Links, `hauptmenue-umbau-2026-10.md`). Ursprünglich: Menü Teppichboden auf rund 12 Links: Nach Preis, Nach Art, Nach Raum, Marken. Farbe,
    Rollenbreite, Kurz-/Mittelflor nur als Filter. Umbau nur mit `scripts/menue-umbau.mjs`.
-3. Sonderposten-Bereich: Restrollen mit gemessener Länge auf Sofortkauf, drei Schilder
+3. **Erledigt 2026-11-04** (Sammelseite `restposten`, Menü, Sofortkauf nach dem Messen; `sonderposten.md` Abschnitt 11). Ursprünglich: Restrollen mit gemessener Länge auf Sofortkauf, drei Schilder
    (Restrolle – noch X m², Auslaufkollektion, Einzelstück), Hinweis auf der Produktseite
    der Ursprungsqualität.
 4. Wohnteppiche: Eigenschaften (Kinder, waschbar, Outdoor, Hochflor, rund) als Filter aus

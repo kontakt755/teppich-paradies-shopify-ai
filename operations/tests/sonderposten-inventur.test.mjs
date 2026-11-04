@@ -106,3 +106,32 @@ test('12 m / Laden 10 m / Online 5 m: Laden zuerst, Online zuerst und gleichzeit
   await assert.rejects(() => verkaufeVonRolle(c.proxy,{ produktId: PRODUKT_ID, laengeM: 10 }), e => e.status === 409);
   assert.equal(c.zustand.available, 28, 'Onlinebestand nicht ueberschrieben');
 });
+
+// Inhaber 2026-11-04: gemessene Restrolle wird wieder sofort kaufbar.
+test('Restrolle auf Anfrage: nach der Inventur mit Bestand auf Vorlage rolle umgestellt', async () => {
+  const a = attrappe({ rolle: true }); a.zustand.vorlage = 'rolle-anfrage';
+  const r = await inventur(a);
+  assert.equal(r.ok, true);
+  assert.equal(r.sofortkauf, 'freigeschaltet');
+  assert.equal(a.zustand.vorlage, 'rolle');
+  assert.deepEqual(a.namen(), ['SonderpostenEinzeln', 'SonderpostenRolleninventur', 'SonderpostenEinzeln', 'SonderpostenSofortkauf']);
+});
+
+test('Restrolle auf Anfrage mit Laenge 0 bleibt auf Anfrage; normale Rolle wird nicht angefasst', async () => {
+  const a = attrappe({ rolle: true }); a.zustand.vorlage = 'rolle-anfrage';
+  const r = await inventur(a, { laengeM: 0 });
+  assert.equal(r.sofortkauf, null);
+  assert.equal(a.zustand.vorlage, 'rolle-anfrage');
+  const b = attrappe({ rolle: true }); b.zustand.vorlage = 'rolle';
+  assert.equal((await inventur(b)).sofortkauf, null);
+  assert.ok(!b.namen().includes('SonderpostenSofortkauf'));
+});
+
+test('Scheitert das Umschalten, bleibt der Bestand gespeichert und das Ergebnis sagt es', async () => {
+  const a = attrappe({ rolle: true }); a.zustand.vorlage = 'rolle-anfrage'; a.zustand.vorlageFehler = true;
+  const r = await inventur(a);
+  assert.equal(r.ok, true);
+  assert.equal(r.bestandNachher, 48);
+  assert.equal(r.sofortkauf, 'fehlgeschlagen');
+  assert.equal(a.zustand.vorlage, 'rolle-anfrage');
+});

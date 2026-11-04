@@ -102,6 +102,9 @@
       {%- for tp_uk_child in tp_uk_parent.links -%}
         {%- comment -%} Gruppen des Mega-Menues (Farbe, Raum, Rollenbreite - Link "#") sind keine Kategorie {%- endcomment -%}
         {%- if tp_uk_child.url == '#' -%}{%- continue -%}{%- endif -%}
+        {%- comment -%} Leere saisonale Ziele (z. B. Aktuelle Angebote ohne Angebot) nicht anbieten {%- endcomment -%}
+        {%- capture tp_uk_mls -%}{%- render 'tp-menu-link-sichtbar', link: tp_uk_child -%}{%- endcapture -%}
+        {%- if tp_uk_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
         {%- assign tp_uk_current = false -%}
         {%- if tp_uk_child.url == collection_resource.url -%}
           {%- assign tp_uk_current = true -%}

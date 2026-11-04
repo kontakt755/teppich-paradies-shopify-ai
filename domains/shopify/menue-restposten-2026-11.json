@@ -1,0 +1,23 @@
+{
+  "_zweck": "Restposten & Auslauf an einem Ort (Inhaber 2026-11-04): Hauptpunkt \"Angebote & Reste\" fuehrt auf die Sammelkollektion restposten (Tag sonderposten ODER auslauf). Die vier Auslauf-Punkte ziehen aus Teppichboden/Teppiche/Teppichfliesen/Vinylboden hierher (IDs bleiben). Anwenden mit scripts/menue-umbau.mjs --plan <diese Datei> auf den Stand sicherung/2026-11-04b-hauptmenue.json.",
+  "menu": "gid://shopify/Menu/268032508238",
+  "oben": [
+    {"id":"gid://shopify/MenuItem/730052297038","_titel":"Teppichboden"},
+    {"id":"gid://shopify/MenuItem/871684145486","_titel":"Teppiche"},
+    {"id":"gid://shopify/MenuItem/871137182030","_titel":"Teppichfliesen"},
+    {"id":"gid://shopify/MenuItem/859123319118","_titel":"Vinylboden"},
+    {"id":"gid://shopify/MenuItem/890032816462","_titel":"Laminat & Parkett"},
+    {"id":"gid://shopify/MenuItem/890032849230","_titel":"Linoleum & Kautschuk"},
+    {"id":"gid://shopify/MenuItem/868583539022","_titel":"Zubehör & Leisten"},
+    {"id":"gid://shopify/MenuItem/887189668174","_titel":"Angebote & Reste","ziel":{"type":"COLLECTION","resourceId":"gid://shopify/Collection/709641208142"},"kinder":[
+      {"id":"gid://shopify/MenuItem/890032881998","_titel":"Aktuelle Angebote"},
+      {"neu":{"title":"Alle Restposten & Auslauf","type":"COLLECTION","resourceId":"gid://shopify/Collection/709641208142"}},
+      {"id":"gid://shopify/MenuItem/889373229390","title":"Restrollen & Reststücke","_titel":"Laden & Reste"},
+      {"id":"gid://shopify/MenuItem/884473921870","_titel":"Auslauf Teppichboden"},
+      {"id":"gid://shopify/MenuItem/884486635854","title":"Auslauf Teppich nach Maß","_titel":"Auslauf Teppich nach Maß – nur noch kurze Zeit (bisher unter Teppiche)"},
+      {"id":"gid://shopify/MenuItem/884855636302","title":"Auslauf Teppichfliesen","_titel":"Auslauf Teppichfliesen – nur noch kurze Zeit (bisher unter Teppichfliesen)"},
+      {"id":"gid://shopify/MenuItem/884486668622","title":"Auslauf Vinylboden","_titel":"Auslauf Vinylboden – nur noch kurze Zeit (bisher unter Vinylboden)"}
+    ]},
+    {"id":"gid://shopify/MenuItem/734281072974","_titel":"Service & Verlegung"}
+  ]
+}

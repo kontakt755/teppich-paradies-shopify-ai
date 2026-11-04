@@ -64,11 +64,20 @@
             "padding-inline-end": 0
           },
           "blocks": {}
+        },
+        "tp_unterkategorien": {
+          "type": "tp-unterkategorien",
+          "settings": {
+            "menu": "main-menu",
+            "label": "Unterkategorien"
+          },
+          "blocks": {}
         }
       },
       "block_order": [
         "text_tqQTNE",
-        "text_twGGkJ"
+        "text_twGGkJ",
+        "tp_unterkategorien"
       ],
       "name": "Collection heading",
       "settings": {
