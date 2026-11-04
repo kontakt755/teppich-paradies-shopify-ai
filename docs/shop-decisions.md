@@ -2,6 +2,7 @@
 
 | Datum | Entscheidung | Quelle |
 |---|---|---|
+| 2026-11-04 | Direktbezug Lieferant K: Verkaufspreis = UVP laut aktueller Hersteller-Preisliste, wie bei D und E. Der Couponzuschlag des Herstellers wird nicht extra berechnet. Produkte erst mit der aktuellen Liste anlegen (vorliegende von 09/2022). Preisregel für Lieferant J (Liste ohne UVP) offen. | Inhaber |
 | 2026-11-04 | Condor Carpets schickt nicht direkt zum Kunden: Ware dieses Herstellers geht immer in den Laden, auch bei Lieferant C (der sonst direkt versenden kann) und auch beim Verlegeservice (nicht auf die Baustelle). Umsetzung: `einkauf.neutralversand = NOT_ALLOWED` an allen 311 Varianten (8 Teppichböden, 8 Teppiche nach Maß), Hinweis am Lieferanten C, `operations/lib/route.mjs`. Neue Condor-Produkte beim Import genauso anlegen. | Inhaber |
 | 2026-11-04 | Teppichboden-Kategorien beginnen mit fuenf Preisklassen (Preiswert bis 40, Komfort 40-60, Gehoben 60-80, Premium 80-100, Exklusiv ab 100 €/m²). Grenzen folgen dem vorhandenen Filter „Preis je m²“, damit keine Produktdaten umgeschrieben werden. Je Klasse sollen spaeter drei Empfehlungen vorn stehen (Auswahl nach Kriterien durch Claude). | Inhaber (Klassen und Namen), Grenzen Claude |
 | 2026-11-04 | Unterkategorien Velours, Schlinge, Wolle, Nadelfilz zeigen nur Produkttyp Teppichboden (vorher liefen 263 Teppiche nach Maß in Velours mit). | Inhaber |

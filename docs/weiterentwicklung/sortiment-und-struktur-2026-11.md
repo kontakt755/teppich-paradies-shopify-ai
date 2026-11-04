@@ -114,5 +114,5 @@ den Preisvergleich zu öffnen.
 - Vorliegende Preislisten sind veraltet (J 03/2024, K 09/2022); Anfrage nach aktuellen
   Listen, Coupon- und Frachtkonditionen, Datenblättern und Bildern liegt als Entwurf im
   Postfach. Kandidaten (je Lieferant rund 7) nur lokal, Einkaufspreise nie im Repository.
-- Offen beim Inhaber: Preisregel (K: UVP laut Liste wie bei D/E? J: Faktor, keine UVP),
+- Preisregel K: UVP laut aktueller Hersteller-Preisliste (Inhaber 2026-11-04). Offen beim Inhaber: Preisregel J (Liste ohne UVP),
   Auswahl der Qualitäten nach den aktuellen Listen.
