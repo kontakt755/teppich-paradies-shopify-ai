@@ -86,7 +86,7 @@ function quellen() {
   return {
     bestellzeilen: kunden.bestellungen?.verfuegbar ? kunden.bestellungen.zeilen : [],
     statusAlle: einkauf.auftragsstatus?.positionen || {},
-    // Null, solange die Belege fehlen: dann sagt kein To-do "kein Beleg im Postfach".
+    // Null, solange die Belege fehlen: dann sagt kein To-do "kein zugeordneter Beleg".
     belegZeilen: darfAnsicht('einkauf') && belege.daten?.verfuegbar ? belege.daten.zeilen : null,
     schwellen: heuteDaten.lieferanten?.schwellen,
     rueckrufe: kunden.rueckrufe?.verfuegbar ? kunden.rueckrufe.zeilen : [],
