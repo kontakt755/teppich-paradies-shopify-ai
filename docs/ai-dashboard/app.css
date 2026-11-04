@@ -779,6 +779,10 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 /* Bei offenem Dialog oben statt unten: ein Hinweis dort verdeckte Knoepfe und Haekchen
    (Versand-Dialog: "Bitte mindestens einen Artikel ankreuzen" lag ueber "Buchen"). */
 body:has(#dialogRoot .dialog-backdrop) .toasts { bottom: auto; top: calc(14px + env(safe-area-inset-top)); }
+/* Liegt ein Hintergrund zum Schliessen darunter, bleibt die Meldung klickfest: Der Klick landete
+   sonst auf dem Hintergrund und schloss Dialog, Blatt oder Suche, im Dialog samt allen Eingaben
+   (gerade nach "Nicht gespeichert: ...", wenn der Dialog fuer den zweiten Versuch offen bleibt). */
+body:has(#dialogRoot .dialog-backdrop, #sheetRoot .sheet-backdrop, #paletteRoot .palette-backdrop) .toast { pointer-events: auto; }
 
 /* Auf Fingergeraeten (Baustelle, Laden) sind 32 px zu klein zum Treffen. */
 @media (pointer: coarse) {
