@@ -8,8 +8,9 @@ Nur lesende Auswertung. Geändert wurde nichts, weder in Shopify noch bei eBay.
 genannten eBay-Preise liegen bei Standardware deutlich unter unseren: Teppichboden etwa 10 bis
 24 €/m² gegen 69,90 €/m² im Median, Klickvinyl etwa 11 bis 17 €/m² gegen 52,99 €/m². Dazu kommen
 13 bis 14 % Provision. Unsere Ware ist nicht automatisch vergleichbar, Qualität und Marke sind hier
-nicht bewertet. Ob ein kleiner Test trägt, entscheiden die Einkaufspreise; sie sind nicht Teil
-dieses öffentlichen Berichts.
+nicht bewertet. Der interne Abgleich mit den Einkaufspreisen (2026-11-04, privat abgelegt, nicht Teil
+dieses öffentlichen Berichts) bestätigt das: Wo Einkaufspreise vorliegen, bleibt zum eBay-Preis fast
+nirgends ein auskömmlicher Rohertrag. Für einen Teil der Ware von Lieferant A und C fehlen sie noch.
 
 ## Datengrundlage
 
@@ -117,8 +118,8 @@ Verkäufer nicht sicher ausgewertet. Keiner der Verkäufer steht in unserem priv
 ## Empfehlung für den Start
 
 1. **Kein breiter Start zu Shop-Preisen.**
-2. **Zuerst Einkaufspreise gegen die Marktpreise legen**, intern und je Warengruppe.
-3. **Falls das trägt, kleiner Test** mit einer Warengruppe, die wir nah am Marktpreis liefern können. Nach Nachfrage und wenigen Anbietern kämen zuerst **Kunstrasen und Klickvinyl** infrage.
+2. **Einkaufspreise:** Der interne Abgleich spricht gegen einen Start. Offen sind vor allem Klickvinyl, PVC und Kunstrasen von Lieferant A, dort fehlen die Händlerpreise.
+3. **Nur falls diese Preise tragen, kleiner Test.** Nach Nachfrage und wenigen Anbietern kämen zuerst **Kunstrasen und Klickvinyl** infrage.
 4. **Vorerst nicht:** Sockelleisten und Wohnteppiche wegen Preiskampf und vieler Anbieter, Maßware und Ketteln mangels sichtbarer Nachfrage.
 5. **Nadelfilz nur nach Prüfung:** Die Nachfrage dort ist stark durch Bastelfilz verzerrt.
 
@@ -126,7 +127,7 @@ Unsere Stärke im Shop (Beratung, Maß, Muster, Montage) lässt sich aus diesen 
 
 ## Offene Entscheidungen für den Inhaber
 
-1. **Einkaufspreis-Abgleich:** Vor jeder weiteren Entscheidung intern durchführen.
+1. **Händlerpreise von Lieferant A:** Beschaffen oder eBay vorerst zurückstellen.
 2. **Preisstrategie:** eigener eBay-Preis mit Aufschlag oder nur Ware, die am Markt mithalten kann.
 3. **Konto:** Ein Firmenkonto mit Verkäufer-Cockpit besteht. Ob es für den Neustart taugt (Status, Rechtstexte, Zahlungsdaten), ist nicht geprüft.
 4. **Anbindungs-App:** Nicht recherchiert; erst nötig, wenn der Test beschlossen ist.
