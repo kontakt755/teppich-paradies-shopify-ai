@@ -331,8 +331,8 @@
           },
           "block_order": [
             "group_icgrde",
-            "tp_bewertungsbeleg_fixpreis",
             "tp_leisten_kurzinfo",
+            "tp_bewertungsbeleg_fixpreis",
             "tp_aktion_hinweis",
             "divider_VJhene",
             "tp_leisten_farbwahl",

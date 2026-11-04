@@ -8,12 +8,12 @@ Lieferant B, Stueckware in festen Groessen, Dropshipping per Paket).
 | Block | Zweck | Datenquelle |
 |---|---|---|
 | `tp-product-h1`, `price` | Titel und Preis der gewaehlten Variante | Shopify |
+| `tp-bewertungsbeleg` | Google-Bewertung, am Telefon direkt unter der Galerie | Shop-Metafeld `custom.google_bewertung`, sonst Theme-Einstellung |
 | `tp-produktmerkmale` | bis zu 4 belegte Merkmale mit Haken | `custom.merkmale` (Liste) |
 | `color-swatch-picker` (`kreise`) | runde Farbfelder mit Variantenbild | Option `Farbe` |
 | `tp-groessen-form` | Groessenkarten mit massstabsgetreuem Variantenbild in der gewaehlten Farbe, Form und Preis | Option `Größe`, Werte wie `Ø 35 cm rund`, `40 × 60 cm Fellform` |
 | `buy-buttons` | Menge und Warenkorb | Shopify |
 | `tp-service-links` | Lieferzeit 5–7 Werktage, ohne Link „Verlegeservice“ | Blockeinstellung |
-| `tp-bewertungsbeleg` | Google-Bewertung | Theme-Einstellung |
 | `text` (Beschreibung) | `pd-card` mit Kurztext, Badges, Tabelle | Produktbeschreibung |
 | `tp-bildnachweis` (2×) | Pflicht-Urhebervermerk der Herstellerbilder: am Handy direkt unter der Galerie, am Desktop am Ende der Details | `custom.bildnachweis` |
 
