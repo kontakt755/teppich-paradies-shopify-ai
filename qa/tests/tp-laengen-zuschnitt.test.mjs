@@ -643,7 +643,7 @@ test('Mindestgesamtlaenge: Grenze im Zuschnitt, genau 300 geht, 299 nicht', () =
   assert.equal(L.rechnen({ ...e, laenge: '75', anzahl: '4' }).ok, true);
   assert.equal(L.rechnen({ ...e, laenge: '75', anzahl: '3' }).ok, false);
   // Ohne Stange an der Variante wird sie nicht als Ausweg genannt.
-  assert.equal(L.rechnen({ ...e, laenge: '299', anzahl: '1', stangeWaehlbar: false }).fehler, 'Zugeschnitten liefern wir ab 3 m je Warenkorb-Position (Länge × Stückzahl), bisher 2,99 m. Bitte Länge oder Stückzahl erhöhen.');
+  assert.equal(L.rechnen({ ...e, laenge: '299', anzahl: '1', stangeWaehlbar: false }).fehler, 'Zugeschnitten liefern wir ab 3 m je Warenkorb-Position (Länge × Stückzahl), bisher 2,99 m. Bitte Länge oder Stückzahl erhöhen. Bei gemischten Längen bitte kurz bei uns melden.');
 });
 
 test('Mindestgesamtlaenge: gilt je Warenkorb-Zeile, der Text behauptet nichts anderes', () => {
