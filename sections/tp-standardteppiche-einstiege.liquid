@@ -83,6 +83,9 @@
       {%- endfor -%}
     </nav>
   {%- endif -%}
+  {%- if collection.handle == 'teppiche-standardgroessen' -%}
+    <p class="tp-st__format">Ihr Format fehlt? <a href="{{ routes.collections_url }}/teppich-nach-mass">Teppich nach Maß berechnen</a></p>
+  {%- endif -%}
 </section>
 {%- endif -%}
 
@@ -106,6 +109,8 @@
   .tp-st__materials { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
   .tp-st__material { display: inline-flex; align-items: center; min-height: 44px; padding: 6px 12px; border: 1px solid var(--tp-line, #e6e0d8); border-radius: 999px; color: inherit; text-decoration: none; }
   .tp-st__material--active { border-color: currentColor; font-weight: 600; }
+  .tp-st__format { margin: 12px 0 0; }
+  .tp-st__format a { display: inline-flex; align-items: center; min-height: 44px; color: inherit; font-weight: 500; }
   body:has([data-tp-standardteppiche]) .product-grid-container .card-gallery .product-media__image { object-fit: contain; }
   /* Ganze Teppiche stehen eingepasst im 3:4-Rahmen; die Freisteller haben weissen
      Grund. Der beige Ladegrund bleibt nur bis zum Bild, sonst entstehen Balken. */
