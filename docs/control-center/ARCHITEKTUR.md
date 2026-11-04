@@ -2040,6 +2040,9 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
     drucken“. Der Knopf nutzt `drucken(…, { nurOffen: true })`, vermerkt nach dem vollständigen Druck
     also selbst „vorbereitet“.
   - Umschläge ohne vollständige Musterzuordnung druckt er nicht und nennt ihre Zahl.
+  - Die Zeile fehlt, wenn jeder Chip alles oder nichts zeigt und kein Umschlag mehr vorzubereiten ist
+    (spart Höhe am Handy). Sie bleibt, solange „noch vorbereiten“ Treffer hat, weil nur dieser Chip
+    zum Sammelknopf führt, und wenn ein Filter gesetzt ist, weil sonst kein Weg zurückführt.
 
 ### Gesperrte Muster in der Packstation (seit 2026-11-04, #1899)
 

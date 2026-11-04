@@ -25,14 +25,14 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
   if (nurMuster) return `<section class="heute-geschaeft shop-musterarbeit" aria-labelledby="heuteGeschaeft">
     <div class="heute-geschaeft-kopf"><h2 id="heuteGeschaeft">Muster &amp; Packstation</h2></div>
     ${bereit && offen === 0 ? `<p class="muted">Keine neuen Muster beim Lieferanten zu bestellen. <a href="${MUSTER}">Musterbestellungen ansehen →</a></p>`
-      : `<div class="heute-arbeitskopf"><h3>Muster bestellen${offen == null ? '' : ` · ${offen}`}</h3><a href="${MUSTER}">Alle ansehen →</a></div>${liste}`}
+      : `<div class="heute-arbeitskopf"><h3>Muster bestellen${offen == null ? '' : ` · ${offen} Artikel`}</h3><a href="${MUSTER}">Alle ansehen →</a></div>${liste}`}
     ${klaerung ? `<p class="notice warn">${plural(klaerung, 'Musterartikel braucht', 'Musterartikel brauchen')} Klärung. <a href="${MUSTER}">Fehlende Angaben prüfen →</a></p>` : ''}
     ${bereit && arbeit.eigen.muster.positionen ? `<p class="small muted">${plural(arbeit.eigen.muster.positionen, 'Musterartikel kommt', 'Musterartikel kommen')} aus eigenem Bestand.</p>` : ''}
     ${p ? `<nav class="shop-packschritte" aria-label="Muster-Arbeitsstand">
-      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=warten">${p.warten || 0} warten auf Ware</a>
-      <a class="chip${p.klaeren ? ' warn' : ''}" href="#/kunden?tab=muster&amp;mpbereich=klaeren">${p.klaeren || 0} zu klären</a>
-      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=packen">${p.packen || 0} packbereit</a>
-      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=gepackt">${p.gepackt || 0} gepackt · Versand vorbereiten</a>
+      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=warten">${plural(p.warten || 0, 'Umschlag wartet', 'Umschläge warten')} auf Ware</a>
+      <a class="chip${p.klaeren ? ' warn' : ''}" href="#/kunden?tab=muster&amp;mpbereich=klaeren">${plural(p.klaeren || 0, 'Umschlag', 'Umschläge')} zu klären</a>
+      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=packen">${plural(p.packen || 0, 'Umschlag', 'Umschläge')} packbereit</a>
+      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=gepackt">${plural(p.gepackt || 0, 'Umschlag', 'Umschläge')} gepackt · Versand vorbereiten</a>
     </nav>` : `<p class="${packFehler ? 'notice warn' : 'muted'}" role="status">${packFehler ? 'Packstand nicht verfügbar. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>`}
     <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${packText}</a>
       <a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a>
@@ -41,7 +41,7 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
   return `<section class="heute-geschaeft${offen === 0 ? ' heute-geschaeft-ohne-offen' : ''}" aria-labelledby="heuteGeschaeft">
     <div class="heute-geschaeft-kopf"><h2 id="heuteGeschaeft">${nurMuster ? 'Muster bestellen &amp; packen' : 'Muster &amp; Bestellungen'}</h2><p>Neue Musterbestellungen stehen hier automatisch, nach Lieferant gebündelt.</p></div>
     <div class="heute-geschaeft-raster">
-      <article class="heute-musterbestellen"><div class="heute-arbeitskopf"><h3>Muster bestellen${offen == null ? '' : ` <span>${offen}</span>`}</h3><a href="${MUSTER}">Alle ansehen →</a></div>
+      <article class="heute-musterbestellen"><div class="heute-arbeitskopf"><h3>Muster bestellen${offen == null ? '' : ` <span>${offen} Artikel</span>`}</h3><a href="${MUSTER}">Alle ansehen →</a></div>
         ${liste}
         ${klaerung ? `<p class="notice warn">${plural(klaerung, 'Musterartikel braucht', 'Musterartikel brauchen')} Klärung. <a href="${MUSTER}">Fehlende Angaben prüfen →</a></p>` : ''}
         ${bereit && arbeit.eigen.muster.positionen ? `<p class="small muted">${plural(arbeit.eigen.muster.positionen, 'Musterartikel kommt', 'Musterartikel kommen')} aus eigenem Bestand. <a href="#/kunden?tab=muster">In der Packstation prüfen →</a></p>` : ''}
@@ -53,10 +53,10 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
           <div class="btn-row"><a class="btn btn-sm" href="#/kunden?tab=bestellungen&bsort=wichtigkeit">Dringendes bearbeiten</a><a class="btn btn-sm btn-ghost" href="#/kunden?tab=bestellungen&bfilter=fertig">Fertige ansehen</a></div>
           <a class="heute-weiter-link" href="${WARE}">Ware beim Lieferanten bestellen${bereit && arbeit.gesamt.ware.positionen ? ` · ${arbeit.gesamt.ware.positionen} Artikel` : ''} →</a>
         </article>`}
-        <article><h3>Packstation &amp; Wareneingang</h3><p${packFehler ? ' class="notice warn" role="status"' : ''}>${p ? `${p.packen} packbereit${p.klaeren ? ` · ${p.klaeren} zu klären` : ''}` : packFehler ? 'Der Packstand kann gerade nicht geladen werden. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>
+        <article><h3>Packstation &amp; Wareneingang</h3><p${packFehler ? ' class="notice warn" role="status"' : ''}>${p ? `${plural(p.packen, 'Umschlag', 'Umschläge')} packbereit${p.klaeren ? ` · ${p.klaeren} zu klären` : ''}` : packFehler ? 'Der Packstand kann gerade nicht geladen werden. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>
           ${p?.warten ? `<p><a href="#/kunden?tab=muster&mpbereich=warten">${plural(p.warten, 'Umschlag wartet', 'Umschläge warten')} auf Ware →</a></p>` : ''}
           <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${packText}</a><a class="btn btn-sm btn-ghost" href="#/einkauf?tab=lieferant&af=bestellt">Ware annehmen</a></div>
-          <a class="heute-weiter-link" href="#/kunden?tab=muster&mpbereich=gepackt">${p ? `${p.gepackt} gepackte Umschläge` : 'Gepackte Umschläge'} · Versand vorbereiten →</a>
+          <a class="heute-weiter-link" href="#/kunden?tab=muster&mpbereich=gepackt">${p ? plural(p.gepackt, 'gepackter Umschlag', 'gepackte Umschläge') : 'Gepackte Umschläge'} · Versand vorbereiten →</a>
         </article>
       </div>
     </div>

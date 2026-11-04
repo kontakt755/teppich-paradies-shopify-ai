@@ -245,7 +245,7 @@ export function viewEinkaufAblauf() {
   }
   const jetzt = liste.filter(x => x.e.gruppe === 'jetzt');
   const zaehl = g => liste.filter(x => x.e.gruende.includes(g)).length;
-  const teile = Object.keys(GRUND_TEXT).map(g => [g, zaehl(g)]).filter(([, n]) => n).map(([g, n]) => `${n} ${GRUND_TEXT[g]}`);
+  const teile = Object.keys(GRUND_TEXT).map(g => [g, zaehl(g)]).filter(([, n]) => n).map(([g, n]) => `${n}× ${GRUND_TEXT[g]}`);
   return `<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.</p>
     ${jetzt.length ? `<h2 class="ab-titel">Jetzt zu tun</h2><div class="ab-raster">${jetzt.map(auftragKarte).join('')}</div>` : ''}
     ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – Nachfrage erst nach ${VERZUG_WERKTAGE} Werktagen`, liste.filter(x => x.e.gruppe === 'unterwegs'))}
