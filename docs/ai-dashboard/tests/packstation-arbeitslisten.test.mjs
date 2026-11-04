@@ -408,3 +408,10 @@ test('Kurze Zahl passt nur als ganze Zahl, und eine genauer passende fertige Bes
   // Mit den Fertigen steht das Wort da: dann darf es nicht mehr als "nicht gefunden" gelten.
   assert.doesNotMatch(ansicht('tab=muster&mpq=Gesuchte%20Ware%2051&mpfertig=Gesuchte%20Ware%2051', [fertig, offen]), /Nicht gefunden: /);
 });
+
+test('Umschlag-Filterzeile erscheint nur, wenn sie etwas unterscheidet', () => {
+  const gleich = [kunde(1, 'packen'), kunde(2, 'packen')];
+  assert.doesNotMatch(ansicht('tab=muster', gleich), /mp-umschlagfilter/);
+  // Ein gesetzter Filter bleibt sichtbar, sonst fuehrt kein Weg zurueck.
+  assert.match(ansicht('tab=muster&mpumschlag=drin', gleich), /mp-umschlagfilter/);
+});
