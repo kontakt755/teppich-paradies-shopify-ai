@@ -111,3 +111,13 @@ test('Rundgang 29.10. (T2): Bestellen, Klaeren, Informieren und Nachfragen vor r
   assert.equal(jetztRang({ gruende: [] }), 1);
   assert.equal(jetztRang(null), 1);
 });
+
+test('Reiner Musterauftrag zeigt keine Waren-Worte, gemischter Auftrag bleibt bei den Waren-Schritten', () => {
+  const muster = { gruppen: [], musterGruppen: [{ lieferant: 'A', positionen: [pos('m1')] }] };
+  const labels = auftragsAblauf({ id: 'o1' }, muster).schritte.map(s => s.label);
+  assert.ok(labels.includes('Muster verschickt'));
+  assert.ok(!labels.some(l => /Ware|Montage/.test(l)));
+  const gemischt = { gruppen: [{ lieferant: 'A', positionen: [pos('a1')] }], musterGruppen: [{ lieferant: 'A', positionen: [pos('m1')] }] };
+  assert.ok(auftragsAblauf({ id: 'o1' }, gemischt).schritte.some(s => s.label === 'Ware da · Lieferung/Montage'));
+});
+
