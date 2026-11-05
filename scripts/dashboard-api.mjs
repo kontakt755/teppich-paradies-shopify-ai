@@ -2981,16 +2981,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /**
      * Rohertrag-Warnung im Bestelldialog: nur bei der Vorbereitung (Rolle "lesen" kommt hier nicht
      * hin), nicht im GET und nicht im Fingerabdruck der Vorlage. Sie darf das Bestellen nie stoeren:
-     * Scheitert die Schaetzung, geht der Dialog ohne sie auf und sagt das.
+     * Scheitert die Schaetzung, geht der Dialog ohne sie auf und sagt das. Einkauf und Marge bekommt nur
+     * der Inhaber (auch der Notzugang: benutzer === null), jede andere Rolle die Fassung ohne Betraege.
      */
-    _mitKostenwarnung(antwort, aktion) {
+    _mitKostenwarnung(antwort, aktion, benutzer = null) {
       if (aktion !== 'bestellVorbereitung') return antwort;
       try {
         const dir = privatDirPath || privatDir();
         const k = this._lieferantenKontext();
         return warnungenAnhaengen(antwort, {
           modell: k.modell, privatDir: dir, stammdaten: k.stammdaten, stammdatenDatei: stammdatenPfad(dir), statusAlle: k.statusAlle,
-          tarif: kettelTarife(path.join(dir, 'versandkosten', 'tarife.json')).tarif ?? null, nahPlz: KETTLER_NAH_PLZ, jetzt: now(),
+          tarif: kettelTarife(path.join(dir, 'versandkosten', 'tarife.json')).tarif ?? null, nahPlz: KETTLER_NAH_PLZ, jetzt: now(), mitPreisen: !benutzer || benutzer.rolle === 'inhaber',
         });
       } catch {
         return { ...antwort, kostenWarnungFehlt: true };
@@ -3095,7 +3096,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           if (e instanceof BeschaffungFehler) throw new ApiError(e.status, e.message);
           throw e;
         }
-        return this._mitKostenwarnung({ ...vorlage, mails, vorbereitungStand: stand }, payload.aktion);
+        return this._mitKostenwarnung({ ...vorlage, mails, vorbereitungStand: stand }, payload.aktion, benutzer);
       }
       // Erst den neuesten Shopify-Stand uebernehmen, dann die Aenderung darauf anwenden.
       shopifyAbgleichen();

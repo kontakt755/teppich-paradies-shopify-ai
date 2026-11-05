@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { bestellWarnung, warnungenAnhaengen, leseEkListe, leseLieferkosten } from '../lib/bestellwarnung.mjs';
+import { bestellWarnung, warnungenAnhaengen, warnungFuerMitarbeiter, leseEkListe, leseLieferkosten } from '../lib/bestellwarnung.mjs';
 import { positionKey } from '../lib/auftragsstatus.mjs';
 
 // Nur Beispielwerte: erfundene Artikel, Preise und Kostensaetze.
@@ -207,5 +207,73 @@ test('Dateien: neueste EK-Ableitung gewinnt, kaputte Dateien gelten als fehlend'
     assert.equal(k.lieferanten.A.paket, 2);
     assert.equal(k.lieferanten.B, undefined);
     assert.equal(k.kettler.ab6qmJeLfm, 1);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+// Rolle "mitarbeiter": Einkauf und Marge duerfen in keinem Feld stehen.
+const VERBOTEN = /Einkauf|Rohertrag|Marge|Verlust|Bleibt|bleiben|vom Netto|Netto|rechnung"\s*:\s*\[\s*\{/;
+
+test('Mitarbeiter: Verlust wird zur Bitte um Klaerung, ohne Rechnung, Marge und rote Stufe', () => {
+  const p = pos('l1', { nettoGesamt: 40 });
+  const w = warnungFuerMitarbeiter(warne(auftrag([p]), inMail([p]), { ek: EK([eZeile('ART-1', 3)]) }));
+  assert.equal(w.stufe, 'warn');
+  assert.match(w.kopf, /vor dem Bestellen mit Ahmet klären/);
+  assert.deepEqual(w.rechnung, []);
+  assert.deepEqual(w.anmerkungen, []);
+  assert.deepEqual(Object.keys(w).sort(), ['anmerkungen', 'hinweise', 'kopf', 'orderId', 'orderName', 'rechnung', 'stufe', 'wege']);
+  assert.doesNotMatch(JSON.stringify(w), VERBOTEN);
+});
+
+test('Mitarbeiter: teurer Weg ohne Zahl, auch ohne Einkaufspreis', () => {
+  const p = pos('l1', { nettoGesamt: 90 });
+  const w = warnungFuerMitarbeiter(warne(auftrag([p]), inMail([p]), { ek: EK([]) }));
+  assert.equal(w.kopf, 'Weg zum Kunden teuer, vor dem Bestellen mit Ahmet klären');
+  assert.doesNotMatch(JSON.stringify(w), VERBOTEN);
+  assert.doesNotMatch(JSON.stringify(w), /€/);
+});
+
+test('Mitarbeiter: Menge bleibt, nur ohne den Einkaufsbetrag; Teillieferung wie beim Inhaber', () => {
+  const stueck = pos('l1', { masspruefung: { einheit: '× 0,01 m²' }, mengeBestellt: 200, nettoGesamt: 300, ausfuehrung: ['Fertigmaß: 100 × 200 cm (Rechteck)'], bestellmenge: { menge: 1, einheit: 'stueck' } });
+  const roh = warne(auftrag([stueck]), inMail([stueck]), { ek: EK([eZeile('ART-1', 10)]) });
+  assert.match(roh.hinweise[0].text, /mehr Einkauf/);
+  const w = warnungFuerMitarbeiter(roh);
+  assert.match(w.hinweise[0].text, /Verschnitt möglich/);
+  assert.match(w.hinweise[0].text, /4,00 m²/);
+  assert.doesNotMatch(JSON.stringify(w), /Einkauf|€/);
+  assert.equal(w.kopf, 'Hinweis zu Menge oder Lieferung');
+  const meter = pos('l2', { mengeBestellt: 8, nettoGesamt: 300 });
+  const m = warnungFuerMitarbeiter(warne(auftrag([meter]), inMail([meter]), { ek: EK([eZeile('ART-1', 10)]) }));
+  assert.ok(m.hinweise.some(h => /verkauft 8,00 m², bestellt 10,00 m²\.$/.test(h.text)));
+  assert.doesNotMatch(JSON.stringify(m), /Einkauf/);
+  const a1 = pos('l3', { nettoGesamt: 300 });
+  const a2 = pos('l4', { nettoGesamt: 300 });
+  const t = warnungFuerMitarbeiter(warne(auftrag([a1, a2]), inMail([a1, a2])));
+  assert.ok(t.hinweise.some(h => h.art === 'teillieferung' && /gemeinsame Lieferung/.test(h.text)));
+});
+
+test('Mitarbeiter: fehlt nur der Einkaufspreis, kommt nichts an', () => {
+  const p = pos('l1');
+  assert.equal(warnungFuerMitarbeiter(warne(auftrag([p]), inMail([p]), { ek: EK([]) })), null);
+  assert.equal(warnungFuerMitarbeiter(null), null);
+});
+
+test('warnungenAnhaengen: ohne Angabe keine Betraege, nur mitPreisen liefert die Rechnung', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-rolle-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'ek-liste', 'ableitung-2099-01-01'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'ek-liste', 'ableitung-2099-01-01', 'ek-varianten.json'), JSON.stringify([eZeile('ART-1', 3.21)]));
+    const stamm = path.join(dir, 'stammdaten.json');
+    fs.writeFileSync(stamm, JSON.stringify({ lieferanten: { A: { kosten: { fracht: 20 } } } }));
+    const p = pos('l1', { nettoGesamt: 40 });
+    const lauf = extra => warnungenAnhaengen({ art: 'ware', mails: [{ lieferziel: 'kunde', positionen: [p], fehlt: [] }] }, { modell: { auftraege: [auftrag([p])] }, privatDir: dir, stammdaten: { lieferanten: {} }, stammdatenDatei: stamm, statusAlle: {}, tarif: null, nahPlz: /^1/, jetzt: new Date('2099-01-01T10:00:00Z'), ...extra });
+    const ohne = lauf({}).mails[0].kostenWarnungen[0];
+    assert.deepEqual(ohne.rechnung, []);
+    assert.equal(ohne.rohertrag, undefined);
+    assert.doesNotMatch(JSON.stringify(ohne), VERBOTEN);
+    const inhaber = lauf({ mitPreisen: true }).mails[0].kostenWarnungen[0];
+    assert.ok(inhaber.rechnung.some(z => z.text === 'Einkauf'));
+    assert.ok(Number.isFinite(inhaber.rohertrag));
+    assert.equal(inhaber.wegTeuer, undefined);
+    assert.equal(inhaber.rohertragAuffaellig, undefined);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

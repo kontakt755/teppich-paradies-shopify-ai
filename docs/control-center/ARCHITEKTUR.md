@@ -517,8 +517,11 @@ leise Zeile „Rohertrag unbekannt“.
   Felder: `operations/lib/lieferanten.beispiel.json`. Abgelaufene Dieselwerte werden mit dem letzten
   Stand gerechnet und im Hinweis genannt.
 - **Sichtbarkeit:** Die Warnung hängt nur an `aktion: bestellVorbereitung` (Rolle „lesen“: 403), nicht am
-  GET `/api/einkauf/bestellmail`. Sie zeigt erstmals Einkaufspreise im Dashboard, also auch der Rolle
-  „mitarbeiter“. Die Sätze selbst gehen nicht über `pruefeStammdaten()` und erscheinen in keiner anderen Antwort.
+  GET `/api/einkauf/bestellmail`. Einkaufspreis, Rohertrag und Rechnung bekommt nur die Rolle „inhaber“
+  (auch der Notzugang), weil der Inhaber über Mitarbeiter nicht entschieden hat. Jede andere Rolle bekommt
+  serverseitig `warnungFuerMitarbeiter()`: eine Liste erlaubter Felder, Kopf „vor dem Bestellen mit Ahmet klären“,
+  Menge ohne Einkaufsbetrag, Teillieferung mit dem Frachtzuschlag. Die Sätze selbst gehen nicht über
+  `pruefeStammdaten()` und erscheinen in keiner anderen Antwort.
 - **Grenzen des Modells:** Paketmaße und Gewicht sind Annahmen (2 kg/m², Rollendurchmesser aus der langen Seite).
   Die EK-Liste ist teils abgeleitet und kann unter echten Rechnungen liegen. Schwellen stehen in `SCHWELLEN`.
   Scheitert die Schätzung, geht der Dialog ohne sie auf (`kostenWarnungFehlt`).

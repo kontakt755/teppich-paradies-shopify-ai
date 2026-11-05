@@ -13,6 +13,9 @@
  *
  * Die Saetze werden bewusst nicht ueber pruefeStammdaten() gereicht: dessen Ergebnis geht auch an
  * Oberflaechen und an die Rolle "lesen". Die Warnung haengt nur an der Vorbereitung im Dialog.
+ *
+ * Einkaufspreis, Rohertrag und Rechnung sieht nur der Inhaber: Ob Mitarbeiter sie sehen, hat er nicht
+ * entschieden (2026-11-05). warnungFuerMitarbeiter() gibt nur frei, was dort ausdruecklich steht.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -403,7 +406,8 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
       const mehr = flaeche - verkauft;
       const euroMehr = ekJeM2 ? mehr * ekJeM2 : null;
       if (euroMehr === null ? mehr >= SCHWELLEN.mengeM2 : euroMehr >= SCHWELLEN.mengeEuro) {
-        hinweise.push({ art: 'menge', text: `Menge weicht ab: ${e.p.titel ?? 'Artikel'}, verkauft ${m2(verkauft)}, bestellt ${m2(flaeche)}${euroMehr !== null ? `, etwa ${euro(euroMehr)} mehr Einkauf` : ''}.` });
+        const satz = `Menge weicht ab: ${e.p.titel ?? 'Artikel'}, verkauft ${m2(verkauft)}, bestellt ${m2(flaeche)}`;
+        hinweise.push({ art: 'menge', text: `${satz}${euroMehr !== null ? `, etwa ${euro(euroMehr)} mehr Einkauf` : ''}.`, textOhnePreis: `${satz}.` });
       }
     }
     if (vollerollenbreite !== null && flaeche !== null && vollerollenbreite > flaeche) {
@@ -418,7 +422,9 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     if (verschnitt.euro !== null) mehrkosten = verschnitt.euro;
     const eins = verschnitt.stuecke.length === 1;
     const breite = [...new Set(verschnitt.stuecke.map(e => e.m.rolle))].join(' und ');
-    hinweise.push({ art: 'menge', text: `Verschnitt möglich: ${eins ? (verschnitt.stuecke[0].p.titel ?? 'Artikel') : `${verschnitt.stuecke.length} Stücke`}, verkauft ${m2(verschnitt.verkauft)}. Berechnet der Lieferant die volle Rollenbreite (${breite} cm), sind es ${eins ? '' : 'bis zu '}${m2(verschnitt.voll)}${verschnitt.euro !== null ? `, etwa ${euro(verschnitt.euro)} mehr Einkauf` : ''}. Beim Bestellen klären: nur die tatsächliche Fläche.` });
+    const satz = `Verschnitt möglich: ${eins ? (verschnitt.stuecke[0].p.titel ?? 'Artikel') : `${verschnitt.stuecke.length} Stücke`}, verkauft ${m2(verschnitt.verkauft)}. Berechnet der Lieferant die volle Rollenbreite (${breite} cm), sind es ${eins ? '' : 'bis zu '}${m2(verschnitt.voll)}`;
+    const schluss = 'Beim Bestellen klären: nur die tatsächliche Fläche.';
+    hinweise.push({ art: 'menge', text: `${satz}${verschnitt.euro !== null ? `, etwa ${euro(verschnitt.euro)} mehr Einkauf` : ''}. ${schluss}`, textOhnePreis: `${satz}. ${schluss}` });
   }
   const lieferantenInMail = new Set(eintraege.filter(e => zielVon.has(e.p.lineItemId)).map(e => e.p.lieferant));
   for (const id of lieferantenInMail) {
@@ -483,7 +489,41 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     rohertrag,
     quote,
     wegAnteil,
+    wegTeuer,
+    rohertragAuffaellig: rohertrag !== null && (rohertrag < 0 || quote < SCHWELLEN.rohertragQuote
+      || (rohertragVerschnitt !== null && (rohertragVerschnitt < 0 || quoteVerschnitt < SCHWELLEN.rohertragQuote))),
   };
+}
+
+/**
+ * Was die Rolle "mitarbeiter" bekommt: keine Betraege zu Einkauf und Marge, auch nicht indirekt
+ * (keine Rechnung, keine Anmerkungen, keine rote Stufe, kein Rohertrag in der Antwort). Bewusst eine
+ * Liste der erlaubten Felder: Was hier nicht steht, geht nicht raus. Reicht nur der Hinweis auf den
+ * fehlenden Einkaufspreis, gibt es nichts zu sagen.
+ */
+export function warnungFuerMitarbeiter(w) {
+  if (!w) return null;
+  const kopf = w.wegTeuer ? 'Weg zum Kunden teuer, vor dem Bestellen mit Ahmet klären'
+    : w.rohertragAuffaellig ? 'Diese Bestellung vor dem Bestellen mit Ahmet klären'
+      : w.hinweise.length ? 'Hinweis zu Menge oder Lieferung' : null;
+  if (!kopf) return null;
+  return {
+    orderId: w.orderId,
+    orderName: w.orderName,
+    stufe: 'warn',
+    kopf,
+    rechnung: [],
+    anmerkungen: [],
+    hinweise: w.hinweise.map(h => ({ art: h.art, text: h.textOhnePreis ?? h.text })),
+    wege: w.wege,
+  };
+}
+
+/** Was aus dem Server in die Antwort an den Inhaber geht; die Hilfsfelder bleiben hier. */
+function warnungFuerInhaber(w) {
+  if (!w) return null;
+  const { wegTeuer, rohertragAuffaellig, ...rest } = w;
+  return { ...rest, hinweise: w.hinweise.map(({ textOhnePreis, ...h }) => h) };
 }
 
 /** Guenstigere Wege, soweit sie aus den Daten folgen. Alles andere bleibt eine Abwaegung von Hand. */
@@ -504,9 +544,10 @@ function wegeHinweise({ eintraege, kosten, nah, lieferantName }) {
 
 /**
  * Haengt die Warnungen an die Mails einer fertigen Dialog-Antwort. Eine Fracht an unseren Kettler oder
- * in den Laden teilen sich die Bestellungen derselben Mail.
+ * in den Laden teilen sich die Bestellungen derselben Mail. Einkauf und Marge nur mit mitPreisen: true,
+ * ohne ausdrueckliche Angabe gehen keine Betraege raus.
  */
-export function warnungenAnhaengen(antwort, { modell, privatDir, stammdaten, stammdatenDatei, statusAlle, tarif, nahPlz, jetzt = new Date() }) {
+export function warnungenAnhaengen(antwort, { modell, privatDir, stammdaten, stammdatenDatei, statusAlle, tarif, nahPlz, jetzt = new Date(), mitPreisen = false }) {
   if (antwort?.art !== 'ware' || !antwort.mails?.length) return antwort;
   const kosten = leseLieferkosten(stammdatenDatei);
   const ek = leseEkListe(privatDir);
@@ -526,8 +567,9 @@ export function warnungenAnhaengen(antwort, { modell, privatDir, stammdaten, sta
       auftrag, mailsMitPosition: sammel.filter(m => m.positionen.some(p => p.orderId === orderId)).map(m => ({ ...m, positionen: m.positionen.filter(p => p.orderId === orderId) })),
       kosten, ek, tarif, statusAlle, absender, nahPlz, ladenPlz: absender?.lieferanschrift?.plz || null, mindestmenge, jetzt, lieferantName: name,
     }) : null;
-    fertig.set(orderId, w);
-    return w;
+    const fuerRolle = mitPreisen ? warnungFuerInhaber(w) : warnungFuerMitarbeiter(w);
+    fertig.set(orderId, fuerRolle);
+    return fuerRolle;
   };
   // Geht eine Bestellung in zwei Mails, steht ihre Warnung nur an der ersten.
   const gezeigt = new Set();

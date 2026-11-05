@@ -195,23 +195,70 @@ test('Abschnittsstand bleibt nach Bestellung einer anderen Mail gueltig; eigene 
   assert.equal(fs.readFileSync(file, 'utf8'), vor);
 });
 
-test('Warnung vor dem Bestellen: nur in der Vorbereitung, nicht im GET, Fingerabdruck bleibt gleich', async t => {
-  const { a, dir } = umgebung(t);
-  const ohne = await vorbereiten(a);
+/** Bestellung mit Verkaufspreis, Einkaufspreis und Kostensatz: die Warnung rechnet echt. Nur Beispielwerte. */
+function mitKosten(dir) {
+  const orders = path.join(dir, 'bestelluebersicht', 'orders.json');
+  const d = JSON.parse(fs.readFileSync(orders, 'utf8'));
+  d.orders[0].lineItems.nodes[0].priceAfterAllDiscountsBeforeTaxesSet = { shopMoney: { amount: '40.00', currencyCode: 'EUR' } };
+  fs.writeFileSync(orders, JSON.stringify(d));
   const stamm = path.join(dir, 'lieferanten', 'stammdaten.json');
   const roh = JSON.parse(fs.readFileSync(stamm, 'utf8'));
-  roh.lieferanten.A.kosten = { fracht: 1 };
+  roh.lieferanten.A.kosten = { fracht: 13.57 };
   fs.writeFileSync(stamm, JSON.stringify(roh));
-  const r = await vorbereiten(a);
+  const ordner = path.join(dir, 'ek-liste', 'ableitung-2099-01-01');
+  fs.mkdirSync(ordner, { recursive: true });
+  fs.writeFileSync(path.join(ordner, 'ek-varianten.json'), JSON.stringify([{ artikelnummer: 'A-4711', handle: 'testdiele', bezug: 'm²', vk_einheit: 'Paket', ek_bezug: 7.77, ek_vk_einheit: 17.09, sicherheit: 'belegt' }]));
+}
+const inhaber = { id: 'chef', name: 'Testinhaber', rolle: 'inhaber' };
+
+test('Warnung vor dem Bestellen: Inhaber bekommt die Rechnung, Fingerabdruck bleibt gleich, nicht im GET und nicht im Pruefen', async t => {
+  const { a, dir } = umgebung(t);
+  const ohne = await vorbereiten(a, inhaber);
+  mitKosten(dir);
+  const r = await vorbereiten(a, inhaber);
   assert.equal(r.vorbereitungStand, ohne.vorbereitungStand);
-  const w = r.mails[0].kostenWarnungen?.[0];
-  assert.match(w.kopf, /Rohertrag unbekannt/);
-  assert.equal(w.rohertrag, null);
+  const w = r.mails[0].kostenWarnungen[0];
+  assert.match(w.kopf, /Verlust wahrscheinlich/);
+  assert.equal(w.stufe, 'crit');
+  assert.ok(w.rechnung.some(z => z.text === 'Einkauf'));
+  assert.ok(w.rohertrag < 0);
   assert.equal(a.einkaufBestellmail(scope).mails[0].kostenWarnungen, undefined);
-  const p = await pruefen(a, r.vorbereitungStand);
+  const p = await pruefen(a, r.vorbereitungStand, inhaber);
   assert.equal(p.mails[0].kostenWarnungen, undefined);
   // Die Saetze selbst bleiben in der Datei.
   assert.ok(!JSON.stringify(a.einkaufLieferanten()).includes('kosten'));
+});
+
+test('Warnung vor dem Bestellen: Notzugang zaehlt als Inhaber', async t => {
+  const { a, dir } = umgebung(t);
+  mitKosten(dir);
+  // Ohne gh-Anmeldung kommt der Notzugang im Test nicht bis hierher, deshalb direkt.
+  const r = a._mitKostenwarnung(a.einkaufBestellmail(scope), 'bestellVorbereitung', null);
+  assert.ok(r.mails[0].kostenWarnungen[0].rechnung.length > 0);
+});
+
+test('Warnung vor dem Bestellen: Mitarbeiter bekommt ueber die API weder Einkauf noch Marge', async t => {
+  const { a, dir } = umgebung(t);
+  mitKosten(dir);
+  const r = await vorbereiten(a, team(1));
+  const w = r.mails[0].kostenWarnungen[0];
+  assert.match(w.kopf, /vor dem Bestellen mit Ahmet klären/);
+  assert.equal(w.stufe, 'warn');
+  assert.deepEqual(w.rechnung, []);
+  assert.deepEqual(w.anmerkungen, []);
+  assert.equal(w.rohertrag, undefined);
+  assert.equal(w.quote, undefined);
+  assert.equal(w.wegAnteil, undefined);
+  // Die ganze Antwort, nicht nur die Warnung: kein EK, kein Kostensatz, keine Herleitung.
+  const antwort = JSON.stringify(r);
+  for (const wert of ['7.77', '17.09', '13.57', 'Rohertrag', 'Verkauf netto', 'Bleibt', 'Verlust']) assert.ok(!antwort.includes(wert), `Antwort enthält ${wert}`);
+});
+
+test('Warnung vor dem Bestellen: unbekannte Rolle bekommt keine Betraege', async t => {
+  const { a, dir } = umgebung(t);
+  mitKosten(dir);
+  const r = await vorbereiten(a, { id: 'x', name: 'Unbekannt', rolle: 'gast' });
+  assert.deepEqual(r.mails[0].kostenWarnungen[0].rechnung, []);
 });
 
 test('Warnung vor dem Bestellen: scheitert die Schaetzung, geht der Dialog trotzdem auf', async t => {
