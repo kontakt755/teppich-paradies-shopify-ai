@@ -502,6 +502,36 @@ bestaetigtem Liefertermin erst nach dem Termin; dieselbe Regel nutzt das To-do �
 `einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
 Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
 
+### Warnung vor dem Bestellen (seit 2026-11-05)
+
+Der Bestellmail-Dialog zeigt je Kommission eine Schätzung, bevor beim Lieferanten bestellt wird
+(`operations/lib/bestellwarnung.mjs`, Anzeige `kostenWarnung()` in `ansichten/einkauf/lieferanten.mjs`):
+Rohertrag niedrig oder negativ mit Rechnung, bestellte gegen verkaufte Menge (auch das Risiko volle
+Rollenbreite), Teillieferung mit erneutem Frachtzuschlag. Nur ein Hinweis: nichts wird gesperrt oder
+bestellt, kein Preis geändert. Der Normalfall zeigt nichts; fehlt nur der Einkaufspreis, steht eine
+leise Zeile „Rohertrag unbekannt“.
+
+- **Quellen zur Laufzeit, kein eigenes Lager:** EK aus `ek-liste/ableitung-<datum>/ek-varianten.json`
+  (die neueste; Zeilen mit `sicherheit: offen` zählen nicht), Lieferkosten aus `kosten` je Lieferant und
+  `absender.kettelservice.kosten` in `lieferanten/stammdaten.json`, GLS/GEL über `berechneVersand()`.
+  Felder: `operations/lib/lieferanten.beispiel.json`. Abgelaufene Dieselwerte werden mit dem letzten
+  Stand gerechnet und im Hinweis genannt.
+- **Sichtbarkeit:** Die Warnung hängt nur an `aktion: bestellVorbereitung` (Rolle „lesen“: 403), nicht am
+  GET `/api/einkauf/bestellmail`. Einkaufspreis, Rohertrag und Rechnung bekommt nur die Rolle „inhaber“
+  (auch der Notzugang), weil der Inhaber über Mitarbeiter nicht entschieden hat. Jede andere Rolle bekommt
+  serverseitig `warnungFuerMitarbeiter()`: eine Liste erlaubter Felder, Kopf „vor dem Bestellen mit Ahmet klären“,
+  Menge und Teillieferung ohne Betrag. Die Sätze selbst gehen nicht über
+  `pruefeStammdaten()` und erscheinen in keiner anderen Antwort.
+- **Rechenregeln:** Bestandsabgänge von Bundles (`masspruefung.status: bestand`) zählen im Netto, nicht im Einkauf und Weg. Volle Rollenbreite: kürzeste Länge, bei der die andere Seite quer in die Rolle passt. Paket, Fracht und Mindermenge gelten je Lieferant, Ziel und Bestelltag.
+- **Maßformen:** Das Fertigmaß wird wie in der Bestellmail gelesen (`kettelZuschnitt`). Ø 200 cm und oval rechnen als umschließendes Rechteck, so verkauft und schneidet der Shop.
+- **Lieferweg:** Schon bestellte Ware ging den vermerkten Weg (`ueber`), sonst gilt die Bestellmail, dann der Vermerk, dann die Regel. Der Teillieferungs-Hinweis zählt alle Bestelltage des Lieferanten, auch an ein anderes Ziel.
+- **Mindestmenge:** Der Hinweis steht bei jeder Bestellung dieses Lieferanten und löst deshalb allein keine Warnung aus; als Zusatz bei einer ohnehin gezeigten Warnung bleibt er.
+- **Sammellieferung:** Die Fracht wird nur auf die neue Lieferung geteilt, frühere Bestelltage tragen sie voll. Die Mindermenge zählt je Bestellung; das kann unter der Sammellieferung liegen und steht dann als Anmerkung da.
+- **Lieber keine Zahl:** „Rohertrag unbekannt“ statt einer Zahl, sobald ein Kostenteil fehlt oder der Fall nicht sicher rechenbar ist (`unsicherheiten()`): Fertigmaß unlesbar, unbekannte Form, Menge passt nicht zum Maß oder Maßprüfung offen, Wunschmaß-Rechner (Maß nur in den Properties), Ketteln außerhalb unseres Kettlers, Ketteln rund oder oval, Einfassung ohne hinterlegte Kosten, bearbeitete Ware ohne Vermerk zum Weg. Übersteigen schon die bekannten Kosten den Verkauf, sagt das der Kopf. Eigene Fahrt im Liefergebiet bleibt eine Anmerkung, sie blockiert die Zahl nicht.
+- **Grenzen des Modells:** Paketmaße und Gewicht sind Annahmen (2 kg/m², Rollendurchmesser aus der langen Seite).
+  Die EK-Liste ist teils abgeleitet und kann unter echten Rechnungen liegen. Schwellen stehen in `SCHWELLEN`.
+  Scheitert die Schätzung, geht der Dialog ohne sie auf (`kostenWarnungFehlt`).
+
 ### Einkauf je Lieferant (seit 2026-10-01)
 
 Der Reiter „Bestellungen" zeigt eine Karte je Lieferant (`ansichten/einkauf/lieferanten.mjs`, Regeln ohne

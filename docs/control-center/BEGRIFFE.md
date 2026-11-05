@@ -72,6 +72,7 @@ gebraeuchlich), Erfassen.
 ## Bestellungen und Packstation (22.10.2026)
 
 - **Bestellungen** = Kundenbestellungen; **Bestellen** = Einkauf beim Lieferanten.
+- **Rohertrag** = Verkauf netto minus Einkauf, Ketteln und Weg zum Kunden; im Bestelldialog immer eine Schätzung. **Weg zum Kunden** = Fracht vom Lieferanten plus Versand. **Rohertrag unbekannt** = der Einkaufspreis fehlt.
 - **Packbereit** = alle Muster haben bestaetigten Bestand oder sind bereits eingelegt, Aufkleber und Adresse sind eindeutig.
 - **Wartet auf Ware** = mindestens ein Muster ist noch nicht als vorhanden bestaetigt.
 - **Alle offenen** = Standard der Packstation (26.10.2026): Packbereit, Zu klaeren und Wartet auf Ware zusammen; wartende Umschlaege mit Anmerkung „Noch nicht da … bestellt am …“.

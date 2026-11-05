@@ -374,3 +374,24 @@ test('"Rückgängig" nach "Als bestellt markieren" laedt Kundenakte und Bestelll
   assert.deepEqual(f.ablauf, ['zurueck', 'render']);
   assert.match(f.root.innerHTML, /data-lf-rueckgaengig="0"/);
 });
+
+// Warnung vor dem Bestellen: Anzeige allein, mit Beispielwerten.
+const warnQuelle = quelle.slice(quelle.indexOf('const euroGanz'), quelle.indexOf('/**\n * Lieferziel-Knoepfe'));
+const kostenWarnung = new Function('esc', `${warnQuelle}; return kostenWarnung;`)(t => String(t).replaceAll('<', '&lt;'));
+
+test('Warnung: Normalfall leer, unbekannt leise, Verlust rot mit Rechnung, immer als Schaetzung', () => {
+  assert.equal(kostenWarnung({}), '');
+  const leise = kostenWarnung({ kostenWarnungen: [{ stufe: 'leise', orderName: '#T1', kopf: 'Rohertrag unbekannt', anmerkungen: ['Einkaufspreis fehlt für: Test.'] }] });
+  assert.match(leise, /lf-kosten-leise/);
+  assert.match(leise, /#T1: Rohertrag unbekannt/);
+  assert.doesNotMatch(leise, /notice/);
+  const rot = kostenWarnung({ kostenWarnungen: [{ stufe: 'crit', orderName: '#T2', kopf: 'Verlust <b>', anmerkungen: [], hinweise: [{ text: 'Teillieferung' }], wege: ['Anderer Weg'],
+    rechnung: [{ text: 'Verkauf netto', betrag: 100 }, { text: 'Einkauf', betrag: -120 }, { text: 'Bleibt', betrag: -20, ergebnis: true }] }] });
+  assert.match(rot, /notice crit lf-kosten/);
+  assert.match(rot, /Verlust &lt;b>/);
+  assert.match(rot, /− 120 €/);
+  assert.match(rot, /Teillieferung/);
+  assert.match(rot, /Anderer Weg/);
+  assert.match(rot, /Schätzung/);
+  assert.match(rot, /bestellen bleibt möglich/);
+});
