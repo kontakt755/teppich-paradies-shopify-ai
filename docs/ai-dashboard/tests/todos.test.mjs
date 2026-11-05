@@ -776,6 +776,8 @@ test('Gesperrtes Muster: rot, Kunde informieren - statt ewig "bestellt" oder "be
   assert.match(t.titel, /Muster nicht lieferbar, Kunde informieren: .* Kunde Sperre/);
   assert.match(t.kontext, /Sand/);
   assert.doesNotMatch(t.kontext, /Grau/);
+  assert.match(t.kontext, /Packstation/);
+  assert.doesNotMatch(t.kontext, /nicht verfügbar/, 'der Schritt schliesst die ganze Bestellung ab, passt bei gemischten Bestellungen nicht');
   const erledigt = { ...statusAlle, ...stand(z, 0, { status: 'erledigt' }) };
   assert.ok(!leiteTodosAb({ bestellzeilen: [z], statusAlle: erledigt }, { sicht: 'laden', jetzt: JETZT }).some(x => x.art === 'muster_gesperrt'), 'abgeschlossen: To-do weg');
 });

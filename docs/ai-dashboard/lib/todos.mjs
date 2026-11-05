@@ -445,7 +445,7 @@ function ausBestellungen(quellen, k) {
     todos.push({
       id: `muster-gesperrt:${orderId}`, art: 'muster_gesperrt', bereich: 'laden', ton: 'crit', alterTage: Math.max(...positionen.map(x => x.seitBestellung ?? 0)),
       titel: `Muster nicht lieferbar, Kunde informieren: ${z.orderName} ${kundeVon(z)}`,
-      kontext: [musterKurz(positionen), 'danach in der Bestellung „nicht verfügbar“ setzen'].join(' · '),
+      kontext: [musterKurz(positionen), 'weiter in der Packstation unter „Zu klären“'].join(' · '),
       knopf: { text: 'Ansehen', href: kundenLink(z) },
     });
   }

@@ -755,7 +755,7 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Ware bestellen | dieselben + `/api/einkauf/belege` | bezahlt, Position ohne Stand; **je Bestellung** ein To-do, damit kein Kunde in einer Sammelzeile verschwindet; gelb ab 1, rot ab 3 Tagen (seit 2026-11-03). Ohne geladene Belege fehlt nur der Zusatz „kein zugeordneter Beleg“ |
 | Laut Beleg bestellt, abhaken | dieselben | wie „Ware bestellen“, aber AB, Lieferschein oder Avis desselben Lieferanten ist sicher zugeordnet: per Mail bestellt, nicht abgehakt. Je Lieferant eine Zeile; Ware anderer Lieferanten derselben Bestellung bleibt unter „Ware bestellen“. Gelb, ab 4 Tagen nach dem Lieferschein rot (noch nicht raus) |
 | Bestellt, kein zugeordneter Beleg | dieselben | Ware „bestellt“ seit ≥ 3 Tagen, ohne zugeordneten Beleg desselben Lieferanten und ohne Liefertermin (unzugeordnete Belege und Vorschläge zählen nicht, die Bestätigung kann also im Postfach liegen); rot ab 7. Ab 10 Werktagen übernimmt „Nachhaken“. Nur bei geladenen Belegen |
-| Muster nicht lieferbar | `/api/kunden/bestellungen`, Feld `gesperrteMuster` (Mustersperre) | SKU gesperrt, Position ohne Stand oder „bestellt“; immer rot, bis der Schritt „nicht verfügbar“ die Position abschließt |
+| Muster nicht lieferbar | `/api/kunden/bestellungen`, Feld `gesperrteMuster` (Mustersperre) | SKU gesperrt, Position ohne Stand oder „bestellt“; immer rot, bis die Position in der Packstation abgeschlossen ist („Kunde informieren…“ oder „Ohne dieses Muster weiter packen“) |
 | Nachhaken | dieselben, Schwellen aus `/api/einkauf/lieferanten` | Stand „bestellt" seit ≥ 7 Tagen gelb, ≥ 14 Tagen rot; je Lieferant |
 | Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 2, rot ab 5 Tagen (seit 2026-11-03) |
 | Zuerst klären | Ampel „rot" der Bestellung | immer rot; die Positionen erscheinen nicht zusätzlich unter „bestellen" |
@@ -2060,6 +2060,12 @@ lahm: `sperrenFehler` wird als roter Hinweis gezeigt.
   ab; der Schritt gilt immer für die ganze Bestellung.
 - **„Ohne dieses Muster weiter packen“** (`aktion: 'ohne-muster'`): nur diese Position wird „erledigt“ und über
   `erledigtBuchen` ohne Kundenmail in Shopify gebucht. Sonst bliebe nach dem Verschicken ein leerer Umschlag.
+- **Musterautomatik** (seit 2026-11-05, `operations/lib/muster-bestellautomatik.mjs`): liest dieselben aktiven
+  Sperren, auch unmittelbar vor jeder Mail. Ein gesperrtes Muster wird nie angefragt und steht als Klärfall an der
+  Bestellung, die übrigen Muster derselben Bestellung gehen normal raus. Nach „wieder verfügbar“ wird es beim
+  nächsten Lauf wieder geplant. Ist die Ablage unlesbar, schickt der Lauf nichts (mehr) und endet mit
+  `sperrliste-unlesbar`; der Hinweis steht in `letzterLauf` (Mitteilung über `ki-stand`) und unter
+  „Musterbestellungen automatisch“. Nur eine fehlende oder leere Datei heißt „keine Sperre“.
   Bei einer Bestellung mit Ware (`bestellungen[].mitWare`, gleiche Regel wie `auftragsart`) ist das der einzige Weg,
   auch für das letzte Muster im Umschlag: der Schritt „Muster nicht verfügbar“ gehört nicht zu einer Warenbestellung.
 - **Reiter „Erledigt“:** die 14 Tage laufen ab `rausAm`/`erledigtAm`, ohne Vermerk ab Bestelldatum; `teilweise`
