@@ -15,6 +15,11 @@
   behaelt alle anderen aktiven Filter und die Sortierung. Ein zweiter Klick auf
   die aktive Klasse nimmt sie wieder heraus. Klassen ohne Treffer entfallen;
   bleibt weniger als zwei Klassen uebrig, erscheint die Leiste nicht.
+
+  Beim Filtern ohne Neuladen rendert Horizon nur die Produktsection. Diese Section
+  rendert sich deshalb bei filter:update selbst mit (assets/tp-preisklassen.js).
+  Die Huelle <tp-preisklassen> bleibt auch ohne Kacheln stehen, damit die Leiste bei
+  einer spaeteren Filteraenderung wieder erscheinen kann.
 {%- endcomment -%}
 {%- liquid
   assign s = section.settings
@@ -105,6 +110,9 @@
   assign pk_zeilen = pk_zeilen | split: '~~'
 -%}
 
+<script src="{{ 'tp-preisklassen.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
+<tp-preisklassen section-id="{{ section.id }}">
 {%- if pk_anzahl_klassen >= 2 -%}
   <div class="tp-pk section section--page-width color-{{ s.color_scheme }}" style="padding-block: {{ s.padding_top }}px {{ s.padding_bottom }}px;">
     <nav class="tp-pk__nav" aria-label="{{ s.heading | default: 'Preisklasse' | escape }}">
@@ -136,8 +144,11 @@
     </nav>
   </div>
 {%- endif -%}
+</tp-preisklassen>
 
 {% stylesheet %}
+  tp-preisklassen { display: block; }
+  tp-preisklassen[aria-busy='true'] .tp-pk__kachel { opacity: 0.6; }
   .tp-pk__nav { min-width: 0; max-width: 100%; }
   .tp-pk__kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-block-end: 12px; }
   .tp-pk__titel { margin: 0; font-size: var(--tp-fs-lg); font-weight: 600; line-height: 1.25; }

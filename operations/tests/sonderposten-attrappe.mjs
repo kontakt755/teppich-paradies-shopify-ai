@@ -28,6 +28,7 @@ function produkt(z) {
  * @param {string} [o.policy='DENY']       inventoryPolicy der Variante (CONTINUE = Ueberverkauf erlaubt)
  * @param {'nach'|'vor'|null} [o.antwortWeg=null]  Bestandsmutation endet ohne Antwort (Netzfehler):
  *        'nach' = Shopify hat gebucht, nur die Antwort fehlt; 'vor' = nie angekommen
+ * @param {'nach'|'vor'|null} [o.vorlageAntwortWeg=null]  Vorlagenwechsel endet ohne Antwort, Bedeutung wie antwortWeg
  * @param {number[]} [o.lesenScheitert=[]] Nummern der SonderpostenEinzeln-Lesungen (1 = erste), die mit Netzfehler enden
  * @param {boolean} [o.rolle=false]        Restrolle statt Einzelstueck: Teppichboden mit Tag "sonderposten",
  *        Rollenbreite 4 m an der Variante, Bestand in m2 (Standard 80), ohne SKU
@@ -35,7 +36,7 @@ function produkt(z) {
  */
 export { produkt as rohProdukt };
 
-export function attrappe({ available, verweigert = false, felderFehler = false, productType, sku, titel, tracked = true, policy = 'DENY', antwortWeg = null, lesenScheitert = [], rolle = false, weitere = [] } = {}) {
+export function attrappe({ available, verweigert = false, felderFehler = false, productType, sku, titel, tracked = true, policy = 'DENY', antwortWeg = null, vorlageAntwortWeg = null, lesenScheitert = [], rolle = false, weitere = [] } = {}) {
   const z = rolle
     ? {
       id: PRODUKT_ID, titel: titel ?? 'TEST Restrolle – nicht kaufen', status: 'ACTIVE', productType: productType ?? 'Teppichboden',
@@ -78,7 +79,9 @@ export function attrappe({ available, verweigert = false, felderFehler = false, 
       }
       if (name === 'SonderpostenSofortkauf') {
         if (z.vorlageFehler) return { productUpdate: { product: null, userErrors: [{ field: ['templateSuffix'], message: 'nicht erlaubt' }] } };
+        if (vorlageAntwortWeg === 'vor') throw new Error('Shopify Admin API: The operation was aborted due to timeout');
         z.vorlage = variables.product.templateSuffix;
+        if (vorlageAntwortWeg === 'nach') throw new Error('Shopify Admin API: The operation was aborted due to timeout');
         return { productUpdate: { product: { id: variables.product.id, templateSuffix: z.vorlage }, userErrors: [] } };
       }
       if (name === 'SonderpostenVerkauftFelder') {

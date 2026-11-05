@@ -323,9 +323,11 @@ export async function korrigiereRollenbestand(proxy, { produktId, inventoryItemI
   }
   const nachher = await leseOderNull(proxy, produktId, standortId);
   const bestandOk = Boolean(nachher?.getrackt && nachher.ueberverkaufGesperrt && nachher.bestandVorhanden === neu && nachher.bestand >= 0);
-  const sofortkauf = bestandOk ? await schalteSofortkauf(proxy, nachher) : null;
+  const sofortkauf = bestandOk ? await schalteSofortkauf(proxy, nachher, standortId) : null;
   return {
     typ: 'inventur', gebucht: true, sofortkauf,
+    // Der Vorlagenwechsel allein macht nichts bestellbar: ein Entwurf bleibt online unsichtbar.
+    produktStatus: nachher?.status ?? null,
     ok: bestandOk,
     gegenprobe: nachher ? 'ok' : 'fehlgeschlagen',
     titel: vorher.titel, operationId, referenz, laengeM: laenge, breiteM: vorher.breiteM,
@@ -337,19 +339,22 @@ export async function korrigiereRollenbestand(proxy, { produktId, inventoryItemI
 
 /**
  * Nach einer erfolgreichen Inventur: Restrolle auf Anfrage mit freiem Bestand wieder auf
- * Sofortkauf stellen. Ergebnis: null (nichts zu tun), 'freigeschaltet' (gegengeprueft) oder
- * 'fehlgeschlagen' - der Bestand ist dann trotzdem gespeichert, nur die Vorlage nicht.
+ * Sofortkauf stellen. Ergebnis: null (nichts zu tun), 'freigeschaltet' (gegengeprueft),
+ * 'fehlgeschlagen' (Vorlage steht nachweislich noch auf Anfrage) oder 'unklar' (keine Antwort
+ * und keine Gegenprobe). Der Bestand ist in allen Faellen gespeichert. Ohne klare Antwort
+ * entscheidet erneutes Lesen: die Umstellung kann trotz verlorener Antwort durch sein.
  */
-async function schalteSofortkauf(proxy, eintrag) {
+async function schalteSofortkauf(proxy, eintrag, standortId) {
   if (eintrag?.typ !== 'rolle' || eintrag.vorlage !== VORLAGE_ANFRAGE || !(eintrag.bestand > 0)) return null;
   try {
     const antwort = await proxy.execute(SOFORTKAUF_MUTATION, { product: { id: eintrag.id, templateSuffix: VORLAGE_SOFORTKAUF } });
     const r = antwort?.productUpdate;
-    if (!r || r.userErrors?.length || r.product?.templateSuffix !== VORLAGE_SOFORTKAUF) return 'fehlgeschlagen';
-    return 'freigeschaltet';
-  } catch {
-    return 'fehlgeschlagen';
-  }
+    if (r?.userErrors?.length) return 'fehlgeschlagen';
+    if (r?.product?.templateSuffix === VORLAGE_SOFORTKAUF) return 'freigeschaltet';
+  } catch { /* Ausgang offen, die Gegenprobe unten klaert ihn */ }
+  const pruef = await leseOderNull(proxy, eintrag.id, standortId);
+  if (!pruef) return 'unklar';
+  return pruef.vorlage === VORLAGE_SOFORTKAUF ? 'freigeschaltet' : 'fehlgeschlagen';
 }
 
 /** Alle Sonderposten (ohne Vorlagen und archivierte), neueste Aenderung zuerst. */

@@ -135,3 +135,43 @@ test('Scheitert das Umschalten, bleibt der Bestand gespeichert und das Ergebnis 
   assert.equal(r.sofortkauf, 'fehlgeschlagen');
   assert.equal(a.zustand.vorlage, 'rolle-anfrage');
 });
+
+test('Vorlagenwechsel ohne Antwort: erneutes Lesen entscheidet, ohne Gegenprobe bleibt es unklar', async () => {
+  // Shopify hat umgestellt, nur die Antwort fehlt: nicht "steht noch auf Anfrage" melden.
+  const durch = attrappe({ rolle: true, vorlageAntwortWeg: 'nach' }); durch.zustand.vorlage = 'rolle-anfrage';
+  const r = await inventur(durch);
+  assert.equal(r.sofortkauf, 'freigeschaltet');
+  assert.equal(durch.zustand.vorlage, 'rolle');
+  assert.deepEqual(durch.namen().slice(-2), ['SonderpostenSofortkauf', 'SonderpostenEinzeln']);
+
+  const nieAngekommen = attrappe({ rolle: true, vorlageAntwortWeg: 'vor' }); nieAngekommen.zustand.vorlage = 'rolle-anfrage';
+  assert.equal((await inventur(nieAngekommen)).sofortkauf, 'fehlgeschlagen');
+
+  // Lesung 3 ist die Gegenprobe nach dem Wechsel (1 vor, 2 nach der Inventur).
+  const blind = attrappe({ rolle: true, vorlageAntwortWeg: 'nach', lesenScheitert: [3] }); blind.zustand.vorlage = 'rolle-anfrage';
+  const u = await inventur(blind);
+  assert.equal(u.sofortkauf, 'unklar');
+  assert.equal(u.ok, true, 'der Bestand ist trotzdem gespeichert');
+  assert.equal(u.bestandNachher, 48);
+});
+
+test('Antwort ohne Vorlage und ohne Fehler: erst die Gegenprobe entscheidet', async () => {
+  const a = attrappe({ rolle: true }); a.zustand.vorlage = 'rolle-anfrage';
+  const echt = a.proxy.execute;
+  a.proxy.execute = async (query, variables) => {
+    const antwort = await echt(query, variables);
+    return /SonderpostenSofortkauf/.test(query) ? { productUpdate: null } : antwort;
+  };
+  assert.equal((await inventur(a)).sofortkauf, 'freigeschaltet', 'Gegenprobe liest die neue Vorlage');
+  assert.ok(a.namen().at(-1) === 'SonderpostenEinzeln');
+});
+
+test('Inventur meldet den Produktstatus, damit Vorlage und Bestellbarkeit getrennt bleiben', async () => {
+  const entwurf = attrappe({ rolle: true }); entwurf.zustand.vorlage = 'rolle-anfrage'; entwurf.zustand.status = 'DRAFT';
+  const r = await inventur(entwurf);
+  assert.equal(r.sofortkauf, 'freigeschaltet');
+  assert.equal(r.produktStatus, 'DRAFT');
+  assert.equal(entwurf.zustand.status, 'DRAFT', 'die Inventur aktiviert nichts');
+  const aktiv = attrappe({ rolle: true }); aktiv.zustand.vorlage = 'rolle-anfrage';
+  assert.equal((await inventur(aktiv)).produktStatus, 'ACTIVE');
+});
