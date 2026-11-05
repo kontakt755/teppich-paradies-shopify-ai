@@ -747,7 +747,7 @@ export function lexikonKlick(e) {
     }
     // Aenderungen gelten nur fuer diesen Ausdruck: nichts wird im Produkt gespeichert oder als gedruckt vermerkt.
     if (etikettKnopf.hasAttribute('data-lex-etikett-aendern')) { oeffneEtikettenDruck({ titel: 'Aufkleber ändern und drucken', allowEditing: false, freierText: true, entwurf: produktEntwurf(auswahl.etikett), entwurfAnzahl: anzahl }); return true; }
-    oeffneEtikettenDruck({ etiketten: Array.from({ length: anzahl }, () => auswahl.etikett), titel: 'Musteretikett drucken' });
+    oeffneEtikettenDruck({ etiketten: Array.from({ length: anzahl }, () => auswahl.etikett), titel: 'Musteretikett drucken', mehrfach: true });
     return true;
   }
   if (e.target.closest('[data-lex-weiteres-muster]')) {

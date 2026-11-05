@@ -26,6 +26,23 @@ export function druckVorschau(etiketten = []) {
   return { motive: je.size, eintraege: [...je.values()].slice(0, DRUCK_LIMIT.vorschau) };
 }
 
+/**
+ * Stueckzahl eines Motivs setzen. Die Kopien bleiben an der Stelle des Motivs zusammen,
+ * andere Motive behalten Reihenfolge und Menge. Ungueltige Werte aendern nichts.
+ */
+export function setzeMotivAnzahl(etiketten = [], schluessel, anzahl) {
+  const treffer = etiketten.filter(e => motivSchluessel(e) === schluessel);
+  if (!treffer.length || !Number.isInteger(anzahl) || anzahl < 1) return etiketten;
+  const n = Math.min(anzahl, DRUCK_LIMIT.etiketten - (etiketten.length - treffer.length));
+  const neu = [];
+  let eingefuegt = false;
+  for (const e of etiketten) {
+    if (motivSchluessel(e) !== schluessel) { neu.push(e); continue; }
+    if (!eingefuegt) { for (let i = 0; i < n; i++) neu.push(treffer[0]); eingefuegt = true; }
+  }
+  return neu;
+}
+
 /** Kleine Transportauftraege begrenzen den Druckerpuffer, ohne Kopien zu verlieren. */
 export function* druckBloecke(etiketten = []) {
   for (let start = 0; start < etiketten.length; start += DRUCK_LIMIT.transport) {
