@@ -508,7 +508,7 @@ export function einkaufKlickMusterlager(ev) {
   if (ev.target.closest('[data-ml-neu]')) { oeffneEinlagern(); return true; }
   if (ev.target.closest('[data-ms-neu]')) { oeffneSperren(); return true; }
   // Einzeletikett von Hand, z. B. fuer Muster im Lager ohne Bestellung.
-  if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Aufkleber drucken' }); return true; }
+  if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Aufkleber drucken', mehrfach: true }); return true; }
   if (ev.target.closest('[data-ml-eigene]')) { oeffneEtikettenDruck({ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }); return true; }
   const ms = ev.target.closest('[data-ms-frei], [data-ms-nachholen]');
   if (ms) {
@@ -571,7 +571,7 @@ async function druckeEtiketten(stuecke, titel) {
   const positionen = stuecke.filter(x => x.handle).map(x => ({ istMuster: true, handle: x.handle, titel: x.titel, farbe: x.farbe, musterQuelle: { sku: x.sku || null, produktHandle: x.handle } }));
   if (!positionen.length) { toast('Ohne Produkt im Lexikon kein Aufkleber – „Aufkleber drucken…“ oben füllt ihn von Hand.'); return; }
   const etiketten = await etikettenFuerBestellung(positionen);
-  oeffneEtikettenDruck({ etiketten, titel });
+  oeffneEtikettenDruck({ etiketten, titel, mehrfach: true });
 }
 
 /**

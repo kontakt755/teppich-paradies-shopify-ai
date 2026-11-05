@@ -138,6 +138,8 @@
 .etk-karte figcaption { display: grid; gap: 6px; }
 .etk-karte figcaption .btn { justify-self: start; }
 .etk-wahl { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.etk-anzahl { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.etk-anzahl input { width: 72px; }
 .etk-karte:has([data-etk-wahl]:not(:checked)) .etk-bild { opacity: .35; }
 .etk-auftrag-hinweis { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
 .etk-einstellungen { margin-block: 12px; }
