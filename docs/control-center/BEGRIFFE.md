@@ -179,8 +179,11 @@ gebraeuchlich), Erfassen.
 - **Bestellmail öffnen (Lieferant)** / **Ware ist bestellt…** = die zwei Knoepfe im Schritt „Ware beim
   Lieferanten bestellen“ der Kundenakte; der zweite fragt nach, ob wirklich alles bestellt ist.
 - **Lieferant nicht zugeordnet** = statt „UNGEKLAERT“; ohne Stammdaten-Namen „Lieferant A“ usw.
-- **Inhaberzeile** = eine Zeile unter den Warenbestellungen, nur Inhaber: „Shop in Ordnung · 7 Tage … €
-  Umsatz · N Entscheidungen offen · nächste Frist TT.MM.“; der Umsatz klappt die Kennzahlen auf.
+- **Warenumsatz** = was Warenkunden bezahlt haben, brutto, ohne Versand und Muster, nach Bestelländerungen.
+  Steht ganz oben auf der Shop-Übersicht, nur Inhaber. **Umsatz mit Versand** ist die Zahl unter
+  „Weitere Kennzahlen“. **Warenkunde** = wer im Zeitraum mindestens eine bezahlte Ware gekauft hat, nur Service oder Muster zählen nicht.
+- **Inhaberzeile** = eine Zeile unter den Warenbestellungen, nur Inhaber: „Shop in Ordnung · Weitere
+  Kennzahlen · N Entscheidungen offen · nächste Frist TT.MM.“.
 - **Ideen & Fragen öffnen ↗** = Link unter „Entscheidungen“; die Werkbank-Fragen bleiben dort.
 - **nicht eingelegt · laut Bestand da – im Regal suchen** = Packstation: als fehlend gemeldet, laut
   Auftragsfluss aber angekommen (vorher „fehlt · angekommen“).

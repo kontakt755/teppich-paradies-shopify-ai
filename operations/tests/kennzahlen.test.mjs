@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { schnappschuss, zaehlt, ladeBestellungen } from '../lib/kennzahlen.mjs';
+import { schnappschuss, zaehlt, ladeBestellungen, warenBetrag } from '../lib/kennzahlen.mjs';
 
 const JETZT = new Date('2026-09-23T12:00:00Z');
 
@@ -107,4 +107,55 @@ test('kostenlose Musterbestellungen werden gezaehlt, damit Umsatz 0 erklaerbar i
   assert.equal(s.zeitraeume['7'].bestellungen, 3);
   assert.equal(s.zeitraeume['7'].kostenlos, 2);
   assert.equal(s.zeitraeume['7'].umsatz, 120);
+});
+
+// Prüfung 05.11.: Warenumsatz ohne Versand und Muster, Stand nach Bestellaenderung (#1056).
+const geld = (n) => ({ shopMoney: { amount: String(n), currencyCode: 'EUR' } });
+const warenPos = (netto) => ({ title: 'Ware', sku: 'W-1', variant: { product: { productType: 'Teppichboden' } }, customAttributes: [], priceAfterAllDiscountsBeforeTaxesSet: geld(netto) });
+const servicePos = (netto) => ({ title: 'Kettelservice', sku: 'S-1', variant: { product: { productType: 'Service' } }, customAttributes: [], priceAfterAllDiscountsBeforeTaxesSet: geld(netto) });
+const musterPos = (netto = 0) => ({ title: 'Muster', sku: 'M-1', variant: { product: { productType: 'Musterservice' } }, customAttributes: [], priceAfterAllDiscountsBeforeTaxesSet: geld(netto) });
+function kauf(tageHer, { gesamt, zwischen, versand = 0, kunde = 'k1', positionen, ...rest }) {
+  return { ...bestellung(tageHer, gesamt, { positionen }), id: `o${tageHer}${kunde}`, customer: { id: kunde }, totalPriceSet: geld(gesamt), currentSubtotalPriceSet: geld(zwischen), currentShippingPriceSet: geld(versand), ...rest };
+}
+
+test('warenBetrag: aktuelle Zwischensumme statt Wert bei Bestellung, ohne Versand', () => {
+  // Wie #1056: Position getauscht, totalPriceSet behaelt das Doppelte, bezahlt ist der aktuelle Stand.
+  const o = kauf(1, { gesamt: 100, zwischen: 100, positionen: [warenPos(0), warenPos(84.03)] });
+  o.totalPriceSet = geld(200);
+  assert.equal(warenBetrag(o), 100);
+  assert.equal(warenBetrag(kauf(1, { gesamt: 104.99, zwischen: 100, versand: 4.99, positionen: [warenPos(84.03)] })), 100);
+});
+
+test('warenBetrag: Service gehoert zum Warenkauf, bezahlte Muster nicht, reine Service-Bestellung ist keine Ware', () => {
+  assert.equal(warenBetrag(kauf(1, { gesamt: 119, zwischen: 119, positionen: [warenPos(80), servicePos(20)] })), 119);
+  assert.equal(warenBetrag(kauf(1, { gesamt: 119, zwischen: 119, positionen: [warenPos(75), musterPos(25)] })), 89.25);
+  assert.equal(warenBetrag(kauf(1, { gesamt: 119, zwischen: 119, positionen: [servicePos(100)] })), 0);
+});
+
+test('warenBetrag: ohne aktuelle Felder (alter Export) Gesamtbetrag minus Versand', () => {
+  const o = { ...bestellung(1, 104.99, { positionen: [warenPos(84.03)] }), totalShippingPriceSet: geld(4.99) };
+  assert.equal(Math.round(warenBetrag(o) * 100) / 100, 100);
+});
+
+test('schnappschuss: Ware und Muster getrennt, Kunden eindeutig, Vorwoche ohne Ueberschneidung', () => {
+  const s = schnappschuss([
+    kauf(1, { gesamt: 104.99, zwischen: 100, versand: 4.99, kunde: 'a', positionen: [warenPos(84)] }),
+    kauf(2, { gesamt: 50, zwischen: 50, kunde: 'a', positionen: [warenPos(42), musterPos()] }),
+    kauf(3, { gesamt: 0, zwischen: 0, kunde: 'b', positionen: [musterPos()] }),
+    kauf(8, { gesamt: 200, zwischen: 200, kunde: 'c', positionen: [warenPos(168)] }),
+    kauf(13, { gesamt: 0, zwischen: 0, kunde: 'd', positionen: [musterPos()] }),
+    kauf(15, { gesamt: 900, zwischen: 900, kunde: 'e', positionen: [warenPos(756)] }),
+    { ...kauf(2, { gesamt: 70, zwischen: 70, kunde: 'f', positionen: [warenPos(58)] }), displayFinancialStatus: 'PENDING' },
+    { ...kauf(2, { gesamt: 70, zwischen: 70, kunde: 'g', positionen: [warenPos(58)] }), cancelledAt: '2026-09-22T10:00:00Z' },
+  ], { jetzt: JETZT });
+  assert.deepEqual(s.zeitraeume['7'].ware, { umsatz: 150, kunden: 1, bestellungen: 2 }, 'zwei Kaeufe desselben Kunden, unbezahlt und storniert zaehlen nicht');
+  assert.deepEqual(s.zeitraeume['7'].muster, { bestellungen: 1, kunden: 1 }, 'gemischte Bestellung ist Ware, nicht Muster');
+  assert.equal(s.zeitraeume['7'].umsatz, 154.99, 'der Umsatz mit Versand bleibt daneben erhalten');
+  assert.deepEqual(s.vorwoche.ware, { umsatz: 200, kunden: 1, bestellungen: 1 });
+  assert.deepEqual(s.vorwoche.muster, { bestellungen: 1, kunden: 1 });
+});
+
+test('schnappschuss: Bestellung genau auf der Grenze steht nur in einem der beiden Fenster', () => {
+  const s = schnappschuss([kauf(7, { gesamt: 10, zwischen: 10, positionen: [warenPos(8)] })], { jetzt: JETZT });
+  assert.equal(s.zeitraeume['7'].ware.bestellungen + s.vorwoche.ware.bestellungen, 1);
 });

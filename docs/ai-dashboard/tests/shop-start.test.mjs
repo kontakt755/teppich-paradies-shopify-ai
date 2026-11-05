@@ -32,7 +32,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
     belege: { daten: null }, akquiseFaellig: () => [], hausverwaltungenFaellig: () => [], hinweisText: x => x, sichtFuer: () => 'laden',
     esc: s => String(s ?? ''), alterText: t => `${t} Tage`,
     // Inhaberzeile (Rundgang 26.10., #44): eigener Baustein, hier nur ihr Platz und ihre Abrufe.
-    inhaberZeile: block('Inhaberzeile'), nebenbereichZusatz: () => ' · 2 offene Anfragen', shopwache: { daten: null },
+    warenkennzahlBlock: block('Warenkennzahl'), inhaberZeile: block('Inhaberzeile'), nebenbereichZusatz: () => ' · 2 offene Anfragen', shopwache: { daten: null },
   });
   return { html: api.viewHeute(), geladen, bloecke, sichten };
 }
@@ -51,15 +51,15 @@ test('Shop ist Standard und Waren stehen vor Mustern, danach Aufraeumen und vorh
   assert.match(r.html, /Weitere Bereiche: Laden, Aufgaben und Technik · 2 offene Anfragen<\/summary>/);
 });
 
-test('Inhaber: eine Zeile mit Shop, Umsatz, Entscheidungen und Frist direkt unter den Warenbestellungen (#44)', () => {
+test('Inhaber: Warenkennzahl zuerst, dann Warenbestellungen, darunter die Inhaberzeile (#44, Prüfung 05.11.)', () => {
   const r = start();
-  assert.deepEqual(r.bloecke, ['Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit'], 'Warenkunden bleiben zuerst');
+  assert.deepEqual(r.bloecke, ['Warenkennzahl', 'Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit'], 'Warenkunden bleiben zuerst');
   for (const name of ['EinkaufKennzahlen', 'Shopwache']) assert.ok(r.geladen.includes(name), `${name} fuer die Inhaberzeile`);
   for (const name of ['KundenFaelle', 'HeuteAufgaben', 'LadenZahlen', 'Akquise']) assert.ok(!r.geladen.includes(name), `${name} gehoert nicht zum Standardabruf`);
   assert.doesNotMatch(r.html, /Kennzahlen der letzten/, 'Kennzahlen-Kacheln erst auf Klick');
 });
 
-test('rote To-dos stehen als "Probleme" vor den Warenbestellungen; gelbe nicht (w-206)', () => {
+test('rote To-dos stehen als "Probleme" unter den Warenbestellungen; gelbe nicht (w-206, Prüfung 05.11.)', () => {
   const todos = [
     { id: 'routinen', art: 'routinen', bereich: 'website', ton: 'crit', titel: 'Mac-Dienst gestört: Postfach', kontext: 'Fehler', alterTage: 1 },
     { id: 'entfernt', art: 'entfernt', bereich: 'laden', ton: 'crit', titel: 'Aus Bestellung entfernt: #T1 – Lieferantenbestellung stornieren?', kontext: 'Testkunde', alterTage: 3, knopf: { text: 'Abhaken…', abhaken: 'gid://1' } },
@@ -68,12 +68,12 @@ test('rote To-dos stehen als "Probleme" vor den Warenbestellungen; gelbe nicht (
   ];
   const r = start('', {}, { todos });
   assert.match(r.html, /Probleme · 2</);
-  assert.ok(r.html.indexOf('heute-probleme') < r.html.indexOf('<div>Waren</div>'), 'Probleme stehen ueber den Warenbestellungen');
+  assert.ok(r.html.indexOf('<div>Waren</div>') < r.html.indexOf('heute-probleme'), 'erst die Warenkunden, dann die Probleme');
   assert.match(r.html, /data-todo="routinen"/); assert.match(r.html, /data-todo="entfernt"/);
   assert.doesNotMatch(r.html, /data-todo="bestellen"/, 'gelb bleibt hinter "Weitere Bereiche"');
   assert.doesNotMatch(r.html, /data-todo="service"/, 'Laden-Anfragen bleiben im Nebenbereich (Inhaber 22.10.)');
   assert.match(r.html, /data-entfernt-abhaken="gid:\/\/1"/, 'derselbe Knopf wie in der Arbeitsliste');
-  assert.deepEqual(r.bloecke, ['Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit'], 'die uebrige Reihenfolge bleibt');
+  assert.deepEqual(r.bloecke, ['Warenkennzahl', 'Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit'], 'die uebrige Reihenfolge bleibt');
   assert.deepEqual(r.sichten, ['alles'], 'der Inhaber sieht alles Rote, egal bei wem es liegt');
   // Mitarbeiter: eigene Sicht "laden" - Website und Technik gehoeren nicht auf seine Liste (21.10.).
   const m = start('', { benutzer: { name: 'Test', rolle: 'mitarbeiter' } }, { todos: [todos[1]] });
@@ -91,14 +91,14 @@ test('alte Alltagssichten bleiben ausdruecklich erreichbar; unbekannte Sicht ble
 
 test('mn=1 oeffnet den bestehenden Nachfassblock im Shop ohne allgemeine Aufgabenabrufe', () => {
   const r = start('mn=1');
-  assert.deepEqual(r.bloecke, ['Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit', 'Vorhandener Nachfassblock']);
+  assert.deepEqual(r.bloecke, ['Warenkennzahl', 'Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit', 'Vorhandener Nachfassblock']);
   assert.ok(!r.geladen.includes('HeuteAufgaben'));
 });
 
 test('w-222: gescheiterter Abgleich mit Shopify steht auf der Shop-Übersicht, gerade ladender nicht', () => {
   const kaputt = start('', {}, { abgleich: { fehler: true } });
   assert.match(kaputt.html, /Liste unvollständig:<\/b> Abgleich mit Shopify konnte nicht geladen werden/);
-  assert.ok(kaputt.html.indexOf('heute-probleme') < kaputt.html.indexOf('<div>Waren</div>'), 'oben, wo sonst die Probleme stehen');
+  assert.ok(kaputt.html.indexOf('<div>Waren</div>') < kaputt.html.indexOf('heute-probleme'), 'dort, wo sonst die Probleme stehen');
   assert.doesNotMatch(start('', {}, { abgleich: null }).html, /heute-probleme/, 'Laden ist kein Fehler');
   assert.doesNotMatch(start('', {}, { abgleich: { verfuegbar: true, abweichungen: [] } }).html, /heute-probleme/);
 });

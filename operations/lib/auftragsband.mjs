@@ -210,7 +210,8 @@ export function auftragskarte(order, { staende = new Map(), quellvarianten = [] 
 }
 
 function bestellwert(order) {
-  const s = order?.totalPriceSet?.shopMoney || order?.currentTotalPriceSet?.shopMoney;
+  // Aktueller Stand zuerst (#1056); eine stornierte Bestellung behaelt ihren urspruenglichen Wert.
+  const s = (order?.cancelledAt ? null : order?.currentTotalPriceSet?.shopMoney) || order?.totalPriceSet?.shopMoney;
   if (!s || leer(s.amount)) return { betrag: UNGEKLAERT, waehrung: UNGEKLAERT, text: UNGEKLAERT };
   const betrag = Number(s.amount);
   const waehrung = s.currencyCode || 'EUR';

@@ -205,6 +205,17 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
 .shop-start .heute-geschaeft { margin-bottom: 24px; }
 /* Probleme (rote To-dos) ganz oben, nur wenn es welche gibt; die Zeilen tragen das Rot, der Kopf bleibt ruhig. */
 .shop-start .heute-probleme { margin-bottom: 24px; }
+/* Warenkennzahl: eine ruhige Leiste, die Zahl traegt die Bedeutung, nicht die Farbe. */
+.waren-zahl { margin: 0 0 20px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.waren-zahl p { margin: 0; }
+.waren-zahl-kopf { display: flex; flex-wrap: wrap; gap: 4px 28px; }
+.waren-zahl-kopf div { display: flex; flex-direction: column; }
+.waren-zahl-kopf strong { font-size: 1.55rem; line-height: 1.2; }
+.waren-zahl-kopf span { color: var(--text-2); font-size: .85rem; }
+.waren-zahl-erklaerung, .waren-zahl-muster, .waren-zahl-hinweis { color: var(--text-2); font-size: .85rem; }
+.waren-zahl-erklaerung { margin-top: 4px !important; }
+.waren-zahl-vergleich { margin-top: 6px !important; font-size: .92rem; }
+.waren-zahl-muster { margin-top: 2px !important; }
 .shop-start .heute-probleme .heute-geschaeft-kopf p { margin-bottom: 10px; }
 .shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-weiter { grid-template-columns: minmax(0, 1fr); }
 .shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }

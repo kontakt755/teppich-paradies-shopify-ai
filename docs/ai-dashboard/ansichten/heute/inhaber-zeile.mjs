@@ -1,8 +1,8 @@
 /**
- * Shop-Übersicht, nur Inhaber (Rundgang 26.10., Massnahme 44): die vier Morgenfragen in einer
- * Zeile direkt unter den Warenbestellungen - laeuft der Shop, wie viel Umsatz in 7 Tagen, was ist
- * zu entscheiden, welche Frist kommt als naechstes. Vorher standen Umsatz und Shop-Kontrolle nur
- * ganz unten in der "Bisherigen Gesamtübersicht". Warenkunden bleiben zuerst (Inhaber 22.10.).
+ * Shop-Übersicht, nur Inhaber (Rundgang 26.10., Massnahme 44): die Morgenfragen in einer Zeile
+ * unter den Warenbestellungen - laeuft der Shop, was ist zu entscheiden, welche Frist kommt als
+ * naechstes. Die Umsatzzahl steht seit 05.11. ganz oben als Warenumsatz (warenkennzahl.mjs); hier
+ * bleibt der Knopf zu den weiteren Kennzahlen, damit dieselbe Frage nicht zwei Zahlen bekommt.
  *
  * Reine Funktionen ohne DOM: heute.mjs sammelt die Daten und haengt die Kennzahlen-Kacheln
  * (kennzahlenBlock) an, wenn sie aufgeklappt sind.
@@ -30,13 +30,18 @@ function shopTeil(shop, jetzt) {
   return { text: 'Shop in Ordnung', ton: '', href: '#/shopwache' };
 }
 
-function umsatzTeil(kennzahlen, kzOffen) {
-  if (kzOffen) return { text: 'Kennzahlen zuklappen', ton: '', param: '' };
-  if (!kennzahlen) return { text: 'Umsatz lädt …', ton: '', param: '1' };
-  const z7 = kennzahlen.verfuegbar ? kennzahlen.zeitraeume?.['7'] : null;
-  if (typeof z7?.umsatz !== 'number') return { text: 'Umsatz nicht verfügbar', ton: 'warn', param: '1' };
-  const geld = z7.umsatz.toLocaleString('de-DE', { style: 'currency', currency: z7.waehrung || 'EUR', maximumFractionDigits: 0 });
-  return { text: `7 Tage ${geld} Umsatz`, ton: '', param: '1' };
+function kennzahlenTeil(kzOffen) {
+  return kzOffen ? { text: 'Kennzahlen zuklappen', ton: '', param: '' } : { text: 'Weitere Kennzahlen', ton: '', param: '1' };
+}
+
+/**
+ * Hat diese Frist noch Sinn? Die Frist einer Entscheidung gilt nur, bis entschieden ist. Danach
+ * bleibt das Issue oft offen, weil noch Nacharbeit aussteht, und die Frist stand bis 05.11. rot
+ * auf der Startseite (#1693: am 26.10. entschieden, "Frist überschritten 30.10."). Vor der Frage
+ * (eingang, triage, geplant), waehrend sie laeuft (freigabe) und blockiert zaehlt sie weiter.
+ */
+function fristGilt(t) {
+  return !(t.isDecision && ['bereit', 'in-arbeit', 'korrektur', 'review', 'beobachten'].includes(t.status));
 }
 
 function entscheidungTeil(tasks, geladen) {
@@ -46,7 +51,7 @@ function entscheidungTeil(tasks, geladen) {
 }
 
 function fristTeil(tasks, jetzt) {
-  const naechste = tasks.filter(t => t.open && t.due).sort((a, b) => String(a.due).localeCompare(String(b.due)))[0];
+  const naechste = tasks.filter(t => t.open && t.due && fristGilt(t)).sort((a, b) => String(a.due).localeCompare(String(b.due)))[0];
   if (!naechste) return null;
   // Fristen sind Kalendertage im Laden: um 00:30 Uhr ist der Vortag vorbei, in UTC noch nicht
   // (gleiche Rechnung wie lib/einkauf-lieferanten.mjs, wartetage).
@@ -63,13 +68,12 @@ function fristTeil(tasks, jetzt) {
 /**
  * @param {object} p
  * @param {object|null|undefined} p.shop   /api/shopwache/status; undefined = Rolle sieht sie nicht
- * @param {object|null} p.kennzahlen       /api/einkauf/kennzahlen
  * @param {object[]} p.tasks               normalisierte Aufgaben (state.tasks)
  * @param {boolean} p.aufgabenGeladen      issues.json da? Sonst keine "0 Entscheidungen" behaupten
  * @param {boolean} [p.kzOffen]            Kennzahlen-Kacheln aufgeklappt (Parameter kz)
  */
-export function inhaberZeile({ shop, kennzahlen, tasks = [], aufgabenGeladen = false, kzOffen = false, jetzt = new Date() }) {
-  const teile = [shopTeil(shop, jetzt), umsatzTeil(kennzahlen, kzOffen), entscheidungTeil(tasks, aufgabenGeladen), fristTeil(tasks, jetzt)].filter(Boolean);
+export function inhaberZeile({ shop, tasks = [], aufgabenGeladen = false, kzOffen = false, jetzt = new Date() }) {
+  const teile = [shopTeil(shop, jetzt), kennzahlenTeil(kzOffen), entscheidungTeil(tasks, aufgabenGeladen), fristTeil(tasks, jetzt)].filter(Boolean);
   const html = teile.map(t => {
     const klasse = `inhaber-teil${t.ton ? ` ${t.ton}` : ''}`;
     return t.param !== undefined

@@ -121,3 +121,10 @@ test('statusband kennt keine unbekannte Farbe bei unbekanntem Status', () => {
   const band = statusband({ checks: { beratung: 'Nein', masspruefung: 'ok' }, ampel: 'gruen' }, 'NEU');
   assert.equal(band.length, 7);
 });
+
+test('bestellwert: aktueller Stand nach Bestellaenderung, Storno behaelt den urspruenglichen Wert (#1056)', () => {
+  const b = bestellung(1, [paketzeile]);
+  const aktuell = { shopMoney: { amount: '100.00', currencyCode: 'EUR' } };
+  assert.equal(auftragskarte({ ...b, currentTotalPriceSet: aktuell }).bestellwert.betrag, 100);
+  assert.equal(auftragskarte({ ...b, currentTotalPriceSet: aktuell, cancelledAt: '2026-01-06T10:00:00Z' }).bestellwert.betrag, 499);
+});
