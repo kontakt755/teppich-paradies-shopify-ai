@@ -446,6 +446,22 @@ test('Erledigt zaehlt ab dem Versand, nicht ab der Bestellung; eine noch offene 
   assert.match(html, /verschickt oder erledigt am 03\.11\.2026/);
 });
 
+test('Gesperrte Muster im Hinweis: Shopname und Farbe statt zweimal derselbe Lieferantenname (05.11.)', () => {
+  const k = kunde(1, 'klaeren');
+  const gesperrt = { imShop: true };
+  const zeile = (lineItemId, titel, farbe, extra = {}) => ({ ...k.muster[0], lineItemId, stand: 'bestellt', bestellt: { titel, farbe }, vorher: { produktname: 'Teppichboden Linie 400cm', farbnummer: '1' }, ...extra });
+  k.muster = [
+    zeile('a', 'Muster Wovena Teppich nach Maß', 'Leinen (439)', { gesperrt }),
+    zeile('b', 'Muster Wovena Teppich nach Maß', 'Sandbeige (132)', { gesperrt }),
+    zeile('c', 'Muster Regalia Teppichboden', 'Creme (511)', { gesperrt }),
+    zeile('d', 'Muster Kalvea Teppichboden', 'Sand (1)'),
+  ];
+  const html = ansicht('tab=muster', [k]);
+  assert.match(html, /Diese 3 Muster kommen nicht – Wovena Teppich nach Maß: Leinen \(439\), Sandbeige \(132\); Regalia Teppichboden: Creme \(511\)\. Der Kunde erfährt das nicht von selbst, bitte informieren\. Die übrigen Muster können danach ohne diese raus\./);
+  const notiz = html.match(/<p class="notice crit">.*?<\/p>/)[0];
+  assert.doesNotMatch(notiz, /Linie 400cm/, 'kein Lieferantenname im Hinweis');
+});
+
 test('URL-Parameter mit Objektnamen zaehlt nicht als Umschlagfilter (Review 29.10.)', () => {
   for (const wert of ['constructor', '__proto__', 'toString']) {
     const html = ansicht(`tab=muster&mpumschlag=${wert}`, [kunde(1, 'warten')]);
@@ -460,7 +476,7 @@ test('Gesperrtes Muster: rot statt "wartet", Kunde informieren zuerst, ohne-Knop
   k.muster = [{ ...k.muster[0], stand: 'bestellt', gesperrt, bestelltAm: '2026-10-20T07:00:00Z' }, { ...k.muster[0], lineItemId: 'line1b', stand: 'bestellt' }];
   const html = ansicht('tab=muster', [k]);
   assert.match(html, /mp-gesperrt">1 Muster kommt nicht</, 'ohne Aufklappen');
-  assert.match(html, /class="notice crit">Dieses Muster kommt nicht: Test\./);
+  assert.match(html, /class="notice crit">Dieses Muster kommt nicht – Testmuster: Sand\./);
   assert.match(html, /class="btn btn-sm btn-primary" data-mp-informieren="order1">Kunde informieren…/);
   assert.match(html, /im Shop gesperrt – kommt nicht/);
   assert.equal((html.match(/data-mp-ohne="line1"/g) || []).length, 1, 'nur am gesperrten Muster');

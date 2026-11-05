@@ -17,6 +17,12 @@ import { setzeSchritt } from './zeitleiste.mjs';
 /** Standtext je Sperre: "im Shop gesperrt" nur, wenn die Sperre dort bestaetigt ist. */
 export const GESPERRT_KURZ = Object.freeze({ imShop: 'im Shop gesperrt – kommt nicht', gemeldet: 'als nicht lieferbar gemeldet – kommt nicht' });
 
+/**
+ * Was kommt nicht, so wie der Kunde es bestellt hat: Shopname und Farbe. Der Lieferantenname nennt die Farbe
+ * nicht immer eindeutig, zwei Farben derselben Linie sahen im roten Hinweis gleich aus (05.11.).
+ */
+export const gesperrteNamen = gesperrte => musterKurz(gesperrte.map(m => ({ istMuster: true, titel: m.bestellt.titel, farbe: m.bestellt.farbe })));
+
 let vorlage = null;
 
 /**
@@ -26,14 +32,14 @@ let vorlage = null;
 export function oeffneKundeInformieren(k, { lesend = false, danach } = {}) {
   const gesperrte = k.muster.filter(m => m.gesperrt);
   if (!gesperrte.length) return;
-  const farben = musterKurz(gesperrte.map(m => ({ istMuster: true, titel: m.bestellt.titel, farbe: m.bestellt.farbe })));
+  const farben = gesperrteNamen(gesperrte);
   const mail = () => fuelleText(vorlage || NICHT_VERFUEGBAR_VORLAGE, { kundenname: k.name, absender: state.session?.benutzer?.name || null, farben }) || {};
   const abschliessbar = umschlagAbschliessbar(k);
   const mitWare = k.bestellungen.filter(b => b.mitWare).map(b => b.orderName);
   const erste = mail();
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="mpInfoTitel" data-dialog>
     <h2 id="mpInfoTitel">Kunde informieren · ${esc(k.name)}</h2>
-    <p>${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : 'Diese Muster kommen nicht')}: ${esc(farben.join('; '))}. Gesendet wird hier nichts: Text kopieren oder im Mailprogramm öffnen.</p>
+    <p>${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : 'Diese Muster kommen nicht')} – ${esc(farben.join('; '))}. Gesendet wird hier nichts: Text kopieren oder im Mailprogramm öffnen.</p>
     <p class="small"><span class="muted">Betreff:</span> <span data-mp-info-betreff>${esc(erste.betreff || '')}</span></p>
     <label class="visually-hidden" for="mpInfoText">Text der E-Mail</label>
     <textarea id="mpInfoText" readonly rows="9">${esc(erste.text || '')}</textarea>
