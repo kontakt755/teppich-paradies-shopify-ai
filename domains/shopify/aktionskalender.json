@@ -1,10 +1,11 @@
 {
   "_hinweis": "Jahreswellen, vom Inhaber freigegeben (Werkbank w-151: 15 % je Welle am 26.10.2026, 30-Tage-Regel fuer die Black Week am 28.10.2026). Keine aktiven Rabatte: aktion:plan schreibt nur lokale Mutationsentwuerfe, die Anzeige bleibt darin inaktiv. Datum als MM-TT; Black Week wird jaehrlich berechnet. Ablauf: domains/shopify/aktionssystem-konzept.md.",
-  "freigabe": {"am": "2026-10-26", "von": "Inhaber", "quelle": "Werkbank w-151", "nachtrag": "2026-10-28: 30-Tage-Regel Black Week"},
+  "freigabe": {"am": "2026-10-26", "von": "Inhaber", "quelle": "Werkbank w-151", "nachtrag": "2026-10-28: 30-Tage-Regel Black Week; 2026-11-05: Tag ohne-rabatt ausgenommen"},
   "vorlauf_tage": 14,
   "ausnahmen_alle": [
     {"text": "Bereits reduzierte Ware ausnehmen (Streichpreis gesetzt oder in den 30 Tagen vor dem Start reduziert)"},
-    {"text": "Muster, Zubehoer und Auslauf in der Zielkollektion pruefen"}
+    {"text": "Muster, Zubehoer und Auslauf in der Zielkollektion pruefen"},
+    {"text": "Produkte mit Tag ohne-rabatt ausnehmen (Marge traegt keine 15 %): Rabatt und Anzeige nicht direkt auf die Kategorie legen, wenn sie solche Produkte enthaelt, sondern auf eine eigene Aktionskollektion ohne diesen Tag"}
   ],
   "wellen": [
     {"id": "winterschluss", "titel": "Winterschluss", "von": "01-07", "bis": "01-31", "kollektion": "teppichboden", "prozent": 15, "idee": "Inventur: Rollenware und Restbestaende", "freigegeben": true},

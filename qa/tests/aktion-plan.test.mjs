@@ -41,6 +41,12 @@ test('30-Tage-Regel: Black Week 2026 nimmt die Teppichboeden aus dem Dauerrabatt
   assert.doesNotMatch(mutationen(bw, 2027).hinweis, /75 Teppichboeden/);
 });
 
+test('Tag ohne-rabatt: jede Welle nimmt ihn aus, auch Black Week und Winterschluss', () => {
+  for (const w of kalender.wellen) {
+    assert.match(mutationen(w, 2026, { ausnahmenAlle: kalender.ausnahmen_alle }).hinweis, /Tag ohne-rabatt ausnehmen/, w.id);
+  }
+});
+
 test('Entwurfsdatei entsteht nur lokal im Arbeitsordner und traegt die Ausnahmen', () => {
   const ordner = mkdtempSync(path.join(os.tmpdir(), 'tp-aktion-plan-'));
   try {

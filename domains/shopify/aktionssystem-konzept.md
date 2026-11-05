@@ -249,6 +249,15 @@ Teppichboeden aus dem Dauerrabatt bis 01.11.2026 bleiben aus der Black Week 2026
 Prozent, Termine und Zielkollektion - den echten Rabatt legt weiterhin erst jemand nach
 dem Ablauf unten an.
 
+**Tag `ohne-rabatt` (Freigabe 05.11.2026):** Produkte mit diesem Tag bekommen keinen
+Rabatt, weil die Marge bei festem Online-Preis keine 15 % traegt (`ausnahmen_alle`). Stand
+05.11.2026 zwei Teppichboeden, beide in der Kategorie `teppichboden` und damit im
+Vorschlag von Winterschluss und Black Week. Dort muessen sie als Kategorie sichtbar bleiben.
+Rabatt und `tp_aktion`
+zeigen deshalb auf eine eigene, im Onlineshop veroeffentlichte Aktionskollektion
+ohne diese Produkte (die Anzeige liest `product.collections`). Vor dem Start pruefen:
+`productsCount(query: "tag:ohne-rabatt")` und ein solches Produkt im Testwarenkorb ohne Abzug.
+
 Erst wenn Prozent, Zielkollektion und Ausnahmen je Welle feststehen, beide Felder
 entsprechend pflegen. Vor der Freigabe die Zielkollektion im Admin lesen und bereits
 reduzierte Ware, Muster, Zubehoer und Auslauf konkret pruefen; die Zuordnung ist

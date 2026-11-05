@@ -1,0 +1,6 @@
+## 2026-11-05 · Tag `ohne-rabatt`: kein Marketingcode und keine Aktionswelle
+
+- **Geaendert:** Die Kollektion `intern-regulaerer-preis` schliesst Produkte mit Tag `ohne-rabatt` aus (Shopify, schon aktiv). Damit greift der Newsletter-Code dort nicht mehr. `ausnahmen_alle` im Aktionskalender nimmt den Tag für alle Wellen aus; Konzept, Marketingcode-Doku und Skill `preislogik` nennen die Regel, ein Test sichert sie. Dazu ein Dashboard-Test mit fester Uhr: Er scheiterte seit heute auch auf main, weil sein festes Bestelldatum 14 Tage alt wurde.
+- **Getestet:** Kollektion vorher 3663, nachher 3661 Produkte, Vergleich der Listen: genau die zwei Produkte mit dem Tag sind heraus, keines neu. Live-Warenkorb: Code bei einem Produkt mit Tag nicht anwendbar (0 € Abzug), beim Vergleichsprodukt 15 € Abzug; Testwarenkorb geleert. `npm run -s pruefen`.
+- **Risiken/Annahmen:** Für die Wellen ist die Regel eine Vorgabe in `aktion:plan`, kein technischer Riegel: Es gibt noch keinen angelegten Rabatt. Wer eine Welle auf `teppichboden` anlegt, muss eine eigene Zielkollektion nehmen, sonst sind die Produkte drin. Rückweg in Shopify: die Ausschlussbedingung an der Kollektion löschen.
+- **Nächste Stufe:** keine.
