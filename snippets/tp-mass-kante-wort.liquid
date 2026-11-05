@@ -1,0 +1,34 @@
+{%- doc -%}
+  Standardkante eines Teppichs nach Mass in Worten: "gekettelt|Kettelung rundum".
+  Erster Teil steht hinter dem Produktnamen, zweiter im Satz "enthalten ...".
+  Die Einfassart kommt aus service.einfassung, ein eigener Name aus service.einfass_label
+  (dieselben Felder wie die Kachel in snippets/tp-einfass-kanten). Unbekannt = nichts.
+
+  @param {object} product - der Teppich nach Mass
+{%- enddoc -%}
+{%- liquid
+  assign tmkw_art = product.metafields.service.einfassung.value | strip | downcase
+  assign tmkw_label = product.metafields.service.einfass_label.value | append: '' | strip
+  assign tmkw = ''
+  case tmkw_art
+    when 'ketteln'
+      assign tmkw = 'gekettelt|Kettelung rundum'
+    when 'paspelband'
+      assign tmkw = 'mit Paspel|Paspel rundum'
+    when 'einfassband'
+      assign tmkw = 'mit Einfassband|Einfassband rundum'
+    when 'cover'
+      assign tmkw = 'mit Cover-Kante|Cover-Kante rundum'
+    when 'fertig'
+      assign tmkw = 'vom Hersteller eingefasst|Einfassung sowie Fertigungs- und Versandpauschale'
+  endcase
+  if tmkw_label != blank and tmkw != blank
+    assign tmkw_teile = tmkw | split: '|'
+    assign tmkw_kopf = 'Kante ' | append: tmkw_label
+    if tmkw_label contains 'Kante'
+      assign tmkw_kopf = tmkw_label
+    endif
+    assign tmkw = tmkw_kopf | append: '|' | append: tmkw_teile[1]
+  endif
+-%}
+{{- tmkw -}}

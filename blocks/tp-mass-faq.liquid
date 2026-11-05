@@ -1,0 +1,44 @@
+{% doc %}
+  Kauffragen auf der Produktseite eines Teppichs nach Mass: Preis, Lieferzeit, Bestellweg.
+  Text und JSON-LD kommen aus snippets/tp-mass-faq. Ohne Frage bleibt der Block leer.
+  Beim Farbwechsel ersetzt assets/tp-mass-kaufangaben.js den Inhalt durch die neue
+  Serverausgabe (der Preis kann je Farbe abweichen).
+{% enddoc %}
+{%- capture tp_mf_inhalt -%}{%- render 'tp-mass-faq', product: closest.product, variant: closest.product.selected_or_first_available_variant -%}{%- endcapture -%}
+<section class="tp-mf" data-tp-mass-neu="{{ block.id }}"{% if tp_mf_inhalt == blank %} hidden{% endif %} {{ block.shopify_attributes }}>
+  <h2 class="tp-mf__titel">{{ block.settings.titel | escape }}</h2>
+  {{ tp_mf_inhalt }}
+</section>
+<script src="{{ 'tp-mass-kaufangaben.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  .tp-mf { display: grid; gap: 4px; }
+  .tp-mf[hidden] { display: none; }
+  .tp-mf__titel { margin: 0 0 4px; font-size: var(--tp-fs-lg); font-weight: 600; }
+  .tp-mf__frage { margin: 8px 0 0; font-size: var(--tp-fs-md); font-weight: 600; }
+  .tp-mf__antwort { margin: 0; font-size: var(--tp-fs-sm); font-weight: 400; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Kauffragen nach Maß",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Fragen und Antworten kommen aus den Produktdaten. Sichtbar nur auf Teppichen nach Maß."
+    },
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Preis, Lieferzeit und Bestellung"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Kauffragen nach Maß"
+    }
+  ]
+}
+{% endschema %}

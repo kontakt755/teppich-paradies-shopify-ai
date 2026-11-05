@@ -22,6 +22,9 @@
 
   @param {string} html - Produktbeschreibung als HTML (product.description)
   @param {string} seiten_url - absolute URL der Produktseite (fuer die @id)
+  @param {string} [vorab] - fertige Question-Knoten aus snippets/tp-mass-faq (Preis,
+    Lieferzeit, Bestellweg), durch Kommas getrennt. Sie stehen vorn im selben Knoten,
+    damit die Seite weiterhin genau einen FAQPage-Knoten hat.
 {%- enddoc -%}
 
 {%- liquid
@@ -49,13 +52,14 @@
   {%- endfor -%}
 {%- endcapture -%}
 
-{%- if tpfb_anzahl > 0 -%}
+{%- assign tpfb_vorab = vorab | strip -%}
+{%- if tpfb_anzahl > 0 or tpfb_vorab != blank -%}
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
       "@id": {{ seiten_url | append: '#faq' | json }},
-      "mainEntity": [{{ tpfb_json | strip }}]
+      "mainEntity": [{{ tpfb_vorab }}{% if tpfb_vorab != blank and tpfb_anzahl > 0 %},{% endif %}{{ tpfb_json | strip }}]
     }
   </script>
 {%- endif -%}
