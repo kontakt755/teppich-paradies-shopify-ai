@@ -1447,13 +1447,14 @@ Styles `stile/serviceanfragen.css`.
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
   Zeile zeigt „aus dem Postfach übernommen“. Ein Test prüft, dass jeder Betreff aus `templates/` in
   der Liste steht oder bewusst ausgenommen ist – eine neue Serviceseite fällt so auf.
-- **Kampagnenfeld:** Das Anfrageformular (`sections/tp-start-kontakt.liquid`) füllt das versteckte
-  Feld `contact[Herkunft]` aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
+- **Kampagnenfeld:** `snippets/tp-herkunft.liquid` (im Layout) füllt das versteckte Feld
+  `contact[Herkunft]` der Formulare auf den Verlegeseiten und der Kontaktseite aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
   „Microsoft-Anzeige“ (msclkid), „Anzeige (<utm_source>)“ bei bezahltem `utm_medium`, sonst „Link
-  (<utm_source>)“ bzw. „Link von Facebook/Instagram“, jeweils mit „· Kampagne <utm_campaign>“. Nichts
-  wird auf dem Gerät gespeichert, Klick-IDs gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle
-  „Werbung“. Grenze: erfasst ist nur, wer auf der Seite mit der Anzeigenadresse anfragt; wer erst
-  weiterklickt, zählt als Formular.
+  (<utm_source>)“ bzw. „Link von Facebook/Instagram“, jeweils mit „· Kampagne <utm_campaign>“. Klick-IDs
+  gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle „Werbung“. Über Seitenwechsel trägt sie ein
+  Eintrag im sessionStorage (nur der Text, nur mit Analyse-Einwilligung) oder, ohne Einwilligung, die
+  Adresse der Vorseite. Grenze: ohne Einwilligung ist die Herkunft nach dem zweiten Seitenwechsel
+  leer, die Anfrage zählt dann als Formular.
 
 ## 21. Insights › „Claude-Verbrauch“ (seit 2026-10-16, #671)
 

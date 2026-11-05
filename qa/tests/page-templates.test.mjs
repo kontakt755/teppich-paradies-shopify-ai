@@ -128,7 +128,7 @@ test('C: jede B2B-Seite hat eine Vorlage zu ihrem Suffix, Knoepfe zeigen auf Kon
     assert.ok(existsSync(new URL(name, TEMPLATES)), `${name} fehlt - die Seite faellt sonst auf page.json zurueck`);
     const hero = Object.values(lies(name).sections).find((s) => s.type === 'b2b-hero-bereich');
     assert.ok(hero, `${name}: kein B2B-Kopf`);
-    assert.match(hero.settings.primary_btn_link, /\/pages\/kontakt$/, `${name}: Knopf 1 zeigt nicht auf die Kontaktseite`);
+    assert.match(hero.settings.primary_btn_link, /\/pages\/kontakt(\?thema=verlegung)?$/, `${name}: Knopf 1 zeigt nicht auf die Kontaktseite`);
     assert.match(hero.settings.secondary_btn_link, /^https:\/\/wa\.me\//, `${name}: Knopf 2 zeigt nicht auf WhatsApp`);
   }
 });

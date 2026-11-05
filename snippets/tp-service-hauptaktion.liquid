@@ -6,7 +6,8 @@
   (gruen, schwarz, keiner) und WhatsApp fehlte oben ganz.
 
   Ziel des Hauptknopfs: #tp-anfrage, wenn die Seite das Formular selbst hat
-  (snippets/tp-anfrage-ziel.liquid), sonst die Kontaktseite. Das Formular
+  (snippets/tp-anfrage-ziel.liquid, auch wenn die Section den Link mit Pfad
+  fuehrt), sonst die Kontaktseite. Das Formular
   klappt sich beim Sprung auf (sections/tp-start-kontakt.liquid).
 
   Nummern aus den Theme-Einstellungen (Gruppe TP Verlegeservice), wie in
@@ -21,13 +22,10 @@
 
 {%- liquid
   assign sha_label = label | default: 'Verlegung anfragen'
-  assign sha_ziel = ziel
-  if sha_ziel == blank
-    capture sha_ziel
-      render 'tp-anfrage-ziel'
-    endcapture
-    assign sha_ziel = sha_ziel | strip
-  endif
+  capture sha_ziel
+    render 'tp-anfrage-ziel', ziel: ziel
+  endcapture
+  assign sha_ziel = sha_ziel | strip
   if sha_ziel == blank
     assign sha_ziel = routes.root_url | append: 'pages/kontakt?thema=verlegung' | replace: '//', '/'
   endif

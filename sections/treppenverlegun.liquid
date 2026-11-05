@@ -159,7 +159,8 @@
           {%- endfor -%}
         </ul>
       {%- endif -%}
-      <a href="{{ section.settings.hero_cta_ziel | default: '/pages/kontakt' }}" class="treppen-button">{{ section.settings.hero_cta }}</a>
+      {%- capture tp_tv_ziel -%}{%- render 'tp-anfrage-ziel', ziel: section.settings.hero_cta_ziel -%}{%- endcapture -%}
+      <a href="{{ tp_tv_ziel | strip | default: '/pages/kontakt?thema=verlegung' }}" class="treppen-button">{{ section.settings.hero_cta }}</a>
     </div>
     {%- endif -%}
   </div>

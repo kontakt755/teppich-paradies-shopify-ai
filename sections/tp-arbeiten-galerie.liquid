@@ -139,7 +139,7 @@
     <div class="tp-arb__unterbau">
       <button type="button" class="tp-s-btn tp-s-btn--ghost" data-tp-mehr hidden>Weitere Arbeiten anzeigen</button>
       {%- if section.settings.cta_label != blank -%}
-        <a class="tp-s-btn tp-s-btn--primary" href="{{ section.settings.cta_link | default: '/pages/kontakt' }}">
+        <a class="tp-s-btn tp-s-btn--primary" href="{{ section.settings.cta_link | default: '/pages/kontakt?thema=verlegung' }}">
           {{ section.settings.cta_label | escape }}
         </a>
       {%- endif -%}
@@ -243,7 +243,7 @@
         <p class="tp-lb__text" data-tp-lb-text></p>
         <div class="tp-lb__thumbs" data-tp-lb-thumbs hidden></div>
         {%- if section.settings.cta_label != blank -%}
-          <a class="tp-s-btn tp-s-btn--primary tp-lb__cta" href="{{ section.settings.cta_link | default: '/pages/kontakt' }}">
+          <a class="tp-s-btn tp-s-btn--primary tp-lb__cta" href="{{ section.settings.cta_link | default: '/pages/kontakt?thema=verlegung' }}">
             {{ section.settings.cta_label | escape }}
           </a>
         {%- endif -%}

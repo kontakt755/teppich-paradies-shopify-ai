@@ -1,0 +1,79 @@
+{% doc %}
+  Herkunft fuer die Anfrage-Mail (Werkbank w-030): kam der Besuch ueber eine
+  Anzeige oder einen Kampagnenlink? Fuellt jedes Feld [data-tp-herkunft]. Das
+  Control Center zaehlt "Anzeige" als Quelle Werbung.
+
+  Reihenfolge der Quellen:
+  1. Adresse dieser Seite.
+  2. Eintrag im sessionStorage: nur der fertige Text, nur fuer diesen Tab. Er
+     wird wie in snippets/tp-funnel-events.liquid nur mit Analyse-Einwilligung
+     geschrieben und bei einem spaeteren Nein geloescht.
+  3. Adresse der Vorseite im selben Shop (document.referrer). Das speichert
+     nichts und traegt die Herkunft auch ohne Einwilligung einen Seitenwechsel
+     weit. Ohne Einwilligung ist sie nach dem zweiten Wechsel weg.
+
+  Klick-IDs (gclid ...) werden nie gespeichert oder verschickt, nur ihr Kanal.
+  Ohne Kennung passiert nichts: keine Einwilligungs-API, kein Eintrag.
+
+  Liegt im Layout und nicht beim Formular, weil der Einstieg auch eine Seite
+  ohne Formular sein kann.
+{% enddoc %}
+
+<script>
+  (function () {
+    var SCHLUESSEL = 'tp_herkunft';
+
+    function ausAdresse(suche) {
+      var p = new URLSearchParams(suche);
+      var quelle = (p.get('utm_source') || '').slice(0, 40);
+      var medium = (p.get('utm_medium') || '').toLowerCase();
+      var kampagne = (p.get('utm_campaign') || '').slice(0, 60);
+      var text = '';
+      if (p.get('gclid') || p.get('gbraid') || p.get('wbraid')) text = 'Google-Anzeige';
+      else if (p.get('msclkid')) text = 'Microsoft-Anzeige';
+      else if (/^(cpc|ppc|paid|paid_?social|display|ads?)$/.test(medium)) text = 'Anzeige (' + (quelle || 'unbekannt') + ')';
+      else if (p.get('fbclid')) text = 'Link von Facebook/Instagram';
+      else if (quelle) text = 'Link (' + quelle + ')';
+      if (kampagne) text += (text ? ' · ' : '') + 'Kampagne ' + kampagne;
+      return text;
+    }
+
+    function gemerkt() {
+      try { return sessionStorage.getItem(SCHLUESSEL) || ''; } catch (e) { return ''; }
+    }
+
+    function vonVorseite() {
+      var vorseite = document.referrer || '';
+      if (vorseite.indexOf(window.location.origin + '/') !== 0) return '';
+      var suche = vorseite.split('#')[0].split('?')[1];
+      return suche ? ausAdresse(suche) : '';
+    }
+
+    var text = '';
+    try { text = ausAdresse(window.location.search) || gemerkt() || vonVorseite(); } catch (e) { return; }
+    if (!text) return;
+
+    document.querySelectorAll('[data-tp-herkunft]').forEach(function (feld) {
+      feld.value = text;
+      feld.disabled = false;
+    });
+
+    function abgleichen() {
+      try {
+        var p = window.Shopify && window.Shopify.customerPrivacy;
+        if (!p || typeof p.analyticsProcessingAllowed !== 'function') return;
+        if (p.analyticsProcessingAllowed()) sessionStorage.setItem(SCHLUESSEL, text);
+        else sessionStorage.removeItem(SCHLUESSEL);
+      } catch (e) {}
+    }
+    document.addEventListener('visitorConsentCollected', abgleichen);
+    try {
+      if (window.Shopify && window.Shopify.customerPrivacy) abgleichen();
+      else if (window.Shopify && typeof window.Shopify.loadFeatures === 'function') {
+        window.Shopify.loadFeatures([{ name: 'consent-tracking-api', version: '0.1' }], function (error) {
+          if (!error) abgleichen();
+        });
+      }
+    } catch (e) {}
+  })();
+</script>

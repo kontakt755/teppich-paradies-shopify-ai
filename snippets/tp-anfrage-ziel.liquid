@@ -7,6 +7,11 @@
   selbst auf der Seite - der Umweg ueber die Kontaktseite verliert dort das
   vorbelegte Anliegen (Audit 01.10.2026, Punkt 10).
 
+  Mit "ziel" (Link aus den Section-Einstellungen): Zeigt er auf ein Formular
+  "/pages/x#tp-anfrage" und die Seite hat selbst eins, kommt der reine Anker
+  heraus, sonst der Link unveraendert. Mit Pfad wuerde der Browser die Seite neu
+  laden und die Anzeigenkennung aus der Adresse verlieren (Pruefung 05.11.2026).
+
   Liste der Seitenvorlagen mit eigenem Formular - beim Einfuegen von
   tp-start-kontakt in eine weitere Seitenvorlage hier ergaenzen.
 
@@ -14,12 +19,22 @@
     capture x
       render 'tp-anfrage-ziel'
     endcapture
+
+  @param {string} [ziel] - Link aus den Section-Einstellungen
 {% enddoc %}
 {%- liquid
+  assign taz_eigen = ''
   if template.name == 'page'
     assign taz_vorlagen = 'verlegeservice,teppichboden-verlegen,vinylboden-verlegen,treppenverlegung,teppichreinigung' | split: ','
     if taz_vorlagen contains template.suffix
-      echo '#tp-anfrage'
+      assign taz_eigen = '#tp-anfrage'
     endif
+  endif
+  if ziel == blank
+    echo taz_eigen
+  elsif taz_eigen != blank and ziel contains '#tp-anfrage'
+    echo taz_eigen
+  else
+    echo ziel
   endif
 -%}

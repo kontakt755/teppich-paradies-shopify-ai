@@ -203,7 +203,8 @@
 
   {%- if section.settings.cta_label != blank -%}
     <div class="tp-treppen-ausf__aktion">
-      <a href="{{ section.settings.cta_ziel | default: '/pages/kontakt' }}" class="tp-treppen-ausf__button">
+      {%- capture tp_ta_ziel -%}{%- render 'tp-anfrage-ziel', ziel: section.settings.cta_ziel -%}{%- endcapture -%}
+      <a href="{{ tp_ta_ziel | strip | default: '/pages/kontakt?thema=verlegung' }}" class="tp-treppen-ausf__button">
         {{ section.settings.cta_label }}
       </a>
       {%- if section.settings.cta_zusatz != blank -%}

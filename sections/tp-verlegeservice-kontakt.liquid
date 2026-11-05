@@ -112,7 +112,8 @@
       {%- endif -%}
       {%- if section.settings.kontakt_link != blank -%}
         <li>
-          <a class="tp-vsk__weg" href="{{ section.settings.kontakt_link }}">
+          {%- capture tp_vsk_ziel -%}{%- render 'tp-anfrage-ziel', ziel: section.settings.kontakt_link -%}{%- endcapture -%}
+          <a class="tp-vsk__weg" href="{{ tp_vsk_ziel | strip }}">
             {%- render 'tp-vs-icon', name: 'chat' -%}
             <span class="tp-vsk__weg-text">
               <span>Kontaktformular</span>
