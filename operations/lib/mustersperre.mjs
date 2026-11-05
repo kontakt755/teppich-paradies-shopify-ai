@@ -79,8 +79,10 @@ function clip(text, max) {
 /**
  * Alle Ereignisse. Nur eine FEHLENDE (oder leere) Datei gilt als leer; eine beschaedigte wirft -
  * sonst schriebe der naechste Klick eine Datei mit genau einem Ereignis.
+ * `streng`: auch ein einzelnes ungueltiges Ereignis wirft. Wer danach Mails verschickt (Musterautomatik),
+ * darf eine Sperre nicht still verlieren; Anzeigen bleiben beim Ausfiltern.
  */
-export function leseSperren(file) {
+export function leseSperren(file, { streng = false } = {}) {
   let text;
   try { text = fs.readFileSync(file, 'utf8'); } catch (e) {
     if (e?.code === 'ENOENT') return [];
@@ -92,7 +94,14 @@ export function leseSperren(file) {
   if (!roh || typeof roh !== 'object' || !Array.isArray(roh.ereignisse)) {
     throw new MustersperreFehler(500, `${path.basename(file)} ist beschädigt – bitte aus der Sicherung holen (npm run daten:sichern legt sie an). Es wurde nichts verändert.`, { grund: 'ablage' });
   }
-  return roh.ereignisse.filter(e => e && typeof e.sku === 'string' && GRUND_WERTE.includes(e.grund) && e.am);
+  const gueltig = e => e && typeof e.sku === 'string' && GRUND_WERTE.includes(e.grund) && e.am;
+  // Streng heisst auch: nicht leer und ein echter Zeitpunkt. `am: []` saehe sonst wie ein alter Eintrag aus
+  // und sortierte die Sperre vor eine aeltere Freigabe.
+  const einwandfrei = e => gueltig(e) && e.sku.trim() && typeof e.am === 'string' && Number.isFinite(Date.parse(e.am));
+  if (streng && !roh.ereignisse.every(einwandfrei)) {
+    throw new MustersperreFehler(500, `${path.basename(file)} enthält ein ungültiges Ereignis – bitte aus der Sicherung holen (npm run daten:sichern legt sie an). Es wurde nichts verändert.`, { grund: 'ablage' });
+  }
+  return roh.ereignisse.filter(gueltig);
 }
 
 /** Baut ein Ereignis (ohne zu schreiben) - wirft bei fehlenden Pflichtangaben. */

@@ -1,0 +1,6 @@
+## 2026-11-05 · Musterautomatik beachtet gesperrte Muster (w-265)
+
+- **Geaendert:** Die automatische Musterbestellung liest `mustersperre.json`, auch unmittelbar vor jeder Mail. Ein gesperrtes Muster wird nie angefragt und steht als Klärfall an der Bestellung; die übrigen Muster derselben Bestellung gehen normal raus. Ist die Ablage unlesbar, schickt der Lauf nichts (mehr) und meldet „Sperrliste nicht lesbar“. Das To-do „Muster nicht lieferbar“ verweist auf die Packstation statt auf den Schritt „nicht verfügbar“, der immer die ganze Bestellung abschließt.
+- **Getestet:** Neue Fälle in `operations/tests/muster-bestellautomatik.test.mjs` (gesperrt, nicht gesperrt, gemischt, kaputte Datei, Sperre oder Schaden mitten im Lauf, wieder verfügbar), `muster-bestellautomatik-api.test.mjs`, `todos.test.mjs`; `npm run -s pruefen`. Kein echter Lauf, keine Mail.
+- **Risiken/Annahmen:** Nur eine fehlende oder leere Datei heißt „keine Sperre“ (Regel von `leseSperren`). Ein Muster ohne auswertbare SKU lässt sich nicht sperren und bleibt bestellbar.
+- **Naechste Stufe:** Das To-do und die Kundenzeile prüfen die Sperre direkt über die Positions-SKU, die Automatik über den Musterschlüssel. Beim Sammelprodukt `TP-MUSTER` kann das To-do die Sperre deshalb übersehen.

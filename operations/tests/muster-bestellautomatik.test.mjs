@@ -6,6 +6,7 @@ import path from 'node:path';
 import { musterAutomatikLauf, musterAutomatikPlan, musterAutomatikDaten, musterAutomatikAnzeige } from '../lib/muster-bestellautomatik.mjs';
 import { pruefeStammdaten } from '../lib/lieferanten.mjs';
 import { leseAlle, setzeStatus, setzeZurueckAufOffen, positionKey } from '../lib/auftragsstatus.mjs';
+import { mustersperrePfad, leseSperren, stand as sperrStand, haengeAn, ereignis, GRUND } from '../lib/mustersperre.mjs';
 const JETZT = new Date('2026-10-23T12:00:00Z');
 function umgebung(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-muster-auto-'));
@@ -25,7 +26,7 @@ function umgebung(t) {
   let mails = [];
   const senden = async (_, mail) => { mails.push(mail); return { messageId: mail.messageId }; };
   const lauf = extra => musterAutomatikLauf({ dir, kontext, katalog: () => katalog, jetzt: JETZT, senden, ...extra });
-  const plan = () => { const { konfig, journal } = musterAutomatikDaten(dir); return musterAutomatikPlan(kontext(), katalog, konfig, journal, JETZT); };
+  const plan = () => { const { konfig, journal } = musterAutomatikDaten(dir); return musterAutomatikPlan(kontext(), katalog, konfig, journal, sperrStand(leseSperren(mustersperrePfad(dir)))); };
   return { dir, datei, regel, konfig, p, a, modell, stammdaten, katalog, kontext, lauf, plan, mails, exportFile, statusFile: path.join(dir, 'auftragsstatus.json') };
 }
 test('versendet vorhandene Vorlage einmal, setzt Bestellt und zeigt Artikel je Kunde', async t => {
@@ -193,4 +194,113 @@ test('Mailversand unklar: der Klaerfall nennt die betroffenen Positionen', async
   const k = musterAutomatikAnzeige(u.dir, u.kontext(), u.katalog).auftraege.o1.klaeren[0];
   assert.deepEqual(k.lineItemIds, ['p1']);
   assert.equal(k.seit, JETZT.toISOString());
+});
+
+// --- Mustersperre (w-265) ---
+const sperre = (u, sku, grund = GRUND.GESPERRT, shopify = { geschrieben: true }) => haengeAn(mustersperrePfad(u.dir), [ereignis({ sku, von: 'Test', grund, shopify, jetzt: JETZT })]);
+/** Zweites Muster derselben Bestellung (gemischt) beim selben Lieferanten. */
+function zweitesMuster(u) {
+  u.p.sku = 'M-TEST-1';
+  const p2 = { ...u.p, lineItemId: 'p2', sku: 'M-TEST-2', farbe: 'Sand', grosshaendlerId: 'TEST-2', musterQuelle: { produktHandle: 'testteppich', farbnummer: '060' } };
+  u.a.positionen.push(p2); u.modell.musterGruppen[0].positionen.push(p2);
+  return p2;
+}
+/** Zweite Bestellung: zeigt, was ein Lauf nach der ersten Mail noch tut. */
+function zweiteBestellung(u) {
+  u.p.sku = 'M-TEST-1';
+  const p2 = { ...u.p, orderId: 'o2', orderName: '#T2', lineItemId: 'p2', sku: 'M-TEST-2', farbe: 'Sand', grosshaendlerId: 'TEST-2', musterQuelle: { produktHandle: 'testteppich', farbnummer: '060' } };
+  u.modell.auftraege.push({ ...u.a, id: 'o2', name: '#T2', positionen: [p2] });
+  u.modell.musterGruppen[0].positionen.push(p2);
+  return p2;
+}
+
+test('gesperrtes Muster: keine Mail, kein Protokolleintrag, Klaerfall nennt den Grund', async t => {
+  const u = umgebung(t); u.p.sku = 'M-TEST-1'; sperre(u, 'M-TEST-1');
+  assert.equal((await u.lauf()).verschickt, 0); assert.equal(u.mails.length, 0);
+  assert.equal(musterAutomatikDaten(u.dir).journal.sendungen.length, 0);
+  assert.equal(leseAlle(u.statusFile)[positionKey('o1', 'p1')]?.status, undefined);
+  const k = musterAutomatikAnzeige(u.dir, u.kontext(), u.katalog).auftraege.o1;
+  assert.equal(k.geplant, 0); assert.match(k.klaeren[0].grund, /gesperrt/);
+});
+test('Sperre geht vor: auch die aeltere offene Bestellung nennt sie als Grund', t => {
+  const u = umgebung(t); u.p.sku = 'M-TEST-1'; sperre(u, 'M-TEST-1'); u.a.datum = '2026-10-22T10:00:00Z';
+  assert.match(u.plan().klaeren[0].grund, /gesperrt/);
+});
+test('im Shop noch nicht bestaetigte Sperre gilt ebenfalls', async t => {
+  const u = umgebung(t); u.p.sku = 'M-TEST-1'; sperre(u, 'M-TEST-1', GRUND.GESPERRT, { geschrieben: false, fehler: 'kein Zugang', fehlerGrund: 'kein-zugang' });
+  await u.lauf(); assert.equal(u.mails.length, 0);
+});
+test('Sammelprodukt: Sperre greift ueber die SKU der Quellvariante', async t => {
+  const u = umgebung(t); u.p.sku = 'TP-MUSTER'; u.p.musterQuelle.sku = 'TEST-1'; sperre(u, 'M-TEST-1');
+  await u.lauf(); assert.equal(u.mails.length, 0);
+});
+test('nicht gesperrt: eine Sperre auf einer anderen Farbe aendert nichts', async t => {
+  const u = umgebung(t); u.p.sku = 'M-TEST-1'; sperre(u, 'M-ANDERE');
+  assert.equal((await u.lauf()).verschickt, 1); assert.match(u.mails[0].text, /TEST-1/);
+});
+test('wieder verfuegbar: beim naechsten Lauf normal bestellt', async t => {
+  const u = umgebung(t); u.p.sku = 'M-TEST-1'; sperre(u, 'M-TEST-1'); await u.lauf(); assert.equal(u.mails.length, 0);
+  sperre(u, 'M-TEST-1', GRUND.FREI);
+  assert.equal((await u.lauf()).verschickt, 1); assert.equal(u.plan().klaeren.length, 0);
+});
+test('gemischte Bestellung: nur das gesperrte Muster bleibt zurueck', async t => {
+  const u = umgebung(t); zweitesMuster(u); sperre(u, 'M-TEST-1');
+  assert.equal((await u.lauf()).verschickt, 1); assert.equal(u.mails.length, 1);
+  assert.match(u.mails[0].text, /TEST-2/); assert.doesNotMatch(u.mails[0].text, /TEST-1/);
+  const status = leseAlle(u.statusFile);
+  assert.equal(status[positionKey('o1', 'p2')].status, 'bestellt');
+  assert.equal(status[positionKey('o1', 'p1')]?.status, undefined);
+  assert.deepEqual(u.plan().klaeren.map(k => k.lineItemId), ['p1']);
+  assert.deepEqual(musterAutomatikDaten(u.dir).journal.sendungen[0].positionen.map(p => p.lineItemId), ['p2']);
+});
+test('Sperre waehrend des Laufs: das naechste Muster geht nicht mehr raus', async t => {
+  const u = umgebung(t); zweiteBestellung(u);
+  const r = await u.lauf({ senden: async (_, mail) => { u.mails.push(mail); sperre(u, 'M-TEST-2'); return {}; } });
+  assert.equal(r.verschickt, 1); assert.equal(u.mails.length, 1); assert.match(u.mails[0].text, /TEST-1/);
+});
+for (const [name, kaputt] of [
+  ['beschaedigtes JSON', f => fs.writeFileSync(f, '{"ereignisse": [')],
+  ['falsche Form', f => fs.writeFileSync(f, '{"ereignisse": "nein"}')],
+  ['nicht lesbar', f => fs.mkdirSync(f)],
+  ['Sperre ohne Zeitpunkt', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [{ sku: 'M-TEST-1', grund: 'nicht verfuegbar' }] }))],
+  ['leerer Eintrag', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [null] }))],
+  ['leere SKU', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [{ sku: '', grund: 'nicht verfuegbar', am: '2026-11-05T10:00:00.000Z' }] }))],
+  ['Zeitpunkt keine Zeichenkette', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [{ sku: 'M-TEST-1', grund: 'nicht verfuegbar', am: [] }] }))],
+  ['Zeitpunkt kein Datum', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [{ sku: 'M-TEST-1', grund: 'nicht verfuegbar', am: 'gestern' }] }))],
+]) test(`kaputte Sperrliste (${name}): nichts bestellt, Hinweis sichtbar, Datei unberuehrt`, async t => {
+  const u = umgebung(t); const f = mustersperrePfad(u.dir); kaputt(f);
+  const inhalt = fs.statSync(f).isFile() ? fs.readFileSync(f, 'utf8') : null;
+  const r = await u.lauf();
+  assert.equal(r.status, 'sperrliste-unlesbar'); assert.equal(r.verschickt, 0); assert.equal(u.mails.length, 0);
+  const { journal } = musterAutomatikDaten(u.dir);
+  assert.equal(journal.sendungen.length, 0); assert.match(journal.letzterLauf.hinweis, /Sperrliste nicht lesbar/);
+  assert.match(musterAutomatikAnzeige(u.dir, u.kontext(), u.katalog).hinweis, /Sperrliste nicht lesbar/);
+  if (inhalt !== null) assert.equal(fs.readFileSync(f, 'utf8'), inhalt);
+});
+test('kaputte Sperrliste: Probe schreibt nichts, ausgeschaltete Automatik bleibt inaktiv', async t => {
+  const u = umgebung(t); fs.writeFileSync(mustersperrePfad(u.dir), 'kaputt');
+  assert.equal((await u.lauf({ probe: true })).status, 'sperrliste-unlesbar');
+  assert.equal(fs.existsSync(path.join(u.dir, 'muster-bestellung/versand.json')), false);
+  u.datei('muster-bestellung/konfiguration.json', { aktiv: false });
+  assert.equal((await u.lauf()).status, 'inaktiv');
+});
+test('Sperrliste kaputt mitten im Lauf: Abbruch, bereits Gesendetes bleibt vermerkt und sichtbar', async t => {
+  const u = umgebung(t); zweiteBestellung(u);
+  const r = await u.lauf({ senden: async (_, mail) => { u.mails.push(mail); fs.writeFileSync(mustersperrePfad(u.dir), 'kaputt'); return {}; } });
+  assert.deepEqual([r.status, r.verschickt, u.mails.length], ['sperrliste-unlesbar', 1, 1]);
+  assert.equal(leseAlle(u.statusFile)[positionKey('o1', 'p1')].status, 'bestellt');
+  assert.equal(leseAlle(u.statusFile)[positionKey('o2', 'p2')]?.status, undefined);
+  const a = musterAutomatikAnzeige(u.dir, u.kontext(), u.katalog);
+  assert.equal(a.auftraege.o1.bestellt.length, 1); assert.match(a.hinweis, /Sperrliste/);
+});
+test('Sperrliste repariert: Hinweis weg, Bestellung laeuft weiter', async t => {
+  const u = umgebung(t); const f = mustersperrePfad(u.dir); fs.writeFileSync(f, 'kaputt');
+  await u.lauf(); assert.equal(u.mails.length, 0);
+  fs.unlinkSync(f);
+  assert.equal((await u.lauf()).verschickt, 1);
+  assert.equal(musterAutomatikAnzeige(u.dir, u.kontext(), u.katalog).hinweis, null);
+});
+test('Plan ohne Sperrliste bricht ab statt alles freizugeben', t => {
+  const u = umgebung(t); const { konfig, journal } = musterAutomatikDaten(u.dir);
+  assert.throws(() => musterAutomatikPlan(u.kontext(), u.katalog, konfig, journal), /Sperrliste fehlt/);
 });

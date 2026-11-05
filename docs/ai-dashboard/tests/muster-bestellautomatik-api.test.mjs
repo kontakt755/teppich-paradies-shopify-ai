@@ -60,3 +60,15 @@ test('Packstation nennt den Grund der Automatik beim Muster, Bestellungen nennen
   assert.equal(m.stand, 'offen');
   assert.match(m.automatikGrund, /Musterweg/);
 });
+
+test('Echter API-Pfad: gesperrtes Muster wird nicht geplant und nicht gesendet', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-muster-api-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  testDaten(dir);
+  fs.writeFileSync(path.join(dir, 'mustersperre.json'), JSON.stringify({ version: 1, ereignisse: [{ sku: 'M-TEST-1', von: 'Test', am: new Date().toISOString(), grund: 'nicht verfuegbar', shopify: { geschrieben: true } }] }));
+  const api = createApi({ root: dir, privatDirPath: dir, gh: async () => '' });
+  assert.equal((await api.musterBestellungenAutomatisch({ probe: true })).geplant, 0);
+  let anzahl = 0;
+  assert.equal((await api.musterBestellungenAutomatisch({ senden: async () => { anzahl++; return {}; } })).verschickt, 0);
+  assert.equal(anzahl, 0);
+});
