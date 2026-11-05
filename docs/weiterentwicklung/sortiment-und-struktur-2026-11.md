@@ -116,3 +116,15 @@ den Preisvergleich zu öffnen.
   Postfach. Kandidaten (je Lieferant rund 7) nur lokal, Einkaufspreise nie im Repository.
 - Preisregeln (Inhaber 2026-11-04): K = UVP laut aktueller Liste; J = Einkauf × 2,0 (Annahmen in `docs/shop-decisions.md`). Offen:
   Auswahl der Qualitäten nach den aktuellen Listen.
+
+### Preislisten im Postfach (geprüft 2026-11-05)
+
+- J: kundenbezogene Preisliste ab 2026 (Mail vom 22.12.2025) ist die gültige EK-Liste; die
+  Liste in der Dropbox (03/2024) ist überholt. Zuschläge 2026: Couponaufschlag (bis 15,49 €/m²
+  EK +3,10 €/m², ab 15,50 €/m² +20 %) und Rohstoffzuschlag je Polmaterial (Q4 2026: PP 13,9 %,
+  PA 7,9 %, PES 5,3 %).
+- K: Rollenpreise laut Liste vom 05/2024 (Außendienst), seit 12/2025 unverändert; UVP-Listen
+  für zwei Linien vom 01/2024; Couponzuschlag 4,00 €/m² seit 01.03.2026. Die „Preisliste 2026“
+  vom April 2026 betrifft nur Teppichfliesen.
+- Die PDFs lassen sich aus der Remote-Session nicht öffnen (kein Anhang-Download); zum
+  Auswerten in den Dropbox-Ordner „Preislisten“ legen.
