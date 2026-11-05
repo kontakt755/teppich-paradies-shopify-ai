@@ -76,6 +76,8 @@ import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { ablaufVon, findeZugang, liesZugaenge, zugangAnlegen, zugangGueltig, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
+import { musterAnrufliste, anrufErgebnis, anrufErgebnisText } from '../docs/ai-dashboard/lib/muster-anrufe.mjs';
+import { musterAnrufePfad, leseMusterAnrufe, trageAnrufEin, MusterAnrufFehler } from '../operations/lib/muster-anrufe.mjs';
 import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
 import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
@@ -2658,6 +2660,60 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       audit({ actor, action: 'rueckruf', orderId, status });
       merke(benutzer, actor, 'Rückruf', `${orderId}: ${status}`);
       return { ok: true, eintrag };
+    },
+
+    /**
+     * "Muster anrufen": wer seit 5 Tagen Muster hat, samt Ergebnis, Notizen und Zaehlung der Gruende.
+     * Abgemeldete (Stoppliste der Nachfrage-Mails) stehen nicht drin.
+     */
+    kundenMusterAnrufe() {
+      const dir = privatDirPath || privatDir();
+      const bestellungen = this.kundenBestellungen();
+      if (!bestellungen.verfuegbar) return { verfuegbar: false, hinweis: bestellungen.hinweis || 'Bestelldaten fehlen.' };
+      const abgemeldet = [...abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir))).keys()];
+      return { verfuegbar: true, ...musterAnrufliste(bestellungen.zeilen, leseMusterAnrufe(musterAnrufePfad(dir)), { jetzt: now(), abgemeldet }) };
+    },
+
+    /**
+     * Ergebnis und/oder Notiz eintragen, fuer alle Bestellungen des Kunden. Erst die eigene Ablage
+     * (die Aussage des Kunden geht nie verloren), dann die Zeitleiste: "kein Interesse" und
+     * "bestellt" beenden auch die Nachfrage-Mails, ein Gespraech zaehlt als "nachgefasst".
+     */
+    async kundenMusterAnrufSetzen(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine Änderungen vornehmen.');
+      const actor = benutzer?.name || benutzer?.kuerzel || await currentUser() || 'Unbekannt';
+      const dir = privatDirPath || privatDir();
+      const orderIds = Array.isArray(payload?.orderIds) ? payload.orderIds.map(String) : [];
+      if (!orderIds.length || orderIds.length > 50) throw new ApiError(400, 'Bestellung fehlt');
+      const muster = new Set((this.kundenBestellungen().zeilen || []).filter(z => z.auftragsart === 'muster').map(z => z.orderId));
+      if (!orderIds.every(id => muster.has(id))) throw new ApiError(404, 'Musterbestellung nicht gefunden – Bestelldaten evtl. inzwischen aktualisiert.');
+      const ergebnis = payload?.ergebnis || null;
+      let neu;
+      try {
+        neu = trageAnrufEin(musterAnrufePfad(dir), { orderIds, ergebnis, notiz: payload?.notiz, wiedervorlage: payload?.wiedervorlage || null, actor, jetzt: now() });
+      } catch (e) {
+        if (e instanceof MusterAnrufFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+      const art = anrufErgebnis(ergebnis);
+      const notiz = String(payload?.notiz ?? '').trim();
+      const text = [`Muster anrufen: ${art ? anrufErgebnisText(ergebnis) : 'Notiz'}`, notiz || null].filter(Boolean).join(' – ');
+      const zeitleisteFehler = [];
+      for (const orderId of orderIds) {
+        const vorherSchritt = anrufErgebnis(neu[orderId].vorher?.ergebnis)?.schritt || null;
+        const schritte = [];
+        // Korrektur: "kein Interesse" zuruecknehmen, wenn es doch etwas anderes war.
+        if (art && vorherSchritt && vorherSchritt !== art.schritt) schritte.push({ schritt: 'zurueck', bezug: vorherSchritt });
+        if (art?.schritt && art.schritt !== vorherSchritt) schritte.push({ schritt: art.schritt, notiz: text });
+        else if (art?.erreicht && !neu[orderId].vorher?.nachgefasst) schritte.push({ schritt: 'nachgefasst', notiz: text });
+        else schritte.push({ schritt: 'notiz', notiz: text });
+        try {
+          for (const s of schritte) await auftragsSchrittSetzen({ orderId, ...s }, benutzer, actor);
+        } catch (e) { zeitleisteFehler.push(e.message); }
+      }
+      audit({ actor, action: 'muster-anruf', orderIds, ergebnis });
+      merke(benutzer, actor, 'Muster anrufen', `${orderIds.length} Bestellung(en): ${art ? anrufErgebnisText(ergebnis) : 'Notiz'}`);
+      return { ok: true, zeitleisteFehler: zeitleisteFehler[0] || null, stand: this.kundenMusterAnrufe() };
     },
 
     /** Service-Anfragen (Verlegeservice, Treppe, Aufmass): alle, neueste zuerst. */

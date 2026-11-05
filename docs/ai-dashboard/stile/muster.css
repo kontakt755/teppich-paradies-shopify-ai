@@ -218,3 +218,18 @@
   .md-druckaktionen .btn { width: 100%; min-height: 44px; }
   .etk-bestaetigung .btn { width: 100%; min-height: 44px; white-space: normal; }
 }
+
+/* Kunden, Reiter "Muster anrufen" */
+.anruf-titel { margin: 16px 0 8px; font-size: 1rem; }
+.anruf-gruende { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.anruf-grund { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: .85rem; }
+.anruf-verlauf { margin: 6px 0 0; padding-left: 16px; font-size: .85rem; color: var(--text-2); overflow-wrap: anywhere; }
+.anruf-mehr { margin-top: 14px; }
+.anruf-wahl { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; padding: 0; border: 0; }
+.anruf-wahl legend { padding: 0 0 4px; font-size: .85rem; color: var(--text-2); }
+.anruf-chip { display: inline-flex; cursor: pointer; }
+.anruf-chip input { position: absolute; opacity: 0; }
+.anruf-chip span { padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: .9rem; }
+.anruf-chip input:checked + span { border-color: var(--accent); background: var(--accent); color: var(--accent-ink, #fff); }
+.anruf-chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.anruf-zeile a.btn { color: var(--text); }

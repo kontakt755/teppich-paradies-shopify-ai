@@ -83,6 +83,7 @@ function arbeitsQuellen() {
     quelle(kunden, 'musterPacken', '/api/kunden/muster-packen', 'loadingMusterPacken'),
     quelle(kunden, 'faelle', '/api/kunden/faelle', 'loadingFaelle'),
     quelle(kunden, 'rueckrufe', '/api/kunden/rueckrufe', 'loadingRueckrufe'),
+    quelle(kunden, 'musterAnrufe', '/api/kunden/muster-anrufe', 'loadingMusterAnrufe'),
     quelle(kunden, 'serviceanfragen', '/api/kunden/serviceanfragen', 'loadingServiceanfragen', () => { kunden.serviceanfragenAm = Date.now(); }),
     quelle(belege, 'daten', '/api/einkauf/belege', 'laedt', () => { belege.geladenAm = Date.now(); }),
     quelle(shopifyAbgleich, 'daten', '/api/einkauf/shopify-abgleich', 'laedt', () => { shopifyAbgleich.am = Date.now(); }),

@@ -58,7 +58,7 @@ export function aktualisiereNavigation() {
   const view = state.route.view;
   // aria-current braucht den Wert "page" - ein leeres Attribut hebt nichts hervor.
   const kundenTab = !state.route.params.get('kunde') ? state.route.params.get('tab') : null;
-  const kundenHauptpunkt = ['bestellungen', 'muster'].includes(kundenTab) ? kundenTab : null;
+  const kundenHauptpunkt = ['bestellungen', 'muster', 'anrufe'].includes(kundenTab) ? kundenTab : null;
   const musterBestellen = state.route.params.get('tab') === 'lieferant' && state.route.params.get('art') === 'muster' && state.route.params.get('af') === 'offen';
   const einkaufPunkt = musterBestellen ? 'muster' : state.route.params.get('tab') === 'musterlager' ? 'lager' : null;
   document.querySelectorAll('[data-nav]').forEach(a => {

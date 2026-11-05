@@ -17,6 +17,7 @@ export const MENUE_KURZ = [
   ['Heute', 'Was heute zu tun ist, das Dringendste oben. Ein Knopf je Zeile führt direkt hin.'],
   ['Bestellungen', 'Alle Bestellungen der Kunden: was offen ist und was als Nächstes dran ist.'],
   ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen.'],
+  ['Muster anrufen', 'Wer seit 5 Tagen Muster hat, wird gefragt, wie sie angekommen sind: Anruf oder Rückfrage-Mail. Ergebnis anklicken, Notiz eintippen. Oben steht, welche Gründe bisher genannt wurden. Am Handy unter „Mehr“.'],
   ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Bestelltag ein Umschlag, Bestellungen eines Kunden vom selben Tag zusammen. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
   ['Musterlager', 'Muster, die wir selbst da haben: was noch liegt, was reserviert ist, einlagern und Aufkleber drucken. Am Handy unter „Mehr“.'],
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],

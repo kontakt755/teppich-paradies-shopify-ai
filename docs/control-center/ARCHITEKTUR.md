@@ -812,6 +812,17 @@ steht unter „Wir sind dran“ („Muster nachfassen“), nicht mehr zugleich u
 (`werWartet(…, { nachfassen })` in `lib/todos.mjs`, die orderIds kommen aus `musterNachfassen()`). Nach
 „Erledigt – nachgefasst“ wandert er zurück zum Kunden.
 
+**Muster anrufen** (seit 2026-11-05, Reiter unter Kunden): Ziel ist zu erfahren, warum aus Mustern selten
+Käufe werden. `lib/muster-anrufe.mjs` rechnet aus den Bestellzeilen, wer dran ist: Muster seit mindestens
+5 Tagen beim Kunden, je Kunde eine Zeile, nicht abgeschlossen, nicht auf der Stoppliste, nicht „Möchte keine
+Anrufe“. Ergebnis und Notizen liegen in `$TP_PRIVAT_DIR/muster-anrufe.json` (`operations/lib/muster-anrufe.mjs`,
+in der Tagessicherung), `GET/POST /api/kunden/muster-anrufe`. Ein Ergebnis schreibt auch die Zeitleiste:
+„kein Interesse“ bzw. „Kunde hat bestellt“ beenden die Nachfrage-Mails, ein Gespräch zählt als „nachgefasst“.
+Nach 3× „Nicht erreicht“ ist Schluss. Oben zählt die Seite die genannten Gründe (je Kunde die letzte Aussage).
+Rechtliche Sperre: Solange `ANRUF_NUR_MIT_RUECKRUFWUNSCH` wahr ist, liefert der Server die Telefonnummer nur
+bei Rückrufwunsch (§ 7 UWG, siehe oben); alle anderen stehen unter „Per E-Mail fragen“. Die Rückfrage-Mail ist
+ein `mailto:`-Link, gesendet wird von Hand, sie läuft nicht über den pausierten Versandlauf.
+
 ### 9b. Kunden „Zu tun“: der nächste Schritt kommt aus der Zeitleiste (seit 2026-10-12)
 
 `/api/kunden/faelle` hängt an jede Bestellzeile den nächsten Schritt der Zeitleiste

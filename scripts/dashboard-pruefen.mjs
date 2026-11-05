@@ -68,7 +68,7 @@ import { ladePuppeteer } from './puppeteer-laden.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'hausverwaltungen', 'team', 'hilfe'];
+const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=anrufe', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'hausverwaltungen', 'team', 'hilfe'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
@@ -83,7 +83,7 @@ const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation'
   'kunden', 'angebote', 'warenkoerbe', 'shopwache', 'bestand', 'erfuellung',
   // Beschreibbare Einzeldateien (Rueckrufe, Fallmarken, Fehlermeldungen): kopieren, damit ein
   // Klick in der Pruefung die echten nie trifft und die Ansicht trotzdem den echten Stand zeigt.
-  'rueckrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'bestellmarken.json', 'muster-packen.json', 'muster-grossbrief.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
+  'rueckrufe.json', 'muster-anrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'bestellmarken.json', 'muster-packen.json', 'muster-grossbrief.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
   // Upload-Links der Ansicht "Social Media": ein Klick auf "Neuen Link anlegen" schreibt hierhin.
   'social/upload-zugaenge.json', 'social/upload-links.json',
   // Textvorlage fuer "Muster nachfassen" auf Heute. Der Ordner nachfassen/ bleibt bewusst draussen:
