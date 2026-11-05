@@ -11,7 +11,7 @@
  */
 import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
-import { DRUCK_LIMIT, druckBloecke, druckVorschau, motivSchluessel } from '../lib/druckliste.mjs';
+import { DRUCK_LIMIT, druckBloecke, druckVorschau, motivSchluessel, setzeMotivAnzahl } from '../lib/druckliste.mjs';
 import { ETIKETT, ETIKETT_FORMATE, FREIE_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle, schwarzWeiss } from '../lib/muster-etiketten.mjs';
 import { adressLayout } from '../lib/adress-etiketten.mjs';
 import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
@@ -178,7 +178,7 @@ function vorschauHtml() {
   const format = aktuellesFormat();
   return druckVorschau(druck.etiketten).eintraege.map(({ index: i, anzahl }) => { const e = druck.etiketten[i]; return `<figure class="etk-karte">
     <canvas class="etk-bild${eigeneGroesseAktiv() ? ' etk-bild-eigen' : ''}" data-etk-bild="${i}" width="${format.breite}" height="${format.hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
-    <figcaption class="small"><label class="etk-wahl"><input type="checkbox" data-etk-wahl="${i}"${druck.abgewaehlt.has(motivSchluessel(e)) ? '' : ' checked'}${druck.laeuft ? ' disabled' : ''}> drucken</label><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(format.name)} – ${druck.frei ? 'Text kürzen, Schrift kleiner stellen oder größere Rolle wählen' : 'Angaben kürzen oder größere Rolle wählen'}</span>`}
+    <figcaption class="small"><label class="etk-wahl"><input type="checkbox" data-etk-wahl="${i}"${druck.abgewaehlt.has(motivSchluessel(e)) ? '' : ' checked'}${druck.laeuft ? ' disabled' : ''}> drucken</label>${druck.mehrfach ? `<label class="etk-anzahl">Anzahl <input type="number" inputmode="numeric" min="1" max="${FREI_MAX_ANZAHL}" value="${anzahl}" data-etk-anzahl="${i}"${druck.laeuft ? ' disabled' : ''}></label>` : `<strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>`}${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(format.name)} – ${druck.frei ? 'Text kürzen, Schrift kleiner stellen oder größere Rolle wählen' : 'Angaben kürzen oder größere Rolle wählen'}</span>`}
       ${druck.allowEditing ? `<button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>` : ''}
       <button type="button" class="btn btn-sm" data-etk-png="${i}"${maengel(e).length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
     </figcaption>
@@ -190,12 +190,15 @@ function zeichneVorschau() {
   if (!aktuell(k)) return;
   const liste = $('#etkListe');
   if (!liste) return;
+  // Die Liste wird neu gezeichnet (auch spaeter, wenn die QR-Codes fertig sind): das Anzahlfeld behaelt den Fokus.
+  const anzahlFokus = document.activeElement?.closest?.('[data-etk-anzahl]')?.dataset.etkAnzahl;
   const eigen = $('#etkEigen'); if (eigen) eigen.hidden = !eigeneGroesseAktiv();
   const fehlerText = formatFehler(), fehlerZeile = $('#etkEigenFehler');
   if (fehlerZeile) { fehlerZeile.textContent = fehlerText; fehlerZeile.hidden = !fehlerText; }
   liste.innerHTML = groesseFehler() ? '<p class="small muted">Keine Vorschau, bis die Größe stimmt.</p>'
     : druck.etiketten.length ? vorschauHtml() : `<p class="small muted">${druck.frei ? 'Noch kein Aufkleber – oben Text eintragen.' : 'Noch kein Aufkleber – unten Angaben eintragen und „Hinzufügen“.'}</p>`;
   liste.querySelectorAll('[data-etk-bild]').forEach(c => zeichne(c, druck.etiketten[Number(c.dataset.etkBild)]));
+  if (anzahlFokus !== undefined) liste.querySelector(`[data-etk-anzahl="${anzahlFokus}"]`)?.focus({ preventScroll: true });
   const zusammenfassung = $('#etkZusammenfassung'), vorschau = druckVorschau(druck.etiketten);
   if (zusammenfassung) zusammenfassung.textContent = `${druck.etiketten.length} Aufkleber insgesamt · ${vorschau.motive} verschiedene Motive.${teildruck() ? ` Ausgewählt: ${ausgewaehlt().length}.` : ''}${vorschau.motive > DRUCK_LIMIT.vorschau ? ` Die Vorschau zeigt die ersten ${DRUCK_LIMIT.vorschau} Motive. Gedruckt werden alle ausgewählten Aufkleber.` : ''}`;
   const wahl = $('#etkWahl'); if (wahl) wahl.hidden = vorschau.motive < 2;
@@ -434,7 +437,7 @@ export async function etikettenFuerBestellung(positionen = []) {
  * (Packstation: Umschlag vorbereitet). Nur die Papierfrage ruft beiBestaetigen auf. false/Fehler
  * lassen den Dialog offen, damit ein Mitarbeiter die Aktion wiederholen kann.
  */
-export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorschau', allowEditing = true, freierText = false, entwurf = null, entwurfAnzahl = 1, hinweis = '', vorDruck, druckVersucht, druckFertig, beiSchliessen, beiBestaetigen, schonVersucht = false } = {}) {
+export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorschau', allowEditing = true, freierText = false, entwurf = null, entwurfAnzahl = 1, mehrfach = false, hinweis = '', vorDruck, druckVersucht, druckFertig, beiSchliessen, beiBestaetigen, schonVersucht = false } = {}) {
   if (druck.laeuft || druck.speichert) { toast('Bitte warten, bis der aktuelle Vorgang fertig ist.'); return; }
   if (!Array.isArray(etiketten) || etiketten.length > DRUCK_LIMIT.etiketten) { toast(`Bitte höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Drucklauf wählen.`); return; }
   // Ein anderer Aufruf darf den alten Auftrag nicht ohne dessen Freigabe ersetzen.
@@ -445,6 +448,8 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   druck.bearbeiten = -1;
   druck.abgewaehlt = new Set();
   druck.allowEditing = allowEditing;
+  // Nur Einzeldrucke: Sammelauftraege mit Packreihenfolge oder Bestaetigung behalten ihre Menge.
+  druck.mehrfach = mehrfach && !freierText && !beiBestaetigen;
   druck.frei = freierText;
   druck.format = freierText ? formatStand.frei : formatStand.muster;
   druck.stil = freiStil();
@@ -618,6 +623,18 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     });
   }
   $('#etkListe').addEventListener('change', ev => {
+    const anzahlFeld = ev.target.closest('[data-etk-anzahl]');
+    if (anzahlFeld) {
+      if (!aktuell(k) || !druck.mehrfach || druck.laeuft || druck.speichert || k.schliesst || k.bestaetigt) return;
+      const wert = Number(anzahlFeld.value), schluessel = motivSchluessel(druck.etiketten[Number(anzahlFeld.dataset.etkAnzahl)]);
+      const bearbeitet = druck.etiketten[druck.bearbeiten];
+      if (Number.isInteger(wert) && wert >= 1 && wert <= FREI_MAX_ANZAHL) druck.etiketten = setzeMotivAnzahl(druck.etiketten, schluessel, wert);
+      else status(`Anzahl: bitte 1 bis ${FREI_MAX_ANZAHL} eintragen.`, k);
+      // Die Liste verschiebt sich: das gerade bearbeitete Motiv muss mitgehen.
+      if (bearbeitet) druck.bearbeiten = druck.etiketten.findIndex(e => motivSchluessel(e) === motivSchluessel(bearbeitet));
+      zeichneVorschau();
+      return;
+    }
     const wahl = ev.target.closest('[data-etk-wahl]');
     if (!wahl || !aktuell(k) || druck.laeuft) return;
     const schluessel = motivSchluessel(druck.etiketten[Number(wahl.dataset.etkWahl)]);
@@ -680,7 +697,8 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
         sku: wert('sku') || ausLexikon.sku, handle,
         technik: produkt ? ausLexikon.technik : (vorher?.url === ausLexikon.url ? vorher.technik : []),
       });
-      if (vorher) druck.etiketten = druck.etiketten.map(e => e === vorher ? neu : e);
+      // Die Karte steht fuer alle Kopien des Motivs: Aendern gilt fuer alle, sonst spaltet sich die Stueckzahl auf.
+      if (vorher) { const alt = motivSchluessel(vorher); druck.etiketten = druck.etiketten.map(e => motivSchluessel(e) === alt ? neu : e); }
       else druck.etiketten.push(neu);
       druck.bearbeiten = -1;
       form.reset();

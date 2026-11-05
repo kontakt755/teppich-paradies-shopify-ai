@@ -1015,7 +1015,7 @@ export function musterPackenKlick(e) {
     const m = k?.muster.find(x => x.lineItemId === eines.dataset.mpDruckenMuster);
     const etiketten = aufkleberFuerMuster(m);
     if (etiketten.length) {
-      oeffneEtikettenDruck({ etiketten, titel: `Aufkleber · ${m.etikett.serie || m.bestellt.titel}${m.etikett.farbe ? ` ${m.etikett.farbe}` : ''}`, allowEditing: false,
+      oeffneEtikettenDruck({ etiketten, titel: `Aufkleber · ${m.etikett.serie || m.bestellt.titel}${m.etikett.farbe ? ` ${m.etikett.farbe}` : ''}`, allowEditing: false, mehrfach: true,
         hinweis: `Gehört in ${umschlagKennung(k)} · ${k.name}. Nach dem Druck aufkleben, einlegen und abhaken. Der Druck bucht nichts.` });
     }
     return true;
