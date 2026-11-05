@@ -4,7 +4,7 @@
  * Prioritaet (Masterprompt Abschnitt 42 ohne Punkt 4 "Eigenbestand" - Shopify
  * fuehrt keinen Bestand, siehe 05-DECISIONS.md):
  *   1. auftragsspezifischer Override (Sonder/Projekt) - mit grund und von
- *   2. Verlegeservice -> SUPPLIER_TO_SITE
+ *   2. Verlegeservice -> SUPPLIER_TO_SITE (bei neutralversand NOT_ALLOWED: SUPPLIER_TO_TP)
  *   3. Abholung -> SUPPLIER_TO_TP
  *   4. verifizierter Direktversand (einkauf.neutralversand === VERIFIED)
  *   5. SUPPLIER_TO_TP
@@ -74,8 +74,17 @@ export function routeFor({ item, override, verlegeservice = false, abholung = fa
   if (standard === ROUTE.NO_PROCUREMENT) return { route: standard, quelle: 'STANDARD', hinweise };
   if (MUSTER_ROUTEN.has(standard)) return { route: standard, quelle: 'STANDARD', hinweise };
 
-  // 2. Verlegeservice
-  if (verlegeservice) return { route: ROUTE.SUPPLIER_TO_SITE, quelle: 'VERLEGESERVICE', hinweise };
+  // 2. Verlegeservice. Die Baustelle ist eine Kundenadresse: Darf der Lieferant
+  // bzw. Hersteller nicht direkt an Kunden liefern (neutralversand NOT_ALLOWED,
+  // z. B. Condor Carpets, Inhaber 2026-11-04), geht die Ware in den Laden und
+  // von dort mit dem Verlegeteam auf die Baustelle.
+  if (verlegeservice) {
+    if (einkauf.neutralversand === NEUTRALVERSAND.NOT_ALLOWED) {
+      hinweise.push('Verlegeservice: Lieferant liefert nicht an Kunden (neutralversand NOT_ALLOWED) - Lieferung in den Laden, von dort zur Baustelle');
+      return { route: ROUTE.SUPPLIER_TO_TP, quelle: 'VERLEGESERVICE', hinweise };
+    }
+    return { route: ROUTE.SUPPLIER_TO_SITE, quelle: 'VERLEGESERVICE', hinweise };
+  }
 
   // 3. Abholung
   if (abholung) return { route: ROUTE.SUPPLIER_TO_TP, quelle: 'ABHOLUNG', hinweise };

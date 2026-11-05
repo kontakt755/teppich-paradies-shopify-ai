@@ -7,7 +7,7 @@ export const ITEM_ID = 'gid://shopify/InventoryItem/7001';
 
 function produkt(z) {
   return {
-    id: z.id, title: z.titel, status: z.status, handle: z.handle || 'test-reststueck', productType: z.productType,
+    id: z.id, title: z.titel, status: z.status, handle: z.handle || 'test-reststueck', productType: z.productType, templateSuffix: z.vorlage ?? null,
     tags: z.tags || [], rollenbreite: null,
     maxRollenlaenge: { value: z.maxRollenlaenge ?? '5000' }, preisPro001Qm: { value: z.preisPro001Qm ?? 'false' },
     featuredMedia: null,
@@ -75,6 +75,11 @@ export function attrappe({ available, verweigert = false, felderFehler = false, 
         else { if (z.onHand !== undefined) z.onHand += q.quantity - z.available; z.available = q.quantity; }
         if (antwortWeg === 'nach') throw new Error('Shopify Admin API: The operation was aborted due to timeout');
         return { inventorySetQuantities: { inventoryAdjustmentGroup: { id: 'gid://shopify/InventoryAdjustmentGroup/1', reason: 'correction', referenceDocumentUri: variables.input.referenceDocumentUri, changes: [] }, userErrors: [] } };
+      }
+      if (name === 'SonderpostenSofortkauf') {
+        if (z.vorlageFehler) return { productUpdate: { product: null, userErrors: [{ field: ['templateSuffix'], message: 'nicht erlaubt' }] } };
+        z.vorlage = variables.product.templateSuffix;
+        return { productUpdate: { product: { id: variables.product.id, templateSuffix: z.vorlage }, userErrors: [] } };
       }
       if (name === 'SonderpostenVerkauftFelder') {
         if (felderFehler) return { metafieldsSet: { metafields: [], userErrors: [{ field: ['metafields'], message: 'Wert nicht erlaubt', code: 'INVALID_VALUE' }] } };

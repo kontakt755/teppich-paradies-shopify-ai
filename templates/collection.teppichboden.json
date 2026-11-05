@@ -1123,6 +1123,10 @@
         "padding-block-end": 48
       }
     },
+    "tp_preisklassen": {
+      "type": "tp-preisklassen",
+      "settings": {}
+    },
     "tp_boden_finder": {
       "type": "tp-boden-finder",
       "blocks": {
@@ -1551,6 +1555,7 @@
   },
   "order": [
     "section",
+    "tp_preisklassen",
     "tp_boden_finder",
     "tbk_muster",
     "main",

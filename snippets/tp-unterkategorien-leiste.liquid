@@ -60,6 +60,23 @@
       endif
     endfor
   endif
+  comment
+    Teppichboden-Unterkategorien, die nicht (mehr) im Menue stehen - Kurz- und
+    Mittelflor sind seit 2026-11-04 nur noch Filter Florhoehe, ihre Kollektionen
+    bleiben fuer Google und den Boden-Finder. Ohne diesen Rueckfall stuende dort
+    gar keine Leiste.
+  endcomment
+  if tp_uk_parent == null and collection_resource != blank
+    assign tp_uk_kopf = collection_resource.handle | slice: 0, 13
+    if tp_uk_kopf == 'teppichboden-'
+      for tp_uk_link in tp_uk_menu.links
+        if tp_uk_link.links.size > 0 and tp_uk_link.object.handle == 'teppichboden'
+          assign tp_uk_parent = tp_uk_link
+          break
+        endif
+      endfor
+    endif
+  endif
   if tp_uk_parent.object.handle == 'teppichboden'
     assign tp_uk_bildkarten = true
   endif
@@ -85,6 +102,9 @@
       {%- for tp_uk_child in tp_uk_parent.links -%}
         {%- comment -%} Gruppen des Mega-Menues (Farbe, Raum, Rollenbreite - Link "#") sind keine Kategorie {%- endcomment -%}
         {%- if tp_uk_child.url == '#' -%}{%- continue -%}{%- endif -%}
+        {%- comment -%} Leere saisonale Ziele (z. B. Aktuelle Angebote ohne Angebot) nicht anbieten {%- endcomment -%}
+        {%- capture tp_uk_mls -%}{%- render 'tp-menu-link-sichtbar', link: tp_uk_child -%}{%- endcapture -%}
+        {%- if tp_uk_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
         {%- assign tp_uk_current = false -%}
         {%- if tp_uk_child.url == collection_resource.url -%}
           {%- assign tp_uk_current = true -%}

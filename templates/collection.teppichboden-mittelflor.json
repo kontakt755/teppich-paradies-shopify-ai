@@ -65,6 +65,10 @@
         "padding_bottom": 24
       }
     },
+    "tp_preisklassen": {
+      "type": "tp-preisklassen",
+      "settings": {}
+    },
     "divider_8GmfQa": {
       "type": "divider",
       "name": "t:names.divider_section",
@@ -1263,6 +1267,7 @@
   },
   "order": [
     "hero_split_HUbzCh",
+    "tp_preisklassen",
     "divider_8GmfQa",
     "main",
     "tp_fliesen_hinweis",

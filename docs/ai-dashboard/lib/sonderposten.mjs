@@ -79,7 +79,10 @@ export function meldungNachInventur(antwort) {
   }
   const er = antwort.ergebnis || {};
   if (er.gebucht !== true || !er.ok || er.gegenprobe !== 'ok') return { erfolg: false, klasse: 'warn', neuLaden: true, text: 'Die Bestandskorrektur wurde gesendet. Die Gegenprobe ist nicht eindeutig – bitte neu laden und den Bestand in Shopify prüfen.' };
-  return { erfolg: true, klasse: null, neuLaden: true, text: `Restlänge gespeichert: physisch ${er.bestandNachher} m² · jetzt ${zahlDe(er.restLaengeM)} m (${er.verfuegbarNachher} m²) frei verfügbar.` };
+  const basis = `Restlänge gespeichert: physisch ${er.bestandNachher} m² · jetzt ${zahlDe(er.restLaengeM)} m (${er.verfuegbarNachher} m²) frei verfügbar.`;
+  if (er.sofortkauf === 'fehlgeschlagen') return { erfolg: false, klasse: 'warn', neuLaden: true, text: `${basis} Die Rolle steht online aber noch auf „Anfrage“ – bitte in Shopify die Vorlage „rolle“ wählen.` };
+  if (er.sofortkauf === 'freigeschaltet') return { erfolg: true, klasse: null, neuLaden: true, text: `${basis} Online ist sie jetzt wieder sofort bestellbar.` };
+  return { erfolg: true, klasse: null, neuLaden: true, text: basis };
 }
 
 /** Rueckmeldung nach einer gebuchten Laenge (ergebnis aus verkaufeVonRolle). */

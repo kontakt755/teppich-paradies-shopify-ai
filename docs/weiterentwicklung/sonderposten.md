@@ -261,8 +261,9 @@ deshalb entschieden: **vorerst nur auf Anfrage**, bis feststeht, ob sie Sofortka
 | Vertriebskanal | nur Onlineshop, nicht Google & YouTube | Google lehnt Produkte ohne Kaufmöglichkeit ab |
 | Anfrage | Shopify-Kontaktformular, Betreff „ANFRAGE Restrolle – <Titel>“ mit Produkt, SKU, Link, Ausführung, Wunschmaß | keine Bestellung; der Laden prüft die Rolle und schickt ein Angebot |
 
-Das einzige Merkmal ist die Vorlage. Zurück auf Sofortkauf: Restlänge messen, Bestand in m²
-setzen (Abschnitt 6, Restrollen im Control Center), Vorlage wieder `rolle`.
+Das einzige Merkmal ist die Vorlage. Zurück auf Sofortkauf: Restlänge im Control Center
+messen (Abschnitt 6) – seit 2026-11-04 stellt die Inventur die Vorlage bei freiem Bestand selbst
+wieder auf `rolle`. Den Kanal Google & YouTube danach im Admin zuschalten.
 
 **Kollektion „Reste & Sonderposten“:** Damit die Restrollen dort stehen, gilt seit dem Livegang
 die Regel *Tag = `sonderposten`* statt *Typ = Sonderposten und Bestand > 0* (Rückweg: alte
@@ -270,3 +271,14 @@ Regeln wieder setzen). Folge für spätere Einzelstücke (Abschnitt 2): Sie brau
 Tag `sonderposten`, und ein verkauftes Stück verschwindet nicht mehr von selbst aus der
 Kollektion, sondern steht dort als „Verkauft“, bis es archiviert ist. Offen, sobald die ersten
 Einzelstücke kommen.
+
+## 11. Sammelseite Restposten & Auslauf (seit 2026-11-04)
+
+Kollektion `restposten` („Restposten & Auslauf“, Vorlage `sonderposten`): Tag `sonderposten`
+**oder** `auslauf`, neueste zuerst. Ziel des Hauptpunkts „Angebote & Reste“ bis zur Black Week
+(`domains/shopify/menue-reste-bis-black-week-2026-11.json`); darunter Restrollen & Reststücke
+(`reste-sonderposten`, unverändert, weil `blocks/tp-aktion-hinweis.liquid` dort die Restrollen
+sucht) und die vier Auslauf-Kollektionen, die vorher verstreut in den Warengruppen standen
+(`domains/shopify/menue-restposten-2026-11.json`). Die Beschreibung der Kollektion erklärt die
+beiden Schilder (Sonderposten, Auslaufkollektion); die Chip-Leiste im Kopf kommt aus dem Menü
+und blendet leere Ziele wie „Aktuelle Angebote“ aus.

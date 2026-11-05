@@ -1,0 +1,190 @@
+{%- comment -%}
+  Preisklassen fuer Teppichboden (Inhaber 2026-11-04): fuenf Kacheln direkt
+  unter dem Kopf der Kategorie, damit Kunden zuerst ihr Budget waehlen und
+  nicht durch das ganze Sortiment blaettern muessen.
+
+  Datenquelle ist der Search-&-Discovery-Filter "Preis je m2" auf dem
+  Produkt-Metafeld custom.meterpreis_bereich (scripts/preisfilter-abgleich.mjs,
+  stuendlich abgeglichen). Eine Klasse buendelt einen oder mehrere Bereiche
+  dieses Filters; die Zuordnung steht nur in snippets/tp-preisklassen-def.liquid
+  (qa/tests/tp-preisklassen.test.mjs prueft sie gegen die Bereiche im Skript).
+  Kein eigenes Metafeld, keine Pflege: Trefferzahl und Link kommen aus
+  collection.filters, also mit den Treffern der gerade gesetzten Filter.
+
+  Ein Klick setzt die Bereiche der Klasse als Filter (ODER-Verknuepfung) und
+  behaelt alle anderen aktiven Filter und die Sortierung. Ein zweiter Klick auf
+  die aktive Klasse nimmt sie wieder heraus. Klassen ohne Treffer entfallen;
+  bleibt weniger als zwei Klassen uebrig, erscheint die Leiste nicht.
+{%- endcomment -%}
+{%- liquid
+  assign s = section.settings
+  assign pk_col = collection
+  assign pk_param = 'filter.p.m.custom.meterpreis_bereich'
+  assign pk_filter = nil
+  for f in pk_col.filters
+    if f.param_name == pk_param
+      assign pk_filter = f
+      break
+    endif
+  endfor
+
+  # Alle anderen aktiven Filter und die Sortierung bleiben erhalten.
+  assign pk_rest = ''
+  for f in pk_col.filters
+    if f.param_name == pk_param
+      continue
+    endif
+    if f.type == 'price_range'
+      if f.min_value.value != nil
+        assign pk_rest = pk_rest | append: '&' | append: f.min_value.param_name | append: '=' | append: f.min_value.value
+      endif
+      if f.max_value.value != nil
+        assign pk_rest = pk_rest | append: '&' | append: f.max_value.param_name | append: '=' | append: f.max_value.value
+      endif
+    else
+      for av in f.active_values
+        assign pk_wert = av.value | url_encode
+        assign pk_rest = pk_rest | append: '&' | append: av.param_name | append: '=' | append: pk_wert
+      endfor
+    endif
+  endfor
+  if pk_col.sort_by != blank and pk_col.sort_by != pk_col.default_sort_by
+    assign pk_rest = pk_rest | append: '&sort_by=' | append: pk_col.sort_by
+  endif
+
+  assign pk_def = ''
+  if pk_filter != nil
+    capture pk_def
+      render 'tp-preisklassen-def'
+    endcapture
+  endif
+  assign pk_klassen = pk_def | strip | split: ';'
+
+  # Je Klasse: Treffer, aktiv, Link. Ergebnis als Zeilen "name|bereich|anzahl|aktiv|url".
+  assign pk_zeilen = ''
+  assign pk_anzahl_klassen = 0
+  assign pk_eine_aktiv = false
+  for k in pk_klassen
+    assign k_s = k | strip
+    if k_s == blank
+      continue
+    endif
+    assign kt = k_s | split: '|'
+    assign k_werte = kt[2] | split: ','
+    assign k_summe = 0
+    assign k_aktiv = false
+    assign k_params = ''
+    for v in pk_filter.values
+      if k_werte contains v.value
+        if v.active
+          assign k_aktiv = true
+        endif
+        if v.count > 0 or v.active
+          assign k_summe = k_summe | plus: v.count
+          assign pk_vw = v.value | url_encode
+          assign k_params = k_params | append: '&' | append: pk_param | append: '=' | append: pk_vw
+        endif
+      endif
+    endfor
+    if k_summe > 0 or k_aktiv
+      assign pk_anzahl_klassen = pk_anzahl_klassen | plus: 1
+      if k_aktiv
+        assign pk_eine_aktiv = true
+        assign k_query = pk_rest
+      else
+        assign k_query = k_params | append: pk_rest
+      endif
+      assign k_query = k_query | remove_first: '&'
+      assign k_url = pk_col.url
+      if k_query != blank
+        assign k_url = k_url | append: '?' | append: k_query
+      endif
+      assign pk_zeilen = pk_zeilen | append: kt[0] | append: '|' | append: kt[1] | append: '|' | append: k_summe | append: '|' | append: k_aktiv | append: '|' | append: k_url | append: '~~'
+    endif
+  endfor
+  assign pk_zeilen = pk_zeilen | split: '~~'
+-%}
+
+{%- if pk_anzahl_klassen >= 2 -%}
+  <div class="tp-pk section section--page-width color-{{ s.color_scheme }}" style="padding-block: {{ s.padding_top }}px {{ s.padding_bottom }}px;">
+    <nav class="tp-pk__nav" aria-label="{{ s.heading | default: 'Preisklasse' | escape }}">
+      <div class="tp-pk__kopf">
+        <h2 class="tp-pk__titel">{{ s.heading | escape }}</h2>
+        {%- if pk_eine_aktiv -%}
+          {%- assign pk_alle = pk_rest | remove_first: '&' -%}
+          <a class="tp-pk__alle" href="{{ pk_col.url }}{% if pk_alle != blank %}?{{ pk_alle }}{% endif %}">Alle Preise zeigen</a>
+        {%- elsif s.text != blank -%}
+          <p class="tp-pk__lead">{{ s.text | escape }}</p>
+        {%- endif -%}
+      </div>
+      <ul class="tp-pk__liste" role="list">
+        {%- for z in pk_zeilen -%}
+          {%- assign zt = z | split: '|' -%}
+          {%- assign z_anzahl = zt[2] | plus: 0 -%}
+          <li>
+            <a class="tp-pk__kachel{% if zt[3] == 'true' %} tp-pk__kachel--aktiv{% endif %}" href="{{ zt[4] }}"{% if zt[3] == 'true' %} aria-current="true"{% endif %} rel="nofollow">
+              <span class="tp-pk__name">{{ zt[0] }}</span>
+              <span class="tp-pk__bereich">{{ zt[1] }}</span>
+              <span class="tp-pk__anzahl">
+                {{- z_anzahl }} {% if z_anzahl == 1 %}{{ s.wort_einzahl | escape }}{% else %}{{ s.wort_mehrzahl | escape }}{% endif -%}
+                {%- if zt[3] == 'true' -%}<span class="visually-hidden"> – gewählt, erneut tippen zum Entfernen</span>{%- endif -%}
+              </span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </nav>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-pk__nav { min-width: 0; max-width: 100%; }
+  .tp-pk__kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-block-end: 12px; }
+  .tp-pk__titel { margin: 0; font-size: var(--tp-fs-lg); font-weight: 600; line-height: 1.25; }
+  .tp-pk__lead { margin: 0; font-size: var(--tp-fs-sm); color: #595959; }
+  .tp-pk__alle { font-size: var(--tp-fs-sm); font-weight: 500; color: var(--tp-ink, #1d1a17); text-decoration: underline; text-underline-offset: 3px; }
+  .tp-pk__liste { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .tp-pk__kachel {
+    display: flex; flex-direction: column; gap: 2px; height: 100%;
+    padding: 14px 16px; border: 1px solid var(--tp-line, #e6e0d8); border-radius: 12px;
+    background: var(--tp-bg-2, #f6f2ec); color: var(--tp-ink, #1d1a17); text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .tp-pk__kachel:hover { border-color: var(--tp-ink, #1d1a17); }
+  .tp-pk__kachel:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+  .tp-pk__kachel--aktiv { border-color: var(--tp-ink, #1d1a17); background: var(--tp-ink, #1d1a17); color: #fff; }
+  .tp-pk__name { font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.25; }
+  .tp-pk__bereich { font-size: var(--tp-fs-md); font-weight: 500; line-height: 1.3; }
+  .tp-pk__anzahl { font-size: var(--tp-fs-sm); color: #595959; line-height: 1.3; }
+  .tp-pk__kachel--aktiv .tp-pk__anzahl { color: rgb(255 255 255 / 0.8); }
+  /* Bis Tablet eine waagerecht wischbare Zeile, wie die Unterkategorien:
+     fuenf Kacheln in eine Telefonbreite zu zwaengen wuerde die Preise umbrechen. */
+  @media screen and (max-width: 1024px) {
+    .tp-pk__liste {
+      display: flex; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+      padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+    }
+    .tp-pk__liste::-webkit-scrollbar { display: none; }
+    .tp-pk__liste > li { flex: none; width: 152px; scroll-snap-align: start; }
+    .tp-pk__kachel { padding: 12px 14px; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Preisklassen",
+  "tag": "section",
+  "class": "section-wrapper",
+  "settings": [
+    { "type": "paragraph", "content": "Kacheln je Preisklasse aus dem Filter Preis je m² (custom.meterpreis_bereich). Klassen und Grenzen stehen in snippets/tp-preisklassen-def.liquid. Ohne diesen Filter in der Kategorie erscheint nichts." },
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Ihre Preisklasse" },
+    { "type": "text", "id": "text", "label": "Hinweis neben der Ueberschrift", "default": "Preis je m² als Meterware von der Rolle" },
+    { "type": "text", "id": "wort_mehrzahl", "label": "Produktwort Mehrzahl", "default": "Teppichböden" },
+    { "type": "text", "id": "wort_einzahl", "label": "Produktwort Einzahl", "default": "Teppichboden" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "t:settings.color_scheme", "default": "scheme-1" },
+    { "type": "range", "id": "padding_top", "label": "Abstand oben", "min": 0, "max": 80, "step": 4, "unit": "px", "default": 8 },
+    { "type": "range", "id": "padding_bottom", "label": "Abstand unten", "min": 0, "max": 80, "step": 4, "unit": "px", "default": 16 }
+  ],
+  "presets": [{ "name": "TP Preisklassen", "category": "t:categories.collection" }]
+}
+{% endschema %}

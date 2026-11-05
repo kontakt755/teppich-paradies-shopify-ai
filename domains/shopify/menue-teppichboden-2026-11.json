@@ -1,0 +1,262 @@
+{
+  "_zweck": "Teppichboden-Menue entschlacken (Inhaber 2026-11-04, docs/weiterentwicklung/sortiment-und-struktur-2026-11.md): vier klare Fragen statt vier vermischter. Arten als Kacheln, Spalten Preisklasse / Raum / Marken. Farbe und Rollenbreite sind Filter auf der Kategorieseite, Kurz- und Mittelflor der Filter Florhoehe; ihre Kollektionen bleiben bestehen. Anwenden nur mit scripts/menue-umbau.mjs --plan <diese Datei>.",
+  "_regeln": [
+    "Wie domains/shopify/menue-umbau-2026-10.json, dazu \"entfernen\": Punkte, die ausdruecklich wegfallen (mit allen Unterpunkten, jeder einzeln genannt).",
+    "Preisklassen-Links buendeln die Bereiche des Filters Preis je m2 genauso wie snippets/tp-preisklassen-def.liquid (qa/tests/menue-umbau.test.mjs prueft das)."
+  ],
+  "menu": "gid://shopify/Menu/268032508238",
+  "oben": [
+    {
+      "id": "gid://shopify/MenuItem/730052297038",
+      "_titel": "Teppichboden",
+      "kinder": [
+        {
+          "id": "gid://shopify/MenuItem/734432788814",
+          "_titel": "Alle Teppichböden"
+        },
+        {
+          "id": "gid://shopify/MenuItem/859122762062",
+          "_titel": "Hochflor"
+        },
+        {
+          "id": "gid://shopify/MenuItem/859122827598",
+          "_titel": "Velours"
+        },
+        {
+          "id": "gid://shopify/MenuItem/859122860366",
+          "_titel": "Schlinge"
+        },
+        {
+          "id": "gid://shopify/MenuItem/859122893134",
+          "_titel": "Wolle"
+        },
+        {
+          "id": "gid://shopify/MenuItem/885193212238",
+          "_titel": "Sisal"
+        },
+        {
+          "id": "gid://shopify/MenuItem/859122925902",
+          "_titel": "Nadelfilz"
+        },
+        {
+          "id": "gid://shopify/MenuItem/882170331470",
+          "_titel": "Büro & Gewerbe"
+        },
+        {
+          "id": "gid://shopify/MenuItem/882358485326",
+          "_titel": "Kunstrasen"
+        },
+        {
+          "neu": {
+            "title": "Preisklasse",
+            "type": "HTTP",
+            "url": "#"
+          },
+          "kinder": [
+            {
+              "neu": {
+                "title": "Preiswert · bis 40 €/m²",
+                "type": "HTTP",
+                "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=unter+30+%E2%82%AC%2Fm%C2%B2&filter.p.m.custom.meterpreis_bereich=30+bis+40+%E2%82%AC%2Fm%C2%B2"
+              }
+            },
+            {
+              "neu": {
+                "title": "Komfort · 40 bis 60 €/m²",
+                "type": "HTTP",
+                "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=40+bis+60+%E2%82%AC%2Fm%C2%B2"
+              }
+            },
+            {
+              "neu": {
+                "title": "Gehoben · 60 bis 80 €/m²",
+                "type": "HTTP",
+                "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=60+bis+80+%E2%82%AC%2Fm%C2%B2"
+              }
+            },
+            {
+              "neu": {
+                "title": "Premium · 80 bis 100 €/m²",
+                "type": "HTTP",
+                "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=80+bis+100+%E2%82%AC%2Fm%C2%B2"
+              }
+            },
+            {
+              "neu": {
+                "title": "Exklusiv · ab 100 €/m²",
+                "type": "HTTP",
+                "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=100+bis+150+%E2%82%AC%2Fm%C2%B2&filter.p.m.custom.meterpreis_bereich=ab+150+%E2%82%AC%2Fm%C2%B2"
+              }
+            }
+          ]
+        },
+        {
+          "id": "gid://shopify/MenuItem/890032456014",
+          "_titel": "Raum",
+          "kinder": [
+            {
+              "id": "gid://shopify/MenuItem/890032488782",
+              "_titel": "Wohnzimmer"
+            },
+            {
+              "id": "gid://shopify/MenuItem/890032521550",
+              "_titel": "Schlafzimmer"
+            },
+            {
+              "id": "gid://shopify/MenuItem/890032554318",
+              "_titel": "Kinderzimmer"
+            },
+            {
+              "id": "gid://shopify/MenuItem/890032619854",
+              "_titel": "Flur"
+            }
+          ]
+        },
+        {
+          "neu": {
+            "title": "Marken",
+            "type": "HTTP",
+            "url": "#"
+          },
+          "kinder": [
+            {
+              "id": "gid://shopify/MenuItem/887138943310",
+              "title": "Vorwerk",
+              "_titel": "Marke Vorwerk"
+            },
+            {
+              "id": "gid://shopify/MenuItem/887138976078",
+              "title": "JAB Anstoetz",
+              "_titel": "Marke JAB Anstoetz"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gid://shopify/MenuItem/871684145486",
+      "_titel": "Teppiche"
+    },
+    {
+      "id": "gid://shopify/MenuItem/871137182030",
+      "_titel": "Teppichfliesen"
+    },
+    {
+      "id": "gid://shopify/MenuItem/859123319118",
+      "_titel": "Vinylboden"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032816462",
+      "_titel": "Laminat & Parkett"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032849230",
+      "_titel": "Linoleum & Kautschuk"
+    },
+    {
+      "id": "gid://shopify/MenuItem/868583539022",
+      "_titel": "Zubehör & Leisten"
+    },
+    {
+      "id": "gid://shopify/MenuItem/887189668174",
+      "_titel": "Angebote & Reste",
+      "kinder": [
+        {
+          "id": "gid://shopify/MenuItem/890032881998",
+          "_titel": "Aktuelle Angebote"
+        },
+        {
+          "id": "gid://shopify/MenuItem/889373229390",
+          "_titel": "Laden & Reste"
+        },
+        {
+          "id": "gid://shopify/MenuItem/884473921870",
+          "title": "Auslauf Teppichboden",
+          "_titel": "Auslauf – nur noch kurze Zeit (bisher unter Teppichboden)"
+        }
+      ]
+    },
+    {
+      "id": "gid://shopify/MenuItem/734281072974",
+      "_titel": "Service & Verlegung"
+    }
+  ],
+  "entfernen": [
+    {
+      "id": "gid://shopify/MenuItem/885193179470",
+      "_titel": "Mittelflor (Filter Florhöhe)"
+    },
+    {
+      "id": "gid://shopify/MenuItem/859122794830",
+      "_titel": "Kurzflor (Filter Florhöhe)"
+    },
+    {
+      "id": "gid://shopify/MenuItem/882170364238",
+      "_titel": "Auch als Teppichfliesen → (eigener Hauptpunkt)"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032128334",
+      "_titel": "Farbe (Filter auf der Kategorieseite)"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032161102",
+      "_titel": "Farbe › Beige"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032193870",
+      "_titel": "Farbe › Braun"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032226638",
+      "_titel": "Farbe › Grau"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032259406",
+      "_titel": "Farbe › Schwarz"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032292174",
+      "_titel": "Farbe › Blau"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032324942",
+      "_titel": "Farbe › Grün"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032357710",
+      "_titel": "Farbe › Rot"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032390478",
+      "_titel": "Farbe › Orange"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032423246",
+      "_titel": "Farbe › Gelb"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032685390",
+      "_titel": "Rollenbreite (Filter auf der Kategorieseite)"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032718158",
+      "_titel": "Rollenbreite › 200 cm"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032750926",
+      "_titel": "Rollenbreite › 400 cm"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032783694",
+      "_titel": "Rollenbreite › 500 cm"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032587086",
+      "_titel": "Raum › Arbeitszimmer"
+    },
+    {
+      "id": "gid://shopify/MenuItem/890032652622",
+      "_titel": "Raum › Büro (doppelt zu Büro & Gewerbe)"
+    }
+  ]
+}

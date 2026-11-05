@@ -363,6 +363,12 @@
                 "review_link": ""
               },
               "blocks": {}
+            },
+            "tp_zuschnitt_laden": {
+              "type": "tp-zuschnitt-laden",
+              "settings": {
+                "titel": "Kostenloser Zuschnitt in unserem Laden"
+              }
             }
           },
           "block_order": [
@@ -373,6 +379,7 @@
             "divider_VJhene",
             "group_farbwahl",
             "tp_rollware_rechner_sales1",
+            "tp_zuschnitt_laden",
             "tp_nachmass_hinweis",
             "tp_zubehoer_empfehlung",
             "tp_muster_cta_1",

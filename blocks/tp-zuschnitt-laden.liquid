@@ -1,0 +1,57 @@
+{% doc %}
+  Hinweis "Zuschnitt in unserem Laden" fuer Teppichboden aus dem Hersteller-
+  Direktbezug (Pilot, Inhaber 2026-11-04). Diese Ware kommt erst in den Laden in
+  Oranienburg und wird dort kostenlos auf die Raumbreite zugeschnitten. Bezahlt
+  wird die volle Rollenbreite (nur Meterware, kein Raummass); der Reststreifen
+  bleibt im Laden, weil er mitgerollt Druckstellen hinterlassen wuerde. Das muss
+  vor dem Kauf klar dastehen.
+
+  Erscheint nur bei Produkten mit dem Tag "zuschnitt-laden". Die Raumbreite
+  stimmt der Laden nach der Bestellung mit dem Kunden ab (Masspruefung im Control
+  Center) - der Rechner gibt nur Rollenbreite und Laenge in den Warenkorb.
+  Lieferzeit nur aus service.lieferzeit (belegt), sonst kein Satz dazu.
+{% enddoc %}
+
+{%- liquid
+  assign tzl_p = closest.product | default: product
+  assign tzl_an = false
+  if tzl_p.tags contains 'zuschnitt-laden'
+    assign tzl_an = true
+  endif
+  assign tzl_lz = tzl_p.metafields.service.lieferzeit.value | strip
+-%}
+
+{%- if tzl_an -%}
+  <div class="tp-zsl" {{ block.shopify_attributes }}>
+    <p class="tp-zsl__titel">{{ block.settings.titel | escape }}</p>
+    <p class="tp-zsl__satz">
+      Wir schneiden Ihren Teppichboden in unserem Laden kostenlos auf Ihre Raumbreite zu. Sie bestellen und bezahlen die volle Rollenbreite; der Reststreifen bleibt bei uns, weil er mitgerollt Druckstellen in Ihrem Boden hinterlassen würde.
+    </p>
+    <p class="tp-zsl__satz">
+      Ihre Raumbreite stimmen wir nach der Bestellung mit Ihnen ab.
+      {%- if tzl_lz != blank %} Lieferzeit: {{ tzl_lz | escape }}.{%- endif -%}
+    </p>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-zsl {
+    display: grid; gap: 4px; margin: 4px 0 8px; padding: 10px 12px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.16); border-radius: 10px;
+    background: var(--tp-bg-2, #f6f2ec);
+  }
+  .tp-zsl__titel { margin: 0; font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.3; }
+  .tp-zsl__satz { margin: 0; font-size: var(--tp-fs-sm); line-height: 1.45; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.78); }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Zuschnitt im Laden",
+  "tag": null,
+  "settings": [
+    { "type": "paragraph", "content": "Erscheint nur bei Produkten mit dem Tag zuschnitt-laden (Hersteller-Direktbezug: nur Meterware, Zuschnitt auf Raumbreite im Laden, Reststreifen bleibt im Laden)." },
+    { "type": "text", "id": "titel", "label": "Ueberschrift", "default": "Kostenloser Zuschnitt in unserem Laden" }
+  ],
+  "presets": [{ "name": "TP Zuschnitt im Laden" }]
+}
+{% endschema %}

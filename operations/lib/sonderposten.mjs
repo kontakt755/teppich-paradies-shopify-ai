@@ -74,7 +74,7 @@ const VARIANTEN_FELDER = `variants(first: 2) { nodes { id sku price inventoryPol
   inventoryItem { id tracked
   inventoryLevel(locationId: $locationId) { quantities(names: ["available", "on_hand", "committed", "reserved", "damaged", "safety_stock", "quality_control"]) { name quantity } } } } }`;
 
-const PRODUKT_FELDER = `id title status handle productType tags
+const PRODUKT_FELDER = `id title status handle productType tags templateSuffix
       preisPro001Qm: metafield(namespace: "custom", key: "preis_pro_001_qm") { value }
       maxRollenlaenge: metafield(namespace: "custom", key: "max_roll_laenge_cm") { value }
       rollenbreite: metafield(namespace: "custom", key: "rollenbreite") { value }`;
@@ -117,6 +117,22 @@ mutation SonderpostenVerkauftFelder($metafields: [MetafieldsSetInput!]!) {
   metafieldsSet(metafields: $metafields) {
     metafields { key value }
     userErrors { field message code }
+  }
+}`;
+
+/**
+ * Restrolle wieder sofort kaufbar (Inhaber 2026-11-04): Rollen ohne gemessene Restlaenge
+ * stehen auf der Vorlage "rolle-anfrage" (nur Anfrage, docs/weiterentwicklung/sonderposten.md
+ * Abschnitt 10). Ist die Laenge gemessen und Bestand da, schaltet die Inventur selbst auf
+ * die normale Rollenvorlage zurueck - vorher war das ein vergessener Handgriff in Shopify.
+ */
+export const VORLAGE_ANFRAGE = 'rolle-anfrage';
+export const VORLAGE_SOFORTKAUF = 'rolle';
+export const SOFORTKAUF_MUTATION = `
+mutation SonderpostenSofortkauf($product: ProductUpdateInput!) {
+  productUpdate(product: $product) {
+    product { id templateSuffix }
+    userErrors { field message }
   }
 }`;
 
@@ -231,6 +247,7 @@ export function eintragAus(produkt) {
     status: produkt.status || null,
     statusText: STATUS_TEXT[produkt.status] || String(produkt.status || '').toLowerCase(),
     handle: produkt.handle || null,
+    vorlage: produkt.templateSuffix || null,
     sku: variante?.sku || null,
     preis: zahl(variante?.price),
     variantenAnzahl: produkt.variants?.nodes?.length ?? 0,
@@ -305,15 +322,34 @@ export async function korrigiereRollenbestand(proxy, { produktId, inventoryItemI
     throw new SonderpostenFehler(502, `Shopify hat die Bestandskorrektur abgelehnt: ${fehler.map(e => e.message).join('; ')}`);
   }
   const nachher = await leseOderNull(proxy, produktId, standortId);
+  const bestandOk = Boolean(nachher?.getrackt && nachher.ueberverkaufGesperrt && nachher.bestandVorhanden === neu && nachher.bestand >= 0);
+  const sofortkauf = bestandOk ? await schalteSofortkauf(proxy, nachher) : null;
   return {
-    typ: 'inventur', gebucht: true,
-    ok: Boolean(nachher?.getrackt && nachher.ueberverkaufGesperrt && nachher.bestandVorhanden === neu && nachher.bestand >= 0),
+    typ: 'inventur', gebucht: true, sofortkauf,
+    ok: bestandOk,
     gegenprobe: nachher ? 'ok' : 'fehlgeschlagen',
     titel: vorher.titel, operationId, referenz, laengeM: laenge, breiteM: vorher.breiteM,
     bestandVorher: vorher.bestandVorhanden, bestandErwartet: neu,
     bestandNachher: nachher?.bestandVorhanden ?? null, verfuegbarNachher: nachher?.bestand ?? null,
     restLaengeM: nachher?.laengeM ?? null, eintrag: nachher,
   };
+}
+
+/**
+ * Nach einer erfolgreichen Inventur: Restrolle auf Anfrage mit freiem Bestand wieder auf
+ * Sofortkauf stellen. Ergebnis: null (nichts zu tun), 'freigeschaltet' (gegengeprueft) oder
+ * 'fehlgeschlagen' - der Bestand ist dann trotzdem gespeichert, nur die Vorlage nicht.
+ */
+async function schalteSofortkauf(proxy, eintrag) {
+  if (eintrag?.typ !== 'rolle' || eintrag.vorlage !== VORLAGE_ANFRAGE || !(eintrag.bestand > 0)) return null;
+  try {
+    const antwort = await proxy.execute(SOFORTKAUF_MUTATION, { product: { id: eintrag.id, templateSuffix: VORLAGE_SOFORTKAUF } });
+    const r = antwort?.productUpdate;
+    if (!r || r.userErrors?.length || r.product?.templateSuffix !== VORLAGE_SOFORTKAUF) return 'fehlgeschlagen';
+    return 'freigeschaltet';
+  } catch {
+    return 'fehlgeschlagen';
+  }
 }
 
 /** Alle Sonderposten (ohne Vorlagen und archivierte), neueste Aenderung zuerst. */

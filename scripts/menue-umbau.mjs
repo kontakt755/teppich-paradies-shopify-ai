@@ -20,6 +20,12 @@
  * Ein bestehender Punkt kann mit {"id", "ziel": {type, resourceId|url}} auf ein
  * neues Ziel zeigen; seine ID bleibt erhalten.
  *
+ * Entfernen nur ausdruecklich: "entfernen": [{"id", "_titel"}] auf oberster
+ * Ebene des Plans. Ein entfernter Punkt nimmt seine Unterpunkte mit; jeder davon
+ * muss ebenfalls in der Liste stehen, damit nichts unbemerkt wegfaellt
+ * (Teppichboden-Menue 2026-11-04). Die Gegenprobe erwartet genau diese IDs als
+ * verloren; --zurueck legt sie ohne ID neu an (Shopify kennt sie nicht mehr).
+ *
  * Gegenprobe (--pruefen): die ID-Menge von vorher steckt vollstaendig in
  * nachher, und nachher hat genau so viele Punkte mehr, wie der Plan neue
  * vorsieht - nicht "userErrors: []".
@@ -80,11 +86,19 @@ export function umbauen(alt, plan) {
     }
   })(plan.oben);
 
-  const unbekannt = [...genannt].filter((id) => !index.has(id));
+  const entfernt = new Set((plan.entfernen ?? []).map((e) => e.id));
+  const unbekannt = [...genannt, ...entfernt].filter((id) => !index.has(id));
   if (unbekannt.length) throw new Error(`Plan nennt IDs, die das Menue nicht hat: ${unbekannt.join(', ')}`);
 
   const verwendet = [];
   const fehler = [];
+  for (const id of entfernt) {
+    if (genannt.has(id)) fehler.push(`Zugleich verwendet und entfernt: ${index.get(id).item.title} (${id})`);
+    for (const { item } of alleItems(index.get(id).item.items)) {
+      if (!entfernt.has(item.id)) fehler.push(`Unterpunkt eines entfernten Punkts steht nicht in "entfernen": ${item.title} (${item.id})`);
+    }
+  }
+  const bleibt = (k) => !genannt.has(k.id) && !entfernt.has(k.id);
 
   function bauen(eintrag, altItem) {
     if (eintrag === '*') {
@@ -92,7 +106,7 @@ export function umbauen(alt, plan) {
         fehler.push('"*" ohne bestehenden Oberpunkt');
         return [];
       }
-      return (altItem.items ?? []).filter((k) => !genannt.has(k.id)).map((k) => uebernehmen(k));
+      return (altItem.items ?? []).filter(bleibt).map((k) => uebernehmen(k));
     }
     if (eintrag.id) {
       const quelle = index.get(eintrag.id).item;
@@ -112,10 +126,7 @@ export function umbauen(alt, plan) {
       if (eintrag.kinder) {
         item.items = eintrag.kinder.flatMap((k) => bauen(k, quelle));
       } else {
-        item.items = (quelle.items ?? []).map((k) => {
-          if (genannt.has(k.id)) return null;
-          return uebernehmen(k);
-        }).filter(Boolean);
+        item.items = (quelle.items ?? []).filter(bleibt).map((k) => uebernehmen(k));
       }
       return [item];
     }
@@ -135,7 +146,7 @@ export function umbauen(alt, plan) {
   function uebernehmen(altItem) {
     verwendet.push(altItem.id);
     const item = { ...bereinigt(altItem), items: [] };
-    item.items = (altItem.items ?? []).filter((k) => !genannt.has(k.id)).map((k) => uebernehmen(k));
+    item.items = (altItem.items ?? []).filter(bleibt).map((k) => uebernehmen(k));
     return item;
   }
 
@@ -143,7 +154,7 @@ export function umbauen(alt, plan) {
 
   const doppelt = verwendet.filter((id, i) => verwendet.indexOf(id) !== i);
   if (doppelt.length) fehler.push(`Doppelt eingesetzt: ${[...new Set(doppelt)].join(', ')}`);
-  const fehlend = [...index.keys()].filter((id) => !verwendet.includes(id));
+  const fehlend = [...index.keys()].filter((id) => !verwendet.includes(id) && !entfernt.has(id));
   if (fehlend.length) {
     fehler.push(`Im Plan fehlen ${fehlend.length} bestehende Punkte: ${fehlend.map((id) => `${index.get(id).item.title} (${id})`).join(', ')}`);
   }
@@ -151,17 +162,17 @@ export function umbauen(alt, plan) {
   if (tiefe(items) > MAX_TIEFE) fehler.push(`Baum ist ${tiefe(items)} Ebenen tief, Shopify erlaubt ${MAX_TIEFE}`);
 
   if (fehler.length) throw new Error(`Umbauplan nicht anwendbar:\n  - ${fehler.join('\n  - ')}`);
-  return { id: altMenu.id, handle: altMenu.handle, title: altMenu.title, items };
+  return { id: altMenu.id, handle: altMenu.handle, title: altMenu.title, items, entfernt: [...entfernt] };
 }
 
 /** Baum in Mutationseingabe umwandeln; ohne IDs fuer menuCreate. */
-export function alsEingabe(items, { mitIds }) {
+export function alsEingabe(items, { mitIds, ohneIds = new Set() }) {
   return items.map((item) => {
     const e = { title: item.title, type: item.type, tags: item.tags ?? [] };
-    if (mitIds && item.id) e.id = item.id;
+    if (mitIds && item.id && !ohneIds.has(item.id)) e.id = item.id;
     if (item.resourceId) e.resourceId = item.resourceId;
     else if (item.url != null) e.url = item.url;
-    e.items = alsEingabe(item.items ?? [], { mitIds });
+    e.items = alsEingabe(item.items ?? [], { mitIds, ohneIds });
     return e;
   });
 }
@@ -170,14 +181,22 @@ function zaehlen(items) {
   return alleItems(items).length;
 }
 
-/** Gegenprobe nach menuUpdate: alle alten IDs da, genau die neuen Punkte dazu. */
-export function pruefen(alt, nachher, erwartetNeu) {
+/**
+ * Gegenprobe nach menuUpdate: alle alten IDs da (ausser den ausdruecklich
+ * entfernten, die wirklich fehlen muessen), genau die neuen Punkte dazu.
+ */
+export function pruefen(alt, nachher, erwartetNeu, entfernt = []) {
   const vorherIds = idMenge(menueAus(alt));
   const nachherMenu = menueAus(nachher);
   const nachherIds = idMenge(nachherMenu);
-  const verloren = [...vorherIds].filter((id) => !nachherIds.has(id));
-  const dazu = zaehlen(nachherMenu.items) - vorherIds.size;
-  return { ok: verloren.length === 0 && dazu === erwartetNeu, verloren, dazu, erwartetNeu, vorher: vorherIds.size, nachher: zaehlen(nachherMenu.items) };
+  const weg = new Set(entfernt);
+  const verloren = [...vorherIds].filter((id) => !nachherIds.has(id) && !weg.has(id));
+  const nochDa = [...weg].filter((id) => nachherIds.has(id));
+  const dazu = zaehlen(nachherMenu.items) - (vorherIds.size - weg.size);
+  return {
+    ok: verloren.length === 0 && nochDa.length === 0 && dazu === erwartetNeu,
+    verloren, nochDa, dazu, erwartetNeu, entfernt: weg.size, vorher: vorherIds.size, nachher: zaehlen(nachherMenu.items),
+  };
 }
 
 function lesen(datei) {
@@ -208,8 +227,8 @@ if (istDirektaufruf) {
 
   try {
     const neu = umbauen(alt, plan);
-    const anzahlNeu = zaehlen(neu.items) - idMenge(menueAus(alt)).size;
-    console.log(`Plan anwendbar: ${idMenge(menueAus(alt)).size} bestehende Punkte bleiben (IDs), ${anzahlNeu} neue, ${neu.items.length} Hauptpunkte.`);
+    const anzahlNeu = zaehlen(neu.items) - (idMenge(menueAus(alt)).size - neu.entfernt.length);
+    console.log(`Plan anwendbar: ${idMenge(menueAus(alt)).size - neu.entfernt.length} bestehende Punkte bleiben (IDs), ${neu.entfernt.length} entfernt, ${anzahlNeu} neue, ${neu.items.length} Hauptpunkte.`);
     if (wert('--update')) schreiben(wert('--update'), { id: neu.id, title: neu.title, items: alsEingabe(neu.items, { mitIds: true }) });
     if (wert('--entwurf')) {
       schreiben(wert('--entwurf'), {
@@ -220,12 +239,13 @@ if (istDirektaufruf) {
     }
     if (wert('--zurueck')) {
       const m = menueAus(alt);
-      schreiben(wert('--zurueck'), { id: m.id, title: m.title, items: alsEingabe(m.items, { mitIds: true }) });
+      schreiben(wert('--zurueck'), { id: m.id, title: m.title, items: alsEingabe(m.items, { mitIds: true, ohneIds: new Set(neu.entfernt) }) });
     }
     if (wert('--pruefen')) {
-      const r = pruefen(alt, lesen(wert('--pruefen')), anzahlNeu);
-      console.log(`Gegenprobe: vorher ${r.vorher}, nachher ${r.nachher}, neu ${r.dazu} (erwartet ${r.erwartetNeu}), verloren ${r.verloren.length}`);
+      const r = pruefen(alt, lesen(wert('--pruefen')), anzahlNeu, neu.entfernt);
+      console.log(`Gegenprobe: vorher ${r.vorher}, entfernt ${r.entfernt}, nachher ${r.nachher}, neu ${r.dazu} (erwartet ${r.erwartetNeu}), verloren ${r.verloren.length}, entfernt aber noch da ${r.nochDa.length}`);
       if (r.verloren.length) console.error(`Verlorene IDs: ${r.verloren.join(', ')}`);
+      if (r.nochDa.length) console.error(`Sollten entfernt sein: ${r.nochDa.join(', ')}`);
       process.exit(r.ok ? 0 : 1);
     }
   } catch (err) {

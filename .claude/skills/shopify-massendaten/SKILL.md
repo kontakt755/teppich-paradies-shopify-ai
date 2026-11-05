@@ -94,6 +94,8 @@ ohne beides lehnt es den Aufruf ab.
 | `collection(handle: "…")` | `collectionByIdentifier(identifier: {handle: "…"})` |
 | `productVariantUpdate` | gibt es nicht: `productVariantsBulkUpdate(productId:, variants: […])` (Preise nur mit Freigabe, AGENTS.md) |
 | `Menu.itemsCount` | gibt es nicht: `items` abfragen und zaehlen |
+| `collectionCreate` mit mehreren `sources.inclusion.conditions` (z. B. Produkttyp UND Titel) | bleibt leer (`productsCount` 0, auch nach Minuten; 04.11.2026). Mit einer Bedingung anlegen, weitere per `collectionUpdate` → `sourcesToUpdate.condition.inclusion.conditionsToCreate` ergänzen, dann `productsCount` gegen eine direkte `productsCount(query:)` prüfen |
+| Bedingung „Produkttyp ist gleich“ mit `matchType: ALL` | abgelehnt („Abgleichstyp muss ANY sein“); `matchType: ANY` nehmen. Tags: `relation: TAGGED_WITH`, nicht `EQUALS` |
 | `products(sortKey: BEST_SELLING)` | `ProductSortKeys` kennt kein `BEST_SELLING`. Das gibt es nur in `collection { products(sortKey: BEST_SELLING) }` (`ProductCollectionSortKeys`) |
 
 Der Shopify-Connector lehnt diese Mutationen grundsaetzlich ab. Steht eine davon

@@ -102,7 +102,7 @@ test('Plan 2026-10-19: "Vorwerk & JAB nach Maß" wird zu zwei Punkten, alle IDs 
 });
 
 // Nr. 27 (03.11.2026): nur das Ziel von "Angebote & Reste" wechselt, ID und Unterpunkte bleiben.
-for (const [datei, ziel] of [['menue-reste-bis-black-week-2026-11', 'gid://shopify/Collection/705477607758'], ['menue-black-week-2026-11', 'gid://shopify/Collection/705490485582']]) {
+for (const [datei, ziel] of [['menue-reste-bis-black-week-2026-11', 'gid://shopify/Collection/709641208142'], ['menue-black-week-2026-11', 'gid://shopify/Collection/705490485582']]) {
   test(`Plan ${datei}: nur der Hauptlink wechselt, keine ID geht verloren`, () => {
     const stand = lesen('docs/weiterentwicklung/sicherung/2026-10-19-hauptmenue.json');
     const neu = umbauen(stand, lesen(`domains/shopify/${datei}.json`));
@@ -116,3 +116,115 @@ for (const [datei, ziel] of [['menue-reste-bis-black-week-2026-11', 'gid://shopi
     assert.equal(andere({ items: neu.items }), andere(stand));
   });
 }
+
+// Teppichboden-Menue 2026-11-04: vier klare Fragen (Art, Preisklasse, Raum, Marken),
+// Farbe/Rollenbreite/Kurz- und Mittelflor fallen ausdruecklich weg.
+const stand1104 = lesen('docs/weiterentwicklung/sicherung/2026-11-04-hauptmenue.json');
+const plan1104 = lesen('domains/shopify/menue-teppichboden-2026-11.json');
+
+test('Plan 2026-11-04: nur die ausdruecklich entfernten IDs fehlen, alle anderen bleiben genau einmal', () => {
+  const neu = umbauen(stand1104, plan1104);
+  const ids = flach(neu.items).map((i) => i.id).filter(Boolean);
+  assert.equal(new Set(ids).size, ids.length);
+  const entfernt = new Set(plan1104.entfernen.map((e) => e.id));
+  assert.equal(entfernt.size, 19);
+  assert.deepEqual(new Set(ids), new Set([...idMenge(menueAus(stand1104))].filter((id) => !entfernt.has(id))));
+  assert.deepEqual(new Set(neu.entfernt), entfernt);
+});
+
+test('Plan 2026-11-04: Teppichboden zeigt Arten, dann Preisklasse, Raum, Marken', () => {
+  const tb = umbauen(stand1104, plan1104).items[0];
+  assert.deepEqual(tb.items.map((i) => i.title), [
+    'Alle Teppichböden', 'Hochflor', 'Velours', 'Schlinge', 'Wolle', 'Sisal', 'Nadelfilz', 'Büro & Gewerbe', 'Kunstrasen',
+    'Preisklasse', 'Raum', 'Marken',
+  ]);
+  const klickbar = flach(tb.items).filter((i) => i.url !== '#');
+  assert.equal(klickbar.length, 20, 'vorher 33 Links');
+  const marken = tb.items.find((i) => i.title === 'Marken');
+  assert.deepEqual(marken.items.map((i) => [i.title, i.resourceId]), [
+    ['Vorwerk', 'gid://shopify/Collection/705754497358'], ['JAB Anstoetz', 'gid://shopify/Collection/705754530126'],
+  ]);
+});
+
+test('Plan 2026-11-04: Preisklassen-Links buendeln dieselben Filterbereiche wie die Kacheln', async () => {
+  const { Liquid } = await import('liquidjs');
+  const def = readFileSync(root + 'snippets/tp-preisklassen-def.liquid', 'utf8').replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/, '');
+  const klassen = (await new Liquid().parseAndRender(def)).trim().split(';').map((k) => k.split('|'));
+  const spalte = umbauen(stand1104, plan1104).items[0].items.find((i) => i.title === 'Preisklasse');
+  assert.equal(spalte.url, '#');
+  assert.equal(spalte.items.length, klassen.length);
+  spalte.items.forEach((link, i) => {
+    const [name, , werte] = klassen[i];
+    assert.ok(link.title.startsWith(name), `${link.title} passt nicht zu ${name}`);
+    const u = new URL(link.url, 'https://x.test');
+    assert.equal(u.pathname, '/collections/teppichboden');
+    assert.deepEqual(u.searchParams.getAll('filter.p.m.custom.meterpreis_bereich'), werte.split(','));
+  });
+});
+
+test('Plan 2026-11-04: Auslauf Teppichboden zieht unter Angebote & Reste um', () => {
+  const neu = umbauen(stand1104, plan1104);
+  const reste = neu.items.find((i) => i.id === 'gid://shopify/MenuItem/887189668174');
+  const auslauf = reste.items.find((i) => i.id === 'gid://shopify/MenuItem/884473921870');
+  assert.equal(auslauf.title, 'Auslauf Teppichboden');
+  assert.equal(auslauf.resourceId, 'gid://shopify/Collection/705205076302');
+});
+
+test('Entfernen ohne die Unterpunkte bricht ab', () => {
+  const kaputt = structuredClone(plan1104);
+  kaputt.entfernen = kaputt.entfernen.filter((e) => !e._titel.startsWith('Farbe ›'));
+  assert.throws(() => umbauen(stand1104, kaputt), /Unterpunkt eines entfernten Punkts/);
+});
+
+test('Gegenprobe 2026-11-04: entfernte muessen fehlen, alle anderen bleiben', () => {
+  const neu = umbauen(stand1104, plan1104);
+  const anzahlNeu = flach(neu.items).length - (idMenge(menueAus(stand1104)).size - neu.entfernt.length);
+  assert.equal(anzahlNeu, 7);
+  assert.equal(pruefen(stand1104, neu, anzahlNeu, neu.entfernt).ok, true);
+  const nochDa = structuredClone(neu);
+  nochDa.items[0].items.push({ id: neu.entfernt[0], title: 'x', items: [] });
+  const r = pruefen(stand1104, nochDa, anzahlNeu, neu.entfernt);
+  assert.equal(r.ok, false);
+  assert.equal(r.nochDa.length, 1);
+});
+
+test('Rueckweg 2026-11-04 legt entfernte Punkte ohne ID an', () => {
+  const neu = umbauen(stand1104, plan1104);
+  const zurueck = flach(alsEingabe(menueAus(stand1104).items, { mitIds: true, ohneIds: new Set(neu.entfernt) }));
+  assert.equal(zurueck.length, 103);
+  assert.equal(zurueck.filter((i) => !i.id).length, 19);
+});
+
+test('Plan Restposten 2026-11-04: Auslauf-Punkte unter Angebote & Reste, Hauptpunkt auf restposten, keine ID verloren', () => {
+  const stand = lesen('docs/weiterentwicklung/sicherung/2026-11-04b-hauptmenue.json');
+  const plan = lesen('domains/shopify/menue-restposten-2026-11.json');
+  const neu = umbauen(stand, plan);
+  assert.deepEqual(new Set(flach(neu.items).map((i) => i.id).filter(Boolean)), idMenge(menueAus(stand)));
+  const reste = neu.items.find((i) => i.id === 'gid://shopify/MenuItem/887189668174');
+  assert.equal(reste.resourceId, 'gid://shopify/Collection/709641208142');
+  assert.deepEqual(reste.items.map((i) => i.title), ['Aktuelle Angebote', 'Alle Restposten & Auslauf', 'Restrollen & Reststücke',
+    'Auslauf Teppichboden', 'Auslauf Teppich nach Maß', 'Auslauf Teppichfliesen', 'Auslauf Vinylboden']);
+  for (const i of neu.items.filter((x) => x !== reste)) {
+    assert.ok(!flach(i.items).some((k) => /^Auslauf/.test(k.title)), `${i.title} traegt noch einen Auslauf-Punkt`);
+  }
+});
+
+test('Plan Teppiche nach Zweck 2026-11-04: vier neue Unterpunkte unter Standardgroessen, Reihenfolge und IDs bleiben', () => {
+  const stand = lesen('docs/weiterentwicklung/sicherung/2026-11-04c-hauptmenue.json');
+  const plan = lesen('domains/shopify/menue-teppiche-zweck-2026-11.json');
+  const neu = umbauen(stand, plan);
+  assert.deepEqual(new Set(flach(neu.items).map((i) => i.id).filter(Boolean)), idMenge(menueAus(stand)));
+  const teppiche = neu.items.find((i) => i.id === 'gid://shopify/MenuItem/871684145486');
+  assert.deepEqual(teppiche.items.map((i) => i.id), menueAus(stand).items[1].items.map((i) => i.id), 'Reihenfolge der Teppich-Punkte bleibt');
+  const standard = teppiche.items.find((i) => i.id === 'gid://shopify/MenuItem/880157360462');
+  assert.deepEqual(standard.items.map((i) => i.title), ['Kinderteppiche', 'Outdoor-Teppiche', 'Hochflor-Teppiche', 'Waschbare Teppiche']);
+  assert.ok(standard.items.every((i) => !i.id && i.type === 'COLLECTION' && /^gid:\/\/shopify\/Collection\/\d+$/.test(i.resourceId)));
+});
+
+test('Plan Runde Teppiche 2026-11-04: fuenfter Unterpunkt unter Standardgroessen, keine ID verloren', () => {
+  const stand = lesen('docs/weiterentwicklung/sicherung/2026-11-04d-hauptmenue.json');
+  const neu = umbauen(stand, lesen('domains/shopify/menue-runde-teppiche-2026-11.json'));
+  assert.deepEqual(new Set(flach(neu.items).map((i) => i.id).filter(Boolean)), idMenge(menueAus(stand)));
+  const standard = neu.items[1].items.find((i) => i.id === 'gid://shopify/MenuItem/880157360462');
+  assert.deepEqual(standard.items.map((i) => i.title), ['Kinderteppiche', 'Outdoor-Teppiche', 'Hochflor-Teppiche', 'Waschbare Teppiche', 'Runde Teppiche']);
+});

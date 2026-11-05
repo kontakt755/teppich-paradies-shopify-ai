@@ -1,0 +1,854 @@
+{
+ "data": {
+  "menu": {
+   "id": "gid://shopify/Menu/268032508238",
+   "handle": "main-menu",
+   "title": "Main menu",
+   "items": [
+    {
+     "id": "gid://shopify/MenuItem/730052297038",
+     "title": "Teppichboden",
+     "type": "COLLECTION",
+     "url": "/collections/teppichboden",
+     "resourceId": "gid://shopify/Collection/688863674702",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/734432788814",
+       "title": "Alle Teppichböden",
+       "type": "COLLECTION",
+       "url": "/collections/teppichboden",
+       "resourceId": "gid://shopify/Collection/688863674702",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859122762062",
+       "title": "Hochflor",
+       "type": "COLLECTION",
+       "url": "/collections/teppichboden-hochflor",
+       "resourceId": "gid://shopify/Collection/689927618894",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859122827598",
+       "title": "Velours",
+       "type": "COLLECTION",
+       "url": "/collections/teppichboden-velours",
+       "resourceId": "gid://shopify/Collection/689931583822",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859122860366",
+       "title": "Schlinge",
+       "type": "COLLECTION",
+       "url": "/collections/teppichboden-schlinge",
+       "resourceId": "gid://shopify/Collection/689931682126",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859122893134",
+       "title": "Wolle",
+       "type": "COLLECTION",
+       "url": "/collections/teppichboden-wolle",
+       "resourceId": "gid://shopify/Collection/689931813198",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/885193212238",
+       "title": "Sisal",
+       "type": "COLLECTION",
+       "url": "/collections/teppichboden-sisal",
+       "resourceId": "gid://shopify/Collection/705358692686",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859122925902",
+       "title": "Nadelfilz",
+       "type": "COLLECTION",
+       "url": "/collections/teppichboden-nadelvlies",
+       "resourceId": "gid://shopify/Collection/704706707790",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/882170331470",
+       "title": "Büro & Gewerbe",
+       "type": "COLLECTION",
+       "url": "/collections/teppichboden-buero-gewerbe",
+       "resourceId": "gid://shopify/Collection/704705331534",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/882358485326",
+       "title": "Kunstrasen",
+       "type": "COLLECTION",
+       "url": "/collections/kunstrasen",
+       "resourceId": "gid://shopify/Collection/704740163918",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/903206437198",
+       "title": "Preisklasse",
+       "type": "HTTP",
+       "url": "#",
+       "tags": [],
+       "items": [
+        {
+         "id": "gid://shopify/MenuItem/903206469966",
+         "title": "Preiswert · bis 40 €/m²",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=unter+30+%E2%82%AC%2Fm%C2%B2&filter.p.m.custom.meterpreis_bereich=30+bis+40+%E2%82%AC%2Fm%C2%B2",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        },
+        {
+         "id": "gid://shopify/MenuItem/903206502734",
+         "title": "Komfort · 40 bis 60 €/m²",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=40+bis+60+%E2%82%AC%2Fm%C2%B2",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        },
+        {
+         "id": "gid://shopify/MenuItem/903206535502",
+         "title": "Gehoben · 60 bis 80 €/m²",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=60+bis+80+%E2%82%AC%2Fm%C2%B2",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        },
+        {
+         "id": "gid://shopify/MenuItem/903206568270",
+         "title": "Premium · 80 bis 100 €/m²",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=80+bis+100+%E2%82%AC%2Fm%C2%B2",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        },
+        {
+         "id": "gid://shopify/MenuItem/903206601038",
+         "title": "Exklusiv · ab 100 €/m²",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.meterpreis_bereich=100+bis+150+%E2%82%AC%2Fm%C2%B2&filter.p.m.custom.meterpreis_bereich=ab+150+%E2%82%AC%2Fm%C2%B2",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        }
+       ],
+       "resourceId": null
+      },
+      {
+       "id": "gid://shopify/MenuItem/890032456014",
+       "title": "Raum",
+       "type": "HTTP",
+       "url": "#",
+       "tags": [],
+       "items": [
+        {
+         "id": "gid://shopify/MenuItem/890032488782",
+         "title": "Wohnzimmer",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1720806834510",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        },
+        {
+         "id": "gid://shopify/MenuItem/890032521550",
+         "title": "Schlafzimmer",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1720807031118",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        },
+        {
+         "id": "gid://shopify/MenuItem/890032554318",
+         "title": "Kinderzimmer",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1720806998350",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        },
+        {
+         "id": "gid://shopify/MenuItem/890032619854",
+         "title": "Flur",
+         "type": "HTTP",
+         "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1720807293262",
+         "tags": [],
+         "items": [],
+         "resourceId": null
+        }
+       ],
+       "resourceId": null
+      },
+      {
+       "id": "gid://shopify/MenuItem/903206633806",
+       "title": "Marken",
+       "type": "HTTP",
+       "url": "#",
+       "tags": [],
+       "items": [
+        {
+         "id": "gid://shopify/MenuItem/887138943310",
+         "title": "Vorwerk",
+         "type": "COLLECTION",
+         "url": "/collections/vorwerk-teppichboden",
+         "resourceId": "gid://shopify/Collection/705754497358",
+         "tags": [],
+         "items": []
+        },
+        {
+         "id": "gid://shopify/MenuItem/887138976078",
+         "title": "JAB Anstoetz",
+         "type": "COLLECTION",
+         "url": "/collections/jab-anstoetz-teppichboden",
+         "resourceId": "gid://shopify/Collection/705754530126",
+         "tags": [],
+         "items": []
+        }
+       ],
+       "resourceId": null
+      }
+     ]
+    },
+    {
+     "id": "gid://shopify/MenuItem/871684145486",
+     "title": "Teppiche",
+     "type": "COLLECTION",
+     "url": "/collections/teppiche",
+     "resourceId": "gid://shopify/Collection/702545690958",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/871684178254",
+       "title": "Alle Teppiche",
+       "type": "COLLECTION",
+       "url": "/collections/teppiche",
+       "resourceId": "gid://shopify/Collection/702545690958",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/880157360462",
+       "title": "Teppiche in Standardgrößen",
+       "type": "COLLECTION",
+       "url": "/collections/teppiche-standardgroessen",
+       "resourceId": "gid://shopify/Collection/704331645262",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/871684211022",
+       "title": "Teppich nach Maß",
+       "type": "COLLECTION",
+       "url": "/collections/teppich-nach-mass",
+       "resourceId": "gid://shopify/Collection/703839600974",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/887143301454",
+       "title": "Designteppiche nach Maß",
+       "type": "COLLECTION",
+       "url": "/collections/designteppiche-nach-mass",
+       "resourceId": "gid://shopify/Collection/705756299598",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/887163814222",
+       "title": "Vorwerk nach Maß",
+       "type": "COLLECTION",
+       "url": "/collections/vorwerk-teppiche-nach-mass",
+       "resourceId": "gid://shopify/Collection/707349152078",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/892446179662",
+       "title": "JAB Anstoetz nach Maß",
+       "type": "COLLECTION",
+       "url": "/collections/jab-anstoetz-teppiche-nach-mass",
+       "resourceId": "gid://shopify/Collection/707349184846",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/893084860750",
+       "title": "Sisal & Kokos nach Maß",
+       "type": "COLLECTION",
+       "url": "/collections/sisal-kokos-teppiche-nach-mass",
+       "resourceId": "gid://shopify/Collection/707465937230",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/892536947022",
+       "title": "Läufer nach Maß",
+       "type": "COLLECTION",
+       "url": "/collections/laeufer-nach-mass",
+       "resourceId": "gid://shopify/Collection/707369763150",
+       "tags": [],
+       "items": [
+        {
+         "id": "gid://shopify/MenuItem/892536979790",
+         "title": "Kokosläufer",
+         "type": "COLLECTION",
+         "url": "/collections/kokoslaeufer",
+         "resourceId": "gid://shopify/Collection/707369795918",
+         "tags": [],
+         "items": []
+        },
+        {
+         "id": "gid://shopify/MenuItem/892537012558",
+         "title": "Sisalläufer",
+         "type": "COLLECTION",
+         "url": "/collections/sisallaeufer",
+         "resourceId": "gid://shopify/Collection/707369828686",
+         "tags": [],
+         "items": []
+        },
+        {
+         "id": "gid://shopify/MenuItem/892590883150",
+         "title": "Läuferstangen",
+         "type": "COLLECTION",
+         "url": "/collections/laeuferstangen",
+         "resourceId": "gid://shopify/Collection/707395977550",
+         "tags": [],
+         "items": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "gid://shopify/MenuItem/871137182030",
+     "title": "Teppichfliesen",
+     "type": "COLLECTION",
+     "url": "/collections/teppichfliesen",
+     "resourceId": "gid://shopify/Collection/700879536462",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/872983855438",
+       "title": "Alle Teppichfliesen",
+       "type": "COLLECTION",
+       "url": "/collections/teppichfliesen",
+       "resourceId": "gid://shopify/Collection/700879536462",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/872983888206",
+       "title": "Fliesen 50 × 50 cm",
+       "type": "COLLECTION",
+       "url": "/collections/teppichfliesen-50x50",
+       "resourceId": "gid://shopify/Collection/702826545486",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/872983920974",
+       "title": "Teppichplanken",
+       "type": "COLLECTION",
+       "url": "/collections/teppichplanken",
+       "resourceId": "gid://shopify/Collection/702826578254",
+       "tags": [],
+       "items": []
+      }
+     ]
+    },
+    {
+     "id": "gid://shopify/MenuItem/859123319118",
+     "title": "Vinylboden",
+     "type": "COLLECTION",
+     "url": "/collections/vinylboden-1",
+     "resourceId": "gid://shopify/Collection/688863740238",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/859131380046",
+       "title": "Alle Vinylböden",
+       "type": "COLLECTION",
+       "url": "/collections/vinylboden-1",
+       "resourceId": "gid://shopify/Collection/688863740238",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859131412814",
+       "title": "Klickvinyl",
+       "type": "COLLECTION",
+       "url": "/collections/vinylboden-klickvinyl",
+       "resourceId": "gid://shopify/Collection/689934369102",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859131445582",
+       "title": "Klebevinyl",
+       "type": "COLLECTION",
+       "url": "/collections/vinylboden-klebevinyl",
+       "resourceId": "gid://shopify/Collection/689934401870",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859131478350",
+       "title": "PVC/Vinyl von der Rolle",
+       "type": "COLLECTION",
+       "url": "/collections/vinylboden-vinyl-von-der-rolle",
+       "resourceId": "gid://shopify/Collection/689934434638",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859131543886",
+       "title": "Alle Holzdekore",
+       "type": "HTTP",
+       "url": "https://www.teppich-paradies.net/collections/vinylboden-1?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392833358",
+       "tags": [],
+       "items": [],
+       "resourceId": null
+      },
+      {
+       "id": "gid://shopify/MenuItem/859131511118",
+       "title": "Alle Steindekore",
+       "type": "HTTP",
+       "url": "https://www.teppich-paradies.net/collections/vinylboden-1?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392964430",
+       "tags": [],
+       "items": [],
+       "resourceId": null
+      },
+      {
+       "id": "gid://shopify/MenuItem/887139008846",
+       "title": "Marke JAB Anstoetz",
+       "type": "COLLECTION",
+       "url": "/collections/jab-anstoetz-designboden",
+       "resourceId": "gid://shopify/Collection/705754562894",
+       "tags": [],
+       "items": []
+      }
+     ]
+    },
+    {
+     "id": "gid://shopify/MenuItem/890032816462",
+     "title": "Laminat & Parkett",
+     "type": "COLLECTION",
+     "url": "/collections/laminat-parkett",
+     "resourceId": "gid://shopify/Collection/706791145806",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/885110702414",
+       "title": "Laminat",
+       "type": "COLLECTION",
+       "url": "/collections/laminat",
+       "resourceId": "gid://shopify/Collection/705347453262",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/885110735182",
+       "title": "Parkett",
+       "type": "COLLECTION",
+       "url": "/collections/parkett",
+       "resourceId": "gid://shopify/Collection/705347486030",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/886687203662",
+       "title": "Korkboden",
+       "type": "COLLECTION",
+       "url": "/collections/korkboden",
+       "resourceId": "gid://shopify/Collection/705673003342",
+       "tags": [],
+       "items": [
+        {
+         "id": "gid://shopify/MenuItem/886687236430",
+         "title": "Klick-Kork",
+         "type": "COLLECTION",
+         "url": "/collections/korkboden-klick",
+         "resourceId": "gid://shopify/Collection/705673036110",
+         "tags": [],
+         "items": []
+        },
+        {
+         "id": "gid://shopify/MenuItem/886687269198",
+         "title": "Klebekork",
+         "type": "COLLECTION",
+         "url": "/collections/korkboden-kleben",
+         "resourceId": "gid://shopify/Collection/705673068878",
+         "tags": [],
+         "items": []
+        }
+       ]
+      },
+      {
+       "id": "gid://shopify/MenuItem/899254190414",
+       "title": "Verlegen lassen",
+       "type": "PAGE",
+       "url": "/pages/vinylboden-verlegen",
+       "resourceId": "gid://shopify/Page/150100934990",
+       "tags": [],
+       "items": []
+      }
+     ]
+    },
+    {
+     "id": "gid://shopify/MenuItem/890032849230",
+     "title": "Linoleum & Kautschuk",
+     "type": "COLLECTION",
+     "url": "/collections/linoleum-kautschuk",
+     "resourceId": "gid://shopify/Collection/706791178574",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/868188684622",
+       "title": "Linoleumboden",
+       "type": "COLLECTION",
+       "url": "/collections/linoleumboden-1",
+       "resourceId": "gid://shopify/Collection/701795664206",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/887199039822",
+       "title": "Kautschukboden",
+       "type": "COLLECTION",
+       "url": "/collections/kautschukboden",
+       "resourceId": "gid://shopify/Collection/705785233742",
+       "tags": [],
+       "items": []
+      }
+     ]
+    },
+    {
+     "id": "gid://shopify/MenuItem/868583539022",
+     "title": "Zubehör & Leisten",
+     "type": "COLLECTION",
+     "url": "/collections/zubehoer",
+     "resourceId": "gid://shopify/Collection/701924376910",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/859123089742",
+       "title": "Bodenleisten",
+       "type": "COLLECTION",
+       "url": "/collections/bodenleisten",
+       "resourceId": "gid://shopify/Collection/688863773006",
+       "tags": [],
+       "items": [
+        {
+         "id": "gid://shopify/MenuItem/859123122510",
+         "title": "Alle Bodenleisten",
+         "type": "COLLECTION",
+         "url": "/collections/bodenleisten",
+         "resourceId": "gid://shopify/Collection/688863773006",
+         "tags": [],
+         "items": []
+        },
+        {
+         "id": "gid://shopify/MenuItem/859123286350",
+         "title": "Kleber & Fixierung",
+         "type": "COLLECTION",
+         "url": "/collections/zubehoer-kleber-fixierung",
+         "resourceId": "gid://shopify/Collection/701924507982",
+         "tags": [],
+         "items": []
+        }
+       ]
+      },
+      {
+       "id": "gid://shopify/MenuItem/868583571790",
+       "title": "Alles Zubehör",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer",
+       "resourceId": "gid://shopify/Collection/701924376910",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/868583604558",
+       "title": "Profile",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer-profile",
+       "resourceId": "gid://shopify/Collection/701924409678",
+       "tags": [],
+       "items": [
+        {
+         "id": "gid://shopify/MenuItem/859123188046",
+         "title": "Übergangsprofile",
+         "type": "COLLECTION",
+         "url": "/collections/zubehoer-uebergangsprofile",
+         "resourceId": "gid://shopify/Collection/701924442446",
+         "tags": [],
+         "items": []
+        },
+        {
+         "id": "gid://shopify/MenuItem/859123253582",
+         "title": "Abschlussprofile",
+         "type": "COLLECTION",
+         "url": "/collections/zubehoer-abschlussprofile",
+         "resourceId": "gid://shopify/Collection/701924475214",
+         "tags": [],
+         "items": []
+        }
+       ]
+      },
+      {
+       "id": "gid://shopify/MenuItem/892590915918",
+       "title": "Läuferstangen",
+       "type": "COLLECTION",
+       "url": "/collections/laeuferstangen",
+       "resourceId": "gid://shopify/Collection/707395977550",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/868583637326",
+       "title": "Kleber & Fixierung",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer-kleber-fixierung",
+       "resourceId": "gid://shopify/Collection/701924507982",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/868583670094",
+       "title": "Bauchemie",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer-bauchemie",
+       "resourceId": "gid://shopify/Collection/701924540750",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/868583702862",
+       "title": "Verlege- & Dämmunterlagen",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer-verlegeunterlagen",
+       "resourceId": "gid://shopify/Collection/701924573518",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/868583735630",
+       "title": "Reinigungsmittel",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer-reinigungsmittel",
+       "resourceId": "gid://shopify/Collection/701924606286",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/868583768398",
+       "title": "Verlegeband",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer-verlegeband",
+       "resourceId": "gid://shopify/Collection/701924639054",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/885135507790",
+       "title": "Werkzeug",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer-werkzeug",
+       "resourceId": "gid://shopify/Collection/705353285966",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/868583801166",
+       "title": "Sauberlauf",
+       "type": "COLLECTION",
+       "url": "/collections/zubehoer-sauberlauf",
+       "resourceId": "gid://shopify/Collection/701924671822",
+       "tags": [],
+       "items": []
+      }
+     ]
+    },
+    {
+     "id": "gid://shopify/MenuItem/887189668174",
+     "title": "Angebote & Reste",
+     "type": "COLLECTION",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/890032881998",
+       "title": "Aktuelle Angebote",
+       "type": "COLLECTION",
+       "url": "/collections/angebote",
+       "resourceId": "gid://shopify/Collection/705490485582",
+       "tags": [],
+       "items": []
+      },
+      {
+       "title": "Alle Restposten & Auslauf",
+       "type": "COLLECTION",
+       "tags": [],
+       "items": [],
+       "resourceId": "gid://shopify/Collection/709641208142",
+       "id": "gid://shopify/MenuItem/903219511630",
+       "url": "/collections/restposten"
+      },
+      {
+       "id": "gid://shopify/MenuItem/889373229390",
+       "title": "Restrollen & Reststücke",
+       "type": "COLLECTION",
+       "url": "/collections/reste-sonderposten",
+       "resourceId": "gid://shopify/Collection/705477607758",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/884473921870",
+       "title": "Auslauf Teppichboden",
+       "type": "COLLECTION",
+       "url": "/collections/auslauf",
+       "resourceId": "gid://shopify/Collection/705205076302",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/884486635854",
+       "title": "Auslauf Teppich nach Maß",
+       "type": "COLLECTION",
+       "url": "/collections/auslauf-teppich-nach-mass",
+       "resourceId": "gid://shopify/Collection/705207894350",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/884855636302",
+       "title": "Auslauf Teppichfliesen",
+       "type": "COLLECTION",
+       "url": "/collections/auslauf-teppichfliesen",
+       "resourceId": "gid://shopify/Collection/705289519438",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/884486668622",
+       "title": "Auslauf Vinylboden",
+       "type": "COLLECTION",
+       "url": "/collections/auslauf-vinylboden",
+       "resourceId": "gid://shopify/Collection/705207861582",
+       "tags": [],
+       "items": []
+      }
+     ],
+     "resourceId": "gid://shopify/Collection/709641208142"
+    },
+    {
+     "id": "gid://shopify/MenuItem/734281072974",
+     "title": "Service & Verlegung",
+     "type": "PAGE",
+     "url": "/pages/liefer-verlegeservice",
+     "resourceId": "gid://shopify/Page/145743577422",
+     "tags": [],
+     "items": [
+      {
+       "id": "gid://shopify/MenuItem/870444007758",
+       "title": "Liefer- & Verlegeservice",
+       "type": "PAGE",
+       "url": "/pages/liefer-verlegeservice",
+       "resourceId": "gid://shopify/Page/145743577422",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859122958670",
+       "title": "Teppichboden verlegen",
+       "type": "HTTP",
+       "url": "https://www.teppich-paradies.net/pages/teppichboden-verlegen-lassen",
+       "tags": [],
+       "items": [],
+       "resourceId": null
+      },
+      {
+       "id": "gid://shopify/MenuItem/859122991438",
+       "title": "Klickvinyl, Laminat & Parkett verlegen",
+       "type": "HTTP",
+       "url": "https://www.teppich-paradies.net/pages/vinylboden-verlegen",
+       "tags": [],
+       "items": [],
+       "resourceId": null
+      },
+      {
+       "id": "gid://shopify/MenuItem/859123024206",
+       "title": "Treppen professionell belegen",
+       "type": "HTTP",
+       "url": "https://www.teppich-paradies.net/pages/treppenverlegung",
+       "tags": [],
+       "items": [],
+       "resourceId": null
+      },
+      {
+       "id": "gid://shopify/MenuItem/882093982030",
+       "title": "Teppichreinigung",
+       "type": "PAGE",
+       "url": "/pages/teppichreinigung",
+       "resourceId": "gid://shopify/Page/750358397262",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/870673121614",
+       "title": "Unsere Arbeit",
+       "type": "PAGE",
+       "url": "/pages/unsere-arbeit",
+       "resourceId": "gid://shopify/Page/146627592526",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/859123056974",
+       "title": "Für Firmenkunden",
+       "type": "HTTP",
+       "url": "https://www.teppich-paradies.net/pages/firmenkunden",
+       "tags": [],
+       "items": [],
+       "resourceId": null
+      },
+      {
+       "id": "gid://shopify/MenuItem/875571609934",
+       "title": "Ratgeber",
+       "type": "PAGE",
+       "url": "/pages/ratgeber",
+       "resourceId": "gid://shopify/Page/749308510542",
+       "tags": [],
+       "items": []
+      },
+      {
+       "id": "gid://shopify/MenuItem/734280614222",
+       "title": "Kontakt",
+       "type": "HTTP",
+       "url": "https://www.teppich-paradies.net/pages/kontakt",
+       "tags": [],
+       "items": [],
+       "resourceId": null
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

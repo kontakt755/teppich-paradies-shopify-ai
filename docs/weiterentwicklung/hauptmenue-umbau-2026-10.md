@@ -111,3 +111,39 @@ Bildschirme) -> 912 px (1,08), Rollenbreite beginnt bei 811 px statt 1131 px,
 `bilder/hauptmenue-2026-10/handy-teppichboden-2026-10-29-*.jpg`.
 Wer nach vorn soll, wird im Shopify-Menue nach vorn geschoben
 (`scripts/menue-umbau.mjs`), kein Theme-Code.
+
+## Teppichboden entschlackt (2026-11-04)
+
+Plan `domains/shopify/menue-teppichboden-2026-11.json` (Inhaber 04.11., Befund in
+`sortiment-und-struktur-2026-11.md`): Arten als Kacheln (Hochflor, Velours, Schlinge,
+Wolle, Sisal, Nadelfilz; Weitere: Büro & Gewerbe, Kunstrasen), Spalten Preisklasse
+(fünf Links auf den Filter „Preis je m²“, gleiche Bündelung wie die Kacheln
+`sections/tp-preisklassen.liquid`), Raum (vier) und Marken (Vorwerk, JAB Anstoetz).
+33 Links → 20. Entfernt (19 Punkte, im Plan einzeln genannt): Kurz- und Mittelflor
+(Filter Florhöhe), „Auch als Teppichfliesen“ (eigener Hauptpunkt), Spalten Farbe und
+Rollenbreite (Filter), Raum Arbeitszimmer und Büro. „Auslauf“ steht jetzt unter
+Angebote & Reste. Kurz- und Mittelflor-Seiten behalten die Unterkategorie-Leiste über
+den Rückfall in `snippets/tp-unterkategorien-leiste.liquid`.
+
+Sicherung vorher: `sicherung/2026-11-04-hauptmenue.json`. Zurück:
+`node scripts/menue-umbau.mjs --alt docs/weiterentwicklung/sicherung/2026-11-04-hauptmenue.json --plan domains/shopify/menue-teppichboden-2026-11.json --zurueck zurueck.json`,
+dann `menuUpdate` mit `zurueck.json` (entfernte Punkte kommen ohne alte ID zurück).
+
+**Live seit 2026-11-04** (`menuUpdate` per MCP). Gegenprobe aus frischem Lesen: 91 Punkte
+= 84 bestehende mit alter ID + 7 neue (Spalten Preisklasse und Marken, fünf Preislinks);
+die 19 entfernten IDs fehlen. Treffer der Preislinks über `custom.meterpreis_bereich`
+(298 Teppichböden, jede Klasse belegt). `npm run menu:guard` und die Sichtprüfung bei
+1440/390 px stehen noch aus (Storefront aus Remote-Sessions gesperrt). Bis zum
+Theme-Deploy fehlt auf den Seiten Kurz- und Mittelflor die Unterkategorie-Leiste.
+
+## Restposten und Teppiche nach Zweck (2026-11-04, live)
+
+- `domains/shopify/menue-restposten-2026-11.json`: „Angebote & Reste“ → Sammelkollektion
+  `restposten`, darunter „Alle Restposten & Auslauf“, „Restrollen & Reststücke“ und die vier
+  Auslauf-Punkte (vorher in Teppichboden/Teppiche/Teppichfliesen/Vinylboden). Gegenprobe: 92 =
+  91 alte IDs + 1 neu. Sicherung davor `sicherung/2026-11-04b-hauptmenue.json`.
+- `domains/shopify/menue-teppiche-zweck-2026-11.json`: unter „Teppiche in Standardgrößen“
+  Kinderteppiche (32), Outdoor-Teppiche (71), Hochflor-Teppiche (42), Waschbare Teppiche (13).
+  Gegenprobe: 96 = 92 alte IDs + 4 neu. Sicherung davor `sicherung/2026-11-04c-hauptmenue.json`.
+- `domains/shopify/menue-runde-teppiche-2026-11.json`: Runde Teppiche (184, Variante mit „rund“)
+  als fünfter Punkt. Gegenprobe: 97 = 96 alte IDs + 1 neu. Sicherung davor `sicherung/2026-11-04d-hauptmenue.json`.
