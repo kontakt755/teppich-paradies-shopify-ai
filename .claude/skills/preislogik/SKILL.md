@@ -23,6 +23,14 @@ Vor einer Änderung der Shopify-Variantenpreise oder Vergleichspreise ist eine
 konkrete Produkttabelle zu prüfen und die ausdrückliche Freigabe des Inhabers
 einzuholen. Produkttexte dürfen keinen abweichenden Rabatt versprechen.
 
+## Tag `ohne-rabatt`
+
+Produkte mit diesem Tag bekommen weder Marketingcode noch Aktionsrabatt (Freigabe
+2026-11-05): Die Kollektion `intern-regulaerer-preis` schliesst den Tag aus, die Wellen in
+`domains/shopify/aktionskalender.json` nehmen ihn aus (`ausnahmen_alle`, Ablauf in
+`domains/shopify/aktionssystem-konzept.md`). Der Tag schuetzt nur dort: Eine Aktion auf
+einer Kategorie mit solchen Produkten braucht eine eigene Zielkollektion.
+
 ## Restrollen: UVP mit Abstand
 
 Restrollen (Tag `sonderposten`, Typ Teppichboden) zeigen ihre UVP wie alle anderen über `preis.vergleich_ist_uvp`, zusätzlich mit „40 % unter UVP“, abgerundet, ohne Rot und ohne Rabattbadge (Inhaber 2026-11-03). Sie bekommen kein `aktion.klasse`, weil sie nie zum Vergleichspreis verkauft wurden. Die UVP gilt nur für die Meterware: Beim Wechsel auf Raummaß blendet der Rechner die Zeile aus, Kettelteppiche und Raummaß-Produkte haben keine.

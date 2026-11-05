@@ -14,6 +14,7 @@ einem anderen Code.
 
 1. **Interne Kollektion** `intern-regulaerer-preis` („Intern: Regulärer Preis
    (rabattcode-fähig)"), automatisch, Regel *Preis reduziert: nicht gesetzt*,
+   ausgenommen Produkte mit Tag `ohne-rabatt` (seit 05.11.2026, Marge trägt keinen Code),
    **in keinem Vertriebskanal veröffentlicht** (also unsichtbar, nicht in der
    Sitemap). Shopify pflegt sie selbst: Bekommt ein Produkt einen Streichpreis,
    fällt es heraus; wird der Streichpreis entfernt, kommt es zurück.
