@@ -360,6 +360,22 @@ test('Kopf der Produktseite: Preis je m2 der gewaehlten Farbe, Hinweis auf den K
   assert.doesNotMatch(html, /tp-ab-preis__qualitaet/);
 });
 
+// Pruefung 05.11.2026: Bei eigener Kettelung stand die Lieferzeit erst nach der Masseingabe.
+test('Kopf mit ab-Preis: Lieferzeit aus service.lieferzeit unter dem Preis, nur wenn belegt und kaufbar', async () => {
+  const p = produkt({ einheitCent: 27, art: 'Ketteln', mindest: 99 });
+  const ohne = await render(p, kettelOk, { price: 27 }, true);
+  assert.notEqual(abCent(ohne), null);
+  assert.doesNotMatch(ohne, /Lieferzeit/, 'ohne Metafeld keine erfundene Lieferzeit');
+  p.metafields.service.lieferzeit = { value: 'ca. 5–8 Werktage inkl. Ketteln' };
+  const mit = await render(p, kettelOk, { price: 27 }, true);
+  assert.equal(abCent(mit), abCent(ohne));
+  assert.match(mit, /tp-ab-preis__grund[\s\S]*tp-ab-preis__lieferzeit[\s\S]*Lieferzeit ca\. 5–8 Werktage inkl\. Ketteln/);
+  assert.doesNotMatch(await render(p, kettelOk, { price: 27 }), /Lieferzeit/, 'Produktseite ausserhalb des Kopfes');
+  assert.doesNotMatch(await render(p), /Lieferzeit/, 'Karte');
+  p.available = false;
+  assert.doesNotMatch(await render(p, kettelOk, { price: 27 }, true), /Lieferzeit/, 'ausverkauft');
+});
+
 // Fehlersuche 2026-10-28: ausverkauft (keine Variante kaufbar) verspricht keine
 // Lieferzeit - wie snippets/tp-lieferzeit. Der Preis bleibt stehen.
 for (const available of [true, false]) {

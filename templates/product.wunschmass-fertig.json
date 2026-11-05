@@ -316,6 +316,22 @@
                 "review_link": ""
               },
               "blocks": {}
+            },
+            "tp_mass_preisbeispiele_1": {
+              "type": "tp-mass-preisbeispiele",
+              "name": "TP Preisbeispiele",
+              "settings": {
+                "titel": "Preisbeispiele"
+              },
+              "blocks": {}
+            },
+            "tp_mass_faq_1": {
+              "type": "tp-mass-faq",
+              "name": "TP Kauffragen nach Maß",
+              "settings": {
+                "titel": "Preis, Lieferzeit und Bestellung"
+              },
+              "blocks": {}
             }
           },
           "block_order": [
@@ -326,10 +342,12 @@
             "tp_produktmerkmale",
             "divider_VJhene",
             "tp_farb_kreise",
+            "tp_mass_preisbeispiele_1",
             "tp_einfass_konfigurator_1",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
             "tp_zubehoer_empfehlung",
+            "tp_mass_faq_1",
             "text_aEtTtq",
             "tp_bildnachweis_desktop"
           ]
