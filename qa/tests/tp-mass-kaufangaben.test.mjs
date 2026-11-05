@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import vm from 'node:vm';
 import { Liquid } from 'liquidjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -177,6 +178,91 @@ test('Genau ein FAQPage-Knoten: Kauffragen vorn, Fragen aus dem Produkttext dahi
   assert.equal(JSON.parse(nurVorab.replace(/<\/?script[^>]*>/g, '')).mainEntity.length, q.length);
   const nichts = await engine.parseAndRender(`{% render 'tp-faq-beschreibung-structured-data', html: html, seiten_url: 'https://x/p' %}`, { html: '<p>Text</p>' });
   assert.equal(nichts.trim(), '');
+});
+
+// Codex-Review PR #1945: Beim Farbwechsel darf der FAQPage-Knoten nicht beim Preis der vorigen
+// Farbe stehen bleiben. Echte Liquid-Ausgabe verschieden teurer Varianten, echtes Skript, nur
+// das DOM ist nachgebaut.
+const asset = readFileSync(path.join(root, 'assets/tp-mass-kaufangaben.js'), 'utf8');
+const JSONLD = 'script[type="application/ld+json"]';
+
+async function serverStand(p, v, html = '') {
+  const vorab = (await render('tp-mass-faq', { product: p, variant: v, ausgabe: 'json' })).trim();
+  const skript = await engine.parseAndRender(`{% render 'tp-faq-beschreibung-structured-data', html: html, seiten_url: 'https://x/p', vorab: vorab %}`, { html, vorab });
+  return { faq: (await render('tp-mass-faq', { product: p, variant: v })).trim(), knoten: skript.replace(/<\/?script[^>]*>/g, '').trim() };
+}
+function seite(stand) {
+  const block = { dataset: { tpMassNeu: 'faq' }, hidden: false, innerHTML: stand.faq, closest: () => ({ id: 'shopify-section-main' }) };
+  const skript = { textContent: stand.knoten, entfernt: false, remove() { this.entfernt = true; } };
+  const hoerer = {};
+  const document = {
+    addEventListener: (typ, fn) => { hoerer[typ] = fn; },
+    querySelector: () => block,
+    querySelectorAll: (sel) => (sel === JSONLD ? [{ textContent: '{"@type":"ProductGroup"}' }, skript] : sel === '[data-tp-mass-neu]' ? [block] : []),
+  };
+  return { document, block, skript, hoerer };
+}
+const antwort = (stand, { mitBlock = true } = {}) => ({
+  querySelector: () => (mitBlock ? { innerHTML: stand.faq, hidden: false } : null),
+  querySelectorAll: () => (stand.knoten ? [{ textContent: stand.knoten }] : []),
+});
+const laden = (s, extra = {}) => vm.runInNewContext(asset, { window: { location: { href: 'https://x/p?preview_theme_id=1' } }, document: s.document, URL, console, ...extra });
+const beschreibung = '<h3>Häufige Fragen</h3><h4>Wie groß darf er sein?</h4><p>Bis 600 cm.</p>';
+
+test('Farbwechsel mit anderem Preis: FAQPage-Knoten und sichtbarer Text bleiben wortgleich', async () => {
+  const p = produkt({ art: 'Fertig', min: 46, max: 66, title: 'Testa & Co', lz: 'ca. 3 Wochen' });
+  const billig = await serverStand(p, variante({ preis: 46, farbe: 'Natur' }), beschreibung);
+  const teuer = await serverStand(p, variante({ preis: 66, farbe: 'Rot' }), beschreibung);
+  // Beim ersten Laden stimmen Text und Knoten schon, je Variante:
+  for (const stand of [billig, teuer]) {
+    for (const q of JSON.parse(stand.knoten).mainEntity.slice(0, 3)) assert.ok(roh(stand.faq).includes(q.acceptedAnswer.text), q.name);
+  }
+  assert.match(billig.knoten, /Ausführung Natur/);
+  assert.match(teuer.knoten, /Ausführung Rot/);
+
+  const s = seite(billig);
+  laden(s);
+  s.hoerer['variant:update']({ detail: { data: { html: antwort(teuer) } } });
+  assert.equal(s.block.innerHTML, teuer.faq);
+  assert.equal(s.skript.textContent, teuer.knoten);
+  const knoten = JSON.parse(s.skript.textContent);
+  assert.equal(knoten.mainEntity.at(-1).name, 'Wie groß darf er sein?');
+  for (const q of knoten.mainEntity.slice(0, 3)) assert.ok(roh(s.block.innerHTML).includes(q.acceptedAnswer.text), q.name);
+  assert.doesNotMatch(s.skript.textContent, /Ausführung Natur/);
+});
+
+test('Farbwechsel ueber die Farbkachel: Section laden, Knoten nachziehen, veraltete Antwort verwerfen', async () => {
+  const p = produkt({ art: 'Fertig', min: 46, max: 66 });
+  const [a, b, c] = await Promise.all([46, 66, 52].map((preis) => serverStand(p, variante({ preis, farbe: `F${preis}` }))));
+  const s = seite(a);
+  const offen = {};
+  laden(s, {
+    fetch: (url) => new Promise((res) => { offen[url.searchParams.get('variant')] = { url, res }; }),
+    DOMParser: class { parseFromString(t) { return antwort(t === 'b' ? b : c); } },
+  });
+  const wechsel = (id) => s.hoerer['tp:farbe-wechsel']({ detail: { variantId: id } });
+  const langsam = wechsel('b');
+  const schnell = wechsel('c');
+  assert.equal(offen.c.url.searchParams.get('preview_theme_id'), '1');
+  assert.equal(offen.c.url.searchParams.get('section_id'), 'main');
+  offen.c.res({ ok: true, text: async () => 'c' });
+  await schnell;
+  offen.b.res({ ok: true, text: async () => 'b' });
+  await langsam;
+  assert.equal(s.block.innerHTML, c.faq);
+  assert.equal(s.skript.textContent, c.knoten);
+});
+
+test('Knoten: Antwort ohne unsere Bloecke aendert nichts, Section ohne Knoten entfernt ihn', async () => {
+  const p = produkt({ art: 'Fertig' });
+  const start = await serverStand(p, variante());
+  const s = seite(start);
+  laden(s);
+  s.hoerer['variant:update']({ detail: { data: { html: antwort({ faq: '', knoten: '{"@type":"FAQPage","mainEntity":[]}' }, { mitBlock: false }) } } });
+  assert.equal(s.skript.textContent, start.knoten);
+  assert.equal(s.skript.entfernt, false);
+  s.hoerer['variant:update']({ detail: { data: { html: antwort({ faq: '', knoten: '' }) } } });
+  assert.equal(s.skript.entfernt, true);
 });
 
 const vorlage = (name) => JSON.parse(readFileSync(path.join(root, `templates/${name}.json`), 'utf8').replace(/^\s*\/\*[\s\S]*?\*\/\s*/, ''));
