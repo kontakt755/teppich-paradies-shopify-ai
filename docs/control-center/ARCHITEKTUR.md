@@ -1556,13 +1556,21 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   weitere Standorte werden dabei nicht automatisch veraendert. Protokoll („Muster wieder verfügbar“), Audit.
 - **Endpunkte:** `GET /api/einkauf/mustersperre` (`gesperrt`, `offen`, `fehler`; dieselbe Liste hängt als
   `sperren` an `GET /api/einkauf/musterlager`), `POST /api/einkauf/mustersperre` mit
-  `aktion: freigeben | nachholen` und `sku` (Schreibpfad: Rolle „lesen“ 403). Der Schritt selbst läuft wie
+  `aktion: freigeben | nachholen` und `sku` oder `aktion: sperren` (siehe unten, Schreibpfad: Rolle „lesen“ 403). Der Schritt selbst läuft wie
   bisher über `POST /api/einkauf/auftragsstatus` (`aktion: "schritt"`, `schritt: "muster_nicht_verfuegbar"`,
   `muster: [lineItemId]`, `notiz`); die Antwort trägt `mustersperre {status, meldung, gesperrt, bereits,
   offen, ohneSku, fehlendeRechte?}`, die Rückmeldung lautet z. B. „Ergebnis: Muster nicht verfügbar ·
   2 Farben im Shop gesperrt“.
 - **Tests und Prüfwerkzeug** sprechen nie echtes Shopify (`operations/tests/mustersperre-attrappe.mjs`);
   `dashboard:pruefen` hat keinen Zugang, dort landet jede Sperre unter „Im Shop sperren“.
+
+**Ein einzelnes Muster sperren (05.11.2026, #1934).** Der Schritt gilt für die ganze Bestellung und bucht auch die
+übrigen Muster. Für die Meldung „von dieser Farbe gibt es kein Muster“ reicht deshalb `POST /api/einkauf/mustersperre`
+mit `aktion: 'sperren'`: mit `orderId` und `lineItemId` aus der Packstation („Kein Muster – im Shop sperren…“) oder mit
+`handle` und `farbe` aus Einkauf › Musterlager („Muster sperren…“). Kein Schritt, kein Positionsstand, keine
+Versandbuchung; danach steht das Muster als „kommt nicht“ da, „Kunde informieren…“ und „Ohne dieses Muster weiter
+packen“ führen weiter. Die Artikelnummer bestimmt der Server (aus der Position bzw. `M-…` des Musterprodukts), nie der
+Browser. Rolle „lesen“ bekommt 403. Klappt es im Shop nicht, steht die Sperre wie beim Schritt unter „Im Shop sperren“.
 
 ## 23. „Muster nachfassen“ verschickt automatisch (seit 2026-10-16, Werkbank w-119, Option A)
 

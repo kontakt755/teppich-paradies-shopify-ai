@@ -24,6 +24,8 @@
  * gesperrt. Oben "Im Shop sperren", wenn das nicht geklappt hat (Recht fehlt, kein Zugang,
  * kein eigener Muster-Artikel) - mit Link zur Variante in Shopify; darunter "Im Shop gesperrte
  * Muster" mit "Wieder verfuegbar". Server: operations/lib/mustersperre.mjs.
+ * "Muster sperren…" sperrt eine einzelne Farbe ohne Bestellung, wenn der Lieferant meldet, dass es
+ * von ihr kein Muster gibt: Produkt suchen, Farbe waehlen, Rueckfrage.
  */
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
@@ -154,7 +156,7 @@ export function viewEinkaufMusterlager() {
   const kopf = `<div class="ml-kopf">
     <div class="ml-erklaerung"><p class="small muted">Muster, die wir selbst da haben. Kommt eine Musterbestellung für eines davon, steht sie automatisch auf „aus dem Musterlager“ – sie geht nicht in die Bestellung an den Lieferanten. Einzelmuster zählen beim Verschicken ab; von Probestück, Bahn und Verlegerest schneiden wir A5-Muster zu. Gemischte Bestellungen gehen zusammen raus, sobald die Lieferanten-Muster da sind.</p>
     <p class="small muted"><b>Verlegereste:</b> Teppichboden und Vinyl von Lieferant ${esc(resteLieferanten())} – Rest immer aufheben und beschriften. Ware anderer Hersteller nur, wenn ${esc(resteLieferanten(' oder '))} sie auch führt: „Rest prüfen…“.</p></div>
-    <div class="btn-row">${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button>'}
+    <div class="btn-row">${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button><button type="button" class="btn" data-ms-neu>Muster sperren…</button>'}
     <button type="button" class="btn" data-ml-rest-pruefen>Rest prüfen…</button>
     <button type="button" class="btn" data-ml-etikett>Aufkleber drucken…</button>
     <button type="button" class="btn" data-ml-eigene>Eigene Aufkleber…</button></div>
@@ -300,6 +302,87 @@ function ortFeld(wert = '') {
     <span class="hint">Damit es beim Verschicken jeder findet.</span></div>`;
 }
 
+/** Sucheingabe gegen das Lexikon; zeigt Treffer als Knoepfe mit data-ml-handle. Der Dialog entscheidet, was ein Klick tut. */
+function bindeProduktSuche(form) {
+  const suche = form.querySelector('#mlSuche');
+  const treffer = form.querySelector('[data-ml-treffer]');
+  let zaehler = 0;
+  let warte = null;
+  suche.addEventListener('input', () => {
+    clearTimeout(warte);
+    const q = suche.value.trim();
+    if (q.length < 2) { treffer.innerHTML = ''; return; }
+    warte = setTimeout(async () => {
+      const nr = ++zaehler;
+      const d = await fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q, pageSize: 8 })}`);
+      if (nr !== zaehler) return;
+      // Musterprodukte selbst nicht anbieten - das Original fuehrt zu denselben Farben.
+      const items = (d?.treffer?.items || []).filter(x => x.produktgruppe !== 'Musterservice');
+      treffer.innerHTML = items.length
+        ? items.map(x => `<button type="button" class="ml-treffer-knopf" data-ml-handle="${esc(x.handle)}"><span>${esc(x.titel)}</span><span class="small muted">${esc([x.produktgruppe, x.farbenAnzahl ? plural(x.farbenAnzahl, 'Farbe', 'Farben') : null].filter(Boolean).join(' · '))}</span></button>`).join('')
+        : `<p class="small muted">${d?.verfuegbar === false ? esc(d.hinweis || 'Lexikon nicht verfügbar.') : 'Kein Produkt gefunden.'}</p>`;
+    }, 250);
+  });
+  return suche;
+}
+
+/**
+ * "Muster sperren…": eine Farbe im Shop sperren, ohne Bestellung. Der Server bestimmt die Muster-SKU
+ * aus Produkt und Farbe. Farben ohne eigenen Musterartikel lassen sich nicht waehlen.
+ */
+function oeffneSperren() {
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog ml-dialog" role="dialog" aria-modal="true" aria-labelledby="mlSperrTitel" data-dialog novalidate>
+    <h2 id="mlSperrTitel">Muster im Shop sperren</h2>
+    <p class="small muted">Für eine Farbe, die es beim Lieferanten nicht als Muster gibt. Sie ist danach sofort nicht mehr als Muster bestellbar. Bestellungen bleiben offen, nichts wird als versendet gebucht.</p>
+    <div class="field"><label for="mlSuche">Produkt</label>
+      <input id="mlSuche" type="search" autocomplete="off" placeholder="Name, Farbe oder Artikelnummer" aria-describedby="mlSucheHinweis">
+      <span class="hint" id="mlSucheHinweis">Mindestens 2 Zeichen.</span>
+      <div class="ml-treffer" data-ml-treffer></div></div>
+    <fieldset class="ml-farben" data-ml-farben hidden><legend data-ml-produkt></legend><div class="ml-farbliste" data-ml-farbliste></div></fieldset>
+    <p data-ml-meldung hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary" disabled>Im Shop sperren…</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  const knopf = form.querySelector('[type=submit]');
+  const suche = bindeProduktSuche(form);
+  const treffer = form.querySelector('[data-ml-treffer]');
+  let produkt = null;
+  const gewaehlt = () => form.querySelector('[data-ml-farbliste] input:checked')?.value || null;
+  treffer.addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-ml-handle]');
+    if (!b) return;
+    const d = await fetchEinkauf(`/api/einkauf/musterlager-farben?${new URLSearchParams({ handle: b.dataset.mlHandle })}`);
+    if (!d?.verfuegbar) { zeigeMeldung(form, d?.hinweis || 'Farben nicht lesbar.'); return; }
+    produkt = d;
+    treffer.innerHTML = '';
+    suche.value = d.titel;
+    const box = form.querySelector('[data-ml-farben]');
+    form.querySelector('[data-ml-produkt]').textContent = `Farben von ${d.titel}`;
+    const wahl = d.farben.filter(f => f.sperrbar);
+    form.querySelector('[data-ml-farbliste]').innerHTML = wahl.length
+      ? wahl.map(f => `<label><input type="radio" name="farbe" value="${esc(f.farbe)}"${f.gesperrt ? ' disabled' : ''}> ${esc(f.farbe)}${f.gesperrt ? ' <span class="muted small">(schon gesperrt)</span>' : ''}</label>`).join('')
+      : '<p class="small muted">Für dieses Produkt gibt es keinen eigenen Musterartikel – seine Farben lassen sich nicht einzeln sperren.</p>';
+    box.hidden = false;
+    knopf.disabled = true;
+    box.querySelector('input:not(:disabled)')?.focus();
+  });
+  form.addEventListener('change', ev => { if (ev.target.closest('[data-ml-farbliste]')) knopf.disabled = !gewaehlt(); });
+  suche.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const farbe = gewaehlt();
+    if (!produkt || !farbe) return;
+    if (!window.confirm(`${produkt.titel} · ${farbe} im Shop sperren?\n\nDie Farbe ist sofort nicht mehr als Muster bestellbar, auch für andere Kunden. Rückgängig: „Wieder verfügbar“.`)) return;
+    knopf.disabled = true;
+    const r = await schreibeSperre({ aktion: 'sperren', handle: produkt.handle, farbe });
+    if (!r.ok) { zeigeMeldung(form, r.text); knopf.disabled = false; return; }
+    $('#dialogRoot').innerHTML = '';
+    const klappte = r.status === 'gesperrt';
+    toast(r.meldung, klappte ? undefined : 'crit', klappte ? {} : { dauer: 9000 });
+    ensureMusterlager({ neu: true });
+  });
+}
+
 /**
  * "Muster einlagern": Produkt im Lexikon suchen, Farben ankreuzen, Art, Anzahl, Platz.
  * Mit `vorgabe` (aus einem Vorschlag) stehen Produkt und Farbe schon fest.
@@ -328,25 +411,8 @@ function oeffneEinlagern(vorgabe = null) {
   const pruefe = () => { if (!vorgabe) knopf.disabled = !produkt || !gewaehlteFarben().length; };
 
   if (!vorgabe) {
-    const suche = form.querySelector('#mlSuche');
+    const suche = bindeProduktSuche(form);
     const treffer = form.querySelector('[data-ml-treffer]');
-    let zaehler = 0;
-    let warte = null;
-    suche.addEventListener('input', () => {
-      clearTimeout(warte);
-      const q = suche.value.trim();
-      if (q.length < 2) { treffer.innerHTML = ''; return; }
-      warte = setTimeout(async () => {
-        const nr = ++zaehler;
-        const d = await fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q, pageSize: 8 })}`);
-        if (nr !== zaehler) return;
-        // Musterprodukte selbst nicht anbieten - das Original fuehrt zu denselben Farben.
-        const items = (d?.treffer?.items || []).filter(x => x.produktgruppe !== 'Musterservice');
-        treffer.innerHTML = items.length
-          ? items.map(x => `<button type="button" class="ml-treffer-knopf" data-ml-handle="${esc(x.handle)}"><span>${esc(x.titel)}</span><span class="small muted">${esc([x.produktgruppe, x.farbenAnzahl ? plural(x.farbenAnzahl, 'Farbe', 'Farben') : null].filter(Boolean).join(' · '))}</span></button>`).join('')
-          : `<p class="small muted">${d?.verfuegbar === false ? esc(d.hinweis || 'Lexikon nicht verfügbar.') : 'Kein Produkt gefunden.'}</p>`;
-      }, 250);
-    });
     treffer.addEventListener('click', async ev => {
       const b = ev.target.closest('[data-ml-handle]');
       if (!b) return;
@@ -440,6 +506,7 @@ function oeffneBearbeiten(e, { wieder = false } = {}) {
 /** Klicks der Ansicht. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function einkaufKlickMusterlager(ev) {
   if (ev.target.closest('[data-ml-neu]')) { oeffneEinlagern(); return true; }
+  if (ev.target.closest('[data-ms-neu]')) { oeffneSperren(); return true; }
   // Einzeletikett von Hand, z. B. fuer Muster im Lager ohne Bestellung.
   if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Aufkleber drucken' }); return true; }
   if (ev.target.closest('[data-ml-eigene]')) { oeffneEtikettenDruck({ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }); return true; }
