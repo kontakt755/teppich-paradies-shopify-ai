@@ -46,7 +46,7 @@ export function musterAutomatikDaten(dir) {
  * der Aufrufer haelt an, damit eine kaputte Sperrliste nicht still jedes Muster freigibt.
  */
 function aktiveSperren(dir) {
-  try { return sperrStand(leseSperren(mustersperrePfad(dir))); }
+  try { return sperrStand(leseSperren(mustersperrePfad(dir), { streng: true })); }
   catch (e) { throw new Error(`Automatische Musterbestellung angehalten: Sperrliste nicht lesbar. ${e.message}`); }
 }
 const offen = e => !e?.status;
