@@ -523,6 +523,9 @@ leise Zeile „Rohertrag unbekannt“.
   Menge ohne Einkaufsbetrag, Teillieferung mit dem Frachtzuschlag. Die Sätze selbst gehen nicht über
   `pruefeStammdaten()` und erscheinen in keiner anderen Antwort.
 - **Rechenregeln:** Bestandsabgänge von Bundles (`masspruefung.status: bestand`) zählen im Netto, nicht im Einkauf und Weg. Volle Rollenbreite: kürzeste Länge, bei der die andere Seite quer in die Rolle passt. Paket, Fracht und Mindermenge gelten je Lieferant, Ziel und Bestelltag.
+- **Maßformen:** Das Fertigmaß wird wie in der Bestellmail gelesen (`kettelZuschnitt`). Ø 200 cm und oval rechnen als umschließendes Rechteck, so verkauft und schneidet der Shop.
+- **Lieferweg:** Schon bestellte Ware ging den vermerkten Weg (`ueber`), sonst gilt die Bestellmail, dann der Vermerk, dann die Regel. Der Teillieferungs-Hinweis zählt alle Bestelltage des Lieferanten, auch an ein anderes Ziel.
+- **Lieber keine Zahl:** „Rohertrag unbekannt“ statt einer Zahl, sobald ein Kostenteil fehlt oder der Fall nicht sicher rechenbar ist (`unsicherheiten()`): Fertigmaß unlesbar, unbekannte Form, Menge passt nicht zum Maß oder Maßprüfung offen, Wunschmaß-Rechner (Maß nur in den Properties), Ketteln außerhalb unseres Kettlers, Ketteln rund oder oval, Einfassung ohne hinterlegte Kosten, bearbeitete Ware ohne Vermerk zum Weg. Übersteigen schon die bekannten Kosten den Verkauf, sagt das der Kopf. Eigene Fahrt im Liefergebiet bleibt eine Anmerkung, sie blockiert die Zahl nicht.
 - **Grenzen des Modells:** Paketmaße und Gewicht sind Annahmen (2 kg/m², Rollendurchmesser aus der langen Seite).
   Die EK-Liste ist teils abgeleitet und kann unter echten Rechnungen liegen. Schwellen stehen in `SCHWELLEN`.
   Scheitert die Schätzung, geht der Dialog ohne sie auf (`kostenWarnungFehlt`).

@@ -403,3 +403,13 @@ test('Shopifyarchivierung bleibt explizit am Auftragsmodell erhalten ohne Versan
   assert.equal(r.auftraege[0].erfuellt, 'UNFULFILLED');
   assert.equal(r.auftraege[1].archiviert, false);
 });
+
+test('Wunschmass-Rechner wird an der Position erkannt, Fertigmass und Rollenrechner nicht', () => {
+  const mit = attrs => zeile({ id: 51, sku: 'W-1', title: 'Testteppich', quantity: 314, attrs, custom: [['preis_pro_001_qm', 'true']] });
+  const m = aufbereiten({ orders: [bestellung(51, [
+    mit([{ key: 'Durchmesser', value: '200 cm' }, { key: 'Form', value: 'Rund' }]),
+    mit([{ key: 'Maße', value: 'Ø 200 cm' }, { key: 'Form', value: 'Rund' }]),
+    mit([{ key: 'Ihre Breite', value: '200' }, { key: 'Gewünschte Länge', value: '300' }]),
+  ])] }, { jetzt: new Date('2026-01-07T00:00:00Z') });
+  assert.deepEqual(m.auftraege[0].positionen.map(p => p.wunschmassRechner), [true, false, false]);
+});

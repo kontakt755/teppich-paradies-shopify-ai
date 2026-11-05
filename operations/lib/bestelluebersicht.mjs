@@ -481,6 +481,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         // Seit 14.10. schreibt der Konfigurator "_Zuschnitt aus Rolle" nicht mehr - dann gilt die
         // Rollenbreite am Produkt (custom.rollenbreite in m), damit der Kettelpuffer pruefbar bleibt.
         ausRolleCm: massanfertigung ? (item.eingaben?.ausRolleCm ?? produktRollenbreiteCm(item.produkt)) : null,
+        // Wunschmass-Rechner: Mass nur in diesen Properties, rund und oval nach echter Flaeche (resolve.mjs).
+        wunschmassRechner: !istM && leer(props['Maße']) && leer(props['Gewünschte Länge']) && ['Durchmesser', 'Seitenlänge', 'Breite'].some(k => !leer(props[k])),
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         // Netto nach allen Rabatten, fuer die Rohertrag-Schaetzung im Bestelldialog (bestellwarnung.mjs).

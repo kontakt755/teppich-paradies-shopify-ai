@@ -596,7 +596,7 @@ const ZIEL_JE_AUFTRAG = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE])
 /** Kettel-/Einfassungszeile aus der Kundenbestellung ("Einfassung: Gekettelt, umlaufend ..."). */
 const istEinfassung = z => /^Einfassung:/.test(z);
 /** Muss wirklich eingefasst werden: nicht "ohne Einfassung", "Zugeschnitten" oder "Fertig eingefasst" (Inhaber 03.11.2026, w-226). */
-const mussEingefasstWerden = z => istEinfassung(z) && !/ohne Einfassung|zugeschnitten|fertig eingefasst/i.test(z);
+export const mussEingefasstWerden = z => istEinfassung(z) && !/ohne Einfassung|zugeschnitten|fertig eingefasst/i.test(z);
 
 /** Kuerzere Seite des Fertigmasses in cm ("200 × 300 cm", "Ø 160 cm"); null, wenn keins da ist. */
 export function kuerzereSeiteCm(ausfuehrung = []) {

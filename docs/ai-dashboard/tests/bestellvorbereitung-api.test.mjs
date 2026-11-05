@@ -211,8 +211,27 @@ function mitKosten(dir) {
 }
 const inhaber = { id: 'chef', name: 'Testinhaber', rolle: 'inhaber' };
 
+/** Im Liefergebiet faellt kein Versand an: Die Vorlage braucht dann keine Versandtarife fuer eine ganze Rechnung. */
+function imLiefergebiet(dir) {
+  const orders = path.join(dir, 'bestelluebersicht', 'orders.json');
+  const d = JSON.parse(fs.readFileSync(orders, 'utf8'));
+  d.orders[0].shippingAddress.zip = '10000';
+  fs.writeFileSync(orders, JSON.stringify(d));
+}
+
+test('Warnung vor dem Bestellen: Ohne Versandtarife kommt keine Zahl, auch nicht ueber die API', async t => {
+  const { a, dir } = umgebung(t);
+  mitKosten(dir);
+  const w = (await vorbereiten(a, inhaber)).mails[0].kostenWarnungen[0];
+  assert.equal(w.rohertrag, null);
+  assert.match(w.kopf, /Rohertrag unbekannt/);
+  assert.equal(w.rechnung.some(z => z.ergebnis), false);
+  assert.ok(w.anmerkungen.some(x => /Versandtarife/.test(x)));
+});
+
 test('Warnung vor dem Bestellen: Inhaber bekommt die Rechnung, Fingerabdruck bleibt gleich, nicht im GET und nicht im Pruefen', async t => {
   const { a, dir } = umgebung(t);
+  imLiefergebiet(dir);
   const ohne = await vorbereiten(a, inhaber);
   mitKosten(dir);
   const r = await vorbereiten(a, inhaber);

@@ -4,7 +4,8 @@
  * bestellte Menge von der verkauften abweicht und ob eine Teillieferung den Frachtzuschlag erneut ausloest.
  *
  * Nur ein Hinweis: Hier wird nichts gesperrt, nichts bestellt und kein Preis geaendert. Alles ist eine
- * Schaetzung. Fehlt ein Einkaufspreis, heisst es "Rohertrag unbekannt", nie eine Zahl.
+ * Schaetzung. Fehlt ein Einkaufspreis oder ist ein Fall nicht sicher rechenbar (siehe unsicherheiten()),
+ * heisst es "Rohertrag unbekannt", nie eine Zahl.
  *
  * Keine Werte im Repository. Zur Laufzeit gelesen aus dem Privatordner:
  *   - ek-liste/ableitung-<datum>/ek-varianten.json  Einkaufspreise (die vorhandene EK-Ableitung)
@@ -20,8 +21,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { berechneVersand } from '../../docs/ai-dashboard/lib/versandkosten.mjs';
-import { positionKey } from './auftragsstatus.mjs';
-import { wirdGekettelt, kettelZuschnitt } from './kettelpuffer.mjs';
+import { positionKey, UEBER_WERTE } from './auftragsstatus.mjs';
+import { wirdGekettelt, kettelZuschnitt, KETTEL_PUFFER_CM } from './kettelpuffer.mjs';
+import { mussEingefasstWerden } from './lieferanten.mjs';
 
 /** Ab hier faellt eine Bestellung auf. Betriebliche Annahmen, keine Vorgaben des Inhabers. */
 export const SCHWELLEN = Object.freeze({
@@ -135,12 +137,67 @@ function rollenbreiteCm(p, ek) {
   return b ?? null;
 }
 
+/**
+ * Fertigmass der Position, gelesen wie in der Bestellmail (kettelZuschnitt): "180 × 250 cm", "Ø 200 cm".
+ * Rund und oval verkauft und schneidet der Shop als umschliessendes Rechteck, deshalb rechnet Ø 200 wie
+ * 200 × 200. null: keine Fertigmass-Zeile. { unlesbar: true }: Zeile da, aber nicht eindeutig.
+ */
 function fertigmass(p) {
-  const z = (p.ausfuehrung ?? []).find(t => t.startsWith('Fertigmaß:'));
-  const m = z?.match(/(\d+(?:[.,]\d+)?)\s*[×x]\s*(\d+(?:[.,]\d+)?)/);
-  if (!m) return null;
-  const [a, b] = [m[1], m[2]].map(s => Number(s.replace(',', '.')));
-  return a > 0 && b > 0 ? { breite: a, laenge: b } : null;
+  if (!(p.ausfuehrung ?? []).some(t => t.startsWith('Fertigmaß:'))) return null;
+  const z = kettelZuschnitt(p.ausfuehrung);
+  if (!z) return { unlesbar: true };
+  return { breite: z.breiteCm - KETTEL_PUFFER_CM, laenge: z.laengeCm - KETTEL_PUFFER_CM, rund: z.fertig.startsWith('Ø'), form: z.form };
+}
+
+/** Passt die Formangabe zum Mass? Anderes (Schablone, Fellform, Widerspruch) rechnen wir nicht. */
+function formRechenbar({ breite, laenge, rund, form }) {
+  if (!form) return true;
+  if (form === 'Rund') return breite === laenge;
+  return !rund && ['Rechteck', 'Oval'].includes(form);
+}
+
+/** Verkaufte Menge gegen Fertigmass. Abweichung: mehrere Stuecke oder Mindestflaeche, die Rechnung traefe nicht. */
+function mengePasstZumMass(p, masse) {
+  const verkauft = verkaufteFlaeche(p);
+  if (verkauft === null) return true;
+  const flaeche = masse.breite * masse.laenge / 1e4;
+  // Volle m² rundet der Shop auf; bei 0,01 m² kann eine Einheit im Zuschnitt stecken (resolve.mjs).
+  const erwartet = p.masspruefung?.einheit === 'm²' ? Math.ceil(flaeche - 1e-9) : flaeche;
+  return Math.abs(verkauft - erwartet) <= 0.02;
+}
+
+/**
+ * Was diese Position nicht sicher rechenbar macht. Jeder Grund fuehrt zu "Rohertrag unbekannt": Die
+ * Warnung schaetzt nur, was belegt ist, und rechnet nichts aus einer Vermutung schoen.
+ */
+function unsicherheiten({ p, ziel, wegBelegt }) {
+  const gruende = [];
+  const masse = fertigmass(p);
+  const gekettelt = wirdGekettelt(p.ausfuehrung);
+  // Dieser Rechner verkauft rund und oval nach echter Flaeche; das Mass steht nur in den Properties.
+  if (p.wunschmassRechner) gruende.push('Material aus dem Wunschmaß-Rechner, das Fertigmaß fehlt an der Position');
+  if (masse?.unlesbar) gruende.push('Zuschnitt, das Fertigmaß ist nicht lesbar');
+  else if (masse && !formRechenbar(masse)) gruende.push(`Form „${masse.form}“, dafür gibt es keine Rechenregel`);
+  else if (masse && !mengePasstZumMass(p, masse)) gruende.push('Menge, sie passt nicht zum Fertigmaß');
+  if (['abweichung', 'unlesbar', 'waise'].includes(p.masspruefung?.status)) gruende.push('Menge, die Maßprüfung ist offen');
+  if (gekettelt && ziel !== 'kettler') gruende.push('Ketteln außerhalb unseres Kettlers, Preis nicht hinterlegt');
+  // Die Kettlerpreise sind nur fuer gerade Kanten belegt.
+  if (gekettelt && ziel === 'kettler' && (masse?.rund || masse?.form === 'Rund' || masse?.form === 'Oval')) gruende.push('Ketteln rund oder oval, Preis nicht belegt');
+  if (!gekettelt && (p.ausfuehrung ?? []).some(mussEingefasstWerden)) gruende.push('Einfassung, Kosten nicht hinterlegt');
+  if (!wegBelegt) gruende.push('Lieferweg schon bearbeiteter Ware, er ist nicht vermerkt');
+  return gruende;
+}
+
+/**
+ * Wohin die Ware geht: Was schon bestellt ist, ging den vermerkten Weg. Sonst gilt die Bestellmail,
+ * dann der Vermerk, dann die Regel. Bearbeitete Ware ohne Vermerk ist nicht belegt: "ueber: null" heisst
+ * nur "nicht ueber den Kettler" (Laden oder Kunde), ein fehlender Schluessel nicht einmal das (beimKettler).
+ */
+function lieferweg({ mailZiel, stand, standard }) {
+  const vermerk = UEBER_WERTE.includes(stand?.ueber) ? stand.ueber : null;
+  if (vermerk && (stand.bestelltAm || !mailZiel)) return { ziel: vermerk, vermerkt: true, wegBelegt: true };
+  if (mailZiel) return { ziel: mailZiel, vermerkt: false, wegBelegt: true };
+  return { ziel: standard, vermerkt: false, wegBelegt: !stand?.status };
 }
 
 /**
@@ -162,7 +219,7 @@ function mengeUndEinkauf(p, ek, { ziel, ekAufschlag = 0 }) {
   const masse = fertigmass(p);
   const rolle = rollenbreiteCm(p, ek);
   const zuschnitt = ziel === 'kettler' && wirdGekettelt(p.ausfuehrung) ? kettelZuschnitt(p.ausfuehrung) : null;
-  const stueck = zuschnitt ?? (masse ? { breiteCm: masse.breite, laengeCm: masse.laenge } : null);
+  const stueck = zuschnitt ?? (masse && !masse.unlesbar ? { breiteCm: masse.breite, laengeCm: masse.laenge } : null);
   let flaeche = verkauft;
   let vollerollenbreite = null;
   if (stueck) {
@@ -299,7 +356,8 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
   const k = kosten.lieferanten[lieferant] ?? null;
   const s = sendung(eintraege);
   // Direkt zum Kunden geht es bei manchen Lieferanten nur auf der Tour im Nahbereich.
-  const uebersLager = ziel === 'laden' || (ziel === 'kunde' && k?.anKundenNurImLiefergebiet && !nah);
+  // Ein Vermerk "kunde" geht vor: Dann hat der Lieferant selbst verschickt.
+  const uebersLager = ziel === 'laden' || (ziel === 'kunde' && k?.anKundenNurImLiefergebiet && !nah && !eintraege.every(e => e.vermerkt));
   // Jede Lieferung fuer sich: Paket oder Fracht und die Mindermenge haengen an dem, was in ihr liegt.
   const zuschlaege = lieferungen.map(l => lieferzuschlag(k, sendung(l.eintraege), { ekOderNetto: bezugswert(l.eintraege), teiler }));
   const z = zuschlaege[lieferungen.findIndex(l => l.neu)] ?? zuschlaege.at(-1);
@@ -350,11 +408,15 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   const nah = inland && nahPlz.test(plz);
   const zielVon = new Map();
   for (const { lieferziel, positionen, teiler } of mailsMitPosition) for (const p of positionen) zielVon.set(p.lineItemId, { ziel: lieferziel, teiler: teiler ?? 1 });
-  const standardziel = p => (wirdGekettelt(p.ausfuehrung) && fertigmass(p) && absender?.kettelservice ? 'kettler' : 'kunde');
+  const stand = p => statusAlle[positionKey(auftrag.id, p.lineItemId)];
+  const standardziel = p => {
+    const masse = fertigmass(p);
+    return wirdGekettelt(p.ausfuehrung) && masse && !masse.unlesbar && absender?.kettelservice ? 'kettler' : 'kunde';
+  };
   const eintraege = ware.map(p => {
-    const ziel = zielVon.get(p.lineItemId)?.ziel ?? standardziel(p);
+    const { ziel, vermerkt, wegBelegt } = lieferweg({ mailZiel: zielVon.get(p.lineItemId)?.ziel, stand: stand(p), standard: standardziel(p) });
     const k = kosten.lieferanten[p.lieferant] ?? null;
-    return { p, ziel: ziel === 'baustelle' ? 'kunde' : ziel, teiler: zielVon.get(p.lineItemId)?.teiler ?? 1, m: mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k?.ekAufschlag ?? 0 }) };
+    return { p, ziel: ziel === 'baustelle' ? 'kunde' : ziel, vermerkt, wegBelegt, teiler: zielVon.get(p.lineItemId)?.teiler ?? 1, m: mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k?.ekAufschlag ?? 0 }) };
   });
 
   const zeilenNetto = (auftrag.positionen ?? []).map(p => p.nettoGesamt);
@@ -375,15 +437,16 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   }
   const hinweise = [];
   const posten = [];
-  const offen = [];
+  const offen = eintraege.flatMap(unsicherheiten);
+  const bestelltTag = e => stand(e.p)?.bestelltAm?.slice?.(0, 10) ?? null;
   let versandVeraltet = false;
   let eigeneZustellung = false;
   for (const [schluessel, liste] of gruppen) {
     const [lieferant, ziel] = schluessel.split('|');
-    const bestelltTag = e => statusAlle[positionKey(auftrag.id, e.p.lineItemId)]?.bestelltAm?.slice?.(0, 10) ?? null;
-    const tage = new Set(liste.map(bestelltTag).filter(Boolean));
+    // Auch was an ein anderes Ziel ging, war eine eigene Lieferung dieses Lieferanten.
+    const tage = new Set(eintraege.filter(e => e.p.lieferant === lieferant).map(bestelltTag).filter(Boolean));
     const inDerMail = liste.some(e => zielVon.has(e.p.lineItemId));
-    const offenJetzt = liste.some(e => zielVon.has(e.p.lineItemId) && !statusAlle[positionKey(auftrag.id, e.p.lineItemId)]?.bestelltAm);
+    const offenJetzt = liste.some(e => zielVon.has(e.p.lineItemId) && !stand(e.p)?.bestelltAm);
     // Eine Lieferung je Bestelltag; alles noch nicht Bestellte kommt zusammen.
     const lieferungen = [...new Set(liste.map(bestelltTag))].map(tag => ({ neu: tag === null, eintraege: liste.filter(e => bestelltTag(e) === tag) }));
     const anteilig = inDerMail ? Math.max(...liste.map(e => e.teiler)) : 1;
@@ -421,7 +484,9 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   const weg = summe(posten.filter(x => x.art === 'weg').map(x => x.betrag));
   const kettel = summe(posten.filter(x => x.art === 'kettel').map(x => x.betrag));
   const wegBekannt = !offen.length;
-  const rohertrag = netto !== null && ekBekannt ? r2(netto - ekSumme - weg - kettel) : null;
+  // Eine Zahl nur, wenn alles eingerechnet ist: Was fehlt, wuerde den Rohertrag zu gut aussehen lassen.
+  const rohertrag = netto !== null && ekBekannt && wegBekannt ? r2(netto - ekSumme - weg - kettel) : null;
+  const kostenUeberVerkauf = rohertrag === null && netto !== null && ekSumme + weg + kettel >= netto;
   const quote = rohertrag !== null && netto > 0 ? rohertrag / netto : null;
 
   // Warnung 2: bestellte Menge gegen verkaufte Menge.
@@ -483,6 +548,9 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     else if (rohertragVerschnitt !== null && rohertragVerschnitt < 0) { stufe = 'crit'; kopf = `Verlust möglich bei voller Rollenbreite: etwa ${euro(rohertragVerschnitt)}`; }
     else if (quoteVerschnitt !== null && quoteVerschnitt < SCHWELLEN.rohertragQuote) { stufe = 'warn'; kopf = `Rohertrag ${zahl}, bei voller Rollenbreite niedrig: etwa ${euro(rohertragVerschnitt)} (${Math.round(quoteVerschnitt * 100)} %)`; }
     else if (wegTeuer) { stufe = 'warn'; kopf = `Weg zum Kunden teuer: etwa ${euro(weg)} (${Math.round(wegAnteil * 100)} % vom Netto), Rohertrag ${zahl}`; }
+  } else if (kostenUeberVerkauf) {
+    stufe = 'warn';
+    kopf = 'Rohertrag unbekannt, schon die bekannten Kosten übersteigen den Verkauf';
   } else if (wegTeuer) {
     stufe = 'warn';
     kopf = `Rohertrag unbekannt, Weg zum Kunden teuer: etwa ${euro(weg)} (${Math.round(wegAnteil * 100)} % vom Netto)`;
@@ -519,7 +587,7 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     quote,
     wegAnteil,
     wegTeuer,
-    rohertragAuffaellig: rohertrag !== null && (rohertrag < 0 || quote < SCHWELLEN.rohertragQuote
+    rohertragAuffaellig: kostenUeberVerkauf || rohertrag !== null && (rohertrag < 0 || quote < SCHWELLEN.rohertragQuote
       || (rohertragVerschnitt !== null && (rohertragVerschnitt < 0 || quoteVerschnitt < SCHWELLEN.rohertragQuote))),
   };
 }

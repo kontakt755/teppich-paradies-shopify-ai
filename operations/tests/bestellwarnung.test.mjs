@@ -360,3 +360,158 @@ test('Mindermenge ohne Einkaufspreis: Verkaufspreis der Lieferung als Grenze, ni
   assert.equal(u.rechnung.find(z => /Fracht/.test(z.text)).betrag, -20);
 });
 
+
+// ------------------------------------------------------------------ Massformen (Review Runde 2)
+
+const rund = (id, extra = {}) => pos(id, { masspruefung: { einheit: '× 0,01 m²' }, ausfuehrung: ['Fertigmaß: Ø 200 cm (Rund)'], bestellmenge: { menge: 1, einheit: 'stueck' }, mengeBestellt: 400, nettoGesamt: 100, ...extra });
+const ek10 = { ek: EK([eZeile('ART-1', 10)]) };
+const unbekannt = w => {
+  assert.equal(w.rohertrag, null);
+  assert.match(w.kopf, /Rohertrag unbekannt/);
+  assert.equal(w.rechnung.some(z => z.ergebnis), false, 'keine Zahl als Ergebnis');
+};
+
+test('Rundmass: Durchmesser zaehlt als umschliessendes Quadrat, volle Rollenbreite wird genannt', () => {
+  const p = rund('l1');
+  const w = warne(auftrag([p]), inMail([p]), ek10);
+  // 100 Verkauf - 40 Einkauf (4 m²) - 20 Fracht - 10 Mindermenge
+  assert.equal(w.rohertrag, 30);
+  assert.equal(w.rechnung.find(z => z.text === 'Bleibt bei voller Rollenbreite').betrag, -10);
+  assert.equal(w.stufe, 'crit');
+  assert.match(w.kopf, /Verlust möglich bei voller Rollenbreite/);
+  assert.match(w.hinweise.find(h => h.art === 'menge').text, /sind es 8,00 m²/);
+});
+
+test('Rundmass beim Kettler: Verschnitt wird genannt, der Rohertrag bleibt unbekannt', () => {
+  const p = rund('l1', { ausfuehrung: ['Fertigmaß: Ø 200 cm (Rund)', 'Einfassung: Gekettelt, umlaufend 6,28 m'] });
+  const w = warne(auftrag([p], '10000'), inMail([p], 'kettler'), ek10);
+  unbekannt(w);
+  assert.ok(w.anmerkungen.some(a => /Ketteln rund oder oval/.test(a)));
+  assert.match(w.hinweise.find(h => h.art === 'menge').text, /Verschnitt möglich/);
+});
+
+test('Oval rechnet wie sein umschliessendes Rechteck', () => {
+  const p = pos('l1', { masspruefung: { einheit: '× 0,01 m²' }, ausfuehrung: ['Fertigmaß: 200 × 300 cm (Oval)'], bestellmenge: { menge: 1, einheit: 'stueck' }, mengeBestellt: 600, nettoGesamt: 300 });
+  const w = warne(auftrag([p]), inMail([p]), ek10);
+  // 300 - 60 - 20 - 10; bei voller Breite 200 × 400 cm: 20 € mehr Einkauf
+  assert.equal(w.rohertrag, 210);
+  assert.match(w.hinweise.find(h => h.art === 'menge').text, /sind es 8,00 m²/);
+});
+
+test('Nicht rechenbare Masse zeigen keine Zahl', () => {
+  for (const [name, zeile, menge] of [
+    ['Meter statt Zentimeter', 'Fertigmaß: 1,80 × 2,50 m', 450],
+    ['einzelne Zahl', 'Fertigmaß: 200 cm', 400],
+    ['Schablone', 'Fertigmaß: 200 × 300 cm (Schablone)', 600],
+    ['Rund mit zwei Seiten', 'Fertigmaß: 200 × 300 cm (Rund)', 600],
+    ['Ø als Rechteck', 'Fertigmaß: Ø 200 cm (Rechteck)', 400],
+  ]) {
+    const p = pos('l1', { masspruefung: { einheit: '× 0,01 m²' }, ausfuehrung: [zeile], bestellmenge: { menge: 1, einheit: 'stueck' }, mengeBestellt: menge, nettoGesamt: 500 });
+    const w = warne(auftrag([p]), inMail([p]), ek10);
+    assert.ok(w, name);
+    unbekannt(w);
+    assert.ok(w.anmerkungen.some(a => /Fertigmaß|Form/.test(a)), name);
+  }
+});
+
+test('Menge passt nicht zum Fertigmass oder Massproblem: keine Zahl', () => {
+  // Zwei Stuecke oder Mindestflaeche: Die Rechnung kennt nur ein Stueck.
+  const doppelt = massStueck('l1', '200 × 300', { mengeBestellt: 1200, nettoGesamt: 500 });
+  unbekannt(warne(auftrag([doppelt]), inMail([doppelt]), ek10));
+  const pruefung = massStueck('l1', '200 × 300', { mengeBestellt: 600, nettoGesamt: 500, masspruefung: { einheit: '× 0,01 m²', status: 'abweichung' } });
+  unbekannt(warne(auftrag([pruefung]), inMail([pruefung]), ek10));
+  // Volle m² rundet der Shop auf, das ist keine Abweichung.
+  const aufgerundet = massStueck('l1', '180 × 250', { masspruefung: { einheit: 'm²', status: 'ok' }, mengeBestellt: 5, nettoGesamt: 500 });
+  assert.notEqual(warne(auftrag([aufgerundet]), inMail([aufgerundet]), ek10).rohertrag, null);
+});
+
+test('Wunschmass-Rechner: Mass fehlt an der Position, keine Zahl aus der Kreisflaeche', () => {
+  const p = pos('l1', { masspruefung: { einheit: '× 0,01 m²', status: 'ok' }, wunschmassRechner: true, bestellmenge: { menge: 3.14, einheit: 'm²' }, mengeBestellt: 314, nettoGesamt: 500 });
+  const w = warne(auftrag([p]), inMail([p]), ek10);
+  unbekannt(w);
+  assert.ok(w.anmerkungen.some(a => /Wunschmaß-Rechner/.test(a)));
+});
+
+test('Einfassung ohne hinterlegte Kosten: Band zaehlt nicht als kostenlos', () => {
+  const p = massStueck('l1', '200 × 300', { mengeBestellt: 600, nettoGesamt: 500, ausfuehrung: ['Fertigmaß: 200 × 300 cm (Rechteck)', 'Einfassung: Juteband, umlaufend 10 m'] });
+  const w = warne(auftrag([p]), inMail([p]), ek10);
+  unbekannt(w);
+  assert.ok(w.anmerkungen.some(a => /Einfassung/.test(a)));
+  // Vom Hersteller eingefasst oder ohne Einfassung kostet nichts extra.
+  for (const zeile of ['Einfassung: Fertig eingefasst', 'Einfassung: ohne Einfassung', 'Einfassung: Zugeschnitten']) {
+    const q = massStueck('l1', '200 × 300', { mengeBestellt: 600, nettoGesamt: 500, ausfuehrung: ['Fertigmaß: 200 × 300 cm (Rechteck)', zeile] });
+    assert.notEqual(warne(auftrag([q]), inMail([q]), ek10)?.rohertrag, null, zeile);
+  }
+});
+
+test('Fehlende Lieferkosten: keine Zahl, aber bekannte Kosten ueber dem Verkauf fallen auf', () => {
+  const p = meter('l1', 20, { nettoGesamt: 500 });
+  const ohne = { lieferanten: {}, kettler: null };
+  const w = warne(auftrag([p]), inMail([p]), { kosten: ohne, ek: EK([eZeile('ART-1', 10)]) });
+  unbekannt(w);
+  assert.ok(w.anmerkungen.some(a => /Lieferkosten des Lieferanten/.test(a)));
+  const teuer = meter('l1', 20, { nettoGesamt: 100 });
+  const t = warne(auftrag([teuer]), inMail([teuer]), { kosten: ohne, ek: EK([eZeile('ART-1', 10)]) });
+  unbekannt(t);
+  assert.equal(t.stufe, 'warn');
+  assert.match(t.kopf, /bekannten Kosten übersteigen den Verkauf/);
+  const ma = warnungFuerMitarbeiter(t);
+  assert.match(ma.kopf, /mit Ahmet klären/);
+  assert.doesNotMatch(JSON.stringify(ma), VERBOTEN);
+});
+
+// ------------------------------------------------------------------ Gespeicherte Lieferwege (Review Runde 2)
+
+const gekettelt = (id, extra = {}) => massStueck(id, '200 × 300', { mengeBestellt: 600, nettoGesamt: 300, ausfuehrung: ['Fertigmaß: 200 × 300 cm (Rechteck)', 'Einfassung: Gekettelt, umlaufend 10 m'], ...extra });
+const schonBestellt = (id, extra = {}) => ({ [positionKey('o1', id)]: { status: 'bestellt', bestelltAm: '2098-12-20T10:00:00Z', ...extra } });
+
+test('Vermerk "kunde": beim Lieferanten gekettelte Ware kostet keinen Kettler, Nachbestellung loest Fracht erneut aus', () => {
+  const alt = gekettelt('l1');
+  const neu = meter('l2', 20, { nettoGesamt: 400 });
+  const w = warne(auftrag([alt, neu]), inMail([neu]), { ...ek10, statusAlle: schonBestellt('l1', { ueber: 'kunde' }) });
+  assert.equal(w.rechnung.some(z => z.text === 'Ketteln'), false);
+  assert.match(w.hinweise.find(h => h.art === 'teillieferung').text, /schon am 20\.12\..*erneut aus/);
+  // Der Preis fuers Ketteln beim Lieferanten steht nirgends.
+  unbekannt(w);
+  assert.ok(w.anmerkungen.some(a => /Ketteln außerhalb unseres Kettlers/.test(a)));
+});
+
+test('Vermerk "kettler": eigene Lieferung, auch wenn die Nachbestellung an den Kunden geht', () => {
+  const alt = gekettelt('l1');
+  const neu = meter('l2', 20, { nettoGesamt: 400 });
+  const w = warne(auftrag([alt, neu], '10000'), inMail([neu]), { ...ek10, statusAlle: schonBestellt('l1', { ueber: 'kettler' }) });
+  assert.equal(w.rechnung.find(z => z.text === 'Ketteln').betrag, -20);
+  assert.match(w.hinweise.find(h => h.art === 'teillieferung').text, /schon am 20\.12\./);
+  assert.notEqual(w.rohertrag, null);
+});
+
+test('Schon bearbeitete Ware ohne Vermerk: Weg nicht belegt, keine Zahl, Hinweis bleibt', () => {
+  const neu = meter('l2', 20, { nettoGesamt: 400 });
+  for (const eintrag of [schonBestellt('l1', { ueber: null }), schonBestellt('l1'), { [positionKey('o1', 'l1')]: { status: 'erledigt', erledigtNotiz: 'ohne Einkauf' } }]) {
+    const alt = meter('l1', 20, { nettoGesamt: 400 });
+    const w = warne(auftrag([alt, neu]), inMail([neu]), { ...ek10, statusAlle: eintrag });
+    unbekannt(w);
+    assert.ok(w.anmerkungen.some(a => /Lieferweg/.test(a)));
+    if (eintrag[positionKey('o1', 'l1')].bestelltAm) assert.ok(w.hinweise.some(h => h.art === 'teillieferung'));
+  }
+});
+
+test('Lieferziel in der Mail: Kettelt der Lieferant, zaehlt kein Kettler und keine Zahl', () => {
+  const p = gekettelt('l1');
+  const w = warne(auftrag([p]), inMail([p], 'kunde'), ek10);
+  assert.equal(w.rechnung.some(z => z.text === 'Ketteln'), false);
+  unbekannt(w);
+  // Ist die Position schon bestellt, gilt ihr Vermerk auch dann, wenn sie noch in der Mail steht.
+  const v = warne(auftrag([p], '10000'), inMail([p], 'kettler'), { ...ek10, statusAlle: schonBestellt('l1', { ueber: 'kunde' }) });
+  assert.equal(v.rechnung.some(z => z.text === 'Ketteln'), false);
+});
+
+test('Vermerk "kunde" bei Lieferant nur im Liefergebiet: kein Weiterversand dazugerechnet', () => {
+  const alt = meter('l1', 20, { lieferant: 'T', nettoGesamt: 300 });
+  const neu = meter('l2', 20, { lieferant: 'T', nettoGesamt: 300 });
+  const w = warne(auftrag([alt, neu]), inMail([neu]), { ...ek10, statusAlle: schonBestellt('l1', { ueber: 'kunde' }) });
+  // Die neue Position teilt die Gruppe, ihr Weg ist nicht vermerkt: Versand bleibt Teil der Rechnung.
+  assert.ok(w.anmerkungen.some(a => /Versandtarife/.test(a)));
+  const nurAlt = warne(auftrag([alt]), [], { ...ek10, statusAlle: schonBestellt('l1', { ueber: 'kunde' }) });
+  assert.equal((nurAlt?.anmerkungen ?? []).some(a => /Versandtarife/.test(a)), false);
+});
