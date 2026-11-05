@@ -1,0 +1,6 @@
+## 2026-11-05 · Warenkorbfenster zeigt beim ersten Artikel nicht mehr kurz „leer“
+
+- **Geaendert:** Einfass-Konfigurator, Rollenrechner, Längenzuschnitt und Paketauswahl holen nach dem Hinzufügen die frischen Warenkorb-Abschnitte (`assets/tp-warenkorb-abschnitte.js`) und öffnen das Fenster erst danach. Beim Konfigurator läuft der Abruf nach dem Zuschnitt-Abgleich, weil die Antwort von `/cart/add.js` das Attribut noch nicht kennt und sonst die Checkout-Sperre zeigen würde.
+- **Getestet:** Vorher auf dem echten Shop: 0,4 bis 0,6 s „leer“ bei 390 und 1280 px. Nachher im Arbeitstheme beim Konfigurator: 0 leere Messpunkte, Kasse frei, Fokus im Fenster, zweites Hinzufügen richtig. `npm run -s pruefen`, neu `qa/tests/tp-warenkorb-abschnitte.test.mjs`.
+- **Risiken/Annahmen:** Das Fenster öffnet durch den Abruf etwas später; der Knopf zeigt in der Zeit „Wird hinzugefügt …“. Schlägt der Abruf fehl oder dauert er über 2,5 s, lädt das Fenster wie bisher selbst nach. Die Meldung „Fokus geht verloren“ aus dem Abgleich ließ sich nicht nachstellen.
+- **Naechste Stufe:** Keine.

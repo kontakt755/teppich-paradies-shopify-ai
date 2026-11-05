@@ -641,6 +641,7 @@
   ></div>
 </carpet-package-selector-{{ package_selector_id }}>
 
+<script src="{{ 'tp-warenkorb-abschnitte.js' | asset_url }}" defer></script>
 <script>
   (function () {
     const component = document.querySelector('carpet-package-selector-{{ package_selector_id }}');
@@ -1090,13 +1091,15 @@
         // hoert auf cart:update und oeffnet bei auto-open). Header-Bubble
         // bekommt die Paketzahl. Ohne Drawer bleibt die Weiterleitung.
         const added = await response.json();
+        // Fenster erst mit fertigem Inhalt oeffnen, sonst steht dort kurz "leer".
+        const sections = window.TPWarenkorbAbschnitte ? await window.TPWarenkorbAbschnitte() : null;
         document.dispatchEvent(
           new CustomEvent('cart:update', {
             bubbles: true,
             detail: {
               resource: added,
               sourceId: component.id || 'paket-auswahl',
-              data: { itemCount: packages + (rail.valid ? rail.rods : 0), source: 'product-form-component' },
+              data: { itemCount: packages + (rail.valid ? rail.rods : 0), source: 'product-form-component', sections: sections || undefined },
             },
           })
         );
