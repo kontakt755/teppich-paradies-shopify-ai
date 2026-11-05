@@ -44,12 +44,25 @@
   assign tp_se_q = tp_se_begriff_roh | url_encode
   assign tp_se_alle_url = routes.search_url | append: '?q=' | append: tp_se_q | append: '&type=product,collection,page,article'
 
+  # Feste Suchthemen (snippets/tp-suche-thema): Greift eine Regel, steht ihre
+  # Kategorie oben, und die Produktliste zeigt nur die Produkte des Themas.
+  capture tp_se_thema
+    render 'tp-suche-thema', begriff: tp_se_begriff_roh
+  endcapture
+  assign tp_se_thema = tp_se_thema | strip | split: '|'
+  assign tp_se_thema_k = tp_se_thema[0] | split: ','
+  assign tp_se_thema_p = tp_se_thema[1] | split: ','
+  assign tp_se_shopify_produkte = predictive_search.resources.products
+  if tp_se_thema_p.size > 0
+    assign tp_se_shopify_produkte = '' | split: ','
+  endif
+
   # Produkte: Entwuerfe, Lieferantenentwuerfe und Serviceartikel bleiben
   # draussen, auch wenn Shopify sie liefern sollte. Zaehlung vorab, damit die
   # Ueberschrift und der Leerzustand stimmen.
   assign tp_se_p_max = 8
-  assign tp_se_p_anzahl = 0
-  for tp_se_p in predictive_search.resources.products
+  assign tp_se_p_anzahl = tp_se_thema_p.size
+  for tp_se_p in tp_se_shopify_produkte
     assign tp_se_p_tags = tp_se_p.tags | join: '|' | downcase
     if tp_se_p_tags contains 'nicht-veroeffentlichen' or tp_se_p_tags contains 'supplier-draft' or tp_se_p.type == 'Service'
       continue
@@ -93,6 +106,9 @@
   # Kollektionen der Treffer. Handles als Liste, damit nichts doppelt steht.
   # Leere Kollektionen entfallen (Angebote ausserhalb einer Aktion, Nr. 27).
   assign tp_se_k_aus = '|all|frontpage|'
+  for tp_se_th in tp_se_thema_k
+    assign tp_se_k_aus = tp_se_k_aus | append: tp_se_th | append: '|'
+  endfor
   assign tp_se_k_handles = '|'
   for tp_se_k in predictive_search.resources.collections
     if tp_se_k.all_products_count == 0
@@ -104,7 +120,7 @@
     endif
     assign tp_se_k_handles = tp_se_k_handles | append: tp_se_k.handle | append: '|'
   endfor
-  for tp_se_p in predictive_search.resources.products
+  for tp_se_p in tp_se_shopify_produkte
     assign tp_se_p_tags = tp_se_p.tags | join: '|' | downcase
     if tp_se_p_tags contains 'nicht-veroeffentlichen' or tp_se_p_tags contains 'supplier-draft' or tp_se_p.type == 'Service'
       continue
@@ -166,7 +182,7 @@
     assign tp_se_a_anzahl = 3
   endif
 
-  assign tp_se_gesamt = tp_se_p_anzahl | plus: tp_se_k_anzahl | plus: tp_se_s_anzahl | plus: tp_se_q_anzahl | plus: tp_se_a_anzahl | plus: tp_se_fest_anzahl
+  assign tp_se_gesamt = tp_se_p_anzahl | plus: tp_se_k_anzahl | plus: tp_se_s_anzahl | plus: tp_se_q_anzahl | plus: tp_se_a_anzahl | plus: tp_se_fest_anzahl | plus: tp_se_thema_k.size
 -%}
 
 <div class="tp-se" role="listbox" aria-label="Suchvorschläge" data-tp-begriff="{{ tp_se_begriff_roh | escape }}" data-tp-produkte="{{ tp_se_p_anzahl }}">
@@ -186,8 +202,17 @@
       <p class="tp-se__leer-hilfe">Wir helfen auch persönlich: <a href="tel:+4933015733720">03301 573 37 20</a></p>
     </div>
   {%- else -%}
-    {%- if tp_se_q_anzahl > 0 or tp_se_fest_anzahl > 0 -%}
+    {%- if tp_se_q_anzahl > 0 or tp_se_fest_anzahl > 0 or tp_se_thema_k.size > 0 -%}
       <div class="tp-se__block tp-se__block--vorschlaege" role="group" aria-label="Suchvorschläge">
+        {%- if tp_se_thema_k.size > 0 -%}
+          <h3 class="tp-se__h">{% if tp_se_thema_k.size > 1 %}Passende Kategorien{% else %}Passende Kategorie{% endif %}</h3>
+          {%- assign tp_se_thema_klasse = 'tp-se__liste tp-se__liste--chips predictive-search-results__list' -%}
+          <ul class="{{ tp_se_thema_klasse }}" role="presentation">
+            {%- for tp_se_th in tp_se_thema_k -%}
+              <li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__chip" data-tp-typ="thema" href="{{ collections[tp_se_th].url }}">{{ collections[tp_se_th].title | escape }}</a></li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
         {%- if tp_se_fest_anzahl > 0 -%}
           <h3 class="tp-se__h">Service</h3>
           <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
@@ -214,8 +239,13 @@
       <div class="tp-se__block tp-se__block--produkte" role="group" aria-label="Passende Produkte">
         <h3 class="tp-se__h">Produkte</h3>
         <ul class="tp-se__liste tp-se__liste--produkte predictive-search-results__list" role="presentation">
+          {%- for tp_se_th in tp_se_thema_p -%}
+            {%- assign tp_se_p = all_products[tp_se_th] -%}
+            {%- if tp_se_p == blank -%}{%- continue -%}{%- endif -%}
+            {%- render 'tp-suche-produktzeile', product: tp_se_p -%}
+          {%- endfor -%}
           {%- assign tp_se_p_ausgegeben = 0 -%}
-          {%- for tp_se_p in predictive_search.resources.products -%}
+          {%- for tp_se_p in tp_se_shopify_produkte -%}
             {%- assign tp_se_p_tags = tp_se_p.tags | join: '|' | downcase -%}
             {%- if tp_se_p_tags contains 'nicht-veroeffentlichen' or tp_se_p_tags contains 'supplier-draft' or tp_se_p.type == 'Service' -%}
               {%- continue -%}
@@ -224,49 +254,7 @@
             {%- if tp_se_p_ausgegeben > tp_se_p_max -%}
               {%- break -%}
             {%- endif -%}
-            {%- liquid
-              assign tp_se_farben = 0
-              for tp_se_opt in tp_se_p.options_with_values
-                if tp_se_opt.name == 'Farbe'
-                  assign tp_se_farben = tp_se_opt.values.size
-                endif
-              endfor
-
-              # Farbwort im Suchbegriff (snippets/tp-suchfarbe-variante): Link
-              # und Bild aus derselben Variante wie der Preis (snippets/price).
-              assign tp_se_url = tp_se_p.url
-              assign tp_se_bild = tp_se_p.featured_image
-              capture tp_se_suchfarbe
-                render 'tp-suchfarbe-variante', product: tp_se_p
-              endcapture
-              assign tp_se_suchteile = tp_se_suchfarbe | strip | split: '|'
-              if tp_se_suchteile.size == 2
-                assign tp_se_such_pos = tp_se_suchteile | first | plus: 0
-                assign tp_se_suchvariante = tp_se_p.variants[tp_se_such_pos]
-                if tp_se_suchvariante != blank
-                  assign tp_se_url = tp_se_suchvariante.url
-                  assign tp_se_bild = tp_se_suchvariante.featured_image
-                endif
-              endif
-            -%}
-            <li ref="resultsItems[]" role="presentation" class="tp-se__item">
-              <a role="option" class="tp-se__produkt" data-tp-typ="produkt" href="{{ tp_se_url }}">
-                <span class="tp-se__bild" aria-hidden="true">
-                  {%- if tp_se_bild -%}
-                    {{ tp_se_bild | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '80px', loading: 'lazy', class: 'tp-se__img', alt: '' }}
-                  {%- endif -%}
-                </span>
-                <span class="tp-se__text">
-                  <span class="tp-se__titel" data-tp-titel>{{ tp_se_p.title | escape }}</span>
-                  <span class="tp-se__sub">
-                    {{- tp_se_p.type | escape -}}
-                    {%- if tp_se_farben > 1 %} · {{ tp_se_farben }} Farben{% endif -%}
-                    {%- unless tp_se_p.available %} · Derzeit nicht lieferbar{% endunless -%}
-                  </span>
-                </span>
-                <span class="tp-se__preis">{% render 'price', product_resource: tp_se_p %}</span>
-              </a>
-            </li>
+            {%- render 'tp-suche-produktzeile', product: tp_se_p -%}
           {%- endfor -%}
         </ul>
       </div>

@@ -1,0 +1,57 @@
+{%- doc -%}
+  Drei Preisbeispiele fuer die gewaehlte Farbe eines Teppichs nach Mass, aufsteigend.
+  Gibt "Breite|Laenge|Cent|Streich-Cent|Einheiten" je Mass aus, durch ";" getrennt,
+  oder nichts.
+
+  Gerechnet und geprueft wird allein in snippets/tp-mass-beispiel: dieselben Grenzen,
+  dieselbe Formel und dasselbe Fail closed wie Konfigurator und Warenkorb. Masse, bei
+  denen der Mindestpreis die Menge anhebt, zaehlen dort nicht als Beispiel.
+
+  Vorrang haben 160 x 230, 200 x 300 und 300 x 400 cm. Passt eines nicht (Rollenbreite,
+  Gewicht, Mindestpreis), rueckt das naechstkleinere Mass nach.
+
+  @param {object} product - der Teppich nach Mass
+  @param {object} variant - die Farbe; nicht lieferbar = keine Ausgabe
+{%- enddoc -%}
+{%- liquid
+  assign tmpl_ergebnis = ''
+  if variant.available
+    capture tmpl_roh
+      render 'tp-mass-beispiel', product: product, variant: variant, groessen: '80x150,120x170,160x230,200x300,250x350,300x400', alle: true
+    endcapture
+    assign tmpl_zeilen = tmpl_roh | strip | split: ';'
+    assign tmpl_vorrang = '160|230,200|300,300|400'
+    assign tmpl_wahl = ','
+    assign tmpl_anzahl = 0
+    for tmpl_z in tmpl_zeilen
+      assign tmpl_t = tmpl_z | split: '|'
+      assign tmpl_key = tmpl_t[0] | append: '|' | append: tmpl_t[1]
+      if tmpl_vorrang contains tmpl_key
+        assign tmpl_wahl = tmpl_wahl | append: tmpl_key | append: ','
+        assign tmpl_anzahl = tmpl_anzahl | plus: 1
+      endif
+    endfor
+    for tmpl_z in tmpl_zeilen reversed
+      if tmpl_anzahl >= 3
+        break
+      endif
+      assign tmpl_t = tmpl_z | split: '|'
+      assign tmpl_key = tmpl_t[0] | append: '|' | append: tmpl_t[1]
+      unless tmpl_vorrang contains tmpl_key
+        assign tmpl_wahl = tmpl_wahl | append: tmpl_key | append: ','
+        assign tmpl_anzahl = tmpl_anzahl | plus: 1
+      endunless
+    endfor
+    for tmpl_z in tmpl_zeilen
+      assign tmpl_t = tmpl_z | split: '|'
+      assign tmpl_such = ',' | append: tmpl_t[0] | append: '|' | append: tmpl_t[1] | append: ','
+      if tmpl_wahl contains tmpl_such
+        if tmpl_ergebnis != blank
+          assign tmpl_ergebnis = tmpl_ergebnis | append: ';'
+        endif
+        assign tmpl_ergebnis = tmpl_ergebnis | append: tmpl_z
+      endif
+    endfor
+  endif
+-%}
+{{- tmpl_ergebnis -}}

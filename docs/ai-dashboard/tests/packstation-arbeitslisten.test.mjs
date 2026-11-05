@@ -279,7 +279,8 @@ test('Zu klaeren und Gepackt: ein Hauptknopf fuer das Naechstliegende, Rest unte
   const sonst = ansicht('tab=muster&umschlag=order6', [kunde(6, 'klaeren')]);
   assert.deepEqual(hauptknoepfe(sonst), ['#TEST6 – Bestellstand prüfen']);
   const gepackt = ansicht('tab=muster&umschlag=order2', [kunde(2, 'gepackt')]);
-  assert.deepEqual(hauptknoepfe(gepackt), ['Verschickt – Kunde informieren']);
+  assert.match(gepackt, /data-mp-eingeworfen="order2">Eingeworfen</);
+  assert.doesNotMatch(gepackt, /Verschickt – Kunde informieren/);
   assert.match(gepackt, /data-mp-grossbrief="order2">Großbrief vorbereiten/);
   assert.match(gepackt, /class="mp-mehr"[\s\S]*data-mp-wert="0">Zurücknehmen</);
 });
@@ -446,6 +447,22 @@ test('Erledigt zaehlt ab dem Versand, nicht ab der Bestellung; eine noch offene 
   assert.match(html, /verschickt oder erledigt am 03\.11\.2026/);
 });
 
+test('Gesperrte Muster im Hinweis: Shopname und Farbe statt zweimal derselbe Lieferantenname (05.11.)', () => {
+  const k = kunde(1, 'klaeren');
+  const gesperrt = { imShop: true };
+  const zeile = (lineItemId, titel, farbe, extra = {}) => ({ ...k.muster[0], lineItemId, stand: 'bestellt', bestellt: { titel, farbe }, vorher: { produktname: 'Teppichboden Linie 400cm', farbnummer: '1' }, ...extra });
+  k.muster = [
+    zeile('a', 'Muster Wovena Teppich nach Maß', 'Leinen (439)', { gesperrt }),
+    zeile('b', 'Muster Wovena Teppich nach Maß', 'Sandbeige (132)', { gesperrt }),
+    zeile('c', 'Muster Regalia Teppichboden', 'Creme (511)', { gesperrt }),
+    zeile('d', 'Muster Kalvea Teppichboden', 'Sand (1)'),
+  ];
+  const html = ansicht('tab=muster', [k]);
+  assert.match(html, /Diese 3 Muster kommen nicht – Wovena Teppich nach Maß: Leinen \(439\), Sandbeige \(132\); Regalia Teppichboden: Creme \(511\)\. Der Kunde erfährt das nicht von selbst, bitte informieren\. Die übrigen Muster können danach ohne diese raus\./);
+  const notiz = html.match(/<p class="notice crit">.*?<\/p>/)[0];
+  assert.doesNotMatch(notiz, /Linie 400cm/, 'kein Lieferantenname im Hinweis');
+});
+
 test('URL-Parameter mit Objektnamen zaehlt nicht als Umschlagfilter (Review 29.10.)', () => {
   for (const wert of ['constructor', '__proto__', 'toString']) {
     const html = ansicht(`tab=muster&mpumschlag=${wert}`, [kunde(1, 'warten')]);
@@ -460,7 +477,7 @@ test('Gesperrtes Muster: rot statt "wartet", Kunde informieren zuerst, ohne-Knop
   k.muster = [{ ...k.muster[0], stand: 'bestellt', gesperrt, bestelltAm: '2026-10-20T07:00:00Z' }, { ...k.muster[0], lineItemId: 'line1b', stand: 'bestellt' }];
   const html = ansicht('tab=muster', [k]);
   assert.match(html, /mp-gesperrt">1 Muster kommt nicht</, 'ohne Aufklappen');
-  assert.match(html, /class="notice crit">Dieses Muster kommt nicht: Test\./);
+  assert.match(html, /class="notice crit">Dieses Muster kommt nicht – Testmuster: Sand\./);
   assert.match(html, /class="btn btn-sm btn-primary" data-mp-informieren="order1">Kunde informieren…/);
   assert.match(html, /im Shop gesperrt – kommt nicht/);
   assert.equal((html.match(/data-mp-ohne="line1"/g) || []).length, 1, 'nur am gesperrten Muster');
@@ -524,4 +541,39 @@ test('Begleitblatt: in jedem Umschlag direkt unter dem Kopf und nie unter "Mehr"
   }
   const direkt = { ...kunde(10, 'warten'), direktversand: true };
   assert.doesNotMatch(ansicht('tab=muster&mpbereich=warten', [direkt]), /data-mp-blatt/);
+});
+
+test('Reiter Gepackt (#1937): Sammelaktion nur fuer heute Gepacktes, Altfaelle mit Zahl und aeltestem zuerst', () => {
+  const heute = new Date().toISOString();
+  const k = (nr, seit, zeit) => ({ ...kunde(nr, 'gepackt'), seit, gepackt: { zeit } });
+  const html = ansicht('tab=muster&mpbereich=gepackt', [
+    k(1, '2026-10-25T08:00:00Z', '2026-10-26T08:00:00Z'), k(2, '2026-10-20T08:00:00Z', '2026-10-28T08:00:00Z'),
+    k(3, '2026-11-01T08:00:00Z', heute), k(4, '2026-11-02T08:00:00Z', heute),
+  ]);
+  assert.match(html, /Heute gepackt · 2/);
+  assert.match(html, /data-mp-eingeworfen="order3 order4">Alle 2 eingeworfen</);
+  assert.match(html, /Altfälle · 2 Umschläge/);
+  const reihe = [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  assert.deepEqual(reihe, ['order3', 'order4', 'order2', 'order1'], 'Altfälle: älteste Bestellung zuerst');
+  assert.match(html, /data-mp-eingeworfen="order2">Eingeworfen</);
+  assert.match(html, /data-mp-frueher="order2"[^>]*>War schon früher raus…/);
+  assert.doesNotMatch(html, /data-mp-eingeworfen="[^"]*order1[^"]* /, 'kein Altfall in der Sammelaktion');
+  assert.match(html, /wirklich bei der Post/);
+});
+
+test('Reiter Gepackt (#1937): nach dem Klick zaehlt die Frist, Rueckgaengig statt Zuruecknehmen, Problem steht oben', () => {
+  const buchtAb = new Date(Date.now() + 300_000).toISOString();
+  const wartend = { ...kunde(1, 'gepackt'), eingeworfen: { zeit: new Date().toISOString(), buchtAb, von: 'Team' } };
+  const html = ansicht('tab=muster&mpbereich=gepackt', [wartend]);
+  assert.match(html, /Wird eingetragen · 1/);
+  assert.match(html, /<strong>Eingeworfen<\/strong> · wird um \d\d:\d\d eingetragen/);
+  assert.match(html, /data-mp-einwurf-zurueck="order1">Rückgängig</);
+  assert.doesNotMatch(html, /data-mp-eingeworfen=/);
+  assert.doesNotMatch(html, /data-mp-wert="0">Zurücknehmen/, 'Gepackt zurücknehmen liefe ins Leere');
+  state.route.params = new URLSearchParams('tab=muster&mpbereich=gepackt');
+  kunden.musterPacken = { verfuegbar: true, ausserhalb: [], kunden: [], einwurf: { probleme: [{ packSchluessel: 'order9', orderIds: ['order9'], bestellungen: ['#TEST9'], meldung: 'Versand nicht gebucht' }] } };
+  const fehler = viewKundenMusterPacken();
+  assert.match(fehler, /Eingeworfen, aber nicht sauber eingetragen/);
+  assert.match(fehler, /#TEST9<\/a>: Versand nicht gebucht/);
+  assert.match(fehler, /data-mp-einwurf-ok="order9">Verstanden/);
 });

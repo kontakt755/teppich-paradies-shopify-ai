@@ -53,6 +53,12 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
       subtotalPriceSet { shopMoney { amount currencyCode } }
       totalShippingPriceSet { shopMoney { amount currencyCode } }
       totalTaxSet { shopMoney { amount currencyCode } }
+      # Stand nach Bestellaenderungen und Erstattungen. total* bleibt der Wert bei Bestellung:
+      # eine nachtraeglich getauschte Position stand sonst doppelt im Umsatz (#1056).
+      currentTotalPriceSet { shopMoney { amount currencyCode } }
+      currentSubtotalPriceSet { shopMoney { amount currencyCode } }
+      currentShippingPriceSet { shopMoney { amount currencyCode } }
+      currentTotalTaxSet { shopMoney { amount currencyCode } }
       shippingLine { title code source }
       paymentGatewayNames
       customAttributes { key value }

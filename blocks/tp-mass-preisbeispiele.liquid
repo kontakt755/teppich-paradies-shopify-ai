@@ -1,0 +1,78 @@
+{% doc %}
+  Drei Preisbeispiele auf der Produktseite eines Teppichs nach Mass, schon im HTML und ohne
+  JavaScript lesbar. Werte aus snippets/tp-mass-preisliste, also dieselbe Rechnung wie
+  Konfigurator und Warenkorb, inklusive der Kante dieses Produkts. Der Kopfpreis
+  (snippets/tp-teppich-ab-preis, Entscheidung 2026-09-20) bleibt davon unberuehrt.
+  Jede Zeile oeffnet den Konfigurator mit genau diesem Mass (?variant=&breite=&laenge=).
+  Beim Farbwechsel ersetzt assets/tp-mass-kaufangaben.js den Inhalt durch die neue
+  Serverausgabe. Keine Beispiele = leerer, verborgener Block.
+{% enddoc %}
+{%- liquid
+  assign tp_mpb_p = closest.product
+  assign tp_mpb_v = tp_mpb_p.selected_or_first_available_variant
+  capture tp_mpb_liste
+    render 'tp-mass-preisliste', product: tp_mpb_p, variant: tp_mpb_v
+  endcapture
+  assign tp_mpb_liste = tp_mpb_liste | strip
+  capture tp_mpb_kante
+    render 'tp-mass-kante-wort', product: tp_mpb_p
+  endcapture
+  assign tp_mpb_kante = tp_mpb_kante | strip | split: '|'
+-%}
+<div class="tp-mpb" data-tp-mass-neu="{{ block.id }}"{% if tp_mpb_liste == blank %} hidden{% endif %} {{ block.shopify_attributes }}>
+  {%- if tp_mpb_liste != blank -%}
+    <p class="tp-mpb__titel">{{ block.settings.titel | escape }}{% if tp_mpb_kante[0] != blank %}, {{ tp_mpb_kante[0] | escape }}{% endif %}</p>
+    <table class="tp-mpb__tabelle">
+      <tbody>
+        {%- assign tp_mpb_zeilen = tp_mpb_liste | split: ';' -%}
+        {%- for tp_mpb_z in tp_mpb_zeilen -%}
+          {%- assign tp_mpb_t = tp_mpb_z | split: '|' -%}
+          {%- assign tp_mpb_cent = tp_mpb_t[2] | times: 1 -%}
+          {%- assign tp_mpb_alt = tp_mpb_t[3] | times: 1 -%}
+          <tr>
+            <th scope="row"><a href="{{ tp_mpb_p.url }}?variant={{ tp_mpb_v.id }}&amp;breite={{ tp_mpb_t[0] }}&amp;laenge={{ tp_mpb_t[1] }}">{{ tp_mpb_t[0] }}&nbsp;×&nbsp;{{ tp_mpb_t[1] }}&nbsp;cm</a></th>
+            <td data-tp-mass-cent="{{ tp_mpb_cent }}">{% if tp_mpb_alt > 0 %}<s><span class="visually-hidden">statt </span>{{ tp_mpb_alt | money_without_trailing_zeros }}</s> {% endif %}<strong>{{ tp_mpb_cent | money_without_trailing_zeros }}</strong></td>
+          </tr>
+        {%- endfor -%}
+      </tbody>
+    </table>
+    <p class="tp-mpb__hinweis">Inkl. {{ tp_mpb_kante[1] | escape }} und MwSt.{% if settings.tp_versand_frei_ab != blank %} Versand in Deutschland ab {{ settings.tp_versand_frei_ab }}&nbsp;€ Bestellwert kostenlos.{% endif %}</p>
+  {%- endif -%}
+</div>
+<script src="{{ 'tp-mass-kaufangaben.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  .tp-mpb { display: grid; gap: 4px; margin: 4px 0; }
+  .tp-mpb[hidden] { display: none; }
+  .tp-mpb__titel { margin: 0; font-size: var(--tp-fs-sm); font-weight: 600; }
+  .tp-mpb__tabelle { width: 100%; margin: 0; border-collapse: collapse; font-size: var(--tp-fs-sm); }
+  .tp-mpb__tabelle th, .tp-mpb__tabelle td { padding: 4px 0; border: 0; border-bottom: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12); background: none; font-weight: 400; text-align: left; }
+  .tp-mpb__tabelle td { text-align: right; white-space: nowrap; }
+  .tp-mpb__tabelle th a { color: var(--tp-ink, currentColor); text-decoration: underline; text-underline-offset: 2px; }
+  .tp-mpb__tabelle strong { font-weight: 600; }
+  .tp-mpb__hinweis { margin: 0; font-size: var(--tp-fs-xs); color: #595959; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Preisbeispiele",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Masse und Preise kommen aus den Produktdaten. Sichtbar nur auf Teppichen nach Maß."
+    },
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Preisbeispiele"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Preisbeispiele"
+    }
+  ]
+}
+{% endschema %}

@@ -10,6 +10,7 @@
   Telefon (bis 767 px): Das Feld oeffnet das Horizon-Suchfenster (Lupe im
   Header), das dieselben Ergebnisse mit derselben Optik zeigt - dort sind
   klebendes Eingabefeld, Bildschirmtastatur und Schliessen bereits geloest.
+  "Meinten Sie" kommt dort aus demselben Code (Ende dieser Datei).
 
   Anfragen: 150 ms entprellt, AbortController plus laufende Nummer, damit eine
   spaete Antwort ("vi") nie die aktuelle ("vinyl") ueberschreibt; Ergebnisse
@@ -33,6 +34,79 @@ const MIN_ZEICHEN = 2;
 const WARTEZEIT_MS = 150;
 const LADE_ANZEIGE_MS = 250;
 const CACHE_MAX = 50;
+
+/** Regeln aus den Einstellungen der Suchzeile (JSON-Text, eine Regel je Zeile). */
+function synonymeLesen(quelle) {
+  if (!quelle) return [];
+  let text = '';
+  try {
+    text = JSON.parse(quelle.textContent || '""');
+  } catch {
+    return [];
+  }
+  if (typeof text !== 'string') return [];
+  return text
+    .split('\n')
+    .map((zeile) => zeile.trim())
+    .filter((zeile) => zeile.includes(':'))
+    .map((zeile) => {
+      const [links, rechts] = zeile.split(':', 2);
+      return {
+        begriffe: links.split(',').map((s) => s.trim().toLocaleLowerCase('de')).filter(Boolean),
+        ziele: rechts.split(',').map((s) => s.trim()).filter(Boolean),
+      };
+    })
+    .filter((eintrag) => eintrag.begriffe.length && eintrag.ziele.length);
+}
+
+/**
+ * Ueberschrift und Liste "Meinten Sie" zum Begriff; leer, wenn keine Regel greift.
+ * Was die Treffer schon als passende Kategorie zeigen (snippets/tp-suche-thema),
+ * steht hier nicht noch einmal: "Teppichboden" ueber "Teppichboden".
+ */
+function meintenTeile(begriff, synonyme, treffer) {
+  const klein = begriff.toLocaleLowerCase('de');
+  const themen = Array.from(treffer?.querySelectorAll('[data-tp-typ="thema"]') ?? [], (a) =>
+    a.textContent.trim().toLocaleLowerCase('de')
+  );
+  const ziele = [];
+  if (klein.length >= MIN_ZEICHEN) {
+    synonyme.forEach((eintrag) => {
+      if (eintrag.begriffe.some((b) => klein.includes(b))) {
+        eintrag.ziele.forEach((z) => {
+          const zielKlein = z.toLocaleLowerCase('de');
+          if (ziele.includes(z) || zielKlein === klein || themen.some((t) => t.startsWith(zielKlein))) return;
+          ziele.push(z);
+        });
+      }
+    });
+  }
+  if (!ziele.length) return [];
+  const titel = document.createElement('h3');
+  titel.className = 'tp-se__h';
+  titel.textContent = 'Meinten Sie';
+  const liste = document.createElement('ul');
+  liste.className = 'tp-se__liste tp-se__liste--chips';
+  liste.setAttribute('role', 'presentation');
+  const suchUrl = (window.Theme && window.Theme.routes && window.Theme.routes.search_url) || '/search';
+  ziele.slice(0, 4).forEach((ziel) => {
+    const li = document.createElement('li');
+    li.className = 'tp-se__item';
+    li.setAttribute('role', 'presentation');
+    const a = document.createElement('a');
+    a.className = 'tp-se__chip';
+    a.setAttribute('role', 'option');
+    a.dataset.tpTyp = 'meinten';
+    const url = new URL(suchUrl, window.location.origin);
+    url.searchParams.set('q', ziel);
+    url.searchParams.set('type', 'product,collection,page');
+    a.href = url.toString();
+    a.textContent = ziel;
+    li.appendChild(a);
+    liste.appendChild(li);
+  });
+  return [titel, liste];
+}
 
 class TpSucheLeiste extends HTMLElement {
   connectedCallback() {
@@ -325,6 +399,7 @@ class TpSucheLeiste extends HTMLElement {
     if (this.leer) this.leer.hidden = true;
     this.#hervorheben(knoten, begriff);
     this.ergebnisse.replaceChildren(knoten);
+    this.#meintenAnzeigen(begriff);
     this.#optionenNummerieren();
     this.#oeffnen();
     const produkte = Number(knoten.getAttribute('data-tp-produkte') || 0);
@@ -465,72 +540,39 @@ class TpSucheLeiste extends HTMLElement {
   }
 
   #synonymeLesen() {
-    const quelle = this.querySelector('script[data-tp-synonyme]') ?? this.quelle?.querySelector('script[data-tp-synonyme]');
-    if (!quelle) return [];
-    let text = '';
-    try {
-      text = JSON.parse(quelle.textContent || '""');
-    } catch {
-      return [];
-    }
-    if (typeof text !== 'string') return [];
-    return text
-      .split('\n')
-      .map((zeile) => zeile.trim())
-      .filter((zeile) => zeile.includes(':'))
-      .map((zeile) => {
-        const [links, rechts] = zeile.split(':', 2);
-        return {
-          begriffe: links.split(',').map((s) => s.trim().toLocaleLowerCase('de')).filter(Boolean),
-          ziele: rechts.split(',').map((s) => s.trim()).filter(Boolean),
-        };
-      })
-      .filter((eintrag) => eintrag.begriffe.length && eintrag.ziele.length);
+    return synonymeLesen(this.querySelector('script[data-tp-synonyme]') ?? this.quelle?.querySelector('script[data-tp-synonyme]'));
   }
 
   #meintenAnzeigen(begriff) {
     if (!this.meinten) return;
-    const klein = begriff.toLocaleLowerCase('de');
-    const ziele = [];
-    if (klein.length >= MIN_ZEICHEN) {
-      this.synonyme.forEach((eintrag) => {
-        if (eintrag.begriffe.some((b) => klein.includes(b))) {
-          eintrag.ziele.forEach((z) => {
-            if (!ziele.includes(z) && z.toLocaleLowerCase('de') !== klein) ziele.push(z);
-          });
-        }
-      });
-    }
-    this.meinten.replaceChildren();
-    this.meinten.hidden = ziele.length === 0;
-    if (!ziele.length) return;
-    const titel = document.createElement('h3');
-    titel.className = 'tp-se__h';
-    titel.textContent = 'Meinten Sie';
-    const liste = document.createElement('ul');
-    liste.className = 'tp-se__liste tp-se__liste--chips';
-    liste.setAttribute('role', 'presentation');
-    const suchUrl = (window.Theme && window.Theme.routes && window.Theme.routes.search_url) || '/search';
-    ziele.slice(0, 4).forEach((ziel) => {
-      const li = document.createElement('li');
-      li.className = 'tp-se__item';
-      li.setAttribute('role', 'presentation');
-      const a = document.createElement('a');
-      a.className = 'tp-se__chip';
-      a.setAttribute('role', 'option');
-      a.dataset.tpTyp = 'meinten';
-      const url = new URL(suchUrl, window.location.origin);
-      url.searchParams.set('q', ziel);
-      url.searchParams.set('type', 'product,collection,page');
-      a.href = url.toString();
-      a.textContent = ziel;
-      li.appendChild(a);
-      liste.appendChild(li);
-    });
-    this.meinten.append(titel, liste);
+    const teile = meintenTeile(begriff, this.synonyme, this.ergebnisse);
+    this.meinten.replaceChildren(...teile);
+    this.meinten.hidden = teile.length === 0;
   }
 }
 
 if (!customElements.get('tp-suche-leiste')) {
   customElements.define('tp-suche-leiste', TpSucheLeiste);
 }
+
+/*
+  Horizon-Suchfenster (Telefon): Es tauscht seine Treffer per morph, ein eigener
+  Platz im Markup bliebe nicht erhalten. Deshalb meldet assets/predictive-search.js
+  jede frische Trefferliste, und "Meinten Sie" kommt als erstes Element in .tp-se.
+  Die Regeln stehen wie beim Dropdown nur in den Einstellungen der Suchzeile.
+*/
+document.addEventListener('tp:suchfenster:treffer', (event) => {
+  const { begriff, ziel } = event.detail;
+  const treffer = ziel.querySelector('.tp-se');
+  if (!treffer) return;
+  const teile = meintenTeile(begriff, synonymeLesen(document.querySelector('.tp-hs script[data-tp-synonyme]')), treffer);
+  if (!teile.length) return;
+  const kasten = document.createElement('div');
+  kasten.className = 'tp-hs__meinten tp-hs__meinten--fenster';
+  kasten.dataset.tpMeinten = '';
+  kasten.append(...teile);
+  // Pfeiltasten des Suchfensters (assets/predictive-search.js) wie bei den Treffern
+  kasten.querySelector('ul')?.classList.add('predictive-search-results__list');
+  kasten.querySelectorAll('li').forEach((li) => li.setAttribute('ref', 'resultsItems[]'));
+  treffer.prepend(kasten);
+});

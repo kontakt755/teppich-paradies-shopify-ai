@@ -11,6 +11,9 @@
  * - Warenkauf: nicht stornierte Bestellung, keine Testbestellung
  *   (operations/lib/testbestellung.mjs), mit mindestens einer Position, die
  *   kein Muster und kein Service ist und nach Rabatten mehr als 0 kostet.
+ *   Der Wert kommt aus der Position (priceAfterAllDiscountsBeforeTaxesSet, netto,
+ *   ohne entfernte Mengen), nicht aus totalPriceSet: eine nachtraeglich getauschte
+ *   Position zaehlt hier nicht doppelt (#1056, Test in muster-kauf.test.mjs).
  * - Kunde: Shopify-Kundenkennung und E-Mail (klein) gehoeren zusammen. Traegt
  *   die Musterbestellung nur eine Kennung und der Kauf nur die E-Mail (oder
  *   umgekehrt), verbindet sie eine dritte Bestellung mit beidem - oder die
@@ -60,7 +63,7 @@ export function position(li) {
   };
 }
 
-function positionen(order) {
+export function positionen(order) {
   const li = Array.isArray(order.lineItems) ? order.lineItems : order.lineItems?.nodes ?? [];
   return li.map(position);
 }
@@ -77,7 +80,7 @@ export function kundenSchluessel(order) {
 }
 
 /** Fasst Kennungen und E-Mails zu einem Kunden zusammen (Union-Find). */
-function kundenZuordnung(orders) {
+export function kundenZuordnung(orders) {
   const eltern = new Map();
   const wurzel = (k) => {
     let w = k;
@@ -97,7 +100,7 @@ function kundenZuordnung(orders) {
   };
 }
 
-function istWarenPosition(p) {
+export function istWarenPosition(p) {
   if (istMusterPosition(p)) return false;
   if (String(p.produktTyp ?? '').toLowerCase() === 'service') return false;
   return p.betrag > 0;

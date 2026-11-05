@@ -14,7 +14,7 @@ import { artikelzahlFuer } from '@theme/tp-cart-artikelzahl';
  */
 class CartDrawerComponent extends DialogComponent {
   /** @type {number} */
-  #summaryThreshold = 0.5;
+  #summaryThreshold = 0.7; // Leiste enthaelt nur noch Summe und Kaufknoepfe; erst sehr niedrige Bildschirme scrollen alles
 
   /** @type {AbortController | null} */
   #historyAbortController = null;
@@ -140,8 +140,10 @@ class CartDrawerComponent extends DialogComponent {
     const summary = dialog.querySelector('.cart-drawer__summary');
 
     if (!content || !summary) {
-      // Ensure the dialog doesn't get stuck in "unsticky" mode when summary disappears (e.g., empty cart).
-      dialog.setAttribute('cart-summary-sticky', 'false');
+      // Ohne Summe (leerer Warenkorb) nie "aus" setzen: Beim ersten Hinzufuegen
+      // oeffnet das Schubfach, bevor der Warenkorb da ist, und morph.js behaelt
+      // das Attribut. "Zur Kasse" lag dann ausserhalb des Bildschirms.
+      dialog.setAttribute('cart-summary-sticky', 'true');
       return;
     }
 

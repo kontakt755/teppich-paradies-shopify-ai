@@ -640,12 +640,15 @@
       }
     </script>
     {%- comment -%}
-      FAQPage nur auf der Vorlage einfassung: Dort zeigt der Block
-      "Beschreibung" den Produkttext samt "Haeufige Fragen" sichtbar an. Das
-      Snippet gibt nichts aus, wenn der Text keine solche FAQ enthaelt.
+      FAQPage auf den Vorlagen einfassung und wunschmass-fertig: Dort zeigt der
+      Block "Beschreibung" den Produkttext samt "Haeufige Fragen" sichtbar an,
+      der Block tp-mass-faq die drei Kauffragen. Beide landen in EINEM Knoten;
+      die Kauffragen kommen aus demselben Snippet wie der sichtbare Text. Das
+      Snippet gibt nichts aus, wenn es keine einzige Frage gibt.
     {%- endcomment -%}
-    {%- if product_resource.template_suffix == 'einfassung' -%}
-      {%- render 'tp-faq-beschreibung-structured-data', html: product_resource.description, seiten_url: tp_sd_product_url -%}
+    {%- if product_resource.template_suffix == 'einfassung' or product_resource.template_suffix == 'wunschmass-fertig' -%}
+      {%- capture tp_sd_faq_vorab -%}{%- render 'tp-mass-faq', product: product_resource, variant: product_resource.selected_or_first_available_variant, ausgabe: 'json' -%}{%- endcapture -%}
+      {%- render 'tp-faq-beschreibung-structured-data', html: product_resource.description, seiten_url: tp_sd_product_url, vorab: tp_sd_faq_vorab -%}
     {%- endif -%}
   {%- endif -%}
 {%- elsif tp_sd_is_wunschmass_legacy -%}

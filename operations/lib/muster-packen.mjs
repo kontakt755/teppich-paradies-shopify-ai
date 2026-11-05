@@ -10,6 +10,11 @@
  * Daneben (gleiche Datei): `haken` je Bestellposition (Muster ueberklebt, liegt im Umschlag),
  * `klaeren` je Umschlag (unvollstaendig: welche Positionen fehlen, kurze Notiz) und
  * `gedruckt` je Umschlag (Aufkleber und Adresse gedruckt: Umschlag vorbereitet, wartet auf Muster).
+ *
+ * `eingeworfen` je Umschlag: jemand hat bestaetigt, dass der Umschlag wirklich bei der Post ist. Bis
+ * `buchtAb` ist das nur dieser Vermerk und laesst sich spurlos zuruecknehmen; danach bucht der Dienst den
+ * Versand (scripts/dashboard-api.mjs, einwurfBuchen). Steht `problem` darin, ging das schief und ein
+ * Mensch muss nachsehen.
  */
 
 import fs from 'node:fs';
@@ -29,16 +34,16 @@ export function leseStand(datei) {
   try {
     inhalt = fs.readFileSync(datei, 'utf8');
   } catch (e) {
-    if (e?.code === 'ENOENT') return { gepackt: {}, haken: {}, klaeren: {}, gedruckt: {} };
+    if (e?.code === 'ENOENT') return { gepackt: {}, haken: {}, klaeren: {}, gedruckt: {}, eingeworfen: {} };
     throw new Error(`${path.basename(datei)} ist nicht lesbar (${e?.code || e?.message}) – bitte aus der Sicherung holen`);
   }
-  if (!inhalt.trim()) return { gepackt: {}, haken: {}, klaeren: {}, gedruckt: {} };
+  if (!inhalt.trim()) return { gepackt: {}, haken: {}, klaeren: {}, gedruckt: {}, eingeworfen: {} };
   let roh;
   try { roh = JSON.parse(inhalt); } catch {
     throw new Error(`${path.basename(datei)} ist beschädigt – bitte aus der Sicherung holen`);
   }
   const objekt = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
-  return { gepackt: objekt(roh?.eintraege), haken: objekt(roh?.haken), klaeren: objekt(roh?.klaeren), gedruckt: objekt(roh?.gedruckt) };
+  return { gepackt: objekt(roh?.eintraege), haken: objekt(roh?.haken), klaeren: objekt(roh?.klaeren), gedruckt: objekt(roh?.gedruckt), eingeworfen: objekt(roh?.eingeworfen) };
 }
 
 /** Nur die gepackten Umschlaege (fruehere Form der Datei). */
@@ -49,7 +54,7 @@ export function leseAlle(datei) {
 function schreibStand(datei, stand) {
   fs.mkdirSync(path.dirname(datei), { recursive: true });
   const tmp = `${datei}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ aktualisiertAm: new Date().toISOString(), eintraege: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren, gedruckt: stand.gedruckt || {} }, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({ aktualisiertAm: new Date().toISOString(), eintraege: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren, gedruckt: stand.gedruckt || {}, eingeworfen: stand.eingeworfen || {} }, null, 2));
   fs.renameSync(tmp, datei);
 }
 
@@ -77,6 +82,43 @@ export function setzeGedruckt(datei, packSchluessel, { gedruckt = true, von = nu
   else delete stand.gedruckt[key];
   schreibStand(datei, stand);
   return { packSchluessel: key, gedruckt: stand.gedruckt[key] || null };
+}
+
+/**
+ * "Eingeworfen" vermerken. Ein zweiter Klick verschiebt die Frist nicht; ein Vermerk mit Problem wird
+ * ersetzt, denn der neue Klick ist der naechste Versuch.
+ * @param {{packSchluessel: string, orderIds: string[], bestellungen: string[]}[]} umschlaege
+ */
+export function merkeEingeworfen(datei, umschlaege, { von = null, jetzt = new Date(), buchtAb } = {}) {
+  const stand = leseStand(datei);
+  for (const u of umschlaege) {
+    if (stand.eingeworfen[u.packSchluessel] && !stand.eingeworfen[u.packSchluessel].problem) continue;
+    stand.eingeworfen[u.packSchluessel] = { zeit: jetzt.toISOString(), von: von || null, buchtAb: buchtAb.toISOString(), orderIds: u.orderIds, bestellungen: u.bestellungen };
+  }
+  schreibStand(datei, stand);
+  return stand.eingeworfen;
+}
+
+/** Vermerke entfernen; gibt zurueck, welche es noch gab. Was fehlt, ist schon gebucht. */
+export function entferneEingeworfen(datei, schluessel) {
+  const stand = leseStand(datei);
+  const entfernt = (schluessel || []).filter(pk => stand.eingeworfen[pk]);
+  if (!entfernt.length) return [];
+  for (const pk of entfernt) delete stand.eingeworfen[pk];
+  schreibStand(datei, stand);
+  return entfernt;
+}
+
+/**
+ * Die Buchung nach der Frist ging schief: bleibt stehen, bis jemand "Verstanden" drueckt oder neu klickt.
+ * Hat jemand waehrend der Buchung neu geklickt, gilt der neue Vermerk: Er meldet sein Ergebnis selbst.
+ */
+export function vermerkeEinwurfProblem(datei, packSchluessel, eintrag, { meldung, jetzt = new Date() } = {}) {
+  const stand = leseStand(datei);
+  const aktuell = stand.eingeworfen[packSchluessel];
+  if (aktuell && !aktuell.problem) return;
+  stand.eingeworfen[packSchluessel] = { ...eintrag, problem: String(meldung || 'Ergebnis unbekannt').slice(0, 500), problemAm: jetzt.toISOString() };
+  schreibStand(datei, stand);
 }
 
 /** Haken je Bestellposition setzen oder entfernen. */

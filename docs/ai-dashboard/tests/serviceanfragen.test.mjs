@@ -148,26 +148,51 @@ test('Theme: jedes Feld und jedes Anliegen des Anfrageformulars kennt der Mail-L
   }
 });
 
-test('Theme: Herkunft-Feld liest nur die Adresse, speichert nichts, schickt keine Klick-ID', () => {
-  const quelle = fs.readFileSync(path.join(REPO, 'sections/tp-start-kontakt.liquid'), 'utf8');
-  assert.match(quelle, /<input type="hidden" name="contact\[Herkunft\]" value="" data-tp-herkunft>/);
-  const start = quelle.indexOf('Herkunft fuer die Anfrage-Mail');
-  const code = quelle.slice(quelle.indexOf('(function', start), quelle.indexOf('})();', start) + 5);
-  assert.doesNotMatch(code, /Storage|cookie/i);
-  const lauf = suche => {
-    const feld = { value: '' };
-    const document = { querySelectorAll: () => [feld] };
-    new Function('window', 'document', 'URLSearchParams', code)({ location: { search: suche } }, document, URLSearchParams);
-    return feld.value;
+test('Theme: Herkunft-Feld merkt nur den Text, nur mit Einwilligung, und schickt keine Klick-ID', () => {
+  const formular = fs.readFileSync(path.join(REPO, 'sections/tp-start-kontakt.liquid'), 'utf8');
+  assert.match(formular, /<input type="hidden" name="contact\[Herkunft\]" value="" data-tp-herkunft>/);
+  const snippet = fs.readFileSync(path.join(REPO, 'snippets/tp-herkunft.liquid'), 'utf8');
+  const code = /<script>([\s\S]*?)<\/script>/.exec(snippet)[1];
+  assert.doesNotMatch(code, /cookie|localStorage/i);
+  const lauf = (suche, { referrer = '', erlaubt = false, speicher = new Map() } = {}) => {
+    const feld = { value: '', disabled: true };
+    const document = { referrer, querySelectorAll: () => [feld], addEventListener() {} };
+    const window = {
+      location: { search: suche, origin: 'https://shop.example' },
+      Shopify: { customerPrivacy: { analyticsProcessingAllowed: () => erlaubt } },
+    };
+    const sessionStorage = {
+      getItem: (k) => (speicher.has(k) ? speicher.get(k) : null),
+      setItem: (k, v) => speicher.set(k, v),
+      removeItem: (k) => speicher.delete(k),
+    };
+    new Function('window', 'document', 'URLSearchParams', 'sessionStorage', code)(window, document, URLSearchParams, sessionStorage);
+    return { wert: feld.value, feld, speicher };
   };
-  assert.equal(lauf('?gclid=abc123&utm_campaign=Treppen'), 'Google-Anzeige · Kampagne Treppen');
-  assert.equal(lauf('?utm_source=facebook&utm_medium=paid_social'), 'Anzeige (facebook)');
-  assert.equal(lauf('?fbclid=xyz'), 'Link von Facebook/Instagram');
-  assert.equal(lauf('?utm_source=newsletter'), 'Link (newsletter)');
-  assert.equal(lauf(''), '');
-  assert.doesNotMatch(lauf('?gclid=geheim-123'), /geheim/);
+  assert.equal(lauf('?gclid=abc123&utm_campaign=Treppen').wert, 'Google-Anzeige · Kampagne Treppen');
+  assert.equal(lauf('?utm_source=facebook&utm_medium=paid_social').wert, 'Anzeige (facebook)');
+  assert.equal(lauf('?fbclid=xyz').wert, 'Link von Facebook/Instagram');
+  assert.equal(lauf('?utm_source=newsletter').wert, 'Link (newsletter)');
+  assert.equal(lauf('').wert, '');
+  assert.equal(lauf('').feld.disabled, true, 'ohne Kennung bleibt ein abgeschaltetes Feld aus der Mail');
+  assert.equal(lauf('?gclid=x').feld.disabled, false);
+  assert.doesNotMatch(lauf('?gclid=geheim-123').wert, /geheim/);
   for (const w of ['Google-Anzeige · Kampagne Treppen', 'Anzeige (facebook)']) assert.equal(istAnzeige(w), true);
-  assert.equal(istAnzeige(lauf('?fbclid=xyz')), false);
+  assert.equal(istAnzeige(lauf('?fbclid=xyz').wert), false);
+
+  // Ohne Einwilligung bleibt das Geraet leer.
+  assert.equal(lauf('?gclid=abc').speicher.size, 0);
+  // Mit Einwilligung: nur der fertige Text, nie die Klick-ID; die naechste Seite liest ihn.
+  const mit = lauf('?gclid=geheim-123&utm_campaign=Vinyl', { erlaubt: true });
+  assert.deepEqual([...mit.speicher.values()], ['Google-Anzeige · Kampagne Vinyl']);
+  assert.equal(lauf('', { erlaubt: true, speicher: mit.speicher }).wert, 'Google-Anzeige · Kampagne Vinyl');
+  // Spaeteres Nein loescht den Eintrag.
+  assert.equal(lauf('', { erlaubt: false, speicher: new Map(mit.speicher) }).speicher.size, 0);
+  // Ohne Einwilligung: die Vorseite im selben Shop traegt einen Wechsel weit, fremde Seiten nicht.
+  assert.equal(lauf('', { referrer: 'https://shop.example/pages/a?gclid=x&utm_campaign=Vinyl#tp-anfrage' }).wert, 'Google-Anzeige · Kampagne Vinyl');
+  assert.equal(lauf('', { referrer: 'https://fremd.example/?gclid=x' }).wert, '');
+  assert.equal(lauf('', { referrer: 'https://shop.example/pages/a' }).wert, '');
+  assert.equal(lauf('', { referrer: 'https://shop.example/pages/a?gclid=x' }).speicher.size, 0);
 });
 
 test('Leistung: Betreff der Serviceseite gewinnt, sonst das Anliegen', () => {

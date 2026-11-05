@@ -158,6 +158,11 @@ gebraeuchlich), Erfassen.
   14 Tagen (Ware 30) wieder.
 - **Belegt fertig** = in Shopify versendet, storniert, archiviert oder voll erstattet, oder im Dashboard
   abgeschlossen; fällt ohne Klick aus den Listen.
+- **Eingeworfen** (#1937) = Klick unter „Gepackt“: der Umschlag ist wirklich bei der Post. Gepackt allein zählt
+  nicht. Nach 5 Minuten wird eingetragen („An Kunden raus“, Shopify, Versandmail); bis dahin **Rückgängig**.
+  **Alle n eingeworfen** gilt nur für heute Gepacktes.
+- **Altfälle** (#1937) = vor heute gepackt und nie eingetragen, älteste Bestellung zuerst. Nichts wird von selbst
+  gebucht. **War schon früher raus…** = Versanddialog mit ausgeschalteter Versandmail.
 - **Gepackt, nicht verschickt** (#1709) = Umschlag in der Packstation gepackt, Versand aber nicht
   eingetragen; steht nach 3 Tagen in der Aufräumliste.
 - **Ist verschickt…** = Versanddialog „An Kunden raus“ für diesen Umschlag, Versandmail vorab aus.
@@ -180,8 +185,11 @@ gebraeuchlich), Erfassen.
 - **Bestellmail öffnen (Lieferant)** / **Ware ist bestellt…** = die zwei Knoepfe im Schritt „Ware beim
   Lieferanten bestellen“ der Kundenakte; der zweite fragt nach, ob wirklich alles bestellt ist.
 - **Lieferant nicht zugeordnet** = statt „UNGEKLAERT“; ohne Stammdaten-Namen „Lieferant A“ usw.
-- **Inhaberzeile** = eine Zeile unter den Warenbestellungen, nur Inhaber: „Shop in Ordnung · 7 Tage … €
-  Umsatz · N Entscheidungen offen · nächste Frist TT.MM.“; der Umsatz klappt die Kennzahlen auf.
+- **Warenumsatz** = was Warenkunden bezahlt haben, brutto, ohne Versand und Muster, nach Bestelländerungen.
+  Steht ganz oben auf der Shop-Übersicht, nur Inhaber. **Umsatz mit Versand** ist die Zahl unter
+  „Weitere Kennzahlen“. **Warenkunde** = wer im Zeitraum mindestens eine bezahlte Ware gekauft hat, nur Service oder Muster zählen nicht.
+- **Inhaberzeile** = eine Zeile unter den Warenbestellungen, nur Inhaber: „Shop in Ordnung · Weitere
+  Kennzahlen · N Entscheidungen offen · nächste Frist TT.MM.“.
 - **Ideen & Fragen öffnen ↗** = Link unter „Entscheidungen“; die Werkbank-Fragen bleiben dort.
 - **nicht eingelegt · laut Bestand da – im Regal suchen** = Packstation: als fehlend gemeldet, laut
   Auftragsfluss aber angekommen (vorher „fehlt · angekommen“).

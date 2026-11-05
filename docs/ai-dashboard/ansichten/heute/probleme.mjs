@@ -4,10 +4,11 @@
  * Meldungen - Mac-Dienst gestoert, Speicher fast voll, Sicherung fehlgeschlagen, aus der
  * Bestellung entfernte Positionen, ueberschrittener Liefertermin - sah dort niemand.
  *
- * Rot heisst: ein Problem, das heute jemand loesen muss (Skill control-center, Farbe). Das gehoert
- * nach oben zu dem, was Geld oder Aerger bedeutet. Gelbes und Normales bleibt in den
- * Alltagssichten, damit die Warenkunden direkt darunter zuerst kommen. Ohne rotes To-do steht
- * hier nichts - ein leerer Kasten waere Rauschen.
+ * Rot heisst: ein Problem, das heute jemand loesen muss (Skill control-center, Farbe). Es steht seit
+ * 05.11. direkt unter den Warenbestellungen: Am Handy begann der Warenblock sonst erst unter dem
+ * ersten Bildschirm, und die Inhaberentscheidung lautet "zahlende Warenkunden zuerst" (22.10.).
+ * Gelbes und Normales bleibt in den Alltagssichten. Ohne rotes To-do steht hier nichts - ein
+ * leerer Kasten waere Rauschen.
  *
  * Nicht hier: Laden-/Treppenanfragen, Angebote aus Kundenfaellen und Team-Aufgaben - auch wenn
  * sie rot sind. Der Inhaber hat sie am 22.10. aus dem taeglichen Fokus in "Weitere Bereiche"
@@ -23,7 +24,7 @@
  */
 import { esc } from '../../kern/helfer.mjs';
 
-/** Mehr als drei rote Zeilen schieben die Warenkunden aus dem Blick - der Rest klappt auf. */
+/** Mehr als drei rote Zeilen machen den Block unuebersichtlich - der Rest klappt auf. */
 export const PROBLEME_SICHTBAR = 3;
 
 /** Arten aus dem Nebenbereich "Laden, Aufgaben" (Inhaber 22.10.) - bleiben hinter "Weitere Bereiche". */

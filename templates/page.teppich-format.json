@@ -11,7 +11,13 @@
   "sections": {
     "main": {
       "type": "tp-format-seite",
-      "settings": {}
+      "settings": {
+        "beispiele": [
+          "solvana-teppich-nach-mass",
+          "chalet-teppich-nach-mass",
+          "sisano-sisalteppich-boucle-nach-mass"
+        ]
+      }
     }
   },
   "order": [

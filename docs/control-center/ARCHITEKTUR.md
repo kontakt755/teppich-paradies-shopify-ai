@@ -659,7 +659,7 @@ weiterhin vorhandene Hintergrundzahlen; sie bilden nicht die Reihenfolge der Sta
 | Kachel | Quelle | Inhalt |
 |---|---|---|
 | „Einkauf – heute zu tun" | `einkaufBestellungen()` + `einkaufAuftragsstatus()` | Positionen zu bestellen, offene Musterbestellungen, Aufträge mit Problem (Ampel rot: Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID), Positionen je Schritt des Auftragsflusses |
-| „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz, Durchschnittsbon der letzten 7 und 30 Tage |
+| „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz mit Versand, Durchschnittsbon der letzten 7 und 30 Tage; seit 05.11. zusätzlich `ware`, `muster` und `vorwoche` für die Warenkennzahl |
 | „Laden" (seit 2026-10-11) | `/api/laden/zahlen` → Auftrags-App `?ansicht=zahlen` | offene Beratungen (davon neu), fällige Wiedervorlagen, Angebote offen (davon nachfassen), Fälle aus dem Shop (7 Tage), gewonnen/verloren (30 Tage); nur wenn > 0 eine Zeile „Spam-Verdacht“ (seit 2026-10-12) mit Link „Spam prüfen“ direkt in den Filter; Link „Laden-Ansicht öffnen" |
 | „Montage" (seit 2026-10-12) | dieselbe Antwort, Objekt `montage` | Einsätze heute/morgen, offen von gestern, Meldungen offen, Anträge offen, neue Aufträge, neue Rückmeldungen – jede Zahl optional; Link „Montage-App öffnen" |
 
@@ -1475,13 +1475,14 @@ Styles `stile/serviceanfragen.css`.
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
   Zeile zeigt „aus dem Postfach übernommen“. Ein Test prüft, dass jeder Betreff aus `templates/` in
   der Liste steht oder bewusst ausgenommen ist – eine neue Serviceseite fällt so auf.
-- **Kampagnenfeld:** Das Anfrageformular (`sections/tp-start-kontakt.liquid`) füllt das versteckte
-  Feld `contact[Herkunft]` aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
+- **Kampagnenfeld:** `snippets/tp-herkunft.liquid` (im Layout) füllt das versteckte Feld
+  `contact[Herkunft]` der Formulare auf den Verlegeseiten und der Kontaktseite aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
   „Microsoft-Anzeige“ (msclkid), „Anzeige (<utm_source>)“ bei bezahltem `utm_medium`, sonst „Link
-  (<utm_source>)“ bzw. „Link von Facebook/Instagram“, jeweils mit „· Kampagne <utm_campaign>“. Nichts
-  wird auf dem Gerät gespeichert, Klick-IDs gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle
-  „Werbung“. Grenze: erfasst ist nur, wer auf der Seite mit der Anzeigenadresse anfragt; wer erst
-  weiterklickt, zählt als Formular.
+  (<utm_source>)“ bzw. „Link von Facebook/Instagram“, jeweils mit „· Kampagne <utm_campaign>“. Klick-IDs
+  gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle „Werbung“. Über Seitenwechsel trägt sie ein
+  Eintrag im sessionStorage (nur der Text, nur mit Analyse-Einwilligung) oder, ohne Einwilligung, die
+  Adresse der Vorseite. Grenze: ohne Einwilligung ist die Herkunft nach dem zweiten Seitenwechsel
+  leer, die Anfrage zählt dann als Formular.
 
 ## 21. Insights › „Claude-Verbrauch“ (seit 2026-10-16, #671)
 
@@ -2147,6 +2148,8 @@ und nach 14 Tagen einen Fall in „Alte Bestellungen aufräumen“.
 
 ### Verschickt meldet den Versand in Shopify (#1810, #1811, Mitarbeiter 29.10.2026)
 
+Seit #1937 löst diesen Weg nicht mehr ein Knopf aus, sondern der Klick „Eingeworfen“ nach seiner Frist
+(Abschnitt 31). Die Aktion `verschickt` ist unverändert. Bis dahin galt:
 Gepackte Umschläge tragen den Hauptknopf „Verschickt – Kunde informieren“. Er sendet einen einzigen
 `POST kunden/muster-packen` mit `{ packSchluessel, aktion: 'verschickt' }`
 (`kundenMusterPackenSchreiben`, alle anderen Aktionen gehen unverändert an `kundenMusterPackenSetzen`).
@@ -2491,9 +2494,18 @@ zwischengespeichert; die Alltagssichten brauchen sie ohnehin). Der Inhaber sieht
 Laden-/Treppenanfragen, Angebote aus Kundenfällen und Team-Aufgaben (`NEBENBEREICH_ARTEN`: `service`,
 `angebot`, `aufgabe`), auch wenn sie rot sind: der Inhaber hat sie am 22.10. in „Weitere Bereiche“
 geschoben, die Anfragen stehen dort mit Zahl und Alter; Kundenfälle und Aufgaben werden auf der
-Shop-Übersicht deshalb gar nicht geladen. Gelbes und Normales bleibt in den Alltagssichten, damit
-die Warenbestellungen direkt darunter zuerst kommen; drei Zeilen sichtbar, der Rest klappt auf.
-Ohne rotes To-do erscheint kein Block.
+Shop-Übersicht deshalb gar nicht geladen. Gelbes und Normales bleibt in den Alltagssichten; drei
+Zeilen sichtbar, der Rest klappt auf. Ohne rotes To-do erscheint kein Block. Seit 05.11. steht der
+Block unter den Warenbestellungen (Inhaber 22.10.: zahlende Warenkunden zuerst).
+
+**Warenkennzahl (05.11.).** `ansichten/heute/warenkennzahl.mjs`, nur Inhaber, ganz oben: Warenumsatz
+und Warenkunden der letzten 7 Tage, die 7 Tage davor, Muster in einer eigenen Zeile. Gerechnet in
+`operations/lib/kennzahlen.mjs`: bezahlt, brutto, ohne Versand, Grundlage `currentSubtotalPriceSet`.
+Das ist der Stand nach Bestelländerungen; `totalPriceSet` bleibt der Wert bei Bestellung und zählte
+eine getauschte Position doppelt (#1056). Service auf einer Warenbestellung zählt mit, allein macht
+er niemanden zum Warenkunden. Zeilensummen und Bestellwerte (`summen`, `bestellwert`) zeigen ebenfalls
+den aktuellen Stand, stornierte Bestellungen den Wert bei Bestellung. Tests: `warenkennzahl.test.mjs`,
+`operations/tests/kennzahlen.test.mjs`.
 Tests: `shop-start-probleme.test.mjs`, `shop-start.test.mjs`.
 
 Shopify-Archivierung bleibt ein ausdruecklicher bewusster Abschluss: `closedAt` wird als
@@ -2743,8 +2755,9 @@ zugeordnet“, ohne Namen „Lieferant A“. „Default Title“ wird nicht als 
 Test: `zeitleiste-bestellweg.test.mjs`.
 
 **Inhaberzeile (#44).** `ansichten/heute/inhaber-zeile.mjs` (reine Funktionen): Shop-Kontrolle,
-7-Tage-Umsatz (Knopf `kz` klappt `kennzahlenBlock` auf), offene Entscheidungen, naechste Frist
-offener Aufgaben. Nur Inhaber; dafuer laedt die Shop-Übersicht beim Inhaber zusaetzlich
+Knopf „Weitere Kennzahlen“ (`kz` klappt `kennzahlenBlock` auf), offene Entscheidungen, naechste Frist
+offener Aufgaben. Die Frist einer Entscheidung zaehlt nur, bis entschieden ist (`fristGilt`): ab
+`bereit` meldet sie nichts mehr, das Issue darf fuer Nacharbeit offen bleiben. Nur Inhaber; dafuer laedt die Shop-Übersicht beim Inhaber zusaetzlich
 Kennzahlen und Shop-Kontrolle, fuer alle die Service-Anfragen (Zahl an „Weitere Bereiche“).
 Tests: `inhaber-ueberblick.test.mjs`, `shop-start.test.mjs`.
 
@@ -2797,3 +2810,47 @@ arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten un
 - Tests: `tests/hausverwaltungen.test.mjs` (Regeln, API, Rollen, Ansicht).
 
 Aufkleber aendern (2026-11-02): `produktEntwurf()` in `lib/freie-etiketten.mjs` macht aus einem Produktetikett aenderbaren Text; `e.schriften` traegt die Schrift je Zeile, `e.url` den QR-Code. Nichts davon wird gespeichert.
+
+## 31. Eingeworfen: Klick, Frist, Buchung (05.11.2026, #1937)
+
+Die Prüfung vom 05.11. fand 38 von 83 Musterbestellungen ohne Versandeintrag. Nachfrage und Anrufliste
+starten erst mit „raus“. Inhaberregel: Versand, Eingang und physische Bestätigung nicht gleichsetzen,
+deshalb wird „gepackt“ nie von selbst zu „raus“.
+
+**Ablauf.** `POST kunden/muster-packen` mit `{ aktion: 'eingeworfen', packSchluessel: [...] }` prüft jeden
+Umschlag für sich (gepackt, alles abgehakt, `rausPlan`) und schreibt nur einen Vermerk nach
+`muster-packen.json` (`eingeworfen[pk] = { zeit, von, buchtAb, orderIds, bestellungen }`). Der Zeitgeber des
+Dienstes (`einwurfBuchen`, alle 30 s) bucht nach `EINWURF_FRIST_MINUTEN` (5) über die unveränderte Aktion
+`verschickt`: Schritt „raus“ im Namen dessen, der geklickt hat, Lagerabgang, Shopify `fulfillmentCreate` mit
+`notifyCustomer: true` (Ausnahme wie bisher: persönlich vorbeigebrachte Muster).
+
+**Warum die Frist auf dem Server liegt.** Eine Sendung wird nie zurückgenommen (Abschnitt 24, kein
+`fulfillmentCancel`), und die Mail ist dann beim Kunden. Rückgängig gibt es also nur vor der Buchung. Im
+Browser liefe die Frist am Briefkasten nicht ab: Handy in der Tasche, Tab eingefroren, der Umschlag bliebe
+ungebucht. Der Vermerk überlebt auch einen Neustart des Dienstes.
+
+**Rückgängig** (`aktion: 'eingeworfen-zurueck'`) nimmt nur den Vermerk weg; es war noch nichts gebucht. Der
+Vermerk verschwindet vor der Buchung. Spätes Rückgängig bekommt deshalb ehrlich `zuSpaet`, und nach einem
+Absturz steht der Umschlag sichtbar unter „Gepackt“ statt doppelt gebucht zu werden. Der Zeitgeber liest den Vermerk
+vor jeder Buchung frisch: Ein währenddessen zurückgenommener oder neu gesetzter Vermerk behält seine neue Frist.
+
+**Scheitert die Buchung**, bleibt der Vermerk mit `problem` stehen und erscheint als roter Hinweis oben in
+der Packstation (`einwurf.probleme`), bis jemand „Verstanden“ drückt. Kein zweiter Versuch von selbst. Still fällt ein
+Vermerk nur weg, wenn alle seine Muster anders versendet sind; ein Teilversand (`teilweise`) zählt nicht.
+
+**Reiter Gepackt** (`einwurfListen`): „Wird eingetragen“, „Heute gepackt“ mit „Alle n eingeworfen“, „Altfälle“
+(vor heute gepackt, älteste Bestellung zuerst). Altfälle stehen bewusst nicht in der Sammelaktion: Ob so ein
+Umschlag raus ist, weiß nur, wer nachsieht. „War schon früher raus…“ öffnet den Versanddialog mit
+ausgeschalteter Mail (`mailVorab: false`), wie „Ist verschickt…“ auf der Startseite, begrenzt auf die Muster des
+Umschlags (`nur`, `umschlagMusterIds`): Bei einer Mischbestellung ist die Ware noch nicht raus und steht nicht im Dialog.
+
+**Datenkopie.** Dort läuft der Zeitgeber nur mit `TP_EINWURF_TEST_SEKUNDEN` (dann auch die kurze Frist) für
+Klickproben; `dashboard:pruefen` startet die Kopie immer ohne Shopify-Zugang.
+
+**Kampagnenkennung.** Links der Muster-Nachfrage tragen `utm_source=muster-nachfass`, `utm_medium=email`,
+`utm_campaign=muster-nachfass`, `utm_content=erste|erinnerung` (`nachfassLink`, `fuelleText({ nachfass })`), in
+Versandlauf, „Jetzt senden“ und mailto-Vorschlag. Keine Kunden- oder Bestellkennung. Andere Mails aus
+`fuelleText` (Muster nicht verfügbar, Rückfrage) bleiben ohne. Lesen: GA4 unter Kampagne `muster-nachfass`;
+je Bestellung `customerJourneySummary` der Admin-API, das der Bestellexport noch nicht holt.
+
+Tests: `tests/packstation-einwurf.test.mjs`, `tests/muster-nachfassen.test.mjs`.

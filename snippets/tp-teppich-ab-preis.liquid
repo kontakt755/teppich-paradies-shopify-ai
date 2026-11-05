@@ -36,7 +36,8 @@
 
   @param {object} product - Produkt
   @param {boolean} [kopf] - Preis im Kopf der Produktseite: bei Kante im m2-Preis steht
-    der Preis je m2 vorn statt des ab-Preises (siehe unten)
+    der Preis je m2 vorn statt des ab-Preises (siehe unten); in beiden Faellen steht darunter
+    die Lieferzeit aus service.lieferzeit, wenn sie belegt ist
   @param {object} [variant] - gewaehlte Variante (Produktseite); ohne sie zaehlt die guenstigste Farbe.
     Ohne Variante (= Produktkarte) steht ueber dem Preis die Qualitaetszeile aus
     snippets/tp-teppich-qualitaet.
@@ -201,6 +202,21 @@
     endif
   endif
 -%}
+{%- comment -%}
+  Lieferzeit nur im Kopf und nur aus service.lieferzeit (belegt); ausverkauft keine, wie
+  snippets/tp-lieferzeit. Steht bei Preis je m2 und bei ab-Preis gleich unter dem Preis:
+  bei Hausmarken erschien "ca. 5-8 Werktage" sonst erst nach der Masseingabe (Pruefung 05.11.).
+{%- endcomment -%}
+{%- capture tp_ab_lieferzeit_zeile -%}
+  {%- assign tp_ab_lieferzeit = product.metafields.service.lieferzeit.value | strip -%}
+  {%- if product.available == false -%}{%- assign tp_ab_lieferzeit = '' -%}{%- endif -%}
+  {%- if kopf and tp_ab_lieferzeit != blank -%}
+    <span class="tp-ab-preis__lieferzeit">
+      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true" focusable="false"><path d="M2 5h10v8H2zM12 8h3.2l2.3 2.6V13H12z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="14.2" r="1.6" fill="currentColor"/><circle cx="14.5" cy="14.2" r="1.6" fill="currentColor"/></svg>
+      Lieferzeit {{ tp_ab_lieferzeit | escape }}
+    </span>
+  {%- endif -%}
+{%- endcapture -%}
 {%- if tp_ab_m2_kopf -%}
   {%- liquid
     assign tp_ab_m2_alt_cent = 0
@@ -240,15 +256,7 @@
       {%- endif -%}
     </span>
     <span class="tp-ab-preis__grund">{% if tp_ab_raummass %}inkl. Zuschnitt, ohne Kettelung{% else %}inkl. {{ tp_ab_kante_wort }} rundum{% endif %}{% if kopf %} · Endpreis nach Ihrem Maß im Konfigurator{% endif %}</span>
-    {%- comment -%} Lieferzeit nur im Kopf und nur aus service.lieferzeit (belegt); ausverkauft keine, wie snippets/tp-lieferzeit {%- endcomment -%}
-    {%- assign tp_ab_lieferzeit = product.metafields.service.lieferzeit.value | strip -%}
-    {%- if product.available == false -%}{%- assign tp_ab_lieferzeit = '' -%}{%- endif -%}
-    {%- if kopf and tp_ab_lieferzeit != blank -%}
-      <span class="tp-ab-preis__lieferzeit">
-        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true" focusable="false"><path d="M2 5h10v8H2zM12 8h3.2l2.3 2.6V13H12z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="14.2" r="1.6" fill="currentColor"/><circle cx="14.5" cy="14.2" r="1.6" fill="currentColor"/></svg>
-        Lieferzeit {{ tp_ab_lieferzeit | escape }}
-      </span>
-    {%- endif -%}
+    {{- tp_ab_lieferzeit_zeile -}}
   </span>
 {%- elsif tp_ab_belegt and tp_ab_cent > 0 -%}
   {%- if variant == blank or karte -%}
@@ -267,6 +275,7 @@
       {%- endif -%}
     </span>
     <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% elsif tp_ab_art == 'fertig' %}{{ tp_ab_inkl_fertig }}{% elsif tp_ab_raummass %}Zuschnitt, ohne Kettelung{% else %}Einfassung{% endif %}</span>
+    {{- tp_ab_lieferzeit_zeile -}}
   </span>
 {%- else -%}
   <span class="tp-preis-je-m2">{% if variant == blank or karte %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
