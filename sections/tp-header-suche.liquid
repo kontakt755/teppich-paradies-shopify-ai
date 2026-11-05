@@ -156,8 +156,17 @@
   .tp-hs__panel--laedt .tp-hs__laden::after { opacity: 1; animation: tp-hs-laden 1s linear infinite; }
   @keyframes tp-hs-laden { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
   @media (prefers-reduced-motion: reduce) { .tp-hs__panel--laedt .tp-hs__laden::after { animation: none; transform: none; width: 100%; } }
-  .tp-hs__meinten { margin-bottom: 18px; }
+  /* Die Chips nutzen die Farben von .tp-se, stehen hier aber ausserhalb davon. */
+  .tp-hs__meinten {
+    --tp-se-ink: var(--tp-ink, #1d1a17);
+    --tp-se-muted: var(--tp-muted, #655e57);
+    --tp-se-line: var(--tp-line, #e6e0d8);
+    --tp-se-bg-2: var(--tp-bg-2, #f6f2ec);
+    margin-bottom: 18px;
+  }
   .tp-hs__meinten[hidden], .tp-hs__leer[hidden] { display: none; }
+  /* Suchfenster: erstes Element im Raster von .tp-se (assets/tp-suche.js) */
+  .tp-hs__meinten--fenster { margin-bottom: 0; grid-column: 1 / -1; }
   .tp-hs__leer .tp-se__h + .tp-se__liste { margin-bottom: 18px; }
   .tp-hs__leer .tp-se__liste:last-child { margin-bottom: 0; }
   .tp-hs__hinweis { margin: 0; font-size: 14px; color: var(--tp-muted, #655e57); }

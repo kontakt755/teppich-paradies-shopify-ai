@@ -604,7 +604,7 @@ const STELLEN = {
   'snippets/price.liquid': 'Preis',
   'blocks/price.liquid': 'Preis Teppich nach Mass',
   'blocks/tp-card-actions.liquid': 'Konfigurator- und Musterlink',
-  'snippets/tp-suche-ergebnisse.liquid': 'Schnellsuche',
+  'snippets/tp-suche-produktzeile.liquid': 'Schnellsuche',
   'blocks/tp-card-color-thumbs.liquid': 'Farbfelder (gewaehlte Farbe vorn)',
 };
 for (const [datei, rolle] of Object.entries(STELLEN)) {

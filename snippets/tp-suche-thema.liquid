@@ -1,0 +1,120 @@
+{%- doc -%}
+  Feste Suchthemen: Kundenwoerter, die Shopifys Suche nicht dem Sortiment
+  zuordnet (Rundgang 2026-11-05). "auslegware" lieferte fast nur eine Marke,
+  "teppichlaeufer" und "flurlaeufer grau" Bestseller statt Laeufer,
+  "teppichreste" keinen Restposten, die Schnellsuche fand zu
+  "teppichunterlage rutschfest" die Antirutsch-Unterlage nicht.
+  Synonyme gibt es in Search & Discovery nicht mehr (von Shopify eingestellt,
+  dort stehen nur noch Produktboosts je Produkt), deshalb diese Tabelle.
+
+  Einzige Stelle fuer diese Regeln. Eine neue Regel braucht nur Woerter und Ziel;
+  jedes Wort trifft als Teilwort, Grossschreibung und Umlaute sind egal.
+  Keine Lieferantennamen und keine fachlich falschen Gleichsetzungen eintragen.
+  Liste der Kategorien: erste Kategorie liefert die Produkte, wenn die Regel
+  keine eigenen Produkte nennt.
+
+  Ausgabe, wenn eine Regel greift, sonst nichts:
+    <Kategorie-Handles mit Komma>|<Produkt-Handles mit Komma>
+  Es stehen nur vorhandene Kategorien mit Produkten und lieferbare Produkte
+  darin, hoechstens 8. Steht ein Farbwort im Begriff ("flurlaeufer grau"),
+  kommen Produkte mit einer Variante in dieser Farbe zuerst
+  (snippets/tp-suchfarbe-variante).
+
+  Aufrufer: snippets/tp-suche-ergebnisse.liquid (Schnellsuche, Dropdown und
+  Suchfenster) und sections/search-results.liquid (Ergebnisseite).
+
+  @param {string} begriff - Suchbegriff, roh oder HTML-escaped
+{%- enddoc -%}
+{%- liquid
+  assign tp_st_text = begriff | downcase | strip | replace: 'ä', 'a' | replace: 'ae', 'a' | replace: 'ö', 'o' | replace: 'oe', 'o' | replace: 'ü', 'u' | replace: 'ue', 'u' | replace: 'ß', 'ss'
+  assign tp_st_kategorien = ''
+  assign tp_st_produkte = ''
+
+  assign tp_st_woerter = 'teppichunterlage,teppich unterlage,unterlage fur teppich,unterlage teppich,rutschunterlage,teppichstopper' | split: ','
+  for tp_st_wort in tp_st_woerter
+    if tp_st_text contains tp_st_wort
+      assign tp_st_kategorien = 'zubehoer-verlegeunterlagen'
+      assign tp_st_produkte = 'antirutsch-unterlage-fuer-teppiche-rollenware,teppichbremse-fuer-teppiche-rollenware,teppichbremse-fuer-teppiche-abgepasst,teppichunterlage-elastisch-rollenware'
+      break
+    endif
+  endfor
+
+  assign tp_st_woerter = 'teppichlaufer,teppich laufer,flurlaufer,dielenlaufer,laufer fur den flur,laufer flur' | split: ','
+  for tp_st_wort in tp_st_woerter
+    if tp_st_text contains tp_st_wort
+      assign tp_st_kategorien = 'laeufer-nach-mass,teppich-nach-mass'
+      break
+    endif
+  endfor
+
+  assign tp_st_woerter = 'auslegware,auslegeware,auslegteppich' | split: ','
+  for tp_st_wort in tp_st_woerter
+    if tp_st_text contains tp_st_wort
+      assign tp_st_kategorien = 'teppichboden'
+      break
+    endif
+  endfor
+
+  assign tp_st_woerter = 'teppichrest,teppich rest,teppichboden rest,bodenrest,restrolle,reststuck,restposten' | split: ','
+  for tp_st_wort in tp_st_woerter
+    if tp_st_text contains tp_st_wort
+      assign tp_st_kategorien = 'restposten,reste-sonderposten'
+      break
+    endif
+  endfor
+
+  if tp_st_kategorien != ''
+    assign tp_st_k_liste = ''
+    assign tp_st_erste = ''
+    assign tp_st_k_roh = tp_st_kategorien | split: ','
+    for tp_st_h in tp_st_k_roh
+      if collections[tp_st_h] == blank or collections[tp_st_h].all_products_count == 0
+        continue
+      endif
+      if tp_st_erste == ''
+        assign tp_st_erste = tp_st_h
+      endif
+      assign tp_st_k_liste = tp_st_k_liste | append: tp_st_h | append: ','
+    endfor
+
+    assign tp_st_farbig = ''
+    assign tp_st_uebrig = ''
+    assign tp_st_anzahl = 0
+    if tp_st_produkte != ''
+      assign tp_st_p_roh = tp_st_produkte | split: ','
+      for tp_st_h in tp_st_p_roh
+        assign tp_st_p = all_products[tp_st_h]
+        if tp_st_p != blank and tp_st_p.available
+          assign tp_st_uebrig = tp_st_uebrig | append: tp_st_h | append: ','
+        endif
+      endfor
+    elsif tp_st_erste != ''
+      for tp_st_p in collections[tp_st_erste].products
+        unless tp_st_p.available
+          continue
+        endunless
+        capture tp_st_farbe
+          render 'tp-suchfarbe-variante', product: tp_st_p
+        endcapture
+        if tp_st_farbe contains '|'
+          assign tp_st_farbig = tp_st_farbig | append: tp_st_p.handle | append: ','
+        else
+          assign tp_st_uebrig = tp_st_uebrig | append: tp_st_p.handle | append: ','
+        endif
+        assign tp_st_anzahl = tp_st_anzahl | plus: 1
+        if tp_st_anzahl >= 12
+          break
+        endif
+      endfor
+    endif
+
+    assign tp_st_alle = tp_st_farbig | append: tp_st_uebrig | split: ','
+    assign tp_st_ausgabe = ''
+    for tp_st_h in tp_st_alle limit: 8
+      assign tp_st_ausgabe = tp_st_ausgabe | append: tp_st_h | append: ','
+    endfor
+    if tp_st_k_liste != '' or tp_st_ausgabe != ''
+      echo tp_st_k_liste | append: '|' | append: tp_st_ausgabe
+    endif
+  endif
+-%}
