@@ -58,6 +58,59 @@
         "box4_text": "Oranienburg, Oberhavel und Nord-Berlin."
       }
     },
+    "tp_wohnung_wege": {
+      "type": "_blocks",
+      "name": "Weitere Wege",
+      "blocks": {
+        "tp_wohnung_wege_kacheln": {
+          "type": "tp-kachel-raster",
+          "settings": {
+            "columns_desktop": 2,
+            "columns_mobile": "1",
+            "grid_gap": 20,
+            "desktop_width_percent": 100,
+            "section_padding": 40,
+            "tile_background_color": "#ffffff",
+            "tile_border_radius": 8,
+            "tile_padding": 20,
+            "tile_border_style": "solid",
+            "tile_border_width": 1,
+            "tile_border_color": "#e6e6e6",
+            "image_aspect_ratio": "16 / 9",
+            "title_size": 20,
+            "title_color": "#000000",
+            "button_background_color": "#000000",
+            "button_text_color": "#ffffff",
+            "button_hover_color": "#333333",
+            "tile_1_enabled": true,
+            "tile_1_image": "shopify://shop_images/image-3-compressed.jpg",
+            "tile_1_title": "Für Firmenkunden",
+            "tile_1_button_text": "Mehr erfahren",
+            "tile_1_button_link": "/pages/firmenkunden",
+            "tile_2_enabled": true,
+            "tile_2_image": "shopify://shop_images/teppichboden-buero-gewerbe-menue.jpg",
+            "tile_2_title": "Teppichboden für Büro & Gewerbe",
+            "tile_2_button_text": "Zum Sortiment",
+            "tile_2_button_link": "/collections/teppichboden-buero-gewerbe",
+            "tile_3_enabled": false,
+            "tile_4_enabled": false,
+            "tile_5_enabled": false,
+            "tile_6_enabled": false
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "tp_wohnung_wege_kacheln"
+      ],
+      "settings": {
+        "content_direction": "column",
+        "gap": 12,
+        "section_width": "page-width",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    },
     "tp_verlege_ablauf": {
       "type": "tp-verlege-ablauf",
       "settings": {
@@ -68,6 +121,7 @@
   "order": [
     "wohnungsunternehmen_hero",
     "tp_verlege_ablauf",
-    "wohnungsunternehmen_vorteile"
+    "wohnungsunternehmen_vorteile",
+    "tp_wohnung_wege"
   ]
 }
