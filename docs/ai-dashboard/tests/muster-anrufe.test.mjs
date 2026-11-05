@@ -39,14 +39,21 @@ test('Liste: mehrere Musterbestellungen eines Kunden sind ein Anruf', () => {
 });
 
 test('Sperre § 7 UWG: ohne Rückrufwunsch verlässt die Nummer den Server nicht, E-Mail bleibt', () => {
-  assert.equal(ANRUF_NUR_MIT_RUECKRUFWUNSCH, true, 'nur der Inhaber hebt die Sperre auf');
-  const m = musterAnrufliste([zeile(1), zeile(2, { beratungOffen: true })], {}, { jetzt: JETZT });
+  const m = musterAnrufliste([zeile(1), zeile(2, { beratungOffen: true })], {}, { jetzt: JETZT, nurMitWunsch: true });
   assert.deepEqual(m.anrufen.map(z => z.orderNames[0]), ['#T2']);
   assert.equal(m.anrufen[0].telefon, '+49302', 'Nummer aus der Lieferadresse');
   assert.deepEqual(m.gesperrt.map(z => z.orderNames[0]), ['#T1']);
   assert.equal(m.gesperrt[0].telefon, null);
   assert.doesNotMatch(JSON.stringify(m.gesperrt), /\+4930/);
   assert.ok(m.gesperrt[0].email);
+});
+
+test('Spalten: ohne Nummer steht auch mit Sperre bei der E-Mail, mit Nummer gesperrt nur das Ja oder Nein', () => {
+  const ohne = zeile(1);
+  ohne.auftrag.details.lieferadresse.telefon = null;
+  const m = musterAnrufliste([ohne, zeile(2)], {}, { jetzt: JETZT, nurMitWunsch: true });
+  assert.deepEqual(m.ohneNummer.map(z => [z.orderNames[0], z.hatNummer]), [['#T1', false]]);
+  assert.deepEqual(m.gesperrt.map(z => [z.orderNames[0], z.hatNummer, z.telefon]), [['#T2', true, null]]);
 });
 
 test('Ohne Sperre: alle mit Nummer anrufen, ohne Nummer per E-Mail', () => {
@@ -82,7 +89,7 @@ test('Gründe: je Kunde die letzte Aussage, „nicht erreicht“ zählt nicht, h
 });
 
 test('Rückfrage-Mail: nennt die Muster, keine Platzhalter, Abmelde-Satz und Firmenangaben, nichts ohne Adresse', () => {
-  const m = musterAnrufliste([zeile(1)], {}, { jetzt: JETZT });
+  const m = musterAnrufliste([zeile(1)], {}, { jetzt: JETZT, nurMitWunsch: true });
   const link = rueckfrageLink(m.gesperrt[0], 'Anna');
   const text = decodeURIComponent(link);
   assert.match(text, /^mailto:k1@example\.invalid\?subject=Wie gefallen/);
@@ -158,12 +165,14 @@ async function umgebung() {
   return { dir, uhr, api, verlauf };
 }
 
-test('Server: Liste bündelt je Kunde, Telefonnummer gesperrt, Bestellung muss eine Musterbestellung sein', async () => {
+test('Server: Liste bündelt je Kunde, zeigt die Nummer der Lieferadresse, Bestellung muss eine Musterbestellung sein', async () => {
+  assert.equal(ANRUF_NUR_MIT_RUECKRUFWUNSCH, false, 'am 05.11. im Chat aufgehoben, w-270');
   const { api } = await umgebung();
   const m = api.kundenMusterAnrufe();
   assert.equal(m.verfuegbar, true);
-  assert.deepEqual(m.gesperrt.map(z => z.orderIds.length).sort(), [1, 2]);
-  assert.doesNotMatch(JSON.stringify(m), /\+4930000/);
+  assert.deepEqual(m.anrufen.map(z => z.orderIds.length).sort(), [1, 2]);
+  assert.match(m.anrufen[0].telefon, /^\+4930000/);
+  assert.equal(m.gesperrt.length, 0);
   await assert.rejects(api.kundenMusterAnrufSetzen({ orderIds: ['gid://shopify/Order/999'], ergebnis: 'zu_teuer' }, ANNA), e => e.status === 404);
   await assert.rejects(api.kundenMusterAnrufSetzen({ orderIds: [ORDER(3)] }, ANNA), e => e.status === 400);
   await assert.rejects(api.kundenMusterAnrufSetzen({ orderIds: [ORDER(3)], ergebnis: 'zu_teuer' }, { name: 'Lena', rolle: 'lesen' }), e => e.status === 403);

@@ -53,6 +53,7 @@ function zeileHtml(z, { mitMail = false } = {}) {
       <div class="m">verschickt vor ${esc(plural(z.tage, 'Tag', 'Tagen'))}${z.versuche ? ` · ${esc(plural(z.versuche, 'Versuch', 'Versuche'))}` : ''}</div>
       ${z.muster.length ? `<div class="small muted">Muster: ${esc(z.muster.join(' · '))}</div>` : ''}
       ${z.telefon ? `<div class="tel-gross">${telLink(z.telefon)}</div>` : ''}
+      ${z.hatNummer && !z.telefon ? '<div class="small muted">Nummer vorhanden, Anruf noch nicht freigegeben</div>' : ''}
       ${z.wiedervorlage ? `<div class="small muted">Nochmal am ${esc(fmtDate(z.wiedervorlage))}</div>` : ''}
       ${verlaufHtml(z)}
     </div>
@@ -64,10 +65,13 @@ function zeileHtml(z, { mitMail = false } = {}) {
   </div>`;
 }
 
-function abschnitt(titel, zeilen, opt = {}) {
-  return `<h3 class="anruf-titel">${esc(titel)} <span class="muted small">${zeilen.length}</span></h3>
-    ${opt.hinweis ? `<p class="small muted">${esc(opt.hinweis)}</p>` : ''}
-    <div class="rows">${zeilen.map(z => zeileHtml(z, opt)).join('')}</div>`;
+/** Eine Spalte: wer eine freigegebene Nummer hat, wird angerufen; alle anderen bekommen die Mail. */
+function spalte(titel, zeilen, leer, hinweis = '') {
+  return `<section class="anruf-spalte" aria-label="${esc(titel)}">
+    <h3 class="anruf-titel">${esc(titel)} <span class="muted small">${zeilen.length}</span></h3>
+    ${hinweis ? `<p class="small muted">${esc(hinweis)}</p>` : ''}
+    ${zeilen.length ? `<div class="rows">${zeilen.map(z => zeileHtml(z, { mitMail: !z.telefon })).join('')}</div>` : `<p class="small muted">${esc(leer)}</p>`}
+  </section>`;
 }
 
 function aufgeklappt(titel, zeilen, opt = {}) {
@@ -118,9 +122,11 @@ export function viewMusterAnrufe() {
     ${gruende}
     ${ideenHtml(m)}
     ${nichts ? emptyState('Gerade ist niemand dran.', 'Neue Kunden erscheinen hier von selbst.') : ''}
-    ${m.anrufen.length ? abschnitt('Jetzt anrufen', m.anrufen) : ''}
-    ${m.ohneNummer.length ? abschnitt('Keine Telefonnummer: per E-Mail fragen', m.ohneNummer, { mitMail: true }) : ''}
-    ${m.gesperrt.length ? abschnitt('Per E-Mail fragen', m.gesperrt, { mitMail: true, hinweis: 'Kein Rückrufwunsch. Ein Anruf ist hier noch nicht freigegeben, der Inhaber klärt das.' }) : ''}
+    ${m.anrufen.length ? '<p class="small muted">Am Telefon zuerst fragen, ob es gerade passt. Möchte jemand keine Anrufe, „Möchte keine Anrufe“ anklicken: Dann ruft niemand mehr an, auch nicht bei späteren Bestellungen.</p>' : ''}
+    ${nichts ? '' : `<div class="anruf-spalten">
+      ${spalte(m.anrufen.length ? 'Telefonnummer vorhanden: anrufen' : 'Telefonnummer vorhanden', [...m.anrufen, ...m.gesperrt], 'Gerade niemand mit Telefonnummer.', m.gesperrt.length ? 'Ohne Rückrufwunsch ist der Anruf noch nicht freigegeben. Bis dahin hier per E-Mail fragen.' : '')}
+      ${spalte('Keine Telefonnummer: per E-Mail', m.ohneNummer, 'Gerade niemand ohne Telefonnummer.')}
+    </div>`}
     ${m.spaeter.length ? aufgeklappt('Später nochmal', m.spaeter) : ''}
     ${m.erledigt.length ? aufgeklappt('Abgeschlossen', m.erledigt) : ''}
   `;

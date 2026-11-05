@@ -819,8 +819,8 @@ Anrufe“. Ergebnis und Notizen liegen in `$TP_PRIVAT_DIR/muster-anrufe.json` (`
 in der Tagessicherung), `GET/POST /api/kunden/muster-anrufe`. Ein Ergebnis schreibt auch die Zeitleiste:
 „kein Interesse“ bzw. „Kunde hat bestellt“ beenden die Nachfrage-Mails, ein Gespräch zählt als „nachgefasst“.
 Nach 3× „Nicht erreicht“ ist Schluss. Oben zählt die Seite die genannten Gründe (je Kunde die letzte Aussage).
-Rechtliche Sperre: Solange `ANRUF_NUR_MIT_RUECKRUFWUNSCH` wahr ist, liefert der Server die Telefonnummer nur
-bei Rückrufwunsch (§ 7 UWG, siehe oben); alle anderen stehen unter „Per E-Mail fragen“. Die Rückfrage-Mail ist
+Zwei Spalten: mit und ohne Telefonnummer. Die Sperre `ANRUF_NUR_MIT_RUECKRUFWUNSCH` (§ 7 UWG, siehe oben) liefert
+auf `true` die Nummer nur bei Rückrufwunsch; am 2026-11-05 im Chat aufgehoben, die rechtliche Klärung steht aus. Die Rückfrage-Mail ist
 ein `mailto:`-Link, gesendet wird von Hand, sie läuft nicht über den pausierten Versandlauf.
 Unter den Gründen steht zugeklappt „Vermutungen und Ideen“ (`lib/muster-ideen.mjs`): feste Texte im Repository,
 die Zahlen dazu (`kennzahlen`) rechnet der Server zur Laufzeit aus den Bestellzeilen und der Musterwirkung.

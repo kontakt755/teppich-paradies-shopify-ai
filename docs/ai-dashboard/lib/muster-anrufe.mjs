@@ -19,11 +19,12 @@ export const ERLEDIGT_ZEIGEN_TAGE = 30;
 export const HOECHSTENS_VERSUCHE = 3;
 
 /**
- * Rechtliche Sperre (§ 7 UWG, Inhaberregel 2026-10-10 "anrufen nur bei Rueckrufwunsch"): solange
- * true, liefert der Server die Telefonnummer nur fuer Kunden mit Rueckrufwunsch. Die Telefonnummer
- * der Lieferadresse ist keine Einwilligung in einen Werbeanruf. Nur der Inhaber hebt das auf.
+ * Rechtliche Sperre (§ 7 UWG): solange true, liefert der Server die Telefonnummer nur fuer Kunden
+ * mit Rueckrufwunsch. Die Nummer der Lieferadresse ist keine Einwilligung in einen Werbeanruf.
+ * Am 2026-11-05 im Chat bewusst aufgehoben, nach Hinweis auf das Risiko und die Regel vom 10.10.;
+ * die rechtliche Klaerung steht noch aus (Werkbank w-270). Zurueck: auf true stellen.
  */
-export const ANRUF_NUR_MIT_RUECKRUFWUNSCH = true;
+export const ANRUF_NUR_MIT_RUECKRUFWUNSCH = false;
 
 /**
  * Die Klick-Ergebnisse.
@@ -194,6 +195,7 @@ export function musterAnrufliste(zeilen = [], eintraege = {}, { jetzt = new Date
     const verlauf = new Map();
     for (const e of eintragListe.flatMap(x => x.verlauf || [])) verlauf.set(`${e.am}|${e.von}|${e.ergebnis}`, e);
     const wunsch = liste.some(l => l.z.beratungOffen);
+    const nummer = liste.map(l => anrufTelefon(l.z)).find(Boolean) || null;
     return {
       schluessel,
       kundenname: liste.map(l => l.z.kundenname).find(gesetzt) || null,
@@ -207,7 +209,9 @@ export function musterAnrufliste(zeilen = [], eintraege = {}, { jetzt = new Date
       rueckrufWunsch: wunsch,
       freigegeben: !nurMitWunsch || wunsch,
       // Ohne Freigabe verlaesst die Nummer den Server gar nicht erst.
-      telefon: !nurMitWunsch || wunsch ? liste.map(l => anrufTelefon(l.z)).find(Boolean) || null : null,
+      telefon: !nurMitWunsch || wunsch ? nummer : null,
+      // Ja oder nein reicht fuer die Spalte: die Nummer selbst bleibt bei gesperrten Kunden auf dem Server.
+      hatNummer: Boolean(nummer),
       ergebnis: letzter?.ergebnis || null,
       notiz: letzter?.notiz || null,
       wiedervorlage: letzter?.wiedervorlage || null,
@@ -223,8 +227,8 @@ export function musterAnrufliste(zeilen = [], eintraege = {}, { jetzt = new Date
   for (const [schluessel, liste] of offen) {
     const r = zeile(schluessel, liste);
     if (r.wiedervorlage && r.wiedervorlage > heute) ergebnis.spaeter.push(r);
+    else if (!r.hatNummer) ergebnis.ohneNummer.push(r);
     else if (!r.freigegeben) ergebnis.gesperrt.push(r);
-    else if (!r.telefon) ergebnis.ohneNummer.push(r);
     else ergebnis.anrufen.push(r);
   }
   for (const [schluessel, liste] of fertig) ergebnis.erledigt.push(zeile(schluessel, liste));
