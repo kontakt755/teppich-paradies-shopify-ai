@@ -522,6 +522,7 @@ leise Zeile „Rohertrag unbekannt“.
   serverseitig `warnungFuerMitarbeiter()`: eine Liste erlaubter Felder, Kopf „vor dem Bestellen mit Ahmet klären“,
   Menge ohne Einkaufsbetrag, Teillieferung mit dem Frachtzuschlag. Die Sätze selbst gehen nicht über
   `pruefeStammdaten()` und erscheinen in keiner anderen Antwort.
+- **Rechenregeln:** Bestandsabgänge von Bundles (`masspruefung.status: bestand`) zählen im Netto, nicht im Einkauf und Weg. Volle Rollenbreite: kürzeste Länge, bei der die andere Seite quer in die Rolle passt. Paket, Fracht und Mindermenge gelten je Lieferant, Ziel und Bestelltag.
 - **Grenzen des Modells:** Paketmaße und Gewicht sind Annahmen (2 kg/m², Rollendurchmesser aus der langen Seite).
   Die EK-Liste ist teils abgeleitet und kann unter echten Rechnungen liegen. Schwellen stehen in `SCHWELLEN`.
   Scheitert die Schätzung, geht der Dialog ohne sie auf (`kostenWarnungFehlt`).

@@ -277,3 +277,86 @@ test('warnungenAnhaengen: ohne Angabe keine Betraege, nur mitPreisen liefert die
     assert.equal(inhaber.rohertragAuffaellig, undefined);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+// Befunde aus dem Review von PR #1954.
+const EK_MEHRERE = (...zeilen) => EK(zeilen);
+// Meterware aus der 400-cm-Rolle: bestellt genau die verkaufte Flaeche.
+const meter = (id, m2Menge, extra = {}) => pos(id, { mengeBestellt: m2Menge, bestellmenge: { menge: m2Menge / 4, einheit: 'lfm' }, ...extra });
+
+test('Bestandsabgang einer Bundle-Komponente: kein Einkauf, kein Weg, Verkaufspreis bleibt im Netto', () => {
+  const teppich = meter('l1', 20, { nettoGesamt: 200 });
+  const rolle = pos('l2', { nettoGesamt: 50, mengeBestellt: 8, grosshaendlerId: 'ROLLE-1', sku: 'ROLLE-1', masspruefung: { status: 'bestand', einheit: '' }, bestellmenge: { menge: 8, einheit: 'stueck' }, titel: 'Rollenkomponente, 500 kg', farbe: '500 kg' });
+  const w = warne(auftrag([teppich, rolle]), inMail([teppich]), {
+    ek: EK_MEHRERE(eZeile('ART-1', 3), eZeile('ROLLE-1', 10, { bezug: 'stueck', vk_einheit: 'stueck' })),
+    mindestmenge: { A: 'x' },
+  });
+  assert.equal(w.rechnung.find(z => z.text === 'Einkauf').betrag, -60);
+  assert.equal(w.rechnung.find(z => z.text === 'Verkauf netto').betrag, 250);
+  assert.equal(w.rohertrag, 250 - 60 - 30);
+  // Nur Bestandsabgang: nichts zu rechnen.
+  assert.equal(warne(auftrag([rolle]), []), null);
+});
+
+const massStueck = (id, masse, extra = {}) => pos(id, { masspruefung: { einheit: '× 0,01 m²' }, ausfuehrung: [`Fertigmaß: ${masse} cm (Rechteck)`], bestellmenge: { menge: 1, einheit: 'stueck' }, ...extra });
+
+test('Volle Rollenbreite: Stueck laenger als die Rolle breit laeuft der Laenge nach', () => {
+  const p = massStueck('l1', '200 × 600', { mengeBestellt: 1200, nettoGesamt: 200 });
+  const w = warne(auftrag([p]), inMail([p]), { ek: EK([eZeile('ART-1', 10)]) });
+  const h = w.hinweise.find(x => x.art === 'menge').text;
+  // 600 cm laeuft, 400 cm Rolle: 24 m², nicht 8 m².
+  assert.match(h, /sind es 24,00 m²/);
+  assert.match(h, /etwa 120 € mehr Einkauf/);
+  assert.equal(w.rechnung.find(z => z.text === 'Bleibt bei voller Rollenbreite').betrag, w.rohertrag - 120);
+  assert.equal(w.stufe, 'crit');
+});
+
+test('Volle Rollenbreite: kuerzeste moegliche Laenge, kein Hinweis ohne Mehrflaeche oder mit Naht', () => {
+  // Beide Richtungen moeglich: die kurze Seite laeuft.
+  const klein = massStueck('l1', '100 × 200', { mengeBestellt: 200, nettoGesamt: 300 });
+  assert.match(warne(auftrag([klein]), inMail([klein]), { ek: EK([eZeile('ART-1', 10)]) }).hinweise[0].text, /sind es 4,00 m²/);
+  // Passt genau in die Rollenbreite: keine Mehrflaeche.
+  const passt = massStueck('l2', '400 × 500', { mengeBestellt: 2000, nettoGesamt: 900 });
+  assert.equal(warne(auftrag([passt]), inMail([passt]), { ek: EK([eZeile('ART-1', 10)]) }), null);
+  // Breiter als die Rolle in beiden Richtungen: mit Naht, keine Aussage zur vollen Breite.
+  const naht = massStueck('l3', '500 × 600', { mengeBestellt: 3000, nettoGesamt: 900 });
+  assert.equal(warne(auftrag([naht]), inMail([naht]), { ek: EK([eZeile('ART-1', 10)]) }), null);
+});
+
+const KOSTEN_ZWEI = { lieferanten: { A: KOSTEN.lieferanten.A, B: { ...KOSTEN.lieferanten.A } }, kettler: null };
+
+test('Mindermenge je Lieferant: zwei Lieferanten mit zusammen genug Einkauf zahlen beide', () => {
+  const a = meter('l1', 20, { lieferant: 'A', nettoGesamt: 400 });
+  const b = meter('l2', 20, { lieferant: 'B', nettoGesamt: 400, grosshaendlerId: 'ART-2', sku: 'ART-2' });
+  const w = warne(auftrag([a, b]), inMail([a, b]), { kosten: KOSTEN_ZWEI, ek: EK_MEHRERE(eZeile('ART-1', 3), eZeile('ART-2', 3)), mindestmenge: { A: 'x' } });
+  // Je 60 Einkauf unter der Grenze von 100, zusammen 120 darueber: je 20 Fracht + 10 Mindermenge.
+  assert.deepEqual(w.rechnung.filter(z => /Fracht/.test(z.text)).map(z => z.betrag), [-30, -30]);
+  assert.equal(w.rohertrag, 800 - 120 - 60);
+});
+
+test('Mindermenge je Lieferung: Lieferant ueber der Grenze zahlt keine, der andere schon', () => {
+  const a = meter('l1', 40, { lieferant: 'A', nettoGesamt: 400 });
+  const b = meter('l2', 20, { lieferant: 'B', nettoGesamt: 400, grosshaendlerId: 'ART-2', sku: 'ART-2' });
+  const w = warne(auftrag([a, b]), inMail([a, b]), { kosten: KOSTEN_ZWEI, ek: EK_MEHRERE(eZeile('ART-1', 3), eZeile('ART-2', 3)), mindestmenge: { A: 'x' } });
+  assert.deepEqual(w.rechnung.filter(z => /Fracht/.test(z.text)).map(z => z.betrag), [-20, -30]);
+});
+
+test('Mindermenge je Teillieferung: jede Lieferung wird fuer sich geprueft', () => {
+  const alt = meter('l1', 20, { nettoGesamt: 400 });
+  const neu = meter('l2', 20, { nettoGesamt: 400 });
+  const statusAlle = { [positionKey('o1', 'l1')]: { bestelltAm: '2099-01-02T10:00:00Z' } };
+  // Je 60 Einkauf: zusammen ueber, einzeln unter der Grenze.
+  const w = warne(auftrag([alt, neu]), inMail([alt, neu]), { statusAlle });
+  assert.equal(w.rechnung.find(z => /2 Lieferungen/.test(z.text)).betrag, -60);
+  assert.ok(w.hinweise.some(h => /erneut/.test(h.text) && /etwa 30 €/.test(h.text)));
+});
+
+test('Mindermenge ohne Einkaufspreis: Verkaufspreis der Lieferung als Grenze, nicht der ganze Auftrag', () => {
+  const a = pos('l1', { lieferant: 'A', nettoGesamt: 90 });
+  const b = pos('l2', { lieferant: 'B', nettoGesamt: 90, grosshaendlerId: 'ART-2', sku: 'ART-2' });
+  const w = warne(auftrag([a, b]), inMail([a, b]), { kosten: KOSTEN_ZWEI, ek: EK([]) });
+  assert.deepEqual(w.rechnung.filter(z => /Fracht/.test(z.text)).map(z => z.betrag), [-30, -30]);
+  const unbekannt = pos('l3', { nettoGesamt: null });
+  const u = warne(auftrag([unbekannt]), inMail([unbekannt]), { ek: EK([]) });
+  assert.equal(u.rechnung.find(z => /Fracht/.test(z.text)).betrag, -20);
+});
+

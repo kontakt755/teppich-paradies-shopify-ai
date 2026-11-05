@@ -143,6 +143,17 @@ function fertigmass(p) {
   return a > 0 && b > 0 ? { breite: a, laenge: b } : null;
 }
 
+/**
+ * Flaeche bei voller Rollenbreite: Eine Seite laeuft quer und muss in die Rolle passen, die andere
+ * bestimmt die Laenge. Es zaehlt die kuerzeste moegliche Laenge. Passt das Stueck in keiner Richtung
+ * (mit Naht), gibt es keine Aussage.
+ */
+function volleBreiteM2({ breiteCm, laengeCm }, rolle) {
+  if (!(rolle > 0)) return null;
+  const laengen = [[breiteCm, laengeCm], [laengeCm, breiteCm]].filter(([, quer]) => quer <= rolle).map(([lauf]) => lauf);
+  return laengen.length ? Math.min(...laengen) * rolle / 1e4 : null;
+}
+
 /** Was vom Lieferanten kommt und was das je Fall kostet. */
 function mengeUndEinkauf(p, ek, { ziel, ekAufschlag = 0 }) {
   const zeile = ekZeile(p, ek);
@@ -156,8 +167,7 @@ function mengeUndEinkauf(p, ek, { ziel, ekAufschlag = 0 }) {
   let vollerollenbreite = null;
   if (stueck) {
     flaeche = stueck.breiteCm * stueck.laengeCm / 1e4;
-    const kurz = Math.min(stueck.breiteCm, stueck.laengeCm);
-    if (rolle > kurz) vollerollenbreite = kurz * rolle / 1e4;
+    vollerollenbreite = volleBreiteM2(stueck, rolle);
   } else if (verkauft !== null && p.bestellmenge?.einheit === 'lfm' && rolle) {
     flaeche = Number(p.bestellmenge.menge) * rolle / 100;
   }
@@ -248,6 +258,17 @@ function versand(s, { zielPlz, abholPlz, warenwert, tarif, jetzt }) {
 
 // ------------------------------------------------------------------ Lieferung vom Lieferanten
 
+/**
+ * Bezugswert der Mindermenge fuer die Ware einer Lieferung: ihr Einkauf. Fehlt er, zaehlt ihr
+ * Verkaufspreis als obere Grenze; ist auch der unbekannt, gibt es keinen Zuschlag zu behaupten.
+ */
+function bezugswert(eintraege) {
+  const ek = eintraege.map(e => e.m.ekSumme);
+  if (ek.every(istZahl)) return summe(ek);
+  const netto = eintraege.map(e => e.p.nettoGesamt);
+  return netto.every(istZahl) ? summe(netto) : Infinity;
+}
+
 /** Was der Lieferant fuer eine Lieferung berechnet. null: nicht hinterlegt. */
 function lieferzuschlag(k, s, { ekOderNetto, teiler = 1 }) {
   if (!k) return null;
@@ -272,16 +293,20 @@ const m2 = x => `${x.toLocaleString('de-DE', { minimumFractionDigits: 2, maximum
 const tagKurz = iso => { const d = new Date(iso); return Number.isNaN(+d) ? '' : `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.`; };
 
 /** Weg einer Lieferung bis zum Kunden: Posten der Rechnung plus das, was nicht berechenbar war. */
-function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kettlerAdresse, ladenPlz, ekOderNetto, netto, tarif, jetzt, teiler, lieferungen }) {
+function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kettlerAdresse, ladenPlz, netto, tarif, jetzt, teiler, lieferungen }) {
   const posten = [];
   const offen = [];
   const k = kosten.lieferanten[lieferant] ?? null;
   const s = sendung(eintraege);
   // Direkt zum Kunden geht es bei manchen Lieferanten nur auf der Tour im Nahbereich.
   const uebersLager = ziel === 'laden' || (ziel === 'kunde' && k?.anKundenNurImLiefergebiet && !nah);
-  const z = lieferzuschlag(k, s, { ekOderNetto, teiler });
-  if (z) {
-    posten.push({ text: lieferungen > 1 ? `${z.text} (${lieferungen} Lieferungen)` : z.text, betrag: z.betrag * lieferungen, art: 'weg' });
+  // Jede Lieferung fuer sich: Paket oder Fracht und die Mindermenge haengen an dem, was in ihr liegt.
+  const zuschlaege = lieferungen.map(l => lieferzuschlag(k, sendung(l.eintraege), { ekOderNetto: bezugswert(l.eintraege), teiler }));
+  const z = zuschlaege[lieferungen.findIndex(l => l.neu)] ?? zuschlaege.at(-1);
+  if (zuschlaege.every(Boolean)) {
+    const n = zuschlaege.length;
+    const text = new Set(zuschlaege.map(x => x.text)).size === 1 ? zuschlaege[0].text : 'Lieferung vom Lieferanten';
+    posten.push({ text: n > 1 ? `${text} (${n} Lieferungen)` : text, betrag: summe(zuschlaege.map(x => x.betrag)), art: 'weg' });
   } else offen.push(lieferant === 'UNGEKLAERT' ? 'Lieferant nicht zugeordnet' : 'Lieferkosten des Lieferanten nicht hinterlegt');
   if (ziel === 'kettler') {
     const kanten = eintraege.filter(e => wirdGekettelt(e.p.ausfuehrung));
@@ -315,7 +340,9 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
  * @returns {object|null} null, wenn nichts vom Normalfall abweicht
  */
 export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tarif, statusAlle = {}, absender = null, nahPlz = /^$/, ladenPlz = null, mindestmenge = {}, jetzt = new Date(), lieferantName = id => `Lieferant ${id}` }) {
-  const ware = (auftrag?.positionen ?? []).filter(p => !p.istMuster && !p.eigenleistung && Number(p.mengeBestellt) > 0);
+  // Rollenkomponente eines Bundles: reiner Bestandsabgang, das Material steht schon an der Teppichzeile.
+  // Sie kostet keinen Einkauf und keinen Weg, ihr Verkaufspreis zaehlt aber im Netto.
+  const ware = (auftrag?.positionen ?? []).filter(p => !p.istMuster && !p.eigenleistung && p.masspruefung?.status !== 'bestand' && Number(p.mengeBestellt) > 0);
   if (!ware.length) return null;
   const adresse = auftrag.details?.lieferadresse ?? null;
   const plz = String(adresse?.plz ?? '').trim();
@@ -353,12 +380,14 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   let eigeneZustellung = false;
   for (const [schluessel, liste] of gruppen) {
     const [lieferant, ziel] = schluessel.split('|');
-    const tage = new Set(liste.map(e => statusAlle[positionKey(auftrag.id, e.p.lineItemId)]?.bestelltAm).filter(Boolean).map(t => String(t).slice(0, 10)));
+    const bestelltTag = e => statusAlle[positionKey(auftrag.id, e.p.lineItemId)]?.bestelltAm?.slice?.(0, 10) ?? null;
+    const tage = new Set(liste.map(bestelltTag).filter(Boolean));
     const inDerMail = liste.some(e => zielVon.has(e.p.lineItemId));
     const offenJetzt = liste.some(e => zielVon.has(e.p.lineItemId) && !statusAlle[positionKey(auftrag.id, e.p.lineItemId)]?.bestelltAm);
-    const lieferungen = Math.max(1, tage.size + (offenJetzt ? 1 : 0));
+    // Eine Lieferung je Bestelltag; alles noch nicht Bestellte kommt zusammen.
+    const lieferungen = [...new Set(liste.map(bestelltTag))].map(tag => ({ neu: tag === null, eintraege: liste.filter(e => bestelltTag(e) === tag) }));
     const anteilig = inDerMail ? Math.max(...liste.map(e => e.teiler)) : 1;
-    const ergebnis = wegEinerGruppe({ lieferant, ziel, eintraege: liste, kosten, adresse, nah, kettlerAdresse: absender?.kettelservice, ladenPlz, ekOderNetto: ekBekannt ? ekSumme : (netto ?? Infinity), netto: netto ?? 0, tarif, jetzt, teiler: anteilig, lieferungen });
+    const ergebnis = wegEinerGruppe({ lieferant, ziel, eintraege: liste, kosten, adresse, nah, kettlerAdresse: absender?.kettelservice, ladenPlz, netto: netto ?? 0, tarif, jetzt, teiler: anteilig, lieferungen });
     posten.push(...ergebnis.posten);
     offen.push(...ergebnis.offen);
     if (!inland && (ziel === 'kettler' || ergebnis.uebersLager)) offen.push('Versand ins Ausland nicht hinterlegt');
