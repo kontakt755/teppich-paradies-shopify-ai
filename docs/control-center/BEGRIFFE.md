@@ -157,6 +157,11 @@ gebraeuchlich), Erfassen.
   14 Tagen (Ware 30) wieder.
 - **Belegt fertig** = in Shopify versendet, storniert, archiviert oder voll erstattet, oder im Dashboard
   abgeschlossen; fällt ohne Klick aus den Listen.
+- **Eingeworfen** (#1937) = Klick unter „Gepackt“: der Umschlag ist wirklich bei der Post. Gepackt allein zählt
+  nicht. Nach 5 Minuten wird eingetragen („An Kunden raus“, Shopify, Versandmail); bis dahin **Rückgängig**.
+  **Alle n eingeworfen** gilt nur für heute Gepacktes.
+- **Altfälle** (#1937) = vor heute gepackt und nie eingetragen, älteste Bestellung zuerst. Nichts wird von selbst
+  gebucht. **War schon früher raus…** = Versanddialog mit ausgeschalteter Versandmail.
 - **Gepackt, nicht verschickt** (#1709) = Umschlag in der Packstation gepackt, Versand aber nicht
   eingetragen; steht nach 3 Tagen in der Aufräumliste.
 - **Ist verschickt…** = Versanddialog „An Kunden raus“ für diesen Umschlag, Versandmail vorab aus.

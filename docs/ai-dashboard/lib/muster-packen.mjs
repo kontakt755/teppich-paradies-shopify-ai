@@ -473,6 +473,30 @@ export function offeneSuche(kundenListe = [], eingabe = '', ausserhalb = [], { m
 }
 
 /**
+ * So lange laesst sich "Eingeworfen" zuruecknehmen, erst danach bucht der Dienst den Versand. Eine Buchung
+ * in Shopify nimmt das Control Center nie zurueck (Architektur, Abschnitt 24), und die Versandmail ist dann
+ * schon beim Kunden - Rueckgaengig gibt es deshalb nur VOR der Buchung.
+ */
+export const EINWURF_FRIST_MINUTEN = 5;
+
+/**
+ * Gepackte Umschlaege fuer den Reiter "Gepackt": `wartend` (eingeworfen, Frist laeuft), `heute` (heute
+ * gepackt: die Sammelaktion) und `alt` (frueher gepackt, nie eingetragen; aelteste Bestellung zuerst).
+ * Altfaelle stehen bewusst nicht in der Sammelaktion: ob so ein Umschlag raus ist, weiss nur, wer ihn
+ * eingeworfen hat. Ein Umschlag mit Problem kann wieder geklickt werden und zaehlt deshalb nicht als wartend.
+ */
+export function einwurfListen(kundenListe = [], jetzt = new Date()) {
+  const gepackt = (kundenListe || []).filter(k => k?.bereich === 'gepackt');
+  const wartend = gepackt.filter(k => k.eingeworfen && !k.eingeworfen.problem);
+  const frei = gepackt.filter(k => !wartend.includes(k));
+  const tag = kalendertag(jetzt);
+  const heute = frei.filter(k => kalendertag(k.gepackt?.zeit) === tag);
+  const alt = frei.filter(k => kalendertag(k.gepackt?.zeit) !== tag)
+    .sort((x, y) => text(x.seit).localeCompare(text(y.seit)) || text(x.gepackt?.zeit).localeCompare(text(y.gepackt?.zeit)));
+  return { wartend, heute, alt, altBestellungen: alt.reduce((n, k) => n + k.bestellungen.length, 0) };
+}
+
+/**
  * "Muster kommt an": welcher Umschlag braucht das Muster in der Hand? `karten` = passende, noch nicht
  * eingelegte Muster offener Umschlaege in Packreihenfolge (aelteste Bestellung zuerst), hoechstens
  * `max`; `eingelegt` = passende Muster, die schon im Umschlag liegen oder gepackt sind; dazu die

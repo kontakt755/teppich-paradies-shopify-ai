@@ -41,6 +41,21 @@ const FESTE_LINKS = Object.freeze({
 
 export const STUFE_LABEL = Object.freeze({ erste: 'Erste Nachfrage', erinnerung: 'Erinnerung' });
 
+export const NACHFASS_KAMPAGNE = 'muster-nachfass';
+
+/**
+ * Kennung fuer Links in der Muster-Nachfrage: ohne sie kann niemand sehen, ob ein Kauf aus dieser Mail
+ * kommt. Sie benennt nur Kampagne und Stufe, nie den Kunden oder die Bestellung.
+ */
+export function nachfassLink(url, stufe) {
+  const u = new URL(url);
+  u.searchParams.set('utm_source', NACHFASS_KAMPAGNE);
+  u.searchParams.set('utm_medium', 'email');
+  u.searchParams.set('utm_campaign', NACHFASS_KAMPAGNE);
+  if (stufe) u.searchParams.set('utm_content', stufe);
+  return u.toString();
+}
+
 function tageSeit(iso, jetzt) {
   return kalendertage(iso, jetzt);
 }
@@ -451,16 +466,18 @@ export function mitFirmenangaben(text) {
  * @param {string|null} p.kundenname
  * @param {string|null} [p.absender]  Name der Person, die schreibt
  * @param {string[]} [p.farben]  nur "Muster nicht verfuegbar": betroffene Muster, je Eintrag "Produkt: Farbe"
+ * @param {string|null} [p.nachfass]  Stufe der Muster-Nachfrage (erste, erinnerung): die Links bekommen die Kampagnenkennung
  * @returns {{ betreff: string, text: string }|null}
  */
-export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [], farben = [] } = {}) {
+export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [], farben = [], nachfass = null } = {}) {
   if (!vorlage?.text) return null;
-  const werte = { ...FESTE_LINKS };
+  const link = url => (nachfass ? nachfassLink(url, nachfass) : url);
+  const werte = Object.fromEntries(Object.entries(FESTE_LINKS).map(([name, url]) => [name, link(url)]));
   // "Muster nicht verfuegbar": je Produkt eine Zeile mit seinen Farben (mehrzeilig, ohne Platzhalter).
   const farbZeilen = (farben || []).map(f => String(f ?? '').replace(/[{}]/g, '').trim()).filter(Boolean);
   if (farbZeilen.length) werte.Farben = farbZeilen.map(f => `– ${f}`).join('\n');
   const links = sichereMusterLinks(produkte);
-  const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${p.url}`).join('\n\n');
+  const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${link(p.url)}`).join('\n\n');
   // Die Linkliste steht auf eigenen Zeilen, danach eine Leerzeile - sonst klebt der naechste Satz am letzten Link.
   if (links.length) werte['Link Produkt'] = `\n${auswahl}\n`;
   // Keine feste Zahl in Mails, nur der Verweis auf die Produktseite (Inhaber 03.11.2026, w-246).

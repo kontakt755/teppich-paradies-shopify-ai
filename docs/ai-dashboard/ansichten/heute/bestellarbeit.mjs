@@ -18,7 +18,7 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
       : `<p class="muted">${klaerung ? 'Vor dem Bestellen müssen noch Angaben geklärt werden.' : 'Gerade keine Muster beim Lieferanten zu bestellen.'}</p>`;
   const p = pack?.verfuegbar ? pack.zahlen : null;
   const packBereich = !p || p.packen ? 'packen' : p.klaeren ? 'klaeren' : p.warten ? 'warten' : p.gepackt ? 'gepackt' : 'packen';
-  const packText = { packen: 'Muster packen', klaeren: 'Klärfälle ansehen', warten: 'Wartende Umschläge ansehen', gepackt: 'Versand vorbereiten' }[packBereich];
+  const packText = { packen: 'Muster packen', klaeren: 'Klärfälle ansehen', warten: 'Wartende Umschläge ansehen', gepackt: 'Eingeworfen eintragen' }[packBereich];
   const packHref = packBereich === 'packen' ? '#/kunden?tab=muster' : `#/kunden?tab=muster&mpbereich=${packBereich}`;
   const bestellFehler = bestellQuelle?.verfuegbar === false || bestellQuelle?.fehler;
   const packFehler = pack?.verfuegbar === false || pack?.fehler;
@@ -32,7 +32,7 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
       <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=warten">${plural(p.warten || 0, 'Umschlag wartet', 'Umschläge warten')} auf Ware</a>
       <a class="chip${p.klaeren ? ' warn' : ''}" href="#/kunden?tab=muster&amp;mpbereich=klaeren">${plural(p.klaeren || 0, 'Umschlag', 'Umschläge')} zu klären</a>
       <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=packen">${plural(p.packen || 0, 'Umschlag', 'Umschläge')} packbereit</a>
-      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=gepackt">${plural(p.gepackt || 0, 'Umschlag', 'Umschläge')} gepackt · Versand vorbereiten</a>
+      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=gepackt">${plural(p.gepackt || 0, 'Umschlag', 'Umschläge')} gepackt · Eingeworfen eintragen</a>
     </nav>` : `<p class="${packFehler ? 'notice warn' : 'muted'}" role="status">${packFehler ? 'Packstand nicht verfügbar. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>`}
     <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${packText}</a>
       <a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a>
@@ -56,7 +56,7 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
         <article><h3>Packstation &amp; Wareneingang</h3><p${packFehler ? ' class="notice warn" role="status"' : ''}>${p ? `${plural(p.packen, 'Umschlag', 'Umschläge')} packbereit${p.klaeren ? ` · ${p.klaeren} zu klären` : ''}` : packFehler ? 'Der Packstand kann gerade nicht geladen werden. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>
           ${p?.warten ? `<p><a href="#/kunden?tab=muster&mpbereich=warten">${plural(p.warten, 'Umschlag wartet', 'Umschläge warten')} auf Ware →</a></p>` : ''}
           <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${packText}</a><a class="btn btn-sm btn-ghost" href="#/einkauf?tab=lieferant&af=bestellt">Ware annehmen</a></div>
-          <a class="heute-weiter-link" href="#/kunden?tab=muster&mpbereich=gepackt">${p ? plural(p.gepackt, 'gepackter Umschlag', 'gepackte Umschläge') : 'Gepackte Umschläge'} · Versand vorbereiten →</a>
+          <a class="heute-weiter-link" href="#/kunden?tab=muster&mpbereich=gepackt">${p ? plural(p.gepackt, 'gepackter Umschlag', 'gepackte Umschläge') : 'Gepackte Umschläge'} · Eingeworfen eintragen →</a>
         </article>
       </div>
     </div>

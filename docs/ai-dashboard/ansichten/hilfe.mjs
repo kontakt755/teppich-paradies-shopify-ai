@@ -41,6 +41,7 @@ const ABLAEUFE = [
     '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>. Das Begleitblatt (A4) kommt mit in den Umschlag.',
     '<b>2 · Was ist da?</b> Jedes Muster überkleben, in den Umschlag legen und abhaken. Fehlt eins: <b>Fehlt noch – zurücklegen</b>.',
     '<b>3 · Zukleben</b>: Umschlag zukleben, dann <b>Umschlag gepackt</b>. Gepackt heißt noch nicht verschickt.',
+    '<b>4 · Einwerfen</b>: Liegt der Umschlag bei der Post, im Reiter <b>Gepackt</b> auf <b>Eingeworfen</b> drücken, für mehrere <b>Alle … eingeworfen</b>. Ein paar Minuten lang geht <b>Rückgängig</b>, dann wird eingetragen und der Kunde bekommt die Versandmail.',
     'Kommt ein Paket Muster vom Lieferanten: Reiter <b>Muster kommt an</b>. Eintippen, was auf dem Muster steht – die Karte sagt, in welchen Umschlag es gehört.',
   ]],
   ['Genossenschaft anschreiben', [

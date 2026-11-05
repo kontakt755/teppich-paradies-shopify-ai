@@ -60,7 +60,7 @@ function zeile(e, texte, lesend, erste, automatisch) {
   // Teppich-Muster bekommen die Teppich-Fassung (Rundgang #7), alle anderen die Vorlage ihrer Stufe.
   const vorlage = vorlageFuer(texte, e);
   const absender = state.session?.benutzer?.name || null;
-  const vorschlag = fuelleText(vorlage, { kundenname: e.kundenname, absender, produkte: e.produkte });
+  const vorschlag = fuelleText(vorlage, { kundenname: e.kundenname, absender, produkte: e.produkte, nachfass: e.stufe });
   const schluessel = entwurfSchluessel(e.orderId, e.stufe);
   const mail = vorschlag ? { ...vorschlag, ...entwuerfe.get(schluessel) } : null;
   const id = textId(e.orderId);
