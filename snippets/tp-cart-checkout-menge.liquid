@@ -11,6 +11,7 @@
   assign tp_cm_paare = ''
   assign tp_cm_anzahl = 0
   assign tp_cm_mehr = false
+  assign tp_cm_gesehen = '|'
 
   for tp_cm_item in cart.items
     capture tp_cm_einheit
@@ -31,9 +32,12 @@
     endcapture
     assign tp_cm_paar = tp_cm_item.quantity | append: ' = ' | append: tp_cm_zahl | append: ' ' | append: tp_cm_name
 
-    if tp_cm_paare contains tp_cm_paar
+    # Ganzes Paar mit Trennzeichen vergleichen: "1000 = 10,00 m" steckt sonst in "1000 = 10,00 m²".
+    assign tp_cm_marke = '|' | append: tp_cm_paar | append: '|'
+    if tp_cm_gesehen contains tp_cm_marke
       continue
     endif
+    assign tp_cm_gesehen = tp_cm_gesehen | append: tp_cm_paar | append: '|'
     if tp_cm_anzahl == 2
       assign tp_cm_mehr = true
       continue

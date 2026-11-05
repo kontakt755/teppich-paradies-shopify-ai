@@ -34,6 +34,13 @@ test('gleiche Zeilen erscheinen einmal, mehr als zwei Beispiele werden gekuerzt'
   assert.ok(!lang.includes('800'));
 });
 
+test('gleiche Menge in m² und m bleibt in beiden Reihenfolgen zwei Beispiele', async () => {
+  const flaeche = zeile(1000, qm);
+  const kante = zeile(1000, {}, 'je 0,01 laufender Meter');
+  assert.match(await render(flaeche, kante), /Hundertsteln: 1000 = 10,00 m², 1000 = 10,00 m\. Der Preis/);
+  assert.match(await render(kante, flaeche), /Hundertsteln: 1000 = 10,00 m, 1000 = 10,00 m²\. Der Preis/);
+});
+
 test('ohne Hundertstel-Artikel gibt es keinen Satz', async () => {
   assert.equal(await render(), '');
   assert.equal(await render(zeile(6)), '');
