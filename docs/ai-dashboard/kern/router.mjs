@@ -5,6 +5,7 @@
  * dem Inhaber vorbehalten ist - eine Zeile in ANSICHT_ROLLEN.
  */
 import { state } from './zustand.mjs';
+import { verbergeSuchbegriffe } from '../lib/suchverweis.mjs';
 
 /**
  * Welche Ansicht gehoert wem. Das Ausblenden lief bisher nur ueber CSS an den
@@ -33,10 +34,14 @@ export function parseRoute() {
   const [path, query = ''] = hash.split('?');
   const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'hausverwaltungen', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
   const view = darfAnsicht(bekannt) ? bekannt : 'heute';
-  state.route = { view, params: new URLSearchParams(query) };
+  const params = new URLSearchParams(query);
+  // Alter Link mit Suchbegriff im Klartext: Wert uebernehmen und aus der Adresse nehmen (w-266).
+  if (verbergeSuchbegriffe(params)) history.replaceState(history.state, '', `#/${path}${params.toString() ? `?${params}` : ''}`);
+  state.route = { view, params };
 }
 export function navigate(view, params = {}, { keepTask = false } = {}) {
   const p = new URLSearchParams(params);
+  verbergeSuchbegriffe(p);
   if (keepTask && state.route.params.get('task')) p.set('task', state.route.params.get('task'));
   const q = p.toString();
   location.hash = `#/${view}${q ? `?${q}` : ''}`;
@@ -63,5 +68,6 @@ export function setParam(key, value) {
   if (key === 'blf') p.delete('bls');
   if (key === 'blq') p.delete('blp');
   if (key !== 'view' && key !== 'task' && p.get('view') && ['status'].includes(key)) p.delete('view');
+  verbergeSuchbegriffe(p);
   location.hash = `#/${state.route.view}?${p}`;
 }

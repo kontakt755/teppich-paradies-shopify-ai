@@ -4,6 +4,7 @@ import { viewKundenMusterPacken, erledigteBestellungen, ERLEDIGT_TAGE } from '..
 import { state } from '../kern/zustand.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { oeffneKundeInformieren } from '../ansichten/kunden/muster-gesperrt.mjs';
+import { verbergeSuchbegriffe } from '../lib/suchverweis.mjs';
 
 const kunde = (nr, bereich) => ({ name: `Testkunde ${nr}`, schluessel: `kunde${nr}`, packSchluessel: `order${nr}`, bereich,
   adresse: {}, bestellungen: [{ orderId: `order${nr}`, orderName: `#TEST${nr}` }], wartetTage: 1,
@@ -13,6 +14,7 @@ const kunde = (nr, bereich) => ({ name: `Testkunde ${nr}`, schluessel: `kunde${n
 function ansicht(query, liste, ausserhalb = []) {
   globalThis.document ||= { addEventListener() {}, querySelector() {} };
   state.route.params = new URLSearchParams(query);
+  verbergeSuchbegriffe(state.route.params);   // wie parseRoute: Suchbegriffe stehen nur als Verweis in den Parametern
   kunden.musterPacken = { verfuegbar: true, kunden: liste, ausserhalb };
   return viewKundenMusterPacken();
 }
@@ -312,7 +314,7 @@ test('Muster kommt an: passt das Muster nur zu Gepacktem, steht das da statt "Ni
   const html = ansicht('tab=muster&mp=laden&mh=TEST6', [k]);
   assert.match(html, /Kein offener Umschlag braucht dieses Muster – es passt nur zu schon gepackten oder versandten Bestellungen/);
   assert.doesNotMatch(html, /Nichts gefunden\. Weniger Wörter versuchen/);
-  assert.match(html, /mpfertig=TEST6">Trotzdem zeigen</);
+  assert.match(html, /mpfertig=sv-[a-z0-9]+-\d+">Trotzdem zeigen</);
   assert.match(ansicht('tab=muster&mp=laden&mh=TEST6&mpfertig=TEST6', [k]), /Schon eingelegt[\s\S]*Umschlag ist schon gepackt/);
 });
 
@@ -322,7 +324,7 @@ test('Suche zeigt passende Musterbestellungen ausserhalb der Packliste mit Grund
   // Schon versandt ist fertig (Mitarbeiter 29.10.): standardmaessig nur gezaehlt, ein Klick zeigt es.
   const standard = ansicht('tab=muster&mpq=9G9', [kunde(1, 'packen')], aussen);
   assert.match(standard, /Kein offener Umschlag passt – nur schon gepackte oder versandte Bestellungen/);
-  assert.match(standard, /1 fertige Bestellung passt auch – schon gepackt oder versandt, deshalb nicht gezeigt\. <a href="#\/kunden\?tab=muster&amp;mpq=9G9&amp;mpfertig=9G9">Trotzdem zeigen</);
+  assert.match(standard, /1 fertige Bestellung passt auch – schon gepackt oder versandt, deshalb nicht gezeigt\. <a href="#\/kunden\?tab=muster&amp;mpq=sv-[a-z0-9]+-\d+&amp;mpfertig=sv-[a-z0-9]+-\d+">Trotzdem zeigen</);
   assert.doesNotMatch(standard, /Außerhalb der Packliste/);
   const storniert = ansicht('tab=muster&mpq=9G9', [kunde(1, 'packen')], [{ ...aussen[0], grund: 'storniert' }]);
   assert.match(storniert, /Außerhalb der Packliste[\s\S]*storniert – nicht verschicken/, 'Warnungen bleiben in der Suche');
@@ -337,7 +339,7 @@ test('Suche zeigt passende Musterbestellungen ausserhalb der Packliste mit Grund
   const html = ansicht('tab=muster&mpq=9G9&mpfertig=9G9', [kunde(1, 'packen')], aussen);
   assert.doesNotMatch(html, /data-mp-kunde="order1"/);
   assert.match(html, /Kein offener Umschlag passt – siehe unten/);
-  assert.match(html, /Schon gepackte und versandte Bestellungen sind mit drin\. <a href="#\/kunden\?tab=muster&amp;mpq=9G9">Fertige wieder ausblenden</);
+  assert.match(html, /Schon gepackte und versandte Bestellungen sind mit drin\. <a href="#\/kunden\?tab=muster&amp;mpq=sv-[a-z0-9]+-\d+">Fertige wieder ausblenden</);
   assert.match(html, /Außerhalb der Packliste[\s\S]*#TEST9[\s\S]*schon versandt oder erledigt[\s\S]*Farbnr\. 9G9/);
   assert.match(html, /bq=%23TEST9">#TEST9 – Bestellung ansehen</);
   assert.doesNotMatch(html.slice(html.indexOf('Außerhalb der Packliste')), /data-mp-(haken|drucken|aktion|alle)/);

@@ -104,9 +104,9 @@ function s_badge() {
 /** Kunden: Akte oeffnen/schliessen, Fall markieren, Rueckruf-Dialog. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function kundenKlickAkte(e) {
   const kundenOpen = e.target.closest('[data-kunden-open]');
-  if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('kunde', kundenLinkWert(kundenOpen.dataset.kundenOpen)); location.hash = `#/kunden?${p}`; return true; }
+  if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('kunde', kundenLinkWert(kundenOpen.dataset.kundenOpen)); if (state.route.params.get('tab') === 'suche' && state.route.params.get('kq')) p.set('kq', state.route.params.get('kq')); location.hash = `#/kunden?${p}`; return true; }
   const kundenZurueck = e.target.closest('[data-kunden-zurueck]');
-  if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return true; }
+  if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ tab: 'suche', kq: state.route.params.get('kq') })}` : ''}`; return true; }
   const fallMarke = e.target.closest('[data-fall-marke]');
   if (fallMarke) { e.preventDefault(); fallMarkeSetzen(fallMarke.dataset.fallMarke, fallMarke.dataset.grund); return true; }
   if (musterwirkungKlick(e)) return true;
