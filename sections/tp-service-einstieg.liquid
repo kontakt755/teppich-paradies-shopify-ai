@@ -29,7 +29,7 @@
     {%- endif -%}
 
     <div class="tp-se__actions">
-      <a href="{{ section.settings.anfrage_link | default: '/pages/kontakt' }}" class="tp-se__cta">
+      <a href="{{ section.settings.anfrage_link | default: '/pages/kontakt?thema=verlegung' }}" class="tp-se__cta">
         {{ section.settings.anfrage_cta }}
       </a>
       {%- if section.settings.telefon != blank -%}

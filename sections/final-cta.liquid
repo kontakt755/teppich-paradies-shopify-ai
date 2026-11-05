@@ -136,7 +136,7 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
         Anfrageformular (snippets/tp-anfrage-ziel), springt er dorthin.
       {%- endcomment -%}
       {%- assign tp_fc_ziel = section.settings.primary_link -%}
-      {%- if tp_fc_ziel contains 'pages/kontakt' -%}
+      {%- if tp_fc_ziel contains 'pages/kontakt' or tp_fc_ziel contains '#tp-anfrage' -%}
         {%- capture tp_fc_eigenes -%}{% render 'tp-anfrage-ziel' %}{%- endcapture -%}
         {%- assign tp_fc_eigenes = tp_fc_eigenes | strip -%}
         {%- if tp_fc_eigenes != blank -%}{%- assign tp_fc_ziel = tp_fc_eigenes -%}{%- endif -%}

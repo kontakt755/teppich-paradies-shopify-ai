@@ -54,6 +54,49 @@ test('unten: ein Kontaktbereich mit dem Formular zuerst, kein doppelter Anfrage-
   }
 });
 
+test('Pruefung 05.11.: Anfrageknoepfe mit eigenem Formular laufen ueber den Anker, sonst laedt die Seite neu', () => {
+  const ziel = read('snippets/tp-anfrage-ziel.liquid');
+  assert.match(ziel, /elsif taz_eigen != blank and ziel contains '#tp-anfrage'\s+echo taz_eigen/);
+  // Jede Stelle, deren Link in den Vorlagen mit Pfad auf #tp-anfrage zeigt, geht durch das Snippet.
+  for (const [datei, einstellung] of [
+    ['snippets/tp-service-hauptaktion.liquid', 'ziel'],
+    ['sections/treppenverlegun.liquid', 'section.settings.hero_cta_ziel'],
+    ['sections/tp-treppen-ausfuehrung.liquid', 'section.settings.cta_ziel'],
+    ['sections/tp-verlegeservice-kontakt.liquid', 'section.settings.kontakt_link'],
+    ['sections/tp-verlegegebiet.liquid', 'section.settings.cta_link'],
+  ]) {
+    const code = read(datei);
+    assert.ok(code.includes(`render 'tp-anfrage-ziel', ziel: ${einstellung}`), `${datei}: ${einstellung} laeuft nicht durch tp-anfrage-ziel`);
+    assert.ok(!code.includes(`href="{{ ${einstellung}`), `${datei}: ${einstellung} steht roh im Link`);
+  }
+  assert.ok(!read('sections/tp-verlegegebiet.liquid').includes('data-cta-url="{{ section.settings.cta_link'));
+});
+
+test('Pruefung 05.11.: das Herkunftsfeld fuellt das Layout, auch auf der Kontaktseite', () => {
+  assert.match(read('layout/theme.liquid'), /render 'tp-herkunft'/);
+  assert.doesNotMatch(read('sections/tp-start-kontakt.liquid'), /URLSearchParams/);
+  assert.match(read('sections/contact-form.liquid'), /name="contact\[Herkunft\]" value="" data-tp-herkunft disabled>/);
+});
+
+test('Pruefung 05.11.: Verlegeseiten ohne eigenes Formular oeffnen die Kontaktseite mit PLZ und Telefon', () => {
+  for (const [vorlage, einstellung] of [
+    ['boden-malerarbeiten', 'anfrage_link'],
+    ['unsere-arbeit', 'cta_link'],
+    ['wohnungsunternehmen', 'primary_btn_link'],
+    ['firmenkunden', 'primary_btn_link'],
+  ]) {
+    const t = template(`page.${vorlage}`);
+    const links = Object.values(t.sections).map((s) => s.settings?.[einstellung]).filter(Boolean);
+    assert.ok(links.length, `${vorlage}: ${einstellung} fehlt`);
+    for (const l of links) assert.equal(l, '/pages/kontakt?thema=verlegung', `${vorlage}: ${l}`);
+  }
+  // Das Telefon heisst wie im Formular der Verlegeseiten, sonst liest es der Mail-Leser nicht.
+  const kontakt = read('sections/contact-form.liquid');
+  assert.match(kontakt, /name="contact\[Telefon\]"/);
+  assert.doesNotMatch(kontakt, /<input[^>]*type="tel"[^>]*required/);
+  assert.match(read('sections/tp-start-kontakt.liquid'), /Telefon \(optional\)<input type="tel" name="contact\[Telefon\]" autocomplete="tel">/);
+});
+
 // --- Ziel zaehlen: snippets/tp-lead-events.liquid in einer Mini-Umgebung -----
 
 function umgebung({ adresse = '/pages/vinylboden-verlegen', speicher = new Map() } = {}) {

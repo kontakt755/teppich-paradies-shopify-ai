@@ -169,28 +169,7 @@
 {% endstylesheet %}
 
 {% javascript %}
-  /* Herkunft fuer die Anfrage-Mail (Werkbank w-030): kam der Besuch ueber eine
-     Anzeige oder einen Kampagnenlink? Gelesen wird nur die Adresse dieser Seite,
-     gespeichert wird nichts auf dem Geraet; Klick-IDs (gclid ...) gehen nicht mit,
-     nur ihr Kanal. Das Control Center zaehlt "Anzeige" als Quelle Werbung. */
-  (function () {
-    var felder = document.querySelectorAll('[data-tp-herkunft]');
-    if (!felder.length) return;
-    var p = new URLSearchParams(window.location.search);
-    var quelle = (p.get('utm_source') || '').slice(0, 40);
-    var medium = (p.get('utm_medium') || '').toLowerCase();
-    var kampagne = (p.get('utm_campaign') || '').slice(0, 60);
-    var text = '';
-    if (p.get('gclid') || p.get('gbraid') || p.get('wbraid')) text = 'Google-Anzeige';
-    else if (p.get('msclkid')) text = 'Microsoft-Anzeige';
-    else if (/^(cpc|ppc|paid|paid_?social|display|ads?)$/.test(medium)) text = 'Anzeige (' + (quelle || 'unbekannt') + ')';
-    else if (p.get('fbclid')) text = 'Link von Facebook/Instagram';
-    else if (quelle) text = 'Link (' + quelle + ')';
-    if (kampagne) text += (text ? ' · ' : '') + 'Kampagne ' + kampagne;
-    if (!text) return;
-    felder.forEach(function (f) { f.value = text; });
-  })();
-
+  /* Das Feld contact[Herkunft] fuellt snippets/tp-herkunft.liquid. */
   (function () {
     var t = document.querySelector('[data-tp-kon-toggle]');
     if (!t) return;
