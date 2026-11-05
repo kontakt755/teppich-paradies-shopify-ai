@@ -1,0 +1,50 @@
+{%- doc -%}
+  Eine Produktzeile der Schnellsuche. Gemeinsames Markup fuer Shopifys Treffer
+  und die festen Produkte eines Suchthemas (snippets/tp-suche-thema), beide
+  aufgerufen aus snippets/tp-suche-ergebnisse.liquid.
+
+  @param {object} product - Produkt der Zeile
+{%- enddoc -%}
+{%- liquid
+  assign tp_se_farben = 0
+  for tp_se_opt in product.options_with_values
+    if tp_se_opt.name == 'Farbe'
+      assign tp_se_farben = tp_se_opt.values.size
+    endif
+  endfor
+
+  # Farbwort im Suchbegriff (snippets/tp-suchfarbe-variante): Link
+  # und Bild aus derselben Variante wie der Preis (snippets/price).
+  assign tp_se_url = product.url
+  assign tp_se_bild = product.featured_image
+  capture tp_se_suchfarbe
+    render 'tp-suchfarbe-variante', product: product
+  endcapture
+  assign tp_se_suchteile = tp_se_suchfarbe | strip | split: '|'
+  if tp_se_suchteile.size == 2
+    assign tp_se_such_pos = tp_se_suchteile | first | plus: 0
+    assign tp_se_suchvariante = product.variants[tp_se_such_pos]
+    if tp_se_suchvariante != blank
+      assign tp_se_url = tp_se_suchvariante.url
+      assign tp_se_bild = tp_se_suchvariante.featured_image
+    endif
+  endif
+-%}
+<li ref="resultsItems[]" role="presentation" class="tp-se__item">
+  <a role="option" class="tp-se__produkt" data-tp-typ="produkt" href="{{ tp_se_url }}">
+    <span class="tp-se__bild" aria-hidden="true">
+      {%- if tp_se_bild -%}
+        {{ tp_se_bild | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '80px', loading: 'lazy', class: 'tp-se__img', alt: '' }}
+      {%- endif -%}
+    </span>
+    <span class="tp-se__text">
+      <span class="tp-se__titel" data-tp-titel>{{ product.title | escape }}</span>
+      <span class="tp-se__sub">
+        {{- product.type | escape -}}
+        {%- if tp_se_farben > 1 %} · {{ tp_se_farben }} Farben{% endif -%}
+        {%- unless product.available %} · Derzeit nicht lieferbar{% endunless -%}
+      </span>
+    </span>
+    <span class="tp-se__preis">{% render 'price', product_resource: product %}</span>
+  </a>
+</li>

@@ -1,5 +1,5 @@
 import { Component } from '@theme/component';
-import { debounce, onAnimationEnd, prefersReducedMotion } from '@theme/utilities';
+import { debounce, onAnimationEnd, prefersReducedMotion, requestIdleCallback } from '@theme/utilities';
 import { sectionRenderer } from '@theme/section-renderer';
 import { morph } from '@theme/morph';
 import { RecentlyViewed } from '@theme/recently-viewed-products';
@@ -360,6 +360,11 @@ class PredictiveSearchComponent extends Component {
         if (abortController.signal.aborted) return;
 
         morph(predictiveSearchResults, resultsMarkup);
+
+        // TP: "Meinten Sie" setzt assets/tp-suche.js in die frischen Treffer ein.
+        document.dispatchEvent(
+          new CustomEvent('tp:suchfenster:treffer', { detail: { begriff: searchTerm, ziel: predictiveSearchResults } })
+        );
 
         this.#resetScrollPositions();
       })
