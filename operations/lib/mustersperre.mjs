@@ -95,7 +95,10 @@ export function leseSperren(file, { streng = false } = {}) {
     throw new MustersperreFehler(500, `${path.basename(file)} ist beschädigt – bitte aus der Sicherung holen (npm run daten:sichern legt sie an). Es wurde nichts verändert.`, { grund: 'ablage' });
   }
   const gueltig = e => e && typeof e.sku === 'string' && GRUND_WERTE.includes(e.grund) && e.am;
-  if (streng && !roh.ereignisse.every(gueltig)) {
+  // Streng heisst auch: nicht leer und ein echter Zeitpunkt. `am: []` saehe sonst wie ein alter Eintrag aus
+  // und sortierte die Sperre vor eine aeltere Freigabe.
+  const einwandfrei = e => gueltig(e) && e.sku.trim() && typeof e.am === 'string' && Number.isFinite(Date.parse(e.am));
+  if (streng && !roh.ereignisse.every(einwandfrei)) {
     throw new MustersperreFehler(500, `${path.basename(file)} enthält ein ungültiges Ereignis – bitte aus der Sicherung holen (npm run daten:sichern legt sie an). Es wurde nichts verändert.`, { grund: 'ablage' });
   }
   return roh.ereignisse.filter(gueltig);

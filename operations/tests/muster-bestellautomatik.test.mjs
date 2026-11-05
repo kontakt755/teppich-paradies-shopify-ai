@@ -264,6 +264,9 @@ for (const [name, kaputt] of [
   ['nicht lesbar', f => fs.mkdirSync(f)],
   ['Sperre ohne Zeitpunkt', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [{ sku: 'M-TEST-1', grund: 'nicht verfuegbar' }] }))],
   ['leerer Eintrag', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [null] }))],
+  ['leere SKU', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [{ sku: '', grund: 'nicht verfuegbar', am: '2026-11-05T10:00:00.000Z' }] }))],
+  ['Zeitpunkt keine Zeichenkette', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [{ sku: 'M-TEST-1', grund: 'nicht verfuegbar', am: [] }] }))],
+  ['Zeitpunkt kein Datum', f => fs.writeFileSync(f, JSON.stringify({ version: 1, ereignisse: [{ sku: 'M-TEST-1', grund: 'nicht verfuegbar', am: 'gestern' }] }))],
 ]) test(`kaputte Sperrliste (${name}): nichts bestellt, Hinweis sichtbar, Datei unberuehrt`, async t => {
   const u = umgebung(t); const f = mustersperrePfad(u.dir); kaputt(f);
   const inhalt = fs.statSync(f).isFile() ? fs.readFileSync(f, 'utf8') : null;
