@@ -13,6 +13,7 @@ import { state } from './kern/zustand.mjs';
 import { $, toast } from './kern/helfer.mjs';
 import { logout } from './kern/sitzung.mjs';
 import { darfAnsicht, parseRoute, navigate, openTask, closeTask, setParam } from './kern/router.mjs';
+import { verbergeSuchbegriffe } from './lib/suchverweis.mjs';
 import { toggleTheme, folgeGeraet } from './kern/thema.mjs';
 import { bindeNavigation, mehrOffen, schliesseMehr } from './kern/navigation.mjs';
 import { refresh } from './kern/daten.mjs';
@@ -167,6 +168,7 @@ export function bindEvents() {
       if (el.value) p.set(key, el.value); else p.delete(key);
       if (key === 'psq') p.delete('seite');
       if (key === 'lq') p.delete('lseite');
+      verbergeSuchbegriffe(p);
       history.replaceState(null, '', `#/${state.route.view}?${p}`);
       parseRoute();
       render();

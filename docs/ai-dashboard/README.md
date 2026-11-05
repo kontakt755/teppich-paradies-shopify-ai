@@ -87,6 +87,7 @@ docs/ai-dashboard/
   kern/                         Zustand, Helfer, API-Zugriff, Sitzung, Router, Zeichnen – kennt keine Ansicht
   bausteine/                    was mehrere Ansichten teilen (Karten, Aufgaben-Panel, Dialog, Palette …)
   ansichten/                    eine Datei je Route; große Ansichten mit Teilmodulen im gleichnamigen Ordner
+  lib/suchverweis.mjs           Suchbegriffe kq, mpq, mpfertig: in der Adresse nur ein Verweis, der Begriff bleibt im Speicher der Seite
   lib/model.mjs                 Regeln: Status, Body-Parser, Dringlichkeit, Übergänge – Browser UND Server
   lib/todos.mjs                 To-dos und „Wer wartet auf was“ für „Heute“ – abgeleitet, nicht erfasst
   lib/akquise.mjs              Akquise Wohnungsunternehmen: Status, Wiedervorlage, Vorlage fuellen - Browser UND Server

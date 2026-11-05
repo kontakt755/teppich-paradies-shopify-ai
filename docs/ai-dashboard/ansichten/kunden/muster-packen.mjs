@@ -32,6 +32,7 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
 import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
+import { suchVerweis, suchwert } from '../../lib/suchverweis.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { GESPERRT_KURZ, oeffneKundeInformieren } from './muster-gesperrt.mjs';
@@ -456,7 +457,7 @@ export function viewKundenMusterPacken() {
   if (!d) return '<p class="muted" role="status">Lade offene Musterbestellungen …</p>';
   if (d.fehler) return stoerungState(d, 'Die Musterbestellungen');
   if (!d.verfuegbar) return emptyState('Keine Bestelldaten.', d.hinweis || 'Bitte „Jetzt aktualisieren“.');
-  const suche = (state.route.params.get('mpq') || '').trim();
+  const suche = suchwert(state.route.params, 'mpq').trim();
   // Gesucht wird in beiden Ansichten; Treffer zeigt immer die Umschlagansicht.
   const modus = !suche && state.route.params.get('mp') === 'laden' ? 'laden' : 'kunde';
   // Links statt Parameterknoepfe: der Wechsel hebt auch eine laufende Suche auf.
@@ -470,7 +471,7 @@ export function viewKundenMusterPacken() {
       <a class="btn btn-sm${modus === 'kunde' ? ' btn-primary' : ''}" href="${esc(modusLink('kunde'))}"${modus === 'kunde' ? ' aria-current="page"' : ''}>Bestellung packen</a>
       <a class="btn btn-sm${modus === 'laden' ? ' btn-primary' : ''}" href="${esc(modusLink('laden'))}"${modus === 'laden' ? ' aria-current="page"' : ''}>Muster kommt an</a>
     </nav>`;
-  const suchfeld = `<div class="toolbar"><input type="search" data-param="mpq" value="${esc(state.route.params.get('mpq') || '')}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer"></div>`;
+  const suchfeld = `<div class="toolbar"><input type="search" data-param="mpq" value="${esc(suchwert(state.route.params, 'mpq'))}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer"></div>`;
   const fehlerHinweis = packFehlerHtml(d);
   if (modus === 'laden') return umschalter + fehlerHinweis + PACKER_INFO + viewMusterKommtAn(d);
   const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt ist noch nicht versandt. Bestellt ein Kunde an mehreren Tagen, hat jeder Tag seinen eigenen Umschlag – nur Bestellungen vom selben Tag kommen zusammen.</p>${PACKER_INFO}`;
@@ -491,7 +492,7 @@ export function viewKundenMusterPacken() {
   const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => `<a class="btn${aktiv === b ? ' btn-primary' : ''}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${b === 'erledigt' ? erledigt.length : d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : k.bereich === b)).length}</span></a>`).join('')}</nav>`;
   // "Trotzdem zeigen" gilt nur fuer genau diese Suche (mpfertig = Suchtext) - jede neue Suche startet ohne Fertige.
   // In den Reitern Gepackt und Erledigt sucht man gerade das Fertige - dort ist es immer mit drin.
-  const mitFertigen = Boolean(suche) && (['gepackt', 'erledigt'].includes(angefordert) || state.route.params.get('mpfertig') === suche);
+  const mitFertigen = Boolean(suche) && (['gepackt', 'erledigt'].includes(angefordert) || suchwert(state.route.params, 'mpfertig') === suche);
   const gefunden = suche ? offeneSuche(d.kunden, suche, d.ausserhalb || [], { mitFertigen }) : null;
   const treffer = new Map((gefunden?.treffer || []).map(t => [t.packSchluessel, new Set(t.muster)]));
   // Offene Arbeit nach Dringlichkeit: erst Packbereites, dann zu Klaerendes, dann Wartendes; in jeder
@@ -573,13 +574,13 @@ function erledigtHtml(liste) {
 
 /**
  * Fertige Treffer (schon gepackt oder versandt) blendet die Suche aus (Mitarbeiter 29.10.); ein Klick
- * zeigt sie trotzdem (mpfertig=<Suchtext>, gilt nur fuer diese Suche), etwa um nachzusehen, wohin ein
+ * zeigt sie trotzdem (mpfertig verweist auf den Suchtext, gilt nur fuer diese Suche), etwa um nachzusehen, wohin ein
  * Muster schon gegangen ist. Offene Treffer stehen dann weiter zuerst.
  */
 function fertigHinweis(anzahl, mitFertigen, suchtext, genauer = false) {
   const p = new URLSearchParams(state.route.params);
   p.set('tab', 'muster');
-  if (mitFertigen) p.delete('mpfertig'); else p.set('mpfertig', suchtext);
+  if (mitFertigen) p.delete('mpfertig'); else p.set('mpfertig', suchVerweis(suchtext));
   const link = `<a href="${esc(`#/kunden?${p}`)}">${mitFertigen ? 'Fertige wieder ausblenden' : 'Trotzdem zeigen'}</a>`;
   if (mitFertigen) return `<p class="small muted mp-fertig">Schon gepackte und versandte Bestellungen sind mit drin. ${link}</p>`;
   if (!anzahl) return '';
@@ -631,7 +632,7 @@ function viewMusterKommtAn(d) {
     </div>`;
   const meldung = handMeldungHtml(d);
   if (!q) return feld + meldung + viewNachLaden(d);
-  const mitFertigen = state.route.params.get('mpfertig') === q;
+  const mitFertigen = suchwert(state.route.params, 'mpfertig') === q;
   const t = handTreffer(d.kunden, q, d.ausserhalb || [], { mitFertigen });
   const karten = t.karten.length ? `<h2 class="mp-titel mp-ohne-pfeil">${t.karten.length === 1 ? 'Gehört in' : `${t.karten.length} offene Muster passen – ältere Bestellung zuerst`}</h2>
     <div class="mp-karten">${t.karten.map((x, i) => karteHtml(x, { erste: i === 0 && t.karten.length > 1, lesend })).join('')}</div>` : '';

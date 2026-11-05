@@ -15,6 +15,7 @@ import { kunden, telLink, kundenAuftragKarte } from './gemeinsam.mjs';
 import { ensureKundenFaelle, fallKarte } from './faelle.mjs';
 import { ORG_STATUS_LABEL } from '../organisation/gemeinsam.mjs';
 import { zeitleisteBlock, kontaktKnoepfe } from './zeitleiste.mjs';
+import { suchwert } from '../../lib/suchverweis.mjs';
 
 // Voreinstellung "in Arbeit" (Inhabervorgabe) - die Liste ist beim Oeffnen
 // sofort da, ohne Suchtext getippt zu haben.
@@ -69,7 +70,7 @@ function kundenTrefferZeile(k) {
 }
 
 export function viewKundenSuche() {
-  const q = state.route.params.get('kq') || '';
+  const q = suchwert(state.route.params, 'kq');
   const filterRaw = state.route.params.get('kf') || '';
   const filter = Object.hasOwn(KUNDEN_FILTER_LABEL, filterRaw) ? filterRaw : KUNDEN_FILTER_STANDARD;
   ensureKundenSuche(q, filter);

@@ -2188,7 +2188,8 @@ Der Packhaken ersetzt keinen Liefer- oder Versandstatus. Nummer des Umschlags = 
 auch in der Wareneingangsansicht; Sortierung und das Abschliessen anderer Kunden aendern sie nicht.
 Kundendetails sind kompakt aufklappbar. Seit #1614 zeigt die Packstation jeweils eine der
 vier Arbeitslisten Packbereit / Wartet auf Ware / Zu klaeren / Gepackt (`mpbereich`), standardmaessig
-Packbereit. Die Suche (`mpq`) durchsucht alle vier Listen, auch Produkte und Farbnummern.
+Packbereit. Die Suche (`mpq`) durchsucht alle vier Listen, auch Produkte und Farbnummern. In der Adresse steht
+nur ein Verweis, der Begriff bleibt im Speicher der Seite (`lib/suchverweis.mjs`, ebenso `kq` und `mpfertig`).
 Ein Direktumschlag (`umschlag`) oeffnet dessen Arbeitsliste und die passende Karte.
 Die Wareneingangsansicht nach Partnerladen (`mp=laden`) bleibt erhalten.
 
