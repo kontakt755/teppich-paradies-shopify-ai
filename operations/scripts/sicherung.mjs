@@ -116,6 +116,7 @@ export const SICHERUNGSPFADE = Object.freeze([
   // Betriebsaufgaben (Aufgaben & Organisation), Rueckrufe und Fallmarken gibt es nur hier.
   'organisation',
   'rueckrufe.json',
+  'muster-anrufe.json',
   'fallmarken.json',
   // Lieferanten-Stammdaten (Bestellweg, Ansprechperson, Kundennummer), die Basisadresse von
   // Lieferant A und die privaten Versandtarife - von Hand gepflegt, nirgends sonst.

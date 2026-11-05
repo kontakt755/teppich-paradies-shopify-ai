@@ -1,0 +1,6 @@
+## 2026-11-05 · Neuer Reiter „Muster anrufen“: nachfragen und festhalten, warum nicht gekauft wird (#1929)
+
+- **Geaendert:** Unter Kunden und im Menü steht „Muster anrufen“. Wer seit 5 Tagen Muster hat, steht dort, je Kunde eine Zeile. Das Ergebnis wird angeklickt („Muster gefällt nicht“, „Hat woanders gekauft“, „Preis zu hoch“ …), Notizen werden eingetippt, oben zählt die Seite die genannten Gründe. Wer nicht angerufen wird, bekommt per Knopf eine fertig ausgefüllte Rückfrage-Mail im Mailprogramm. Ein Ergebnis schreibt auch die Zeitleiste, damit keine Nachfrage-Mail mehr hinterherläuft.
+- **Getestet:** `docs/ai-dashboard/tests/muster-anrufe.test.mjs` 15 von 15 grün, darunter echte Zeitleiste, Korrektur und Rolle „lesen“. Klickstrecke gegen die Datenkopie: 24 Kunden auf der Liste, Eintrag „Hat woanders gekauft“ ändert die Liste von 24 auf 23 und zeigt den Grund oben, nur Notiz geht, 0 JS-Fehler, 0 px Überlauf bei 390 und 1440 px.
+- **Risiken/Annahmen:** Telefonnummern erscheinen vorerst nur bei Rückrufwunsch (`ANRUF_NUR_MIT_RUECKRUFWUNSCH`), wegen § 7 UWG und der Inhaberregel vom 10.10.; aktuell hat keiner der 24 Kunden einen Rückruf gewünscht. Die Rückfrage-Mail wird von Hand gesendet und läuft nicht über den pausierten Versandlauf. Ihr Text ist noch nicht vom Inhaber abgenommen.
+- **Nächste Stufe:** Entscheidung des Inhabers zur Telefonsperre.

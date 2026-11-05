@@ -79,7 +79,7 @@ function zeichne() {
   // aus jedem anderen Bedienelement (auf dem Handy samt Tastatur).
   const kundenAnsichtNeu = state.route.view === 'kunden' && letzteAnsicht !== 'kunden';
   letzteAnsicht = state.route.view;
-  if (kundenAnsichtNeu && !state.route.params.get('kunde') && state.route.params.get('tab') !== 'rueckrufe') {
+  if (kundenAnsichtNeu && !state.route.params.get('kunde') && !['rueckrufe', 'anrufe'].includes(state.route.params.get('tab'))) {
     const feld = main.querySelector('input[type=search][data-param="kq"]');
     if (feld && document.activeElement !== feld) { feld.focus(); feld.setSelectionRange(feld.value.length, feld.value.length); }
   }
