@@ -31,7 +31,17 @@
   {{ block.shopify_attributes }}
 >
   <div class="{{ cart_summary_inner_class }}">
-    {% render 'cart-summary', accelerated_checkout_buttons_layout: 'vertical', section_id: section.id %}
+    <div class="tp-cart-hinweise">
+      {% render 'cart-summary', section_id: section.id, teil: 'hinweise' %}
+    </div>
+    {% # Summe und Kaufknopf bleiben im Bild: Handy als Leiste am unteren Rand, Desktop in der Seitenspalte %}
+    <div class="tp-cart-kasse">
+      {% render 'cart-summary', teil: 'kasse' %}
+    </div>
+    <div class="tp-cart-schnellkauf">
+      {% render 'cart-summary', accelerated_checkout_buttons_layout: 'vertical', teil: 'schnellkauf' %}
+      {% render 'cart-summary', teil: 'zahlung' %}
+    </div>
   </div>
 </div>
 
@@ -77,6 +87,79 @@
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
     }
+  }
+
+  .tp-cart-kasse {
+    position: sticky;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    gap: var(--gap-md);
+    width: 100%;
+    background-color: var(--color-background);
+  }
+
+  /*
+    Handy: Die Leiste muss ueber dem ganzen Warenkorb stehen koennen, nicht nur
+    in ihrem eigenen Block. Sticky haelt sich aber nur innerhalb des Elternteils,
+    deshalb treten die Huellen zurueck und .cart-page wird zum Elternteil.
+    Kein position: fixed - .cart-summary__inner ist ein Container, und so bleibt
+    der Fuss der Seite frei, ohne dass Hoehe reserviert werden muss.
+  */
+  @media screen and (max-width: 749px) {
+    .cart-page:not(.cart-page--empty) {
+      display: block;
+    }
+
+    .cart-page__summary,
+    .cart-page__summary .cart-summary,
+    .cart-page__summary .cart-summary__inner {
+      display: contents;
+    }
+
+    .cart-page__summary .tp-cart-hinweise {
+      margin-block-start: var(--padding-xl);
+    }
+
+    .tp-cart-schnellkauf {
+      padding-block: var(--padding-md) var(--padding-4xl);
+    }
+
+    .tp-cart-kasse {
+      bottom: 0;
+      width: auto;
+      margin-block-start: var(--padding-xl);
+      margin-inline: calc(var(--page-margin) * -1);
+      padding: var(--padding-md) var(--page-margin) max(var(--padding-md), env(safe-area-inset-bottom));
+      border-block-start: 1px solid var(--color-border);
+    }
+  }
+
+  /*
+    Desktop: Steht die Kasse unter langen Hinweisen, zieht bottom sie in den
+    Bildschirm; bei langen Warenkoerben haelt top sie unter dem Kopf.
+  */
+  @media screen and (min-width: 750px) {
+    .tp-cart-kasse {
+      bottom: 0;
+      padding-block: var(--padding-md);
+    }
+  }
+
+  /* Im Querformat am Handy reicht die Hoehe nicht fuer Kopf plus Leiste: dort nur bottom */
+  @media screen and (min-width: 750px) and (min-height: 600px) {
+    .tp-cart-kasse {
+      top: var(--padding-md);
+    }
+
+    body:has(> #header-group header-component[sticky]) .tp-cart-kasse {
+      top: calc(var(--header-height, 0px) + var(--padding-md));
+    }
+  }
+
+  .tp-cart-schnellkauf {
+    width: 100%;
   }
 
   /* If extend is on, only include top and bottom borders when the border radius is 0. */

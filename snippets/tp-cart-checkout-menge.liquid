@@ -1,19 +1,62 @@
 {%- doc -%}
-  Kurze Uebersetzung der nativen Checkout-Menge in die Kundeneinheit.
-  Nutzt dieselbe belegte Hundertstel-Einheit wie der Einzelpreis; keine
-  Preisberechnung und keine Aenderung an der Warenkorbmenge.
+  Ein Satz ueber "Zur Kasse": erklaert die native Checkout-Menge von Artikeln,
+  die in Hundertsteln gerechnet werden (Teppich nach Mass 600 = 6,00 m²,
+  Kettelservice 1000 = 10,00 m). Vorher stand der Hinweis je Zeile und
+  verlaengerte den Weg zur Kasse (Pruefung 2026-11-05). Keine Preisberechnung
+  und keine Aenderung an der Warenkorbmenge; ohne solchen Artikel kein Satz.
 
-  @param {object} line_item - Warenkorbposition
+  Hoechstens zwei Beispiele, die feste Leiste soll niedrig bleiben.
 {%- enddoc -%}
-{%- capture tp_cm_einheit -%}
-  {%- render 'tp-cart-einzelpreis-einheit', line_item: line_item -%}
-{%- endcapture -%}
-{%- assign tp_cm_teile = tp_cm_einheit | strip | split: '|' -%}
-{%- if tp_cm_teile.first == '100' and line_item.quantity > 0 -%}
-  {%- assign tp_cm_menge = line_item.quantity | times: 0.01 -%}
-  {%- assign tp_cm_name = tp_cm_teile.last | remove_first: '/' -%}
-  {%- if tp_cm_name == 'lfm' -%}{%- assign tp_cm_name = 'm' -%}{%- endif -%}
-  <p class="tp-cart-mengenhinweis" data-tp-checkout-menge>
-    An der Kasse steht die Menge {{ line_item.quantity }} für {% render 'tp-zahl-de', zahl: tp_cm_menge %} {{ tp_cm_name | escape }}.
+{%- liquid
+  assign tp_cm_paare = ''
+  assign tp_cm_anzahl = 0
+  assign tp_cm_mehr = false
+
+  for tp_cm_item in cart.items
+    capture tp_cm_einheit
+      render 'tp-cart-einzelpreis-einheit', line_item: tp_cm_item
+    endcapture
+    assign tp_cm_teile = tp_cm_einheit | strip | split: '|'
+    if tp_cm_teile.first != '100' or tp_cm_item.quantity < 1
+      continue
+    endif
+
+    assign tp_cm_name = tp_cm_teile.last | remove_first: '/'
+    if tp_cm_name == 'lfm'
+      assign tp_cm_name = 'm'
+    endif
+    assign tp_cm_menge = tp_cm_item.quantity | times: 0.01
+    capture tp_cm_zahl
+      render 'tp-zahl-de', zahl: tp_cm_menge
+    endcapture
+    assign tp_cm_paar = tp_cm_item.quantity | append: ' = ' | append: tp_cm_zahl | append: ' ' | append: tp_cm_name
+
+    if tp_cm_paare contains tp_cm_paar
+      continue
+    endif
+    if tp_cm_anzahl == 2
+      assign tp_cm_mehr = true
+      continue
+    endif
+    if tp_cm_anzahl > 0
+      assign tp_cm_paare = tp_cm_paare | append: ', '
+    endif
+    assign tp_cm_paare = tp_cm_paare | append: tp_cm_paar
+    assign tp_cm_anzahl = tp_cm_anzahl | plus: 1
+  endfor
+-%}
+{%- if tp_cm_anzahl > 0 -%}
+  <p class="tp-cart-kasse-menge" data-tp-checkout-menge>
+    In der Kasse zählt die Menge in Hundertsteln: {{ tp_cm_paare | escape }}{% if tp_cm_mehr %} usw{% endif %}. Der Preis bleibt gleich.
   </p>
 {%- endif -%}
+
+{% stylesheet %}
+  .tp-cart-kasse-menge {
+    width: 100%;
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / var(--opacity-subdued-text));
+    font-size: var(--font-size--2xs);
+    line-height: 1.4;
+  }
+{% endstylesheet %}
