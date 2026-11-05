@@ -47,7 +47,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 | GitHub synchronisieren | **Aufgaben neu laden** | |
 | Packliste (lokale Datei) | **Packstation** (Arbeitsgang: „Muster packen“) | Reiter unter Kunden (#1572); „Umschlag gepackt“ ist der gemeinsame Stand, das Abhaken je Muster nur eine Packhilfe am Gerät |
 | Einkauf & Wareneingang (Menuepunkt) | **Bestellen** | Menuepunkt unter „Kunden & Einkauf“, wie der Seitentitel (Rundgang 26.10.2026) |
-| Abtelefonieren verschickter Muster | **Muster anrufen** | Reiter unter Kunden; Ergebnis anklicken, Notiz eintippen, „Rückfrage-Mail öffnen“ für alle, die nicht angerufen werden |
+| Abtelefonieren verschickter Muster | **Kunden nach Produkt fragen** | Menüpunkt direkt unter Packstation; Ergebnis anklicken, Notiz eintippen, „Rückfrage-Mail öffnen“ für alle, die nicht angerufen werden |
 | A4-Blatt im Musterumschlag | **Begleitblatt** | Packstation, Knopf „Begleitblatt drucken“ |
 | Partnerladen | **Lieferant** | Packstation, Reiter „Muster kommt an“ („Lieferant nicht hinterlegt“) |
 | Wareneingang nach Partnerladen | **Muster kommt an** | Reiter der Packstation; auch in Leerzustaenden und Rueckweg-Knoepfen |

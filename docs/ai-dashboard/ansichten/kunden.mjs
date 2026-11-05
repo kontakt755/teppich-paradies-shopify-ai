@@ -48,7 +48,7 @@ export function viewKunden() {
   ensureServiceanfragen();
   ensureMusterPacken();
   ensureMusterAnrufe();
-  const titel = tab === 'anrufe' ? 'Muster anrufen' : tab === 'musterwirkung' ? 'Musterwirkung' : tab === 'muster' ? 'Packstation' : tab === 'bestellungen' ? 'Bestellungen' : 'Kunden';
+  const titel = tab === 'anrufe' ? 'Kunden nach Produkt fragen' : tab === 'musterwirkung' ? 'Musterwirkung' : tab === 'muster' ? 'Packstation' : tab === 'bestellungen' ? 'Bestellungen' : 'Kunden';
   const beschreibung = tab === 'anrufe' ? 'Hier fragst du nach, wie die Muster angekommen sind, und hältst fest, warum gekauft wird oder nicht.' : tab === 'musterwirkung' ? 'Hier vergleichst du Musteraufwand und beobachtete Warenkäufe – mit klarer Datenabdeckung.' : tab === 'muster' ? 'Hier findest du packbereite Umschläge, fehlende Muster und den gemeinsamen Packstand.' : tab === 'bestellungen' ? 'Hier bearbeitest du Kundenbestellungen und siehst den nächsten Schritt.' : 'Hier findest du Kunden am Telefon schnell, ihre Bestellungen und wer zurückgerufen werden möchte.';
   const head = `<div class="page-head"><div><h1>${titel}</h1><p class="sub">${beschreibung}</p></div></div>
     <div class="tabs no-print" role="tablist">
@@ -56,7 +56,7 @@ export function viewKunden() {
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="suche">Suche</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'bestellungen'}" data-param="tab" data-value="bestellungen">Bestellungen</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'muster'}" data-param="tab" data-value="muster">Muster packen${m_badge()}</button>
-      <button type="button" class="tab" role="tab" aria-selected="${tab === 'anrufe'}" data-param="tab" data-value="anrufe">Muster anrufen${a_badge()}</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'anrufe'}" data-param="tab" data-value="anrufe">Kunden nach Produkt fragen${a_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'service'}" data-param="tab" data-value="service">Service-Anfragen${s_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'angebote'}" data-param="tab" data-value="angebote">Angebote</button>
@@ -76,7 +76,7 @@ export function viewKunden() {
     <nav class="chips no-print" aria-label="Bestellungen und Kunden">
       <a class="chip" href="#/kunden?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit"${tab === 'bestellungen' ? ' aria-current="page"' : ''}>Bestellungen</a>
       <a class="chip" href="#/kunden?tab=muster"${tab === 'muster' ? ' aria-current="page"' : ''}>Packstation</a>
-      <a class="chip" href="#/kunden?tab=anrufe"${tab === 'anrufe' ? ' aria-current="page"' : ''}>Muster anrufen</a>
+      <a class="chip" href="#/kunden?tab=anrufe"${tab === 'anrufe' ? ' aria-current="page"' : ''}>Kunden nach Produkt fragen</a>
       <a class="chip" href="#/kunden?tab=musterwirkung"${tab === 'musterwirkung' ? ' aria-current="page"' : ''}>Musterwirkung</a>
       <a class="chip" href="#/kunden">Weitere Kundenansichten</a>
     </nav>`;

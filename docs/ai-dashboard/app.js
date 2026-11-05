@@ -30,6 +30,7 @@ import { kunden } from './ansichten/kunden/gemeinsam.mjs';
 import { viewEinkauf } from './ansichten/einkauf.mjs';
 import { viewLexikon } from './ansichten/lexikon.mjs';
 import { musterPackenOffen } from './ansichten/kunden/muster-packen.mjs';
+import { musterAnrufeOffen } from './ansichten/kunden/muster-anrufe.mjs';
 import { bestellungenOffen } from './ansichten/kunden/bestellungen.mjs';
 import { viewKunden } from './ansichten/kunden.mjs';
 import { viewOrganisation } from './ansichten/organisation.mjs';
@@ -63,7 +64,7 @@ async function init() {
   registriereNachZeichnen(zeichneDatenstand);
   // Zaehler in der Navigation: nur, was ohnehin geladen ist - kein eigener Abruf dafuer.
   // Kunden: sofort faellige Faelle plus alle noch offenen Service-Anfragen.
-  registriereNavZaehler({ bestellungen: () => bestellungenOffen({ art: 'ware' }), packen: musterPackenOffen, kunden: () => (kunden.faelle?.sofort || 0) + serviceOffenAnzahl() });
+  registriereNavZaehler({ bestellungen: () => bestellungenOffen({ art: 'ware' }), packen: musterPackenOffen, fragen: musterAnrufeOffen, kunden: () => (kunden.faelle?.sofort || 0) + serviceOffenAnzahl() });
   parseRoute();
   bindEvents();
   renderThemeButton();

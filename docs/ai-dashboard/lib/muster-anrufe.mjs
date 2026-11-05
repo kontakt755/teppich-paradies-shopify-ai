@@ -1,5 +1,5 @@
 /**
- * "Muster anrufen": wer hat seit mindestens 5 Tagen Muster und muss nachtelefoniert werden?
+ * "Kunden nach Produkt fragen" (Route tab=anrufe): wer hat seit mindestens 5 Tagen Muster und muss nachtelefoniert werden?
  * Reine Funktionen ohne DOM und ohne Dateizugriff - Browser (Dialog) und Server (Liste, Pruefung)
  * nutzen dieselben Ergebnisse. Die Eintraege selbst liegen in operations/lib/muster-anrufe.mjs.
  *

@@ -1,5 +1,5 @@
 /**
- * Kunden, Reiter "Muster anrufen": wer seit 5 Tagen Muster hat, wird nachgefragt - am Telefon oder,
+ * Kunden, Reiter "Kunden nach Produkt fragen": wer seit 5 Tagen Muster hat, wird nachgefragt - am Telefon oder,
  * wenn das nicht geht, per Rueckfrage-Mail. Das Ergebnis wird angeklickt, Notizen eingetippt; oben
  * steht, welche Gruende bisher genannt wurden, darunter zugeklappt Vermutungen und Ideen
  * (lib/muster-ideen.mjs). Rechnen: lib/muster-anrufe.mjs. Gestaltung: stile/muster.css.
@@ -20,13 +20,14 @@ export function ensureMusterAnrufe() {
   kunden.loadingMusterAnrufe = true;
   fetchEinkauf('/api/kunden/muster-anrufe').then((d) => {
     kunden.musterAnrufe = d; kunden.loadingMusterAnrufe = false;
-    if (state.route.view === 'kunden') render();
+    if (['heute', 'kunden'].includes(state.route.view)) render();
   });
 }
 
-/** Zahl am Reiter: genau die Liste "Jetzt anrufen". */
+/** Zahl im Menue und am Reiter: alle, die jetzt dran sind, egal ob per Telefon oder E-Mail. */
 export function musterAnrufeOffen() {
-  return kunden.musterAnrufe?.anrufen?.length || 0;
+  const m = kunden.musterAnrufe;
+  return m?.verfuegbar ? m.anrufen.length + m.ohneNummer.length + m.gesperrt.length : 0;
 }
 
 const alleZeilen = () => {
