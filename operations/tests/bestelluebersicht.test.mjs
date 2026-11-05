@@ -403,3 +403,14 @@ test('Shopifyarchivierung bleibt explizit am Auftragsmodell erhalten ohne Versan
   assert.equal(r.auftraege[0].erfuellt, 'UNFULFILLED');
   assert.equal(r.auftraege[1].archiviert, false);
 });
+
+test('summen: aktueller Stand nach Bestellaenderung, Storno zeigt weiter den Wert bei Bestellung (#1056)', () => {
+  const geld = (n) => ({ shopMoney: { amount: String(n), currencyCode: 'EUR' } });
+  const basis = { id: 'gid://shopify/Order/1056', name: '#T1056', createdAt: '2026-10-21T10:00:00Z', lineItems: { nodes: [] },
+    totalPriceSet: geld(200), subtotalPriceSet: geld(200), currentTotalPriceSet: geld(100), currentSubtotalPriceSet: geld(100) };
+  const summen = (o) => aufbereiten({ orders: [o] }).auftraege[0].details.summen;
+  assert.equal(summen(basis).gesamt.betrag, 100);
+  assert.equal(summen(basis).zwischensumme.betrag, 100);
+  assert.equal(summen({ ...basis, cancelledAt: '2026-10-22T10:00:00Z' }).gesamt.betrag, 200);
+  assert.equal(summen({ ...basis, currentTotalPriceSet: undefined }).gesamt.betrag, 200, 'alter Export ohne aktuelle Felder');
+});

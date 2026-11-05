@@ -18,7 +18,8 @@ import { musterAutomatikBlock } from '../bausteine/muster-bestellanzeige.mjs';
  * Sprungfelder (die Zahlen stehen jetzt an den Sicht-Chips), die Spalte "Wir sind dran" und
  * die leeren Bloecke "Laden nicht eingerichtet"/"Montage noch nicht verbunden".
  *
- * Shop-Übersicht (Standard ohne `sicht`): nur rote To-dos, ganz oben als "Probleme"
+ * Shop-Übersicht (Standard ohne `sicht`): zuerst die Warenkennzahl (heute/warenkennzahl.mjs, nur
+ * Inhaber) und die offenen Warenbestellungen, danach die roten To-dos als "Probleme"
  * (heute/probleme.mjs, w-206) - aus denselben Quellen wie die Gesamtübersicht, damit dort nichts
  * Rotes steht, was hier fehlt. Gelbes und Normales bleibt hinter "Weitere Bereiche".
  *
@@ -65,6 +66,7 @@ import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
 import { problemeBlock } from './heute/probleme.mjs';
+import { warenkennzahlBlock } from './heute/warenkennzahl.mjs';
 
 const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
 const SPALTE_SICHTBAR = 8;
@@ -202,8 +204,9 @@ function viewShop() {
     <header class="heute-geschaeft-kopf shop-start-kopf"><h1>Shop-Übersicht</h1>
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
     </header>
-    ${problemeShop(nf)}
+    ${warenkennzahl()}
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
+    ${problemeShop(nf)}
     ${inhaberUeberblick()}
     ${musterAutomatikBlock(kunden.bestellungen)}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
@@ -252,14 +255,21 @@ function problemQuellenFehlen() {
   return arbeitsquellenStand(teile).fehlt;
 }
 
-/** Inhaber: Shop, Umsatz, Entscheidungen und Frist in einer Zeile; Kennzahlen klappen darunter auf. */
+/** Umsatzzahlen sieht nur der Inhaber (NUR_INHABER im Server); alle anderen beginnen mit den Warenbestellungen. */
+function warenkennzahl() {
+  if (!istInhaber()) return '';
+  ensureEinkaufKennzahlen();
+  return warenkennzahlBlock(einkauf.kennzahlen);
+}
+
+/** Inhaber: Shop, Entscheidungen und Frist in einer Zeile; die weiteren Kennzahlen klappen darunter auf. */
 function inhaberUeberblick() {
   if (!istInhaber()) return '';
   ensureEinkaufKennzahlen();
   if (darfAnsicht('shopwache')) ensureShopwache();
   const kzOffen = Boolean(state.route.params.get('kz'));
   return inhaberZeile({
-    shop: darfAnsicht('shopwache') ? shopwache.daten : undefined, kennzahlen: einkauf.kennzahlen,
+    shop: darfAnsicht('shopwache') ? shopwache.daten : undefined,
     tasks: state.tasks, aufgabenGeladen: Boolean(state.raw), kzOffen,
   }) + (kzOffen ? kennzahlenBlock() : '');
 }
@@ -554,7 +564,7 @@ function kennzahlenBlock() {
     <div class="heute-kpis">
       ${kachel('Bestellungen', zahl(z7?.bestellungen), zahl(z30?.bestellungen))}
       ${kachel('davon kostenlose Muster', zahl(z7?.kostenlos), zahl(z30?.kostenlos))}
-      ${kachel('Umsatz', geld(z7?.umsatz, z7), geld(z30?.umsatz, z30))}
+      ${kachel('Umsatz mit Versand', geld(z7?.umsatz, z7), geld(z30?.umsatz, z30))}
       ${kachel('Ø je bezahlter Bestellung', schnittText(z7, geld), schnittText(z30, geld))}
     </div>
   </section>`;

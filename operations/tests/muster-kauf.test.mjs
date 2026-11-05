@@ -126,3 +126,17 @@ test('Argumente und Bericht ohne Kundendaten', () => {
   assert.match(text, /Gesamt\s+1 Musterkunden · reif 1, davon gekauft 0 = 0 %/);
   assert.doesNotMatch(text, /k1|#1/);
 });
+
+// #1056: totalPriceSet behielt nach dem Positionstausch das Doppelte. Die Auswertung rechnet aus
+// den Positionen, entfernte Mengen stehen dort mit 0: der Fehler betraf sie nicht und soll es nicht.
+test('nachtraeglich entfernte Position zaehlt nicht als Warenkauf und nicht im Wert', () => {
+  const orders = [
+    bestellung('#M', 20, 'k', { nodes: [muster('Muster A')] }),
+    { ...bestellung('#W', 10, 'k', { nodes: [ware('Bauchemie', 0), ware('Bauchemie', 80)] }), totalPriceSet: { shopMoney: { amount: '200' } } },
+    bestellung('#N', 10, 'n', { nodes: [muster('Muster B')] }),
+    bestellung('#X', 5, 'n', { nodes: [ware('Bauchemie', 0)] }),
+  ];
+  const r = musterKauf(orders, { jetzt: JETZT, tage: 40, nachTagen: 30 });
+  assert.equal(r.gesamt.musterkunden, 2);
+  assert.equal(r.gesamt.kaufOffen + r.gesamt.kaufReif, 1, 'nur der Kauf mit bezahlter Position');
+});

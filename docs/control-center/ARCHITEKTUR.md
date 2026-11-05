@@ -631,7 +631,7 @@ weiterhin vorhandene Hintergrundzahlen; sie bilden nicht die Reihenfolge der Sta
 | Kachel | Quelle | Inhalt |
 |---|---|---|
 | „Einkauf – heute zu tun" | `einkaufBestellungen()` + `einkaufAuftragsstatus()` | Positionen zu bestellen, offene Musterbestellungen, Aufträge mit Problem (Ampel rot: Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID), Positionen je Schritt des Auftragsflusses |
-| „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz, Durchschnittsbon der letzten 7 und 30 Tage |
+| „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz mit Versand, Durchschnittsbon der letzten 7 und 30 Tage; seit 05.11. zusätzlich `ware`, `muster` und `vorwoche` für die Warenkennzahl |
 | „Laden" (seit 2026-10-11) | `/api/laden/zahlen` → Auftrags-App `?ansicht=zahlen` | offene Beratungen (davon neu), fällige Wiedervorlagen, Angebote offen (davon nachfassen), Fälle aus dem Shop (7 Tage), gewonnen/verloren (30 Tage); nur wenn > 0 eine Zeile „Spam-Verdacht“ (seit 2026-10-12) mit Link „Spam prüfen“ direkt in den Filter; Link „Laden-Ansicht öffnen" |
 | „Montage" (seit 2026-10-12) | dieselbe Antwort, Objekt `montage` | Einsätze heute/morgen, offen von gestern, Meldungen offen, Anträge offen, neue Aufträge, neue Rückmeldungen – jede Zahl optional; Link „Montage-App öffnen" |
 
@@ -2464,9 +2464,18 @@ zwischengespeichert; die Alltagssichten brauchen sie ohnehin). Der Inhaber sieht
 Laden-/Treppenanfragen, Angebote aus Kundenfällen und Team-Aufgaben (`NEBENBEREICH_ARTEN`: `service`,
 `angebot`, `aufgabe`), auch wenn sie rot sind: der Inhaber hat sie am 22.10. in „Weitere Bereiche“
 geschoben, die Anfragen stehen dort mit Zahl und Alter; Kundenfälle und Aufgaben werden auf der
-Shop-Übersicht deshalb gar nicht geladen. Gelbes und Normales bleibt in den Alltagssichten, damit
-die Warenbestellungen direkt darunter zuerst kommen; drei Zeilen sichtbar, der Rest klappt auf.
-Ohne rotes To-do erscheint kein Block.
+Shop-Übersicht deshalb gar nicht geladen. Gelbes und Normales bleibt in den Alltagssichten; drei
+Zeilen sichtbar, der Rest klappt auf. Ohne rotes To-do erscheint kein Block. Seit 05.11. steht der
+Block unter den Warenbestellungen (Inhaber 22.10.: zahlende Warenkunden zuerst).
+
+**Warenkennzahl (05.11.).** `ansichten/heute/warenkennzahl.mjs`, nur Inhaber, ganz oben: Warenumsatz
+und Warenkunden der letzten 7 Tage, die 7 Tage davor, Muster in einer eigenen Zeile. Gerechnet in
+`operations/lib/kennzahlen.mjs`: bezahlt, brutto, ohne Versand, Grundlage `currentSubtotalPriceSet`.
+Das ist der Stand nach Bestelländerungen; `totalPriceSet` bleibt der Wert bei Bestellung und zählte
+eine getauschte Position doppelt (#1056). Service auf einer Warenbestellung zählt mit, allein macht
+er niemanden zum Warenkunden. Zeilensummen und Bestellwerte (`summen`, `bestellwert`) zeigen ebenfalls
+den aktuellen Stand, stornierte Bestellungen den Wert bei Bestellung. Tests: `warenkennzahl.test.mjs`,
+`operations/tests/kennzahlen.test.mjs`.
 Tests: `shop-start-probleme.test.mjs`, `shop-start.test.mjs`.
 
 Shopify-Archivierung bleibt ein ausdruecklicher bewusster Abschluss: `closedAt` wird als
@@ -2716,8 +2725,9 @@ zugeordnet“, ohne Namen „Lieferant A“. „Default Title“ wird nicht als 
 Test: `zeitleiste-bestellweg.test.mjs`.
 
 **Inhaberzeile (#44).** `ansichten/heute/inhaber-zeile.mjs` (reine Funktionen): Shop-Kontrolle,
-7-Tage-Umsatz (Knopf `kz` klappt `kennzahlenBlock` auf), offene Entscheidungen, naechste Frist
-offener Aufgaben. Nur Inhaber; dafuer laedt die Shop-Übersicht beim Inhaber zusaetzlich
+Knopf „Weitere Kennzahlen“ (`kz` klappt `kennzahlenBlock` auf), offene Entscheidungen, naechste Frist
+offener Aufgaben. Die Frist einer Entscheidung zaehlt nur, bis entschieden ist (`fristGilt`): ab
+`bereit` meldet sie nichts mehr, das Issue darf fuer Nacharbeit offen bleiben. Nur Inhaber; dafuer laedt die Shop-Übersicht beim Inhaber zusaetzlich
 Kennzahlen und Shop-Kontrolle, fuer alle die Service-Anfragen (Zahl an „Weitere Bereiche“).
 Tests: `inhaber-ueberblick.test.mjs`, `shop-start.test.mjs`.
 

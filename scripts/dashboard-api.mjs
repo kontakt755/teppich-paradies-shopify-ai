@@ -3501,7 +3501,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           befehl: 'npm run kennzahlen:export -- --ziel ' + file,
         };
       }
-      return { verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, zeitraeume: daten.zeitraeume, topProdukte: daten.topProdukte || [] };
+      return { verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, zeitraeume: daten.zeitraeume, vorwoche: daten.vorwoche || null, topProdukte: daten.topProdukte || [] };
     },
 
     /**

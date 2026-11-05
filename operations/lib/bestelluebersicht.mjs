@@ -277,6 +277,14 @@ function jaNein(wert) {
   return wert ? wert : '–';
 }
 
+/**
+ * Aktueller Stand nach Bestellaenderungen und Erstattungen (#1056). Eine stornierte Bestellung
+ * zeigt weiter, was bestellt war: "0,00 €" sagte in der Liste nichts mehr. Zaehlen tut sie nirgends.
+ */
+function aktuell(order, jetzt, urspruenglich) {
+  return !order.cancelledAt && jetzt ? jetzt : urspruenglich;
+}
+
 function geld(set) {
   const m = set?.shopMoney;
   if (!m || m.amount === undefined || m.amount === null) return null;
@@ -323,10 +331,10 @@ function vollstaendigeDetails(order, positionen) {
     rechnungsadresse: adresse(order.billingAddress),
     versandart: order.shippingLine?.title ?? '–',
     summen: {
-      zwischensumme: geld(order.subtotalPriceSet),
-      versand: geld(order.totalShippingPriceSet),
-      steuer: geld(order.totalTaxSet),
-      gesamt: geld(order.totalPriceSet),
+      zwischensumme: geld(aktuell(order, order.currentSubtotalPriceSet, order.subtotalPriceSet)),
+      versand: geld(aktuell(order, order.currentShippingPriceSet, order.totalShippingPriceSet)),
+      steuer: geld(aktuell(order, order.currentTotalTaxSet, order.totalTaxSet)),
+      gesamt: geld(aktuell(order, order.currentTotalPriceSet, order.totalPriceSet)),
     },
     zahlungsart: Array.isArray(order.paymentGatewayNames) && order.paymentGatewayNames.length ? order.paymentGatewayNames.join(', ') : '–',
     beratungsangaben,
