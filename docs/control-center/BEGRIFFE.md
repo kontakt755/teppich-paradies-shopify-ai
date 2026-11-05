@@ -188,3 +188,4 @@ gebraeuchlich), Erfassen.
 - **Alle anderen Geräte abmelden…** = Knopf unter Zugänge › Angemeldete Geräte (nur Inhaber); meldet
   im Control Center und in der Social-Zentrale ab, das eigene Gerät bleibt im Control Center angemeldet.
   Immer klickbar, auch wenn im Control Center nur dieses Gerät zählt (die Social-Zentrale zählt dort nicht mit).
+- **Kein Muster – im Shop sperren…** (Packstation) / **Muster sperren…** (Musterlager) = sperrt nur diese eine Farbe im Shop, mit Rückfrage; die Bestellung bleibt offen, nichts wird gebucht. Zurück mit „Wieder verfügbar“.

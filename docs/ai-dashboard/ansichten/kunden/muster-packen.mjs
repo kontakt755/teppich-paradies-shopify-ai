@@ -20,6 +20,8 @@
  * Porto und Versandbuchung folgen, wenn der Versandweg entschieden ist.
  * Im Shop gesperrte Muster (w-210) kommen nicht: rot, Umschlag unter "Zu klaeren", dazu "Kunde
  * informieren…" (muster-gesperrt.mjs, sendet nichts) und "Ohne dieses Muster weiter packen".
+ * Meldet der Lieferant, dass es eine Farbe nicht als Muster gibt: "Kein Muster – im Shop sperren…" am Muster
+ * sperrt nur diese Farbe; die Bestellung bleibt offen (Vorfall 05.11., gemischte Bestellung).
  * In beiden Ansichten steht oben fuer den Packer, welche Herstelleretiketten abkommen (PACKER_INFO).
  * Das A4-Begleitblatt kommt je Umschlag oder gesammelt als PDF (blattKnopf); Direktversand bekommt keins.
  */
@@ -303,6 +305,9 @@ function hakenHtml(m, lesend) {
   return `<label class="mp-haken"><input type="checkbox" data-mp-haken="${esc(m.lineItemId)}"${m.abgehakt ? ' checked' : ''}${lesend ? ' disabled' : ''}><span class="visually-hidden">${esc(`${e.serie || name} ${e.farbe || ''} überklebt und eingelegt`)}</span></label>`;
 }
 
+/** Nur was noch kommen soll: ein Muster, das hier liegt oder schon gesperrt ist, braucht keine Sperre. Ohne Zuordnung fehlt die Artikelnummer. */
+const sperrbar = m => !m.gesperrt && !m.abgehakt && !m.fehlt.length && !['da', 'lager'].includes(m.stand);
+
 function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffer = false, ohneMoeglich = false } = {}) {
   const e = m.etikett || {};
   const v = m.vorher || {};
@@ -327,7 +332,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="mp-fehlt">Zuordnung fehlt: ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
       : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
-    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}<span class="${m.gesperrt ? 'mp-gesperrt' : m.stand === 'offen' ? 'wait-warn' : 'muted'}">${esc(stand)}</span>${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}</div>
+    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}<span class="${m.gesperrt ? 'mp-gesperrt' : m.stand === 'offen' ? 'wait-warn' : 'muted'}">${esc(stand)}</span>${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}</div>
   </li>`;
 }
 
@@ -749,6 +754,26 @@ async function packlisteErneutLaden() {
   }
 }
 
+/**
+ * "Kein Muster – im Shop sperren…": sperrt nur diese Farbe. Die Bestellung bleibt offen, nichts wird gebucht;
+ * danach steht das Muster als "kommt nicht" da, mit "Kunde informieren…" und "Ohne dieses Muster weiter packen".
+ */
+async function musterSperren(m, knopf) {
+  const name = `${m.vorher?.produktname || m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`;
+  if (!window.confirm(`Dieses Muster im Shop sperren?\n\n${name}\n\nDie Farbe ist sofort nicht mehr als Muster bestellbar, auch für andere Kunden. ${m.orderName} bleibt offen, nichts wird als versendet gebucht.\n\nRückgängig: Einkauf › Musterlager › „Wieder verfügbar“.`)) return;
+  packSpeichert = true;
+  knopf.disabled = true;
+  try {
+    const r = await orgSchreiben('/api/einkauf/mustersperre', { aktion: 'sperren', orderId: m.orderId, lineItemId: m.lineItemId });
+    const klappte = r.status === 'gesperrt';
+    toast(klappte ? `${r.meldung}. ${m.orderName} bleibt offen.` : r.meldung, klappte ? undefined : 'crit', klappte ? {} : { dauer: 9000 });
+  } catch (err) {
+    toast(`Nicht gesperrt: ${err.message}`, 'crit');
+  }
+  packSpeichert = false;
+  await packlisteErneutLaden();
+}
+
 /** "Ohne dieses Muster weiter packen": schliesst genau diese Position ab; bucht in Shopify ohne Mail. */
 async function ohneMuster(k, m, knopf) {
   const name = `${m.vorher?.produktname || m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`;
@@ -928,6 +953,13 @@ export function musterPackenKlick(e) {
     const k = kundeMitMuster(ohne.dataset.mpOhne);
     const m = k?.muster.find(x => x.lineItemId === ohne.dataset.mpOhne);
     if (m && !packSpeichert) void ohneMuster(k, m, ohne);
+    return true;
+  }
+  const sperren = e.target.closest('[data-mp-sperren]');
+  if (sperren) {
+    e.preventDefault();
+    const m = kundeMitMuster(sperren.dataset.mpSperren)?.muster.find(x => x.lineItemId === sperren.dataset.mpSperren);
+    if (m && !packSpeichert) void musterSperren(m, sperren);
     return true;
   }
   const versandt = e.target.closest('[data-mp-verschickt]');

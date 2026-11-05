@@ -353,6 +353,13 @@ function offeneZuProdukt(map, produkt) {
   return [...new Set(handles)].flatMap(h => map.get(h) ?? []);
 }
 
+/** Muster-SKUs (M-…) einer Farbe in einem Musterprodukt. Nur diese darf "Muster sperren…" anfassen, nie eine Warenvariante. */
+function musterSkusDerFarbe(musterprodukt, farbe) {
+  const f = String(farbe ?? '').trim();
+  const skus = (musterprodukt?.varianten || []).filter(v => String(v.farbe ?? '').trim() === f).map(v => sperrSku(v.sku)).filter(s => s.startsWith('M-') && s.length > 2);
+  return f ? [...new Set(skus)] : [];
+}
+
 /** Bestellungen aus orders.json in jeder Form, die ladeExport kennt - ohne Umweg ueber Text. null = unbrauchbar. */
 function exportOrders(daten) {
   if (Array.isArray(daten)) return daten;
@@ -3238,16 +3245,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /**
-     * Mustersperre schreiben: "freigeben" (Wieder verfuegbar - Stand vor der Sperre im Shop
-     * zurueck) oder "nachholen" (eine noch nicht im Shop stehende Sperre erneut versuchen).
-     * Beides nur anhaengen, protokolliert.
+     * Mustersperre schreiben: "sperren" (genau ein Muster, ohne die Bestellung anzufassen), "freigeben"
+     * (Wieder verfuegbar - Stand vor der Sperre im Shop zurueck) oder "nachholen" (eine noch nicht im
+     * Shop stehende Sperre erneut versuchen). Alles nur anhaengen, protokolliert.
      */
     async einkaufMustersperreSetzen(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Mustersperren nicht ändern.');
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const dir = privatDirPath || privatDir();
       const file = mustersperrePfad(dir);
       const { aktion } = payload || {};
+      if (aktion === 'sperren') return this._musterEinzelnSperren(payload, { dir, benutzer, actor });
       const sku = String(payload?.sku ?? '').trim().toUpperCase();
       if (!sku) throw new ApiError(400, 'sku ist Pflicht', { missing: ['sku'] });
       if (!['freigeben', 'nachholen'].includes(aktion)) throw new ApiError(400, `Unbekannte Aktion „${aktion}"`);
@@ -3298,6 +3307,50 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
 
     /**
+     * Ein einzelnes Muster sperren, ohne Bestellung abzuschliessen oder Versand zu buchen (Vorfall 05.11.:
+     * der Schritt "Muster nicht verfuegbar" gilt fuer die ganze Bestellung und buchte die uebrigen Muster
+     * mit). Am Muster einer Bestellung: { orderId, lineItemId } (Packstation). Ohne Bestellung:
+     * { handle, farbe } (Einkauf > Musterlager). Die SKU kommt immer vom Server, nie aus dem Browser -
+     * sonst koennte ein selbstgebauter Aufruf eine Warenvariante sperren.
+     * Klappt es im Shop nicht, steht die Sperre wie beim Schritt unter "Im Shop sperren" (ok, status "offen").
+     */
+    async _musterEinzelnSperren(payload, { dir, benutzer, actor }) {
+      try { leseSperren(mustersperrePfad(dir)); } catch (e) { throw new ApiError(e.status || 500, e.message); }
+      const orderId = typeof payload?.orderId === 'string' ? payload.orderId.trim() : '';
+      if (orderId) {
+        const lineItemId = typeof payload?.lineItemId === 'string' ? payload.lineItemId.trim() : '';
+        if (!lineItemId) throw new ApiError(400, 'Welches Muster? Die Position fehlt.', { missing: ['lineItemId'] });
+        const modell = ladeBestellModell(dir);
+        const auftrag = modell ? [...modell.auftraege, ...modell.testauftraege].find(a => a.id === orderId) : null;
+        if (!auftrag) throw new ApiError(409, 'Diese Bestellung steht nicht mehr so in der Liste. Bitte neu laden.');
+        const position = (auftrag.positionen || []).find(p => p.lineItemId === lineItemId && p.istMuster);
+        if (!position) throw new ApiError(400, 'Das ist kein Muster dieser Bestellung.');
+        if (!musterSchluessel(position)) throw new ApiError(409, 'Dieses Muster hat keine Artikelnummer – bitte in Shopify von Hand sperren.');
+        const sperre = await musterSperren({ dir, auftrag, positionen: [position], benutzer, actor });
+        return { ok: true, status: sperre.status, meldung: sperre.meldung, mustersperre: sperre };
+      }
+      const farbe = typeof payload?.farbe === 'string' ? payload.farbe.trim() : '';
+      if (!farbe) throw new ApiError(400, 'Bitte eine Farbe wählen.', { missing: ['farbe'] });
+      const ziel = this._musterlagerProdukt(payload?.handle);
+      if (!ziel) throw new ApiError(409, 'Produkt nicht im Lexikon gefunden – bitte neu suchen.');
+      const skus = musterSkusDerFarbe(ziel.muster, farbe);
+      if (skus.length !== 1) {
+        throw new ApiError(409, skus.length ? `Zu „${farbe}“ gibt es mehrere Musterartikel – bitte in Shopify von Hand sperren.` : `Zu „${farbe}“ gibt es keinen eigenen Musterartikel – diese Farbe lässt sich nicht einzeln sperren.`);
+      }
+      const [sku] = skus;
+      const info = { farbe, produkt: lagerKurzTitel(ziel.produkt.titel), handle: ziel.muster.handle };
+      const name = [info.produkt, farbe].filter(Boolean).join(' · ');
+      const ev = await sperreEine({ dir, sku, info, orderId: null, orderName: null, zugang: await sperrZugang(), actor });
+      const bereits = !ev || Boolean(ev.shopify.geschrieben && ev.shopify.bereits);
+      const gesperrt = !bereits && Boolean(ev.shopify.geschrieben);
+      const offen = !bereits && !gesperrt;
+      if (gesperrt) merke(benutzer, actor, 'Muster im Shop gesperrt', name);
+      if (offen) merke(benutzer, actor, 'Muster im Shop nicht gesperrt', `${name} · ${ev.shopify.fehler}`);
+      const meldung = sperrMeldung({ gesperrt: Number(gesperrt), bereits: Number(bereits), offen: Number(offen), ohneSku: 0, fehler: ev?.shopify?.fehler });
+      return { ok: true, status: offen ? 'offen' : 'gesperrt', meldung: `${name}: ${meldung}` };
+    },
+
+    /**
      * Verlegereste (Regel 2026-10-21): fuehrt Lieferant A oder C diese Ware? Fuer Bestellungen
      * direkt beim Hersteller oder anderswo, die nicht ueber den Shop laufen. Nur lesend.
      */
@@ -3334,10 +3387,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!ziel) return { verfuegbar: false, hinweis: 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.' };
       let imLager = new Set();
       try { imLager = new Set(leseLager(musterlagerPfad(dir)).eintraege.filter(e => !e.leer).flatMap(e => e.schluessel)); } catch { /* Lager kaputt: nur ohne Kennzeichen */ }
+      // Fuer "Muster sperren…": welche Farbe einen eigenen Musterartikel hat und welche schon gesperrt ist.
+      let sperren = new Map();
+      try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* Ablage kaputt: der Musterlager-Reiter meldet es, Sperren lehnt der Server ab */ }
       return {
         verfuegbar: true, handle: ziel.produkt.handle, titel: lagerKurzTitel(ziel.produkt.titel), produktgruppe: ziel.produkt.produktgruppe || null,
         bild: ziel.produkt.bild || null,
-        farben: ziel.farben.map(f => ({ ...f, imLager: f.schluessel.some(k => imLager.has(k)) })),
+        farben: ziel.farben.map(f => {
+          const skus = musterSkusDerFarbe(ziel.muster, f.farbe);
+          return { ...f, imLager: f.schluessel.some(k => imLager.has(k)), sperrbar: skus.length === 1, gesperrt: skus.some(sku => sperren.has(sku)) };
+        }),
       };
     },
 
