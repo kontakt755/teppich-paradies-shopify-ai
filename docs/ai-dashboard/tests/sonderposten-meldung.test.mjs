@@ -129,3 +129,28 @@ test('Inventurrueckmeldung unterscheidet physisch/frei und warnt ohne Gegenprobe
   assert.equal(meldungNachInventur({ ok: true, ergebnis: { ...ergebnis, gegenprobe: 'fehlgeschlagen' } }).erfolg, false);
   assert.match(meldungNachInventur({ verbindung: false }).text, /Restlänge.*unklar/);
 });
+
+test('Inventurrueckmeldung: Vorlagenwechsel getrennt von der Bestellbarkeit, unklarer Ausgang als Warnung', async () => {
+  const { meldungNachInventur } = await import('../lib/sonderposten.mjs');
+  const ergebnis = { typ: 'inventur', gebucht: true, ok: true, gegenprobe: 'ok', bestandNachher: 48, verfuegbarNachher: 48, restLaengeM: 12, sofortkauf: 'freigeschaltet' };
+  const melde = werte => meldungNachInventur({ ok: true, ergebnis: { ...ergebnis, ...werte } });
+
+  assert.match(melde({ produktStatus: 'ACTIVE' }).text, /Online ist sie jetzt wieder sofort bestellbar/);
+
+  const entwurf = melde({ produktStatus: 'DRAFT' });
+  assert.equal(entwurf.erfolg, true);
+  assert.doesNotMatch(entwurf.text, /sofort bestellbar/);
+  assert.match(entwurf.text, /Vorlage steht jetzt auf Sofortkauf\. Das Produkt ist noch Entwurf/);
+
+  // Ein Server ohne Statusangabe darf keine Bestellbarkeit behaupten.
+  assert.doesNotMatch(melde({ produktStatus: undefined }).text, /sofort bestellbar/);
+
+  const unklar = melde({ sofortkauf: 'unklar', produktStatus: 'ACTIVE' });
+  assert.equal(unklar.erfolg, false); assert.equal(unklar.klasse, 'warn'); assert.equal(unklar.neuLaden, true);
+  assert.match(unklar.text, /Restlänge gespeichert.*unklar/);
+  assert.doesNotMatch(unklar.text, /steht aber noch/);
+
+  const fehlgeschlagen = melde({ sofortkauf: 'fehlgeschlagen', produktStatus: 'ACTIVE' });
+  assert.match(fehlgeschlagen.text, /steht aber noch auf „Anfrage“/);
+  assert.doesNotMatch(fehlgeschlagen.text, /unklar/);
+});

@@ -80,8 +80,14 @@ export function meldungNachInventur(antwort) {
   const er = antwort.ergebnis || {};
   if (er.gebucht !== true || !er.ok || er.gegenprobe !== 'ok') return { erfolg: false, klasse: 'warn', neuLaden: true, text: 'Die Bestandskorrektur wurde gesendet. Die Gegenprobe ist nicht eindeutig – bitte neu laden und den Bestand in Shopify prüfen.' };
   const basis = `Restlänge gespeichert: physisch ${er.bestandNachher} m² · jetzt ${zahlDe(er.restLaengeM)} m (${er.verfuegbarNachher} m²) frei verfügbar.`;
-  if (er.sofortkauf === 'fehlgeschlagen') return { erfolg: false, klasse: 'warn', neuLaden: true, text: `${basis} Die Rolle steht online aber noch auf „Anfrage“ – bitte in Shopify die Vorlage „rolle“ wählen.` };
-  if (er.sofortkauf === 'freigeschaltet') return { erfolg: true, klasse: null, neuLaden: true, text: `${basis} Online ist sie jetzt wieder sofort bestellbar.` };
+  if (er.sofortkauf === 'fehlgeschlagen') return { erfolg: false, klasse: 'warn', neuLaden: true, text: `${basis} Die Rolle steht aber noch auf „Anfrage“ – bitte in Shopify die Vorlage „rolle“ wählen.` };
+  if (er.sofortkauf === 'unklar') return { erfolg: false, klasse: 'warn', neuLaden: true, text: `${basis} Ob die Rolle von „Anfrage“ auf Sofortkauf umgestellt wurde, ist unklar – bitte neu laden und in Shopify prüfen, ob die Vorlage „rolle“ eingestellt ist.` };
+  if (er.sofortkauf === 'freigeschaltet') {
+    // Bestellbar ist nur ein aktives Produkt; die Vorlage sagt darueber nichts.
+    if (er.produktStatus === 'ACTIVE') return { erfolg: true, klasse: null, neuLaden: true, text: `${basis} Online ist sie jetzt wieder sofort bestellbar.` };
+    const stand = er.produktStatus === 'DRAFT' ? 'Das Produkt ist noch Entwurf' : 'Das Produkt ist in Shopify nicht als aktiv bestätigt';
+    return { erfolg: true, klasse: null, neuLaden: true, text: `${basis} Die Vorlage steht jetzt auf Sofortkauf. ${stand} – online bestellbar erst, wenn es dort aktiv ist.` };
+  }
   return { erfolg: true, klasse: null, neuLaden: true, text: basis };
 }
 
