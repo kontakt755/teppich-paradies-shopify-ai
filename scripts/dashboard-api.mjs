@@ -77,6 +77,7 @@ import { ablaufVon, findeZugang, liesZugaenge, zugangAnlegen, zugangGueltig, zug
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { musterAnrufliste, anrufErgebnis, anrufErgebnisText } from '../docs/ai-dashboard/lib/muster-anrufe.mjs';
+import { musterKennzahlen } from '../docs/ai-dashboard/lib/muster-ideen.mjs';
 import { musterAnrufePfad, leseMusterAnrufe, trageAnrufEin, MusterAnrufFehler } from '../operations/lib/muster-anrufe.mjs';
 import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
 import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
@@ -2671,7 +2672,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const bestellungen = this.kundenBestellungen();
       if (!bestellungen.verfuegbar) return { verfuegbar: false, hinweis: bestellungen.hinweis || 'Bestelldaten fehlen.' };
       const abgemeldet = [...abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir))).keys()];
-      return { verfuegbar: true, ...musterAnrufliste(bestellungen.zeilen, leseMusterAnrufe(musterAnrufePfad(dir)), { jetzt: now(), abgemeldet }) };
+      // Die Beobachtung ist Beiwerk: kann sie nicht gelesen werden, bleibt die Liste benutzbar.
+      let wirkung = null;
+      try { wirkung = this.kundenMusterwirkung()?.zahlen || null; } catch { /* meldet der Reiter Musterwirkung selbst */ }
+      return {
+        verfuegbar: true,
+        ...musterAnrufliste(bestellungen.zeilen, leseMusterAnrufe(musterAnrufePfad(dir)), { jetzt: now(), abgemeldet }),
+        kennzahlen: musterKennzahlen(bestellungen.zeilen, wirkung, { jetzt: now() }),
+      };
     },
 
     /**

@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 import { ANRUF_ERGEBNISSE, ANRUF_NUR_MIT_RUECKRUFWUNSCH, RUECKFRAGE_VORLAGE, musterAnrufliste, rueckfrageLink, wiedervorlageTag } from '../lib/muster-anrufe.mjs';
+import { MUSTER_ALTERNATIVEN, MUSTER_VERMUTUNGEN, musterKennzahlen, vermutungGenannt } from '../lib/muster-ideen.mjs';
 import { SICHERUNGSPFADE } from '../../../operations/scripts/sicherung.mjs';
 import { leseMusterAnrufe, musterAnrufePfad, trageAnrufEin } from '../../../operations/lib/muster-anrufe.mjs';
 
@@ -207,4 +208,39 @@ test('Server: POST steht in der write-Liste, GET ist eine bekannte Route', () =>
   const quelle = fs.readFileSync(new URL('../../../scripts/serve-dashboard.mjs', import.meta.url), 'utf8');
   assert.match(quelle, /simple === 'kunden\/muster-anrufe' && req\.method === 'POST'\) \|\|/);
   assert.match(quelle, /kunden\\\/muster-anrufe\|/);
+});
+
+test('Kennzahlen: Wartezeit, nicht Verschicktes und Warenkunden ohne Muster, Test und Storno zählen nicht', () => {
+  const am = (tage) => vor(tage);
+  const m = (nr, kunde, raus, datum) => ({ orderId: `o${nr}`, auftragsart: 'muster', kundenSchluessel: kunde, datum, verlauf: raus ? [{ schritt: 'raus', zustand: 'erledigt', am: raus }] : [] });
+  const k = musterKennzahlen([
+    m(1, 'a', am(10), am(14)), m(2, 'b', am(2), am(14)), m(3, 'c', am(1), am(4)),
+    m(4, 'd', null, am(9)), m(5, 'e', null, am(2)),
+    { ...m(6, 'f', null, am(30)), testbestellung: true }, { ...m(7, 'g', null, am(30)), storniert: true },
+    { orderId: 'w1', auftragsart: 'ware', kundenSchluessel: 'a', datum: am(1) }, { orderId: 'w2', auftragsart: 'ware', kundenSchluessel: 'x', datum: am(1) },
+  ], { nochJungeMusterkunden: 3, musterkundenMitWarenkauf: 1 }, { jetzt: JETZT });
+  assert.deepEqual([k.tageBisVersand, k.ueberZehnTage], [4, 1]);
+  assert.deepEqual([k.nichtVerschickt, k.nichtVerschicktLange], [2, 1]);
+  assert.deepEqual([k.musterKunden, k.warenKunden, k.warenOhneMuster], [5, 2, 1]);
+  assert.deepEqual([k.nochJung, k.mitWarenkauf, k.reifOhneKauf], [3, 1, null]);
+});
+
+test('Ideen: jede Vermutung verweist auf echte Ergebnisse, Zahlen fehlen ohne Daten still, keine festen Zahlen im Text', () => {
+  const werte = new Set(ANRUF_ERGEBNISSE.map(e => e.wert));
+  const leer = musterKennzahlen([], null);
+  for (const v of MUSTER_VERMUTUNGEN) {
+    for (const g of v.gruende) assert.ok(werte.has(g), `${v.titel}: ${g}`);
+    assert.equal(v.zahl(leer), null, v.titel);
+    assert.doesNotMatch(`${v.titel} ${v.text}`, /\d/, 'öffentliches Repository: Zahlen nur zur Laufzeit');
+  }
+  assert.ok(MUSTER_ALTERNATIVEN.length >= 5);
+  assert.equal(vermutungGenannt(MUSTER_VERMUTUNGEN[1], [{ wert: 'zu_spaet', anzahl: 2 }, { wert: 'woanders_gekauft', anzahl: 3 }, { wert: 'zu_teuer', anzahl: 9 }]), 5);
+});
+
+test('Server: die Liste bringt die Kennzahlen mit', async () => {
+  const { api } = await umgebung();
+  const k = api.kundenMusterAnrufe().kennzahlen;
+  assert.equal(k.musterKunden, 2);
+  assert.equal(k.tageBisVersand, 5, 'Bestellt am 1.1., verschickt am 6.1.');
+  assert.equal(k.warenKunden, 0);
 });
