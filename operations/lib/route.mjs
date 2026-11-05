@@ -76,7 +76,7 @@ export function routeFor({ item, override, verlegeservice = false, abholung = fa
 
   // 2. Verlegeservice. Die Baustelle ist eine Kundenadresse: Darf der Lieferant
   // bzw. Hersteller nicht direkt an Kunden liefern (neutralversand NOT_ALLOWED,
-  // z. B. Condor Carpets, Inhaber 2026-11-04), geht die Ware in den Laden und
+  // Inhaber 2026-11-04), geht die Ware in den Laden und
   // von dort mit dem Verlegeteam auf die Baustelle.
   if (verlegeservice) {
     if (einkauf.neutralversand === NEUTRALVERSAND.NOT_ALLOWED) {
