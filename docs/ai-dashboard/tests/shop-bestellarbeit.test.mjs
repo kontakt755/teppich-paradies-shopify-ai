@@ -243,7 +243,9 @@ test('offene Zahlung bleibt bei archivierten Waren sichtbar und nennt Zahlung st
   }
 });
 
-test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eigener Arbeit und bekommt nicht den Hauptknopf', () => {
+test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eigener Arbeit und bekommt nicht den Hauptknopf', (t) => {
+  // Der Block rechnet mit der echten Uhr: ohne feste Zeit gilt die Bestellung 14 Tage spaeter als ueberfaellig.
+  t.mock.timers.enable({ apis: ['Date'], now: jetzt });
   const wartend = zeile('wartend', [p('w')], { w: { status: 'bestellt', bestelltAm: '2026-10-21T08:00:00Z' } }, { datum: '2026-10-10T12:00:00Z' });
   const bestellen = zeile('bestellen', [p('w')], { w: null }, { datum: '2026-10-20T12:00:00Z' });
   const a = shopBestellarbeit(daten([wartend, bestellen]), { jetzt });
