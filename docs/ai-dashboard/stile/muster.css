@@ -220,6 +220,7 @@
 }
 
 /* Kunden, Reiter "Muster anrufen" */
+.anruf-spalte .anruf-titel { margin-top: 0; }
 .anruf-titel { margin: 16px 0 8px; font-size: 1rem; }
 .anruf-gruende { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .anruf-grund { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: .85rem; }
@@ -238,3 +239,5 @@
 .anruf-ideen-liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .anruf-idee { padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; overflow-wrap: anywhere; }
 .anruf-idee .small { margin-top: 3px; }
+.anruf-spalten { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .anruf-spalten { grid-template-columns: minmax(0, 1fr); } }
