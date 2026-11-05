@@ -233,3 +233,8 @@
 .anruf-chip input:checked + span { border-color: var(--accent); background: var(--accent); color: var(--accent-ink, #fff); }
 .anruf-chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .anruf-zeile a.btn { color: var(--text); }
+.anruf-ideen { margin: 0 0 12px; }
+.anruf-ideen h4 { margin: 12px 0 6px; font-size: .95rem; }
+.anruf-ideen-liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.anruf-idee { padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; overflow-wrap: anywhere; }
+.anruf-idee .small { margin-top: 3px; }

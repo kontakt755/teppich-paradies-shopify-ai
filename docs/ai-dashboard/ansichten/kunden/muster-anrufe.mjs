@@ -1,7 +1,8 @@
 /**
  * Kunden, Reiter "Muster anrufen": wer seit 5 Tagen Muster hat, wird nachgefragt - am Telefon oder,
  * wenn das nicht geht, per Rueckfrage-Mail. Das Ergebnis wird angeklickt, Notizen eingetippt; oben
- * steht, welche Gruende bisher genannt wurden. Rechnen: lib/muster-anrufe.mjs. Gestaltung: stile/muster.css.
+ * steht, welche Gruende bisher genannt wurden, darunter zugeklappt Vermutungen und Ideen
+ * (lib/muster-ideen.mjs). Rechnen: lib/muster-anrufe.mjs. Gestaltung: stile/muster.css.
  */
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
@@ -11,6 +12,7 @@ import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 import { ANRUF_ERGEBNISSE, ANRUF_GRUPPEN, ANRUF_NACH_TAGEN, HOECHSTENS_VERSUCHE, anrufErgebnis, anrufErgebnisText, rueckfrageLink, wiedervorlageTag } from '../../lib/muster-anrufe.mjs';
+import { MUSTER_ALTERNATIVEN, MUSTER_VERMUTUNGEN, vermutungGenannt } from '../../lib/muster-ideen.mjs';
 import { kunden, telLink } from './gemeinsam.mjs';
 
 export function ensureMusterAnrufe() {
@@ -71,6 +73,34 @@ function aufgeklappt(titel, zeilen, opt = {}) {
   return `<details class="anruf-mehr"><summary>${esc(titel)} (${zeilen.length})</summary><div class="rows">${zeilen.map(z => zeileHtml(z, opt)).join('')}</div></details>`;
 }
 
+/** Zahlen, Vermutungen und Alternativen. Zugeklappt: die Liste bleibt die Arbeit, das hier das Nachdenken. */
+function ideenHtml(m) {
+  const k = m.kennzahlen;
+  if (!k) return '';
+  const vermutungen = MUSTER_VERMUTUNGEN.map((v) => {
+    const genannt = vermutungGenannt(v, m.gruende);
+    const zahl = v.zahl(k);
+    return `<li class="anruf-idee">
+      <div class="t">${esc(v.titel)}${genannt ? ` <span class="badge plain">${genannt}× genannt</span>` : ''}</div>
+      <div class="small">${esc(v.text)}</div>
+      ${zahl ? `<div class="small"><b>Unsere Zahlen:</b> ${esc(zahl)}</div>` : ''}
+      <div class="small muted">Idee: ${esc(v.idee)}</div>
+    </li>`;
+  }).join('');
+  const alternativen = MUSTER_ALTERNATIVEN.map(a => `<li class="anruf-idee">
+    <div class="t">${esc(a.titel)}</div>
+    <div class="small">${esc(a.text)}</div>
+    <div class="small muted">Aufwand ${esc(a.aufwand)} · entscheidet: ${esc(a.entscheidet)}</div>
+  </li>`).join('');
+  return `<details class="anruf-mehr anruf-ideen"><summary>Warum nicht gekauft wird: Vermutungen und Ideen</summary>
+    <p class="small muted">Das sind Vermutungen, keine Tatsachen. Die Klicks oben zeigen mit der Zeit, welche stimmen. Beschlossen ist davon nichts.</p>
+    <h4>Mögliche Gründe</h4>
+    <ul class="anruf-ideen-liste">${vermutungen}</ul>
+    <h4>Was wir statt oder neben dem Gratis-Muster ausprobieren könnten</h4>
+    <ul class="anruf-ideen-liste">${alternativen}</ul>
+  </details>`;
+}
+
 export function viewMusterAnrufe() {
   ensureMusterAnrufe();
   const m = kunden.musterAnrufe;
@@ -85,6 +115,7 @@ export function viewMusterAnrufe() {
     <p class="small muted" style="margin:0 0 10px">Ab ${ANRUF_NACH_TAGEN} Tagen nach dem Versand. Mehrere Musterbestellungen eines Kunden sind ein Anruf. Nach ${HOECHSTENS_VERSUCHE}× „Nicht erreicht“ ist Schluss.</p>
     <h3 class="anruf-titel">Warum gekauft wird oder nicht</h3>
     ${gruende}
+    ${ideenHtml(m)}
     ${nichts ? emptyState('Gerade ist niemand dran.', 'Neue Kunden erscheinen hier von selbst.') : ''}
     ${m.anrufen.length ? abschnitt('Jetzt anrufen', m.anrufen) : ''}
     ${m.ohneNummer.length ? abschnitt('Keine Telefonnummer: per E-Mail fragen', m.ohneNummer, { mitMail: true }) : ''}
