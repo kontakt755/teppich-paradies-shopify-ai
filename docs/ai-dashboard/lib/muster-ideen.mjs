@@ -1,5 +1,5 @@
 /**
- * Reiter "Muster anrufen": warum wird aus Mustern selten ein Kauf, und was ginge anders?
+ * Reiter "Kunden nach Produkt fragen": warum wird aus Mustern selten ein Kauf, und was ginge anders?
  *
  * Die Texte sind Vermutungen und Vorschlaege, keine Entscheidungen. Jede Vermutung nennt die
  * Klick-Ergebnisse, die sie bestaetigen, und soweit moeglich eine Zahl - beides kommt zur Laufzeit

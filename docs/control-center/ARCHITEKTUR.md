@@ -812,7 +812,7 @@ steht unter „Wir sind dran“ („Muster nachfassen“), nicht mehr zugleich u
 (`werWartet(…, { nachfassen })` in `lib/todos.mjs`, die orderIds kommen aus `musterNachfassen()`). Nach
 „Erledigt – nachgefasst“ wandert er zurück zum Kunden.
 
-**Muster anrufen** (seit 2026-11-05, Reiter unter Kunden): Ziel ist zu erfahren, warum aus Mustern selten
+**Kunden nach Produkt fragen** (seit 2026-11-05, im Menü direkt unter Packstation, Route `#/kunden?tab=anrufe`): Ziel ist zu erfahren, warum aus Mustern selten
 Käufe werden. `lib/muster-anrufe.mjs` rechnet aus den Bestellzeilen, wer dran ist: Muster seit mindestens
 5 Tagen beim Kunden, je Kunde eine Zeile, nicht abgeschlossen, nicht auf der Stoppliste, nicht „Möchte keine
 Anrufe“. Ergebnis und Notizen liegen in `$TP_PRIVAT_DIR/muster-anrufe.json` (`operations/lib/muster-anrufe.mjs`,

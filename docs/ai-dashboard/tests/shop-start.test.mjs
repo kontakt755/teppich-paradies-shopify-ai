@@ -13,7 +13,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
   // Spiegel von ANSICHT_ROLLEN (kern/router.mjs): Shop-Kontrolle, Technik und Genossenschaften nur beim Inhaber.
   const darfAnsicht = name => rolle === 'inhaber' || !['shopwache', 'arbeit', 'akquise', 'insights'].includes(name);
   const ensure = ['KundenBestellungen', 'EinkaufAuftragsstatus', 'EinkaufBestellungen', 'HeuteLieferanten',
-    'MusterPacken', 'Aktualisierung', 'HeuteMusterTexte', 'KundenRueckrufe', 'KundenFaelle', 'Serviceanfragen',
+    'MusterPacken', 'MusterAnrufe', 'Aktualisierung', 'HeuteMusterTexte', 'KundenRueckrufe', 'KundenFaelle', 'Serviceanfragen',
     'HeuteAufgaben', 'LadenZahlen', 'ShopifyAbgleich', 'EinkaufKennzahlen', 'Shopwache', 'Akquise', 'Belege'];
   const kontext = Object.fromEntries(ensure.map(n => [`ensure${n}`, () => geladen.push(n)]));
   const state = { route: { view: 'heute', params: new URLSearchParams(query) }, session, tasks: [] };

@@ -42,6 +42,7 @@ import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureMusterPacken } from './kunden/muster-packen.mjs';
+import { ensureMusterAnrufe } from './kunden/muster-anrufe.mjs';
 import { bestellungenOffen } from './kunden/bestellungen.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
@@ -191,7 +192,7 @@ export function viewHeute() {
 
 function viewShop() {
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufBestellungen();
-  ensureHeuteLieferanten(); ensureMusterPacken(); ensureAktualisierung(); ensureServiceanfragen();
+  ensureHeuteLieferanten(); ensureMusterPacken(); ensureMusterAnrufe(); ensureAktualisierung(); ensureServiceanfragen();
   const nf = nachfassStand('laden');
   // Versandfehler und vorhandene Nachfragen sind Kerngeschaeft, auch ohne allgemeine Aufgaben.
   ensureHeuteMusterTexte();
