@@ -483,6 +483,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         ausRolleCm: massanfertigung ? (item.eingaben?.ausRolleCm ?? produktRollenbreiteCm(item.produkt)) : null,
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
+        // Netto nach allen Rabatten, fuer die Rohertrag-Schaetzung im Bestelldialog (bestellwarnung.mjs).
+        nettoGesamt: geld(li.priceAfterAllDiscountsBeforeTaxesSet)?.betrag ?? null,
         menge,
         // Bestellt (nach Aenderungen): mit `menge` erkennt der Belegabgleich Teilversand je Position.
         mengeBestellt: bestellteMenge(li),

@@ -502,6 +502,27 @@ bestaetigtem Liefertermin erst nach dem Termin; dieselbe Regel nutzt das To-do �
 `einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
 Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
 
+### Warnung vor dem Bestellen (seit 2026-11-05)
+
+Der Bestellmail-Dialog zeigt je Kommission eine Schätzung, bevor beim Lieferanten bestellt wird
+(`operations/lib/bestellwarnung.mjs`, Anzeige `kostenWarnung()` in `ansichten/einkauf/lieferanten.mjs`):
+Rohertrag niedrig oder negativ mit Rechnung, bestellte gegen verkaufte Menge (auch das Risiko volle
+Rollenbreite), Teillieferung mit erneutem Frachtzuschlag. Nur ein Hinweis: nichts wird gesperrt oder
+bestellt, kein Preis geändert. Der Normalfall zeigt nichts; fehlt nur der Einkaufspreis, steht eine
+leise Zeile „Rohertrag unbekannt“.
+
+- **Quellen zur Laufzeit, kein eigenes Lager:** EK aus `ek-liste/ableitung-<datum>/ek-varianten.json`
+  (die neueste; Zeilen mit `sicherheit: offen` zählen nicht), Lieferkosten aus `kosten` je Lieferant und
+  `absender.kettelservice.kosten` in `lieferanten/stammdaten.json`, GLS/GEL über `berechneVersand()`.
+  Felder: `operations/lib/lieferanten.beispiel.json`. Abgelaufene Dieselwerte werden mit dem letzten
+  Stand gerechnet und im Hinweis genannt.
+- **Sichtbarkeit:** Die Warnung hängt nur an `aktion: bestellVorbereitung` (Rolle „lesen“: 403), nicht am
+  GET `/api/einkauf/bestellmail`. Sie zeigt erstmals Einkaufspreise im Dashboard, also auch der Rolle
+  „mitarbeiter“. Die Sätze selbst gehen nicht über `pruefeStammdaten()` und erscheinen in keiner anderen Antwort.
+- **Grenzen des Modells:** Paketmaße und Gewicht sind Annahmen (2 kg/m², Rollendurchmesser aus der langen Seite).
+  Die EK-Liste ist teils abgeleitet und kann unter echten Rechnungen liegen. Schwellen stehen in `SCHWELLEN`.
+  Scheitert die Schätzung, geht der Dialog ohne sie auf (`kostenWarnungFehlt`).
+
 ### Einkauf je Lieferant (seit 2026-10-01)
 
 Der Reiter „Bestellungen" zeigt eine Karte je Lieferant (`ansichten/einkauf/lieferanten.mjs`, Regeln ohne

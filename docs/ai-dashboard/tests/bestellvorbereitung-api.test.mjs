@@ -194,3 +194,35 @@ test('Abschnittsstand bleibt nach Bestellung einer anderen Mail gueltig; eigene 
   await assert.rejects(a.einkaufAuftragsstatusSetzen({ ...scope, aktion: 'bestellPruefen', mailStand }, team(1)), e => e.status === 409);
   assert.equal(fs.readFileSync(file, 'utf8'), vor);
 });
+
+test('Warnung vor dem Bestellen: nur in der Vorbereitung, nicht im GET, Fingerabdruck bleibt gleich', async t => {
+  const { a, dir } = umgebung(t);
+  const ohne = await vorbereiten(a);
+  const stamm = path.join(dir, 'lieferanten', 'stammdaten.json');
+  const roh = JSON.parse(fs.readFileSync(stamm, 'utf8'));
+  roh.lieferanten.A.kosten = { fracht: 1 };
+  fs.writeFileSync(stamm, JSON.stringify(roh));
+  const r = await vorbereiten(a);
+  assert.equal(r.vorbereitungStand, ohne.vorbereitungStand);
+  const w = r.mails[0].kostenWarnungen?.[0];
+  assert.match(w.kopf, /Rohertrag unbekannt/);
+  assert.equal(w.rohertrag, null);
+  assert.equal(a.einkaufBestellmail(scope).mails[0].kostenWarnungen, undefined);
+  const p = await pruefen(a, r.vorbereitungStand);
+  assert.equal(p.mails[0].kostenWarnungen, undefined);
+  // Die Saetze selbst bleiben in der Datei.
+  assert.ok(!JSON.stringify(a.einkaufLieferanten()).includes('kosten'));
+});
+
+test('Warnung vor dem Bestellen: scheitert die Schaetzung, geht der Dialog trotzdem auf', async t => {
+  const { a } = umgebung(t);
+  const ursprung = a._lieferantenKontext;
+  let aufrufe = 0;
+  a._lieferantenKontext = function () { aufrufe += 1; return ursprung.call(this); };
+  const roh = a._mitKostenwarnung;
+  a._mitKostenwarnung = function (antwort, aktion) { const kaputt = Object.create(this); kaputt._lieferantenKontext = () => { throw new Error('Testfehler'); }; return roh.call(kaputt, antwort, aktion); };
+  const r = await vorbereiten(a);
+  assert.equal(r.kostenWarnungFehlt, true);
+  assert.equal(r.mails[0].positionen.length, 1);
+  assert.ok(aufrufe > 0);
+});

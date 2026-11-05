@@ -38,7 +38,7 @@ export const MUSTER_LIEFERUNG = Object.freeze(['kunde', 'laden']);
 // ungekettelt dorthin, wir ketteln dort guenstiger und liefern selbst bzw. verschicken von dort.
 export const WARE_LIEFERUNG = Object.freeze(['kunde', 'laden', 'kettler']);
 /** PLZ-Bereiche, in die wir selbst liefern koennen: Berlin (10-14) und unser Umland (16). */
-const KETTLER_NAH_PLZ = /^1[0-46]/;
+export const KETTLER_NAH_PLZ = /^1[0-46]/;
 
 /**
  * Wartezeit-Schwellen: ab 7 Tagen beim Lieferanten nachhaken, ab 14 Tagen ist

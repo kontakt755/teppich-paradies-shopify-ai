@@ -19,7 +19,12 @@
       "strasse": "Kettelweg 5",
       "plz": "00001",
       "ort": "Musterstadt",
-      "telefon": "+49 30 2222222"
+      "telefon": "+49 30 2222222",
+      "kosten": {
+        "_hinweis": "Nur Beispielwerte. Fuer die Warnung im Bestelldialog: Ketteln je laufender Meter bis und ab 6 m².",
+        "bis6qmJeLfm": 1,
+        "ab6qmJeLfm": 2
+      }
     }
   },
   "lieferanten": {
@@ -49,6 +54,17 @@
       "mail": {
         "anrede": "Guten Tag Frau Muster,",
         "gruss": "Viele Grüße\nErika Beispiel\nBeispielhandel GmbH"
+      },
+      "kosten": {
+        "_hinweis": "Nur Beispielwerte, echte Saetze nur privat. Fuer die Warnung im Bestelldialog (operations/lib/bestellwarnung.mjs): paket = Sendung bis paketBisCm/paketBisKg; fracht = Lieferung per LKW; mindermenge unter mindermengeUnterEk Einkauf; ekAufschlag = Zuschlag auf den Listen-EK (0,1 = 10 %); anKundenNurImLiefergebiet = direkt zum Kunden nur im Nahbereich, sonst ueber uns.",
+        "paket": 1,
+        "paketBisCm": 100,
+        "paketBisKg": 10,
+        "fracht": 2,
+        "mindermenge": 3,
+        "mindermengeUnterEk": 100,
+        "ekAufschlag": 0,
+        "anKundenNurImLiefergebiet": false
       }
     },
     "B": {

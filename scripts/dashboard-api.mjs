@@ -68,7 +68,8 @@ import {
   benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN, pruefePasswort,
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
-import { leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff, kennungAusLexikon } from '../operations/lib/lieferanten.mjs';
+import { warnungenAnhaengen } from '../operations/lib/bestellwarnung.mjs';
+import { leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff, kennungAusLexikon, KETTLER_NAH_PLZ } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
@@ -2977,6 +2978,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
     },
 
+    /**
+     * Rohertrag-Warnung im Bestelldialog: nur bei der Vorbereitung (Rolle "lesen" kommt hier nicht
+     * hin), nicht im GET und nicht im Fingerabdruck der Vorlage. Sie darf das Bestellen nie stoeren:
+     * Scheitert die Schaetzung, geht der Dialog ohne sie auf und sagt das.
+     */
+    _mitKostenwarnung(antwort, aktion) {
+      if (aktion !== 'bestellVorbereitung') return antwort;
+      try {
+        const dir = privatDirPath || privatDir();
+        const k = this._lieferantenKontext();
+        return warnungenAnhaengen(antwort, {
+          modell: k.modell, privatDir: dir, stammdaten: k.stammdaten, stammdatenDatei: stammdatenPfad(dir), statusAlle: k.statusAlle,
+          tarif: kettelTarife(path.join(dir, 'versandkosten', 'tarife.json')).tarif ?? null, nahPlz: KETTLER_NAH_PLZ, jetzt: now(),
+        });
+      } catch {
+        return { ...antwort, kostenWarnungFehlt: true };
+      }
+    },
+
     einkaufKettelversand({orderId} = {}) {
       const dir=privatDirPath || privatDir(); const k=this._lieferantenKontext();
       const auftrag=k.modell?.auftraege.find(a=>a.id===orderId);
@@ -3075,7 +3095,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           if (e instanceof BeschaffungFehler) throw new ApiError(e.status, e.message);
           throw e;
         }
-        return { ...vorlage, mails, vorbereitungStand: stand };
+        return this._mitKostenwarnung({ ...vorlage, mails, vorbereitungStand: stand }, payload.aktion);
       }
       // Erst den neuesten Shopify-Stand uebernehmen, dann die Aenderung darauf anwenden.
       shopifyAbgleichen();

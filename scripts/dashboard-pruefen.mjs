@@ -75,7 +75,7 @@ const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozes
 // der Baustelle), ist das Handy kein Sonderfall mehr: jede Ansicht wird bei jeder Breite geprueft.
 const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800'], [390, 844, 'handy'], [360, 740, 'b360']];
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
-const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten', 'bildrechte'];
+const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten', 'bildrechte', 'ek-liste'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
 const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'sicherungsstand.json', 'auftragsstatus.json', 'kettelversand.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json', 'muster-druckliste.json', 'mustersperre.json', 'prozesslinks.json',
   // Kunden & Auftraege, Warenkoerbe, Shop-Wache, Bestand und Erfuellung: ohne diese Ordner

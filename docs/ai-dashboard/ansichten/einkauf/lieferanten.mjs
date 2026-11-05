@@ -401,6 +401,26 @@ function bezugswegHinweis(m) {
   return naheZeile + weiteZeile;
 }
 
+const euroGanz = x => `${Math.round(x).toLocaleString('de-DE')} €`;
+
+/**
+ * Warnung vor dem Bestellen (bestellwarnung.mjs): Schaetzung des Servers, nur ein Hinweis. Normalfall:
+ * nichts. Fehlt nur der Einkaufspreis: eine leise Zeile. Es wird nichts gesperrt.
+ */
+function kostenWarnung(m) {
+  const liste = m.kostenWarnungen || [];
+  return liste.map(w => {
+    const anmerkung = (w.anmerkungen || []).map(esc).join(' ');
+    if (w.stufe === 'leise') return `<p class="small muted lf-kosten-leise">${esc(w.orderName)}: ${esc(w.kopf)}. ${anmerkung}</p>`;
+    const zeilen = (w.rechnung || []).map(z => `<tr${z.ergebnis ? ' class="lf-kosten-ergebnis"' : ''}><td>${esc(z.text)}</td><td>${z.betrag < 0 ? '− ' : ''}${euroGanz(Math.abs(z.betrag))}</td></tr>`).join('');
+    const hinweise = [...(w.hinweise || []).map(h => h.text), ...(w.wege || [])].map(t => `<li>${esc(t)}</li>`).join('');
+    return `<div class="notice ${w.stufe === 'crit' ? 'crit' : 'warn'} lf-kosten"><strong>${esc(w.orderName)}: ${esc(w.kopf)}</strong>
+      ${hinweise ? `<ul class="small">${hinweise}</ul>` : ''}
+      ${zeilen ? `<table class="lf-kosten-rechnung small"><tbody>${zeilen}</tbody></table>` : ''}
+      <p class="small muted">Schätzung, kein Beleg. Nur ein Hinweis, bestellen bleibt möglich. ${anmerkung}</p></div>`;
+  }).join('');
+}
+
 /**
  * Lieferziel-Knoepfe. Mit Kettler gibt es "Automatisch" (Regel: gekettelt zum Kettler, Rest
  * normal) - die anderen Knoepfe schicken die ganze Bestellung an ein Ziel.
@@ -436,7 +456,7 @@ function mailAbschnitt(m, i, mehrere) {
       ${zielChips(m)}</div>` : '';
   if (!m.text) {
     const schon = m.bereitsBestellt ? `${plural(m.bereitsBestellt, 'Artikel ist', 'Artikel sind')} schon bestellt.` : '';
-    return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${bezugswegHinweis(m)}${(m.fehlt || []).length ? '' : `<p class="lf-leer">Nichts mehr zu bestellen. ${esc(schon)}</p>`}${fehlt}${ohne}</section>`;
+    return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${kostenWarnung(m)}${bezugswegHinweis(m)}${(m.fehlt || []).length ? '' : `<p class="lf-leer">Nichts mehr zu bestellen. ${esc(schon)}</p>`}${fehlt}${ohne}</section>`;
   }
   const fertig = dialog.markiert.has(i);
   const vorbereitet = !lesend && !dialog.fehler && !!m.vorbereitungStand;
@@ -466,7 +486,7 @@ function mailAbschnitt(m, i, mehrere) {
         <div class="field"><label for="lfNr${i}">Bestellnummer des Lieferanten (aus der Auftragsbestätigung)</label><input id="lfNr${i}" maxlength="200" placeholder="z. B. 2026-4711"><span class="small muted">Damit die Auftragsbestätigung automatisch zugeordnet wird. Optional.</span></div>
         <div class="lf-frage-knoepfe"><button type="button" class="btn btn-primary" data-lf-markieren="${i}">${plural(n, wort, wort)} als bestellt markieren</button><button type="button" class="btn btn-ghost" data-lf-nicht="${i}">Noch nicht</button></div>
       </div>`;
-  return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${bezugswegHinweis(m)}
+  return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${kostenWarnung(m)}${bezugswegHinweis(m)}
     ${uebernahmeBlock(m.positionen).replaceAll('data-einkauf-uebernahme=', 'data-lf-uebernahme=')}
     <dl class="lf-mailkopf"><dt>An</dt><dd>${an}</dd><dt>Betreff</dt><dd>${esc(m.betreff)}</dd></dl>
     <pre class="lf-mailtext" tabindex="0">${esc(m.text)}</pre>
@@ -484,7 +504,7 @@ function zeichneDialog() {
   else if (d.fehler) inhalt = `<p class="notice crit">Die Bestellung konnte nicht geladen werden. ${esc(d.hinweis || '')}</p>`;
   else if (!d.verfuegbar) inhalt = `<p class="notice">${esc(d.hinweis || 'Bestelldaten fehlen.')}</p>`;
   else if (!d.mails.length && !d.kettelwege?.length) inhalt = `<p class="lf-leer">${dialog.art === 'muster' ? 'Keine offenen Muster bei diesem Lieferanten.' : 'Keine offene Ware bei diesem Lieferanten.'}</p>`;
-  else inhalt = kettelwegWahl(d.kettelwege || []) + d.mails.map((m, i) => mailAbschnitt(m, i, d.mails.length > 1)).join('');
+  else inhalt = (d.kostenWarnungFehlt ? '<p class="small muted">Rohertrag konnte gerade nicht geschätzt werden. Bestellen geht trotzdem.</p>' : '') + kettelwegWahl(d.kettelwege || []) + d.mails.map((m, i) => mailAbschnitt(m, i, d.mails.length > 1)).join('');
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop lf-dialog-boden" data-close-dialog><div class="dialog lf-dialog" role="dialog" aria-modal="true" aria-labelledby="lfTitel">
     <h2 id="lfTitel" class="lf-name">${titel}</h2>
     <p class="notice warn" data-lf-fehler role="alert"${dialog.fehler ? '' : ' hidden'}>${esc(dialog.fehler || '')}</p>
@@ -516,7 +536,10 @@ async function ladeDialog() {
   dialog.fehler = fehler;
   dialog.daten = daten;
   zeichneDialog();
-  $('#dialogRoot .lf-mail-knoepfe .btn-primary, #dialogRoot [data-close-dialog].btn')?.focus();
+  // Der Fokus darf eine Warnung nicht aus dem Bild schieben: sie soll vor dem Bestellen zu sehen sein.
+  const warnung = $('#dialogRoot .lf-kosten');
+  $('#dialogRoot .lf-mail-knoepfe .btn-primary, #dialogRoot [data-close-dialog].btn')?.focus(warnung ? { preventScroll: true } : undefined);
+  warnung?.scrollIntoView?.({ block: 'nearest' });
 }
 
 export function openBestellmailDialog(lieferant, art = 'ware', { auftrag = null } = {}) {
