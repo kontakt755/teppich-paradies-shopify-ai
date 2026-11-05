@@ -359,7 +359,9 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
   // Ein Vermerk "kunde" geht vor: Dann hat der Lieferant selbst verschickt.
   const uebersLager = ziel === 'laden' || (ziel === 'kunde' && k?.anKundenNurImLiefergebiet && !nah && !eintraege.every(e => e.vermerkt));
   // Jede Lieferung fuer sich: Paket oder Fracht und die Mindermenge haengen an dem, was in ihr liegt.
-  const zuschlaege = lieferungen.map(l => lieferzuschlag(k, sendung(l.eintraege), { ekOderNetto: bezugswert(l.eintraege), teiler }));
+  // Den Anteil an einer Sammellieferung gibt es nur fuer die neue, fruehere Bestelltage trugen ihre Fracht allein.
+  const zuschlaege = lieferungen.map(l => lieferzuschlag(k, sendung(l.eintraege), { ekOderNetto: bezugswert(l.eintraege), teiler: l.neu ? teiler : 1 }));
+  const mindermengeGeschaetzt = teiler > 1 && lieferungen.some((l, i) => l.neu && zuschlaege[i]?.mindermenge > 0);
   const z = zuschlaege[lieferungen.findIndex(l => l.neu)] ?? zuschlaege.at(-1);
   if (zuschlaege.every(Boolean)) {
     const n = zuschlaege.length;
@@ -369,7 +371,7 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
   if (ziel === 'kettler') {
     const kanten = eintraege.filter(e => wirdGekettelt(e.p.ausfuehrung));
     if (!kosten.kettler) { if (kanten.length) offen.push('Kettelpreis nicht hinterlegt'); } else {
-      const meter = kanten.map(e => ({ m: kanteMeter(e.p.ausfuehrung), satz: (e.m.verkauft ?? 0) > 6 ? kosten.kettler.ab6qmJeLfm : kosten.kettler.bis6qmJeLfm }));
+      const meter = kanten.map(e => ({ m: kanteMeter(e.p.ausfuehrung), satz: (e.m.verkauft ?? e.m.flaeche ?? 0) > 6 ? kosten.kettler.ab6qmJeLfm : kosten.kettler.bis6qmJeLfm }));
       if (meter.some(x => x.m === null)) offen.push('Kantenlänge unbekannt');
       const betragKettler = summe(meter.filter(x => x.m !== null).map(x => x.m * x.satz));
       if (betragKettler > 0) posten.push({ text: 'Ketteln', betrag: betragKettler, art: 'kettel' });
@@ -386,7 +388,7 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
       else posten.push({ text: v.spedition ? `Spedition zum Kunden${v.xxl ? ' (XXL)' : ''}${s.kurzCm ? `, kurze Seite ${Math.round(s.kurzCm)} cm` : ''}` : 'Paket zum Kunden', betrag: v.netto, art: 'weg' });
     }
   }
-  return { posten, offen, z, s, versand: versandAngabe, uebersLager };
+  return { posten, offen, z, s, versand: versandAngabe, uebersLager, mindermengeGeschaetzt };
 }
 
 // ------------------------------------------------------------------ Warnung je Bestellung
@@ -404,7 +406,9 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   if (!ware.length) return null;
   const adresse = auftrag.details?.lieferadresse ?? null;
   const plz = String(adresse?.plz ?? '').trim();
-  const inland = /^\d{5}$/.test(plz) && (!adresse?.land || /^(deutschland|germany|de)$/i.test(String(adresse.land).trim()));
+  const landAngabe = String(adresse?.land ?? '').trim();
+  const imAusland = Boolean(landAngabe) && !/^(deutschland|germany|de)$/i.test(landAngabe);
+  const inland = !imAusland && /^\d{5}$/.test(plz);
   const nah = inland && nahPlz.test(plz);
   const zielVon = new Map();
   for (const { lieferziel, positionen, teiler } of mailsMitPosition) for (const p of positionen) zielVon.set(p.lineItemId, { ziel: lieferziel, teiler: teiler ?? 1 });
@@ -441,6 +445,7 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   const bestelltTag = e => stand(e.p)?.bestelltAm?.slice?.(0, 10) ?? null;
   let versandVeraltet = false;
   let eigeneZustellung = false;
+  let mindermengeGeschaetzt = false;
   for (const [schluessel, liste] of gruppen) {
     const [lieferant, ziel] = schluessel.split('|');
     // Auch was an ein anderes Ziel ging, war eine eigene Lieferung dieses Lieferanten.
@@ -453,7 +458,8 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     const ergebnis = wegEinerGruppe({ lieferant, ziel, eintraege: liste, kosten, adresse, nah, kettlerAdresse: absender?.kettelservice, ladenPlz, netto: netto ?? 0, tarif, jetzt, teiler: anteilig, lieferungen });
     posten.push(...ergebnis.posten);
     offen.push(...ergebnis.offen);
-    if (!inland && (ziel === 'kettler' || ergebnis.uebersLager)) offen.push('Versand ins Ausland nicht hinterlegt');
+    if (!inland && (ziel === 'kettler' || ergebnis.uebersLager)) offen.push(imAusland ? 'Versand ins Ausland nicht hinterlegt' : 'Lieferadresse fehlt');
+    if (ergebnis.mindermengeGeschaetzt) mindermengeGeschaetzt = true;
     if (ergebnis.versand?.veraltet) versandVeraltet = true;
     if (ergebnis.versand?.selbst) eigeneZustellung = true;
 
@@ -462,9 +468,12 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     if (inDerMail && zuschlag > 0) {
       const name = lieferantName(lieferant);
       if (tage.size && offenJetzt) {
-        hinweise.push({ art: 'teillieferung', text: `Teillieferung: Bei ${name} wurde für diese Bestellung schon am ${[...tage].map(tagKurz).join(', ')} bestellt. Eine weitere Lieferung löst den Frachtzuschlag erneut aus, etwa ${euro(zuschlag)}.` });
+        const satz = `Teillieferung: Bei ${name} wurde für diese Bestellung schon am ${[...tage].map(tagKurz).join(', ')} bestellt. Eine weitere Lieferung löst den Frachtzuschlag erneut aus`;
+        hinweise.push({ art: 'teillieferung', text: `${satz}, etwa ${euro(zuschlag)}.`, textOhnePreis: `${satz}.` });
       } else if (ergebnis.s.stuecke > 1 && offenJetzt) {
-        hinweise.push({ art: 'teillieferung', text: `Teillieferung vermeiden: ${ergebnis.s.stuecke} Stücke von ${name}. Kommen sie getrennt, fällt der Frachtzuschlag je Lieferung an, etwa ${euro(zuschlag)}. Beim Bestellen um eine gemeinsame Lieferung bitten.` });
+        const satz = `Teillieferung vermeiden: ${ergebnis.s.stuecke} Stücke von ${name}. Kommen sie getrennt, fällt der Frachtzuschlag je Lieferung an`;
+        const schluss = 'Beim Bestellen um eine gemeinsame Lieferung bitten.';
+        hinweise.push({ art: 'teillieferung', text: `${satz}, etwa ${euro(zuschlag)}. ${schluss}`, textOhnePreis: `${satz}. ${schluss}` });
       }
     }
   }
@@ -478,7 +487,7 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     }
   }
   for (const [id, ziele] of zieleJeLieferant) {
-    if (ziele.size > 1) hinweise.push({ art: 'teillieferung', text: `Zwei Lieferungen: ${lieferantName(id)} liefert diese Bestellung an ${ziele.size} verschiedene Ziele. Der Frachtzuschlag fällt je Lieferung an.` });
+    if (ziele.size > 1 && kosten.lieferanten[id]?.fracht > 0) hinweise.push({ art: 'teillieferung', text: `Zwei Lieferungen: ${lieferantName(id)} liefert diese Bestellung an ${ziele.size} verschiedene Ziele. Der Frachtzuschlag fällt je Lieferung an.` });
   }
 
   const weg = summe(posten.filter(x => x.art === 'weg').map(x => x.betrag));
@@ -486,7 +495,8 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   const wegBekannt = !offen.length;
   // Eine Zahl nur, wenn alles eingerechnet ist: Was fehlt, wuerde den Rohertrag zu gut aussehen lassen.
   const rohertrag = netto !== null && ekBekannt && wegBekannt ? r2(netto - ekSumme - weg - kettel) : null;
-  const kostenUeberVerkauf = rohertrag === null && netto !== null && ekSumme + weg + kettel >= netto;
+  const bekannteKosten = ekSumme + weg + kettel;
+  const kostenUeberVerkauf = rohertrag === null && netto !== null && bekannteKosten >= netto && (netto > 0 || bekannteKosten > 0);
   const quote = rohertrag !== null && netto > 0 ? rohertrag / netto : null;
 
   // Warnung 2: bestellte Menge gegen verkaufte Menge.
@@ -522,7 +532,8 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   }
   const lieferantenInMail = new Set(eintraege.filter(e => zielVon.has(e.p.lineItemId)).map(e => e.p.lieferant));
   for (const id of lieferantenInMail) {
-    if (mindestmenge[id]) hinweise.push({ art: 'menge', text: `Mindestmenge bei ${lieferantName(id)}: ${mindestmenge[id]}` });
+    // Nur Zusatz: Sie steht bei jeder Bestellung dieses Lieferanten und loest allein nichts aus.
+    if (mindestmenge[id]) hinweise.push({ art: 'menge', nurZusatz: true, text: `Mindestmenge bei ${lieferantName(id)}: ${mindestmenge[id]}` });
   }
 
   const rohertragVerschnitt = rohertrag !== null && mehrkosten > 0 ? r2(rohertrag - mehrkosten) : null;
@@ -558,9 +569,10 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     stufe = 'leise';
     kopf = 'Rohertrag unbekannt';
   }
-  if (!kopf && !hinweise.length) return null;
+  const auffaelligeHinweise = hinweise.filter(h => !h.nurZusatz);
+  if (!kopf && !auffaelligeHinweise.length) return null;
   if (!kopf) { stufe = 'warn'; kopf = `Mehrkosten möglich, Rohertrag etwa ${euro(rohertrag)}${quote !== null ? ` (${Math.round(quote * 100)} %)` : ''}`; }
-  if (stufe === 'leise' && hinweise.length) stufe = 'warn';
+  if (stufe === 'leise' && auffaelligeHinweise.length) stufe = 'warn';
 
   const anmerkungen = [];
   if (!ekBekannt) anmerkungen.push(`Einkaufspreis fehlt für: ${[...new Set(ohneEk.map(e => e.p.titel ?? 'Artikel'))].join(', ')}.`);
@@ -573,6 +585,7 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   if (eigeneZustellung) anmerkungen.push('Nicht eingerechnet: Fahrt und Abholung, der Kunde liegt in unserem Liefergebiet.');
   if (ek.verfuegbar && eintraege.some(e => e.m.zeile?.sicherheit === 'abgeleitet')) anmerkungen.push(`Einkauf aus der abgeleiteten EK-Liste (Stand ${ek.stand}), echte Rechnungen können abweichen.`);
   if (versandVeraltet) anmerkungen.push('Versand mit dem letzten hinterlegten Dieselwert gerechnet.');
+  if (mindermengeGeschaetzt) anmerkungen.push('Mindermenge je Bestellung geschätzt, die Sammellieferung kann darüber liegen.');
 
   return {
     orderId: auftrag.id,
@@ -582,13 +595,13 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     rechnung,
     anmerkungen,
     hinweise,
-    wege: wegeHinweise({ eintraege, kosten, nah, lieferantName }),
+    wege: wegeHinweise({ eintraege: eintraege.filter(e => zielVon.has(e.p.lineItemId) && !stand(e.p)?.bestelltAm), kosten, nah, lieferantName }),
     rohertrag,
     quote,
     wegAnteil,
     wegTeuer,
-    rohertragAuffaellig: kostenUeberVerkauf || rohertrag !== null && (rohertrag < 0 || quote < SCHWELLEN.rohertragQuote
-      || (rohertragVerschnitt !== null && (rohertragVerschnitt < 0 || quoteVerschnitt < SCHWELLEN.rohertragQuote))),
+    rohertragAuffaellig: kostenUeberVerkauf || rohertrag !== null && (rohertrag < 0 || (quote !== null && quote < SCHWELLEN.rohertragQuote)
+      || (rohertragVerschnitt !== null && (rohertragVerschnitt < 0 || (quoteVerschnitt !== null && quoteVerschnitt < SCHWELLEN.rohertragQuote)))),
   };
 }
 
@@ -602,7 +615,7 @@ export function warnungFuerMitarbeiter(w) {
   if (!w) return null;
   const kopf = w.wegTeuer ? 'Weg zum Kunden teuer, vor dem Bestellen mit Ahmet klären'
     : w.rohertragAuffaellig ? 'Diese Bestellung vor dem Bestellen mit Ahmet klären'
-      : w.hinweise.length ? 'Hinweis zu Menge oder Lieferung' : null;
+      : w.hinweise.some(h => !h.nurZusatz) ? 'Hinweis zu Menge oder Lieferung' : null;
   if (!kopf) return null;
   return {
     orderId: w.orderId,
@@ -620,19 +633,21 @@ export function warnungFuerMitarbeiter(w) {
 function warnungFuerInhaber(w) {
   if (!w) return null;
   const { wegTeuer, rohertragAuffaellig, ...rest } = w;
-  return { ...rest, hinweise: w.hinweise.map(({ textOhnePreis, ...h }) => h) };
+  return { ...rest, hinweise: w.hinweise.map(({ textOhnePreis, nurZusatz, ...h }) => h) };
 }
 
-/** Guenstigere Wege, soweit sie aus den Daten folgen. Alles andere bleibt eine Abwaegung von Hand. */
+/**
+ * Guenstigere Wege, soweit sie aus den Daten folgen. Alles andere bleibt eine Abwaegung von Hand.
+ * eintraege: nur, was jetzt noch bestellt wird. Fuer schon Bestelltes laesst sich der Weg nicht mehr waehlen.
+ */
 function wegeHinweise({ eintraege, kosten, nah, lieferantName }) {
   const wege = [];
-  const inMail = eintraege;
-  const ueberUns = inMail.filter(e => e.ziel === 'laden' && !wirdGekettelt(e.p.ausfuehrung));
+  const ueberUns = eintraege.filter(e => e.ziel === 'laden' && !wirdGekettelt(e.p.ausfuehrung));
   for (const id of new Set(ueberUns.map(e => e.p.lieferant))) {
     const k = kosten.lieferanten[id];
     if (k && !k.anKundenNurImLiefergebiet && !nah) wege.push(`${lieferantName(id)} kann direkt an den Kunden liefern: Der Weiterversand von uns entfällt.`);
   }
-  const zumKettler = inMail.filter(e => e.ziel === 'kettler');
+  const zumKettler = eintraege.filter(e => e.ziel === 'kettler');
   if (zumKettler.some(e => e.m.stueck && Math.min(e.m.stueck.breiteCm, e.m.stueck.laengeCm) > 200) && !nah) {
     wege.push('Kurze Seite über 200 cm: Der Kettler versendet per Spedition. Wenn der Lieferant selbst kettelt, entfällt dieser Weg.');
   }

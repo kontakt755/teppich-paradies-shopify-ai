@@ -96,10 +96,17 @@ test('Meterware: bestellt mehr als verkauft', () => {
   assert.ok(w.hinweise.some(h => /Menge weicht ab/.test(h.text) && /verkauft 8,00 m²/.test(h.text) && /bestellt 10,00 m²/.test(h.text)));
 });
 
-test('Mindestmenge aus den Stammdaten wird genannt', () => {
-  const p = pos('l1', { nettoGesamt: 300 });
-  const w = warne(auftrag([p]), inMail([p]), { mindestmenge: { A: '10 lfm je Bestellung' } });
+test('Mindestmenge: allein keine Warnung, als Zusatz bei einer gezeigten Warnung', () => {
+  const mindestmenge = { A: '10 lfm je Bestellung' };
+  const normal = pos('l1', { nettoGesamt: 300 });
+  assert.equal(warne(auftrag([normal]), inMail([normal]), { mindestmenge }), null);
+  const verlust = pos('l1', { nettoGesamt: 40 });
+  const w = warne(auftrag([verlust]), inMail([verlust]), { mindestmenge });
   assert.ok(w.hinweise.some(h => /Mindestmenge bei Lieferant A: 10 lfm/.test(h.text)));
+  // Rohertrag unbekannt bleibt leise, Mitarbeiter bekommen dann nichts.
+  const leise = warne(auftrag([normal]), inMail([normal]), { mindestmenge, ek: EK([]) });
+  assert.equal(leise.stufe, 'leise');
+  assert.equal(warnungFuerMitarbeiter(leise), null);
 });
 
 test('Teillieferung: schon bestellter Teil loest den Zuschlag erneut aus und zaehlt in der Rechnung', () => {
@@ -161,12 +168,12 @@ test('Fehlender Verkaufspreis: unbekannt statt einer falschen Rechnung', () => {
 });
 
 test('Muster und Eigenleistung: kein Einkauf, Kettelerloes zaehlt im Netto', () => {
-  const p = pos('l1', { nettoGesamt: 100 });
-  const dienst = pos('l2', { eigenleistung: true, nettoGesamt: 200, grosshaendlerId: 'UNGEKLAERT' });
+  const p = pos('l1', { nettoGesamt: 60 });
+  const dienst = pos('l2', { eigenleistung: true, nettoGesamt: 10, grosshaendlerId: 'UNGEKLAERT' });
   const muster = pos('l3', { istMuster: true, nettoGesamt: 0, grosshaendlerId: 'UNGEKLAERT' });
-  const w = warne(auftrag([p, dienst, muster]), inMail([p]), { mindestmenge: { A: 'x' } });
-  assert.equal(w.rechnung[0].betrag, 300);
-  assert.equal(w.rohertrag, 300 - 30 - 30);
+  const w = warne(auftrag([p, dienst, muster]), inMail([p]));
+  assert.equal(w.rechnung[0].betrag, 70);
+  assert.equal(w.rohertrag, 70 - 30 - 30);
 });
 
 test('warnungenAnhaengen: je Bestellung nur an der ersten Mail, Muster bleiben ohne', () => {
@@ -284,15 +291,14 @@ const EK_MEHRERE = (...zeilen) => EK(zeilen);
 const meter = (id, m2Menge, extra = {}) => pos(id, { mengeBestellt: m2Menge, bestellmenge: { menge: m2Menge / 4, einheit: 'lfm' }, ...extra });
 
 test('Bestandsabgang einer Bundle-Komponente: kein Einkauf, kein Weg, Verkaufspreis bleibt im Netto', () => {
-  const teppich = meter('l1', 20, { nettoGesamt: 200 });
-  const rolle = pos('l2', { nettoGesamt: 50, mengeBestellt: 8, grosshaendlerId: 'ROLLE-1', sku: 'ROLLE-1', masspruefung: { status: 'bestand', einheit: '' }, bestellmenge: { menge: 8, einheit: 'stueck' }, titel: 'Rollenkomponente, 500 kg', farbe: '500 kg' });
+  const teppich = meter('l1', 20, { nettoGesamt: 70 });
+  const rolle = pos('l2', { nettoGesamt: 30, mengeBestellt: 8, grosshaendlerId: 'ROLLE-1', sku: 'ROLLE-1', masspruefung: { status: 'bestand', einheit: '' }, bestellmenge: { menge: 8, einheit: 'stueck' }, titel: 'Rollenkomponente, 500 kg', farbe: '500 kg' });
   const w = warne(auftrag([teppich, rolle]), inMail([teppich]), {
     ek: EK_MEHRERE(eZeile('ART-1', 3), eZeile('ROLLE-1', 10, { bezug: 'stueck', vk_einheit: 'stueck' })),
-    mindestmenge: { A: 'x' },
   });
   assert.equal(w.rechnung.find(z => z.text === 'Einkauf').betrag, -60);
-  assert.equal(w.rechnung.find(z => z.text === 'Verkauf netto').betrag, 250);
-  assert.equal(w.rohertrag, 250 - 60 - 30);
+  assert.equal(w.rechnung.find(z => z.text === 'Verkauf netto').betrag, 100);
+  assert.equal(w.rohertrag, 100 - 60 - 30);
   // Nur Bestandsabgang: nichts zu rechnen.
   assert.equal(warne(auftrag([rolle]), []), null);
 });
@@ -325,18 +331,18 @@ test('Volle Rollenbreite: kuerzeste moegliche Laenge, kein Hinweis ohne Mehrflae
 const KOSTEN_ZWEI = { lieferanten: { A: KOSTEN.lieferanten.A, B: { ...KOSTEN.lieferanten.A } }, kettler: null };
 
 test('Mindermenge je Lieferant: zwei Lieferanten mit zusammen genug Einkauf zahlen beide', () => {
-  const a = meter('l1', 20, { lieferant: 'A', nettoGesamt: 400 });
-  const b = meter('l2', 20, { lieferant: 'B', nettoGesamt: 400, grosshaendlerId: 'ART-2', sku: 'ART-2' });
-  const w = warne(auftrag([a, b]), inMail([a, b]), { kosten: KOSTEN_ZWEI, ek: EK_MEHRERE(eZeile('ART-1', 3), eZeile('ART-2', 3)), mindestmenge: { A: 'x' } });
+  const a = meter('l1', 20, { lieferant: 'A', nettoGesamt: 100 });
+  const b = meter('l2', 20, { lieferant: 'B', nettoGesamt: 100, grosshaendlerId: 'ART-2', sku: 'ART-2' });
+  const w = warne(auftrag([a, b]), inMail([a, b]), { kosten: KOSTEN_ZWEI, ek: EK_MEHRERE(eZeile('ART-1', 3), eZeile('ART-2', 3)) });
   // Je 60 Einkauf unter der Grenze von 100, zusammen 120 darueber: je 20 Fracht + 10 Mindermenge.
   assert.deepEqual(w.rechnung.filter(z => /Fracht/.test(z.text)).map(z => z.betrag), [-30, -30]);
-  assert.equal(w.rohertrag, 800 - 120 - 60);
+  assert.equal(w.rohertrag, 200 - 120 - 60);
 });
 
 test('Mindermenge je Lieferung: Lieferant ueber der Grenze zahlt keine, der andere schon', () => {
-  const a = meter('l1', 40, { lieferant: 'A', nettoGesamt: 400 });
-  const b = meter('l2', 20, { lieferant: 'B', nettoGesamt: 400, grosshaendlerId: 'ART-2', sku: 'ART-2' });
-  const w = warne(auftrag([a, b]), inMail([a, b]), { kosten: KOSTEN_ZWEI, ek: EK_MEHRERE(eZeile('ART-1', 3), eZeile('ART-2', 3)), mindestmenge: { A: 'x' } });
+  const a = meter('l1', 40, { lieferant: 'A', nettoGesamt: 125 });
+  const b = meter('l2', 20, { lieferant: 'B', nettoGesamt: 125, grosshaendlerId: 'ART-2', sku: 'ART-2' });
+  const w = warne(auftrag([a, b]), inMail([a, b]), { kosten: KOSTEN_ZWEI, ek: EK_MEHRERE(eZeile('ART-1', 3), eZeile('ART-2', 3)) });
   assert.deepEqual(w.rechnung.filter(z => /Fracht/.test(z.text)).map(z => z.betrag), [-20, -30]);
 });
 
@@ -514,4 +520,84 @@ test('Vermerk "kunde" bei Lieferant nur im Liefergebiet: kein Weiterversand dazu
   assert.ok(w.anmerkungen.some(a => /Versandtarife/.test(a)));
   const nurAlt = warne(auftrag([alt]), [], { ...ek10, statusAlle: schonBestellt('l1', { ueber: 'kunde' }) });
   assert.equal((nurAlt?.anmerkungen ?? []).some(a => /Versandtarife/.test(a)), false);
+});
+
+// ------------------------------------------------------------------ Letzte Korrekturen vor dem Merge
+
+test('Teillieferung: Mitarbeiter sehen keinen Frachtbetrag, der Inhaber schon', () => {
+  const [a, b] = [meter('l1', 20, { nettoGesamt: 400 }), meter('l2', 20, { nettoGesamt: 400 })];
+  const stuecke = warne(auftrag([a, b]), inMail([a, b]), ek10);
+  assert.match(stuecke.hinweise.find(h => h.art === 'teillieferung').text, /Teillieferung vermeiden.*etwa \d+ €/);
+  assert.doesNotMatch(JSON.stringify(warnungFuerMitarbeiter(stuecke)), /€/);
+  assert.match(warnungFuerMitarbeiter(stuecke).hinweise.find(h => h.art === 'teillieferung').text, /Teillieferung vermeiden.*gemeinsame Lieferung/);
+  const nach = warne(auftrag([a, b]), inMail([b]), { ...ek10, statusAlle: schonBestellt('l1', { ueber: 'kunde' }) });
+  assert.match(nach.hinweise.find(h => h.art === 'teillieferung').text, /schon am 20\.12\..*etwa \d+ €/);
+  assert.doesNotMatch(JSON.stringify(warnungFuerMitarbeiter(nach)), /€/);
+});
+
+test('Zwei Lieferungen: nur, wenn beim Lieferanten Fracht hinterlegt ist', () => {
+  const [a, b] = [pos('l1', { nettoGesamt: 300 }), pos('l2', { nettoGesamt: 300 })];
+  const mails = [...inMail([a], 'kunde'), ...inMail([b], 'laden')];
+  const genannt = warne(auftrag([a, b], '10000'), mails, ek10);
+  assert.ok(genannt.hinweise.some(h => /^Zwei Lieferungen/.test(h.text)));
+  const nurPaket = { lieferanten: { A: { ...KOSTEN.lieferanten.A, fracht: null, mindermenge: null } }, kettler: null };
+  const ohne = warne(auftrag([a, b], '10000'), mails, { ...ek10, kosten: nurPaket });
+  assert.equal((ohne?.hinweise ?? []).some(h => /^Zwei Lieferungen/.test(h.text)), false);
+});
+
+test('Sammellieferung: Anteil nur fuer die neue Lieferung, fruehere Bestelltage tragen die volle Fracht', () => {
+  const [alt, neu] = [meter('l1', 20, { nettoGesamt: 100 }), meter('l2', 20, { nettoGesamt: 100 })];
+  const w = warne(auftrag([alt, neu]), inMail([neu], 'kunde', 2), { ...ek10, ek: EK([eZeile('ART-1', 3)]), statusAlle: schonBestellt('l1', { ueber: 'kunde' }) });
+  // Alt: 20 Fracht + 10 Mindermenge. Neu: 20 / 2 + 10 Mindermenge.
+  assert.equal(w.rechnung.find(z => /2 Lieferungen/.test(z.text)).betrag, -50);
+});
+
+test('Mindermenge bei Sammellieferung wird als Schaetzung benannt', () => {
+  const satz = /Mindermenge je Bestellung geschätzt, die Sammellieferung kann darüber liegen/;
+  const p = meter('l1', 20, { nettoGesamt: 70 });
+  assert.ok(warne(auftrag([p]), inMail([p], 'kunde', 2)).anmerkungen.some(a => satz.test(a)));
+  assert.equal(warne(auftrag([p]), inMail([p], 'kunde', 1)).anmerkungen.some(a => satz.test(a)), false);
+  const ohneMindermenge = meter('l1', 40, { nettoGesamt: 120 });
+  assert.equal(warne(auftrag([ohneMindermenge]), inMail([ohneMindermenge], 'kunde', 2)).anmerkungen.some(a => satz.test(a)), false);
+});
+
+test('Guenstigere Wege nur fuer noch offene Positionen in der Mail', () => {
+  const gross = gekettelt('l1', { mengeBestellt: 750, ausfuehrung: ['Fertigmaß: 250 × 300 cm (Rechteck)', 'Einfassung: Gekettelt, umlaufend 11 m'] });
+  const satz = /Kurze Seite über 200 cm/;
+  assert.ok(warne(auftrag([gross]), inMail([gross], 'kettler'), ek10).wege.some(x => satz.test(x)));
+  const neu = meter('l2', 20, { nettoGesamt: 70 });
+  const w = warne(auftrag([gross, neu]), inMail([neu]), { ...ek10, statusAlle: schonBestellt('l1', { ueber: 'kettler' }) });
+  assert.equal(w.wege.some(x => satz.test(x)), false);
+});
+
+test('Netto 0 ohne Kosten: nichts uebersteigt den Verkauf, quote null ist nicht auffaellig', () => {
+  const p = meter('l1', 20, { nettoGesamt: 0 });
+  const ohne = warne(auftrag([p]), inMail([p]), { kosten: { lieferanten: {}, kettler: null }, ek: EK([]) });
+  assert.doesNotMatch(ohne.kopf, /übersteigen/);
+  assert.equal(warnungFuerMitarbeiter(ohne), null);
+  // Rohertrag genau 0 auf Netto 0, dazu eine Mengenabweichung: bleibt ein Mengenhinweis.
+  const kostenlos = { lieferanten: { A: { ...KOSTEN.lieferanten.A, paket: null, fracht: 0, mindermenge: null } }, kettler: null };
+  const q = pos('l1', { nettoGesamt: 0, mengeBestellt: 10, bestellmenge: { menge: 10, einheit: 'lfm' } });
+  const w = warne(auftrag([q]), inMail([q]), { kosten: kostenlos, ek: EK([eZeile('ART-1', 0)]) });
+  assert.equal(w.quote, null);
+  assert.equal(warnungFuerMitarbeiter(w).kopf, 'Hinweis zu Menge oder Lieferung');
+});
+
+test('Fehlende oder unlesbare Adresse heisst Lieferadresse fehlt, nicht Ausland', () => {
+  const p = gekettelt('l1');
+  const hinweis = a => warne(a, inMail([p], 'kettler'), ek10).anmerkungen.join(' ');
+  const summen = { summen: { versand: { betrag: 0 } } };
+  for (const a of [auftrag([p], '–'), auftrag([p], '123'), auftrag([p], '50000', { details: { lieferadresse: null, ...summen } })]) {
+    assert.match(hinweis(a), /Lieferadresse fehlt/);
+    assert.doesNotMatch(hinweis(a), /Ausland/);
+  }
+  const ausland = auftrag([p], '1010', { details: { lieferadresse: { plz: '1010', land: 'Österreich' }, ...summen } });
+  assert.match(hinweis(ausland), /Versand ins Ausland nicht hinterlegt/);
+});
+
+test('Kettelsatz ohne verkaufte Flaeche richtet sich nach der Flaeche des Stuecks', () => {
+  const p = pos('l1', { masspruefung: { einheit: '' }, mengeBestellt: 1, nettoGesamt: 900, bestellmenge: { menge: 1, einheit: 'stueck' }, ausfuehrung: ['Fertigmaß: 300 × 300 cm (Rechteck)', 'Einfassung: Gekettelt, umlaufend 12 m'] });
+  const w = warne(auftrag([p], '10000'), inMail([p], 'kettler'), { ek: EK([eZeile('ART-1', 80, { bezug: 'stueck', vk_einheit: 'stueck', ek_vk_einheit: 800 })]) });
+  // 12 m zum Satz ab 6 m² (3 €), nicht bis 6 m² (2 €).
+  assert.equal(w.rechnung.find(z => z.text === 'Ketteln').betrag, -36);
 });
