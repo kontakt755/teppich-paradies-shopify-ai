@@ -12,7 +12,7 @@ import { $, esc, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { einkauf, kundeUndOrt, ladeStandNeu } from './auftragsfluss.mjs';
-import { VERSANDDIENSTE, versandKandidaten, vorauswahl, versandRueckmeldung, istUebergabe } from '../../lib/versand.mjs';
+import { VERSANDDIENSTE, versandIds, versandKandidaten, vorauswahl, versandRueckmeldung, istUebergabe } from '../../lib/versand.mjs';
 import { beschaffungsStand, darfWeiter, beschaffungText } from '../../lib/beschaffung.mjs';
 import { shopifyAbgleichKlick } from './shopify-abgleich.mjs';
 import { ratgeberKnopf } from '../kunden/gemeinsam.mjs';
@@ -42,7 +42,7 @@ function artikelText(p) {
  * @param {boolean} [opt.mailVorab]  Versandmail vorab an/aus; ohne Angabe wie bisher (aus bei Uebergabe/Abholung)
  * @param {Function} [opt.danach]    nach erfolgreicher Buchung, z. B. die Aufraeumliste neu laden
  */
-export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = null, mailVorab = null, danach = null } = {}) {
+export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = null, mailVorab = null, danach = null, nur = null } = {}) {
   if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return; }
   // Stand und Positionen koennen fehlen, wenn der Klick von "Heute" kommt.
   if (!einkauf.auftragsstatus?.positionen) {
@@ -55,7 +55,8 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     if (d?.verfuegbar) { einkauf.bestellungen = d; info = kundeUndOrt(orderId); }
   }
   const { name, ort, auftrag } = info;
-  const kandidaten = auftrag ? versandKandidaten(auftrag, einkauf.auftragsstatus?.positionen || {}) : [];
+  // `nur`: der Aufrufer weiss, welche Positionen gemeint sind (Packstation: die Muster eines Umschlags).
+  const kandidaten = auftrag ? versandKandidaten(auftrag, einkauf.auftragsstatus?.positionen || {}, { nur }) : [];
   // Nichts mehr offen (laut geladenem Stand): kein Buchen-Knopf - sonst setzte der Server "erledigt"
   // still zurueck auf "raus". Mit angeklickter Position bleibt es bei genau dieser einen.
   const nichtsOffen = Boolean(auftrag) && !kandidaten.length && !lineItemId;
@@ -96,7 +97,7 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     : bereit.length === 1 ? `<p class="small">${esc(artikelText(bereit[0]))}</p>`
       // Stand unbekannt (Bestellung nicht geladen): der Server nimmt alles, was noch nicht raus ist.
       : nichtsOffen ? '<p class="small muted">Alle Artikel sind schon als raus eingetragen – hier ist nichts mehr zu buchen.</p>'
-        : '<p class="small muted">Alle Artikel dieser Bestellung, die noch nicht raus sind.</p>';
+        : `<p class="small muted">${nur ? 'Die Muster dieses Umschlags, die noch nicht raus sind.' : 'Alle Artikel dieser Bestellung, die noch nicht raus sind.'}</p>`;
   const sendung = uebergabe ? '' : `<div class="vs-sendung">
       <div class="field"><label for="vsNummer">Sendungsnummer (optional)</label><input id="vsNummer" name="nummer" autocomplete="off" maxlength="60" placeholder="vom Paketaufkleber"></div>
       <div class="field"><label for="vsDienst">Versanddienst</label><select id="vsDienst" name="dienst"><option value="">–</option>${VERSANDDIENSTE.map(d => `<option${d === dienst ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></div>
@@ -137,7 +138,7 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     const daten = new FormData(form);
     if (nichtsOffen || nurGesperrt) return;
     // Angeklickte Position, die im geladenen Stand fehlt: genau diese eine, nie die ganze Bestellung.
-    const ids = nurGeklickt ? [lineItemId] : bereit.length > 1 ? daten.getAll('pos').map(String) : bereit.length === 1 ? [bereit[0].lineItemId] : null;
+    const ids = versandIds({ nurGeklickt, lineItemId, bereit, gewaehlt: daten.getAll('pos').map(String), nur });
     if (ids && !ids.length) { toast('Bitte mindestens einen Artikel ankreuzen.', 'warn'); return; }
     const nummer = String(daten.get('nummer') || '').trim();
     const gewaehlt = String(daten.get('dienst') || '');

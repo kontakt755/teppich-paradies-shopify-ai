@@ -32,12 +32,14 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, WARTET_AB_TAGEN, EINWURF_FRIST_MINUTEN, aufkleberFuer, aufkleberFuerMuster, einwurfListen, umschlagMusterIds, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
 import { suchVerweis, suchwert } from '../../lib/suchverweis.mjs';
+import { kalendertag } from '../../lib/kalendertage.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { GESPERRT_KURZ, gesperrteNamen, oeffneKundeInformieren } from './muster-gesperrt.mjs';
+import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 let packOffen = null;
@@ -46,7 +48,6 @@ let packFehlerStand = null;
 let blattMeldung = null;
 // Bestellungen, deren Versand nach "Verschickt" nicht sicher in Shopify steht: bleibt sichtbar, bis jemand
 // "Verstanden" klickt - der Umschlag ist dann schon aus der Liste, ein Toast allein ginge unter (Pruefung 29.10.).
-let versandProbleme = [];
 let packSpeichert = false;
 let letztesPackZiel = null;
 let letzterPackModus = null;
@@ -349,7 +350,27 @@ function blaetterKnopf(liste) {
   return nummern ? `<button type="button" class="btn" data-mp-blatt="${esc(nummern)}">Begleitblätter drucken (${nummern.split(',').length})</button>` : '';
 }
 
-function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
+const uhrzeit = iso => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); };
+
+/**
+ * Sichtbar, ohne den Umschlag aufzuklappen: das Eintragen ist ein Klick, kein Weg. Steht im Kopf des
+ * Umschlags, die Klicks dort klappen ihn nicht auf (musterPackenKlick nimmt preventDefault).
+ */
+function einwurfHtml(k, { hauptknopf = false } = {}) {
+  if (k.bereich !== 'gepackt') return '';
+  const pk = esc(k.packSchluessel);
+  const e = k.eingeworfen;
+  const lesend = istNurLesend();
+  if (e && !e.problem) {
+    return `<div class="mp-einwurf mp-einwurf-wartet" role="status"><span class="small"><strong>Eingeworfen</strong> · wird um ${esc(uhrzeit(e.buchtAb))} eingetragen</span>${lesend ? '' : `<button type="button" class="btn btn-sm" data-mp-einwurf-zurueck="${pk}">Rückgängig</button>`}</div>`;
+  }
+  if (lesend) return '';
+  const alt = k.gepackt?.zeit && kalendertag(k.gepackt.zeit) !== kalendertag(new Date());
+  const frueher = alt ? k.bestellungen.map(b => `<button type="button" class="btn btn-sm btn-ghost" data-mp-frueher="${esc(b.orderId)}" data-mp-k="${pk}" title="Versanddialog mit ausgeschalteter Versandmail, nur für einen Umschlag, der schon vor Tagen zur Post ging">${k.bestellungen.length > 1 ? `${esc(b.orderName)}: war ` : 'War '}schon früher raus…</button>`).join('') : '';
+  return `<div class="mp-einwurf"><button type="button" class="btn btn-sm${hauptknopf ? ' btn-primary' : ''}" data-mp-eingeworfen="${pk}">Eingeworfen</button>${frueher}</div>`;
+}
+
+function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set(), hauptknopf = false } = {}) {
   const lesend = istNurLesend();
   const mehrere = k.bestellungen.length > 1;
   const nummern = k.bestellungen.map(b => b.orderName).join(' · ');
@@ -375,10 +396,11 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
     : k.gedruckt ? `<button type="button" class="btn btn-sm btn-ghost" data-mp-gedruckt-weg="${pk}">Druckvermerk zurücknehmen</button>`
       : k.bereich === 'klaeren' || angefangen(k) ? `<button type="button" class="btn btn-sm" data-mp-gedruckt="${pk}">Schon gedruckt – Umschlag vorbereitet</button>` : '';
   if (k.bereich === 'gepackt') {
-    // Gepackt heisst: geht heute raus (Inhaber 29.10.). "Verschickt" bucht in Shopify mit Versandmail,
-    // danach steht der Umschlag nur noch unter "Erledigt".
-    unten = `${lesend ? '' : `<button type="button" class="btn btn-sm btn-primary" data-mp-verschickt="${pk}">Verschickt – Kunde informieren</button>`}<button type="button" class="btn btn-sm" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>`;
-    mehr = [erneutDrucken, lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`,
+    // Gepackt heisst: geht heute raus (Inhaber 29.10.), ist aber noch nicht raus. Eingetragen wird erst mit
+    // dem Klick "Eingeworfen" im Kopf des Umschlags (einwurfHtml).
+    unten = `<button type="button" class="btn btn-sm" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>`;
+    const einwurfWartet = k.eingeworfen && !k.eingeworfen.problem;
+    mehr = [erneutDrucken, lesend || einwurfWartet ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`,
       ...k.bestellungen.map(b => `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Versand prüfen…</a>`)];
   } else if (k.bereich === 'klaeren') {
     // Was zuerst geklaert werden muss, wird der Hauptknopf; der Rest wandert unter "Mehr …".
@@ -429,6 +451,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set() } = {}) {
       <div class="mp-meta">
         <span class="small muted">${k.muster.length} Muster · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
         ${datumHtml(k)}
+        ${einwurfHtml(k, { hauptknopf })}
       </div>
     </summary>
     ${blattKnopf(k) ? `<div class="mp-aktionen mp-blatt-zeile">${blattKnopf(k)}</div>` : ''}
@@ -459,6 +482,7 @@ export function viewKundenMusterPacken() {
   letzterPackModus = packModus;
   ensureMusterPacken();
   const d = kunden.musterPacken;
+  planeEinwurfNachladen(d);
   if (!d) return '<p class="muted" role="status">Lade offene Musterbestellungen …</p>';
   if (d.fehler) return stoerungState(d, 'Die Musterbestellungen');
   if (!d.verfuegbar) return emptyState('Keine Bestelldaten.', d.hinweis || 'Bitte „Jetzt aktualisieren“.');
@@ -479,7 +503,7 @@ export function viewKundenMusterPacken() {
   const suchfeld = `<div class="toolbar"><input type="search" data-param="mpq" value="${esc(suchwert(state.route.params, 'mpq'))}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer"></div>`;
   const fehlerHinweis = packFehlerHtml(d);
   if (modus === 'laden') return umschalter + fehlerHinweis + PACKER_INFO + viewMusterKommtAn(d);
-  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt ist noch nicht versandt. Bestellt ein Kunde an mehreren Tagen, hat jeder Tag seinen eigenen Umschlag – nur Bestellungen vom selben Tag kommen zusammen.</p>${PACKER_INFO}`;
+  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt ist noch nicht versandt: Liegt der Umschlag bei der Post, unter „Gepackt“ auf „Eingeworfen“ drücken. Bestellt ein Kunde an mehreren Tagen, hat jeder Tag seinen eigenen Umschlag – nur Bestellungen vom selben Tag kommen zusammen.</p>${PACKER_INFO}`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const zielKunde = d.kunden.find(k => k.packSchluessel === ziel);
@@ -552,10 +576,35 @@ export function viewKundenMusterPacken() {
     ${suchfeld}
     <p class="mp-eigene"><button type="button" class="btn btn-sm btn-ghost" data-mp-eigene>Eigene Aufkleber…</button></p>
     ${suche ? `<p class="small muted">Die Suche berücksichtigt alle offenen Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer. Alle Kunden und Produkte findest du über die Suche oben.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>${fertigHinweis(gefunden.fertig, mitFertigen, suche, gefunden.fertigGenauer)}` : ''}
-    ${druck}${blaetter ? `<div class="mp-summe">${blaetter}</div>` : ''}<section class="mp-arbeitsliste" aria-label="${esc(titel)}"><h2 class="mp-titel">${esc(titel)}${aktiv === 'gepackt' ? ' – nach dem Verschicken „Verschickt“ drücken' : ''}</h2>
-    ${sichtbar.length ? `<div class="mp-kunden">${sichtbar.map((k, i) => kundeHtml(k, i + 1, { offenBeiSuche: aufklappen, treffer: treffer.get(k.packSchluessel) })).join('')}</div>` : leer}</section>
+    ${druck}${blaetter ? `<div class="mp-summe">${blaetter}</div>` : ''}<section class="mp-arbeitsliste" aria-label="${esc(titel)}">${aktiv === 'gepackt' && !gefunden ? einwurfBereich(d, sichtbar, leer) : `<h2 class="mp-titel">${esc(titel)}</h2>
+    ${sichtbar.length ? `<div class="mp-kunden">${sichtbar.map((k, i) => kundeHtml(k, i + 1, { offenBeiSuche: aufklappen, treffer: treffer.get(k.packSchluessel) })).join('')}</div>` : leer}`}</section>
     ${gefunden?.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], gefunden.ausserhalb) : ''}
     <p class="small muted">Fehlt eine Bestellung? <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Bestellungen – Muster →</a>.</p>`;
+}
+
+/**
+ * Reiter "Gepackt": drei Gruppen, damit niemand aus Versehen etwas als eingeworfen eintraegt, das noch im
+ * Regal liegt. Die Sammelaktion gilt nur fuer heute Gepacktes; Altfaelle werden je Umschlag entschieden.
+ */
+function einwurfBereich(d, sichtbar, leer) {
+  if (!sichtbar.length) return `<h2 class="mp-titel">Gepackt</h2>${leer}`;
+  const { wartend, heute, alt, altBestellungen } = einwurfListen(sichtbar);
+  const frist = d.einwurf?.fristMinuten || EINWURF_FRIST_MINUTEN;
+  const karten = (liste, start, opt = {}) => `<div class="mp-kunden">${liste.map((k, i) => kundeHtml(k, start + i + 1, opt)).join('')}</div>`;
+  const lesend = istNurLesend();
+  const schluessel = liste => esc(liste.map(k => k.packSchluessel).join(' '));
+  const teile = [`<p class="notice mp-einwurf-regel"><strong>„Eingeworfen“ erst drücken, wenn der Umschlag wirklich bei der Post ist.</strong> Gepackt allein zählt nicht. ${frist} Minuten nach dem Klick wird eingetragen: „An Kunden raus“, in Shopify versendet, der Kunde bekommt die Versandmail, Nachfrage und Anrufliste starten. Bis dahin geht „Rückgängig“, danach nicht mehr.</p>`];
+  if (wartend.length) {
+    teile.push(`<div class="mp-einwurf-kopf"><h2 class="mp-titel">Wird eingetragen · ${wartend.length}</h2>${!lesend && wartend.length > 1 ? `<button type="button" class="btn btn-sm" data-mp-einwurf-zurueck="${schluessel(wartend)}">Alle ${wartend.length} rückgängig</button>` : ''}</div>${karten(wartend, 0)}`);
+  }
+  if (heute.length) {
+    teile.push(`<div class="mp-einwurf-kopf"><h2 class="mp-titel">Heute gepackt · ${heute.length}</h2>${!lesend && heute.length > 1 ? `<button type="button" class="btn btn-primary" data-mp-eingeworfen="${schluessel(heute)}">Alle ${heute.length} eingeworfen</button>` : ''}</div>${karten(heute, wartend.length, { hauptknopf: heute.length === 1 })}`);
+  }
+  if (alt.length) {
+    teile.push(`<div class="mp-einwurf-kopf"><h2 class="mp-titel">Altfälle · ${plural(alt.length, 'Umschlag', 'Umschläge')}${altBestellungen !== alt.length ? ` (${altBestellungen} Bestellungen)` : ''}</h2></div>
+      <p class="small muted">Vor heute gepackt und nie eingetragen, älteste Bestellung zuerst. Hier bucht niemand von selbst: Nachsehen, ob der Umschlag noch im Regal liegt. Liegt er noch da: einwerfen, dann „Eingeworfen“. War er schon früher raus: „War schon früher raus…“, dort ist die Versandmail vorab aus.</p>${karten(alt, wartend.length + heute.length)}`);
+  }
+  return teile.join('');
 }
 
 /** Reiter "Erledigt": versandte oder erledigte Musterbestellungen der letzten Tage, nur zum Nachsehen. */
@@ -732,9 +781,11 @@ function packFehlerHtml(d) {
   if (packFehler && d?.verfuegbar && !d.fehler && d !== packFehlerStand) {
     packFehler = null; packFehlerStand = null;
   }
-  const versand = versandProbleme.length ? `<div class="notice crit" role="alert"><p><strong>Verschickt, aber in Shopify nicht sicher als versendet gemeldet.</strong> Bestellung öffnen und prüfen – fehlt der Versand, dort „In Shopify buchen“ (mit Mail-Wahl).</p>
-      <ul>${versandProbleme.map(v => `<li><a href="#/einkauf?auftrag=${encodeURIComponent(v.orderId)}">${esc(v.orderName)}</a>: ${esc(v.meldung || 'Ergebnis unbekannt')}</li>`).join('')}</ul>
-      <button type="button" class="btn btn-sm" data-mp-versand-ok>Verstanden</button></div>` : '';
+  // Steht auf dem Server: der Eintrag laeuft nach der Frist, oft ist dann niemand mehr auf dieser Seite.
+  const probleme = d?.einwurf?.probleme || [];
+  const versand = probleme.length ? `<div class="notice crit" role="alert"><p><strong>Eingeworfen, aber nicht sauber eingetragen.</strong> Bestellung öffnen und prüfen. Fehlt der Versand, dort „In Shopify buchen“ (mit Mail-Wahl). Steht der Umschlag noch unter „Gepackt“, dort erneut „Eingeworfen“.</p>
+      <ul>${probleme.map(v => `<li>${(v.orderIds || []).map((id, i) => `<a href="#/einkauf?auftrag=${encodeURIComponent(id)}">${esc(v.bestellungen?.[i] || 'Bestellung')}</a>`).join(', ')}: ${esc(v.meldung || 'Ergebnis unbekannt')}</li>`).join('')}</ul>
+      <button type="button" class="btn btn-sm" data-mp-einwurf-ok="${esc(probleme.map(v => v.packSchluessel).join(' '))}">Verstanden</button></div>` : '';
   const sperren = d?.sperrenFehler ? `<p class="notice crit" role="alert">Gesperrte Muster nicht lesbar – ein gesperrtes Muster kann gerade als „wartet auf Ware“ erscheinen: ${esc(d.sperrenFehler)}</p>` : '';
   return versand + sperren + (blattMeldung ? `<p class="notice warn" role="alert">${esc(blattMeldung)}</p>` : '') + (packFehler ? `<p class="notice warn" role="alert">${esc(packFehler)} <button type="button" class="btn btn-sm" data-mp-neuladen>Packliste erneut laden</button></p>` : '');
 }
@@ -824,60 +875,78 @@ async function schreiben(daten, meldung) {
 }
 
 /**
- * "Verschickt – Kunde informieren": je Bestellung im Umschlag den Schritt "raus" fuer genau ihre Muster.
- * Der Server bucht dabei in Shopify den Versand mit Versandmail (operations/lib/versand.mjs) - wie der
- * Versanddialog, ohne Sendungsnummer (Brief). Danach ist der Umschlag nicht mehr in der Packliste.
+ * Die Frist laeuft auf dem Server. Sobald sie um ist, die Liste neu holen, damit "wird eingetragen" nicht
+ * stehen bleibt. Beim Tippen nicht neu zeichnen: das naechste Zeichnen zeigt den Stand ohnehin.
  */
-async function verschicken(k, knopf) {
-  const n = k.bestellungen.length;
-  if (!window.confirm(`Umschlag ${umschlagKennung(k)} für ${k.name} ist verschickt?\n\nShopify bucht ${n === 1 ? 'die Bestellung' : `die ${n} Bestellungen`} als versendet und schickt die Versandbestätigung an den Kunden. Danach steht der Umschlag unter „Erledigt“.`)) return;
+let einwurfUhr = null;
+function planeEinwurfNachladen(d) {
+  if (einwurfUhr) return;
+  const fristen = (d?.kunden || []).filter(k => k.eingeworfen && !k.eingeworfen.problem).map(k => Date.parse(k.eingeworfen.buchtAb)).filter(Number.isFinite);
+  if (!fristen.length) return;
+  // 35 s nach der Frist: der Zeitgeber des Dienstes laeuft alle 30 s.
+  einwurfUhr = setTimeout(einwurfNachladen, Math.max(Math.min(...fristen) - Date.now() + 35_000, 10_000));
+  einwurfUhr?.unref?.(); // nur Node (Tests): die Uhr haelt den Prozess nicht offen
+}
+
+async function einwurfNachladen() {
+  einwurfUhr = null;
+  const wartend = d => (d?.kunden || []).filter(k => k.eingeworfen && !k.eingeworfen.problem);
+  const vorher = wartend(kunden.musterPacken).map(k => k.packSchluessel);
+  if (packSpeichert) { planeEinwurfNachladen(kunden.musterPacken); return; }
+  let neu;
+  try { neu = await fetchEinkauf(ENDPOINT); } catch { neu = null; }
+  if (!neu?.verfuegbar || neu.fehler) { einwurfUhr = setTimeout(einwurfNachladen, 30_000); einwurfUhr?.unref?.(); return; }
+  kunden.musterPacken = neu;
+  const nochDa = new Set(wartend(neu).map(k => k.packSchluessel));
+  const fehlgeschlagen = new Set((neu.einwurf?.probleme || []).map(p => p.packSchluessel));
+  const fertig = vorher.filter(pk => !nochDa.has(pk) && !fehlgeschlagen.has(pk)).length;
+  if (fertig) toast(`${plural(fertig, 'Umschlag', 'Umschläge')} eingetragen – steht jetzt unter „Erledigt“.`);
+  if (vorher.some(pk => fehlgeschlagen.has(pk))) toast('Ein Eintrag ging schief – Hinweis oben in der Packstation.', 'crit', { dauer: 9000 });
+  planeEinwurfNachladen(neu);
+  const aufSeite = state.route.view === 'kunden' && state.route.params.get('tab') === 'muster';
+  if (aufSeite && !document.activeElement?.matches?.('input, textarea, select')) render();
+}
+
+/** "Eingeworfen" fuer einen Umschlag oder die Sammelaktion. Bucht noch nichts: siehe kundenMusterEinwurf. */
+async function eingeworfen(schluessel, knopf) {
   packSpeichert = true;
   knopf.disabled = true;
-  knopf.textContent = 'Wird gebucht …';
-  // Ein Aufruf fuer den ganzen Umschlag: der Server prueft erst alle Bestellungen und schreibt dann
-  // alle lokalen Schritte, bevor Shopify antwortet - so zerfaellt ein Umschlag mit zwei Bestellungen nie.
   let r = null;
-  let fehler = null;
   try {
-    r = await orgSchreiben(ENDPOINT, { packSchluessel: k.packSchluessel, aktion: 'verschickt' });
-  } catch (err) { fehler = err; }
+    r = await orgSchreiben(ENDPOINT, { aktion: 'eingeworfen', packSchluessel: schluessel });
+  } catch (err) {
+    toast(`Nicht vermerkt: ${err.message}`, 'crit', { dauer: 9000 });
+  }
   try {
     const neu = await fetchEinkauf(ENDPOINT);
     if (neu?.verfuegbar && !neu.fehler) kunden.musterPacken = neu;
   } catch { /* der naechste Abruf holt es nach */ }
   packSpeichert = false;
-  if (fehler) {
-    // Nur eine Sperre des Servers (4xx, oder 500 "Nicht verschickt, keine Mail") ist sicher "nichts
-    // passiert". Bei Netzfehler/5xx sonst entscheidet die neu geladene Liste (Pruefung 29.10.).
-    const sicherNichts = /^Nicht verschickt/.test(fehler.message) || (fehler.status >= 400 && fehler.status < 500);
-    const nochDa = (kunden.musterPacken?.kunden || []).some(x => x.packSchluessel === k.packSchluessel);
-    const text = sicherNichts || nochDa
-      ? `${/^Nicht verschickt/.test(fehler.message) ? fehler.message : `Nicht verschickt: ${fehler.message}`}${nochDa ? ' Der Umschlag steht noch unter „Gepackt“.' : ''}`
-      : `Ergebnis unklar (${fehler.message}) – der Umschlag ist nicht mehr in der Liste, vermutlich verschickt. Bitte ${k.bestellungen.map(b => b.orderName).join(', ')} unter Bestellen prüfen.`;
-    // Erst nach dem Neuladen setzen: der Fehler gilt fuer genau diesen Stand der Liste, sonst loescht
-    // packFehlerHtml ihn beim naechsten Zeichnen sofort wieder.
-    packFehler = text;
-    packFehlerStand = kunden.musterPacken;
-    toast(text, 'crit', { dauer: 9000 });
-    render();
-    return;
+  if (r) {
+    if (r.angenommen?.length) toast(`${plural(r.angenommen.length, 'Umschlag', 'Umschläge')} als eingeworfen vermerkt. Bis ${uhrzeit(r.buchtAb)} geht „Rückgängig“.`);
+    if (r.abgelehnt?.length) toast(`Nicht vermerkt: ${r.abgelehnt.map(x => `${x.bestellungen.join(', ') || 'Umschlag'} – ${x.meldung}`).join(' · ')}`, 'crit', { dauer: 9000 });
   }
-  const versand = Array.isArray(r?.versand) ? r.versand : [];
-  // Lokal nicht eingetragen: steht weiter unter "Gepackt" und braucht einen neuen Klick, keine Shopify-Pruefung.
-  const nicht = versand.filter(v => v.status === 'nicht-eingetragen');
-  // Was lokal raus, aber in Shopify nicht sicher gebucht ist, bleibt oben stehen; die Texte je Bestellung
-  // kommen vom Server und passen zu jedem Ergebnis (teilweise, unklar, Fehler).
-  const probleme = versand.filter(v => !['gebucht', 'bereits', 'nicht-eingetragen'].includes(v.status));
-  const gebucht = versand.filter(v => v.status === 'gebucht');
-  toast(`Verschickt · ${umschlagKennung(k)} ${k.name}${gebucht.length ? ` · in Shopify als versendet gemeldet${gebucht.some(v => v.kundeBenachrichtigt) ? ', der Kunde bekommt die Versandmail' : ', ohne Mail'}` : ''}`);
-  if (nicht.length) {
-    packFehler = `Nicht verschickt: ${nicht.map(v => `${v.orderName} – ${v.meldung}`).join(' · ')} Diese Bestellung steht noch unter „Gepackt“ – dort erneut „Verschickt“ drücken.`;
-    packFehlerStand = kunden.musterPacken;
-    toast(packFehler, 'crit', { dauer: 9000 });
+  render();
+}
+
+/** Rueckgaengig: nimmt nur den Vermerk weg. Ist die Frist durch, sagt die Meldung das ehrlich. */
+async function einwurfZurueck(schluessel, knopf, { verstanden = false } = {}) {
+  packSpeichert = true;
+  knopf.disabled = true;
+  let r = null;
+  try {
+    r = await orgSchreiben(ENDPOINT, { aktion: 'eingeworfen-zurueck', packSchluessel: schluessel });
+  } catch (err) {
+    toast(`Nicht zurückgenommen: ${err.message}`, 'crit', { dauer: 9000 });
   }
-  if (probleme.length) {
-    versandProbleme = [...versandProbleme.filter(a => !probleme.some(v => v.orderId === a.orderId)), ...probleme];
-    toast(`${plural(probleme.length, 'Bestellung', 'Bestellungen')} in Shopify bitte prüfen – Hinweis oben in der Packstation.`, 'crit', { dauer: 9000 });
+  try {
+    const neu = await fetchEinkauf(ENDPOINT);
+    if (neu?.verfuegbar && !neu.fehler) kunden.musterPacken = neu;
+  } catch { /* der naechste Abruf holt es nach */ }
+  packSpeichert = false;
+  if (r && !verstanden) {
+    if (r.zurueck?.length) toast(`${plural(r.zurueck.length, 'Umschlag', 'Umschläge')} zurück unter „Gepackt“. Nichts gebucht, keine Mail.`);
+    if (r.zuSpaet?.length) toast(`Zu spät für ${plural(r.zuSpaet.length, 'Umschlag', 'Umschläge')}: schon eingetragen und in Shopify gebucht.`, 'crit', { dauer: 9000 });
   }
   render();
 }
@@ -924,7 +993,8 @@ async function blattOeffnen(knopf) {
 
 export function musterPackenKlick(e) {
   if (e.target.closest('[data-mp-neuladen]')) { e.preventDefault(); void packlisteErneutLaden(); return true; }
-  if (e.target.closest('[data-mp-versand-ok]')) { e.preventDefault(); versandProbleme = []; render(); return true; }
+  const einwurfOk = e.target.closest('[data-mp-einwurf-ok]');
+  if (einwurfOk) { e.preventDefault(); if (!packSpeichert) void einwurfZurueck(einwurfOk.dataset.mpEinwurfOk.split(' '), einwurfOk, { verstanden: true }); return true; }
   const h = e.target.closest('[data-mp-haken]');
   if (h) {
     const k = kundeMitMuster(h.dataset.mpHaken);
@@ -962,11 +1032,25 @@ export function musterPackenKlick(e) {
     if (m && !packSpeichert) void musterSperren(m, sperren);
     return true;
   }
-  const versandt = e.target.closest('[data-mp-verschickt]');
-  if (versandt) {
+  const einwurf = e.target.closest('[data-mp-eingeworfen]');
+  if (einwurf) {
     e.preventDefault();
-    const k = liste.find(x => x.packSchluessel === versandt.dataset.mpVerschickt);
-    if (k?.gepackt && !packSpeichert) verschicken(k, versandt);
+    if (!packSpeichert) void eingeworfen(einwurf.dataset.mpEingeworfen.split(' '), einwurf);
+    return true;
+  }
+  const einwurfWeg = e.target.closest('[data-mp-einwurf-zurueck]');
+  if (einwurfWeg) {
+    e.preventDefault();
+    if (!packSpeichert) void einwurfZurueck(einwurfWeg.dataset.mpEinwurfZurueck.split(' '), einwurfWeg);
+    return true;
+  }
+  const frueher = e.target.closest('[data-mp-frueher]');
+  if (frueher) {
+    e.preventDefault();
+    // Nur die Muster dieses Umschlags: Bei einer Mischbestellung ist die Ware noch nicht raus.
+    const nur = umschlagMusterIds(liste.find(k => k.packSchluessel === frueher.dataset.mpK), frueher.dataset.mpFrueher);
+    if (nur.length) void oeffneVersandDialog(frueher.dataset.mpFrueher, { notiz: 'Umschlag war schon früher raus, in der Packstation nachgetragen', mailVorab: false, danach: packlisteErneutLaden, nur });
+    else toast('Dieser Umschlag steht nicht mehr so in der Liste. Bitte neu laden.', 'crit');
     return true;
   }
   const grossbrief = e.target.closest('[data-mp-grossbrief]');

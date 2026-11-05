@@ -2120,6 +2120,8 @@ und nach 14 Tagen einen Fall in „Alte Bestellungen aufräumen“.
 
 ### Verschickt meldet den Versand in Shopify (#1810, #1811, Mitarbeiter 29.10.2026)
 
+Seit #1937 löst diesen Weg nicht mehr ein Knopf aus, sondern der Klick „Eingeworfen“ nach seiner Frist
+(Abschnitt 31). Die Aktion `verschickt` ist unverändert. Bis dahin galt:
 Gepackte Umschläge tragen den Hauptknopf „Verschickt – Kunde informieren“. Er sendet einen einzigen
 `POST kunden/muster-packen` mit `{ packSchluessel, aktion: 'verschickt' }`
 (`kundenMusterPackenSchreiben`, alle anderen Aktionen gehen unverändert an `kundenMusterPackenSetzen`).
@@ -2780,3 +2782,47 @@ arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten un
 - Tests: `tests/hausverwaltungen.test.mjs` (Regeln, API, Rollen, Ansicht).
 
 Aufkleber aendern (2026-11-02): `produktEntwurf()` in `lib/freie-etiketten.mjs` macht aus einem Produktetikett aenderbaren Text; `e.schriften` traegt die Schrift je Zeile, `e.url` den QR-Code. Nichts davon wird gespeichert.
+
+## 31. Eingeworfen: Klick, Frist, Buchung (05.11.2026, #1937)
+
+Die Prüfung vom 05.11. fand 38 von 83 Musterbestellungen ohne Versandeintrag. Nachfrage und Anrufliste
+starten erst mit „raus“. Inhaberregel: Versand, Eingang und physische Bestätigung nicht gleichsetzen,
+deshalb wird „gepackt“ nie von selbst zu „raus“.
+
+**Ablauf.** `POST kunden/muster-packen` mit `{ aktion: 'eingeworfen', packSchluessel: [...] }` prüft jeden
+Umschlag für sich (gepackt, alles abgehakt, `rausPlan`) und schreibt nur einen Vermerk nach
+`muster-packen.json` (`eingeworfen[pk] = { zeit, von, buchtAb, orderIds, bestellungen }`). Der Zeitgeber des
+Dienstes (`einwurfBuchen`, alle 30 s) bucht nach `EINWURF_FRIST_MINUTEN` (5) über die unveränderte Aktion
+`verschickt`: Schritt „raus“ im Namen dessen, der geklickt hat, Lagerabgang, Shopify `fulfillmentCreate` mit
+`notifyCustomer: true` (Ausnahme wie bisher: persönlich vorbeigebrachte Muster).
+
+**Warum die Frist auf dem Server liegt.** Eine Sendung wird nie zurückgenommen (Abschnitt 24, kein
+`fulfillmentCancel`), und die Mail ist dann beim Kunden. Rückgängig gibt es also nur vor der Buchung. Im
+Browser liefe die Frist am Briefkasten nicht ab: Handy in der Tasche, Tab eingefroren, der Umschlag bliebe
+ungebucht. Der Vermerk überlebt auch einen Neustart des Dienstes.
+
+**Rückgängig** (`aktion: 'eingeworfen-zurueck'`) nimmt nur den Vermerk weg; es war noch nichts gebucht. Der
+Vermerk verschwindet vor der Buchung. Spätes Rückgängig bekommt deshalb ehrlich `zuSpaet`, und nach einem
+Absturz steht der Umschlag sichtbar unter „Gepackt“ statt doppelt gebucht zu werden. Der Zeitgeber liest den Vermerk
+vor jeder Buchung frisch: Ein währenddessen zurückgenommener oder neu gesetzter Vermerk behält seine neue Frist.
+
+**Scheitert die Buchung**, bleibt der Vermerk mit `problem` stehen und erscheint als roter Hinweis oben in
+der Packstation (`einwurf.probleme`), bis jemand „Verstanden“ drückt. Kein zweiter Versuch von selbst. Still fällt ein
+Vermerk nur weg, wenn alle seine Muster anders versendet sind; ein Teilversand (`teilweise`) zählt nicht.
+
+**Reiter Gepackt** (`einwurfListen`): „Wird eingetragen“, „Heute gepackt“ mit „Alle n eingeworfen“, „Altfälle“
+(vor heute gepackt, älteste Bestellung zuerst). Altfälle stehen bewusst nicht in der Sammelaktion: Ob so ein
+Umschlag raus ist, weiß nur, wer nachsieht. „War schon früher raus…“ öffnet den Versanddialog mit
+ausgeschalteter Mail (`mailVorab: false`), wie „Ist verschickt…“ auf der Startseite, begrenzt auf die Muster des
+Umschlags (`nur`, `umschlagMusterIds`): Bei einer Mischbestellung ist die Ware noch nicht raus und steht nicht im Dialog.
+
+**Datenkopie.** Dort läuft der Zeitgeber nur mit `TP_EINWURF_TEST_SEKUNDEN` (dann auch die kurze Frist) für
+Klickproben; `dashboard:pruefen` startet die Kopie immer ohne Shopify-Zugang.
+
+**Kampagnenkennung.** Links der Muster-Nachfrage tragen `utm_source=muster-nachfass`, `utm_medium=email`,
+`utm_campaign=muster-nachfass`, `utm_content=erste|erinnerung` (`nachfassLink`, `fuelleText({ nachfass })`), in
+Versandlauf, „Jetzt senden“ und mailto-Vorschlag. Keine Kunden- oder Bestellkennung. Andere Mails aus
+`fuelleText` (Muster nicht verfügbar, Rückfrage) bleiben ohne. Lesen: GA4 unter Kampagne `muster-nachfass`;
+je Bestellung `customerJourneySummary` der Admin-API, das der Bestellexport noch nicht holt.
+
+Tests: `tests/packstation-einwurf.test.mjs`, `tests/muster-nachfassen.test.mjs`.

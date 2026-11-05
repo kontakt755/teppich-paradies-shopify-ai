@@ -18,9 +18,22 @@ const stufe = s => SCHRITTE.indexOf(s ?? '');
  * @param {object} auftrag         Auftrag mit positionen[] (lineItemId, titel, farbe, eigenleistung ...)
  * @param {object} statusPositionen "orderId::lineItemId" -> Stand (GET /api/einkauf/auftragsstatus)
  */
-export function versandKandidaten(auftrag, statusPositionen = {}) {
+export function versandKandidaten(auftrag, statusPositionen = {}, { nur = null } = {}) {
+  const erlaubt = nur ? new Set(nur) : null;
   return (auftrag?.positionen ?? [])
-    .filter(p => p?.lineItemId && stufe(statusPositionen?.[`${auftrag.id}::${p.lineItemId}`]?.status) < stufe('raus'));
+    .filter(p => p?.lineItemId && (!erlaubt || erlaubt.has(p.lineItemId)) && stufe(statusPositionen?.[`${auftrag.id}::${p.lineItemId}`]?.status) < stufe('raus'));
+}
+
+/**
+ * Welche Positionen bucht der Dialog? null heisst: der Server nimmt alles, was noch nicht raus ist.
+ * Das darf bei einer Begrenzung (`nur`) nie passieren: Ist die Bestellung im Browser nicht geladen, gilt
+ * die Begrenzung selbst, sonst ginge bei einer Mischbestellung die offene Ware mit.
+ */
+export function versandIds({ nurGeklickt = false, lineItemId = null, bereit = [], gewaehlt = [], nur = null } = {}) {
+  if (nurGeklickt) return [lineItemId];
+  if (bereit.length > 1) return gewaehlt;
+  if (bereit.length === 1) return [bereit[0].lineItemId];
+  return nur ? [...nur] : null;
 }
 
 /**

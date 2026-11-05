@@ -112,8 +112,8 @@ import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten
 import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
 import { musterwirkung } from '../operations/lib/musterwirkung.mjs';
 import { packhilfeDaten } from '../operations/lib/packhilfe-daten.mjs';
-import { musterPackliste, ohneMusterMoeglich } from '../docs/ai-dashboard/lib/muster-packen.mjs';
-import { musterPackenPfad, setzeGedruckt, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
+import { musterPackliste, ohneMusterMoeglich, EINWURF_FRIST_MINUTEN } from '../docs/ai-dashboard/lib/muster-packen.mjs';
+import { musterPackenPfad, setzeGedruckt, setzeGepackt, setzeHaken, setzeKlaeren, merkeEingeworfen, entferneEingeworfen, vermerkeEinwurfProblem, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1021,6 +1021,36 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return { anzahl: 0, fehler: e.message };
     }
   }
+
+  /** Kann der Umschlag auf "raus"? Wirft mit Grund, schreibt nichts. Liefert je Bestellung, was gebucht wird. */
+  function rausPlan(kunde, modell, statusDatei, actor) {
+    const alle = leseAktuellenStatus(statusDatei, modell);
+    // Nur, was noch nicht raus ist: der Schritt "raus" auf schon Erledigtes waere eine Korrektur zurueck.
+    // Testbestellungen stehen in testauftraege, nicht in auftraege.
+    const plan = kunde.bestellungen.map(b => ({ b, auftrag: [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === b.orderId) || null,
+      ids: kunde.muster.filter(m => m.orderId === b.orderId && STATUS_ORDER.indexOf(alle[positionKey(b.orderId, m.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus')).map(m => m.lineItemId) }));
+    for (const { b, auftrag, ids } of plan) {
+      const blockiert = ids.map(id => alle[positionKey(b.orderId, id)]).find(e => !darfWeiter(e, 'raus'));
+      try {
+        if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
+        bereiteStatusPositionenVor(statusDatei, ids.map(id => {
+          const p = auftrag?.positionen?.find(x => x.lineItemId === id);
+          return { orderId: b.orderId, lineItemId: id, status: 'raus', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, jetzt: now() };
+        }));
+      } catch (e) {
+        throw new ApiError(e.status || 409, `Nicht verschickt, keine Mail – ${b.orderName}: ${String(e?.message || e).split('\n')[0]}`);
+      }
+    }
+    return plan;
+  }
+
+  const packSchluesselListe = wert => [...new Set((Array.isArray(wert) ? wert : [wert]).filter(v => typeof v === 'string').map(v => v.trim()).filter(Boolean))].slice(0, 100);
+  let einwurfLaeuft = false;
+  // Kurze Frist nur fuer Klickproben an der Datenkopie (die hat keinen Shopify-Zugang), nie im Betrieb.
+  const einwurfFristMs = () => {
+    const probe = env.TP_DASHBOARD_DATENKOPIE ? Number(env.TP_EINWURF_TEST_SEKUNDEN) : 0;
+    return probe > 0 ? probe * 1000 : EINWURF_FRIST_MINUTEN * 60_000;
+  };
 
   async function erledigtBuchen({ dir, auftrag, lineItemIds, benutzer, actor }) {
     if (!auftrag || !lineItemIds?.length) return null;
@@ -2001,7 +2031,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       });
       try {
         const gespeicherte = leseGrossbriefe(grossbriefPfad(dir));
-        return { verfuegbar: true, ...liste, ...(sperrenFehler ? { sperrenFehler } : {}), kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte) })) };
+        const einwurf = stand.eingeworfen || {};
+        return { verfuegbar: true, ...liste, ...(sperrenFehler ? { sperrenFehler } : {}),
+          kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte), ...(k.gepackt && einwurf[k.packSchluessel] ? { eingeworfen: einwurf[k.packSchluessel] } : {}) })),
+          einwurf: { fristMinuten: EINWURF_FRIST_MINUTEN, probleme: Object.entries(einwurf).filter(([, e]) => e?.problem).map(([packSchluessel, e]) => ({ packSchluessel, orderIds: e.orderIds || [], bestellungen: e.bestellungen || [], meldung: e.problem, am: e.problemAm || null })) } };
       } catch (e) { throw new ApiError(500, e.message); }
     },
 
@@ -2114,6 +2147,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * im Umschlag; die Ware bleibt unberuehrt.
      */
     async kundenMusterPackenSchreiben(payload = {}, benutzer = null) {
+      if (payload?.aktion === 'eingeworfen') return this.kundenMusterEinwurf(payload, benutzer);
+      if (payload?.aktion === 'eingeworfen-zurueck') return this.kundenMusterEinwurfZurueck(payload, benutzer);
+      // Vermerkt und Frist laeuft: "Gepackt" zuruecknehmen liesse den Vermerk ins Leere laufen.
+      if ((payload?.aktion ?? 'gepackt') === 'gepackt' && payload?.gepackt === false) {
+        let offen = null;
+        try { offen = leseMusterPackStand(musterPackenPfad(privatDirPath || privatDir())).eingeworfen[payload.packSchluessel]; } catch { /* kundenMusterPackenSetzen meldet die kaputte Ablage */ }
+        if (offen && !offen.problem) throw new ApiError(409, 'Der Umschlag ist als eingeworfen vermerkt. Erst „Rückgängig“ drücken.');
+      }
       if (payload?.aktion === 'ohne-muster') {
         if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
         const lineItemId = typeof payload.lineItemId === 'string' ? payload.lineItemId.trim() : '';
@@ -2158,23 +2199,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
       const modell = ladeBestellModell(dir);
       const statusDatei = auftragsstatusPfad(dir);
-      const alle = leseAktuellenStatus(statusDatei, modell);
-      // Nur, was noch nicht raus ist: der Schritt "raus" auf schon Erledigtes waere eine Korrektur zurueck.
-      // Testbestellungen stehen in testauftraege, nicht in auftraege.
-      const plan = kunde.bestellungen.map(b => ({ b, auftrag: [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === b.orderId) || null,
-        ids: kunde.muster.filter(m => m.orderId === b.orderId && STATUS_ORDER.indexOf(alle[positionKey(b.orderId, m.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus')).map(m => m.lineItemId) }));
-      for (const { b, auftrag, ids } of plan) {
-        const blockiert = ids.map(id => alle[positionKey(b.orderId, id)]).find(e => !darfWeiter(e, 'raus'));
-        try {
-          if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
-          bereiteStatusPositionenVor(statusDatei, ids.map(id => {
-            const p = auftrag?.positionen?.find(x => x.lineItemId === id);
-            return { orderId: b.orderId, lineItemId: id, status: 'raus', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, jetzt: now() };
-          }));
-        } catch (e) {
-          throw new ApiError(e.status || 409, `Nicht verschickt, keine Mail – ${b.orderName}: ${String(e?.message || e).split('\n')[0]}`);
-        }
-      }
+      const plan = rausPlan(kunde, modell, statusDatei, actor);
       // Ohne await gestartet: jeder Aufruf schreibt seinen lokalen Schritt synchron, bevor irgendeine
       // Shopify-Buchung abgewartet wird.
       const laeufe = plan.map(({ b, ids }) => (ids.length
@@ -2206,6 +2231,109 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         } catch (e) { logFehler('versand', `Packstation: Gepackt-Vermerk fuer den Rest nicht gesetzt (${String(e?.message || e).split('\n')[0]})`); }
       }
       return { ok: true, packSchluessel: pk, versand };
+    },
+
+    /**
+     * "Eingeworfen" (Packstation, auch als Sammelaktion): jemand bestaetigt, dass die Umschlaege wirklich
+     * bei der Post sind. Hier wird nur vermerkt; "gepackt" allein wird nie zu "raus". Eine Buchung in
+     * Shopify laesst sich nicht zuruecknehmen und die Versandmail ist dann beim Kunden, deshalb wird erst
+     * nach der Frist gebucht (einwurfBuchen). Auf dem Server statt im Browser: am Briefkasten steckt das
+     * Handy nach dem Klick in der Tasche, eine Frist im Browser liefe dann nie ab.
+     *
+     * Jeder Umschlag fuer sich: wer sechs eingeworfen hat und einer ist gesperrt, bei dem sind die
+     * anderen fuenf trotzdem bei der Post.
+     */
+    kundenMusterEinwurf(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
+      const schluessel = packSchluesselListe(payload.packSchluessel);
+      if (!schluessel.length) throw new ApiError(400, 'Kein Umschlag angegeben.');
+      const dir = privatDirPath || privatDir();
+      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      const modell = ladeBestellModell(dir);
+      const statusDatei = auftragsstatusPfad(dir);
+      const liste = this.kundenMusterPacken().kunden || [];
+      const angenommen = [], abgelehnt = [];
+      for (const pk of schluessel) {
+        const kunde = liste.find(k => k.packSchluessel === pk);
+        try {
+          if (!kunde) throw new ApiError(409, 'Dieser Umschlag steht nicht mehr so in der Liste. Bitte neu laden.');
+          if (!kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist noch nicht gepackt.');
+          if (kunde.muster.some(m => !m.abgehakt)) throw new ApiError(409, 'Im Umschlag ist nicht jedes Muster abgehakt. Bitte „Gepackt“ zurücknehmen und neu packen.');
+          rausPlan(kunde, modell, statusDatei, actor);
+          angenommen.push(kunde);
+        } catch (e) {
+          abgelehnt.push({ packSchluessel: pk, bestellungen: (kunde?.bestellungen || []).map(b => b.orderName), meldung: String(e?.message || e).split('\n')[0] });
+        }
+      }
+      const buchtAb = new Date(now().getTime() + einwurfFristMs());
+      if (angenommen.length) {
+        try {
+          merkeEingeworfen(musterPackenPfad(dir), angenommen.map(k => ({ packSchluessel: k.packSchluessel, orderIds: k.bestellungen.map(b => b.orderId), bestellungen: k.bestellungen.map(b => b.orderName) })), { von: actor, jetzt: now(), buchtAb });
+        } catch (e) { throw new ApiError(500, e.message); }
+        const nummern = angenommen.flatMap(k => k.bestellungen.map(b => b.orderName)).join(', ');
+        audit({ actor, action: 'muster-eingeworfen', umschlaege: angenommen.length });
+        merke(benutzer, actor, 'Muster eingeworfen', `${nummern}: ${angenommen.length === 1 ? 'Umschlag' : `${angenommen.length} Umschläge`} bei der Post, Eintrag nach der Frist`);
+      }
+      return { ok: true, angenommen: angenommen.map(k => k.packSchluessel), abgelehnt, buchtAb: buchtAb.toISOString() };
+    },
+
+    /** Rueckgaengig (oder "Verstanden" bei einem Problem): nimmt nur den Vermerk weg. Fehlt er, ist schon gebucht. */
+    kundenMusterEinwurfZurueck(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
+      const schluessel = packSchluesselListe(payload.packSchluessel);
+      if (!schluessel.length) throw new ApiError(400, 'Kein Umschlag angegeben.');
+      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      let zurueck;
+      try { zurueck = entferneEingeworfen(musterPackenPfad(privatDirPath || privatDir()), schluessel); } catch (e) { throw new ApiError(500, e.message); }
+      if (zurueck.length) {
+        audit({ actor, action: 'muster-eingeworfen-zurueck', umschlaege: zurueck.length });
+        merke(benutzer, actor, 'Eingeworfen zurückgenommen', `${zurueck.length === 1 ? 'Ein Umschlag' : `${zurueck.length} Umschläge`}: nichts gebucht, keine Mail`);
+      }
+      return { ok: true, zurueck, zuSpaet: schluessel.filter(pk => !zurueck.includes(pk)) };
+    },
+
+    /**
+     * Zeitgeber des Dienstes: bucht, was seine Frist hinter sich hat, ueber denselben Weg wie bisher der
+     * Knopf "Verschickt" (Schritt "raus", Lagerabgang, Shopify mit Versandmail). Der Vermerk geht VOR der
+     * Buchung weg: ein spaetes Rueckgaengig bekommt dann ehrlich "zu spaet", und nach einem Absturz bleibt
+     * der Umschlag sichtbar unter "Gepackt" statt doppelt gebucht zu werden.
+     */
+    async einwurfBuchen() {
+      if (einwurfLaeuft) return { gebucht: 0, probleme: 0 };
+      einwurfLaeuft = true;
+      const ergebnis = { gebucht: 0, probleme: 0 };
+      try {
+        const datei = musterPackenPfad(privatDirPath || privatDir());
+        for (const pk of Object.keys(leseMusterPackStand(datei).eingeworfen)) {
+          // Jedes Mal frisch lesen: Zwischen zwei Buchungen vergeht Zeit. Wer inzwischen zurueckgenommen hat,
+          // bleibt zurueckgenommen, und ein neu gesetzter Vermerk behaelt seine neue Frist.
+          const eintrag = leseMusterPackStand(datei).eingeworfen[pk];
+          if (!eintrag || eintrag.problem || !(Date.parse(eintrag.buchtAb) <= now().getTime())) continue;
+          entferneEingeworfen(datei, [pk]);
+          const benutzer = { name: eintrag.von || 'Packstation', rolle: 'mitarbeiter' };
+          let problem = null;
+          try {
+            const r = await this.kundenMusterPackenSchreiben({ packSchluessel: pk, aktion: 'verschickt' }, benutzer);
+            const offen = (r.versand || []).filter(v => !['gebucht', 'bereits'].includes(v.status));
+            // Die Ansicht nennt die Bestellungen selbst; nur bei mehreren muss die Meldung sagen, welche es traf.
+            if (offen.length) problem = offen.map(v => `${(r.versand || []).length > 1 ? `${v.orderName}: ` : ''}${v.meldung || 'Ergebnis unbekannt'}`).join(' · ');
+          } catch (e) {
+            // Inzwischen anders versendet (Shopify, Dialog): erledigt, kein Fehler. Nur bei ALLEN Mustern:
+            // Bei einem Teilversand ist der Rest noch offen, und sein Scheitern muss jemand sehen.
+            const liste = this.kundenMusterPacken();
+            const fertig = (eintrag.orderIds || []).length && eintrag.orderIds.every(id => (liste.ausserhalb || []).some(b => b.orderId === id && b.grund === 'erledigt' && !b.teilweise));
+            if (!fertig) problem = String(e?.message || e).split('\n')[0];
+          }
+          if (problem) {
+            ergebnis.probleme += 1;
+            vermerkeEinwurfProblem(datei, pk, eintrag, { meldung: problem, jetzt: now() });
+            logFehler('versand', `Packstation, eingeworfen: ${(eintrag.bestellungen || []).join(', ')} - ${problem}`);
+          } else ergebnis.gebucht += 1;
+        }
+      } catch (e) {
+        logFehler('versand', `Packstation, eingeworfen: ${String(e?.message || e).split('\n')[0]}`);
+      } finally { einwurfLaeuft = false; }
+      return ergebnis;
     },
 
     /**
@@ -2446,7 +2574,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
       for (const b of nachfragenBuendeln(zuSenden)) {
         const kurzVon = e => ({ orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname });
-        const mail = mitMusterListe(fuelleText(vorlageFuer(vorlage.texte, b), { kundenname: b.kundenname, absender: unterschrift, produkte: b.produkte }), b);
+        const mail = mitMusterListe(fuelleText(vorlageFuer(vorlage.texte, b), { kundenname: b.kundenname, absender: unterschrift, produkte: b.produkte, nachfass: b.stufe }), b);
         if (!platzhalterFrei(mail)) {
           for (const e of b.eintraege) ergebnis.fehler.push({ ...kurzVon(e), fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[b.stufe]}“ fehlt.` });
           continue;
@@ -2547,7 +2675,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         mail = { betreff: String(payload.betreff ?? '').trim(), text: String(payload.text).replace(/\r\n/g, '\n').trim() };
       } else {
         const vorlage = this.kundenMusterTexte();
-        mail = vorlage.verfuegbar ? fuelleText(vorlageFuer(vorlage.texte, e), { kundenname: e.kundenname, absender: actor, produkte: e.produkte }) : null;
+        mail = vorlage.verfuegbar ? fuelleText(vorlageFuer(vorlage.texte, e), { kundenname: e.kundenname, absender: actor, produkte: e.produkte, nachfass: e.stufe }) : null;
         if (!mail) throw new ApiError(409, vorlage.hinweis || `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.`);
       }
       if (!mail.betreff || /[\r\n]/.test(mail.betreff) || mail.betreff.length > 200) throw new ApiError(400, 'Bitte einen Betreff in einer Zeile angeben (höchstens 200 Zeichen).');

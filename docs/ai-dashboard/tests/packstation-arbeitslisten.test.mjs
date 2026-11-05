@@ -279,7 +279,8 @@ test('Zu klaeren und Gepackt: ein Hauptknopf fuer das Naechstliegende, Rest unte
   const sonst = ansicht('tab=muster&umschlag=order6', [kunde(6, 'klaeren')]);
   assert.deepEqual(hauptknoepfe(sonst), ['#TEST6 – Bestellstand prüfen']);
   const gepackt = ansicht('tab=muster&umschlag=order2', [kunde(2, 'gepackt')]);
-  assert.deepEqual(hauptknoepfe(gepackt), ['Verschickt – Kunde informieren']);
+  assert.match(gepackt, /data-mp-eingeworfen="order2">Eingeworfen</);
+  assert.doesNotMatch(gepackt, /Verschickt – Kunde informieren/);
   assert.match(gepackt, /data-mp-grossbrief="order2">Großbrief vorbereiten/);
   assert.match(gepackt, /class="mp-mehr"[\s\S]*data-mp-wert="0">Zurücknehmen</);
 });
@@ -540,4 +541,39 @@ test('Begleitblatt: in jedem Umschlag direkt unter dem Kopf und nie unter "Mehr"
   }
   const direkt = { ...kunde(10, 'warten'), direktversand: true };
   assert.doesNotMatch(ansicht('tab=muster&mpbereich=warten', [direkt]), /data-mp-blatt/);
+});
+
+test('Reiter Gepackt (#1937): Sammelaktion nur fuer heute Gepacktes, Altfaelle mit Zahl und aeltestem zuerst', () => {
+  const heute = new Date().toISOString();
+  const k = (nr, seit, zeit) => ({ ...kunde(nr, 'gepackt'), seit, gepackt: { zeit } });
+  const html = ansicht('tab=muster&mpbereich=gepackt', [
+    k(1, '2026-10-25T08:00:00Z', '2026-10-26T08:00:00Z'), k(2, '2026-10-20T08:00:00Z', '2026-10-28T08:00:00Z'),
+    k(3, '2026-11-01T08:00:00Z', heute), k(4, '2026-11-02T08:00:00Z', heute),
+  ]);
+  assert.match(html, /Heute gepackt · 2/);
+  assert.match(html, /data-mp-eingeworfen="order3 order4">Alle 2 eingeworfen</);
+  assert.match(html, /Altfälle · 2 Umschläge/);
+  const reihe = [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  assert.deepEqual(reihe, ['order3', 'order4', 'order2', 'order1'], 'Altfälle: älteste Bestellung zuerst');
+  assert.match(html, /data-mp-eingeworfen="order2">Eingeworfen</);
+  assert.match(html, /data-mp-frueher="order2"[^>]*>War schon früher raus…/);
+  assert.doesNotMatch(html, /data-mp-eingeworfen="[^"]*order1[^"]* /, 'kein Altfall in der Sammelaktion');
+  assert.match(html, /wirklich bei der Post/);
+});
+
+test('Reiter Gepackt (#1937): nach dem Klick zaehlt die Frist, Rueckgaengig statt Zuruecknehmen, Problem steht oben', () => {
+  const buchtAb = new Date(Date.now() + 300_000).toISOString();
+  const wartend = { ...kunde(1, 'gepackt'), eingeworfen: { zeit: new Date().toISOString(), buchtAb, von: 'Team' } };
+  const html = ansicht('tab=muster&mpbereich=gepackt', [wartend]);
+  assert.match(html, /Wird eingetragen · 1/);
+  assert.match(html, /<strong>Eingeworfen<\/strong> · wird um \d\d:\d\d eingetragen/);
+  assert.match(html, /data-mp-einwurf-zurueck="order1">Rückgängig</);
+  assert.doesNotMatch(html, /data-mp-eingeworfen=/);
+  assert.doesNotMatch(html, /data-mp-wert="0">Zurücknehmen/, 'Gepackt zurücknehmen liefe ins Leere');
+  state.route.params = new URLSearchParams('tab=muster&mpbereich=gepackt');
+  kunden.musterPacken = { verfuegbar: true, ausserhalb: [], kunden: [], einwurf: { probleme: [{ packSchluessel: 'order9', orderIds: ['order9'], bestellungen: ['#TEST9'], meldung: 'Versand nicht gebucht' }] } };
+  const fehler = viewKundenMusterPacken();
+  assert.match(fehler, /Eingeworfen, aber nicht sauber eingetragen/);
+  assert.match(fehler, /#TEST9<\/a>: Versand nicht gebucht/);
+  assert.match(fehler, /data-mp-einwurf-ok="order9">Verstanden/);
 });
