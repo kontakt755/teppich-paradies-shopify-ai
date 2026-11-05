@@ -2792,15 +2792,18 @@ ungebucht. Der Vermerk überlebt auch einen Neustart des Dienstes.
 
 **Rückgängig** (`aktion: 'eingeworfen-zurueck'`) nimmt nur den Vermerk weg; es war noch nichts gebucht. Der
 Vermerk verschwindet vor der Buchung. Spätes Rückgängig bekommt deshalb ehrlich `zuSpaet`, und nach einem
-Absturz steht der Umschlag sichtbar unter „Gepackt“ statt doppelt gebucht zu werden.
+Absturz steht der Umschlag sichtbar unter „Gepackt“ statt doppelt gebucht zu werden. Der Zeitgeber liest den Vermerk
+vor jeder Buchung frisch: Ein währenddessen zurückgenommener oder neu gesetzter Vermerk behält seine neue Frist.
 
 **Scheitert die Buchung**, bleibt der Vermerk mit `problem` stehen und erscheint als roter Hinweis oben in
-der Packstation (`einwurf.probleme`), bis jemand „Verstanden“ drückt. Kein zweiter Versuch von selbst.
+der Packstation (`einwurf.probleme`), bis jemand „Verstanden“ drückt. Kein zweiter Versuch von selbst. Still fällt ein
+Vermerk nur weg, wenn alle seine Muster anders versendet sind; ein Teilversand (`teilweise`) zählt nicht.
 
 **Reiter Gepackt** (`einwurfListen`): „Wird eingetragen“, „Heute gepackt“ mit „Alle n eingeworfen“, „Altfälle“
 (vor heute gepackt, älteste Bestellung zuerst). Altfälle stehen bewusst nicht in der Sammelaktion: Ob so ein
 Umschlag raus ist, weiß nur, wer nachsieht. „War schon früher raus…“ öffnet den Versanddialog mit
-ausgeschalteter Mail (`mailVorab: false`), wie „Ist verschickt…“ auf der Startseite.
+ausgeschalteter Mail (`mailVorab: false`), wie „Ist verschickt…“ auf der Startseite, begrenzt auf die Muster des
+Umschlags (`nur`, `umschlagMusterIds`): Bei einer Mischbestellung ist die Ware noch nicht raus und steht nicht im Dialog.
 
 **Datenkopie.** Dort läuft der Zeitgeber nur mit `TP_EINWURF_TEST_SEKUNDEN` (dann auch die kurze Frist) für
 Klickproben; `dashboard:pruefen` startet die Kopie immer ohne Shopify-Zugang.

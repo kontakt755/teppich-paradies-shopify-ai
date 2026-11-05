@@ -2304,10 +2304,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const ergebnis = { gebucht: 0, probleme: 0 };
       try {
         const datei = musterPackenPfad(privatDirPath || privatDir());
-        const faellig = Object.entries(leseMusterPackStand(datei).eingeworfen).filter(([, e]) => !e?.problem && Date.parse(e?.buchtAb) <= now().getTime());
-        for (const [pk, eintrag] of faellig) {
-          // Zwischen zwei Buchungen vergeht Zeit: wer inzwischen zurueckgenommen hat, bleibt zurueckgenommen.
-          if (!entferneEingeworfen(datei, [pk]).length) continue;
+        for (const pk of Object.keys(leseMusterPackStand(datei).eingeworfen)) {
+          // Jedes Mal frisch lesen: Zwischen zwei Buchungen vergeht Zeit. Wer inzwischen zurueckgenommen hat,
+          // bleibt zurueckgenommen, und ein neu gesetzter Vermerk behaelt seine neue Frist.
+          const eintrag = leseMusterPackStand(datei).eingeworfen[pk];
+          if (!eintrag || eintrag.problem || !(Date.parse(eintrag.buchtAb) <= now().getTime())) continue;
+          entferneEingeworfen(datei, [pk]);
           const benutzer = { name: eintrag.von || 'Packstation', rolle: 'mitarbeiter' };
           let problem = null;
           try {
@@ -2316,9 +2318,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
             // Die Ansicht nennt die Bestellungen selbst; nur bei mehreren muss die Meldung sagen, welche es traf.
             if (offen.length) problem = offen.map(v => `${(r.versand || []).length > 1 ? `${v.orderName}: ` : ''}${v.meldung || 'Ergebnis unbekannt'}`).join(' · ');
           } catch (e) {
-            // Inzwischen anders versendet (Shopify, Dialog): erledigt, kein Fehler.
+            // Inzwischen anders versendet (Shopify, Dialog): erledigt, kein Fehler. Nur bei ALLEN Mustern:
+            // Bei einem Teilversand ist der Rest noch offen, und sein Scheitern muss jemand sehen.
             const liste = this.kundenMusterPacken();
-            const fertig = (eintrag.orderIds || []).length && eintrag.orderIds.every(id => (liste.ausserhalb || []).some(b => b.orderId === id && b.grund === 'erledigt'));
+            const fertig = (eintrag.orderIds || []).length && eintrag.orderIds.every(id => (liste.ausserhalb || []).some(b => b.orderId === id && b.grund === 'erledigt' && !b.teilweise));
             if (!fertig) problem = String(e?.message || e).split('\n')[0];
           }
           if (problem) {

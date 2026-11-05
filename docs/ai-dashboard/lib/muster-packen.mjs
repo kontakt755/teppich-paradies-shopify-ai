@@ -496,6 +496,11 @@ export function einwurfListen(kundenListe = [], jetzt = new Date()) {
   return { wartend, heute, alt, altBestellungen: alt.reduce((n, k) => n + k.bestellungen.length, 0) };
 }
 
+/** Die Muster einer Bestellung in diesem Umschlag. Offene Ware derselben Bestellung gehoert nicht dazu. */
+export function umschlagMusterIds(k, orderId) {
+  return (k?.muster || []).filter(m => m.orderId === orderId).map(m => m.lineItemId);
+}
+
 /**
  * "Muster kommt an": welcher Umschlag braucht das Muster in der Hand? `karten` = passende, noch nicht
  * eingelegte Muster offener Umschlaege in Packreihenfolge (aelteste Bestellung zuerst), hoechstens

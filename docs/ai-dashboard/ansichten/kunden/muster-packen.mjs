@@ -32,7 +32,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, EINWURF_FRIST_MINUTEN, aufkleberFuer, aufkleberFuerMuster, einwurfListen, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, WARTET_AB_TAGEN, EINWURF_FRIST_MINUTEN, aufkleberFuer, aufkleberFuerMuster, einwurfListen, umschlagMusterIds, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
 import { suchVerweis, suchwert } from '../../lib/suchverweis.mjs';
 import { kalendertag } from '../../lib/kalendertage.mjs';
@@ -366,7 +366,7 @@ function einwurfHtml(k, { hauptknopf = false } = {}) {
   }
   if (lesend) return '';
   const alt = k.gepackt?.zeit && kalendertag(k.gepackt.zeit) !== kalendertag(new Date());
-  const frueher = alt ? k.bestellungen.map(b => `<button type="button" class="btn btn-sm btn-ghost" data-mp-frueher="${esc(b.orderId)}" title="Versanddialog mit ausgeschalteter Versandmail, nur für einen Umschlag, der schon vor Tagen zur Post ging">${k.bestellungen.length > 1 ? `${esc(b.orderName)}: war ` : 'War '}schon früher raus…</button>`).join('') : '';
+  const frueher = alt ? k.bestellungen.map(b => `<button type="button" class="btn btn-sm btn-ghost" data-mp-frueher="${esc(b.orderId)}" data-mp-k="${pk}" title="Versanddialog mit ausgeschalteter Versandmail, nur für einen Umschlag, der schon vor Tagen zur Post ging">${k.bestellungen.length > 1 ? `${esc(b.orderName)}: war ` : 'War '}schon früher raus…</button>`).join('') : '';
   return `<div class="mp-einwurf"><button type="button" class="btn btn-sm${hauptknopf ? ' btn-primary' : ''}" data-mp-eingeworfen="${pk}">Eingeworfen</button>${frueher}</div>`;
 }
 
@@ -1047,7 +1047,10 @@ export function musterPackenKlick(e) {
   const frueher = e.target.closest('[data-mp-frueher]');
   if (frueher) {
     e.preventDefault();
-    void oeffneVersandDialog(frueher.dataset.mpFrueher, { notiz: 'Umschlag war schon früher raus, in der Packstation nachgetragen', mailVorab: false, danach: packlisteErneutLaden });
+    // Nur die Muster dieses Umschlags: Bei einer Mischbestellung ist die Ware noch nicht raus.
+    const nur = umschlagMusterIds(liste.find(k => k.packSchluessel === frueher.dataset.mpK), frueher.dataset.mpFrueher);
+    if (nur.length) void oeffneVersandDialog(frueher.dataset.mpFrueher, { notiz: 'Umschlag war schon früher raus, in der Packstation nachgetragen', mailVorab: false, danach: packlisteErneutLaden, nur });
+    else toast('Dieser Umschlag steht nicht mehr so in der Liste. Bitte neu laden.', 'crit');
     return true;
   }
   const grossbrief = e.target.closest('[data-mp-grossbrief]');

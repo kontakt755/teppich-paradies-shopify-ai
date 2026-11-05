@@ -109,9 +109,14 @@ export function entferneEingeworfen(datei, schluessel) {
   return entfernt;
 }
 
-/** Die Buchung nach der Frist ging schief: bleibt stehen, bis jemand "Verstanden" drueckt oder neu klickt. */
+/**
+ * Die Buchung nach der Frist ging schief: bleibt stehen, bis jemand "Verstanden" drueckt oder neu klickt.
+ * Hat jemand waehrend der Buchung neu geklickt, gilt der neue Vermerk: Er meldet sein Ergebnis selbst.
+ */
 export function vermerkeEinwurfProblem(datei, packSchluessel, eintrag, { meldung, jetzt = new Date() } = {}) {
   const stand = leseStand(datei);
+  const aktuell = stand.eingeworfen[packSchluessel];
+  if (aktuell && !aktuell.problem) return;
   stand.eingeworfen[packSchluessel] = { ...eintrag, problem: String(meldung || 'Ergebnis unbekannt').slice(0, 500), problemAm: jetzt.toISOString() };
   schreibStand(datei, stand);
 }
