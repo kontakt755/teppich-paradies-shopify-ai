@@ -39,14 +39,14 @@ test('Prioritaet: Override > Verlegeservice > Abholung > Direktversand', () => {
 });
 
 test('Verlegeservice: Lieferant ohne Kundenlieferung (NOT_ALLOWED) liefert in den Laden statt auf die Baustelle', () => {
-  const condor = { einkauf: { route: 'SUPPLIER_TO_TP', neutralversand: 'NOT_ALLOWED' } };
-  const r = routeFor({ item: condor, verlegeservice: true });
+  const ohneDirektversand = { einkauf: { route: 'SUPPLIER_TO_TP', neutralversand: 'NOT_ALLOWED' } };
+  const r = routeFor({ item: ohneDirektversand, verlegeservice: true });
   assert.equal(r.route, 'SUPPLIER_TO_TP');
   assert.equal(r.quelle, 'VERLEGESERVICE');
   assert.match(r.hinweise[0], /nicht an Kunden/);
   // ohne Verlegeservice unveraendert; ein Override geht weiterhin vor
-  assert.equal(routeFor({ item: condor }).route, 'SUPPLIER_TO_TP');
-  assert.equal(routeFor({ item: condor, verlegeservice: true, override: { route: 'SUPPLIER_TO_SITE', grund: 'Sonderabsprache', von: 'Test' } }).route, 'SUPPLIER_TO_SITE');
+  assert.equal(routeFor({ item: ohneDirektversand }).route, 'SUPPLIER_TO_TP');
+  assert.equal(routeFor({ item: ohneDirektversand, verlegeservice: true, override: { route: 'SUPPLIER_TO_SITE', grund: 'Sonderabsprache', von: 'Test' } }).route, 'SUPPLIER_TO_SITE');
   // unbekannt oder verifiziert: Baustelle wie bisher
   assert.equal(routeFor({ item: { einkauf: { route: 'SUPPLIER_TO_TP', neutralversand: 'UNKNOWN' } }, verlegeservice: true }).route, 'SUPPLIER_TO_SITE');
 });
