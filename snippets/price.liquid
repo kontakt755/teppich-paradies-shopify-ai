@@ -299,8 +299,9 @@
   assign tp_pr_uvp = false
   if tp_pr_aktion == 'uvp' and compare_at_price != blank and compare_at_price > price
     assign tp_pr_uvp = true
-    # Sonderposten: Abstand zur UVP mit angeben, abgerundet (Inhaber 2026-11-03)
-    if product_resource.tags contains 'sonderposten'
+    # Sonderposten: Abstand zur UVP mit angeben, abgerundet (Inhaber 2026-11-03).
+    # Auf Karten steht er als rote Pille im Bild (_product-card-gallery), hier nur auf der Produktseite.
+    if product_resource.tags contains 'sonderposten' and product.handle == product_resource.handle
       assign tp_pr_uvp_prozent = compare_at_price | minus: price | times: 100 | divided_by: compare_at_price
     endif
   endif
