@@ -267,3 +267,17 @@ gebraeuchlich), Erfassen.
   der Bestellung des Kunden.
 - **Kunde bestellt 19.10.** = Datumszeile einer Packstation-Karte, wenn die Plakette schon Tage zählt; statt
   „bestellt am … · wartet seit 18 Tagen“. Eine Tageszahl je Karte.
+
+## Shop-Übersicht: Musterteil verdichtet (06.11.2026, #1996)
+
+- **Musterautomatik** = Zeile unter „Im Hintergrund“: „n Musterbestellungen (m Muster) in 7 Tagen automatisch
+  bestellt, zuletzt TT.MM., HH:MM · Ansehen“ (öffnet Bestellungen › Muster). Gezählt werden alle Bestellungen der
+  7 Tage. Ersetzt den Block „Musterbestellungen automatisch“ mit fünf Kundenkarten.
+- **Musterautomatik: Klärung nötig** = Block nur, wenn jemand hinsehen muss: Störung der Automatik (gelber Hinweis),
+  gleich geplante Bestellungen (**Wird gleich automatisch bestellt**) oder Klärfälle, je Grund eine Zeile mit den
+  Bestellnummern. Was oben schon rot steht („Muster nicht lieferbar“, „n Muster hängen“), steht hier nicht noch einmal.
+- **n Musterartikel: Angaben fehlen – prüfen →** = eine Zeile in „Muster & Packstation“, wenn nichts bestellbar ist,
+  aber Angaben fehlen (vorher Überschrift, Leersatz und Hinweis mit derselben Zahl).
+- **× n Umschläge nicht eingetragen** = rote Plakette in „Muster & Packstation“: gepackt, aber nie als verschickt
+  eingetragen, der Kunde hat keine Versandmail (vorher Bernstein „gepackt, nicht verschickt“).
+- **n Kunden nach Produkt fragen →** = Zeile in „Muster & Packstation“ mit derselben Zahl wie am Menüpunkt.

@@ -27,7 +27,9 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
     musterNachfassenStand: () => ({ offen: [], erledigt: [], abgemeldet: [] }),
     versandLaeuft: () => null, startBestellarbeit: () => ({}),
     musterAutomatikBlock: () => '',
-    warenbestellungenBlock: block('Waren'), bestellarbeitBlock: block('Muster'),
+    // Rundgang 06.11. (#1996): die Erfolge der Musterautomatik als Zeile im Hintergrund, die Anrufzahl im Musterblock.
+    musterAutomatikZeile: () => '<div class="heute-hg-zeile">Musterautomatik</div>', musterAnrufeOffen: () => 24,
+    warenbestellungenBlock: block('Waren'), bestellarbeitBlock: o => { bloecke.push('Muster'); return `<div>Muster</div><div>Anrufe ${o.anrufe}</div>`; },
     aufraeumenBlock: block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
     istNurLesend: () => false, darfAnsicht,
     // Rote To-dos oben (w-206): echte problemeBlock, die Ableitung liefert die uebergebenen To-dos.
@@ -150,4 +152,12 @@ test('Von uns abschicken (#1995): direkt unter den Warenbestellungen, nur mit Ar
   // Beschaedigte Regeldatei: nie still - der Block meldet es auch ohne Zeilen.
   const kaputt = start('', {}, { bestellungen: { verfuegbar: true, zeilen: [], lagerwareFehler: 'lagerware.json ist beschädigt.' } });
   assert.match(kaputt.html, /notice crit[^>]*>lagerware\.json ist beschädigt\./);
+});
+
+test('Musterautomatik als ruhige Zeile im Hintergrund, Anrufzahl im Musterblock (#1996)', () => {
+  const r = start();
+  const hg = r.html.slice(r.html.indexOf('class="heute-hintergrund"'));
+  assert.match(hg, /Musterautomatik/, 'die Zeile steht unter "Im Hintergrund"');
+  assert.ok(r.html.indexOf('Musterautomatik') > r.html.indexOf('<div>Muster</div>'), 'nach Muster & Packstation, nicht davor');
+  assert.match(r.html, /<div>Anrufe 24<\/div>/, 'dieselbe Zahl wie am Menuepunkt');
 });

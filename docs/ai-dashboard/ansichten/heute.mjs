@@ -1,4 +1,4 @@
-import { musterAutomatikBlock } from '../bausteine/muster-bestellanzeige.mjs';
+import { musterAutomatikBlock, musterAutomatikZeile } from '../bausteine/muster-bestellanzeige.mjs';
 /**
  * Ansicht "Heute" (#/heute): standardmaessig Shop-Arbeit mit Warenkunden zuerst.
  * Die ausdruecklichen Alltagssichten behalten die seit 2026-10-19 gebuendelte Arbeitsliste
@@ -43,7 +43,7 @@ import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureMusterPacken } from './kunden/muster-packen.mjs';
-import { ensureMusterAnrufe } from './kunden/muster-anrufe.mjs';
+import { ensureMusterAnrufe, musterAnrufeOffen } from './kunden/muster-anrufe.mjs';
 import { bestellungenOffen } from './kunden/bestellungen.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
@@ -213,8 +213,9 @@ function viewShop() {
     ${selbstAbschickenBlock(selbst, { lesend: istNurLesend() })}
     ${problemeShop(nf, selbst)}
     ${inhaberUeberblick()}
+    ${/* Nur bei Stoerung oder Klaerung; was geklappt hat, steht als Zeile "Musterautomatik" unten (#1996). */ ''}
     ${musterAutomatikBlock(kunden.bestellungen)}
-    ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
+    ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, anrufe: musterAnrufeOffen(), lesend: istNurLesend(), nurMuster: true })}
     ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
     ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, pack: kunden.musterPacken,
       nachfassen: nf.alle, texte: heuteDaten.musterTexte })}
@@ -222,7 +223,7 @@ function viewShop() {
     <section class="shop-werkzeuge" aria-label="Shop-Werkzeuge">
       <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
     </section>
-    <div class="heute-hintergrund">${darfAnsicht('sonderposten') ? restrollenZeile() : ''}${datenstandZeile('shop')}</div>
+    <div class="heute-hintergrund">${musterAutomatikZeile(kunden.bestellungen)}${darfAnsicht('sonderposten') ? restrollenZeile() : ''}${datenstandZeile('shop')}</div>
     <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik${nebenbereichZusatz(kunden.serviceanfragen)}</summary>
       <nav class="chips" aria-label="Weitere Bereiche">
         <a class="chip" href="#/heute?sicht=laden">Laden &amp; Anfragen</a>

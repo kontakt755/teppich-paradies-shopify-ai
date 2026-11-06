@@ -245,7 +245,17 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
 
 .shop-musterarbeit { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .shop-musterarbeit .heute-geschaeft-kopf { margin-bottom: 12px; }
-.shop-packschritte { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.shop-packschritte { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0; }
+/* Mengen sind keine Warnung und kein Link-Blau (#1996): neutrale Schrift. Die Zahl mit demselben Ziel wie der
+   Knopf darunter ist reiner Text in derselben Hoehe; rot ist nur "nicht eingetragen" (Ampel-Plakette). */
+.shop-packschritte a.chip { color: var(--text); }
+.shop-packzahl { display: inline-flex; align-items: center; min-height: 32px; padding: 6px 4px; color: var(--text); font-size: .85rem; }
+.shop-packzahl-rot { display: inline-flex; align-items: center; min-height: 32px; }
+.shop-packzahl-rot:hover { text-decoration: none; }
+.shop-anrufe { margin: 0 0 12px; }
+@media (max-width: 760px) {
+  .shop-packzahl-rot, .shop-anrufe a { min-height: 44px; display: inline-flex; align-items: center; }
+}
 .shop-nacharbeit-zeile { border-top: 1px solid var(--line); padding: 10px 0; }
 .shop-nacharbeit-zeile summary { min-height: 36px; cursor: pointer; color: var(--text-2); }
 .shop-nacharbeit-zeile p { margin: 4px 0; }
