@@ -166,9 +166,9 @@ gebraeuchlich), Erfassen.
   eingetragen wurde (vor dem 06.11. gepackt oder Eintrag gescheitert). **War schon früher raus…** =
   Versanddialog mit ausgeschalteter Versandmail.
 - **Gepackt, nicht verschickt** (#1709) = Umschlag in der Packstation gepackt, Versand aber nicht
-  eingetragen; steht nach 3 Tagen in der Aufräumliste.
-- **Ist verschickt…** = Versanddialog „An Kunden raus“ für diesen Umschlag, Versandmail vorab aus.
-- **Liegt noch hier** = der Umschlag ist noch nicht zur Post; die Liste fragt nach 3 Tagen wieder.
+  eingetragen. Seit 06.11.2026 (#1996) nicht mehr in der Aufräumliste, sondern rot: Packstation › Gepackt
+  und auf Heute **× n Umschläge nicht eingetragen**. **Ist verschickt…** und **Liegt noch hier** (die
+  Aufräum-Knöpfe dafür) sind entfallen.
 
 ## Dashboard-Updates (#1710)
 
@@ -281,3 +281,12 @@ gebraeuchlich), Erfassen.
 - **× n Umschläge nicht eingetragen** = rote Plakette in „Muster & Packstation“: gepackt, aber nie als verschickt
   eingetragen, der Kunde hat keine Versandmail (vorher Bernstein „gepackt, nicht verschickt“).
 - **n Kunden nach Produkt fragen →** = Zeile in „Muster & Packstation“ mit derselben Zahl wie am Menüpunkt.
+
+## Heute: jede Bestellung einmal (06.11.2026, #1996)
+
+- **#1049: seit 17 Tagen keine Bewegung** + **Abschließen…** / **Läuft noch** = Zeile unter einem roten
+  Problem-Eintrag, wenn dieselbe Bestellung sonst auch unter „Alte Bestellungen aufräumen“ stünde. Sie steht
+  dann nur dort, nicht noch einmal im Aufräumen-Block.
+- **Automatische Nachfrage-Mails: n fällig** = Zeile unter „Versand & Kunden nachfassen“ (vorher „n Nachfragen
+  sind fällig“); Link **Nachfrage-Mails ansehen →**. Mit **· automatischer Versand läuft nicht**, wenn der
+  Server das meldet. Nicht verwechseln mit **Kunden nach Produkt fragen** (Anrufe).

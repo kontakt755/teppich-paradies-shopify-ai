@@ -35,6 +35,11 @@ export function nurProbleme(todos) {
   return (todos || []).filter(t => t && t.ton === 'crit' && !NEBENBEREICH_ARTEN.includes(t.art));
 }
 
+/** Bestellungen der roten Eintraege (To-do-Feld `orderIds`) - stehen sie hier, fehlen sie im Aufraeumen-Block. */
+export function problemOrderIds(todos) {
+  return [...new Set(nurProbleme(todos).flatMap(t => t.orderIds || []))];
+}
+
 /**
  * @param {object[]} todos  sortierte To-dos einer Sicht (lib/todos.mjs sortiereTodos)
  * @param {object} p

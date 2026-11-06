@@ -2737,8 +2737,13 @@ Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt n
 „Ansehen“ und „Läuft noch“.
 
 **Anzeige und Knöpfe.** `ansichten/heute/aufraeumen.mjs`, Block „Alte Bestellungen aufräumen · N“ auf der
-Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar. Kein
-eigener Schreibpfad:
+Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar.
+**Eine Bestellung einmal (06.11.2026, #1996):** Steht sie schon rot unter „Probleme“ (z. B. „Beim Lieferanten
+nachfragen“ für #1049), fehlt sie im Block und zählt dort nicht mit (`aufraeumListe(zeilen, { ohne })`). Die
+roten To-dos aus `lib/todos.mjs` tragen dafür `orderIds`, `problemOrderIds()` in `ansichten/heute/probleme.mjs`
+sammelt sie. Am Problem-Eintrag hängt dann eine Zeile „#1049: seit 17 Tagen keine Bewegung“ mit denselben
+Knöpfen (`aufraeumenUnterProblem()`, dieselben data-Attribute, Klicks über `aufraeumenKlick()`), sodass
+Abschließen und „Läuft noch“ erreichbar bleiben. Kein eigener Schreibpfad:
 - **Abschließen** (Rückfrage mit Vermerk) = `POST /api/kunden/bestellung-fertig` mit den offenen
   Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Ohne vorgegebenen Vermerk „Abschließen…“:
   der Vermerk ist „Aufgeräumt: <eingegebener Grund>“. Bucht wie jedes „Erledigt“ in Shopify als
@@ -2764,18 +2769,18 @@ gepackt, ohne dass jemand den Versand eingetragen hatte. Dashboard und Liste mer
   „Umschlag gepackt am TT.MM. – zur Post bringen und als verschickt eintragen“ (Knopf wie bisher
   „Muster sind verschickt…“). Der Ablauf selbst bekommt keinen Schritt dazu. Eine kaputte Packablage
   lässt die Zeitleisten ohne diese Angabe laufen.
-- **Aufräumliste:** Ein Musterauftrag mit gepacktem Umschlag, bei dem kein Artikel „raus“ ist
-  (`grund: 'gepackt'`), wird schon nach 3 Tagen Ruhe ein Fall (`GEPACKT_OHNE_VERSAND_AB_TAGEN`). Die Uhr
-  läuft ab dem Packen. Ein danach nachgetragenes „bestellt“/„angekommen“ ist keine Bewegung, Notizen und
-  spätere Zeitleistenschritte schon (`ruheSeitPacken()`).
-- **Knöpfe:** „Ist verschickt…“ öffnet den Versanddialog wie an der Zeitleiste (`oeffneVersandDialog`
-  mit `mailVorab: false`, Vermerk „Umschlag gepackt am …, Versand beim Aufräumen eingetragen“) und bucht
-  in Shopify. „Liegt noch hier“ schreibt eine Notiz, und die Liste fragt nach 3 Tagen wieder.
-  „Abschließen“ gibt es hier bewusst nicht: „erledigt“ übersprünge das Nachfassen beim Kunden.
+- **Aufräumliste (bis 06.11.2026):** Ein Musterauftrag mit gepacktem Umschlag, bei dem kein Artikel „raus“
+  war, wurde nach 3 Tagen Ruhe ein Fall (`grund: 'gepackt'`) mit „Ist verschickt…“ und „Liegt noch hier“.
+  **Seit #1996 entfallen:** Gepackt heißt seit Abschnitt 32 verschickt; was trotzdem gepackt und nie
+  eingetragen ist, steht rot in der Packstation (Reiter „Gepackt“, „Verschickt – Kunde informieren…“) und auf
+  Heute als rote Plakette „× n Umschläge nicht eingetragen“ in „Muster & Packstation“. `aufraeumFall()` gibt
+  für solche Aufträge `null` zurück – auch nach 14 Tagen, denn „Abschließen“ wäre dort falsch (keine
+  Versandmail an den Kunden). Ist schon ein Artikel raus, gilt die normale Frist von 14 Tagen. Ein Server
+  von vor #1996 liefert bis zum Neustart noch `grund: 'gepackt'`; `aufraeumListe()` zeigt das nicht.
 
 Tests: `operations/tests/auftragsverlauf.test.mjs` (nächster Schritt, fremde und mehrere Umschläge,
-Ware, schon verschickt) und `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Grenze 2/3 Tage,
-„Liegt noch hier“, nachgetragener Wareneingang, teils verschickt, Knöpfe, API mit Packablage).
+Ware, schon verschickt) und `docs/ai-dashboard/tests/aufraeumen.test.mjs` (kein Fall nach 3, 20 oder 40
+Tagen, teils verschickt als Ruhefall, alter Server, API mit Packablage, eine Bestellung einmal).
 
 ## Dienst zieht main automatisch nach (26.10.2026, #1710)
 

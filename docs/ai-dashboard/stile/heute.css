@@ -29,6 +29,10 @@ html[data-theme="dark"] .heute-sicht a[aria-current] { color: var(--bg); }
 .heute-todos > .heute-todo:first-child { border-top: 0; }
 .heute-todo.warn { border-left-color: var(--warn); }
 .heute-todo.crit { border-left-color: var(--crit); }
+/* Aufraeumfall am Problem-Eintrag (#1996): eine ganze Zeile unter Text und Knopf, Knoepfe in eigener Breite. */
+.heute-todo-aufraeumen { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; color: var(--text-2); font-size: .9rem; }
+.heute-todo-aufraeumen > span { margin-right: 4px; overflow-wrap: anywhere; }
+.heute-todo .heute-todo-aufraeumen .btn { min-width: 0; min-height: 36px; width: auto; }
 .heute-todo .t { font-weight: 650; overflow-wrap: anywhere; }
 .heute-todo .s { color: var(--text-2); font-size: .9rem; overflow-wrap: anywhere; }
 .heute-todo .btn { min-width: 132px; min-height: 40px; white-space: nowrap; }
@@ -170,6 +174,7 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
   .heute-todo { grid-template-columns: minmax(0, 1fr) auto; padding: 13px 14px 14px 12px; }
   .heute-todo .btn { grid-column: 1 / -1; }
   .heute-todo .btn { width: 100%; min-height: 44px; }
+  .heute-todo .heute-todo-aufraeumen .btn { width: auto; min-height: 44px; }
   .heute-rest > summary { min-height: 44px; display: flex; align-items: center; }
   .heute-mn-zeile { padding: 13px 14px 12px 12px; }
   .heute-mn-kopf { grid-template-columns: minmax(0, 1fr); }

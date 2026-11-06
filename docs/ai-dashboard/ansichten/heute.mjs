@@ -64,9 +64,9 @@ import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
 import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
 import { selbstAbschickenStand, selbstAbschickenBlock } from './heute/selbst-abschicken.mjs';
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
-import { aufraeumenBlock } from './heute/aufraeumen.mjs';
+import { aufraeumenBlock, aufraeumenUnterProblem } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
-import { problemeBlock } from './heute/probleme.mjs';
+import { problemeBlock, problemOrderIds } from './heute/probleme.mjs';
 import { restrollenZeile } from './heute/restrollen.mjs';
 import { warenkennzahlBlock } from './heute/warenkennzahl.mjs';
 
@@ -204,6 +204,8 @@ function viewShop() {
     statusAlle: einkauf.auftragsstatus, lieferanten: heuteDaten.lieferanten });
   // Was wir selbst zuschneiden, packen und verschicken (#1995) - direkt unter den Warenbestellungen.
   const selbst = selbstAbschickenStand({ daten: kunden.bestellungen, statusAlle: einkauf.auftragsstatus });
+  // Eine Bestellung steht einmal (#1996): was rot unter "Probleme" steht, fehlt in "Alte Bestellungen aufräumen".
+  const probleme = problemeShop(nf, selbst);
   return `<div class="heute shop-start">
     <header class="heute-geschaeft-kopf shop-start-kopf"><h1>Shop-Übersicht</h1>
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
@@ -211,12 +213,12 @@ function viewShop() {
     ${warenkennzahl()}
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
     ${selbstAbschickenBlock(selbst, { lesend: istNurLesend() })}
-    ${problemeShop(nf, selbst)}
+    ${probleme.html}
     ${inhaberUeberblick()}
     ${/* Nur bei Stoerung oder Klaerung; was geklappt hat, steht als Zeile "Musterautomatik" unten (#1996). */ ''}
     ${musterAutomatikBlock(kunden.bestellungen)}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, anrufe: musterAnrufeOffen(), lesend: istNurLesend(), nurMuster: true })}
-    ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
+    ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), ohne: probleme.orderIds })}
     ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, pack: kunden.musterPacken,
       nachfassen: nf.alle, texte: heuteDaten.musterTexte })}
     ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
@@ -242,6 +244,9 @@ function viewShop() {
  * Technik-Eintraege gehoeren nicht auf ihre Liste (Wunsch 2026-10-21). Ohne Rot kein Block.
  * Kundenfaelle und Team-Aufgaben werden hier nicht geladen: ihre To-dos gehoeren in den
  * Nebenbereich (probleme.mjs, NEBENBEREICH_ARTEN) und wuerden hier nur Abrufe kosten.
+ * Liefert auch die Bestellungen der roten Eintraege: "Alte Bestellungen aufräumen" laesst sie weg, und ihr
+ * Problem-Eintrag traegt dafuer "Abschließen…"/"Läuft noch" (aufraeumenUnterProblem, #1996).
+ * @returns {{ html: string, orderIds: string[] }}
  */
 function problemeShop(nf, selbst = null) {
   ensureKundenRueckrufe(); ensureShopifyAbgleich();
@@ -252,7 +257,9 @@ function problemeShop(nf, selbst = null) {
   // "Ware ist da – rausgeben" ohne die Positionen, die schon im Block "Von uns abschicken" stehen -
   // nicht ein zweites Mal rot. Bleibt nichts uebrig (nur Ware ueber uns), faellt das To-do weg.
   const liste = todosDerSicht(sicht, q, nf).liste.map(t => rausgebenOhne(t, selbst?.schluessel)).filter(Boolean);
-  return problemeBlock(liste, { zeile: t => todoZeile(t, false), fehlen: problemQuellenFehlen() });
+  const lesend = istNurLesend();
+  const zeile = t => todoZeile(t, false, aufraeumenUnterProblem(t, { daten: kunden.bestellungen, lesend }));
+  return { html: problemeBlock(liste, { zeile, fehlen: problemQuellenFehlen() }), orderIds: problemOrderIds(liste) };
 }
 
 /** Quellen der roten To-dos, deren Abruf gescheitert ist - gerade geladene zaehlen nicht. */
@@ -374,7 +381,8 @@ function kopf(anzahl, sicht, chips) {
   </header>`;
 }
 
-function todoZeile(t, erste) {
+/** @param {string} [unten]  ganze Zeile unter Text und Knopf (Aufraeumfall am Problem-Eintrag, #1996) */
+function todoZeile(t, erste, unten = '') {
   const k = t.knopf;
   const klasse = `btn btn-sm${erste ? ' btn-primary' : ''}`;
   // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
@@ -397,7 +405,7 @@ function todoZeile(t, erste) {
   const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage, t.alterBezug))}</span>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
     <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
-    ${alter}${knopf}
+    ${alter}${knopf}${unten}
   </div>`;
 }
 
