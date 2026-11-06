@@ -2158,7 +2158,11 @@ function tpRwcInit{{ tp_rc_id }}() {
   function farbeText() {
     if (!target) return '';
     var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
-    return target.farbnummer ? name + ' (' + target.farbnummer + ')' : name;
+    // Nummer nur anhaengen, wenn sie nicht schon im Optionsnamen steht
+    // (sonst "Grau (075) (075)" in Warenkorb und Bestellung).
+    if (!target.farbnummer) return name;
+    if (name.indexOf('(' + target.farbnummer + ')') !== -1) return name;
+    return name + ' (' + target.farbnummer + ')';
   }
 
   function updateExtras(w, len, area) {
