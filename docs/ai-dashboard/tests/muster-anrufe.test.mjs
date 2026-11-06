@@ -5,7 +5,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import vm from 'node:vm';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
+import * as anrufLib from '../lib/muster-anrufe.mjs';
+import * as ideenLib from '../lib/muster-ideen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 import { ANRUF_ERGEBNISSE, ANRUF_NUR_MIT_RUECKRUFWUNSCH, RUECKFRAGE_VORLAGE, musterAnrufliste, rueckfrageLink, wiedervorlageTag } from '../lib/muster-anrufe.mjs';
 import { MUSTER_ALTERNATIVEN, MUSTER_VERMUTUNGEN, musterKennzahlen, vermutungGenannt } from '../lib/muster-ideen.mjs';
 import { SICHERUNGSPFADE } from '../../../operations/scripts/sicherung.mjs';
@@ -252,4 +256,47 @@ test('Server: die Liste bringt die Kennzahlen mit', async () => {
   assert.equal(k.musterKunden, 2);
   assert.equal(k.tageBisVersand, 5, 'Bestellt am 1.1., verschickt am 6.1.');
   assert.equal(k.warenKunden, 0);
+});
+
+// Die Ansicht im Browser: Quelltext ohne Importe, die Bausteine des Kerns als einfache Ersatzteile.
+const ansichtQuelle = fs.readFileSync(new URL('../ansichten/kunden/muster-anrufe.mjs', import.meta.url), 'utf8')
+  .replace(/^import.*;\n/gm, '').replace(/^export\s/gm, '');
+function anrufAnsicht(m) {
+  const esc = t => String(t ?? '').replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
+  return vm.runInNewContext(`${ansichtQuelle}\nviewMusterAnrufe()`, {
+    ...anrufLib, ...ideenLib, kundenLinkWert, URLSearchParams,
+    state: { session: {} }, kunden: { musterAnrufe: m }, esc, fmtDate: d => String(d), plural: (n, a, b) => `${n} ${n === 1 ? a : b}`,
+    toast() {}, fetchEinkauf: async () => null, orgSchreiben: async () => null, istNurLesend: () => false, render() {}, $: () => null,
+    emptyState: (t, h) => `<div class="empty">${esc(t)} ${esc(h)}</div>`, stoerungState: () => '', telLink: t => `<a href="tel:${esc(t)}">${esc(t)}</a>`,
+  });
+}
+
+test('Ansicht: ohne Kunden ohne Nummer keine leere E-Mail-Spalte, die Telefonkarten liegen im Raster ueber die volle Breite', () => {
+  const m = { ...musterAnrufliste([zeile(1), zeile(2)], {}, { jetzt: JETZT, nurMitWunsch: false }), verfuegbar: true, gruende: [] };
+  assert.equal(m.ohneNummer.length, 0);
+  const html = anrufAnsicht(m);
+  assert.doesNotMatch(html, /Keine Telefonnummer: per E-Mail/);
+  assert.doesNotMatch(html, /anruf-spalten/);
+  assert.match(html, /Telefonnummer vorhanden: anrufen <span class="muted small">2<\/span>/);
+  assert.match(html, /class="rows anruf-raster"/);
+  // Arbeit zuerst: die Liste steht vor der Auswertung, die Regeln in einer Zeile davor.
+  assert.ok(html.indexOf('anruf-zeile') < html.indexOf('Warum gekauft wird oder nicht'));
+  assert.match(html, /Ab 5 Tagen nach Versand · erst fragen, ob es passt · nach 3× „Nicht erreicht“ Schluss · „Möchte keine Anrufe“ gilt dauerhaft/);
+  assert.equal((html.match(/class="small muted[^"]*"[^>]*>(Ab \d|Am Telefon)/g) || []).length, 1, 'ein Regelsatz statt zwei');
+});
+
+test('Ansicht: ein Kunde ohne Nummer bringt die zweite Spalte zurueck; Spaeter und Abgeschlossen bleiben unter der Auswertung', () => {
+  const ohne = zeile(3);
+  ohne.auftrag.details.lieferadresse.telefon = null;
+  const m = { ...musterAnrufliste([zeile(1), ohne], {}, { jetzt: JETZT, nurMitWunsch: false }), verfuegbar: true, gruende: [] };
+  m.spaeter = [{ ...m.anrufen[0], schluessel: 'spaeter-1' }];
+  const html = anrufAnsicht(m);
+  assert.match(html, /<div class="anruf-spalten">/);
+  assert.match(html, /Keine Telefonnummer: per E-Mail <span class="muted small">1<\/span>/);
+  assert.doesNotMatch(html, /anruf-raster/, 'zwei Spalten nebeneinander, kein Raster in der Spalte');
+  assert.ok(html.indexOf('Warum gekauft wird oder nicht') < html.indexOf('Später nochmal'));
+  // Nur Kunden ohne Nummer: die E-Mail-Spalte steht allein und volle Breite, keine leere Telefonspalte.
+  const nurOhne = anrufAnsicht({ ...musterAnrufliste([ohne], {}, { jetzt: JETZT, nurMitWunsch: false }), verfuegbar: true, gruende: [] });
+  assert.doesNotMatch(nurOhne, /Telefonnummer vorhanden/);
+  assert.match(nurOhne, /Keine Telefonnummer: per E-Mail[\s\S]*class="rows anruf-raster"/);
 });

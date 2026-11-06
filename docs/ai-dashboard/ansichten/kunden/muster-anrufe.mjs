@@ -1,8 +1,8 @@
 /**
  * Kunden, Reiter "Kunden nach Produkt fragen": wer seit 5 Tagen Muster hat, wird nachgefragt - am Telefon oder,
- * wenn das nicht geht, per Rueckfrage-Mail. Das Ergebnis wird angeklickt, Notizen eingetippt; oben
- * steht, welche Gruende bisher genannt wurden, darunter zugeklappt Vermutungen und Ideen
- * (lib/muster-ideen.mjs). Rechnen: lib/muster-anrufe.mjs. Gestaltung: stile/muster.css.
+ * wenn das nicht geht, per Rueckfrage-Mail. Das Ergebnis wird angeklickt, Notizen eingetippt. Oben
+ * steht die Anrufliste, darunter, welche Gruende bisher genannt wurden, und zugeklappt Vermutungen
+ * und Ideen (lib/muster-ideen.mjs). Rechnen: lib/muster-anrufe.mjs. Gestaltung: stile/muster.css.
  */
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
@@ -65,13 +65,32 @@ function zeileHtml(z, { mitMail = false } = {}) {
   </div>`;
 }
 
-/** Eine Spalte: wer eine freigegebene Nummer hat, wird angerufen; alle anderen bekommen die Mail. */
-function spalte(titel, zeilen, leer, hinweis = '') {
+/**
+ * Eine Spalte: wer eine freigegebene Nummer hat, wird angerufen; alle anderen bekommen die Mail.
+ * `raster`: steht die Spalte allein, liegen die Karten auf breiten Bildschirmen zu zweit nebeneinander.
+ */
+function spalte(titel, zeilen, { hinweis = '', raster = false } = {}) {
   return `<section class="anruf-spalte" aria-label="${esc(titel)}">
     <h3 class="anruf-titel">${esc(titel)} <span class="muted small">${zeilen.length}</span></h3>
     ${hinweis ? `<p class="small muted">${esc(hinweis)}</p>` : ''}
-    ${zeilen.length ? `<div class="rows">${zeilen.map(z => zeileHtml(z, { mitMail: !z.telefon })).join('')}</div>` : `<p class="small muted">${esc(leer)}</p>`}
+    <div class="rows${raster ? ' anruf-raster' : ''}">${zeilen.map(z => zeileHtml(z, { mitMail: !z.telefon })).join('')}</div>
   </section>`;
+}
+
+/**
+ * Die Arbeitsliste. Eine leere Spalte faellt weg (bis 2026-11-06 stand fast immer "Keine
+ * Telefonnummer: per E-Mail 0" daneben und die Telefonkarten nutzten nur die halbe Breite).
+ */
+function arbeitslisteHtml(m) {
+  const telefon = [...m.anrufen, ...m.gesperrt];
+  const teile = [];
+  if (telefon.length) {
+    teile.push(['Telefonnummer vorhanden: anrufen', telefon, m.gesperrt.length ? 'Ohne Rückrufwunsch ist der Anruf noch nicht freigegeben. Bis dahin hier per E-Mail fragen.' : '']);
+  }
+  if (m.ohneNummer.length) teile.push(['Keine Telefonnummer: per E-Mail', m.ohneNummer, '']);
+  const raster = teile.length === 1;
+  const html = teile.map(([titel, zeilen, hinweis]) => spalte(titel, zeilen, { hinweis, raster })).join('');
+  return raster ? html : `<div class="anruf-spalten">${html}</div>`;
 }
 
 function aufgeklappt(titel, zeilen, opt = {}) {
@@ -116,17 +135,13 @@ export function viewMusterAnrufe() {
   const gruende = m.gruende?.length
     ? `<div class="anruf-gruende" aria-label="Genannte Gründe">${m.gruende.map(g => `<span class="anruf-grund"><b>${g.anzahl}</b> ${esc(g.text)}</span>`).join('')}</div>`
     : '<p class="small muted">Noch keine Gründe erfasst. Sobald Ergebnisse eingetragen sind, steht hier, warum gekauft wird oder nicht.</p>';
+  // Erst die Arbeit, dann das Nachdenken: die Anrufliste beginnt oben, die Auswertung steht darunter.
   return `
-    <p class="small muted" style="margin:0 0 10px">Ab ${ANRUF_NACH_TAGEN} Tagen nach dem Versand. Mehrere Musterbestellungen eines Kunden sind ein Anruf. Nach ${HOECHSTENS_VERSUCHE}× „Nicht erreicht“ ist Schluss.</p>
+    <p class="small muted anruf-regel">Ab ${ANRUF_NACH_TAGEN} Tagen nach Versand · erst fragen, ob es passt · nach ${HOECHSTENS_VERSUCHE}× „Nicht erreicht“ Schluss · „Möchte keine Anrufe“ gilt dauerhaft</p>
+    ${nichts ? emptyState('Gerade ist niemand dran.', 'Neue Kunden erscheinen hier von selbst.') : arbeitslisteHtml(m)}
     <h3 class="anruf-titel">Warum gekauft wird oder nicht</h3>
     ${gruende}
     ${ideenHtml(m)}
-    ${nichts ? emptyState('Gerade ist niemand dran.', 'Neue Kunden erscheinen hier von selbst.') : ''}
-    ${m.anrufen.length ? '<p class="small muted">Am Telefon zuerst fragen, ob es gerade passt. Möchte jemand keine Anrufe, „Möchte keine Anrufe“ anklicken: Dann ruft niemand mehr an, auch nicht bei späteren Bestellungen.</p>' : ''}
-    ${nichts ? '' : `<div class="anruf-spalten">
-      ${spalte(m.anrufen.length ? 'Telefonnummer vorhanden: anrufen' : 'Telefonnummer vorhanden', [...m.anrufen, ...m.gesperrt], 'Gerade niemand mit Telefonnummer.', m.gesperrt.length ? 'Ohne Rückrufwunsch ist der Anruf noch nicht freigegeben. Bis dahin hier per E-Mail fragen.' : '')}
-      ${spalte('Keine Telefonnummer: per E-Mail', m.ohneNummer, 'Gerade niemand ohne Telefonnummer.')}
-    </div>`}
     ${m.spaeter.length ? aufgeklappt('Später nochmal', m.spaeter) : ''}
     ${m.erledigt.length ? aufgeklappt('Abgeschlossen', m.erledigt) : ''}
   `;
