@@ -19,6 +19,9 @@
     (scripts/preisfilter-abgleich.mjs). Gilt fuer jede Kollektion, deren Handle
     "teppichboden" enthaelt (Hauptkategorie, Unterkategorien, Marken, Angebote,
     Buero/Gewerbe), und fuer die Nadelfilz-Preisklassen.
+  - Gemischte Kollektionen (Rundgang 06.11.2026, NAV-02): /collections/all und
+    Aktionskollektionen mit Handle-Anfang "black-week" mischen Rollenpreise je
+    m2 mit Paketpreisen; der Filter bot "hoechster Preis 380,94 EUR" an.
 
   Der Preisfilter in Search & Discovery bleibt angelegt; ausgeblendet wird nur
   seine Darstellung. Auf der Suchseite entscheidet blocks/filters.liquid selbst.
@@ -26,7 +29,7 @@
   @param {object} collection - die Kollektion (collection.handle, collection.title)
 {%- enddoc -%}
 {%- liquid
-  assign tp_pv_aus = 'vinylboden-1,vinylboden-klickvinyl,vinylboden-klebevinyl,vinylboden-fischgraet,angebote-vinylboden,auslauf-vinylboden,jab-anstoetz-designboden,laminat,parkett,korkboden,korkboden-klick,korkboden-kleben,kautschukboden,teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen,teppichboden-buero-gewerbe,angebote-teppichboden,angebote,teppich-nach-mass,marken-teppiche-nach-mass,vorwerk-teppiche-nach-mass,jab-anstoetz-teppiche-nach-mass' | split: ','
+  assign tp_pv_aus = 'vinylboden-1,vinylboden-klickvinyl,vinylboden-klebevinyl,vinylboden-fischgraet,angebote-vinylboden,auslauf-vinylboden,jab-anstoetz-designboden,laminat,parkett,korkboden,korkboden-klick,korkboden-kleben,kautschukboden,teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen,teppichboden-buero-gewerbe,angebote-teppichboden,angebote,teppich-nach-mass,marken-teppiche-nach-mass,vorwerk-teppiche-nach-mass,jab-anstoetz-teppiche-nach-mass,all' | split: ','
   assign tp_pv_handle = collection.handle | default: ''
   assign tp_pv_titel = collection.title | default: ''
   assign tp_pv_versteckt = false
@@ -37,6 +40,10 @@
     assign tp_pv_versteckt = true
   endif
   if tp_pv_handle contains 'teppichboden' or tp_pv_handle contains 'nadelfilz'
+    assign tp_pv_versteckt = true
+  endif
+  assign tp_pv_anfang = tp_pv_handle | slice: 0, 10
+  if tp_pv_anfang == 'black-week'
     assign tp_pv_versteckt = true
   endif
   if tp_pv_versteckt

@@ -204,7 +204,7 @@
     <ul class="tp-vg__stufen tp-vg__stufen--zonen" role="list">
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
-        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }} (mind. {{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }} je Auftrag).</span>
+        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }} (mind. {{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }} je Auftrag).{% if section.settings.aktionshinweis %} Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis.{% endif %}</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_mitte }} km</span>
@@ -500,6 +500,13 @@
       "label": "Stufen des Rollenware-Service zeigen",
       "info": "Stufen aus den Theme-Einstellungen (TP Verlegeservice) unter der Karte und im Pruefergebnis. Nur auf Teppichboden-Seiten - auf Vinyl- und Treppenseiten gilt der Service nicht.",
       "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "aktionshinweis",
+      "label": "Hinweis \"nur zum regulaeren Preis\" in der kostenlosen Stufe",
+      "info": "Aus nur dort, wo derselbe Satz schon auf der Seite steht (Liefer- und Verlegeservice).",
+      "default": true
     },
     {
       "type": "header",

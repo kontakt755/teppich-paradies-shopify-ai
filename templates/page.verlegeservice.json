@@ -83,6 +83,7 @@
         "heading": "Wie weit wir zu Ihnen kommen",
         "intro": "Von unserem Geschäft in Oranienburg liefern und verlegen wir bis nach Berlin und ins Brandenburger Umland. Prüfen Sie hier Ihren Wohnort.",
         "rollenware_stufen": true,
+        "aktionshinweis": false,
         "hinweis": "",
         "cta_zeigen": false,
         "cta_link": "/pages/liefer-verlegeservice#tp-anfrage",

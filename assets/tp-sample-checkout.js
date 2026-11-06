@@ -48,6 +48,26 @@
     });
   }
 
+  // Neutraler Hinweis (data-sample-none) mit Links statt rotem Fehlerkasten.
+  function zeigeOhneMuster(text, links) {
+    var noneEl = root.querySelector('[data-sample-none]');
+    if (!noneEl) {
+      showError(text);
+      return;
+    }
+    noneEl.textContent = text;
+    var linksEl = document.createElement('span');
+    linksEl.className = 'tp-sample__keine-links';
+    links.forEach(function (link) {
+      var a = document.createElement('a');
+      a.href = link.href;
+      a.textContent = link.text;
+      linksEl.appendChild(a);
+    });
+    noneEl.appendChild(linksEl);
+    noneEl.hidden = false;
+  }
+
   function hideError() {
     errorEl.hidden = true;
     errorEl.textContent = '';
@@ -372,18 +392,26 @@
         // dann nicht zum Hinweis darunter (Laminat, Parkett, Kork, ohne Muster).
         var infoEl = root.querySelector('[data-sample-info]');
         if (infoEl) infoEl.hidden = true;
+        // Kein Warenkorbweg: Auswahl-Intro und Knopf passen nicht, der Hinweis
+        // steht neutral statt als Fehler (Rundgang 06.11.2026).
+        var introEl = root.querySelector('[data-sample-intro]');
+        if (introEl) introEl.hidden = true;
+        submitEl.hidden = true;
+        var produktLink = { text: 'Zurück zu ' + product.title, href: '/products/' + handle };
         if (musterAufAnfrage(product)) {
           // Laminat, Parkett, Kork: kostenlos, aber nur auf Anfrage
           // (Inhaber 14.10.2026, blocks/tp-muster-cta). Alte Links landen hier.
-          showError('Muster für ' + product.title + ' sind kostenlos wie alle unsere Muster. Weil sie wertiger sind, senden wir sie nach kurzer Anfrage zu.');
-          var anfrage = document.createElement('a');
-          anfrage.href = '/pages/kontakt?thema=musteranfrage&produkt=' + encodeURIComponent(product.title) + '&handle=' + encodeURIComponent(product.handle);
-          anfrage.textContent = 'Kostenloses Muster anfragen';
-          errorEl.appendChild(document.createTextNode(' '));
-          errorEl.appendChild(anfrage);
+          // Linktext ohne "kostenlos" wie der Knopf auf der Produktseite (w-161).
+          zeigeOhneMuster('Muster für ' + product.title + ' sind kostenlos wie alle unsere Muster. Weil sie wertiger sind, senden wir sie nach kurzer Anfrage zu.', [
+            { text: 'Muster anfragen', href: '/pages/kontakt?thema=musteranfrage&produkt=' + encodeURIComponent(product.title) + '&handle=' + encodeURIComponent(product.handle) },
+            produktLink,
+          ]);
           return;
         }
-        showError('Für dieses Produkt bieten wir derzeit keine kostenlosen Muster an. Bitte kontaktieren Sie uns für eine persönliche Beratung.');
+        zeigeOhneMuster('Für diesen Boden gibt es leider keine Muster. Wir beraten Sie gern.', [
+          { text: 'Beratung anfragen', href: '/pages/kontakt?thema=beratung' },
+          produktLink,
+        ]);
         return;
       }
       var sampleProduct = results[1];
