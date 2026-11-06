@@ -31,6 +31,20 @@ export function serviceOffen(e) {
   return Boolean(e?.id && STATUS.includes(e.status) && !ABGESCHLOSSEN.includes(e.status));
 }
 
+/**
+ * Zahl am Menuepunkt "Kunden": sofort faellige Faelle plus offene Service-Anfragen. Erst, wenn
+ * beide Quellen fehlerfrei geladen sind - sonst null, das Menue zeigt dann keine Zahl. Bis
+ * 2026-11-06 stand auf "Heute" und "Bestellen" eine 8 (nur die Service-Anfragen, die Faelle
+ * laedt erst "Kunden"), auf "Kunden" dann 14: eine Teilsumme sah aus wie eine echte Zahl.
+ * Geladen heisst verfuegbar und ohne Fehler: fehlt orders.json, antwortet der Server mit
+ * HTTP 200 und { verfuegbar: false } ohne `fehler` - dann kam wieder 0 + Service-Anfragen heraus.
+ */
+export function kundenMenueZahl(faelle, serviceanfragen) {
+  const geladen = q => Boolean(q?.verfuegbar) && !q.fehler;
+  if (!geladen(faelle) || !geladen(serviceanfragen) || typeof faelle.sofort !== 'number') return null;
+  return faelle.sofort + (serviceanfragen.eintraege || []).filter(serviceOffen).length;
+}
+
 /** Gezielter Sprung zur vorhandenen Anfrage, ohne Kontaktdaten in der Adresse. */
 export function serviceLink(id) {
   return `#/kunden?${new URLSearchParams({ tab: 'service', anfrage: String(id) })}`;

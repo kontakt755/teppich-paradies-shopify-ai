@@ -10,7 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   klassifiziere, referenzen, aktuellerTeil, domainVon, lieferantZurDomain, kandidatenAus, ordneZu,
-  zuordnungMitEntscheidung, abgleich, belegMarke,
+  zuordnungMitEntscheidung, abgleich, belegMarke, belegFilter,
 } from '../lib/lieferbelege.mjs';
 import { lieferbelegePfad, leseBelege, uebernehmen, entscheide, bekannt, LieferbelegFehler } from '../../../operations/lib/lieferbelege.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
@@ -125,6 +125,33 @@ test('zuordnungMitEntscheidung: Mensch geht vor, Absender "kein Shop" nur ohne N
 });
 
 // --- Abgleich -------------------------------------------------------------------------------
+
+test('abgleich: Eigenleistung ohne Lieferant (Kettelservice) gibt keine Zeile "Lieferant nicht zugeordnet"', () => {
+  const status = (nr, i) => [`gid://shopify/Order/${nr}::gid://shopify/LineItem/${nr}${i}`, { status: 'bestellt', bestelltAm: '2026-10-11T09:00:00Z' }];
+  const roh = (nr, positionen) => ({ ...zeile(nr, 'Erika Beispiel', []), auftrag: { positionen: positionen.map(([lieferant, eigenleistung], i) => ({ lineItemId: `gid://shopify/LineItem/${nr}${i}`, lieferant, eigenleistung, istMuster: false, titel: eigenleistung ? 'Kettelservice' : `Ware ${lieferant}` })) } });
+  const statusAlle = Object.fromEntries([status(9101, 0), status(9101, 1), status(9102, 0), status(9102, 1), status(9103, 0)]);
+  const kandidaten = kandidatenAus([
+    roh(9101, [['A', false], ['UNGEKLAERT', true]]),     // Ware von A plus Kettelservice
+    roh(9102, [['A', false], ['UNGEKLAERT', false]]),    // echte Ware ohne Lieferant: Hinweis bleibt
+    roh(9103, [['UNGEKLAERT', true]]),                   // nur Eigenleistung, aber mit Beleg
+  ], statusAlle);
+  assert.deepEqual(kandidaten[0].lieferanten, ['A', 'UNGEKLAERT'], 'die Position bleibt - Zuordnen rechnet unveraendert');
+  const b = { id: 'ab9', art: 'ab', datum: '2026-10-12T08:00:00Z', lieferant: null, domain: 'kettler.example', refs: referenzen({ betreff: 'AB #9103' }), erledigt: null, zuordnung: { stufe: 'sicher', orderIds: ['gid://shopify/Order/9103'] } };
+  const { zeilen } = abgleich({ belege: [b], kandidaten, jetzt: JETZT });
+  const ids = zeilen.map(z => z.id).sort();
+  assert.deepEqual(ids, ['gid://shopify/Order/9101|A', 'gid://shopify/Order/9102|A', 'gid://shopify/Order/9102|UNGEKLAERT', 'gid://shopify/Order/9103|UNGEKLAERT']);
+  assert.equal(zeilen.find(z => z.id === 'gid://shopify/Order/9103|UNGEKLAERT').ab.id, 'ab9', 'haengt ein Beleg an der Eigenleistung, bleibt die Zeile');
+});
+
+test('belegFilter: Vorgabe ist "Passt nicht zusammen", ohne Abweichung alle; ausdruecklich Gewaehltes bleibt', () => {
+  assert.equal(belegFilter(null, { abweichungen: 2 }), 'abweichung');
+  assert.equal(belegFilter('', { abweichungen: 2 }), 'abweichung');
+  assert.equal(belegFilter(null, { abweichungen: 0 }), 'alle', 'leere Arbeitsliste: Rueckfall auf Alle');
+  assert.equal(belegFilter('alle', { abweichungen: 2 }), 'alle', '"Alle" ist einen Klick entfernt');
+  assert.equal(belegFilter('beleg', { abweichungen: 2 }), 'beleg', 'Sprungziel aus den Lieferantenkarten (blf=beleg)');
+  assert.equal(belegFilter('abweichung', { abweichungen: 0 }), 'abweichung', 'ausdruecklich gewaehlt: zeigt "Alles passt zusammen"');
+  assert.equal(belegFilter('quatsch', { abweichungen: 1 }), 'abweichung');
+});
 
 test('abgleich: AB und Lieferschein je Auftrag und Lieferant, Storno rot, Lieferschein ohne Haken gelb', () => {
   const status = (nr, i, eintrag) => [`gid://shopify/Order/${nr}::gid://shopify/LineItem/${nr}${i}`, eintrag];
