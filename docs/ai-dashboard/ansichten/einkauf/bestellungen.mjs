@@ -16,8 +16,10 @@ import {
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, alleAuftraege, erledigtePositionen,
   sammelGruppen, anzeigeWert, afEintragFuer, hatLieferantLink, positionUnvollstaendig,
   positionsGruppe, musterEigen, MUSTER_HERKUNFT_KURZ, zurueckGruppen, musterSchrittKnopf,
-  afStatusText, istUeberKettler, istDirektZumKunden,
+  afStatusText, istUeberKettler, istDirektZumKunden, selbstKnoepfe, herstellerDirekt,
 } from './auftragsfluss.mjs';
+import { lieferwegVon, selbstStand, selbstStandText, istLagerware } from '../../lib/lieferweg.mjs';
+import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
 import { beschaffungText } from '../../lib/beschaffung.mjs';
@@ -77,15 +79,21 @@ function afStatusZelle(p) {
       : MUSTER_HERKUNFT_KURZ[p.musterHerkunft] || 'aus dem eigenen Musterlager';
     return `<div class="small muted">Stand: ${esc(woher)}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
   }
-  // Direkt vom Lieferanten zum Kunden: nach "bestellt" kommt "raus" - bei uns kommt nichts an.
-  const naechster = status === 'bestellt' && istDirektZumKunden(eintrag) ? 'raus' : afNaechsterStatus(status);
-  const aktion = naechster === 'geliefert' && istUeberKettler(eintrag) ? 'Als beim Kettler abgeholt markieren' : AF_AKTIONS_LABEL[naechster];
-  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}"${naechster === 'erledigt' ? ' title="Ist der Versand in Shopify noch nicht gebucht, wird er dort ohne Mail an den Kunden gebucht"' : ''}>${esc(aktion)}</button>`
+  // Direkt vom Lieferanten zum Kunden (Vermerk oder Lieferweg "Hersteller → Kunde"): nach "bestellt"
+  // kommt "raus" - bei uns kommt nichts an.
+  const naechster = status === 'bestellt' && (istDirektZumKunden(eintrag) || herstellerDirekt(p, eintrag)) ? 'raus' : afNaechsterStatus(status);
+  const aktion = naechster === 'raus' && status === 'bestellt' ? 'Ist beim Kunden…' : naechster === 'geliefert' && istUeberKettler(eintrag) ? 'Als beim Kettler abgeholt markieren' : AF_AKTIONS_LABEL[naechster];
+  // Ware, die wir selbst verschicken (aus Lager bzw. bei uns eingetroffen): Zugeschnitten/Gepackt/Verschickt…
+  // statt "Als bestellt markieren" - Lagerware wird nie beim Lieferanten bestellt.
+  const lw = lieferwegVon(p, eintrag);
+  const selbst = selbstKnoepfe(p, eintrag);
+  const btn = (selbst || (lw?.weg === 'lager' && !status)) ? selbst : naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}"${naechster === 'erledigt' ? ' title="Ist der Versand in Shopify noch nicht gebucht, wird er dort ohne Mail an den Kunden gebucht"' : ''}>${esc(aktion)}</button>`
     : status === 'erledigt' ? `<button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" title="Abschluss rückgängig machen">Wieder öffnen…</button>` : '';
   // Der Stand ist ein ruhiger Text, kein zweiter Knopf - deshalb kein "badge status" mehr.
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
-  const stand = `<div class="small muted">Stand: ${esc(afStatusText(eintrag))}${zusatz}</div><div class="small">${esc(beschaffungText(eintrag))}</div>${uebernahmeBlock([p])}`
+  const selbstText = selbstStandText(selbstStand(p, eintrag), lw?.weg);
+  const stand = `<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${uebernahmeBlock([p])}`
     // Steht im Musterlager, ist aber leer bzw. aufgebraucht: deshalb wieder beim Lieferanten.
     + (!status && p.musterLagerLeer ? `<div class="small muted">Musterlager: ${esc(p.musterLagerLeer.artLabel)} leer${p.musterLagerLeer.ort ? ` (${esc(p.musterLagerLeer.ort)})` : ''}</div>` : '');
   // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.
@@ -125,7 +133,7 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
     ? `<p class="small warnc" style="margin:-6px 0 10px">${plural(luecken, 'Artikel kann', 'Artikel können')} so nicht bestellt werden – Angaben fehlen (siehe markierte Felder).</p>`
     : unbekannt ? '<p class="small muted" style="margin:-6px 0 10px">Großhändler-ID und Produktseite sind je Artikel hinterlegt – über „Öffnen" beim Lieferanten bestellen.</p>' : '';
   const ungeklaert = grund => `<span class="badge gap" title="${esc(grund || 'Nicht in Shopify hinterlegt')}">fehlt</span>`;
-  const zuBestellen = positionen.filter(p => p.lineItemId && !afEintragFuer(p)?.status && !musterEigen(p));
+  const zuBestellen = positionen.filter(p => p.lineItemId && !afEintragFuer(p)?.status && !musterEigen(p) && !istLagerware(p, afEintragFuer(p)));
   // Ab zwei Artikeln lohnt die Sammelaktion; fuer einen reicht der Knopf in der Zeile.
   const sammel = zuBestellen.length >= 2 && !istNurLesend() ? `<button type="button" class="btn btn-sm" data-af-sammel="${esc(id)}">Alle als bestellt markieren…</button>` : '';
   if (sammel) sammelGruppen.set(id, { titel: unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${g.lieferant}`, positionen: zuBestellen });

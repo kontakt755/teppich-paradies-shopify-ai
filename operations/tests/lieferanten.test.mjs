@@ -14,6 +14,7 @@ import {
   kettelZuschnitt, KETTEL_PUFFER_CM,
 } from '../lib/lieferanten.mjs';
 import { WARTESCHWELLEN } from '../../docs/ai-dashboard/lib/ampel.mjs';
+import { markiereLagerware } from '../lib/lagerware.mjs';
 
 // Nur synthetische Testdaten: Pseudonyme (Lieferant A/B, *.example), erfundene Kunden.
 const mf = (namespace, key, value) => ({ namespace, key, value });
@@ -1103,4 +1104,32 @@ test('bezugsweg in der Bestellmail: zum Kettler ist der Weg schon entschieden', 
   assert.ok(Array.isArray(offen.bezugsweg.nah) && Array.isArray(offen.bezugsweg.weit));
   const kettler = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'kettler', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
   assert.deepEqual(kettler.bezugsweg, { nah: [], weit: [] });
+});
+
+// ---------------------------------------------------------------- Lagerware (#1995)
+
+test('Lagerware: nie in der Bestellmail an den Lieferanten, sondern als "aus eigenem Lager – nicht bestellen"', () => {
+  const m = modell();
+  assert.equal(markiereLagerware(m, [{ skuPraefix: 'TEST-A-1', hinweis: 'Rolle im Lager' }]), 1);
+  const mail = bestellmail({ modell: m, lieferant: 'A', art: 'ware', gruppe: 'A|SUPPLIER_TO_TP|TP', ziel: 'laden', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.equal(mail.positionen.length, 0, 'die einzige bestellbare Position ist Lagerware');
+  assert.equal(mail.text, null);
+  assert.equal(mail.mailto, null);
+  assert.equal(mail.bereitsBestellt, 0, 'Lagerware ist nicht "schon bestellt"');
+  assert.deepEqual(mail.ohneBestellung.map(f => [f.titel, f.gruende]), [['Testdiele Eiche', ['aus eigenem Lager – nicht bestellen']]]);
+  const d = lieferantDetail(m, 'A', { stammdaten: STAMM, jetzt: JETZT });
+  assert.equal(d.ware.zuBestellen.some(x => x.artikelnummer === 'A-4711'), false);
+  const eigen = d.ware.eigenerBestand.find(x => x.artikelnummer === 'A-4711');
+  assert.equal(eigen?.lagerware, true);
+  assert.equal(eigen?.lagerHinweis, 'Rolle im Lager');
+});
+
+test('Lagerware per Vermerk "aus Lager" (ohne Regel) und als Altfall "bestellt": keine Mail, kein Nachfassen', () => {
+  const m = modell();
+  const statusAlle = statusFuer(m, [[1, 1, { status: 'bestellt', ueber: 'lager', bestelltAm: '2026-01-01T10:00:00Z' }]]);
+  const mail = bestellmail({ modell: m, lieferant: 'A', statusAlle, stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.equal(mail.positionen.length, 0);
+  const d = lieferantDetail(m, 'A', { statusAlle, stammdaten: STAMM, jetzt: JETZT });
+  assert.deepEqual(d.ueberfaelligePositionen, [], 'seit 19 Tagen "bestellt", aber nichts beim Lieferanten nachzufragen');
+  assert.ok(d.ware.eigenerBestand.some(x => x.artikelnummer === 'A-4711'));
 });

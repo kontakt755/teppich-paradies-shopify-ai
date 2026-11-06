@@ -6,6 +6,7 @@ import { esc, plural } from '../kern/helfer.mjs';
 import { bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen } from '../lib/bestellarbeit.mjs';
 import { bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit } from '../lib/kunden-bestellgruppen.mjs';
 import { wendeFilterAn } from '../../../operations/lib/bestellliste.mjs';
+import * as lieferweg from '../lib/lieferweg.mjs';
 
 const quelle = fs.readFileSync(new URL('../ansichten/kunden/bestellungen.mjs', import.meta.url), 'utf8')
   .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];\s*/gm, '').replace(/^export\s/gm, '');
@@ -90,7 +91,8 @@ function sammelUmgebung({ leseFehler = null, schreibFehler = null, packGeladen =
   const kunden = { bestellungen: alteBestellungen, musterPacken: alterPackstand };
   const kontext = {
     kunden, state: { route: { view: 'kunden', params: new URLSearchParams('tab=bestellungen') } },
-    URLSearchParams, musterEigen: () => false, istNurLesend: () => false,
+    // Lieferweg-Regel (#1995) ist rein - das echte Modul statt einer Attrappe.
+    ...lieferweg, URLSearchParams, musterEigen: () => false, istNurLesend: () => false,
     render: () => { u.render++; }, toast: (...args) => u.toasts.push(args),
     fetch: async (pfad, optionen) => {
       const p = JSON.parse(optionen.body);

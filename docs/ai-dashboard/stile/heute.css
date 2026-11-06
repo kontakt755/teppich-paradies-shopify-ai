@@ -249,3 +249,14 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
 .shop-nacharbeit-zeile { border-top: 1px solid var(--line); padding: 10px 0; }
 .shop-nacharbeit-zeile summary { min-height: 36px; cursor: pointer; color: var(--text-2); }
 .shop-nacharbeit-zeile p { margin: 4px 0; }
+
+/* Von uns abschicken (ansichten/heute/selbst-abschicken.mjs, #1995): Zeilen wie die Warenbestellungen
+   darueber; Weg, Stand und Alter in einer umbrechenden Zeile, die Knoepfe brechen am Handy unter den Text. */
+.selbst-abschicken .selbst-stand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; }
+.selbst-abschicken .selbst-hinweis { margin-top: 2px; color: var(--text); }
+.selbst-abschicken .selbst-knoepfe { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+.selbst-abschicken .selbst-mehr > summary { min-height: 44px; padding: 10px 0; border-top: 1px solid var(--line); color: var(--text-2); cursor: pointer; }
+@media (max-width: 480px) {
+  .selbst-abschicken .selbst-knoepfe { justify-content: flex-start; }
+  .selbst-abschicken .selbst-knoepfe .btn { min-height: 44px; }
+}

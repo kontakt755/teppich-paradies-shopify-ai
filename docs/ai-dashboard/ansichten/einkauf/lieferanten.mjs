@@ -15,6 +15,8 @@ import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../../li
 import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { warteWort, warteTitel } from '../../lib/ampel.mjs';
 import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
+import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
+import { lieferwegVon } from '../../lib/lieferweg.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
@@ -164,15 +166,23 @@ function wareZeile(x, namen) {
   // Bestellt und noch nicht da: "Ist eingetroffen" direkt an der Zeile (setzt "geliefert",
   // derselbe Schritt wie "Als geliefert markieren" in der Tabelle).
   // Ueber den Kettler bestellt: die Ware kommt nicht zu uns, sondern muss dort abgeholt werden.
+  // Hersteller liefert direkt (lib/lieferweg.mjs): bei uns kommt nichts an - der naechste Schritt
+  // ist "Ist beim Kunden…" (der vorhandene Versand-Dialog, Schritt "raus").
   const status = x.eintrag?.status;
   const kettler = status === 'bestellt' && x.eintrag?.ueber === 'kettler';
-  const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend()
-    ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${kettler ? 'Beim Kettler abgeholt' : 'Ist eingetroffen'}</button>` : '';
+  const lw = lieferwegVon(p, x.eintrag);
+  const direkt = ['hersteller', 'baustelle'].includes(lw?.weg);
+  const daten = `data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}"`;
+  // Lagerware (auch ein Altfall auf "bestellt") kommt nie vom Lieferanten: abgehakt wird auf Heute ("Zugeschnitten").
+  const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend() && lw?.weg !== 'lager'
+    ? direkt ? `<button type="button" class="btn btn-sm lf-zeilenknopf" ${daten} data-af-status="raus" title="Der Hersteller liefert direkt – bei uns kommt nichts an">Ist beim Kunden…</button>`
+      : `<button type="button" class="btn btn-sm lf-zeilenknopf" ${daten} data-af-status="geliefert">${kettler ? 'Beim Kettler abgeholt' : 'Ist eingetroffen'}</button>` : '';
   return `<li class="lf-posten${ampelRand(x.ampel?.stufe)}"><div class="lf-posten-text">
       <div class="t">${esc(titel)}</div>
       ${menge ? `<div class="lf-menge">${esc(menge)}</div>` : ''}
       ${aus.map(z => `<div class="s">${esc(z)}</div>`).join('')}
       ${wer ? `<div class="s lf-wer">${esc(wer)}</div>` : ''}
+      ${lw ? `<div class="s">${lieferwegPlakette(lw)}${p.lagerHinweis ? ` ${esc(p.lagerHinweis)}` : ''}</div>` : ''}
       ${kettler ? '<div class="s lf-kettler">Geht zum Kettler – nach dem Ketteln dort abholen</div>' : ''}
       ${belegZeile(x.eintrag?.status, p.orderId, p.lieferant)}
       ${block.length ? `<div class="lf-grund">${esc(block.join(' · '))}</div>` : ''}
@@ -273,6 +283,12 @@ function arbeitsSchritte(k, namen) {
   }
   // Ruhig darunter: was wir selbst da haben und was im Plan laeuft (nicht ueberfaellig).
   const ruhig = [];
+  // Lagerware: steht beim Lieferanten im Shop, wird aber von uns zugeschnitten und verschickt (Heute › Von uns abschicken).
+  const ausLager = k.ware.eigen || [];
+  if (ausLager.length) {
+    ruhig.push(stufeKopf('Aus eigenem Lager – nicht bestellen', ausLager.length, '<a class="btn btn-sm" href="#/heute">Von uns abschicken</a>', { klasse: 'lf-ruhig' })
+      + stufeListe(ausLager.slice(0, 4).map(x => wareZeile(x, namen)), ausLager.length - Math.min(ausLager.length, 4), 'weitere Positionen'));
+  }
   const eigen = k.muster.eigen || [];
   if (eigen.length) {
     const g = jeKommission(eigen);
@@ -722,7 +738,10 @@ async function markiereMail(i, knopf) {
   // den Kettler ("unterwegs zum Kettler"), Muster direkt an den Kunden (kein "angekommen" bei uns).
   // Jede andere Mail nimmt einen alten Vermerk zurueck.
   // Kettelt der Lieferant nach der Wahl selbst, wird das vermerkt: nur so kann die Kundenakte es belegen.
-  const ueber = m.art === 'ware' ? (m.lieferziel === 'kettler' ? 'kettler' : m.kettelnBeimLieferanten ? 'kunde' : null) : (m.lieferziel === 'kunde' ? 'kunde' : null);
+  // Seit 06.11.2026 (#1995) immer mit Vermerk, damit der Lieferweg belegt ist: Kunde/Baustelle -> 'kunde'
+  // (bei uns kommt nichts an), Laden -> 'laden', Kettler -> 'kettler'. Vorher blieb Direktware ohne Vermerk.
+  const WARE_UEBER = { kunde: 'kunde', baustelle: 'kunde', laden: 'laden', kettler: 'kettler' };
+  const ueber = m.art === 'ware' ? (m.kettelnBeimLieferanten && m.lieferziel !== 'kettler' ? 'kunde' : WARE_UEBER[m.lieferziel] ?? null) : (m.lieferziel === 'kunde' ? 'kunde' : null);
   const ok = await markiereAlsBestellt(m.positionen, nr, { ueber });
   if (ok) { dialog.markiert.add(i); dialog.gesetzt.set(i, m.positionen.filter(p => afEintragFuer(p)?.status === 'bestellt')); }
   // Karten und Zahlen dahinter nachziehen. Der Dialog bleibt offen - mit "Rückgängig", falls der

@@ -8,6 +8,7 @@
  */
 import { UNGEKLAERT, musterEigen } from './einkauf-lieferanten.mjs';
 import { warteAmpel, warteWort, dringendereAmpel } from './ampel.mjs';
+import { istLagerware, lieferwegVon, selbstStand } from './lieferweg.mjs';
 
 export const SCHRITTE = [
   ['eingegangen', 'Bestellung eingegangen'],
@@ -52,9 +53,12 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
     for (const g of liste || []) for (const p of g.positionen || []) {
       if (String(p.orderId) !== String(auftrag.id) || (p.menge ?? 1) <= 0) continue;
       const eintrag = eintragFuer(p) || null;
-      const eigen = art === 'muster' && musterEigen(p);
+      // Lagerware (lib/lieferweg.mjs) wie ein Lagermuster: nicht beim Lieferanten bestellen, kein Nachhaken.
+      const eigen = art === 'muster' ? musterEigen(p) : istLagerware(p, eintrag);
       const r = rang(eintrag?.status);
       positionen.push({ pos: p, art, lieferant: g.lieferant || UNGEKLAERT, eintrag, rang: r, eigen, fehlt: eigen ? [] : fehlendeAngaben(p, g.lieferant),
+        // Ware, die wir selbst verschicken: 'zuschneiden' | 'packen' | 'versand' | null.
+        selbst: art === 'ware' ? selbstStand(p, eintrag) : null, weg: art === 'ware' ? lieferwegVon(p, eintrag)?.weg || null : null,
         // Kommt nicht mehr (Mustersperre): solange noch nicht bei uns, ist Nachfragen beim Lieferanten sinnlos.
         gesperrt: art === 'muster' && r <= 1 && gesperrt.has(p.lineItemId) });
     }
@@ -95,6 +99,8 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
     bestelltAm: daten.length ? daten[daten.length - 1] : null,
     unterwegs: positionen.filter(x => x.rang === 1),
     beiUns: positionen.filter(x => x.rang === 2),
+    // Ware, die wir selbst zuschneiden bzw. packen und verschicken (Heute › Von uns abschicken).
+    selbst: positionen.filter(x => x.selbst),
   };
 }
 
@@ -139,8 +145,11 @@ export function einordnung(ab, informiert = null, jetzt = new Date()) {
   const gruende = [];
   const verzug = ab.unterwegs.filter(x => !x.eigen && !x.gesperrt).map(x => ({ ...x, ampel: verzugAmpel(x.eintrag, jetzt) })).filter(x => x.ampel).map(x => ({ ...x, tage: x.ampel.tage }));
   if (ab.jetzt === 'vorbereiten') gruende.push(ab.lieferanten.length ? 'bestellen' : null, ab.ungeklaert.length ? 'ungeklaert' : null);
-  const wareDa = ab.beiUns.filter(x => x.art === 'ware');
+  // Lagerware geht als Paket von uns raus - dafuer gibt es keinen Termin abzustimmen.
+  const wareDa = ab.beiUns.filter(x => x.art === 'ware' && x.weg !== 'lager');
   if (wareDa.length && !informiert) gruende.push('informieren');
+  // Eigener Grund nur fuer Lagerware: eingetroffene Ware "ueber uns" steht schon unter "Kunde informieren".
+  if ((ab.selbst || []).some(x => x.weg === 'lager')) gruende.push('selbst');
   if (ab.beiUns.some(x => x.art === 'muster')) gruende.push('muster_da');
   if (verzug.length) gruende.push('verzug');
   const g = gruende.filter(Boolean);

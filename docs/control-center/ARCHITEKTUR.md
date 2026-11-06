@@ -504,6 +504,26 @@ bis 06.11.2026 waren es 10 Werktage); dieselbe Regel nutzt das To-do „Nachfrag
 `einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
 Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
 
+### Lieferweg und Lagerware (seit 2026-11-06, #1995)
+
+Wer die Ware zum Kunden bringt, ist eine reine Regel in `lib/lieferweg.mjs` (Browser und Server):
+Vermerk beim Bestellen (`eintrag.ueber`: kunde, kettler, laden, lager) > Lagerware > Stammroute
+(`einkauf.route`); Muster und Eigenleistungen haben keinen Weg. Lagerware sind Artikel, die wir aus
+eigener Rolle zuschneiden, obwohl sie in Shopify als Ware eines Lieferanten gefuehrt werden. Welche das
+sind, steht nur in der privaten Regeldatei `$TP_PRIVAT_DIR/lieferanten/lagerware.json`
+(`{ "regeln": [{ "skuPraefix", "hinweis" }] }`, nie im Git); `operations/lib/lagerware.mjs` markiert die
+Positionen im Bestellmodell (`lagerware`, `lagerHinweis`). Fehlt die Datei, gibt es keine Lagerware; ist sie
+beschaedigt, steht `lagerwareFehler` am Modell, Heute meldet es rot, und Ware-Bestellmail sowie „bestellt“
+antworten 409 - still leer hiesse, Lagerware landete wieder beim Lieferanten. Lagerware steht in keiner
+Bestellmail (`ohneBestellung`), „bestellt“ antwortet 409, der Sammelknopf ueberspringt sie, und es gibt
+weder „Nachhaken“ noch „kein Beleg“. Zugeschnitten und Gepackt speichert `setzeSelbstversand()` in
+`auftragsstatus.json` (`selbstversand.zugeschnitten|gepackt = { am, von }`; Zugeschnitten setzt „bei uns“
+mit Vermerk `lager`), ueber `POST /api/einkauf/auftragsstatus` mit `aktion: 'selbstversand'` (Rolle „lesen“
+403, Muster und Direktware 409). „Zurück auf offen…“ nimmt beides in den Verlauf mit. Verschickt wird ueber
+den vorhandenen Versand-Dialog (Schritt „raus“, Buchung in Shopify). Die Shop-Uebersicht zeigt den Block
+„Von uns abschicken“ (`ansichten/heute/selbst-abschicken.mjs`); die Zeitleiste (`auftragsverlauf.mjs`)
+zaehlt bei gemischten Auftraegen jeden Schritt nur fuer die Positionen, die ihn gehen.
+
 ### Warnung vor dem Bestellen (seit 2026-11-05)
 
 Der Bestellmail-Dialog zeigt je Kommission eine Schätzung, bevor beim Lieferanten bestellt wird

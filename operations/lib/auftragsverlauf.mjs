@@ -44,6 +44,7 @@ import { kundenSchluessel } from './kundensuche.mjs';
 import { ROUTE } from './route.mjs';
 import { wirdGekettelt } from './kettelpuffer.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
+import { lieferwegVon } from '../../docs/ai-dashboard/lib/lieferweg.mjs';
 
 /** Kompatibler Export: die Frist stammt aus dem vorhandenen Nachfassmodell (ab Versand). */
 export const NACHFASSEN_NACH_TAGEN = ERSTE_NACH_TAGEN;
@@ -91,6 +92,8 @@ export const SCHRITT_LABEL = Object.freeze({
     kunde_hat_bestellt: 'Kunde hat bestellt',
     bestellt: 'Ware beim Lieferanten bestellt',
     geliefert: 'Geliefert an uns',
+    // Nur Lagerware im Auftrag (#1995): nichts kommt an, wir schneiden aus eigener Rolle zu.
+    geliefert_lager: 'Aus eigenem Lager zugeschnitten',
     kunde_informiert: 'Kunde informiert – Ware ist da',
     raus: 'An Kunden raus',
     erledigt: 'Erledigt',
@@ -261,8 +264,6 @@ function versandBeleg(auftrag) {
   return { am, zugestellt, zugestelltAm, tracking };
 }
 
-const DIREKT_ROUTEN = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE]);
-
 /**
  * Muster aus dem eigenen Bestand (musterherkunft.mjs bzw. Route SAMPLE_STOCK/SAMPLE_CUT):
  * 'vorbei' (persoenlich vorbeibringen), 'versand' (wir verschicken) oder null (beim Lieferanten).
@@ -292,8 +293,8 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   const versand = versandBeleg(auftrag);
   const positionen = auftrag?.positionen ?? [];
 
-  const ausPosition = (status, extra = {}) => {
-    const s = pos.schritt(status);
+  const ausPosition = (status, extra = {}, stand = pos) => {
+    const s = stand.schritt(status);
     return { schritt: status, label: label[status], getan: s.getan, am: s.am, von: s.von, notiz: s.notiz, automatisch: false, quelle: s.getan ? 'manuell' : null,
       teil: !s.getan && s.erreicht > 0 ? { erledigt: s.erreicht, gesamt: s.gesamt } : null, ...extra };
   };
@@ -308,6 +309,7 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   const schritte = [];
   let direkt = false;
   let eigen = null;
+  let wege = null;
   if (art === AUFTRAGSART.MUSTER) {
     eigen = eigenerBestand(positionen);
     // Mit Lieferziel "Kunden" bestellt (ueber: 'kunde'): der Hersteller verschickt die Muster
@@ -345,13 +347,37 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   } else {
     // Eine mitgekaufte Eigenleistung (Kettelservice) hat keine Route und reist nicht mit.
     const ware = positionen.filter(p => !p.istMuster && !p.eigenleistung);
-    // Ueber unseren Kettler bestellte Ware (ueber: 'kettler', #1453) kommt erst zu uns zurueck,
-    // auch wenn der Lieferant sonst direkt verschickt.
-    const ueberKettler = p => statusAlle[positionKey(auftrag.id, p.lineItemId)]?.ueber === 'kettler';
-    direkt = ware.length > 0 && ware.every(p => DIREKT_ROUTEN.has(p.route) && !ueberKettler(p));
-    schritte.push(start('kunde_hat_bestellt'), ausPosition('bestellt'));
-    if (!direkt) schritte.push(ausPosition('geliefert'));
+    // Lieferweg je Position (docs/ai-dashboard/lib/lieferweg.mjs, #1995): Vermerk beim Bestellen >
+    // Lagerware > Stammroute. Ueber unseren Kettler bestellte Ware (ueber: 'kettler', #1453) kommt
+    // erst zu uns zurueck, auch wenn der Lieferant sonst direkt verschickt. Hersteller-Direktware
+    // kommt nie bei uns an; Lagerware wird nie bestellt - wir schneiden sie selbst zu.
+    const eintragVon = p => statusAlle[positionKey(auftrag.id, p.lineItemId)] || null;
+    const wegVon = p => lieferwegVon(p, eintragVon(p))?.weg;
+    const istDirekt = p => wegVon(p) === 'hersteller' || wegVon(p) === 'baustelle';
+    const lager = ware.filter(p => wegVon(p) === 'lager');
+    const zuBestellen = ware.filter(p => wegVon(p) !== 'lager');
+    const kommtZuUns = ware.filter(p => !istDirekt(p));
+    direkt = ware.length > 0 && ware.every(istDirekt);
+    // Gemischt (#1119: eine Position Hersteller → Kunde, eine aus Lager) zaehlt jeder Schritt nur
+    // die Positionen, die ihn ueberhaupt gehen - sonst stuende "Lieferant liefert die Ware an uns"
+    // fuer Ware, die nie zu uns kommt. Reine Auftraege rechnen wie bisher ueber alle Positionen.
+    const gemischt = lager.length > 0 || (!direkt && kommtZuUns.length < ware.length);
+    const teil = liste => positionsStand({ ...auftrag, positionen: liste }, statusAlle);
+    schritte.push(start('kunde_hat_bestellt'));
+    if (!gemischt) schritte.push(ausPosition('bestellt'));
+    else if (zuBestellen.length) schritte.push(ausPosition('bestellt', {}, teil(zuBestellen)));
+    if (!direkt) schritte.push(ausPosition('geliefert', zuBestellen.length ? {} : { label: label.geliefert_lager }, gemischt ? teil(kommtZuUns) : pos));
     schritte.push(ausVersand(), ausPosition('erledigt'));
+    if (gemischt) {
+      const stufe = p => STATUS_ORDER.indexOf(eintragVon(p)?.status) + 1;
+      wege = {
+        lager: lager.length, direkt: ware.length - kommtZuUns.length, gesamt: ware.length,
+        direktOffen: ware.filter(p => istDirekt(p) && stufe(p) < 3).length,
+        zuschneiden: lager.filter(p => stufe(p) < 2).length,
+        zuUnsUnterwegs: kommtZuUns.filter(p => wegVon(p) !== 'lager' && stufe(p) < 2).length,
+        vonUnsRaus: kommtZuUns.filter(p => stufe(p) === 2).length,
+      };
+    }
   }
 
   // Der weiteste getane Schritt bestimmt den Stand; Luecken davor sind "uebersprungen"
@@ -367,6 +393,8 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   });
 
   const ergebnis = { auftragsart: art, verlauf, verlaufNotizen: notizen, abgeschlossen, direktversand: direkt, eigenerBestand: eigen,
+    // Nur bei gemischten Wegen oder Lagerware (#1995): wie viele Positionen wo stehen - fuer den naechsten Schritt.
+    ...(wege ? { wege } : {}),
     // Gepackt ist noch nicht versandt (#1709): nur als Angabe fuer den naechsten Schritt, kein eigener Zeitleistenschritt.
     ...(art === AUFTRAGSART.MUSTER && gepacktAm ? { gepacktAm } : {}) };
   const beschaffung = (auftrag?.positionen || []).map(p => beschaffungsStand(statusAlle[positionKey(auftrag.id, p.lineItemId)], p.bestellSoll || p.bestellmenge)).filter(e => e?.status === 'bestellt');
@@ -474,13 +502,34 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
     }
   }
 
+  // Gemischte Wege bzw. Lagerware (#1995, zeitleiste() wege): sagen, wer was bringt.
+  const w = stand.wege || null;
+  const vonUns = n => `${n === 1 ? '1 Position' : `${n} Positionen`} von uns`;
+  const lagerDetail = 'Aus eigenem Lager – nicht beim Lieferanten bestellen. Zuschneiden, packen und verschicken unter „Von uns abschicken“.';
   switch (aktuell.schritt) {
     case 'bestellt':
-      return schritt('wir', `Ware beim Lieferanten bestellen${teil}`, null, 'bestellt', 'Ware ist bestellt', 'faellig', tage, tage);
+      return schritt('wir', `Ware beim Lieferanten bestellen${teil}`, w?.lager ? `${vonUns(w.lager)} aus eigenem Lager – nicht bestellen, sondern zuschneiden und abschicken.` : null,
+        'bestellt', 'Ware ist bestellt', 'faellig', tage, tage);
     case 'geliefert':
+      if (w && !w.zuUnsUnterwegs) {
+        // Nichts ist mehr zu uns unterwegs - offen ist nur der Zuschnitt aus eigenem Lager.
+        const text = w.lager === w.gesamt ? `Aus eigenem Lager zuschneiden und abschicken${teil}`
+          : [w.direktOffen ? 'Hersteller liefert direkt' : null, `${vonUns(w.zuschneiden)} zuschneiden und abschicken`].filter(Boolean).join(' · ');
+        return { ...schritt('wir', text, lagerDetail, null, 'Von uns abschicken', 'faellig', tage, tage), href: '#/heute' };
+      }
+      if (w?.zuschneiden) {
+        const r = beimLieferanten('Lieferant liefert die Ware an uns', 'geliefert', 'Ware ist angekommen');
+        return { ...r, text: `${r.text} · ${vonUns(w.zuschneiden)} zuschneiden` };
+      }
       return beimLieferanten('Lieferant liefert die Ware an uns', 'geliefert', 'Ware ist angekommen');
     case 'raus':
       if (stand.direktversand) return beimLieferanten('Lieferant liefert direkt an den Kunden', 'raus', 'Ist an den Kunden raus…');
+      // Unsere Positionen sind raus, offen ist nur noch, was der Hersteller direkt schickt.
+      if (w?.direktOffen && !w.vonUnsRaus) return beimLieferanten('Hersteller liefert direkt an den Kunden', 'raus', 'Ist an den Kunden raus…');
+      if (w?.direktOffen) {
+        return schritt('wir', `Hersteller liefert direkt · ${vonUns(w.vonUnsRaus)} verschicken`, 'Die Direktware schickt der Hersteller; unsere Position packen und verschicken.',
+          'raus', 'An Kunden raus…', 'faellig', tage, tage);
+      }
       return schritt('wir', `Ware an den Kunden übergeben oder verschicken${teil}`, null, 'raus', 'An Kunden raus…', 'faellig', tage, tage);
     case 'erledigt':
       if (versand?.zugestellt || tage >= WARE_ABSCHLIESSEN_NACH_TAGEN) {

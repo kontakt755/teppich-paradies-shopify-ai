@@ -211,3 +211,21 @@ gebraeuchlich), Erfassen.
   **keine Telefonnummer, per Mail antworten**.
 - **Sonderposten** steht jetzt auch im Menü der Mitarbeiter (unter „Shop & Inhalte“): Ladenverkauf
   buchen ja, **Restlänge eintragen** bleibt beim Inhaber.
+
+## Lieferweg und Von uns abschicken (06.11.2026, #1995)
+
+- **Lieferweg** = wer die Ware zum Kunden bringt; eine ruhige Plakette je Warenposition, überall
+  dieselbe (Heute, Kundenakte, Einkauf „Je Lieferant“ und „Je Auftrag“, Versand-Dialog). Genau fünf Wörter:
+  **Hersteller → Kunde** (der Lieferant schickt direkt), **Hersteller → Baustelle**, **über uns**
+  (kommt zu uns, geht von hier raus), **über Kettler** (erst zu unserem Kettelservice), **aus Lager**
+  (wir schneiden aus eigener Rolle zu und verschicken selbst). Gestrichelt mit Hinweis
+  **nicht vermerkt – aus den Stammdaten**, solange beim Bestellen nichts vermerkt wurde.
+- **Von uns abschicken (N)** = Block auf der Shop-Übersicht direkt unter den Warenbestellungen, nur wenn
+  etwas zu tun ist: Ware aus eigenem Lager und bei uns eingetroffene Ware, die wir selbst verschicken.
+  Stand je Zeile: **noch zuschneiden**, **zugeschnitten – noch packen** (bzw. **eingetroffen – noch packen**),
+  **gepackt – wartet auf Versand**. Knöpfe **Zugeschnitten**, **Gepackt**, **Verschickt…** (der vorhandene
+  Versand-Dialog) und **Rückgängig**. Das To-do „Ware ist da – rausgeben“ steht dann nicht ein zweites Mal da.
+- **Aus eigenem Lager – nicht bestellen** = Lagerware steht in keiner Bestellmail an den Lieferanten,
+  sondern unter diesem Satz; „Als bestellt markieren“ sagt **Aus eigenem Lager – nicht bestellen, als
+  zugeschnitten markieren**.
+- **Ist beim Kunden…** = statt „Ist eingetroffen“ bei Ware, die der Hersteller direkt liefert (bei uns kommt nichts an).

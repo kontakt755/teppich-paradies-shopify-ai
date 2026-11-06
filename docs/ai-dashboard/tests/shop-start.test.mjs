@@ -4,10 +4,11 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { problemeBlock } from '../ansichten/heute/probleme.mjs';
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
+import { selbstAbschickenStand, selbstAbschickenBlock, vonSelbstAbschickenGedeckt } from '../ansichten/heute/selbst-abschicken.mjs';
 
 const quelle = fs.readFileSync(new URL('../ansichten/heute.mjs', import.meta.url), 'utf8')
   .replace(/^import[\s\S]*?from ['"][^'"]+['"];\n/gm, '').replace(/^export\s/gm, '');
-function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
+function start(query = '', session = {}, { todos = [], abgleich = null, bestellungen = undefined, auftragsstatus = undefined } = {}) {
   const geladen = [], bloecke = [], sichten = [];
   const rolle = session.benutzer?.rolle || 'inhaber';
   // Spiegel von ANSICHT_ROLLEN (kern/router.mjs): Shop-Kontrolle, Technik und Genossenschaften nur beim Inhaber.
@@ -19,7 +20,9 @@ function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
   const state = { route: { view: 'heute', params: new URLSearchParams(query) }, session, tasks: [] };
   const block = name => () => { bloecke.push(name); return `<div>${name}</div>`; };
   const api = vm.runInNewContext(quelle + '\ndatenstandZeile=()=>"Datenstand"; viewAlltag=()=>"Expliziter Alltag"; ({viewHeute})', {
-    ...kontext, state, einkauf: {}, kunden: {}, heuteDaten: {},
+    ...kontext, state, einkauf: { auftragsstatus }, kunden: { bestellungen }, heuteDaten: {},
+    // "Von uns abschicken" (#1995): die echten, reinen Funktionen - ohne Bestellstand kein Block.
+    selbstAbschickenStand, selbstAbschickenBlock, vonSelbstAbschickenGedeckt,
     musterNachfassenStand: () => ({ offen: [], erledigt: [], abgemeldet: [] }),
     versandLaeuft: () => null, startBestellarbeit: () => ({}),
     musterAutomatikBlock: () => '',
@@ -103,4 +106,39 @@ test('w-222: gescheiterter Abgleich mit Shopify steht auf der Shop-Übersicht, g
   assert.ok(kaputt.html.indexOf('<div>Waren</div>') < kaputt.html.indexOf('heute-probleme'), 'dort, wo sonst die Probleme stehen');
   assert.doesNotMatch(start('', {}, { abgleich: null }).html, /heute-probleme/, 'Laden ist kein Fehler');
   assert.doesNotMatch(start('', {}, { abgleich: { verfuegbar: true, abweichungen: [] } }).html, /heute-probleme/);
+});
+
+// Erfundene Testdaten (#1995): eine Bestellung mit einer Position aus eigenem Lager und einer, die bei uns liegt.
+const TEST_BESTELLUNGEN = { verfuegbar: true, zeilen: [{
+  orderId: 'gid://test/Order/1', orderName: '#TEST-1', kundenname: 'Testkunde', offen: true, datum: '2026-11-01T09:00:00Z',
+  positionsstatus: { l1: null, u1: { status: 'geliefert', geliefertAm: '2026-11-05T09:00:00Z' } },
+  auftrag: { positionen: [
+    { lineItemId: 'l1', titel: 'Testunterlage', farbe: 'grau', kundenmenge: '6 m²', sku: 'TEST-LAGER-1', lagerware: true, lagerHinweis: 'Rolle hinten links' },
+    { lineItemId: 'u1', titel: 'Testboden', farbe: 'beige', kundenmenge: '12 m²', sku: 'TEST-WARE-1', route: 'SUPPLIER_TO_TP' },
+  ] },
+}] };
+
+test('Von uns abschicken (#1995): direkt unter den Warenbestellungen, nur mit Arbeit, rausgeben-To-do nicht doppelt', () => {
+  const todos = [
+    { id: 'rausgeben:gid://test/Order/1', art: 'rausgeben', bereich: 'laden', ton: 'crit', titel: 'Ware ist da – rausgeben: #TEST-1', alterTage: 6, schluessel: ['gid://test/Order/1::u1'] },
+    { id: 'rausgeben:gid://test/Order/2', art: 'rausgeben', bereich: 'laden', ton: 'crit', titel: 'Ware ist da – rausgeben: #TEST-2', alterTage: 6, schluessel: ['gid://test/Order/2::x1'] },
+  ];
+  const r = start('', {}, { todos, bestellungen: TEST_BESTELLUNGEN });
+  assert.match(r.html, /Von uns abschicken · 2</);
+  const waren = r.html.indexOf('<div>Waren</div>');
+  const block = r.html.indexOf('heuteSelbstAbschicken');
+  assert.ok(waren < block && block < r.html.indexOf('heute-probleme'), 'unter den Warenbestellungen, vor den Problemen');
+  assert.match(r.html, /noch zuschneiden/); assert.match(r.html, /eingetroffen – noch packen/);
+  assert.match(r.html, /Rolle hinten links/, 'Hinweis aus der Regeldatei');
+  assert.match(r.html, /data-selbst="zugeschnitten"/); assert.match(r.html, /data-selbst="gepackt"/);
+  assert.match(r.html, /data-af-set data-af-status="raus"/, '"Verschickt…" oeffnet den vorhandenen Versand-Dialog');
+  assert.doesNotMatch(r.html, /#TEST-1<\/div>|rausgeben: #TEST-1/, 'das To-do zu derselben Position steht nicht ein zweites Mal');
+  assert.match(r.html, /rausgeben: #TEST-2/, 'ein To-do zu anderer Ware bleibt');
+  // Frisch geladener Stand (nach einem Klick) gewinnt vor dem mitgelieferten Positionsstand.
+  const nach = start('', {}, { bestellungen: TEST_BESTELLUNGEN, auftragsstatus: { positionen: {
+    'gid://test/Order/1::l1': { status: 'raus' }, 'gid://test/Order/1::u1': { status: 'raus' } } } });
+  assert.doesNotMatch(nach.html, /heuteSelbstAbschicken/, 'ohne Arbeit kein Block');
+  // Beschaedigte Regeldatei: nie still - der Block meldet es auch ohne Zeilen.
+  const kaputt = start('', {}, { bestellungen: { verfuegbar: true, zeilen: [], lagerwareFehler: 'lagerware.json ist beschädigt.' } });
+  assert.match(kaputt.html, /notice crit[^>]*>lagerware\.json ist beschädigt\./);
 });

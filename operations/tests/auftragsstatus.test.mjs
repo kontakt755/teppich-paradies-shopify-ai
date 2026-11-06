@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { auftragsstatusPfad, leseAlle, setzeStatus, oeffneWieder, statusVorErledigt, filterGruppe, positionKey, STATUS_ORDER, AuftragsstatusFehler, vermerkeShopifyVersand, setzeZurueckAufOffen } from '../lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle, setzeStatus, oeffneWieder, statusVorErledigt, filterGruppe, positionKey, STATUS_ORDER, AuftragsstatusFehler, vermerkeShopifyVersand, setzeZurueckAufOffen, setzeSelbstversand, UEBER_WERTE } from '../lib/auftragsstatus.mjs';
 
 function tmpDir() { return fs.mkdtempSync(path.join(os.tmpdir(), 'cc-auftragsstatus-')); }
 
@@ -138,4 +138,70 @@ test('Direktversand-Vermerk: Muster mit ueber=kunde behalten den Weg bis "raus"'
   assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: 'kunde' }).ueber, 'kunde');
   assert.equal(setzeStatus(file, { ...basis, status: 'raus' }).ueber, 'kunde', '"raus" ohne Angabe behaelt den Weg');
   assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: null }).ueber, null, 'Mail an den Laden nimmt ihn zurueck');
+});
+
+// "Von uns abschicken" (#1995): Zugeschnitten/Gepackt je Position - erfundene Kennungen.
+const SV = { orderId: 'gid://test/Order/LAGER-1', lineItemId: 'gid://test/LineItem/LAGER-1' };
+
+test('selbstversand: zugeschnitten setzt "bei uns" mit Vermerk "aus Lager", gepackt danach; idempotent', () => {
+  const file = auftragsstatusPfad(tmpDir());
+  const jetzt = new Date('2026-11-06T09:00:00Z');
+  const z = setzeSelbstversand(file, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test', jetzt });
+  assert.equal(z.status, 'geliefert');
+  assert.equal(z.ueber, 'lager');
+  assert.equal(z.geliefertNotiz, 'Aus eigenem Lager zugeschnitten');
+  assert.deepEqual(z.selbstversand.zugeschnitten, { am: jetzt.toISOString(), von: 'test', vorher: null });
+  assert.equal(setzeSelbstversand(file, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test2' }).selbstversand.zugeschnitten.von, 'test', 'Doppelklick aendert nichts');
+  const g = setzeSelbstversand(file, { ...SV, schritt: 'gepackt', an: true, actor: 'test', jetzt: new Date('2026-11-06T10:00:00Z') });
+  assert.equal(g.selbstversand.gepackt.am, '2026-11-06T10:00:00.000Z');
+  assert.ok(UEBER_WERTE.includes('lager') && UEBER_WERTE.includes('laden'));
+  // Lesbar bleibt die Datei auch mit dem neuen Feld.
+  assert.equal(leseAlle(file)[positionKey(SV.orderId, SV.lineItemId)].selbstversand.gepackt.von, 'test');
+});
+
+test('selbstversand: zuruecknehmen in umgekehrter Reihenfolge, Altfall "bestellt" kehrt dorthin zurueck', () => {
+  const file = auftragsstatusPfad(tmpDir());
+  setzeStatus(file, { ...SV, status: 'bestellt', actor: 'test', jetzt: new Date('2026-11-01T09:00:00Z') });
+  setzeSelbstversand(file, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test' });
+  setzeSelbstversand(file, { ...SV, schritt: 'gepackt', an: true, actor: 'test' });
+  assert.throws(() => setzeSelbstversand(file, { ...SV, schritt: 'zugeschnitten', an: false, actor: 'test' }), e => e instanceof AuftragsstatusFehler && e.status === 409, 'erst "Gepackt" zuruecknehmen');
+  const ohneGepackt = setzeSelbstversand(file, { ...SV, schritt: 'gepackt', an: false, actor: 'test' });
+  assert.equal(ohneGepackt.selbstversand.gepackt, undefined);
+  assert.equal(ohneGepackt.verlauf.at(-1).aktion, 'gepackt zurückgenommen');
+  const zurueck = setzeSelbstversand(file, { ...SV, schritt: 'zugeschnitten', an: false, actor: 'test' });
+  assert.equal(zurueck.status, 'bestellt', 'zurueck auf den Stand vor dem Zuschnitt');
+  assert.equal(zurueck.geliefertAm, undefined);
+  assert.equal(zurueck.selbstversand, undefined, 'leeres Feld verschwindet');
+  assert.equal(zurueck.verlauf.at(-1).aktion, 'zugeschnitten zurückgenommen');
+});
+
+test('selbstversand: Grenzen - Direktware, schon raus, Gepackt vor Eingang, unbekannter Schritt', () => {
+  const file = auftragsstatusPfad(tmpDir());
+  const fehler409 = e => e instanceof AuftragsstatusFehler && e.status === 409;
+  assert.throws(() => setzeSelbstversand(file, { ...SV, schritt: 'gepackt', an: true, actor: 'test' }), fehler409, 'nichts bei uns: nicht packen');
+  assert.throws(() => setzeSelbstversand(file, { ...SV, schritt: 'gepackt', an: false, actor: 'test' }), fehler409);
+  assert.throws(() => setzeSelbstversand(file, { ...SV, schritt: 'gefaltet', an: true, actor: 'test' }), AuftragsstatusFehler);
+  assert.throws(() => setzeSelbstversand(file, { ...SV, schritt: 'gepackt', an: 'ja', actor: 'test' }), AuftragsstatusFehler);
+  setzeStatus(file, { ...SV, status: 'bestellt', ueber: 'kunde', actor: 'test' });
+  assert.throws(() => setzeSelbstversand(file, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test' }), fehler409, 'Hersteller schickt direkt');
+  const andere = { ...SV, lineItemId: 'gid://test/LineItem/LAGER-2' };
+  setzeStatus(file, { ...andere, status: 'raus', actor: 'test' });
+  assert.throws(() => setzeSelbstversand(file, { ...andere, schritt: 'zugeschnitten', an: true, actor: 'test' }), fehler409, 'schon raus');
+});
+
+test('selbstversand: kaputtes Feld macht die Ablage unlesbar; "Zurück auf offen" nimmt es mit in den Verlauf', () => {
+  const dir = tmpDir();
+  const file = auftragsstatusPfad(dir);
+  setzeSelbstversand(file, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test' });
+  const offen = setzeZurueckAufOffen(file, { ...SV, actor: 'test' });
+  assert.equal(offen.status, null);
+  assert.equal(offen.selbstversand, undefined);
+  assert.ok(offen.verlauf.at(-1).vorher.selbstversand.zugeschnitten, 'alter Durchlauf im Verlauf');
+  const roh = JSON.parse(fs.readFileSync(file, 'utf8'));
+  roh.positionen[positionKey(SV.orderId, SV.lineItemId)].selbstversand = { gepackt: 'gestern' };
+  fs.writeFileSync(file, JSON.stringify(roh));
+  assert.throws(() => leseAlle(file), /beschädigt/);
+  roh.positionen[positionKey(SV.orderId, SV.lineItemId)].selbstversand = { gefaltet: { am: 'x', von: 'y' } };
+  fs.writeFileSync(file, JSON.stringify(roh));
+  assert.throws(() => leseAlle(file), /beschädigt/);
 });

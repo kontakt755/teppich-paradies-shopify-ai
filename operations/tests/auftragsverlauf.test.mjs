@@ -420,3 +420,54 @@ test('zeitleiste: mitgekaufter Kettelservice stoert den Direktversand nicht', ()
   const statusAlle = { 'gid://shopify/Order/1::gid://shopify/LineItem/1': { status: 'bestellt', ueber: 'kettler' } };
   assert.equal(zeitleiste(auftrag, { statusAlle }).direktversand, false);
 });
+
+// Gemischte Lieferwege (#1995) - erfundene Kennungen, Lagerware als TEST-LAGER-1.
+const WEG_ID = 'gid://test/Order/WEG-1';
+const wegAuftrag = positionen => ({ id: WEG_ID, datum: '2026-11-01T09:00:00Z', auftragsart: 'ware', positionen });
+const lagerPos = { lineItemId: 'l1', sku: 'TEST-LAGER-1', route: 'SUPPLIER_TO_TP', menge: 1, lagerware: true };
+const direktPos = { lineItemId: 'd1', sku: 'TEST-WARE-1', route: 'SUPPLIER_TO_TP', menge: 1 };
+const wegStatus = eintraege => Object.fromEntries(Object.entries(eintraege).map(([id, e]) => [`${WEG_ID}::${id}`, e]));
+const JETZT_WEG = new Date('2026-11-06T12:00:00Z');
+
+test('#1119: Direktware bestellt, Lagerware offen - nie "Lieferant liefert die Ware an uns", Lagerware wird nicht bestellt', () => {
+  const statusAlle = wegStatus({ d1: { status: 'bestellt', ueber: 'kunde', bestelltAm: '2026-11-02T09:00:00Z' }, l1: { status: 'bestellt', bestelltAm: '2026-11-02T09:00:00Z' } });
+  const z = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle, jetzt: JETZT_WEG });
+  assert.equal(z.direktversand, false);
+  assert.deepEqual(z.wege, { lager: 1, direkt: 1, gesamt: 2, direktOffen: 1, zuschneiden: 1, zuUnsUnterwegs: 0, vonUnsRaus: 0 });
+  assert.equal(z.naechsterSchritt.wer, 'wir');
+  assert.equal(z.naechsterSchritt.text, 'Hersteller liefert direkt · 1 Position von uns zuschneiden und abschicken');
+  assert.doesNotMatch(JSON.stringify(z.naechsterSchritt), /liefert die Ware an uns/);
+  // Noch nichts bestellt: bestellt wird nur die Direktware, die Lagerware steht im Hinweis.
+  const neu = zeitleiste(wegAuftrag([lagerPos, direktPos]), { jetzt: JETZT_WEG }).naechsterSchritt;
+  assert.equal(neu.text, 'Ware beim Lieferanten bestellen');
+  assert.match(neu.detail, /1 Position von uns aus eigenem Lager – nicht bestellen/);
+});
+
+test('#1104: Lagerware zugeschnitten -> "1 Position von uns verschicken"; ist sie raus, wartet nur noch der Hersteller', () => {
+  const zugeschnitten = { status: 'geliefert', ueber: 'lager', geliefertAm: '2026-11-05T09:00:00Z', selbstversand: { zugeschnitten: { am: '2026-11-05T09:00:00Z', von: 'test', vorher: null } } };
+  const bestellt = { status: 'bestellt', ueber: 'kunde', bestelltAm: '2026-11-02T09:00:00Z' };
+  const beide = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle: wegStatus({ l1: zugeschnitten, d1: bestellt }), jetzt: JETZT_WEG });
+  assert.equal(beide.naechsterSchritt.text, 'Hersteller liefert direkt · 1 Position von uns verschicken');
+  assert.equal(beide.naechsterSchritt.aktion, 'raus');
+  const nurHersteller = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle: wegStatus({ l1: { ...zugeschnitten, status: 'raus' }, d1: bestellt }), jetzt: JETZT_WEG });
+  assert.equal(nurHersteller.naechsterSchritt.wer, 'lieferant');
+  assert.equal(nurHersteller.naechsterSchritt.text, 'Hersteller liefert direkt an den Kunden (1 von 2 Artikeln schon)');
+});
+
+test('nur Lagerware: kein Bestellschritt, "Aus eigenem Lager zugeschnitten" statt "Geliefert an uns"', () => {
+  const offen = zeitleiste(wegAuftrag([lagerPos]), { jetzt: JETZT_WEG });
+  assert.deepEqual(offen.verlauf.map(s => s.label), ['Kunde hat bestellt', 'Aus eigenem Lager zugeschnitten', 'An Kunden raus', 'Erledigt']);
+  assert.equal(offen.naechsterSchritt.text, 'Aus eigenem Lager zuschneiden und abschicken');
+  assert.equal(offen.naechsterSchritt.wer, 'wir');
+  const da = zeitleiste(wegAuftrag([lagerPos]), { statusAlle: wegStatus({ l1: { status: 'geliefert', ueber: 'lager', geliefertAm: '2026-11-05T09:00:00Z' } }), jetzt: JETZT_WEG });
+  assert.equal(da.naechsterSchritt.text, 'Ware an den Kunden übergeben oder verschicken');
+});
+
+test('#1078 und reine Auftraege unveraendert: Direktware per Vermerk ohne "bei uns", Ware an uns wie bisher', () => {
+  const direkt = zeitleiste(wegAuftrag([direktPos]), { statusAlle: wegStatus({ d1: { status: 'bestellt', ueber: 'kunde', bestelltAm: '2026-11-02T09:00:00Z' } }), jetzt: JETZT_WEG });
+  assert.equal(direkt.direktversand, true, 'Vermerk "direkt an Kunden" schlaegt die Stammroute "an uns"');
+  assert.equal(direkt.wege, undefined);
+  assert.equal(direkt.naechsterSchritt.text, 'Lieferant liefert direkt an den Kunden');
+  const anUns = zeitleiste(wegAuftrag([direktPos]), { statusAlle: wegStatus({ d1: { status: 'bestellt', bestelltAm: '2026-11-02T09:00:00Z' } }), jetzt: JETZT_WEG });
+  assert.equal(anUns.naechsterSchritt.text, 'Lieferant liefert die Ware an uns');
+});

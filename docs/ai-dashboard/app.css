@@ -292,6 +292,11 @@ body.rolle-mitarbeiter [data-nicht-mitarbeiter] { display: none !important; }
 .ampel-grund { color: var(--text-2); overflow-wrap: anywhere; }
 .ampel-grund.rot { color: var(--crit); }
 .ampel-grund.gelb { color: var(--warn); }
+/* Lieferweg (lib/lieferweg.mjs, bausteine/lieferweg.mjs): ein ruhiges Wort mit Rahmen, keine Farbe.
+   Gestrichelt = nicht vermerkt, nur aus den Stammdaten abgeleitet. */
+.lieferweg { display: inline-flex; align-items: center; max-width: 100%; padding: 0 7px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--text-2); font-size: .75rem; font-weight: 600; line-height: 1.5; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lieferweg.unbelegt { border-style: dashed; color: var(--text-3); font-weight: 500; }
+.lieferwege { display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle; }
 .badge.status.fertig { background: var(--ok-soft); color: var(--ok); }
 .badge.ki { background: var(--accent-soft); color: var(--accent); }
 .badge.gap { background: var(--warn-soft); color: var(--warn); }

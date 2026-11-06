@@ -16,6 +16,8 @@ import { VERSANDDIENSTE, versandIds, versandKandidaten, vorauswahl, versandRueck
 import { beschaffungsStand, darfWeiter, beschaffungText } from '../../lib/beschaffung.mjs';
 import { shopifyAbgleichKlick } from './shopify-abgleich.mjs';
 import { ratgeberKnopf } from '../kunden/gemeinsam.mjs';
+import { lieferwegVon } from '../../lib/lieferweg.mjs';
+import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 
 // Zuletzt gewaehlter Versanddienst je Geraet - im Laden ist es fast immer derselbe.
 const DIENST_SCHLUESSEL = 'tp-versanddienst';
@@ -87,14 +89,16 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
   const sperre = gesperrt.length ? `<div class="notice warn" role="status"><p><b>${nurGesperrt ? 'Noch nicht versandbereit' : 'Nicht alles ist versandbereit'}</b> – der Wareneingang ist unvollständig.</p>
       ${gesperrt.map(x => `<p>${esc(artikelText(x.p))}: ${esc(beschaffungText(x.e))}. <button type="button" class="btn btn-sm" data-beschaffung data-af-status="geliefert" data-af-order="${esc(orderId)}" data-af-item="${esc(x.p.lineItemId)}">Wareneingang ergänzen…</button></p>`).join('')}
     </div>` : '';
+  // Lieferweg je Artikel (lib/lieferweg.mjs): was der Hersteller direkt schickt, liegt nicht in unserem Paket.
+  const weg = p => lieferwegPlakette(lieferwegVon(p, stand[`${orderId}::${p.lineItemId}`] || null));
   const liste = nurGeklickt
-    ? `<p class="small">${esc(position ? artikelText(position) : 'Dieser Artikel')}</p>`
+    ? `<p class="small">${esc(position ? artikelText(position) : 'Dieser Artikel')}${position ? ` ${weg(position)}` : ''}</p>`
     : nurGesperrt ? ''
     : bereit.length > 1
     ? `<fieldset class="zl-wahl"><legend>Was ist in diesem Paket?</legend>
-        ${bereit.map(p => `<label><input type="checkbox" name="pos" value="${esc(p.lineItemId)}"${vor.has(p.lineItemId) ? ' checked' : ''}> ${esc(artikelText(p))}</label>`).join('')}
+        ${bereit.map(p => `<label><input type="checkbox" name="pos" value="${esc(p.lineItemId)}"${vor.has(p.lineItemId) ? ' checked' : ''}> <span>${esc(artikelText(p))} ${weg(p)}</span></label>`).join('')}
       </fieldset>`
-    : bereit.length === 1 ? `<p class="small">${esc(artikelText(bereit[0]))}</p>`
+    : bereit.length === 1 ? `<p class="small">${esc(artikelText(bereit[0]))} ${weg(bereit[0])}</p>`
       // Stand unbekannt (Bestellung nicht geladen): der Server nimmt alles, was noch nicht raus ist.
       : nichtsOffen ? '<p class="small muted">Alle Artikel sind schon als raus eingetragen – hier ist nichts mehr zu buchen.</p>'
         : `<p class="small muted">${nur ? 'Die Muster dieses Umschlags, die noch nicht raus sind.' : 'Alle Artikel dieser Bestellung, die noch nicht raus sind.'}</p>`;

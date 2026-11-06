@@ -40,7 +40,9 @@ import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { ratgeberFuerBestellung, ratgeberHtml, kurzTitel as ratgeberKurzTitel, RATGEBER, ORDNER as RATGEBER_ORDNER } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
 import { BlattFehler, anzeigename as blattName, bewertungText, blaetterHtml, istNah, musterZiel, whatsappNummer } from '../domains/shopify/muster-begleitblatt/vorlage.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, bereiteStatusPositionenVor, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, UEBER_WERTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, bereiteStatusPositionenVor, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, setzeSelbstversand, STATUS_ORDER, UEBER_WERTE, SELBST_SCHRITTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { lagerwarePfad, leseLagerware, markiereLagerware, LagerwareFehler } from '../operations/lib/lagerware.mjs';
+import { lieferwegVon, istLagerware } from '../docs/ai-dashboard/lib/lieferweg.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
@@ -391,9 +393,37 @@ function exportOrders(daten) {
   return null;
 }
 
+// Beschaedigte Lagerware-Regeln einmal je Meldung ins Dienstprotokoll, nicht bei jedem Laden des Modells.
+let lagerwareGemeldet = null;
+
+/**
+ * Lagerware (operations/lib/lagerware.mjs) an die Warenpositionen. Eine beschaedigte Regeldatei
+ * haelt die Bestellansichten nicht auf, bleibt aber nie still: `lagerwareFehler` steht am Modell
+ * (und in /api/einkauf/bestellungen), und Warenbestellungen werden solange abgelehnt
+ * (einkaufBestellmail, Status "bestellt") - sonst ginge Lagerware wieder an den Lieferanten.
+ */
+function mitLagerware(modell, dir) {
+  try {
+    markiereLagerware(modell, leseLagerware(lagerwarePfad(dir)).regeln);
+    lagerwareGemeldet = null;
+  } catch (e) {
+    if (!(e instanceof LagerwareFehler)) throw e;
+    modell.lagerwareFehler = e.message;
+    if (lagerwareGemeldet !== e.message) { lagerwareGemeldet = e.message; console.error(`[lagerware] ${e.message}`); }
+  }
+  return modell;
+}
+
+/** Warenbestellung trotz unlesbarer Lagerware-Regeln? Dann 409 - nichts geht an den Lieferanten. */
+function pruefeLagerwareLesbar(modell) {
+  if (modell?.lagerwareFehler) throw new ApiError(409, `${modell.lagerwareFehler} Solange wird keine Ware als bestellt eingetragen oder zur Bestellung vorbereitet.`);
+}
+
+const LAGERWARE_NICHT_BESTELLEN = 'Aus eigenem Lager – nicht bestellen, als zugeschnitten markieren';
+
 function bereiteBestellModell(daten, dir, jetzt) {
   const exportDaten = ladeExport(JSON.stringify(daten));
-  const modell = mitMusterherkunft(aufbereiten(exportDaten, { jetzt }), dir);
+  const modell = mitLagerware(mitMusterherkunft(aufbereiten(exportDaten, { jetzt }), dir), dir);
   // Kurz-Ratgeber zum Beilegen (domains/shopify/ratgeber-pdf): dieselbe Zuordnung wie in der
   // Bestellbestaetigung, Muster zaehlen nicht. Leer = kein Knopf "Ratgeber drucken".
   const roh = new Map(exportDaten.orders.map(o => [o?.id, o]));
@@ -1324,13 +1354,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const stufe = p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status);
       // Nur Positionen, die noch nicht so weit sind. Sind alle schon weiter, ist der Klick eine
       // bewusste Korrektur zurueck - dann gilt er fuer alle.
-      const dahinter = positionen.filter(p => stufe(p) < ziel && !(status === 'bestellt' && lagerGedeckt(p)));
+      // Lagerware ("aus eigenem Lager") ueberspringt "Ware ist bestellt" wie gedeckte Lagermuster.
+      const lagerware = p => istLagerware(p, alle[positionKey(orderId, p.lineItemId)]);
+      if (status === 'bestellt' && positionen.some(p => !p.istMuster)) pruefeLagerwareLesbar(modell);
+      const dahinter = positionen.filter(p => stufe(p) < ziel && !(status === 'bestellt' && (lagerGedeckt(p) || lagerware(p))));
       if (status === 'bestellt' && !dahinter.length && positionen.some(lagerGedeckt)) throw new ApiError(409, LAGER_NICHT_BESTELLEN);
-      const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel);
+      if (status === 'bestellt' && !dahinter.length && positionen.some(p => lagerware(p) && stufe(p) < ziel)) throw new ApiError(409, LAGERWARE_NICHT_BESTELLEN);
+      // Bewusste Korrektur zurueck auf "bestellt": nie fuer Lagerware.
+      const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel && !(status === 'bestellt' && lagerware(p)));
       const blockiert = positionen.map(p => alle[positionKey(orderId, p.lineItemId)]).find(e => !darfWeiter(e, status));
       if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
       setzeStatusPositionen(statusDatei, betroffen.map(p => ({ orderId, lineItemId: p.lineItemId, status, actor, bestellmenge: p.bestellSoll || p.bestellmenge || null, lieferantBestellnummer, notiz: text, jetzt: now(),
-        ...(status === 'bestellt' && kettelwege?.[p.lineItemId] ? { ueber: kettelwege[p.lineItemId] } : {}),
+        ...(status === 'bestellt' && ['kunde', 'kettler'].includes(kettelwege?.[p.lineItemId]) ? { ueber: kettelwege[p.lineItemId] } : {}),
         ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}) })));
       return betroffen.map(p => p.lineItemId);
     };
@@ -1398,6 +1433,43 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const statusNachher = leseAktuellenStatus(statusDatei, modell);
     const nachher = zeitleisten(dir, modell, statusNachher).get(orderId);
     return { ok: true, orderId, schritt, positionen: anzahl, ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}), ...(sperre ? { mustersperre: sperre } : {}), ...zeitleistenFelder(nachher), ...versandFelder(auftrag, statusNachher) };
+  }
+
+  /**
+   * "Zugeschnitten" / "Gepackt" je Position (operations/lib/auftragsstatus.mjs setzeSelbstversand):
+   * nur Ware, die wir selbst verschicken - Lieferweg "aus Lager" bzw. "über uns" (lib/lieferweg.mjs).
+   * Muster laufen ueber die Packstation, Direktversand des Lieferanten (Vermerk "kunde") hat bei uns
+   * nichts zu packen: beides 409. Zugeschnitten wird nur Ware aus eigenem Lager.
+   */
+  function selbstversandSetzen(payload, benutzer, actor) {
+    const { orderId, lineItemId, schritt, an } = payload || {};
+    if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
+    if (!SELBST_SCHRITTE.includes(schritt)) throw new ApiError(400, `Unbekannter Schritt „${schritt}“`);
+    if (typeof an !== 'boolean') throw new ApiError(400, 'Angabe „an“ (ja/nein) fehlt');
+    const dir = privatDirPath || privatDir();
+    const modell = ladeBestellModell(dir);
+    if (!modell) throw new ApiError(409, 'Die Bestelldaten sind nicht lesbar. Es wurde nichts verändert.');
+    // Auch Testbestellungen: sie stehen in testauftraege, nicht in auftraege.
+    const p = [...(modell.auftraege || []), ...(modell.testauftraege || [])].flatMap(a => a.positionen || [])
+      .find(x => String(x.orderId) === String(orderId) && String(x.lineItemId) === String(lineItemId));
+    if (!p) throw new ApiError(404, 'Position nicht gefunden – Bestelldaten evtl. inzwischen aktualisiert.');
+    if (p.istMuster) throw new ApiError(409, 'Muster werden in der Packstation gepackt, nicht hier.');
+    const file = auftragsstatusPfad(dir);
+    const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)] || null;
+    if (vorher?.ueber === 'kunde') throw new ApiError(409, 'Der Lieferant schickt diese Ware direkt an den Kunden – bei uns wird nichts zugeschnitten oder gepackt.');
+    const weg = lieferwegVon(p, vorher)?.weg;
+    if (schritt === 'zugeschnitten' && weg !== 'lager') throw new ApiError(409, 'Zugeschnitten wird nur Ware aus eigenem Lager.');
+    if (schritt === 'gepackt' && !['lager', 'uns'].includes(weg)) throw new ApiError(409, 'Gepackt wird nur Ware, die wir selbst verschicken.');
+    let eintrag;
+    try {
+      eintrag = setzeSelbstversand(file, { orderId, lineItemId, schritt, an, actor, bestellmenge: p.bestellSoll || p.bestellmenge || null, jetzt: now() });
+    } catch (e) {
+      if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status || 400, e.message);
+      throw e;
+    }
+    audit({ actor, action: 'selbstversand', orderId, lineItemId, schritt, an });
+    merke(benutzer, actor, an ? (schritt === 'zugeschnitten' ? 'Zugeschnitten' : 'Gepackt') : `${schritt === 'zugeschnitten' ? 'Zugeschnitten' : 'Gepackt'} zurückgenommen`, `${p.orderName} · ${p.titel}`);
+    return { ok: true, eintrag };
   }
 
   // Rechte fuer die Mustersperre: einmal je Prozess bestaetigt (der Dienst haelt seinen Token im
@@ -1955,7 +2027,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* siehe oben */ }
       const gesperrteMuster = z => (z.auftrag?.positionen || []).filter(p => p.istMuster && p.sku && sperren.has(sperrSku(p.sku))).map(p => p.lineItemId);
       const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, auftrag: z.auftrag ? { ...z.auftrag, ...kettelFelder(z.auftrag, statusAlle) } : z.auftrag, gesperrteMuster: gesperrteMuster(z), musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
-      return { verfuegbar: true, ratgeberVorlagen: RATGEBER.map(r => ({ schluessel: r.schluessel, titel: ratgeberKurzTitel(r) })), musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
+      // lagerwareFehler: beschaedigte Regeldatei (operations/lib/lagerware.mjs) - Heute sagt es laut.
+      return { verfuegbar: true, lagerwareFehler: modell.lagerwareFehler || null, ratgeberVorlagen: RATGEBER.map(r => ({ schluessel: r.schluessel, titel: ratgeberKurzTitel(r) })), musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
     },
 
     /** Rein lesende Aggregate, ohne Kundennamen oder zweite Bestellablage. */
@@ -3137,6 +3210,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     einkaufBestellmail({ lieferant = '', art = 'ware', gruppe = '', ziel = '', auftrag = '', kettelwege = '' } = {}) {
       const k = this._lieferantenKontext();
       if (!k.modell) return { verfuegbar: false, hinweis: k.hinweis, stammdatenDatei: k.stammdatenDatei, mails: [] };
+      if (art !== 'muster') pruefeLagerwareLesbar(k.modell);
       try {
         return {
           verfuegbar: true,
@@ -3314,6 +3388,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Zeitleiste: ein Schritt fuer den ganzen Auftrag (alle Positionen bzw. ein Ereignis je Auftrag).
       // Additiv - ohne `aktion` verhaelt sich der Endpunkt exakt wie bisher.
       if (aktion === 'schritt') return auftragsSchrittSetzen(payload, benutzer, actor);
+      if (aktion === 'selbstversand') return selbstversandSetzen(payload, benutzer, actor);
       if (aktion === 'versandNachholen') return versandNachholen(payload, benutzer, actor);
       if (aktion === 'shopifyNachbuchen') return shopifyNachbuchen(payload, benutzer, actor);
       if (aktion === 'zurueckAufOffen') return zurueckAufOffen(payload, benutzer, actor);
@@ -3347,6 +3422,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const p = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].flatMap(a => a.positionen || []).find(p => p.orderId === orderId && p.lineItemId === lineItemId);
       const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)];
       if (status === 'bestellt' && lagerGedeckt(p)) throw new ApiError(409, LAGER_NICHT_BESTELLEN);
+      if (status === 'bestellt' && (istLagerware(p, vorher) || ueber === 'lager')) throw new ApiError(409, LAGERWARE_NICHT_BESTELLEN);
+      if (status === 'bestellt' && p && !p.istMuster) pruefeLagerwareLesbar(modell);
       let eintrag;
       try {
         eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, lieferantBestellnummer, notiz, ueber, jetzt: now(),
