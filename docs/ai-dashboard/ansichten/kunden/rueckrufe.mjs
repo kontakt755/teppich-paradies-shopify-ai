@@ -62,13 +62,31 @@ function mailAngaben(z) {
       ${z.nachricht ? `<div class="small">„${esc(z.nachricht)}“</div>` : ''}`;
 }
 
+/**
+ * Ohne Telefonnummer bleibt bei der Musterberatung nur die Mail: dann steht die Adresse als
+ * Link da, sonst saehe die Zeile aus, als koenne niemand den Kunden erreichen.
+ */
+function kontaktHtml(z) {
+  if (z.quelle === 'mail' && !z.telefon && z.email) {
+    // Lange Adressen ohne Leerzeichen duerfen umbrechen, sonst steht die Zeile am Handy ueber.
+    return `<a href="mailto:${esc(z.email)}" style="overflow-wrap:anywhere">${esc(z.email)}</a> <span class="small muted">· keine Telefonnummer, per Mail antworten</span>`;
+  }
+  return telLink(z.telefon);
+}
+
+/** "eingegangen 04.11., 14:32" - bei zwei Anfragen derselben Person mit der letzten dazu. */
+function eingangText(z) {
+  const mehr = z.anfragen > 1 && z.zuletztAm ? ` · ${z.anfragen}× angefragt, zuletzt ${esc(fmtDateTime(z.zuletztAm))}` : '';
+  return `eingegangen ${esc(fmtDateTime(z.datum))}${mehr}`;
+}
+
 function rueckrufZeileHtml(z) {
   const ausMail = z.quelle === 'mail';
   return `<div class="row rueckruf-row">
     <div>
       <div class="t">${esc(z.kundenname)} ${ausMail ? '<span class="badge plain">noch keine Bestellung</span>' : `<span class="muted small mono">${esc(z.orderName)}</span>`}${z.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</div>
-      <div class="m">${ausMail ? `${esc(z.thema)} aus dem Warenkorb · eingegangen ${esc(fmtDateTime(z.datum))}` : `${esc(z.thema)}${z.wunschzeit ? ` · Wunschzeit: ${esc(z.wunschzeit)}` : ''} · seit ${fmtDate(z.datum)}`}</div>
-      <div class="tel-gross">${telLink(z.telefon)}</div>
+      <div class="m">${ausMail ? `${esc(z.thema)} aus dem Warenkorb · ${eingangText(z)}` : `${esc(z.thema)}${z.wunschzeit ? ` · Wunschzeit: ${esc(z.wunschzeit)}` : ''} · seit ${fmtDate(z.datum)}`}</div>
+      <div class="tel-gross">${kontaktHtml(z)}</div>
       ${mailAngaben(z)}
       ${z.notiz ? `<div class="small muted">Notiz: ${esc(z.notiz)}</div>` : ''}
       ${z.aktualisiertVon ? `<div class="small muted">Zuletzt: ${esc(z.aktualisiertVon)}${z.aktualisiertAm ? ` am ${esc(fmtDate(z.aktualisiertAm))}` : ''}</div>` : ''}

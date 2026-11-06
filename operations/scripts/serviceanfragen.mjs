@@ -61,9 +61,11 @@ export function uebernehmen(mails, { privatDir, jetzt = new Date() } = {}) {
     const rueckruf = rueckrufAusMail(gelesen);
     if (rueckruf) {
       try {
-        const { doppelt } = rueckrufAusMailAnlegen(rueckrufePfad(privatDir), { ...rueckruf, mailId, eingangAm: m.datum }, { actor: AKTEUR, jetzt });
-        geprueft[mailId] = { am: jetzt.toISOString(), ergebnis: doppelt ? 'Rückruf schon erfasst' : 'Rückruf angelegt' };
-        if (!doppelt) ergebnis.rueckrufe.push({ mailId });
+        const { eintrag, doppelt, zusammengefasst } = rueckrufAusMailAnlegen(rueckrufePfad(privatDir), { ...rueckruf, mailId, eingangAm: m.datum }, { actor: AKTEUR, jetzt });
+        // Zweite Anfrage derselben Person: ergaenzt den offenen Rueckruf, kein zweiter Eintrag.
+        geprueft[mailId] = { am: jetzt.toISOString(), ergebnis: doppelt ? 'Rückruf schon erfasst' : zusammengefasst ? `Rückruf ergänzt (${eintrag.orderId})` : 'Rückruf angelegt' };
+        if (zusammengefasst) ergebnis.rueckrufe.push({ mailId, ergaenzt: eintrag.orderId });
+        else if (!doppelt) ergebnis.rueckrufe.push({ mailId });
       } catch (e) {
         if (e instanceof RueckrufFehler) { merke(e.message); continue; }
         throw e;

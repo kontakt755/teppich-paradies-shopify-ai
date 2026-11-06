@@ -528,8 +528,9 @@ function ausMailRueckrufen(quellen, k) {
         titel: `Zurückrufen: ${r.kundenname && r.kundenname !== '–' ? r.kundenname : 'Kunde'}`,
         kontext: [r.thema || 'Musterberatung', anzahl ? `${anzahl} Muster angefragt` : null,
           tage === null ? null : `eingegangen ${vorText(tage)}`,
+          r.anfragen > 1 ? `${r.anfragen}× angefragt` : null,
           r.status === 'nicht_erreicht' ? 'zuletzt nicht erreicht' : null,
-          r.telefon ? null : 'keine Telefonnummer'].filter(Boolean).join(' · '),
+          r.telefon ? null : r.email ? 'keine Telefonnummer, per Mail antworten' : 'keine Telefonnummer'].filter(Boolean).join(' · '),
         knopf: { text: 'Zurückrufen', href: vorgangsLink('kunden', { auftrag: r.orderId, tab: 'rueckrufe' }) },
       };
     });

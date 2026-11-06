@@ -205,6 +205,8 @@ gebraeuchlich), Erfassen.
 - **Musterberatung aus dem Warenkorb** = Rückrufwunsch über „Lieber erst beraten lassen?“ im
   Muster-Warenkorb. Steht unter Kunden › **Rückrufe & Beratungen** mit **noch keine Bestellung**,
   den angefragten Mustern, dem Text des Kunden und „eingegangen TT.MM., HH:MM“ – nicht unter
-  Service-Anfragen. Auf „Heute“: **Zurückrufen: Name** mit „n Muster angefragt“.
+  Service-Anfragen. Auf „Heute“: **Zurückrufen: Name** mit „n Muster angefragt“. Zweimal abgeschickt:
+  **2× angefragt, zuletzt TT.MM., HH:MM** (ein Rückruf, nicht zwei). Ohne Telefon: E-Mail als Link und
+  **keine Telefonnummer, per Mail antworten**.
 - **Sonderposten** steht jetzt auch im Menü der Mitarbeiter (unter „Shop & Inhalte“): Ladenverkauf
   buchen ja, **Restlänge eintragen** bleibt beim Inhaber.

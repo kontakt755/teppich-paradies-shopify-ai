@@ -171,3 +171,69 @@ test('Heute: faelliger Rueckruf aus der Mail wird ein To-do, Erledigtes und spae
   const ziel = new URLSearchParams(t.knopf.href.split('?')[1]);
   assert.deepEqual([ziel.get('tab'), ziel.get('auftrag')], ['rueckrufe', 'mail-1']);
 });
+
+test('Doppelt abgeschickt (Doppelklick, zweites Geraet): ein Rueckruf, ergaenzt um Muster und Text der neueren Mail', () => {
+  const privatDir = wegwerfOrdner('tp-rueckruf-doppelt-');
+  const jetzt = new Date('2026-11-06T14:00:00Z');
+  const zweite = mail('b2', {
+    datum: '2026-11-06T13:33:10Z',
+    text: MAIL_TEXT.replace(/Muster:\n[\s\S]*?\n\nName:/, 'Muster:\nTestboden Kurzflor – Muster Rot (M-TEST-3)\n\nName:').replace(/Text:\n[\s\S]*$/, 'Text:\nDoch lieber in Rot.'),
+  });
+  const r = uebernehmen([mail('a1'), zweite], { privatDir, jetzt });
+  assert.deepEqual(r.rueckrufe, [{ mailId: 'a1' }, { mailId: 'b2', ergaenzt: 'mail-a1' }]);
+  assert.doesNotMatch(JSON.stringify(r), /Rita|example|0170/, 'Ausgabe ohne Kundendaten');
+  const alle = leseRueckrufe(rueckrufePfad(privatDir));
+  assert.deepEqual(Object.keys(alle), ['mail-a1'], 'kein zweiter Rueckruf');
+  const e = alle['mail-a1'];
+  assert.deepEqual(e.muster, ['Testboden Kurzflor – Muster Rot (M-TEST-3)'], 'Musterliste der neueren Mail');
+  assert.equal(e.nachricht, 'Doch lieber in Rot.');
+  assert.equal(e.eingangAm, '2026-11-06T13:32:00.000Z', 'Alter zaehlt ab der ersten Mail');
+  assert.equal(e.zuletztAm, '2026-11-06T13:33:10.000Z');
+  assert.deepEqual(e.weitereMailIds, ['b2']);
+  // beide Kennungen gelten als erledigt, ein erneuter Lauf aendert nichts
+  assert.ok(['a1', 'b2'].every(id => bekannt({ privatDir }).mailIds.includes(id)));
+  assert.deepEqual(uebernehmen([mail('a1'), zweite], { privatDir, jetzt }).rueckrufe, []);
+  // Zeile und To-do nennen die zweite Anfrage
+  const [zeile] = rueckrufliste({ auftraege: [] }, leseRueckrufe(rueckrufePfad(privatDir)));
+  assert.deepEqual([zeile.anfragen, zeile.zuletztAm], [2, '2026-11-06T13:33:10.000Z']);
+  // gleiche Telefonnummer mit anderer Adresse zaehlt auch als dieselbe Person
+  const telGleich = mail('c3', { datum: '2026-11-07T09:00:00Z', text: MAIL_TEXT.replace('rita@example.com', 'rita.zwei@example.com').replace('0170 0000000', '0170 000 0000') });
+  assert.deepEqual(uebernehmen([telGleich], { privatDir, jetzt }).rueckrufe, [{ mailId: 'c3', ergaenzt: 'mail-a1' }]);
+});
+
+test('Doppelt: nicht zusammengefasst nach dem Gespraech, nach 7 Tagen oder bei einer anderen Person', () => {
+  const file = rueckrufePfad(wegwerfOrdner('tp-rueckruf-getrennt-'));
+  const f = (mailId, mehr = {}) => ({ mailId, name: 'R R', telefon: '030 111111', email: 'r@example.com', muster: ['M'], nachricht: null, eingangAm: '2026-11-06T08:00:00Z', ...mehr });
+  rueckrufAusMailAnlegen(file, f('x1'), { actor: AKTEUR });
+  assert.equal(rueckrufAusMailAnlegen(file, f('x2'), { actor: AKTEUR }).zusammengefasst, true, 'offen: zusammen');
+  setzeStatus(file, { orderId: 'mail-x1', status: 'nicht_erreicht', actor: 'Ben' });
+  assert.equal(rueckrufAusMailAnlegen(file, f('x3'), { actor: AKTEUR }).zusammengefasst, true, 'nicht erreicht: noch niemand gesprochen');
+  assert.equal(leseRueckrufe(file)['mail-x1'].status, 'nicht_erreicht', 'Status bleibt');
+  setzeStatus(file, { orderId: 'mail-x1', status: 'angerufen', actor: 'Ben' });
+  assert.equal(rueckrufAusMailAnlegen(file, f('x4'), { actor: AKTEUR }).zusammengefasst, false, 'nach dem Gespraech: neue Anfrage');
+  assert.equal(rueckrufAusMailAnlegen(file, f('x5', { eingangAm: '2026-11-14T08:00:01Z' }), { actor: AKTEUR }).zusammengefasst, false, 'mehr als 7 Tage nach der letzten Mail');
+  assert.equal(rueckrufAusMailAnlegen(file, f('x6', { telefon: '030 999999', email: 'anders@example.com' }), { actor: AKTEUR }).zusammengefasst, false, 'andere Person');
+  assert.deepEqual(Object.keys(leseRueckrufe(file)).sort(), ['mail-x1', 'mail-x4', 'mail-x5', 'mail-x6']);
+});
+
+test('Ohne Telefon: Zeile zeigt die E-Mail als Link, To-do sagt "per Mail antworten"', async () => {
+  const { state } = await import('../kern/zustand.mjs');
+  const { kunden } = await import('../ansichten/kunden/gemeinsam.mjs');
+  const { viewKundenRueckrufe } = await import('../ansichten/kunden/rueckrufe.mjs');
+  const zeile = { orderId: 'mail-q1', orderName: null, quelle: 'mail', thema: 'Musterberatung', datum: '2026-11-06T13:32:00.000Z', kundenname: 'Ohne Telefon', telefon: null, email: 'ohne.tel@example.com', muster: ['M'], nachricht: null, anfragen: 2, zuletztAm: '2026-11-06T13:40:00.000Z', status: 'offen', testbestellung: false };
+  state.route = { view: 'kunden', params: new URLSearchParams('tab=rueckrufe') };
+  kunden.rueckrufe = { verfuegbar: true, zeilen: [zeile, { ...zeile, orderId: 'mail-q2', kundenname: 'Mit Telefon', telefon: '030 222222', anfragen: 1, zuletztAm: null }] };
+  try {
+    const h = viewKundenRueckrufe();
+    assert.match(h, /<a href="mailto:ohne\.tel@example\.com" style="overflow-wrap:anywhere">ohne\.tel@example\.com<\/a> <span class="small muted">· keine Telefonnummer, per Mail antworten<\/span>/);
+    assert.match(h, /2× angefragt, zuletzt/);
+    assert.equal((h.match(/mailto:/g) || []).length, 1, 'mit Telefon bleibt es beim Anruf-Link');
+    assert.match(h, /href="tel:030222222"/);
+  } finally {
+    kunden.rueckrufe = null;
+  }
+  const todos = leiteTodosAb({ bestellzeilen: [], rueckrufe: [zeile] }, { sicht: 'laden', jetzt: new Date('2026-11-06T15:00:00Z') });
+  assert.equal(todos[0].kontext, 'Musterberatung · 1 Muster angefragt · eingegangen heute · 2× angefragt · keine Telefonnummer, per Mail antworten');
+  const ohneAlles = leiteTodosAb({ bestellzeilen: [], rueckrufe: [{ ...zeile, email: null }] }, { sicht: 'laden', jetzt: new Date('2026-11-06T15:00:00Z') });
+  assert.match(ohneAlles[0].kontext, /keine Telefonnummer$/);
+});

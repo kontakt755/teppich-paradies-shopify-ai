@@ -76,6 +76,9 @@ export function mailRueckrufZeilen(statusAlle = {}) {
       quelle: 'mail',
       muster: Array.isArray(e.muster) ? e.muster : [],
       nachricht: e.nachricht || null,
+      // Zweite Musterberatung derselben Person wird hier zusammengefasst (rueckrufe.mjs).
+      anfragen: 1 + (Array.isArray(e.weitereMailIds) ? e.weitereMailIds.length : 0),
+      zuletztAm: e.zuletztAm || null,
       testbestellung: false,
     }));
 }

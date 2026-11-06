@@ -1496,7 +1496,15 @@ Styles `stile/serviceanfragen.css`.
   diese Einträge an die Rückrufe aus Bestellungen an (`mailRueckrufZeilen`, älteste zuerst); Status
   und Notiz laufen über denselben `POST`. Die Zeile zeigt „noch keine Bestellung“, Musterliste, Text
   und Eingangszeit; „Heute“ bekommt dasselbe To-do „Zurückrufen“ mit denselben Fristen (2/7 Tage ab
-  Eingang). Antwortentwürfe entstehen dabei keine: dieser Weg schreibt nur die lokale Ablage.
+  Eingang). Auf diesem Weg entstehen keine Antwortentwürfe: er schreibt nur die lokale Ablage. Ob der
+  getrennte Lauf `postfach-entwuerfe` zu solchen Mails einen Gmail-Entwurf anlegt, regelt dessen privater
+  Auftrag, nicht dieser Code. **Doppelt abgeschickt** (Doppelklick, zweites Gerät): gleiche E-Mail oder
+  Telefonnummer innerhalb von 7 Tagen, solange noch niemand mit dem Kunden gesprochen hat (Status offen
+  oder nicht erreicht), ergänzt den vorhandenen Eintrag statt einen zweiten anzulegen
+  (`offenerMailRueckruf`): Musterliste und Text der neueren Mail, `zuletztAm`, Kennung unter
+  `weitereMailIds`; Status, Notiz, Wiedervorlage und das Alter ab der ersten Mail bleiben. Die Zeile zeigt
+  dann „2× angefragt, zuletzt …“. **Ohne Telefon** steht die E-Mail als Link in der Zeile („keine
+  Telefonnummer, per Mail antworten“), das To-do sagt dasselbe.
 - **Kampagnenfeld:** `snippets/tp-herkunft.liquid` (im Layout) füllt das versteckte Feld
   `contact[Herkunft]` der Formulare auf den Verlegeseiten und der Kontaktseite aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
   „Microsoft-Anzeige“ (msclkid), „Anzeige (<utm_source>)“ bei bezahltem `utm_medium`, sonst „Link
