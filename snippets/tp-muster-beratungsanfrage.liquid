@@ -108,12 +108,23 @@
         sessionStorage.removeItem(MARKE);
       } catch (error) { gesendet = false; }
       if (!gesendet) return;
-      for (var i = 0; i < danke.length; i++) {
-        danke[i].hidden = false;
-        var box = danke[i].parentNode && danke[i].parentNode.querySelector('[data-tp-mba-box]');
-        if (box) box.hidden = true;
+      zeigen();
+      // Die Header-Hydration morpht das Schubfach nach dem Laden mit dem
+      // Server-HTML neu (Dank wieder hidden). Den Zustand kurz nachziehen.
+      if (window.MutationObserver && document.body) {
+        var beobachter = new window.MutationObserver(zeigen);
+        beobachter.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
+        setTimeout(function () { beobachter.disconnect(); }, 20000);
       }
       fetch('/cart/clear.js', { method: 'POST' }).catch(function () {});
+    }
+    function zeigen() {
+      var danke = document.querySelectorAll('[data-tp-mba-ok]');
+      for (var i = 0; i < danke.length; i++) {
+        if (danke[i].hidden) danke[i].hidden = false;
+        var box = danke[i].parentNode && danke[i].parentNode.querySelector('[data-tp-mba-box]');
+        if (box && !box.hidden) box.hidden = true;
+      }
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auswerten);
     else auswerten();

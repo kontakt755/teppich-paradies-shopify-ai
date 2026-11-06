@@ -156,3 +156,40 @@ test('alte Marke (abgebrochenes Absenden vor ueber 15 Minuten): fremdes Formular
   assert.equal(s.kaesten[0].ok.hidden, true);
   assert.equal(s.speicher.m.has(MARKE), false, 'alte Marke wird verworfen');
 });
+
+test('Hydration morpht den Dank zurueck: Beobachter zeigt ihn wieder', () => {
+  const kaesten = [];
+  const box = { hidden: false };
+  const ok = { hidden: true, parentNode: { querySelector: (sel) => (sel === '[data-tp-mba-box]' ? box : null) } };
+  kaesten.push({ box, ok });
+  let rueckruf = null;
+  let getrennt = false;
+  const window = {
+    MutationObserver: function (fn) { rueckruf = fn; this.observe = () => {}; this.disconnect = () => { getrennt = true; }; },
+  };
+  const document = {
+    readyState: 'complete',
+    body: {},
+    addEventListener: () => {},
+    querySelectorAll: (sel) => (sel === '[data-tp-mba-ok]' ? [ok] : []),
+    querySelector: () => null,
+  };
+  const geholt = [];
+  let zeitgeber = null;
+  vm.runInNewContext(code, {
+    window, document, Date,
+    sessionStorage: speicherAus([[MARKE, String(Date.now())]]),
+    fetch: (url) => { geholt.push(url); return Promise.resolve(); },
+    setTimeout: (fn) => { zeitgeber = fn; },
+  });
+  assert.equal(ok.hidden, false);
+  assert.equal(box.hidden, true);
+  assert.deepEqual(geholt, ['/cart/clear.js']);
+  // Morph setzt den Server-Zustand zurueck ...
+  ok.hidden = true; box.hidden = false;
+  rueckruf();
+  assert.equal(ok.hidden, false, 'Dank wieder sichtbar');
+  assert.equal(box.hidden, true, 'Kaestchen wieder weg');
+  zeitgeber();
+  assert.equal(getrennt, true, 'Beobachter endet nach der Frist');
+});
