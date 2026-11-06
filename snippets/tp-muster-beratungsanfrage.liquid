@@ -9,6 +9,12 @@
     gewaehlten Mustern an die Shop-Adresse. Es entsteht keine Bestellung und
     kein Versand; nach dem Absenden wird der Warenkorb geleert.
 
+  Shopify haengt contact_posted=true nach JEDEM Kontaktformular an (Kontaktseite,
+  Produktanfrage, Boden-Finder), form.posted_successfully? ist dann auch hier
+  wahr. Deshalb stehen Danke-Kasten (versteckt) und Kaestchen beide im HTML;
+  erst die Marke tp_mba_gesendet aus dem Absenden dieses Formulars zeigt den
+  Dank und leert den Warenkorb. Ohne Marke bleiben die Muster (2026-11-06).
+
   Wird in snippets/cart-summary.liquid im scrollenden Teil gerendert
   (Warenkorbseite und Drawer). Kein eigenes form im Warenkorb-Formular:
   cart-summary liegt ausserhalb von #cart-form.
@@ -40,37 +46,73 @@
 {%- if tpm_muster != blank and tpm_ware == 0 -%}
   {%- form 'contact', id: tpm_id, class: 'tp-mba' -%}
     {%- if form.posted_successfully? -%}
-      <p class="tp-mba__ok" role="status" data-tp-mba-ok data-tp-sample-success>
+      <p class="tp-mba__ok" role="status" hidden data-tp-mba-ok data-tp-sample-success>
         <b>Danke, Ihre Anfrage ist angekommen.</b>
         Wir rufen Sie kurz an, beraten Sie und schicken Ihnen dann die passenden Muster.
       </p>
-    {%- else -%}
-      <details class="tp-mba__box" {% if form.errors %}open{% endif %}>
-        <summary class="tp-mba__summary">
-          <span class="tp-mba__titel">Lieber erst beraten lassen?</span>
-          <span class="tp-mba__unter">Muster mit Rückruf anfragen – wir melden uns und schicken dann die passenden Muster.</span>
-        </summary>
-        {%- if form.errors -%}
-          <p class="tp-mba__err" role="alert">Bitte Name, E-Mail und Telefonnummer prüfen.</p>
-        {%- endif -%}
-        <input type="hidden" name="contact[Betreff]" value="RÜCKRUF – Musterberatung">
-        <input type="hidden" name="contact[Muster]" value="{{ tpm_muster | escape }}">
-        <label class="tp-mba__feld">Name<input type="text" name="contact[name]" autocomplete="name" required value="{{ form.name }}"></label>
-        <label class="tp-mba__feld">Telefon<input type="tel" name="contact[Telefon]" autocomplete="tel" inputmode="tel" required pattern="[0-9 +()/.-]{6,}" placeholder="z. B. 0176 1234567"></label>
-        <label class="tp-mba__feld">E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
-        <label class="tp-mba__feld">Worum geht es? <em>(optional)</em><textarea name="contact[body]" rows="2" maxlength="500">{{ form.body }}</textarea></label>
-        <p class="tp-mba__note">Es entsteht keine Bestellung. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
-        <button type="submit" class="button tp-mba__btn">Beratung anfragen</button>
-      </details>
     {%- endif -%}
+    <details class="tp-mba__box" data-tp-mba-box {% if form.errors %}open data-tp-mba-fehler{% endif %}>
+      <summary class="tp-mba__summary">
+        <span class="tp-mba__titel">Lieber erst beraten lassen?</span>
+        <span class="tp-mba__unter">Muster mit Rückruf anfragen – wir melden uns und schicken dann die passenden Muster.</span>
+      </summary>
+      {%- if form.errors -%}
+        <p class="tp-mba__err" role="alert">Bitte Name, E-Mail und Telefonnummer prüfen.</p>
+      {%- endif -%}
+      <input type="hidden" name="contact[Betreff]" value="RÜCKRUF – Musterberatung">
+      <input type="hidden" name="contact[Muster]" value="{{ tpm_muster | escape }}">
+      <label class="tp-mba__feld">Name<input type="text" name="contact[name]" autocomplete="name" required value="{{ form.name }}"></label>
+      <label class="tp-mba__feld">Telefon<input type="tel" name="contact[Telefon]" autocomplete="tel" inputmode="tel" required pattern="[0-9 +()/.-]{6,}" placeholder="z. B. 0176 1234567"></label>
+      <label class="tp-mba__feld">E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
+      <label class="tp-mba__feld">Worum geht es? <em>(optional)</em><textarea name="contact[body]" rows="2" maxlength="500">{{ form.body }}</textarea></label>
+      <p class="tp-mba__note">Es entsteht keine Bestellung. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
+      <button type="submit" class="button tp-mba__btn">Beratung anfragen</button>
+    </details>
   {%- endform -%}
 {%- endif -%}
 
-{%- comment -%} Nach erfolgreicher Anfrage den Musterwarenkorb leeren (kein Versand ohne Rueckruf) {%- endcomment -%}
+{%- comment -%}
+  Nach der eigenen Anfrage den Musterwarenkorb leeren (kein Versand ohne Rueckruf).
+  Geleert wird nur mit Danke-Kasten UND Marke aus dem Absenden von form.tp-mba.
+  Ohne Marke (anderes Formular, Link mit contact_posted, Speicher gesperrt)
+  bleibt der Dank versteckt und die Muster bleiben im Warenkorb. Das Snippet
+  kann mehrfach auf einer Seite stehen: nur das erste Skript arbeitet, es wertet
+  die Marke einmal nach dem Laden der Seite aus.
+{%- endcomment -%}
 <script>
   (function () {
-    if (!document.querySelector('[data-tp-mba-ok]')) return;
-    fetch('/cart/clear.js', { method: 'POST' }).catch(function () {});
+    if (window.tpMbaBereit) return;
+    window.tpMbaBereit = true;
+    var MARKE = 'tp_mba_gesendet';
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (!form || !form.matches || !form.matches('form.tp-mba')) return;
+      try { sessionStorage.setItem(MARKE, '1'); } catch (error) {}
+    });
+    function auswerten() {
+      var danke = document.querySelectorAll('[data-tp-mba-ok]');
+      if (!danke.length) {
+        // Anfrage kam mit Fehlern zurueck: Marke verwerfen, erneutes Absenden setzt sie neu.
+        if (document.querySelector('[data-tp-mba-fehler]')) {
+          try { sessionStorage.removeItem(MARKE); } catch (error) {}
+        }
+        return;
+      }
+      var gesendet = false;
+      try {
+        gesendet = sessionStorage.getItem(MARKE) === '1';
+        sessionStorage.removeItem(MARKE);
+      } catch (error) { gesendet = false; }
+      if (!gesendet) return;
+      for (var i = 0; i < danke.length; i++) {
+        danke[i].hidden = false;
+        var box = danke[i].parentNode && danke[i].parentNode.querySelector('[data-tp-mba-box]');
+        if (box) box.hidden = true;
+      }
+      fetch('/cart/clear.js', { method: 'POST' }).catch(function () {});
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auswerten);
+    else auswerten();
   })();
 </script>
 
