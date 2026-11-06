@@ -5,14 +5,30 @@
   Je 5 Pakete 5 Leisten mit je 11,90 EUR Nachlass (Belmora weiss gratis).
   Nie zwischen Gesamtbetrag und "Zur Kasse". Rein serverseitig;
   Schalter in snippets/tp-leisten-paket.
+
+  Liegt irgendein Produkt einer laufenden zentralen Aktion im Warenkorb
+  (snippets/tp-aktion-laufend, z. B. Black Week), entfaellt der Hinweis ganz:
+  Beide automatischen Rabatte sind nicht kombinierbar, Shopify nimmt fuer den
+  ganzen Warenkorb nur einen - die versprochenen Gratis-Leisten waeren dann
+  nicht sicher (Inhaber 06.11.2026, F01/w-286). Aktionsvinyl zaehlt ohnehin
+  nicht mit (tp-leisten-paket).
 {%- enddoc -%}
 
 {%- liquid
   assign tcl_pakete = 0
   assign tcl_hat_leiste = false
+  assign tcl_aktion_im_korb = false
   for tcl_item in cart.items
     if tcl_item.product.type == 'Sockelleisten'
       assign tcl_hat_leiste = true
+      break
+    endif
+    capture tcl_aktion
+      render 'tp-aktion-laufend', product: tcl_item.product
+    endcapture
+    assign tcl_aktion = tcl_aktion | strip
+    if tcl_aktion != blank
+      assign tcl_aktion_im_korb = true
       break
     endif
     capture tcl_gilt
@@ -23,7 +39,7 @@
     endif
   endfor
   assign tcl_weiss = nil
-  if tcl_pakete >= 5 and tcl_hat_leiste == false
+  if tcl_pakete >= 5 and tcl_hat_leiste == false and tcl_aktion_im_korb == false
     assign tcl_weiss = all_products['belmora-sockelleiste-eckig-12x58mm']
     assign tcl_alle = collections['bodenleisten']
     assign tcl_stangen = tcl_pakete | divided_by: 5 | times: 5 | at_most: 100
