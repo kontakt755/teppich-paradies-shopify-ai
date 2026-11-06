@@ -128,12 +128,13 @@ test('Anfang und Ende zaehlen mit, bei Ueberlappung gewinnt der hoechste echte P
   assert.match(inklusiv, /^15\|20261023\|/);
 });
 
-test('Topbar bleibt standardmaessig unveraendert und gibt Aktionstexte und Link sicher aus', async () => {
+test('Topbar bleibt ohne Schalter unveraendert und gibt Aktionstexte und Link sicher aus', async () => {
   const group = JSON.parse(readFileSync(path.join(root, 'sections/header-group.json'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''));
   const topbar = Object.values(group.sections).find(s => s.type === 'tp-topbar');
-  assert.equal(topbar.settings.aktion_zeigen, false);
+  // Seit 06.11.2026 (Black Week) an; ohne laufende Aktion bleibt die Leiste trotzdem unveraendert.
+  assert.equal(typeof topbar.settings.aktion_zeigen, 'boolean');
   const template = source('sections/tp-topbar.liquid');
-  const settings = { ...topbar.settings };
+  const settings = { ...topbar.settings, aktion_zeigen: false };
   const normal = { id: 'normal', settings: { text: 'Bekannter Vorteil', link: '' } };
   const context = { shop: shop([aktion()]), section: { settings, blocks: [normal] } };
   const aus = await engine.parseAndRender(template, context, { globals: { shop: context.shop } });
