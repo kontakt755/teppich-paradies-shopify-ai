@@ -51,7 +51,7 @@ function fixture(o = {}) {
     metafields: { service: { einfassen: val('Verfügbar') }, custom: { farbcode: val('005') } },
   };
   const product = {
-    id: 7001, title: 'Synthetic Wunschmass fixture',
+    id: 7001, title: 'Synthetic Wunschmass fixture', template_suffix: o.vorlage,
     variants: [variant, ...(o.weitereVarianten || []).map(v => ({ ...variant, ...v }))],
     selected_or_first_available_variant: variant,
     options_with_values: [{ name: 'Farbe', position: 1 }],
@@ -176,6 +176,14 @@ test('Fertig: Preishinweis nennt nur die belegte Produktlieferzeit', async () =>
   assert.doesNotMatch(mit, /14 Tage/);
   const ohne = await engine.parseAndRender(source, fixture());
   assert.doesNotMatch(ohne, /Lieferzeit|14 Tage/, 'ohne Produktquelle keine Zusage');
+  // Rundgang 06.11. (NM-03): Vorlage wunschmass-fertig ohne Metafeld - derselbe Wert wie
+  // unter dem Warenkorb-Knopf und im JSON-LD, genau einmal; das Metafeld geht vor.
+  const vorlage = await engine.parseAndRender(source, fixture({ vorlage: 'wunschmass-fertig' }));
+  assert.match(vorlage, /Lieferzeit: ca\. 14 Tage\./);
+  assert.equal((vorlage.match(/Lieferzeit/g) || []).length, 1);
+  const vorrang = await engine.parseAndRender(source, fixture({ vorlage: 'wunschmass-fertig', lieferzeit: 'ca. 3 Wochen' }));
+  assert.match(vorrang, /Lieferzeit: ca\. 3 Wochen\./);
+  assert.doesNotMatch(vorrang, /14 Tage/);
   const escaped = await engine.parseAndRender(source, fixture({ lieferzeit: '3 Wochen < 4 Wochen' }));
   assert.match(escaped, /3 Wochen &lt; 4 Wochen/);
 });

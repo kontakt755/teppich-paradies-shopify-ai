@@ -83,13 +83,21 @@
     endif
 
     if product.available
-      assign tmf_wahl = 'Farbe wählen'
+      # Farbe nur nennen, wenn es eine Farbauswahl gibt (Rundgang 06.11., RE-06:
+      # Kettelteppiche aus Restrollen haben genau eine Farbe)
+      assign tmf_farbe_option = product.options_with_values | where: 'name', 'Farbe' | first
+      assign tmf_farben = tmf_farbe_option.values | size
       assign tmf_gruppe = product.metafields.service.einfass_gruppe.value | size
-      if tmf_gruppe > 1
-        assign tmf_wahl = 'Farbe und Kante wählen'
+      assign tmf_wahl = ''
+      if tmf_farben > 1 and tmf_gruppe > 1
+        assign tmf_wahl = 'Farbe und Kante wählen, '
+      elsif tmf_farben > 1
+        assign tmf_wahl = 'Farbe wählen, '
+      elsif tmf_gruppe > 1
+        assign tmf_wahl = 'Kante wählen, '
       endif
       assign tmf_f3 = 'Wie bestelle ich diesen Teppich?'
-      assign tmf_a3 = tmf_wahl | append: ', Breite und Länge in Zentimetern eingeben und den Endpreis prüfen. Dann in den Warenkorb legen und an der Kasse bezahlen.'
+      assign tmf_a3 = tmf_wahl | append: 'Breite und Länge in Zentimetern eingeben und den Endpreis prüfen. Dann in den Warenkorb legen und an der Kasse bezahlen.'
       capture tmf_muster
         render 'tp-musteroption', product: product
       endcapture

@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import { Liquid } from 'liquidjs';
-import { blackFriday, zeitraum, zeitpunktBerlin, mutationen, ausnahmenFuer } from '../../scripts/aktion-plan.mjs';
+import { blackFriday, zeitraum, zeitpunktBerlin, mutationen, ausnahmenFuer, status, kollektionFuer } from '../../scripts/aktion-plan.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const kalender = JSON.parse(readFileSync(path.join(root, 'domains/shopify/aktionskalender.json'), 'utf8'));
@@ -54,12 +54,39 @@ test('Entwurfsdatei entsteht nur lokal im Arbeitsordner und traegt die Ausnahmen
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, /nichts in Shopify angelegt/);
     const entwurf = JSON.parse(readFileSync(path.join(ordner, 'aktion-black-week-2026.json'), 'utf8'));
-    assert.equal(entwurf.rabatt.variables.d.startsAt, '2026-11-23T00:00:00+01:00');
+    assert.equal(entwurf.rabatt.variables.d.startsAt, '2026-11-06T00:00:00+01:00', 'Sofortstart 2026 (Inhaber 06.11.)');
+    assert.equal(entwurf.kollektion_handle, 'black-week-2026');
     assert.ok(entwurf.ausnahmen.some(a => /75 Teppichboeden/.test(a)));
     assert.ok(entwurf.ausnahmen.some(a => /Bereits reduzierte Ware/.test(a)));
   } finally {
     rmSync(ordner, { recursive: true, force: true });
   }
+});
+
+test('Black Week 2026: Sofortstart 06.11.-30.11. auf black-week-2026, 2027 wieder Jahresregel auf teppichboden', () => {
+  const bw = kalender.wellen.find(w => w.id === 'black-week');
+  const z26 = zeitraum(bw, 2026);
+  assert.deepEqual(z26, { von: '2026-11-06', bis: '2026-11-30' });
+  assert.equal(status(z26, '2026-11-06'), 'laeuft');
+  assert.equal(kollektionFuer(bw, 2026), 'black-week-2026');
+  const m26 = mutationen(bw, 2026, { ausnahmenAlle: kalender.ausnahmen_alle });
+  assert.equal(m26.kollektion_handle, 'black-week-2026');
+  assert.doesNotMatch(JSON.stringify(m26), /"teppichboden"/, '2026 keine Mutation auf teppichboden');
+  assert.equal(m26.rabatt.variables.d.endsAt, '2026-11-30T23:59:59+01:00');
+  const f26 = Object.fromEntries(m26.anzeige.variables.m.fields.map(f => [f.key, f.value]));
+  assert.equal(f26.start, '2026-11-06');
+  assert.equal(f26.ende, '2026-11-30');
+  assert.deepEqual(zeitraum(bw, 2027), { von: '2027-11-22', bis: '2027-11-29' });
+  assert.equal(kollektionFuer(bw, 2027), 'teppichboden');
+  assert.equal(mutationen(bw, 2027).kollektion_handle, 'teppichboden');
+});
+
+test('Jahres-Abweichung: ungueltige Daten werden abgelehnt', () => {
+  assert.throws(() => zeitraum(welle({ jahre: { 2026: { von: '2026-02-30', bis: '2026-03-01' } } }), 2026), /Aktionsdatum/);
+  assert.throws(() => zeitraum(welle({ jahre: { 2026: { von: '2027-01-01', bis: '2027-01-02' } } }), 2026), /Aktionsdatum/, 'Datum aus anderem Jahr');
+  assert.throws(() => zeitraum(welle({ jahre: { 2026: { von: '2026-05-02', bis: '2026-05-01' } } }), 2026), /vor dem Start/);
+  assert.throws(() => mutationen(welle({ jahre: { 2026: { kollektion: 'x"/>' } } }), 2026), /Kollektions-Handle/);
+  assert.deepEqual(zeitraum(welle({ jahre: { 2026: { kollektion: 'nur-kollektion' } } }), 2026), { von: '2026-06-15', bis: '2026-07-05' });
 });
 
 test('Direkter Generatoraufruf akzeptiert keine fehlenden oder ungueltigen Geschaeftswerte', () => {

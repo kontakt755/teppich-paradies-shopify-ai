@@ -877,8 +877,16 @@
       if (b.komma || l.komma) fehlerListe.push('Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.');
       if (b.ungueltig) fehlerListe.push((rund ? 'Durchmesser' : 'Breite') + ' mindestens ' + minCm + ' cm.');
       if (l.ungueltig) fehlerListe.push('Länge mindestens ' + minCm + ' cm.');
-      var eingabeFehler = fehlerListe.length > 0;
       var eingegeben = b.wert > 0 && (rund || l.wert > 0);
+      // Rundgang 06.11. (NM-06): ein zu kurzes Einzelmass sofort melden, nicht erst,
+      // wenn auch das zweite Mass steht (dann prueft pruefeMasse unten). Nicht
+      // waehrend das Feld noch den Fokus hat - "2" auf dem Weg zu "250" ist kein Fehler.
+      if (!eingegeben && !fehlerListe.length) {
+        var aktiv = document.activeElement;
+        if (b.wert > 0 && b.wert < minCm && aktiv !== inBreite) fehlerListe.push((rund ? 'Durchmesser' : 'Breite') + ' mindestens ' + minCm + ' cm.');
+        if (!rund && l.wert > 0 && l.wert < minCm && aktiv !== inLaenge) fehlerListe.push('Länge mindestens ' + minCm + ' cm.');
+      }
+      var eingabeFehler = fehlerListe.length > 0;
       var massFehler = eingabeFehler;
       if (eingegeben && !fehlerListe.length) {
         fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL, minW: minCm, minL: minCm, maxKg: maxKg, kgProQm: kgProQm, richtung: rollenRichtung });
@@ -1207,7 +1215,12 @@
     [inBreite, inLaenge].forEach(function (i) {
       if (!i) return;
       i.addEventListener('input', rechnen);
-      i.addEventListener('blur', function () { massFeldAbschliessen(i); });
+      i.addEventListener('blur', function () {
+        massFeldAbschliessen(i);
+        // Zu kurzes Einzelmass: Meldung jetzt, wo das Feld den Fokus verliert (rechnen oben)
+        var w = lesen(i).wert;
+        if (w > 0 && w < minCm) rechnen();
+      });
     });
     cta.addEventListener('click', hinzufuegen);
     document.addEventListener('tp:farbe-wechsel', function (e) {

@@ -10,7 +10,9 @@
 //
 // Entfernt wird nur, wenn ALLES gilt - sonst bleibt die Kopie und der Grund steht da:
 //   - nicht der Hauptcheckout, nicht die Kopie mit Branch main (Deploy), nicht die eigene;
-//   - HEAD ist in origin/main enthalten (nach git fetch);
+//   - HEAD ist in origin/main enthalten (nach git fetch) - als Vorfahre oder
+//     patch-gleich: per Squash-Merge (ein Commit) oder Cherry-Pick uebernommene
+//     Branches zeigt `git cherry origin/main <head>` ohne Zeile mit "+";
 //   - keine geaenderten und keine unversionierten Dateien;
 //   - ignorierte Dateien nur aus der Liste NEU_ERZEUGBAR - git worktree remove
 //     loescht ignorierte Dateien ohne Rueckfrage;
@@ -82,6 +84,18 @@ function git(args, cwd) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
 }
 
+/**
+ * Steckt die Arbeit von head in ref? Vorfahre (normaler Merge) oder jeder eigene
+ * Commit patch-gleich in ref (git cherry: "-" = uebernommen, "+" = fehlt).
+ * Bei einem Git-Fehler gilt die Kopie als nicht gemergt.
+ */
+export function inMainEnthalten(head, cwd, ref = 'origin/main') {
+  try { git(['merge-base', '--is-ancestor', head, ref], cwd); return true; } catch { /* kein Vorfahre */ }
+  try {
+    return !git(['cherry', ref, head], cwd).split('\n').some((z) => z.startsWith('+'));
+  } catch { return false; }
+}
+
 function prozessArbeitsordner() {
   try {
     return execFileSync('lsof', ['-d', 'cwd', '-Fn'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 })
@@ -124,8 +138,7 @@ function main() {
   const bleibt = [];
   for (const w of worktrees(git(['worktree', 'list', '--porcelain'], haupt))) {
     if (!fs.existsSync(w.pfad)) { bleibt.push([w, 'Ordner fehlt (git worktree prune)']); continue; }
-    let gemergt = false;
-    try { git(['merge-base', '--is-ancestor', w.head, 'origin/main'], haupt); gemergt = true; } catch { /* nicht enthalten */ }
+    const gemergt = inMainEnthalten(w.head, haupt);
     const status = gemergt ? git(['status', '--porcelain', '--ignored'], w.pfad).split('\n').filter(Boolean) : [];
     const geaendert = status.filter((z) => !z.startsWith('!! '));
     const ignoriert = status.filter((z) => z.startsWith('!! ')).map((z) => z.slice(3));

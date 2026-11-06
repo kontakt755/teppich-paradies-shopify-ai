@@ -21,6 +21,9 @@
  *
  * Black Week rechnet sich jedes Jahr neu: Montag vor Black Friday (Freitag
  * nach dem vierten Donnerstag im November) bis Cyber Monday.
+ * Weicht ein Jahr ab (Inhaber-Entscheidung), steht es in der Welle unter
+ * "jahre": {"2026": {"von": "2026-11-06", "bis": "2026-11-30", "kollektion": "..."}};
+ * Zeitraum, Status und Mutationen ziehen diesen Eintrag vor.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -38,8 +41,34 @@ export function blackFriday(jahr) {
 const tag = (d) => d.toISOString().slice(0, 10);
 const plusTage = (d, n) => new Date(d.getTime() + n * 864e5);
 
+/**
+ * Jahres-Abweichung einer Welle (Feld "jahre", z. B. Black Week 2026 Sofortstart
+ * 06.11.-30.11. auf eigener Aktionskollektion): volle Daten JJJJ-MM-TT und/oder
+ * eine andere Kollektion. Ohne Eintrag gilt die Jahresregel der Welle.
+ */
+export function jahresAbweichung(welle, jahr) {
+  const j = welle?.jahre?.[String(jahr)];
+  return j && typeof j === 'object' ? j : null;
+}
+
+export function kollektionFuer(welle, jahr) {
+  return jahresAbweichung(welle, jahr)?.kollektion ?? welle.kollektion;
+}
+
 export function zeitraum(welle, jahr) {
   if (!Number.isInteger(jahr) || jahr < 2000 || jahr > 9999) throw new Error('Jahr muss eine ganze Zahl von 2000 bis 9999 sein.');
+  const abw = jahresAbweichung(welle, jahr);
+  if (abw && (abw.von || abw.bis)) {
+    const z = { von: abw.von, bis: abw.bis };
+    for (const datum of Object.values(z)) {
+      if (typeof datum !== 'string' || !datum.startsWith(`${jahr}-`) || !/^\d{4}-\d{2}-\d{2}$/.test(datum)
+        || new Date(`${datum}T00:00:00Z`).toISOString().slice(0, 10) !== datum) {
+        throw new Error('Aktionsdatum ist ungueltig.');
+      }
+    }
+    if (z.bis < z.von) throw new Error('Aktionsende liegt vor dem Start.');
+    return z;
+  }
   if (welle.id === 'black-week') {
     const bf = blackFriday(jahr);
     return { von: tag(plusTage(bf, -4)), bis: tag(plusTage(bf, 3)) };
@@ -88,13 +117,14 @@ export function ausnahmenFuer(welle, jahr, alle = []) {
 export function mutationen(welle, jahr, { ausnahmenAlle = [] } = {}) {
   if (welle.freigegeben !== true) throw new Error('Aktionswelle ist fachlich noch nicht freigegeben: Prozent, Kollektion und Ausnahmen klaeren.');
   if (!Number.isInteger(welle.prozent) || welle.prozent < 1 || welle.prozent > 50) throw new Error('Prozentsatz muss eine ganze Zahl von 1 bis 50 sein.');
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(welle.kollektion || '')) throw new Error('Gueltiger Kollektions-Handle fehlt.');
+  const kollektion = kollektionFuer(welle, jahr);
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(kollektion || '')) throw new Error('Gueltiger Kollektions-Handle fehlt.');
   const z = zeitraum(welle, jahr);
   const titel = `${welle.titel} ${jahr}`;
   const ausnahmen = ausnahmenFuer(welle, jahr, ausnahmenAlle);
   return {
-    hinweis: `Nur Vorbereitung, keine Aktivierung: {{KOLLEKTION_GID}} fuer "${welle.kollektion}" nachschlagen und Sortiment auf bereits reduzierte Ware, Muster, Zubehoer und Auslauf pruefen. Erst den Rabatt anlegen und mit Prozent, Ziel und Berliner Zeitgrenzen zuruecklesen. Die Anzeige wird absichtlich inaktiv angelegt; erst nach passendem Rabatt und Gegenprobe von Produktseite/Rechner/Warenkorb aktivieren, danach die Topbar freischalten. Bei Fehlern keine Anzeige aktivieren.${ausnahmen.length ? ` Ausnahmen (vor dem Anlegen aus der Zielmenge nehmen): ${ausnahmen.join(' · ')}.` : ''}`,
-    kollektion_handle: welle.kollektion,
+    hinweis: `Nur Vorbereitung, keine Aktivierung: {{KOLLEKTION_GID}} fuer "${kollektion}" nachschlagen und Sortiment auf bereits reduzierte Ware, Muster, Zubehoer und Auslauf pruefen. Erst den Rabatt anlegen und mit Prozent, Ziel und Berliner Zeitgrenzen zuruecklesen. Die Anzeige wird absichtlich inaktiv angelegt; erst nach passendem Rabatt und Gegenprobe von Produktseite/Rechner/Warenkorb aktivieren, danach die Topbar freischalten. Bei Fehlern keine Anzeige aktivieren.${ausnahmen.length ? ` Ausnahmen (vor dem Anlegen aus der Zielmenge nehmen): ${ausnahmen.join(' · ')}.` : ''}`,
+    kollektion_handle: kollektion,
     ausnahmen,
     rabatt: {
       query: 'mutation($d: DiscountAutomaticBasicInput!) { discountAutomaticBasicCreate(automaticBasicDiscount: $d) { automaticDiscountNode { id } userErrors { field message } } }',
@@ -164,7 +194,7 @@ function main() {
     const pr = w.prozent ? `${w.prozent} %` : 'Prozent offen';
     const warn = imVorlauf && (w.freigegeben !== true || !w.prozent) ? '  ← Prozent, Kollektion und Ausnahmen offen' : '';
     if (warn) fehlt++;
-    console.log(`  ${z.von} – ${z.bis}  ${w.titel.padEnd(22)} ${w.kollektion.padEnd(32)} ${pr.padEnd(14)} ${s}${warn}`);
+    console.log(`  ${z.von} – ${z.bis}  ${w.titel.padEnd(22)} ${kollektionFuer(w, jahr).padEnd(32)} ${pr.padEnd(14)} ${s}${warn}`);
     for (const text of ausnahmenFuer(w, jahr)) console.log(`      Ausnahme: ${text}`);
   }
   for (const text of ausnahmenFuer({}, jahr, kal.ausnahmen_alle)) console.log(`  Fuer alle Wellen: ${text}`);

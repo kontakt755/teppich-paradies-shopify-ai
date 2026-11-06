@@ -88,3 +88,20 @@ test('Produkt-Brotkrumen ueberspringen abgeloeste Kollektionen mit Handle auf -a
   assert.equal(await pfad([tb, alt]), '>teppichboden', 'nur alt: Pfad Start > Teppichboden > Produkt');
   assert.equal(await pfad([alt, tb, neu], ''), 'teppichboden>teppichboden-nadelvlies', 'Fallback ohne Produkttyp');
 });
+
+test('Produkt-Brotkrumen ueberspringen befristete Aktionskollektionen (Rundgang 2026-11-06, SEO-02)', async () => {
+  const src = lies('snippets/product-information-content.liquid');
+  const treffer = src.match(/if tp_c\.handle contains 'black-week'\s+continue/g) || [];
+  assert.equal(treffer.length, 3, 'Stufe 2, Stufe 1 und Fallback muessen Aktionskollektionen auslassen');
+
+  const start = src.indexOf('{%- liquid', src.indexOf("request.page_type == 'product'"));
+  const block = src.slice(start, src.indexOf('-%}', start) + 3);
+  const pfad = async (collections, type = 'Teppichboden') => (await eng.parseAndRender(
+    `${block}{{ tp_crumb_1.handle }}>{{ tp_crumb_2.handle }}`, { product: { type, collections }, collections: {} })).trim();
+  const bw = { handle: 'black-week-2026', title: 'Black Week: 15 % auf Teppichboden und Vinyl', all_products_count: 151 };
+  const tb = { handle: 'teppichboden', title: 'Teppichboden', all_products_count: 278 };
+  const vel = { handle: 'teppichboden-velours', title: 'Teppichboden Velours', all_products_count: 60 };
+  assert.equal(await pfad([bw, tb, vel]), 'teppichboden>teppichboden-velours');
+  assert.equal(await pfad([tb, bw]), '>teppichboden', 'nur Aktion und Hauptkategorie: Start > Teppichboden > Produkt');
+  assert.equal(await pfad([bw, tb, vel], ''), 'teppichboden>teppichboden-velours', 'Fallback ohne Produkttyp');
+});

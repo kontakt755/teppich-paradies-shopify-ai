@@ -130,3 +130,21 @@ Mutation läuft über die Admin API (MCP), das Skript schreibt nur Dateien. Reih
 `productsCount` der Kollektion `angebote` größer 0), dann dieselben fünf Schritte mit
 `domains/shopify/menue-black-week-2026-11.json`. Vorher bleibt der Link auf den Resten, sonst
 führt er wieder auf die leere Seite. Nach der Aktion wieder der Plan `menue-reste-bis-black-week-2026-11`.
+
+## 7. Startseite während der Black Week (06.–30.11.2026)
+
+Der Abschnitt `tp_angebote_tabs` in `templates/index.json` nennt die Aktion seit 06.11.:
+Reiter `a1` heißt „Black Week −15 %“, die Unterzeile „Black Week bis 30.11.: 15 % auf
+ausgewählten Teppichboden und Vinyl, Preise schon reduziert.“ Ein eigenes Aktionsband unter
+dem Hero gibt es bewusst nicht (nur nach Rückfrage beim Inhaber).
+
+**Rückweg am 01.12.2026** (per Branch und PR, Werte in `templates/index.json`, nicht im Editor):
+
+- `tp_angebote_tabs.blocks.a1.settings.label` zurück auf `Teppichboden`
+- `tp_angebote_tabs.settings.text` zurück auf `Reduzierte Bodenbeläge und Zubehör, sortiert nach Kategorie. Der Rabatt steht direkt am Produkt.`
+- Kollektion der Sektion `angebote_teppichboden` von `black-week-2026` wieder auf `angebote-teppichboden`
+  (Rückweg der Aktion selbst: Gedächtnisnotiz zur Black Week des Inhabers)
+
+Der Satz „Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis.“
+auf den Verlegeseiten und in der Startseiten-FAQ bleibt nach der Aktion stehen: die Regel gilt
+für jede Aktion.

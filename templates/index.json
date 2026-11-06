@@ -288,7 +288,7 @@
         "online_cta": "Zum Sortiment",
         "service_eyebrow": "Verlegeservice · bis 50 km um Oranienburg",
         "service_titel": "Aufmaß, Lieferung, Untergrund, Verlegung, Leisten",
-        "service_text": "Teppichboden von der Rolle liefern und verlegen wir rund um Oranienburg – ab 649 € Warenwert im Nahbereich kostenlos, sonst zu fairen Festpreisen. Fixierung oder Verklebung auf Wunsch.",
+        "service_text": "Teppichboden von der Rolle liefern und verlegen wir rund um Oranienburg – ab 649 € Warenwert im Nahbereich kostenlos, sonst zu fairen Festpreisen. Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis. Fixierung oder Verklebung auf Wunsch.",
         "service_punkte": "Beratung im Fachgeschäft oder bei Ihnen zu Hause, Fester Ansprechpartner und transparentes Angebot, Bis 50 km regulär – weiter entfernt auf Anfrage",
         "service_cta": "Verlegung anfragen",
         "service_telefon": "03301 573 37 20",
@@ -495,7 +495,7 @@
           "type": "frage",
           "settings": {
             "frage": "Verlegen Sie auch – und was kostet das?",
-            "antwort": "<p>Ja, mit eigenem Team: Aufmaß, Lieferung, Untergrundvorbereitung, Verlegung und Sockelleisten für Teppichboden und Vinyl von der Rolle. Lose Verlegung kostet 8,95 €/m², mindestens 129 € je Auftrag; die Lieferung im Umkreis von 15 km kostet 39 €. Ab 649 € Warenwert sind Lieferung und lose Verlegung bis 15 km kostenlos (Stand: Oktober 2026). Regulär verlegen wir bis 50 km um Oranienburg, weiter entfernt auf Anfrage. Alle Stufen und Preise stehen auf der Seite <a href=\"/pages/liefer-verlegeservice\">Liefer- &amp; Verlegeservice</a>. Auch Klick- und Klebevinyl verlegen wir; dafür erstellen wir <a href=\"/pages/vinylboden-verlegen\">ein individuelles Angebot</a>. Geben Sie oben Ihre Postleitzahl ein oder rufen Sie kurz an.</p>"
+            "antwort": "<p>Ja, mit eigenem Team: Aufmaß, Lieferung, Untergrundvorbereitung, Verlegung und Sockelleisten für Teppichboden und Vinyl von der Rolle. Lose Verlegung kostet 8,95 €/m², mindestens 129 € je Auftrag; die Lieferung im Umkreis von 15 km kostet 39 €. Ab 649 € Warenwert sind Lieferung und lose Verlegung bis 15 km kostenlos. Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis. Regulär verlegen wir bis 50 km um Oranienburg, weiter entfernt auf Anfrage. Alle Stufen und Preise stehen auf der Seite <a href=\"/pages/liefer-verlegeservice\">Liefer- &amp; Verlegeservice</a>. Auch Klick- und Klebevinyl verlegen wir; dafür erstellen wir <a href=\"/pages/vinylboden-verlegen\">ein individuelles Angebot</a>. Geben Sie oben Ihre Postleitzahl ein oder rufen Sie kurz an.</p>"
           }
         },
         "q4": {
@@ -546,7 +546,7 @@
           "type": "liste",
           "settings": {
             "titel": "Service in der Region",
-            "links": "Teppichboden verlegen lassen|/pages/teppichboden-verlegen-lassen\nVinylboden verlegen lassen|/pages/vinylboden-verlegen\nTreppen mit Teppich belegen|/pages/treppenverlegung\nBöden für Praxen & Büros|/pages/boden-malerarbeiten\nVersand & Lieferung|/pages/versand-lieferung\nKontakt & Anfahrt|/pages/kontakt"
+            "links": "Teppichboden verlegen lassen|/pages/teppichboden-verlegen-lassen\nVinylboden verlegen lassen|/pages/vinylboden-verlegen\nTreppen mit Teppich belegen|/pages/treppenverlegung\nBöden für Praxen & Büros|/pages/firmenkunden\nVersand & Lieferung|/pages/versand-lieferung\nKontakt & Anfahrt|/pages/kontakt"
           }
         }
       },
@@ -1660,13 +1660,13 @@
       "type": "tp-start-tabs",
       "settings": {
         "heading": "Aktuelle Angebote",
-        "text": "Reduzierte Bodenbeläge und Zubehör, sortiert nach Kategorie. Der Rabatt steht direkt am Produkt."
+        "text": "Black Week bis 30.11.: 15 % auf ausgewählten Teppichboden und Vinyl, Preise schon reduziert."
       },
       "blocks": {
         "a1": {
           "type": "tab",
           "settings": {
-            "label": "Teppichboden",
+            "label": "Black Week −15 %",
             "section_id": "angebote_teppichboden"
           }
         },

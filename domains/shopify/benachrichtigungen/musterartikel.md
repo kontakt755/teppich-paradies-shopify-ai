@@ -71,6 +71,15 @@ unveraendert. Code: `assignSampleVariants`, `isSelectable`,
 `allSamplesUnavailable` in `assets/tp-sample-checkout-core.js`. Tests:
 `qa/tests/muster-gesperrt.test.mjs`.
 
+### Ganze Kollektion ohne Muster (ab 2026-11-06)
+
+Bei der Sperre der einen Farbe bleibt es nicht mehr: Gibt es fuer eine Farbe kein
+Muster, wird die ganze Kollektion herausgenommen - Tag `ohne-muster` an jedem
+Warenprodukt, jedes Musterprodukt von UNLISTED auf DRAFT. Teppichfliesen,
+Teppichplanken und Sauberlauf-Fliesen haben gar keinen Musterservice und bekommen
+kein Musterprodukt. Regel, Erkennung und Pruefung (`npm run -s import:pruefen`):
+`domains/shopify/produktimport-arbeitsweise.md`, Abschnitt 9.
+
 ### Teppich nach Maß: Musterprodukt des Teppichbodens (ab 2026-10-10)
 
 Ein Teppich nach Maß wird aus einem Teppichboden zugeschnitten
