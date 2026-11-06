@@ -29,6 +29,15 @@ test('Paketware-Liste und Teppiche nach Mass bleiben ausgeblendet', async () => 
   assert.equal(await versteckt({ handle: 'laeufer-xy', title: 'Läufer nach Maß' }), true, 'Titel nach Maß');
 });
 
+test('Gemischte Kollektionen: alle Produkte und Black-Week-Aktionen (NAV-02, Rundgang 06.11.2026)', async () => {
+  for (const handle of ['all', 'black-week-2026', 'black-week-2027']) {
+    assert.equal(await versteckt({ handle, title: 'x' }), true, handle);
+  }
+  for (const handle of ['alle-teppiche', 'week-angebote', 'aktion-black-week']) {
+    assert.equal(await versteckt({ handle, title: 'x' }), false, `${handle}: kein Handle-Anfang black-week`);
+  }
+});
+
 test('Alles andere behaelt den Standard-Preisfilter', async () => {
   for (const handle of ['teppiche', 'bodenleisten', 'zubehoer', 'sauberlaufmatten', 'linoleum', 'auslauf']) {
     assert.equal(await versteckt({ handle, title: 'Teppiche' }), false, handle);
