@@ -266,3 +266,16 @@ test('Kopfzeile: jeder Auftrag zaehlt einmal nach seinem dringendsten Grund, Sum
   assert.equal(Object.values(z).reduce((a, b) => a + b, 0), liste.filter(e => e.gruende.length).length);
   assert.deepEqual([z.verzug, z.ungeklaert, z.muster_da, z.informieren, z.gesperrt, z.selbst], [1, 1, 1, 1, 1, 0]);
 });
+
+test('Gesperrtes Muster ohne Artikelnummer: nicht "ungeklaert", nicht zu bestellen - Karte "Gesperrt", Grund "Muster kommt nicht"', () => {
+  const md = gesperrteMuster => ({ gesperrteMuster, musterGruppen: [{ lieferant: 'UNGEKLAERT', positionen: [pos('g1', { istMuster: true, grosshaendlerId: 'UNGEKLAERT' })] },
+    { lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] });
+  const vorher = auftragsAblauf({ id: 'o1' }, md([]), stand({ m1: 'bestellt' }));
+  assert.equal(vorher.ungeklaert.length, 1);
+  const ab = auftragsAblauf({ id: 'o1' }, md(['g1']), stand({ m1: 'bestellt' }));
+  assert.deepEqual([ab.ungeklaert.length, ab.lieferanten.length], [0, 0]);
+  assert.equal(ab.jetzt, 'bestellt', 'nichts mehr zu bestellen: Schritt 3 statt "vorbereiten"');
+  const e = einordnung(ab, null, JETZT);
+  assert.deepEqual(e.gruende, ['gesperrt']);
+  assert.equal(auftragsAmpel(ab, e).wort, 'Gesperrt');
+});

@@ -72,8 +72,9 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
   sammle(gruppen, 'ware');
   sammle(musterGruppen, 'muster');
 
-  // Noch zu bestellen, nach Lieferant und Art (Ware/Muster) - je Gruppe eine Bestellnachricht.
-  const zuBestellen = positionen.filter(x => x.rang === 0 && !x.eigen);
+  // Noch zu bestellen, nach Lieferant und Art (Ware/Muster) - je Gruppe eine Bestellnachricht. Ein
+  // gesperrtes Muster kommt nie: weder bestellen noch seine Artikelnummer klaeren (#1996).
+  const zuBestellen = positionen.filter(x => x.rang === 0 && !x.eigen && !x.gesperrt);
   const ungeklaert = zuBestellen.filter(x => x.fehlt.length);
   const je = new Map();
   for (const x of zuBestellen.filter(y => !y.fehlt.length)) {
@@ -83,8 +84,9 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
   }
   const lieferanten = [...je.values()].sort((a, b) => a.lieferant.localeCompare(b.lieferant) || a.art.localeCompare(b.art));
 
-  // Eigene Muster (haben wir da) brauchen keine Lieferantenbestellung, zaehlen also als bestellt.
-  const r = x => (x.eigen ? Math.max(x.rang, 1) : x.rang);
+  // Eigene Muster (haben wir da) brauchen keine Lieferantenbestellung, zaehlen also als bestellt -
+  // ebenso gesperrte: es gibt nichts zu bestellen, weiter geht es in der Packstation.
+  const r = x => (x.eigen || x.gesperrt ? Math.max(x.rang, 1) : x.rang);
   const alle = positionen.length;
   const mind = n => alle > 0 && positionen.every(x => r(x) >= n);
   const nurMuster = alle > 0 && positionen.every(x => x.art === 'muster');

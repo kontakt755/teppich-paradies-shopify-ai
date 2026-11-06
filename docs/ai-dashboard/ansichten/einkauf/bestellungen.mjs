@@ -25,6 +25,12 @@ import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
 import { beschaffungText } from '../../lib/beschaffung.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
 import { lieferantenKartenHtml, nachfassenSumme, bestellartDaten } from './lieferanten.mjs';
+import { ohneGesperrteKlaerung } from '../../lib/einkauf-uebersicht.mjs';
+
+/** Gesperrte Muster (Lieferant kann nicht liefern) - dieselbe Liste wie die Ampel "Gesperrt" der Karten. */
+const sperrListe = () => new Set(einkauf.bestellungen?.gesperrteMuster || []);
+/** Noch nicht bestellt und gesperrt: kommt nie, also weder bestellen noch die Artikelnummer klaeren. */
+const gesperrtOffen = (p, sperre = sperrListe()) => Boolean(p?.istMuster && sperre.has(p.lineItemId) && !afEintragFuer(p)?.status);
 
 function kopierbutton(id, label = 'Liste kopieren') {
   return `<button type="button" class="btn btn-sm" data-kopieren="${esc(id)}">${esc(label)}</button>`;
@@ -125,15 +131,17 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
   const kundengruppen = gruppierePositionenNachKunde(positionen, einkauf.bestellungen?.auftraege || []);
   const sortiertePositionen = kundengruppen.flatMap(gruppe => gruppe.positionen);
   const unbekannt = g.lieferant === 'UNGEKLAERT';
-  const luecken = positionen.filter(positionUnvollstaendig).length;
+  const sperre = sperrListe();
+  const gesperrt = p => gesperrtOffen(p, sperre);
+  const luecken = positionen.filter(p => !gesperrt(p) && positionUnvollstaendig(p)).length;
   const titel = eingebettet ? (praefix === 'muster' ? 'Muster' : 'Ware') : unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${esc(g.lieferant)}`;
   const route = g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER'
     ? ` <span class="badge plain" title="${esc(g.route)}">${esc(LIEFERWEG_LABEL[g.route] || g.route)}</span>` : '';
   const unterzeile = luecken
     ? `<p class="small warnc" style="margin:-6px 0 10px">${plural(luecken, 'Artikel kann', 'Artikel können')} so nicht bestellt werden – Angaben fehlen (siehe markierte Felder).</p>`
-    : unbekannt ? '<p class="small muted" style="margin:-6px 0 10px">Großhändler-ID und Produktseite sind je Artikel hinterlegt – über „Öffnen" beim Lieferanten bestellen.</p>' : '';
+    : unbekannt && positionen.some(p => !gesperrt(p)) ? '<p class="small muted" style="margin:-6px 0 10px">Großhändler-ID und Produktseite sind je Artikel hinterlegt – über „Öffnen" beim Lieferanten bestellen.</p>' : '';
   const ungeklaert = grund => `<span class="badge gap" title="${esc(grund || 'Nicht in Shopify hinterlegt')}">fehlt</span>`;
-  const zuBestellen = positionen.filter(p => p.lineItemId && !afEintragFuer(p)?.status && !musterEigen(p) && !istLagerware(p, afEintragFuer(p)));
+  const zuBestellen = positionen.filter(p => p.lineItemId && !afEintragFuer(p)?.status && !musterEigen(p) && !istLagerware(p, afEintragFuer(p)) && !gesperrt(p));
   // Ab zwei Artikeln lohnt die Sammelaktion; fuer einen reicht der Knopf in der Zeile.
   const sammel = zuBestellen.length >= 2 && !istNurLesend() ? `<button type="button" class="btn btn-sm" data-af-sammel="${esc(id)}">Alle als bestellt markieren…</button>` : '';
   if (sammel) sammelGruppen.set(id, { titel: unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${g.lieferant}`, positionen: zuBestellen });
@@ -156,13 +164,16 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
   // data-l traegt die Spaltenueberschrift in die Zelle. Am Handy wird die
   // Tabelle damit zu Karten (app.css) - vorher musste man 390 px seitwaerts
   // schieben, um Artikelnummer und Stand zu sehen.
-  const zeile = p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
+  // Gesperrt statt "fehlt": dieselbe Plakette wie in der Lieferantenkarte, ohne Bestellknopf.
+  const sperrPlakette = ampelPlakette('rot', 'Gesperrt', { titel: 'Der Lieferant kann dieses Muster nicht liefern – nicht bestellen, Kunde informieren (Packstation)' });
+  const sperrStand = '<div class="small muted">Stand: kommt nicht – Kunde informieren</div><div class="small"><a href="#/kunden?tab=muster&amp;mpbereich=klaeren">In der Packstation →</a></div>';
+  const zeile = p => `<tr class="${!gesperrt(p) && positionUnvollstaendig(p) ? 'row-gap' : ''}">
       <td data-l="Artikel"><div class="cell-title">${esc(anzeigeWert(p.titel))}</div><div class="small muted">${esc(p.farbe)}${p.sku && p.sku !== 'UNGEKLAERT' ? ` · unsere SKU: <span class="mono">${esc(p.sku)}</span>` : ''}</div></td>
       <td data-l="Auftrag" class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a><div class="small muted">${fmtDate(p.orderDatum)}</div></td>
       <td data-l="Zu bestellen">${p.bestellmenge.menge === 'UNGEKLAERT' ? `${ungeklaert(p.bestellmenge.grund)}<div class="small muted">${esc(p.bestellmenge.grund || '')}</div>` : `<b>${esc(p.bestellmenge.text)}</b>`}${kundenmengeWeicht(p) ? `<div class="small muted">Kunde: ${esc(p.kundenmenge)}</div>` : ''}</td>
-      <td data-l="Artikelnummer beim Lieferanten">${p.grosshaendlerId === 'UNGEKLAERT' ? `${ungeklaert(p.idGrund)}<div class="small muted">${esc(p.idGrund || '')}</div>` : `<code class="mono" data-kopiertext="${esc(p.grosshaendlerId)}" title="Klicken zum Kopieren">${esc(p.grosshaendlerId)}</code>`}</td>
+      <td data-l="Artikelnummer beim Lieferanten">${gesperrt(p) ? sperrPlakette : p.grosshaendlerId === 'UNGEKLAERT' ? `${ungeklaert(p.idGrund)}<div class="small muted">${esc(p.idGrund || '')}</div>` : `<code class="mono" data-kopiertext="${esc(p.grosshaendlerId)}" title="Klicken zum Kopieren">${esc(p.grosshaendlerId)}</code>`}</td>
       <td data-l="Lieferant">${lieferantLinkZelle(p)}</td>
-      <td data-l="Stand">${afStatusZelle(p)}</td>
+      <td data-l="Stand">${gesperrt(p) ? sperrStand : afStatusZelle(p)}</td>
     </tr>`;
   // Muster je Kunde in einem Schritt: "Alle 3 angekommen" bzw. "Verschicken…" (Innendienst 15.10.).
   const kundenAktion = gruppe => {
@@ -180,7 +191,7 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
     ${unterzeile}
     <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Auftrag</th><th>Zu bestellen</th><th>Artikelnummer beim Lieferanten</th><th>Lieferant</th><th>Stand</th></tr></thead>
     ${zeilen}</table></div>
-    <textarea id="${id}" class="visually-hidden" aria-hidden="true" tabindex="-1">${esc(kopierTextFuer(g, sortiertePositionen))}</textarea>
+    <textarea id="${id}" class="visually-hidden" aria-hidden="true" tabindex="-1">${esc(kopierTextFuer(g, sortiertePositionen.filter(p => !gesperrt(p))))}</textarea>
   </section>`;
 }
 /** Shopify-Link eines Auftrags aus der Auftragsliste (Positionen tragen ihn nicht selbst). */
@@ -266,7 +277,7 @@ function afFilterChips(allePositionen) {
   const af = afNorm(state.route.params.get('af'));
   const offenGesamt = zaehler.offen + zaehler.bestellt + zaehler.eingetroffen + zaehler.eigen;
   return `<div class="chips" role="group" aria-label="Nach Auftragsfluss filtern">
-    <button type="button" class="chip" data-param="af" data-value="" aria-pressed="${!af}">Alle offenen<span class="c">${offenGesamt}</span></button>
+    <button type="button" class="chip" data-param="af" data-value="" aria-pressed="${!af}">Alle offenen<span class="c">· ${plural(offenGesamt, 'Position', 'Positionen')}</span></button>
     ${Object.keys(AF_FILTER_LABEL).map(k => `<button type="button" class="chip" data-param="af" data-value="${k}" aria-pressed="${af === k}">${esc(AF_FILTER_LABEL[k])}<span class="c">${zaehler[k]}</span></button>`).join('')}
   </div>`;
 }
@@ -281,7 +292,9 @@ export function viewEinkaufBestellungen() {
   if (d?.fehler) return stoerungState(d, 'Die Bestelldaten');
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
   const { ware, muster, gruppe } = einkaufPositionenMitStand(d);
-  const aktiv = aktiveAuftraege(d);
+  // Gesperrte Muster sind kein "ohne Großhändler-ID" (#1996): sie werden nie bestellt.
+  const sperre = sperrListe();
+  const aktiv = aktiveAuftraege(d).map(a => ohneGesperrteKlaerung(a, sperre, afEintragFuer));
   const klaeren = aktiv.filter(a => a.ampel === 'rot' || a.ampel === 'gelb').sort((a, b) => (a.ampel === 'rot' ? 0 : 1) - (b.ampel === 'rot' ? 0 : 1));
   const rot = klaeren.filter(a => a.ampel === 'rot').length;
   const af = afNorm(state.route.params.get('af'));
@@ -296,7 +309,7 @@ export function viewEinkaufBestellungen() {
     ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf?tab=lieferant">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
     <div class="band">
       ${art === 'muster' ? '' : bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Ware zu bestellen', 'warn')}
-      ${art === 'ware' ? '' : bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster zu bestellen', 'warn')}
+      ${art === 'ware' ? '' : bandItem(muster.filter(p => gruppe(p) === 'offen' && !gesperrtOffen(p, sperre)).length, 'Muster zu bestellen', 'warn')}
       ${bandItem(nachfassen.auftraege, nachfassen.auftraege === 1 ? 'Auftrag nachfassen' : 'Aufträge nachfassen', nachfassen.stufe || 'warn')}
       ${zumKettler ? bandItem(zumKettler, 'Ware unterwegs zum Kettler', 'plain') : ''}
       ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}

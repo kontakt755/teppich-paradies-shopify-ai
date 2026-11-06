@@ -519,6 +519,15 @@ Umschläge stehen unter „Unterwegs“, nie unter „Beim Kunden“. Die Kopfze
 Warenauftrag zu tun ist; dort stehen reine Musteraufträge, die nur noch verschickt werden, als eine Zeile
 mit der Zahl „Packbereit“ der Packstation.
 
+**Gesperrte Muster beim Bestellen (seit 2026-11-06, #1996).** Ein Muster aus `gesperrteMuster`
+(`/api/einkauf/bestellungen`, noch nicht bei uns) wird nie bestellt: `startBestellarbeit()` (Heute) zählt es
+weder in `gesamt` noch in `blockiert`/`nichtZugeordnet` und gibt nur `gesperrt` als Zahl zurück; Je Auftrag
+führt es nicht unter „ungeklärt“; die Kachel „Muster zu bestellen“ zählt es nicht; in den Tabellen steht es mit
+„× Gesperrt“ ohne Bestellknopf, außerhalb von Sammelaktion und Kopierliste. „Zuerst klären“ nimmt es aus dem
+Grund „ohne Großhändler-ID“ (`ohneGesperrteKlaerung()` in `lib/einkauf-uebersicht.mjs`); dafür liefert die
+Bestellübersicht je Auftrag `ohneIdPositionen` und `ampelOhneIdGrund` (Ampel der übrigen Gründe). Eine leere
+oder unlesbare Sperrliste filtert nichts.
+
 ### Lieferweg und Lagerware (seit 2026-11-06, #1995)
 
 Wer die Ware zum Kunden bringt, ist eine reine Regel in `lib/lieferweg.mjs` (Browser und Server):
