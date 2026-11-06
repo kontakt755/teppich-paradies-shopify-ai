@@ -51,6 +51,7 @@ beforeEach((t) => t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-
 const engine = new Liquid({ timezoneOffset: 0, templates: {
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+  'tp-aktion-laufend': ohneDoc('snippets/tp-aktion-laufend.liquid'),
   'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
   'tp-sonderposten-preisbeleg': ohneDoc('snippets/tp-sonderposten-preisbeleg.liquid'),
   'tp-sonderposten-flaeche': ohneDoc('snippets/tp-sonderposten-flaeche.liquid'),
@@ -68,6 +69,23 @@ const paket = (aktion, preis, compare_at_price = 2995) => ({
   selected_variant: { price: 2495, compare_at_price },
   sqm_per_package: 1,
   product: { metafields: { aktion, preis } },
+});
+
+// Zentrale Aktion (Metaobjekt tp_aktion): Paket nach Abzug, Abzug je Paket auf den
+// Cent abgerundet wie Shopify: 24,95 x 15 % = 3,7425 -> 3,74, also 21,21.
+test('Paketpreis: zentrale Aktion zeigt Preis nach Abzug und bisherigen Preis als Streichpreis', async () => {
+  const shop = (id) => ({ metaobjects: { tp_aktion: { values: [{
+    aktiv: { value: true }, start: { value: '2026-01-01' }, ende: { value: '2099-12-31' },
+    kollektion: { value: { id } }, prozent: { value: 15 },
+  }] } } });
+  const daten = paket({}, undefined, null);
+  daten.product.collections = [{ id: 9 }];
+  // shop ist in Shopify global; LiquidJS reicht nur globals in {% render %} weiter.
+  const mit = await engine.parseAndRender(sqm, daten, { globals: { shop: shop(9) } });
+  assert.match(mit, /tp-price-per-sqm__compare[\s\S]*24,95/);
+  assert.match(mit, /21,21[\s\S]*21,21&nbsp;€ pro Originalpaket/);
+  const fremd = await engine.parseAndRender(sqm, daten, { globals: { shop: shop(10) } });
+  assert.doesNotMatch(fremd, /tp-price-per-sqm__compare|21,21/);
 });
 
 test('Paketpreis: Streichpreis 29,95 erscheint nur mit laufender Aktion', async () => {
