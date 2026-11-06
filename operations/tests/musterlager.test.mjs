@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   musterSchluessel, leseLager, einlagern, aendern, entfernen, wendeLagerAn, festzuschreiben, farbenFuer, vorschlaege,
-  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE,
+  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE, GANZER_ARTIKEL,
 } from '../lib/musterlager.mjs';
 import { haengeWahlAn, leseEreignisse, wendeAufModellAn, musterOhneLieferant, musterherkunftPfad } from '../lib/musterherkunft.mjs';
 
@@ -181,6 +181,14 @@ test('farbenFuer: Mustervarianten liefern die SKU, alle Breiten einer Farbe teil
   // Teppich nach Maß: nur das Musterprodukt traegt eine SKU.
   assert.deepEqual(farbenFuer({ varianten: [{ farbe: 'Sand', sku: null }] }, { varianten: [{ farbe: 'Sand', sku: 'M-TESTVEL4_004' }] }), [{ farbe: 'Sand', schluessel: ['TESTVEL4_004'] }]);
   assert.deepEqual(farbenFuer({ varianten: [{ farbe: 'Sand', sku: null }] }), []);
+});
+
+test('farbenFuer: Artikel ohne Farboption (Restrolle, Zuschnitt) gibt einen Eintrag "Ganzer Artikel" mit allen SKUs', () => {
+  assert.deepEqual(farbenFuer({ varianten: [{ farbe: null, sku: 'TPRTEST-ROLLE' }] }), [{ farbe: GANZER_ARTIKEL, ganzerArtikel: true, schluessel: ['TPRTEST-ROLLE'] }]);
+  assert.deepEqual(farbenFuer({ varianten: [{ farbe: null, sku: 'TPRTEST-ZS-20' }, { farbe: null, sku: 'TPRTEST-ZS-40' }] }).map(f => f.schluessel), [['TPRTEST-ZS-20', 'TPRTEST-ZS-40']]);
+  // Ohne SKU bleibt es unzuordenbar, und sobald eine Variante eine Farbe hat, gilt die normale Liste.
+  assert.deepEqual(farbenFuer({ varianten: [{ farbe: null, sku: null }] }), []);
+  assert.deepEqual(farbenFuer({ varianten: [{ farbe: 'Sand', sku: null }, { farbe: null, sku: 'X_1' }] }), []);
 });
 
 test('vorschlaege: eingetroffenes Probestueck zuerst, mehrfach gefragte Farben danach, Lagerware faellt weg', () => {

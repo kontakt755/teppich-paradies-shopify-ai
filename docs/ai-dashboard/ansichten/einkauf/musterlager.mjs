@@ -464,7 +464,9 @@ function oeffneEinlagern(vorgabe = null) {
     const r = await schreibe(body);
     if (!r.ok) { zeigeMeldung(form, r.text); knopf.disabled = false; knopf.textContent = 'Einlagern'; return; }
     $('#dialogRoot').innerHTML = '';
-    toast(`${plural(r.anzahl, 'Muster', 'Muster')} eingelagert${basis.ort ? ` · ${basis.ort}` : ''}`);
+    // r.anzahl zaehlt Lagereintraege (Farben), nicht Stueck: "1 Muster" bei 15 eingelagerten las sich wie ein Fehler.
+    const stueck = Math.max(1, Number(basis.anzahl) || 1);
+    toast(`${r.anzahl > 1 ? `${r.anzahl} Farben je ${stueck}×` : `${stueck}×`} eingelagert${basis.ort ? ` · ${basis.ort}` : ''}`);
     nachladen();
   });
 }
