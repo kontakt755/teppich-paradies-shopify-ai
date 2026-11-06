@@ -5,9 +5,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { aufraeumFall, aufraeumListe, letzteBewegung, packBefund, aufraeumenAbTagen, AUFRAEUMEN_AB_TAGEN, GEPACKT_OHNE_VERSAND_AB_TAGEN } from '../lib/aufraeumen.mjs';
+import { aufraeumFall, aufraeumListe, letzteBewegung, packBefund, aufraeumenAbTagen, AUFRAEUMEN_AB_TAGEN } from '../lib/aufraeumen.mjs';
 import { belegtFertigGrund, bestellungAusgeblendet, bestellArbeitsstand } from '../lib/bestellarbeit.mjs';
-import { aufraeumenBlock } from '../ansichten/heute/aufraeumen.mjs';
+import { aufraeumenBlock, aufraeumenUnterProblem } from '../ansichten/heute/aufraeumen.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 
 // Nur synthetische Daten: erfundene Kunden, keine echten Bestellungen.
@@ -149,39 +149,58 @@ test('Liste: am laengsten ruhende zuerst; Block erscheint nur mit Faellen und es
   assert.doesNotMatch(lesend, /data-aufraeumen-(abschliessen|laeuft)=/, 'Rolle "lesen" sieht nur "Ansehen"');
 });
 
-test('Gepackt ohne Versandvermerk (#1709): nach 3 Tagen ein Fall mit "Ist verschickt…" statt "Abschließen"', () => {
-  assert.equal(GEPACKT_OHNE_VERSAND_AB_TAGEN, 3);
+test('Gepackt, nie eingetragen (#1996): kein Aufraeumfall mehr - die Packstation zeigt es rot, ohne 3-Tage-Regel', () => {
   const gl = { status: { [L(1)]: geliefert(8), [L(2)]: geliefert(8) } };
   const packen = t => ({ gepackt: { [O]: { zeit: vorTagen(t) } }, haken: {}, klaeren: {} });
-  assert.equal(fall(zeile(gl), { packen: packen(2) }), null);
-  const f = fall(zeile(gl), { packen: packen(3) });
-  assert.equal(f.grund, 'gepackt');
-  assert.equal(f.tage, 3);
-  assert.equal(aufraeumenAbTagen(f), 3);
-  assert.equal(aufraeumenAbTagen({ art: 'muster', grund: 'ruhe' }), AUFRAEUMEN_AB_TAGEN.muster);
-  assert.ok(f.belege.includes('Gepackt am 23.10.'));
-  assert.match(f.vorschlag.text, /nicht als verschickt eingetragen/);
-  assert.equal(f.vorschlag.notiz, 'Umschlag gepackt am 23.10., Versand beim Aufräumen eingetragen');
-  assert.deepEqual(f.lineItemIds, [L(1), L(2)]);
-  // "Liegt noch hier" ist eine Bewegung: drei Tage Ruhe, dann fragt die Liste wieder.
-  const liegt = n => zeile({ ...gl, notizen: [{ am: vorTagen(n), text: 'Umschlag liegt noch hier – beim Aufräumen bestätigt' }] });
-  assert.equal(fall(liegt(2), { packen: packen(6) }), null);
-  assert.equal(fall(liegt(3), { packen: packen(6) }).grund, 'gepackt');
-  // Wareneingang nach dem Packen nachgetragen (#1706): Buchhaltung, keine Bewegung - die Uhr laeuft ab dem Packen.
-  const nachgetragen = zeile({ status: { [L(1)]: geliefert(0), [L(2)]: geliefert(0) } });
-  assert.equal(fall(nachgetragen, { packen: packen(4) }).tage, 4);
-  // Schon ein Artikel als verschickt eingetragen: kein Gepackt-Fall, es gilt die normale Ruhefrist.
-  const teil = zeile({ status: { [L(1)]: { ...geliefert(8), status: 'raus', rausAm: vorTagen(4), aktualisiertAm: vorTagen(4) }, [L(2)]: geliefert(8) } });
-  assert.equal(fall(teil, { packen: packen(5) }), null);
-  // Ohne Umschlag bleibt alles wie bisher.
-  assert.equal(fall(zeile(gl)), null, 'angekommen vor 8 Tagen, nicht gepackt: noch keine 14 Tage');
+  // Bis 06.11. nach 3 Tagen ein Fall mit "Ist verschickt…"; jetzt nie - auch nicht nach Wochen ("Abschließen"
+  // waere falsch: der Kunde bekaeme keine Versandmail). Er steht unter Packstation › Gepackt und auf Heute rot.
+  for (const t of [3, 20, 40]) assert.equal(fall(zeile(gl), { packen: packen(t) }), null, `gepackt vor ${t} Tagen`);
+  assert.equal(aufraeumenAbTagen({ art: 'muster' }), AUFRAEUMEN_AB_TAGEN.muster);
+  assert.equal(aufraeumenAbTagen({ art: 'ware' }), AUFRAEUMEN_AB_TAGEN.ware);
+  // Schon ein Artikel als verschickt eingetragen: normaler Ruhefall nach 14 Tagen, der Umschlag ist eine Bewegung.
+  const teil = zeile({ status: { [L(1)]: { ...geliefert(30), status: 'raus', rausAm: vorTagen(20), aktualisiertAm: vorTagen(20) }, [L(2)]: geliefert(30) } });
+  assert.equal(fall(teil, { packen: packen(5) }), null, 'gepackt vor 5 Tagen');
+  const f = fall(teil, { packen: packen(16) });
+  assert.equal(f.grund, 'ruhe');
+  assert.equal(f.tage, 16);
+  // Ein Server von vor #1996 liefert noch grund 'gepackt': die Liste zeigt ihn nicht (kein "Abschließen" daran).
+  const alt = { ...zeile(gl), aufraeumen: { art: 'muster', grund: 'gepackt', tage: 4, belege: [], vorschlag: { text: 'x', notiz: 'y' }, lineItemIds: [L(1)] } };
+  assert.deepEqual(aufraeumListe([alt]), []);
+  assert.equal(aufraeumenBlock({ daten: { verfuegbar: true, zeilen: [alt] } }), '');
+  const html = aufraeumenBlock({ daten: { verfuegbar: true, zeilen: [{ ...teil, aufraeumen: f }] } });
+  assert.doesNotMatch(html, /data-aufraeumen-verschickt|Ist verschickt|Liegt noch hier|3 Tagen/);
+  assert.doesNotMatch(html, /gepackte Umschläge/, 'der Text nennt keine 3-Tage-Regel mehr');
+});
 
-  const zeilen = [{ ...zeile(gl), aufraeumen: f }];
-  const html = aufraeumenBlock({ daten: { verfuegbar: true, zeilen } });
-  assert.match(html, /data-aufraeumen-verschickt="gid:\/\/shopify\/Order\/71"[^>]*>Ist verschickt…</);
-  assert.match(html, /data-aufraeumen-laeuft="[^"]+"[^>]*fragt in 3 Tagen wieder">Liegt noch hier</);
-  assert.doesNotMatch(html, /data-aufraeumen-abschliessen=/, 'gepackt: abschliessen wuerde das Nachfassen ueberspringen');
-  assert.doesNotMatch(aufraeumenBlock({ daten: { verfuegbar: true, zeilen }, lesend: true }), /data-aufraeumen-(verschickt|laeuft)=/);
+test('Eine Bestellung einmal (#1996): was rot unter Probleme steht, fehlt hier und hat dort dieselben Knoepfe', () => {
+  const a = { ...zeile({ status: { [L(1)]: bestellt(20), [L(2)]: bestellt(20) } }), orderId: 'A', orderName: '#A' };
+  const b = { ...zeile({ status: { [L(1)]: bestellt(17), [L(2)]: bestellt(17) } }), orderId: 'B', orderName: '#B' };
+  const daten = { verfuegbar: true, zeilen: [a, b].map(z => ({ ...z, aufraeumen: fall(z) })) };
+  assert.deepEqual(aufraeumListe(daten.zeilen, { ohne: ['B'] }).map(z => z.orderName), ['#A']);
+  const block = aufraeumenBlock({ daten, ohne: new Set(['B']) });
+  assert.match(block, /Alte Bestellungen aufräumen · 1/);
+  assert.doesNotMatch(block, /data-aufraeumen="B"/);
+  assert.equal(aufraeumenBlock({ daten, ohne: ['A', 'B'] }), '', 'alles schon oben: kein Block');
+  // Am Problem-Eintrag (To-do mit orderIds): dieselben data-Attribute wie im Block, also derselbe Klickweg.
+  const unter = aufraeumenUnterProblem({ orderIds: ['B', 'X'] }, { daten });
+  assert.match(unter, /class="heute-todo-aufraeumen" data-aufraeumen="B"/);
+  assert.match(unter, /#B: seit 17 Tagen keine Bewegung/);
+  assert.match(unter, /data-aufraeumen-abschliessen="B"[^>]*>Abschließen…</);
+  assert.match(unter, /data-aufraeumen-laeuft="B"[^>]*>Läuft noch</);
+  assert.doesNotMatch(unter, /data-aufraeumen="A"/);
+  assert.equal(aufraeumenUnterProblem({ orderIds: ['B'] }, { daten, lesend: true }), '', 'Rolle "lesen": keine Knoepfe');
+  assert.equal(aufraeumenUnterProblem({ id: 'ohne-bestellung' }, { daten }), '');
+  assert.equal(aufraeumenUnterProblem({ orderIds: ['B'] }, { daten: { verfuegbar: false } }), '');
+  // Eine Bestellung in zwei roten Eintraegen: die Zeile samt Knoepfen nur am ersten (Review 06.11.2026).
+  const schonGezeigt = new Set();
+  const erste = aufraeumenUnterProblem({ orderIds: ['B'] }, { daten, schonGezeigt });
+  const zweite = aufraeumenUnterProblem({ orderIds: ['B', 'X'] }, { daten, schonGezeigt });
+  assert.match(erste, /data-aufraeumen-laeuft="B"/);
+  assert.equal(zweite, '');
+  // Traegt das To-do schon eine Tageszahl, nennt die Zeile das Datum statt einer zweiten Zahl.
+  const mitZahl = aufraeumenUnterProblem({ orderIds: ['B'], alterTage: 17 }, { daten });
+  assert.match(mitZahl, /#B: letzte Bewegung am \d\d\.\d\d\.\d{4}/);
+  assert.doesNotMatch(mitZahl, /seit 17 Tagen/);
 });
 
 // API: der Server haengt den Fall an /api/kunden/bestellungen, "Läuft noch" (Notiz) nimmt ihn heraus.
@@ -238,8 +257,8 @@ test('API: gepackter Umschlag ohne Versand - naechster Schritt und Aufraeumfall 
   uhr.jetzt = new Date('2026-10-26T10:00:00Z');
   const z = api.kundenBestellungen().zeilen.find(x => x.orderName === '#T3');
   assert.equal(z.naechsterSchritt.text, 'Umschlag gepackt am 22.10. – zur Post bringen und als verschickt eintragen');
-  assert.equal(z.aufraeumen.grund, 'gepackt');
-  assert.equal(z.aufraeumen.tage, 4);
+  // Seit #1996 kein Aufraeumfall (vorher grund 'gepackt' nach 3 Tagen): rot in der Packstation unter "Gepackt".
+  assert.equal(z.aufraeumen, null);
   // Beschaedigte Packablage: Zeitleisten laufen weiter, nur ohne diese Angabe.
   fs.writeFileSync(path.join(dir, 'muster-packen.json'), '{kaputt');
   assert.match(api.kundenBestellungen().zeilen.find(x => x.orderName === '#T3').naechsterSchritt.text, /^Muster labeln/);

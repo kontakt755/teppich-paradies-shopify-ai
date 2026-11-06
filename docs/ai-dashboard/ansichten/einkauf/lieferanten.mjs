@@ -90,7 +90,7 @@ function ueberfaelligHinweis(k, { mitLink = true } = {}) {
 
 /**
  * Wartestand einer Zeile (lib/ampel.mjs): rot/gelb als Plakette mit Zeichen und Wort
- * ("× Überfällig · 15 Tage", "! Nachhaken · 9 Tage", "× Blockiert"), ruhig nur die Tage in Grau.
+ * ("× Überfällig · 15 Tage beim Lieferanten", "! Liegt seit 8 Tagen hier", "× Blockiert"), ruhig nur die Tage in Grau.
  */
 function warteChip(x) {
   const a = x.ampel;
@@ -248,7 +248,8 @@ function nachfassKnopf(k) {
 function arbeitsSchritte(k, namen) {
   const teile = [];
   const w = k.ware.zuBestellen;
-  const m = k.muster.zuBestellen;
+  // Gesperrt (Lieferant kann nicht liefern): nie bestellen - steht unter "Muster nicht lieferbar" (#1996).
+  const m = k.muster.zuBestellen.filter(x => x.ampel?.grund !== 'gesperrt');
   if (w.length) {
     const zeigen = w.slice(0, 8);
     teile.push(`<section class="lf-schritt">${stufeKopf('Ware bestellen', w.length, wareKnopf(k, 'btn btn-primary'))}
@@ -273,10 +274,10 @@ function arbeitsSchritte(k, namen) {
     teile.push(`<section class="lf-schritt lf-nachfassen ${lbu.stufe}">${stufeKopf('Liegt bei uns', lbu.auftraege === 1 ? '1 Auftrag' : `${lbu.auftraege} Aufträge`, knopf, { zusatz: esc(satz) })}
       ${stufeListe(laufendZeilen(lbu.positionen, namen).map(z => z.html), 0, '')}</section>`);
   }
-  // Bestellt, aber der Lieferant kann das Muster nicht liefern (Mustersperre): nicht nachfassen,
+  // Der Lieferant kann das Muster nicht liefern (Mustersperre), bestellt oder noch nicht: nicht nachfassen,
   // sondern den Kunden informieren - das geht in der Packstation. Eigener Abschnitt, damit kein
   // rotes Muster unter "Bestellt, im Plan" verschwindet.
-  const nichtLieferbar = k.muster.bestellt.filter(x => x.ampel?.grund === 'gesperrt');
+  const nichtLieferbar = [...k.muster.zuBestellen, ...k.muster.bestellt].filter(x => x.ampel?.grund === 'gesperrt');
   if (nichtLieferbar.length) {
     teile.push(`<section class="lf-schritt lf-nachfassen crit">${stufeKopf('Muster nicht lieferbar', fuerKunden(nichtLieferbar), '<a class="btn" href="#/kunden?tab=muster">Packstation</a>', { zusatz: 'Der Lieferant kann diese Muster nicht liefern – Kunde informieren.' })}
       ${stufeListe(jeKommission(nichtLieferbar).map(g => musterZeile(g, namen)), 0, '')}</section>`);

@@ -79,10 +79,11 @@ function ausZeitleiste(zeile) {
   // Lieferant oder Kunde ist dran und die Frist laeuft noch: fuer uns nichts zu tun.
   if (n.stufe === 'warten') return { text: n.text, dringend: DRINGEND.NORMAL, art: 'wartet', wer: n.wer, hinweis };
   const seit = n.faelligSeitTagen ?? 0;
-  const dringend = n.stufe === 'problem' ? DRINGEND.SOFORT
+  // Ein roter Schritt (haelt den Auftrag auf) ist immer sofort - auch ein bestaetigter Termin, der erst gestern verstrich.
+  const dringend = n.stufe === 'problem' || n.rot ? DRINGEND.SOFORT
     : n.stufe === 'nachhaken' ? DRINGEND.BALD
       : seit >= 3 ? DRINGEND.SOFORT : DRINGEND.BALD;
-  return { text: n.text, dringend, art: 'auftrag', wer: n.wer, hinweis };
+  return { text: n.text, dringend, art: 'auftrag', wer: n.wer, hinweis, rot: Boolean(n.rot) };
 }
 
 /**
@@ -174,6 +175,10 @@ export function faelle(quellen = {}, opt = {}) {
     if (z.testbestellung || z.storniert) continue;
     const schritt = naechsterSchritt(z, { jetzt });
     if (schritt.art === 'fertig') continue;
+    // Rot nur aus der Ampel (lib/ampel.mjs, 06.11.2026): Schritt der Zeitleiste rot (gesperrt, ab 14 Tagen
+    // beim Lieferanten, Termin vorbei, Wareneingang klaeren) oder Bestellung blockiert ("Zuerst klaeren").
+    // "sofort" allein ist normale Arbeit - bis hierher trug jede sofortige Karte einen roten Rand.
+    const rot = Boolean(schritt.rot) || z.auftrag?.ampel === 'rot';
     hole({ schluessel: z.kundenSchluessel, name: z.kundenname, email: z.email, telefon: z.telefon })
       .punkte.push({
         quelle: 'bestellung',
@@ -185,6 +190,7 @@ export function faelle(quellen = {}, opt = {}) {
         betrag: z.gesamtbetrag ?? null,
         waehrung: z.waehrung || 'EUR',
         schritt,
+        rot,
         adminUrl: z.adminUrl || null,
       });
   }
@@ -240,6 +246,7 @@ export function faelle(quellen = {}, opt = {}) {
     k.testkontakt = istTestkontakt(k);
     k.punkte.sort((a, b) => a.schritt.dringend - b.schritt.dringend || (b.tage ?? 0) - (a.tage ?? 0));
     k.dringend = Math.min(...k.punkte.map(p => p.schritt.dringend));
+    k.rot = k.punkte.some(p => p.rot === true);
     k.aeltesteTage = Math.max(...k.punkte.map(p => p.tage ?? 0));
     k.summe = k.punkte.reduce((s, p) => s + (Number(p.betrag) || 0), 0);
   }

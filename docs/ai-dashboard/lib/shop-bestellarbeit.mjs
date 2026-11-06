@@ -3,6 +3,8 @@ import { bestellArbeitsstand, bestellZahlungOffen } from './bestellarbeit.mjs';
 import { beschaffungsStand, restmenge } from './beschaffung.mjs';
 import { werWartet } from './todos.mjs';
 import { kalendertage } from './kalendertage.mjs';
+import { zeilenAblauf, teilstandText, warenAmpel, tageBeimLieferanten } from './auftrags-ablauf.mjs';
+import { lieferantName as lieferantAnzeige } from './einkauf-lieferanten.mjs';
 
 const positionenVon = z => Array.isArray(z?.auftrag?.positionen) ? z.auftrag.positionen.filter(Boolean) : [];
 const warenVon = z => positionenVon(z).filter(p => p.istMuster !== true);
@@ -16,8 +18,17 @@ export function bestellArtPasst(z, art = 'alle') {
   return true;
 }
 
-/** Warenstand verwendet den vorhandenen positionsweisen Fortschritt, niemals den gemischten Gesamtstand. */
-export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
+const seitText = t => (t === 0 ? 'seit heute' : t === 1 ? 'seit 1 Tag' : `seit ${t} Tagen`);
+
+/**
+ * Warenstand verwendet den vorhandenen positionsweisen Fortschritt, niemals den gemischten Gesamtstand.
+ * Zusaetzlich (#1996, 06.11.2026) aus derselben Rechnung wie "Je Auftrag" (zeilenAblauf):
+ *   teilstand  "Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: …" oder ''
+ *   ampel      rote Ampel der Ware (warenAmpel) oder null
+ * @param opt.lieferantName  Kennung -> Anzeigename fuer den Teilstand (Stammdaten der Ansicht); ohne
+ *                           Stammdaten der neutrale Ersatz "Lieferant A" wie in "Je Auftrag" und den To-dos
+ */
+export function warenArbeitsstand(z = {}, { jetzt = Date.now(), lieferantName = id => lieferantAnzeige(id) } = {}) {
   const waren = warenVon(z);
   const gemischt = waren.length > 0 && musterVon(z).length > 0;
   const fortschritt = z.warenFortschritt || (!gemischt && waren.length ? z.fortschritt : null);
@@ -81,18 +92,30 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
   const tage = kalendertage(z.datum, Number(jetzt));
   // Jede Pruef-/Zahlungsaufgabe von oben ist unser Schritt, auch wenn der Lieferant noch liefert.
   if (archiviert || unklar || kontrollieren || zahlungOffen) wartet = null;
+  const lage = !archiviert && !unklar && !abgeschlossen && z.offen ? zeilenAblauf(z, new Date(jetzt)) : null;
+  const teilstand = lage ? teilstandText(lage.ab, lage.e, { lieferantName }) : '';
+  // Wartet nur auf den Lieferanten: der Stand ("Beim Lieferanten bestellt") steht schon in der Zeile -
+  // vorher wiederholte der naechste Schritt ihn ("Ware bestellt"). Ein Teilstand sagt mehr; ein
+  // bestaetigter Termin bleibt "Ware kommt bis …" wie auf Heute und in den To-dos.
+  if (wartet === 'lieferant') {
+    // Ohne belegte Wartezeit (kein Bestelldatum, Termin im Plan) keine Tageszahl - nicht "seit heute".
+    const tageL = tageBeimLieferanten(lage?.ab, new Date(jetzt));
+    const warten = liefertermin ? arbeit.naechstes : tageL === null ? 'wartet auf Lieferant' : `wartet auf Lieferant · ${seitText(tageL)}`;
+    arbeit = { ...arbeit, naechstes: teilstand ? (liefertermin ? `${teilstand} · ${arbeit.naechstes}` : teilstand) : warten };
+  }
   return { ...arbeit, wartet, liefertermin: wartet === 'lieferant' ? liefertermin : null, fortschritt: fortschritt || null, waren, gemischt, unklar: Boolean(unklar),
-    kontrollieren, abgeschlossen, bezahlt, zahlungOffen, zahlungsRang, tage, fehlteile: fehlteile.length };
+    kontrollieren, abgeschlossen, bezahlt, zahlungOffen, zahlungsRang, tage, fehlteile: fehlteile.length,
+    teilstand, ampel: lage ? warenAmpel(lage.ab, lage.e) : null };
 }
 
 /** Eine gemeinsam verwendbare Projektion fuer Waren-Startseite und bewusste Artfilter. */
-export function shopBestellarbeit(daten, { jetzt = Date.now() } = {}) {
+export function shopBestellarbeit(daten, { jetzt = Date.now(), lieferantName } = {}) {
   if (daten == null) return { verfuegbar: false, laedt: true, hinweis: 'Warenbestellungen werden geladen …', zeilen: [], offen: null };
   if (!daten.verfuegbar || fehlerhaft(daten) || !Array.isArray(daten.zeilen)) return {
     verfuegbar: false, laedt: false, hinweis: daten.hinweis || 'Warenbestellungen können gerade nicht vollständig gelesen werden.', zeilen: [], offen: null,
   };
   const zeilen = daten.zeilen.filter(z => z && !z.testbestellung && !z.storniert && bestellArtPasst(z, 'ware'))
-    .map(z => ({ zeile: z, ...warenArbeitsstand(z, { jetzt }) }))
+    .map(z => ({ zeile: z, ...warenArbeitsstand(z, { jetzt, lieferantName }) }))
     .filter(z => !z.abgeschlossen)
     .sort((a, b) => a.zahlungsRang - b.zahlungsRang || Number(Boolean(a.wartet)) - Number(Boolean(b.wartet))
       || Number(b.kontrollieren) - Number(a.kontrollieren)

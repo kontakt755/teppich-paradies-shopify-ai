@@ -43,6 +43,7 @@ import { BlattFehler, anzeigename as blattName, bewertungText, blaetterHtml, ist
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, bereiteStatusPositionenVor, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, setzeSelbstversand, STATUS_ORDER, UEBER_WERTE, SELBST_SCHRITTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { lagerwarePfad, leseLagerware, markiereLagerware, LagerwareFehler } from '../operations/lib/lagerware.mjs';
 import { lieferwegVon, istLagerware } from '../docs/ai-dashboard/lib/lieferweg.mjs';
+import { ohneGesperrteKlaerung } from '../docs/ai-dashboard/lib/einkauf-uebersicht.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
@@ -1280,7 +1281,27 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     // Packablage meldet die Packstation selbst; die Zeitleisten laufen dann ohne diese Angabe.
     let gepackt = {};
     try { gepackt = leseMusterPackStand(musterPackenPfad(dir)).gepackt; } catch { /* siehe oben */ }
-    return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), gepackt, jetzt: now() });
+    // Gesperrte Muster (#1996): dieselbe Liste wie `gesperrteMuster` der Bestellungen und das To-do "Muster
+    // nicht lieferbar" - sonst schlug "Kunden › Zu tun" vor, ein gesperrtes Muster zu bestellen oder beim
+    // Lieferanten nachzufragen. Ist die Ablage kaputt, meldet das das Musterlager; dann ohne Sperre.
+    let sperren = new Map();
+    try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* siehe Musterlager */ }
+    const gesperrtFuer = a => (sperren.size ? (a.positionen || []).filter(p => p.istMuster && p.sku && p.lineItemId && sperren.has(sperrSku(p.sku))).map(p => p.lineItemId) : null);
+    return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), gepackt, gesperrtFuer, jetzt: now() });
+  }
+
+  /**
+   * Gesperrte Muster je Bestellzeile (Mustersperre) und der Auftrag ohne den Grund "ohne Großhändler-ID" fuer
+   * sie - dieselbe Regel wie im Einkauf (ohneGesperrteKlaerung, #1996). Ein Ort fuer Heute, Kunden › Zu tun und
+   * Kunden › Bestellungen: sonst lasen sie weiter die rote Ampel eines Musters, das nie bestellt wird.
+   * Ist die Ablage kaputt, meldet das das Musterlager; dann ohne Sperre.
+   */
+  function sperrBereinigung(dir, statusAlle) {
+    let sperren = new Map();
+    try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* siehe Musterlager */ }
+    const ids = a => (sperren.size ? (a?.positionen || []).filter(p => p.istMuster && p.sku && p.lineItemId && sperren.has(sperrSku(p.sku))).map(p => p.lineItemId) : []);
+    const statusVon = ({ orderId, lineItemId }) => statusAlle[positionKey(orderId, lineItemId)] || null;
+    return { ids, zeile: z => (z.auftrag ? { ...z, auftrag: ohneGesperrteKlaerung(z.auftrag, new Set(ids(z.auftrag)), statusVon) } : z) };
   }
 
   /** Wer kettelt und ob der Kettler-Dialog gilt: fuer die Zeitleiste in Kundenakte und Bestellungen. */
@@ -2037,10 +2058,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { packen = leseMusterPackStand(musterPackenPfad(dir)); } catch { /* Fehler meldet die Packstation selbst. */ }
       const jetzt = now().getTime();
       // Gesperrte Muster je Bestellung fuers To-do "Kunde informieren"; ist die Ablage kaputt, meldet das das Musterlager.
-      let sperren = new Map();
-      try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* siehe oben */ }
-      const gesperrteMuster = z => (z.auftrag?.positionen || []).filter(p => p.istMuster && p.sku && sperren.has(sperrSku(p.sku))).map(p => p.lineItemId);
-      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, auftrag: z.auftrag ? { ...z.auftrag, ...kettelFelder(z.auftrag, statusAlle) } : z.auftrag, gesperrteMuster: gesperrteMuster(z), musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
+      const sperre = sperrBereinigung(dir, statusAlle);
+      const gesperrteMuster = z => sperre.ids(z.auftrag);
+      const zeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(sperre.zeile).map(z => ({ ...z, auftrag: z.auftrag ? { ...z.auftrag, ...kettelFelder(z.auftrag, statusAlle) } : z.auftrag, gesperrteMuster: gesperrteMuster(z), musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) }));
       // lagerwareFehler: beschaedigte Regeldatei (operations/lib/lagerware.mjs) - Heute sagt es laut.
       return { verfuegbar: true, lagerwareFehler: modell.lagerwareFehler || null, ratgeberVorlagen: RATGEBER.map(r => ({ schluessel: r.schluessel, titel: ratgeberKurzTitel(r) })), musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: zeilen.map(z => ({ ...z, aufraeumen: aufraeumFall(z, { jetzt, packen }) })) };
     },
@@ -4699,7 +4719,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Der naechste Schritt kommt aus der Zeitleiste (Auftragsfluss + Verlauf), nicht aus dem
       // Shopify-Versandstatus: Muster, die laengst beim Kunden sind, standen sonst als "Versenden".
       const zl = zeitleisten(dir, modell, statusAlle);
-      const bestellzeilen = bestellliste(modell, { statusAlle, rueckrufeAlle })
+      // Rot nur aus der bereinigten Ampel: ein gesperrtes Muster ist kein "Zuerst klären" (sperrBereinigung).
+      const bestellzeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(sperrBereinigung(dir, statusAlle).zeile)
         .map(z => ({ ...z, zeitleisteSchritt: zl.get(z.orderId)?.naechsterSchritt ?? null }));
       const angebote = readJsonIfExists(path.join(dir, 'angebote', 'angebote.json'))?.angebote ?? [];
       const warenkoerbe = readJsonIfExists(path.join(dir, 'warenkoerbe', 'warenkoerbe.json'))?.warenkoerbe ?? [];

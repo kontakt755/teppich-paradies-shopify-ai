@@ -15,7 +15,10 @@ import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
-import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus, ladeStandNeu } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus, ladeStandNeu, ensureEinkaufLieferanten } from '../einkauf/auftragsfluss.mjs';
+import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
+import { warteWort, warteTitel } from '../../lib/ampel.mjs';
+import { ampelPlakette } from '../../bausteine/ampel.mjs';
 import { kunden, telLink, kundenAuftragKarte, ratgeberKnopf, ZAHLUNG_TEXT, VERSAND_TEXT, statusText } from './gemeinsam.mjs';
 import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
@@ -62,10 +65,23 @@ const KANAL_TEXT = { web: 'Onlineshop', pos: 'Ladengeschäft', shopify_draft_ord
 
 function bqFeldTreffer(felder, q) { return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(q)); }
 
+/** Anzeigename je Lieferant fuer den Teilstand - dieselbe Quelle wie "Je Auftrag" (einkauf.lieferanten). */
+const lieferantName = id => lieferantAnzeige(id, einkauf.lieferanten?.lieferanten || []);
+
 function zeilenNachArt(zeilen, art) {
   if (!['ware', 'muster'].includes(art)) return zeilen;
   return zeilen.filter(z => bestellArtPasst(z, art))
-    .map(z => art === 'ware' ? { ...z, warenarbeit: warenArbeitsstand(z) } : z);
+    .map(z => art === 'ware' ? { ...z, warenarbeit: warenArbeitsstand(z, { lieferantName }) } : z);
+}
+
+/**
+ * Rot nur aus der Ampel der Warenpositionen (#1996, 06.11.2026): Bestellangaben fehlen, Termin vorbei
+ * oder ab 14 Tagen beim Lieferanten - als Plakette mit Wort, nie Farbe allein. Die Farbe des Stands
+ * selbst sagt nur "zu tun" (gelb, noch nicht bestellt) oder ruhig (app.css .bq-fortschritt).
+ */
+function warenPlakette(z) {
+  const a = (z.warenarbeit || warenArbeitsstand(z, { lieferantName })).ampel;
+  return a ? ` ${ampelPlakette('rot', warteWort(a), { titel: warteTitel(a) })}` : '';
 }
 
 function pruefgruende(z) {
@@ -281,7 +297,7 @@ function bestellzeileHtml(z) {
   return `<tr class="bq-row${offenKlasse}${inhalt ? ' mit-inhalt' : ''}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
       <td data-l="Bestellnr.">${hakenKnopf(z)}<a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${neuBadge(z)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
       <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}<div class="small muted">${fmtDateTime(z.datum)} · ${betragText(z)}</div></td>
-      <td data-l="Stand"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span>${z.zahlungsstatus !== 'PAID' ? `<div class="small">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</div>` : ''}</td>
+      <td data-l="Stand"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span>${warenPlakette(z)}${z.zahlungsstatus !== 'PAID' ? `<div class="small">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</div>` : ''}</td>
       <td data-l="Nächster Schritt">${esc(arbeitsstand(z).naechstes)}</td>
     </tr>
     ${inhalt ? `<tr class="bq-inhalt${offenKlasse}" data-bq-toggle="${esc(z.orderId)}"><td colspan="4">${inhalt}</td></tr>` : ''}
@@ -295,7 +311,7 @@ function bestellzeileKarte(z, gruppiert = false) {
       <div class="t">${hakenKnopf(z)}${esc(z.orderName)}${neuBadge(z)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${betragText(z)} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
       ${inhaltHtml(z) ? `<div class="bq-inhalt-mobil">${inhaltHtml(z)}</div>` : ''}
-      <div class="m"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span></div>
+      <div class="m"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span>${warenPlakette(z)}</div>
       <div class="m">${esc(arbeitsstand(z).naechstes)}</div>
     </div>
     <div class="r"><span class="small muted">${kunden.erweitert.has(z.orderId) ? 'zuklappen ▲' : 'Details ▼'}</span></div>
@@ -311,6 +327,8 @@ export function viewKundenBestellungen() {
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   const params = state.route.params;
   const art = ['ware', 'muster'].includes(params.get('bart')) ? params.get('bart') : 'alle';
+  // Namen fuer den Teilstand-Satz ("fehlt noch: … (Lieferant)") wie in "Je Auftrag".
+  if (art === 'ware') ensureEinkaufLieferanten();
   const filter = params.get('bfilter') || 'nicht_fertig';
   const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');

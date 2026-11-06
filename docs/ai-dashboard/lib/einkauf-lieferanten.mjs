@@ -158,7 +158,10 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       zuBestellen: k.ware.zuBestellen.length,
       bestellt: k.ware.bestellt.length,
       eingetroffen: k.ware.eingetroffen.length,
-      musterOffen: k.muster.zuBestellen.length,
+      // Gesperrte Muster kommen nie: kein "Muster bestellen", kein Rang "zu bestellen" (dieselbe Regel wie
+      // arbeitsSchritte in ansichten/einkauf/lieferanten.mjs). Sie bleiben offen (musterGesperrt).
+      musterOffen: k.muster.zuBestellen.filter(x => x.ampel?.grund !== 'gesperrt').length,
+      musterGesperrt: k.muster.zuBestellen.filter(x => x.ampel?.grund === 'gesperrt').length,
       musterLaufend: k.muster.bestellt.length + k.muster.eingetroffen.length,
     };
     // Eigenes Feld (nicht in `zahlen`): offene Muster aus dem eigenen Bestand.
@@ -170,7 +173,7 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       stammdaten: st,
       zahlen,
       musterEigen,
-      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.eingetroffen + zahlen.musterOffen + zahlen.musterLaufend + musterEigen + k.ware.eigen.length,
+      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.eingetroffen + zahlen.musterOffen + zahlen.musterGesperrt + zahlen.musterLaufend + musterEigen + k.ware.eigen.length,
       ueberfaellig: {
         stufe: wartend.some(x => x.warnstufe === 'crit') ? 'crit' : wartend.length ? 'warn' : null,
         anzahl: wartend.length,

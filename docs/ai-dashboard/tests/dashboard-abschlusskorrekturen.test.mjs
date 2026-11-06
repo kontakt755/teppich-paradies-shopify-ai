@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { aufkleberFuer } from '../lib/muster-packen.mjs';
 import { plural } from '../kern/helfer.mjs';
+import { warenArbeitsstand } from '../lib/shop-bestellarbeit.mjs';
+import { lieferantName as lieferantAnzeige } from '../lib/einkauf-lieferanten.mjs';
+import { warteWort, warteTitel } from '../lib/ampel.mjs';
+import { ampelPlakette } from '../bausteine/ampel.mjs';
 
 // Ansichtsmodul mit kleinen Browser-Stubs laden; getestet werden die echten Handler.
 function ladeAnsicht(datei, kontext, ausgabe) {
@@ -55,6 +59,7 @@ function bestellTestAnsicht(filter, zeilen) {
     bestellungAusgeblendet: z => !!(z.abgehakt || z.fertig || z.fulfillmentstatus === 'FULFILLED'),
     bestellPruefgruende: z => z.abgehakt && !z.fertig && z.fulfillmentstatus !== 'FULFILLED' ? ['Versand offen'] : [],
     bestellArbeitsstand: () => ({ stand: 'Offen', naechstes: 'Prüfen' }),
+    warenArbeitsstand, lieferantAnzeige, warteWort, warteTitel, ampelPlakette, einkauf: {}, ensureEinkaufLieferanten: () => {},
     istNurLesend: () => true, esc: v => String(v ?? ''),
     fmtDateTime: () => '', fmtDate: () => '', geldText: () => '',
     statusText: () => '', ZAHLUNG_TEXT: {},

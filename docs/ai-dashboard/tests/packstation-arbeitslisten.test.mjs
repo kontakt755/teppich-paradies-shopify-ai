@@ -89,6 +89,30 @@ test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die
   assert.match(kopf(ansicht('tab=muster', [kunde(4, 'warten')])), /<span class="small muted">wartet seit 1 Tag<\/span>/);
 });
 
+test('Eine Tageszahl je Karte (#1996): zaehlt die Plakette schon Tage, steht nur "Kunde bestellt TT.MM."', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  // Wie #1049 in der Datenkopie: Kunde bestellt 19.10., beim Lieferanten seit 20.10. - am 06.11. 17 Tage.
+  const k = kunde(1, 'warten');
+  Object.assign(k, { seit: '2026-10-19T08:00:00Z', wartetTage: 18 });
+  k.bestellungen[0].datum = k.seit;
+  k.muster = [{ ...k.muster[0], bestelltAm: '2026-10-20T07:00:00.000Z' }];
+  const html = kopf(ansicht('tab=muster', [mitAmpel(k)]));
+  assert.match(html, /×<\/span>Überfällig · 17 Tage beim Lieferanten</);
+  assert.match(html, /<span class="small muted">Kunde bestellt 19\.10\.<\/span>/);
+  assert.doesNotMatch(html, /wartet seit/, 'keine zweite Tageszahl auf der Karte');
+  const sichtbar = html.replace(/<[^>]*>/g, ' ');   // ohne Tooltips (title) - die liest am Handy niemand
+  assert.equal((sichtbar.match(/\d+ (Tag|Werktag)/g) || []).length, 1, sichtbar);
+  // Gelb (Nachhaken) ebenso; mehrere Bestellungen sagen, dass es die erste ist.
+  const zwei = { ...k, muster: [{ ...k.muster[0], bestelltAm: '2026-10-28T07:00:00.000Z' }],
+    bestellungen: [k.bestellungen[0], { orderId: 'order1b', orderName: '#TEST1b', datum: '2026-10-25T08:00:00Z' }] };
+  assert.match(kopf(ansicht('tab=muster', [mitAmpel(zwei)])), /!<\/span>Nachhaken · 9 Tage beim Lieferanten<[\s\S]*Kunde bestellt 19\.10\. \(erste von 2\)/);
+  // Plakette ohne Tage ("Termin … vorbei", "Kommt nicht") oder ruhig: die Wartezeit des Kunden bleibt die eine Zahl.
+  const termin = { ...k, muster: [{ ...k.muster[0], liefertermin: '2026-11-04' }] };
+  assert.match(kopf(ansicht('tab=muster', [mitAmpel(termin)])), /bestellt am Mo\., 19\.10\. · wartet seit 18 Tagen/);
+  const ruhig = { ...k, muster: [{ ...k.muster[0], bestelltAm: '2026-11-04T07:00:00.000Z' }] };
+  assert.match(kopf(ansicht('tab=muster', [mitAmpel(ruhig)])), /bestellt am Mo\., 19\.10\. · wartet seit 18 Tagen/);
+});
+
 test('Filter "Umschlag" zaehlt und zeigt noch vorzubereitende, vorbereitete und angefangene Umschlaege (Inhaber 28.10.)', () => {
   const reihe = html => [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
   const chip = (html, label) => html.match(new RegExp(`<a class="chip" href="([^"]*)"( aria-current="page")?>${label}<span class="c">(\\d+)</span>`));
@@ -636,9 +660,9 @@ test('Ampel (06.11.): Reiter zaehlen rote Umschlaege, Rot steht oben, ein Rand j
 
   const karte = pk => html.match(new RegExp(`<details class="([^"]*)"[^>]*data-mp-kunde="${pk}"[\\s\\S]*?</summary>`));
   assert.match(karte('order1')[1], /ampel-karte rot/);
-  assert.match(karte('order1')[0], /×<\/span>Überfällig · 16 Tage</);
+  assert.match(karte('order1')[0], /×<\/span>Überfällig · 16 Tage beim Lieferanten</);
   assert.match(karte('order2')[1], /ampel-karte gelb/);
-  assert.match(karte('order2')[0], /!<\/span>Nachhaken · 9 Tage</);
+  assert.match(karte('order2')[0], /!<\/span>Nachhaken · 9 Tage beim Lieferanten</);
   assert.doesNotMatch(karte('order3')[0], /ampel/, 'ruhig: kein Rand, keine Plakette, nichts Gruenes');
   assert.match(karte('order4')[1], /mp-angefangen/);
   assert.doesNotMatch(karte('order4')[1], /ampel-karte/, 'angefangen ist kein eigener Rand mehr, die Marke bleibt');
@@ -653,7 +677,7 @@ test('Ampel (06.11.): Reiter zaehlen rote Umschlaege, Rot steht oben, ein Rand j
   assert.match(offen('order7'), /<li class="mp-zeile ampel-zeile rot">[\s\S]*?Kein eindeutiger Aufkleber für Testmuster – Sand[\s\S]*?×<\/span>Zuordnung fehlt</);
   assert.match(offen('order7'), /<p class="notice crit">Musterzuordnung unvollständig/);
   assert.match(offen('order8'), /<li class="mp-zeile ampel-zeile gelb">[\s\S]*?!<\/span>Nicht bestellt<\/span> <span class="muted">Farbnummer fehlt<\/span>/);
-  assert.match(offen('order2'), /!<\/span>Nachhaken · 9 Tage<\/span> <span class="muted">beim Lieferanten bestellt am 28\.10\.<\/span>/);
+  assert.match(offen('order2'), /!<\/span>Nachhaken · 9 Tage beim Lieferanten<\/span> <span class="muted">beim Lieferanten bestellt am 28\.10\.<\/span>/);
   assert.match(offen('order4'), /<li class="mp-zeile mp-ab">/, 'eingelegt: ruhig');
   assert.match(offen('order3'), /<p class="notice mp-anmerkung"><strong>Noch nicht da:/, 'ruhiger Umschlag: Auskunft ohne Bernstein');
   assert.match(offen('order2'), /<p class="notice warn mp-anmerkung"><strong>Noch nicht da:/, 'gelber Umschlag: Bernstein');

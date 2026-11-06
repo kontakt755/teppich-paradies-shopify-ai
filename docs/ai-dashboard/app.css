@@ -655,8 +655,8 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .bq-kundengruppe-mobil h3 { margin: 0; padding: 10px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); border-radius: 8px; font-size: .94rem; }
 .bq-detail-mobil { margin: -4px 0 8px; padding: 0 4px; }
 .bq-fortschritt { font-weight: 600; }
-.bq-fortschritt.offen { color: var(--crit); }
-.bq-fortschritt.unterwegs { color: var(--warn); }
+.bq-fortschritt.offen { color: var(--warn); }
+.bq-fortschritt.unterwegs { color: var(--text-2); }
 .bq-fortschritt.erledigt { color: var(--text-2); font-weight: 400; }
 .bq-fehlt { color: var(--crit); font-size: .8rem; }
 .kunden-zeile.fertig { opacity: .68; }

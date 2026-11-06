@@ -30,7 +30,7 @@ function menge(eintraege, jetzt) {
 function nichtBereit(laedt, hinweis) {
   // Unbekannt ist keine leere Arbeitsliste und darf nie als "alles erledigt" erscheinen.
   return { verfuegbar: false, laedt, hinweis, lieferanten: [], blockiert: null,
-    nichtZugeordnet: null, eigen: null, gesamt: null };
+    nichtZugeordnet: null, eigen: null, gesamt: null, gesperrt: null };
 }
 
 /**
@@ -42,8 +42,12 @@ function nichtBereit(laedt, hinweis) {
  * @param {object|null} p.statusAlle Positionsmap oder Antwort von /api/einkauf/auftragsstatus
  * @param {object[]|object|null} p.lieferanten Stammdatenliste oder deren API-Antwort
  * @param {number|Date} p.jetzt
+ * @param {string[]} [p.gesperrt] lineItemIds gesperrter Muster (Vorgabe daten.gesperrteMuster). Sie kommen nie:
+ *        nicht bestellen, nicht als "ohne Artikelnummer" klaeren - zurueck kommt nur ihre Zahl (`gesperrt`).
+ *        Fehlt die Liste (Sperrablage unlesbar liefert eine leere), wird nicht gefiltert: lieber eine Klaerung
+ *        zu viel als ein still verschwundenes Muster.
  */
-export function startBestellarbeit({ daten = null, statusAlle = null, lieferanten = null, jetzt = Date.now() } = {}) {
+export function startBestellarbeit({ daten = null, statusAlle = null, lieferanten = null, jetzt = Date.now(), gesperrt = daten?.gesperrteMuster } = {}) {
   if (!daten || !statusAlle) return nichtBereit(true, 'Bestellarbeit wird geladen.');
   if (daten.verfuegbar === false) return nichtBereit(false, daten.hinweis || 'Bestelldaten sind nicht verfügbar.');
   if (statusAlle.verfuegbar === false) return nichtBereit(false, statusAlle.hinweis || 'Der aktuelle Bestellstand ist nicht verfügbar.');
@@ -54,9 +58,12 @@ export function startBestellarbeit({ daten = null, statusAlle = null, lieferante
   const zeit = Number(jetzt);
   if (!Number.isFinite(zeit)) return nichtBereit(false, 'Der Zeitpunkt für die Bestellarbeit ist nicht verfügbar.');
   const stamm = Array.isArray(lieferanten) ? lieferanten : lieferanten?.lieferanten || [];
+  const sperre = new Set(Array.isArray(gesperrt) ? gesperrt : []);
+  const istGesperrt = p => Boolean(p?.istMuster && p.lineItemId && sperre.has(p.lineItemId));
   const karten = lieferantenKarten({ gruppen: daten.gruppen, musterGruppen: daten.musterGruppen,
-    lieferanten: stamm, schwellen: lieferanten?.schwellen, jetzt: zeit,
+    lieferanten: stamm, schwellen: lieferanten?.schwellen, jetzt: zeit, gesperrt: istGesperrt,
     eintragFuer: p => p.orderId && p.lineItemId ? status[`${p.orderId}::${p.lineItemId}`] || null : null });
+  let gesperrtZahl = 0;
   const blockiert = arten(() => []), nichtZugeordnet = arten(() => []), eigen = arten(() => []);
   const gesamt = arten(() => []), liste = [];
   for (const k of karten) {
@@ -64,6 +71,8 @@ export function startBestellarbeit({ daten = null, statusAlle = null, lieferante
     for (const art of ['muster', 'ware']) {
       eigen[art].push(...k[art].eigen);
       for (const x of k[art].zuBestellen) {
+        // Gesperrt (Lieferant kann nicht liefern): weiter geht es in der Packstation (Kunde informieren).
+        if (art === 'muster' && istGesperrt(x.pos)) { gesperrtZahl += 1; continue; }
         gesamt[art].push(x);
         if (!k.zugeordnet) nichtZugeordnet[art].push(x);
         else if (!x.pos.orderId || !x.pos.lineItemId || (art === 'muster' ? musterBlockiert(x.pos) : blockGruende(x.pos).length)) blockiert[art].push(x);
@@ -80,5 +89,6 @@ export function startBestellarbeit({ daten = null, statusAlle = null, lieferante
     blockiert: arten(art => menge(blockiert[art], zeit)),
     nichtZugeordnet: arten(art => menge(nichtZugeordnet[art], zeit)),
     eigen: arten(art => menge(eigen[art], zeit)),
-    gesamt: arten(art => menge(gesamt[art], zeit)) };
+    gesamt: arten(art => menge(gesamt[art], zeit)),
+    gesperrt: gesperrtZahl };
 }
