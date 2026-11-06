@@ -52,6 +52,8 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Partnerladen | **Lieferant** | Packstation, Reiter „Muster kommt an“ („Lieferant nicht hinterlegt“) |
 | Wareneingang nach Partnerladen | **Muster kommt an** | Reiter der Packstation; auch in Leerzustaenden und Rueckweg-Knoepfen |
 | Per Bestellbearbeitung hinzugefuegte Position (ORDER_EDIT) | **Nachbestellung** | Packstation: „Nachbestellung am 05.11.“ am Muster und in der Kopfzeile der Kundenkarte |
+| Großhändler-ID | **Artikelnummer beim Lieferanten** | Spalte unter Bestellen, Hilfe „Begriffe kurz erklärt“; nicht unsere SKU |
+| Anleitung (Reiter unter Bestellen) | **Hilfe** | seit 06.11.2026 (#1996) ein Ort: „Beim Lieferanten bestellen“ mit Musterlager, „Begriffe kurz erklärt“ (Position, Ampel ohne Grün, Artikelnummer beim Lieferanten, Teillieferung); alte Links auf den Reiter öffnen „Je Auftrag“ |
 
 ## Bleibt bewusst
 

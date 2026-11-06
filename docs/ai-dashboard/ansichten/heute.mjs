@@ -225,7 +225,8 @@ function viewShop() {
     <section class="shop-werkzeuge" aria-label="Shop-Werkzeuge">
       <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
     </section>
-    <div class="heute-hintergrund">${musterAutomatikZeile(kunden.bestellungen)}${darfAnsicht('sonderposten') ? restrollenZeile() : ''}${datenstandZeile('shop')}</div>
+    ${/* Wie in den Alltagssichten mit Ueberschrift - Hilfe und Begriffe nennen die Zeilen "Im Hintergrund" (#1996). */ ''}
+    <section class="heute-hintergrund" aria-labelledby="heuteHg"><h2 id="heuteHg">Im Hintergrund</h2>${musterAutomatikZeile(kunden.bestellungen)}${darfAnsicht('sonderposten') ? restrollenZeile() : ''}${datenstandZeile('shop')}</section>
     <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik${nebenbereichZusatz(kunden.serviceanfragen)}</summary>
       <nav class="chips" aria-label="Weitere Bereiche">
         <a class="chip" href="#/heute?sicht=laden">Laden &amp; Anfragen</a>
