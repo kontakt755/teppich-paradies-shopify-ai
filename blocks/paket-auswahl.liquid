@@ -673,7 +673,7 @@
     // Variante stehen - wer "Blau Tief" waehlte, bekam "Blau Dunkel" in den
     // Warenkorb. Beides wird jetzt aus variant:update nachgefuehrt.
     let packagePriceCents = parseInt(component.dataset.packagePriceCents || '0', 10);
-    const aktionProzent = parseInt(component.dataset.aktionProzent || '0', 10) || 0;
+    const aktionProzent = parseFloat(component.dataset.aktionProzent || '0') || 0;
     let variantId = component.dataset.variantId;
     const WASTE_FACTOR = 1.05;
     const SQM_STEP = 0.25;
