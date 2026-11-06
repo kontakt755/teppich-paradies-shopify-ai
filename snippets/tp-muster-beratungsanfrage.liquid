@@ -84,10 +84,13 @@
     if (window.tpMbaBereit) return;
     window.tpMbaBereit = true;
     var MARKE = 'tp_mba_gesendet';
+    // Marke gilt 15 Minuten: ein abgebrochenes Absenden (Captcha, Zurueck)
+    // darf ein spaeteres fremdes Kontaktformular nicht zum Leeren bringen.
+    var GUELTIG_MS = 15 * 60 * 1000;
     document.addEventListener('submit', function (event) {
       var form = event.target;
       if (!form || !form.matches || !form.matches('form.tp-mba')) return;
-      try { sessionStorage.setItem(MARKE, '1'); } catch (error) {}
+      try { sessionStorage.setItem(MARKE, String(Date.now())); } catch (error) {}
     });
     function auswerten() {
       var danke = document.querySelectorAll('[data-tp-mba-ok]');
@@ -100,7 +103,8 @@
       }
       var gesendet = false;
       try {
-        gesendet = sessionStorage.getItem(MARKE) === '1';
+        var zeit = Number(sessionStorage.getItem(MARKE));
+        gesendet = zeit > 0 && Date.now() - zeit >= 0 && Date.now() - zeit < GUELTIG_MS;
         sessionStorage.removeItem(MARKE);
       } catch (error) { gesendet = false; }
       if (!gesendet) return;

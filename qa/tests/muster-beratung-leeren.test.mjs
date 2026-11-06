@@ -93,7 +93,7 @@ test('ohne Marke (fremdes Formular, Link mit contact_posted): Muster bleiben, ke
 test('mit Marke aus dem Absenden: Dank zeigen, einmal leeren, Marke danach weg', () => {
   const vorher = seite();
   vorher.absenden(musterForm);
-  assert.equal(vorher.speicher.m.get(MARKE), '1');
+  assert.match(vorher.speicher.m.get(MARKE), /^\d+$/);
 
   const nachher = seite({ erfolg: 1, speicher: vorher.speicher });
   nachher.geladen();
@@ -110,7 +110,7 @@ test('mit Marke aus dem Absenden: Dank zeigen, einmal leeren, Marke danach weg',
 });
 
 test('Snippet mehrfach auf der Seite: Marke einmal auswerten, nur einmal leeren', () => {
-  const s = seite({ erfolg: 2, skripte: 2, speicher: speicherAus([[MARKE, '1']]) });
+  const s = seite({ erfolg: 2, skripte: 2, speicher: speicherAus([[MARKE, String(Date.now())]]) });
   s.geladen();
   assert.deepEqual(s.geholt, [['/cart/clear.js', 'POST']]);
   assert.deepEqual(s.kaesten.map((k) => [k.ok.hidden, k.box.hidden]), [[false, true], [false, true]]);
@@ -133,7 +133,7 @@ test('Speicher gesperrt: sicherer Ausfall, Muster bleiben im Warenkorb', () => {
 });
 
 test('Anfrage mit Fehlern zurueck: Marke verworfen, spaeteres fremdes Formular leert nicht', () => {
-  const fehler = seite({ fehler: true, speicher: speicherAus([[MARKE, '1']]) });
+  const fehler = seite({ fehler: true, speicher: speicherAus([[MARKE, String(Date.now())]]) });
   fehler.geladen();
   assert.equal(fehler.speicher.m.has(MARKE), false);
   const spaeter = seite({ erfolg: 1, speicher: fehler.speicher });
@@ -142,8 +142,17 @@ test('Anfrage mit Fehlern zurueck: Marke verworfen, spaeteres fremdes Formular l
 });
 
 test('Seite ohne Danke und ohne Fehler (z. B. Zwischenschritt) laesst die Marke stehen', () => {
-  const s = seite({ speicher: speicherAus([[MARKE, '1']]) });
+  const s = seite({ speicher: speicherAus([[MARKE, String(Date.now())]]) });
   s.geladen();
-  assert.equal(s.speicher.m.get(MARKE), '1');
+  assert.match(s.speicher.m.get(MARKE), /^\d+$/);
   assert.deepEqual(s.geholt, []);
+});
+
+test('alte Marke (abgebrochenes Absenden vor ueber 15 Minuten): fremdes Formular leert nicht', () => {
+  const alt = String(Date.now() - 16 * 60 * 1000);
+  const s = seite({ erfolg: 1, speicher: speicherAus([[MARKE, alt]]) });
+  s.geladen();
+  assert.deepEqual(s.geholt, []);
+  assert.equal(s.kaesten[0].ok.hidden, true);
+  assert.equal(s.speicher.m.has(MARKE), false, 'alte Marke wird verworfen');
 });
