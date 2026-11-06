@@ -69,7 +69,7 @@
       <div class="tp-rm__feld">
         <label for="tp-rm-b-{{ id }}">Raumbreite</label>
         <div class="tp-rm__wrap">
-          <input type="text" id="tp-rm-b-{{ id }}" inputmode="decimal" autocomplete="off" placeholder="z. B. 350" data-rm-breite>
+          <input type="text" id="tp-rm-b-{{ id }}" inputmode="decimal" autocomplete="off" aria-describedby="tp-rm-fehler-{{ id }}" placeholder="z. B. 350" data-rm-breite>
           <span>cm</span>
         </div>
       </div>
@@ -77,12 +77,12 @@
       <div class="tp-rm__feld">
         <label for="tp-rm-l-{{ id }}">Raumlänge</label>
         <div class="tp-rm__wrap">
-          <input type="text" id="tp-rm-l-{{ id }}" inputmode="decimal" autocomplete="off" placeholder="z. B. 550" data-rm-laenge>
+          <input type="text" id="tp-rm-l-{{ id }}" inputmode="decimal" autocomplete="off" aria-describedby="tp-rm-fehler-{{ id }}" placeholder="z. B. 550" data-rm-laenge>
           <span>cm</span>
         </div>
       </div>
     </div>
-    <p class="tp-rm__fehler" data-rm-fehler role="alert" hidden></p>
+    <p class="tp-rm__fehler" id="tp-rm-fehler-{{ id }}" data-rm-fehler role="alert" hidden></p>
     <div class="tp-rm__ergebnis" data-rm-ergebnis aria-live="polite"></div>
   </div>
 </details>
