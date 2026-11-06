@@ -424,3 +424,14 @@ test('summen: aktueller Stand nach Bestellaenderung, Storno zeigt weiter den Wer
   assert.equal(summen({ ...basis, cancelledAt: '2026-10-22T10:00:00Z' }).gesamt.betrag, 200);
   assert.equal(summen({ ...basis, currentTotalPriceSet: undefined }).gesamt.betrag, 200, 'alter Export ohne aktuelle Felder');
 });
+
+test('Nachtraeglich eingefuegtes Muster ohne Properties: Quellvariante aus dem Metafeld der Mustervariante', () => {
+  const ersatz = zeile({ id: 41, sku: 'M-TESTROLLE_1', title: 'Muster Testboden', variantTitle: 'Taupe', handle: 'muster-testboden',
+    einkauf: [['quellvariante', 'gid://shopify/ProductVariant/777']] });
+  const mm = aufbereiten({ orders: [bestellung(41, [ersatz])], quellvarianten: [quellvariante] });
+  const p = mm.auftraege[0].positionen[0];
+  assert.equal(p.istMuster, true);
+  assert.equal(p.musterQuelle.quellvariante, '777');
+  assert.equal(p.musterQuelle.produktHandle, 'testboden');
+  assert.equal(p.grosshaendlerId, 'A-9999');
+});
