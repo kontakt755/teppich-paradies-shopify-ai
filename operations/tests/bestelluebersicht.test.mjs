@@ -435,3 +435,29 @@ test('Nachtraeglich eingefuegtes Muster ohne Properties: Quellvariante aus dem M
   assert.equal(p.musterQuelle.produktHandle, 'testboden');
   assert.equal(p.grosshaendlerId, 'A-9999');
 });
+
+test('Nachbestellung: nur Positionen, die erst per Bestellbearbeitung verkauft wurden, tragen das Datum', async () => {
+  const { nachbestellungen } = await import('../lib/bestelluebersicht.mjs');
+  const li = n => ({ id: `gid://shopify/LineItem/${n}` });
+  const order = { agreements: { nodes: [
+    { happenedAt: '2026-11-01T21:52:59Z', reason: 'ORDER', sales: { nodes: [
+      { actionType: 'ORDER', lineItem: li(1) }, { actionType: 'ORDER', lineItem: li(2) }, { actionType: 'ORDER' } ] } },
+    // Mengenaenderung an einer alten Position ist keine Nachbestellung, die neue Position schon.
+    { happenedAt: '2026-11-05T13:12:22Z', reason: 'ORDER_EDIT', sales: { nodes: [
+      { actionType: 'ORDER', lineItem: li(2) }, { actionType: 'ORDER', lineItem: li(3) } ] } },
+    // Rueckerstattung verkauft nichts neu.
+    { happenedAt: '2026-11-06T08:00:00Z', reason: 'REFUND', sales: { nodes: [{ actionType: 'RETURN', lineItem: li(4) }] } },
+  ] } };
+  assert.deepEqual([...nachbestellungen(order)], [['gid://shopify/LineItem/3', '2026-11-05T13:12:22Z']]);
+  assert.equal(nachbestellungen({}).size, 0, 'aelterer Export ohne agreements');
+  assert.equal(nachbestellungen({ agreements: { nodes: [{ happenedAt: 'kaputt', reason: 'ORDER_EDIT', sales: { nodes: [{ actionType: 'ORDER', lineItem: li(9) }] } }] } }).size, 0);
+});
+
+test('Nachbestellung: unvollstaendige Verkaufsliste der Bestellung selbst ergibt keinen Hinweis', async () => {
+  const { nachbestellungen } = await import('../lib/bestelluebersicht.mjs');
+  const order = { agreements: { nodes: [
+    { happenedAt: '2026-11-01T21:52:59Z', reason: 'ORDER', sales: { pageInfo: { hasNextPage: true }, nodes: [{ actionType: 'ORDER', lineItem: { id: 'a' } }] } },
+    { happenedAt: '2026-11-05T13:12:22Z', reason: 'ORDER_EDIT', sales: { nodes: [{ actionType: 'ORDER', lineItem: { id: 'b' } }] } },
+  ] } };
+  assert.equal(nachbestellungen(order).size, 0);
+});
