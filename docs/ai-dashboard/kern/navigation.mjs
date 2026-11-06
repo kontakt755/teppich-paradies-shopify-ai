@@ -120,6 +120,17 @@ function sichereUrl(roh) {
   try { const u = new URL(String(roh || '')); return u.protocol === 'https:' ? u.toString() : null; } catch { return null; }
 }
 
+/**
+ * Ein weiteres Dashboard fuer die Befehlspalette - mit denselben Regeln wie die Seitenleiste:
+ * nur mit sicherer Adresse vom Server, "nichtLesen" nicht fuer die Rolle "lesen". Sonst null.
+ */
+export function dashboardZiel(key) {
+  const d = DASHBOARDS.find(x => x.key === key);
+  const href = d ? sichereUrl(state.capabilities?.dashboards?.[key]) : null;
+  if (!href || (d.nichtLesen && state.session?.benutzer?.rolle === 'lesen')) return null;
+  return { href, text: d.text, titel: d.titel };
+}
+
 /** Gruppe "Weitere Dashboards" in der Seitenleiste fuellen; ohne eine Adresse bleibt sie weg. */
 export function zeichneDashboards() {
   const ziel = $('#navDashboards');

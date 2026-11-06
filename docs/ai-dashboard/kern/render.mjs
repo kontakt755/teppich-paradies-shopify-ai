@@ -10,6 +10,7 @@ import { merkeEingabe, stelleEingabeWiederHer } from '../lib/eingabe.mjs';
 import { state } from './zustand.mjs';
 import { $, esc } from './helfer.mjs';
 import { istNurLesend } from './sitzung.mjs';
+import { darfAnsicht } from './router.mjs';
 import { aktualisiereNavigation, aktualisiereSeitentitel } from './navigation.mjs';
 import { renderSheet } from '../bausteine/aufgaben-panel.mjs';
 
@@ -24,6 +25,24 @@ export function registriereAnsichten(tabelle) { ansichten = tabelle; }
 // Ueber den Einstieg angemeldet, damit dieses Modul keinen Baustein mit Ansichtsdaten laden muss.
 let nachZeichnen = () => {};
 export function registriereNachZeichnen(fn) { nachZeichnen = fn; }
+
+// Nur diese Ansichten zeigen GitHub-Aufgaben (issues.json). Fehlt die Datei, sperren nur sie;
+// Bestellungen, Packstation, Einkauf und Lexikon holen ihre Daten ueber /api/* und laufen weiter.
+// Bis 2026-11-06 stand dann auf jeder Seite "Daten nicht verfuegbar" - auch an der Packstation.
+const NUR_MIT_AUFGABEN = ['arbeit', 'freigaben', 'insights', 'bereiche', 'aktivitaet'];
+
+/**
+ * Eine gelbe Zeile statt der Sperre - nur fuer den Inhaber, nur er sieht Technik und Entscheidungen.
+ * Klappt nur die Aktualisierung (alter Stand da), bleibt es bei der roten Zeile fuer alle.
+ */
+function aufgabenHinweis(ohneAufgaben) {
+  if (ohneAufgaben) {
+    return darfAnsicht('freigaben')
+      ? '<div class="notice warn" style="margin-bottom:12px">Technik-Aufgaben nicht geladen – Entscheidungen werden gerade nicht gezählt. <button class="btn btn-sm" data-action="refresh" style="margin-left:8px">Erneut versuchen</button></div>'
+      : '';
+  }
+  return state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '';
+}
 
 export function render() {
   zeichne();
@@ -56,11 +75,12 @@ function zeichne() {
     document.title = 'Nur lokal im Betrieb · Teppich Dashboard';
     return;
   }
-  if (state.loadError && !state.raw) {
+  const ohneAufgaben = Boolean(state.loadError && !state.raw);
+  if (ohneAufgaben && NUR_MIT_AUFGABEN.includes(state.route.view)) {
     main.innerHTML = `<div class="page-head"><h1>Daten nicht verfügbar</h1></div><div class="notice crit">${esc(state.loadError)}</div><p class="small muted" style="margin-top:10px">issues.json entsteht lokal: <span class="mono">npm run dashboard</span>. <button class="btn btn-sm" data-action="refresh" style="margin-left:8px">Erneut versuchen</button></p>`;
     return;
   }
-  main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + ansichten[state.route.view]();
+  main.innerHTML = aufgabenHinweis(ohneAufgaben) + ansichten[state.route.view]();
   document.title = `${{ heute: 'Heute', prozesse: 'Vorbereiten', arbeit: 'Technik', freigaben: 'Entscheidungen', bereiche: 'Bereiche', insights: 'Kennzahlen', aktivitaet: 'Verlauf', einkauf: 'Bestellen', kunden: !state.route.params.get('kunde') && state.route.params.get('tab') === 'muster' ? 'Packstation' : !state.route.params.get('kunde') && state.route.params.get('tab') === 'bestellungen' ? 'Bestellungen' : 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Kontrolle', organisation: 'Aufgaben', sonderposten: 'Sonderposten', akquise: 'Genossenschaften', hausverwaltungen: 'Hausverwaltungen', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   if (lokalerFokus?.id) {

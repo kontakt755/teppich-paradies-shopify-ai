@@ -187,3 +187,32 @@ test('Musterlager ist direkt im Menue, auch am Handy im Blatt Mehr, und markiert
   assert.equal(lager.attrs['aria-current'], undefined);
   assert.equal(einkauf.attrs['aria-current'], 'page');
 });
+
+test('Kunden-Zaehler bleibt leer, bis Faelle und Service-Anfragen geladen sind - keine Teilsumme', async () => {
+  const { kundenMenueZahl } = await import('../lib/serviceanfragen.mjs');
+  assert.match(app, /kunden: \(\) => kundenMenueZahl\(kunden\.faelle, kunden\.serviceanfragen\)/, 'app.js meldet genau diese Zahl an');
+  const service = { eintraege: [{ id: 's1', status: 'neu' }, { id: 's2', status: 'kontaktiert' }, { id: 's3', status: 'gewonnen' }] };
+  assert.equal(kundenMenueZahl(null, service), null, 'nur Service geladen (Heute, Bestellen): vorher stand hier 2');
+  assert.equal(kundenMenueZahl({ verfuegbar: true, sofort: 3 }, null), null);
+  assert.equal(kundenMenueZahl({ verfuegbar: false, fehler: true }, service), null, 'Faelle nicht abrufbar: keine Zahl statt einer zu kleinen');
+  assert.equal(kundenMenueZahl({ verfuegbar: true, sofort: 3 }, { verfuegbar: false, fehler: true }), null);
+  assert.equal(kundenMenueZahl({ verfuegbar: true, sofort: 3 }, service), 5);
+
+  // Und im Menue: null blendet die Zahl aus, danach steht die Summe.
+  const zahl = { dataset: { navZahl: 'kunden' }, hidden: false, textContent: '9' };
+  const quellen = { faelle: null, service };
+  const state = { route: { view: 'einkauf', params: new URLSearchParams() }, tasks: [] };
+  const text = fs.readFileSync(path.join(WURZEL, 'kern/navigation.mjs'), 'utf8').replace(/^import.*;\n/gm, '').replace(/^export /gm, '');
+  const nav = vm.runInNewContext(text + '\n({ registriereNavZaehler, aktualisiereNavigation })', {
+    state, URLSearchParams, darfAnsicht: () => false, $: () => null, localStorage: { getItem: () => null },
+    document: { body: { classList: { remove() {} } }, querySelectorAll: sel => sel === '[data-nav-zahl]' ? [zahl] : [], querySelector: () => null },
+  });
+  nav.registriereNavZaehler({ kunden: () => kundenMenueZahl(quellen.faelle, quellen.service) });
+  nav.aktualisiereNavigation();
+  assert.equal(zahl.hidden, true);
+  assert.equal(zahl.textContent, '');
+  quellen.faelle = { verfuegbar: true, sofort: 3 };
+  nav.aktualisiereNavigation();
+  assert.equal(zahl.hidden, false);
+  assert.equal(zahl.textContent, '5');
+});

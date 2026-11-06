@@ -31,6 +31,17 @@ export function serviceOffen(e) {
   return Boolean(e?.id && STATUS.includes(e.status) && !ABGESCHLOSSEN.includes(e.status));
 }
 
+/**
+ * Zahl am Menuepunkt "Kunden": sofort faellige Faelle plus offene Service-Anfragen. Erst, wenn
+ * beide Quellen fehlerfrei geladen sind - sonst null, das Menue zeigt dann keine Zahl. Bis
+ * 2026-11-06 stand auf "Heute" und "Bestellen" eine 8 (nur die Service-Anfragen, die Faelle
+ * laedt erst "Kunden"), auf "Kunden" dann 14: eine Teilsumme sah aus wie eine echte Zahl.
+ */
+export function kundenMenueZahl(faelle, serviceanfragen) {
+  if (!faelle || faelle.fehler || !serviceanfragen || serviceanfragen.fehler) return null;
+  return (Number(faelle.sofort) || 0) + (serviceanfragen.eintraege || []).filter(serviceOffen).length;
+}
+
 /** Gezielter Sprung zur vorhandenen Anfrage, ohne Kontaktdaten in der Adresse. */
 export function serviceLink(id) {
   return `#/kunden?${new URLSearchParams({ tab: 'service', anfrage: String(id) })}`;
