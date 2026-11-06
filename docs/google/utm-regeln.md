@@ -60,6 +60,22 @@ https://www.teppich-paradies.net/?utm_source=google&utm_medium=organic&utm_campa
 https://www.teppich-paradies.net/pages/muster?utm_source=flyer&utm_medium=offline&utm_campaign=ausstellung
 ```
 
+## So kommt Google in Shopify an
+
+Die Google-&-YouTube-App haengt an Klicks aus Google eigene UTM-Werte an. Diese
+setzen wir nicht selbst, wir muessen sie nur richtig lesen:
+
+| Herkunft | utm_campaign | utm_medium |
+|---|---|---|
+| kostenlose Eintraege (Google Shopping ohne Anzeige) | `sag_organic` | `cpc` oder `product_sync` |
+| bezahlte Klicks aus einer Kampagne | Kampagnen-ID (Zahl) | entscheidet nicht |
+
+**`sag_organic` ist nicht bezahlt**, auch wenn das Medium `cpc` heisst. Fuer
+Werbe-Auswertungen (Kosten je Kauf, Anteil Werbung) nur Sitzungen mit
+Kampagnen-ID als bezahlt zaehlen. Groessenordnung 09.10.–06.11.2026: 647
+Sitzungen mit `sag_organic` gegen 124 mit Kampagnen-ID — wer beides
+zusammenzaehlt, ueberschaetzt die Werbung um ein Mehrfaches.
+
 ## Auswertung in GA4
 
 Berichte → Akquisition → Traffic-Akquisition, Dimension
