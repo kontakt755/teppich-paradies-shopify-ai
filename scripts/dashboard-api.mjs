@@ -90,7 +90,7 @@ import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefeReferenz } from '../docs/ai-dashboard/lib/akquise.mjs';
 import { wendeHvAenderungAn, leererBestand as leererHvBestand } from '../docs/ai-dashboard/lib/hausverwaltungen.mjs';
-import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, korrigiereRollenbestand, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
+import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, korrigiereRollenbestand, SonderpostenFehler, ladenStandAusProtokoll } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
 import { dashboardLinks } from './weitere-dashboards.mjs';
@@ -801,6 +801,36 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    * Einrichtungsanleitung (.env.local, Befehl) nur das Dienstprotokoll - einmal je Prozess.
    * Rundgang 26.10.: Mitarbeiter sahen Dateinamen und einen Terminalbefehl.
    */
+  /**
+   * Restrollen im Laden (Inhaber 2026-11-06): Ladenbuchungen und Nachmessungen aus dem
+   * Protokoll, fuer die Zeile auf "Heute". Ein unlesbares Protokoll liefert null - dann
+   * fehlt die Zeile, statt "nie gebucht" zu behaupten.
+   */
+  function sonderpostenLadenStand() {
+    let roh;
+    try { roh = fs.readFileSync(protokollPfad(), 'utf8'); } catch (e) {
+      if (e?.code !== 'ENOENT') return null;
+      roh = '';
+    }
+    const eintraege = [];
+    for (const z of roh.split('\n')) {
+      if (!z.includes('sonderposten-rolle') && !z.includes('sonderposten-rollenbestand')) continue;
+      try { eintraege.push(JSON.parse(z)); } catch { /* kaputte Zeile ueberspringen */ }
+    }
+    return ladenStandAusProtokoll(eintraege, { jetzt: now() });
+  }
+
+  /**
+   * Adresse des Dashboards fuer QR-Etiketten an den Rollen: der erste Name aus
+   * TP_DASHBOARD_EXTRA_HOSTS (MagicDNS-Name hinter `tailscale serve`, https). Ohne
+   * Eintrag null - dann nimmt der Browser seine eigene Adresse.
+   */
+  function sonderpostenNetzAdresse() {
+    const host = String(env.TP_DASHBOARD_EXTRA_HOSTS || '').split(',').map(t => t.trim().toLowerCase()).find(Boolean);
+    if (!host || !/^[a-z0-9.-]+(:\d+)?$/.test(host)) return null;
+    return `https://${host}`;
+  }
+
   let sonderpostenOhneZugangGemeldet = false;
   function sonderpostenOhneZugang() {
     if (!sonderpostenOhneZugangGemeldet) { sonderpostenOhneZugangGemeldet = true; logFehler('sonderposten', KEIN_ZUGANG); }
@@ -4886,7 +4916,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try {
         const daten = await leseSonderposten(zugang.proxy, { jetzt: now() });
         if (!daten) return sonderpostenOhneZugang();
-        return { verfuegbar: true, ...daten };
+        return { verfuegbar: true, ...daten, ladenStand: sonderpostenLadenStand(), netzAdresse: sonderpostenNetzAdresse() };
       } catch (e) {
         const msg = String(e?.message || e).split('\n')[0].slice(0, 300);
         console.error(`[sonderposten] ${msg}`);
