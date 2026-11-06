@@ -12,7 +12,8 @@ export const kunden = {
   serviceanfragen: null, loadingServiceanfragen: false,
   bestellungen: null, loadingBestellungen: false,
   angebote: null, loadingAngebote: false,
-  faelle: null, loadingFaelle: false,
+  // faelleZuletzt: letzter vollstaendig geladener Stand, nur fuer die Menuezahl (faelleFuerMenue).
+  faelle: null, faelleZuletzt: null, loadingFaelle: false,
   warenkoerbe: null, loadingWarenkoerbe: false,
   musterPacken: null, loadingMusterPacken: false,
   notizen: null, loadingNotizen: false, notizenKey: null,

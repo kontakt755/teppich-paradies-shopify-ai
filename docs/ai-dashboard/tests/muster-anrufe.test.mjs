@@ -300,3 +300,18 @@ test('Ansicht: ein Kunde ohne Nummer bringt die zweite Spalte zurueck; Spaeter u
   assert.doesNotMatch(nurOhne, /Telefonnummer vorhanden/);
   assert.match(nurOhne, /Keine Telefonnummer: per E-Mail[\s\S]*class="rows anruf-raster"/);
 });
+
+test('Ansicht: nur Kunden ohne Freigabe (Anruf nur mit Rueckrufwunsch) - der Titel fordert nicht zum Anrufen auf', () => {
+  // Rueckweg in lib/muster-anrufe.mjs: ANRUF_NUR_MIT_RUECKRUFWUNSCH wieder auf true. Ohne Wunsch
+  // steht dann jeder Kunde mit Nummer unter "gesperrt" und bekommt nur die Mail.
+  const m = { ...musterAnrufliste([zeile(1), zeile(2)], {}, { jetzt: JETZT, nurMitWunsch: true }), verfuegbar: true, gruende: [] };
+  assert.equal(m.anrufen.length, 0);
+  assert.equal(m.gesperrt.length, 2);
+  const html = anrufAnsicht(m);
+  assert.match(html, /Telefonnummer vorhanden <span class="muted small">2<\/span>/);
+  assert.doesNotMatch(html, /Telefonnummer vorhanden: anrufen/);
+  assert.match(html, /Ohne Rückrufwunsch ist der Anruf noch nicht freigegeben/);
+  // Ein Kunde mit Wunsch dazu: dann gibt es wieder jemanden zum Anrufen.
+  const mitWunsch = { ...musterAnrufliste([zeile(1), zeile(2, { beratungOffen: true })], {}, { jetzt: JETZT, nurMitWunsch: true }), verfuegbar: true, gruende: [] };
+  assert.match(anrufAnsicht(mitWunsch), /Telefonnummer vorhanden: anrufen <span class="muted small">2<\/span>/);
+});

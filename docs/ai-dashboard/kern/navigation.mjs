@@ -53,6 +53,26 @@ function oeffneMehr() {
   const schleier = $('#sideSchleier'); if (schleier) schleier.hidden = false;
 }
 
+/**
+ * Nur die Zahlen an den Menuepunkten. Die Zahl steht auf jeder Seite, eine Ladefunktion zeichnet
+ * aber nur ihre eigene Ansicht neu - kommen ihre Daten an, waehrend eine andere Seite offen ist,
+ * ruft sie das hier auf. Nicht aktualisiereNavigation(): das schliesst das "Mehr"-Blatt.
+ */
+export function aktualisiereNavZahlen() {
+  if (typeof document === 'undefined') return;
+  const freigaben = darfAnsicht('freigaben') ? offeneEntscheidungen(state.tasks).length : 0;
+  setzeZahl($('#navFreigaben'), freigaben);
+  // Entscheidungen bleiben auch in der geschlossenen Verwaltungsgruppe sichtbar.
+  setzeZahl($('#navMoreCount'), freigaben);
+  document.querySelectorAll('[data-nav-zahl]').forEach(el => {
+    const name = el.dataset.navZahl;
+    if (name === 'mehr') { setzeZahl(el, freigaben); return; }
+    let n = 0;
+    try { n = zaehler[name]?.() || 0; } catch { n = 0; }
+    setzeZahl(el, n);
+  });
+}
+
 /** Nach jedem Zeichnen: aktiven Punkt markieren, Zaehler setzen, "Mehr"-Blatt schliessen. */
 export function aktualisiereNavigation() {
   const view = state.route.view;
@@ -67,18 +87,8 @@ export function aktualisiereNavigation() {
     if (a.dataset.nav === view && tabPasst && einkaufPasst) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
-  const freigaben = darfAnsicht('freigaben') ? offeneEntscheidungen(state.tasks).length : 0;
-  setzeZahl($('#navFreigaben'), freigaben);
-  // Entscheidungen bleiben auch in der geschlossenen Verwaltungsgruppe sichtbar.
-  setzeZahl($('#navMoreCount'), freigaben);
   aktualisiereGruppen();
-  document.querySelectorAll('[data-nav-zahl]').forEach(el => {
-    const name = el.dataset.navZahl;
-    if (name === 'mehr') { setzeZahl(el, freigaben); return; }
-    let n = 0;
-    try { n = zaehler[name]?.() || 0; } catch { n = 0; }
-    setzeZahl(el, n);
-  });
+  aktualisiereNavZahlen();
   const mehr = $('#navToggle');
   if (mehr) {
     const untenAktiv = !!document.querySelector('#tabbar a[aria-current="page"]');

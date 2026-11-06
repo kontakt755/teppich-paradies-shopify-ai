@@ -190,12 +190,16 @@ test('Musterlager ist direkt im Menue, auch am Handy im Blatt Mehr, und markiert
 
 test('Kunden-Zaehler bleibt leer, bis Faelle und Service-Anfragen geladen sind - keine Teilsumme', async () => {
   const { kundenMenueZahl } = await import('../lib/serviceanfragen.mjs');
-  assert.match(app, /kunden: \(\) => kundenMenueZahl\(kunden\.faelle, kunden\.serviceanfragen\)/, 'app.js meldet genau diese Zahl an');
-  const service = { eintraege: [{ id: 's1', status: 'neu' }, { id: 's2', status: 'kontaktiert' }, { id: 's3', status: 'gewonnen' }] };
+  assert.match(app, /kunden: \(\) => kundenMenueZahl\(faelleFuerMenue\(\), kunden\.serviceanfragen\)/, 'app.js meldet genau diese Zahl an');
+  const service = { verfuegbar: true, eintraege: [{ id: 's1', status: 'neu' }, { id: 's2', status: 'kontaktiert' }, { id: 's3', status: 'gewonnen' }] };
   assert.equal(kundenMenueZahl(null, service), null, 'nur Service geladen (Heute, Bestellen): vorher stand hier 2');
   assert.equal(kundenMenueZahl({ verfuegbar: true, sofort: 3 }, null), null);
   assert.equal(kundenMenueZahl({ verfuegbar: false, fehler: true }, service), null, 'Faelle nicht abrufbar: keine Zahl statt einer zu kleinen');
+  // Fehlt orders.json, antwortet der Server mit HTTP 200 und ohne `fehler` (dashboard-api.mjs kundenFaelle).
+  assert.equal(kundenMenueZahl({ verfuegbar: false, hinweis: 'orders.json fehlt.' }, service), null, 'Export fehlt: vorher stand hier 2');
+  assert.equal(kundenMenueZahl({ verfuegbar: true }, service), null, 'ohne Zahl der sofort faelligen Faelle keine Summe');
   assert.equal(kundenMenueZahl({ verfuegbar: true, sofort: 3 }, { verfuegbar: false, fehler: true }), null);
+  assert.equal(kundenMenueZahl({ verfuegbar: true, sofort: 3 }, { verfuegbar: false, eintraege: [] }), null);
   assert.equal(kundenMenueZahl({ verfuegbar: true, sofort: 3 }, service), 5);
 
   // Und im Menue: null blendet die Zahl aus, danach steht die Summe.
@@ -215,4 +219,69 @@ test('Kunden-Zaehler bleibt leer, bis Faelle und Service-Anfragen geladen sind -
   nav.aktualisiereNavigation();
   assert.equal(zahl.hidden, false);
   assert.equal(zahl.textContent, '5');
+});
+
+// Quelltext eines Moduls ohne Importe, in einer eigenen Umgebung ausgefuehrt.
+function modulOhneImporte(datei, ausgabe, umgebung) {
+  const text = fs.readFileSync(path.join(WURZEL, datei), 'utf8').replace(/^import[\s\S]*?;\n/gm, '').replace(/^export /gm, '');
+  return vm.runInNewContext(`${text}\n(${ausgabe})`, umgebung);
+}
+
+test('Kunden-Zahl bleibt nach einer Aenderung in Bestellen stehen: letzter vollstaendiger Stand, Fehler loescht ihn', () => {
+  const kunden = { faelle: null, faelleZuletzt: null };
+  const { faelleFuerMenue } = modulOhneImporte('ansichten/kunden/faelle.mjs', '{ faelleFuerMenue }', { kunden, state: {} });
+  assert.equal(faelleFuerMenue(), null, 'nie geladen: nichts');
+  const geladen = { verfuegbar: true, sofort: 6 };
+  kunden.faelle = geladen;
+  assert.equal(faelleFuerMenue(), geladen);
+  // "zurueck auf offen" in Bestellen (einkauf/auftragsfluss.mjs ladeStandNeu) leert den Speicher;
+  // neu geladen wird erst auf Kunden oder Heute. Vorher verschwand die Zahl hier von allen Seiten.
+  kunden.faelle = null;
+  assert.equal(faelleFuerMenue(), geladen);
+  kunden.faelle = { verfuegbar: false, hinweis: 'orders.json fehlt.' };
+  assert.equal(faelleFuerMenue(), kunden.faelle);
+  kunden.faelle = null;
+  assert.equal(faelleFuerMenue(), null, 'nach fehlendem Export keine alte Zahl');
+  kunden.faelle = geladen; faelleFuerMenue();
+  kunden.faelle = { verfuegbar: false, fehler: true };
+  faelleFuerMenue();
+  kunden.faelle = null;
+  assert.equal(faelleFuerMenue(), null, 'nach einem Ladefehler keine alte Zahl');
+});
+
+test('Faelle und Service-Anfragen ziehen nach dem Laden die Menuezahl auch auf anderen Seiten nach, ohne das Mehr-Blatt zu schliessen', async () => {
+  const serviceLib = { ...await import('../lib/serviceanfragen.mjs') };
+  for (const [datei, laden, speicher, extra] of [
+    ['ansichten/kunden/faelle.mjs', 'ensureKundenFaelle', { faelle: null, loadingFaelle: false }, {}],
+    ['ansichten/kunden/serviceanfragen.mjs', 'ensureServiceanfragen', { serviceanfragen: null, loadingServiceanfragen: false }, serviceLib],
+  ]) {
+    for (const view of ['einkauf', 'kunden']) {
+      const aufrufe = { render: 0, zahlen: 0 };
+      const state = { route: { view, params: new URLSearchParams() } };
+      const kunden = { ...speicher };
+      const fn = modulOhneImporte(datei, laden, {
+        ...extra, kunden, state, URLSearchParams, Date, JSON,
+        fetchEinkauf: async () => ({ verfuegbar: true, sofort: 2, eintraege: [] }),
+        render: () => { aufrufe.render++; }, aktualisiereNavZahlen: () => { aufrufe.zahlen++; },
+      });
+      fn();
+      await new Promise(r => setImmediate(r));
+      if (view === 'einkauf') assert.deepEqual(aufrufe, { render: 0, zahlen: 1 }, `${laden} auf Bestellen: nur die Zahl, kein Neuzeichnen`);
+      else assert.deepEqual(aufrufe, { render: 1, zahlen: 0 }, `${laden} auf Kunden: Neuzeichnen setzt die Zahl mit`);
+    }
+  }
+
+  // aktualisiereNavZahlen setzt nur die Zahlen: kein aria-current, kein Schliessen des Mehr-Blatts.
+  const zahl = { dataset: { navZahl: 'kunden' }, hidden: true, textContent: '' };
+  let geschlossen = 0;
+  const nav = modulOhneImporte('kern/navigation.mjs', '{ registriereNavZaehler, aktualisiereNavZahlen }', {
+    state: { route: { view: 'einkauf', params: new URLSearchParams() }, tasks: [] }, URLSearchParams,
+    darfAnsicht: () => false, $: () => null, localStorage: { getItem: () => null },
+    document: { body: { classList: { remove() { geschlossen++; } } }, querySelectorAll: sel => sel === '[data-nav-zahl]' ? [zahl] : [], querySelector: () => null },
+  });
+  nav.registriereNavZaehler({ kunden: () => 14 });
+  nav.aktualisiereNavZahlen();
+  assert.equal(zahl.textContent, '14');
+  assert.equal(zahl.hidden, false);
+  assert.equal(geschlossen, 0, 'Mehr-Blatt bleibt offen');
 });

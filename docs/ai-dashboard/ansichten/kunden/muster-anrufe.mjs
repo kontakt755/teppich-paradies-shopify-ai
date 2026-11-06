@@ -85,7 +85,8 @@ function arbeitslisteHtml(m) {
   const telefon = [...m.anrufen, ...m.gesperrt];
   const teile = [];
   if (telefon.length) {
-    teile.push(['Telefonnummer vorhanden: anrufen', telefon, m.gesperrt.length ? 'Ohne Rückrufwunsch ist der Anruf noch nicht freigegeben. Bis dahin hier per E-Mail fragen.' : '']);
+    // Nur gesperrte Kunden (Anruf ohne Rueckrufwunsch nicht freigegeben): kein "anrufen" im Titel.
+    teile.push([m.anrufen.length ? 'Telefonnummer vorhanden: anrufen' : 'Telefonnummer vorhanden', telefon, m.gesperrt.length ? 'Ohne Rückrufwunsch ist der Anruf noch nicht freigegeben. Bis dahin hier per E-Mail fragen.' : '']);
   }
   if (m.ohneNummer.length) teile.push(['Keine Telefonnummer: per E-Mail', m.ohneNummer, '']);
   const raster = teile.length === 1;

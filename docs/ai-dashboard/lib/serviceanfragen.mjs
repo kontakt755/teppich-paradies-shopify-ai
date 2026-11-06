@@ -36,10 +36,13 @@ export function serviceOffen(e) {
  * beide Quellen fehlerfrei geladen sind - sonst null, das Menue zeigt dann keine Zahl. Bis
  * 2026-11-06 stand auf "Heute" und "Bestellen" eine 8 (nur die Service-Anfragen, die Faelle
  * laedt erst "Kunden"), auf "Kunden" dann 14: eine Teilsumme sah aus wie eine echte Zahl.
+ * Geladen heisst verfuegbar und ohne Fehler: fehlt orders.json, antwortet der Server mit
+ * HTTP 200 und { verfuegbar: false } ohne `fehler` - dann kam wieder 0 + Service-Anfragen heraus.
  */
 export function kundenMenueZahl(faelle, serviceanfragen) {
-  if (!faelle || faelle.fehler || !serviceanfragen || serviceanfragen.fehler) return null;
-  return (Number(faelle.sofort) || 0) + (serviceanfragen.eintraege || []).filter(serviceOffen).length;
+  const geladen = q => Boolean(q?.verfuegbar) && !q.fehler;
+  if (!geladen(faelle) || !geladen(serviceanfragen) || typeof faelle.sofort !== 'number') return null;
+  return faelle.sofort + (serviceanfragen.eintraege || []).filter(serviceOffen).length;
 }
 
 /** Gezielter Sprung zur vorhandenen Anfrage, ohne Kontaktdaten in der Adresse. */
