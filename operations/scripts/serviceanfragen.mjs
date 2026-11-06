@@ -12,7 +12,10 @@
  * ruft dieses Skript im Dienst-Checkout auf. Uebernommen wird nur, was
  * automatischUebernehmbar() erlaubt (feste Betreffe der Serviceseiten);
  * dieselbe Mail nie zweimal, eine schon von Hand erfasste Anfrage nicht noch
- * einmal. Die Ausgabe nennt nur Nummern und Gruende, keine Kundendaten.
+ * einmal. Die Musterberatung aus dem Warenkorb ("RÜCKRUF – Musterberatung")
+ * wird seit 2026-11-06 ein Rueckruf in rueckrufe.json (Kunden > Rueckrufe &
+ * Beratungen) statt uebersprungen. Die Ausgabe nennt nur Nummern und Gruende,
+ * keine Kundendaten.
  */
 
 import fs from 'node:fs';
@@ -20,7 +23,8 @@ import { fileURLToPath } from 'node:url';
 import {
   serviceanfragenPfad, postfachPfad, leseAlle, anlegen, aehnlicheAnfrage, leseGeprueft, schreibeGeprueft, ServiceanfrageFehler,
 } from '../lib/serviceanfragen.mjs';
-import { ausFormularMail, automatischUebernehmbar } from '../../docs/ai-dashboard/lib/serviceanfragen.mjs';
+import { rueckrufePfad, rueckrufAusMailAnlegen, RueckrufFehler } from '../lib/rueckrufe.mjs';
+import { ausFormularMail, automatischUebernehmbar, rueckrufAusMail } from '../../docs/ai-dashboard/lib/serviceanfragen.mjs';
 
 export const AKTEUR = 'Postfach (automatisch)';
 const ABSENDER = /mailer@shopify\.com/i;
@@ -40,7 +44,7 @@ export function uebernehmen(mails, { privatDir, jetzt = new Date() } = {}) {
   const datei = serviceanfragenPfad(privatDir);
   const pDatei = postfachPfad(privatDir);
   const geprueft = leseGeprueft(pDatei);
-  const ergebnis = { angelegt: [], uebersprungen: [] };
+  const ergebnis = { angelegt: [], uebersprungen: [], rueckrufe: [] };
   for (const m of Array.isArray(mails) ? mails : []) {
     const mailId = String(m?.id || '').trim();
     if (!mailId) { ergebnis.uebersprungen.push({ mailId: null, grund: 'Mail ohne ID' }); continue; }
@@ -52,6 +56,22 @@ export function uebernehmen(mails, { privatDir, jetzt = new Date() } = {}) {
     if (leseAlle(datei).some(e => e.mailId === mailId)) continue;
     if (!ABSENDER.test(String(m.von || ''))) { merke('Absender ist nicht das Shopify-Kontaktformular'); continue; }
     const gelesen = ausFormularMail(`${m.betreff || ''}\n\n${m.text || ''}`);
+    // Musterberatung im Warenkorb: der Kunde will angerufen werden. Das ist ein Rueckruf
+    // (Kunden > Rueckrufe & Beratungen), keine Service-Anfrage und kein Fall fuer eine Antwortmail.
+    const rueckruf = rueckrufAusMail(gelesen);
+    if (rueckruf) {
+      try {
+        const { eintrag, doppelt, zusammengefasst } = rueckrufAusMailAnlegen(rueckrufePfad(privatDir), { ...rueckruf, mailId, eingangAm: m.datum }, { actor: AKTEUR, jetzt });
+        // Zweite Anfrage derselben Person: ergaenzt den offenen Rueckruf, kein zweiter Eintrag.
+        geprueft[mailId] = { am: jetzt.toISOString(), ergebnis: doppelt ? 'Rückruf schon erfasst' : zusammengefasst ? `Rückruf ergänzt (${eintrag.orderId})` : 'Rückruf angelegt' };
+        if (zusammengefasst) ergebnis.rueckrufe.push({ mailId, ergaenzt: eintrag.orderId });
+        else if (!doppelt) ergebnis.rueckrufe.push({ mailId });
+      } catch (e) {
+        if (e instanceof RueckrufFehler) { merke(e.message); continue; }
+        throw e;
+      }
+      continue;
+    }
     const pruefung = automatischUebernehmbar(gelesen);
     if (!pruefung.ok) { merke(pruefung.grund); continue; }
     const felder = { ...gelesen.felder, datum: gelesen.felder.datum || berlinerTag(m.datum || jetzt), mailId, status: 'neu' };

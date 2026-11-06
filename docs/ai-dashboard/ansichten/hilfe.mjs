@@ -23,7 +23,7 @@ export const MENUE_KURZ = [
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
   ['Eigene Aufkleber drucken', 'Aufkleber mit frei getipptem Text, ohne Produkt, zum Beispiel Wegweiser fürs Lager.'],
   ['Kunden & Einkauf', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften, Hausverwaltungen.'],
-  ['Shop & Inhalte', 'Sonderposten, Bildrechte, Social Media – nur mit Büro- oder Inhaberzugang.'],
+  ['Shop & Inhalte', 'Sonderposten: Reststück oder Rolle im Laden als verkauft buchen, vor Zahlung und Zuschnitt. Bildrechte und Social Media nur mit Büro- oder Inhaberzugang.'],
   ['Verwaltung', 'Aufgaben, Zugänge und diese Hilfe. Was du siehst, hängt von deinem Zugang ab.'],
   ['Fehler melden', 'Ganz unten in der Seitenleiste: kurz schreiben, was nicht stimmt. Die Technik bekommt die Seite mit.'],
 ];

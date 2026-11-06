@@ -64,12 +64,13 @@ test('Seiten mit Betriebsdaten haben eine Quelle fuer "Stand"', () => {
   assert.equal(quelleFuerSeite('hilfe'), null);
 });
 
-test('Menue fuer Mitarbeiter: nur Heute, Kunden, Bestellen, Genossenschaften, Hausverwaltungen, Lexikon, Hilfe', () => {
+test('Menue fuer Mitarbeiter: nur Heute, Kunden, Bestellen, Genossenschaften, Hausverwaltungen, Lexikon, Sonderposten, Hilfe', () => {
   const html = fs.readFileSync(path.join(hier, '..', 'index.html'), 'utf8');
   const side = html.slice(html.indexOf('id="mainnav"'), html.indexOf('id="navDashboards"'));
   const links = [...side.matchAll(/<a href="#\/([a-z]+)" data-nav="\1"([^>]*)>/g)];
   const sichtbar = links.filter(([, , attr]) => !/data-nur-inhaber|data-nicht-mitarbeiter/.test(attr)).map(([, n]) => n);
-  assert.deepEqual(sichtbar.sort(), ['akquise', 'einkauf', 'hausverwaltungen', 'heute', 'hilfe', 'kunden', 'lexikon']);
+  // Sonderposten seit 06.11.2026: im Laden bucht die verkaufende Person (Inhaber 10.10.); die Restlaenge bleibt Inhabersache.
+  assert.deepEqual(sichtbar.sort(), ['akquise', 'einkauf', 'hausverwaltungen', 'heute', 'hilfe', 'kunden', 'lexikon', 'sonderposten']);
   assert.match(html, /data-nav-gruppe="verwaltung"/);
   assert.ok(!html.includes('id="navMore"'), 'keine pauschale Mehr-Gruppe mehr');
   assert.match(html, /id="datenstandLeiste"/);

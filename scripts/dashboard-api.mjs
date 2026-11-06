@@ -2767,13 +2767,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return { ok: true, anzahl: eintraege.length, eintraege: eintraege.map(e => stand[positionKey(e.orderId, e.lineItemId)] || e), ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}) };
     },
 
-    /** Rueckruf-/Beratungs-Arbeitsliste, aelteste Bestellung zuerst, mit lokalem Bearbeitungsstatus. */
+    /** Rueckruf-/Beratungs-Arbeitsliste, aelteste zuerst, mit lokalem Bearbeitungsstatus. */
     kundenRueckrufe() {
       const dir = privatDirPath || privatDir();
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseRueckrufe(rueckrufePfad(dir));
-      const zeilen = rueckrufliste(modell).map(z => {
+      // Mit statusAlle: auch Rueckrufwuensche aus der Musterberatung im Warenkorb (ohne Bestellung).
+      const zeilen = rueckrufliste(modell, statusAlle).map(z => {
         const s = statusAlle[z.orderId];
         return {
           ...z, status: s?.status || 'offen', notiz: s?.notiz || null,

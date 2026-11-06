@@ -142,6 +142,9 @@ export function meldungNachBuchung(antwort) {
   if (status === 401) return { erfolg: false, klasse: 'crit', text: 'Die Anmeldung ist abgelaufen – bitte neu anmelden. Gebucht wurde nichts.', neuLaden: false };
   if (antwort.grund === 'recht-fehlt') return { erfolg: false, klasse: 'warn', text: antwort.text, neuLaden: false };
   if (antwort.grund === 'unklar') return { erfolg: false, klasse: 'warn', text: antwort.text, neuLaden: true };
+  // Rolle ohne Recht (z. B. Mitarbeiter bei "Restlänge eintragen"): der Server lehnt vor jedem
+  // Shopify-Aufruf ab, also ist sicher nichts geaendert. Seit 06.11. sehen Mitarbeiter die Seite.
+  if (status === 403) return { erfolg: false, klasse: 'crit', text: `${antwort.text || 'Dafür fehlt dir die Berechtigung.'} Am Bestand wurde nichts geändert.`, neuLaden: false };
   if (status === 409) return { erfolg: false, klasse: 'crit', text: antwort.text, neuLaden: true };
   if (status >= 500 && !antwort.text) {
     // Fehlerantwort ohne Text (z. B. von einem Proxy unterwegs): Ausgang offen.
