@@ -256,3 +256,14 @@ gebraeuchlich), Erfassen.
 - **Roter Rand** an einer Fallkarte = ein Ampelgrund: Muster gesperrt, „Zuerst klären“, 14 Tage beim
   Lieferanten, Liefertermin vorbei, Wareneingang klären. **sofort** ohne roten Rand = Routine, die heute dran ist.
 - **Zu tun · n sofort** = Reiter unter Kunden; n zählt die Kunden mit einem sofortigen Schritt.
+
+## Tageszahlen mit Bezug (06.11.2026, #1996)
+
+- **Überfällig · 17 Tage beim Lieferanten** / **Nachhaken · 9 Tage beim Lieferanten** = Plakette einer
+  bestellten Position; gezählt ab der Bestellung beim Lieferanten (vorher nur „Überfällig · 17 Tage“).
+- **Liegt seit 8 Tagen hier** = Plakette für Ware oder Muster, die bei uns eingetroffen sind; an den Kunden
+  rausgeben. Ersetzt dort „Nachhaken · 8 Tage“ – nachhaken müssen wir bei uns selbst, nicht beim Lieferanten.
+- **Kunde wartet 17 Tage** = Alters-Marke auf Heute bei „Zuerst klären“ und „Muster nicht lieferbar“; gezählt ab
+  der Bestellung des Kunden.
+- **Kunde bestellt 19.10.** = Datumszeile einer Packstation-Karte, wenn die Plakette schon Tage zählt; statt
+  „bestellt am … · wartet seit 18 Tagen“. Eine Tageszahl je Karte.

@@ -90,7 +90,7 @@ function ueberfaelligHinweis(k, { mitLink = true } = {}) {
 
 /**
  * Wartestand einer Zeile (lib/ampel.mjs): rot/gelb als Plakette mit Zeichen und Wort
- * ("× Überfällig · 15 Tage", "! Nachhaken · 9 Tage", "× Blockiert"), ruhig nur die Tage in Grau.
+ * ("× Überfällig · 15 Tage beim Lieferanten", "! Liegt seit 8 Tagen hier", "× Blockiert"), ruhig nur die Tage in Grau.
  */
 function warteChip(x) {
   const a = x.ampel;

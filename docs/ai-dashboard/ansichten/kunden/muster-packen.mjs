@@ -248,16 +248,24 @@ function hierHtml(k) {
     + `${offen ? `<span class="small mp-hier-offen">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt${gruende.length ? `: ${gruende.join('; ')}` : ''}`)}</span>` : ''}`;
 }
 
+/** Plaketten-Gruende, deren Wort schon eine Tageszahl traegt ("Überfällig · 17 Tage beim Lieferanten", "Hängt · 3 Werktage"). */
+const PLAKETTE_MIT_TAGEN = new Set(['ueberfaellig', 'nachhaken', 'haengt']);
+const tagKurz = iso => new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
+
 /**
  * Datum und Wartezeit des Kunden, neutral: ob das Warten ein Problem ist, sagt die Ampel des Umschlags
  * (beim Lieferanten 7/14 Tage, lib/ampel.mjs). Die eigene Bernstein-Schwelle ab 2 Tagen (#1572) faerbte am
  * 06.11. 16 von 18 Umschlaegen - Farbe sagte dort nichts mehr.
+ * Eine Tageszahl je Karte (#1996, 06.11.2026): zaehlt die Plakette schon Tage (beim Lieferanten), steht hier
+ * nur das Datum "Kunde bestellt 19.10." - vorher stand "Überfällig · 17 Tage" neben "wartet seit 18 Tagen".
  */
 function datumHtml(k) {
   const tage = k.wartetTage;
-  const bestellt = gueltig(k.seit) ? `${k.bestellungen.length > 1 ? 'erste Bestellung' : 'bestellt'} am ${tagDatum(k.seit)}` : '';
-  const wartet = tage === null ? '' : tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`;
-  const zeile = [bestellt, wartet].filter(Boolean).join(' · ');
+  const mehrere = k.bestellungen.length > 1;
+  const zeile = gueltig(k.seit) && PLAKETTE_MIT_TAGEN.has(k.ampel?.grund)
+    ? `Kunde bestellt ${tagKurz(k.seit)}${mehrere ? ` (erste von ${k.bestellungen.length})` : ''}`
+    : [gueltig(k.seit) ? `${mehrere ? 'erste Bestellung' : 'bestellt'} am ${tagDatum(k.seit)}` : '',
+      tage === null ? '' : tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`].filter(Boolean).join(' · ');
   const beimLieferanten = k.muster.map(m => m.bestelltAm).filter(gueltig).sort();
   return `${zeile ? `<span class="small muted">${esc(zeile)}</span>` : ''}`
     + hierHtml(k)

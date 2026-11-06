@@ -651,9 +651,9 @@ test('Ampel (06.11.): jedes Muster und jeder Umschlag traegt sie, gerechnet mit 
     ] });
   const je = Object.fromEntries(r.kunden.map(k => [k.name, k]));
   const kurz = a => [a.stufe, a.wort];
-  assert.deepEqual(je['Anna Rot'].muster.map(m => kurz(m.ampel)), [['rot', 'Überfällig · 16 Tage'], [null, '']]);
-  assert.deepEqual(kurz(je['Anna Rot'].ampel), ['rot', 'Überfällig · 16 Tage'], 'die dringendste Stufe seiner Muster');
-  assert.deepEqual(kurz(je['Berta Gelb'].ampel), ['gelb', 'Nachhaken · 8 Tage']);
+  assert.deepEqual(je['Anna Rot'].muster.map(m => kurz(m.ampel)), [['rot', 'Überfällig · 16 Tage beim Lieferanten'], [null, '']]);
+  assert.deepEqual(kurz(je['Anna Rot'].ampel), ['rot', 'Überfällig · 16 Tage beim Lieferanten'], 'die dringendste Stufe seiner Muster');
+  assert.deepEqual(kurz(je['Berta Gelb'].ampel), ['gelb', 'Nachhaken · 8 Tage beim Lieferanten']);
   assert.deepEqual(kurz(je['Carl Ruhig'].ampel), [null, ''], 'wartet 2 Tage: kein Befund mehr (frueher Bernstein ab 2 Tagen)');
   assert.equal(je['Dora Termin'].muster[0].liefertermin, '2026-10-20');
   assert.deepEqual(kurz(je['Dora Termin'].ampel), ['rot', 'Termin 20.10. vorbei']);

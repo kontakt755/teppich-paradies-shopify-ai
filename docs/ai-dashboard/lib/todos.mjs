@@ -16,7 +16,7 @@ import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugAmpel, kundenErinnerung } from './auftrags-ablauf.mjs';
-import { WARTESCHWELLEN } from './ampel.mjs';
+import { WARTESCHWELLEN, tageMitBezug } from './ampel.mjs';
 import { sichereUrl } from './akquise.mjs';
 import { entscheidungsGruppen } from './model.mjs';
 import { lieferantName as lieferantAnzeige, werktageZwischen } from './einkauf-lieferanten.mjs';
@@ -73,10 +73,13 @@ export function tonNachAlter(tage, warnAb = SCHWELLEN.nachhakenTage, critAb = SC
   return '';
 }
 
-/** "heute", "1 Tag", "5 Tage" - fuer die Alters-Marke. */
-export function alterText(tage) {
-  if (tage === null || tage === undefined) return '';
-  return tage === 0 ? 'heute' : tage === 1 ? '1 Tag' : `${tage} Tage`;
+/**
+ * "heute", "1 Tag", "5 Tage" - fuer die Alters-Marke. Mit `bezug` (To-do-Feld `alterBezug`, #1996) nennt die
+ * Marke, seit wann gezaehlt wird: "17 Tage beim Lieferanten", "Liegt seit 8 Tagen hier", "Kunde wartet 17 Tage"
+ * (lib/ampel.mjs tageMitBezug) - dieselben Worte wie im Einkauf und in der Packstation.
+ */
+export function alterText(tage, bezug = null) {
+  return tageMitBezug(tage, bezug);
 }
 
 const seitText = tage => (tage === 0 ? 'seit heute' : tage === 1 ? 'seit 1 Tag' : `seit ${tage} Tagen`);
@@ -134,10 +137,11 @@ function rausgebenFelder(r) {
   const alterTage = r.teile.length === 1 ? erste.tage : Math.max(...r.teile.map(t => t.tage ?? 0));
   const dazu = erste.istMuster ? r.lagermuster : null;
   return {
-    ton: tonNachAlter(alterTage, ...FRISTEN.rausgeben), alterTage,
+    ton: tonNachAlter(alterTage, ...FRISTEN.rausgeben), alterTage, alterBezug: 'hier',
     schluessel: [...r.teile.map(t => t.schluessel), ...(dazu?.schluessel || [])],
     titel: `${erste.istMuster ? 'Muster' : 'Ware'} ist da – an ${r.kunde} rausgeben`,
-    kontext: [r.orderName, erste.text, erste.tage !== null ? `liegt ${seitText(erste.tage)} bei uns` : null, dazu?.text].filter(Boolean).join(' · '),
+    // Wie lange es hier liegt, sagt die Marke ("Liegt seit 8 Tagen hier") - nicht noch einmal im Text.
+    kontext: [r.orderName, erste.text, dazu?.text].filter(Boolean).join(' · '),
   };
 }
 
@@ -351,7 +355,7 @@ function ausBestellungen(quellen, k) {
       // Blockiert ("Zuerst klären"): solange etwas fehlt, kann niemand bestellen - darum
       // erscheinen die Positionen dieser Bestellung nicht zusaetzlich unter "bestellen".
       todos.push({
-        id: `blockiert:${z.orderId}`, art: 'blockiert', bereich: 'laden', ton: 'crit', alterTage: seitBestellung,
+        id: `blockiert:${z.orderId}`, art: 'blockiert', bereich: 'laden', ton: 'crit', alterTage: seitBestellung, alterBezug: 'kunde',
         titel: `Zuerst klären: ${z.orderName}`,
         kontext: [kundeVon(z), ...(a.hinweise || []).slice(0, 2).map(k.klartext)].join(' · '),
         knopf: { text: 'Klären', href: vorgangsLink('einkauf', { auftrag: z.orderId }) },
@@ -499,7 +503,8 @@ function ausBestellungen(quellen, k) {
   for (const [orderId, positionen] of gesperrt) {
     const z = positionen[0].z;
     todos.push({
-      id: `muster-gesperrt:${orderId}`, art: 'muster_gesperrt', bereich: 'laden', ton: 'crit', alterTage: Math.max(...positionen.map(x => x.seitBestellung ?? 0)),
+      id: `muster-gesperrt:${orderId}`, art: 'muster_gesperrt', bereich: 'laden', ton: 'crit', alterBezug: 'kunde',
+      alterTage: Math.max(...positionen.map(x => x.seitBestellung ?? 0)),
       titel: `Muster nicht lieferbar, Kunde informieren: ${z.orderName} ${kundeVon(z)}`,
       kontext: [musterKurz(positionen), 'weiter in der Packstation unter „Zu klären“'].join(' · '),
       knopf: { text: 'Ansehen', href: kundenLink(z) },
@@ -539,8 +544,9 @@ function ausBestellungen(quellen, k) {
     const tage = Math.max(...positionen.map(x => x.tage));
     todos.push({
       id: `nachhaken:${lieferant}`, art: 'nachhaken', bereich: 'laden',
-      ton: positionen.some(x => x.ampel.stufe === 'rot') ? 'crit' : 'warn', alterTage: tage,
-      titel: `Beim Lieferanten nachfragen: ${artWort(positionen)} ${seitText(tage)} bestellt, noch nicht da`,
+      ton: positionen.some(x => x.ampel.stufe === 'rot') ? 'crit' : 'warn', alterTage: tage, alterBezug: 'lieferant',
+      // Die Tage stehen einmal, in der Marke ("17 Tage beim Lieferanten"); vorher auch im Titel.
+      titel: `Beim Lieferanten nachfragen: ${artWort(positionen)} bestellt, noch nicht da`,
       kontext: [k.lieferantName(lieferant), kundenKurz(positionen), wasKurz(positionen)].join(' · '),
       knopf: { text: 'Nachfragen', href: '#/einkauf?ab=verzug' },
     });

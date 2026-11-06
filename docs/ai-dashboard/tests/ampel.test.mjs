@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  WARTESCHWELLEN, warteStufe, warteAmpel, warteWort, dringender, dringendereAmpel,
+  WARTESCHWELLEN, warteStufe, warteAmpel, warteWort, warteTitel, tageMitBezug, dringender, dringendereAmpel,
   hatBestellampel, bestellbarkeit, zaehleAmpeln, musterlagerAmpel, ZEICHEN,
   packMusterAmpel, packUmschlagAmpel, packRotZaehlung,
 } from '../lib/ampel.mjs';
@@ -27,20 +27,20 @@ test('Wartestand: eine Schwelle fuer alle Ansichten (gelb ab 7, rot ab 14 Tagen)
 
 test('warteAmpel: bestellt, eingetroffen, Termin, blockiert, gesperrt', () => {
   const w = (eintrag, opt = {}) => warteAmpel(eintrag, { jetzt: JETZT, ...opt });
-  assert.deepEqual(w({ status: 'bestellt', bestelltAm: vor(9) }), { stufe: 'gelb', grund: 'wartet', tage: 9, termin: null });
+  assert.deepEqual(w({ status: 'bestellt', bestelltAm: vor(9) }), { stufe: 'gelb', grund: 'wartet', tage: 9, termin: null, bezug: 'lieferant' });
   assert.equal(w({ status: 'bestellt', bestelltAm: vor(15) }).stufe, 'rot');
-  assert.equal(w({ status: 'geliefert', geliefertAm: vor(8) }).stufe, 'gelb', 'liegt bei uns: dieselbe Schwelle');
-  assert.deepEqual(w(null), { stufe: null, grund: null, tage: null, termin: null }, 'noch nicht bestellt: wartet nicht');
+  assert.deepEqual([w({ status: 'geliefert', geliefertAm: vor(8) }).stufe, w({ status: 'geliefert', geliefertAm: vor(8) }).bezug], ['gelb', 'hier'], 'liegt bei uns: dieselbe Schwelle, Bezug "hier"');
+  assert.deepEqual(w(null), { stufe: null, grund: null, tage: null, termin: null, bezug: null }, 'noch nicht bestellt: wartet nicht');
   const imPlan = w({ status: 'bestellt', bestelltAm: vor(30), beschaffung: { liefertermin: '2026-11-10' } });
   assert.deepEqual([imPlan.stufe, imPlan.grund, imPlan.tage], [null, 'imPlan', null], 'Termin vor uns: ruhig, egal wie lange bestellt');
   const vorbei = w({ status: 'bestellt', bestelltAm: vor(2), beschaffung: { liefertermin: '2026-11-04' } });
-  assert.deepEqual([vorbei.stufe, vorbei.grund, vorbei.tage], ['rot', 'termin', 2], 'Termin vorbei: sofort rot');
+  assert.deepEqual([vorbei.stufe, vorbei.grund, vorbei.tage, vorbei.bezug], ['rot', 'termin', 2, 'lieferant'], 'Termin vorbei: sofort rot');
   assert.equal(w(null, { blockiert: true }).stufe, 'rot');
   assert.equal(w({ status: 'bestellt', bestelltAm: vor(1) }, { gesperrt: true }).grund, 'gesperrt');
 });
 
 test('Plakette sagt Zeichen und Wort, nie nur Farbe', () => {
-  assert.equal(warteWort({ stufe: 'rot', grund: 'wartet', tage: 15 }), 'Überfällig · 15 Tage');
+  assert.equal(warteWort({ stufe: 'rot', grund: 'wartet', tage: 15 }), 'Überfällig · 15 Tage', 'ohne Bezug wie bisher');
   assert.equal(warteWort({ stufe: 'gelb', grund: 'wartet', tage: 9 }), 'Nachhaken · 9 Tage');
   assert.equal(warteWort({ stufe: 'rot', grund: 'termin', tage: 2, termin: '2026-11-04' }), 'Termin 04.11. vorbei');
   assert.equal(warteWort({ stufe: 'rot', grund: 'blockiert' }), 'Blockiert');
@@ -53,6 +53,27 @@ test('Plakette sagt Zeichen und Wort, nie nur Farbe', () => {
   assert.equal(ampelRand('gelb', 'karte'), ' ampel-karte gelb');
   assert.equal(ampelRand(null), '');
   assert.match(ampelPlakette('rot', '<b>'), /&lt;b&gt;/, 'Wort wird maskiert');
+});
+
+test('Tageszahl nennt ihren Bezug (#1996): beim Lieferanten, hier, Kunde wartet - Stufe bleibt', () => {
+  const w = eintrag => warteAmpel(eintrag, { jetzt: JETZT });
+  const rot = w({ status: 'bestellt', bestelltAm: vor(17) });
+  const gelb = w({ status: 'bestellt', bestelltAm: vor(9) });
+  const hier = w({ status: 'geliefert', geliefertAm: vor(8) });
+  const hierRot = w({ status: 'geliefert', geliefertAm: vor(15) });
+  assert.deepEqual([rot.stufe, warteWort(rot)], ['rot', 'Überfällig · 17 Tage beim Lieferanten']);
+  assert.deepEqual([gelb.stufe, warteWort(gelb)], ['gelb', 'Nachhaken · 9 Tage beim Lieferanten']);
+  assert.deepEqual([hier.stufe, warteWort(hier)], ['gelb', 'Liegt seit 8 Tagen hier'], 'bei uns ist nicht der Lieferant dran: kein "Nachhaken"');
+  assert.deepEqual([hierRot.stufe, warteWort(hierRot)], ['rot', 'Liegt seit 15 Tagen hier'], 'Stufe und Zeichen bleiben, nur das Wort ändert sich');
+  assert.equal(warteTitel(rot), 'Seit 17 Tagen beim Lieferanten bestellt – ab 14 Tagen überfällig');
+  assert.equal(warteTitel(gelb), 'Seit 9 Tagen beim Lieferanten bestellt – ab 7 Tagen nachhaken');
+  assert.equal(warteTitel(hier), 'Seit 8 Tagen bei uns – an den Kunden rausgeben');
+  const termin = w({ status: 'bestellt', bestelltAm: vor(2), beschaffung: { liefertermin: '2026-11-04' } });
+  assert.equal(warteWort(termin), 'Termin 04.11. vorbei', 'Termin: das Datum sagt es');
+  assert.deepEqual([0, 1, 17].map(t => tageMitBezug(t, 'lieferant')), ['seit heute beim Lieferanten', '1 Tag beim Lieferanten', '17 Tage beim Lieferanten']);
+  assert.deepEqual([0, 1, 8].map(t => tageMitBezug(t, 'hier')), ['Liegt seit heute hier', 'Liegt seit 1 Tag hier', 'Liegt seit 8 Tagen hier']);
+  assert.deepEqual([0, 1, 17].map(t => tageMitBezug(t, 'kunde')), ['Kunde wartet seit heute', 'Kunde wartet 1 Tag', 'Kunde wartet 17 Tage']);
+  assert.deepEqual([tageMitBezug(5), tageMitBezug(null, 'hier')], ['5 Tage', '']);
 });
 
 test('dringender: rot vor gelb vor ruhig, bei Gleichstand das laengere Warten', () => {
@@ -190,8 +211,8 @@ test('Packstation je Muster: im Haus ruhig, beim Lieferanten 7/14 Tage wie ueber
   // Die fruehere Schwelle der Packstation ("wartet ab 2 Tagen") gibt es nicht mehr.
   assert.equal(a({ bestelltAm: vor(2) }).stufe, null, '2 Tage: ruhig');
   assert.equal(a({ bestelltAm: vor(6) }).stufe, null);
-  assert.deepEqual(kurz(a({ bestelltAm: vor(7) })), ['gelb', 'nachhaken', 'Nachhaken · 7 Tage']);
-  assert.deepEqual(kurz(a({ bestelltAm: vor(14) })), ['rot', 'ueberfaellig', 'Überfällig · 14 Tage']);
+  assert.deepEqual(kurz(a({ bestelltAm: vor(7) })), ['gelb', 'nachhaken', 'Nachhaken · 7 Tage beim Lieferanten']);
+  assert.deepEqual(kurz(a({ bestelltAm: vor(14) })), ['rot', 'ueberfaellig', 'Überfällig · 14 Tage beim Lieferanten']);
   assert.deepEqual(kurz(a({ bestelltAm: vor(3), liefertermin: '2026-11-04' })), ['rot', 'termin', 'Termin 04.11. vorbei']);
   assert.equal(a({ bestelltAm: vor(20), liefertermin: '2026-11-10' }).stufe, null, 'bestaetigter Termin vor uns: ruhig');
   assert.equal(a({ bestelltAm: null }).stufe, null, 'ohne Bestelldatum keine Wartezeit');

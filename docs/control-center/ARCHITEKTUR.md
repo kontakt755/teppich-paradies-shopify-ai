@@ -2993,7 +2993,7 @@ Tests: `tests/packstation-gepackt-verschickt.test.mjs`, `tests/packstation-versa
 
 Freigabe Inhaber 06.11.: **Rot** heißt, etwas hält einen Auftrag oder einen Kunden auf. **Gelb** heißt, es ist
 etwas zu tun, aber nichts steht still. Alles andere bleibt ruhig, ohne grüne Fläche. Farbe steht nie allein:
-immer Zeichen und Wort (`× Blockiert`, `! Nachhaken · 9 Tage`, `✓ … ohne Befund`).
+immer Zeichen und Wort (`× Blockiert`, `! Nachhaken · 9 Tage beim Lieferanten`, `✓ … ohne Befund`).
 
 **Ein Ort für die Regeln.** `lib/ampel.mjs` (ohne DOM, auch auf dem Server): `WARTESCHWELLEN`
 (`nachhakenTage: 7`, `problemTage: 14`), `warteAmpel()`, `bestellbarkeit()`, `musterlagerAmpel()`,
@@ -3012,6 +3012,18 @@ kommt als `gesperrteMuster` (Position-IDs) aus `/api/einkauf/bestellungen` (`ope
 Warum Kalendertage: Der Inhaber zählt Wartezeiten in Kalendertagen (Fristen der To-dos, Notiz 28.10.), und
 14 Kalendertage sind in einer normalen Woche genau die bisherigen 10 Werktage. Werktage hätten „rot“ auf
 drei Kalenderwochen geschoben und Feiertage gebraucht, die niemand pflegt.
+
+**Jede Tageszahl nennt ihren Bezug (seit 06.11.2026, #1996).** `warteAmpel()` liefert `bezug`: `'lieferant'`
+(Status bestellt, gezählt ab `bestelltAm`) oder `'hier'` (Status geliefert, ab `geliefertAm`). `warteWort()`
+schreibt „Überfällig · 17 Tage beim Lieferanten“, „Nachhaken · 9 Tage beim Lieferanten“ und für Ware bei uns
+„Liegt seit 8 Tagen hier“ – nie „Nachhaken“, denn dann sind wir dran, nicht der Lieferant. Stufe, Zeichen
+und Schwellen bleiben gleich. `tageMitBezug(tage, bezug)` ist die eine Formulierung; auf „Heute“ reicht
+`alterText(tage, t.alterBezug)` sie an die Alters-Marke durch (Nachfragen beim Lieferanten: `lieferant`,
+Rausgeben und Von uns abschicken: `hier`, „Zuerst klären“ und „Muster nicht lieferbar“: `kunde` = „Kunde wartet
+17 Tage“, gezählt ab der Kundenbestellung). Eine Zahl je Zeile: Der Titel „Beim Lieferanten nachfragen“ und
+der Text von „rausgeben“ wiederholen die Tage nicht mehr. In der Packstation steht unter einer Plakette mit
+Tagen (`ueberfaellig`, `nachhaken`, `haengt`) nur „Kunde bestellt 19.10.“ statt „wartet seit 18 Tagen“.
+To-dos ohne `alterBezug` zeigen weiter nur „n Tage“.
 
 **Lexikon: Bestellbarkeit je Produkt** (`bestellbarkeit()`, Server `lexikonAmpeln()` in
 `scripts/dashboard-api.mjs`, je Lexikon-Stand einmal gerechnet). Rot: einer Bestellvariante fehlt

@@ -393,7 +393,7 @@ function todoZeile(t, erste) {
     : k.schritt && !istNurLesend()
       ? `<button type="button" class="${klasse}" data-zl-schritt="${esc(k.schritt.aktion)}" data-zl-order="${esc(k.schritt.orderId)}">${esc(k.text)}</button>`
       : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen || k.abhaken ? 'Ansehen' : k.text)}</a>`;
-  const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage))}</span>`;
+  const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage, t.alterBezug))}</span>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
     <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
     ${alter}${knopf}

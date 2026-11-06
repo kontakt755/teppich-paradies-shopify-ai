@@ -81,8 +81,8 @@ test('Auftragskarte: Ampel aus der dringendsten Position - blockiert, gesperrt, 
   const d = { gruppen: [{ lieferant: 'A', positionen: [pos('a1')] }] };
   const mit = (tage) => { const ab = auftragsAblauf({ id: 'o1' }, d, () => ({ status: 'bestellt', bestelltAm: new Date(JETZT - tage * 864e5).toISOString() })); return auftragsAmpel(ab, einordnung(ab, null, JETZT)); };
   assert.equal(mit(3), null, 'frisch bestellt: ruhig');
-  assert.deepEqual([mit(8).stufe, mit(8).wort], ['gelb', 'Nachhaken · 8 Tage']);
-  assert.deepEqual([mit(15).stufe, mit(15).wort], ['rot', 'Überfällig · 15 Tage']);
+  assert.deepEqual([mit(8).stufe, mit(8).wort], ['gelb', 'Nachhaken · 8 Tage beim Lieferanten']);
+  assert.deepEqual([mit(15).stufe, mit(15).wort], ['rot', 'Überfällig · 15 Tage beim Lieferanten']);
   const ungeklaert = auftragsAblauf({ id: 'o1' }, { gruppen: [{ lieferant: 'A', positionen: [pos('a1', { grosshaendlerId: 'UNGEKLAERT' })] }] }, () => null);
   assert.deepEqual([auftragsAmpel(ungeklaert, einordnung(ungeklaert, null, JETZT)).stufe, auftragsAmpel(ungeklaert, einordnung(ungeklaert, null, JETZT)).wort], ['rot', 'Blockiert']);
   const md = { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] };

@@ -104,7 +104,10 @@ test('Verzug wie im Einkauf (lib/ampel.mjs): ab 7 Tagen nachhaken (gelb), ab 14 
   };
   const todos = leiteTodosAb({ bestellzeilen: [frisch, a, b, c], statusAlle }, { sicht: 'laden', jetzt: JETZT });
   assert.deepEqual(todos.map(t => [t.art, t.ton, t.alterTage]), [['nachhaken', 'crit', 23], ['nachhaken', 'crit', 15], ['nachhaken', 'warn', 8]], '6 Tage: noch kein To-do');
-  assert.equal(todos[1].titel, 'Beim Lieferanten nachfragen: Ware seit 15 Tagen bestellt, noch nicht da');
+  // Die Tage stehen einmal, in der Marke mit Bezug (#1996) - vorher "Ware seit 15 Tagen bestellt" im Titel und "15 Tage" daneben.
+  assert.equal(todos[1].titel, 'Beim Lieferanten nachfragen: Ware bestellt, noch nicht da');
+  assert.equal(todos[1].alterBezug, 'lieferant');
+  assert.equal(alterText(todos[1].alterTage, todos[1].alterBezug), '15 Tage beim Lieferanten');
   assert.match(todos[1].kontext, /^Lieferant C · Kunde Fuenfzehn/);
   assert.equal(todos[1].knopf.href, '#/einkauf?ab=verzug', 'direkt in die Verzugsliste mit fertiger Nachfrage');
 });
@@ -115,6 +118,7 @@ test('blockierte Bestellung ("Zuerst klären") ist rot und erscheint nicht zusae
   assert.deepEqual(arten(todos), ['blockiert']);
   assert.equal(todos[0].ton, 'crit');
   assert.equal(todos[0].kontext, 'Kunde Rot · 1 Position ohne Großhändler-ID · Verlegung gebucht');
+  assert.equal(alterText(todos[0].alterTage, todos[0].alterBezug), 'Kunde wartet 2 Tage', 'gezaehlt seit der Kundenbestellung (#1996)');
   assert.match(todos[0].knopf.href, /^#\/einkauf\?/);
   assert.equal(new URLSearchParams(todos[0].knopf.href.split('?')[1]).get('auftrag'), rot.orderId);
 });
@@ -145,6 +149,9 @@ test('Ware liegt bei uns: ein To-do je Bestellung, Alter seit Wareneingang', () 
   const todos = leiteTodosAb({ bestellzeilen: [z], statusAlle }, { sicht: 'laden', jetzt: JETZT });
   assert.deepEqual(todos.map(t => [t.art, t.alterTage, t.ton]), [['rausgeben', 9, 'crit']]);
   assert.match(todos[0].titel, /Ware ist da – an Kunde Lager rausgeben/);
+  // Eine Tageszahl, mit Bezug in der Marke (#1996); der Text wiederholt sie nicht mehr.
+  assert.equal(alterText(todos[0].alterTage, todos[0].alterBezug), 'Liegt seit 9 Tagen hier');
+  assert.doesNotMatch(todos[0].kontext, /seit \d+ Tag/);
 });
 
 test('offene Faelle: Angebote erst nach einer Woche ohne Antwort, Warenkoerbe nie', () => {
@@ -778,6 +785,7 @@ test('Gesperrtes Muster: rot, Kunde informieren - statt ewig "bestellt" oder "be
   assert.match(t.kontext, /Sand/);
   assert.doesNotMatch(t.kontext, /Grau/);
   assert.match(t.kontext, /Packstation/);
+  assert.equal(alterText(t.alterTage, t.alterBezug), 'Kunde wartet 10 Tage', 'seit der Kundenbestellung, nicht seit der Lieferantenbestellung (#1996)');
   assert.doesNotMatch(t.kontext, /nicht verfügbar/, 'der Schritt schliesst die ganze Bestellung ab, passt bei gemischten Bestellungen nicht');
   const erledigt = { ...statusAlle, ...stand(z, 0, { status: 'erledigt' }) };
   assert.ok(!leiteTodosAb({ bestellzeilen: [z], statusAlle: erledigt }, { sicht: 'laden', jetzt: JETZT }).some(x => x.art === 'muster_gesperrt'), 'abgeschlossen: To-do weg');
