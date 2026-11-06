@@ -812,6 +812,16 @@ function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftF
   return datei;
 }
 
+/**
+ * Wartet, bis der Kindprozess fertig ist, statt eine feste Zeit zu schlafen. Unter Last (Probekopie des
+ * Nachziehens, parallele Suiten) brauchte allein der Start von node laenger als die frueheren 500 ms -
+ * der Test war dann rot und hielt das Nachziehen des Dashboards an (05.11.).
+ */
+async function warteAufLaufende(api, hoechstensMs = 15000) {
+  const bis = Date.now() + hoechstensMs;
+  while (api.aktualisierungStatus().laeuft && Date.now() < bis) await new Promise(r => setTimeout(r, 25));
+}
+
 test('aktualisierungStarten: ohne Zugang kein leerer Lauf, alter Datenstand bleibt erhalten', () => {
   const root = tmpRoot();
   const dir = wegwerfOrdner('tp-aktualisierung-');
@@ -857,7 +867,7 @@ test('aktualisierungStatus: laeuft waehrend des Laufs, danach fertig mit neuem S
   api.aktualisierungStarten();
   const waehrend = api.aktualisierungStatus();
   assert.equal(waehrend.laeuft, true);
-  await new Promise(r => setTimeout(r, 500));
+  await warteAufLaufende(api);
   const danach = api.aktualisierungStatus();
   assert.equal(danach.laeuft, false);
   assert.equal(danach.verfuegbar, true);
@@ -1462,7 +1472,7 @@ test('"Jetzt aktualisieren": ein abgebrochener Lauf bleibt als letzterKnopfLauf 
   const vorher = console.error; const zeilen = []; console.error = z => zeilen.push(z);
   try {
     const start = api.aktualisierungStarten();
-    for (let i = 0; i < 50 && api.aktualisierungStatus().laeuft; i += 1) await new Promise(r => setTimeout(r, 50));
+    await warteAufLaufende(api);
     const s = api.aktualisierungStatus();
     assert.equal(s.laeuft, false);
     assert.equal(s.letzterKnopfLauf.seit, start.seit);
@@ -1480,7 +1490,7 @@ test('"Jetzt aktualisieren": ein abgebrochener Lauf bleibt als letzterKnopfLauf 
   console.error = () => {};
   try {
     api2.aktualisierungStarten();
-    for (let i = 0; i < 50 && api2.aktualisierungStatus().laeuft; i += 1) await new Promise(r => setTimeout(r, 50));
+    await warteAufLaufende(api2);
   } finally { console.error = vorher; }
   assert.equal(api2.aktualisierungStatus().letzterKnopfLauf.fehler, null);
 });
