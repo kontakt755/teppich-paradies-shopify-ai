@@ -541,6 +541,7 @@
           </div>
           <input type="tel" name="contact[phone]" autocomplete="tel" placeholder="Telefon (optional)" aria-label="Telefon">
           <textarea name="contact[body]" rows="3" placeholder="Ungefähre Maße und Wünsche" aria-label="Ungefähre Maße und Wünsche"></textarea>
+          <p class="tp-ek__datenschutz">{% render 'tp-datenschutz-hinweis' %}</p>
           <button type="submit" class="tp-ek__cta tp-ek__cta--zweit">Anfrage senden</button>
         {%- endform -%}
       </div>

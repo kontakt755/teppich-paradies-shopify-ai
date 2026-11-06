@@ -269,6 +269,9 @@
   background: var(--tp-ek-surface); color: var(--tp-ek-ink); font: inherit; font-size: var(--tp-fs-md);
 }
 .tp-ek__formular input:focus, .tp-ek__formular textarea:focus { outline: none; border-color: var(--tp-ek-ink); }
+/* Datenschutz-Hinweis vor dem Absenden, Wortlaut aus snippets/tp-datenschutz-hinweis (w-172) */
+.tp-ek__datenschutz { margin: 0; font-size: var(--tp-fs-xs); line-height: 1.5; color: var(--tp-ek-muted); }
+.tp-ek__datenschutz a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .tp-ek__erfolg { margin: 0; font-size: var(--tp-fs-sm); font-weight: 600; color: var(--tp-ek-green); }
 
 @media screen and (max-width: 749px) {

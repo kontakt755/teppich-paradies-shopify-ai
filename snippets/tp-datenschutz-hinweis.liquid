@@ -1,0 +1,24 @@
+{%- doc -%}
+  Datenschutz-Hinweis fuer Anfrageformulare (Werkbank w-172): ein Satz zur
+  Verarbeitung der Angaben mit Link zur Datenschutzerklaerung.
+
+  Wortlaut und Linkziel hat der Inhaber am 28.10.2026 freigegeben (PR #1771).
+  Nicht je Formular umformulieren - eine Aenderung gehoert hierher und gilt
+  dann fuer alle Formulare. Der Link oeffnet in einem neuen Tab, damit die
+  Eingaben im Formular nicht verloren gehen.
+
+  Gibt nur den Satz mit Link aus: kein Absatz, kein Leerraum davor oder
+  danach. Jedes Formular setzt ihn in seinen eigenen Hinweis-Absatz, innerhalb
+  des Formulars und vor dem Absendeknopf, und gestaltet Absatz und Link selbst.
+
+  Eingebunden in sections/contact-form, sections/tp-start-kontakt,
+  blocks/tp-anfrage-formular, blocks/tp-einfass-konfigurator und
+  snippets/tp-muster-beratungsanfrage. Der Boden-Finder
+  (sections/tp-boden-finder) schreibt denselben Satz noch selbst aus.
+  Test: qa/tests/datenschutz-formulare.test.mjs.
+
+  Aufruf, im Hinweis-Absatz des Formulars:
+    render 'tp-datenschutz-hinweis'
+{%- enddoc -%}
+Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu. Mehr dazu in unserer <a href="{{ shop.privacy_policy.url | default: '/policies/privacy-policy' }}" target="_blank" rel="noopener">Datenschutzerklärung<span class="visually-hidden"> (öffnet in neuem Tab)</span></a>.
+{%- comment -%} Die Ausgabe endet am Punkt: kein Zeilenumbruch nach dem Satz. {%- endcomment -%}

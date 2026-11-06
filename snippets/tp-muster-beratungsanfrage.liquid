@@ -65,7 +65,7 @@
       <label class="tp-mba__feld">Telefon<input type="tel" name="contact[Telefon]" autocomplete="tel" inputmode="tel" required pattern="[0-9 +()/.-]{6,}" placeholder="z. B. 0176 1234567"></label>
       <label class="tp-mba__feld">E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
       <label class="tp-mba__feld">Worum geht es? <em>(optional)</em><textarea name="contact[body]" rows="2" maxlength="500">{{ form.body }}</textarea></label>
-      <p class="tp-mba__note">Es entsteht keine Bestellung. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
+      <p class="tp-mba__note">Es entsteht keine Bestellung. {% render 'tp-datenschutz-hinweis' %}</p>
       <button type="submit" class="button tp-mba__btn">Beratung anfragen</button>
     </details>
   {%- endform -%}
@@ -154,6 +154,8 @@
     font: inherit;
   }
   .tp-mba__note { font-size: var(--tp-fs-xs); margin: 0 0 0.6rem; color: rgb(from var(--color-foreground) r g b / 0.7); }
+  /* Link zur Datenschutzerklaerung im Hinweis, wie im Kontaktformular (w-172) */
+  .tp-mba__note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   .tp-mba__btn { inline-size: 100%; }
   .tp-mba__ok { padding: 0.75rem 0.875rem; border-radius: 6px; background: #e8f4ec; color: #1d5b3a; }
   .tp-mba__err { color: var(--color-error, #b3261e); margin: 0 0 0.5rem; }

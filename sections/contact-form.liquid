@@ -571,7 +571,7 @@
       <label for="ContactFormMessage" data-message-label>Nachricht</label>
       <textarea id="ContactFormMessage" name="contact[body]" rows="5" data-message-field required>{{ form.body }}</textarea>
 
-      <p class="tp-kontakt-datenschutz">Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu. Mehr dazu in unserer <a href="{{ shop.privacy_policy.url | default: '/policies/privacy-policy' }}" target="_blank" rel="noopener">Datenschutzerklärung<span class="visually-hidden"> (öffnet in neuem Tab)</span></a>.</p>
+      <p class="tp-kontakt-datenschutz">{% render 'tp-datenschutz-hinweis' %}</p>
 
       <button type="submit">Nachricht senden</button>
     {%- endform -%}
