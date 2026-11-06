@@ -33,7 +33,7 @@ einer Kategorie mit solchen Produkten braucht eine eigene Zielkollektion.
 
 ## Restrollen: UVP mit Abstand
 
-Restrollen (Tag `sonderposten`, Typ Teppichboden) zeigen ihre UVP wie alle anderen über `preis.vergleich_ist_uvp`, zusätzlich mit „40 % unter UVP“, abgerundet, ohne Rot und ohne Rabattbadge (Inhaber 2026-11-03). Sie bekommen kein `aktion.klasse`, weil sie nie zum Vergleichspreis verkauft wurden. Die UVP gilt nur für die Meterware: Beim Wechsel auf Raummaß blendet der Rechner die Zeile aus, Kettelteppiche und Raummaß-Produkte haben keine.
+Restrollen (Tag `sonderposten`, Typ Teppichboden) zeigen ihre UVP wie alle anderen über `preis.vergleich_ist_uvp`, zusätzlich mit dem Abstand als roter Pille „−40 % ggü. UVP“, abgerundet: auf der Karte im Bild, auf der Produktseite in der UVP-Zeile (Inhaber 2026-11-06, vorher grau). Der Bezug „UVP“ bleibt immer dabei – „Rabatt“ oder „reduziert“ hieße, wir hätten die Rolle vorher teurer verkauft. Die Kartenplakette heißt bei Rollenware „Restrolle“. Sie bekommen kein `aktion.klasse`, weil sie nie zum Vergleichspreis verkauft wurden. Die UVP gilt nur für die Meterware: Beim Wechsel auf Raummaß blendet der Rechner die Zeile aus, Kettelteppiche und Raummaß-Produkte haben keine.
 
 Restrollen stehen wie normaler Teppichboden im Kanal Google & YouTube, mit Grundpreis 1 m² an der Variante (Inhaber 2026-11-03). Karten zeigen die Restmenge aus dem Bestand („Noch 80 m²“, `blocks/tp-card-aktion`), die Startseite ein eigenes Band (`start_restrollen`). Normale Teppichböden mit echtem Hersteller verweisen auf dessen Restrollen (`blocks/tp-aktion-hinweis`), beim Hausnamen TeppichParadies erscheint nichts.
 
