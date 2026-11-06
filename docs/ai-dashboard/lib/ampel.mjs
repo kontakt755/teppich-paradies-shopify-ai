@@ -248,22 +248,28 @@ const werktageText = n => (n === 1 ? '1 Werktag' : `${n} Werktage`);
 
 /**
  * Ampel eines Musters im Umschlag. Gerechnet in lib/muster-packen.mjs mit `jetzt` des Servers.
- *   rot   Zuordnung fehlt: kein eindeutiger Aufkleber, so wird der Umschlag nie gepackt.
- *         Gesperrt: das Muster kommt nicht.
+ *   rot   Gesperrt: das Muster kommt nicht - geht vor allem anderen, auch vor fehlender Zuordnung,
+ *         weil dann der Kunde informiert werden muss.
+ *         Zuordnung fehlt: kein eindeutiger Aufkleber, so wird der Umschlag nie gepackt.
  *         Beim Lieferanten seit 14 Tagen bestellt oder Liefertermin vorbei (warteAmpel).
  *         Noch nicht bestellt und die Musterautomatik haelt es fest (`haengtWerktage`, gesetzt nach
  *         derselben Regel wie das rote To-do "n Muster haengen" auf Heute, lib/todos.mjs).
+ *         Noch nicht bestellt seit `bestellenRotAb` Tagen (`offenTage` seit der Kundenbestellung) - auch
+ *         wenn die Musterautomatik pausiert oder ausfaellt. Der Aufrufer reicht die Frist des To-dos
+ *         "Muster bei … bestellen" herein (FRISTEN.bestellen in lib/todos.mjs); ohne sie bleibt es gelb.
  *   gelb  Beim Lieferanten seit 7 Tagen bestellt (nachhaken), oder noch nicht bestellt.
  *   ruhig Im Umschlag (abgehakt), angekommen, aus dem Musterlager, bestellt seit weniger als 7 Tagen.
  * Die eigene Packstations-Schwelle "wartet ab 2 Tagen" (#1572) gibt es nicht mehr: dieselben 7/14
  * Tage wie im Einkauf.
- * @param {object} m  Muster aus musterPackliste (stand, abgehakt, gesperrt, fehlt, bestelltAm, liefertermin, haengtWerktage)
+ * @param {object} m  Muster aus musterPackliste (stand, abgehakt, gesperrt, fehlt, bestelltAm, liefertermin,
+ *                    haengtWerktage, offenTage)
+ * @param {{jetzt?: Date|number, schwellen?: object, bestellenRotAb?: number|null}} [opt]
  * @returns {{stufe:'rot'|'gelb'|null, grund:string|null, wort:string, titel:string, tage?:number|null}}
  */
-export function packMusterAmpel(m, { jetzt = Date.now(), schwellen = WARTESCHWELLEN } = {}) {
+export function packMusterAmpel(m, { jetzt = Date.now(), schwellen = WARTESCHWELLEN, bestellenRotAb = null } = {}) {
   if (!m) return RUHIG;
-  if (m.fehlt?.length) return { stufe: 'rot', grund: 'zuordnung', wort: 'Zuordnung fehlt', titel: 'Kein eindeutiger Aufkleber – erst im Lexikon klären, dann packen' };
   if (m.gesperrt) return { stufe: 'rot', grund: 'kommtNicht', wort: 'Kommt nicht', titel: warteTitel({ grund: 'gesperrt' }) };
+  if (m.fehlt?.length) return { stufe: 'rot', grund: 'zuordnung', wort: 'Zuordnung fehlt', titel: 'Kein eindeutiger Aufkleber – erst im Lexikon klären, dann packen' };
   if (m.abgehakt || m.stand === 'da' || m.stand === 'lager') return RUHIG;
   if (m.stand === 'bestellt') {
     const a = warteAmpel({ status: 'bestellt', bestelltAm: m.bestelltAm, beschaffung: m.liefertermin ? { liefertermin: m.liefertermin } : null }, { jetzt, schwellen });
@@ -273,7 +279,11 @@ export function packMusterAmpel(m, { jetzt = Date.now(), schwellen = WARTESCHWEL
   if (Number.isInteger(m.haengtWerktage) && m.haengtWerktage > 0) {
     return { stufe: 'rot', grund: 'haengt', wort: `Hängt · ${werktageText(m.haengtWerktage)}`, titel: 'Die Musterautomatik bestellt es nicht – erst den Grund klären' };
   }
-  return { stufe: 'gelb', grund: 'nichtBestellt', wort: 'Nicht bestellt', titel: 'Noch nicht beim Lieferanten bestellt' };
+  if (Number.isInteger(bestellenRotAb) && Number.isInteger(m.offenTage) && m.offenTage >= bestellenRotAb) {
+    return { stufe: 'rot', grund: 'ueberfaellig', wort: `Nicht bestellt · ${tageText(m.offenTage)}`, tage: m.offenTage,
+      titel: `Seit ${tageText(m.offenTage)} bezahlt, noch nicht beim Lieferanten bestellt – ab ${bestellenRotAb} Tagen überfällig` };
+  }
+  return { stufe: 'gelb', grund: 'nichtBestellt', wort: 'Nicht bestellt', titel: 'Noch nicht beim Lieferanten bestellt', ...(Number.isInteger(m.offenTage) ? { tage: m.offenTage } : {}) };
 }
 
 /** Bei gleicher Stufe gewinnt der Grund weiter vorn: was den Kunden sicher aufhaelt, vor dem, was nur dauert. */

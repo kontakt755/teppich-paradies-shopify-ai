@@ -2929,9 +2929,12 @@ nachgekauft (Inhaber 15.10.), und fast jedes Einzelmuster liegt in kleiner Zahl 
 `packRotZaehlung()` für die Reiter, gerechnet in `musterPackliste()` mit `jetzt` des Servers (`muster[].ampel`,
 `kunden[].ampel` in `GET /api/kunden/muster-packen`). Je Muster: abgehakt, angekommen, aus dem Musterlager ruhig;
 beim Lieferanten bestellt mit `warteAmpel()` (7/14 Tage, Liefertermin aus `beschaffung.liefertermin`); gesperrt
-(„Kommt nicht“) und Zuordnung fehlt rot; noch nicht bestellt gelb, rot erst, wenn die Musterautomatik es länger als
-`MUSTER_KLAER_WERKTAGE` festhält (`automatikHaengtWerktage()` in `lib/todos.mjs`, dieselbe Regel wie das rote To-do
-„n Muster hängen“; der Server reicht dafür den Klärfall samt `seit` herein, `automatikFallVon`). Je Umschlag die
+(„Kommt nicht“, geht vor fehlender Zuordnung, weil dann der Kunde informiert werden muss) und Zuordnung fehlt rot;
+noch nicht bestellt gelb. Rot wird es, wenn die Musterautomatik es länger als `MUSTER_KLAER_WERKTAGE` festhält
+(`automatikHaengtWerktage()` in `lib/todos.mjs`, dieselbe Regel wie das rote To-do „n Muster hängen“; der Server
+reicht dafür den Klärfall samt `seit` herein, `automatikFallVon`), sonst ab `FRISTEN.bestellen[1]` (7) Tagen seit der
+Kundenbestellung (`offenTage`, `tageSeit()`), genau wie das rote To-do „Muster bei … bestellen“ auf Heute. So wird
+ein nie bestelltes Muster auch rot, wenn die Musterautomatik pausiert oder ausfällt (Review #1975). Je Umschlag die
 dringendste Stufe, dazu rot: gepackt und nie eingetragen (Reiter „Gepackt“), roter Versandhinweis mit diesem
 Packschlüssel (`versandProbleme`), Lieferadresse unvollständig; alles unter „Zu klären“ mindestens gelb („Fehlt noch“,
 „Direktversand prüfen“, „Restumfang prüfen“, sonst „Zu klären“). Die Reiter Packbereit, Zu klären, Wartet auf Ware und

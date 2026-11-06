@@ -13,7 +13,7 @@ import { adressEtikett } from './adress-etiketten.mjs';
 import { passtBegriff } from './lexikon-suche.mjs';
 import { kalendertag, kalendertage } from './kalendertage.mjs';
 import { packMusterAmpel, packUmschlagAmpel } from './ampel.mjs';
-import { automatikHaengtWerktage } from './todos.mjs';
+import { FRISTEN, automatikHaengtWerktage, tageSeit } from './todos.mjs';
 
 const FERTIG = new Set(['raus', 'erledigt']);
 /** So traegt die automatische Musterbestellung (operations/lib/muster-bestellautomatik.mjs) ein. */
@@ -230,6 +230,9 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
         // Ampel: Liefertermin (nur bestaetigt und noch bestellt) und wie lange die Automatik es schon festhaelt.
         const liefertermin = stand === 'bestellt' && typeof eintrag?.beschaffung?.liefertermin === 'string' ? eintrag.beschaffung.liefertermin : null;
         const haengtWerktage = grund && belegt(fall?.seit) ? automatikHaengtWerktage(fall.seit, jetzt) : null;
+        // Nie bestellt und haengt nicht: Tage seit der Kundenbestellung, wie das To-do "Muster bei … bestellen"
+        // auf Heute (tageSeit, FRISTEN.bestellen) - rot auch, wenn die Musterautomatik pausiert oder ausfaellt.
+        const offenTage = stand === 'offen' && !haengtWerktage ? tageSeit(a.datum, jetzt) : null;
         const m = {
           orderId: a.id, orderName: text(a.name), lineItemId: z.lineItemId,
           anzahl: Number.isInteger(z.anzahl) ? z.anzahl : null, etikett: z.etikett, fehlt: z.fehlt,
@@ -250,8 +253,9 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           ...(p.musterHerkunft === 'eigen_vorbei' ? { persoenlich: true } : {}),
           ...(liefertermin ? { liefertermin } : {}),
           ...(haengtWerktage ? { haengtWerktage } : {}),
+          ...(offenTage !== null ? { offenTage } : {}),
         };
-        m.ampel = packMusterAmpel(m, { jetzt });
+        m.ampel = packMusterAmpel(m, { jetzt, bestellenRotAb: FRISTEN.bestellen[1] });
         g.muster.push(m);
       });
     }

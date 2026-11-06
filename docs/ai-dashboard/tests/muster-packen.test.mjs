@@ -665,7 +665,29 @@ test('Ampel (06.11.): jedes Muster und jeder Umschlag traegt sie, gerechnet mit 
   assert.deepEqual(kurz(je['Gerd Versand'].ampel), ['rot', 'Versand nicht eingetragen']);
   assert.equal(je['Gerd Versand'].ampel.titel, 'Shopify nicht erreicht');
   assert.deepEqual([je['Hanna Altfall'].bereich, ...kurz(je['Hanna Altfall'].ampel)], ['gepackt', 'rot', 'Nicht eingetragen']);
-  // Ohne Fall-Lieferant bleibt der alte Weg (nur Grund) bestehen.
-  const alt = musterPackliste({ produkte, schluesselVon, jetzt, automatikGrundVon: () => 'Testgrund', auftraege: [auftrag(1, '2026-10-02T09:00:00Z', 'Anna Test', [pos(11, '101')])] });
-  assert.deepEqual([alt.kunden[0].muster[0].automatikGrund, alt.kunden[0].muster[0].ampel.stufe], ['Testgrund', 'gelb']);
+  // Ohne Fall-Lieferant bleibt der alte Weg (nur Grund, kein Beginn): ohne Haengen zaehlt die Kundenbestellung.
+  const alt = musterPackliste({ produkte, schluesselVon, jetzt, automatikGrundVon: () => 'Testgrund', auftraege: [auftrag(1, '2026-10-02T09:00:00Z', 'Anna Test', [pos(11, '101')]), auftrag(2, '2026-10-19T09:00:00Z', 'Berta Test', [pos(21, '101')])] });
+  assert.deepEqual(alt.kunden.map(k => [k.muster[0].automatikGrund, k.muster[0].ampel.stufe]), [['Testgrund', 'rot'], ['Testgrund', 'gelb']], '19 Tage rot, 2 Tage gelb');
+});
+
+test('Nie bestellt, ohne Musterautomatik: ab 7 Tagen rot wie das To-do auf Heute (Review #1975)', () => {
+  const stichtag = new Date('2026-11-06T10:00:00Z');
+  const r = musterPackliste({ produkte, schluesselVon, jetzt: stichtag, auftraege: [
+    auftrag(1, '2026-10-26T09:00:00Z', 'Anna Lange', [pos(11, '101')]),
+    auftrag(2, '2026-10-30T09:00:00Z', 'Berta Sieben', [pos(21, '101')]),
+    auftrag(3, '2026-10-31T09:00:00Z', 'Carl Sechs', [pos(31, '101')]),
+  ] });
+  const je = Object.fromEntries(r.kunden.map(k => [k.name, k]));
+  const kurz = a => [a.stufe, a.wort];
+  assert.equal(je['Anna Lange'].muster[0].offenTage, 11);
+  assert.deepEqual(kurz(je['Anna Lange'].muster[0].ampel), ['rot', 'Nicht bestellt · 11 Tage'], 'Muster rot');
+  assert.deepEqual(kurz(je['Anna Lange'].ampel), ['rot', 'Nicht bestellt · 11 Tage'], 'Umschlag rot');
+  assert.deepEqual(kurz(je['Berta Sieben'].ampel), ['rot', 'Nicht bestellt · 7 Tage']);
+  assert.deepEqual(kurz(je['Carl Sechs'].ampel), ['gelb', 'Nicht bestellt'], '6 Tage: noch gelb');
+  // Haengt das Muster bei der Automatik, gilt deren Grund und keine zweite Zaehlung.
+  const mitFall = musterPackliste({ produkte, schluesselVon, jetzt: stichtag,
+    automatikFallVon: () => ({ grund: 'Farbnummer fehlt', seit: '2026-11-02T08:00:00Z' }),
+    auftraege: [auftrag(1, '2026-10-26T09:00:00Z', 'Anna Lange', [pos(11, '101')])] });
+  const m = mitFall.kunden[0].muster[0];
+  assert.deepEqual([m.haengtWerktage, m.offenTage, m.ampel.wort], [4, undefined, 'Hängt · 4 Werktage']);
 });

@@ -25,8 +25,9 @@
  * Meldet der Lieferant, dass es eine Farbe nicht als Muster gibt: "Kein Muster – im Shop sperren…" am Muster
  * sperrt nur diese Farbe; die Bestellung bleibt offen (Vorfall 05.11., gemischte Bestellung).
  * Ampel (06.11.2026, Regeln lib/ampel.mjs, gerechnet im Server): je Muster und je Umschlag Plakette und linker
- * Rand, rot haelt den Kunden auf (kommt nicht, Zuordnung/Adresse fehlt, beim Lieferanten ab 14 Tagen, nie als
- * verschickt eingetragen), gelb ist zu tun (ab 7 Tagen, nicht bestellt, alles unter "Zu klären"). Die Reiter
+ * Rand, rot haelt den Kunden auf (kommt nicht, Zuordnung/Adresse fehlt, beim Lieferanten ab 14 Tagen, seit 7 Tagen
+ * nicht bestellt wie das To-do auf Heute, nie als verschickt eingetragen), gelb ist zu tun (beim Lieferanten ab
+ * 7 Tagen, nicht bestellt, alles unter "Zu klären"). Die Reiter
  * nennen die Zahl der roten Umschlaege.
  * In beiden Ansichten steht oben fuer den Packer, welche Herstelleretiketten abkommen (PACKER_INFO).
  * Das A4-Begleitblatt kommt je Umschlag oder gesammelt als PDF (blattKnopf); Direktversand bekommt keins.

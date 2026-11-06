@@ -5,7 +5,7 @@ import {
   hatBestellampel, bestellbarkeit, zaehleAmpeln, musterlagerAmpel, ZEICHEN,
   packMusterAmpel, packUmschlagAmpel, packRotZaehlung,
 } from '../lib/ampel.mjs';
-import { automatikHaengtWerktage, MUSTER_KLAER_WERKTAGE } from '../lib/todos.mjs';
+import { automatikHaengtWerktage, MUSTER_KLAER_WERKTAGE, FRISTEN } from '../lib/todos.mjs';
 import { SCHWELLEN_STANDARD, lieferantenKarten, warnstufe } from '../lib/einkauf-lieferanten.mjs';
 import { SCHWELLEN } from '../lib/todos.mjs';
 import { jeKommission } from '../lib/einkauf-uebersicht.mjs';
@@ -200,6 +200,24 @@ test('Packstation je Muster: im Haus ruhig, beim Lieferanten 7/14 Tage wie ueber
   assert.deepEqual(kurz(a({ stand: 'offen' })), ['gelb', 'nichtBestellt', 'Nicht bestellt']);
   assert.deepEqual(kurz(a({ stand: 'offen', haengtWerktage: 3 })), ['rot', 'haengt', 'Hängt · 3 Werktage']);
   for (const x of [a({ bestelltAm: vor(9) }), a({ stand: 'offen' }), a({ gesperrt: { imShop: false } })]) assert.ok(x.titel, `Tooltip zu ${x.wort}`);
+  // Gesperrt geht vor fehlender Zuordnung: dann muss der Kunde informiert werden (Review #1975).
+  assert.deepEqual(kurz(a({ gesperrt: { imShop: true }, fehlt: ['Farbe'] })), ['rot', 'kommtNicht', 'Kommt nicht']);
+});
+
+test('Packstation: nie bestellt wird rot wie das To-do "Muster bei … bestellen" auf Heute, auch ohne Musterautomatik', () => {
+  assert.deepEqual(FRISTEN.bestellen, [3, 7], 'dieselbe Frist wie Heute');
+  const rotAb = FRISTEN.bestellen[1];
+  const a = m => packMusterAmpel({ fehlt: [], stand: 'offen', ...m }, { jetzt: JETZT, bestellenRotAb: rotAb });
+  const kurz = x => [x.stufe, x.grund, x.wort];
+  assert.deepEqual(kurz(a({ offenTage: 6 })), ['gelb', 'nichtBestellt', 'Nicht bestellt']);
+  assert.deepEqual(kurz(a({ offenTage: 7 })), ['rot', 'ueberfaellig', 'Nicht bestellt · 7 Tage']);
+  assert.match(a({ offenTage: 7 }).titel, /ab 7 Tagen überfällig/);
+  assert.deepEqual(kurz(a({ offenTage: 11, haengtWerktage: 3 })), ['rot', 'haengt', 'Hängt · 3 Werktage'], 'haengt bei der Automatik: deren Grund zuerst');
+  assert.deepEqual(kurz(packMusterAmpel({ fehlt: [], stand: 'offen', offenTage: 20 }, { jetzt: JETZT })), ['gelb', 'nichtBestellt', 'Nicht bestellt'], 'ohne Frist vom Aufrufer keine eigene Schwelle');
+  assert.equal(a({ stand: 'bestellt', offenTage: 20, bestelltAm: vor(2) }).stufe, null, 'nur fuer nie Bestelltes');
+  const u = packUmschlagAmpel({ bereich: 'warten', muster: [{ ampel: a({ offenTage: 11 }) }, { ampel: { stufe: 'gelb', grund: 'nachhaken', wort: 'Nachhaken · 9 Tage', tage: 9 } }], hinweise: [], adressFehlt: [] });
+  assert.deepEqual([u.stufe, u.grund, u.wort], ['rot', 'ueberfaellig', 'Nicht bestellt · 11 Tage']);
+  assert.deepEqual(packRotZaehlung([{ ampel: u }]), { n: 1, wort: 'überfällig' });
 });
 
 test('Packstation: "haengt" nach derselben Regel wie das rote To-do auf Heute', () => {
@@ -223,6 +241,8 @@ test('Packstation je Umschlag: dringendstes Muster, nie eingetragen und Versandh
   assert.deepEqual(kurz(u({ muster: [m(gelb()), m(rot(16))] })), ['rot', 'Überfällig · 16 Tage']);
   assert.deepEqual(kurz(u({ bereich: 'klaeren', muster: [m(rot()), m(kommtNicht), m(kommtNicht)] })), ['rot', '2 Muster kommen nicht'], 'kommt nicht vor dem Warten, mit Anzahl');
   assert.deepEqual(kurz(u({ bereich: 'klaeren', muster: [m(kommtNicht)] })), ['rot', '1 Muster kommt nicht']);
+  const gesperrtOhneZuordnung = packMusterAmpel({ stand: 'bestellt', gesperrt: { imShop: true }, fehlt: ['Farbe'] }, { jetzt: JETZT });
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', muster: [m(gesperrtOhneZuordnung)] })), ['rot', '1 Muster kommt nicht'], 'auch ohne Zuordnung steht "kommt nicht" im Kopf');
   assert.deepEqual(kurz(u({ bereich: 'gepackt', muster: [m(ruhig)] })), ['rot', 'Nicht eingetragen'], 'Altfall: gepackt, nie eingetragen');
   assert.deepEqual(kurz(u({ bereich: 'gepackt', muster: [m(ruhig)] }, { versandProblem: 'Shopify nicht erreicht' })), ['rot', 'Nicht eingetragen']);
   const versand = u({ bereich: 'packen', muster: [m(ruhig)] }, { versandProblem: 'Shopify nicht erreicht' });
