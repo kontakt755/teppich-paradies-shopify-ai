@@ -1,4 +1,5 @@
 import { kalendertage } from './kalendertage.mjs';
+import { UNGEKLAERT } from './einkauf-lieferanten.mjs';
 /**
  * Lieferantenbelege aus dem Firmenpostfach: Auftragsbestaetigung (AB), Lieferschein, Avis,
  * Storno - erkannt, einer Shop-Bestellung zugeordnet und gegen Dashboard und Shopify
@@ -193,6 +194,8 @@ export function kandidatenAus(bestellzeilen = [], statusAlle = {}) {
   return (bestellzeilen || []).filter(z => z?.auftrag && !z.testbestellung && !z.storniert).map(z => {
     const positionen = (z.auftrag.positionen || []).filter(p => p.lineItemId).map(p => ({
       lineItemId: p.lineItemId, lieferant: p.lieferant || null, istMuster: !!p.istMuster, titel: p.titel || null,
+      // Eigenleistung (Kettelservice, Fertigungspauschale): nichts beim Lieferanten zu bestellen.
+      eigenleistung: !!p.eigenleistung,
       // menge = in Shopify noch offene Menge, mengeBestellt = bestellte (bestelluebersicht.mjs);
       // fehlt sie, gilt der Status der Bestellung. Teil: von dieser Position ist schon etwas raus.
       shopifyOffen: typeof p.menge === 'number' && !p.eigenleistung ? p.menge > 0 : null,
@@ -420,6 +423,10 @@ export function abgleich({ belege = [], kandidaten = [], jetzt = new Date(), tag
       });
       // Nur, was beim Lieferanten bestellt wurde oder wozu ein Beleg kam - nicht jede offene Bestellung.
       if (stand === 'offen' && !eigene.length) continue;
+      // Eigenleistung ohne Lieferant (Kettelservice) ist keine Lieferantenpost: bis 2026-11-06 stand dafuer
+      // eine zweite Zeile "Lieferant nicht zugeordnet" (#1116). Die Position bleibt im Kandidaten - Zuordnen
+      // und Absenderpruefung rechnen unveraendert -, nur die Zeile entfaellt, solange kein Beleg an ihr haengt.
+      if (!eigene.length && (!lieferant || lieferant === UNGEKLAERT) && positionen.every(p => p.eigenleistung)) continue;
       const bestelltAm = positionen.map(p => p.eintrag?.bestelltAm).filter(Boolean).sort()[0] || null;
       const der = art => neueste(eigene.filter(b => b.art === art))[0] || null;
       const ls = der('lieferschein') || der('avis');
@@ -485,6 +492,16 @@ export function belegMarke(beleg) {
   const d = beleg.datum ? new Date(beleg.datum) : null;
   const tag = d && !Number.isNaN(d.getTime()) ? `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.` : '';
   return `${ART_KURZ[beleg.art] || 'Beleg'}${tag ? ` ${tag}` : ''}`;
+}
+
+/**
+ * Tabelle "Je Auftrag", Vorgabe ohne Parameter blf: die Arbeitsliste "Passt nicht zusammen"; ist sie leer, alle. Bis
+ * 2026-11-06 oeffnete die Tabelle auf "Alle" (131 Zeilen, 11 Seiten), die zwei Abweichungen standen
+ * irgendwo dazwischen. "Alle" hat deshalb einen eigenen Wert und bleibt einen Klick entfernt.
+ */
+export function belegFilter(roh, { abweichungen = 0 } = {}) {
+  if (['alle', 'beleg', 'abweichung'].includes(roh)) return roh;
+  return abweichungen ? 'abweichung' : 'alle';
 }
 
 /** Belege ohne Bestellung zaehlen so lange als "zu pruefen" - aeltere stehen nur noch in der Liste. */
