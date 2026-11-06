@@ -57,7 +57,12 @@ URLs als `lieferant-a.example`. Rohdaten nur unter `~/teppich-paradies-analyse/l
    Verkaufskanaele des Referenzprodukts (IDs aus Schritt 1 lesen, nicht aus dem Gedaechtnis).
 9. **Gegenprobe nach jedem Schreibvorgang:** Variantenzahl, SKU, Optionswerte,
    `variant.image`, Metafelder, Veroeffentlichung. `userErrors: []` ist kein Beleg.
-10. **Muster** nach `domains/shopify/benachrichtigungen/musterartikel.md` (verbindlich):
+10. **Muster - zuerst klaeren, ob die Ware Musterservice hat** (Arbeitsweise, Abschnitt 9):
+    Teppichfliesen, Teppichplanken und Sauberlauf-Fliesen bekommen den Tag `ohne-muster` und
+    **kein** Musterprodukt. Dasselbe gilt fuer die ganze Kollektion, sobald der Lieferant
+    eine ihrer Farben nicht als Muster liefert: Tag an jedes Warenprodukt, kein Musterprodukt
+    (ein vorhandenes auf DRAFT).
+    Sonst nach `domains/shopify/benachrichtigungen/musterartikel.md` (verbindlich):
     eigenes Produkt `muster-<Handle des Quellprodukts>`, Titel `Muster <Name ohne Breite>`,
     dieselbe Option wie die Quelle, eine Variante je Farbe, SKU `M-<SKU der Quellvariante>`,
     0,00 EUR, Status UNLISTED und im Onlineshop veroeffentlicht. Fehlt das Produkt oder eine
@@ -70,7 +75,9 @@ URLs als `lieferant-a.example`. Rohdaten nur unter `~/teppich-paradies-analyse/l
     prueft Veroeffentlichung, Bilder, Variantenbilder, Kategorie, SKU, Muster und die
     Metafelder, die die uebrigen Produkte derselben Produktart tragen. Lieferanten, die Muster
     nach ihrer Bezeichnung bestellen (`muster.nachBezeichnung`, auch Teppich nach Mass), brauchen
-    `einkauf.farbname` je Variante, sonst bestellt die Musterautomatik nicht. Fehler beheben,
+    `einkauf.farbname` je Variante, sonst bestellt die Musterautomatik nicht. Gemeldet werden
+    auch Teppichfliesen ohne `ohne-muster` und Ware ohne Musterservice, deren Musterprodukt
+    noch auf ACTIVE oder UNLISTED steht - ohne `--handles` auch im Bestand. Fehler beheben,
     Hinweise belegt nachtragen oder als offenen Fall notieren. Ohne `.env.local` im
     Worktree: `TP_ENV_LOCAL=<Betriebskopie>/.env.local` oder `--bulk-query` ueber den
     Shopify-MCP und das JSONL per `--jsonl` uebergeben.

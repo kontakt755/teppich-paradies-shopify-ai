@@ -2,7 +2,8 @@
  * Pruefroutine nach Importen (Werkbank w-012).
  *
  * Prueft neu angelegte Produkte gegen die Regeln aus
- * .claude/skills/produktimport/SKILL.md und
+ * .claude/skills/produktimport/SKILL.md,
+ * domains/shopify/produktimport-arbeitsweise.md (Abschnitt 9: kein Musterservice) und
  * domains/shopify/benachrichtigungen/musterartikel.md - und gegen das, was
  * die uebrigen Produkte derselben Produktart tragen. Eine feste Liste
  * Pflicht-Filterfelder je Produktart gibt es nicht (Search & Discovery wird im
@@ -50,6 +51,34 @@ export function musterMoeglich(p) {
   if (['laminat', 'parkett', 'kork'].includes(klein(p.productType))) return false;
   return !(p.tags ?? []).some((t) => ['zubehoer', 'ohne-muster'].includes(klein(t)));
 }
+
+/**
+ * Teppichfliesen, Teppichplanken und Sauberlauf-Fliesen haben seit 2026-11-06 keinen
+ * Musterservice (domains/shopify/produktimport-arbeitsweise.md, Abschnitt 9).
+ * Ihre Produktart ist "Teppichboden" wie bei Rollenware; erkennbar sind sie am Tag,
+ * am Namen oder an der Kategorie. Im Bestand vom 2026-11-06 treffen Name und Kategorie
+ * dieselben 69 Produkte, dem Tag fehlt eines davon - deshalb alle drei Merkmale.
+ * Sauberlaufmatten und Sauberlauf von der Rolle gehoeren nicht dazu.
+ */
+export const FLIESEN_TAG = 'art: teppichfliese';
+export const FLIESEN_NAME = /teppichfliese|teppichplanke|sauberlauf[- ]?fliese/i;
+/** Dieselben Kategorien wie tp_paket_kollektionen in snippets/sorting.liquid. */
+export const FLIESEN_SAMMLUNGEN = Object.freeze(['teppichfliesen', 'teppichfliesen-50x50', 'teppichfliesen-nadelfilz', 'teppichplanken', 'auslauf-teppichfliesen']);
+
+export function istTeppichfliese(p) {
+  if (istMusterProdukt(p)) return false;
+  if ((p.tags ?? []).some((t) => klein(t) === FLIESEN_TAG)) return true;
+  if (FLIESEN_NAME.test(`${p.title ?? ''} ${p.handle ?? ''}`)) return true;
+  return (p.collections ?? []).some((h) => FLIESEN_SAMMLUNGEN.includes(h));
+}
+
+/** Kein Musterservice: Tag ohne-muster (gilt je Kollektion fuer alle Warenprodukte) oder Teppichfliese. */
+export function ohneMusterservice(p) {
+  return (p.tags ?? []).some((t) => klein(t) === 'ohne-muster') || istTeppichfliese(p);
+}
+
+/** In diesen Zustaenden ist ein Musterprodukt fuer Kunden erreichbar; DRAFT und ARCHIVED sind es nicht. */
+export const MUSTER_ERREICHBAR = Object.freeze(['ACTIVE', 'UNLISTED']);
 
 export function farbOption(p) {
   return (p.options ?? []).find((o) => FARBOPTIONEN.includes(klein(o.name))) ?? null;
@@ -131,6 +160,26 @@ function musterFarbBefund(p, muster, option) {
 }
 
 /**
+ * Der Shop boete fuer eine Teppichfliese noch Muster an. Gemeldet wird der fehlende Tag,
+ * nicht ein fehlendes Musterprodukt - sonst legt der naechste Import wieder eins an.
+ */
+function fliesenBefund(p) {
+  return befund(p, 'fehler', 'muster-teppichfliese', 'Teppichfliese ohne Tag ohne-muster - Teppichfliesen, -planken und Sauberlauf-Fliesen haben keinen Musterservice: Tag setzen, kein Musterprodukt anlegen');
+}
+
+/**
+ * Ware ohne Musterservice, deren Musterprodukt noch erreichbar ist (Regel "ganze Kollektion
+ * ohne Muster": Tag ohne-muster an der Ware, Musterprodukt auf DRAFT). Archivierte Ware
+ * regelt die Auslaufregel.
+ */
+function musterTrotzdemBefund(p, nachHandle) {
+  if (istMusterProdukt(p) || p.status === 'ARCHIVED' || !ohneMusterservice(p)) return null;
+  const muster = nachHandle.get(MUSTER_PRAEFIX + p.handle);
+  if (!muster || !MUSTER_ERREICHBAR.includes(muster.status)) return null;
+  return befund(p, 'fehler', 'muster-trotz-ohne-muster', `kein Musterservice, aber Musterprodukt ${muster.handle} steht noch auf ${muster.status} - auf DRAFT stellen`);
+}
+
+/**
  * @param {object} eingabe
  * @param {object[]} eingabe.produkte  alle Produkte des Shops (normalisiert, siehe normalisiere())
  * @param {string}   eingabe.seit      JJJJ-MM-TT - geprueft wird, was ab diesem Tag angelegt wurde
@@ -157,8 +206,21 @@ export function pruefeImporte({ produkte, seit, handles = null, nachBezeichnung 
   }
 
   const befunde = [];
+  // Ein erreichbares Musterprodukt trotz fehlendem Musterservice wird je Ware einmal gemeldet -
+  // neue Ware, ihr neues Musterprodukt und der Abgleich des Bestands fuehren alle hierher.
+  const gemeldet = new Set();
+  const meldeMusterTrotzdem = (ware) => {
+    if (!ware || gemeldet.has(ware.handle)) return;
+    gemeldet.add(ware.handle);
+    const b = musterTrotzdemBefund(ware, nachHandle);
+    if (b) befunde.push(b);
+  };
   for (const p of neu) {
-    if (istMusterProdukt(p)) { befunde.push(...pruefeMuster(p, nachHandle)); continue; }
+    if (istMusterProdukt(p)) {
+      befunde.push(...pruefeMuster(p, nachHandle));
+      meldeMusterTrotzdem(quelleVon(p, nachHandle));
+      continue;
+    }
     // Archiviert = fuer Kunden weg (Auslauf, verworfene Lieferanten-Entwuerfe, alte Tests).
     // Ein fehlendes Bild oder Preis 0 schadet dort niemandem.
     if (p.status === 'ARCHIVED') continue;
@@ -218,10 +280,16 @@ export function pruefeImporte({ produkte, seit, handles = null, nachBezeichnung 
       }
     }
 
-    const ohneName = musterMoeglich(p) ? ohneBezeichnung(p, nachBezeichnung) : [];
+    // Teppichfliesen haben keinen Musterservice: statt Musterprodukt und Farbnamen zaehlt dort der Tag.
+    const fliese = istTeppichfliese(p);
+    if (fliese && musterMoeglich(p)) befunde.push(fliesenBefund(p));
+    meldeMusterTrotzdem(p);
+    const musterservice = musterMoeglich(p) && !fliese;
+
+    const ohneName = musterservice ? ohneBezeichnung(p, nachBezeichnung) : [];
     if (ohneName.length) befunde.push(befund(p, 'fehler', 'muster-bezeichnung', `${ohneName.length} Variante(n) von Lieferant ${lieferantenVon(ohneName)} ohne einkauf.farbname - die Musterautomatik bestellt deren Muster nicht`));
 
-    if (option && musterMoeglich(p) && p.status !== 'DRAFT') {
+    if (option && musterservice && p.status !== 'DRAFT') {
       const muster = nachHandle.get(MUSTER_PRAEFIX + p.handle);
       if (!muster) {
         befunde.push(befund(p, 'fehler', 'muster-fehlt', `kein Musterprodukt ${MUSTER_PRAEFIX}${p.handle} - der Konfigurator faellt still auf kostenloses-muster zurueck (sonst Tag ohne-muster setzen)`));
@@ -237,7 +305,16 @@ export function pruefeImporte({ produkte, seit, handles = null, nachBezeichnung 
   if (!handles) {
     const altOhneName = [];
     for (const p of produkte) {
-      if (neuSet.has(p) || p.status !== 'ACTIVE' || istMusterProdukt(p) || !musterMoeglich(p)) continue;
+      if (neuSet.has(p) || istMusterProdukt(p)) continue;
+      // Kein Musterservice gilt fuer den ganzen Bestand, auch fuer versteckte Ware (Raummass ist UNLISTED):
+      // Eine Kollektion wird spaeter herausgenommen, ein Musterprodukt bleibt dabei leicht stehen.
+      meldeMusterTrotzdem(p);
+      if (p.status !== 'ACTIVE') continue;
+      if (istTeppichfliese(p)) {
+        if (musterMoeglich(p)) befunde.push(fliesenBefund(p));
+        continue;
+      }
+      if (!musterMoeglich(p)) continue;
       if (!istHilfsprodukt(p)) {
         const ohne = ohneBezeichnung(p, nachBezeichnung);
         if (ohne.length) altOhneName.push({ handle: p.handle, ohne });
@@ -259,12 +336,22 @@ export function pruefeImporte({ produkte, seit, handles = null, nachBezeichnung 
   return { geprueft: neu.length, befunde };
 }
 
+/** Quellprodukt eines Musterprodukts: derselbe Handle ohne muster-. */
+function quelleVon(m, nachHandle) {
+  const handle = String(m.handle ?? '');
+  return handle.startsWith(MUSTER_PRAEFIX) ? nachHandle.get(handle.slice(MUSTER_PRAEFIX.length)) : undefined;
+}
+
 /** Musterprodukt laut domains/shopify/benachrichtigungen/musterartikel.md. */
 export function pruefeMuster(m, nachHandle) {
   const befunde = [];
-  const quelle = nachHandle.get(String(m.handle).slice(MUSTER_PRAEFIX.length));
+  const quelle = quelleVon(m, nachHandle);
   // Auslaufregel (AGENTS.md, Produktdaten): Quelle archiviert -> Muster mit archiviert. Das ist kein Befund.
   if (m.status === 'ARCHIVED' && (!quelle || quelle.status === 'ARCHIVED')) return befunde;
+  // Quelle ohne Musterservice (Tag ohne-muster, Teppichfliese): das Musterprodukt ruht auf DRAFT,
+  // unveroeffentlicht ist dort gewollt. Steht es noch auf ACTIVE oder UNLISTED, meldet
+  // pruefeImporte das an der Quelle (muster-trotz-ohne-muster).
+  if (quelle && quelle.status !== 'ARCHIVED' && ohneMusterservice(quelle)) return befunde;
   // Das Sammelmuster ist keine Kopie eines Quellprodukts und traegt bewusst eine eigene SKU.
   if (m.handle === 'kostenloses-muster') return befunde;
   if (!quelle && m.handle !== 'kostenloses-muster') befunde.push(befund(m, 'hinweis', 'muster-quelle', 'kein Quellprodukt mit gleichem Handle ohne muster-'));
