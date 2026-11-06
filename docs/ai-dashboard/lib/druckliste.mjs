@@ -83,3 +83,16 @@ export function weiterAbFuer(alle = [], weiter = null) {
   if (!weiter || !(weiter.ab > 0) || weiter.ab >= alle.length) return 0;
   return weiter.signatur === auswahlSignatur(alle) ? Math.trunc(weiter.ab) : 0;
 }
+
+/**
+ * Neuer Stand nach einem weiteren Abbruch. `geschaetzt` ist der erste Aufkleber, der sicher fehlt:
+ * schliesst der Lauf lueckenlos an (Start nicht hinter `geschaetzt`), rueckt die Grenze mit; wer
+ * weiter hinten angesetzt hat, laesst eine Luecke, die Grenze bleibt dort.
+ * @param {{basisAb: number, rest: number, alt: {geschaetzt?: number}|null, signatur: string}} lauf
+ */
+export function weiterNachAbbruch({ basisAb = 0, rest = 0, alt = null, signatur = '' } = {}) {
+  if (!(rest > 0)) return null;
+  const ab = basisAb + rest;
+  const luecke = basisAb > 0 && Number.isFinite(alt?.geschaetzt) && basisAb > alt.geschaetzt;
+  return { ab, signatur, geschaetzt: luecke ? alt.geschaetzt : ab };
+}

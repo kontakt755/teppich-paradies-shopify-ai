@@ -11,7 +11,7 @@
  */
 import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
-import { DRUCK_LIMIT, auswahlSignatur, druckBloecke, druckVorschau, fertigeSeiten, motivSchluessel, setzeMotivAnzahl, weiterAbFuer, weiterAbSchaetzen } from '../lib/druckliste.mjs';
+import { DRUCK_LIMIT, auswahlSignatur, druckBloecke, druckVorschau, fertigeSeiten, motivSchluessel, setzeMotivAnzahl, weiterAbFuer, weiterAbSchaetzen, weiterNachAbbruch } from '../lib/druckliste.mjs';
 import { ETIKETT, ETIKETT_FORMATE, FREIE_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle, schwarzWeiss } from '../lib/muster-etiketten.mjs';
 import { adressLayout } from '../lib/adress-etiketten.mjs';
 import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
@@ -383,10 +383,7 @@ async function drucken() {
     const auswahlAbbruch = /cancel|chosen|abgebrochen/i.test(String(err?.message));
     // Ein Druckerfehler mitten im Lauf: der Rest laesst sich ab dem ersten fehlenden Aufkleber nachdrucken.
     const rest = druck.abbruch || auswahlAbbruch ? 0 : weiterAbSchaetzen({ gesendet, gedruckt, gesamt: etiketten.length });
-    if (rest > 0) {
-      const ab = basisAb + rest;
-      druck.weiter = { ab, signatur, geschaetzt: Math.min(ab, druck.weiter?.geschaetzt ?? ab) };
-    }
+    if (rest > 0) druck.weiter = weiterNachAbbruch({ basisAb, rest, alt: basisAb > 0 ? druck.weiter : null, signatur });
     status(druck.abbruch ? 'Druck abgebrochen. Bereits ausgegebene Aufkleber prüfen. Der Ausdruck wurde nicht bestätigt.'
       : auswahlAbbruch ? 'Kein Drucker gewählt.'
         : rest > 0 ? `Druck unterbrochen nach Aufkleber ${basisAb + rest} von ${alleGewaehlt.length}: ${err?.message || err}. An der Rolle prüfen, welcher zuletzt kam – unten lässt sich ab dem nächsten weiterdrucken.`

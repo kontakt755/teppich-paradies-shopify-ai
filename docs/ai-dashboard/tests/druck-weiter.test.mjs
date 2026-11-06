@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auswahlSignatur, fertigeSeiten, weiterAbFuer, weiterAbSchaetzen } from '../lib/druckliste.mjs';
+import { auswahlSignatur, fertigeSeiten, weiterAbFuer, weiterAbSchaetzen, weiterNachAbbruch } from '../lib/druckliste.mjs';
 
 // Nur ausgedachte Aufkleber (Buchstabenpaare wie am 06.11. auf der 50-x-20-Rolle).
 const paar = t => ({ art: 'frei', zeilen: [t], serie: t, farbe: '', sku: '', url: '', technik: [], fehlt: [] });
@@ -45,4 +45,16 @@ test('Weiterdrucken gilt nur fuer dieselbe Auswahl in derselben Reihenfolge', ()
   const kopien = [paar('A'), paar('A'), paar('A')];
   assert.equal(weiterAbFuer(kopien.slice(0, 2), { ab: 1, signatur: auswahlSignatur(kopien) }), 0);
   assert.equal(weiterAbFuer(kopien, { ab: 1, signatur: auswahlSignatur(kopien) }), 1);
+});
+
+test('Zweiter Abbruch beim Weiterdrucken: die Grenze rueckt nur bei lueckenlosem Anschluss mit', () => {
+  // Erster Lauf: Abbruch nach 12. Weiter ab 12 bricht nach 3 weiteren ab: jetzt fehlt sicher erst ab 15.
+  const erst = weiterNachAbbruch({ basisAb: 0, rest: 12, alt: null, signatur: 's' });
+  assert.deepEqual(erst, { ab: 12, signatur: 's', geschaetzt: 12 });
+  assert.deepEqual(weiterNachAbbruch({ basisAb: 12, rest: 3, alt: erst, signatur: 's' }), { ab: 15, signatur: 's', geschaetzt: 15 });
+  // Wer ab 14 statt 12 weitermacht, laesst 12 und 13 aus: die Grenze bleibt bei 12.
+  assert.deepEqual(weiterNachAbbruch({ basisAb: 14, rest: 2, alt: erst, signatur: 's' }), { ab: 16, signatur: 's', geschaetzt: 12 });
+  // Ein veralteter Stand aus einer anderen Auswahl zaehlt nicht (basisAb 0).
+  assert.deepEqual(weiterNachAbbruch({ basisAb: 0, rest: 5, alt: { geschaetzt: 2 }, signatur: 't' }), { ab: 5, signatur: 't', geschaetzt: 5 });
+  assert.equal(weiterNachAbbruch({ basisAb: 3, rest: 0, alt: erst }), null);
 });
