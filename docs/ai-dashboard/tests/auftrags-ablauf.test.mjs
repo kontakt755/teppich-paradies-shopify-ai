@@ -279,3 +279,23 @@ test('Gesperrtes Muster ohne Artikelnummer: nicht "ungeklaert", nicht zu bestell
   assert.deepEqual(e.gruende, ['gesperrt']);
   assert.equal(auftragsAmpel(ab, e).wort, 'Gesperrt');
 });
+
+// --- Bestellzeile wie "Je Auftrag" (Kunden › Bestellungen, Heute; #1996, 06.11.2026) ---
+import { zeilenAblauf, warenAmpel } from '../lib/auftrags-ablauf.mjs';
+
+test('zeilenAblauf: Positionen der Bestellzeile je Lieferant, ohne Bestandsabgang, Stand aus positionsstatus', () => {
+  const z = { orderId: 'o9', auftrag: { positionen: [
+    pos('w1', { lieferant: 'A', titel: 'Teppich', farbe: 'Rot' }), pos('w2', { lieferant: 'B', titel: 'Unterlage' }),
+    // Rollenware unter "Zuschnitt von der Rolle": Bestandsabgang, kein eigener Einkauf - auch ohne Artikelnummer nicht "blockiert".
+    pos('r1', { lieferant: 'A', grosshaendlerId: 'UNGEKLAERT', masspruefung: { status: 'bestand' } }),
+    pos('m1', { lieferant: 'A', istMuster: true }),
+  ] }, positionsstatus: { w1: { status: 'geliefert', bestelltAm: '2026-10-01T08:00:00Z', geliefertAm: '2026-10-10T08:00:00Z' },
+    w2: { status: 'bestellt', bestelltAm: '2026-10-01T08:00:00Z' }, m1: null } };
+  const { ab, e } = zeilenAblauf(z, JETZT);
+  assert.deepEqual(ab.positionen.map(x => [x.pos.lineItemId, x.art, x.lieferant]), [['w1', 'ware', 'A'], ['w2', 'ware', 'B'], ['m1', 'muster', 'A']]);
+  assert.equal(ab.ungeklaert.length, 0, 'der Bestandsabgang zaehlt nicht als fehlende Angabe');
+  assert.deepEqual(e.teillieferung, { da: 1, gesamt: 2, fehlt: [{ titel: 'Unterlage · Grau', lieferant: 'B' }] });
+  // 19 Tage beim Lieferanten: rot wie in "Je Auftrag"; das Muster zaehlt fuer die Ware nicht.
+  assert.equal(warenAmpel(ab, e)?.stufe, 'rot');
+  assert.equal(warenAmpel(ab, e)?.grund, 'wartet');
+});

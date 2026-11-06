@@ -254,7 +254,9 @@ export function teilstandText(ab, e, { lieferantName = () => '' } = {}) {
 export function zeilenAblauf(z, jetzt = new Date()) {
   const je = { ware: new Map(), muster: new Map() };
   for (const p of z?.auftrag?.positionen || []) {
-    if (!p) continue;
+    // Rollenware unter "Zuschnitt von der Rolle" ist ein Bestandsabgang ohne eigenen Einkauf - die
+    // Bestelluebersicht nimmt sie nicht in die Gruppen (operations/lib/bestelluebersicht.mjs).
+    if (!p || p.masspruefung?.status === 'bestand') continue;
     const ziel = je[p.istMuster === true ? 'muster' : 'ware'];
     const lieferant = p.lieferant || p.einkauf?.lieferant || UNGEKLAERT;
     if (!ziel.has(lieferant)) ziel.set(lieferant, { lieferant, positionen: [] });
