@@ -290,3 +290,16 @@ gebraeuchlich), Erfassen.
 - **Automatische Nachfrage-Mails: n fällig** = Zeile unter „Versand & Kunden nachfassen“ (vorher „n Nachfragen
   sind fällig“); Link **Nachfrage-Mails ansehen →**. Mit **· automatischer Versand läuft nicht**, wenn der
   Server das meldet. Nicht verwechseln mit **Kunden nach Produkt fragen** (Anrufe).
+
+## Bestellungen: ruhige Farben, ein Teilstand (06.11.2026, #1996)
+
+- **Stand** in Kunden › Bestellungen: **gelb** = noch nicht beim Lieferanten bestellt (zu tun); **ruhig** =
+  bestellt, unterwegs, bei uns. Vorher war Unbestelltes rot und Bestelltes bernsteinfarben.
+- **× Überfällig · 15 Tage beim Lieferanten**, **× Termin 05.11. vorbei**, **× Blockiert** = rote Plakette neben
+  dem Stand, nur aus der Ampel der Warenpositionen (wie in „Je Auftrag“). Sonst ist in der Liste nichts rot.
+- **wartet auf Lieferant · seit n Tagen** = nächster Schritt einer Warenbestellung, die nur auf den Lieferanten
+  wartet; gezählt ab der Bestellung beim Lieferanten (vorher „Ware bestellt“, das wiederholte nur den Stand).
+  Auf Heute steht ruhig **wartet auf Lieferant**; das Alter der Bestellung steht dort in der Zeile darüber.
+- **Ware kommt bis TT.MM.JJJJ** = derselbe Schritt mit bestätigtem Liefertermin – wie auf Heute und in den To-dos.
+- **Teillieferung: x von y Warenartikeln da – fehlt noch: …** = derselbe Satz in „Je Auftrag“, Kunden ›
+  Bestellungen (nächster Schritt) und Heute › Warenbestellungen, aus denselben Positionsständen.

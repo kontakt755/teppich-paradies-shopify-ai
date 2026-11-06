@@ -245,6 +245,48 @@ export function teilstandText(ab, e, { lieferantName = () => '' } = {}) {
 }
 
 /**
+ * Ablauf und Einordnung aus einer Zeile von /api/kunden/bestellungen (Kunden › Bestellungen, Heute ›
+ * Warenbestellungen) - dieselbe Rechnung wie "Je Auftrag" (#1996, 06.11.2026). Die Positionen der Zeile
+ * bilden je Lieferant die Gruppen wie in der Bestelluebersicht (operations/lib/einkauf.mjs gruppieren),
+ * der Stand je Position kommt aus z.positionsstatus. Sonst zeigten die Ansichten wieder zwei Staende.
+ * @returns {{ ab: object, e: object }}  ab = auftragsAblauf(), e = einordnung()
+ */
+export function zeilenAblauf(z, jetzt = new Date()) {
+  const je = { ware: new Map(), muster: new Map() };
+  for (const p of z?.auftrag?.positionen || []) {
+    if (!p) continue;
+    const ziel = je[p.istMuster === true ? 'muster' : 'ware'];
+    const lieferant = p.lieferant || p.einkauf?.lieferant || UNGEKLAERT;
+    if (!ziel.has(lieferant)) ziel.set(lieferant, { lieferant, positionen: [] });
+    ziel.get(lieferant).positionen.push({ ...p, orderId: z.orderId });
+  }
+  const ab = auftragsAblauf({ id: z?.orderId },
+    { gruppen: [...je.ware.values()], musterGruppen: [...je.muster.values()], gesperrteMuster: z?.gesperrteMuster || [] },
+    p => z?.positionsstatus?.[p.lineItemId] || null);
+  return { ab, e: einordnung(ab, null, jetzt) };
+}
+
+/**
+ * Rote Ampel der Ware einer Bestellung (Kunden › Bestellungen): dieselben Gruende wie auftragsAmpel()
+ * in "Je Auftrag", nur fuer Warenpositionen und nur rot - Bestellangaben fehlen (blockiert), Termin
+ * vorbei oder ab 14 Tagen beim Lieferanten (warteAmpel). Gelb steht dort schon als "Nachhaken" im
+ * naechsten Schritt; Warten ohne Verzug bleibt ruhig.
+ * @returns {{stufe:'rot', grund:string, tage:number|null, termin:string|null, bezug:string|null}|null}
+ */
+export function warenAmpel(ab, e) {
+  if ((ab?.ungeklaert || []).some(x => x.art === 'ware')) return warteAmpel(null, { blockiert: true });
+  const v = (e?.verzug || []).filter(x => x.art === 'ware').reduce((m, x) => dringendereAmpel(m, x.ampel), null);
+  return v?.stufe === 'rot' ? v : null;
+}
+
+/** Laengstes Warten der bestellten Ware beim Lieferanten in Kalendertagen (wie die Ampel), null ohne Zahl. */
+export function tageBeimLieferanten(ab, jetzt = new Date()) {
+  const tage = (ab?.unterwegs || []).filter(x => x.art === 'ware' && !x.eigen)
+    .map(x => warteAmpel(x.eintrag, { jetzt }).tage).filter(Number.isInteger);
+  return tage.length ? Math.max(...tage) : null;
+}
+
+/**
  * Ampel einer Auftragskarte "Je Auftrag" (lib/ampel.mjs): die dringendste ihrer Positionen.
  *   rot   Bestellangaben fehlen (ungeklaert), ein Muster ist gesperrt (Lieferant kann nicht
  *         liefern), Verzug ab 14 Tagen oder bestaetigter Liefertermin vorbei

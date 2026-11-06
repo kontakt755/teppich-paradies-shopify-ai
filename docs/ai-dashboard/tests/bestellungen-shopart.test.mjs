@@ -7,6 +7,9 @@ import { esc, plural } from '../kern/helfer.mjs';
 import { bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen } from '../lib/bestellarbeit.mjs';
 import { bestellArtPasst, warenArbeitsstand, shopBestellarbeit } from '../lib/shop-bestellarbeit.mjs';
 import { bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit } from '../lib/kunden-bestellgruppen.mjs';
+import { lieferantName as lieferantAnzeige } from '../lib/einkauf-lieferanten.mjs';
+import { warteWort, warteTitel } from '../lib/ampel.mjs';
+import { ampelPlakette } from '../bausteine/ampel.mjs';
 
 const quelle = fs.readFileSync(new URL('../ansichten/kunden/bestellungen.mjs', import.meta.url), 'utf8')
   .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];\s*/gm, '').replace(/^export\s/gm, '');
@@ -30,6 +33,7 @@ function ansicht(query, zeilen, extras = {}) {
     URLSearchParams, state, kunden: { bestellungen, erweitert: new Set() },
     bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen,
     bestellArtPasst, warenArbeitsstand, shopBestellarbeit,
+    lieferantAnzeige, warteWort, warteTitel, ampelPlakette, einkauf: {}, ensureEinkaufLieferanten: () => {},
     bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit,
     esc, plural, istNurLesend: () => true, fmtDateTime: () => '', fmtDate: () => '', geldText: () => '',
     statusText: () => '', ZAHLUNG_TEXT: {}, emptyState: t => t, stoerungState: () => 'Lesefehler',

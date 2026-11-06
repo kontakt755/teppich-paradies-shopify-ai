@@ -519,6 +519,19 @@ Umschläge stehen unter „Unterwegs“, nie unter „Beim Kunden“. Die Kopfze
 Warenauftrag zu tun ist; dort stehen reine Musteraufträge, die nur noch verschickt werden, als eine Zeile
 mit der Zahl „Packbereit“ der Packstation.
 
+**Derselbe Stand in Bestellungen und auf Heute (seit 2026-11-06, #1996).** `zeilenAblauf(z)` rechnet
+`auftragsAblauf()` und `einordnung()` aus einer Zeile von `/api/kunden/bestellungen`: die Positionen der
+Zeile bilden je Lieferant die Gruppen wie `gruppieren()` der Bestellübersicht, der Stand je Position kommt
+aus `z.positionsstatus`. `warenArbeitsstand()` (`lib/shop-bestellarbeit.mjs`) gibt daraus `teilstand` (Satz
+aus `teilstandText()`) und `ampel` (`warenAmpel()`: nur rot – Ware ungeklärt, Termin vorbei, ab 14 Tagen
+beim Lieferanten; dieselben Gründe wie `auftragsAmpel()` ohne Muster) zurück. Wartet die Ware nur auf den
+Lieferanten, heißt der nächste Schritt der Teilstand, mit Termin „Ware kommt bis …“, sonst „wartet auf
+Lieferant · seit n Tagen“ (`tageBeimLieferanten()`, Kalendertage wie die Ampel). Kunden › Bestellungen
+zeigt die rote Ampel als Plakette neben dem Stand; die Stand-Farbe selbst ist nur gelb (noch nicht
+bestellt) oder ruhig. Die Namen für den Teilstand kommen aus `/api/einkauf/lieferanten` (Bestellungen:
+`einkauf.lieferanten`, Heute: `heuteDaten.lieferanten`), wie in „Je Auftrag“. Abgleich in der Datenkopie
+am 06.11.: 113 von 113 Aufträgen gleich.
+
 **Gesperrte Muster beim Bestellen (seit 2026-11-06, #1996).** Ein Muster aus `gesperrteMuster`
 (`/api/einkauf/bestellungen`, noch nicht bei uns) wird nie bestellt: `startBestellarbeit()` (Heute) zählt es
 weder in `gesamt` noch in `blockiert`/`nichtZugeordnet` und gibt nur `gesperrt` als Zahl zurück; Je Auftrag

@@ -211,7 +211,7 @@ function viewShop() {
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
     </header>
     ${warenkennzahl()}
-    ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
+    ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), lieferantName })}
     ${selbstAbschickenBlock(selbst, { lesend: istNurLesend() })}
     ${probleme.html}
     ${inhaberUeberblick()}

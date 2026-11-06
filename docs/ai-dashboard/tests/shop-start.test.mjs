@@ -7,11 +7,12 @@ import { aufraeumenBlock, aufraeumenUnterProblem } from '../ansichten/heute/aufr
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
 import { selbstAbschickenStand, selbstAbschickenBlock } from '../ansichten/heute/selbst-abschicken.mjs';
 import { rausgebenOhne } from '../lib/todos.mjs';
+import { lieferantName as lieferantAnzeige } from '../lib/einkauf-lieferanten.mjs';
 
 const quelle = fs.readFileSync(new URL('../ansichten/heute.mjs', import.meta.url), 'utf8')
   .replace(/^import[\s\S]*?from ['"][^'"]+['"];\n/gm, '').replace(/^export\s/gm, '');
-function start(query = '', session = {}, { todos = [], abgleich = null, bestellungen = undefined, auftragsstatus = undefined, echtesAufraeumen = false } = {}) {
-  const geladen = [], bloecke = [], sichten = [];
+function start(query = '', session = {}, { todos = [], abgleich = null, bestellungen = undefined, auftragsstatus = undefined, echtesAufraeumen = false, heuteDaten = {} } = {}) {
+  const geladen = [], bloecke = [], sichten = [], waren = {};
   const rolle = session.benutzer?.rolle || 'inhaber';
   // Spiegel von ANSICHT_ROLLEN (kern/router.mjs): Shop-Kontrolle, Technik und Genossenschaften nur beim Inhaber.
   const darfAnsicht = name => rolle === 'inhaber' || !['shopwache', 'arbeit', 'akquise', 'insights'].includes(name);
@@ -22,7 +23,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
   const state = { route: { view: 'heute', params: new URLSearchParams(query) }, session, tasks: [] };
   const block = name => () => { bloecke.push(name); return `<div>${name}</div>`; };
   const api = vm.runInNewContext(quelle + '\ndatenstandZeile=()=>"Datenstand"; viewAlltag=()=>"Expliziter Alltag"; ({viewHeute})', {
-    ...kontext, state, einkauf: { auftragsstatus }, kunden: { bestellungen }, heuteDaten: {},
+    ...kontext, state, einkauf: { auftragsstatus }, kunden: { bestellungen }, heuteDaten, lieferantAnzeige,
     // "Von uns abschicken" (#1995): die echten, reinen Funktionen - ohne Bestellstand kein Block.
     selbstAbschickenStand, selbstAbschickenBlock, rausgebenOhne,
     musterNachfassenStand: () => ({ offen: [], erledigt: [], abgemeldet: [] }),
@@ -30,7 +31,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
     musterAutomatikBlock: () => '',
     // Rundgang 06.11. (#1996): die Erfolge der Musterautomatik als Zeile im Hintergrund, die Anrufzahl im Musterblock.
     musterAutomatikZeile: () => '<div class="heute-hg-zeile">Musterautomatik</div>', musterAnrufeOffen: () => 24,
-    warenbestellungenBlock: block('Waren'), bestellarbeitBlock: o => { bloecke.push('Muster'); return `<div>Muster</div><div>Anrufe ${o.anrufe}</div>`; },
+    warenbestellungenBlock: o => { Object.assign(waren, o); bloecke.push('Waren'); return '<div>Waren</div>'; }, bestellarbeitBlock: o => { bloecke.push('Muster'); return `<div>Muster</div><div>Anrufe ${o.anrufe}</div>`; },
     aufraeumenBlock: echtesAufraeumen ? aufraeumenBlock : block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
     istNurLesend: () => false, darfAnsicht,
     // Rote To-dos oben (w-206): echte problemeBlock, die Ableitung liefert die uebergebenen To-dos.
@@ -43,7 +44,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
     restrollenZeile: () => '',
     warenkennzahlBlock: block('Warenkennzahl'), inhaberZeile: block('Inhaberzeile'), nebenbereichZusatz: () => ' · 2 offene Anfragen', shopwache: { daten: null },
   });
-  return { html: api.viewHeute(), geladen, bloecke, sichten };
+  return { html: api.viewHeute(), geladen, bloecke, sichten, waren };
 }
 
 test('Shop ist Standard und Waren stehen vor Mustern, danach Aufraeumen und vorhandene Nacharbeit', () => {
@@ -178,4 +179,11 @@ test('Eine Bestellung einmal: rot unter Probleme mit Abschließen/Läuft noch, n
   // Gelb steht nicht unter Probleme: dann bleibt der Fall im Aufraeumen-Block.
   const gelb = start('', {}, { todos: [{ ...todos[0], ton: 'warn' }], bestellungen, echtesAufraeumen: true });
   assert.match(gelb.html, /Alte Bestellungen aufräumen · 2</, 'gelb steht nicht unter Probleme, also bleibt der Fall im Block');
+});
+
+test('Warenbestellungen bekommen die Lieferantennamen der Seite - der Teilstand-Satz wie in "Je Auftrag" (#1996)', () => {
+  const r = start('', {}, { heuteDaten: { lieferanten: { lieferanten: [{ id: 'A', name: 'Testlieferant' }] } } });
+  assert.equal(typeof r.waren.lieferantName, 'function');
+  assert.equal(r.waren.lieferantName('A'), 'Testlieferant');
+  assert.equal(r.waren.lieferantName('B'), 'Lieferant B', 'ohne Stammdaten der neutrale Ersatz');
 });
