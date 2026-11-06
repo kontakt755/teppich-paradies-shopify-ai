@@ -16,12 +16,13 @@ import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText, lieferantenStand, werktageSeit, NACHFASSEN_WERKTAGE } from './beschaffung.mjs';
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugAmpel, kundenErinnerung } from './auftrags-ablauf.mjs';
-import { WARTESCHWELLEN } from './ampel.mjs';
+import { WARTESCHWELLEN, tageMitBezug } from './ampel.mjs';
 import { sichereUrl } from './akquise.mjs';
 import { entscheidungsGruppen } from './model.mjs';
 import { lieferantName as lieferantAnzeige, werktageZwischen } from './einkauf-lieferanten.mjs';
 import { belegMarke } from './lieferbelege.mjs';
 import { istLagerware, selbstStand } from './lieferweg.mjs';
+import { ohneGesperrteKlaerung } from './einkauf-uebersicht.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -73,10 +74,13 @@ export function tonNachAlter(tage, warnAb = SCHWELLEN.nachhakenTage, critAb = SC
   return '';
 }
 
-/** "heute", "1 Tag", "5 Tage" - fuer die Alters-Marke. */
-export function alterText(tage) {
-  if (tage === null || tage === undefined) return '';
-  return tage === 0 ? 'heute' : tage === 1 ? '1 Tag' : `${tage} Tage`;
+/**
+ * "heute", "1 Tag", "5 Tage" - fuer die Alters-Marke. Mit `bezug` (To-do-Feld `alterBezug`, #1996) nennt die
+ * Marke, seit wann gezaehlt wird: "17 Tage beim Lieferanten", "Liegt seit 8 Tagen hier", "Kunde wartet 17 Tage"
+ * (lib/ampel.mjs tageMitBezug) - dieselben Worte wie im Einkauf und in der Packstation.
+ */
+export function alterText(tage, bezug = null) {
+  return tageMitBezug(tage, bezug);
 }
 
 const seitText = tage => (tage === 0 ? 'seit heute' : tage === 1 ? 'seit 1 Tag' : `seit ${tage} Tagen`);
@@ -113,11 +117,16 @@ function offenePositionen(auftrag, statusAlle) {
     .filter(x => x.eintrag?.status !== 'erledigt');
 }
 
-/** Echte, laufende Bestellungen: nicht Test, nicht storniert, in Shopify noch offen, mit offener Position. */
+/**
+ * Echte, laufende Bestellungen: nicht Test, nicht storniert, in Shopify noch offen, mit offener Position.
+ * Gesperrte Muster (`z.gesperrteMuster`) sind kein "ohne Großhändler-ID" - dieselbe Bereinigung wie im
+ * Einkauf (ohneGesperrteKlaerung). Sonst stand auf Heute "Zuerst klären" fuer ein Muster, das nie bestellt
+ * wird, und das To-do "Muster nicht lieferbar" entstand gar nicht (Review 06.11.2026, #1996).
+ */
 function laufendeBestellungen(bestellzeilen, statusAlle) {
   return (bestellzeilen || [])
     .filter(z => z?.auftrag && !z.testbestellung && !z.storniert && z.offen)
-    .map(z => ({ z, a: z.auftrag, offen: offenePositionen(z.auftrag, statusAlle) }))
+    .map(z => ({ z, a: ohneGesperrteKlaerung(z.auftrag, new Set(z.gesperrteMuster || []), p => standVon(statusAlle, p.orderId, p.lineItemId)), offen: offenePositionen(z.auftrag, statusAlle) }))
     .filter(x => x.offen.length);
 }
 
@@ -134,10 +143,11 @@ function rausgebenFelder(r) {
   const alterTage = r.teile.length === 1 ? erste.tage : Math.max(...r.teile.map(t => t.tage ?? 0));
   const dazu = erste.istMuster ? r.lagermuster : null;
   return {
-    ton: tonNachAlter(alterTage, ...FRISTEN.rausgeben), alterTage,
+    ton: tonNachAlter(alterTage, ...FRISTEN.rausgeben), alterTage, alterBezug: 'hier',
     schluessel: [...r.teile.map(t => t.schluessel), ...(dazu?.schluessel || [])],
     titel: `${erste.istMuster ? 'Muster' : 'Ware'} ist da – an ${r.kunde} rausgeben`,
-    kontext: [r.orderName, erste.text, erste.tage !== null ? `liegt ${seitText(erste.tage)} bei uns` : null, dazu?.text].filter(Boolean).join(' · '),
+    // Wie lange es hier liegt, sagt die Marke ("Liegt seit 8 Tagen hier") - nicht noch einmal im Text.
+    kontext: [r.orderName, erste.text, dazu?.text].filter(Boolean).join(' · '),
   };
 }
 
@@ -336,6 +346,17 @@ export function werWartet(quellen = {}, opt = {}) {
 
 // ---------------------------------------------------------------- To-dos
 
+/**
+ * Bestellungen eines To-dos (`orderIds`): die Shop-Uebersicht laesst eine Bestellung, die schon rot unter
+ * "Probleme" steht, aus "Alte Bestellungen aufräumen" weg und haengt dort Abschliessen/Laeuft noch an (#1996).
+ */
+const orderIdsVon = positionen => [...new Set(positionen.map(x => x.z?.orderId).filter(Boolean))];
+/**
+ * Positionen eines Muster-To-dos als "orderId::lineItemId" (`musterSchluessel`): die Shop-Uebersicht laesst genau
+ * diese Klaerfaelle aus dem Block "Musterautomatik" weg - nicht nach Alter geraten, was oben rot steht (#1996).
+ */
+const musterSchluesselVon = positionen => positionen.map(x => `${x.z?.orderId}::${x.p?.lineItemId}`);
+
 function ausBestellungen(quellen, k) {
   const todos = [];
   const bestellen = new Map();   // lieferant|art -> Muster, noch nicht beim Lieferanten bestellt
@@ -360,7 +381,7 @@ function ausBestellungen(quellen, k) {
       // Blockiert ("Zuerst klären"): solange etwas fehlt, kann niemand bestellen - darum
       // erscheinen die Positionen dieser Bestellung nicht zusaetzlich unter "bestellen".
       todos.push({
-        id: `blockiert:${z.orderId}`, art: 'blockiert', bereich: 'laden', ton: 'crit', alterTage: seitBestellung,
+        id: `blockiert:${z.orderId}`, orderIds: [z.orderId], art: 'blockiert', bereich: 'laden', ton: 'crit', alterTage: seitBestellung, alterBezug: 'kunde',
         titel: `Zuerst klären: ${z.orderName}`,
         kontext: [kundeVon(z), ...(a.hinweise || []).slice(0, 2).map(k.klartext)].join(' · '),
         knopf: { text: 'Klären', href: vorgangsLink('einkauf', { auftrag: z.orderId }) },
@@ -370,7 +391,7 @@ function ausBestellungen(quellen, k) {
     const rueckruf = k.rueckrufJeOrder.get(z.orderId);
     if (rueckrufFaellig(rueckruf, k.heute)) {
       todos.push({
-        id: `rueckruf:${z.orderId}`, art: 'rueckruf', bereich: 'laden',
+        id: `rueckruf:${z.orderId}`, orderIds: [z.orderId], art: 'rueckruf', bereich: 'laden',
         ton: tonNachAlter(seitBestellung, ...FRISTEN.rueckruf), alterTage: seitBestellung,
         titel: `Zurückrufen: ${rueckruf.kundenname && rueckruf.kundenname !== '–' ? rueckruf.kundenname : kundeVon(z)}`,
         kontext: [rueckruf.thema, z.orderName, rueckruf.wunschzeit ? `Wunschzeit ${rueckruf.wunschzeit}` : null,
@@ -393,7 +414,7 @@ function ausBestellungen(quellen, k) {
         continue;
       }
       if (lieferterminFaellig(x.eintrag, k.heute)) {
-        todos.push({ id: `liefertermin:${z.orderId}:${x.p.lineItemId}`, art: 'liefertermin', bereich: 'laden', ton: 'crit', alterTage: tageSeit(x.eintrag.beschaffung.liefertermin, k.jetzt), titel: `Bestätigter Liefertermin überschritten: ${z.orderName}`, kontext: [x.p.titel, beschaffungText(x.eintrag), uebernahmeText(x.eintrag)].filter(Boolean).join(' · '), knopf: { text: 'Nachhaken', href: vorgangsLink('einkauf', { auftrag: z.orderId, af: 'bestellt' }) } });
+        todos.push({ id: `liefertermin:${z.orderId}:${x.p.lineItemId}`, orderIds: [z.orderId], art: 'liefertermin', bereich: 'laden', ton: 'crit', alterTage: tageSeit(x.eintrag.beschaffung.liefertermin, k.jetzt), titel: `Bestätigter Liefertermin überschritten: ${z.orderName}`, kontext: [x.p.titel, beschaffungText(x.eintrag), uebernahmeText(x.eintrag)].filter(Boolean).join(' · '), knopf: { text: 'Nachhaken', href: vorgangsLink('einkauf', { auftrag: z.orderId, af: 'bestellt' }) } });
         continue;
       }
       // Lagerware: kein "bestellen", kein "Nachhaken", kein "kein Beleg" - zugeschnitten und
@@ -435,7 +456,7 @@ function ausBestellungen(quellen, k) {
           lagermuster: ausLager.length ? { schluessel: ausLager.map(p => `${z.orderId}::${p.lineItemId}`),
             text: `zusammen mit ${musterHerkunftText(ausLager) || 'Mustern aus eigenem Bestand'}: ${musterText(ausLager)}` } : null };
         todos.push({
-          id, art: 'rausgeben', bereich: 'laden', ...rausgebenFelder(rausgeben), rausgeben,
+          id, orderIds: [z.orderId], art: 'rausgeben', bereich: 'laden', ...rausgebenFelder(rausgeben), rausgeben,
           knopf: { text: 'Rausgeben', href: vorgangsLink('einkauf', { auftrag: z.orderId, af: 'eingetroffen' }) },
         });
       }
@@ -460,7 +481,7 @@ function ausBestellungen(quellen, k) {
     const [lieferant, art] = key.split('|');
     const tage = Math.max(...positionen.map(x => x.seitBestellung ?? 0));
     todos.push({
-      id: `bestellen:${key}`, art: 'bestellen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
+      id: `bestellen:${key}`, orderIds: orderIdsVon(positionen), art: 'bestellen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
       titel: `${art === 'muster' ? 'Muster' : 'Ware'} bei ${k.lieferantName(lieferant)} bestellen`,
       kontext: [kundenKurz(positionen), art === 'muster' ? musterKurz(positionen) : wasKurz(positionen), `bezahlt, Bestellung ${vorText(tage)}`].join(' · '),
       knopf: { text: 'Bestellen', href: einkaufLink(lieferant) },
@@ -483,7 +504,7 @@ function ausBestellungen(quellen, k) {
       // Ein Avis kuendigt die Lieferung nur an: keine Frist, die Ware kann noch gar nicht da sein
       const lsTage = beleg.lieferschein?.art === 'lieferschein' ? tageSeit(beleg.lieferschein.datum, k.jetzt) : null;
       todos.push({
-        id: `bestellen:${orderId}:ware:${lieferant}`, art: 'bestellen', bereich: 'laden',
+        id: `bestellen:${orderId}:ware:${lieferant}`, orderIds: [orderId], art: 'bestellen', bereich: 'laden',
         ton: lsTage !== null ? tonNachAlter(lsTage, ...FRISTEN.lieferschein) : 'warn', alterTage: lsTage ?? Math.max(...teil.map(x => x.seitBestellung ?? 0)),
         titel: `Laut Beleg bestellt, im Einkauf abhaken: ${fuer}`,
         kontext: [mehrereLieferanten ? k.lieferantName(lieferant) : null, wasKurz(teil), belegMarke(beleg.ab), belegMarke(beleg.lieferschein), lsTage !== null && lsTage >= FRISTEN.lieferschein[1] ? `${seitText(lsTage)} Lieferschein, noch nicht raus` : null].filter(Boolean).join(' · '),
@@ -495,7 +516,7 @@ function ausBestellungen(quellen, k) {
     const lieferanten = [...new Set(positionen.map(x => x.p.lieferant).filter(l => l && l !== UNGEKLAERT))];
     const wer = lieferanten.length === 1 ? `bei ${k.lieferantName(lieferanten[0])} ` : '';
     todos.push({
-      id: `bestellen:${orderId}:ware`, art: 'bestellen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.ware_bestellen), alterTage: tage,
+      id: `bestellen:${orderId}:ware`, orderIds: [orderId], art: 'bestellen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.ware_bestellen), alterTage: tage,
       titel: `Ware ${wer}bestellen: ${fuer}`,
       kontext: [wasKurz(positionen), `bezahlt, Bestellung ${vorText(tage)}`, quellen.belegZeilen ? 'kein zugeordneter Beleg' : null].filter(Boolean).join(' · '),
       knopf: { text: 'Bestellen', href: lieferanten.length === 1 ? einkaufLink(lieferanten[0]) : vorgangsLink('einkauf', { auftrag: orderId }) },
@@ -507,7 +528,7 @@ function ausBestellungen(quellen, k) {
     const lieferanten = [...new Set(positionen.map(x => x.p.lieferant).filter(l => l && l !== UNGEKLAERT))];
     const werktage = Math.max(...positionen.map(x => x.werktage ?? 0));
     todos.push({
-      id: `keine-bestaetigung:${orderId}`, art: 'keine_bestaetigung', bereich: 'laden', ton: tonNachAlter(tage, 0, FRISTEN.bestaetigung[1]), alterTage: tage,
+      id: `keine-bestaetigung:${orderId}`, orderIds: [orderId], art: 'keine_bestaetigung', bereich: 'laden', ton: tonNachAlter(tage, 0, FRISTEN.bestaetigung[1]), alterTage: tage,
       titel: `AB fehlt – beim Lieferanten nachfassen: ${z.orderName} ${kundeVon(z)}`,
       kontext: [lieferanten.map(l => k.lieferantName(l)).join(', '), wasKurz(positionen), `bestellt vor ${werktage} Werktagen`, 'keine Auftragsbestätigung'].filter(Boolean).join(' · '),
       knopf: { text: 'Ansehen', href: vorgangsLink('einkauf', { auftrag: orderId, af: 'bestellt' }) },
@@ -519,7 +540,7 @@ function ausBestellungen(quellen, k) {
     const nachfassen = stand.some(st => st.nachfassen);
     const anfragen = [...new Set(positionen.map(x => x.eintrag.beschaffung.anfrage.lieferant).filter(Boolean))];
     todos.push({
-      id: `anfrage:${orderId}`, art: 'anfrage', bereich: 'laden', ton: nachfassen ? 'warn' : '', alterTage: Math.max(...stand.map(st => st.werktage ?? 0)),
+      id: `anfrage:${orderId}`, orderIds: [orderId], art: 'anfrage', bereich: 'laden', ton: nachfassen ? 'warn' : '', alterTage: Math.max(...stand.map(st => st.werktage ?? 0)),
       titel: `${nachfassen ? 'Anfrage nachfassen' : 'Lieferant angefragt, Antwort offen'}: ${z.orderName} ${kundeVon(z)}`,
       kontext: [anfragen.join(', '), wasKurz(positionen), `angefragt am ${positionen.map(x => x.eintrag.beschaffung.anfrage.am).sort()[0].split('-').reverse().join('.')}`].filter(Boolean).join(' · '),
       knopf: { text: 'Ansehen', href: vorgangsLink('einkauf', { auftrag: orderId }) },
@@ -528,7 +549,7 @@ function ausBestellungen(quellen, k) {
   for (const [orderId, positionen] of abAbweichung) {
     const z = positionen[0].z;
     todos.push({
-      id: `ab-abweichung:${orderId}`, art: 'ab_abweichung', bereich: 'laden', ton: 'warn', alterTage: tageSeit(positionen[0].eintrag.beschaffung.ab.geprueftAm, k.jetzt),
+      id: `ab-abweichung:${orderId}`, orderIds: [orderId], art: 'ab_abweichung', bereich: 'laden', ton: 'warn', alterTage: tageSeit(positionen[0].eintrag.beschaffung.ab.geprueftAm, k.jetzt),
       titel: `AB weicht ab – mit dem Lieferanten klären: ${z.orderName} ${kundeVon(z)}`,
       kontext: [wasKurz(positionen), ...positionen.map(x => beschaffungText(x.eintrag))].filter(Boolean).join(' · '),
       knopf: { text: 'Ansehen', href: vorgangsLink('einkauf', { auftrag: orderId, af: 'bestellt' }) },
@@ -537,7 +558,8 @@ function ausBestellungen(quellen, k) {
   for (const [orderId, positionen] of gesperrt) {
     const z = positionen[0].z;
     todos.push({
-      id: `muster-gesperrt:${orderId}`, art: 'muster_gesperrt', bereich: 'laden', ton: 'crit', alterTage: Math.max(...positionen.map(x => x.seitBestellung ?? 0)),
+      id: `muster-gesperrt:${orderId}`, orderIds: [orderId], musterSchluessel: musterSchluesselVon(positionen), art: 'muster_gesperrt', bereich: 'laden', ton: 'crit', alterBezug: 'kunde',
+      alterTage: Math.max(...positionen.map(x => x.seitBestellung ?? 0)),
       titel: `Muster nicht lieferbar, Kunde informieren: ${z.orderName} ${kundeVon(z)}`,
       kontext: [musterKurz(positionen), 'weiter in der Packstation unter „Zu klären“'].join(' · '),
       knopf: { text: 'Ansehen', href: kundenLink(z) },
@@ -551,7 +573,7 @@ function ausBestellungen(quellen, k) {
     const tage = Math.max(...positionen.map(x => x.seitBestellung ?? 0));
     const vorbei = positionen.every(x => x.p.musterHerkunft === 'eigen_vorbei');
     todos.push({
-      id: `muster-eigen:${orderId}`, art: 'muster_eigen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
+      id: `muster-eigen:${orderId}`, orderIds: [orderId], art: 'muster_eigen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
       titel: vorbei ? `Muster vorbeibringen bei ${kundeVon(z)}` : `Muster verschicken an ${kundeVon(z)}`,
       kontext: [ortVon(z), z.orderName, musterKurz(positionen), musterHerkunftText(positionen.map(x => x.p)) || 'aus eigenem Bestand'].filter(Boolean).join(' · '),
       // Nur persoenliche Uebergabe belegt Empfang; Versand oeffnet den bestehenden Versanddialog.
@@ -566,7 +588,7 @@ function ausBestellungen(quellen, k) {
   for (const [grund, positionen] of haengend) {
     const werktage = Math.max(...positionen.map(x => x.werktage));
     todos.push({
-      id: `muster-klaeren:${grund}`, art: 'muster_klaeren', bereich: 'laden', ton: 'crit',
+      id: `muster-klaeren:${grund}`, orderIds: orderIdsVon(positionen), musterSchluessel: musterSchluesselVon(positionen), art: 'muster_klaeren', bereich: 'laden', ton: 'crit',
       alterTage: Math.max(...positionen.map(x => tageSeit(x.seit, k.jetzt) ?? 0)),
       titel: `${positionen.length === 1 ? '1 Muster hängt' : `${positionen.length} Muster hängen`}: ${grund}`,
       kontext: [kundenKurz(positionen), musterKurz(positionen), `seit ${mehrzahl(werktage, 'Werktag', 'Werktagen')} nicht automatisch bestellt`].join(' · '),
@@ -576,9 +598,10 @@ function ausBestellungen(quellen, k) {
   for (const [lieferant, positionen] of nachhaken) {
     const tage = Math.max(...positionen.map(x => x.tage));
     todos.push({
-      id: `nachhaken:${lieferant}`, art: 'nachhaken', bereich: 'laden',
-      ton: positionen.some(x => x.ampel.stufe === 'rot') ? 'crit' : 'warn', alterTage: tage,
-      titel: `Beim Lieferanten nachfragen: ${artWort(positionen)} ${seitText(tage)} bestellt, noch nicht da`,
+      id: `nachhaken:${lieferant}`, orderIds: orderIdsVon(positionen), art: 'nachhaken', bereich: 'laden',
+      ton: positionen.some(x => x.ampel.stufe === 'rot') ? 'crit' : 'warn', alterTage: tage, alterBezug: 'lieferant',
+      // Die Tage stehen einmal, in der Marke ("17 Tage beim Lieferanten"); vorher auch im Titel.
+      titel: `Beim Lieferanten nachfragen: ${artWort(positionen)} bestellt, noch nicht da`,
       kontext: [k.lieferantName(lieferant), kundenKurz(positionen), wasKurz(positionen)].join(' · '),
       knopf: { text: 'Nachfragen', href: '#/einkauf?ab=verzug' },
     });

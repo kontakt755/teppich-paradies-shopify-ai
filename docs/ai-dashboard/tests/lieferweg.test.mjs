@@ -119,7 +119,9 @@ test('E1/G5/B2: Altfall-Lagerware auf "bestellt" steht "Je Auftrag" nur unter "V
   const d = { gruppen: [{ lieferant: 'lieferant-a', positionen: [pos(unterlage({ lagerware: true })), pos(ware())] }] };
   const stand = { l1: { status: 'bestellt', bestelltAm: '2026-11-06T08:00:00Z' }, w1: { status: 'bestellt', ueber: 'kunde', bestelltAm: '2026-11-06T08:00:00Z' } };
   const ab = auftragsAblauf({ id: 'o1' }, d, p => stand[p.lineItemId] || null);
-  assert.equal(ab.jetzt, 'lieferung');
+  // Die Unterlage ist noch nicht zugeschnitten: nicht "Ware da · Lieferung/Montage" (Review 06.11.2026, #1119).
+  assert.equal(ab.jetzt, 'bestellt');
+  assert.equal(ab.schritte.find(s => s.key === 'bestellt').label, 'Aus eigenem Lager zuschneiden');
   assert.deepEqual(ab.unterwegs.map(x => x.pos.lineItemId), ['w1'], 'nur die Direktware ist unterwegs');
   assert.deepEqual(ab.selbst.map(x => [x.pos.lineItemId, x.selbst]), [['l1', 'zuschneiden']]);
 });

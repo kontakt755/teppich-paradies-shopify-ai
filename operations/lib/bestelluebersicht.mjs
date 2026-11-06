@@ -563,12 +563,15 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
 
     const hinweise = [];
     let ampel = 'gruen';
-    const rot = t => { hinweise.push(t); ampel = 'rot'; };
-    const gelb = t => { hinweise.push(t); if (ampel !== 'rot') ampel = 'gelb'; };
+    // Ampel ohne den Grund "ohne Grosshaendler-ID": das Control Center nimmt gesperrte Muster aus diesem
+    // Grund heraus (sie werden nie bestellt) und braucht dann die Ampel der uebrigen Gruende (#1996).
+    let ampelOhneIdGrund = 'gruen';
+    const rot = (t, { ohneIdGrund = false } = {}) => { hinweise.push(t); ampel = 'rot'; if (!ohneIdGrund) ampelOhneIdGrund = 'rot'; };
+    const gelb = t => { hinweise.push(t); if (ampel !== 'rot') ampel = 'gelb'; if (ampelOhneIdGrund !== 'rot') ampelOhneIdGrund = 'gelb'; };
     if (massProbleme.length) rot(`Maßprüfung: ${massProbleme.map(p => p.masspruefung.status).join(', ')}`);
     if (beratung.toLowerCase() === 'ja' && !telefon) rot('Beratung gewünscht, aber keine Telefonnummer');
     else if (beratung.toLowerCase() === 'ja') gelb('Beratung gewünscht – vor Einkauf anrufen');
-    if (ohneId.length) rot(`${ohneId.length} Position(en) ohne Großhändler-ID`);
+    if (ohneId.length) rot(`${ohneId.length} Position(en) ohne Großhändler-ID`, { ohneIdGrund: true });
     if (mengeOffen.length) gelb(`${mengeOffen.length} Einkaufsmenge(n) UNGEKLAERT`);
     if (jaNein(verlegung) === 'Ja') gelb('Verlegung gebucht');
     if (!['PAID', 'PARTIALLY_REFUNDED'].includes(String(order.displayFinancialStatus))) gelb(`Zahlung: ${order.displayFinancialStatus ?? '–'}`);
@@ -591,6 +594,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       status: statusInfo.status,
       ampel: istTest ? 'test' : ampel,
       hinweise,
+      // Welche Positionen den Grund "ohne Großhändler-ID" tragen, und die Ampel ohne ihn (siehe oben).
+      ohneIdPositionen: ohneId.map(p => p.lineItemId).filter(Boolean),
+      ampelOhneIdGrund: istTest ? 'test' : offen ? ampelOhneIdGrund : 'grau',
       checks: {
         beratung: jaNein(beratung),
         telefon: telefon ? 'vorhanden' : 'fehlt',

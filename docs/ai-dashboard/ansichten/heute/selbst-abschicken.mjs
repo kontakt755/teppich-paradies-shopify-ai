@@ -75,7 +75,8 @@ function zeile(x, { erste, lesend }) {
     : `#/kunden?${new URLSearchParams({ tab: 'bestellungen', bart: 'ware', bfilter: 'alle', bq: z.orderName || z.orderId || '' })}`;
   const menge = p.kundenmenge || p.menge;
   const artikel = [p.titel, p.farbe, menge].filter(v => v !== undefined && v !== null && String(v).trim() && v !== 'UNGEKLAERT').map(String);
-  const alter = x.tage === null ? '' : `<span class="heute-alter${x.ton ? ` ${x.ton}` : ''}" title="${x.stand === 'zuschneiden' ? 'Seit der Bestellung' : 'Liegt so lange bei uns'}">${esc(alterText(x.tage))}</span>`;
+  // Die Marke nennt den Bezug (#1996): "Liegt seit 8 Tagen hier" bzw. beim Zuschnitt "Kunde wartet 3 Tage".
+  const alter = x.tage === null ? '' : `<span class="heute-alter${x.ton ? ` ${x.ton}` : ''}">${esc(alterText(x.tage, x.stand === 'zuschneiden' ? 'kunde' : 'hier'))}</span>`;
   const knoepfe = lesend ? '' : selbstKnoepfe(p, x.eintrag, { haupt: erste, rueckgaengig: true });
   return `<div class="heute-bestellzeile selbst-zeile" data-selbst-zeile="${esc(x.stand)}"><div>
       <strong><a href="${esc(ziel)}">${esc(z.orderName || 'Bestellung')}</a> · ${esc(z.kundenname || 'Kunde nicht hinterlegt')}</strong>

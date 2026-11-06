@@ -5,6 +5,10 @@ import vm from 'node:vm';
 import { esc, plural } from '../kern/helfer.mjs';
 import { bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen } from '../lib/bestellarbeit.mjs';
 import { bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit } from '../lib/kunden-bestellgruppen.mjs';
+import { warenArbeitsstand } from '../lib/shop-bestellarbeit.mjs';
+import { lieferantName as lieferantAnzeige } from '../lib/einkauf-lieferanten.mjs';
+import { warteWort, warteTitel } from '../lib/ampel.mjs';
+import { ampelPlakette } from '../bausteine/ampel.mjs';
 import { wendeFilterAn } from '../../../operations/lib/bestellliste.mjs';
 import * as lieferweg from '../lib/lieferweg.mjs';
 
@@ -19,6 +23,7 @@ function ansicht(zeilen, query = 'tab=bestellungen') {
   const api = vm.runInNewContext(`${quelle}\n({html:viewKundenBestellungen(), treffer:bestellzeileGefiltert(kunden.bestellungen.zeilen,state.route.params)})`, {
     URLSearchParams, state, kunden: { bestellungen: { verfuegbar: true, zeilen }, erweitert: new Set() },
     bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen,
+    warenArbeitsstand, lieferantAnzeige, warteWort, warteTitel, ampelPlakette, einkauf: {}, ensureEinkaufLieferanten: () => {},
     bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit,
     esc, plural, istNurLesend: () => true, fmtDateTime: () => '', fmtDate: () => '', geldText: () => '',
     statusText: () => '', ZAHLUNG_TEXT: {}, emptyState: text => text,

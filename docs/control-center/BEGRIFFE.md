@@ -52,6 +52,8 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Partnerladen | **Lieferant** | Packstation, Reiter „Muster kommt an“ („Lieferant nicht hinterlegt“) |
 | Wareneingang nach Partnerladen | **Muster kommt an** | Reiter der Packstation; auch in Leerzustaenden und Rueckweg-Knoepfen |
 | Per Bestellbearbeitung hinzugefuegte Position (ORDER_EDIT) | **Nachbestellung** | Packstation: „Nachbestellung am 05.11.“ am Muster und in der Kopfzeile der Kundenkarte |
+| Großhändler-ID | **Artikelnummer beim Lieferanten** | Spalte unter Bestellen, Hilfe „Begriffe kurz erklärt“; nicht unsere SKU |
+| Anleitung (Reiter unter Bestellen) | **Hilfe** | seit 06.11.2026 (#1996) ein Ort: „Beim Lieferanten bestellen“ mit Musterlager, „Begriffe kurz erklärt“ (Position, Ampel ohne Grün, Artikelnummer beim Lieferanten, Teillieferung); alte Links auf den Reiter öffnen „Je Auftrag“ |
 
 ## Bleibt bewusst
 
@@ -166,9 +168,9 @@ gebraeuchlich), Erfassen.
   eingetragen wurde (vor dem 06.11. gepackt oder Eintrag gescheitert). **War schon früher raus…** =
   Versanddialog mit ausgeschalteter Versandmail.
 - **Gepackt, nicht verschickt** (#1709) = Umschlag in der Packstation gepackt, Versand aber nicht
-  eingetragen; steht nach 3 Tagen in der Aufräumliste.
-- **Ist verschickt…** = Versanddialog „An Kunden raus“ für diesen Umschlag, Versandmail vorab aus.
-- **Liegt noch hier** = der Umschlag ist noch nicht zur Post; die Liste fragt nach 3 Tagen wieder.
+  eingetragen. Seit 06.11.2026 (#1996) nicht mehr in der Aufräumliste, sondern rot: Packstation › Gepackt
+  und auf Heute **× n Umschläge nicht eingetragen**. **Ist verschickt…** und **Liegt noch hier** (die
+  Aufräum-Knöpfe dafür) sind entfallen.
 
 ## Dashboard-Updates (#1710)
 
@@ -239,3 +241,90 @@ gebraeuchlich), Erfassen.
 - **AB bestätigt** = AB geprüft und vermerkt; **AB weicht ab** = geprüft, mindestens ein Punkt passt nicht.
 - **Bestelldaten…** = tatsächlicher Bestellzeitpunkt, Bestellreferenz und ein noch offener Lieferweg.
 
+## Je Auftrag: Teillieferung und vollständige Muster (06.11.2026, #1996)
+
+- **Teillieferung: x von y Warenartikeln da – fehlt noch: Artikel (Lieferant)** = ruhige Zeile (nicht gelb)
+  in der Auftragskarte, solange nur ein Teil der Ware bei uns ist, die zu uns kommt. Ware, die der
+  Hersteller direkt liefert, und Lagerware zählen nicht mit. Erst wenn alles da ist, kommt
+  **Ware ist da – Kunde noch nicht informiert** mit **Nachricht an Kunde**.
+- **Unterwegs · x von y da** = Schritt 3 der Schrittleiste, solange alles bestellt, aber noch nicht alles da
+  ist (vorher sprang die Leiste schon nach dem Bestellen auf „Ware da · Lieferung/Montage“).
+- **Muster da · x von y** = Schritt 3 bei reinen Musteraufträgen (vorher „Muster bestellt oder im Lager“).
+  Gesperrte Muster zählen nicht mit, Muster aus eigenem Bestand sind da. **Muster verschicken** ist erst
+  dran, wenn alle da sind und der Umschlag in der Packstation packbereit ist.
+- **Muster kommt nicht** = Grund in der Kopfzeile „Je Auftrag“ für ein gesperrtes Muster (Kunde informieren,
+  in der Packstation).
+- **Ware | Muster | Alle** = Filter in „Je Auftrag“; Vorgabe **Ware**, solange ein Warenauftrag zu tun ist.
+  Unter „Ware“ stehen reine Musteraufträge, die nur noch verschickt werden, als eine Zeile
+  **n Umschläge packbereit → Packstation**.
+
+## Kunden › Zu tun: gesperrt und Rot (06.11.2026, #1996)
+
+- **Muster kommt nicht – Kunde informieren (x von y Mustern)** = nächster Schritt eines Musterauftrags unter
+  Kunden › Zu tun, wenn ein gesperrtes Muster noch nicht bei uns ist; Link in die Packstation unter
+  „Zu klären“. Vorher stand dort „beim Lieferanten nachfragen“ oder „Muster beim Lieferanten bestellen“.
+- **Roter Rand** an einer Fallkarte = ein Ampelgrund: Muster gesperrt, „Zuerst klären“, 14 Tage beim
+  Lieferanten, Liefertermin vorbei, Wareneingang klären. **sofort** ohne roten Rand = Routine, die heute dran ist.
+- **Zu tun · n sofort** = Reiter unter Kunden; n zählt die Kunden mit einem sofortigen Schritt.
+
+## Tageszahlen mit Bezug (06.11.2026, #1996)
+
+- **Überfällig · 17 Tage beim Lieferanten** / **Nachhaken · 9 Tage beim Lieferanten** = Plakette einer
+  bestellten Position; gezählt ab der Bestellung beim Lieferanten (vorher nur „Überfällig · 17 Tage“).
+- **Liegt seit 8 Tagen hier** = Plakette für Ware oder Muster, die bei uns eingetroffen sind; an den Kunden
+  rausgeben. Ersetzt dort „Nachhaken · 8 Tage“ – nachhaken müssen wir bei uns selbst, nicht beim Lieferanten.
+- **Kunde wartet 17 Tage** = Alters-Marke auf Heute bei „Zuerst klären“ und „Muster nicht lieferbar“; gezählt ab
+  der Bestellung des Kunden.
+- **Kunde bestellt 19.10.** = Datumszeile einer Packstation-Karte, wenn die Plakette schon Tage zählt; statt
+  „bestellt am … · wartet seit 18 Tagen“. Eine Tageszahl je Karte.
+
+## Shop-Übersicht: Musterteil verdichtet (06.11.2026, #1996)
+
+- **Musterautomatik** = Zeile unter „Im Hintergrund“: „n Musterbestellungen (m Muster) in 7 Tagen automatisch
+  bestellt, zuletzt TT.MM., HH:MM · Ansehen“ (öffnet Bestellungen › Muster). Gezählt werden alle Bestellungen der
+  7 Tage. Ersetzt den Block „Musterbestellungen automatisch“ mit fünf Kundenkarten.
+- **Musterautomatik: Klärung nötig** = Block nur, wenn jemand hinsehen muss: Störung der Automatik (gelber Hinweis),
+  gleich geplante Bestellungen (**Wird gleich automatisch bestellt**) oder Klärfälle, je Grund eine Zeile mit den
+  Bestellnummern. Was oben schon rot steht („Muster nicht lieferbar“, „n Muster hängen“), steht hier nicht noch einmal.
+- **n Musterartikel: Angaben fehlen – prüfen →** = eine Zeile in „Muster & Packstation“, wenn nichts bestellbar ist,
+  aber Angaben fehlen (vorher Überschrift, Leersatz und Hinweis mit derselben Zahl).
+- **× n Umschläge nicht eingetragen** = rote Plakette in „Muster & Packstation“: gepackt, aber nie als verschickt
+  eingetragen, der Kunde hat keine Versandmail (vorher Bernstein „gepackt, nicht verschickt“).
+- **n Kunden nach Produkt fragen →** = Zeile in „Muster & Packstation“ mit derselben Zahl wie am Menüpunkt.
+
+## Heute: jede Bestellung einmal (06.11.2026, #1996)
+
+- **#1049: seit 17 Tagen keine Bewegung** + **Abschließen…** / **Läuft noch** = Zeile unter einem roten
+  Problem-Eintrag, wenn dieselbe Bestellung sonst auch unter „Alte Bestellungen aufräumen“ stünde. Sie steht
+  dann nur dort, nicht noch einmal im Aufräumen-Block.
+- **Automatische Nachfrage-Mails: n fällig** = Zeile unter „Versand & Kunden nachfassen“ (vorher „n Nachfragen
+  sind fällig“); Link **Nachfrage-Mails ansehen →**. Mit **· automatischer Versand läuft nicht**, wenn der
+  Server das meldet. Nicht verwechseln mit **Kunden nach Produkt fragen** (Anrufe).
+
+## Bestellungen: ruhige Farben, ein Teilstand (06.11.2026, #1996)
+
+- **Stand** in Kunden › Bestellungen: **gelb** = noch nicht beim Lieferanten bestellt (zu tun); **ruhig** =
+  bestellt, unterwegs, bei uns. Vorher war Unbestelltes rot und Bestelltes bernsteinfarben.
+- **× Überfällig · 15 Tage beim Lieferanten**, **× Termin 05.11. vorbei**, **× Blockiert** = rote Plakette neben
+  dem Stand, nur aus der Ampel der Warenpositionen (wie in „Je Auftrag“). Sonst ist in der Liste nichts rot.
+- **wartet auf Lieferant · seit n Tagen** = nächster Schritt einer Warenbestellung, die nur auf den Lieferanten
+  wartet; gezählt ab der Bestellung beim Lieferanten (vorher „Ware bestellt“, das wiederholte nur den Stand).
+  Auf Heute steht ruhig **wartet auf Lieferant**; das Alter der Bestellung steht dort in der Zeile darüber.
+- **Ware kommt bis TT.MM.JJJJ** = derselbe Schritt mit bestätigtem Liefertermin – wie auf Heute und in den To-dos.
+- **Teillieferung: x von y Warenartikeln da – fehlt noch: …** = derselbe Satz in „Je Auftrag“, Kunden ›
+  Bestellungen (nächster Schritt) und Heute › Warenbestellungen, aus denselben Positionsständen.
+
+## Gesperrte Muster und Je Auftrag (06.11.2026, Review #1996)
+
+- **Versand eintragen** = Grund in „Je Auftrag“: alle Muster sind da, der Umschlag ist gepackt, aber nicht als
+  verschickt eingetragen. Plakette **× Nicht eingetragen** (rot): der Kunde hat noch keine Versandmail.
+- **in der Packstation klären** = Grund in „Je Auftrag“: alle Muster sind da, der Umschlag steht in der
+  Packstation unter „Zu klären“.
+- **n Musteraufträge mit Problem → Muster** = rote Zeile im Filter „Ware“; die Karten stehen unter „Muster“.
+- **n Musteraufträge zum Verschicken → Packstation** = Zeile im Filter „Ware“, zählt Aufträge wie der Chip „Muster“.
+- **· 1 Muster kommt nicht – Kunde informieren** = Zusatz am nächsten Schritt (Kunden › Zu tun), wenn nur ein
+  Teil der Muster gesperrt ist; sonst heißt der Schritt **Muster kommt nicht – Kunde informieren**.
+- **Muster kommt nicht** = Schritt 3 der Leiste, wenn alle Muster gesperrt sind.
+- **Lieferant schickt direkt an den Kunden** / **Hersteller liefert direkt** = Schritt 4 der Leiste, wenn nichts
+  zu uns kommt. **Aus eigenem Lager zuschneiden** = Schritt 3, solange Lagerware noch zuzuschneiden ist.
+- **letzte Bewegung am TT.MM.JJJJ** = Aufräumzeile unter einem roten Problem-Eintrag, der schon eine Tageszahl trägt.

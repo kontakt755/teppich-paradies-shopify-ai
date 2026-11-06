@@ -63,9 +63,13 @@ export function warteStufe(tage, schwellen = WARTESCHWELLEN) {
  *   wartet     bestellt bzw. bei uns eingetroffen seit `tage` Tagen - gelb/rot nach Schwelle
  *   imPlan     bestaetigter Liefertermin liegt noch vor uns - ruhig
  * `tage`: seit dem Termin (termin), sonst seit "bestellt" bzw. "geliefert"; null = wartet nicht.
+ * `bezug` (#1996, 06.11.2026): wo gezaehlt wird - 'lieferant' (Status bestellt, auch beim Termin) oder
+ * 'hier' (Status geliefert, gezaehlt ab geliefertAm), sonst null. Die Plakette nennt ihn (warteWort),
+ * damit niemand "17 Tage" seit der Kundenbestellung mit 17 Tagen beim Lieferanten verwechselt.
  */
 export function warteAmpel(eintrag, { jetzt = Date.now(), schwellen = WARTESCHWELLEN, blockiert = false, gesperrt = false } = {}) {
   const status = eintrag?.status || null;
+  const bezug = status === 'bestellt' ? 'lieferant' : status === 'geliefert' ? 'hier' : null;
   const termin = status === 'bestellt' && typeof eintrag?.beschaffung?.liefertermin === 'string' ? eintrag.beschaffung.liefertermin : null;
   let tage = null, grund = null, stufe = null;
   if (termin) {
@@ -77,25 +81,47 @@ export function warteAmpel(eintrag, { jetzt = Date.now(), schwellen = WARTESCHWE
     stufe = warteStufe(tage, schwellen);
     if (tage !== null) grund = 'wartet';
   }
-  if (blockiert) return { stufe: 'rot', grund: 'blockiert', tage, termin };
-  if (gesperrt) return { stufe: 'rot', grund: 'gesperrt', tage, termin };
-  return { stufe, grund, tage, termin };
+  if (blockiert) return { stufe: 'rot', grund: 'blockiert', tage, termin, bezug };
+  if (gesperrt) return { stufe: 'rot', grund: 'gesperrt', tage, termin, bezug };
+  return { stufe, grund, tage, termin, bezug };
 }
 
 const tageText = n => (n === 0 ? 'heute' : n === 1 ? '1 Tag' : `${n} Tage`);
+const seitTagen = n => (n === 0 ? 'seit heute' : n === 1 ? 'seit 1 Tag' : `seit ${n} Tagen`);
+
+/**
+ * Eine Tageszahl mit ihrem Bezug (#1996, 06.11.2026) - dieselben Worte in Einkauf, Packstation und auf Heute:
+ *   'lieferant'  "17 Tage beim Lieferanten"   (seit der Bestellung beim Lieferanten)
+ *   'hier'       "Liegt seit 8 Tagen hier"    (seit dem Wareneingang bei uns)
+ *   'kunde'      "Kunde wartet 17 Tage"       (seit der Bestellung des Kunden)
+ * Ohne Bezug nur "17 Tage" wie bisher.
+ */
+export function tageMitBezug(tage, bezug = null) {
+  if (tage === null || tage === undefined) return '';
+  if (bezug === 'lieferant') return tage === 0 ? 'seit heute beim Lieferanten' : `${tageText(tage)} beim Lieferanten`;
+  if (bezug === 'hier') return `Liegt ${seitTagen(tage)} hier`;
+  if (bezug === 'kunde') return tage === 0 ? 'Kunde wartet seit heute' : `Kunde wartet ${tageText(tage)}`;
+  return tageText(tage);
+}
 const datumDe = iso => String(iso || '').slice(0, 10).split('-').reverse().join('.');
 const datumKurz = iso => { const [, m, t] = String(iso || '').slice(0, 10).split('-'); return t && m ? `${t}.${m}.` : ''; };
 
-/** Wort fuer die Plakette einer Position: "Überfällig · 15 Tage", "Nachhaken · 9 Tage", "Blockiert" … */
+/**
+ * Wort fuer die Plakette einer Position: "Überfällig · 15 Tage beim Lieferanten", "Nachhaken · 9 Tage beim
+ * Lieferanten", "Liegt seit 8 Tagen hier", "Blockiert" … Was bei uns liegt, heisst nie "Nachhaken" - da ist
+ * nicht der Lieferant dran, sondern wir (an den Kunden rausgeben). Stufe und Zeichen bleiben gleich.
+ */
 export function warteWort(a) {
   if (!a) return '';
   if (a.grund === 'blockiert') return 'Blockiert';
   if (a.grund === 'gesperrt') return 'Gesperrt';
   if (a.grund === 'termin') return `Termin ${datumKurz(a.termin)} vorbei`;
   if (a.tage === null || a.tage === undefined) return '';
-  if (a.stufe === 'rot') return `Überfällig · ${tageText(a.tage)}`;
-  if (a.stufe === 'gelb') return `Nachhaken · ${tageText(a.tage)}`;
-  return tageText(a.tage);
+  const tage = tageMitBezug(a.tage, a.bezug);
+  if (a.bezug === 'hier') return tage;
+  if (a.stufe === 'rot') return `Überfällig · ${tage}`;
+  if (a.stufe === 'gelb') return `Nachhaken · ${tage}`;
+  return tage;
 }
 
 /** Langtext fuer den Tooltip (nur Zusatz - das Wort auf der Plakette reicht allein). */
@@ -104,8 +130,11 @@ export function warteTitel(a) {
   if (a.grund === 'blockiert') return 'Bestellangaben fehlen – so kann nicht bestellt werden';
   if (a.grund === 'gesperrt') return 'Der Lieferant kann dieses Muster nicht liefern – Kunde informieren';
   if (a.grund === 'termin') return `Bestätigter Liefertermin ${datumDe(a.termin)} ist überschritten`;
-  if (a.stufe === 'rot') return `Seit ${tageText(a.tage)} – ab ${WARTESCHWELLEN.problemTage} Tagen überfällig`;
-  if (a.stufe === 'gelb') return `Seit ${tageText(a.tage)} – ab ${WARTESCHWELLEN.nachhakenTage} Tagen beim Lieferanten nachhaken`;
+  const seit = gross(seitTagen(a.tage));
+  if (a.bezug === 'hier' && a.stufe) return `${seit} bei uns – an den Kunden rausgeben`;
+  const wo = a.bezug === 'lieferant' ? ' beim Lieferanten bestellt' : '';
+  if (a.stufe === 'rot') return `${seit}${wo} – ab ${WARTESCHWELLEN.problemTage} Tagen überfällig`;
+  if (a.stufe === 'gelb') return `${seit}${wo} – ab ${WARTESCHWELLEN.nachhakenTage} Tagen ${wo ? 'nachhaken' : 'beim Lieferanten nachhaken'}`;
   return '';
 }
 
@@ -281,7 +310,7 @@ export function packMusterAmpel(m, { jetzt = Date.now(), schwellen = WARTESCHWEL
   }
   if (Number.isInteger(bestellenRotAb) && Number.isInteger(m.offenTage) && m.offenTage >= bestellenRotAb) {
     return { stufe: 'rot', grund: 'ueberfaellig', wort: `Nicht bestellt · ${tageText(m.offenTage)}`, tage: m.offenTage,
-      titel: `Seit ${tageText(m.offenTage)} bezahlt, noch nicht beim Lieferanten bestellt – ab ${bestellenRotAb} Tagen überfällig` };
+      titel: `${gross(seitTagen(m.offenTage))} bezahlt, noch nicht beim Lieferanten bestellt – ab ${bestellenRotAb} Tagen überfällig` };
   }
   return { stufe: 'gelb', grund: 'nichtBestellt', wort: 'Nicht bestellt', titel: 'Noch nicht beim Lieferanten bestellt', ...(Number.isInteger(m.offenTage) ? { tage: m.offenTage } : {}) };
 }

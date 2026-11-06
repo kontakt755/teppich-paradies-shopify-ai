@@ -1,10 +1,15 @@
 /** Ein Arbeitsbereich fuer den Verkauf: vorhandene Einkaufs- und Packwege direkt erreichen. */
 import { esc, plural } from '../../kern/helfer.mjs';
+import { ampelPlakette } from '../../bausteine/ampel.mjs';
 
 const MUSTER = '#/einkauf?tab=lieferant&art=muster&af=offen';
 const WARE = '#/einkauf?tab=lieferant&art=ware&af=offen';
 
-export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQuelle = null, kontrolle = null, pack = null, lesend = false, nurMuster = false } = {}) {
+/**
+ * @param {number|null} [anrufe]  Kunden, die nach dem Muster gefragt werden (musterAnrufeOffen, dieselbe Zahl wie
+ *        am Menuepunkt "Kunden nach Produkt fragen"); nur die Shop-Uebersicht zeigt sie, und nur ueber 0.
+ */
+export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQuelle = null, kontrolle = null, pack = null, lesend = false, nurMuster = false, anrufe = null } = {}) {
   const bereit = arbeit?.verfuegbar;
   const laeden = bereit ? arbeit.lieferanten.filter(l => l.muster.positionen) : [];
   const offen = bereit ? arbeit.gesamt.muster.positionen : null;
@@ -23,22 +28,7 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
   const packHref = packBereich === 'packen' ? '#/kunden?tab=muster' : `#/kunden?tab=muster&mpbereich=${packBereich}`;
   const bestellFehler = bestellQuelle?.verfuegbar === false || bestellQuelle?.fehler;
   const packFehler = pack?.verfuegbar === false || pack?.fehler;
-  if (nurMuster) return `<section class="heute-geschaeft shop-musterarbeit" aria-labelledby="heuteGeschaeft">
-    <div class="heute-geschaeft-kopf"><h2 id="heuteGeschaeft">Muster &amp; Packstation</h2></div>
-    ${bereit && offen === 0 ? `<p class="muted">Keine neuen Muster beim Lieferanten zu bestellen. <a href="${MUSTER}">Musterbestellungen ansehen →</a></p>`
-      : `<div class="heute-arbeitskopf"><h3>Muster bestellen${offen == null ? '' : ` · ${offen} Artikel`}</h3><a href="${MUSTER}">Alle ansehen →</a></div>${liste}`}
-    ${klaerung ? `<p class="notice warn">${plural(klaerung, 'Musterartikel braucht', 'Musterartikel brauchen')} Klärung. <a href="${MUSTER}">Fehlende Angaben prüfen →</a></p>` : ''}
-    ${bereit && arbeit.eigen.muster.positionen ? `<p class="small muted">${plural(arbeit.eigen.muster.positionen, 'Musterartikel kommt', 'Musterartikel kommen')} aus eigenem Bestand.</p>` : ''}
-    ${p ? `<nav class="shop-packschritte" aria-label="Muster-Arbeitsstand">
-      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=warten">${plural(p.warten || 0, 'Umschlag wartet', 'Umschläge warten')} auf Ware</a>
-      <a class="chip${p.klaeren ? ' warn' : ''}" href="#/kunden?tab=muster&amp;mpbereich=klaeren">${plural(p.klaeren || 0, 'Umschlag', 'Umschläge')} zu klären</a>
-      <a class="chip" href="#/kunden?tab=muster&amp;mpbereich=packen">${plural(p.packen || 0, 'Umschlag', 'Umschläge')} packbereit</a>
-      ${p.gepackt ? `<a class="chip warn" href="#/kunden?tab=muster&amp;mpbereich=gepackt">${plural(p.gepackt, 'Umschlag', 'Umschläge')} gepackt, nicht verschickt</a>` : ''}
-    </nav>` : `<p class="${packFehler ? 'notice warn' : 'muted'}" role="status">${packFehler ? 'Packstand nicht verfügbar. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>`}
-    <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${packText}</a>
-      <a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a>
-      <a class="btn btn-sm btn-ghost" href="#/lexikon?tab=druckliste">Aufkleber-Druckliste</a></div>
-  </section>`;
+  if (nurMuster) return shopMusterBlock({ bereit, offen, klaerung, laeden, liste, arbeit, p, packBereich, packText, packHref, packFehler, anrufe });
   return `<section class="heute-geschaeft${offen === 0 ? ' heute-geschaeft-ohne-offen' : ''}" aria-labelledby="heuteGeschaeft">
     <div class="heute-geschaeft-kopf"><h2 id="heuteGeschaeft">${nurMuster ? 'Muster bestellen &amp; packen' : 'Muster &amp; Bestellungen'}</h2><p>Neue Musterbestellungen stehen hier automatisch, nach Lieferant gebündelt.</p></div>
     <div class="heute-geschaeft-raster">
@@ -63,3 +53,46 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQ
     </div>
   </section>`;
 }
+
+/**
+ * "Muster & Packstation" auf der Shop-Uebersicht. Jede Zahl steht einmal (Rundgang 06.11.2026, #1996):
+ * - Nur Klaerfaelle, nichts Bestellbares: eine Zeile "n Musterartikel: Angaben fehlen – prüfen →" statt
+ *   Ueberschrift, Leersatz und zweitem Hinweis mit derselben Zahl und demselben Ziel.
+ * - Packstand als ruhige Zahlen, nur ueber 0 (vorher "0 Umschläge packbereit" in Linkblau). Die Zahl mit
+ *   demselben Ziel wie der Knopf darunter ist reiner Text - ein Weg je Ziel, der Knopf ist die Handlung.
+ * - Gepackt, aber nie eingetragen ist rot wie in der Packstation ("× n Umschläge nicht eingetragen"):
+ *   der Kunde hat keine Versandmail. Seit die Aufraeumliste diese Faelle nicht mehr nach 3 Tagen meldet,
+ *   ist das die Stelle auf Heute, an der sie auffallen.
+ * - "n Kunden nach Produkt fragen →": die taegliche Anrufliste, sonst nur im Menue.
+ */
+function shopMusterBlock({ bereit, offen, klaerung, laeden, liste, arbeit, p, packBereich, packText, packHref, packFehler, anrufe }) {
+  const bestellen = !bereit ? liste
+    : offen === 0 ? `<p class="muted">Keine neuen Muster beim Lieferanten zu bestellen. <a href="${MUSTER}">Musterbestellungen ansehen →</a></p>`
+      : !laeden.length ? `<p class="notice warn">${plural(klaerung, 'Musterartikel', 'Musterartikel')}: Angaben fehlen – <a href="${MUSTER}">prüfen →</a></p>`
+        : `<div class="heute-arbeitskopf"><h3>Muster bestellen · ${offen} Artikel</h3><a href="${MUSTER}">Alle ansehen →</a></div>${liste}
+          ${klaerung ? `<p class="small">davon ${plural(klaerung, 'Musterartikel', 'Musterartikel')} mit fehlenden Angaben</p>` : ''}`;
+  // Ziel je Packbereich; "packen" oeffnet die Packstation ohne Parameter (dort ist Packbereit die Vorgabe).
+  const zahl = (bereich, text) => (bereich === packBereich
+    ? `<span class="shop-packzahl">${text}</span>`
+    : `<a class="chip shop-packzahl-link" href="#/kunden?tab=muster&amp;mpbereich=${bereich}">${text}</a>`);
+  const zahlen = p ? [
+    p.warten ? zahl('warten', `${plural(p.warten, 'Umschlag wartet', 'Umschläge warten')} auf Ware`) : '',
+    p.klaeren ? zahl('klaeren', `${plural(p.klaeren, 'Umschlag', 'Umschläge')} zu klären`) : '',
+    p.packen ? zahl('packen', `${plural(p.packen, 'Umschlag', 'Umschläge')} packbereit`) : '',
+    p.gepackt ? (packBereich === 'gepackt' ? ampelPlakette('rot', `${plural(p.gepackt, 'Umschlag', 'Umschläge')} nicht eingetragen`, { titel: GEPACKT_TITEL })
+      : `<a class="shop-packzahl-rot" href="#/kunden?tab=muster&amp;mpbereich=gepackt">${ampelPlakette('rot', `${plural(p.gepackt, 'Umschlag', 'Umschläge')} nicht eingetragen`, { titel: GEPACKT_TITEL })}</a>`) : '',
+  ].filter(Boolean) : [];
+  return `<section class="heute-geschaeft shop-musterarbeit" aria-labelledby="heuteGeschaeft">
+    <div class="heute-geschaeft-kopf"><h2 id="heuteGeschaeft">Muster &amp; Packstation</h2></div>
+    ${bestellen}
+    ${bereit && arbeit.eigen.muster.positionen ? `<p class="small muted">${plural(arbeit.eigen.muster.positionen, 'Musterartikel kommt', 'Musterartikel kommen')} aus eigenem Bestand.</p>` : ''}
+    ${p ? (zahlen.length ? `<nav class="shop-packschritte" aria-label="Muster-Arbeitsstand">${zahlen.join('')}</nav>` : '')
+      : `<p class="${packFehler ? 'notice warn' : 'muted'}" role="status">${packFehler ? 'Packstand nicht verfügbar. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>`}
+    ${anrufe > 0 ? `<p class="shop-anrufe"><a href="#/kunden?tab=anrufe">${plural(anrufe, 'Kunde', 'Kunden')} nach Produkt fragen →</a></p>` : ''}
+    <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${packText}</a>
+      <a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a>
+      <a class="btn btn-sm btn-ghost" href="#/lexikon?tab=druckliste">Aufkleber-Druckliste</a></div>
+  </section>`;
+}
+
+const GEPACKT_TITEL = 'Gepackt, aber nie als verschickt eingetragen – der Kunde hat keine Versandmail';

@@ -32,14 +32,19 @@ test('fehlende Angaben in Alltagssprache, nichts geraten', () => {
   assert.deepEqual(fehlendeAngaben(pos('ok'), 'A'), []);
 });
 
-test('alles bestellt -> Schritt Lieferung, Datum der Bestellung bekannt', () => {
+test('alles bestellt, ein Teil da -> Schritt "Unterwegs · 1 von 2 da"; erst alles da -> Schritt Lieferung', () => {
   const d = { gruppen: [{ lieferant: 'A', positionen: [pos('a1'), pos('a2')] }] };
   const ab = auftragsAblauf({ id: 'o1' }, d, stand({ a1: 'bestellt', a2: 'geliefert' }));
-  assert.equal(ab.jetzt, 'lieferung');
-  assert.equal(schritt(ab).bestellt, 'fertig');
+  assert.equal(ab.jetzt, 'bestellt', 'bis 06.11. sprang die Leiste hier auf "Ware da"');
+  assert.equal(ab.schritte.find(s => s.key === 'bestellt').label, 'Unterwegs · 1 von 2 da');
+  assert.equal(schritt(ab).lieferung, 'offen');
   assert.equal(ab.unterwegs.length, 1);
   assert.equal(ab.beiUns.length, 1);
   assert.equal(ab.bestelltAm, '2026-10-19T08:00:00Z');
+  const da = auftragsAblauf({ id: 'o1' }, d, stand({ a1: 'geliefert', a2: 'geliefert' }));
+  assert.equal(da.jetzt, 'lieferung');
+  assert.deepEqual([schritt(da).bestellt, da.schritte.find(s => s.key === 'bestellt').label], ['fertig', 'Beim Lieferanten bestellt']);
+  assert.equal(auftragsAblauf({ id: 'o1' }, d, stand({ a1: 'bestellt', a2: 'bestellt' })).schritte.find(s => s.stand === 'jetzt').label, 'Unterwegs · 0 von 2 da');
 });
 
 test('teilweise bestellt bleibt bei "vorbereiten"; an Kunden raus -> erledigt ist dran', () => {
@@ -76,8 +81,8 @@ test('Auftragskarte: Ampel aus der dringendsten Position - blockiert, gesperrt, 
   const d = { gruppen: [{ lieferant: 'A', positionen: [pos('a1')] }] };
   const mit = (tage) => { const ab = auftragsAblauf({ id: 'o1' }, d, () => ({ status: 'bestellt', bestelltAm: new Date(JETZT - tage * 864e5).toISOString() })); return auftragsAmpel(ab, einordnung(ab, null, JETZT)); };
   assert.equal(mit(3), null, 'frisch bestellt: ruhig');
-  assert.deepEqual([mit(8).stufe, mit(8).wort], ['gelb', 'Nachhaken · 8 Tage']);
-  assert.deepEqual([mit(15).stufe, mit(15).wort], ['rot', 'Überfällig · 15 Tage']);
+  assert.deepEqual([mit(8).stufe, mit(8).wort], ['gelb', 'Nachhaken · 8 Tage beim Lieferanten']);
+  assert.deepEqual([mit(15).stufe, mit(15).wort], ['rot', 'Überfällig · 15 Tage beim Lieferanten']);
   const ungeklaert = auftragsAblauf({ id: 'o1' }, { gruppen: [{ lieferant: 'A', positionen: [pos('a1', { grosshaendlerId: 'UNGEKLAERT' })] }] }, () => null);
   assert.deepEqual([auftragsAmpel(ungeklaert, einordnung(ungeklaert, null, JETZT)).stufe, auftragsAmpel(ungeklaert, einordnung(ungeklaert, null, JETZT)).wort], ['rot', 'Blockiert']);
   const md = { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] };
@@ -150,12 +155,13 @@ test('w-223: Warenauftraege vor reinen Musterauftraegen, Musterversand zuletzt',
 
 test('Offener Versandschritt beim Muster klingt nicht nach erledigt', () => {
   const muster = { gruppen: [], musterGruppen: [{ lieferant: 'A', positionen: [pos('m1')] }] };
-  for (const status of ['bestellt', 'geliefert']) {
-    const schritt = auftragsAblauf({ id: 'o1' }, muster, () => ({ status })).schritte.find(s => s.stand === 'jetzt');
-    assert.equal(schritt.key, 'lieferung');
-    assert.equal(schritt.label, 'Muster verschicken');
-    assert.doesNotMatch(schritt.label, /verschickt/);
-  }
+  // Bestellt, noch nicht da: Schritt 3 "Muster da · 0 von 1" ist dran, nicht schon "verschicken".
+  const bestellt = auftragsAblauf({ id: 'o1' }, muster, () => ({ status: 'bestellt' })).schritte.find(s => s.stand === 'jetzt');
+  assert.deepEqual([bestellt.key, bestellt.label], ['bestellt', 'Muster da · 0 von 1']);
+  const schritt = auftragsAblauf({ id: 'o1' }, muster, () => ({ status: 'geliefert' })).schritte.find(s => s.stand === 'jetzt');
+  assert.equal(schritt.key, 'lieferung');
+  assert.equal(schritt.label, 'Muster verschicken');
+  assert.doesNotMatch(schritt.label, /verschickt/);
   // Muster aus dem eigenen Lager ohne Stand: ebenfalls noch nicht raus.
   const eigen = { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true, musterHerkunft: 'eigen_versand' })] }] };
   assert.equal(auftragsAblauf({ id: 'o1' }, eigen).schritte.find(s => s.stand === 'jetzt').label, 'Muster verschicken');
@@ -173,3 +179,151 @@ test('Reiner Musterauftrag zeigt keine Waren-Worte, gemischter Auftrag bleibt be
   assert.ok(auftragsAblauf({ id: 'o1' }, gemischt).schritte.some(s => s.label === 'Ware da · Lieferung/Montage'));
 });
 
+
+// --- Teillieferung und vollstaendige Muster (#1996, 06.11.2026) ---
+import { grundZahlen, hauptGrund, teilstandText, GRUND_REIHENFOLGE } from '../lib/auftrags-ablauf.mjs';
+
+test('Teillieferung 1 von 2: kein "Kunde informieren", Teilstand gesetzt, Schritt 3 aktiv', () => {
+  const d = { gruppen: [{ lieferant: 'A', positionen: [pos('a1'), pos('a2', { titel: 'Teppich', farbe: 'Rot' })] }] };
+  const ab = auftragsAblauf({ id: 'o1' }, d, stand({ a1: 'geliefert', a2: 'bestellt' }));
+  const e = einordnung(ab, null, JETZT);
+  assert.ok(!e.gruende.includes('informieren'), 'eine Teillieferung ist kein "Ware ist da"');
+  assert.deepEqual(e.teillieferung, { da: 1, gesamt: 2, fehlt: [{ titel: 'Teppich · Rot', lieferant: 'A' }] });
+  assert.equal(ab.schritte.find(s => s.stand === 'jetzt').label, 'Unterwegs · 1 von 2 da');
+  assert.equal(teilstandText(ab, e, { lieferantName: id => `Lieferant ${id}` }), 'Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: Teppich · Rot (Lieferant A)');
+  assert.equal(teilstandText(ab, einordnung(auftragsAblauf({ id: 'o1' }, d, stand({ a1: 'geliefert', a2: 'geliefert' })), null, JETZT)), '', 'alles da: kein Teilstand');
+  // Alles da: jetzt erst "Kunde informieren".
+  const voll = einordnung(auftragsAblauf({ id: 'o1' }, d, stand({ a1: 'geliefert', a2: 'geliefert' })), null, JETZT);
+  assert.deepEqual([voll.gruende, voll.teillieferung], [['informieren'], null]);
+});
+
+test('Direktlieferung vom Hersteller und Lagerware zaehlen nicht als fehlend', () => {
+  const d = { gruppen: [{ lieferant: 'A', positionen: [pos('a1'), pos('d1', { route: 'SUPPLIER_DIRECT' }), pos('b1', { route: 'SUPPLIER_TO_SITE' }), pos('l1', { lagerware: true })] }] };
+  const ab = auftragsAblauf({ id: 'o1' }, d, stand({ a1: 'geliefert', d1: 'bestellt', b1: 'bestellt' }));
+  assert.deepEqual([ab.eingang.ware.da, ab.eingang.ware.gesamt], [1, 1]);
+  const e = einordnung(ab, null, JETZT);
+  assert.ok(e.gruende.includes('informieren'), 'was zu uns kommt, ist da');
+  assert.equal(e.teillieferung, null);
+  // Vermerk "direkt an Kunden" beim Bestellen wirkt wie die Stammroute.
+  const vermerk = auftragsAblauf({ id: 'o1' }, { gruppen: [{ lieferant: 'A', positionen: [pos('a1'), pos('a2')] }] },
+    p => (p.lineItemId === 'a1' ? { status: 'geliefert' } : { status: 'bestellt', ueber: 'kunde', bestelltAm: '2026-10-19T08:00:00Z' }));
+  assert.ok(einordnung(vermerk, null, JETZT).gruende.includes('informieren'));
+});
+
+test('Teillieferung "ueber uns": das eingetroffene Teil steht unter "von uns abschicken", nicht unter "Kunde informieren"', () => {
+  const d = { gruppen: [{ lieferant: 'A', positionen: [pos('a1'), pos('a2')] }] };
+  const ab = auftragsAblauf({ id: 'o1' }, d, stand({ a1: 'geliefert', a2: 'bestellt' }));
+  assert.deepEqual(ab.selbst.map(x => x.pos.lineItemId), ['a1']);
+  const e = einordnung(ab, null, JETZT);
+  assert.deepEqual([e.gruppe, e.gruende], ['jetzt', ['selbst']]);
+  // Schon informiert: kein eigener Grund, der Auftrag wartet auf den Rest.
+  assert.deepEqual(einordnung(ab, { am: '2026-10-20' }, JETZT).gruppe, 'unterwegs');
+});
+
+test('Muster: "verschicken" erst, wenn alle Muster da sind; ein gesperrtes wird nicht erwartet', () => {
+  const md = extra => ({ musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true }), pos('m2', { istMuster: true })] }], ...extra });
+  const halb = auftragsAblauf({ id: 'o1' }, md(), stand({ m1: 'geliefert', m2: 'bestellt' }));
+  const e = einordnung(halb, null, JETZT);
+  assert.ok(!e.gruende.includes('muster_da'), '1 von 2 da: noch nicht verschicken');
+  assert.equal(e.gruppe, 'unterwegs', 'angefangener Umschlag: unterwegs, nie "beim Kunden"');
+  assert.equal(halb.schritte.find(s => s.stand === 'jetzt').label, 'Muster da · 1 von 2');
+  const voll = einordnung(auftragsAblauf({ id: 'o1' }, md(), stand({ m1: 'geliefert', m2: 'geliefert' })), null, JETZT);
+  assert.deepEqual(voll.gruende, ['muster_da']);
+  // m2 gesperrt (kommt nicht): m1 da reicht fuer "verschicken"; dazu "Muster kommt nicht" (rot, nie eingeklappt).
+  const gesperrt = auftragsAblauf({ id: 'o1' }, md({ gesperrteMuster: ['m2'] }), stand({ m1: 'geliefert', m2: 'bestellt' }));
+  assert.deepEqual([gesperrt.eingang.muster.da, gesperrt.eingang.muster.gesamt], [1, 1]);
+  assert.deepEqual(einordnung(gesperrt, null, JETZT).gruende, ['muster_da', 'gesperrt']);
+  // Eigene Muster sind da: verschicken, nicht unter "Beim Kunden" (vorher ohne Grund eingeklappt).
+  const eigen = auftragsAblauf({ id: 'o1' }, { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true, musterHerkunft: 'eigen_versand' })] }] });
+  assert.deepEqual(einordnung(eigen, null, JETZT).gruende, ['muster_da']);
+});
+
+test('Muster verschicken nur, wenn auch der Umschlag in der Packstation packbereit ist', () => {
+  const md = { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] };
+  const ab = auftragsAblauf({ id: 'o1' }, md, stand({ m1: 'geliefert' }));
+  assert.deepEqual(einordnung(ab, null, JETZT, { umschlag: 'packen' }).gruende, ['muster_da']);
+  // Wartet auf Muster einer anderen Bestellung desselben Kunden: unterwegs.
+  const w = einordnung(ab, null, JETZT, { umschlag: 'warten' });
+  assert.deepEqual([w.gruende, w.gruppe], [[], 'unterwegs']);
+  // Alles da, aber gepackt und nie eingetragen bzw. in der Packstation zu klaeren (Review 06.11.2026): eigener
+  // Grund unter "Jetzt zu tun" - vorher ohne Grund eingeklappt unter "Unterwegs", als kaeme noch etwas.
+  const gepackt = einordnung(ab, null, JETZT, { umschlag: 'gepackt' });
+  assert.deepEqual([gepackt.gruende, gepackt.gruppe], [['eintragen'], 'jetzt']);
+  assert.deepEqual(auftragsAmpel(ab, gepackt), { stufe: 'rot', grund: 'eintragen', wort: 'Nicht eingetragen' });
+  const klaeren = einordnung(ab, null, JETZT, { umschlag: 'klaeren' });
+  assert.deepEqual([klaeren.gruende, klaeren.gruppe], [['packstation'], 'jetzt']);
+  assert.equal(auftragsAmpel(ab, klaeren), null, 'zu klaeren ist normale Arbeit');
+  assert.deepEqual(einordnung(ab, null, JETZT).gruende, ['muster_da'], 'Packstand nicht geladen: Regel je Auftrag');
+});
+
+test('Kopfzeile: jeder Auftrag zaehlt einmal nach seinem dringendsten Grund, Summe = Zahl der Auftraege', () => {
+  const liste = [
+    { gruende: ['verzug', 'muster_da'] },
+    { gruende: ['bestellen', 'ungeklaert'] },
+    { gruende: ['muster_da'] },
+    { gruende: ['informieren', 'selbst'] },
+    { gruende: ['gesperrt', 'muster_da'] },
+    { gruende: [] },
+  ];
+  assert.equal(hauptGrund(liste[0]), 'verzug');
+  assert.equal(hauptGrund(liste[1]), 'ungeklaert');
+  assert.equal(hauptGrund({ gruende: [] }), null);
+  const z = grundZahlen(liste);
+  assert.deepEqual(Object.keys(z), [...GRUND_REIHENFOLGE]);
+  assert.equal(Object.values(z).reduce((a, b) => a + b, 0), liste.filter(e => e.gruende.length).length);
+  assert.deepEqual([z.verzug, z.ungeklaert, z.muster_da, z.informieren, z.gesperrt, z.selbst], [1, 1, 1, 1, 1, 0]);
+});
+
+test('Gesperrtes Muster ohne Artikelnummer: nicht "ungeklaert", nicht zu bestellen - Karte "Gesperrt", Grund "Muster kommt nicht"', () => {
+  const md = gesperrteMuster => ({ gesperrteMuster, musterGruppen: [{ lieferant: 'UNGEKLAERT', positionen: [pos('g1', { istMuster: true, grosshaendlerId: 'UNGEKLAERT' })] },
+    { lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] });
+  const vorher = auftragsAblauf({ id: 'o1' }, md([]), stand({ m1: 'bestellt' }));
+  assert.equal(vorher.ungeklaert.length, 1);
+  const ab = auftragsAblauf({ id: 'o1' }, md(['g1']), stand({ m1: 'bestellt' }));
+  assert.deepEqual([ab.ungeklaert.length, ab.lieferanten.length], [0, 0]);
+  assert.equal(ab.jetzt, 'bestellt', 'nichts mehr zu bestellen: Schritt 3 statt "vorbereiten"');
+  const e = einordnung(ab, null, JETZT);
+  assert.deepEqual(e.gruende, ['gesperrt']);
+  assert.equal(auftragsAmpel(ab, e).wort, 'Gesperrt');
+});
+
+// --- Bestellzeile wie "Je Auftrag" (Kunden › Bestellungen, Heute; #1996, 06.11.2026) ---
+import { zeilenAblauf, warenAmpel } from '../lib/auftrags-ablauf.mjs';
+
+test('zeilenAblauf: Positionen der Bestellzeile je Lieferant, ohne Bestandsabgang, Stand aus positionsstatus', () => {
+  const z = { orderId: 'o9', auftrag: { positionen: [
+    pos('w1', { lieferant: 'A', titel: 'Teppich', farbe: 'Rot' }), pos('w2', { lieferant: 'B', titel: 'Unterlage' }),
+    // Rollenware unter "Zuschnitt von der Rolle": Bestandsabgang, kein eigener Einkauf - auch ohne Artikelnummer nicht "blockiert".
+    pos('r1', { lieferant: 'A', grosshaendlerId: 'UNGEKLAERT', masspruefung: { status: 'bestand' } }),
+    pos('m1', { lieferant: 'A', istMuster: true }),
+  ] }, positionsstatus: { w1: { status: 'geliefert', bestelltAm: '2026-10-01T08:00:00Z', geliefertAm: '2026-10-10T08:00:00Z' },
+    w2: { status: 'bestellt', bestelltAm: '2026-10-01T08:00:00Z' }, m1: null } };
+  const { ab, e } = zeilenAblauf(z, JETZT);
+  assert.deepEqual(ab.positionen.map(x => [x.pos.lineItemId, x.art, x.lieferant]), [['w1', 'ware', 'A'], ['w2', 'ware', 'B'], ['m1', 'muster', 'A']]);
+  assert.equal(ab.ungeklaert.length, 0, 'der Bestandsabgang zaehlt nicht als fehlende Angabe');
+  assert.deepEqual(e.teillieferung, { da: 1, gesamt: 2, fehlt: [{ titel: 'Unterlage · Grau', lieferant: 'B' }] });
+  // 19 Tage beim Lieferanten: rot wie in "Je Auftrag"; das Muster zaehlt fuer die Ware nicht.
+  assert.equal(warenAmpel(ab, e)?.stufe, 'rot');
+  assert.equal(warenAmpel(ab, e)?.grund, 'wartet');
+});
+
+test('Kommt nichts zu uns: keine Leiste "Muster da · 0 von 0" bzw. "Ware da" (Review 06.11.2026)', () => {
+  const lab = ab => ab.schritte.find(s => s.key === ab.jetzt)?.label;
+  // Direkt an den Kunden bestelltes Muster (Lieferziel Kunde): wartet nicht auf "Muster da".
+  const direkt = { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] };
+  const d = auftragsAblauf({ id: 'o1' }, direkt, p => ({ status: 'bestellt', ueber: 'kunde', bestelltAm: '2026-10-19T08:00:00Z' }));
+  assert.equal(d.eingang.muster.gesamt, 0);
+  assert.deepEqual([d.jetzt, lab(d)], ['lieferung', 'Lieferant schickt direkt an den Kunden']);
+  const dr = auftragsAblauf({ id: 'o1' }, { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true, musterRoute: 'SUPPLIER_DIRECT' })] }] }, stand({ m1: 'bestellt' }));
+  assert.equal(dr.jetzt, 'lieferung', 'Route Direktversand: dasselbe');
+  // Nur gesperrte Muster: nichts zu verschicken, der Schritt bleibt "Muster kommt nicht".
+  const g = auftragsAblauf({ id: 'o1' }, { ...direkt, gesperrteMuster: ['m1'] });
+  assert.deepEqual([g.jetzt, lab(g)], ['bestellt', 'Muster kommt nicht']);
+  // #1119: Hersteller liefert direkt, Unterlage aus Lager noch zuschneiden - nicht "Ware da".
+  const w = { gruppen: [{ lieferant: 'A', positionen: [pos('d1', { route: 'SUPPLIER_DIRECT' }), pos('l1', { lagerware: true })] }] };
+  const ware = auftragsAblauf({ id: 'o1' }, w, stand({ d1: 'bestellt' }));
+  assert.deepEqual([ware.jetzt, lab(ware)], ['bestellt', 'Aus eigenem Lager zuschneiden']);
+  // Nur Direktware, bestellt: Schritt 4 heisst "Hersteller liefert direkt".
+  const nurD = auftragsAblauf({ id: 'o1' }, { gruppen: [{ lieferant: 'A', positionen: [pos('d1', { route: 'SUPPLIER_DIRECT' })] }] }, stand({ d1: 'bestellt' }));
+  assert.deepEqual([nurD.jetzt, lab(nurD)], ['lieferung', 'Hersteller liefert direkt']);
+});

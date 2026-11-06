@@ -35,12 +35,16 @@ export const MUSTER_HERKUNFT_LABEL = {
 export const MUSTER_HERKUNFT_KURZ = { lieferant: 'beim Lieferanten', eigen_versand: 'haben wir da – verschicken', eigen_vorbei: 'haben wir da – vorbeibringen' };
 /**
  * Filtergruppe einer Position wie afFilterGruppe(), dazu "eigen": ein noch offenes Muster aus
- * dem eigenen Bestand - es ist nicht "noch zu bestellen", sondern vorbeizubringen/zu verschicken.
+ * dem eigenen Bestand - es ist nicht "noch zu bestellen", sondern vorbeizubringen/zu verschicken -
+ * und "gesperrt": ein Muster, das der Lieferant nicht liefern kann.
  */
 export function positionsGruppe(p) {
   const g = afFilterGruppe(afEintragFuer(p)?.status);
   // Lagerware (lib/lieferweg.mjs) ist wie ein Lagermuster nicht "noch zu bestellen".
-  return g === 'offen' && (musterEigen(p) || istLagerware(p, afEintragFuer(p))) ? 'eigen' : g;
+  if (g === 'offen' && (musterEigen(p) || istLagerware(p, afEintragFuer(p)))) return 'eigen';
+  // Gesperrtes Muster ohne Stand (Mustersperre, `gesperrteMuster` der Bestellungen): kommt nie, also auch
+  // nicht "Noch zu bestellen" - sonst zaehlten Kachel und Filterchip verschiedene Mengen (Review 06.11.2026).
+  return g === 'offen' && p?.istMuster && (einkauf.bestellungen?.gesperrteMuster || []).includes(p.lineItemId) ? 'gesperrt' : g;
 }
 
 /**

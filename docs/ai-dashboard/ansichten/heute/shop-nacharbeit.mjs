@@ -1,6 +1,12 @@
-/** Nacharbeit aus bestehenden Shopdaten. Links lesen oder oeffnen vorhandene Arbeitswege. */
+/**
+ * Nacharbeit aus bestehenden Shopdaten. Links lesen oder oeffnen vorhandene Arbeitswege.
+ * "Automatische Nachfrage-Mails" (#1996) heissen so, damit sie nicht mit "Kunden nach Produkt fragen"
+ * (Anrufe, Zeile im Musterblock) verwechselt werden - vorher stand hier "0 Nachfragen sind fällig" neben
+ * 24 Anrufen im Menue. Ob der Versand laeuft, sagt der Server (versandLaeuft: Postfach eingerichtet, keine
+ * Stoerung); ein "pausiert" gibt es dort nicht, also steht es hier auch nicht.
+ */
 import { esc, plural } from '../../kern/helfer.mjs';
-import { musterNachfassen } from '../../lib/muster-nachfassen.mjs';
+import { musterNachfassen, versandLaeuft } from '../../lib/muster-nachfassen.mjs';
 
 export function shopNacharbeitBlock({ bestellungen = null, pack = null, nachfassen = null, texte = null } = {}) {
   const zeilen = bestellungen?.verfuegbar ? (bestellungen.zeilen || []).filter(z => !z.testbestellung && !z.storniert) : [];
@@ -21,7 +27,7 @@ export function shopNacharbeitBlock({ bestellungen = null, pack = null, nachfass
   return `<section class="shop-nacharbeit" aria-labelledby="shopNacharbeit"><h2 id="shopNacharbeit">Versand &amp; Kunden nachfassen</h2>
     ${quellfehler || (versandPruefen.length ? `<div class="notice warn"><strong>${plural(versandPruefen.length, 'Versandbuchung braucht', 'Versandbuchungen brauchen')} Prüfung.</strong><ul>${faelle(versandPruefen)}</ul><a href="#/kunden?tab=bestellungen&amp;bfilter=pruefen">Alle Versandkontrollen →</a></div>` : '')}
     ${unterwegs.length ? `<details class="shop-nacharbeit-zeile"><summary>${plural(unterwegs.length, 'Bestellung ist', 'Bestellungen sind')} versandt, Empfang noch nicht belegt</summary><ul>${faelle(unterwegs)}</ul><p><a href="#/kunden?tab=bestellungen&amp;bfilter=fertig">Versandte Bestellungen ansehen →</a></p></details>` : ''}
-    <div class="shop-nacharbeit-zeile">${fehlt(bestellungen, 'Nachfassgrundlagen') || fehlt(texte, 'Nachfassdaten') || `<p>${nach ? plural(nach.offen?.length || 0, 'Nachfrage ist', 'Nachfragen sind') + ' fällig.' : 'Nachfassstand noch nicht verfügbar.'} <a href="#/heute?mn=1">Nachfassliste öffnen →</a></p>`}
+    <div class="shop-nacharbeit-zeile">${fehlt(bestellungen, 'Nachfassgrundlagen') || fehlt(texte, 'Nachfassdaten') || `<p>${nach ? `Automatische Nachfrage-Mails: ${nach.offen?.length || 0} fällig${versandLaeuft(texte) === false ? ' · automatischer Versand läuft nicht' : ''}.` : 'Nachfassstand noch nicht verfügbar.'} <a href="#/heute?mn=1">Nachfrage-Mails ansehen →</a></p>`}
       ${texte?.versand?.letzterLauf?.fehler ? '<p class="notice warn">Der letzte Nachfasslauf meldet Fehler. Den vorhandenen Versandlauf prüfen.</p>' : ''}
       ${texte?.abgleichFehler ? '<p class="notice warn">Die Postfach-Suche vor dem Nachfasslauf ist fehlgeschlagen. Solange das so ist, geht keine Nachfrage raus. <a href="#/heute?mn=1">Ansehen</a></p>' : ''}
       ${texte?.antwortHinweise?.length ? `<p class="notice warn">${plural(texte.antwortHinweise.length, 'Hinweis', 'Hinweise')} aus dem Postfach zu Muster-Nachfragen. <a href="#/heute?mn=1">Lesen</a></p>` : ''}

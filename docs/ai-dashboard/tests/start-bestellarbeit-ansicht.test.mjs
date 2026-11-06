@@ -174,7 +174,9 @@ test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgeme
     pack: { verfuegbar: true, zahlen: { packen: 1, klaeren: 2, warten: 3, gepackt: 4 } } });
   assert.match(html, /Muster &amp; Packstation/);
   assert.match(html, /3 Umschläge warten auf Ware/);
-  assert.match(html, /<a class="chip warn" href="#\/kunden\?tab=muster&amp;mpbereich=gepackt">4 Umschläge gepackt, nicht verschickt</);
+  // Gepackt, nie eingetragen: rot wie in der Packstation (#1996), nicht mehr Bernstein.
+  assert.match(html, /href="#\/kunden\?tab=muster&amp;mpbereich=gepackt"><span class="ampel ampel-rot"[^>]*><span class="ampel-zeichen" aria-hidden="true">×<\/span>4 Umschläge nicht eingetragen</);
+  assert.doesNotMatch(html, /chip warn/);
   const ohne = bestellarbeitBlock({ arbeit, nurMuster: true, pack: { verfuegbar: true, zahlen: { packen: 1, klaeren: 2, warten: 3, gepackt: 0 } } });
   assert.doesNotMatch(ohne, /mpbereich=gepackt/);
   assert.equal((html.match(/Aufkleber-Druckliste/g) || []).length, 1);
@@ -182,4 +184,48 @@ test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgeme
   // Rundgang 29.10. (T6): ein Weg fuer eingetroffene Muster - der Packstation-Reiter "Muster kommt an".
   assert.match(html, /href="#\/kunden\?tab=muster&amp;mp=laden">Muster kommt an</);
   assert.doesNotMatch(html, /Muster-Wareneingang|Etiketten-Druckliste/);
+});
+
+// Rundgang 06.11.2026 (#1996): jede Zahl einmal, kein Chip mit 0, kein Chip mit demselben Ziel wie der Knopf.
+const zahlenIn = html => (html.match(/<nav class="shop-packschritte"[\s\S]*?<\/nav>/)?.[0] || '');
+
+test('Shop-Uebersicht: Packstand nur ueber 0, neutral, die Zahl zum Knopf ist reiner Text', () => {
+  const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true,
+    pack: { verfuegbar: true, zahlen: { packen: 0, klaeren: 5, warten: 14, gepackt: 0 } } });
+  const nav = zahlenIn(html);
+  assert.doesNotMatch(nav, /0 Umschläge/, 'keine Null');
+  assert.match(nav, /<a class="chip shop-packzahl-link" href="#\/kunden\?tab=muster&amp;mpbereich=warten">14 Umschläge warten auf Ware<\/a>/);
+  assert.match(nav, /<span class="shop-packzahl">5 Umschläge zu klären<\/span>/, 'gleiches Ziel wie der Knopf: Text');
+  assert.equal(parameter(link(html, 'Klärfälle ansehen').href).get('mpbereich'), 'klaeren', 'der Knopf bleibt die eine Handlung');
+  const ziele = links(html).map(a => a.href).filter(h => h.includes('mpbereich=klaeren'));
+  assert.equal(ziele.length, 1, 'ein Weg zu den Klaerfaellen');
+  assert.doesNotMatch(nav, /chip warn/);
+  // Nichts offen: keine Zahlenzeile.
+  assert.equal(zahlenIn(bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, pack: { verfuegbar: true, zahlen: { packen: 0, klaeren: 0, warten: 0, gepackt: 0 } } })), '');
+  // Packbereit ist der Knopf "Muster packen": dann ist "packbereit" Text, "zu klären" ein Link.
+  const packen = bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, pack: { verfuegbar: true, zahlen: { packen: 2, klaeren: 1 } } });
+  assert.match(zahlenIn(packen), /<span class="shop-packzahl">2 Umschläge packbereit<\/span>/);
+  assert.match(zahlenIn(packen), /mpbereich=klaeren">1 Umschlag zu klären/);
+});
+
+test('Shop-Uebersicht: nur Klaerfaelle ergeben genau eine Zeile mit einem Link', () => {
+  const arbeit = arbeitFuer([gruppe('UNGEKLAERT', [position(1)])]);
+  const html = bestellarbeitBlock({ arbeit, nurMuster: true, pack: { verfuegbar: true, zahlen: {} } });
+  assert.match(html, /<p class="notice warn">1 Musterartikel: Angaben fehlen – <a href="[^"]+">prüfen →<\/a><\/p>/);
+  assert.doesNotMatch(html, /Muster bestellen ·|Vor dem Bestellen|braucht Klärung|Alle ansehen|Fehlende Angaben prüfen/);
+  assert.equal(links(html).filter(a => a.href.includes('art=muster')).length, 1);
+  // Gemischt: Bestellbares mit Kopfzeile, die Klaerfaelle als "davon" ohne zweiten Link zum selben Ziel.
+  const gemischt = bestellarbeitBlock({ arbeit: arbeitFuer([gruppe('A', [position(1), position(2, { grosshaendlerId: 'UNGEKLAERT' })])]), nurMuster: true });
+  assert.match(gemischt, /<h3>Muster bestellen · 2 Artikel<\/h3>/);
+  assert.match(gemischt, /davon 1 Musterartikel mit fehlenden Angaben/);
+  assert.equal(links(gemischt).filter(a => a.href.includes('art=muster')).length, 1, 'nur "Alle ansehen"');
+});
+
+test('Shop-Uebersicht: Kunden nach Produkt fragen mit der Zahl des Menues, nur ueber 0', () => {
+  const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, anrufe: 24, pack: { verfuegbar: true, zahlen: {} } });
+  assert.equal(link(html, 'nach Produkt fragen').href, '#/kunden?tab=anrufe');
+  assert.match(link(html, 'nach Produkt fragen').text, /^24 Kunden nach Produkt fragen →$/);
+  assert.match(bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, anrufe: 1 }), /1 Kunde nach Produkt fragen/);
+  for (const anrufe of [0, null]) assert.doesNotMatch(bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, anrufe }), /nach Produkt fragen/);
+  assert.doesNotMatch(bestellarbeitBlock({ arbeit: arbeitFuer([]), anrufe: 24 }), /nach Produkt fragen/, 'nur die Shop-Uebersicht');
 });
