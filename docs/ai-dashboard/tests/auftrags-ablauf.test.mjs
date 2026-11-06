@@ -56,16 +56,38 @@ test('Muster aus eigenem Bestand brauchen keine Lieferantenbestellung', () => {
 });
 
 // --- Arbeitsliste (2026-10-20) ---
-import { einordnung, verzugWerktage, kundeInformiertAus, kundenNachricht, nachfrageNachricht, einkaufZahlen } from '../lib/auftrags-ablauf.mjs';
+import { einordnung, verzugAmpel, auftragsAmpel, kundeInformiertAus, kundenNachricht, nachfrageNachricht, einkaufZahlen } from '../lib/auftrags-ablauf.mjs';
 
 const JETZT = new Date('2026-10-20T10:00:00Z'); // Dienstag
 
-test('Verzug erst nach mehr als 10 Werktagen; bestaetigter Termin zaehlt vorher', () => {
-  assert.equal(verzugWerktage({ status: 'bestellt', bestelltAm: '2026-10-06T08:00:00Z' }, JETZT), null, 'genau 10 Werktage: noch kein Verzug');
-  assert.equal(verzugWerktage({ status: 'bestellt', bestelltAm: '2026-10-05T08:00:00Z' }, JETZT), 11);
-  assert.equal(verzugWerktage({ status: 'bestellt', bestelltAm: '2026-10-01T08:00:00Z', beschaffung: { liefertermin: '2026-10-25' } }, JETZT), null);
-  assert.ok(verzugWerktage({ status: 'bestellt', bestelltAm: '2026-10-15T08:00:00Z', beschaffung: { liefertermin: '2026-10-19' } }, JETZT) !== null);
-  assert.equal(verzugWerktage({ status: 'geliefert', bestelltAm: '2026-09-01T08:00:00Z' }, JETZT), null);
+test('Verzug wie "Je Lieferant": gelb ab 7, rot ab 14 Kalendertagen; bestaetigter Termin zaehlt vorher', () => {
+  const v = (bestelltAm, extra = {}) => verzugAmpel({ status: 'bestellt', bestelltAm, ...extra }, JETZT);
+  assert.equal(v('2026-10-14T08:00:00Z'), null, '6 Tage: noch im Plan');
+  assert.deepEqual([v('2026-10-13T08:00:00Z').stufe, v('2026-10-13T08:00:00Z').tage], ['gelb', 7], '7 Tage: nachhaken');
+  assert.deepEqual([v('2026-10-07T08:00:00Z').stufe, v('2026-10-07T08:00:00Z').tage], ['gelb', 13]);
+  assert.deepEqual([v('2026-10-06T08:00:00Z').stufe, v('2026-10-06T08:00:00Z').tage], ['rot', 14], '14 Tage = frueher 10 Werktage: ueberfaellig');
+  assert.equal(v('2026-10-01T08:00:00Z', { beschaffung: { liefertermin: '2026-10-25' } }), null, 'Termin vor uns: im Plan, egal wie lange bestellt');
+  const termin = v('2026-10-15T08:00:00Z', { beschaffung: { liefertermin: '2026-10-19' } });
+  assert.deepEqual([termin.stufe, termin.grund, termin.tage], ['rot', 'termin', 1], 'Termin vorbei: sofort rot, auch nach 5 Tagen');
+  assert.equal(verzugAmpel({ status: 'geliefert', bestelltAm: '2026-09-01T08:00:00Z' }, JETZT), null);
+});
+
+test('Auftragskarte: Ampel aus der dringendsten Position - blockiert, gesperrt, ueberfaellig, nachhaken', () => {
+  const d = { gruppen: [{ lieferant: 'A', positionen: [pos('a1')] }] };
+  const mit = (tage) => { const ab = auftragsAblauf({ id: 'o1' }, d, () => ({ status: 'bestellt', bestelltAm: new Date(JETZT - tage * 864e5).toISOString() })); return auftragsAmpel(ab, einordnung(ab, null, JETZT)); };
+  assert.equal(mit(3), null, 'frisch bestellt: ruhig');
+  assert.deepEqual([mit(8).stufe, mit(8).wort], ['gelb', 'Nachhaken · 8 Tage']);
+  assert.deepEqual([mit(15).stufe, mit(15).wort], ['rot', 'Überfällig · 15 Tage']);
+  const ungeklaert = auftragsAblauf({ id: 'o1' }, { gruppen: [{ lieferant: 'A', positionen: [pos('a1', { grosshaendlerId: 'UNGEKLAERT' })] }] }, () => null);
+  assert.deepEqual([auftragsAmpel(ungeklaert, einordnung(ungeklaert, null, JETZT)).stufe, auftragsAmpel(ungeklaert, einordnung(ungeklaert, null, JETZT)).wort], ['rot', 'Blockiert']);
+  const md = { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] };
+  const muster = auftragsAblauf({ id: 'o1' }, md, () => null);
+  assert.equal(auftragsAmpel(muster, einordnung(muster, null, JETZT)), null, 'Muster zu bestellen: normale Arbeit, ruhig');
+  // Gesperrt und seit 15 Tagen bestellt: rot "Gesperrt", aber kein Nachfragen beim Lieferanten.
+  const gesperrt = auftragsAblauf({ id: 'o1' }, { ...md, gesperrteMuster: ['m1'] }, () => ({ status: 'bestellt', bestelltAm: new Date(JETZT - 15 * 864e5).toISOString() }));
+  const eg = einordnung(gesperrt, null, JETZT);
+  assert.equal(auftragsAmpel(gesperrt, eg).wort, 'Gesperrt');
+  assert.equal(eg.verzug.length, 0, 'kommt nicht mehr: nicht nachfragen');
 });
 
 test('Einordnung: zu bestellen und Ware da ohne Info sind "jetzt", Unterwegs wartet eingeklappt', () => {
@@ -79,6 +101,8 @@ test('Einordnung: zu bestellen und Ware da ohne Info sind "jetzt", Unterwegs war
   const alt = stand({ a1: 'bestellt' });
   const verzug = einordnung(auftragsAblauf({ id: 'o1' }, { gruppen: [{ lieferant: 'A', positionen: [pos('a1')] }] }, p => ({ ...alt(p), bestelltAm: '2026-10-01T08:00:00Z' })), null, JETZT);
   assert.deepEqual([verzug.gruppe, verzug.gruende, verzug.verzug.length], ['jetzt', ['verzug'], 1]);
+  const nachhaken = einordnung(auftragsAblauf({ id: 'o1' }, { gruppen: [{ lieferant: 'A', positionen: [pos('a1')] }] }, p => ({ ...alt(p), bestelltAm: '2026-10-12T08:00:00Z' })), null, JETZT);
+  assert.deepEqual([nachhaken.gruppe, nachhaken.verzug[0].ampel.stufe], ['jetzt', 'gelb'], 'ab 7 Tagen steht der Auftrag unter "jetzt": nachhaken');
 });
 
 test('"Kunde informiert" aus dem Verlauf; "zurueck" hebt es auf', () => {

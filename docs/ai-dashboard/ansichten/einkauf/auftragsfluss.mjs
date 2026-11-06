@@ -115,14 +115,11 @@ export const LIEFERWEG_LABEL = {
 function afKey(orderId, lineItemId) { return `${orderId}::${lineItemId}`; }
 
 // Wartezeit: wie lange steht eine Position schon auf "Bestellt" bzw. "Geliefert an uns"?
-// Ab 7 Tagen beim Lieferanten nachhaken (Bernstein), ab 14 Tagen ist es ein Problem (Rot).
-export const AF_WARTE_WARN = 7;
-const AF_WARTE_CRIT = 14;
+// Gelb ab 7, rot ab 14 Tagen - die Schwelle steht einmal in lib/ampel.mjs (WARTESCHWELLEN).
 export function afWartetage(eintrag, jetzt = Date.now()) {
   return wartetage(eintrag, jetzt);
 }
 export const afWarteText = tage => tage === 0 ? 'seit heute' : tage === 1 ? 'seit 1 Tag' : `seit ${tage} Tagen`;
-export const afWarteKlasse = tage => tage >= AF_WARTE_CRIT ? 'wait-crit' : tage >= AF_WARTE_WARN ? 'wait-warn' : 'muted';
 
 // Schritt, auf den "Wieder öffnen" zurueckfaellt - Spiegel von statusVorErledigt() in
 // operations/lib/auftragsstatus.mjs (dort entscheidet der Server; hier nur fuer den Dialogtext).

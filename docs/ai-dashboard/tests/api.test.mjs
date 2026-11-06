@@ -553,6 +553,30 @@ test('lexikonListe liefert Preis ab und Link-Zeichen in der Trefferliste', () =>
   assert.equal(muster.linkVorhanden, true, 'Mustervariante hat ein gefundenes Original');
 });
 
+test('lexikonListe: Bestellampel je Treffer, Kopfzahlen und Filter "Nur gelb"/"Nur rot"', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  // Ohne Bildverzeichnis: Raumbild unbekannt, also nur die Lieferbarkeit.
+  let r = api.lexikonListe({});
+  assert.deepEqual(r.ampel, { rot: 0, gelb: 1, ruhig: 1, filter: '' }, 'Musterprodukt zaehlt nicht mit');
+  const grau = r.treffer.items.find(i => i.handle === 'traum-teppich-grau');
+  assert.deepEqual(grau.ampel, { stufe: 'gelb', wort: 'Teilweise lieferbar', text: '1 von 2 Farben nicht lieferbar' });
+  assert.equal(r.treffer.items.find(i => i.handle === 'muster-traum-teppich-grau').ampel, null);
+  // Mit Bildverzeichnis: Vinyl hat erfasste Bilder, aber kein Raumbild; ein Bild ohne Bildtyp beim Teppich bleibt unbekannt.
+  fs.mkdirSync(path.join(dir, 'bildrechte'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'bildrechte', 'bildrechte.csv'), 'media_id;produkt_handle;bildtyp;status\nm1;vinyl-clic-eiche;detail;geprueft\nm2;traum-teppich-grau;;ungeklaert\nm3;vinyl-clic-eiche;raum;entfernt\n');
+  r = api.lexikonListe({});
+  assert.deepEqual(r.ampel, { rot: 0, gelb: 2, ruhig: 0, filter: '' });
+  assert.deepEqual(r.treffer.items.find(i => i.handle === 'vinyl-clic-eiche').ampel, { stufe: 'gelb', wort: 'Kein Raumbild', text: '' }, 'entferntes Raumbild zaehlt nicht');
+  const gelb = api.lexikonListe({ ampel: 'gelb' });
+  assert.deepEqual([gelb.treffer.count, gelb.ampel.filter], [2, 'gelb'], 'Zahl am Knopf = Laenge der Liste');
+  assert.equal(api.lexikonListe({ ampel: 'rot' }).treffer.count, 0);
+  assert.equal(api.lexikonListe({ ampel: 'quatsch' }).treffer.count, 3, 'unbekannter Filter: alle');
+  assert.deepEqual(api.lexikonListe({ q: 'vinyl', ampel: 'gelb' }).ampel, { rot: 0, gelb: 1, ruhig: 0, filter: 'gelb' }, 'Kopfzahlen folgen der Suche');
+  assert.deepEqual(api.lexikonProdukt('vinyl-clic-eiche').ampel, { stufe: 'gelb', wort: 'Kein Raumbild', text: '' });
+});
+
 test('lexikonListe sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion', () => {
   const root = tmpRoot();
   const dir = lexikonFixture(root);

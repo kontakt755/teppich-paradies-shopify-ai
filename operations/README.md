@@ -280,8 +280,8 @@ Positionen; nicht zugeordnete Positionen als `id: "UNGEKLAERT"` am Ende.
 - `aeltesteOffeneBestellungTage`: älteste Bestellung beim Lieferanten, die noch
   nicht bei uns ist (Tage seit `bestelltAm`). `aeltesteUnbestellteTage`: älteste
   Kundenbestellung, für die noch nichts bestellt wurde.
-- `ueberfaellig`: Wartezeit wie im Frontend (`AF_WARTE_WARN`/`AF_WARTE_CRIT`):
-  ab 7 Tagen `nachhaken`, ab 14 Tagen `problem`.
+- `ueberfaellig`: Wartezeit wie im Frontend (eine Schwelle `WARTESCHWELLEN` in
+  `docs/ai-dashboard/lib/ampel.mjs`): ab 7 Tagen `nachhaken`, ab 14 Tagen `problem`.
 - `gruppen[].schluessel` ist der Wert für `gruppe=` der Bestellmail.
 
 **`GET /api/einkauf/lieferant?id=A`** – ein Lieferant wie oben (unter
@@ -479,7 +479,8 @@ Die Datei ist Teil von `npm run daten:sichern`.
 **Fristen** (Konstanten in `lib/auftragsverlauf.mjs`): `NACHFASSEN_NACH_TAGEN = 5`
 (nach „Kunde hat Muster“), `MUSTER_ANGEKOMMEN_ANNAHME_TAGE = 3`,
 `ERGEBNIS_KLAEREN_NACH_TAGEN = 14`, `WARE_ABSCHLIESSEN_NACH_TAGEN = 7`. Lieferant
-überfällig: `WARTE_NACHHAKEN_TAGE` (7) / `WARTE_PROBLEM_TAGE` (14) aus `lib/lieferanten.mjs`.
+überfällig: `WARTE_NACHHAKEN_TAGE` (7) / `WARTE_PROBLEM_TAGE` (14) aus `lib/lieferanten.mjs`
+(übernommen aus `docs/ai-dashboard/lib/ampel.mjs`, dort steht die Zahl genau einmal).
 
 **Lesen (additive Felder).** `GET /api/kunden/detail` trägt an jedem Eintrag von
 `kunde.auftraege[]`, `GET /api/kunden/bestellungen` an jeder Zeile von `zeilen[]`:

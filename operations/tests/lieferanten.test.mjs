@@ -13,6 +13,7 @@ import {
   kennungAusLexikon, lexikonSchnellzugriff, lexikonProduktMitSchnellzugriff, kettlerGrund, bezugswegHinweis, kettlerAutomatisch, kuerzereSeiteCm, leseKettelwege,
   kettelZuschnitt, KETTEL_PUFFER_CM,
 } from '../lib/lieferanten.mjs';
+import { WARTESCHWELLEN } from '../../docs/ai-dashboard/lib/ampel.mjs';
 
 // Nur synthetische Testdaten: Pseudonyme (Lieferant A/B, *.example), erfundene Kunden.
 const mf = (namespace, key, value) => ({ namespace, key, value });
@@ -181,18 +182,14 @@ test('Wartetage und Warnstufen wie im Frontend', () => {
   assert.equal(warnstufe(null), null);
 });
 
-test('Schwellen stimmen mit dem Frontend ueberein (AF_WARTE_WARN / AF_WARTE_CRIT)', (t) => {
+test('Schwellen kommen aus der einen Konstante im Frontend (lib/ampel.mjs) - keine zweite Kopie', () => {
+  assert.equal(WARTE_NACHHAKEN_TAGE, WARTESCHWELLEN.nachhakenTage);
+  assert.equal(WARTE_PROBLEM_TAGE, WARTESCHWELLEN.problemTage);
+  // Frueher standen 7/14 bzw. 10 Werktage in vier Dateien; eine neue Kopie faellt hier auf.
   const wurzel = new URL('../../docs/ai-dashboard/', import.meta.url);
   const dateien = fs.readdirSync(wurzel, { recursive: true }).filter(f => /\.(m?js)$/.test(String(f)) && !String(f).includes('tests'));
-  let warn = null; let crit = null;
-  for (const f of dateien) {
-    const text = fs.readFileSync(new URL(String(f), wurzel), 'utf8');
-    warn ??= text.match(/AF_WARTE_WARN\s*=\s*(\d+)/)?.[1] ?? null;
-    crit ??= text.match(/AF_WARTE_CRIT\s*=\s*(\d+)/)?.[1] ?? null;
-  }
-  if (warn === null || crit === null) { t.skip('Konstanten im Frontend nicht gefunden (umbenannt?)'); return; }
-  assert.equal(Number(warn), WARTE_NACHHAKEN_TAGE);
-  assert.equal(Number(crit), WARTE_PROBLEM_TAGE);
+  const kopien = dateien.filter(f => /(nachhakenTage|problemTage)\s*:\s*\d+|AF_WARTE_(WARN|CRIT)\s*=\s*\d+|VERZUG_WERKTAGE\s*=\s*\d+/.test(fs.readFileSync(new URL(String(f), wurzel), 'utf8')));
+  assert.deepEqual(kopien.map(String), ['lib/ampel.mjs']);
 });
 
 // --------------------------------------------------------------- Uebersicht

@@ -91,18 +91,19 @@ test('unbezahlt, storniert, Test oder schon bestellt: kein Bestell-To-do', () =>
   assert.deepEqual(todos, []);
 });
 
-test('Verzug: nach mehr als 10 Werktagen ohne Wareneingang nachfragen, ab 16 Werktagen rot', () => {
-  // JETZT ist Donnerstag, 01.10.: vor 8 Tagen = 6 Werktage, vor 15 Tagen = 11, vor 23 Tagen = 16.
+test('Verzug wie im Einkauf (lib/ampel.mjs): ab 7 Tagen nachhaken (gelb), ab 14 Tagen rot', () => {
+  const frisch = zeile({ name: 'Kunde Sechs', tage: 8, positionen: [{ lieferant: 'E' }] });
   const a = zeile({ name: 'Kunde Acht', tage: 10 });
   const b = zeile({ name: 'Kunde Fuenfzehn', tage: 20, positionen: [{ lieferant: 'C' }] });
   const c = zeile({ name: 'Kunde Lang', tage: 30, positionen: [{ lieferant: 'D' }] });
   const statusAlle = {
+    ...stand(frisch, 0, { status: 'bestellt', bestelltAm: vorTagen(6) }),
     ...stand(a, 0, { status: 'bestellt', bestelltAm: vorTagen(8) }),
     ...stand(b, 0, { status: 'bestellt', bestelltAm: vorTagen(15) }),
     ...stand(c, 0, { status: 'bestellt', bestelltAm: vorTagen(23) }),
   };
-  const todos = leiteTodosAb({ bestellzeilen: [a, b, c], statusAlle }, { sicht: 'laden', jetzt: JETZT });
-  assert.deepEqual(todos.map(t => [t.art, t.ton, t.alterTage]), [['nachhaken', 'crit', 23], ['nachhaken', 'warn', 15]]);
+  const todos = leiteTodosAb({ bestellzeilen: [frisch, a, b, c], statusAlle }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(todos.map(t => [t.art, t.ton, t.alterTage]), [['nachhaken', 'crit', 23], ['nachhaken', 'crit', 15], ['nachhaken', 'warn', 8]], '6 Tage: noch kein To-do');
   assert.equal(todos[1].titel, 'Beim Lieferanten nachfragen: Ware seit 15 Tagen bestellt, noch nicht da');
   assert.match(todos[1].kontext, /^Lieferant C · Kunde Fuenfzehn/);
   assert.equal(todos[1].knopf.href, '#/einkauf?ab=verzug', 'direkt in die Verzugsliste mit fertiger Nachfrage');

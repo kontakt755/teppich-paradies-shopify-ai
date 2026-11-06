@@ -10,6 +10,7 @@
  */
 
 import { musterEigen } from './einkauf-lieferanten.mjs';
+import { dringendereAmpel } from './ampel.mjs';
 
 const UNGEKLAERT = 'UNGEKLAERT';
 const leer = v => v === null || v === undefined || String(v).trim() === '' || v === '–' || v === UNGEKLAERT;
@@ -62,10 +63,12 @@ export function jeKommission(eintraege = []) {
   for (const x of eintraege || []) {
     const p = x?.pos || {};
     const key = p.orderId || p.orderName || '?';
-    if (!je.has(key)) je.set(key, { orderId: p.orderId || null, orderName: p.orderName || '', eintraege: [], positionen: [], wartetage: null, warnstufe: null });
+    if (!je.has(key)) je.set(key, { orderId: p.orderId || null, orderName: p.orderName || '', eintraege: [], positionen: [], wartetage: null, warnstufe: null, ampel: null });
     const k = je.get(key);
     k.eintraege.push(x);
     k.positionen.push(p);
+    // Die Kommission traegt die dringendste Ampel ihrer Muster (ein gesperrtes Muster macht sie rot).
+    if (x.ampel) k.ampel = dringendereAmpel(k.ampel, x.ampel);
     if (x.wartetage !== null && x.wartetage !== undefined && (k.wartetage === null || x.wartetage > k.wartetage)) k.wartetage = x.wartetage;
     if ((STUFE_RANG[x.warnstufe] || 0) > (STUFE_RANG[k.warnstufe] || 0)) k.warnstufe = x.warnstufe;
   }

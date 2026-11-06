@@ -488,15 +488,17 @@ dafür nur die Stammdaten.
 vor „Erledigt" zurück (ohne solchen: kein Status = noch nicht bestellt). Die Abschlussfelder
 (`erledigtAm/Von/Notiz`) wandern mit Zeit, Person und Notiz in `verlauf` (höchstens 20 Einträge);
 `wiederGeoeffnetAm/Von` stehen am Datensatz, der Audit-Log erhält `auftragsstatus-wieder-geoeffnet`.
-Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage bernstein, 14 rot).
+Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage gelb, 14 rot;
+eine Schwelle für alle Ansichten, Abschnitt 33).
 
 ### Einkauf „Je Auftrag“: Arbeitsliste (seit 2026-10-20, #1522)
 
 `lib/auftrags-ablauf.mjs` ordnet jeden offenen Auftrag ein (`einordnung`): **jetzt** (bestellen,
 ungeklaert, Ware da ohne „Kunde informiert“, Muster da, Verzug), **unterwegs** und **beiKunde**
-(beide eingeklappt). Verzug = Status „bestellt“, mehr als `VERZUG_WERKTAGE` (10) Werktage, bei
-bestaetigtem Liefertermin erst nach dem Termin; dieselbe Regel nutzt das To-do „Nachfragen“ in
-`lib/todos.mjs`. „Kunde informiert“ ist ein Ereignis `kunde_informiert` im Auftragsverlauf
+(beide eingeklappt). Verzug = Status „bestellt“ seit mindestens 7 Kalendertagen (gelb, ab 14 rot),
+bei bestaetigtem Liefertermin erst nach dem Termin (`verzugAmpel()`, Schwelle aus `lib/ampel.mjs`,
+bis 06.11.2026 waren es 10 Werktage); dieselbe Regel nutzt das To-do „Nachfragen“ in
+`lib/todos.mjs`. Gesperrte Muster zählen nicht als Verzug, die Karte sagt „Muster nicht lieferbar“. „Kunde informiert“ ist ein Ereignis `kunde_informiert` im Auftragsverlauf
 (`POST /api/einkauf/auftragsstatus`, aktion `schritt`, nur Warenauftraege, Rolle „lesen“ 403);
 `/api/einkauf/bestellungen` liefert es als `kundeInformiert[orderId]`. „Heute“ zaehlt mit
 `einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
@@ -784,7 +786,7 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant ein To-do; gelb ab 3, rot ab 7 Tagen |
 | Ware bestellen | dieselben + `/api/einkauf/belege` | bezahlt, Position ohne Stand; **je Bestellung** ein To-do, damit kein Kunde in einer Sammelzeile verschwindet; gelb ab 1, rot ab 3 Tagen (seit 2026-11-03). Ohne geladene Belege fehlt nur der Zusatz „kein zugeordneter Beleg“ |
 | Laut Beleg bestellt, abhaken | dieselben | wie „Ware bestellen“, aber AB, Lieferschein oder Avis desselben Lieferanten ist sicher zugeordnet: per Mail bestellt, nicht abgehakt. Je Lieferant eine Zeile; Ware anderer Lieferanten derselben Bestellung bleibt unter „Ware bestellen“. Gelb, ab 4 Tagen nach dem Lieferschein rot (noch nicht raus) |
-| Bestellt, kein zugeordneter Beleg | dieselben | Ware „bestellt“ seit ≥ 3 Tagen, ohne zugeordneten Beleg desselben Lieferanten und ohne Liefertermin (unzugeordnete Belege und Vorschläge zählen nicht, die Bestätigung kann also im Postfach liegen); rot ab 7. Ab 10 Werktagen übernimmt „Nachhaken“. Nur bei geladenen Belegen |
+| Bestellt, kein zugeordneter Beleg | dieselben | Ware „bestellt“ seit ≥ 3 Tagen, ohne zugeordneten Beleg desselben Lieferanten und ohne Liefertermin (unzugeordnete Belege und Vorschläge zählen nicht, die Bestätigung kann also im Postfach liegen); ab 7 Tagen übernimmt „Nachhaken“ (seit 06.11.2026, vorher 10 Werktage). Nur bei geladenen Belegen |
 | Muster nicht lieferbar | `/api/kunden/bestellungen`, Feld `gesperrteMuster` (Mustersperre) | SKU gesperrt, Position ohne Stand oder „bestellt“; immer rot, bis die Position in der Packstation abgeschlossen ist („Kunde informieren…“ oder „Ohne dieses Muster weiter packen“) |
 | Nachhaken | dieselben, Schwellen aus `/api/einkauf/lieferanten` | Stand „bestellt" seit ≥ 7 Tagen gelb, ≥ 14 Tagen rot; je Lieferant |
 | Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 2, rot ab 5 Tagen (seit 2026-11-03) |
@@ -2879,3 +2881,48 @@ nicht 0 ist („n Umschläge gepackt, nicht verschickt“, Bernstein).
 
 Tests: `tests/packstation-gepackt-verschickt.test.mjs`, `tests/packstation-versandmail.test.mjs` (Altfall-Weg),
 `tests/dashboard-abschlusskorrekturen.test.mjs` (Klicks), `tests/packstation-arbeitslisten.test.mjs` (Ansicht).
+
+## 33. Ampel: rot, gelb, ruhig (06.11.2026, #1969)
+
+Freigabe Inhaber 06.11.: **Rot** heißt, etwas hält einen Auftrag oder einen Kunden auf. **Gelb** heißt, es ist
+etwas zu tun, aber nichts steht still. Alles andere bleibt ruhig, ohne grüne Fläche. Farbe steht nie allein:
+immer Zeichen und Wort (`× Blockiert`, `! Nachhaken · 9 Tage`, `✓ … ohne Befund`).
+
+**Ein Ort für die Regeln.** `lib/ampel.mjs` (ohne DOM, auch auf dem Server): `WARTESCHWELLEN`
+(`nachhakenTage: 7`, `problemTage: 14`), `warteAmpel()`, `bestellbarkeit()`, `musterlagerAmpel()`,
+`dringendereAmpel()`. `operations/lib/lieferanten.mjs` (`WARTE_NACHHAKEN_TAGE`/`WARTE_PROBLEM_TAGE`),
+`lib/todos.mjs` (`SCHWELLEN`) und `lib/einkauf-lieferanten.mjs` (`SCHWELLEN_STANDARD`) übernehmen die
+Schwelle von dort; `operations/tests/lieferanten.test.mjs` schlägt an, wenn irgendwo wieder eine Zahl steht.
+Darstellung: `bausteine/ampel.mjs` (`ampelRand()` für den linken Rand wie `.order-row.rot/.gelb`,
+`ampelPlakette()`), Styles in `app.css`, Abschnitt „Ampel“, nur mit den Tokens ok/warn/crit.
+
+**Wartestand (Einkauf Je Lieferant, Je Auftrag, Tabelle „Bestellungen“, Heute).** Kalendertage seit
+`bestelltAm` (Berlin, `lib/kalendertage.mjs`). Gelb ab 7, rot ab 14; rot sofort, wenn der bestätigte
+Liefertermin vorbei ist, eine zu bestellende Position blockiert ist (Artikelnummer fehlt, Menge ungeklärt)
+oder ein bestelltes Muster gesperrt ist. Gesperrte Muster sind kein Verzug: Je Lieferant führt sie im
+Abschnitt „Muster nicht lieferbar“, Je Auftrag zeigt den Hinweis mit Weg in die Packstation. Die Sperre
+kommt als `gesperrteMuster` (Position-IDs) aus `/api/einkauf/bestellungen` (`operations/lib/mustersperre.mjs`).
+Warum Kalendertage: Der Inhaber zählt Wartezeiten in Kalendertagen (Fristen der To-dos, Notiz 28.10.), und
+14 Kalendertage sind in einer normalen Woche genau die bisherigen 10 Werktage. Werktage hätten „rot“ auf
+drei Kalenderwochen geschoben und Feiertage gebraucht, die niemand pflegt.
+
+**Lexikon: Bestellbarkeit je Produkt** (`bestellbarkeit()`, Server `lexikonAmpeln()` in
+`scripts/dashboard-api.mjs`, je Lexikon-Stand einmal gerechnet). Rot: einer Bestellvariante fehlt
+`einkauf.lieferant`, Artikelnummer (oder Produktname beim Lieferanten) oder Bestelleinheit, oder keine
+Variante ist verfügbar. Gelb: einzelne Farben/Varianten nicht lieferbar, oder kein Raumbild – nur wenn die
+Bildrechte-Liste Bilder mit Typ führt, aber keines vom Typ `raum` (`raumbildJeProdukt()` in
+`operations/lib/bildrechte.mjs`); nicht erfasst heißt unbekannt, nicht gelb. Nachtragsangaben wie
+`link.status = nur_artikelnummer` bleiben ruhig. Ohne Ampel: Muster-, Test- und Serviceprodukte,
+Geschenkgutschein, eigene Restware (Tag `sonderposten`); Wunschmaß- und Original-Varianten zählen nicht als
+Bestellvariante. `GET /api/lexikon?ampel=rot|gelb` filtert, `ampel: {rot, gelb, ruhig, filter}` steht in
+jeder Antwort, `items[].ampel` und `/api/lexikon/produkt` tragen `{stufe, wort, text}`. Oberfläche: Kopfzeile
+„Bestellbarkeit: × Nur rot (n) · ! Nur gelb (n) · ✓ n ohne Befund“ (Parameter `lampel`, setzt die Seite zurück),
+Karte mit linkem Rand und Plakette, Grund als kurzer Text, dasselbe oben auf der Produktseite.
+
+**Musterlager** (`musterlagerAmpel()`, `ansichten/einkauf/musterlager.mjs`): als leer gemeldet oder
+aufgebraucht rot, knapp gelb (Zuschnitt: reicht noch für höchstens 5 Muster; Einzelmuster: alles Übrige ist
+reserviert), sonst ruhig. Einzelmuster werden bewusst nicht ab 5 Stück gelb: es werden keine Bestände
+nachgekauft (Inhaber 15.10.), und fast jedes Einzelmuster liegt in kleiner Zahl im Regal.
+
+Tests: `tests/ampel.test.mjs`, `tests/auftrags-ablauf.test.mjs`, `tests/todos.test.mjs`,
+`tests/api.test.mjs` (Lexikon-Filter), `operations/tests/bildrechte.test.mjs`, `operations/tests/lieferanten.test.mjs`.

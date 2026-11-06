@@ -29,6 +29,7 @@ import { ROUTE } from './route.mjs';
 import { positionKey, filterGruppe } from './auftragsstatus.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 import { KETTEL_PUFFER_CM, kettelZuschnitt, wirdGekettelt } from './kettelpuffer.mjs';
+import { WARTESCHWELLEN } from '../../docs/ai-dashboard/lib/ampel.mjs';
 
 export { KETTEL_PUFFER_CM, kettelZuschnitt };
 
@@ -42,13 +43,11 @@ export const KETTLER_NAH_PLZ = /^1[0-46]/;
 
 /**
  * Wartezeit-Schwellen: ab 7 Tagen beim Lieferanten nachhaken, ab 14 Tagen ist
- * es ein Problem. Dieselben Werte wie AF_WARTE_WARN / AF_WARTE_CRIT im
- * Frontend (docs/ai-dashboard) - das ist ein Browser-Skript und laesst sich
- * hier nicht importieren; operations/tests/lieferanten.test.mjs prueft, dass
- * beide Seiten dieselben Zahlen tragen.
+ * es ein Problem. Die Werte stehen einmal in docs/ai-dashboard/lib/ampel.mjs
+ * (WARTESCHWELLEN) und gelten im Browser und hier gleich.
  */
-export const WARTE_NACHHAKEN_TAGE = 7;
-export const WARTE_PROBLEM_TAGE = 14;
+export const WARTE_NACHHAKEN_TAGE = WARTESCHWELLEN.nachhakenTage;
+export const WARTE_PROBLEM_TAGE = WARTESCHWELLEN.problemTage;
 
 /**
  * Obergrenze fuer den ganzen mailto:-Link. Es gibt keine genormte Grenze;

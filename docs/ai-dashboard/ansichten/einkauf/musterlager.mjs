@@ -36,6 +36,8 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
 import { oeffneEtikettenDruck, etikettenFuerBestellung } from '../../bausteine/etiketten-druck.mjs';
 import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar, stueckJeArt } from '../../lib/musterlager-bestand.mjs';
+import { musterlagerAmpel } from '../../lib/ampel.mjs';
+import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
 
 export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -65,23 +67,29 @@ const zaehlbar = e => (musterlager.daten?.zaehlbar || ['einzel']).includes(e.art
 /** Physisch noch da (Einzelmuster): eingelagert minus verschickt. Reservierte liegen noch in der Schublade. */
 const nochDa = nochDaZaehlbar;
 
-/** Bestand in Worten - und ob er Aufmerksamkeit braucht (leer, aufgebraucht). */
+/**
+ * Bestand in Worten und Ampel (lib/ampel.mjs): leer oder aufgebraucht ist rot, knapp gelb, sonst
+ * ruhig. Das Wort steht auf der Plakette ("× Leer", "! Knapp") und nicht noch einmal im Text.
+ */
 function bestandVon(e) {
-  if (e.leer) return { text: 'leer', warn: true };
+  const knappAb = musterlager.daten?.knappAb ?? 5;
+  if (e.leer) return { text: '', ...musterlagerAmpel({ leer: true }) };
   if (zaehlbar(e)) {
     const da = nochDa(e);
     const frei = e.stand?.rest ?? da;
-    if (da <= 0) return { text: 'aufgebraucht', warn: true };
+    const a = musterlagerAmpel({ zaehlbar: true, nochDa: da, frei, knappAb });
+    if (da <= 0) return { text: '', ...a };
     const zurueck = da - frei;
-    return { text: `noch ${da} Stück${zurueck > 0 ? ` (${zurueck} zurückgelegt)` : ''}`, warn: frei <= 0 };
+    return { text: `noch ${da} Stück${zurueck > 0 ? ` (${zurueck} zurückgelegt)` : ''}`, ...a };
   }
   const n = e.anzahl ?? 1;
   const stueck = e.art === 'bahn' ? `${n} ${n === 1 ? 'Bahn' : 'Bahnen'}` : `${n} Stück`;
   // Zuschnitt: A5-Muster je Stueck (Inhaber 2026-10-15), Schaetzung aus dem Verschickten.
   const reicht = e.stand?.reichtNoch;
-  if (reicht === null || reicht === undefined) return { text: stueck, warn: false };
-  if (reicht <= 0) return { text: `${stueck} · rechnerisch aufgebraucht – nachsehen`, warn: true };
-  return { text: `${stueck} · reicht noch für ca. ${reicht} ${musterGroesse()}-Muster`, warn: reicht <= (musterlager.daten?.knappAb ?? 5) };
+  const a = musterlagerAmpel({ reichtNoch: reicht, knappAb });
+  if (reicht === null || reicht === undefined) return { text: stueck, ...a };
+  if (reicht <= 0) return { text: `${stueck} · rechnerisch – bitte nachsehen`, ...a };
+  return { text: `${stueck} · reicht noch für ca. ${reicht} ${musterGroesse()}-Muster`, ...a };
 }
 
 const musterGroesse = () => musterlager.daten?.musterGroesse?.name || 'A5';
@@ -97,7 +105,7 @@ function zeileHtml(e) {
   const fuer = offene.filter(o => !o.wartetAufLieferant).map(o => `${o.orderName}${o.kunde ? ` ${o.kunde}` : ''}`);
   // Gemischte Bestellung: geht zusammen mit den Lieferanten-Mustern raus (Inhaber 2026-10-15).
   const wartet = offene.filter(o => o.wartetAufLieferant).map(o => `${o.orderName}${o.kunde ? ` ${o.kunde}` : ''}`);
-  const nachkaufen = e.art === 'probestueck' && b.warn && musterlager.daten?.probestueckPreis ? `Neues Probestück beim Lieferanten: ${musterlager.daten.probestueckPreis}` : '';
+  const nachkaufen = e.art === 'probestueck' && b.stufe && musterlager.daten?.probestueckPreis ? `Neues Probestück beim Lieferanten: ${musterlager.daten.probestueckPreis}` : '';
   const knoepfe = lesend ? '' : `<div class="ml-aktionen">
       ${e.leer || (zaehlbar(e) && nochDa(e) <= 0)
         ? `<button type="button" class="btn btn-sm" data-ml-wieder="${esc(e.id)}">Wieder da…</button>`
@@ -105,12 +113,13 @@ function zeileHtml(e) {
       ${e.handle ? `<button type="button" class="btn btn-sm btn-ghost" data-ml-etikett-eintrag="${esc(e.id)}" title="Aufkleber für dieses Stück">Aufkleber</button>` : ''}
       <button type="button" class="btn btn-sm btn-ghost" data-ml-bearbeiten="${esc(e.id)}">Bearbeiten…</button>
     </div>`;
-  return `<li class="ml-zeile${b.warn ? ' ml-knapp' : ''}">
+  return `<li class="ml-zeile${ampelRand(b.stufe)}">
     <div class="ml-was">
       <div class="ml-farbe">${esc(e.farbe || e.titel)}</div>
       <div class="ml-angaben">
+        ${ampelPlakette(b.stufe, b.wort)}
         <span>${esc(e.artLabel || arten()[e.art] || e.art)}</span>
-        <span class="${b.warn ? 'ml-warn' : ''}">${esc(b.text)}</span>
+        ${b.text ? `<span>${esc(b.text)}</span>` : ''}
         ${e.ort ? `<span>Platz: ${esc(e.ort)}</span>` : '<span class="muted">kein Platz eingetragen</span>'}
         ${verschickt ? `<span class="muted">${esc(verschickt)}</span>` : ''}
       </div>
@@ -151,7 +160,9 @@ export function viewEinkaufMusterlager() {
   const q = (state.route.params.get('mlq') || '').trim().toLowerCase();
   const eintraege = d.eintraege.filter(e => passt(e, q));
   const offen = d.eintraege.reduce((s, e) => s + (e.offeneBestellungen?.length || 0), 0);
-  const leer = d.eintraege.filter(e => bestandVon(e).warn).length;
+  const stufen = d.eintraege.map(e => bestandVon(e).stufe);
+  const rot = stufen.filter(x => x === 'rot').length;
+  const gelb = stufen.filter(x => x === 'gelb').length;
 
   const kopf = `<div class="ml-kopf">
     <div class="ml-erklaerung"><p class="small muted">Muster, die wir selbst da haben. Kommt eine Musterbestellung für eines davon, steht sie automatisch auf „aus dem Musterlager“ – sie geht nicht in die Bestellung an den Lieferanten. Einzelmuster zählen beim Verschicken ab; von Probestück, Bahn und Verlegerest schneiden wir A5-Muster zu. Gemischte Bestellungen gehen zusammen raus, sobald die Lieferanten-Muster da sind.</p>
@@ -161,11 +172,13 @@ export function viewEinkaufMusterlager() {
     <button type="button" class="btn" data-ml-etikett>Aufkleber drucken…</button>
     <button type="button" class="btn" data-ml-eigene>Eigene Aufkleber…</button></div>
   </div>`;
-  // Eine Zeile mit den drei Zahlen, die vom Normalfall abweichen; 0 faellt weg.
+  // Eine Zeile mit den Zahlen, die vom Normalfall abweichen; 0 faellt weg. Rot und gelb mit
+  // Zeichen und Wort wie an den Zeilen.
   const zahlen = [
     plural(d.eintraege.length, 'Muster im Lager', 'Muster im Lager'),
     offen ? `<b>${esc(plural(offen, 'Musterbestellung wird', 'Musterbestellungen werden'))} daraus bedient</b>` : null,
-    leer ? `<span class="ml-warn">${esc(plural(leer, 'ist leer', 'sind leer'))}</span>` : null,
+    rot ? ampelPlakette('rot', `${rot} leer oder aufgebraucht`) : null,
+    gelb ? ampelPlakette('gelb', `${gelb} knapp`) : null,
   ].filter(Boolean);
 
   let liste;

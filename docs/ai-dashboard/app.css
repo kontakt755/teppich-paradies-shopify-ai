@@ -274,6 +274,24 @@ body.rolle-mitarbeiter [data-nicht-mitarbeiter] { display: none !important; }
 .badge.status.freigabe { background: var(--warn-soft); color: var(--warn); }
 .badge.status.in-arbeit, .badge.status.korrektur { background: var(--info-soft); color: var(--info); }
 .badge.status.review { background: var(--accent-soft); color: var(--accent); }
+
+/* Ampel (lib/ampel.mjs, bausteine/ampel.mjs): Rot haelt eine Bestellung oder einen Kunden auf,
+   Gelb ist zu tun. Ruhig bleibt ohne Farbe. Darstellung nur als linker Rand plus Plakette mit
+   Zeichen und Wort - nie Farbe allein, keine Flaeche fuer "alles gut". */
+.ampel { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 1px 8px; border-radius: 999px; font-size: .78rem; font-weight: 650; line-height: 1.45; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ampel-zeichen { font-weight: 800; }
+.ampel-rot { background: var(--crit-soft); color: var(--crit); }
+.ampel-gelb { background: var(--warn-soft); color: var(--warn); }
+.ampel-ruhig { padding-inline: 0; color: var(--text-3); font-weight: 500; }
+/* Karten mit eigenem Rahmen: der linke Rand wird breiter und farbig (wie .order-row). */
+.ampel-karte.rot { border-left: 3px solid var(--crit); }
+.ampel-karte.gelb { border-left: 3px solid var(--warn); }
+/* Zeilen ohne Rahmen: Rand als Innenschatten, damit der Inhalt nicht verrutscht. */
+.ampel-zeile.rot { box-shadow: inset 3px 0 0 var(--crit); }
+.ampel-zeile.gelb { box-shadow: inset 3px 0 0 var(--warn); }
+.ampel-grund { color: var(--text-2); overflow-wrap: anywhere; }
+.ampel-grund.rot { color: var(--crit); }
+.ampel-grund.gelb { color: var(--warn); }
 .badge.status.fertig { background: var(--ok-soft); color: var(--ok); }
 .badge.ki { background: var(--accent-soft); color: var(--accent); }
 .badge.gap { background: var(--warn-soft); color: var(--warn); }
@@ -991,8 +1009,13 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
 .lex-karte .m { margin-top: 2px; font-size: .875rem; color: var(--text-2); }
 .lex-karte .preis { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; white-space: nowrap; text-align: right; }
 .lex-karte .preis small { display: block; font-family: var(--font); font-size: .75rem; font-weight: 500; color: var(--text-3); }
-.lex-link { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; border: 1.5px solid var(--warn); vertical-align: 1px; }
-.lex-link.da { background: var(--ok); border-color: var(--ok); }
+.lex-ampel { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 4px; font-size: .875rem; }
+/* Kopfzeile Bestellbarkeit: zwei Filterknoepfe (rot, gelb) und die ruhige Zahl. */
+.lex-ampel-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: -4px 0 12px; font-size: .875rem; }
+.lex-ampel-kopf .btn.rot { color: var(--crit); }
+.lex-ampel-kopf .btn.gelb { color: var(--warn); }
+.lex-ampel-kopf .btn.rot[aria-pressed="true"] { background: var(--crit-soft); border-color: var(--crit); }
+.lex-ampel-kopf .btn.gelb[aria-pressed="true"] { background: var(--warn-soft); border-color: var(--warn); }
 .lex-seiten { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 
 /* Lexikon: Produktkarte - das Wichtigste (Preis, Eckdaten, Farben) zuerst. */

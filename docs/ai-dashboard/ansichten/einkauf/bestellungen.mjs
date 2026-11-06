@@ -6,11 +6,13 @@
 import { gruppierePositionenNachKunde } from '../../lib/einkauf-kundengruppen.mjs';
 import { afNorm } from '../../lib/einkauf-lieferanten.mjs';
 import { state } from '../../kern/zustand.mjs';
+import { warteAmpel, warteWort, warteTitel } from '../../lib/ampel.mjs';
+import { ampelPlakette } from '../../bausteine/ampel.mjs';
 import { esc, fmtDate, fmtDateTime, plural, geldText } from '../../kern/helfer.mjs';
 import { emptyState, stoerungState, bandItem } from '../../bausteine/karten.mjs';
 import {
   einkaufPositionenMitStand, auftragOffenePositionen, aktiveAuftraege, einkauf,
-  afNaechsterStatus, LIEFERWEG_LABEL, afWartetage, afWarteText, afWarteKlasse,
+  afNaechsterStatus, LIEFERWEG_LABEL, afWarteText,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, alleAuftraege, erledigtePositionen,
   sammelGruppen, anzeigeWert, afEintragFuer, hatLieferantLink, positionUnvollstaendig,
   positionsGruppe, musterEigen, MUSTER_HERKUNFT_KURZ, zurueckGruppen, musterSchrittKnopf,
@@ -52,8 +54,12 @@ const AF_AKTIONS_LABEL = { bestellt: 'Als bestellt markieren', geliefert: 'Als g
 function afStatusZelle(p) {
   const eintrag = afEintragFuer(p);
   const status = eintrag?.status || null;
-  const tage = afWartetage(eintrag);
-  const warte = tage === null ? '' : `<div class="small ${afWarteKlasse(tage)}" title="${esc(afStatusText(eintrag))} am ${esc(fmtDate(eintrag[`${status}Am`]))}">${esc(afWarteText(tage))}</div>`;
+  // Wartestand wie in den Karten (lib/ampel.mjs): rot/gelb mit Zeichen und Wort, sonst grau.
+  const a = warteAmpel(eintrag);
+  const seitText = `${afStatusText(eintrag)} am ${fmtDate(eintrag?.[`${status}Am`])}`;
+  const warte = a.tage === null ? '' : a.stufe
+    ? `<div class="small">${ampelPlakette(a.stufe, warteWort(a), { titel: `${seitText} · ${warteTitel(a)}` })}</div>`
+    : `<div class="small muted" title="${esc(seitText)}">${esc(afWarteText(a.tage))}</div>`;
   const grund = status === 'erledigt' && eintrag.erledigtNotiz ? `<div class="small muted">Grund: ${esc(eintrag.erledigtNotiz)}</div>` : '';
   const nr = eintrag?.lieferantBestellnummer ? `<div class="small muted">Bestellnr. ${esc(eintrag.lieferantBestellnummer)}</div>` : '';
   const lesend = istNurLesend();

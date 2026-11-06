@@ -103,7 +103,8 @@ import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs'
 import { kontodatenPruefen } from '../docs/ai-dashboard/lib/angebot-nachricht.mjs';
 import { aufraeumFall } from '../docs/ai-dashboard/lib/aufraeumen.mjs';
 import { betriebszustand, sicherungsstand, ausserHausStand } from '../operations/lib/betriebszustand.mjs';
-import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
+import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten, raumbildJeProdukt } from '../operations/lib/bildrechte.mjs';
+import { bestellbarkeit, zaehleAmpeln } from '../docs/ai-dashboard/lib/ampel.mjs';
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
 import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
 import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
@@ -266,6 +267,26 @@ function leseBildrechte(file) {
   }
   return bildrechteZwischenspeicher;
 }
+
+/**
+ * Bestellampel je Lexikon-Produkt (docs/ai-dashboard/lib/ampel.mjs), einmal je Exportstand und
+ * Bildverzeichnis - sonst rechnete jeder Tastendruck in der Suche alle Produkte neu. Ist das
+ * Bildverzeichnis nicht lesbar, bleibt das Raumbild unbekannt: dann gibt es dafuer keine Warnung,
+ * die Ansicht "Bildrechte" meldet den Fehler selbst.
+ */
+const lexikonAmpelSpeicher = new WeakMap();
+function lexikonAmpeln(daten, dir) {
+  let bild = null;
+  try { bild = leseBildrechte(path.join(dir, 'bildrechte', 'bildrechte.csv')); } catch { bild = null; }
+  const kennung = bild?.kennung || '';
+  const alt = lexikonAmpelSpeicher.get(daten);
+  if (alt?.kennung === kennung) return alt.je;
+  const raum = bild ? raumbildJeProdukt(bild.zeilen) : new Map();
+  const je = new Map(daten.produkte.map(p => [p, bestellbarkeit(p, { raumbild: raum.has(p.handle) ? raum.get(p.handle) : null })]));
+  lexikonAmpelSpeicher.set(daten, { kennung, je });
+  return je;
+}
+const ampelKurz = a => (a ? { stufe: a.stufe, wort: a.wort, text: a.text } : null);
 
 /** Handle -> Links ins Shopify-Admin und in den Shop, aus dem Lexikon-Export (einmal je Exportstand). */
 const lexikonLinks = new WeakMap();
@@ -1794,7 +1815,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const kundeInformiert = {};
       for (const [id, v] of Object.entries(verlauf)) { const k = kundeInformiertAus(v.ereignisse); if (k) kundeInformiert[id] = k; }
       const kundentermine = readJsonIfExists(path.join(dir, 'bestelluebersicht', 'kundentermine.json')) || {};
-      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell, kundeInformiert, kundentermine };
+      // Gesperrte Muster (Lieferant kann nicht liefern) fuer die Ampel im Einkauf - dieselbe Regel wie
+      // kundenBestellungen(). Ist die Ablage kaputt, meldet das das Musterlager; hier bleibt die Liste leer.
+      let sperren = new Map();
+      try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* siehe Musterlager */ }
+      const gesperrteMuster = (modell.musterGruppen || []).flatMap(g => g.positionen || [])
+        .filter(p => p.istMuster && p.sku && p.lineItemId && sperren.has(sperrSku(p.sku))).map(p => p.lineItemId);
+      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell, kundeInformiert, kundentermine, gesperrteMuster };
     },
 
     /** Kundensuche: Name, E-Mail, Telefon, Bestellnummer, Strasse/Ort/PLZ - waehrend des Tippens. */
@@ -3710,7 +3737,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           items: zeilen.slice((seite - 1) * pageSize, seite * pageSize) } };
     },
 
-    lexikonListe({ q = '', page = 1, pageSize = 20 } = {}) {
+    lexikonListe({ q = '', page = 1, pageSize = 20, ampel = '' } = {}) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');
       const daten = readJsonGecacht(file);
@@ -3731,22 +3758,30 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           return t.passt;
         })
         : daten.produkte;
+      // Bestellampel: Kopfzahlen ueber alle Treffer der Suche, der Filter "Nur rot/gelb" danach -
+      // so passen die Zahl am Knopf und die Liste darunter zusammen.
+      const ampeln = lexikonAmpeln(daten, dir);
+      const zahlen = zaehleAmpeln(treffer.map(prod => ampeln.get(prod)));
+      const filter = ['rot', 'gelb'].includes(ampel) ? ampel : '';
+      const gezeigt = filter ? treffer.filter(prod => ampeln.get(prod)?.stufe === filter) : treffer;
       const size = Math.min(Math.max(Number(pageSize) || 20, 1), 100);
       const p = Math.max(Number(page) || 1, 1);
       const start = (p - 1) * size;
       // Je Treffer: in wie vielen offenen Bestellungen steckt das Produkt? (Ware und Muster getrennt)
       const offenMap = offeneBestellungenMap(dir);
-      const seite = treffer.slice(start, start + size).map(prod => {
+      const seite = gezeigt.slice(start, start + size).map(prod => {
         const offen = offeneZuProdukt(offenMap, prod);
         const anzahl = liste => new Set(liste.map(o => o.orderId)).size;
         return {
           ...lexikonListenEintrag(prod), ...lexikonSuchHinweis(prod, passendJe.get(prod) || [], begriffe),
           offeneBestellungen: anzahl(offen.filter(o => !o.istMuster)), offeneMuster: anzahl(offen.filter(o => o.istMuster)),
+          ampel: ampelKurz(ampeln.get(prod)),
         };
       });
       return {
         verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, anzahl: daten.anzahl ?? daten.produkte.length,
-        treffer: { count: treffer.length, page: p, pageSize: size, pages: Math.max(Math.ceil(treffer.length / size), 1), items: seite },
+        ampel: { ...zahlen, filter },
+        treffer: { count: gezeigt.length, page: p, pageSize: size, pages: Math.max(Math.ceil(gezeigt.length / size), 1), items: seite },
       };
     },
 
@@ -3846,7 +3881,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // (Mail, Portal, Telefon) an jeder Variante, die weder Direkt- noch Suchlink hat.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
       const offeneBestellungen = offeneZuProdukt(offeneBestellungenMap(dir), produkt);
-      return { verfuegbar: true, quelle: file, produkt: lexikonProduktMitSchnellzugriff(produkt, stammdaten), wartendeKunden: offen, offeneBestellungen };
+      return { verfuegbar: true, quelle: file, produkt: lexikonProduktMitSchnellzugriff(produkt, stammdaten), wartendeKunden: offen, offeneBestellungen, ampel: ampelKurz(lexikonAmpeln(daten, dir).get(produkt)) };
     },
 
     /**
