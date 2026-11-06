@@ -49,3 +49,50 @@ export function* druckBloecke(etiketten = []) {
     yield { start, etiketten: etiketten.slice(start, start + DRUCK_LIMIT.transport) };
   }
 }
+
+/**
+ * Weiterdrucken nach einem Abbruch (06.11.2026: der B1 brach nach 12 von 13 Aufklebern mit
+ * "DataError" ab, der Rest musste von Hand neu eingetippt werden).
+ *
+ * Ab welchem Aufkleber (0-basiert) es weitergeht: Meldet der Drucker im Statusabruf schon fertige
+ * Seiten, zaehlt das; sonst die Seiten, die vollstaendig an den Drucker gingen. Lieber einen
+ * Aufkleber doppelt als einen zu wenig - deshalb nie mehr als gesendet. 0 = nichts zum Weiterdrucken
+ * (alles neu drucken), ebenso wenn schon alles draussen ist.
+ * @param {{gesendet: number, gedruckt?: number|null, gesamt: number}} stand
+ */
+export function weiterAbSchaetzen({ gesendet = 0, gedruckt = null, gesamt = 0 } = {}) {
+  const n = Math.trunc(Number(gesamt)) || 0;
+  const s = Math.max(0, Math.trunc(Number(gesendet)) || 0);
+  const g = gedruckt === null || gedruckt === undefined ? s : Math.min(s, Math.max(0, Math.trunc(Number(gedruckt)) || 0));
+  return g > 0 && g < n ? g : 0;
+}
+
+/** Fertig gedruckte Seiten aus einer printprogress-Meldung: die laufende Seite zaehlt erst, wenn sie ganz draussen ist. */
+export const fertigeSeiten = ({ page = 0, pagePrintProgress = 0, pageFeedProgress = 0 } = {}) =>
+  Math.max(0, (Math.trunc(Number(page)) || 0) - (pagePrintProgress >= 100 && pageFeedProgress >= 100 ? 0 : 1));
+
+/** Kennung einer Auswahl: Weiterdrucken gilt nur, solange dieselben Aufkleber in derselben Reihenfolge gewaehlt sind. */
+export const auswahlSignatur = (etiketten = []) => `${etiketten.length}:${etiketten.map(motivSchluessel).join('\u0001')}`;
+
+/**
+ * Gueltiger Startpunkt zum Weiterdrucken fuer die aktuelle Auswahl, sonst 0.
+ * @param {object[]} alle   alle gewaehlten Aufkleber in Druckreihenfolge
+ * @param {{ab: number, signatur: string}|null} weiter
+ */
+export function weiterAbFuer(alle = [], weiter = null) {
+  if (!weiter || !(weiter.ab > 0) || weiter.ab >= alle.length) return 0;
+  return weiter.signatur === auswahlSignatur(alle) ? Math.trunc(weiter.ab) : 0;
+}
+
+/**
+ * Neuer Stand nach einem weiteren Abbruch. `geschaetzt` ist der erste Aufkleber, der sicher fehlt:
+ * schliesst der Lauf lueckenlos an (Start nicht hinter `geschaetzt`), rueckt die Grenze mit; wer
+ * weiter hinten angesetzt hat, laesst eine Luecke, die Grenze bleibt dort.
+ * @param {{basisAb: number, rest: number, alt: {geschaetzt?: number}|null, signatur: string}} lauf
+ */
+export function weiterNachAbbruch({ basisAb = 0, rest = 0, alt = null, signatur = '' } = {}) {
+  if (!(rest > 0)) return null;
+  const ab = basisAb + rest;
+  const luecke = basisAb > 0 && Number.isFinite(alt?.geschaetzt) && basisAb > alt.geschaetzt;
+  return { ab, signatur, geschaetzt: luecke ? alt.geschaetzt : ab };
+}
