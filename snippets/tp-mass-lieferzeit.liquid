@@ -13,6 +13,11 @@
      Mass - nicht tp_lieferzeit_sonderposten, der gilt fuer Rollenware ohne
      Ketteln. Belegt am 06.11.: alle 136 uebrigen aktiven Produkte mit Tag
      gekettelt tragen genau diesen Wert.
+  3. Ohne Metafeld und Vorlage wunschmass-fertig (Wunschmass vom Hersteller):
+     "ca. 14 Tage", derselbe Wert wie die Produktvorlage unter dem Warenkorb-
+     Knopf (templates/product.wunschmass-fertig.json, delivery_time) und das
+     JSON-LD (snippets/tp-product-structured-data). Rundgang 06.11. (NM-03):
+     28 dieser Produkte tragen kein Metafeld, Kopf und Preiskasten blieben leer.
   Sonst leer (fail closed), nichts wird von anderen Produkten geliehen.
 
   @param {object} product - Teppich nach Mass
@@ -27,6 +32,9 @@
     elsif tml_art == 'ketteln' and product.tags contains 'sonderposten'
       assign tml_text = tml_ketteln
     endif
+  endif
+  if tml_text == blank and product.template_suffix == 'wunschmass-fertig'
+    assign tml_text = 'ca. 14 Tage'
   endif
   echo tml_text
 -%}
