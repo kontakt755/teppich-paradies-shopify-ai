@@ -113,8 +113,8 @@ import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten
 import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
 import { musterwirkung } from '../operations/lib/musterwirkung.mjs';
 import { packhilfeDaten } from '../operations/lib/packhilfe-daten.mjs';
-import { musterPackliste, ohneMusterMoeglich, EINWURF_FRIST_MINUTEN } from '../docs/ai-dashboard/lib/muster-packen.mjs';
-import { musterPackenPfad, setzeGedruckt, setzeGepackt, setzeHaken, setzeKlaeren, merkeEingeworfen, entferneEingeworfen, vermerkeEinwurfProblem, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
+import { musterPackliste, ohneMusterMoeglich } from '../docs/ai-dashboard/lib/muster-packen.mjs';
+import { musterPackenPfad, setzeGedruckt, setzeGepackt, setzeHaken, setzeKlaeren, vermerkeVersandProblem, entferneVersandProbleme, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1023,8 +1023,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     }
   }
 
-  /** Kann der Umschlag auf "raus"? Wirft mit Grund, schreibt nichts. Liefert je Bestellung, was gebucht wird. */
-  function rausPlan(kunde, modell, statusDatei, actor) {
+  /**
+   * Kann der Umschlag auf "raus"? Wirft mit Grund, schreibt nichts. Liefert je Bestellung, was gebucht wird.
+   * `vorsatz` beginnt die Meldung: beim Packen ist dann auch nichts gepackt.
+   */
+  function rausPlan(kunde, modell, statusDatei, actor, { vorsatz = 'Nicht verschickt, keine Mail' } = {}) {
     const alle = leseAktuellenStatus(statusDatei, modell);
     // Nur, was noch nicht raus ist: der Schritt "raus" auf schon Erledigtes waere eine Korrektur zurueck.
     // Testbestellungen stehen in testauftraege, nicht in auftraege.
@@ -1039,19 +1042,54 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           return { orderId: b.orderId, lineItemId: id, status: 'raus', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, jetzt: now() };
         }));
       } catch (e) {
-        throw new ApiError(e.status || 409, `Nicht verschickt, keine Mail – ${b.orderName}: ${String(e?.message || e).split('\n')[0]}`);
+        throw new ApiError(e.status || 409, `${vorsatz} – ${b.orderName}: ${String(e?.message || e).split('\n')[0]}`);
       }
     }
     return plan;
   }
 
+  /**
+   * Darf dieser Umschlag als gepackt gelten? Wirft mit Grund, schreibt nichts. Gepackt wird nur, was
+   * nachweislich im Umschlag liegt: jedes Muster abgehakt (oder mit "Alle eingelegt" genau die gezeigten
+   * offenen), keine offenen Angaben, keine Klaerung, kein Direktversand.
+   */
+  function gepacktPruefen(kunde, payload) {
+    const restumfangBestaetigt = kunde.restumfangPruefen === true && kunde.hinweise?.length === 1 && kunde.hinweise[0] === 'Teilweise erstattet – offene Muster und Versandumfang prüfen.' && payload.restumfangGeprueft === true;
+    // Die bewusste Restumfangpruefung gilt nur fuer Teilrueckerstattung, nie fuer Direktversand.
+    const hinweisBlockiert = (kunde.hinweise?.length || 0) > 0 && !restumfangBestaetigt;
+    const offeneMuster = kunde.muster.filter(m => !m.abgehakt).map(m => m.lineItemId);
+    // "Alle eingelegt": die Person bestaetigt jedes gezeigte offene Muster; kam inzwischen eins dazu
+    // oder hat jemand anders abgehakt, stimmt ihre Seite nicht mehr.
+    const alleEingelegt = payload.alleEingelegt === true;
+    if (alleEingelegt) {
+      const gezeigt = Array.isArray(payload.lineItemIds) ? [...new Set(payload.lineItemIds.filter(id => typeof id === 'string'))].sort() : [];
+      if (!offeneMuster.length || JSON.stringify(gezeigt) !== JSON.stringify([...offeneMuster].sort())) {
+        throw new ApiError(409, 'Die Muster dieses Umschlags haben sich geändert. Bitte neu laden und erneut prüfen.');
+      }
+    }
+    if (kunde.fehlt.length || kunde.direktversand || hinweisBlockiert || kunde.klaeren || (!alleEingelegt && offeneMuster.length)) {
+      throw new ApiError(409, 'Nicht gepackt, nichts verschickt – bitte zuerst alle Muster tatsächlich einlegen und abhaken sowie offene Angaben und Klärungen prüfen.');
+    }
+    return { offeneMuster, alleEingelegt, restumfangBestaetigt };
+  }
+
+  /**
+   * Was beim Verschicken nicht sauber eingetragen wurde, bleibt als roter Hinweis in der Packstation, bis
+   * jemand "Verstanden" drueckt - fuer alle Geraete, auch wenn der Packende die Seite schon verlassen hat.
+   * Ging alles durch, faellt ein alter Hinweis zu diesem Umschlag weg. Wirft nie: der Schritt steht schon.
+   */
+  function versandProblemMerken(packSchluessel, versand, von) {
+    const offen = versand.filter(v => !['gebucht', 'bereits'].includes(v.status));
+    const datei = musterPackenPfad(privatDirPath || privatDir());
+    try {
+      if (!offen.length) { entferneVersandProbleme(datei, [packSchluessel]); return; }
+      // Die Ansicht nennt die Bestellungen selbst; nur bei mehreren muss die Meldung sagen, welche es traf.
+      vermerkeVersandProblem(datei, packSchluessel, { orderIds: offen.map(v => v.orderId), bestellungen: offen.map(v => v.orderName), von, jetzt: now(),
+        meldung: offen.map(v => `${versand.length > 1 ? `${v.orderName}: ` : ''}${v.meldung || 'Ergebnis unbekannt'}`).join(' · ') });
+    } catch (e) { logFehler('versand', `Packstation: Versandhinweis nicht gespeichert (${String(e?.message || e).split('\n')[0]})`); }
+  }
+
   const packSchluesselListe = wert => [...new Set((Array.isArray(wert) ? wert : [wert]).filter(v => typeof v === 'string').map(v => v.trim()).filter(Boolean))].slice(0, 100);
-  let einwurfLaeuft = false;
-  // Kurze Frist nur fuer Klickproben an der Datenkopie (die hat keinen Shopify-Zugang), nie im Betrieb.
-  const einwurfFristMs = () => {
-    const probe = env.TP_DASHBOARD_DATENKOPIE ? Number(env.TP_EINWURF_TEST_SEKUNDEN) : 0;
-    return probe > 0 ? probe * 1000 : EINWURF_FRIST_MINUTEN * 60_000;
-  };
 
   async function erledigtBuchen({ dir, auftrag, lineItemIds, benutzer, actor }) {
     if (!auftrag || !lineItemIds?.length) return null;
@@ -2032,15 +2070,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       });
       try {
         const gespeicherte = leseGrossbriefe(grossbriefPfad(dir));
-        const einwurf = stand.eingeworfen || {};
         return { verfuegbar: true, ...liste, ...(sperrenFehler ? { sperrenFehler } : {}),
-          kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte), ...(k.gepackt && einwurf[k.packSchluessel] ? { eingeworfen: einwurf[k.packSchluessel] } : {}) })),
-          einwurf: { fristMinuten: EINWURF_FRIST_MINUTEN, probleme: Object.entries(einwurf).filter(([, e]) => e?.problem).map(([packSchluessel, e]) => ({ packSchluessel, orderIds: e.orderIds || [], bestellungen: e.bestellungen || [], meldung: e.problem, am: e.problemAm || null })) } };
+          kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte) })),
+          versandProbleme: Object.entries(stand.versandProbleme || {}).map(([packSchluessel, e]) => ({ packSchluessel, orderIds: e.orderIds || [], bestellungen: e.bestellungen || [], meldung: e.problem || 'Ergebnis unbekannt', am: e.problemAm || null })) };
       } catch (e) { throw new ApiError(500, e.message); }
     },
 
     /**
-     * Muster packen schreiben - nur lokal, ohne Versandbuchung. `aktion`:
+     * Muster packen schreiben - nur lokal, ohne Versandbuchung. Ueber HTTP kommt "gepackt: true" nie hier
+     * an, sondern geht durch kundenMusterGepacktVerschicken (Gepackt = verschickt, 06.11.2026). `aktion`:
      *   gepackt  { gepackt: bool }                 Umschlag gepackt / zuruecknehmen (Standard);
      *            mit { alleEingelegt: true, lineItemIds } zugleich alle noch offenen Muster abhaken -
      *            nur, wenn die Seite genau diese offenen Muster gezeigt hat
@@ -2077,22 +2115,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let eingang = null;
       try {
         if (aktion === 'gepackt') {
-          const restumfangBestaetigt = kunde.restumfangPruefen === true && kunde.hinweise?.length === 1 && kunde.hinweise[0] === 'Teilweise erstattet – offene Muster und Versandumfang prüfen.' && payload.restumfangGeprueft === true;
-          // Die bewusste Restumfangpruefung gilt nur fuer Teilrueckerstattung, nie fuer Direktversand.
-          const hinweisBlockiert = (kunde.hinweise?.length || 0) > 0 && !restumfangBestaetigt;
-          const offeneMuster = kunde.muster.filter(m => !m.abgehakt).map(m => m.lineItemId);
-          // "Alle eingelegt": die Person bestaetigt jedes gezeigte offene Muster; kam inzwischen eins dazu
-          // oder hat jemand anders abgehakt, stimmt ihre Seite nicht mehr.
-          const alleEingelegt = wert && payload.alleEingelegt === true;
-          if (alleEingelegt) {
-            const gezeigt = Array.isArray(payload.lineItemIds) ? [...new Set(payload.lineItemIds.filter(id => typeof id === 'string'))].sort() : [];
-            if (!offeneMuster.length || JSON.stringify(gezeigt) !== JSON.stringify([...offeneMuster].sort())) {
-              throw new ApiError(409, 'Die Muster dieses Umschlags haben sich geändert. Bitte neu laden und erneut prüfen.');
-            }
-          }
-          if (wert && (kunde.fehlt.length || kunde.direktversand || hinweisBlockiert || kunde.klaeren || (!alleEingelegt && offeneMuster.length))) {
-            throw new ApiError(409, 'Bitte zuerst alle Muster tatsächlich einlegen und abhaken sowie offene Angaben und Klärungen prüfen.');
-          }
+          const { offeneMuster, alleEingelegt, restumfangBestaetigt } = wert ? gepacktPruefen(kunde, payload) : {};
           if (alleEingelegt) setzeHaken(datei, offeneMuster, { an: true, von, jetzt: now() });
           ergebnis = setzeGepackt(datei, pk, { gepackt: wert, von, jetzt: now(), restumfangGeprueft: restumfangBestaetigt });
           if (wert) eingang = wareneingangAusPackstation({ positionen: kunde.muster, actor: von, notiz: 'Umschlag gepackt (Packstation)' });
@@ -2127,35 +2150,24 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /**
-     * Schreibweg der Packstation (POST kunden/muster-packen). Alle Aktionen wie kundenMusterPackenSetzen;
-     * dazu `aktion: 'verschickt'` fuer einen gepackten Umschlag (#1810, Knopf "Verschickt – Kunde
-     * informieren"): je Bestellung des Umschlags der Schritt "raus" fuer deren Muster - lokal, Lagerabgang
-     * und in Shopify als versendet mit Versandbestaetigung (Ausnahme wie beim Schritt "raus": persoenlich
-     * vorbeigebrachte Muster ohne Mail).
-     *
-     * Auf dem Server statt je Bestellung aus dem Browser (Pruefung 29.10.): der Packschluessel ergibt sich
-     * aus den noch offenen Bestellungen. Bei zwei Bestellungen zerfiel der Umschlag, sobald die erste
-     * "raus" war; scheiterte die zweite, stand ihr Rest wieder als "packbereit" da - ohne Gepackt-Vermerk.
-     * Deshalb: erst fuer ALLE Bestellungen pruefen, ob "raus" geht (sonst 409, nichts geschrieben), dann
-     * alle lokalen Schritte schreiben, bevor die erste Shopify-Buchung abgewartet wird. `versand` sagt je
-     * Bestellung, was in Shopify passiert ist.
-     *
-     * `aktion: 'ohne-muster'` { lineItemId } (w-210): ein gesperrtes Muster kommt nicht, die uebrigen sollen
-     * raus. Nur diese Position wird "erledigt" und in Shopify ohne Kundenmail gebucht - sonst bliebe die
-     * Bestellung dort offen und nach dem Verschicken ein leerer Umschlag stehen. Der Schritt "Muster nicht
-     * verfuegbar" taugt dafuer nicht: er schliesst die ganze Bestellung ab, auch die Muster, die noch raus sollen.
-     * Eine Bestellung mit Ware kennt den Schritt gar nicht: dort geht das Muster immer so weg, auch als letztes
-     * im Umschlag; die Ware bleibt unberuehrt.
+     * Schreibweg der Packstation (POST kunden/muster-packen). Alle Aktionen wie kundenMusterPackenSetzen,
+     * dazu:
+     *   gepackt: true  Gepackt = verschickt (Benutzer 06.11.2026): siehe kundenMusterGepacktVerschicken.
+     *   verschickt     ein schon gepackter Umschlag, der nie eingetragen wurde (Altfall oder gescheiterter
+     *                  Eintrag), Knopf "Verschickt – Kunde informieren…": kundenMusterVerschicken.
+     *   ohne-muster    { lineItemId } (w-210): ein gesperrtes Muster kommt nicht, die uebrigen sollen raus.
+     *                  Nur diese Position wird "erledigt" und in Shopify ohne Kundenmail gebucht - sonst bliebe
+     *                  die Bestellung dort offen und nach dem Verschicken ein leerer Umschlag stehen. Der Schritt
+     *                  "Muster nicht verfuegbar" taugt dafuer nicht: er schliesst die ganze Bestellung ab, auch
+     *                  die Muster, die noch raus sollen. Eine Bestellung mit Ware kennt den Schritt gar nicht:
+     *                  dort geht das Muster immer so weg, auch als letztes im Umschlag; die Ware bleibt unberuehrt.
+     *   versand-verstanden  { packSchluessel: [...] } nimmt die roten Versandhinweise weg.
      */
     async kundenMusterPackenSchreiben(payload = {}, benutzer = null) {
-      if (payload?.aktion === 'eingeworfen') return this.kundenMusterEinwurf(payload, benutzer);
-      if (payload?.aktion === 'eingeworfen-zurueck') return this.kundenMusterEinwurfZurueck(payload, benutzer);
-      // Vermerkt und Frist laeuft: "Gepackt" zuruecknehmen liesse den Vermerk ins Leere laufen.
-      if ((payload?.aktion ?? 'gepackt') === 'gepackt' && payload?.gepackt === false) {
-        let offen = null;
-        try { offen = leseMusterPackStand(musterPackenPfad(privatDirPath || privatDir())).eingeworfen[payload.packSchluessel]; } catch { /* kundenMusterPackenSetzen meldet die kaputte Ablage */ }
-        if (offen && !offen.problem) throw new ApiError(409, 'Der Umschlag ist als eingeworfen vermerkt. Erst „Rückgängig“ drücken.');
-      }
+      // "Eingeworfen" (#1937) gibt es seit 06.11.2026 nicht mehr: eine noch offene alte Seite sagt das ehrlich.
+      if (['eingeworfen', 'eingeworfen-zurueck'].includes(payload?.aktion)) throw new ApiError(409, 'Diese Seite ist veraltet: „Gepackt“ verschickt jetzt sofort. Bitte neu laden.');
+      if (payload?.aktion === 'versand-verstanden') return this.kundenMusterVersandVerstanden(payload, benutzer);
+      if ((payload?.aktion ?? 'gepackt') === 'gepackt' && payload?.gepackt === true) return this.kundenMusterGepacktVerschicken(payload, benutzer);
       if (payload?.aktion === 'ohne-muster') {
         if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
         const lineItemId = typeof payload.lineItemId === 'string' ? payload.lineItemId.trim() : '';
@@ -2190,6 +2202,66 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
       const pk = typeof payload.packSchluessel === 'string' ? payload.packSchluessel.trim() : '';
       if (!pk) throw new ApiError(400, 'Kein Kunde angegeben.');
+      return this.kundenMusterVerschicken(pk, benutzer);
+    },
+
+    /**
+     * "Umschlag gepackt" = verschickt (Benutzer, Muster-Verantwortlicher, 06.11.2026: "wenn muster alle da
+     * sind und markiert wurden immer als verschickt markieren und kunden bescheid geben", sofort beim
+     * Packen). Bis dahin buchte erst "Eingeworfen" nach 5 Minuten Frist (#1937); den Knopf hat im Alltag
+     * niemand gedrueckt, 18 Bestellungen lagen gepackt und nie gebucht, kein Kunde hatte eine Versandmail.
+     *
+     * Ganz oder gar nicht: Erst wird geprueft, ob der Umschlag gepackt werden darf (gepacktPruefen: jedes
+     * Muster abgehakt) und ob JEDE seiner Bestellungen auf "raus" kann (rausPlan: Musterautomatik,
+     * Fehlmenge). Geht eins nicht, kommt 409 und nichts ist geschrieben - auch kein "gepackt". Ein Umschlag
+     * "gepackt, aber nicht gebucht" entsteht so nur noch, wenn der lokale Schritt trotz Vorpruefung scheitert;
+     * dann steht er unter "Gepackt" mit rotem Hinweis. Danach derselbe Weg wie "verschickt": Schritt "raus",
+     * Lagerabgang, Shopify mit Versandmail (persoenlich vorbeigebrachte Muster ohne Mail, Ware einer
+     * Mischbestellung bleibt unberuehrt). Alles bis zur ersten Shopify-Antwort laeuft ohne await, also ohne
+     * dass ein anderer Klick dazwischenkommt.
+     *
+     * `verschicken: true` muss die Seite mitschicken: eine alte, noch offene Seite sagt dem Packenden
+     * "Gepackt ist noch nicht versandt" und darf deshalb keine Versandmail ausloesen.
+     */
+    async kundenMusterGepacktVerschicken(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
+      if (payload.verschicken !== true) throw new ApiError(409, 'Diese Seite ist veraltet: „Gepackt“ verschickt jetzt sofort, der Kunde bekommt die Versandmail. Bitte neu laden.');
+      const pk = typeof payload.packSchluessel === 'string' ? payload.packSchluessel.trim() : '';
+      if (!pk) throw new ApiError(400, 'Kein Kunde angegeben.');
+      const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === pk);
+      if (!kunde) throw new ApiError(409, 'Diese Bestellungen stehen nicht mehr so in der Liste. Bitte neu laden.');
+      if (kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist schon gepackt. Unter „Gepackt“ steht „Verschickt – Kunde informieren…“.');
+      gepacktPruefen(kunde, payload);
+      const dir = privatDirPath || privatDir();
+      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      rausPlan(kunde, ladeBestellModell(dir), auftragsstatusPfad(dir), actor, { vorsatz: 'Nicht gepackt, nichts verschickt, keine Mail' });
+      const gepackt = this.kundenMusterPackenSetzen({ ...payload, aktion: 'gepackt', gepackt: true }, benutzer);
+      try {
+        const r = await this.kundenMusterVerschicken(pk, benutzer);
+        return { ...gepackt, versand: r.versand };
+      } catch (e) {
+        // Gepackt steht schon (der Umschlag ist ja zu): er bleibt unter "Gepackt", der Hinweis sagt warum.
+        const meldung = `Gepackt, aber nicht verschickt: ${String(e?.message || e).split('\n')[0]}`;
+        const versand = kunde.bestellungen.map(b => ({ orderId: b.orderId, orderName: b.orderName, status: 'nicht-eingetragen', meldung }));
+        versandProblemMerken(pk, versand, actor);
+        logFehler('versand', `Packstation: ${kunde.bestellungen.map(b => b.orderName).join(', ')} - ${meldung}`);
+        return { ...gepackt, versand };
+      }
+    },
+
+    /**
+     * Ein gepackter Umschlag wird verschickt (#1810/#1811): je Bestellung des Umschlags der Schritt "raus"
+     * fuer deren Muster - lokal, Lagerabgang und in Shopify als versendet mit Versandbestaetigung (Ausnahme
+     * wie beim Schritt "raus": persoenlich vorbeigebrachte Muster ohne Mail).
+     *
+     * Auf dem Server statt je Bestellung aus dem Browser (Pruefung 29.10.): der Packschluessel ergibt sich
+     * aus den noch offenen Bestellungen. Bei zwei Bestellungen zerfiel der Umschlag, sobald die erste
+     * "raus" war; scheiterte die zweite, stand ihr Rest wieder als "packbereit" da - ohne Gepackt-Vermerk.
+     * Deshalb: erst fuer ALLE Bestellungen pruefen, ob "raus" geht (sonst 409, nichts geschrieben), dann
+     * alle lokalen Schritte schreiben, bevor die erste Shopify-Buchung abgewartet wird. `versand` sagt je
+     * Bestellung, was in Shopify passiert ist; was nicht sauber ging, merkt versandProblemMerken.
+     */
+    async kundenMusterVerschicken(pk, benutzer = null) {
       const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === pk);
       if (!kunde) throw new ApiError(409, 'Dieser Umschlag steht nicht mehr so in der Liste – vielleicht schon verschickt. Bitte neu laden.');
       if (!kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist noch nicht gepackt.');
@@ -2231,110 +2303,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           }
         } catch (e) { logFehler('versand', `Packstation: Gepackt-Vermerk fuer den Rest nicht gesetzt (${String(e?.message || e).split('\n')[0]})`); }
       }
+      versandProblemMerken(pk, versand, actor);
       return { ok: true, packSchluessel: pk, versand };
     },
 
-    /**
-     * "Eingeworfen" (Packstation, auch als Sammelaktion): jemand bestaetigt, dass die Umschlaege wirklich
-     * bei der Post sind. Hier wird nur vermerkt; "gepackt" allein wird nie zu "raus". Eine Buchung in
-     * Shopify laesst sich nicht zuruecknehmen und die Versandmail ist dann beim Kunden, deshalb wird erst
-     * nach der Frist gebucht (einwurfBuchen). Auf dem Server statt im Browser: am Briefkasten steckt das
-     * Handy nach dem Klick in der Tasche, eine Frist im Browser liefe dann nie ab.
-     *
-     * Jeder Umschlag fuer sich: wer sechs eingeworfen hat und einer ist gesperrt, bei dem sind die
-     * anderen fuenf trotzdem bei der Post.
-     */
-    kundenMusterEinwurf(payload = {}, benutzer = null) {
-      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
-      const schluessel = packSchluesselListe(payload.packSchluessel);
-      if (!schluessel.length) throw new ApiError(400, 'Kein Umschlag angegeben.');
-      const dir = privatDirPath || privatDir();
-      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
-      const modell = ladeBestellModell(dir);
-      const statusDatei = auftragsstatusPfad(dir);
-      const liste = this.kundenMusterPacken().kunden || [];
-      const angenommen = [], abgelehnt = [];
-      for (const pk of schluessel) {
-        const kunde = liste.find(k => k.packSchluessel === pk);
-        try {
-          if (!kunde) throw new ApiError(409, 'Dieser Umschlag steht nicht mehr so in der Liste. Bitte neu laden.');
-          if (!kunde.gepackt) throw new ApiError(409, 'Dieser Umschlag ist noch nicht gepackt.');
-          if (kunde.muster.some(m => !m.abgehakt)) throw new ApiError(409, 'Im Umschlag ist nicht jedes Muster abgehakt. Bitte „Gepackt“ zurücknehmen und neu packen.');
-          rausPlan(kunde, modell, statusDatei, actor);
-          angenommen.push(kunde);
-        } catch (e) {
-          abgelehnt.push({ packSchluessel: pk, bestellungen: (kunde?.bestellungen || []).map(b => b.orderName), meldung: String(e?.message || e).split('\n')[0] });
-        }
-      }
-      const buchtAb = new Date(now().getTime() + einwurfFristMs());
-      if (angenommen.length) {
-        try {
-          merkeEingeworfen(musterPackenPfad(dir), angenommen.map(k => ({ packSchluessel: k.packSchluessel, orderIds: k.bestellungen.map(b => b.orderId), bestellungen: k.bestellungen.map(b => b.orderName) })), { von: actor, jetzt: now(), buchtAb });
-        } catch (e) { throw new ApiError(500, e.message); }
-        const nummern = angenommen.flatMap(k => k.bestellungen.map(b => b.orderName)).join(', ');
-        audit({ actor, action: 'muster-eingeworfen', umschlaege: angenommen.length });
-        merke(benutzer, actor, 'Muster eingeworfen', `${nummern}: ${angenommen.length === 1 ? 'Umschlag' : `${angenommen.length} Umschläge`} bei der Post, Eintrag nach der Frist`);
-      }
-      return { ok: true, angenommen: angenommen.map(k => k.packSchluessel), abgelehnt, buchtAb: buchtAb.toISOString() };
-    },
-
-    /** Rueckgaengig (oder "Verstanden" bei einem Problem): nimmt nur den Vermerk weg. Fehlt er, ist schon gebucht. */
-    kundenMusterEinwurfZurueck(payload = {}, benutzer = null) {
+    /** "Verstanden" am roten Versandhinweis: nimmt nur den Hinweis weg, am Versand aendert sich nichts. */
+    kundenMusterVersandVerstanden(payload = {}, benutzer = null) {
       if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
       const schluessel = packSchluesselListe(payload.packSchluessel);
       if (!schluessel.length) throw new ApiError(400, 'Kein Umschlag angegeben.');
       const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
-      let zurueck;
-      try { zurueck = entferneEingeworfen(musterPackenPfad(privatDirPath || privatDir()), schluessel); } catch (e) { throw new ApiError(500, e.message); }
-      if (zurueck.length) {
-        audit({ actor, action: 'muster-eingeworfen-zurueck', umschlaege: zurueck.length });
-        merke(benutzer, actor, 'Eingeworfen zurückgenommen', `${zurueck.length === 1 ? 'Ein Umschlag' : `${zurueck.length} Umschläge`}: nichts gebucht, keine Mail`);
-      }
-      return { ok: true, zurueck, zuSpaet: schluessel.filter(pk => !zurueck.includes(pk)) };
-    },
-
-    /**
-     * Zeitgeber des Dienstes: bucht, was seine Frist hinter sich hat, ueber denselben Weg wie bisher der
-     * Knopf "Verschickt" (Schritt "raus", Lagerabgang, Shopify mit Versandmail). Der Vermerk geht VOR der
-     * Buchung weg: ein spaetes Rueckgaengig bekommt dann ehrlich "zu spaet", und nach einem Absturz bleibt
-     * der Umschlag sichtbar unter "Gepackt" statt doppelt gebucht zu werden.
-     */
-    async einwurfBuchen() {
-      if (einwurfLaeuft) return { gebucht: 0, probleme: 0 };
-      einwurfLaeuft = true;
-      const ergebnis = { gebucht: 0, probleme: 0 };
-      try {
-        const datei = musterPackenPfad(privatDirPath || privatDir());
-        for (const pk of Object.keys(leseMusterPackStand(datei).eingeworfen)) {
-          // Jedes Mal frisch lesen: Zwischen zwei Buchungen vergeht Zeit. Wer inzwischen zurueckgenommen hat,
-          // bleibt zurueckgenommen, und ein neu gesetzter Vermerk behaelt seine neue Frist.
-          const eintrag = leseMusterPackStand(datei).eingeworfen[pk];
-          if (!eintrag || eintrag.problem || !(Date.parse(eintrag.buchtAb) <= now().getTime())) continue;
-          entferneEingeworfen(datei, [pk]);
-          const benutzer = { name: eintrag.von || 'Packstation', rolle: 'mitarbeiter' };
-          let problem = null;
-          try {
-            const r = await this.kundenMusterPackenSchreiben({ packSchluessel: pk, aktion: 'verschickt' }, benutzer);
-            const offen = (r.versand || []).filter(v => !['gebucht', 'bereits'].includes(v.status));
-            // Die Ansicht nennt die Bestellungen selbst; nur bei mehreren muss die Meldung sagen, welche es traf.
-            if (offen.length) problem = offen.map(v => `${(r.versand || []).length > 1 ? `${v.orderName}: ` : ''}${v.meldung || 'Ergebnis unbekannt'}`).join(' · ');
-          } catch (e) {
-            // Inzwischen anders versendet (Shopify, Dialog): erledigt, kein Fehler. Nur bei ALLEN Mustern:
-            // Bei einem Teilversand ist der Rest noch offen, und sein Scheitern muss jemand sehen.
-            const liste = this.kundenMusterPacken();
-            const fertig = (eintrag.orderIds || []).length && eintrag.orderIds.every(id => (liste.ausserhalb || []).some(b => b.orderId === id && b.grund === 'erledigt' && !b.teilweise));
-            if (!fertig) problem = String(e?.message || e).split('\n')[0];
-          }
-          if (problem) {
-            ergebnis.probleme += 1;
-            vermerkeEinwurfProblem(datei, pk, eintrag, { meldung: problem, jetzt: now() });
-            logFehler('versand', `Packstation, eingeworfen: ${(eintrag.bestellungen || []).join(', ')} - ${problem}`);
-          } else ergebnis.gebucht += 1;
-        }
-      } catch (e) {
-        logFehler('versand', `Packstation, eingeworfen: ${String(e?.message || e).split('\n')[0]}`);
-      } finally { einwurfLaeuft = false; }
-      return ergebnis;
+      let weg;
+      try { weg = entferneVersandProbleme(musterPackenPfad(privatDirPath || privatDir()), schluessel); } catch (e) { throw new ApiError(500, e.message); }
+      if (weg.length) audit({ actor, action: 'muster-versandhinweis-verstanden', umschlaege: weg.length });
+      return { ok: true, weg };
     },
 
     /**

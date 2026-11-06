@@ -2150,8 +2150,9 @@ und nach 14 Tagen einen Fall in „Alte Bestellungen aufräumen“.
 
 ### Verschickt meldet den Versand in Shopify (#1810, #1811, Mitarbeiter 29.10.2026)
 
-Seit #1937 löst diesen Weg nicht mehr ein Knopf aus, sondern der Klick „Eingeworfen“ nach seiner Frist
-(Abschnitt 31). Die Aktion `verschickt` ist unverändert. Bis dahin galt:
+Seit 06.11.2026 löst diesen Weg der Klick „Umschlag gepackt“ selbst aus (Abschnitt 32); den Knopf
+„Verschickt – Kunde informieren…“ gibt es nur noch unter „Gepackt“ für Umschläge, die nie eingetragen wurden.
+Die Aktion `verschickt` ist unverändert, sie heißt im Server `kundenMusterVerschicken`. Ursprünglich galt:
 Gepackte Umschläge tragen den Hauptknopf „Verschickt – Kunde informieren“. Er sendet einen einzigen
 `POST kunden/muster-packen` mit `{ packSchluessel, aktion: 'verschickt' }`
 (`kundenMusterPackenSchreiben`, alle anderen Aktionen gehen unverändert an `kundenMusterPackenSetzen`).
@@ -2813,41 +2814,13 @@ arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten un
 
 Aufkleber aendern (2026-11-02): `produktEntwurf()` in `lib/freie-etiketten.mjs` macht aus einem Produktetikett aenderbaren Text; `e.schriften` traegt die Schrift je Zeile, `e.url` den QR-Code. Nichts davon wird gespeichert.
 
-## 31. Eingeworfen: Klick, Frist, Buchung (05.11.2026, #1937)
+## 31. Eingeworfen: Klick, Frist, Buchung (05.11.2026, #1937) – abgelöst am 06.11.2026
 
-Die Prüfung vom 05.11. fand 38 von 83 Musterbestellungen ohne Versandeintrag. Nachfrage und Anrufliste
-starten erst mit „raus“. Inhaberregel: Versand, Eingang und physische Bestätigung nicht gleichsetzen,
-deshalb wird „gepackt“ nie von selbst zu „raus“.
-
-**Ablauf.** `POST kunden/muster-packen` mit `{ aktion: 'eingeworfen', packSchluessel: [...] }` prüft jeden
-Umschlag für sich (gepackt, alles abgehakt, `rausPlan`) und schreibt nur einen Vermerk nach
-`muster-packen.json` (`eingeworfen[pk] = { zeit, von, buchtAb, orderIds, bestellungen }`). Der Zeitgeber des
-Dienstes (`einwurfBuchen`, alle 30 s) bucht nach `EINWURF_FRIST_MINUTEN` (5) über die unveränderte Aktion
-`verschickt`: Schritt „raus“ im Namen dessen, der geklickt hat, Lagerabgang, Shopify `fulfillmentCreate` mit
-`notifyCustomer: true` (Ausnahme wie bisher: persönlich vorbeigebrachte Muster).
-
-**Warum die Frist auf dem Server liegt.** Eine Sendung wird nie zurückgenommen (Abschnitt 24, kein
-`fulfillmentCancel`), und die Mail ist dann beim Kunden. Rückgängig gibt es also nur vor der Buchung. Im
-Browser liefe die Frist am Briefkasten nicht ab: Handy in der Tasche, Tab eingefroren, der Umschlag bliebe
-ungebucht. Der Vermerk überlebt auch einen Neustart des Dienstes.
-
-**Rückgängig** (`aktion: 'eingeworfen-zurueck'`) nimmt nur den Vermerk weg; es war noch nichts gebucht. Der
-Vermerk verschwindet vor der Buchung. Spätes Rückgängig bekommt deshalb ehrlich `zuSpaet`, und nach einem
-Absturz steht der Umschlag sichtbar unter „Gepackt“ statt doppelt gebucht zu werden. Der Zeitgeber liest den Vermerk
-vor jeder Buchung frisch: Ein währenddessen zurückgenommener oder neu gesetzter Vermerk behält seine neue Frist.
-
-**Scheitert die Buchung**, bleibt der Vermerk mit `problem` stehen und erscheint als roter Hinweis oben in
-der Packstation (`einwurf.probleme`), bis jemand „Verstanden“ drückt. Kein zweiter Versuch von selbst. Still fällt ein
-Vermerk nur weg, wenn alle seine Muster anders versendet sind; ein Teilversand (`teilweise`) zählt nicht.
-
-**Reiter Gepackt** (`einwurfListen`): „Wird eingetragen“, „Heute gepackt“ mit „Alle n eingeworfen“, „Altfälle“
-(vor heute gepackt, älteste Bestellung zuerst). Altfälle stehen bewusst nicht in der Sammelaktion: Ob so ein
-Umschlag raus ist, weiß nur, wer nachsieht. „War schon früher raus…“ öffnet den Versanddialog mit
-ausgeschalteter Mail (`mailVorab: false`), wie „Ist verschickt…“ auf der Startseite, begrenzt auf die Muster des
-Umschlags (`nur`, `umschlagMusterIds`): Bei einer Mischbestellung ist die Ware noch nicht raus und steht nicht im Dialog.
-
-**Datenkopie.** Dort läuft der Zeitgeber nur mit `TP_EINWURF_TEST_SEKUNDEN` (dann auch die kurze Frist) für
-Klickproben; `dashboard:pruefen` startet die Kopie immer ohne Shopify-Zugang.
+Die Prüfung vom 05.11. fand 38 von 83 Musterbestellungen ohne Versandeintrag. Darauf folgte der Klick
+„Eingeworfen“ unter „Gepackt“, gebucht vom Zeitgeber des Dienstes erst nach 5 Minuten Frist mit „Rückgängig“.
+Im Alltag drückte ihn niemand: am 06.11. lagen 18 Bestellungen gepackt und nie gebucht, kein
+Kunde hatte eine Versandmail. Klick, Frist, Zeitgeber (`einwurfBuchen`, `TP_EINWURF_TEST_SEKUNDEN`) und die
+Gruppen „Wird eingetragen“, „Heute gepackt“, „Altfälle“ sind entfernt; was heute gilt, steht in Abschnitt 32.
 
 **Kampagnenkennung.** Links der Muster-Nachfrage tragen `utm_source=muster-nachfass`, `utm_medium=email`,
 `utm_campaign=muster-nachfass`, `utm_content=erste|erinnerung` (`nachfassLink`, `fuelleText({ nachfass })`), in
@@ -2855,4 +2828,54 @@ Versandlauf, „Jetzt senden“ und mailto-Vorschlag. Keine Kunden- oder Bestell
 `fuelleText` (Muster nicht verfügbar, Rückfrage) bleiben ohne. Lesen: GA4 unter Kampagne `muster-nachfass`;
 je Bestellung `customerJourneySummary` der Admin-API, das der Bestellexport noch nicht holt.
 
-Tests: `tests/packstation-einwurf.test.mjs`, `tests/muster-nachfassen.test.mjs`.
+Tests: `tests/muster-nachfassen.test.mjs`.
+
+## 32. Gepackt = verschickt (06.11.2026)
+
+Entscheidung des Muster-Verantwortlichen am 06.11.2026: „wenn muster alle da sind und markiert wurden immer
+als verschickt markieren und kunden bescheid geben“, auf Rückfrage „sofort beim Packen“. Damit gilt die Regel
+aus Abschnitt 31 („gepackt wird nie von selbst zu raus“) nicht mehr.
+
+**Ablauf.** „Umschlag gepackt – verschicken…“ (Schritt 3), „Alle n da – gepackt, verschicken…“ (Schritt 2 bzw.
+unter „Mehr“) und „Restumfang geprüft – gepackt, verschicken…“ öffnen zuerst eine Rückfrage in der Karte
+(`versandFrageHtml`, kein `window.confirm`: der häufigste Klick des Tages, auch am Handy). Sie nennt, was
+passiert („An Kunden raus“, Shopify, Versandmail, kein Zurücknehmen), bei „Alle da“ die Zahl der Muster und
+den Hinweis, wenn laut Bestellstand eines nicht angekommen ist, bei Teilerstattung den Restumfang. Die beiden
+Browser-Dialoge, die das vorher fragten, sind weg. Esc oder „Abbrechen“ schreibt nichts. Der Ja-Knopf trägt
+`id="mpVersandJa"` und `data-focus-erhalten`, damit ein Neuzeichnen den Fokus nicht verliert.
+
+**Server.** `POST kunden/muster-packen` mit `gepackt: true` geht an `kundenMusterGepacktVerschicken` und
+verlangt `verschicken: true` (eine noch offene alte Seite bekommt 409 „Seite ist veraltet“, ebenso die alten
+Aktionen `eingeworfen` und `eingeworfen-zurueck`). Reihenfolge, ganz oder gar nicht:
+1. `gepacktPruefen`: jedes Muster abgehakt (oder `alleEingelegt` mit genau den gezeigten offenen), keine
+   offenen Angaben, keine Klärung, kein Direktversand. Sonst 409 „Nicht gepackt, nichts verschickt …“.
+2. `rausPlan` für jede Bestellung des Umschlags (Musterautomatik, Fehlmenge). Sonst 409 „Nicht gepackt,
+   nichts verschickt, keine Mail – #…“. Bis hier ist nichts geschrieben, auch kein Haken.
+3. `kundenMusterPackenSetzen` (Haken, Gepackt-Vermerk, Wareneingang „bestellt“ → „geliefert“, Abschnitt
+   „Eingelegt und gepackt bestätigen den Wareneingang“), dann `kundenMusterVerschicken`: Schritt „raus“ je
+   Bestellung, Lagerabgang, Shopify mit Versandmail. Ausnahmen unverändert: persönlich vorbeigebrachte Muster
+   ohne Mail (die Rückfrage sagt das, Feld `persoenlich` je Muster), Ware einer Mischbestellung bleibt
+   unberührt, gesperrte Muster über „Ohne dieses Muster weiter packen“. Bis zur ersten Shopify-Antwort läuft
+   alles ohne `await`.
+
+Bleibt „gepackt, nicht verschickt“ doch einmal stehen (lokaler Schritt gescheitert), steht der Umschlag
+unter „Gepackt“ und ein roter Hinweis oben.
+
+**Ist nicht jedes Muster abgehakt, bucht „Gepackt“ nichts: 409, kein Gepackt ohne Buchung.** Ein Gepackt-
+Vermerk ohne Buchung wäre genau der unsichtbare Zustand, aus dem die 18 Altfälle entstanden.
+
+**Versandhinweise** (`versandProbleme` in `muster-packen.json`, `versandProblemMerken`): Was beim Verschicken
+nicht `gebucht`/`bereits` ist (Shopify nicht erreicht, unklar, lokal nicht eingetragen), steht als roter
+Hinweis oben in der Packstation, für alle Geräte, bis „Verstanden“ (`aktion: 'versand-verstanden'`) oder bis
+derselbe Umschlag sauber verschickt wird. Die frühere Ablage `eingeworfen` wird beim Lesen übernommen: ein
+Vermerk mit Problem bleibt, einer ohne Problem wurde nie gebucht und erscheint als „Als eingeworfen vermerkt,
+aber nie eingetragen“. Beim nächsten Schreiben verschwindet der alte Schlüssel.
+
+**Reiter „Gepackt“** (`gepacktNichtVerschickt`): nur Umschläge, die gepackt und nie eingetragen wurden, älteste
+Bestellung zuerst, keine Sammelaktion. Je Umschlag im Kopf „Verschickt – Kunde informieren…“ (dieselbe
+Rückfrage, dann `aktion: 'verschickt'`) und, wenn vor heute gepackt (`frueherGepackt`, Berliner Tag), „War schon
+früher raus…“ (Versanddialog ohne Mail, nur die Muster des Umschlags). „Heute“ zeigt die Zahl nur, wenn sie
+nicht 0 ist („n Umschläge gepackt, nicht verschickt“, Bernstein).
+
+Tests: `tests/packstation-gepackt-verschickt.test.mjs`, `tests/packstation-versandmail.test.mjs` (Altfall-Weg),
+`tests/dashboard-abschlusskorrekturen.test.mjs` (Klicks), `tests/packstation-arbeitslisten.test.mjs` (Ansicht).

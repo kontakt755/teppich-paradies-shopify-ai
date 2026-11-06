@@ -159,12 +159,14 @@
   .mp-gross { flex: 1 1 100%; }
 }
 
-/* Reiter Gepackt: "Eingeworfen" steht im Kopf des Umschlags, das Eintragen braucht kein Aufklappen (#1937). */
-.mp-einwurf { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; margin-top: 6px; }
-.mp-einwurf-wartet strong { color: var(--text); }
-.mp-einwurf-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 16px 0 8px; }
-.mp-einwurf-kopf .mp-titel::before { content: none; }
-.mp-einwurf-regel { margin: 0 0 8px; }
+/* Reiter Gepackt: "Verschickt – Kunde informieren…" steht im Kopf des Umschlags, das Eintragen braucht kein Aufklappen. */
+.mp-kopfknoepfe { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; margin-top: 6px; }
+.mp-gepackt-regel { margin: 0 0 8px; }
+/* Rueckfrage vor dem Verschicken (Gepackt = verschickt): in der Karte, ersetzt die Knoepfe, die sie gestellt haben. */
+.mp-versandfrage { margin-top: 12px; }
+.mp-versandfrage p { margin: 0 0 6px; }
+.mp-versandfrage strong { color: var(--text); }
+.mp-versandfrage .mp-aktionen { margin-top: 8px; }
 @media (max-width: 767px) {
-  .mp-einwurf { justify-content: flex-start; }
+  .mp-kopfknoepfe { justify-content: flex-start; }
 }

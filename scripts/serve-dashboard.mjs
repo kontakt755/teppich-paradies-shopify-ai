@@ -439,9 +439,9 @@ export async function handleApi(req, res, pathname, benutzer = null) {
       return;
     }
     else if (simple === 'kunden/musteretiketten' && req.method === 'GET') result = api.kundenMusteretiketten(url.searchParams.get('orderId') || '');
-    // Muster packen (#1572): GET lesend, POST setzt Haken und "gepackt" lokal; `aktion: verschickt` setzt
-    // je Bestellung "raus" und bucht in Shopify mit Versandmail (#1811); `eingeworfen` vermerkt das erst und
-    // bucht nach der Frist (einwurfBuchen). write-Liste, Rolle "lesen": 403.
+    // Muster packen (#1572): GET lesend, POST setzt Haken lokal; "gepackt" (seit 06.11.2026) und `aktion:
+    // verschickt` setzen je Bestellung "raus" und buchen in Shopify mit Versandmail (#1811). write-Liste,
+    // Rolle "lesen": 403.
     else if (simple === 'kunden/muster-packen' && req.method === 'GET') result = api.kundenMusterPacken();
     else if (simple === 'kunden/muster-packen' && req.method === 'POST') result = await api.kundenMusterPackenSchreiben(await readJson(req), benutzer);
     else if (simple === 'kunden/musteretiketten' && req.method === 'POST') result = await api.kundenMusteretikettenVormerken(await readJson(req), benutzer);
@@ -758,14 +758,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       const musterLauf = () => api.musterBestellungenAutomatisch().catch(() => logFehler('muster-bestellung', 'Automatische Musterbestellung unterbrochen. Bestellstand prüfen.'));
       setInterval(musterLauf, 60_000).unref();
       musterLauf();
-    }
-    // "Eingeworfen" buchen, sobald die Frist um ist - auch ohne offene Seite. In der Datenkopie nur fuer
-    // eine ausdrueckliche Klickprobe (dashboard:pruefen startet sie immer ohne Shopify-Zugang).
-    const einwurfProbe = process.env.TP_DASHBOARD_DATENKOPIE && Number(process.env.TP_EINWURF_TEST_SEKUNDEN) > 0;
-    if (!process.env.TP_DASHBOARD_DATENKOPIE || einwurfProbe) {
-      const einwurfLauf = () => api.einwurfBuchen().catch(e => logFehler('versand', String(e?.message || e).split('\n')[0]));
-      setInterval(einwurfLauf, einwurfProbe ? 5_000 : 30_000).unref();
-      einwurfLauf();
     }
     if (NEUBAU_MINUTEN > 0) {
       setInterval(regelmaessigNeubauen, NEUBAU_MINUTEN * 60_000).unref();

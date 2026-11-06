@@ -238,6 +238,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           automatikGrund: stand === 'offen' ? text(automatikGrundVon(a.id, p.lineItemId)) || null : null,
           // Wo es im Haus liegt (Musterlager), damit die Karte "liegt hier: …" sagen kann.
           lagerOrt: stand === 'lager' && belegt(p.musterLager?.ort) ? text(p.musterLager.ort) : null,
+          // Persoenlich vorbeigebracht: "raus" ohne Versandmail (versandMailFuer im Server) - die Rueckfrage sagt es.
+          ...(p.musterHerkunft === 'eigen_vorbei' ? { persoenlich: true } : {}),
         });
       });
     }
@@ -473,28 +475,17 @@ export function offeneSuche(kundenListe = [], eingabe = '', ausserhalb = [], { m
 }
 
 /**
- * So lange laesst sich "Eingeworfen" zuruecknehmen, erst danach bucht der Dienst den Versand. Eine Buchung
- * in Shopify nimmt das Control Center nie zurueck (Architektur, Abschnitt 24), und die Versandmail ist dann
- * schon beim Kunden - Rueckgaengig gibt es deshalb nur VOR der Buchung.
+ * Reiter "Gepackt" (seit 06.11.2026): Gepackt heisst verschickt, ein heute gepackter Umschlag ist sofort
+ * eingetragen. Hier bleibt nur, was gepackt und nie als verschickt eingetragen wurde - Altfaelle aus der
+ * Zeit davor oder ein Umschlag, dessen Eintrag scheiterte. Aelteste Bestellung zuerst.
  */
-export const EINWURF_FRIST_MINUTEN = 5;
-
-/**
- * Gepackte Umschlaege fuer den Reiter "Gepackt": `wartend` (eingeworfen, Frist laeuft), `heute` (heute
- * gepackt: die Sammelaktion) und `alt` (frueher gepackt, nie eingetragen; aelteste Bestellung zuerst).
- * Altfaelle stehen bewusst nicht in der Sammelaktion: ob so ein Umschlag raus ist, weiss nur, wer ihn
- * eingeworfen hat. Ein Umschlag mit Problem kann wieder geklickt werden und zaehlt deshalb nicht als wartend.
- */
-export function einwurfListen(kundenListe = [], jetzt = new Date()) {
-  const gepackt = (kundenListe || []).filter(k => k?.bereich === 'gepackt');
-  const wartend = gepackt.filter(k => k.eingeworfen && !k.eingeworfen.problem);
-  const frei = gepackt.filter(k => !wartend.includes(k));
-  const tag = kalendertag(jetzt);
-  const heute = frei.filter(k => kalendertag(k.gepackt?.zeit) === tag);
-  const alt = frei.filter(k => kalendertag(k.gepackt?.zeit) !== tag)
+export function gepacktNichtVerschickt(kundenListe = []) {
+  return (kundenListe || []).filter(k => k?.bereich === 'gepackt')
     .sort((x, y) => text(x.seit).localeCompare(text(y.seit)) || text(x.gepackt?.zeit).localeCompare(text(y.gepackt?.zeit)));
-  return { wartend, heute, alt, altBestellungen: alt.reduce((n, k) => n + k.bestellungen.length, 0) };
 }
+
+/** Vor heute gepackt (Berlin): nur so ein Umschlag kann schon laengst bei der Post sein ("War schon frueher raus…"). */
+export const frueherGepackt = (k, jetzt = new Date()) => !!k?.gepackt?.zeit && kalendertag(k.gepackt.zeit) !== kalendertag(jetzt);
 
 /** Die Muster einer Bestellung in diesem Umschlag. Offene Ware derselben Bestellung gehoert nicht dazu. */
 export function umschlagMusterIds(k, orderId) {
