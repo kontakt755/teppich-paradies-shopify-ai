@@ -318,9 +318,36 @@
       lieferten einen leeren <title>. Deploy-Gate SEO hat es am 2026-09-09
       gefunden, bevor es live ging.
     {%- endcomment -%}
-    {{ page_title }}
-    {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
-    {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
+    {%- comment -%}
+      Folgeseiten und Filter auf Deutsch (Rundgang 2026-11-06, SEO-04): aus
+      "... | Teppich Paradies - Page 2" wird "... - Seite 2 | Teppich Paradies".
+      Endet der Titel auf " | Marke", steht der Zusatz vor der Marke; sonst
+      bleibt er wie bisher hinter dem Titel.
+    {%- endcomment -%}
+    {%- liquid
+      assign tp_titel_basis = page_title
+      assign tp_titel_marke = ''
+      if current_tags or current_page != 1
+        assign tp_titel_endungen = tp_marke | append: '||' | append: shop.name | split: '||'
+        for tp_endung_name in tp_titel_endungen
+          assign tp_endung = ' | ' | append: tp_endung_name
+          if page_title.size > tp_endung.size
+            assign tp_endung_start = 0 | minus: tp_endung.size
+            assign tp_titel_ende = page_title | slice: tp_endung_start, tp_endung.size
+            if tp_titel_ende == tp_endung
+              assign tp_basis_laenge = page_title.size | minus: tp_endung.size
+              assign tp_titel_basis = page_title | slice: 0, tp_basis_laenge
+              assign tp_titel_marke = ' | ' | append: tp_marke
+              break
+            endif
+          endif
+        endfor
+      endif
+    -%}
+    {{ tp_titel_basis }}
+    {%- if current_tags %} &ndash; Filter: {{ current_tags | join: ', ' }}{% endif -%}
+    {%- if current_page != 1 %} &ndash; Seite {{ current_page }}{% endif -%}
+    {{- tp_titel_marke -}}
     {%- comment -%}
       Marke nur anhaengen, wenn sie nicht schon im Titel steht (sonst
       "… | Teppich Paradies – TeppichParadies") und wenn der Titel dadurch
@@ -400,4 +427,29 @@
     name="description"
     content="Alle Bodenbeläge auf einen Blick: Teppichboden, Vinyl, Linoleum, Teppichfliesen, Sockelleisten und Zubehör – mit Musterservice und Fachberatung."
   >
+{%- elsif request.page_type == 'policy' -%}
+  {%- comment -%}
+    Richtlinienseiten (/policies/...) haben in Shopify kein SEO-Feld und
+    lieferten keine Description (Rundgang 2026-11-06, SEO-06). Je Richtlinie
+    ein fester, neutraler Satz; die Rechtstexte selbst bleiben unveraendert.
+    Unbekannte Richtlinien bekommen bewusst keinen Text.
+  {%- endcomment -%}
+  {%- liquid
+    assign tp_policy_beschreibung = ''
+    if request.path contains '/policies/legal-notice'
+      assign tp_policy_beschreibung = 'Impressum der Teppich Paradies Oranienburg GmbH mit Anbieterangaben und Kontaktdaten.'
+    elsif request.path contains '/policies/privacy-policy'
+      assign tp_policy_beschreibung = 'Datenschutzerklärung der Teppich Paradies Oranienburg GmbH für den Onlineshop.'
+    elsif request.path contains '/policies/refund-policy'
+      assign tp_policy_beschreibung = 'Widerrufsrecht für Bestellungen im Onlineshop der Teppich Paradies Oranienburg GmbH.'
+    elsif request.path contains '/policies/terms-of-service'
+      assign tp_policy_beschreibung = 'Allgemeine Geschäftsbedingungen (AGB) der Teppich Paradies Oranienburg GmbH für den Onlineshop.'
+    endif
+  -%}
+  {%- if tp_policy_beschreibung != blank -%}
+    <meta
+      name="description"
+      content="{{ tp_policy_beschreibung }}"
+    >
+  {%- endif -%}
 {% endif %}
