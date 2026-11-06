@@ -103,8 +103,14 @@
       # Ebenso abgeloeste Kollektionen mit Handle auf "-alt": "Teppichboden
       # Nadelfilz (alt)" ist laenger als "Teppichboden Nadelfilz" und stand
       # deshalb im Pfad und im JSON-LD von Fortiva (Fehlersuche 2026-10-28).
+      # Ebenso befristete Aktionskollektionen (black-week-2026, Titel "Black
+      # Week: 15 % auf Teppichboden und Vinyl"): sie enthalten "Teppichboden"
+      # und sind laenger als jede Unterkategorie (Rundgang 2026-11-06, SEO-02).
       for tp_c in product.collections
         if tp_c.handle contains 'angebote-'
+          continue
+        endif
+        if tp_c.handle contains 'black-week'
           continue
         endif
         assign tp_c_ende = tp_c.handle | slice: -4, 4
@@ -123,6 +129,9 @@
           if tp_c.handle contains 'angebote-'
             continue
           endif
+          if tp_c.handle contains 'black-week'
+            continue
+          endif
           assign tp_c_ende = tp_c.handle | slice: -4, 4
           if tp_c_ende == '-alt'
             continue
@@ -139,6 +148,9 @@
         assign tp_crumb_fallback = product.collections | sort: 'all_products_count' | reverse
         for tp_c in tp_crumb_fallback
           if tp_c.handle contains 'angebote-'
+            continue
+          endif
+          if tp_c.handle contains 'black-week'
             continue
           endif
           assign tp_c_ende = tp_c.handle | slice: -4, 4
