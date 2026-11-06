@@ -24,6 +24,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
 import { beschaffungText } from '../../lib/beschaffung.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
+import { lieferantenstandBlock, lieferantenstandZahlen } from './lieferantenstand.mjs';
 import { lieferantenKartenHtml, nachfassenSumme, bestellartDaten } from './lieferanten.mjs';
 
 function kopierbutton(id, label = 'Liste kopieren') {
@@ -93,7 +94,7 @@ function afStatusZelle(p) {
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
   const selbstText = selbstStandText(selbstStand(p, eintrag), lw?.weg, eintrag);
-  const stand = `<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${uebernahmeBlock([p])}`
+  const stand = `<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${lieferantenstandBlock(p, eintrag)}${uebernahmeBlock([p])}`
     // Steht im Musterlager, ist aber leer bzw. aufgebraucht: deshalb wieder beim Lieferanten.
     + (!status && p.musterLagerLeer ? `<div class="small muted">Musterlager: ${esc(p.musterLagerLeer.artLabel)} leer${p.musterLagerLeer.ort ? ` (${esc(p.musterLagerLeer.ort)})` : ''}</div>` : '');
   // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.
@@ -291,6 +292,8 @@ export function viewEinkaufBestellungen() {
   // Bestellt und an unseren Kettler unterwegs: dort abholen (bzw. von dort verschicken lassen).
   const zumKettler = ware.filter(p => afEintragFuer(p)?.status === 'bestellt' && istUeberKettler(afEintragFuer(p))).length;
   const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte(auftragId) : '';
+  // Lieferantenstand (lib/beschaffung.mjs): offene Anfragen, fehlende AB, Abweichungen, Verspaetung - nur wenn > 0.
+  const ls = lieferantenstandZahlen(ware);
   return `
     ${['muster', 'ware'].includes(art) ? `<p class="notice">Nur ${art === 'muster' ? 'Muster' : 'Ware'} · <a href="#/einkauf?tab=lieferant">Alle Bestellungen zeigen</a></p>` : ''}
     ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf?tab=lieferant">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
@@ -298,6 +301,10 @@ export function viewEinkaufBestellungen() {
       ${art === 'muster' ? '' : bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Ware zu bestellen', 'warn')}
       ${art === 'ware' ? '' : bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster zu bestellen', 'warn')}
       ${bandItem(nachfassen.auftraege, nachfassen.auftraege === 1 ? 'Auftrag nachfassen' : 'Aufträge nachfassen', nachfassen.stufe || 'warn')}
+      ${ls.angefragt ? bandItem(ls.angefragt, ls.angefragt === 1 ? 'Lieferant angefragt' : 'Lieferanten angefragt', 'plain') : ''}
+      ${ls.abFehlt ? bandItem(ls.abFehlt, ls.nachfassen ? `AB fehlt · ${ls.nachfassen} nachfassen` : 'AB fehlt', 'warn') : ''}
+      ${ls.abweichung ? bandItem(ls.abweichung, 'AB weicht ab', 'warn') : ''}
+      ${ls.verspaetet ? bandItem(ls.verspaetet, 'Liefertermin überschritten', 'crit') : ''}
       ${zumKettler ? bandItem(zumKettler, 'Ware unterwegs zum Kettler', 'plain') : ''}
       ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}
       ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}

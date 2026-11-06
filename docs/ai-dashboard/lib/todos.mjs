@@ -13,7 +13,7 @@
 
 import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
 import { vorgangsLink } from './vorgangslink.mjs';
-import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
+import { lieferterminFaellig, beschaffungText, uebernahmeText, lieferantenStand, werktageSeit, NACHFASSEN_WERKTAGE } from './beschaffung.mjs';
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugAmpel, kundenErinnerung } from './auftrags-ablauf.mjs';
 import { WARTESCHWELLEN } from './ampel.mjs';
@@ -243,6 +243,13 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
     const vorbei = eigen.every(x => x.p.musterHerkunft === 'eigen_vorbei');
     return { spalte: 'wir', art: 'muster_eigen', schritt: vorbei ? 'Muster vorbeibringen' : 'Muster verschicken', alterTage: seitBestellung, positionen: eigen };
   }
+  // Nur angefragt (Preis/Verfuegbarkeit beim Lieferanten): der Lieferant ist dran - ab 2 Werktagen ohne Antwort wieder wir.
+  const angefragt = unbestellt.filter(x => !x.p.istMuster && x.eintrag?.beschaffung?.anfrage);
+  if (unbestellt.length && angefragt.length === unbestellt.length) {
+    const nachfassen = angefragt.some(x => lieferantenStand(x.eintrag, { jetzt }).nachfassen);
+    return nachfassen ? { spalte: 'wir', art: 'anfrage_nachfassen', schritt: 'Anfrage beim Lieferanten nachfassen', alterTage: seitBestellung, positionen: angefragt }
+      : { spalte: 'lieferant', art: 'angefragt', schritt: 'Lieferant angefragt', alterTage: seitBestellung, positionen: angefragt };
+  }
   if (unbestellt.length) return { spalte: 'wir', art: 'bestellen', schritt: `${artWort(unbestellt)} bestellen`, alterTage: seitBestellung, positionen: unbestellt };
   if (ausLager.length) return { spalte: 'wir', art: 'zuschneiden', schritt: 'Aus eigenem Lager zuschneiden', alterTage: seitBestellung, positionen: ausLager };
   const maxTage = (liste, feld) => liste.reduce((m, x) => Math.max(m, tageSeit(x.eintrag?.[feld], jetzt) ?? 0), 0);
@@ -333,7 +340,9 @@ function ausBestellungen(quellen, k) {
   const todos = [];
   const bestellen = new Map();   // lieferant|art -> Muster, noch nicht beim Lieferanten bestellt
   const wareBestellen = new Map(); // orderId -> Ware ohne Status: je Bestellung, kein Kunde verschwindet in "+3"
-  const ohneBestaetigung = new Map(); // orderId -> Ware als bestellt markiert, kein Beleg zugeordnet
+  const ohneBestaetigung = new Map(); // orderId -> Ware als bestellt markiert, keine AB (weder Beleg noch Vermerk)
+  const angefragt = new Map();   // orderId -> Ware beim Lieferanten angefragt, noch nicht bestellt
+  const abAbweichung = new Map(); // orderId -> AB geprueft, weicht aber ab (Menge, Masse, Lieferweg, Zuschlaege)
   const gesperrt = new Map();    // orderId -> Muster, die der Lieferant nicht mehr liefern kann
   const belegeJeLieferant = new Map();
   for (const b of quellen.belegZeilen || []) sammleBeleg(belegeJeLieferant, b);
@@ -395,14 +404,21 @@ function ausBestellungen(quellen, k) {
       if (haengt) sammle(haengend, haengt.grund, { ...pos, ...haengt });
       else if (!status && musterEigen(x.p)) sammle(eigeneMuster, z.orderId, pos);
       else if (!status && x.p.istMuster) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|muster`, pos);
+      else if (!status && x.eintrag?.beschaffung?.anfrage) sammle(angefragt, z.orderId, pos);
       else if (!status) sammle(wareBestellen, z.orderId, pos);
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
         const termin = x.eintrag?.beschaffung?.liefertermin;
         const verzug = termin ? null : verzugAmpel(x.eintrag, k.jetzt);
+        if (!x.p.istMuster && lieferantenStand(x.eintrag, { jetzt: k.jetzt }).abweichungen.length) sammle(abAbweichung, z.orderId, pos);
         if (verzug) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage, ampel: verzug });
-        // Nur wenn die Belege geladen sind: ohne sie ist "kein Beleg" nicht belegt.
-        else if (!x.p.istMuster && !termin && quellen.belegZeilen && tage >= FRISTEN.bestaetigung[0] && !belegZu(z.orderId, x.p.lieferant)) sammle(ohneBestaetigung, z.orderId, { ...pos, tage });
+        // Nur wenn die Belege geladen sind: ohne sie ist "kein Beleg" nicht belegt. Ab 2 Werktagen ohne AB
+        // nachfassen (Inhaber 06.11.2026, vorher 3 Kalendertage); eine eingegangene, ungepruefte AB meldet
+        // der Belegbereich ("Auftragsbestaetigung pruefen"), eine gepruefte AB beendet das Nachfassen.
+        else if (!x.p.istMuster && !x.p.eigenleistung && !termin && !x.eintrag?.beschaffung?.ab && quellen.belegZeilen
+          && (werktageSeit(x.eintrag.bestelltAm, k.jetzt) ?? 0) >= NACHFASSEN_WERKTAGE && !belegZu(z.orderId, x.p.lieferant)) {
+          sammle(ohneBestaetigung, z.orderId, { ...pos, tage, werktage: werktageSeit(x.eintrag.bestelltAm, k.jetzt) });
+        }
       } else if (status === 'geliefert') {
         const tage = tageSeit(x.eintrag.geliefertAm, k.jetzt);
         const id = `rausgeben:${z.orderId}`;
@@ -489,11 +505,33 @@ function ausBestellungen(quellen, k) {
     const z = positionen[0].z;
     const tage = Math.max(...positionen.map(x => x.tage ?? 0));
     const lieferanten = [...new Set(positionen.map(x => x.p.lieferant).filter(l => l && l !== UNGEKLAERT))];
+    const werktage = Math.max(...positionen.map(x => x.werktage ?? 0));
     todos.push({
-      id: `keine-bestaetigung:${orderId}`, art: 'keine_bestaetigung', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestaetigung), alterTage: tage,
-      titel: `Bestellt, kein zugeordneter Beleg: ${z.orderName} ${kundeVon(z)}`,
-      kontext: [lieferanten.map(l => k.lieferantName(l)).join(', '), wasKurz(positionen), `${seitText(tage)} bestellt`].filter(Boolean).join(' · '),
+      id: `keine-bestaetigung:${orderId}`, art: 'keine_bestaetigung', bereich: 'laden', ton: tonNachAlter(tage, 0, FRISTEN.bestaetigung[1]), alterTage: tage,
+      titel: `AB fehlt – beim Lieferanten nachfassen: ${z.orderName} ${kundeVon(z)}`,
+      kontext: [lieferanten.map(l => k.lieferantName(l)).join(', '), wasKurz(positionen), `bestellt vor ${werktage} Werktagen`, 'keine Auftragsbestätigung'].filter(Boolean).join(' · '),
+      knopf: { text: 'Ansehen', href: vorgangsLink('einkauf', { auftrag: orderId, af: 'bestellt' }) },
+    });
+  }
+  for (const [orderId, positionen] of angefragt) {
+    const z = positionen[0].z;
+    const stand = positionen.map(x => lieferantenStand(x.eintrag, { jetzt: k.jetzt }));
+    const nachfassen = stand.some(st => st.nachfassen);
+    const anfragen = [...new Set(positionen.map(x => x.eintrag.beschaffung.anfrage.lieferant).filter(Boolean))];
+    todos.push({
+      id: `anfrage:${orderId}`, art: 'anfrage', bereich: 'laden', ton: nachfassen ? 'warn' : '', alterTage: Math.max(...stand.map(st => st.werktage ?? 0)),
+      titel: `${nachfassen ? 'Anfrage nachfassen' : 'Lieferant angefragt, Antwort offen'}: ${z.orderName} ${kundeVon(z)}`,
+      kontext: [anfragen.join(', '), wasKurz(positionen), `angefragt am ${positionen.map(x => x.eintrag.beschaffung.anfrage.am).sort()[0].split('-').reverse().join('.')}`].filter(Boolean).join(' · '),
       knopf: { text: 'Ansehen', href: vorgangsLink('einkauf', { auftrag: orderId }) },
+    });
+  }
+  for (const [orderId, positionen] of abAbweichung) {
+    const z = positionen[0].z;
+    todos.push({
+      id: `ab-abweichung:${orderId}`, art: 'ab_abweichung', bereich: 'laden', ton: 'warn', alterTage: tageSeit(positionen[0].eintrag.beschaffung.ab.geprueftAm, k.jetzt),
+      titel: `AB weicht ab – mit dem Lieferanten klären: ${z.orderName} ${kundeVon(z)}`,
+      kontext: [wasKurz(positionen), ...positionen.map(x => beschaffungText(x.eintrag))].filter(Boolean).join(' · '),
+      knopf: { text: 'Ansehen', href: vorgangsLink('einkauf', { auftrag: orderId, af: 'bestellt' }) },
     });
   }
   for (const [orderId, positionen] of gesperrt) {

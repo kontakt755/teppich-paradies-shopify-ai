@@ -183,7 +183,18 @@ test('abgleich: AB und Lieferschein je Auftrag und Lieferant, Storno rot, Liefer
   assert.equal(z('gid://shopify/Order/9002|A').ab, null, 'AB fehlt ist nur Information');
   assert.deepEqual(z('gid://shopify/Order/9003|B').hinweise, ['shopify_offen'], 'bei uns raus, in Shopify nicht versendet');
   assert.equal(zeilen.some(x => x.orderId === 'gid://shopify/Order/9004'), false, 'nie bestellt, kein Beleg: keine Zeile');
-  assert.deepEqual(abweichungen.map(a => [a.art, a.ton]).sort(), [['lieferschein_offen', 'warn'], ['storno', 'crit']]);
+  // Die AB zu 9001 ist da, an der Position aber nicht geprueft: zur Pruefung anbieten (Lieferantenstand 06.11.2026).
+  assert.deepEqual(abweichungen.map(a => [a.art, a.ton]).sort(), [['ab_pruefen', 'warn'], ['lieferschein_offen', 'warn'], ['storno', 'crit']]);
+  const abPruefen = abweichungen.find(a => a.art === 'ab_pruefen');
+  assert.equal(abPruefen.belegId, 'ab1');
+  assert.deepEqual(abPruefen.positionen.map(p => p.lineItemId), ['gid://shopify/LineItem/90010']);
+  assert.equal(z('gid://shopify/Order/9002|A').abFehlt, true, 'bestellt ohne AB: in der Zelle "fehlt"');
+  // Ist die AB an der Position geprueft, faellt die Pruefung weg - bestaetigt wird nie vom Beleg selbst.
+  const geprueft = kandidaten.map(k => ({ ...k, positionen: k.positionen.map(p => (p.lineItemId === 'gid://shopify/LineItem/90010'
+    ? { ...p, eintrag: { ...p.eintrag, beschaffung: { ab: { nummer: 'AB-1', pruefung: {} }, liefertermin: '2026-10-20' } } } : p)) }));
+  const nachher = abgleich({ belege, kandidaten: geprueft, jetzt: JETZT });
+  assert.equal(nachher.abweichungen.some(a => a.art === 'ab_pruefen'), false);
+  assert.equal(nachher.zeilen.find(x => x.id === 'gid://shopify/Order/9001|A').abGeprueft, true);
   // Erledigt nimmt die Abweichung weg, der Beleg bleibt.
   belege[2].erledigt = { am: '2026-10-16', von: 'Mona' };
   assert.equal(abgleich({ belege, kandidaten, jetzt: JETZT }).abweichungen.some(a => a.art === 'storno'), false);

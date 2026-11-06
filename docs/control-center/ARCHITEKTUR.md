@@ -818,7 +818,10 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant ein To-do; gelb ab 3, rot ab 7 Tagen |
 | Ware bestellen | dieselben + `/api/einkauf/belege` | bezahlt, Position ohne Stand; **je Bestellung** ein To-do, damit kein Kunde in einer Sammelzeile verschwindet; gelb ab 1, rot ab 3 Tagen (seit 2026-11-03). Ohne geladene Belege fehlt nur der Zusatz „kein zugeordneter Beleg“ |
 | Laut Beleg bestellt, abhaken | dieselben | wie „Ware bestellen“, aber AB, Lieferschein oder Avis desselben Lieferanten ist sicher zugeordnet: per Mail bestellt, nicht abgehakt. Je Lieferant eine Zeile; Ware anderer Lieferanten derselben Bestellung bleibt unter „Ware bestellen“. Gelb, ab 4 Tagen nach dem Lieferschein rot (noch nicht raus) |
-| Bestellt, kein zugeordneter Beleg | dieselben | Ware „bestellt“ seit ≥ 3 Tagen, ohne zugeordneten Beleg desselben Lieferanten und ohne Liefertermin (unzugeordnete Belege und Vorschläge zählen nicht, die Bestätigung kann also im Postfach liegen); ab 7 Tagen übernimmt „Nachhaken“ (seit 06.11.2026, vorher 10 Werktage). Nur bei geladenen Belegen |
+| AB fehlt – beim Lieferanten nachfassen | dieselben | Ware „bestellt“ seit ≥ 2 Werktagen (Mo–Fr, Berliner Kalendertag, Feiertage zählen mit), ohne geprüfte AB (`beschaffung.ab`), ohne Liefertermin und ohne zugeordneten Beleg desselben Lieferanten (unzugeordnete Belege und Vorschläge zählen nicht); gelb, ab 7 Tagen rot, dort übernimmt „Nachhaken“. Nur bei geladenen Belegen. Bis 06.11.2026 „Bestellt, kein zugeordneter Beleg“ ab 3 Kalendertagen |
+| Auftragsbestätigung prüfen | `/api/einkauf/belege` (`abweichungen`, Art `ab_pruefen`) | AB sicher oder bestätigt zugeordnet, nicht erledigt, und eine Warenposition dieses Lieferanten steht auf „bestellt“ ohne AB-Vermerk und ohne Liefertermin; gelb. Bestätigt wird nie vom Beleg, nur im Dialog „AB prüfen“ |
+| AB weicht ab – klären | `/api/einkauf/auftragsstatus` | geprüfte AB mit mindestens einem Prüfpunkt „weicht ab“ (Menge, Maße, Lieferweg, Zuschläge), Position „bestellt“; gelb |
+| Lieferant angefragt / Anfrage nachfassen | dieselben | Ware ohne Stand mit `beschaffung.anfrage`; erscheint statt „Ware bestellen“; neutral, ab 2 Werktagen nach dem Anfragedatum gelb |
 | Muster nicht lieferbar | `/api/kunden/bestellungen`, Feld `gesperrteMuster` (Mustersperre) | SKU gesperrt, Position ohne Stand oder „bestellt“; immer rot, bis die Position in der Packstation abgeschlossen ist („Kunde informieren…“ oder „Ohne dieses Muster weiter packen“) |
 | Nachhaken | dieselben, Schwellen aus `/api/einkauf/lieferanten` | Stand „bestellt" seit ≥ 7 Tagen gelb, ≥ 14 Tagen rot; je Lieferant |
 | Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 2, rot ab 5 Tagen (seit 2026-11-03) |
@@ -3018,3 +3021,26 @@ nicht, die Summe stünde sonst zweimal da. In jeder Gruppe stehen rote Umschläg
 Tests: `tests/ampel.test.mjs`, `tests/auftrags-ablauf.test.mjs`, `tests/todos.test.mjs`,
 `tests/api.test.mjs` (Lexikon-Filter), `operations/tests/bildrechte.test.mjs`, `operations/tests/lieferanten.test.mjs`,
 Packstation: `tests/muster-packen.test.mjs`, `tests/packstation-arbeitslisten.test.mjs`, `tests/packstation-gepackt-verschickt.test.mjs`.
+
+## Lieferantenstand je Position (seit 06.11.2026)
+
+Kein zweiter Status: der Auftragsfluss bleibt `null → bestellt → geliefert → raus → erledigt`
+(`operations/lib/auftragsstatus.mjs`). Der Lieferantenstand sind Vermerke im vorhandenen
+Unterobjekt `beschaffung` derselben Position, geschrieben von `setzeLieferantenstand()`
+(`operations/lib/beschaffung.mjs`) über `POST /api/einkauf/auftragsstatus` mit
+`aktion: 'lieferantenstand'` und `schritt`:
+
+| Schritt | Wann | Felder |
+|---|---|---|
+| `anfrage` / `anfrageZurueck` | nur ohne Stand | `beschaffung.anfrage = { am (Tag), lieferant, notiz, erfasstAm, erfasstVon }` |
+| `bestelldaten` | nur „bestellt“ | korrigiert `bestelltAm` (tatsächlicher Versand der Bestellung) und `lieferantBestellnummer`; `beschaffung.bestellung = { lieferwegOffen, notiz }` |
+| `ab` / `abZurueck` | „bestellt“ oder „geliefert“ | `beschaffung.ab = { nummer, preis, belegId, link (nur https), pruefung: {menge, masse, lieferweg, zuschlaege: ok|abweichung}, abweichung, geprueftAm, geprueftVon }`, dazu `beschaffung.liefertermin` (Pflicht) |
+
+Abgeleitet wird der Stand in `lieferantenStand()` (`docs/ai-dashboard/lib/beschaffung.mjs`):
+Offen · Lieferant angefragt · Bestellt (AB fehlt, nach 2 Werktagen „nachfassen“) · AB bestätigt
+(Abweichungen gelb, Termin überschritten rot) · danach die bisherigen Schritte. Ein Liefertermin
+ohne AB-Vermerk (Altbestand) gilt als bestätigt und mahnt nicht. Muster, Eigenleistung
+(Kettelservice) und Lagerware haben keinen Lieferantenstand; der Server lehnt sie mit 409 ab.
+„Zurück auf offen“ verschiebt AB, Bestelldaten und den AB-Liefertermin in den Verlauf, die Anfrage
+bleibt. Jeder Schritt steht im Verlauf der Position und im Auftragsverlauf (`merke`).
+
