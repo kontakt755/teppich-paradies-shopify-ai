@@ -128,3 +128,20 @@ den Preisvergleich zu öffnen.
   vom April 2026 betrifft nur Teppichfliesen.
 - Die PDFs lassen sich aus der Remote-Session nicht öffnen (kein Anhang-Download); zum
   Auswerten in den Dropbox-Ordner „Preislisten“ legen.
+
+### Kandidaten J gerechnet (2026-11-06)
+
+- Grundlage: J-Liste gültig ab 01.01.2026 (vom Inhaber hochgeladen). K-„Preisliste 2026“ ist
+  nur die Fliesenliste (19 Qualitäten); keine unserer 69 Teppichfliesen stammt von K.
+- Rechnung nach `docs/shop-decisions.md`: Couponpreis der Liste × (1 + Rohstoffzuschlag) × 2,0
+  × 1,19, auf ,90 aufgerundet. Polmaterial unbekannt, deshalb PP-Zuschlag (13,9 %) als
+  Obergrenze; mit PA oder PES wird der Preis 1–3 € niedriger.
+- Nur Qualitäten mit Couponpreis kommen in Frage (Zuschnitt je Kunde). Die zehn günstigsten
+  landen bei **29,90–35,90 €/m²** (Preisklasse Preiswert), weitere zehn bei 36,90–39,90 €/m².
+  Die Filzrücken-Qualitäten ohne Couponpreis (rechnerisch 9,90–18,90 €/m²) gibt es nur als
+  ganze Rolle; das wäre Lagerware im Laden, ein anderes Modell als der Pilot.
+- Gelschaum-Läufer der Liste (vier Breiten 67–120 cm): rechnerisch 22,90–24,90 €/m². Das
+  deckt die Lücke „Läufer als Meterware“.
+- Offen vor dem Anlegen: Machart, Polmaterial, Breiten und Farben je Qualität. Die
+  Datenanfrage beim Hersteller (Bildnutzungsvereinbarung unterschrieben am 10.10.,
+  Erinnerungen 19.10. und 04.11.) ist unbeantwortet. Kandidatenliste mit Preisen nur lokal.
