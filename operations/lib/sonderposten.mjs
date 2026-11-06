@@ -654,3 +654,39 @@ export async function verkaufeVonRolle(proxy, { produktId, inventoryItemId = nul
     eintrag: nachher,
   };
 }
+
+/**
+ * Laden-Stand der Restrollen aus dem Protokoll (Inhaber 2026-11-06: Laden und Shop immer
+ * synchron). Zaehlt die Ladenbuchungen ("Ladenverkauf buchen") der letzten 30 Tage und
+ * nennt die letzte Buchung und die letzte Nachmessung ("Restlaenge eintragen"). Daraus
+ * zeigt "Heute", ob im Laden ueberhaupt gebucht wird und wann wieder nachgemessen werden
+ * muss. Unklare Buchungen zaehlen nicht mit - ihr Ergebnis ist offen.
+ *
+ * @param {Array<{zeitpunkt: string, aktion: string}>} eintraege - Protokollzeilen, beliebige Reihenfolge
+ * @param {{jetzt?: Date, ersteMessung?: string}} [opt] - ersteMessung: Messung vor dem Protokoll
+ *   (die gemessenen Laengen vom 28.10.2026 kamen direkt in Shopify, nicht ueber das Dashboard)
+ */
+export const NACHMESSEN_TAGE = 30;
+export const ERSTE_MESSUNG = '2026-10-28T12:00:00.000Z';
+export function ladenStandAusProtokoll(eintraege = [], { jetzt = new Date(), ersteMessung = ERSTE_MESSUNG } = {}) {
+  const tag = 24 * 60 * 60 * 1000;
+  const grenze = jetzt.getTime() - 30 * tag;
+  let letzteBuchung = null;
+  let letzteInventur = ersteMessung || null;
+  let buchungen30 = 0;
+  for (const e of eintraege) {
+    const t = Date.parse(e?.zeitpunkt);
+    if (!Number.isFinite(t)) continue;
+    if (e.aktion === 'sonderposten-rolle-im-laden-verkauft') {
+      if (t >= grenze) buchungen30++;
+      if (!letzteBuchung || t > Date.parse(letzteBuchung)) letzteBuchung = e.zeitpunkt;
+    } else if (e.aktion === 'sonderposten-rollenbestand') {
+      if (!letzteInventur || t > Date.parse(letzteInventur)) letzteInventur = e.zeitpunkt;
+    }
+  }
+  const nachmessenAb = letzteInventur ? new Date(Date.parse(letzteInventur) + NACHMESSEN_TAGE * tag).toISOString() : null;
+  return {
+    buchungen30, letzteBuchung, letzteInventur, nachmessenAb,
+    nachmessenFaellig: !nachmessenAb || jetzt.getTime() >= Date.parse(nachmessenAb),
+  };
+}

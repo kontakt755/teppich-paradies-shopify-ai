@@ -1104,6 +1104,20 @@ kann diese Menge trotzdem begrenzen (Shopify setzt bei kleinen Shops standardmae
 Vor dem Start den aktuellen Checkout-Wert lesend pruefen; weder Bestandseinheiten umbauen noch
 Checkout-Einstellungen ohne eigenen Auftrag aendern.
 
+**QR-Etikett und Laden-Stand (seit 2026-11-06, Inhaber: Laden und Shop immer synchron).**
+Jede Rolle hat den Knopf „QR-Etikett drucken…“ (Niimbot B1 50 × 50, freier Aufkleber aus
+`lib/freie-etiketten.mjs` mit QR). Der Code führt auf `#/sonderposten?rolle=<Produktnummer>`:
+die Ansicht zeigt nur diese Rolle und öffnet „Ladenverkauf buchen“ einmal von selbst. Die Adresse
+ist die, unter der das Dashboard gerade offen ist; am Mac selbst (127.0.0.1) nimmt sie die
+`netzAdresse` aus der Liste, also den ersten Namen aus `TP_DASHBOARD_EXTRA_HOSTS` als https
+(`tailscale serve`). Ohne beides druckt der Dialog nicht. Ein Handy braucht Tailscale oder das
+Firmennetz und eine Anmeldung - der QR-Code selbst gibt keinen Zugang.
+`/api/sonderposten/liste` liefert zusätzlich `ladenStand` (`ladenStandAusProtokoll`): Ladenbuchungen
+der letzten 30 Tage, letzte Buchung, letzte Nachmessung (vor dem Protokoll: Messung vom 28.10.2026)
+und ob das Nachmessen fällig ist (30 Tage). Daraus zeigt „Heute“ (Shop-Übersicht und „Im
+Hintergrund“) die Zeile „Restrollen“, Bernstein nur bei fälligem Nachmessen. Unlesbares Protokoll:
+`ladenStand: null`, die Zeile nennt dann nur den Bestand.
+
 **Tests** sprechen nie echtes Shopify: `tests/_testumgebung.mjs` blendet `.env.local` und die
 `SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
 über `createApi({ shopifyZugang })` bzw. `ersetzeShopifyZugang()` in `serve-dashboard.mjs` hinein.
