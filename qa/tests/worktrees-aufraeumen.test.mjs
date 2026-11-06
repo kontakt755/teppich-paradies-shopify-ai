@@ -1,7 +1,11 @@
 // Tests fuer scripts/worktrees-aufraeumen.mjs - nur gemergte, ruhende, saubere Kopien.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { worktrees, grund, dienstPfade } from '../../scripts/worktrees-aufraeumen.mjs';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { worktrees, grund, dienstPfade, inMainEnthalten } from '../../scripts/worktrees-aufraeumen.mjs';
 
 const JETZT = Date.parse('2026-10-24T12:00:00Z');
 const basis = (w = {}) => ({
@@ -66,4 +70,34 @@ test('auch Shell-Aufrufe mit $HOME, ${HOME} und ~ zaehlen als Verweis', () => {
   assert.ok(d.includes('/Users/t/tp-dritte'));
   assert.ok(!d.some((p) => p.includes('kein-pfad') && p.startsWith('/Users/t')), 'a~/x ist kein Home-Pfad');
   assert.match(grund(wt('/Users/t/tp-dashboard', 'dashboard-betrieb'), basis({ dienste: d })), /LaunchAgent/);
+});
+
+test('inMainEnthalten: patch-gleicher Branch (Squash eines Commits, Cherry-Pick) gilt als gemergt, eigene Arbeit nicht', () => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-wt-cherry-'));
+  const g = (...a) => execFileSync('git', a, { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const datei = (name, inhalt) => fs.writeFileSync(path.join(repo, name), inhalt);
+  try {
+    g('init', '-q', '-b', 'main');
+    g('config', 'user.email', 't@example.invalid'); g('config', 'user.name', 'Test'); g('config', 'commit.gpgsign', 'false');
+    datei('a.txt', 'a\n'); g('add', 'a.txt'); g('commit', '-q', '-m', 'start');
+    // Branch mit einem Commit, auf main per Squash (gleicher Patch, anderer Commit) uebernommen
+    g('checkout', '-q', '-b', 'claude/squash');
+    datei('b.txt', 'b\n'); g('add', 'b.txt'); g('commit', '-q', '-m', 'arbeit');
+    const squashHead = g('rev-parse', 'HEAD');
+    g('checkout', '-q', 'main');
+    g('merge', '-q', '--squash', 'claude/squash'); g('commit', '-q', '-m', 'Squash (#1)');
+    datei('c.txt', 'c\n'); g('add', 'c.txt'); g('commit', '-q', '-m', 'weiter auf main');
+    // Branch mit eigener, nicht uebernommener Arbeit
+    g('checkout', '-q', '-b', 'claude/offen', squashHead);
+    datei('d.txt', 'd\n'); g('add', 'd.txt'); g('commit', '-q', '-m', 'eigene arbeit');
+    const offenHead = g('rev-parse', 'HEAD');
+    g('checkout', '-q', 'main');
+    assert.match(g('cherry', 'main', squashHead), /^- /, 'git cherry ohne +');
+    assert.equal(inMainEnthalten(squashHead, repo, 'main'), true, 'Squash-gleicher Branch gilt als gemergt');
+    assert.equal(inMainEnthalten(offenHead, repo, 'main'), false, 'Branch mit eigener Arbeit bleibt');
+    assert.equal(inMainEnthalten(g('rev-parse', 'HEAD~1'), repo, 'main'), true, 'Vorfahre gilt weiter als gemergt');
+    assert.equal(inMainEnthalten('f'.repeat(40), repo, 'main'), false, 'unbekannter Commit gilt nie als gemergt');
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
 });
