@@ -38,6 +38,31 @@
   if tp_pc_verkaufseinheit == 'rolle' and tp_pc_teppich == false and product_resource.handle == product.handle
     assign tp_pc_rollware = true
   endif
+  # Zentrale Aktion (Metaobjekt tp_aktion, snippets/tp-aktion-laufend): Preis
+  # nach Abzug zeigen, der bisherige Preis wird zum Streichpreis (Wunsch
+  # 2026-11-06, vorher nur Hinweis "wird im Warenkorb abgezogen"). Abgerechnet
+  # wird weiter ueber den automatischen Shopify-Rabatt. Der bisherige Preis muss
+  # der niedrigste der letzten 30 Tage sein - darauf achtet die Aktionskollektion.
+  # Der Rechner haelt den Kopfpreis beim Wechsel Meterware/Raummass mit
+  # derselben Rechnung nach (anzeigeRate in blocks/tp-rollware-rechner).
+  capture tp_pc_zentral
+    render 'tp-aktion-laufend', product: product_resource
+  endcapture
+  assign tp_pc_zentral = tp_pc_zentral | strip | split: '|' | first | plus: 0
+  if tp_pc_zentral > 0 and tp_pc_teppich == false and current_price > 0
+    unless show_compare_price
+      assign compare_at_price = current_price
+    endunless
+    # Wie Shopify: Abzug je Einheit der Variante (m², bei cm-genauer Ware
+    # 0,01 m²) auf den Cent abgerundet - 58,90 € -> 8,83 € Abzug -> 50,07 €.
+    assign tp_pc_einheit = selected_variant.price
+    assign tp_pc_abzug = tp_pc_einheit | times: tp_pc_zentral | divided_by: 100 | floor
+    assign current_price = tp_pc_einheit | minus: tp_pc_abzug
+    if product_resource.metafields.custom.preis_pro_001_qm.value == true
+      assign current_price = current_price | times: 100
+    endif
+    assign show_compare_price = true
+  endif
 -%}
 
 {% liquid

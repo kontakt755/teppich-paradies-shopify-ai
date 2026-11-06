@@ -51,6 +51,7 @@ beforeEach((t) => t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-
 const engine = new Liquid({ timezoneOffset: 0, templates: {
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+  'tp-aktion-laufend': ohneDoc('snippets/tp-aktion-laufend.liquid'),
   'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
   'tp-sonderposten-preisbeleg': ohneDoc('snippets/tp-sonderposten-preisbeleg.liquid'),
   'tp-sonderposten-flaeche': ohneDoc('snippets/tp-sonderposten-flaeche.liquid'),

@@ -295,9 +295,35 @@
     # Rabatt in Prozent, immer aus Vergleichs- und Verkaufspreis gerechnet (nie statisch)
     assign tp_pr_prozent = compare_at_price | minus: price | times: 100.0 | divided_by: compare_at_price | round
   endif
+  # Zentrale Aktion (Metaobjekt tp_aktion, snippets/tp-aktion-laufend): Preis
+  # nach Abzug zeigen, der bisherige Preis wird zum Streichpreis (Wunsch
+  # 2026-11-06, vorher nur Hinweis). Abgerechnet wird weiter ueber den
+  # automatischen Shopify-Rabatt, gerundet wie dort.
+  capture tp_pr_zentral
+    render 'tp-aktion-laufend', product: product_resource
+  endcapture
+  assign tp_pr_zentral = tp_pr_zentral | strip | split: '|' | first | plus: 0
+  if tp_pr_zentral > 0 and price > 0
+    unless show_compare_price
+      assign compare_at_price = price
+    endunless
+    # Wie Shopify: Abzug je Einheit (m², bei cm-genauer Ware 0,01 m²) auf den
+    # Cent abgerundet - 58,90 € x 15 % = 8,835 -> 8,83 €, also 50,07 € (im
+    # Testwarenkorb 06.11. nachgerechnet).
+    if product_resource.metafields.custom.preis_pro_001_qm.value == true
+      assign tp_pr_einheit = price | divided_by: 100 | floor
+      assign tp_pr_abzug = tp_pr_einheit | times: tp_pr_zentral | divided_by: 100 | floor
+      assign price = tp_pr_einheit | minus: tp_pr_abzug | times: 100
+    else
+      assign tp_pr_abzug = price | times: tp_pr_zentral | divided_by: 100 | floor
+      assign price = price | minus: tp_pr_abzug
+    endif
+    assign show_compare_price = true
+    assign tp_pr_prozent = compare_at_price | minus: price | times: 100.0 | divided_by: compare_at_price | round
+  endif
   # UVP des Herstellers ohne laufende Aktion: eigene graue Zeile statt Streichpreis (snippets/tp-uvp-zeile).
   assign tp_pr_uvp = false
-  if tp_pr_aktion == 'uvp' and compare_at_price != blank and compare_at_price > price
+  if tp_pr_aktion == 'uvp' and tp_pr_zentral == 0 and compare_at_price != blank and compare_at_price > price
     assign tp_pr_uvp = true
     # Sonderposten: Abstand zur UVP mit angeben, abgerundet (Inhaber 2026-11-03)
     if product_resource.tags contains 'sonderposten'
