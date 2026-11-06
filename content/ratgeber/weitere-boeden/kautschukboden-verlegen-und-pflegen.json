@@ -125,7 +125,8 @@
     "Noppenbelag: Welche Bürste bzw. welchen Schrubber und welchen Reiniger empfehlen Sie Kunden für die tägliche und die gründliche Reinigung? Gilt „weiche Bürste ohne Schleifanteil“ (Herstellerangabe für die maschinelle Erstreinigung) auch für die laufende Reinigung, und sind Scheuerbürsten mit Schleifanteil auszuschließen?",
     "Bestätigen Sie: keine Lösungsmittel, Scheuermittel, Benzin oder Öl auf Kautschuk?",
     "Was empfehlen Sie Kunden, wenn nach der Verlegung Blasen, Hohlstellen oder klaffende Fugen auftreten (Spalte „Was jetzt hilft“ fehlt bisher)?",
-    "Riecht frisch verlegter Kautschuk bei Ihren Verlegungen, und wie lange? (Satz aus dem Kurz-Ratgeber, online bisher ohne Beleg.)"
+    "Riecht frisch verlegter Kautschuk bei Ihren Verlegungen, und wie lange? (Satz aus dem Kurz-Ratgeber, online bisher ohne Beleg.)",
+    "Für Inhaber/Redaktion (06.11.2026): CTA „verlegeservice“ entfernt. Sie führt auf /pages/liefer-verlegeservice, und dort gilt der Service nur für Teppichboden und Vinyl von der Rolle. Der Textlink auf /pages/boden-malerarbeiten bleibt (gedeckt durch den freigegebenen Kurz-Ratgeber). Soll /pages/boden-malerarbeiten Kork, Kautschuk und Linoleum ausdrücklich nennen?"
   ],
   "excerpt": "Kautschukfliesen und Kautschuk von der Rolle werden vollflächig verklebt. Entscheidend sind Raumtemperatur, ein glatt gespachtelter Untergrund, der passende Kleber und gründliches Walzen; gereinigt wird mit pH-neutralem Reiniger, Noppenbelag mit weicher Bürste.",
   "seo": {
@@ -150,7 +151,6 @@
       "Neutralreiniger und weiche Bürste"
     ],
     "cta": [
-      "verlegeservice",
       "zubehoer"
     ],
     "kollektion": "kautschukboden",

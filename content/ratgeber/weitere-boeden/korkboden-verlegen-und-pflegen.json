@@ -143,7 +143,8 @@
     "Werte für die Metafelder dauer, schwierigkeit und personen (je Raumgröße), getrennt nach Klick und Klebe?",
     "Shop-Entscheidung: Die Seite /pages/boden-malerarbeiten nennt Kork nicht. Soll Kork dort ergänzt werden, damit die CTA 'verlegeservice' und der Tipp im Artikel passen?",
     "Shop-Entscheidung: Muster bei Kork gibt es nur auf Anfrage. CTA 'muster' bleibt weg; im Text steht ein Link 'Muster anfragen' auf /pages/kontakt?thema=musteranfrage. So lassen?",
-    "Soll der Shop einen für Kork freigegebenen Endlack führen? Derzeit gibt es keinen, obwohl die Klebekork-Seiten eine Endlackierung vorsehen."
+    "Soll der Shop einen für Kork freigegebenen Endlack führen? Derzeit gibt es keinen, obwohl die Klebekork-Seiten eine Endlackierung vorsehen.",
+    "Für Inhaber/Redaktion (06.11.2026): CTA „verlegeservice“ entfernt. Sie führt auf /pages/liefer-verlegeservice, und dort gilt der Service nur für Teppichboden und Vinyl von der Rolle. Der Textlink auf /pages/boden-malerarbeiten bleibt (gedeckt durch den freigegebenen Kurz-Ratgeber). Soll /pages/boden-malerarbeiten Kork, Kautschuk und Linoleum ausdrücklich nennen?"
   ],
   "excerpt": "Klickkork schwimmend verlegen, Klebekork verkleben und endlackieren: welches Raumklima Kork braucht, was der Untergrund können muss und wie Sie die Lackoberfläche pflegen.",
   "seo": {
@@ -173,7 +174,6 @@
       "für Kork empfohlener Lack zur Endlackierung (Klebekork)"
     ],
     "cta": [
-      "verlegeservice",
       "zubehoer"
     ],
     "kollektion": "korkboden",
