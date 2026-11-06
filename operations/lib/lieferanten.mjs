@@ -26,6 +26,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { UNGEKLAERT, formatDe } from './umrechnung.mjs';
 import { ROUTE } from './route.mjs';
+import { istLagerware } from '../../docs/ai-dashboard/lib/lieferweg.mjs';
 import { positionKey, filterGruppe } from './auftragsstatus.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 import { KETTEL_PUFFER_CM, kettelZuschnitt, wirdGekettelt } from './kettelpuffer.mjs';
@@ -361,6 +362,9 @@ function schlankePosition(pos, statusAlle, jetzt) {
     ohneLieferant: !!pos.istMuster && musterOhneLieferant(pos),
     // Additiv: Lagerplatz, wenn das Muster aus dem Musterlager kommt (musterlager.mjs).
     musterLager: pos.musterLager ? { artLabel: pos.musterLager.artLabel, ort: pos.musterLager.ort } : null,
+    // Additiv: Ware aus eigener Lagerrolle (lagerware.mjs bzw. Vermerk "aus Lager") - nie beim Lieferanten bestellen.
+    lagerware: istLagerware(pos, eintrag),
+    lagerHinweis: istLagerware(pos, eintrag) ? pos.lagerHinweis ?? null : null,
     lieferantUrl: geklaert(pos.lieferantUrl),
     status,
     gruppe: GRUPPE_FELD[filterGruppe(status)] ?? 'erledigt',
@@ -391,6 +395,9 @@ function sammle(modell, statusAlle, jetzt) {
         const s = schlankePosition(pos, statusAlle, jetzt);
         if (!ziel[art][s.gruppe]) continue; // erledigt
         if (s.gruppe === 'zuBestellen' && s.ohneLieferant) { ziel[art].eigenerBestand.push(s); continue; }
+        // Lagerware schneiden wir selbst zu: weder "zu bestellen" noch "beim Lieferanten nachhaken" -
+        // auch nicht, wenn sie (vor dem 06.11.) versehentlich als bestellt markiert wurde.
+        if (s.lagerware && ['zuBestellen', 'bestellt'].includes(s.gruppe)) { ziel[art].eigenerBestand.push(s); continue; }
         ziel[art][s.gruppe].push(s);
         if (s.gruppe === 'zuBestellen') zuBestellen += 1;
       }
@@ -717,7 +724,9 @@ function fuerLieferantKettelt(p, wege) {
 
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false, kettelwege = {}, kettelwegGewaehlt = false }) {
   const alle = (gruppe.positionen ?? []).filter(p => !auswahl || auswahl(p)).map(p => schlankePosition(p, statusAlle, jetzt));
-  const offen = alle.filter(p => p.gruppe === 'zuBestellen');
+  // Lagerware kommt nie in die Mail an den Lieferanten (#1995) - wie Muster aus eigenem Bestand.
+  const ausLager = alle.filter(p => p.gruppe === 'zuBestellen' && p.lagerware);
+  const offen = alle.filter(p => p.gruppe === 'zuBestellen' && !p.lagerware);
   // Die Kettler-Regel gilt auch fuer Ware, die der Lieferant sonst direkt zum Kunden schickt:
   // abgetrennte Positionen gehen an unseren Kettler (Issue #1453).
   const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route) && !(automatisch && ziel === 'kettler');
@@ -818,7 +827,8 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       kettelPuffer,
       // Zum Kettler oder auf die Baustelle ist der Weg schon entschieden.
       bezugsweg: anKettler || gruppe.route === ROUTE.SUPPLIER_TO_SITE ? { nah: [], weit: [] } : bezugswegHinweis(offen, adressen),
-      bereitsBestellt: alle.length - offen.length,
+      bereitsBestellt: alle.length - offen.length - ausLager.length,
+      ohneBestellung: ausLager.map(p => fehltEintrag(p, ['aus eigenem Lager – nicht bestellen'])),
     },
   });
 }
@@ -897,7 +907,7 @@ function kettelRegelGilt(gruppe, kontext) {
 }
 
 /** Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail. */
-const istOffen = (p, kontext) => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
+const istOffen = (p, kontext) => { const s = schlankePosition(p, kontext.statusAlle, kontext.jetzt); return s.gruppe === 'zuBestellen' && !s.lagerware; };
 
 /**
  * Nur bei Direktversand: nur dort heisst "Lieferant kettelt" sicher auch "direkt an den Kunden",

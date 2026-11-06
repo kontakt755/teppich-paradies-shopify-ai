@@ -26,7 +26,7 @@ import { musterAutomatikBlock } from '../bausteine/muster-bestellanzeige.mjs';
  * To-dos werden nicht erfasst, sondern abgeleitet - diese Datei laedt und zeichnet nur.
  */
 import {
-  leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, alterText, SICHT_LABEL,
+  leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, alterText, SICHT_LABEL, rausgebenOhne,
 } from '../lib/todos.mjs';
 import { versandLaeuft, teileNachfassen, nachfassTodo } from '../lib/muster-nachfassen.mjs';
 import { belegTodos } from '../lib/lieferbelege.mjs';
@@ -62,6 +62,7 @@ import { bestellarbeitBlock } from './heute/bestellarbeit.mjs';
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
 import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
 import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
+import { selbstAbschickenStand, selbstAbschickenBlock } from './heute/selbst-abschicken.mjs';
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
@@ -201,13 +202,16 @@ function viewShop() {
   ensureHeuteMusterTexte();
   const arbeit = startBestellarbeit({ daten: einkauf.bestellungen,
     statusAlle: einkauf.auftragsstatus, lieferanten: heuteDaten.lieferanten });
+  // Was wir selbst zuschneiden, packen und verschicken (#1995) - direkt unter den Warenbestellungen.
+  const selbst = selbstAbschickenStand({ daten: kunden.bestellungen, statusAlle: einkauf.auftragsstatus });
   return `<div class="heute shop-start">
     <header class="heute-geschaeft-kopf shop-start-kopf"><h1>Shop-Übersicht</h1>
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
     </header>
     ${warenkennzahl()}
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
-    ${problemeShop(nf)}
+    ${selbstAbschickenBlock(selbst, { lesend: istNurLesend() })}
+    ${problemeShop(nf, selbst)}
     ${inhaberUeberblick()}
     ${musterAutomatikBlock(kunden.bestellungen)}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
@@ -238,13 +242,16 @@ function viewShop() {
  * Kundenfaelle und Team-Aufgaben werden hier nicht geladen: ihre To-dos gehoeren in den
  * Nebenbereich (probleme.mjs, NEBENBEREICH_ARTEN) und wuerden hier nur Abrufe kosten.
  */
-function problemeShop(nf) {
+function problemeShop(nf, selbst = null) {
   ensureKundenRueckrufe(); ensureShopifyAbgleich();
   if (darfAnsicht('einkauf')) ensureBelege();
   if (darfAnsicht('shopwache')) ensureShopwache();
   const q = quellen();
   const sicht = istInhaber() ? 'alles' : gewaehlteSicht(q.aufgaben);
-  return problemeBlock(todosDerSicht(sicht, q, nf).liste, { zeile: t => todoZeile(t, false), fehlen: problemQuellenFehlen() });
+  // "Ware ist da – rausgeben" ohne die Positionen, die schon im Block "Von uns abschicken" stehen -
+  // nicht ein zweites Mal rot. Bleibt nichts uebrig (nur Ware ueber uns), faellt das To-do weg.
+  const liste = todosDerSicht(sicht, q, nf).liste.map(t => rausgebenOhne(t, selbst?.schluessel)).filter(Boolean);
+  return problemeBlock(liste, { zeile: t => todoZeile(t, false), fehlen: problemQuellenFehlen() });
 }
 
 /** Quellen der roten To-dos, deren Abruf gescheitert ist - gerade geladene zaehlen nicht. */

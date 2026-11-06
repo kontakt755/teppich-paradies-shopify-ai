@@ -20,12 +20,32 @@ import { darfWeiter, beschaffungsStand } from '../../docs/ai-dashboard/lib/besch
 export const STATUS_ORDER = Object.freeze(['bestellt', 'geliefert', 'raus', 'erledigt']);
 
 /**
- * Vermerk "ueber" beim Bestellen: wohin der Lieferant liefert, wenn es nicht der Laden ist.
+ * Vermerk "ueber": welchen Weg die Ware geht (Lieferweg, docs/ai-dashboard/lib/lieferweg.mjs).
  * 'kettler' = Ware geht erst an unseren Kettelservice (#1453), 'kunde' = der Lieferant schickt
  * direkt an den Kunden: Muster (Herstellermuster, Lieferziel "Kunden" in der Bestellmail) oder
- * ein Teppich, den er selbst kettelt (Wahl im Bestelldialog).
+ * Ware mit Lieferziel Kunde/Baustelle, 'laden' = der Lieferant liefert zu uns (seit 06.11.2026),
+ * 'lager' = wir schneiden aus eigener Lagerrolle zu und verschicken selbst (gesetzt von
+ * "Zugeschnitten", setzeSelbstversand).
  */
-export const UEBER_WERTE = Object.freeze(['kettler', 'kunde']);
+export const UEBER_WERTE = Object.freeze(['kettler', 'kunde', 'laden', 'lager']);
+
+/** Schritte vor dem Versand, die wir bei eigener Ware abhaken (Unterobjekt `selbstversand`). */
+export const SELBST_SCHRITTE = Object.freeze(['zugeschnitten', 'gepackt']);
+
+/**
+ * Ungueltiges Unterobjekt `selbstversand`? Jeder Schritt ist null oder { am, von } (Text), "vorher"
+ * ein Schritt oder null, "ueberVorher" (Vermerk vor "Zugeschnitten") einer aus UEBER_WERTE oder null.
+ */
+function selbstversandKaputt(sv) {
+  if (sv == null) return false;
+  if (typeof sv !== 'object' || Array.isArray(sv)) return true;
+  return Object.entries(sv).some(([k, v]) => {
+    if (!SELBST_SCHRITTE.includes(k)) return true;
+    if (v == null) return false;
+    if (typeof v !== 'object' || Array.isArray(v) || typeof v.am !== 'string' || typeof v.von !== 'string') return true;
+    return (v.vorher != null && !STATUS_ORDER.includes(v.vorher)) || (v.ueberVorher != null && !UEBER_WERTE.includes(v.ueberVorher));
+  });
+}
 
 export const STATUS_LABEL = Object.freeze({
   bestellt: 'Bestellt',
@@ -82,6 +102,7 @@ export function leseAlle(file) {
     || Object.values(raw.positionen).some(e => {
       if (!e || typeof e !== 'object' || Array.isArray(e)) return true;
       if (e.uebernahme != null && (typeof e.uebernahme !== 'object' || Array.isArray(e.uebernahme) || typeof e.uebernahme.id !== 'string' || typeof e.uebernahme.person !== 'string')) return true;
+      if (selbstversandKaputt(e.selbstversand)) return true;
       const b = e.beschaffung;
       if (b != null && (typeof b !== 'object' || Array.isArray(b))) return true;
       if (b?.liefertermin != null && (typeof b.liefertermin !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(b.liefertermin) || !Number.isFinite(Date.parse(b.liefertermin)) || new Date(b.liefertermin).toISOString().slice(0, 10) !== b.liefertermin)) return true;
@@ -158,6 +179,8 @@ function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmen
   if (status === 'bestellt') {
     eintrag.lieferantBestellnummer = lieferantBestellnummer ? clip(lieferantBestellnummer, 200) : (bisher.lieferantBestellnummer || null);
     if (ueber !== undefined) eintrag.ueber = UEBER_WERTE.includes(ueber) ? ueber : null;
+    // Beim Lieferanten Bestelltes kommt nie "aus Lager" - der Vermerk gehoert zu "Zugeschnitten".
+    if (eintrag.ueber === 'lager') eintrag.ueber = null;
   }
   if (notiz) eintrag[`${status}Notiz`] = clip(notiz, 2000);
   if (status === 'raus') {
@@ -326,10 +349,15 @@ export function setzeZurueckAufOffen(file, { orderId, lineItemId, actor, notiz =
   delete rest.lieferantBestellnummer;
   // Versandangaben gehoeren zum alten Durchlauf. Eine Buchung in Shopify bleibt dort bestehen;
   // hier wandert nur der Vermerk in den Verlauf.
-  for (const feld of ['sendungsnummer', 'versanddienst', 'versandMail', 'shopifyVersand']) {
+  // "Zugeschnitten"/"Gepackt" gehoeren ebenfalls zum alten Durchlauf und wandern mit in den Verlauf.
+  for (const feld of ['sendungsnummer', 'versanddienst', 'versandMail', 'shopifyVersand', 'selbstversand']) {
     if (rest[feld] !== undefined && rest[feld] !== null) vorher[feld] = rest[feld];
     delete rest[feld];
   }
+  // Der Vermerk "aus Lager" kommt nur von "Zugeschnitten" und gehoert damit zum alten Durchlauf.
+  // Bliebe er stehen, galt die Position fuer immer als Lagerware - auch ohne Regel (Pruefung 06.11.).
+  // Andere Vermerke bleiben wie bisher; sie zaehlen ohne Schritt ohnehin nicht (lib/lieferweg.mjs).
+  if (rest.ueber === 'lager') { vorher.ueber = rest.ueber; delete rest.ueber; }
   const protokoll = { aktion: 'zurück auf offen', am: zeit, von: actor, vonStatus: bisher.status, vorher };
   if (notiz) protokoll.notiz = clip(notiz, 2000);
   const eintrag = {
@@ -344,6 +372,88 @@ export function setzeZurueckAufOffen(file, { orderId, lineItemId, actor, notiz =
     zurueckGesetztVonStatus: bisher.status,
     verlauf: [...(Array.isArray(bisher.verlauf) ? bisher.verlauf : []), protokoll].slice(-20),
   };
+  alle[key] = eintrag;
+  schreibeAlle(file, alle);
+  return eintrag;
+}
+
+/**
+ * Ware, die wir selbst verschicken (Lieferweg "aus Lager" oder "über uns"): "Zugeschnitten" und
+ * "Gepackt" je Position, gespeichert im Unterobjekt `selbstversand` ({ zugeschnitten: {am, von,
+ * vorher}, gepackt: {am, von} }). Verschickt wird ueber den vorhandenen Schritt "raus".
+ *
+ * - zugeschnitten, an: aus leer (oder Altfall "bestellt") auf "geliefert" mit Vermerk "aus Lager";
+ *   steht die Position schon auf "geliefert", kommt nur der Vermerk dazu. Fehlmenge offen: 409.
+ *   Der Vermerk davor steht in `ueberVorher`.
+ * - zugeschnitten, aus: zurueck auf den Schritt davor (`vorher`) und den Vermerk davor
+ *   (`ueberVorher`), nur solange nicht gepackt - sonst bliebe "aus Lager" fuer immer stehen.
+ * - gepackt, an/aus: nur bei "geliefert".
+ * Direktversand des Lieferanten (ueber "kunde") lehnt beides ab. Ob die Position wirklich aus dem
+ * Lager kommt bzw. kein Muster ist, prueft der Aufrufer (er kennt die Position). Jede Ruecknahme
+ * steht mit Zeit und Person im Verlauf.
+ *
+ * @param {string} file
+ * @param {object} p
+ * @param {string} p.orderId
+ * @param {string} p.lineItemId
+ * @param {'zugeschnitten'|'gepackt'} p.schritt
+ * @param {boolean} p.an
+ * @param {string} p.actor
+ * @param {object} [p.bestellmenge]  aktuelle Bestellmenge (wie setzeStatus), fuer die Fehlmengen-Sperre
+ * @param {Date}   [p.jetzt]
+ */
+export function setzeSelbstversand(file, { orderId, lineItemId, schritt, an, actor, bestellmenge, jetzt = new Date() } = {}) {
+  const key = positionKey(orderId, lineItemId);
+  if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
+  if (!SELBST_SCHRITTE.includes(schritt)) throw new AuftragsstatusFehler(`Unbekannter Schritt „${schritt}“`);
+  if (typeof an !== 'boolean') throw new AuftragsstatusFehler('Angabe „an“ (ja/nein) fehlt');
+  if (!actor) throw new AuftragsstatusFehler('actor (gh-Login) ist Pflicht');
+  const alle = leseAlle(file);
+  const bisher = alle[key] || {};
+  // Ein Vermerk zaehlt nur mit Schritt (lib/lieferweg.mjs): nach "Zurueck auf offen" ist er Vergangenheit.
+  if (bisher.status && bisher.ueber === 'kunde') throw new AuftragsstatusFehler('Der Lieferant schickt diese Ware direkt an den Kunden – bei uns wird nichts zugeschnitten oder gepackt.', 409);
+  const zeit = jetzt.toISOString();
+  const sv = { ...(bisher.selbstversand || {}) };
+  const status = bisher.status || null;
+  let eintrag = { ...bisher, orderId: String(orderId), lineItemId: String(lineItemId), aktualisiertAm: zeit, aktualisiertVon: actor };
+  const protokolliere = (aktion, extra = {}) => {
+    eintrag.verlauf = [...(Array.isArray(bisher.verlauf) ? bisher.verlauf : []), { aktion, am: zeit, von: actor, ...extra }].slice(-20);
+  };
+  if (schritt === 'zugeschnitten' && an) {
+    if (['raus', 'erledigt'].includes(status)) throw new AuftragsstatusFehler('Diese Position ist schon an den Kunden raus.', 409);
+    if (sv.zugeschnitten && status === 'geliefert') return bisher;
+    if (status !== 'geliefert') {
+      const stand = bestellmenge === undefined ? bisher : beschaffungsStand(bisher, bestellmenge);
+      if (!darfWeiter(stand, 'geliefert')) throw new AuftragsstatusFehler(stand.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.', 409);
+      eintrag = { ...eintrag, status: 'geliefert', geliefertAm: zeit, geliefertVon: actor, geliefertNotiz: 'Aus eigenem Lager zugeschnitten' };
+    }
+    eintrag.ueber = 'lager';
+    sv.zugeschnitten = { am: zeit, von: actor, vorher: status, ueberVorher: UEBER_WERTE.includes(bisher.ueber) && bisher.ueber !== 'lager' ? bisher.ueber : null };
+  } else if (schritt === 'zugeschnitten') {
+    if (!sv.zugeschnitten) throw new AuftragsstatusFehler('Diese Position ist nicht als zugeschnitten eingetragen.', 409);
+    if (sv.gepackt) throw new AuftragsstatusFehler('Zuerst „Gepackt“ zurücknehmen.', 409);
+    if (status !== 'geliefert') throw new AuftragsstatusFehler('Diese Position ist schon weiter – zurück nur über „Zurück auf offen…“.', 409);
+    const vorher = sv.zugeschnitten.vorher ?? null;
+    if (vorher !== 'geliefert') {
+      eintrag.status = vorher;
+      for (const feld of ['geliefertAm', 'geliefertVon', 'geliefertNotiz']) delete eintrag[feld];
+    }
+    // Vermerk wie vor dem Zuschnitt: ohne ihn ist die Position wieder, was Regeldatei und Stammroute sagen.
+    const ueberVorher = sv.zugeschnitten.ueberVorher ?? null;
+    if (ueberVorher) eintrag.ueber = ueberVorher; else delete eintrag.ueber;
+    protokolliere('zugeschnitten zurückgenommen', { zugeschnittenAm: sv.zugeschnitten.am, zugeschnittenVon: sv.zugeschnitten.von, zurueckAuf: eintrag.status });
+    delete sv.zugeschnitten;
+  } else if (an) {
+    if (status !== 'geliefert') throw new AuftragsstatusFehler('Gepackt geht erst, wenn die Ware bei uns ist (zugeschnitten bzw. eingetroffen).', 409);
+    if (sv.gepackt) return bisher;
+    sv.gepackt = { am: zeit, von: actor };
+  } else {
+    if (!sv.gepackt) throw new AuftragsstatusFehler('Diese Position ist nicht als gepackt eingetragen.', 409);
+    if (status !== 'geliefert') throw new AuftragsstatusFehler('Diese Position ist schon weiter – zurück nur über „Zurück auf offen…“.', 409);
+    protokolliere('gepackt zurückgenommen', { gepacktAm: sv.gepackt.am, gepacktVon: sv.gepackt.von });
+    delete sv.gepackt;
+  }
+  if (Object.keys(sv).length) eintrag.selbstversand = sv; else delete eintrag.selbstversand;
   alle[key] = eintrag;
   schreibeAlle(file, alle);
   return eintrag;

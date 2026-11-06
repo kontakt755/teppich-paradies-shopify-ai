@@ -1,4 +1,5 @@
 import { WARTESCHWELLEN, warteAmpel, warteStufe, TON } from './ampel.mjs';
+import { istLagerware } from './lieferweg.mjs';
 /**
  * Einkauf je Lieferant: reine Regeln ohne DOM (Browser und Tests).
  *
@@ -125,7 +126,10 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
         const eintrag = eintragFuer(pos);
         const stufe = stufeVon(eintrag?.status);
         const offen = stufe === 'zuBestellen' || stufe === 'bestellt';
-        const ampel = warteAmpel(eintrag, {
+        // Lagerware (lib/lieferweg.mjs) schneiden wir selbst zu: nicht "bestellen", nicht "nachfassen" -
+        // auch wenn sie vor dem 06.11. versehentlich als bestellt markiert wurde.
+        const ausLager = art === 'ware' && offen && istLagerware(pos, eintrag);
+        const ampel = ausLager ? warteAmpel(null, { jetzt, schwellen }) : warteAmpel(eintrag, {
           jetzt, schwellen,
           blockiert: stufe === 'zuBestellen' && !musterEigen(pos) && Boolean(blockiert(pos)),
           gesperrt: offen && Boolean(gesperrt(pos)),
@@ -133,7 +137,7 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
         // Ueberschrittener Liefertermin ist rot, egal wie lange schon bestellt (vorher erst ab 14 Tagen
         // nach dem Termin). Ein gesperrtes Muster kommt nicht mehr: kein Nachfassen beim Lieferanten.
         const ws = ampel.grund === 'gesperrt' ? null : ampel.grund === 'termin' ? 'crit' : warnstufe(ampel.tage, schwellen);
-        ziel[art][stufe === 'zuBestellen' && musterEigen(pos) ? 'eigen' : stufe].push({ pos, eintrag, wartetage: ampel.tage, warnstufe: ws, ampel });
+        ziel[art][(stufe === 'zuBestellen' && musterEigen(pos)) || ausLager ? 'eigen' : stufe].push({ pos, eintrag, wartetage: ampel.tage, warnstufe: ws, ampel });
       }
     }
   };
@@ -166,7 +170,7 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       stammdaten: st,
       zahlen,
       musterEigen,
-      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.eingetroffen + zahlen.musterOffen + zahlen.musterLaufend + musterEigen,
+      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.eingetroffen + zahlen.musterOffen + zahlen.musterLaufend + musterEigen + k.ware.eigen.length,
       ueberfaellig: {
         stufe: wartend.some(x => x.warnstufe === 'crit') ? 'crit' : wartend.length ? 'warn' : null,
         anzahl: wartend.length,

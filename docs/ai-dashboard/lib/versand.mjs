@@ -45,9 +45,21 @@ export function versandIds({ nurGeklickt = false, lineItemId = null, bereit = []
  *   Ist die angeklickte Position ein Muster, gehen die Muster aus eigenem Bestand (Musterlager,
  *   "haben wir da") mit ins Paket: gemischte Musterbestellungen gehen zusammen raus (Inhaber 2026-10-15).
  *   Ebenso alle Muster, die schon bei uns angekommen sind (`status`: lineItemId -> Auftragsfluss-Status).
+ * - Gemischter Auftrag (`weg`: lineItemId -> Lieferweg aus lib/lieferweg.mjs, #1995): ohne angeklickte
+ *   Position nur, was wir selbst verschicken. Was der Hersteller direkt schickt, ist nicht in unserem
+ *   Paket - sonst buchte "Als verschickt buchen" es mit unserer Sendungsnummer und Versandmail als
+ *   versendet, obwohl der Hersteller noch nicht geliefert hat. Ist nur noch Direktware offen
+ *   ("Ist an den Kunden raus…"), ist sie vorab angekreuzt wie bisher.
  */
-export function vorauswahl(kandidaten, { geklickt = null, status = {} } = {}) {
-  if (!geklickt) return new Set(kandidaten.map(p => p.lineItemId));
+const AUSSER_HAUS = new Set(['hersteller', 'baustelle']);
+
+export function vorauswahl(kandidaten, { geklickt = null, status = {}, weg = {} } = {}) {
+  if (!geklickt) {
+    const direkt = p => AUSSER_HAUS.has(weg?.[p.lineItemId]);
+    const eigene = kandidaten.filter(p => !direkt(p) && !p.eigenleistung);
+    // Eigenleistung (Kettelservice) geht mit der letzten Ware raus - solange Direktware offen ist, nicht.
+    return new Set((kandidaten.some(direkt) && eigene.length ? eigene : kandidaten).map(p => p.lineItemId));
+  }
   const ids = new Set([geklickt]);
   if (kandidaten.find(p => p.lineItemId === geklickt)?.istMuster) {
     // Alle Muster, die fertig zum Verschicken sind, gleich mit ankreuzen (Innendienst 15.10.:
