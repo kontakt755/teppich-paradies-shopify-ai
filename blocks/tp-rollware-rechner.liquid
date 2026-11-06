@@ -1356,6 +1356,7 @@
   die Initialisierung unten auf DOMContentLoaded, falls das Asset noch nicht da
   ist - deferred Skripte laufen garantiert davor.
 {%- endcomment -%}
+<script src="{{ 'tp-warenkorb-abschnitte.js' | asset_url }}" defer></script>
 <script src="{{ 'tp-rollware-art.js' | asset_url }}" defer></script>
 <script>
 function tpRwcInit{{ tp_rc_id }}() {
@@ -3075,6 +3076,13 @@ function tpRwcInit{{ tp_rc_id }}() {
         return window.TPZuschnitt.abgleichen().then(function () { return addedItem; }, function () { return addedItem; });
       })
       .then(function (addedItem) {
+        // Fenster erst mit fertigem Inhalt oeffnen, sonst steht dort kurz "leer".
+        return (window.TPWarenkorbAbschnitte ? window.TPWarenkorbAbschnitte() : Promise.resolve(null)).then(function (sections) {
+          return { addedItem: addedItem, sections: sections };
+        });
+      })
+      .then(function (erg) {
+        var addedItem = erg.addedItem;
         inFlight = false;
         // billedArea statt qty: im cm-genauen Modus ist qty die Menge in
         // 0,01-m2-Einheiten und wuerde "666 m2" statt "6,66 m2" melden.
@@ -3098,7 +3106,7 @@ function tpRwcInit{{ tp_rc_id }}() {
           detail: {
             resource: addedItem,
             sourceId: 'tp-rwc-{{ tp_rc_id }}',
-            data: { itemCount: addedCount, source: 'product-form-component' }
+            data: { itemCount: addedCount, source: 'product-form-component', sections: erg.sections || undefined }
           }
         }));
 
