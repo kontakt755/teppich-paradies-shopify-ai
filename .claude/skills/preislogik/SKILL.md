@@ -75,6 +75,13 @@ Verkaufspreis inklusive Aktion - **nach jeder Preisaenderung**
 das auch der Dienst `net.teppich-paradies.preisfilter`). Das Feld nie von Hand
 pflegen; Bereiche aendern nur im Skript `scripts/preisfilter-abgleich.mjs`
 (danach Abgleich und Sortierung des Filters in Search & Discovery pruefen).
+Zentrale Aktionen (Metaobjekt `tp_aktion`, z. B. Black Week) laufen als
+automatischer Rabatt und aendern keine Variantenpreise: der Abgleich liest die
+heute laufenden Aktionen selbst und stuft Mitglieder der Aktionskollektion nach
+dem angezeigten Preis ein (Abzug je Einheit bzw. je Paket auf den Cent
+abgerundet, wie `snippets/price.liquid`); nach Aktionsende stuft er von selbst
+zurueck. Er braucht dafuer einen Zugang, der Metaobjekte lesen darf (Token aus
+`.env.local`, nicht der CLI-Token) - sonst bricht er ab.
 
 ## Preisklassen Teppichboden
 
