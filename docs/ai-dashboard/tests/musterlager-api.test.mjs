@@ -39,6 +39,8 @@ function privat() {
       varianten: [{ farbe: 'Grau', sku: 'TESTTEP4_101' }, { farbe: 'Grau', sku: 'TESTTEP5_101' }, { farbe: 'Blau', sku: 'TESTTEP4_102' }] },
     { handle: 'muster-testteppich', titel: 'Muster Testteppich', produktgruppe: 'Musterservice',
       varianten: [{ farbe: 'Grau', sku: 'M-TESTTEP4_101' }, { farbe: 'Blau', sku: 'M-TESTTEP4_102' }] },
+    { handle: 'testteppich-1234-restrolle', titel: 'Testteppich 1234 – Restposten, 500 cm', produktgruppe: 'Teppichboden',
+      muster: { vorhanden: false, handle: null }, varianten: [{ farbe: null, sku: 'TPRTEST-ROLLE' }] },
   ] }));
   return dir;
 }
@@ -58,6 +60,17 @@ test('Farben zum Einlagern: aus Produkt und Musterprodukt, alle Breiten einer Fa
   // Das Musterprodukt selbst gewaehlt: dieselben Farben.
   assert.deepEqual(api.einkaufMusterlagerFarben({ handle: 'muster-testteppich' }).farben.map(x => x.farbe), ['Grau', 'Blau']);
   assert.equal(api.einkaufMusterlagerFarben({ handle: 'gibt-es-nicht' }).verfuegbar, false);
+});
+
+test('Artikel ohne Farboption (Restrolle) laesst sich einlagern: ein Eintrag "Ganzer Artikel", gespeichert ohne Farbe', async () => {
+  const { api } = umgebung();
+  const f = api.einkaufMusterlagerFarben({ handle: 'testteppich-1234-restrolle' });
+  assert.deepEqual(f.farben.map(x => [x.farbe, x.schluessel]), [['Ganzer Artikel', ['TPRTEST-ROLLE']]]);
+  const r = await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'testteppich-1234-restrolle', farben: ['Ganzer Artikel'], art: 'einzel', anzahl: 15, notiz: 'mehr da' }, MONA);
+  assert.equal(r.anzahl, 1);
+  const e = r.eintraege[0];
+  assert.deepEqual([e.titel, e.farbe, e.anzahl, e.schluessel, e.notiz], ['Testteppich 1234 – Restposten', null, 15, ['TPRTEST-ROLLE'], 'mehr da']);
+  assert.equal(api.einkaufMusterlagerFarben({ handle: 'testteppich-1234-restrolle' }).farben[0].imLager, true);
 });
 
 test('Einlagern -> aelteste offene Musterbestellung kommt aus dem Lager, verschicken zaehlt ab, Nachfuellen gibt das naechste frei', async () => {

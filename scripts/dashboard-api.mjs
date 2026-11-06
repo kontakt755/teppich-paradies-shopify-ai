@@ -3626,8 +3626,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
             const z = this._musterlagerProdukt(handle);
             if (!z) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.');
             const gesucht = new Set(farben.map(f => String(f)));
-            ziele = z.farben.filter(f => gesucht.has(f.farbe)).map(f => ({ titel: lagerKurzTitel(z.produkt.titel), farbe: f.farbe, handle: z.produkt.handle, schluessel: f.schluessel }));
-            const fehlen = [...gesucht].filter(f => !ziele.some(x => x.farbe === f));
+            ziele = z.farben.filter(f => gesucht.has(f.farbe)).map(f => ({ titel: lagerKurzTitel(z.produkt.titel), farbe: f.ganzerArtikel ? null : f.farbe, handle: z.produkt.handle, schluessel: f.schluessel }));
+            const fehlen = [...gesucht].filter(f => !z.farben.some(x => x.farbe === f));
             if (fehlen.length) throw new ApiError(400, `Für ${fehlen.join(', ')} fehlt die Artikelnummer – im Lexikon prüfen.`);
           } else if (Array.isArray(schluessel) && schluessel.length) {
             ziele = [{ titel, farbe, handle: handle || null, schluessel }];
