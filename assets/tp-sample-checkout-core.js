@@ -25,8 +25,13 @@
   // sonst Post von einem Absender, den er nicht erwartet.
   var HERSTELLER_MUSTER = ['vorwerk', 'jab anstoetz'];
 
+  // Sonderposten (Tag sonderposten) liegen bei uns im Lager - dort passt der
+  // Hinweis "kommt direkt vom Hersteller" nicht (Rundgang 06.11.2026).
   function isHerstellerMuster(product) {
     if (!product) return false;
+    var tags = Array.isArray(product.tags) ? product.tags : String(product.tags || '').split(',');
+    var sonderposten = tags.some(function (tag) { return String(tag || '').trim().toLowerCase() === 'sonderposten'; });
+    if (sonderposten) return false;
     return HERSTELLER_MUSTER.indexOf(String(product.vendor || '').trim().toLowerCase()) !== -1;
   }
 
@@ -98,7 +103,9 @@
         value: dekor || String(product.title || ''),
         variantId: einzel.id,
         image: product.featured_image || '',
-        exactImage: '',
+        // Ein Produkt = ein Dekor: das Produktbild ist das genaue Bild fuer
+        // die Warenkorbzeile (Rundgang 06.11.2026, vorher ohne Bild).
+        exactImage: product.featured_image || '',
       }];
     }
     var seen = Object.create(null);
