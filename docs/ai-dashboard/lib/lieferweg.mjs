@@ -15,6 +15,15 @@
  * Route "an uns" geht nach der Regel vom 14.10. meist trotzdem direkt an den Kunden - die
  * Plakette sagt dann "nicht vermerkt".
  *
+ * Zwei Grenzen (Pruefung 06.11.2026):
+ * - Ein Vermerk zaehlt nur, solange die Position einen Schritt hat. "Zurueck auf offen" laesst ihn
+ *   stehen; ein alter Vermerk "direkt an Kunden" machte sonst Lagerware wieder bestellbar.
+ * - Die Regeldatei gilt nur fuer Ware, die noch nicht vom Lieferanten gekommen ist (offen oder der
+ *   Altfall "bestellt" wie #1119). Was ohne Vermerk "aus Lager" schon geliefert, raus oder erledigt
+ *   ist, kam vor der Regel ueber den Lieferanten zu uns (#1104) - der Weg folgt dann der Stammroute.
+ * Die Stammroute OWN_STOCK ist kein Lieferweg: routeFor (operations/lib/route.mjs) bestellt sie
+ * beim Lieferanten, weil Shopify keinen Bestand fuehrt. Lagerware steht nur in der Regeldatei.
+ *
  * Muster und Eigenleistungen haben keinen Lieferweg: Muster laufen ueber die Packstation,
  * eine Eigenleistung (Kettelservice) reist nicht.
  */
@@ -31,8 +40,10 @@ export const LIEFERWEG_WORT = Object.freeze({
 
 /** Vermerk beim Bestellen (operations/lib/auftragsstatus.mjs UEBER_WERTE) -> Weg. */
 const VERMERK_WEG = Object.freeze({ kunde: 'hersteller', kettler: 'kettler', laden: 'uns', lager: 'lager' });
-/** Stammroute (domains/shopify/einkauf-metafelder.json) -> Weg; alles andere "über uns". */
-const ROUTE_WEG = Object.freeze({ SUPPLIER_DIRECT: 'hersteller', SUPPLIER_TO_SITE: 'baustelle', OWN_STOCK: 'lager' });
+/** Stammroute (domains/shopify/einkauf-metafelder.json) -> Weg; alles andere "über uns" (auch OWN_STOCK, siehe oben). */
+const ROUTE_WEG = Object.freeze({ SUPPLIER_DIRECT: 'hersteller', SUPPLIER_TO_SITE: 'baustelle' });
+/** Ab hier ist die Ware nicht mehr "beim Lieferanten" - die Regeldatei sagt dann nichts mehr. */
+const SCHON_DA = new Set(['geliefert', 'raus', 'erledigt']);
 
 /** Schritte, die wir bei Ware selbst abhaken, bevor sie raus geht (eintrag.selbstversand). */
 export const SELBST_SCHRITTE = Object.freeze(['zugeschnitten', 'gepackt']);
@@ -62,17 +73,22 @@ const wegErgebnis = (weg, belegt) => ({ weg, wort: LIEFERWEG_WORT[weg], belegt }
  */
 export function lieferwegVon(p, eintrag = null, ctx = {}) {
   if (!p || p.istMuster || p.eigenleistung) return null;
-  const vermerk = VERMERK_WEG[eintrag?.ueber];
+  const status = eintrag?.status || null;
+  const vermerk = status ? VERMERK_WEG[eintrag.ueber] : null;
   // "Lieferant liefert direkt" auf eine Baustelle bleibt "Baustelle" - der Vermerk sagt nur "nicht zu uns".
   if (vermerk) return wegErgebnis(vermerk === 'hersteller' && p.route === 'SUPPLIER_TO_SITE' ? 'baustelle' : vermerk, true);
-  const lager = p.lagerware === true || (p.lagerware === undefined && Array.isArray(ctx.regeln) && Boolean(lagerRegelFuer(p.sku, ctx.regeln)));
-  if (lager) return wegErgebnis('lager', true);
+  const regel = p.lagerware === true || (p.lagerware === undefined && Array.isArray(ctx.regeln) && Boolean(lagerRegelFuer(p.sku, ctx.regeln)));
+  if (regel && !SCHON_DA.has(status)) return wegErgebnis('lager', true);
   return wegErgebnis(ROUTE_WEG[p.route] || 'uns', false);
 }
 
-/** Lagerware darf nie beim Lieferanten bestellt werden (Regeldatei oder Vermerk "aus Lager"). */
+/**
+ * Lagerware darf nie beim Lieferanten bestellt werden. Dieselbe Regel wie lieferwegVon (Weg "aus
+ * Lager") - sonst galt eine schon mit Vermerk bestellte Position zugleich als "Hersteller → Kunde"
+ * und als Lagerware und fiel aus jeder Arbeitsliste.
+ */
 export function istLagerware(p, eintrag = null) {
-  return Boolean(p && !p.istMuster && !p.eigenleistung && (p.lagerware === true || eintrag?.ueber === 'lager'));
+  return lieferwegVon(p, eintrag)?.weg === 'lager';
 }
 
 /**
@@ -92,10 +108,14 @@ export function selbstStand(p, eintrag = null) {
   return null;
 }
 
-/** Klartext je Stand - "noch zuschneiden", "zugeschnitten – noch packen", "gepackt – wartet auf Versand". */
-export function selbstStandText(stand, weg) {
+/**
+ * Klartext je Stand - "noch zuschneiden", "zugeschnitten – noch packen", "gepackt – wartet auf Versand".
+ * "zugeschnitten" nur, wenn "Zugeschnitten" wirklich abgehakt ist (eintrag.selbstversand), sonst
+ * hiesse es, die Rolle sei schon geschnitten.
+ */
+export function selbstStandText(stand, weg, eintrag = null) {
   if (stand === 'zuschneiden') return 'noch zuschneiden';
-  if (stand === 'packen') return weg === 'lager' ? 'zugeschnitten – noch packen' : 'eingetroffen – noch packen';
+  if (stand === 'packen') return weg === 'lager' && eintrag?.selbstversand?.zugeschnitten ? 'zugeschnitten – noch packen' : 'eingetroffen – noch packen';
   if (stand === 'versand') return 'gepackt – wartet auf Versand';
   return '';
 }

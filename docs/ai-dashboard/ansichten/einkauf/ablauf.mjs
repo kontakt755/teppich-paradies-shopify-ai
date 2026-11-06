@@ -80,7 +80,7 @@ function lieferungHtml(a, ab, e) {
 function selbstHtml(ab) {
   const liste = ab.selbst || [];
   if (!liste.length) return '';
-  const zeile = x => `<li class="ab-pos"><span>${esc(titelVon(x.pos))} ${lieferwegPlakette(lieferwegVon(x.pos, x.eintrag))} <span class="small muted">${esc(selbstStandText(x.selbst, x.weg))}</span></span>
+  const zeile = x => `<li class="ab-pos"><span>${esc(titelVon(x.pos))} ${lieferwegPlakette(lieferwegVon(x.pos, x.eintrag))} <span class="small muted">${esc(selbstStandText(x.selbst, x.weg, x.eintrag))}</span></span>
     <div class="ab-knoepfe" style="margin-top:0">${selbstKnoepfe(x.pos, x.eintrag)}</div></li>`;
   return `<p class="small muted" style="margin:6px 0 0">Von uns abschicken:</p><ul class="ab-liste">${liste.map(zeile).join('')}</ul>`;
 }

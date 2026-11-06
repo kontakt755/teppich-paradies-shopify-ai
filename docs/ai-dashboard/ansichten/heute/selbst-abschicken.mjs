@@ -7,9 +7,9 @@
  * Steht direkt unter den Warenbestellungen und nur, wenn etwas zu tun ist - ein leerer Kasten
  * waere Rauschen. Zaehlt Warenpositionen offener, echter Bestellungen (lib/lieferweg.mjs
  * selbstStand). Gelb und Rot folgen der vorhandenen Frist "Ware liegt bei uns" (lib/todos.mjs
- * FRISTEN.rausgeben), keine neue Schwelle. Das To-do "Ware ist da – rausgeben" laesst heute.mjs
- * weg, wenn dieser Block alle seine Positionen zeigt (vonSelbstAbschickenGedeckt) - eine Sache
- * steht genau einmal auf der Seite.
+ * FRISTEN.rausgeben), keine neue Schwelle. Aus dem To-do "Ware ist da – rausgeben" nimmt heute.mjs
+ * die Positionen heraus, die dieser Block zeigt (lib/todos.mjs rausgebenOhne, Schluessel aus
+ * `schluessel`) - eine Sache steht genau einmal auf der Seite.
  *
  * Knoepfe kommen aus einkauf/auftragsfluss.mjs selbstKnoepfe (dieselben wie im Einkauf und in der
  * Kundenakte); Klicks verteilt ereignisse.mjs ueber data-Attribute. Styles: stile/heute.css.
@@ -26,11 +26,14 @@ export const SELBST_SICHTBAR = 5;
 
 const TON_RANG = { crit: 0, warn: 1, '': 2 };
 
-/** Seit wann der aktuelle Schritt ansteht: Bestellung, Zuschnitt bzw. Eingang, Packen. */
+/**
+ * Ab wann die Frist zaehlt: beim Zuschneiden ab der Bestellung, danach ab Zuschnitt bzw. Eingang -
+ * solange liegt die Ware bei uns, auch wenn sie schon gepackt ist. "Gepackt" setzt die Frist nicht
+ * zurueck (Pruefung 06.11.: sonst war eine seit 6 Tagen liegende Ware nach dem Klick wieder neutral).
+ */
 function seit(stand, z, eintrag) {
   if (stand === 'zuschneiden') return z.datum || z.auftrag?.datum || null;
-  if (stand === 'packen') return eintrag?.selbstversand?.zugeschnitten?.am || eintrag?.geliefertAm || null;
-  return eintrag?.selbstversand?.gepackt?.am || eintrag?.geliefertAm || null;
+  return eintrag?.selbstversand?.zugeschnitten?.am || eintrag?.geliefertAm || null;
 }
 
 /**
@@ -66,25 +69,19 @@ export function selbstAbschickenStand({ daten, statusAlle = null, jetzt = new Da
   return { verfuegbar: true, zeilen, schluessel: new Set(zeilen.map(x => x.key)), fehler: daten.lagerwareFehler || null };
 }
 
-/** true, wenn ein "rausgeben"-To-do nur Positionen meint, die der Block schon zeigt. */
-export function vonSelbstAbschickenGedeckt(todo, stand) {
-  if (todo?.art !== 'rausgeben' || !Array.isArray(todo.schluessel) || !todo.schluessel.length) return false;
-  return todo.schluessel.every(k => stand?.schluessel?.has(k));
-}
-
 function zeile(x, { erste, lesend }) {
   const { z, p } = x;
   const ziel = z.kundenSchluessel ? vorgangsLink('kunden', { kunde: z.kundenSchluessel, auftrag: z.orderId })
     : `#/kunden?${new URLSearchParams({ tab: 'bestellungen', bart: 'ware', bfilter: 'alle', bq: z.orderName || z.orderId || '' })}`;
   const menge = p.kundenmenge || p.menge;
   const artikel = [p.titel, p.farbe, menge].filter(v => v !== undefined && v !== null && String(v).trim() && v !== 'UNGEKLAERT').map(String);
-  const alter = x.tage === null ? '' : `<span class="heute-alter${x.ton ? ` ${x.ton}` : ''}" title="Seit diesem Schritt">${esc(alterText(x.tage))}</span>`;
+  const alter = x.tage === null ? '' : `<span class="heute-alter${x.ton ? ` ${x.ton}` : ''}" title="${x.stand === 'zuschneiden' ? 'Seit der Bestellung' : 'Liegt so lange bei uns'}">${esc(alterText(x.tage))}</span>`;
   const knoepfe = lesend ? '' : selbstKnoepfe(p, x.eintrag, { haupt: erste, rueckgaengig: true });
   return `<div class="heute-bestellzeile selbst-zeile" data-selbst-zeile="${esc(x.stand)}"><div>
       <strong><a href="${esc(ziel)}">${esc(z.orderName || 'Bestellung')}</a> · ${esc(z.kundenname || 'Kunde nicht hinterlegt')}</strong>
       <p>${esc(artikel.join(' · ') || 'Artikel nicht hinterlegt')}</p>
-      <p class="selbst-stand">${lieferwegPlakette(x.lw)} <span>${esc(selbstStandText(x.stand, x.lw?.weg))}</span> ${alter}</p>
-      ${p.lagerHinweis ? `<p class="selbst-hinweis">${esc(p.lagerHinweis)}</p>` : ''}</div>
+      <p class="selbst-stand">${lieferwegPlakette(x.lw)} <span>${esc(selbstStandText(x.stand, x.lw?.weg, x.eintrag))}</span> ${alter}</p>
+      ${p.lagerHinweis && x.lw?.weg === 'lager' ? `<p class="selbst-hinweis">${esc(p.lagerHinweis)}</p>` : ''}</div>
       ${knoepfe ? `<div class="selbst-knoepfe">${knoepfe}</div>` : ''}</div>`;
 }
 

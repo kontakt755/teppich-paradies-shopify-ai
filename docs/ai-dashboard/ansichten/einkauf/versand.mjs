@@ -79,7 +79,9 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
   const bereit = kandidaten.filter(p => !gesperrt.some(x => x.p.lineItemId === p.lineItemId));
   const nurGesperrt = Boolean(auftrag) && kandidaten.length > 0 && !bereit.length && !nurGeklickt;
   // Vorauswahl ueber alle offenen Artikel, damit eine Eigenleistung nicht ohne die gesperrte Ware vorab angekreuzt wird.
-  const vor = vorauswahl(kandidaten, { geklickt: geklickt?.lineItemId || null, status });
+  // Lieferweg je Artikel (lib/lieferweg.mjs): Direktware des Herstellers ist im gemischten Auftrag nicht vorab angekreuzt.
+  const wegJe = Object.fromEntries(kandidaten.map(p => [p.lineItemId, lieferwegVon(p, stand[`${orderId}::${p.lineItemId}`] || null)?.weg || null]));
+  const vor = vorauswahl(kandidaten, { geklickt: geklickt?.lineItemId || null, status, weg: wegJe });
   // Muster, die jemand persoenlich vorbeibringt: keine Sendungsnummer, Mail vorab aus.
   const uebergabe = istUebergabe(geklickt ? [geklickt] : position ? [position] : kandidaten);
   // Abholung im Laden: Mail vorab aus (eine Mail "ist unterwegs" passt nicht).

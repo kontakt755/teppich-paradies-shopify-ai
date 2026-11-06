@@ -420,6 +420,7 @@ function pruefeLagerwareLesbar(modell) {
 }
 
 const LAGERWARE_NICHT_BESTELLEN = 'Aus eigenem Lager – nicht bestellen, als zugeschnitten markieren';
+const LAGERWARE_KOMMT_NICHT_AN = 'Diese Ware kommt nicht vom Lieferanten zu uns: Lagerware als zugeschnitten markieren, Direktware des Herstellers über „Ist beim Kunden…“ abschließen.';
 
 function bereiteBestellModell(daten, dir, jetzt) {
   const exportDaten = ladeExport(JSON.stringify(daten));
@@ -1356,12 +1357,24 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // bewusste Korrektur zurueck - dann gilt er fuer alle.
       // Lagerware ("aus eigenem Lager") ueberspringt "Ware ist bestellt" wie gedeckte Lagermuster.
       const lagerware = p => istLagerware(p, alle[positionKey(orderId, p.lineItemId)]);
+      // "Ware ist angekommen" gilt nur fuer Ware, die der Lieferant zu uns bringt (#1995): Lagerware geht
+      // ueber "Zugeschnitten" (aktion selbstversand) auf "bei uns", Direktware des Herstellers kommt nie an.
+      // Bis zur Pruefung 06.11. setzte der Klick in gemischten Auftraegen beides mit auf "geliefert".
+      // Schon zugeschnittene Lagerware darf als Korrektur zurueck auf "bei uns" (z. B. von "raus").
+      const kommtNichtAn = p => {
+        if (status !== 'geliefert') return false;
+        const weg = lieferwegVon(p, alle[positionKey(orderId, p.lineItemId)])?.weg;
+        return weg === 'hersteller' || weg === 'baustelle' || (weg === 'lager' && stufe(p) < ziel);
+      };
+      const auslassen = p => (status === 'bestellt' && (lagerGedeckt(p) || lagerware(p))) || kommtNichtAn(p);
       if (status === 'bestellt' && positionen.some(p => !p.istMuster)) pruefeLagerwareLesbar(modell);
-      const dahinter = positionen.filter(p => stufe(p) < ziel && !(status === 'bestellt' && (lagerGedeckt(p) || lagerware(p))));
+      const dahinter = positionen.filter(p => stufe(p) < ziel && !auslassen(p));
       if (status === 'bestellt' && !dahinter.length && positionen.some(lagerGedeckt)) throw new ApiError(409, LAGER_NICHT_BESTELLEN);
       if (status === 'bestellt' && !dahinter.length && positionen.some(p => lagerware(p) && stufe(p) < ziel)) throw new ApiError(409, LAGERWARE_NICHT_BESTELLEN);
-      // Bewusste Korrektur zurueck auf "bestellt": nie fuer Lagerware.
-      const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel && !(status === 'bestellt' && lagerware(p)));
+      // Bewusste Korrektur zurueck auf "bestellt" bzw. "geliefert": nie fuer Lager- oder Direktware.
+      const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel && !auslassen(p));
+      // Bliebe nur Lager- oder Direktware uebrig, wuerde der Klick still nichts tun - lieber sagen, welcher Weg gilt.
+      if (status === 'geliefert' && !betroffen.length && positionen.some(p => kommtNichtAn(p) && stufe(p) < ziel)) throw new ApiError(409, LAGERWARE_KOMMT_NICHT_AN);
       const blockiert = positionen.map(p => alle[positionKey(orderId, p.lineItemId)]).find(e => !darfWeiter(e, status));
       if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
       setzeStatusPositionen(statusDatei, betroffen.map(p => ({ orderId, lineItemId: p.lineItemId, status, actor, bestellmenge: p.bestellSoll || p.bestellmenge || null, lieferantBestellnummer, notiz: text, jetzt: now(),
@@ -1456,8 +1469,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     if (p.istMuster) throw new ApiError(409, 'Muster werden in der Packstation gepackt, nicht hier.');
     const file = auftragsstatusPfad(dir);
     const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)] || null;
-    if (vorher?.ueber === 'kunde') throw new ApiError(409, 'Der Lieferant schickt diese Ware direkt an den Kunden – bei uns wird nichts zugeschnitten oder gepackt.');
+    // Derselbe Weg wie ueberall (lib/lieferweg.mjs): ein Vermerk zaehlt nur mit Schritt.
     const weg = lieferwegVon(p, vorher)?.weg;
+    if (['hersteller', 'baustelle'].includes(weg)) throw new ApiError(409, 'Der Lieferant schickt diese Ware direkt an den Kunden – bei uns wird nichts zugeschnitten oder gepackt.');
     if (schritt === 'zugeschnitten' && weg !== 'lager') throw new ApiError(409, 'Zugeschnitten wird nur Ware aus eigenem Lager.');
     if (schritt === 'gepackt' && !['lager', 'uns'].includes(weg)) throw new ApiError(409, 'Gepackt wird nur Ware, die wir selbst verschicken.');
     let eintrag;
@@ -3423,6 +3437,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)];
       if (status === 'bestellt' && lagerGedeckt(p)) throw new ApiError(409, LAGER_NICHT_BESTELLEN);
       if (status === 'bestellt' && (istLagerware(p, vorher) || ueber === 'lager')) throw new ApiError(409, LAGERWARE_NICHT_BESTELLEN);
+      // Nie bestellte Lagerware kann nicht "eingetroffen" sein - sie wird zugeschnitten (aktion selbstversand).
+      if (status === 'geliefert' && !vorher?.status && lieferwegVon(p, vorher)?.weg === 'lager') throw new ApiError(409, LAGERWARE_KOMMT_NICHT_AN);
       if (status === 'bestellt' && p && !p.istMuster) pruefeLagerwareLesbar(modell);
       let eintrag;
       try {

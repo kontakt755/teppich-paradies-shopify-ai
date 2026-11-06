@@ -92,8 +92,8 @@ function afStatusZelle(p) {
   // Der Stand ist ein ruhiger Text, kein zweiter Knopf - deshalb kein "badge status" mehr.
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
-  const selbstText = selbstStandText(selbstStand(p, eintrag), lw?.weg);
-  const stand = `<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${uebernahmeBlock([p])}`
+  const selbstText = selbstStandText(selbstStand(p, eintrag), lw?.weg, eintrag);
+  const stand = `<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${uebernahmeBlock([p])}`
     // Steht im Musterlager, ist aber leer bzw. aufgebraucht: deshalb wieder beim Lieferanten.
     + (!status && p.musterLagerLeer ? `<div class="small muted">Musterlager: ${esc(p.musterLagerLeer.artLabel)} leer${p.musterLagerLeer.ort ? ` (${esc(p.musterLagerLeer.ort)})` : ''}</div>` : '');
   // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.

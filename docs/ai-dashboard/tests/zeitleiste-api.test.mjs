@@ -154,11 +154,16 @@ test('Schritt bestellt: Kettelweg je Artikel wird vermerkt, ohne Angabe bleibt d
   await schritt(WARE, 'bestellt', { kettelwege: { [item]: 'kunde' } });
   assert.equal(stand(api).status, 'bestellt');
   assert.equal(stand(api).ueber, 'kunde');
-  await schritt(WARE, 'geliefert', { kettelwege: { [item]: 'kettler' } });
-  assert.equal(stand(api).ueber, 'kunde', 'nur der Schritt bestellt setzt den Vermerk');
+  // Direktware kommt nie bei uns an (#1995, Pruefung 06.11.): "Ware ist angekommen" lehnt der Server ab, der Vermerk bleibt.
+  await assert.rejects(() => schritt(WARE, 'geliefert', { kettelwege: { [item]: 'kettler' } }), e => e instanceof ApiError && e.status === 409 && /kommt nicht vom Lieferanten zu uns/.test(e.message));
+  assert.equal(stand(api).status, 'bestellt');
+  assert.equal(stand(api).ueber, 'kunde');
   const ohne = umgebung();
   await ohne.schritt(WARE, 'bestellt');
   assert.equal(stand(ohne.api).ueber, undefined);
+  await ohne.schritt(WARE, 'geliefert', { kettelwege: { [item]: 'kettler' } });
+  assert.equal(stand(ohne.api).status, 'geliefert');
+  assert.equal(stand(ohne.api).ueber, undefined, 'nur der Schritt bestellt setzt den Vermerk');
 });
 
 test('Abwaertskompatibel: der bestehende Aufruf ohne aktion verhaelt sich wie bisher', async () => {

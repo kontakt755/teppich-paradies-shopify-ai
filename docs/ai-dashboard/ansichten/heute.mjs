@@ -26,7 +26,7 @@ import { musterAutomatikBlock } from '../bausteine/muster-bestellanzeige.mjs';
  * To-dos werden nicht erfasst, sondern abgeleitet - diese Datei laedt und zeichnet nur.
  */
 import {
-  leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, alterText, SICHT_LABEL,
+  leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, alterText, SICHT_LABEL, rausgebenOhne,
 } from '../lib/todos.mjs';
 import { versandLaeuft, teileNachfassen, nachfassTodo } from '../lib/muster-nachfassen.mjs';
 import { belegTodos } from '../lib/lieferbelege.mjs';
@@ -62,7 +62,7 @@ import { bestellarbeitBlock } from './heute/bestellarbeit.mjs';
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
 import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
 import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
-import { selbstAbschickenStand, selbstAbschickenBlock, vonSelbstAbschickenGedeckt } from './heute/selbst-abschicken.mjs';
+import { selbstAbschickenStand, selbstAbschickenBlock } from './heute/selbst-abschicken.mjs';
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
@@ -248,8 +248,9 @@ function problemeShop(nf, selbst = null) {
   if (darfAnsicht('shopwache')) ensureShopwache();
   const q = quellen();
   const sicht = istInhaber() ? 'alles' : gewaehlteSicht(q.aufgaben);
-  // "Ware ist da – rausgeben" steht schon im Block "Von uns abschicken" - nicht ein zweites Mal rot.
-  const liste = todosDerSicht(sicht, q, nf).liste.filter(t => !vonSelbstAbschickenGedeckt(t, selbst));
+  // "Ware ist da – rausgeben" ohne die Positionen, die schon im Block "Von uns abschicken" stehen -
+  // nicht ein zweites Mal rot. Bleibt nichts uebrig (nur Ware ueber uns), faellt das To-do weg.
+  const liste = todosDerSicht(sicht, q, nf).liste.map(t => rausgebenOhne(t, selbst?.schluessel)).filter(Boolean);
   return problemeBlock(liste, { zeile: t => todoZeile(t, false), fehlen: problemQuellenFehlen() });
 }
 

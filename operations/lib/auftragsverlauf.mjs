@@ -354,28 +354,34 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
     const eintragVon = p => statusAlle[positionKey(auftrag.id, p.lineItemId)] || null;
     const wegVon = p => lieferwegVon(p, eintragVon(p))?.weg;
     const istDirekt = p => wegVon(p) === 'hersteller' || wegVon(p) === 'baustelle';
+    const stufe = p => STATUS_ORDER.indexOf(eintragVon(p)?.status) + 1;
     const lager = ware.filter(p => wegVon(p) === 'lager');
     const zuBestellen = ware.filter(p => wegVon(p) !== 'lager');
-    const kommtZuUns = ware.filter(p => !istDirekt(p));
+    // Was der Lieferant zu uns (bzw. zum Kettler und zurueck) bringt - nur das ist "Geliefert an uns".
+    const vomLieferanten = ware.filter(p => !istDirekt(p) && wegVon(p) !== 'lager');
     direkt = ware.length > 0 && ware.every(istDirekt);
     // Gemischt (#1119: eine Position Hersteller → Kunde, eine aus Lager) zaehlt jeder Schritt nur
     // die Positionen, die ihn ueberhaupt gehen - sonst stuende "Lieferant liefert die Ware an uns"
-    // fuer Ware, die nie zu uns kommt. Reine Auftraege rechnen wie bisher ueber alle Positionen.
-    const gemischt = lager.length > 0 || (!direkt && kommtZuUns.length < ware.length);
+    // fuer Ware, die nie zu uns kommt. Ebenso, wenn ein Teil schon bei uns liegt und raus soll
+    // (#1104), waehrend der Rest noch unterwegs ist. Sonst rechnen Auftraege wie bisher ueber alle Positionen.
+    const gemischt = lager.length > 0 || (!direkt && vomLieferanten.length < ware.length);
+    const teilweise = vomLieferanten.some(p => stufe(p) === 2) && vomLieferanten.some(p => stufe(p) < 2);
+    const jeWeg = gemischt || teilweise;
     const teil = liste => positionsStand({ ...auftrag, positionen: liste }, statusAlle);
     schritte.push(start('kunde_hat_bestellt'));
-    if (!gemischt) schritte.push(ausPosition('bestellt'));
+    if (!jeWeg) schritte.push(ausPosition('bestellt'));
     else if (zuBestellen.length) schritte.push(ausPosition('bestellt', {}, teil(zuBestellen)));
-    if (!direkt) schritte.push(ausPosition('geliefert', zuBestellen.length ? {} : { label: label.geliefert_lager }, gemischt ? teil(kommtZuUns) : pos));
+    // "Geliefert an uns" zaehlt nur Ware vom Lieferanten; Lagerware kommt nicht an, sie wird
+    // zugeschnitten. Nur ohne Ware vom Lieferanten steht der Zuschnitt selbst als Schritt da.
+    if (!direkt) schritte.push(ausPosition('geliefert', vomLieferanten.length ? {} : { label: label.geliefert_lager }, !jeWeg ? pos : teil(vomLieferanten.length ? vomLieferanten : lager)));
     schritte.push(ausVersand(), ausPosition('erledigt'));
-    if (gemischt) {
-      const stufe = p => STATUS_ORDER.indexOf(eintragVon(p)?.status) + 1;
+    if (jeWeg) {
       wege = {
-        lager: lager.length, direkt: ware.length - kommtZuUns.length, gesamt: ware.length,
+        lager: lager.length, direkt: ware.filter(istDirekt).length, gesamt: ware.length,
         direktOffen: ware.filter(p => istDirekt(p) && stufe(p) < 3).length,
         zuschneiden: lager.filter(p => stufe(p) < 2).length,
-        zuUnsUnterwegs: kommtZuUns.filter(p => wegVon(p) !== 'lager' && stufe(p) < 2).length,
-        vonUnsRaus: kommtZuUns.filter(p => stufe(p) === 2).length,
+        zuUnsUnterwegs: vomLieferanten.filter(p => stufe(p) < 2).length,
+        vonUnsRaus: [...vomLieferanten, ...lager].filter(p => stufe(p) === 2).length,
       };
     }
   }
@@ -510,27 +516,38 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
     case 'bestellt':
       return schritt('wir', `Ware beim Lieferanten bestellen${teil}`, w?.lager ? `${vonUns(w.lager)} aus eigenem Lager – nicht bestellen, sondern zuschneiden und abschicken.` : null,
         'bestellt', 'Ware ist bestellt', 'faellig', tage, tage);
-    case 'geliefert':
+    case 'geliefert': {
       if (w && !w.zuUnsUnterwegs) {
         // Nichts ist mehr zu uns unterwegs - offen ist nur der Zuschnitt aus eigenem Lager.
         const text = w.lager === w.gesamt ? `Aus eigenem Lager zuschneiden und abschicken${teil}`
           : [w.direktOffen ? 'Hersteller liefert direkt' : null, `${vonUns(w.zuschneiden)} zuschneiden und abschicken`].filter(Boolean).join(' · ');
         return { ...schritt('wir', text, lagerDetail, null, 'Von uns abschicken', 'faellig', tage, tage), href: '#/heute' };
       }
-      if (w?.zuschneiden) {
-        const r = beimLieferanten('Lieferant liefert die Ware an uns', 'geliefert', 'Ware ist angekommen');
-        return { ...r, text: `${r.text} · ${vonUns(w.zuschneiden)} zuschneiden` };
-      }
-      return beimLieferanten('Lieferant liefert die Ware an uns', 'geliefert', 'Ware ist angekommen');
-    case 'raus':
+      // Ware vom Lieferanten ist unterwegs zu uns; daneben steht, was wir selbst schon tun koennen
+      // ("Von uns abschicken" auf Heute) - #1104: die Unterlage liegt da, der Teppich kommt noch.
+      const r = beimLieferanten('Lieferant liefert die Ware an uns', 'geliefert', 'Ware ist angekommen');
+      const dazu = [w?.zuschneiden ? `${vonUns(w.zuschneiden)} zuschneiden` : null, w?.vonUnsRaus ? `${vonUns(w.vonUnsRaus)} verschicken` : null].filter(Boolean);
+      return dazu.length ? { ...r, text: [r.text, ...dazu].join(' · ') } : r;
+    }
+    case 'raus': {
       if (stand.direktversand) return beimLieferanten('Lieferant liefert direkt an den Kunden', 'raus', 'Ist an den Kunden raus…');
+      // Bei uns liegt nichts mehr, offen ist nur der Zuschnitt aus eigenem Lager: kein Versand-Dialog,
+      // sondern "Von uns abschicken" (sonst kreuzte der Dialog die ungeschnittene Rolle an).
+      if (w?.zuschneiden && !w.vonUnsRaus) {
+        const text = [w.direktOffen ? 'Hersteller liefert direkt' : null, `${vonUns(w.zuschneiden)} zuschneiden und abschicken`].filter(Boolean).join(' · ');
+        return { ...schritt('wir', text, lagerDetail, null, 'Von uns abschicken', 'faellig', tage, tage), href: '#/heute' };
+      }
+      // Ware vom Lieferanten ist da, die Lagerware noch nicht zugeschnitten: steht dabei.
+      const zuschnitt = w?.zuschneiden ? ` · ${vonUns(w.zuschneiden)} zuschneiden` : '';
       // Unsere Positionen sind raus, offen ist nur noch, was der Hersteller direkt schickt.
       if (w?.direktOffen && !w.vonUnsRaus) return beimLieferanten('Hersteller liefert direkt an den Kunden', 'raus', 'Ist an den Kunden raus…');
       if (w?.direktOffen) {
-        return schritt('wir', `Hersteller liefert direkt · ${vonUns(w.vonUnsRaus)} verschicken`, 'Die Direktware schickt der Hersteller; unsere Position packen und verschicken.',
+        // Der Versand-Dialog kreuzt die Direktware nicht vorab an (lib/versand.mjs vorauswahl).
+        return schritt('wir', `Hersteller liefert direkt · ${vonUns(w.vonUnsRaus)} verschicken${zuschnitt}`, 'Die Direktware schickt der Hersteller; unsere Position packen und verschicken.',
           'raus', 'An Kunden raus…', 'faellig', tage, tage);
       }
-      return schritt('wir', `Ware an den Kunden übergeben oder verschicken${teil}`, null, 'raus', 'An Kunden raus…', 'faellig', tage, tage);
+      return schritt('wir', `Ware an den Kunden übergeben oder verschicken${teil}${zuschnitt}`, null, 'raus', 'An Kunden raus…', 'faellig', tage, tage);
+    }
     case 'erledigt':
       if (versand?.zugestellt || tage >= WARE_ABSCHLIESSEN_NACH_TAGEN) {
         return schritt('wir', 'Ware ist beim Kunden – Auftrag abschließen', versand?.zugestellt ? 'Laut Sendungsverfolgung zugestellt.' : `Seit ${tageText(tage)} an den Kunden raus.`, 'erledigt', 'Abschließen', 'faellig', versand?.zugestellt ? 0 : tage - WARE_ABSCHLIESSEN_NACH_TAGEN, tage);

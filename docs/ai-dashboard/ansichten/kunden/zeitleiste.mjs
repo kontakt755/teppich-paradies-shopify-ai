@@ -138,9 +138,9 @@ function wegZeile(a, p) {
   const lw = lieferwegVon(p, eintrag);
   if (!lw) return '';
   // Ohne geladenen Stand nur der Weg - "Noch nicht bestellt" waere geraten.
-  const stand = !einkauf.auftragsstatus?.positionen ? '' : selbstStandText(selbstStand(p, eintrag), lw.weg) || afStatusText(eintrag);
+  const stand = !einkauf.auftragsstatus?.positionen ? '' : selbstStandText(selbstStand(p, eintrag), lw.weg, eintrag) || afStatusText(eintrag);
   const knoepfe = selbstKnoepfe({ ...p, orderId: a.id, orderName: a.name }, eintrag);
-  return `<dt>Lieferweg</dt><dd>${lieferwegPlakette(lw)}${stand ? ` <span class="small muted">${esc(stand)}</span>` : ''}${p.lagerHinweis ? `<br><span class="small muted">${esc(p.lagerHinweis)}</span>` : ''}${knoepfe ? `<div class="zl-knoepfe no-print">${knoepfe}</div>` : ''}</dd>`;
+  return `<dt>Lieferweg</dt><dd>${lieferwegPlakette(lw)}${stand ? ` <span class="small muted">${esc(stand)}</span>` : ''}${p.lagerHinweis && lw.weg === 'lager' ? `<br><span class="small muted">${esc(p.lagerHinweis)}</span>` : ''}${knoepfe ? `<div class="zl-knoepfe no-print">${knoepfe}</div>` : ''}</dd>`;
 }
 
 function worumKarte(a) {

@@ -97,7 +97,9 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
   return {
     schritte, jetzt: jetztKey, lieferanten, ungeklaert, positionen,
     bestelltAm: daten.length ? daten[daten.length - 1] : null,
-    unterwegs: positionen.filter(x => x.rang === 1),
+    // Lagerware ist nie "unterwegs", auch nicht im Altfall "bestellt" (#1119): sie kommt nicht vom
+    // Lieferanten. Sonst stuende sie in "Je Auftrag" zweimal da - mit "Ist eingetroffen" und mit "Zugeschnitten".
+    unterwegs: positionen.filter(x => x.rang === 1 && x.weg !== 'lager'),
     beiUns: positionen.filter(x => x.rang === 2),
     // Ware, die wir selbst zuschneiden bzw. packen und verschicken (Heute › Von uns abschicken).
     selbst: positionen.filter(x => x.selbst),

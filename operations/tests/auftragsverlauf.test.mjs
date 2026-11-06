@@ -443,12 +443,14 @@ test('#1119: Direktware bestellt, Lagerware offen - nie "Lieferant liefert die W
   assert.match(neu.detail, /1 Position von uns aus eigenem Lager – nicht bestellen/);
 });
 
-test('#1104: Lagerware zugeschnitten -> "1 Position von uns verschicken"; ist sie raus, wartet nur noch der Hersteller', () => {
+test('#1119 nach dem Zuschnitt: "1 Position von uns verschicken"; ist sie raus, wartet nur noch der Hersteller', () => {
   const zugeschnitten = { status: 'geliefert', ueber: 'lager', geliefertAm: '2026-11-05T09:00:00Z', selbstversand: { zugeschnitten: { am: '2026-11-05T09:00:00Z', von: 'test', vorher: null } } };
   const bestellt = { status: 'bestellt', ueber: 'kunde', bestelltAm: '2026-11-02T09:00:00Z' };
   const beide = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle: wegStatus({ l1: zugeschnitten, d1: bestellt }), jetzt: JETZT_WEG });
   assert.equal(beide.naechsterSchritt.text, 'Hersteller liefert direkt · 1 Position von uns verschicken');
   assert.equal(beide.naechsterSchritt.aktion, 'raus');
+  // B5: an uns wurde nichts geliefert - der Schritt heisst wie der Zuschnitt.
+  assert.deepEqual(beide.verlauf.map(s => s.label), ['Kunde hat bestellt', 'Ware beim Lieferanten bestellt', 'Aus eigenem Lager zugeschnitten', 'An Kunden raus', 'Erledigt']);
   const nurHersteller = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle: wegStatus({ l1: { ...zugeschnitten, status: 'raus' }, d1: bestellt }), jetzt: JETZT_WEG });
   assert.equal(nurHersteller.naechsterSchritt.wer, 'lieferant');
   assert.equal(nurHersteller.naechsterSchritt.text, 'Hersteller liefert direkt an den Kunden (1 von 2 Artikeln schon)');
@@ -470,4 +472,49 @@ test('#1078 und reine Auftraege unveraendert: Direktware per Vermerk ohne "bei u
   assert.equal(direkt.naechsterSchritt.text, 'Lieferant liefert direkt an den Kunden');
   const anUns = zeitleiste(wegAuftrag([direktPos]), { statusAlle: wegStatus({ d1: { status: 'bestellt', bestelltAm: '2026-11-02T09:00:00Z' } }), jetzt: JETZT_WEG });
   assert.equal(anUns.naechsterSchritt.text, 'Lieferant liefert die Ware an uns');
+});
+
+test('E4: echte Lage #1104 - Unterlage vor der Regel geliefert, Teppich unterwegs, Kettelservice: "1 Position von uns verschicken"', () => {
+  const kettel = { lineItemId: 'k1', titel: 'Kettelservice', eigenleistung: true, menge: 1 };
+  const statusAlle = wegStatus({
+    l1: { status: 'geliefert', bestelltAm: '2026-11-03T09:00:00Z', geliefertAm: '2026-11-05T09:00:00Z' },
+    d1: { status: 'bestellt', bestelltAm: '2026-11-03T09:00:00Z' },
+    k1: { status: 'bestellt', bestelltAm: '2026-11-03T09:00:00Z' },
+  });
+  const z = zeitleiste(wegAuftrag([direktPos, kettel, lagerPos]), { statusAlle, jetzt: JETZT_WEG });
+  assert.equal(z.naechsterSchritt.text, 'Lieferant liefert die Ware an uns (1 von 2 Artikeln schon) · 1 Position von uns verschicken');
+  assert.equal(z.naechsterSchritt.aktion, 'geliefert');
+  assert.equal(z.wege.vonUnsRaus, 1);
+});
+
+test('E4: Lagerware zaehlt nie als "vom Lieferanten an uns geliefert"', () => {
+  const zugeschnitten = { status: 'geliefert', ueber: 'lager', geliefertAm: '2026-11-05T09:00:00Z', selbstversand: { zugeschnitten: { am: '2026-11-05T09:00:00Z', von: 'test', vorher: null } } };
+  const z = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle: wegStatus({ l1: zugeschnitten, d1: { status: 'bestellt', ueber: 'laden', bestelltAm: '2026-11-02T09:00:00Z' } }), jetzt: JETZT_WEG });
+  const geliefert = z.verlauf.find(s => s.schritt === 'geliefert');
+  assert.equal(geliefert.label, 'Geliefert an uns');
+  assert.equal(geliefert.teil, null, 'kein "1 von 2 schon" - die Lagerware kam nicht vom Lieferanten');
+  assert.equal(z.naechsterSchritt.text, 'Lieferant liefert die Ware an uns · 1 Position von uns verschicken');
+  // G1: Lagerware noch offen, Ware ueber uns bestellt - der Knopf "Ware ist angekommen" meint nur die Ware.
+  const offen = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle: wegStatus({ d1: { status: 'bestellt', ueber: 'laden', bestelltAm: '2026-11-02T09:00:00Z' } }), jetzt: JETZT_WEG });
+  assert.equal(offen.naechsterSchritt.text, 'Lieferant liefert die Ware an uns · 1 Position von uns zuschneiden');
+  // Ware vom Lieferanten da und raus, Lagerware noch nicht geschnitten: kein Versand-Dialog, sondern "Von uns abschicken".
+  const nurZuschnitt = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle: wegStatus({ d1: { status: 'raus', ueber: 'laden', bestelltAm: '2026-11-02T09:00:00Z', geliefertAm: '2026-11-03T09:00:00Z', rausAm: '2026-11-04T09:00:00Z' } }), jetzt: JETZT_WEG });
+  assert.equal(nurZuschnitt.naechsterSchritt.text, '1 Position von uns zuschneiden und abschicken');
+  assert.equal(nurZuschnitt.naechsterSchritt.aktion, null);
+  assert.equal(nurZuschnitt.naechsterSchritt.href, '#/heute');
+  // Ware da, Lagerware noch offen: verschicken mit Hinweis auf den Zuschnitt.
+  const beides = zeitleiste(wegAuftrag([lagerPos, direktPos]), { statusAlle: wegStatus({ d1: { status: 'geliefert', ueber: 'laden', bestelltAm: '2026-11-02T09:00:00Z', geliefertAm: '2026-11-03T09:00:00Z' } }), jetzt: JETZT_WEG });
+  assert.equal(beides.naechsterSchritt.text, 'Ware an den Kunden übergeben oder verschicken · 1 Position von uns zuschneiden');
+});
+
+test('reine Auftraege ohne Teillieferung bleiben unveraendert (keine wege)', () => {
+  const zwei = [direktPos, { ...direktPos, lineItemId: 'd2' }];
+  const bestellt = { status: 'bestellt', bestelltAm: '2026-11-02T09:00:00Z' };
+  const z = zeitleiste(wegAuftrag(zwei), { statusAlle: wegStatus({ d1: bestellt, d2: bestellt }), jetzt: JETZT_WEG });
+  assert.equal(z.wege, undefined);
+  assert.equal(z.naechsterSchritt.text, 'Lieferant liefert die Ware an uns');
+  const da = { status: 'geliefert', bestelltAm: '2026-11-02T09:00:00Z', geliefertAm: '2026-11-04T09:00:00Z' };
+  const alle = zeitleiste(wegAuftrag(zwei), { statusAlle: wegStatus({ d1: da, d2: da }), jetzt: JETZT_WEG });
+  assert.equal(alle.wege, undefined);
+  assert.equal(alle.naechsterSchritt.text, 'Ware an den Kunden übergeben oder verschicken');
 });

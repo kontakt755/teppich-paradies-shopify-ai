@@ -106,3 +106,68 @@ test('Regeldatei: fehlt = keine Lagerware; beschaedigt = laut, Bestellmail und "
   await assert.rejects(() => kaputt.setze(L.ware, { status: 'bestellt' }), fehler(409));
   assert.ok(kaputt.api.einkaufBestellmail({ lieferant: 'A', art: 'muster' }).verfuegbar, 'Muster sind nicht betroffen');
 });
+
+test('E3/G1: "Ware ist angekommen" setzt nur Ware vom Lieferanten - Lagerware und Direktware bleiben, wie sie sind', async () => {
+  const u = umgebung();
+  await u.setze(L.ware, { status: 'bestellt', ueber: 'laden' });
+  const vorher = u.api.kundenBestellungen().zeilen.find(x => x.orderId === O).naechsterSchritt;
+  assert.equal(vorher.aktion, 'geliefert');
+  assert.match(vorher.text, /1 Position von uns zuschneiden/);
+  const r = await u.api.einkaufAuftragsstatusSetzen({ orderId: O, aktion: 'schritt', schritt: 'geliefert' }, mitarbeiter);
+  assert.ok(r.ok);
+  const stand = u.api.einkaufAuftragsstatus().positionen;
+  assert.equal(stand[`${O}::${L.ware}`].status, 'geliefert');
+  assert.equal(stand[`${O}::${L.lager}`]?.status ?? null, null, 'Lagerware wurde nicht "angekommen"');
+  assert.equal(stand[`${O}::${L.lager}`]?.selbstversand, undefined);
+  // Direktware des Herstellers: der Sammelschritt laesst sie aus; ist nichts anderes offen, 409 mit Weg.
+  const d = umgebung();
+  await d.setze(L.ware, { status: 'bestellt', ueber: 'kunde' });
+  await d.setze(L.lager, { aktion: 'selbstversand', schritt: 'zugeschnitten', an: true });
+  await d.setze(L.muster, { status: 'geliefert' });
+  await assert.rejects(() => d.api.einkaufAuftragsstatusSetzen({ orderId: O, aktion: 'schritt', schritt: 'geliefert' }, mitarbeiter),
+    e => e.status === 409 && /kommt nicht vom Lieferanten zu uns/.test(e.message));
+  assert.equal(d.api.einkaufAuftragsstatus().positionen[`${O}::${L.ware}`].status, 'bestellt');
+  // Bewusste Korrektur ("Etwas anderes ist passiert"): Ware ueber uns schon raus, Lagerware noch nicht
+  // geschnitten - die Ware geht zurueck auf "bei uns", die Lagerware bleibt offen (kein 409).
+  const k = umgebung();
+  const roh = { version: 1, positionen: { [`${O}::${L.ware}`]: { orderId: O, lineItemId: L.ware, status: 'raus', ueber: 'laden', bestelltAm: '2026-11-02T08:00:00Z', geliefertAm: '2026-11-03T08:00:00Z', rausAm: '2026-11-04T08:00:00Z' },
+    [`${O}::${L.muster}`]: { orderId: O, lineItemId: L.muster, status: 'geliefert', geliefertAm: '2026-11-03T08:00:00Z' } } };
+  fs.writeFileSync(path.join(k.dir, 'auftragsstatus.json'), JSON.stringify(roh));
+  assert.ok((await k.api.einkaufAuftragsstatusSetzen({ orderId: O, aktion: 'schritt', schritt: 'geliefert' }, mitarbeiter)).ok);
+  const korrigiert = k.api.einkaufAuftragsstatus().positionen;
+  assert.equal(korrigiert[`${O}::${L.ware}`].status, 'geliefert');
+  assert.equal(korrigiert[`${O}::${L.lager}`]?.status ?? null, null, 'Lagerware bleibt "noch zuschneiden"');
+  // Einzelweg: nie bestellte Lagerware ist nicht "eingetroffen".
+  const e = umgebung();
+  await assert.rejects(() => e.setze(L.lager, { status: 'geliefert' }), e2 => e2.status === 409 && /als zugeschnitten markieren/.test(e2.message));
+});
+
+test('G4/B1: nach "Zugeschnitten", "Rückgängig" und "Zurück auf offen" ist die Position wieder bestellbar, sobald die Regel weg ist', async () => {
+  const u = umgebung();
+  // Altfall #1119: Lagerware stand ohne Vermerk auf "bestellt" (vor der Regel geklickt).
+  const roh = { version: 1, positionen: { [`${O}::${L.lager}`]: { orderId: O, lineItemId: L.lager, status: 'bestellt', bestelltAm: '2026-11-06T08:00:00Z', bestelltVon: 'test' } } };
+  fs.writeFileSync(path.join(u.dir, 'auftragsstatus.json'), JSON.stringify(roh));
+  await u.setze(L.lager, { aktion: 'selbstversand', schritt: 'zugeschnitten', an: true });
+  await u.setze(L.lager, { aktion: 'selbstversand', schritt: 'gepackt', an: true });
+  await u.setze(L.lager, { aktion: 'selbstversand', schritt: 'gepackt', an: false });
+  const zurueck = await u.setze(L.lager, { aktion: 'selbstversand', schritt: 'zugeschnitten', an: false });
+  assert.deepEqual([zurueck.eintrag.status, zurueck.eintrag.ueber], ['bestellt', undefined], 'kein "aus Lager" mehr');
+  await u.setze(L.lager, { aktion: 'zurueckAufOffen' });
+  assert.equal(u.api.einkaufAuftragsstatus().positionen[`${O}::${L.lager}`].ueber, undefined);
+  // Lagerrolle leer, Regel entfernt: die Position ist normale Ware und laesst sich bestellen.
+  fs.writeFileSync(path.join(u.dir, 'lieferanten/lagerware.json'), JSON.stringify({ _zweck: 'Test', regeln: [] }));
+  assert.equal((await u.setze(L.lager, { status: 'bestellt' })).eintrag.status, 'bestellt');
+  const mail = u.api.einkaufBestellmail({ lieferant: 'A', art: 'ware' });
+  assert.ok(!mail.mails.some(m => (m.ohneBestellung || []).length), 'nicht mehr unter "nicht bestellen"');
+});
+
+test('E8/G2: alter Vermerk "direkt an Kunden" ohne Schritt macht Lagerware nicht wieder zur Bestellware', async () => {
+  const u = umgebung();
+  const roh = { version: 1, positionen: { [`${O}::${L.lager}`]: { orderId: O, lineItemId: L.lager, status: null, ueber: 'kunde', zurueckGesetztAm: '2026-11-05T08:00:00Z' } } };
+  fs.writeFileSync(path.join(u.dir, 'auftragsstatus.json'), JSON.stringify(roh));
+  await assert.rejects(() => u.setze(L.lager, { status: 'bestellt' }), fehler(409));
+  const mail = u.api.einkaufBestellmail({ lieferant: 'A', art: 'ware' });
+  assert.deepEqual(mail.mails.flatMap(m => m.positionen || []).map(p => p.lineItemId), [L.ware]);
+  const r = await u.setze(L.lager, { aktion: 'selbstversand', schritt: 'zugeschnitten', an: true });
+  assert.deepEqual([r.eintrag.status, r.eintrag.ueber], ['geliefert', 'lager']);
+});

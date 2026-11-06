@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { problemeBlock } from '../ansichten/heute/probleme.mjs';
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
-import { selbstAbschickenStand, selbstAbschickenBlock, vonSelbstAbschickenGedeckt } from '../ansichten/heute/selbst-abschicken.mjs';
+import { selbstAbschickenStand, selbstAbschickenBlock } from '../ansichten/heute/selbst-abschicken.mjs';
+import { rausgebenOhne } from '../lib/todos.mjs';
 
 const quelle = fs.readFileSync(new URL('../ansichten/heute.mjs', import.meta.url), 'utf8')
   .replace(/^import[\s\S]*?from ['"][^'"]+['"];\n/gm, '').replace(/^export\s/gm, '');
@@ -22,7 +23,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
   const api = vm.runInNewContext(quelle + '\ndatenstandZeile=()=>"Datenstand"; viewAlltag=()=>"Expliziter Alltag"; ({viewHeute})', {
     ...kontext, state, einkauf: { auftragsstatus }, kunden: { bestellungen }, heuteDaten: {},
     // "Von uns abschicken" (#1995): die echten, reinen Funktionen - ohne Bestellstand kein Block.
-    selbstAbschickenStand, selbstAbschickenBlock, vonSelbstAbschickenGedeckt,
+    selbstAbschickenStand, selbstAbschickenBlock, rausgebenOhne,
     musterNachfassenStand: () => ({ offen: [], erledigt: [], abgemeldet: [] }),
     versandLaeuft: () => null, startBestellarbeit: () => ({}),
     musterAutomatikBlock: () => '',
@@ -119,9 +120,12 @@ const TEST_BESTELLUNGEN = { verfuegbar: true, zeilen: [{
 }] };
 
 test('Von uns abschicken (#1995): direkt unter den Warenbestellungen, nur mit Arbeit, rausgeben-To-do nicht doppelt', () => {
+  // Wie lib/todos.mjs sie baut: je eingetroffener Position ein Teil (rausgebenOhne nimmt die gezeigten heraus).
+  const rausgeben = (nr, teile) => ({ id: `rausgeben:gid://test/Order/${nr}`, art: 'rausgeben', bereich: 'laden', ton: 'crit', titel: `Ware ist da – rausgeben: #TEST-${nr}`, alterTage: 6,
+    schluessel: teile.map(t => t.schluessel), rausgeben: { kunde: 'Testkunde', orderName: `#TEST-${nr}`, teile, lagermuster: null } });
   const todos = [
-    { id: 'rausgeben:gid://test/Order/1', art: 'rausgeben', bereich: 'laden', ton: 'crit', titel: 'Ware ist da – rausgeben: #TEST-1', alterTage: 6, schluessel: ['gid://test/Order/1::u1'] },
-    { id: 'rausgeben:gid://test/Order/2', art: 'rausgeben', bereich: 'laden', ton: 'crit', titel: 'Ware ist da – rausgeben: #TEST-2', alterTage: 6, schluessel: ['gid://test/Order/2::x1'] },
+    rausgeben(1, [{ schluessel: 'gid://test/Order/1::u1', istMuster: false, text: 'Testboden', tage: 6 }]),
+    rausgeben(2, [{ schluessel: 'gid://test/Order/2::x1', istMuster: false, text: 'Anderer Testboden', tage: 6 }]),
   ];
   const r = start('', {}, { todos, bestellungen: TEST_BESTELLUNGEN });
   assert.match(r.html, /Von uns abschicken · 2</);
@@ -134,6 +138,11 @@ test('Von uns abschicken (#1995): direkt unter den Warenbestellungen, nur mit Ar
   assert.match(r.html, /data-af-set data-af-status="raus"/, '"Verschickt…" oeffnet den vorhandenen Versand-Dialog');
   assert.doesNotMatch(r.html, /#TEST-1<\/div>|rausgeben: #TEST-1/, 'das To-do zu derselben Position steht nicht ein zweites Mal');
   assert.match(r.html, /rausgeben: #TEST-2/, 'ein To-do zu anderer Ware bleibt');
+  // E7: gemischt (Ware im Block, Muster nicht) - das To-do bleibt nur fuer das Muster, die Ware steht einmal.
+  const gemischt = start('', {}, { todos: [rausgeben(1, [{ schluessel: 'gid://test/Order/1::u1', istMuster: false, text: 'Testboden', tage: 6 },
+    { schluessel: 'gid://test/Order/1::m1', istMuster: true, text: 'Muster grau', tage: 6 }])], bestellungen: TEST_BESTELLUNGEN });
+  assert.match(gemischt.html, /Muster ist da – an Testkunde rausgeben/);
+  assert.doesNotMatch(gemischt.html, /Ware ist da – rausgeben: #TEST-1/);
   // Frisch geladener Stand (nach einem Klick) gewinnt vor dem mitgelieferten Positionsstand.
   const nach = start('', {}, { bestellungen: TEST_BESTELLUNGEN, auftragsstatus: { positionen: {
     'gid://test/Order/1::l1': { status: 'raus' }, 'gid://test/Order/1::u1': { status: 'raus' } } } });

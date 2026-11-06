@@ -364,7 +364,7 @@ function schlankePosition(pos, statusAlle, jetzt) {
     musterLager: pos.musterLager ? { artLabel: pos.musterLager.artLabel, ort: pos.musterLager.ort } : null,
     // Additiv: Ware aus eigener Lagerrolle (lagerware.mjs bzw. Vermerk "aus Lager") - nie beim Lieferanten bestellen.
     lagerware: istLagerware(pos, eintrag),
-    lagerHinweis: pos.lagerHinweis ?? null,
+    lagerHinweis: istLagerware(pos, eintrag) ? pos.lagerHinweis ?? null : null,
     lieferantUrl: geklaert(pos.lieferantUrl),
     status,
     gruppe: GRUPPE_FELD[filterGruppe(status)] ?? 'erledigt',

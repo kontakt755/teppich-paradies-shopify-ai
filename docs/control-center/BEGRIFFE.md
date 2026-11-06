@@ -222,9 +222,10 @@ gebraeuchlich), Erfassen.
   **nicht vermerkt – aus den Stammdaten**, solange beim Bestellen nichts vermerkt wurde.
 - **Von uns abschicken (N)** = Block auf der Shop-Übersicht direkt unter den Warenbestellungen, nur wenn
   etwas zu tun ist: Ware aus eigenem Lager und bei uns eingetroffene Ware, die wir selbst verschicken.
-  Stand je Zeile: **noch zuschneiden**, **zugeschnitten – noch packen** (bzw. **eingetroffen – noch packen**),
-  **gepackt – wartet auf Versand**. Knöpfe **Zugeschnitten**, **Gepackt**, **Verschickt…** (der vorhandene
-  Versand-Dialog) und **Rückgängig**. Das To-do „Ware ist da – rausgeben“ steht dann nicht ein zweites Mal da.
+  Stand je Zeile: **noch zuschneiden**, **zugeschnitten – noch packen** (nur nach „Zugeschnitten“, sonst
+  **eingetroffen – noch packen**), **gepackt – wartet auf Versand**. Knöpfe **Zugeschnitten**, **Gepackt**,
+  **Verschickt…** (der vorhandene Versand-Dialog) und **Rückgängig**. Das To-do „Ware ist da – rausgeben“
+  nennt dann nur noch, was der Block nicht zeigt (z. B. ein eingetroffenes Muster).
 - **Aus eigenem Lager – nicht bestellen** = Lagerware steht in keiner Bestellmail an den Lieferanten,
   sondern unter diesem Satz; „Als bestellt markieren“ sagt **Aus eigenem Lager – nicht bestellen, als
   zugeschnitten markieren**.

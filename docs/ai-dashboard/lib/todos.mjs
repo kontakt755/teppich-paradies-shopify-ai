@@ -124,6 +124,40 @@ function laufendeBestellungen(bestellzeilen, statusAlle) {
 const kundeVon = z => z.kundenname || z.orderName || 'Kunde';
 
 /**
+ * Titel, Kontext, Alter, Ton und Schluessel des To-dos "… ist da – rausgeben" aus seinen Teilen (je
+ * eingetroffener Position einer). Eine Funktion fuer Aufbau und Rest (rausgebenOhne), damit beides
+ * gleich klingt: Titel und Text nach der ersten Position, das Alter nach der aeltesten. Die
+ * Lagermuster gehen nur mit, wenn die erste Position ein Muster ist.
+ */
+function rausgebenFelder(r) {
+  const erste = r.teile[0];
+  const alterTage = r.teile.length === 1 ? erste.tage : Math.max(...r.teile.map(t => t.tage ?? 0));
+  const dazu = erste.istMuster ? r.lagermuster : null;
+  return {
+    ton: tonNachAlter(alterTage, ...FRISTEN.rausgeben), alterTage,
+    schluessel: [...r.teile.map(t => t.schluessel), ...(dazu?.schluessel || [])],
+    titel: `${erste.istMuster ? 'Muster' : 'Ware'} ist da – an ${r.kunde} rausgeben`,
+    kontext: [r.orderName, erste.text, erste.tage !== null ? `liegt ${seitText(erste.tage)} bei uns` : null, dazu?.text].filter(Boolean).join(' · '),
+  };
+}
+
+/**
+ * Das To-do "rausgeben" ohne die Positionen in `gedeckt` (Schluessel "<orderId>::<lineItemId>", z. B.
+ * was "Von uns abschicken" schon zeigt). null, wenn nichts uebrig bleibt; andere To-dos unveraendert.
+ * Vorher fiel das To-do nur weg, wenn ALLE Positionen gedeckt waren - in einem Auftrag mit Ware und
+ * Muster stand die Ware dann zweimal auf der Seite.
+ */
+export function rausgebenOhne(todo, gedeckt) {
+  const r = todo?.art === 'rausgeben' ? todo.rausgeben : null;
+  if (!r || !gedeckt?.size) return todo;
+  const teile = r.teile.filter(t => !gedeckt.has(t.schluessel));
+  if (teile.length === r.teile.length) return todo;
+  if (!teile.length) return null;
+  const rest = { ...r, teile };
+  return { ...todo, ...rausgebenFelder(rest), rausgeben: rest };
+}
+
+/**
  * Neueste AB und neuester Lieferschein je Bestellung und Lieferant aus dem Beleg-Abgleich; Storno zaehlt
  * nicht als bestellt. Je Lieferant, weil die AB von A nichts ueber die Ware von B sagt.
  */
@@ -372,20 +406,20 @@ function ausBestellungen(quellen, k) {
       } else if (status === 'geliefert') {
         const tage = tageSeit(x.eintrag.geliefertAm, k.jetzt);
         const id = `rausgeben:${z.orderId}`;
-        const schluessel = `${z.orderId}::${x.p.lineItemId}`;
+        const teil = { schluessel: `${z.orderId}::${x.p.lineItemId}`, istMuster: Boolean(x.p.istMuster), text: x.p.istMuster ? musterText([x.p]) : x.p.titel, tage };
         const vorhanden = todos.find(t => t.id === id);
-        if (vorhanden) { vorhanden.alterTage = Math.max(vorhanden.alterTage ?? 0, tage ?? 0); vorhanden.ton = tonNachAlter(vorhanden.alterTage, ...FRISTEN.rausgeben); vorhanden.schluessel.push(schluessel); continue; }
-        // Gemischt: die Lagermuster derselben Bestellung gehen jetzt mit raus.
+        if (vorhanden) { vorhanden.rausgeben.teile.push(teil); Object.assign(vorhanden, rausgebenFelder(vorhanden.rausgeben)); continue; }
+        // Gemischt: die Lagermuster derselben Bestellung gehen mit den Mustern raus.
+        // Wie bisher nur, wenn das To-do mit einem Muster beginnt (sonst stuenden sie zusaetzlich unter "eigene Muster").
         const ausLager = x.p.istMuster ? offen.filter(y => !y.eintrag?.status && musterEigen(y.p) && y.p.musterHerkunft !== 'eigen_vorbei').map(y => y.p) : [];
         if (ausLager.length) wartenAufLieferant.add(z.orderId);
+        // Teile je Position: die Shop-Uebersicht nimmt heraus, was "Von uns abschicken" schon zeigt
+        // (rausgebenOhne) - eine Sache genau einmal auf der Seite, auch in gemischten Auftraegen.
+        const rausgeben = { kunde: kundeVon(z), orderName: z.orderName, teile: [teil],
+          lagermuster: ausLager.length ? { schluessel: ausLager.map(p => `${z.orderId}::${p.lineItemId}`),
+            text: `zusammen mit ${musterHerkunftText(ausLager) || 'Mustern aus eigenem Bestand'}: ${musterText(ausLager)}` } : null };
         todos.push({
-          // schluessel: alle Positionen, die dieses To-do meint - die Shop-Uebersicht laesst es weg, wenn
-          // "Von uns abschicken" sie schon alle zeigt (eine Sache genau einmal auf der Seite).
-          id, art: 'rausgeben', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.rausgeben), alterTage: tage,
-          schluessel: [schluessel, ...ausLager.map(p => `${z.orderId}::${p.lineItemId}`)],
-          titel: `${x.p.istMuster ? 'Muster' : 'Ware'} ist da – an ${kundeVon(z)} rausgeben`,
-          kontext: [z.orderName, x.p.istMuster ? musterText([x.p]) : x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null,
-            ausLager.length ? `zusammen mit ${musterHerkunftText(ausLager) || 'Mustern aus eigenem Bestand'}: ${musterText(ausLager)}` : null].filter(Boolean).join(' · '),
+          id, art: 'rausgeben', bereich: 'laden', ...rausgebenFelder(rausgeben), rausgeben,
           knopf: { text: 'Rausgeben', href: vorgangsLink('einkauf', { auftrag: z.orderId, af: 'eingetroffen' }) },
         });
       }

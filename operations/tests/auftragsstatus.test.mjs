@@ -150,7 +150,7 @@ test('selbstversand: zugeschnitten setzt "bei uns" mit Vermerk "aus Lager", gepa
   assert.equal(z.status, 'geliefert');
   assert.equal(z.ueber, 'lager');
   assert.equal(z.geliefertNotiz, 'Aus eigenem Lager zugeschnitten');
-  assert.deepEqual(z.selbstversand.zugeschnitten, { am: jetzt.toISOString(), von: 'test', vorher: null });
+  assert.deepEqual(z.selbstversand.zugeschnitten, { am: jetzt.toISOString(), von: 'test', vorher: null, ueberVorher: null });
   assert.equal(setzeSelbstversand(file, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test2' }).selbstversand.zugeschnitten.von, 'test', 'Doppelklick aendert nichts');
   const g = setzeSelbstversand(file, { ...SV, schritt: 'gepackt', an: true, actor: 'test', jetzt: new Date('2026-11-06T10:00:00Z') });
   assert.equal(g.selbstversand.gepackt.am, '2026-11-06T10:00:00.000Z');
@@ -173,6 +173,40 @@ test('selbstversand: zuruecknehmen in umgekehrter Reihenfolge, Altfall "bestellt
   assert.equal(zurueck.geliefertAm, undefined);
   assert.equal(zurueck.selbstversand, undefined, 'leeres Feld verschwindet');
   assert.equal(zurueck.verlauf.at(-1).aktion, 'zugeschnitten zurückgenommen');
+  assert.equal(zurueck.ueber, undefined, 'B1: ohne Vermerk davor kein "aus Lager" mehr');
+});
+
+test('G4/B1: "Zugeschnitten" zuruecknehmen stellt den Vermerk davor wieder her, "Zurück auf offen" nimmt "aus Lager" mit', () => {
+  // Vermerk davor: wiederhergestellt.
+  const mitVermerk = auftragsstatusPfad(tmpDir());
+  setzeStatus(mitVermerk, { ...SV, status: 'bestellt', ueber: 'laden', actor: 'test' });
+  const z = setzeSelbstversand(mitVermerk, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test' });
+  assert.deepEqual([z.ueber, z.selbstversand.zugeschnitten.ueberVorher], ['lager', 'laden']);
+  const zurueck = setzeSelbstversand(mitVermerk, { ...SV, schritt: 'zugeschnitten', an: false, actor: 'test' });
+  assert.deepEqual([zurueck.status, zurueck.ueber], ['bestellt', 'laden']);
+  // Zugeschnitten -> Zurueck auf offen: der Vermerk "aus Lager" wandert in den Verlauf.
+  const offenFile = auftragsstatusPfad(tmpDir());
+  setzeSelbstversand(offenFile, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test' });
+  setzeSelbstversand(offenFile, { ...SV, schritt: 'gepackt', an: true, actor: 'test' });
+  const offen = setzeZurueckAufOffen(offenFile, { ...SV, actor: 'test' });
+  assert.equal(offen.ueber, undefined);
+  assert.equal(offen.verlauf.at(-1).vorher.ueber, 'lager');
+  assert.equal(leseAlle(offenFile)[positionKey(SV.orderId, SV.lineItemId)].ueber, undefined);
+  // Andere Vermerke bleiben wie bisher (sie zaehlen ohne Schritt ohnehin nicht).
+  const kunde = auftragsstatusPfad(tmpDir());
+  setzeStatus(kunde, { ...SV, status: 'bestellt', ueber: 'kunde', actor: 'test' });
+  assert.equal(setzeZurueckAufOffen(kunde, { ...SV, actor: 'test' }).ueber, 'kunde');
+  // Danach Zuschneiden trotz altem Vermerk "kunde": ohne Schritt ist er Vergangenheit.
+  const neu = setzeSelbstversand(kunde, { ...SV, schritt: 'zugeschnitten', an: true, actor: 'test' });
+  assert.deepEqual([neu.status, neu.ueber, neu.selbstversand.zugeschnitten.ueberVorher], ['geliefert', 'lager', 'kunde']);
+  // "bestellt" setzt nie "aus Lager".
+  const bestellt = auftragsstatusPfad(tmpDir());
+  assert.equal(setzeStatus(bestellt, { ...SV, status: 'bestellt', ueber: 'lager', actor: 'test' }).ueber, null);
+  // Ein ungueltiger Vermerk davor macht die Ablage unlesbar (nie still).
+  const roh = JSON.parse(fs.readFileSync(mitVermerk, 'utf8'));
+  roh.positionen[positionKey(SV.orderId, SV.lineItemId)].selbstversand = { zugeschnitten: { am: 'x', von: 'y', vorher: null, ueberVorher: 'irgendwo' } };
+  fs.writeFileSync(mitVermerk, JSON.stringify(roh));
+  assert.throws(() => leseAlle(mitVermerk), /beschädigt/);
 });
 
 test('selbstversand: Grenzen - Direktware, schon raus, Gepackt vor Eingang, unbekannter Schritt', () => {
