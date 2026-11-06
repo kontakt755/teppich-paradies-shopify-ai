@@ -1051,6 +1051,11 @@ fragt der Dialog „Wer hat verkauft?“ – Pflicht, ohne Vorbelegung, zuletzt 
 (`localStorage`, je Gerät). Der Server verlangt den Namen dann (400 `name-fehlt`, kein Shopify-Aufruf),
 schreibt ihn in `verkauft_von` und als Benutzer ins Protokoll, mit dem Vermerk „Name im gemeinsamen Zugang
 angegeben“. Grund: Inhaber 2026-10-10 – im Laden bucht die gerade verkaufende Person.
+Deshalb steht „Sonderposten“ seit 2026-11-06 auch im Menü der Rolle `mitarbeiter` (vorher nur über
+die Adresse erreichbar). Mitarbeiter sehen „Im Laden verkauft…“ und „Ladenverkauf buchen…“;
+„Restlänge eintragen…“ bleibt Inhabersache (Knopf ausgeblendet, `sonderposten/bestand` in
+`NUR_INHABER`). Kommt trotzdem ein 403 ohne Shopify-Grund, sagt die Meldung „… Am Bestand wurde
+nichts geändert.“
 
 **Restrollen (seit 2026-10-12, Inhaber).** Rollenware mit Produkt-Tag `sonderposten` und Rollenbreite
 (`custom.rollenbreite`, Variante vor Produkt), deren Bestand Shopify in ganzen m² führt – z. B. Passion
@@ -1479,6 +1484,19 @@ Styles `stile/serviceanfragen.css`.
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
   Zeile zeigt „aus dem Postfach übernommen“. Ein Test prüft, dass jeder Betreff aus `templates/` in
   der Liste steht oder bewusst ausgenommen ist – eine neue Serviceseite fällt so auf.
+- **Musterberatung wird ein Rückruf (seit 2026-11-06):** „Lieber erst beraten lassen?“ im reinen
+  Muster-Warenkorb (`snippets/tp-muster-beratungsanfrage.liquid`) schickt Betreff
+  `RÜCKRUF – Musterberatung` mit `Muster:` (Musterliste, „ · “ getrennt), Name, Telefon, E-Mail, Text.
+  Das ist keine Service-Anfrage: `uebernehmen` legt dafür über `rueckrufAusMail()`
+  (`lib/serviceanfragen.mjs`) und `rueckrufAusMailAnlegen()` (`operations/lib/rueckrufe.mjs`) einen
+  Eintrag in `rueckrufe.json` an – Schlüssel `mail-<Mail-ID>`, `quelle: 'mail'`, Status „offen“,
+  Name, Telefon, E-Mail, Muster, Text und Eingangszeit im Eintrag selbst, weil es keine Bestellung
+  gibt. Dieselbe Mail nie zweimal, ein schon bearbeiteter Rückruf wird nicht zurückgesetzt, ohne
+  Telefon und E-Mail wird nichts angelegt (Vermerk im Postfach-Log). `GET /api/kunden/rueckrufe` hängt
+  diese Einträge an die Rückrufe aus Bestellungen an (`mailRueckrufZeilen`, älteste zuerst); Status
+  und Notiz laufen über denselben `POST`. Die Zeile zeigt „noch keine Bestellung“, Musterliste, Text
+  und Eingangszeit; „Heute“ bekommt dasselbe To-do „Zurückrufen“ mit denselben Fristen (2/7 Tage ab
+  Eingang). Antwortentwürfe entstehen dabei keine: dieser Weg schreibt nur die lokale Ablage.
 - **Kampagnenfeld:** `snippets/tp-herkunft.liquid` (im Layout) füllt das versteckte Feld
   `contact[Herkunft]` der Formulare auf den Verlegeseiten und der Kontaktseite aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
   „Microsoft-Anzeige“ (msclkid), „Anzeige (<utm_source>)“ bei bezahltem `utm_medium`, sonst „Link

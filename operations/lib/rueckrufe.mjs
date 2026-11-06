@@ -4,6 +4,8 @@
  * Rein lokale Ablage unter $TP_PRIVAT_DIR/rueckrufe.json - nie im
  * Repository, nie auf GitHub Pages. Schluessel ist die Bestell-ID (ein
  * Rueckruf gehoert zum ganzen Auftrag, nicht zu einer einzelnen Position).
+ * Seit 2026-11-06 auch "mail-<Mail-ID>": Rueckrufwunsch aus der Musterberatung
+ * im Warenkorb, ohne Bestellung - der Eintrag traegt dann Name, Telefon und Muster selbst.
  *
  * Gleiche Bauart wie operations/lib/auftragsstatus.mjs: atomares Schreiben
  * (tmp-Datei + rename), "last write wins" je Schluessel.
@@ -69,6 +71,46 @@ export class RueckrufFehler extends Error {}
 function clip(text, max) {
   const s = String(text ?? '').trim();
   return s.length > max ? s.slice(0, max) : s;
+}
+
+/**
+ * Schluessel eines Rueckrufs aus einer Mail (Musterberatung im Warenkorb). Gehoert zu keiner
+ * Bestellung; das Praefix haelt ihn von den Bestell-IDs getrennt, die Bestellliste und
+ * "Heute" hier nachschlagen. Nur Zeichen, die in Adresse und data-Attribut unveraendert bleiben.
+ */
+export function mailRueckrufSchluessel(mailId) {
+  const id = String(mailId ?? '').trim().replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 100);
+  if (!id) throw new RueckrufFehler('mailId ist Pflicht');
+  return `mail-${id}`;
+}
+
+/**
+ * Legt einen Rueckruf aus einer Formular-Mail an (Postfach-Lauf, operations/scripts/serviceanfragen.mjs).
+ * Gleiche Ablage und gleicher Statusweg wie die Rueckrufe aus Bestellungen: setzeStatus()
+ * behaelt die Felder der Mail. Dieselbe Mail legt nie einen zweiten Eintrag an, und ein
+ * schon bearbeiteter Eintrag wird nicht zurueckgesetzt.
+ *
+ * @param {object} f  Ergebnis von rueckrufAusMail() plus mailId und eingangAm (ISO)
+ */
+export function rueckrufAusMailAnlegen(file, f = {}, { actor, jetzt = new Date() } = {}) {
+  if (!actor) throw new RueckrufFehler('actor ist Pflicht');
+  const key = mailRueckrufSchluessel(f.mailId);
+  const telefon = clip(f.telefon, 40);
+  const email = clip(f.email, 160);
+  if (!telefon && !email) throw new RueckrufFehler('Rückruf ohne Telefon und E-Mail – niemand könnte zurückrufen');
+  const alle = leseAlle(file);
+  if (alle[key]) return { eintrag: alle[key], doppelt: true };
+  const eingang = Date.parse(f.eingangAm) ? new Date(f.eingangAm).toISOString() : jetzt.toISOString();
+  const eintrag = {
+    orderId: key, quelle: 'mail', mailId: String(f.mailId).slice(0, 100), thema: 'Musterberatung',
+    eingangAm: eingang, kundenname: clip(f.name, 120) || null, telefon: telefon || null, email: email || null,
+    muster: (Array.isArray(f.muster) ? f.muster : []).map(m => clip(m, 200)).filter(Boolean).slice(0, 30),
+    nachricht: clip(f.nachricht, 2000) || null,
+    status: 'offen', erstelltAm: jetzt.toISOString(), erstelltVon: actor,
+  };
+  alle[key] = eintrag;
+  schreibeAlle(file, alle);
+  return { eintrag, doppelt: false };
 }
 
 /**

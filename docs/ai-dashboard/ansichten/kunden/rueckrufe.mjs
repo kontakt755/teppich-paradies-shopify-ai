@@ -1,11 +1,12 @@
 /**
  * Kunden, Reiter "Rueckrufe": alle Bestellungen mit Beratungswunsch, Masspruefung oder
- * angefragter Verlegung, aelteste zuerst, mit klickbarer Telefonnummer - und der zugehoerige
+ * angefragter Verlegung, dazu seit 2026-11-06 die Musterberatung aus dem Warenkorb (Mail,
+ * keine Bestellung), aelteste zuerst, mit klickbarer Telefonnummer - und der zugehoerige
  * Block auf "Heute". Seit 2026-10-13 die fuehrende Liste (w-078): die Laden-Ansicht der
  * Auftrags-App legt dafuer keine eigenen Faelle mehr an und verlinkt hierher.
  */
 import { state } from '../../kern/zustand.mjs';
-import { $, esc, fmtDate, toast } from '../../kern/helfer.mjs';
+import { $, esc, fmtDate, fmtDateTime, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
@@ -49,12 +50,26 @@ async function setzeRueckrufStatus(orderId, status, notiz, wiedervorlage = null)
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
 }
 
+/**
+ * Rueckruf aus der Musterberatung im Warenkorb: es gibt keine Bestellung, nur die Mail. Was
+ * der Kunde angefragt hat, steht deshalb in der Zeile selbst - welche Muster und was er
+ * geschrieben hat - und die Eingangszeit statt eines Bestelldatums.
+ */
+function mailAngaben(z) {
+  if (z.quelle !== 'mail') return '';
+  const muster = z.muster || [];
+  return `${muster.length ? `<div class="small">Muster: ${muster.map(m => esc(m)).join(' · ')}</div>` : ''}
+      ${z.nachricht ? `<div class="small">„${esc(z.nachricht)}“</div>` : ''}`;
+}
+
 function rueckrufZeileHtml(z) {
+  const ausMail = z.quelle === 'mail';
   return `<div class="row rueckruf-row">
     <div>
-      <div class="t">${esc(z.kundenname)} <span class="muted small mono">${esc(z.orderName)}</span>${z.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</div>
-      <div class="m">${esc(z.thema)}${z.wunschzeit ? ` · Wunschzeit: ${esc(z.wunschzeit)}` : ''} · seit ${fmtDate(z.datum)}</div>
+      <div class="t">${esc(z.kundenname)} ${ausMail ? '<span class="badge plain">noch keine Bestellung</span>' : `<span class="muted small mono">${esc(z.orderName)}</span>`}${z.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</div>
+      <div class="m">${ausMail ? `${esc(z.thema)} aus dem Warenkorb · eingegangen ${esc(fmtDateTime(z.datum))}` : `${esc(z.thema)}${z.wunschzeit ? ` · Wunschzeit: ${esc(z.wunschzeit)}` : ''} · seit ${fmtDate(z.datum)}`}</div>
       <div class="tel-gross">${telLink(z.telefon)}</div>
+      ${mailAngaben(z)}
       ${z.notiz ? `<div class="small muted">Notiz: ${esc(z.notiz)}</div>` : ''}
       ${z.aktualisiertVon ? `<div class="small muted">Zuletzt: ${esc(z.aktualisiertVon)}${z.aktualisiertAm ? ` am ${esc(fmtDate(z.aktualisiertAm))}` : ''}</div>` : ''}
       ${z.wiedervorlage ? `<div class="small${z.wiedervorlage <= heuteTag() ? ' warnc' : ' muted'}">Nochmal versuchen: ${esc(fmtDate(z.wiedervorlage))}${z.wiedervorlage <= heuteTag() ? ' – heute fällig' : ''}</div>` : ''}
@@ -71,7 +86,7 @@ function rueckrufZeileHtml(z) {
 export function openRueckrufDialog(orderId, status) {
   const z = kunden.rueckrufe?.zeilen?.find(x => x.orderId === orderId);
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="rrTitle" data-dialog>
-    <h2 id="rrTitle">Rückruf · ${esc(z?.orderName || '')} → ${esc(RUECKRUF_STATUS_LABEL[status])}</h2>
+    <h2 id="rrTitle">Rückruf · ${esc(z?.orderName || z?.thema || '')} → ${esc(RUECKRUF_STATUS_LABEL[status])}</h2>
     <p class="small muted">${esc(z?.kundenname || '')} · ${esc(z?.thema || '')}</p>
     <div class="field"><label for="rrNotiz">Notiz (optional)</label><textarea id="rrNotiz" name="notiz" maxlength="2000" placeholder="z. B. Ergebnis des Anrufs">${esc(z?.notiz || '')}</textarea></div>
     ${status === 'erledigt' ? '' : `<div class="field"><label for="rrWieder">Nochmal versuchen am (optional)</label>
@@ -109,7 +124,7 @@ export function viewKundenRueckrufe() {
   const tests = zeilen.filter(z => z.status !== 'erledigt' && z.testbestellung);
   return `
     ${auftrag ? '<p><a href="#/heute">← Zurück zu Heute</a> · <a href="#/kunden?tab=rueckrufe">Alle Rückrufe</a></p>' : ''}
-    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch, Maßprüfung „Ja" oder angefragter Verlegung – „Nicht erreicht“ zuerst, sonst älteste zuerst. Nachgefasst wird nur hier, nicht in der Laden-Ansicht. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
+    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch, Maßprüfung „Ja" oder angefragter Verlegung und jede Musterberatung aus dem Warenkorb – „Nicht erreicht“ zuerst, sonst älteste zuerst. Nachgefasst wird nur hier, nicht in der Laden-Ansicht. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
     <div class="rows">${offen.length ? offen.map(rueckrufZeileHtml).join('') : emptyState('Keine offenen Rückrufe.', '')}</div>
     ${tests.length ? `<details style="margin-top:14px"><summary>${tests.length} aus Testbestellungen</summary><div class="rows">${tests.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
     ${erledigt.length ? `<details ${auftrag ? 'open' : ''} style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}

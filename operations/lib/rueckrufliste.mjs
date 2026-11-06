@@ -56,11 +56,33 @@ export function rueckrufZeile(auftrag) {
   };
 }
 
-/** Aelteste zuerst (laengstes Warten zuerst abarbeiten). */
-export function rueckrufliste(modell) {
+/**
+ * Rueckrufwuensche ohne Bestellung (Musterberatung im Warenkorb, aus dem Postfach-Lauf in
+ * rueckrufe.json angelegt, operations/lib/rueckrufe.mjs). Gleiche Zeilenform wie oben, damit
+ * Liste, Zaehler und "Heute" sie ohne Sonderweg zeigen; `datum` ist der Mail-Eingang.
+ */
+export function mailRueckrufZeilen(statusAlle = {}) {
+  return Object.values(statusAlle || {})
+    .filter(e => e?.quelle === 'mail' && e.orderId)
+    .map(e => ({
+      orderId: e.orderId,
+      orderName: null,
+      datum: e.eingangAm || e.erstelltAm || null,
+      kundenname: e.kundenname || '–',
+      telefon: e.telefon || null,
+      email: e.email || null,
+      thema: e.thema || 'Musterberatung',
+      wunschzeit: null,
+      quelle: 'mail',
+      muster: Array.isArray(e.muster) ? e.muster : [],
+      nachricht: e.nachricht || null,
+      testbestellung: false,
+    }));
+}
+
+/** Aelteste zuerst (laengstes Warten zuerst abarbeiten). Mit `statusAlle` auch die Rueckrufe aus Mails. */
+export function rueckrufliste(modell, statusAlle = null) {
   const alle = [...(modell?.auftraege ?? []), ...(modell?.testauftraege ?? [])];
-  return alle
-    .filter(istRueckrufKandidat)
-    .map(rueckrufZeile)
+  return [...alle.filter(istRueckrufKandidat).map(rueckrufZeile), ...mailRueckrufZeilen(statusAlle)]
     .sort((a, b) => String(a.datum ?? '').localeCompare(String(b.datum ?? '')));
 }

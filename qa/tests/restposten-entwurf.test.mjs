@@ -91,3 +91,41 @@ test('Private Ausgaben sperren Repository-Root, Unterordner und Symlinks hinein'
     rmSync(temp, { recursive: true, force: true });
   }
 });
+test('Zwei- und Dreimeterrollen (06.11.2026): gleiche Preisregel, Raster verbraucht nie weniger als abgeschnitten', async () => {
+  const { zuschnittRaster } = await import('../../operations/lib/restposten-entwurf.mjs');
+  const plan = planeRestEntwuerfe({ records: [row('TPR0201', 200), row('TPR0301', 300)] }, { locationId });
+  const je = key => plan.relationships.filter(r => r.component === `${key}:quelle`);
+  // 2 m: 50 cm je m², 20 Stufen bis 1000 cm - wie bei 4 und 5 m glatt
+  assert.deepEqual(je('tpr0201').slice(0, 3).map(r => [r.title, r.quantity]), [['50 cm', 1], ['100 cm', 2], ['150 cm', 3]]);
+  assert.equal(je('tpr0201').length, 20);
+  // 3 m: 33 1/3 cm je m² - Laenge abgerundet, Verbrauch ganze m²
+  assert.deepEqual(je('tpr0301').slice(0, 4).map(r => [r.title, r.quantity]), [['33 cm', 1], ['66 cm', 2], ['100 cm', 3], ['133 cm', 4]]);
+  assert.equal(je('tpr0301').length, 30);
+  assert.equal(je('tpr0301').at(-1).title, '1000 cm');
+  for (const breite of [200, 300, 400, 500]) {
+    for (const r of zuschnittRaster(breite)) {
+      assert.ok(Number.isInteger(r.cm) && Number.isInteger(r.einheiten));
+      assert.ok(r.einheiten * 10000 >= r.cm * breite, `${breite} cm: ${r.cm} cm brauchen hoechstens ${r.einheiten} m²`);
+      assert.ok((r.einheiten - 1) * 10000 < r.cm * breite, `${breite} cm: ${r.cm} cm nicht mit weniger m² abgedeckt`);
+    }
+  }
+  // Rollenbreite als Metafeld, Preise wie bei 4/5 m
+  assert.equal(plan.metafields.find(m => m.owner === 'tpr0301:quelle' && m.key === 'rollenbreite' && !m.ownerVariant).value, '3.0');
+  assert.equal(plan.products.find(p => p.key === 'tpr0201:quelle').input.variants[0].price, '34.95');
+  assert.equal(plan.products.find(p => p.key === 'tpr0301:quelle').input.title, 'Beispiel – Restposten, 300 cm');
+  // Verknuepfen klappt auch mit dem 3-m-Raster
+  let n = 100;
+  const live = plan.products.map(p => ({
+    id: `gid://shopify/Product/${n++}`, handle: p.input.handle, status: 'DRAFT', tags: [REST_ENTWURF_TAG],
+    variants: p.input.variants.map(v => ({ id: `gid://shopify/ProductVariant/${n++}`, title: v.optionValues[0].name, inventoryQuantity: 0, inventoryPolicy: 'DENY', price: v.price, inventoryItem: { tracked: v.inventoryItem.tracked }, requiresComponents: Boolean(v.requiresComponents) })),
+  }));
+  assert.equal(bindeRestPlan(plan, live).relationships.length, 50);
+});
+test('Andere Breiten und TPR-Nummern unter vier Ziffern bleiben gesperrt', () => {
+  for (const breite of [100, 250, 350, 450, 600, null]) {
+    assert.throws(() => planeRestEntwuerfe({ records: [row('TPR0001', breite)] }, { locationId }), /Nennbreite/, String(breite));
+  }
+  for (const code of ['TPR011', 'TPR1', 'TP0011', 'TPR001100000']) {
+    assert.throws(() => planeRestEntwuerfe({ records: [row(code)] }, { locationId }), /Vorbereitungsschluessel/, code);
+  }
+});

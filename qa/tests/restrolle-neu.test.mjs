@@ -73,3 +73,20 @@ test('Handle-Teil ohne Umlaute und Sonderzeichen', () => {
   assert.equal(handleTeil('Antigua 41 (1756)'), 'antigua-41-1756');
   assert.equal(handleTeil('Grün Größe'), 'gruen-groesse');
 });
+
+test('Restrolle 3 m: Bestand abgerundet, Laengengrenze passt zur groessten Zuschnittstufe', () => {
+  const plan = planeNeueRestrolle(rolle({ code: 'TPR0301', breiteCm: 300, gemesseneLaengeCm: 345 }), { locationId });
+  assert.equal(plan.bestandQm, 10);
+  assert.equal(plan.maxLaengeCm, 333);
+  const je = Object.fromEntries(plan.products.map(p => [p.role, p]));
+  assert.equal(je.quelle.input.handle, 'eiger-elite-91-beige-teppichboden-300-cm-restrolle');
+  assert.equal(je.quelle.input.variants[0].inventoryQuantities[0].quantity, 10);
+  assert.equal(feld(plan, 'tpr0301:raummass', 'max_breite_cm').value, '300');
+  // die Stufe mit genau dem Bestand deckt die Laengengrenze ab
+  const stufe = plan.relationships.find(r => r.quantity === plan.bestandQm);
+  assert.equal(stufe.title, `${plan.maxLaengeCm} cm`);
+  const zwei = planeNeueRestrolle(rolle({ code: 'TPR0201', breiteCm: 200, gemesseneLaengeCm: 1580 }), { locationId });
+  assert.equal(zwei.bestandQm, 31);
+  assert.equal(zwei.maxLaengeCm, 1000);
+  assert.equal(zwei.products.find(p => p.role === 'zuschnitt').input.variants.length, 20);
+});

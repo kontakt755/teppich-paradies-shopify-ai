@@ -512,6 +512,30 @@ function ausFaellen(quellen) {
 }
 
 /**
+ * Rueckrufwuensche ohne Bestellung (Musterberatung im Warenkorb): die Schleife ueber die
+ * Bestellungen sieht sie nie. Gleiche Faelligkeit und Fristen wie ein Rueckruf an einer
+ * Bestellung; das Alter zaehlt ab dem Mail-Eingang.
+ */
+function ausMailRueckrufen(quellen, k) {
+  return (quellen.rueckrufe || [])
+    .filter(r => r.quelle === 'mail' && rueckrufFaellig(r, k.heute))
+    .map(r => {
+      const tage = tageSeit(r.datum, k.jetzt);
+      const anzahl = (r.muster || []).length;
+      return {
+        id: `rueckruf:${r.orderId}`, art: 'rueckruf', bereich: 'laden',
+        ton: tonNachAlter(tage, ...FRISTEN.rueckruf), alterTage: tage,
+        titel: `Zurückrufen: ${r.kundenname && r.kundenname !== '–' ? r.kundenname : 'Kunde'}`,
+        kontext: [r.thema || 'Musterberatung', anzahl ? `${anzahl} Muster angefragt` : null,
+          tage === null ? null : `eingegangen ${vorText(tage)}`,
+          r.status === 'nicht_erreicht' ? 'zuletzt nicht erreicht' : null,
+          r.telefon ? null : 'keine Telefonnummer'].filter(Boolean).join(' · '),
+        knopf: { text: 'Zurückrufen', href: vorgangsLink('kunden', { auftrag: r.orderId, tab: 'rueckrufe' }) },
+      };
+    });
+}
+
+/**
  * Offene Service-Anfragen bleiben bis zum Abschluss sichtbar. Nur fuer den Erstkontakt gelten
  * die bestehenden Altersfristen; kontaktiert/Termin/Angebot ist ohne Wiedervorlage kein Verzug.
  */
@@ -960,6 +984,7 @@ function alleTodos(quellen, opt) {
   return [
     ...ausBestellungen(quellen, k),
     ...ausFaellen(quellen),
+    ...ausMailRueckrufen(quellen, k),
     ...ausServiceanfragen(quellen, k.jetzt),
     ...ausAufgaben(quellen, { ich: opt.ich, jetzt: k.jetzt }),
     ...ausFreigaben(quellen, k.jetzt),
