@@ -537,10 +537,10 @@
       </div>
 
       <label for="ContactFormName">Name</label>
-      <input type="text" id="ContactFormName" name="contact[name]" value="{{ form.name }}" required>
+      <input type="text" id="ContactFormName" name="contact[name]" value="{{ form.name }}" autocomplete="name" required>
 
       <label for="ContactFormEmail">E-Mail</label>
-      <input type="email" id="ContactFormEmail" name="contact[email]" value="{{ form.email }}" required>
+      <input type="email" id="ContactFormEmail" name="contact[email]" value="{{ form.email }}" autocomplete="email" required>
 
       <div data-reklamation-feld>
         <label for="ContactFormBestellnummer">Bestellnummer</label>
