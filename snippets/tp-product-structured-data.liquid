@@ -210,6 +210,15 @@
   # lesen kann - deshalb hier je template_suffix; qa/tests/produkt-jsonld-
   # rueckgabe-versand vergleicht sie mit templates/product*.json.
   assign tp_sd_lz = product_resource.metafields.service.lieferzeit.value | strip
+  # Teppich nach Mass ohne Metafeld (Serena, gekettelte Sonderposten): derselbe
+  # Wert wie im Mass-Konfigurator (snippets/tp-mass-lieferzeit), sonst
+  # widersprechen sich sichtbare Zusage und strukturierte Daten.
+  if tp_sd_lz == blank
+    capture tp_sd_lz_mass
+      render 'tp-mass-lieferzeit', product: product_resource
+    endcapture
+    assign tp_sd_lz = tp_sd_lz_mass | strip
+  endif
   if tp_sd_lz == blank and product_resource.tags contains 'sonderposten'
     assign tp_sd_lz = settings.tp_lieferzeit_sonderposten | strip
   elsif tp_sd_lz == blank

@@ -67,7 +67,7 @@ const produkt = (o = {}) => ({
       preis_pro_001_lfm: { value: o.lfm ?? false },
       wunschmass_mindestbreite_cm: { value: null },
     },
-    service: { lieferzeit: { value: o.lieferzeit ?? null } },
+    service: { lieferzeit: { value: o.lieferzeit ?? null }, einfassung: { value: o.einfassung ?? null } },
   },
 });
 
@@ -200,6 +200,10 @@ test('Lieferzeit: Metafeld vor Sonderposten-Einstellung vor Vorlage', async () =
   assert.deepEqual(await zeit(produkt({ suffix: 'teppich' })), [3, 5]);
   assert.deepEqual(await zeit(produkt({ suffix: '' })), [5, 7]);
   assert.deepEqual(await zeit(produkt({ suffix: 'sonderposten', tags: ['sonderposten'] })), [5, 7]);
+  // Gekettelter Sonderposten nach Mass ohne Metafeld: wie der Mass-Konfigurator
+  // (snippets/tp-mass-lieferzeit), nicht die Sonderposten-Einstellung (06.11.).
+  assert.deepEqual(await zeit(produkt({ suffix: 'einfassung', tags: ['sonderposten'], einfassung: 'Ketteln' })), [5, 8]);
+  assert.deepEqual(await zeit(produkt({ suffix: 'einfassung', tags: ['sonderposten'], einfassung: 'Fertig' })), [5, 7]);
   assert.deepEqual(await zeit(produkt({ suffix: 'zubehoer', lieferzeit: '3 Werktage' })), [3, 3]);
 });
 
