@@ -168,14 +168,16 @@
   endif
 -%}
 {%- comment -%}
-  Zentral gesteuerte Aktion (snippets/tp-aktion-laufend). Nur Anzeige: der
-  Rabatt selbst kommt im Warenkorb vom automatischen Shopify-Rabatt.
+  Zentral gesteuerte Aktion (snippets/tp-aktion-laufend). Nur Anzeige: Preise
+  erscheinen schon reduziert (anzeigeRate), abgerechnet wird der Rabatt im
+  Warenkorb vom automatischen Shopify-Rabatt.
 {%- endcomment -%}
 {%- liquid
   capture tp_rc_aktion_raw
     render 'tp-aktion-laufend', product: product
   endcapture
   assign tp_rc_aktion_prozent = tp_rc_aktion_raw | strip | split: '|' | first | plus: 0
+  assign tp_rc_aktion_ende = tp_rc_aktion_raw | strip | split: '|' | last | date: '%d.%m.'
   # K1: Streichpreis auf den Art-Karten nur, wenn das gemeinsame Snippet ihn
   # freigibt (Dauerrabatt oder laufende Aktion) - wie auf Karte und Preisblock.
   capture tp_rc_rabatt
@@ -673,7 +675,7 @@
     {%- if product.tags contains 'sonderposten' -%}<span>Versand per Paketdienst oder Spedition je nach Maß</span>
     {%- else -%}<span>Spedition frei Bordsteinkante</span>{%- endif -%}
     {%- if settings.tp_versand_frei_ab != blank -%}<span>versandkostenfrei ab {{ settings.tp_versand_frei_ab }} €</span>{%- endif -%}
-    {%- if tp_rc_aktion_prozent > 0 -%}<span class="tp-rwc-infozeile__aktion">Aktion −{{ tp_rc_aktion_prozent }} % im Warenkorb</span>{%- endif -%}
+    {%- if tp_rc_aktion_prozent > 0 -%}<span class="tp-rwc-infozeile__aktion">Aktion −{{ tp_rc_aktion_prozent }} % bis {{ tp_rc_aktion_ende }}</span>{%- endif -%}
   </p>
   {%- comment -%} Abholung und Zahlarten als zweite Infozeile (Wortlaut: Theme-Einstellungen "TP Zahlung und Abholung", snippets/tp-zahlung-abholung) {%- endcomment -%}
   {%- render 'tp-zahlung-abholung', kontext: 'rechner' -%}
@@ -1798,6 +1800,27 @@ function tpRwcInit{{ tp_rc_id }}() {
     return cmExact ? alt : alt / 100;
   }
 
+  // Zentrale Aktion (snippets/tp-aktion-laufend): Kopfpreis und Art-Karten
+  // zeigen den Preis nach Abzug, der bisherige Preis wird zum Streichpreis
+  // (Wunsch 2026-11-06: Kunden sollen die 15 % nicht selbst rechnen). Nur
+  // Anzeige - gerechnet wird weiter mit rateOf(), abgezogen im Warenkorb vom
+  // automatischen Shopify-Rabatt. Rundung wie dort: Abzug je Einheit der
+  // Variante (m² bzw. 0,01 m²) auf den Cent abgerundet (aktionAbzugJe).
+  function aktionAbzugJe(cent) {
+    return Math.floor(cent * aktionProzent / 100);
+  }
+  function anzeigeRate(v) {
+    var rate = rateOf(v);
+    var alt = compareRateOf(v);
+    if (aktionProzent > 0 && rate > 0) {
+      alt = rate; // Referenz immer der aktuelle Preis, wie in price_custom
+      var cent = Math.round(parseFloat(v.price));
+      var neu = cent - aktionAbzugJe(cent);
+      rate = cmExact ? neu : neu / 100;
+    }
+    return { rate: rate, alt: alt };
+  }
+
   // Der Kopfpreis muss denselben Zuschnitt wie die Rechnung zeigen. Der
   // Theme-Preisblock aktualisiert sich sonst nur beim Varianten-Picker, nicht
   // beim Wechsel zwischen Meterware und Raummaß in diesem Rechner.
@@ -1808,8 +1831,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     var badge = headlinePrice.querySelector('[data-tp-rollware-rabatt]');
     var uvp = headlinePrice.querySelector('[data-tp-uvp-kopf]');
     if (uvp) uvp.hidden = String(v.id) !== uvp.dataset.variante;
-    var rate = rateOf(v);
-    var oldRate = compareRateOf(v);
+    var anzeige = anzeigeRate(v);
+    var rate = anzeige.rate;
+    var oldRate = anzeige.alt;
     if (current) current.textContent = fmt(rate) + '\u00a0€/m²';
     if (compare) {
       compare.hidden = !(oldRate > rate);
@@ -1883,8 +1907,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Meterware-Karte von der gewaehlten Rolle, nicht immer von der kleinsten.
     var meterV = variantFor(t, byWidth(selectedMeterWidth()));
     // D2: Preis steht im Titel der Karte ("Meterware · 29,95 €/m²"), die Unterzeile erklaert nur
-    artTitel(artTitleMeter, 'Meterware', rateOf(meterV), compareRateOf(meterV));
-    artTitel(artTitleRaum, 'Raummaß', raumOk ? rateOf(rv) : 0, raumOk ? compareRateOf(rv) : 0);
+    var meterAnzeige = anzeigeRate(meterV);
+    var raumAnzeige = raumOk ? anzeigeRate(rv) : { rate: 0, alt: 0 };
+    artTitel(artTitleMeter, 'Meterware', meterAnzeige.rate, meterAnzeige.alt);
+    artTitel(artTitleRaum, 'Raummaß', raumAnzeige.rate, raumAnzeige.alt);
     if (artSubMeter) artSubMeter.textContent = 'volle Rollenbreite';
     if (artSubRaum) artSubRaum.textContent = raumAnfrage ? 'eigene Breite, auf Anfrage' : 'eigene Breite, zentimetergenau';
 
@@ -2633,21 +2659,25 @@ function tpRwcInit{{ tp_rc_id }}() {
       extras = updateExtras(w, len, billedArea);
       // Eine Summe auf der Seite: Teppichboden plus gewaehlte Zusaetze. Die
       // Aufteilung in Zeilen sieht der Kunde im Warenkorb.
-      // Aktion (Inhaber 2026-09-22): nur Anzeige. Shopify zieht einen
-      // prozentualen automatischen Rabatt je Warenkorbzeile ab und rundet auf
-      // den Cent; hier dieselbe Rechnung fuer die Hauptposition. Zubehoer
+      // Aktion: nur Anzeige (Inhaber 2026-09-22). Shopify zieht den
+      // prozentualen automatischen Rabatt je Einheit ab und rundet ihn auf den
+      // Cent ab (Testwarenkorb 06.11.: 14 x 58,90 € -> 14 x 8,83 € = 123,62 €,
+      // nicht 15 % der Summe = 123,69 €); hier dieselbe Rechnung fuer die
+      // Hauptposition. Zubehoer
       // bleibt aussen vor - ob es in der Aktionskollektion liegt, weiss der
       // Rechner nicht, also verspricht er dafuer nichts.
       var aktionAbzug = 0;
       if (aktionProzent > 0) {
-        aktionAbzug = Math.round(Math.round(total * 100) * aktionProzent / 100) / 100;
+        var aktionEinheiten = target.rest_raum ? restMenge : qty;
+        var aktionEinheitCent = Math.round(parseFloat(target.rest_raum ? restRaum.price : target.price));
+        aktionAbzug = Math.round(aktionEinheiten * aktionAbzugJe(aktionEinheitCent)) / 100;
       }
       if (aktionZeile) {
         aktionZeile.hidden = !(aktionAbzug > 0);
-        if (aktionAbzug > 0) aktionZeile.textContent = 'Aktion −' + aktionProzent + ' %: −' + fmt(aktionAbzug) + ' € (wird im Warenkorb abgezogen)';
+        if (aktionAbzug > 0) aktionZeile.textContent = 'Aktion −' + aktionProzent + ' %: −' + fmt(aktionAbzug) + ' €';
       }
       var summe = [[(data.produkt_art || 'Teppich') + ' · ' + fmtArea(billedArea) + ' m² × ' + fmt(rate) + ' €', total]];
-      if (aktionAbzug > 0) summe.push(['Aktion −' + aktionProzent + ' % (im Warenkorb)', -aktionAbzug]);
+      if (aktionAbzug > 0) summe.push(['Aktion −' + aktionProzent + ' %', -aktionAbzug]);
       zeigeSumme(summe.concat(extras.rows));
       outTotal.textContent = fmt(total - aktionAbzug + extras.sum) + ' €';
       if (!inFlight) {

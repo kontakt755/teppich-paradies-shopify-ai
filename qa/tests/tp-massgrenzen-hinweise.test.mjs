@@ -23,7 +23,7 @@ function auswahl({ widths = [400, 500], farbBreiten = widths, raum = true } = {}
     baseOptions: () => [], byWidth: w => w, variantFor: (_t, w) => context.verfuegbar.includes(w) ? { price: 1 } : null,
     raumVariant: () => ({}), raumMoeglich: () => context.raumMoeglichWert,
     artMode: () => context.modus, setArt: mode => { context.modus = mode; },
-    selectedMeterWidth: () => 400, artTitel() {}, rateOf: () => 1, compareRateOf: () => 0,
+    selectedMeterWidth: () => 400, artTitel() {}, rateOf: () => 1, compareRateOf: () => 0, anzeigeRate: () => ({ rate: 1, alt: 0 }),
     maxRaumBreite: () => ART.maxRaumBreite(context.farbBreiten),
     verfuegbar: farbBreiten, raumMoeglichWert: raum, modus: raum ? 'raum' : 'meter',
   });

@@ -290,6 +290,7 @@ const abEngine = new Liquid({ templates: {
   'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+  'tp-aktion-laufend': ohneDoc('snippets/tp-aktion-laufend.liquid'),
   'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
 } });
 abEngine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
