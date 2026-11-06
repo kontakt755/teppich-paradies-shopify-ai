@@ -1,0 +1,223 @@
+{
+  "id": "RAT-WB-005",
+  "handle": "sauberlauf-richtig-auslegen-und-pflegen",
+  "title": "Sauberlauf richtig auslegen und pflegen: Größe, Zuschnitt, Kokos",
+  "blog": "ratgeber-weitere-boeden",
+  "tags": [
+    "Verlegen"
+  ],
+  "cluster": "weitere-boeden/sauberlauf",
+  "parent": "ratgeber-weitere-boeden",
+  "intent": "anleitung",
+  "frage": "Wie lege ich Sauberlauf richtig aus und wie pflege ich ihn?",
+  "begriff": "sauberlauf auslegen",
+  "nebenfragen": [
+    "Wie lang und breit muss eine Sauberlaufzone sein?",
+    "Geht die Tür noch über die Matte?",
+    "Wie schneide ich Sauberlauf von der Rolle zu?",
+    "Was gilt im Mattenschacht oder Mattenrahmen?",
+    "Was ist bei Kokosmatten anders?",
+    "Darf eine Sauberlaufmatte draußen liegen?",
+    "Wie reinige ich eine Sauberlaufmatte?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "linoleum-verlegen-und-pflegen",
+    "kautschukboden-verlegen-und-pflegen",
+    "kunstrasen-verlegen-und-pflegen"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [
+    "gesamthoehe",
+    "florhoehe",
+    "ruecken",
+    "rollenbreite",
+    "stuhlrolleneignung"
+  ],
+  "quellen": [
+    {
+      "art": "fachquelle",
+      "titel": "Ratinger Standard der Gebäudereinigung (Stadt Ratingen, Stand 9/2019), Abschnitt 2 Eingangsbereiche: ca. 80 % Schmutzeintrag über die Füße, Sauberlaufzone mit drei bis vier Schrittlängen einzuplanen, Zone nicht umgehbar, Türen/Absätze/Stufen einplanen",
+      "url": "https://www.stadt-ratingen.de/fileadmin/user_upload/Bilder/25/25.2/Ratinger_Standard_der_Gebaeudereinigung.pdf"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen, Glossar Sauberlaufzonen: Schuhe trocknen, kratzende Partikel entfernen, Breite mindestens wie der Eingang",
+      "url": "https://www.baunetzwissen.de/glossar/s/sauberlaufzonen-50673"
+    },
+    {
+      "art": "norm",
+      "titel": "ASR A1.5 Fußböden, Abschnitt 6 Absatz 3: Schutz vor Schmutz und Nässe kann durch Sauberlaufzonen erreicht werden, dann mindestens 1,5 m über die gesamte Durchgangsbreite, gesichert, ohne Stolperstellen, reinigen oder ersetzen",
+      "url": "https://vorschriften.bgn-branchenwissen.de/daten/tr/asr_a1_5/6.htm"
+    },
+    {
+      "art": "norm",
+      "titel": "ASR A1.5 Fußböden, Abschnitt 3.5 Stolperstelle: Höhenunterschied von mehr als 4 mm",
+      "url": "https://vorschriften.bgn-branchenwissen.de/daten/tr/asr_a1_5/3.htm"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Reinigungs- und Pflegeanleitung lackierte Holzfußböden: Sauberlaufzonen (mindestens 3 bis 4 Schrittlängen) erforderlich, vermeiden einen großen Teil des Schmutzeintrags; Weichmacherwanderung aus Gummi kann die Siegelschicht dauerhaft verfärben; Parkett nie längere Zeit nass lassen",
+      "url": "https://fries24.de/out/media/58bk0135n~~2~barlinek_reinigung_pflege.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Pflegeanleitung Design-Vinylboden (Haushalt, 2022): Weichmacherwanderung (z. B. aus Gummi, Teppichunterlagen) kann die Oberfläche dauerhaft verfärben; ausreichend dimensionierte Sauberlaufzonen",
+      "url": "https://media.holzland.de/docs/70398_49ae44tHLVTProPflegeanleitungHaushaltDE20220701web.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanweisungen Kokosmatte: 24 h akklimatisieren (Raum mind. 18 °C, Unterboden mind. 15 °C, Luftfeuchte max. 70 %), lose bis 5 m², darüber vollflächig verkleben, doppelseitiges Klebeband, Kleber je Untergrund (Dispersion, 2K-PU, auf Treppen Kontaktkleber), Vorschriften des Klebstoffherstellers, Untergrund sauber/zug- und druckfest/dauerhaft trocken, Unebenheiten spachteln, Dehnung/Schrumpfung bis 0,4 %",
+      "url": "https://rinos.com/de/die-richtige-fussmatte-fur-jeden-standort/verlegeanweisungen-kokosmatte/"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Pflegeanleitung Kokosmatte: absaugen mit rotierender Bürste, ausklopfen, nassen Schmutz trocknen lassen, gefärbtes Garn kann bei starker Nässe abfärben, Schnee sofort entfernen",
+      "url": "https://rinos.com/de/die-richtige-fussmatte-fur-jeden-standort/pflegeanleitung-kokosmatte/"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Ratgeber Schmutzfangmatten aus Kokosfaser: nicht im Regen liegen lassen, Faserausfall, abgelaufene Mitte als Stolperstelle, für Mattenrahmen und Mulden",
+      "url": "https://www.coba.com/de/buying-guides/coir-der-ultimative-ratgeber-fuer-schmutzfangmatten-aus-kokosfaser"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Einbauhinweise Winkelrahmen (Katalogauszug 2015): Rahmen bündig, Untergrund plan, Rahmenhöhe je Mattenstärke, 2 mm Einlegeluft für die passende Systemmatte",
+      "url": "https://prd-media.crb.ch/media/15686/Einbauhinweise"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Kurz-Ratgeber Sauberlauf (Beileger zur Bestellung): Ware und Tür prüfen, zwei, drei Schritte, Zugabe einplanen, liegen lassen bis glatt, Zuschnitt von der Rückseite, Laufrichtung, Ränder mit Klebeband sichern, keine Stolperkante, Pflege, Zuschnitt-Service auch für Mattenschächte",
+      "url": "https://www.teppich-paradies.net/cdn/shop/files/ratgeber-sauberlauf.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Reinigungs- und Pflegeanweisung Linoleum eines Belagherstellers (Stand 09/2023): Direktkontakt mit eingefärbtem Gummi, z. B. durch Schmutzfangmatten, kann bleibend verfärben",
+      "url": "https://www.heinze.de/m2/68/64068/etc/87/50343987.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Linoleum eines Belagherstellers (Stand 08/2025): Klebeband darf nicht direkt auf den Belag geklebt werden",
+      "url": "https://www.heinze.de/m2/68/64068/etc/19/49858419.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Korkboden, Klick- und Klebevariante: nicht verfärbende Matten verwenden, Matten mit Gummi- oder Latexunterlage können die Oberfläche verschmutzen oder beschädigen",
+      "url": "https://media.bodenhaus.de/bh/installationmanual/as.118982557.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Reinigungs- und Pflegeanleitung Kautschuk-Bodenbeläge eines Pflegemittelherstellers (07/2024): Weichmacherwanderung aus Gummi und Teppichunterlagen kann die Oberfläche irreversibel verfärben",
+      "url": "https://www.mega.de/fileadmin/0_mega.de/3.Sortiment/5.Bodenbelaege/Dr.Schutz/Kautschuk-Bodenbelaege_mit_PU_Versiegelung__Objektbereich_.pdf"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Außen-Sauberlauf von der Rolle: für überdachte Außen- und Eingangsbereiche (Abfrage 2026-10-29)",
+      "url": "/products/aperta-aussen-sauberlauf-von-der-rolle"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Produktdaten Kollektion Sauberlauf: Breiten, Größen, Höhen, Treppen- und Stuhlrolleneignung, Matten nach Maß (Innenmaß des Rahmens, Kokos-Stärken 17–28 mm, Vinylrücken ca. 4 mm, Natur und farbig, Naturprodukt Kokos), Streifenware 200 cm",
+      "url": "/collections/zubehoer-sauberlauf"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Kokos-Sauberlauf von der Rolle: Polhöhe ca. 18 mm, Rücken Vinylbeschichtung",
+      "url": "/products/palmira-kokos-sauberlauf-von-der-rolle"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Pflegeangaben Sauberlauf-Meterware mit Vinylrücken (Bürstsauger, Sprühextraktion)",
+      "url": "/products/brixona-sauberlauf-von-der-rolle"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Pflegeangaben Sauberlaufmatte mit Vinylrücken (ausschütteln, abspritzen, Hochdruckreiniger, hängend trocknen, keine Chlorkohlenwasserstoffe; Gesamtdicke ca. 9 mm)",
+      "url": "/products/sauberlaufmatte-90-155-cm"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Pflegeangaben offene Vinyl-Schlingenware",
+      "url": "/products/stegora-medio-sauberlauf-von-der-rolle-ohne-ruecken"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Rips-Rahmenmatte nach Maß (ca. 22 mm, für Mattenrahmen und Schmutzfangmulden)",
+      "url": "/products/rips-rahmenmatte-nach-mass"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Gummiwabenmatte nach Maß (100 % Gummi, ca. 22 mm, für Außenbereich, Eingänge und Mattenrahmen; offen: Schmutz und Wasser fallen durch; geschlossen: geschlossene Unterseite für festen Untergrund)",
+      "url": "/products/gummiwabenmatte-nach-mass"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Sauberlaufzone im Hauseingang über die ganze Türbreite, Tür geht über die Matte",
+      "status": "offen"
+    },
+    {
+      "zweck": "Meterware wird von der Rückseite mit Stahllineal und Hakenklinge geschnitten",
+      "status": "offen"
+    },
+    {
+      "zweck": "Kokosmatte liegt bündig im Mattenrahmen",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-10-29",
+    "grund": "Fachempfehlungen zur Sauberlaufzone sind stabil; Höhen, Breiten und Pflegeangaben im Sortiment gegen die Produktdaten prüfen"
+  },
+  "expert_input": [
+    "Zuschnitt: Schneiden wir Meterware nur in der Länge oder auch in der Breite, z. B. passgenau für Mattenschächte? Bestellt der Kunde das über Kontakt oder über den Rechner?",
+    "Mattenschacht: Gibt der Kunde das lichte Innenmaß ohne Abzug an? Zieht der Hersteller beim Kokos-Zuschnitt Einlegeluft ab, und wie viel Spiel braucht Kokos wegen Dehnen und Schrumpfen?",
+    "Meterware im Schacht: lose einlegen oder verkleben, und wie viel Materialzugabe? Der Artikel verweist derzeit nur auf Rücksprache vor dem Zuschnitt.",
+    "Bahnenware verlegen: Wir brauchen eine neutrale Verlegeanleitung (Hersteller außerhalb des Sortiments oder Fachverband) oder die eigene Praxis für Zugabe je Laufmeter, Akklimatisierung (Dauer, Temperatur), lose Verlegung bis wie viel m², Verbindung loser Nähte (Verbindungsband?), Nahtschnitt, Richtungspfeil, Klebstoff im nassen Eingang. Bis dahin stehen diese Punkte nicht im Artikel.",
+    "Mehrere Bahnen: Schneiden wir Sauberlauf-Bahnen einer Bestellung aus derselben Partie, und sollen Kunden alle Bahnen zusammen bestellen?",
+    "Streifenware (200 cm breit): Werden Stücke quer zur Gehrichtung verlegt, und bestimmt dann die Rollenbreite die Tiefe der Zone? Der Artikel rät derzeit nur zur Rücksprache vor der Bestellung.",
+    "Kokosmatte nach Maß: Enthält die angegebene Stärke (17–28 mm) den Vinylrücken von ca. 4 mm? Kokos von der Rolle: Der Produkttext nennt '18 mm stark' und zugleich 'Polhöhe ca. 18 mm' - wie hoch ist die Ware mit Rücken?",
+    "Gibt es eine Hausregel, welche Böden empfindlich auf Sauberlauf reagieren? Der Artikel nennt nach Herstellerangaben Gummi auf Vinyl/Design, Linoleum, Kork, Kautschuk und lackiertem Parkett sowie kein Klebeband auf Linoleum (Gesamtprüfung 2026-10-29). Offen: PVC von der Rolle, Naturstein, geöltes Parkett.",
+    "Schnittkanten von Meterware ohne Rand: Wie werden sie gegen Ausfransen und Stolpern gesichert – Klebeband, Profil, Ketteln? Bieten wir dafür etwas an? (Der Kurz-Ratgeber nennt ein Kanten- oder Einfassprofil, der Shop führt keins.)",
+    "Ist eines der Verlegebänder aus zubehoer-verlegeband für Sauberlauf mit Schwerbeschichtung oder Vinylrücken geeignet? Dann zubehoer_kollektion = zubehoer-verlegeband und cta zubehoer.",
+    "Hilft die Antirutsch-Unterlage für Teppiche auch unter Sauberlaufmatten (der Kurz-Ratgeber nennt eine Rutschstopp-Unterlage), oder haben unsere Matten genug Halt? Rutschhemmung ist nur bei einer Linie angegeben.",
+    "Gesamtdicke der Meterware und Matten: angegeben ist meist nur die Florhöhe. Können wir die Gesamthöhe in den Produktdaten ergänzen? Für die Türfreiheit ist sie entscheidend.",
+    "Länge der Zone im Wohnbereich: Der Artikel nennt als unsere Faustregel mindestens zwei, drei Schritte (Kurz-Ratgeber) und daneben drei bis vier Schritte, die Fachstellen und Bodenhersteller verlangen. Passt diese Formulierung?",
+    "Gab es Verfärbungen durch Matten mit Schwerbeschichtung oder Vinylrücken auf Vinyl, PVC oder Linoleum? Gibt es eine Hausempfehlung für Matten auf Designboden?",
+    "Darf die Kokosmatte nach Maß (Vinylrücken) überdacht im Außenbereich liegen?",
+    "Gilt der Hochdruckreiniger (Hausangabe bei Fertigmatten mit Vinylrücken) auch für Matten mit Schwerbeschichtung und für Rips-Rahmenmatten? Für Kokos raten die Quellen von starker Nässe ab; zum Hochdruckreiniger sagen sie nichts.",
+    "Pflegeangaben fehlen bei allen Linien mit Schwerbeschichtung (auch als Matten), beim Kokos von der Rolle, bei den Kokosmatten nach Maß sowie bei Rips- und Gummiwabenmatte. Können wir sie in den Produktdaten ergänzen?",
+    "Die Fachempfehlung 'lose Matten je Stück höchstens ca. 3 m²' gilt für öffentliche Gebäude, der Shop führt Matten bis 200 × 300 cm. Erwähnen oder weglassen? (derzeit weggelassen)"
+  ],
+  "excerpt": "Rund 80 % des Schmutzes kommen über die Schuhe ins Haus. Eine Sauberlaufzone hält einen großen Teil davon zurück, wenn sie lang genug ist, sich nicht umgehen lässt und sauber bleibt.",
+  "seo": {
+    "title": "Sauberlauf auslegen: Größe, Zuschnitt und Pflege",
+    "description": "Wie lang und breit eine Sauberlaufzone sein sollte, wie Sie Meterware zuschneiden, Matten sichern und was bei Kokos und der Pflege gilt."
+  },
+  "metafields": {
+    "kurzantwort": "Eine Sauberlaufzone reicht über die ganze Breite des Eingangs und ist mindestens zwei, drei Schritte lang; Fachstellen und Bodenhersteller verlangen drei bis vier Schritte. Die Tür muss über die Matte aufgehen, und die Ränder dürfen keine Stolperkante bilden. Meterware wird von der Rückseite zugeschnitten und in gleicher Laufrichtung ausgelegt. Saugen Sie die Zone regelmäßig ab; Kokos reinigen Sie nicht nass.",
+    "art": "Anleitung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [
+      "Maßband",
+      "Stahllineal",
+      "Cuttermesser mit Hakenklinge",
+      "doppelseitiges Klebeband nach Herstellerangabe",
+      "Staubsauger mit Bürste"
+    ],
+    "cta": [
+      "rechner"
+    ],
+    "kollektion": "zubehoer-sauberlauf",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/fortena-sauberlauf-von-der-rolle-raumbild-1.jpg?v=1790770836",
+    "alt": "Blaue Sauberlaufmatte innen vor einer Glasschiebetür im Eingang eines Ladens"
+  }
+}
