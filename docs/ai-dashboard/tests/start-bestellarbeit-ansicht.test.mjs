@@ -114,15 +114,19 @@ test('offene, fertige, Ware- und Packwege tragen die passenden vorhandenen Route
   assert.equal(parameter(link(html, 'Ware beim Lieferanten bestellen').href).get('art'), 'ware');
   assert.equal(link(html, 'Muster packen').href, '#/kunden?tab=muster');
   assert.equal(parameter(link(html, 'Ware annehmen').href).get('af'), 'bestellt');
-  assert.equal(parameter(link(html, 'Eingeworfen eintragen').href).get('mpbereich'), 'gepackt');
-  assert.match(link(html, 'Eingeworfen eintragen').text, /4 gepackte Umschläge/);
+  // Gepackt heisst verschickt (06.11.): "gepackt" zaehlt nur, was nie eingetragen wurde.
+  assert.equal(parameter(link(html, 'gepackt, nicht verschickt').href).get('mpbereich'), 'gepackt');
+  assert.match(link(html, 'gepackt, nicht verschickt').text, /4 Umschläge gepackt, nicht verschickt · Versand eintragen/);
+  assert.doesNotMatch(html, /Eingeworfen/);
+  const ohne = bestellarbeitBlock({ arbeit, offeneBestellungen: 3, pack: { verfuegbar: true, zahlen: { packen: 2, klaeren: 1, gepackt: 0 } } });
+  assert.doesNotMatch(ohne, /gepackt, nicht verschickt/, 'der Normalfall braucht keine Zeile');
 });
 
 test('ohne packbereite Muster fuehrt der naechste Packweg direkt zu den Klaerfaellen', () => {
   const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), offeneBestellungen: 0,
     pack: { verfuegbar: true, zahlen: { packen: 0, klaeren: 2, gepackt: 1 } } });
   assert.equal(parameter(link(html, 'Klärfälle ansehen').href).get('mpbereich'), 'klaeren');
-  assert.equal(parameter(link(html, 'Eingeworfen eintragen').href).get('mpbereich'), 'gepackt');
+  assert.equal(parameter(link(html, 'gepackt, nicht verschickt').href).get('mpbereich'), 'gepackt');
   assert.match(html, /0 Bestellungen sind noch offen/);
 });
 
@@ -170,7 +174,9 @@ test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgeme
     pack: { verfuegbar: true, zahlen: { packen: 1, klaeren: 2, warten: 3, gepackt: 4 } } });
   assert.match(html, /Muster &amp; Packstation/);
   assert.match(html, /3 Umschläge warten auf Ware/);
-  assert.match(html, /4 Umschläge gepackt · Eingeworfen eintragen/);
+  assert.match(html, /<a class="chip warn" href="#\/kunden\?tab=muster&amp;mpbereich=gepackt">4 Umschläge gepackt, nicht verschickt</);
+  const ohne = bestellarbeitBlock({ arbeit, nurMuster: true, pack: { verfuegbar: true, zahlen: { packen: 1, klaeren: 2, warten: 3, gepackt: 0 } } });
+  assert.doesNotMatch(ohne, /mpbereich=gepackt/);
   assert.equal((html.match(/Aufkleber-Druckliste/g) || []).length, 1);
   assert.doesNotMatch(html, /Kundenbestellungen|Dringendes bearbeiten|Bestellungen werden geladen/);
   // Rundgang 29.10. (T6): ein Weg fuer eingetroffene Muster - der Packstation-Reiter "Muster kommt an".

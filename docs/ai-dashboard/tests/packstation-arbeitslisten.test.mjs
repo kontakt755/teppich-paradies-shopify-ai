@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { viewKundenMusterPacken, erledigteBestellungen, ERLEDIGT_TAGE } from '../ansichten/kunden/muster-packen.mjs';
+import { viewKundenMusterPacken, erledigteBestellungen, ERLEDIGT_TAGE, versandFrageHtml } from '../ansichten/kunden/muster-packen.mjs';
 import { state } from '../kern/zustand.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { oeffneKundeInformieren } from '../ansichten/kunden/muster-gesperrt.mjs';
@@ -195,7 +195,7 @@ test('Bestellung packen in drei Schritten: drucken, was ist da, zukleben – gen
   assert.match(eins, /data-mp-gedruckt="order1">Schon gedruckt – weiter</);
   assert.match(eins, /<strong>Da: 0 von 2<\/strong> · Fehlt: Test, Test/);
   assert.doesNotMatch(eins, /data-mp-aktion="gepackt"/);
-  assert.match(eins, /class="mp-mehr"[\s\S]*data-mp-alle-eingelegt="order1">Alle 2 da – Umschlag gepackt</);
+  assert.match(eins, /class="mp-mehr"[\s\S]*data-mp-alle-eingelegt="order1">Alle 2 da – gepackt, verschicken…</);
   // 2 · Ein Muster abgehakt: was ist da / was fehlt, Antworten ohne Hauptknopf.
   const halb = { ...neu, muster: [{ ...neu.muster[0], abgehakt: { zeit: 'x' } }, { ...neu.muster[1], vorher: { produktname: 'Herstellerware', farbnummer: '30' } }] };
   const zwei = ansicht('tab=muster&umschlag=order1', [halb]);
@@ -203,12 +203,14 @@ test('Bestellung packen in drei Schritten: drucken, was ist da, zukleben – gen
   assert.deepEqual(hauptknoepfe(zwei), []);
   assert.match(zwei, /<strong>Da: 1 von 2<\/strong> · Fehlt: Herstellerware \(Farbnr\. 30\)</);
   assert.match(zwei, /data-mp-aktion="klaeren"[^>]*>Fehlt noch – zurücklegen \(1\)</);
-  assert.match(zwei, /data-mp-alle-eingelegt="order1">Alle 2 da – Umschlag gepackt</);
-  // 3 · Alles abgehakt: nur noch "Umschlag gepackt".
+  assert.match(zwei, /data-mp-alle-eingelegt="order1">Alle 2 da – gepackt, verschicken…</);
+  // 3 · Alles abgehakt: nur noch "Umschlag gepackt" - und schon davor steht, dass das verschickt (06.11.).
   const voll = { ...neu, muster: neu.muster.map(m => ({ ...m, abgehakt: { zeit: 'x' } })) };
   const drei = ansicht('tab=muster&umschlag=order1', [voll]);
-  assert.equal(schritt(drei), '3 · Zukleben');
-  assert.deepEqual(hauptknoepfe(drei), ['Umschlag gepackt']);
+  assert.equal(schritt(drei), '3 · Zukleben und verschicken');
+  assert.deepEqual(hauptknoepfe(drei), ['Umschlag gepackt – verschicken…']);
+  assert.match(drei, /„Gepackt“ trägt ihn als verschickt ein, der Kunde bekommt sofort die Versandmail/);
+  assert.match(drei, /Gepackt heißt verschickt: „Umschlag gepackt“ trägt ihn als verschickt ein/, 'auch der Kopftext sagt es');
   assert.match(drei, /data-mp-drucken="order1">Adressaufkleber drucken</, 'Muster einzeln eingelegt: Adresse fehlt noch');
   assert.match(drei, /class="mp-mehr"[\s\S]*Alle Aufkleber erneut drucken \(2\)/, 'Zahl aus dem Server (Fixture)');
 });
@@ -279,8 +281,8 @@ test('Zu klaeren und Gepackt: ein Hauptknopf fuer das Naechstliegende, Rest unte
   const sonst = ansicht('tab=muster&umschlag=order6', [kunde(6, 'klaeren')]);
   assert.deepEqual(hauptknoepfe(sonst), ['#TEST6 – Bestellstand prüfen']);
   const gepackt = ansicht('tab=muster&umschlag=order2', [kunde(2, 'gepackt')]);
-  assert.match(gepackt, /data-mp-eingeworfen="order2">Eingeworfen</);
-  assert.doesNotMatch(gepackt, /Verschickt – Kunde informieren/);
+  assert.match(gepackt, /data-mp-versand-frage="order2" data-mp-art="verschickt">Verschickt – Kunde informieren…</);
+  assert.doesNotMatch(gepackt, /Eingeworfen|eingeworfen/);
   assert.match(gepackt, /data-mp-grossbrief="order2">Großbrief vorbereiten/);
   assert.match(gepackt, /class="mp-mehr"[\s\S]*data-mp-wert="0">Zurücknehmen</);
 });
@@ -543,37 +545,50 @@ test('Begleitblatt: in jedem Umschlag direkt unter dem Kopf und nie unter "Mehr"
   assert.doesNotMatch(ansicht('tab=muster&mpbereich=warten', [direkt]), /data-mp-blatt/);
 });
 
-test('Reiter Gepackt (#1937): Sammelaktion nur fuer heute Gepacktes, Altfaelle mit Zahl und aeltestem zuerst', () => {
+test('Reiter Gepackt (06.11.): nur nie Eingetragenes, aelteste Bestellung zuerst, keine Sammelaktion', () => {
   const heute = new Date().toISOString();
   const k = (nr, seit, zeit) => ({ ...kunde(nr, 'gepackt'), seit, gepackt: { zeit } });
   const html = ansicht('tab=muster&mpbereich=gepackt', [
-    k(1, '2026-10-25T08:00:00Z', '2026-10-26T08:00:00Z'), k(2, '2026-10-20T08:00:00Z', '2026-10-28T08:00:00Z'),
-    k(3, '2026-11-01T08:00:00Z', heute), k(4, '2026-11-02T08:00:00Z', heute),
+    k(1, '2026-10-25T08:00:00Z', '2026-10-26T08:00:00Z'), k(2, '2026-10-20T08:00:00Z', '2026-10-28T08:00:00Z'), k(3, '2026-11-01T08:00:00Z', heute),
   ]);
-  assert.match(html, /Heute gepackt · 2/);
-  assert.match(html, /data-mp-eingeworfen="order3 order4">Alle 2 eingeworfen</);
-  assert.match(html, /Altfälle · 2 Umschläge/);
-  const reihe = [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
-  assert.deepEqual(reihe, ['order3', 'order4', 'order2', 'order1'], 'Altfälle: älteste Bestellung zuerst');
-  assert.match(html, /data-mp-eingeworfen="order2">Eingeworfen</);
+  assert.match(html, /<strong>Gepackt heißt verschickt\.<\/strong> Hier steht nur, was gepackt, aber nie als verschickt eingetragen wurde/);
+  assert.match(html, /Gepackt, nicht verschickt · 3 Umschläge/);
+  assert.deepEqual([...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]), ['order2', 'order1', 'order3']);
+  assert.equal((html.match(/data-mp-versand-frage="order\d"/g) || []).length, 3, 'je Umschlag ein Knopf');
+  assert.deepEqual(hauptknoepfe(html), [], 'bei mehreren leuchtet keiner');
   assert.match(html, /data-mp-frueher="order2"[^>]*>War schon früher raus…/);
-  assert.doesNotMatch(html, /data-mp-eingeworfen="[^"]*order1[^"]* /, 'kein Altfall in der Sammelaktion');
-  assert.match(html, /wirklich bei der Post/);
+  assert.doesNotMatch(html, /data-mp-frueher="order3"/, 'heute gepackt kann nicht schon laengst raus sein');
+  assert.doesNotMatch(html, /Alle \d+ eingeworfen|Eingeworfen|Rückgängig/);
+  assert.deepEqual(hauptknoepfe(ansicht('tab=muster&mpbereich=gepackt', [k(4, '2026-10-20T08:00:00Z', '2026-10-28T08:00:00Z')])), ['Verschickt – Kunde informieren…']);
+  assert.match(ansicht('tab=muster&mpbereich=gepackt', []), /Nichts offen: jeder gepackte Umschlag ist als verschickt eingetragen/);
 });
 
-test('Reiter Gepackt (#1937): nach dem Klick zaehlt die Frist, Rueckgaengig statt Zuruecknehmen, Problem steht oben', () => {
-  const buchtAb = new Date(Date.now() + 300_000).toISOString();
-  const wartend = { ...kunde(1, 'gepackt'), eingeworfen: { zeit: new Date().toISOString(), buchtAb, von: 'Team' } };
-  const html = ansicht('tab=muster&mpbereich=gepackt', [wartend]);
-  assert.match(html, /Wird eingetragen · 1/);
-  assert.match(html, /<strong>Eingeworfen<\/strong> · wird um \d\d:\d\d eingetragen/);
-  assert.match(html, /data-mp-einwurf-zurueck="order1">Rückgängig</);
-  assert.doesNotMatch(html, /data-mp-eingeworfen=/);
-  assert.doesNotMatch(html, /data-mp-wert="0">Zurücknehmen/, 'Gepackt zurücknehmen liefe ins Leere');
+test('Versandhinweis vom Server steht oben, bis jemand "Verstanden" drueckt', () => {
   state.route.params = new URLSearchParams('tab=muster&mpbereich=gepackt');
-  kunden.musterPacken = { verfuegbar: true, ausserhalb: [], kunden: [], einwurf: { probleme: [{ packSchluessel: 'order9', orderIds: ['order9'], bestellungen: ['#TEST9'], meldung: 'Versand nicht gebucht' }] } };
+  kunden.musterPacken = { verfuegbar: true, ausserhalb: [], kunden: [], versandProbleme: [{ packSchluessel: 'order9', orderIds: ['order9'], bestellungen: ['#TEST9'], meldung: 'Versand nicht gebucht' }] };
   const fehler = viewKundenMusterPacken();
-  assert.match(fehler, /Eingeworfen, aber nicht sauber eingetragen/);
+  assert.match(fehler, /Gepackt, aber nicht sauber als verschickt eingetragen/);
   assert.match(fehler, /#TEST9<\/a>: Versand nicht gebucht/);
-  assert.match(fehler, /data-mp-einwurf-ok="order9">Verstanden/);
+  assert.match(fehler, /data-mp-versand-ok="order9">Verstanden/);
+});
+
+test('Rueckfrage vor dem Verschicken sagt, was passiert: Versandmail, ohne Mail, nicht angekommen, Restumfang', () => {
+  globalThis.document ||= { addEventListener() {}, querySelector() {} };
+  const k = { ...kunde(1, 'packen'), muster: [{ ...kunde(1, 'packen').muster[0], stand: 'bestellt' }, { ...kunde(1, 'packen').muster[0], lineItemId: 'line1b', stand: 'da' }] };
+  const alle = versandFrageHtml(k, 'alle');
+  assert.match(alle, /<strong>Gepackt heißt verschickt\.<\/strong> Eingetragen wird „An Kunden raus“ und in Shopify versendet – Testkunde 1 bekommt sofort die Versandmail\. Zurücknehmen geht danach nicht mehr\./);
+  assert.match(alle, /Alle 2 Muster werden abgehakt/);
+  assert.match(alle, /<strong>Laut Bestellstand ist 1 Muster noch nicht angekommen\.<\/strong> Nur bestätigen, wenn trotzdem alle überklebt im Umschlag liegen/);
+  assert.match(alle, /data-mp-frage-weg>Abbrechen<\/button><button type="button" class="btn btn-sm btn-primary" id="mpVersandJa" data-focus-erhalten data-mp-versand-ja="order1" data-mp-art="alle">Ja, gepackt und verschickt</);
+  assert.doesNotMatch(versandFrageHtml(k, 'gepackt'), /noch nicht angekommen|werden abgehakt/);
+  assert.match(versandFrageHtml(k, 'restumfang'), /Teilweise erstattet: nur bestätigen/);
+  const alt = versandFrageHtml({ ...kunde(2, 'gepackt') }, 'verschickt');
+  assert.match(alt, /Umschlag #TEST2 ist bei der Post\?/);
+  assert.match(alt, />Ja, verschickt – Kunde informieren</);
+  const vorbei = versandFrageHtml({ ...k, muster: k.muster.map(m => ({ ...m, persoenlich: true })) }, 'gepackt');
+  assert.match(vorbei, /Persönlich übergeben: Eingetragen wird „An Kunden raus“, ohne Versandmail/);
+  assert.match(vorbei, />Ja, als übergeben eintragen</);
+  assert.doesNotMatch(vorbei, /bekommt sofort die Versandmail/);
+  const name = versandFrageHtml({ ...k, name: '<b>X</b>' }, 'gepackt');
+  assert.match(name, /&lt;b&gt;X&lt;\/b&gt; bekommt/);
 });

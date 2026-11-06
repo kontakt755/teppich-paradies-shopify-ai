@@ -28,7 +28,7 @@ test('neues Umschlagziel ersetzt Handwahl, stilles Neuzeichnen erhaelt sie', () 
   const state = { route: { params: new URLSearchParams('umschlag=A') } };
   const api = ladeAnsicht('muster-packen.mjs', {
     state,
-    document: { addEventListener: (_, handler) => { toggle = handler; } },
+    document: { addEventListener: (typ, handler) => { if (typ === 'toggle') toggle = handler; } },
     kunden: { loadingMusterPacken: true },
   }, '({ zeichne: viewKundenMusterPacken, offen: () => packOffen })');
   api.zeichne();
@@ -82,17 +82,79 @@ test('Gesamtliste zeigt Storno und Archiv; Kontrolle holt manuelle Haken in die 
   assert.doesNotMatch(kontrolle, /VERSANDT|STORNO/);
 });
 
-test('abgebrochene Restumfang-Pruefung setzt keine Packmarke und laesst den Knopf bedienbar', () => {
-  const knopf = { dataset: { mpAktion: 'gepackt', mpK: 'A', mpWert: '1', mpRestumfang: '1' }, disabled: false };
-  let bestaetigungen = 0;
-  const klick = ladeAnsicht('muster-packen.mjs', {
-    kunden: { musterPacken: { kunden: [] } },
-    window: { confirm: () => { bestaetigungen++; return false; } },
-    orgSchreiben: () => { throw new Error('Darf bei Abbruch nicht schreiben'); },
-  }, 'musterPackenKlick');
-  assert.equal(klick({ target: { closest: s => s === '[data-mp-aktion]' ? knopf : null }, preventDefault() {} }), true);
-  assert.equal(bestaetigungen, 1);
-  assert.equal(knopf.disabled, false);
+// Gepackt = verschickt (06.11.2026): jeder Weg zu "gepackt" fragt erst in der Karte, gebucht wird mit dem Ja.
+function packKlicks({ fehler = null, liste = [{ packSchluessel: 'A', name: 'Testkunde', bestellungen: [{ orderId: 'A', orderName: '#T1' }], muster: [{ lineItemId: 'L1', abgehakt: null }, { lineItemId: 'L2', abgehakt: { zeit: 'x' } }] }], antwort = { ok: true, versand: [{ orderId: 'A', orderName: '#T1', status: 'gebucht', kundeBenachrichtigt: true }] } } = {}) {
+  const geschrieben = [], toasts = [];
+  let gezeichnet = 0;
+  const api = ladeAnsicht('muster-packen.mjs', {
+    kunden: { musterPacken: { verfuegbar: true, kunden: liste } },
+    window: { confirm: () => assert.fail('kein Browser-Dialog: die Rueckfrage steht in der Karte') },
+    orgSchreiben: async (_, d) => { geschrieben.push(JSON.parse(JSON.stringify(d))); if (fehler) throw fehler; return antwort; },
+    fetchEinkauf: async () => ({ verfuegbar: true, kunden: [] }),
+    render: () => { gezeichnet++; }, toast: (t, ton) => { toasts.push([t, ton || '']); },
+    plural: (n, a, b) => `${n} ${n === 1 ? a : b}`, umschlagKennung: k => k.bestellungen.map(b => b.orderName).join(' / '),
+    document: { getElementById: () => null },
+  }, '({ musterPackenKlick, frage: () => versandFrage })');
+  const klick = (selektor, knopf) => api.musterPackenKlick({ target: { closest: s => (s === selektor ? knopf : null) }, preventDefault() {} });
+  return { api, klick, geschrieben, toasts, gezeichnet: () => gezeichnet };
+}
+
+test('Umschlag gepackt und Restumfang fragen erst in der Karte, Abbrechen schreibt nichts', () => {
+  for (const [daten, art] of [[{ mpAktion: 'gepackt', mpK: 'A', mpWert: '1' }, 'gepackt'], [{ mpAktion: 'gepackt', mpK: 'A', mpWert: '1', mpRestumfang: '1' }, 'restumfang']]) {
+    const u = packKlicks();
+    const knopf = { dataset: daten, disabled: false };
+    assert.equal(u.klick('[data-mp-aktion]', knopf), true);
+    assert.equal(JSON.stringify(u.api.frage()), JSON.stringify({ pk: 'A', art }));
+    assert.equal(knopf.disabled, false);
+    assert.equal(u.geschrieben.length, 0, 'die Frage allein bucht nichts');
+    assert.equal(u.klick('[data-mp-frage-weg]', {}), true);
+    assert.equal(u.api.frage(), null);
+    assert.equal(u.geschrieben.length, 0);
+  }
+});
+
+test('"Ja, gepackt und verschickt" schickt gepackt mit verschicken, bei "Alle da" genau die offenen Muster', async () => {
+  const u = packKlicks();
+  u.klick('[data-mp-alle-eingelegt]', { dataset: { mpAlleEingelegt: 'A' } });
+  assert.equal(JSON.stringify(u.api.frage()), JSON.stringify({ pk: 'A', art: 'alle' }));
+  const ja = { dataset: { mpVersandJa: 'A', mpArt: 'alle' }, disabled: false, textContent: '' };
+  assert.equal(u.klick('[data-mp-versand-ja]', ja), true);
+  assert.equal(ja.disabled, true, 'kein zweiter Klick waehrend der Buchung');
+  for (let i = 0; i < 3; i++) await new Promise(r => setImmediate(r));
+  assert.deepEqual(u.geschrieben, [{ packSchluessel: 'A', aktion: 'gepackt', gepackt: true, verschicken: true, alleEingelegt: true, lineItemIds: ['L1'] }]);
+  assert.equal(u.api.frage(), null);
+  assert.match(u.toasts.at(-1)[0], /^Gepackt und verschickt · #T1 Testkunde · der Kunde bekommt die Versandmail/);
+
+  const v = packKlicks({ antwort: { ok: true, versand: [{ orderId: 'A', orderName: '#T1', status: 'fehler', meldung: 'kein Zugang' }] } });
+  v.klick('[data-mp-aktion]', { dataset: { mpAktion: 'gepackt', mpK: 'A', mpWert: '1', mpRestumfang: '1' } });
+  v.klick('[data-mp-versand-ja]', { dataset: { mpVersandJa: 'A', mpArt: 'restumfang' } });
+  for (let i = 0; i < 3; i++) await new Promise(r => setImmediate(r));
+  assert.deepEqual(v.geschrieben, [{ packSchluessel: 'A', aktion: 'gepackt', gepackt: true, verschicken: true, restumfangGeprueft: true }]);
+  assert.deepEqual(v.toasts.at(-1), ['Gepackt und verschickt · #T1 Testkunde – aber nicht sauber eingetragen. Hinweis oben in der Packstation.', 'crit']);
+});
+
+test('Sperrt der Server (409), sagt die Rueckmeldung "nicht gepackt" und die Frage ist zu', async () => {
+  const sperre = Object.assign(new Error('Die Muster dieses Umschlags haben sich geändert. Bitte neu laden und erneut prüfen.'), { status: 409 });
+  const u = packKlicks({ fehler: sperre });
+  u.klick('[data-mp-aktion]', { dataset: { mpAktion: 'gepackt', mpK: 'A', mpWert: '1' } });
+  u.klick('[data-mp-versand-ja]', { dataset: { mpVersandJa: 'A', mpArt: 'gepackt' } });
+  for (let i = 0; i < 3; i++) await new Promise(r => setImmediate(r));
+  assert.equal(u.api.frage(), null);
+  assert.deepEqual(u.toasts.at(-1), ['Nicht gepackt, nichts verschickt: Die Muster dieses Umschlags haben sich geändert. Bitte neu laden und erneut prüfen.', 'crit']);
+});
+
+test('Altfall: "Verschickt – Kunde informieren…" fragt, das Ja schickt aktion verschickt; "Gepackt zuruecknehmen" bleibt ohne Frage', async () => {
+  const u = packKlicks();
+  u.klick('[data-mp-versand-frage]', { dataset: { mpVersandFrage: 'A', mpArt: 'verschickt' } });
+  assert.equal(JSON.stringify(u.api.frage()), JSON.stringify({ pk: 'A', art: 'verschickt' }));
+  u.klick('[data-mp-versand-ja]', { dataset: { mpVersandJa: 'A', mpArt: 'verschickt' } });
+  for (let i = 0; i < 3; i++) await new Promise(r => setImmediate(r));
+  assert.deepEqual(u.geschrieben, [{ packSchluessel: 'A', aktion: 'verschickt' }]);
+  const zurueck = packKlicks();
+  zurueck.klick('[data-mp-aktion]', { dataset: { mpAktion: 'gepackt', mpK: 'A', mpWert: '0' } });
+  assert.equal(zurueck.api.frage(), null);
+  for (let i = 0; i < 3; i++) await new Promise(r => setImmediate(r));
+  assert.deepEqual(zurueck.geschrieben, [{ packSchluessel: 'A', aktion: 'gepackt', gepackt: false }]);
 });
 
 test('Eingelegt im Reiter "Muster kommt an": Haken speichern, Feld leeren, Rueckmeldung merken, Fokus zurueck ins Feld', async () => {
