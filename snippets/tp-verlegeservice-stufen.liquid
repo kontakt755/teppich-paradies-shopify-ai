@@ -26,6 +26,7 @@
 
   @param {string} [link] - Ziel der Knoepfe, Standard: Kollektion teppichboden
   @param {string} [ebene] - Tag der Kartentitel, Standard: h3
+  @param {boolean} [aktionshinweis] - Satz "nur zum regulaeren Preis" unter der kostenlosen Stufe zeigen, Standard: aus
 {% enddoc %}
 
 {%- liquid
@@ -56,6 +57,12 @@
       <li>{% render 'tp-vs-icon', name: 'check' %}<span>Lieferadresse <strong>höchstens {{ vss_nah }}&nbsp;km</strong> von unserem Geschäft in Oranienburg entfernt (Luftlinie)</span></li>
     </ol>
     <p class="tp-vs-stufe__bedingung">Wohnen Sie weiter weg, zahlen Sie Lieferung <strong>und</strong> lose Verlegung – auch wenn Ihr Einkauf über {{ vss_schwelle }}&nbsp;€ liegt.</p>
+    {%- comment -%} Aktionspreis-Regel des Inhabers, gleicher Wortlaut wie in
+      sections/tp-verlegeservice.liquid. Dort steht der Satz schon im Kasten
+      ueber den Karten, deshalb nur auf Wunsch des Aufrufers. {%- endcomment -%}
+    {%- if aktionshinweis %}
+    <p class="tp-vs-stufe__bedingung">Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis.</p>
+    {%- endif %}
 
     <ul class="tp-vs-kurz" role="list">
       <li>

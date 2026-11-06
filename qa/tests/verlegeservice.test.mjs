@@ -38,6 +38,9 @@ const ohneKommentare = (code) => code
 
 const ohneSchema = (code) => code.replace(/{%-?\s*schema\s*-?%}[\s\S]*?{%-?\s*endschema\s*-?%}/g, '');
 
+/** Aktionspreis-Regel des Inhabers, Wortlaut wie in sections/tp-verlegeservice.liquid. */
+const AKTION_SATZ = 'Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis.';
+
 const SERVICE_DATEIEN = [
   ['sections', 'tp-verlegeservice.liquid'],
   ['sections', 'tp-verlegeservice-kontakt.liquid'],
@@ -163,12 +166,41 @@ test('kostenlos steht nur zusammen mit Schwelle und erster Zone', () => {
     // Ausnahme seit 2026-09-20: der Aktionshinweis. "Kostenlose Lieferung bis
     // Bordsteinkante" ist eine andere Zusage als die kostenlose Verlegung und gilt
     // ohne Zone; dieselbe Zeile schliesst den kostenlosen Vor-Ort-Service gerade aus.
-    const pruefbar = (z) => /kostenlos/i.test(z) && !/tp-vs-gratis/.test(z) && !/Bordsteinkante.*nur zum regulären Preis/.test(z);
+    // Seit 2026-11-06 (Rundgang, P04) steht der Ausschluss auch als eigener
+    // Absatz: er schraenkt die Zusage ein und verspricht selbst nichts.
+    const nurAusschluss = (z) => z.trim().replace(/<[^>]+>/g, '') === AKTION_SATZ;
+    const pruefbar = (z) => /kostenlos/i.test(z) && !/tp-vs-gratis/.test(z) && !/Bordsteinkante.*nur zum regulären Preis/.test(z)
+      && !nurAusschluss(z);
     for (const zeile of code.split('\n').filter(pruefbar)) {
       assert.match(zeile, /tp_vs_radius_basis|vs_nah|vss_nah|vsh_nah|kostenlose Zone/,
         `${teile.join('/')}: "kostenlos" ohne die erste Zone: ${zeile.trim()}`);
     }
   }
+});
+
+test('wo die kostenlose Verlegung zugesagt wird, steht der Aktionsausschluss genau einmal (Rundgang 06.11., P04)', () => {
+  const zaehle = (text, such) => text.split(such).length - 1;
+  const ausschluss = /nur zum regulären Preis/gi;
+  // Teppichboden-Seite: Karten mit Hinweis, Liefergebiet mit Hinweis (Standard an).
+  assert.match(lesen('sections', 'teppichboden-verlegen.liquid'), /render 'tp-verlegeservice-stufen', aktionshinweis: true/);
+  const stufen = ohneKommentare(lesen('snippets', 'tp-verlegeservice-stufen.liquid'));
+  assert.equal(zaehle(stufen, AKTION_SATZ), 1, 'Stufen-Karten ohne Aktionsausschluss');
+  assert.match(stufen, /{%-?\s*if aktionshinweis\s*-?%}/, 'Der Satz in den Karten haengt nicht am Parameter.');
+  const gebiet = ohneSchema(ohneKommentare(lesen('sections', 'tp-verlegegebiet.liquid')));
+  assert.equal(zaehle(gebiet, AKTION_SATZ), 1, 'Liefergebiet: kostenlose Stufe ohne Aktionsausschluss');
+  // Serviceseite: der Kasten oben hat den Satz schon, Karten und Liefergebiet nicht noch einmal.
+  assert.doesNotMatch(lesen('sections', 'tp-verlegeservice.liquid'), /render 'tp-verlegeservice-stufen'[^%]*aktionshinweis/);
+  const gebietDort = Object.values(vorlage('page.verlegeservice').sections).find((x) => x.type === 'tp-verlegegebiet');
+  assert.equal(gebietDort?.settings?.aktionshinweis, false, '/pages/liefer-verlegeservice zeigt den Satz doppelt.');
+  // Vinyl-Rollenware-Karte.
+  const vinyl = ohneKommentare(lesen('sections', 'vinylboden-verlegen.liquid'));
+  assert.equal((vinyl.match(ausschluss) || []).length, 1, 'Vinyl-Rollenware ohne Aktionsausschluss');
+  // Startseite: Service-Text und FAQ.
+  const start = vorlage('index');
+  assert.match(start.sections.tp_zwei_wege_home.settings.service_text, ausschluss);
+  const faq = JSON.stringify(start.sections.tp_start_faq);
+  assert.equal((faq.match(ausschluss) || []).length, 1, 'Startseiten-FAQ ohne Aktionsausschluss');
+  assert.doesNotMatch(faq, /Stand: Oktober 2026/);
 });
 
 test('der Aktionshinweis steht unter dem Preis, nur bei Berechtigung UND aktiver Aktion (D2)', () => {
