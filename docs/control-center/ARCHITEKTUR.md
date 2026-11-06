@@ -504,6 +504,38 @@ bis 06.11.2026 waren es 10 Werktage); dieselbe Regel nutzt das To-do „Nachfrag
 `einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
 Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
 
+### Lieferweg und Lagerware (seit 2026-11-06, #1995)
+
+Wer die Ware zum Kunden bringt, ist eine reine Regel in `lib/lieferweg.mjs` (Browser und Server):
+Vermerk beim Bestellen (`eintrag.ueber`: kunde, kettler, laden, lager) > Lagerware > Stammroute
+(`einkauf.route`); Muster und Eigenleistungen haben keinen Weg. Ein Vermerk zaehlt nur, solange die
+Position einen Schritt hat; die Regeldatei nur, solange die Ware nicht geliefert ist (was ohne Vermerk
+`lager` schon geliefert ist, kam ueber den Lieferanten). Die Stammroute `OWN_STOCK` ist kein Weg „aus
+Lager“ - `routeFor` bestellt sie beim Lieferanten. `istLagerware()` heisst genau „Weg aus Lager“, damit
+keine Position zugleich bestellt und Lagerware ist. Lagerware sind Artikel, die wir aus
+eigener Rolle zuschneiden, obwohl sie in Shopify als Ware eines Lieferanten gefuehrt werden. Welche das
+sind, steht nur in der privaten Regeldatei `$TP_PRIVAT_DIR/lieferanten/lagerware.json`
+(`{ "regeln": [{ "skuPraefix", "hinweis" }] }`, nie im Git); `operations/lib/lagerware.mjs` markiert die
+Positionen im Bestellmodell (`lagerware`, `lagerHinweis`). Fehlt die Datei, gibt es keine Lagerware; ist sie
+beschaedigt, steht `lagerwareFehler` am Modell, Heute meldet es rot, und Ware-Bestellmail sowie „bestellt“
+antworten 409 - still leer hiesse, Lagerware landete wieder beim Lieferanten. Lagerware steht in keiner
+Bestellmail (`ohneBestellung`), „bestellt“ antwortet 409, der Sammelknopf ueberspringt sie, und es gibt
+weder „Nachhaken“ noch „kein Beleg“. Zugeschnitten und Gepackt speichert `setzeSelbstversand()` in
+`auftragsstatus.json` (`selbstversand.zugeschnitten|gepackt = { am, von }`; Zugeschnitten setzt „bei uns“
+mit Vermerk `lager`), ueber `POST /api/einkauf/auftragsstatus` mit `aktion: 'selbstversand'` (Rolle „lesen“
+403, Muster und Direktware 409). Zugeschnitten merkt den Vermerk davor (`ueberVorher`), Rückgängig stellt
+ihn wieder her; „Zurück auf offen…“ nimmt beides und den Vermerk `lager` in den Verlauf mit - sonst
+bliebe die Position ohne Regel fuer immer Lagerware. Der Sammelschritt „Ware ist angekommen“ setzt nur
+Ware vom Lieferanten (Lagerware geht ueber Zugeschnitten, Direktware ueber „Ist beim Kunden…“; bleibt
+nichts anderes, 409 mit diesem Hinweis). Verschickt wird ueber den vorhandenen Versand-Dialog (Schritt
+„raus“, Buchung in Shopify); im gemischten Auftrag kreuzt er die Direktware nicht vorab an
+(`lib/versand.mjs vorauswahl`). Die Shop-Uebersicht zeigt den Block „Von uns abschicken“
+(`ansichten/heute/selbst-abschicken.mjs`, Frist ab Zuschnitt bzw. Eingang, „Gepackt“ setzt sie nicht
+zurueck); aus dem To-do „Ware ist da – rausgeben“ nimmt sie nur die Positionen heraus, die der Block zeigt
+(`lib/todos.mjs rausgebenOhne`). Die Zeitleiste (`auftragsverlauf.mjs`) zaehlt bei gemischten und
+teilweise gelieferten Auftraegen jeden Schritt nur fuer die Positionen, die ihn gehen; „Geliefert an uns“
+zaehlt nur Ware vom Lieferanten.
+
 ### Warnung vor dem Bestellen (seit 2026-11-05)
 
 Der Bestellmail-Dialog zeigt je Kommission eine Schätzung, bevor beim Lieferanten bestellt wird

@@ -21,7 +21,10 @@ import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten
 import {
   einkauf, afEintragFuer, aktiveAuftraege, anzeigeWert, kundeUndOrt,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, ensureEinkaufLieferanten, musterSchrittKnopf,
+  selbstKnoepfe, herstellerDirekt,
 } from './auftragsfluss.mjs';
+import { lieferwegVon, selbstStandText } from '../../lib/lieferweg.mjs';
+import { lieferwegPlakette, lieferwegeAuftrag } from '../../bausteine/lieferweg.mjs';
 
 function lieferantName(id) {
   return lieferantAnzeige(id, einkauf.lieferanten?.lieferanten || []);
@@ -62,11 +65,24 @@ function lieferungHtml(a, ab, e) {
   const lesend = istNurLesend();
   const muster = ab.positionen.filter(x => x.art === 'muster' && x.rang >= 1 && x.rang < 3).map(x => x.pos);
   const ware = ab.unterwegs.filter(x => x.art === 'ware');
-  const zeile = x => `<li class="ab-pos"><span>${esc(titelVon(x.pos))}</span>
-    ${lesend ? '' : `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(x.pos.orderId)}" data-af-item="${esc(x.pos.lineItemId)}" data-af-name="${esc(x.pos.orderName || '')}" data-af-titel="${esc(x.pos.titel || '')}" data-af-farbe="${esc(x.pos.farbe || '')}" data-af-status="geliefert">Ist eingetroffen</button>`}</li>`;
+  // Hersteller liefert direkt (Lieferweg): bei uns kommt nichts an - "Ist beim Kunden…" (Versand-Dialog, Schritt "raus").
+  const zeile = x => {
+    const direkt = herstellerDirekt(x.pos, x.eintrag);
+    return `<li class="ab-pos"><span>${esc(titelVon(x.pos))} ${lieferwegPlakette(lieferwegVon(x.pos, x.eintrag))}</span>
+    ${lesend ? '' : `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(x.pos.orderId)}" data-af-item="${esc(x.pos.lineItemId)}" data-af-name="${esc(x.pos.orderName || '')}" data-af-titel="${esc(x.pos.titel || '')}" data-af-farbe="${esc(x.pos.farbe || '')}" data-af-status="${direkt ? 'raus' : 'geliefert'}"${direkt ? ' title="Der Hersteller liefert direkt – bei uns kommt nichts an"' : ''}>${direkt ? 'Ist beim Kunden…' : 'Ist eingetroffen'}</button>`}</li>`;
+  };
   const musterHtml = muster.length ? `<div class="ab-pos"><span><span class="small muted">${plural(muster.length, 'Muster', 'Muster')}:</span> ${esc(muster.map(titelVon).join(' · '))}</span>${musterSchrittKnopf(muster)}</div>` : '';
   const wareHtml = ware.length ? `<p class="small muted" style="margin:6px 0 0">Ware unterwegs:</p><ul class="ab-liste">${ware.map(zeile).join('')}</ul>` : '';
-  return `${verzugHtml(a, ab, e)}${musterHtml}${wareHtml}${informierenHtml(a, e)}${terminHtml(a)}<p class="small" style="margin:8px 0 0"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Alle Artikel dieses Auftrags bearbeiten →</a></p>`;
+  return `${verzugHtml(a, ab, e)}${musterHtml}${wareHtml}${selbstHtml(ab)}${informierenHtml(a, e)}${terminHtml(a)}<p class="small" style="margin:8px 0 0"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Alle Artikel dieses Auftrags bearbeiten →</a></p>`;
+}
+
+/** Ware, die wir selbst zuschneiden bzw. packen und verschicken - dieselben Knoepfe wie auf Heute. */
+function selbstHtml(ab) {
+  const liste = ab.selbst || [];
+  if (!liste.length) return '';
+  const zeile = x => `<li class="ab-pos"><span>${esc(titelVon(x.pos))} ${lieferwegPlakette(lieferwegVon(x.pos, x.eintrag))} <span class="small muted">${esc(selbstStandText(x.selbst, x.weg, x.eintrag))}</span></span>
+    <div class="ab-knoepfe" style="margin-top:0">${selbstKnoepfe(x.pos, x.eintrag)}</div></li>`;
+  return `<p class="small muted" style="margin:6px 0 0">Von uns abschicken:</p><ul class="ab-liste">${liste.map(zeile).join('')}</ul>`;
 }
 
 /** Muster, die der Lieferant nicht liefern kann: wer, was - weiter geht es in der Packstation. */
@@ -85,14 +101,14 @@ function auftragKarte({ a, ab, e }) {
   const amp = auftragsAmpel(ab, e);
   const k = kundeUndOrt(a.id);
   const wer = [k.name, k.ort].filter(Boolean).join(' · ');
-  const inhalt = gesperrtHtml(ab) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab)
+  const inhalt = gesperrtHtml(ab) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab) + selbstHtml(ab)
     : ab.jetzt === 'lieferung' ? lieferungHtml(a, ab, e)
     : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`);
   const bestellt = ab.bestelltAm && ab.jetzt !== 'vorbereiten' ? `<span class="small muted">bestellt ${esc(fmtDate(ab.bestelltAm))}</span>` : '';
   return `<section class="card ab-karte${ampelRand(amp?.stufe, 'karte')}">
     <div class="ab-kopf"><h3><a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a>${wer ? ` <span class="ab-kunde">${esc(wer)}</span>` : ''}</h3>
       ${amp ? ampelPlakette(amp.stufe, amp.wort, { titel: AMPEL_TITEL[amp.grund] || warteTitel(amp) }) : ''}
-      <span class="small muted">eingegangen ${esc(fmtDate(a.datum))}</span>${bestellt}</div>
+      <span class="small muted">eingegangen ${esc(fmtDate(a.datum))}</span>${bestellt}${lieferwegeAuftrag(a.positionen, afEintragFuer)}</div>
     ${schrittLeiste(ab)}
     <div class="ab-inhalt">${inhalt}</div>
   </section>`;
@@ -232,7 +248,7 @@ export function einkaufKlickAblauf(ev) {
   return false;
 }
 
-const GRUND_TEXT = { bestellen: 'bestellen', ungeklaert: 'klären', informieren: 'Kunde informieren', muster_da: 'Muster verschicken', verzug: 'nachfragen' };
+const GRUND_TEXT = { bestellen: 'bestellen', ungeklaert: 'klären', informieren: 'Kunde informieren', selbst: 'von uns abschicken', muster_da: 'Muster verschicken', verzug: 'nachfragen' };
 // Filter aus den Zahlen auf "Heute" (?ab=…): genau diese Auftraege.
 const FILTER = {
   bestellen: { label: 'Zu bestellen', passt: e => e.gruende.includes('bestellen') || e.gruende.includes('ungeklaert') },
