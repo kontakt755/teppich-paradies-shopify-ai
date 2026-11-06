@@ -223,7 +223,7 @@ async function teilBestellungen(dir) {
   // siehe baueRelevantQuery in sync/orders.mjs. Vollstaendig paginiert, kein
   // festes Limit mehr (vorher: letzte 50 Bestellungen, seit 2026-09 zu wenig
   // fuer den taeglichen Betrieb).
-  const { orders, seiten, gesammelt } = await fetchOrdersRelevant(proxy);
+  const { orders, seiten, gesammelt, agreements } = await fetchOrdersRelevant(proxy);
   if (gesammelt) throw new Error('Kein Zugang (Sammelmodus) - Bestellungen konnten nicht geladen werden');
 
   // Quellvarianten der Muster ohne festes Limit: die Admin API nimmt bis zu
@@ -263,7 +263,7 @@ async function teilBestellungen(dir) {
 
   return {
     anzahl: orders.length,
-    hinweis: `${seiten} Seite(n) · ${quellvarianten.length}/${ids.length} Quellvarianten der Muster geladen · ${erfuellung.versendet} versendet · ${erfuellung.erstattet} erstattet`,
+    hinweis: `${seiten} Seite(n) · ${quellvarianten.length}/${ids.length} Quellvarianten der Muster geladen · ${erfuellung.versendet} versendet · ${erfuellung.erstattet} erstattet${agreements?.fehler ? ` · Nachbestellungen nicht geladen: ${agreements.fehler}` : ''}`,
   };
 }
 

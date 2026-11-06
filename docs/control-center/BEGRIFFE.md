@@ -51,6 +51,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 | A4-Blatt im Musterumschlag | **Begleitblatt** | Packstation, Knopf „Begleitblatt drucken“ |
 | Partnerladen | **Lieferant** | Packstation, Reiter „Muster kommt an“ („Lieferant nicht hinterlegt“) |
 | Wareneingang nach Partnerladen | **Muster kommt an** | Reiter der Packstation; auch in Leerzustaenden und Rueckweg-Knoepfen |
+| Per Bestellbearbeitung hinzugefuegte Position (ORDER_EDIT) | **Nachbestellung** | Packstation: „Nachbestellung am 05.11.“ am Muster und in der Kopfzeile der Kundenkarte |
 
 ## Bleibt bewusst
 

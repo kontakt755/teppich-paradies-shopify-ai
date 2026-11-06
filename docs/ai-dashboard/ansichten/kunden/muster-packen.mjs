@@ -173,6 +173,17 @@ function standText(m, { mitPlakette = false } = {}) {
   return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}`;
 }
 
+/**
+ * Kopfzeile der zugeklappten Karte: " · davon 1 Nachbestellung am 05.11." (Wunsch 06.11.) - nachtraeglich
+ * hinzugefuegte Muster kommen spaeter als der Rest, das soll man sehen, ohne die Karte zu oeffnen.
+ */
+function nachbestelltKopf(k) {
+  const daten = [...new Set(k.muster.filter(m => m.nachbestelltAm).map(m => datumKurz(m.nachbestelltAm)))];
+  const anzahl = k.muster.filter(m => m.nachbestelltAm).length;
+  if (!anzahl) return '';
+  return ` · <strong class="mp-nachbestellt">davon ${anzahl === 1 ? '1 Nachbestellung' : `${anzahl} Nachbestellungen`} am ${esc(daten.join(', '))}</strong>`;
+}
+
 /** "Di., 20.10." - mit Wochentag und in Berlin, wie die Wartetage (#1754). */
 const tagDatum = iso => new Date(iso).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
 const gueltig = iso => !!iso && !Number.isNaN(new Date(iso).getTime());
@@ -376,7 +387,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="${ampel ? 'mp-ohne-aufkleber' : 'mp-fehlt'}">${ampel ? 'Kein eindeutiger Aufkleber für' : 'Zuordnung fehlt:'} ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
       : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
-    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}</div>
+    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.nachbestelltAm ? `<strong class="mp-nachbestellt">Nachbestellung am ${esc(datumKurz(m.nachbestelltAm))}</strong> · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}</div>
   </li>`;
 }
 
@@ -516,7 +527,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set(), hauptkno
       </div>
       <div class="mp-meta">
         ${ampel ? ampelPlakette(ampel.stufe, ampel.wort, { titel: ampel.titel }) : ''}
-        <span class="small muted">${k.muster.length} Muster · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
+        <span class="small muted">${k.muster.length} Muster${nachbestelltKopf(k)} · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
         ${datumHtml(k)}
         ${gepacktKopfHtml(k, { hauptknopf })}
       </div>
