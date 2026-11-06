@@ -2074,9 +2074,10 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
     Karte von „Muster kommt an“:
     - `.mp-stempel` „Umschlag vorbereitet · TT.MM.“
     - `.mp-stempel-drin` „x von n Mustern schon im Umschlag“
-  - Ein Umschlag mit mindestens einem Haken (`angefangen(k)`) trägt `mp-angefangen`, das ist der
-    Bernstein-Balken links. In jeder Gruppe steht er oben (`reihe` in `viewKundenMusterPacken`, nach
-    `RANG`).
+  - Ein Umschlag mit mindestens einem Haken (`angefangen(k)`) trägt `mp-angefangen`. Bis 06.11. war das
+    ein Bernstein-Balken links; seit der Ampel (Abschnitt 33) gehört der linke Rand nur ihr, die
+    Bernstein-Marke bleibt. In jeder Gruppe steht er oben, direkt nach den roten Umschlägen (`reihe` in
+    `viewKundenMusterPacken`).
   - Bernstein, weil ein angefangener Umschlag offene Arbeit ist. „Vorbereitet“ ist nur ein Stand und
     bleibt neutral.
   - „Schon gedruckt“ steht in Schritt 1 am Schritt, sonst (zu klären oder schon ein Haken) unter
@@ -2924,5 +2925,24 @@ aufgebraucht rot, knapp gelb (Zuschnitt: reicht noch für höchstens 5 Muster; E
 reserviert), sonst ruhig. Einzelmuster werden bewusst nicht ab 5 Stück gelb: es werden keine Bestände
 nachgekauft (Inhaber 15.10.), und fast jedes Einzelmuster liegt in kleiner Zahl im Regal.
 
+**Packstation** (Runde 2, 06.11.): `packMusterAmpel()` je Muster, `packUmschlagAmpel()` je Umschlag,
+`packRotZaehlung()` für die Reiter, gerechnet in `musterPackliste()` mit `jetzt` des Servers (`muster[].ampel`,
+`kunden[].ampel` in `GET /api/kunden/muster-packen`). Je Muster: abgehakt, angekommen, aus dem Musterlager ruhig;
+beim Lieferanten bestellt mit `warteAmpel()` (7/14 Tage, Liefertermin aus `beschaffung.liefertermin`); gesperrt
+(„Kommt nicht“, geht vor fehlender Zuordnung, weil dann der Kunde informiert werden muss) und Zuordnung fehlt rot;
+noch nicht bestellt gelb. Rot wird es, wenn die Musterautomatik es länger als `MUSTER_KLAER_WERKTAGE` festhält
+(`automatikHaengtWerktage()` in `lib/todos.mjs`, dieselbe Regel wie das rote To-do „n Muster hängen“; der Server
+reicht dafür den Klärfall samt `seit` herein, `automatikFallVon`), sonst ab `FRISTEN.bestellen[1]` (7) Tagen seit der
+Kundenbestellung (`offenTage`, `tageSeit()`), genau wie das rote To-do „Muster bei … bestellen“ auf Heute. So wird
+ein nie bestelltes Muster auch rot, wenn die Musterautomatik pausiert oder ausfällt (Review #1975). Je Umschlag die
+dringendste Stufe, dazu rot: gepackt und nie eingetragen (Reiter „Gepackt“), roter Versandhinweis mit diesem
+Packschlüssel (`versandProbleme`), Lieferadresse unvollständig; alles unter „Zu klären“ mindestens gelb („Fehlt noch“,
+„Direktversand prüfen“, „Restumfang prüfen“, sonst „Zu klären“). Die Reiter Packbereit, Zu klären, Wartet auf Ware und
+Gepackt nennen die roten Umschläge („× 2 überfällig“, „× 4 blockiert“; sind alle rot, nur das Wort); „Alle offenen“
+nicht, die Summe stünde sonst zweimal da. In jeder Gruppe stehen rote Umschläge oben, dann angefangene. Weggefallen:
+`WARTET_AB_TAGEN = 2` (Bernstein-Datumszeile ab 2 Tagen Kundenwartezeit, #1572, ohne Vorgabe des Inhabers; färbte am
+06.11. 16 von 18 Umschlägen), der Bernstein-Rahmen von „Zu klären“ und der Bernstein-Balken angefangener Umschläge.
+
 Tests: `tests/ampel.test.mjs`, `tests/auftrags-ablauf.test.mjs`, `tests/todos.test.mjs`,
-`tests/api.test.mjs` (Lexikon-Filter), `operations/tests/bildrechte.test.mjs`, `operations/tests/lieferanten.test.mjs`.
+`tests/api.test.mjs` (Lexikon-Filter), `operations/tests/bildrechte.test.mjs`, `operations/tests/lieferanten.test.mjs`,
+Packstation: `tests/muster-packen.test.mjs`, `tests/packstation-arbeitslisten.test.mjs`, `tests/packstation-gepackt-verschickt.test.mjs`.

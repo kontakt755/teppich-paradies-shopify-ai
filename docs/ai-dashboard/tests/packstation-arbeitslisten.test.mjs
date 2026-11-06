@@ -5,11 +5,20 @@ import { state } from '../kern/zustand.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { oeffneKundeInformieren } from '../ansichten/kunden/muster-gesperrt.mjs';
 import { verbergeSuchbegriffe } from '../lib/suchverweis.mjs';
+import { packMusterAmpel, packUmschlagAmpel } from '../lib/ampel.mjs';
 
 const kunde = (nr, bereich) => ({ name: `Testkunde ${nr}`, schluessel: `kunde${nr}`, packSchluessel: `order${nr}`, bereich,
   adresse: {}, bestellungen: [{ orderId: `order${nr}`, orderName: `#TEST${nr}` }], wartetTage: 1,
   muster: [{ lineItemId: `line${nr}`, bestellt: { titel: 'Testmuster', farbe: 'Sand' }, etikett: { serie: 'Test', farbe: 'Sand' }, fehlt: [], stand: 'bestellt', anzahl: 1 }],
   fehlt: [], aufkleber: 2, gepackt: bereich === 'gepackt' ? { zeit: '2026-10-22T08:00:00Z' } : null });
+
+/** Ampel setzen wie der Server (lib/muster-packen.mjs), mit festem Stichtag. */
+const STICHTAG = new Date('2026-11-06T10:00:00Z');
+const mitAmpel = (k, { versandProblem = null } = {}) => {
+  const muster = k.muster.map(m => ({ ...m, ampel: packMusterAmpel(m, { jetzt: STICHTAG }) }));
+  const u = { ...k, muster };
+  return { ...u, ampel: packUmschlagAmpel(u, { versandProblem }) };
+};
 
 function ansicht(query, liste, ausserhalb = []) {
   globalThis.document ||= { addEventListener() {}, querySelector() {} };
@@ -51,7 +60,9 @@ test('Karte zeigt ohne Aufklappen das Bestelldatum und bei fehlenden Mustern die
   k.bestellungen[0].datum = k.seit;
   k.muster = [{ ...k.muster[0], bestelltAm: '2026-10-24T07:00:00.000Z' }, { ...k.muster[0], lineItemId: 'line1b', stand: 'da' }];
   const html = ansicht('tab=muster', [k]);
-  assert.match(kopf(html), /<span class="wait-warn">bestellt am Di\., 20\.10\. · wartet seit 8 Tagen<\/span>/);
+  // Neutral: ob das Warten ein Problem ist, sagt die Ampel (7/14 Tage beim Lieferanten), nicht mehr "ab 2 Tagen".
+  assert.match(kopf(html), /<span class="small muted">bestellt am Di\., 20\.10\. · wartet seit 8 Tagen<\/span>/);
+  assert.doesNotMatch(kopf(html), /wait-warn/);
   assert.match(kopf(html), /beim Lieferanten bestellt am Sa\., 24\.10\./);
   assert.doesNotMatch(html, /mp-bestelldaten/, 'eine Bestellung braucht keine Einzelaufstellung');
 
@@ -477,18 +488,22 @@ test('Gesperrtes Muster: rot statt "wartet", Kunde informieren zuerst, ohne-Knop
   const gesperrt = { imShop: true, seit: '2026-10-28T09:00:00Z' };
   const k = kunde(1, 'klaeren');
   k.muster = [{ ...k.muster[0], stand: 'bestellt', gesperrt, bestelltAm: '2026-10-20T07:00:00Z' }, { ...k.muster[0], lineItemId: 'line1b', stand: 'bestellt' }];
-  const html = ansicht('tab=muster', [k]);
-  assert.match(html, /mp-gesperrt">1 Muster kommt nicht</, 'ohne Aufklappen');
+  const html = ansicht('tab=muster', [mitAmpel(k)]);
+  const kopf = html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  assert.match(kopf, /<span class="ampel ampel-rot"[^>]*><span class="ampel-zeichen" aria-hidden="true">×<\/span>1 Muster kommt nicht<\/span>/, 'ohne Aufklappen, mit Zeichen und Wort');
+  assert.doesNotMatch(kopf, /mp-gesperrt/, 'die Zeile darunter wiederholt es nicht');
+  assert.match(html, /class="mp-kunde mp-klaeren ampel-karte rot"/, 'roter Rand am Umschlag');
+  assert.match(html, /<li class="mp-zeile ampel-zeile rot">[\s\S]*?×<\/span>Kommt nicht<\/span> <span class="muted">im Shop gesperrt<\/span>/, 'Muster: Rand, Plakette, Grund');
   assert.match(html, /class="notice crit">Dieses Muster kommt nicht – Testmuster: Sand\./);
   assert.match(html, /class="btn btn-sm btn-primary" data-mp-informieren="order1">Kunde informieren…/);
-  assert.match(html, /im Shop gesperrt – kommt nicht/);
+  assert.match(ansicht('tab=muster', [k]), /im Shop gesperrt – kommt nicht/, 'ohne Ampel im Datenstand wie bisher');
   assert.equal((html.match(/data-mp-ohne="line1"/g) || []).length, 1, 'nur am gesperrten Muster');
   assert.doesNotMatch(html, /data-mp-ohne="line1b"/);
 
   const allein = kunde(2, 'klaeren');
   allein.muster = [{ ...allein.muster[0], stand: 'offen', gesperrt: { imShop: false } }];
-  const nurDas = ansicht('tab=muster', [allein]);
-  assert.match(nurDas, /als nicht lieferbar gemeldet – kommt nicht/, 'im Shop noch nicht bestaetigt');
+  const nurDas = ansicht('tab=muster', [mitAmpel(allein)]);
+  assert.match(nurDas, /×<\/span>Kommt nicht<\/span> <span class="muted">als nicht lieferbar gemeldet<\/span>/, 'im Shop noch nicht bestaetigt');
   assert.doesNotMatch(nurDas, /data-mp-ohne/, 'sonst nichts im Umschlag');
   assert.doesNotMatch(nurDas, /noch nicht bestellt/, 'kommt nicht ersetzt "noch nicht bestellt"');
   assert.match(ansicht('tab=muster&mp=laden', [allein]), /als nicht lieferbar gemeldet – kommt nicht/, 'auch im Wareneingang');
@@ -591,4 +606,58 @@ test('Rueckfrage vor dem Verschicken sagt, was passiert: Versandmail, ohne Mail,
   assert.doesNotMatch(vorbei, /bekommt sofort die Versandmail/);
   const name = versandFrageHtml({ ...k, name: '<b>X</b>' }, 'gepackt');
   assert.match(name, /&lt;b&gt;X&lt;\/b&gt; bekommt/);
+});
+
+test('Ampel (06.11.): Reiter zaehlen rote Umschlaege, Rot steht oben, ein Rand je Karte, Zeichen und Wort', () => {
+  const vor = tage => new Date(STICHTAG.getTime() - tage * 864e5).toISOString();
+  const mit = (k, muster) => mitAmpel({ ...k, muster: muster.map((m, i) => ({ ...k.muster[0], lineItemId: `${k.packSchluessel}-${i}`, ...m })) });
+  const ueberfaellig = mit(kunde(1, 'warten'), [{ stand: 'bestellt', bestelltAm: vor(16) }]);
+  const nachhaken = mit(kunde(2, 'warten'), [{ stand: 'bestellt', bestelltAm: vor(9) }]);
+  const ruhig = mit(kunde(3, 'warten'), [{ stand: 'bestellt', bestelltAm: vor(2) }]);
+  const angefangen = mit(kunde(4, 'warten'), [{ stand: 'da', abgehakt: { zeit: 'x' } }, { stand: 'bestellt', bestelltAm: vor(3) }]);
+  const gesperrt = mit(kunde(5, 'klaeren'), [{ stand: 'bestellt', gesperrt: { imShop: true } }]);
+  const zuKlaeren = mit({ ...kunde(6, 'klaeren'), klaeren: { fehlt: ['order6-0'], zeit: vor(1) } }, [{ stand: 'da' }]);
+  const zuordnung = mit({ ...kunde(7, 'klaeren'), fehlt: ['Testmuster – Sand'], zuordnungFehlt: ['Testmuster – Sand'] }, [{ stand: 'bestellt', fehlt: ['Farbe'] }]);
+  const nichtBestellt = mit(kunde(8, 'warten'), [{ stand: 'offen', automatikGrund: 'Farbnummer fehlt' }]);
+  const altfall = mitAmpel(kunde(9, 'gepackt'));
+  const liste = [ruhig, nachhaken, angefangen, ueberfaellig, gesperrt, zuKlaeren, zuordnung, nichtBestellt, altfall];
+  const html = ansicht('tab=muster', liste);
+  const reiter = label => html.match(new RegExp(`>${label} <span class="mp-filterzahl">(\\d+)</span>(<span class="mp-filterampel">[\\s\\S]*?</span></span>)?</a>`));
+  assert.equal(reiter('Wartet auf Ware')[1], '5');
+  assert.match(reiter('Wartet auf Ware')[2], /ampel-rot"><span class="ampel-zeichen" aria-hidden="true">×<\/span>1 überfällig</, '"Wartet auf Ware 5 · × 1 überfällig"');
+  assert.match(reiter('Zu klären')[2], /×<\/span>2 blockiert</);
+  assert.match(reiter('Gepackt')[2], /×<\/span>nicht eingetragen</, 'alle rot: nur das Wort, die Zahl steht daneben');
+  assert.equal(reiter('Alle offenen')[2], undefined, 'die Summe nicht ein zweites Mal');
+  assert.equal(reiter('Packbereit')[2], undefined, 'ohne Rot keine Plakette');
+
+  // In jeder Gruppe zuerst Rot, dann angefangene, dann nach Wartezeit (Reihenfolge der Liste).
+  const reihe = [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  assert.deepEqual(reihe, ['order5', 'order7', 'order6', 'order1', 'order4', 'order3', 'order2', 'order8']);
+
+  const karte = pk => html.match(new RegExp(`<details class="([^"]*)"[^>]*data-mp-kunde="${pk}"[\\s\\S]*?</summary>`));
+  assert.match(karte('order1')[1], /ampel-karte rot/);
+  assert.match(karte('order1')[0], /×<\/span>Überfällig · 16 Tage</);
+  assert.match(karte('order2')[1], /ampel-karte gelb/);
+  assert.match(karte('order2')[0], /!<\/span>Nachhaken · 9 Tage</);
+  assert.doesNotMatch(karte('order3')[0], /ampel/, 'ruhig: kein Rand, keine Plakette, nichts Gruenes');
+  assert.match(karte('order4')[1], /mp-angefangen/);
+  assert.doesNotMatch(karte('order4')[1], /ampel-karte/, 'angefangen ist kein eigener Rand mehr, die Marke bleibt');
+  assert.match(karte('order4')[0], /mp-stempel-drin">1 von 2 Mustern schon im Umschlag/);
+  assert.match(karte('order6')[0], /!<\/span>Fehlt noch</, 'Zu klären ist mindestens gelb');
+  assert.match(karte('order7')[0], /×<\/span>Zuordnung fehlt</);
+  assert.match(karte('order8')[0], /!<\/span>Nicht bestellt</);
+  assert.match(karte('order8')[0], /<span class="small mp-hier-offen">1 Muster noch nicht bestellt: Farbnummer fehlt<\/span>/, 'Grund bleibt, Farbe nur auf der Plakette');
+
+  // Musterzeilen aufgeklappt: Rand, Plakette, der Text sagt nur noch die Einzelheit.
+  const offen = pk => ansicht(`tab=muster&umschlag=${pk}`, liste);
+  assert.match(offen('order7'), /<li class="mp-zeile ampel-zeile rot">[\s\S]*?Kein eindeutiger Aufkleber für Testmuster – Sand[\s\S]*?×<\/span>Zuordnung fehlt</);
+  assert.match(offen('order7'), /<p class="notice crit">Musterzuordnung unvollständig/);
+  assert.match(offen('order8'), /<li class="mp-zeile ampel-zeile gelb">[\s\S]*?!<\/span>Nicht bestellt<\/span> <span class="muted">Farbnummer fehlt<\/span>/);
+  assert.match(offen('order2'), /!<\/span>Nachhaken · 9 Tage<\/span> <span class="muted">beim Lieferanten bestellt am 28\.10\.<\/span>/);
+  assert.match(offen('order4'), /<li class="mp-zeile mp-ab">/, 'eingelegt: ruhig');
+  assert.match(offen('order3'), /<p class="notice mp-anmerkung"><strong>Noch nicht da:/, 'ruhiger Umschlag: Auskunft ohne Bernstein');
+  assert.match(offen('order2'), /<p class="notice warn mp-anmerkung"><strong>Noch nicht da:/, 'gelber Umschlag: Bernstein');
+  const eingelegtOffen = mit(kunde(10, 'packen'), [{ stand: 'offen', abgehakt: { zeit: 'x' } }]);
+  assert.match(ansicht('tab=muster&umschlag=order10', [eingelegtOffen]), /<li class="mp-zeile mp-ab">[\s\S]*?<span class="muted">noch nicht bestellt<\/span>/, 'eingelegt, Stand nie nachgetragen: ruhig, kein Bernstein');
+  assert.doesNotMatch(html, /wait-warn/, 'keine zweite Bernstein-Regel neben der Ampel');
 });

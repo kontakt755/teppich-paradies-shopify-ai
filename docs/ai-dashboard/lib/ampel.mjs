@@ -238,3 +238,97 @@ export function musterlagerAmpel({ leer = false, zaehlbar = false, nochDa = 0, f
   if (reichtNoch <= knappAb) return { stufe: 'gelb', wort: 'Knapp' };
   return { stufe: null, wort: '' };
 }
+
+// ---------------------------------------------------------------------------
+// Packstation: je Muster im Umschlag und je Umschlag
+// ---------------------------------------------------------------------------
+
+const RUHIG = Object.freeze({ stufe: null, grund: null, wort: '', titel: '' });
+const werktageText = n => (n === 1 ? '1 Werktag' : `${n} Werktage`);
+
+/**
+ * Ampel eines Musters im Umschlag. Gerechnet in lib/muster-packen.mjs mit `jetzt` des Servers.
+ *   rot   Gesperrt: das Muster kommt nicht - geht vor allem anderen, auch vor fehlender Zuordnung,
+ *         weil dann der Kunde informiert werden muss.
+ *         Zuordnung fehlt: kein eindeutiger Aufkleber, so wird der Umschlag nie gepackt.
+ *         Beim Lieferanten seit 14 Tagen bestellt oder Liefertermin vorbei (warteAmpel).
+ *         Noch nicht bestellt und die Musterautomatik haelt es fest (`haengtWerktage`, gesetzt nach
+ *         derselben Regel wie das rote To-do "n Muster haengen" auf Heute, lib/todos.mjs).
+ *         Noch nicht bestellt seit `bestellenRotAb` Tagen (`offenTage` seit der Kundenbestellung) - auch
+ *         wenn die Musterautomatik pausiert oder ausfaellt. Der Aufrufer reicht die Frist des To-dos
+ *         "Muster bei … bestellen" herein (FRISTEN.bestellen in lib/todos.mjs); ohne sie bleibt es gelb.
+ *   gelb  Beim Lieferanten seit 7 Tagen bestellt (nachhaken), oder noch nicht bestellt.
+ *   ruhig Im Umschlag (abgehakt), angekommen, aus dem Musterlager, bestellt seit weniger als 7 Tagen.
+ * Die eigene Packstations-Schwelle "wartet ab 2 Tagen" (#1572) gibt es nicht mehr: dieselben 7/14
+ * Tage wie im Einkauf.
+ * @param {object} m  Muster aus musterPackliste (stand, abgehakt, gesperrt, fehlt, bestelltAm, liefertermin,
+ *                    haengtWerktage, offenTage)
+ * @param {{jetzt?: Date|number, schwellen?: object, bestellenRotAb?: number|null}} [opt]
+ * @returns {{stufe:'rot'|'gelb'|null, grund:string|null, wort:string, titel:string, tage?:number|null}}
+ */
+export function packMusterAmpel(m, { jetzt = Date.now(), schwellen = WARTESCHWELLEN, bestellenRotAb = null } = {}) {
+  if (!m) return RUHIG;
+  if (m.gesperrt) return { stufe: 'rot', grund: 'kommtNicht', wort: 'Kommt nicht', titel: warteTitel({ grund: 'gesperrt' }) };
+  if (m.fehlt?.length) return { stufe: 'rot', grund: 'zuordnung', wort: 'Zuordnung fehlt', titel: 'Kein eindeutiger Aufkleber – erst im Lexikon klären, dann packen' };
+  if (m.abgehakt || m.stand === 'da' || m.stand === 'lager') return RUHIG;
+  if (m.stand === 'bestellt') {
+    const a = warteAmpel({ status: 'bestellt', bestelltAm: m.bestelltAm, beschaffung: m.liefertermin ? { liefertermin: m.liefertermin } : null }, { jetzt, schwellen });
+    if (!a.stufe) return { ...RUHIG, tage: a.tage };
+    return { stufe: a.stufe, grund: a.grund === 'termin' ? 'termin' : a.stufe === 'rot' ? 'ueberfaellig' : 'nachhaken', wort: warteWort(a), titel: warteTitel(a), tage: a.tage };
+  }
+  if (Number.isInteger(m.haengtWerktage) && m.haengtWerktage > 0) {
+    return { stufe: 'rot', grund: 'haengt', wort: `Hängt · ${werktageText(m.haengtWerktage)}`, titel: 'Die Musterautomatik bestellt es nicht – erst den Grund klären' };
+  }
+  if (Number.isInteger(bestellenRotAb) && Number.isInteger(m.offenTage) && m.offenTage >= bestellenRotAb) {
+    return { stufe: 'rot', grund: 'ueberfaellig', wort: `Nicht bestellt · ${tageText(m.offenTage)}`, tage: m.offenTage,
+      titel: `Seit ${tageText(m.offenTage)} bezahlt, noch nicht beim Lieferanten bestellt – ab ${bestellenRotAb} Tagen überfällig` };
+  }
+  return { stufe: 'gelb', grund: 'nichtBestellt', wort: 'Nicht bestellt', titel: 'Noch nicht beim Lieferanten bestellt', ...(Number.isInteger(m.offenTage) ? { tage: m.offenTage } : {}) };
+}
+
+/** Bei gleicher Stufe gewinnt der Grund weiter vorn: was den Kunden sicher aufhaelt, vor dem, was nur dauert. */
+const PACK_GRUENDE = ['nichtEingetragen', 'versand', 'kommtNicht', 'adresse', 'zuordnung', 'termin', 'ueberfaellig', 'haengt', 'nachhaken', 'nichtBestellt', 'fehltNoch', 'pruefen', 'klaeren'];
+
+/**
+ * Ampel eines Umschlags: die dringendste Stufe seiner Muster, dazu was nur den Umschlag betrifft.
+ *   rot   Gepackt, aber nie als verschickt eingetragen (Reiter "Gepackt", Altfall oder gescheiterter
+ *         Eintrag); roter Versandhinweis zu diesem Umschlag; Lieferadresse unvollstaendig (wie eine
+ *         fehlende Musterzuordnung: ohne Adressaufkleber geht der Umschlag nicht raus).
+ *   gelb  Alles unter "Zu klären" ist mindestens gelb: "Fehlt noch" zurueckgelegt, Direktversand oder
+ *         Restumfang pruefen. Bis 06.11. trug jede Karte dort einen Bernstein-Rahmen.
+ * Das Wort nennt den dringendsten Grund; gesperrte Muster mit Anzahl ("2 Muster kommen nicht").
+ * @param {object} k  Umschlag aus musterPackliste, `muster[].ampel` schon gesetzt
+ * @param {{versandProblem?: string|null}} [opt]  Text des roten Versandhinweises, falls es einen gibt
+ */
+export function packUmschlagAmpel(k, { versandProblem = null } = {}) {
+  const kandidaten = [];
+  if (k?.bereich === 'gepackt') kandidaten.push({ stufe: 'rot', grund: 'nichtEingetragen', wort: 'Nicht eingetragen', titel: 'Gepackt, aber nie als verschickt eingetragen – der Kunde hat keine Versandmail' });
+  if (versandProblem) kandidaten.push({ stufe: 'rot', grund: 'versand', wort: 'Versand nicht eingetragen', titel: String(versandProblem) });
+  if (k?.adressFehlt?.length) kandidaten.push({ stufe: 'rot', grund: 'adresse', wort: 'Adresse fehlt', titel: `Lieferadresse unvollständig: ${k.adressFehlt.join(', ')}` });
+  const muster = (k?.muster || []).map(m => m.ampel).filter(a => a?.stufe);
+  const kommtNicht = muster.filter(a => a.grund === 'kommtNicht').length;
+  if (kommtNicht) kandidaten.push({ stufe: 'rot', grund: 'kommtNicht', wort: kommtNicht === 1 ? '1 Muster kommt nicht' : `${kommtNicht} Muster kommen nicht`, titel: 'Der Kunde erfährt das nicht von selbst – bitte informieren' });
+  kandidaten.push(...muster.filter(a => a.grund !== 'kommtNicht'));
+  if (k?.klaeren) kandidaten.push({ stufe: 'gelb', grund: 'fehltNoch', wort: 'Fehlt noch', titel: 'Als fehlend zurückgelegt – „Fehlendes ist da“, sobald es kommt' });
+  if (k?.direktversand) kandidaten.push({ stufe: 'gelb', grund: 'pruefen', wort: 'Direktversand prüfen', titel: 'Vom Lieferanten direkt an den Kunden – nicht hier packen' });
+  else if (k?.hinweise?.length) kandidaten.push({ stufe: 'gelb', grund: 'pruefen', wort: 'Restumfang prüfen', titel: 'Teilweise erstattet – offene Muster mit der Bestellung abgleichen' });
+  if (k?.bereich === 'klaeren') kandidaten.push({ stufe: 'gelb', grund: 'klaeren', wort: 'Zu klären', titel: '' });
+  const rang = a => (RANG[a.stufe] || 0) * 100 - PACK_GRUENDE.indexOf(a.grund);
+  const beste = kandidaten.reduce((x, y) => (!x || rang(y) > rang(x) || (rang(y) === rang(x) && (y.tage ?? -1) > (x.tage ?? -1)) ? y : x), null);
+  if (!beste) return RUHIG;
+  const { stufe, grund, wort, titel } = beste;
+  return { stufe, grund, wort, titel: titel || '' };
+}
+
+/** Wort hinter der Zahl roter Umschlaege in den Reitern ("Wartet auf Ware 13 · × 2 überfällig"). */
+const ROT_WORT = Object.freeze({ nichtEingetragen: 'nicht eingetragen', versand: 'nicht eingetragen', kommtNicht: 'blockiert', adresse: 'blockiert', zuordnung: 'blockiert', termin: 'überfällig', ueberfaellig: 'überfällig', haengt: 'überfällig' });
+
+/**
+ * Rote Umschlaege einer Arbeitsliste: Anzahl und ein Wort. Haben alle denselben Grund, sagt das Wort
+ * ihn ("überfällig", "blockiert", "nicht eingetragen"), sonst "dringend".
+ */
+export function packRotZaehlung(umschlaege = []) {
+  const rot = umschlaege.filter(k => k?.ampel?.stufe === 'rot');
+  const woerter = new Set(rot.map(k => ROT_WORT[k.ampel.grund] || 'dringend'));
+  return { n: rot.length, wort: woerter.size === 1 ? [...woerter][0] : 'dringend' };
+}

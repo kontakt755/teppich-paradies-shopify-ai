@@ -15,7 +15,9 @@ import { musterKurz, fuelleText, mailtoLink, NICHT_VERFUEGBAR_VORLAGE } from '..
 import { setzeSchritt } from './zeitleiste.mjs';
 
 /** Standtext je Sperre: "im Shop gesperrt" nur, wenn die Sperre dort bestaetigt ist. */
-export const GESPERRT_KURZ = Object.freeze({ imShop: 'im Shop gesperrt – kommt nicht', gemeldet: 'als nicht lieferbar gemeldet – kommt nicht' });
+/** Warum es nicht kommt. Neben der Plakette "× Kommt nicht" (Ampel) steht nur dieser Teil. */
+export const GESPERRT_GRUND = Object.freeze({ imShop: 'im Shop gesperrt', gemeldet: 'als nicht lieferbar gemeldet' });
+export const GESPERRT_KURZ = Object.freeze({ imShop: `${GESPERRT_GRUND.imShop} – kommt nicht`, gemeldet: `${GESPERRT_GRUND.gemeldet} – kommt nicht` });
 
 /**
  * Was kommt nicht, so wie der Kunde es bestellt hat: Shopname und Farbe. Der Lieferantenname nennt die Farbe

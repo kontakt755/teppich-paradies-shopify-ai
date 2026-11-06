@@ -43,6 +43,7 @@ const ABLAEUFE = [
     '<b>3 · Zukleben und verschicken</b>: Umschlag zukleben, dann <b>Umschlag gepackt – verschicken…</b> und in der Karte bestätigen. Gepackt heißt verschickt: der Kunde bekommt sofort die Versandmail, danach geht der Umschlag zur Post. Zurücknehmen geht dann nicht mehr.',
     'Steht etwas im Reiter <b>Gepackt</b>, wurde es nie als verschickt eingetragen. Liegt der Umschlag noch im Regal: zur Post und <b>Verschickt – Kunde informieren…</b>. War er schon früher raus: <b>War schon früher raus…</b> (ohne Versandmail).',
     'Kommt ein Paket Muster vom Lieferanten: Reiter <b>Muster kommt an</b>. Eintippen, was auf dem Muster steht – die Karte sagt, in welchen Umschlag es gehört.',
+    '<b>× Rot</b> heißt: der Kunde wartet auf uns – ein Muster kommt nicht, eine Angabe fehlt, beim Lieferanten seit 14 Tagen bestellt, seit 7 Tagen bezahlt und nicht bestellt oder nie als verschickt eingetragen. <b>! Gelb</b>: seit 7 Tagen bestellt (nachhaken), noch nicht bestellt oder zu klären. Ohne Zeichen ist alles in Ordnung. Die Reiter oben zählen die roten Umschläge.',
   ]],
   ['Genossenschaft anschreiben', [
     'Unter <b>Kunden &amp; Einkauf</b> auf <b>Genossenschaften</b>: oben steht „Als Nächstes“ mit der Firma, die jetzt dran ist.',
