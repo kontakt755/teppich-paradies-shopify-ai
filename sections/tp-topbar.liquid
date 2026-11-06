@@ -30,7 +30,8 @@
         -%}
         <li class="tp-tb__item tp-tb__item--aktion" data-tp-aktion="{{ tp_tb_t[0] }}">
           <span class="tp-tb__badge">−{{ tp_tb_t[0] }} %</span>
-          <a href="{{ tp_tb_t[3] | escape }}">{{ tp_tb_t[2] | escape }}: {{ tp_tb_t[4] | escape }} bis {{ tp_tb_ende }}</a>
+          {%- comment -%} Nennt der Kollektionstitel die Aktion schon, nicht doppelt ("Black Week: Black Week: ...") {%- endcomment -%}
+          <a href="{{ tp_tb_t[3] | escape }}">{% unless tp_tb_t[4] contains tp_tb_t[2] %}{{ tp_tb_t[2] | escape }}: {% endunless %}{{ tp_tb_t[4] | escape }} bis {{ tp_tb_ende }}</a>
         </li>
       {%- endif -%}
       {%- for block in section.blocks -%}

@@ -148,3 +148,13 @@ test('Topbar bleibt ohne Schalter unveraendert und gibt Aktionstexte und Link si
   assert.match(aktiv, /&lt;img src=x onerror=alert\(1\)&gt;/);
   assert.match(aktiv, /href="\/collections\/test\?q=(?:&quot;|&#34;)bad(?:&quot;|&#34;)"/);
 });
+
+test('Topbar nennt die Aktion nicht doppelt, wenn der Kollektionstitel sie schon traegt', async () => {
+  const group = JSON.parse(readFileSync(path.join(root, 'sections/header-group.json'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''));
+  const topbar = Object.values(group.sections).find(s => s.type === 'tp-topbar');
+  const template = source('sections/tp-topbar.liquid');
+  const bw = shop([aktion({ titel: { value: 'Black Week' }, kollektion: { value: { id: 1, title: 'Black Week: 15 % auf Teppichboden', url: '/collections/black-week-2026' } } })]);
+  const html = await engine.parseAndRender(template, { shop: bw, section: { settings: { ...topbar.settings, aktion_zeigen: true }, blocks: [] } }, { globals: { shop: bw } });
+  assert.match(html, />Black Week: 15 % auf Teppichboden bis 31\.10\.</);
+  assert.doesNotMatch(html, /Black Week: Black Week/);
+});
