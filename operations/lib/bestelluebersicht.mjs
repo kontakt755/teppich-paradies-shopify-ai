@@ -54,6 +54,33 @@ function knoten(conn) {
 }
 
 /**
+ * Positionen, die erst durch eine Bestellbearbeitung dazukamen: lineItemId -> Zeitpunkt der Bearbeitung.
+ * Massgeblich ist die frueheste Vereinbarung, die die Position verkauft hat - kam sie mit der Bestellung
+ * selbst (ORDER), ist sie keine Nachbestellung, auch wenn ihre Menge spaeter geaendert wurde.
+ * Ohne `agreements` (aelterer Export) bleibt die Liste leer.
+ */
+export function nachbestellungen(order) {
+  const erste = new Map();
+  const vereinbarungen = knoten(order?.agreements);
+  // Fehlen Verkaeufe der Bestellung selbst (mehr als eine Seite), waere jede spaeter geaenderte alte
+  // Position scheinbar neu - dann lieber gar keinen Hinweis.
+  if (vereinbarungen.some(ag => ag?.reason === 'ORDER' && ag?.sales?.pageInfo?.hasNextPage)) return new Map();
+  for (const ag of vereinbarungen) {
+    const zeit = typeof ag?.happenedAt === 'string' ? ag.happenedAt : null;
+    if (!zeit || Number.isNaN(new Date(zeit).getTime())) continue;
+    for (const s of knoten(ag.sales)) {
+      const id = s?.lineItem?.id;
+      if (!id || s.actionType !== 'ORDER') continue;
+      const bisher = erste.get(id);
+      if (!bisher || zeit < bisher.zeit) erste.set(id, { zeit, grund: ag.reason });
+    }
+  }
+  const ergebnis = new Map();
+  for (const [id, { zeit, grund }] of erste) if (grund === 'ORDER_EDIT') ergebnis.set(id, zeit);
+  return ergebnis;
+}
+
+/**
  * Bestellung gilt als offen: nicht storniert, nicht in Shopify archiviert und nicht
  * (vollstaendig) erfuellt. Archivieren ohne Versand ist in Shopify der Weg, einen Auftrag
  * abzuhaken (Abholung, Ladenverkauf, erledigt ohne Sendung) - er soll dann ueberall
@@ -441,6 +468,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     const offen = istOffen(order);
     const kettel = kettelJeGruppe(zeilen);
     const kunde = order.shippingAddress?.name ?? order.customer?.displayName ?? null;
+    const nachbestellt = nachbestellungen(order);
     const positionen = zeilen.map(li => {
       const item = resolveLineItem({ lineItem: li, variant: li.variant, alleZeilen: zeilen });
       const vm = metafeldMap(li.variant?.metafields);
@@ -475,6 +503,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         orderName: order.name,
         orderDatum: order.createdAt,
         lineItemId: li.id ?? null,
+        // Erst per Bestellbearbeitung dazugekommen (z. B. Ersatzfarbe fuer ein gesperrtes Muster):
+        // Zeitpunkt der Bearbeitung, sonst null. Die Packstation zeigt "Nachbestellung am …".
+        nachbestelltAm: (li.id && nachbestellt.get(li.id)) || null,
         lieferantUrl: istM ? (mq?.lieferantUrl ?? UNGEKLAERT) : (item.einkauf.lieferant_url ?? UNGEKLAERT),
         titel: istM && props.Produkt ? `Muster: ${props.Produkt}` : (li.title ?? li.variant?.product?.title ?? '–'),
         // Schluessel fuers Produktlexikon: von der Bestellposition direkt zum

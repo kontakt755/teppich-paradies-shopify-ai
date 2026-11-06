@@ -180,13 +180,25 @@ test('UVP: Paketpreis zeigt nach Aktionsende "UVP 29,95 €/m²" statt Streichpr
 
 test('Restrollen: UVP-Kopfzeile mit Abstand, im Rechner nur bei Meterware', () => {
   const block = readFileSync(new URL('../../blocks/price_custom.liquid', import.meta.url), 'utf8');
-  assert.match(block, /tp_pc_aktion == 'uvp' and product_resource\.tags contains 'sonderposten'/);
+  assert.match(block, /tp_pc_aktion == 'uvp' and tp_pc_zentral == 0 and product_resource\.tags contains 'sonderposten'/);
   assert.match(block, /data-tp-uvp-kopf data-variante="\{\{ selected_variant\.id \}\}"/);
   const rechner = readFileSync(new URL('../../blocks/tp-rollware-rechner.liquid', import.meta.url), 'utf8');
   assert.match(rechner, /uvp\.hidden = String\(v\.id\) !== uvp\.dataset\.variante/);
   const zeile = readFileSync(new URL('../../snippets/tp-uvp-zeile.liquid', import.meta.url), 'utf8');
-  assert.match(zeile, /% unter UVP/);
+  // Rote Pille, aber immer mit Bezug auf die UVP (Inhaber 2026-11-06)
+  assert.match(zeile, /−\{\{ prozent \}\}&nbsp;% ggü\. UVP/);
+  assert.match(zeile, /\.tp-uvp__abstand \{[^}]*background: #b3261e/);
   assert.doesNotMatch(zeile, /tp-rabatt-badge/);
+});
+
+test('Restrollen: Karte zeigt "-x % ggü. UVP" im Bild und heisst "Restrolle"', () => {
+  const galerie = readFileSync(path.join(root, 'blocks/_product-card-gallery.liquid'), 'utf8');
+  assert.match(galerie, /tp_pcg_aktion == 'uvp' and product\.tags contains 'sonderposten'/);
+  assert.match(galerie, /tp-rabatt-badge--uvp[\s\S]*?ggü\. UVP/);
+  assert.match(galerie, /contains 'art: teppichboden' %\}Restrolle\{% else %\}Sonderposten/);
+  // Auf Karten nicht doppelt: price.liquid nennt den Abstand nur auf der Produktseite
+  const preis = readFileSync(path.join(root, 'snippets/price.liquid'), 'utf8');
+  assert.match(preis, /contains 'sonderposten' and product\.handle == product_resource\.handle/);
 });
 
 test('Restrollen: Band auf der Startseite, Restmenge auf Karten, Herstellerhinweis', () => {

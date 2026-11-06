@@ -3,9 +3,11 @@
   eine zentral gesteuerte Aktion laeuft (snippets/tp-aktion-laufend) - sonst
   rendert der Block nichts.
 
-  Inhaberentscheidung 2026-09-22: kein durchgestrichener Vergleichspreis, sondern
-  ein Hinweis mit Prozentsatz und Enddatum. Der Rabatt wird im Warenkorb vom
-  automatischen Shopify-Rabatt abgezogen. Kein Countdown, keine Verknappung.
+  Seit 2026-11-06 zeigt der Preisblock den Preis schon nach Abzug, mit Streichpreis
+  und Prozentschild (blocks/price_custom). Dieser Hinweis nennt deshalb nur noch
+  Prozent und Enddatum, ohne zweites Schild und ohne "schon abgezogen" - Paketware
+  und Teppich nach Mass rechnen die Aktion nicht in den Kopfpreis ein. Abgerechnet wird ueber den automatischen Shopify-Rabatt. Kein Countdown,
+  keine Verknappung.
 
   Darunter, unabhaengig von einer Aktion: der Hinweis fuer Auslaufkollektionen
   (Produkt-Tag "auslauf") und fuer Sonderposten von der Rolle (Produkt-Tag
@@ -26,8 +28,7 @@
     assign tah_ende = tah_teile[1] | date: '%d.%m.%Y'
   -%}
   <p class="tp-aktion-hinweis" data-tp-aktion="{{ tah_prozent }}" {{ block.shopify_attributes }}>
-    <span class="tp-aktion-hinweis__badge">−{{ tah_prozent }} %</span>
-    <span class="tp-aktion-hinweis__text">Aktion bis {{ tah_ende }} – wird im Warenkorb abgezogen</span>
+    <span class="tp-aktion-hinweis__text">Aktion −{{ tah_prozent }}&nbsp;% bis {{ tah_ende }}</span>
   </p>
 {%- endif -%}
 
@@ -193,15 +194,6 @@
     line-height: 1.35;
   }
 
-  .tp-aktion-hinweis__badge {
-    display: inline-block;
-    padding: 3px 9px;
-    border-radius: 999px;
-    background: #b3261e;
-    color: #fff;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
 
   .tp-aktion-hinweis__text {
     color: var(--color-foreground);

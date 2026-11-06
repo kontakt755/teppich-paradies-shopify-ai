@@ -569,6 +569,13 @@
       })
         .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
         .then(function (item) {
+          // Fenster erst mit fertigem Inhalt oeffnen, sonst steht dort kurz "leer".
+          return (window.TPWarenkorbAbschnitte ? window.TPWarenkorbAbschnitte() : Promise.resolve(null)).then(function (sections) {
+            return { item: item, sections: sections };
+          });
+        })
+        .then(function (erg) {
+          var item = erg.item;
           inFlight = false;
           if (sperrgut && stand && stand.erg.sperrgutCent) sperrgutDa = true;
           cta.textContent = 'Im Warenkorb';
@@ -577,7 +584,7 @@
           var stueck = zeile.items ? zeile.items.reduce(function (n, z) { return n + z.quantity; }, 0) : zeile.quantity;
           document.dispatchEvent(new CustomEvent('cart:update', {
             bubbles: true,
-            detail: { resource: item, sourceId: el.id, data: { itemCount: stueck, source: 'product-form-component' } }
+            detail: { resource: item, sourceId: el.id, data: { itemCount: stueck, source: 'product-form-component', sections: erg.sections || undefined } }
           }));
           var drawer = document.querySelector('cart-drawer-component');
           if (drawer && typeof drawer.open === 'function') drawer.open();

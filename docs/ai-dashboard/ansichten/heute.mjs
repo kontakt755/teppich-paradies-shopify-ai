@@ -66,6 +66,7 @@ import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
 import { problemeBlock } from './heute/probleme.mjs';
+import { restrollenZeile } from './heute/restrollen.mjs';
 import { warenkennzahlBlock } from './heute/warenkennzahl.mjs';
 
 const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
@@ -217,7 +218,7 @@ function viewShop() {
     <section class="shop-werkzeuge" aria-label="Shop-Werkzeuge">
       <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
     </section>
-    <div class="heute-hintergrund">${datenstandZeile('shop')}</div>
+    <div class="heute-hintergrund">${darfAnsicht('sonderposten') ? restrollenZeile() : ''}${datenstandZeile('shop')}</div>
     <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik${nebenbereichZusatz(kunden.serviceanfragen)}</summary>
       <nav class="chips" aria-label="Weitere Bereiche">
         <a class="chip" href="#/heute?sicht=laden">Laden &amp; Anfragen</a>
@@ -460,6 +461,7 @@ function hintergrund(nf, wartet, sicht) {
     zeilen.push(`<div class="heute-hg-zeile${l.ton ? ` ${l.ton}` : ''}"><span class="heute-hg-name">Lieferantenpostfach</span><span class="heute-hg-text">${esc(l.text)}</span><a class="heute-hg-knopf" href="#/einkauf?tab=belege">Lieferantenpost</a></div>`);
   }
 
+  if (sicht !== 'website' && darfAnsicht('sonderposten')) zeilen.push(restrollenZeile());
   zeilen.push(datenstandZeile(sicht));
   return `<section class="heute-hintergrund" aria-labelledby="heuteHg">
     <h2 id="heuteHg">Im Hintergrund</h2>

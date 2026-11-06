@@ -63,6 +63,7 @@ const voll = new Liquid({ templates: {
   'tp-sonderposten-kaufstatus': ohneDoc('snippets/tp-sonderposten-kaufstatus.liquid'),
   'tp-sonderposten-preisbeleg': ohneDoc('snippets/tp-sonderposten-preisbeleg.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+  'tp-aktion-laufend': ohneDoc('snippets/tp-aktion-laufend.liquid'),
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-verkaufseinheit': ohneDoc('snippets/tp-verkaufseinheit.liquid'),
   'tp-zahl-de': ohneDoc('snippets/tp-zahl-de.liquid'),

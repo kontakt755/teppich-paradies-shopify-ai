@@ -691,3 +691,9 @@ test('Nie bestellt, ohne Musterautomatik: ab 7 Tagen rot wie das To-do auf Heute
   const m = mitFall.kunden[0].muster[0];
   assert.deepEqual([m.haengtWerktage, m.offenTage, m.ampel.wort], [4, undefined, 'Hängt · 4 Werktage']);
 });
+
+test('Nachbestellung: nachtraeglich hinzugefuegtes Muster traegt das Datum der Bestellbearbeitung (Wunsch 06.11.)', async () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt,
+    auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102', { nachbestelltAm: '2026-10-21T13:12:22Z' }), pos(13, '101', { nachbestelltAm: 'kaputt' })])] });
+  assert.deepEqual(r.kunden[0].muster.map(m => m.nachbestelltAm), [null, '2026-10-21T13:12:22Z', null]);
+});

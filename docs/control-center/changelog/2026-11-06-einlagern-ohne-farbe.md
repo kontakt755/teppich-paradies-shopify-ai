@@ -1,0 +1,6 @@
+## 2026-11-06 · Muster einlagern auch für Artikel ohne Farbauswahl
+
+- **Geaendert:** „Muster einlagern…“ bot bei Artikeln ohne Farboption (Restrolle, Zuschnitt von der Rolle, Sonderposten) keine Farbe an – „Einlagern“ blieb gesperrt („Keine Farbe mit Artikelnummer“). `farbenFuer` (`operations/lib/musterlager.mjs`) gibt für solche Artikel jetzt einen Eintrag „Ganzer Artikel“ mit allen SKUs zurück; gespeichert wird der Eintrag ohne Farbe, die Farbe steht im Titel. Der Kurztitel schneidet haengende Trenner ab („… – Restposten, 500 cm“ → „… – Restposten“). Die Rueckmeldung nennt die Stueckzahl („15× eingelagert“) statt der Zahl der Lagereintraege („1 Muster eingelagert“).
+- **Getestet:** Neue Tests in `operations/tests/musterlager.test.mjs` und `docs/ai-dashboard/tests/musterlager-api.test.mjs`. Klickstrecke gegen die Datenkopie: Restrolle gesucht, „Ganzer Artikel“ vorausgewaehlt, 15 Stueck mit Notiz eingelagert → Eintrag mit 15, Farbe leer; Zuschnitt-Artikel ebenso; normaler Artikel mit Farben unveraendert. `npm run dashboard:test`, `npm run -s pruefen`.
+- **Risiken/Annahmen:** Gilt nur, wenn keine Variante eine Farbe traegt; gemischte Artikel verhalten sich wie bisher. Musterbestellungen werden ueber die SKU zugeordnet – fuer Restrollen ohne Musterartikel gibt es keine, der Eintrag ist reiner Bestand.
+- **Naechste Stufe:** Keine.

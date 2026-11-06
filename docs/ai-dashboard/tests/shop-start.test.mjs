@@ -32,6 +32,8 @@ function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
     belege: { daten: null }, akquiseFaellig: () => [], hausverwaltungenFaellig: () => [], hinweisText: x => x, sichtFuer: () => 'laden',
     esc: s => String(s ?? ''), alterText: t => `${t} Tage`,
     // Inhaberzeile (Rundgang 26.10., #44): eigener Baustein, hier nur ihr Platz und ihre Abrufe.
+    // Restrollen-Zeile (2026-11-06): eigener Baustein mit eigenem Test (sonderposten-restrollen.test.mjs).
+    restrollenZeile: () => '',
     warenkennzahlBlock: block('Warenkennzahl'), inhaberZeile: block('Inhaberzeile'), nebenbereichZusatz: () => ' · 2 offene Anfragen', shopwache: { daten: null },
   });
   return { html: api.viewHeute(), geladen, bloecke, sichten };

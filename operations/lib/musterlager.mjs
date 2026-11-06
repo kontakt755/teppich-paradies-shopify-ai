@@ -450,7 +450,8 @@ export function lieferantVonEintrag(eintrag, jeSchluessel) {
 
 /** Titel ohne angehaengte Rollenbreiten ("Vellana Teppichboden 400cm 500cm" -> "Vellana Teppichboden"). */
 export function kurzTitel(titel) {
-  return String(titel ?? '').replace(/^\s*Muster\s*:?\s*/i, '').replace(/(\s+\d{2,3}\s?cm)+\s*(-\s*\d+)?$/i, '').trim();
+  // Danach haengende Trenner weg: "Rustica 5578 – Restposten, 500 cm" -> "Rustica 5578 – Restposten".
+  return String(titel ?? '').replace(/^\s*Muster\s*:?\s*/i, '').replace(/(\s+\d{2,3}\s?cm)+\s*(-\s*\d+)?$/i, '').replace(/[\s,;–-]+$/, '').trim();
 }
 
 /**
@@ -472,8 +473,16 @@ export function farbenFuer(produkt, muster = null) {
   };
   for (const v of muster?.varianten ?? []) dazu(v.farbe, v.sku);
   for (const v of produkt?.varianten ?? []) dazu(v.farbe, v.sku);
-  return [...je].filter(([, s]) => s.size).map(([farbe, s]) => ({ farbe, schluessel: [...s] }));
+  const farben = [...je].filter(([, s]) => s.size).map(([farbe, s]) => ({ farbe, schluessel: [...s] }));
+  if (farben.length || [...(muster?.varianten ?? []), ...(produkt?.varianten ?? [])].some(v => String(v?.farbe ?? '').trim())) return farben;
+  // Artikel ganz ohne Farboption (Restrolle, Zuschnitt, Sonderposten): die Farbe steckt im Titel.
+  // Ohne diesen einen Eintrag liess sich so ein Artikel nicht einlagern (2026-11-06, Restrolle).
+  const skus = [...new Set([...(muster?.varianten ?? []), ...(produkt?.varianten ?? [])].map(v => musterSchluessel({ sku: v?.sku })).filter(Boolean))];
+  return skus.length ? [{ farbe: GANZER_ARTIKEL, ganzerArtikel: true, schluessel: skus }] : [];
 }
+
+/** Auswahlname fuer Artikel ohne Farboption; gespeichert wird dann keine Farbe (Titel reicht). */
+export const GANZER_ARTIKEL = 'Ganzer Artikel';
 
 /**
  * Vorschlaege fuer das Lager, aus den Bestellungen abgeleitet:

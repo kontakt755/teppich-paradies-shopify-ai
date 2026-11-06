@@ -20,7 +20,7 @@ const M = globalThis.TPMass;
 
 const engine = new Liquid({ templates: Object.fromEntries([
   'tp-mass-faq', 'tp-mass-preisliste', 'tp-mass-beispiel', 'tp-mass-kante-wort', 'tp-musteroption',
-  'tp-teppich-max-breite', 'tp-aktion-aktiv', 'tp-rabatt-sichtbar', 'tp-ist-sonderposten',
+  'tp-teppich-max-breite', 'tp-aktion-aktiv', 'tp-aktion-laufend', 'tp-rabatt-sichtbar', 'tp-ist-sonderposten',
   'tp-sonderposten-preisbeleg', 'tp-restrolle-freigegeben', 'tp-faq-beschreibung-structured-data',
 ].map((n) => [n, ohneDoc(`snippets/${n}.liquid`)])) });
 const geld = (c) => {

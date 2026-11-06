@@ -5,8 +5,10 @@
   Inhaber 2026-10-28: UVP dauerhaft zeigen). Grau und klein, ohne Rabattbadge
   und ohne Prozent - ein UVP-Vergleich ist keine Preisermaessigung des Shops,
   deshalb steht die Herkunft des Betrags ausdruecklich dabei.
-  Sonderposten nennen zusaetzlich den Abstand ("40 % unter UVP"), ebenfalls ohne
-  Rot und ohne Badge (Inhaber 2026-11-03).
+  Restrollen nennen zusaetzlich den Abstand als rote Pille "-40 % ggue. UVP"
+  (Inhaber 2026-11-06, vorher grau seit 2026-11-03). Der Bezug "UVP" bleibt
+  immer dabei: Die Rollen wurden nie zum hoeheren Preis verkauft, "Rabatt" oder
+  "reduziert" waere deshalb irrefuehrend.
 
   @param {string} betrag - fertig formatierter Betrag, z. B. "68,63 €" oder "53,58"
   @param {string} [einheit] - Einheit hinter dem Betrag, z. B. "€/m²"
@@ -16,7 +18,7 @@
   <span aria-hidden="true">UVP</span>
   <s><span class="visually-hidden">Unverbindliche Preisempfehlung des Herstellers: </span>{{ betrag }}{% if einheit != blank %}&nbsp;{{ einheit }}{% endif %}</s>
   {%- if prozent != blank and prozent > 0 -%}
-    <span class="tp-uvp__abstand">{{ prozent }}&nbsp;% unter UVP</span>
+    <span class="tp-uvp__abstand"><span aria-hidden="true">−{{ prozent }}&nbsp;% ggü. UVP</span><span class="visually-hidden">{{ prozent }}&nbsp;% unter der unverbindlichen Preisempfehlung</span></span>
   {%- endif -%}
 </div>
 
@@ -34,12 +36,17 @@
     white-space: nowrap;
   }
 
+  /* Restrollen: Abstand zur UVP als rote Pille (Rot = Rabatt, Inhaber 2026-11-06) */
   .tp-uvp__abstand {
     display: inline-block;
     margin-inline-start: 6px;
-    font-weight: 600;
-    color: var(--tp-ink);
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #b3261e;
+    color: #fff;
+    font-weight: 700;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Mitlaufende Kaufleiste: nur der Preis. Mit UVP blieb vom Produktnamen

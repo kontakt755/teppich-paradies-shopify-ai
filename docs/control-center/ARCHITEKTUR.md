@@ -1051,6 +1051,11 @@ fragt der Dialog „Wer hat verkauft?“ – Pflicht, ohne Vorbelegung, zuletzt 
 (`localStorage`, je Gerät). Der Server verlangt den Namen dann (400 `name-fehlt`, kein Shopify-Aufruf),
 schreibt ihn in `verkauft_von` und als Benutzer ins Protokoll, mit dem Vermerk „Name im gemeinsamen Zugang
 angegeben“. Grund: Inhaber 2026-10-10 – im Laden bucht die gerade verkaufende Person.
+Deshalb steht „Sonderposten“ seit 2026-11-06 auch im Menü der Rolle `mitarbeiter` (vorher nur über
+die Adresse erreichbar). Mitarbeiter sehen „Im Laden verkauft…“ und „Ladenverkauf buchen…“;
+„Restlänge eintragen…“ bleibt Inhabersache (Knopf ausgeblendet, `sonderposten/bestand` in
+`NUR_INHABER`). Kommt trotzdem ein 403 ohne Shopify-Grund, sagt die Meldung „… Am Bestand wurde
+nichts geändert.“
 
 **Restrollen (seit 2026-10-12, Inhaber).** Rollenware mit Produkt-Tag `sonderposten` und Rollenbreite
 (`custom.rollenbreite`, Variante vor Produkt), deren Bestand Shopify in ganzen m² führt – z. B. Passion
@@ -1098,6 +1103,20 @@ bei 4/5 m Breite korrekt als 80/100 Einheiten angefragt. Ein separat in Shopify 
 kann diese Menge trotzdem begrenzen (Shopify setzt bei kleinen Shops standardmaessig 50).
 Vor dem Start den aktuellen Checkout-Wert lesend pruefen; weder Bestandseinheiten umbauen noch
 Checkout-Einstellungen ohne eigenen Auftrag aendern.
+
+**QR-Etikett und Laden-Stand (seit 2026-11-06, Inhaber: Laden und Shop immer synchron).**
+Jede Rolle hat den Knopf „QR-Etikett drucken…“ (Niimbot B1 50 × 50, freier Aufkleber aus
+`lib/freie-etiketten.mjs` mit QR). Der Code führt auf `#/sonderposten?rolle=<Produktnummer>`:
+die Ansicht zeigt nur diese Rolle und öffnet „Ladenverkauf buchen“ einmal von selbst. Die Adresse
+ist die, unter der das Dashboard gerade offen ist; am Mac selbst (127.0.0.1) nimmt sie die
+`netzAdresse` aus der Liste, also den ersten Namen aus `TP_DASHBOARD_EXTRA_HOSTS` als https
+(`tailscale serve`). Ohne beides druckt der Dialog nicht. Ein Handy braucht Tailscale oder das
+Firmennetz und eine Anmeldung - der QR-Code selbst gibt keinen Zugang.
+`/api/sonderposten/liste` liefert zusätzlich `ladenStand` (`ladenStandAusProtokoll`): Ladenbuchungen
+der letzten 30 Tage, letzte Buchung, letzte Nachmessung (vor dem Protokoll: Messung vom 28.10.2026)
+und ob das Nachmessen fällig ist (30 Tage). Daraus zeigt „Heute“ (Shop-Übersicht und „Im
+Hintergrund“) die Zeile „Restrollen“, Bernstein nur bei fälligem Nachmessen. Unlesbares Protokoll:
+`ladenStand: null`, die Zeile nennt dann nur den Bestand.
 
 **Tests** sprechen nie echtes Shopify: `tests/_testumgebung.mjs` blendet `.env.local` und die
 `SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
@@ -1479,6 +1498,27 @@ Styles `stile/serviceanfragen.css`.
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
   Zeile zeigt „aus dem Postfach übernommen“. Ein Test prüft, dass jeder Betreff aus `templates/` in
   der Liste steht oder bewusst ausgenommen ist – eine neue Serviceseite fällt so auf.
+- **Musterberatung wird ein Rückruf (seit 2026-11-06):** „Lieber erst beraten lassen?“ im reinen
+  Muster-Warenkorb (`snippets/tp-muster-beratungsanfrage.liquid`) schickt Betreff
+  `RÜCKRUF – Musterberatung` mit `Muster:` (Musterliste, „ · “ getrennt), Name, Telefon, E-Mail, Text.
+  Das ist keine Service-Anfrage: `uebernehmen` legt dafür über `rueckrufAusMail()`
+  (`lib/serviceanfragen.mjs`) und `rueckrufAusMailAnlegen()` (`operations/lib/rueckrufe.mjs`) einen
+  Eintrag in `rueckrufe.json` an – Schlüssel `mail-<Mail-ID>`, `quelle: 'mail'`, Status „offen“,
+  Name, Telefon, E-Mail, Muster, Text und Eingangszeit im Eintrag selbst, weil es keine Bestellung
+  gibt. Dieselbe Mail nie zweimal, ein schon bearbeiteter Rückruf wird nicht zurückgesetzt, ohne
+  Telefon und E-Mail wird nichts angelegt (Vermerk im Postfach-Log). `GET /api/kunden/rueckrufe` hängt
+  diese Einträge an die Rückrufe aus Bestellungen an (`mailRueckrufZeilen`, älteste zuerst); Status
+  und Notiz laufen über denselben `POST`. Die Zeile zeigt „noch keine Bestellung“, Musterliste, Text
+  und Eingangszeit; „Heute“ bekommt dasselbe To-do „Zurückrufen“ mit denselben Fristen (2/7 Tage ab
+  Eingang). Auf diesem Weg entstehen keine Antwortentwürfe: er schreibt nur die lokale Ablage. Ob der
+  getrennte Lauf `postfach-entwuerfe` zu solchen Mails einen Gmail-Entwurf anlegt, regelt dessen privater
+  Auftrag, nicht dieser Code. **Doppelt abgeschickt** (Doppelklick, zweites Gerät): gleiche E-Mail oder
+  Telefonnummer innerhalb von 7 Tagen, solange noch niemand mit dem Kunden gesprochen hat (Status offen
+  oder nicht erreicht), ergänzt den vorhandenen Eintrag statt einen zweiten anzulegen
+  (`offenerMailRueckruf`): Musterliste und Text der neueren Mail, `zuletztAm`, Kennung unter
+  `weitereMailIds`; Status, Notiz, Wiedervorlage und das Alter ab der ersten Mail bleiben. Die Zeile zeigt
+  dann „2× angefragt, zuletzt …“. **Ohne Telefon** steht die E-Mail als Link in der Zeile („keine
+  Telefonnummer, per Mail antworten“), das To-do sagt dasselbe.
 - **Kampagnenfeld:** `snippets/tp-herkunft.liquid` (im Layout) füllt das versteckte Feld
   `contact[Herkunft]` der Formulare auf den Verlegeseiten und der Kontaktseite aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
   „Microsoft-Anzeige“ (msclkid), „Anzeige (<utm_source>)“ bei bezahltem `utm_medium`, sonst „Link
