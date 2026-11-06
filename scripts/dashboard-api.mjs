@@ -2086,12 +2086,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
         produkte: new Map(katalog.map(p => [p.handle, p])),
-        automatikGrundVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId))?.grund || null,
+        // Grund samt Beginn: haengt ein Muster laenger, ist es in der Packstation rot wie das To-do auf Heute.
+        automatikFallVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId)) || null,
         sperreVon: p => { const k = musterSchluessel(p); return k ? sperren.get(`M-${k}`) || null : null; },
         // Ganzer Eintrag: Bestelldatum und "Musterautomatik" fuer die Anmerkung beim Warten.
         eintragVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)] || null,
         schluesselVon: kundenSchluessel,
         gepackt: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren, gedruckt: stand.gedruckt,
+        // Ein Umschlag mit rotem Versandhinweis ist selbst rot (Ampel).
+        versandProbleme: stand.versandProbleme,
         lieferantVon: id => stammdatenFuer(stammdaten, id).name,
         jetzt: now(),
       });

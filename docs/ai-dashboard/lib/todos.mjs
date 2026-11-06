@@ -155,11 +155,20 @@ const ortVon = z => { const o = z?.auftrag?.details?.lieferadresse?.ort; return 
 const istBezahlt = z => BEZAHLT.includes(String(z.zahlungsstatus));
 const artWort = positionen => (positionen.every(x => x.p.istMuster) ? 'Muster' : 'Ware');
 
+/**
+ * Werktage, seit ein Muster aus demselben Grund bei der Musterautomatik haengt - nur wenn es laenger als
+ * MUSTER_KLAER_WERKTAGE sind, sonst null. Eine Regel fuer das rote To-do hier und die Packstation (Ampel).
+ */
+export function automatikHaengtWerktage(seit, jetzt = new Date()) {
+  const werktage = werktageZwischen(seit, jetzt);
+  return werktage !== null && werktage > MUSTER_KLAER_WERKTAGE ? werktage : null;
+}
+
 /** Klaerfall der Musterautomatik, wenn diese Position zu lange aus demselben Grund haengt - sonst null. */
 function haengtBeiAutomatik(z, lineItemId, jetzt) {
   const fall = z.musterAutomatik?.klaeren?.find(e => e.lineItemIds?.includes(lineItemId));
-  const werktage = fall ? werktageZwischen(fall.seit, jetzt) : null;
-  return werktage !== null && werktage > MUSTER_KLAER_WERKTAGE ? { grund: fall.grund, seit: fall.seit, werktage } : null;
+  const werktage = fall ? automatikHaengtWerktage(fall.seit, jetzt) : null;
+  return werktage !== null ? { grund: fall.grund, seit: fall.seit, werktage } : null;
 }
 
 function rueckrufFaellig(r, heute) {

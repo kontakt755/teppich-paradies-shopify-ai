@@ -24,6 +24,10 @@
  * informieren…" (muster-gesperrt.mjs, sendet nichts) und "Ohne dieses Muster weiter packen".
  * Meldet der Lieferant, dass es eine Farbe nicht als Muster gibt: "Kein Muster – im Shop sperren…" am Muster
  * sperrt nur diese Farbe; die Bestellung bleibt offen (Vorfall 05.11., gemischte Bestellung).
+ * Ampel (06.11.2026, Regeln lib/ampel.mjs, gerechnet im Server): je Muster und je Umschlag Plakette und linker
+ * Rand, rot haelt den Kunden auf (kommt nicht, Zuordnung/Adresse fehlt, beim Lieferanten ab 14 Tagen, nie als
+ * verschickt eingetragen), gelb ist zu tun (ab 7 Tagen, nicht bestellt, alles unter "Zu klären"). Die Reiter
+ * nennen die Zahl der roten Umschlaege.
  * In beiden Ansichten steht oben fuer den Packer, welche Herstelleretiketten abkommen (PACKER_INFO).
  * Das A4-Begleitblatt kommt je Umschlag oder gesammelt als PDF (blattKnopf); Direktversand bekommt keins.
  */
@@ -34,12 +38,14 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, aufkleberFuerMuster, frueherGepackt, gepacktNichtVerschickt, umschlagMusterIds, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, aufkleberFuer, aufkleberFuerMuster, frueherGepackt, gepacktNichtVerschickt, umschlagMusterIds, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
 import { suchVerweis, suchwert } from '../../lib/suchverweis.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
-import { GESPERRT_KURZ, gesperrteNamen, oeffneKundeInformieren } from './muster-gesperrt.mjs';
+import { GESPERRT_GRUND, GESPERRT_KURZ, gesperrteNamen, oeffneKundeInformieren } from './muster-gesperrt.mjs';
+import { packRotZaehlung } from '../../lib/ampel.mjs';
+import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { kunden } from './gemeinsam.mjs';
 
@@ -153,10 +159,14 @@ export function musterPackenOffen() {
 
 const gesperrtText = m => GESPERRT_KURZ[m.gesperrt.imShop ? 'imShop' : 'gemeldet'];
 
-/** "bestellt am 24.10. (automatisch)" - ohne belegtes Datum bleibt es beim Standtext. */
+/**
+ * "bestellt am 24.10. (automatisch)" - ohne belegtes Datum bleibt es beim Standtext. `mitPlakette`: die
+ * Ampel-Plakette davor sagt schon "Kommt nicht" bzw. "Nicht bestellt", der Text nur noch die Einzelheit.
+ */
 const datumKurz = iso => fmtDate(iso).slice(0, 6);
-function standText(m) {
-  if (m.gesperrt) return gesperrtText(m);
+function standText(m, { mitPlakette = false } = {}) {
+  if (m.gesperrt) return mitPlakette ? GESPERRT_GRUND[m.gesperrt.imShop ? 'imShop' : 'gemeldet'] : gesperrtText(m);
+  if (m.stand === 'offen' && mitPlakette) return m.automatikGrund || '';
   if (m.automatikGrund) return `${STAND_TEXT.offen}: ${m.automatikGrund}`;
   if (m.stand !== 'bestellt' || !m.bestelltAm) return STAND_TEXT[m.stand] || '';
   return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}`;
@@ -184,11 +194,13 @@ function wannText(isos, format) {
 function warteAnmerkung(k) {
   const { nichtDa, bestellt, isos } = nochNichtDa(k);
   if (!nichtDa.length) return '';
+  // Ruhiger Umschlag (Ampel ohne Befund): nur Auskunft, kein Bernstein - die Farbe gehoert der Ampel.
+  const ton = k.ampel && !k.ampel.stufe ? 'notice' : 'notice warn';
   const wann = wannText(isos, datumKurz);
   const auto = bestellt.filter(m => m.automatisch).length;
   const wie = !bestellt.length ? '' : auto === bestellt.length ? ', automatisch per Mail' : auto ? ', teils automatisch per Mail' : '';
   const ohne = nichtDa.length - bestellt.length;
-  return `<p class="notice warn mp-anmerkung"><strong>Noch nicht da:</strong> ${nichtDa.length} von ${plural(k.muster.length, 'Muster', 'Mustern')}.`
+  return `<p class="${ton} mp-anmerkung"><strong>Noch nicht da:</strong> ${nichtDa.length} von ${plural(k.muster.length, 'Muster', 'Mustern')}.`
     + `${bestellt.length ? ` Beim Lieferanten bestellt${wann}${wie}.` : ''}`
     + `${ohne ? ` ${plural(ohne, 'Muster ist', 'Muster sind')} noch nicht bestellt – unter „Bestellen“ prüfen.` : ''}`
     + ' Kommt ein Muster an: abhaken. Sind alle abgehakt, ist der Umschlag packbereit.</p>';
@@ -211,7 +223,6 @@ function hierHtml(k) {
   const lager = k.muster.filter(m => !m.abgehakt && m.stand === 'lager');
   const orte = [...new Set(lager.map(m => m.lagerOrt).filter(Boolean))];
   const offeneMuster = k.muster.filter(m => !m.abgehakt && m.stand === 'offen' && !m.gesperrt);
-  const kommtNicht = k.muster.filter(m => m.gesperrt).length;
   const offen = offeneMuster.length;
   const gruende = [...new Set(offeneMuster.map(m => m.automatikGrund).filter(Boolean))];
   const teile = [
@@ -219,19 +230,23 @@ function hierHtml(k) {
     da ? `${da} angekommen` : '',
     lager.length ? `${lager.length} im Musterlager${orte.length ? ` (${orte.join(', ')})` : ''}` : '',
   ].filter(Boolean);
+  // "n Muster kommen nicht" steht auf der Plakette darueber (Ampel); die Farbe traegt nur sie.
   return `${teile.length ? `<span class="small mp-hier-da">${esc(`Liegt hier: ${teile.join(' · ')}`)}</span>` : ''}`
-    + `${kommtNicht ? `<span class="small mp-gesperrt">${esc(`${plural(kommtNicht, 'Muster kommt', 'Muster kommen')} nicht`)}</span>` : ''}`
-    + `${offen ? `<span class="small wait-warn">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt${gruende.length ? `: ${gruende.join('; ')}` : ''}`)}</span>` : ''}`;
+    + `${offen ? `<span class="small mp-hier-offen">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt${gruende.length ? `: ${gruende.join('; ')}` : ''}`)}</span>` : ''}`;
 }
 
+/**
+ * Datum und Wartezeit des Kunden, neutral: ob das Warten ein Problem ist, sagt die Ampel des Umschlags
+ * (beim Lieferanten 7/14 Tage, lib/ampel.mjs). Die eigene Bernstein-Schwelle ab 2 Tagen (#1572) faerbte am
+ * 06.11. 16 von 18 Umschlaegen - Farbe sagte dort nichts mehr.
+ */
 function datumHtml(k) {
   const tage = k.wartetTage;
-  const warn = tage !== null && tage >= WARTET_AB_TAGEN && k.bereich !== 'gepackt';
   const bestellt = gueltig(k.seit) ? `${k.bestellungen.length > 1 ? 'erste Bestellung' : 'bestellt'} am ${tagDatum(k.seit)}` : '';
   const wartet = tage === null ? '' : tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`;
   const zeile = [bestellt, wartet].filter(Boolean).join(' · ');
   const beimLieferanten = k.muster.map(m => m.bestelltAm).filter(gueltig).sort();
-  return `${zeile ? `<span class="${warn ? 'wait-warn' : 'small muted'}">${esc(zeile)}</span>` : ''}`
+  return `${zeile ? `<span class="small muted">${esc(zeile)}</span>` : ''}`
     + hierHtml(k)
     + `${beimLieferanten.length ?`<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
 }
@@ -257,6 +272,18 @@ function weitereHtml(k) {
   const eintrag = w => `<a href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(w.packSchluessel)}">${esc(w.bestellungen.join(' / '))}</a>`
     + ` (${[gueltig(w.seit) ? `bestellt am ${tagDatum(w.seit)}` : '', BEREICH_TEXT[w.bereich] || ''].filter(Boolean).map(esc).join(', ')})`;
   return `<div class="small mp-weitere">${weitere.length === 1 ? 'Weiterer Umschlag für diesen Empfänger' : `${weitere.length} weitere Umschläge für diesen Empfänger`}: ${weitere.map(eintrag).join(' · ')}</div>`;
+}
+
+/**
+ * Rote Umschlaege im Reiter, als Plakette unter der Zahl: "Wartet auf Ware 13 · × 2 überfällig". Nicht bei
+ * "Alle offenen" (die Summe stuende sonst zweimal da) und "Erledigt". Sind alle rot (Gepackt: immer),
+ * steht nur das Wort - die Zahl steht schon daneben.
+ */
+function rotImReiter(liste, bereich) {
+  if (!['packen', 'klaeren', 'warten', 'gepackt'].includes(bereich)) return '';
+  const imReiter = liste.filter(k => k.bereich === bereich);
+  const { n, wort } = packRotZaehlung(imReiter);
+  return n ? `<span class="mp-filterampel">${ampelPlakette('rot', n === imReiter.length ? wort : `${n} ${wort}`)}</span>` : '';
 }
 
 /** Ein Umschlag, in dem schon Muster liegen: angefangene Arbeit, die nicht untergehen darf (Inhaber 26.10.). */
@@ -328,10 +355,14 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
   // Als fehlend gemeldet, laut Bestand aber da: nicht "fehlt · angekommen" (Widerspruch), sondern
   // sagen, was zu tun ist (Rundgang 26.10.).
   const imRegal = fehltHervor && m.stand === 'da';
-  const stand = imRegal ? 'laut Bestand da – im Regal suchen' : standText(m);
+  // Ampel je Muster (lib/ampel.mjs, packMusterAmpel): Plakette vorn in der Standzeile, Rand links an der Zeile.
+  // Ohne `ampel` (aelterer Datenstand) bleibt es bei den bisherigen Textfarben.
+  const ampel = m.ampel?.stufe ? m.ampel : null;
+  const plakette = ampel ? `${ampelPlakette(ampel.stufe, ampel.wort, { titel: ampel.titel })} ` : '';
+  const stand = imRegal ? 'laut Bestand da – im Regal suchen' : standText(m, { mitPlakette: !!ampel });
   const link = v.url ? ` · <a href="${esc(v.url)}" target="_blank" rel="noopener">Lieferantenseite</a>` : '';
   const haken = !!m.abgehakt;
-  return `<li class="mp-zeile${haken ? ' mp-ab' : ''}${fehltHervor ? ' mp-fehlend' : ''}${treffer ? ' mp-treffer' : ''}">
+  return `<li class="mp-zeile${haken ? ' mp-ab' : ''}${fehltHervor ? ' mp-fehlend' : ''}${treffer ? ' mp-treffer' : ''}${ampelRand(ampel?.stufe)}">
     ${hakenHtml(m, lesend)}
     ${bildHtml(m)}
     <div class="mp-vorher">
@@ -342,9 +373,9 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     </div>
     <div class="mp-pfeil" aria-hidden="true">→</div>
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
-      ? `<span class="mp-fehlt">Zuordnung fehlt: ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
+      ? `<span class="${ampel ? 'mp-ohne-aufkleber' : 'mp-fehlt'}">${ampel ? 'Kein eindeutiger Aufkleber für' : 'Zuordnung fehlt:'} ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
       : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
-    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}<span class="${m.gesperrt ? 'mp-gesperrt' : m.stand === 'offen' ? 'wait-warn' : 'muted'}">${esc(stand)}</span>${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}</div>
+    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}</div>
   </li>`;
 }
 
@@ -472,7 +503,9 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set(), hauptkno
   if (frage && frage !== 'verschickt' && !lesend) unten = versandFrageHtml(k, frage);
   mehr = [...mehr, ...(k.bereich === 'klaeren' ? [] : k.bestellungen.map(b => bestellLink(b))), rueckweg].filter(Boolean);
   const mehrHtml = mehr.length ? `<details class="mp-mehr"><summary>Mehr …</summary><div class="mp-aktionen">${mehr.join('')}</div></details>` : '';
-  return `<details class="mp-kunde mp-${k.bereich}${angefangen(k) ? ' mp-angefangen' : ''}" name="mp-umschlag" data-mp-kunde="${pk}" aria-labelledby="mp-k${nr}"${offenBeiSuche || frage || (packOffen ?? state.route.params.get('umschlag')) === k.packSchluessel ? ' open' : ''}>
+  // Ampel des Umschlags (packUmschlagAmpel): der einzige farbige Rand links, dazu die Plakette oben rechts.
+  const ampel = k.ampel?.stufe ? k.ampel : null;
+  return `<details class="mp-kunde mp-${k.bereich}${angefangen(k) ? ' mp-angefangen' : ''}${ampelRand(ampel?.stufe, 'karte')}" name="mp-umschlag" data-mp-kunde="${pk}" aria-labelledby="mp-k${nr}"${offenBeiSuche || frage || (packOffen ?? state.route.params.get('umschlag')) === k.packSchluessel ? ' open' : ''}>
     <summary class="mp-kopf">
       <div class="mp-wer">
         <h3 id="mp-k${nr}"><span class="mp-pos">${esc(umschlagKennung(k))}</span>${esc(k.name)}</h3>
@@ -481,6 +514,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set(), hauptkno
         ${weitereHtml(k)}
       </div>
       <div class="mp-meta">
+        ${ampel ? ampelPlakette(ampel.stufe, ampel.wort, { titel: ampel.titel }) : ''}
         <span class="small muted">${k.muster.length} Muster · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
         ${datumHtml(k)}
         ${gepacktKopfHtml(k, { hauptknopf })}
@@ -494,8 +528,8 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set(), hauptkno
     ${k.altvermerk && !k.klaeren ? `<p class="small muted">${esc(k.altvermerk)}</p>` : ''}
     ${k.gedruckt && k.bereich === 'klaeren' ? `<p class="small mp-vorbereitet">Umschlag vorbereitet: Aufkleber und Adresse ${esc(gedrucktText(k.gedruckt))}. Er wartet auf die fehlenden Muster.</p>` : ''}
     ${(k.hinweise || []).map(h => `<p class="notice warn">${esc(h)}</p>`).join('')}
-    ${(k.adressFehlt || []).length ? `<p class="notice warn">Lieferadresse unvollständig: ${esc(k.adressFehlt.join(', '))}. Bitte die Lieferadresse in der Bestellung prüfen.</p>` : ''}
-    ${(k.zuordnungFehlt || []).length ? `<p class="notice warn">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
+    ${(k.adressFehlt || []).length ? `<p class="notice crit">Lieferadresse unvollständig: ${esc(k.adressFehlt.join(', '))}. Bitte die Lieferadresse in der Bestellung prüfen.</p>` : ''}
+    ${(k.zuordnungFehlt || []).length ? `<p class="notice crit">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
     ${schritte}
     <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId), treffer: treffer.has(m.lineItemId), ohneMoeglich: ohneMusterMoeglich(k, m) })).join('')}</ul>
     ${k.bereich === 'warten' ? warteAnmerkung(k) : ''}
@@ -550,7 +584,7 @@ export function viewKundenMusterPacken() {
     p.delete('umschlag'); p.delete('mpq'); p.delete('mp');
     return `#/kunden?${p}`;
   };
-  const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => `<a class="btn${aktiv === b ? ' btn-primary' : ''}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${b === 'erledigt' ? erledigt.length : d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : k.bereich === b)).length}</span></a>`).join('')}</nav>`;
+  const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => `<a class="btn${aktiv === b ? ' btn-primary' : ''}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${b === 'erledigt' ? erledigt.length : d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : k.bereich === b)).length}</span>${rotImReiter(d.kunden, b)}</a>`).join('')}</nav>`;
   // "Trotzdem zeigen" gilt nur fuer genau diese Suche (mpfertig = Suchtext) - jede neue Suche startet ohne Fertige.
   // In den Reitern Gepackt und Erledigt sucht man gerade das Fertige - dort ist es immer mit drin.
   const mitFertigen = Boolean(suche) && (['gepackt', 'erledigt'].includes(angefordert) || suchwert(state.route.params, 'mpfertig') === suche);
@@ -559,7 +593,9 @@ export function viewKundenMusterPacken() {
   // Offene Arbeit nach Dringlichkeit: erst Packbereites, dann zu Klaerendes, dann Wartendes; in jeder
   // Gruppe zuerst die Umschlaege, in denen schon Muster liegen.
   const RANG = { packen: 0, klaeren: 1, warten: 2 };
-  const reihe = (x, y) => (RANG[x.bereich] ?? 3) - (RANG[y.bereich] ?? 3) || angefangen(y) - angefangen(x);
+  // Innerhalb der Gruppe zuerst, was den Kunden aufhaelt (Ampel rot), dann angefangene Umschlaege (#1720).
+  const rot = k => k.ampel?.stufe === 'rot';
+  const reihe = (x, y) => (RANG[x.bereich] ?? 3) - (RANG[y.bereich] ?? 3) || rot(y) - rot(x) || angefangen(y) - angefangen(x);
   const imReiter = gefunden ? d.kunden.filter(k => treffer.has(k.packSchluessel))
     : aktiv === 'offen' ? d.kunden.filter(k => k.bereich !== 'gepackt').sort(reihe)
       : aktiv === 'alle' ? d.kunden : d.kunden.filter(k => k.bereich === aktiv).sort(reihe);

@@ -157,6 +157,9 @@ test('Scheitert der Eintrag nach dem Packen trotz Vorpruefung: Umschlag bleibt u
   assert.equal(u.kunde().bereich, 'gepackt', 'der Umschlag ist zu, er wartet unter "Gepackt" auf "Verschickt"');
   assert.match(u.api.kundenMusterPacken().versandProbleme[0].meldung, /Platte voll/);
   assert.equal(u.attrappe.buchungen().length, 0);
+  // Ampel (06.11.): gepackt und nie eingetragen ist rot, die Muster darin sind ruhig (liegen im Umschlag).
+  assert.deepEqual([u.kunde().ampel.stufe, u.kunde().ampel.wort], ['rot', 'Nicht eingetragen']);
+  assert.deepEqual(u.kunde().muster.map(m => m.ampel.stufe), [null, null]);
 });
 
 test('Persoenlich vorbeigebrachte Muster: gebucht, aber ohne Mail; die Packliste kennzeichnet sie', async t => {

@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   WARTESCHWELLEN, warteStufe, warteAmpel, warteWort, dringender, dringendereAmpel,
   hatBestellampel, bestellbarkeit, zaehleAmpeln, musterlagerAmpel, ZEICHEN,
+  packMusterAmpel, packUmschlagAmpel, packRotZaehlung,
 } from '../lib/ampel.mjs';
+import { automatikHaengtWerktage, MUSTER_KLAER_WERKTAGE } from '../lib/todos.mjs';
 import { SCHWELLEN_STANDARD, lieferantenKarten, warnstufe } from '../lib/einkauf-lieferanten.mjs';
 import { SCHWELLEN } from '../lib/todos.mjs';
 import { jeKommission } from '../lib/einkauf-uebersicht.mjs';
@@ -175,4 +177,69 @@ test('Musterlager: leer oder aufgebraucht rot, knapp gelb, sonst ruhig', () => {
   assert.deepEqual(musterlagerAmpel({ reichtNoch: 5, knappAb: 5 }), { stufe: 'gelb', wort: 'Knapp' });
   assert.equal(musterlagerAmpel({ reichtNoch: 6, knappAb: 5 }).stufe, null);
   assert.equal(musterlagerAmpel({ reichtNoch: null }).stufe, null, 'ohne Schaetzung: ruhig');
+});
+
+// ------------------------------------------------------------- Packstation
+
+test('Packstation je Muster: im Haus ruhig, beim Lieferanten 7/14 Tage wie ueberall, kommt nicht und Zuordnung fehlt rot', () => {
+  const a = (m, jetzt = JETZT) => packMusterAmpel({ fehlt: [], stand: 'bestellt', ...m }, { jetzt });
+  const kurz = x => [x.stufe, x.grund, x.wort];
+  assert.deepEqual(kurz(a({ stand: 'da', bestelltAm: vor(30) })), [null, null, ''], 'angekommen: ruhig, auch nach 30 Tagen');
+  assert.deepEqual(kurz(a({ stand: 'lager' })), [null, null, ''], 'aus dem Musterlager');
+  assert.deepEqual(kurz(a({ abgehakt: { zeit: vor(1) }, bestelltAm: vor(20) })), [null, null, ''], 'liegt im Umschlag');
+  // Die fruehere Schwelle der Packstation ("wartet ab 2 Tagen") gibt es nicht mehr.
+  assert.equal(a({ bestelltAm: vor(2) }).stufe, null, '2 Tage: ruhig');
+  assert.equal(a({ bestelltAm: vor(6) }).stufe, null);
+  assert.deepEqual(kurz(a({ bestelltAm: vor(7) })), ['gelb', 'nachhaken', 'Nachhaken · 7 Tage']);
+  assert.deepEqual(kurz(a({ bestelltAm: vor(14) })), ['rot', 'ueberfaellig', 'Überfällig · 14 Tage']);
+  assert.deepEqual(kurz(a({ bestelltAm: vor(3), liefertermin: '2026-11-04' })), ['rot', 'termin', 'Termin 04.11. vorbei']);
+  assert.equal(a({ bestelltAm: vor(20), liefertermin: '2026-11-10' }).stufe, null, 'bestaetigter Termin vor uns: ruhig');
+  assert.equal(a({ bestelltAm: null }).stufe, null, 'ohne Bestelldatum keine Wartezeit');
+  assert.deepEqual(kurz(a({ gesperrt: { imShop: true }, bestelltAm: vor(1) })), ['rot', 'kommtNicht', 'Kommt nicht']);
+  assert.deepEqual(kurz(a({ stand: 'da', fehlt: ['Farbe'] })), ['rot', 'zuordnung', 'Zuordnung fehlt'], 'ohne Aufkleber wird nie gepackt, auch wenn es da ist');
+  assert.deepEqual(kurz(a({ stand: 'offen' })), ['gelb', 'nichtBestellt', 'Nicht bestellt']);
+  assert.deepEqual(kurz(a({ stand: 'offen', haengtWerktage: 3 })), ['rot', 'haengt', 'Hängt · 3 Werktage']);
+  for (const x of [a({ bestelltAm: vor(9) }), a({ stand: 'offen' }), a({ gesperrt: { imShop: false } })]) assert.ok(x.titel, `Tooltip zu ${x.wort}`);
+});
+
+test('Packstation: "haengt" nach derselben Regel wie das rote To-do auf Heute', () => {
+  assert.equal(MUSTER_KLAER_WERKTAGE, 1);
+  // Freitag 06.11.: seit Mittwoch 2 Werktage (Do, Fr), seit Donnerstag 1.
+  assert.equal(automatikHaengtWerktage('2026-11-04T09:00:00Z', JETZT), 2);
+  assert.equal(automatikHaengtWerktage('2026-11-05T09:00:00Z', JETZT), null);
+  assert.equal(automatikHaengtWerktage('kaputt', JETZT), null);
+});
+
+test('Packstation je Umschlag: dringendstes Muster, nie eingetragen und Versandhinweis rot, Zu klaeren mindestens gelb', () => {
+  const m = (ampel, extra = {}) => ({ ampel, ...extra });
+  const ruhig = { stufe: null, grund: null, wort: '' };
+  const gelb = (tage = 9) => ({ stufe: 'gelb', grund: 'nachhaken', wort: `Nachhaken · ${tage} Tage`, tage });
+  const rot = (tage = 15) => ({ stufe: 'rot', grund: 'ueberfaellig', wort: `Überfällig · ${tage} Tage`, tage });
+  const kommtNicht = { stufe: 'rot', grund: 'kommtNicht', wort: 'Kommt nicht' };
+  const u = (k, opt) => packUmschlagAmpel({ bereich: 'warten', muster: [], hinweise: [], adressFehlt: [], ...k }, opt);
+  const kurz = x => [x.stufe, x.wort];
+  assert.deepEqual(kurz(u({ bereich: 'packen', muster: [m(ruhig), m(ruhig)] })), [null, ''], 'packbereit ohne Befund: ruhig');
+  assert.deepEqual(kurz(u({ muster: [m(ruhig), m(gelb(8)), m(gelb(12))] })), ['gelb', 'Nachhaken · 12 Tage'], 'gleiche Stufe: das laengere Warten');
+  assert.deepEqual(kurz(u({ muster: [m(gelb()), m(rot(16))] })), ['rot', 'Überfällig · 16 Tage']);
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', muster: [m(rot()), m(kommtNicht), m(kommtNicht)] })), ['rot', '2 Muster kommen nicht'], 'kommt nicht vor dem Warten, mit Anzahl');
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', muster: [m(kommtNicht)] })), ['rot', '1 Muster kommt nicht']);
+  assert.deepEqual(kurz(u({ bereich: 'gepackt', muster: [m(ruhig)] })), ['rot', 'Nicht eingetragen'], 'Altfall: gepackt, nie eingetragen');
+  assert.deepEqual(kurz(u({ bereich: 'gepackt', muster: [m(ruhig)] }, { versandProblem: 'Shopify nicht erreicht' })), ['rot', 'Nicht eingetragen']);
+  const versand = u({ bereich: 'packen', muster: [m(ruhig)] }, { versandProblem: 'Shopify nicht erreicht' });
+  assert.deepEqual([versand.stufe, versand.wort, versand.titel], ['rot', 'Versand nicht eingetragen', 'Shopify nicht erreicht']);
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', adressFehlt: ['PLZ'], muster: [m(gelb())] })), ['rot', 'Adresse fehlt']);
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', klaeren: { fehlt: ['x'] }, muster: [m(ruhig)] })), ['gelb', 'Fehlt noch']);
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', direktversand: true, hinweise: ['Direktversand'], muster: [m(ruhig)] })), ['gelb', 'Direktversand prüfen']);
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', hinweise: ['Teilweise erstattet'], muster: [m(ruhig)] })), ['gelb', 'Restumfang prüfen']);
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', muster: [m(ruhig)] })), ['gelb', 'Zu klären'], 'unter Zu klären nie ruhig');
+  assert.deepEqual(kurz(u({ bereich: 'klaeren', klaeren: { fehlt: ['x'] }, muster: [m(gelb(10))] })), ['gelb', 'Nachhaken · 10 Tage'], 'das Warten beim Lieferanten sagt mehr');
+});
+
+test('Packstation Reiter: Zahl roter Umschlaege mit einem Wort', () => {
+  const k = (grund, stufe = 'rot') => ({ ampel: { stufe, grund } });
+  assert.deepEqual(packRotZaehlung([k('ueberfaellig'), k('termin'), k('haengt'), k('nachhaken', 'gelb'), {}]), { n: 3, wort: 'überfällig' });
+  assert.deepEqual(packRotZaehlung([k('kommtNicht'), k('zuordnung'), k('adresse')]), { n: 3, wort: 'blockiert' });
+  assert.deepEqual(packRotZaehlung([k('nichtEingetragen'), k('versand')]), { n: 2, wort: 'nicht eingetragen' });
+  assert.deepEqual(packRotZaehlung([k('kommtNicht'), k('ueberfaellig')]), { n: 2, wort: 'dringend' }, 'gemischt');
+  assert.deepEqual(packRotZaehlung([k('nachhaken', 'gelb')]), { n: 0, wort: 'dringend' });
 });

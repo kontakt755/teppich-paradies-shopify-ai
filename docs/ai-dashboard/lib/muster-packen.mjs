@@ -12,9 +12,8 @@ import { musteretikettenFuerAuftrag } from './bestellungs-musteretiketten.mjs';
 import { adressEtikett } from './adress-etiketten.mjs';
 import { passtBegriff } from './lexikon-suche.mjs';
 import { kalendertag, kalendertage } from './kalendertage.mjs';
-
-/** Ab so vielen Tagen Wartezeit steht die Zahl in Bernstein. */
-export const WARTET_AB_TAGEN = 2;
+import { packMusterAmpel, packUmschlagAmpel } from './ampel.mjs';
+import { automatikHaengtWerktage } from './todos.mjs';
 
 const FERTIG = new Set(['raus', 'erledigt']);
 /** So traegt die automatische Musterbestellung (operations/lib/muster-bestellautomatik.mjs) ein. */
@@ -126,9 +125,13 @@ function vorherIndex(produkte) {
  *                                      Empfaenger und Bestelltag; aeltere je Empfaenger bzw. je Kunde gelten weiter
  * @param {(id) => string} [p.lieferantVon]  Lieferanten-Kuerzel -> Anzeigename (private Stammdaten)
  * @param {(orderId, lineItemId) => string|null} [p.automatikGrundVon]  warum die Musterautomatik zurueckhaelt
+ * @param {(orderId, lineItemId) => {grund: string, seit: string|null}|null} [p.automatikFallVon]  Klaerfall der
+ *                                      Musterautomatik samt Beginn; geht vor automatikGrundVon (Ampel "haengt")
  * @param {(position) => {imShop: boolean, seit: string}|null} [p.sperreVon]  aktive Mustersperre dieser Position (w-210)
+ * @param {object} [p.versandProbleme]  { [packSchluessel]: { problem } } - roter Versandhinweis, Umschlag ist dann rot
+ * Jedes Muster und jeder Umschlag traegt `ampel` (lib/ampel.mjs: packMusterAmpel, packUmschlagAmpel).
  */
-export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, automatikGrundVon = () => null, sperreVon = () => null, jetzt = new Date() } = {}) {
+export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, automatikGrundVon = () => null, automatikFallVon = null, sperreVon = () => null, versandProbleme = {}, jetzt = new Date() } = {}) {
   const statusVon = eintragVon ? (o, l) => eintragVon(o, l)?.status || null : statusAllein;
   // Vom Lieferanten direkt an den Kunden (#1680): wird nicht bei uns gepackt.
   const direkt = (a, p) => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT') || eintragVon?.(a.id, p.lineItemId)?.ueber === 'kunde';
@@ -222,7 +225,12 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
         const stand = standVon(statusVon(a.id, p.lineItemId), p);
         // Nur was noch fehlt, "kommt nicht": ein Muster, das trotzdem hier liegt, wird normal gepackt.
         const sperre = !haken[z.lineItemId] && !['da', 'lager'].includes(stand) ? sperreVon(p) : null;
-        g.muster.push({
+        const fall = stand === 'offen' ? automatikFallVon?.(a.id, p.lineItemId) || null : null;
+        const grund = stand === 'offen' ? text(fall?.grund ?? automatikGrundVon(a.id, p.lineItemId)) || null : null;
+        // Ampel: Liefertermin (nur bestaetigt und noch bestellt) und wie lange die Automatik es schon festhaelt.
+        const liefertermin = stand === 'bestellt' && typeof eintrag?.beschaffung?.liefertermin === 'string' ? eintrag.beschaffung.liefertermin : null;
+        const haengtWerktage = grund && belegt(fall?.seit) ? automatikHaengtWerktage(fall.seit, jetzt) : null;
+        const m = {
           orderId: a.id, orderName: text(a.name), lineItemId: z.lineItemId,
           anzahl: Number.isInteger(z.anzahl) ? z.anzahl : null, etikett: z.etikett, fehlt: z.fehlt,
           bestellt: { titel: text(p.titel), farbe: text(p.farbe) },
@@ -235,12 +243,16 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           // Bleibt nach der Ankunft erhalten: die Kopfzeile nennt das Lieferanten-Bestelldatum immer (29.10.).
           bestelltAm: belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
           automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
-          automatikGrund: stand === 'offen' ? text(automatikGrundVon(a.id, p.lineItemId)) || null : null,
+          automatikGrund: grund,
           // Wo es im Haus liegt (Musterlager), damit die Karte "liegt hier: …" sagen kann.
           lagerOrt: stand === 'lager' && belegt(p.musterLager?.ort) ? text(p.musterLager.ort) : null,
           // Persoenlich vorbeigebracht: "raus" ohne Versandmail (versandMailFuer im Server) - die Rueckfrage sagt es.
           ...(p.musterHerkunft === 'eigen_vorbei' ? { persoenlich: true } : {}),
-        });
+          ...(liefertermin ? { liefertermin } : {}),
+          ...(haengtWerktage ? { haengtWerktage } : {}),
+        };
+        m.ampel = packMusterAmpel(m, { jetzt });
+        g.muster.push(m);
       });
     }
     const bestellungen = g.bestellungen.sort((x, y) => text(x.datum).localeCompare(text(y.datum)));
@@ -263,7 +275,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     const gesperrt = muster.some(m => m.gesperrt);
     // Gepackt erledigt jede Klaerung.
     const klaerung = istGepackt ? null : kl;
-    return {
+    const umschlag = {
       schluessel, packSchluessel: pk, name: g.name, adresse, bestellungen, seit, wartetTage: tage,
       muster, adressAufkleber, hinweise, altvermerk,
       // Fuer den Textvorschlag "Kunde informieren": nur bei Umschlaegen, die ihn brauchen.
@@ -284,6 +296,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       // Ein Haken bestaetigt das physisch eingelegte Muster, sonst braucht es bestaetigten Bestand.
       bereich: istGepackt ? 'gepackt' : klaerung || gesperrt || hinweise.length || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
     };
+    umschlag.ampel = packUmschlagAmpel(umschlag, { versandProblem: text(versandProbleme?.[pk]?.problem) || null });
+    return umschlag;
   };
 
   const liste = [];
