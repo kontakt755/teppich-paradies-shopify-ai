@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pruefeImporte, jsonlZuProdukten, ueblicheFelder, bericht } from '../lib/import-pruefung.mjs';
+import { pruefeImporte, jsonlZuProdukten, ueblicheFelder, bericht, istTeppichfliese } from '../lib/import-pruefung.mjs';
 import { argumente } from '../scripts/import-pruefen.mjs';
 
 let n = 0;
@@ -271,4 +271,121 @@ test('archivierte Produkte und das Sammelmuster kostenloses-muster sind kein Bef
   // Ein aktives Produkt mit Tag test ist fuer Kunden sichtbar - das bleibt ein Befund.
   const sichtbar = produkt({ createdAt: '2026-10-07T08:00:00Z', tags: ['test'], collections: [] });
   assert.deepEqual(regeln(pruefeImporte({ produkte: [...vergleich(), sichtbar], seit: '2026-10-01' })), ['fehler:kategorie']);
+});
+
+// Kein Musterservice (seit 2026-11-06, Arbeitsweise Abschnitt 9): Teppichfliesen, -planken und Sauberlauf-Fliesen
+// tragen ohne-muster und haben kein Musterprodukt; faellt eine Kollektion heraus, ruht ihr Musterprodukt auf DRAFT.
+const NEU = '2026-11-06T08:00:00Z';
+const farbvariante = (wert) => ({ id: `f${n}-${wert}`, sku: `F-${n}-${wert}`, title: wert, price: '84.00', image: 'u', selectedOptions: [{ name: 'Farbe', value: wert }], custom: {} });
+const zweiFarben = () => ({ options: [{ name: 'Farbe', values: ['Sand', 'Grau'] }], variants: [farbvariante('Sand'), farbvariante('Grau')] });
+const fliese = (over = {}) => produkt({
+  productType: 'Teppichboden', title: 'Testlinea Teppichfliese 50x50cm', tags: ['art: teppichboden', 'art: teppichfliese', 'ohne-muster'],
+  collections: ['teppichfliesen', 'teppichfliesen-50x50'], ...zweiFarben(),
+  ...over,
+});
+const musterVon = (ware, over = {}) => produkt({
+  handle: `muster-${ware.handle}`, title: `Muster ${ware.title}`, productType: 'Musterservice', status: 'UNLISTED', collections: [],
+  options: [{ name: 'Farbe', values: ['Sand'] }],
+  variants: [{ id: `m${n}`, sku: `M-F-${n}`, title: 'Sand', price: '0.00', image: null, selectedOptions: [{ name: 'Farbe', value: 'Sand' }], custom: {} }],
+  ...over,
+});
+
+test('Teppichfliese ohne Tag ohne-muster ist ein Fehler - erkannt an Tag, Name oder Kategorie', () => {
+  // Sollzustand: Tag gesetzt, kein Musterprodukt - das ist kein muster-fehlt.
+  assert.deepEqual(pruefeImporte({ produkte: [fliese({ createdAt: NEU })], seit: '2026-11-01' }).befunde, []);
+
+  const faelle = {
+    tag: fliese({ createdAt: NEU, title: 'Testlinea 50x50cm', tags: ['art: teppichboden', 'art: teppichfliese'], collections: ['teppichboden'] }),
+    titel: fliese({ createdAt: NEU, title: 'Testlinea Teppichplanke 25x100cm', tags: ['art: teppichboden'], collections: ['teppichboden'] }),
+    handle: fliese({ createdAt: NEU, handle: 'testlinea-sauberlauf-fliesen-50-50-cm', title: 'Testlinea 50 × 50 cm', tags: [], collections: ['teppichboden'] }),
+    kategorie: fliese({ createdAt: NEU, title: 'Testlinea Nadelvlies 50x50cm', tags: ['art: teppichboden'], collections: ['teppichfliesen'] }),
+  };
+  for (const [merkmal, p] of Object.entries(faelle)) {
+    const erg = pruefeImporte({ produkte: [p], seit: '2026-11-01' });
+    // Nur der fehlende Tag - kein muster-fehlt, das zum Anlegen eines Musterprodukts verleitet.
+    assert.deepEqual(regeln(erg), ['fehler:muster-teppichfliese'], merkmal);
+    assert.match(erg.befunde[0].text, /ohne Tag ohne-muster.*kein Musterprodukt anlegen/, merkmal);
+  }
+
+  // Keine Teppichfliesen: Sauberlauf als Matte oder von der Rolle, Fliesen anderer Belaege, Rollenware, Musterprodukte.
+  const andere = [
+    produkt({ productType: 'Sauberlauf', title: 'Testlinea Sauberlaufmatte 55 × 90 cm', tags: ['art: sauberlauf', 'zubehoer'], collections: ['zubehoer-sauberlauf'] }),
+    produkt({ productType: 'Sauberlauf', title: 'Testlinea Sauberlauf von der Rolle', tags: ['art: sauberlauf', 'zubehoer'], collections: ['zubehoer-sauberlauf'] }),
+    produkt({ productType: 'Klickvinyl', title: 'Testlinea Beton Grau – Vinyl-Designfliese 6,5mm', tags: ['art: klickvinyl'] }),
+    produkt({ productType: 'Kautschukboden', title: 'Testlinea Hellgrau – Kautschukfliese 3,5mm', tags: ['art: kautschuk'] }),
+    produkt({ productType: 'Teppichboden', title: 'Testlinea Teppichboden 400cm', tags: ['art: teppichboden'], collections: ['teppichboden'] }),
+    // Die Kategorie "Teppichfliesen 50 × 50 cm" fuellt sich ueber den Titel und enthaelt deshalb auch Musterprodukte.
+    musterVon(fliese(), { collections: ['teppichfliesen-50x50'] }),
+  ];
+  for (const p of andere) assert.equal(istTeppichfliese(p), false, p.title);
+  for (const p of Object.values(faelle)) assert.equal(istTeppichfliese(p), true, p.title);
+});
+
+test('Teppichfliese ohne Tag: auch im Bestand ein Fehler, als Entwurf ein Hinweis; Zubehoer fuer Fliesen zaehlt nicht', () => {
+  const alt = fliese({ tags: ['art: teppichboden', 'art: teppichfliese'] });
+  const sauber = fliese();
+  const erg = pruefeImporte({ produkte: [alt, sauber], seit: '2026-11-01' });
+  assert.equal(erg.geprueft, 0);
+  assert.deepEqual(erg.befunde.map((b) => `${b.handle}:${b.stufe}:${b.regel}`), [`${alt.handle}:fehler:muster-teppichfliese`]);
+  // --handles prueft genau die genannten Produkte, keinen Shop-Abgleich
+  assert.deepEqual(pruefeImporte({ produkte: [alt, sauber], handles: [sauber.handle] }).befunde, []);
+
+  const entwurf = fliese({ createdAt: NEU, status: 'DRAFT', onlineStoreUrl: null, tags: ['art: teppichfliese'] });
+  assert.deepEqual(regeln(pruefeImporte({ produkte: [entwurf], seit: '2026-11-01' })), ['hinweis:entwurf', 'hinweis:muster-teppichfliese']);
+
+  // Der Shop bietet fuer Zubehoer ohnehin kein Muster an (Tag zubehoer) - der Name allein macht keine Fliese zum Befund.
+  const kleber = produkt({ createdAt: NEU, productType: 'Kleber & Fixierung', title: 'Testfix Fixierung für Teppichfliesen', tags: ['zubehoer'] });
+  assert.deepEqual(pruefeImporte({ produkte: [kleber], seit: '2026-11-01' }).befunde, []);
+});
+
+test('ohne Musterservice: erreichbares Musterprodukt (ACTIVE, UNLISTED) ist ein Fehler an der Ware, DRAFT der Sollzustand', () => {
+  for (const status of ['UNLISTED', 'ACTIVE']) {
+    const ware = fliese({ createdAt: NEU });
+    const muster = musterVon(ware, { createdAt: NEU, status });
+    // Ware und Musterprodukt sind beide neu: trotzdem genau eine Meldung, und zwar an der Ware.
+    const erg = pruefeImporte({ produkte: [ware, muster], seit: '2026-11-01' });
+    assert.deepEqual(erg.befunde.map((b) => `${b.handle}:${b.stufe}:${b.regel}`), [`${ware.handle}:fehler:muster-trotz-ohne-muster`], status);
+    assert.match(erg.befunde[0].text, new RegExp(`${muster.handle} steht noch auf ${status} - auf DRAFT stellen`));
+    // Wird nur das Musterprodukt genannt, steht der Befund ebenfalls an der Ware.
+    assert.deepEqual(pruefeImporte({ produkte: [ware, muster], handles: [muster.handle] }).befunde.map((b) => `${b.handle}:${b.regel}`), [`${ware.handle}:muster-trotz-ohne-muster`]);
+  }
+
+  // DRAFT und ARCHIVED sind nicht erreichbar: kein Befund, auch nicht "Status DRAFT statt UNLISTED" oder "nicht veroeffentlicht".
+  for (const status of ['DRAFT', 'ARCHIVED']) {
+    const ware = fliese({ createdAt: NEU });
+    const muster = musterVon(ware, { createdAt: NEU, status, onlineStoreUrl: null });
+    assert.deepEqual(pruefeImporte({ produkte: [ware, muster], seit: '2026-11-01' }).befunde, [], status);
+  }
+
+  // Fehlt der Fliese der Tag und steht ihr Musterprodukt noch: beide Befunde in einem Lauf, kein Farbabgleich mehr.
+  const ohneTag = fliese({ createdAt: NEU, tags: ['art: teppichfliese'] });
+  assert.deepEqual(regeln(pruefeImporte({ produkte: [ohneTag, musterVon(ohneTag)], seit: '2026-11-01' })), ['fehler:muster-teppichfliese', 'fehler:muster-trotz-ohne-muster']);
+});
+
+test('ganze Kollektion ohne Muster: gilt im Bestand fuer jede Ware mit ohne-muster, nicht fuer Zubehoer und Archiv', () => {
+  const linie = (over = {}) => produkt({
+    productType: 'Teppichboden', title: 'Testlinea Teppichboden 400cm', tags: ['art: teppichboden', 'ohne-muster'], collections: ['teppichboden'],
+    ...zweiFarben(), ...over,
+  });
+  const boden = linie();
+  const nachMass = linie({ productType: 'Teppich nach Maß', title: 'Testlinea Teppich nach Maß' });
+  const raummass = linie({ productType: 'Teppich nach Maß', title: 'Testlinea Raummaß', status: 'UNLISTED' });
+  const archiv = linie({ status: 'ARCHIVED', onlineStoreUrl: null });
+  // Sauberlauf traegt zubehoer und hat Musterprodukte (Bestand 2026-11-06): von der Regel nicht betroffen.
+  const sauberlauf = produkt({ productType: 'Sauberlauf', title: 'Testlinea Sauberlauf von der Rolle', tags: ['art: sauberlauf', 'zubehoer'], collections: ['zubehoer-sauberlauf'] });
+  // Ware mit Musterservice und vollstaendigem Musterprodukt bleibt ohne Befund.
+  const mitMuster = linie({ title: 'Testmuster Teppichboden 400cm', tags: ['art: teppichboden'] });
+  const farben = zweiFarben();
+  const beideFarben = { options: farben.options, variants: farben.variants.map((v) => ({ ...v, sku: `M-${v.sku}`, price: '0.00' })) };
+  const produkte = [
+    boden, musterVon(boden),
+    nachMass, musterVon(nachMass, { status: 'DRAFT', onlineStoreUrl: null }),
+    raummass, musterVon(raummass),
+    archiv, musterVon(archiv),
+    sauberlauf, musterVon(sauberlauf),
+    mitMuster, musterVon(mitMuster, beideFarben),
+  ];
+  const erg = pruefeImporte({ produkte, seit: '2026-11-01' });
+  assert.equal(erg.geprueft, 0);
+  assert.deepEqual(erg.befunde.map((b) => `${b.handle}:${b.stufe}:${b.regel}`).sort(), [boden, raummass].map((p) => `${p.handle}:fehler:muster-trotz-ohne-muster`).sort());
 });
