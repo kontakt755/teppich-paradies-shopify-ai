@@ -230,3 +230,20 @@ gebraeuchlich), Erfassen.
   sondern unter diesem Satz; „Als bestellt markieren“ sagt **Aus eigenem Lager – nicht bestellen, als
   zugeschnitten markieren**.
 - **Ist beim Kunden…** = statt „Ist eingetroffen“ bei Ware, die der Hersteller direkt liefert (bei uns kommt nichts an).
+
+## Je Auftrag: Teillieferung und vollständige Muster (06.11.2026, #1996)
+
+- **Teillieferung: x von y Warenartikeln da – fehlt noch: Artikel (Lieferant)** = ruhige Zeile (nicht gelb)
+  in der Auftragskarte, solange nur ein Teil der Ware bei uns ist, die zu uns kommt. Ware, die der
+  Hersteller direkt liefert, und Lagerware zählen nicht mit. Erst wenn alles da ist, kommt
+  **Ware ist da – Kunde noch nicht informiert** mit **Nachricht an Kunde**.
+- **Unterwegs · x von y da** = Schritt 3 der Schrittleiste, solange alles bestellt, aber noch nicht alles da
+  ist (vorher sprang die Leiste schon nach dem Bestellen auf „Ware da · Lieferung/Montage“).
+- **Muster da · x von y** = Schritt 3 bei reinen Musteraufträgen (vorher „Muster bestellt oder im Lager“).
+  Gesperrte Muster zählen nicht mit, Muster aus eigenem Bestand sind da. **Muster verschicken** ist erst
+  dran, wenn alle da sind und der Umschlag in der Packstation packbereit ist.
+- **Muster kommt nicht** = Grund in der Kopfzeile „Je Auftrag“ für ein gesperrtes Muster (Kunde informieren,
+  in der Packstation).
+- **Ware | Muster | Alle** = Filter in „Je Auftrag“; Vorgabe **Ware**, solange ein Warenauftrag zu tun ist.
+  Unter „Ware“ stehen reine Musteraufträge, die nur noch verschickt werden, als eine Zeile
+  **n Umschläge packbereit → Packstation**.

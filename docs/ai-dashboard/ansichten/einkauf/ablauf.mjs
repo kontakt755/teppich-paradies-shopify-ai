@@ -13,7 +13,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
-import { auftragsAblauf, einordnung, jetztRang, kundenNachricht, nachfrageNachricht, auftragsAmpel } from '../../lib/auftrags-ablauf.mjs';
+import { auftragsAblauf, einordnung, jetztRang, kundenNachricht, nachfrageNachricht, auftragsAmpel, grundZahlen, GRUND_REIHENFOLGE, teilstandText } from '../../lib/auftrags-ablauf.mjs';
 import { WARTESCHWELLEN, warteTitel } from '../../lib/ampel.mjs';
 import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
 import { referenzKnopf } from './referenz.mjs';
@@ -25,6 +25,8 @@ import {
 } from './auftragsfluss.mjs';
 import { lieferwegVon, selbstStandText } from '../../lib/lieferweg.mjs';
 import { lieferwegPlakette, lieferwegeAuftrag } from '../../bausteine/lieferweg.mjs';
+import { kunden } from '../kunden/gemeinsam.mjs';
+import { ensureMusterPacken } from '../kunden/muster-packen.mjs';
 
 function lieferantName(id) {
   return lieferantAnzeige(id, einkauf.lieferanten?.lieferanten || []);
@@ -102,7 +104,7 @@ function auftragKarte({ a, ab, e }) {
   const k = kundeUndOrt(a.id);
   const wer = [k.name, k.ort].filter(Boolean).join(' · ');
   const inhalt = gesperrtHtml(ab) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab) + selbstHtml(ab)
-    : ab.jetzt === 'lieferung' ? lieferungHtml(a, ab, e)
+    : ['bestellt', 'lieferung'].includes(ab.jetzt) ? lieferungHtml(a, ab, e)
     : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`);
   const bestellt = ab.bestelltAm && ab.jetzt !== 'vorbereiten' ? `<span class="small muted">bestellt ${esc(fmtDate(ab.bestelltAm))}</span>` : '';
   return `<section class="card ab-karte${ampelRand(amp?.stufe, 'karte')}">
@@ -128,11 +130,16 @@ function terminHtml(a) {
 
 const informiertFuer = id => einkauf.bestellungen?.kundeInformiert?.[id] || null;
 
-/** Schritt 4, Ware bei uns: Kunde informieren - fertiger Text, danach abhaken. */
+/**
+ * Schritt 4, Ware bei uns: Kunde informieren - fertiger Text, danach abhaken. Nur wenn ALLES da ist,
+ * was zu uns kommt; bei einer Teillieferung steht stattdessen ruhig, was noch fehlt (kein Gelb:
+ * zu tun ist nichts, ausser zu warten).
+ */
 function informierenHtml(a, e) {
-  if (!e.wareDa.length) return '';
+  const teil = e.teillieferung ? `<p class="small ab-teilstand">${esc(teilstandText(null, e, { lieferantName }))}</p>` : '';
   const inf = informiertFuer(a.id);
-  if (inf) return `<p class="small ab-informiert" style="margin:8px 0 0">✓ Kunde informiert am ${esc(fmtDate(inf.am))}${inf.von ? ` (${esc(inf.von)})` : ''} – Termin für Lieferung, Verlegung oder Abholung abstimmen.${referenzKnopf(a)}</p>`;
+  if (inf && e.wareDa.length) return `${teil}<p class="small ab-informiert" style="margin:8px 0 0">✓ Kunde informiert am ${esc(fmtDate(inf.am))}${inf.von ? ` (${esc(inf.von)})` : ''} – Termin für Lieferung, Verlegung oder Abholung abstimmen.${referenzKnopf(a)}</p>`;
+  if (!e.gruende.includes('informieren')) return teil;
   const lesend = istNurLesend();
   return `<div class="notice warn ab-aktion"><strong>Ware ist da – Kunde noch nicht informiert.</strong>
     ${lesend ? '' : `<div class="ab-knoepfe"><button type="button" class="btn btn-primary btn-sm" data-ab-kunde="${esc(a.id)}">Nachricht an Kunde</button>
@@ -185,6 +192,8 @@ function auftragUndAblauf(id) {
 function kundeDialog(id) {
   const x = auftragUndAblauf(id); if (!x) return;
   const { a, ab } = x;
+  // Nie mit halber Artikelliste: "Ihre Ware ist eingetroffen" nur, wenn wirklich alles da ist.
+  if (!einordnung(ab, informiertFuer(a.id), new Date(), { umschlag: umschlagBereich(a.id) }).gruende.includes('informieren')) { toast('Noch nicht alles da – die Nachricht an den Kunden kommt, wenn alles eingetroffen ist.'); return; }
   const k = a.details?.kunde || {};
   const { betreff, text } = kundenNachricht({ auftragName: a.name, kundeName: kundeUndOrt(a.id).name, artikel: ab.beiUns.filter(y => y.art === 'ware').map(y => titelVon(y.pos)) });
   textDialog({ titel: `Nachricht an Kunde · ${a.name}`, an: echt(k.email), telefon: echt(k.telefon), betreff, text,
@@ -194,7 +203,7 @@ function kundeDialog(id) {
 function nachfrageDialog(id) {
   const x = auftragUndAblauf(id); if (!x) return;
   const { a, ab } = x;
-  const e = einordnung(ab, informiertFuer(a.id));
+  const e = einordnung(ab, informiertFuer(a.id), new Date(), { umschlag: umschlagBereich(a.id) });
   // Je Lieferant eine Nachricht; meist ist es einer.
   const je = new Map();
   for (const v of e.verzug) { if (!je.has(v.lieferant)) je.set(v.lieferant, []); je.get(v.lieferant).push(v); }
@@ -248,7 +257,23 @@ export function einkaufKlickAblauf(ev) {
   return false;
 }
 
-const GRUND_TEXT = { bestellen: 'bestellen', ungeklaert: 'klären', informieren: 'Kunde informieren', selbst: 'von uns abschicken', muster_da: 'Muster verschicken', verzug: 'nachfragen' };
+const GRUND_TEXT = { bestellen: 'bestellen', ungeklaert: 'klären', informieren: 'Kunde informieren', selbst: 'von uns abschicken', muster_da: 'Muster verschicken', gesperrt: 'Muster kommt nicht', verzug: 'nachfragen' };
+
+/**
+ * Bereich des Umschlags in der Packstation je Auftrag ('packen', 'warten', 'klaeren', 'gepackt') - aus
+ * demselben Packstand wie die Kachel "Packbereit". Noch nicht geladen: null, dann gilt die Regel je Auftrag.
+ */
+function umschlagBereich(orderId) {
+  const d = kunden.musterPacken;
+  if (!d?.verfuegbar || d.fehler) return null;
+  const k = (d.kunden || []).find(x => (x.bestellungen || []).some(b => String(b.orderId) === String(orderId)));
+  return k?.bereich || null;
+}
+
+// Art der Auftraege (Inhaber 22.10.: Ware und reine Muster getrennt). "Ware" = mindestens ein Warenartikel.
+const ART_LABEL = { ware: 'Ware', muster: 'Muster', alle: 'Alle' };
+const hatWare = x => x.ab.positionen.some(p => p.art === 'ware');
+const passtArt = (x, art) => art === 'alle' || (art === 'ware' ? hatWare(x) : !hatWare(x));
 // Filter aus den Zahlen auf "Heute" (?ab=…): genau diese Auftraege.
 const FILTER = {
   bestellen: { label: 'Zu bestellen', passt: e => e.gruende.includes('bestellen') || e.gruende.includes('ungeklaert') },
@@ -271,6 +296,7 @@ export function viewEinkaufAblauf() {
   ensureEinkaufBestellungen();
   ensureEinkaufAuftragsstatus();
   ensureEinkaufLieferanten();
+  ensureMusterPacken();
   const d = einkauf.bestellungen;
   if (!d && einkauf.loadingBestellungen) return '<div class="empty">Lade Bestellungen …</div>';
   if (d?.fehler) return stoerungState(d, 'Die Bestelldaten');
@@ -278,7 +304,7 @@ export function viewEinkaufAblauf() {
   // Warenauftraege, dann reine Musterauftraege mit eigenem Schritt, zuletzt Musterversand (jetztRang), darin
   // aeltestes zuerst: wer am laengsten wartet, ist am dringendsten.
   const liste = aktiveAuftraege(d)
-    .map(a => { const ab = auftragsAblauf(a, d, afEintragFuer); return { a, ab, e: einordnung(ab, informiertFuer(a.id)) }; })
+    .map(a => { const ab = auftragsAblauf(a, d, afEintragFuer); return { a, ab, e: einordnung(ab, informiertFuer(a.id), new Date(), { umschlag: umschlagBereich(a.id) }) }; })
     .sort((x, y) => jetztRang(x.e, x.ab) - jetztRang(y.e, y.ab) || String(x.a.datum).localeCompare(String(y.a.datum)));
   if (!liste.length) return emptyState('Keine offenen Kundenbestellungen.', 'Neue Bestellungen aus dem Shop erscheinen hier von selbst.');
   const f = FILTER[state.route.params.get('ab')];
@@ -287,11 +313,34 @@ export function viewEinkaufAblauf() {
     return `<p class="sub ab-einleitung"><strong>${esc(f.label)}: ${treffer.length}</strong> · <a href="#/einkauf">Alle Aufträge zeigen</a></p>
       ${treffer.length ? `<div class="ab-raster">${treffer.map(auftragKarte).join('')}</div>` : '<p class="small muted">Gerade nichts – alles erledigt.</p>'}`;
   }
-  const jetzt = liste.filter(x => x.e.gruppe === 'jetzt');
-  const zaehl = g => liste.filter(x => x.e.gruende.includes(g)).length;
-  const teile = Object.keys(GRUND_TEXT).map(g => [g, zaehl(g)]).filter(([, n]) => n).map(([g, n]) => `${n}× ${GRUND_TEXT[g]}`);
-  return `<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.</p>
+  const jetztAlle = liste.filter(x => x.e.gruppe === 'jetzt');
+  // Vorgabe "Ware", solange ein Warenauftrag zu tun ist - sonst "Alle"; "art=alle" waehlt ausdruecklich alle.
+  const gewaehlt = state.route.params.get('art');
+  const art = ART_LABEL[gewaehlt] ? gewaehlt : jetztAlle.some(hatWare) ? 'ware' : 'alle';
+  // Im Filter "Ware" stehen reine Musterauftraege, die nur noch verschickt werden, als eine Zeile: das
+  // Packen laeuft in der Packstation, dort steht dieselbe Zahl (Packbereit).
+  const nurVersand = x => !hatWare(x) && x.e.gruende.length === 1 && x.e.gruende[0] === 'muster_da';
+  const versandZeile = art === 'ware' ? packbereitZeile(jetztAlle.filter(nurVersand).length) : '';
+  const jetzt = jetztAlle.filter(x => passtArt(x, art));
+  const chips = `<div class="chips ab-art" role="group" aria-label="Aufträge nach Art">${Object.entries(ART_LABEL).map(([k, l]) => `<button type="button" class="chip" data-param="art" data-value="${k}" aria-pressed="${art === k}">${l}<span class="c">${jetztAlle.filter(x => passtArt(x, k)).length}</span></button>`).join('')}</div>`;
+  // Jeder Auftrag zaehlt einmal, nach seinem dringendsten Grund: die Teilzahlen ergeben die Gesamtzahl.
+  const z = grundZahlen(jetzt.map(x => x.e));
+  const teile = GRUND_REIHENFOLGE.filter(g => z[g]).map(g => `${z[g]}× ${GRUND_TEXT[g]}`);
+  const sicht = liste.filter(x => passtArt(x, art));
+  return `${chips}<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.</p>
+    ${versandZeile}
     ${jetzt.length ? `<h2 class="ab-titel">Jetzt zu tun</h2><div class="ab-raster">${jetzt.map(auftragKarte).join('')}</div>` : ''}
-    ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – nachhaken ab ${WARTESCHWELLEN.nachhakenTage} Tagen`, liste.filter(x => x.e.gruppe === 'unterwegs'))}
-    ${gruppe('kunde', 'Beim Kunden', 'Kunde informiert oder Ware raus – Termin bzw. Abschluss', liste.filter(x => x.e.gruppe === 'beiKunde'))}`;
+    ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – nachhaken ab ${WARTESCHWELLEN.nachhakenTage} Tagen`, sicht.filter(x => x.e.gruppe === 'unterwegs'))}
+    ${gruppe('kunde', 'Beim Kunden', 'Kunde informiert oder Ware raus – Termin bzw. Abschluss', sicht.filter(x => x.e.gruppe === 'beiKunde'))}`;
+}
+
+/**
+ * Eine Zeile statt Musterkarten im Filter "Ware". Die Zahl kommt aus der Packstation (Packbereit);
+ * solange sie nicht geladen ist, zaehlt die Zeile die Auftraege.
+ */
+function packbereitZeile(auftraege) {
+  if (!auftraege) return '';
+  const p = kunden.musterPacken?.verfuegbar && !kunden.musterPacken.fehler ? kunden.musterPacken.zahlen : null;
+  const text = p ? plural(p.packen || 0, 'Umschlag packbereit', 'Umschläge packbereit') : `${plural(auftraege, 'Musterauftrag', 'Musteraufträge')} zum Verschicken`;
+  return `<p class="small ab-packbereit"><a href="#/kunden?tab=muster&amp;mpbereich=packen">${esc(text)} → Packstation</a> <span class="muted">· die Karten stehen unter <a href="#/einkauf?art=muster">Muster</a></span></p>`;
 }

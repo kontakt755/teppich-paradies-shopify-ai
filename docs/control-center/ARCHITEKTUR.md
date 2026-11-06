@@ -504,6 +504,21 @@ bis 06.11.2026 waren es 10 Werktage); dieselbe Regel nutzt das To-do „Nachfrag
 `einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
 Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
 
+**Teillieferung und vollständige Muster (seit 2026-11-06, #1996).** `auftragsAblauf()` liefert `eingang`
+(`ware`/`muster` je `{ da, gesamt, alle, fehlt }`): erwartet wird Ware mit Lieferweg „über uns“ oder „über
+Kettler“ (nicht Hersteller → Kunde/Baustelle, nicht aus Lager, keine Eigenleistung) und jedes nicht
+gesperrte Muster; Muster aus eigenem Bestand gelten als da. Schritt 3 bleibt aktiv („Unterwegs · x von y
+da“, reine Muster „Muster da · x von y“), bis alles da ist; erst dann wird Schritt 4 aktiv. `einordnung()`
+setzt „informieren“ nur, wenn alle erwartete Ware da ist, sonst `teillieferung` (Satz aus
+`teilstandText()`, ruhig, ohne Kundennachricht); das schon eingetroffene Teil „über uns“ steht dann unter
+„von uns abschicken“ wie auf Heute. „muster_da“ nur, wenn alle offenen, nicht gesperrten Muster da sind und
+– sobald der Packstand (`/api/kunden/muster-packen`) geladen ist – der Umschlag packbereit ist (Option
+`umschlag`); ein gesperrtes Muster ist eigener Grund „gesperrt“ (rot, nie eingeklappt). Angefangene
+Umschläge stehen unter „Unterwegs“, nie unter „Beim Kunden“. Die Kopfzeile zählt jeden Auftrag einmal nach
+`hauptGrund()` (`GRUND_REIHENFOLGE`). Filter `art=ware|muster|alle`: Vorgabe „Ware“, solange ein
+Warenauftrag zu tun ist; dort stehen reine Musteraufträge, die nur noch verschickt werden, als eine Zeile
+mit der Zahl „Packbereit“ der Packstation.
+
 ### Lieferweg und Lagerware (seit 2026-11-06, #1995)
 
 Wer die Ware zum Kunden bringt, ist eine reine Regel in `lib/lieferweg.mjs` (Browser und Server):

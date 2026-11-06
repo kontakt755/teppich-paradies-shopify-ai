@@ -41,3 +41,9 @@
 .ab-aktion { margin: 0 0 8px; }
 .ab-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .ab-text-feld { width: 100%; box-sizing: border-box; font: inherit; font-size: .9rem; overflow-wrap: anywhere; }
+
+/* Teillieferung (06.11.2026): ruhig, ohne Bernstein - zu tun ist nur warten. */
+.ab-teilstand { margin: 8px 0 0; color: var(--text-2); overflow-wrap: anywhere; }
+/* Filter Ware | Muster | Alle und die eine Zeile zur Packstation statt der Musterkarten. */
+.ab-art { margin: 0 0 6px; }
+.ab-packbereit { margin: 0 0 12px; }

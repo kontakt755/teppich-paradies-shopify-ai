@@ -21,10 +21,16 @@ export const SCHRITTE = [
 // Reine Musterauftraege: keine Waren-Worte (Rundgang 29.10.), die Schritte selbst bleiben dieselben.
 const MUSTER_LABEL = {
   vorbereiten: 'Muster bereitstellen',
-  bestellt: 'Muster bestellt oder im Lager',
+  // Bis 06.11.2026 "Muster bestellt oder im Lager": abgehakt, sobald alles bestellt war - die Leiste
+  // sprang dann auf "Muster verschicken", obwohl das Muster noch beim Lieferanten lag.
+  bestellt: 'Muster da',
   // Offener Schritt, solange das Muster nicht raus ist: als Aufgabe benannt, nicht als erledigt.
   lieferung: 'Muster verschicken',
 };
+
+// Diese Ware kommt nie bei uns an: der Hersteller schickt direkt, Lagerware schneiden wir selbst zu
+// (lib/lieferweg.mjs). Eine Eigenleistung hat gar keinen Weg.
+const OHNE_EINGANG = new Set(['hersteller', 'baustelle', 'lager']);
 
 // Rang je Auftragsfluss-Stand (operations/lib/auftragsstatus.mjs): ohne Stand = noch zu bestellen.
 const RANG = { bestellt: 1, geliefert: 2, raus: 3, erledigt: 4 };
@@ -81,21 +87,39 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
   const r = x => (x.eigen ? Math.max(x.rang, 1) : x.rang);
   const alle = positionen.length;
   const mind = n => alle > 0 && positionen.every(x => r(x) >= n);
+  const nurMuster = alle > 0 && positionen.every(x => x.art === 'muster');
+  // Was muss bei uns ankommen, bevor es weitergeht? Ware, die zu uns kommt (nicht direkt vom
+  // Hersteller, nicht aus Lager, keine Eigenleistung), und jedes Muster, das der Lieferant noch
+  // liefern kann. Muster aus eigenem Bestand sind schon da - dieselbe Regel wie "Packbereit".
+  const eingang = {
+    ware: zaehleEingang(positionen.filter(x => x.art === 'ware' && x.weg && !OHNE_EINGANG.has(x.weg)), x => x.rang >= 2),
+    muster: zaehleEingang(positionen.filter(x => x.art === 'muster' && !x.gesperrt), x => x.rang >= 2 || x.eigen),
+  };
+  const fuerLeiste = nurMuster ? eingang.muster : eingang.ware;
   const fertig = {
     eingegangen: true,
     vorbereiten: mind(1),
-    bestellt: mind(1),
+    // Erst wenn alles da ist, das zu uns kommt (06.11.2026) - vorher hiess es "Ware da", sobald
+    // alles bestellt war, und eine Teillieferung loeste "Kunde informieren" aus.
+    bestellt: mind(1) && fuerLeiste.alle,
     lieferung: mind(3),
     erledigt: mind(4),
   };
-  // "Vorbereiten" und "bestellt" fallen zusammen, sobald abgehakt ist; vorher steht der Auftrag
-  // auf "vorbereiten". Ware, die bei uns liegt, wartet auf Auslieferung oder Montage.
+  // Bis alles bestellt ist, steht der Auftrag auf "vorbereiten", danach auf "bestellt" (unterwegs),
+  // bis alles da ist. Ware, die bei uns liegt, wartet auf Auslieferung oder Montage.
   const jetztKey = SCHRITTE.map(s => s[0]).find(k => !fertig[k]) || 'erledigt';
-  const nurMuster = alle > 0 && positionen.every(x => x.art === 'muster');
-  const schritte = SCHRITTE.map(([key, label]) => ({ key, label: (nurMuster && MUSTER_LABEL[key]) || label, stand: fertig[key] && key !== jetztKey ? 'fertig' : key === jetztKey ? 'jetzt' : 'offen' }));
+  const label = (key, basis, stand) => {
+    if (key !== 'bestellt' || stand === 'offen') return (nurMuster && MUSTER_LABEL[key]) || basis;
+    if (nurMuster) return `Muster da · ${fuerLeiste.da} von ${fuerLeiste.gesamt}`;
+    return stand === 'jetzt' ? `Unterwegs · ${fuerLeiste.da} von ${fuerLeiste.gesamt} da` : basis;
+  };
+  const schritte = SCHRITTE.map(([key, basis]) => {
+    const stand = fertig[key] && key !== jetztKey ? 'fertig' : key === jetztKey ? 'jetzt' : 'offen';
+    return { key, label: label(key, basis, stand), stand };
+  });
   const daten = positionen.map(x => x.eintrag?.bestelltAm).filter(Boolean).sort();
   return {
-    schritte, jetzt: jetztKey, lieferanten, ungeklaert, positionen,
+    schritte, jetzt: jetztKey, lieferanten, ungeklaert, positionen, eingang,
     bestelltAm: daten.length ? daten[daten.length - 1] : null,
     // Lagerware ist nie "unterwegs", auch nicht im Altfall "bestellt" (#1119): sie kommt nicht vom
     // Lieferanten. Sonst stuende sie in "Je Auftrag" zweimal da - mit "Ist eingetroffen" und mit "Zugeschnitten".
@@ -103,6 +127,15 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
     beiUns: positionen.filter(x => x.rang === 2),
     // Ware, die wir selbst zuschneiden bzw. packen und verschicken (Heute › Von uns abschicken).
     selbst: positionen.filter(x => x.selbst),
+  };
+}
+
+/** { da, gesamt, alle, fehlt } - fehlt: was noch nicht da ist, als { titel, lieferant }. */
+function zaehleEingang(liste, istDa) {
+  const fehlt = liste.filter(x => !istDa(x));
+  return {
+    da: liste.length - fehlt.length, gesamt: liste.length, alle: fehlt.length === 0,
+    fehlt: fehlt.map(x => ({ titel: [x.pos.titel, x.pos.farbe].filter(v => v && v !== UNGEKLAERT).join(' · '), lieferant: x.lieferant })),
   };
 }
 
@@ -136,27 +169,77 @@ export function kundeInformiertAus(ereignisse = []) {
 
 /**
  * Wohin gehoert ein Auftrag in der Liste "Je Auftrag"?
- *   jetzt      - wir sind dran: bestellen, Ungeklaertes klaeren, Ware da und Kunde nicht
- *                informiert, Muster da zum Verschicken, Lieferant im Verzug
- *   unterwegs  - beim Lieferanten bestellt, wartet auf Ware (startet eingeklappt)
+ *   jetzt      - wir sind dran: bestellen, Ungeklaertes klaeren, ALLE Ware da und Kunde nicht
+ *                informiert, ALLE Muster da zum Verschicken, Muster kommt nicht, Lieferant im Verzug
+ *   unterwegs  - beim Lieferanten bestellt, wartet auf Ware oder Muster (startet eingeklappt)
  *   beiKunde   - Kunde informiert bzw. schon raus: Termin/Abschluss (eingeklappt)
  * @param ab  Ergebnis von auftragsAblauf()
  * @param informiert  { am, von } oder null
+ * @param opt.umschlag  Bereich des Umschlags in der Packstation ('packen', 'warten', 'klaeren', 'gepackt') -
+ *                      ohne Angabe gilt nur die Regel je Auftrag
+ * @returns { gruppe, gruende, verzug, wareDa, teillieferung }  teillieferung: { da, gesamt, fehlt } oder null
  */
-export function einordnung(ab, informiert = null, jetzt = new Date()) {
+export function einordnung(ab, informiert = null, jetzt = new Date(), { umschlag = null } = {}) {
   const gruende = [];
   const verzug = ab.unterwegs.filter(x => !x.eigen && !x.gesperrt).map(x => ({ ...x, ampel: verzugAmpel(x.eintrag, jetzt) })).filter(x => x.ampel).map(x => ({ ...x, tage: x.ampel.tage }));
   if (ab.jetzt === 'vorbereiten') gruende.push(ab.lieferanten.length ? 'bestellen' : null, ab.ungeklaert.length ? 'ungeklaert' : null);
   // Lagerware geht als Paket von uns raus - dafuer gibt es keinen Termin abzustimmen.
   const wareDa = ab.beiUns.filter(x => x.art === 'ware' && x.weg !== 'lager');
-  if (wareDa.length && !informiert) gruende.push('informieren');
-  // Eigener Grund nur fuer Lagerware: eingetroffene Ware "ueber uns" steht schon unter "Kunde informieren".
-  if ((ab.selbst || []).some(x => x.weg === 'lager')) gruende.push('selbst');
-  if (ab.beiUns.some(x => x.art === 'muster')) gruende.push('muster_da');
+  // "Ware ist da" erst, wenn alles da ist, was zu uns kommt (06.11.2026): vorher schrieb eine
+  // Teillieferung dem Kunden "Ihre Ware ist eingetroffen" - mit nur der Unterlage in der Liste.
+  const w = ab.eingang?.ware || { da: wareDa.length, gesamt: wareDa.length, alle: true, fehlt: [] };
+  const teillieferung = w.da > 0 && !w.alle ? { da: w.da, gesamt: w.gesamt, fehlt: w.fehlt } : null;
+  if (wareDa.length && w.alle && !informiert) gruende.push('informieren');
+  // Eigener Grund fuer Ware, die wir selbst auf den Weg bringen: Lagerware immer; eingetroffene Ware
+  // "ueber uns" nur bei einer Teillieferung - ist alles da, steht sie unter "Kunde informieren".
+  if ((ab.selbst || []).some(x => x.weg === 'lager' || (teillieferung && !informiert))) gruende.push('selbst');
+  // Muster verschicken erst, wenn alle Muster da sind, die noch kommen koennen (Regel "Packbereit");
+  // kennt die Ansicht den Umschlag, muss auch er packbereit sein (mehrere Bestellungen, Adresse).
+  const offeneMuster = ab.positionen.filter(x => x.art === 'muster' && !x.gesperrt && x.rang < 3);
+  if (offeneMuster.length && offeneMuster.every(x => x.rang >= 2 || x.eigen) && (!umschlag || umschlag === 'packen')) gruende.push('muster_da');
+  // Kommt nicht (Mustersperre): Kunde informieren - in der Packstation. Rot, also nie eingeklappt.
+  if (ab.positionen.some(x => x.gesperrt)) gruende.push('gesperrt');
   if (verzug.length) gruende.push('verzug');
   const g = gruende.filter(Boolean);
-  const gruppe = g.length ? 'jetzt' : ab.jetzt === 'lieferung' && ab.unterwegs.length ? 'unterwegs' : 'beiKunde';
-  return { gruppe, gruende: g, verzug, wareDa };
+  // Angefangene Umschlaege warten auf ihre Muster - sie sind unterwegs, nie "beim Kunden".
+  const wartet = ab.unterwegs.length || offeneMuster.length;
+  const gruppe = g.length ? 'jetzt' : ['bestellt', 'lieferung'].includes(ab.jetzt) && wartet ? 'unterwegs' : 'beiKunde';
+  return { gruppe, gruende: g, verzug, wareDa, teillieferung };
+}
+
+/**
+ * Dringendster Grund zuerst - danach zaehlt die Kopfzeile "Je Auftrag" jeden Auftrag genau einmal
+ * (vorher ergaben 10 Auftraege 11 Gruende). Muster verschicken zuletzt, wie in jetztRang().
+ */
+export const GRUND_REIHENFOLGE = Object.freeze(['ungeklaert', 'gesperrt', 'verzug', 'bestellen', 'informieren', 'selbst', 'muster_da']);
+
+/** Der dringendste Grund eines Auftrags (Ergebnis von einordnung()) oder null. */
+export function hauptGrund(e) {
+  return GRUND_REIHENFOLGE.find(g => (e?.gruende || []).includes(g)) || null;
+}
+
+/** Je Grund die Zahl der Auftraege, jeder Auftrag einmal; die Summe ist die Zahl der Auftraege mit Grund. */
+export function grundZahlen(liste = []) {
+  const z = Object.fromEntries(GRUND_REIHENFOLGE.map(g => [g, 0]));
+  for (const e of liste) { const g = hauptGrund(e); if (g) z[g] += 1; }
+  return z;
+}
+
+/**
+ * "Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: Teppich · Farbe (Lieferant)" - leer ohne
+ * Teillieferung. Ein Satz fuer alle Ansichten, die den Teilstand zeigen.
+ * @param ab  Ergebnis von auftragsAblauf() (nur fuer kuenftige Ansichten ohne einordnung)
+ * @param e   Ergebnis von einordnung()
+ * @param opt.lieferantName  Kennung -> Anzeigename (Stammdaten); ohne Namen bleibt der Lieferant weg
+ */
+export function teilstandText(ab, e, { lieferantName = () => '' } = {}) {
+  const t = e?.teillieferung;
+  if (!t) return '';
+  const fehlt = t.fehlt.map(f => {
+    const name = f.lieferant && f.lieferant !== UNGEKLAERT ? lieferantName(f.lieferant) : '';
+    return `${f.titel || 'Artikel'}${name ? ` (${name})` : ''}`;
+  });
+  return `Teillieferung: ${t.da} von ${t.gesamt} Warenartikeln da – fehlt noch: ${fehlt.join(', ')}`;
 }
 
 /**

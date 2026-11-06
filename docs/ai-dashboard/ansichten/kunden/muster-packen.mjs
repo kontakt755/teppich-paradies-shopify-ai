@@ -145,7 +145,8 @@ export function ensureMusterPacken() {
   kunden.loadingMusterPacken = true;
   packAbruf = fetchEinkauf(ENDPOINT).then(d => {
     kunden.musterPacken = d; kunden.loadingMusterPacken = false; packAbruf = null;
-    if (['kunden', 'heute'].includes(state.route.view)) render();
+    // Einkauf "Je Auftrag" rechnet "Muster verschicken" mit demselben Packstand (Packbereit).
+    if (['kunden', 'heute', 'einkauf'].includes(state.route.view)) render();
     void alteVermerkeUebernehmen(d);
     return d;
   });
