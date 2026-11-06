@@ -13,7 +13,9 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
-import { auftragsAblauf, einordnung, jetztRang, kundenNachricht, nachfrageNachricht, VERZUG_WERKTAGE } from '../../lib/auftrags-ablauf.mjs';
+import { auftragsAblauf, einordnung, jetztRang, kundenNachricht, nachfrageNachricht, auftragsAmpel } from '../../lib/auftrags-ablauf.mjs';
+import { WARTESCHWELLEN, warteTitel } from '../../lib/ampel.mjs';
+import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
 import { referenzKnopf } from './referenz.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import {
@@ -43,7 +45,8 @@ function vorbereitenHtml(a, ab) {
       ${lesend ? '' : `<button type="button" class="btn btn-primary btn-sm" data-lf-mail="${esc(g.lieferant)}" data-lf-art="${g.art}" data-lf-auftrag="${esc(a.id)}">Bestellnachricht zeigen</button>`}
     </div>`;
   }).join('');
-  const offen = ab.ungeklaert.length ? `<div class="notice warn ab-ungeklaert"><strong>Ungeklärt – erst klären, nicht raten (${ab.ungeklaert.length}):</strong>
+  // Rot wie "Zuerst klären" je Lieferant: ohne diese Angaben kann niemand bestellen.
+  const offen = ab.ungeklaert.length ? `<div class="notice crit ab-ungeklaert"><strong>Ungeklärt – erst klären, nicht raten (${ab.ungeklaert.length}):</strong>
       <ul>${ab.ungeklaert.map(x => `<li>${esc(titelVon(x.pos))} – ${esc(x.fehlt.join(', '))}</li>`).join('')}</ul>
       <span class="small">Fehlende Angaben stehen unter <a href="#/einkauf?tab=produktdaten">Produktdaten</a>.</span></div>` : '';
   const leer = !knoepfe && !offen ? '<p class="small muted">Für diesen Auftrag ist nichts beim Lieferanten zu bestellen.</p>' : '';
@@ -66,15 +69,29 @@ function lieferungHtml(a, ab, e) {
   return `${verzugHtml(a, ab, e)}${musterHtml}${wareHtml}${informierenHtml(a, e)}${terminHtml(a)}<p class="small" style="margin:8px 0 0"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Alle Artikel dieses Auftrags bearbeiten →</a></p>`;
 }
 
+/** Muster, die der Lieferant nicht liefern kann: wer, was - weiter geht es in der Packstation. */
+function gesperrtHtml(ab) {
+  const g = ab.positionen.filter(x => x.gesperrt);
+  if (!g.length) return '';
+  return `<div class="notice crit ab-aktion"><strong>Muster nicht lieferbar:</strong> ${esc(g.map(x => titelVon(x.pos)).join(' · '))} – Kunde informieren, weiter in der <a href="#/kunden?tab=muster">Packstation</a>.</div>`;
+}
+
+const AMPEL_TITEL = {
+  blockiert: 'Bestellangaben fehlen – so kann nicht bestellt werden',
+  gesperrt: 'Ein Muster kann der Lieferant nicht liefern – Kunde informieren (Packstation)',
+};
+
 function auftragKarte({ a, ab, e }) {
+  const amp = auftragsAmpel(ab, e);
   const k = kundeUndOrt(a.id);
   const wer = [k.name, k.ort].filter(Boolean).join(' · ');
-  const inhalt = ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab)
+  const inhalt = gesperrtHtml(ab) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab)
     : ab.jetzt === 'lieferung' ? lieferungHtml(a, ab, e)
-    : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`;
+    : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`);
   const bestellt = ab.bestelltAm && ab.jetzt !== 'vorbereiten' ? `<span class="small muted">bestellt ${esc(fmtDate(ab.bestelltAm))}</span>` : '';
-  return `<section class="card ab-karte${ab.ungeklaert.length || e.verzug.length ? ' ab-mit-problem' : ''}">
+  return `<section class="card ab-karte${ampelRand(amp?.stufe, 'karte')}">
     <div class="ab-kopf"><h3><a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a>${wer ? ` <span class="ab-kunde">${esc(wer)}</span>` : ''}</h3>
+      ${amp ? ampelPlakette(amp.stufe, amp.wort, { titel: AMPEL_TITEL[amp.grund] || warteTitel(amp) }) : ''}
       <span class="small muted">eingegangen ${esc(fmtDate(a.datum))}</span>${bestellt}</div>
     ${schrittLeiste(ab)}
     <div class="ab-inhalt">${inhalt}</div>
@@ -106,11 +123,22 @@ function informierenHtml(a, e) {
     <button type="button" class="btn btn-sm" data-ab-informiert="${esc(a.id)}">Kunde informiert</button></div>`}</div>`;
 }
 
-/** Bestellt, aber nach mehr als 10 Werktagen (bzw. nach dem bestaetigten Termin) nicht da. */
+/**
+ * Bestellt und noch nicht da (lib/ampel.mjs): gelb ab 7 Tagen nachhaken, rot ab 14 Tagen oder nach
+ * dem bestaetigten Liefertermin. Die Farbe folgt der dringendsten Position.
+ */
 function verzugHtml(a, ab, e) {
   if (!e.verzug.length) return '';
-  const max = Math.max(...e.verzug.map(x => x.werktage));
-  return `<div class="notice warn ab-aktion"><strong>Beim Lieferanten nachfragen:</strong> ${plural(e.verzug.length, 'Artikel', 'Artikel')} seit ${max} Werktagen bestellt und noch nicht da.
+  const rot = e.verzug.filter(x => x.ampel.stufe === 'rot');
+  const termin = e.verzug.filter(x => x.ampel.grund === 'termin').map(x => x.ampel.termin).sort()[0];
+  const ohneTermin = e.verzug.filter(x => x.ampel.grund !== 'termin');
+  // Tage seit "bestellt" nur, wo kein Termin gilt - beim Termin zaehlen die Tage ab dem Termin.
+  const max = ohneTermin.length ? Math.max(...ohneTermin.map(x => x.tage ?? 0)) : null;
+  const was = [
+    termin ? `bestätigter Liefertermin ${fmtDate(termin)} überschritten` : null,
+    max !== null ? `seit ${plural(max, 'Tag', 'Tagen')} bestellt und noch nicht da` : null,
+  ].filter(Boolean).join(', ');
+  return `<div class="notice ${rot.length ? 'crit' : 'warn'} ab-aktion"><strong>${rot.length ? 'Überfällig – beim Lieferanten nachfragen:' : 'Beim Lieferanten nachhaken:'}</strong> ${plural(e.verzug.length, 'Artikel', 'Artikel')} ${esc(was)}.
     ${istNurLesend() ? '' : `<div class="ab-knoepfe"><button type="button" class="btn btn-sm" data-ab-nachfrage="${esc(a.id)}">Nachfrage-Nachricht</button></div>`}</div>`;
 }
 
@@ -248,6 +276,6 @@ export function viewEinkaufAblauf() {
   const teile = Object.keys(GRUND_TEXT).map(g => [g, zaehl(g)]).filter(([, n]) => n).map(([g, n]) => `${n}× ${GRUND_TEXT[g]}`);
   return `<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.</p>
     ${jetzt.length ? `<h2 class="ab-titel">Jetzt zu tun</h2><div class="ab-raster">${jetzt.map(auftragKarte).join('')}</div>` : ''}
-    ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – Nachfrage erst nach ${VERZUG_WERKTAGE} Werktagen`, liste.filter(x => x.e.gruppe === 'unterwegs'))}
+    ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – nachhaken ab ${WARTESCHWELLEN.nachhakenTage} Tagen`, liste.filter(x => x.e.gruppe === 'unterwegs'))}
     ${gruppe('kunde', 'Beim Kunden', 'Kunde informiert oder Ware raus – Termin bzw. Abschluss', liste.filter(x => x.e.gruppe === 'beiKunde'))}`;
 }

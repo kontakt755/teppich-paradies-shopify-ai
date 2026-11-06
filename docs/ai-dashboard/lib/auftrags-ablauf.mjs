@@ -6,7 +6,8 @@
  * Es wird nichts geraten: fehlt der Lieferant, die Artikelnummer oder die Bestellmenge, steht
  * die Position unter "ungeklaert" und geht nicht in die Bestellnachricht.
  */
-import { UNGEKLAERT, musterEigen, werktageZwischen } from './einkauf-lieferanten.mjs';
+import { UNGEKLAERT, musterEigen } from './einkauf-lieferanten.mjs';
+import { warteAmpel, warteWort, dringendereAmpel } from './ampel.mjs';
 
 export const SCHRITTE = [
   ['eingegangen', 'Bestellung eingegangen'],
@@ -39,18 +40,23 @@ export function fehlendeAngaben(p, lieferant) {
 
 /**
  * @param auftrag  { id } aus bestellungen.auftraege
- * @param daten    { gruppen, musterGruppen } der Bestelluebersicht
+ * @param daten    { gruppen, musterGruppen, gesperrteMuster? } der Bestelluebersicht (/api/einkauf/bestellungen);
+ *                 gesperrteMuster = lineItemIds der Muster, die der Lieferant nicht liefern kann
  * @param eintragFuer  Position -> Auftragsfluss-Eintrag ({ status, bestelltAm, ... }) oder null
  * @returns { schritte: [{ key, label, stand: 'fertig'|'jetzt'|'offen' }], jetzt, lieferanten, ungeklaert, positionen, bestelltAm }
  */
-export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [] } = {}, eintragFuer = () => null) {
+export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesperrteMuster = [] } = {}, eintragFuer = () => null) {
   const positionen = [];
+  const gesperrt = new Set(gesperrteMuster || []);
   const sammle = (liste, art) => {
     for (const g of liste || []) for (const p of g.positionen || []) {
       if (String(p.orderId) !== String(auftrag.id) || (p.menge ?? 1) <= 0) continue;
       const eintrag = eintragFuer(p) || null;
       const eigen = art === 'muster' && musterEigen(p);
-      positionen.push({ pos: p, art, lieferant: g.lieferant || UNGEKLAERT, eintrag, rang: rang(eintrag?.status), eigen, fehlt: eigen ? [] : fehlendeAngaben(p, g.lieferant) });
+      const r = rang(eintrag?.status);
+      positionen.push({ pos: p, art, lieferant: g.lieferant || UNGEKLAERT, eintrag, rang: r, eigen, fehlt: eigen ? [] : fehlendeAngaben(p, g.lieferant),
+        // Kommt nicht mehr (Mustersperre): solange noch nicht bei uns, ist Nachfragen beim Lieferanten sinnlos.
+        gesperrt: art === 'muster' && r <= 1 && gesperrt.has(p.lineItemId) });
     }
   };
   sammle(gruppen, 'ware');
@@ -96,22 +102,18 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [] } = {
 // Einordnung fuer die Arbeitsliste (seit 2026-10-20): nur was Handlung braucht, steht offen.
 // ---------------------------------------------------------------------------
 
-/** Ab so vielen Werktagen ohne Wareneingang nachfragen (Inhaber 2026-10-20). */
-export const VERZUG_WERKTAGE = 10;
-
-const tagVon = d => (d instanceof Date ? d.toISOString() : String(d || '')).slice(0, 10);
-
 /**
- * Ist eine beim Lieferanten bestellte Position im Verzug? Mit bestaetigtem Liefertermin zaehlt
- * nur der Termin (vorher ist der Lieferant im Plan), sonst mehr als 10 Werktage seit "bestellt".
- * Rueckgabe: Werktage seit der Bestellung, wenn im Verzug - sonst null.
+ * Ist eine beim Lieferanten bestellte Position im Verzug? Dieselbe Schwelle wie "Je Lieferant"
+ * (lib/ampel.mjs, 06.11.2026): gelb ab 7 Kalendertagen seit "bestellt" (nachhaken), rot ab 14
+ * (ueberfaellig). Bis dahin galten hier 10 Werktage - in einer normalen Woche sind das die 14
+ * Kalendertage, ab denen es jetzt rot ist. Mit bestaetigtem Liefertermin zaehlt nur der Termin:
+ * davor ist der Lieferant im Plan, danach ist es sofort rot.
+ * Rueckgabe: die Ampel ({ stufe, grund, tage, termin }) - oder null, wenn nichts zu tun ist.
  */
-export function verzugWerktage(eintrag, jetzt = new Date()) {
+export function verzugAmpel(eintrag, jetzt = new Date()) {
   if (eintrag?.status !== 'bestellt' || !eintrag.bestelltAm) return null;
-  const tage = werktageZwischen(eintrag.bestelltAm, jetzt);
-  const termin = eintrag.beschaffung?.liefertermin;
-  if (typeof termin === 'string' && termin) return termin < tagVon(jetzt) ? (tage ?? 0) : null;
-  return tage !== null && tage > VERZUG_WERKTAGE ? tage : null;
+  const a = warteAmpel(eintrag, { jetzt });
+  return a.stufe ? a : null;
 }
 
 /** Nur das erste "kunde_informiert" zaehlt; ein "zurueck" darauf hebt es auf (wie in der Zeitleiste). */
@@ -135,7 +137,7 @@ export function kundeInformiertAus(ereignisse = []) {
  */
 export function einordnung(ab, informiert = null, jetzt = new Date()) {
   const gruende = [];
-  const verzug = ab.unterwegs.filter(x => !x.eigen).map(x => ({ ...x, werktage: verzugWerktage(x.eintrag, jetzt) })).filter(x => x.werktage !== null);
+  const verzug = ab.unterwegs.filter(x => !x.eigen && !x.gesperrt).map(x => ({ ...x, ampel: verzugAmpel(x.eintrag, jetzt) })).filter(x => x.ampel).map(x => ({ ...x, tage: x.ampel.tage }));
   if (ab.jetzt === 'vorbereiten') gruende.push(ab.lieferanten.length ? 'bestellen' : null, ab.ungeklaert.length ? 'ungeklaert' : null);
   const wareDa = ab.beiUns.filter(x => x.art === 'ware');
   if (wareDa.length && !informiert) gruende.push('informieren');
@@ -144,6 +146,25 @@ export function einordnung(ab, informiert = null, jetzt = new Date()) {
   const g = gruende.filter(Boolean);
   const gruppe = g.length ? 'jetzt' : ab.jetzt === 'lieferung' && ab.unterwegs.length ? 'unterwegs' : 'beiKunde';
   return { gruppe, gruende: g, verzug, wareDa };
+}
+
+/**
+ * Ampel einer Auftragskarte "Je Auftrag" (lib/ampel.mjs): die dringendste ihrer Positionen.
+ *   rot   Bestellangaben fehlen (ungeklaert), ein Muster ist gesperrt (Lieferant kann nicht
+ *         liefern), Verzug ab 14 Tagen oder bestaetigter Liefertermin vorbei
+ *   gelb  Verzug ab 7 Tagen: beim Lieferanten nachhaken
+ * Was sonst "jetzt" zu tun ist (bestellen, Kunde informieren, Muster verschicken), ist normale
+ * Arbeit und bleibt ohne Farbe.
+ * @param ab  Ergebnis von auftragsAblauf()
+ * @param e   Ergebnis von einordnung()
+ * Gesperrte Muster markiert auftragsAblauf() aus `gesperrteMuster` der Bestellungen.
+ * @returns {{stufe:'rot'|'gelb', grund:string, wort:string, tage?:number}|null}
+ */
+export function auftragsAmpel(ab, e) {
+  if (ab?.ungeklaert?.length) return { stufe: 'rot', grund: 'blockiert', wort: 'Blockiert' };
+  if ((ab?.positionen || []).some(x => x.gesperrt)) return { stufe: 'rot', grund: 'gesperrt', wort: 'Gesperrt' };
+  const v = (e?.verzug || []).reduce((m, x) => dringendereAmpel(m, x.ampel), null);
+  return v?.stufe ? { ...v, wort: warteWort(v) } : null;
 }
 
 /**

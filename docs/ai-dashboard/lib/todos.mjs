@@ -15,7 +15,8 @@ import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
 import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
 import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
-import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
+import { verzugAmpel, kundenErinnerung } from './auftrags-ablauf.mjs';
+import { WARTESCHWELLEN } from './ampel.mjs';
 import { sichereUrl } from './akquise.mjs';
 import { entscheidungsGruppen } from './model.mjs';
 import { lieferantName as lieferantAnzeige, werktageZwischen } from './einkauf-lieferanten.mjs';
@@ -25,9 +26,9 @@ const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
 const BEZAHLT = ['PAID', 'PARTIALLY_REFUNDED'];
 
-/** Wartezeit beim Lieferanten: ab 7 Tagen nachhaken, ab 14 Tagen ist es ein Problem
- * (operations/lib/lieferanten.mjs fuehrt dieselben Werte; /api/einkauf/lieferanten liefert sie mit). */
-export const SCHWELLEN = Object.freeze({ nachhakenTage: 7, problemTage: 14 });
+/** Wartezeit beim Lieferanten: ab 7 Tagen nachhaken, ab 14 Tagen ist es ein Problem - die eine
+ * Schwelle aus lib/ampel.mjs (/api/einkauf/lieferanten liefert sie mit). */
+export const SCHWELLEN = WARTESCHWELLEN;
 
 /** Ab wann ein To-do gelb bzw. rot wird, je Art. Ein Rueckrufwunsch altert schneller als eine Lieferung. */
 export const FRISTEN = Object.freeze({
@@ -210,8 +211,8 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
       return { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} kommt bis ${termin.split('-').reverse().join('.')}`, termin, alterTage: null, positionen: bestellt };
     }
     const tage = maxTage(ohneTermin, 'bestelltAm');
-    // Verzug: mehr als 10 Werktage ohne Wareneingang (Inhaber 2026-10-20, wie im Einkauf "Je Auftrag").
-    return ohneTermin.some(x => verzugWerktage(x.eintrag, jetzt) !== null)
+    // Verzug: ab 7 Tagen ohne Wareneingang nachhaken (lib/ampel.mjs, wie im Einkauf "Je Auftrag").
+    return ohneTermin.some(x => verzugAmpel(x.eintrag, jetzt) !== null)
       ? { spalte: 'wir', art: 'nachhaken', schritt: 'Nachhaken', alterTage: tage, positionen: bestellt }
       : { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} bestellt`, alterTage: tage, positionen: bestellt };
   }
@@ -347,8 +348,8 @@ function ausBestellungen(quellen, k) {
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
         const termin = x.eintrag?.beschaffung?.liefertermin;
-        const werktage = termin ? null : verzugWerktage(x.eintrag, k.jetzt);
-        if (werktage !== null) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage, werktage });
+        const verzug = termin ? null : verzugAmpel(x.eintrag, k.jetzt);
+        if (verzug) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage, ampel: verzug });
         // Nur wenn die Belege geladen sind: ohne sie ist "kein Beleg" nicht belegt.
         else if (!x.p.istMuster && !termin && quellen.belegZeilen && tage >= FRISTEN.bestaetigung[0] && !belegZu(z.orderId, x.p.lieferant)) sammle(ohneBestaetigung, z.orderId, { ...pos, tage });
       } else if (status === 'geliefert') {
@@ -483,7 +484,7 @@ function ausBestellungen(quellen, k) {
     const tage = Math.max(...positionen.map(x => x.tage));
     todos.push({
       id: `nachhaken:${lieferant}`, art: 'nachhaken', bereich: 'laden',
-      ton: Math.max(...positionen.map(x => x.werktage)) > VERZUG_WERKTAGE + 5 ? 'crit' : 'warn', alterTage: tage,
+      ton: positionen.some(x => x.ampel.stufe === 'rot') ? 'crit' : 'warn', alterTage: tage,
       titel: `Beim Lieferanten nachfragen: ${artWort(positionen)} ${seitText(tage)} bestellt, noch nicht da`,
       kontext: [k.lieferantName(lieferant), kundenKurz(positionen), wasKurz(positionen)].join(' · '),
       knopf: { text: 'Nachfragen', href: '#/einkauf?ab=verzug' },

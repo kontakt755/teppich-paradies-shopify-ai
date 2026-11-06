@@ -89,7 +89,8 @@ export function viewHilfe() {
     ${hilfeKarte('Der Kunde nennt einen Produktnamen', `
       <p>Denselben Weg nehmen: <b>Suche</b> öffnen und den Produktnamen tippen – oder links auf <b>Lexikon</b>.</p>
       <p>Die Produktseite hat zwei Teile: <b>Für das Kundengespräch</b> (Preis ab, Farben, Material, Brandverhalten, Fußbodenheizung) und <b>Zum Bestellen</b> (unsere SKU, Lieferant, Artikelnummer, Bestelleinheit, Link zum Lieferanten).</p>
-      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt das Lexikon das Originalprodukt beim Lieferanten.</p>`)}
+      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt das Lexikon das Originalprodukt beim Lieferanten.</p>
+      <p><b>Bestellbarkeit</b> oben im Lexikon: <b>× Nur rot</b> zeigt Produkte, die wir so nicht bestellen können (Lieferant, Artikelnummer oder Bestelleinheit fehlt, nichts lieferbar). <b>! Nur gelb</b> zeigt Produkte mit einzelnen nicht lieferbaren Farben oder ohne Raumbild. Noch einmal tippen hebt den Filter auf.</p>`)}
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
@@ -102,7 +103,7 @@ export function viewHilfe() {
         <li>Muster selbst da (Katalog, Musterlager)? <b>Haben wir da…</b> am Muster oder in der Kundenakte: dann wird es nicht bestellt, sondern erscheint als „Muster vorbeibringen“ bzw. „Muster verschicken“ – mit Ort des Kunden.</li>
       </ol>
       <p style="margin-top:8px"><b>Lieferantenpost</b> (Reiter unter <b>Bestellen</b>): was die Lieferanten geschickt haben – Auftragsbestätigung, Lieferschein, Storno – und ob es zu unserem Stand passt. Den Schritt setzt trotzdem immer ein Mensch.</p>
-      <p class="small muted" style="margin-top:8px">Gelb heißt: seit 7 Tagen bestellt, bitte nachhaken. Rot: seit 14 Tagen. Ein Klick auf den Namen zeigt Kontakt, Lieferzeit und Verlauf des Lieferanten.</p>`)}
+      <p class="small muted" style="margin-top:8px"><b>! Gelb</b> heißt: seit 7 Tagen bestellt, bitte nachhaken. <b>× Rot</b>: seit 14 Tagen, Liefertermin vorbei, Bestellung blockiert oder Muster nicht lieferbar. Ein Klick auf den Namen zeigt Kontakt, Lieferzeit und Verlauf des Lieferanten.</p>`)}
 
     ${hilfeKarte('Was die Kennzeichen bedeuten', `
       <ul style="margin:0;padding-left:20px;line-height:1.9">

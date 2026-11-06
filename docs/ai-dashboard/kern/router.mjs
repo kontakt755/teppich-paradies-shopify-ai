@@ -62,7 +62,7 @@ export function setParam(key, value) {
   if (value === '' || value === null) p.delete(key); else p.set(key, value);
   // Ein neuer Filter beginnt wieder auf Seite 1 - sonst landet man auf einer leeren Seite.
   if (['psfilter', 'gruppe', 'psq'].includes(key)) p.delete('seite');
-  if (key === 'lq') p.delete('lseite');
+  if (key === 'lq' || key === 'lampel') p.delete('lseite');
   if (['bl', 'bg'].includes(key)) p.delete('bs');
   if (['bq', 'bfilter', 'bsort', 'bdir', 'bart'].includes(key)) p.delete('bseite');
   if (key === 'blf') p.delete('bls');

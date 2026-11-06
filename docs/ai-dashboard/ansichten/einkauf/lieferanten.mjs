@@ -13,6 +13,8 @@ import {
   telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink, afNorm } from '../../lib/einkauf-lieferanten.mjs';
 import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../../lib/einkauf-uebersicht.mjs';
 import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
+import { warteWort, warteTitel } from '../../lib/ampel.mjs';
+import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
@@ -47,6 +49,7 @@ export function bestellartDaten(d, art = '') {
 }
 
 function karten(d = einkauf.bestellungen || {}) {
+  const gesperrt = new Set(d.gesperrteMuster || []);
   d = bestellartDaten(d, state.route.params.get('art'));
   const l = einkauf.lieferanten;
   return lieferantenKarten({
@@ -54,6 +57,8 @@ function karten(d = einkauf.bestellungen || {}) {
     lieferanten: l?.lieferanten || [],
     eintragFuer: afEintragFuer,
     schwellen: l?.schwellen || SCHWELLEN_STANDARD,
+    blockiert: p => blockGruende(p).length > 0,
+    gesperrt: p => gesperrt.has(p.lineItemId),
   }).filter(k => !['muster', 'ware'].includes(state.route.params.get('art')) || k.wareGruppen.length || k.musterGruppen.length);
 }
 
@@ -81,10 +86,16 @@ function ueberfaelligHinweis(k, { mitLink = true } = {}) {
   return `<div class="lf-hinweis ${h.stufe}"><span class="lf-uhr" aria-hidden="true"></span><span>${esc(h.text)}${mitLink && k.zugeordnet ? ` <a href="${detailLink(k.id)}">Kontakt</a>` : ''}</span></div>`;
 }
 
+/**
+ * Wartestand einer Zeile (lib/ampel.mjs): rot/gelb als Plakette mit Zeichen und Wort
+ * ("× Überfällig · 15 Tage", "! Nachhaken · 9 Tage", "× Blockiert"), ruhig nur die Tage in Grau.
+ */
 function warteChip(x) {
-  if (x.wartetage === null) return '';
+  const a = x.ampel;
+  if (a?.stufe) return ampelPlakette(a.stufe, warteWort(a), { titel: warteTitel(a) });
+  if (x.wartetage === null || x.wartetage === undefined) return '';
   const text = x.wartetage === 0 ? 'heute' : x.wartetage === 1 ? '1 Tag' : `${x.wartetage} Tage`;
-  return `<span class="lf-tage ${x.warnstufe || ''}" title="${esc(afWarteText(x.wartetage))}">${text}</span>`;
+  return `<span class="lf-tage" title="${esc(afWarteText(x.wartetage))}">${text}</span>`;
 }
 
 function postenZeile(x, namen) {
@@ -95,7 +106,7 @@ function postenZeile(x, namen) {
   // Aus dem Musterlager: wo es liegt - das ist beim Verschicken die erste Frage.
   const lager = p.musterLager && !afEintragFuer(p)?.status ? `Musterlager${p.musterLager.ort ? ` ${p.musterLager.ort}` : ''}` : '';
   const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName, lager].filter(v => v && v !== 'UNGEKLAERT');
-  return `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div></div>${warteChip(x)}</li>`;
+  return `<li class="lf-posten${ampelRand(x.ampel?.stufe)}"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div></div>${warteChip(x)}</li>`;
 }
 
 function postenListe(titel, liste, namen, max) {
@@ -157,14 +168,14 @@ function wareZeile(x, namen) {
   const kettler = status === 'bestellt' && x.eintrag?.ueber === 'kettler';
   const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend()
     ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${kettler ? 'Beim Kettler abgeholt' : 'Ist eingetroffen'}</button>` : '';
-  return `<li class="lf-posten${block.length ? ' lf-blockiert' : ''}"><div class="lf-posten-text">
+  return `<li class="lf-posten${ampelRand(x.ampel?.stufe)}"><div class="lf-posten-text">
       <div class="t">${esc(titel)}</div>
       ${menge ? `<div class="lf-menge">${esc(menge)}</div>` : ''}
       ${aus.map(z => `<div class="s">${esc(z)}</div>`).join('')}
       ${wer ? `<div class="s lf-wer">${esc(wer)}</div>` : ''}
       ${kettler ? '<div class="s lf-kettler">Geht zum Kettler – nach dem Ketteln dort abholen</div>' : ''}
       ${belegZeile(x.eintrag?.status, p.orderId, p.lieferant)}
-      ${block.length ? `<div class="lf-grund">Blockiert: ${esc(block.join(' · '))}</div>` : ''}
+      ${block.length ? `<div class="lf-grund">${esc(block.join(' · '))}</div>` : ''}
     </div><div class="lf-posten-rechts">${warteChip(x)}${knopf}</div></li>`;
 }
 
@@ -172,7 +183,7 @@ function musterZeile(g, namen, { herkunft = false } = {}) {
   const { ort } = kundeUndOrt(g.orderId);
   const wer = [namen.get(g.orderId) || g.positionen[0]?.kunde, ort, g.orderName].filter(ok).join(' · ');
   const woher = herkunft ? musterHerkunftText(g.positionen) : '';
-  return `<li class="lf-posten"><div class="lf-posten-text">
+  return `<li class="lf-posten${ampelRand(g.ampel?.stufe)}"><div class="lf-posten-text">
       <div class="t">${esc(wer || 'Kunde unbekannt')}</div>
       <div class="s">${esc(musterText(g.positionen))}</div>
       ${woher ? `<div class="s lf-wer">${esc(woher)}</div>` : ''}
@@ -252,6 +263,14 @@ function arbeitsSchritte(k, namen) {
     teile.push(`<section class="lf-schritt lf-nachfassen ${lbu.stufe}">${stufeKopf('Liegt bei uns', lbu.auftraege === 1 ? '1 Auftrag' : `${lbu.auftraege} Aufträge`, knopf, { zusatz: esc(satz) })}
       ${stufeListe(laufendZeilen(lbu.positionen, namen).map(z => z.html), 0, '')}</section>`);
   }
+  // Bestellt, aber der Lieferant kann das Muster nicht liefern (Mustersperre): nicht nachfassen,
+  // sondern den Kunden informieren - das geht in der Packstation. Eigener Abschnitt, damit kein
+  // rotes Muster unter "Bestellt, im Plan" verschwindet.
+  const nichtLieferbar = k.muster.bestellt.filter(x => x.ampel?.grund === 'gesperrt');
+  if (nichtLieferbar.length) {
+    teile.push(`<section class="lf-schritt lf-nachfassen crit">${stufeKopf('Muster nicht lieferbar', fuerKunden(nichtLieferbar), '<a class="btn" href="#/kunden?tab=muster">Packstation</a>', { zusatz: 'Der Lieferant kann diese Muster nicht liefern – Kunde informieren.' })}
+      ${stufeListe(jeKommission(nichtLieferbar).map(g => musterZeile(g, namen)), 0, '')}</section>`);
+  }
   // Ruhig darunter: was wir selbst da haben und was im Plan laeuft (nicht ueberfaellig).
   const ruhig = [];
   const eigen = k.muster.eigen || [];
@@ -260,7 +279,7 @@ function arbeitsSchritte(k, namen) {
     ruhig.push(stufeKopf('Muster haben wir da – verschicken oder vorbeibringen', fuerKunden(eigen), '', { klasse: 'lf-ruhig' })
       + stufeListe(g.slice(0, 4).map(x => musterZeile(x, namen, { herkunft: true })), g.length - Math.min(g.length, 4), 'weitere Kunden'));
   }
-  const imPlan = [...k.ware.bestellt, ...k.muster.bestellt].filter(x => !x.warnstufe);
+  const imPlan = [...k.ware.bestellt, ...k.muster.bestellt].filter(x => !x.warnstufe && x.ampel?.grund !== 'gesperrt');
   if (imPlan.length) {
     ruhig.push(stufeKopf('Bestellt, im Plan', imPlan.length, '', { klasse: 'lf-ruhig' }) + ruhigeListe(laufendZeilen(imPlan, namen), 3));
   }

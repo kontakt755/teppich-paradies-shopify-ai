@@ -416,7 +416,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'lexikon/druckliste' && req.method === 'GET') result = api.lexikonDruckliste();
     else if (simple === 'lexikon/druckliste' && req.method === 'POST') result = await api.lexikonDrucklisteSetzen(await readJson(req), benutzer);
     else if (simple === 'lexikon/etiketten-status' && req.method === 'GET') result = api.lexikonEtikettenStatus({ q: url.searchParams.get('q') || '', status: url.searchParams.get('status') || 'pruefen', page: url.searchParams.get('page') || 1 });
-    else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize') });
+    else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize'), ampel: url.searchParams.get('ampel') || '' });
     else if (simple === 'lexikon/produkt') result = api.lexikonProdukt(url.searchParams.get('handle') || '');
     else if (simple === 'lexikon/mengenhilfe') result = api.lexikonMengenhilfe({ handle: url.searchParams.get('handle') || '', variantenId: url.searchParams.get('variantenId') || '', kundenmengeM2: url.searchParams.get('kundenmengeM2'), kundenlaengeCm: url.searchParams.get('kundenlaengeCm') });
     else if (simple === 'kunden/suche') result = api.kundenSuche({ q: url.searchParams.get('q') || '', filter: url.searchParams.get('filter') || '' });

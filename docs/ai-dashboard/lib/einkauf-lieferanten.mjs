@@ -1,4 +1,4 @@
-import { kalendertage } from './kalendertage.mjs';
+import { WARTESCHWELLEN, warteAmpel, warteStufe, TON } from './ampel.mjs';
 /**
  * Einkauf je Lieferant: reine Regeln ohne DOM (Browser und Tests).
  *
@@ -9,11 +9,12 @@ import { kalendertage } from './kalendertage.mjs';
  * - hauptAktion(): der EINE Knopf je Lieferant, abhaengig vom Bestellweg aus den Stammdaten.
  * - verlauf() / lieferzeiten(): was zuletzt bestellt und geliefert wurde.
  *
- * Schwellen (7/14 Tage) kommen vom Server (`schwellen`) - hier stehen nur die Rueckfallwerte.
+ * Schwellen (7/14 Kalendertage) stehen einmal in lib/ampel.mjs (WARTESCHWELLEN); der Server
+ * liefert dieselben Werte als `schwellen` mit.
  */
 
 export const UNGEKLAERT = 'UNGEKLAERT';
-export const SCHWELLEN_STANDARD = Object.freeze({ nachhakenTage: 7, problemTage: 14 });
+export const SCHWELLEN_STANDARD = WARTESCHWELLEN;
 
 const STUFEN = ['zuBestellen', 'bestellt', 'eingetroffen', 'erledigt', 'eigen'];
 
@@ -50,25 +51,17 @@ export function stufeVon(status) {
   return 'zuBestellen';
 }
 
-/** Seit wie vielen Tagen steht die Position auf "bestellt" bzw. "geliefert"? null = wartet nicht. */
+/**
+ * Seit wie vielen Tagen steht die Position auf "bestellt" bzw. "geliefert"? Mit bestaetigtem
+ * Liefertermin: null, solange er vor uns liegt, danach die Tage seit dem Termin. null = wartet nicht.
+ */
 export function wartetage(eintrag, jetzt = Date.now()) {
-  const termin = eintrag?.status === 'bestellt' ? eintrag.beschaffung?.liefertermin : null;
-  if (termin) {
-    const d = new Date(Number(jetzt));
-    const heute = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(d);
-    return termin >= heute ? null : Math.floor((Date.parse(heute) - Date.parse(termin)) / 864e5);
-  }
-  const seit = eintrag?.status === 'bestellt' ? eintrag.bestelltAm : eintrag?.status === 'geliefert' ? eintrag.geliefertAm : null;
-  if (!seit) return null;
-  return kalendertage(seit, Number(jetzt));
+  return warteAmpel(eintrag, { jetzt }).tage;
 }
 
-/** 'crit' ab problemTage, 'warn' ab nachhakenTage, sonst null. */
+/** 'crit' ab problemTage, 'warn' ab nachhakenTage, sonst null (Stufen aus lib/ampel.mjs). */
 export function warnstufe(tage, schwellen = SCHWELLEN_STANDARD) {
-  if (tage === null || tage === undefined) return null;
-  if (tage >= schwellen.problemTage) return 'crit';
-  if (tage >= schwellen.nachhakenTage) return 'warn';
-  return null;
+  return TON[warteStufe(tage, schwellen)] || null;
 }
 
 // eigen: offene Muster aus dem eigenen Bestand - vorbeibringen/verschicken statt bestellen.
@@ -110,8 +103,14 @@ function leereStammdaten(id) {
  * @param {(pos:object)=>object|null} p.eintragFuer  Auftragsfluss-Eintrag einer Position
  * @param {{nachhakenTage:number, problemTage:number}} [p.schwellen]
  * @param {number|Date} [p.jetzt]
+ * @param {(pos:object)=>boolean} [p.blockiert]  Bestellangaben fehlen (nur fuer noch zu Bestellendes)
+ * @param {(pos:object)=>boolean} [p.gesperrt]   Muster, das der Lieferant nicht liefern kann
+ *
+ * Je Position: `warnstufe` ('crit'/'warn') sagt, ob sie zu lange wartet - sie entscheidet, ob die
+ * Position unter "Nachfassen" bzw. "Liegt bei uns" steht. `ampel` (lib/ampel.mjs) nimmt dazu
+ * Blockiert und Gesperrt auf und bestimmt Farbrand und Plakette der Zeile.
  */
-export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferanten = [], eintragFuer = () => null, schwellen = SCHWELLEN_STANDARD, jetzt = Date.now() } = {}) {
+export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferanten = [], eintragFuer = () => null, schwellen = SCHWELLEN_STANDARD, jetzt = Date.now(), blockiert = () => false, gesperrt = () => false } = {}) {
   const je = new Map();
   const fuer = id => {
     if (!je.has(id)) je.set(id, { id, ware: leereStufen(), muster: leereStufen(), wareGruppen: [], musterGruppen: [] });
@@ -124,9 +123,17 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       ziel[art === 'ware' ? 'wareGruppen' : 'musterGruppen'].push(g);
       for (const pos of g.positionen || []) {
         const eintrag = eintragFuer(pos);
-        const tage = wartetage(eintrag, jetzt);
         const stufe = stufeVon(eintrag?.status);
-        ziel[art][stufe === 'zuBestellen' && musterEigen(pos) ? 'eigen' : stufe].push({ pos, eintrag, wartetage: tage, warnstufe: warnstufe(tage, schwellen) });
+        const offen = stufe === 'zuBestellen' || stufe === 'bestellt';
+        const ampel = warteAmpel(eintrag, {
+          jetzt, schwellen,
+          blockiert: stufe === 'zuBestellen' && !musterEigen(pos) && Boolean(blockiert(pos)),
+          gesperrt: offen && Boolean(gesperrt(pos)),
+        });
+        // Ueberschrittener Liefertermin ist rot, egal wie lange schon bestellt (vorher erst ab 14 Tagen
+        // nach dem Termin). Ein gesperrtes Muster kommt nicht mehr: kein Nachfassen beim Lieferanten.
+        const ws = ampel.grund === 'gesperrt' ? null : ampel.grund === 'termin' ? 'crit' : warnstufe(ampel.tage, schwellen);
+        ziel[art][stufe === 'zuBestellen' && musterEigen(pos) ? 'eigen' : stufe].push({ pos, eintrag, wartetage: ampel.tage, warnstufe: ws, ampel });
       }
     }
   };

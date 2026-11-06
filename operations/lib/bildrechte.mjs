@@ -164,6 +164,25 @@ export function istEntfernt(z) {
   return /^entfernt/i.test(String(z?.status ?? '').trim()) || String(z?.notiz ?? '').includes('nicht mehr in Shopify');
 }
 
+/**
+ * Raumbild je Produkt fuer die Bestellampel im Lexikon (docs/ai-dashboard/lib/ampel.mjs):
+ * true = mindestens ein Raumbild, false = Bildtypen erfasst, aber keins ist ein Raumbild.
+ * Fehlt das Produkt in der Zuordnung, ist es unbekannt (nicht im Verzeichnis oder kein Bildtyp
+ * erfasst) - das trifft viele Produkte und darf keine Warnung ausloesen.
+ */
+export function raumbildJeProdukt(zeilen) {
+  const je = new Map();
+  for (const z of zeilen ?? []) {
+    if (istEntfernt(z)) continue;
+    const handle = String(z.produkt_handle ?? '').trim();
+    const typ = String(z.bildtyp ?? '').trim().toLowerCase();
+    if (!handle || !typ) continue;
+    if (typ === 'raum') je.set(handle, true);
+    else if (!je.has(handle)) je.set(handle, false);
+  }
+  return je;
+}
+
 const PRUEFUNG = {
   ungeklaert: (z) => { const s = String(z.status ?? '').trim(); return s === '' || s === 'ungeklaert'; },
   'zu-klein': (z) => Number(z.breite) > 0 && Number(z.breite) < MINDESTBREITE,
