@@ -187,14 +187,19 @@ query OpsLieferanten {
   }
 }`;
 
-function quellvarianteIdsAus(orders) {
+export function quellvarianteIdsAus(orders) {
   const ids = new Set();
+  const dazu = wert => {
+    const w = String(wert ?? '').trim();
+    if (w) ids.add(/^\d+$/.test(w) ? `gid://shopify/ProductVariant/${w}` : w);
+  };
   for (const o of orders) {
     for (const li of o.lineItems?.nodes ?? []) {
-      const wert = (li.customAttributes ?? []).find(a => a.key === '_Quellvariante_ID')?.value;
-      if (!wert) continue;
-      const id = /^\d+$/.test(String(wert).trim()) ? `gid://shopify/ProductVariant/${String(wert).trim()}` : String(wert).trim();
-      ids.add(id);
+      dazu((li.customAttributes ?? []).find(a => a.key === '_Quellvariante_ID')?.value);
+      // Nachtraeglich per Bestellbearbeitung eingefuegte Muster (z. B. Ersatzfarbe) haben keine
+      // Properties; dann traegt die Mustervariante die Zuordnung im Metafeld einkauf.quellvariante,
+      // das resolve.mjs ohnehin zuerst nimmt. Ohne diese ID fehlt die Quellvariante im Export.
+      dazu((li.variant?.metafields?.nodes ?? []).find(m => m.key === 'quellvariante' && (m.namespace ?? 'einkauf') === 'einkauf')?.value);
     }
   }
   return [...ids];

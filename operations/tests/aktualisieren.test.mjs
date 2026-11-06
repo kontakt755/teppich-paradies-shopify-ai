@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { aktualisiere, argumente, standNachLauf, ohneUeberholtenFehler, TEIL_FN } from '../scripts/aktualisieren.mjs';
+import { aktualisiere, argumente, standNachLauf, ohneUeberholtenFehler, quellvarianteIdsAus, TEIL_FN } from '../scripts/aktualisieren.mjs';
 
 // Die Tests "ohne Zugang" duerfen nie den echten Zugang des Rechners finden -
 // sonst liefen sie auf dem Betriebsrechner gegen Shopify.
@@ -399,4 +399,16 @@ test('abgebrochene Positionsseite erhaelt Bestellungen und Erfuellungen des letz
     if (alterToken === undefined) delete process.env.SHOPIFY_ADMIN_TOKEN; else process.env.SHOPIFY_ADMIN_TOKEN = alterToken;
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('Quellvarianten fuer den Export: Property und Metafeld der Mustervariante, ohne Doppelte', () => {
+  const zeile = (attrs, mfs) => ({ customAttributes: attrs, variant: { metafields: { nodes: mfs } } });
+  const orders = [{ lineItems: { nodes: [
+    zeile([{ key: '_Quellvariante_ID', value: '111' }], []),
+    zeile([], [{ namespace: 'einkauf', key: 'quellvariante', value: 'gid://shopify/ProductVariant/222' }]),
+    zeile([{ key: '_Quellvariante_ID', value: '111' }], [{ namespace: 'einkauf', key: 'quellvariante', value: 'gid://shopify/ProductVariant/111' }]),
+    zeile([], [{ namespace: 'einkauf', key: 'farbnummer', value: '513' }]),
+    { customAttributes: [], variant: null },
+  ] } }];
+  assert.deepEqual(quellvarianteIdsAus(orders), ['gid://shopify/ProductVariant/111', 'gid://shopify/ProductVariant/222']);
 });
