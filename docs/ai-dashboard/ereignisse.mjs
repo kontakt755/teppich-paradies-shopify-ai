@@ -26,6 +26,7 @@ import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auf
 import { versandkostenKlick, versandkostenEingabe, verwerfeVersandkosten } from './ansichten/einkauf/versandkosten.mjs';
 import { versandKlick } from './ansichten/einkauf/versand.mjs';
 import { beschaffungKlick } from './ansichten/einkauf/beschaffung.mjs';
+import { lieferantenstandKlick } from './ansichten/einkauf/lieferantenstand.mjs';
 import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
 import { einkaufKlickAblauf, einkaufAenderungAblauf } from './ansichten/einkauf/ablauf.mjs';
 import { referenzKlick } from './ansichten/einkauf/referenz.mjs';
@@ -91,6 +92,7 @@ export function bindEvents() {
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
     // Vor einkaufKlickStatus: "raus" oeffnet den Versand-Dialog statt sofort zu setzen.
     if (versandKlick(e)) return;
+    if (lieferantenstandKlick(e)) return;
     if (beschaffungKlick(e)) return;
     if (einkaufKlickStatus(e)) return;
     if (einkaufKlickAblauf(e)) return;

@@ -58,6 +58,115 @@ export function bestaetigeBeschaffung(file, { orderId, lineItemId, felder, soll,
   return eintrag;
 }
 
+const PRUEFPUNKTE = ['menge', 'masse', 'lieferweg', 'zuschlaege'];
+function text(v, max, name, { pflicht = false } = {}) {
+  if (v === null || v === undefined || v === '') {
+    if (pflicht) throw new BeschaffungFehler(`${name} bitte angeben.`);
+    return null;
+  }
+  if (typeof v !== 'string') throw new BeschaffungFehler(`${name} muss ein Text sein.`);
+  const s = v.trim();
+  if (!s && pflicht) throw new BeschaffungFehler(`${name} bitte angeben.`);
+  return s ? s.slice(0, max) : null;
+}
+/** Tag ("JJJJ-MM-TT"), nicht nach heute. */
+function vergangenerTag(v, name, jetzt) {
+  const tag = datum(v);
+  if (!tag) throw new BeschaffungFehler(`${name} bitte angeben.`);
+  if (tag > new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(jetzt)) throw new BeschaffungFehler(`${name} liegt in der Zukunft.`);
+  return tag;
+}
+/** Zeitpunkt als ISO-Text mit Zeitzone (der Browser rechnet die Ortszeit um), nicht in der Zukunft. */
+function zeitpunkt(v, name, jetzt) {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(v)) throw new BeschaffungFehler(`${name} als Datum mit Uhrzeit angeben.`);
+  const t = Date.parse(v);
+  if (!Number.isFinite(t)) throw new BeschaffungFehler(`${name} ist kein gültiger Zeitpunkt.`);
+  if (t > jetzt.getTime() + 5 * 60_000) throw new BeschaffungFehler(`${name} liegt in der Zukunft.`);
+  return new Date(t).toISOString();
+}
+/** Nur ein Gmail-Link oder eine https-Adresse - nie javascript: oder data: in der Anzeige. */
+function belegLink(v) {
+  const s = text(v, 500, 'Beleg-Link');
+  if (!s) return null;
+  let u;
+  try { u = new URL(s); } catch { throw new BeschaffungFehler('Der Beleg-Link ist keine gültige Adresse.'); }
+  if (u.protocol !== 'https:') throw new BeschaffungFehler('Der Beleg-Link muss mit https:// beginnen.');
+  return u.toString();
+}
+
+/**
+ * Lieferantenstand je Position im vorhandenen Unterobjekt `beschaffung` - der Schritt im
+ * Auftragsfluss (status) aendert sich dabei nie:
+ *   anfrage        offene Position: Lieferant nach Preis/Verfuegbarkeit/Konditionen gefragt (am, lieferant, notiz)
+ *   anfrageZurueck Anfrage zuruecknehmen (wandert in den Verlauf)
+ *   bestelldaten   bestellte Position: tatsaechlicher Bestellzeitpunkt, Bestellreferenz, offener Lieferweg, Notiz
+ *   ab             bestellte Position: Auftragsbestaetigung geprueft (Nummer, Liefertermin, Preis, Beleg,
+ *                  Pruefung Menge/Masse/Lieferweg/Zuschlaege - jeder Punkt ausdruecklich beantwortet)
+ *   abZurueck      AB-Vermerk zuruecknehmen (wandert in den Verlauf; der Liefertermin bleibt)
+ * Ein Beleg wird nie automatisch bestaetigt: jede AB kommt aus diesem Aufruf mit handelnder Person.
+ */
+export function setzeLieferantenstand(file, { orderId, lineItemId, schritt, felder = {}, actor, jetzt = new Date() } = {}) {
+  const key = positionKey(orderId, lineItemId);
+  if (!key || !actor) throw new BeschaffungFehler('Position und handelnde Person fehlen.');
+  if (!objekt(felder)) throw new BeschaffungFehler('Angaben fehlen.');
+  const erlaubt = { anfrage: ['am', 'lieferant', 'notiz'], anfrageZurueck: [], bestelldaten: ['am', 'referenz', 'lieferwegOffen', 'notiz'],
+    ab: ['nummer', 'liefertermin', 'preis', 'belegId', 'link', 'pruefung', 'abweichung'], abZurueck: [] }[schritt];
+  if (!erlaubt) throw new BeschaffungFehler(`Unbekannter Schritt „${schritt}“.`);
+  if (Object.keys(felder).some(k => !erlaubt.includes(k))) throw new BeschaffungFehler('Unbekannte Angaben zum Lieferantenstand.');
+  const alle = leseAlle(file);
+  const vorher = alle[key] || {};
+  const status = vorher.status || null;
+  const b = { ...(vorher.beschaffung || {}) };
+  const zeit = jetzt.toISOString();
+  const eintrag = { ...vorher, orderId: String(orderId), lineItemId: String(lineItemId), aktualisiertAm: zeit, aktualisiertVon: actor };
+  const protokoll = { am: zeit, von: actor };
+  if (schritt === 'anfrage') {
+    if (status) throw new BeschaffungFehler('Diese Position ist schon bestellt. Eine Anfrage gehört vor die Bestellung.', 409);
+    b.anfrage = { am: vergangenerTag(felder.am, 'Datum der Anfrage', jetzt), lieferant: text(felder.lieferant, 120, 'Lieferant', { pflicht: true }),
+      notiz: text(felder.notiz, 1000, 'Notiz'), erfasstAm: zeit, erfasstVon: actor };
+    Object.assign(protokoll, { aktion: 'Lieferant angefragt', vorher: vorher.beschaffung?.anfrage || null });
+  } else if (schritt === 'anfrageZurueck') {
+    if (!b.anfrage) throw new BeschaffungFehler('Zu dieser Position ist keine Anfrage erfasst.', 409);
+    Object.assign(protokoll, { aktion: 'Anfrage zurückgenommen', vorher: b.anfrage });
+    delete b.anfrage;
+  } else if (schritt === 'bestelldaten') {
+    if (status !== 'bestellt') throw new BeschaffungFehler('Bestelldaten gehen nur bei einer bestellten Position.', 409);
+    Object.assign(protokoll, { aktion: 'Bestelldaten ergänzt', vorher: { bestelltAm: vorher.bestelltAm || null, lieferantBestellnummer: vorher.lieferantBestellnummer || null, bestellung: vorher.beschaffung?.bestellung || null } });
+    if ('am' in felder) eintrag.bestelltAm = zeitpunkt(felder.am, 'Bestellzeitpunkt', jetzt);
+    if ('referenz' in felder) eintrag.lieferantBestellnummer = text(felder.referenz, 200, 'Bestellreferenz');
+    const best = { ...(b.bestellung || {}) };
+    if ('lieferwegOffen' in felder) best.lieferwegOffen = text(felder.lieferwegOffen, 500, 'Offener Lieferweg');
+    if ('notiz' in felder) best.notiz = text(felder.notiz, 1000, 'Notiz');
+    for (const k of Object.keys(best)) if (best[k] === null) delete best[k];
+    if (Object.keys(best).length) b.bestellung = { ...best, erfasstAm: zeit, erfasstVon: actor }; else delete b.bestellung;
+  } else if (schritt === 'ab') {
+    if (!['bestellt', 'geliefert'].includes(status)) throw new BeschaffungFehler('Eine Auftragsbestätigung gehört zu einer bestellten Position. Zuerst „Bestellt“ setzen.', 409);
+    const pruefung = felder.pruefung;
+    if (!objekt(pruefung) || PRUEFPUNKTE.some(k => !['ok', 'abweichung'].includes(pruefung[k])) || Object.keys(pruefung).some(k => !PRUEFPUNKTE.includes(k))) {
+      throw new BeschaffungFehler('Bitte Menge, Maße, Lieferweg und Zuschläge einzeln prüfen (stimmt / weicht ab).');
+    }
+    const abweichung = text(felder.abweichung, 1000, 'Abweichung');
+    if (PRUEFPUNKTE.some(k => pruefung[k] === 'abweichung') && !abweichung) throw new BeschaffungFehler('Bitte beschreiben, was in der AB abweicht.');
+    const liefertermin = datum(felder.liefertermin);
+    if (!liefertermin) throw new BeschaffungFehler('Bestätigten Liefertermin aus der AB angeben.');
+    Object.assign(protokoll, { aktion: 'AB geprüft', vorher: vorher.beschaffung?.ab || null, lieferterminVorher: vorher.beschaffung?.liefertermin || null });
+    b.ab = { nummer: text(felder.nummer, 80, 'AB-Nummer', { pflicht: true }), preis: text(felder.preis, 80, 'Preis'),
+      belegId: text(felder.belegId, 120, 'Beleg'), link: belegLink(felder.link), pruefung: Object.fromEntries(PRUEFPUNKTE.map(k => [k, pruefung[k]])),
+      abweichung, geprueftAm: zeit, geprueftVon: actor };
+    b.liefertermin = liefertermin;
+    b.bestaetigtAm = zeit; b.bestaetigtVon = actor;
+  } else {
+    if (!b.ab) throw new BeschaffungFehler('Zu dieser Position ist keine AB erfasst.', 409);
+    Object.assign(protokoll, { aktion: 'AB zurückgenommen', vorher: b.ab });
+    delete b.ab;
+  }
+  if (Object.keys(b).length) eintrag.beschaffung = b; else delete eintrag.beschaffung;
+  eintrag.verlauf = [...(Array.isArray(vorher.verlauf) ? vorher.verlauf : []), protokoll].slice(-100);
+  alle[key] = eintrag;
+  schreibeAlle(file, alle);
+  return eintrag;
+}
+
 /** Alle betroffenen Positionen werden vor dem einzigen Schreibvorgang geprüft. Kein stiller Ablauf. */
 export function arbeitsuebernahme(file, { positionen, aktion, person, actor, jetzt = new Date() } = {}) {
   if (person?.rolle === 'lesen') throw new BeschaffungFehler('Rolle „lesen“ darf keine Arbeit übernehmen.', 403);

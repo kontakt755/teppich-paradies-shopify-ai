@@ -19,6 +19,8 @@ import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { lieferwegVon } from '../../lib/lieferweg.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
+import { mitLieferantenstand } from './lieferantenstand.mjs';
+import { lieferantenStand, beschaffungText } from '../../lib/beschaffung.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
@@ -185,6 +187,7 @@ function wareZeile(x, namen) {
       ${lw ? `<div class="s">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` ${esc(p.lagerHinweis)}` : ''}</div>` : ''}
       ${kettler ? '<div class="s lf-kettler">Geht zum Kettler – nach dem Ketteln dort abholen</div>' : ''}
       ${belegZeile(x.eintrag?.status, p.orderId, p.lieferant)}
+      ${lieferantenZeile(p, x.eintrag)}
       ${block.length ? `<div class="lf-grund">${esc(block.join(' · '))}</div>` : ''}
     </div><div class="lf-posten-rechts">${warteChip(x)}${knopf}</div></li>`;
 }
@@ -219,6 +222,18 @@ function stufeListe(zeilen, rest, restText) {
 const fuerKunden = liste => `${liste.length}<span class="lf-fuer"> für ${plural(jeKommission(liste).length, 'Kunden', 'Kunden')}</span>`;
 
 /** Laufende Posten: Ware je Position, Muster je Kommission - Ware zuerst. */
+/**
+ * Lieferantenstand in der Kartenzeile (lib/beschaffung.mjs): "AB fehlt", "angefragt", "weicht ab",
+ * dazu AB-Nummer/offener Lieferweg - und bei fehlender AB der Knopf, sie zu erfassen.
+ */
+function lieferantenZeile(p, eintrag) {
+  if (!mitLieferantenstand(p, eintrag)) return '';
+  const st = lieferantenStand(eintrag);
+  const info = beschaffungText(eintrag);
+  const knopf = st.abFehlt && !istNurLesend() ? ` <button type="button" class="btn btn-sm btn-ghost" data-ls-schritt="ab" data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}">AB eingegangen…</button>` : '';
+  return `${st.text ? `<div class="s${st.ton === 'crit' ? ' wait-crit' : st.ton === 'warn' ? ' wait-warn' : ''}">${esc(st.text)}${knopf}</div>` : ''}${info ? `<div class="s">${esc(info)}</div>` : ''}`;
+}
+
 function laufendZeilen(liste, namen) {
   const ware = nachWartezeit(liste.filter(x => !x.pos?.istMuster)).map(x => ({ n: 1, html: wareZeile(x, namen) }));
   const muster = jeKommission(liste.filter(x => x.pos?.istMuster)).map(g => ({ n: g.positionen.length, html: musterZeile(g, namen) }));

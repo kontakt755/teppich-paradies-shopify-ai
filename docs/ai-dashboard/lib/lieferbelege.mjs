@@ -449,6 +449,20 @@ export function abgleich({ belege = [], kandidaten = [], jetzt = new Date(), tag
         zeile.hinweise.push('lieferschein_offen');
         abweichungen.push({ id: `lieferschein:${lsOffen.id}:${k.orderId}`, art: 'lieferschein_offen', ton: 'warn', orderId: k.orderId, orderName: k.orderName, kundenname: k.kundenname, lieferant, belegId: lsOffen.id, datum: lsOffen.datum, nurMuster: zeile.nurMuster });
       }
+      // AB da, aber an der Position noch nicht geprueft (Lieferantenstand, lib/beschaffung.mjs): zur Pruefung
+      // anbieten - nie selbst bestaetigen. Gilt nur fuer Ware beim Lieferanten, nicht fuer Muster/Eigenleistung.
+      const ware = positionen.filter(p => !p.istMuster && !p.eigenleistung);
+      zeile.abGeprueft = ware.length > 0 && ware.every(p => p.eintrag?.beschaffung?.ab);
+      zeile.abFehlt = stand === 'bestellt' && ware.some(p => p.eintrag?.status === 'bestellt' && !p.eintrag?.beschaffung?.ab && !p.eintrag?.beschaffung?.liefertermin);
+      const abOffen = neueste(eigene.filter(b => b.art === 'ab' && offenFuer(b, k.orderId)))[0];
+      // Nur, solange die Ware noch "Bestellt" ist: bei eingetroffener Ware ist die AB Vergangenheit, und ein
+      // vor dem 06.11.2026 bestaetigter Liefertermin gilt als geprueft (keine Mahnwelle fuer Altbestaende).
+      const ungeprueft = ware.filter(p => p.eintrag?.status === 'bestellt' && !p.eintrag?.beschaffung?.ab && !p.eintrag?.beschaffung?.liefertermin);
+      if (abOffen && ungeprueft.length) {
+        zeile.hinweise.push('ab_pruefen');
+        abweichungen.push({ id: `ab:${abOffen.id}:${k.orderId}:${lieferant}`, art: 'ab_pruefen', ton: 'warn', orderId: k.orderId, orderName: k.orderName, kundenname: k.kundenname, lieferant, belegId: abOffen.id, datum: abOffen.datum,
+          positionen: ungeprueft.map(p => ({ lineItemId: p.lineItemId, titel: p.titel })) });
+      }
       if (['raus', 'erledigt'].includes(stand) && zeile.shopify && zeile.shopify !== 'FULFILLED') zeile.hinweise.push('shopify_offen');
       if (stand === 'bestellt' && zeile.shopify === 'FULFILLED') zeile.hinweise.push('shopify_weiter');
       zeilen.push(zeile);
@@ -536,7 +550,14 @@ export function belegTodos(d, { jetzt = new Date(), href = '#/einkauf?tab=belege
   const tage = iso => kalendertage(iso, jetzt);
   const name = id => d.lieferanten?.[id] || (id ? `Lieferant ${id}` : 'Lieferant');
   const fuer = x => `${x.orderName}${x.kundenname ? ` ${x.kundenname}` : ''}`;
-  const todos = a.abweichungen.map(x => (x.art === 'storno'
+  const todos = a.abweichungen.map(x => (x.art === 'ab_pruefen'
+    ? {
+      id: `beleg-${x.id}`, art: 'beleg_ab', bereich: 'laden', ton: 'warn', alterTage: tage(x.datum),
+      titel: `Auftragsbestätigung prüfen: ${fuer(x)}`,
+      kontext: `${name(x.lieferant)} · ${belegMarke({ art: 'ab', datum: x.datum })} · Menge, Maße, Lieferweg und Zuschläge abgleichen`,
+      knopf: { text: 'Prüfen', href },
+    }
+    : x.art === 'storno'
     ? {
       id: `beleg-${x.id}`, art: 'beleg_storno', bereich: 'laden', ton: 'crit', alterTage: tage(x.datum),
       titel: `Storno vom Lieferanten prüfen: ${fuer(x)}`,

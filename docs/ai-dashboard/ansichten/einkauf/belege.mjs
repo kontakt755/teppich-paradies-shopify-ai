@@ -107,6 +107,16 @@ function abweichungHtml(a) {
   const wer = esc(lieferantName(a.lieferant) || 'Lieferant');
   const erledigt = lesend ? '' : `<button type="button" class="btn btn-sm" data-bl-erledigt="${esc(a.belegId)}" data-bl-order="${esc(a.orderId)}">Erledigt</button>`;
   const zum = `<a class="btn btn-sm btn-ghost" href="${esc(auftragLink(a.orderId))}">Zum Auftrag</a>`;
+  if (a.art === 'ab_pruefen') {
+    // Zur Pruefung anbieten, nie selbst bestaetigen: der Knopf oeffnet den AB-Dialog der Position
+    // (ansichten/einkauf/lieferantenstand.mjs) mit AB-Nummer und Gmail-Link als Vorschlag.
+    const knoepfe = lesend ? '' : (a.positionen || []).map(p => `<button type="button" class="btn btn-sm" data-ls-ab-beleg="${esc(a.belegId)}" data-af-order="${esc(a.orderId)}" data-af-item="${esc(p.lineItemId)}">${esc((a.positionen.length > 1 ? `AB prüfen: ${p.titel || 'Position'}` : 'AB prüfen…'))}</button>`).join('');
+    return zeile({
+      ton: 'warn', titel: `Auftragsbestätigung von ${wer} zu ${esc(auftragText(a.orderId))}`,
+      kontext: `${fmtDate(a.datum)}${b ? ` · „${esc(b.betreff)}“` : ''} · noch nicht geprüft. Menge, Maße, Lieferweg und Zuschläge mit unserer Bestellung vergleichen.`,
+      knoepfe: `${gmailKnopf(b)}${knoepfe}${zum}${erledigt}`,
+    });
+  }
   if (a.art === 'storno') {
     return zeile({
       ton: 'crit', titel: `Storno von ${wer} zu ${esc(auftragText(a.orderId))}`,
@@ -172,6 +182,7 @@ function ohneHtml(ohne) {
 const HINWEIS = {
   storno: ['crit', 'Storno'],
   lieferschein_offen: ['warn', 'Lieferschein da, bei uns noch bestellt'],
+  ab_pruefen: ['warn', 'AB da, noch nicht geprüft'],
   shopify_offen: ['warn', 'In Shopify noch nicht versendet'],
   shopify_weiter: ['warn', 'In Shopify schon versendet, bei uns noch bestellt'],
 };
@@ -205,7 +216,7 @@ function abgleichHtml(d) {
       <td><a href="${esc(auftragLink(z.orderId))}">${esc(z.orderName)}</a>${z.kundenname ? `<div class="small muted">${esc(z.kundenname)}</div>` : ''}</td>
       <td>${esc(lieferantName(z.lieferant))}${z.nurMuster ? '<div class="small muted">Muster</div>' : ''}</td>
       <td>${z.bestelltAm ? esc(fmtDate(z.bestelltAm)) : '<span class="muted">–</span>'}</td>
-      <td>${belegZelle(z.ab)}</td>
+      <td>${belegZelle(z.ab)}${z.abGeprueft ? '<div class="small muted">geprüft</div>' : !z.ab && z.abFehlt ? '<div class="small wait-warn">fehlt</div>' : ''}</td>
       <td>${belegZelle(z.lieferschein)}</td>
       <td>${esc(STAND_LABEL[z.stand] || z.stand)}</td>
       <td>${esc(SHOPIFY_LABEL[z.shopify] || (z.shopify ? z.shopify.toLowerCase() : '–'))}</td>

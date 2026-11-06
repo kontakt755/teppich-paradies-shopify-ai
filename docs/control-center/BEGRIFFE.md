@@ -233,6 +233,14 @@ gebraeuchlich), Erfassen.
   zugeschnitten markieren**.
 - **Ist beim Kunden…** = statt „Ist eingetroffen“ bei Ware, die der Hersteller direkt liefert (bei uns kommt nichts an).
 
+## Lieferantenstand (06.11.2026)
+
+- **Lieferant angefragt** = Preis, Verfügbarkeit oder Konditionen beim Lieferanten erfragt, noch nicht bestellt.
+- **AB fehlt** = bestellt, aber noch keine Auftragsbestätigung geprüft; nach 2 Werktagen „beim Lieferanten nachfassen“.
+- **AB eingegangen… / AB prüfen** = Dialog, in dem jemand AB-Nummer, Liefertermin, Preis und Beleg einträgt und Menge, Maße, Lieferweg und Zuschläge einzeln mit „stimmt“ oder „weicht ab“ beantwortet.
+- **AB bestätigt** = AB geprüft und vermerkt; **AB weicht ab** = geprüft, mindestens ein Punkt passt nicht.
+- **Bestelldaten…** = tatsächlicher Bestellzeitpunkt, Bestellreferenz und ein noch offener Lieferweg.
+
 ## Je Auftrag: Teillieferung und vollständige Muster (06.11.2026, #1996)
 
 - **Teillieferung: x von y Warenartikeln da – fehlt noch: Artikel (Lieferant)** = ruhige Zeile (nicht gelb)

@@ -99,7 +99,7 @@ import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMe
 import { dashboardLinks } from './weitere-dashboards.mjs';
 import { logFehler } from './dashboard-log.mjs';
 import { leseTailscaleStatus } from '../operations/lib/tailscale.mjs';
-import { bestaetigeBeschaffung, arbeitsuebernahme, BeschaffungFehler } from '../operations/lib/beschaffung.mjs';
+import { bestaetigeBeschaffung, arbeitsuebernahme, setzeLieferantenstand, BeschaffungFehler } from '../operations/lib/beschaffung.mjs';
 import { darfWeiter, beschaffungsStand } from '../docs/ai-dashboard/lib/beschaffung.mjs';
 import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
@@ -3393,6 +3393,29 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Ware ueber unseren Kettelservice bzw. Muster direkt vom Lieferanten zum Kunden: nur diese
       // Werte, alles andere nimmt den Vermerk zurueck.
       const ueber = payload?.ueber === undefined ? undefined : UEBER_WERTE.includes(payload.ueber) ? payload.ueber : null;
+      // Lieferantenstand (Anfrage, Bestelldaten, geprüfte AB) im vorhandenen Positionsspeicher; der
+      // Schritt im Auftragsfluss bleibt, kein Shopify-Aufruf. Nur Warenpositionen beim Lieferanten:
+      // Eigenleistung (Kettelservice) und Muster werden hier nie beim Lieferanten geführt.
+      if (aktion === 'lieferantenstand') {
+        const dir = privatDirPath || privatDir();
+        const modell = ladeBestellModell(dir);
+        if (!modell) throw new ApiError(409, 'Die Bestelldaten sind nicht lesbar. Es wurde nichts verändert.');
+        const p = [...(modell.auftraege || []), ...(modell.testauftraege || [])].flatMap(a => a.positionen || [])
+          .find(z => String(z.orderId) === String(orderId) && String(z.lineItemId) === String(lineItemId));
+        if (!p) throw new ApiError(400, 'Die ausgewählte Position gehört nicht zu den vorliegenden Bestellungen.');
+        if (p.eigenleistung) throw new ApiError(409, 'Eigenleistung (z. B. Kettelservice) – hier wird nichts beim Lieferanten angefragt oder bestellt.');
+        if (p.istMuster) throw new ApiError(409, 'Muster laufen über die Musterbestellung, nicht über Anfrage und AB.');
+        try {
+          const eintrag = setzeLieferantenstand(auftragsstatusPfad(dir), { orderId, lineItemId, schritt: payload.schritt, felder: payload.felder || {}, actor, jetzt: now() });
+          audit({ actor, action: 'lieferantenstand', schritt: payload.schritt, orderId, lineItemId });
+          const wort = { anfrage: 'Lieferant angefragt', anfrageZurueck: 'Anfrage zurückgenommen', bestelldaten: 'Bestelldaten ergänzt', ab: 'AB geprüft', abZurueck: 'AB zurückgenommen' }[payload.schritt];
+          merke(benutzer, actor, wort, `${p.orderName} · ${p.titel}`);
+          return { ok: true, eintrag };
+        } catch (e) {
+          if (e instanceof BeschaffungFehler) throw new ApiError(e.status, e.message);
+          throw e;
+        }
+      }
       if (aktion === 'beschaffung' || aktion === 'uebernahme') {
         const dir = privatDirPath || privatDir();
         const modell = ladeBestellModell(dir);

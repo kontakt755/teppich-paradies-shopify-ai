@@ -108,6 +108,11 @@ export function leseAlle(file) {
       if (b?.liefertermin != null && (typeof b.liefertermin !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(b.liefertermin) || !Number.isFinite(Date.parse(b.liefertermin)) || new Date(b.liefertermin).toISOString().slice(0, 10) !== b.liefertermin)) return true;
       if (b?.grund != null && typeof b.grund !== 'string') return true;
       if (['bestaetigtAm', 'bestaetigtVon'].some(k => b?.[k] != null && typeof b[k] !== 'string')) return true;
+      // Lieferantenstand (operations/lib/beschaffung.mjs, setzeLieferantenstand): Anfrage, Bestelldaten, AB.
+      const unterobjektKaputt = (o, textfelder) => o != null && (typeof o !== 'object' || Array.isArray(o) || textfelder.some(k => o[k] != null && typeof o[k] !== 'string'));
+      if (unterobjektKaputt(b?.anfrage, ['am', 'lieferant', 'notiz', 'erfasstAm', 'erfasstVon']) || (b?.anfrage && typeof b.anfrage.am !== 'string')) return true;
+      if (unterobjektKaputt(b?.bestellung, ['lieferwegOffen', 'notiz', 'erfasstAm', 'erfasstVon'])) return true;
+      if (unterobjektKaputt(b?.ab, ['nummer', 'preis', 'belegId', 'link', 'abweichung', 'geprueftAm', 'geprueftVon']) || (b?.ab && (typeof b.ab.nummer !== 'string' || (b.ab.pruefung != null && (typeof b.ab.pruefung !== 'object' || Array.isArray(b.ab.pruefung)))))) return true;
       const w = b?.wareneingang;
       return w != null && (typeof w !== 'object' || Array.isArray(w) || !(w.soll > 0) || !['paket', 'stueck', 'muster', 'lfm', 'm2'].includes(w.einheit) || ['bestaetigtAm', 'bestaetigtVon'].some(k => w[k] != null && typeof w[k] !== 'string') || ['soll', 'angekommen', 'verwendbar'].some(k => !Number.isFinite(w[k]) || w[k] < 0) || w.verwendbar > w.angekommen || w.angekommen > w.soll);
     })) {
@@ -358,6 +363,16 @@ export function setzeZurueckAufOffen(file, { orderId, lineItemId, actor, notiz =
   // Bliebe er stehen, galt die Position fuer immer als Lagerware - auch ohne Regel (Pruefung 06.11.).
   // Andere Vermerke bleiben wie bisher; sie zaehlen ohne Schritt ohnehin nicht (lib/lieferweg.mjs).
   if (rest.ueber === 'lager') { vorher.ueber = rest.ueber; delete rest.ueber; }
+  // Bestelldaten und AB gehoeren zur alten Bestellung (Lieferantenstand, beschaffung.mjs): sonst
+  // stuende nach "Zurueck auf offen" eine bestaetigte AB an einer nicht bestellten Position.
+  // Die Anfrage gehoert vor die Bestellung und bleibt.
+  if (rest.beschaffung && (rest.beschaffung.ab || rest.beschaffung.bestellung)) {
+    const { ab, bestellung, ...b } = rest.beschaffung;
+    // Der Liefertermin kam mit dieser AB und gilt fuer eine neue Bestellung nicht mehr.
+    if (ab) { vorher.ab = ab; if (b.liefertermin) { vorher.liefertermin = b.liefertermin; delete b.liefertermin; } }
+    if (bestellung) vorher.bestellung = bestellung;
+    if (Object.keys(b).length) rest.beschaffung = b; else delete rest.beschaffung;
+  }
   const protokoll = { aktion: 'zurück auf offen', am: zeit, von: actor, vonStatus: bisher.status, vorher };
   if (notiz) protokoll.notiz = clip(notiz, 2000);
   const eintrag = {
