@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   BEREICHE, LABELS, JE_AUFRUF, bereichFuer, meterpreisCent, sollWert, planeAbgleich, rueckwegFuer,
   bauePakete, setzenAufruf, fehlerAus, argumente, ladeExport, definitionMutation, KEY, NAMESPACE,
-  laufOrdner, erwartung, vergleiche, main,
+  laufOrdner, erwartung, vergleiche, main, nachAbzug, rabatteFuer, leseRabatte,
 } from '../../scripts/preisfilter-abgleich.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -182,9 +182,64 @@ test('Gegenprobe je Feld: Erwartung und Vergleich', () => {
   assert.deepEqual(vergleiche(soll, new Map([['a', 'y']])).abweichend.map((e) => e.ownerId), ['a']);
 });
 
+// Zentrale Aktion (tp_aktion, automatischer Rabatt seit #1977): Rundgang 06.11.2026
+// BWH-03/BWP-02 - Mimosa zeigte 37,82 EUR/m2, stand aber unter "40 bis 60".
+const BW = 'gid://shopify/Collection/777';
+const AKTION = (o = {}) => ({ fields: Object.entries({ aktiv: 'true', start: '2026-11-06', ende: '2026-11-30', kollektion: BW, prozent: '15', ...o }).map(([key, value]) => ({ key, value })) });
+
+test('Abzug wie Shopify und Theme: je Einheit auf den Cent abgerundet', () => {
+  assert.equal(nachAbzug(4449, 15), 3782); // 44,49 x 15 % = 6,6735 -> 6,67
+  assert.equal(nachAbzug(5890, 15), 5007); // Beispiel aus snippets/price.liquid
+  assert.equal(nachAbzug(4449, 0), 4449);
+});
+
+test('Aktion: Mitglied mit 44,49 EUR/m2 und 15 % landet unter 40, Nichtmitglied und Aktionsende nach Normalpreis', () => {
+  const mimosa = P({ id: 'gid://shopify/Product/10', handle: 'mimosa', mpb: { value: '40 bis 60 €/m²' }, variants: { nodes: [V(44.49), V(52.9, 'Wunschmaß')] } });
+  const andere = P({ id: 'gid://shopify/Product/11', handle: 'andere', mpb: { value: '40 bis 60 €/m²' }, variants: { nodes: [V(44.49)] } });
+  const aktionen = [{ aktiv: true, start: '2026-11-06', ende: '2026-11-30', kollektion: BW, prozent: 15 }];
+  const mitglieder = new Map([[BW, new Set([mimosa.id])]]);
+
+  const rabatte = rabatteFuer(aktionen, mitglieder, '2026-11-06');
+  assert.deepEqual([...rabatte], [[mimosa.id, 15]]);
+  const plan = planeAbgleich([mimosa, andere], { rabatte });
+  assert.deepEqual(plan.setzen.map((e) => [e.handle, e.neu, e.cent, e.aktion]), [['mimosa', '30 bis 40 €/m²', 3782, 15]]);
+  assert.equal(plan.unveraendert, 1, 'Nichtmitglied bleibt bei 40 bis 60');
+
+  // Letzter Tag zaehlt noch, danach stuft der Lauf zurueck
+  assert.equal(rabatteFuer(aktionen, mitglieder, '2026-11-30').get(mimosa.id), 15);
+  const danach = rabatteFuer(aktionen, mitglieder, '2026-12-01');
+  assert.equal(danach.size, 0);
+  const zurueck = planeAbgleich([{ ...mimosa, mpb: { value: '30 bis 40 €/m²' } }], { rabatte: danach });
+  assert.deepEqual(zurueck.setzen.map((e) => [e.handle, e.neu, e.aktion]), [['mimosa', '40 bis 60 €/m²', undefined]]);
+});
+
+test('Aktion: Paketware je Paket abgezogen, cm-genaue Ware je 0,01 m2, hoechste von zwei Aktionen', () => {
+  const paket = P({ qm: { value: '2.0' }, variants: { nodes: [V(99.99, 'Paket')] } });
+  // 99,99 - floor(14,9985) = 85,00 je Paket -> 42,50 je m2
+  assert.deepEqual(meterpreisCent(paket, 15), { cent: 4250, quelle: 'paket', prozent: 15 });
+  const p001 = P({ p001: { value: 'true' }, variants: { nodes: [V(0.89, '400cm')] } });
+  // 89 Cent je 0,01 m2 - floor(13,35) = 76 -> 76,00 je m2
+  assert.deepEqual(meterpreisCent(p001, 15), { cent: 7600, quelle: 'meterware', prozent: 15 });
+  const zwei = [{ aktiv: true, start: '2026-11-01', ende: '2026-11-30', kollektion: 'k1', prozent: 10 }, { aktiv: true, start: '2026-11-01', ende: '2026-11-30', kollektion: 'k2', prozent: 20 }, { aktiv: false, start: '2026-11-01', ende: '2026-11-30', kollektion: 'k1', prozent: 50 }];
+  assert.equal(rabatteFuer(zwei, new Map([['k1', new Set(['p'])], ['k2', new Set(['p'])]]), '2026-11-06').get('p'), 20);
+});
+
+test('Aktionen lesen: Metaobjekte und Kollektion seitenweise, nicht lesbar -> Fehler', async () => {
+  const seiten = [{ nodes: [{ id: 'a' }], pageInfo: { hasNextPage: true, endCursor: 'c1' } }, { nodes: [{ id: 'b' }], pageInfo: { hasNextPage: false, endCursor: null } }];
+  const frage = async (q, v) => (q.includes('metaobjects') ? { def: { id: 'd' }, metaobjects: { nodes: [AKTION(), AKTION({ ende: '2026-11-05', prozent: '50' })] } } : { collection: { products: seiten[v.after ? 1 : 0] } });
+  const { rabatte, aktionen } = await leseRabatte(frage, '2026-11-06');
+  assert.equal(aktionen.length, 1);
+  assert.deepEqual([...rabatte], [['a', 15], ['b', 15]]);
+  await assert.rejects(leseRabatte(async () => ({}), '2026-11-06'), /nicht lesbar/);
+  // CLI-Token ohne Metaobjekt-Rechte: leere Liste und keine Definition -> nicht als "keine Aktion" werten
+  await assert.rejects(leseRabatte(async () => ({ def: null, metaobjects: { nodes: [] } }), '2026-11-06'), /Metaobjekt-Rechte/);
+});
+
 /** Speicherbasierter Shopify-Zugang: liest aus produkte, Mutationen setzen Werte nur, wenn wirksam. */
-function mockZugang(produkte, { wirksam = true } = {}) {
+function mockZugang(produkte, { wirksam = true, aktionen = [], mitglieder = [] } = {}) {
   const frage = async (q, v) => {
+    if (q.includes('metaobjects')) return { def: { id: 'gid://shopify/MetaobjectDefinition/1' }, metaobjects: { nodes: aktionen } };
+    if (q.includes('collection(id')) return { collection: { products: { nodes: mitglieder.map((id) => ({ id })), pageInfo: { hasNextPage: false, endCursor: null } } } };
     if (q.includes('nodes(ids')) return { nodes: v.ids.map((id) => { const p = produkte.find((x) => x.id === id); return p ? { id, mpb: p.mpb } : null; }) };
     return { products: { nodes: produkte, pageInfo: { hasNextPage: false, endCursor: null } } };
   };
@@ -221,5 +276,19 @@ test('Rueckweg: Gegenprobe je Feld, wirkungslos -> Exit 1', async () => {
   const still = () => {};
   assert.equal(await main(['--zurueck', datei], { zugang: mockZugang([P({ mpb: { value: '30 bis 40 €/m²' } })]), env, aus: still }), 0);
   assert.equal(await main(['--zurueck', datei], { zugang: mockZugang([P({ mpb: { value: '30 bis 40 €/m²' } })], { wirksam: false }), env, aus: still }), 1);
+  fs.rmSync(basis, { recursive: true, force: true });
+});
+
+test('Schreiblauf mit laufender Aktion: Mitglied nach Aktionspreis, Gegenprobe mit denselben Rabatten', async () => {
+  const basis = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-pf-'));
+  const env = { TP_PRIVAT_DIR: basis };
+  const mimosa = P({ id: 'gid://shopify/Product/10', handle: 'mimosa', mpb: { value: '40 bis 60 €/m²' }, variants: { nodes: [V(44.49)] } });
+  const z = mockZugang([mimosa], { aktionen: [AKTION()], mitglieder: [mimosa.id] });
+  const jetzt = new Date('2026-11-06T10:00:00Z');
+  assert.equal(await main(['--schreiben'], { zugang: z, env, aus: () => {}, jetzt }), 0);
+  assert.equal(mimosa.mpb.value, '30 bis 40 €/m²');
+  // Aktion nicht lesbar -> Abbruch statt Rueckstufung
+  const kaputt = { ...z, frage: async (q, v) => (q.includes('metaobjects') ? { def: null, metaobjects: { nodes: [] } } : z.frage(q, v)) };
+  await assert.rejects(main([], { zugang: kaputt, env, aus: () => {}, jetzt }), /nicht lesbar/);
   fs.rmSync(basis, { recursive: true, force: true });
 });

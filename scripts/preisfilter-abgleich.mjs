@@ -32,6 +32,15 @@
  * Preis, den er zahlt. Nur Produkte vom Typ "Teppichboden"; Muster, Entwuerfe und
  * Archiviertes bekommen keinen Wert (ein vorhandener wird entfernt).
  *
+ * Zentrale Aktionen (Metaobjekt tp_aktion, z. B. Black Week seit #1977) laufen als
+ * automatischer Shopify-Rabatt und aendern keine Variantenpreise. Der Abgleich liest
+ * deshalb die heute laufenden Aktionen (aktiv, start <= heute <= ende, Berlin) und
+ * zieht fuer Mitglieder der Aktionskollektion den Rabatt so ab wie die Anzeige
+ * (snippets/price.liquid, tp-price-per-sqm.liquid): je Einheit Preis -
+ * floor(Preis x Prozent), bei Paketware je Paket; mehrere Aktionen -> die hoechste.
+ * Nach Aktionsende stuft der naechste Lauf von selbst nach Normalpreis zurueck.
+ * Sind die Aktionen nicht lesbar, bricht der Lauf ab (sonst stuende alles falsch).
+ *
  * Nach jeder Preisaenderung (Rueckstellung, Angebotswelle, Einzelpreise) muss der
  * Abgleich nachziehen: Dienst net.teppich-paradies.preisfilter (stuendlich, aus
  * ~/tp-dashboard) und Pflichtschritt nach jedem Preislauf (docs/angebotswelle.md).
@@ -50,6 +59,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { istRaummass } from '../operations/scripts/angebotswelle.mjs';
+import { aktionAusMetaobjekt, heuteBerlin, laufendeAktionen } from '../operations/lib/angebote-abgleich.mjs';
 
 export const STORE = 'sjjyq1-6w.myshopify.com';
 export const NAMESPACE = 'custom';
@@ -111,12 +121,20 @@ export function bereichFuer(c) {
 const istMusterVariante = (v) => /^M-/.test(String(v.sku || ''));
 const istOpc = (v) => /opc-/i.test(String(v.title || ''));
 
+/** Preis in Cent nach Abzug einer zentralen Aktion: Abzug auf den Cent abgerundet, wie Shopify und das Theme. */
+export function nachAbzug(c, prozent = 0) {
+  const pr = Number(prozent);
+  if (!(pr > 0)) return c;
+  return c - Math.floor((c * pr) / 100);
+}
+
 /**
  * Preis je m2 in Cent, wie die Karte ihn als "ab" zeigt - oder { grund }.
  * Erwartet ein Produkt aus leseAlle()/--export: id, handle, status, productType,
  * qm (custom.qm_pro_paket), p001 (custom.preis_pro_001_qm), variants.
+ * prozent: Rabatt einer laufenden zentralen Aktion fuer dieses Produkt (0 = keine).
  */
-export function meterpreisCent(p) {
+export function meterpreisCent(p, prozent = 0) {
   if (p.status !== 'ACTIVE') return { grund: 'nicht aktiv' };
   if (p.productType !== PRODUKTTYP) return { grund: `Produkttyp ${p.productType || 'leer'}` };
   if (/^muster-/.test(String(p.handle || ''))) return { grund: 'Musterprodukt' };
@@ -124,36 +142,51 @@ export function meterpreisCent(p) {
   const qm = Number(wert(p.qm));
   if (qm > 0) {
     // Paketware: die Karte rechnet den Paketpreis auf den Quadratmeter um (price.liquid, round in Cent).
-    const preise = varianten.map((v) => Math.round(cent(v.price) / qm));
+    // Zentrale Aktion: Shopify zieht je Paket ab, daraus wieder der Preis je m2.
+    const preise = varianten.map((v) => Math.round(nachAbzug(cent(v.price), prozent) / qm));
     if (!preise.length) return { grund: 'keine Variante mit Preis' };
-    return { cent: Math.min(...preise), quelle: 'paket' };
+    return { cent: Math.min(...preise), quelle: 'paket', ...(prozent > 0 ? { prozent } : {}) };
   }
   const meter = varianten.filter((v) => !istRaummass(v));
   if (!meter.length) return { grund: varianten.length ? 'keine Meterware-Variante' : 'keine Variante mit Preis' };
-  let min = Math.min(...meter.map((v) => cent(v.price)));
+  // Abzug je Einheit (m2 bzw. 0,01 m2) - floor ist monoton, das Minimum bleibt dieselbe Variante.
+  let min = nachAbzug(Math.min(...meter.map((v) => cent(v.price))), prozent);
   // Preis je 0,01 m2 (Teppich nach Mass mit diesem Produkttyp): sichtbar ist das Hundertfache.
   if (String(wert(p.p001)) === 'true') min *= 100;
-  return { cent: min, quelle: 'meterware' };
+  return { cent: min, quelle: 'meterware', ...(prozent > 0 ? { prozent } : {}) };
 }
 
 /** Sollwert eines Produkts: { label, cent, quelle } oder { label: null, grund }. */
-export function sollWert(p) {
-  const m = meterpreisCent(p);
+export function sollWert(p, prozent = 0) {
+  const m = meterpreisCent(p, prozent);
   if (m.grund) return { label: null, grund: m.grund };
   const label = bereichFuer(m.cent);
-  return { label, cent: m.cent, quelle: m.quelle, grund: label ? null : 'kein Bereich' };
+  return { label, cent: m.cent, quelle: m.quelle, ...(m.prozent ? { prozent: m.prozent } : {}), grund: label ? null : 'kein Bereich' };
+}
+
+/**
+ * Laufende zentrale Aktionen -> Map Produkt-ID -> Prozent (hoechste Aktion je Produkt,
+ * wie snippets/tp-aktion-laufend.liquid). mitglieder: Map Kollektions-ID -> Set Produkt-IDs.
+ */
+export function rabatteFuer(aktionen, mitglieder, heute) {
+  const rabatte = new Map();
+  for (const a of laufendeAktionen(aktionen, heute)) {
+    const pr = Number(a.prozent);
+    for (const id of mitglieder.get(a.kollektion) || []) if (!(rabatte.get(id) >= pr)) rabatte.set(id, pr);
+  }
+  return rabatte;
 }
 
 /**
  * Plan: welche Produkte bekommen einen (anderen) Wert, wo wird einer entfernt.
  * Idempotent - ein zweiter Lauf ueber denselben Stand plant nichts mehr.
  */
-export function planeAbgleich(produkte) {
+export function planeAbgleich(produkte, { rabatte = new Map() } = {}) {
   const setzen = []; const loeschen = []; const offen = []; const zaehlung = {};
   let unveraendert = 0;
   for (const p of produkte) {
     const ist = wert(p.mpb);
-    const s = sollWert(p);
+    const s = sollWert(p, rabatte.get(p.id) || 0);
     if (!s.label) {
       if (ist !== null && ist !== undefined) loeschen.push({ ownerId: p.id, handle: p.handle, alt: ist, grund: s.grund });
       if (p.status === 'ACTIVE' && p.productType === PRODUKTTYP && s.grund !== 'Musterprodukt') offen.push({ handle: p.handle, grund: s.grund });
@@ -161,7 +194,7 @@ export function planeAbgleich(produkte) {
     }
     zaehlung[s.label] = (zaehlung[s.label] || 0) + 1;
     if (ist === s.label) { unveraendert += 1; continue; }
-    setzen.push({ ownerId: p.id, handle: p.handle, alt: ist ?? null, neu: s.label, cent: s.cent, quelle: s.quelle });
+    setzen.push({ ownerId: p.id, handle: p.handle, alt: ist ?? null, neu: s.label, cent: s.cent, quelle: s.quelle, ...(s.prozent ? { aktion: s.prozent } : {}) });
   }
   return { setzen, loeschen, offen, unveraendert, zaehlung };
 }
@@ -304,6 +337,37 @@ export async function leseAlle(frage) {
   return alle;
 }
 
+// def: ohne Metaobjekt-Rechte (CLI-Token) kommt metaobjects leer zurueck statt mit Fehler -
+// die Definition existiert im Shop, fehlt sie in der Antwort, ist der Zugang blind.
+export const AKTIONEN_ABFRAGE = '{ def: metaobjectDefinitionByType(type: "tp_aktion") { id } metaobjects(type: "tp_aktion", first: 50) { nodes { fields { key value } } } }';
+export const KOLLEKTION_ABFRAGE = 'query($id:ID!,$after:String){ collection(id:$id){ products(first:250, after:$after){ nodes{ id } pageInfo{ hasNextPage endCursor } } } }';
+
+/**
+ * Heute laufende zentrale Aktionen samt Mitgliedern ihrer Kollektion lesen ->
+ * { rabatte: Map Produkt-ID -> Prozent, aktionen: [...] }. Wirft, wenn nicht lesbar.
+ */
+export async function leseRabatte(frage, heute) {
+  const d = await frage(AKTIONEN_ABFRAGE, {});
+  if (!d?.def?.id || !d?.metaobjects?.nodes) throw new Error('Zentrale Aktionen (tp_aktion) nicht lesbar (Zugang ohne Metaobjekt-Rechte? Token aus .env.local nehmen) - Abbruch, sonst stuende Aktionsware nach Normalpreis');
+  const aktionen = d.metaobjects.nodes.map(aktionAusMetaobjekt);
+  const laufend = laufendeAktionen(aktionen, heute);
+  const mitglieder = new Map();
+  for (const a of laufend) {
+    if (mitglieder.has(a.kollektion)) continue;
+    const ids = new Set(); let after = null;
+    do {
+      // eslint-disable-next-line no-await-in-loop
+      const k = await frage(KOLLEKTION_ABFRAGE, { id: a.kollektion, after });
+      const seite = k?.collection?.products;
+      if (!seite) throw new Error(`Aktionskollektion ${a.kollektion} nicht lesbar - Abbruch`);
+      for (const n of seite.nodes || []) ids.add(n.id);
+      after = seite.pageInfo?.hasNextPage ? seite.pageInfo.endCursor : null;
+    } while (after);
+    mitglieder.set(a.kollektion, ids);
+  }
+  return { rabatte: rabatteFuer(aktionen, mitglieder, heute), aktionen: laufend };
+}
+
 // ---------- Zugang ----------
 
 function cliAusfuehren(text, variables, mutation) {
@@ -423,12 +487,16 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   }
 
   const produkte = a.export ? ladeExport(fs.readFileSync(a.export, 'utf8')) : await leseAlle(z.frage);
-  const plan = planeAbgleich(produkte);
+  const heute = heuteBerlin(jetzt);
+  const { rabatte, aktionen } = await leseRabatte(z.frage, heute);
+  const plan = planeAbgleich(produkte, { rabatte });
   const zuTun = plan.setzen.length + plan.loeschen.length;
   const stand = {
     zeit: jetzt.toISOString(), zugang: z.art, quelle: a.export || 'live', produkte: produkte.length,
     unveraendert: plan.unveraendert, setzen: plan.setzen.length, loeschen: plan.loeschen.length,
     offen: plan.offen.length, zaehlung: plan.zaehlung, geschrieben: false, ok: zuTun === 0,
+    aktionen: aktionen.map((x) => ({ kollektion: x.kollektion, prozent: x.prozent, start: x.start, ende: x.ende })),
+    aktionsware: produkte.filter((p) => rabatte.has(p.id)).length,
   };
 
   if (zuTun === 0 && !a.definition) {
@@ -448,8 +516,9 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   schreibDatei(ziel, 'zusammenfassung.json', stand);
 
   aus(`${stand.zeit} Preisfilter ${NAMESPACE}.${KEY}: ${produkte.length} Produkte gelesen (${z.art}), ${plan.unveraendert} aktuell, ${plan.setzen.length} zu setzen, ${plan.loeschen.length} zu loeschen, ${plan.offen.length} ohne Bereich.`);
+  if (aktionen.length) aus(`Zentrale Aktionen heute (${heute}): ${aktionen.map((x) => `${x.prozent} % bis ${String(x.ende).slice(0, 10)}`).join(', ')} - ${stand.aktionsware} Produkte nach Aktionspreis, davon ${plan.setzen.filter((e) => e.aktion).length} mit Wechsel.`);
   aus(`Bereiche: ${LABELS.map((l) => `${l}: ${plan.zaehlung[l] || 0}`).join(' | ')}`);
-  for (const e of auswahl.setzen.slice(0, 8)) aus(`  ${e.handle}: ${e.alt ?? '(leer)'} -> ${e.neu} (${(e.cent / 100).toFixed(2)} EUR/m2, ${e.quelle})`);
+  for (const e of auswahl.setzen.slice(0, 8)) aus(`  ${e.handle}: ${e.alt ?? '(leer)'} -> ${e.neu} (${(e.cent / 100).toFixed(2)} EUR/m2, ${e.quelle}${e.aktion ? `, Aktion ${e.aktion} %` : ''})`);
   if (auswahl.setzen.length > 8) aus(`  ... ${auswahl.setzen.length - 8} weitere, siehe ${path.join(ziel, 'plan.json')}`);
   for (const e of auswahl.loeschen.slice(0, 5)) aus(`  ${e.handle}: ${e.alt} entfernen (${e.grund})`);
   if (a.hoechstens < zuTun) aus(`Probelauf: nur ${auswahl.setzen.length + auswahl.loeschen.length} von ${zuTun} Aenderungen (--hoechstens).`);
@@ -464,7 +533,7 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   const ergebnisse = await fuehrePaketeAus(z, dateien, aus);
   // Gegenprobe: frisch lesen und erneut planen - userErrors:[] ist kein Beleg.
   const nachher = await leseAlle(z.frage);
-  const probe = planeAbgleich(nachher);
+  const probe = planeAbgleich(nachher, { rabatte });
   const offenNachher = probe.setzen.length + probe.loeschen.length;
   const erwartetOffen = zuTun - (auswahl.setzen.length + auswahl.loeschen.length);
   const felder = vergleiche(erwartung(auswahl), new Map(nachher.map((p) => [p.id, wert(p.mpb)])));
