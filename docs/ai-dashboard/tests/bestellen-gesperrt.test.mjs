@@ -70,3 +70,34 @@ test('Lieferantenkarte: gesperrtes, noch nicht bestelltes Muster steht unter "Mu
     state.route.params = vorher.params; einkauf.bestellungen = vorher.b; einkauf.auftragsstatus = vorher.s; einkauf.lieferanten = vorher.l;
   }
 });
+
+test('Kachel, Filterchip und Liste "Noch zu bestellen" zaehlen dieselbe Menge ohne gesperrtes Muster (Review 06.11.2026)', () => {
+  const vorher = { params: state.route.params, view: state.route.view, b: einkauf.bestellungen, s: einkauf.auftragsstatus, l: einkauf.lieferanten };
+  try {
+    state.route.view = 'einkauf';
+    state.route.params = new URLSearchParams('tab=lieferant&art=muster&af=offen');
+    // Einziges offenes Muster ist gesperrt.
+    einkauf.bestellungen = { ...daten(['g1']), musterGruppen: [{ lieferant: 'UNGEKLAERT', positionen: [senf] }] };
+    einkauf.auftragsstatus = { positionen: {} };
+    einkauf.lieferanten = { lieferanten: [{ id: 'A', stammdaten: { name: 'Lieferant A' } }] };
+    const html = viewEinkaufBestellungen();
+    assert.equal(kachel(html, 'Muster zu bestellen'), 0);
+    assert.match(html, /Noch zu bestellen<span class="c">0</);
+    assert.doesNotMatch(html, /data-af-item="g1"/, 'die Liste "Noch zu bestellen" enthaelt das gesperrte Muster nicht');
+  } finally {
+    state.route.params = vorher.params; state.route.view = vorher.view;
+    einkauf.bestellungen = vorher.b; einkauf.auftragsstatus = vorher.s; einkauf.lieferanten = vorher.l;
+  }
+});
+
+test('Lieferantenkarte: nur ein gesperrtes Muster offen - kein Knopf "Muster bestellen", Nachhaken bleibt, kein Rang "zu bestellen"', async () => {
+  const { lieferantenKarten } = await import('../lib/einkauf-lieferanten.mjs');
+  const pos = { ...senf, grosshaendlerId: 'A-1' };
+  const alt = { ...gelb, lineItemId: 'm9', orderId: 'o9' };
+  const [k] = lieferantenKarten({ musterGruppen: [{ lieferant: 'A', positionen: [pos, alt] }],
+    eintragFuer: p => (p.lineItemId === 'm9' ? { status: 'bestellt', bestelltAm: '2026-10-20T09:00:00Z' } : null),
+    gesperrt: p => p.lineItemId === 'g1', jetzt: Date.parse('2026-11-06T12:00:00Z') });
+  assert.deepEqual([k.zahlen.musterOffen, k.zahlen.musterGesperrt], [0, 1]);
+  assert.ok(k.offenGesamt >= 2, 'das gesperrte Muster bleibt offene Arbeit');
+  assert.equal(k.ueberfaellig.stufe, 'crit');
+});

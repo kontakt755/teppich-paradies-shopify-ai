@@ -1,5 +1,4 @@
 import { esc, fmtDateTime, plural } from '../kern/helfer.mjs';
-import { automatikHaengtWerktage } from '../lib/todos.mjs';
 import { vorgangsLink } from '../lib/vorgangslink.mjs';
 
 const SIEBEN_TAGE_MS = 7 * 864e5;
@@ -52,13 +51,14 @@ export function musterAutomatikZeile(daten, jetzt = Date.now()) {
 }
 
 /**
- * Klaerfall, der auf Heute schon als rotes To-do steht: gesperrtes Muster ("Muster nicht lieferbar") oder
- * laenger als einen Werktag haengend ("n Muster haengen", lib/todos.mjs). Den nicht ein zweites Mal zeigen.
+ * Klaerfall, der auf Heute schon als rotes To-do steht - den nicht ein zweites Mal zeigen. `rot` kommt aus den
+ * roten To-dos selbst (probleme.mjs rotMuster): bis 06.11. wurde hier nach Alter geraten, und unbezahlte
+ * Klaerfaelle oder solche mit faelligem Rueckruf verschwanden von beiden Stellen. Ohne `rot` fehlt nichts.
  */
-function stehtSchonRot(z, k, jetzt) {
-  const ids = k.lineItemIds || [];
-  if (!ids.length) return false;
-  return ids.some(id => (z.gesperrteMuster || []).includes(id)) || automatikHaengtWerktage(k.seit, new Date(jetzt)) !== null;
+function stehtSchonRot(z, k, rot) {
+  if (!rot) return false;
+  if (rot.auftraege?.has(z.orderId)) return true;
+  return (k.lineItemIds || []).some(id => rot.positionen?.has(`${z.orderId}::${id}`));
 }
 
 /** Bestellnummer als Link in die Kundenakte (wie "Ansehen" in der Aufraeumliste). */
@@ -74,7 +74,7 @@ function bestellLink(z) {
  * Klaerfaelle stehen je Grund in einer Zeile mit den Bestellnummern. Was schon als rotes To-do oben steht,
  * fehlt hier. Erfolgreiche Bestellungen zaehlt nur musterAutomatikZeile().
  */
-export function musterAutomatikBlock(daten, jetzt = Date.now()) {
+export function musterAutomatikBlock(daten, jetzt = Date.now(), { rot = null } = {}) {
   const a = daten?.musterAutomatik;
   if (!a?.aktiv && !a?.hinweis) return '';
   const jeGrund = new Map();
@@ -84,7 +84,7 @@ export function musterAutomatikBlock(daten, jetzt = Date.now()) {
     if (!m) continue;
     if (m.geplant) geplant.push(`${z.orderName} (${plural(m.geplant, 'Muster', 'Muster')})`);
     for (const k of m.klaeren || []) {
-      if (!k?.grund || stehtSchonRot(z, k, jetzt)) continue;
+      if (!k?.grund || stehtSchonRot(z, k, rot)) continue;
       if (!jeGrund.has(k.grund)) jeGrund.set(k.grund, new Map());
       jeGrund.get(k.grund).set(z.orderId || z.orderName, z);
     }

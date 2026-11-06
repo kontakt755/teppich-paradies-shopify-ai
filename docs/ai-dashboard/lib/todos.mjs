@@ -22,6 +22,7 @@ import { entscheidungsGruppen } from './model.mjs';
 import { lieferantName as lieferantAnzeige, werktageZwischen } from './einkauf-lieferanten.mjs';
 import { belegMarke } from './lieferbelege.mjs';
 import { istLagerware, selbstStand } from './lieferweg.mjs';
+import { ohneGesperrteKlaerung } from './einkauf-uebersicht.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -116,11 +117,16 @@ function offenePositionen(auftrag, statusAlle) {
     .filter(x => x.eintrag?.status !== 'erledigt');
 }
 
-/** Echte, laufende Bestellungen: nicht Test, nicht storniert, in Shopify noch offen, mit offener Position. */
+/**
+ * Echte, laufende Bestellungen: nicht Test, nicht storniert, in Shopify noch offen, mit offener Position.
+ * Gesperrte Muster (`z.gesperrteMuster`) sind kein "ohne Großhändler-ID" - dieselbe Bereinigung wie im
+ * Einkauf (ohneGesperrteKlaerung). Sonst stand auf Heute "Zuerst klären" fuer ein Muster, das nie bestellt
+ * wird, und das To-do "Muster nicht lieferbar" entstand gar nicht (Review 06.11.2026, #1996).
+ */
 function laufendeBestellungen(bestellzeilen, statusAlle) {
   return (bestellzeilen || [])
     .filter(z => z?.auftrag && !z.testbestellung && !z.storniert && z.offen)
-    .map(z => ({ z, a: z.auftrag, offen: offenePositionen(z.auftrag, statusAlle) }))
+    .map(z => ({ z, a: ohneGesperrteKlaerung(z.auftrag, new Set(z.gesperrteMuster || []), p => standVon(statusAlle, p.orderId, p.lineItemId)), offen: offenePositionen(z.auftrag, statusAlle) }))
     .filter(x => x.offen.length);
 }
 
@@ -338,6 +344,11 @@ export function werWartet(quellen = {}, opt = {}) {
  * "Probleme" steht, aus "Alte Bestellungen aufräumen" weg und haengt dort Abschliessen/Laeuft noch an (#1996).
  */
 const orderIdsVon = positionen => [...new Set(positionen.map(x => x.z?.orderId).filter(Boolean))];
+/**
+ * Positionen eines Muster-To-dos als "orderId::lineItemId" (`musterSchluessel`): die Shop-Uebersicht laesst genau
+ * diese Klaerfaelle aus dem Block "Musterautomatik" weg - nicht nach Alter geraten, was oben rot steht (#1996).
+ */
+const musterSchluesselVon = positionen => positionen.map(x => `${x.z?.orderId}::${x.p?.lineItemId}`);
 
 function ausBestellungen(quellen, k) {
   const todos = [];
@@ -509,7 +520,7 @@ function ausBestellungen(quellen, k) {
   for (const [orderId, positionen] of gesperrt) {
     const z = positionen[0].z;
     todos.push({
-      id: `muster-gesperrt:${orderId}`, orderIds: [orderId], art: 'muster_gesperrt', bereich: 'laden', ton: 'crit', alterBezug: 'kunde',
+      id: `muster-gesperrt:${orderId}`, orderIds: [orderId], musterSchluessel: musterSchluesselVon(positionen), art: 'muster_gesperrt', bereich: 'laden', ton: 'crit', alterBezug: 'kunde',
       alterTage: Math.max(...positionen.map(x => x.seitBestellung ?? 0)),
       titel: `Muster nicht lieferbar, Kunde informieren: ${z.orderName} ${kundeVon(z)}`,
       kontext: [musterKurz(positionen), 'weiter in der Packstation unter „Zu klären“'].join(' · '),
@@ -539,7 +550,7 @@ function ausBestellungen(quellen, k) {
   for (const [grund, positionen] of haengend) {
     const werktage = Math.max(...positionen.map(x => x.werktage));
     todos.push({
-      id: `muster-klaeren:${grund}`, orderIds: orderIdsVon(positionen), art: 'muster_klaeren', bereich: 'laden', ton: 'crit',
+      id: `muster-klaeren:${grund}`, orderIds: orderIdsVon(positionen), musterSchluessel: musterSchluesselVon(positionen), art: 'muster_klaeren', bereich: 'laden', ton: 'crit',
       alterTage: Math.max(...positionen.map(x => tageSeit(x.seit, k.jetzt) ?? 0)),
       titel: `${positionen.length === 1 ? '1 Muster hängt' : `${positionen.length} Muster hängen`}: ${grund}`,
       kontext: [kundenKurz(positionen), musterKurz(positionen), `seit ${mehrzahl(werktage, 'Werktag', 'Werktagen')} nicht automatisch bestellt`].join(' · '),

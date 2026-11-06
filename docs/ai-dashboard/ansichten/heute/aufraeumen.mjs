@@ -10,7 +10,7 @@
  * Problem-Eintrag (aufraeumenUnterProblem, #1996). Gepackte, nie eingetragene Umschlaege (bis 06.11. nach
  * 3 Tagen hier, #1709) stehen rot in der Packstation und im Musterblock darueber.
  */
-import { esc, plural, toast } from '../../kern/helfer.mjs';
+import { esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { state } from '../../kern/zustand.mjs';
@@ -50,13 +50,20 @@ function zeile(z, lesend) {
  * Unter einem roten Problem-Eintrag (#1996): die Aufraeumfaelle seiner Bestellungen mit denselben Knoepfen
  * wie im Block. So steht #1049 einmal auf der Seite ("Beim Lieferanten nachfragen" oben), und Abschliessen
  * oder "Läuft noch" bleiben erreichbar. Leer ohne passenden Fall oder fuer die Rolle "lesen".
+ * `schonGezeigt` (orderIds): steht eine Bestellung in zwei roten Eintraegen, haengt die Zeile nur am ersten.
+ * Traegt das To-do schon eine Tageszahl (`alterTage`), nennt die Zeile das Datum der letzten Bewegung statt
+ * einer zweiten Zahl mit anderem Bezug - eine Zahl je Karte.
  * @param {object} todo  To-do mit `orderIds` (lib/todos.mjs)
  */
-export function aufraeumenUnterProblem(todo, { daten, lesend = false } = {}) {
+export function aufraeumenUnterProblem(todo, { daten, lesend = false, schonGezeigt = null } = {}) {
   const ids = todo?.orderIds || [];
   if (!ids.length || !daten?.verfuegbar || lesend) return '';
-  return aufraeumListe(daten.zeilen).filter(z => ids.includes(z.orderId)).map(z => `<div class="heute-todo-aufraeumen" data-aufraeumen="${esc(z.orderId)}">
-    <span>${esc(z.orderName || 'Bestellung')}: seit ${esc(plural(z.aufraeumen.tage, 'Tag', 'Tagen'))} keine Bewegung</span>${knoepfe(z, lesend)}</div>`).join('');
+  const mitZahl = todo.alterTage !== null && todo.alterTage !== undefined;
+  const ruhe = z => (mitZahl && z.aufraeumen.seit ? `letzte Bewegung am ${fmtDate(z.aufraeumen.seit)}` : `seit ${plural(z.aufraeumen.tage, 'Tag', 'Tagen')} keine Bewegung`);
+  const faelle = aufraeumListe(daten.zeilen).filter(z => ids.includes(z.orderId) && !schonGezeigt?.has(z.orderId));
+  for (const z of faelle) schonGezeigt?.add(z.orderId);
+  return faelle.map(z => `<div class="heute-todo-aufraeumen" data-aufraeumen="${esc(z.orderId)}">
+    <span>${esc(z.orderName || 'Bestellung')}: ${esc(ruhe(z))}</span>${knoepfe(z, lesend)}</div>`).join('');
 }
 
 /**

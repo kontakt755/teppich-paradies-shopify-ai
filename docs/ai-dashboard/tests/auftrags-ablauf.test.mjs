@@ -242,10 +242,17 @@ test('Muster verschicken nur, wenn auch der Umschlag in der Packstation packbere
   const md = { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] };
   const ab = auftragsAblauf({ id: 'o1' }, md, stand({ m1: 'geliefert' }));
   assert.deepEqual(einordnung(ab, null, JETZT, { umschlag: 'packen' }).gruende, ['muster_da']);
-  for (const umschlag of ['warten', 'klaeren']) {
-    const e = einordnung(ab, null, JETZT, { umschlag });
-    assert.deepEqual([e.gruende, e.gruppe], [[], 'unterwegs'], umschlag);
-  }
+  // Wartet auf Muster einer anderen Bestellung desselben Kunden: unterwegs.
+  const w = einordnung(ab, null, JETZT, { umschlag: 'warten' });
+  assert.deepEqual([w.gruende, w.gruppe], [[], 'unterwegs']);
+  // Alles da, aber gepackt und nie eingetragen bzw. in der Packstation zu klaeren (Review 06.11.2026): eigener
+  // Grund unter "Jetzt zu tun" - vorher ohne Grund eingeklappt unter "Unterwegs", als kaeme noch etwas.
+  const gepackt = einordnung(ab, null, JETZT, { umschlag: 'gepackt' });
+  assert.deepEqual([gepackt.gruende, gepackt.gruppe], [['eintragen'], 'jetzt']);
+  assert.deepEqual(auftragsAmpel(ab, gepackt), { stufe: 'rot', grund: 'eintragen', wort: 'Nicht eingetragen' });
+  const klaeren = einordnung(ab, null, JETZT, { umschlag: 'klaeren' });
+  assert.deepEqual([klaeren.gruende, klaeren.gruppe], [['packstation'], 'jetzt']);
+  assert.equal(auftragsAmpel(ab, klaeren), null, 'zu klaeren ist normale Arbeit');
   assert.deepEqual(einordnung(ab, null, JETZT).gruende, ['muster_da'], 'Packstand nicht geladen: Regel je Auftrag');
 });
 
@@ -298,4 +305,25 @@ test('zeilenAblauf: Positionen der Bestellzeile je Lieferant, ohne Bestandsabgan
   // 19 Tage beim Lieferanten: rot wie in "Je Auftrag"; das Muster zaehlt fuer die Ware nicht.
   assert.equal(warenAmpel(ab, e)?.stufe, 'rot');
   assert.equal(warenAmpel(ab, e)?.grund, 'wartet');
+});
+
+test('Kommt nichts zu uns: keine Leiste "Muster da · 0 von 0" bzw. "Ware da" (Review 06.11.2026)', () => {
+  const lab = ab => ab.schritte.find(s => s.key === ab.jetzt)?.label;
+  // Direkt an den Kunden bestelltes Muster (Lieferziel Kunde): wartet nicht auf "Muster da".
+  const direkt = { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true })] }] };
+  const d = auftragsAblauf({ id: 'o1' }, direkt, p => ({ status: 'bestellt', ueber: 'kunde', bestelltAm: '2026-10-19T08:00:00Z' }));
+  assert.equal(d.eingang.muster.gesamt, 0);
+  assert.deepEqual([d.jetzt, lab(d)], ['lieferung', 'Lieferant schickt direkt an den Kunden']);
+  const dr = auftragsAblauf({ id: 'o1' }, { musterGruppen: [{ lieferant: 'A', positionen: [pos('m1', { istMuster: true, musterRoute: 'SUPPLIER_DIRECT' })] }] }, stand({ m1: 'bestellt' }));
+  assert.equal(dr.jetzt, 'lieferung', 'Route Direktversand: dasselbe');
+  // Nur gesperrte Muster: nichts zu verschicken, der Schritt bleibt "Muster kommt nicht".
+  const g = auftragsAblauf({ id: 'o1' }, { ...direkt, gesperrteMuster: ['m1'] });
+  assert.deepEqual([g.jetzt, lab(g)], ['bestellt', 'Muster kommt nicht']);
+  // #1119: Hersteller liefert direkt, Unterlage aus Lager noch zuschneiden - nicht "Ware da".
+  const w = { gruppen: [{ lieferant: 'A', positionen: [pos('d1', { route: 'SUPPLIER_DIRECT' }), pos('l1', { lagerware: true })] }] };
+  const ware = auftragsAblauf({ id: 'o1' }, w, stand({ d1: 'bestellt' }));
+  assert.deepEqual([ware.jetzt, lab(ware)], ['bestellt', 'Aus eigenem Lager zuschneiden']);
+  // Nur Direktware, bestellt: Schritt 4 heisst "Hersteller liefert direkt".
+  const nurD = auftragsAblauf({ id: 'o1' }, { gruppen: [{ lieferant: 'A', positionen: [pos('d1', { route: 'SUPPLIER_DIRECT' })] }] }, stand({ d1: 'bestellt' }));
+  assert.deepEqual([nurD.jetzt, lab(nurD)], ['lieferung', 'Hersteller liefert direkt']);
 });

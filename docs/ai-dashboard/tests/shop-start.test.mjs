@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { problemeBlock, problemOrderIds } from '../ansichten/heute/probleme.mjs';
+import { problemeBlock, problemOrderIds, rotMuster } from '../ansichten/heute/probleme.mjs';
 import { aufraeumenBlock, aufraeumenUnterProblem } from '../ansichten/heute/aufraeumen.mjs';
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
 import { selbstAbschickenStand, selbstAbschickenBlock } from '../ansichten/heute/selbst-abschicken.mjs';
@@ -35,7 +35,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
     aufraeumenBlock: echtesAufraeumen ? aufraeumenBlock : block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
     istNurLesend: () => false, darfAnsicht,
     // Rote To-dos oben (w-206): echte problemeBlock, die Ableitung liefert die uebergebenen To-dos.
-    problemeBlock, problemOrderIds, aufraeumenUnterProblem, arbeitsquellenStand, shopifyAbgleich: { daten: abgleich }, leiteTodosAb: (q, opt) => { sichten.push(opt.sicht); return todos; }, sortiereTodos: x => x,
+    problemeBlock, problemOrderIds, rotMuster, aufraeumenUnterProblem, arbeitsquellenStand, shopifyAbgleich: { daten: abgleich }, leiteTodosAb: (q, opt) => { sichten.push(opt.sicht); return todos; }, sortiereTodos: x => x,
     nachfassTodo: () => ({}), belegTodos: () => [], shopifyAbgleichTodos: () => [], datenstandTodo: () => [], veralteteQuellen: () => [],
     belege: { daten: null }, akquiseFaellig: () => [], hausverwaltungenFaellig: () => [], hinweisText: x => x, sichtFuer: () => 'laden',
     esc: s => String(s ?? ''), alterText: t => `${t} Tage`,

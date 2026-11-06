@@ -66,7 +66,10 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
         // Ware, die wir selbst verschicken: 'zuschneiden' | 'packen' | 'versand' | null.
         selbst: art === 'ware' ? selbstStand(p, eintrag) : null, weg: art === 'ware' ? lieferwegVon(p, eintrag)?.weg || null : null,
         // Kommt nicht mehr (Mustersperre): solange noch nicht bei uns, ist Nachfragen beim Lieferanten sinnlos.
-        gesperrt: art === 'muster' && r <= 1 && gesperrt.has(p.lineItemId) });
+        gesperrt: art === 'muster' && r <= 1 && gesperrt.has(p.lineItemId),
+        // Muster, die der Lieferant direkt an den Kunden schickt (wie die Packstation, lib/muster-packen.mjs):
+        // sie kommen nie bei uns an - "Muster da" wartet nicht auf sie.
+        direkt: art === 'muster' && ([p.route, p.musterRoute].includes('SUPPLIER_DIRECT') || eintrag?.ueber === 'kunde') });
     }
   };
   sammle(gruppen, 'ware');
@@ -95,25 +98,36 @@ export function auftragsAblauf(auftrag, { gruppen = [], musterGruppen = [], gesp
   // liefern kann. Muster aus eigenem Bestand sind schon da - dieselbe Regel wie "Packbereit".
   const eingang = {
     ware: zaehleEingang(positionen.filter(x => x.art === 'ware' && x.weg && !OHNE_EINGANG.has(x.weg)), x => x.rang >= 2),
-    muster: zaehleEingang(positionen.filter(x => x.art === 'muster' && !x.gesperrt), x => x.rang >= 2 || x.eigen),
+    muster: zaehleEingang(positionen.filter(x => x.art === 'muster' && !x.gesperrt && !x.direkt), x => x.rang >= 2 || x.eigen),
   };
   const fuerLeiste = nurMuster ? eingang.muster : eingang.ware;
+  // Kommt gar nichts zu uns, ist "Muster da · 0 von 0" bzw. "Ware da" falsch (Review 06.11.2026): sind alle
+  // Muster gesperrt, bleibt der Schritt offen ("Muster kommt nicht"); Lagerware muss erst zugeschnitten sein.
+  const nurGesperrt = nurMuster && positionen.every(x => x.gesperrt);
+  const zuschneiden = positionen.some(x => x.selbst === 'zuschneiden');
+  const nurDirekt = !nurMuster && eingang.ware.gesamt === 0 && !zuschneiden
+    && positionen.some(x => x.art === 'ware' && ['hersteller', 'baustelle'].includes(x.weg)) && !positionen.some(x => x.weg === 'lager');
   const fertig = {
     eingegangen: true,
     vorbereiten: mind(1),
     // Erst wenn alles da ist, das zu uns kommt (06.11.2026) - vorher hiess es "Ware da", sobald
     // alles bestellt war, und eine Teillieferung loeste "Kunde informieren" aus.
-    bestellt: mind(1) && fuerLeiste.alle,
+    bestellt: mind(1) && fuerLeiste.alle && !nurGesperrt && !zuschneiden,
     lieferung: mind(3),
     erledigt: mind(4),
   };
   // Bis alles bestellt ist, steht der Auftrag auf "vorbereiten", danach auf "bestellt" (unterwegs),
   // bis alles da ist. Ware, die bei uns liegt, wartet auf Auslieferung oder Montage.
   const jetztKey = SCHRITTE.map(s => s[0]).find(k => !fertig[k]) || 'erledigt';
+  const nurMusterDirekt = nurMuster && !nurGesperrt && eingang.muster.gesamt === 0 && positionen.some(x => x.direkt);
   const label = (key, basis, stand) => {
+    if (key === 'lieferung' && (nurDirekt || nurMusterDirekt)) return nurMuster ? 'Lieferant schickt direkt an den Kunden' : 'Hersteller liefert direkt';
     if (key !== 'bestellt' || stand === 'offen') return (nurMuster && MUSTER_LABEL[key]) || basis;
+    if (nurGesperrt) return 'Muster kommt nicht';
+    if (nurMusterDirekt) return 'Beim Lieferanten bestellt';
     if (nurMuster) return `Muster da · ${fuerLeiste.da} von ${fuerLeiste.gesamt}`;
-    return stand === 'jetzt' ? `Unterwegs · ${fuerLeiste.da} von ${fuerLeiste.gesamt} da` : basis;
+    if (stand === 'jetzt' && zuschneiden && fuerLeiste.alle) return 'Aus eigenem Lager zuschneiden';
+    return stand === 'jetzt' && fuerLeiste.gesamt ? `Unterwegs · ${fuerLeiste.da} von ${fuerLeiste.gesamt} da` : basis;
   };
   const schritte = SCHRITTE.map(([key, basis]) => {
     const stand = fertig[key] && key !== jetztKey ? 'fertig' : key === jetztKey ? 'jetzt' : 'offen';
@@ -172,7 +186,8 @@ export function kundeInformiertAus(ereignisse = []) {
 /**
  * Wohin gehoert ein Auftrag in der Liste "Je Auftrag"?
  *   jetzt      - wir sind dran: bestellen, Ungeklaertes klaeren, ALLE Ware da und Kunde nicht
- *                informiert, ALLE Muster da zum Verschicken, Muster kommt nicht, Lieferant im Verzug
+ *                informiert, ALLE Muster da zum Verschicken (bzw. gepackt und nicht eingetragen, oder in
+ *                der Packstation zu klaeren), Muster kommt nicht, Lieferant im Verzug
  *   unterwegs  - beim Lieferanten bestellt, wartet auf Ware oder Muster (startet eingeklappt)
  *   beiKunde   - Kunde informiert bzw. schon raus: Termin/Abschluss (eingeklappt)
  * @param ab  Ergebnis von auftragsAblauf()
@@ -197,14 +212,22 @@ export function einordnung(ab, informiert = null, jetzt = new Date(), { umschlag
   if ((ab.selbst || []).some(x => x.weg === 'lager' || (teillieferung && !informiert))) gruende.push('selbst');
   // Muster verschicken erst, wenn alle Muster da sind, die noch kommen koennen (Regel "Packbereit");
   // kennt die Ansicht den Umschlag, muss auch er packbereit sein (mehrere Bestellungen, Adresse).
-  const offeneMuster = ab.positionen.filter(x => x.art === 'muster' && !x.gesperrt && x.rang < 3);
-  if (offeneMuster.length && offeneMuster.every(x => x.rang >= 2 || x.eigen) && (!umschlag || umschlag === 'packen')) gruende.push('muster_da');
+  // Direkt an den Kunden verschickte Muster gehen nicht durch unseren Umschlag.
+  const offeneMuster = ab.positionen.filter(x => x.art === 'muster' && !x.gesperrt && !x.direkt && x.rang < 3);
+  const alleMusterDa = offeneMuster.length > 0 && offeneMuster.every(x => x.rang >= 2 || x.eigen);
+  if (alleMusterDa && (!umschlag || umschlag === 'packen')) gruende.push('muster_da');
+  // Alles da, der Umschlag steht aber anders in der Packstation (Review 06.11.2026): gepackt und nie als
+  // verschickt eingetragen (rot, der Kunde hat keine Versandmail) bzw. dort zu klaeren. Bis dahin lagen
+  // solche Auftraege ohne Grund unter "Unterwegs".
+  if (alleMusterDa && umschlag === 'gepackt') gruende.push('eintragen');
+  if (alleMusterDa && umschlag === 'klaeren' && !ab.positionen.some(x => x.gesperrt)) gruende.push('packstation');
   // Kommt nicht (Mustersperre): Kunde informieren - in der Packstation. Rot, also nie eingeklappt.
   if (ab.positionen.some(x => x.gesperrt)) gruende.push('gesperrt');
   if (verzug.length) gruende.push('verzug');
   const g = gruende.filter(Boolean);
-  // Angefangene Umschlaege warten auf ihre Muster - sie sind unterwegs, nie "beim Kunden".
-  const wartet = ab.unterwegs.length || offeneMuster.length;
+  // Angefangene Umschlaege warten auf ihre Muster - sie sind unterwegs, nie "beim Kunden". Nur was wirklich
+  // noch kommt: ein Muster, das schon da ist, wartet nicht (vorher zaehlte jedes offene Muster).
+  const wartet = ab.unterwegs.length || offeneMuster.some(x => x.rang < 2 && !x.eigen) || umschlag === 'warten';
   const gruppe = g.length ? 'jetzt' : ['bestellt', 'lieferung'].includes(ab.jetzt) && wartet ? 'unterwegs' : 'beiKunde';
   return { gruppe, gruende: g, verzug, wareDa, teillieferung };
 }
@@ -213,7 +236,7 @@ export function einordnung(ab, informiert = null, jetzt = new Date(), { umschlag
  * Dringendster Grund zuerst - danach zaehlt die Kopfzeile "Je Auftrag" jeden Auftrag genau einmal
  * (vorher ergaben 10 Auftraege 11 Gruende). Muster verschicken zuletzt, wie in jetztRang().
  */
-export const GRUND_REIHENFOLGE = Object.freeze(['ungeklaert', 'gesperrt', 'verzug', 'bestellen', 'informieren', 'selbst', 'muster_da']);
+export const GRUND_REIHENFOLGE = Object.freeze(['ungeklaert', 'gesperrt', 'eintragen', 'verzug', 'bestellen', 'informieren', 'selbst', 'packstation', 'muster_da']);
 
 /** Der dringendste Grund eines Auftrags (Ergebnis von einordnung()) oder null. */
 export function hauptGrund(e) {
@@ -291,7 +314,8 @@ export function tageBeimLieferanten(ab, jetzt = new Date()) {
 /**
  * Ampel einer Auftragskarte "Je Auftrag" (lib/ampel.mjs): die dringendste ihrer Positionen.
  *   rot   Bestellangaben fehlen (ungeklaert), ein Muster ist gesperrt (Lieferant kann nicht
- *         liefern), Verzug ab 14 Tagen oder bestaetigter Liefertermin vorbei
+ *         liefern), Umschlag gepackt und nicht eingetragen, Verzug ab 14 Tagen oder bestaetigter
+ *         Liefertermin vorbei
  *   gelb  Verzug ab 7 Tagen: beim Lieferanten nachhaken
  * Was sonst "jetzt" zu tun ist (bestellen, Kunde informieren, Muster verschicken), ist normale
  * Arbeit und bleibt ohne Farbe.
@@ -303,6 +327,8 @@ export function tageBeimLieferanten(ab, jetzt = new Date()) {
 export function auftragsAmpel(ab, e) {
   if (ab?.ungeklaert?.length) return { stufe: 'rot', grund: 'blockiert', wort: 'Blockiert' };
   if ((ab?.positionen || []).some(x => x.gesperrt)) return { stufe: 'rot', grund: 'gesperrt', wort: 'Gesperrt' };
+  // Gepackt, nie eingetragen: rot wie in der Packstation - der Kunde hat keine Versandmail.
+  if ((e?.gruende || []).includes('eintragen')) return { stufe: 'rot', grund: 'eintragen', wort: 'Nicht eingetragen' };
   const v = (e?.verzug || []).reduce((m, x) => dringendereAmpel(m, x.ampel), null);
   return v?.stufe ? { ...v, wort: warteWort(v) } : null;
 }

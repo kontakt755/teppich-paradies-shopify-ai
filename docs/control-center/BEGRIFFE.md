@@ -305,3 +305,18 @@ gebraeuchlich), Erfassen.
 - **Ware kommt bis TT.MM.JJJJ** = derselbe Schritt mit bestätigtem Liefertermin – wie auf Heute und in den To-dos.
 - **Teillieferung: x von y Warenartikeln da – fehlt noch: …** = derselbe Satz in „Je Auftrag“, Kunden ›
   Bestellungen (nächster Schritt) und Heute › Warenbestellungen, aus denselben Positionsständen.
+
+## Gesperrte Muster und Je Auftrag (06.11.2026, Review #1996)
+
+- **Versand eintragen** = Grund in „Je Auftrag“: alle Muster sind da, der Umschlag ist gepackt, aber nicht als
+  verschickt eingetragen. Plakette **× Nicht eingetragen** (rot): der Kunde hat noch keine Versandmail.
+- **in der Packstation klären** = Grund in „Je Auftrag“: alle Muster sind da, der Umschlag steht in der
+  Packstation unter „Zu klären“.
+- **n Musteraufträge mit Problem → Muster** = rote Zeile im Filter „Ware“; die Karten stehen unter „Muster“.
+- **n Musteraufträge zum Verschicken → Packstation** = Zeile im Filter „Ware“, zählt Aufträge wie der Chip „Muster“.
+- **· 1 Muster kommt nicht – Kunde informieren** = Zusatz am nächsten Schritt (Kunden › Zu tun), wenn nur ein
+  Teil der Muster gesperrt ist; sonst heißt der Schritt **Muster kommt nicht – Kunde informieren**.
+- **Muster kommt nicht** = Schritt 3 der Leiste, wenn alle Muster gesperrt sind.
+- **Lieferant schickt direkt an den Kunden** / **Hersteller liefert direkt** = Schritt 4 der Leiste, wenn nichts
+  zu uns kommt. **Aus eigenem Lager zuschneiden** = Schritt 3, solange Lagerware noch zuzuschneiden ist.
+- **letzte Bewegung am TT.MM.JJJJ** = Aufräumzeile unter einem roten Problem-Eintrag, der schon eine Tageszahl trägt.

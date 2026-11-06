@@ -41,6 +41,20 @@ export function problemOrderIds(todos) {
 }
 
 /**
+ * Was auf der Shop-Uebersicht schon rot steht und im Block "Musterautomatik" fehlen darf: Muster der roten
+ * To-dos "n Muster hängen" und "Muster nicht lieferbar" (`musterSchluessel`) sowie blockierte Bestellungen
+ * ("Zuerst klären"). Nur was wirklich oben steht - ein unbezahlter Klaerfall hat kein rotes To-do und bleibt.
+ * @returns {{ positionen: Set<string>, auftraege: Set<string> }}
+ */
+export function rotMuster(todos) {
+  const rot = nurProbleme(todos);
+  return {
+    positionen: new Set(rot.flatMap(t => t.musterSchluessel || [])),
+    auftraege: new Set(rot.filter(t => t.art === 'blockiert').flatMap(t => t.orderIds || [])),
+  };
+}
+
+/**
  * @param {object[]} todos  sortierte To-dos einer Sicht (lib/todos.mjs sortiereTodos)
  * @param {object} p
  * @param {(todo: object) => string} p.zeile  zeichnet eine To-do-Zeile (heute.mjs todoZeile)

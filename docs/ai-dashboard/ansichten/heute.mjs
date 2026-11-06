@@ -66,7 +66,7 @@ import { selbstAbschickenStand, selbstAbschickenBlock } from './heute/selbst-abs
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock, aufraeumenUnterProblem } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
-import { problemeBlock, problemOrderIds } from './heute/probleme.mjs';
+import { problemeBlock, problemOrderIds, rotMuster } from './heute/probleme.mjs';
 import { restrollenZeile } from './heute/restrollen.mjs';
 import { warenkennzahlBlock } from './heute/warenkennzahl.mjs';
 
@@ -216,7 +216,7 @@ function viewShop() {
     ${probleme.html}
     ${inhaberUeberblick()}
     ${/* Nur bei Stoerung oder Klaerung; was geklappt hat, steht als Zeile "Musterautomatik" unten (#1996). */ ''}
-    ${musterAutomatikBlock(kunden.bestellungen)}
+    ${musterAutomatikBlock(kunden.bestellungen, Date.now(), { rot: probleme.rotMuster })}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, anrufe: musterAnrufeOffen(), lesend: istNurLesend(), nurMuster: true })}
     ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), ohne: probleme.orderIds })}
     ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, pack: kunden.musterPacken,
@@ -247,7 +247,7 @@ function viewShop() {
  * Nebenbereich (probleme.mjs, NEBENBEREICH_ARTEN) und wuerden hier nur Abrufe kosten.
  * Liefert auch die Bestellungen der roten Eintraege: "Alte Bestellungen aufräumen" laesst sie weg, und ihr
  * Problem-Eintrag traegt dafuer "Abschließen…"/"Läuft noch" (aufraeumenUnterProblem, #1996).
- * @returns {{ html: string, orderIds: string[] }}
+ * @returns {{ html: string, orderIds: string[], rotMuster: { positionen: Set<string>, auftraege: Set<string> } }}
  */
 function problemeShop(nf, selbst = null) {
   ensureKundenRueckrufe(); ensureShopifyAbgleich();
@@ -259,8 +259,10 @@ function problemeShop(nf, selbst = null) {
   // nicht ein zweites Mal rot. Bleibt nichts uebrig (nur Ware ueber uns), faellt das To-do weg.
   const liste = todosDerSicht(sicht, q, nf).liste.map(t => rausgebenOhne(t, selbst?.schluessel)).filter(Boolean);
   const lesend = istNurLesend();
-  const zeile = t => todoZeile(t, false, aufraeumenUnterProblem(t, { daten: kunden.bestellungen, lesend }));
-  return { html: problemeBlock(liste, { zeile, fehlen: problemQuellenFehlen() }), orderIds: problemOrderIds(liste) };
+  // Jede Bestellung einmal: die Aufraeumzeile haengt nur am ersten roten Eintrag ihrer Bestellung.
+  const schonGezeigt = new Set();
+  const zeile = t => todoZeile(t, false, aufraeumenUnterProblem(t, { daten: kunden.bestellungen, lesend, schonGezeigt }));
+  return { html: problemeBlock(liste, { zeile, fehlen: problemQuellenFehlen() }), orderIds: problemOrderIds(liste), rotMuster: rotMuster(liste) };
 }
 
 /** Quellen der roten To-dos, deren Abruf gescheitert ist - gerade geladene zaehlen nicht. */

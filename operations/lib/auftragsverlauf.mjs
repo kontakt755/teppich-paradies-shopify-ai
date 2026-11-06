@@ -45,6 +45,7 @@ import { ROUTE } from './route.mjs';
 import { wirdGekettelt } from './kettelpuffer.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 import { lieferwegVon } from '../../docs/ai-dashboard/lib/lieferweg.mjs';
+import { warteAmpel, dringendereAmpel } from '../../docs/ai-dashboard/lib/ampel.mjs';
 
 /** Kompatibler Export: die Frist stammt aus dem vorhandenen Nachfassmodell (ab Versand). */
 export const NACHFASSEN_NACH_TAGEN = ERSTE_NACH_TAGEN;
@@ -288,7 +289,17 @@ function eigenerBestand(positionen) {
 export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = null, gepacktAm = null, gesperrt = null, jetzt = new Date() } = {}) {
   const art = auftragsart(auftrag);
   const label = SCHRITT_LABEL[art];
-  const pos = positionsStand(auftrag, statusAlle);
+  // Gesperrte Muster, die noch nicht bei uns sind (dieselbe Regel wie die Ampel "Gesperrt" und das To-do
+  // "Muster nicht lieferbar"): sie kommen nie - nicht bestellen, nicht beim Lieferanten nachfragen. Sie halten
+  // die Schritte nicht auf (Review 06.11.2026: sonst blieb ein gemischter Auftrag auf "bestellen" stehen),
+  // ausser wenn sonst nichts uebrig bleibt - dann sagt naechsterSchritt "Muster kommt nicht".
+  const sperre = gesperrt instanceof Set ? gesperrt : new Set(gesperrt || []);
+  const standVon = p => statusAlle[positionKey(auftrag?.id, p.lineItemId)]?.status || null;
+  const kommtNichtP = p => Boolean(p?.istMuster && p.lineItemId && (p.menge ?? 1) > 0 && sperre.has(p.lineItemId) && [null, 'bestellt'].includes(standVon(p)));
+  const ohneGesperrte = (auftrag?.positionen ?? []).filter(p => !kommtNichtP(p));
+  const zaehlen = sperre.size && ohneGesperrte.some(p => p.lineItemId) && ohneGesperrte.length < (auftrag?.positionen ?? []).length
+    ? { ...auftrag, positionen: ohneGesperrte } : auftrag;
+  const pos = positionsStand(zaehlen, statusAlle);
   const { jeSchritt, notizen } = wirksameEreignisse(ereignisse);
   const versand = versandBeleg(auftrag);
   const positionen = auftrag?.positionen ?? [];
@@ -403,13 +414,24 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
     ...(wege ? { wege } : {}),
     // Gepackt ist noch nicht versandt (#1709): nur als Angabe fuer den naechsten Schritt, kein eigener Zeitleistenschritt.
     ...(art === AUFTRAGSART.MUSTER && gepacktAm ? { gepacktAm } : {}) };
-  const beschaffung = (auftrag?.positionen || []).map(p => beschaffungsStand(statusAlle[positionKey(auftrag.id, p.lineItemId)], p.bestellSoll || p.bestellmenge)).filter(e => e?.status === 'bestellt');
-  // Gesperrte Muster, die noch nicht bei uns sind (dieselbe Regel wie die Ampel "Gesperrt" und das To-do
-  // "Muster nicht lieferbar"): sie kommen nie - nicht bestellen, nicht beim Lieferanten nachfragen.
-  const sperre = gesperrt instanceof Set ? gesperrt : new Set(gesperrt || []);
+  const bestelltePos = ohneGesperrte.filter(p => p.lineItemId);
+  const beschaffung = bestelltePos.map(p => beschaffungsStand(statusAlle[positionKey(auftrag.id, p.lineItemId)], p.bestellSoll || p.bestellmenge)).filter(e => e?.status === 'bestellt');
+  // Ampel beim Lieferanten je Position ab ihrem Bestelldatum (lib/ampel.mjs warteAmpel), die dringendste -
+  // nicht ab dem letzten Schritt des ganzen Auftrags: eine spaetere zweite Bestellung setzte die Zaehlung
+  // sonst zurueck, waehrend "Je Auftrag" die erste schon rot zeigte (Review 06.11.2026). Lagerware kommt
+  // nicht vom Lieferanten und zaehlt nicht mit.
+  const ampeln = bestelltePos
+    .filter(p => standVon(p) === 'bestellt' && (p.istMuster || lieferwegVon(p, statusAlle[positionKey(auftrag.id, p.lineItemId)])?.weg !== 'lager'))
+    .map(p => warteAmpel(statusAlle[positionKey(auftrag.id, p.lineItemId)], { jetzt }));
+  // Termin vorbei geht vor; sonst das laengste Warten. Nur Termine im Plan: keine Ampel (Regel wie bisher).
+  const lieferantAmpel = ampeln.filter(a => a.grund === 'termin').reduce((m, a) => dringendereAmpel(m, a), null)
+    || ampeln.filter(a => a.grund === 'wartet').sort((x, y) => y.tage - x.tage)[0] || null;
   const muster = positionen.filter(p => p?.istMuster && (p.menge ?? 1) > 0 && p.lineItemId);
-  const kommtNicht = sperre.size ? muster.filter(p => sperre.has(p.lineItemId) && [null, 'bestellt'].includes(statusAlle[positionKey(auftrag.id, p.lineItemId)]?.status || null)).length : 0;
-  return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, beschaffung, nachverfolgbar: pos.gesamt > 0, kommtNicht: kommtNicht ? { anzahl: kommtNicht, von: muster.length } : null, jetzt }) };
+  const kommtNicht = muster.filter(kommtNichtP).length;
+  // "Alle": jedes noch nicht eingetroffene Muster ist gesperrt - nur dann ersetzt "Muster kommt nicht" den Schritt.
+  const nichtDa = muster.filter(p => [null, 'bestellt'].includes(standVon(p)) && !musterOhneLieferant(p));
+  const kommtNichtStand = kommtNicht ? { anzahl: kommtNicht, von: muster.length, alle: nichtDa.every(kommtNichtP) } : null;
+  return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, beschaffung, lieferantAmpel, nachverfolgbar: pos.gesamt > 0, kommtNicht: kommtNichtStand, jetzt }) };
 }
 
 /**
@@ -420,7 +442,9 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
  * @param {object} [kontext.auftrag]        fuer das Bestelldatum als Rueckfallebene
  * @param {object} [kontext.versand]        Sendungsbeleg (intern)
  * @param {boolean} [kontext.nachverfolgbar] false, wenn keine Position eine Kennung hat
- * @param {{anzahl:number, von:number}|null} [kontext.kommtNicht] gesperrte Muster, noch nicht bei uns (Musterauftrag)
+ * @param {{anzahl:number, von:number, alle?:boolean}|null} [kontext.kommtNicht] gesperrte Muster, noch nicht bei uns;
+ *        alle = jedes noch fehlende Muster ist gesperrt (nur dann ersetzt "Muster kommt nicht" den Schritt)
+ * @param {object|null} [kontext.lieferantAmpel] dringendste warteAmpel() der beim Lieferanten bestellten Positionen
  * @param {Date}   [kontext.jetzt]
  * @returns {null | { wer: 'wir'|'lieferant'|'kunde', text, detail, aktion, knopf, stufe, faelligSeitTagen, wartetSeitTagen, annahme, rot }}
  *   null = nichts zu tun (abgeschlossen oder storniert).
@@ -431,7 +455,17 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
  *        bestaetigter Liefertermin vorbei, Wareneingang/Fehlmenge klaeren. Nur dann zeigt "Kunden › Zu tun"
  *        den roten Rand; "sofort" allein ist normale Arbeit.
  */
-export function naechsterSchritt(stand, { auftrag = null, versand = null, beschaffung = [], nachverfolgbar = true, kommtNicht = null, jetzt = new Date() } = {}) {
+export function naechsterSchritt(stand, kontext = {}) {
+  const basis = naechsterSchrittOhneSperre(stand, kontext);
+  const k = kontext.kommtNicht;
+  // Ein Teil der Muster kommt nicht, der Rest laeuft weiter (Review 06.11.2026): der normale Schritt bleibt -
+  // auch ein echter Verzug beim Lieferanten -, dazu der Hinweis, rot. Ersetzt wird er nur, wenn jedes noch
+  // fehlende Muster gesperrt ist (naechsterSchrittOhneSperre); dort steht der Hinweis schon im Text.
+  if (!basis || !k?.anzahl || basis.kommtNicht) return basis;
+  return { ...basis, text: `${basis.text} · ${k.anzahl === 1 ? '1 Muster kommt' : `${k.anzahl} Muster kommen`} nicht – Kunde informieren`, rot: true };
+}
+
+function naechsterSchrittOhneSperre(stand, { auftrag = null, versand = null, beschaffung = [], lieferantAmpel = null, nachverfolgbar = true, kommtNicht = null, jetzt = new Date() } = {}) {
   if (!stand || stand.abgeschlossen) return null;
   const { verlauf, auftragsart: art } = stand;
   const muster = art === AUFTRAGSART.MUSTER;
@@ -451,20 +485,26 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
   const tage = tageSeit(davor, jetzt) ?? 0;
   const teil = aktuell.teil ? ` (${aktuell.teil.erledigt} von ${aktuell.teil.gesamt} Artikeln schon)` : '';
   const beimLieferanten = (text, aktion, knopf) => {
-    const ws = warnstufe(tage);
-    const kopf = ws === 'problem' ? `Problem: ${sache} seit ${tageText(tage)} bestellt und nicht da`
-      : ws === 'nachhaken' ? `Beim Lieferanten nachhaken: ${sache} seit ${tageText(tage)} bestellt`
+    // Mit Bestelldaten: die Ampel je Position (warteAmpel, wie "Je Auftrag"); sonst wie bisher ab dem letzten Schritt.
+    const a = lieferantAmpel;
+    if (a?.grund === 'termin') {
+      return rot(schritt('wir', `Bestätigter Liefertermin überschritten – nachhaken${teil}`, null, aktion, knopf, 'nachhaken', a.tage ?? 0, tage));
+    }
+    const lt = a?.grund === 'wartet' && Number.isInteger(a.tage) ? a.tage : tage;
+    const ws = a?.grund === 'wartet' ? (a.stufe === 'rot' ? 'problem' : a.stufe === 'gelb' ? 'nachhaken' : null) : warnstufe(tage);
+    const kopf = ws === 'problem' ? `Problem: ${sache} seit ${tageText(lt)} bestellt und nicht da`
+      : ws === 'nachhaken' ? `Beim Lieferanten nachhaken: ${sache} seit ${tageText(lt)} bestellt`
       : text;
-    const detail = ws ? `Üblich ist weniger als ${WARTE_NACHHAKEN_TAGE} Tage – ab ${WARTE_PROBLEM_TAGE} Tagen ist es ein Problem.` : `Bestellt vor ${tageText(tage)}.`;
-    return rot(schritt('lieferant', kopf + teil, detail, aktion, knopf, ws || 'warten', ws ? tage - WARTE_NACHHAKEN_TAGE : null, tage), ws === 'problem');
+    const detail = ws ? `Üblich ist weniger als ${WARTE_NACHHAKEN_TAGE} Tage – ab ${WARTE_PROBLEM_TAGE} Tagen ist es ein Problem.` : `Bestellt vor ${tageText(lt)}.`;
+    return rot(schritt('lieferant', kopf + teil, detail, aktion, knopf, ws || 'warten', ws ? lt - WARTE_NACHHAKEN_TAGE : null, lt), ws === 'problem');
   };
   // Gesperrtes Muster (kommt nie): vor "bestellen" und vor "beim Lieferanten" - wie das To-do "Muster nicht
   // lieferbar" auf Heute und die Packstation ("Zu klären"). Bis 06.11. stand hier "seit 15 Tagen bestellt und
   // nicht da" bzw. "Muster beim Lieferanten bestellen" fuer ein Muster, das es nicht mehr gibt.
-  if (muster && kommtNicht?.anzahl && ['bestellt', 'geliefert'].includes(aktuell.schritt)) {
+  if (muster && kommtNicht?.anzahl && kommtNicht.alle !== false && ['bestellt', 'geliefert'].includes(aktuell.schritt)) {
     const welche = kommtNicht.von > 1 ? ` (${kommtNicht.anzahl} von ${kommtNicht.von} Mustern)` : '';
     return { ...rot(schritt('wir', `Muster kommt nicht – Kunde informieren${welche}`, 'Der Lieferant kann es nicht liefern. Kunde informieren, weiter in der Packstation unter „Zu klären“.',
-      null, 'Packstation', 'problem', tage, tage)), href: '#/kunden?tab=muster&mpbereich=klaeren' };
+      null, 'Packstation', 'problem', tage, tage)), href: '#/kunden?tab=muster&mpbereich=klaeren', kommtNicht: true };
   }
   if (!nachverfolgbar && STATUS_ORDER.includes(aktuell.schritt)) {
     return schritt('wir', 'Stand im Shopify-Admin prüfen', 'Die Positionen dieser Bestellung haben keine Kennung – der Stand lässt sich hier nicht festhalten.', null, null, 'faellig', tage, tage);

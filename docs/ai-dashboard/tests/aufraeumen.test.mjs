@@ -191,6 +191,16 @@ test('Eine Bestellung einmal (#1996): was rot unter Probleme steht, fehlt hier u
   assert.equal(aufraeumenUnterProblem({ orderIds: ['B'] }, { daten, lesend: true }), '', 'Rolle "lesen": keine Knoepfe');
   assert.equal(aufraeumenUnterProblem({ id: 'ohne-bestellung' }, { daten }), '');
   assert.equal(aufraeumenUnterProblem({ orderIds: ['B'] }, { daten: { verfuegbar: false } }), '');
+  // Eine Bestellung in zwei roten Eintraegen: die Zeile samt Knoepfen nur am ersten (Review 06.11.2026).
+  const schonGezeigt = new Set();
+  const erste = aufraeumenUnterProblem({ orderIds: ['B'] }, { daten, schonGezeigt });
+  const zweite = aufraeumenUnterProblem({ orderIds: ['B', 'X'] }, { daten, schonGezeigt });
+  assert.match(erste, /data-aufraeumen-laeuft="B"/);
+  assert.equal(zweite, '');
+  // Traegt das To-do schon eine Tageszahl, nennt die Zeile das Datum statt einer zweiten Zahl.
+  const mitZahl = aufraeumenUnterProblem({ orderIds: ['B'], alterTage: 17 }, { daten });
+  assert.match(mitZahl, /#B: letzte Bewegung am \d\d\.\d\d\.\d{4}/);
+  assert.doesNotMatch(mitZahl, /seit 17 Tagen/);
 });
 
 // API: der Server haengt den Fall an /api/kunden/bestellungen, "Läuft noch" (Notiz) nimmt ihn heraus.

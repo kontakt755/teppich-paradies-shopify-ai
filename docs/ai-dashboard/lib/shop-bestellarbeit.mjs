@@ -98,7 +98,9 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now(), lieferantName = 
   // vorher wiederholte der naechste Schritt ihn ("Ware bestellt"). Ein Teilstand sagt mehr; ein
   // bestaetigter Termin bleibt "Ware kommt bis …" wie auf Heute und in den To-dos.
   if (wartet === 'lieferant') {
-    const warten = liefertermin ? arbeit.naechstes : `wartet auf Lieferant · ${seitText(tageBeimLieferanten(lage?.ab, new Date(jetzt)) ?? 0)}`;
+    // Ohne belegte Wartezeit (kein Bestelldatum, Termin im Plan) keine Tageszahl - nicht "seit heute".
+    const tageL = tageBeimLieferanten(lage?.ab, new Date(jetzt));
+    const warten = liefertermin ? arbeit.naechstes : tageL === null ? 'wartet auf Lieferant' : `wartet auf Lieferant · ${seitText(tageL)}`;
     arbeit = { ...arbeit, naechstes: teilstand ? (liefertermin ? `${teilstand} · ${arbeit.naechstes}` : teilstand) : warten };
   }
   return { ...arbeit, wartet, liefertermin: wartet === 'lieferant' ? liefertermin : null, fortschritt: fortschritt || null, waren, gemischt, unklar: Boolean(unklar),

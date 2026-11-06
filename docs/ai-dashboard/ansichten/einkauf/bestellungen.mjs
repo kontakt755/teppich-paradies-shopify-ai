@@ -272,10 +272,11 @@ const AF_FILTER_LABEL = { offen: 'Noch zu bestellen', bestellt: 'Bestellt', eing
 
 /** Filter nach Auftragsfluss-Schritt. Ohne Auswahl: alles ausser "Erledigt". */
 function afFilterChips(allePositionen) {
-  const zaehler = { offen: 0, bestellt: 0, eingetroffen: 0, erledigt: 0, eigen: 0 };
+  const zaehler = { offen: 0, bestellt: 0, eingetroffen: 0, erledigt: 0, eigen: 0, gesperrt: 0 };
   for (const p of allePositionen) zaehler[positionsGruppe(p)] += 1;
   const af = afNorm(state.route.params.get('af'));
-  const offenGesamt = zaehler.offen + zaehler.bestellt + zaehler.eingetroffen + zaehler.eigen;
+  // Gesperrte Muster bleiben offene Arbeit (Kunde informieren), sind aber nicht "Noch zu bestellen".
+  const offenGesamt = zaehler.offen + zaehler.bestellt + zaehler.eingetroffen + zaehler.eigen + zaehler.gesperrt;
   return `<div class="chips" role="group" aria-label="Nach Auftragsfluss filtern">
     <button type="button" class="chip" data-param="af" data-value="" aria-pressed="${!af}">Alle offenen<span class="c">· ${plural(offenGesamt, 'Position', 'Positionen')}</span></button>
     ${Object.keys(AF_FILTER_LABEL).map(k => `<button type="button" class="chip" data-param="af" data-value="${k}" aria-pressed="${af === k}">${esc(AF_FILTER_LABEL[k])}<span class="c">${zaehler[k]}</span></button>`).join('')}
@@ -309,7 +310,7 @@ export function viewEinkaufBestellungen() {
     ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf?tab=lieferant">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
     <div class="band">
       ${art === 'muster' ? '' : bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Ware zu bestellen', 'warn')}
-      ${art === 'ware' ? '' : bandItem(muster.filter(p => gruppe(p) === 'offen' && !gesperrtOffen(p, sperre)).length, 'Muster zu bestellen', 'warn')}
+      ${art === 'ware' ? '' : bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster zu bestellen', 'warn')}
       ${bandItem(nachfassen.auftraege, nachfassen.auftraege === 1 ? 'Auftrag nachfassen' : 'Aufträge nachfassen', nachfassen.stufe || 'warn')}
       ${zumKettler ? bandItem(zumKettler, 'Ware unterwegs zum Kettler', 'plain') : ''}
       ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}

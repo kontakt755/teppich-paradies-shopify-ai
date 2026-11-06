@@ -97,13 +97,21 @@ function gesperrtHtml(ab) {
 const AMPEL_TITEL = {
   blockiert: 'Bestellangaben fehlen – so kann nicht bestellt werden',
   gesperrt: 'Ein Muster kann der Lieferant nicht liefern – Kunde informieren (Packstation)',
+  eintragen: 'Umschlag gepackt, aber nicht als verschickt eingetragen – der Kunde hat keine Versandmail',
 };
+
+/** Alles da, der Umschlag steht in der Packstation aber nicht unter "Packen": wohin damit. */
+function packstationHtml(e) {
+  if (e.gruende.includes('eintragen')) return '<div class="notice crit ab-aktion"><strong>Gepackt, nicht eingetragen:</strong> Umschlag zur Post bringen und als verschickt eintragen – in der <a href="#/kunden?tab=muster&amp;mpbereich=gepackt">Packstation</a>.</div>';
+  if (e.gruende.includes('packstation')) return '<p class="small ab-aktion">Alle Muster sind da – der Umschlag steht in der <a href="#/kunden?tab=muster&amp;mpbereich=klaeren">Packstation unter „Zu klären“</a>.</p>';
+  return '';
+}
 
 function auftragKarte({ a, ab, e }) {
   const amp = auftragsAmpel(ab, e);
   const k = kundeUndOrt(a.id);
   const wer = [k.name, k.ort].filter(Boolean).join(' · ');
-  const inhalt = gesperrtHtml(ab) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab) + selbstHtml(ab)
+  const inhalt = gesperrtHtml(ab) + packstationHtml(e) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab) + selbstHtml(ab)
     : ['bestellt', 'lieferung'].includes(ab.jetzt) ? lieferungHtml(a, ab, e)
     : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`);
   const bestellt = ab.bestelltAm && ab.jetzt !== 'vorbereiten' ? `<span class="small muted">bestellt ${esc(fmtDate(ab.bestelltAm))}</span>` : '';
@@ -257,7 +265,7 @@ export function einkaufKlickAblauf(ev) {
   return false;
 }
 
-const GRUND_TEXT = { bestellen: 'bestellen', ungeklaert: 'klären', informieren: 'Kunde informieren', selbst: 'von uns abschicken', muster_da: 'Muster verschicken', gesperrt: 'Muster kommt nicht', verzug: 'nachfragen' };
+const GRUND_TEXT = { bestellen: 'bestellen', ungeklaert: 'klären', informieren: 'Kunde informieren', selbst: 'von uns abschicken', muster_da: 'Muster verschicken', gesperrt: 'Muster kommt nicht', verzug: 'nachfragen', eintragen: 'Versand eintragen', packstation: 'in der Packstation klären' };
 
 /**
  * Bereich des Umschlags in der Packstation je Auftrag ('packen', 'warten', 'klaeren', 'gepackt') - aus
@@ -320,7 +328,10 @@ export function viewEinkaufAblauf() {
   // Im Filter "Ware" stehen reine Musterauftraege, die nur noch verschickt werden, als eine Zeile: das
   // Packen laeuft in der Packstation, dort steht dieselbe Zahl (Packbereit).
   const nurVersand = x => !hatWare(x) && x.e.gruende.length === 1 && x.e.gruende[0] === 'muster_da';
-  const versandZeile = art === 'ware' ? packbereitZeile(jetztAlle.filter(nurVersand).length) : '';
+  // Rote Musterauftraege (kommt nicht, klaeren, ueberfaellig, nicht eingetragen) verschwinden im Filter
+  // "Ware" nicht still hinter dem Chip (Review 06.11.2026): eine rote Zeile mit Sprung zu "Muster".
+  const rotMuster = x => !hatWare(x) && auftragsAmpel(x.ab, x.e)?.stufe === 'rot';
+  const versandZeile = art === 'ware' ? musterProblemZeile(jetztAlle.filter(rotMuster).length) + packbereitZeile(jetztAlle.filter(nurVersand).length) : '';
   const jetzt = jetztAlle.filter(x => passtArt(x, art));
   const chips = `<div class="chips ab-art" role="group" aria-label="Aufträge nach Art">${Object.entries(ART_LABEL).map(([k, l]) => `<button type="button" class="chip" data-param="art" data-value="${k}" aria-pressed="${art === k}">${l}<span class="c">${jetztAlle.filter(x => passtArt(x, k)).length}</span></button>`).join('')}</div>`;
   // Jeder Auftrag zaehlt einmal, nach seinem dringendsten Grund: die Teilzahlen ergeben die Gesamtzahl.
@@ -335,12 +346,17 @@ export function viewEinkaufAblauf() {
 }
 
 /**
- * Eine Zeile statt Musterkarten im Filter "Ware". Die Zahl kommt aus der Packstation (Packbereit);
- * solange sie nicht geladen ist, zaehlt die Zeile die Auftraege.
+ * Eine Zeile statt Musterkarten im Filter "Ware". Sie zaehlt die Auftraege wie der Chip "Muster" -
+ * die Zahl "Packbereit" der Packstation zaehlt Umschlaege und kennt Auftraege ausserhalb der Packliste
+ * (z. B. Zahlung offen) nicht; mit ihr stand "0 Umschläge packbereit" neben einem Musterauftrag (Review 06.11.).
  */
-function packbereitZeile(auftraege) {
+export function packbereitZeile(auftraege) {
   if (!auftraege) return '';
-  const p = kunden.musterPacken?.verfuegbar && !kunden.musterPacken.fehler ? kunden.musterPacken.zahlen : null;
-  const text = p ? plural(p.packen || 0, 'Umschlag packbereit', 'Umschläge packbereit') : `${plural(auftraege, 'Musterauftrag', 'Musteraufträge')} zum Verschicken`;
-  return `<p class="small ab-packbereit"><a href="#/kunden?tab=muster&amp;mpbereich=packen">${esc(text)} → Packstation</a> <span class="muted">· die Karten stehen unter <a href="#/einkauf?art=muster">Muster</a></span></p>`;
+  return `<p class="small ab-packbereit"><a href="#/kunden?tab=muster&amp;mpbereich=packen">${esc(plural(auftraege, 'Musterauftrag', 'Musteraufträge'))} zum Verschicken → Packstation</a> <span class="muted">· die Karten stehen unter <a href="#/einkauf?art=muster">Muster</a></span></p>`;
+}
+
+/** Rote reine Musterauftraege im Filter "Ware": Zahl und Sprung, die Karten stehen unter "Muster". */
+export function musterProblemZeile(auftraege) {
+  if (!auftraege) return '';
+  return `<p class="small warnc ab-packbereit"><a href="#/einkauf?art=muster">${esc(plural(auftraege, 'Musterauftrag', 'Musteraufträge'))} mit Problem → Muster</a></p>`;
 }

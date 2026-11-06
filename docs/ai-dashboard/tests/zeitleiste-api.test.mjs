@@ -286,10 +286,18 @@ test('Kunden "Zu tun": gesperrtes Muster heisst "Muster kommt nicht – Kunde in
   haengeAn(mustersperrePfad(dir), [sperrEreignis({ sku: 'M-TEST-2', von: 'Mitarbeiter 1', grund: 'nicht verfuegbar', orderId: MUSTER, orderName: '#T1', jetzt: uhr.jetzt })]);
   const f = fallZu();
   const p = f.punkte.find(x => x.bezug === '#T1');
-  assert.equal(p.schritt.text, 'Muster kommt nicht – Kunde informieren (1 von 2 Mustern)');
-  assert.deepEqual([p.rot, f.rot, f.dringend], [true, true, 0]);
+  // M-TEST-1 ist seit 16 Tagen im Verzug: der Verzug bleibt stehen, der Hinweis kommt dazu (Review 06.11.2026).
+  assert.equal(p.schritt.text, 'Problem: Muster seit 16 Tagen bestellt und nicht da · 1 Muster kommt nicht – Kunde informieren');
+  assert.deepEqual([p.rot, f.rot], [true, true]);
+  // Beide gesperrt: "Muster kommt nicht" ersetzt den Schritt.
+  haengeAn(mustersperrePfad(dir), [sperrEreignis({ sku: 'M-TEST-1', von: 'Mitarbeiter 1', grund: 'nicht verfuegbar', orderId: MUSTER, orderName: '#T1', jetzt: uhr.jetzt })]);
+  const beide = fallZu().punkte.find(x => x.bezug === '#T1');
+  assert.equal(beide.schritt.text, 'Muster kommt nicht – Kunde informieren (2 von 2 Mustern)');
   const akte = api.kundenBestellungen().zeilen.find(x => x.orderId === MUSTER);
   assert.equal(akte.naechsterSchritt.href, '#/kunden?tab=muster&mpbereich=klaeren');
+  // Beide Muster ohne Großhändler-ID sind gesperrt: kein "ohne Großhändler-ID" mehr, Ampel nicht rot - an einer
+  // Stelle im Server fuer Heute, Kunden › Zu tun und Kunden › Bestellungen.
+  assert.deepEqual([akte.auftrag.ampel, akte.auftrag.hinweise, akte.auftrag.gesperrtOhneId], ['gruen', [], 2]);
   // Ware frisch bestellen: Routine, kein Rot.
   const ware = [...api.kundenFaelle().faelle, ...api.kundenFaelle().ausgeblendet].find(x => x.punkte.some(q => q.bezug === '#T2'));
   assert.equal(ware.rot, false);

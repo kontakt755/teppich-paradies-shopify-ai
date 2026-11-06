@@ -808,3 +808,24 @@ test('w-222: To-do-Liste und Zaehler teilen Entscheidungen gleich zu', async () 
   assert.deepEqual(g.fuerDich.map(t => t.number), [21, 22]);
   assert.deepEqual(g.beiAnderen.map(t => t.number), [23, 24]);
 });
+
+test('Gesperrtes Muster ohne Artikelnummer: kein "Zuerst klären", sondern "Muster nicht lieferbar" (Review 06.11.2026)', () => {
+  // Wie #T1110: m1 gesperrt und ohne Großhändler-ID (einziger roter Grund), m2 geliefert.
+  const z = zeile({ name: 'Kunde Sperre', tage: 4, ampel: 'rot', hinweise: ['1 Position(en) ohne Großhändler-ID'], positionen: [
+    { istMuster: true, lieferant: 'UNGEKLAERT', titel: 'Muster Testfliese', farbe: 'Senf' },
+    { istMuster: true, lieferant: 'A', titel: 'Muster Testfliese', farbe: 'Gelb' },
+  ] });
+  const [m1] = z.auftrag.positionen.map(p => p.lineItemId);
+  Object.assign(z.auftrag, { ohneIdPositionen: [m1], ampelOhneIdGrund: 'gruen' });
+  z.gesperrteMuster = [m1];
+  const statusAlle = stand(z, 1, { status: 'geliefert', geliefertAm: vorTagen(1) });
+  const todos = leiteTodosAb({ bestellzeilen: [z], statusAlle }, { sicht: 'laden', jetzt: JETZT });
+  assert.ok(!todos.some(t => t.art === 'blockiert'), 'kein "Zuerst klären" fuer ein Muster, das nie bestellt wird');
+  const t = todos.find(x => x.art === 'muster_gesperrt');
+  assert.ok(t, 'To-do "Muster nicht lieferbar" entsteht');
+  assert.deepEqual(t.musterSchluessel, [`${z.orderId}::${m1}`]);
+  assert.ok(!werWartet({ bestellzeilen: [z], statusAlle }, { jetzt: JETZT }).wir.some(x => x.schritt === 'Zuerst klären'));
+  // Ohne Sperrliste bleibt die Bestellung blockiert.
+  const ohne = { ...z, gesperrteMuster: [] };
+  assert.ok(leiteTodosAb({ bestellzeilen: [ohne], statusAlle }, { sicht: 'laden', jetzt: JETZT }).some(x => x.art === 'blockiert'));
+});

@@ -61,7 +61,9 @@ test('Klaerfaelle je Grund in einer Zeile; was oben schon rot steht, fehlt hier'
     // haengt laenger als einen Werktag: steht oben als "1 Muster hängt"
     zeile(5, [], { klaeren: [{ lineItemIds: ['m5'], grund: 'Mustermenge prüfen', seit: '2026-11-02T09:00:00Z' }] }),
   ] };
-  const html = musterAutomatikBlock(daten, jetzt);
+  // Was oben rot steht, kommt aus den roten To-dos selbst (probleme.mjs rotMuster), nicht aus dem Alter.
+  const rot = { positionen: new Set(['gid://test/Order/4::m4', 'gid://test/Order/5::m5']), auftraege: new Set() };
+  const html = musterAutomatikBlock(daten, jetzt, { rot });
   assert.match(html, /Musterautomatik: Klärung nötig/);
   assert.equal((html.match(/Bestellumfang nach dem Mailversand/g) || []).length, 1, 'ein Grund, eine Zeile');
   assert.match(html, />#T1<\/a>, <a [^>]*>#T2<\/a>/);
@@ -70,4 +72,21 @@ test('Klaerfaelle je Grund in einer Zeile; was oben schon rot steht, fehlt hier'
   assert.doesNotMatch(html, /#T4|Im Shop gesperrt/);
   assert.doesNotMatch(html, /#T5|Mustermenge/);
   assert.match(html, /href="#\/kunden\?tab=bestellungen&amp;bart=muster">Alle Musterbestellungen ansehen/);
+});
+
+test('Klaerfall ohne rotes To-do bleibt im Block, auch wenn er seit Tagen haengt (Review 06.11.2026)', async () => {
+  const { leiteTodosAb } = await import('../lib/todos.mjs');
+  const { rotMuster } = await import('../ansichten/heute/probleme.mjs');
+  // Unbezahlte Musterbestellung: kein rotes To-do "Muster hängen", der Klaerfall der Automatik seit 02.11.
+  const z = { ...zeile(7, [], { klaeren: [{ lineItemIds: ['m7'], grund: 'Zahlung oder Rückerstattung prüfen', seit: '2026-11-02T09:00:00Z' }] }),
+    datum: '2026-11-02T08:00:00Z', zahlungsstatus: 'PENDING', offen: true, storniert: false, testbestellung: false,
+    auftrag: { id: 'gid://test/Order/7', name: '#T7', ampel: 'gruen', hinweise: [], positionen: [{ lineItemId: 'm7', istMuster: true, menge: 1, lieferant: 'A', titel: 'Muster Testteppich' }] } };
+  const daten = { musterAutomatik: { aktiv: true }, zeilen: [z] };
+  const todos = leiteTodosAb({ bestellzeilen: [z], statusAlle: {} }, { sicht: 'laden', jetzt: new Date(jetzt) });
+  const html = musterAutomatikBlock(daten, jetzt, { rot: rotMuster(todos) });
+  assert.match(html, /Zahlung oder Rückerstattung prüfen<\/strong><p><a [^>]*>#T7<\/a>/);
+  // Bezahlt: jetzt gibt es das rote To-do "1 Muster hängt" - dann fehlt der Fall hier.
+  const bezahlt = { ...z, zahlungsstatus: 'PAID' };
+  const rotBezahlt = rotMuster(leiteTodosAb({ bestellzeilen: [bezahlt], statusAlle: {} }, { sicht: 'laden', jetzt: new Date(jetzt) }));
+  assert.equal(musterAutomatikBlock({ ...daten, zeilen: [bezahlt] }, jetzt, { rot: rotBezahlt }), '');
 });

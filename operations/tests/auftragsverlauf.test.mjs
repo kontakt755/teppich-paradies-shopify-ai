@@ -523,13 +523,22 @@ test('reine Auftraege ohne Teillieferung bleiben unveraendert (keine wege)', () 
 test('Gesperrtes Muster: "Muster kommt nicht – Kunde informieren" vor "bestellen" und vor dem Lieferanten, rot', () => {
   const a = einAuftrag(bestellung(1, [muster(1), muster(2)]));
   const [m1, m2] = a.positionen.map(p => p.lineItemId);
-  // Seit 15 Tagen bestellt, m2 gesperrt: vorher "Problem: Muster seit 15 Tagen bestellt und nicht da".
+  // Beide seit 15 Tagen bestellt.
   const statusAlle = statusBis(a, 'bestellt');
   const ohne = zeitleiste(a, { statusAlle, jetzt: am(17) }).naechsterSchritt;
   assert.match(ohne.text, /^Problem: Muster seit 15 Tagen bestellt/);
   assert.equal(ohne.rot, true, 'ab 14 Tagen beim Lieferanten: rot');
+  // m2 gesperrt, m1 echt im Verzug (Review 06.11.2026, E5): der Verzug bleibt sichtbar - beim Lieferanten
+  // muss nachgefragt werden -, der Hinweis auf das gesperrte Muster kommt dazu.
   const n = zeitleiste(a, { statusAlle, gesperrt: [m2], jetzt: am(17) }).naechsterSchritt;
-  assert.deepEqual([n.wer, n.text, n.rot, n.href], ['wir', 'Muster kommt nicht – Kunde informieren (1 von 2 Mustern)', true, '#/kunden?tab=muster&mpbereich=klaeren']);
+  assert.deepEqual([n.wer, n.text, n.rot], ['lieferant', 'Problem: Muster seit 15 Tagen bestellt und nicht da · 1 Muster kommt nicht – Kunde informieren', true]);
+  // m1 schon da, m2 (bestellt) gesperrt: m1 kann raus, der Hinweis steht dabei.
+  const halb = { ...statusAlle, [`${a.id}::${m1}`]: { ...statusAlle[`${a.id}::${m1}`], status: 'geliefert', geliefertAm: tag(5) } };
+  const teil = zeitleiste(a, { statusAlle: halb, gesperrt: [m2], jetzt: am(17) }).naechsterSchritt;
+  assert.deepEqual([teil.wer, teil.text, teil.rot], ['wir', 'Muster labeln und an den Kunden schicken · 1 Muster kommt nicht – Kunde informieren', true]);
+  // Alle fehlenden Muster gesperrt (beide bestellt): dann ersetzt "kommt nicht" den Schritt.
+  const ersetzt = zeitleiste(a, { statusAlle, gesperrt: [m1, m2], jetzt: am(17) }).naechsterSchritt;
+  assert.deepEqual([ersetzt.wer, ersetzt.text, ersetzt.rot, ersetzt.href], ['wir', 'Muster kommt nicht – Kunde informieren (2 von 2 Mustern)', true, '#/kunden?tab=muster&mpbereich=klaeren']);
   // Noch nichts bestellt: nie "Muster beim Lieferanten bestellen".
   const offen = zeitleiste(a, { statusAlle: {}, gesperrt: new Set([m1, m2]), jetzt: am(3) }).naechsterSchritt;
   assert.equal(offen.text, 'Muster kommt nicht – Kunde informieren (2 von 2 Mustern)');
@@ -559,4 +568,33 @@ test('rot nur aus Ampelgruenden: Termin vorbei ja, Nachhaken (gelb) und Routine 
   const n = zeitleiste(a, { statusAlle: termin, jetzt: am(6) }).naechsterSchritt;
   assert.deepEqual([n.text, n.rot], ['Bestätigter Liefertermin überschritten – nachhaken', true]);
   assert.equal(zeitleiste(einAuftrag(bestellung(2, [ware(1)])), { statusAlle: {}, jetzt: am(5) }).naechsterSchritt.rot, false, 'Ware bestellen: Routine');
+});
+
+test('Gemischter Auftrag mit gesperrtem Muster ohne Stand: nicht "bestellen", rot mit "Muster kommt nicht" (E4)', () => {
+  const a = einAuftrag(bestellung(1, [ware(1), muster(2)]));
+  const [w1, m2] = a.positionen.map(p => p.lineItemId);
+  const statusAlle = { [`${a.id}::${w1}`]: { status: 'bestellt', bestelltAm: tag(3), aktualisiertAm: tag(3) } };
+  const ohneSperre = zeitleiste(a, { statusAlle, jetzt: am(5) }).naechsterSchritt;
+  assert.match(ohneSperre.text, /^Ware beim Lieferanten bestellen \(1 von 2 Artikeln schon\)/, 'Ausgangslage: das Muster ist noch zu bestellen');
+  const n = zeitleiste(a, { statusAlle, gesperrt: [m2], jetzt: am(5) }).naechsterSchritt;
+  assert.doesNotMatch(n.text, /bestellen/);
+  assert.equal(n.text, 'Lieferant liefert die Ware an uns · 1 Muster kommt nicht – Kunde informieren');
+  assert.equal(n.rot, true);
+});
+
+test('Rot beim Lieferanten je Position ab ihrem Bestelldatum, nicht ab dem letzten Schritt (E6)', () => {
+  const a = einAuftrag(bestellung(1, [ware(1), ware(2)]));
+  const [w1, w2] = a.positionen.map(p => p.lineItemId);
+  // w1 seit 17.10. (20 Tage), w2 erst seit 03.11. bestellt - der Schritt "bestellt" ist am 03.11. getan.
+  const statusAlle = {
+    [`${a.id}::${w1}`]: { status: 'bestellt', bestelltAm: '2026-10-17T09:00:00Z', aktualisiertAm: '2026-10-17T09:00:00Z' },
+    [`${a.id}::${w2}`]: { status: 'bestellt', bestelltAm: '2026-11-03T09:00:00Z', aktualisiertAm: '2026-11-03T09:00:00Z' },
+  };
+  const n = zeitleiste(a, { statusAlle, jetzt: new Date('2026-11-06T12:00:00Z') }).naechsterSchritt;
+  assert.equal(n.text, 'Problem: Ware seit 20 Tagen bestellt und nicht da');
+  assert.deepEqual([n.stufe, n.rot, n.wartetSeitTagen], ['problem', true, 20]);
+  // Bestaetigter Termin vorbei bei einer Position: rot, wir haken nach.
+  const termin = { ...statusAlle, [`${a.id}::${w2}`]: { ...statusAlle[`${a.id}::${w2}`], beschaffung: { liefertermin: '2026-11-04' } } };
+  const t = zeitleiste(a, { statusAlle: termin, jetzt: new Date('2026-11-06T12:00:00Z') }).naechsterSchritt;
+  assert.deepEqual([t.wer, t.text, t.rot], ['wir', 'Bestätigter Liefertermin überschritten – nachhaken', true]);
 });

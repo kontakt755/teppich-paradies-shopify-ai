@@ -288,4 +288,7 @@ test('Heute-Warenblock: eine Teillieferung nennt denselben Satz wie Kunden › B
   assert.match(ruhig, /Beim Lieferanten bestellt · wartet auf Lieferant/);
   assert.doesNotMatch(ruhig, /wartet auf Lieferant · seit/);
   assert.equal(shopBestellarbeit(daten([wartend]), { jetzt }).zeilen[0].naechstes, 'wartet auf Lieferant · seit 3 Tagen');
+  // Bestellt ohne Bestelldatum (Altfall): keine Tageszahl statt "seit heute" (Review 06.11.2026).
+  const ohneDatum = zeile('ohne-datum', [ware('a')], { a: { status: 'bestellt' } });
+  assert.equal(shopBestellarbeit(daten([ohneDatum]), { jetzt }).zeilen[0].naechstes, 'wartet auf Lieferant');
 });

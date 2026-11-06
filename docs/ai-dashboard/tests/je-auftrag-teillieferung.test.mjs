@@ -27,18 +27,18 @@ const daten = () => ({
 });
 const status = { 'o1::w1': 'geliefert', 'o1::w2': 'bestellt', 'o2::m1': 'geliefert', 'o3::m2': 'geliefert', 'o3::m3': 'bestellt' };
 
-function ansicht(query, { pack = true, ohneWare = false } = {}) {
+function ansicht(query, { pack = true, ohneWare = false, gesperrt = [], bereichO2 = 'packen' } = {}) {
   const vorher = { params: state.route.params, view: state.route.view, b: einkauf.bestellungen, s: einkauf.auftragsstatus, l: einkauf.lieferanten, p: kunden.musterPacken };
   try {
     state.route.view = 'einkauf';
     state.route.params = new URLSearchParams(query);
-    einkauf.bestellungen = daten();
+    einkauf.bestellungen = { ...daten(), gesperrteMuster: gesperrt };
     // Ware schon beim Kunden: kein Warenauftrag mehr unter "Jetzt zu tun".
     if (ohneWare) einkauf.bestellungen.auftraege = einkauf.bestellungen.auftraege.filter(a => a.id !== 'o1');
     einkauf.auftragsstatus = { positionen: Object.fromEntries(Object.entries(status).map(([k, st]) => [k, { status: st, bestelltAm: '2026-11-03T09:00:00Z' }])) };
     einkauf.lieferanten = { lieferanten: [{ id: 'lieferant-a', stammdaten: { name: 'Lieferant A' } }] };
     kunden.musterPacken = pack ? { verfuegbar: true, offen: 2, zahlen: { packen: 1, warten: 1, klaeren: 0, gepackt: 0 },
-      kunden: [{ bestellungen: [{ orderId: 'o2' }], bereich: 'packen' }, { bestellungen: [{ orderId: 'o3' }], bereich: 'warten' }] } : { verfuegbar: false };
+      kunden: [{ bestellungen: [{ orderId: 'o2' }], bereich: bereichO2 }, { bestellungen: [{ orderId: 'o3' }], bereich: 'warten' }] } : { verfuegbar: false };
     return viewEinkaufAblauf();
   } finally {
     state.route.params = vorher.params; state.route.view = vorher.view;
@@ -61,7 +61,8 @@ test('Vorgabe "Ware", solange ein Warenauftrag zu tun ist; Musterversand als ein
   assert.match(html, /data-value="muster" aria-pressed="false">Muster<span class="c">1</);
   assert.match(html, /data-value="alle" aria-pressed="false">Alle<span class="c">2</);
   assert.deepEqual(karten(html.slice(0, html.indexOf('ab-gruppe') > 0 ? html.indexOf('ab-gruppe') : html.length)), ['#To1']);
-  assert.match(html, /href="#\/kunden\?tab=muster&amp;mpbereich=packen">1 Umschlag packbereit → Packstation</);
+  // Die Zeile zaehlt Auftraege wie der Chip "Muster" - "Packbereit" der Packstation zaehlt Umschlaege (Review 06.11.2026).
+  assert.match(html, /href="#\/kunden\?tab=muster&amp;mpbereich=packen">1 Musterauftrag zum Verschicken → Packstation</);
   // Kopfzeile zaehlt nur, was im Filter steht - und jeden Auftrag einmal.
   assert.match(html, /<strong>1 Auftrag jetzt zu tun<\/strong> \(1× von uns abschicken\)/);
 });
@@ -85,4 +86,16 @@ test('Filter "Muster"; ohne Warenauftrag zu tun gilt "Alle"; Packstand nicht gel
   assert.doesNotMatch(ohneWare, /ab-packbereit/);
   const ohnePack = ansicht('', { pack: false });
   assert.match(ohnePack, /1 Musterauftrag zum Verschicken → Packstation/);
+});
+
+test('Filter "Ware": rote Musterauftraege verschwinden nicht hinter dem Chip, gepackt und nie eingetragen ist rot (Review 06.11.2026)', () => {
+  // m3 gesperrt: o3 ist rot ("Muster kommt nicht") - im Filter "Ware" eine rote Zeile mit Sprung zu "Muster".
+  const html = ansicht('', { gesperrt: ['m3'] });
+  assert.match(html, /<p class="small warnc ab-packbereit"><a href="#\/einkauf\?art=muster">1 Musterauftrag mit Problem → Muster<\/a>/);
+  assert.doesNotMatch(ansicht(''), /mit Problem → Muster/, 'ohne Rot keine Zeile');
+  // o2: alles da, Umschlag gepackt und nicht eingetragen - "Jetzt zu tun" mit rotem Rand, nicht "Unterwegs".
+  const gepackt = ansicht('art=muster', { bereichO2: 'gepackt' });
+  assert.match(gepackt, /1× Versand eintragen/);
+  assert.match(gepackt, /Gepackt, nicht eingetragen:/);
+  assert.match(gepackt, /mpbereich=gepackt/);
 });
