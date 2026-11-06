@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-11-06T13:33:47Z",
-    "verifiedBy": "Admin API role MAIN nach workflow:live (main a290fb61, PR #1994 Top-Leiste)."
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-11-06T13:33:47Z",
-    "verifiedBy": "Bisheriges Live-Theme (seit main 1cba3b8e), nach workflow:live (main a290fb61) als Preview getauscht; Rolle UNPUBLISHED per Admin API bestaetigt."
+    "verifiedAt": "2026-11-06T18:23:41Z",
+    "verifiedBy": "Admin API role MAIN nach workflow:live (main 44809286, Rundgang 06.11.: #2000-#2016)."
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-11-06T18:23:41Z",
+    "verifiedBy": "Bisheriges Live-Theme (seit main a290fb61), nach workflow:live (main 44809286) als Preview getauscht; Rolle UNPUBLISHED per Admin API bestaetigt."
   },
   "fallback": {
     "themeId": "206590509390",
