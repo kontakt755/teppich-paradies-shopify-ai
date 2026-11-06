@@ -1280,7 +1280,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     // Packablage meldet die Packstation selbst; die Zeitleisten laufen dann ohne diese Angabe.
     let gepackt = {};
     try { gepackt = leseMusterPackStand(musterPackenPfad(dir)).gepackt; } catch { /* siehe oben */ }
-    return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), gepackt, jetzt: now() });
+    // Gesperrte Muster (#1996): dieselbe Liste wie `gesperrteMuster` der Bestellungen und das To-do "Muster
+    // nicht lieferbar" - sonst schlug "Kunden › Zu tun" vor, ein gesperrtes Muster zu bestellen oder beim
+    // Lieferanten nachzufragen. Ist die Ablage kaputt, meldet das das Musterlager; dann ohne Sperre.
+    let sperren = new Map();
+    try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* siehe Musterlager */ }
+    const gesperrtFuer = a => (sperren.size ? (a.positionen || []).filter(p => p.istMuster && p.sku && p.lineItemId && sperren.has(sperrSku(p.sku))).map(p => p.lineItemId) : null);
+    return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), gepackt, gesperrtFuer, jetzt: now() });
   }
 
   /** Wer kettelt und ob der Kettler-Dialog gilt: fuer die Zeitleiste in Kundenakte und Bestellungen. */

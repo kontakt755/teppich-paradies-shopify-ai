@@ -273,3 +273,24 @@ test('Kunden "Zu tun": naechster Schritt aus der Zeitleiste, Shopify-Versand nur
   assert.equal(typeof r.wartend, 'number');
   assert.equal(r.wartendeSchluessel, undefined);
 });
+
+test('Kunden "Zu tun": gesperrtes Muster heisst "Muster kommt nicht – Kunde informieren", rot; Routine nicht rot (#1996)', async () => {
+  const { dir, api, uhr, schritt } = umgebung();
+  const { sperrEreignis, mustersperrePfad, haengeAn } = await import('../../../operations/lib/mustersperre.mjs').then(m => ({ sperrEreignis: m.ereignis, mustersperrePfad: m.mustersperrePfad, haengeAn: m.haengeAn }));
+  schritt(MUSTER, 'bestellt');
+  uhr.jetzt = new Date('2026-01-18T10:00:00Z');
+  const fallZu = () => { const r = api.kundenFaelle(); return [...r.faelle, ...r.ausgeblendet].find(f => f.punkte.some(p => p.bezug === '#T1')); };
+  const vorher = fallZu().punkte.find(p => p.bezug === '#T1');
+  assert.match(vorher.schritt.text, /^Problem: Muster seit 16 Tagen bestellt/);
+  // Ein Muster der Bestellung wird gesperrt (Ablage wie im Betrieb, ohne Shopify).
+  haengeAn(mustersperrePfad(dir), [sperrEreignis({ sku: 'M-TEST-2', von: 'Mitarbeiter 1', grund: 'nicht verfuegbar', orderId: MUSTER, orderName: '#T1', jetzt: uhr.jetzt })]);
+  const f = fallZu();
+  const p = f.punkte.find(x => x.bezug === '#T1');
+  assert.equal(p.schritt.text, 'Muster kommt nicht – Kunde informieren (1 von 2 Mustern)');
+  assert.deepEqual([p.rot, f.rot, f.dringend], [true, true, 0]);
+  const akte = api.kundenBestellungen().zeilen.find(x => x.orderId === MUSTER);
+  assert.equal(akte.naechsterSchritt.href, '#/kunden?tab=muster&mpbereich=klaeren');
+  // Ware frisch bestellen: Routine, kein Rot.
+  const ware = [...api.kundenFaelle().faelle, ...api.kundenFaelle().ausgeblendet].find(x => x.punkte.some(q => q.bezug === '#T2'));
+  assert.equal(ware.rot, false);
+});

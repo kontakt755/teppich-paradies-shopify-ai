@@ -83,9 +83,10 @@ export function viewKunden() {
   return (['bestellungen', 'muster', 'anrufe', 'musterwirkung'].includes(tab) ? einfacherKopf : head) + body;
 }
 
+/** "Zu tun · 6 sofort": die Zahl zaehlt die sofortigen Kunden (wie der Satz darunter), nicht alle Karten. */
 function f_badge() {
   const n = kunden.faelle?.sofort || 0;
-  return n ? ` <span class="badge gap">${n}</span>` : '';
+  return n ? ` <span class="badge gap">${n} sofort</span>` : '';
 }
 
 function r_badge() {

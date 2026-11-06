@@ -79,7 +79,7 @@ test('Musterstrecke ohne Status: angefragt automatisch, naechster Schritt "bei L
   assert.equal(z.verlauf[3].label, 'Gelabelt und an Kunden verschickt');
   assert.deepEqual({ wer: z.naechsterSchritt.wer, aktion: z.naechsterSchritt.aktion, stufe: z.naechsterSchritt.stufe, faelligSeitTagen: z.naechsterSchritt.faelligSeitTagen },
     { wer: 'wir', aktion: 'bestellt', stufe: 'faellig', faelligSeitTagen: 2 });
-  assert.deepEqual(Object.keys(z.naechsterSchritt).sort(), ['aktion', 'annahme', 'detail', 'faelligSeitTagen', 'knopf', 'stufe', 'text', 'wartetSeitTagen', 'wer']);
+  assert.deepEqual(Object.keys(z.naechsterSchritt).sort(), ['aktion', 'annahme', 'detail', 'faelligSeitTagen', 'knopf', 'rot', 'stufe', 'text', 'wartetSeitTagen', 'wer']);
 });
 
 test('Muster beim Lieferanten: warten, ab 7 Tagen nachhaken, ab 14 Tagen Problem (Schwellen aus lieferanten.mjs)', () => {
@@ -517,4 +517,46 @@ test('reine Auftraege ohne Teillieferung bleiben unveraendert (keine wege)', () 
   const alle = zeitleiste(wegAuftrag(zwei), { statusAlle: wegStatus({ d1: da, d2: da }), jetzt: JETZT_WEG });
   assert.equal(alle.wege, undefined);
   assert.equal(alle.naechsterSchritt.text, 'Ware an den Kunden übergeben oder verschicken');
+});
+
+// --- Gesperrte Muster und rot (#1996, 06.11.2026) ---
+test('Gesperrtes Muster: "Muster kommt nicht – Kunde informieren" vor "bestellen" und vor dem Lieferanten, rot', () => {
+  const a = einAuftrag(bestellung(1, [muster(1), muster(2)]));
+  const [m1, m2] = a.positionen.map(p => p.lineItemId);
+  // Seit 15 Tagen bestellt, m2 gesperrt: vorher "Problem: Muster seit 15 Tagen bestellt und nicht da".
+  const statusAlle = statusBis(a, 'bestellt');
+  const ohne = zeitleiste(a, { statusAlle, jetzt: am(17) }).naechsterSchritt;
+  assert.match(ohne.text, /^Problem: Muster seit 15 Tagen bestellt/);
+  assert.equal(ohne.rot, true, 'ab 14 Tagen beim Lieferanten: rot');
+  const n = zeitleiste(a, { statusAlle, gesperrt: [m2], jetzt: am(17) }).naechsterSchritt;
+  assert.deepEqual([n.wer, n.text, n.rot, n.href], ['wir', 'Muster kommt nicht – Kunde informieren (1 von 2 Mustern)', true, '#/kunden?tab=muster&mpbereich=klaeren']);
+  // Noch nichts bestellt: nie "Muster beim Lieferanten bestellen".
+  const offen = zeitleiste(a, { statusAlle: {}, gesperrt: new Set([m1, m2]), jetzt: am(3) }).naechsterSchritt;
+  assert.equal(offen.text, 'Muster kommt nicht – Kunde informieren (2 von 2 Mustern)');
+  // Ist das gesperrte Muster doch angekommen, laeuft alles normal.
+  const da = zeitleiste(a, { statusAlle: statusBis(a, 'geliefert'), gesperrt: [m2], jetzt: am(5) }).naechsterSchritt;
+  assert.match(da.text, /^Muster labeln und an den Kunden schicken/);
+  assert.equal(da.rot, false, 'Routine: nicht rot');
+  // Ohne Sperrliste unveraendert.
+  assert.equal(zeitleiste(a, { statusAlle: {}, jetzt: am(3) }).naechsterSchritt.text, 'Muster beim Lieferanten bestellen');
+});
+
+test('zeitleistenFuerModell reicht die Sperrliste je Auftrag weiter', () => {
+  const m = modellAus(bestellung(1, [muster(1)]), bestellung(2, [muster(2)], { kunde: 2 }));
+  const gesperrt = m.auftraege[0].positionen[0].lineItemId;
+  const zl = zeitleistenFuerModell(m, { gesperrtFuer: a => (a.id === m.auftraege[0].id ? [gesperrt] : null), jetzt: am(3) });
+  assert.match(zl.get(m.auftraege[0].id).naechsterSchritt.text, /^Muster kommt nicht/);
+  assert.equal(zl.get(m.auftraege[1].id).naechsterSchritt.text, 'Muster beim Lieferanten bestellen');
+});
+
+test('rot nur aus Ampelgruenden: Termin vorbei ja, Nachhaken (gelb) und Routine nein', () => {
+  const a = einAuftrag(bestellung(1, [muster(1)]));
+  const statusAlle = statusBis(a, 'bestellt');
+  assert.equal(zeitleiste(a, { statusAlle, jetzt: am(2 + WARTE_NACHHAKEN_TAGE) }).naechsterSchritt.rot, false, 'gelb ist nicht rot');
+  assert.equal(zeitleiste(a, { statusAlle, jetzt: am(2 + WARTE_PROBLEM_TAGE) }).naechsterSchritt.rot, true);
+  const key = Object.keys(statusAlle)[0];
+  const termin = { ...statusAlle, [key]: { ...statusAlle[key], beschaffung: { liefertermin: '2026-01-04' } } };
+  const n = zeitleiste(a, { statusAlle: termin, jetzt: am(6) }).naechsterSchritt;
+  assert.deepEqual([n.text, n.rot], ['Bestätigter Liefertermin überschritten – nachhaken', true]);
+  assert.equal(zeitleiste(einAuftrag(bestellung(2, [ware(1)])), { statusAlle: {}, jetzt: am(5) }).naechsterSchritt.rot, false, 'Ware bestellen: Routine');
 });

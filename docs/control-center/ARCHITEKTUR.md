@@ -938,6 +938,16 @@ entfällt dann. Seit 2026-10-13 bucht „raus“ selbst in Shopify (Abschnitt 17
 der Hinweis, auch wenn der Bestellexport noch den alten Stand zeigt; ist die Buchung gescheitert, heißt er
 „Versand in Shopify nicht gebucht – in der Bestellung nachholen“.
 
+**Gesperrte Muster und Rot (seit 2026-11-06, #1996).** `zeitleisten()` im Server reicht die Mustersperre
+(`mustersperre.json`, dieselbe Liste wie `gesperrteMuster`) als `gesperrtFuer` an `zeitleistenFuerModell()`.
+Ist in einem Musterauftrag ein gesperrtes Muster noch nicht bei uns, heißt der nächste Schritt vor
+„bestellen“ und vor „beim Lieferanten“ **„Muster kommt nicht – Kunde informieren (x von y Mustern)“** mit
+Link in die Packstation (`mpbereich=klaeren`) – wie das To-do auf Heute. Jeder Schritt trägt `rot`
+(lib/ampel.mjs): gesperrt, ab 14 Tagen beim Lieferanten, bestätigter Liefertermin vorbei, Wareneingang
+bzw. Fehlmenge klären. `kundenfaelle.mjs` setzt daraus und aus der Bestellampel („Zuerst klären“) `rot` je
+Punkt und Fall; nur dann trägt die Fallkarte den roten Rand (`fall-sofort`). „sofort“ bleibt als Wort, der
+Reiter heißt „Zu tun · n sofort“. Eine kaputte Sperrablage lässt die Zeitleisten ohne Sperre laufen.
+
 ## 10. Datenaktualisierung (seit 2026-09-23)
 
 Lexikon, Bestellübersicht und Kennzahlen sind Momentaufnahmen unter `$TP_PRIVAT_DIR` (Abschnitt 8/9) und

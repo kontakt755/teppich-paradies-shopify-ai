@@ -83,7 +83,9 @@ export function fallKarte(f, { ausgeblendet = false } = {}) {
       : `<button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="">Wieder einblenden</button>`)
     : `<button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="erledigt" title="Ist erledigt – aus der Arbeitsliste nehmen">✓ Erledigt</button>
        <button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="test" title="Eigener Testkauf, kein Kunde">Kein echter Kunde</button>`;
-  return `<section class="card fall${f.dringend === 0 && !ausgeblendet ? ' fall-sofort' : ''}${ausgeblendet ? ' fertig' : ''}" style="margin-bottom:12px">
+  // Roter Rand nur aus Ampelgruenden (f.rot: gesperrt, blockiert, ab 14 Tagen beim Lieferanten, Termin vorbei);
+  // "sofort" steht als Wort daneben - vorher trug jede sofortige Karte den Rand, auch reine Routine.
+  return `<section class="card fall${f.rot && !ausgeblendet ? ' fall-sofort' : ''}${ausgeblendet ? ' fertig' : ''}" style="margin-bottom:12px">
     <div class="card-head">
       <h3>${esc(f.name)} <span class="small muted">${ausgeblendet ? esc(FALL_GRUND_LABEL[f.marke?.grund] || 'ausgeblendet') : esc(stufe)}</span></h3>
       <span class="small">${f.summe ? `${esc(fmtPreis(f.summe))} €` : ''}</span>

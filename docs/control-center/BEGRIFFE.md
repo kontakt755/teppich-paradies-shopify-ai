@@ -247,3 +247,12 @@ gebraeuchlich), Erfassen.
 - **Ware | Muster | Alle** = Filter in „Je Auftrag“; Vorgabe **Ware**, solange ein Warenauftrag zu tun ist.
   Unter „Ware“ stehen reine Musteraufträge, die nur noch verschickt werden, als eine Zeile
   **n Umschläge packbereit → Packstation**.
+
+## Kunden › Zu tun: gesperrt und Rot (06.11.2026, #1996)
+
+- **Muster kommt nicht – Kunde informieren (x von y Mustern)** = nächster Schritt eines Musterauftrags unter
+  Kunden › Zu tun, wenn ein gesperrtes Muster noch nicht bei uns ist; Link in die Packstation unter
+  „Zu klären“. Vorher stand dort „beim Lieferanten nachfragen“ oder „Muster beim Lieferanten bestellen“.
+- **Roter Rand** an einer Fallkarte = ein Ampelgrund: Muster gesperrt, „Zuerst klären“, 14 Tage beim
+  Lieferanten, Liefertermin vorbei, Wareneingang klären. **sofort** ohne roten Rand = Routine, die heute dran ist.
+- **Zu tun · n sofort** = Reiter unter Kunden; n zählt die Kunden mit einem sofortigen Schritt.
