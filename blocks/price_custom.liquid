@@ -50,9 +50,9 @@
   endcapture
   assign tp_pc_zentral = tp_pc_zentral | strip | split: '|' | first | plus: 0
   if tp_pc_zentral > 0 and tp_pc_teppich == false and current_price > 0
-    unless show_compare_price
-      assign compare_at_price = current_price
-    endunless
+    # Streichpreis ist immer der aktuelle Preis (30-Tage-Tiefstpreis), nie ein
+    # aelterer Vergleichspreis - sonst stuende ein kombinierter Rabatt da.
+    assign compare_at_price = current_price
     # Wie Shopify: Abzug je Einheit der Variante (m², bei cm-genauer Ware
     # 0,01 m²) auf den Cent abgerundet - 58,90 € -> 8,83 € Abzug -> 50,07 €.
     assign tp_pc_einheit = selected_variant.price
@@ -144,7 +144,7 @@
     Restrollen: UVP mit Abstand unter dem Kopfpreis. Gilt nur fuer die Meterware,
     der Rechner blendet die Zeile bei Raummass aus (Inhaber 2026-11-03).
   {%- endcomment -%}
-  {%- if tp_pc_aktion == 'uvp' and product_resource.tags contains 'sonderposten' and compare_at_price > current_price -%}
+  {%- if tp_pc_aktion == 'uvp' and tp_pc_zentral == 0 and product_resource.tags contains 'sonderposten' and compare_at_price > current_price -%}
     {%- assign tp_pc_uvp_prozent = compare_at_price | minus: current_price | times: 100 | divided_by: compare_at_price -%}
     {%- assign tp_pc_uvp_betrag = compare_at_price | money_without_currency -%}
     <div data-tp-uvp-kopf data-variante="{{ selected_variant.id }}">

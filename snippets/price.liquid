@@ -304,13 +304,18 @@
   endcapture
   assign tp_pr_zentral = tp_pr_zentral | strip | split: '|' | first | plus: 0
   if tp_pr_zentral > 0 and price > 0
-    unless show_compare_price
-      assign compare_at_price = price
-    endunless
+    # Streichpreis ist immer der aktuelle Preis (30-Tage-Tiefstpreis), nie ein
+    # aelterer Vergleichspreis - sonst stuende ein kombinierter Rabatt da.
+    assign compare_at_price = price
     # Wie Shopify: Abzug je Einheit (m², bei cm-genauer Ware 0,01 m²) auf den
     # Cent abgerundet - 58,90 € x 15 % = 8,835 -> 8,83 €, also 50,07 € (im
     # Testwarenkorb 06.11. nachgerechnet).
-    if product_resource.metafields.custom.preis_pro_001_qm.value == true
+    if is_package_card and tp_pr_paketpreis != blank
+      # Paketware: Shopify zieht je Paket ab; daraus wieder der Preis je m².
+      assign tp_pr_abzug = tp_pr_paketpreis | times: tp_pr_zentral | divided_by: 100 | floor
+      assign tp_pr_paketpreis = tp_pr_paketpreis | minus: tp_pr_abzug
+      assign price = tp_pr_paketpreis | times: 1.0 | divided_by: sqm_per_package | round
+    elsif product_resource.metafields.custom.preis_pro_001_qm.value == true
       assign tp_pr_einheit = price | divided_by: 100 | floor
       assign tp_pr_abzug = tp_pr_einheit | times: tp_pr_zentral | divided_by: 100 | floor
       assign price = tp_pr_einheit | minus: tp_pr_abzug | times: 100

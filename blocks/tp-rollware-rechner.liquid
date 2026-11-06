@@ -1813,7 +1813,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     var rate = rateOf(v);
     var alt = compareRateOf(v);
     if (aktionProzent > 0 && rate > 0) {
-      if (!(alt > rate)) alt = rate;
+      alt = rate; // Referenz immer der aktuelle Preis, wie in price_custom
       var cent = Math.round(parseFloat(v.price));
       var neu = cent - aktionAbzugJe(cent);
       rate = cmExact ? neu : neu / 100;
