@@ -364,7 +364,7 @@ export const RATGEBER = [
       ['Abschließen', 'Ränder sauber schneiden, Sockelleisten und Übergangsprofile setzen.'],
     ],
     gutZuWissen: [
-      '<strong>Reifeschleier:</strong> Neues Linoleum hat oft einen gelblichen Schimmer. Unter Tageslicht verschwindet er nach einigen Wochen – das ist kein Mangel.',
+      '<strong>Reifeschleier:</strong> Neues Linoleum hat oft einen gelblichen Schimmer. In direkter Sonne verschwindet er nach einigen Stunden, bei Tageslicht meist innerhalb eines Tages, in dunklen Räumen kann es Wochen dauern – das ist kein Mangel.',
       '<strong>Naturmaterial:</strong> Leinöl, Kork- und Holzmehl. Der typische Geruch ist am Anfang normal und lässt nach.',
       '<strong>Linoleum mag keine Lauge:</strong> nur pH-neutrale Reiniger, keine Schmierseife und keine Scheuermittel.',
     ],

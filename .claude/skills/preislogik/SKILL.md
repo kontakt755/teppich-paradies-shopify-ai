@@ -37,6 +37,8 @@ Restrollen (Tag `sonderposten`, Typ Teppichboden) zeigen ihre UVP wie alle ander
 
 Restrollen stehen wie normaler Teppichboden im Kanal Google & YouTube, mit Grundpreis 1 m² an der Variante (Inhaber 2026-11-03). Karten zeigen die Restmenge aus dem Bestand („Noch 80 m²“, `blocks/tp-card-aktion`), die Startseite ein eigenes Band (`start_restrollen`). Normale Teppichböden mit echtem Hersteller verweisen auf dessen Restrollen (`blocks/tp-aktion-hinweis`), beim Hausnamen TeppichParadies erscheint nichts.
 
+**Preisendung ,95 als Ausnahme (Inhaber 2026-11-07, Werkbank w-294 und w-279):** Restrollen und Reste stehen online auf ,95 (z. B. 34,95 €/m², Yasmin 41,95 €/m² seit 09.10.), nicht auf den sonst geltenden Endungen ,00/,50/,90/,99. Der Online-Preis ist der Ladenpreis plus 5 € mit Endung ,95 – nicht runden. Wer eine Restrolle oder einen Rest anlegt oder einen Preislauf über Teppichboden macht, lässt diese Preise so stehen.
+
 Neue Restrolle: `npm run -s restrolle:plan` erzeugt aus Name, Maßen, Preis, UVP mit Beleg und Foto den Plan für alle vier Produkte samt Ablaufliste; Bestand und Längen folgen der gemessenen Länge. Die Anlage läuft danach über den Shopify-MCP.
 
 ## Gekettelte Fußleiste

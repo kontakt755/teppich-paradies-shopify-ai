@@ -16,6 +16,7 @@
     {"id": "black-week", "titel": "Black Week", "von": "11-23", "bis": "11-30", "kollektion": "teppichboden", "prozent": 15, "idee": "Staerkste Woche des Jahres; Black Friday ist der Freitag nach dem 4. Donnerstag im November", "freigegeben": true,
       "jahre": {"2026": {"von": "2026-11-06", "bis": "2026-11-30", "kollektion": "black-week-2026", "quelle": "Inhaber 06.11.2026: Sofortstart"}},
       "ausnahmen": [{"jahr": 2026, "text": "30-Tage-Regel: die 75 Teppichboeden aus dem Dauerrabatt bis 01.11.2026 herausnehmen (Liste im Privatordner: aktion-2026-11-02/stand-2026-10-24); die uebrigen Teppichboeden bekommen 15 %"}, {"jahr": 2026, "text": "Inhaber 06.11.2026: Start sofort am 06.11. bis 30.11., 15 %, Kollektion black-week-2026 (1.029 Produkte: 151 Teppichboden, 878 Vinyl ohne 30-Tage-Faelle). Draussen: Gerbera und Freesia (Rohertrag nach Versand negativ), 15 Produkte einer Linie von Lieferant A bis zum Einkaufsbeleg, 6 Produkte bis 18.10. billiger (30-Tage-Regel, frühestens ab 19.11. aufnehmen)."}]},
-    {"id": "winterdeals", "titel": "Winterdeals", "von": "12-01", "bis": "12-14", "kollektion": "teppich-nach-mass", "prozent": 15, "idee": "Noch vor Weihnachten - Lieferzeit Teppich nach Mass beachten", "freigegeben": true}
+    {"id": "winterdeals", "titel": "Winterdeals", "von": "12-01", "bis": "12-14", "kollektion": "teppich-nach-mass", "prozent": 15, "idee": "Noch vor Weihnachten - Lieferzeit Teppich nach Mass beachten", "freigegeben": true,
+      "jahre": {"2026": {"von": "2026-12-03", "bis": "2026-12-14", "quelle": "Inhaber 07.11.2026 (w-297): Winterdeals ab 03.12., nicht 01.12."}}}
   ]
 }
