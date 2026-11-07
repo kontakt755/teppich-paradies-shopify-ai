@@ -30,10 +30,25 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      # Solange die Pages-Quelle in den Einstellungen noch "Deploy from a branch"
+      # ist (Umstellen kann nur der Inhaber, Werkbank w-316), baut GitHub weiter
+      # selbst; deploy-pages wuerde dann rot abbrechen. Deshalb vorher nachsehen
+      # und still aussteigen statt ein rotes Kreuz an main zu haengen.
+      - id: quelle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          art=$(gh api "repos/${{ github.repository }}/pages" --jq .build_type 2>/dev/null || echo unbekannt)
+          echo "build_type=$art" >> "$GITHUB_OUTPUT"
+          [ "$art" = "workflow" ] || echo "Pages-Quelle ist '$art', nicht 'workflow' - GitHub baut selbst, hier nichts zu tun."
+      - if: steps.quelle.outputs.build_type == 'workflow'
+        uses: actions/checkout@v7
+      - if: steps.quelle.outputs.build_type == 'workflow'
+        uses: actions/configure-pages@v5
+      - if: steps.quelle.outputs.build_type == 'workflow'
+        uses: actions/upload-pages-artifact@v4
         with:
           path: docs
-      - id: deployment
+      - if: steps.quelle.outputs.build_type == 'workflow'
+        id: deployment
         uses: actions/deploy-pages@v4
