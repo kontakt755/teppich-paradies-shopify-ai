@@ -5,7 +5,7 @@ Es gibt Einkaufspreise und Lieferanten nie weiter und sendet nichts ohne ausdrü
 
 ## Einrichten (einmalig, durch den Inhaber)
 
-1. Konto im eBay-Entwicklerprogramm und App-Schlüssel anlegen; die Befreiung von den Kontolöschungs-Meldungen beantragen. Benutzer-Token mit den Berechtigungen `sell.inventory` und `sell.account.readonly` erzeugen.
+1. Konto im eBay-Entwicklerprogramm und App-Schlüssel anlegen; die Befreiung von den Kontolöschungs-Meldungen beantragen. Benutzer-Token mit den Berechtigungen `sell.inventory` und `sell.account` erzeugen (`sell.account` deckt das Lesen der Rahmenbedingungen ab; ein Token ohne `sell.account.readonly` scheitert sonst mit `invalid_scope`).
 2. `ebay-zugang.env` im Privatordner ausfüllen: `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `EBAY_REFRESH_TOKEN`. Nie in den Chat oder ins Repository.
 3. Im Verkäufer-Cockpit die Rahmenbedingungen aktivieren und je eine für Versand, Zahlung und Rücknahme anlegen.
 4. `ebay-konfig.json` im Privatordner ausfüllen:

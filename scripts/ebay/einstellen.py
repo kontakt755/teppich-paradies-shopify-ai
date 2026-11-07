@@ -51,7 +51,7 @@ MAX_MENGEN_JE_AUFRUF = 25
 KONFIG_PFLICHT = ('fulfillmentPolicyId', 'paymentPolicyId', 'returnPolicyId', 'merchantLocationKey')
 ZUGANG_PFLICHT = ('EBAY_CLIENT_ID', 'EBAY_CLIENT_SECRET', 'EBAY_REFRESH_TOKEN')
 BASIS = {'sandbox': 'https://api.sandbox.ebay.com', 'produktion': 'https://api.ebay.com'}
-SCOPES = 'https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account.readonly'
+SCOPES = 'https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account'
 # Nur Eigenschaften aus dem Lexikon; fehlt ein Wert, bleibt das Merkmal weg (nie erfinden).
 MERKMALE = {
     'Material': ('fasermaterial', 'material'),
