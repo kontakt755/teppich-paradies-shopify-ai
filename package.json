@@ -124,7 +124,8 @@
     "social:zentrale": "node social/scripts/server.mjs",
     "social:einrichten": "bash social/scripts/dienste-einrichten.sh",
     "teppich:basis-daten": "node scripts/teppich-basis-daten.mjs",
-    "aktion:plan": "node scripts/aktion-plan.mjs"
+    "aktion:plan": "node scripts/aktion-plan.mjs",
+    "aktion:guard": "node operations/scripts/aktion-guard.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.30.0",

@@ -144,7 +144,8 @@ ohnehin unter die Sicherheitsgrenzen von `CLAUDE.md` und braucht Freigabe).
 3. **Parallel dazu** ein `DiscountAutomaticBasic` mit identischem Zeitraum
    (Start/Ende) und identischem Ziel (Kollektion/Produkte) als **Abrechnungsquelle** -
    das ist der fehlende Teil, ohne den PDP und Kasse auseinanderlaufen.
-4. Ein Guard-Skript (`npm run aktion:guard`, analog zu den bestehenden Guards),
+4. Ein Guard-Skript (`npm run aktion:guard`, seit 07.11.2026 als Teil-Guard in
+   `operations/scripts/aktion-guard.mjs`, Werkbank w-310),
    das je aktivem `aktion.*`-Metafeld prueft, ob ein passender automatischer Rabatt
    mit demselben Zeitraum existiert - und umgekehrt meldet, wenn ein Rabatt laeuft,
    fuer den keine Anzeige gesetzt ist.
