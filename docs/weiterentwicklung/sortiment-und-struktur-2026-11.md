@@ -160,3 +160,14 @@ den Preisvergleich zu öffnen.
   Anlegen je Qualität abgleichen (Musterkarte oder Rückfrage beim Hersteller); eine schon
   vorhandene Qualität bekommt kein zweites Produkt, sondern höchstens einen neuen Bezugsweg.
 - K bleibt beim Stand oben: Rollen-UVP fehlt.
+- Datenanfrage J: Ansprechpartnerin abwesend, Entwurf an die Vertretung liegt im Postfach
+  (2026-11-07).
+
+### Zweite Marke von Lieferant H freigegeben (2026-11-06)
+
+- Der Hersteller hinter H (Wollteppichboden, Direktversand) erlaubt auch seine zweite Marke,
+  ausgenommen drei Qualitäten (Liste in der Mail vom 06.11.). Lieferkonditionen wie bei der
+  Hauptmarke, alle Qualitäten als Coupon und einfassbar, kein Raummaß (volle Breite).
+- Preislisten und Bordürenkatalog liegen der Mail bei, Bilder kamen per WeTransfer (wird lokal
+  gesichert). Steht im Lieferanten-Eintrag `lieferant-h` (Hinweis). Anlegen nach Skill
+  `produktimport` am nächsten fertigen H-Produkt entlang.
