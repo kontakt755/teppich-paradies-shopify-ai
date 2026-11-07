@@ -140,18 +140,44 @@ def merkmale(produkt, konfig, maengel):
     return ergebnis
 
 
-def beschreibung(produkt, zusatz):
+STIL_KASTEN = 'border:1px solid #d9d4cc;border-radius:6px;padding:12px 16px;margin:16px 0'
+STIL_ZEILE = 'padding:6px 12px 6px 0;border-bottom:1px solid #eee;vertical-align:top'
+
+
+def _abschnitt(ueberschrift, inhalt):
+    return f'<h3 style="font-size:17px;margin:20px 0 6px">{html.escape(ueberschrift)}</h3>{inhalt}'
+
+
+def beschreibung(produkt, zusatz, eckdaten=None, bestellen=None, kopf=None):
+    """eBay-Beschreibung: Kopf, Eckdaten als Tabelle, Bestellen, Versand, Zuschnitt-Hinweis.
+
+    Nur Werte aus dem Lexikon und der Startliste - fehlt ein Wert, faellt die Zeile weg (nie erfinden).
+    Der Anwaltshinweis HINWEIS_ZUSCHNITT steht woertlich und unveraendert im Kasten.
+    """
     eig = produkt.get('eigenschaften') or {}
-    zeilen = [f'<p>{html.escape(t)}</p>' for t in [*zusatz, HINWEIS_ZUSCHNITT]]
-    punkte = [
-        f'<li>{html.escape(n)}: {html.escape(v)}</li>'
-        for n, s in BESCHREIBUNG.items()
-        for v in [wert(eig, s)]
-        if v
+    zeilen = list((eckdaten or {}).items()) + [
+        (n, v) for n, s in BESCHREIBUNG.items() for v in [wert(eig, s)] if v
     ]
-    if punkte:
-        zeilen.append('<ul>' + ''.join(punkte) + '</ul>')
-    return ''.join(zeilen)
+    teile = ['<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#222;max-width:760px">']
+    if kopf:
+        teile.append(f'<h2 style="font-size:21px;margin:0 0 8px">{html.escape(kopf)}</h2>')
+    teile += [f'<p style="margin:0 0 10px">{html.escape(t)}</p>' for t in zusatz]
+    if zeilen:
+        tabelle = ''.join(
+            f'<tr><td style="{STIL_ZEILE};color:#666;white-space:nowrap">{html.escape(n)}</td>'
+            f'<td style="{STIL_ZEILE}">{html.escape(v)}</td></tr>'
+            for n, v in zeilen
+        )
+        teile.append(_abschnitt('Auf einen Blick', f'<table style="border-collapse:collapse;width:100%">{tabelle}</table>'))
+    if bestellen:
+        punkte = ''.join(f'<li style="margin:0 0 4px">{html.escape(t)}</li>' for t in bestellen)
+        teile.append(_abschnitt('So bestellen Sie', f'<ul style="margin:0;padding-left:20px">{punkte}</ul>'))
+    teile.append(_abschnitt('Versand', '<p style="margin:0">Kostenloser Versand innerhalb Deutschlands. '
+                            'Der Teppichboden kommt gerollt: bis 2 m Länge als Paket, größere Stücke per Spedition.</p>'))
+    teile.append(f'<div style="{STIL_KASTEN};background:#faf8f5"><strong>Wichtig: Zuschnitt</strong><br>{html.escape(HINWEIS_ZUSCHNITT)}</div>')
+    teile.append('<p style="margin:16px 0 0;color:#666;font-size:13px">Teppich Paradies Oranienburg – Ihr Fachhandel für Teppichboden.</p>')
+    teile.append('</div>')
+    return ''.join(teile)
 
 
 def titel(name, breite):
@@ -282,7 +308,7 @@ def plane_welle1(liste, lexikon, konfig):
             preis_m2 = zahl(zeile['preis']) or 0
         else:
             preis_m2 = mischpreis(zeile['preis'], breite, laengen, zeile['einkauf'], liste, konfig)
-        zeilen, posten, angebote, margen = [], {}, [], []
+        posten, angebote, margen = {}, [], []
         aspekte = merkmale(produkt, konfig, maengel)
         ueberschrift = titel(name, breite)
         bilder = bilder_von(produkt, [variante])
@@ -291,14 +317,23 @@ def plane_welle1(liste, lexikon, konfig):
         for laenge in laengen:
             flaeche = breite * laenge / 10000
             preis = round(preis_m2 * flaeche, 2)
-            zeilen.append(f'{text_laenge(breite)} × {text_laenge(laenge)} = {euro(flaeche)} m²: {euro(preis)} EUR')
             if not rollen_mangel(zeile, konfig, liste):
                 margen.append((laenge, stueckmarge(preis_m2, flaeche, versandkosten(breite, laenge, konfig), zeile['einkauf'], liste)))
-        text = beschreibung(produkt, [
-            f'Restposten, zugeschnitten von der Rolle. Rollenbreite {text_laenge(breite)}, Preis {euro(preis_m2)} EUR je m².',
-            'Lieferbar: ' + '; '.join(zeilen) + '.',
-            'Anderes Maß oder länger als 6 m? Schreiben Sie uns über eBay eine Nachricht, wir erstellen ein passendes Angebot.',
-        ])
+        text = beschreibung(
+            produkt,
+            ['Restposten direkt von der Rolle: Wir schneiden Ihr Stück in der gewünschten Länge zu.'],
+            eckdaten={
+                'Rollenbreite': text_laenge(breite),
+                'Preis': f'{euro(preis_m2)} EUR je m²',
+                'Längen': f'{text_laenge(laengen[0])} bis {text_laenge(laengen[-1])}',
+            },
+            bestellen=[
+                f'Länge auswählen: Die Breite ist immer {text_laenge(breite)}, den Preis zeigt eBay bei jeder Länge.',
+                f'Beispiel: {text_laenge(breite)} × {text_laenge(laengen[0])} = {euro(breite * laengen[0] / 10000)} m² für {euro(round(preis_m2 * breite * laengen[0] / 10000, 2))} EUR.',
+                f'Anderes Maß oder länger als {text_laenge(laengen[-1])}? Schreiben Sie uns über eBay, wir erstellen ein passendes Angebot.',
+            ],
+            kopf=ueberschrift,
+        )
         for laenge in laengen:
             flaeche = breite * laenge / 10000
             sku = f'{eigene_sku(variante)}-L{laenge}'
