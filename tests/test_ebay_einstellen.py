@@ -118,6 +118,25 @@ class Kettel(unittest.TestCase):
         self.assertEqual(angebot['pricingSummary']['price']['value'], '360.00')
         self.assertEqual(angebot['categoryId'], modul.KATEGORIE_TEPPICHE)
 
+    def test_alle_shopbilder_des_kettelteppichs_in_reihenfolge(self):
+        k = kettelprodukt()
+        k['bild'] = 'https://cdn.example/haupt.jpg'
+        k['bilder'] = [{'url': 'https://cdn.example/haupt.jpg', 'alt': 'Draufsicht'},
+                       {'url': 'https://cdn.example/kante.jpg', 'alt': 'Kettelkante'},
+                       {'url': 'http://cdn.example/unsicher.jpg', 'alt': None}]
+        e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), k], KETTEL_KONFIG)[0]
+        erwartet = ['https://cdn.example/haupt.jpg', 'https://cdn.example/kante.jpg']
+        self.assertEqual(e['gruppe']['imageUrls'][:2], erwartet)
+        self.assertNotIn('http://cdn.example/unsicher.jpg', e['gruppe']['imageUrls'])
+        for sku in e['artikel']:
+            self.assertEqual(e['artikel'][sku]['product']['imageUrls'][:2], erwartet)
+
+    def test_ohne_bilderliste_bleibt_hauptbild(self):
+        k = kettelprodukt()
+        k['bild'] = 'https://cdn.example/haupt.jpg'
+        e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), k], KETTEL_KONFIG)[0]
+        self.assertEqual(e['gruppe']['imageUrls'][0], 'https://cdn.example/haupt.jpg')
+
     def test_kleine_groesse_unter_mindestmarge_faellt_weg(self):
         e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), kettelprodukt(preis=40.0)], KETTEL_KONFIG)[0]
         self.assertFalse(any(s.endswith('-K80X150') for s in e['artikel']))

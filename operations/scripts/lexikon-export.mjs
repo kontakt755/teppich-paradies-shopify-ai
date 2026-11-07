@@ -111,6 +111,7 @@ export const BULK_QUERY = `
         }
         lieferzeit: metafield(namespace: "service", key: "lieferzeit") { value }
         featuredImage { url }
+        media(first: 12) { edges { node { ... on MediaImage { id image { url altText } } } } }
         metafields(namespace: "custom", first: 30) { edges { node { namespace key value type } } }
         variants {
           edges {
@@ -167,6 +168,7 @@ export function jsonlZuProdukten(jsonlText) {
   const produkteById = new Map();
   const produktReihenfolge = [];
   const variantenByParent = new Map();
+  const bilderByParent = new Map();
 
   for (const zeile of zeilen) {
     const obj = JSON.parse(zeile);
@@ -174,6 +176,11 @@ export function jsonlZuProdukten(jsonlText) {
       const p = { ...obj, metafields: [], variants: [] };
       produkteById.set(obj.id, p);
       produktReihenfolge.push(obj.id);
+    } else if (typeof obj.id === 'string' && obj.id.includes('/MediaImage/') && obj.image) {
+      // Produktbild in Shop-Reihenfolge (Bulk liefert die Zeilen nach Position)
+      const liste = bilderByParent.get(obj.__parentId) ?? [];
+      liste.push({ url: obj.image.url, altText: obj.image.altText ?? null });
+      bilderByParent.set(obj.__parentId, liste);
     } else if (typeof obj.id === 'string' && obj.id.includes('/ProductVariant/')) {
       const liste = variantenByParent.get(obj.__parentId) ?? [];
       liste.push({ ...obj, metafields: [] });
@@ -202,6 +209,7 @@ export function jsonlZuProdukten(jsonlText) {
   for (const id of produktReihenfolge) {
     const p = produkteById.get(id);
     p.variants = variantenByParent.get(id) ?? [];
+    if (bilderByParent.has(id)) p.media = { nodes: bilderByParent.get(id) };
   }
   return { produkte: produktReihenfolge.map(id => produkteById.get(id)) };
 }

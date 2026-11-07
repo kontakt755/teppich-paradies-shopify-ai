@@ -128,6 +128,13 @@ function produktgruppe(produkt) {
   return null;
 }
 
+/** Alle Produktbilder in Shop-Reihenfolge ({url, alt}); fehlt die Liste im Export, fehlt der Schluessel. */
+function bilderListe(produkt) {
+  const roh = Array.isArray(produkt?.media?.nodes) ? produkt.media.nodes
+    : Array.isArray(produkt?.media?.edges) ? produkt.media.edges.map(e => e.node) : [];
+  return roh.filter(m => text(m?.image?.url)).map(m => ({ url: text(m.image.url), alt: text(m.image.altText) }));
+}
+
 function bildUrl(produkt) {
   return produkt?.featuredImage?.url ?? produkt?.featuredMedia?.preview?.image?.url ?? null;
 }
@@ -373,6 +380,7 @@ export function aufbereiten(exportDaten, opt = {}) {
       // Teppich nach Mass. Fehlt das Feld, fehlt der Schluessel - nie raten.
       ...(text(p.lieferzeit?.value) ? { lieferzeit: text(p.lieferzeit.value) } : {}),
       bild: bildUrl(p),
+      ...(bilderListe(p).length ? { bilder: bilderListe(p) } : {}),
       eigenschaften: eigenschaften(customMap),
       muster: musterBlock(p, varianten, handleSet, musterKandidatenAusVarianten),
       varianten,
