@@ -2366,7 +2366,8 @@
         "type": "text",
         "id": "tp_versand_bearbeitungszeit",
         "label": "Bearbeitungszeit bis zum Versand (nur für Google)",
-        "info": "Werktage von der Bestellung, bis die Ware das Lager verlässt, z. B. „1–2 Werktage“. Teilt die Lieferzeit im Google-Markup der Produktseiten in Bearbeitung (handlingTime, dieser Wert) und Transport (transitTime, der Rest). Leer oder länger als die Lieferzeit eines Produkts = keine Aufteilung, dann steht wie bisher nur die Gesamtzeit."
+        "default": "3–7 Werktage",
+        "info": "Inhaber 07.11.2026 (w-205): 3–7 Arbeitstage. Werktage von der Bestellung, bis die Ware das Lager verlässt, z. B. „1–2 Werktage“. Teilt die Lieferzeit im Google-Markup der Produktseiten in Bearbeitung (handlingTime, dieser Wert) und Transport (transitTime, der Rest). Leer oder länger als die Lieferzeit eines Produkts = keine Aufteilung, dann steht wie bisher nur die Gesamtzeit."
       },
       {
         "type": "header",
