@@ -504,6 +504,75 @@ bis 06.11.2026 waren es 10 Werktage); dieselbe Regel nutzt das To-do „Nachfrag
 `einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
 Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
 
+**Teillieferung und vollständige Muster (seit 2026-11-06, #1996).** `auftragsAblauf()` liefert `eingang`
+(`ware`/`muster` je `{ da, gesamt, alle, fehlt }`): erwartet wird Ware mit Lieferweg „über uns“ oder „über
+Kettler“ (nicht Hersteller → Kunde/Baustelle, nicht aus Lager, keine Eigenleistung) und jedes nicht
+gesperrte Muster; Muster aus eigenem Bestand gelten als da. Schritt 3 bleibt aktiv („Unterwegs · x von y
+da“, reine Muster „Muster da · x von y“), bis alles da ist; erst dann wird Schritt 4 aktiv. `einordnung()`
+setzt „informieren“ nur, wenn alle erwartete Ware da ist, sonst `teillieferung` (Satz aus
+`teilstandText()`, ruhig, ohne Kundennachricht); das schon eingetroffene Teil „über uns“ steht dann unter
+„von uns abschicken“ wie auf Heute. „muster_da“ nur, wenn alle offenen, nicht gesperrten Muster da sind und
+– sobald der Packstand (`/api/kunden/muster-packen`) geladen ist – der Umschlag packbereit ist (Option
+`umschlag`); ein gesperrtes Muster ist eigener Grund „gesperrt“ (rot, nie eingeklappt). Angefangene
+Umschläge stehen unter „Unterwegs“, nie unter „Beim Kunden“. Die Kopfzeile zählt jeden Auftrag einmal nach
+`hauptGrund()` (`GRUND_REIHENFOLGE`). Filter `art=ware|muster|alle`: Vorgabe „Ware“, solange ein
+Warenauftrag zu tun ist; dort stehen reine Musteraufträge, die nur noch verschickt werden, als eine Zeile
+mit der Zahl „Packbereit“ der Packstation.
+
+**Derselbe Stand in Bestellungen und auf Heute (seit 2026-11-06, #1996).** `zeilenAblauf(z)` rechnet
+`auftragsAblauf()` und `einordnung()` aus einer Zeile von `/api/kunden/bestellungen`: die Positionen der
+Zeile bilden je Lieferant die Gruppen wie `gruppieren()` der Bestellübersicht, der Stand je Position kommt
+aus `z.positionsstatus`. `warenArbeitsstand()` (`lib/shop-bestellarbeit.mjs`) gibt daraus `teilstand` (Satz
+aus `teilstandText()`) und `ampel` (`warenAmpel()`: nur rot – Ware ungeklärt, Termin vorbei, ab 14 Tagen
+beim Lieferanten; dieselben Gründe wie `auftragsAmpel()` ohne Muster) zurück. Wartet die Ware nur auf den
+Lieferanten, heißt der nächste Schritt der Teilstand, mit Termin „Ware kommt bis …“, sonst „wartet auf
+Lieferant · seit n Tagen“ (`tageBeimLieferanten()`, Kalendertage wie die Ampel). Kunden › Bestellungen
+zeigt die rote Ampel als Plakette neben dem Stand; die Stand-Farbe selbst ist nur gelb (noch nicht
+bestellt) oder ruhig. Die Namen für den Teilstand kommen aus `/api/einkauf/lieferanten` (Bestellungen:
+`einkauf.lieferanten`, Heute: `heuteDaten.lieferanten`), wie in „Je Auftrag“. Abgleich in der Datenkopie
+am 06.11.: 113 von 113 Aufträgen gleich.
+
+**Gesperrte Muster beim Bestellen (seit 2026-11-06, #1996).** Ein Muster aus `gesperrteMuster`
+(`/api/einkauf/bestellungen`, noch nicht bei uns) wird nie bestellt: `startBestellarbeit()` (Heute) zählt es
+weder in `gesamt` noch in `blockiert`/`nichtZugeordnet` und gibt nur `gesperrt` als Zahl zurück; Je Auftrag
+führt es nicht unter „ungeklärt“; die Kachel „Muster zu bestellen“ zählt es nicht; in den Tabellen steht es mit
+„× Gesperrt“ ohne Bestellknopf, außerhalb von Sammelaktion und Kopierliste. „Zuerst klären“ nimmt es aus dem
+Grund „ohne Großhändler-ID“ (`ohneGesperrteKlaerung()` in `lib/einkauf-uebersicht.mjs`); dafür liefert die
+Bestellübersicht je Auftrag `ohneIdPositionen` und `ampelOhneIdGrund` (Ampel der übrigen Gründe). Eine leere
+oder unlesbare Sperrliste filtert nichts.
+
+### Lieferweg und Lagerware (seit 2026-11-06, #1995)
+
+Wer die Ware zum Kunden bringt, ist eine reine Regel in `lib/lieferweg.mjs` (Browser und Server):
+Vermerk beim Bestellen (`eintrag.ueber`: kunde, kettler, laden, lager) > Lagerware > Stammroute
+(`einkauf.route`); Muster und Eigenleistungen haben keinen Weg. Ein Vermerk zaehlt nur, solange die
+Position einen Schritt hat; die Regeldatei nur, solange die Ware nicht geliefert ist (was ohne Vermerk
+`lager` schon geliefert ist, kam ueber den Lieferanten). Die Stammroute `OWN_STOCK` ist kein Weg „aus
+Lager“ - `routeFor` bestellt sie beim Lieferanten. `istLagerware()` heisst genau „Weg aus Lager“, damit
+keine Position zugleich bestellt und Lagerware ist. Lagerware sind Artikel, die wir aus
+eigener Rolle zuschneiden, obwohl sie in Shopify als Ware eines Lieferanten gefuehrt werden. Welche das
+sind, steht nur in der privaten Regeldatei `$TP_PRIVAT_DIR/lieferanten/lagerware.json`
+(`{ "regeln": [{ "skuPraefix", "hinweis" }] }`, nie im Git); `operations/lib/lagerware.mjs` markiert die
+Positionen im Bestellmodell (`lagerware`, `lagerHinweis`). Fehlt die Datei, gibt es keine Lagerware; ist sie
+beschaedigt, steht `lagerwareFehler` am Modell, Heute meldet es rot, und Ware-Bestellmail sowie „bestellt“
+antworten 409 - still leer hiesse, Lagerware landete wieder beim Lieferanten. Lagerware steht in keiner
+Bestellmail (`ohneBestellung`), „bestellt“ antwortet 409, der Sammelknopf ueberspringt sie, und es gibt
+weder „Nachhaken“ noch „kein Beleg“. Zugeschnitten und Gepackt speichert `setzeSelbstversand()` in
+`auftragsstatus.json` (`selbstversand.zugeschnitten|gepackt = { am, von }`; Zugeschnitten setzt „bei uns“
+mit Vermerk `lager`), ueber `POST /api/einkauf/auftragsstatus` mit `aktion: 'selbstversand'` (Rolle „lesen“
+403, Muster und Direktware 409). Zugeschnitten merkt den Vermerk davor (`ueberVorher`), Rückgängig stellt
+ihn wieder her; „Zurück auf offen…“ nimmt beides und den Vermerk `lager` in den Verlauf mit - sonst
+bliebe die Position ohne Regel fuer immer Lagerware. Der Sammelschritt „Ware ist angekommen“ setzt nur
+Ware vom Lieferanten (Lagerware geht ueber Zugeschnitten, Direktware ueber „Ist beim Kunden…“; bleibt
+nichts anderes, 409 mit diesem Hinweis). Verschickt wird ueber den vorhandenen Versand-Dialog (Schritt
+„raus“, Buchung in Shopify); im gemischten Auftrag kreuzt er die Direktware nicht vorab an
+(`lib/versand.mjs vorauswahl`). Die Shop-Uebersicht zeigt den Block „Von uns abschicken“
+(`ansichten/heute/selbst-abschicken.mjs`, Frist ab Zuschnitt bzw. Eingang, „Gepackt“ setzt sie nicht
+zurueck); aus dem To-do „Ware ist da – rausgeben“ nimmt sie nur die Positionen heraus, die der Block zeigt
+(`lib/todos.mjs rausgebenOhne`). Die Zeitleiste (`auftragsverlauf.mjs`) zaehlt bei gemischten und
+teilweise gelieferten Auftraegen jeden Schritt nur fuer die Positionen, die ihn gehen; „Geliefert an uns“
+zaehlt nur Ware vom Lieferanten.
+
 ### Warnung vor dem Bestellen (seit 2026-11-05)
 
 Der Bestellmail-Dialog zeigt je Kommission eine Schätzung, bevor beim Lieferanten bestellt wird
@@ -786,7 +855,10 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant ein To-do; gelb ab 3, rot ab 7 Tagen |
 | Ware bestellen | dieselben + `/api/einkauf/belege` | bezahlt, Position ohne Stand; **je Bestellung** ein To-do, damit kein Kunde in einer Sammelzeile verschwindet; gelb ab 1, rot ab 3 Tagen (seit 2026-11-03). Ohne geladene Belege fehlt nur der Zusatz „kein zugeordneter Beleg“ |
 | Laut Beleg bestellt, abhaken | dieselben | wie „Ware bestellen“, aber AB, Lieferschein oder Avis desselben Lieferanten ist sicher zugeordnet: per Mail bestellt, nicht abgehakt. Je Lieferant eine Zeile; Ware anderer Lieferanten derselben Bestellung bleibt unter „Ware bestellen“. Gelb, ab 4 Tagen nach dem Lieferschein rot (noch nicht raus) |
-| Bestellt, kein zugeordneter Beleg | dieselben | Ware „bestellt“ seit ≥ 3 Tagen, ohne zugeordneten Beleg desselben Lieferanten und ohne Liefertermin (unzugeordnete Belege und Vorschläge zählen nicht, die Bestätigung kann also im Postfach liegen); ab 7 Tagen übernimmt „Nachhaken“ (seit 06.11.2026, vorher 10 Werktage). Nur bei geladenen Belegen |
+| AB fehlt – beim Lieferanten nachfassen | dieselben | Ware „bestellt“ seit ≥ 2 Werktagen (Mo–Fr, Berliner Kalendertag, Feiertage zählen mit), ohne geprüfte AB (`beschaffung.ab`), ohne Liefertermin und ohne zugeordneten Beleg desselben Lieferanten (unzugeordnete Belege und Vorschläge zählen nicht); gelb, ab 7 Tagen rot, dort übernimmt „Nachhaken“. Nur bei geladenen Belegen. Bis 06.11.2026 „Bestellt, kein zugeordneter Beleg“ ab 3 Kalendertagen |
+| Auftragsbestätigung prüfen | `/api/einkauf/belege` (`abweichungen`, Art `ab_pruefen`) | AB sicher oder bestätigt zugeordnet, nicht erledigt, und eine Warenposition dieses Lieferanten steht auf „bestellt“ ohne AB-Vermerk und ohne Liefertermin; gelb. Bestätigt wird nie vom Beleg, nur im Dialog „AB prüfen“ |
+| AB weicht ab – klären | `/api/einkauf/auftragsstatus` | geprüfte AB mit mindestens einem Prüfpunkt „weicht ab“ (Menge, Maße, Lieferweg, Zuschläge), Position „bestellt“; gelb |
+| Lieferant angefragt / Anfrage nachfassen | dieselben | Ware ohne Stand mit `beschaffung.anfrage`; erscheint statt „Ware bestellen“; neutral, ab 2 Werktagen nach dem Anfragedatum gelb |
 | Muster nicht lieferbar | `/api/kunden/bestellungen`, Feld `gesperrteMuster` (Mustersperre) | SKU gesperrt, Position ohne Stand oder „bestellt“; immer rot, bis die Position in der Packstation abgeschlossen ist („Kunde informieren…“ oder „Ohne dieses Muster weiter packen“) |
 | Nachhaken | dieselben, Schwellen aus `/api/einkauf/lieferanten` | Stand „bestellt" seit ≥ 7 Tagen gelb, ≥ 14 Tagen rot; je Lieferant |
 | Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 2, rot ab 5 Tagen (seit 2026-11-03) |
@@ -881,6 +953,16 @@ Spalte „Versand“ der Bestellliste („in Shopify nicht gebucht“); „Noch 
 entfällt dann. Seit 2026-10-13 bucht „raus“ selbst in Shopify (Abschnitt 17): mit Vermerk „gebucht“ entfällt
 der Hinweis, auch wenn der Bestellexport noch den alten Stand zeigt; ist die Buchung gescheitert, heißt er
 „Versand in Shopify nicht gebucht – in der Bestellung nachholen“.
+
+**Gesperrte Muster und Rot (seit 2026-11-06, #1996).** `zeitleisten()` im Server reicht die Mustersperre
+(`mustersperre.json`, dieselbe Liste wie `gesperrteMuster`) als `gesperrtFuer` an `zeitleistenFuerModell()`.
+Ist in einem Musterauftrag ein gesperrtes Muster noch nicht bei uns, heißt der nächste Schritt vor
+„bestellen“ und vor „beim Lieferanten“ **„Muster kommt nicht – Kunde informieren (x von y Mustern)“** mit
+Link in die Packstation (`mpbereich=klaeren`) – wie das To-do auf Heute. Jeder Schritt trägt `rot`
+(lib/ampel.mjs): gesperrt, ab 14 Tagen beim Lieferanten, bestätigter Liefertermin vorbei, Wareneingang
+bzw. Fehlmenge klären. `kundenfaelle.mjs` setzt daraus und aus der Bestellampel („Zuerst klären“) `rot` je
+Punkt und Fall; nur dann trägt die Fallkarte den roten Rand (`fall-sofort`). „sofort“ bleibt als Wort, der
+Reiter heißt „Zu tun · n sofort“. Eine kaputte Sperrablage lässt die Zeitleisten ohne Sperre laufen.
 
 ## 10. Datenaktualisierung (seit 2026-09-23)
 
@@ -2671,8 +2753,13 @@ Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt n
 „Ansehen“ und „Läuft noch“.
 
 **Anzeige und Knöpfe.** `ansichten/heute/aufraeumen.mjs`, Block „Alte Bestellungen aufräumen · N“ auf der
-Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar. Kein
-eigener Schreibpfad:
+Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar.
+**Eine Bestellung einmal (06.11.2026, #1996):** Steht sie schon rot unter „Probleme“ (z. B. „Beim Lieferanten
+nachfragen“ für #1049), fehlt sie im Block und zählt dort nicht mit (`aufraeumListe(zeilen, { ohne })`). Die
+roten To-dos aus `lib/todos.mjs` tragen dafür `orderIds`, `problemOrderIds()` in `ansichten/heute/probleme.mjs`
+sammelt sie. Am Problem-Eintrag hängt dann eine Zeile „#1049: seit 17 Tagen keine Bewegung“ mit denselben
+Knöpfen (`aufraeumenUnterProblem()`, dieselben data-Attribute, Klicks über `aufraeumenKlick()`), sodass
+Abschließen und „Läuft noch“ erreichbar bleiben. Kein eigener Schreibpfad:
 - **Abschließen** (Rückfrage mit Vermerk) = `POST /api/kunden/bestellung-fertig` mit den offenen
   Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Ohne vorgegebenen Vermerk „Abschließen…“:
   der Vermerk ist „Aufgeräumt: <eingegebener Grund>“. Bucht wie jedes „Erledigt“ in Shopify als
@@ -2698,18 +2785,18 @@ gepackt, ohne dass jemand den Versand eingetragen hatte. Dashboard und Liste mer
   „Umschlag gepackt am TT.MM. – zur Post bringen und als verschickt eintragen“ (Knopf wie bisher
   „Muster sind verschickt…“). Der Ablauf selbst bekommt keinen Schritt dazu. Eine kaputte Packablage
   lässt die Zeitleisten ohne diese Angabe laufen.
-- **Aufräumliste:** Ein Musterauftrag mit gepacktem Umschlag, bei dem kein Artikel „raus“ ist
-  (`grund: 'gepackt'`), wird schon nach 3 Tagen Ruhe ein Fall (`GEPACKT_OHNE_VERSAND_AB_TAGEN`). Die Uhr
-  läuft ab dem Packen. Ein danach nachgetragenes „bestellt“/„angekommen“ ist keine Bewegung, Notizen und
-  spätere Zeitleistenschritte schon (`ruheSeitPacken()`).
-- **Knöpfe:** „Ist verschickt…“ öffnet den Versanddialog wie an der Zeitleiste (`oeffneVersandDialog`
-  mit `mailVorab: false`, Vermerk „Umschlag gepackt am …, Versand beim Aufräumen eingetragen“) und bucht
-  in Shopify. „Liegt noch hier“ schreibt eine Notiz, und die Liste fragt nach 3 Tagen wieder.
-  „Abschließen“ gibt es hier bewusst nicht: „erledigt“ übersprünge das Nachfassen beim Kunden.
+- **Aufräumliste (bis 06.11.2026):** Ein Musterauftrag mit gepacktem Umschlag, bei dem kein Artikel „raus“
+  war, wurde nach 3 Tagen Ruhe ein Fall (`grund: 'gepackt'`) mit „Ist verschickt…“ und „Liegt noch hier“.
+  **Seit #1996 entfallen:** Gepackt heißt seit Abschnitt 32 verschickt; was trotzdem gepackt und nie
+  eingetragen ist, steht rot in der Packstation (Reiter „Gepackt“, „Verschickt – Kunde informieren…“) und auf
+  Heute als rote Plakette „× n Umschläge nicht eingetragen“ in „Muster & Packstation“. `aufraeumFall()` gibt
+  für solche Aufträge `null` zurück – auch nach 14 Tagen, denn „Abschließen“ wäre dort falsch (keine
+  Versandmail an den Kunden). Ist schon ein Artikel raus, gilt die normale Frist von 14 Tagen. Ein Server
+  von vor #1996 liefert bis zum Neustart noch `grund: 'gepackt'`; `aufraeumListe()` zeigt das nicht.
 
 Tests: `operations/tests/auftragsverlauf.test.mjs` (nächster Schritt, fremde und mehrere Umschläge,
-Ware, schon verschickt) und `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Grenze 2/3 Tage,
-„Liegt noch hier“, nachgetragener Wareneingang, teils verschickt, Knöpfe, API mit Packablage).
+Ware, schon verschickt) und `docs/ai-dashboard/tests/aufraeumen.test.mjs` (kein Fall nach 3, 20 oder 40
+Tagen, teils verschickt als Ruhefall, alter Server, API mit Packablage, eine Bestellung einmal).
 
 ## Dienst zieht main automatisch nach (26.10.2026, #1710)
 
@@ -2927,7 +3014,7 @@ Tests: `tests/packstation-gepackt-verschickt.test.mjs`, `tests/packstation-versa
 
 Freigabe Inhaber 06.11.: **Rot** heißt, etwas hält einen Auftrag oder einen Kunden auf. **Gelb** heißt, es ist
 etwas zu tun, aber nichts steht still. Alles andere bleibt ruhig, ohne grüne Fläche. Farbe steht nie allein:
-immer Zeichen und Wort (`× Blockiert`, `! Nachhaken · 9 Tage`, `✓ … ohne Befund`).
+immer Zeichen und Wort (`× Blockiert`, `! Nachhaken · 9 Tage beim Lieferanten`, `✓ … ohne Befund`).
 
 **Ein Ort für die Regeln.** `lib/ampel.mjs` (ohne DOM, auch auf dem Server): `WARTESCHWELLEN`
 (`nachhakenTage: 7`, `problemTage: 14`), `warteAmpel()`, `bestellbarkeit()`, `musterlagerAmpel()`,
@@ -2946,6 +3033,18 @@ kommt als `gesperrteMuster` (Position-IDs) aus `/api/einkauf/bestellungen` (`ope
 Warum Kalendertage: Der Inhaber zählt Wartezeiten in Kalendertagen (Fristen der To-dos, Notiz 28.10.), und
 14 Kalendertage sind in einer normalen Woche genau die bisherigen 10 Werktage. Werktage hätten „rot“ auf
 drei Kalenderwochen geschoben und Feiertage gebraucht, die niemand pflegt.
+
+**Jede Tageszahl nennt ihren Bezug (seit 06.11.2026, #1996).** `warteAmpel()` liefert `bezug`: `'lieferant'`
+(Status bestellt, gezählt ab `bestelltAm`) oder `'hier'` (Status geliefert, ab `geliefertAm`). `warteWort()`
+schreibt „Überfällig · 17 Tage beim Lieferanten“, „Nachhaken · 9 Tage beim Lieferanten“ und für Ware bei uns
+„Liegt seit 8 Tagen hier“ – nie „Nachhaken“, denn dann sind wir dran, nicht der Lieferant. Stufe, Zeichen
+und Schwellen bleiben gleich. `tageMitBezug(tage, bezug)` ist die eine Formulierung; auf „Heute“ reicht
+`alterText(tage, t.alterBezug)` sie an die Alters-Marke durch (Nachfragen beim Lieferanten: `lieferant`,
+Rausgeben und Von uns abschicken: `hier`, „Zuerst klären“ und „Muster nicht lieferbar“: `kunde` = „Kunde wartet
+17 Tage“, gezählt ab der Kundenbestellung). Eine Zahl je Zeile: Der Titel „Beim Lieferanten nachfragen“ und
+der Text von „rausgeben“ wiederholen die Tage nicht mehr. In der Packstation steht unter einer Plakette mit
+Tagen (`ueberfaellig`, `nachhaken`, `haengt`) nur „Kunde bestellt 19.10.“ statt „wartet seit 18 Tagen“.
+To-dos ohne `alterBezug` zeigen weiter nur „n Tage“.
 
 **Lexikon: Bestellbarkeit je Produkt** (`bestellbarkeit()`, Server `lexikonAmpeln()` in
 `scripts/dashboard-api.mjs`, je Lexikon-Stand einmal gerechnet). Rot: einer Bestellvariante fehlt
@@ -2986,3 +3085,26 @@ nicht, die Summe stünde sonst zweimal da. In jeder Gruppe stehen rote Umschläg
 Tests: `tests/ampel.test.mjs`, `tests/auftrags-ablauf.test.mjs`, `tests/todos.test.mjs`,
 `tests/api.test.mjs` (Lexikon-Filter), `operations/tests/bildrechte.test.mjs`, `operations/tests/lieferanten.test.mjs`,
 Packstation: `tests/muster-packen.test.mjs`, `tests/packstation-arbeitslisten.test.mjs`, `tests/packstation-gepackt-verschickt.test.mjs`.
+
+## Lieferantenstand je Position (seit 06.11.2026)
+
+Kein zweiter Status: der Auftragsfluss bleibt `null → bestellt → geliefert → raus → erledigt`
+(`operations/lib/auftragsstatus.mjs`). Der Lieferantenstand sind Vermerke im vorhandenen
+Unterobjekt `beschaffung` derselben Position, geschrieben von `setzeLieferantenstand()`
+(`operations/lib/beschaffung.mjs`) über `POST /api/einkauf/auftragsstatus` mit
+`aktion: 'lieferantenstand'` und `schritt`:
+
+| Schritt | Wann | Felder |
+|---|---|---|
+| `anfrage` / `anfrageZurueck` | nur ohne Stand | `beschaffung.anfrage = { am (Tag), lieferant, notiz, erfasstAm, erfasstVon }` |
+| `bestelldaten` | nur „bestellt“ | korrigiert `bestelltAm` (tatsächlicher Versand der Bestellung) und `lieferantBestellnummer`; `beschaffung.bestellung = { lieferwegOffen, notiz }` |
+| `ab` / `abZurueck` | „bestellt“ oder „geliefert“ | `beschaffung.ab = { nummer, preis, belegId, link (nur https), pruefung: {menge, masse, lieferweg, zuschlaege: ok|abweichung}, abweichung, geprueftAm, geprueftVon }`, dazu `beschaffung.liefertermin` (Pflicht) |
+
+Abgeleitet wird der Stand in `lieferantenStand()` (`docs/ai-dashboard/lib/beschaffung.mjs`):
+Offen · Lieferant angefragt · Bestellt (AB fehlt, nach 2 Werktagen „nachfassen“) · AB bestätigt
+(Abweichungen gelb, Termin überschritten rot) · danach die bisherigen Schritte. Ein Liefertermin
+ohne AB-Vermerk (Altbestand) gilt als bestätigt und mahnt nicht. Muster, Eigenleistung
+(Kettelservice) und Lagerware haben keinen Lieferantenstand; der Server lehnt sie mit 409 ab.
+„Zurück auf offen“ verschiebt AB, Bestelldaten und den AB-Liefertermin in den Verlauf, die Anfrage
+bleibt. Jeder Schritt steht im Verlauf der Position und im Auftragsverlauf (`merke`).
+

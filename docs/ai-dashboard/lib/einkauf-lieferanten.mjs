@@ -1,4 +1,5 @@
 import { WARTESCHWELLEN, warteAmpel, warteStufe, TON } from './ampel.mjs';
+import { istLagerware } from './lieferweg.mjs';
 /**
  * Einkauf je Lieferant: reine Regeln ohne DOM (Browser und Tests).
  *
@@ -125,7 +126,10 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
         const eintrag = eintragFuer(pos);
         const stufe = stufeVon(eintrag?.status);
         const offen = stufe === 'zuBestellen' || stufe === 'bestellt';
-        const ampel = warteAmpel(eintrag, {
+        // Lagerware (lib/lieferweg.mjs) schneiden wir selbst zu: nicht "bestellen", nicht "nachfassen" -
+        // auch wenn sie vor dem 06.11. versehentlich als bestellt markiert wurde.
+        const ausLager = art === 'ware' && offen && istLagerware(pos, eintrag);
+        const ampel = ausLager ? warteAmpel(null, { jetzt, schwellen }) : warteAmpel(eintrag, {
           jetzt, schwellen,
           blockiert: stufe === 'zuBestellen' && !musterEigen(pos) && Boolean(blockiert(pos)),
           gesperrt: offen && Boolean(gesperrt(pos)),
@@ -133,7 +137,7 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
         // Ueberschrittener Liefertermin ist rot, egal wie lange schon bestellt (vorher erst ab 14 Tagen
         // nach dem Termin). Ein gesperrtes Muster kommt nicht mehr: kein Nachfassen beim Lieferanten.
         const ws = ampel.grund === 'gesperrt' ? null : ampel.grund === 'termin' ? 'crit' : warnstufe(ampel.tage, schwellen);
-        ziel[art][stufe === 'zuBestellen' && musterEigen(pos) ? 'eigen' : stufe].push({ pos, eintrag, wartetage: ampel.tage, warnstufe: ws, ampel });
+        ziel[art][(stufe === 'zuBestellen' && musterEigen(pos)) || ausLager ? 'eigen' : stufe].push({ pos, eintrag, wartetage: ampel.tage, warnstufe: ws, ampel });
       }
     }
   };
@@ -154,7 +158,10 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       zuBestellen: k.ware.zuBestellen.length,
       bestellt: k.ware.bestellt.length,
       eingetroffen: k.ware.eingetroffen.length,
-      musterOffen: k.muster.zuBestellen.length,
+      // Gesperrte Muster kommen nie: kein "Muster bestellen", kein Rang "zu bestellen" (dieselbe Regel wie
+      // arbeitsSchritte in ansichten/einkauf/lieferanten.mjs). Sie bleiben offen (musterGesperrt).
+      musterOffen: k.muster.zuBestellen.filter(x => x.ampel?.grund !== 'gesperrt').length,
+      musterGesperrt: k.muster.zuBestellen.filter(x => x.ampel?.grund === 'gesperrt').length,
       musterLaufend: k.muster.bestellt.length + k.muster.eingetroffen.length,
     };
     // Eigenes Feld (nicht in `zahlen`): offene Muster aus dem eigenen Bestand.
@@ -166,7 +173,7 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       stammdaten: st,
       zahlen,
       musterEigen,
-      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.eingetroffen + zahlen.musterOffen + zahlen.musterLaufend + musterEigen,
+      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.eingetroffen + zahlen.musterOffen + zahlen.musterGesperrt + zahlen.musterLaufend + musterEigen + k.ware.eigen.length,
       ueberfaellig: {
         stufe: wartend.some(x => x.warnstufe === 'crit') ? 'crit' : wartend.length ? 'warn' : null,
         anzahl: wartend.length,

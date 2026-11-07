@@ -266,3 +266,29 @@ test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eig
   // Nur Wartende: kein Hauptknopf, nichts zu tun.
   assert.doesNotMatch(warenbestellungenBlock({ daten: daten([wartend]) }), /btn-primary/);
 });
+
+test('Heute-Warenblock: eine Teillieferung nennt denselben Satz wie Kunden › Bestellungen und "Je Auftrag" (#1996)', (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: jetzt });
+  const ware = id => p(id, false, { lieferant: 'A', route: 'SUPPLIER_TO_TP', titel: 'Teppich', farbe: id === 'b' ? 'Blau' : 'Rot' });
+  const teil = zeile('teil', [ware('a'), ware('b')], {
+    a: { status: 'geliefert', bestelltAm: '2026-10-19T08:00:00Z', geliefertAm: '2026-10-21T08:00:00Z' },
+    b: { status: 'bestellt', bestelltAm: '2026-10-19T08:00:00Z' } });
+  const lieferantName = id => `Testname ${id}`;
+  const satz = 'Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: Teppich · Blau (Testname A)';
+  const a = shopBestellarbeit(daten([teil]), { jetzt, lieferantName }).zeilen[0];
+  assert.equal(a.wartet, 'lieferant');
+  assert.equal(a.teilstand, satz);
+  assert.equal(a.naechstes, satz, 'Kunden › Bestellungen zeigt denselben Satz als naechsten Schritt');
+  const html = warenbestellungenBlock({ daten: daten([teil]), lieferantName });
+  assert.ok(html.includes(`Beim Lieferanten bestellt · ${satz}`), 'statt "wartet auf Lieferant" der Teilstand');
+  assert.doesNotMatch(html, /wartet auf Lieferant/);
+  // Ohne Teillieferung bleibt Heute ruhig: "wartet auf Lieferant" ohne zweite Tageszahl (die steht in Zeile 1).
+  const wartend = zeile('wartend', [ware('a')], { a: { status: 'bestellt', bestelltAm: '2026-10-19T08:00:00Z' } });
+  const ruhig = warenbestellungenBlock({ daten: daten([wartend]), lieferantName });
+  assert.match(ruhig, /Beim Lieferanten bestellt · wartet auf Lieferant/);
+  assert.doesNotMatch(ruhig, /wartet auf Lieferant · seit/);
+  assert.equal(shopBestellarbeit(daten([wartend]), { jetzt }).zeilen[0].naechstes, 'wartet auf Lieferant · seit 3 Tagen');
+  // Bestellt ohne Bestelldatum (Altfall): keine Tageszahl statt "seit heute" (Review 06.11.2026).
+  const ohneDatum = zeile('ohne-datum', [ware('a')], { a: { status: 'bestellt' } });
+  assert.equal(shopBestellarbeit(daten([ohneDatum]), { jetzt }).zeilen[0].naechstes, 'wartet auf Lieferant');
+});

@@ -31,6 +31,7 @@ const engine = new Liquid({ templates: {
   'tp-aktion-laufend': ohneDoc('snippets/tp-aktion-laufend.liquid'),
   'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
   'tp-restrolle-freigegeben': ohneDoc('snippets/tp-restrolle-freigegeben.liquid'),
+  'tp-mass-lieferzeit': ohneDoc('snippets/tp-mass-lieferzeit.liquid'),
 } });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
 engine.registerFilter('money', (c) => (Number(c) / 100).toFixed(2).replace('.', ',') + ' €');
@@ -375,6 +376,26 @@ test('Kopf mit ab-Preis: Lieferzeit aus service.lieferzeit unter dem Preis, nur 
   assert.doesNotMatch(await render(p), /Lieferzeit/, 'Karte');
   p.available = false;
   assert.doesNotMatch(await render(p, kettelOk, { price: 27 }, true), /Lieferzeit/, 'ausverkauft');
+});
+
+// Rundgang 06.11.2026 (NM-03): Wunschmass vom Hersteller ohne Metafeld zeigt im Kopf
+// denselben Wert wie Preiskasten und Vorlage ("ca. 14 Tage"). Andere Vorlagen ohne
+// Metafeld bleiben ohne Lieferzeit, ein Metafeld geht vor.
+test('Kopf, Vorlage wunschmass-fertig ohne Metafeld: Lieferzeit ca. 14 Tage, einmal', async () => {
+  const pauschale = { 'wunschmass-pauschale': { selected_or_first_available_variant: { available: true, price: 1499 } } };
+  const p = produkt({ einheitCent: 96, art: 'Fertig' });
+  p.template_suffix = 'wunschmass-fertig';
+  const html = await render(p, pauschale, { price: 96 }, true);
+  assert.notEqual(abCent(html), null, 'ab-Preis bleibt');
+  assert.equal((html.match(/Lieferzeit ca\. 14 Tage/g) || []).length, 1, html);
+  assert.doesNotMatch(await render(p, pauschale), /Lieferzeit/, 'Karte ohne Lieferzeit');
+  p.metafields.service.lieferzeit = { value: 'ca. 3 Wochen' };
+  const metafeld = await render(p, pauschale, { price: 96 }, true);
+  assert.match(metafeld, /Lieferzeit ca\. 3 Wochen/);
+  assert.doesNotMatch(metafeld, /14 Tage/);
+  const andere = produkt({ einheitCent: 96, art: 'Fertig' });
+  andere.template_suffix = 'matte-nach-mass';
+  assert.doesNotMatch(await render(andere, pauschale, { price: 96 }, true), /Lieferzeit/);
 });
 
 // Fehlersuche 2026-10-28: ausverkauft (keine Variante kaufbar) verspricht keine

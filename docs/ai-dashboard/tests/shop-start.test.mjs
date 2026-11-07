@@ -2,13 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { problemeBlock } from '../ansichten/heute/probleme.mjs';
+import { problemeBlock, problemOrderIds, rotMuster } from '../ansichten/heute/probleme.mjs';
+import { aufraeumenBlock, aufraeumenUnterProblem } from '../ansichten/heute/aufraeumen.mjs';
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
+import { selbstAbschickenStand, selbstAbschickenBlock } from '../ansichten/heute/selbst-abschicken.mjs';
+import { rausgebenOhne } from '../lib/todos.mjs';
+import { lieferantName as lieferantAnzeige } from '../lib/einkauf-lieferanten.mjs';
 
 const quelle = fs.readFileSync(new URL('../ansichten/heute.mjs', import.meta.url), 'utf8')
   .replace(/^import[\s\S]*?from ['"][^'"]+['"];\n/gm, '').replace(/^export\s/gm, '');
-function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
-  const geladen = [], bloecke = [], sichten = [];
+function start(query = '', session = {}, { todos = [], abgleich = null, bestellungen = undefined, auftragsstatus = undefined, echtesAufraeumen = false, heuteDaten = {} } = {}) {
+  const geladen = [], bloecke = [], sichten = [], waren = {};
   const rolle = session.benutzer?.rolle || 'inhaber';
   // Spiegel von ANSICHT_ROLLEN (kern/router.mjs): Shop-Kontrolle, Technik und Genossenschaften nur beim Inhaber.
   const darfAnsicht = name => rolle === 'inhaber' || !['shopwache', 'arbeit', 'akquise', 'insights'].includes(name);
@@ -19,15 +23,19 @@ function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
   const state = { route: { view: 'heute', params: new URLSearchParams(query) }, session, tasks: [] };
   const block = name => () => { bloecke.push(name); return `<div>${name}</div>`; };
   const api = vm.runInNewContext(quelle + '\ndatenstandZeile=()=>"Datenstand"; viewAlltag=()=>"Expliziter Alltag"; ({viewHeute})', {
-    ...kontext, state, einkauf: {}, kunden: {}, heuteDaten: {},
+    ...kontext, state, einkauf: { auftragsstatus }, kunden: { bestellungen }, heuteDaten, lieferantAnzeige,
+    // "Von uns abschicken" (#1995): die echten, reinen Funktionen - ohne Bestellstand kein Block.
+    selbstAbschickenStand, selbstAbschickenBlock, rausgebenOhne,
     musterNachfassenStand: () => ({ offen: [], erledigt: [], abgemeldet: [] }),
     versandLaeuft: () => null, startBestellarbeit: () => ({}),
     musterAutomatikBlock: () => '',
-    warenbestellungenBlock: block('Waren'), bestellarbeitBlock: block('Muster'),
-    aufraeumenBlock: block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
+    // Rundgang 06.11. (#1996): die Erfolge der Musterautomatik als Zeile im Hintergrund, die Anrufzahl im Musterblock.
+    musterAutomatikZeile: () => '<div class="heute-hg-zeile">Musterautomatik</div>', musterAnrufeOffen: () => 24,
+    warenbestellungenBlock: o => { Object.assign(waren, o); bloecke.push('Waren'); return '<div>Waren</div>'; }, bestellarbeitBlock: o => { bloecke.push('Muster'); return `<div>Muster</div><div>Anrufe ${o.anrufe}</div>`; },
+    aufraeumenBlock: echtesAufraeumen ? aufraeumenBlock : block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
     istNurLesend: () => false, darfAnsicht,
     // Rote To-dos oben (w-206): echte problemeBlock, die Ableitung liefert die uebergebenen To-dos.
-    problemeBlock, arbeitsquellenStand, shopifyAbgleich: { daten: abgleich }, leiteTodosAb: (q, opt) => { sichten.push(opt.sicht); return todos; }, sortiereTodos: x => x,
+    problemeBlock, problemOrderIds, rotMuster, aufraeumenUnterProblem, arbeitsquellenStand, shopifyAbgleich: { daten: abgleich }, leiteTodosAb: (q, opt) => { sichten.push(opt.sicht); return todos; }, sortiereTodos: x => x,
     nachfassTodo: () => ({}), belegTodos: () => [], shopifyAbgleichTodos: () => [], datenstandTodo: () => [], veralteteQuellen: () => [],
     belege: { daten: null }, akquiseFaellig: () => [], hausverwaltungenFaellig: () => [], hinweisText: x => x, sichtFuer: () => 'laden',
     esc: s => String(s ?? ''), alterText: t => `${t} Tage`,
@@ -36,7 +44,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null } = {}) {
     restrollenZeile: () => '',
     warenkennzahlBlock: block('Warenkennzahl'), inhaberZeile: block('Inhaberzeile'), nebenbereichZusatz: () => ' · 2 offene Anfragen', shopwache: { daten: null },
   });
-  return { html: api.viewHeute(), geladen, bloecke, sichten };
+  return { html: api.viewHeute(), geladen, bloecke, sichten, waren };
 }
 
 test('Shop ist Standard und Waren stehen vor Mustern, danach Aufraeumen und vorhandene Nacharbeit', () => {
@@ -103,4 +111,79 @@ test('w-222: gescheiterter Abgleich mit Shopify steht auf der Shop-Übersicht, g
   assert.ok(kaputt.html.indexOf('<div>Waren</div>') < kaputt.html.indexOf('heute-probleme'), 'dort, wo sonst die Probleme stehen');
   assert.doesNotMatch(start('', {}, { abgleich: null }).html, /heute-probleme/, 'Laden ist kein Fehler');
   assert.doesNotMatch(start('', {}, { abgleich: { verfuegbar: true, abweichungen: [] } }).html, /heute-probleme/);
+});
+
+// Erfundene Testdaten (#1995): eine Bestellung mit einer Position aus eigenem Lager und einer, die bei uns liegt.
+const TEST_BESTELLUNGEN = { verfuegbar: true, zeilen: [{
+  orderId: 'gid://test/Order/1', orderName: '#TEST-1', kundenname: 'Testkunde', offen: true, datum: '2026-11-01T09:00:00Z',
+  positionsstatus: { l1: null, u1: { status: 'geliefert', geliefertAm: '2026-11-05T09:00:00Z' } },
+  auftrag: { positionen: [
+    { lineItemId: 'l1', titel: 'Testunterlage', farbe: 'grau', kundenmenge: '6 m²', sku: 'TEST-LAGER-1', lagerware: true, lagerHinweis: 'Rolle hinten links' },
+    { lineItemId: 'u1', titel: 'Testboden', farbe: 'beige', kundenmenge: '12 m²', sku: 'TEST-WARE-1', route: 'SUPPLIER_TO_TP' },
+  ] },
+}] };
+
+test('Von uns abschicken (#1995): direkt unter den Warenbestellungen, nur mit Arbeit, rausgeben-To-do nicht doppelt', () => {
+  // Wie lib/todos.mjs sie baut: je eingetroffener Position ein Teil (rausgebenOhne nimmt die gezeigten heraus).
+  const rausgeben = (nr, teile) => ({ id: `rausgeben:gid://test/Order/${nr}`, art: 'rausgeben', bereich: 'laden', ton: 'crit', titel: `Ware ist da – rausgeben: #TEST-${nr}`, alterTage: 6,
+    schluessel: teile.map(t => t.schluessel), rausgeben: { kunde: 'Testkunde', orderName: `#TEST-${nr}`, teile, lagermuster: null } });
+  const todos = [
+    rausgeben(1, [{ schluessel: 'gid://test/Order/1::u1', istMuster: false, text: 'Testboden', tage: 6 }]),
+    rausgeben(2, [{ schluessel: 'gid://test/Order/2::x1', istMuster: false, text: 'Anderer Testboden', tage: 6 }]),
+  ];
+  const r = start('', {}, { todos, bestellungen: TEST_BESTELLUNGEN });
+  assert.match(r.html, /Von uns abschicken · 2</);
+  const waren = r.html.indexOf('<div>Waren</div>');
+  const block = r.html.indexOf('heuteSelbstAbschicken');
+  assert.ok(waren < block && block < r.html.indexOf('heute-probleme'), 'unter den Warenbestellungen, vor den Problemen');
+  assert.match(r.html, /noch zuschneiden/); assert.match(r.html, /eingetroffen – noch packen/);
+  assert.match(r.html, /Rolle hinten links/, 'Hinweis aus der Regeldatei');
+  assert.match(r.html, /data-selbst="zugeschnitten"/); assert.match(r.html, /data-selbst="gepackt"/);
+  assert.match(r.html, /data-af-set data-af-status="raus"/, '"Verschickt…" oeffnet den vorhandenen Versand-Dialog');
+  assert.doesNotMatch(r.html, /#TEST-1<\/div>|rausgeben: #TEST-1/, 'das To-do zu derselben Position steht nicht ein zweites Mal');
+  assert.match(r.html, /rausgeben: #TEST-2/, 'ein To-do zu anderer Ware bleibt');
+  // E7: gemischt (Ware im Block, Muster nicht) - das To-do bleibt nur fuer das Muster, die Ware steht einmal.
+  const gemischt = start('', {}, { todos: [rausgeben(1, [{ schluessel: 'gid://test/Order/1::u1', istMuster: false, text: 'Testboden', tage: 6 },
+    { schluessel: 'gid://test/Order/1::m1', istMuster: true, text: 'Muster grau', tage: 6 }])], bestellungen: TEST_BESTELLUNGEN });
+  assert.match(gemischt.html, /Muster ist da – an Testkunde rausgeben/);
+  assert.doesNotMatch(gemischt.html, /Ware ist da – rausgeben: #TEST-1/);
+  // Frisch geladener Stand (nach einem Klick) gewinnt vor dem mitgelieferten Positionsstand.
+  const nach = start('', {}, { bestellungen: TEST_BESTELLUNGEN, auftragsstatus: { positionen: {
+    'gid://test/Order/1::l1': { status: 'raus' }, 'gid://test/Order/1::u1': { status: 'raus' } } } });
+  assert.doesNotMatch(nach.html, /heuteSelbstAbschicken/, 'ohne Arbeit kein Block');
+  // Beschaedigte Regeldatei: nie still - der Block meldet es auch ohne Zeilen.
+  const kaputt = start('', {}, { bestellungen: { verfuegbar: true, zeilen: [], lagerwareFehler: 'lagerware.json ist beschädigt.' } });
+  assert.match(kaputt.html, /notice crit[^>]*>lagerware\.json ist beschädigt\./);
+});
+
+test('Musterautomatik als ruhige Zeile im Hintergrund, Anrufzahl im Musterblock (#1996)', () => {
+  const r = start();
+  const hg = r.html.slice(r.html.indexOf('class="heute-hintergrund"'));
+  assert.match(hg, /Musterautomatik/, 'die Zeile steht unter "Im Hintergrund"');
+  assert.ok(r.html.indexOf('Musterautomatik') > r.html.indexOf('<div>Muster</div>'), 'nach Muster & Packstation, nicht davor');
+  assert.match(r.html, /<div>Anrufe 24<\/div>/, 'dieselbe Zahl wie am Menuepunkt');
+});
+
+// Erfunden (#1996): eine Musterbestellung, die 17 Tage beim Lieferanten liegt - rot "nachfragen" UND Aufraeumfall.
+test('Eine Bestellung einmal: rot unter Probleme mit Abschließen/Läuft noch, nicht noch einmal unter Aufräumen', () => {
+  const fallVon = (id, name, tage) => ({ orderId: id, orderName: name, kundenname: 'Testkunde', offen: true, datum: '2026-10-19T09:00:00Z',
+    aufraeumen: { art: 'muster', grund: 'ruhe', tage, belege: [], vorschlag: { text: 'Testvorschlag', notiz: null }, lineItemIds: [`${id}-1`] } });
+  const bestellungen = { verfuegbar: true, zeilen: [fallVon('gid://test/Order/49', '#TEST-49', 17), fallVon('gid://test/Order/50', '#TEST-50', 15)] };
+  const todos = [{ id: 'nachhaken:A', orderIds: ['gid://test/Order/49'], art: 'nachhaken', bereich: 'laden', ton: 'crit', titel: 'Beim Lieferanten nachfragen: Muster bestellt, noch nicht da', kontext: 'Testkunde', alterTage: 17, knopf: { text: 'Nachfragen', href: '#/einkauf?ab=verzug' } }];
+  const r = start('', {}, { todos, bestellungen, echtesAufraeumen: true });
+  const probleme = r.html.slice(r.html.indexOf('heute-probleme'), r.html.indexOf('</section>', r.html.indexOf('heute-probleme')));
+  assert.match(probleme, /data-todo="nachhaken"[\s\S]*data-aufraeumen-abschliessen="gid:\/\/test\/Order\/49"[\s\S]*data-aufraeumen-laeuft="gid:\/\/test\/Order\/49"/);
+  assert.match(r.html, /Alte Bestellungen aufräumen · 1</, 'nur noch die andere Bestellung');
+  assert.equal((r.html.match(/data-aufraeumen="gid:\/\/test\/Order\/49"/g) || []).length, 1, '#TEST-49 steht einmal');
+  assert.match(r.html, /data-aufraeumen="gid:\/\/test\/Order\/50"/);
+  // Gelb steht nicht unter Probleme: dann bleibt der Fall im Aufraeumen-Block.
+  const gelb = start('', {}, { todos: [{ ...todos[0], ton: 'warn' }], bestellungen, echtesAufraeumen: true });
+  assert.match(gelb.html, /Alte Bestellungen aufräumen · 2</, 'gelb steht nicht unter Probleme, also bleibt der Fall im Block');
+});
+
+test('Warenbestellungen bekommen die Lieferantennamen der Seite - der Teilstand-Satz wie in "Je Auftrag" (#1996)', () => {
+  const r = start('', {}, { heuteDaten: { lieferanten: { lieferanten: [{ id: 'A', name: 'Testlieferant' }] } } });
+  assert.equal(typeof r.waren.lieferantName, 'function');
+  assert.equal(r.waren.lieferantName('A'), 'Testlieferant');
+  assert.equal(r.waren.lieferantName('B'), 'Lieferant B', 'ohne Stammdaten der neutrale Ersatz');
 });

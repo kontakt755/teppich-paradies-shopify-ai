@@ -89,7 +89,9 @@ test('Meldung nennt bei Vinyl die Vinyl-Grenze, sonst wie bisher', () => {
 
 // --- Liquid: Snippet und Knopf auf der Produktseite ---
 
-const liquid = new Liquid();
+const liquid = new Liquid({ root: new URL('../../snippets/', import.meta.url).pathname, extname: '.liquid' });
+// Shopify-Tag {% doc %} kennt liquidjs nicht (tp-color-label-mapping beginnt damit)
+liquid.registerTag('doc', { parse(t, ts) { while (ts.length && ts.shift().name !== 'enddoc') {} }, render() { return ''; } });
 const grenzeSource = read('snippets/tp-muster-grenze.liquid').replace(/\{%-? doc -?%\}[\s\S]*?\{%-? enddoc -?%\}/, '');
 
 const grenze = async (type, items) => (await liquid.parseAndRender(grenzeSource, { product: { type }, cart: { items } })).trim();
@@ -336,6 +338,16 @@ test('Rollenrechner: Musterknopf nennt die Farbe, nicht die Breite', async () =>
   assert.match(await rcKnopf(breiteFarbe), /^Kostenloses Muster in Eiche Beige\|/);
   const farbeBreite = { options_with_values: [{ name: 'Farbe' }, { name: 'Breite' }], selected_or_first_available_variant: { options: ['Grau Anthrazit', '200 cm'] }, tags: [] };
   assert.match(await rcKnopf(farbeBreite), /^Kostenloses Muster in Grau Anthrazit\|/);
+});
+
+// Restrollen (07.11.) haben nur "Default Title" und oft keinen Farbtag: dann
+// stand "Kostenloses Muster in" ohne Farbe im Knopf. Ohne bekannte Farbe gilt
+// die zweite Beschriftung; der Tag "farbe: gruen" wird zum Anzeigenamen.
+test('Rollenrechner: ohne Farboption und Farbtag kein haengendes "in"', async () => {
+  const ohneAlles = { options_with_values: [{ name: 'Title' }], selected_or_first_available_variant: { options: ['Default Title'] }, tags: ['restposten'] };
+  assert.equal(await rcKnopf(ohneAlles), 'Kostenloses Muster bestellen|/pages/muster?produkt=x&farbe=');
+  const mitTag = { options_with_values: [{ name: 'Title' }], selected_or_first_available_variant: { options: ['Default Title'] }, tags: ['farbe: gruen'] };
+  assert.equal(await rcKnopf(mitTag), 'Kostenloses Muster in Grün|/pages/muster?produkt=x&farbe=Gr%C3%BCn');
 });
 
 // Sauberlauf von der Rolle (Tag ohne-muster) bekam bis 09.10. als Musterziel

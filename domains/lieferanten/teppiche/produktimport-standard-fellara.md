@@ -9,13 +9,14 @@ Vorher lesen: `domains/shopify/produktimport-arbeitsweise.md`, Skill `produktimp
 `importplan-2026-09.md`, `draft-product-groups-2026-09.json` (76 Gruppen, 584 SKUs),
 `import-snapshot-2026-09.json`, `domains/shopify/dekofell-template.md`.
 
-## Routing
+## Ablauf und Freigabe
 
-`npm run workflow:route` ergibt fuer den Import Klasse D: Sitzung **Opus, Effort high**,
-unabhaengiges Review vor den Shopify-Schreibvorgaengen. Massenanlage und Preise sind
-geschuetzte Aktionen: Freigabe des Inhabers **zu Beginn** im Chat einholen (Preisregel,
-Umfang, Veroeffentlichen). Merges nach `main` blockt der Auto-Modus ohne ausdrueckliche
-Freigabe im Chat.
+Der Import laeuft nach Skill `produktimport` (Router und Klassen gibt es seit
+2026-09-30 nicht mehr). Massenanlage und Preise sind geschuetzte Aktionen: Freigabe
+des Inhabers **zu Beginn** im Chat einholen (Preisregel, Umfang, Veroeffentlichen).
+Vor dem Merge eines PRs mit Preisen, SKUs, Varianten oder Massenimport einen zweiten
+Blick auf den PR-Diff holen, wie in `AGENTS.md`, Abschnitt „Review“, beschrieben.
+Merges nach `main` blockt der Auto-Modus ohne ausdrueckliche Freigabe im Chat.
 
 ## Checkliste je Produkt
 

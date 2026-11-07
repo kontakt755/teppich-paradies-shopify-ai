@@ -40,6 +40,7 @@ def produkt(titel='Rolle Eins – Restposten, 400 cm', tag='sonderposten', varia
 
 def liste(einkauf=10.0, preis=30.0, restlaenge=2000, bestand=80):
     return {'aufschlag': 0, 'ziel': 5, 'provision': 0.14, 'steuer': 0.19, 'fest': 0.45,
+            'kettel_klein': 3.45, 'kettel_gross': 4.95,
             'welle2': [{'produkt': 'Boden Zwei', 'status': 'Welle 2'}],
             'welle1': [{'rolle': 'Rolle Eins', 'breite': 400, 'restlaenge': restlaenge, 'bestand': bestand,
                         'preis': preis, 'einkauf': einkauf}]}
@@ -92,6 +93,85 @@ class FalscherServer:
 
 
 ZUGANG = {k: 'x' for k in modul.ZUGANG_PFLICHT}
+
+KETTEL_KONFIG = dict(KONFIG, versand_kettel={f'{b}x{l}': 20 for b, l in modul.KETTEL_GROESSEN})
+
+
+def kettelprodukt(preis=60.0, tags=('gekettelt', 'restvorlage:tpr0001'), titel='Rolle Eins – Kettelteppich nach Maß'):
+    p = produkt(titel=titel, varianten=[variante(nummer=7, preis=preis)])
+    p.update(produktgruppe='Teppich nach Maß', handle='rolle-eins-kettel', adminUrl='https://admin/products/77')
+    p['musterRegeln'] = {'tags': list(tags)}
+    return p
+
+
+def rolle_mit_vorlage():
+    p = produkt()
+    p['musterRegeln'] = {'tags': ['sonderposten', 'restvorlage:tpr0001']}
+    return p
+
+
+class Kettel(unittest.TestCase):
+    def test_preis_je_groesse_wie_im_shop(self):
+        e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), kettelprodukt(preis=60.0)], KETTEL_KONFIG)[0]
+        self.assertEqual(e['maengel'], [])
+        angebot = next(a for a in e['angebote'] if a['sku'].endswith('-K200X300'))
+        self.assertEqual(angebot['pricingSummary']['price']['value'], '360.00')
+        self.assertEqual(angebot['categoryId'], modul.KATEGORIE_TEPPICHE)
+
+    def test_alle_shopbilder_des_kettelteppichs_in_reihenfolge(self):
+        k = kettelprodukt()
+        k['bild'] = 'https://cdn.example/haupt.jpg'
+        k['bilder'] = [{'url': 'https://cdn.example/haupt.jpg', 'alt': 'Draufsicht'},
+                       {'url': 'https://cdn.example/kante.jpg', 'alt': 'Kettelkante'},
+                       {'url': 'http://cdn.example/unsicher.jpg', 'alt': None}]
+        e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), k], KETTEL_KONFIG)[0]
+        erwartet = ['https://cdn.example/haupt.jpg', 'https://cdn.example/kante.jpg']
+        self.assertEqual(e['gruppe']['imageUrls'][:2], erwartet)
+        self.assertNotIn('http://cdn.example/unsicher.jpg', e['gruppe']['imageUrls'])
+        for sku in e['artikel']:
+            self.assertEqual(e['artikel'][sku]['product']['imageUrls'][:2], erwartet)
+
+    def test_ohne_bilderliste_bleibt_hauptbild(self):
+        k = kettelprodukt()
+        k['bild'] = 'https://cdn.example/haupt.jpg'
+        e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), k], KETTEL_KONFIG)[0]
+        self.assertEqual(e['gruppe']['imageUrls'][0], 'https://cdn.example/haupt.jpg')
+
+    def test_kleine_groesse_unter_mindestmarge_faellt_weg(self):
+        e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), kettelprodukt(preis=40.0)], KETTEL_KONFIG)[0]
+        self.assertFalse(any(s.endswith('-K80X150') for s in e['artikel']))
+        self.assertIn('80x150', e['rechnung']['verworfen'])
+        self.assertTrue(all(m >= 0 for m in e['rechnung']['margen'].values()))
+
+    def test_ketteln_kostet_je_laufendem_meter(self):
+        self.assertAlmostEqual(modul.kettel_kosten(200, 300, liste()), 10 * 3.45)
+        self.assertAlmostEqual(modul.kettel_kosten(240, 340, liste()), 11.6 * 4.95)
+
+    def test_zuordnung_ueber_konfiguration(self):
+        k = kettelprodukt(tags=('gekettelt',), titel='Passion Eins Kettelteppich')
+        konfig = dict(KETTEL_KONFIG, kettel_zuordnung={'Rolle Eins': 'rolle-eins-kettel'})
+        self.assertEqual(modul.plane_kettel(liste(), [produkt(), k], konfig)[0]['maengel'], [])
+
+    def test_ohne_kettelprodukt_gesperrt(self):
+        e = modul.plane_kettel(liste(), [produkt()], KETTEL_KONFIG)[0]
+        self.assertIn('0 Kettelprodukte im Lexikon', e['maengel'])
+
+    def test_ohne_versandkosten_gesperrt(self):
+        e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), kettelprodukt()], KONFIG)[0]
+        self.assertTrue(any('versand_kettel' in m for m in e['maengel']))
+
+    def test_hinweis_und_wunschmass_in_beschreibung(self):
+        e = modul.plane_kettel(liste(), [rolle_mit_vorlage(), kettelprodukt()], KETTEL_KONFIG)[0]
+        self.assertIn(modul.HINWEIS_ZUSCHNITT, e['gruppe']['description'])
+        self.assertIn('Wunschmaß', e['gruppe']['description'])
+        self.assertLessEqual(len(e['gruppe']['title']), modul.MAX_TITEL)
+
+    def test_einzelmass_gekettelt(self):
+        e = modul.plane_einzelmass(liste(), [rolle_mit_vorlage(), kettelprodukt()], KETTEL_KONFIG, 'Rolle Eins', 190, 290, 350.0, 60.0, kettel=True)[0]
+        self.assertEqual(e['maengel'], [])
+        self.assertTrue(e['schluessel'].endswith('-K190X290'))
+        self.assertEqual(e['angebote'][0]['categoryId'], modul.KATEGORIE_TEPPICHE)
+        self.assertIn('gekettelt 190 x 290 cm', e['artikel'][e['schluessel']]['product']['title'])
 
 
 class Plan(unittest.TestCase):

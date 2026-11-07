@@ -10,6 +10,8 @@
 .bl-abschnitt > .section-title { display: flex; align-items: baseline; gap: 8px; }
 .bl-zahl { color: var(--warn); }
 .bl-warn { color: var(--warn); font-weight: 700; }
+/* Zahl im gedrueckten Chip: Schriftfarbe des aktiven Chips, hell und dunkel lesbar. */
+.chip[aria-pressed="true"] .bl-chip-zahl { color: var(--accent-ink); font-weight: 700; }
 
 .bl-liste, .bl-gruppen, .bl-belege { list-style: none; margin: 0; padding: 0; }
 .bl-liste, .bl-belege { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }

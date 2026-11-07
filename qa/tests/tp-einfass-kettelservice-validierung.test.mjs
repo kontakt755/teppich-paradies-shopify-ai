@@ -120,7 +120,10 @@ async function runCase(o = {}) {
   const context = vm.createContext({
     URLSearchParams, auditBandSelected: false,
     window: { location: { search: '' }, TPZuschnitt: { abgleichen: async () => {} } },
-    document: { querySelectorAll: () => [], querySelector: () => null, dispatchEvent: (e) => events.push(e.type) },
+    document: {
+      querySelectorAll: () => [], querySelector: () => null, dispatchEvent: (e) => events.push(e.type),
+      activeElement: o.fokus ? q(o.fokus === 'breite' ? '[data-breite]' : '[data-laenge]') : null,
+    },
     CustomEvent: class { constructor(type) { this.type = type; } },
     setTimeout() {},
     fetch: async (url, options) => {
@@ -248,4 +251,31 @@ test('Regression: ohne Feld Mindestpreis abzüglich Kante (50 x 50 cm)', async (
   const [kante, teppich] = result.requests[0].body.items; // Teppich zuletzt: Shopify zeigt ihn dann oben
   assert.equal(kante.quantity, 200);
   assert.equal(teppich.quantity, 69, 'ceil((9900 - 3800) / 89)');
+});
+
+// Rundgang 06.11. (NM-06): ein zu kurzes Einzelmass wird gemeldet, ohne dass das
+// zweite Mass schon steht - aber nicht, solange das Feld noch den Fokus hat.
+test('NM-06: nur Laenge 30 eingegeben meldet sofort das Mindestmass', async () => {
+  const result = await runCase({ width: '', length: 30 });
+  assert.equal(result.error, 'Länge mindestens 50 cm.');
+  assert.equal(result.ctaHidden, true);
+  assert.equal(result.requests.length, 0);
+});
+
+test('NM-06: nur Breite 20 eingegeben meldet die Breite', async () => {
+  const result = await runCase({ width: 20, length: '' });
+  assert.equal(result.error, 'Breite mindestens 50 cm.');
+});
+
+test('NM-06: waehrend der Eingabe im Feld noch keine Meldung, ein leeres Feld allein auch nicht', async () => {
+  assert.equal((await runCase({ width: '', length: 3, fokus: 'laenge' })).error, null);
+  assert.equal((await runCase({ width: '', length: '' })).error, null);
+  assert.equal((await runCase({ width: '', length: 300 })).error, null, 'gueltiges Einzelmass ist kein Fehler');
+});
+
+test('NM-06: gueltige Masse ergeben den Preis wie bisher', async () => {
+  const result = await runCase({ width: 200, length: 300 });
+  assert.equal(result.error, null);
+  assert.equal(result.ctaHidden, false);
+  assert.equal(result.requests.length, 1);
 });

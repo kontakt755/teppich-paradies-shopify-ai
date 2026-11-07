@@ -1,4 +1,4 @@
-import { musterAutomatikBlock } from '../bausteine/muster-bestellanzeige.mjs';
+import { musterAutomatikBlock, musterAutomatikZeile } from '../bausteine/muster-bestellanzeige.mjs';
 /**
  * Ansicht "Heute" (#/heute): standardmaessig Shop-Arbeit mit Warenkunden zuerst.
  * Die ausdruecklichen Alltagssichten behalten die seit 2026-10-19 gebuendelte Arbeitsliste
@@ -26,7 +26,7 @@ import { musterAutomatikBlock } from '../bausteine/muster-bestellanzeige.mjs';
  * To-dos werden nicht erfasst, sondern abgeleitet - diese Datei laedt und zeichnet nur.
  */
 import {
-  leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, alterText, SICHT_LABEL,
+  leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, alterText, SICHT_LABEL, rausgebenOhne,
 } from '../lib/todos.mjs';
 import { versandLaeuft, teileNachfassen, nachfassTodo } from '../lib/muster-nachfassen.mjs';
 import { belegTodos } from '../lib/lieferbelege.mjs';
@@ -43,7 +43,7 @@ import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureMusterPacken } from './kunden/muster-packen.mjs';
-import { ensureMusterAnrufe } from './kunden/muster-anrufe.mjs';
+import { ensureMusterAnrufe, musterAnrufeOffen } from './kunden/muster-anrufe.mjs';
 import { bestellungenOffen } from './kunden/bestellungen.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
@@ -62,10 +62,11 @@ import { bestellarbeitBlock } from './heute/bestellarbeit.mjs';
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
 import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
 import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
+import { selbstAbschickenStand, selbstAbschickenBlock } from './heute/selbst-abschicken.mjs';
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
-import { aufraeumenBlock } from './heute/aufraeumen.mjs';
+import { aufraeumenBlock, aufraeumenUnterProblem } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
-import { problemeBlock } from './heute/probleme.mjs';
+import { problemeBlock, problemOrderIds, rotMuster } from './heute/probleme.mjs';
 import { restrollenZeile } from './heute/restrollen.mjs';
 import { warenkennzahlBlock } from './heute/warenkennzahl.mjs';
 
@@ -201,24 +202,31 @@ function viewShop() {
   ensureHeuteMusterTexte();
   const arbeit = startBestellarbeit({ daten: einkauf.bestellungen,
     statusAlle: einkauf.auftragsstatus, lieferanten: heuteDaten.lieferanten });
+  // Was wir selbst zuschneiden, packen und verschicken (#1995) - direkt unter den Warenbestellungen.
+  const selbst = selbstAbschickenStand({ daten: kunden.bestellungen, statusAlle: einkauf.auftragsstatus });
+  // Eine Bestellung steht einmal (#1996): was rot unter "Probleme" steht, fehlt in "Alte Bestellungen aufräumen".
+  const probleme = problemeShop(nf, selbst);
   return `<div class="heute shop-start">
     <header class="heute-geschaeft-kopf shop-start-kopf"><h1>Shop-Übersicht</h1>
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
     </header>
     ${warenkennzahl()}
-    ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
-    ${problemeShop(nf)}
+    ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), lieferantName })}
+    ${selbstAbschickenBlock(selbst, { lesend: istNurLesend() })}
+    ${probleme.html}
     ${inhaberUeberblick()}
-    ${musterAutomatikBlock(kunden.bestellungen)}
-    ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
-    ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
+    ${/* Nur bei Stoerung oder Klaerung; was geklappt hat, steht als Zeile "Musterautomatik" unten (#1996). */ ''}
+    ${musterAutomatikBlock(kunden.bestellungen, Date.now(), { rot: probleme.rotMuster })}
+    ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, anrufe: musterAnrufeOffen(), lesend: istNurLesend(), nurMuster: true })}
+    ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), ohne: probleme.orderIds })}
     ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, pack: kunden.musterPacken,
       nachfassen: nf.alle, texte: heuteDaten.musterTexte })}
     ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
     <section class="shop-werkzeuge" aria-label="Shop-Werkzeuge">
       <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
     </section>
-    <div class="heute-hintergrund">${darfAnsicht('sonderposten') ? restrollenZeile() : ''}${datenstandZeile('shop')}</div>
+    ${/* Wie in den Alltagssichten mit Ueberschrift - Hilfe und Begriffe nennen die Zeilen "Im Hintergrund" (#1996). */ ''}
+    <section class="heute-hintergrund" aria-labelledby="heuteHg"><h2 id="heuteHg">Im Hintergrund</h2>${musterAutomatikZeile(kunden.bestellungen)}${darfAnsicht('sonderposten') ? restrollenZeile() : ''}${datenstandZeile('shop')}</section>
     <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik${nebenbereichZusatz(kunden.serviceanfragen)}</summary>
       <nav class="chips" aria-label="Weitere Bereiche">
         <a class="chip" href="#/heute?sicht=laden">Laden &amp; Anfragen</a>
@@ -237,14 +245,24 @@ function viewShop() {
  * Technik-Eintraege gehoeren nicht auf ihre Liste (Wunsch 2026-10-21). Ohne Rot kein Block.
  * Kundenfaelle und Team-Aufgaben werden hier nicht geladen: ihre To-dos gehoeren in den
  * Nebenbereich (probleme.mjs, NEBENBEREICH_ARTEN) und wuerden hier nur Abrufe kosten.
+ * Liefert auch die Bestellungen der roten Eintraege: "Alte Bestellungen aufräumen" laesst sie weg, und ihr
+ * Problem-Eintrag traegt dafuer "Abschließen…"/"Läuft noch" (aufraeumenUnterProblem, #1996).
+ * @returns {{ html: string, orderIds: string[], rotMuster: { positionen: Set<string>, auftraege: Set<string> } }}
  */
-function problemeShop(nf) {
+function problemeShop(nf, selbst = null) {
   ensureKundenRueckrufe(); ensureShopifyAbgleich();
   if (darfAnsicht('einkauf')) ensureBelege();
   if (darfAnsicht('shopwache')) ensureShopwache();
   const q = quellen();
   const sicht = istInhaber() ? 'alles' : gewaehlteSicht(q.aufgaben);
-  return problemeBlock(todosDerSicht(sicht, q, nf).liste, { zeile: t => todoZeile(t, false), fehlen: problemQuellenFehlen() });
+  // "Ware ist da – rausgeben" ohne die Positionen, die schon im Block "Von uns abschicken" stehen -
+  // nicht ein zweites Mal rot. Bleibt nichts uebrig (nur Ware ueber uns), faellt das To-do weg.
+  const liste = todosDerSicht(sicht, q, nf).liste.map(t => rausgebenOhne(t, selbst?.schluessel)).filter(Boolean);
+  const lesend = istNurLesend();
+  // Jede Bestellung einmal: die Aufraeumzeile haengt nur am ersten roten Eintrag ihrer Bestellung.
+  const schonGezeigt = new Set();
+  const zeile = t => todoZeile(t, false, aufraeumenUnterProblem(t, { daten: kunden.bestellungen, lesend, schonGezeigt }));
+  return { html: problemeBlock(liste, { zeile, fehlen: problemQuellenFehlen() }), orderIds: problemOrderIds(liste), rotMuster: rotMuster(liste) };
 }
 
 /** Quellen der roten To-dos, deren Abruf gescheitert ist - gerade geladene zaehlen nicht. */
@@ -366,7 +384,8 @@ function kopf(anzahl, sicht, chips) {
   </header>`;
 }
 
-function todoZeile(t, erste) {
+/** @param {string} [unten]  ganze Zeile unter Text und Knopf (Aufraeumfall am Problem-Eintrag, #1996) */
+function todoZeile(t, erste, unten = '') {
   const k = t.knopf;
   const klasse = `btn btn-sm${erste ? ' btn-primary' : ''}`;
   // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
@@ -386,10 +405,10 @@ function todoZeile(t, erste) {
     : k.schritt && !istNurLesend()
       ? `<button type="button" class="${klasse}" data-zl-schritt="${esc(k.schritt.aktion)}" data-zl-order="${esc(k.schritt.orderId)}">${esc(k.text)}</button>`
       : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen || k.abhaken ? 'Ansehen' : k.text)}</a>`;
-  const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage))}</span>`;
+  const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage, t.alterBezug))}</span>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
     <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
-    ${alter}${knopf}
+    ${alter}${knopf}${unten}
   </div>`;
 }
 

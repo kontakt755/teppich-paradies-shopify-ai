@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import * as lieferweg from '../lib/lieferweg.mjs';
 
 const quelltext = fs.readFileSync(new URL('../ansichten/einkauf/auftragsfluss.mjs', import.meta.url), 'utf8')
   .replace(/^import.*;\n/gm, '').replace(/^export\s/gm, '');
@@ -13,7 +14,7 @@ function umgebung({ leseFehler = null, geladen = true, postFehler = false, akte 
   let status = null;
   let zeichnungen = 0;
   const modul = vm.runInNewContext(quelltext + '\n({ setzeAuftragsstatus, ladeStandNeu, markiereAlsBestellt, markiereMusterAngekommen, einkauf })', {
-    kunden, musterEigen: () => false, istNurLesend: () => false, URLSearchParams,
+    kunden, ...lieferweg, musterEigen: () => false, istNurLesend: () => false, URLSearchParams,
     toast() {}, render() { zeichnungen++; }, plural: n => String(n),
     versandRueckmeldung: text => ({ text }),
     fetch: async (pfad, optionen) => {

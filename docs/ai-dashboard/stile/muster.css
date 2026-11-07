@@ -242,4 +242,7 @@
 .anruf-idee { padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; overflow-wrap: anywhere; }
 .anruf-idee .small { margin-top: 3px; }
 .anruf-spalten { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
-@media (max-width: 900px) { .anruf-spalten { grid-template-columns: minmax(0, 1fr); } }
+.anruf-regel { margin: 0 0 10px; }
+/* Steht nur eine Spalte da, liegen ihre Karten zu zweit nebeneinander - volle Breite statt halber. */
+.rows.anruf-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+@media (max-width: 900px) { .anruf-spalten, .rows.anruf-raster { grid-template-columns: minmax(0, 1fr); } }

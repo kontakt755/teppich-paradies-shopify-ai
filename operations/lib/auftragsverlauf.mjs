@@ -44,6 +44,8 @@ import { kundenSchluessel } from './kundensuche.mjs';
 import { ROUTE } from './route.mjs';
 import { wirdGekettelt } from './kettelpuffer.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
+import { lieferwegVon } from '../../docs/ai-dashboard/lib/lieferweg.mjs';
+import { warteAmpel, dringendereAmpel } from '../../docs/ai-dashboard/lib/ampel.mjs';
 
 /** Kompatibler Export: die Frist stammt aus dem vorhandenen Nachfassmodell (ab Versand). */
 export const NACHFASSEN_NACH_TAGEN = ERSTE_NACH_TAGEN;
@@ -91,6 +93,8 @@ export const SCHRITT_LABEL = Object.freeze({
     kunde_hat_bestellt: 'Kunde hat bestellt',
     bestellt: 'Ware beim Lieferanten bestellt',
     geliefert: 'Geliefert an uns',
+    // Nur Lagerware im Auftrag (#1995): nichts kommt an, wir schneiden aus eigener Rolle zu.
+    geliefert_lager: 'Aus eigenem Lager zugeschnitten',
     kunde_informiert: 'Kunde informiert – Ware ist da',
     raus: 'An Kunden raus',
     erledigt: 'Erledigt',
@@ -261,8 +265,6 @@ function versandBeleg(auftrag) {
   return { am, zugestellt, zugestelltAm, tracking };
 }
 
-const DIREKT_ROUTEN = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE]);
-
 /**
  * Muster aus dem eigenen Bestand (musterherkunft.mjs bzw. Route SAMPLE_STOCK/SAMPLE_CUT):
  * 'vorbei' (persoenlich vorbeibringen), 'versand' (wir verschicken) oder null (beim Lieferanten).
@@ -284,16 +286,26 @@ function eigenerBestand(positionen) {
  * @param {Date} [opts.jetzt]
  * @returns {{ auftragsart, verlauf, verlaufNotizen, abgeschlossen, naechsterSchritt }}
  */
-export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = null, gepacktAm = null, jetzt = new Date() } = {}) {
+export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = null, gepacktAm = null, gesperrt = null, jetzt = new Date() } = {}) {
   const art = auftragsart(auftrag);
   const label = SCHRITT_LABEL[art];
-  const pos = positionsStand(auftrag, statusAlle);
+  // Gesperrte Muster, die noch nicht bei uns sind (dieselbe Regel wie die Ampel "Gesperrt" und das To-do
+  // "Muster nicht lieferbar"): sie kommen nie - nicht bestellen, nicht beim Lieferanten nachfragen. Sie halten
+  // die Schritte nicht auf (Review 06.11.2026: sonst blieb ein gemischter Auftrag auf "bestellen" stehen),
+  // ausser wenn sonst nichts uebrig bleibt - dann sagt naechsterSchritt "Muster kommt nicht".
+  const sperre = gesperrt instanceof Set ? gesperrt : new Set(gesperrt || []);
+  const standVon = p => statusAlle[positionKey(auftrag?.id, p.lineItemId)]?.status || null;
+  const kommtNichtP = p => Boolean(p?.istMuster && p.lineItemId && (p.menge ?? 1) > 0 && sperre.has(p.lineItemId) && [null, 'bestellt'].includes(standVon(p)));
+  const ohneGesperrte = (auftrag?.positionen ?? []).filter(p => !kommtNichtP(p));
+  const zaehlen = sperre.size && ohneGesperrte.some(p => p.lineItemId) && ohneGesperrte.length < (auftrag?.positionen ?? []).length
+    ? { ...auftrag, positionen: ohneGesperrte } : auftrag;
+  const pos = positionsStand(zaehlen, statusAlle);
   const { jeSchritt, notizen } = wirksameEreignisse(ereignisse);
   const versand = versandBeleg(auftrag);
   const positionen = auftrag?.positionen ?? [];
 
-  const ausPosition = (status, extra = {}) => {
-    const s = pos.schritt(status);
+  const ausPosition = (status, extra = {}, stand = pos) => {
+    const s = stand.schritt(status);
     return { schritt: status, label: label[status], getan: s.getan, am: s.am, von: s.von, notiz: s.notiz, automatisch: false, quelle: s.getan ? 'manuell' : null,
       teil: !s.getan && s.erreicht > 0 ? { erledigt: s.erreicht, gesamt: s.gesamt } : null, ...extra };
   };
@@ -308,6 +320,7 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   const schritte = [];
   let direkt = false;
   let eigen = null;
+  let wege = null;
   if (art === AUFTRAGSART.MUSTER) {
     eigen = eigenerBestand(positionen);
     // Mit Lieferziel "Kunden" bestellt (ueber: 'kunde'): der Hersteller verschickt die Muster
@@ -345,13 +358,43 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   } else {
     // Eine mitgekaufte Eigenleistung (Kettelservice) hat keine Route und reist nicht mit.
     const ware = positionen.filter(p => !p.istMuster && !p.eigenleistung);
-    // Ueber unseren Kettler bestellte Ware (ueber: 'kettler', #1453) kommt erst zu uns zurueck,
-    // auch wenn der Lieferant sonst direkt verschickt.
-    const ueberKettler = p => statusAlle[positionKey(auftrag.id, p.lineItemId)]?.ueber === 'kettler';
-    direkt = ware.length > 0 && ware.every(p => DIREKT_ROUTEN.has(p.route) && !ueberKettler(p));
-    schritte.push(start('kunde_hat_bestellt'), ausPosition('bestellt'));
-    if (!direkt) schritte.push(ausPosition('geliefert'));
+    // Lieferweg je Position (docs/ai-dashboard/lib/lieferweg.mjs, #1995): Vermerk beim Bestellen >
+    // Lagerware > Stammroute. Ueber unseren Kettler bestellte Ware (ueber: 'kettler', #1453) kommt
+    // erst zu uns zurueck, auch wenn der Lieferant sonst direkt verschickt. Hersteller-Direktware
+    // kommt nie bei uns an; Lagerware wird nie bestellt - wir schneiden sie selbst zu.
+    const eintragVon = p => statusAlle[positionKey(auftrag.id, p.lineItemId)] || null;
+    const wegVon = p => lieferwegVon(p, eintragVon(p))?.weg;
+    const istDirekt = p => wegVon(p) === 'hersteller' || wegVon(p) === 'baustelle';
+    const stufe = p => STATUS_ORDER.indexOf(eintragVon(p)?.status) + 1;
+    const lager = ware.filter(p => wegVon(p) === 'lager');
+    const zuBestellen = ware.filter(p => wegVon(p) !== 'lager');
+    // Was der Lieferant zu uns (bzw. zum Kettler und zurueck) bringt - nur das ist "Geliefert an uns".
+    const vomLieferanten = ware.filter(p => !istDirekt(p) && wegVon(p) !== 'lager');
+    direkt = ware.length > 0 && ware.every(istDirekt);
+    // Gemischt (#1119: eine Position Hersteller → Kunde, eine aus Lager) zaehlt jeder Schritt nur
+    // die Positionen, die ihn ueberhaupt gehen - sonst stuende "Lieferant liefert die Ware an uns"
+    // fuer Ware, die nie zu uns kommt. Ebenso, wenn ein Teil schon bei uns liegt und raus soll
+    // (#1104), waehrend der Rest noch unterwegs ist. Sonst rechnen Auftraege wie bisher ueber alle Positionen.
+    const gemischt = lager.length > 0 || (!direkt && vomLieferanten.length < ware.length);
+    const teilweise = vomLieferanten.some(p => stufe(p) === 2) && vomLieferanten.some(p => stufe(p) < 2);
+    const jeWeg = gemischt || teilweise;
+    const teil = liste => positionsStand({ ...auftrag, positionen: liste }, statusAlle);
+    schritte.push(start('kunde_hat_bestellt'));
+    if (!jeWeg) schritte.push(ausPosition('bestellt'));
+    else if (zuBestellen.length) schritte.push(ausPosition('bestellt', {}, teil(zuBestellen)));
+    // "Geliefert an uns" zaehlt nur Ware vom Lieferanten; Lagerware kommt nicht an, sie wird
+    // zugeschnitten. Nur ohne Ware vom Lieferanten steht der Zuschnitt selbst als Schritt da.
+    if (!direkt) schritte.push(ausPosition('geliefert', vomLieferanten.length ? {} : { label: label.geliefert_lager }, !jeWeg ? pos : teil(vomLieferanten.length ? vomLieferanten : lager)));
     schritte.push(ausVersand(), ausPosition('erledigt'));
+    if (jeWeg) {
+      wege = {
+        lager: lager.length, direkt: ware.filter(istDirekt).length, gesamt: ware.length,
+        direktOffen: ware.filter(p => istDirekt(p) && stufe(p) < 3).length,
+        zuschneiden: lager.filter(p => stufe(p) < 2).length,
+        zuUnsUnterwegs: vomLieferanten.filter(p => stufe(p) < 2).length,
+        vonUnsRaus: [...vomLieferanten, ...lager].filter(p => stufe(p) === 2).length,
+      };
+    }
   }
 
   // Der weiteste getane Schritt bestimmt den Stand; Luecken davor sind "uebersprungen"
@@ -367,10 +410,28 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   });
 
   const ergebnis = { auftragsart: art, verlauf, verlaufNotizen: notizen, abgeschlossen, direktversand: direkt, eigenerBestand: eigen,
+    // Nur bei gemischten Wegen oder Lagerware (#1995): wie viele Positionen wo stehen - fuer den naechsten Schritt.
+    ...(wege ? { wege } : {}),
     // Gepackt ist noch nicht versandt (#1709): nur als Angabe fuer den naechsten Schritt, kein eigener Zeitleistenschritt.
     ...(art === AUFTRAGSART.MUSTER && gepacktAm ? { gepacktAm } : {}) };
-  const beschaffung = (auftrag?.positionen || []).map(p => beschaffungsStand(statusAlle[positionKey(auftrag.id, p.lineItemId)], p.bestellSoll || p.bestellmenge)).filter(e => e?.status === 'bestellt');
-  return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, beschaffung, nachverfolgbar: pos.gesamt > 0, jetzt }) };
+  const bestelltePos = ohneGesperrte.filter(p => p.lineItemId);
+  const beschaffung = bestelltePos.map(p => beschaffungsStand(statusAlle[positionKey(auftrag.id, p.lineItemId)], p.bestellSoll || p.bestellmenge)).filter(e => e?.status === 'bestellt');
+  // Ampel beim Lieferanten je Position ab ihrem Bestelldatum (lib/ampel.mjs warteAmpel), die dringendste -
+  // nicht ab dem letzten Schritt des ganzen Auftrags: eine spaetere zweite Bestellung setzte die Zaehlung
+  // sonst zurueck, waehrend "Je Auftrag" die erste schon rot zeigte (Review 06.11.2026). Lagerware kommt
+  // nicht vom Lieferanten und zaehlt nicht mit.
+  const ampeln = bestelltePos
+    .filter(p => standVon(p) === 'bestellt' && (p.istMuster || lieferwegVon(p, statusAlle[positionKey(auftrag.id, p.lineItemId)])?.weg !== 'lager'))
+    .map(p => warteAmpel(statusAlle[positionKey(auftrag.id, p.lineItemId)], { jetzt }));
+  // Termin vorbei geht vor; sonst das laengste Warten. Nur Termine im Plan: keine Ampel (Regel wie bisher).
+  const lieferantAmpel = ampeln.filter(a => a.grund === 'termin').reduce((m, a) => dringendereAmpel(m, a), null)
+    || ampeln.filter(a => a.grund === 'wartet').sort((x, y) => y.tage - x.tage)[0] || null;
+  const muster = positionen.filter(p => p?.istMuster && (p.menge ?? 1) > 0 && p.lineItemId);
+  const kommtNicht = muster.filter(kommtNichtP).length;
+  // "Alle": jedes noch nicht eingetroffene Muster ist gesperrt - nur dann ersetzt "Muster kommt nicht" den Schritt.
+  const nichtDa = muster.filter(p => [null, 'bestellt'].includes(standVon(p)) && !musterOhneLieferant(p));
+  const kommtNichtStand = kommtNicht ? { anzahl: kommtNicht, von: muster.length, alle: nichtDa.every(kommtNichtP) } : null;
+  return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, beschaffung, lieferantAmpel, nachverfolgbar: pos.gesamt > 0, kommtNicht: kommtNichtStand, jetzt }) };
 }
 
 /**
@@ -381,14 +442,30 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
  * @param {object} [kontext.auftrag]        fuer das Bestelldatum als Rueckfallebene
  * @param {object} [kontext.versand]        Sendungsbeleg (intern)
  * @param {boolean} [kontext.nachverfolgbar] false, wenn keine Position eine Kennung hat
+ * @param {{anzahl:number, von:number, alle?:boolean}|null} [kontext.kommtNicht] gesperrte Muster, noch nicht bei uns;
+ *        alle = jedes noch fehlende Muster ist gesperrt (nur dann ersetzt "Muster kommt nicht" den Schritt)
+ * @param {object|null} [kontext.lieferantAmpel] dringendste warteAmpel() der beim Lieferanten bestellten Positionen
  * @param {Date}   [kontext.jetzt]
- * @returns {null | { wer: 'wir'|'lieferant'|'kunde', text, detail, aktion, knopf, stufe, faelligSeitTagen, wartetSeitTagen, annahme }}
+ * @returns {null | { wer: 'wir'|'lieferant'|'kunde', text, detail, aktion, knopf, stufe, faelligSeitTagen, wartetSeitTagen, annahme, rot }}
  *   null = nichts zu tun (abgeschlossen oder storniert).
  *   stufe: "faellig" (wir sind dran), "warten" (jemand anderes ist dran, in der Frist),
  *          "nachhaken" (ab 7 Tagen), "problem" (ab 14 Tagen).
  *   faelligSeitTagen: seit wie vielen Tagen der Schritt faellig ist (0 = heute), null solange gewartet wird.
+ *   rot: haelt den Auftrag auf (lib/ampel.mjs) - Muster gesperrt, ab 14 Tagen beim Lieferanten,
+ *        bestaetigter Liefertermin vorbei, Wareneingang/Fehlmenge klaeren. Nur dann zeigt "Kunden › Zu tun"
+ *        den roten Rand; "sofort" allein ist normale Arbeit.
  */
-export function naechsterSchritt(stand, { auftrag = null, versand = null, beschaffung = [], nachverfolgbar = true, jetzt = new Date() } = {}) {
+export function naechsterSchritt(stand, kontext = {}) {
+  const basis = naechsterSchrittOhneSperre(stand, kontext);
+  const k = kontext.kommtNicht;
+  // Ein Teil der Muster kommt nicht, der Rest laeuft weiter (Review 06.11.2026): der normale Schritt bleibt -
+  // auch ein echter Verzug beim Lieferanten -, dazu der Hinweis, rot. Ersetzt wird er nur, wenn jedes noch
+  // fehlende Muster gesperrt ist (naechsterSchrittOhneSperre); dort steht der Hinweis schon im Text.
+  if (!basis || !k?.anzahl || basis.kommtNicht) return basis;
+  return { ...basis, text: `${basis.text} · ${k.anzahl === 1 ? '1 Muster kommt' : `${k.anzahl} Muster kommen`} nicht – Kunde informieren`, rot: true };
+}
+
+function naechsterSchrittOhneSperre(stand, { auftrag = null, versand = null, beschaffung = [], lieferantAmpel = null, nachverfolgbar = true, kommtNicht = null, jetzt = new Date() } = {}) {
   if (!stand || stand.abgeschlossen) return null;
   const { verlauf, auftragsart: art } = stand;
   const muster = art === AUFTRAGSART.MUSTER;
@@ -408,26 +485,40 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
   const tage = tageSeit(davor, jetzt) ?? 0;
   const teil = aktuell.teil ? ` (${aktuell.teil.erledigt} von ${aktuell.teil.gesamt} Artikeln schon)` : '';
   const beimLieferanten = (text, aktion, knopf) => {
-    const ws = warnstufe(tage);
-    const kopf = ws === 'problem' ? `Problem: ${sache} seit ${tageText(tage)} bestellt und nicht da`
-      : ws === 'nachhaken' ? `Beim Lieferanten nachhaken: ${sache} seit ${tageText(tage)} bestellt`
+    // Mit Bestelldaten: die Ampel je Position (warteAmpel, wie "Je Auftrag"); sonst wie bisher ab dem letzten Schritt.
+    const a = lieferantAmpel;
+    if (a?.grund === 'termin') {
+      return rot(schritt('wir', `Bestätigter Liefertermin überschritten – nachhaken${teil}`, null, aktion, knopf, 'nachhaken', a.tage ?? 0, tage));
+    }
+    const lt = a?.grund === 'wartet' && Number.isInteger(a.tage) ? a.tage : tage;
+    const ws = a?.grund === 'wartet' ? (a.stufe === 'rot' ? 'problem' : a.stufe === 'gelb' ? 'nachhaken' : null) : warnstufe(tage);
+    const kopf = ws === 'problem' ? `Problem: ${sache} seit ${tageText(lt)} bestellt und nicht da`
+      : ws === 'nachhaken' ? `Beim Lieferanten nachhaken: ${sache} seit ${tageText(lt)} bestellt`
       : text;
-    const detail = ws ? `Üblich ist weniger als ${WARTE_NACHHAKEN_TAGE} Tage – ab ${WARTE_PROBLEM_TAGE} Tagen ist es ein Problem.` : `Bestellt vor ${tageText(tage)}.`;
-    return schritt('lieferant', kopf + teil, detail, aktion, knopf, ws || 'warten', ws ? tage - WARTE_NACHHAKEN_TAGE : null, tage);
+    const detail = ws ? `Üblich ist weniger als ${WARTE_NACHHAKEN_TAGE} Tage – ab ${WARTE_PROBLEM_TAGE} Tagen ist es ein Problem.` : `Bestellt vor ${tageText(lt)}.`;
+    return rot(schritt('lieferant', kopf + teil, detail, aktion, knopf, ws || 'warten', ws ? lt - WARTE_NACHHAKEN_TAGE : null, lt), ws === 'problem');
   };
+  // Gesperrtes Muster (kommt nie): vor "bestellen" und vor "beim Lieferanten" - wie das To-do "Muster nicht
+  // lieferbar" auf Heute und die Packstation ("Zu klären"). Bis 06.11. stand hier "seit 15 Tagen bestellt und
+  // nicht da" bzw. "Muster beim Lieferanten bestellen" fuer ein Muster, das es nicht mehr gibt.
+  if (muster && kommtNicht?.anzahl && kommtNicht.alle !== false && ['bestellt', 'geliefert'].includes(aktuell.schritt)) {
+    const welche = kommtNicht.von > 1 ? ` (${kommtNicht.anzahl} von ${kommtNicht.von} Mustern)` : '';
+    return { ...rot(schritt('wir', `Muster kommt nicht – Kunde informieren${welche}`, 'Der Lieferant kann es nicht liefern. Kunde informieren, weiter in der Packstation unter „Zu klären“.',
+      null, 'Packstation', 'problem', tage, tage)), href: '#/kunden?tab=muster&mpbereich=klaeren', kommtNicht: true };
+  }
   if (!nachverfolgbar && STATUS_ORDER.includes(aktuell.schritt)) {
     return schritt('wir', 'Stand im Shopify-Admin prüfen', 'Die Positionen dieser Bestellung haben keine Kennung – der Stand lässt sich hier nicht festhalten.', null, null, 'faellig', tage, tage);
   }
   if (aktuell.schritt === 'geliefert' && beschaffung.length) {
     const klaerung = beschaffung.find(e => e.beschaffung?.klaerung);
-    if (klaerung) return schritt('wir', 'Bestellmenge / Wareneingang klären', beschaffungText(klaerung), 'geliefert', 'Wareneingang prüfen', 'problem', 0, tage);
+    if (klaerung) return rot(schritt('wir', 'Bestellmenge / Wareneingang klären', beschaffungText(klaerung), 'geliefert', 'Wareneingang prüfen', 'problem', 0, tage));
     const schaden = beschaffung.find(e => restmenge(e) > 0 && e.beschaffung.wareneingang.angekommen > e.beschaffung.wareneingang.verwendbar);
-    if (schaden) return schritt('wir', 'Nicht verwendbare Ware / Fehlmenge klären', beschaffungText(schaden), 'geliefert', 'Wareneingang prüfen', 'problem', 0, tage);
+    if (schaden) return rot(schritt('wir', 'Nicht verwendbare Ware / Fehlmenge klären', beschaffungText(schaden), 'geliefert', 'Wareneingang prüfen', 'problem', 0, tage));
     if (beschaffung.every(e => e.beschaffung?.liefertermin)) {
       const termin = beschaffung.map(e => e.beschaffung.liefertermin).sort()[0];
       const heute = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(jetzt);
       const detail = beschaffung.map(beschaffungText).filter(Boolean).join(' · ');
-      return termin < heute ? schritt('wir', 'Bestätigter Liefertermin überschritten – nachhaken', detail, 'geliefert', 'Wareneingang prüfen', 'nachhaken', 0, tage)
+      return termin < heute ? rot(schritt('wir', 'Bestätigter Liefertermin überschritten – nachhaken', detail, 'geliefert', 'Wareneingang prüfen', 'nachhaken', 0, tage))
         : schritt('lieferant', `Lieferung zugesagt zum ${termin.split('-').reverse().join('.')}`, detail, 'geliefert', 'Wareneingang bestätigen', 'warten', null, tage);
     }
   }
@@ -474,14 +565,46 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
     }
   }
 
+  // Gemischte Wege bzw. Lagerware (#1995, zeitleiste() wege): sagen, wer was bringt.
+  const w = stand.wege || null;
+  const vonUns = n => `${n === 1 ? '1 Position' : `${n} Positionen`} von uns`;
+  const lagerDetail = 'Aus eigenem Lager – nicht beim Lieferanten bestellen. Zuschneiden, packen und verschicken unter „Von uns abschicken“.';
   switch (aktuell.schritt) {
     case 'bestellt':
-      return schritt('wir', `Ware beim Lieferanten bestellen${teil}`, null, 'bestellt', 'Ware ist bestellt', 'faellig', tage, tage);
-    case 'geliefert':
-      return beimLieferanten('Lieferant liefert die Ware an uns', 'geliefert', 'Ware ist angekommen');
-    case 'raus':
+      return schritt('wir', `Ware beim Lieferanten bestellen${teil}`, w?.lager ? `${vonUns(w.lager)} aus eigenem Lager – nicht bestellen, sondern zuschneiden und abschicken.` : null,
+        'bestellt', 'Ware ist bestellt', 'faellig', tage, tage);
+    case 'geliefert': {
+      if (w && !w.zuUnsUnterwegs) {
+        // Nichts ist mehr zu uns unterwegs - offen ist nur der Zuschnitt aus eigenem Lager.
+        const text = w.lager === w.gesamt ? `Aus eigenem Lager zuschneiden und abschicken${teil}`
+          : [w.direktOffen ? 'Hersteller liefert direkt' : null, `${vonUns(w.zuschneiden)} zuschneiden und abschicken`].filter(Boolean).join(' · ');
+        return { ...schritt('wir', text, lagerDetail, null, 'Von uns abschicken', 'faellig', tage, tage), href: '#/heute' };
+      }
+      // Ware vom Lieferanten ist unterwegs zu uns; daneben steht, was wir selbst schon tun koennen
+      // ("Von uns abschicken" auf Heute) - #1104: die Unterlage liegt da, der Teppich kommt noch.
+      const r = beimLieferanten('Lieferant liefert die Ware an uns', 'geliefert', 'Ware ist angekommen');
+      const dazu = [w?.zuschneiden ? `${vonUns(w.zuschneiden)} zuschneiden` : null, w?.vonUnsRaus ? `${vonUns(w.vonUnsRaus)} verschicken` : null].filter(Boolean);
+      return dazu.length ? { ...r, text: [r.text, ...dazu].join(' · ') } : r;
+    }
+    case 'raus': {
       if (stand.direktversand) return beimLieferanten('Lieferant liefert direkt an den Kunden', 'raus', 'Ist an den Kunden raus…');
-      return schritt('wir', `Ware an den Kunden übergeben oder verschicken${teil}`, null, 'raus', 'An Kunden raus…', 'faellig', tage, tage);
+      // Bei uns liegt nichts mehr, offen ist nur der Zuschnitt aus eigenem Lager: kein Versand-Dialog,
+      // sondern "Von uns abschicken" (sonst kreuzte der Dialog die ungeschnittene Rolle an).
+      if (w?.zuschneiden && !w.vonUnsRaus) {
+        const text = [w.direktOffen ? 'Hersteller liefert direkt' : null, `${vonUns(w.zuschneiden)} zuschneiden und abschicken`].filter(Boolean).join(' · ');
+        return { ...schritt('wir', text, lagerDetail, null, 'Von uns abschicken', 'faellig', tage, tage), href: '#/heute' };
+      }
+      // Ware vom Lieferanten ist da, die Lagerware noch nicht zugeschnitten: steht dabei.
+      const zuschnitt = w?.zuschneiden ? ` · ${vonUns(w.zuschneiden)} zuschneiden` : '';
+      // Unsere Positionen sind raus, offen ist nur noch, was der Hersteller direkt schickt.
+      if (w?.direktOffen && !w.vonUnsRaus) return beimLieferanten('Hersteller liefert direkt an den Kunden', 'raus', 'Ist an den Kunden raus…');
+      if (w?.direktOffen) {
+        // Der Versand-Dialog kreuzt die Direktware nicht vorab an (lib/versand.mjs vorauswahl).
+        return schritt('wir', `Hersteller liefert direkt · ${vonUns(w.vonUnsRaus)} verschicken${zuschnitt}`, 'Die Direktware schickt der Hersteller; unsere Position packen und verschicken.',
+          'raus', 'An Kunden raus…', 'faellig', tage, tage);
+      }
+      return schritt('wir', `Ware an den Kunden übergeben oder verschicken${teil}${zuschnitt}`, null, 'raus', 'An Kunden raus…', 'faellig', tage, tage);
+    }
     case 'erledigt':
       if (versand?.zugestellt || tage >= WARE_ABSCHLIESSEN_NACH_TAGEN) {
         return schritt('wir', 'Ware ist beim Kunden – Auftrag abschließen', versand?.zugestellt ? 'Laut Sendungsverfolgung zugestellt.' : `Seit ${tageText(tage)} an den Kunden raus.`, 'erledigt', 'Abschließen', 'faellig', versand?.zugestellt ? 0 : tage - WARE_ABSCHLIESSEN_NACH_TAGEN, tage);
@@ -511,8 +634,11 @@ export function kundeUndOrt(auftrag) {
 }
 
 function schritt(wer, text, detail, aktion, knopf, stufe, faelligSeitTagen, wartetSeitTagen) {
-  return { wer, text, detail: detail || null, aktion, knopf, stufe, faelligSeitTagen: faelligSeitTagen ?? null, wartetSeitTagen: wartetSeitTagen ?? null, annahme: false };
+  return { wer, text, detail: detail || null, aktion, knopf, stufe, faelligSeitTagen: faelligSeitTagen ?? null, wartetSeitTagen: wartetSeitTagen ?? null, annahme: false, rot: false };
 }
+
+/** Markiert einen Schritt als rot (haelt den Auftrag auf, lib/ampel.mjs). */
+const rot = (s, ja = true) => (ja ? { ...s, rot: true } : s);
 
 const STUFEN_RANG = { problem: 3, nachhaken: 2, faellig: 1, warten: 0 };
 
@@ -528,7 +654,11 @@ export function dringendsterSchritt(schritte = []) {
  *
  * @returns {Map<string, object>} orderId -> zeitleiste()
  */
-export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {}, gepackt = {}, jetzt = new Date() } = {}) {
+/**
+ * @param {(auftrag:object)=>string[]|Set<string>|null} [opt.gesperrtFuer] lineItemIds gesperrter Muster je Auftrag
+ *        (Mustersperre, im Server aus mustersperre.json - dieselbe Liste wie `gesperrteMuster` der Bestellungen)
+ */
+export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {}, gepackt = {}, gesperrtFuer = () => null, jetzt = new Date() } = {}) {
   const alle = [...(modell?.auftraege ?? []), ...(modell?.testauftraege ?? [])];
   const jeKunde = new Map();
   for (const a of alle) {
@@ -539,7 +669,7 @@ export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {
   const ergebnis = new Map();
   for (const a of alle) {
     const folge = auftragsart(a) === AUFTRAGSART.MUSTER && !a.testbestellung ? folgebestellung(a, jeKunde.get(kundenSchluessel(a))) : null;
-    ergebnis.set(a.id, zeitleiste(a, { statusAlle, ereignisse: verlaufAlle[a.id]?.ereignisse ?? [], folge, gepacktAm: gepacktAmFuer(a.id, gepackt), jetzt }));
+    ergebnis.set(a.id, zeitleiste(a, { statusAlle, ereignisse: verlaufAlle[a.id]?.ereignisse ?? [], folge, gepacktAm: gepacktAmFuer(a.id, gepackt), gesperrt: gesperrtFuer(a), jetzt }));
   }
   return ergebnis;
 }

@@ -7,12 +7,24 @@
   Einziger Schalter fuer Produktseite, Produktkarte und Warenkorb: endet die
   Aktion, lph_aktiv auf false setzen.
 
+  Laufende zentrale Aktion (Metaobjekt tp_aktion, snippets/tp-aktion-laufend):
+  kein Paketvorteil. Beide automatischen Rabatte sind in Shopify nicht
+  kombinierbar, Shopify nimmt nur einen (Inhaber 06.11.2026, F01/w-286:
+  Black Week bis 30.11. ohne Leisten-Hinweis). Endet die Aktion, erscheint der
+  Hinweis von selbst wieder - kein Datum hier.
+
   @param {product} product
 {%- enddoc -%}
 {%- liquid
   assign lph_aktiv = true
   assign lph_typen = 'Klickvinyl,Klebevinyl' | split: ','
   if lph_aktiv and lph_typen contains product.type
-    echo 'ja'
+    capture lph_aktion
+      render 'tp-aktion-laufend', product: product
+    endcapture
+    assign lph_aktion = lph_aktion | strip
+    if lph_aktion == blank
+      echo 'ja'
+    endif
   endif
 -%}

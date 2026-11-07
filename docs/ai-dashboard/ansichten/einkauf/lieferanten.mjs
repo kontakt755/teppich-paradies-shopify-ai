@@ -15,8 +15,12 @@ import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../../li
 import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { warteWort, warteTitel } from '../../lib/ampel.mjs';
 import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
+import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
+import { lieferwegVon } from '../../lib/lieferweg.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
+import { mitLieferantenstand } from './lieferantenstand.mjs';
+import { lieferantenStand, beschaffungText } from '../../lib/beschaffung.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
@@ -88,7 +92,7 @@ function ueberfaelligHinweis(k, { mitLink = true } = {}) {
 
 /**
  * Wartestand einer Zeile (lib/ampel.mjs): rot/gelb als Plakette mit Zeichen und Wort
- * ("× Überfällig · 15 Tage", "! Nachhaken · 9 Tage", "× Blockiert"), ruhig nur die Tage in Grau.
+ * ("× Überfällig · 15 Tage beim Lieferanten", "! Liegt seit 8 Tagen hier", "× Blockiert"), ruhig nur die Tage in Grau.
  */
 function warteChip(x) {
   const a = x.ampel;
@@ -164,17 +168,26 @@ function wareZeile(x, namen) {
   // Bestellt und noch nicht da: "Ist eingetroffen" direkt an der Zeile (setzt "geliefert",
   // derselbe Schritt wie "Als geliefert markieren" in der Tabelle).
   // Ueber den Kettler bestellt: die Ware kommt nicht zu uns, sondern muss dort abgeholt werden.
+  // Hersteller liefert direkt (lib/lieferweg.mjs): bei uns kommt nichts an - der naechste Schritt
+  // ist "Ist beim Kunden…" (der vorhandene Versand-Dialog, Schritt "raus").
   const status = x.eintrag?.status;
   const kettler = status === 'bestellt' && x.eintrag?.ueber === 'kettler';
-  const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend()
-    ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${kettler ? 'Beim Kettler abgeholt' : 'Ist eingetroffen'}</button>` : '';
+  const lw = lieferwegVon(p, x.eintrag);
+  const direkt = ['hersteller', 'baustelle'].includes(lw?.weg);
+  const daten = `data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}"`;
+  // Lagerware (auch ein Altfall auf "bestellt") kommt nie vom Lieferanten: abgehakt wird auf Heute ("Zugeschnitten").
+  const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend() && lw?.weg !== 'lager'
+    ? direkt ? `<button type="button" class="btn btn-sm lf-zeilenknopf" ${daten} data-af-status="raus" title="Der Hersteller liefert direkt – bei uns kommt nichts an">Ist beim Kunden…</button>`
+      : `<button type="button" class="btn btn-sm lf-zeilenknopf" ${daten} data-af-status="geliefert">${kettler ? 'Beim Kettler abgeholt' : 'Ist eingetroffen'}</button>` : '';
   return `<li class="lf-posten${ampelRand(x.ampel?.stufe)}"><div class="lf-posten-text">
       <div class="t">${esc(titel)}</div>
       ${menge ? `<div class="lf-menge">${esc(menge)}</div>` : ''}
       ${aus.map(z => `<div class="s">${esc(z)}</div>`).join('')}
       ${wer ? `<div class="s lf-wer">${esc(wer)}</div>` : ''}
+      ${lw ? `<div class="s">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` ${esc(p.lagerHinweis)}` : ''}</div>` : ''}
       ${kettler ? '<div class="s lf-kettler">Geht zum Kettler – nach dem Ketteln dort abholen</div>' : ''}
       ${belegZeile(x.eintrag?.status, p.orderId, p.lieferant)}
+      ${lieferantenZeile(p, x.eintrag)}
       ${block.length ? `<div class="lf-grund">${esc(block.join(' · '))}</div>` : ''}
     </div><div class="lf-posten-rechts">${warteChip(x)}${knopf}</div></li>`;
 }
@@ -209,6 +222,18 @@ function stufeListe(zeilen, rest, restText) {
 const fuerKunden = liste => `${liste.length}<span class="lf-fuer"> für ${plural(jeKommission(liste).length, 'Kunden', 'Kunden')}</span>`;
 
 /** Laufende Posten: Ware je Position, Muster je Kommission - Ware zuerst. */
+/**
+ * Lieferantenstand in der Kartenzeile (lib/beschaffung.mjs): "AB fehlt", "angefragt", "weicht ab",
+ * dazu AB-Nummer/offener Lieferweg - und bei fehlender AB der Knopf, sie zu erfassen.
+ */
+function lieferantenZeile(p, eintrag) {
+  if (!mitLieferantenstand(p, eintrag)) return '';
+  const st = lieferantenStand(eintrag);
+  const info = beschaffungText(eintrag);
+  const knopf = st.abFehlt && !istNurLesend() ? ` <button type="button" class="btn btn-sm btn-ghost" data-ls-schritt="ab" data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}">AB eingegangen…</button>` : '';
+  return `${st.text ? `<div class="s${st.ton === 'crit' ? ' wait-crit' : st.ton === 'warn' ? ' wait-warn' : ''}">${esc(st.text)}${knopf}</div>` : ''}${info ? `<div class="s">${esc(info)}</div>` : ''}`;
+}
+
 function laufendZeilen(liste, namen) {
   const ware = nachWartezeit(liste.filter(x => !x.pos?.istMuster)).map(x => ({ n: 1, html: wareZeile(x, namen) }));
   const muster = jeKommission(liste.filter(x => x.pos?.istMuster)).map(g => ({ n: g.positionen.length, html: musterZeile(g, namen) }));
@@ -238,7 +263,8 @@ function nachfassKnopf(k) {
 function arbeitsSchritte(k, namen) {
   const teile = [];
   const w = k.ware.zuBestellen;
-  const m = k.muster.zuBestellen;
+  // Gesperrt (Lieferant kann nicht liefern): nie bestellen - steht unter "Muster nicht lieferbar" (#1996).
+  const m = k.muster.zuBestellen.filter(x => x.ampel?.grund !== 'gesperrt');
   if (w.length) {
     const zeigen = w.slice(0, 8);
     teile.push(`<section class="lf-schritt">${stufeKopf('Ware bestellen', w.length, wareKnopf(k, 'btn btn-primary'))}
@@ -263,16 +289,22 @@ function arbeitsSchritte(k, namen) {
     teile.push(`<section class="lf-schritt lf-nachfassen ${lbu.stufe}">${stufeKopf('Liegt bei uns', lbu.auftraege === 1 ? '1 Auftrag' : `${lbu.auftraege} Aufträge`, knopf, { zusatz: esc(satz) })}
       ${stufeListe(laufendZeilen(lbu.positionen, namen).map(z => z.html), 0, '')}</section>`);
   }
-  // Bestellt, aber der Lieferant kann das Muster nicht liefern (Mustersperre): nicht nachfassen,
+  // Der Lieferant kann das Muster nicht liefern (Mustersperre), bestellt oder noch nicht: nicht nachfassen,
   // sondern den Kunden informieren - das geht in der Packstation. Eigener Abschnitt, damit kein
   // rotes Muster unter "Bestellt, im Plan" verschwindet.
-  const nichtLieferbar = k.muster.bestellt.filter(x => x.ampel?.grund === 'gesperrt');
+  const nichtLieferbar = [...k.muster.zuBestellen, ...k.muster.bestellt].filter(x => x.ampel?.grund === 'gesperrt');
   if (nichtLieferbar.length) {
     teile.push(`<section class="lf-schritt lf-nachfassen crit">${stufeKopf('Muster nicht lieferbar', fuerKunden(nichtLieferbar), '<a class="btn" href="#/kunden?tab=muster">Packstation</a>', { zusatz: 'Der Lieferant kann diese Muster nicht liefern – Kunde informieren.' })}
       ${stufeListe(jeKommission(nichtLieferbar).map(g => musterZeile(g, namen)), 0, '')}</section>`);
   }
   // Ruhig darunter: was wir selbst da haben und was im Plan laeuft (nicht ueberfaellig).
   const ruhig = [];
+  // Lagerware: steht beim Lieferanten im Shop, wird aber von uns zugeschnitten und verschickt (Heute › Von uns abschicken).
+  const ausLager = k.ware.eigen || [];
+  if (ausLager.length) {
+    ruhig.push(stufeKopf('Aus eigenem Lager – nicht bestellen', ausLager.length, '<a class="btn btn-sm" href="#/heute">Von uns abschicken</a>', { klasse: 'lf-ruhig' })
+      + stufeListe(ausLager.slice(0, 4).map(x => wareZeile(x, namen)), ausLager.length - Math.min(ausLager.length, 4), 'weitere Positionen'));
+  }
   const eigen = k.muster.eigen || [];
   if (eigen.length) {
     const g = jeKommission(eigen);
@@ -291,12 +323,23 @@ function arbeitsSchritte(k, namen) {
   return teile.join('');
 }
 
+/**
+ * Zahl am Knopf "Positionen bearbeiten (n)": genau die Positionen, die die Karte zeigt - auch
+ * Lagermuster und Lagerware ("Aus eigenem Lager", k.ware.eigen), wie offenGesamt in
+ * lib/einkauf-lieferanten.mjs. Bis zur Pruefung 06.11. stand unter einer Lagerware-Position "(0)".
+ */
+export function kartenAnzahl(k, af = null) {
+  if (af === 'erledigt') return k.ware.erledigt.length + k.muster.erledigt.length;
+  return k.ware.zuBestellen.length + k.muster.zuBestellen.length
+    + k.ware.bestellt.length + k.ware.eingetroffen.length + k.muster.bestellt.length + k.muster.eingetroffen.length
+    + (k.muster.eigen || []).length + (k.ware.eigen || []).length;
+}
+
 function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }) {
   const offen = aufgeklappt.has(k.id) || state.route.params.get('lf') === k.id || !k.zugeordnet || !!af;
   const zu = [...k.ware.zuBestellen, ...k.muster.zuBestellen];
   const laufend = nachWartezeit([...k.ware.bestellt, ...k.ware.eingetroffen, ...k.muster.bestellt, ...k.muster.eingetroffen]);
-  const eigen = k.muster.eigen || [];
-  const anzahl = af === 'erledigt' ? k.ware.erledigt.length + k.muster.erledigt.length : zu.length + laufend.length + eigen.length;
+  const anzahl = kartenAnzahl(k, af);
   // Zugeklappt stehen die Bestellknoepfe bei "Zu bestellen"; aufgeklappt (Tabellen) unten im Fuss.
   const knoepfe = offen ? bestellKnoepfe(k) : '';
   const vorschau = offen ? '' : arbeitsSchritte(k, namen);
@@ -464,12 +507,23 @@ function kettelwegWahl(fragen) {
     <ul class="lf-liste">${fragen.map(zeile).join('')}</ul></section>`;
 }
 
+/**
+ * Knopf an "Nicht beim Lieferanten zu bestellen": "Ändern…" ist die Musterherkunft und gilt nur fuer
+ * Muster. Lagerware (Ware aus eigener Rolle, #1995) wird auf Heute zugeschnitten - der Musterdialog
+ * endete dort mit "Diese Position ist kein Muster" und der Maildialog war weg.
+ */
+function ohneKnopf(f) {
+  if (istNurLesend()) return '';
+  if (!f.istMuster) return '<a class="btn btn-sm btn-ghost" href="#/heute">Von uns abschicken</a>';
+  return `<button type="button" class="btn btn-sm btn-ghost" data-lf-herkunft="${esc(f.orderId)}" data-af-item="${esc(f.lineItemId)}">Ändern…</button>`;
+}
+
 function mailAbschnitt(m, i, mehrere) {
   const lesend = istNurLesend();
   const kopf = mehrere ? `<h3 class="lf-mail-titel">${esc(m.art === 'muster' ? 'Muster' : 'Ware')}${LIEFERZIEL_TEXT[m.lieferziel] ? ` · ${esc(LIEFERZIEL_TEXT[m.lieferziel])}` : ''}</h3>` : '';
   const fehlt = (m.fehlt || []).length ? `<div class="notice warn lf-fehltliste"><strong>${m.text ? 'Nicht in der Mail' : 'Kann so nicht bestellt werden'} (${m.fehlt.length}):</strong>
       <ul>${m.fehlt.map(f => `<li>${esc([f.orderName, [f.titel, f.farbe].filter(Boolean).join(', ')].filter(Boolean).join(' · '))} – weil: ${esc((f.gruende || []).join('; '))}</li>`).join('')}</ul></div>` : '';
-  const ohne = (m.ohneBestellung || []).length ? `<div class="small muted lf-ohne"><p style="margin:0 0 4px">Nicht beim Lieferanten zu bestellen (${m.ohneBestellung.length}):</p><ul class="lf-liste">${m.ohneBestellung.map(f => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(f.titel || ''))}</div><div class="s">${esc([kundeOrtText(f.orderId), f.orderName, ...(f.gruende || [])].filter(Boolean).join(' · '))}</div></div>${istNurLesend() ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-lf-herkunft="${esc(f.orderId)}" data-af-item="${esc(f.lineItemId)}">Ändern…</button>`}</li>`).join('')}</ul></div>` : '';
+  const ohne = (m.ohneBestellung || []).length ? `<div class="small muted lf-ohne"><p style="margin:0 0 4px">Nicht beim Lieferanten zu bestellen (${m.ohneBestellung.length}):</p><ul class="lf-liste">${m.ohneBestellung.map(f => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(f.titel || ''))}</div><div class="s">${esc([kundeOrtText(f.orderId), f.orderName, ...(f.gruende || [])].filter(Boolean).join(' · '))}</div></div>${ohneKnopf(f)}</li>`).join('')}</ul></div>` : '';
   const wahl = m.art === 'muster' || m.zielWaehlbar;
   const zielWahl = wahl ? `<div class="lf-zielwahl" role="group" aria-label="Wohin geht die Lieferung?"><span class="small muted">${m.art === 'muster' ? 'Muster gehen an' : 'Ware geht an'}:</span>
       ${zielChips(m)}</div>` : '';
@@ -722,7 +776,10 @@ async function markiereMail(i, knopf) {
   // den Kettler ("unterwegs zum Kettler"), Muster direkt an den Kunden (kein "angekommen" bei uns).
   // Jede andere Mail nimmt einen alten Vermerk zurueck.
   // Kettelt der Lieferant nach der Wahl selbst, wird das vermerkt: nur so kann die Kundenakte es belegen.
-  const ueber = m.art === 'ware' ? (m.lieferziel === 'kettler' ? 'kettler' : m.kettelnBeimLieferanten ? 'kunde' : null) : (m.lieferziel === 'kunde' ? 'kunde' : null);
+  // Seit 06.11.2026 (#1995) immer mit Vermerk, damit der Lieferweg belegt ist: Kunde/Baustelle -> 'kunde'
+  // (bei uns kommt nichts an), Laden -> 'laden', Kettler -> 'kettler'. Vorher blieb Direktware ohne Vermerk.
+  const WARE_UEBER = { kunde: 'kunde', baustelle: 'kunde', laden: 'laden', kettler: 'kettler' };
+  const ueber = m.art === 'ware' ? (m.kettelnBeimLieferanten && m.lieferziel !== 'kettler' ? 'kunde' : WARE_UEBER[m.lieferziel] ?? null) : (m.lieferziel === 'kunde' ? 'kunde' : null);
   const ok = await markiereAlsBestellt(m.positionen, nr, { ueber });
   if (ok) { dialog.markiert.add(i); dialog.gesetzt.set(i, m.positionen.filter(p => afEintragFuer(p)?.status === 'bestellt')); }
   // Karten und Zahlen dahinter nachziehen. Der Dialog bleibt offen - mit "Rückgängig", falls der

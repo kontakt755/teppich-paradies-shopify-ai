@@ -45,6 +45,7 @@ function produkt(o = {}) {
   return {
     title: o.title ?? 'Solvana Teppich nach Maß', handle: 'solvana-teppich-nach-mass', type: 'Teppich nach Maß',
     tags: o.tags ?? [], variants: [], available: o.available ?? true, price_min: o.min ?? 27, price_max: o.max ?? 27,
+    options_with_values: [{ name: 'Farbe', values: o.farben ?? ['Sand', 'Grau'] }],
     metafields: { service, custom: { preis_pro_001_qm: { value: o.p001 ?? true } }, aktion: {} },
   };
 }
@@ -140,11 +141,25 @@ test('Ohne Musterweg kein Mustersatz; mehrere Kanten werden im Bestellweg genann
   assert.match(mehrere, /^Farbe und Kante wählen/);
 });
 
+// Rundgang 06.11. (RE-06): Kettelteppiche aus Restrollen haben genau eine Farbe - dann
+// kein "Farbe wählen" im Bestellweg, sichtbar wie im JSON-LD.
+test('Bestellweg nennt die Farbe nur bei mehr als einer Farbe', async () => {
+  const weg = async (o) => (await fragen(produkt(o))).at(-1).acceptedAnswer.text;
+  assert.match(await weg({}), /^Farbe wählen, Breite und Länge/);
+  const eine = await weg({ farben: ['Beige'] });
+  assert.match(eine, /^Breite und Länge in Zentimetern eingeben/);
+  assert.doesNotMatch(eine, /Farbe wählen/);
+  assert.match(await weg({ farben: ['Beige'], gruppe: [{}, {}] }), /^Kante wählen, Breite und Länge/);
+  const html = await render('tp-mass-faq', { product: produkt({ farben: ['Beige'] }), variant: variante() });
+  assert.doesNotMatch(html, /Farbe wählen/);
+  assert.match(html, />Breite und Länge in Zentimetern eingeben/);
+});
+
 test('Fertig: Pauschale im Preis und im Text, abweichende Preise nennen die Ausführung', async () => {
   const q = await fragen(produkt({ art: 'Fertig', min: 96, max: 120 }), variante({ preis: 96, farbe: 'Natur' }));
   const preis = q[0].acceptedAnswer.text;
   assert.match(preis, /in der Ausführung Natur, vom Hersteller eingefasst/);
-  assert.match(preis, /enthalten Einfassung sowie Fertigungs- und Versandpauschale und die MwSt/);
+  assert.match(preis, /enthalten Einfassung sowie Fertigungspauschale und die MwSt/);
   assert.ok(preis.includes(`200 × 300 cm kosten ${geld(600 * 96 + 1499)}`), preis);
 });
 

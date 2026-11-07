@@ -209,6 +209,15 @@
 {%- endcomment -%}
 {%- capture tp_ab_lieferzeit_zeile -%}
   {%- assign tp_ab_lieferzeit = product.metafields.service.lieferzeit.value | strip -%}
+  {%- comment -%}
+    Wunschmass vom Hersteller ohne Metafeld: derselbe Wert wie im Preiskasten
+    (snippets/tp-mass-lieferzeit), Rundgang 06.11. (NM-03). Andere Produkte
+    bleiben bei Metafeld oder nichts.
+  {%- endcomment -%}
+  {%- if kopf and tp_ab_lieferzeit == blank and product.template_suffix == 'wunschmass-fertig' -%}
+    {%- capture tp_ab_lieferzeit -%}{%- render 'tp-mass-lieferzeit', product: product -%}{%- endcapture -%}
+    {%- assign tp_ab_lieferzeit = tp_ab_lieferzeit | strip -%}
+  {%- endif -%}
   {%- if product.available == false -%}{%- assign tp_ab_lieferzeit = '' -%}{%- endif -%}
   {%- if kopf and tp_ab_lieferzeit != blank -%}
     <span class="tp-ab-preis__lieferzeit">

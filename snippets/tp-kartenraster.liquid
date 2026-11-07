@@ -53,13 +53,13 @@
        Bedingung steht an allen drei Ebenen: ein halbes Subgrid (li ja, Karte
        nein) wuerde die Spuren der Karte zusammenfallen lassen. */
     .tp-kartenraster:not([product-grid-view='zoom-out'])
-      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template))) {
+      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-aktion__gruppe, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template))) {
       display: grid;
       grid-template-rows: subgrid;
     }
 
     .tp-kartenraster:not([product-grid-view='zoom-out'])
-      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template)))
+      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-aktion__gruppe, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template)))
       > product-card {
       display: grid;
       grid-template-rows: subgrid;
@@ -68,7 +68,7 @@
     }
 
     .tp-kartenraster:not([product-grid-view='zoom-out'])
-      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template)))
+      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-aktion__gruppe, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template)))
       > product-card
       > .product-card__content {
       display: grid;
@@ -139,7 +139,11 @@
       margin: 6px 0 0;
     }
 
-    .tp-kartenraster .product-card__content > .tp-card-aktion {
+    /* Aktion und "Sockelleiste inklusive" stehen seit #1452 in einer Gruppe
+       (blocks/tp-card-aktion). Fehlte die Gruppe in den Listen oben, fiel die
+       Karte aufs Flex-Layout zurueck und zog die Spuren der Nachbarkarten
+       auseinander (Rundgang 2026-11-06). */
+    .tp-kartenraster .product-card__content > :is(.tp-card-aktion, .tp-card-aktion__gruppe) {
       grid-row: 12;
       margin: 4px 0 0;
     }

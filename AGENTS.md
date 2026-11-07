@@ -186,4 +186,4 @@ Nicht automatisch bearbeiten, aber bei zukünftigen Aufgaben berücksichtigen:
 - ecoVella-/Wolle-Zuordnung sauber prüfen
 - Horizon 4.1.3 später separat migrieren
 - Produktbilder langfristig verbessern
-- Reste & Sonderposten später als eigenen starken Shopbereich aufbauen (seit 14.10. nur Platzhalter „demnächst“ im Menü)
+- Reste & Sonderposten später als eigenen starken Shopbereich aufbauen (Reste-Seite seit 03.11. live mit Sofortkauf, Ausbau zu einem starken Shopbereich offen)

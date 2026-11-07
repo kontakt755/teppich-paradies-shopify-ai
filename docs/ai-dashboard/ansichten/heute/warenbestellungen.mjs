@@ -2,14 +2,31 @@
 import { esc, plural, geldText } from '../../kern/helfer.mjs';
 import { shopBestellarbeit } from '../../lib/shop-bestellarbeit.mjs';
 import { vorgangsLink } from '../../lib/vorgangslink.mjs';
+import { lieferwegeAuftrag } from '../../bausteine/lieferweg.mjs';
 
 const ALLE = '#/kunden?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit';
 const SICHTBAR = 5;
 // Pauschal nur ohne bestaetigten Termin: "Ware kommt bis 12.11." sagt mehr (a.liefertermin).
 const WARTET_TEXT = { lieferant: 'wartet auf Lieferant', kunde: 'wartet auf Kunde' };
 
-export function warenbestellungenBlock({ daten, lesend = false } = {}) {
-  const arbeit = shopBestellarbeit(daten);
+/**
+ * Naechster Schritt der Zeile. Ist ein Teil der Ware da, steht der Teilstand-Satz (#1996) - wortgleich mit
+ * "Je Auftrag" und Kunden › Bestellungen, aus denselben Positionsstaenden (a.naechstes, lib/shop-bestellarbeit.mjs).
+ * Sonst beim reinen Warten ruhig "wartet auf Lieferant"; die Tage seit der Bestellung stehen in der Zeile darueber.
+ */
+function weiterText(a) {
+  if (a.wartet === 'lieferant') return a.teilstand || a.liefertermin ? a.naechstes : WARTET_TEXT.lieferant;
+  return WARTET_TEXT[a.wartet] || a.naechstes?.replaceAll('Großhändler-ID', 'Lieferanten-Artikelnummer');
+}
+
+// Wer liefert wohin (#1995): "Hersteller → Kunde", "aus Lager" ... je Warenposition, ohne Muster.
+const wege = a => {
+  const html = lieferwegeAuftrag(a.waren || [], p => a.zeile.positionsstatus?.[p.lineItemId] || null);
+  return html ? ` ${html}` : '';
+};
+
+export function warenbestellungenBlock({ daten, lesend = false, lieferantName } = {}) {
+  const arbeit = shopBestellarbeit(daten, { lieferantName });
   // Hauptknopf auf der ersten Zeile, bei der wir dran sind (Rundgang 29.10., T4) - nicht auf
   // einer Bestellung, die nur auf den Lieferanten wartet.
   const erste = arbeit.zeilen.slice(0, SICHTBAR).findIndex(a => !a.wartet);
@@ -26,7 +43,7 @@ export function warenbestellungenBlock({ daten, lesend = false } = {}) {
       : z.zahlungsstatus === 'AUTHORIZED' ? 'Zahlung autorisiert' : 'Zahlung prüfen';
     return `<div class="heute-bestellzeile"><div><strong>${esc(z.kundenname || 'Kunde nicht hinterlegt')} · ${esc(z.orderName || 'Bestellung')}</strong>
       <p>Bestellwert ${wert} · ${esc(zahlung)} · ${esc(alter)}${a.gemischt ? ' · mit Mustern' : ''}</p>
-      <p>${esc(a.stand)} · ${esc((a.liefertermin ? a.naechstes : WARTET_TEXT[a.wartet]) || a.naechstes?.replaceAll('Großhändler-ID', 'Lieferanten-Artikelnummer'))}</p></div>
+      <p>${esc(a.stand)} · ${esc(weiterText(a))}${wege(a)}</p></div>
       <a class="btn btn-sm${!lesend && i === erste ? ' btn-primary' : ''}" href="${esc(ziel)}">${lesend || a.wartet ? 'Bestellung ansehen' : 'Bestellung bearbeiten'}</a></div>`;
   };
   return `<section class="heute-geschaeft" aria-labelledby="heuteWarenbestellungen"><div class="heute-geschaeft-kopf">

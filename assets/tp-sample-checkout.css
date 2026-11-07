@@ -227,6 +227,22 @@
   color: var(--tp-muted, #595959);
 }
 
+/* Kein Muster ueber diese Seite: Beratung und Rueckweg zum Boden als Links */
+.tp-sample__keine-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 10px;
+}
+
+.tp-sample__keine-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-foreground, #222);
+  font-weight: 600;
+}
+
 .tp-sample__submit {
   width: 100%;
   min-height: 44px;
@@ -371,9 +387,13 @@
 }
 
 .tp-sample__produkt-name {
+  /* Lange Namen brechen in der Karte um statt bei 320 px herauszuragen (Rundgang 06.11.2026) */
+  min-width: 0;
   font-size: var(--tp-fs-sm);
   font-weight: 600;
   line-height: 1.25;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .tp-sample__gruppe-alle {

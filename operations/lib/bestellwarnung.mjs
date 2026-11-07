@@ -194,7 +194,8 @@ function unsicherheiten({ p, ziel, wegBelegt }) {
  * nur "nicht ueber den Kettler" (Laden oder Kunde), ein fehlender Schluessel nicht einmal das (beimKettler).
  */
 function lieferweg({ mailZiel, stand, standard }) {
-  const vermerk = UEBER_WERTE.includes(stand?.ueber) ? stand.ueber : null;
+  // "aus Lager" ist kein Weg vom Lieferanten - solche Ware steht nie in der Bestellmail (lieferanten.mjs).
+  const vermerk = UEBER_WERTE.includes(stand?.ueber) && stand.ueber !== 'lager' ? stand.ueber : null;
   if (vermerk && (stand.bestelltAm || !mailZiel)) return { ziel: vermerk, vermerkt: true, wegBelegt: true };
   if (mailZiel) return { ziel: mailZiel, vermerkt: false, wegBelegt: true };
   return { ziel: standard, vermerkt: false, wegBelegt: !stand?.status };
