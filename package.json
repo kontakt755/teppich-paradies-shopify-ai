@@ -2,7 +2,7 @@
   "name": "teppich-paradies-shopify-ai",
   "private": true,
   "scripts": {
-    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test && npm run lexware:test",
+    "test": "node scripts/abhaengigkeiten.mjs && node scripts/test-temp.mjs --test qa/tests/*.test.mjs docs/ai-dashboard/tests/*.test.mjs operations/tests/*.test.mjs automation/tests/*.test.mjs workflow/tests/*.test.mjs .claude/hooks/*.test.mjs social/tests/*.test.mjs domains/lexware/angebotsassistent/test/*.test.mjs",
     "pruefen": "node scripts/pruefen.mjs",
     "restrolle:plan": "node operations/restrolle-neu.mjs",
     "qa": "node qa/run-qa.mjs",
@@ -124,7 +124,8 @@
     "social:zentrale": "node social/scripts/server.mjs",
     "social:einrichten": "bash social/scripts/dienste-einrichten.sh",
     "teppich:basis-daten": "node scripts/teppich-basis-daten.mjs",
-    "aktion:plan": "node scripts/aktion-plan.mjs"
+    "aktion:plan": "node scripts/aktion-plan.mjs",
+    "aktion:guard": "node operations/scripts/aktion-guard.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.30.0",

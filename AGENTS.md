@@ -121,7 +121,7 @@ Aktionen und Streichpreise bei Teppichboden, Preisstufen der gekettelten Fußlei
 
 ## Tests
 
-`npm test` startet alle Suiten (rund 35 s), `npm run -s pruefen` zusaetzlich alle Guards. Was je Änderung risikobasiert zu prüfen ist (Desktop, Mobile ca. 390 px, Warenkorb, Muster …) und welche weiteren Checks es gibt: Skill `theme-regeln`.
+`npm test` startet alle Suiten in einem Lauf (rund 25 s), `npm run -s pruefen` zusaetzlich alle Guards und Theme Check, alle Schritte gleichzeitig. Was je Änderung risikobasiert zu prüfen ist (Desktop, Mobile ca. 390 px, Warenkorb, Muster …) und welche weiteren Checks es gibt: Skill `theme-regeln`.
 
 ## Gedächtnis, Übergaben und Review
 
@@ -184,6 +184,6 @@ Nicht automatisch bearbeiten, aber bei zukünftigen Aufgaben berücksichtigen:
 - Teppichboden Mobile-Menü optimieren
 - Hochflor-/Mittelflor-Zuordnung fachlich verbessern (Mittelflor ist seit 07.10. eigene Kategorie, die Zuordnung je Produkt bleibt offen)
 - ecoVella-/Wolle-Zuordnung sauber prüfen
-- Horizon 4.1.3 später separat migrieren
+- Horizon 4.1.3 später separat migrieren (aufgeschobene Kernpunkte: `docs/weiterentwicklung/horizon-migration.md`)
 - Produktbilder langfristig verbessern
 - Reste & Sonderposten später als eigenen starken Shopbereich aufbauen (Reste-Seite seit 03.11. live mit Sofortkauf, Ausbau zu einem starken Shopbereich offen)
