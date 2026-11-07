@@ -20,7 +20,7 @@
     when 'cover'
       assign tmkw = 'mit Cover-Kante|Cover-Kante rundum'
     when 'fertig'
-      assign tmkw = 'vom Hersteller eingefasst|Einfassung sowie Fertigungs- und Versandpauschale'
+      assign tmkw = 'vom Hersteller eingefasst|Einfassung sowie Fertigungspauschale'
   endcase
   if tmkw_label != blank and tmkw != blank
     assign tmkw_teile = tmkw | split: '|'

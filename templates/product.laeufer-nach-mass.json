@@ -249,7 +249,7 @@
                 "label_laenge": "Länge des Läufers",
                 "max_stueck": 20,
                 "messhilfe": "Die Breite wählen Sie oben, hier nur die Länge.",
-                "preishinweis": "Läufer vom Hersteller auf Ihre Länge zugeschnitten, je Läufer 14,99 € Fertigungs- und Versandpauschale.",
+                "preishinweis": "Läufer vom Hersteller auf Ihre Länge zugeschnitten, je Läufer 14,99 € Fertigungspauschale.",
                 "widerruf_hinweis": false
               },
               "blocks": {}
