@@ -10,7 +10,8 @@
 
   Das Formular schickt ueber das Shopify-Kontaktformular eine als ANFRAGE
   gekennzeichnete E-Mail an die Shop-Adresse (Produkt, SKU, Link, Wunschmass,
-  Ausfuehrung). Es entsteht keine Bestellung.
+  Ausfuehrung). Es entsteht keine Bestellung. Der Datenschutz-Hinweis mit Link
+  vor dem Absendeknopf kommt aus snippets/tp-datenschutz-hinweis (w-172).
 
   Kaufsperre: Die Rollen-Variante hat Bestand 0 bei gesperrtem Ueberverkauf,
   damit kauft auch ein Warenkorb-Link sie nicht. Zurueck auf Sofortkauf:
@@ -75,8 +76,7 @@
         <textarea name="contact[body]" rows="2" maxlength="500">{{ form.body }}</textarea>
       </label>
       <p class="tp-af__note">
-        Es entsteht keine Bestellung. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der
-        Anfrage zu.
+        Es entsteht keine Bestellung. {% render 'tp-datenschutz-hinweis' %}
       </p>
       <button type="submit" class="button tp-af__btn">Verfügbarkeit anfragen</button>
     {%- endif -%}
@@ -145,6 +145,12 @@
     margin: 0 0 0.6rem;
     font-size: var(--tp-fs-xs);
     color: rgb(from var(--color-foreground) r g b / 0.7);
+  }
+  /* Link zur Datenschutzerklaerung im Hinweis, wie im Kontaktformular (w-172) */
+  .tp-af__note a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
   .tp-af__btn {
     inline-size: 100%;
