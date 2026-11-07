@@ -89,3 +89,32 @@ export function versandRueckmeldung(basis, shopify) {
   if (shopify.status === 'uebersprungen') return { text: `${basis}${m}`, ton: '' };
   return { text: `${basis} – aber${m.replace(/^ · /, ' ')}`, ton: 'crit' };
 }
+
+/**
+ * Darf "Erledigt" bei dieser Position die Versandmail von Shopify ausloesen? (Inhaber 07.11.2026, w-276)
+ * Nur Ware - keine Muster, keine Eigenleistung -, die von vor "raus" direkt auf "Erledigt" geht und
+ * in Shopify noch nicht gebucht ist. Dann hat der Kunde noch nie gehoert, dass seine Ware unterwegs
+ * ist; die Rueckfrage bietet die Mail vorab angehakt an. Muster bleiben ohne Mail wie bisher.
+ * Gilt in Browser (Rueckfrage zeigen) und Server (Wahl annehmen) gleich.
+ * @param {object} p        Position (istMuster, eigenleistung, menge)
+ * @param {object|null} eintrag  Stand der Position vor dem Klick (auftragsstatus.json)
+ */
+export function erledigtMitMailMoeglich(p, eintrag) {
+  if (!p?.lineItemId || p.istMuster || p.eigenleistung || (p.menge ?? 1) <= 0) return false;
+  if (stufe(eintrag?.status) >= stufe('raus')) return false;
+  return !['gebucht', 'bereits', 'uebersprungen'].includes(eintrag?.shopifyVersand?.status);
+}
+
+/**
+ * Die Ware eines Auftrags, fuer die "Erledigt" die Kundenmail anbieten soll (siehe oben).
+ * Testbestellungen bucht der Server nie - dort gibt es nichts zu fragen.
+ * @param {object} auftrag  Auftrag mit id, testbestellung, positionen[]
+ * @param {object} statusPositionen "orderId::lineItemId" -> Stand
+ * @param {string[]|null} ids  nur diese Positionen (z. B. die offenen eines Sammelschritts)
+ */
+export function kundenmailKandidaten(auftrag, statusPositionen = {}, ids = null) {
+  if (!auftrag || auftrag.testbestellung) return [];
+  const erlaubt = ids ? new Set(ids.map(String)) : null;
+  return (auftrag.positionen ?? []).filter(p => p?.lineItemId && (!erlaubt || erlaubt.has(String(p.lineItemId)))
+    && erledigtMitMailMoeglich(p, statusPositionen?.[`${auftrag.id}::${p.lineItemId}`] || null));
+}

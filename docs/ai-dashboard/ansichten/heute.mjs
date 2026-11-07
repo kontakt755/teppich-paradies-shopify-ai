@@ -9,9 +9,10 @@ import { musterAutomatikBlock, musterAutomatikZeile } from '../bausteine/muster-
  *      ein Mensch ran muss (lib/muster-nachfassen.mjs), neue Service-Anfragen, Lieferantenbelege
  *      (Storno, Lieferschein ohne Haken) und "In Shopify noch offen" (einkauf/shopify-abgleich.mjs).
  *   2. "Im Hintergrund" - was ohne uns laeuft, je eine ruhige Zeile zum Aufklappen:
- *      automatische Muster-Nachfragen (die volle Karte aus heute/muster-nachfassen.mjs),
  *      "wartet auf Lieferant/Kunde" (die Spalte "Wir sind dran" ist die Liste oben selbst)
- *      und der Datenstand.
+ *      und der Datenstand. Die automatischen Muster-Nachfragen (Karte aus heute/muster-nachfassen.mjs)
+ *      stehen seit 07.11.2026 unter Kunden › Kunden nach Produkt fragen (w-284); hier bleiben
+ *      nur ihre Warnungen als To-do (Versandfehler, Postfach-Suche, Hinweise) mit Link dorthin.
  *   3. Laden und Montage (heute/laden.mjs) - nur, wenn verbunden. Kennzahlen nur beim Inhaber.
  *
  * Entfallen am 2026-10-19: das zweite Suchfeld (die Suche oben findet auch Produkte), die
@@ -54,7 +55,8 @@ import { shopwache, ensureShopwache } from './shopwache.mjs';
 import { ensureAkquise, akquiseFaellig } from './akquise.mjs';
 import { ensureHausverwaltungen, hausverwaltungenFaellig } from './hausverwaltungen.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
-import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
+import { musterNachfassenStand } from './heute/muster-nachfassen.mjs';
+import { NACHFRAGE_MAILS_HREF } from '../lib/nachfrage-mails.mjs';
 import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
 import { veralteteQuellen, datenstandTodo } from '../lib/datenstand.mjs';
 import { startBestellarbeit } from '../lib/start-bestellarbeit.mjs';
@@ -122,14 +124,6 @@ function lieferantName(id) {
   return lieferantAnzeige(id, heuteDaten.lieferanten?.lieferanten || []);
 }
 
-/** Link auf Heute mit geaendertem Parameter - die gewaehlte Sicht bleibt erhalten. */
-function heuteHref(key, value) {
-  const p = new URLSearchParams(state.route.params);
-  if (value) p.set(key, value); else p.delete(key);
-  const q = p.toString();
-  return `#/heute${q ? `?${q}` : ''}`;
-}
-
 /** Welche Sicht? Inhaber waehlt per Chip (Standard Laden, Inhaberentscheidung 2026-10-01), alle anderen bekommen ihre. */
 function gewaehlteSicht(aufgaben) {
   // Website-/Technik-Eintraege gehoeren nicht auf die Liste eines Mitarbeiters (Wunsch 2026-10-21).
@@ -172,7 +166,7 @@ function versandFehlerTodo(lauf) {
     id: 'nachfassen-versand', art: 'nachfassen_versand', bereich: 'laden', ton: 'warn', alterTage: null,
     titel: `Muster-Nachfragen: ${plural(lauf.fehler, 'E-Mail', 'E-Mails')} nicht verschickt`,
     kontext: `letzter Lauf ${fmtDateTime(lauf.am)} · ${lauf.verschickt || 0} verschickt`,
-    knopf: { text: 'Ansehen', href: heuteHref('mn', '1') },
+    knopf: { text: 'Ansehen', href: NACHFRAGE_MAILS_HREF },
   };
 }
 
@@ -184,7 +178,7 @@ function postfachAbgleichTodo(nf) {
     id: 'nachfassen-postfach', art: 'nachfassen_versand', bereich: 'laden', ton: 'warn', alterTage: null,
     titel: nf.abgleichFehler ? 'Muster-Nachfragen: Postfach-Suche fehlgeschlagen, es geht nichts raus' : `Muster-Nachfragen: ${plural(n, 'Hinweis', 'Hinweise')} aus dem Postfach`,
     kontext: nf.abgleichFehler || 'Abmeldungen sind eingetragen, abgelehnte Zustellungen nicht gesperrt. Bitte lesen.',
-    knopf: { text: 'Ansehen', href: heuteHref('mn', '1') },
+    knopf: { text: 'Ansehen', href: NACHFRAGE_MAILS_HREF },
   }];
 }
 
@@ -219,9 +213,7 @@ function viewShop() {
     ${musterAutomatikBlock(kunden.bestellungen, Date.now(), { rot: probleme.rotMuster })}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, anrufe: musterAnrufeOffen(), lesend: istNurLesend(), nurMuster: true })}
     ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), ohne: probleme.orderIds })}
-    ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, pack: kunden.musterPacken,
-      nachfassen: nf.alle, texte: heuteDaten.musterTexte })}
-    ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
+    ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, nachfassen: nf.alle, texte: heuteDaten.musterTexte })}
     <section class="shop-werkzeuge" aria-label="Shop-Werkzeuge">
       <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
     </section>
@@ -320,7 +312,6 @@ function viewAlltag() {
     ${kopf(liste.length, sicht, null)}
     ${bestellEinstieg()}
     ${todoListe(liste)}
-    ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
   </div>`;
   }
 
@@ -328,8 +319,7 @@ function viewAlltag() {
     ${kopf(liste.length, sicht, chips)}
     ${bestellEinstieg()}
     ${todoListe(liste)}
-    ${hintergrund(nf, wartet, sicht)}
-    ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
+    ${hintergrund(wartet, sicht)}
     ${state.route.params.get('ww') ? werWartetBlock(wartet) : ''}
     ${sicht === 'website' ? '' : ladenUndMontage()}
     ${istInhaber() ? kennzahlenBlock() : ''}
@@ -353,7 +343,7 @@ function todoOptionen(sicht) {
 function todosDerSicht(sicht, q, nf, opt = todoOptionen(sicht)) {
   const nfLaden = sicht === 'website' ? nachfassStand('laden') : nf;
   const eigeneLaden = [
-    ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: heuteHref('mn', '1') })),
+    ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: NACHFRAGE_MAILS_HREF })),
     ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
     ...postfachAbgleichTodo(nfLaden),
     ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
@@ -448,25 +438,13 @@ function todoListe(todos) {
 
 /**
  * "Im Hintergrund": was ohne uns laeuft - je eine ruhige Zeile, aufklappbar ueber einen
- * Routenparameter (mn = Nachfragen, ww = wartet auf andere), damit ein Neuzeichnen nichts zuklappt.
+ * Routenparameter (ww = wartet auf andere), damit ein Neuzeichnen nichts zuklappt. Die Zeile
+ * "Muster-Nachfragen" ist seit 07.11.2026 unter Kunden › Kunden nach Produkt fragen (w-284).
  */
-function hintergrund(nf, wartet, sicht) {
+function hintergrund(wartet, sicht) {
   const zeilen = [];
   const auf = key => Boolean(state.route.params.get(key));
   const umschalten = (key, text) => `<button type="button" class="heute-hg-knopf" data-param="${key}" data-value="${auf(key) ? '' : '1'}" aria-expanded="${auf(key)}">${auf(key) ? 'Zuklappen' : text}</button>`;
-
-  if (sicht !== 'website' && (nf.alleOffen.length || nf.alle.erledigt.length || nf.alle.abgemeldet?.length || nf.antwortHinweise.length || nf.abgleichFehler)) {
-    const lauf = heuteDaten.musterTexte?.versand?.letzterLauf;
-    const teile = [];
-    if (nf.laeuft === null) teile.push('Lade …');
-    else if (nf.laeuft) {
-      teile.push(nf.automatisch.length ? `${plural(nf.automatisch.length, 'Nachfrage geht', 'Nachfragen gehen')} beim nächsten Lauf von selbst per E-Mail raus` : 'Nichts fällig');
-      if (lauf?.am) teile.push(`letzter Lauf ${fmtDateTime(lauf.am)} (${lauf.verschickt || 0} verschickt)`);
-    } else teile.push(nf.mensch.length ? 'Automatischer Versand läuft nicht – fällige Nachfragen stehen oben in der Liste' : 'Nichts fällig · automatischer Versand läuft nicht');
-    if (nf.ohneWeg.length) teile.push(`${nf.ohneWeg.length} ohne E-Mail`);
-    if (nf.alle.erledigt.length) teile.push(`${nf.alle.erledigt.length} in den letzten Tagen erledigt`);
-    zeilen.push(`<div class="heute-hg-zeile"><span class="heute-hg-name">Muster-Nachfragen</span><span class="heute-hg-text">${esc(teile.join(' · '))}</span>${umschalten('mn', 'Ansehen')}</div>`);
-  }
 
   const lieferant = wartet.lieferant.length;
   const kunde = wartet.kunde.length;

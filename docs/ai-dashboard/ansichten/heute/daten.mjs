@@ -34,7 +34,8 @@ function lade(feld, pfad, danach = null) {
     heuteDaten[feld] = d; heuteDaten[am] = Date.now(); heuteDaten[laedt] = false;
     // Nur neu zeichnen, wenn sich etwas geaendert hat - sonst zoege jedes stille Nachladen
     // ein weiteres Zeichnen nach sich.
-    if (state.route.view === 'heute' && JSON.stringify(d) !== vorher) render();
+    // "kunden": die Nachfrage-Mails stehen seit 07.11.2026 unter Kunden nach Produkt fragen (w-284).
+    if (['heute', 'kunden'].includes(state.route.view) && JSON.stringify(d) !== vorher) render();
     if (danach) danach(d, alt);
   });
 }

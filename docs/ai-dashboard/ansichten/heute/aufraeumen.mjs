@@ -15,11 +15,12 @@ import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { render } from '../../kern/render.mjs';
-import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { versandRueckmeldung, kundenmailKandidaten } from '../../lib/versand.mjs';
+import { kundenmailFrage } from '../../bausteine/kundenmail.mjs';
 import { aufraeumListe, aufraeumenAbTagen, AUFRAEUMEN_AB_TAGEN } from '../../lib/aufraeumen.mjs';
 import { vorgangsLink } from '../../lib/vorgangslink.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
-import { einkauf } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, auftragsstatusPositionen } from '../einkauf/auftragsfluss.mjs';
 
 const SICHTBAR = 5;
 export const LAEUFT_NOCH_NOTIZ = 'Läuft noch – beim Aufräumen bestätigt';
@@ -96,19 +97,29 @@ async function abschliessen(knopf) {
   const z = (kunden.bestellungen?.zeilen || []).find(x => x.orderId === knopf.dataset.aufraeumenAbschliessen);
   const a = z?.aufraeumen;
   if (!a?.lineItemIds?.length || istNurLesend()) return;
+  // Ware, die "raus" uebersprungen hat: statt "ohne Mail" fragt der Klick mit vorab angehakter Kundenmail (w-276).
+  const kandidaten = kundenmailKandidaten({ ...z.auftrag, id: z.orderId }, await auftragsstatusPositionen() || {}, a.lineItemIds);
+  const ohneMail = kandidaten.length ? '' : ' – ohne Mail an den Kunden';
   let notiz = a.vorschlag.notiz;
+  let kundeInformieren = false;
   if (!notiz) {
     // Kein belegter Vorschlag: der Grund kommt von dem, der abschliesst - nie ein geratener Text.
-    const grund = window.prompt(`${z.orderName}: Woher wissen wir, dass das erledigt ist?\n\nZum Beispiel: „Kundin hat die Muster laut Telefonat“. Der Text steht als Vermerk am Auftrag. In Shopify wird die Bestellung als versendet gebucht – ohne Mail an den Kunden.`, '');
+    const grund = window.prompt(`${z.orderName}: Woher wissen wir, dass das erledigt ist?\n\nZum Beispiel: „Kundin hat die Muster laut Telefonat“. Der Text steht als Vermerk am Auftrag. In Shopify wird die Bestellung als versendet gebucht${ohneMail}.`, '');
     if (!grund?.trim()) return;
     notiz = `Aufgeräumt: ${grund.trim()}`;
-  } else {
+  }
+  if (kandidaten.length) {
+    const wahl = await kundenmailFrage({ titel: `Abschließen · ${z.orderName}`, kandidaten,
+      text: `${plural(a.lineItemIds.length, 'Artikel', 'Artikel')} abschließen. Vermerk: ${notiz}. In Shopify wird die Bestellung als versendet gebucht.` });
+    if (wahl === null) return;
+    kundeInformieren = wahl;
+  } else if (a.vorschlag.notiz) {
     const frage = `${z.orderName}: ${plural(a.lineItemIds.length, 'Artikel', 'Artikel')} abschließen?\n\nVermerk: ${notiz}\n\nIn Shopify wird die Bestellung als versendet gebucht – ohne Mail an den Kunden.`;
     if (!window.confirm(frage)) return;
   }
   knopf.disabled = true;
   try {
-    const j = await orgSchreiben('/api/kunden/bestellung-fertig', { orderId: z.orderId, lineItemIds: a.lineItemIds, notiz });
+    const j = await orgSchreiben('/api/kunden/bestellung-fertig', { orderId: z.orderId, lineItemIds: a.lineItemIds, notiz, kundeInformieren });
     const r = versandRueckmeldung(`${z.orderName} abgeschlossen`, j.shopify);
     toast(r.text, r.ton, r.ton ? { dauer: 9000 } : {});
   } catch (e) {

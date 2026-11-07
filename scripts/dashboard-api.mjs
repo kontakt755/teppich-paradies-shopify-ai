@@ -43,6 +43,7 @@ import { BlattFehler, anzeigename as blattName, bewertungText, blaetterHtml, ist
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, bereiteStatusPositionenVor, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, setzeSelbstversand, STATUS_ORDER, UEBER_WERTE, SELBST_SCHRITTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { lagerwarePfad, leseLagerware, markiereLagerware, LagerwareFehler } from '../operations/lib/lagerware.mjs';
 import { lieferwegVon, istLagerware } from '../docs/ai-dashboard/lib/lieferweg.mjs';
+import { erledigtMitMailMoeglich } from '../docs/ai-dashboard/lib/versand.mjs';
 import { ohneGesperrteKlaerung } from '../docs/ai-dashboard/lib/einkauf-uebersicht.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
@@ -1050,13 +1051,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // eslint-disable-next-line no-await-in-loop -- je Sendung nacheinander, dieselbe Bestellung.
       teile.push(await versandBuchen({ dir, auftrag, lineItemIds: ids, angaben, benutzer, actor }));
     }
-    const schlecht = teile.find(t => !['gebucht', 'bereits'].includes(t.status));
-    const shopifyErgebnis = teile.length === 1 ? teile[0] : {
-      status: schlecht ? (teile.some(t => t.gebucht) ? 'teilweise' : schlecht.status) : teile.some(t => t.gebucht) ? 'gebucht' : 'bereits',
-      meldung: schlecht ? schlecht.meldung : teile.map(t => t.meldung).find(Boolean),
-      gebucht: teile.reduce((n, t) => n + (t.gebucht || 0), 0), bereits: teile.reduce((n, t) => n + (t.bereits || 0), 0), nichtGebucht: teile.reduce((n, t) => n + (t.nichtGebucht || 0), 0),
-      kundeBenachrichtigt: teile.some(t => t.kundeBenachrichtigt),
-    };
+    const shopifyErgebnis = buchungenZusammen(teile);
     return { ok: true, orderId: auftrag.id, shopify: shopifyErgebnis, ...versandFelder(quelle, leseAuftragsstatus(auftragsstatusPfad(dir))) };
   }
 
@@ -1070,7 +1065,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    * "Erledigt" -> Versand in Shopify buchen (Inhaber 2026-10-19, operations/lib/shopify-abgleich.mjs):
    * Positionen, die gerade auf "Erledigt" gegangen sind und in Shopify noch nicht als versendet
    * gelten, bucht derselbe Weg wie "raus" - mit Gegenprobe und Vermerk, aber ohne Mail an den
-   * Kunden (bereiteStatusVor merkt sich das als versandMail: false, auch fuers Nachholen).
+   * Kunden (bereiteStatusVor merkt sich das als versandMail: false, auch fuers Nachholen). Ausnahme
+   * (w-276): Ware vor "raus", bei der die Rueckfrage die Kundenmail angehakt liess (versandMail: true).
    * Gilt fuer Ware und Muster. Testbestellungen und stornierte Bestellungen bucht versandBuchen
    * ohnehin nicht. Ist danach keine Ware mehr offen, gehen Eigenleistungen (Kettelservice) mit -
    * sonst bliebe die Bestellung in Shopify "teilweise versendet". null = nichts zu buchen.
@@ -1187,8 +1183,37 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       for (const p of positionen) if (p.eigenleistung && stufe(p.lineItemId) < STATUS_ORDER.indexOf('raus') && !fertig(p.lineItemId)) ids.add(p.lineItemId);
     }
     if (!ids.size) return null;
-    return versandBuchen({ dir, auftrag, lineItemIds: [...ids], angaben: { benachrichtigen: false }, benutzer, actor });
+    // Je Mail-Wahl eine Buchung (w-276): Ware, bei der die Rueckfrage "Kunde per Mail informieren"
+    // angehakt liess, traegt versandMail: true - Muster und alles andere bleiben ohne Mail.
+    // Eigenleistungen gehen mit der Ware, die die Mail bekommt (ein Paket in Shopify).
+    const mitMail = [...ids].filter(id => eintrag(id)?.versandMail === true);
+    const eigen = id => positionen.find(p => p.lineItemId === id)?.eigenleistung;
+    const mail = mitMail.length ? new Set([...mitMail, ...[...ids].filter(eigen)]) : new Set();
+    const ohne = [...ids].filter(id => !mail.has(id));
+    const teile = [];
+    if (mail.size) teile.push(await versandBuchen({ dir, auftrag, lineItemIds: [...mail], angaben: { benachrichtigen: true }, benutzer, actor }));
+    if (ohne.length) teile.push(await versandBuchen({ dir, auftrag, lineItemIds: ohne, angaben: { benachrichtigen: false }, benutzer, actor }));
+    return buchungenZusammen(teile);
   }
+
+  /** Mehrere Buchungen derselben Bestellung als eine Rueckmeldung (Nachholen je Sendung, Erledigt je Mail-Wahl). */
+  function buchungenZusammen(teile) {
+    if (teile.length === 1) return teile[0];
+    const schlecht = teile.find(t => !['gebucht', 'bereits'].includes(t.status));
+    const summe = feld => teile.reduce((n, t) => n + (t[feld] || 0), 0);
+    return {
+      status: schlecht ? (teile.some(t => t.gebucht) ? 'teilweise' : schlecht.status) : teile.some(t => t.gebucht) ? 'gebucht' : 'bereits',
+      meldung: schlecht ? schlecht.meldung : (teile.find(t => t.kundeBenachrichtigt) || teile.find(t => t.meldung))?.meldung,
+      gebucht: summe('gebucht'), bereits: summe('bereits'), nichtGebucht: summe('nichtGebucht'),
+      kundeBenachrichtigt: teile.some(t => t.kundeBenachrichtigt),
+    };
+  }
+
+  /**
+   * Mail-Wahl einer Position beim Schritt "Erledigt" (w-276): nur `kundeInformieren: true` aus der
+   * Rueckfrage, und nur fuer Ware, die "raus" uebersprungen hat (lib/versand.mjs). Sonst ohne Mail.
+   */
+  const erledigtMail = (kundeInformieren, p, eintragVorher) => kundeInformieren === true && erledigtMitMailMoeglich(p, eintragVorher);
 
   /**
    * Shopify -> Control Center: einmal je neuem Bestellexport (Groesse und Aenderungszeit von
@@ -1400,7 +1425,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
       setzeStatusPositionen(statusDatei, betroffen.map(p => ({ orderId, lineItemId: p.lineItemId, status, actor, bestellmenge: p.bestellSoll || p.bestellmenge || null, lieferantBestellnummer, notiz: text, jetzt: now(),
         ...(status === 'bestellt' && ['kunde', 'kettler'].includes(kettelwege?.[p.lineItemId]) ? { ueber: kettelwege[p.lineItemId] } : {}),
-        ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}) })));
+        ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}),
+        // Nur der ausdrueckliche Schritt "Erledigt" kennt die Rueckfrage mit Kundenmail - Ergebnisse von Musterauftraegen nicht.
+        ...(status === 'erledigt' && schritt === 'erledigt' ? { versandMail: erledigtMail(payload?.kundeInformieren, p, alle[positionKey(orderId, p.lineItemId)]) } : {}) })));
       return betroffen.map(p => p.lineItemId);
     };
     // Nur eine neue Sendung wird gebucht: Positionen, die vor dem Klick noch nicht "raus" waren.
@@ -2885,12 +2912,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const auftrag = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === orderId) || null;
       const positionen = auftrag?.positionen || [];
       const ids = [...new Set(lineItemIds.map(String))];
-      // Was vorher noch nicht erledigt war, wird gleich in Shopify gebucht (ohne Kundenmail).
+      // Was vorher noch nicht erledigt war, wird gleich in Shopify gebucht - ohne Kundenmail, ausser die
+      // Rueckfrage liess "Kunde per Mail informieren" angehakt (kundeInformieren, nur Ware vor "raus", w-276).
       const vorher = leseAuftragsstatus(file);
       const neuErledigt = ids.filter(id => vorher[positionKey(orderId, id)]?.status !== 'erledigt');
       let eintraege;
       try {
-        eintraege = setzeStatusPositionen(file, ids.map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }; }));
+        eintraege = setzeStatusPositionen(file, ids.map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now(),
+          versandMail: erledigtMail(payload.kundeInformieren, p, vorher[positionKey(orderId, lineItemId)]) }; }));
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
         throw e;
@@ -3486,7 +3515,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let eintrag;
       try {
         eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, lieferantBestellnummer, notiz, ueber, jetzt: now(),
-          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail: angaben.benachrichtigen } : {}) });
+          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail: angaben.benachrichtigen } : {}),
+          ...(status === 'erledigt' ? { versandMail: erledigtMail(payload?.kundeInformieren, p, vorher) } : {}) });
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
         throw e;
@@ -3503,7 +3533,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           meldung: 'Noch nicht in Shopify gebucht – „In Shopify buchen“ bucht alle wartenden Artikel dieser Bestellung als ein Paket.' } }) || eintrag;
         return { ok: true, eintrag, shopify: { status: 'ausstehend', meldung: eintrag.shopifyVersand?.meldung || null, gebucht: 0, bereits: 0, nichtGebucht: 1 } };
       }
-      // "Erledigt" bucht in Shopify, wenn dort noch offen - ohne Mail, deshalb auch je Artikel unbedenklich.
+      // "Erledigt" bucht in Shopify, wenn dort noch offen - ohne Mail, ausser die Rueckfrage liess sie angehakt (w-276).
       if (status === 'erledigt' && vorher?.status !== 'erledigt') {
         const shopifyErgebnis = await erledigtBuchen({ dir, auftrag: auftragFuerVersand(dir, String(orderId)), lineItemIds: [lineItemId], benutzer, actor });
         if (shopifyErgebnis) return { ok: true, eintrag: leseAuftragsstatus(file)[positionKey(orderId, lineItemId)] || eintrag, shopify: shopifyErgebnis };

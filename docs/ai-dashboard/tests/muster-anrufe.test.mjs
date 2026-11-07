@@ -261,11 +261,15 @@ test('Server: die Liste bringt die Kennzahlen mit', async () => {
 // Die Ansicht im Browser: Quelltext ohne Importe, die Bausteine des Kerns als einfache Ersatzteile.
 const ansichtQuelle = fs.readFileSync(new URL('../ansichten/kunden/muster-anrufe.mjs', import.meta.url), 'utf8')
   .replace(/^import.*;\n/gm, '').replace(/^export\s/gm, '');
-function anrufAnsicht(m) {
+function anrufAnsicht(m, query = '') {
   const esc = t => String(t ?? '').replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
   return vm.runInNewContext(`${ansichtQuelle}\nviewMusterAnrufe()`, {
     ...anrufLib, ...ideenLib, kundenLinkWert, URLSearchParams,
-    state: { session: {} }, kunden: { musterAnrufe: m }, esc, fmtDate: d => String(d), plural: (n, a, b) => `${n} ${n === 1 ? a : b}`,
+    // Nachfrage-Mails (w-284): Zeile und Karte sind eigene Bausteine (tests/nachfrage-mails-umzug.test.mjs).
+    ensureKundenBestellungen() {}, ensureHeuteMusterTexte() {}, musterNachfassenStand: () => ({ offen: [], erledigt: [] }),
+    nachfrageMailsZeile: (stand, auf) => `<div class="nm-zeile" data-auf="${auf}">Automatische Nachfrage-Mails</div>`,
+    musterNachfassenBlock: (stand, opt) => `<section class="nm-karte" data-eingebettet="${opt?.eingebettet}"></section>`,
+    state: { session: {}, route: { params: new URLSearchParams(query) } }, kunden: { musterAnrufe: m }, esc, fmtDate: d => String(d), plural: (n, a, b) => `${n} ${n === 1 ? a : b}`,
     toast() {}, fetchEinkauf: async () => null, orgSchreiben: async () => null, istNurLesend: () => false, render() {}, $: () => null,
     emptyState: (t, h) => `<div class="empty">${esc(t)} ${esc(h)}</div>`, stoerungState: () => '', telLink: t => `<a href="tel:${esc(t)}">${esc(t)}</a>`,
   });
@@ -314,4 +318,18 @@ test('Ansicht: nur Kunden ohne Freigabe (Anruf nur mit Rueckrufwunsch) - der Tit
   // Ein Kunde mit Wunsch dazu: dann gibt es wieder jemanden zum Anrufen.
   const mitWunsch = { ...musterAnrufliste([zeile(1), zeile(2, { beratungOffen: true })], {}, { jetzt: JETZT, nurMitWunsch: true }), verfuegbar: true, gruende: [] };
   assert.match(anrufAnsicht(mitWunsch), /Telefonnummer vorhanden: anrufen <span class="muted small">2<\/span>/);
+});
+
+test('w-284: Nachfrage-Mails stehen ganz oben im Reiter, die Karte nur mit mn=1 und eingebettet', () => {
+  const m = { ...musterAnrufliste([zeile(1)], {}, { jetzt: JETZT, nurMitWunsch: false }), verfuegbar: true, gruende: [] };
+  const zu = anrufAnsicht(m);
+  assert.match(zu, /data-auf="false">Automatische Nachfrage-Mails/);
+  assert.doesNotMatch(zu, /nm-karte/);
+  assert.ok(zu.indexOf('nm-zeile') < zu.indexOf('anruf-regel'), 'vor der Anrufliste');
+  const auf = anrufAnsicht(m, 'tab=anrufe&mn=1');
+  assert.match(auf, /data-auf="true"/);
+  assert.match(auf, /<section class="nm-karte" data-eingebettet="true">/);
+  assert.ok(auf.indexOf('nm-karte') < auf.indexOf('anruf-zeile'));
+  // Auch wenn die Anrufliste fehlt oder laedt, bleibt der Stand der Mails sichtbar.
+  assert.match(anrufAnsicht({ verfuegbar: false, hinweis: 'Test' }), /Automatische Nachfrage-Mails/);
 });

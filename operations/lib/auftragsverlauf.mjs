@@ -46,6 +46,7 @@ import { wirdGekettelt } from './kettelpuffer.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 import { lieferwegVon } from '../../docs/ai-dashboard/lib/lieferweg.mjs';
 import { warteAmpel, dringendereAmpel } from '../../docs/ai-dashboard/lib/ampel.mjs';
+import { NACHFRAGE_MAILS_HREF } from '../../docs/ai-dashboard/lib/nachfrage-mails.mjs';
 
 /** Kompatibler Export: die Frist stammt aus dem vorhandenen Nachfassmodell (ab Versand). */
 export const NACHFASSEN_NACH_TAGEN = ERSTE_NACH_TAGEN;
@@ -552,13 +553,13 @@ function naechsterSchrittOhneSperre(stand, { auftrag = null, versand = null, bes
           telefon: auftrag?.details?.kunde?.telefon, beratungOffen: auftrag?.checks?.beratung === 'Ja' }], { jetzt }).offen[0];
         if (nach) return { ...schritt('wir', nach.stufe === 'erinnerung' ? 'Muster-Erinnerung im bestehenden Ablauf prüfen' : 'Muster nach Versand nachfassen',
           'Die Nachfassansicht prüft Kontaktweg, Stoppliste und den Versandlauf. Versand ist kein Empfangsnachweis.',
-          null, 'Nachfragen prüfen', 'faellig', Math.max(0, nach.tage - (nach.stufe === 'erinnerung' ? ERINNERUNG_NACH_TAGEN : ERSTE_NACH_TAGEN)), nach.tage), href: '#/heute?mn=1' };
+          null, 'Nachfragen prüfen', 'faellig', Math.max(0, nach.tage - (nach.stufe === 'erinnerung' ? ERINNERUNG_NACH_TAGEN : ERSTE_NACH_TAGEN)), nach.tage), href: NACHFRAGE_MAILS_HREF };
         if (aktuell.schritt === 'kunde_hat_muster') return schritt('kunde', 'Muster sind unterwegs – Empfang noch nicht belegt',
           'Nur tatsächlichen Empfang bestätigen. Die bestehende Nachfassansicht führt ihre Fristen unabhängig vom Empfangsnachweis.',
           'kunde_hat_muster', 'Empfang bestätigt…', 'warten', null, tage);
         return { ...schritt('kunde', 'Kunde schaut sich die Muster an',
           'Nachfragen, Erinnerungen und Stoppliste im bestehenden Ablauf prüfen. Ein Ergebnis erst nach Rückmeldung festhalten.',
-          null, 'Nachfassverlauf prüfen', 'warten', null, tage), href: '#/heute?mn=1' };
+          null, 'Nachfassverlauf prüfen', 'warten', null, tage), href: NACHFRAGE_MAILS_HREF };
       }
       default:
         return null;

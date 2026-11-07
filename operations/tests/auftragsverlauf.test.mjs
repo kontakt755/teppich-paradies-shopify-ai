@@ -185,7 +185,7 @@ test('Nachfassen verwendet denselben Versandbeginn und dieselbe Frist wie der mo
   const frueh = zeitleiste(a, { statusAlle, ereignisse, jetzt: am(8) });
   assert.equal(frueh.naechsterSchritt.stufe, 'warten');
   const faellig = zeitleiste(a, { statusAlle, ereignisse, jetzt: am(9) });
-  assert.equal(faellig.naechsterSchritt.href, '#/heute?mn=1');
+  assert.equal(faellig.naechsterSchritt.href, '#/kunden?tab=anrufe&mn=1');
   assert.equal(faellig.naechsterSchritt.aktion, null, 'keine manuelle Schein-Nachfrage');
   assert.equal(faellig.naechsterSchritt.faelligSeitTagen, 0);
   assert.equal(faellig.verlauf[4].von, 'Mitarbeiter 2');
@@ -218,7 +218,7 @@ test('Automatisch erkannt: Shopify-Versand = an Kunden verschickt, Zustellung = 
   const z2 = zeitleiste(zugestellt, { jetzt: am(8) });
   assert.deepEqual([z2.verlauf[4].zustand, z2.verlauf[4].automatisch, z2.verlauf[4].quelle, z2.verlauf[4].am], ['erledigt', true, 'Sendungsverfolgung', tag(6)]);
   assert.equal(z2.naechsterSchritt.aktion, null);
-  assert.equal(z2.naechsterSchritt.href, '#/heute?mn=1');
+  assert.equal(z2.naechsterSchritt.href, '#/kunden?tab=anrufe&mn=1');
 
   // Teilversand ist kein sicherer Beleg, stornierte Sendungen zaehlen nicht.
   const teil = einAuftrag(bestellung(1, [muster(1)], { erfuellt: 'PARTIALLY_FULFILLED', fulfillments: sendung('IN_TRANSIT') }));

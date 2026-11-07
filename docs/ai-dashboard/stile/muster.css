@@ -246,3 +246,7 @@
 /* Steht nur eine Spalte da, liegen ihre Karten zu zweit nebeneinander - volle Breite statt halber. */
 .rows.anruf-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
 @media (max-width: 900px) { .anruf-spalten, .rows.anruf-raster { grid-template-columns: minmax(0, 1fr); } }
+
+/* Kunden nach Produkt fragen: Zeile "Automatische Nachfrage-Mails" ueber der Anrufliste (w-284). */
+.nachfrage-mails { margin: 0 0 14px; border-top: 1px solid var(--line); }
+.nachfrage-mails .heute-mn { margin-top: 10px; }

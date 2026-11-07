@@ -156,7 +156,8 @@ gebraeuchlich), Erfassen.
   fertig sind.
 - **Keine Bewegung** = seit dem Tag hat niemand etwas erfasst (Bestellt, Angekommen, Notiz, Packstation …).
 - **Abschließen** = alle offenen Artikel auf „Erledigt“ mit dem Vorschlag als Vermerk; in Shopify als
-  versendet gebucht, ohne Mail an den Kunden (wie „Kunde fertig“).
+  versendet gebucht, ohne Mail an den Kunden (wie „Kunde fertig“). Ausnahme seit 07.11.2026: Ware, die nie als
+  „raus“ eingetragen war, siehe **Kunde per Mail informieren**.
 - **Läuft noch** = die Bestellung bleibt offen; das Dashboard merkt sich das als Notiz und fragt nach
   14 Tagen (Ware 30) wieder.
 - **Belegt fertig** = in Shopify versendet, storniert, archiviert oder voll erstattet, oder im Dashboard
@@ -297,9 +298,8 @@ gebraeuchlich), Erfassen.
 - **#1049: seit 17 Tagen keine Bewegung** + **Abschließen…** / **Läuft noch** = Zeile unter einem roten
   Problem-Eintrag, wenn dieselbe Bestellung sonst auch unter „Alte Bestellungen aufräumen“ stünde. Sie steht
   dann nur dort, nicht noch einmal im Aufräumen-Block.
-- **Automatische Nachfrage-Mails: n fällig** = Zeile unter „Versand & Kunden nachfassen“ (vorher „n Nachfragen
-  sind fällig“); Link **Nachfrage-Mails ansehen →**. Mit **· automatischer Versand läuft nicht**, wenn der
-  Server das meldet. Nicht verwechseln mit **Kunden nach Produkt fragen** (Anrufe).
+- ~~**Automatische Nachfrage-Mails: n fällig**~~ = bis 07.11.2026 Zeile unter „Versand & Kunden nachfassen“;
+  seitdem unter **Kunden nach Produkt fragen** (siehe unten, w-284).
 
 ## Bestellungen: ruhige Farben, ein Teilstand (06.11.2026, #1996)
 
@@ -328,3 +328,20 @@ gebraeuchlich), Erfassen.
 - **Lieferant schickt direkt an den Kunden** / **Hersteller liefert direkt** = Schritt 4 der Leiste, wenn nichts
   zu uns kommt. **Aus eigenem Lager zuschneiden** = Schritt 3, solange Lagerware noch zuzuschneiden ist.
 - **letzte Bewegung am TT.MM.JJJJ** = Aufräumzeile unter einem roten Problem-Eintrag, der schon eine Tageszahl trägt.
+
+## Nachfrage-Mails und Abschließen mit Kundenmail (07.11.2026, w-284, w-276)
+
+- **Automatische Nachfrage-Mails** = erste Zeile unter Kunden › **Kunden nach Produkt fragen**: was beim nächsten
+  Lauf von selbst per E-Mail rausgeht, der letzte Lauf, was erledigt ist. **Ansehen** klappt darunter die Kunden
+  mit Textvorschlag, „Jetzt senden“, „Abgemeldet“ und „Erledigt – nachgefasst“ auf (vorher Heute, „Muster
+  nachfassen“, `#/heute?mn=1`; alte Links landen jetzt hier). Gelb nur bei **n fällig, automatischer Versand läuft
+  nicht**, **Fehler im letzten Lauf**, **Postfach-Suche fehlgeschlagen** oder **Hinweise aus dem Postfach**.
+  Anruf, Rückfrage-Mail und Nachfrage-Mail sind damit an einem Ort.
+- **Versand & Kunden nachfassen** (Heute) = nur noch, wenn es etwas gibt: Versandbuchungen prüfen, versandt ohne
+  Empfangsbeleg und die vier Warnungen der Nachfrage-Mails mit **Ansehen** dorthin. „Bewertungen: bestehenden
+  Ablauf prüfen“ ist entfallen.
+- **Kunde per Mail informieren (Versandmail von Shopify)** = Kästchen in der Rückfrage von **Erledigt – Auftrag
+  abschließen**, **Abschließen**, **Kunde fertig** und **Ohne Einkauf abschließen**, vorab angehakt. Erscheint
+  nur, wenn Ware (keine Muster, keine Eigenleistung) nie als „raus“ eingetragen war und in Shopify noch offen ist.
+  Angehakt bucht Shopify den Versand mit Versandmail wie bei „An Kunden raus“; abgehakt ohne Mail wie bisher.
+  Muster bekommen nie eine Mail.

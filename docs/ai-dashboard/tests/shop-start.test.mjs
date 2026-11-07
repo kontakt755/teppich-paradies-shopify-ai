@@ -32,7 +32,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
     // Rundgang 06.11. (#1996): die Erfolge der Musterautomatik als Zeile im Hintergrund, die Anrufzahl im Musterblock.
     musterAutomatikZeile: () => '<div class="heute-hg-zeile">Musterautomatik</div>', musterAnrufeOffen: () => 24,
     warenbestellungenBlock: o => { Object.assign(waren, o); bloecke.push('Waren'); return '<div>Waren</div>'; }, bestellarbeitBlock: o => { bloecke.push('Muster'); return `<div>Muster</div><div>Anrufe ${o.anrufe}</div>`; },
-    aufraeumenBlock: echtesAufraeumen ? aufraeumenBlock : block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'), musterNachfassenBlock: block('Vorhandener Nachfassblock'),
+    aufraeumenBlock: echtesAufraeumen ? aufraeumenBlock : block('Aufräumen'), shopNacharbeitBlock: block('Nacharbeit'),
     istNurLesend: () => false, darfAnsicht,
     // Rote To-dos oben (w-206): echte problemeBlock, die Ableitung liefert die uebergebenen To-dos.
     problemeBlock, problemOrderIds, rotMuster, aufraeumenUnterProblem, arbeitsquellenStand, shopifyAbgleich: { daten: abgleich }, leiteTodosAb: (q, opt) => { sichten.push(opt.sicht); return todos; }, sortiereTodos: x => x,
@@ -99,10 +99,13 @@ test('alte Alltagssichten bleiben ausdruecklich erreichbar; unbekannte Sicht ble
   assert.match(start('sicht=unbekannt').html, /Shop-Übersicht/);
 });
 
-test('mn=1 oeffnet den bestehenden Nachfassblock im Shop ohne allgemeine Aufgabenabrufe', () => {
+// w-284 (07.11.2026): die Nachfrage-Mails stehen unter Kunden › Kunden nach Produkt fragen. Heute zeichnet
+// die Karte nicht mehr - alte Links #/heute?mn=1 leitet der Router um (tests/nachfrage-mails-umzug.test.mjs).
+test('mn=1 zeichnet auf Heute keinen Nachfassblock mehr (Shop und Alltagssicht)', () => {
   const r = start('mn=1');
-  assert.deepEqual(r.bloecke, ['Warenkennzahl', 'Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit', 'Vorhandener Nachfassblock']);
+  assert.deepEqual(r.bloecke, ['Warenkennzahl', 'Waren', 'Inhaberzeile', 'Muster', 'Aufräumen', 'Nacharbeit']);
   assert.ok(!r.geladen.includes('HeuteAufgaben'));
+  assert.doesNotMatch(quelle, /musterNachfassenBlock|Muster-Nachfragen<\/span>/, 'weder Karte noch Hintergrundzeile auf Heute');
 });
 
 test('w-222: gescheiterter Abgleich mit Shopify steht auf der Shop-Übersicht, gerade ladender nicht', () => {

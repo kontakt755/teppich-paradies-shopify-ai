@@ -1786,7 +1786,15 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   verschickt, nachgetragen, uebersprungen, fehler, kopie}`, `sendungen[]` (Bestellung, Stufe, Adresse,
   Betreff, Kopie, Status `sendet|gesendet|vermerkt|fehler`, Message-ID; die letzten 500). Ein Fehlversuch
   sperrt nicht – der nächste Lauf versucht es wieder.
-- **Karte „Muster nachfassen“** (`ansichten/heute/muster-nachfassen.mjs`): `GET /api/kunden/muster-texte`
+- **Karte „Automatische Nachfrage-Mails“** (früher „Muster nachfassen“ auf Heute, `#/heute?mn=1`; seit
+  07.11.2026 unter Kunden › Kunden nach Produkt fragen, w-284): oben im Reiter eine ruhige Zeile
+  (`nachfrageMailsZeile()`, gelb nur bei Versandfehler, Postfach-Suche fehlgeschlagen, Hinweisen aus dem Postfach
+  oder fälligen Mails ohne laufenden Versand), mit `mn=1` darunter die Karte (`musterNachfassenBlock(stand,
+  { eingebettet: true })`). Ziel `NACHFRAGE_MAILS_HREF` in `lib/nachfrage-mails.mjs` (auch für den nächsten
+  Schritt der Zeitleiste); `kern/router.mjs` leitet alte Links um. Heute zeigt nur noch die Warnungen: im Block
+  „Versand & Kunden nachfassen“ (fällt ohne Inhalt weg; „Bewertungen: bestehenden Ablauf prüfen“ entfallen)
+  und als To-do der Alltagssichten, jeweils mit Link dorthin. Die Zeile „Muster-Nachfragen“ unter „Im
+  Hintergrund“ ist entfallen. Datei weiter `ansichten/heute/muster-nachfassen.mjs`: `GET /api/kunden/muster-texte`
   liefert zusätzlich `versand {eingerichtet, hinweis, letzterLauf, mitlesenBis, kopie}` und
   `abgemeldet[]`. Eingerichtet: eine Zeile „E-Mails gehen automatisch vom Firmenpostfach raus (Mo–Sa
   vormittags) · letzter Lauf … · bis … mit Kopie an …“, offene Zeilen sagen „Geht beim nächsten Lauf
@@ -1862,6 +1870,19 @@ Testbestellungen und stornierte Bestellungen bucht Shopify nie. „Ohne Einkauf 
 2026-10-19 einen Aufruf für alle Artikel (`POST /api/kunden/bestellung-fertig`) statt einen je Artikel – eine
 Buchung statt N. Die Antwort trägt `shopify {status, meldung, …}`; die Rückmeldung lautet z. B.
 „Status: Erledigt · In Shopify als versendet gebucht (ohne Mail an den Kunden).“
+
+**Ausnahme: Ware, die „raus“ übersprungen hat** (Inhaber 07.11.2026, w-276). Geht eine Warenposition (kein
+Muster, keine Eigenleistung, in Shopify nicht gebucht) von vor „raus“ direkt auf „Erledigt“, hat der Kunde nie
+eine Versandmail bekommen. Dann fragen „Erledigt – Auftrag abschließen“ (Zeitleiste: Hauptknopf und „Etwas
+anderes ist passiert …“), „Abschließen“ (Aufräumen), „Kunde fertig“ und „Ohne Einkauf abschließen…“ zurück, mit
+dem Kästchen **Kunde per Mail informieren (Versandmail von Shopify)** vorab angehakt (`bausteine/kundenmail.mjs`;
+Regel `erledigtMitMailMoeglich()`/`kundenmailKandidaten()` in `lib/versand.mjs`, Browser und Server gleich).
+Angehakt schickt der Browser `kundeInformieren: true` mit (`aktion: 'schritt'`, Einzelstatus und
+`/api/kunden/bestellung-fertig`, alle in der `write`-Liste, Rolle „lesen“ 403). Der Server nimmt die Wahl nur für
+Positionen an, die die Regel erfüllt, und merkt sie als `versandMail: true`; `erledigtBuchen()` bucht dann je
+Mail-Wahl getrennt (Ware mit Mail samt Eigenleistung mit `notifyCustomer: true`, Muster ohne) und fasst die
+Rückmeldung zusammen (`buchungenZusammen()`). Ohne Kandidaten bleibt es beim bisherigen `confirm` ohne Mail.
+„In Shopify nachbuchen“ (Abweichungsliste) bleibt ohne Mail.
 
 **Rücknahme.** „Wieder öffnen…“ und „Zurück auf offen…“ ändern nur das Control Center. Ist der Versand gebucht,
 sagt der Dialog: „In Shopify bleibt die Bestellung als versendet gebucht – das Control Center storniert dort

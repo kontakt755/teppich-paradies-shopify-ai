@@ -202,3 +202,78 @@ test('Rollen: Abgleich lesen duerfen alle, Nachbuchen ist ein Schreibpfad (Rolle
   await handleApi(anfrage('/api/einkauf/auftragsstatus', 'POST'), res, '/api/einkauf/auftragsstatus', leser);
   assert.equal(res.code, 403);
 });
+
+// w-276 (Inhaber 07.11.2026): Ware, die "raus" uebersprungen hat, darf beim Abschliessen die Versandmail
+// von Shopify bekommen - nur mit kundeInformieren: true aus der Rueckfrage. Muster nie.
+test('w-276: "Erledigt" mit Kundenmail - Ware vor "raus" bucht mit notifyCustomer, Kettelservice im selben Paket', async () => {
+  const u = umgebung({ status: { ...pos(1, 'geliefert'), ...pos(2, 'bestellt') } });
+  const r = await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'erledigt', kundeInformieren: true });
+  assert.equal(r.shopify.status, 'gebucht');
+  assert.equal(r.shopify.kundeBenachrichtigt, true);
+  assert.match(r.shopify.meldung, /der Kunde bekommt die Versandmail/);
+  const buchung = u.z.attrappe.buchungen();
+  assert.equal(buchung.length, 1, 'eine Buchung, eine Mail');
+  assert.equal(buchung[0].variables.fulfillment.notifyCustomer, true);
+  assert.equal(buchung[0].variables.fulfillment.lineItemsByFulfillmentOrder[0].fulfillmentOrderLineItems.length, 3, 'Kettelservice geht mit');
+  assert.equal(u.eintrag(1).versandMail, true);
+  assert.equal(u.eintrag(1).shopifyVersand.kundeBenachrichtigt, true);
+});
+
+test('w-276: ohne Haken (oder mit anderem Wert als true) bleibt "Erledigt" ohne Mail', async () => {
+  for (const wert of [false, 'ja', 1, undefined]) {
+    const u = umgebung({ status: { ...pos(1, 'geliefert'), ...pos(2, 'geliefert') } });
+    // eslint-disable-next-line no-await-in-loop -- je Wert eine frische Umgebung
+    await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'erledigt', ...(wert === undefined ? {} : { kundeInformieren: wert }) });
+    assert.equal(u.z.attrappe.buchungen()[0].variables.fulfillment.notifyCustomer, false, String(wert));
+    assert.equal(u.eintrag(1).versandMail, false);
+  }
+});
+
+test('w-276: "Kunde fertig" mit Kundenmail - Muster ohne Mail, Ware mit Mail, zwei Buchungen, eine Rueckmeldung', async () => {
+  const muster = n => ware(n, { typ: 'Musterservice', sku: `M-TEST-${n}` });
+  const u = umgebung({ zeilen: [ware(1), muster(2), kettel(3)] });
+  const r = await u.api.kundenBestellungFertig({ orderId: BESTELLUNG, lineItemIds: [li(1), li(2), li(3)], notiz: 'Kunde fertig', kundeInformieren: true }, ICH);
+  assert.equal(r.shopify.status, 'gebucht');
+  assert.equal(r.shopify.gebucht, 3);
+  assert.equal(r.shopify.kundeBenachrichtigt, true);
+  const buchungen = u.z.attrappe.buchungen().map(b => ({ mail: b.variables.fulfillment.notifyCustomer, ids: b.variables.fulfillment.lineItemsByFulfillmentOrder[0].fulfillmentOrderLineItems.map(x => x.id).sort() }));
+  assert.deepEqual(buchungen, [
+    { mail: true, ids: ['gid://shopify/FulfillmentOrderLineItem/11', 'gid://shopify/FulfillmentOrderLineItem/13'] },
+    { mail: false, ids: ['gid://shopify/FulfillmentOrderLineItem/12'] },
+  ]);
+  assert.deepEqual([u.eintrag(1).versandMail, u.eintrag(2).versandMail], [true, false]);
+});
+
+test('w-276: schon "raus" oder in Shopify gebucht - kein Mail trotz kundeInformieren; Testbestellung bucht nie', async () => {
+  const u = umgebung({ status: { ...pos(1, 'raus'), ...pos(2, 'geliefert') } });
+  await u.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'erledigt', kundeInformieren: true });
+  assert.equal(u.z.attrappe.buchungen()[0].variables.fulfillment.notifyCustomer, false, 'wer raus war, hatte seine Mail-Wahl beim Versand');
+  assert.equal(u.eintrag(1).versandMail, false);
+
+  const g = umgebung({ status: pos(1, 'geliefert', { shopifyVersand: { status: 'gebucht', am: '2026-10-12T10:00:00Z' } }) });
+  await g.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'erledigt', kundeInformieren: true });
+  assert.equal(g.z.attrappe.buchungen().length, 0, 'schon gebucht: keine zweite Buchung, keine Mail');
+
+  const t = await u.api.kundenBestellungFertig({ orderId: TEST, lineItemIds: [li(7)], notiz: 'Testbestellung', kundeInformieren: true }, ICH);
+  assert.equal(t.shopify.status, 'uebersprungen');
+});
+
+test('w-276: Einzelposition "Erledigt" mit Kundenmail vor "raus"', async () => {
+  const u = umgebung({ status: pos(1, 'geliefert') });
+  const r = await u.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'erledigt', kundeInformieren: true });
+  assert.equal(r.shopify.kundeBenachrichtigt, true);
+  assert.equal(u.z.attrappe.buchungen()[0].variables.fulfillment.notifyCustomer, true);
+});
+
+test('w-276: Rolle "lesen" bekommt 403 auf beiden Abschlusswegen, auch mit kundeInformieren', async () => {
+  const { handleApi } = await import('../../../scripts/serve-dashboard.mjs');
+  const antwort = () => ({ code: null, body: null, writeHead(c) { this.code = c; return this; }, end(b) { this.body = b; }, setHeader() {}, getHeader() { return null; } });
+  const anfrage = pfad => ({ method: 'POST', url: pfad, headers: { host: 'localhost:8001' } });
+  const leser = { name: 'Leser', kuerzel: 'leser', rolle: 'lesen' };
+  for (const pfad of ['/api/einkauf/auftragsstatus', '/api/kunden/bestellung-fertig']) {
+    const res = antwort();
+    // eslint-disable-next-line no-await-in-loop -- zwei Pfade nacheinander
+    await handleApi(anfrage(pfad), res, pfad, leser);
+    assert.equal(res.code, 403, pfad);
+  }
+});

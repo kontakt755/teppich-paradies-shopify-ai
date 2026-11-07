@@ -204,9 +204,11 @@ function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmen
   }
   // "Erledigt" bucht den Versand in Shopify ohne Mail an den Kunden (Inhaber 2026-10-19,
   // shopify-abgleich.mjs): wer abschliesst, hat die Ware beim Kunden - eine Mail "ist unterwegs"
-  // verwirrt. Gilt auch, wenn die Buchung erst spaeter nachgeholt wird. Eine schon gebuchte
-  // Sendung behaelt ihre damalige Wahl.
-  if (status === 'erledigt' && !['gebucht', 'bereits'].includes(bisher.shopifyVersand?.status)) eintrag.versandMail = false;
+  // verwirrt. Ausnahme seit 07.11.2026 (w-276): Ware, die "raus" uebersprungen hat, darf die
+  // Versandmail bekommen, wenn die Rueckfrage sie angehakt laesst - dann kommt `versandMail: true`
+  // (die Regel prueft der Aufrufer, lib/versand.mjs erledigtMitMailMoeglich). Die Wahl gilt auch,
+  // wenn die Buchung erst spaeter nachgeholt wird. Eine schon gebuchte Sendung behaelt ihre damalige Wahl.
+  if (status === 'erledigt' && !['gebucht', 'bereits'].includes(bisher.shopifyVersand?.status)) eintrag.versandMail = versandMail === true;
 
   alle[key] = eintrag;
   return eintrag;
