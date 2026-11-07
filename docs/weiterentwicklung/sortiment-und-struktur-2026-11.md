@@ -145,3 +145,18 @@ den Preisvergleich zu öffnen.
 - Offen vor dem Anlegen: Machart, Polmaterial, Breiten und Farben je Qualität. Die
   Datenanfrage beim Hersteller (Bildnutzungsvereinbarung unterschrieben am 10.10.,
   Erinnerungen 19.10. und 04.11.) ist unbeantwortet. Kandidatenliste mit Preisen nur lokal.
+
+### Umfang: ganzes Coupon-Sortiment von J (2026-11-07)
+
+- Statt 10–15 Pilotqualitäten alle 46 Qualitäten mit Couponpreis anlegen (rechnerisch
+  Preiswert 20, Komfort 10, Gehoben 11, Premium 4, Exklusiv 1) plus die sechs
+  Gelschaum-Läufer. Begründung: die Preisklassen-Kacheln und Empfehlungen lösen die
+  Orientierung, Teppichboden wächst um rund 15 %; gemessen wird das Bezugsmodell (Fracht,
+  Zuschnitt im Laden, Lieferzeit), nicht die Zahl der Qualitäten. Filzrücken-Qualitäten ohne
+  Couponpreis bleiben draußen (nur ganze Rolle).
+- **Doppelte vermeiden:** 4 Qualitäten des Herstellers hinter J und 16 des Herstellers hinter K
+  sind schon im Shop, bezogen über Lieferant A und C unter deren Handelsnamen (`einkauf.hersteller`
+  an der Variante). Welche Herstellerqualität dahintersteht, steht nicht in den Daten. Vor dem
+  Anlegen je Qualität abgleichen (Musterkarte oder Rückfrage beim Hersteller); eine schon
+  vorhandene Qualität bekommt kein zweites Produkt, sondern höchstens einen neuen Bezugsweg.
+- K bleibt beim Stand oben: Rollen-UVP fehlt.
