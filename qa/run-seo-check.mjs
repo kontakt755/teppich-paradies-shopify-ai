@@ -4,7 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
-import { isKnownShopifyLoginXFrameWarning, isPreviewHeaderHydrationArtifact } from './console-classification.mjs';
+import { isKnownShopifyLoginXFrameWarning, isLostPreviewHeaderResponse, isPreviewHeaderHydrationArtifact } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
 import { targetUrl as workflowTargetUrl } from './target-url.mjs';
 import { collectSmallTouchTargets, duplicateExecutableScripts } from './seo-dom-evidence.mjs';
@@ -108,6 +108,8 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   page.on('console', message => {
     if (message.type() === 'error') consoleErrors.push({ type: 'console.error', message: sanitizeText(message.text()), url: sanitizeUrl(message.location().url || '') });
   });
+  let kopfAbrufVerloren = false;
+  page.on('response', antwort => { if (isLostPreviewHeaderResponse(antwort.url(), antwort.status())) kopfAbrufVerloren = true; });
   page.on('pageerror', error => consoleErrors.push({ type: 'pageerror', message: sanitizeText(error.message), url: '' }));
   page.on('requestfailed', request => failedRequests.push({ url: sanitizeUrl(request.url()), type: request.resourceType(), message: sanitizeText(request.failure()?.errorText || '') }));
 
@@ -378,7 +380,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
     'Transiente/veraltete X-Frame-Options-Direktive in einer Shopify-Edge-Antwort; kein On-Page-SEO-Fehler',
     item,
   ));
-  const previewArtefakte = consoleErrors.filter(item => isPreviewHeaderHydrationArtifact(item, config.baseUrl));
+  const previewArtefakte = consoleErrors.filter(item => isPreviewHeaderHydrationArtifact(item, config.baseUrl, kopfAbrufVerloren));
   previewArtefakte.slice(0, 1).forEach(item => add(
     'WARN',
     'PREVIEW_ARTEFAKT',
@@ -389,7 +391,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   ));
   const relevantConsoleErrors = consoleErrors.filter(item => {
     if (isKnownShopifyLoginXFrameWarning(item, config.baseUrl)) return false;
-    if (isPreviewHeaderHydrationArtifact(item, config.baseUrl)) return false;
+    if (isPreviewHeaderHydrationArtifact(item, config.baseUrl, kopfAbrufVerloren)) return false;
     if (/Required ref "overflowMenu"|favicon|shop\.app|chrome-error:\/\/chromewebdata|Content Security Policy/i.test(`${item.message} ${item.url}`)) return false;
     try { return !item.url || new URL(item.url).origin === new URL(config.baseUrl).origin; } catch { return false; }
   });
