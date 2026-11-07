@@ -231,6 +231,19 @@ def bilder_von(produkt, varianten):
     return gesehen
 
 
+def bilder_kettel(produkt, variante):
+    """Alle Shop-Bilder des Kettelteppichs in Shop-Reihenfolge (Hauptbild, Kettelkante ...).
+
+    Bilder der Rolle kommen bewusst nicht dazu: deren Schnittkante waere beim gekettelten Teppich irrefuehrend.
+    Ohne Bilderliste im Lexikon (aelterer Export) gilt wie bisher Hauptbild plus Variantenbild.
+    """
+    gesehen = []
+    for url in [b.get('url') for b in produkt.get('bilder') or []] + bilder_von(produkt, [variante]):
+        if url and url.startswith('https://') and url not in gesehen:
+            gesehen.append(url)
+    return gesehen
+
+
 def versandkosten(breite_cm, laenge_cm, konfig):
     """Gerollt wird ueber die kuerzere Seite; die entscheidet ueber den Versandweg."""
     kurz = min(breite_cm, laenge_cm)
@@ -447,7 +460,7 @@ def plane_kettel(liste, lexikon, konfig):
         ueberschrift = kettel_titel(name, groessen)
         aspekte = merkmale(produkt, konfig, maengel)
         aspekte['Produktart'] = ['Teppich']
-        bilder = bilder_von(produkt, [variante])
+        bilder = bilder_kettel(produkt, variante)
         if not bilder:
             maengel.append('kein Bild')
         text = beschreibung(
@@ -536,7 +549,7 @@ def plane_einzelmass(liste, lexikon, konfig, name, breite_cm, laenge_cm, preis, 
         groesse = f'{text_laenge(breite_cm)} × {text_laenge(laenge_cm)}'
         text = beschreibung(produkt, [f'Zuschnitt nach Ihrer Anfrage: {groesse}, {euro(flaeche)} m². Restposten.'])
         ueberschrift = titel(zeile['rolle'], None)[:MAX_TITEL - len(groesse) - 1] + ' ' + groesse
-    bilder = bilder_von(produkt, [variante])
+    bilder = bilder_kettel(produkt, variante) if kettel else bilder_von(produkt, [variante])
     if not bilder:
         maengel.append('kein Bild')
     return [{

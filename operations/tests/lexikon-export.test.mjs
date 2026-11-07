@@ -178,3 +178,17 @@ test('Lesende Lexikon-Abfrage und JSONL erhalten den öffentlichen Veröffentlic
   assert.equal(p.onlineStoreUrl,url);
   const {aufbereiten}=await import('../lib/lexikon.mjs');assert.equal(aufbereiten([p]).produkte[0].onlineStoreUrl,url);
 });
+
+test('jsonlZuProdukten: Produktbilder (MediaImage) landen als media in Shop-Reihenfolge, aufbereiten macht bilder daraus', async () => {
+  const zeilen = [
+    { id: 'gid://shopify/Product/1', handle: 'a', title: 'A', status: 'ACTIVE' },
+    { id: 'gid://shopify/MediaImage/1', __parentId: 'gid://shopify/Product/1', image: { url: 'https://cdn.example/1.jpg', altText: 'Draufsicht' } },
+    { id: 'gid://shopify/MediaImage/2', __parentId: 'gid://shopify/Product/1', image: { url: 'https://cdn.example/2.jpg', altText: null } },
+  ];
+  const { produkte } = jsonlZuProdukten(zeilen.map((z) => JSON.stringify(z)).join('\n'));
+  assert.deepEqual(produkte[0].media.nodes.map((m) => m.url), ['https://cdn.example/1.jpg', 'https://cdn.example/2.jpg']);
+  const { aufbereiten } = await import('../lib/lexikon.mjs');
+  const roh = { ...produkte[0], media: { nodes: produkte[0].media.nodes.map((m) => ({ image: { url: m.url, altText: m.altText } })) } };
+  const [p] = aufbereiten({ produkte: [roh] }).produkte;
+  assert.deepEqual(p.bilder, [{ url: 'https://cdn.example/1.jpg', alt: 'Draufsicht' }, { url: 'https://cdn.example/2.jpg', alt: null }]);
+});
