@@ -25,7 +25,6 @@
 | `skills/preislogik/SKILL.md` | aus `AGENTS.md` ausgelagert (2026-10-16): Aktionen/Streichpreise Teppichboden, Fussleiste, Paketprodukte, Vinyl-Preisfilter |
 | `skills/werkzeuge/SKILL.md` | aus `AGENTS.md` ausgelagert (2026-10-16): Werkzeugtabelle aller `npm run`-Befehle |
 | `skills/theme-audit/` | nur lesendes Theme-Audit mit Pruefliste; uebernommen aus zwei MIT-Skills (Quellen in `QUELLEN.md`), Bericht nach `docs/audits/` |
-| `hooks/pre-push-pruefen.sh` | Git-Pre-Push-Hook: alle Testsuiten vor dem Push (`pruefen --nur tests`, rund 25 s), rot blockiert; ohne `node_modules` nur Hinweis, `TP_PUSH_OHNE_TESTS=1` ueberspringt. Je Rechner installieren (`hooks/SETUP.md`; auf dem Mac seit 07.11.) |
 | `hooks/pre-commit-unmerged-branch.sh`, `hooks/SETUP.md` | Git-Pre-Commit-Hook gegen Commits auf alten, nie gemergten Branches (warnt ab 7, blockiert ab 30 Tagen; AGENTS.md Fallstrick 6). Vergleicht seit 16.10. mit `origin/main` statt dem lokalen `main`. Wirkt nur, wenn er je Rechner installiert ist (`hooks/SETUP.md`; auf dem Mac seit 16.10.) |
 | `agents/control-center.md` | Dashboard-Mitarbeiter (Subagent), arbeitet nach dem Skill oben |
 

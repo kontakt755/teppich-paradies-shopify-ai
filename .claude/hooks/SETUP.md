@@ -80,21 +80,3 @@ npm run unmerged:guard
 # Doctor testet beide automatisch
 npm run workflow:doctor
 ```
-
-## Pre-Push: Testsuiten vor dem Push (seit 2026-11-07)
-
-`.claude/hooks/pre-push-pruefen.sh` laesst vor jedem Push `npm run -s pruefen -- --nur tests`
-laufen (rund 25 s) und blockiert bei roten Tests. Ohne `node_modules` nur ein Hinweis;
-`TP_PUSH_OHNE_TESTS=1 git push` ueberspringt bewusst. Aufrufer wie beim Pre-Commit:
-
-```bash
-cat > "$(git rev-parse --git-common-dir)/hooks/pre-push" <<'HOOK'
-#!/bin/bash
-skript="$(git rev-parse --show-toplevel)/.claude/hooks/pre-push-pruefen.sh"
-[ -f "$skript" ] || exit 0
-exec bash "$skript"
-HOOK
-chmod +x "$(git rev-parse --git-common-dir)/hooks/pre-push"
-```
-
-Auf dem Mac seit 07.11.2026 installiert.
