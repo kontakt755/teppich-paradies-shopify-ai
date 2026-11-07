@@ -20,6 +20,7 @@ import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterNachfassen, fuelleText, mailtoLink, vorlageFuer, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
 import { heuteDaten, ladeBestellzeilenNeu } from './daten.mjs';
+import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 
 /** Steht in der Zeitleiste als "von", wenn der Versandlauf nachgefasst hat (operations/lib/nachfass-versand.mjs). */
 const AUTOMATISCH = 'automatisch';
@@ -28,7 +29,7 @@ const tageText = n => (n === 0 ? 'heute' : n === 1 ? 'vor 1 Tag' : `vor ${n} Tag
 // Bestell-IDs sind gid://-Adressen - als HTML-id nur Buchstaben und Ziffern.
 const textId = orderId => `mnText-${String(orderId).replace(/[^A-Za-z0-9_-]/g, '')}`;
 const betreffId = orderId => `mnBetreff-${String(orderId).replace(/[^A-Za-z0-9_-]/g, '')}`;
-const kundenLink = e => (e.kundenSchluessel ? `#/kunden?kunde=${encodeURIComponent(e.kundenSchluessel)}` : '#/kunden?tab=bestellungen');
+const kundenLink = e => (e.kundenSchluessel ? `#/kunden?kunde=${kundenLinkWert(e.kundenSchluessel)}` : '#/kunden?tab=bestellungen');
 
 /**
  * Angepasste Texte je Bestellung und Stufe, damit ein Neuzeichnen (Sync, anderer Klick) die
@@ -59,7 +60,7 @@ function zeile(e, texte, lesend, erste, automatisch) {
   // Teppich-Muster bekommen die Teppich-Fassung (Rundgang #7), alle anderen die Vorlage ihrer Stufe.
   const vorlage = vorlageFuer(texte, e);
   const absender = state.session?.benutzer?.name || null;
-  const vorschlag = fuelleText(vorlage, { kundenname: e.kundenname, absender, produkte: e.produkte });
+  const vorschlag = fuelleText(vorlage, { kundenname: e.kundenname, absender, produkte: e.produkte, nachfass: e.stufe });
   const schluessel = entwurfSchluessel(e.orderId, e.stufe);
   const mail = vorschlag ? { ...vorschlag, ...entwuerfe.get(schluessel) } : null;
   const id = textId(e.orderId);

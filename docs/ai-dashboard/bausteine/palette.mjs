@@ -12,9 +12,12 @@ import { darfAnsicht, navigate, openTask } from '../kern/router.mjs';
 import { refresh } from '../kern/daten.mjs';
 import { syncNow } from './aktualisierung.mjs';
 import { openFehlerMelden } from './fehler-melden.mjs';
+import { oeffneEtikettenDruck } from './etiketten-druck.mjs';
+import { dashboardZiel } from '../kern/navigation.mjs';
 import { openOrgSchnell, openOrgListe } from '../ansichten/organisation/dialoge.mjs';
 import { ensureMusterPacken } from '../ansichten/kunden/muster-packen.mjs';
 import { offeneSuche, umschlagKennung } from '../lib/muster-packen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 // Treffer aus den Betriebsdaten - Kunden und Produkte. Die Suche ist fuer
 // viele der schnellste Weg ueberhaupt ("Kunde am Telefon, Produktname
@@ -94,6 +97,7 @@ function paletteItems(q) {
   for (const [label, view, params] of [
     ['Bestellungen', 'kunden', { tab: 'bestellungen', bart: 'ware', bsort: 'wichtigkeit' }],
     ['Packstation', 'kunden', { tab: 'muster' }],
+    ['Kunden nach Produkt fragen', 'kunden', { tab: 'anrufe' }],
     ['Muster bestellen', 'einkauf', { tab: 'lieferant', art: 'muster', af: 'offen' }],
     ['Musterlager', 'einkauf', { tab: 'musterlager' }],
     ['Lexikon', 'lexikon', {}],
@@ -107,7 +111,7 @@ function paletteItems(q) {
   for (const k of paletteFern.kunden) {
     // Ueber den Produktnamen gefunden: sagen, was der Kunde bestellt hat - sonst wirkt der Treffer zufaellig.
     const bestellt = k.trefferProdukt ? `bestellt: ${[k.trefferProdukt.titel, k.trefferProdukt.farbe].filter(Boolean).join(' · ')}` : null;
-    items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [bestellt, k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { kunde: k.key }) });
+    items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [bestellt, k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { kunde: kundenLinkWert(k.key) }) });
   }
   items.push(...musterZeilen(q));
   for (const p of paletteFern.produkte) {
@@ -117,6 +121,10 @@ function paletteItems(q) {
   items.push({ kind: 'Ansicht', label: 'Versandkosten GLS und GEL vergleichen', run: () => navigate('einkauf', { tab: 'versandkosten' }) });
   const views = [['heute', 'Heute'], ['einkauf', 'Bestellen beim Lieferanten'], ['kunden', 'Kunden'], ['arbeit', 'Technik (GitHub)'], ['freigaben', 'Entscheidungen'], ['bereiche', 'Bereiche'], ['insights', 'Kennzahlen'], ['aktivitaet', 'Verlauf'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben'], ['akquise', 'Genossenschaften & Hausverwaltungen (Aufträge anfragen)'], ['hausverwaltungen', 'Hausverwaltungen (Ansprechpartner, Objekte, Angebote)'], ['shopwache', 'Shop-Kontrolle'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
+  // Ziele unter "Mehr" mit denselben Worten und Rollen wie im Menue (index.html, Shop & Inhalte).
+  const rolle = state.session?.benutzer?.rolle;
+  if (darfAnsicht('sonderposten')) items.push({ kind: 'Ansicht', label: 'Sonderposten', run: () => navigate('sonderposten') });
+  if (darfAnsicht('social') && !['lesen', 'mitarbeiter'].includes(rolle)) items.push({ kind: 'Ansicht', label: 'Social Media', run: () => navigate('social') });
   items.push({ kind: 'Ansicht', label: 'Vorbereiten: E-Mail, Angebot oder Recherche', run: () => navigate('prozesse') });
   for (const [prozess, label] of [['email', 'E-Mail vorbereiten'], ['angebot', 'Angebot vorbereiten'], ['recherche', 'Recherche starten']]) {
     items.push({ kind: 'Vorbereiten', label, run: () => navigate('prozesse', { prozess }) });
@@ -131,6 +139,9 @@ function paletteItems(q) {
   }
   items.push({ kind: 'Aktion', label: 'Schnell erfassen (Aufgabe oder Notiz)', run: () => openOrgSchnell() });
   items.push({ kind: 'Aktion', label: 'Liste einfügen (mehrere Aufgaben auf einmal)', run: () => openOrgListe() });
+  items.push({ kind: 'Aktion', label: 'Eigene Aufkleber drucken', sub: 'Freier Text, ohne Produkt', run: () => oeffneEtikettenDruck({ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }) });
+  const werkbank = dashboardZiel('werkbank');
+  if (werkbank) items.push({ kind: 'Aktion', label: werkbank.text, sub: werkbank.titel, run: () => window.open(werkbank.href, '_blank', 'noopener') });
   items.push({ kind: 'Aktion', label: 'Fehler melden', sub: 'Etwas geht nicht – an die Technik', run: () => openFehlerMelden() });
   items.push({ kind: 'Aktion', label: 'Daten neu laden', run: () => refresh() });
   if (state.capabilities.sync && darfAnsicht('arbeit')) items.push({ kind: 'Aktion', label: 'Jetzt mit GitHub synchronisieren', run: () => syncNow() });
@@ -144,8 +155,9 @@ function paletteItems(q) {
   const ql = q.trim().toLowerCase();
   const scored = items.map(i => ({
     i,
-    // Kunden/Produkte kommen schon gefiltert vom Server und stehen oben.
-    s: i.rang && ql ? i.rang : i.treffer ? 5 : !ql ? 1 : i.label.toLowerCase().includes(ql) ? 2 + (i.label.toLowerCase().startsWith(ql) ? 1 : 0) : ql.split(/\s+/).every(p => i.label.toLowerCase().includes(p)) ? 1 : 0,
+    // Kunden/Produkte kommen schon gefiltert vom Server und stehen oben - ausser vor dem
+    // Menuepunkt, dessen Namen jemand genau eintippt ("Sonderposten" vor fuenf Sonderposten-Produkten).
+    s: i.rang && ql ? i.rang : i.treffer ? 5 : !ql ? 1 : i.label.toLowerCase() === ql ? 7 : i.label.toLowerCase().includes(ql) ? 2 + (i.label.toLowerCase().startsWith(ql) ? 1 : 0) : ql.split(/\s+/).every(p => i.label.toLowerCase().includes(p)) ? 1 : 0,
   })).filter(x => x.s > 0);
   return scored.sort((a, b) => b.s - a.s).slice(0, 14).map(x => x.i);
 }

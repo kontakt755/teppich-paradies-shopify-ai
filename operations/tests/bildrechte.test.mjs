@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  alsCsv, ausCsv, auswerten, bildtypAusName, dateiname, nameNachSchema, quelleVermutet, zeilenAusProdukten, zusammenfuehren,
+  alsCsv, ausCsv, auswerten, bildtypAusName, dateiname, nameNachSchema, quelleVermutet, zeilenAusProdukten, zusammenfuehren, raumbildJeProdukt,
 } from '../lib/bildrechte.mjs';
 
 const produkt = (handle, media) => ({ handle, title: handle, productType: 'Teppichboden', media: { nodes: media } });
@@ -144,4 +144,18 @@ test('Pruefliste: Warengruppen der gewaehlten Liste, Filter, Sortierung und Seit
 test('Pruefliste: Eintraege tragen keine Lizenz- oder Quellenangaben', () => {
   const [e] = prueflisten([z({ status: 'ungeklaert', quelle: 'Lieferant A', lizenz: 'x', beleg: 'y' })]).items;
   assert.deepEqual(Object.keys(e).sort(), ['breite', 'datei', 'gruppe', 'handle', 'hinweis', 'hoehe', 'position', 'titel']);
+});
+
+test('Raumbild je Produkt fuer die Bestellampel: nur sicher erfasste Bildtypen zaehlen', () => {
+  const je = raumbildJeProdukt([
+    { produkt_handle: 'mit-raum', bildtyp: 'detail', status: 'geprueft' },
+    { produkt_handle: 'mit-raum', bildtyp: 'raum', status: 'ungeklaert' },
+    { produkt_handle: 'ohne-raum', bildtyp: 'detail', status: 'geprueft' },
+    { produkt_handle: 'ohne-raum', bildtyp: 'raum', status: 'entfernt (Dublette)' },
+    { produkt_handle: 'ohne-raum', bildtyp: 'raum', status: 'geprueft', notiz: 'nicht mehr in Shopify' },
+    { produkt_handle: 'unbekannt', bildtyp: '', status: 'ungeklaert' },
+  ]);
+  assert.equal(je.get('mit-raum'), true);
+  assert.equal(je.get('ohne-raum'), false, 'entfernte Raumbilder zaehlen nicht');
+  assert.equal(je.has('unbekannt'), false, 'kein Bildtyp erfasst: unbekannt, keine Warnung');
 });

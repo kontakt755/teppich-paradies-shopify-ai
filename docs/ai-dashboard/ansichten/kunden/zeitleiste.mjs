@@ -15,7 +15,9 @@ import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { kettelwegNoetig } from '../../lib/einkauf-uebersicht.mjs';
-import { einkauf, kettelwegFelder, kettelwegGewaehlt, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, ensureEinkaufAuftragsstatus, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, kettelwegFelder, kettelwegGewaehlt, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, ensureEinkaufAuftragsstatus, MUSTER_HERKUNFT_LABEL, afStatusText, selbstKnoepfe } from '../einkauf/auftragsfluss.mjs';
+import { lieferwegVon, istLagerware, selbstStand, selbstStandText } from '../../lib/lieferweg.mjs';
+import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
@@ -121,9 +123,24 @@ function naechsterKarte(a, kunde, lesend) {
  */
 function bestellLieferanten(a) {
   const stand = einkauf.auftragsstatus?.positionen || null;
+  // Lagerware schneiden wir selbst zu - dafuer gibt es keine Bestellmail.
   const offen = (a.positionen || []).filter(p => p.lineItemId && !p.istMuster && !p.eigenleistung && gesetzt(p.lieferant)
-    && !(stand && stand[`${a.id}::${p.lineItemId}`]?.status));
+    && !(stand && stand[`${a.id}::${p.lineItemId}`]?.status) && !istLagerware(p, stand?.[`${a.id}::${p.lineItemId}`]));
   return [...new Set(offen.map(p => p.lieferant))];
+}
+
+/**
+ * Lieferweg und Stand je Warenposition (lib/lieferweg.mjs): "Hersteller → Kunde · Bestellt …",
+ * "aus Lager · noch zuschneiden" - mit den Knoepfen fuer das, was wir selbst verschicken.
+ */
+function wegZeile(a, p) {
+  const eintrag = einkauf.auftragsstatus?.positionen?.[`${a.id}::${p.lineItemId}`] || null;
+  const lw = lieferwegVon(p, eintrag);
+  if (!lw) return '';
+  // Ohne geladenen Stand nur der Weg - "Noch nicht bestellt" waere geraten.
+  const stand = !einkauf.auftragsstatus?.positionen ? '' : selbstStandText(selbstStand(p, eintrag), lw.weg, eintrag) || afStatusText(eintrag);
+  const knoepfe = selbstKnoepfe({ ...p, orderId: a.id, orderName: a.name }, eintrag);
+  return `<dt>Lieferweg</dt><dd>${lieferwegPlakette(lw)}${stand ? ` <span class="small muted">${esc(stand)}</span>` : ''}${p.lagerHinweis && lw.weg === 'lager' ? `<br><span class="small muted">${esc(p.lagerHinweis)}</span>` : ''}${knoepfe ? `<div class="zl-knoepfe no-print">${knoepfe}</div>` : ''}</dd>`;
 }
 
 function worumKarte(a) {
@@ -138,6 +155,7 @@ function worumKarte(a) {
       ${p.kettelweg ? `<dt>Kettelt</dt><dd>${esc(p.kettelweg)}</dd>` : ''}
       ${p.eigenleistung ? '<dt>Einkauf</dt><dd>Eigenleistung – nichts beim Lieferanten</dd>' : `<dt>Lieferant</dt><dd>${gesetzt(p.lieferant) ? esc(lieferantText(p.lieferant)) : '<span class="zl-fehlt">nicht zugeordnet</span>'}</dd>
       <dt>Art.-Nr.</dt><dd>${gesetzt(p.grosshaendlerId) ? esc(p.grosshaendlerId) : '<span class="zl-fehlt">fehlt</span>'}</dd>`}
+      ${wegZeile(a, p)}
     </dl>`;
   });
   return `<div class="card zl-worum"><p class="zl-titel">Worum es geht</p>${zeilen.join('') || '<p class="small muted">Keine Positionen.</p>'}</div>`;
@@ -172,7 +190,8 @@ export function zeitleisteBlock(a, { kontakt = false } = {}) {
   if ((a.positionen || []).some(p => gesetzt(p.lieferant))) ensureEinkaufLieferanten();
   // Positionsstand fuer den Bestellweg: ohne ihn bekaeme ein schon bestellter Lieferant in einer
   // direkt geoeffneten Kundenakte weiter "Bestellmail öffnen" (bestellLieferanten).
-  if (a.auftragsart === 'ware' && a.naechsterSchritt?.aktion === 'bestellt') ensureEinkaufAuftragsstatus();
+  // Auch fuer Lieferweg und Stand je Position in "Worum es geht".
+  if (a.auftragsart === 'ware') ensureEinkaufAuftragsstatus();
   const kunde = a.details?.kunde || null;
   const lesend = istNurLesend();
   const notizen = a.verlaufNotizen || [];
@@ -227,7 +246,7 @@ async function ladeNeu() {
 /** Noch nicht bestellter gekettelter Direktversand: `kettelweg` kommt vom Server erst mit Status. */
 const offeneKettelwege = a => (a?.auftragsart === 'ware' ? a.positionen ?? [] : []).filter(p => p.lineItemId && kettelwegNoetig(p) && !p.kettelweg);
 
-async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null } = {}) {
+export async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null } = {}) {
   let antwort;
   try {
     antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug, ...(muster ? { muster } : {}), ...(kettelwege ? { kettelwege } : {}) });

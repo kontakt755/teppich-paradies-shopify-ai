@@ -4,9 +4,9 @@
 .ab-einleitung { margin: 4px 0 14px; }
 .ab-raster { display: grid; gap: 12px; }
 .ab-karte { padding: 14px 16px; }
-.ab-karte.ab-mit-problem { border-left: 3px solid var(--warn); }
 .ab-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .ab-kopf h3 { margin: 0; font-size: 1rem; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.ab-kopf .ampel { align-self: center; }
 .ab-kunde { font-weight: 500; color: var(--text-2); }
 .ab-schritte { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 12px 0 10px; padding: 0; }
 .ab-schritt { display: flex; align-items: flex-start; gap: 6px; font-size: .82rem; line-height: 1.25; color: var(--text-3); min-width: 0; }
@@ -41,3 +41,9 @@
 .ab-aktion { margin: 0 0 8px; }
 .ab-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .ab-text-feld { width: 100%; box-sizing: border-box; font: inherit; font-size: .9rem; overflow-wrap: anywhere; }
+
+/* Teillieferung (06.11.2026): ruhig, ohne Bernstein - zu tun ist nur warten. */
+.ab-teilstand { margin: 8px 0 0; color: var(--text-2); overflow-wrap: anywhere; }
+/* Filter Ware | Muster | Alle und die eine Zeile zur Packstation statt der Musterkarten. */
+.ab-art { margin: 0 0 6px; }
+.ab-packbereit { margin: 0 0 12px; }

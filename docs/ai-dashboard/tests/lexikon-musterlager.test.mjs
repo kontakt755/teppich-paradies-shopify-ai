@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { lagerEintraegeFuerFarben } from '../lib/lexikon-musterlager.mjs';
-import { gesamtAusNochDa, lagerKorrektur, lagerNochDa, nachLieferant, nochDaZaehlbar } from '../lib/musterlager-bestand.mjs';
+import { gesamtAusNochDa, lagerKorrektur, lagerNochDa, nachLieferant, nochDaZaehlbar, stueckJeArt } from '../lib/musterlager-bestand.mjs';
 
 const farben = [{ farbe: 'Greige (097)', schluessel: ['X-097'] }, { farbe: 'Taupe (272)', schluessel: ['X-272'] }];
 
@@ -77,4 +77,16 @@ test('Nach Lieferant: A, E, D, dann die uebrigen, unbekannt zuletzt; Summe je Gr
   assert.deepEqual(g.map(x => [x.id, x.name, x.eintraege.length, x.stueck]), [
     ['A', 'Lieferant A', 4, 9], ['E', 'Lieferant E', 1, 4], ['D', 'Lieferant D', 1, 3], ['C', 'Anbieter', 1, 1], ['B', 'Zulieferer', 1, 2], [null, 'Lieferant unbekannt', 1, 1],
   ]);
+});
+
+test('Summe je Lieferant trennt die Arten, statt Bahnen und Einzelmuster zusammenzuzaehlen', () => {
+  const [g] = nachLieferant([
+    { art: 'einzel', anzahl: 2, lieferant: { id: 'A', name: 'Lieferant A' }, stand: { verbraucht: 0 } },
+    { art: 'einzel', anzahl: 3, lieferant: { id: 'A', name: 'Lieferant A' }, stand: { verbraucht: 0 } },
+    { art: 'bahn', anzahl: 1, lieferant: { id: 'A', name: 'Lieferant A' } },
+  ]);
+  assert.equal(stueckJeArt(g.jeArt), '5 Einzelmuster · 1 Bahn');
+  assert.equal(stueckJeArt({ probestueck: 2, rest: 1 }), '2 Probestücke · 1 Verlegerest');
+  assert.equal(stueckJeArt({ anders: 2, bahn: 0 }), '2 Stück');
+  assert.equal(stueckJeArt({}), '0 Stück');
 });

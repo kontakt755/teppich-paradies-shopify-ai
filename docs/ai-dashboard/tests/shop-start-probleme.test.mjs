@@ -48,3 +48,14 @@ test('ab der vierten roten Zeile klappt der Rest auf - die Warenkunden darunter 
   assert.deepEqual(zeilen(vorher), ['a', 'b', 'c']);
   assert.deepEqual(zeilen(nachher), ['d', 'e']);
 });
+
+test('w-222: gescheiterter Abruf wird genannt, auch ohne rotes To-do', () => {
+  const nur = problemeBlock([], { zeile, fehlen: ['Abgleich mit Shopify'] });
+  assert.match(nur, /<b>Liste unvollständig:<\/b> Abgleich mit Shopify konnte nicht geladen werden/);
+  assert.match(nur, /role="status"/);
+  assert.doesNotMatch(nur, /Probleme · /, 'keine Zahl ohne rotes To-do');
+  const mit = problemeBlock([todo('a', 'crit')], { zeile, fehlen: ['Rückrufe', 'Abgleich mit Shopify <x>'] });
+  assert.match(mit, /Probleme · 1</);
+  assert.match(mit, /Rückrufe, Abgleich mit Shopify &lt;x&gt; konnten nicht geladen werden/);
+  assert.equal(problemeBlock([], { zeile, fehlen: [] }), '', 'alles geladen, nichts rot: weiter kein Block');
+});

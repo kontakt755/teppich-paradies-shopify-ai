@@ -61,12 +61,23 @@
             "bald": false,
             "bild": "shopify://shop_images/ratgeber-untergrund-pruefen-titel.png"
           }
+        },
+        "weitere-boeden": {
+          "type": "bereich",
+          "settings": {
+            "blog": "ratgeber-weitere-boeden",
+            "titel": "Weitere Böden",
+            "text": "Linoleum, Kautschuk, Kork, Kunstrasen und Sauberlauf: verlegen und pflegen.",
+            "bald": false,
+            "bild": "shopify://shop_images/suberra-kork-natur-korkboden-10-5mm-raum-63d763.jpg"
+          }
         }
       },
       "block_order": [
         "teppichboden",
         "vinylboden",
-        "untergrund"
+        "untergrund",
+        "weitere-boeden"
       ],
       "settings": {}
     },

@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { wegwerfOrdner } from '../../../scripts/test-temp.mjs';
 import { createApi, ApiError, buildComment, readJsonGecacht } from '../../../scripts/dashboard-api.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 /** Fake-gh: merkt sich Aufrufe, liefert Issue/Labels/User. */
 function fakeGh({ issue, labels = ['status:geplant', 'status:in-arbeit', 'status:review', 'status:blockiert', 'status:fertig', 'reviewer:mensch'], user = 'tobias' } = {}) {
@@ -552,6 +553,30 @@ test('lexikonListe liefert Preis ab und Link-Zeichen in der Trefferliste', () =>
   assert.equal(muster.linkVorhanden, true, 'Mustervariante hat ein gefundenes Original');
 });
 
+test('lexikonListe: Bestellampel je Treffer, Kopfzahlen und Filter "Nur gelb"/"Nur rot"', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  // Ohne Bildverzeichnis: Raumbild unbekannt, also nur die Lieferbarkeit.
+  let r = api.lexikonListe({});
+  assert.deepEqual(r.ampel, { rot: 0, gelb: 1, ruhig: 1, filter: '' }, 'Musterprodukt zaehlt nicht mit');
+  const grau = r.treffer.items.find(i => i.handle === 'traum-teppich-grau');
+  assert.deepEqual(grau.ampel, { stufe: 'gelb', wort: 'Teilweise lieferbar', text: '1 von 2 Farben nicht lieferbar' });
+  assert.equal(r.treffer.items.find(i => i.handle === 'muster-traum-teppich-grau').ampel, null);
+  // Mit Bildverzeichnis: Vinyl hat erfasste Bilder, aber kein Raumbild; ein Bild ohne Bildtyp beim Teppich bleibt unbekannt.
+  fs.mkdirSync(path.join(dir, 'bildrechte'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'bildrechte', 'bildrechte.csv'), 'media_id;produkt_handle;bildtyp;status\nm1;vinyl-clic-eiche;detail;geprueft\nm2;traum-teppich-grau;;ungeklaert\nm3;vinyl-clic-eiche;raum;entfernt\n');
+  r = api.lexikonListe({});
+  assert.deepEqual(r.ampel, { rot: 0, gelb: 2, ruhig: 0, filter: '' });
+  assert.deepEqual(r.treffer.items.find(i => i.handle === 'vinyl-clic-eiche').ampel, { stufe: 'gelb', wort: 'Kein Raumbild', text: '' }, 'entferntes Raumbild zaehlt nicht');
+  const gelb = api.lexikonListe({ ampel: 'gelb' });
+  assert.deepEqual([gelb.treffer.count, gelb.ampel.filter], [2, 'gelb'], 'Zahl am Knopf = Laenge der Liste');
+  assert.equal(api.lexikonListe({ ampel: 'rot' }).treffer.count, 0);
+  assert.equal(api.lexikonListe({ ampel: 'quatsch' }).treffer.count, 3, 'unbekannter Filter: alle');
+  assert.deepEqual(api.lexikonListe({ q: 'vinyl', ampel: 'gelb' }).ampel, { rot: 0, gelb: 1, ruhig: 0, filter: 'gelb' }, 'Kopfzahlen folgen der Suche');
+  assert.deepEqual(api.lexikonProdukt('vinyl-clic-eiche').ampel, { stufe: 'gelb', wort: 'Kein Raumbild', text: '' });
+});
+
 test('lexikonListe sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion', () => {
   const root = tmpRoot();
   const dir = lexikonFixture(root);
@@ -811,6 +836,16 @@ function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftF
   return datei;
 }
 
+/**
+ * Wartet, bis der Kindprozess fertig ist, statt eine feste Zeit zu schlafen. Unter Last (Probekopie des
+ * Nachziehens, parallele Suiten) brauchte allein der Start von node laenger als die frueheren 500 ms -
+ * der Test war dann rot und hielt das Nachziehen des Dashboards an (05.11.).
+ */
+async function warteAufLaufende(api, hoechstensMs = 15000) {
+  const bis = Date.now() + hoechstensMs;
+  while (api.aktualisierungStatus().laeuft && Date.now() < bis) await new Promise(r => setTimeout(r, 25));
+}
+
 test('aktualisierungStarten: ohne Zugang kein leerer Lauf, alter Datenstand bleibt erhalten', () => {
   const root = tmpRoot();
   const dir = wegwerfOrdner('tp-aktualisierung-');
@@ -856,7 +891,7 @@ test('aktualisierungStatus: laeuft waehrend des Laufs, danach fertig mit neuem S
   api.aktualisierungStarten();
   const waehrend = api.aktualisierungStatus();
   assert.equal(waehrend.laeuft, true);
-  await new Promise(r => setTimeout(r, 500));
+  await warteAufLaufende(api);
   const danach = api.aktualisierungStatus();
   assert.equal(danach.laeuft, false);
   assert.equal(danach.verfuegbar, true);
@@ -928,6 +963,11 @@ test('kundenDetail zeigt auch einen Kunden ohne Bestellung in dieser Datei', () 
   assert.equal(r.kunde.kunde.name, 'Erika Musterfrau');
   assert.equal(r.kunde.lieferadresse.ort, 'Oranienburg');
   assert.match(r.kunde.hinweis, /ausserhalb der hier exportierten Daten/);
+  // Links tragen nur den Kurzwert; er fuehrt zur selben Akte und nennt den echten Schluessel
+  const ueberLink = api.kundenDetail({ key: kundenLinkWert('email:erika@example.test') });
+  assert.equal(ueberLink.kunde.kunde.name, 'Erika Musterfrau');
+  assert.equal(ueberLink.kunde.key, 'email:erika@example.test');
+  assert.equal(api.kundenDetail({ key: kundenLinkWert('email:gibtsnicht@example.test') }).verfuegbar, false);
   // Unbekannter Schluessel bleibt eine ehrliche Fehlanzeige
   assert.equal(api.kundenDetail({ key: 'email:gibtsnicht@example.test' }).verfuegbar, false);
 });
@@ -1456,7 +1496,7 @@ test('"Jetzt aktualisieren": ein abgebrochener Lauf bleibt als letzterKnopfLauf 
   const vorher = console.error; const zeilen = []; console.error = z => zeilen.push(z);
   try {
     const start = api.aktualisierungStarten();
-    for (let i = 0; i < 50 && api.aktualisierungStatus().laeuft; i += 1) await new Promise(r => setTimeout(r, 50));
+    await warteAufLaufende(api);
     const s = api.aktualisierungStatus();
     assert.equal(s.laeuft, false);
     assert.equal(s.letzterKnopfLauf.seit, start.seit);
@@ -1474,7 +1514,7 @@ test('"Jetzt aktualisieren": ein abgebrochener Lauf bleibt als letzterKnopfLauf 
   console.error = () => {};
   try {
     api2.aktualisierungStarten();
-    for (let i = 0; i < 50 && api2.aktualisierungStatus().laeuft; i += 1) await new Promise(r => setTimeout(r, 50));
+    await warteAufLaufende(api2);
   } finally { console.error = vorher; }
   assert.equal(api2.aktualisierungStatus().letzterKnopfLauf.fehler, null);
 });

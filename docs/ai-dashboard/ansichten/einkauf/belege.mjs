@@ -21,7 +21,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
-import { ART_LABEL, ART_KURZ, STAND_LABEL, SHOPIFY_LABEL, FREEMAIL, adresseVon, belegArbeit as arbeitAus } from '../../lib/lieferbelege.mjs';
+import { ART_LABEL, ART_KURZ, STAND_LABEL, SHOPIFY_LABEL, FREEMAIL, adresseVon, belegArbeit as arbeitAus, belegFilter } from '../../lib/lieferbelege.mjs';
 
 export const belege = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -88,7 +88,8 @@ export function laufStand(d = belege.daten) {
   const std = (Date.now() - Date.parse(l.am)) / 3600000;
   const tag = new Date().getDay();
   const werktag = tag >= 1 && tag <= 6;
-  const neu = l.neu ? ` · ${plural(l.neu, 'neues Schreiben', 'neue Schreiben')}` : '';
+  // `neu` zaehlt, was der letzte Lauf neu uebernommen hat - nicht die offene Arbeit (Reiterzahl).
+  const neu = l.neu ? ` · ${plural(l.neu, 'neues Schreiben', 'neue Schreiben')} beim letzten Lesen` : '';
   const teil = l.vollstaendig === false ? ' · nicht vollständig gelesen' : '';
   return { text: `Postfach zuletzt gelesen ${ago(l.am)}${neu}${teil}`, ton: (werktag && std > LAUF_ALT_STD) || l.vollstaendig === false ? 'warn' : '' };
 }
@@ -106,6 +107,16 @@ function abweichungHtml(a) {
   const wer = esc(lieferantName(a.lieferant) || 'Lieferant');
   const erledigt = lesend ? '' : `<button type="button" class="btn btn-sm" data-bl-erledigt="${esc(a.belegId)}" data-bl-order="${esc(a.orderId)}">Erledigt</button>`;
   const zum = `<a class="btn btn-sm btn-ghost" href="${esc(auftragLink(a.orderId))}">Zum Auftrag</a>`;
+  if (a.art === 'ab_pruefen') {
+    // Zur Pruefung anbieten, nie selbst bestaetigen: der Knopf oeffnet den AB-Dialog der Position
+    // (ansichten/einkauf/lieferantenstand.mjs) mit AB-Nummer und Gmail-Link als Vorschlag.
+    const knoepfe = lesend ? '' : (a.positionen || []).map(p => `<button type="button" class="btn btn-sm" data-ls-ab-beleg="${esc(a.belegId)}" data-af-order="${esc(a.orderId)}" data-af-item="${esc(p.lineItemId)}">${esc((a.positionen.length > 1 ? `AB prüfen: ${p.titel || 'Position'}` : 'AB prüfen…'))}</button>`).join('');
+    return zeile({
+      ton: 'warn', titel: `Auftragsbestätigung von ${wer} zu ${esc(auftragText(a.orderId))}`,
+      kontext: `${fmtDate(a.datum)}${b ? ` · „${esc(b.betreff)}“` : ''} · noch nicht geprüft. Menge, Maße, Lieferweg und Zuschläge mit unserer Bestellung vergleichen.`,
+      knoepfe: `${gmailKnopf(b)}${knoepfe}${zum}${erledigt}`,
+    });
+  }
   if (a.art === 'storno') {
     return zeile({
       ton: 'crit', titel: `Storno von ${wer} zu ${esc(auftragText(a.orderId))}`,
@@ -171,6 +182,7 @@ function ohneHtml(ohne) {
 const HINWEIS = {
   storno: ['crit', 'Storno'],
   lieferschein_offen: ['warn', 'Lieferschein da, bei uns noch bestellt'],
+  ab_pruefen: ['warn', 'AB da, noch nicht geprüft'],
   shopify_offen: ['warn', 'In Shopify noch nicht versendet'],
   shopify_weiter: ['warn', 'In Shopify schon versendet, bei uns noch bestellt'],
 };
@@ -183,23 +195,28 @@ function belegZelle(kurz) {
 }
 
 function abgleichHtml(d) {
-  const filter = ['abweichung', 'beleg'].includes(state.route.params.get('blf')) ? state.route.params.get('blf') : '';
   const mitAbw = d.zeilen.filter(z => z.hinweise.length);
   const mitBeleg = d.zeilen.filter(z => z.belege.length);
+  const filter = belegFilter(state.route.params.get('blf'), { abweichungen: mitAbw.length });
   const liste = filter === 'abweichung' ? mitAbw : filter === 'beleg' ? mitBeleg : d.zeilen;
   const seite = Math.max(1, Number(state.route.params.get('bls')) || 1);
   const seiten = Math.max(1, Math.ceil(liste.length / SEITE_AUFTRAG));
   const sichtbar = liste.slice((Math.min(seite, seiten) - 1) * SEITE_AUFTRAG, Math.min(seite, seiten) * SEITE_AUFTRAG);
-  const chip = (wert, text, n, ton = '') => `<button type="button" class="chip" aria-pressed="${filter === wert}" data-param="blf" data-value="${wert}">${text} <span class="${n && ton ? ton : 'muted'}">${n}</span></button>`;
+  // Im gedrueckten Chip steht die Zahl in dessen Schriftfarbe: grau oder bernstein auf Terrakotta war
+  // kaum lesbar (gemessen 1,3:1 bzw. 1,2:1).
+  const chip = (wert, text, n, ton = '') => {
+    const an = filter === wert;
+    return `<button type="button" class="chip" aria-pressed="${an}" data-param="blf" data-value="${wert}">${text} <span class="${an ? 'bl-chip-zahl' : n && ton ? ton : 'muted'}">${n}</span></button>`;
+  };
   const chips = `<div class="chips bl-chips" role="group" aria-label="Auswahl">
-    ${chip('', 'Alle', d.zeilen.length)}${chip('beleg', 'Mit Schreiben', mitBeleg.length)}${chip('abweichung', 'Passt nicht zusammen', mitAbw.length, 'bl-warn')}
+    ${chip('alle', 'Alle', d.zeilen.length)}${chip('beleg', 'Mit Schreiben', mitBeleg.length)}${chip('abweichung', 'Passt nicht zusammen', mitAbw.length, 'bl-warn')}
   </div>`;
   if (!d.zeilen.length) return `<section class="bl-abschnitt"><h2 class="section-title">Je Auftrag</h2>${emptyState('Noch keine Bestellung mit Lieferantenpost.', 'Sobald ein Lieferant eine Auftragsbestätigung oder einen Lieferschein mit unserer Bestellnummer schickt, steht er hier neben unserem Stand.')}</section>`;
   const rows = sichtbar.map(z => `<tr class="${z.hinweise.includes('storno') ? 'crit' : z.hinweise.length ? 'warn' : ''}">
       <td><a href="${esc(auftragLink(z.orderId))}">${esc(z.orderName)}</a>${z.kundenname ? `<div class="small muted">${esc(z.kundenname)}</div>` : ''}</td>
       <td>${esc(lieferantName(z.lieferant))}${z.nurMuster ? '<div class="small muted">Muster</div>' : ''}</td>
       <td>${z.bestelltAm ? esc(fmtDate(z.bestelltAm)) : '<span class="muted">–</span>'}</td>
-      <td>${belegZelle(z.ab)}</td>
+      <td>${belegZelle(z.ab)}${z.abGeprueft ? '<div class="small muted">geprüft</div>' : !z.ab && z.abFehlt ? '<div class="small wait-warn">fehlt</div>' : ''}</td>
       <td>${belegZelle(z.lieferschein)}</td>
       <td>${esc(STAND_LABEL[z.stand] || z.stand)}</td>
       <td>${esc(SHOPIFY_LABEL[z.shopify] || (z.shopify ? z.shopify.toLowerCase() : '–'))}</td>

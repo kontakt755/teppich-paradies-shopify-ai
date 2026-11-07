@@ -554,3 +554,146 @@ test('Grund der Musterautomatik nur bei "noch nicht bestellt"', () => {
   assert.equal(offen.automatikGrund, 'Testgrund fehlt');
   assert.equal(bestellt.automatikGrund, null);
 });
+
+test('Variante ohne Einkaufsangaben behaelt Farbbild und Herstellersuche, macht aber nichts mehrdeutig (Review 29.10.)', () => {
+  const p = { handle: 'ohne-einkauf', titel: 'Ohne Einkauf', varianten: [
+    { sku: 'OE-1', farbe: 'Sand', bild: 'https://cdn.example/sand.jpg', einkauf: {} },
+    { sku: 'OE-2', farbe: 'Grau', bild: 'https://cdn.example/grau.jpg', einkauf: { hersteller: 'Testhersteller' } },
+    { sku: 'OE-3', farbe: 'Rot', einkauf: {} },
+    // Dieselbe SKU einmal ohne, einmal mit Angaben: die Angaben gelten, kein "mehrdeutig".
+    { sku: 'OE-4', farbe: 'Blau', bild: 'https://cdn.example/blau.jpg', einkauf: {} },
+    { sku: 'OE-4', farbe: 'Blau', einkauf: { produktname: 'Lieferantenname Blau', farbnummer: '44' } },
+    // Eigene Variante ohne Angaben: die Variante mit dieser SKU als Artikelnummer liefert sie, das Bild bleibt.
+    { sku: 'OE-5', farbe: 'Gelb', bild: 'https://cdn.example/gelb.jpg', einkauf: {} },
+    { sku: 'OE-5-BREIT', farbe: 'Gelb', einkauf: { artikelnummer: 'OE-5', produktname: 'Lieferantenname Gelb', farbnummer: '55' } },
+  ] };
+  const zeile = (sku, li) => ({ lineItemId: `gid://shopify/LineItem/${li}`, istMuster: true, titel: 'Muster', farbe: sku, menge: 1, mengeBestellt: 1, sku: `M-${sku}`, handle: 'muster-x', musterQuelle: { sku, produktHandle: p.handle } });
+  const eigene = new Map([[p.handle, p]]);
+  const { kunden } = musterPackliste({ produkte: eigene, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', ['OE-1', 'OE-2', 'OE-3', 'OE-4', 'OE-5'].map((s, i) => zeile(s, i + 1)))] });
+  const je = Object.fromEntries(kunden[0].muster.map(m => [m.bestellt.farbe, m]));
+  assert.equal(je['OE-1'].bild, 'https://cdn.example/sand.jpg');
+  assert.equal(je['OE-2'].bild, 'https://cdn.example/grau.jpg');
+  assert.equal(je['OE-2'].vorher.hersteller, 'Testhersteller');
+  assert.equal(je['OE-3'].vorher, null, 'gar nichts bekannt: wie bisher');
+  assert.equal(je['OE-4'].vorher.unklar, undefined);
+  assert.equal(je['OE-4'].vorher.farbnummer, '44');
+  assert.equal(je['OE-4'].bild, 'https://cdn.example/blau.jpg');
+  assert.equal(je['OE-5'].vorher.farbnummer, '55');
+  assert.equal(je['OE-5'].bild, 'https://cdn.example/gelb.jpg');
+  assert.equal(offeneSuche(kunden, 'Testhersteller').treffer.length, 1);
+});
+
+test('Erledigt: Versanddatum aus dem Auftragsfluss; teilweise erledigte Bestellung ist markiert und bleibt in der Suche (Review 29.10.)', () => {
+  const eintrag = (o, l) => ({
+    'gid://shopify/LineItem/11': { status: 'raus', rausAm: '2026-10-20T08:00:00Z' },
+    'gid://shopify/LineItem/21': { status: 'raus', rausAm: '2026-10-19T08:00:00Z', erledigtAm: null },
+    'gid://shopify/LineItem/22': { status: 'erledigt', rausAm: '2026-10-19T08:00:00Z', erledigtAm: '2026-10-21T08:00:00Z' },
+  }[l] || null);
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, eintragVon: eintrag, auftraege: [
+    auftrag(1, '2026-10-01T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')]),
+    auftrag(2, '2026-10-02T09:00:00Z', 'Berta Beispiel', [pos(21, '101'), pos(22, '102')]),
+  ] });
+  const je = Object.fromEntries(r.ausserhalb.map(b => [b.orderName, b]));
+  assert.equal(je['#T1'].teilweise, true, 'Muster 12 liegt noch in der Packliste');
+  assert.equal(je['#T1'].erledigtAm, '2026-10-20T08:00:00Z');
+  assert.equal(je['#T2'].teilweise, false);
+  assert.equal(je['#T2'].erledigtAm, '2026-10-21T08:00:00Z', 'der letzte Schritt zaehlt');
+  assert.deepEqual(r.kunden.map(k => k.bestellungen[0].orderName), ['#T1']);
+});
+
+test('Gesperrtes Muster: Umschlag zu klaeren, kein Aufkleber im Stapeldruck; was schon da ist, zaehlt nicht als gesperrt (w-210)', () => {
+  const sperreVon = p => (p.lineItemId.endsWith('/11') || p.lineItemId.endsWith('/31') ? { imShop: true, seit: '2026-10-28T09:00:00Z' } : p.lineItemId.endsWith('/41') ? { imShop: false, seit: '2026-10-28T09:00:00Z' } : null);
+  const haken = { 'gid://shopify/LineItem/31': { zeit: '2026-10-29T09:00:00Z' } };
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, sperreVon, haken, statusVon: (o, l) => (l.endsWith('/51') ? 'geliefert' : 'bestellt'), auftraege: [
+    auftrag(1, '2026-10-15T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')], { details: { kunde: { name: 'Anna Test', email: 'anna@example.invalid' }, lieferadresse: adresse('Anna Test') } }),
+    auftrag(3, '2026-10-15T09:00:00Z', 'Carl Haken', [pos(31, '101')]),
+    auftrag(4, '2026-10-15T09:00:00Z', 'Dora Offen', [pos(41, '101')]),
+    auftrag(5, '2026-10-15T09:00:00Z', 'Emil Da', [pos(51, '101')]),
+    auftrag(6, '2026-10-15T09:00:00Z', 'Frei Test', [pos(61, '101')]),
+  ] });
+  const je = Object.fromEntries(r.kunden.map(k => [k.name, k]));
+  assert.equal(je['Anna Test'].bereich, 'klaeren');
+  assert.deepEqual(je['Anna Test'].muster.map(m => !!m.gesperrt), [true, false]);
+  assert.equal(je['Anna Test'].email, 'anna@example.invalid');
+  assert.equal(je['Carl Haken'].muster[0].gesperrt, null, 'abgehakt: es ist doch gekommen');
+  assert.equal(je['Carl Haken'].bereich, 'packen');
+  assert.deepEqual(je['Dora Offen'].muster[0].gesperrt, { imShop: false, seit: '2026-10-28T09:00:00Z' }, 'auch eine noch nicht im Shop bestaetigte Sperre kommt nicht');
+  assert.equal(je['Emil Da'].muster[0].gesperrt, null);
+  assert.equal(je['Frei Test'].bereich, 'warten');
+  assert.equal(je['Frei Test'].email, undefined, 'Mailadresse nur, wo sie gebraucht wird');
+  assert.deepEqual(aufkleberFuer(je['Anna Test'], { nurOffen: true }).map(e => e.art || e.sku), ['TV-GR', 'adresse'], 'kein Aufkleber fuer ein Muster, das nicht kommt');
+  assert.deepEqual(aufkleberFuer(je['Anna Test']).map(e => e.art || e.sku), ['TV-SA', 'TV-GR', 'adresse'], 'erneut alles drucken bleibt vollstaendig');
+});
+
+test('Ampel (06.11.): jedes Muster und jeder Umschlag traegt sie, gerechnet mit jetzt des Servers', () => {
+  const eintraege = {
+    'gid://shopify/LineItem/11': { status: 'bestellt', bestelltAm: '2026-10-05T08:00:00Z' },            // 16 Tage: rot
+    'gid://shopify/LineItem/12': { status: 'geliefert', bestelltAm: '2026-10-01T08:00:00Z' },           // da: ruhig
+    'gid://shopify/LineItem/21': { status: 'bestellt', bestelltAm: '2026-10-13T08:00:00Z' },            // 8 Tage: gelb
+    'gid://shopify/LineItem/31': { status: 'bestellt', bestelltAm: '2026-10-19T08:00:00Z' },            // 2 Tage: ruhig
+    'gid://shopify/LineItem/41': { status: 'bestellt', bestelltAm: '2026-10-19T08:00:00Z', beschaffung: { liefertermin: '2026-10-20' } },
+  };
+  const faelle = { 'gid://shopify/LineItem/51': { grund: 'Farbnummer fehlt', seit: '2026-10-16T08:00:00Z' }, 'gid://shopify/LineItem/61': { grund: 'Farbnummer fehlt', seit: '2026-10-21T08:00:00Z' } };
+  const r = musterPackliste({ produkte, schluesselVon, jetzt,
+    eintragVon: (_, li) => eintraege[li] || null,
+    automatikFallVon: (_, li) => faelle[li] || null,
+    versandProbleme: { [packSchluessel(['gid://shopify/Order/7'])]: { problem: 'Shopify nicht erreicht' } },
+    gepackt: { [packSchluessel(['gid://shopify/Order/8'])]: { zeit: '2026-10-20T10:00:00Z' } },
+    auftraege: [
+      auftrag(1, '2026-10-02T09:00:00Z', 'Anna Rot', [pos(11, '101'), pos(12, '102')]),
+      auftrag(2, '2026-10-10T09:00:00Z', 'Berta Gelb', [pos(21, '101')]),
+      auftrag(3, '2026-10-19T09:00:00Z', 'Carl Ruhig', [pos(31, '101')]),
+      auftrag(4, '2026-10-19T09:00:00Z', 'Dora Termin', [pos(41, '101')]),
+      auftrag(5, '2026-10-15T09:00:00Z', 'Emil Haengt', [pos(51, '101')]),
+      auftrag(6, '2026-10-21T07:00:00Z', 'Frieda Neu', [pos(61, '101')]),
+      auftrag(7, '2026-10-19T09:00:00Z', 'Gerd Versand', [pos(71, '101')]),
+      auftrag(8, '2026-10-18T09:00:00Z', 'Hanna Altfall', [pos(81, '101')]),
+    ] });
+  const je = Object.fromEntries(r.kunden.map(k => [k.name, k]));
+  const kurz = a => [a.stufe, a.wort];
+  assert.deepEqual(je['Anna Rot'].muster.map(m => kurz(m.ampel)), [['rot', 'Überfällig · 16 Tage beim Lieferanten'], [null, '']]);
+  assert.deepEqual(kurz(je['Anna Rot'].ampel), ['rot', 'Überfällig · 16 Tage beim Lieferanten'], 'die dringendste Stufe seiner Muster');
+  assert.deepEqual(kurz(je['Berta Gelb'].ampel), ['gelb', 'Nachhaken · 8 Tage beim Lieferanten']);
+  assert.deepEqual(kurz(je['Carl Ruhig'].ampel), [null, ''], 'wartet 2 Tage: kein Befund mehr (frueher Bernstein ab 2 Tagen)');
+  assert.equal(je['Dora Termin'].muster[0].liefertermin, '2026-10-20');
+  assert.deepEqual(kurz(je['Dora Termin'].ampel), ['rot', 'Termin 20.10. vorbei']);
+  assert.equal(je['Emil Haengt'].muster[0].automatikGrund, 'Farbnummer fehlt', 'Grund aus dem Klaerfall');
+  assert.equal(je['Emil Haengt'].muster[0].haengtWerktage, 3, 'Fr 16.10. bis Mi 21.10.: Mo, Di, Mi');
+  assert.deepEqual(kurz(je['Emil Haengt'].ampel), ['rot', 'Hängt · 3 Werktage']);
+  assert.equal(je['Frieda Neu'].muster[0].haengtWerktage, undefined, 'seit heute: noch kein Haengen');
+  assert.deepEqual(kurz(je['Frieda Neu'].ampel), ['gelb', 'Nicht bestellt']);
+  assert.deepEqual(kurz(je['Gerd Versand'].ampel), ['rot', 'Versand nicht eingetragen']);
+  assert.equal(je['Gerd Versand'].ampel.titel, 'Shopify nicht erreicht');
+  assert.deepEqual([je['Hanna Altfall'].bereich, ...kurz(je['Hanna Altfall'].ampel)], ['gepackt', 'rot', 'Nicht eingetragen']);
+  // Ohne Fall-Lieferant bleibt der alte Weg (nur Grund, kein Beginn): ohne Haengen zaehlt die Kundenbestellung.
+  const alt = musterPackliste({ produkte, schluesselVon, jetzt, automatikGrundVon: () => 'Testgrund', auftraege: [auftrag(1, '2026-10-02T09:00:00Z', 'Anna Test', [pos(11, '101')]), auftrag(2, '2026-10-19T09:00:00Z', 'Berta Test', [pos(21, '101')])] });
+  assert.deepEqual(alt.kunden.map(k => [k.muster[0].automatikGrund, k.muster[0].ampel.stufe]), [['Testgrund', 'rot'], ['Testgrund', 'gelb']], '19 Tage rot, 2 Tage gelb');
+});
+
+test('Nie bestellt, ohne Musterautomatik: ab 7 Tagen rot wie das To-do auf Heute (Review #1975)', () => {
+  const stichtag = new Date('2026-11-06T10:00:00Z');
+  const r = musterPackliste({ produkte, schluesselVon, jetzt: stichtag, auftraege: [
+    auftrag(1, '2026-10-26T09:00:00Z', 'Anna Lange', [pos(11, '101')]),
+    auftrag(2, '2026-10-30T09:00:00Z', 'Berta Sieben', [pos(21, '101')]),
+    auftrag(3, '2026-10-31T09:00:00Z', 'Carl Sechs', [pos(31, '101')]),
+  ] });
+  const je = Object.fromEntries(r.kunden.map(k => [k.name, k]));
+  const kurz = a => [a.stufe, a.wort];
+  assert.equal(je['Anna Lange'].muster[0].offenTage, 11);
+  assert.deepEqual(kurz(je['Anna Lange'].muster[0].ampel), ['rot', 'Nicht bestellt · 11 Tage'], 'Muster rot');
+  assert.deepEqual(kurz(je['Anna Lange'].ampel), ['rot', 'Nicht bestellt · 11 Tage'], 'Umschlag rot');
+  assert.deepEqual(kurz(je['Berta Sieben'].ampel), ['rot', 'Nicht bestellt · 7 Tage']);
+  assert.deepEqual(kurz(je['Carl Sechs'].ampel), ['gelb', 'Nicht bestellt'], '6 Tage: noch gelb');
+  // Haengt das Muster bei der Automatik, gilt deren Grund und keine zweite Zaehlung.
+  const mitFall = musterPackliste({ produkte, schluesselVon, jetzt: stichtag,
+    automatikFallVon: () => ({ grund: 'Farbnummer fehlt', seit: '2026-11-02T08:00:00Z' }),
+    auftraege: [auftrag(1, '2026-10-26T09:00:00Z', 'Anna Lange', [pos(11, '101')])] });
+  const m = mitFall.kunden[0].muster[0];
+  assert.deepEqual([m.haengtWerktage, m.offenTage, m.ampel.wort], [4, undefined, 'Hängt · 4 Werktage']);
+});
+
+test('Nachbestellung: nachtraeglich hinzugefuegtes Muster traegt das Datum der Bestellbearbeitung (Wunsch 06.11.)', async () => {
+  const r = musterPackliste({ produkte, schluesselVon, jetzt,
+    auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102', { nachbestelltAm: '2026-10-21T13:12:22Z' }), pos(13, '101', { nachbestelltAm: 'kaputt' })])] });
+  assert.deepEqual(r.kunden[0].muster.map(m => m.nachbestelltAm), [null, '2026-10-21T13:12:22Z', null]);
+});

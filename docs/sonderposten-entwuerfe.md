@@ -17,8 +17,13 @@ Der Pilotplan legt deshalb pro vorbereiteter Position vier **DRAFTs** an:
 - Kettelteppich-Angebot: derselbe Materialpreisweg plus vorhandener Kettelservice.
 
 Bei 4 m Nennbreite entspricht eine Quelleinheit 25 cm Rollenlaenge,
-bei 5 m sind es 20 cm. Das vorbereitete Raster deckt bis 1000 cm ab;
-es behauptet weder eine vorhandene Restlaenge noch eine fertige Maßfreigabe.
+bei 5 m sind es 20 cm, bei 2 m 50 cm. Bei 3 m (seit 06.11.2026 wie 2 m
+zugelassen) sind es 33⅓ cm: die Stufen heissen „33 cm“, „66 cm“, „100 cm“ …
+und verbrauchen 1, 2, 3 … m². Abgerundet wird die Laenge, nie der Verbrauch
+(`zuschnittRaster` in `operations/lib/restposten-entwurf.mjs`). Andere Breiten
+und TPR-Nummern unter vier Ziffern lehnt der Planer ab. Das vorbereitete Raster
+deckt bis 1000 cm ab; es behauptet weder eine vorhandene Restlaenge noch eine
+fertige Maßfreigabe.
 
 ## Sperren und Preise
 

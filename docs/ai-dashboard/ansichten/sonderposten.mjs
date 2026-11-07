@@ -20,17 +20,25 @@ import { render } from '../kern/render.mjs';
 import { emptyState, stoerungState } from '../bausteine/karten.mjs';
 import { meldungNachBuchung, rollenRechnung, inventurRechnung, meldungNachInventur } from '../lib/sonderposten.mjs';
 import { neueKennung } from '../lib/druckliste.mjs';
+import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
+import { rollenEtikett, rollenLink, rollenNummer } from '../lib/sonderposten.mjs';
+import { freieEtiketten } from '../lib/freie-etiketten.mjs';
 
-export const sonderposten = { daten: null, laedt: false };
+export const sonderposten = { daten: null, laedt: false, am: 0, geoeffnet: '' };
 
-function ensureSonderposten({ neu = false } = {}) {
-  if (sonderposten.laedt || (sonderposten.daten && !neu)) return;
+// "Heute" fragt hoechstens alle 5 Minuten nach - die Liste kommt live aus Shopify.
+const HALTBAR_MS = 5 * 60_000;
+
+export function ensureSonderposten({ neu = false, alt = false } = {}) {
+  if (sonderposten.laedt) return;
+  if (sonderposten.daten && !neu && !(alt && Date.now() - sonderposten.am > HALTBAR_MS)) return;
   sonderposten.laedt = true;
   fetchEinkauf('/api/sonderposten/liste').then(d => {
     sonderposten.daten = d;
+    sonderposten.am = Date.now();
   }).finally(() => {
     sonderposten.laedt = false;
-    if (state.route.view === 'sonderposten') render();
+    if (['sonderposten', 'heute'].includes(state.route.view)) render();
   });
 }
 
@@ -99,6 +107,9 @@ function karte(e) {
     : '';
   const inventur = e.typ === 'rolle' && !istNurLesend() && state.session?.benutzer?.rolle !== 'mitarbeiter'
     ? `<button type="button" class="btn btn-sm" data-sp-bestand="${esc(e.id)}">Restlänge eintragen…</button>` : '';
+  // QR-Etikett an die Rolle (Inhaber 2026-11-06): Handy-Kamera drauf, und "Ladenverkauf buchen" ist offen.
+  const qr = e.typ === 'rolle' && !istNurLesend()
+    ? `<button type="button" class="btn btn-sm" data-sp-qr="${esc(e.id)}">QR-Etikett drucken…</button>` : '';
   return `<article class="sp-karte${e.verkaufbar ? '' : ' sp-weg'}">
     ${bild}
     <div class="sp-inhalt">
@@ -121,6 +132,7 @@ function karte(e) {
         : `<span class="sp-preis">${e.preis === null ? '–' : `${esc(fmtPreis(e.preis))} €`}</span>`}
       ${knopf}
       ${inventur}
+      ${qr}
     </div>
   </article>`;
 }
@@ -143,11 +155,24 @@ export function viewSonderposten() {
       <button type="button" class="btn btn-sm" data-fehler-melden style="margin-left:8px">Fehler melden</button></div>`;
   }
 
+  // Die Zahl steht nur hier; bei 0 sagt es der Leerzustand darunter, nicht zweimal.
+  const stand = `<p class="small muted sp-stand">${anzahlVerfuegbar ? `${anzahlVerfuegbar} verfügbar · ` : ''}Stand ${esc(fmtDateTime(d.abgerufenAm))}</p>`;
+  // Vom QR-Etikett: genau diese Rolle, der Buchungsdialog oeffnet sich einmal von selbst.
+  const nr = state.route.params.get('rolle') || '';
+  if (nr) {
+    const e = d.eintraege.find(x => x.typ === 'rolle' && rollenNummer(x.id) === nr);
+    if (!e) return kopf + emptyState('Diese Rolle gibt es nicht mehr.', 'Sie ist leer, archiviert oder das Etikett ist alt. Alle Rollen stehen in der Liste.') + '<p><a class="btn btn-sm" href="#/sonderposten">Alle Sonderposten</a></p>';
+    if (e.verkaufbar && !istNurLesend() && sonderposten.geoeffnet !== nr) {
+      sonderposten.geoeffnet = nr;
+      setTimeout(() => { if (state.route.view === 'sonderposten' && state.route.params.get('rolle') === nr && !$('#dialogRoot form')) oeffneRollenDialog(e); }, 0);
+    }
+    return kopf + stand + `<div class="sp-liste">${karte(e)}</div><p><a class="btn btn-sm" href="#/sonderposten">Alle Sonderposten</a></p>`;
+  }
+  sonderposten.geoeffnet = '';
+
   const treffer = d.eintraege.filter(e => passtZurSuche(e, q));
   const da = treffer.filter(e => e.verkaufbar);
   const weg = treffer.filter(e => !e.verkaufbar);
-  // Die Zahl steht nur hier; bei 0 sagt es der Leerzustand darunter, nicht zweimal.
-  const stand = `<p class="small muted sp-stand">${anzahlVerfuegbar ? `${anzahlVerfuegbar} verfügbar · ` : ''}Stand ${esc(fmtDateTime(d.abgerufenAm))}</p>`;
 
   if (!d.eintraege.length) {
     return kopf + emptyState('Noch keine Sonderposten angelegt.', 'Neue Stücke legt der Inhaber in Shopify aus der Vorlage „VORLAGE Sonderposten“ an.');
@@ -386,9 +411,33 @@ function oeffneInventurDialog(e) {
   });
 }
 
+/**
+ * QR-Etikett fuer eine Rolle auf dem Niimbot B1 (50 x 50): Name, Breite und ein QR-Code,
+ * der im Dashboard direkt "Ladenverkauf buchen" fuer genau diese Rolle oeffnet. Die Adresse
+ * ist die des Dashboards im Firmen-/Tailnetz (netzAdresse vom Server); am Mac selbst
+ * (127.0.0.1) waere die eigene Adresse vom Handy aus nicht erreichbar.
+ */
+function oeffneQrEtikett(e) {
+  const url = rollenLink(e.id, { netzAdresse: sonderposten.daten?.netzAdresse, ort: location });
+  if (!url) { toast('Für den QR-Code fehlt die Netzadresse des Dashboards. Bitte das Dashboard über die Firmenadresse öffnen.'); return; }
+  oeffneEtikettenDruck({
+    etiketten: (({ text, zeilenSchrift }) => freieEtiketten(text, 1, { url, zeilenSchrift }))(rollenEtikett(e)),
+    titel: 'QR-Etikett für die Rolle',
+    allowEditing: false,
+    mehrfach: true,
+    hinweis: `Gut sichtbar an die Rolle kleben. Handy-Kamera auf den Code: „Ladenverkauf buchen“ öffnet sich für diese Rolle. Der Code führt zu ${url}`,
+  });
+}
+
 /** Klicks der Ansicht. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function sonderpostenKlick(ev) {
   if (ev.target.closest('[data-sp-neu]')) { ensureSonderposten({ neu: true }); render(); return true; }
+  const qr = ev.target.closest('[data-sp-qr]');
+  if (qr) {
+    const e = sonderposten.daten?.eintraege?.find(x => x.id === qr.dataset.spQr);
+    if (e) oeffneQrEtikett(e);
+    return true;
+  }
   const inventur = ev.target.closest('[data-sp-bestand]');
   if (inventur) {
     const e = sonderposten.daten?.eintraege?.find(x => x.id === inventur.dataset.spBestand);

@@ -13,6 +13,7 @@ import { $, esc, fmtDate, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
+import { aktualisiereNavZahlen } from '../../kern/navigation.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { kunden, telLink } from './gemeinsam.mjs';
 import {
@@ -33,7 +34,9 @@ export function ensureServiceanfragen() {
   fetchEinkauf('/api/kunden/serviceanfragen').then(d => {
     const vorher = JSON.stringify(kunden.serviceanfragen);
     kunden.serviceanfragen = d; kunden.serviceanfragenAm = Date.now(); kunden.loadingServiceanfragen = false;
+    // Sonst nur die Menuezahl "Kunden" nachziehen - sie steht auf jeder Seite.
     if (['kunden', 'heute'].includes(state.route.view) && JSON.stringify(d) !== vorher) render();
+    else aktualisiereNavZahlen();
   });
 }
 

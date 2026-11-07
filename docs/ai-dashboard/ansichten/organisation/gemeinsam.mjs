@@ -11,6 +11,7 @@ import { esc, fmtDate } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
+import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 
 export const org = {
   liste: null, loading: false, key: null, listeFehler: null, listeAm: 0, listeAbruf: 0,
@@ -191,7 +192,7 @@ export function orgZeile(e, { bereich = '' } = {}) {
   const prioKlasse = e.prioritaet === 'URGENT' ? 'crit' : e.prioritaet === 'HIGH' ? 'gap' : 'plain';
   const merkmale = [
     e.verknuepft?.art === 'kunde' && e.verknuepft.id
-      ? `<a href="#/kunden?kunde=${encodeURIComponent(e.verknuepft.id)}" onclick="event.stopPropagation()">${esc(e.verknuepft.titel || 'Kunde')}</a>`
+      ? `<a href="#/kunden?kunde=${kundenLinkWert(e.verknuepft.id)}" onclick="event.stopPropagation()">${esc(e.verknuepft.titel || 'Kunde')}</a>`
       : '',
     e.bereich ? esc(e.bereich) : '',
     e.verantwortlich ? `für ${esc(e.verantwortlich)}` : (e.typ === 'TASK' ? '<span class="muted">unzugewiesen</span>' : ''),

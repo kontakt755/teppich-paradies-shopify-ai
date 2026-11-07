@@ -80,8 +80,14 @@ export function meldungNachInventur(antwort) {
   const er = antwort.ergebnis || {};
   if (er.gebucht !== true || !er.ok || er.gegenprobe !== 'ok') return { erfolg: false, klasse: 'warn', neuLaden: true, text: 'Die Bestandskorrektur wurde gesendet. Die Gegenprobe ist nicht eindeutig – bitte neu laden und den Bestand in Shopify prüfen.' };
   const basis = `Restlänge gespeichert: physisch ${er.bestandNachher} m² · jetzt ${zahlDe(er.restLaengeM)} m (${er.verfuegbarNachher} m²) frei verfügbar.`;
-  if (er.sofortkauf === 'fehlgeschlagen') return { erfolg: false, klasse: 'warn', neuLaden: true, text: `${basis} Die Rolle steht online aber noch auf „Anfrage“ – bitte in Shopify die Vorlage „rolle“ wählen.` };
-  if (er.sofortkauf === 'freigeschaltet') return { erfolg: true, klasse: null, neuLaden: true, text: `${basis} Online ist sie jetzt wieder sofort bestellbar.` };
+  if (er.sofortkauf === 'fehlgeschlagen') return { erfolg: false, klasse: 'warn', neuLaden: true, text: `${basis} Die Rolle steht aber noch auf „Anfrage“ – bitte in Shopify die Vorlage „rolle“ wählen.` };
+  if (er.sofortkauf === 'unklar') return { erfolg: false, klasse: 'warn', neuLaden: true, text: `${basis} Ob die Rolle von „Anfrage“ auf Sofortkauf umgestellt wurde, ist unklar – bitte neu laden und in Shopify prüfen, ob die Vorlage „rolle“ eingestellt ist.` };
+  if (er.sofortkauf === 'freigeschaltet') {
+    // Bestellbar ist nur ein aktives Produkt; die Vorlage sagt darueber nichts.
+    if (er.produktStatus === 'ACTIVE') return { erfolg: true, klasse: null, neuLaden: true, text: `${basis} Online ist sie jetzt wieder sofort bestellbar.` };
+    const stand = er.produktStatus === 'DRAFT' ? 'Das Produkt ist noch Entwurf' : 'Das Produkt ist in Shopify nicht als aktiv bestätigt';
+    return { erfolg: true, klasse: null, neuLaden: true, text: `${basis} Die Vorlage steht jetzt auf Sofortkauf. ${stand} – online bestellbar erst, wenn es dort aktiv ist.` };
+  }
   return { erfolg: true, klasse: null, neuLaden: true, text: basis };
 }
 
@@ -136,10 +142,84 @@ export function meldungNachBuchung(antwort) {
   if (status === 401) return { erfolg: false, klasse: 'crit', text: 'Die Anmeldung ist abgelaufen – bitte neu anmelden. Gebucht wurde nichts.', neuLaden: false };
   if (antwort.grund === 'recht-fehlt') return { erfolg: false, klasse: 'warn', text: antwort.text, neuLaden: false };
   if (antwort.grund === 'unklar') return { erfolg: false, klasse: 'warn', text: antwort.text, neuLaden: true };
+  // Rolle ohne Recht (z. B. Mitarbeiter bei "Restlänge eintragen"): der Server lehnt vor jedem
+  // Shopify-Aufruf ab, also ist sicher nichts geaendert. Seit 06.11. sehen Mitarbeiter die Seite.
+  if (status === 403) return { erfolg: false, klasse: 'crit', text: `${antwort.text || 'Dafür fehlt dir die Berechtigung.'} Am Bestand wurde nichts geändert.`, neuLaden: false };
   if (status === 409) return { erfolg: false, klasse: 'crit', text: antwort.text, neuLaden: true };
   if (status >= 500 && !antwort.text) {
     // Fehlerantwort ohne Text (z. B. von einem Proxy unterwegs): Ausgang offen.
     return { erfolg: false, klasse: 'warn', text: TEXT_OHNE_ANTWORT, neuLaden: true };
   }
   return { erfolg: false, klasse: 'crit', text: antwort.text || 'Das hat nicht geklappt. Bitte die Liste neu laden und den Bestand prüfen.', neuLaden: status >= 500 };
+}
+
+/** "gid://shopify/Product/123" -> "123" (Kennung im QR-Link, kurz und ohne Sonderzeichen). */
+export function rollenNummer(gid) {
+  return String(gid ?? '').match(/(\d+)$/)?.[1] || '';
+}
+
+const LOKAL = /^(127\.0\.0\.1|localhost|\[::1\])$/i;
+
+/**
+ * Adresse, die der QR-Code an der Rolle traegt: #/sonderposten?rolle=<nummer>. Basis ist die
+ * Adresse, unter der das Dashboard gerade offen ist - ausser am Mac selbst (127.0.0.1), denn
+ * die erreicht kein Handy; dann die Netzadresse vom Server. Ohne beide: ''.
+ */
+export function rollenLink(gid, { netzAdresse = null, ort = null } = {}) {
+  const nr = rollenNummer(gid);
+  if (!nr) return '';
+  let basis = '';
+  if (ort?.origin && ort?.hostname && !LOKAL.test(ort.hostname)) basis = ort.origin;
+  else if (netzAdresse && /^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(netzAdresse)) basis = netzAdresse;
+  return basis ? `${basis}/#/sonderposten?rolle=${nr}` : '';
+}
+
+/**
+ * Text des QR-Etiketts: "RESTROLLE", Name ohne Zusatz ("Antigua 40 grün – Restposten, 400 cm"
+ * -> "Antigua 40 grün"), Breite und was der Code tut. Je Zeile eine Zeile auf dem Aufkleber.
+ */
+export function rollenEtikettText(e) {
+  return rollenEtikett(e).text;
+}
+
+/**
+ * Text und feste Schrift je Zeile (mm, zeilenSchluessel "0:<zeile>" aus lib/freie-etiketten.mjs):
+ * der Name bleibt automatisch und damit am groessten, die anderen Zeilen klein und gleich.
+ */
+export function rollenEtikett(e) {
+  const name = String(e?.titel ?? '').split(/\s+[–-]\s+/)[0].trim() || 'Restrolle';
+  const breite = Number(e?.breiteM);
+  const zeilen = [['RESTROLLE', 4], [name, 0], [Number.isFinite(breite) && breite > 0 ? `${String(breite).replace('.', ',')} m breit` : '', 4], ['Verkauf: scannen + buchen', 3]]
+    .filter(([t]) => t);
+  const zeilenSchrift = {};
+  zeilen.forEach(([, mm], i) => { if (mm) zeilenSchrift[`0:${i}`] = mm; });
+  return { text: zeilen.map(([t]) => t).join('\n'), zeilenSchrift };
+}
+
+const zahl1 = n => Number(n).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+const tagMonat = iso => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`; };
+
+/** Zahlen fuer die Zeile "Restrollen" auf Heute; null, wenn es keine verkaufbare Rolle gibt oder die Liste fehlt. */
+export function restrollenStand(d) {
+  if (!d?.verfuegbar || !Array.isArray(d.eintraege)) return null;
+  const rollen = d.eintraege.filter(e => e.typ === 'rolle' && e.verkaufbar);
+  if (!rollen.length) return null;
+  const qm = rollen.reduce((s, e) => s + (Number(e.bestand) || 0), 0);
+  const meter = rollen.reduce((s, e) => s + (Number(e.laengeM) || 0), 0);
+  return { anzahl: rollen.length, qm, meter, laden: d.ladenStand || null };
+}
+
+/** Text und Ton der Zeile: Bernstein nur, wenn das Nachmessen faellig ist. */
+export function restrollenText(st) {
+  const teile = [`${st.anzahl} ${st.anzahl === 1 ? 'Rolle' : 'Rollen'} · noch ${zahl1(st.meter)} m (${zahl1(st.qm)} m²)`];
+  const l = st.laden;
+  let warn = false;
+  if (l) {
+    teile.push(l.letzteBuchung ? `Ladenbuchungen 30 Tage: ${l.buchungen30} (zuletzt ${tagMonat(l.letzteBuchung)})` : 'im Laden noch nie gebucht');
+    if (l.nachmessenFaellig) {
+      warn = true;
+      teile.push(l.letzteInventur ? `nachmessen fällig (zuletzt ${tagMonat(l.letzteInventur)})` : 'nachmessen fällig');
+    } else if (l.nachmessenAb) teile.push(`nachmessen ab ${tagMonat(l.nachmessenAb)}`);
+  }
+  return { text: teile.join(' · '), warn };
 }

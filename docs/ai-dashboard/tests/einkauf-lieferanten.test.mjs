@@ -46,7 +46,7 @@ test('Stufe, Wartezeit und Warnstufe einer Position', () => {
 test('lieferantenKarten: zaehlt je Stufe, Muster getrennt, erledigt zaehlt nicht als offen', () => {
   const k = karten();
   const a = k.find(x => x.id === 'A');
-  assert.deepEqual(a.zahlen, { zuBestellen: 1, bestellt: 1, eingetroffen: 1, musterOffen: 1, musterLaufend: 0 });
+  assert.deepEqual(a.zahlen, { zuBestellen: 1, bestellt: 1, eingetroffen: 1, musterOffen: 1, musterGesperrt: 0, musterLaufend: 0 });
   assert.equal(a.offenGesamt, 4);
   assert.equal(a.ware.erledigt.length, 1);
   assert.equal(a.name, 'Lieferant A');

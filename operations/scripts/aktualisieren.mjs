@@ -187,14 +187,19 @@ query OpsLieferanten {
   }
 }`;
 
-function quellvarianteIdsAus(orders) {
+export function quellvarianteIdsAus(orders) {
   const ids = new Set();
+  const dazu = wert => {
+    const w = String(wert ?? '').trim();
+    if (w) ids.add(/^\d+$/.test(w) ? `gid://shopify/ProductVariant/${w}` : w);
+  };
   for (const o of orders) {
     for (const li of o.lineItems?.nodes ?? []) {
-      const wert = (li.customAttributes ?? []).find(a => a.key === '_Quellvariante_ID')?.value;
-      if (!wert) continue;
-      const id = /^\d+$/.test(String(wert).trim()) ? `gid://shopify/ProductVariant/${String(wert).trim()}` : String(wert).trim();
-      ids.add(id);
+      dazu((li.customAttributes ?? []).find(a => a.key === '_Quellvariante_ID')?.value);
+      // Nachtraeglich per Bestellbearbeitung eingefuegte Muster (z. B. Ersatzfarbe) haben keine
+      // Properties; dann traegt die Mustervariante die Zuordnung im Metafeld einkauf.quellvariante,
+      // das resolve.mjs ohnehin zuerst nimmt. Ohne diese ID fehlt die Quellvariante im Export.
+      dazu((li.variant?.metafields?.nodes ?? []).find(m => m.key === 'quellvariante' && (m.namespace ?? 'einkauf') === 'einkauf')?.value);
     }
   }
   return [...ids];
@@ -218,7 +223,7 @@ async function teilBestellungen(dir) {
   // siehe baueRelevantQuery in sync/orders.mjs. Vollstaendig paginiert, kein
   // festes Limit mehr (vorher: letzte 50 Bestellungen, seit 2026-09 zu wenig
   // fuer den taeglichen Betrieb).
-  const { orders, seiten, gesammelt } = await fetchOrdersRelevant(proxy);
+  const { orders, seiten, gesammelt, agreements } = await fetchOrdersRelevant(proxy);
   if (gesammelt) throw new Error('Kein Zugang (Sammelmodus) - Bestellungen konnten nicht geladen werden');
 
   // Quellvarianten der Muster ohne festes Limit: die Admin API nimmt bis zu
@@ -258,7 +263,7 @@ async function teilBestellungen(dir) {
 
   return {
     anzahl: orders.length,
-    hinweis: `${seiten} Seite(n) · ${quellvarianten.length}/${ids.length} Quellvarianten der Muster geladen · ${erfuellung.versendet} versendet · ${erfuellung.erstattet} erstattet`,
+    hinweis: `${seiten} Seite(n) · ${quellvarianten.length}/${ids.length} Quellvarianten der Muster geladen · ${erfuellung.versendet} versendet · ${erfuellung.erstattet} erstattet${agreements?.fehler ? ` · Nachbestellungen nicht geladen: ${agreements.fehler}` : ''}`,
   };
 }
 

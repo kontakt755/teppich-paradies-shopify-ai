@@ -323,9 +323,11 @@ export async function korrigiereRollenbestand(proxy, { produktId, inventoryItemI
   }
   const nachher = await leseOderNull(proxy, produktId, standortId);
   const bestandOk = Boolean(nachher?.getrackt && nachher.ueberverkaufGesperrt && nachher.bestandVorhanden === neu && nachher.bestand >= 0);
-  const sofortkauf = bestandOk ? await schalteSofortkauf(proxy, nachher) : null;
+  const sofortkauf = bestandOk ? await schalteSofortkauf(proxy, nachher, standortId) : null;
   return {
     typ: 'inventur', gebucht: true, sofortkauf,
+    // Der Vorlagenwechsel allein macht nichts bestellbar: ein Entwurf bleibt online unsichtbar.
+    produktStatus: nachher?.status ?? null,
     ok: bestandOk,
     gegenprobe: nachher ? 'ok' : 'fehlgeschlagen',
     titel: vorher.titel, operationId, referenz, laengeM: laenge, breiteM: vorher.breiteM,
@@ -337,19 +339,22 @@ export async function korrigiereRollenbestand(proxy, { produktId, inventoryItemI
 
 /**
  * Nach einer erfolgreichen Inventur: Restrolle auf Anfrage mit freiem Bestand wieder auf
- * Sofortkauf stellen. Ergebnis: null (nichts zu tun), 'freigeschaltet' (gegengeprueft) oder
- * 'fehlgeschlagen' - der Bestand ist dann trotzdem gespeichert, nur die Vorlage nicht.
+ * Sofortkauf stellen. Ergebnis: null (nichts zu tun), 'freigeschaltet' (gegengeprueft),
+ * 'fehlgeschlagen' (Vorlage steht nachweislich noch auf Anfrage) oder 'unklar' (keine Antwort
+ * und keine Gegenprobe). Der Bestand ist in allen Faellen gespeichert. Ohne klare Antwort
+ * entscheidet erneutes Lesen: die Umstellung kann trotz verlorener Antwort durch sein.
  */
-async function schalteSofortkauf(proxy, eintrag) {
+async function schalteSofortkauf(proxy, eintrag, standortId) {
   if (eintrag?.typ !== 'rolle' || eintrag.vorlage !== VORLAGE_ANFRAGE || !(eintrag.bestand > 0)) return null;
   try {
     const antwort = await proxy.execute(SOFORTKAUF_MUTATION, { product: { id: eintrag.id, templateSuffix: VORLAGE_SOFORTKAUF } });
     const r = antwort?.productUpdate;
-    if (!r || r.userErrors?.length || r.product?.templateSuffix !== VORLAGE_SOFORTKAUF) return 'fehlgeschlagen';
-    return 'freigeschaltet';
-  } catch {
-    return 'fehlgeschlagen';
-  }
+    if (r?.userErrors?.length) return 'fehlgeschlagen';
+    if (r?.product?.templateSuffix === VORLAGE_SOFORTKAUF) return 'freigeschaltet';
+  } catch { /* Ausgang offen, die Gegenprobe unten klaert ihn */ }
+  const pruef = await leseOderNull(proxy, eintrag.id, standortId);
+  if (!pruef) return 'unklar';
+  return pruef.vorlage === VORLAGE_SOFORTKAUF ? 'freigeschaltet' : 'fehlgeschlagen';
 }
 
 /** Alle Sonderposten (ohne Vorlagen und archivierte), neueste Aenderung zuerst. */
@@ -647,5 +652,41 @@ export async function verkaufeVonRolle(proxy, { produktId, inventoryItemId = nul
     bestandNachher: nachher ? nachher.bestand : null,
     restLaengeM: nachher ? nachher.laengeM : null,
     eintrag: nachher,
+  };
+}
+
+/**
+ * Laden-Stand der Restrollen aus dem Protokoll (Inhaber 2026-11-06: Laden und Shop immer
+ * synchron). Zaehlt die Ladenbuchungen ("Ladenverkauf buchen") der letzten 30 Tage und
+ * nennt die letzte Buchung und die letzte Nachmessung ("Restlaenge eintragen"). Daraus
+ * zeigt "Heute", ob im Laden ueberhaupt gebucht wird und wann wieder nachgemessen werden
+ * muss. Unklare Buchungen zaehlen nicht mit - ihr Ergebnis ist offen.
+ *
+ * @param {Array<{zeitpunkt: string, aktion: string}>} eintraege - Protokollzeilen, beliebige Reihenfolge
+ * @param {{jetzt?: Date, ersteMessung?: string}} [opt] - ersteMessung: Messung vor dem Protokoll
+ *   (die gemessenen Laengen vom 28.10.2026 kamen direkt in Shopify, nicht ueber das Dashboard)
+ */
+export const NACHMESSEN_TAGE = 30;
+export const ERSTE_MESSUNG = '2026-10-28T12:00:00.000Z';
+export function ladenStandAusProtokoll(eintraege = [], { jetzt = new Date(), ersteMessung = ERSTE_MESSUNG } = {}) {
+  const tag = 24 * 60 * 60 * 1000;
+  const grenze = jetzt.getTime() - 30 * tag;
+  let letzteBuchung = null;
+  let letzteInventur = ersteMessung || null;
+  let buchungen30 = 0;
+  for (const e of eintraege) {
+    const t = Date.parse(e?.zeitpunkt);
+    if (!Number.isFinite(t)) continue;
+    if (e.aktion === 'sonderposten-rolle-im-laden-verkauft') {
+      if (t >= grenze) buchungen30++;
+      if (!letzteBuchung || t > Date.parse(letzteBuchung)) letzteBuchung = e.zeitpunkt;
+    } else if (e.aktion === 'sonderposten-rollenbestand') {
+      if (!letzteInventur || t > Date.parse(letzteInventur)) letzteInventur = e.zeitpunkt;
+    }
+  }
+  const nachmessenAb = letzteInventur ? new Date(Date.parse(letzteInventur) + NACHMESSEN_TAGE * tag).toISOString() : null;
+  return {
+    buchungen30, letzteBuchung, letzteInventur, nachmessenAb,
+    nachmessenFaellig: !nachmessenAb || jetzt.getTime() >= Date.parse(nachmessenAb),
   };
 }

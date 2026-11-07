@@ -26,9 +26,11 @@ import path from 'node:path';
 import os from 'node:os';
 import { UNGEKLAERT, formatDe } from './umrechnung.mjs';
 import { ROUTE } from './route.mjs';
+import { istLagerware } from '../../docs/ai-dashboard/lib/lieferweg.mjs';
 import { positionKey, filterGruppe } from './auftragsstatus.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 import { KETTEL_PUFFER_CM, kettelZuschnitt, wirdGekettelt } from './kettelpuffer.mjs';
+import { WARTESCHWELLEN } from '../../docs/ai-dashboard/lib/ampel.mjs';
 
 export { KETTEL_PUFFER_CM, kettelZuschnitt };
 
@@ -38,17 +40,15 @@ export const MUSTER_LIEFERUNG = Object.freeze(['kunde', 'laden']);
 // ungekettelt dorthin, wir ketteln dort guenstiger und liefern selbst bzw. verschicken von dort.
 export const WARE_LIEFERUNG = Object.freeze(['kunde', 'laden', 'kettler']);
 /** PLZ-Bereiche, in die wir selbst liefern koennen: Berlin (10-14) und unser Umland (16). */
-const KETTLER_NAH_PLZ = /^1[0-46]/;
+export const KETTLER_NAH_PLZ = /^1[0-46]/;
 
 /**
  * Wartezeit-Schwellen: ab 7 Tagen beim Lieferanten nachhaken, ab 14 Tagen ist
- * es ein Problem. Dieselben Werte wie AF_WARTE_WARN / AF_WARTE_CRIT im
- * Frontend (docs/ai-dashboard) - das ist ein Browser-Skript und laesst sich
- * hier nicht importieren; operations/tests/lieferanten.test.mjs prueft, dass
- * beide Seiten dieselben Zahlen tragen.
+ * es ein Problem. Die Werte stehen einmal in docs/ai-dashboard/lib/ampel.mjs
+ * (WARTESCHWELLEN) und gelten im Browser und hier gleich.
  */
-export const WARTE_NACHHAKEN_TAGE = 7;
-export const WARTE_PROBLEM_TAGE = 14;
+export const WARTE_NACHHAKEN_TAGE = WARTESCHWELLEN.nachhakenTage;
+export const WARTE_PROBLEM_TAGE = WARTESCHWELLEN.problemTage;
 
 /**
  * Obergrenze fuer den ganzen mailto:-Link. Es gibt keine genormte Grenze;
@@ -362,6 +362,9 @@ function schlankePosition(pos, statusAlle, jetzt) {
     ohneLieferant: !!pos.istMuster && musterOhneLieferant(pos),
     // Additiv: Lagerplatz, wenn das Muster aus dem Musterlager kommt (musterlager.mjs).
     musterLager: pos.musterLager ? { artLabel: pos.musterLager.artLabel, ort: pos.musterLager.ort } : null,
+    // Additiv: Ware aus eigener Lagerrolle (lagerware.mjs bzw. Vermerk "aus Lager") - nie beim Lieferanten bestellen.
+    lagerware: istLagerware(pos, eintrag),
+    lagerHinweis: istLagerware(pos, eintrag) ? pos.lagerHinweis ?? null : null,
     lieferantUrl: geklaert(pos.lieferantUrl),
     status,
     gruppe: GRUPPE_FELD[filterGruppe(status)] ?? 'erledigt',
@@ -392,6 +395,9 @@ function sammle(modell, statusAlle, jetzt) {
         const s = schlankePosition(pos, statusAlle, jetzt);
         if (!ziel[art][s.gruppe]) continue; // erledigt
         if (s.gruppe === 'zuBestellen' && s.ohneLieferant) { ziel[art].eigenerBestand.push(s); continue; }
+        // Lagerware schneiden wir selbst zu: weder "zu bestellen" noch "beim Lieferanten nachhaken" -
+        // auch nicht, wenn sie (vor dem 06.11.) versehentlich als bestellt markiert wurde.
+        if (s.lagerware && ['zuBestellen', 'bestellt'].includes(s.gruppe)) { ziel[art].eigenerBestand.push(s); continue; }
         ziel[art][s.gruppe].push(s);
         if (s.gruppe === 'zuBestellen') zuBestellen += 1;
       }
@@ -596,7 +602,7 @@ const ZIEL_JE_AUFTRAG = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE])
 /** Kettel-/Einfassungszeile aus der Kundenbestellung ("Einfassung: Gekettelt, umlaufend ..."). */
 const istEinfassung = z => /^Einfassung:/.test(z);
 /** Muss wirklich eingefasst werden: nicht "ohne Einfassung", "Zugeschnitten" oder "Fertig eingefasst" (Inhaber 03.11.2026, w-226). */
-const mussEingefasstWerden = z => istEinfassung(z) && !/ohne Einfassung|zugeschnitten|fertig eingefasst/i.test(z);
+export const mussEingefasstWerden = z => istEinfassung(z) && !/ohne Einfassung|zugeschnitten|fertig eingefasst/i.test(z);
 
 /** Kuerzere Seite des Fertigmasses in cm ("200 × 300 cm", "Ø 160 cm"); null, wenn keins da ist. */
 export function kuerzereSeiteCm(ausfuehrung = []) {
@@ -657,6 +663,26 @@ export function kettlerGrund(p, adresse) {
 }
 
 /**
+ * Bezugsweg je Bestellung abwaegen (Inhaber 2026-11-04): Wohnt der Kunde in der Naehe, kann die
+ * Rolle vom Hersteller guenstiger sein - wir schneiden zu und liefern selbst an. Weiter weg ist
+ * meist der Grosshandel besser, wegen der Speditionskosten. Nur Massware aus der Rolle; ohne PLZ
+ * keine Aussage. Eine feste Grenze hat der Inhaber nicht genannt: "nah" ist unser Liefergebiet.
+ */
+export function bezugswegHinweis(positionen = [], adressen = new Map()) {
+  const hinweis = { nah: [], weit: [] };
+  const gesehen = new Set();
+  for (const p of positionen) {
+    if (!(Number(p.ausRolleCm) > 0) || gesehen.has(p.orderId)) continue;
+    const plz = String(adressen.get(p.orderId)?.plz ?? '').trim();
+    if (!/^\d{5}$/.test(plz)) continue;
+    gesehen.add(p.orderId);
+    const eintrag = { orderName: p.orderName, ort: `${plz} ${adressen.get(p.orderId)?.ort ?? ''}`.trim() };
+    (KETTLER_NAH_PLZ.test(plz) ? hinweis.nah : hinweis.weit).push(eintrag);
+  }
+  return hinweis;
+}
+
+/**
  * Was vor einer Bestellung ueber den Kettler geklaert sein muss: ohne lesbares Fertigmass gibt
  * es kein Zuschnittmass, und passt das Zuschnittmass nicht mehr in die Rolle, aus der
  * zugeschnitten wird, faellt es nicht still auf das Fertigmass zurueck.
@@ -698,7 +724,9 @@ function fuerLieferantKettelt(p, wege) {
 
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false, kettelwege = {}, kettelwegGewaehlt = false }) {
   const alle = (gruppe.positionen ?? []).filter(p => !auswahl || auswahl(p)).map(p => schlankePosition(p, statusAlle, jetzt));
-  const offen = alle.filter(p => p.gruppe === 'zuBestellen');
+  // Lagerware kommt nie in die Mail an den Lieferanten (#1995) - wie Muster aus eigenem Bestand.
+  const ausLager = alle.filter(p => p.gruppe === 'zuBestellen' && p.lagerware);
+  const offen = alle.filter(p => p.gruppe === 'zuBestellen' && !p.lagerware);
   // Die Kettler-Regel gilt auch fuer Ware, die der Lieferant sonst direkt zum Kunden schickt:
   // abgetrennte Positionen gehen an unseren Kettler (Issue #1453).
   const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route) && !(automatisch && ziel === 'kettler');
@@ -797,7 +825,10 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       kettelwegGewaehlt,
       kettelnBeimLieferanten: !anKettler && aufgenommen.some(p => kettelwege[p.lineItemId] === 'lieferant' && wirdGekettelt(p.ausfuehrung)),
       kettelPuffer,
-      bereitsBestellt: alle.length - offen.length,
+      // Zum Kettler oder auf die Baustelle ist der Weg schon entschieden.
+      bezugsweg: anKettler || gruppe.route === ROUTE.SUPPLIER_TO_SITE ? { nah: [], weit: [] } : bezugswegHinweis(offen, adressen),
+      bereitsBestellt: alle.length - offen.length - ausLager.length,
+      ohneBestellung: ausLager.map(p => fehltEintrag(p, ['aus eigenem Lager – nicht bestellen'])),
     },
   });
 }
@@ -876,7 +907,7 @@ function kettelRegelGilt(gruppe, kontext) {
 }
 
 /** Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail. */
-const istOffen = (p, kontext) => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
+const istOffen = (p, kontext) => { const s = schlankePosition(p, kontext.statusAlle, kontext.jetzt); return s.gruppe === 'zuBestellen' && !s.lagerware; };
 
 /**
  * Nur bei Direktversand: nur dort heisst "Lieferant kettelt" sicher auch "direkt an den Kunden",

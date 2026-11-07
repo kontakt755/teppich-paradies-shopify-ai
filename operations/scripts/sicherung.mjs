@@ -52,6 +52,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'musterherkunft.json',
   // Gemeinsame Packhaken und manuell abgehakte Bestellungen gibt es nur lokal.
   'muster-packen.json', 'muster-grossbrief.json',
+  // WhatsApp-Nummer auf dem Begleitblatt (domains/shopify/muster-begleitblatt): nur hier, nie im Repository.
+  'muster-begleitblatt/einstellungen.json',
   'bestellmarken.json',
   // Musterlager: welche Muster wir selbst da haben (operations/lib/musterlager.mjs).
   'musterlager.json',
@@ -114,6 +116,7 @@ export const SICHERUNGSPFADE = Object.freeze([
   // Betriebsaufgaben (Aufgaben & Organisation), Rueckrufe und Fallmarken gibt es nur hier.
   'organisation',
   'rueckrufe.json',
+  'muster-anrufe.json',
   'fallmarken.json',
   // Lieferanten-Stammdaten (Bestellweg, Ansprechperson, Kundennummer), die Basisadresse von
   // Lieferant A und die privaten Versandtarife - von Hand gepflegt, nirgends sonst.
@@ -133,6 +136,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   // vor dem Archivieren auffrischt (dienstPlistsAbziehen). Vier davon gibt es ohne Vorlage im
   // Repository (Dashboard, Shop-Wache, Aufgabenwaechter, Lieferantenseiten).
   'dienste',
+  // Alte Bestellexporte (operations/lib/altexporte.mjs): der einzige Beleg, was wann endgueltig geloescht wurde.
+  'altexporte-protokoll.jsonl',
 ]);
 
 /** Ordner unter $TP_PRIVAT_DIR fuer den Abzug der Mac-Dienste. */
@@ -147,6 +152,7 @@ export const DIENSTE_ORDNER = 'dienste';
  */
 export const NICHT_GESICHERT = Object.freeze({
   'nachfassen/postfach.json': 'Zugang zum Firmenpostfach - neu anlegen',
+  'ek-liste': 'Abgeleitete EK-Tabelle (58 MB, von Hand angestossen), nur gelesen fuer die Warnung im Bestelldialog - fehlt sie, steht dort "Rohertrag unbekannt"',
   'benutzer.json': 'Zugaenge zum Control Center - neu anlegen (npm run benutzer)',
   'dashboard-passwort.txt': 'Notpasswort des Control Centers - neu anlegen',
   'dashboard-sitzungen.json': 'Anmeldungen - entstehen neu',
@@ -174,7 +180,10 @@ export const NICHT_GESICHERT = Object.freeze({
   'routinen': 'Laufstand der Mac-Dienste; Auftragstexte liegen in den App-Aufgaben',
   'betrieb-nachziehen.json': 'Stand des Nachziehens - entsteht neu',
   'sicherungsstand.json': 'Beleg der Sicherung selbst',
+  'sicherung-ausser-haus.json': 'Beleg der Kopie in der Dropbox',
+  '.ausser-haus-': 'Zwischendateien der Kopie ausser Haus - jeder Lauf raeumt sie weg',
   'sicherungen': 'die Sicherungen selbst',
+  'altexporte-papierkorb': 'alte Bestellexporte auf dem Weg zur Loeschung - im Archiv lebten sie 30 Tage weiter',
 });
 
 export function parseArgs(argv, env = process.env) {

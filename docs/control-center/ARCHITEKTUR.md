@@ -488,19 +488,120 @@ dafür nur die Stammdaten.
 vor „Erledigt" zurück (ohne solchen: kein Status = noch nicht bestellt). Die Abschlussfelder
 (`erledigtAm/Von/Notiz`) wandern mit Zeit, Person und Notiz in `verlauf` (höchstens 20 Einträge);
 `wiederGeoeffnetAm/Von` stehen am Datensatz, der Audit-Log erhält `auftragsstatus-wieder-geoeffnet`.
-Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage bernstein, 14 rot).
+Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage gelb, 14 rot;
+eine Schwelle für alle Ansichten, Abschnitt 33).
 
 ### Einkauf „Je Auftrag“: Arbeitsliste (seit 2026-10-20, #1522)
 
 `lib/auftrags-ablauf.mjs` ordnet jeden offenen Auftrag ein (`einordnung`): **jetzt** (bestellen,
 ungeklaert, Ware da ohne „Kunde informiert“, Muster da, Verzug), **unterwegs** und **beiKunde**
-(beide eingeklappt). Verzug = Status „bestellt“, mehr als `VERZUG_WERKTAGE` (10) Werktage, bei
-bestaetigtem Liefertermin erst nach dem Termin; dieselbe Regel nutzt das To-do „Nachfragen“ in
-`lib/todos.mjs`. „Kunde informiert“ ist ein Ereignis `kunde_informiert` im Auftragsverlauf
+(beide eingeklappt). Verzug = Status „bestellt“ seit mindestens 7 Kalendertagen (gelb, ab 14 rot),
+bei bestaetigtem Liefertermin erst nach dem Termin (`verzugAmpel()`, Schwelle aus `lib/ampel.mjs`,
+bis 06.11.2026 waren es 10 Werktage); dieselbe Regel nutzt das To-do „Nachfragen“ in
+`lib/todos.mjs`. Gesperrte Muster zählen nicht als Verzug, die Karte sagt „Muster nicht lieferbar“. „Kunde informiert“ ist ein Ereignis `kunde_informiert` im Auftragsverlauf
 (`POST /api/einkauf/auftragsstatus`, aktion `schritt`, nur Warenauftraege, Rolle „lesen“ 403);
 `/api/einkauf/bestellungen` liefert es als `kundeInformiert[orderId]`. „Heute“ zaehlt mit
 `einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
 Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
+
+**Teillieferung und vollständige Muster (seit 2026-11-06, #1996).** `auftragsAblauf()` liefert `eingang`
+(`ware`/`muster` je `{ da, gesamt, alle, fehlt }`): erwartet wird Ware mit Lieferweg „über uns“ oder „über
+Kettler“ (nicht Hersteller → Kunde/Baustelle, nicht aus Lager, keine Eigenleistung) und jedes nicht
+gesperrte Muster; Muster aus eigenem Bestand gelten als da. Schritt 3 bleibt aktiv („Unterwegs · x von y
+da“, reine Muster „Muster da · x von y“), bis alles da ist; erst dann wird Schritt 4 aktiv. `einordnung()`
+setzt „informieren“ nur, wenn alle erwartete Ware da ist, sonst `teillieferung` (Satz aus
+`teilstandText()`, ruhig, ohne Kundennachricht); das schon eingetroffene Teil „über uns“ steht dann unter
+„von uns abschicken“ wie auf Heute. „muster_da“ nur, wenn alle offenen, nicht gesperrten Muster da sind und
+– sobald der Packstand (`/api/kunden/muster-packen`) geladen ist – der Umschlag packbereit ist (Option
+`umschlag`); ein gesperrtes Muster ist eigener Grund „gesperrt“ (rot, nie eingeklappt). Angefangene
+Umschläge stehen unter „Unterwegs“, nie unter „Beim Kunden“. Die Kopfzeile zählt jeden Auftrag einmal nach
+`hauptGrund()` (`GRUND_REIHENFOLGE`). Filter `art=ware|muster|alle`: Vorgabe „Ware“, solange ein
+Warenauftrag zu tun ist; dort stehen reine Musteraufträge, die nur noch verschickt werden, als eine Zeile
+mit der Zahl „Packbereit“ der Packstation.
+
+**Derselbe Stand in Bestellungen und auf Heute (seit 2026-11-06, #1996).** `zeilenAblauf(z)` rechnet
+`auftragsAblauf()` und `einordnung()` aus einer Zeile von `/api/kunden/bestellungen`: die Positionen der
+Zeile bilden je Lieferant die Gruppen wie `gruppieren()` der Bestellübersicht, der Stand je Position kommt
+aus `z.positionsstatus`. `warenArbeitsstand()` (`lib/shop-bestellarbeit.mjs`) gibt daraus `teilstand` (Satz
+aus `teilstandText()`) und `ampel` (`warenAmpel()`: nur rot – Ware ungeklärt, Termin vorbei, ab 14 Tagen
+beim Lieferanten; dieselben Gründe wie `auftragsAmpel()` ohne Muster) zurück. Wartet die Ware nur auf den
+Lieferanten, heißt der nächste Schritt der Teilstand, mit Termin „Ware kommt bis …“, sonst „wartet auf
+Lieferant · seit n Tagen“ (`tageBeimLieferanten()`, Kalendertage wie die Ampel). Kunden › Bestellungen
+zeigt die rote Ampel als Plakette neben dem Stand; die Stand-Farbe selbst ist nur gelb (noch nicht
+bestellt) oder ruhig. Die Namen für den Teilstand kommen aus `/api/einkauf/lieferanten` (Bestellungen:
+`einkauf.lieferanten`, Heute: `heuteDaten.lieferanten`), wie in „Je Auftrag“. Abgleich in der Datenkopie
+am 06.11.: 113 von 113 Aufträgen gleich.
+
+**Gesperrte Muster beim Bestellen (seit 2026-11-06, #1996).** Ein Muster aus `gesperrteMuster`
+(`/api/einkauf/bestellungen`, noch nicht bei uns) wird nie bestellt: `startBestellarbeit()` (Heute) zählt es
+weder in `gesamt` noch in `blockiert`/`nichtZugeordnet` und gibt nur `gesperrt` als Zahl zurück; Je Auftrag
+führt es nicht unter „ungeklärt“; die Kachel „Muster zu bestellen“ zählt es nicht; in den Tabellen steht es mit
+„× Gesperrt“ ohne Bestellknopf, außerhalb von Sammelaktion und Kopierliste. „Zuerst klären“ nimmt es aus dem
+Grund „ohne Großhändler-ID“ (`ohneGesperrteKlaerung()` in `lib/einkauf-uebersicht.mjs`); dafür liefert die
+Bestellübersicht je Auftrag `ohneIdPositionen` und `ampelOhneIdGrund` (Ampel der übrigen Gründe). Eine leere
+oder unlesbare Sperrliste filtert nichts.
+
+### Lieferweg und Lagerware (seit 2026-11-06, #1995)
+
+Wer die Ware zum Kunden bringt, ist eine reine Regel in `lib/lieferweg.mjs` (Browser und Server):
+Vermerk beim Bestellen (`eintrag.ueber`: kunde, kettler, laden, lager) > Lagerware > Stammroute
+(`einkauf.route`); Muster und Eigenleistungen haben keinen Weg. Ein Vermerk zaehlt nur, solange die
+Position einen Schritt hat; die Regeldatei nur, solange die Ware nicht geliefert ist (was ohne Vermerk
+`lager` schon geliefert ist, kam ueber den Lieferanten). Die Stammroute `OWN_STOCK` ist kein Weg „aus
+Lager“ - `routeFor` bestellt sie beim Lieferanten. `istLagerware()` heisst genau „Weg aus Lager“, damit
+keine Position zugleich bestellt und Lagerware ist. Lagerware sind Artikel, die wir aus
+eigener Rolle zuschneiden, obwohl sie in Shopify als Ware eines Lieferanten gefuehrt werden. Welche das
+sind, steht nur in der privaten Regeldatei `$TP_PRIVAT_DIR/lieferanten/lagerware.json`
+(`{ "regeln": [{ "skuPraefix", "hinweis" }] }`, nie im Git); `operations/lib/lagerware.mjs` markiert die
+Positionen im Bestellmodell (`lagerware`, `lagerHinweis`). Fehlt die Datei, gibt es keine Lagerware; ist sie
+beschaedigt, steht `lagerwareFehler` am Modell, Heute meldet es rot, und Ware-Bestellmail sowie „bestellt“
+antworten 409 - still leer hiesse, Lagerware landete wieder beim Lieferanten. Lagerware steht in keiner
+Bestellmail (`ohneBestellung`), „bestellt“ antwortet 409, der Sammelknopf ueberspringt sie, und es gibt
+weder „Nachhaken“ noch „kein Beleg“. Zugeschnitten und Gepackt speichert `setzeSelbstversand()` in
+`auftragsstatus.json` (`selbstversand.zugeschnitten|gepackt = { am, von }`; Zugeschnitten setzt „bei uns“
+mit Vermerk `lager`), ueber `POST /api/einkauf/auftragsstatus` mit `aktion: 'selbstversand'` (Rolle „lesen“
+403, Muster und Direktware 409). Zugeschnitten merkt den Vermerk davor (`ueberVorher`), Rückgängig stellt
+ihn wieder her; „Zurück auf offen…“ nimmt beides und den Vermerk `lager` in den Verlauf mit - sonst
+bliebe die Position ohne Regel fuer immer Lagerware. Der Sammelschritt „Ware ist angekommen“ setzt nur
+Ware vom Lieferanten (Lagerware geht ueber Zugeschnitten, Direktware ueber „Ist beim Kunden…“; bleibt
+nichts anderes, 409 mit diesem Hinweis). Verschickt wird ueber den vorhandenen Versand-Dialog (Schritt
+„raus“, Buchung in Shopify); im gemischten Auftrag kreuzt er die Direktware nicht vorab an
+(`lib/versand.mjs vorauswahl`). Die Shop-Uebersicht zeigt den Block „Von uns abschicken“
+(`ansichten/heute/selbst-abschicken.mjs`, Frist ab Zuschnitt bzw. Eingang, „Gepackt“ setzt sie nicht
+zurueck); aus dem To-do „Ware ist da – rausgeben“ nimmt sie nur die Positionen heraus, die der Block zeigt
+(`lib/todos.mjs rausgebenOhne`). Die Zeitleiste (`auftragsverlauf.mjs`) zaehlt bei gemischten und
+teilweise gelieferten Auftraegen jeden Schritt nur fuer die Positionen, die ihn gehen; „Geliefert an uns“
+zaehlt nur Ware vom Lieferanten.
+
+### Warnung vor dem Bestellen (seit 2026-11-05)
+
+Der Bestellmail-Dialog zeigt je Kommission eine Schätzung, bevor beim Lieferanten bestellt wird
+(`operations/lib/bestellwarnung.mjs`, Anzeige `kostenWarnung()` in `ansichten/einkauf/lieferanten.mjs`):
+Rohertrag niedrig oder negativ mit Rechnung, bestellte gegen verkaufte Menge (auch das Risiko volle
+Rollenbreite), Teillieferung mit erneutem Frachtzuschlag. Nur ein Hinweis: nichts wird gesperrt oder
+bestellt, kein Preis geändert. Der Normalfall zeigt nichts; fehlt nur der Einkaufspreis, steht eine
+leise Zeile „Rohertrag unbekannt“.
+
+- **Quellen zur Laufzeit, kein eigenes Lager:** EK aus `ek-liste/ableitung-<datum>/ek-varianten.json`
+  (die neueste; Zeilen mit `sicherheit: offen` zählen nicht), Lieferkosten aus `kosten` je Lieferant und
+  `absender.kettelservice.kosten` in `lieferanten/stammdaten.json`, GLS/GEL über `berechneVersand()`.
+  Felder: `operations/lib/lieferanten.beispiel.json`. Abgelaufene Dieselwerte werden mit dem letzten
+  Stand gerechnet und im Hinweis genannt.
+- **Sichtbarkeit:** Die Warnung hängt nur an `aktion: bestellVorbereitung` (Rolle „lesen“: 403), nicht am
+  GET `/api/einkauf/bestellmail`. Einkaufspreis, Rohertrag und Rechnung bekommt nur die Rolle „inhaber“
+  (auch der Notzugang), weil der Inhaber über Mitarbeiter nicht entschieden hat. Jede andere Rolle bekommt
+  serverseitig `warnungFuerMitarbeiter()`: eine Liste erlaubter Felder, Kopf „vor dem Bestellen mit Ahmet klären“,
+  Menge und Teillieferung ohne Betrag. Die Sätze selbst gehen nicht über
+  `pruefeStammdaten()` und erscheinen in keiner anderen Antwort.
+- **Rechenregeln:** Bestandsabgänge von Bundles (`masspruefung.status: bestand`) zählen im Netto, nicht im Einkauf und Weg. Volle Rollenbreite: kürzeste Länge, bei der die andere Seite quer in die Rolle passt. Paket, Fracht und Mindermenge gelten je Lieferant, Ziel und Bestelltag.
+- **Maßformen:** Das Fertigmaß wird wie in der Bestellmail gelesen (`kettelZuschnitt`). Ø 200 cm und oval rechnen als umschließendes Rechteck, so verkauft und schneidet der Shop.
+- **Lieferweg:** Schon bestellte Ware ging den vermerkten Weg (`ueber`), sonst gilt die Bestellmail, dann der Vermerk, dann die Regel. Der Teillieferungs-Hinweis zählt alle Bestelltage des Lieferanten, auch an ein anderes Ziel.
+- **Mindestmenge:** Der Hinweis steht bei jeder Bestellung dieses Lieferanten und löst deshalb allein keine Warnung aus; als Zusatz bei einer ohnehin gezeigten Warnung bleibt er.
+- **Sammellieferung:** Die Fracht wird nur auf die neue Lieferung geteilt, frühere Bestelltage tragen sie voll. Die Mindermenge zählt je Bestellung; das kann unter der Sammellieferung liegen und steht dann als Anmerkung da.
+- **Lieber keine Zahl:** „Rohertrag unbekannt“ statt einer Zahl, sobald ein Kostenteil fehlt oder der Fall nicht sicher rechenbar ist (`unsicherheiten()`): Fertigmaß unlesbar, unbekannte Form, Menge passt nicht zum Maß oder Maßprüfung offen, Wunschmaß-Rechner (Maß nur in den Properties), Ketteln außerhalb unseres Kettlers, Ketteln rund oder oval, Einfassung ohne hinterlegte Kosten, bearbeitete Ware ohne Vermerk zum Weg. Übersteigen schon die bekannten Kosten den Verkauf, sagt das der Kopf. Eigene Fahrt im Liefergebiet bleibt eine Anmerkung, sie blockiert die Zahl nicht.
+- **Grenzen des Modells:** Paketmaße und Gewicht sind Annahmen (2 kg/m², Rollendurchmesser aus der langen Seite).
+  Die EK-Liste ist teils abgeleitet und kann unter echten Rechnungen liegen. Schwellen stehen in `SCHWELLEN`.
+  Scheitert die Schätzung, geht der Dialog ohne sie auf (`kostenWarnungFehlt`).
 
 ### Einkauf je Lieferant (seit 2026-10-01)
 
@@ -631,7 +732,7 @@ weiterhin vorhandene Hintergrundzahlen; sie bilden nicht die Reihenfolge der Sta
 | Kachel | Quelle | Inhalt |
 |---|---|---|
 | „Einkauf – heute zu tun" | `einkaufBestellungen()` + `einkaufAuftragsstatus()` | Positionen zu bestellen, offene Musterbestellungen, Aufträge mit Problem (Ampel rot: Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID), Positionen je Schritt des Auftragsflusses |
-| „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz, Durchschnittsbon der letzten 7 und 30 Tage |
+| „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz mit Versand, Durchschnittsbon der letzten 7 und 30 Tage; seit 05.11. zusätzlich `ware`, `muster` und `vorwoche` für die Warenkennzahl |
 | „Laden" (seit 2026-10-11) | `/api/laden/zahlen` → Auftrags-App `?ansicht=zahlen` | offene Beratungen (davon neu), fällige Wiedervorlagen, Angebote offen (davon nachfassen), Fälle aus dem Shop (7 Tage), gewonnen/verloren (30 Tage); nur wenn > 0 eine Zeile „Spam-Verdacht“ (seit 2026-10-12) mit Link „Spam prüfen“ direkt in den Filter; Link „Laden-Ansicht öffnen" |
 | „Montage" (seit 2026-10-12) | dieselbe Antwort, Objekt `montage` | Einsätze heute/morgen, offen von gestern, Meldungen offen, Anträge offen, neue Aufträge, neue Rückmeldungen – jede Zahl optional; Link „Montage-App öffnen" |
 
@@ -751,9 +852,16 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 
 | To-do | Quelle | Regel |
 |---|---|---|
-| Ware/Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant und Art ein To-do; gelb ab 3, rot ab 7 Tagen |
+| Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant ein To-do; gelb ab 3, rot ab 7 Tagen |
+| Ware bestellen | dieselben + `/api/einkauf/belege` | bezahlt, Position ohne Stand; **je Bestellung** ein To-do, damit kein Kunde in einer Sammelzeile verschwindet; gelb ab 1, rot ab 3 Tagen (seit 2026-11-03). Ohne geladene Belege fehlt nur der Zusatz „kein zugeordneter Beleg“ |
+| Laut Beleg bestellt, abhaken | dieselben | wie „Ware bestellen“, aber AB, Lieferschein oder Avis desselben Lieferanten ist sicher zugeordnet: per Mail bestellt, nicht abgehakt. Je Lieferant eine Zeile; Ware anderer Lieferanten derselben Bestellung bleibt unter „Ware bestellen“. Gelb, ab 4 Tagen nach dem Lieferschein rot (noch nicht raus) |
+| AB fehlt – beim Lieferanten nachfassen | dieselben | Ware „bestellt“ seit ≥ 2 Werktagen (Mo–Fr, Berliner Kalendertag, Feiertage zählen mit), ohne geprüfte AB (`beschaffung.ab`), ohne Liefertermin und ohne zugeordneten Beleg desselben Lieferanten (unzugeordnete Belege und Vorschläge zählen nicht); gelb, ab 7 Tagen rot, dort übernimmt „Nachhaken“. Nur bei geladenen Belegen. Bis 06.11.2026 „Bestellt, kein zugeordneter Beleg“ ab 3 Kalendertagen |
+| Auftragsbestätigung prüfen | `/api/einkauf/belege` (`abweichungen`, Art `ab_pruefen`) | AB sicher oder bestätigt zugeordnet, nicht erledigt, und eine Warenposition dieses Lieferanten steht auf „bestellt“ ohne AB-Vermerk und ohne Liefertermin; gelb. Bestätigt wird nie vom Beleg, nur im Dialog „AB prüfen“ |
+| AB weicht ab – klären | `/api/einkauf/auftragsstatus` | geprüfte AB mit mindestens einem Prüfpunkt „weicht ab“ (Menge, Maße, Lieferweg, Zuschläge), Position „bestellt“; gelb |
+| Lieferant angefragt / Anfrage nachfassen | dieselben | Ware ohne Stand mit `beschaffung.anfrage`; erscheint statt „Ware bestellen“; neutral, ab 2 Werktagen nach dem Anfragedatum gelb |
+| Muster nicht lieferbar | `/api/kunden/bestellungen`, Feld `gesperrteMuster` (Mustersperre) | SKU gesperrt, Position ohne Stand oder „bestellt“; immer rot, bis die Position in der Packstation abgeschlossen ist („Kunde informieren…“ oder „Ohne dieses Muster weiter packen“) |
 | Nachhaken | dieselben, Schwellen aus `/api/einkauf/lieferanten` | Stand „bestellt" seit ≥ 7 Tagen gelb, ≥ 14 Tagen rot; je Lieferant |
-| Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 7, rot ab 14 Tagen |
+| Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 2, rot ab 5 Tagen (seit 2026-11-03) |
 | Zuerst klären | Ampel „rot" der Bestellung | immer rot; die Positionen erscheinen nicht zusätzlich unter „bestellen" |
 | Zurückrufen | `/api/kunden/rueckrufe` | nicht erledigt und Wiedervorlage heute oder früher; gelb ab 2, rot ab 7 Tagen |
 | Angebot nachfassen | `/api/kunden/faelle` | Angebot seit ≥ 7 Tagen offen; rot ab 14 |
@@ -808,6 +916,19 @@ steht unter „Wir sind dran“ („Muster nachfassen“), nicht mehr zugleich u
 (`werWartet(…, { nachfassen })` in `lib/todos.mjs`, die orderIds kommen aus `musterNachfassen()`). Nach
 „Erledigt – nachgefasst“ wandert er zurück zum Kunden.
 
+**Kunden nach Produkt fragen** (seit 2026-11-05, im Menü direkt unter Packstation, Route `#/kunden?tab=anrufe`): Ziel ist zu erfahren, warum aus Mustern selten
+Käufe werden. `lib/muster-anrufe.mjs` rechnet aus den Bestellzeilen, wer dran ist: Muster seit mindestens
+5 Tagen beim Kunden, je Kunde eine Zeile, nicht abgeschlossen, nicht auf der Stoppliste, nicht „Möchte keine
+Anrufe“. Ergebnis und Notizen liegen in `$TP_PRIVAT_DIR/muster-anrufe.json` (`operations/lib/muster-anrufe.mjs`,
+in der Tagessicherung), `GET/POST /api/kunden/muster-anrufe`. Ein Ergebnis schreibt auch die Zeitleiste:
+„kein Interesse“ bzw. „Kunde hat bestellt“ beenden die Nachfrage-Mails, ein Gespräch zählt als „nachgefasst“.
+Nach 3× „Nicht erreicht“ ist Schluss. Oben zählt die Seite die genannten Gründe (je Kunde die letzte Aussage).
+Zwei Spalten: mit und ohne Telefonnummer. Die Sperre `ANRUF_NUR_MIT_RUECKRUFWUNSCH` (§ 7 UWG, siehe oben) liefert
+auf `true` die Nummer nur bei Rückrufwunsch; am 2026-11-05 im Chat aufgehoben, die rechtliche Klärung steht aus. Die Rückfrage-Mail ist
+ein `mailto:`-Link, gesendet wird von Hand, sie läuft nicht über den pausierten Versandlauf.
+Unter den Gründen steht zugeklappt „Vermutungen und Ideen“ (`lib/muster-ideen.mjs`): feste Texte im Repository,
+die Zahlen dazu (`kennzahlen`) rechnet der Server zur Laufzeit aus den Bestellzeilen und der Musterwirkung.
+
 ### 9b. Kunden „Zu tun“: der nächste Schritt kommt aus der Zeitleiste (seit 2026-10-12)
 
 `/api/kunden/faelle` hängt an jede Bestellzeile den nächsten Schritt der Zeitleiste
@@ -832,6 +953,16 @@ Spalte „Versand“ der Bestellliste („in Shopify nicht gebucht“); „Noch 
 entfällt dann. Seit 2026-10-13 bucht „raus“ selbst in Shopify (Abschnitt 17): mit Vermerk „gebucht“ entfällt
 der Hinweis, auch wenn der Bestellexport noch den alten Stand zeigt; ist die Buchung gescheitert, heißt er
 „Versand in Shopify nicht gebucht – in der Bestellung nachholen“.
+
+**Gesperrte Muster und Rot (seit 2026-11-06, #1996).** `zeitleisten()` im Server reicht die Mustersperre
+(`mustersperre.json`, dieselbe Liste wie `gesperrteMuster`) als `gesperrtFuer` an `zeitleistenFuerModell()`.
+Ist in einem Musterauftrag ein gesperrtes Muster noch nicht bei uns, heißt der nächste Schritt vor
+„bestellen“ und vor „beim Lieferanten“ **„Muster kommt nicht – Kunde informieren (x von y Mustern)“** mit
+Link in die Packstation (`mpbereich=klaeren`) – wie das To-do auf Heute. Jeder Schritt trägt `rot`
+(lib/ampel.mjs): gesperrt, ab 14 Tagen beim Lieferanten, bestätigter Liefertermin vorbei, Wareneingang
+bzw. Fehlmenge klären. `kundenfaelle.mjs` setzt daraus und aus der Bestellampel („Zuerst klären“) `rot` je
+Punkt und Fall; nur dann trägt die Fallkarte den roten Rand (`fall-sofort`). „sofort“ bleibt als Wort, der
+Reiter heißt „Zu tun · n sofort“. Eine kaputte Sperrablage lässt die Zeitleisten ohne Sperre laufen.
 
 ## 10. Datenaktualisierung (seit 2026-09-23)
 
@@ -1002,6 +1133,11 @@ fragt der Dialog „Wer hat verkauft?“ – Pflicht, ohne Vorbelegung, zuletzt 
 (`localStorage`, je Gerät). Der Server verlangt den Namen dann (400 `name-fehlt`, kein Shopify-Aufruf),
 schreibt ihn in `verkauft_von` und als Benutzer ins Protokoll, mit dem Vermerk „Name im gemeinsamen Zugang
 angegeben“. Grund: Inhaber 2026-10-10 – im Laden bucht die gerade verkaufende Person.
+Deshalb steht „Sonderposten“ seit 2026-11-06 auch im Menü der Rolle `mitarbeiter` (vorher nur über
+die Adresse erreichbar). Mitarbeiter sehen „Im Laden verkauft…“ und „Ladenverkauf buchen…“;
+„Restlänge eintragen…“ bleibt Inhabersache (Knopf ausgeblendet, `sonderposten/bestand` in
+`NUR_INHABER`). Kommt trotzdem ein 403 ohne Shopify-Grund, sagt die Meldung „… Am Bestand wurde
+nichts geändert.“
 
 **Restrollen (seit 2026-10-12, Inhaber).** Rollenware mit Produkt-Tag `sonderposten` und Rollenbreite
 (`custom.rollenbreite`, Variante vor Produkt), deren Bestand Shopify in ganzen m² führt – z. B. Passion
@@ -1049,6 +1185,20 @@ bei 4/5 m Breite korrekt als 80/100 Einheiten angefragt. Ein separat in Shopify 
 kann diese Menge trotzdem begrenzen (Shopify setzt bei kleinen Shops standardmaessig 50).
 Vor dem Start den aktuellen Checkout-Wert lesend pruefen; weder Bestandseinheiten umbauen noch
 Checkout-Einstellungen ohne eigenen Auftrag aendern.
+
+**QR-Etikett und Laden-Stand (seit 2026-11-06, Inhaber: Laden und Shop immer synchron).**
+Jede Rolle hat den Knopf „QR-Etikett drucken…“ (Niimbot B1 50 × 50, freier Aufkleber aus
+`lib/freie-etiketten.mjs` mit QR). Der Code führt auf `#/sonderposten?rolle=<Produktnummer>`:
+die Ansicht zeigt nur diese Rolle und öffnet „Ladenverkauf buchen“ einmal von selbst. Die Adresse
+ist die, unter der das Dashboard gerade offen ist; am Mac selbst (127.0.0.1) nimmt sie die
+`netzAdresse` aus der Liste, also den ersten Namen aus `TP_DASHBOARD_EXTRA_HOSTS` als https
+(`tailscale serve`). Ohne beides druckt der Dialog nicht. Ein Handy braucht Tailscale oder das
+Firmennetz und eine Anmeldung - der QR-Code selbst gibt keinen Zugang.
+`/api/sonderposten/liste` liefert zusätzlich `ladenStand` (`ladenStandAusProtokoll`): Ladenbuchungen
+der letzten 30 Tage, letzte Buchung, letzte Nachmessung (vor dem Protokoll: Messung vom 28.10.2026)
+und ob das Nachmessen fällig ist (30 Tage). Daraus zeigt „Heute“ (Shop-Übersicht und „Im
+Hintergrund“) die Zeile „Restrollen“, Bernstein nur bei fälligem Nachmessen. Unlesbares Protokoll:
+`ladenStand: null`, die Zeile nennt dann nur den Bestand.
 
 **Tests** sprechen nie echtes Shopify: `tests/_testumgebung.mjs` blendet `.env.local` und die
 `SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
@@ -1169,6 +1319,11 @@ Befunde einer Prüfung am 2026-10-12, alle mit Test (`tests/robustheit.test.mjs`
   der seine Kopie dann selbst löscht (`TP_DASHBOARD_DATENKOPIE`, `scripts/dashboard-datenkopie.mjs`, nur ein
   eigener markierter Ordner `tp-dashboard-daten-XXXXXX` direkt im Temp-Ordner, der zugleich `TP_PRIVAT_DIR` ist).
   `dashboard-pruefung-lauf.mjs` wartet Browserstart, Browserende und Serverende ab, bevor die Kopie verschwindet.
+  Frist je Schritt beim Beenden (Browser schließen, `SIGTERM`, `SIGKILL`): 15 s, einstellbar über
+  `TP_DASHBOARD_PRUEF_WARTE_MS` (seit 29.10.2026, w-216; vorher 3 s, die unter Last durch parallele Testläufe nicht
+  reichten). Hängt nur das Schließen des Browsers, nachdem alle Ansichten geprüft sind, schreibt der Lauf den Bericht
+  trotzdem, beendet den eigenen Browserprozess begrenzt, löscht die Kopie und meldet das als Hinweis; der Exit-Code
+  kommt weiter aus dem Prüfergebnis. Exit 2 nur bei Abbruch vor dem Bericht oder liegen gebliebener Datenkopie.
   Bei SIGINT/SIGTERM/SIGHUP endet auch ein laufender Browserstart geordnet; Puppeteers eigene Signalhandler
   bleiben aus. Verwaiste eigene Kopien werden nach einem Tag, eigene Screenshot-Ordner nach drei Tagen
   bereinigt. `dashboard-temp-besitz.mjs` bindet die Kennung an Verzeichnisidentität und Besitzer-PID;
@@ -1425,13 +1580,35 @@ Styles `stile/serviceanfragen.css`.
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
   Zeile zeigt „aus dem Postfach übernommen“. Ein Test prüft, dass jeder Betreff aus `templates/` in
   der Liste steht oder bewusst ausgenommen ist – eine neue Serviceseite fällt so auf.
-- **Kampagnenfeld:** Das Anfrageformular (`sections/tp-start-kontakt.liquid`) füllt das versteckte
-  Feld `contact[Herkunft]` aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
+- **Musterberatung wird ein Rückruf (seit 2026-11-06):** „Lieber erst beraten lassen?“ im reinen
+  Muster-Warenkorb (`snippets/tp-muster-beratungsanfrage.liquid`) schickt Betreff
+  `RÜCKRUF – Musterberatung` mit `Muster:` (Musterliste, „ · “ getrennt), Name, Telefon, E-Mail, Text.
+  Das ist keine Service-Anfrage: `uebernehmen` legt dafür über `rueckrufAusMail()`
+  (`lib/serviceanfragen.mjs`) und `rueckrufAusMailAnlegen()` (`operations/lib/rueckrufe.mjs`) einen
+  Eintrag in `rueckrufe.json` an – Schlüssel `mail-<Mail-ID>`, `quelle: 'mail'`, Status „offen“,
+  Name, Telefon, E-Mail, Muster, Text und Eingangszeit im Eintrag selbst, weil es keine Bestellung
+  gibt. Dieselbe Mail nie zweimal, ein schon bearbeiteter Rückruf wird nicht zurückgesetzt, ohne
+  Telefon und E-Mail wird nichts angelegt (Vermerk im Postfach-Log). `GET /api/kunden/rueckrufe` hängt
+  diese Einträge an die Rückrufe aus Bestellungen an (`mailRueckrufZeilen`, älteste zuerst); Status
+  und Notiz laufen über denselben `POST`. Die Zeile zeigt „noch keine Bestellung“, Musterliste, Text
+  und Eingangszeit; „Heute“ bekommt dasselbe To-do „Zurückrufen“ mit denselben Fristen (2/7 Tage ab
+  Eingang). Auf diesem Weg entstehen keine Antwortentwürfe: er schreibt nur die lokale Ablage. Ob der
+  getrennte Lauf `postfach-entwuerfe` zu solchen Mails einen Gmail-Entwurf anlegt, regelt dessen privater
+  Auftrag, nicht dieser Code. **Doppelt abgeschickt** (Doppelklick, zweites Gerät): gleiche E-Mail oder
+  Telefonnummer innerhalb von 7 Tagen, solange noch niemand mit dem Kunden gesprochen hat (Status offen
+  oder nicht erreicht), ergänzt den vorhandenen Eintrag statt einen zweiten anzulegen
+  (`offenerMailRueckruf`): Musterliste und Text der neueren Mail, `zuletztAm`, Kennung unter
+  `weitereMailIds`; Status, Notiz, Wiedervorlage und das Alter ab der ersten Mail bleiben. Die Zeile zeigt
+  dann „2× angefragt, zuletzt …“. **Ohne Telefon** steht die E-Mail als Link in der Zeile („keine
+  Telefonnummer, per Mail antworten“), das To-do sagt dasselbe.
+- **Kampagnenfeld:** `snippets/tp-herkunft.liquid` (im Layout) füllt das versteckte Feld
+  `contact[Herkunft]` der Formulare auf den Verlegeseiten und der Kontaktseite aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
   „Microsoft-Anzeige“ (msclkid), „Anzeige (<utm_source>)“ bei bezahltem `utm_medium`, sonst „Link
-  (<utm_source>)“ bzw. „Link von Facebook/Instagram“, jeweils mit „· Kampagne <utm_campaign>“. Nichts
-  wird auf dem Gerät gespeichert, Klick-IDs gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle
-  „Werbung“. Grenze: erfasst ist nur, wer auf der Seite mit der Anzeigenadresse anfragt; wer erst
-  weiterklickt, zählt als Formular.
+  (<utm_source>)“ bzw. „Link von Facebook/Instagram“, jeweils mit „· Kampagne <utm_campaign>“. Klick-IDs
+  gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle „Werbung“. Über Seitenwechsel trägt sie ein
+  Eintrag im sessionStorage (nur der Text, nur mit Analyse-Einwilligung) oder, ohne Einwilligung, die
+  Adresse der Vorseite. Grenze: ohne Einwilligung ist die Herkunft nach dem zweiten Seitenwechsel
+  leer, die Anfrage zählt dann als Formular.
 
 ## 21. Insights › „Claude-Verbrauch“ (seit 2026-10-16, #671)
 
@@ -1534,13 +1711,21 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   weitere Standorte werden dabei nicht automatisch veraendert. Protokoll („Muster wieder verfügbar“), Audit.
 - **Endpunkte:** `GET /api/einkauf/mustersperre` (`gesperrt`, `offen`, `fehler`; dieselbe Liste hängt als
   `sperren` an `GET /api/einkauf/musterlager`), `POST /api/einkauf/mustersperre` mit
-  `aktion: freigeben | nachholen` und `sku` (Schreibpfad: Rolle „lesen“ 403). Der Schritt selbst läuft wie
+  `aktion: freigeben | nachholen` und `sku` oder `aktion: sperren` (siehe unten, Schreibpfad: Rolle „lesen“ 403). Der Schritt selbst läuft wie
   bisher über `POST /api/einkauf/auftragsstatus` (`aktion: "schritt"`, `schritt: "muster_nicht_verfuegbar"`,
   `muster: [lineItemId]`, `notiz`); die Antwort trägt `mustersperre {status, meldung, gesperrt, bereits,
   offen, ohneSku, fehlendeRechte?}`, die Rückmeldung lautet z. B. „Ergebnis: Muster nicht verfügbar ·
   2 Farben im Shop gesperrt“.
 - **Tests und Prüfwerkzeug** sprechen nie echtes Shopify (`operations/tests/mustersperre-attrappe.mjs`);
   `dashboard:pruefen` hat keinen Zugang, dort landet jede Sperre unter „Im Shop sperren“.
+
+**Ein einzelnes Muster sperren (05.11.2026, #1934).** Der Schritt gilt für die ganze Bestellung und bucht auch die
+übrigen Muster. Für die Meldung „von dieser Farbe gibt es kein Muster“ reicht deshalb `POST /api/einkauf/mustersperre`
+mit `aktion: 'sperren'`: mit `orderId` und `lineItemId` aus der Packstation („Kein Muster – im Shop sperren…“) oder mit
+`handle` und `farbe` aus Einkauf › Musterlager („Muster sperren…“). Kein Schritt, kein Positionsstand, keine
+Versandbuchung; danach steht das Muster als „kommt nicht“ da, „Kunde informieren…“ und „Ohne dieses Muster weiter
+packen“ führen weiter. Die Artikelnummer bestimmt der Server (aus der Position bzw. `M-…` des Musterprodukts), nie der
+Browser. Rolle „lesen“ bekommt 403. Klappt es im Shop nicht, steht die Sperre wie beim Schritt unter „Im Shop sperren“.
 
 ## 23. „Muster nachfassen“ verschickt automatisch (seit 2026-10-16, Werkbank w-119, Option A)
 
@@ -1763,8 +1948,8 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
 Etikettendrucker Niimbot B1, Etikett 50 × 50 mm (400 × 400 px, 203 dpi, Druckrichtung „top“ –
 NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
 
-- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Etiketten drucken“ (alle Muster der
-  Bestellung, eins je Stück). Einkauf › Musterlager → „Etikett drucken…“ für ein Etikett von Hand
+- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Aufkleber drucken“ (alle Muster der
+  Bestellung, eins je Stück). Einkauf › Musterlager → „Aufkleber drucken…“ für einen Aufkleber von Hand
   (Produktlink, optional Farbe/Serie/Artikelnummer). Beide öffnen denselben Dialog mit Vorschau,
   Druckdichte (1–5, Standard 3) und Verbindung.
 - **Direkt im Lexikon (20.10., #1489):** Produkt oder Muster oeffnen → „Musteraufkleber“ →
@@ -2011,9 +2196,10 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
     Karte von „Muster kommt an“:
     - `.mp-stempel` „Umschlag vorbereitet · TT.MM.“
     - `.mp-stempel-drin` „x von n Mustern schon im Umschlag“
-  - Ein Umschlag mit mindestens einem Haken (`angefangen(k)`) trägt `mp-angefangen`, das ist der
-    Bernstein-Balken links. In jeder Gruppe steht er oben (`reihe` in `viewKundenMusterPacken`, nach
-    `RANG`).
+  - Ein Umschlag mit mindestens einem Haken (`angefangen(k)`) trägt `mp-angefangen`. Bis 06.11. war das
+    ein Bernstein-Balken links; seit der Ampel (Abschnitt 33) gehört der linke Rand nur ihr, die
+    Bernstein-Marke bleibt. In jeder Gruppe steht er oben, direkt nach den roten Umschlägen (`reihe` in
+    `viewKundenMusterPacken`).
   - Bernstein, weil ein angefangener Umschlag offene Arbeit ist. „Vorbereitet“ ist nur ein Stand und
     bleibt neutral.
   - „Schon gedruckt“ steht in Schritt 1 am Schritt, sonst (zu klären oder schon ein Haken) unter
@@ -2035,6 +2221,32 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
     drucken“. Der Knopf nutzt `drucken(…, { nurOffen: true })`, vermerkt nach dem vollständigen Druck
     also selbst „vorbereitet“.
   - Umschläge ohne vollständige Musterzuordnung druckt er nicht und nennt ihre Zahl.
+  - Die Zeile fehlt, wenn jeder Chip alles oder nichts zeigt und kein Umschlag mehr vorzubereiten ist
+    (spart Höhe am Handy). Sie bleibt, solange „noch vorbereiten“ Treffer hat, weil nur dieser Chip
+    zum Sammelknopf führt, und wenn ein Filter gesetzt ist, weil sonst kein Weg zurückführt.
+
+### Gesperrte Muster in der Packstation (seit 2026-11-04, #1899)
+
+`kundenMusterPacken()` liest `mustersperre.json` (aktive Sperren je `M-<SKU>`, auch die im Shop noch nicht
+bestätigten) und gibt je Position `gesperrt` zurück, solange das Muster weder abgehakt noch da oder im
+Musterlager ist. Ein solcher Umschlag steht unter „Zu klären“. Eine beschädigte Ablage legt die Liste nicht
+lahm: `sperrenFehler` wird als roter Hinweis gezeigt.
+
+- **„Kunde informieren…“** (`ansichten/kunden/muster-gesperrt.mjs`) sendet nichts. Nur wenn alle Muster des
+  Umschlags gesperrt sind, schließt der Dialog die Bestellung mit dem Schritt `muster_nicht_verfuegbar`
+  ab; der Schritt gilt immer für die ganze Bestellung.
+- **„Ohne dieses Muster weiter packen“** (`aktion: 'ohne-muster'`): nur diese Position wird „erledigt“ und über
+  `erledigtBuchen` ohne Kundenmail in Shopify gebucht. Sonst bliebe nach dem Verschicken ein leerer Umschlag.
+- **Musterautomatik** (seit 2026-11-05, `operations/lib/muster-bestellautomatik.mjs`): liest dieselben aktiven
+  Sperren, auch unmittelbar vor jeder Mail. Ein gesperrtes Muster wird nie angefragt und steht als Klärfall an der
+  Bestellung, die übrigen Muster derselben Bestellung gehen normal raus. Nach „wieder verfügbar“ wird es beim
+  nächsten Lauf wieder geplant. Ist die Ablage unlesbar, schickt der Lauf nichts (mehr) und endet mit
+  `sperrliste-unlesbar`; der Hinweis steht in `letzterLauf` (Mitteilung über `ki-stand`) und unter
+  „Musterbestellungen automatisch“. Nur eine fehlende oder leere Datei heißt „keine Sperre“.
+  Bei einer Bestellung mit Ware (`bestellungen[].mitWare`, gleiche Regel wie `auftragsart`) ist das der einzige Weg,
+  auch für das letzte Muster im Umschlag: der Schritt „Muster nicht verfügbar“ gehört nicht zu einer Warenbestellung.
+- **Reiter „Erledigt“:** die 14 Tage laufen ab `rausAm`/`erledigtAm`, ohne Vermerk ab Bestelldatum; `teilweise`
+  erledigte Bestellungen stehen nur in der Suche.
 
 ### Eingelegt und gepackt bestätigen den Wareneingang (#1706, 26.10.2026)
 
@@ -2063,6 +2275,9 @@ und nach 14 Tagen einen Fall in „Alte Bestellungen aufräumen“.
 
 ### Verschickt meldet den Versand in Shopify (#1810, #1811, Mitarbeiter 29.10.2026)
 
+Seit 06.11.2026 löst diesen Weg der Klick „Umschlag gepackt“ selbst aus (Abschnitt 32); den Knopf
+„Verschickt – Kunde informieren…“ gibt es nur noch unter „Gepackt“ für Umschläge, die nie eingetragen wurden.
+Die Aktion `verschickt` ist unverändert, sie heißt im Server `kundenMusterVerschicken`. Ursprünglich galt:
 Gepackte Umschläge tragen den Hauptknopf „Verschickt – Kunde informieren“. Er sendet einen einzigen
 `POST kunden/muster-packen` mit `{ packSchluessel, aktion: 'verschickt' }`
 (`kundenMusterPackenSchreiben`, alle anderen Aktionen gehen unverändert an `kundenMusterPackenSetzen`).
@@ -2148,7 +2363,8 @@ Der Packhaken ersetzt keinen Liefer- oder Versandstatus. Nummer des Umschlags = 
 auch in der Wareneingangsansicht; Sortierung und das Abschliessen anderer Kunden aendern sie nicht.
 Kundendetails sind kompakt aufklappbar. Seit #1614 zeigt die Packstation jeweils eine der
 vier Arbeitslisten Packbereit / Wartet auf Ware / Zu klaeren / Gepackt (`mpbereich`), standardmaessig
-Packbereit. Die Suche (`mpq`) durchsucht alle vier Listen, auch Produkte und Farbnummern.
+Packbereit. Die Suche (`mpq`) durchsucht alle vier Listen, auch Produkte und Farbnummern. In der Adresse steht
+nur ein Verweis, der Begriff bleibt im Speicher der Seite (`lib/suchverweis.mjs`, ebenso `kq` und `mpfertig`).
 Ein Direktumschlag (`umschlag`) oeffnet dessen Arbeitsliste und die passende Karte.
 Die Wareneingangsansicht nach Partnerladen (`mp=laden`) bleibt erhalten.
 
@@ -2268,6 +2484,8 @@ Bestehende getrennte Versandaktionen und bewusst bestaetigte Bestellaktionen ble
 
 
 ## Kettler und Packstuecke
+
+**Bezugsweg abwaegen (Inhaber 2026-11-04):** Bei Massware aus der Rolle zeigt der Waren-Bestelldialog je Auftrag einen Hinweis. Liegt die PLZ in unserem Liefergebiet (10-14, 16; dieselbe Grenze wie beim Kettler-Vorschlag), kann die Rolle direkt beim Hersteller guenstiger sein: wir schneiden zu und liefern an. Sonst ist meist der Grosshandel besser, wegen der Speditionskosten. Es ist nur ein Hinweis (`bezugswegHinweis` in `lib/lieferanten.mjs`): keine Preise, kein Umschalten, die Bestellmail bleibt gleich.
 
 **Wer kettelt (Inhaber 2026-11-03):** Steht bei einem Lieferanten in den privaten Stammdaten `ware.kettelnMoeglich: true`, fragt der Bestelldialog bei Direktversand (`SUPPLIER_DIRECT`) je gekettelten Massteppich, ob der Lieferant kettelt und direkt liefert oder ob der Zuschnitt zu unserem Kettler geht. Bis zur Wahl steht der Teppich in keiner Bestellmail. Ueber 200 cm kurzer Seite ist der Lieferant als meist guenstiger markiert, weil vom Kettler sonst die Spedition dazukommt; das ist nur eine Empfehlung. Ohne den Eintrag und bei anderer Ware gilt weiter die Regel „gekettelt zum Kettler“, dort wählt man das Ziel wie bisher mit den Knöpfen im Dialog. Die Wahl laeuft als Parameter `kettelwege` (`<Position>=lieferant|kettler`) durch Vorlage und Vorbereitungsstand; dauerhaft gespeichert wird nur der Vermerk `ueber` beim Bestellen (`kettler` oder `kunde`). Auch die Dialoge ohne Bestellmail (Einzelartikel, „Alle als bestellt markieren“, „Ware ist bestellt“) fragen bei gekettelten Direktversand danach. Die Kundenakte nennt den Weg nur mit Vermerk; fehlt er bei Direktversand, steht dort „Nicht vermerkt, bitte klären“ und der Kettler-Dialog bleibt offen, weil die Ware dort liegen kann.
 
@@ -2404,9 +2622,18 @@ zwischengespeichert; die Alltagssichten brauchen sie ohnehin). Der Inhaber sieht
 Laden-/Treppenanfragen, Angebote aus Kundenfällen und Team-Aufgaben (`NEBENBEREICH_ARTEN`: `service`,
 `angebot`, `aufgabe`), auch wenn sie rot sind: der Inhaber hat sie am 22.10. in „Weitere Bereiche“
 geschoben, die Anfragen stehen dort mit Zahl und Alter; Kundenfälle und Aufgaben werden auf der
-Shop-Übersicht deshalb gar nicht geladen. Gelbes und Normales bleibt in den Alltagssichten, damit
-die Warenbestellungen direkt darunter zuerst kommen; drei Zeilen sichtbar, der Rest klappt auf.
-Ohne rotes To-do erscheint kein Block.
+Shop-Übersicht deshalb gar nicht geladen. Gelbes und Normales bleibt in den Alltagssichten; drei
+Zeilen sichtbar, der Rest klappt auf. Ohne rotes To-do erscheint kein Block. Seit 05.11. steht der
+Block unter den Warenbestellungen (Inhaber 22.10.: zahlende Warenkunden zuerst).
+
+**Warenkennzahl (05.11.).** `ansichten/heute/warenkennzahl.mjs`, nur Inhaber, ganz oben: Warenumsatz
+und Warenkunden der letzten 7 Tage, die 7 Tage davor, Muster in einer eigenen Zeile. Gerechnet in
+`operations/lib/kennzahlen.mjs`: bezahlt, brutto, ohne Versand, Grundlage `currentSubtotalPriceSet`.
+Das ist der Stand nach Bestelländerungen; `totalPriceSet` bleibt der Wert bei Bestellung und zählte
+eine getauschte Position doppelt (#1056). Service auf einer Warenbestellung zählt mit, allein macht
+er niemanden zum Warenkunden. Zeilensummen und Bestellwerte (`summen`, `bestellwert`) zeigen ebenfalls
+den aktuellen Stand, stornierte Bestellungen den Wert bei Bestellung. Tests: `warenkennzahl.test.mjs`,
+`operations/tests/kennzahlen.test.mjs`.
 Tests: `shop-start-probleme.test.mjs`, `shop-start.test.mjs`.
 
 Shopify-Archivierung bleibt ein ausdruecklicher bewusster Abschluss: `closedAt` wird als
@@ -2526,8 +2753,13 @@ Ware bekommt nie einen Abschluss-Vorschlag (eine bezahlte Bestellung schließt n
 „Ansehen“ und „Läuft noch“.
 
 **Anzeige und Knöpfe.** `ansichten/heute/aufraeumen.mjs`, Block „Alte Bestellungen aufräumen · N“ auf der
-Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar. Kein
-eigener Schreibpfad:
+Shop-Übersicht unter „Muster & Packstation“, nur mit Fällen, längste Ruhe zuerst, fünf sichtbar.
+**Eine Bestellung einmal (06.11.2026, #1996):** Steht sie schon rot unter „Probleme“ (z. B. „Beim Lieferanten
+nachfragen“ für #1049), fehlt sie im Block und zählt dort nicht mit (`aufraeumListe(zeilen, { ohne })`). Die
+roten To-dos aus `lib/todos.mjs` tragen dafür `orderIds`, `problemOrderIds()` in `ansichten/heute/probleme.mjs`
+sammelt sie. Am Problem-Eintrag hängt dann eine Zeile „#1049: seit 17 Tagen keine Bewegung“ mit denselben
+Knöpfen (`aufraeumenUnterProblem()`, dieselben data-Attribute, Klicks über `aufraeumenKlick()`), sodass
+Abschließen und „Läuft noch“ erreichbar bleiben. Kein eigener Schreibpfad:
 - **Abschließen** (Rückfrage mit Vermerk) = `POST /api/kunden/bestellung-fertig` mit den offenen
   Musterpositionen und `notiz` = Vermerk („Aufgeräumt: …“). Ohne vorgegebenen Vermerk „Abschließen…“:
   der Vermerk ist „Aufgeräumt: <eingegebener Grund>“. Bucht wie jedes „Erledigt“ in Shopify als
@@ -2553,18 +2785,18 @@ gepackt, ohne dass jemand den Versand eingetragen hatte. Dashboard und Liste mer
   „Umschlag gepackt am TT.MM. – zur Post bringen und als verschickt eintragen“ (Knopf wie bisher
   „Muster sind verschickt…“). Der Ablauf selbst bekommt keinen Schritt dazu. Eine kaputte Packablage
   lässt die Zeitleisten ohne diese Angabe laufen.
-- **Aufräumliste:** Ein Musterauftrag mit gepacktem Umschlag, bei dem kein Artikel „raus“ ist
-  (`grund: 'gepackt'`), wird schon nach 3 Tagen Ruhe ein Fall (`GEPACKT_OHNE_VERSAND_AB_TAGEN`). Die Uhr
-  läuft ab dem Packen. Ein danach nachgetragenes „bestellt“/„angekommen“ ist keine Bewegung, Notizen und
-  spätere Zeitleistenschritte schon (`ruheSeitPacken()`).
-- **Knöpfe:** „Ist verschickt…“ öffnet den Versanddialog wie an der Zeitleiste (`oeffneVersandDialog`
-  mit `mailVorab: false`, Vermerk „Umschlag gepackt am …, Versand beim Aufräumen eingetragen“) und bucht
-  in Shopify. „Liegt noch hier“ schreibt eine Notiz, und die Liste fragt nach 3 Tagen wieder.
-  „Abschließen“ gibt es hier bewusst nicht: „erledigt“ übersprünge das Nachfassen beim Kunden.
+- **Aufräumliste (bis 06.11.2026):** Ein Musterauftrag mit gepacktem Umschlag, bei dem kein Artikel „raus“
+  war, wurde nach 3 Tagen Ruhe ein Fall (`grund: 'gepackt'`) mit „Ist verschickt…“ und „Liegt noch hier“.
+  **Seit #1996 entfallen:** Gepackt heißt seit Abschnitt 32 verschickt; was trotzdem gepackt und nie
+  eingetragen ist, steht rot in der Packstation (Reiter „Gepackt“, „Verschickt – Kunde informieren…“) und auf
+  Heute als rote Plakette „× n Umschläge nicht eingetragen“ in „Muster & Packstation“. `aufraeumFall()` gibt
+  für solche Aufträge `null` zurück – auch nach 14 Tagen, denn „Abschließen“ wäre dort falsch (keine
+  Versandmail an den Kunden). Ist schon ein Artikel raus, gilt die normale Frist von 14 Tagen. Ein Server
+  von vor #1996 liefert bis zum Neustart noch `grund: 'gepackt'`; `aufraeumListe()` zeigt das nicht.
 
 Tests: `operations/tests/auftragsverlauf.test.mjs` (nächster Schritt, fremde und mehrere Umschläge,
-Ware, schon verschickt) und `docs/ai-dashboard/tests/aufraeumen.test.mjs` (Grenze 2/3 Tage,
-„Liegt noch hier“, nachgetragener Wareneingang, teils verschickt, Knöpfe, API mit Packablage).
+Ware, schon verschickt) und `docs/ai-dashboard/tests/aufraeumen.test.mjs` (kein Fall nach 3, 20 oder 40
+Tagen, teils verschickt als Ruhefall, alter Server, API mit Packablage, eine Bestellung einmal).
 
 ## Dienst zieht main automatisch nach (26.10.2026, #1710)
 
@@ -2575,16 +2807,20 @@ Neue Staende von main kamen bis zum 26.10. nur per Hand oder KI-Lauf hinein (Ski
 
 1. `git fetch`; ohne neuen Commit endet der Lauf still.
 2. `git merge-tree --write-tree HEAD origin/main`. Konflikt: „haengt“, nichts geaendert.
-3. `git commit-tree` legt den Merge-Commit an, ohne den Checkout zu beruehren. Genau dieser
+3. Nur der Dienst (`TP_NACHZIEHEN_DIENST=1`) und nur bei Aenderungen mit Neustart: PR-Serien
+   buendeln (`nachziehenBuendeln`, Werte in `BUENDELN`). Stand „wartet“ mit dem Grund „bündelt
+   Neustarts“, bis der neueste neue Commit 15 Minuten alt ist, hoechstens bis der aelteste
+   30 Minuten alt ist. Von Hand gestartet, `--probe` und reine Theme-Aenderungen warten nicht.
+4. `git commit-tree` legt den Merge-Commit an, ohne den Checkout zu beruehren. Genau dieser
    Commit wird in einer losgeloesten Arbeitskopie im Temp-Ordner getestet (`dashboard:test`,
    bei `operations/` bzw. `social/` auch `operations:test`/`social:test`), mit leerem
    `TP_PRIVAT_DIR`. Ein gruener Baum wird beim Warten nicht erneut getestet.
-4. Ruhe (`operations/lib/betrieb-nachziehen.mjs`): keine aktive Codex-Automation, deren Auftrag
+5. Ruhe (`operations/lib/betrieb-nachziehen.mjs`): keine aktive Codex-Automation, deren Auftrag
    diesen Checkout nennt, hat einen offenen Lauf (`task_started` ohne `task_complete` im
    Protokoll, hoechstens 30 Minuten alt), und keine Datei direkt im Privatordner wurde in den
    letzten zwei Minuten geschrieben (Unterordner des Sync-Dienstes, `*.log` und
    `aktualisierung.json` zaehlen nicht). Bis zu zehn Minuten Warten, sonst „wartet“.
-5. Bei geaendertem `package-lock.json` zuerst `node_modules` gegen die in der Probe frisch
+6. Bei geaendertem `package-lock.json` zuerst `node_modules` gegen die in der Probe frisch
    installierten und getesteten Bibliotheken tauschen (zwei `rename` im Checkout,
    `.nachziehen-module-neu`/`-vorher`; seit #1716, vorher `npm ci` im laufenden Betrieb, das
    `node_modules` erst loescht). Dann `git merge --ff-only` auf den getesteten Commit,
@@ -2594,7 +2830,7 @@ Neue Staende von main kamen bis zum 26.10. nur per Hand oder KI-Lauf hinein (Ski
    `social/`. Erfolg = neue PID und `/login` 200 (Social: `/api/status` 401).
    Der Dashboard-Start baut zuerst `issues.json`; scheitert der GitHub-Abruf, startet er mit der
    bisherigen Datei (`--weiter-mit-alten-daten`), deshalb bis zu 4 Minuten Startzeit.
-6. Fehler nach dem Vorspulen: `git reset --keep` auf den Commit von vorher, alte Bibliotheken
+7. Fehler nach dem Vorspulen: `git reset --keep` auf den Commit von vorher, alte Bibliotheken
    zurueckgetauscht (ohne Netz), Dienste erneut, „haengt“ mit dem Grund. Vor dem Tausch liegt der
    HEAD von vorher in `.nachziehen-module-head`; nach einem Abbruch holt `moduleReste` die alten
    Bibliotheken zurueck, wenn node_modules fehlt oder HEAD noch auf dieser Marke steht. Konflikt, rote Probe und gescheiterter Neustart
@@ -2652,8 +2888,9 @@ zugeordnet“, ohne Namen „Lieferant A“. „Default Title“ wird nicht als 
 Test: `zeitleiste-bestellweg.test.mjs`.
 
 **Inhaberzeile (#44).** `ansichten/heute/inhaber-zeile.mjs` (reine Funktionen): Shop-Kontrolle,
-7-Tage-Umsatz (Knopf `kz` klappt `kennzahlenBlock` auf), offene Entscheidungen, naechste Frist
-offener Aufgaben. Nur Inhaber; dafuer laedt die Shop-Übersicht beim Inhaber zusaetzlich
+Knopf „Weitere Kennzahlen“ (`kz` klappt `kennzahlenBlock` auf), offene Entscheidungen, naechste Frist
+offener Aufgaben. Die Frist einer Entscheidung zaehlt nur, bis entschieden ist (`fristGilt`): ab
+`bereit` meldet sie nichts mehr, das Issue darf fuer Nacharbeit offen bleiben. Nur Inhaber; dafuer laedt die Shop-Übersicht beim Inhaber zusaetzlich
 Kennzahlen und Shop-Kontrolle, fuer alle die Service-Anfragen (Zahl an „Weitere Bereiche“).
 Tests: `inhaber-ueberblick.test.mjs`, `shop-start.test.mjs`.
 
@@ -2706,3 +2943,168 @@ arbeiten oder arbeiten wollen – mit festen Ansprechpartnern, ihren Objekten un
 - Tests: `tests/hausverwaltungen.test.mjs` (Regeln, API, Rollen, Ansicht).
 
 Aufkleber aendern (2026-11-02): `produktEntwurf()` in `lib/freie-etiketten.mjs` macht aus einem Produktetikett aenderbaren Text; `e.schriften` traegt die Schrift je Zeile, `e.url` den QR-Code. Nichts davon wird gespeichert.
+
+## 31. Eingeworfen: Klick, Frist, Buchung (05.11.2026, #1937) – abgelöst am 06.11.2026
+
+Die Prüfung vom 05.11. fand 38 von 83 Musterbestellungen ohne Versandeintrag. Darauf folgte der Klick
+„Eingeworfen“ unter „Gepackt“, gebucht vom Zeitgeber des Dienstes erst nach 5 Minuten Frist mit „Rückgängig“.
+Im Alltag drückte ihn niemand: am 06.11. lagen 18 Bestellungen gepackt und nie gebucht, kein
+Kunde hatte eine Versandmail. Klick, Frist, Zeitgeber (`einwurfBuchen`, `TP_EINWURF_TEST_SEKUNDEN`) und die
+Gruppen „Wird eingetragen“, „Heute gepackt“, „Altfälle“ sind entfernt; was heute gilt, steht in Abschnitt 32.
+
+**Kampagnenkennung.** Links der Muster-Nachfrage tragen `utm_source=muster-nachfass`, `utm_medium=email`,
+`utm_campaign=muster-nachfass`, `utm_content=erste|erinnerung` (`nachfassLink`, `fuelleText({ nachfass })`), in
+Versandlauf, „Jetzt senden“ und mailto-Vorschlag. Keine Kunden- oder Bestellkennung. Andere Mails aus
+`fuelleText` (Muster nicht verfügbar, Rückfrage) bleiben ohne. Lesen: GA4 unter Kampagne `muster-nachfass`;
+je Bestellung `customerJourneySummary` der Admin-API, das der Bestellexport noch nicht holt.
+
+Tests: `tests/muster-nachfassen.test.mjs`.
+
+## 32. Gepackt = verschickt (06.11.2026)
+
+Entscheidung des Muster-Verantwortlichen am 06.11.2026: „wenn muster alle da sind und markiert wurden immer
+als verschickt markieren und kunden bescheid geben“, auf Rückfrage „sofort beim Packen“. Damit gilt die Regel
+aus Abschnitt 31 („gepackt wird nie von selbst zu raus“) nicht mehr.
+
+**Ablauf.** „Umschlag gepackt – verschicken…“ (Schritt 3), „Alle n da – gepackt, verschicken…“ (Schritt 2 bzw.
+unter „Mehr“) und „Restumfang geprüft – gepackt, verschicken…“ öffnen zuerst eine Rückfrage in der Karte
+(`versandFrageHtml`, kein `window.confirm`: der häufigste Klick des Tages, auch am Handy). Sie nennt, was
+passiert („An Kunden raus“, Shopify, Versandmail, kein Zurücknehmen), bei „Alle da“ die Zahl der Muster und
+den Hinweis, wenn laut Bestellstand eines nicht angekommen ist, bei Teilerstattung den Restumfang. Die beiden
+Browser-Dialoge, die das vorher fragten, sind weg. Esc oder „Abbrechen“ schreibt nichts. Der Ja-Knopf trägt
+`id="mpVersandJa"` und `data-focus-erhalten`, damit ein Neuzeichnen den Fokus nicht verliert.
+
+**Server.** `POST kunden/muster-packen` mit `gepackt: true` geht an `kundenMusterGepacktVerschicken` und
+verlangt `verschicken: true` (eine noch offene alte Seite bekommt 409 „Seite ist veraltet“, ebenso die alten
+Aktionen `eingeworfen` und `eingeworfen-zurueck`). Reihenfolge, ganz oder gar nicht:
+1. `gepacktPruefen`: jedes Muster abgehakt (oder `alleEingelegt` mit genau den gezeigten offenen), keine
+   offenen Angaben, keine Klärung, kein Direktversand. Sonst 409 „Nicht gepackt, nichts verschickt …“.
+2. `rausPlan` für jede Bestellung des Umschlags (Musterautomatik, Fehlmenge). Sonst 409 „Nicht gepackt,
+   nichts verschickt, keine Mail – #…“. Bis hier ist nichts geschrieben, auch kein Haken.
+3. `kundenMusterPackenSetzen` (Haken, Gepackt-Vermerk, Wareneingang „bestellt“ → „geliefert“, Abschnitt
+   „Eingelegt und gepackt bestätigen den Wareneingang“), dann `kundenMusterVerschicken`: Schritt „raus“ je
+   Bestellung, Lagerabgang, Shopify mit Versandmail. Ausnahmen unverändert: persönlich vorbeigebrachte Muster
+   ohne Mail (die Rückfrage sagt das, Feld `persoenlich` je Muster), Ware einer Mischbestellung bleibt
+   unberührt, gesperrte Muster über „Ohne dieses Muster weiter packen“. Bis zur ersten Shopify-Antwort läuft
+   alles ohne `await`.
+
+Bleibt „gepackt, nicht verschickt“ doch einmal stehen (lokaler Schritt gescheitert), steht der Umschlag
+unter „Gepackt“ und ein roter Hinweis oben.
+
+**Ist nicht jedes Muster abgehakt, bucht „Gepackt“ nichts: 409, kein Gepackt ohne Buchung.** Ein Gepackt-
+Vermerk ohne Buchung wäre genau der unsichtbare Zustand, aus dem die 18 Altfälle entstanden.
+
+**Versandhinweise** (`versandProbleme` in `muster-packen.json`, `versandProblemMerken`): Was beim Verschicken
+nicht `gebucht`/`bereits` ist (Shopify nicht erreicht, unklar, lokal nicht eingetragen), steht als roter
+Hinweis oben in der Packstation, für alle Geräte, bis „Verstanden“ (`aktion: 'versand-verstanden'`) oder bis
+derselbe Umschlag sauber verschickt wird. Die frühere Ablage `eingeworfen` wird beim Lesen übernommen: ein
+Vermerk mit Problem bleibt, einer ohne Problem wurde nie gebucht und erscheint als „Als eingeworfen vermerkt,
+aber nie eingetragen“. Beim nächsten Schreiben verschwindet der alte Schlüssel.
+
+**Reiter „Gepackt“** (`gepacktNichtVerschickt`): nur Umschläge, die gepackt und nie eingetragen wurden, älteste
+Bestellung zuerst, keine Sammelaktion. Je Umschlag im Kopf „Verschickt – Kunde informieren…“ (dieselbe
+Rückfrage, dann `aktion: 'verschickt'`) und, wenn vor heute gepackt (`frueherGepackt`, Berliner Tag), „War schon
+früher raus…“ (Versanddialog ohne Mail, nur die Muster des Umschlags). „Heute“ zeigt die Zahl nur, wenn sie
+nicht 0 ist („n Umschläge gepackt, nicht verschickt“, Bernstein).
+
+Tests: `tests/packstation-gepackt-verschickt.test.mjs`, `tests/packstation-versandmail.test.mjs` (Altfall-Weg),
+`tests/dashboard-abschlusskorrekturen.test.mjs` (Klicks), `tests/packstation-arbeitslisten.test.mjs` (Ansicht).
+
+## 33. Ampel: rot, gelb, ruhig (06.11.2026, #1969)
+
+Freigabe Inhaber 06.11.: **Rot** heißt, etwas hält einen Auftrag oder einen Kunden auf. **Gelb** heißt, es ist
+etwas zu tun, aber nichts steht still. Alles andere bleibt ruhig, ohne grüne Fläche. Farbe steht nie allein:
+immer Zeichen und Wort (`× Blockiert`, `! Nachhaken · 9 Tage beim Lieferanten`, `✓ … ohne Befund`).
+
+**Ein Ort für die Regeln.** `lib/ampel.mjs` (ohne DOM, auch auf dem Server): `WARTESCHWELLEN`
+(`nachhakenTage: 7`, `problemTage: 14`), `warteAmpel()`, `bestellbarkeit()`, `musterlagerAmpel()`,
+`dringendereAmpel()`. `operations/lib/lieferanten.mjs` (`WARTE_NACHHAKEN_TAGE`/`WARTE_PROBLEM_TAGE`),
+`lib/todos.mjs` (`SCHWELLEN`) und `lib/einkauf-lieferanten.mjs` (`SCHWELLEN_STANDARD`) übernehmen die
+Schwelle von dort; `operations/tests/lieferanten.test.mjs` schlägt an, wenn irgendwo wieder eine Zahl steht.
+Darstellung: `bausteine/ampel.mjs` (`ampelRand()` für den linken Rand wie `.order-row.rot/.gelb`,
+`ampelPlakette()`), Styles in `app.css`, Abschnitt „Ampel“, nur mit den Tokens ok/warn/crit.
+
+**Wartestand (Einkauf Je Lieferant, Je Auftrag, Tabelle „Bestellungen“, Heute).** Kalendertage seit
+`bestelltAm` (Berlin, `lib/kalendertage.mjs`). Gelb ab 7, rot ab 14; rot sofort, wenn der bestätigte
+Liefertermin vorbei ist, eine zu bestellende Position blockiert ist (Artikelnummer fehlt, Menge ungeklärt)
+oder ein bestelltes Muster gesperrt ist. Gesperrte Muster sind kein Verzug: Je Lieferant führt sie im
+Abschnitt „Muster nicht lieferbar“, Je Auftrag zeigt den Hinweis mit Weg in die Packstation. Die Sperre
+kommt als `gesperrteMuster` (Position-IDs) aus `/api/einkauf/bestellungen` (`operations/lib/mustersperre.mjs`).
+Warum Kalendertage: Der Inhaber zählt Wartezeiten in Kalendertagen (Fristen der To-dos, Notiz 28.10.), und
+14 Kalendertage sind in einer normalen Woche genau die bisherigen 10 Werktage. Werktage hätten „rot“ auf
+drei Kalenderwochen geschoben und Feiertage gebraucht, die niemand pflegt.
+
+**Jede Tageszahl nennt ihren Bezug (seit 06.11.2026, #1996).** `warteAmpel()` liefert `bezug`: `'lieferant'`
+(Status bestellt, gezählt ab `bestelltAm`) oder `'hier'` (Status geliefert, ab `geliefertAm`). `warteWort()`
+schreibt „Überfällig · 17 Tage beim Lieferanten“, „Nachhaken · 9 Tage beim Lieferanten“ und für Ware bei uns
+„Liegt seit 8 Tagen hier“ – nie „Nachhaken“, denn dann sind wir dran, nicht der Lieferant. Stufe, Zeichen
+und Schwellen bleiben gleich. `tageMitBezug(tage, bezug)` ist die eine Formulierung; auf „Heute“ reicht
+`alterText(tage, t.alterBezug)` sie an die Alters-Marke durch (Nachfragen beim Lieferanten: `lieferant`,
+Rausgeben und Von uns abschicken: `hier`, „Zuerst klären“ und „Muster nicht lieferbar“: `kunde` = „Kunde wartet
+17 Tage“, gezählt ab der Kundenbestellung). Eine Zahl je Zeile: Der Titel „Beim Lieferanten nachfragen“ und
+der Text von „rausgeben“ wiederholen die Tage nicht mehr. In der Packstation steht unter einer Plakette mit
+Tagen (`ueberfaellig`, `nachhaken`, `haengt`) nur „Kunde bestellt 19.10.“ statt „wartet seit 18 Tagen“.
+To-dos ohne `alterBezug` zeigen weiter nur „n Tage“.
+
+**Lexikon: Bestellbarkeit je Produkt** (`bestellbarkeit()`, Server `lexikonAmpeln()` in
+`scripts/dashboard-api.mjs`, je Lexikon-Stand einmal gerechnet). Rot: einer Bestellvariante fehlt
+`einkauf.lieferant`, Artikelnummer (oder Produktname beim Lieferanten) oder Bestelleinheit, oder keine
+Variante ist verfügbar. Gelb: einzelne Farben/Varianten nicht lieferbar, oder kein Raumbild – nur wenn die
+Bildrechte-Liste Bilder mit Typ führt, aber keines vom Typ `raum` (`raumbildJeProdukt()` in
+`operations/lib/bildrechte.mjs`); nicht erfasst heißt unbekannt, nicht gelb. Nachtragsangaben wie
+`link.status = nur_artikelnummer` bleiben ruhig. Ohne Ampel: Muster-, Test- und Serviceprodukte,
+Geschenkgutschein, eigene Restware (Tag `sonderposten`); Wunschmaß- und Original-Varianten zählen nicht als
+Bestellvariante. `GET /api/lexikon?ampel=rot|gelb` filtert, `ampel: {rot, gelb, ruhig, filter}` steht in
+jeder Antwort, `items[].ampel` und `/api/lexikon/produkt` tragen `{stufe, wort, text}`. Oberfläche: Kopfzeile
+„Bestellbarkeit: × Nur rot (n) · ! Nur gelb (n) · ✓ n ohne Befund“ (Parameter `lampel`, setzt die Seite zurück),
+Karte mit linkem Rand und Plakette, Grund als kurzer Text, dasselbe oben auf der Produktseite.
+
+**Musterlager** (`musterlagerAmpel()`, `ansichten/einkauf/musterlager.mjs`): als leer gemeldet oder
+aufgebraucht rot, knapp gelb (Zuschnitt: reicht noch für höchstens 5 Muster; Einzelmuster: alles Übrige ist
+reserviert), sonst ruhig. Einzelmuster werden bewusst nicht ab 5 Stück gelb: es werden keine Bestände
+nachgekauft (Inhaber 15.10.), und fast jedes Einzelmuster liegt in kleiner Zahl im Regal.
+
+**Packstation** (Runde 2, 06.11.): `packMusterAmpel()` je Muster, `packUmschlagAmpel()` je Umschlag,
+`packRotZaehlung()` für die Reiter, gerechnet in `musterPackliste()` mit `jetzt` des Servers (`muster[].ampel`,
+`kunden[].ampel` in `GET /api/kunden/muster-packen`). Je Muster: abgehakt, angekommen, aus dem Musterlager ruhig;
+beim Lieferanten bestellt mit `warteAmpel()` (7/14 Tage, Liefertermin aus `beschaffung.liefertermin`); gesperrt
+(„Kommt nicht“, geht vor fehlender Zuordnung, weil dann der Kunde informiert werden muss) und Zuordnung fehlt rot;
+noch nicht bestellt gelb. Rot wird es, wenn die Musterautomatik es länger als `MUSTER_KLAER_WERKTAGE` festhält
+(`automatikHaengtWerktage()` in `lib/todos.mjs`, dieselbe Regel wie das rote To-do „n Muster hängen“; der Server
+reicht dafür den Klärfall samt `seit` herein, `automatikFallVon`), sonst ab `FRISTEN.bestellen[1]` (7) Tagen seit der
+Kundenbestellung (`offenTage`, `tageSeit()`), genau wie das rote To-do „Muster bei … bestellen“ auf Heute. So wird
+ein nie bestelltes Muster auch rot, wenn die Musterautomatik pausiert oder ausfällt (Review #1975). Je Umschlag die
+dringendste Stufe, dazu rot: gepackt und nie eingetragen (Reiter „Gepackt“), roter Versandhinweis mit diesem
+Packschlüssel (`versandProbleme`), Lieferadresse unvollständig; alles unter „Zu klären“ mindestens gelb („Fehlt noch“,
+„Direktversand prüfen“, „Restumfang prüfen“, sonst „Zu klären“). Die Reiter Packbereit, Zu klären, Wartet auf Ware und
+Gepackt nennen die roten Umschläge („× 2 überfällig“, „× 4 blockiert“; sind alle rot, nur das Wort); „Alle offenen“
+nicht, die Summe stünde sonst zweimal da. In jeder Gruppe stehen rote Umschläge oben, dann angefangene. Weggefallen:
+`WARTET_AB_TAGEN = 2` (Bernstein-Datumszeile ab 2 Tagen Kundenwartezeit, #1572, ohne Vorgabe des Inhabers; färbte am
+06.11. 16 von 18 Umschlägen), der Bernstein-Rahmen von „Zu klären“ und der Bernstein-Balken angefangener Umschläge.
+
+Tests: `tests/ampel.test.mjs`, `tests/auftrags-ablauf.test.mjs`, `tests/todos.test.mjs`,
+`tests/api.test.mjs` (Lexikon-Filter), `operations/tests/bildrechte.test.mjs`, `operations/tests/lieferanten.test.mjs`,
+Packstation: `tests/muster-packen.test.mjs`, `tests/packstation-arbeitslisten.test.mjs`, `tests/packstation-gepackt-verschickt.test.mjs`.
+
+## Lieferantenstand je Position (seit 06.11.2026)
+
+Kein zweiter Status: der Auftragsfluss bleibt `null → bestellt → geliefert → raus → erledigt`
+(`operations/lib/auftragsstatus.mjs`). Der Lieferantenstand sind Vermerke im vorhandenen
+Unterobjekt `beschaffung` derselben Position, geschrieben von `setzeLieferantenstand()`
+(`operations/lib/beschaffung.mjs`) über `POST /api/einkauf/auftragsstatus` mit
+`aktion: 'lieferantenstand'` und `schritt`:
+
+| Schritt | Wann | Felder |
+|---|---|---|
+| `anfrage` / `anfrageZurueck` | nur ohne Stand | `beschaffung.anfrage = { am (Tag), lieferant, notiz, erfasstAm, erfasstVon }` |
+| `bestelldaten` | nur „bestellt“ | korrigiert `bestelltAm` (tatsächlicher Versand der Bestellung) und `lieferantBestellnummer`; `beschaffung.bestellung = { lieferwegOffen, notiz }` |
+| `ab` / `abZurueck` | „bestellt“ oder „geliefert“ | `beschaffung.ab = { nummer, preis, belegId, link (nur https), pruefung: {menge, masse, lieferweg, zuschlaege: ok|abweichung}, abweichung, geprueftAm, geprueftVon }`, dazu `beschaffung.liefertermin` (Pflicht) |
+
+Abgeleitet wird der Stand in `lieferantenStand()` (`docs/ai-dashboard/lib/beschaffung.mjs`):
+Offen · Lieferant angefragt · Bestellt (AB fehlt, nach 2 Werktagen „nachfassen“) · AB bestätigt
+(Abweichungen gelb, Termin überschritten rot) · danach die bisherigen Schritte. Ein Liefertermin
+ohne AB-Vermerk (Altbestand) gilt als bestätigt und mahnt nicht. Muster, Eigenleistung
+(Kettelservice) und Lagerware haben keinen Lieferantenstand; der Server lehnt sie mit 409 ab.
+„Zurück auf offen“ verschiebt AB, Bestelldaten und den AB-Liefertermin in den Verlauf, die Anfrage
+bleibt. Jeder Schritt steht im Verlauf der Position und im Auftragsverlauf (`merke`).
+

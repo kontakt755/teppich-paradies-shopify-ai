@@ -30,6 +30,7 @@ import { kunden } from './ansichten/kunden/gemeinsam.mjs';
 import { viewEinkauf } from './ansichten/einkauf.mjs';
 import { viewLexikon } from './ansichten/lexikon.mjs';
 import { musterPackenOffen } from './ansichten/kunden/muster-packen.mjs';
+import { musterAnrufeOffen } from './ansichten/kunden/muster-anrufe.mjs';
 import { bestellungenOffen } from './ansichten/kunden/bestellungen.mjs';
 import { viewKunden } from './ansichten/kunden.mjs';
 import { viewOrganisation } from './ansichten/organisation.mjs';
@@ -54,7 +55,8 @@ import { bindEvents } from './ereignisse.mjs';
 import { pruefeAntworten } from './bausteine/fehler-melden.mjs';
 import { starteDatenstand, zeichneDatenstand } from './bausteine/datenstand.mjs';
 import { starteDienstversion } from './bausteine/dienstversion.mjs';
-import { serviceOffenAnzahl } from './ansichten/kunden/serviceanfragen.mjs';
+import { kundenMenueZahl } from './lib/serviceanfragen.mjs';
+import { faelleFuerMenue } from './ansichten/kunden/faelle.mjs';
 
 const VIEWS = { heute: viewHeute, prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, akquise: viewAkquise, hausverwaltungen: viewHausverwaltungen, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
@@ -62,8 +64,8 @@ async function init() {
   registriereAnsichten(VIEWS);
   registriereNachZeichnen(zeichneDatenstand);
   // Zaehler in der Navigation: nur, was ohnehin geladen ist - kein eigener Abruf dafuer.
-  // Kunden: sofort faellige Faelle plus alle noch offenen Service-Anfragen.
-  registriereNavZaehler({ bestellungen: () => bestellungenOffen({ art: 'ware' }), packen: musterPackenOffen, kunden: () => (kunden.faelle?.sofort || 0) + serviceOffenAnzahl() });
+  // Kunden: sofort faellige Faelle plus alle noch offenen Service-Anfragen - leer, bis beide geladen sind.
+  registriereNavZaehler({ bestellungen: () => bestellungenOffen({ art: 'ware' }), packen: musterPackenOffen, fragen: musterAnrufeOffen, kunden: () => kundenMenueZahl(faelleFuerMenue(), kunden.serviceanfragen) });
   parseRoute();
   bindEvents();
   renderThemeButton();

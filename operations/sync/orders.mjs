@@ -53,6 +53,12 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
       subtotalPriceSet { shopMoney { amount currencyCode } }
       totalShippingPriceSet { shopMoney { amount currencyCode } }
       totalTaxSet { shopMoney { amount currencyCode } }
+      # Stand nach Bestellaenderungen und Erstattungen. total* bleibt der Wert bei Bestellung:
+      # eine nachtraeglich getauschte Position stand sonst doppelt im Umsatz (#1056).
+      currentTotalPriceSet { shopMoney { amount currencyCode } }
+      currentSubtotalPriceSet { shopMoney { amount currencyCode } }
+      currentShippingPriceSet { shopMoney { amount currencyCode } }
+      currentTotalTaxSet { shopMoney { amount currencyCode } }
       shippingLine { title code source }
       paymentGatewayNames
       customAttributes { key value }
@@ -87,6 +93,64 @@ query OpsOrderLineItems($id: ID!, $first: Int!, $after: String) {
     }
   }
 }`;
+
+/**
+ * Bestellbearbeitungen (Vereinbarungen) fuer wenige Bestellungen auf einmal. Eigene Abfrage statt Feld in
+ * ORDERS_QUERY: dort halbierte schon ein kleiner Zusatz die Seitengroesse und verdoppelte die Abrufe (06.11.).
+ */
+export const ORDER_AGREEMENTS_QUERY = `
+query OpsOrderAgreements($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ... on Order {
+      id
+      agreements(first: 5) {
+        pageInfo { hasNextPage }
+        nodes {
+          happenedAt reason
+          sales(first: 20) { pageInfo { hasNextPage } nodes { actionType ... on ProductSale { lineItem { id } } } }
+        }
+      }
+    }
+  }
+}`;
+
+/** So viele Bestellungen je Abruf: 5 Vereinbarungen x 20 Verkaeufe bleiben so unter dem Kostenlimit. */
+export const AGREEMENTS_JE_ABRUF = 8;
+
+/**
+ * Nur Bestellungen, bei denen eine Nachbestellung die Arbeit noch betrifft: nicht storniert, nicht
+ * vollstaendig versendet und nach dem Kauf noch einmal geaendert (eine Bearbeitung setzt updatedAt).
+ */
+export function brauchtAgreements(order) {
+  if (!order?.id || order.cancelledAt) return false;
+  if (['FULFILLED', 'RESTOCKED'].includes(order.displayFulfillmentStatus)) return false;
+  const erstellt = Date.parse(order.createdAt), geaendert = Date.parse(order.updatedAt);
+  return Number.isFinite(erstellt) && Number.isFinite(geaendert) && geaendert - erstellt > 60_000;
+}
+
+/**
+ * Haengt `agreements` an die betroffenen Bestellungen (fuer bestelluebersicht.mjs nachbestellungen()).
+ * Scheitert der Abruf, bleibt die Bestellung ohne - dann fehlt nur der Hinweis "Nachbestellung", der
+ * Abgleich der Bestellungen laeuft weiter.
+ * @returns {Promise<{abgefragt:number, fehler:string|null}>}
+ */
+export async function ergaenzeAgreements(proxy, orders, { warten } = {}) {
+  const ziel = orders.filter(brauchtAgreements);
+  let abgefragt = 0;
+  try {
+    for (let i = 0; i < ziel.length; i += AGREEMENTS_JE_ABRUF) {
+      if (i > 0) await wartenBeiThrottle(proxy, warten ? { warten } : undefined);
+      const teil = ziel.slice(i, i + AGREEMENTS_JE_ABRUF);
+      const daten = await proxy.execute(ORDER_AGREEMENTS_QUERY, { ids: teil.map(o => o.id) });
+      if (daten === null) return { abgefragt, fehler: null }; // Sammelmodus ohne Zugang
+      const jeId = new Map((daten?.nodes ?? []).filter(n => n?.id).map(n => [n.id, n.agreements]));
+      for (const o of teil) if (jeId.get(o.id)) { o.agreements = jeId.get(o.id); abgefragt += 1; }
+    }
+    return { abgefragt, fehler: null };
+  } catch (e) {
+    return { abgefragt, fehler: String(e?.message || e) };
+  }
+}
 
 export const ORDER_STATE_QUERY = `
 query OpsOrderState($id: ID!) {
@@ -301,7 +365,9 @@ export async function fetchOrdersRelevant(proxy, { tageFenster = STANDARD_TAGE_F
   if (!(tageFenster > 0)) throw new Error('fetchOrdersRelevant: tageFenster muss > 0 sein');
   const query = baueRelevantQuery(tageFenster, jetzt);
   const r = await paginiereOrders(proxy, query, { first, warten, fehlerPraefix: 'fetchOrdersRelevant' });
-  return { ...r, query };
+  // Nachbestellungen fuer die Packstation; ein Fehler hier haelt den Abgleich nicht auf.
+  const agreements = r.gesammelt ? { abgefragt: 0, fehler: null } : await ergaenzeAgreements(proxy, r.orders, { warten });
+  return { ...r, query, agreements };
 }
 
 function alsMetafeld(orderId, key, wert) {

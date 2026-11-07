@@ -10,6 +10,14 @@
  * Daneben (gleiche Datei): `haken` je Bestellposition (Muster ueberklebt, liegt im Umschlag),
  * `klaeren` je Umschlag (unvollstaendig: welche Positionen fehlen, kurze Notiz) und
  * `gedruckt` je Umschlag (Aufkleber und Adresse gedruckt: Umschlag vorbereitet, wartet auf Muster).
+ *
+ * `versandProbleme` je Umschlag: "Gepackt" bzw. "Verschickt" hat den Versand nicht sauber eingetragen
+ * (Shopify nicht erreicht, lokaler Schritt gescheitert). Bleibt stehen, bis jemand "Verstanden" drueckt
+ * oder derselbe Umschlag doch noch sauber verschickt wird.
+ *
+ * Bis 06.11.2026 (#1937) hiess diese Ablage `eingeworfen` und hielt auch Vermerke ohne Problem: der Klick
+ * "Eingeworfen", gebucht erst nach einer Frist. Den Weg gibt es nicht mehr (Gepackt = verschickt). Ein alter
+ * Vermerk ohne Problem wurde nie gebucht und gilt deshalb beim Lesen als Problem.
  */
 
 import fs from 'node:fs';
@@ -29,17 +37,22 @@ export function leseStand(datei) {
   try {
     inhalt = fs.readFileSync(datei, 'utf8');
   } catch (e) {
-    if (e?.code === 'ENOENT') return { gepackt: {}, haken: {}, klaeren: {}, gedruckt: {} };
+    if (e?.code === 'ENOENT') return leer();
     throw new Error(`${path.basename(datei)} ist nicht lesbar (${e?.code || e?.message}) – bitte aus der Sicherung holen`);
   }
-  if (!inhalt.trim()) return { gepackt: {}, haken: {}, klaeren: {}, gedruckt: {} };
+  if (!inhalt.trim()) return leer();
   let roh;
   try { roh = JSON.parse(inhalt); } catch {
     throw new Error(`${path.basename(datei)} ist beschädigt – bitte aus der Sicherung holen`);
   }
   const objekt = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
-  return { gepackt: objekt(roh?.eintraege), haken: objekt(roh?.haken), klaeren: objekt(roh?.klaeren), gedruckt: objekt(roh?.gedruckt) };
+  const alt = Object.entries(objekt(roh?.eingeworfen)).map(([pk, e]) => [pk, e?.problem ? e : { ...e, problem: ALT_NIE_GEBUCHT, problemAm: e?.zeit || null }]);
+  return { gepackt: objekt(roh?.eintraege), haken: objekt(roh?.haken), klaeren: objekt(roh?.klaeren), gedruckt: objekt(roh?.gedruckt),
+    versandProbleme: { ...Object.fromEntries(alt), ...objekt(roh?.versandProbleme) } };
 }
+
+const leer = () => ({ gepackt: {}, haken: {}, klaeren: {}, gedruckt: {}, versandProbleme: {} });
+export const ALT_NIE_GEBUCHT = 'Als eingeworfen vermerkt, aber nie eingetragen. Steht der Umschlag noch unter „Gepackt“, dort „Verschickt – Kunde informieren…“.';
 
 /** Nur die gepackten Umschlaege (fruehere Form der Datei). */
 export function leseAlle(datei) {
@@ -49,7 +62,7 @@ export function leseAlle(datei) {
 function schreibStand(datei, stand) {
   fs.mkdirSync(path.dirname(datei), { recursive: true });
   const tmp = `${datei}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ aktualisiertAm: new Date().toISOString(), eintraege: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren, gedruckt: stand.gedruckt || {} }, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({ aktualisiertAm: new Date().toISOString(), eintraege: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren, gedruckt: stand.gedruckt || {}, versandProbleme: stand.versandProbleme || {} }, null, 2));
   fs.renameSync(tmp, datei);
 }
 
@@ -77,6 +90,29 @@ export function setzeGedruckt(datei, packSchluessel, { gedruckt = true, von = nu
   else delete stand.gedruckt[key];
   schreibStand(datei, stand);
   return { packSchluessel: key, gedruckt: stand.gedruckt[key] || null };
+}
+
+/**
+ * Versand nicht sauber eingetragen: ein Vermerk je Umschlag, ein neuer ersetzt den alten.
+ * @param {{orderIds: string[], bestellungen: string[], meldung: string, von?: string, jetzt?: Date}} angaben
+ */
+export function vermerkeVersandProblem(datei, packSchluessel, { orderIds = [], bestellungen = [], meldung, von = null, jetzt = new Date() } = {}) {
+  const key = String(packSchluessel || '').trim();
+  if (!key) throw new Error('Kein Umschlag angegeben');
+  const stand = leseStand(datei);
+  stand.versandProbleme[key] = { zeit: jetzt.toISOString(), von: von || null, orderIds, bestellungen,
+    problem: String(meldung || 'Ergebnis unbekannt').slice(0, 500), problemAm: jetzt.toISOString() };
+  schreibStand(datei, stand);
+}
+
+/** Vermerke entfernen ("Verstanden" oder doch noch sauber verschickt); gibt zurueck, welche es gab. */
+export function entferneVersandProbleme(datei, schluessel) {
+  const stand = leseStand(datei);
+  const entfernt = (schluessel || []).filter(pk => stand.versandProbleme[pk]);
+  if (!entfernt.length) return [];
+  for (const pk of entfernt) delete stand.versandProbleme[pk];
+  schreibStand(datei, stand);
+  return entfernt;
 }
 
 /** Haken je Bestellposition setzen oder entfernen. */

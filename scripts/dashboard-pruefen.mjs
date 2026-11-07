@@ -10,6 +10,9 @@
  *   npm run dashboard:pruefen -- --offen                # Instanz nach dem Lauf offen lassen
  *                                                       # (beenden mit dem ausgegebenen kill <pid>)
  *   npm run dashboard:pruefen -- --rollen               # zusaetzlich als Inhaber, Mitarbeiter und "lesen"
+ *   TP_DASHBOARD_PRUEF_WARTE_MS=30000 npm run dashboard:pruefen
+ *                                                       # Frist je Schritt beim Beenden (Browser schliessen,
+ *                                                       # SIGTERM, SIGKILL); Standard 15 s
  *
  * Ablauf:
  *  1. Kopie der privaten Daten ($TP_PRIVAT_DIR, Standard ~/teppich-paradies-analyse) in ein
@@ -28,6 +31,10 @@
  *     zeigen echte Daten: jeder Lauf loescht beim Start solche Ordner, die aelter als drei Tage
  *     sind (scripts/dashboard-pruefung-ordner.mjs).
  *     Exit-Code 1 bei JS-Fehlern, Fehlerantworten oder seitlichem Scrollen (egal bei welcher Breite).
+ *     Haengt nur das Schliessen des Browsers, nachdem alle Ansichten geprueft sind (unter Last
+ *     beobachtet), wird der eigene Browserprozess begrenzt beendet und das als Hinweis gemeldet -
+ *     der Exit-Code kommt weiter aus dem Pruefergebnis. Exit 2 nur, wenn der Lauf vorher abbricht
+ *     oder die Datenkopie nicht geloescht werden konnte.
  *
  * Mit --rollen legt das Skript in der DATENKOPIE eine benutzer.json mit drei Wegwerf-Zugaengen
  * an (inhaber, mitarbeiter, lesen; Passwoerter zufaellig, nirgends ausgegeben) und prueft jede
@@ -56,19 +63,19 @@ import { fileURLToPath } from 'node:url';
 import { altePruefOrdnerLoeschen, pruefOrdnerAnlegen, pruefOrdnerBehalten } from './dashboard-pruefung-ordner.mjs';
 import { benutzerAnlegen, schreibeBenutzer } from '../operations/lib/benutzer.mjs';
 import { datenkopieAnlegen, datenkopieLoeschen, verwaisteDatenkopien } from './dashboard-datenkopie.mjs';
-import { pruefLauf } from './dashboard-pruefung-lauf.mjs';
+import { pruefLauf, warteMsAusUmgebung, aufraeumFehlerNurHinweis } from './dashboard-pruefung-lauf.mjs';
 import { ladePuppeteer } from './puppeteer-laden.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'hausverwaltungen', 'team', 'hilfe'];
+const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=anrufe', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'hausverwaltungen', 'team', 'hilfe'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
 // der Baustelle), ist das Handy kein Sonderfall mehr: jede Ansicht wird bei jeder Breite geprueft.
 const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800'], [390, 844, 'handy'], [360, 740, 'b360']];
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
-const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten', 'bildrechte'];
+const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten', 'bildrechte', 'ek-liste'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
 const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'sicherungsstand.json', 'auftragsstatus.json', 'kettelversand.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json', 'muster-druckliste.json', 'mustersperre.json', 'prozesslinks.json',
   // Kunden & Auftraege, Warenkoerbe, Shop-Wache, Bestand und Erfuellung: ohne diese Ordner
@@ -76,7 +83,7 @@ const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation'
   'kunden', 'angebote', 'warenkoerbe', 'shopwache', 'bestand', 'erfuellung',
   // Beschreibbare Einzeldateien (Rueckrufe, Fallmarken, Fehlermeldungen): kopieren, damit ein
   // Klick in der Pruefung die echten nie trifft und die Ansicht trotzdem den echten Stand zeigt.
-  'rueckrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'bestellmarken.json', 'muster-packen.json', 'muster-grossbrief.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
+  'rueckrufe.json', 'muster-anrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'bestellmarken.json', 'muster-packen.json', 'muster-grossbrief.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
   // Upload-Links der Ansicht "Social Media": ein Klick auf "Neuen Link anlegen" schreibt hierhin.
   'social/upload-zugaenge.json', 'social/upload-links.json',
   // Textvorlage fuer "Muster nachfassen" auf Heute. Der Ordner nachfassen/ bleibt bewusst draussen:
@@ -152,6 +159,8 @@ async function warteAufServer(url, ms = 20_000) {
 
 async function main() {
   const args = argumente(process.argv.slice(2));
+  // Vor allem anderen pruefen: eine unsinnige Frist soll keine Datenkopie hinterlassen.
+  const warteMs = warteMsAusUmgebung();
   if (args.aus) pruefOrdnerBehalten(args.aus);
   // Eigene alte Screenshot-Ordner nur bereinigen, wenn sie nachweislich nicht mehr benutzt werden.
   const altePruefungen = altePruefOrdnerLoeschen({ aus: args.aus });
@@ -165,7 +174,7 @@ async function main() {
   if (geloescht.length) console.log(`${geloescht.length} verwaiste Datenkopie(n) frueherer Laeufe geloescht.`);
   const quelle = process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
   const daten = datenkopieAnlegen();
-  const lauf = pruefLauf({ daten });
+  const lauf = pruefLauf({ daten, warteMs });
   const abbruch = new AbortController();
   let abbruchCode = null;
   process.on('exit', lauf.notaus);
@@ -179,6 +188,10 @@ async function main() {
         .finally(() => process.exit(code));
     });
   }
+  // Alle Ansichten geprueft, Bericht geschrieben: danach darf ein haengendes Browserende die
+  // Pruefung nicht mehr zum Fehlschlag machen (w-216).
+  let fertig = false;
+  let browserHinweis = null;
   try {
   kopieFuellen(quelle, daten);
   const aus = args.aus || pruefOrdnerAnlegen();
@@ -314,11 +327,15 @@ async function main() {
       await kontext.close();
     }
   } finally {
-    await lauf.browserSchliessen();
+    // Ueberschreitet browser.close() die Frist (unter Last beobachtet), darf das den Bericht
+    // nicht verhindern: merken, Bericht schreiben, am Ende einordnen. Ein Fehler aus der
+    // Schleife selbst bleibt der gemeldete Fehler.
+    try { await lauf.browserSchliessen(); } catch (e) { browserHinweis = e; }
   }
 
   const schlecht = ergebnisse.filter(e => e.fehler.length || e.ueberlauf || e.ueberstand.length).length;
-  const offen = args.offen && !schlecht;
+  // --offen nur, wenn der Browser nachweislich weg ist: sonst bliebe ein haengender Prozess stehen.
+  const offen = args.offen && !schlecht && (!browserHinweis || aufraeumFehlerNurHinweis(browserHinweis, { fertig: true }));
   const bericht = { erstellt: new Date().toISOString(), basis: offen ? basis : null, ergebnisse };
   fs.writeFileSync(path.join(aus, 'bericht.json'), JSON.stringify(bericht, null, 2));
   for (const e of ergebnisse) {
@@ -339,8 +356,17 @@ async function main() {
   const log = serverLog();
   if (/Error|Fehler/.test(log)) console.log(`\nServer-Ausgabe:\n${log.trim()}`);
   process.exitCode = schlecht ? 1 : 0;
+  fertig = true;
   } finally {
-    await lauf.aufraeumen();
+    try {
+      await lauf.aufraeumen();
+    } catch (e) {
+      if (!aufraeumFehlerNurHinweis(e, { fertig })) throw e;
+      browserHinweis = e;
+    }
+  }
+  if (browserHinweis) {
+    console.error(`\nHinweis: ${browserHinweis.message} Alle Ansichten waren da schon geprueft, der eigene Browserprozess wurde begrenzt beendet - das Pruefergebnis oben gilt. Frist je Schritt: ${warteMs} ms (TP_DASHBOARD_PRUEF_WARTE_MS).`);
   }
 }
 

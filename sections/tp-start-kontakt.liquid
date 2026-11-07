@@ -130,18 +130,19 @@
   .tp-kon__ico svg { width: 22px; height: 22px; }
   .tp-kon__ico--wa { background: #e6f6ec; color: #1f9d55; }
   .tp-kon__toggle { display: none; }
-  .tp-kon__form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* minmax(0, ...) statt 1fr und width: 100%: sonst setzt die laengste Option im select die Mindestbreite der Karte, und sie ragt auf dem Telefon ueber den Rand */
+  .tp-kon__form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .tp-kon__form label { display: grid; gap: 5px; font-size: var(--tp-fs-sm); font-weight: 500; color: var(--tp-ink-2, #4a443f); }
-  .tp-kon__form input, .tp-kon__form select, .tp-kon__form textarea { height: 46px; border: 1.5px solid var(--tp-line-2, #d5cec4); border-radius: 8px; padding: 0 12px; font: inherit; font-size: var(--tp-fs-md); background: #fff; color: var(--tp-ink, #1d1a17); }
+  .tp-kon__form input, .tp-kon__form select, .tp-kon__form textarea { width: 100%; min-width: 0; height: 46px; border: 1.5px solid var(--tp-line-2, #d5cec4); border-radius: 8px; padding: 0 12px; font: inherit; font-size: var(--tp-fs-md); background: #fff; color: var(--tp-ink, #1d1a17); }
   .tp-kon__form textarea { height: auto; min-height: 80px; padding: 10px 12px; resize: vertical; }
   .tp-kon__form input:focus, .tp-kon__form select:focus, .tp-kon__form textarea:focus { border-color: var(--tp-ink, #1d1a17); outline: none; }
   .tp-kon__full { grid-column: 1 / -1; }
   .tp-kon__ok { grid-column: 1 / -1; background: var(--tp-green-soft, #e7f3ea); color: #1f5a36; padding: 10px 12px; border-radius: 8px; }
   .tp-kon__err { grid-column: 1 / -1; background: #fff6e5; color: #7a4b00; padding: 10px 12px; border-radius: 8px; }
-  @media (max-width: 1023px) { .tp-kon__grid { grid-template-columns: 1fr 1fr; } .tp-kon__card--form { grid-column: 1 / -1; grid-row: auto; } }
+  @media (max-width: 1023px) { .tp-kon__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tp-kon__card--form { grid-column: 1 / -1; grid-row: auto; } }
   @media (max-width: 767px) {
-    .tp-kon__grid { grid-template-columns: 1fr; }
-    .tp-kon__form { grid-template-columns: 1fr; }
+    .tp-kon__grid { grid-template-columns: minmax(0, 1fr); }
+    .tp-kon__form { grid-template-columns: minmax(0, 1fr); }
     .tp-kon__full { grid-column: auto; }
     .tp-kon__toggle { display: inline-flex; }
     .tp-kon__card--form .tp-kon__form { display: none; }
@@ -164,33 +165,12 @@
      Formular offen da - .tp-s-btn setzte den Knopf dort bisher sichtbar. */
   @media (min-width: 768px) { .tp-kon .tp-kon__toggle { display: none; } }
   .tp-kon--fh .tp-kon__card--form > .tp-s-h3 { display: none; }
-  @media (max-width: 1023px) { .tp-kon__fh-wrap { grid-template-columns: 1fr; gap: 28px; } }
+  @media (max-width: 1023px) { .tp-kon__fh-wrap { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
   @media (max-width: 767px) { .tp-kon__fakt b { font-size: var(--tp-fs-lg); } .tp-kon__rechts { padding: 18px; } }
 {% endstylesheet %}
 
 {% javascript %}
-  /* Herkunft fuer die Anfrage-Mail (Werkbank w-030): kam der Besuch ueber eine
-     Anzeige oder einen Kampagnenlink? Gelesen wird nur die Adresse dieser Seite,
-     gespeichert wird nichts auf dem Geraet; Klick-IDs (gclid ...) gehen nicht mit,
-     nur ihr Kanal. Das Control Center zaehlt "Anzeige" als Quelle Werbung. */
-  (function () {
-    var felder = document.querySelectorAll('[data-tp-herkunft]');
-    if (!felder.length) return;
-    var p = new URLSearchParams(window.location.search);
-    var quelle = (p.get('utm_source') || '').slice(0, 40);
-    var medium = (p.get('utm_medium') || '').toLowerCase();
-    var kampagne = (p.get('utm_campaign') || '').slice(0, 60);
-    var text = '';
-    if (p.get('gclid') || p.get('gbraid') || p.get('wbraid')) text = 'Google-Anzeige';
-    else if (p.get('msclkid')) text = 'Microsoft-Anzeige';
-    else if (/^(cpc|ppc|paid|paid_?social|display|ads?)$/.test(medium)) text = 'Anzeige (' + (quelle || 'unbekannt') + ')';
-    else if (p.get('fbclid')) text = 'Link von Facebook/Instagram';
-    else if (quelle) text = 'Link (' + quelle + ')';
-    if (kampagne) text += (text ? ' · ' : '') + 'Kampagne ' + kampagne;
-    if (!text) return;
-    felder.forEach(function (f) { f.value = text; });
-  })();
-
+  /* Das Feld contact[Herkunft] fuellt snippets/tp-herkunft.liquid. */
   (function () {
     var t = document.querySelector('[data-tp-kon-toggle]');
     if (!t) return;

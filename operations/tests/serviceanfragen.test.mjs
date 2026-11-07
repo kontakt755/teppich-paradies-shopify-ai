@@ -72,7 +72,7 @@ test('Postfach: nur Service-Betreffe, jede Mail einmal, von Hand Erfasstes nicht
   assert.equal(alle.find(e => e.id === 'S-002').status, 'neu');
   // zweiter Lauf: nichts Neues, nichts doppelt
   const nochmal = uebernehmen(mails, { privatDir, jetzt });
-  assert.deepEqual(nochmal, { angelegt: [], uebersprungen: [] });
+  assert.deepEqual(nochmal, { angelegt: [], uebersprungen: [], rueckrufe: [] });
   assert.equal(leseAlle(serviceanfragenPfad(privatDir)).length, 3);
   assert.deepEqual(bekannt({ privatDir }).mailIds, ['m1', 'm2', 'm3', 'm4', 'm5']);
   assert.equal(berlinerTag('2026-10-15T22:30:00Z'), '2026-10-16');

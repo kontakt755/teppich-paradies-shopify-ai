@@ -15,6 +15,7 @@ import { kunden, telLink, kundenAuftragKarte } from './gemeinsam.mjs';
 import { ensureKundenFaelle, fallKarte } from './faelle.mjs';
 import { ORG_STATUS_LABEL } from '../organisation/gemeinsam.mjs';
 import { zeitleisteBlock, kontaktKnoepfe } from './zeitleiste.mjs';
+import { suchwert } from '../../lib/suchverweis.mjs';
 
 // Voreinstellung "in Arbeit" (Inhabervorgabe) - die Liste ist beim Oeffnen
 // sofort da, ohne Suchtext getippt zu haben.
@@ -69,7 +70,7 @@ function kundenTrefferZeile(k) {
 }
 
 export function viewKundenSuche() {
-  const q = state.route.params.get('kq') || '';
+  const q = suchwert(state.route.params, 'kq');
   const filterRaw = state.route.params.get('kf') || '';
   const filter = Object.hasOwn(KUNDEN_FILTER_LABEL, filterRaw) ? filterRaw : KUNDEN_FILTER_STANDARD;
   ensureKundenSuche(q, filter);
@@ -96,17 +97,19 @@ function adresseHtml(a, titel) {
     <button type="button" class="btn btn-sm btn-ghost no-print" data-kopiertext="${esc(alsText)}" title="Anschrift in die Zwischenablage">Adresse kopieren</button></div>`;
 }
 
-export function viewKundenDetail(key) {
-  ensureKundenDetail(key);
+export function viewKundenDetail(linkWert) {
+  ensureKundenDetail(linkWert);
   ensureKundenFaelle();      // der naechste Schritt liegt berechnet vor
-  ensureKundenNotizen(key);  // was beim letzten Anruf besprochen wurde
   const zurueck = state.route.params.get('von') === 'heute' ? '<p><a href="#/heute">← Zurück zu Heute</a></p>' : `<p class="no-print" style="margin:0 0 12px"><a href="#" data-kunden-zurueck>← Zurück zur Kundensuche</a></p>`;
   // Nur anzeigen, was zu DIESEM Kunden gehoert: sonst stehen waehrend des
   // Ladens Name und Adresse des zuvor geoeffneten Kunden unter der neuen
   // Adresse - am Telefon liest das jemand vor.
-  const d = kunden.detailKey === key ? kunden.detail : null;
+  const d = kunden.detailKey === linkWert ? kunden.detail : null;
   if (!d) return zurueck + `<div class="empty">Lade Kunde …</div>`;
   if (!d || !d.verfuegbar) return zurueck + emptyState('Kunde nicht gefunden.', d?.hinweis || '');
+  // Fall, Notizen und Aufgaben haengen am echten Schluessel; den nennt erst der Dienst.
+  const key = d.kunde.key;
+  ensureKundenNotizen(key);  // was beim letzten Anruf besprochen wurde
   const auftrag = state.route.params.get('auftrag');
   const k = auftrag ? { ...d.kunde, auftraege: (d.kunde.auftraege || []).filter(a => String(a.id) === auftrag) } : d.kunde;
   // "Was ist hier offen?" musste man sich bisher aus den Bestellkarten

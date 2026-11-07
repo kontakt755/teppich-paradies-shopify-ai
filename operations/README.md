@@ -280,8 +280,8 @@ Positionen; nicht zugeordnete Positionen als `id: "UNGEKLAERT"` am Ende.
 - `aeltesteOffeneBestellungTage`: älteste Bestellung beim Lieferanten, die noch
   nicht bei uns ist (Tage seit `bestelltAm`). `aeltesteUnbestellteTage`: älteste
   Kundenbestellung, für die noch nichts bestellt wurde.
-- `ueberfaellig`: Wartezeit wie im Frontend (`AF_WARTE_WARN`/`AF_WARTE_CRIT`):
-  ab 7 Tagen `nachhaken`, ab 14 Tagen `problem`.
+- `ueberfaellig`: Wartezeit wie im Frontend (eine Schwelle `WARTESCHWELLEN` in
+  `docs/ai-dashboard/lib/ampel.mjs`): ab 7 Tagen `nachhaken`, ab 14 Tagen `problem`.
 - `gruppen[].schluessel` ist der Wert für `gruppe=` der Bestellmail.
 
 **`GET /api/einkauf/lieferant?id=A`** – ein Lieferant wie oben (unter
@@ -479,7 +479,8 @@ Die Datei ist Teil von `npm run daten:sichern`.
 **Fristen** (Konstanten in `lib/auftragsverlauf.mjs`): `NACHFASSEN_NACH_TAGEN = 5`
 (nach „Kunde hat Muster“), `MUSTER_ANGEKOMMEN_ANNAHME_TAGE = 3`,
 `ERGEBNIS_KLAEREN_NACH_TAGEN = 14`, `WARE_ABSCHLIESSEN_NACH_TAGEN = 7`. Lieferant
-überfällig: `WARTE_NACHHAKEN_TAGE` (7) / `WARTE_PROBLEM_TAGE` (14) aus `lib/lieferanten.mjs`.
+überfällig: `WARTE_NACHHAKEN_TAGE` (7) / `WARTE_PROBLEM_TAGE` (14) aus `lib/lieferanten.mjs`
+(übernommen aus `docs/ai-dashboard/lib/ampel.mjs`, dort steht die Zahl genau einmal).
 
 **Lesen (additive Felder).** `GET /api/kunden/detail` trägt an jedem Eintrag von
 `kunde.auftraege[]`, `GET /api/kunden/bestellungen` an jeder Zeile von `zeilen[]`:
@@ -620,6 +621,9 @@ sowie vier weitere Datenarten (Phase seit 2026-09-24):
   und Verlegeangebote (Shopify `DraftOrder`), die noch keine Bestellung sind:
   Nummer, Kunde, Betrag, Status, Positionen.
   → `$TP_PRIVAT_DIR/angebote/angebote.json`
+  Der WhatsApp-Text im Reiter „Angebote“ liest die Bankverbindung aus
+  `$TP_PRIVAT_DIR/angebote/kontodaten.json` (`{ "kontoinhaber": "…", "iban": "…" }`, nie im
+  Repository). Fehlt die Datei oder stimmt die IBAN-Prüfsumme nicht, gibt es keinen Text.
 - **Abgebrochene Warenkörbe** (`sync/abandonedCheckouts.mjs`, `lib/warenkoerbe.mjs`) -
   letzte 30 Tage, noch nicht abgeschlossen: Zeitpunkt, Kunde/E-Mail sofern
   vorhanden, Warenkorbwert, Positionen - verlorener Umsatz, den das Dashboard
@@ -900,7 +904,29 @@ selben Abend). Das Control Center zeigt ihn als To-do auf „Heute“ (seit 28.1
 „Sicherung überfällig“ nach einem verpassten Termin, rot ab 48 Std., bei „fehlgeschlagen“ und bei
 unlesbarem Stand; gelb „Sicherungsstand fehlt“, wenn `sicherungsstand.json` gar nicht existiert.
 
-**Zweite Kopie ausser Haus (vorbereitet, Entscheidung beim Inhaber).** Das Skript kann jedes
+**Verschluesselte Kopie in der Dropbox (Entscheidung Inhaber 26.10.2026, w-163).** Der Dienst
+`net.teppich-paradies.sicherung-ausser-haus` legt taeglich um 23:00 Uhr das neueste Tagesarchiv mit
+gpg (AES-256) verschluesselt in den Dropbox-Ordner `Teppich Paradies Sicherung`
+(`scripts/sicherung-ausser-haus.mjs`, 14 Tage Frist). Jeder Lauf entschluesselt die abgelegte Datei
+noch einmal und vergleicht die Pruefsumme. Der Stand steht in `sicherung-ausser-haus.json`;
+ein Fehlschlag oder mehr als 48 Stunden ohne Kopie werden auf „Heute“ zum roten To-do.
+
+Einrichten und Umstellen: `bash operations/scripts/dienste-einrichten.sh --nur-sicherung` **nur aus
+`~/tp-dashboard`** starten, und erst nachdem dort `main` nachgezogen ist. Das Skript schreibt den Pfad
+des aufrufenden Checkouts in die Dienste, auch in den der Hauptsicherung. Aus einem Worktree oder dem
+Hauptcheckout gestartet, haengt die Hauptsicherung an dieser Kopie und bricht, sobald sie weg ist.
+
+Der Schluessel liegt im Anmelde-Schluesselbund dieses Macs (Eintrag „Teppich Paradies Sicherung
+ausser Haus“), einmalig angelegt mit `--schluessel-anlegen`; ein vorhandener wird nie ersetzt.
+**Dieser Schluesselbund geht mit dem Mac verloren.** Der Schluessel muss deshalb zusaetzlich an
+einem zweiten Ort liegen (Passwortmanager oder Ausdruck im Tresor), sonst ist die Kopie nach einem
+Totalausfall wertlos. Nie in die Dropbox, ins Repository oder in einen Chat.
+
+Wiederherstellen aus der Dropbox: `brew install gnupg`, dann
+`gpg --output <datum>.tar.gz --decrypt <datum>.tar.gz.gpg`, den Schluessel eingeben und weiter wie
+unter „Wiederherstellen nach einem Ausfall“, Schritt 3.
+
+**Weitere Kopie, z. B. auf externer Platte (vorbereitet).** Das Skript kann jedes
 fertige Tagesarchiv zusaetzlich in einen zweiten Ordner legen:
 
 ```
@@ -923,6 +949,24 @@ Kopie der Archive): Eintrag `TP_SICHERUNG_KOPIE` unter `EnvironmentVariables` in
 `bash operations/scripts/dienste-einrichten.sh --nur-sicherung`. Danach einmal das
 Zurueckspielen ueben (Abschnitt „Ausfall des Mac mini“).
 
+### Alte Bestellexporte (w-169, Inhaber 28.10.: 30-Tage-Loeschung)
+
+`npm run -s altexporte` zeigt fuer die feste Liste `operations/altexporte-ordner.json`, was faellig
+ist (30 Tage seit der juengsten Datei im Ordner), und aendert nichts. Kein Dienst startet den Lauf.
+
+Die Tagessicherung ist **kein** Rueckweg: Diese Ordner gehoeren nicht zu `SICHERUNGSPFADE`. Darum zwei Stufen:
+
+```
+npm run -s altexporte                      # Trockenlauf
+npm run -s altexporte -- --verschieben     # Stufe 1: faellige Ordner nach altexporte-papierkorb/ (nur Eigentuemer)
+npm run -s altexporte -- --zurueck <Name>  # Rueckweg
+npm run -s altexporte -- --endgueltig      # Stufe 2: Papierkorb-Eintraege nach 7 Tagen entfernen, nicht rueckholbar
+```
+
+Jeder Schritt steht in `altexporte-protokoll.jsonl` im Privatordner (in der Tagessicherung, der Papierkorb bewusst
+nicht). Ein zurueckgeholter Ordner zaehlt ab dem Verschieben: die 30 Tage laufen noch einmal. Gesperrt sind Pfade, Verknuepfungen,
+Dateien und alles aus der Tagessicherung. Einplanen als Dienst und jede Ausfuehrung erst nach Freigabe.
+
 ### Dienst-Checkout automatisch nachziehen (seit 2026-10-26, #1710)
 
 `npm run -s betrieb:nachziehen` bringt `~/tp-dashboard` (Zweig `dashboard-betrieb`) auf den
@@ -940,6 +984,10 @@ gegen genau diese getauscht (`.nachziehen-module-neu`/`-vorher`/`-head`, #1716),
 ohne Netz zurueck. Nie `npm ci` im laufenden Betrieb: es loescht `node_modules` zuerst (gemessen
 bis 0,3 s ohne `puppeteer`, ohne Paketquelle dauerhaft leer). Konflikt, rote Probe und gescheiterter Neustart gelten fuer diesen main-Stand als
 haengend und werden erst wieder versucht, wenn main weiterzieht. Nie pushen.
+
+PR-Serien werden gebuendelt: Der Dienst (`TP_NACHZIEHEN_DIENST=1`) wartet bei Aenderungen mit Neustart, bis
+main 15 Minuten ruhig ist, hoechstens 30 Minuten seit dem aeltesten neuen Commit (`BUENDELN`). Von Hand
+zieht `npm run -s betrieb:nachziehen` sofort nach. Reine Theme-Aenderungen warten nicht.
 
 ```
 npm run -s betrieb:nachziehen -- --status   # letzter Stand und Verlauf

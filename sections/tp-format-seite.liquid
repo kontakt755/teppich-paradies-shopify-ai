@@ -3,7 +3,10 @@
   Masse, die es nicht als fertige Standardgroesse gibt, gehen ueber Teppich nach Mass.
   Das Mass steht im Handle der Seite (teppich-200x300), damit eine neue Seite keinen
   Theme-Code braucht. Der Knopf oeffnet den Mass-Rechner der Kategorie mit diesem Mass
-  (assets/tp-teppich-rechner.js, lesenAusAdresse); Preise rechnet nur der Rechner.
+  (assets/tp-teppich-rechner.js, lesenAusAdresse). Die Preisbeispiele fuer genau dieses
+  Mass stehen schon im HTML: ausgewaehlte Qualitaeten (Einstellung "beispiele"), je
+  guenstigste lieferbare Farbe, gerechnet in snippets/tp-mass-beispiel wie im Warenkorb.
+  Bewusst keine Schleife ueber die Kollektion (Renderlimit der Teppich-Seite).
 {%- endcomment -%}
 {%- liquid
   assign tp_fs_mass = page.handle | remove: 'teppich-' | split: 'x'
@@ -27,6 +30,44 @@
   {%- if tp_fs_b > 0 and tp_fs_l > 0 -%}
     <p class="tp-format__lead">Das Maß {{ tp_fs_titel }} ({{ tp_fs_qm }} m²) fertigen wir als Teppich nach Maß. Sie wählen Qualität und Farbe und sehen den Preis für genau dieses Maß, die günstigste Qualität zuerst.</p>
     <a class="button tp-format__knopf" href="{{ collections['teppich-nach-mass'].url }}?{{ tp_fs_param }}">Qualitäten und Preise für {{ tp_fs_titel }}</a>
+    {%- capture tp_fs_zeilen -%}
+      {%- assign tp_fs_groesse = tp_fs_b | append: 'x' | append: tp_fs_l -%}
+      {%- for tp_fs_p in section.settings.beispiele -%}
+        {%- assign tp_fs_preis = '' -%}
+        {%- assign tp_fs_v = nil -%}
+        {%- for tp_fs_kand in tp_fs_p.variants -%}
+          {%- if tp_fs_kand.available and tp_fs_kand.price > 0 and tp_fs_kand.metafields.service.einfassen.value == 'Verfügbar' -%}
+            {%- if tp_fs_v == nil or tp_fs_kand.price < tp_fs_v.price -%}
+              {%- capture tp_fs_erg -%}{%- render 'tp-mass-beispiel', product: tp_fs_p, variant: tp_fs_kand, groessen: tp_fs_groesse -%}{%- endcapture -%}
+              {%- assign tp_fs_erg = tp_fs_erg | strip -%}
+              {%- if tp_fs_erg != blank -%}
+                {%- assign tp_fs_preis = tp_fs_erg -%}
+                {%- assign tp_fs_v = tp_fs_kand -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- if tp_fs_preis != blank -%}
+          {%- capture tp_fs_kante -%}{%- render 'tp-mass-kante-wort', product: tp_fs_p -%}{%- endcapture -%}
+          {%- assign tp_fs_kante = tp_fs_kante | strip | split: '|' -%}
+          {%- assign tp_fs_preis_teile = tp_fs_preis | split: '|' -%}
+          {%- assign tp_fs_cent = tp_fs_preis_teile[2] | times: 1 -%}
+          {%- assign tp_fs_lz = tp_fs_p.metafields.service.lieferzeit.value | strip -%}
+          <tr>
+            <th scope="row">
+              <a href="{{ tp_fs_p.url }}?variant={{ tp_fs_v.id }}&amp;{{ tp_fs_param | replace: '&', '&amp;' }}">{{ tp_fs_p.title | escape }}</a>, {{ tp_fs_kante[0] | escape }}
+              {%- if tp_fs_lz != blank %}<span class="tp-format__lz">Lieferzeit {{ tp_fs_lz | escape }}</span>{%- endif -%}
+            </th>
+            <td data-tp-mass-cent="{{ tp_fs_cent }}">{% if tp_fs_p.price_min != tp_fs_p.price_max %}ab {% endif %}<strong>{{ tp_fs_cent | money_without_trailing_zeros }}</strong></td>
+          </tr>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if tp_fs_zeilen != blank -%}
+      <h2>Preisbeispiele für {{ tp_fs_titel }}</h2>
+      <table class="tp-format__preise"><tbody>{{ tp_fs_zeilen }}</tbody></table>
+      <p class="tp-format__hinweis">Endpreise für dieses Maß inkl. der genannten Kante und MwSt.{% if settings.tp_versand_frei_ab != blank %} Versand in Deutschland ab {{ settings.tp_versand_frei_ab }}&nbsp;€ Bestellwert kostenlos.{% endif %} Alle Qualitäten stehen im Rechner.</p>
+    {%- endif -%}
     <ul class="tp-format__punkte" role="list">
       <li>Rundum eingefasst</li>
       <li>Bis zu zwei Muster je Bestellung kostenlos</li>
@@ -65,6 +106,12 @@
   .tp-format__lead { margin: 0 0 20px; font-size: var(--tp-fs-md); }
   .tp-format__knopf { display: inline-block; }
   .tp-format__punkte { margin: 20px 0 0; padding-left: 20px; font-size: var(--tp-fs-sm); }
+  .tp-format__preise { width: 100%; margin: 0; border-collapse: collapse; font-size: var(--tp-fs-sm); }
+  .tp-format__preise th, .tp-format__preise td { padding: 8px 0; border: 0; border-bottom: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12); background: none; font-weight: 400; text-align: left; vertical-align: top; }
+  .tp-format__preise td { padding-left: 12px; text-align: right; white-space: nowrap; }
+  .tp-format__preise strong { font-weight: 600; }
+  .tp-format__lz { display: block; font-size: var(--tp-fs-xs); color: #595959; }
+  .tp-format__hinweis { margin: 8px 0 0; font-size: var(--tp-fs-xs); color: #595959; }
   .tp-format__links { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; padding: 0; list-style: none; }
   .tp-format a:not(.button) { color: var(--tp-ink); text-decoration: underline; text-underline-offset: 2px; }
 {% endstylesheet %}
@@ -72,6 +119,14 @@
 {% schema %}
 {
   "name": "TP Format-Seite",
-  "settings": []
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "beispiele",
+      "label": "Qualitäten für die Preisbeispiele",
+      "limit": 5,
+      "info": "Teppiche nach Maß. Preis und Kante kommen aus den Produktdaten; passt das Maß nicht, entfällt die Zeile."
+    }
+  ]
 }
 {% endschema %}

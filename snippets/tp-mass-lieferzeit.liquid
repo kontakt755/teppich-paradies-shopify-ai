@@ -1,0 +1,40 @@
+{%- doc -%}
+  Lieferzeit eines Teppichs nach Mass fuer den Preishinweis im Mass-Konfigurator
+  (blocks/tp-einfass-konfigurator, Variable tp_ek_lieferzeit; Werkbank w-018).
+  Gibt nur den Text aus, leer = keine Lieferzeit.
+
+  Quelle, in dieser Reihenfolge:
+  1. Produkt-Metafeld service.lieferzeit (Text, z. B. "ca. 5–8 Werktage inkl.
+     Ketteln"), gesetzt nur dort, wo die Lieferzeit belegt ist - seit 10.10. fuer
+     die gekettelten Teppiche nach Mass laut Inhaberentscheidung.
+  2. Ohne Metafeld und nicht Art Fertig: Serena (seit 10.10. bestaetigter Wert
+     inkl. Ketteln) und gekettelte Sonderposten (Tag sonderposten, Art Ketteln,
+     eigener Bestand) bekommen den Wert der uebrigen gekettelten Teppiche nach
+     Mass - nicht tp_lieferzeit_sonderposten, der gilt fuer Rollenware ohne
+     Ketteln. Belegt am 06.11.: alle 136 uebrigen aktiven Produkte mit Tag
+     gekettelt tragen genau diesen Wert.
+  3. Ohne Metafeld und Vorlage wunschmass-fertig (Wunschmass vom Hersteller):
+     "ca. 14 Tage", derselbe Wert wie die Produktvorlage unter dem Warenkorb-
+     Knopf (templates/product.wunschmass-fertig.json, delivery_time) und das
+     JSON-LD (snippets/tp-product-structured-data). Rundgang 06.11. (NM-03):
+     28 dieser Produkte tragen kein Metafeld, Kopf und Preiskasten blieben leer.
+  Sonst leer (fail closed), nichts wird von anderen Produkten geliehen.
+
+  @param {object} product - Teppich nach Mass
+{%- enddoc -%}
+{%- liquid
+  assign tml_ketteln = 'ca. 5–8 Werktage inkl. Ketteln'
+  assign tml_text = product.metafields.service.lieferzeit.value | strip
+  assign tml_art = product.metafields.service.einfassung.value | strip | downcase
+  if tml_text == blank and tml_art != 'fertig'
+    if product.handle == 'serena-teppich-nach-mass'
+      assign tml_text = tml_ketteln
+    elsif tml_art == 'ketteln' and product.tags contains 'sonderposten'
+      assign tml_text = tml_ketteln
+    endif
+  endif
+  if tml_text == blank and product.template_suffix == 'wunschmass-fertig'
+    assign tml_text = 'ca. 14 Tage'
+  endif
+  echo tml_text
+-%}

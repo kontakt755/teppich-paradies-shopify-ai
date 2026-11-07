@@ -31,7 +31,13 @@ deshalb im Git-Verlauf, nicht in der Erinnerung:
 git log --all --oneline --diff-filter=A -- <pfad>   # wo entstand die Datei
 git branch -a --contains <commit>                   # auf welchem Branch liegt sie
 git branch -r --no-merged main                      # was ist sonst noch ungemergt
+git cherry origin/main <zweig>                      # Gegenprobe je Branch
 ```
+
+`--no-merged` vergleicht Commits. Wurde ein Branch per Squash-Merge
+uebernommen, steht er dort trotzdem als ungemergt. `git cherry` vergleicht die
+Aenderungen selbst: Zeilen mit `-` sind schon in `main`, Zeilen mit `+` fehlen
+noch. Nur `+`-Zeilen sind echte, ungemergte Arbeit.
 
 ## Der zweite Fehler beim Zurueckholen
 

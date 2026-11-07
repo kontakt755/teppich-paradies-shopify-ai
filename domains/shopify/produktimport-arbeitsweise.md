@@ -162,3 +162,52 @@ keine Muster.
 
 Mehrzeilige Logik in eine Datei schreiben und mit einem einzelnen Aufruf starten
 (`python3 script.py`), statt sie in eine Befehlskette zu pressen.
+
+---
+
+## 9. Vor dem Musterprodukt klären, ob die Ware Musterservice hat
+
+Gilt seit 2026-11-06 (Aufgabe #1966). Nicht jede Ware bekommt ein Musterprodukt:
+
+- **Teppichfliesen, Teppichplanken und Sauberlauf-Fliesen haben keinen Musterservice.** Jedes
+  neue Warenprodukt dieser Art bekommt schon beim Anlegen den Tag `ohne-muster`; ein
+  Musterprodukt `muster-<handle>` wird **nicht** angelegt. Sauberlaufmatten und Sauberlauf von
+  der Rolle sind davon nicht betroffen.
+- **Gibt es für eine Farbe einer Kollektion kein Muster, hat die ganze Kollektion keinen
+  Musterservice.** Liefert der Lieferant eine Farbe nicht als Muster (Absage, „nur in Format“,
+  Meldung aus der Packstation), wird nicht nur diese Farbe gesperrt: Jedes Warenprodukt der
+  Kollektion – Teppichboden, Teppich nach Maß und alle weiteren – bekommt den Tag `ohne-muster`,
+  und jedes zugehörige Musterprodukt geht von UNLISTED auf DRAFT. Steht das beim Import schon
+  fest, wird die Kollektion gleich ohne Musterprodukt angelegt.
+
+Warum: Einzelne Farben zu sperren lief den Absagen hinterher. Jede Absage traf einen Kunden,
+der das Muster schon bestellt hatte, und auf die erste Absage einer Kollektion folgten weitere.
+
+| Zustand | Ware | Musterprodukt |
+|---|---|---|
+| Musterservice | kein Tag `ohne-muster` | nach `benachrichtigungen/musterartikel.md`: in der Regel `muster-<handle>`, UNLISTED und veröffentlicht |
+| kein Musterservice | Tag `ohne-muster` | keines – oder, wenn es schon eines gab, DRAFT |
+
+Der Tag `ohne-muster` nimmt den Muster-Link von der Produktseite, und die Musterseite meldet
+„keine kostenlosen Muster“ (`canSample` in `assets/tp-sample-checkout-core.js`). Ein
+Musterprodukt auf DRAFT ist nicht mehr erreichbar (`/products/muster-<handle>.js` antwortet mit
+404); gelöscht wird es nicht, der Rückweg ist UNLISTED und Tag entfernen. Das Herausnehmen ändert
+bestehende Produkte: mit Plan und Rollback (Skill `shopify-massendaten`), danach im Shop
+gegenprüfen.
+
+**Woran eine Teppichfliese zu erkennen ist:** Die Produktart ist `Teppichboden` wie bei
+Rollenware, sie hilft nicht. Erkennbar ist die Fliese am Tag `art: teppichfliese`, am Namen
+(`Teppichfliese`, `Teppichplanke`, `Sauberlauf-Fliesen`) und an der Kategorie `teppichfliesen`
+(gefüllt über `custom.arten`). Kein Merkmal allein ist sicher: Am 2026-11-06 trafen Name und
+Kategorie dieselben 69 Produkte, der Tag fehlte einem davon.
+
+`npm run -s import:pruefen` nimmt alle drei Merkmale und meldet als Fehler – bei neuen Produkten
+und, ohne `--handles`, im ganzen Bestand:
+
+| Regel | Befund |
+|---|---|
+| `muster-teppichfliese` | Teppichfliese ohne Tag `ohne-muster` – der Shop böte noch Muster an |
+| `muster-trotz-ohne-muster` | Ware ohne Musterservice, deren Musterprodukt noch auf ACTIVE oder UNLISTED steht |
+
+Fehlt einer Teppichfliese der Tag, meldet die Prüfung nur den Tag und bewusst kein fehlendes
+Musterprodukt – diese zweite Meldung würde dazu einladen, eins anzulegen.

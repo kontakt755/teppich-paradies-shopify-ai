@@ -81,6 +81,14 @@
     endfor
   endif
 -%}
+{%- liquid
+  # Suche, Filterfenster am Handy: 15 offene Gruppen waren 7.148 px lang. Dort
+  # beginnen die Gruppen zugeklappt, eine Gruppe mit aktivem Wert bleibt offen.
+  assign tp_lf_offen = is_vertical
+  if in_drawer and request.page_type == 'search' and filter.active_values.size == 0
+    assign tp_lf_offen = false
+  endif
+-%}
 {% capture accordion_children %}
   <details
     id="Facet-Details-{{ sectionId }}-{{ filter.param_name | escape | replace: '.', '-' }}{% if in_drawer %}-drawer{% endif %}"
@@ -88,7 +96,7 @@
     {% if filter_style == 'horizontal' %}
       data-auto-close-details="desktop"
     {% endif %}
-    {% if filter_style == 'vertical' %}
+    {% if tp_lf_offen %}
       open
     {% endif %}
   >
@@ -539,9 +547,9 @@
 {% render 'accordion-custom-component',
   children: accordion_children,
   class: 'facets__item',
-  open: is_vertical,
-  open_by_default_on_desktop: is_vertical,
-  open_by_default_on_mobile: is_vertical,
+  open: tp_lf_offen,
+  open_by_default_on_desktop: tp_lf_offen,
+  open_by_default_on_mobile: tp_lf_offen,
   disable_animation_on_desktop: is_horizontal,
   close_with_escape: is_horizontal,
   data_filter_param_name: filter_param_name

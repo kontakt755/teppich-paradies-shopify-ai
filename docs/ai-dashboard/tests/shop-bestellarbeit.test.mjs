@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { bestellzeile } from '../../../operations/lib/bestellliste.mjs';
 import { bestellArtPasst, warenArbeitsstand, shopBestellarbeit } from '../lib/shop-bestellarbeit.mjs';
 import { warenbestellungenBlock } from '../ansichten/heute/warenbestellungen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 const jetzt = Date.parse('2026-10-22T12:00:00Z');
 const p = (lineItemId, istMuster = false, extra = {}) => ({ lineItemId, istMuster, menge: 1,
@@ -154,7 +155,7 @@ test('Renderer fuehrt lesend direkt zur vorhandenen Kundenakte und maskiert Text
   assert.match(html, /Bestellung ansehen/);
   const ziel = html.match(/href="([^"]*)">Bestellung ansehen/)[1].replaceAll('&amp;', '&');
   const params = new URLSearchParams(ziel.split('?')[1]);
-  assert.equal(params.get('kunde'), z.kundenSchluessel);
+  assert.equal(params.get('kunde'), kundenLinkWert(z.kundenSchluessel));
   assert.equal(params.get('auftrag'), 'sicher');
   const fehlt = warenbestellungenBlock({ daten: { verfuegbar: false, hinweis: 'Test <fehlt>' } });
   assert.match(fehlt, /Test &lt;fehlt&gt;/);
@@ -242,7 +243,9 @@ test('offene Zahlung bleibt bei archivierten Waren sichtbar und nennt Zahlung st
   }
 });
 
-test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eigener Arbeit und bekommt nicht den Hauptknopf', () => {
+test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eigener Arbeit und bekommt nicht den Hauptknopf', (t) => {
+  // Der Block rechnet mit der echten Uhr: ohne feste Zeit gilt die Bestellung 14 Tage spaeter als ueberfaellig.
+  t.mock.timers.enable({ apis: ['Date'], now: jetzt });
   const wartend = zeile('wartend', [p('w')], { w: { status: 'bestellt', bestelltAm: '2026-10-21T08:00:00Z' } }, { datum: '2026-10-10T12:00:00Z' });
   const bestellen = zeile('bestellen', [p('w')], { w: null }, { datum: '2026-10-20T12:00:00Z' });
   const a = shopBestellarbeit(daten([wartend, bestellen]), { jetzt });
@@ -253,6 +256,39 @@ test('Rundgang 29.10. (T4): wer nur auf den Lieferanten wartet, steht hinter eig
   const knoepfe = [...html.matchAll(/class="btn btn-sm( btn-primary)?"[^>]*>([^<]+)</g)].map(m => [Boolean(m[1]), m[2]]);
   assert.deepEqual(knoepfe.slice(0, 2), [[true, 'Bestellung bearbeiten'], [false, 'Bestellung ansehen']]);
   assert.match(html, /wartet auf Lieferant/);
+  // w-223: ein bestaetigter Termin ersetzt den Pauschaltext; ohne Termin bleibt er.
+  const termin = zeile('termin', [p('w')], { w: { status: 'bestellt', bestelltAm: '2026-10-21T08:00:00Z', beschaffung: { liefertermin: '2099-11-12' } } }, { datum: '2026-10-10T12:00:00Z' });
+  assert.equal(shopBestellarbeit(daten([termin]), { jetzt }).zeilen[0].liefertermin, '2099-11-12');
+  const mitTermin = warenbestellungenBlock({ daten: daten([termin]) });
+  assert.match(mitTermin, /Ware kommt bis 12\.11\.2099/);
+  assert.doesNotMatch(mitTermin, /wartet auf Lieferant/);
+  assert.equal(a.zeilen.find(z => z.zeile.orderId === 'wartend').liefertermin, null);
   // Nur Wartende: kein Hauptknopf, nichts zu tun.
   assert.doesNotMatch(warenbestellungenBlock({ daten: daten([wartend]) }), /btn-primary/);
+});
+
+test('Heute-Warenblock: eine Teillieferung nennt denselben Satz wie Kunden › Bestellungen und "Je Auftrag" (#1996)', (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: jetzt });
+  const ware = id => p(id, false, { lieferant: 'A', route: 'SUPPLIER_TO_TP', titel: 'Teppich', farbe: id === 'b' ? 'Blau' : 'Rot' });
+  const teil = zeile('teil', [ware('a'), ware('b')], {
+    a: { status: 'geliefert', bestelltAm: '2026-10-19T08:00:00Z', geliefertAm: '2026-10-21T08:00:00Z' },
+    b: { status: 'bestellt', bestelltAm: '2026-10-19T08:00:00Z' } });
+  const lieferantName = id => `Testname ${id}`;
+  const satz = 'Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: Teppich · Blau (Testname A)';
+  const a = shopBestellarbeit(daten([teil]), { jetzt, lieferantName }).zeilen[0];
+  assert.equal(a.wartet, 'lieferant');
+  assert.equal(a.teilstand, satz);
+  assert.equal(a.naechstes, satz, 'Kunden › Bestellungen zeigt denselben Satz als naechsten Schritt');
+  const html = warenbestellungenBlock({ daten: daten([teil]), lieferantName });
+  assert.ok(html.includes(`Beim Lieferanten bestellt · ${satz}`), 'statt "wartet auf Lieferant" der Teilstand');
+  assert.doesNotMatch(html, /wartet auf Lieferant/);
+  // Ohne Teillieferung bleibt Heute ruhig: "wartet auf Lieferant" ohne zweite Tageszahl (die steht in Zeile 1).
+  const wartend = zeile('wartend', [ware('a')], { a: { status: 'bestellt', bestelltAm: '2026-10-19T08:00:00Z' } });
+  const ruhig = warenbestellungenBlock({ daten: daten([wartend]), lieferantName });
+  assert.match(ruhig, /Beim Lieferanten bestellt · wartet auf Lieferant/);
+  assert.doesNotMatch(ruhig, /wartet auf Lieferant · seit/);
+  assert.equal(shopBestellarbeit(daten([wartend]), { jetzt }).zeilen[0].naechstes, 'wartet auf Lieferant · seit 3 Tagen');
+  // Bestellt ohne Bestelldatum (Altfall): keine Tageszahl statt "seit heute" (Review 06.11.2026).
+  const ohneDatum = zeile('ohne-datum', [ware('a')], { a: { status: 'bestellt' } });
+  assert.equal(shopBestellarbeit(daten([ohneDatum]), { jetzt }).zeilen[0].naechstes, 'wartet auf Lieferant');
 });

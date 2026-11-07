@@ -5,7 +5,12 @@ import vm from 'node:vm';
 import { esc, plural } from '../kern/helfer.mjs';
 import { bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen } from '../lib/bestellarbeit.mjs';
 import { bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit } from '../lib/kunden-bestellgruppen.mjs';
+import { warenArbeitsstand } from '../lib/shop-bestellarbeit.mjs';
+import { lieferantName as lieferantAnzeige } from '../lib/einkauf-lieferanten.mjs';
+import { warteWort, warteTitel } from '../lib/ampel.mjs';
+import { ampelPlakette } from '../bausteine/ampel.mjs';
 import { wendeFilterAn } from '../../../operations/lib/bestellliste.mjs';
+import * as lieferweg from '../lib/lieferweg.mjs';
 
 const quelle = fs.readFileSync(new URL('../ansichten/kunden/bestellungen.mjs', import.meta.url), 'utf8')
   .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];\s*/gm, '').replace(/^export\s/gm, '');
@@ -18,6 +23,7 @@ function ansicht(zeilen, query = 'tab=bestellungen') {
   const api = vm.runInNewContext(`${quelle}\n({html:viewKundenBestellungen(), treffer:bestellzeileGefiltert(kunden.bestellungen.zeilen,state.route.params)})`, {
     URLSearchParams, state, kunden: { bestellungen: { verfuegbar: true, zeilen }, erweitert: new Set() },
     bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen,
+    warenArbeitsstand, lieferantAnzeige, warteWort, warteTitel, ampelPlakette, einkauf: {}, ensureEinkaufLieferanten: () => {},
     bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit,
     esc, plural, istNurLesend: () => true, fmtDateTime: () => '', fmtDate: () => '', geldText: () => '',
     statusText: () => '', ZAHLUNG_TEXT: {}, emptyState: text => text,
@@ -90,7 +96,8 @@ function sammelUmgebung({ leseFehler = null, schreibFehler = null, packGeladen =
   const kunden = { bestellungen: alteBestellungen, musterPacken: alterPackstand };
   const kontext = {
     kunden, state: { route: { view: 'kunden', params: new URLSearchParams('tab=bestellungen') } },
-    URLSearchParams, musterEigen: () => false, istNurLesend: () => false,
+    // Lieferweg-Regel (#1995) ist rein - das echte Modul statt einer Attrappe.
+    ...lieferweg, URLSearchParams, musterEigen: () => false, istNurLesend: () => false,
     render: () => { u.render++; }, toast: (...args) => u.toasts.push(args),
     fetch: async (pfad, optionen) => {
       const p = JSON.parse(optionen.body);

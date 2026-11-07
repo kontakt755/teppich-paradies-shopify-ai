@@ -59,7 +59,7 @@
         "pro_schritt": 9,
         "nur_kategorie": "",
         "cta_label": "Verlegung anfragen",
-        "cta_link": "/pages/kontakt"
+        "cta_link": "/pages/kontakt?thema=verlegung"
       }
     },
     "vorher_nachher": {

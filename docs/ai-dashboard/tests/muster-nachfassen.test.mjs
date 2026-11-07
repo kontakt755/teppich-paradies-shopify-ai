@@ -399,3 +399,23 @@ test('Musterlinks tragen die Lieferzeit laut Produktseite mit, ohne sie fehlt da
   assert.equal(Object.hasOwn(musterKaufLinks([quelle], [produkt])[0], 'lieferzeit'), false);
   assert.equal(musterKaufLinks([quelle], [{ ...produkt, lieferzeit: '{Name}' }])[0].lieferzeit, 'Name', 'keine Platzhalter-Klammern aus Produktdaten');
 });
+
+test('Nachfass-Links tragen die Kampagnenkennung mit Stufe, andere Mails bleiben ohne (#1937)', () => {
+  const vorlage = { betreff: 'Ihre Muster', text: 'Guten Tag {Anrede} {Nachname},\n\nProdukt: {Link Produkt}\nWeitere Muster: {Link Muster}\nVerlegung: {Link Liefer- & Verlegeservice}\n\nFreundliche Grüße\n{Name}' };
+  const produkte = [{ titel: 'Testboden', farbe: 'Sand', url: 'https://www.teppich-paradies.net/products/testboden?variant=7' }];
+  const mail = fuelleText(vorlage, { kundenname: 'Testkunde', absender: 'Team', produkte, nachfass: 'erste' });
+  const links = mail.text.match(/https:\/\/\S+/g);
+  assert.equal(links.length, 3);
+  for (const roh of links) {
+    const u = new URL(roh);
+    assert.equal(u.searchParams.get('utm_source'), 'muster-nachfass');
+    assert.equal(u.searchParams.get('utm_medium'), 'email');
+    assert.equal(u.searchParams.get('utm_campaign'), 'muster-nachfass');
+    assert.equal(u.searchParams.get('utm_content'), 'erste');
+  }
+  assert.equal(new URL(links[0]).searchParams.get('variant'), '7', 'die Farbe bleibt gewählt');
+  assert.ok(platzhalterFrei(mail));
+  assert.equal(new URL(fuelleText(vorlage, { kundenname: 'K', absender: 'T', produkte, nachfass: 'erinnerung' }).text.match(/https:\/\/\S+/)[0]).searchParams.get('utm_content'), 'erinnerung');
+  assert.doesNotMatch(fuelleText(vorlage, { kundenname: 'K', absender: 'T', produkte }).text, /utm_/, 'ohne Stufe keine Kennung');
+  assert.doesNotMatch(mail.text, /Testkunde.*utm_|utm_.*Testkunde/, 'die Kennung nennt keinen Kunden');
+});

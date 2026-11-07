@@ -20,7 +20,6 @@ const AUFGABEN = [
   aufgabe(5, { due: '2026-10-28' }),
   aufgabe(6, { due: '2026-11-15' }),
 ];
-const KENNZAHLEN = { verfuegbar: true, zeitraeume: { 7: { umsatz: 1234.5, waehrung: 'EUR' } } };
 // toLocaleString setzt ein geschuetztes Leerzeichen vor das Eurozeichen.
 const teile = html => [...html.matchAll(/class="inhaber-teil[^"]*"[^>]*>([^<]+)</g)].map(m => m[1].replace(/\u00a0/g, ' '));
 
@@ -43,10 +42,10 @@ test('Entscheidungen: die Liste zeigt genau so viele Eintraege, wie der Zaehler 
   state.tasks = [];
 });
 
-test('Inhaberzeile: Shop, 7-Tage-Umsatz, Entscheidungen und naechste Frist, jeweils verlinkt', () => {
-  const html = inhaberZeile({ shop: { verfuegbar: true, ampel: 'gruen', geprueftAm: '2026-10-26T08:30:00Z' }, kennzahlen: KENNZAHLEN,
+test('Inhaberzeile: Shop, Kennzahlen-Knopf, Entscheidungen und naechste Frist, jeweils verlinkt', () => {
+  const html = inhaberZeile({ shop: { verfuegbar: true, ampel: 'gruen', geprueftAm: '2026-10-26T08:30:00Z' },
     tasks: AUFGABEN, aufgabenGeladen: true, jetzt: JETZT });
-  assert.deepEqual(teile(html), ['Shop in Ordnung', '7 Tage 1.235 € Umsatz', '2 Entscheidungen offen', 'nächste Frist 28.10.']);
+  assert.deepEqual(teile(html), ['Shop in Ordnung', 'Weitere Kennzahlen', '2 Entscheidungen offen', 'nächste Frist 28.10.']);
   assert.match(html, /<nav class="inhaber-zeile" aria-label="Überblick für den Inhaber">/);
   assert.match(html, /href="#\/shopwache"/);
   assert.match(html, /<button type="button" class="inhaber-teil" data-param="kz" data-value="1" aria-expanded="false">/);
@@ -56,18 +55,18 @@ test('Inhaberzeile: Shop, 7-Tage-Umsatz, Entscheidungen und naechste Frist, jewe
 
 test('Inhaberzeile: ehrliche Zustaende statt geratener Zahlen', () => {
   const t = p => teile(inhaberZeile({ jetzt: JETZT, ...p }));
-  assert.deepEqual(t({ shop: null, kennzahlen: null }), ['Shop-Kontrolle lädt …', 'Umsatz lädt …']);
-  assert.deepEqual(t({ shop: { verfuegbar: false }, kennzahlen: { verfuegbar: false } }), ['Shop-Kontrolle noch nie gelaufen', 'Umsatz nicht verfügbar']);
+  assert.deepEqual(t({ shop: null }), ['Shop-Kontrolle lädt …', 'Weitere Kennzahlen']);
+  assert.deepEqual(t({ shop: { verfuegbar: false } }), ['Shop-Kontrolle noch nie gelaufen', 'Weitere Kennzahlen']);
   assert.equal(t({ shop: { verfuegbar: true, ampel: 'gruen', geprueftAm: '2026-10-26T04:00:00Z' } })[0], 'Shop-Kontrolle meldet sich nicht');
   assert.equal(t({ shop: { verfuegbar: true, ampel: 'rot', geprueftAm: '2026-10-26T08:30:00Z' } })[0], 'Shop hat ein Problem');
   assert.equal(t({ shop: { verfuegbar: true, ampel: 'gelb', geprueftAm: '2026-10-26T08:30:00Z' } })[0], 'Shop: Auffälligkeiten');
-  assert.deepEqual(t({ shop: undefined, kennzahlen: KENNZAHLEN }), ['7 Tage 1.235 € Umsatz'], 'ohne Shop-Kontrolle fuer die Rolle kein Shopteil');
+  assert.deepEqual(t({ shop: undefined }), ['Weitere Kennzahlen'], 'ohne Shop-Kontrolle fuer die Rolle kein Shopteil');
   // Aufgaben noch nicht geladen: keine "0 Entscheidungen" behaupten.
-  assert.ok(!t({ kennzahlen: KENNZAHLEN, tasks: [] }).some(x => /Entscheidung/.test(x)));
-  assert.ok(t({ kennzahlen: KENNZAHLEN, tasks: [], aufgabenGeladen: true }).includes('keine Entscheidung offen'));
-  assert.ok(t({ kennzahlen: KENNZAHLEN, tasks: [aufgabe(9, { due: '2026-10-20' })], aufgabenGeladen: true }).includes('Frist überschritten 20.10.'));
+  assert.ok(!t({ tasks: [] }).some(x => /Entscheidung/.test(x)));
+  assert.ok(t({ tasks: [], aufgabenGeladen: true }).includes('keine Entscheidung offen'));
+  assert.ok(t({ tasks: [aufgabe(9, { due: '2026-10-20' })], aufgabenGeladen: true }).includes('Frist überschritten 20.10.'));
   // Aufgeklappt: derselbe Knopf klappt zu.
-  assert.match(inhaberZeile({ kennzahlen: KENNZAHLEN, kzOffen: true, jetzt: JETZT }), /data-param="kz" data-value="" aria-expanded="true">Kennzahlen zuklappen</);
+  assert.match(inhaberZeile({ kzOffen: true, jetzt: JETZT }), /data-param="kz" data-value="" aria-expanded="true">Kennzahlen zuklappen</);
 });
 
 test('nebenbereichZusatz: Zahl der offenen Anfragen und Alter der aeltesten, sonst nichts', () => {
@@ -80,6 +79,16 @@ test('nebenbereichZusatz: Zahl der offenen Anfragen und Alter der aeltesten, son
   ] };
   assert.equal(nebenbereichZusatz(d, JETZT), ' · 2 offene Anfragen, älteste seit 10 Tagen');
   assert.equal(nebenbereichZusatz({ eintraege: [{ id: 's4', status: 'neu', erstelltAm: '2026-10-26T08:00:00Z' }] }, JETZT), ' · 1 offene Anfrage');
+});
+
+// Fehlalarm "Frist überschritten" (Prüfung 05.11.): die Frist einer Entscheidung endet mit der Entscheidung.
+test('Inhaberzeile: entschiedene Entscheidung meldet keine Frist mehr, offene und normale Aufgaben schon', () => {
+  const frist = aufgabe => teile(inhaberZeile({ tasks: [aufgabe], jetzt: JETZT })).filter(x => /Frist/.test(x));
+  const entscheidung = status => aufgabe(7, { isDecision: true, status, due: '2026-10-20' });
+  assert.deepEqual(frist(entscheidung('freigabe')), ['Frist überschritten 20.10.'], 'noch nicht entschieden');
+  assert.deepEqual(frist(entscheidung('eingang')), ['Frist überschritten 20.10.'], 'noch nicht gefragt');
+  for (const status of ['bereit', 'in-arbeit', 'review', 'beobachten']) assert.deepEqual(frist(entscheidung(status)), [], status);
+  assert.deepEqual(frist(aufgabe(8, { status: 'bereit', due: '2026-10-20' })), ['Frist überschritten 20.10.'], 'normale Aufgabe behaelt die Frist');
 });
 
 // Codex-Review #1731 (P2): Fristen sind Kalendertage in Oranienburg, nicht in UTC.

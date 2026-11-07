@@ -181,3 +181,46 @@ test('die reine Ableitung schreibt weder Quelldaten noch Auftragsstatus um', () 
   start(d, { statusAlle });
   assert.equal(JSON.stringify({ d, statusAlle }), vorher);
 });
+
+// --- Gesperrte Muster (#1996, 06.11.2026) ---
+import { ohneGesperrteKlaerung } from '../lib/einkauf-uebersicht.mjs';
+
+test('gesperrtes Muster ohne Artikelnummer ist weder zu bestellen noch zu klaeren, nur gezaehlt', () => {
+  const d = daten([gruppe('UNGEKLAERT', [m('g1', { grosshaendlerId: 'UNGEKLAERT' })]), gruppe('A', [m('m1'), m('g2')])]);
+  const ohne = start(d);
+  assert.equal(ohne.nichtZugeordnet.muster.positionen, 1, 'ohne Sperrliste bleibt alles wie bisher');
+  assert.equal(ohne.gesamt.muster.positionen, 3);
+  assert.equal(ohne.gesperrt, 0);
+  const mit = start({ ...d, gesperrteMuster: ['g1', 'g2'] });
+  assert.equal(mit.nichtZugeordnet.muster.positionen, 0);
+  assert.equal(mit.blockiert.muster.positionen, 0);
+  assert.equal(mit.gesamt.muster.positionen, 1);
+  assert.deepEqual(mit.lieferanten.map(k => [k.id, k.muster.positionen]), [['A', 1]]);
+  assert.equal(mit.gesperrt, 2);
+  // Ausdruecklich uebergeben schlaegt die Vorgabe; eine leere Liste filtert nicht.
+  assert.equal(start({ ...d, gesperrteMuster: ['g1'] }, { gesperrt: [] }).gesperrt, 0);
+  assert.equal(startBestellarbeit().gesperrt, null, 'nicht geladen: keine Zahl');
+});
+
+test('"Zuerst klären": gesperrtes Muster zaehlt nicht als "ohne Großhändler-ID" (echte Bestellübersicht)', () => {
+  // Erfundene Musterzeilen ohne Quellvariante: die Bestelluebersicht meldet sie "ohne Großhändler-ID".
+  const zeile = id => ({ id: `gid://shopify/LineItem/${id}`, sku: `M-TEST-${id}`, title: `Muster Testware ${id}`, quantity: 1, unfulfilledQuantity: 1,
+    variant: { id: `gid://shopify/ProductVariant/${id}`, sku: `M-TEST-${id}`, metafields: [{ namespace: 'einkauf', key: 'lieferant', value: 'A' }],
+      product: { id: `gid://shopify/Product/${id}`, handle: `muster-testware-${id}`, title: `Muster Testware ${id}` } } });
+  const a = aufbereiten({ orders: [{ id: 'gid://shopify/Order/9', name: '#TEST9', createdAt: vor(2), displayFinancialStatus: 'PAID',
+    displayFulfillmentStatus: 'UNFULFILLED', lineItems: { nodes: [zeile(1), zeile(2)] } }] }).auftraege[0];
+  assert.deepEqual([a.ampel, a.hinweise], ['rot', ['2 Position(en) ohne Großhändler-ID']]);
+  assert.equal(a.ampelOhneIdGrund, 'gruen');
+  assert.equal(ohneGesperrteKlaerung(a, new Set()), a, 'ohne Sperre unveraendert');
+  // Eines gesperrt: der Rest bleibt rot mit der Restzahl.
+  const c = ohneGesperrteKlaerung(a, new Set(['gid://shopify/LineItem/1']));
+  assert.deepEqual([c.ampel, c.hinweise, c.gesperrtOhneId], ['rot', ['1 Position(en) ohne Großhändler-ID'], 1]);
+  // Beide gesperrt: nichts anderes offen, also nicht mehr "Blockiert".
+  const b = ohneGesperrteKlaerung(a, new Set(['gid://shopify/LineItem/1', 'gid://shopify/LineItem/2']));
+  assert.deepEqual([b.ampel, b.hinweise], ['gruen', []]);
+  // Schon bei uns angekommen: die Sperre wirkt nicht mehr.
+  assert.equal(ohneGesperrteKlaerung(a, new Set(['gid://shopify/LineItem/1', 'gid://shopify/LineItem/2']), () => ({ status: 'geliefert' })), a);
+  // Alter Server ohne die neuen Felder: unveraendert.
+  const { ohneIdPositionen, ...alt } = a;
+  assert.equal(ohneGesperrteKlaerung(alt, new Set(['gid://shopify/LineItem/1'])), alt);
+});

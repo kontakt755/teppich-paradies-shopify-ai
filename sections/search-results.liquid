@@ -109,6 +109,46 @@
         endif
         assign tp_sr_fest_liste = tp_sr_fest | remove_first: '|' | split: '|'
       -%}
+      {%- liquid
+        # Feste Suchthemen (snippets/tp-suche-thema): Kategorie oben, die Produkte
+        # des Themas zuerst im Raster, nur auf Seite 1 und ohne Filter oder
+        # eigene Sortierung. Auf allen Seiten stehen sie nicht noch einmal.
+        assign tp_sr_thema_k = '' | split: ','
+        assign tp_sr_thema_p = '' | split: ','
+        assign tp_sr_thema_kette = '|'
+        if search.terms != blank
+          capture tp_sr_thema
+            render 'tp-suche-thema', begriff: search.terms
+          endcapture
+          assign tp_sr_thema = tp_sr_thema | strip | split: '|'
+          assign tp_sr_thema_k = tp_sr_thema[0] | split: ','
+          assign tp_sr_thema_p = tp_sr_thema[1] | split: ','
+
+          assign tp_sr_filter_aktiv = false
+          for tp_sr_f in search.filters
+            if tp_sr_f.active_values.size > 0 or tp_sr_f.min_value.value != null or tp_sr_f.max_value.value != null
+              assign tp_sr_filter_aktiv = true
+              break
+            endif
+          endfor
+          if tp_sr_filter_aktiv or search.sort_by != search.default_sort_by
+            assign tp_sr_thema_p = '' | split: ','
+          endif
+          for tp_sr_th in tp_sr_thema_p
+            assign tp_sr_thema_kette = tp_sr_thema_kette | append: tp_sr_th | append: '|'
+          endfor
+        endif
+      -%}
+      {%- if tp_sr_thema_k.size > 0 and paginate.current_page == 1 -%}
+        <section class="tp-sr-ziele" aria-labelledby="tp-sr-thema-titel">
+          <h2 class="tp-sr-ziele__titel" id="tp-sr-thema-titel">{% if tp_sr_thema_k.size > 1 %}Passende Kategorien{% else %}Passende Kategorie{% endif %}</h2>
+          <ul class="tp-sr-ziele__liste">
+            {% for tp_sr_th in tp_sr_thema_k %}
+              <li><a href="{{ collections[tp_sr_th].url | escape }}">{{ collections[tp_sr_th].title | escape }}</a></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {%- endif -%}
       {%- capture tp_sr_seiten_html -%}
         {% if tp_sr_seiten.size > 0 or tp_sr_fest_liste.size > 0 %}
           <section class="tp-sr-ziele" aria-labelledby="tp-sr-seiten-titel">
@@ -133,7 +173,7 @@
       {%- endcapture -%}
       {%- if tp_sr_fest_liste.size > 0 -%}{{ tp_sr_seiten_html }}{%- endif -%}
       {% if search.results_count > 0 %}
-        {% if tp_sr_unsicher %}
+        {% if tp_sr_unsicher and tp_sr_thema_k.size == 0 %}
           {% render 'tp-suche-leer', begriff: search.terms %}
         {% endif %}
         {% if tp_sr_produkte.size > 0 %}
@@ -183,16 +223,37 @@
       {% endif %}
 
       {% capture children %}
+        {%- comment -%} Produkte des Suchthemas zuerst (siehe oben). {%- endcomment -%}
+        {% assign tp_sr_karte = 0 %}
+        {% if paginate.current_page == 1 %}
+          {% for tp_sr_th in tp_sr_thema_p %}
+            {% assign product = all_products[tp_sr_th] %}
+            {% if product == blank %}{% continue %}{% endif %}
+            <li
+              id="{{ section.id }}-{{ product.id }}"
+              class="product-grid__item product-grid__item--{{ tp_sr_karte }}"
+              data-page="{{ paginate.current_page }}"
+              data-product-id="{{ product.id }}"
+              ref="cards[]"
+            >
+              {% content_for 'block', type: '_product-card', id: 'product-card', closest.product: product, card_index: tp_sr_karte %}
+            </li>
+            {% assign tp_sr_karte = tp_sr_karte | plus: 1 %}
+          {% endfor %}
+        {% endif %}
         {% for product in products %}
+          {%- assign tp_sr_pkey = '|' | append: product.handle | append: '|' -%}
+          {%- if tp_sr_thema_kette contains tp_sr_pkey -%}{%- continue -%}{%- endif -%}
           <li
             id="{{ section.id }}-{{ product.id }}"
-            class="product-grid__item product-grid__item--{{ forloop.index0 }}"
+            class="product-grid__item product-grid__item--{{ tp_sr_karte }}"
             data-page="{{ paginate.current_page }}"
             data-product-id="{{ product.id }}"
             ref="cards[]"
           >
-            {% content_for 'block', type: '_product-card', id: 'product-card', closest.product: product, card_index: forloop.index0 %}
+            {% content_for 'block', type: '_product-card', id: 'product-card', closest.product: product, card_index: tp_sr_karte %}
           </li>
+          {% assign tp_sr_karte = tp_sr_karte | plus: 1 %}
         {% endfor %}
       {% endcapture %}
 

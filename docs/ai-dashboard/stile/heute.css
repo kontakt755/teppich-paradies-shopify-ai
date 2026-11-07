@@ -29,6 +29,10 @@ html[data-theme="dark"] .heute-sicht a[aria-current] { color: var(--bg); }
 .heute-todos > .heute-todo:first-child { border-top: 0; }
 .heute-todo.warn { border-left-color: var(--warn); }
 .heute-todo.crit { border-left-color: var(--crit); }
+/* Aufraeumfall am Problem-Eintrag (#1996): eine ganze Zeile unter Text und Knopf, Knoepfe in eigener Breite. */
+.heute-todo-aufraeumen { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; color: var(--text-2); font-size: .9rem; }
+.heute-todo-aufraeumen > span { margin-right: 4px; overflow-wrap: anywhere; }
+.heute-todo .heute-todo-aufraeumen .btn { min-width: 0; min-height: 36px; width: auto; }
 .heute-todo .t { font-weight: 650; overflow-wrap: anywhere; }
 .heute-todo .s { color: var(--text-2); font-size: .9rem; overflow-wrap: anywhere; }
 .heute-todo .btn { min-width: 132px; min-height: 40px; white-space: nowrap; }
@@ -170,6 +174,7 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
   .heute-todo { grid-template-columns: minmax(0, 1fr) auto; padding: 13px 14px 14px 12px; }
   .heute-todo .btn { grid-column: 1 / -1; }
   .heute-todo .btn { width: 100%; min-height: 44px; }
+  .heute-todo .heute-todo-aufraeumen .btn { width: auto; min-height: 44px; }
   .heute-rest > summary { min-height: 44px; display: flex; align-items: center; }
   .heute-mn-zeile { padding: 13px 14px 12px 12px; }
   .heute-mn-kopf { grid-template-columns: minmax(0, 1fr); }
@@ -205,6 +210,17 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
 .shop-start .heute-geschaeft { margin-bottom: 24px; }
 /* Probleme (rote To-dos) ganz oben, nur wenn es welche gibt; die Zeilen tragen das Rot, der Kopf bleibt ruhig. */
 .shop-start .heute-probleme { margin-bottom: 24px; }
+/* Warenkennzahl: eine ruhige Leiste, die Zahl traegt die Bedeutung, nicht die Farbe. */
+.waren-zahl { margin: 0 0 20px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.waren-zahl p { margin: 0; }
+.waren-zahl-kopf { display: flex; flex-wrap: wrap; gap: 4px 28px; }
+.waren-zahl-kopf div { display: flex; flex-direction: column; }
+.waren-zahl-kopf strong { font-size: 1.55rem; line-height: 1.2; }
+.waren-zahl-kopf span { color: var(--text-2); font-size: .85rem; }
+.waren-zahl-erklaerung, .waren-zahl-muster, .waren-zahl-hinweis { color: var(--text-2); font-size: .85rem; }
+.waren-zahl-erklaerung { margin-top: 4px !important; }
+.waren-zahl-vergleich { margin-top: 6px !important; font-size: .92rem; }
+.waren-zahl-muster { margin-top: 2px !important; }
 .shop-start .heute-probleme .heute-geschaeft-kopf p { margin-bottom: 10px; }
 .shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-weiter { grid-template-columns: minmax(0, 1fr); }
 .shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -234,7 +250,28 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
 
 .shop-musterarbeit { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .shop-musterarbeit .heute-geschaeft-kopf { margin-bottom: 12px; }
-.shop-packschritte { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.shop-packschritte { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0; }
+/* Mengen sind keine Warnung und kein Link-Blau (#1996): neutrale Schrift. Die Zahl mit demselben Ziel wie der
+   Knopf darunter ist reiner Text in derselben Hoehe; rot ist nur "nicht eingetragen" (Ampel-Plakette). */
+.shop-packschritte a.chip { color: var(--text); }
+.shop-packzahl { display: inline-flex; align-items: center; min-height: 32px; padding: 6px 4px; color: var(--text); font-size: .85rem; }
+.shop-packzahl-rot { display: inline-flex; align-items: center; min-height: 32px; }
+.shop-packzahl-rot:hover { text-decoration: none; }
+.shop-anrufe { margin: 0 0 12px; }
+@media (max-width: 760px) {
+  .shop-packzahl-rot, .shop-anrufe a { min-height: 44px; display: inline-flex; align-items: center; }
+}
 .shop-nacharbeit-zeile { border-top: 1px solid var(--line); padding: 10px 0; }
 .shop-nacharbeit-zeile summary { min-height: 36px; cursor: pointer; color: var(--text-2); }
 .shop-nacharbeit-zeile p { margin: 4px 0; }
+
+/* Von uns abschicken (ansichten/heute/selbst-abschicken.mjs, #1995): Zeilen wie die Warenbestellungen
+   darueber; Weg, Stand und Alter in einer umbrechenden Zeile, die Knoepfe brechen am Handy unter den Text. */
+.selbst-abschicken .selbst-stand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; }
+.selbst-abschicken .selbst-hinweis { margin-top: 2px; color: var(--text); }
+.selbst-abschicken .selbst-knoepfe { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+.selbst-abschicken .selbst-mehr > summary { min-height: 44px; padding: 10px 0; border-top: 1px solid var(--line); color: var(--text-2); cursor: pointer; }
+@media (max-width: 480px) {
+  .selbst-abschicken .selbst-knoepfe { justify-content: flex-start; }
+  .selbst-abschicken .selbst-knoepfe .btn { min-height: 44px; }
+}

@@ -1,7 +1,9 @@
 // "Verschickt – Kunde informieren" (#1810) bucht die Muster eines gepackten Umschlags in Shopify als
 // versendet - Shopify schickt die Versandmail (Mitarbeiter 29.10.2026). Seit #1811 auf dem Server, ganz
-// oder gar nicht. "Umschlag gepackt" allein bucht nichts. Kein Test spricht echtes Shopify: die Attrappe
-// aus operations/tests.
+// oder gar nicht. Seit 06.11.2026 geht "Umschlag gepackt" selbst diesen Weg (packstation-gepackt-verschickt
+// .test.mjs); "verschickt" bleibt fuer Umschlaege, die gepackt und nie eingetragen wurden (Altfaelle). Hier
+// entsteht so ein Altfall ueber den lokalen Packstand allein (kundenMusterPackenSetzen). Kein Test spricht
+// echtes Shopify: die Attrappe aus operations/tests.
 import './_testumgebung.mjs'; // vor Server-Imports
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -34,20 +36,20 @@ function umgebung(t, { attrappe = versandAttrappe({ fos: [fo('1', [{ n: 1 }, { n
   const api = createApi({ root: dir, privatDirPath: dir, gh: verboten, rebuild: verboten, now: () => new Date('2026-10-21T12:00:00Z'),
     shopifyZugang: async () => (zugang ? { proxy: attrappe.proxy, art: 'client-credentials', scope: 'write_orders' } : { proxy: { execute: async () => null }, art: 'sammeln', scope: null }) });
   const kunde = () => api.kundenMusterPacken().kunden[0];
-  const packen = () => api.kundenMusterPackenSchreiben({ packSchluessel: kunde().packSchluessel, aktion: 'gepackt', gepackt: true, alleEingelegt: true, lineItemIds: kunde().muster.filter(m => !m.abgehakt).map(m => m.lineItemId) }, ICH);
+  const packen = () => api.kundenMusterPackenSetzen({ packSchluessel: kunde().packSchluessel, aktion: 'gepackt', gepackt: true, alleEingelegt: true, lineItemIds: kunde().muster.filter(m => !m.abgehakt).map(m => m.lineItemId) }, ICH);
   const verschicken = (pk = kunde().packSchluessel, wer = ICH) => api.kundenMusterPackenSchreiben({ packSchluessel: pk, aktion: 'verschickt' }, wer);
   const status = () => JSON.parse(fs.readFileSync(path.join(dir, 'auftragsstatus.json'), 'utf8'));
   const eintrag = n => { const s = status(); return (s.positionen || s)[`${BESTELLUNG}::${li(n)}`]; };
   return { dir, api, attrappe, kunde, packen, verschicken, eintrag };
 }
 
-test('Umschlag gepackt bucht nichts; Verschickt: Muster lokal "raus", in Shopify mit Versandmail, Umschlag aus der Packstation', async t => {
+test('Altfall: der lokale Packstand allein bucht nichts; Verschickt: Muster lokal "raus", in Shopify mit Versandmail, Umschlag aus der Packstation', async t => {
   const u = umgebung(t);
   const pk = u.kunde().packSchluessel;
   const gepackt = await u.packen();
   assert.equal(gepackt.gepackt?.von, 'Mitarbeiter 1', 'Packstand gespeichert');
   assert.equal(gepackt.versand, undefined);
-  assert.equal(u.attrappe.buchungen().length, 0, 'Gepackt allein schickt keine Mail - der Grossbrief kann noch vorbereitet werden');
+  assert.equal(u.attrappe.buchungen().length, 0, 'der lokale Packstand allein schickt keine Mail');
   assert.equal(u.kunde().bereich, 'gepackt');
   const r = await u.verschicken();
   assert.equal(r.ok, true);
@@ -132,7 +134,7 @@ function zweiBestellungen(t, vorStatus = null) {
   const api = createApi({ root: dir, privatDirPath: dir, gh: verboten, rebuild: verboten, now: () => new Date('2026-10-21T12:00:00Z'),
     shopifyZugang: async () => { await halt; return { proxy: { execute: async () => null }, art: 'sammeln', scope: null }; } });
   const kunden = () => api.kundenMusterPacken().kunden;
-  const packen = () => { const k = kunden()[0]; return api.kundenMusterPackenSchreiben({ packSchluessel: k.packSchluessel, aktion: 'gepackt', gepackt: true, alleEingelegt: true, lineItemIds: k.muster.map(m => m.lineItemId) }, ICH); };
+  const packen = () => { const k = kunden()[0]; return api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, aktion: 'gepackt', gepackt: true, alleEingelegt: true, lineItemIds: k.muster.map(m => m.lineItemId) }, ICH); };
   const verschicken = () => api.kundenMusterPackenSchreiben({ packSchluessel: kunden()[0].packSchluessel, aktion: 'verschickt' }, ICH);
   const status = () => (fs.existsSync(path.join(dir, 'auftragsstatus.json')) ? JSON.parse(fs.readFileSync(path.join(dir, 'auftragsstatus.json'), 'utf8')).positionen || {} : {});
   return { dir, api, kunden, packen, verschicken, status, freigabe };

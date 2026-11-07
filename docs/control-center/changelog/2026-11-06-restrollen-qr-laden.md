@@ -1,0 +1,6 @@
+## 2026-11-06 · Restrollen: QR-Etikett an der Rolle, Direktlink zum Ladenverkauf, Zeile auf Heute
+
+- **Geaendert:** Jede Restrolle in „Sonderposten“ hat „QR-Etikett drucken…“ (Niimbot B1, 50 × 50). Der Code öffnet im Dashboard genau diese Rolle mit „Ladenverkauf buchen“ – im Laden: scannen, Meter eingeben, buchen, dann schneiden. „Heute“ zeigt eine ruhige Zeile „Restrollen“ mit Rest in m und m², Ladenbuchungen der letzten 30 Tage und wann wieder nachgemessen werden muss (Bernstein nur, wenn fällig). Wunsch des Inhabers: Laden und Online-Shop zeigen immer denselben Bestand.
+- **Getestet:** neue Tests `operations/tests/sonderposten-ladenstand.test.mjs`, `docs/ai-dashboard/tests/sonderposten-restrollen.test.mjs`, ergänzt `sonderposten-api.test.mjs`; `npm run -s pruefen` und `npm run dashboard:pruefen` (Desktop und Handy).
+- **Risiken/Annahmen:** Ein Handy braucht Tailscale oder das Firmennetz und eine Anmeldung. Die erste Messung (28.10.2026) lief direkt in Shopify und steht deshalb als feste Startmarke im Code. Online-Verkäufe (Meterware, Raummaß, Kettelteppich) buchen Shopify selbst über das Zuschnitt-Bündel ab – daran ändert sich nichts.
+- **Naechste Stufe:** Etiketten an alle 10 Rollen kleben, Laden-Team einweisen; nach 30 Tagen nachmessen und per „Restlänge eintragen“ abgleichen.

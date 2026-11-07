@@ -4,10 +4,11 @@
  * Meldungen - Mac-Dienst gestoert, Speicher fast voll, Sicherung fehlgeschlagen, aus der
  * Bestellung entfernte Positionen, ueberschrittener Liefertermin - sah dort niemand.
  *
- * Rot heisst: ein Problem, das heute jemand loesen muss (Skill control-center, Farbe). Das gehoert
- * nach oben zu dem, was Geld oder Aerger bedeutet. Gelbes und Normales bleibt in den
- * Alltagssichten, damit die Warenkunden direkt darunter zuerst kommen. Ohne rotes To-do steht
- * hier nichts - ein leerer Kasten waere Rauschen.
+ * Rot heisst: ein Problem, das heute jemand loesen muss (Skill control-center, Farbe). Es steht seit
+ * 05.11. direkt unter den Warenbestellungen: Am Handy begann der Warenblock sonst erst unter dem
+ * ersten Bildschirm, und die Inhaberentscheidung lautet "zahlende Warenkunden zuerst" (22.10.).
+ * Gelbes und Normales bleibt in den Alltagssichten. Ohne rotes To-do steht hier nichts - ein
+ * leerer Kasten waere Rauschen.
  *
  * Nicht hier: Laden-/Treppenanfragen, Angebote aus Kundenfaellen und Team-Aufgaben - auch wenn
  * sie rot sind. Der Inhaber hat sie am 22.10. aus dem taeglichen Fokus in "Weitere Bereiche"
@@ -17,9 +18,13 @@
  *
  * Reine Funktion ohne DOM: heute.mjs liefert die sortierte To-do-Liste der Sicht und den
  * Zeilen-Zeichner (todoZeile), damit Knoepfe und Dialoge dieselben bleiben wie in der Liste.
+ *
+ * Konnte eine Quelle nicht geladen werden, darf der Block nicht einfach fehlen: "kein Problem" waere
+ * dann eine Behauptung ohne Grundlage (Review 29.10., w-222). Deshalb die Zeile "Liste unvollstaendig".
  */
+import { esc } from '../../kern/helfer.mjs';
 
-/** Mehr als drei rote Zeilen schieben die Warenkunden aus dem Blick - der Rest klappt auf. */
+/** Mehr als drei rote Zeilen machen den Block unuebersichtlich - der Rest klappt auf. */
 export const PROBLEME_SICHTBAR = 3;
 
 /** Arten aus dem Nebenbereich "Laden, Aufgaben" (Inhaber 22.10.) - bleiben hinter "Weitere Bereiche". */
@@ -30,15 +35,36 @@ export function nurProbleme(todos) {
   return (todos || []).filter(t => t && t.ton === 'crit' && !NEBENBEREICH_ARTEN.includes(t.art));
 }
 
+/** Bestellungen der roten Eintraege (To-do-Feld `orderIds`) - stehen sie hier, fehlen sie im Aufraeumen-Block. */
+export function problemOrderIds(todos) {
+  return [...new Set(nurProbleme(todos).flatMap(t => t.orderIds || []))];
+}
+
+/**
+ * Was auf der Shop-Uebersicht schon rot steht und im Block "Musterautomatik" fehlen darf: Muster der roten
+ * To-dos "n Muster hängen" und "Muster nicht lieferbar" (`musterSchluessel`) sowie blockierte Bestellungen
+ * ("Zuerst klären"). Nur was wirklich oben steht - ein unbezahlter Klaerfall hat kein rotes To-do und bleibt.
+ * @returns {{ positionen: Set<string>, auftraege: Set<string> }}
+ */
+export function rotMuster(todos) {
+  const rot = nurProbleme(todos);
+  return {
+    positionen: new Set(rot.flatMap(t => t.musterSchluessel || [])),
+    auftraege: new Set(rot.filter(t => t.art === 'blockiert').flatMap(t => t.orderIds || [])),
+  };
+}
+
 /**
  * @param {object[]} todos  sortierte To-dos einer Sicht (lib/todos.mjs sortiereTodos)
  * @param {object} p
  * @param {(todo: object) => string} p.zeile  zeichnet eine To-do-Zeile (heute.mjs todoZeile)
- * @returns {string} HTML oder '' ohne rotes To-do
+ * @param {string[]} [p.fehlen]  Namen der Quellen, die nicht geladen werden konnten
+ * @returns {string} HTML oder '' ohne rotes To-do und ohne fehlende Quelle
  */
-export function problemeBlock(todos, { zeile }) {
+export function problemeBlock(todos, { zeile, fehlen = [] }) {
   const rot = nurProbleme(todos);
-  if (!rot.length) return '';
+  const hinweis = fehlen.length ? `<p class="heute-unvollstaendig" role="status"><b>Liste unvollständig:</b> ${esc(fehlen.join(', '))} ${fehlen.length === 1 ? 'konnte' : 'konnten'} nicht geladen werden, ein Problem kann hier fehlen. Seite neu laden; bleibt es so, Claude Bescheid geben.</p>` : '';
+  if (!rot.length) return hinweis ? `<section class="heute-probleme" aria-label="Probleme">${hinweis}</section>` : '';
   const oben = rot.slice(0, PROBLEME_SICHTBAR);
   const rest = rot.slice(PROBLEME_SICHTBAR);
   return `<section class="heute-probleme" aria-labelledby="heuteProbleme"><div class="heute-geschaeft-kopf">
@@ -46,5 +72,6 @@ export function problemeBlock(todos, { zeile }) {
     <p>Rot heißt: das muss heute jemand lösen. Alles Weitere steht unter „Weitere Bereiche“.</p></div>
     <div class="heute-todos">${oben.map(zeile).join('')}${rest.length
     ? `<details class="heute-rest"><summary>${PROBLEME_SICHTBAR} von ${rot.length} – alle anzeigen</summary>${rest.map(zeile).join('')}</details>` : ''}</div>
+    ${hinweis}
   </section>`;
 }

@@ -176,3 +176,27 @@ test('Zeitleiste abgeschlossen (null): nur was sonst noch fehlt, sonst faellt di
   const offen = bestellzeile({ zahlungsstatus: 'PENDING', zeitleisteSchritt: zl('wir', 'faellig', 'Ware beim Lieferanten bestellen'), wasFehlt: ['Noch nicht bezahlt'] });
   assert.match(naechsterSchritt(offen, { jetzt: JETZT }).text, /Noch nicht bezahlt/);
 });
+
+// --- Rot nur aus der Ampel (#1996, 06.11.2026) ---
+test('Fall rot nur aus Ampelgruenden: roter Zeitleistenschritt oder blockierte Bestellung, nicht jede sofortige Routine', () => {
+  const kunde = n => ({ orderId: `gid://shopify/Order/${n}`, orderName: `#${n}`, kundenSchluessel: `email:k${n}@example.test`, email: `k${n}@example.test`, kundenname: `Kunde ${n}` });
+  const fallVon = z => faelle({ bestellzeilen: [z] }, { jetzt: JETZT }).faelle[0];
+  // Routine, seit 5 Tagen faellig: sofort, aber kein Rot.
+  const routine = fallVon(bestellzeile({ ...kunde(1), zeitleisteSchritt: zl('wir', 'faellig', 'Muster labeln und an den Kunden schicken', { faelligSeitTagen: 5 }) }));
+  assert.deepEqual([routine.dringend, routine.rot], [DRINGEND.SOFORT, false]);
+  // Gesperrtes Muster (Zeitleiste rot): rot und sofort.
+  const gesperrt = fallVon(bestellzeile({ ...kunde(2), zeitleisteSchritt: { ...zl('wir', 'problem', 'Muster kommt nicht – Kunde informieren'), rot: true } }));
+  assert.deepEqual([gesperrt.dringend, gesperrt.rot], [DRINGEND.SOFORT, true]);
+  // Ab 14 Tagen beim Lieferanten (rot) ja, Nachhaken (gelb) nein.
+  assert.equal(fallVon(bestellzeile({ ...kunde(3), zeitleisteSchritt: { ...zl('lieferant', 'problem', 'Problem: Muster seit 15 Tagen bestellt und nicht da'), rot: true } })).rot, true);
+  assert.equal(fallVon(bestellzeile({ ...kunde(4), zeitleisteSchritt: zl('lieferant', 'nachhaken', 'Beim Lieferanten nachhaken', { faelligSeitTagen: 3 }) })).rot, false);
+  // Termin vorbei: rot und sofort, auch wenn er erst gestern verstrich.
+  const termin = fallVon(bestellzeile({ ...kunde(5), zeitleisteSchritt: { ...zl('wir', 'nachhaken', 'Bestätigter Liefertermin überschritten – nachhaken', { faelligSeitTagen: 0 }), rot: true } }));
+  assert.deepEqual([termin.dringend, termin.rot], [DRINGEND.SOFORT, true]);
+  // Blockiert ("Zuerst klären", Ampel der Bestellung rot): rot, auch bei sonst normalem Schritt.
+  const blockiert = fallVon(bestellzeile({ ...kunde(6), auftrag: { ampel: 'rot', positionen: [] }, zeitleisteSchritt: zl('wir', 'faellig', 'Ware beim Lieferanten bestellen', { faelligSeitTagen: 1 }) }));
+  assert.equal(blockiert.rot, true);
+  // Angebot und Warenkorb sind nie rot.
+  const angebot = faelle({ angebote: [{ status: 'OPEN', kunde: 'Kunde 7', email: 'k7@example.org', nummer: 'A1', erstelltAm: vorTagen(20), positionen: [] }] }, { jetzt: JETZT }).faelle[0];
+  assert.deepEqual([angebot.dringend, angebot.rot], [DRINGEND.SOFORT, false]);
+});

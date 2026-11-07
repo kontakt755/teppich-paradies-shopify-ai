@@ -3,41 +3,23 @@
 
   @param {string} [accelerated_checkout_buttons_layout] - { 'vertical' } Forced layout of the additional checkout buttons, instead of relying on platform's layout.
   @param {string} [section_id] - The section ID for cart discount component.
+  @param {string} teil - { 'hinweise' | 'kasse' | 'schnellkauf' | 'zahlung' } Welcher Teil ausgegeben wird, siehe unten.
 {%- enddoc -%}
 
-<div class="cart-totals">
-  {% # We need to keep this node in place to allow morphing to work properly # %}
-  <div class="cart-totals__original-container cart-primary-typography">
-    {%- if cart.cart_level_discount_applications.size > 0 -%}
-      <span class="cart-totals__item cart-totals__original">
-        <span class="cart-totals__original-label">{{ 'content.cart_subtotal' | t }}</span>
-        <span
-          class="cart-totals__original-value cart-secondary-typography"
-          data-testid="cart-subtotal-value"
-        >
-          {{- cart.items_subtotal_price | money -}}
-        </span>
-      </span>
-      <ul
-        class="cart-discounts"
-        role="list"
-        aria-label="{{ 'content.discounts' | t }}"
-      >
-        {%- for discount in cart.cart_level_discount_applications -%}
-          <li class="cart-discounts__item">
-            <span class="cart-discounts__label">
-              {{- 'icon-discount.svg' | inline_asset_content -}}
-              {{ discount.title | escape }}
-            </span>
-            <span class="cart-discounts__value cart-secondary-typography"
-              >-{{ discount.total_allocated_amount | money -}}
-            </span>
-          </li>
-        {%- endfor -%}
-      </ul>
-    {%- endif -%}
-  </div>
+{%- comment -%}
+  Die Summenleiste wurde am Handy ueber 600 px hoch: assets/cart-drawer.js hob
+  das Festhalten ab der halben Hoehe auf, "Zur Kasse" lag ausserhalb des
+  Bildschirms (Pruefung 2026-11-05). Darum vier Teile, die die Aufrufer
+  (snippets/header-actions, blocks/_cart-summary) je einmal rendern:
+  - hinweise: Rabatt, Tipps, Versand, Verlegeanfrage, Musterberatung, Ratenzahlung.
+    Scrollt. Zwei Stuecke, weil Ratenzahlung fachlich hinter die Kaufknoepfe gehoert.
+  - kasse: Summe, Preishinweis und "Zur Kasse". Bleibt immer im Bild.
+  - schnellkauf: Shop Pay, PayPal usw. Im Schubfach eine Zeile unter dem Kaufknopf,
+    auf der Seite (untereinander, rund 190 px) unter der festen Leiste.
+  - zahlung: Zeile zu Zahlarten und Abholung.
+{%- endcomment -%}
 
+{%- if teil == 'hinweise' -%}
   {% if settings.show_cart_note or settings.show_add_discount_code %}
     <div class="cart-actions">
       {% if settings.show_cart_note %}
@@ -219,14 +201,6 @@
     </div>
   {% endif %}
 
-  {%- liquid
-    if settings.currency_code_enabled_cart_total
-      assign total_price = cart.total_price | money_with_currency
-    else
-      assign total_price = cart.total_price | money
-    endif
-  -%}
-
   {% # Unterlagen-Tipp bei Teppich nach Mass ohne Unterlage - oberhalb des Gesamtbetrags, nie davor/dahinter %}
   {% render 'tp-cart-unterlage-hinweis' %}
   {% render 'tp-cart-leisten-paket' %}
@@ -240,16 +214,19 @@
   {%- endcomment -%}
   {%- if settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
     {%- assign tp_cart_vs_ok = false -%}
+    {%- assign tp_cart_vs_summe = 0 -%}
     {%- comment -%}
       Aktionsware ist vom kostenlosen Vor-Ort-Service ausgenommen (Inhaber
       2026-09-20, snippets/tp-aktion-aktiv.liquid) - sie zaehlt hier nicht mit.
+      Die Schwelle rechnet deshalb nur mit der Summe der berechtigten Zeilen
+      ohne Aktion, nie mit cart.total_price (Rundgang 2026-11-06, WK-02).
     {%- endcomment -%}
     {%- for tp_cart_vs_item in cart.items -%}
       {%- capture tp_cart_vs_ja -%}{% render 'tp-vs-berechtigt', product: tp_cart_vs_item.product %}{%- endcapture -%}
       {%- capture tp_cart_vs_aktion -%}{% render 'tp-aktion-aktiv', product: tp_cart_vs_item.product %}{%- endcapture -%}
       {%- if tp_cart_vs_ja contains 'ja' and tp_cart_vs_aktion == blank -%}
         {%- assign tp_cart_vs_ok = true -%}
-        {%- break -%}
+        {%- assign tp_cart_vs_summe = tp_cart_vs_summe | plus: tp_cart_vs_item.final_line_price -%}
       {%- endif -%}
     {%- endfor -%}
     {%- if tp_cart_vs_ok -%}
@@ -267,10 +244,10 @@
           (blocks/tp-verlegeservice-hinweis: "Lieferung & lose Verlegung bis
           15 km kostenlos"), vorher nannte der Warenkorb nur die Anlieferung.
         {%- endcomment -%}
-        {%- if cart.total_price >= tp_cart_vs_schwelle_cent -%}
+        {%- if tp_cart_vs_summe >= tp_cart_vs_schwelle_cent -%}
           <strong>Lieferung &amp; lose Verlegung bis {{ settings.tp_vs_radius_basis }}&nbsp;km kostenlos</strong> – durch unser Team rund um Oranienburg, nach Prüfung der Lieferadresse.
         {%- else -%}
-          {%- assign tp_cart_vs_rest = tp_cart_vs_schwelle_cent | minus: cart.total_price -%}
+          {%- assign tp_cart_vs_rest = tp_cart_vs_schwelle_cent | minus: tp_cart_vs_summe -%}
           <strong>Noch {{ tp_cart_vs_rest | money }} bis zur kostenlosen Lieferung &amp; losen Verlegung</strong> bis {{ settings.tp_vs_radius_basis }}&nbsp;km um Oranienburg (ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert, nach Prüfung der Lieferadresse).
         {%- endif %}
       </p>
@@ -279,6 +256,52 @@
 
   {% # Freiwillige Verlegeanfrage: vor Gesamtbetrag und "Zur Kasse", direkt unter der Zusage zur Verlegung (Rundgang 2026-10-26, #3). Zwischen Gesamtbetrag und Kaufknopf bleibt nur der Preishinweis. %}
   {% render 'tp-cart-beratung', stelle: 'vor_summe' %}
+{%- endif -%}
+
+{%- if teil == 'kasse' -%}
+  {%- liquid
+    if settings.currency_code_enabled_cart_total
+      assign total_price = cart.total_price | money_with_currency
+    else
+      assign total_price = cart.total_price | money
+    endif
+  -%}
+
+  {% # Ueber dem Gesamtbetrag, damit zwischen Summe und Kaufknopf nur der Preishinweis steht %}
+  {% render 'tp-cart-checkout-menge' %}
+
+<div class="cart-totals">
+  {% # We need to keep this node in place to allow morphing to work properly # %}
+  <div class="cart-totals__original-container cart-primary-typography">
+    {%- if cart.cart_level_discount_applications.size > 0 -%}
+      <span class="cart-totals__item cart-totals__original">
+        <span class="cart-totals__original-label">{{ 'content.cart_subtotal' | t }}</span>
+        <span
+          class="cart-totals__original-value cart-secondary-typography"
+          data-testid="cart-subtotal-value"
+        >
+          {{- cart.items_subtotal_price | money -}}
+        </span>
+      </span>
+      <ul
+        class="cart-discounts"
+        role="list"
+        aria-label="{{ 'content.discounts' | t }}"
+      >
+        {%- for discount in cart.cart_level_discount_applications -%}
+          <li class="cart-discounts__item">
+            <span class="cart-discounts__label">
+              {{- 'icon-discount.svg' | inline_asset_content -}}
+              {{ discount.title | escape }}
+            </span>
+            <span class="cart-discounts__value cart-secondary-typography"
+              >-{{ discount.total_allocated_amount | money -}}
+            </span>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
 
   <div class="cart-totals__container">
     <span
@@ -327,8 +350,11 @@
       {{ 'content.checkout' | t }}
     </span>
   </button>
+</div>
+{%- endif -%}
 
-  {% if additional_checkout_buttons and settings.show_accelerated_checkout_buttons %}
+{%- if teil == 'schnellkauf' and additional_checkout_buttons and settings.show_accelerated_checkout_buttons -%}
+  <div class="cart__ctas">
     <div
       class="
         additional-checkout-buttons
@@ -337,18 +363,19 @@
     >
       {{ content_for_additional_checkout_buttons }}
     </div>
-  {% endif %}
-</div>
+  </div>
+{%- endif -%}
 
 {%- comment -%}
-  Direkt unter dem Kaufknopf, wo die Frage nach der Zahlung auftaucht:
+  Unter den Kaufknoepfen, wo die Frage nach der Zahlung auftaucht:
   Zahlarten und Abholung als eine ruhige Zeile (Checkout-Befund 2026-10-08,
   Wortlaut in den Theme-Einstellungen "TP Zahlung und Abholung").
 {%- endcomment -%}
-{%- if cart.item_count > 0 -%}
+{%- if teil == 'zahlung' and cart.item_count > 0 -%}
   {%- render 'tp-zahlung-abholung', kontext: 'warenkorb' -%}
 {%- endif -%}
 
+{%- if teil == 'hinweise' -%}
 {% render 'tp-muster-beratungsanfrage' %}
 
 {% if settings.show_installments %}
@@ -358,8 +385,17 @@
     {% endform %}
   </div>
 {% endif %}
+{%- endif -%}
 
 {% stylesheet %}
+  .tp-cart-hinweise {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    gap: var(--gap-xl);
+    width: 100%;
+  }
+
   .cart-actions {
     display: flex;
     flex-direction: column;
@@ -381,12 +417,6 @@
     color: rgb(var(--color-foreground-rgb) / var(--opacity-subdued-text));
     font-size: var(--font-size--2xs);
     line-height: 1.4;
-  }
-
-  .cart-totals:not(:has(.cart-actions)) {
-    margin-block-start: var(--margin-3xs);
-    border-block-start: 1px solid var(--color-border);
-    padding-block-start: var(--margin-xl);
   }
 
   .cart-totals__item {

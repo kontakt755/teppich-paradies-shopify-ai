@@ -29,9 +29,23 @@
     assign compare_per_sqm = package_compare_at_price | times: 1.0 | divided_by: sqm_per_package | round
     assign show_compare_price = true
   endif
+  # Zentrale Aktion (snippets/tp-aktion-laufend, z. B. Black Week): Paket- und
+  # m²-Preis nach Abzug, der bisherige Preis wird zum Streichpreis. Shopify zieht
+  # je Paket ab und rundet den Abzug auf den Cent ab; abgerechnet wird dort.
+  capture tp_pps_zentral
+    render 'tp-aktion-laufend', product: product
+  endcapture
+  assign tp_pps_zentral = tp_pps_zentral | strip | split: '|' | first | plus: 0
+  if tp_pps_zentral > 0 and package_price > 0
+    assign compare_per_sqm = package_price | times: 1.0 | divided_by: sqm_per_package | round
+    assign tp_pps_abzug = package_price | times: tp_pps_zentral | divided_by: 100 | floor
+    assign package_price = package_price | minus: tp_pps_abzug
+    assign price_per_sqm = package_price | times: 1.0 | divided_by: sqm_per_package | round
+    assign show_compare_price = true
+  endif
   # UVP des Herstellers ohne laufende Aktion: graue Zeile "UVP" statt Streichpreis (snippets/tp-uvp-zeile).
   assign tp_pps_uvp = false
-  if tp_pps_aktion == 'uvp' and package_compare_at_price != blank and package_compare_at_price > package_price
+  if tp_pps_zentral == 0 and tp_pps_aktion == 'uvp' and package_compare_at_price != blank and package_compare_at_price > package_price
     assign tp_pps_uvp = true
     assign uvp_per_sqm = package_compare_at_price | times: 1.0 | divided_by: sqm_per_package | round | money_without_currency
   endif

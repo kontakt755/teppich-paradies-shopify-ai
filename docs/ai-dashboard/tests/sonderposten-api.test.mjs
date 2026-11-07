@@ -288,3 +288,19 @@ test('Server: /api/sonderposten/verkauft - lesen 403, mitarbeiter 200, inhaber 2
     process.env.TP_PRIVAT_DIR = PRIVAT_DIR;
   }
 });
+
+test('Liste: Laden-Stand aus dem Protokoll und Netzadresse fuer QR-Etiketten (Inhaber 2026-11-06)', async () => {
+  const a = attrappe({ rolle: true, available: 80 });
+  // Erst eine echte Ladenbuchung, dann muss die Liste sie zaehlen
+  await apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID, laengeM: 2 }, MONA);
+  const root = wegwerfOrdner('tp-sonderposten-root-');
+  const api = createApi({ root, now: () => JETZT, env: { TP_DASHBOARD_EXTRA_HOSTS: 'mac.tailxyz.ts.net, zweiter.ts.net' },
+    shopifyZugang: async () => ({ proxy: a.proxy, art: 'client-credentials' }) });
+  const d = await api.sonderpostenListe();
+  assert.equal(d.netzAdresse, 'https://mac.tailxyz.ts.net');
+  assert.ok(d.ladenStand.buchungen30 >= 1);
+  assert.equal(d.ladenStand.letzteBuchung, JETZT.toISOString());
+  assert.equal(typeof d.ladenStand.nachmessenFaellig, 'boolean');
+  const ohne = await apiMit(attrappe({ rolle: true })).sonderpostenListe();
+  assert.equal(ohne.netzAdresse, null, 'ohne Eintrag nimmt der Browser seine eigene Adresse');
+});

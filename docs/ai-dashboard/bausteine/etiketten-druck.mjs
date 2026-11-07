@@ -11,7 +11,7 @@
  */
 import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
-import { DRUCK_LIMIT, druckBloecke, druckVorschau, motivSchluessel } from '../lib/druckliste.mjs';
+import { DRUCK_LIMIT, auswahlSignatur, druckBloecke, druckVorschau, fertigeSeiten, motivSchluessel, setzeMotivAnzahl, weiterAbFuer, weiterAbSchaetzen, weiterNachAbbruch } from '../lib/druckliste.mjs';
 import { ETIKETT, ETIKETT_FORMATE, FREIE_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle, schwarzWeiss } from '../lib/muster-etiketten.mjs';
 import { adressLayout } from '../lib/adress-etiketten.mjs';
 import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
@@ -65,7 +65,7 @@ function versatzMerken(v) { try { localStorage.setItem(VERSATZ_SCHLUESSEL, JSON.
 const versatzHinweis = () => (druck.versatz.x || druck.versatz.y ? '\u00a0· Versatz eingestellt' : '');
 const versatzOptionen = (wert, minus, plus) => VERSATZ_MM.map(v => `<option value="${v}"${v === wert ? ' selected' : ''}>${v === 0 ? 'keiner (Standard)' : `${String(Math.abs(v)).replace('.', ',')} mm ${v < 0 ? minus : plus}`}</option>`).join('');
 
-const druck = { format: formatStand.muster, frei: false, stil: freiStil(), eigenFormat: eigenesFormat(formatStand.eigen.breite, formatStand.eigen.laenge), eigenFehler: '', zeilenSchrift: {}, freiUrl: '', produktEtiketten: [], versatz: gemerkterVersatz(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, abgewaehlt: new Set(), allowEditing: true, abbruch: false, kontext: null };
+const druck = { format: formatStand.muster, frei: false, stil: freiStil(), eigenFormat: eigenesFormat(formatStand.eigen.breite, formatStand.eigen.laenge), eigenFehler: '', zeilenSchrift: {}, freiUrl: '', produktEtiketten: [], versatz: gemerkterVersatz(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, abgewaehlt: new Set(), weiter: null, allowEditing: true, abbruch: false, kontext: null };
 let sitzung = 0;
 const aktuell = k => !!k && druck.kontext === k && !k.beendet && k.sitzung === sitzung && k.element?.isConnected;
 const qrBereit = () => typeof window.qrcode === 'function';
@@ -107,7 +107,10 @@ function etikettLayout(e) {
 /** Was dem Etikett fehlt - auch, dass es im gewaehlten Format nicht ohne Ueberlappen passt. */
 const maengel = e => [...e.fehlt, ...(formatFehler() ? [formatFehler()] : []), ...(etikettLayout(e).passt ? [] : [`passt nicht auf ${aktuellesFormat().name}`])];
 // Abgewaehlte Motive (alle Kopien) bleiben in der Liste, werden aber nicht gedruckt.
-const ausgewaehlt = () => druck.etiketten.filter(e => !druck.abgewaehlt.has(motivSchluessel(e)));
+const auswahlGesamt = () => druck.etiketten.filter(e => !druck.abgewaehlt.has(motivSchluessel(e)));
+// Nach einem Abbruch nur der Rest ab dem ersten fehlenden Aufkleber - solange die Auswahl gleich bleibt.
+const weiterAb = () => weiterAbFuer(auswahlGesamt(), druck.weiter);
+const ausgewaehlt = () => { const alle = auswahlGesamt(); return alle.slice(weiterAbFuer(alle, druck.weiter)); };
 const teildruck = () => ausgewaehlt().length < druck.etiketten.length;
 const unvollstaendig = () => ausgewaehlt().some(e => maengel(e).length);
 
@@ -178,7 +181,7 @@ function vorschauHtml() {
   const format = aktuellesFormat();
   return druckVorschau(druck.etiketten).eintraege.map(({ index: i, anzahl }) => { const e = druck.etiketten[i]; return `<figure class="etk-karte">
     <canvas class="etk-bild${eigeneGroesseAktiv() ? ' etk-bild-eigen' : ''}" data-etk-bild="${i}" width="${format.breite}" height="${format.hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
-    <figcaption class="small"><label class="etk-wahl"><input type="checkbox" data-etk-wahl="${i}"${druck.abgewaehlt.has(motivSchluessel(e)) ? '' : ' checked'}${druck.laeuft ? ' disabled' : ''}> drucken</label><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(format.name)} – ${druck.frei ? 'Text kürzen, Schrift kleiner stellen oder größere Rolle wählen' : 'Angaben kürzen oder größere Rolle wählen'}</span>`}
+    <figcaption class="small"><label class="etk-wahl"><input type="checkbox" data-etk-wahl="${i}"${druck.abgewaehlt.has(motivSchluessel(e)) ? '' : ' checked'}${druck.laeuft ? ' disabled' : ''}> drucken</label>${druck.mehrfach ? `<label class="etk-anzahl">Anzahl <input type="number" inputmode="numeric" min="1" max="${FREI_MAX_ANZAHL}" value="${anzahl}" data-etk-anzahl="${i}"${druck.laeuft ? ' disabled' : ''}></label>` : `<strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>`}${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : ''}${etikettLayout(e).passt ? (e.fehlt.length ? '' : '<span class="muted">vollständig</span>') : `<span class="etk-fehlt" title="${esc(etikettLayout(e).probleme.join(' · '))}">Passt nicht auf ${esc(format.name)} – ${druck.frei ? 'Text kürzen, Schrift kleiner stellen oder größere Rolle wählen' : 'Angaben kürzen oder größere Rolle wählen'}</span>`}
       ${druck.allowEditing ? `<button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>` : ''}
       <button type="button" class="btn btn-sm" data-etk-png="${i}"${maengel(e).length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
     </figcaption>
@@ -190,12 +193,15 @@ function zeichneVorschau() {
   if (!aktuell(k)) return;
   const liste = $('#etkListe');
   if (!liste) return;
+  // Die Liste wird neu gezeichnet (auch spaeter, wenn die QR-Codes fertig sind): das Anzahlfeld behaelt den Fokus.
+  const anzahlFokus = document.activeElement?.closest?.('[data-etk-anzahl]')?.dataset.etkAnzahl;
   const eigen = $('#etkEigen'); if (eigen) eigen.hidden = !eigeneGroesseAktiv();
   const fehlerText = formatFehler(), fehlerZeile = $('#etkEigenFehler');
   if (fehlerZeile) { fehlerZeile.textContent = fehlerText; fehlerZeile.hidden = !fehlerText; }
   liste.innerHTML = groesseFehler() ? '<p class="small muted">Keine Vorschau, bis die Größe stimmt.</p>'
-    : druck.etiketten.length ? vorschauHtml() : `<p class="small muted">${druck.frei ? 'Noch kein Aufkleber – oben Text eintragen.' : 'Noch kein Etikett – unten Angaben eintragen und „Hinzufügen“.'}</p>`;
+    : druck.etiketten.length ? vorschauHtml() : `<p class="small muted">${druck.frei ? 'Noch kein Aufkleber – oben Text eintragen.' : 'Noch kein Aufkleber – unten Angaben eintragen und „Hinzufügen“.'}</p>`;
   liste.querySelectorAll('[data-etk-bild]').forEach(c => zeichne(c, druck.etiketten[Number(c.dataset.etkBild)]));
+  if (anzahlFokus !== undefined) liste.querySelector(`[data-etk-anzahl="${anzahlFokus}"]`)?.focus({ preventScroll: true });
   const zusammenfassung = $('#etkZusammenfassung'), vorschau = druckVorschau(druck.etiketten);
   if (zusammenfassung) zusammenfassung.textContent = `${druck.etiketten.length} Aufkleber insgesamt · ${vorschau.motive} verschiedene Motive.${teildruck() ? ` Ausgewählt: ${ausgewaehlt().length}.` : ''}${vorschau.motive > DRUCK_LIMIT.vorschau ? ` Die Vorschau zeigt die ersten ${DRUCK_LIMIT.vorschau} Motive. Gedruckt werden alle ausgewählten Aufkleber.` : ''}`;
   const wahl = $('#etkWahl'); if (wahl) wahl.hidden = vorschau.motive < 2;
@@ -212,6 +218,21 @@ function zeichneVorschau() {
   if (trennen) { trennen.textContent = druck.laeuft ? 'Druck abbrechen' : 'Verbindung trennen'; trennen.hidden = !druck.laeuft && !druck.client?.isConnected?.(); trennen.disabled = druck.trennt || k.schliesst || k.bestaetigt; }
   const knopf = $('#etkDrucken');
   if (knopf) { knopf.hidden = !!k.beiBestaetigen && k.transportFertig; knopf.disabled = !ausgewaehlt().length || beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || druck.speichert || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = `Jetzt ${ausgewaehlt().length} Aufkleber drucken`; }
+  // Weiterdrucken nach Abbruch: Startnummer sichtbar und aenderbar, falls an der Rolle ein anderer zuletzt kam.
+  const weiterZeile = $('#etkWeiter');
+  if (weiterZeile) {
+    const alle = auswahlGesamt(), ab = weiterAbFuer(alle, druck.weiter);
+    weiterZeile.hidden = !ab;
+    if (ab) {
+      const feld = $('#etkWeiterAb');
+      feld.max = String(alle.length);
+      if (document.activeElement !== feld) feld.value = String(ab + 1);
+      feld.disabled = beschaeftigt;
+      $('#etkWeiterAlle').disabled = beschaeftigt;
+      const e = alle[ab];
+      $('#etkWeiterName').textContent = `(${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}, noch ${alle.length - ab} von ${alle.length})`;
+    }
+  }
   const bestaetigung = $('#etkBestaetigung');
   if (bestaetigung) bestaetigung.hidden = !k.transportFertig || !!k.teilGedruckt;
   const bestaetigen = $('#etkBestaetigen'); if (bestaetigen) bestaetigen.disabled = beschaeftigt;
@@ -289,7 +310,16 @@ function verbindungswahlBeenden(k) {
 async function drucken() {
   const k = druck.kontext;
   if (!aktuell(k) || druck.laeuft || k.verbindet || druck.verbindung || druck.trennt || druck.speichert || k.schliesst || k.bestaetigt || (k.beiBestaetigen && k.transportFertig) || !ausgewaehlt().length || druck.etiketten.length > DRUCK_LIMIT.etiketten || unvollstaendig() || !qrBereit()) return;
-  const etiketten = ausgewaehlt(), teil = etiketten.length < druck.etiketten.length;
+  const etiketten = ausgewaehlt();
+  // Weiterdrucken nach Abbruch: zusammen mit dem ersten Lauf ist alles draussen, wenn nichts abgewaehlt ist
+  // und der Start nicht hinter dem ersten fehlenden Aufkleber liegt. Dann zaehlt es wie ein ganzer Lauf.
+  const basisAb = weiterAb(), alleGewaehlt = auswahlGesamt();
+  const weiterKomplett = basisAb > 0 && alleGewaehlt.length === druck.etiketten.length && basisAb <= (druck.weiter?.geschaetzt ?? 0);
+  const teil = etiketten.length < druck.etiketten.length && !weiterKomplett;
+  const signatur = auswahlSignatur(alleGewaehlt);
+  // Fortschritt fuer "weiterdrucken": vollstaendig gesendete Seiten und, falls der Drucker es meldet, fertige Seiten.
+  let gesendet = 0, gedruckt = null, blockStart = 0, client = null;
+  const fortschritt = ev => { gedruckt = blockStart + fertigeSeiten(ev); };
   const weg = $('#etkWeg')?.value || 'bluetooth';
   const dichte = Math.min(ETIKETT.dichteMax, Math.max(ETIKETT.dichteMin, Number($('#etkDichte')?.value) || ETIKETT.dichteStandard));
   druck.laeuft = true; druck.abbruch = false; k.transportFertig = false;
@@ -301,8 +331,9 @@ async function drucken() {
   try {
     k.druckVersucht?.();
     zeichneVorschau();
-    const client = await verbinden(weg, k, pruefeAbbruch);
+    client = await verbinden(weg, k, pruefeAbbruch);
     pruefeAbbruch();
+    client.on?.('printprogress', fortschritt);
     // Ein Kollege kann die Reservierung waehrend der Druckerauswahl geaendert
     // haben. Vor dem ersten Druckbefehl nochmals den gemeinsamen Stand pruefen.
     if (await k.vorDruck?.() === false) throw new Error('Der Druckauftrag konnte nicht geprüft werden. Bitte die Druckliste neu laden.');
@@ -312,14 +343,16 @@ async function drucken() {
     const canvas = document.createElement('canvas'), kopfBild = document.createElement('canvas');
     for (const block of druckBloecke(etiketten)) {
       pruefeAbbruch();
+      blockStart = block.start; gedruckt = null;
       task = client.protocol.newPrintTask(art, { totalPages: block.etiketten.length, density: dichte, labelType: 1 });
       await task.printInit();
       pruefeAbbruch();
       for (const [i, e] of block.etiketten.entries()) {
         pruefeAbbruch();
-        status(`Drucke Aufkleber ${block.start + i + 1} von ${etiketten.length} …`, k);
+        status(`Drucke Aufkleber ${basisAb + block.start + i + 1} von ${alleGewaehlt.length} …`, k);
         zeichne(canvas, e, druck.versatz);
         await task.printPage(lib.ImageEncoder.encodeCanvas(aufDruckkopf(canvas, kopfBild, meta?.printheadPixels, richtung), 0, richtung), 1);
+        gesendet = block.start + i + 1;
         pruefeAbbruch();
       }
       pruefeAbbruch();
@@ -329,7 +362,9 @@ async function drucken() {
       pruefeAbbruch();
       if (art === 'B1' && beendet === false) throw new Error('Der Drucker hat den Abschluss des Druckteils noch nicht bestätigt');
       task = null;
+      gedruckt = block.start + block.etiketten.length;
     }
+    druck.weiter = null;
     // Ein Teildruck (nur ausgewaehlte Motive) markiert nichts als gedruckt: der Auftrag
     // ist erst erledigt, wenn alle Aufkleber gedruckt sind.
     if (teil) {
@@ -340,15 +375,21 @@ async function drucken() {
     k.transportFertig = true;
     // Nur ein vollstaendiger Lauf zaehlt; ein Fehler im Aufrufer darf die Meldung nicht verhindern.
     try { k.druckFertig?.(); } catch { /* Aufrufer meldet selbst */ }
-    status(`Der Drucklauf ist fertig. Bitte die ${etiketten.length} Aufkleber an der Rolle prüfen.`, k);
+    status(basisAb > 0 ? `Rest gedruckt (ab Aufkleber ${basisAb + 1}). Bitte alle ${druck.etiketten.length} Aufkleber an der Rolle prüfen.`
+      : `Der Drucklauf ist fertig. Bitte die ${etiketten.length} Aufkleber an der Rolle prüfen.`, k);
     toast(etiketten.length === 1 ? '1 Aufkleber gedruckt' : `${etiketten.length} Aufkleber gedruckt`);
   } catch (err) {
     if (!aktuell(k)) return;
     const auswahlAbbruch = /cancel|chosen|abgebrochen/i.test(String(err?.message));
+    // Ein Druckerfehler mitten im Lauf: der Rest laesst sich ab dem ersten fehlenden Aufkleber nachdrucken.
+    const rest = druck.abbruch || auswahlAbbruch ? 0 : weiterAbSchaetzen({ gesendet, gedruckt, gesamt: etiketten.length });
+    if (rest > 0) druck.weiter = weiterNachAbbruch({ basisAb, rest, alt: basisAb > 0 ? druck.weiter : null, signatur });
     status(druck.abbruch ? 'Druck abgebrochen. Bereits ausgegebene Aufkleber prüfen. Der Ausdruck wurde nicht bestätigt.'
       : auswahlAbbruch ? 'Kein Drucker gewählt.'
-        : `Druck unterbrochen: ${err?.message || err}. Bereits ausgegebene Aufkleber prüfen. Der Ausdruck wurde nicht bestätigt. Verbindung und Etikettenrolle prüfen und bei Bedarf den Auftrag wieder freigeben.`, k);
+        : rest > 0 ? `Druck unterbrochen nach Aufkleber ${basisAb + rest} von ${alleGewaehlt.length}: ${err?.message || err}. An der Rolle prüfen, welcher zuletzt kam – unten lässt sich ab dem nächsten weiterdrucken.`
+          : `Druck unterbrochen: ${err?.message || err}. Bereits ausgegebene Aufkleber prüfen. Der Ausdruck wurde nicht bestätigt. Verbindung und Etikettenrolle prüfen und bei Bedarf den Auftrag wieder freigeben.`, k);
   } finally {
+    client?.off?.('printprogress', fortschritt);
     try { await task?.printEnd(); } catch { /* Verbindung bereits getrennt */ }
     if (druck.kontext === k) { druck.laeuft = false; zeichneVorschau(); if (k.transportFertig) $('#etkBestaetigen')?.focus({ preventScroll: true }); }
   }
@@ -434,7 +475,7 @@ export async function etikettenFuerBestellung(positionen = []) {
  * (Packstation: Umschlag vorbereitet). Nur die Papierfrage ruft beiBestaetigen auf. false/Fehler
  * lassen den Dialog offen, damit ein Mitarbeiter die Aktion wiederholen kann.
  */
-export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorschau', allowEditing = true, freierText = false, entwurf = null, entwurfAnzahl = 1, hinweis = '', vorDruck, druckVersucht, druckFertig, beiSchliessen, beiBestaetigen, schonVersucht = false } = {}) {
+export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorschau', allowEditing = true, freierText = false, entwurf = null, entwurfAnzahl = 1, mehrfach = false, hinweis = '', vorDruck, druckVersucht, druckFertig, beiSchliessen, beiBestaetigen, schonVersucht = false } = {}) {
   if (druck.laeuft || druck.speichert) { toast('Bitte warten, bis der aktuelle Vorgang fertig ist.'); return; }
   if (!Array.isArray(etiketten) || etiketten.length > DRUCK_LIMIT.etiketten) { toast(`Bitte höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Drucklauf wählen.`); return; }
   // Ein anderer Aufruf darf den alten Auftrag nicht ohne dessen Freigabe ersetzen.
@@ -444,7 +485,10 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   druck.etiketten = [...etiketten];
   druck.bearbeiten = -1;
   druck.abgewaehlt = new Set();
+  druck.weiter = null;
   druck.allowEditing = allowEditing;
+  // Nur Einzeldrucke: Sammelauftraege mit Packreihenfolge oder Bestaetigung behalten ihre Menge.
+  druck.mehrfach = mehrfach && !freierText && !beiBestaetigen;
   druck.frei = freierText;
   druck.format = freierText ? formatStand.frei : formatStand.muster;
   druck.stil = freiStil();
@@ -490,7 +534,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     <p id="etkZusammenfassung" class="small"></p>
     <p id="etkWahl" class="etk-wahl-leiste small" hidden>Zum Drucken: <button type="button" class="btn btn-sm" data-etk-alle="1">alle wählen</button> <button type="button" class="btn btn-sm" data-etk-alle="0">keine</button></p>
     <div id="etkListe" class="etk-liste"></div>
-    ${allowEditing ? `<details class="etk-hand"${etiketten.length ? '' : ' open'}><summary>Etikett von Hand hinzufügen</summary>
+    ${allowEditing ? `<details class="etk-hand"${etiketten.length ? '' : ' open'}><summary>Aufkleber von Hand hinzufügen</summary>
       <form id="etkForm" class="etk-form">
         <label>Produktlink oder Handle <input name="handle" autocomplete="off" placeholder="https://www.teppich-paradies.net/products/…"></label>
         <label>Farbe <input name="farbe" autocomplete="off"></label>
@@ -509,6 +553,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     </div></details>
     <p id="etkVerbindungWartet" class="small muted" role="status" hidden>Vorherige Geräteauswahl schließen und das Trennen abwarten. Danach kannst du erneut verbinden.</p>
     <p id="etkStatus" class="small" role="status" aria-live="polite"></p>
+    <p id="etkWeiter" class="small etk-weiter" hidden><label>Weiter ab Aufkleber <input id="etkWeiterAb" type="number" inputmode="numeric" min="1" step="1" style="width:5rem"></label> <span id="etkWeiterName" class="muted"></span> <button type="button" class="btn btn-sm" id="etkWeiterAlle">Doch alle drucken</button></p>
     ${beiBestaetigen ? `<div id="etkBestaetigung" class="etk-bestaetigung" hidden>
       <p><strong>Sind alle ${etiketten.length} Aufkleber vollständig und lesbar?</strong></p>
       <button type="button" class="btn btn-primary" id="etkBestaetigen">Ja, als gedruckt markieren</button>
@@ -618,6 +663,18 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     });
   }
   $('#etkListe').addEventListener('change', ev => {
+    const anzahlFeld = ev.target.closest('[data-etk-anzahl]');
+    if (anzahlFeld) {
+      if (!aktuell(k) || !druck.mehrfach || druck.laeuft || druck.speichert || k.schliesst || k.bestaetigt) return;
+      const wert = Number(anzahlFeld.value), schluessel = motivSchluessel(druck.etiketten[Number(anzahlFeld.dataset.etkAnzahl)]);
+      const bearbeitet = druck.etiketten[druck.bearbeiten];
+      if (Number.isInteger(wert) && wert >= 1 && wert <= FREI_MAX_ANZAHL) druck.etiketten = setzeMotivAnzahl(druck.etiketten, schluessel, wert);
+      else status(`Anzahl: bitte 1 bis ${FREI_MAX_ANZAHL} eintragen.`, k);
+      // Die Liste verschiebt sich: das gerade bearbeitete Motiv muss mitgehen.
+      if (bearbeitet) druck.bearbeiten = druck.etiketten.findIndex(e => motivSchluessel(e) === motivSchluessel(bearbeitet));
+      zeichneVorschau();
+      return;
+    }
     const wahl = ev.target.closest('[data-etk-wahl]');
     if (!wahl || !aktuell(k) || druck.laeuft) return;
     const schluessel = motivSchluessel(druck.etiketten[Number(wahl.dataset.etkWahl)]);
@@ -680,7 +737,8 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
         sku: wert('sku') || ausLexikon.sku, handle,
         technik: produkt ? ausLexikon.technik : (vorher?.url === ausLexikon.url ? vorher.technik : []),
       });
-      if (vorher) druck.etiketten = druck.etiketten.map(e => e === vorher ? neu : e);
+      // Die Karte steht fuer alle Kopien des Motivs: Aendern gilt fuer alle, sonst spaltet sich die Stueckzahl auf.
+      if (vorher) { const alt = motivSchluessel(vorher); druck.etiketten = druck.etiketten.map(e => motivSchluessel(e) === alt ? neu : e); }
       else druck.etiketten.push(neu);
       druck.bearbeiten = -1;
       form.reset();
@@ -694,6 +752,15 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     }
   });
   $('#etkDrucken').addEventListener('click', () => { if (aktuell(k) && !umgebungsHinweis()) void drucken(); });
+  $('#etkWeiterAb').addEventListener('change', ev => {
+    if (!druck.weiter || druck.laeuft) return;
+    const n = Math.trunc(Number(ev.target.value)), alle = auswahlGesamt();
+    // 1 = wieder alles; ausserhalb der Auswahl bleibt der bisherige Startpunkt.
+    if (n === 1) druck.weiter = null;
+    else if (n > 1 && n <= alle.length) druck.weiter = { ...druck.weiter, ab: n - 1 };
+    zeichneVorschau();
+  });
+  $('#etkWeiterAlle').addEventListener('click', () => { if (druck.laeuft) return; druck.weiter = null; zeichneVorschau(); $('#etkDrucken')?.focus({ preventScroll: true }); });
   $('#etkVerbinden').addEventListener('click', () => { void druckerVerbinden(k); });
   $('#etkTrennen').addEventListener('click', () => { void trennen(); });
   $('#etkBestaetigen')?.addEventListener('click', () => { void bestaetigen(k); });

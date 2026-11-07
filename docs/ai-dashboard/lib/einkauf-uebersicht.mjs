@@ -10,6 +10,7 @@
  */
 
 import { musterEigen } from './einkauf-lieferanten.mjs';
+import { dringendereAmpel } from './ampel.mjs';
 
 const UNGEKLAERT = 'UNGEKLAERT';
 const leer = v => v === null || v === undefined || String(v).trim() === '' || v === '–' || v === UNGEKLAERT;
@@ -62,10 +63,12 @@ export function jeKommission(eintraege = []) {
   for (const x of eintraege || []) {
     const p = x?.pos || {};
     const key = p.orderId || p.orderName || '?';
-    if (!je.has(key)) je.set(key, { orderId: p.orderId || null, orderName: p.orderName || '', eintraege: [], positionen: [], wartetage: null, warnstufe: null });
+    if (!je.has(key)) je.set(key, { orderId: p.orderId || null, orderName: p.orderName || '', eintraege: [], positionen: [], wartetage: null, warnstufe: null, ampel: null });
     const k = je.get(key);
     k.eintraege.push(x);
     k.positionen.push(p);
+    // Die Kommission traegt die dringendste Ampel ihrer Muster (ein gesperrtes Muster macht sie rot).
+    if (x.ampel) k.ampel = dringendereAmpel(k.ampel, x.ampel);
     if (x.wartetage !== null && x.wartetage !== undefined && (k.wartetage === null || x.wartetage > k.wartetage)) k.wartetage = x.wartetage;
     if ((STUFE_RANG[x.warnstufe] || 0) > (STUFE_RANG[k.warnstufe] || 0)) k.warnstufe = x.warnstufe;
   }
@@ -93,4 +96,26 @@ export function musterSchritt(positionen = [], statusVon = () => null, { direktV
   const bereit = muster.filter(p => statusVon(p) === 'geliefert' || (!statusVon(p) && musterEigen(p)));
   if (!bereit.length) return null;
   return { schritt: 'verschicken', positionen: bereit, uebergabe: bereit.every(p => p.musterHerkunft === 'eigen_vorbei') };
+}
+
+/**
+ * Gesperrte Muster (Lieferant kann nicht liefern, `gesperrteMuster` aus /api/einkauf/bestellungen) werden nie
+ * bestellt - ihnen fehlt die Artikelnummer also nicht. Nimmt sie aus dem Grund "ohne Großhändler-ID" eines
+ * Auftrags heraus: Hinweis mit der Restzahl, und ohne Rest die Ampel der übrigen Gründe (`ampelOhneIdGrund`
+ * der Bestellübersicht). Nur solange das Muster noch nicht bei uns ist (wie die Ampel "Gesperrt").
+ * Ohne Sperrliste oder ohne die Felder der Bestellübersicht bleibt der Auftrag unverändert.
+ * @param {object} a  Auftrag aus bestellungen.auftraege
+ * @param {Set<string>} sperre  lineItemIds gesperrter Muster
+ * @param {(p:{orderId, lineItemId})=>object|null} [statusVon]  Auftragsfluss-Eintrag
+ * @returns {object} derselbe Auftrag oder eine Kopie mit angepassten `hinweise`/`ampel` und `gesperrtOhneId`
+ */
+export function ohneGesperrteKlaerung(a, sperre, statusVon = () => null) {
+  const ids = Array.isArray(a?.ohneIdPositionen) ? a.ohneIdPositionen : null;
+  if (!ids?.length || !sperre?.size || !a.ampelOhneIdGrund) return a;
+  const gesperrt = ids.filter(id => sperre.has(id) && !['geliefert', 'raus', 'erledigt'].includes(statusVon({ orderId: a.id, lineItemId: id })?.status));
+  if (!gesperrt.length) return a;
+  const rest = ids.length - gesperrt.length;
+  const alt = `${ids.length} Position(en) ohne Großhändler-ID`;
+  const hinweise = (a.hinweise || []).flatMap(h => (h === alt ? (rest ? [`${rest} Position(en) ohne Großhändler-ID`] : []) : [h]));
+  return { ...a, hinweise, ampel: rest ? a.ampel : a.ampelOhneIdGrund, gesperrtOhneId: gesperrt.length };
 }

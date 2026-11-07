@@ -23,6 +23,7 @@ const engine = new Liquid({
     'tp-verkaufseinheit': ohneDoc('snippets/tp-verkaufseinheit.liquid'),
     'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
     'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+    'tp-aktion-laufend': ohneDoc('snippets/tp-aktion-laufend.liquid'),
     'tp-teppich-ab-preis': ohneDoc('snippets/tp-teppich-ab-preis.liquid'),
     'tp-teppich-qualitaet': ohneDoc('snippets/tp-teppich-qualitaet.liquid'),
     'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
@@ -524,6 +525,31 @@ test('Rollenware: Kartenpreis aus den Breiten der gewaehlten Farbe', async () =>
   assert.match(await preis(p, suche('grauer teppichboden')), /ab 39,90 €\/m²/);
 });
 
+// Zentrale Aktion (Metaobjekt tp_aktion): die Karte zeigt den Preis nach Abzug,
+// der bisherige Preis steht durchgestrichen daneben (2026-11-06). Gerundet wird
+// wie im Warenkorb: Abzug je m² 36,90 x 15 % = 5,535 -> 5,53 (abgerundet), also 31,37.
+test('Zentrale Aktion: Kartenpreis nach Abzug mit bisherigem Preis als Streichpreis', async () => {
+  const breite = { custom: { rollenbreite: { value: 4 } } };
+  const p = produkt([
+    variante('Mokka', '400 cm', { price: 3690, metafields: breite }),
+    variante('Mokka', 'Wunschmaß', { price: 5000 }),
+  ]);
+  p.collections = [{ id: 77 }];
+  const aktion = (kollektion, aktiv = true) => ({ shop: { metaobjects: { tp_aktion: { values: [{
+    aktiv: { value: aktiv }, start: { value: '2026-01-01' }, ende: { value: '2099-12-31' },
+    kollektion: { value: { id: kollektion } }, prozent: { value: 15 },
+  }] } } } });
+  const mit = await preis(p, { ...kollektion(), ...aktion(77) });
+  assert.match(mit, /ab 31,37 €\/m²/);
+  assert.match(mit, /36,90 €\/m²/);
+  // andere Kollektion oder ausgeschaltet: unveraendert, kein Streichpreis
+  for (const g of [aktion(78), aktion(77, false)]) {
+    const ohne = await preis(p, { ...kollektion(), ...g });
+    assert.match(ohne, /ab 36,90 €\/m²/);
+    assert.doesNotMatch(ohne, /31,37/);
+  }
+});
+
 test('Teppiche in festen Groessen: ab-Preis nur ueber die Groessen der gewaehlten Farbe', async () => {
   const p = produkt([
     variante('Beige', '80x150', { price: 9900 }),
@@ -604,7 +630,7 @@ const STELLEN = {
   'snippets/price.liquid': 'Preis',
   'blocks/price.liquid': 'Preis Teppich nach Mass',
   'blocks/tp-card-actions.liquid': 'Konfigurator- und Musterlink',
-  'snippets/tp-suche-ergebnisse.liquid': 'Schnellsuche',
+  'snippets/tp-suche-produktzeile.liquid': 'Schnellsuche',
   'blocks/tp-card-color-thumbs.liquid': 'Farbfelder (gewaehlte Farbe vorn)',
 };
 for (const [datei, rolle] of Object.entries(STELLEN)) {

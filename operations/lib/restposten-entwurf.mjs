@@ -16,6 +16,25 @@ export function privaterAusgabeordner(ausgabe, repoRoot) {
 }
 
 export const REST_ENTWURF_TAG = 'rest-vorbereitung-20261023';
+// Nennbreiten der Rollen im Laden. 200 und 300 cm seit 06.11.2026; die Preisregel bleibt
+// dieselbe (Preis je m², je lfm also m²-Preis × Breite in m, das rechnet der Rollenrechner).
+export const ROLLENBREITEN_CM = Object.freeze([200, 300, 400, 500]);
+// Die TPR-Nummern auf den Kassenartikeln haben vier Ziffern (TPR0011 bis TPR0114 im Shop,
+// Stand 06.11.2026). Kuerzere sind nirgends belegt und bleiben ein Tippfehler.
+const TPR_NUMMER = /^tpr\d{4,8}$/;
+const MAX_ZUSCHNITT_CM = 1000;
+
+/**
+ * Raster des Rollenzuschnitts: Variante k verbraucht k Quelleinheiten (je 1 m² volle
+ * Rollenbreite) und deckt so viel Rollenlaenge, wie k m² ergeben, auf ganze cm abgerundet.
+ * Bei 200/400/500 cm geht das glatt auf (50/25/20 cm je m²). Bei 300 cm sind es 33⅓ cm: die
+ * Variante "33 cm" verbraucht 1 m², "66 cm" 2 m², "100 cm" 3 m². Abgerundet wird die Laenge,
+ * nie der Verbrauch - der Bestand sinkt also nie um weniger, als abgeschnitten wurde.
+ */
+export function zuschnittRaster(breiteCm) {
+  const einheiten = Math.floor((MAX_ZUSCHNITT_CM * breiteCm) / 10000);
+  return Array.from({ length: einheiten }, (_, i) => ({ cm: Math.floor(((i + 1) * 10000) / breiteCm), einheiten: i + 1 }));
+}
 const ROLES = ['quelle', 'zuschnitt', 'raummass', 'kettelteppich'];
 const GID = /^gid:\/\/shopify\/(Product|ProductVariant)\/\d+$/;
 const text = value => String(value ?? '').trim();
@@ -44,7 +63,7 @@ export function planeRestEntwuerfe(input, { locationId } = {}) {
   const products = [], metafields = [], relationships = [], preise = [];
   for (const row of input.records) {
     const key = text(row.tprBarcode).toLowerCase();
-    if (!/^tpr\d{4,8}$/.test(key) || keys.has(key)) throw new Error('Vorbereitungsschluessel fehlt oder ist doppelt');
+    if (!TPR_NUMMER.test(key) || keys.has(key)) throw new Error('Vorbereitungsschluessel fehlt oder ist doppelt');
     if (!text(row.SumUpItemId) || sumupIds.has(row.SumUpItemId)) throw new Error('SumUp-Artikelkennung fehlt oder ist doppelt');
     keys.add(key); sumupIds.add(row.SumUpItemId);
     // Keine Laenge oder Menge aus einem Kassenkatalog ohne Bestandsfuehrung ableiten.
@@ -53,7 +72,7 @@ export function planeRestEntwuerfe(input, { locationId } = {}) {
     }
     const name = text(row.nameOriginal);
     const width = Number(row.bekannteRollenbreiteCm);
-    if (!name || ![400, 500].includes(width)) throw new Error(`${key}: bestaetigte Nennbreite oder Artikelname fehlt`);
+    if (!name || !ROLLENBREITEN_CM.includes(width)) throw new Error(`${key}: bestaetigte Nennbreite (${ROLLENBREITEN_CM.join('/')} cm) oder Artikelname fehlt`);
     const laden = cents(row.ladenPreisQm, 'Ladenpreis');
     const material = cents(row.onlineMaterialPreisQm, 'Online-Materialpreis');
     if (material !== laden + 500) throw new Error(`${key}: Preisregel Ladenpreis + 5 EUR/m² verletzt`);
@@ -88,8 +107,8 @@ export function planeRestEntwuerfe(input, { locationId } = {}) {
       { ...mf(owner('quelle'), 'custom', 'rollenbreite', 'number_decimal', (width / 100).toFixed(1)), ownerVariant: true },
       { ...mf(owner('quelle'), 'custom', 'farbcode', 'single_line_text_field', row.colourCodeOriginal), ownerVariant: true },
     );
-    const step = 10000 / width; // eine Quelleinheit = 1 m² volle Rollenbreite
-    const cuts = Array.from({ length: 1000 / step }, (_, i) => (i + 1) * step);
+    const raster = zuschnittRaster(width); // eine Quelleinheit = 1 m² volle Rollenbreite
+    const cuts = raster.map(r => r.cm);
     const bundle = {
       title: `Zuschnitt von der Rolle – ${name}`, handle: handles.zuschnitt,
       productType: '', vendor: 'TeppichParadies', status: 'DRAFT', tags: [...tags, 'rest-zuschnitt'],
@@ -102,7 +121,7 @@ export function planeRestEntwuerfe(input, { locationId } = {}) {
       })),
     };
     products.push({ key: owner('zuschnitt'), role: 'zuschnitt', input: bundle });
-    cuts.forEach(cm => relationships.push({ parent: owner('zuschnitt'), title: `${cm} cm`, component: owner('quelle'), quantity: cm / step, price: einheit }));
+    raster.forEach(r => relationships.push({ parent: owner('zuschnitt'), title: `${r.cm} cm`, component: owner('quelle'), quantity: r.einheiten, price: einheit }));
     for (const role of ['raummass', 'kettelteppich']) {
       const raum = role === 'raummass';
       const angebot = {

@@ -30,3 +30,15 @@
   .hv-zwei { grid-template-columns: 1fr; }
   .hv-knoepfe .btn { flex: 1 1 40%; text-align: center; }
 }
+
+/* Am Handy lag "Speichern" unter dem sichtbaren Bereich des langen Dialogs. */
+@media (max-width: 860px) {
+  .hv-dialog .actions {
+    position: sticky;
+    bottom: calc(-18px - env(safe-area-inset-bottom));
+    margin-bottom: calc(-18px - env(safe-area-inset-bottom));
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+}

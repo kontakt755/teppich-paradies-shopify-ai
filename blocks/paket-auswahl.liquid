@@ -8,6 +8,23 @@
 
 {% assign package_selector_id = block.id | replace: '_', '' | downcase %}
 {% assign selected_variant = product.selected_or_first_available_variant %}
+{%- comment -%}
+  Zentrale Aktion (snippets/tp-aktion-laufend, z. B. Black Week): der Rechner
+  zeigt den Paketpreis nach Abzug. Shopify zieht den automatischen Rabatt je
+  Paket ab und rundet den Abzug auf den Cent ab - dieselbe Rechnung hier und
+  im Skript (variant:update), sonst wiche der Gesamtpreis vom Warenkorb ab.
+{%- endcomment -%}
+{%- liquid
+  capture tp_pa_aktion
+    render 'tp-aktion-laufend', product: product
+  endcapture
+  assign tp_pa_aktion = tp_pa_aktion | strip | split: '|' | first | plus: 0
+  assign tp_pa_paketpreis = selected_variant.price
+  if tp_pa_aktion > 0
+    assign tp_pa_abzug = tp_pa_paketpreis | times: tp_pa_aktion | divided_by: 100 | floor
+    assign tp_pa_paketpreis = tp_pa_paketpreis | minus: tp_pa_abzug
+  endif
+-%}
 {% comment %}
   Ohne custom.qm_pro_paket rendert der Block nichts. Der fruehere Standardwert
   2,05 m2 hat Sockelleisten und anderes Zubehoer ohne Metafeld als Paketware
@@ -404,7 +421,8 @@
 <carpet-package-selector-{{ package_selector_id }}
   class="carpet-package-{{ package_selector_id }} tp-paket-auswahl"
   data-sqm-per-package="{{ sqm_per_package }}"
-  data-package-price-cents="{{ selected_variant.price }}"
+  data-package-price-cents="{{ tp_pa_paketpreis }}"
+  data-aktion-prozent="{{ tp_pa_aktion }}"
   data-variant-id="{{ selected_variant.id }}"
   data-initial-packages="{{ initial_packages }}"
   {%- comment -%}
@@ -641,6 +659,7 @@
   ></div>
 </carpet-package-selector-{{ package_selector_id }}>
 
+<script src="{{ 'tp-warenkorb-abschnitte.js' | asset_url }}" defer></script>
 <script>
   (function () {
     const component = document.querySelector('carpet-package-selector-{{ package_selector_id }}');
@@ -654,6 +673,7 @@
     // Variante stehen - wer "Blau Tief" waehlte, bekam "Blau Dunkel" in den
     // Warenkorb. Beides wird jetzt aus variant:update nachgefuehrt.
     let packagePriceCents = parseInt(component.dataset.packagePriceCents || '0', 10);
+    const aktionProzent = parseFloat(component.dataset.aktionProzent || '0') || 0;
     let variantId = component.dataset.variantId;
     const WASTE_FACTOR = 1.05;
     const SQM_STEP = 0.25;
@@ -1090,13 +1110,15 @@
         // hoert auf cart:update und oeffnet bei auto-open). Header-Bubble
         // bekommt die Paketzahl. Ohne Drawer bleibt die Weiterleitung.
         const added = await response.json();
+        // Fenster erst mit fertigem Inhalt oeffnen, sonst steht dort kurz "leer".
+        const sections = window.TPWarenkorbAbschnitte ? await window.TPWarenkorbAbschnitte() : null;
         document.dispatchEvent(
           new CustomEvent('cart:update', {
             bubbles: true,
             detail: {
               resource: added,
               sourceId: component.id || 'paket-auswahl',
-              data: { itemCount: packages + (rail.valid ? rail.rods : 0), source: 'product-form-component' },
+              data: { itemCount: packages + (rail.valid ? rail.rods : 0), source: 'product-form-component', sections: sections || undefined },
             },
           })
         );
@@ -1303,8 +1325,9 @@
       // variant.price kommt als Betrag in Cent aus dem Variant-JSON.
       const preis = parseInt(variant.price, 10);
       if (!isNaN(preis) && preis > 0) {
-        packagePriceCents = preis;
-        component.dataset.packagePriceCents = String(preis);
+        // Aktion: Abzug je Paket auf den Cent abgerundet, wie Shopify.
+        packagePriceCents = preis - (aktionProzent > 0 ? Math.floor(preis * aktionProzent / 100) : 0);
+        component.dataset.packagePriceCents = String(packagePriceCents);
       }
 
       renderResults();

@@ -11,6 +11,7 @@ const liquidSource = name => read(name)
   .replace(/{%-?\s*(doc|stylesheet|schema)\s*-?%}[\s\S]*?{%-?\s*end\1\s*-?%}/g, '');
 const engine = new Liquid({ templates: {
   'tp-leisten-paket': liquidSource('snippets/tp-leisten-paket.liquid'),
+  'tp-aktion-laufend': liquidSource('snippets/tp-aktion-laufend.liquid'),
   'tp-musteroption': liquidSource('snippets/tp-musteroption.liquid'),
   'tp-muster-grenze': '',
   'tp-muster-hinweis': '',

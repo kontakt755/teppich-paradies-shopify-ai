@@ -221,6 +221,7 @@ test('Server: Rolle "lesen" bekommt 403 (Sperre und Schritt), Mitarbeiter ohne N
 
       assert.equal((await post(lena, '/api/einkauf/auftragsstatus', { ...schritt, muster: ['gid://shopify/LineItem/1'] })).status, 403);
       assert.equal((await post(lena, '/api/einkauf/mustersperre', { aktion: 'freigeben', sku: 'M-TEST-1' })).status, 403);
+      assert.equal((await post(lena, '/api/einkauf/mustersperre', { aktion: 'sperren', orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/1' })).status, 403, 'einzeln sperren: Rolle lesen nie');
       const ohne = await post(mona, '/api/einkauf/auftragsstatus', schritt);
       assert.equal(ohne.status, 400);
       assert.match((await ohne.json()).error, /Farben/);
@@ -229,6 +230,10 @@ test('Server: Rolle "lesen" bekommt 403 (Sperre und Schritt), Mitarbeiter ohne N
       const ok = await post(mona, '/api/einkauf/auftragsstatus', { ...schritt, muster: ['gid://shopify/LineItem/1'] });
       assert.equal(ok.status, 200);
       assert.equal((await ok.json()).mustersperre.gesperrt, 1);
+      const einzeln = await post(mona, '/api/einkauf/mustersperre', { aktion: 'sperren', orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/2' });
+      assert.equal(einzeln.status, 200, 'einzeln sperren: Mitarbeiter darf');
+      const zweite = await post(mona, '/api/einkauf/mustersperre', { aktion: 'freigeben', sku: 'M-TEST-2' });
+      assert.equal(zweite.status, 200);
       const lesen = await (await fetch(`${base}/api/einkauf/mustersperre`, { headers: { cookie: lena } })).json();
       assert.deepEqual(lesen.gesperrt.map(s => [s.sku, s.von]), [['M-TEST-1', 'Mona Mitarbeiter']], 'lesen darf die Liste sehen');
       const frei = await post(mona, '/api/einkauf/mustersperre', { aktion: 'freigeben', sku: 'M-TEST-1' });
@@ -448,4 +453,183 @@ test('Alter Vorstand ohne Variante, unklar zuzuordnen: Wieder verfuegbar schreib
   nm.tracked = false;
   assert.match((await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH)).meldung, /wieder bestellbar/);
   assert.deepEqual([api.einkaufMustersperre().offen, api.einkaufMustersperre().gesperrt, shop.mutationen().length], [[], [], vorher]);
+});
+
+test('Gesperrte SKU: Schreibweise der Bestellposition spielt keine Rolle', async () => {
+  const { dir, api, schritt } = umgebung();
+  await schritt(ANDERER, { muster: ['gid://shopify/LineItem/3'], notiz: 'Kunde informiert' });
+  const datei = path.join(dir, 'bestelluebersicht', 'orders.json');
+  fs.writeFileSync(datei, fs.readFileSync(datei, 'utf8').replaceAll('M-TEST-3', 'M-Test-3'));
+  const zeile = api.kundenBestellungen().zeilen.find(z => z.orderName === '#T2');
+  assert.deepEqual(zeile.gesperrteMuster, ['gid://shopify/LineItem/3']);
+});
+
+test('Gesperrte SKU: offene Bestellungen melden die Position fuers To-do "Kunde informieren"', async () => {
+  const { dir, api, schritt } = umgebung();
+  await schritt(ANDERER, { muster: ['gid://shopify/LineItem/3'], notiz: 'Kunde informiert' });
+  assert.ok(sperrDatei(dir).some(e => e.sku === 'M-TEST-3'));
+  const zeile = name => api.kundenBestellungen().zeilen.find(z => z.orderName === name);
+  assert.deepEqual(zeile('#T1').gesperrteMuster, [], 'andere SKU: nichts');
+  assert.deepEqual(zeile('#T2').gesperrteMuster, ['gid://shopify/LineItem/3']);
+  assert.ok(!todosFuer(api, '#T2').some(t => t.art === 'muster_gesperrt'), 'mit dem Schritt abgeschlossen: kein To-do');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// -- Ein einzelnes Muster sperren, ohne Bestellung abzuschliessen (Vorfall 05.11., gemischte Bestellung) ------
+
+const ware = id => ({
+  ...muster(id, 'Rolle'), sku: `TEST-WARE-${id}`, title: 'Testboden', originalUnitPriceSet: { shopMoney: { amount: '99.00', currencyCode: 'EUR' } },
+  customAttributes: [],
+  variant: { id: `gid://shopify/ProductVariant/8${id}`, sku: `TEST-WARE-${id}`, title: 'Rolle', metafields: { nodes: [] }, lieferant: { nodes: [] },
+    product: { id: 'gid://shopify/Product/8', handle: 'testboden', title: 'Testboden', productType: 'Teppichboden', metafields: { nodes: [] }, grosshandel: { nodes: [] } } },
+});
+
+/** Zwei Muster und Ware in einer Bestellung; Lexikon mit Musterprodukt und einem Produkt ohne eigenes Muster. */
+function einzelUmgebung(opt = {}) {
+  const u = umgebung(opt);
+  fs.writeFileSync(path.join(u.dir, 'bestelluebersicht', 'orders.json'), JSON.stringify({ orders: [
+    bestellung(1, [muster(1, 'Sand'), muster(2, 'Greige'), ware(9)], { kunde: 1 }),
+    bestellung(2, [muster(3, 'Grau')], { kunde: 2 }),
+    bestellung(3, [muster(1, 'Sand')], { kunde: 3, test: true }),
+  ] }));
+  fs.mkdirSync(path.join(u.dir, 'lexikon'), { recursive: true });
+  fs.writeFileSync(path.join(u.dir, 'lexikon', 'produkte.json'), JSON.stringify({ erstellt: '2026-01-01T00:00:00Z', produkte: [
+    { handle: 'testteppich', titel: 'Testteppich', produktgruppe: 'Teppichboden', muster: { handle: 'muster-testteppich' }, varianten: [{ sku: 'TEST-1', farbe: 'Sand' }, { sku: 'TEST-2', farbe: 'Greige' }, { sku: 'TEST-9', farbe: 'Ohne Musterartikel' }] },
+    { handle: 'muster-testteppich', titel: 'Muster Testteppich', produktgruppe: 'Musterservice', varianten: [{ sku: 'M-TEST-1', farbe: 'Sand' }, { sku: 'M-TEST-2', farbe: 'Greige' }] },
+    { handle: 'ohne-muster', titel: 'Ohne Muster', produktgruppe: 'Teppichboden', varianten: [{ sku: 'TEST-WARE-9', farbe: 'Rolle' }] },
+  ] }));
+  const sperren = rumpf => u.api.einkaufMustersperreSetzen({ aktion: 'sperren', ...rumpf }, ICH);
+  return { ...u, sperren };
+}
+
+const NUR_SPERRE = /^Mustersperre/;
+
+test('Einzeln sperren in gemischter Bestellung: nur diese Farbe im Shop, Bestellung bleibt offen, nichts gebucht', async () => {
+  const { dir, shop, api, sperren } = einzelUmgebung();
+  const vorher = api.einkaufAuftragsstatus().positionen;
+  const r = await sperren({ orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/2' });
+  assert.deepEqual([r.ok, r.status, r.meldung], [true, 'gesperrt', '1 Farbe im Shop gesperrt']);
+  assert.deepEqual(shop.varianten.map(v => [v.sku, v.tracked]), [['M-TEST-1', false], ['M-TEST-2', true], ['M-TEST-3', false]], 'nur die eine Farbe');
+  assert.ok(shop.aufrufe.every(a => NUR_SPERRE.test(a.name)), `nur Sperr-Aufrufe, keine Versandbuchung: ${shop.aufrufe.map(a => a.name).join(', ')}`);
+  assert.deepEqual(api.einkaufAuftragsstatus().positionen, vorher, 'kein Schritt, kein Positionsstand');
+  const z = api.kundenBestellungen().zeilen.find(x => x.orderName === '#T1');
+  assert.equal(z.zeitleisteAbgeschlossen, false, 'nicht abgeschlossen');
+  assert.deepEqual(z.gesperrteMuster, ['gid://shopify/LineItem/2']);
+  assert.deepEqual(sperrDatei(dir).map(e => [e.sku, e.farbe, e.orderId, e.von, e.grund, e.shopify.geschrieben]), [['M-TEST-2', 'Greige', AUFTRAG, 'Mitarbeiter 1', 'nicht verfuegbar', true]]);
+  // Packstation: rot "kommt nicht", das andere Muster bleibt normal im Umschlag.
+  const k = api.kundenMusterPacken().kunden.find(x => x.bestellungen.some(b => b.orderName === '#T1'));
+  assert.deepEqual(k.muster.map(m => [m.bestellt.farbe, Boolean(m.gesperrt)]), [['Sand', false], ['Greige', true]]);
+  assert.equal(k.muster[1].gesperrt.imShop, true);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Einzeln gesperrt: Wieder verfuegbar stellt den Stand vor der Sperre her, Muster kommt in der Packstation zurueck', async () => {
+  const { dir, shop, api, sperren } = einzelUmgebung();
+  await sperren({ orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/2' });
+  assert.deepEqual(api.einkaufMustersperre().gesperrt.map(s => [s.sku, s.auftraege.map(a => a.orderName)]), [['M-TEST-2', ['#T1']]]);
+  const r = await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-2' }, ICH);
+  assert.equal(r.ok, true);
+  const v = shop.varianten.find(x => x.sku === 'M-TEST-2');
+  assert.deepEqual([v.tracked, v.policy, v.menge], [false, 'DENY', 0], 'wie vor der Sperre');
+  assert.deepEqual(api.einkaufMustersperre().gesperrt, []);
+  const k = api.kundenMusterPacken().kunden.find(x => x.bestellungen.some(b => b.orderName === '#T1'));
+  assert.ok(k.muster.every(m => !m.gesperrt));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Einzeln sperren zweimal: kein zweites Ereignis, keine Mutation', async () => {
+  const { dir, shop, sperren } = einzelUmgebung();
+  await sperren({ orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/1' });
+  const schreibend = () => shop.aufrufe.filter(a => /Bestand|Richtlinie|Verfolgung/.test(a.name)).length;
+  const danach = schreibend();
+  const r = await sperren({ orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/1' });
+  assert.equal(r.meldung, '1 Farbe war schon gesperrt');
+  assert.equal(schreibend(), danach);
+  assert.equal(sperrDatei(dir).length, 1);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Einzeln sperren: Ware, fremde Position und fehlende Angaben werden abgelehnt, nichts geschrieben', async () => {
+  const { dir, shop, sperren } = einzelUmgebung();
+  await assert.rejects(sperren({ orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/9' }), e => e.status === 400 && /kein Muster/.test(e.message), 'Warenposition');
+  await assert.rejects(sperren({ orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/3' }), e => e.status === 400, 'Position einer anderen Bestellung');
+  await assert.rejects(sperren({ orderId: AUFTRAG }), e => e.status === 400, 'ohne Position');
+  await assert.rejects(sperren({ orderId: 'gid://shopify/Order/999', lineItemId: 'gid://shopify/LineItem/1' }), e => e.status === 409, 'unbekannte Bestellung');
+  await assert.rejects(sperren({}), e => e.status === 400, 'gar keine Angabe');
+  assert.equal(shop.aufrufe.length, 0);
+  assert.ok(!fs.existsSync(path.join(dir, 'mustersperre.json')));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Einzeln sperren: Testbestellung sperrt nie echte Varianten', async () => {
+  const { dir, shop, sperren } = einzelUmgebung();
+  const r = await sperren({ orderId: 'gid://shopify/Order/3', lineItemId: 'gid://shopify/LineItem/1' });
+  assert.equal(r.status, 'uebersprungen');
+  assert.equal(shop.aufrufe.length, 0);
+  assert.ok(!fs.existsSync(path.join(dir, 'mustersperre.json')));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Einzeln sperren ohne Recht: Sperre steht als offen, Rueckmeldung sagt es, Bestellung unberuehrt', async () => {
+  const { dir, shop, api, sperren } = einzelUmgebung({ rechte: ['read_products'] });
+  const r = await sperren({ orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/1' });
+  assert.equal(r.status, 'offen');
+  assert.match(r.meldung, /noch zu sperren/);
+  assert.ok(!shop.aufrufe.some(a => /Bestand|Richtlinie|Verfolgung/.test(a.name)));
+  assert.deepEqual(api.einkaufMustersperre().offen.map(s => s.sku), ['M-TEST-1']);
+  assert.deepEqual(api.einkaufAuftragsstatus().positionen, {});
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Einzeln sperren: beschaedigte Ablage lehnt ab, nichts nach Shopify', async () => {
+  const { dir, shop, sperren } = einzelUmgebung();
+  fs.writeFileSync(path.join(dir, 'mustersperre.json'), '{kaputt');
+  await assert.rejects(sperren({ orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/1' }), e => e.status === 500);
+  assert.equal(shop.aufrufe.length, 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Musterlager: Farbe ohne Bestellung sperren, SKU kommt vom Server, Wieder verfuegbar geht', async () => {
+  const { dir, shop, api, sperren } = einzelUmgebung();
+  const vorher = api.einkaufMusterlagerFarben({ handle: 'testteppich' }).farben;
+  assert.deepEqual(vorher.map(f => [f.farbe, f.sperrbar, f.gesperrt]), [['Sand', true, false], ['Greige', true, false], ['Ohne Musterartikel', false, false]]);
+
+  const r = await sperren({ handle: 'testteppich', farbe: 'Greige' });
+  assert.deepEqual([r.ok, r.status, r.meldung], [true, 'gesperrt', 'Testteppich · Greige: 1 Farbe im Shop gesperrt']);
+  assert.deepEqual(shop.varianten.map(v => [v.sku, v.tracked]), [['M-TEST-1', false], ['M-TEST-2', true], ['M-TEST-3', false]]);
+  const [ev] = sperrDatei(dir);
+  assert.deepEqual([ev.sku, ev.farbe, ev.produkt, ev.handle, ev.orderId], ['M-TEST-2', 'Greige', 'Testteppich', 'muster-testteppich', null]);
+  assert.deepEqual(api.einkaufMustersperre().gesperrt.map(s => s.sku), ['M-TEST-2']);
+  assert.equal(api.einkaufMusterlagerFarben({ handle: 'testteppich' }).farben.find(f => f.farbe === 'Greige').gesperrt, true);
+  // Auch in offenen Bestellungen steht sie jetzt als "kommt nicht".
+  assert.deepEqual(api.kundenBestellungen().zeilen.find(z => z.orderName === '#T1').gesperrteMuster, ['gid://shopify/LineItem/2']);
+
+  const zweimal = await sperren({ handle: 'testteppich', farbe: 'Greige' });
+  assert.match(zweimal.meldung, /schon gesperrt/);
+  assert.equal(sperrDatei(dir).length, 1);
+
+  await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-2' }, ICH);
+  assert.equal(shop.varianten[1].tracked, false);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Musterlager: Warenvariante laesst sich nie sperren, auch nicht mit selbstgebautem Aufruf', async () => {
+  const { dir, shop, sperren } = einzelUmgebung();
+  // Farbe ohne Mustervariante, Produkt ohne Musterprodukt, unbekanntes Produkt, fehlende Farbe.
+  await assert.rejects(sperren({ handle: 'testteppich', farbe: 'Ohne Musterartikel' }), e => e.status === 409 && /keinen eigenen Musterartikel/.test(e.message));
+  await assert.rejects(sperren({ handle: 'ohne-muster', farbe: 'Rolle' }), e => e.status === 409);
+  await assert.rejects(sperren({ handle: 'gibt-es-nicht', farbe: 'Sand' }), e => e.status === 409);
+  await assert.rejects(sperren({ handle: 'testteppich' }), e => e.status === 400);
+  // Eine vom Browser genannte SKU zaehlt nicht.
+  await assert.rejects(sperren({ sku: 'TEST-WARE-9' }), e => e.status === 400);
+  assert.equal(shop.aufrufe.length, 0);
+  assert.ok(!fs.existsSync(path.join(dir, 'mustersperre.json')));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Rolle lesen: auch der direkte API-Aufruf sperrt nichts', async () => {
+  const { dir, shop, api } = einzelUmgebung();
+  await assert.rejects(api.einkaufMustersperreSetzen({ aktion: 'sperren', orderId: AUFTRAG, lineItemId: 'gid://shopify/LineItem/1' }, { name: 'Lena', rolle: 'lesen' }), e => e.status === 403);
+  assert.equal(shop.aufrufe.length, 0);
+  fs.rmSync(dir, { recursive: true, force: true });
 });

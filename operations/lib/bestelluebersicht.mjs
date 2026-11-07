@@ -54,6 +54,33 @@ function knoten(conn) {
 }
 
 /**
+ * Positionen, die erst durch eine Bestellbearbeitung dazukamen: lineItemId -> Zeitpunkt der Bearbeitung.
+ * Massgeblich ist die frueheste Vereinbarung, die die Position verkauft hat - kam sie mit der Bestellung
+ * selbst (ORDER), ist sie keine Nachbestellung, auch wenn ihre Menge spaeter geaendert wurde.
+ * Ohne `agreements` (aelterer Export) bleibt die Liste leer.
+ */
+export function nachbestellungen(order) {
+  const erste = new Map();
+  const vereinbarungen = knoten(order?.agreements);
+  // Fehlen Verkaeufe der Bestellung selbst (mehr als eine Seite), waere jede spaeter geaenderte alte
+  // Position scheinbar neu - dann lieber gar keinen Hinweis.
+  if (vereinbarungen.some(ag => ag?.reason === 'ORDER' && ag?.sales?.pageInfo?.hasNextPage)) return new Map();
+  for (const ag of vereinbarungen) {
+    const zeit = typeof ag?.happenedAt === 'string' ? ag.happenedAt : null;
+    if (!zeit || Number.isNaN(new Date(zeit).getTime())) continue;
+    for (const s of knoten(ag.sales)) {
+      const id = s?.lineItem?.id;
+      if (!id || s.actionType !== 'ORDER') continue;
+      const bisher = erste.get(id);
+      if (!bisher || zeit < bisher.zeit) erste.set(id, { zeit, grund: ag.reason });
+    }
+  }
+  const ergebnis = new Map();
+  for (const [id, { zeit, grund }] of erste) if (grund === 'ORDER_EDIT') ergebnis.set(id, zeit);
+  return ergebnis;
+}
+
+/**
  * Bestellung gilt als offen: nicht storniert, nicht in Shopify archiviert und nicht
  * (vollstaendig) erfuellt. Archivieren ohne Versand ist in Shopify der Weg, einen Auftrag
  * abzuhaken (Abholung, Ladenverkauf, erledigt ohne Sendung) - er soll dann ueberall
@@ -277,6 +304,14 @@ function jaNein(wert) {
   return wert ? wert : '–';
 }
 
+/**
+ * Aktueller Stand nach Bestellaenderungen und Erstattungen (#1056). Eine stornierte Bestellung
+ * zeigt weiter, was bestellt war: "0,00 €" sagte in der Liste nichts mehr. Zaehlen tut sie nirgends.
+ */
+function aktuell(order, jetzt, urspruenglich) {
+  return !order.cancelledAt && jetzt ? jetzt : urspruenglich;
+}
+
 function geld(set) {
   const m = set?.shopMoney;
   if (!m || m.amount === undefined || m.amount === null) return null;
@@ -323,10 +358,10 @@ function vollstaendigeDetails(order, positionen) {
     rechnungsadresse: adresse(order.billingAddress),
     versandart: order.shippingLine?.title ?? '–',
     summen: {
-      zwischensumme: geld(order.subtotalPriceSet),
-      versand: geld(order.totalShippingPriceSet),
-      steuer: geld(order.totalTaxSet),
-      gesamt: geld(order.totalPriceSet),
+      zwischensumme: geld(aktuell(order, order.currentSubtotalPriceSet, order.subtotalPriceSet)),
+      versand: geld(aktuell(order, order.currentShippingPriceSet, order.totalShippingPriceSet)),
+      steuer: geld(aktuell(order, order.currentTotalTaxSet, order.totalTaxSet)),
+      gesamt: geld(aktuell(order, order.currentTotalPriceSet, order.totalPriceSet)),
     },
     zahlungsart: Array.isArray(order.paymentGatewayNames) && order.paymentGatewayNames.length ? order.paymentGatewayNames.join(', ') : '–',
     beratungsangaben,
@@ -433,6 +468,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     const offen = istOffen(order);
     const kettel = kettelJeGruppe(zeilen);
     const kunde = order.shippingAddress?.name ?? order.customer?.displayName ?? null;
+    const nachbestellt = nachbestellungen(order);
     const positionen = zeilen.map(li => {
       const item = resolveLineItem({ lineItem: li, variant: li.variant, alleZeilen: zeilen });
       const vm = metafeldMap(li.variant?.metafields);
@@ -467,6 +503,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         orderName: order.name,
         orderDatum: order.createdAt,
         lineItemId: li.id ?? null,
+        // Erst per Bestellbearbeitung dazugekommen (z. B. Ersatzfarbe fuer ein gesperrtes Muster):
+        // Zeitpunkt der Bearbeitung, sonst null. Die Packstation zeigt "Nachbestellung am …".
+        nachbestelltAm: (li.id && nachbestellt.get(li.id)) || null,
         lieferantUrl: istM ? (mq?.lieferantUrl ?? UNGEKLAERT) : (item.einkauf.lieferant_url ?? UNGEKLAERT),
         titel: istM && props.Produkt ? `Muster: ${props.Produkt}` : (li.title ?? li.variant?.product?.title ?? '–'),
         // Schluessel fuers Produktlexikon: von der Bestellposition direkt zum
@@ -481,8 +520,12 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         // Seit 14.10. schreibt der Konfigurator "_Zuschnitt aus Rolle" nicht mehr - dann gilt die
         // Rollenbreite am Produkt (custom.rollenbreite in m), damit der Kettelpuffer pruefbar bleibt.
         ausRolleCm: massanfertigung ? (item.eingaben?.ausRolleCm ?? produktRollenbreiteCm(item.produkt)) : null,
+        // Wunschmass-Rechner: Mass nur in diesen Properties, rund und oval nach echter Flaeche (resolve.mjs).
+        wunschmassRechner: !istM && leer(props['Maße']) && leer(props['Gewünschte Länge']) && ['Durchmesser', 'Seitenlänge', 'Breite'].some(k => !leer(props[k])),
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
+        // Netto nach allen Rabatten, fuer die Rohertrag-Schaetzung im Bestelldialog (bestellwarnung.mjs).
+        nettoGesamt: geld(li.priceAfterAllDiscountsBeforeTaxesSet)?.betrag ?? null,
         menge,
         // Bestellt (nach Aenderungen): mit `menge` erkennt der Belegabgleich Teilversand je Position.
         mengeBestellt: bestellteMenge(li),
@@ -520,12 +563,15 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
 
     const hinweise = [];
     let ampel = 'gruen';
-    const rot = t => { hinweise.push(t); ampel = 'rot'; };
-    const gelb = t => { hinweise.push(t); if (ampel !== 'rot') ampel = 'gelb'; };
+    // Ampel ohne den Grund "ohne Grosshaendler-ID": das Control Center nimmt gesperrte Muster aus diesem
+    // Grund heraus (sie werden nie bestellt) und braucht dann die Ampel der uebrigen Gruende (#1996).
+    let ampelOhneIdGrund = 'gruen';
+    const rot = (t, { ohneIdGrund = false } = {}) => { hinweise.push(t); ampel = 'rot'; if (!ohneIdGrund) ampelOhneIdGrund = 'rot'; };
+    const gelb = t => { hinweise.push(t); if (ampel !== 'rot') ampel = 'gelb'; if (ampelOhneIdGrund !== 'rot') ampelOhneIdGrund = 'gelb'; };
     if (massProbleme.length) rot(`Maßprüfung: ${massProbleme.map(p => p.masspruefung.status).join(', ')}`);
     if (beratung.toLowerCase() === 'ja' && !telefon) rot('Beratung gewünscht, aber keine Telefonnummer');
     else if (beratung.toLowerCase() === 'ja') gelb('Beratung gewünscht – vor Einkauf anrufen');
-    if (ohneId.length) rot(`${ohneId.length} Position(en) ohne Großhändler-ID`);
+    if (ohneId.length) rot(`${ohneId.length} Position(en) ohne Großhändler-ID`, { ohneIdGrund: true });
     if (mengeOffen.length) gelb(`${mengeOffen.length} Einkaufsmenge(n) UNGEKLAERT`);
     if (jaNein(verlegung) === 'Ja') gelb('Verlegung gebucht');
     if (!['PAID', 'PARTIALLY_REFUNDED'].includes(String(order.displayFinancialStatus))) gelb(`Zahlung: ${order.displayFinancialStatus ?? '–'}`);
@@ -548,6 +594,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       status: statusInfo.status,
       ampel: istTest ? 'test' : ampel,
       hinweise,
+      // Welche Positionen den Grund "ohne Großhändler-ID" tragen, und die Ampel ohne ihn (siehe oben).
+      ohneIdPositionen: ohneId.map(p => p.lineItemId).filter(Boolean),
+      ampelOhneIdGrund: istTest ? 'test' : offen ? ampelOhneIdGrund : 'grau',
       checks: {
         beratung: jaNein(beratung),
         telefon: telefon ? 'vorhanden' : 'fehlt',

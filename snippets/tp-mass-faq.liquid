@@ -1,0 +1,120 @@
+{%- doc -%}
+  Drei Kauffragen eines Teppichs nach Mass: Preis, Lieferzeit, Bestellweg. Einzige Quelle
+  fuer den sichtbaren Text (blocks/tp-mass-faq) und das FAQPage-JSON-LD
+  (snippets/tp-product-structured-data), damit beides Wort fuer Wort gleich ist.
+
+  Alles kommt aus den Daten dieses Produkts:
+  - Preis: snippets/tp-mass-preisliste (fehlt sie, fehlt die Frage). Bewusst Endpreise
+    und keine Rechnung: "Der Kunde sieht eine Zahl" (Inhaber 2026-09-20).
+  - Lieferzeit: nur service.lieferzeit, wie sie am Produkt steht; leer oder ausverkauft =
+    keine Frage (keine Vorlagenwerte, nichts wird erfunden).
+  - Abweichende Preise je Variante (Produkt mit price_min != price_max): der Satz nennt die
+    gezeigte Ausfuehrung.
+  - Muster: nur als Zusatzsatz und nur, wenn snippets/tp-musteroption einen Weg nennt.
+
+  Nur Art Ketteln, Paspelband, Einfassband, Cover und Fertig mit Preis je 0,01 m2. Raummass
+  ist kein Teppich und bekommt nichts.
+
+  @param {object} product - der Teppich nach Mass
+  @param {object} variant - die gezeigte Farbe
+  @param {string} [ausgabe] - 'json' = Question-Knoten durch Kommas getrennt; sonst HTML
+{%- enddoc -%}
+{%- liquid
+  assign tmf_art = product.metafields.service.einfassung.value | strip | downcase
+  assign tmf_arten = 'cover,ketteln,einfassband,paspelband,fertig' | split: ','
+  assign tmf_f1 = ''
+  assign tmf_f2 = ''
+  assign tmf_f3 = ''
+  if product.metafields.custom.preis_pro_001_qm.value == true and tmf_arten contains tmf_art
+    capture tmf_liste
+      render 'tp-mass-preisliste', product: product, variant: variant
+    endcapture
+    assign tmf_liste = tmf_liste | strip
+    if tmf_liste != blank
+      capture tmf_kante
+        render 'tp-mass-kante-wort', product: product
+      endcapture
+      assign tmf_kante = tmf_kante | strip | split: '|'
+      assign tmf_saetze = ''
+      assign tmf_zeilen = tmf_liste | split: ';'
+      for tmf_z in tmf_zeilen
+        assign tmf_t = tmf_z | split: '|'
+        assign tmf_cent = tmf_t[2] | times: 1 | money_without_trailing_zeros
+        if tmf_saetze != blank
+          assign tmf_saetze = tmf_saetze | append: ', '
+        endif
+        assign tmf_saetze = tmf_saetze | append: tmf_t[0] | append: ' × ' | append: tmf_t[1] | append: ' cm kosten ' | append: tmf_cent
+      endfor
+      assign tmf_name = product.title
+      if product.price_min != product.price_max
+        assign tmf_name = tmf_name | append: ' in der Ausführung ' | append: variant.option1
+      endif
+      assign tmf_vorsatz = tmf_name | append: ', ' | append: tmf_kante[0]
+      # Steht die Kante schon im Titel ("... - Paspel"), nicht doppelt nennen.
+      assign tmf_label = product.metafields.service.einfass_label.value | append: '' | strip
+      if tmf_label != blank and product.title contains tmf_label
+        assign tmf_vorsatz = tmf_name
+      endif
+      assign tmf_inhalt = 'Zuschnitt, ' | append: tmf_kante[1] | append: ' und MwSt.'
+      if tmf_art == 'fertig'
+        assign tmf_inhalt = tmf_kante[1] | append: ' und die MwSt.'
+      endif
+      assign tmf_f1 = 'Was kostet dieser Teppich nach Maß?'
+      assign tmf_a1 = tmf_vorsatz | append: ': ' | append: tmf_saetze | append: '. Die Preise enthalten ' | append: tmf_inhalt | append: ' Den Preis für Ihr Maß zeigt die Eingabe auf dieser Seite sofort an.'
+      assign tmf_mp = product.metafields.service.mindestpreis.value
+      if tmf_mp.amount
+        assign tmf_mindest = tmf_mp.amount | times: 100 | round
+      else
+        assign tmf_mindest = tmf_mp | times: 100 | round
+      endif
+      if tmf_mindest > 0
+        assign tmf_mindest_text = tmf_mindest | money_without_trailing_zeros
+        assign tmf_a1 = tmf_a1 | append: ' Der Mindestpreis je Teppich beträgt ' | append: tmf_mindest_text | append: '.'
+      endif
+      if settings.tp_versand_frei_ab != blank
+        assign tmf_a1 = tmf_a1 | append: ' Versand in Deutschland ab ' | append: settings.tp_versand_frei_ab | append: ' € Bestellwert kostenlos.'
+      endif
+    endif
+
+    assign tmf_lz = product.metafields.service.lieferzeit.value | strip
+    if tmf_lz != blank and product.available
+      assign tmf_f2 = 'Wie lange dauert die Lieferung?'
+      assign tmf_a2 = 'Die Lieferzeit beträgt ' | append: tmf_lz | append: '.'
+    endif
+
+    if product.available
+      # Farbe nur nennen, wenn es eine Farbauswahl gibt (Rundgang 06.11., RE-06:
+      # Kettelteppiche aus Restrollen haben genau eine Farbe)
+      assign tmf_farbe_option = product.options_with_values | where: 'name', 'Farbe' | first
+      assign tmf_farben = tmf_farbe_option.values | size
+      assign tmf_gruppe = product.metafields.service.einfass_gruppe.value | size
+      assign tmf_wahl = ''
+      if tmf_farben > 1 and tmf_gruppe > 1
+        assign tmf_wahl = 'Farbe und Kante wählen, '
+      elsif tmf_farben > 1
+        assign tmf_wahl = 'Farbe wählen, '
+      elsif tmf_gruppe > 1
+        assign tmf_wahl = 'Kante wählen, '
+      endif
+      assign tmf_f3 = 'Wie bestelle ich diesen Teppich?'
+      assign tmf_a3 = tmf_wahl | append: 'Breite und Länge in Zentimetern eingeben und den Endpreis prüfen. Dann in den Warenkorb legen und an der Kasse bezahlen.'
+      capture tmf_muster
+        render 'tp-musteroption', product: product
+      endcapture
+      assign tmf_muster = tmf_muster | strip
+      if tmf_muster != blank
+        assign tmf_a3 = tmf_a3 | append: ' Wer die Farbe vorher sehen möchte, kann zusätzlich ein Muster bestellen.'
+      endif
+    endif
+  endif
+-%}
+{%- if ausgabe == 'json' -%}
+  {%- assign tmf_erste = true -%}
+  {%- if tmf_f1 != blank -%}{"@type":"Question","name":{{ tmf_f1 | json }},"acceptedAnswer":{"@type":"Answer","text":{{ tmf_a1 | json }}}}{%- assign tmf_erste = false -%}{%- endif -%}
+  {%- if tmf_f2 != blank -%}{%- unless tmf_erste -%},{%- endunless -%}{"@type":"Question","name":{{ tmf_f2 | json }},"acceptedAnswer":{"@type":"Answer","text":{{ tmf_a2 | json }}}}{%- assign tmf_erste = false -%}{%- endif -%}
+  {%- if tmf_f3 != blank -%}{%- unless tmf_erste -%},{%- endunless -%}{"@type":"Question","name":{{ tmf_f3 | json }},"acceptedAnswer":{"@type":"Answer","text":{{ tmf_a3 | json }}}}{%- endif -%}
+{%- else -%}
+  {%- if tmf_f1 != blank -%}<h3 class="tp-mf__frage">{{ tmf_f1 | escape }}</h3><p class="tp-mf__antwort">{{ tmf_a1 | escape }}</p>{%- endif -%}
+  {%- if tmf_f2 != blank -%}<h3 class="tp-mf__frage">{{ tmf_f2 | escape }}</h3><p class="tp-mf__antwort">{{ tmf_a2 | escape }}</p>{%- endif -%}
+  {%- if tmf_f3 != blank -%}<h3 class="tp-mf__frage">{{ tmf_f3 | escape }}</h3><p class="tp-mf__antwort">{{ tmf_a3 | escape }}</p>{%- endif -%}
+{%- endif -%}

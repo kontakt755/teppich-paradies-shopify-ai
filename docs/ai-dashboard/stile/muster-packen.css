@@ -7,7 +7,8 @@
 .mp-kunden { display: grid; gap: 12px; }
 .mp-kunde { min-width: 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow-wrap: anywhere; }
 .mp-gepackt { background: var(--surface-2); }
-.mp-klaeren { border-color: var(--warn); }
+/* Farbiger Rand links nur noch aus der Ampel (app.css, .ampel-karte): bis 06.11. trugen "Zu klären" einen
+   Bernstein-Rahmen und angefangene Umschlaege einen Bernstein-Balken - zwei Raender mit anderer Bedeutung. */
 .mp-kopf { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
 .mp-wer { min-width: 0; }
 .mp-wer h3 { margin: 0 0 2px; font-family: var(--serif); font-size: 1.15rem; }
@@ -18,7 +19,7 @@
 .mp-kunde .notice { margin: 10px 0 0; }
 
 .mp-liste { list-style: none; margin: 10px 0 0; padding: 0; }
-.mp-zeile { display: grid; grid-template-columns: 28px 72px minmax(0, 1fr) 20px minmax(0, 1fr) minmax(0, .8fr); align-items: start; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.mp-zeile { display: grid; grid-template-columns: 28px 72px minmax(0, 1fr) 20px minmax(0, 1fr) minmax(0, .8fr); align-items: start; gap: 4px 12px; padding: 10px 0 10px 10px; border-top: 1px solid var(--line); }
 .mp-haken { padding-top: 24px; }
 .mp-haken input { width: 22px; height: 22px; margin: 0; }
 .mp-vorher, .mp-nachher { display: grid; gap: 1px; min-width: 0; }
@@ -36,17 +37,19 @@
 /* Umschlag vorbereitet (Aufkleber gedruckt, #1718): ein Stand, kein Problem - neutral, aber gut lesbar. */
 .mp-vorbereitet { color: var(--text-2); font-weight: 600; }
 /* Was schon auf dem Packtisch liegt (#1720), in der Kopfzeile: vorbereiteter Umschlag kraeftig neutral,
-   Muster schon im Umschlag in Bernstein (angefangene Arbeit) samt Randbalken an der ganzen Karte. */
+   Muster schon im Umschlag in Bernstein (angefangene Arbeit). Der Randbalken gehoert seit 06.11. der Ampel. */
 .mp-stempelzeile { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
 .mp-stempel { display: inline-flex; align-items: center; padding: 3px 10px; border: 2px solid var(--text); border-radius: 6px; color: var(--text); font-size: .85rem; font-weight: 700; }
 .mp-stempel-drin { border-color: var(--warn); background: var(--warn); color: var(--surface); }
-.mp-angefangen { border-left: 6px solid var(--warn); }
 .mp-karte-ziel .mp-stempelzeile { margin: 2px 0; }
 /* Weitere Umschlaege desselben Empfaengers (andere Bestelltage, 29.10.): in der Kopfzeile, damit niemand die Bestellungen verwechselt. */
 .mp-weitere { margin: 2px 0 4px; color: var(--text-2); }
 .mp-weitere a { font-weight: 600; }
 /* Kopfzeile: was schon im Haus ist (Inhaber 29.10.) - neutral, aber kraeftiger als die Datumszeile. */
 .mp-hier-da { color: var(--text); font-weight: 600; }
+/* Noch nicht bestellt samt Grund: die Farbe traegt die Plakette darueber, der Text bleibt neutral. */
+.mp-hier-offen { color: var(--text-2); }
+.mp-ohne-aufkleber { color: var(--text-2); }
 .mp-zahlen { font-size: 1.05rem; }
 .mp-bereich { margin-top: 14px; }
 .mp-bereich > summary { cursor: pointer; list-style: none; padding: 4px 0 8px; }
@@ -58,6 +61,8 @@
 .mp-pfeil { padding-top: 24px; color: var(--accent); font-weight: 700; }
 .mp-sku { font-family: var(--mono); font-size: .85rem; color: var(--text-2); }
 .mp-fehlt { color: var(--warn); font-weight: 600; }
+.mp-gesperrt { color: var(--crit); font-weight: 600; }
+.mp-ohne { margin-left: 6px; }
 .mp-stand { padding-top: 6px; color: var(--text-2); }
 .mp-ab .mp-vorher, .mp-ab .mp-nachher, .mp-ab .mp-bild { opacity: .5; }
 
@@ -110,8 +115,10 @@
 
 /* Eine Arbeitsliste zur Zeit; Mengen stehen ausschliesslich in der Filterleiste. */
 .mp-arbeitsfilter { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
-.mp-arbeitsfilter .btn { display: flex; justify-content: space-between; gap: 8px; min-height: 44px; white-space: normal; text-align: left; }
+/* flex-wrap: rote Umschlaege im Reiter ("× 2 überfällig") stehen in eigener Zeile unter Name und Zahl. */
+.mp-arbeitsfilter .btn { display: flex; flex-wrap: wrap; align-content: center; justify-content: space-between; gap: 2px 8px; min-height: 44px; white-space: normal; text-align: left; }
 .mp-filterzahl { font-weight: 700; }
+.mp-filterampel { flex-basis: 100%; display: flex; }
 .mp-arbeitsleer { padding: 16px 0; color: var(--text-2); }
 @media (max-width: 760px) { .mp-arbeitsfilter { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* Zweite Zeile "Umschlag:" (28.10.), wirkt zusammen mit der Arbeitsliste darueber. */
@@ -155,4 +162,16 @@
   .mp-karte { grid-template-columns: 96px minmax(0, 1fr); grid-template-areas: 'bild vorher' 'ziel ziel' 'aktionen aktionen'; }
   .mp-karte .mp-bild-gross { width: 96px; height: 96px; }
   .mp-gross { flex: 1 1 100%; }
+}
+
+/* Reiter Gepackt: "Verschickt – Kunde informieren…" steht im Kopf des Umschlags, das Eintragen braucht kein Aufklappen. */
+.mp-kopfknoepfe { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; margin-top: 6px; }
+.mp-gepackt-regel { margin: 0 0 8px; }
+/* Rueckfrage vor dem Verschicken (Gepackt = verschickt): in der Karte, ersetzt die Knoepfe, die sie gestellt haben. */
+.mp-versandfrage { margin-top: 12px; }
+.mp-versandfrage p { margin: 0 0 6px; }
+.mp-versandfrage strong { color: var(--text); }
+.mp-versandfrage .mp-aktionen { margin-top: 8px; }
+@media (max-width: 767px) {
+  .mp-kopfknoepfe { justify-content: flex-start; }
 }

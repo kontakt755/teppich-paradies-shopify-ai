@@ -18,6 +18,8 @@ const ohneStylesheet = (code) => code.replace(/{%-?\s*stylesheet\s*-?%}[\s\S]*?{
 const engine = new Liquid({
   templates: {
     'tp-suche-service-ziele': ohneDoc(lies('snippets/tp-suche-service-ziele.liquid')),
+    'tp-suche-thema': ohneDoc(lies('snippets/tp-suche-thema.liquid')),
+    'tp-suche-produktzeile': '',
     price: '',
     'tp-suchfarbe-variante': '',
   },

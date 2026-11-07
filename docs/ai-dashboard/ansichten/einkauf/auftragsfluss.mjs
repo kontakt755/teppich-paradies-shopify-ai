@@ -15,6 +15,7 @@ import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterEigen, stufeVon, wartetage } from '../../lib/einkauf-lieferanten.mjs';
 import { kettelwegNoetig, musterSchritt } from '../../lib/einkauf-uebersicht.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { LIEFERWEG_WORT, istLagerware, lieferwegVon, selbstStand } from '../../lib/lieferweg.mjs';
 
 export { musterEigen };
 
@@ -34,11 +35,16 @@ export const MUSTER_HERKUNFT_LABEL = {
 export const MUSTER_HERKUNFT_KURZ = { lieferant: 'beim Lieferanten', eigen_versand: 'haben wir da – verschicken', eigen_vorbei: 'haben wir da – vorbeibringen' };
 /**
  * Filtergruppe einer Position wie afFilterGruppe(), dazu "eigen": ein noch offenes Muster aus
- * dem eigenen Bestand - es ist nicht "noch zu bestellen", sondern vorbeizubringen/zu verschicken.
+ * dem eigenen Bestand - es ist nicht "noch zu bestellen", sondern vorbeizubringen/zu verschicken -
+ * und "gesperrt": ein Muster, das der Lieferant nicht liefern kann.
  */
 export function positionsGruppe(p) {
   const g = afFilterGruppe(afEintragFuer(p)?.status);
-  return g === 'offen' && musterEigen(p) ? 'eigen' : g;
+  // Lagerware (lib/lieferweg.mjs) ist wie ein Lagermuster nicht "noch zu bestellen".
+  if (g === 'offen' && (musterEigen(p) || istLagerware(p, afEintragFuer(p)))) return 'eigen';
+  // Gesperrtes Muster ohne Stand (Mustersperre, `gesperrteMuster` der Bestellungen): kommt nie, also auch
+  // nicht "Noch zu bestellen" - sonst zaehlten Kachel und Filterchip verschiedene Mengen (Review 06.11.2026).
+  return g === 'offen' && p?.istMuster && (einkauf.bestellungen?.gesperrteMuster || []).includes(p.lineItemId) ? 'gesperrt' : g;
 }
 
 /**
@@ -74,6 +80,7 @@ export function afStatusText(eintrag) {
   const s = eintrag?.status;
   if (!s) return 'Noch nicht bestellt';
   if (s === 'bestellt' && istDirektZumKunden(eintrag)) return 'Bestellt · Lieferant schickt direkt an den Kunden';
+  if (s === 'geliefert' && eintrag.ueber === 'lager') return eintrag.selbstversand?.gepackt ? 'Zugeschnitten und gepackt' : 'Aus eigenem Lager zugeschnitten';
   return (eintrag.ueber === 'kettler' && AF_KETTLER_LABEL[s]) || AF_STATUS_LABEL[s] || s;
 }
 export const istUeberKettler = eintrag => eintrag?.ueber === 'kettler';
@@ -101,11 +108,12 @@ export function afFilterGruppe(status) {
 // Steht bewusst weit oben: die Einkaufsansicht zeigte den Rohwert
 // ("SUPPLIER_DIRECT") - ausgerechnet bei der Angabe, an der haengt, wohin die
 // Ware geliefert wird.
+// Ware: dieselben Woerter wie die Lieferweg-Plakette (lib/lieferweg.mjs, LIEFERWEG_WORT).
 export const LIEFERWEG_LABEL = {
-  OWN_STOCK: 'Eigenes Lager',
-  SUPPLIER_TO_TP: 'Lieferant → Teppich-Paradies',
-  SUPPLIER_DIRECT: 'Direktlieferung an Kunde',
-  SUPPLIER_TO_SITE: 'Lieferant → Baustelle',
+  OWN_STOCK: LIEFERWEG_WORT.lager,
+  SUPPLIER_TO_TP: LIEFERWEG_WORT.uns,
+  SUPPLIER_DIRECT: LIEFERWEG_WORT.hersteller,
+  SUPPLIER_TO_SITE: LIEFERWEG_WORT.baustelle,
   SAMPLE_STOCK: 'Muster aus Lager',
   SAMPLE_SUPPLIER: 'Muster vom Lieferanten',
   SAMPLE_CUT: 'Muster (Zuschnitt)',
@@ -115,14 +123,11 @@ export const LIEFERWEG_LABEL = {
 function afKey(orderId, lineItemId) { return `${orderId}::${lineItemId}`; }
 
 // Wartezeit: wie lange steht eine Position schon auf "Bestellt" bzw. "Geliefert an uns"?
-// Ab 7 Tagen beim Lieferanten nachhaken (Bernstein), ab 14 Tagen ist es ein Problem (Rot).
-export const AF_WARTE_WARN = 7;
-const AF_WARTE_CRIT = 14;
+// Gelb ab 7, rot ab 14 Tagen - die Schwelle steht einmal in lib/ampel.mjs (WARTESCHWELLEN).
 export function afWartetage(eintrag, jetzt = Date.now()) {
   return wartetage(eintrag, jetzt);
 }
 export const afWarteText = tage => tage === 0 ? 'seit heute' : tage === 1 ? 'seit 1 Tag' : `seit ${tage} Tagen`;
-export const afWarteKlasse = tage => tage >= AF_WARTE_CRIT ? 'wait-crit' : tage >= AF_WARTE_WARN ? 'wait-warn' : 'muted';
 
 // Schritt, auf den "Wieder öffnen" zurueckfaellt - Spiegel von statusVorErledigt() in
 // operations/lib/auftragsstatus.mjs (dort entscheidet der Server; hier nur fuer den Dialogtext).
@@ -188,6 +193,62 @@ export async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer 
     return true;
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
 }
+
+// Rueckmeldung nimmt das Wort des Knopfs auf.
+const SELBST_TEXT = { zugeschnitten: 'Zugeschnitten', gepackt: 'Gepackt' };
+
+/**
+ * Ware, die wir selbst verschicken (lib/lieferweg.mjs selbstStand): "Zugeschnitten" (aus eigenem
+ * Lager, setzt "bei uns" mit Vermerk "aus Lager") bzw. "Gepackt". `an: false` nimmt den Schritt
+ * zurueck. Verschickt wird ueber den vorhandenen Versand-Dialog.
+ */
+export async function setzeSelbstversand(pos, schritt, an = true) {
+  if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return false; }
+  try {
+    const r = await fetch('/api/einkauf/auftragsstatus', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ aktion: 'selbstversand', orderId: pos.orderId, lineItemId: pos.lineItemId, schritt, an }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Nicht gespeichert: ${j.error || r.status}`, 'crit'); return false; }
+    if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
+    einkauf.auftragsstatus.positionen[afKey(pos.orderId, pos.lineItemId)] = j.eintrag;
+    // Sofort zeichnen: "Von uns abschicken" liest den frischen Eintrag aus einkauf.auftragsstatus.
+    // Das Nachladen der Listen dauerte in der Klickstrecke (06.11.) 2-4 s - so lange stand der alte Knopf da.
+    toast(an ? `${SELBST_TEXT[schritt] || 'Gespeichert'} – eingetragen` : `„${SELBST_TEXT[schritt] || schritt}“ zurückgenommen`);
+    render();
+    await ladeKundenArbeitsstandNeu();
+    render();
+    return true;
+  } catch (e) { toast(`Nicht gespeichert: ${e.message}`, 'crit'); return false; }
+}
+
+/**
+ * Knoepfe fuer Ware, die wir selbst verschicken (lib/lieferweg.mjs selbstStand) - dieselben auf
+ * Heute, im Einkauf und in der Kundenakte: [Zugeschnitten] (aus Lager), [Gepackt], [Verschickt…]
+ * (der vorhandene Versand-Dialog). Angaben stehen als data-Attribute am Knopf. Rolle "lesen": nichts.
+ * `rueckgaengig`: kleiner Knopf, der den zuletzt gesetzten Schritt zuruecknimmt.
+ */
+export function selbstKnoepfe(p, eintrag, { klasse = 'btn btn-sm', haupt = false, rueckgaengig = false } = {}) {
+  if (istNurLesend() || !p?.lineItemId) return '';
+  const stand = selbstStand(p, eintrag);
+  if (!stand) return '';
+  const daten = `data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-name="${esc(p.orderName || '')}" data-af-titel="${esc(p.titel || '')}" data-af-farbe="${esc(p.farbe || '')}"`;
+  const erster = haupt ? `${klasse} btn-primary` : klasse;
+  const zuschnitt = `<button type="button" class="${erster}" data-selbst="zugeschnitten" ${daten}>Zugeschnitten</button>`;
+  const gepackt = `<button type="button" class="${erster}" data-selbst="gepackt" ${daten}>Gepackt</button>`;
+  const raus = cls => `<button type="button" class="${cls}" data-af-set data-af-status="raus" ${daten}>Verschickt…</button>`;
+  const sv = eintrag?.selbstversand || {};
+  const zurueck = !rueckgaengig ? ''
+    : sv.gepackt ? `<button type="button" class="btn btn-sm btn-ghost" data-selbst="gepackt" data-selbst-an="0" ${daten} title="„Gepackt“ zurücknehmen">Rückgängig</button>`
+      : sv.zugeschnitten && stand === 'packen' ? `<button type="button" class="btn btn-sm btn-ghost" data-selbst="zugeschnitten" data-selbst-an="0" ${daten} title="„Zugeschnitten“ zurücknehmen">Rückgängig</button>` : '';
+  if (stand === 'zuschneiden') return zuschnitt;
+  if (stand === 'packen') return gepackt + raus(klasse) + zurueck;
+  return raus(erster) + zurueck;
+}
+
+/** Hersteller liefert direkt an Kunde oder Baustelle (Lieferweg): bei uns kommt nichts an, nach "bestellt" folgt "raus". */
+export const herstellerDirekt = (p, eintrag) => ['hersteller', 'baustelle'].includes(lieferwegVon(p, eintrag)?.weg);
 
 /** Pflichtfrage je gekettelten Direktversand, dieselben Begriffe wie im Bestelldialog. */
 export function kettelwegFelder(positionen = []) {
@@ -441,7 +502,8 @@ function openSammelBestelltDialog(id) {
   const g = sammelGruppen.get(id);
   if (!g) return;
   // Beim Oeffnen neu pruefen: zwischen Zeichnen und Klick kann jemand einzelne Artikel gesetzt haben.
-  const positionen = g.positionen.filter(p => !afEintragFuer(p)?.status && !musterEigen(p));
+  // Lagerware schneiden wir selbst zu - sie wird nie beim Lieferanten bestellt (der Server lehnt es ab).
+  const positionen = g.positionen.filter(p => !afEintragFuer(p)?.status && !musterEigen(p) && !istLagerware(p, afEintragFuer(p)));
   if (!positionen.length) { toast('Alle Artikel dieser Gruppe sind bereits bestellt.'); return; }
   const luecken = positionen.filter(positionUnvollstaendig).length;
   const fragen = positionen.filter(kettelwegNoetig);
@@ -600,6 +662,14 @@ export function einkaufKlickStatus(e) {
     if (!positionen.length) { toast('Die Muster sind nicht in den aktuellen Daten. Bitte aktualisieren.', 'crit'); return true; }
     angekommen.disabled = true;   // gegen den Doppelklick - danach wird ohnehin neu gezeichnet
     markiereMusterAngekommen(positionen).then(ok => { if (!ok) angekommen.disabled = false; });
+    return true;
+  }
+  const selbst = e.target.closest('[data-selbst]');
+  if (selbst) {
+    e.preventDefault();
+    const ds = selbst.dataset;
+    selbst.disabled = true;   // gegen den Doppelklick - danach wird ohnehin neu gezeichnet
+    setzeSelbstversand({ orderId: ds.afOrder, lineItemId: ds.afItem }, ds.selbst, ds.selbstAn !== '0').then(ok => { if (!ok) selbst.disabled = false; });
     return true;
   }
   const afBtn = e.target.closest('[data-af-set]');

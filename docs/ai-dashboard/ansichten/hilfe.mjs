@@ -14,18 +14,48 @@ function hilfeKarte(titel, inhalt) {
  * auch hier nachziehen (Rundgang 26.10.: die Hilfe kannte die Packstation noch nicht).
  */
 export const MENUE_KURZ = [
-  ['Heute', 'Was heute zu tun ist, das Dringendste oben. Ein Knopf je Zeile führt direkt hin.'],
+  ['Heute', 'Die Shop-Übersicht: zuerst die Warenbestellungen, dann Probleme, Muster und Versand. Ein Knopf je Zeile führt direkt hin.'],
   ['Bestellungen', 'Alle Bestellungen der Kunden: was offen ist und was als Nächstes dran ist.'],
   ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen.'],
+  ['Kunden nach Produkt fragen', 'Wer seit 5 Tagen Muster hat, wird gefragt, wie sie angekommen sind: Anruf oder Rückfrage-Mail. Ergebnis anklicken, Notiz eintippen. Oben steht, welche Gründe bisher genannt wurden. Am Handy unter „Mehr“.'],
   ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Bestelltag ein Umschlag, Bestellungen eines Kunden vom selben Tag zusammen. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
   ['Musterlager', 'Muster, die wir selbst da haben: was noch liegt, was reserviert ist, einlagern und Aufkleber drucken. Am Handy unter „Mehr“.'],
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
   ['Eigene Aufkleber drucken', 'Aufkleber mit frei getipptem Text, ohne Produkt, zum Beispiel Wegweiser fürs Lager.'],
   ['Kunden & Einkauf', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften, Hausverwaltungen.'],
-  ['Shop & Inhalte', 'Sonderposten, Bildrechte, Social Media – nur mit Büro- oder Inhaberzugang.'],
+  ['Shop & Inhalte', 'Sonderposten: Reststück oder Rolle im Laden als verkauft buchen, vor Zahlung und Zuschnitt. Bildrechte und Social Media nur mit Büro- oder Inhaberzugang.'],
   ['Verwaltung', 'Aufgaben, Zugänge und diese Hilfe. Was du siehst, hängt von deinem Zugang ab.'],
   ['Fehler melden', 'Ganz unten in der Seitenleiste: kurz schreiben, was nicht stimmt. Die Technik bekommt die Seite mit.'],
 ];
+
+/**
+ * Die Shop-Uebersicht ("Heute") von oben nach unten, mit denselben Ueberschriften wie auf der Seite.
+ * tests/hilfe-menue.test.mjs prueft jeden Namen gegen heute.mjs und ihre Bausteine: bis 06.11.2026
+ * beschrieb die Hilfe noch einen Block, den es seit 12.10. nicht mehr gab (#1996).
+ */
+export const HEUTE_BLOECKE = [
+  ['Warenbestellungen', 'Offene Warenaufträge, bezahlte Kunden zuerst, je Zeile der nächste Schritt. Ist erst ein Teil der Ware da, steht dort „Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: …“.'],
+  ['Von uns abschicken', 'Ware, die wir selbst zuschneiden, packen und verschicken.'],
+  ['Probleme', 'Was rot ist und eine Bestellung aufhält. Ein Knopf je Zeile führt hin. Steht eine Bestellung schon lange still, stehen dort auch „Abschließen…“ und „Läuft noch“.'],
+  ['Muster & Packstation', 'Muster bestellen und Umschläge packen; darunter „Kunden nach Produkt fragen“.'],
+  ['Versand & Kunden nachfassen', 'Versandte Bestellungen ohne Empfangsbeleg, automatische Nachfrage-Mails und Bewertungen.'],
+  ['Im Hintergrund', 'Ruhige Zeilen: was die Musterautomatik in 7 Tagen bestellt hat und wie alt die Daten sind, mit „Jetzt aktualisieren“.'],
+  ['Weitere Bereiche', 'Zum Aufklappen: Laden & Anfragen, Aufgaben, Shop & Technik (nur Inhaber) und die bisherige Gesamtübersicht.'],
+];
+/** Bloecke, die nur erscheinen, wenn es dort etwas gibt (dieselben Namen wie auf der Seite). */
+export const HEUTE_BEI_BEDARF = ['Von uns abschicken', 'Probleme', 'Musterautomatik', 'Alte Bestellungen aufräumen'];
+
+function heuteKarte() {
+  const nurBeiBedarf = n => (HEUTE_BEI_BEDARF.includes(n) ? ' <span class="muted">(nur wenn es etwas gibt)</span>' : '');
+  return hilfeKarte('Morgens: Seite „Heute"', `
+      <p>Die Seite heißt <b>Shop-Übersicht</b>. Von oben nach unten:</p>
+      <ol style="margin:0;padding-left:20px;line-height:1.7">
+        ${HEUTE_BLOECKE.map(([n, t]) => `<li><b>${esc(n)}</b>${nurBeiBedarf(n)} – ${esc(t)}</li>`).join('')}
+      </ol>
+      <p style="margin-top:8px">Nur bei Bedarf stehen dazwischen außerdem <b>Musterautomatik</b> mit „Klärung nötig“ (Störung oder fehlende Angaben) und <b>Alte Bestellungen aufräumen</b> (seit 14 Tagen, bei Ware 30, keine Bewegung).</p>
+      <p class="small muted"><b>× Rot</b> hält eine Bestellung auf, <b>! Gelb</b> ist zu tun, ohne Zeichen ist alles in Ordnung. Grün gibt es nicht.</p>
+      <p class="small muted">Über der Seite steht, wie alt die Daten sind („Stand: vor 3 Min.“). Die Seite holt neue Daten alle paar Minuten von selbst – auch während sie offen ist; was du gerade tippst, bleibt stehen.</p>`);
+}
 
 /** Die Ablaeufe, die jeden Tag vorkommen - Schritt fuer Schritt, mit den Woertern der Knoepfe. */
 const ABLAEUFE = [
@@ -36,11 +66,13 @@ const ABLAEUFE = [
     'Geht die Ware raus: <b>An Kunden raus…</b> – die Sendungsnummer vom Paketaufkleber eintragen. Jedes Paket hat seine eigene Nummer.',
   ]],
   ['Muster packen', [
-    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Bestelltag ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet.',
-    '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>.',
+    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Bestelltag ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet, ganz oben steht <b>Begleitblatt drucken</b>.',
+    '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>. Das Begleitblatt (A4) kommt mit in den Umschlag.',
     '<b>2 · Was ist da?</b> Jedes Muster überkleben, in den Umschlag legen und abhaken. Fehlt eins: <b>Fehlt noch – zurücklegen</b>.',
-    '<b>3 · Zukleben</b>: Umschlag zukleben, dann <b>Umschlag gepackt</b>. Gepackt heißt noch nicht verschickt.',
+    '<b>3 · Zukleben und verschicken</b>: Umschlag zukleben, dann <b>Umschlag gepackt – verschicken…</b> und in der Karte bestätigen. Gepackt heißt verschickt: der Kunde bekommt sofort die Versandmail, danach geht der Umschlag zur Post. Zurücknehmen geht dann nicht mehr.',
+    'Steht etwas im Reiter <b>Gepackt</b>, wurde es nie als verschickt eingetragen. Liegt der Umschlag noch im Regal: zur Post und <b>Verschickt – Kunde informieren…</b>. War er schon früher raus: <b>War schon früher raus…</b> (ohne Versandmail).',
     'Kommt ein Paket Muster vom Lieferanten: Reiter <b>Muster kommt an</b>. Eintippen, was auf dem Muster steht – die Karte sagt, in welchen Umschlag es gehört.',
+    '<b>× Rot</b> heißt: der Kunde wartet auf uns – ein Muster kommt nicht, eine Angabe fehlt, beim Lieferanten seit 14 Tagen bestellt, seit 7 Tagen bezahlt und nicht bestellt oder nie als verschickt eingetragen. <b>! Gelb</b>: seit 7 Tagen bestellt (nachhaken), noch nicht bestellt oder zu klären. Ohne Zeichen ist alles in Ordnung. Die Reiter oben zählen die roten Umschläge.',
   ]],
   ['Genossenschaft anschreiben', [
     'Unter <b>Kunden &amp; Einkauf</b> auf <b>Genossenschaften</b>: oben steht „Als Nächstes“ mit der Firma, die jetzt dran ist.',
@@ -71,10 +103,7 @@ export function viewHilfe() {
 
     ${inEinerMinute()}
 
-    ${hilfeKarte('Morgens: Seite „Heute"', `
-      <p>Ganz oben steht das Kundengeschäft: offene Aufträge, was noch beim Lieferanten bestellt werden muss, Muster.</p>
-      <p><b>Nicht liegen lassen</b> darunter ist Geld, das schon im Haus war: bezahlte Bestellungen ohne Versand, Angebote, auf die jemand wartet, und abgebrochene Warenkörbe. Erscheint der Block nicht, gibt es dort nichts zu tun.</p>
-      <p class="small muted">Über der Seite steht, wie alt die Daten sind („Stand: vor 3 Min.“). Die Seite holt neue Daten alle paar Minuten von selbst – auch während sie offen ist; was du gerade tippst, bleibt stehen.</p>`)}
+    ${heuteKarte()}
 
     ${hilfeKarte('Ein Kunde ruft an', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
@@ -87,7 +116,8 @@ export function viewHilfe() {
     ${hilfeKarte('Der Kunde nennt einen Produktnamen', `
       <p>Denselben Weg nehmen: <b>Suche</b> öffnen und den Produktnamen tippen – oder links auf <b>Lexikon</b>.</p>
       <p>Die Produktseite hat zwei Teile: <b>Für das Kundengespräch</b> (Preis ab, Farben, Material, Brandverhalten, Fußbodenheizung) und <b>Zum Bestellen</b> (unsere SKU, Lieferant, Artikelnummer, Bestelleinheit, Link zum Lieferanten).</p>
-      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt das Lexikon das Originalprodukt beim Lieferanten.</p>`)}
+      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt das Lexikon das Originalprodukt beim Lieferanten.</p>
+      <p><b>Bestellbarkeit</b> oben im Lexikon: <b>× Nur rot</b> zeigt Produkte, die wir so nicht bestellen können (Lieferant, Artikelnummer oder Bestelleinheit fehlt, nichts lieferbar). <b>! Nur gelb</b> zeigt Produkte mit einzelnen nicht lieferbaren Farben oder ohne Raumbild. Noch einmal tippen hebt den Filter auf.</p>`)}
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
@@ -99,20 +129,31 @@ export function viewHilfe() {
         <li>Versehentlich „bestellt“ geklickt? <b>Rückgängig</b> direkt danach, oder später <b>Zurück auf offen…</b> am Artikel bzw. <b>Alle zurück auf offen…</b> an der Karte.</li>
         <li>Muster selbst da (Katalog, Musterlager)? <b>Haben wir da…</b> am Muster oder in der Kundenakte: dann wird es nicht bestellt, sondern erscheint als „Muster vorbeibringen“ bzw. „Muster verschicken“ – mit Ort des Kunden.</li>
       </ol>
+      <p style="margin-top:8px"><b>Musterlager:</b> Kommt ein Probestück 2 × 1 m (PVC, Linoleum) oder eine Bahn 4 m × 20 cm vom Lieferanten, dort mit Lagerplatz einlagern – eingetroffene Probestücke schlägt die Seite unter <b>Einlagern?</b> vor. Bestellt ein Kunde ein Muster, das im Lager liegt, steht es auf „aus dem Musterlager“ und geht nicht in die Bestellung an den Lieferanten. Ist nichts mehr da: <b>Ist leer</b>.</p>
       <p style="margin-top:8px"><b>Lieferantenpost</b> (Reiter unter <b>Bestellen</b>): was die Lieferanten geschickt haben – Auftragsbestätigung, Lieferschein, Storno – und ob es zu unserem Stand passt. Den Schritt setzt trotzdem immer ein Mensch.</p>
-      <p class="small muted" style="margin-top:8px">Gelb heißt: seit 7 Tagen bestellt, bitte nachhaken. Rot: seit 14 Tagen. Ein Klick auf den Namen zeigt Kontakt, Lieferzeit und Verlauf des Lieferanten.</p>`)}
+      <p class="small muted" style="margin-top:8px"><b>! Gelb</b> heißt: seit 7 Tagen bestellt, bitte nachhaken. <b>× Rot</b>: seit 14 Tagen, Liefertermin vorbei, Bestellung blockiert oder Muster nicht lieferbar. Ein Klick auf den Namen zeigt Kontakt, Lieferzeit und Verlauf des Lieferanten.</p>`)}
 
     ${hilfeKarte('Was die Kennzeichen bedeuten', `
       <ul style="margin:0;padding-left:20px;line-height:1.9">
         <li><b>Fertig / In Arbeit</b> bei Kunden: ob bei dieser Bestellung noch etwas offen ist.</li>
-        <li><b>Bezahlt, noch nicht versandt</b>: Geld ist da, Ware nicht raus – das hat Vorrang.</li>
-        <li><b>Angebot wartet auf Antwort</b>: ein Angebot wurde erstellt, aber nie bezahlt.</li>
         <li><b>Liegengeblieben</b>: der Kunde hatte den Warenkorb voll und hat abgebrochen.</li>
         <li><b>aus Shopify, keine Bestellung hier</b>: den Kunden gibt es, seine Bestellungen liegen außerhalb der hier geladenen Daten.</li>
       </ul>`)}
 
     ${hilfeKarte('„nicht hinterlegt" heißt: es fehlt wirklich', `
-      <p>Das Dashboard rät nie. Steht irgendwo „nicht hinterlegt", „ungeklärt" oder ein Grund statt einer Zahl, dann fehlt die Angabe in Shopify oder beim Lieferanten – dann lieber nachfragen als schätzen.</p>`)}
+      <p>Das Dashboard rät nie. Steht irgendwo „nicht hinterlegt", „ungeklärt" oder ein Grund statt einer Zahl, dann fehlt die Angabe in Shopify oder beim Lieferanten – dann lieber nachfragen als schätzen. Oft wurde eine Produktvariante gelöscht: den Artikel in Shopify prüfen und im Team klären.</p>
+      <ul style="margin:0;padding-left:20px;line-height:1.9">
+        <li><b>Kein Link zum Lieferanten:</b> auf dem gewohnten Weg bestellen (Telefon, E-Mail) und die fehlende Produktseite melden.</li>
+        <li><b>Ein Artikel lässt sich nicht weiterschalten oder eine Zahl sieht falsch aus:</b> Seite neu laden. Bleibt es so, im Team Bescheid geben. Einen Stand zu setzen bestellt nichts beim Lieferanten.</li>
+      </ul>`)}
+
+    ${hilfeKarte('Begriffe kurz erklärt', `
+      <ul style="margin:0;padding-left:20px;line-height:1.9">
+        <li><b>Position:</b> eine Zeile einer Kundenbestellung, meist ein Artikel in einer Farbe oder Größe. Eine Bestellung kann mehrere Positionen haben.</li>
+        <li><b>Ampel:</b> <b>× Rot</b> hält auf (Angabe fehlt, Muster nicht lieferbar, 14 Tage beim Lieferanten, Liefertermin vorbei), <b>! Gelb</b> ist zu tun (noch nicht bestellt, seit 7 Tagen bestellt: nachhaken). Ohne Zeichen ist alles in Ordnung – Grün gibt es nicht.</li>
+        <li><b>Artikelnummer beim Lieferanten:</b> die Nummer, unter der der Lieferant den Artikel führt – nicht unsere SKU im Shop.</li>
+        <li><b>Teillieferung:</b> ein Teil der Ware ist bei uns, der Rest noch beim Lieferanten. Dann steht „Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: …“, und der Kunde wird erst informiert, wenn alles da ist.</li>
+      </ul>`)}
 
     ${hilfeKarte('Aufgaben und Notizen', `
       <p>Der Bereich <b>Aufgaben</b> ist für alles, was im Betrieb ansteht – Laden, Lager, Baustelle, Kunden, Lieferanten.</p>

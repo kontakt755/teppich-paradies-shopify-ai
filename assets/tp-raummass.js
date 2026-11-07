@@ -827,11 +827,20 @@ if (typeof document !== 'undefined') (function () {
       entwurfZeigen();
     }
 
+    function feldStatus(feld, ungueltig) {
+      if (ungueltig) feld.setAttribute('aria-invalid', 'true');
+      else feld.removeAttribute('aria-invalid');
+    }
+
     function rechnenInhalt() {
       var b = RM.leseCm(bIn.value);
       var l = RM.leseCm(lIn.value);
       aus.innerHTML = '';
       fehler.hidden = true;
+      // Screenreader: das fehlerhafte Feld meldet sich selbst, die Meldung
+      // haengt per aria-describedby an beiden Feldern (Liquid).
+      feldStatus(bIn, b.fehler);
+      feldStatus(lIn, l.fehler);
       if (b.leer || l.leer) return;
       if (b.fehler || l.fehler) {
         fehler.textContent = 'Bitte Maße zwischen 50 und 5000 cm eingeben, zum Beispiel 350.';

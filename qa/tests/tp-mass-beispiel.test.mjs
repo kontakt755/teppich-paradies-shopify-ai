@@ -25,6 +25,7 @@ const engine = new Liquid({ templates: {
   'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+  'tp-aktion-laufend': ohneDoc('snippets/tp-aktion-laufend.liquid'),
   'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
   'tp-sonderposten-preisbeleg': ohneDoc('snippets/tp-sonderposten-preisbeleg.liquid'),
   'tp-restrolle-freigegeben': ohneDoc('snippets/tp-restrolle-freigegeben.liquid'),
@@ -219,7 +220,8 @@ test('og:price nennt bei Teppich nach Mass den Endpreis der Beispielgroesse, son
   const block = meta.slice(meta.indexOf("{%- if request.page_type == 'product' -%}"), meta.indexOf('{%- if settings.social_twitter_link'));
   assert.match(block, /og:price:amount/);
   const engine2 = new Liquid({ templates: { 'tp-mass-beispiel': source, 'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
-    'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'), 'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
+    'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+    'tp-aktion-laufend': ohneDoc('snippets/tp-aktion-laufend.liquid'), 'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
     'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid') } });
   // Shopify teilt Integer/Integer ganzzahlig (Euro-Anteil im Block).
   engine2.registerFilter('divided_by', (a, b) => (Number.isInteger(a) && Number.isInteger(b) ? Math.floor(a / b) : a / b));

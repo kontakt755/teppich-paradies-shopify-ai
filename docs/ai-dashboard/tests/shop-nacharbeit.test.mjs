@@ -27,9 +27,9 @@ test('Versandvorbereitung und gebuchte Sendung sind keine Zustellung; unbekannte
 test('Nachfassfehler und faellige Nachfragen verweisen nur auf vorhandenen pruefbaren Ablauf', () => {
   const html = shopNacharbeitBlock({ bestellungen: daten([]), pack: { verfuegbar: true, zahlen: {} },
     nachfassen: { offen: [{ orderId: 'test' }] }, texte: { verfuegbar: true, versand: { letzterLauf: { fehler: 1 } } } });
-  assert.match(html, /1 Nachfrage ist/);
+  assert.match(html, /Automatische Nachfrage-Mails: 1 fällig/);
   assert.match(html, /letzte Nachfasslauf meldet Fehler/);
-  assert.match(html, /#\/heute\?mn=1/);
+  assert.match(html, /href="#\/heute\?mn=1">Nachfrage-Mails ansehen →/);
   assert.doesNotMatch(html, /data-zl-schritt|data-mp-aktion|data-lf-mail|mailto:/);
 });
 
@@ -42,4 +42,18 @@ test('Nachfass-Hauptknopf akzeptiert ausschliesslich den bekannten internen Nach
   assert.match(html, /href="#\/heute\?mn=1"/);
   auftrag.naechsterSchritt.href = 'javascript:alert(1)';
   assert.doesNotMatch(api.naechsterKarte(auftrag, {}, false), /javascript:/);
+});
+
+// Rundgang 06.11.2026 (#1996): "Nachfragen" (Mails) und "nach Produkt fragen" (Anrufe) klangen gleich.
+test('Nachfrage-Mails heissen so; "läuft nicht" nur, wenn der Server es sagt, "pausiert" nie', () => {
+  const block = texte => shopNacharbeitBlock({ bestellungen: daten([]), nachfassen: { offen: [] }, texte });
+  const laeuft = block({ verfuegbar: true, versand: { eingerichtet: true, hinweis: null } });
+  assert.match(laeuft, /<p>Automatische Nachfrage-Mails: 0 fällig\. <a href="#\/heute\?mn=1">Nachfrage-Mails ansehen →<\/a><\/p>/);
+  const aus = block({ verfuegbar: true, versand: { eingerichtet: false, hinweis: 'Automatischer Versand nicht eingerichtet: Testdatei fehlt.' } });
+  assert.match(aus, /Automatische Nachfrage-Mails: 0 fällig · automatischer Versand läuft nicht\./);
+  assert.doesNotMatch(aus, /Testdatei/, 'kein Dateipfad in der Ansicht');
+  for (const html of [laeuft, aus]) {
+    assert.doesNotMatch(html, /pausiert|Nachfragen sind fällig|Nachfassliste öffnen/);
+  }
+  assert.match(block(null), /Nachfassdaten werden geladen/, 'ohne Antwort keine Behauptung');
 });

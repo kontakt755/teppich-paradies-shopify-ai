@@ -13,13 +13,20 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
-import { auftragsAblauf, einordnung, jetztRang, kundenNachricht, nachfrageNachricht, VERZUG_WERKTAGE } from '../../lib/auftrags-ablauf.mjs';
+import { auftragsAblauf, einordnung, jetztRang, kundenNachricht, nachfrageNachricht, auftragsAmpel, grundZahlen, GRUND_REIHENFOLGE, teilstandText } from '../../lib/auftrags-ablauf.mjs';
+import { WARTESCHWELLEN, warteTitel } from '../../lib/ampel.mjs';
+import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
 import { referenzKnopf } from './referenz.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import {
   einkauf, afEintragFuer, aktiveAuftraege, anzeigeWert, kundeUndOrt,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, ensureEinkaufLieferanten, musterSchrittKnopf,
+  selbstKnoepfe, herstellerDirekt,
 } from './auftragsfluss.mjs';
+import { lieferwegVon, selbstStandText } from '../../lib/lieferweg.mjs';
+import { lieferwegPlakette, lieferwegeAuftrag } from '../../bausteine/lieferweg.mjs';
+import { kunden } from '../kunden/gemeinsam.mjs';
+import { ensureMusterPacken } from '../kunden/muster-packen.mjs';
 
 function lieferantName(id) {
   return lieferantAnzeige(id, einkauf.lieferanten?.lieferanten || []);
@@ -43,7 +50,8 @@ function vorbereitenHtml(a, ab) {
       ${lesend ? '' : `<button type="button" class="btn btn-primary btn-sm" data-lf-mail="${esc(g.lieferant)}" data-lf-art="${g.art}" data-lf-auftrag="${esc(a.id)}">Bestellnachricht zeigen</button>`}
     </div>`;
   }).join('');
-  const offen = ab.ungeklaert.length ? `<div class="notice warn ab-ungeklaert"><strong>Ungeklärt – erst klären, nicht raten (${ab.ungeklaert.length}):</strong>
+  // Rot wie "Zuerst klären" je Lieferant: ohne diese Angaben kann niemand bestellen.
+  const offen = ab.ungeklaert.length ? `<div class="notice crit ab-ungeklaert"><strong>Ungeklärt – erst klären, nicht raten (${ab.ungeklaert.length}):</strong>
       <ul>${ab.ungeklaert.map(x => `<li>${esc(titelVon(x.pos))} – ${esc(x.fehlt.join(', '))}</li>`).join('')}</ul>
       <span class="small">Fehlende Angaben stehen unter <a href="#/einkauf?tab=produktdaten">Produktdaten</a>.</span></div>` : '';
   const leer = !knoepfe && !offen ? '<p class="small muted">Für diesen Auftrag ist nichts beim Lieferanten zu bestellen.</p>' : '';
@@ -59,23 +67,58 @@ function lieferungHtml(a, ab, e) {
   const lesend = istNurLesend();
   const muster = ab.positionen.filter(x => x.art === 'muster' && x.rang >= 1 && x.rang < 3).map(x => x.pos);
   const ware = ab.unterwegs.filter(x => x.art === 'ware');
-  const zeile = x => `<li class="ab-pos"><span>${esc(titelVon(x.pos))}</span>
-    ${lesend ? '' : `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(x.pos.orderId)}" data-af-item="${esc(x.pos.lineItemId)}" data-af-name="${esc(x.pos.orderName || '')}" data-af-titel="${esc(x.pos.titel || '')}" data-af-farbe="${esc(x.pos.farbe || '')}" data-af-status="geliefert">Ist eingetroffen</button>`}</li>`;
+  // Hersteller liefert direkt (Lieferweg): bei uns kommt nichts an - "Ist beim Kunden…" (Versand-Dialog, Schritt "raus").
+  const zeile = x => {
+    const direkt = herstellerDirekt(x.pos, x.eintrag);
+    return `<li class="ab-pos"><span>${esc(titelVon(x.pos))} ${lieferwegPlakette(lieferwegVon(x.pos, x.eintrag))}</span>
+    ${lesend ? '' : `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(x.pos.orderId)}" data-af-item="${esc(x.pos.lineItemId)}" data-af-name="${esc(x.pos.orderName || '')}" data-af-titel="${esc(x.pos.titel || '')}" data-af-farbe="${esc(x.pos.farbe || '')}" data-af-status="${direkt ? 'raus' : 'geliefert'}"${direkt ? ' title="Der Hersteller liefert direkt – bei uns kommt nichts an"' : ''}>${direkt ? 'Ist beim Kunden…' : 'Ist eingetroffen'}</button>`}</li>`;
+  };
   const musterHtml = muster.length ? `<div class="ab-pos"><span><span class="small muted">${plural(muster.length, 'Muster', 'Muster')}:</span> ${esc(muster.map(titelVon).join(' · '))}</span>${musterSchrittKnopf(muster)}</div>` : '';
   const wareHtml = ware.length ? `<p class="small muted" style="margin:6px 0 0">Ware unterwegs:</p><ul class="ab-liste">${ware.map(zeile).join('')}</ul>` : '';
-  return `${verzugHtml(a, ab, e)}${musterHtml}${wareHtml}${informierenHtml(a, e)}${terminHtml(a)}<p class="small" style="margin:8px 0 0"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Alle Artikel dieses Auftrags bearbeiten →</a></p>`;
+  return `${verzugHtml(a, ab, e)}${musterHtml}${wareHtml}${selbstHtml(ab)}${informierenHtml(a, e)}${terminHtml(a)}<p class="small" style="margin:8px 0 0"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Alle Artikel dieses Auftrags bearbeiten →</a></p>`;
+}
+
+/** Ware, die wir selbst zuschneiden bzw. packen und verschicken - dieselben Knoepfe wie auf Heute. */
+function selbstHtml(ab) {
+  const liste = ab.selbst || [];
+  if (!liste.length) return '';
+  const zeile = x => `<li class="ab-pos"><span>${esc(titelVon(x.pos))} ${lieferwegPlakette(lieferwegVon(x.pos, x.eintrag))} <span class="small muted">${esc(selbstStandText(x.selbst, x.weg, x.eintrag))}</span></span>
+    <div class="ab-knoepfe" style="margin-top:0">${selbstKnoepfe(x.pos, x.eintrag)}</div></li>`;
+  return `<p class="small muted" style="margin:6px 0 0">Von uns abschicken:</p><ul class="ab-liste">${liste.map(zeile).join('')}</ul>`;
+}
+
+/** Muster, die der Lieferant nicht liefern kann: wer, was - weiter geht es in der Packstation. */
+function gesperrtHtml(ab) {
+  const g = ab.positionen.filter(x => x.gesperrt);
+  if (!g.length) return '';
+  return `<div class="notice crit ab-aktion"><strong>Muster nicht lieferbar:</strong> ${esc(g.map(x => titelVon(x.pos)).join(' · '))} – Kunde informieren, weiter in der <a href="#/kunden?tab=muster">Packstation</a>.</div>`;
+}
+
+const AMPEL_TITEL = {
+  blockiert: 'Bestellangaben fehlen – so kann nicht bestellt werden',
+  gesperrt: 'Ein Muster kann der Lieferant nicht liefern – Kunde informieren (Packstation)',
+  eintragen: 'Umschlag gepackt, aber nicht als verschickt eingetragen – der Kunde hat keine Versandmail',
+};
+
+/** Alles da, der Umschlag steht in der Packstation aber nicht unter "Packen": wohin damit. */
+function packstationHtml(e) {
+  if (e.gruende.includes('eintragen')) return '<div class="notice crit ab-aktion"><strong>Gepackt, nicht eingetragen:</strong> Umschlag zur Post bringen und als verschickt eintragen – in der <a href="#/kunden?tab=muster&amp;mpbereich=gepackt">Packstation</a>.</div>';
+  if (e.gruende.includes('packstation')) return '<p class="small ab-aktion">Alle Muster sind da – der Umschlag steht in der <a href="#/kunden?tab=muster&amp;mpbereich=klaeren">Packstation unter „Zu klären“</a>.</p>';
+  return '';
 }
 
 function auftragKarte({ a, ab, e }) {
+  const amp = auftragsAmpel(ab, e);
   const k = kundeUndOrt(a.id);
   const wer = [k.name, k.ort].filter(Boolean).join(' · ');
-  const inhalt = ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab)
-    : ab.jetzt === 'lieferung' ? lieferungHtml(a, ab, e)
-    : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`;
+  const inhalt = gesperrtHtml(ab) + packstationHtml(e) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab) + selbstHtml(ab)
+    : ['bestellt', 'lieferung'].includes(ab.jetzt) ? lieferungHtml(a, ab, e)
+    : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`);
   const bestellt = ab.bestelltAm && ab.jetzt !== 'vorbereiten' ? `<span class="small muted">bestellt ${esc(fmtDate(ab.bestelltAm))}</span>` : '';
-  return `<section class="card ab-karte${ab.ungeklaert.length || e.verzug.length ? ' ab-mit-problem' : ''}">
+  return `<section class="card ab-karte${ampelRand(amp?.stufe, 'karte')}">
     <div class="ab-kopf"><h3><a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a>${wer ? ` <span class="ab-kunde">${esc(wer)}</span>` : ''}</h3>
-      <span class="small muted">eingegangen ${esc(fmtDate(a.datum))}</span>${bestellt}</div>
+      ${amp ? ampelPlakette(amp.stufe, amp.wort, { titel: AMPEL_TITEL[amp.grund] || warteTitel(amp) }) : ''}
+      <span class="small muted">eingegangen ${esc(fmtDate(a.datum))}</span>${bestellt}${lieferwegeAuftrag(a.positionen, afEintragFuer)}</div>
     ${schrittLeiste(ab)}
     <div class="ab-inhalt">${inhalt}</div>
   </section>`;
@@ -95,22 +138,38 @@ function terminHtml(a) {
 
 const informiertFuer = id => einkauf.bestellungen?.kundeInformiert?.[id] || null;
 
-/** Schritt 4, Ware bei uns: Kunde informieren - fertiger Text, danach abhaken. */
+/**
+ * Schritt 4, Ware bei uns: Kunde informieren - fertiger Text, danach abhaken. Nur wenn ALLES da ist,
+ * was zu uns kommt; bei einer Teillieferung steht stattdessen ruhig, was noch fehlt (kein Gelb:
+ * zu tun ist nichts, ausser zu warten).
+ */
 function informierenHtml(a, e) {
-  if (!e.wareDa.length) return '';
+  const teil = e.teillieferung ? `<p class="small ab-teilstand">${esc(teilstandText(null, e, { lieferantName }))}</p>` : '';
   const inf = informiertFuer(a.id);
-  if (inf) return `<p class="small ab-informiert" style="margin:8px 0 0">✓ Kunde informiert am ${esc(fmtDate(inf.am))}${inf.von ? ` (${esc(inf.von)})` : ''} – Termin für Lieferung, Verlegung oder Abholung abstimmen.${referenzKnopf(a)}</p>`;
+  if (inf && e.wareDa.length) return `${teil}<p class="small ab-informiert" style="margin:8px 0 0">✓ Kunde informiert am ${esc(fmtDate(inf.am))}${inf.von ? ` (${esc(inf.von)})` : ''} – Termin für Lieferung, Verlegung oder Abholung abstimmen.${referenzKnopf(a)}</p>`;
+  if (!e.gruende.includes('informieren')) return teil;
   const lesend = istNurLesend();
   return `<div class="notice warn ab-aktion"><strong>Ware ist da – Kunde noch nicht informiert.</strong>
     ${lesend ? '' : `<div class="ab-knoepfe"><button type="button" class="btn btn-primary btn-sm" data-ab-kunde="${esc(a.id)}">Nachricht an Kunde</button>
     <button type="button" class="btn btn-sm" data-ab-informiert="${esc(a.id)}">Kunde informiert</button></div>`}</div>`;
 }
 
-/** Bestellt, aber nach mehr als 10 Werktagen (bzw. nach dem bestaetigten Termin) nicht da. */
+/**
+ * Bestellt und noch nicht da (lib/ampel.mjs): gelb ab 7 Tagen nachhaken, rot ab 14 Tagen oder nach
+ * dem bestaetigten Liefertermin. Die Farbe folgt der dringendsten Position.
+ */
 function verzugHtml(a, ab, e) {
   if (!e.verzug.length) return '';
-  const max = Math.max(...e.verzug.map(x => x.werktage));
-  return `<div class="notice warn ab-aktion"><strong>Beim Lieferanten nachfragen:</strong> ${plural(e.verzug.length, 'Artikel', 'Artikel')} seit ${max} Werktagen bestellt und noch nicht da.
+  const rot = e.verzug.filter(x => x.ampel.stufe === 'rot');
+  const termin = e.verzug.filter(x => x.ampel.grund === 'termin').map(x => x.ampel.termin).sort()[0];
+  const ohneTermin = e.verzug.filter(x => x.ampel.grund !== 'termin');
+  // Tage seit "bestellt" nur, wo kein Termin gilt - beim Termin zaehlen die Tage ab dem Termin.
+  const max = ohneTermin.length ? Math.max(...ohneTermin.map(x => x.tage ?? 0)) : null;
+  const was = [
+    termin ? `bestätigter Liefertermin ${fmtDate(termin)} überschritten` : null,
+    max !== null ? `seit ${plural(max, 'Tag', 'Tagen')} bestellt und noch nicht da` : null,
+  ].filter(Boolean).join(', ');
+  return `<div class="notice ${rot.length ? 'crit' : 'warn'} ab-aktion"><strong>${rot.length ? 'Überfällig – beim Lieferanten nachfragen:' : 'Beim Lieferanten nachhaken:'}</strong> ${plural(e.verzug.length, 'Artikel', 'Artikel')} ${esc(was)}.
     ${istNurLesend() ? '' : `<div class="ab-knoepfe"><button type="button" class="btn btn-sm" data-ab-nachfrage="${esc(a.id)}">Nachfrage-Nachricht</button></div>`}</div>`;
 }
 
@@ -141,6 +200,8 @@ function auftragUndAblauf(id) {
 function kundeDialog(id) {
   const x = auftragUndAblauf(id); if (!x) return;
   const { a, ab } = x;
+  // Nie mit halber Artikelliste: "Ihre Ware ist eingetroffen" nur, wenn wirklich alles da ist.
+  if (!einordnung(ab, informiertFuer(a.id), new Date(), { umschlag: umschlagBereich(a.id) }).gruende.includes('informieren')) { toast('Noch nicht alles da – die Nachricht an den Kunden kommt, wenn alles eingetroffen ist.'); return; }
   const k = a.details?.kunde || {};
   const { betreff, text } = kundenNachricht({ auftragName: a.name, kundeName: kundeUndOrt(a.id).name, artikel: ab.beiUns.filter(y => y.art === 'ware').map(y => titelVon(y.pos)) });
   textDialog({ titel: `Nachricht an Kunde · ${a.name}`, an: echt(k.email), telefon: echt(k.telefon), betreff, text,
@@ -150,7 +211,7 @@ function kundeDialog(id) {
 function nachfrageDialog(id) {
   const x = auftragUndAblauf(id); if (!x) return;
   const { a, ab } = x;
-  const e = einordnung(ab, informiertFuer(a.id));
+  const e = einordnung(ab, informiertFuer(a.id), new Date(), { umschlag: umschlagBereich(a.id) });
   // Je Lieferant eine Nachricht; meist ist es einer.
   const je = new Map();
   for (const v of e.verzug) { if (!je.has(v.lieferant)) je.set(v.lieferant, []); je.get(v.lieferant).push(v); }
@@ -204,7 +265,23 @@ export function einkaufKlickAblauf(ev) {
   return false;
 }
 
-const GRUND_TEXT = { bestellen: 'bestellen', ungeklaert: 'klären', informieren: 'Kunde informieren', muster_da: 'Muster verschicken', verzug: 'nachfragen' };
+const GRUND_TEXT = { bestellen: 'bestellen', ungeklaert: 'klären', informieren: 'Kunde informieren', selbst: 'von uns abschicken', muster_da: 'Muster verschicken', gesperrt: 'Muster kommt nicht', verzug: 'nachfragen', eintragen: 'Versand eintragen', packstation: 'in der Packstation klären' };
+
+/**
+ * Bereich des Umschlags in der Packstation je Auftrag ('packen', 'warten', 'klaeren', 'gepackt') - aus
+ * demselben Packstand wie die Kachel "Packbereit". Noch nicht geladen: null, dann gilt die Regel je Auftrag.
+ */
+function umschlagBereich(orderId) {
+  const d = kunden.musterPacken;
+  if (!d?.verfuegbar || d.fehler) return null;
+  const k = (d.kunden || []).find(x => (x.bestellungen || []).some(b => String(b.orderId) === String(orderId)));
+  return k?.bereich || null;
+}
+
+// Art der Auftraege (Inhaber 22.10.: Ware und reine Muster getrennt). "Ware" = mindestens ein Warenartikel.
+const ART_LABEL = { ware: 'Ware', muster: 'Muster', alle: 'Alle' };
+const hatWare = x => x.ab.positionen.some(p => p.art === 'ware');
+const passtArt = (x, art) => art === 'alle' || (art === 'ware' ? hatWare(x) : !hatWare(x));
 // Filter aus den Zahlen auf "Heute" (?ab=…): genau diese Auftraege.
 const FILTER = {
   bestellen: { label: 'Zu bestellen', passt: e => e.gruende.includes('bestellen') || e.gruende.includes('ungeklaert') },
@@ -227,15 +304,16 @@ export function viewEinkaufAblauf() {
   ensureEinkaufBestellungen();
   ensureEinkaufAuftragsstatus();
   ensureEinkaufLieferanten();
+  ensureMusterPacken();
   const d = einkauf.bestellungen;
   if (!d && einkauf.loadingBestellungen) return '<div class="empty">Lade Bestellungen …</div>';
   if (d?.fehler) return stoerungState(d, 'Die Bestelldaten');
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
-  // Bestellen, klaeren, informieren, nachfragen vor reinem Musterversand (jetztRang), darin
+  // Warenauftraege, dann reine Musterauftraege mit eigenem Schritt, zuletzt Musterversand (jetztRang), darin
   // aeltestes zuerst: wer am laengsten wartet, ist am dringendsten.
   const liste = aktiveAuftraege(d)
-    .map(a => { const ab = auftragsAblauf(a, d, afEintragFuer); return { a, ab, e: einordnung(ab, informiertFuer(a.id)) }; })
-    .sort((x, y) => jetztRang(x.e) - jetztRang(y.e) || String(x.a.datum).localeCompare(String(y.a.datum)));
+    .map(a => { const ab = auftragsAblauf(a, d, afEintragFuer); return { a, ab, e: einordnung(ab, informiertFuer(a.id), new Date(), { umschlag: umschlagBereich(a.id) }) }; })
+    .sort((x, y) => jetztRang(x.e, x.ab) - jetztRang(y.e, y.ab) || String(x.a.datum).localeCompare(String(y.a.datum)));
   if (!liste.length) return emptyState('Keine offenen Kundenbestellungen.', 'Neue Bestellungen aus dem Shop erscheinen hier von selbst.');
   const f = FILTER[state.route.params.get('ab')];
   if (f) {
@@ -243,11 +321,42 @@ export function viewEinkaufAblauf() {
     return `<p class="sub ab-einleitung"><strong>${esc(f.label)}: ${treffer.length}</strong> · <a href="#/einkauf">Alle Aufträge zeigen</a></p>
       ${treffer.length ? `<div class="ab-raster">${treffer.map(auftragKarte).join('')}</div>` : '<p class="small muted">Gerade nichts – alles erledigt.</p>'}`;
   }
-  const jetzt = liste.filter(x => x.e.gruppe === 'jetzt');
-  const zaehl = g => liste.filter(x => x.e.gruende.includes(g)).length;
-  const teile = Object.keys(GRUND_TEXT).map(g => [g, zaehl(g)]).filter(([, n]) => n).map(([g, n]) => `${n} ${GRUND_TEXT[g]}`);
-  return `<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Bestellen und Klären vor Musterversand, darin älteste zuerst.</p>
+  const jetztAlle = liste.filter(x => x.e.gruppe === 'jetzt');
+  // Vorgabe "Ware", solange ein Warenauftrag zu tun ist - sonst "Alle"; "art=alle" waehlt ausdruecklich alle.
+  const gewaehlt = state.route.params.get('art');
+  const art = ART_LABEL[gewaehlt] ? gewaehlt : jetztAlle.some(hatWare) ? 'ware' : 'alle';
+  // Im Filter "Ware" stehen reine Musterauftraege, die nur noch verschickt werden, als eine Zeile: das
+  // Packen laeuft in der Packstation, dort steht dieselbe Zahl (Packbereit).
+  const nurVersand = x => !hatWare(x) && x.e.gruende.length === 1 && x.e.gruende[0] === 'muster_da';
+  // Rote Musterauftraege (kommt nicht, klaeren, ueberfaellig, nicht eingetragen) verschwinden im Filter
+  // "Ware" nicht still hinter dem Chip (Review 06.11.2026): eine rote Zeile mit Sprung zu "Muster".
+  const rotMuster = x => !hatWare(x) && auftragsAmpel(x.ab, x.e)?.stufe === 'rot';
+  const versandZeile = art === 'ware' ? musterProblemZeile(jetztAlle.filter(rotMuster).length) + packbereitZeile(jetztAlle.filter(nurVersand).length) : '';
+  const jetzt = jetztAlle.filter(x => passtArt(x, art));
+  const chips = `<div class="chips ab-art" role="group" aria-label="Aufträge nach Art">${Object.entries(ART_LABEL).map(([k, l]) => `<button type="button" class="chip" data-param="art" data-value="${k}" aria-pressed="${art === k}">${l}<span class="c">${jetztAlle.filter(x => passtArt(x, k)).length}</span></button>`).join('')}</div>`;
+  // Jeder Auftrag zaehlt einmal, nach seinem dringendsten Grund: die Teilzahlen ergeben die Gesamtzahl.
+  const z = grundZahlen(jetzt.map(x => x.e));
+  const teile = GRUND_REIHENFOLGE.filter(g => z[g]).map(g => `${z[g]}× ${GRUND_TEXT[g]}`);
+  const sicht = liste.filter(x => passtArt(x, art));
+  return `${chips}<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.</p>
+    ${versandZeile}
     ${jetzt.length ? `<h2 class="ab-titel">Jetzt zu tun</h2><div class="ab-raster">${jetzt.map(auftragKarte).join('')}</div>` : ''}
-    ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – Nachfrage erst nach ${VERZUG_WERKTAGE} Werktagen`, liste.filter(x => x.e.gruppe === 'unterwegs'))}
-    ${gruppe('kunde', 'Beim Kunden', 'Kunde informiert oder Ware raus – Termin bzw. Abschluss', liste.filter(x => x.e.gruppe === 'beiKunde'))}`;
+    ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – nachhaken ab ${WARTESCHWELLEN.nachhakenTage} Tagen`, sicht.filter(x => x.e.gruppe === 'unterwegs'))}
+    ${gruppe('kunde', 'Beim Kunden', 'Kunde informiert oder Ware raus – Termin bzw. Abschluss', sicht.filter(x => x.e.gruppe === 'beiKunde'))}`;
+}
+
+/**
+ * Eine Zeile statt Musterkarten im Filter "Ware". Sie zaehlt die Auftraege wie der Chip "Muster" -
+ * die Zahl "Packbereit" der Packstation zaehlt Umschlaege und kennt Auftraege ausserhalb der Packliste
+ * (z. B. Zahlung offen) nicht; mit ihr stand "0 Umschläge packbereit" neben einem Musterauftrag (Review 06.11.).
+ */
+export function packbereitZeile(auftraege) {
+  if (!auftraege) return '';
+  return `<p class="small ab-packbereit"><a href="#/kunden?tab=muster&amp;mpbereich=packen">${esc(plural(auftraege, 'Musterauftrag', 'Musteraufträge'))} zum Verschicken → Packstation</a> <span class="muted">· die Karten stehen unter <a href="#/einkauf?art=muster">Muster</a></span></p>`;
+}
+
+/** Rote reine Musterauftraege im Filter "Ware": Zahl und Sprung, die Karten stehen unter "Muster". */
+export function musterProblemZeile(auftraege) {
+  if (!auftraege) return '';
+  return `<p class="small warnc ab-packbereit"><a href="#/einkauf?art=muster">${esc(plural(auftraege, 'Musterauftrag', 'Musteraufträge'))} mit Problem → Muster</a></p>`;
 }

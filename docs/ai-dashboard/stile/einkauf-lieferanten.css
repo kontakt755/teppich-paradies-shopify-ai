@@ -30,8 +30,6 @@
 .lf-posten .t { font-weight: 600; overflow-wrap: anywhere; }
 .lf-posten .s { font-size: .86rem; color: var(--text-2); overflow-wrap: anywhere; }
 .lf-tage { flex: none; padding: 2px 9px; border-radius: 999px; font-size: .78rem; font-weight: 650; background: var(--surface-2); color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.lf-tage.warn { background: var(--warn-soft); color: var(--warn); }
-.lf-tage.crit { background: var(--crit-soft); color: var(--crit); }
 .lf-rest { padding: 4px 18px 10px; font-size: .88rem; color: var(--text-3); }
 
 /* Arbeitsschritte je Karte: Ware bestellen, Muster bestellen, Nachfassen - je ein eigener
@@ -44,8 +42,7 @@
 .lf-stufe-titel p { font-size: .88rem; color: var(--text-2); }
 .lf-nachfassen.warn .lf-stufe-titel h4, .lf-nachfassen.warn .lf-stufe-titel p { color: var(--warn); }
 .lf-nachfassen.crit .lf-stufe-titel h4, .lf-nachfassen.crit .lf-stufe-titel p { color: var(--crit); }
-.lf-nachfassen.warn { box-shadow: inset 3px 0 0 var(--warn); }
-.lf-nachfassen.crit { box-shadow: inset 3px 0 0 var(--crit); }
+/* Der Farbrand steht an jeder Zeile (Ampel, app.css), nicht mehr am ganzen Abschnitt. */
 .lf-ruhig .lf-stufe-titel h4 { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
 .lf-ruhig .lf-stufe-titel h4 b { color: var(--text-2); letter-spacing: 0; }
 .lf-schritt-ruhig .lf-posten .t { font-weight: 550; }
@@ -56,7 +53,6 @@
 .lf-menge { font-weight: 650; font-size: .92rem; overflow-wrap: anywhere; }
 .lf-wer { color: var(--text-3); }
 .lf-grund { margin-top: 2px; font-size: .86rem; font-weight: 650; color: var(--crit); overflow-wrap: anywhere; }
-.lf-blockiert { box-shadow: inset 3px 0 0 var(--crit); }
 .lf-posten-rechts { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .lf-anzahl { font-size: .8rem; color: var(--text-2); white-space: nowrap; }
 .lf-zeilenknopf { min-height: 36px; }
@@ -155,3 +151,12 @@ body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
   .lf-dialog .actions { flex-direction: column-reverse; align-items: stretch; }
 }
 .lf-beleg a { color: var(--text-2); text-decoration: underline dotted; text-underline-offset: 2px; }
+
+/* Warnung vor dem Bestellen: Schaetzung des Rohertrags, nur ein Hinweis (bestellwarnung.mjs). */
+.lf-kosten ul { margin: 6px 0 0; padding-left: 18px; }
+.lf-kosten p { margin: 6px 0 0; }
+.lf-kosten-rechnung { margin-top: 6px; border-collapse: collapse; width: 100%; max-width: 420px; }
+.lf-kosten-rechnung td { padding: 1px 0; overflow-wrap: anywhere; }
+.lf-kosten-rechnung td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; font-variant-numeric: tabular-nums; }
+.lf-kosten-ergebnis td { font-weight: 600; border-top: 1px solid var(--line, currentColor); }
+.lf-kosten-leise { margin: 4px 0; }

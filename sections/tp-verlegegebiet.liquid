@@ -26,6 +26,8 @@
   qa/tests/verlegegebiet-flaeche.test.mjs haelt das fest.
 {% endcomment %}
 
+{%- capture vg_cta_ziel -%}{%- render 'tp-anfrage-ziel', ziel: section.settings.cta_link -%}{%- endcapture -%}
+{%- assign vg_cta_ziel = vg_cta_ziel | strip -%}
 {%- liquid
   assign vg_radius = section.settings.radius | at_least: 30 | at_most: 50
 
@@ -202,7 +204,7 @@
     <ul class="tp-vg__stufen tp-vg__stufen--zonen" role="list">
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
-        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }} (mind. {{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }} je Auftrag).</span>
+        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }} (mind. {{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }} je Auftrag).{% if section.settings.aktionshinweis %} Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis.{% endif %}</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_mitte }} km</span>
@@ -273,7 +275,7 @@
         class="tp-vg__check"
         data-tp-verlegegebiet-form
         {%- if section.settings.cta_link != blank and section.settings.cta_label != blank %}
-          data-cta-url="{{ section.settings.cta_link }}"
+          data-cta-url="{{ vg_cta_ziel }}"
           data-cta-text="{{ section.settings.cta_label | escape }}"
         {%- endif %}
         {%- comment -%} Der Verlegeservice endet bei 50 km, der Versand nicht.
@@ -330,7 +332,7 @@
   {%- if section.settings.cta_zeigen -%}
     <div class="tp-vg__aktionen">
       {%- if section.settings.cta_label != blank and section.settings.cta_link != blank -%}
-        <a class="tp-vg__btn tp-vg__btn--primaer" href="{{ section.settings.cta_link }}">
+        <a class="tp-vg__btn tp-vg__btn--primaer" href="{{ vg_cta_ziel }}">
           {{ section.settings.cta_label | escape }}
         </a>
       {%- endif -%}
@@ -498,6 +500,13 @@
       "label": "Stufen des Rollenware-Service zeigen",
       "info": "Stufen aus den Theme-Einstellungen (TP Verlegeservice) unter der Karte und im Pruefergebnis. Nur auf Teppichboden-Seiten - auf Vinyl- und Treppenseiten gilt der Service nicht.",
       "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "aktionshinweis",
+      "label": "Hinweis \"nur zum regulaeren Preis\" in der kostenlosen Stufe",
+      "info": "Aus nur dort, wo derselbe Satz schon auf der Seite steht (Liefer- und Verlegeservice).",
+      "default": true
     },
     {
       "type": "header",

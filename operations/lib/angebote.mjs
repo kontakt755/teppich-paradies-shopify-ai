@@ -29,6 +29,8 @@ export function angebotEintrag(d) {
       || d.shippingAddress?.phone || d.billingAddress?.phone || null,
     betrag: betrag(d),
     waehrung: d.totalPriceSet?.shopMoney?.currencyCode || 'EUR',
+    // Der WhatsApp-Text nennt Versand nur, wenn er im Entwurf wirklich eingetragen ist.
+    versandEingetragen: Boolean(d.shippingLine),
     erstelltAm: d.createdAt || null,
     aktualisiertAm: d.updatedAt || null,
     abgeschlossenAm: d.completedAt || null,

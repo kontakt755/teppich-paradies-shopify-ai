@@ -35,6 +35,22 @@ Weg des Ereignisses: `Shopify.analytics.publish` → Kundenereignisse (Custom
 Pixel), zusätzlich `window.dataLayer`. Belegt durch
 `qa/tests/service-hauptaktion.test.mjs`.
 
+## Kampagnenfeld über Seitenwechsel (Prüfung 05.11.2026)
+
+Bis 05.11. luden die oberen Knöpfe auf Vinyl, Treppe und Liefer-Service die Seite neu
+(`/pages/x#tp-anfrage` statt `#tp-anfrage`), die Kennung ging verloren und das Feld blieb leer.
+Zahlen vor dem 05.11. unterschätzen deshalb die Anfragen aus Anzeigen.
+
+Seitdem füllt `snippets/tp-herkunft.liquid` das Feld auf jeder Seite:
+
+| Besucher | Herkunft im Formular |
+|---|---|
+| fragt auf der Einstiegsseite an | immer gefüllt |
+| mit Analyse-Einwilligung | bleibt im Tab über beliebig viele Seitenwechsel |
+| ohne Einwilligung | bleibt einen Seitenwechsel, danach leer (zählt als „Formular“) |
+
+Gespeichert wird nur der fertige Text, nie die Klick-ID.
+
 ## Was es schon heute ohne Einschalten gibt
 
 Das Kampagnenfeld steht in jeder Anfrage-Mail, und der Postfach-Lauf trägt die

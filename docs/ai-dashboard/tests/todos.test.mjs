@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 import {
   leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, tonNachAlter, alterText, tageSeit,
   tailscaleHinweis, speicherHinweis,
@@ -43,16 +44,17 @@ test('Sortierung: rot vor gelb vor normal, darin das Aelteste zuerst, sonst Eing
   assert.deepEqual(sortiereTodos(liste).map(t => t.id), ['c-alt', 'c-jung', 'w', 'n-alt', 'n-alt-2', 'n-jung', 'n-ohne']);
 });
 
-test('bezahlt und noch nicht bestellt: ein To-do je Lieferant und Art, mit einem Knopf zum Bestellen', () => {
+test('bezahlt und noch nicht bestellt: Ware je Bestellung, Muster je Lieferant', () => {
   const a = zeile({ name: 'Kunde Eins', tage: 1 });
   const b = zeile({ name: 'Kunde Zwei', tage: 4, positionen: [{}, { lieferant: 'B', istMuster: true, titel: 'Muster: Testvelours' }] });
   const todos = leiteTodosAb({ bestellzeilen: [a, b] }, { sicht: 'laden', jetzt: JETZT });
-  assert.deepEqual(arten(todos), ['bestellen', 'bestellen']);
-  const ware = todos.find(t => /Ware bei Lieferant A/.test(t.titel));
-  assert.ok(ware, 'Ware fuer Lieferant A zusammengefasst');
-  assert.match(ware.kontext, /Kunde Eins, Kunde Zwei · 2 Positionen · bezahlt, Bestellung vor 4 Tagen/);
-  assert.equal(ware.ton, 'warn', 'ab 3 Tagen gelb');
+  assert.deepEqual(arten(todos), ['bestellen', 'bestellen', 'bestellen']);
+  const ware = todos.find(t => /Ware bei Lieferant A bestellen: .* Kunde Zwei/.test(t.titel));
+  assert.ok(ware, 'jede Warenbestellung hat eine eigene Zeile');
+  assert.match(ware.kontext, /bezahlt, Bestellung vor 4 Tagen/);
+  assert.equal(ware.ton, 'crit', 'Ware ab 3 Tagen rot');
   assert.deepEqual(ware.knopf, { text: 'Bestellen', href: '#/einkauf?lf=A' });
+  assert.equal(todos.find(t => /Kunde Eins/.test(t.titel)).ton, 'warn', 'Ware ab einem Tag gelb');
   const muster = todos.find(t => /Muster bei Lieferant B/.test(t.titel));
   // Muster: Produkt (und Farben) statt Menge und "Muster:"-Vorsatz.
   assert.match(muster.kontext, /Kunde Zwei · Testvelours · bezahlt/);
@@ -89,19 +91,23 @@ test('unbezahlt, storniert, Test oder schon bestellt: kein Bestell-To-do', () =>
   assert.deepEqual(todos, []);
 });
 
-test('Verzug: nach mehr als 10 Werktagen ohne Wareneingang nachfragen, ab 16 Werktagen rot', () => {
-  // JETZT ist Donnerstag, 01.10.: vor 8 Tagen = 6 Werktage, vor 15 Tagen = 11, vor 23 Tagen = 16.
+test('Verzug wie im Einkauf (lib/ampel.mjs): ab 7 Tagen nachhaken (gelb), ab 14 Tagen rot', () => {
+  const frisch = zeile({ name: 'Kunde Sechs', tage: 8, positionen: [{ lieferant: 'E' }] });
   const a = zeile({ name: 'Kunde Acht', tage: 10 });
   const b = zeile({ name: 'Kunde Fuenfzehn', tage: 20, positionen: [{ lieferant: 'C' }] });
   const c = zeile({ name: 'Kunde Lang', tage: 30, positionen: [{ lieferant: 'D' }] });
   const statusAlle = {
+    ...stand(frisch, 0, { status: 'bestellt', bestelltAm: vorTagen(6) }),
     ...stand(a, 0, { status: 'bestellt', bestelltAm: vorTagen(8) }),
     ...stand(b, 0, { status: 'bestellt', bestelltAm: vorTagen(15) }),
     ...stand(c, 0, { status: 'bestellt', bestelltAm: vorTagen(23) }),
   };
-  const todos = leiteTodosAb({ bestellzeilen: [a, b, c], statusAlle }, { sicht: 'laden', jetzt: JETZT });
-  assert.deepEqual(todos.map(t => [t.art, t.ton, t.alterTage]), [['nachhaken', 'crit', 23], ['nachhaken', 'warn', 15]]);
-  assert.equal(todos[1].titel, 'Beim Lieferanten nachfragen: Ware seit 15 Tagen bestellt, noch nicht da');
+  const todos = leiteTodosAb({ bestellzeilen: [frisch, a, b, c], statusAlle }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(todos.map(t => [t.art, t.ton, t.alterTage]), [['nachhaken', 'crit', 23], ['nachhaken', 'crit', 15], ['nachhaken', 'warn', 8]], '6 Tage: noch kein To-do');
+  // Die Tage stehen einmal, in der Marke mit Bezug (#1996) - vorher "Ware seit 15 Tagen bestellt" im Titel und "15 Tage" daneben.
+  assert.equal(todos[1].titel, 'Beim Lieferanten nachfragen: Ware bestellt, noch nicht da');
+  assert.equal(todos[1].alterBezug, 'lieferant');
+  assert.equal(alterText(todos[1].alterTage, todos[1].alterBezug), '15 Tage beim Lieferanten');
   assert.match(todos[1].kontext, /^Lieferant C · Kunde Fuenfzehn/);
   assert.equal(todos[1].knopf.href, '#/einkauf?ab=verzug', 'direkt in die Verzugsliste mit fertiger Nachfrage');
 });
@@ -112,6 +118,7 @@ test('blockierte Bestellung ("Zuerst klären") ist rot und erscheint nicht zusae
   assert.deepEqual(arten(todos), ['blockiert']);
   assert.equal(todos[0].ton, 'crit');
   assert.equal(todos[0].kontext, 'Kunde Rot · 1 Position ohne Großhändler-ID · Verlegung gebucht');
+  assert.equal(alterText(todos[0].alterTage, todos[0].alterBezug), 'Kunde wartet 2 Tage', 'gezaehlt seit der Kundenbestellung (#1996)');
   assert.match(todos[0].knopf.href, /^#\/einkauf\?/);
   assert.equal(new URLSearchParams(todos[0].knopf.href.split('?')[1]).get('auftrag'), rot.orderId);
 });
@@ -140,8 +147,11 @@ test('Ware liegt bei uns: ein To-do je Bestellung, Alter seit Wareneingang', () 
   const z = zeile({ name: 'Kunde Lager', tage: 20, positionen: [{}, {}] });
   const statusAlle = { ...stand(z, 0, { status: 'geliefert', geliefertAm: vorTagen(2) }), ...stand(z, 1, { status: 'geliefert', geliefertAm: vorTagen(9) }) };
   const todos = leiteTodosAb({ bestellzeilen: [z], statusAlle }, { sicht: 'laden', jetzt: JETZT });
-  assert.deepEqual(todos.map(t => [t.art, t.alterTage, t.ton]), [['rausgeben', 9, 'warn']]);
+  assert.deepEqual(todos.map(t => [t.art, t.alterTage, t.ton]), [['rausgeben', 9, 'crit']]);
   assert.match(todos[0].titel, /Ware ist da – an Kunde Lager rausgeben/);
+  // Eine Tageszahl, mit Bezug in der Marke (#1996); der Text wiederholt sie nicht mehr.
+  assert.equal(alterText(todos[0].alterTage, todos[0].alterBezug), 'Liegt seit 9 Tagen hier');
+  assert.doesNotMatch(todos[0].kontext, /seit \d+ Tag/);
 });
 
 test('offene Faelle: Angebote erst nach einer Woche ohne Antwort, Warenkoerbe nie', () => {
@@ -177,7 +187,7 @@ test('Verkaeufer (Laden): Kunden- und Einkaufsschritte, eigene und freie Team-Au
   const kunde = zeile({ name: 'Kunde Eins', tage: 0 });
   const todos = leiteTodosAb({ bestellzeilen: [kunde], aufgaben: AUFGABEN, freigaben: FREIGABEN, shopwache: { verfuegbar: true, ampel: 'rot', befunde: [{ titel: 'Startseite' }] } },
     { sicht: 'laden', ich: 'vk', jetzt: JETZT });
-  assert.deepEqual(todos.map(t => t.id), ['aufgabe:a1', 'aufgabe:a2', 'bestellen:A|ware']);
+  assert.deepEqual(todos.map(t => t.id), ['aufgabe:a1', 'aufgabe:a2', `bestellen:${kunde.orderId}:ware`]);
   assert.equal(todos[0].kontext, 'Kunden · überfällig seit 3 Tagen · noch niemandem zugewiesen');
   assert.equal(todos[0].ton, 'crit');
   assert.equal(todos[1].kontext, 'Laden · heute fällig');
@@ -280,7 +290,7 @@ test('Wer wartet auf was: jede laufende Bestellung genau einmal, in der Spalte d
   ]);
   assert.equal(w.gesamt, 10);
   const ziel = new URLSearchParams(w.wir[0].href.split('?')[1]);
-  assert.equal(ziel.get('kunde'), rot.kundenSchluessel); assert.equal(ziel.get('auftrag'), rot.orderId);
+  assert.equal(ziel.get('kunde'), kundenLinkWert(rot.kundenSchluessel)); assert.equal(ziel.get('auftrag'), rot.orderId);
   assert.equal(w.kunde[1].href, '#/kunden?tab=angebote');
 });
 
@@ -489,6 +499,16 @@ test('Auslauf-Pruefung: Farben ohne Handmuster ("nur in Format") werden ein eige
   assert.deepEqual(mit({ geprueftAm: vorTagen(9), befunde: [ohne] }).map(t => t.id).sort(), ['auslauf-muster', 'auslauf-stumm']);
 });
 
+test('Sicherung ausser Haus: still ohne Stand und bei frischer Kopie, sonst rot mit Grund', () => {
+  const mit = sicherungAusserHaus => leiteTodosAb({ shopwache: { verfuegbar: true, sicherungAusserHaus } }, { sicht: 'website', jetzt: JETZT });
+  for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }]) assert.deepEqual(mit(s), []);
+  const alt = mit({ status: 'alt', letzterErfolg: vorTagen(3) });
+  assert.deepEqual([alt.length, alt[0].id, alt[0].ton, alt[0].titel], [1, 'sicherung-ausser-haus', 'crit', 'Sicherungskopie in der Dropbox fehlt']);
+  assert.match(alt[0].kontext, /^letzte Kopie /);
+  const gescheitert = mit({ status: 'ok', letzterErfolg: vorTagen(1), letzterFehler: { am: vorTagen(0), meldung: 'Zielordner nicht erreichbar' } });
+  assert.match(gescheitert[0].kontext, /^Zielordner nicht erreichbar · letzte Kopie /);
+});
+
 test('Sicherung: verpasst wird gelb, ueber 48 Std., gescheitert oder unlesbar rot, sonst nichts', () => {
   const mit = sicherung => leiteTodosAb({ shopwache: { verfuegbar: true, sicherung } }, { sicht: 'website', jetzt: JETZT });
   for (const s of [null, { status: 'ok', letzterErfolg: vorTagen(0) }, { status: 'unbekannt', letzterErfolg: null }]) assert.deepEqual(mit(s), []);
@@ -557,7 +577,7 @@ test('Sicht "Alles": wirklich alles - auch normale Laden-Arbeit, die die frueher
   const alles = leiteTodosAb(quellen, { sicht: 'alles', ich: 'chef', alle: true, jetzt: JETZT });
   const laden = leiteTodosAb(quellen, { sicht: 'laden', ich: 'chef', alle: true, jetzt: JETZT });
   const website = leiteTodosAb(quellen, { sicht: 'website', ich: 'chef', alle: true, jetzt: JETZT });
-  assert.ok(alles.some(t => t.id === 'bestellen:A|ware'), 'neue bezahlte Bestellung steht in Alles');
+  assert.ok(alles.some(t => t.id === `bestellen:${neu.orderId}:ware`), 'neue bezahlte Bestellung steht in Alles');
   for (const t of [...laden, ...website]) assert.ok(alles.some(x => x.id === t.id), `${t.id} fehlt in Alles`);
   assert.ok(alles.some(t => t.art === 'freigabe'), 'Freigaben gehoeren zu Alles');
   assert.equal(zaehleTodos(quellen, { ich: 'chef', jetzt: JETZT }).alles, alles.length, 'Chip-Zahl = Listenlaenge');
@@ -674,4 +694,164 @@ test('Musterautomatik: von Hand bestellt, Wochenende und Faelle ohne Position er
   const ohnePosition = zeile({ tage: 5, positionen: [pos] });
   ohnePosition.musterAutomatik = { klaeren: [{ grund: 'Bestellumfang geändert', seit: vorTagen(5) }] };
   assert.ok(!arten(leiteTodosAb({ bestellzeilen: [ohnePosition] }, { sicht: 'laden', jetzt: JETZT })).includes('muster_klaeren'));
+});
+
+// Liegengebliebene Bestellungen (03.11.: bezahlte Ware lag unbemerkt, Bestelltes stand als "bestellen").
+const belegZeile = (z, felder = {}) => ({ orderId: z.orderId, lieferant: 'A', nurMuster: false, ab: null, lieferschein: null, ...felder });
+
+test('Ware ohne Status und ohne Beleg: "kein zugeordneter Beleg" steht nur, wenn die Belege geladen sind', () => {
+  const z = zeile({ name: 'Kunde Roh', tage: 4 });
+  const ohne = leiteTodosAb({ bestellzeilen: [z] }, { sicht: 'laden', jetzt: JETZT })[0];
+  assert.doesNotMatch(ohne.kontext, /kein Beleg/);
+  const mit = leiteTodosAb({ bestellzeilen: [z], belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT })[0];
+  assert.match(mit.kontext, /kein zugeordneter Beleg/);
+  assert.doesNotMatch(mit.kontext, /Postfach/);
+  assert.equal(mit.ton, 'crit');
+});
+
+test('Ware ohne Status, aber mit Beleg: abhaken statt bestellen, Lieferschein ab 4 Tagen rot', () => {
+  const z = zeile({ name: 'Kunde Beleg', tage: 5 });
+  const belegZeilen = [belegZeile(z, { ab: { art: 'ab', datum: vorTagen(5) }, lieferschein: { art: 'lieferschein', datum: vorTagen(1) } })];
+  const frisch = leiteTodosAb({ bestellzeilen: [z], belegZeilen }, { sicht: 'laden', jetzt: JETZT })[0];
+  assert.match(frisch.titel, /Laut Beleg bestellt, im Einkauf abhaken: .* Kunde Beleg/);
+  assert.match(frisch.kontext, /AB .* · LS /);
+  assert.equal(frisch.ton, 'warn', 'Lieferschein von gestern: gelb');
+  belegZeilen[0].lieferschein.datum = vorTagen(4);
+  const alt = leiteTodosAb({ bestellzeilen: [z], belegZeilen }, { sicht: 'laden', jetzt: JETZT })[0];
+  assert.equal(alt.ton, 'crit');
+  assert.match(alt.kontext, /noch nicht raus/);
+  const avis = leiteTodosAb({ bestellzeilen: [z], belegZeilen: [belegZeile(z, { lieferschein: { art: 'avis', datum: vorTagen(5) } })] }, { sicht: 'laden', jetzt: JETZT })[0];
+  assert.equal(avis.ton, 'warn', 'Avis kuendigt nur an: bleibt gelb');
+  assert.doesNotMatch(avis.kontext, /noch nicht raus/);
+});
+
+test('Ware bestellt ohne AB: ab 2 Werktagen nachfassen, nicht bei Beleg, Termin, geprüfter AB oder fehlenden Belegen', () => {
+  const z = zeile({ name: 'Kunde Still', tage: 9 });
+  const statusAlle = stand(z, 0, { status: 'bestellt', bestelltAm: vorTagen(4) });
+  const todos = leiteTodosAb({ bestellzeilen: [z], statusAlle, belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(arten(todos), ['keine_bestaetigung']);
+  assert.equal(todos[0].ton, 'warn');
+  assert.match(todos[0].titel, /AB fehlt – beim Lieferanten nachfassen: .* Kunde Still/);
+  const mitAb = stand(z, 0, { status: 'bestellt', bestelltAm: vorTagen(4), beschaffung: { ab: { nummer: 'AB-7', pruefung: { menge: 'ok', masse: 'ok', lieferweg: 'ok', zuschlaege: 'ok' } }, liefertermin: '2026-10-20' } });
+  assert.deepEqual(arten(leiteTodosAb({ bestellzeilen: [z], statusAlle: mitAb, belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT })), [], 'geprüfte AB: kein Nachfassen');
+  assert.deepEqual(arten(leiteTodosAb({ bestellzeilen: [z], statusAlle }, { sicht: 'laden', jetzt: JETZT })), [], 'ohne Belege nicht behaupten');
+  assert.deepEqual(arten(leiteTodosAb({ bestellzeilen: [z], statusAlle, belegZeilen: [belegZeile(z, { ab: { art: 'ab', datum: vorTagen(3) } })] }, { sicht: 'laden', jetzt: JETZT })), []);
+  const mitTermin = stand(z, 0, { status: 'bestellt', bestelltAm: vorTagen(4), beschaffung: { liefertermin: '2026-10-20' } });
+  assert.deepEqual(arten(leiteTodosAb({ bestellzeilen: [z], statusAlle: mitTermin, belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT })), []);
+  // JETZT ist Donnerstag: gestern bestellt = 1 Werktag (noch warten), vorgestern = 2 Werktage (nachfassen).
+  const frisch = stand(z, 0, { status: 'bestellt', bestelltAm: vorTagen(1) });
+  assert.deepEqual(arten(leiteTodosAb({ bestellzeilen: [z], statusAlle: frisch, belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT })), []);
+  const zweiWerktage = stand(z, 0, { status: 'bestellt', bestelltAm: vorTagen(2) });
+  assert.deepEqual(arten(leiteTodosAb({ bestellzeilen: [z], statusAlle: zweiWerktage, belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT })), ['keine_bestaetigung']);
+  // Freitag bestellt, Montag geschaut: nur 1 Werktag - das Wochenende zaehlt nicht.
+  const montag = new Date('2026-10-05T10:00:00');
+  const freitag = stand(z, 0, { status: 'bestellt', bestelltAm: '2026-10-02T16:00:00' });
+  assert.deepEqual(arten(leiteTodosAb({ bestellzeilen: [z], statusAlle: freitag, belegZeilen: [] }, { sicht: 'laden', jetzt: montag })).filter(a => a === 'keine_bestaetigung'), []);
+});
+
+test('Mehrere Warenlieferanten: die AB von A sagt nichts ueber die Ware von B', () => {
+  const z = zeile({ name: 'Kunde Zwei Quellen', tage: 5, positionen: [{ lieferant: 'A', titel: 'Boden von A' }, { lieferant: 'B', titel: 'Boden von B' }] });
+  const abVonA = belegZeile(z, { ab: { art: 'ab', datum: vorTagen(5) } });
+  // Beide ohne Status: A zum Abhaken, B bleibt rot zum Bestellen.
+  const offen = leiteTodosAb({ bestellzeilen: [z], belegZeilen: [abVonA] }, { sicht: 'laden', jetzt: JETZT });
+  assert.equal(offen.length, 2);
+  const bestellen = offen.find(t => /Ware bei Lieferant B bestellen/.test(t.titel));
+  assert.equal(bestellen.ton, 'crit');
+  assert.match(bestellen.kontext, /Boden von B/);
+  assert.match(bestellen.kontext, /kein zugeordneter Beleg/);
+  assert.deepEqual(bestellen.knopf, { text: 'Bestellen', href: '#/einkauf?lf=B' });
+  const abhaken = offen.find(t => /Laut Beleg bestellt/.test(t.titel));
+  assert.equal(abhaken.ton, 'warn');
+  assert.match(abhaken.kontext, /Lieferant A · 12 m² Boden von A/);
+  assert.notEqual(abhaken.id, bestellen.id);
+  // Belege von beiden: je Lieferant eine Abhak-Zeile, keine Kennung doppelt.
+  const beide = leiteTodosAb({ bestellzeilen: [z], belegZeilen: [abVonA, belegZeile(z, { lieferant: 'B', lieferschein: { art: 'lieferschein', datum: vorTagen(1) } })] }, { sicht: 'laden', jetzt: JETZT });
+  assert.equal(beide.length, 2);
+  assert.ok(beide.every(t => /Laut Beleg bestellt/.test(t.titel)));
+  assert.equal(new Set(beide.map(t => t.id)).size, 2);
+  // Beide bestellt, nur A bestaetigt: B bleibt als fehlender Beleg stehen.
+  const statusAlle = { ...stand(z, 0, { status: 'bestellt', bestelltAm: vorTagen(4) }), ...stand(z, 1, { status: 'bestellt', bestelltAm: vorTagen(4) }) };
+  const bestellt = leiteTodosAb({ bestellzeilen: [z], statusAlle, belegZeilen: [abVonA] }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(arten(bestellt), ['keine_bestaetigung']);
+  assert.match(bestellt[0].kontext, /Lieferant B · 12 m² Boden von B/);
+  assert.doesNotMatch(bestellt[0].kontext, /Boden von A/);
+  // Beleg von B nur zu dessen Mustern: zaehlt nicht fuer die Ware.
+  const nurMuster = belegZeile(z, { lieferant: 'B', nurMuster: true, ab: { art: 'ab', datum: vorTagen(2) } });
+  assert.ok(leiteTodosAb({ bestellzeilen: [z], belegZeilen: [nurMuster] }, { sicht: 'laden', jetzt: JETZT }).every(t => !/Laut Beleg/.test(t.titel)));
+});
+
+test('Gesperrtes Muster: rot, Kunde informieren - statt ewig "bestellt" oder "bestellen"', () => {
+  const z = zeile({ name: 'Kunde Sperre', tage: 10, positionen: [
+    { istMuster: true, lieferant: 'A', titel: 'Muster Testvelours', farbe: 'Sand' },
+    { istMuster: true, lieferant: 'A', titel: 'Muster Testvelours', farbe: 'Grau' },
+  ] });
+  z.gesperrteMuster = [z.auftrag.positionen[0].lineItemId];
+  const statusAlle = { ...stand(z, 0, { status: 'bestellt', bestelltAm: vorTagen(9) }), ...stand(z, 1, { status: 'geliefert', geliefertAm: vorTagen(1) }) };
+  const todos = leiteTodosAb({ bestellzeilen: [z], statusAlle }, { sicht: 'laden', jetzt: JETZT });
+  const t = todos.find(x => x.art === 'muster_gesperrt');
+  assert.equal(t.ton, 'crit');
+  assert.match(t.titel, /Muster nicht lieferbar, Kunde informieren: .* Kunde Sperre/);
+  assert.match(t.kontext, /Sand/);
+  assert.doesNotMatch(t.kontext, /Grau/);
+  assert.match(t.kontext, /Packstation/);
+  assert.equal(alterText(t.alterTage, t.alterBezug), 'Kunde wartet 10 Tage', 'seit der Kundenbestellung, nicht seit der Lieferantenbestellung (#1996)');
+  assert.doesNotMatch(t.kontext, /nicht verfügbar/, 'der Schritt schliesst die ganze Bestellung ab, passt bei gemischten Bestellungen nicht');
+  const erledigt = { ...statusAlle, ...stand(z, 0, { status: 'erledigt' }) };
+  assert.ok(!leiteTodosAb({ bestellzeilen: [z], statusAlle: erledigt }, { sicht: 'laden', jetzt: JETZT }).some(x => x.art === 'muster_gesperrt'), 'abgeschlossen: To-do weg');
+});
+
+test('w-222: To-do-Liste und Zaehler teilen Entscheidungen gleich zu', async () => {
+  const { entscheidungsGruppen } = await import('../lib/model.mjs');
+  const freigaben = [
+    { number: 21, title: 'Liegt beim Inhaber', status: 'freigabe', open: true, owner: 'kontakt755', updatedAt: vorTagen(1) },
+    { number: 22, title: 'Ohne Entscheider', status: 'freigabe', open: true, updatedAt: vorTagen(1) },
+    { number: 23, title: 'Fremder Entscheider', status: 'freigabe', open: true, overdue: true, decision: { decider: 'jemand-anders' }, updatedAt: vorTagen(5) },
+    { number: 24, title: 'Fremder Zustaendiger', status: 'freigabe', open: true, owner: 'jemand-anders', updatedAt: vorTagen(1) },
+    { number: 25, title: 'Pruefung bleibt', status: 'review', reviewer: 'mensch', open: true, owner: 'jemand-anders', updatedAt: vorTagen(1) },
+    { number: 26, title: 'Geschlossen', status: 'freigabe', open: false, updatedAt: vorTagen(1) },
+  ];
+  const todos = leiteTodosAb({ freigaben }, { sicht: 'alles', jetzt: JETZT }).filter(t => t.art === 'freigabe');
+  assert.deepEqual(todos.map(t => t.id).sort(), ['freigabe:21', 'freigabe:22', 'freigabe:25']);
+  assert.ok(!todos.some(t => t.ton === 'crit'), 'die ueberfaellige fremde Entscheidung ist hier nicht rot');
+  const g = entscheidungsGruppen(freigaben);
+  assert.deepEqual(g.fuerDich.map(t => t.number), [21, 22]);
+  assert.deepEqual(g.beiAnderen.map(t => t.number), [23, 24]);
+});
+
+test('Lieferantenstand: angefragte Ware statt „bestellen“, nach 2 Werktagen nachfassen; abweichende AB als eigenes To-do', () => {
+  const z = zeile({ name: 'Kunde Anfrage', tage: 1 });
+  const anfrage = am => stand(z, 0, { beschaffung: { anfrage: { am, lieferant: 'Lieferant A' } } });
+  const frisch = leiteTodosAb({ bestellzeilen: [z], statusAlle: anfrage('2026-09-30'), belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(arten(frisch), ['anfrage']);
+  assert.equal(frisch[0].ton, '');
+  assert.match(frisch[0].titel, /Lieferant angefragt, Antwort offen: .* Kunde Anfrage/);
+  assert.match(frisch[0].kontext, /Lieferant A · .* · angefragt am 30\.09\.2026/);
+  const alt = leiteTodosAb({ bestellzeilen: [z], statusAlle: anfrage('2026-09-29'), belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT })[0];
+  assert.equal(alt.ton, 'warn');
+  assert.match(alt.titel, /Anfrage nachfassen/);
+  const abw = stand(z, 0, { status: 'bestellt', bestelltAm: vorTagen(1), beschaffung: { liefertermin: '2026-10-20', ab: { nummer: 'AB-3', pruefung: { menge: 'ok', masse: 'ok', lieferweg: 'abweichung', zuschlaege: 'ok' }, abweichung: 'AB sagt Abholung', geprueftAm: vorTagen(0) } } });
+  const t = leiteTodosAb({ bestellzeilen: [z], statusAlle: abw, belegZeilen: [] }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(arten(t), ['ab_abweichung']);
+  assert.match(t[0].kontext, /Abweichung: AB sagt Abholung/);
+});
+
+test('Gesperrtes Muster ohne Artikelnummer: kein "Zuerst klären", sondern "Muster nicht lieferbar" (Review 06.11.2026)', () => {
+  // Wie #T1110: m1 gesperrt und ohne Großhändler-ID (einziger roter Grund), m2 geliefert.
+  const z = zeile({ name: 'Kunde Sperre', tage: 4, ampel: 'rot', hinweise: ['1 Position(en) ohne Großhändler-ID'], positionen: [
+    { istMuster: true, lieferant: 'UNGEKLAERT', titel: 'Muster Testfliese', farbe: 'Senf' },
+    { istMuster: true, lieferant: 'A', titel: 'Muster Testfliese', farbe: 'Gelb' },
+  ] });
+  const [m1] = z.auftrag.positionen.map(p => p.lineItemId);
+  Object.assign(z.auftrag, { ohneIdPositionen: [m1], ampelOhneIdGrund: 'gruen' });
+  z.gesperrteMuster = [m1];
+  const statusAlle = stand(z, 1, { status: 'geliefert', geliefertAm: vorTagen(1) });
+  const todos = leiteTodosAb({ bestellzeilen: [z], statusAlle }, { sicht: 'laden', jetzt: JETZT });
+  assert.ok(!todos.some(t => t.art === 'blockiert'), 'kein "Zuerst klären" fuer ein Muster, das nie bestellt wird');
+  const t = todos.find(x => x.art === 'muster_gesperrt');
+  assert.ok(t, 'To-do "Muster nicht lieferbar" entsteht');
+  assert.deepEqual(t.musterSchluessel, [`${z.orderId}::${m1}`]);
+  assert.ok(!werWartet({ bestellzeilen: [z], statusAlle }, { jetzt: JETZT }).wir.some(x => x.schritt === 'Zuerst klären'));
+  // Ohne Sperrliste bleibt die Bestellung blockiert.
+  const ohne = { ...z, gesperrteMuster: [] };
+  assert.ok(leiteTodosAb({ bestellzeilen: [ohne], statusAlle }, { sicht: 'laden', jetzt: JETZT }).some(x => x.art === 'blockiert'));
 });

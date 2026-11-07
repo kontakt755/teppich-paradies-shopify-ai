@@ -19,6 +19,9 @@ import { schliesseMehr } from '../kern/navigation.mjs';
 import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
 import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-etiketten-status.mjs';
 import { musterlagerBlock, musterlagerEingabe } from './lexikon-musterlager.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
+import { ZEICHEN } from '../lib/ampel.mjs';
+import { ampelPlakette, ampelRand } from '../bausteine/ampel.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
@@ -40,14 +43,18 @@ export function lexikonEingabe(e) {
   return true;
 }
 
+/** Filter der Bestellampel ("Nur rot"/"Nur gelb"); alles andere heisst: kein Filter. */
+const ampelFilter = () => (['rot', 'gelb'].includes(state.route.params.get('lampel')) ? state.route.params.get('lampel') : '');
+
 function ensureLexikonListe() {
   const q = state.route.params.get('lq') || '';
   const seite = state.route.params.get('lseite') || '1';
-  const key = `${q}::${seite}`;
+  const ampel = ampelFilter();
+  const key = `${q}::${seite}::${ampel}`;
   if (lexikon.listeKey === key && (lexikon.liste || lexikon.loadingListe)) return;
   lexikon.listeKey = key;
   lexikon.loadingListe = true;
-  fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q, page: seite })}`).then(d => {
+  fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q, page: seite, ...(ampel ? { ampel } : {}) })}`).then(d => {
     if (lexikon.listeKey !== key) return; // Antwort einer aelteren Eingabe
     lexikon.liste = d; lexikon.loadingListe = false;
     if (state.route.view === 'lexikon') render();
@@ -206,20 +213,28 @@ function preisZelle(v) {
 }
 
 /**
+ * Bestellampel eines Produkts (lib/ampel.mjs, gerechnet im Server): Plakette mit Zeichen und
+ * Wort, daneben der Grund. Ruhig steht nichts da - der fruehere Punkt (gruen/Ring) sprach nur
+ * ueber Farbe und meinte bloss "Link vorhanden".
+ */
+function ampelZeile(a) {
+  if (!a?.stufe) return '';
+  return `<div class="lex-ampel">${ampelPlakette(a.stufe, a.wort)}${a.text ? `<span class="ampel-grund">${esc(a.text)}</span>` : ''}</div>`;
+}
+
+/**
  * Ein Treffer als Karte: Bild, Name, Gruppe und Farbenzahl, rechts der Preis. Eine Tabelle
  * laesst sich am Handy nicht mit dem Daumen treffen - nachgeschlagen wird aber gerade unterwegs.
  */
 function lexikonTrefferKarte(p) {
   const bild = p.bild ? `<img class="lex-bild" src="${esc(p.bild)}" alt="" loading="lazy">` : `<span class="lex-bild" aria-hidden="true"></span>`;
   const preis = preisText(p.preisAb, p.preisEinheit);
-  const link = p.linkVorhanden
-    ? '<span class="lex-link da" title="Lieferanten-Link vorhanden"></span>'
-    : '<span class="lex-link" title="Lieferanten-Link fehlt noch"></span>';
-  return `<div class="lex-karte" data-lex-open="${esc(p.handle)}" tabindex="0" role="button">
+  return `<div class="lex-karte${ampelRand(p.ampel?.stufe, 'karte')}" data-lex-open="${esc(p.handle)}" tabindex="0" role="button">
     ${bild}
     <div>
       <div class="t">${esc(p.titel)}</div>
-      <div class="m">${link}${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT} · ${p.farbenAnzahl} Farbe${p.farbenAnzahl === 1 ? '' : 'n'}</div>
+      <div class="m">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT} · ${p.farbenAnzahl} Farbe${p.farbenAnzahl === 1 ? '' : 'n'}</div>
+      ${ampelZeile(p.ampel)}
       ${suchHinweisKurz(p)}
       ${offeneBestellungenKurz(p)}
     </div>
@@ -243,12 +258,33 @@ function offeneBestellungenKurz(p) {
   const ware = p.offeneBestellungen || 0;
   const muster = p.offeneMuster || 0;
   if (!ware && !muster) return '';
-  return `<div class="m">${ware ? `<span class="badge p1">${ware} offene Bestellung${ware === 1 ? '' : 'en'}</span>` : ''}${muster ? `<span class="small muted">${ware ? ' ' : ''}${muster} Muster offen</span>` : ''}</div>`;
+  return `<div class="m">${ware ? `<span class="badge status">${ware} offene Bestellung${ware === 1 ? '' : 'en'}</span>` : ''}${muster ? `<span class="small muted">${ware ? ' ' : ''}${muster} Muster offen</span>` : ''}</div>`;
+}
+
+/**
+ * Kopfzeile Bestellbarkeit: die drei Zahlen der Ampel, rot und gelb zugleich als Filter
+ * ("Nur rot (8)"). So steht jede Zahl genau einmal auf der Seite. Gezaehlt werden nur Produkte,
+ * die wir beim Lieferanten bestellen (ohne Muster, Service, Gutschein, eigenen Bestand).
+ */
+function ampelKopf(d) {
+  const z = d?.ampel;
+  if (!z || !(z.rot + z.gelb + z.ruhig)) return '';
+  const filter = ampelFilter();
+  const knopf = (stufe, n, titel) => (n || filter === stufe)
+    ? `<button type="button" class="btn btn-sm ${stufe}" data-param="lampel" data-value="${filter === stufe ? '' : stufe}" aria-pressed="${filter === stufe}" title="${esc(filter === stufe ? 'Wieder alle Produkte zeigen' : titel)}"><span aria-hidden="true">${ZEICHEN[stufe]}</span> Nur ${stufe} (${n.toLocaleString('de-DE')})</button>`
+    : '';
+  return `<div class="lex-ampel-kopf" role="group" aria-label="Bestellbarkeit filtern">
+    <span class="muted">Bestellbarkeit:</span>
+    ${knopf('rot', z.rot, 'Rot: Bestellung blockiert – Angabe fehlt oder nichts lieferbar')}
+    ${knopf('gelb', z.gelb, 'Gelb: zu tun – einzelne Farben nicht lieferbar oder kein Raumbild')}
+    <span class="muted"><span aria-hidden="true">${ZEICHEN.ruhig}</span> ${z.ruhig.toLocaleString('de-DE')} ohne Befund</span>
+  </div>`;
 }
 
 function viewLexikonListe() {
   ensureLexikonListe();
   const q = state.route.params.get('lq') || '';
+  const ampel = ampelFilter();
   const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Was hat der Kunde gesagt? Produktname, Farbe, SKU oder Artikelnummer …" value="${esc(q)}" data-param="lq" aria-label="Produkte durchsuchen"></div>`;
   const d = lexikon.liste;
   if (!d && lexikon.loadingListe) return toolbar + `<div class="empty">Lade Produkte …</div>`;
@@ -260,19 +296,24 @@ function viewLexikonListe() {
   const t = d.treffer;
   // Ohne Suchbegriff zuerst die Suche anbieten statt 638 Produkte in Shop-Reihenfolge -
   // die Liste bleibt einen Klick entfernt ("Alle durchblättern").
-  if (!q && !state.route.params.get('lalle')) {
-    return `${toolbar}
+  if (!q && !ampel && !state.route.params.get('lalle')) {
+    return `${toolbar}${ampelKopf(d)}
       <div class="empty search-hint"><strong>${d.anzahl} Produkte in der Suche.</strong> Tippe ein, was der Kunde genannt hat – das Lexikon findet das Produkt samt Lieferanten-Artikelnummer und Link. <button type="button" class="btn btn-sm" data-param="lalle" data-value="1">Alle durchblättern</button>
       <div class="small muted" style="margin-top:6px">Stand: ${esc(fmtDateTime(d.erstellt))}</div></div>`;
   }
   const pages = t.pages > 1 ? `<div class="lex-seiten">
       <button type="button" class="btn btn-sm" ${t.page <= 1 ? 'disabled' : ''} data-param="lseite" data-value="${t.page - 1}">← Zurück</button>
-      <span class="muted small">Seite ${t.page} von ${t.pages} · ${t.count} Treffer</span>
+      <span class="muted small">Seite ${t.page} von ${t.pages}${ampel ? '' : ` · ${t.count} Treffer`}</span>
       <button type="button" class="btn btn-sm" ${t.page >= t.pages ? 'disabled' : ''} data-param="lseite" data-value="${t.page + 1}">Weiter →</button>
     </div>` : '';
-  return `${toolbar}
-    <p class="small muted" style="margin:-4px 0 10px">${q ? `${t.count} Treffer für „${esc(q)}"` : `${d.anzahl} Produkte`} · Stand: ${esc(fmtDateTime(d.erstellt))}</p>
-    <div class="lex-treffer">${t.items.length ? t.items.map(lexikonTrefferKarte).join('') : emptyState(q ? 'Keine Treffer.' : 'Noch keine Produkte.', q ? 'Begriff prüfen oder anders schreiben.' : '')}</div>
+  const leer = ampel ? emptyState(`Kein Produkt ist ${ampel}.`, 'Filter aufheben, um alle zu sehen.')
+    : emptyState(q ? 'Keine Treffer.' : 'Noch keine Produkte.', q ? 'Begriff prüfen oder anders schreiben.' : '');
+  // Mit Filter nennt die Zahl am Knopf die Menge - hier keine zweite Trefferzahl.
+  const zeile = ampel ? `${q ? `Suche „${esc(q)}" · ` : ''}Stand: ${esc(fmtDateTime(d.erstellt))}`
+    : `${q ? `${t.count} Treffer für „${esc(q)}"` : `${d.anzahl} Produkte`} · Stand: ${esc(fmtDateTime(d.erstellt))}`;
+  return `${toolbar}${ampelKopf(d)}
+    <p class="small muted" style="margin:-4px 0 10px">${zeile}</p>
+    <div class="lex-treffer">${t.items.length ? t.items.map(lexikonTrefferKarte).join('') : leer}</div>
     ${pages}`;
 }
 
@@ -345,7 +386,7 @@ function rollenbreiteText(roh) {
  * Eckdaten, Farben, Muster. Jede Angabe steht genau einmal: was hier steht, fehlt unten in
  * "Fuer das Kundengespraech".
  */
-function produktKarte(p, normaleVarianten) {
+function produktKarte(p, normaleVarianten, ampel = null) {
   const eig = p.eigenschaften || {};
   const farben = [...new Set(normaleVarianten.map((v) => v.farbe).filter(Boolean))];
   const preise = normaleVarianten.map((v) => v.preisJeEinheit).filter(Boolean);
@@ -372,6 +413,7 @@ function produktKarte(p, normaleVarianten) {
       <div class="lex-produkt-titel">
         <div class="gruppe">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${statusHinweis(p.status)}</div>
         <h1>${esc(p.titel)}</h1>
+        ${ampelZeile(ampel)}
       </div>
       ${minPreis ? `<div class="lex-produkt-preis"><span>ab</span><b>${esc(preisText(minPreis.betrag, minPreis.einheit))}</b></div>` : ''}
     </div>
@@ -641,7 +683,7 @@ function offeneBestellungenBlock(offene = [], wartende = []) {
   const bekannt = new Set(offene.map(o => o.bestellung));
   const uebrige = wartende.filter(w => !w.bezug || !bekannt.has(w.bezug));
   if (!ware.length && !muster.length && !uebrige.length) return '';
-  const kundeLink = o => `<a href="#/kunden?kunde=${encodeURIComponent(o.kundenKey)}"><b>${esc(o.kunde)}</b></a>`;
+  const kundeLink = o => `<a href="#/kunden?kunde=${kundenLinkWert(o.kundenKey)}"><b>${esc(o.kunde)}</b></a>`;
   const zeile = o => {
     const schritt = schrittJeBestellung.get(o.bestellung);
     return `<li>${kundeLink(o)} · ${esc(o.bestellung)} vom ${esc(fmtDate(o.datum))}${o.farbe ? ` · ${esc(o.farbe)}` : ''}${o.menge && !o.istMuster ? ` · ${esc(o.menge)}` : ''} – ${esc(o.stand)}${schritt ? ` <span class="small muted">(als Nächstes: ${esc(schritt)})</span>` : ''}</li>`;
@@ -683,13 +725,15 @@ function viewLexikonDetail(handle) {
       ${wunschmassVarianten.length ? `<p class="small muted" style="margin:10px 0 0">Wunschmaß (${wunschmassVarianten.length} Variante${wunschmassVarianten.length === 1 ? '' : 'n'}): wird erst beim Zuschnitt bestellt, deshalb hier ohne eigene Artikelnummer – keine fehlende Angabe.</p>` : ''}
       ${mengenhilfeWidget(p, zielVariante, normaleVarianten)}`;
 
-  return `${zurueck}
+  // Der Sprung ersetzt das Scrollen; die Reihenfolge bleibt, das Kundengespraech am Telefon steht vorn.
+  const zumBestellen = `<p class="no-print small" style="margin:6px 0 0"><a href="#" onclick="event.preventDefault();document.getElementById('lexBestellen').scrollIntoView()">Zum Bestellen springen ↓</a></p>`;
+  return `${zurueck}${zumBestellen}
     ${offeneBestellungenBlock(d.offeneBestellungen, d.wartendeKunden)}
-    ${produktKarte(p, normaleVarianten)}
+    ${produktKarte(p, normaleVarianten, d.ampel)}
     ${musterlagerBlock(p.handle)}
     ${musterEtikettenBlock(p)}
     ${fuersKundengespraech(p, normaleVarianten)}
-    <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Zum Bestellen</h2></div>${bestellTabelle}</section>
+    <section class="card" id="lexBestellen" style="margin-bottom:16px"><div class="card-head"><h2>Zum Bestellen</h2></div>${bestellTabelle}</section>
     ${internesDetails(p)}`;
 }
 
@@ -744,7 +788,7 @@ export function lexikonKlick(e) {
     }
     // Aenderungen gelten nur fuer diesen Ausdruck: nichts wird im Produkt gespeichert oder als gedruckt vermerkt.
     if (etikettKnopf.hasAttribute('data-lex-etikett-aendern')) { oeffneEtikettenDruck({ titel: 'Aufkleber ändern und drucken', allowEditing: false, freierText: true, entwurf: produktEntwurf(auswahl.etikett), entwurfAnzahl: anzahl }); return true; }
-    oeffneEtikettenDruck({ etiketten: Array.from({ length: anzahl }, () => auswahl.etikett), titel: 'Musteretikett drucken' });
+    oeffneEtikettenDruck({ etiketten: Array.from({ length: anzahl }, () => auswahl.etikett), titel: 'Musteretikett drucken', mehrfach: true });
     return true;
   }
   if (e.target.closest('[data-lex-weiteres-muster]')) {

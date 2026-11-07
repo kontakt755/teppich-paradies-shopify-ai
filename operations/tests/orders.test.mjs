@@ -65,7 +65,7 @@ test('fetchOrdersSince blaettert ueber zwei Seiten mit endCursor und first 50', 
   assert.equal(aufrufe[1].after, 'c1');
   assert.match(aufrufe[0].query, /^updated_at:>'2026-09-21T00:00:00\.000Z'$/);
   // Query traegt die verlangten Felder
-  for (const f of ['closedAt', 'customAttributes', 'note', 'tags', 'shippingAddress', 'displayFinancialStatus', 'displayFulfillmentStatus', 'namespace: "einkauf"', 'namespace: "ops"', 'pageInfo { hasNextPage endCursor }']) {
+  for (const f of ['currentTotalPriceSet', 'currentSubtotalPriceSet', 'currentShippingPriceSet', 'currentTotalTaxSet', 'closedAt', 'customAttributes', 'note', 'tags', 'shippingAddress', 'displayFinancialStatus', 'displayFulfillmentStatus', 'namespace: "einkauf"', 'namespace: "ops"', 'pageInfo { hasNextPage endCursor }']) {
     assert.ok(ORDERS_QUERY.includes(f), f);
   }
 });
@@ -372,4 +372,27 @@ test('Normalisierung behaelt Musterservice-Typ und rabattbereinigten Warenwert a
   const p = normalisiereLineItem(roh);
   assert.equal(p.variant.product.productType, 'Musterservice', 'Muster duerfen ihre Typkennung beim Export nicht verlieren');
   assert.deepEqual(p.priceAfterAllDiscountsBeforeTaxesSet, preis);
+});
+
+test('Nachbestellungen: nur offene, nachtraeglich geaenderte Bestellungen bekommen agreements; Fehler halten den Abgleich nicht auf', async () => {
+  const { ergaenzeAgreements, brauchtAgreements, AGREEMENTS_JE_ABRUF } = await import('../sync/orders.mjs');
+  const o = (n, extra = {}) => ({ id: `gid://shopify/Order/${n}`, createdAt: '2026-11-01T21:52:59Z', updatedAt: '2026-11-05T13:12:23Z', displayFulfillmentStatus: 'UNFULFILLED', ...extra });
+  assert.equal(brauchtAgreements(o(1)), true);
+  assert.equal(brauchtAgreements(o(2, { updatedAt: '2026-11-01T21:53:30Z' })), false, 'nie bearbeitet');
+  assert.equal(brauchtAgreements(o(3, { displayFulfillmentStatus: 'FULFILLED' })), false);
+  assert.equal(brauchtAgreements(o(4, { cancelledAt: '2026-11-02T00:00:00Z' })), false);
+
+  const orders = Array.from({ length: AGREEMENTS_JE_ABRUF + 2 }, (_, i) => o(10 + i));
+  orders.push(o(99, { displayFulfillmentStatus: 'FULFILLED' }));
+  const aufrufe = [];
+  const proxy = { requestLog: [], execute: async (_q, { ids }) => { aufrufe.push(ids.length); return { nodes: ids.map(id => ({ id, agreements: { nodes: [] } })) }; } };
+  const r = await ergaenzeAgreements(proxy, orders, { warten: async () => {} });
+  assert.deepEqual(aufrufe, [AGREEMENTS_JE_ABRUF, 2]);
+  assert.equal(r.abgefragt, AGREEMENTS_JE_ABRUF + 2);
+  assert.equal(orders.at(-1).agreements, undefined, 'versendete Bestellung wird nicht abgefragt');
+
+  const kaputt = [o(1)];
+  const f = await ergaenzeAgreements({ execute: async () => { throw new Error('Throttled'); } }, kaputt);
+  assert.equal(f.fehler, 'Throttled');
+  assert.equal(kaputt[0].agreements, undefined);
 });

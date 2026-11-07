@@ -129,3 +129,59 @@ test('Inventurrueckmeldung unterscheidet physisch/frei und warnt ohne Gegenprobe
   assert.equal(meldungNachInventur({ ok: true, ergebnis: { ...ergebnis, gegenprobe: 'fehlgeschlagen' } }).erfolg, false);
   assert.match(meldungNachInventur({ verbindung: false }).text, /Restlänge.*unklar/);
 });
+
+test('Inventurrueckmeldung: Vorlagenwechsel getrennt von der Bestellbarkeit, unklarer Ausgang als Warnung', async () => {
+  const { meldungNachInventur } = await import('../lib/sonderposten.mjs');
+  const ergebnis = { typ: 'inventur', gebucht: true, ok: true, gegenprobe: 'ok', bestandNachher: 48, verfuegbarNachher: 48, restLaengeM: 12, sofortkauf: 'freigeschaltet' };
+  const melde = werte => meldungNachInventur({ ok: true, ergebnis: { ...ergebnis, ...werte } });
+
+  assert.match(melde({ produktStatus: 'ACTIVE' }).text, /Online ist sie jetzt wieder sofort bestellbar/);
+
+  const entwurf = melde({ produktStatus: 'DRAFT' });
+  assert.equal(entwurf.erfolg, true);
+  assert.doesNotMatch(entwurf.text, /sofort bestellbar/);
+  assert.match(entwurf.text, /Vorlage steht jetzt auf Sofortkauf\. Das Produkt ist noch Entwurf/);
+
+  // Ein Server ohne Statusangabe darf keine Bestellbarkeit behaupten.
+  assert.doesNotMatch(melde({ produktStatus: undefined }).text, /sofort bestellbar/);
+
+  const unklar = melde({ sofortkauf: 'unklar', produktStatus: 'ACTIVE' });
+  assert.equal(unklar.erfolg, false); assert.equal(unklar.klasse, 'warn'); assert.equal(unklar.neuLaden, true);
+  assert.match(unklar.text, /Restlänge gespeichert.*unklar/);
+  assert.doesNotMatch(unklar.text, /steht aber noch/);
+
+  const fehlgeschlagen = melde({ sofortkauf: 'fehlgeschlagen', produktStatus: 'ACTIVE' });
+  assert.match(fehlgeschlagen.text, /steht aber noch auf „Anfrage“/);
+  assert.doesNotMatch(fehlgeschlagen.text, /unklar/);
+});
+
+// -- Mitarbeiter sehen die Seite (06.11.2026) -----------------------------------
+
+test('Rolle ohne Recht (403 ohne Shopify-Grund): klar erklaert, nichts geaendert, kein Neuladen noetig', () => {
+  const m = meldungNachBuchung({ ok: false, status: 403, grund: null, text: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
+  assert.deepEqual(m, { erfolg: false, klasse: 'crit', text: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber. Am Bestand wurde nichts geändert.', neuLaden: false });
+  assert.match(meldungNachBuchung({ ok: false, status: 403, text: '' }).text, /^Dafür fehlt dir die Berechtigung\. Am Bestand wurde nichts geändert\.$/);
+});
+
+test('Knoepfe je Rolle: Mitarbeiter bucht den Ladenverkauf, die Restlaenge traegt nur der Inhaber ein, lesen sieht keinen Knopf', async () => {
+  const { state } = await import('../kern/zustand.mjs');
+  const { sonderposten, viewSonderposten } = await import('../ansichten/sonderposten.mjs');
+  state.route = { view: 'sonderposten', params: new URLSearchParams() };
+  sonderposten.daten = { verfuegbar: true, abgerufenAm: '2026-11-06T10:00:00Z', eintraege: [
+    { id: 'gid://shopify/Product/1', typ: 'rolle', titel: 'Testrolle', verkaufbar: true, getrackt: true, bestand: 40, breiteM: 4, laengeM: 10, onlineGesperrt: true },
+    { id: 'gid://shopify/Product/2', typ: 'stueck', sku: 'SP-0001', titel: 'Reststueck', verkaufbar: true, getrackt: true, bestand: 1, breiteM: 2, laengeM: 3, flaecheM2: 6, onlineGesperrt: true },
+  ] };
+  const knoepfe = rolle => {
+    state.session = rolle ? { benutzer: { rolle, kuerzel: rolle, name: rolle } } : null;
+    const h = viewSonderposten();
+    return { verkauf: (h.match(/data-sp-verkauft=/g) || []).length, restlaenge: (h.match(/data-sp-bestand=/g) || []).length };
+  };
+  try {
+    assert.deepEqual(knoepfe('inhaber'), { verkauf: 2, restlaenge: 1 });
+    assert.deepEqual(knoepfe('mitarbeiter'), { verkauf: 2, restlaenge: 0 });
+    assert.deepEqual(knoepfe('lesen'), { verkauf: 0, restlaenge: 0 });
+    assert.deepEqual(knoepfe(null), { verkauf: 2, restlaenge: 1 }, 'Notzugang am Mac gilt als Inhaber');
+  } finally {
+    state.session = null; sonderposten.daten = null;
+  }
+});

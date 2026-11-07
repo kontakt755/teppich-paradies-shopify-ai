@@ -1,0 +1,6 @@
+## 2026-11-05 · Kundensuche und Packstation: Suchbegriff nicht mehr in der Adresse
+
+- **Geaendert:** `kq`, `mpq` und `mpfertig` tragen in der Adresse nur noch einen Verweis (`sv-…`), der Begriff bleibt im Speicher der Seite (`lib/suchverweis.mjs`). `mpfertig` gehoert dazu, weil es den Suchtext wiederholt. Alte Links mit Klartext oeffnen weiter: Der Wert wird beim Oeffnen uebernommen und aus der Adresse genommen. Der Zurueck-Knopf des Browsers findet in jedem Eintrag seinen Begriff wieder. Aus der Kundensuche geoeffnete Akten fuehren ueber „Zurueck zur Kundensuche“ jetzt wieder in die Suche mit dem Begriff.
+- **Getestet:** `npm run -s pruefen`, `npm run dashboard:test` mit `tests/suchverweis.test.mjs`; Klickstrecke im Browser gegen die Datenkopie (`dashboard:pruefen -- --offen`).
+- **Risiken/Annahmen:** Nach dem Neuladen und in einem neuen Fenster ist die Suche leer, das Feld bleibt nutzbar. Ein Link auf eine Suche laesst sich nicht mehr weitergeben. Eintraege im vorhandenen Browserverlauf bleiben. Die Anfrage an den eigenen Dienst nennt den Begriff weiter, nicht in der Adresszeile.
+- **Naechste Stufe:** `bq` (Bestellungen) und `mh` (Muster kommt an) tragen weiter im Klartext, was getippt wird, auch Kundennamen oder E-Mail. Sie lassen sich in `GESCHUETZT` aufnehmen; bei `bq` muessen dann die Sprunglinks mit Bestellnummer mit.

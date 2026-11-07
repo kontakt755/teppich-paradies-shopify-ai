@@ -24,6 +24,8 @@
  * gesperrt. Oben "Im Shop sperren", wenn das nicht geklappt hat (Recht fehlt, kein Zugang,
  * kein eigener Muster-Artikel) - mit Link zur Variante in Shopify; darunter "Im Shop gesperrte
  * Muster" mit "Wieder verfuegbar". Server: operations/lib/mustersperre.mjs.
+ * "Muster sperren…" sperrt eine einzelne Farbe ohne Bestellung, wenn der Lieferant meldet, dass es
+ * von ihr kein Muster gibt: Produkt suchen, Farbe waehlen, Rueckfrage.
  */
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
@@ -33,7 +35,9 @@ import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
 import { oeffneEtikettenDruck, etikettenFuerBestellung } from '../../bausteine/etiketten-druck.mjs';
-import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar } from '../../lib/musterlager-bestand.mjs';
+import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar, stueckJeArt } from '../../lib/musterlager-bestand.mjs';
+import { musterlagerAmpel } from '../../lib/ampel.mjs';
+import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
 
 export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -63,23 +67,29 @@ const zaehlbar = e => (musterlager.daten?.zaehlbar || ['einzel']).includes(e.art
 /** Physisch noch da (Einzelmuster): eingelagert minus verschickt. Reservierte liegen noch in der Schublade. */
 const nochDa = nochDaZaehlbar;
 
-/** Bestand in Worten - und ob er Aufmerksamkeit braucht (leer, aufgebraucht). */
+/**
+ * Bestand in Worten und Ampel (lib/ampel.mjs): leer oder aufgebraucht ist rot, knapp gelb, sonst
+ * ruhig. Das Wort steht auf der Plakette ("× Leer", "! Knapp") und nicht noch einmal im Text.
+ */
 function bestandVon(e) {
-  if (e.leer) return { text: 'leer', warn: true };
+  const knappAb = musterlager.daten?.knappAb ?? 5;
+  if (e.leer) return { text: '', ...musterlagerAmpel({ leer: true }) };
   if (zaehlbar(e)) {
     const da = nochDa(e);
     const frei = e.stand?.rest ?? da;
-    if (da <= 0) return { text: 'aufgebraucht', warn: true };
+    const a = musterlagerAmpel({ zaehlbar: true, nochDa: da, frei, knappAb });
+    if (da <= 0) return { text: '', ...a };
     const zurueck = da - frei;
-    return { text: `noch ${da} Stück${zurueck > 0 ? ` (${zurueck} zurückgelegt)` : ''}`, warn: frei <= 0 };
+    return { text: `noch ${da} Stück${zurueck > 0 ? ` (${zurueck} zurückgelegt)` : ''}`, ...a };
   }
   const n = e.anzahl ?? 1;
   const stueck = e.art === 'bahn' ? `${n} ${n === 1 ? 'Bahn' : 'Bahnen'}` : `${n} Stück`;
   // Zuschnitt: A5-Muster je Stueck (Inhaber 2026-10-15), Schaetzung aus dem Verschickten.
   const reicht = e.stand?.reichtNoch;
-  if (reicht === null || reicht === undefined) return { text: stueck, warn: false };
-  if (reicht <= 0) return { text: `${stueck} · rechnerisch aufgebraucht – nachsehen`, warn: true };
-  return { text: `${stueck} · reicht noch für ca. ${reicht} ${musterGroesse()}-Muster`, warn: reicht <= (musterlager.daten?.knappAb ?? 5) };
+  const a = musterlagerAmpel({ reichtNoch: reicht, knappAb });
+  if (reicht === null || reicht === undefined) return { text: stueck, ...a };
+  if (reicht <= 0) return { text: `${stueck} · rechnerisch – bitte nachsehen`, ...a };
+  return { text: `${stueck} · reicht noch für ca. ${reicht} ${musterGroesse()}-Muster`, ...a };
 }
 
 const musterGroesse = () => musterlager.daten?.musterGroesse?.name || 'A5';
@@ -95,7 +105,7 @@ function zeileHtml(e) {
   const fuer = offene.filter(o => !o.wartetAufLieferant).map(o => `${o.orderName}${o.kunde ? ` ${o.kunde}` : ''}`);
   // Gemischte Bestellung: geht zusammen mit den Lieferanten-Mustern raus (Inhaber 2026-10-15).
   const wartet = offene.filter(o => o.wartetAufLieferant).map(o => `${o.orderName}${o.kunde ? ` ${o.kunde}` : ''}`);
-  const nachkaufen = e.art === 'probestueck' && b.warn && musterlager.daten?.probestueckPreis ? `Neues Probestück beim Lieferanten: ${musterlager.daten.probestueckPreis}` : '';
+  const nachkaufen = e.art === 'probestueck' && b.stufe && musterlager.daten?.probestueckPreis ? `Neues Probestück beim Lieferanten: ${musterlager.daten.probestueckPreis}` : '';
   const knoepfe = lesend ? '' : `<div class="ml-aktionen">
       ${e.leer || (zaehlbar(e) && nochDa(e) <= 0)
         ? `<button type="button" class="btn btn-sm" data-ml-wieder="${esc(e.id)}">Wieder da…</button>`
@@ -103,12 +113,13 @@ function zeileHtml(e) {
       ${e.handle ? `<button type="button" class="btn btn-sm btn-ghost" data-ml-etikett-eintrag="${esc(e.id)}" title="Aufkleber für dieses Stück">Aufkleber</button>` : ''}
       <button type="button" class="btn btn-sm btn-ghost" data-ml-bearbeiten="${esc(e.id)}">Bearbeiten…</button>
     </div>`;
-  return `<li class="ml-zeile${b.warn ? ' ml-knapp' : ''}">
+  return `<li class="ml-zeile${ampelRand(b.stufe)}">
     <div class="ml-was">
       <div class="ml-farbe">${esc(e.farbe || e.titel)}</div>
       <div class="ml-angaben">
+        ${ampelPlakette(b.stufe, b.wort)}
         <span>${esc(e.artLabel || arten()[e.art] || e.art)}</span>
-        <span class="${b.warn ? 'ml-warn' : ''}">${esc(b.text)}</span>
+        ${b.text ? `<span>${esc(b.text)}</span>` : ''}
         ${e.ort ? `<span>Platz: ${esc(e.ort)}</span>` : '<span class="muted">kein Platz eingetragen</span>'}
         ${verschickt ? `<span class="muted">${esc(verschickt)}</span>` : ''}
       </div>
@@ -149,21 +160,25 @@ export function viewEinkaufMusterlager() {
   const q = (state.route.params.get('mlq') || '').trim().toLowerCase();
   const eintraege = d.eintraege.filter(e => passt(e, q));
   const offen = d.eintraege.reduce((s, e) => s + (e.offeneBestellungen?.length || 0), 0);
-  const leer = d.eintraege.filter(e => bestandVon(e).warn).length;
+  const stufen = d.eintraege.map(e => bestandVon(e).stufe);
+  const rot = stufen.filter(x => x === 'rot').length;
+  const gelb = stufen.filter(x => x === 'gelb').length;
 
   const kopf = `<div class="ml-kopf">
     <div class="ml-erklaerung"><p class="small muted">Muster, die wir selbst da haben. Kommt eine Musterbestellung für eines davon, steht sie automatisch auf „aus dem Musterlager“ – sie geht nicht in die Bestellung an den Lieferanten. Einzelmuster zählen beim Verschicken ab; von Probestück, Bahn und Verlegerest schneiden wir A5-Muster zu. Gemischte Bestellungen gehen zusammen raus, sobald die Lieferanten-Muster da sind.</p>
     <p class="small muted"><b>Verlegereste:</b> Teppichboden und Vinyl von Lieferant ${esc(resteLieferanten())} – Rest immer aufheben und beschriften. Ware anderer Hersteller nur, wenn ${esc(resteLieferanten(' oder '))} sie auch führt: „Rest prüfen…“.</p></div>
-    <div class="btn-row">${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button>'}
+    <div class="btn-row">${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button><button type="button" class="btn" data-ms-neu>Muster sperren…</button>'}
     <button type="button" class="btn" data-ml-rest-pruefen>Rest prüfen…</button>
     <button type="button" class="btn" data-ml-etikett>Aufkleber drucken…</button>
     <button type="button" class="btn" data-ml-eigene>Eigene Aufkleber…</button></div>
   </div>`;
-  // Eine Zeile mit den drei Zahlen, die vom Normalfall abweichen; 0 faellt weg.
+  // Eine Zeile mit den Zahlen, die vom Normalfall abweichen; 0 faellt weg. Rot und gelb mit
+  // Zeichen und Wort wie an den Zeilen.
   const zahlen = [
     plural(d.eintraege.length, 'Muster im Lager', 'Muster im Lager'),
     offen ? `<b>${esc(plural(offen, 'Musterbestellung wird', 'Musterbestellungen werden'))} daraus bedient</b>` : null,
-    leer ? `<span class="ml-warn">${esc(plural(leer, 'ist leer', 'sind leer'))}</span>` : null,
+    rot ? ampelPlakette('rot', `${rot} leer oder aufgebraucht`) : null,
+    gelb ? ampelPlakette('gelb', `${gelb} knapp`) : null,
   ].filter(Boolean);
 
   let liste;
@@ -183,7 +198,7 @@ export function viewEinkaufMusterlager() {
     </section>`).join('');
     };
     liste = nachLieferant(eintraege, d.zaehlbar).map(g => `<section class="ml-lieferant">
-      <h2 class="section-title">${esc(g.name)} <span class="small muted">${esc(plural(g.eintraege.length, 'Muster', 'Muster'))} · ${esc(g.stueck)} Stück</span></h2>
+      <h2 class="section-title">${esc(g.name)} <span class="small muted">${esc(plural(g.eintraege.length, 'Eintrag', 'Einträge'))} · ${esc(stueckJeArt(g.jeArt))}</span></h2>
       ${produkte(g.eintraege)}
     </section>`).join('');
   }
@@ -300,6 +315,87 @@ function ortFeld(wert = '') {
     <span class="hint">Damit es beim Verschicken jeder findet.</span></div>`;
 }
 
+/** Sucheingabe gegen das Lexikon; zeigt Treffer als Knoepfe mit data-ml-handle. Der Dialog entscheidet, was ein Klick tut. */
+function bindeProduktSuche(form) {
+  const suche = form.querySelector('#mlSuche');
+  const treffer = form.querySelector('[data-ml-treffer]');
+  let zaehler = 0;
+  let warte = null;
+  suche.addEventListener('input', () => {
+    clearTimeout(warte);
+    const q = suche.value.trim();
+    if (q.length < 2) { treffer.innerHTML = ''; return; }
+    warte = setTimeout(async () => {
+      const nr = ++zaehler;
+      const d = await fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q, pageSize: 8 })}`);
+      if (nr !== zaehler) return;
+      // Musterprodukte selbst nicht anbieten - das Original fuehrt zu denselben Farben.
+      const items = (d?.treffer?.items || []).filter(x => x.produktgruppe !== 'Musterservice');
+      treffer.innerHTML = items.length
+        ? items.map(x => `<button type="button" class="ml-treffer-knopf" data-ml-handle="${esc(x.handle)}"><span>${esc(x.titel)}</span><span class="small muted">${esc([x.produktgruppe, x.farbenAnzahl ? plural(x.farbenAnzahl, 'Farbe', 'Farben') : null].filter(Boolean).join(' · '))}</span></button>`).join('')
+        : `<p class="small muted">${d?.verfuegbar === false ? esc(d.hinweis || 'Lexikon nicht verfügbar.') : 'Kein Produkt gefunden.'}</p>`;
+    }, 250);
+  });
+  return suche;
+}
+
+/**
+ * "Muster sperren…": eine Farbe im Shop sperren, ohne Bestellung. Der Server bestimmt die Muster-SKU
+ * aus Produkt und Farbe. Farben ohne eigenen Musterartikel lassen sich nicht waehlen.
+ */
+function oeffneSperren() {
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog ml-dialog" role="dialog" aria-modal="true" aria-labelledby="mlSperrTitel" data-dialog novalidate>
+    <h2 id="mlSperrTitel">Muster im Shop sperren</h2>
+    <p class="small muted">Für eine Farbe, die es beim Lieferanten nicht als Muster gibt. Sie ist danach sofort nicht mehr als Muster bestellbar. Bestellungen bleiben offen, nichts wird als versendet gebucht.</p>
+    <div class="field"><label for="mlSuche">Produkt</label>
+      <input id="mlSuche" type="search" autocomplete="off" placeholder="Name, Farbe oder Artikelnummer" aria-describedby="mlSucheHinweis">
+      <span class="hint" id="mlSucheHinweis">Mindestens 2 Zeichen.</span>
+      <div class="ml-treffer" data-ml-treffer></div></div>
+    <fieldset class="ml-farben" data-ml-farben hidden><legend data-ml-produkt></legend><div class="ml-farbliste" data-ml-farbliste></div></fieldset>
+    <p data-ml-meldung hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary" disabled>Im Shop sperren…</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  const knopf = form.querySelector('[type=submit]');
+  const suche = bindeProduktSuche(form);
+  const treffer = form.querySelector('[data-ml-treffer]');
+  let produkt = null;
+  const gewaehlt = () => form.querySelector('[data-ml-farbliste] input:checked')?.value || null;
+  treffer.addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-ml-handle]');
+    if (!b) return;
+    const d = await fetchEinkauf(`/api/einkauf/musterlager-farben?${new URLSearchParams({ handle: b.dataset.mlHandle })}`);
+    if (!d?.verfuegbar) { zeigeMeldung(form, d?.hinweis || 'Farben nicht lesbar.'); return; }
+    produkt = d;
+    treffer.innerHTML = '';
+    suche.value = d.titel;
+    const box = form.querySelector('[data-ml-farben]');
+    form.querySelector('[data-ml-produkt]').textContent = `Farben von ${d.titel}`;
+    const wahl = d.farben.filter(f => f.sperrbar);
+    form.querySelector('[data-ml-farbliste]').innerHTML = wahl.length
+      ? wahl.map(f => `<label><input type="radio" name="farbe" value="${esc(f.farbe)}"${f.gesperrt ? ' disabled' : ''}> ${esc(f.farbe)}${f.gesperrt ? ' <span class="muted small">(schon gesperrt)</span>' : ''}</label>`).join('')
+      : '<p class="small muted">Für dieses Produkt gibt es keinen eigenen Musterartikel – seine Farben lassen sich nicht einzeln sperren.</p>';
+    box.hidden = false;
+    knopf.disabled = true;
+    box.querySelector('input:not(:disabled)')?.focus();
+  });
+  form.addEventListener('change', ev => { if (ev.target.closest('[data-ml-farbliste]')) knopf.disabled = !gewaehlt(); });
+  suche.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const farbe = gewaehlt();
+    if (!produkt || !farbe) return;
+    if (!window.confirm(`${produkt.titel} · ${farbe} im Shop sperren?\n\nDie Farbe ist sofort nicht mehr als Muster bestellbar, auch für andere Kunden. Rückgängig: „Wieder verfügbar“.`)) return;
+    knopf.disabled = true;
+    const r = await schreibeSperre({ aktion: 'sperren', handle: produkt.handle, farbe });
+    if (!r.ok) { zeigeMeldung(form, r.text); knopf.disabled = false; return; }
+    $('#dialogRoot').innerHTML = '';
+    const klappte = r.status === 'gesperrt';
+    toast(r.meldung, klappte ? undefined : 'crit', klappte ? {} : { dauer: 9000 });
+    ensureMusterlager({ neu: true });
+  });
+}
+
 /**
  * "Muster einlagern": Produkt im Lexikon suchen, Farben ankreuzen, Art, Anzahl, Platz.
  * Mit `vorgabe` (aus einem Vorschlag) stehen Produkt und Farbe schon fest.
@@ -328,25 +424,8 @@ function oeffneEinlagern(vorgabe = null) {
   const pruefe = () => { if (!vorgabe) knopf.disabled = !produkt || !gewaehlteFarben().length; };
 
   if (!vorgabe) {
-    const suche = form.querySelector('#mlSuche');
+    const suche = bindeProduktSuche(form);
     const treffer = form.querySelector('[data-ml-treffer]');
-    let zaehler = 0;
-    let warte = null;
-    suche.addEventListener('input', () => {
-      clearTimeout(warte);
-      const q = suche.value.trim();
-      if (q.length < 2) { treffer.innerHTML = ''; return; }
-      warte = setTimeout(async () => {
-        const nr = ++zaehler;
-        const d = await fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q, pageSize: 8 })}`);
-        if (nr !== zaehler) return;
-        // Musterprodukte selbst nicht anbieten - das Original fuehrt zu denselben Farben.
-        const items = (d?.treffer?.items || []).filter(x => x.produktgruppe !== 'Musterservice');
-        treffer.innerHTML = items.length
-          ? items.map(x => `<button type="button" class="ml-treffer-knopf" data-ml-handle="${esc(x.handle)}"><span>${esc(x.titel)}</span><span class="small muted">${esc([x.produktgruppe, x.farbenAnzahl ? plural(x.farbenAnzahl, 'Farbe', 'Farben') : null].filter(Boolean).join(' · '))}</span></button>`).join('')
-          : `<p class="small muted">${d?.verfuegbar === false ? esc(d.hinweis || 'Lexikon nicht verfügbar.') : 'Kein Produkt gefunden.'}</p>`;
-      }, 250);
-    });
     treffer.addEventListener('click', async ev => {
       const b = ev.target.closest('[data-ml-handle]');
       if (!b) return;
@@ -385,7 +464,9 @@ function oeffneEinlagern(vorgabe = null) {
     const r = await schreibe(body);
     if (!r.ok) { zeigeMeldung(form, r.text); knopf.disabled = false; knopf.textContent = 'Einlagern'; return; }
     $('#dialogRoot').innerHTML = '';
-    toast(`${plural(r.anzahl, 'Muster', 'Muster')} eingelagert${basis.ort ? ` · ${basis.ort}` : ''}`);
+    // r.anzahl zaehlt Lagereintraege (Farben), nicht Stueck: "1 Muster" bei 15 eingelagerten las sich wie ein Fehler.
+    const stueck = Math.max(1, Number(basis.anzahl) || 1);
+    toast(`${r.anzahl > 1 ? `${r.anzahl} Farben je ${stueck}×` : `${stueck}×`} eingelagert${basis.ort ? ` · ${basis.ort}` : ''}`);
     nachladen();
   });
 }
@@ -440,8 +521,9 @@ function oeffneBearbeiten(e, { wieder = false } = {}) {
 /** Klicks der Ansicht. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function einkaufKlickMusterlager(ev) {
   if (ev.target.closest('[data-ml-neu]')) { oeffneEinlagern(); return true; }
+  if (ev.target.closest('[data-ms-neu]')) { oeffneSperren(); return true; }
   // Einzeletikett von Hand, z. B. fuer Muster im Lager ohne Bestellung.
-  if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Aufkleber drucken' }); return true; }
+  if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Aufkleber drucken', mehrfach: true }); return true; }
   if (ev.target.closest('[data-ml-eigene]')) { oeffneEtikettenDruck({ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }); return true; }
   const ms = ev.target.closest('[data-ms-frei], [data-ms-nachholen]');
   if (ms) {
@@ -502,9 +584,9 @@ export function einkaufKlickMusterlager(ev) {
 /** Aufkleber fuer Lagerstuecke: dieselben Etiketten wie fuer Muster (Serie, Farbe, Technik aus dem Lexikon). */
 async function druckeEtiketten(stuecke, titel) {
   const positionen = stuecke.filter(x => x.handle).map(x => ({ istMuster: true, handle: x.handle, titel: x.titel, farbe: x.farbe, musterQuelle: { sku: x.sku || null, produktHandle: x.handle } }));
-  if (!positionen.length) { toast('Ohne Produkt im Lexikon kein Etikett – „Etikett drucken…“ oben füllt es von Hand.'); return; }
+  if (!positionen.length) { toast('Ohne Produkt im Lexikon kein Aufkleber – „Aufkleber drucken…“ oben füllt ihn von Hand.'); return; }
   const etiketten = await etikettenFuerBestellung(positionen);
-  oeffneEtikettenDruck({ etiketten, titel });
+  oeffneEtikettenDruck({ etiketten, titel, mehrfach: true });
 }
 
 /**
@@ -576,7 +658,7 @@ function restTrefferHtml(t, i) {
     <div class="ml-farbliste">${farben.map(f => `<label><input type="checkbox" value="${esc(f.farbe)}"${vorab ? ' checked' : ''}> ${esc(f.farbe)}${f.farbnummer && !String(f.farbe).includes(f.farbnummer) ? ` <span class="muted small">${esc(f.farbnummer)}</span>` : ''}${f.imLager ? ' <span class="muted small">(schon im Lager)</span>' : ''}</label>`).join('')}</div>
     ${lesend ? '' : `<div class="field"><label>Lagerplatz <input name="ort" maxlength="80" autocomplete="off" placeholder="z. B. Regal B, Fach 3"></label></div>`}
     <div class="btn-row">
-      <button type="button" class="btn btn-sm btn-ghost" data-ml-rest-etikett="${i}">Etikett</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-ml-rest-etikett="${i}">Aufkleber</button>
       ${lesend ? '' : `<button type="button" class="btn btn-sm btn-primary" data-ml-rest-einlagern="${i}">Als Verlegerest einlagern</button>`}
     </div>
   </section>`;

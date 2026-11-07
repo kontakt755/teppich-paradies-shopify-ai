@@ -478,6 +478,8 @@
     {%- form 'contact', id: 'ContactForm-sample', class: 'contact-form' -%}
       <input type="hidden" name="contact[id]" value="ContactForm-sample">
       <input type="hidden" name="contact[Betreff]" value="" data-tp-hidden-field="Betreff">
+      {%- comment -%} Bleibt ohne Kampagne abgeschaltet und damit aus der Mail (snippets/tp-herkunft.liquid). {%- endcomment -%}
+      <input type="hidden" name="contact[Herkunft]" value="" data-tp-herkunft disabled>
       <input type="hidden" name="contact[Produkt]" value="" data-tp-hidden-field="Produkt">
       <input type="hidden" name="contact[Produkt-Handle]" value="" data-tp-hidden-field="Produkt-Handle">
       <input type="hidden" name="contact[Produkt-Link]" value="" data-tp-hidden-field="Produkt-Link">
@@ -535,10 +537,10 @@
       </div>
 
       <label for="ContactFormName">Name</label>
-      <input type="text" id="ContactFormName" name="contact[name]" value="{{ form.name }}" required>
+      <input type="text" id="ContactFormName" name="contact[name]" value="{{ form.name }}" autocomplete="name" required>
 
       <label for="ContactFormEmail">E-Mail</label>
-      <input type="email" id="ContactFormEmail" name="contact[email]" value="{{ form.email }}" required>
+      <input type="email" id="ContactFormEmail" name="contact[email]" value="{{ form.email }}" autocomplete="email" required>
 
       <div data-reklamation-feld>
         <label for="ContactFormBestellnummer">Bestellnummer</label>
@@ -563,7 +565,7 @@
 
       <div data-sample-field data-anfrage-feld>
         <label for="ContactFormPhone">Telefon (optional)</label>
-        <input type="tel" id="ContactFormPhone" name="contact[phone]" value="{{ form.phone }}" autocomplete="tel">
+        <input type="tel" id="ContactFormPhone" name="contact[Telefon]" autocomplete="tel">
       </div>
 
       <label for="ContactFormMessage" data-message-label>Nachricht</label>

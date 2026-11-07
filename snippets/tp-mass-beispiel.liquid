@@ -34,6 +34,10 @@
   @param {object} product - der Teppich nach Mass
   @param {object} variant - die Farbe
   @param {string} [aktion] - Ergebnis von tp-rabatt-sichtbar ("ja"/"nein"); ohne Angabe wird es hier ermittelt
+  @param {string} [groessen] - eigene Kandidaten ("160x230,200x300", kuerzere Seite zuerst),
+    Standard siehe oben. Feed, JSON-LD und og:price bleiben beim Standard.
+  @param {boolean} [alle] - alle passenden Groessen statt nur der ersten, durch ";" getrennt
+    (snippets/tp-mass-preisliste, sichtbare Preisbeispiele)
 {%- enddoc -%}
 {%- liquid
   assign tmbsp_art = product.metafields.service.einfassung.value | strip | downcase
@@ -168,7 +172,7 @@
 
   assign tmbsp_ergebnis = ''
   if tmbsp_ok
-    assign tmbsp_groessen = '80x150,120x170,160x230,200x300' | split: ','
+    assign tmbsp_groessen = groessen | default: '80x150,120x170,160x230,200x300' | split: ','
     for tmbsp_g in tmbsp_groessen
       assign tmbsp_teile = tmbsp_g | split: 'x'
       assign tmbsp_w = tmbsp_teile[0] | times: 1
@@ -224,8 +228,16 @@
       if tmbsp_alt_preis > tmbsp_preis
         assign tmbsp_alt_cent = tmbsp_einheiten | times: tmbsp_alt_preis | plus: tmbsp_kante_cent | plus: tmbsp_pauschale_cent
       endif
-      assign tmbsp_ergebnis = tmbsp_w | append: '|' | append: tmbsp_l | append: '|' | append: tmbsp_cent | append: '|' | append: tmbsp_alt_cent | append: '|' | append: tmbsp_einheiten
-      break
+      assign tmbsp_zeile = tmbsp_w | append: '|' | append: tmbsp_l | append: '|' | append: tmbsp_cent | append: '|' | append: tmbsp_alt_cent | append: '|' | append: tmbsp_einheiten
+      if alle
+        if tmbsp_ergebnis != blank
+          assign tmbsp_ergebnis = tmbsp_ergebnis | append: ';'
+        endif
+        assign tmbsp_ergebnis = tmbsp_ergebnis | append: tmbsp_zeile
+      else
+        assign tmbsp_ergebnis = tmbsp_zeile
+        break
+      endif
     endfor
   endif
 -%}

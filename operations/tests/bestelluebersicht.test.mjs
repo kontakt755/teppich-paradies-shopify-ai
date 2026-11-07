@@ -403,3 +403,61 @@ test('Shopifyarchivierung bleibt explizit am Auftragsmodell erhalten ohne Versan
   assert.equal(r.auftraege[0].erfuellt, 'UNFULFILLED');
   assert.equal(r.auftraege[1].archiviert, false);
 });
+
+test('Wunschmass-Rechner wird an der Position erkannt, Fertigmass und Rollenrechner nicht', () => {
+  const mit = attrs => zeile({ id: 51, sku: 'W-1', title: 'Testteppich', quantity: 314, attrs, custom: [['preis_pro_001_qm', 'true']] });
+  const m = aufbereiten({ orders: [bestellung(51, [
+    mit([{ key: 'Durchmesser', value: '200 cm' }, { key: 'Form', value: 'Rund' }]),
+    mit([{ key: 'Maße', value: 'Ø 200 cm' }, { key: 'Form', value: 'Rund' }]),
+    mit([{ key: 'Ihre Breite', value: '200' }, { key: 'Gewünschte Länge', value: '300' }]),
+  ])] }, { jetzt: new Date('2026-01-07T00:00:00Z') });
+  assert.deepEqual(m.auftraege[0].positionen.map(p => p.wunschmassRechner), [true, false, false]);
+});
+
+test('summen: aktueller Stand nach Bestellaenderung, Storno zeigt weiter den Wert bei Bestellung (#1056)', () => {
+  const geld = (n) => ({ shopMoney: { amount: String(n), currencyCode: 'EUR' } });
+  const basis = { id: 'gid://shopify/Order/1056', name: '#T1056', createdAt: '2026-10-21T10:00:00Z', lineItems: { nodes: [] },
+    totalPriceSet: geld(200), subtotalPriceSet: geld(200), currentTotalPriceSet: geld(100), currentSubtotalPriceSet: geld(100) };
+  const summen = (o) => aufbereiten({ orders: [o] }).auftraege[0].details.summen;
+  assert.equal(summen(basis).gesamt.betrag, 100);
+  assert.equal(summen(basis).zwischensumme.betrag, 100);
+  assert.equal(summen({ ...basis, cancelledAt: '2026-10-22T10:00:00Z' }).gesamt.betrag, 200);
+  assert.equal(summen({ ...basis, currentTotalPriceSet: undefined }).gesamt.betrag, 200, 'alter Export ohne aktuelle Felder');
+});
+
+test('Nachtraeglich eingefuegtes Muster ohne Properties: Quellvariante aus dem Metafeld der Mustervariante', () => {
+  const ersatz = zeile({ id: 41, sku: 'M-TESTROLLE_1', title: 'Muster Testboden', variantTitle: 'Taupe', handle: 'muster-testboden',
+    einkauf: [['quellvariante', 'gid://shopify/ProductVariant/777']] });
+  const mm = aufbereiten({ orders: [bestellung(41, [ersatz])], quellvarianten: [quellvariante] });
+  const p = mm.auftraege[0].positionen[0];
+  assert.equal(p.istMuster, true);
+  assert.equal(p.musterQuelle.quellvariante, '777');
+  assert.equal(p.musterQuelle.produktHandle, 'testboden');
+  assert.equal(p.grosshaendlerId, 'A-9999');
+});
+
+test('Nachbestellung: nur Positionen, die erst per Bestellbearbeitung verkauft wurden, tragen das Datum', async () => {
+  const { nachbestellungen } = await import('../lib/bestelluebersicht.mjs');
+  const li = n => ({ id: `gid://shopify/LineItem/${n}` });
+  const order = { agreements: { nodes: [
+    { happenedAt: '2026-11-01T21:52:59Z', reason: 'ORDER', sales: { nodes: [
+      { actionType: 'ORDER', lineItem: li(1) }, { actionType: 'ORDER', lineItem: li(2) }, { actionType: 'ORDER' } ] } },
+    // Mengenaenderung an einer alten Position ist keine Nachbestellung, die neue Position schon.
+    { happenedAt: '2026-11-05T13:12:22Z', reason: 'ORDER_EDIT', sales: { nodes: [
+      { actionType: 'ORDER', lineItem: li(2) }, { actionType: 'ORDER', lineItem: li(3) } ] } },
+    // Rueckerstattung verkauft nichts neu.
+    { happenedAt: '2026-11-06T08:00:00Z', reason: 'REFUND', sales: { nodes: [{ actionType: 'RETURN', lineItem: li(4) }] } },
+  ] } };
+  assert.deepEqual([...nachbestellungen(order)], [['gid://shopify/LineItem/3', '2026-11-05T13:12:22Z']]);
+  assert.equal(nachbestellungen({}).size, 0, 'aelterer Export ohne agreements');
+  assert.equal(nachbestellungen({ agreements: { nodes: [{ happenedAt: 'kaputt', reason: 'ORDER_EDIT', sales: { nodes: [{ actionType: 'ORDER', lineItem: li(9) }] } }] } }).size, 0);
+});
+
+test('Nachbestellung: unvollstaendige Verkaufsliste der Bestellung selbst ergibt keinen Hinweis', async () => {
+  const { nachbestellungen } = await import('../lib/bestelluebersicht.mjs');
+  const order = { agreements: { nodes: [
+    { happenedAt: '2026-11-01T21:52:59Z', reason: 'ORDER', sales: { pageInfo: { hasNextPage: true }, nodes: [{ actionType: 'ORDER', lineItem: { id: 'a' } }] } },
+    { happenedAt: '2026-11-05T13:12:22Z', reason: 'ORDER_EDIT', sales: { nodes: [{ actionType: 'ORDER', lineItem: { id: 'b' } }] } },
+  ] } };
+  assert.equal(nachbestellungen(order).size, 0);
+});

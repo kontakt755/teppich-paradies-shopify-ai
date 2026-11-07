@@ -4,22 +4,32 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 import { offeneSuche, umschlagKennung } from '../lib/muster-packen.mjs';
+import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 const quelle = fs.readFileSync(new URL('../bausteine/palette.mjs', import.meta.url), 'utf8')
   .replace(/^import.*;\n/gm, '').replace(/^export\s/gm, '');
+const navQuelle = fs.readFileSync(new URL('../kern/navigation.mjs', import.meta.url), 'utf8')
+  .replace(/^import.*;\n/gm, '').replace(/^export\s/gm, '');
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function palette({ packliste = null, produkte = [], kundenTreffer = [{ key: 'test', name: 'Synthetischer Kunde' }] } = {}) {
-  const fahrten = [], timer = [];
+// Adresse nur erfunden; im Betrieb kommt sie vom Server (/api/capabilities), nie aus dem Repository.
+const WERKBANK = 'https://werkbank.example.invalid/ideen';
+function palette({ packliste = null, produkte = [], kundenTreffer = [{ key: 'test', name: 'Synthetischer Kunde' }], rolle = null, dashboards = { werkbank: WERKBANK } } = {}) {
+  const fahrten = [], timer = [], druck = [], fenster = [];
+  const state = { capabilities: { mode: 'local', dashboards }, tasks: [], session: rolle ? { benutzer: { rolle } } : {} };
+  // Echte Regel der Seitenleiste (kern/navigation.mjs), nicht nachgebaut.
+  const { dashboardZiel } = vm.runInNewContext(navQuelle + '\n({ dashboardZiel })', { state, URL });
   const api = vm.runInNewContext(quelle + '\n({ paletteItems, paletteFernSuche, paletteFern })', {
-    state: { capabilities: { mode: 'local' }, tasks: [] }, AREAS: [], SAVED_VIEWS: [], URLSearchParams,
-    offeneSuche, umschlagKennung, plural: (n, a, b) => `${n} ${n === 1 ? a : b}`, ensureMusterPacken: async () => packliste,
+    state, AREAS: [], SAVED_VIEWS: [], URLSearchParams,
+    offeneSuche, umschlagKennung, kundenLinkWert, plural: (n, a, b) => `${n} ${n === 1 ? a : b}`, ensureMusterPacken: async () => packliste,
     darfAnsicht: view => !['arbeit', 'team'].includes(view), navigate: (...a) => fahrten.push(a),
     setTimeout: fn => { timer.push(fn); return timer.length; }, clearTimeout() {},
     fetchEinkauf: async pfad => pfad.startsWith('/api/kunden')
       ? { treffer: kundenTreffer }
       : { treffer: { items: produkte } },
+    oeffneEtikettenDruck: opt => druck.push(opt), dashboardZiel,
+    window: { open: (...a) => fenster.push(a) },
   });
-  return { ...api, fahrten, timer };
+  return { ...api, fahrten, timer, druck, fenster };
 }
 
 test('Packstation, Bestellungen und Muster bestellen sind auch fuer Mitarbeiter direkt auffindbar', () => {
@@ -37,6 +47,51 @@ test('Packstation, Bestellungen und Muster bestellen sind auch fuer Mitarbeiter 
   }
 });
 
+test('Ziele unter "Mehr" stehen in der Suche mit denselben Worten wie im Menue', () => {
+  for (const [q, ziel] of [
+    ['Sonderposten', ['sonderposten']],
+    ['Social Media', ['social']],
+    ['Kunden nach Produkt fragen', ['kunden', { tab: 'anrufe' }]],
+  ]) {
+    const u = palette(), item = u.paletteItems(q)[0];
+    assert.equal(item.label, q);
+    item.run();
+    assert.deepEqual(JSON.parse(JSON.stringify(u.fahrten[0])), ziel);
+  }
+  const druck = palette(), aufkleber = druck.paletteItems('Eigene Aufkleber drucken')[0];
+  assert.equal(aufkleber.label, 'Eigene Aufkleber drucken');
+  aufkleber.run();
+  assert.deepEqual(JSON.parse(JSON.stringify(druck.druck)), [{ titel: 'Eigene Aufkleber drucken', allowEditing: false, freierText: true }], 'derselbe Druckdialog wie im Menue');
+  const ideen = palette(), werkbank = ideen.paletteItems('Ideen & Fragen')[0];
+  assert.equal(werkbank.label, 'Ideen & Fragen');
+  werkbank.run();
+  assert.deepEqual(JSON.parse(JSON.stringify(ideen.fenster)), [[WERKBANK, '_blank', 'noopener']]);
+});
+
+test('Rollen wie im Menue: "lesen" ohne Social Media und Ideen & Fragen, Mitarbeiter ohne Social Media', () => {
+  const labels = opt => palette(opt).paletteItems('').concat(...['Social Media', 'Ideen & Fragen', 'Sonderposten', 'Eigene Aufkleber drucken'].map(q => palette(opt).paletteItems(q))).map(i => i.label);
+  const lesen = labels({ rolle: 'lesen' });
+  assert.ok(!lesen.includes('Social Media'));
+  assert.ok(!lesen.includes('Ideen & Fragen'));
+  assert.ok(lesen.includes('Sonderposten') && lesen.includes('Eigene Aufkleber drucken'));
+  const mitarbeiter = labels({ rolle: 'mitarbeiter' });
+  assert.ok(!mitarbeiter.includes('Social Media'), 'im Menue data-nicht-mitarbeiter');
+  assert.ok(mitarbeiter.includes('Ideen & Fragen') && mitarbeiter.includes('Sonderposten'));
+  // Ohne Adresse vom Server und mit einer Adresse ohne https gibt es den Punkt nicht - wie in der Seitenleiste.
+  assert.ok(!palette({ dashboards: {} }).paletteItems('Ideen & Fragen').some(i => i.label === 'Ideen & Fragen'));
+  assert.ok(!palette({ dashboards: { werkbank: 'http://werkbank.example.invalid' } }).paletteItems('Ideen & Fragen').some(i => i.label === 'Ideen & Fragen'));
+});
+
+test('Genau eingetippter Menuename steht vor gleichnamigen Produkten', async () => {
+  const u = palette({ kundenTreffer: [], produkte: [1, 2, 3, 4, 5].map(n => ({ titel: `Testteppich ${n} – Sonderposten`, handle: `t${n}` })) });
+  u.paletteFernSuche('Sonderposten', () => {});
+  u.timer.shift()();
+  await tick();
+  const zeilen = u.paletteItems('Sonderposten');
+  assert.equal(zeilen[0].label, 'Sonderposten');
+  assert.equal(zeilen.filter(i => i.kind === 'Produkt').length, 5, 'die Produkte bleiben darunter');
+});
+
 test('Aufgabensuche uebernimmt den eingegebenen Text in die vorhandene Teamliste', () => {
   const u = palette();
   const q = 'Synthetische Rückfrage';
@@ -44,6 +99,17 @@ test('Aufgabensuche uebernimmt den eingegebenen Text in die vorhandene Teamliste
   assert.ok(item);
   item.run();
   assert.deepEqual(JSON.parse(JSON.stringify(u.fahrten[0])), ['organisation', { ob: 'team-aufgaben', oa: 'alle', og: 'alles', oq: q }]);
+});
+
+test('Kundentreffer fuehrt mit dem Kurzwert in die Akte, nie mit dem Klartext-Schluessel', async () => {
+  const key = 'email:test.kunde@example.invalid';
+  const u = palette({ kundenTreffer: [{ key, name: 'Synthetischer Kunde' }] });
+  u.paletteFernSuche('Synthetisch', () => {});
+  u.timer.shift()();
+  await tick();
+  u.paletteItems('Synthetisch').find(i => i.kind === 'Kunde').run();
+  assert.deepEqual(JSON.parse(JSON.stringify(u.fahrten[0])), ['kunden', { kunde: kundenLinkWert(key) }]);
+  assert.doesNotMatch(JSON.stringify(u.fahrten[0]), /example|email/);
 });
 
 test('waehrend einer neuen Suche erscheinen keine Kunden zum alten Suchwort', async () => {

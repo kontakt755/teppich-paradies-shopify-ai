@@ -154,11 +154,16 @@ test('Schritt bestellt: Kettelweg je Artikel wird vermerkt, ohne Angabe bleibt d
   await schritt(WARE, 'bestellt', { kettelwege: { [item]: 'kunde' } });
   assert.equal(stand(api).status, 'bestellt');
   assert.equal(stand(api).ueber, 'kunde');
-  await schritt(WARE, 'geliefert', { kettelwege: { [item]: 'kettler' } });
-  assert.equal(stand(api).ueber, 'kunde', 'nur der Schritt bestellt setzt den Vermerk');
+  // Direktware kommt nie bei uns an (#1995, Pruefung 06.11.): "Ware ist angekommen" lehnt der Server ab, der Vermerk bleibt.
+  await assert.rejects(() => schritt(WARE, 'geliefert', { kettelwege: { [item]: 'kettler' } }), e => e instanceof ApiError && e.status === 409 && /kommt nicht vom Lieferanten zu uns/.test(e.message));
+  assert.equal(stand(api).status, 'bestellt');
+  assert.equal(stand(api).ueber, 'kunde');
   const ohne = umgebung();
   await ohne.schritt(WARE, 'bestellt');
   assert.equal(stand(ohne.api).ueber, undefined);
+  await ohne.schritt(WARE, 'geliefert', { kettelwege: { [item]: 'kettler' } });
+  assert.equal(stand(ohne.api).status, 'geliefert');
+  assert.equal(stand(ohne.api).ueber, undefined, 'nur der Schritt bestellt setzt den Vermerk');
 });
 
 test('Abwaertskompatibel: der bestehende Aufruf ohne aktion verhaelt sich wie bisher', async () => {
@@ -267,4 +272,33 @@ test('Kunden "Zu tun": naechster Schritt aus der Zeitleiste, Shopify-Versand nur
   // Nur Zahlen nach aussen, keine internen Schluessellisten.
   assert.equal(typeof r.wartend, 'number');
   assert.equal(r.wartendeSchluessel, undefined);
+});
+
+test('Kunden "Zu tun": gesperrtes Muster heisst "Muster kommt nicht – Kunde informieren", rot; Routine nicht rot (#1996)', async () => {
+  const { dir, api, uhr, schritt } = umgebung();
+  const { sperrEreignis, mustersperrePfad, haengeAn } = await import('../../../operations/lib/mustersperre.mjs').then(m => ({ sperrEreignis: m.ereignis, mustersperrePfad: m.mustersperrePfad, haengeAn: m.haengeAn }));
+  schritt(MUSTER, 'bestellt');
+  uhr.jetzt = new Date('2026-01-18T10:00:00Z');
+  const fallZu = () => { const r = api.kundenFaelle(); return [...r.faelle, ...r.ausgeblendet].find(f => f.punkte.some(p => p.bezug === '#T1')); };
+  const vorher = fallZu().punkte.find(p => p.bezug === '#T1');
+  assert.match(vorher.schritt.text, /^Problem: Muster seit 16 Tagen bestellt/);
+  // Ein Muster der Bestellung wird gesperrt (Ablage wie im Betrieb, ohne Shopify).
+  haengeAn(mustersperrePfad(dir), [sperrEreignis({ sku: 'M-TEST-2', von: 'Mitarbeiter 1', grund: 'nicht verfuegbar', orderId: MUSTER, orderName: '#T1', jetzt: uhr.jetzt })]);
+  const f = fallZu();
+  const p = f.punkte.find(x => x.bezug === '#T1');
+  // M-TEST-1 ist seit 16 Tagen im Verzug: der Verzug bleibt stehen, der Hinweis kommt dazu (Review 06.11.2026).
+  assert.equal(p.schritt.text, 'Problem: Muster seit 16 Tagen bestellt und nicht da · 1 Muster kommt nicht – Kunde informieren');
+  assert.deepEqual([p.rot, f.rot], [true, true]);
+  // Beide gesperrt: "Muster kommt nicht" ersetzt den Schritt.
+  haengeAn(mustersperrePfad(dir), [sperrEreignis({ sku: 'M-TEST-1', von: 'Mitarbeiter 1', grund: 'nicht verfuegbar', orderId: MUSTER, orderName: '#T1', jetzt: uhr.jetzt })]);
+  const beide = fallZu().punkte.find(x => x.bezug === '#T1');
+  assert.equal(beide.schritt.text, 'Muster kommt nicht – Kunde informieren (2 von 2 Mustern)');
+  const akte = api.kundenBestellungen().zeilen.find(x => x.orderId === MUSTER);
+  assert.equal(akte.naechsterSchritt.href, '#/kunden?tab=muster&mpbereich=klaeren');
+  // Beide Muster ohne Großhändler-ID sind gesperrt: kein "ohne Großhändler-ID" mehr, Ampel nicht rot - an einer
+  // Stelle im Server fuer Heute, Kunden › Zu tun und Kunden › Bestellungen.
+  assert.deepEqual([akte.auftrag.ampel, akte.auftrag.hinweise, akte.auftrag.gesperrtOhneId], ['gruen', [], 2]);
+  // Ware frisch bestellen: Routine, kein Rot.
+  const ware = [...api.kundenFaelle().faelle, ...api.kundenFaelle().ausgeblendet].find(x => x.punkte.some(q => q.bezug === '#T2'));
+  assert.equal(ware.rot, false);
 });

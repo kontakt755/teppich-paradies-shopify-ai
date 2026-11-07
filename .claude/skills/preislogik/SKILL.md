@@ -23,9 +23,17 @@ Vor einer Änderung der Shopify-Variantenpreise oder Vergleichspreise ist eine
 konkrete Produkttabelle zu prüfen und die ausdrückliche Freigabe des Inhabers
 einzuholen. Produkttexte dürfen keinen abweichenden Rabatt versprechen.
 
+## Tag `ohne-rabatt`
+
+Produkte mit diesem Tag bekommen weder Marketingcode noch Aktionsrabatt (Freigabe
+2026-11-05): Die Kollektion `intern-regulaerer-preis` schliesst den Tag aus, die Wellen in
+`domains/shopify/aktionskalender.json` nehmen ihn aus (`ausnahmen_alle`, Ablauf in
+`domains/shopify/aktionssystem-konzept.md`). Der Tag schuetzt nur dort: Eine Aktion auf
+einer Kategorie mit solchen Produkten braucht eine eigene Zielkollektion.
+
 ## Restrollen: UVP mit Abstand
 
-Restrollen (Tag `sonderposten`, Typ Teppichboden) zeigen ihre UVP wie alle anderen über `preis.vergleich_ist_uvp`, zusätzlich mit „40 % unter UVP“, abgerundet, ohne Rot und ohne Rabattbadge (Inhaber 2026-11-03). Sie bekommen kein `aktion.klasse`, weil sie nie zum Vergleichspreis verkauft wurden. Die UVP gilt nur für die Meterware: Beim Wechsel auf Raummaß blendet der Rechner die Zeile aus, Kettelteppiche und Raummaß-Produkte haben keine.
+Restrollen (Tag `sonderposten`, Typ Teppichboden) zeigen ihre UVP wie alle anderen über `preis.vergleich_ist_uvp`, zusätzlich mit dem Abstand als roter Pille „−40 % ggü. UVP“, abgerundet: auf der Karte im Bild, auf der Produktseite in der UVP-Zeile (Inhaber 2026-11-06, vorher grau). Der Bezug „UVP“ bleibt immer dabei – „Rabatt“ oder „reduziert“ hieße, wir hätten die Rolle vorher teurer verkauft. Die Kartenplakette heißt bei Rollenware „Restrolle“. Sie bekommen kein `aktion.klasse`, weil sie nie zum Vergleichspreis verkauft wurden. Die UVP gilt nur für die Meterware: Beim Wechsel auf Raummaß blendet der Rechner die Zeile aus, Kettelteppiche und Raummaß-Produkte haben keine.
 
 Restrollen stehen wie normaler Teppichboden im Kanal Google & YouTube, mit Grundpreis 1 m² an der Variante (Inhaber 2026-11-03). Karten zeigen die Restmenge aus dem Bestand („Noch 80 m²“, `blocks/tp-card-aktion`), die Startseite ein eigenes Band (`start_restrollen`). Normale Teppichböden mit echtem Hersteller verweisen auf dessen Restrollen (`blocks/tp-aktion-hinweis`), beim Hausnamen TeppichParadies erscheint nichts.
 
@@ -67,6 +75,13 @@ Verkaufspreis inklusive Aktion - **nach jeder Preisaenderung**
 das auch der Dienst `net.teppich-paradies.preisfilter`). Das Feld nie von Hand
 pflegen; Bereiche aendern nur im Skript `scripts/preisfilter-abgleich.mjs`
 (danach Abgleich und Sortierung des Filters in Search & Discovery pruefen).
+Zentrale Aktionen (Metaobjekt `tp_aktion`, z. B. Black Week) laufen als
+automatischer Rabatt und aendern keine Variantenpreise: der Abgleich liest die
+heute laufenden Aktionen selbst und stuft Mitglieder der Aktionskollektion nach
+dem angezeigten Preis ein (Abzug je Einheit bzw. je Paket auf den Cent
+abgerundet, wie `snippets/price.liquid`); nach Aktionsende stuft er von selbst
+zurueck. Er braucht dafuer einen Zugang, der Metaobjekte lesen darf (Token aus
+`.env.local`, nicht der CLI-Token) - sonst bricht er ab.
 
 ## Preisklassen Teppichboden
 

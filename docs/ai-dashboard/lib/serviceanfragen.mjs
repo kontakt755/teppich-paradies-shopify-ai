@@ -31,6 +31,20 @@ export function serviceOffen(e) {
   return Boolean(e?.id && STATUS.includes(e.status) && !ABGESCHLOSSEN.includes(e.status));
 }
 
+/**
+ * Zahl am Menuepunkt "Kunden": sofort faellige Faelle plus offene Service-Anfragen. Erst, wenn
+ * beide Quellen fehlerfrei geladen sind - sonst null, das Menue zeigt dann keine Zahl. Bis
+ * 2026-11-06 stand auf "Heute" und "Bestellen" eine 8 (nur die Service-Anfragen, die Faelle
+ * laedt erst "Kunden"), auf "Kunden" dann 14: eine Teilsumme sah aus wie eine echte Zahl.
+ * Geladen heisst verfuegbar und ohne Fehler: fehlt orders.json, antwortet der Server mit
+ * HTTP 200 und { verfuegbar: false } ohne `fehler` - dann kam wieder 0 + Service-Anfragen heraus.
+ */
+export function kundenMenueZahl(faelle, serviceanfragen) {
+  const geladen = q => Boolean(q?.verfuegbar) && !q.fehler;
+  if (!geladen(faelle) || !geladen(serviceanfragen) || typeof faelle.sofort !== 'number') return null;
+  return faelle.sofort + (serviceanfragen.eintraege || []).filter(serviceOffen).length;
+}
+
 /** Gezielter Sprung zur vorhandenen Anfrage, ohne Kontaktdaten in der Adresse. */
 export function serviceLink(id) {
   return `#/kunden?${new URLSearchParams({ tab: 'service', anfrage: String(id) })}`;
@@ -84,9 +98,10 @@ export function pruefeFelder(roh = {}, { teil = false } = {}) {
  * Feldanfang - eine Zeile "Folgendes:" im Kundentext bleibt Text.
  * "Wunschzeitraum" kam am 26.10.2026 ins Anfrageformular (noch ohne echte
  * Mail geprueft). tests/serviceanfragen.test.mjs prueft, dass jedes Feld aus
- * sections/tp-start-kontakt.liquid hier steht.
+ * sections/tp-start-kontakt.liquid hier steht. "Muster" schickt die
+ * Musterberatung im Warenkorb (snippets/tp-muster-beratungsanfrage.liquid).
  */
-export const MAILFELDER = Object.freeze(['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Anliegen', 'Wunschzeitraum', 'Text', 'Nachricht']);
+export const MAILFELDER = Object.freeze(['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Muster', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Anliegen', 'Wunschzeitraum', 'Text', 'Nachricht']);
 const FELD_ZEILE = new RegExp(`^\\s*(${MAILFELDER.map(f => f.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')).join('|')})\\s*:\\s*(.*)$`);
 
 /**
@@ -159,6 +174,8 @@ export function ausFormularMail(roh) {
   return {
     erkannt: true,
     betreff, anliegen,
+    // Nur fuer die Musterberatung (rueckrufAusMail): Musterliste und Kundentext getrennt.
+    muster: wert('Muster'), nachricht,
     felder: {
       datum: datumAusBetreffzeile(roh),
       name: text(wert('Name'), GRENZEN.name),
@@ -198,8 +215,33 @@ export const BETREFF_STARTSEITE = 'Anfrage von der Startseite';
 export const ANLIEGEN_SERVICE = Object.freeze(['Boden verlegen lassen', 'Aufmaß und Angebot', 'Mieterwechsel / mehrere Wohnungen', 'Treppe belegen lassen']);
 /** Auswahl "Ich moechte" im Formular, die bewusst keine Service-Anfrage ist. */
 export const ANLIEGEN_KEIN_SERVICE = Object.freeze(['Beratung zum Produkt', 'Muster bestellen', 'Rückruf']);
+/**
+ * "Lieber erst beraten lassen?" im Muster-Warenkorb (snippets/tp-muster-beratungsanfrage.liquid):
+ * der Kunde will vor dem Versand angerufen werden. Kein Service, sondern ein Rueckruf -
+ * rueckrufAusMail() liest die Mail fuer die Rueckrufliste (Kunden > Rueckrufe & Beratungen).
+ */
+export const BETREFF_MUSTERBERATUNG = 'RÜCKRUF – Musterberatung';
 /** Bekannte Betreffe ohne Service-Anfrage (Reinigung, Boden-Finder, Musterberatung). */
-export const BETREFF_KEIN_SERVICE = Object.freeze(['Anfrage Teppichreinigung', 'Boden-Finder: persönliche Vorschläge', 'RÜCKRUF – Musterberatung']);
+export const BETREFF_KEIN_SERVICE = Object.freeze(['Anfrage Teppichreinigung', 'Boden-Finder: persönliche Vorschläge', BETREFF_MUSTERBERATUNG]);
+
+export const RUECKRUF_GRENZEN = Object.freeze({ muster: 30, musterZeile: 200, nachricht: 2000 });
+
+/**
+ * Ergebnis von ausFormularMail() -> Rueckruf aus der Musterberatung, sonst null.
+ * Die Musterliste kommt als eine Zeile "Produkt – Farbe (SKU) · Produkt – Farbe (SKU)";
+ * umbricht der Mailtext sie, werden die Zeilen wieder zusammengefuegt.
+ */
+export function rueckrufAusMail(ergebnis) {
+  // Gedankenstrich, Bindestrich und Leerzeichen koennen beim Weiterleiten oder Kopieren wechseln.
+  if (!ergebnis?.erkannt || !/^R[ÜU]E?CKRUF\s*[–—-]\s*Musterberatung$/i.test(String(ergebnis.betreff || '').trim())) return null;
+  const f = ergebnis.felder || {};
+  const muster = String(ergebnis.muster || '').replace(/\s*\n\s*/g, ' ').split(' · ')
+    .map(m => text(m, RUECKRUF_GRENZEN.musterZeile)).filter(Boolean).slice(0, RUECKRUF_GRENZEN.muster);
+  return {
+    datum: f.datum || null, name: f.name || '', telefon: f.telefon || '', email: f.email || '',
+    muster, nachricht: text(ergebnis.nachricht, RUECKRUF_GRENZEN.nachricht),
+  };
+}
 
 /** Ergebnis von ausFormularMail() -> darf es ohne Menschen in die Liste? */
 export function automatischUebernehmbar(ergebnis) {

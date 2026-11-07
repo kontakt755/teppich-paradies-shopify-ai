@@ -7,17 +7,33 @@ import { state } from '../../kern/zustand.mjs';
 import { esc, toast, fmtPreis } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
+import { aktualisiereNavZahlen } from '../../kern/navigation.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { kunden } from './gemeinsam.mjs';
+import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 
 export function ensureKundenFaelle() {
   if (kunden.faelle || kunden.loadingFaelle) return;
   kunden.loadingFaelle = true;
   fetchEinkauf('/api/kunden/faelle').then(d => {
     kunden.faelle = d; kunden.loadingFaelle = false;
-    if (['heute', 'kunden'].includes(state.route.view)) render();
+    // Wer "Kunden" oeffnet und sofort weiterklickt, sieht die Zahl am Menuepunkt trotzdem.
+    if (['heute', 'kunden'].includes(state.route.view)) render(); else aktualisiereNavZahlen();
   });
+}
+
+/**
+ * Faelle fuer die Zahl am Menuepunkt "Kunden". Mehrere Aktionen leeren kunden.faelle (Fall
+ * abhaken, in Bestellen "zurueck auf offen", Zeitleiste, neuer Export), neu geladen wird aber
+ * nur auf "Kunden" und "Heute". Bis dahin gilt der letzte vollstaendig geladene Stand - sonst
+ * verschwand die Zahl nach jeder Aenderung in Bestellen von allen Seiten. Ein Ladefehler oder
+ * ein fehlender Export loescht ihn: dann lieber keine Zahl als eine alte.
+ */
+export function faelleFuerMenue() {
+  const d = kunden.faelle;
+  if (d) kunden.faelleZuletzt = d.verfuegbar && !d.fehler ? d : null;
+  return d || kunden.faelleZuletzt;
 }
 
 const FALL_QUELLE_LABEL = { bestellung: 'Bestellung', angebot: 'Angebot', warenkorb: 'Warenkorb' };
@@ -67,7 +83,9 @@ export function fallKarte(f, { ausgeblendet = false } = {}) {
       : `<button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="">Wieder einblenden</button>`)
     : `<button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="erledigt" title="Ist erledigt – aus der Arbeitsliste nehmen">✓ Erledigt</button>
        <button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="test" title="Eigener Testkauf, kein Kunde">Kein echter Kunde</button>`;
-  return `<section class="card fall${f.dringend === 0 && !ausgeblendet ? ' fall-sofort' : ''}${ausgeblendet ? ' fertig' : ''}" style="margin-bottom:12px">
+  // Roter Rand nur aus Ampelgruenden (f.rot: gesperrt, blockiert, ab 14 Tagen beim Lieferanten, Termin vorbei);
+  // "sofort" steht als Wort daneben - vorher trug jede sofortige Karte den Rand, auch reine Routine.
+  return `<section class="card fall${f.rot && !ausgeblendet ? ' fall-sofort' : ''}${ausgeblendet ? ' fertig' : ''}" style="margin-bottom:12px">
     <div class="card-head">
       <h3>${esc(f.name)} <span class="small muted">${ausgeblendet ? esc(FALL_GRUND_LABEL[f.marke?.grund] || 'ausgeblendet') : esc(stufe)}</span></h3>
       <span class="small">${f.summe ? `${esc(fmtPreis(f.summe))} €` : ''}</span>
@@ -92,9 +110,10 @@ export async function fallMarkeSetzen(schluessel, grund) {
 
 export function viewKundenFaelle() {
   ensureKundenFaelle();
-  const ziel = state.route.params.get('fall');
+  const ziel = kundenLinkWert(state.route.params.get('fall'));
+  const passtZiel = f => kundenLinkWert(f.schluessel) === ziel || kundenLinkWert(f.key) === ziel;
   const roh = kunden.faelle;
-  const d = roh && ziel ? { ...roh, faelle: (roh.faelle || []).filter(f => f.schluessel === ziel || f.key === ziel), ausgeblendet: (roh.ausgeblendet || []).filter(f => f.schluessel === ziel || f.key === ziel) } : roh;
+  const d = roh && ziel ? { ...roh, faelle: (roh.faelle || []).filter(passtZiel), ausgeblendet: (roh.ausgeblendet || []).filter(passtZiel) } : roh;
   if (!d && kunden.loadingFaelle) return `<div class="empty">Lade offene Fälle …</div>`;
   if (d?.fehler) return stoerungState(d, 'Die offenen Fälle');
   if (!d || !d.verfuegbar) return emptyState('Keine Daten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');

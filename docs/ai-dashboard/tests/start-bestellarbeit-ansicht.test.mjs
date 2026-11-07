@@ -23,7 +23,7 @@ test('fehlende Quellen zeigen Ladezustaende und keine erfundene Null-Erledigtmel
     assert.match(html, /(?:wird|werden) geladen/);
     assert.match(html, /Bestellungen werden geladen/);
     assert.match(html, /Packstand wird geladen/);
-    assert.doesNotMatch(html, /Gerade keine Muster|0 Bestellungen sind noch offen|0 packbereit|<span>0<\/span>/);
+    assert.doesNotMatch(html, /Gerade keine Muster|0 Bestellungen sind noch offen|0 Umschläge packbereit|<span>0 Artikel<\/span>/);
     assert.equal(vorbereiten(html).length, 0);
   }
 });
@@ -33,7 +33,7 @@ test('unverfuegbare Einkaufsdaten bleiben mit Ursache sichtbar, ohne Bestellknop
   const html = bestellarbeitBlock({ arbeit });
   assert.match(html, /notice warn/);
   assert.match(html, /Testexport &lt;fehlt&gt;/);
-  assert.doesNotMatch(html, /Gerade keine Muster|<span>0<\/span>|Testexport <fehlt>/);
+  assert.doesNotMatch(html, /Gerade keine Muster|<span>0 Artikel<\/span>|Testexport <fehlt>/);
   assert.equal(vorbereiten(html).length, 0);
   assert.equal(parameter(link(html, 'Alle ansehen').href).get('art'), 'muster');
 });
@@ -68,7 +68,7 @@ test('vier Lieferanten bleiben alle erreichbar: drei direkt und der vierte im au
 test('unbekannte und blockierte Muster verlieren ihren Prueflink nicht und erzeugen keinen irrefuehrenden Bestellknopf', () => {
   const arbeit = arbeitFuer([gruppe('UNGEKLAERT', [position(1)]), gruppe('A', [position(2, { lineItemId: null })])]);
   const html = bestellarbeitBlock({ arbeit });
-  assert.match(html, /<h3>Muster bestellen <span>2<\/span><\/h3>/);
+  assert.match(html, /<h3>Muster bestellen <span>2 Artikel<\/span><\/h3>/);
   assert.match(html, /Vor dem Bestellen müssen noch Angaben geklärt werden/);
   assert.match(html, /2 Musterartikel brauchen Klärung/);
   const ziel = parameter(link(html, 'Fehlende Angaben prüfen').href);
@@ -82,7 +82,7 @@ test('Muster mit fehlenden Bestellangaben bleiben neben vorbereitbaren Mustern s
   const arbeit = arbeitFuer([gruppe('A', [position(1), position(2, { grosshaendlerId: 'UNGEKLAERT' }),
     position(3, { bestellmenge: { menge: 0 } })])]);
   const html = bestellarbeitBlock({ arbeit });
-  assert.match(html, /<h3>Muster bestellen <span>3<\/span><\/h3>/);
+  assert.match(html, /<h3>Muster bestellen <span>3 Artikel<\/span><\/h3>/);
   assert.match(html, /1 Kundenbestellung · 1 Musterartikel/);
   assert.match(html, /2 Musterartikel brauchen Klärung/);
   assert.equal(vorbereiten(html).length, 1);
@@ -108,21 +108,25 @@ test('offene, fertige, Ware- und Packwege tragen die passenden vorhandenen Route
   const html = bestellarbeitBlock({ arbeit, offeneBestellungen: 3,
     pack: { verfuegbar: true, zahlen: { packen: 2, klaeren: 1, gepackt: 4 } } });
   assert.match(html, /3 Bestellungen sind noch offen/);
-  assert.match(html, /2 packbereit · 1 zu klären/);
+  assert.match(html, /2 Umschläge packbereit · 1 zu klären/);
   assert.equal(parameter(link(html, 'Dringendes bearbeiten').href).get('bsort'), 'wichtigkeit');
   assert.equal(parameter(link(html, 'Fertige ansehen').href).get('bfilter'), 'fertig');
   assert.equal(parameter(link(html, 'Ware beim Lieferanten bestellen').href).get('art'), 'ware');
   assert.equal(link(html, 'Muster packen').href, '#/kunden?tab=muster');
   assert.equal(parameter(link(html, 'Ware annehmen').href).get('af'), 'bestellt');
-  assert.equal(parameter(link(html, 'Versand vorbereiten').href).get('mpbereich'), 'gepackt');
-  assert.match(link(html, 'Versand vorbereiten').text, /4 gepackte Umschläge/);
+  // Gepackt heisst verschickt (06.11.): "gepackt" zaehlt nur, was nie eingetragen wurde.
+  assert.equal(parameter(link(html, 'gepackt, nicht verschickt').href).get('mpbereich'), 'gepackt');
+  assert.match(link(html, 'gepackt, nicht verschickt').text, /4 Umschläge gepackt, nicht verschickt · Versand eintragen/);
+  assert.doesNotMatch(html, /Eingeworfen/);
+  const ohne = bestellarbeitBlock({ arbeit, offeneBestellungen: 3, pack: { verfuegbar: true, zahlen: { packen: 2, klaeren: 1, gepackt: 0 } } });
+  assert.doesNotMatch(ohne, /gepackt, nicht verschickt/, 'der Normalfall braucht keine Zeile');
 });
 
 test('ohne packbereite Muster fuehrt der naechste Packweg direkt zu den Klaerfaellen', () => {
   const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), offeneBestellungen: 0,
     pack: { verfuegbar: true, zahlen: { packen: 0, klaeren: 2, gepackt: 1 } } });
   assert.equal(parameter(link(html, 'Klärfälle ansehen').href).get('mpbereich'), 'klaeren');
-  assert.equal(parameter(link(html, 'Versand vorbereiten').href).get('mpbereich'), 'gepackt');
+  assert.equal(parameter(link(html, 'gepackt, nicht verschickt').href).get('mpbereich'), 'gepackt');
   assert.match(html, /0 Bestellungen sind noch offen/);
 });
 
@@ -161,7 +165,7 @@ test('fehlgeschlagene Bestell- und Packabrufe sind kein endloser Lade- oder Null
   const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), bestellQuelle: { verfuegbar: false }, pack: { verfuegbar: false } });
   assert.match(html, /Bestellungen können gerade nicht geladen werden/);
   assert.match(html, /Packstand kann gerade nicht geladen werden/);
-  assert.doesNotMatch(html, /Bestellungen werden geladen|Packstand wird geladen|0 packbereit/);
+  assert.doesNotMatch(html, /Bestellungen werden geladen|Packstand wird geladen|0 Umschläge packbereit/);
 });
 
 test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgemeinen Bestellkarte', () => {
@@ -169,11 +173,59 @@ test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgeme
   const html = bestellarbeitBlock({ arbeit, nurMuster: true,
     pack: { verfuegbar: true, zahlen: { packen: 1, klaeren: 2, warten: 3, gepackt: 4 } } });
   assert.match(html, /Muster &amp; Packstation/);
-  assert.match(html, /3 warten auf Ware/);
-  assert.match(html, /4 gepackt · Versand vorbereiten/);
+  assert.match(html, /3 Umschläge warten auf Ware/);
+  // Gepackt, nie eingetragen: rot wie in der Packstation (#1996), nicht mehr Bernstein.
+  assert.match(html, /href="#\/kunden\?tab=muster&amp;mpbereich=gepackt"><span class="ampel ampel-rot"[^>]*><span class="ampel-zeichen" aria-hidden="true">×<\/span>4 Umschläge nicht eingetragen</);
+  assert.doesNotMatch(html, /chip warn/);
+  const ohne = bestellarbeitBlock({ arbeit, nurMuster: true, pack: { verfuegbar: true, zahlen: { packen: 1, klaeren: 2, warten: 3, gepackt: 0 } } });
+  assert.doesNotMatch(ohne, /mpbereich=gepackt/);
   assert.equal((html.match(/Aufkleber-Druckliste/g) || []).length, 1);
   assert.doesNotMatch(html, /Kundenbestellungen|Dringendes bearbeiten|Bestellungen werden geladen/);
   // Rundgang 29.10. (T6): ein Weg fuer eingetroffene Muster - der Packstation-Reiter "Muster kommt an".
   assert.match(html, /href="#\/kunden\?tab=muster&amp;mp=laden">Muster kommt an</);
   assert.doesNotMatch(html, /Muster-Wareneingang|Etiketten-Druckliste/);
+});
+
+// Rundgang 06.11.2026 (#1996): jede Zahl einmal, kein Chip mit 0, kein Chip mit demselben Ziel wie der Knopf.
+const zahlenIn = html => (html.match(/<nav class="shop-packschritte"[\s\S]*?<\/nav>/)?.[0] || '');
+
+test('Shop-Uebersicht: Packstand nur ueber 0, neutral, die Zahl zum Knopf ist reiner Text', () => {
+  const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true,
+    pack: { verfuegbar: true, zahlen: { packen: 0, klaeren: 5, warten: 14, gepackt: 0 } } });
+  const nav = zahlenIn(html);
+  assert.doesNotMatch(nav, /0 Umschläge/, 'keine Null');
+  assert.match(nav, /<a class="chip shop-packzahl-link" href="#\/kunden\?tab=muster&amp;mpbereich=warten">14 Umschläge warten auf Ware<\/a>/);
+  assert.match(nav, /<span class="shop-packzahl">5 Umschläge zu klären<\/span>/, 'gleiches Ziel wie der Knopf: Text');
+  assert.equal(parameter(link(html, 'Klärfälle ansehen').href).get('mpbereich'), 'klaeren', 'der Knopf bleibt die eine Handlung');
+  const ziele = links(html).map(a => a.href).filter(h => h.includes('mpbereich=klaeren'));
+  assert.equal(ziele.length, 1, 'ein Weg zu den Klaerfaellen');
+  assert.doesNotMatch(nav, /chip warn/);
+  // Nichts offen: keine Zahlenzeile.
+  assert.equal(zahlenIn(bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, pack: { verfuegbar: true, zahlen: { packen: 0, klaeren: 0, warten: 0, gepackt: 0 } } })), '');
+  // Packbereit ist der Knopf "Muster packen": dann ist "packbereit" Text, "zu klären" ein Link.
+  const packen = bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, pack: { verfuegbar: true, zahlen: { packen: 2, klaeren: 1 } } });
+  assert.match(zahlenIn(packen), /<span class="shop-packzahl">2 Umschläge packbereit<\/span>/);
+  assert.match(zahlenIn(packen), /mpbereich=klaeren">1 Umschlag zu klären/);
+});
+
+test('Shop-Uebersicht: nur Klaerfaelle ergeben genau eine Zeile mit einem Link', () => {
+  const arbeit = arbeitFuer([gruppe('UNGEKLAERT', [position(1)])]);
+  const html = bestellarbeitBlock({ arbeit, nurMuster: true, pack: { verfuegbar: true, zahlen: {} } });
+  assert.match(html, /<p class="notice warn">1 Musterartikel: Angaben fehlen – <a href="[^"]+">prüfen →<\/a><\/p>/);
+  assert.doesNotMatch(html, /Muster bestellen ·|Vor dem Bestellen|braucht Klärung|Alle ansehen|Fehlende Angaben prüfen/);
+  assert.equal(links(html).filter(a => a.href.includes('art=muster')).length, 1);
+  // Gemischt: Bestellbares mit Kopfzeile, die Klaerfaelle als "davon" ohne zweiten Link zum selben Ziel.
+  const gemischt = bestellarbeitBlock({ arbeit: arbeitFuer([gruppe('A', [position(1), position(2, { grosshaendlerId: 'UNGEKLAERT' })])]), nurMuster: true });
+  assert.match(gemischt, /<h3>Muster bestellen · 2 Artikel<\/h3>/);
+  assert.match(gemischt, /davon 1 Musterartikel mit fehlenden Angaben/);
+  assert.equal(links(gemischt).filter(a => a.href.includes('art=muster')).length, 1, 'nur "Alle ansehen"');
+});
+
+test('Shop-Uebersicht: Kunden nach Produkt fragen mit der Zahl des Menues, nur ueber 0', () => {
+  const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, anrufe: 24, pack: { verfuegbar: true, zahlen: {} } });
+  assert.equal(link(html, 'nach Produkt fragen').href, '#/kunden?tab=anrufe');
+  assert.match(link(html, 'nach Produkt fragen').text, /^24 Kunden nach Produkt fragen →$/);
+  assert.match(bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, anrufe: 1 }), /1 Kunde nach Produkt fragen/);
+  for (const anrufe of [0, null]) assert.doesNotMatch(bestellarbeitBlock({ arbeit: arbeitFuer([]), nurMuster: true, anrufe }), /nach Produkt fragen/);
+  assert.doesNotMatch(bestellarbeitBlock({ arbeit: arbeitFuer([]), anrufe: 24 }), /nach Produkt fragen/, 'nur die Shop-Uebersicht');
 });
