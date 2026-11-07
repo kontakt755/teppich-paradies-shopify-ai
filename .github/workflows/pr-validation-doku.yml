@@ -1,0 +1,35 @@
+name: PR validation (Doku)
+
+# Gegenstueck zu pr-validation.yml: Die volle Pruefung laesst reine Markdown-PRs
+# aus (paths-ignore). Hier laufen nur die Guards, die Markdown betreffen -
+# Theme-IDs in Anweisungsdateien, Changelog-Eintraege, Bewertungen, Secrets.
+# Rund 15 s statt 80 s. Aendert ein PR Markdown und anderes, laufen beide.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-validation-doku-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  doku-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+        env:
+          # Kein Browser noetig; Puppeteer laedt sonst je Lauf Chrome.
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+      - run: npm run -s pruefen -- --nur theme,changelog,bewertung,secrets
