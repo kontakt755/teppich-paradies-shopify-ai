@@ -1,0 +1,39 @@
+name: Pages (Control Center)
+
+# Veroeffentlicht docs/ auf GitHub Pages - nur, wenn sich dort etwas geaendert hat.
+# Bis 2026-11-07 baute GitHub die Seite selbst nach jedem Push auf main (27 Laeufe
+# in 22 h, 15 davon abgebrochen, 22 Maschinenminuten), auch bei reinen Theme-
+# oder Skript-Commits. Quelle in den Repository-Einstellungen: "GitHub Actions"
+# (build_type "workflow"); docs/.nojekyll bleibt, es wird nichts umgewandelt.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+      - id: deployment
+        uses: actions/deploy-pages@v4

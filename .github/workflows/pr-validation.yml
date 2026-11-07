@@ -3,6 +3,11 @@ name: PR validation
 on:
   pull_request:
     branches: [main]
+    # Reine Markdown-PRs (Doku, Notizen, Skills) brauchen keine Tests und keinen
+    # Theme Check: fuer sie laeuft pr-validation-doku.yml mit den Guards, die
+    # Markdown pruefen. Sobald eine andere Datei dabei ist, laeuft alles hier.
+    paths-ignore:
+      - '**.md'
 
 permissions:
   contents: read
@@ -27,7 +32,16 @@ jobs:
       - run: npm ci
       # Fuer themecheck:guard (Theme Check laeuft offline, keine Anmeldung).
       # Dieselbe Version wie auf dem Mac, damit Baseline und Befunde gleich sind.
-      - run: npm install -g --no-fund --no-audit @shopify/cli@4.9.4
+      # Die Installation liegt im Cache (eigenes npm-Praefix, Schluessel = Version);
+      # bei einem Versionswechsel hier und im Schluessel aendern.
+      - uses: actions/cache@v5
+        with:
+          path: ~/.npm-global
+          key: shopify-cli-4.9.4-${{ runner.os }}
+      - run: |
+          npm config set prefix ~/.npm-global
+          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
+          [ -x ~/.npm-global/bin/shopify ] || npm install -g --no-fund --no-audit @shopify/cli@4.9.4
       # Ubuntu ab 23.10 sperrt per AppArmor die User-Namespaces, die die Chrome-
       # Sandbox braucht; die Browsertests der Betriebssuite brachen mit "No usable
       # sandbox!" ab (erster Lauf #1667). Nur auf dem Wegwerf-Runner freigeben,
