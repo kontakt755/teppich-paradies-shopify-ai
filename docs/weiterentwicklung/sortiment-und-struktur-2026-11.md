@@ -105,8 +105,8 @@ den Preisvergleich zu öffnen.
 
 - Lieferanten im Einkauf angelegt: `lieferant-j` und `lieferant-k` (Metaobjekt `tp_lieferant`,
   Direktversand „nein“, Bestellweg Mail). Belegte Konditionen stehen dort im Hinweis
-  (Coupon-Mindestlänge J 2 m; Couponzuschlag K 4,00 €/m² seit 01.03.2026; Rohstoffzuschlag J
-  je Polmaterial). Frachtbeträge stehen nur auf den Rechnungs-PDFs, nicht im Mailtext.
+  (Coupon-Mindestlänge J 2 m; Couponzuschlag K seit 01.03.2026; Rohstoffzuschlag J
+  je Polmaterial; Beträge nur im Hinweisfeld). Frachtbeträge stehen nur auf den Rechnungs-PDFs, nicht im Mailtext.
 - Theme: Block `tp-zuschnitt-laden` nach dem Rollenrechner, nur bei Tag `zuschnitt-laden`.
   Pilot-Produkte: nur Meterware (keine Wunschmaß-Variante), Tags `zuschnitt-laden` und
   `ohne-raummass`, `service.lieferzeit` belegt, Varianten `einkauf.route = SUPPLIER_TO_TP`,
@@ -116,3 +116,74 @@ den Preisvergleich zu öffnen.
   Postfach. Kandidaten (je Lieferant rund 7) nur lokal, Einkaufspreise nie im Repository.
 - Preisregeln (Inhaber 2026-11-04): K = UVP laut aktueller Liste; J = Einkauf × 2,0 (Annahmen in `docs/shop-decisions.md`). Offen:
   Auswahl der Qualitäten nach den aktuellen Listen.
+
+### Preislisten im Postfach (geprüft 2026-11-05)
+
+- J: kundenbezogene Preisliste ab 2026 (Mail vom 22.12.2025) ist die gültige EK-Liste; die
+  Liste in der Dropbox (03/2024) ist überholt. Zuschläge 2026: Couponaufschlag (zweistufig nach
+  Einkaufspreis) und Rohstoffzuschlag je Polmaterial (quartalsweise; PP am höchsten, PES am
+  niedrigsten). Beträge nur im Lieferanten-Eintrag und in der Liste, nicht im Repository.
+- K: Rollenpreise laut Liste vom 05/2024 (Außendienst), seit 12/2025 unverändert; UVP-Listen
+  für zwei Linien vom 01/2024; Couponzuschlag seit 01.03.2026 (Betrag im Lieferanten-Eintrag). Die „Preisliste 2026“
+  vom April 2026 betrifft nur Teppichfliesen.
+- Die PDFs lassen sich aus der Remote-Session nicht öffnen (kein Anhang-Download); zum
+  Auswerten in den Dropbox-Ordner „Preislisten“ legen.
+
+### Kandidaten J gerechnet (2026-11-06)
+
+- Grundlage: J-Liste gültig ab 01.01.2026 (vom Inhaber hochgeladen). K-„Preisliste 2026“ ist
+  nur die Fliesenliste (19 Qualitäten); keine unserer 69 Teppichfliesen stammt von K.
+- Rechnung nach `docs/shop-decisions.md`: Couponpreis der Liste × (1 + Rohstoffzuschlag) × 2,0
+  × 1,19, auf ,90 aufgerundet. Polmaterial unbekannt, deshalb PP-Zuschlag (der höchste) als
+  Obergrenze; mit PA oder PES wird der Preis 1–3 € niedriger.
+- Nur Qualitäten mit Couponpreis kommen in Frage (Zuschnitt je Kunde). Die zehn günstigsten
+  landen bei **29,90–35,90 €/m²** (Preisklasse Preiswert), weitere zehn bei 36,90–39,90 €/m².
+  Die Filzrücken-Qualitäten ohne Couponpreis (rechnerisch 9,90–18,90 €/m²) gibt es nur als
+  ganze Rolle; das wäre Lagerware im Laden, ein anderes Modell als der Pilot.
+- Gelschaum-Läufer der Liste (vier Breiten 67–120 cm): rechnerisch 22,90–24,90 €/m². Das
+  deckt die Lücke „Läufer als Meterware“.
+- Offen vor dem Anlegen: Machart, Polmaterial, Breiten und Farben je Qualität. Die
+  Datenanfrage beim Hersteller (Bildnutzungsvereinbarung unterschrieben am 10.10.,
+  Erinnerungen 19.10. und 04.11.) ist unbeantwortet. Kandidatenliste mit Preisen nur lokal.
+
+### Umfang: ganzes Coupon-Sortiment von J (2026-11-07)
+
+- Statt 10–15 Pilotqualitäten alle 46 Qualitäten mit Couponpreis anlegen (rechnerisch
+  Preiswert 20, Komfort 10, Gehoben 11, Premium 4, Exklusiv 1) plus die sechs
+  Gelschaum-Läufer. Begründung: die Preisklassen-Kacheln und Empfehlungen lösen die
+  Orientierung, Teppichboden wächst um rund 15 %; gemessen wird das Bezugsmodell (Fracht,
+  Zuschnitt im Laden, Lieferzeit), nicht die Zahl der Qualitäten. Filzrücken-Qualitäten ohne
+  Couponpreis bleiben draußen (nur ganze Rolle).
+- **Doppelte vermeiden:** 4 Qualitäten des Herstellers hinter J und 16 des Herstellers hinter K
+  sind schon im Shop, bezogen über Lieferant A und C unter deren Handelsnamen (`einkauf.hersteller`
+  an der Variante). Welche Herstellerqualität dahintersteht, steht nicht in den Daten. Vor dem
+  Anlegen je Qualität abgleichen (Musterkarte oder Rückfrage beim Hersteller); eine schon
+  vorhandene Qualität bekommt kein zweites Produkt, sondern höchstens einen neuen Bezugsweg.
+- K bleibt beim Stand oben: Rollen-UVP fehlt.
+- Datenanfrage J: Ansprechpartnerin abwesend, Entwurf an die Vertretung liegt im Postfach
+  (2026-11-07).
+
+### Sisal-Angebot Lieferant B (2026-11-06)
+
+- Zwei Sisal-Qualitäten (100 % Sisal), Angebot gültig bis 30.06.2027, je als Coupon,
+  ganze Rolle (30 lfm) und Wunschmaß, mit UVP je m².
+- Qualität 1: 8,5 mm, 400/500 cm, 14 Farben (drei davon nur eingeschränkt lieferbar),
+  UVP Coupon 62,90 €/m², Wunschmaß 81,90 €/m². Qualität 2: beschichteter Rücken, 6 mm,
+  400 cm, 4 Farben, UVP 86,90 €/m², Wunschmaß 112,90 €/m².
+- Passt zwischen unsere Sisal-Böden (54,90 / 72,90 / 77,90 / 108,90 €/m²); 14 Farben sind
+  mehr als jede vorhandene Sisal-Qualität. Wunschmaß gehört zu „Teppich nach Maß“
+  (Vorlage `wunschmass-fertig` wie die übrigen Wunschmaß-Teppiche von B).
+- Hinweis zur Spanne (Werte nur lokal): Bei Qualität 1 im Wunschmaß ist die Spanne zur UVP
+  deutlich enger als beim Coupon.
+- Offen: Preisregel für B-Teppichboden bestätigen (UVP wie bei den Wunschmaß-Teppichen),
+  Bilder je Farbe (das Angebots-PDF enthält nur kleine Farbfelder), Lieferweg (Direktversand
+  bei B ungeklärt).
+
+### Zweite Marke von Lieferant H freigegeben (2026-11-06)
+
+- Der Hersteller hinter H (Wollteppichboden, Direktversand) erlaubt auch seine zweite Marke,
+  ausgenommen drei Qualitäten (Liste in der Mail vom 06.11.). Lieferkonditionen wie bei der
+  Hauptmarke, alle Qualitäten als Coupon und einfassbar, kein Raummaß (volle Breite).
+- Preislisten und Bordürenkatalog liegen der Mail bei, Bilder kamen per WeTransfer (wird lokal
+  gesichert). Steht im Lieferanten-Eintrag `lieferant-h` (Hinweis). Anlegen nach Skill
+  `produktimport` am nächsten fertigen H-Produkt entlang.
