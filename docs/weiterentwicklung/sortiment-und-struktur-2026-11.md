@@ -163,6 +163,22 @@ den Preisvergleich zu öffnen.
 - Datenanfrage J: Ansprechpartnerin abwesend, Entwurf an die Vertretung liegt im Postfach
   (2026-11-07).
 
+### Sisal-Angebot Lieferant B (2026-11-06)
+
+- Zwei Sisal-Qualitäten (100 % Sisal), Angebot gültig bis 30.06.2027, je als Coupon,
+  ganze Rolle (30 lfm) und Wunschmaß, mit UVP je m².
+- Qualität 1: 8,5 mm, 400/500 cm, 14 Farben (drei davon nur eingeschränkt lieferbar),
+  UVP Coupon 62,90 €/m², Wunschmaß 81,90 €/m². Qualität 2: beschichteter Rücken, 6 mm,
+  400 cm, 4 Farben, UVP 86,90 €/m², Wunschmaß 112,90 €/m².
+- Passt zwischen unsere Sisal-Böden (54,90 / 72,90 / 77,90 / 108,90 €/m²); 14 Farben sind
+  mehr als jede vorhandene Sisal-Qualität. Wunschmaß gehört zu „Teppich nach Maß“
+  (Vorlage `wunschmass-fertig` wie die übrigen Wunschmaß-Teppiche von B).
+- Hinweis zur Spanne (Werte nur lokal): Bei Qualität 1 im Wunschmaß ist die Spanne zur UVP
+  deutlich enger als beim Coupon.
+- Offen: Preisregel für B-Teppichboden bestätigen (UVP wie bei den Wunschmaß-Teppichen),
+  Bilder je Farbe (das Angebots-PDF enthält nur kleine Farbfelder), Lieferweg (Direktversand
+  bei B ungeklärt).
+
 ### Zweite Marke von Lieferant H freigegeben (2026-11-06)
 
 - Der Hersteller hinter H (Wollteppichboden, Direktversand) erlaubt auch seine zweite Marke,
