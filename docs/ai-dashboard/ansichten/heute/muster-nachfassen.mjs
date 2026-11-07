@@ -1,5 +1,11 @@
 /**
- * "Heute": Karte "Muster nachfassen" (Inhaberentscheidung 2026-10-10 - der Verkauf im Laden
+ * Karte "Automatische Nachfrage-Mails" (frueher "Muster nachfassen" auf Heute, #/heute?mn=1). Seit
+ * 07.11.2026 (Inhaber, w-284) unter Kunden › Kunden nach Produkt fragen (ansichten/kunden/muster-anrufe.mjs):
+ * Anruf und Mail sind zwei Wege zum selben Ziel und stehen jetzt an einem Ort. Dort oben eine ruhige
+ * Zeile (nachfrageMailsZeile), aufgeklappt per Parameter mn=1 diese Karte. Heute zeigt nur noch die
+ * Warnungen (Versandfehler, Postfach-Suche, Hinweise) mit Link hierher.
+ *
+ * (Inhaberentscheidung 2026-10-10 - der Verkauf im Laden
  * fasst nach; seit w-119 vom 2026-10-16 verschickt ein taeglicher Lauf Text 1 und die
  * Erinnerung selbst vom Firmenpostfach, scripts/muster-nachfassen-senden.mjs).
  *
@@ -18,7 +24,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
-import { musterNachfassen, fuelleText, mailtoLink, vorlageFuer, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
+import { musterNachfassen, fuelleText, mailtoLink, vorlageFuer, versandLaeuft, teileNachfassen, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
 import { heuteDaten, ladeBestellzeilenNeu } from './daten.mjs';
 import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 
@@ -157,22 +163,58 @@ function versandZeile(v, offen) {
 }
 
 /**
- * Die Karte - leer bleibt sie ganz weg (nichts offen, nichts abgemeldet, in den letzten Tagen nichts erledigt).
- * @param {{offen: object[], erledigt: object[], abgemeldet?: object[]}} stand  musterNachfassenStand()
+ * Eine ruhige Zeile ueber der Karte: was beim naechsten Lauf rausgeht, letzter Lauf, was erledigt ist.
+ * Gelb nur bei echten Warnungen (Fehler im Lauf, Postfach-Suche kaputt, Hinweise aus dem Postfach,
+ * faellige Mails ohne laufenden Versand). Der Knopf klappt die Karte per Parameter mn auf.
+ * @param {{offen: object[], erledigt: object[]}} stand  musterNachfassenStand()
+ * @param {boolean} offen  ist die Karte gerade aufgeklappt?
  */
-export function musterNachfassenBlock(stand) {
+export function nachfrageMailsZeile(stand, offen) {
+  const t = heuteDaten.musterTexte;
+  const laeuft = versandLaeuft(t);
+  const lauf = t?.versand?.letzterLauf;
+  const teile = [];
+  const warn = [];
+  if (!kunden.bestellungen || laeuft === null) teile.push('Lade …');
+  else if (kunden.bestellungen.verfuegbar === false || kunden.bestellungen.fehler) teile.push('Bestellungen nicht geladen – fällige Mails unbekannt');
+  else {
+    const auto = teileNachfassen(stand.offen, { automatisch: laeuft });
+    if (laeuft) {
+      teile.push(auto.automatisch.length ? `${plural(auto.automatisch.length, 'Mail geht', 'Mails gehen')} beim nächsten Lauf von selbst raus` : 'nichts fällig');
+      if (lauf?.am) teile.push(`letzter Lauf ${fmtDateTime(lauf.am)} (${lauf.verschickt || 0} verschickt)`);
+    } else if (stand.offen.length) warn.push(`${stand.offen.length} fällig, automatischer Versand läuft nicht`);
+    else teile.push('nichts fällig · automatischer Versand läuft nicht');
+    if (auto.ohneWeg.length) teile.push(`${auto.ohneWeg.length} ohne E-Mail`);
+    if (stand.erledigt.length) teile.push(`${stand.erledigt.length} in den letzten Tagen erledigt`);
+  }
+  if (laeuft && lauf?.fehler) warn.push(`${plural(lauf.fehler, 'Fehler', 'Fehler')} im letzten Lauf`);
+  if (t?.abgleichFehler) warn.push('Postfach-Suche fehlgeschlagen, es geht nichts raus');
+  if (t?.antwortHinweise?.length) warn.push(`${plural(t.antwortHinweise.length, 'Hinweis', 'Hinweise')} aus dem Postfach`);
+  const text = [...warn, ...teile].join(' · ');
+  return `<div class="heute-hg-zeile nachfrage-mails-zeile${warn.length ? ' warn' : ''}"><span class="heute-hg-name">Automatische Nachfrage-Mails</span><span class="heute-hg-text">${esc(text)}</span><button type="button" class="heute-hg-knopf" data-param="mn" data-value="${offen ? '' : '1'}" aria-expanded="${offen}">${offen ? 'Zuklappen' : 'Ansehen'}</button></div>`;
+}
+
+/**
+ * Die Karte. Auf Heute blieb sie leer ganz weg; eingebettet (unter Kunden nach Produkt fragen, unter
+ * der Zeile, die schon Titel und Kurzstand traegt) steht sie immer da und ohne eigenen Kopf.
+ * @param {{offen: object[], erledigt: object[], abgemeldet?: object[]}} stand  musterNachfassenStand()
+ * @param {{eingebettet?: boolean}} [opt]
+ */
+export function musterNachfassenBlock(stand, { eingebettet = false } = {}) {
   const abgemeldet = stand.abgemeldet || [];
   const t = heuteDaten.musterTexte;
   const antworten = t?.antwortHinweise || [];
   const abgleichFehler = t?.abgleichFehler || null;
-  if (!stand.offen.length && !stand.erledigt.length && !abgemeldet.length && !antworten.length && !abgleichFehler) return '';
+  const leer = !stand.offen.length && !stand.erledigt.length && !abgemeldet.length && !antworten.length && !abgleichFehler;
+  if (leer && !eingebettet) return '';
   const texte = t?.verfuegbar ? t.texte : null;
   const automatisch = Boolean(t?.versand?.eingerichtet);
   const lesend = istNurLesend();
   // Fehlt die Vorlage, geht es trotzdem: Liste und Knopf funktionieren, nur ohne Textvorschlag.
   const hinweis = stand.offen.length && t && !t.verfuegbar ? `<p class="heute-hinweis">Ohne Textvorschlag: ${esc(t.hinweis || 'Textvorlage nicht geladen.')}</p>` : '';
-  return `<section class="heute-block heute-mn" aria-labelledby="heuteMuster">
-    <div class="heute-block-kopf"><h2 id="heuteMuster">Muster nachfassen</h2><span>${stand.offen.length ? `${plural(stand.offen.length, 'Kunde', 'Kunden')} offen` : 'alles nachgefasst'}</span></div>
+  const kopf = eingebettet ? '' : `<div class="heute-block-kopf"><h2 id="heuteMuster">Automatische Nachfrage-Mails</h2><span>${stand.offen.length ? `${plural(stand.offen.length, 'Kunde', 'Kunden')} offen` : 'alles nachgefasst'}</span></div>`;
+  return `<section class="heute-block heute-mn" ${eingebettet ? 'aria-label="Automatische Nachfrage-Mails"' : 'aria-labelledby="heuteMuster"'}>
+    ${kopf}
     <p class="heute-mn-regel">Erste E-Mail ab ${ERSTE_NACH_TAGEN} Tagen nach dem Versand, höchstens eine Erinnerung ${ERINNERUNG_NACH_TAGEN} Tage danach. Anrufen nur bei Rückrufwunsch.</p>
     ${versandZeile(t?.versand, stand.offen.length)}
     ${abgleichFehler ? `<p class="notice warn">Postfach-Suche fehlgeschlagen: ${esc(abgleichFehler)}. Solange das so ist, verschickt der Lauf nichts.</p>` : ''}
@@ -181,6 +223,7 @@ export function musterNachfassenBlock(stand) {
     ${hinweis}
     ${abgemeldet.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Abgemeldet</p>${abgemeldet.map(abgemeldetZeile).join('')}</div>` : ''}
     ${stand.erledigt.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Erledigt in den letzten Tagen</p>${stand.erledigt.map(fertigZeile).join('')}</div>` : ''}
+    ${leer ? '<p class="small muted">Gerade ist keine Nachfrage fällig und in den letzten Tagen keine verschickt.</p>' : ''}
   </section>`;
 }
 

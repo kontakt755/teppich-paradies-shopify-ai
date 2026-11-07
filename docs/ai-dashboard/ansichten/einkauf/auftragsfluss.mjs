@@ -14,7 +14,8 @@ import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterEigen, stufeVon, wartetage } from '../../lib/einkauf-lieferanten.mjs';
 import { kettelwegNoetig, musterSchritt } from '../../lib/einkauf-uebersicht.mjs';
-import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { versandRueckmeldung, kundenmailKandidaten } from '../../lib/versand.mjs';
+import { kundenmailFeld, kundenmailGewaehlt } from '../../bausteine/kundenmail.mjs';
 import { LIEFERWEG_WORT, istLagerware, lieferwegVon, selbstStand } from '../../lib/lieferweg.mjs';
 
 export { musterEigen };
@@ -144,6 +145,20 @@ export function ensureEinkaufBestellungen() {
     einkauf.bestellungen = d; einkauf.loadingBestellungen = false;
     if (['heute', 'einkauf'].includes(state.route.view)) render();
   });
+}
+
+/**
+ * Auftragsfluss-Stand fuer eine Rueckfrage (Kundenmail beim Abschliessen, w-276): der geladene Stand
+ * oder einmal frisch geholt - der Klick kann von "Heute" oder "Kunden" kommen, wo er noch fehlt.
+ * null, wenn er nicht lesbar ist; dann fragt die Rueckfrage lieber einmal zu viel (der Server
+ * nimmt die Mail ohnehin nur fuer Ware vor "raus" an).
+ */
+export async function auftragsstatusPositionen() {
+  if (!einkauf.auftragsstatus?.positionen) {
+    const d = await fetchEinkauf('/api/einkauf/auftragsstatus').catch(() => null);
+    if (d?.verfuegbar) einkauf.auftragsstatus = d;
+  }
+  return einkauf.auftragsstatus?.positionen || null;
 }
 
 export function ensureEinkaufAuftragsstatus() {
@@ -616,11 +631,14 @@ function openAuftragAbschliessenDialog(orderId) {
   if (!a) return;
   const offen = auftragOffenePositionen(a).filter(p => p.lineItemId);
   if (!offen.length) { toast('Keine offenen Artikel in diesem Auftrag.'); return; }
+  // Ware, die "raus" uebersprungen hat: Kundenmail vorab angehakt anbieten (w-276).
+  const kandidaten = kundenmailKandidaten(a, einkauf.auftragsstatus?.positionen || {}, offen.map(p => p.lineItemId));
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="abTitle" data-dialog>
     <h2 id="abTitle">Ohne Einkauf abschließen · ${esc(a.name)}</h2>
-    <p class="small muted">Setzt ${plural(offen.length, 'Artikel', 'Artikel')} dieses Auftrags im Auftragsfluss auf „Erledigt". Gedacht für Testbestellungen oder Aufträge, die anders erledigt wurden. ${a.testbestellung ? 'Testbestellung: in Shopify wird nichts gebucht.' : 'In Shopify wird die Bestellung als versendet gebucht, ohne Mail an den Kunden. Wurde sie storniert, zuerst in Shopify stornieren.'} Über den Filter „Erledigt" lässt sich der Schritt nachvollziehen und wieder öffnen.</p>
+    <p class="small muted">Setzt ${plural(offen.length, 'Artikel', 'Artikel')} dieses Auftrags im Auftragsfluss auf „Erledigt". Gedacht für Testbestellungen oder Aufträge, die anders erledigt wurden. ${a.testbestellung ? 'Testbestellung: in Shopify wird nichts gebucht.' : `In Shopify wird die Bestellung als versendet gebucht${kandidaten.length ? '' : ', ohne Mail an den Kunden'}. Wurde sie storniert, zuerst in Shopify stornieren.`} Über den Filter „Erledigt" lässt sich der Schritt nachvollziehen und wieder öffnen.</p>
     <ul class="small" style="margin:0;padding-left:18px">${offen.map(p => `<li>${esc(anzeigeWert(p.titel))} · ${esc(p.farbe)}</li>`).join('')}</ul>
     <div class="field"><label for="abGrund">Grund (Pflicht)</label><textarea id="abGrund" name="grund" required maxlength="500" placeholder="z. B. Testbestellung, kein Einkauf nötig"></textarea></div>
+    ${kundenmailFeld(kandidaten)}
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Abschließen</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
@@ -636,7 +654,7 @@ function openAuftragAbschliessenDialog(orderId) {
     try {
       const r = await fetch('/api/kunden/bestellung-fertig', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ orderId: a.id, lineItemIds: offen.map(p => p.lineItemId), notiz: grund }),
+        body: JSON.stringify({ orderId: a.id, lineItemIds: offen.map(p => p.lineItemId), notiz: grund, kundeInformieren: kundenmailGewaehlt(form) }),
       });
       j = await r.json().catch(() => ({}));
       if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); knopf.disabled = false; return; }

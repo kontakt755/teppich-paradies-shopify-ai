@@ -15,7 +15,7 @@ import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
-import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus, ladeStandNeu, ensureEinkaufLieferanten } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus, ladeStandNeu, ensureEinkaufLieferanten, auftragsstatusPositionen } from '../einkauf/auftragsfluss.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { warteWort, warteTitel } from '../../lib/ampel.mjs';
 import { ampelPlakette } from '../../bausteine/ampel.mjs';
@@ -23,7 +23,8 @@ import { kunden, telLink, kundenAuftragKarte, ratgeberKnopf, ZAHLUNG_TEXT, VERSA
 import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { bestellinhalt } from '../../lib/bestellinhalt.mjs';
-import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { versandRueckmeldung, kundenmailKandidaten } from '../../lib/versand.mjs';
+import { kundenmailFrage } from '../../bausteine/kundenmail.mjs';
 import { aktualisiereMusteretiketten, bestellungsEtikettenDrucken, musteretikettenBlock, musteretikettenKlick } from './musteretiketten.mjs';
 
 /** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
@@ -181,11 +182,19 @@ async function kundeFertigSetzen(orderId) {
   const ids = (zeile?.auftrag?.positionen || []).filter(p => p.lineItemId).map(p => p.lineItemId);
   if (!ids.length) return;
   const test = zeile.auftrag?.testbestellung;
-  if (!window.confirm(`${zeile.orderName}: alle ${ids.length} Artikel dieser Bestellung wirklich auf „Erledigt" setzen?${test ? '' : '\n\nIn Shopify wird die Bestellung als versendet gebucht, falls noch nicht geschehen – ohne Mail an den Kunden.'}`)) return;
+  // Ware, die "raus" uebersprungen hat: Rueckfrage mit vorab angehakter Kundenmail (w-276).
+  const kandidaten = kundenmailKandidaten({ ...zeile.auftrag, id: orderId }, await auftragsstatusPositionen() || {}, ids);
+  let kundeInformieren = false;
+  if (kandidaten.length) {
+    const wahl = await kundenmailFrage({ titel: `Kunde fertig · ${zeile.orderName}`, kandidaten,
+      text: `Alle ${ids.length} Artikel dieser Bestellung auf „Erledigt“ setzen? In Shopify wird die Bestellung als versendet gebucht, falls noch nicht geschehen.` });
+    if (wahl === null) return;
+    kundeInformieren = wahl;
+  } else if (!window.confirm(`${zeile.orderName}: alle ${ids.length} Artikel dieser Bestellung wirklich auf „Erledigt" setzen?${test ? '' : '\n\nIn Shopify wird die Bestellung als versendet gebucht, falls noch nicht geschehen – ohne Mail an den Kunden.'}`)) return;
   try {
     const r = await fetch('/api/kunden/bestellung-fertig', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ orderId, lineItemIds: ids, notiz: 'Kunde fertig (Sammelschritt, Bestellliste)' }),
+      body: JSON.stringify({ orderId, lineItemIds: ids, notiz: 'Kunde fertig (Sammelschritt, Bestellliste)', kundeInformieren }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return; }

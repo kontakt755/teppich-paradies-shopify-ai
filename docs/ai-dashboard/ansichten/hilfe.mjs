@@ -17,7 +17,7 @@ export const MENUE_KURZ = [
   ['Heute', 'Die Shop-Übersicht: zuerst die Warenbestellungen, dann Probleme, Muster und Versand. Ein Knopf je Zeile führt direkt hin.'],
   ['Bestellungen', 'Alle Bestellungen der Kunden: was offen ist und was als Nächstes dran ist.'],
   ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen.'],
-  ['Kunden nach Produkt fragen', 'Wer seit 5 Tagen Muster hat, wird gefragt, wie sie angekommen sind: Anruf oder Rückfrage-Mail. Ergebnis anklicken, Notiz eintippen. Oben steht, welche Gründe bisher genannt wurden. Am Handy unter „Mehr“.'],
+  ['Kunden nach Produkt fragen', 'Wer seit 5 Tagen Muster hat, wird gefragt, wie sie angekommen sind: Anruf oder Rückfrage-Mail. Ergebnis anklicken, Notiz eintippen. Ganz oben steht der Stand der automatischen Nachfrage-Mails („Ansehen“ zeigt die einzelnen Kunden und Texte), darunter, welche Gründe bisher genannt wurden. Am Handy unter „Mehr“.'],
   ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Bestelltag ein Umschlag, Bestellungen eines Kunden vom selben Tag zusammen. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
   ['Musterlager', 'Muster, die wir selbst da haben: was noch liegt, was reserviert ist, einlagern und Aufkleber drucken. Am Handy unter „Mehr“.'],
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
@@ -38,12 +38,12 @@ export const HEUTE_BLOECKE = [
   ['Von uns abschicken', 'Ware, die wir selbst zuschneiden, packen und verschicken.'],
   ['Probleme', 'Was rot ist und eine Bestellung aufhält. Ein Knopf je Zeile führt hin. Steht eine Bestellung schon lange still, stehen dort auch „Abschließen…“ und „Läuft noch“.'],
   ['Muster & Packstation', 'Muster bestellen und Umschläge packen; darunter „Kunden nach Produkt fragen“.'],
-  ['Versand & Kunden nachfassen', 'Versandte Bestellungen ohne Empfangsbeleg, automatische Nachfrage-Mails und Bewertungen.'],
+  ['Versand & Kunden nachfassen', 'Versandbuchungen, die geprüft werden müssen, versandte Bestellungen ohne Empfangsbeleg und Warnungen zu den Nachfrage-Mails (Fehler im Versand, Postfach-Suche). Der normale Stand der Nachfrage-Mails steht unter „Kunden nach Produkt fragen“.'],
   ['Im Hintergrund', 'Ruhige Zeilen: was die Musterautomatik in 7 Tagen bestellt hat und wie alt die Daten sind, mit „Jetzt aktualisieren“.'],
   ['Weitere Bereiche', 'Zum Aufklappen: Laden & Anfragen, Aufgaben, Shop & Technik (nur Inhaber) und die bisherige Gesamtübersicht.'],
 ];
 /** Bloecke, die nur erscheinen, wenn es dort etwas gibt (dieselben Namen wie auf der Seite). */
-export const HEUTE_BEI_BEDARF = ['Von uns abschicken', 'Probleme', 'Musterautomatik', 'Alte Bestellungen aufräumen'];
+export const HEUTE_BEI_BEDARF = ['Von uns abschicken', 'Probleme', 'Musterautomatik', 'Alte Bestellungen aufräumen', 'Versand & Kunden nachfassen'];
 
 function heuteKarte() {
   const nurBeiBedarf = n => (HEUTE_BEI_BEDARF.includes(n) ? ' <span class="muted">(nur wenn es etwas gibt)</span>' : '');

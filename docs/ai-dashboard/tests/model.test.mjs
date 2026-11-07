@@ -233,3 +233,15 @@ test('mitBlockerAbschnitt: setzt "## Blocker" so, dass parseBody den Grund liest
   assert.equal(parseBody(mitBlockerAbschnitt(null, 'Zeile 1\n## Ziel\nboese')).goal, null);
   assert.equal(mitBlockerAbschnitt(body, '   '), body, 'ohne Grund keine Aenderung');
 });
+
+test('Beobachten zaehlt nicht als kritisch oder ueberfaellig (w-283, #1693)', () => {
+  const t = normalizeTask(issue({ number: 1693, labels: ['status:beobachten', 'priority:p0', 'type:entscheidung', 'area:google'], body: '## Frist\n2026-08-01' }), { now: NOW });
+  assert.equal(t.status, 'beobachten');
+  assert.equal(t.due, '2026-08-01');
+  assert.equal(t.overdue, false);
+  const s = summarize([t], { now: NOW });
+  assert.equal(s.critical, 0);
+  assert.equal(s.overdue, 0);
+  const health = areaHealth([t], { now: NOW });
+  assert.ok(health.every(a => a.level !== 'kritisch'));
+});

@@ -93,7 +93,7 @@ test('Schreiben: ganze Musterstrecke per Klick, wer/wann je Schritt, Positionsst
   uhr.jetzt = new Date('2026-01-14T10:00:00Z');
   const a = akte().auftraege[0];
   assert.deepEqual([a.naechsterSchritt.wer, a.naechsterSchritt.aktion, a.naechsterSchritt.faelligSeitTagen], ['wir', null, 4], '4 Tage seit Faelligkeit: 8 Tage ab Versand minus bestehende 4-Tage-Frist; Empfang am 8. verschiebt sie nicht');
-  assert.equal(a.naechsterSchritt.href, '#/heute?mn=1');
+  assert.equal(a.naechsterSchritt.href, '#/kunden?tab=anrufe&mn=1');
   assert.equal(a.verlauf.find(s => s.schritt === 'nachgefasst').zustand, 'aktuell');
   assert.equal(a.verlauf.find(s => s.schritt === 'nachgefasst').am, null, 'Anzeigen der Nachfrage erzeugt keinen Nachgefasst-Haken');
   assert.equal(fs.existsSync(path.join(dir, 'nachfassen', 'versand.json')), false, 'Zeitleistenlesen sendet keine Nachricht');
@@ -231,7 +231,7 @@ test('Muster "haben wir da": Wahl speichern (privat, nur anhaengen), raus aus "z
   assert.deepEqual(fertig.verlauf.slice(0, 3).map(s => [s.schritt, s.zustand]), [['angefragt', 'erledigt'], ['raus', 'erledigt'], ['kunde_hat_muster', 'erledigt']]);
   assert.equal(fertig.verlauf[1].label, 'Persönlich übergeben');
   assert.equal(fertig.naechsterSchritt.aktion, null, 'Uebergabe bestaetigt Empfang, keine Nachfrage');
-  assert.equal(fertig.naechsterSchritt.href, '#/heute?mn=1');
+  assert.equal(fertig.naechsterSchritt.href, '#/kunden?tab=anrufe&mn=1');
   assert.equal(fertig.naechsterSchritt.stufe, 'warten');
   assert.equal(fertig.verlauf.find(s => s.schritt === 'nachgefasst').am, null);
   assert.equal(fs.existsSync(path.join(dir, 'nachfassen', 'versand.json')), false);
@@ -260,7 +260,7 @@ test('Kunden "Zu tun": naechster Schritt aus der Zeitleiste, Shopify-Versand nur
   assert.match(p.schritt.text, /Muster nach Versand nachfassen/);
   assert.doesNotMatch(p.schritt.text, /Vermutlich|Kunde hat Muster/);
   const quellAuftrag = api.kundenBestellungen().zeilen.find(x => x.orderId === MUSTER);
-  assert.equal(quellAuftrag.naechsterSchritt.href, '#/heute?mn=1');
+  assert.equal(quellAuftrag.naechsterSchritt.href, '#/kunden?tab=anrufe&mn=1');
   assert.equal(quellAuftrag.naechsterSchritt.aktion, null);
   assert.notEqual(quellAuftrag.verlauf.find(s => s.schritt === 'kunde_hat_muster').zustand, 'erledigt', 'Versandalter ist kein Empfangsbeleg');
   assert.notEqual(quellAuftrag.verlauf.find(s => s.schritt === 'nachgefasst').zustand, 'erledigt', 'Nachfrage-Link erzeugt keinen Phantom-Haken');

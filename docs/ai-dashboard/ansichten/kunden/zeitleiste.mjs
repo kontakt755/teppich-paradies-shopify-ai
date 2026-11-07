@@ -15,14 +15,16 @@ import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { kettelwegNoetig } from '../../lib/einkauf-uebersicht.mjs';
-import { einkauf, kettelwegFelder, kettelwegGewaehlt, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, ensureEinkaufAuftragsstatus, MUSTER_HERKUNFT_LABEL, afStatusText, selbstKnoepfe } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, kettelwegFelder, kettelwegGewaehlt, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, ensureEinkaufLieferanten, ensureEinkaufAuftragsstatus, MUSTER_HERKUNFT_LABEL, afStatusText, selbstKnoepfe, auftragsstatusPositionen } from '../einkauf/auftragsfluss.mjs';
 import { lieferwegVon, istLagerware, selbstStand, selbstStandText } from '../../lib/lieferweg.mjs';
 import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
-import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { versandRueckmeldung, kundenmailKandidaten } from '../../lib/versand.mjs';
+import { kundenmailFeld, kundenmailFrage, kundenmailGewaehlt } from '../../bausteine/kundenmail.mjs';
 import { musterKurz, fuelleText, mailtoLink, NICHT_VERFUEGBAR_VORLAGE } from '../../lib/muster-nachfassen.mjs';
 import { kunden } from './gemeinsam.mjs';
+import { NACHFRAGE_MAILS_HREF, NACHFRAGE_MAILS_HREF_ALT } from '../../lib/nachfrage-mails.mjs';
 
 const WER_TEXT = { wir: 'wir', lieferant: 'Lieferant', kunde: 'Kunde' };
 const ART_TEXT = { muster: 'Musterbestellung', ware: 'Bestellung' };
@@ -104,7 +106,7 @@ function naechsterKarte(a, kunde, lesend) {
       <button type="button" class="btn${bestellweg.length ? '' : ' btn-primary'}" data-zl-bestellt="${esc(a.id)}">${esc(n.knopf)}…</button>`
     : `<button type="button" class="btn ${n.stufe === 'warten' ? '' : 'btn-primary'}" data-zl-schritt="${esc(n.aktion)}" data-zl-order="${esc(a.id)}">${esc(n.knopf)}</button>`;
   const knoepfe = lesend ? '' : `
-    ${n.href === '#/heute?mn=1' ? `<div class="zl-knoepfe no-print"><a class="btn" href="${esc(n.href)}">${esc(n.knopf || 'Nachfragen prüfen')}</a></div>` : n.aktion ? `<div class="zl-knoepfe no-print">
+    ${[NACHFRAGE_MAILS_HREF, NACHFRAGE_MAILS_HREF_ALT].includes(n.href) ? `<div class="zl-knoepfe no-print"><a class="btn" href="${esc(NACHFRAGE_MAILS_HREF)}">${esc(n.knopf || 'Nachfragen prüfen')}</a></div>` : n.aktion ? `<div class="zl-knoepfe no-print">
       ${hauptknopf}${anruf}${haben}
     </div>` : ''}
     <button type="button" class="zl-anders no-print" data-zl-anders="${esc(a.id)}">Etwas anderes ist passiert …</button>`;
@@ -246,10 +248,10 @@ async function ladeNeu() {
 /** Noch nicht bestellter gekettelter Direktversand: `kettelweg` kommt vom Server erst mit Status. */
 const offeneKettelwege = a => (a?.auftragsart === 'ware' ? a.positionen ?? [] : []).filter(p => p.lineItemId && kettelwegNoetig(p) && !p.kettelweg);
 
-export async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null } = {}) {
+export async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null, kundeInformieren = false } = {}) {
   let antwort;
   try {
-    antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug, ...(muster ? { muster } : {}), ...(kettelwege ? { kettelwege } : {}) });
+    antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug, ...(muster ? { muster } : {}), ...(kettelwege ? { kettelwege } : {}), ...(kundeInformieren ? { kundeInformieren: true } : {}) });
   } catch (e) {
     toast(`Nicht gespeichert: ${e.message}`, 'crit');
     return false;
@@ -348,6 +350,8 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     : `<label${extra}><input type="radio" name="schritt" value="${esc(wert)}" required> ${esc(text)}</label>`);
   const muster = (a.positionen || []).filter(p => p.istMuster && p.lineItemId);
   const nichtVerfuegbar = !nurErgebnis && art === 'muster' ? nichtVerfuegbarBlock(a, muster) : '';
+  // "Erledigt – Auftrag abschließen" bei Ware, die "raus" uebersprungen hat: Kundenmail vorab angehakt (w-276).
+  const mailFeld = !nurErgebnis && art === 'ware' ? kundenmailFeld(kundenmailKandidaten(a, einkauf.auftragsstatus?.positionen || {}), { versteckt: true }) : '';
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="zlTitel" data-dialog>
     <h2 id="zlTitel">${nurErgebnis ? 'Ergebnis eintragen' : 'Etwas anderes ist passiert'} · ${esc(a.name)}</h2>
     <fieldset class="zl-wahl"><legend>Was ist passiert?</legend>
@@ -360,12 +364,14 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
       ${Object.entries(MUSTER_HERKUNFT_LABEL).map(([w, t]) => radio(`herkunft:${w}`, `${t}${w === herkunftJetzt ? ' (aktuell)' : ''}`)).join('')}
     </fieldset>` : ''}
     ${nichtVerfuegbar}
+    ${mailFeld}
     <div class="field"><label for="zlNotiz" data-zl-notiz-label>Notiz (optional)</label><textarea id="zlNotiz" name="notiz" maxlength="2000" placeholder="z. B. Kunde meldet sich nach dem Urlaub"></textarea></div>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Eintragen</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
   form.querySelector('input[type=radio]')?.focus();
   if (nichtVerfuegbar) nichtVerfuegbarVerdrahten(form, a);
+  if (mailFeld) form.addEventListener('change', ev => { if (ev.target.name === 'schritt') form.querySelector('[data-kundenmail]').hidden = ev.target.value !== 'erledigt'; });
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     const daten = new FormData(form);
@@ -394,7 +400,7 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     if (wert === 'bestellt' && offeneKettelwege(a).length) { oeffneBestelltDialog(orderId, { notiz }); return; }
     const ok = wert.startsWith('zurueck:')
       ? await setzeSchritt(orderId, 'zurueck', { bezug: wert.slice('zurueck:'.length), notiz })
-      : await setzeSchritt(orderId, wert, { notiz, muster: nvMuster });
+      : await setzeSchritt(orderId, wert, { notiz, muster: nvMuster, kundeInformieren: wert === 'erledigt' && kundenmailGewaehlt(form) });
     if (ok) $('#dialogRoot').innerHTML = ''; else knopf.disabled = false;
   });
 }
@@ -430,6 +436,25 @@ function oeffneBestelltDialog(orderId, { notiz = null } = {}) {
   });
 }
 
+/**
+ * Hauptknopf "Erledigt – Auftrag abschließen": wie bisher ein Klick, ausser Ware hat "raus"
+ * uebersprungen - dann erst die Rueckfrage mit vorab angehakter Kundenmail (w-276).
+ */
+async function abschliessenMitFrage(knopf) {
+  const orderId = knopf.dataset.zlOrder;
+  knopf.disabled = true;
+  const a = findeAuftrag(orderId);
+  const kandidaten = a ? kundenmailKandidaten(a, await auftragsstatusPositionen() || {}) : [];
+  let kundeInformieren = false;
+  if (kandidaten.length) {
+    const wahl = await kundenmailFrage({ titel: `Abschließen · ${a.name}`, kandidaten,
+      text: 'Alle Artikel auf „Erledigt“ setzen. In Shopify wird die Bestellung als versendet gebucht, falls noch nicht geschehen.' });
+    if (wahl === null) { knopf.disabled = false; return; }
+    kundeInformieren = wahl;
+  }
+  if (!await setzeSchritt(orderId, 'erledigt', { kundeInformieren })) knopf.disabled = false;
+}
+
 /** Klicks der Zeitleiste. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function zeitleisteKlick(e) {
   const kettler=e.target.closest('[data-kettelversand]');
@@ -439,6 +464,7 @@ export function zeitleisteKlick(e) {
     e.preventDefault();
     if (haupt.dataset.zlSchritt === 'ergebnis') { oeffneDialog(haupt.dataset.zlOrder, { nurErgebnis: true }); return true; }
     if (haupt.dataset.zlSchritt === 'raus') { oeffneVersandDialog(haupt.dataset.zlOrder); return true; }
+    if (haupt.dataset.zlSchritt === 'erledigt') { abschliessenMitFrage(haupt); return true; }
     haupt.disabled = true;   // gegen den Doppelklick - nach dem Neuladen steht ohnehin der naechste Schritt da
     setzeSchritt(haupt.dataset.zlOrder, haupt.dataset.zlSchritt).then(ok => { if (!ok) haupt.disabled = false; });
     return true;

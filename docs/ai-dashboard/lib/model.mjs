@@ -393,7 +393,9 @@ export function normalizeTask(raw, { now = new Date() } = {}) {
     risk: fields.risk,
     size: fields.size,
     due, daysToDue,
-    overdue: daysToDue !== null && daysToDue < 0 && status.open,
+    // Beobachten = entschieden und umgesetzt, nur noch Wirkung abwarten (Inhaber 07.11.2026,
+    // w-283): keine rote Frist mehr, sonst nutzt sich Rot an Erledigtem ab.
+    overdue: daysToDue !== null && daysToDue < 0 && status.open && st.key !== 'beobachten',
     escalation: fields.escalation || labels.includes('eskalation'),
     isDecision,
     decision: isDecision ? {
@@ -614,7 +616,8 @@ export function summarize(tasks, { now = new Date() } = {}) {
   const open = tasks.filter(t => t.open);
   return {
     open: open.length,
-    critical: open.filter(t => t.priority === 'p0').length,
+    // Beobachtete Aufgaben sind entschieden (w-283) - ein P0 darunter ist kein offenes Problem.
+    critical: open.filter(t => t.priority === 'p0' && t.status !== 'beobachten').length,
     blocked: open.filter(t => t.status === 'blockiert').length,
     approvals: open.filter(t => t.status === 'freigabe').length,
     inProgress: open.filter(t => ['in-arbeit', 'korrektur'].includes(t.status)).length,
@@ -635,7 +638,7 @@ export function areaHealth(tasks, { now = new Date() } = {}) {
     const open = own.filter(t => t.open);
     const reasons = [];
     let level = 'ok';
-    const p0 = open.filter(t => t.priority === 'p0');
+    const p0 = open.filter(t => t.priority === 'p0' && t.status !== 'beobachten');
     const blocked = open.filter(t => t.status === 'blockiert');
     const approvals = open.filter(t => t.status === 'freigabe');
     const overdue = open.filter(t => t.overdue);

@@ -3,6 +3,11 @@
  * wenn das nicht geht, per Rueckfrage-Mail. Das Ergebnis wird angeklickt, Notizen eingetippt. Oben
  * steht die Anrufliste, darunter, welche Gruende bisher genannt wurden, und zugeklappt Vermutungen
  * und Ideen (lib/muster-ideen.mjs). Rechnen: lib/muster-anrufe.mjs. Gestaltung: stile/muster.css.
+ *
+ * Ganz oben seit 07.11.2026 (Inhaber, w-284) die automatischen Nachfrage-Mails: eine ruhige Zeile mit
+ * dem Stand des Versandlaufs, aufgeklappt (Parameter mn=1) die Karte aus heute/muster-nachfassen.mjs.
+ * Anruf und Mail sind zwei Wege zum selben Ziel - vorher stand die Mail auf Heute ("0 Nachfragen
+ * fällig") und der Anruf im Menue ("Kunden nach Produkt fragen 24"), mit verwechselbaren Woertern.
  */
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
@@ -14,6 +19,9 @@ import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 import { ANRUF_ERGEBNISSE, ANRUF_GRUPPEN, ANRUF_NACH_TAGEN, HOECHSTENS_VERSUCHE, anrufErgebnis, anrufErgebnisText, rueckfrageLink, wiedervorlageTag } from '../../lib/muster-anrufe.mjs';
 import { MUSTER_ALTERNATIVEN, MUSTER_VERMUTUNGEN, vermutungGenannt } from '../../lib/muster-ideen.mjs';
 import { kunden, telLink } from './gemeinsam.mjs';
+import { ensureKundenBestellungen } from './bestellungen.mjs';
+import { ensureHeuteMusterTexte } from '../heute/daten.mjs';
+import { musterNachfassenStand, musterNachfassenBlock, nachfrageMailsZeile } from '../heute/muster-nachfassen.mjs';
 
 export function ensureMusterAnrufe() {
   if (kunden.musterAnrufe || kunden.loadingMusterAnrufe) return;
@@ -126,18 +134,28 @@ function ideenHtml(m) {
   </details>`;
 }
 
+/** Automatische Nachfrage-Mails: Zeile immer, Karte nur aufgeklappt. Unabhaengig von der Anrufliste geladen. */
+function nachfrageMailsHtml() {
+  ensureKundenBestellungen(); ensureHeuteMusterTexte();
+  const stand = musterNachfassenStand();
+  const auf = Boolean(state.route.params.get('mn'));
+  return `<div class="nachfrage-mails">${nachfrageMailsZeile(stand, auf)}${auf ? musterNachfassenBlock(stand, { eingebettet: true }) : ''}</div>`;
+}
+
 export function viewMusterAnrufe() {
   ensureMusterAnrufe();
   const m = kunden.musterAnrufe;
-  if (!m && kunden.loadingMusterAnrufe) return '<div class="empty">Lade Anrufliste …</div>';
-  if (m?.fehler) return stoerungState(m, 'Die Anrufliste');
-  if (!m || !m.verfuegbar) return emptyState('Keine Daten verfügbar.', m?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  const mails = nachfrageMailsHtml();
+  if (!m && kunden.loadingMusterAnrufe) return `${mails}<div class="empty">Lade Anrufliste …</div>`;
+  if (m?.fehler) return mails + stoerungState(m, 'Die Anrufliste');
+  if (!m || !m.verfuegbar) return mails + emptyState('Keine Daten verfügbar.', m?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   const nichts = !m.anrufen.length && !m.ohneNummer.length && !m.gesperrt.length;
   const gruende = m.gruende?.length
     ? `<div class="anruf-gruende" aria-label="Genannte Gründe">${m.gruende.map(g => `<span class="anruf-grund"><b>${g.anzahl}</b> ${esc(g.text)}</span>`).join('')}</div>`
     : '<p class="small muted">Noch keine Gründe erfasst. Sobald Ergebnisse eingetragen sind, steht hier, warum gekauft wird oder nicht.</p>';
   // Erst die Arbeit, dann das Nachdenken: die Anrufliste beginnt oben, die Auswertung steht darunter.
   return `
+    ${mails}
     <p class="small muted anruf-regel">Ab ${ANRUF_NACH_TAGEN} Tagen nach Versand · erst fragen, ob es passt · nach ${HOECHSTENS_VERSUCHE}× „Nicht erreicht“ Schluss · „Möchte keine Anrufe“ gilt dauerhaft</p>
     ${nichts ? emptyState('Gerade ist niemand dran.', 'Neue Kunden erscheinen hier von selbst.') : arbeitslisteHtml(m)}
     <h3 class="anruf-titel">Warum gekauft wird oder nicht</h3>
