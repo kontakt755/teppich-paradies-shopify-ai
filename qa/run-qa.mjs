@@ -7,7 +7,7 @@ import { buildEvidence, formatEvidenceForConsole, writeEvidence } from './eviden
 import { targetUrl as workflowTargetUrl, validatePreviewContext, validatePreviewTheme } from './target-url.mjs';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
-import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
+import { isKnownShopifyLoginXFrameWarning, isPreviewHeaderHydrationArtifact } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
 import { BASELINE_FILE, newFindings, readBaseline, runThemeCheck, writeBaseline } from './theme-check.mjs';
 import { qaImpactSummary, selectImpactedPages } from './impact-router.mjs';
@@ -101,6 +101,10 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
     (host === targetHost && !/shop\.app|\/favicon\.ico/i.test(rawEntry) ? pageErrors : thirdParty).push({ type: event.type, message: sanitizeText(rawEntry), url: sanitizeUrl(sourceUrl) });
   });
   page.on('pageerror', error => {
+    if (isPreviewHeaderHydrationArtifact({ type: 'pageerror', message: error.message }, config.baseUrl)) {
+      knownConsole.push({ type: 'pageerror', message: sanitizeText(error.message), knownIssueId: 'preview-kopf-nachladen', reportLabel: 'Preview-Theme: Kopf-Nachladen rendert Live' });
+      return;
+    }
     const knownIssue = knownConsoleIssue('pageerror', error.message);
     (knownIssue ? knownConsole : pageErrors).push({ type: 'pageerror', message: sanitizeText(error.message), knownIssueId: knownIssue?.id, reportLabel: knownIssue?.reportLabel });
   });
