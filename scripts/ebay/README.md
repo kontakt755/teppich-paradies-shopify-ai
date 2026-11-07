@@ -82,3 +82,15 @@ Für andere Maße oder über 6 m entsteht ein einmaliges Angebot:
 `--einzelmass "Name der Rolle" --breite-cm 400 --laenge-cm 700 --preis 700 --frachtkosten 150`
 
 Es zählt nicht automatisch gegen den Rollenbestand der anderen Längen.
+
+Ein gekettelter Teppich im Wunschmaß: zusätzlich `--kettel`. Dann zählen die Kettelkosten in die Marge, das Angebot kommt in die Kategorie Teppiche.
+
+## Kettelteppiche aus den Sonderposten-Rollen
+
+`--welle 1 --kettel` macht aus jeder Rolle ein zweites Angebot mit gekettelten Standardgrößen (`KETTEL_GROESSEN`: 80×150 bis 240×340, Inhaber 07.11.2026).
+
+- Preis je m² wie der Kettelteppich der Rolle im Shop (Lexikon, `preisJeEinheit`), damit Shop und eBay gleich sind.
+- Das Kettelprodukt wird über den gleichen `restvorlage:`-Tag gefunden, sonst über den Namensanfang, sonst über `kettel_zuordnung` (Rollenname → Handle) in `ebay-konfig.json`.
+- Versand je Größe steht in `versand_kettel` (`"200x300": 70`), gerechnet mit dem GLS/GEL-Rechner. Ketteln je laufendem Meter kommt aus der Startliste (Annahmen B10/B11).
+- Größen, die nach Ketteln, Versand, Gebühren und Einkauf unter `stueck_mindestmarge` liegen, fallen weg; der Probelauf nennt sie.
+- Je Größe stehen höchstens `KETTEL_MENGE` (2) Stück im Angebot. Meterware und Kettelteppich teilen sich die Rolle, eBay gleicht das nicht ab.

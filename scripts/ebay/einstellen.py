@@ -34,6 +34,10 @@ MAX_BILDER = 12
 PREIS_GRENZE = 45.0
 # Sonderposten: Laengen in cm. Ueber 6 m nur auf Anfrage, wegen Gewicht (Inhaber 04.11.2026).
 LAENGEN_CM = tuple(range(100, 601, 20))
+# Kettelteppiche: Standardgroessen plus gaengige Zwischenmasse (Inhaber 07.11.2026), Breite x Laenge in cm
+KETTEL_GROESSEN = ((80, 150), (120, 170), (140, 200), (160, 230), (170, 240), (200, 200), (200, 250), (200, 300), (240, 340))
+KETTEL_MENGE = 2
+KATEGORIE_TEPPICHE = '45510'
 GRENZE_GLS_CM = 200
 GRENZE_STANDARD_CM = 320
 VERSAND_FELDER = ('versand_gls_kosten', 'versand_spedition_kosten', 'versand_xxl_kosten')
@@ -87,6 +91,8 @@ def lies_startliste(pfad):
     provision = zahl(annahmen['B5'].value)
     steuer = zahl(annahmen['B6'].value)
     fest = zahl(annahmen['B7'].value)
+    kettel_klein = zahl(annahmen['B10'].value)
+    kettel_gross = zahl(annahmen['B11'].value)
     welle1 = []
     for z in mappe[BLATT_WELLE_1].iter_rows(min_row=5, values_only=True):
         if z[0] and z[0] != 'Summe':
@@ -95,7 +101,8 @@ def lies_startliste(pfad):
     for z in mappe[BLATT_WELLE_2].iter_rows(min_row=5, values_only=True):
         if z[0]:
             welle2.append({'produkt': z[0], 'status': z[13]})
-    return {'aufschlag': aufschlag, 'ziel': ziel, 'provision': provision, 'steuer': steuer, 'fest': fest, 'welle1': welle1, 'welle2': welle2}
+    return {'aufschlag': aufschlag, 'ziel': ziel, 'provision': provision, 'steuer': steuer, 'fest': fest,
+            'kettel_klein': kettel_klein, 'kettel_gross': kettel_gross, 'welle1': welle1, 'welle2': welle2}
 
 
 def lies_lexikon(pfad):
@@ -148,7 +155,13 @@ def _abschnitt(ueberschrift, inhalt):
     return f'<h3 style="font-size:17px;margin:20px 0 6px">{html.escape(ueberschrift)}</h3>{inhalt}'
 
 
-def beschreibung(produkt, zusatz, eckdaten=None, bestellen=None, kopf=None):
+VERSAND_BODEN = ('Kostenloser Versand innerhalb Deutschlands. '
+                 'Der Teppichboden kommt gerollt: bis 2 m Länge als Paket, größere Stücke per Spedition.')
+VERSAND_KETTEL = ('Kostenloser Versand innerhalb Deutschlands. Der Teppich wird nach Ihrer Bestellung zugeschnitten, '
+                  'rundum gekettelt und gerollt verschickt, kleinere Größen als Paket, ab 2 m Breite per Spedition.')
+
+
+def beschreibung(produkt, zusatz, eckdaten=None, bestellen=None, kopf=None, versand=VERSAND_BODEN):
     """eBay-Beschreibung: Kopf, Eckdaten als Tabelle, Bestellen, Versand, Zuschnitt-Hinweis.
 
     Nur Werte aus dem Lexikon und der Startliste - fehlt ein Wert, faellt die Zeile weg (nie erfinden).
@@ -172,8 +185,7 @@ def beschreibung(produkt, zusatz, eckdaten=None, bestellen=None, kopf=None):
     if bestellen:
         punkte = ''.join(f'<li style="margin:0 0 4px">{html.escape(t)}</li>' for t in bestellen)
         teile.append(_abschnitt('So bestellen Sie', f'<ul style="margin:0;padding-left:20px">{punkte}</ul>'))
-    teile.append(_abschnitt('Versand', '<p style="margin:0">Kostenloser Versand innerhalb Deutschlands. '
-                            'Der Teppichboden kommt gerollt: bis 2 m Länge als Paket, größere Stücke per Spedition.</p>'))
+    teile.append(_abschnitt('Versand', f'<p style="margin:0">{html.escape(versand)}</p>'))
     teile.append(f'<div style="{STIL_KASTEN};background:#faf8f5"><strong>Wichtig: Zuschnitt</strong><br>{html.escape(HINWEIS_ZUSCHNITT)}</div>')
     teile.append('<p style="margin:16px 0 0;color:#666;font-size:13px">Teppich Paradies Oranienburg – Ihr Fachhandel für Teppichboden.</p>')
     teile.append('</div>')
@@ -359,8 +371,127 @@ def plane_welle1(liste, lexikon, konfig):
     return plan
 
 
-def plane_einzelmass(liste, lexikon, konfig, name, breite_cm, laenge_cm, preis, frachtkosten):
-    """Einmaliges Angebot auf Kundenanfrage, auch ueber 6 m."""
+def kettel_kosten(breite_cm, laenge_cm, liste):
+    """Ketteln rundum, Preis je laufendem Meter laut Rechnung des Kettlers (Startliste, Annahmen)."""
+    flaeche = breite_cm * laenge_cm / 10000
+    satz = liste['kettel_klein'] if flaeche <= 6 else liste['kettel_gross']
+    return 2 * (breite_cm + laenge_cm) / 100 * satz
+
+
+def finde_kettel(zeile, rolle, lexikon, konfig):
+    """Kettelprodukt im Shop zur Rolle: gleicher restvorlage-Tag, sonst gleicher Namensanfang, sonst Zuordnung in der Konfiguration."""
+    kandidaten = [p for p in lexikon if p['produktgruppe'] == 'Teppich nach Maß' and 'gekettelt' in tags(p)]
+    vorlage = [t for t in tags(rolle) if t.startswith('restvorlage:')]
+    treffer = [p for p in kandidaten if vorlage and vorlage[0] in tags(p)]
+    if not treffer:
+        treffer = [p for p in kandidaten if p['titel'].startswith(zeile['rolle'])]
+    if not treffer:
+        handle = (konfig.get('kettel_zuordnung') or {}).get(zeile['rolle'])
+        treffer = [p for p in kandidaten if handle and p['handle'] == handle]
+    return treffer
+
+
+def kettel_titel(name, groessen=()):
+    grund = re.sub(r'\s+–.*$', '', name)
+    spanne = f' {groessen[0][0]}x{groessen[0][1]} bis {groessen[-1][0]}x{groessen[-1][1]} cm' if len(groessen) > 1 else ''
+    voll = f'{grund} Teppich gekettelt{spanne}'
+    return (voll if len(voll) <= MAX_TITEL else f'{grund} Teppich gekettelt')[:MAX_TITEL]
+
+
+def plane_kettel(liste, lexikon, konfig):
+    """Je Rolle ein Angebot mit gekettelten Standardgroessen. Preis je m² wie der Kettelteppich im Shop.
+
+    Groessen, die nach Ketteln, Versand, Gebuehren und Einkauf unter der Mindestmarge laegen, fallen weg.
+    """
+    plan = []
+    versand = konfig.get('versand_kettel') or {}
+    mindest = konfig.get('stueck_mindestmarge', 0)
+    for zeile in liste['welle1']:
+        name = zeile['rolle']
+        maengel = rollen_mangel(zeile, konfig, liste)
+        if None in (liste.get('kettel_klein'), liste.get('kettel_gross')):
+            maengel.append('Kettelkosten fehlen in der Startliste (Annahmen B10/B11)')
+        rollen = finde_rolle(name, lexikon)
+        kettel = finde_kettel(zeile, rollen[0], lexikon, konfig) if len(rollen) == 1 else []
+        if len(kettel) != 1:
+            plan.append({'name': f'{name} gekettelt', 'art': 'gruppe', 'maengel': maengel + [f'{len(kettel)} Kettelprodukte im Lexikon']})
+            continue
+        # Gleiche Ware wie die Rolle: fehlende Eigenschaften kommen von der Rolle, eigene haben Vorrang
+        produkt = dict(kettel[0], eigenschaften={**(rollen[0].get('eigenschaften') or {}), **(kettel[0].get('eigenschaften') or {})})
+        variante = produkt['varianten'][0]
+        einheit = variante.get('preisJeEinheit') or {}
+        preis_m2 = einheit.get('betrag') if einheit.get('einheit') == 'm2' else None
+        if not preis_m2:
+            maengel.append('Kettelpreis je m² fehlt im Lexikon')
+        breite = zeile['breite']
+        rest_cm = min(zahl(zeile['restlaenge']) or 0, (zahl(zeile['bestand']) or 0) * 10000 / breite)
+        groessen, verworfen = [], []
+        for b, l in KETTEL_GROESSEN:
+            if b > breite or l > rest_cm:
+                continue
+            fracht = versand.get(f'{b}x{l}')
+            if fracht is None:
+                maengel.append(f'Versandkosten für {b}x{l} fehlen (versand_kettel)')
+                continue
+            flaeche = b * l / 10000
+            preis = round((preis_m2 or 0) * flaeche, 2)
+            marge = None
+            if not maengel:
+                marge = stueckmarge(preis_m2, flaeche, fracht + kettel_kosten(b, l, liste), zeile['einkauf'], liste)
+                if marge < mindest:
+                    verworfen.append(f'{b}x{l}')
+                    continue
+            groessen.append((b, l, preis, marge))
+        if not groessen and not maengel:
+            maengel.append('keine Größe über der Mindestmarge')
+        ueberschrift = kettel_titel(name, groessen)
+        aspekte = merkmale(produkt, konfig, maengel)
+        aspekte['Produktart'] = ['Teppich']
+        bilder = bilder_von(produkt, [variante])
+        if not bilder:
+            maengel.append('kein Bild')
+        text = beschreibung(
+            produkt,
+            ['Restposten von der Rolle, für Sie zugeschnitten und rundum gekettelt (eingefasst), damit nichts ausfranst.'],
+            eckdaten={
+                'Preis': f'{euro(preis_m2 or 0)} EUR je m²',
+                'Größen': ', '.join(f'{b} × {l} cm' for b, l, _, _ in groessen),
+                'Kante': 'rundum gekettelt',
+            },
+            bestellen=[
+                'Größe auswählen: Den Preis zeigt eBay bei jeder Größe.',
+                'Wunschmaß? Schreiben Sie uns über eBay, wir erstellen Ihnen ein eigenes Angebot für genau Ihr Maß.',
+            ],
+            kopf=ueberschrift,
+            versand=VERSAND_KETTEL,
+        )
+        posten, angebote = {}, []
+        for b, l, preis, _ in groessen:
+            sku = f'{eigene_sku(variante)}-K{b}X{l}'
+            menge = max(1, min(KETTEL_MENGE, (breite // b) * int(rest_cm // l)))
+            groesse = f'{b} x {l} cm'
+            posten[sku] = artikel(ueberschrift, text, bilder, dict(aspekte, Größe=[groesse]), menge)
+            angebote.append(angebot_grund(sku, preis, menge, KATEGORIE_TEPPICHE, text, konfig))
+        eintrag = {
+            'name': f'{name} gekettelt', 'art': 'gruppe', 'maengel': maengel, 'schluessel': gruppen_schluessel(produkt),
+            'artikel': posten, 'angebote': angebote,
+            'gruppe': {
+                'title': ueberschrift, 'description': text, 'aspects': aspekte, 'imageUrls': bilder[:MAX_BILDER],
+                'variantSKUs': list(posten),
+                'variesBy': {'specifications': [{'name': 'Größe', 'values': [f'{b} x {l} cm' for b, l, _, _ in groessen]}]},
+            },
+        }
+        if not maengel:
+            eintrag['rechnung'] = {
+                'kettel_m2': preis_m2, 'verworfen': verworfen,
+                'margen': {f'{b}x{l}': round(m, 2) for b, l, _, m in groessen},
+            }
+        plan.append(eintrag)
+    return plan
+
+
+def plane_einzelmass(liste, lexikon, konfig, name, breite_cm, laenge_cm, preis, frachtkosten, kettel=False):
+    """Einmaliges Angebot auf Kundenanfrage, auch ueber 6 m; mit kettel=True rundum gekettelt."""
     treffer = [z for z in liste['welle1'] if name.lower() in z['rolle'].lower()]
     if len(treffer) != 1:
         raise Abbruch(f'{len(treffer)} Rollen passen zu "{name}"')
@@ -380,23 +511,37 @@ def plane_einzelmass(liste, lexikon, konfig, name, breite_cm, laenge_cm, preis, 
     flaeche = breite_cm * laenge_cm / 10000
     marge = None
     if not maengel:
-        marge = stueckmarge(preis / flaeche, flaeche, frachtkosten, zeile['einkauf'], liste)
+        kosten = frachtkosten + (kettel_kosten(breite_cm, laenge_cm, liste) if kettel else 0)
+        marge = stueckmarge(preis / flaeche, flaeche, kosten, zeile['einkauf'], liste)
         if marge < konfig.get('stueck_mindestmarge', 0):
             maengel.append(f'Marge {marge:.2f} EUR unter der Mindestmarge')
     produkt = gefunden[0]
+    kategorie = KATEGORIE_TEPPICHBODEN
+    if kettel:
+        passend = finde_kettel(zeile, produkt, lexikon, konfig)
+        if len(passend) != 1:
+            raise Abbruch(f"{len(passend)} Kettelprodukte im Lexikon für {zeile['rolle']}")
+        produkt, kategorie = passend[0], KATEGORIE_TEPPICHE
     variante = produkt['varianten'][0]
-    sku = f'{eigene_sku(variante)}-E{breite_cm}X{laenge_cm}'
+    sku = f"{eigene_sku(variante)}-{'K' if kettel else 'E'}{breite_cm}X{laenge_cm}"
     aspekte = merkmale(produkt, konfig, maengel)
-    groesse = f'{text_laenge(breite_cm)} × {text_laenge(laenge_cm)}'
-    text = beschreibung(produkt, [f'Zuschnitt nach Ihrer Anfrage: {groesse}, {euro(flaeche)} m². Restposten.'])
-    ueberschrift = titel(zeile['rolle'], None)[:MAX_TITEL - len(groesse) - 1] + ' ' + groesse
+    if kettel:
+        aspekte['Produktart'] = ['Teppich']
+        groesse = f'{breite_cm} x {laenge_cm} cm'
+        text = beschreibung(produkt, [f'Gekettelter Teppich nach Ihrer Anfrage: {groesse}, {euro(flaeche)} m². Restposten, rundum gekettelt.'],
+                            kopf=f"{re.sub(r'\s+–.*$', '', zeile['rolle'])} Teppich gekettelt {groesse}", versand=VERSAND_KETTEL)
+        ueberschrift = kettel_titel(zeile['rolle']).split(' Teppich gekettelt')[0][:MAX_TITEL - len(groesse) - 19] + ' Teppich gekettelt ' + groesse
+    else:
+        groesse = f'{text_laenge(breite_cm)} × {text_laenge(laenge_cm)}'
+        text = beschreibung(produkt, [f'Zuschnitt nach Ihrer Anfrage: {groesse}, {euro(flaeche)} m². Restposten.'])
+        ueberschrift = titel(zeile['rolle'], None)[:MAX_TITEL - len(groesse) - 1] + ' ' + groesse
     bilder = bilder_von(produkt, [variante])
     if not bilder:
         maengel.append('kein Bild')
     return [{
         'name': f"{zeile['rolle']} {groesse}", 'art': 'einzel', 'maengel': maengel, 'schluessel': sku,
-        'artikel': {sku: artikel(ueberschrift, text, bilder, dict(aspekte, Länge=[text_laenge(laenge_cm)]), 1)},
-        'angebote': [angebot_grund(sku, preis, 1, KATEGORIE_TEPPICHBODEN, text, konfig)],
+        'artikel': {sku: artikel(ueberschrift, text, bilder, dict(aspekte, **({'Größe': [groesse]} if kettel else {'Länge': [text_laenge(laenge_cm)]})), 1)},
+        'angebote': [angebot_grund(sku, preis, 1, kategorie, text, konfig)],
         'rechnung': {'marge_stueck': None if marge is None else round(marge, 2)},
     }]
 
@@ -678,6 +823,7 @@ def hauptlauf(argv=None):
     p.add_argument('--standort-anlegen', action='store_true', help='Artikelstandort aus ebay-konfig.json bei eBay anlegen')
     p.add_argument('--nur', help='nur Produkte, deren Name diesen Text enthält')
     p.add_argument('--einzelmass', help='einmaliges Angebot auf Anfrage: Name der Rolle')
+    p.add_argument('--kettel', action='store_true', help='gekettelte Teppiche statt Meterware (mit --welle 1 oder --einzelmass)')
     p.add_argument('--breite-cm', type=int)
     p.add_argument('--laenge-cm', type=int)
     p.add_argument('--preis', type=float, help='Gesamtpreis des Einzelmaßes in EUR')
@@ -719,7 +865,11 @@ def hauptlauf(argv=None):
     if args.einzelmass:
         treffer = [z for z in liste['welle1'] if args.einzelmass.lower() in z['rolle'].lower()]
         breite = einzelmass_breite(args.breite_cm, treffer)
-        plan = plane_einzelmass(liste, lexikon, konfig, args.einzelmass, breite, args.laenge_cm, args.preis, args.frachtkosten)
+        plan = plane_einzelmass(liste, lexikon, konfig, args.einzelmass, breite, args.laenge_cm, args.preis, args.frachtkosten, args.kettel)
+    elif args.kettel:
+        if args.welle != 1:
+            raise Abbruch('--kettel geht nur mit --welle 1')
+        plan = plane_kettel(liste, lexikon, konfig)
     else:
         plan = (plane_welle1 if args.welle == 1 else plane_welle2)(liste, lexikon, konfig)
     if args.nur:
@@ -729,7 +879,8 @@ def hauptlauf(argv=None):
         if fund:
             eintrag['maengel'].append(f'verbotener Name im Angebot ({len(fund)})')
 
-    ziel = os.path.join(ordner, UNTERORDNER, 'einstellplan-einzelmass.json' if args.einzelmass else f'einstellplan-welle{args.welle}.json')
+    datei_name = 'einstellplan-einzelmass.json' if args.einzelmass else ('einstellplan-kettel.json' if args.kettel else f'einstellplan-welle{args.welle}.json')
+    ziel = os.path.join(ordner, UNTERORDNER, datei_name)
     with open(ziel, 'w', encoding='utf-8') as datei:
         json.dump(plan, datei, ensure_ascii=False, indent=1)
     bereit = [e for e in plan if not e['maengel']]
@@ -738,6 +889,10 @@ def hauptlauf(argv=None):
         r = eintrag.get('rechnung')
         if r and 'mischpreis_m2' in r:
             print(f"  {eintrag['name']}: Liste {r['listenpreis_m2']:.2f}, Misch {r['mischpreis_m2']:.2f} EUR/m²; Schnitt {r['schnitt_marge_m2']:.2f} EUR/m², kleinstes Stück {r['kleinste_marge_stueck']:.2f} EUR")
+        elif r and 'kettel_m2' in r:
+            margen = ', '.join(f'{g} {m:.2f}' for g, m in r['margen'].items())
+            weg = f"; ohne {', '.join(r['verworfen'])} (unter Mindestmarge)" if r['verworfen'] else ''
+            print(f"  {eintrag['name']}: {r['kettel_m2']:.2f} EUR/m²; Marge je Stück {margen}{weg}")
         elif r and r.get('marge_stueck') is not None:
             print(f"  {eintrag['name']}: Marge {r['marge_stueck']:.2f} EUR")
     gruende = {}
