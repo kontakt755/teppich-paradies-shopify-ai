@@ -600,9 +600,14 @@
     endcapture
     assign tp_rc_muster_url = tp_rc_muster_url | strip
     assign tp_rc_muster_vorlage = block.settings.muster_label | default: 'Kostenloses Muster in {farbe}'
+    assign tp_rc_muster_ohne_farbe = block.settings.muster_label_ohne_farbe | default: 'Kostenloses Muster bestellen'
     # Farbe = erste Option, die nicht die Breite ist. Vinyl von der Rolle hat
     # oft nur "Breite" - frueher stand dann "Kostenloses Muster in 200 cm" im
-    # Knopf. Ohne Farboption greift der Tag "farbe: ..." wie bei Default Title.
+    # Knopf. Ohne Farboption greift der Tag "farbe: ..." wie bei Default Title;
+    # der Tag ist Filterschreibweise ("gruen"), deshalb laeuft er durch
+    # tp-color-label-mapping (Gruen -> Gruen mit Umlaut). Ist gar keine Farbe
+    # bekannt (Restrollen ohne Tag), steht die zweite Beschriftung ohne {farbe}
+    # im Knopf - vorher ein haengendes "Kostenloses Muster in".
     assign tp_rc_start_farbe = 'Default Title'
     assign tp_rc_start_variante = product.selected_or_first_available_variant
     for tp_rc_opt in product.options_with_values
@@ -612,7 +617,7 @@
         break
       endunless
     endfor
-    if tp_rc_start_farbe == 'Default Title'
+    if tp_rc_start_farbe == 'Default Title' or tp_rc_start_farbe == blank
       assign tp_rc_start_farbe = ''
       for tp_rc_tag in product.tags
         assign tp_rc_tag_anfang = tp_rc_tag | slice: 0, 7 | downcase
@@ -621,9 +626,19 @@
           break
         endif
       endfor
+      if tp_rc_start_farbe != blank
+        capture tp_rc_start_farbe
+          render 'tp-color-label-mapping', filter_label: 'Farbe', value_label: tp_rc_start_farbe
+        endcapture
+        assign tp_rc_start_farbe = tp_rc_start_farbe | strip
+      endif
     endif
     assign tp_rc_muster_platzhalter = '{farbe}'
-    assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
+    if tp_rc_start_farbe == blank
+      assign tp_rc_muster_text = tp_rc_muster_ohne_farbe
+    else
+      assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
+    endif
     assign tp_rc_muster_farbe = tp_rc_start_farbe | url_encode
     # Ohne Muster (Tag ohne-muster, zubehoer) liefert tp-musteroption nichts -
     # dann nichts anhaengen, sonst entsteht ein Knopf mit kaputtem Link: das
@@ -646,7 +661,7 @@
       nach Warenkorb-Aenderungen (Drawer, Zurueck-Knopf) um, ohne Neuladen.
     {%- endcomment -%}
     <div{% if tp_rc_muster_grenze != blank %} data-tp-muster-grenze="{{ tp_rc_muster_grenze }}"{% endif %} data-rwc-body>
-      <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-muster-fallback-farbe="{{ tp_rc_start_farbe | escape }}"{% if tp_rc_muster_grenze != blank %} data-tp-mg-offen{% endif %}{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>
+      <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-muster-fallback-farbe="{{ tp_rc_start_farbe | escape }}" data-muster-ohne-farbe="{{ tp_rc_muster_ohne_farbe | escape }}"{% if tp_rc_muster_grenze != blank %} data-tp-mg-offen{% endif %}{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>
         {{- tp_rc_muster_text | escape -}}
       </a>
       {%- if tp_rc_muster_grenze != blank -%}
@@ -1570,10 +1585,16 @@ function tpRwcInit{{ tp_rc_id }}() {
   var cartLink = root.querySelector('[data-cart-link]');
   var musterLink = root.querySelector('[data-muster-link]');
   // K7: Farbname (alle Optionen ausser der Breite) in die Musterbeschriftung.
+  // Ohne Farboption (Default Title) gilt die Farbe aus dem Liquid (Tag); ist
+  // auch die leer, bleibt die Beschriftung ohne {farbe} und der Link wie er ist.
   function updateMuster() {
     if (!musterLink || !target) return;
     var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
     if (!name || name === 'Default Title') name = musterLink.getAttribute('data-muster-fallback-farbe') || '';
+    if (!name) {
+      musterLink.textContent = musterLink.getAttribute('data-muster-ohne-farbe') || 'Kostenloses Muster bestellen';
+      return;
+    }
     musterLink.textContent = (musterLink.getAttribute('data-muster-vorlage') || '').replace('{farbe}', name);
     var musterUrl = new URL(musterLink.href, window.location.origin);
     musterUrl.searchParams.set('farbe', name);
@@ -3242,6 +3263,13 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
       "label": "Beschriftung",
       "info": "{farbe} wird durch die gewaehlte Farbe ersetzt.",
       "default": "Kostenloses Muster in {farbe}"
+    },
+    {
+      "type": "text",
+      "id": "muster_label_ohne_farbe",
+      "label": "Beschriftung ohne Farboption",
+      "info": "Fuer Produkte mit nur einer Variante (z. B. Restrollen), bei denen keine Farbe gewaehlt wird.",
+      "default": "Kostenloses Muster bestellen"
     },
     {
       "type": "header",
