@@ -7,7 +7,9 @@ const source = readFileSync(new URL('../../blocks/tp-rollware-rechner.liquid', i
 const start = source.indexOf('{%- liquid\n  assign tp_rc_max_laenge_cm');
 const end = source.indexOf('-%}', start) + 3;
 assert.ok(start >= 0 && end > start);
-const engine = new Liquid();
+const engine = new Liquid({ root: new URL('../../snippets/', import.meta.url).pathname, extname: '.liquid' });
+// Shopify-Tag {% doc %} kennt liquidjs nicht (tp-color-label-mapping beginnt damit)
+engine.registerTag('doc', { parse(t, ts) { while (ts.length && ts.shift().name !== 'enddoc') {} }, render() { return ''; } });
 engine.registerFilter('divided_by', (a, b) => Number.isInteger(b) ? Math.floor(a / b) : a / b);
 async function grenze({ limit = 2000, stock = 80, tracked = true, policy = 'deny', width = 400, exact = false, variants = 1 } = {}) {
   const product = {
@@ -52,4 +54,6 @@ test('Musterfarbe behandelt beide Schreibweisen des Farbtag-Praefixes gleich', a
     assert.equal((await engine.parseAndRender(template, { product: { tags, selected_or_first_available_variant: { options: ['Default Title'] } } })).trim(), 'Anthrazit');
   }
   assert.equal((await engine.parseAndRender(template, { product: { tags: [], selected_or_first_available_variant: { options: ['Default Title'] } } })).trim(), '');
+  // Filterschreibweise des Tags wird zum Anzeigenamen (snippets/tp-color-label-mapping)
+  assert.equal((await engine.parseAndRender(template, { product: { tags: ['farbe: gruen'], selected_or_first_available_variant: { options: ['Default Title'] } } })).trim(), 'Grün');
 });
