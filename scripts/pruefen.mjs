@@ -13,7 +13,12 @@
 //
 // Alle Schritte laufen auch nach einem Fehler weiter: ein Lauf meldet alle
 // Befunde auf einmal (wie workflow:doctor), danach je Fehler die letzten Zeilen.
-import { spawnSync } from 'node:child_process';
+//
+// Seit 2026-11-07 starten alle Schritte gleichzeitig: sie lesen nur und haengen
+// nicht voneinander ab. Vorher liefen sie nacheinander, und die CI wartete nach
+// den Tests (69 s) noch auf Theme Check (20 s) und Python (9 s). Der Bericht
+// bleibt in der Reihenfolge von SCHRITTE.
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -102,20 +107,31 @@ export function bericht(ergebnisse, { zeilen = 30 } = {}) {
   return { text: z.join('\n'), exitCode: fehler ? 1 : 0 };
 }
 
-function main() {
+/** Startet einen Schritt und loest mit seinem Ergebnis auf (stdout und stderr in Reihenfolge des Eintreffens). */
+export function starte(schritt, { cwd = WURZEL } = {}) {
+  const { bin, args } = aufruf(schritt);
+  const start = Date.now();
+  return new Promise((resolve) => {
+    let ausgabe = '';
+    let fertig = false;
+    const ende = (ok, grund) => {
+      if (fertig) return;
+      fertig = true;
+      console.error(`${ok ? 'OK    ' : 'FEHLER'} ${schritt.name}`);
+      resolve({ ...schritt, ok, ms: Date.now() - start, grund, ausgabe });
+    };
+    const kind = spawn(bin, args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+    kind.stdout.on('data', (d) => { ausgabe += d; });
+    kind.stderr.on('data', (d) => { ausgabe += d; });
+    kind.on('error', (e) => ende(false, `${bin} nicht startbar (${e.code})`));
+    kind.on('close', (status, signal) => ende(status === 0, status === 0 ? '' : `Exit ${status ?? signal}`));
+  });
+}
+
+async function main() {
   let schritte;
   try { schritte = auswahl(process.argv.slice(2)); } catch (e) { console.error(e.message); process.exit(2); }
-  const ergebnisse = [];
-  for (const s of schritte) {
-    if (s.ausgelassen) { ergebnisse.push(s); continue; }
-    const { bin, args } = aufruf(s);
-    const start = Date.now();
-    const r = spawnSync(bin, args, { cwd: WURZEL, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-    const ok = r.status === 0 && !r.error;
-    const grund = r.error ? `${bin} nicht startbar (${r.error.code})` : ok ? '' : `Exit ${r.status ?? r.signal}`;
-    ergebnisse.push({ ...s, ok, ms: Date.now() - start, grund, ausgabe: `${r.stdout || ''}${r.stderr || ''}` });
-    console.error(`${ok ? 'OK    ' : 'FEHLER'} ${s.name}`);
-  }
+  const ergebnisse = await Promise.all(schritte.map((s) => (s.ausgelassen ? s : starte(s))));
   const { text, exitCode } = bericht(ergebnisse);
   console.log(text);
   process.exit(exitCode);
