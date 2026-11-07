@@ -12,3 +12,39 @@ export function isKnownShopifyLoginXFrameWarning(event, baseUrl = 'https://www.t
   }
 }
 
+
+/**
+ * Horizon laedt den Kopf auf jeder Seite per Section Rendering nach
+ * (sections/header.liquid -> assets/section-hydration.js, Abruf der aktuellen URL
+ * mit section_id). Auf einem unveroeffentlichten Preview-Theme verwirft Shopify
+ * dabei die Vorschau (302 ohne preview_theme_id) und rendert das Live-Theme, das
+ * die Kopfgruppe des Preview-Themes nicht kennt (404). section-renderer.js wirft
+ * dann diesen Fehler. Im Livebetrieb gibt es nur ein Theme, dort kann er so nicht
+ * entstehen und bleibt ein echter Fehler (Preview-Laeufe 07.11.2026, w-289).
+ */
+export const PREVIEW_HEADER_HYDRATION_PATTERN = /^Section sections--\d+__header_section not found in the section rendering response$/;
+
+/**
+ * Beleg aus dem Netz: Die Antwort auf den Kopf-Abruf (section_id=...header_section)
+ * kam mit 404 - Shopify hat also ein anderes Theme gerendert. Ohne diesen Beleg
+ * bleibt der Fehler ein Fehler (z. B. wenn der Preview-Kopf wirklich kaputt ist).
+ */
+export function isLostPreviewHeaderResponse(url, status) {
+  try {
+    const sectionId = new URL(url).searchParams.get('section_id') || '';
+    return /^sections--\d+__header_section$/.test(sectionId) && Number(status) === 404;
+  } catch {
+    return false;
+  }
+}
+
+export function isPreviewHeaderHydrationArtifact(event, baseUrl, kopfAbrufVerloren = false) {
+  if (!kopfAbrufVerloren) return false;
+  if (event?.type !== 'pageerror') return false;
+  if (!PREVIEW_HEADER_HYDRATION_PATTERN.test(String(event?.message || '').trim())) return false;
+  try {
+    return Boolean(new URL(baseUrl).searchParams.get('preview_theme_id'));
+  } catch {
+    return false;
+  }
+}
