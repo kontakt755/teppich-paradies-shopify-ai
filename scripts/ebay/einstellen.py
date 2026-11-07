@@ -528,8 +528,9 @@ def plane_einzelmass(liste, lexikon, konfig, name, breite_cm, laenge_cm, preis, 
     if kettel:
         aspekte['Produktart'] = ['Teppich']
         groesse = f'{breite_cm} x {laenge_cm} cm'
+        kurzname = re.sub(r'\s+–.*$', '', zeile['rolle'])
         text = beschreibung(produkt, [f'Gekettelter Teppich nach Ihrer Anfrage: {groesse}, {euro(flaeche)} m². Restposten, rundum gekettelt.'],
-                            kopf=f"{re.sub(r'\s+–.*$', '', zeile['rolle'])} Teppich gekettelt {groesse}", versand=VERSAND_KETTEL)
+                            kopf=f'{kurzname} Teppich gekettelt {groesse}', versand=VERSAND_KETTEL)
         ueberschrift = kettel_titel(zeile['rolle']).split(' Teppich gekettelt')[0][:MAX_TITEL - len(groesse) - 19] + ' Teppich gekettelt ' + groesse
     else:
         groesse = f'{text_laenge(breite_cm)} × {text_laenge(laenge_cm)}'
