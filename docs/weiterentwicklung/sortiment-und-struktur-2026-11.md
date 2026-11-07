@@ -105,8 +105,8 @@ den Preisvergleich zu öffnen.
 
 - Lieferanten im Einkauf angelegt: `lieferant-j` und `lieferant-k` (Metaobjekt `tp_lieferant`,
   Direktversand „nein“, Bestellweg Mail). Belegte Konditionen stehen dort im Hinweis
-  (Coupon-Mindestlänge J 2 m; Couponzuschlag K 4,00 €/m² seit 01.03.2026; Rohstoffzuschlag J
-  je Polmaterial). Frachtbeträge stehen nur auf den Rechnungs-PDFs, nicht im Mailtext.
+  (Coupon-Mindestlänge J 2 m; Couponzuschlag K seit 01.03.2026; Rohstoffzuschlag J
+  je Polmaterial; Beträge nur im Hinweisfeld). Frachtbeträge stehen nur auf den Rechnungs-PDFs, nicht im Mailtext.
 - Theme: Block `tp-zuschnitt-laden` nach dem Rollenrechner, nur bei Tag `zuschnitt-laden`.
   Pilot-Produkte: nur Meterware (keine Wunschmaß-Variante), Tags `zuschnitt-laden` und
   `ohne-raummass`, `service.lieferzeit` belegt, Varianten `einkauf.route = SUPPLIER_TO_TP`,
@@ -120,11 +120,11 @@ den Preisvergleich zu öffnen.
 ### Preislisten im Postfach (geprüft 2026-11-05)
 
 - J: kundenbezogene Preisliste ab 2026 (Mail vom 22.12.2025) ist die gültige EK-Liste; die
-  Liste in der Dropbox (03/2024) ist überholt. Zuschläge 2026: Couponaufschlag (bis 15,49 €/m²
-  EK +3,10 €/m², ab 15,50 €/m² +20 %) und Rohstoffzuschlag je Polmaterial (Q4 2026: PP 13,9 %,
-  PA 7,9 %, PES 5,3 %).
+  Liste in der Dropbox (03/2024) ist überholt. Zuschläge 2026: Couponaufschlag (zweistufig nach
+  Einkaufspreis) und Rohstoffzuschlag je Polmaterial (quartalsweise; PP am höchsten, PES am
+  niedrigsten). Beträge nur im Lieferanten-Eintrag und in der Liste, nicht im Repository.
 - K: Rollenpreise laut Liste vom 05/2024 (Außendienst), seit 12/2025 unverändert; UVP-Listen
-  für zwei Linien vom 01/2024; Couponzuschlag 4,00 €/m² seit 01.03.2026. Die „Preisliste 2026“
+  für zwei Linien vom 01/2024; Couponzuschlag seit 01.03.2026 (Betrag im Lieferanten-Eintrag). Die „Preisliste 2026“
   vom April 2026 betrifft nur Teppichfliesen.
 - Die PDFs lassen sich aus der Remote-Session nicht öffnen (kein Anhang-Download); zum
   Auswerten in den Dropbox-Ordner „Preislisten“ legen.
@@ -134,7 +134,7 @@ den Preisvergleich zu öffnen.
 - Grundlage: J-Liste gültig ab 01.01.2026 (vom Inhaber hochgeladen). K-„Preisliste 2026“ ist
   nur die Fliesenliste (19 Qualitäten); keine unserer 69 Teppichfliesen stammt von K.
 - Rechnung nach `docs/shop-decisions.md`: Couponpreis der Liste × (1 + Rohstoffzuschlag) × 2,0
-  × 1,19, auf ,90 aufgerundet. Polmaterial unbekannt, deshalb PP-Zuschlag (13,9 %) als
+  × 1,19, auf ,90 aufgerundet. Polmaterial unbekannt, deshalb PP-Zuschlag (der höchste) als
   Obergrenze; mit PA oder PES wird der Preis 1–3 € niedriger.
 - Nur Qualitäten mit Couponpreis kommen in Frage (Zuschnitt je Kunde). Die zehn günstigsten
   landen bei **29,90–35,90 €/m²** (Preisklasse Preiswert), weitere zehn bei 36,90–39,90 €/m².
