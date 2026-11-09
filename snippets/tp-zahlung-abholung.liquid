@@ -9,12 +9,15 @@
 
   Beide Saetze sind Theme-Einstellungen unter "TP Zahlung und Abholung"; leer
   lassen blendet den jeweiligen Satz aus, sind beide leer, rendert das Snippet
-  nichts. Der Wortlaut ist nur, was der echte Checkout am 2026-10-08 anbietet
-  (Zahlung: Kreditkarte, PayPal, Klarna; Lieferung: Versand oder Abholung am
-  Standort Oranienburg). Keine Betraege, Raten, Zinsen oder Konditionen - das
-  waere Finanzierungswerbung mit Pflichtangaben. Klarna fuehrt der Checkout nur
-  als "Klarna", ohne "Rechnung" oder "Raten"; solange das nicht bei Klarna
-  belegt ist, steht es auch hier nicht.
+  nichts. Der Wortlaut ist nur, was der echte Checkout anbietet (Stand
+  2026-11-09: Kreditkarte, Apple Pay, PayPal, Klarna; Lieferung: Versand oder
+  Abholung am Standort Oranienburg). Rechnung und Raten sind belegt (Inhaber
+  2026-10-10, Anbieter-Doku 2026-11-09): Klarna "Pay in 30 days", "Pay in 3",
+  "Financing", PayPal "Bezahlung nach 30 Tagen" und "Ratenzahlung"; welche
+  Variante ein Kunde bekommt, entscheidet der Anbieter. Der Satz nennt Raten
+  nur allgemein. Keine Betraege, Zinsen, Laufzeiten oder Konditionen - das
+  waere Finanzierungswerbung mit Pflichtangaben (ob schon der Satz welche
+  ausloest, entscheidet der Inhaber).
 
   @param {string} [kontext] - { 'produkt' | 'rechner' | 'mass' | 'warenkorb' }, Standard 'produkt'.
 {%- enddoc -%}
