@@ -684,7 +684,7 @@ function gepacktBereich(sichtbar, leer) {
     <div class="mp-kunden">${liste.map((k, i) => kundeHtml(k, i + 1, { hauptknopf: liste.length === 1 })).join('')}</div>`;
 }
 
-/** Reiter "Erledigt": versandte oder erledigte Musterbestellungen der letzten Tage, nur zum Nachsehen. */
+/** Reiter "Erledigt": versandte oder erledigte Musterbestellungen der letzten Tage, zum Nachsehen und Begleitblatt-Nachdruck. */
 export const ERLEDIGT_TAGE = 14;
 export function erledigteBestellungen(ausserhalb = [], jetzt = Date.now()) {
   const ab = jetzt - ERLEDIGT_TAGE * 24 * 60 * 60 * 1000;
@@ -698,7 +698,9 @@ export function erledigteBestellungen(ausserhalb = [], jetzt = Date.now()) {
 
 function erledigtHtml(liste) {
   const zeilen = liste.map(b => `<li class="mp-aussen"><div><strong>${esc(b.orderName)}</strong> · ${esc(b.name)} · ${plural(b.muster.length, 'Muster', 'Muster')}</div>`
-    + `<div class="small muted">bestellt am ${esc(fmtDate(b.datum))} · verschickt oder erledigt${gueltig(b.erledigtAm) ? ` am ${esc(fmtDate(b.erledigtAm))}` : ''} · <a href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">Bestellung ansehen</a></div></li>`).join('');
+    + `<div class="small muted">bestellt am ${esc(fmtDate(b.datum))} · verschickt oder erledigt${gueltig(b.erledigtAm) ? ` am ${esc(fmtDate(b.erledigtAm))}` : ''} · <a href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">Bestellung ansehen</a></div>`
+    // Vergessen beim Packen (Benutzer 09.11.): gemeinsam gepackte Bestellungen kommen auf ein Blatt.
+    + `<div class="mp-aktionen"><button type="button" class="btn btn-sm" data-mp-blatt="${esc(String(b.orderName).replace(/^#/, ''))}">Begleitblatt nachdrucken</button></div></li>`).join('');
   return `<section class="mp-arbeitsliste" aria-label="Erledigt"><h2 class="mp-titel">Erledigt – Musterbestellungen der letzten ${ERLEDIGT_TAGE} Tage</h2>
     ${zeilen ? `<ul class="mp-liste">${zeilen}</ul>` : `<div class="mp-arbeitsleer"><p>In den letzten ${ERLEDIGT_TAGE} Tagen ist keine Musterbestellung erledigt worden.</p></div>`}</section>`;
 }

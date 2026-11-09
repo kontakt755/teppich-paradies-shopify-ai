@@ -2150,8 +2150,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      */
     async kundenMusterBegleitblatt({ nummern = '' } = {}) {
       if (typeof nummern !== 'string' || !/^\d{1,10}(,\d{1,10}){0,99}$/.test(nummern)) throw new ApiError(400, 'Bestellnummer fehlt oder es sind zu viele auf einmal.');
-      const liste = this.kundenMusterPacken();
+      const gewuenscht = new Set(nummern.split(','));
+      let liste = this.kundenMusterPacken();
       if (!liste.verfuegbar) throw new ApiError(503, liste.hinweis);
+      // Schon gepackt und aus der Packliste raus: das Blatt laesst sich trotzdem nachdrucken.
+      const offen = new Set(liste.kunden.flatMap(k => k.bestellungen.map(b => String(b.orderName).replace(/^#/, ''))));
+      const fehlen = [...gewuenscht].filter(n => !offen.has(n));
+      if (fehlen.length) liste = { ...liste, kunden: [...liste.kunden, ...this.kundenMusterPacken({ nachdruck: new Set(fehlen) }).kunden] };
       const dir = privatDirPath || privatDir();
       const positionen = new Map((exportOrders(readJsonGecacht(path.join(dir, 'bestelluebersicht', 'orders.json'))) || [])
         .flatMap(o => (Array.isArray(o.lineItems) ? o.lineItems : o.lineItems?.nodes || o.lineItems?.edges?.map(e => e.node) || []))
@@ -2160,7 +2165,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const katalog = this._lexikonProdukte();
       if (!katalog.length) throw new ApiError(503, 'Die Produktdaten fehlen. Bitte „Jetzt aktualisieren“ und danach erneut drucken.');
       const produkte = new Map(katalog.map(p => [p.handle, p]));
-      const gewuenscht = new Set(nummern.split(','));
       const umschlaege = [];
       const ausgelassen = [];
       // Packreihenfolge der Liste, nicht die der Anfrage: so liegen Blaetter und Umschlaege gleich.
@@ -2234,13 +2238,28 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Kunden → Muster packen (#1572): offene, bezahlte Musterbestellungen je Kunde, rein lesend.
      * Anschriften kommen nur aus dem privaten Bestellexport; Shopify wird nicht gefragt.
      */
-    kundenMusterPacken() {
+    /**
+     * `nachdruck` (Bestellnummern ohne "#"): baut nur die Umschlaege dieser Bestellungen neu, als waeren sie offen -
+     * fuer das Begleitblatt, wenn es beim Packen vergessen wurde. Bestellungen mit gemeinsamer Packmarke kommen mit.
+     */
+    kundenMusterPacken({ nachdruck = null } = {}) {
       const dir = privatDirPath || privatDir();
-      const modell = ladeBestellModell(dir);
+      let modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, hinweis: 'Die Bestelldaten fehlen. Bitte „Jetzt aktualisieren“ und danach erneut öffnen.' };
       const status = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
       let stand;
       try { stand = leseMusterPackStand(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
+      if (nachdruck) {
+        const ids = new Set((modell.auftraege || []).filter(a => nachdruck.has(String(a.name || '').replace(/^#/, ''))).map(a => String(a.id)));
+        // Gemeinsam gepackte Bestellungen (Packmarke "id1,id2") gehoeren auf dasselbe Blatt.
+        for (const k of [...Object.keys(stand.gepackt || {}), ...Object.keys(stand.gedruckt || {})]) {
+          const teil = k.split(',');
+          if (teil.some(id => ids.has(id))) teil.forEach(id => ids.add(id));
+        }
+        modell = { ...modell, auftraege: (modell.auftraege || []).filter(a => ids.has(String(a.id))).map(a => ({ ...a, offen: true, erfuellt: null,
+          // Nach dem Versand ist die offene Menge 0; fuers Blatt zaehlt, was bestellt wurde.
+          positionen: (a.positionen || []).map(p => ({ ...p, menge: p.mengeBestellt ?? p.menge })) })) };
+      }
       // Lieferantennamen nur aus den privaten Stammdaten; ohne Eintrag bleibt das Kuerzel.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
       const katalog = this._lexikonProdukte();
@@ -2256,7 +2275,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         automatikFallVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId)) || null,
         sperreVon: p => { const k = musterSchluessel(p); return k ? sperren.get(`M-${k}`) || null : null; },
         // Ganzer Eintrag: Bestelldatum und "Musterautomatik" fuer die Anmerkung beim Warten.
-        eintragVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)] || null,
+        // Beim Nachdruck zaehlt kein Versandstand: sonst gilt das Muster als fertig und faellt heraus.
+        eintragVon: (orderId, lineItemId) => { const e = status[positionKey(orderId, lineItemId)] || null; return nachdruck && e ? { ...e, status: null } : e; },
         schluesselVon: kundenSchluessel,
         gepackt: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren, gedruckt: stand.gedruckt,
         // Ein Umschlag mit rotem Versandhinweis ist selbst rot (Ampel).

@@ -11,6 +11,7 @@ Control Center, **Packstation**, Reiter **Bestellung packen**:
 
 - je Umschlag **Begleitblatt drucken**, immer direkt unter dem Kopf des aufgeklappten Umschlags
 - über der Liste **Begleitblätter drucken (N)** für alle gezeigten, noch nicht gepackten Umschläge, in Packreihenfolge
+- vergessen? Reiter **Erledigt**, **Begleitblatt nachdrucken**: auch nach dem Versand, gemeinsam gepackte Bestellungen auf einem Blatt
 
 Das PDF öffnet in einem neuen Tab. Beide Seiten bei 4 und mehr Mustern gehören in denselben Umschlag.
 Direktversand vom Hersteller bekommt kein Blatt.

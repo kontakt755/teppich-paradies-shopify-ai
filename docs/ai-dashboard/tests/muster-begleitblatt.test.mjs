@@ -213,3 +213,20 @@ test('Route: Eingabe wird geprueft, nur GET', async t => {
   assert.equal((await fetch(`${url}?nummern=999`)).status, 404);
   assert.equal((await fetch(`${url}?nummern=801`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, 405);
 });
+
+test('API: Nachdruck fuer schon versandte Bestellungen, gemeinsam gepackte kommen auf ein Blatt', async t => {
+  const { dir, api, gedruckt } = umgebung(t);
+  const datei = path.join(dir, 'bestelluebersicht/orders.json');
+  const daten = JSON.parse(fs.readFileSync(datei, 'utf8'));
+  // Wie #1114/#1115 am 09.11.: zwei Bestellungen in einem Umschlag gepackt, danach versandt - kein Blatt beigelegt.
+  for (const o of daten.orders.slice(0, 2)) Object.assign(o, { displayFulfillmentStatus: 'FULFILLED', lineItems: { nodes: o.lineItems.nodes.map(l => ({ ...l, unfulfilledQuantity: 0 })) }, customer: daten.orders[0].customer, shippingAddress: daten.orders[0].shippingAddress });
+  fs.writeFileSync(datei, JSON.stringify(daten));
+  fs.writeFileSync(path.join(dir, 'muster-packen.json'), JSON.stringify({ eintraege: { 'gid://shopify/Order/801,gid://shopify/Order/802': { zeit: '2026-10-21T10:00:00Z', von: 'Test' } }, haken: {} }));
+  assert.ok(!api.kundenMusterPacken().kunden.some(k => k.bestellungen.some(b => ['#801', '#802'].includes(b.orderName))), 'nicht mehr in der Packliste');
+  const r = await api.kundenMusterBegleitblatt({ nummern: '802' });
+  assert.deepEqual(r.ausgelassen, []);
+  assert.equal(blaetterZahl(gedruckt[0]), 1);
+  const text = gedruckt[0].replace(/<style>[\s\S]*?<\/style>/g, '');
+  assert.ok(/Musterbestellungen[\s\S]{0,40}801[\s\S]{0,40}802/.test(text), text.slice(0, 2000));
+  assert.ok(text.includes('Testlinea') && text.includes('Testboden'), 'beide Muster stehen auf dem Blatt');
+});
