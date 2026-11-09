@@ -193,7 +193,10 @@ test('Musterlager: leer oder aufgebraucht rot, knapp gelb, sonst ruhig', () => {
   assert.deepEqual(musterlagerAmpel({ leer: true }), { stufe: 'rot', wort: 'Leer' });
   assert.equal(musterlagerAmpel({ zaehlbar: true, nochDa: 0 }).wort, 'Aufgebraucht');
   assert.deepEqual(musterlagerAmpel({ zaehlbar: true, nochDa: 2, frei: 0 }), { stufe: 'gelb', wort: 'Knapp' }, 'alles zurueckgelegt');
-  assert.equal(musterlagerAmpel({ zaehlbar: true, nochDa: 1, frei: 1 }).stufe, null, 'Einzelmuster werden nicht auf Vorrat nachbestellt');
+  assert.equal(musterlagerAmpel({ zaehlbar: true, nochDa: 3, frei: 3 }).wort, 'Knapp', 'reicht noch fuer hoechstens 3 Muster (09.11.)');
+  assert.equal(musterlagerAmpel({ zaehlbar: true, nochDa: 5, frei: 4 }).stufe, null);
+  assert.equal(musterlagerAmpel({ reichtNoch: 3 }).wort, 'Knapp', 'Standardschwelle 3');
+  assert.equal(musterlagerAmpel({ reichtNoch: 4 }).stufe, null);
   assert.equal(musterlagerAmpel({ reichtNoch: 0 }).stufe, 'rot');
   assert.deepEqual(musterlagerAmpel({ reichtNoch: 5, knappAb: 5 }), { stufe: 'gelb', wort: 'Knapp' });
   assert.equal(musterlagerAmpel({ reichtNoch: 6, knappAb: 5 }).stufe, null);

@@ -65,8 +65,8 @@ export function musterJeStueck(art) {
   return Math.max(passt(l, kurz) * passt(b, lang), passt(l, lang) * passt(b, kurz));
 }
 
-/** Ab so wenigen restlichen Mustern steht ein Zuschnitt-Stueck auf "knapp". */
-export const KNAPP_AB = 5;
+/** Ab so wenigen restlichen Mustern steht ein Eintrag auf "knapp" (09.11.: hoechstens 3); nur Anzeige, bestellt wird nichts. */
+export const KNAPP_AB = 3;
 
 /** Preis eines Probestuecks 2 x 1 m beim Lieferanten (Inhaber 2026-10-15), nur zur Anzeige. */
 export const PROBESTUECK_PREIS = '8–15 € je nach Qualität';

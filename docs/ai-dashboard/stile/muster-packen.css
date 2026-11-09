@@ -177,3 +177,6 @@
 @media (max-width: 767px) {
   .mp-kopfknoepfe { justify-content: flex-start; }
 }
+/* Sammelliste (09.11.): ganze Liste auf dem Blatt, nicht in einem Scrollfenster abgeschnitten. */
+.table-scroll.mp-sammel-scroll { max-height: none; }
+@media print { .table-scroll.mp-sammel-scroll { overflow: visible; } .mp-sammel tr { break-inside: avoid; } }

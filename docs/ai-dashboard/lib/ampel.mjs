@@ -243,10 +243,10 @@ export function zaehleAmpeln(ergebnisse) {
 
 /**
  * Musterlager: leer oder aufgebraucht ist rot, knapp ist gelb, sonst ruhig.
- * "Knapp" heisst wie bisher (operations/lib/musterlager.mjs, KNAPP_AB): beim Zuschnitt
- * (Probestueck, Bahn, Verlegerest) reicht es noch fuer hoechstens `knappAb` A5-Muster - dann
- * lohnt ein neues Probestueck. Einzelmuster werden nicht auf Vorrat nachbestellt (Inhaber
- * 15.10.); dort ist nur knapp, wenn alles, was noch da ist, schon fuer Bestellungen zurueckliegt.
+ * "Knapp" (operations/lib/musterlager.mjs, KNAPP_AB, seit 09.11. drei): der Eintrag reicht noch fuer
+ * hoechstens `knappAb` Muster - beim Zuschnitt (Probestueck, Bahn, Verlegerest) geschaetzte A5-Muster,
+ * bei Einzelmustern die freien (nicht zurueckgelegten) Stuecke. Nur Anzeige: Einzelmuster werden nicht
+ * auf Vorrat nachbestellt (Inhaber 15.10.).
  * @param {object} b
  * @param {boolean} b.leer         von Hand auf "Ist leer" gesetzt
  * @param {boolean} b.zaehlbar     Einzelmuster (jedes verschickte zaehlt ab)
@@ -255,11 +255,11 @@ export function zaehleAmpeln(ergebnisse) {
  * @param {number|null} [b.reichtNoch]  Zuschnitt: geschaetzte A5-Muster
  * @param {number} [b.knappAb]
  */
-export function musterlagerAmpel({ leer = false, zaehlbar = false, nochDa = 0, frei = nochDa, reichtNoch = null, knappAb = 5 } = {}) {
+export function musterlagerAmpel({ leer = false, zaehlbar = false, nochDa = 0, frei = nochDa, reichtNoch = null, knappAb = 3 } = {}) {
   if (leer) return { stufe: 'rot', wort: 'Leer' };
   if (zaehlbar) {
     if (nochDa <= 0) return { stufe: 'rot', wort: 'Aufgebraucht' };
-    if (frei <= 0) return { stufe: 'gelb', wort: 'Knapp' };
+    if (frei <= knappAb) return { stufe: 'gelb', wort: 'Knapp' };
     return { stufe: null, wort: '' };
   }
   if (reichtNoch === null || reichtNoch === undefined) return { stufe: null, wort: '' };
