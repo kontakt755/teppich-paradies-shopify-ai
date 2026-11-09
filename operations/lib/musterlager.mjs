@@ -597,12 +597,45 @@ export function vorschlaege(modell, { lager, statusAlle = {}, produktgruppe = ()
  * @returns {string[]}
  */
 export function sofortLieferbar(lager, stand = new Map()) {
-  const keys = new Set();
+  return [...freiJeSchluessel(lager, stand).keys()].sort();
+}
+
+/**
+ * Wie viele Muster je Schluessel jetzt frei aus dem Lager gehen koennen (nur > 0). Einzelmuster: Rest nach
+ * Verschicktem und Reserviertem; Zuschnitt-Stuecke: die Schaetzung "reicht noch"; leer zaehlt nicht.
+ * Mehrere Eintraege zu einem Schluessel addieren sich.
+ * @param {{eintraege: object[]}} lager
+ * @param {Map<string, {rest: number|null, reichtNoch: number|null}>} stand  aus wendeLagerAn
+ * @returns {Map<string, number>}
+ */
+export function freiJeSchluessel(lager, stand = new Map()) {
+  const je = new Map();
   for (const e of lager?.eintraege ?? []) {
     if (e.leer) continue;
     const st = stand.get(e.id);
-    const da = ZAEHLBAR.includes(e.art) ? (st ? st.rest : e.anzahl ?? 0) > 0 : (st?.reichtNoch ?? 1) > 0;
-    if (da) for (const k of e.schluessel) keys.add(k);
+    const n = ZAEHLBAR.includes(e.art) ? (st ? st.rest : e.anzahl ?? 0) : (st?.reichtNoch ?? 1);
+    if (n > 0) for (const k of e.schluessel) je.set(k, (je.get(k) || 0) + n);
   }
-  return [...keys].sort();
+  return je;
+}
+
+/**
+ * Ersatz fuer ein Muster, das nicht kommt (Packstation, "Kunde informieren"): Farben desselben Produkts,
+ * von denen jetzt ein Muster frei im Lager liegt. Das Produkt samt "Teppich nach Maß"-Gegenstueck steckt
+ * in `farben` (farbenFuer): beide teilen sich die Schluessel einer Farbe. Groesster Posten zuerst,
+ * hoechstens `max`; die nicht kommende Farbe selbst (`ausser`) nie.
+ * @param {{farbe: string, schluessel: string[], ganzerArtikel?: boolean}[]} farben  aus farbenFuer
+ * @param {Map<string, number>} frei  aus freiJeSchluessel
+ * @param {string|null} ausser        Schluessel des Musters, das nicht kommt
+ * @returns {{farbe: string, frei: number}[]}
+ */
+export function ersatzAusLager(farben, frei, ausser = null, max = 3) {
+  const liste = [];
+  for (const f of farben ?? []) {
+    if (f.ganzerArtikel || (ausser && f.schluessel.includes(ausser))) continue;
+    // Alle Breiten einer Farbe stehen im selben Lagereintrag: der groesste Wert, nicht die Summe.
+    const n = Math.max(0, ...f.schluessel.map(k => frei.get(k) || 0));
+    if (n > 0) liste.push({ farbe: f.farbe, frei: n });
+  }
+  return liste.sort((a, b) => b.frei - a.frei || a.farbe.localeCompare(b.farbe, 'de')).slice(0, max);
 }

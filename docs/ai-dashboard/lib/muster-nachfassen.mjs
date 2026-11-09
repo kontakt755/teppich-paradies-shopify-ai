@@ -329,6 +329,8 @@ export function platzhalterFrei(mail) {
  * der Kunde erfaehrt es per Mail und bestellt bei Bedarf andere Muster. Bewusst ohne Termin -
  * wann die Farbe wiederkommt, weiss niemand. Gilt, solange die Vorlage des Inhabers keinen
  * eigenen Abschnitt "nicht verfuegbar" hat. Keine Kundendaten: alles in {} fuellt fuelleText().
+ * {Lagerfarben} (09.11.2026): liegen Farben desselben Produkts im Musterlager, nennt die Mail sie als
+ * sofort lieferbaren Ersatz; ohne Lagerfarben faellt die Zeile weg und der Text bleibt wie vorher.
  */
 export const NICHT_VERFUEGBAR_VORLAGE = Object.freeze({
   betreff: 'Ihre Musterbestellung bei Teppich Paradies',
@@ -340,12 +342,36 @@ vielen Dank für Ihre Musterbestellung. Leider sind diese Muster derzeit nicht v
 
 Wann sie wieder lieferbar sind, können wir im Moment nicht sagen. Gern schicken wir Ihnen Muster in anderen Farben – Sie können sie direkt im Shop bestellen: {Link Muster}
 
+{Lagerfarben}
+
 Bei Fragen helfen wir Ihnen gern weiter, auch telefonisch.
 
 Freundliche Grüße
 {Name}
 Teppich Paradies`,
 });
+
+/**
+ * Ersatzfarben fuer die Mail "Muster nicht verfuegbar" (Auftrag 09.11.2026): was im Musterlager liegt, von
+ * demselben Produkt wie das Muster, das nicht kommt. Alle `lagerErsatz` der gesperrten Muster zusammen, je Farbe
+ * der groesste Posten, grosse zuerst, hoechstens `max`; eine Farbe, die selbst nicht kommt, nie. Stammen die Farben
+ * von mehreren Produkten, steht das Produkt davor - sonst waere nicht klar, wozu welche Farbe gehoert.
+ * @param {{bestellt?: {farbe?: string}, lagerErsatz?: {farbe: string, frei: number, produkt?: string}[]}[]} gesperrte
+ * @returns {string[]}
+ */
+export function ersatzFarben(gesperrte, max = 3) {
+  const nicht = new Set((gesperrte || []).map(m => m?.bestellt?.farbe).filter(Boolean));
+  const je = new Map();
+  for (const m of gesperrte || []) {
+    for (const e of m?.lagerErsatz ?? []) {
+      const name = `${e.produkt || ''}|${e.farbe}`;
+      if (!nicht.has(e.farbe)) je.set(name, { ...e, frei: Math.max(e.frei, je.get(name)?.frei || 0) });
+    }
+  }
+  const gewaehlt = [...je.values()].sort((a, b) => b.frei - a.frei || a.farbe.localeCompare(b.farbe, 'de')).slice(0, max);
+  const mehrere = new Set([...je.values()].map(e => e.produkt)).size > 1;
+  return gewaehlt.map(e => (mehrere && e.produkt ? `${e.produkt} ${e.farbe}` : e.farbe));
+}
 
 /**
  * Teppich-Fassung (Rundgang 2026-10-26, #7): fuer Bestellungen, deren Muster alle zu einem
@@ -485,16 +511,21 @@ export function mitFirmenangaben(text) {
  * @param {string|null} p.kundenname
  * @param {string|null} [p.absender]  Name der Person, die schreibt
  * @param {string[]} [p.farben]  nur "Muster nicht verfuegbar": betroffene Muster, je Eintrag "Produkt: Farbe"
+ * @param {string[]} [p.lagerFarben]  nur "Muster nicht verfuegbar": Farben, die im Musterlager liegen (ersatzFarben)
  * @param {string|null} [p.nachfass]  Stufe der Muster-Nachfrage (erste, erinnerung): die Links bekommen die Kampagnenkennung
  * @returns {{ betreff: string, text: string }|null}
  */
-export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [], farben = [], nachfass = null } = {}) {
+export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [], farben = [], lagerFarben = [], nachfass = null } = {}) {
   if (!vorlage?.text) return null;
   const link = url => (nachfass ? nachfassLink(url, nachfass) : url);
   const werte = Object.fromEntries(Object.entries(FESTE_LINKS).map(([name, url]) => [name, link(url)]));
   // "Muster nicht verfuegbar": je Produkt eine Zeile mit seinen Farben (mehrzeilig, ohne Platzhalter).
   const farbZeilen = (farben || []).map(f => String(f ?? '').replace(/[{}]/g, '').trim()).filter(Boolean);
   if (farbZeilen.length) werte.Farben = farbZeilen.map(f => `– ${f}`).join('\n');
+  // Ersatz aus dem Musterlager (09.11.2026): Farben, die wir sofort da haben - ersatzFarben() waehlt sie aus.
+  const lager = (lagerFarben || []).map(f => String(f ?? '').replace(/[{}]/g, '').trim()).filter(Boolean);
+  const lagerAbsatz = lager.length ? `Außerdem haben wir ${lager.length === 1 ? 'diese Farbe' : 'diese Farben'} sofort da und schicken sie Ihnen gern kostenlos: ${lager.join(', ')}. Eine kurze Antwort auf diese E-Mail genügt.` : '';
+  if (lagerAbsatz) werte.Lagerfarben = lagerAbsatz;
   const links = sichereMusterLinks(produkte);
   const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${link(p.url)}`).join('\n\n');
   // Die Linkliste steht auf eigenen Zeilen, danach eine Leerzeile - sonst klebt der naechste Satz am letzten Link.
@@ -518,12 +549,14 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
     .replace(/\n{3,}/g, '\n\n')
     .trim();
   const block = `${mehrere ? 'Ihre gewählten Produkte' : 'Ihr gewähltes Produkt'}:\n${auswahl}\n\nFragen zum Maß? Wir beraten Sie gern.`;
-  const mitAuswahl = auswahl && !vorlage.text.includes('{Link Produkt}')
-    // \n+ nimmt die Leerzeile vor dem Gruss mit - sonst stuenden zwei Leerzeilen vor dem Block.
-    ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n+((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
+  // \n+ nimmt die Leerzeile vor dem Gruss mit - sonst stuenden zwei Leerzeilen vor dem Block.
+  const vorGruss = (t, absatz) => (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(t) ? t.replace(/\n+((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, (_, gruss) => `\n\n${absatz}\n\n${gruss}`) : `${t}\n\n${absatz}`);
+  const mitAuswahl = auswahl && !vorlage.text.includes('{Link Produkt}') ? vorGruss(text, block) : text;
+  // Eigene Vorlage des Inhabers ohne {Lagerfarben}: der Ersatz steht dann vor dem Gruss, nicht gar nicht.
+  const mitLager = lagerAbsatz && !vorlage.text.includes('{Lagerfarben}') ? vorGruss(mitAuswahl, lagerAbsatz) : mitAuswahl;
   // Der Betreff hat keine Zeile, die wegfallen koennte: ein unbekannter Platzhalter bleibt stehen,
   // damit platzhalterFrei() ihn sieht und der Versandlauf die Mail zurueckhaelt (statt „Ihre Muster,“ zu schicken).
-  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitFirmenangaben(nachfass ? mitWhatsApp(mitAuswahl) : mitAuswahl) };
+  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitFirmenangaben(nachfass ? mitWhatsApp(mitLager) : mitLager) };
 }
 
 /**

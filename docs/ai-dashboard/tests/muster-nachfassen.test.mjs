@@ -10,6 +10,7 @@ import {
   ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN, HOECHSTENS_TAGE, ERLEDIGT_ZEIGEN_TAGE, SHOP_URL,
   versandLaeuft, teileNachfassen, nachfassTodo, nachfragenBuendeln, mitMusterListe,
   musterArt, vorlageFuer, nameSchreibweise, TEPPICH_VORLAGEN, NICHT_NOETIG, mitWhatsApp, WHATSAPP,
+  ersatzFarben, NICHT_VERFUEGBAR_VORLAGE,
 } from '../lib/muster-nachfassen.mjs';
 import { musterKaufLinks } from '../lib/muster-kauf-links.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
@@ -454,4 +455,43 @@ test('WhatsApp steht in der Nachfrage: hinter der Telefonzeile, sonst vor dem Gr
   assert.ok(mail.text.includes(WHATSAPP.link));
   assert.ok(!fuelleText(TEPPICH_VORLAGEN.erinnerung, { kundenname: 'Testkunde' }).text.includes(WHATSAPP.link), 'nur Nachfass-Mails');
   assert.doesNotMatch(mail.text, /€|Rabatt/);
+});
+
+// -- "Muster nicht verfuegbar" mit Ersatz aus dem Musterlager (09.11.2026) ---------------------------
+const nv = extra => fuelleText(NICHT_VERFUEGBAR_VORLAGE, { kundenname: 'Erika Beispiel', absender: 'Anna', farben: ['Fame Teppichboden: Rot (123)'], ...extra });
+
+test('Mail "nicht verfuegbar": Lagerfarben stehen als Angebot im Text, ohne Lagerfarben bleibt der Text wie bisher', () => {
+  const mit = nv({ lagerFarben: ['Nougat (271)', 'Steingrau (373)'] });
+  assert.match(mit.text, /Außerdem haben wir diese Farben sofort da und schicken sie Ihnen gern kostenlos: Nougat \(271\), Steingrau \(373\)\. Eine kurze Antwort auf diese E-Mail genügt\./);
+  assert.match(mit.text, /– Fame Teppichboden: Rot \(123\)/, 'die nicht lieferbare Farbe steht weiter in der Liste');
+  assert.ok(mit.text.indexOf('Außerdem haben wir') > mit.text.indexOf('direkt im Shop bestellen'), 'nach dem Hinweis auf den Shop');
+  assert.ok(mit.text.indexOf('Außerdem haben wir') < mit.text.indexOf('Bei Fragen helfen wir'), 'vor dem Schluss');
+  assert.match(nv({ lagerFarben: ['Nougat (271)'] }).text, /diese Farbe sofort da und schicken sie Ihnen gern/);
+  assert.equal(platzhalterFrei(mit), true);
+  // Ohne Lagerfarben: genau der Text von vorher, keine zusaetzliche Leerzeile.
+  const alt = { ...NICHT_VERFUEGBAR_VORLAGE, text: NICHT_VERFUEGBAR_VORLAGE.text.replace('\n\n{Lagerfarben}', '') };
+  assert.equal(nv({}).text, fuelleText(alt, { kundenname: 'Erika Beispiel', absender: 'Anna', farben: ['Fame Teppichboden: Rot (123)'] }).text);
+  assert.equal(nv({ lagerFarben: [] }).text, nv({}).text);
+  assert.doesNotMatch(nv({}).text, /Außerdem|\n\n\n|\{/);
+});
+
+test('Mail "nicht verfuegbar": eine eigene Vorlage ohne {Lagerfarben} bekommt den Ersatz vor dem Gruss', () => {
+  const eigen = { betreff: 'Leider nicht da', text: 'Guten Tag {Anrede} {Nachname},\n\nDiese Muster fehlen:\n{Farben}\n\nFreundliche Grüße\n{Name}' };
+  const m = fuelleText(eigen, { kundenname: 'Erika Beispiel', absender: 'Anna', farben: ['Rot'], lagerFarben: ['Nougat (271)'] });
+  assert.match(m.text, /– Rot\n\nAußerdem haben wir diese Farbe sofort da.*: Nougat \(271\)\. Eine kurze Antwort.*\n\nFreundliche Grüße\nAnna/s);
+  assert.doesNotMatch(fuelleText(eigen, { kundenname: 'Erika Beispiel', absender: 'Anna', farben: ['Rot'] }).text, /Außerdem/);
+});
+
+test('ersatzFarben: grosse Posten zuerst, hoechstens 3, nicht die Farben, die nicht kommen; Produkt nur bei mehreren Produkten', () => {
+  const rot = { bestellt: { farbe: 'Rot (1)' }, lagerErsatz: [{ farbe: 'Gelb (3)', frei: 2, produkt: 'Fame' }, { farbe: 'Grün (4)', frei: 7, produkt: 'Fame' }, { farbe: 'Rot (1)', frei: 9, produkt: 'Fame' }, { farbe: 'Blau (2)', frei: 7, produkt: 'Fame' }, { farbe: 'Grau (5)', frei: 1, produkt: 'Fame' }] };
+  assert.deepEqual(ersatzFarben([rot]), ['Blau (2)', 'Grün (4)', 'Gelb (3)']);
+  assert.deepEqual(ersatzFarben([rot], 1), ['Blau (2)']);
+  // Zwei Muster desselben Produkts: dieselbe Farbe zaehlt einmal, die andere nicht kommende Farbe faellt weg.
+  const blau = { bestellt: { farbe: 'Blau (2)' }, lagerErsatz: [{ farbe: 'Grün (4)', frei: 7, produkt: 'Fame' }, { farbe: 'Gelb (3)', frei: 2, produkt: 'Fame' }] };
+  assert.deepEqual(ersatzFarben([rot, blau]), ['Grün (4)', 'Gelb (3)', 'Grau (5)']);
+  // Zwei Produkte: ohne Produktnamen waere nicht klar, welche Farbe wozu gehoert.
+  const punto = { bestellt: { farbe: 'Beige' }, lagerErsatz: [{ farbe: 'Greige (196)', frei: 3, produkt: 'Punto' }] };
+  assert.deepEqual(ersatzFarben([rot, punto], 2), ['Fame Blau (2)', 'Fame Grün (4)']);
+  assert.deepEqual(ersatzFarben([{ bestellt: { farbe: 'Rot' } }, null]), [], 'ohne Lagerfarbe nichts');
+  assert.deepEqual(ersatzFarben(undefined), []);
 });

@@ -128,10 +128,12 @@ function vorherIndex(produkte) {
  * @param {(orderId, lineItemId) => {grund: string, seit: string|null}|null} [p.automatikFallVon]  Klaerfall der
  *                                      Musterautomatik samt Beginn; geht vor automatikGrundVon (Ampel "haengt")
  * @param {(position) => {imShop: boolean, seit: string}|null} [p.sperreVon]  aktive Mustersperre dieser Position (w-210)
+ * @param {(produktHandle, position) => {farbe: string, frei: number}[]} [p.ersatzVon]  Farben desselben Produkts, die im
+ *                                      Musterlager frei liegen - nur fuer gesperrte Muster abgefragt (Mail "Kunde informieren")
  * @param {object} [p.versandProbleme]  { [packSchluessel]: { problem } } - roter Versandhinweis, Umschlag ist dann rot
  * Jedes Muster und jeder Umschlag traegt `ampel` (lib/ampel.mjs: packMusterAmpel, packUmschlagAmpel).
  */
-export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, automatikGrundVon = () => null, automatikFallVon = null, sperreVon = () => null, versandProbleme = {}, jetzt = new Date() } = {}) {
+export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon: statusAllein = () => null, eintragVon = null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, gedruckt = {}, lieferantVon = id => `Lieferant ${id}`, automatikGrundVon = () => null, automatikFallVon = null, sperreVon = () => null, ersatzVon = () => [], versandProbleme = {}, jetzt = new Date() } = {}) {
   const statusVon = eintragVon ? (o, l) => eintragVon(o, l)?.status || null : statusAllein;
   // Vom Lieferanten direkt an den Kunden (#1680): wird nicht bei uns gepackt.
   const direkt = (a, p) => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT') || eintragVon?.(a.id, p.lineItemId)?.ueber === 'kunde';
@@ -225,6 +227,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
         const stand = standVon(statusVon(a.id, p.lineItemId), p);
         // Nur was noch fehlt, "kommt nicht": ein Muster, das trotzdem hier liegt, wird normal gepackt.
         const sperre = !haken[z.lineItemId] && !['da', 'lager'].includes(stand) ? sperreVon(p) : null;
+        const ersatz = sperre ? ersatzVon(z.produktHandle, p) : [];
         const fall = stand === 'offen' ? automatikFallVon?.(a.id, p.lineItemId) || null : null;
         const grund = stand === 'offen' ? text(fall?.grund ?? automatikGrundVon(a.id, p.lineItemId)) || null : null;
         // Ampel: Liefertermin (nur bestaetigt und noch bestellt) und wie lange die Automatik es schon festhaelt.
@@ -245,6 +248,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           abgehakt: haken[z.lineItemId] ? { zeit: haken[z.lineItemId].zeit || null, von: haken[z.lineItemId].von || null } : null,
           stand,
           gesperrt: sperre ? { imShop: !!sperre.imShop, seit: sperre.seit || null } : null,
+          // Gesperrt, aber Farben desselben Produkts liegen im Musterlager: die Mail nennt sie als Ersatz.
+          ...(ersatz.length ? { lagerErsatz: ersatz } : {}),
           // Bleibt nach der Ankunft erhalten: die Kopfzeile nennt das Lieferanten-Bestelldatum immer (29.10.).
           bestelltAm: belegt(eintrag?.bestelltAm) ? text(eintrag.bestelltAm) : null,
           automatisch: stand === 'bestellt' && eintrag?.bestelltVon === MUSTERAUTOMATIK,
