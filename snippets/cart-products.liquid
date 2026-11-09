@@ -233,6 +233,7 @@
                       </a>
                     </p>
                     {%- render 'tp-cart-gruppe', line_item: item, teil: 'hinweis' -%}
+                    {%- render 'tp-muster-lieferzeit', line_item: item -%}
                     {% if item.product.vendor and block_settings.vendor %}
                       <p>
                         {{ item.product.vendor }}

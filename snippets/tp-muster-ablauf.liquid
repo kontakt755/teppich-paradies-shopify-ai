@@ -1,0 +1,35 @@
+{%- doc -%}
+  "So geht es weiter" nach einer Musterbestellung (09.11.2026): im
+  Musterkonfigurator (sections/tp-sample-checkout) und im Warenkorb, sobald ein
+  Muster drin liegt (snippets/tp-cart-versandhinweis). Versandmail = Shopify-
+  Versandbestaetigung.
+{%- enddoc -%}
+<div class="tp-muster-ablauf">
+  <h2 class="tp-muster-ablauf__titel">So geht es weiter</h2>
+  <ol>
+    <li>Wir packen Ihre Muster – was nicht auf Lager ist, bestellen wir beim Lieferanten oder Hersteller.</li>
+    <li>Sobald die Muster unterwegs sind, bekommen Sie eine Versandmail.</li>
+    <li>Ihre Farbe gefunden? Bestellen Sie online oder bei uns im Laden.</li>
+  </ol>
+</div>
+{% stylesheet %}
+  .tp-muster-ablauf {
+    margin: 24px 0 0;
+    padding: 16px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    border-radius: 8px;
+  }
+
+  .tp-muster-ablauf__titel {
+    margin: 0 0 8px;
+    font-size: var(--tp-fs-md);
+    font-weight: 600;
+  }
+
+  .tp-muster-ablauf ol {
+    margin: 0;
+    padding-left: 1.25em;
+    font-size: var(--tp-fs-sm);
+    line-height: 1.5;
+  }
+{% endstylesheet %}
