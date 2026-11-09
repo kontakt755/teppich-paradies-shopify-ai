@@ -262,6 +262,22 @@ export function vermerkeShopifyVersand(file, { orderId, lineItemId, vermerk } = 
 }
 
 /**
+ * Vermerkt nachtraeglich "direkt vom Lieferanten zum Kunden" (ueber 'kunde') an einer bestellten Position,
+ * ohne Schritt und Bestelldatum zu aendern - fuer Bestellungen vor dem Vermerk im Bestellmail-Dialog (#1049).
+ */
+export function vermerkeDirektversand(file, { orderId, lineItemId, actor, jetzt = new Date() } = {}) {
+  const key = positionKey(orderId, lineItemId);
+  if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
+  if (!actor) throw new AuftragsstatusFehler('actor (gh-Login) ist Pflicht');
+  const alle = leseAlle(file);
+  const bisher = alle[key];
+  if (bisher?.status !== 'bestellt') throw new AuftragsstatusFehler('Nur eine beim Lieferanten bestellte Position kann als Direktversand vermerkt werden.', 409);
+  alle[key] = { ...bisher, ueber: 'kunde', aktualisiertAm: jetzt.toISOString(), aktualisiertVon: actor };
+  schreibeAlle(file, alle);
+  return alle[key];
+}
+
+/**
  * Schritt, auf den eine erledigte Position beim Wiederoeffnen zurueckfaellt: der letzte
  * Schritt vor "Erledigt", der im Datensatz belegt ist (z. B. "An Kunden raus"), sonst
  * gar keiner (= noch nicht bestellt, typisch nach "Ohne Einkauf abschliessen").

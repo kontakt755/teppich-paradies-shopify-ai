@@ -166,6 +166,18 @@ test('Schritt bestellt: Kettelweg je Artikel wird vermerkt, ohne Angabe bleibt d
   assert.equal(stand(ohne.api).ueber, undefined, 'nur der Schritt bestellt setzt den Vermerk');
 });
 
+test('aktion direktversand: bestelltes Muster nachtraeglich als Direktversand, Ware und offene Muster abgelehnt (#1049)', async () => {
+  const { api, schritt } = umgebung();
+  const ich = { name: 'Mitarbeiter 1', rolle: 'mitarbeiter' };
+  const setze = (orderId, li) => api.einkaufAuftragsstatusSetzen({ aktion: 'direktversand', orderId, lineItemId: `gid://shopify/LineItem/${li}` }, ich);
+  await assert.rejects(() => setze(MUSTER, 1), e => e instanceof ApiError && e.status === 409, 'noch nicht bestellt');
+  await assert.rejects(() => setze(WARE, 3), e => e instanceof ApiError && e.status === 400, 'nur Muster');
+  await schritt(MUSTER, 'bestellt');
+  const r = await setze(MUSTER, 1);
+  assert.deepEqual([r.eintrag.status, r.eintrag.ueber], ['bestellt', 'kunde']);
+  assert.equal(api.einkaufAuftragsstatus().positionen[`${MUSTER}::gid://shopify/LineItem/2`].ueber, undefined, 'nur die eine Position');
+});
+
 test('Abwaertskompatibel: der bestehende Aufruf ohne aktion verhaelt sich wie bisher', async () => {
   const { api } = umgebung();
   const r = await api.einkaufAuftragsstatusSetzen({ orderId: WARE, lineItemId: 'gid://shopify/LineItem/3', status: 'bestellt', lieferantBestellnummer: 'AB-1' }, { name: 'Mitarbeiter 1' });

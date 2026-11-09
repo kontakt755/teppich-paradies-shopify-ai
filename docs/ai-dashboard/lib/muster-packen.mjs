@@ -256,6 +256,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           ...(liefertermin ? { liefertermin } : {}),
           ...(haengtWerktage ? { haengtWerktage } : {}),
           ...(offenTage !== null ? { offenTage } : {}),
+          ...(direkt(a, p) ? { direkt: true } : {}),
         };
         m.ampel = packMusterAmpel(m, { jetzt, bestellenRotAb: FRISTEN.bestellen[1] });
         g.muster.push(m);
