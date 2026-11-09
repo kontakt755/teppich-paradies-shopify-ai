@@ -66,8 +66,8 @@ const ABLAEUFE = [
     'Geht die Ware raus: <b>An Kunden raus…</b> – die Sendungsnummer vom Paketaufkleber eintragen. Jedes Paket hat seine eigene Nummer.',
   ]],
   ['Muster packen', [
-    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Bestelltag ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet, ganz oben steht <b>Begleitblatt drucken</b>.',
-    '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>. Das Begleitblatt (A4) kommt mit in den Umschlag.',
+    'Links auf <b>Packstation</b>, Reiter <b>Bestellung packen</b>: je Bestelltag ein Umschlag. Umschlag aufklappen – der nächste Schritt leuchtet.',
+    '<b>1 · Bestellung drucken</b>: <b>Aufkleber und Adresse drucken</b>. Das Begleitblatt (A4) öffnet dabei von selbst als PDF in einem neuen Tab: dort drucken, dann zurück zur Packstation und die Aufkleber drucken. Das Blatt kommt mit in den Umschlag. <b>Begleitblatt drucken</b> ist nur noch für den Nachdruck.',
     '<b>2 · Was ist da?</b> Jedes Muster überkleben, in den Umschlag legen und abhaken. Fehlt eins: <b>Fehlt noch – zurücklegen</b>.',
     '<b>3 · Zukleben und verschicken</b>: Umschlag zukleben, dann <b>Umschlag gepackt – verschicken…</b> und in der Karte bestätigen. Gepackt heißt verschickt: der Kunde bekommt sofort die Versandmail, danach geht der Umschlag zur Post. Zurücknehmen geht dann nicht mehr.',
     'Steht etwas im Reiter <b>Gepackt</b>, wurde es nie als verschickt eingetragen. Liegt der Umschlag noch im Regal: zur Post und <b>Verschickt – Kunde informieren…</b>. War er schon früher raus: <b>War schon früher raus…</b> (ohne Versandmail).',

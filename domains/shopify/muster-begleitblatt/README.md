@@ -9,7 +9,8 @@ Farbe prüft der Kunde am echten Muster), ohne gedruckte Preise (sie ändern sic
 
 Control Center, **Packstation**, Reiter **Bestellung packen**:
 
-- je Umschlag **Begleitblatt drucken**, immer direkt unter dem Kopf des aufgeklappten Umschlags
+- automatisch mit **Aufkleber und Adresse drucken** (Schritt 1 im Umschlag, auch „Alle Packbereiten drucken“ und das Vorbereiten mehrerer Umschläge: dann ein gemeinsames PDF); nicht bei „Nur diesen nachdrucken“ und „Alle Aufkleber erneut drucken“. Kann das Blatt nicht erstellt werden, läuft der Aufkleberdruck trotzdem, die Packstation meldet „Kein Begleitblatt: …“
+- je Umschlag **Begleitblatt drucken** (Nachdruck), immer direkt unter dem Kopf des aufgeklappten Umschlags
 - über der Liste **Begleitblätter drucken (N)** für alle gezeigten, noch nicht gepackten Umschläge, in Packreihenfolge
 - vergessen? Reiter **Erledigt**, **Begleitblatt nachdrucken**: auch nach dem Versand, gemeinsam gepackte Bestellungen auf einem Blatt
 

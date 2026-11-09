@@ -30,7 +30,8 @@
  * 7 Tagen, nicht bestellt, alles unter "Zu klären"). Die Reiter
  * nennen die Zahl der roten Umschlaege.
  * In beiden Ansichten steht oben fuer den Packer, welche Herstelleretiketten abkommen (PACKER_INFO).
- * Das A4-Begleitblatt kommt je Umschlag oder gesammelt als PDF (blattKnopf); Direktversand bekommt keins.
+ * Das A4-Begleitblatt kommt beim Aufkleber-und-Adresse-Druck automatisch mit (ein PDF je Klick), der Knopf blattKnopf
+ * bleibt fuer den Nachdruck; Direktversand bekommt keins.
  */
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast } from '../../kern/helfer.mjs';
@@ -845,9 +846,13 @@ function viewNachLaden(d) {
  * Druck je Bestellung. Ist der Lauf vollstaendig beim Drucker, gilt der Umschlag fuer alle Geraete als
  * vorbereitet (#1718); ein abgebrochener Druck vermerkt nichts - dann "Schon gedruckt" waehlen.
  */
-function drucken(liste, titel, { nurOffen = false } = {}) {
+function drucken(liste, titel, { nurOffen = false, blatt = false } = {}) {
   const etiketten = liste.flatMap(k => aufkleberFuer(k, { nurOffen }));
   if (!etiketten.length) return;
+  // Begleitblatt im selben Klick mit (sonst sperrt der Browser den Tab), alle Umschlaege in einem PDF;
+  // vergessen am 09.11. bei #1114/#1115. Direktversand filtert blattNummern heraus.
+  const nummern = blatt ? blattNummern(liste) : '';
+  if (nummern) void blattOeffnen(nummern);
   // Der erste Druck zaehlt; Gepacktes wird nur neu etikettiert.
   const vorbereiten = liste.filter(k => !k.gepackt && !k.gedruckt).map(k => k.packSchluessel);
   oeffneEtikettenDruck({ etiketten, titel, allowEditing: false,
@@ -1073,12 +1078,12 @@ function kundeMitMuster(lineItemId) {
 
 /** Klicks im Reiter "Muster packen". Gibt true zurueck, wenn der Klick damit erledigt ist. */
 /** Der Tab muss noch im Klick aufgehen, sonst sperrt ihn der Browser; das PDF kommt danach hinein. */
-async function blattOeffnen(knopf) {
+async function blattOeffnen(nummern, knopf = null) {
   const tab = window.open('', '_blank');
   blattMeldung = null;
-  knopf.disabled = true;
+  if (knopf) knopf.disabled = true;
   try {
-    const antwort = await fetch(`/api/kunden/muster-begleitblatt?${new URLSearchParams({ nummern: knopf.dataset.mpBlatt })}`, { credentials: 'same-origin' });
+    const antwort = await fetch(`/api/kunden/muster-begleitblatt?${new URLSearchParams({ nummern })}`, { credentials: 'same-origin' });
     if (!antwort.ok) throw new Error((await antwort.json().catch(() => null))?.error || 'Das Begleitblatt konnte nicht erstellt werden.');
     const ausgelassen = JSON.parse(decodeURIComponent(antwort.headers.get('X-Tp-Ausgelassen') || '%5B%5D'));
     if (ausgelassen.length) blattMeldung = `Ohne Begleitblatt: ${ausgelassen.map(a => `${a.nummer} – ${a.grund}`).join(' ')}`;
@@ -1203,7 +1208,7 @@ export function musterPackenKlick(e) {
   const blatt = e.target.closest('[data-mp-blatt]');
   if (blatt) {
     e.preventDefault();
-    void blattOeffnen(blatt);
+    void blattOeffnen(blatt.dataset.mpBlatt, blatt);
     return true;
   }
   const eines = e.target.closest('[data-mp-drucken-muster]');
@@ -1230,7 +1235,9 @@ export function musterPackenKlick(e) {
   if (einzeln) {
     e.preventDefault();
     const k = liste.find(x => x.packSchluessel === einzeln.dataset.mpDrucken);
-    if (k) drucken([k], `Aufkleber · ${k.name}`, { nurOffen: k.bereich !== 'gepackt' && einzeln.dataset.mpAlleAufkleber !== '1' });
+    // "Alle Aufkleber erneut drucken" ist ein Nachdruck: ohne Blatt.
+    const nachdruck = einzeln.dataset.mpAlleAufkleber === '1';
+    if (k) drucken([k], `Aufkleber · ${k.name}`, { nurOffen: k.bereich !== 'gepackt' && !nachdruck, blatt: !nachdruck && k.bereich !== 'gepackt' });
     return true;
   }
   if (e.target.closest('[data-mp-eigene]')) {
@@ -1240,7 +1247,7 @@ export function musterPackenKlick(e) {
   }
   if (e.target.closest('[data-mp-alle]')) {
     e.preventDefault();
-    drucken(liste.filter(k => k.bereich === 'packen' && !k.fehlt.length), 'Aufkleber · alle Kunden in Packreihenfolge', { nurOffen: true });
+    drucken(liste.filter(k => k.bereich === 'packen' && !k.fehlt.length), 'Aufkleber · alle Kunden in Packreihenfolge', { nurOffen: true, blatt: true });
     return true;
   }
   const vorb = e.target.closest('[data-mp-vorbereiten]');
@@ -1248,7 +1255,7 @@ export function musterPackenKlick(e) {
     e.preventDefault();
     // Reihenfolge wie in der Liste; was inzwischen gepackt oder ohne Zuordnung ist, faellt heraus.
     const auswahl = vorb.dataset.mpVorbereiten.split(' ').map(pk => liste.find(k => k.packSchluessel === pk)).filter(k => k && !k.gepackt && !k.fehlt.length);
-    drucken(auswahl, `Aufkleber · ${plural(auswahl.length, 'Umschlag', 'Umschläge')} vorbereiten`, { nurOffen: true });
+    drucken(auswahl, `Aufkleber · ${plural(auswahl.length, 'Umschlag', 'Umschläge')} vorbereiten`, { nurOffen: true, blatt: true });
     return true;
   }
   const a = e.target.closest('[data-mp-aktion]');
