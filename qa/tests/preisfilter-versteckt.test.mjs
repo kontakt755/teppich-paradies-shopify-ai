@@ -45,3 +45,14 @@ test('Alles andere behaelt den Standard-Preisfilter', async () => {
   assert.equal(await versteckt({ handle: '', title: '' }), false, 'ohne Kollektion (Suche)');
   assert.equal(await versteckt(null), false, 'collection nil');
 });
+
+test('Reste & Sonderposten: Preisfilter aus, Kettelteppich ohne eigene Karte neben seiner Rolle', async () => {
+  // Restrollen je m2 neben Kettelteppichen je 0,01 m2 (09.11.2026).
+  assert.equal(await versteckt({ handle: 'reste-sonderposten', title: 'Reste & Sonderposten' }), true);
+  // Zusammenlegung: Section ueberspringt den Kettelteppich nur, wenn seine Rolle
+  // (service.einfass_basis) mit auf der Seite steht; die Rollenkarte verlinkt ihn.
+  const section = read('sections/main-collection.liquid');
+  assert.match(section, /collection\.handle == 'reste-sonderposten' and collection\.products_count <= products_per_page/);
+  assert.match(section, /tp_rest_rollen contains tp_rest_marke[\s\S]*continue/);
+  assert.match(read('blocks/tp-card-aktion.liquid'), /einfass_basis\.value\.id == closest\.product\.id/);
+});
