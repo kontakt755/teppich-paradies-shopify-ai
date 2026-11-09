@@ -16,7 +16,10 @@ const src = readFileSync(path.join(root, 'snippets', 'meta-tags.liquid'), 'utf8'
 
 const markeZeile = src.match(/assign tp_marke = [^\n]+/)[0];
 const titelBlock = src.match(/^<title>[\s\S]*?^<\/title>/m)[0];
-const beschreibungBlock = src.match(/{% if page_description %}[\s\S]*{% endif %}/)[0];
+const beschreibungBlock = src.match(/{% if tp_beschreibung != blank %}[\s\S]*{% endif %}/)[0];
+// Aufbau von tp_beschreibung (Theme-Audit 2026-11-09): eigener Text statt
+// Shopifys zusammengeklebter 320-Zeichen-Vorgabe, Kuerzung an der Wortgrenze.
+const beschreibungAufbau = src.match(/ {2}assign tp_beschreibung = page_description[\s\S]*?(?= {2}assign og_description)/)[0];
 
 const engine = new Liquid();
 const shop = { name: 'TeppichParadies', description: '' };
@@ -29,9 +32,11 @@ const titel = async (ctx) => {
   return html.replace(/<\/?title>/g, '').replace(/\s+/g, ' ').trim();
 };
 
-const beschreibung = async (ctx) => engine.parseAndRender(beschreibungBlock, {
-  shop, collection: null, ...ctx,
-});
+const beschreibung = async (ctx) => engine.parseAndRender(
+  `{%- liquid\n${beschreibungAufbau}\n-%}${beschreibungBlock}`,
+  { shop, collection: null, ...ctx },
+);
+const descInhalt = (html) => [...html.matchAll(/name="description"\s+content="([^"]+)"/g)].map((m) => m[1]);
 
 const KAT = 'Teppichboden kaufen – Meterware nach Maß | Teppich Paradies';
 
@@ -90,4 +95,47 @@ test('Gepflegte Description bleibt vorrangig (Produkt, Kollektion, Startseite)',
     assert.equal(treffer.length, 1);
     assert.equal(treffer[0][1], 'Eigener Text');
   }
+});
+
+test('Produkt ohne SEO-Beschreibung: Absaetze mit Leerzeichen, an der Wortgrenze gekuerzt', async () => {
+  const body = '<p>Teppich nach Ihrem Maß aus unserer Restrolle Broadway 05 grau: rechteckig zugeschnitten und rundum gekettelt. Rollenbreite 500 cm, Florhöhe ca. 12 mm.</p>\n<p>Altbestand aus unserem Lager in Oranienburg, solange der Vorrat reicht. Technische Daten sind nicht belegt.</p>';
+  const html = await beschreibung({
+    page_description: 'Shopify-Vorgabe mm.Altbestand',
+    product: { description: body, metafields: { global: {} } },
+    request: { page_type: 'product', path: '/products/x' },
+  });
+  const [d] = descInhalt(html);
+  assert.ok(d.length <= 156, `zu lang: ${d.length}`);
+  assert.match(d, /12 mm\.$/, 'endet auf Satzende, ohne Auslassungszeichen');
+  assert.doesNotMatch(d, /<|mm\.Altbestand/);
+
+  const kurz = await beschreibung({
+    page_description: 'x',
+    product: { description: '<p>Florhöhe ca. 12 mm.</p>\n<p>Altbestand aus dem Lager.</p>', metafields: { global: {} } },
+    request: { page_type: 'product', path: '/products/x' },
+  });
+  assert.deepEqual(descInhalt(kurz), ['Florhöhe ca. 12 mm. Altbestand aus dem Lager.']);
+});
+
+test('Produkt mit SEO-Beschreibung: unveraendert, auch ueber 160 Zeichen', async () => {
+  const gepflegt = 'Gepflegter Text mit Lieferung in ganz Deutschland. '.repeat(4).trim();
+  const html = await beschreibung({
+    page_description: gepflegt,
+    product: { description: '<p>Langer Produkttext</p>', metafields: { global: { description_tag: gepflegt } } },
+    request: { page_type: 'product', path: '/products/x' },
+  });
+  assert.deepEqual(descInhalt(html), [gepflegt]);
+});
+
+test('Kollektion ohne SEO-Beschreibung: lange Beschreibung wird gekuerzt', async () => {
+  const lang = 'Restrollen und Reststücke aus unserem Lager in Oranienburg, solange der Vorrat reicht. '.repeat(4);
+  const html = await beschreibung({
+    page_description: lang.slice(0, 320),
+    collection: { description: `<p>${lang}</p>`, metafields: { global: {} } },
+    request: { page_type: 'collection', path: '/collections/x' },
+  });
+  const [d] = descInhalt(html);
+  assert.ok(d.length <= 156 && d.startsWith('Restrollen und Reststücke'));
+  assert.match(d, /Oranienburg, solange/, 'Kommas im Text bleiben erhalten');
+  assert.doesNotMatch(d, /[,:;]…$/);
 });
