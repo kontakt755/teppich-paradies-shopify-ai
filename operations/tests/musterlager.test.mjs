@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   musterSchluessel, leseLager, einlagern, aendern, entfernen, wendeLagerAn, festzuschreiben, farbenFuer, vorschlaege,
-  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE, GANZER_ARTIKEL,
+  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE, GANZER_ARTIKEL, sofortLieferbar,
 } from '../lib/musterlager.mjs';
 import { haengeWahlAn, leseEreignisse, wendeAufModellAn, musterOhneLieferant, musterherkunftPfad } from '../lib/musterherkunft.mjs';
 
@@ -265,4 +265,33 @@ test('Einlagern in ein leer gesetztes Zuschnitt-Stueck ersetzt den Rest statt ih
   assert.equal(r.eintrag.anzahl, 1);
   assert.equal(r.eintrag.leer, false);
   assert.equal(r.eintrag.basisAm, NEU.toISOString());
+});
+
+test('sofortLieferbar: Einzelmuster nach Rest, Zuschnitt solange nicht leer, leer nie', () => {
+  const file = musterlagerPfad(tmp());
+  const a = einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_101'], art: 'einzel', anzahl: 1, actor: 'x', jetzt: AM }).eintrag;
+  einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_102', 'TESTVEL5_102'], art: 'bahn', anzahl: 1, actor: 'x', jetzt: AM });
+  const c = einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_103'], art: 'einzel', anzahl: 2, actor: 'x', jetzt: AM }).eintrag;
+  aendern(file, c.id, { leer: true }, { actor: 'x', jetzt: AM });
+  const m = modellMit([auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_101')])]);
+  const stand = wendeLagerAn(m, leseLager(file));
+  assert.equal(stand.get(a.id).rest, 0, 'das eine Einzelmuster ist reserviert');
+  assert.deepEqual(sofortLieferbar(leseLager(file), stand), ['TESTVEL4_102', 'TESTVEL5_102']);
+});
+
+test('musterLagerMoeglich: bestellt beim Lieferanten, aber im Lager - Angebot nur solange Rest da', () => {
+  const file = musterlagerPfad(tmp());
+  const e = einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_101'], art: 'einzel', anzahl: 1, ort: 'Büro', actor: 'x', jetzt: AM }).eintrag;
+  const m = modellMit([auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_101')])]);
+  wendeLagerAn(m, leseLager(file), { statusAlle: { 'O1::L1': { status: 'bestellt' } } });
+  assert.deepEqual(m.auftraege[0].positionen[0].musterLagerMoeglich, { id: e.id, artLabel: 'Einzelmuster', ort: 'Büro' });
+  assert.equal(m.musterGruppen[0].positionen[0].musterLagerMoeglich.id, e.id, 'auch in der Mustergruppe');
+  // Ein aelterer offener Auftrag hat das letzte reserviert: kein Angebot mehr.
+  const m2 = modellMit([auftrag('O0', '2026-10-01', [muster('O0', 'L0', 'M-TESTVEL4_101')]), auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_101')])]);
+  wendeLagerAn(m2, leseLager(file), { statusAlle: { 'O1::L1': { status: 'bestellt' } } });
+  assert.equal(m2.auftraege[1].positionen[0].musterLagerMoeglich, undefined);
+  // Schon angekommen oder raus: kein Angebot.
+  const m3 = modellMit([auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_101')])]);
+  wendeLagerAn(m3, leseLager(file), { statusAlle: { 'O1::L1': { status: 'geliefert' } } });
+  assert.equal(m3.auftraege[0].positionen[0].musterLagerMoeglich, undefined);
 });

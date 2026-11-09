@@ -272,6 +272,8 @@ const posKey = (orderId, lineItemId) => `${orderId}::${lineItemId}`;
  * - `musterHerkunftQuelle` 'lager' bei automatischer Zuordnung
  * - `musterLagerLeer`    {id, artLabel, ort} - steht im Lager, ist aber leer bzw. aufgebraucht
  * - `musterLagerReserviert` true bei ausdruecklicher Wahl "haben wir da", wenn ein Stueck dafuer zurueckliegt
+ * - `musterLagerMoeglich` {id, artLabel, ort} - beim Lieferanten bestellt (oder so gewaehlt), liegt aber im
+ *                         Lager: Knopf "Aus dem Lager genommen" in der Packstation (09.11.)
  *
  * Automatisch zugeordnet wird nur, was noch offen ist: Muster ohne Auftragsfluss-Stand und
  * ohne ausdrueckliche Wahl, in offenen Auftraegen. Die aelteste Bestellung kommt zuerst dran,
@@ -303,6 +305,7 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
 
   const gesetzt = new Map(); // orderId::lineItemId -> Felder (fuer die Mustergruppen)
   const kandidaten = [];
+  const spaeter = []; // Bestellt bzw. Lieferant gewaehlt - nur Angebot "aus dem Lager genommen"
   const auftraege = [...(modell.auftraege ?? []).map(a => ({ a, test: false })), ...(modell.testauftraege ?? []).map(a => ({ a, test: true }))];
   for (const { a, test } of auftraege) {
     for (const p of a.positionen ?? []) {
@@ -325,9 +328,12 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
       const passend = key ? jeSchluessel.get(key) : null;
       if (!passend) continue;
       const gewaehlt = p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei';
+      const status = statusAlle[posKey(a.id, p.lineItemId)]?.status;
+      // Beim Lieferanten bestellt (oder so gewaehlt), aber inzwischen im Lager: der Packer darf es von dort nehmen.
+      if (!gewaehlt && (!status || status === 'bestellt') && a.offen !== false && (p.menge ?? 1) > 0) spaeter.push({ a, p, passend });
       if (p.musterHerkunft && !gewaehlt) continue; // "Beim Lieferanten bestellen" gewaehlt
       // Status gesetzt, in Shopify schon versendet (offene Menge 0) oder Auftrag zu: nichts mehr zu verschicken.
-      if (statusAlle[posKey(a.id, p.lineItemId)]?.status || a.offen === false || (p.menge ?? 1) <= 0) {
+      if (status || a.offen === false || (p.menge ?? 1) <= 0) {
         // Die Wahl "haben wir da" behaelt den Lagerplatz als Auskunft, belegt aber kein Stueck.
         const e = gewaehlt ? passend.find(x => !x.leer) || null : null;
         if (e) { p.musterLager = lagerInfo(e); gesetzt.set(posKey(a.id, p.lineItemId), { musterLager: p.musterLager }); }
@@ -365,6 +371,14 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
     };
     Object.assign(p, felder);
     gesetzt.set(posKey(a.id, p.lineItemId), felder);
+  }
+  // Nach der Verteilung: nur was dann noch uebrig ist, darf ein Packer von Hand nehmen.
+  for (const { a, p, passend } of spaeter) {
+    if (p.musterLager) continue;
+    const e = passend.find(x => !x.leer && (!ZAEHLBAR.includes(x.art) || rest.get(x.id) > 0));
+    if (!e) continue;
+    p.musterLagerMoeglich = { id: e.id, artLabel: LAGER_ARTEN[e.art], ort: e.ort || null };
+    gesetzt.set(posKey(a.id, p.lineItemId), { ...gesetzt.get(posKey(a.id, p.lineItemId)), musterLagerMoeglich: p.musterLagerMoeglich });
   }
   for (const g of modell.musterGruppen ?? []) {
     for (const p of g.positionen ?? []) {
@@ -571,4 +585,24 @@ export function vorschlaege(modell, { lager, statusAlle = {}, produktgruppe = ()
       verlegerest: { am: kam, orderName: a.name, lieferant: String(p.lieferant || '').toUpperCase() || null, ueber },
     });
   }
+}
+
+/**
+ * Schluessel (SKU ohne "M-") aller Muster, die jetzt sofort aus dem Lager gehen koennen - fuer den
+ * Hinweis "Muster sofort lieferbar" im Shop (Shop-Metafeld custom.muster_sofort, 09.11.).
+ * Einzelmuster: Rest nach Verschicktem und Reserviertem > 0. Zuschnitt-Stuecke: nicht leer und
+ * die Schaetzung reicht noch fuer mindestens ein Muster. Sortiert, damit gleicher Stand gleich vergleicht.
+ * @param {{eintraege: object[]}} lager
+ * @param {Map<string, {rest: number|null, reichtNoch: number|null}>} stand  aus wendeLagerAn
+ * @returns {string[]}
+ */
+export function sofortLieferbar(lager, stand = new Map()) {
+  const keys = new Set();
+  for (const e of lager?.eintraege ?? []) {
+    if (e.leer) continue;
+    const st = stand.get(e.id);
+    const da = ZAEHLBAR.includes(e.art) ? (st ? st.rest : e.anzahl ?? 0) > 0 : (st?.reichtNoch ?? 1) > 0;
+    if (da) for (const k of e.schluessel) keys.add(k);
+  }
+  return [...keys].sort();
 }

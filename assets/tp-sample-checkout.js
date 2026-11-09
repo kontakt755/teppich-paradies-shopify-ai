@@ -178,6 +178,12 @@
     updateCount();
   }
 
+  // SKUs der Muster im Musterlager (snippets/tp-muster-sofort); fehlt oder kaputt: kein Hinweis.
+  function sofortListe() {
+    var el = document.querySelector('script[data-tp-muster-sofort]');
+    try { return (JSON.parse(el ? el.textContent : 'null') || {}).skus || []; } catch (e) { return []; }
+  }
+
   function renderColors() {
     gridEl.textContent = '';
 
@@ -225,6 +231,12 @@
         status.className = 'tp-sample__card-status';
         status.textContent = 'Kein Muster verfügbar';
         card.appendChild(status);
+      } else if (color.sampleSofort) {
+        card.setAttribute('data-sample-sofort', '');
+        var sofort = document.createElement('span');
+        sofort.className = 'tp-sample__card-sofort';
+        sofort.textContent = 'Sofort lieferbar – schneller Versand';
+        card.appendChild(sofort);
       }
       card.appendChild(check);
       gridEl.appendChild(card);
@@ -430,7 +442,7 @@
       // Beschriftungen an das Sortiment anpassen: "Farben" oder "Dekore".
       optionName = core.getOptionName(product);
       return ladeMuster(sectionHtml).then(function (muster) {
-        colors = core.applySperrliste(core.assignSampleVariantsWithBasis(colors, muster[0], muster[1], optionName), product.handle);
+        colors = core.markSofort(core.applySperrliste(core.assignSampleVariantsWithBasis(colors, muster[0], muster[1], optionName), product.handle), sofortListe());
         root.querySelectorAll('[data-sample-term]').forEach(function (el) {
           el.textContent = core.getOptionTerm(product, el.getAttribute('data-sample-term'));
         });

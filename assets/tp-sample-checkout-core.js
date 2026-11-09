@@ -188,6 +188,7 @@
   function assignSampleVariants(colors, sampleProduct, optionName) {
     var available = Object.create(null);
     var known = Object.create(null);
+    var skus = Object.create(null);
     var position = 0;
     (sampleProduct && sampleProduct.options || []).forEach(function (entry) {
       if (String(entry.name || '').trim().toLowerCase() === String(optionName || '').trim().toLowerCase()) {
@@ -199,7 +200,7 @@
         var value = String(variant['option' + position] || '').trim().toLowerCase();
         if (!value) return;
         known[value] = true;
-        if (variant.available && !available[value]) available[value] = variant.id;
+        if (variant.available && !available[value]) { available[value] = variant.id; skus[value] = variant.sku || null; }
       });
     }
     return colors.map(function (color) {
@@ -209,6 +210,22 @@
       Object.keys(color).forEach(function (name) { copy[name] = color[name]; });
       copy.sampleVariantId = hit || null;
       copy.sampleUnavailable = !hit && known[key] === true;
+      copy.sampleSku = hit ? skus[key] : null;
+      return copy;
+    });
+  }
+
+  // "Muster sofort lieferbar" (09.11.2026): das Control Center schreibt die SKUs der Muster, die im
+  // Musterlager liegen, ins Shop-Metafeld custom.muster_sofort (snippets/tp-muster-sofort). Vergleich
+  // ohne "M-" und ohne Gross/Klein - so fuehrt das Lager die Schluessel.
+  function markSofort(colors, liste) {
+    var set = Object.create(null);
+    (Array.isArray(liste) ? liste : []).forEach(function (sku) { set[String(sku || '').trim().toUpperCase()] = true; });
+    return colors.map(function (color) {
+      var sku = String(color.sampleSku || '').trim().toUpperCase().replace(/^M-/, '');
+      var copy = {};
+      Object.keys(color).forEach(function (name) { copy[name] = color[name]; });
+      copy.sampleSofort = Boolean(sku) && set[sku] === true && color.sampleUnavailable !== true;
       return copy;
     });
   }
@@ -397,6 +414,7 @@
     parseBasisHandle: parseBasisHandle,
     parseMusterQuelle: parseMusterQuelle,
     applySperrliste: applySperrliste,
+    markSofort: markSofort,
     assignSampleVariantsWithBasis: assignSampleVariantsWithBasis,
     getSelectionStatus: getSelectionStatus,
     buildCartItems: buildCartItems,

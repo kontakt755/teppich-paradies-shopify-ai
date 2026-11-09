@@ -263,3 +263,54 @@ test('Wahl "haben wir da" belegt ein Stueck und zaehlt beim Verschicken ab', asy
   assert.equal(e.filter(x => x.lagerId).length, 1);
   assert.deepEqual(api.einkaufMusterlager().eintraege[0].stand, { verbraucht: 1, reserviert: 0, rest: 0, reichtNoch: null, jeStueck: null });
 });
+
+test('Packstation "Aus dem Lager genommen" (09.11.): beim Lieferanten bestellt, liegt aber im Lager - Lager 3 -> 2 sofort', async () => {
+  const { dir, api, position } = umgebung();
+  await api.einkaufAuftragsstatusSetzen({ orderId: ALT, lineItemId: 'gid://shopify/LineItem/11', status: 'bestellt' }, MONA);
+  const r = await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'testteppich-teppichboden-400cm-500cm', farben: ['Grau'], art: 'einzel', anzahl: 3, ort: 'Regal B' }, MONA);
+  const id = r.eintraege[0].id;
+  // NEU/21 ist offen und reserviert eins; ALT/11 ist bestellt: nur das Angebot.
+  assert.deepEqual(api.einkaufMusterlager().eintraege[0].stand.rest, 2);
+  assert.deepEqual(position(ALT, 11).musterLagerMoeglich, { id, artLabel: 'Einzelmuster', ort: 'Regal B' });
+  const kunde = () => api.kundenMusterPacken().kunden.find(k => k.muster.some(m => m.lineItemId === 'gid://shopify/LineItem/11'));
+  const m = () => kunde().muster.find(x => x.lineItemId === 'gid://shopify/LineItem/11');
+  assert.deepEqual(m().lagerMoeglich, { id, ort: 'Regal B' });
+  assert.equal(m().stand, 'bestellt');
+
+  await assert.rejects(api.kundenMusterPackenSchreiben({ aktion: 'aus-lager', packSchluessel: kunde().packSchluessel, lineItemId: 'gid://shopify/LineItem/11' }, { ...MONA, rolle: 'lesen' }), e => e.status === 403);
+  const a = await api.kundenMusterPackenSchreiben({ aktion: 'aus-lager', packSchluessel: kunde().packSchluessel, lineItemId: 'gid://shopify/LineItem/11' }, MONA);
+  assert.equal(a.ok, true);
+  const stand = api.einkaufMusterlager().eintraege[0].stand;
+  assert.deepEqual([stand.verbraucht, stand.reserviert, stand.rest], [1, 1, 1], 'Lager 3: eins genommen, eins reserviert -> 1 frei');
+  assert.deepEqual([m().stand, m().lagerOrt, m().lagerMoeglich], ['lager', 'Regal B', undefined]);
+  // Zweiter Klick (alte Seite): abgelehnt, kein doppeltes Abzaehlen.
+  await assert.rejects(api.kundenMusterPackenSchreiben({ aktion: 'aus-lager', packSchluessel: kunde().packSchluessel, lineItemId: 'gid://shopify/LineItem/11' }, MONA), e => e.status === 409);
+  const ev = JSON.parse(fs.readFileSync(path.join(dir, 'musterherkunft.json'), 'utf8')).ereignisse;
+  assert.deepEqual(ev.map(e => [e.lineItemId, e.lagerId]), [['gid://shopify/LineItem/11', id]]);
+});
+
+test('Shop-Hinweis "Muster sofort lieferbar": nur mit Freigabe, nur bei Aenderung, bei 0 sofort weg', async () => {
+  const dir = privat();
+  let wert = null;
+  const aufrufe = [];
+  const proxy = { async execute(q, v) {
+    aufrufe.push(q.includes('metafieldsSet') ? 'set' : 'get');
+    if (q.includes('metafieldsSet')) { wert = v.m[0].value; return { metafieldsSet: { userErrors: [] } }; }
+    return { shop: { id: 'gid://shopify/Shop/1', metafield: wert ? { value: wert } : null } };
+  } };
+  const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, now: () => new Date('2026-01-05T10:00:00Z'), shopifyZugang: async () => ({ proxy }) });
+  const skus = () => JSON.parse(wert).skus;
+  const r = await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'testteppich-teppichboden-400cm-500cm', farben: ['Blau'], art: 'einzel', anzahl: 2 }, MONA);
+  assert.deepEqual(await api.musterSofortAbgleich(), { status: 'aus' });
+  assert.equal(aufrufe.length, 0, 'ohne Freigabe kein Shopify-Aufruf');
+
+  fs.writeFileSync(path.join(dir, 'muster-sofort-shop.json'), JSON.stringify({ aktiv: true }));
+  // Blau: 2 da, NEU/22 reserviert eins -> 1 frei, also im Shop.
+  assert.equal((await api.musterSofortAbgleich()).status, 'geschrieben');
+  assert.deepEqual(skus(), ['TESTTEP4_102']);
+  assert.equal((await api.musterSofortAbgleich()).status, 'unveraendert');
+  // Anzahl auf 1: das eine ist reserviert, nichts mehr frei -> Hinweis weg.
+  await api.einkaufMusterlagerSetzen({ aktion: 'aendern', id: r.eintraege[0].id, anzahl: 1 }, MONA);
+  await api.musterSofortAbgleich();
+  assert.deepEqual(skus(), []);
+});

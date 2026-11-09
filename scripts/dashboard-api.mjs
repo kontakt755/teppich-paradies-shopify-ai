@@ -47,8 +47,9 @@ import { erledigtMitMailMoeglich } from '../docs/ai-dashboard/lib/versand.mjs';
 import { ohneGesperrteKlaerung } from '../docs/ai-dashboard/lib/einkauf-uebersicht.mjs';
 import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
+import { abgleichen as musterSofortAbgleichen, leseStand as musterSofortStand, standPfad as musterSofortPfad } from '../operations/lib/muster-sofort.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
-import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, lieferantJeSchluessel as lagerLieferantJeSchluessel, lieferantVonEintrag as lagerLieferantVon, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
+import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, sofortLieferbar as lagerSofortLieferbar, lieferantJeSchluessel as lagerLieferantJeSchluessel, lieferantVonEintrag as lagerLieferantVon, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, kettelwegText, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { norm as sperrSku, mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
@@ -1703,6 +1704,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return modell ? [...modell.auftraege, ...modell.testauftraege].find(a => a.id === orderId) || null : null;
   }
 
+  let musterSofortLauf = null;
+  /** Nach einer Lageraenderung: Shop-Hinweis nachziehen, ohne die Antwort aufzuhalten. */
+  const musterSofortNachziehen = api => { api.musterSofortAbgleich().catch(e => console.error(`[muster-sofort] ${String(e?.message || e).split('\n')[0]}`)); };
+
   const LAGER_NICHT_BESTELLEN = 'Dieses Muster liegt noch im Musterlager und wird nicht nachbestellt. Ist es beschädigt oder weg: erst im Musterlager auf „Ist leer“ klicken.';
 
   /** "Muster haben wir da": Wahl je Musterbestellung (ohne lineItemId) oder Musterposition, nur anhaengen. */
@@ -2413,6 +2418,23 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         // Der lokale Schritt steht; was Shopify antwortet, zeigt die Rueckmeldung.
         const shopify = await erledigtBuchen({ dir, auftrag, lineItemIds: [lineItemId], benutzer, actor });
         return { ok: true, packSchluessel: kunde.packSchluessel, lineItemId, shopify };
+      }
+      if (payload?.aktion === 'aus-lager') {
+        // Beim Lieferanten bestellt, der Packer nimmt aber ein Lagermuster (09.11.): sofort abzaehlen.
+        if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
+        const lineItemId = typeof payload.lineItemId === 'string' ? payload.lineItemId.trim() : '';
+        const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === payload.packSchluessel);
+        const m = kunde?.muster.find(x => x.lineItemId === lineItemId);
+        if (!m?.lagerMoeglich) throw new ApiError(409, 'Dieses Muster liegt nicht (mehr) im Musterlager oder kommt schon von dort. Bitte neu laden.');
+        const dir = privatDirPath || privatDir();
+        const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+        const ort = m.lagerMoeglich.ort;
+        haengeWahlAn(musterherkunftPfad(dir), { orderId: m.orderId, lineItemId, herkunft: 'eigen_versand', actor,
+          notiz: `Aus dem Musterlager genommen (Packstation)${ort ? ` – ${ort}` : ''}`, lagerId: m.lagerMoeglich.id, jetzt: now() });
+        audit({ actor, action: 'musterlager-abgang', orderId: m.orderId, anzahl: 1, hand: true });
+        merke(benutzer, actor, 'Aus dem Musterlager genommen', `${m.orderName}: ${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`);
+        musterSofortNachziehen(this);
+        return { ok: true, packSchluessel: kunde.packSchluessel, lineItemId };
       }
       if (payload?.aktion !== 'verschickt') return this.kundenMusterPackenSetzen(payload, benutzer);
       if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
@@ -3800,6 +3822,30 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Vorschlag: schluessel + titel + farbe), aendern (Platz, Anzahl, Art, Notiz, leer),
      * entfernen. Nur lokal, Shopify wird nie geschrieben.
      */
+    /**
+     * Musterlager -> Shop-Metafeld custom.muster_sofort (Hinweis "Muster sofort lieferbar" im
+     * Konfigurator). Laeuft jede Minute (serve-dashboard) und nach jeder Lageraenderung; schreibt nur
+     * bei Freigabe (muster-sofort-shop.json aktiv) und geaendertem Stand. Nie zwei Laeufe gleichzeitig.
+     */
+    musterSofortAbgleich() {
+      if (musterSofortLauf) return musterSofortLauf;
+      musterSofortLauf = (async () => {
+        const dir = privatDirPath || privatDir();
+        // Erst die Freigabe: ohne sie wird Shopify nicht einmal angesprochen (auch nicht in Tests).
+        if (!musterSofortStand(musterSofortPfad(dir)).aktiv) return { status: 'aus' };
+        const modell = ladeBestellModell(dir);
+        // Ohne Bestellmodell fehlen die Reservierungen: lieber nichts schreiben als zu viel versprechen.
+        if (!modell) return { status: 'ohne-modell' };
+        const skus = lagerSofortLieferbar(leseLager(musterlagerPfad(dir)), modell.musterlagerStand || new Map());
+        let proxy = null;
+        const zugang = await shopify().catch(() => null);
+        if (zugang?.proxy && zugang.art !== 'sammeln') proxy = zugang.proxy;
+        if (!proxy) return { status: 'ohne-zugang', skus };
+        return musterSofortAbgleichen({ dir, skus, proxy, jetzt: now() });
+      })().finally(() => { musterSofortLauf = null; });
+      return musterSofortLauf;
+    },
+
     async einkaufMusterlagerSetzen(payload = {}, benutzer = null) {
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
@@ -3826,6 +3872,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const ergebnisse = ziele.map(z => lagerEinlagern(file, { ...z, art, anzahl, ort, notiz, actor, jetzt: now(), verbrauchtVon }));
           audit({ actor, action: 'musterlager-einlagern', anzahl: ergebnisse.length });
           merke(benutzer, actor, 'Musterlager', `eingelagert: ${ziele.map(z => [z.titel, z.farbe].filter(Boolean).join(' ')).slice(0, 5).join(', ')}${ziele.length > 5 ? ' …' : ''}`);
+          musterSofortNachziehen(this);
           return { ok: true, anzahl: ergebnisse.length, neu: ergebnisse.filter(r => r.neu).length, eintraege: ergebnisse.map(r => r.eintrag) };
         }
         if (aktion === 'aendern') {
@@ -3835,12 +3882,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const e = lagerAendern(file, String(id || ''), felder, { actor, jetzt: now() });
           audit({ actor, action: 'musterlager-aendern', id: e.id, felder: Object.keys(felder) });
           merke(benutzer, actor, 'Musterlager', `${[e.titel, e.farbe].filter(Boolean).join(' ')}: ${e.verlauf?.at(-1)?.was || 'geändert'}`);
+          musterSofortNachziehen(this);
           return { ok: true, eintrag: e };
         }
         if (aktion === 'entfernen') {
           const e = lagerEntfernen(file, String(payload.id || ''), { actor, jetzt: now() });
           audit({ actor, action: 'musterlager-entfernen', id: e.id });
           merke(benutzer, actor, 'Musterlager', `entfernt: ${[e.titel, e.farbe].filter(Boolean).join(' ')}`);
+          musterSofortNachziehen(this);
           return { ok: true, id: e.id };
         }
         throw new ApiError(400, `Unbekannte Aktion „${aktion}"`);
