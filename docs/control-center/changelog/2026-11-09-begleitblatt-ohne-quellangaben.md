@@ -1,0 +1,7 @@
+## 2026-11-09 · Packstation: Begleitblatt auch ohne Quellangaben der Musterposition (#2055)
+
+- **Geaendert:**
+  - `musterZiel()` in `domains/shopify/muster-begleitblatt/vorlage.mjs`: Fehlen der Musterposition `_Quellprodukt`/`_Quellvariante_ID` (aeltere Bestellungen), sucht das Blatt im Lexikon genau ein aktives Warenprodukt, dessen Titel der Mustertitel ohne „Muster “ ist (eine Breite darf folgen, z. B. „… 400cm“). Ausgenommen: Produktgruppe `Musterservice` und „Teppich nach Maß“, wenn der Mustertitel „Teppichboden“ sagt. Genommen wird die erste verfuegbare Standardbreite der bestellten Farbe, nie „Wunschmaß“. Mehrdeutig oder kein Treffer: Meldung „Kaufseite nicht bekannt“ wie bisher.
+- **Getestet:** neuer Test in `tests/muster-begleitblatt.test.mjs` (Standardbreite statt Wunschmaß, Musterservice und Teppich nach Maß ignoriert, zwei Breiten = mehrdeutig, nur Wunschmaß, Entwurf). `npm run dashboard:test` 1464/1464, `npm run -s pruefen` 11/11. Gezaehlt im Bestellexport: 2 Musterbestellungen ohne Quellangaben (offen #1099, 1 erledigte), beide jetzt aufgeloest. Gegen die Datenkopie liefert `kundenMusterBegleitblatt({ nummern: '1099' })` ein PDF ohne Auslassung, Sandbeige (513) zeigt auf die 400-cm-Variante wie beim Handdruck.
+- **Risiken/Annahmen:** Zuordnung ueber den Titel; bei zwei passenden Warenprodukten bleibt es bewusst beim Hinweis statt zu raten.
+- **Naechste Stufe:** Keine.
