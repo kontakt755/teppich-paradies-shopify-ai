@@ -356,11 +356,13 @@ Teppich Paradies`,
  * demselben Produkt wie das Muster, das nicht kommt. Alle `lagerErsatz` der gesperrten Muster zusammen, je Farbe
  * der groesste Posten, grosse zuerst, hoechstens `max`; eine Farbe, die selbst nicht kommt, nie. Stammen die Farben
  * von mehreren Produkten, steht das Produkt davor - sonst waere nicht klar, wozu welche Farbe gehoert.
+ * `imUmschlag`: alle Muster des Umschlags; deren Farben nennt die Mail nicht noch einmal.
  * @param {{bestellt?: {farbe?: string}, lagerErsatz?: {farbe: string, frei: number, produkt?: string}[]}[]} gesperrte
  * @returns {string[]}
  */
-export function ersatzFarben(gesperrte, max = 3) {
-  const nicht = new Set((gesperrte || []).map(m => m?.bestellt?.farbe).filter(Boolean));
+export function ersatzFarben(gesperrte, max = 3, imUmschlag = []) {
+  // Auch Farben, die der Kunde im selben Umschlag ohnehin bekommt, sind kein Ersatz.
+  const nicht = new Set([...(gesperrte || []), ...(imUmschlag || [])].map(m => m?.bestellt?.farbe).filter(Boolean));
   const je = new Map();
   for (const m of gesperrte || []) {
     for (const e of m?.lagerErsatz ?? []) {

@@ -495,3 +495,10 @@ test('ersatzFarben: grosse Posten zuerst, hoechstens 3, nicht die Farben, die ni
   assert.deepEqual(ersatzFarben([{ bestellt: { farbe: 'Rot' } }, null]), [], 'ohne Lagerfarbe nichts');
   assert.deepEqual(ersatzFarben(undefined), []);
 });
+
+test('ersatzFarben: Farben, die der Kunde im selben Umschlag ohnehin bekommt, werden nicht noch einmal angeboten', () => {
+  const rot = { bestellt: { farbe: 'Rot (1)' }, lagerErsatz: [{ farbe: 'Blau (2)', frei: 6, produkt: 'Fame' }, { farbe: 'Grün (4)', frei: 5, produkt: 'Fame' }] };
+  const blau = { bestellt: { farbe: 'Blau (2)' } }; // liegt im Umschlag, nicht gesperrt
+  assert.deepEqual(ersatzFarben([rot], 3, [rot, blau]), ['Grün (4)']);
+  assert.deepEqual(ersatzFarben([rot]), ['Blau (2)', 'Grün (4)'], 'ohne Umschlag wie bisher');
+});

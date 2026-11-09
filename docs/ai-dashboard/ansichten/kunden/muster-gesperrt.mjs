@@ -36,7 +36,7 @@ export function oeffneKundeInformieren(k, { lesend = false, danach } = {}) {
   if (!gesperrte.length) return;
   const farben = gesperrteNamen(gesperrte);
   // Liegen Farben desselben Produkts im Musterlager, nennt die Mail sie als Ersatz (sofort da, kostenlos).
-  const lagerFarben = ersatzFarben(gesperrte);
+  const lagerFarben = ersatzFarben(gesperrte, 3, k.muster);
   const mail = () => fuelleText(vorlage || NICHT_VERFUEGBAR_VORLAGE, { kundenname: k.name, absender: state.session?.benutzer?.name || null, farben, lagerFarben }) || {};
   const abschliessbar = umschlagAbschliessbar(k);
   const mitWare = k.bestellungen.filter(b => b.mitWare).map(b => b.orderName);
