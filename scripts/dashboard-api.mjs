@@ -801,7 +801,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return versionCache;
   }
 
-  const auditPath = path.join(root, '.router', 'control-center-audit.jsonl');
+  // TP_AUDIT_PATH setzt der Teststarter (scripts/test-temp.mjs): Testlaeufe schrieben
+  // sonst Testfiguren ins echte Betriebsprotokoll des Checkouts.
+  const auditPath = env.TP_AUDIT_PATH || path.join(root, '.router', 'control-center-audit.jsonl');
   function audit(entry) {
     try {
       fs.mkdirSync(path.dirname(auditPath), { recursive: true });
