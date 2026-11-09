@@ -32,9 +32,12 @@ F 5, B 2, Restposten 10. 83 Produkte ohne `einkauf.hersteller`.
   Teppichboden; Rückweg: Bedingung in der Kollektion wieder entfernen).
 - Teppichboden-Menü: 15 Einträge plus 18 Filterlinks, vier Fragen gemischt (Florhöhe,
   Machart, Material, Marke). 236 Rollenwaren liegen in zwei oder mehr Unterkategorien.
-- 96 Rollenwaren ohne `custom.florhoehe_mm`, darunter alle 67 von Lieferant D. Deren
-  Texte nennen nur eine Florklasse („Mittlerer Flor“), keine Millimeter; die
-  Herstellerseite ist aus Remote-Sessions gesperrt. **Offen, lokal nachziehen.**
+- 111 Rollenwaren ohne `custom.florhoehe_mm` (Stand 2026-11-09), darunter alle 67 von
+  Lieferant D. Deren Texte nennen nur eine Florklasse („Mittlerer Flor“), keine Millimeter;
+  Herstellerseite, Downloads und Preisliste nennen ebenfalls keine (geprüft 07./09.11.).
+  Die übrigen 44 haben keinen Flor (13 Nadelvlies, 3 Schlinge, 23 Kokos/Sisal/Webware von
+  Lieferant F und H, Datenblätter nur mit Gesamthöhe) und bleiben bewusst leer. **Offen: der
+  Inhaber fordert bei Lieferant D technische Datenblätter mit Polhöhe an** (Werkbank).
 - Wohnteppiche: 305 von Lieferant I, eine Karte je Design und Farbe; Kinder, waschbar,
   Hochflor, rund stehen nur im Titel (kein Filter). Bei Lieferant I steht der echte
   Lieferantenname im Feld `vendor` (widerspricht `docs/MARKENSTRATEGIE.md`).
@@ -87,7 +90,7 @@ Datenlage ist dünn (214 Musterstücke im Jahr); nach drei Monaten neu rechnen.
 3. **Erledigt 2026-11-04** (Sammelseite `restposten`, Menü, Sofortkauf nach dem Messen; `sonderposten.md` Abschnitt 11). Ursprünglich: Restrollen mit gemessener Länge auf Sofortkauf, drei Schilder
    (Restrolle – noch X m², Auslaufkollektion, Einzelstück), Hinweis auf der Produktseite
    der Ursprungsqualität.
-4. **Teilweise erledigt 2026-11-04:** automatische Kollektionen `kinderteppiche`, `outdoor-teppiche`, `hochflor-teppiche`, `waschbare-teppiche` (Produkttyp Wohnteppich plus Wort im Lieferanten-Titel, keine Datenänderung) als Unterpunkte von „Teppiche in Standardgrößen“ (`domains/shopify/menue-teppiche-zweck-2026-11.json`). Für Outdoor zählt nur der Titel: der Tag `eignung: outdoor` steht auch an Baumwoll-Wohnteppichen (z. B. Jorina, Ethelia) und ist ungeprüft. Dazu `runde-teppiche` (184, Variante mit „rund“ im Namen). Offen: Farben je Design zusammenfassen (Lieferant I legt je Farbe ein Produkt an). Ursprünglich: Wohnteppiche: Eigenschaften (Kinder, waschbar, Outdoor, Hochflor, rund) als Filter aus
+4. **Teilweise erledigt 2026-11-04:** automatische Kollektionen `kinderteppiche`, `outdoor-teppiche`, `hochflor-teppiche`, `waschbare-teppiche` (Produkttyp Wohnteppich plus Wort im Lieferanten-Titel, keine Datenänderung) als Unterpunkte von „Teppiche in Standardgrößen“ (`domains/shopify/menue-teppiche-zweck-2026-11.json`). Outdoor läuft seit 2026-11-09 über den Tag `outdoor` (71 Produkte, an die Titeltreffer gesetzt; neue Outdoor-Wohnteppiche brauchen den Tag); der Tag `eignung: outdoor` steht auch an Baumwoll-Wohnteppichen (z. B. Jorina, Ethelia), ist ungeprüft und wird nicht benutzt. Dazu `runde-teppiche` (184, Variante mit „rund“ im Namen). Offen: Farben je Design zusammenfassen (Lieferant I legt je Farbe ein Produkt an). Ursprünglich: Wohnteppiche: Eigenschaften (Kinder, waschbar, Outdoor, Hochflor, rund) als Filter aus
    belegten Lieferantendaten; Farben eines Designs zusammenfassen prüfen.
 5. Direktbezug Lieferant J und K als Pilot: 10–15 Qualitäten aus 15–35 €/m², Kennzeichnung
    „Zuschnitt in unserem Laden · Lieferzeit“, Filter „sofort lieferbar / auf Bestellung“,
