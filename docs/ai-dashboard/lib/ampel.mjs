@@ -300,6 +300,8 @@ export function packMusterAmpel(m, { jetzt = Date.now(), schwellen = WARTESCHWEL
   if (m.gesperrt) return { stufe: 'rot', grund: 'kommtNicht', wort: 'Kommt nicht', titel: warteTitel({ grund: 'gesperrt' }) };
   if (m.fehlt?.length) return { stufe: 'rot', grund: 'zuordnung', wort: 'Zuordnung fehlt', titel: 'Kein eindeutiger Aufkleber – erst im Lexikon klären, dann packen' };
   if (m.abgehakt || m.stand === 'da' || m.stand === 'lager') return RUHIG;
+  // Direktversand (ueber 'kunde', #1049): bei uns kommt nie etwas an - kein Ueberfaellig, der Umschlag sagt "Direktversand pruefen".
+  if (m.stand === 'bestellt' && m.direkt) return RUHIG;
   if (m.stand === 'bestellt') {
     const a = warteAmpel({ status: 'bestellt', bestelltAm: m.bestelltAm, beschaffung: m.liefertermin ? { liefertermin: m.liefertermin } : null }, { jetzt, schwellen });
     if (!a.stufe) return { ...RUHIG, tage: a.tage };

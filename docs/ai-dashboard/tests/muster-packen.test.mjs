@@ -390,6 +390,18 @@ test('Anmerkung: Bestelldatum und Musterautomatik aus dem Auftragsfluss, Direktv
   assert.deepEqual([alt.kunden[0].muster[0].bestelltAm, alt.kunden[0].muster[0].automatisch], [null, false]);
 });
 
+test('Direktversand (ueber kunde, #1049): kein rotes Ueberfaellig, nur der Hinweis am Umschlag', () => {
+  const eintrag = { status: 'bestellt', bestelltAm: '2026-10-01T07:00:00.000Z', bestelltVon: 'Inhaber' };
+  const liste = ueber => musterPackliste({ produkte, schluesselVon, jetzt, eintragVon: () => ({ ...eintrag, ueber }),
+    auftraege: [auftrag(5, '2026-09-30T08:00:00Z', 'Eva Test', [pos(51, '101')])] }).kunden[0];
+  const ohne = liste(undefined);
+  assert.equal(ohne.muster[0].ampel.grund, 'ueberfaellig', '20 Tage beim Lieferanten ohne Vermerk: rot');
+  const mit = liste('kunde');
+  assert.equal(mit.muster[0].direkt, true);
+  assert.equal(mit.muster[0].ampel.stufe, null);
+  assert.deepEqual([mit.ampel.stufe, mit.ampel.grund], ['gelb', 'pruefen']);
+});
+
 test('packSuche: Herstellerangaben vom Muster finden den Umschlag, das beste Muster wird markiert, Unbekanntes stoert nicht', () => {
   const lexikon = new Map([[boden.handle, { ...boden, varianten: boden.varianten.map(v => ({ ...v,
     einkauf: { ...v.einkauf, hersteller: 'Testwerk Hameln', kollektion: 'Testkollektion', artikelnummer: `ART-${v.sku}` } })) }]]);

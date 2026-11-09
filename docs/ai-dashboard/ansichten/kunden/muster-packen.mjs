@@ -171,7 +171,7 @@ function standText(m, { mitPlakette = false } = {}) {
   if (m.stand === 'offen' && mitPlakette) return m.automatikGrund || '';
   if (m.automatikGrund) return `${STAND_TEXT.offen}: ${m.automatikGrund}`;
   if (m.stand !== 'bestellt' || !m.bestelltAm) return STAND_TEXT[m.stand] || '';
-  return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}`;
+  return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}${m.direkt ? ' · direkt an den Kunden' : ''}`;
 }
 
 /**
@@ -396,7 +396,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="${ampel ? 'mp-ohne-aufkleber' : 'mp-fehlt'}">${ampel ? 'Kein eindeutiger Aufkleber für' : 'Zuordnung fehlt:'} ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
       : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
-    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.nachbestelltAm ? `<strong class="mp-nachbestellt">Nachbestellung am ${esc(datumKurz(m.nachbestelltAm))}</strong> · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}</div>
+    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.nachbestelltAm ? `<strong class="mp-nachbestellt">Nachbestellung am ${esc(datumKurz(m.nachbestelltAm))}</strong> · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}${!lesend && m.stand === 'bestellt' && !m.direkt && !m.abgehakt ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-direkt="${esc(m.lineItemId)}" title="Der Lieferant schickt dieses Muster direkt an den Kunden – bei uns kommt nichts an">Kommt direkt zum Kunden…</button>` : ''}</div>
   </li>`;
 }
 
@@ -884,6 +884,21 @@ async function packlisteErneutLaden() {
   }
 }
 
+/** "Kommt direkt zum Kunden…": vermerkt nachtraeglich den Direktversand (ueber 'kunde'), z. B. Bestellungen vor dem 24.10. (#1049). */
+async function direktVermerken(m, knopf) {
+  if (!window.confirm(`Schickt der Lieferant dieses Muster direkt an den Kunden?\n\n${m.orderName}: ${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}\n\nDann kommt bei uns nichts an; der Umschlag zeigt „Direktversand prüfen“ statt „Überfällig“.`)) return;
+  packSpeichert = true;
+  knopf.disabled = true;
+  try {
+    await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'direktversand', orderId: m.orderId, lineItemId: m.lineItemId });
+    toast(`${m.orderName}: als Direktversand vermerkt`);
+  } catch (err) {
+    toast(`Nicht vermerkt: ${err.message}`, 'crit');
+  }
+  packSpeichert = false;
+  await packlisteErneutLaden();
+}
+
 /**
  * "Kein Muster – im Shop sperren…": sperrt nur diese Farbe. Die Bestellung bleibt offen, nichts wird gebucht;
  * danach steht das Muster als "kommt nicht" da, mit "Kunde informieren…" und "Ohne dieses Muster weiter packen".
@@ -1119,6 +1134,13 @@ export function musterPackenKlick(e) {
     e.preventDefault();
     const m = kundeMitMuster(sperren.dataset.mpSperren)?.muster.find(x => x.lineItemId === sperren.dataset.mpSperren);
     if (m && !packSpeichert) void musterSperren(m, sperren);
+    return true;
+  }
+  const direktKnopf = e.target.closest('[data-mp-direkt]');
+  if (direktKnopf) {
+    e.preventDefault();
+    const m = kundeMitMuster(direktKnopf.dataset.mpDirekt)?.muster.find(x => x.lineItemId === direktKnopf.dataset.mpDirekt);
+    if (m && !packSpeichert) void direktVermerken(m, direktKnopf);
     return true;
   }
   const frageKnopf = e.target.closest('[data-mp-versand-frage]');
