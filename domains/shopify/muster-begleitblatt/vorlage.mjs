@@ -67,6 +67,22 @@ export function bewertungText(meldung) {
 const quellAngabe = (position, schluessel) => (position?.customAttributes || []).find(a => a.key === schluessel)?.value || null;
 
 /**
+ * Aeltere Bestellungen ohne _Quellprodukt: genau ein aktives Warenprodukt, dessen Titel der Mustertitel ist
+ * (eine Breite darf folgen), mit einer verfuegbaren Standardbreite dieser Farbe. Mehrdeutig heisst null.
+ */
+function ersatzQuelle(titel, farbe, produkte) {
+  const name = titel.replace(/^Muster /, '').trim().toLowerCase();
+  const treffer = [...produkte.values()].flatMap(p => {
+    const t = String(p.titel || '').toLowerCase();
+    if (p.status !== 'ACTIVE' || p.produktgruppe === 'Musterservice' || (t !== name && !t.startsWith(`${name} `))) return [];
+    if (name.includes('teppichboden') && p.produktgruppe === 'Teppich nach Maß') return [];
+    const v = p.varianten?.find(x => x.verfuegbar && x.farbe === farbe && !/wunschma/i.test(x.titel));
+    return v ? [{ handle: p.handle, variante: String(v.id).split('/').pop() }] : [];
+  });
+  return treffer.length === 1 ? treffer[0] : null;
+}
+
+/**
  * Kaufseite und Farbe, die der Kunde beim Muster angesehen hat. Bricht mit BlattFehler ab statt zu
  * raten: ein QR-Code auf eine falsche Farbe oder eine tote Seite ist schlimmer als kein Blatt.
  * @param {object} m                  Muster aus der Packliste
@@ -82,8 +98,9 @@ export function musterZiel(m, position, produkte) {
     if (!p?.varianten?.some(v => v.verfuegbar)) throw new BlattFehler(`${bezeichnung} ist im Shop nicht verfügbar.`);
     return { name: titel.slice('Muster:'.length).trim(), farbe: null, typ: p.produktgruppe || '', url: `${SHOP}${handle}?utm_source=musterblatt` };
   }
-  const handle = quellAngabe(position, '_Quellprodukt');
-  const variante = quellAngabe(position, '_Quellvariante_ID');
+  let handle = quellAngabe(position, '_Quellprodukt');
+  let variante = quellAngabe(position, '_Quellvariante_ID');
+  if (!handle || !variante) ({ handle, variante } = ersatzQuelle(titel, farbe, produkte) || {});
   if (!handle || !variante) throw new BlattFehler(`Zu ${bezeichnung} ist die Kaufseite nicht bekannt.`);
   const p = produkte.get(handle);
   const v = p?.varianten?.find(x => String(x.id).split('/').pop() === String(variante));

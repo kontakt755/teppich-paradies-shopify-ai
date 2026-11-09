@@ -66,6 +66,23 @@ test('Kaufseite: Variante und Farbe muessen im Lexikon stimmen, sonst gibt es ke
   assert.throws(() => musterZiel(m, q, katalog('testlinea', [variante(7, 'Grau (2)')])), /passt nicht/);
 });
 
+test('Ohne Quellangaben: eindeutiges Warenprodukt gleichen Titels, Standardbreite statt Wunschmass', () => {
+  const m = { bestellt: { titel: 'Muster Testlinea Teppichboden', farbe: 'Sand (1)' } };
+  const ware = (handle, titel, produktgruppe, varianten) => [handle, { handle, titel, produktgruppe, status: 'ACTIVE', varianten }];
+  const basis = [
+    ware('testlinea-teppichboden-400cm', 'Testlinea Teppichboden 400cm', 'Teppichboden', [variante(9, 'Grau (2)', true, 'Grau (2) / 400 cm'), variante(7, 'Sand (1)', true, 'Sand (1) / Wunschmaß'), variante(8, 'Sand (1)', true, 'Sand (1) / 400 cm')]),
+    ware('muster-testlinea-teppichboden-400cm', 'Muster Testlinea Teppichboden', 'Musterservice', [variante(5, 'Sand (1)')]),
+    ware('testlinea-teppich-nach-mass', 'Testlinea Teppichboden nach Maß', 'Teppich nach Maß', [variante(6, 'Sand (1)')]),
+  ];
+  const ziel = musterZiel(m, position({}), new Map(basis));
+  assert.equal(ziel.url, 'https://www.teppich-paradies.net/products/testlinea-teppichboden-400cm?variant=8&utm_source=musterblatt');
+  const zweite = ware('testlinea-teppichboden-500cm', 'Testlinea Teppichboden 500cm', 'Teppichboden', [variante(11, 'Sand (1)', true, 'Sand (1) / 500 cm')]);
+  assert.throws(() => musterZiel(m, position({}), new Map([...basis, zweite])), /nicht bekannt/);
+  const nurWunsch = ware('testlinea-teppichboden-400cm', 'Testlinea Teppichboden 400cm', 'Teppichboden', [variante(7, 'Sand (1)', true, 'Sand (1) / Wunschmaß')]);
+  assert.throws(() => musterZiel(m, position({}), new Map([nurWunsch])), /nicht bekannt/);
+  assert.throws(() => musterZiel(m, position({}), new Map([[basis[0][0], { ...basis[0][1], status: 'DRAFT' }]])), /nicht bekannt/);
+});
+
 test('Kostenloses Muster: Link ueber das Etikett, ohne Farbzeile, mit Produktgruppe', () => {
   const m = { bestellt: { titel: 'Muster: Testlinea Eiche', farbe: null }, etikett: { url: 'https://www.teppich-paradies.net/products/testlinea-eiche' } };
   const ziel = musterZiel(m, position({}), katalog('testlinea-eiche', [variante(1, 'Eiche')], 'Klickvinyl'));
