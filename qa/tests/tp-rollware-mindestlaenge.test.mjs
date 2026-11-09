@@ -140,3 +140,9 @@ test('Shopify lehnt ab (422): Grund und Telefonnummer stehen unter dem Knopf', a
   assert.match(letzterHint.textContent, /nur 50 Artikel/);
   assert.match(letzterHint.textContent, /03301 5733720/);
 });
+
+test('429 (zu viele Anfragen): kein Grund, Knopf bleibt bei erneut versuchen', async () => {
+  await klick('2000', 0, 400, { ok: false, status: 429, json: async () => ({ status: 429, description: 'Too many requests' }) });
+  await new Promise((r) => setImmediate(r));
+  assert.equal(letzterHint.hidden, true);
+});

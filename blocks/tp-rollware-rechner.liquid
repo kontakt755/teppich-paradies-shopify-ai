@@ -3096,7 +3096,8 @@ function tpRwcInit{{ tp_rc_id }}() {
         if (!r.ok) {
           return r.json().catch(function () { return {}; }).then(function (d) {
             var err = new Error('add failed');
-            err.grund = d && typeof d.description === 'string' ? d.description : '';
+            // Nur 422 ist eine echte Ablehnung (Menge, Bestand); 429/5xx bleiben "erneut versuchen".
+            err.grund = r.status === 422 && d && typeof d.description === 'string' ? d.description : '';
             throw err;
           });
         }
@@ -3176,10 +3177,11 @@ function tpRwcInit{{ tp_rc_id }}() {
       .catch(function (err) {
         inFlight = false;
         var grund = err && err.grund;
+        var eingabeBeiFehler = lengthInput.value;
         var tel = ctaHint ? ctaHint.getAttribute('data-tel') : '';
         function zeigeGrund() {
           if (!grund || !ctaHint) return;
-          ctaHint.textContent = grund + (tel ? ' Größere Mengen bestellen Sie telefonisch: ' + tel + '.' : ' Größere Mengen bestellen Sie gern über unser Kontaktformular.');
+          ctaHint.textContent = grund + (tel ? ' Wir helfen gern telefonisch: ' + tel + '.' : ' Schreiben Sie uns gern über das Kontaktformular.');
           ctaHint.hidden = false;
         }
         cta.textContent = grund ? 'Nicht hinzugefügt' : 'Nicht hinzugefügt – erneut versuchen';
@@ -3189,8 +3191,9 @@ function tpRwcInit{{ tp_rc_id }}() {
           cta.classList.remove('is-error');
           sperren(false);
           calculate();
-          // calculate() leert den Hinweis - der Grund soll stehen bleiben.
-          zeigeGrund();
+          // calculate() leert den Hinweis - der Grund soll stehen bleiben,
+          // solange der Kunde die Laenge nicht schon geaendert hat.
+          if (lengthInput.value === eingabeBeiFehler) zeigeGrund();
         }, 3000);
       });
     }
