@@ -206,7 +206,7 @@ test('Wechsel-Block: Ziel behaelt Quellvariante und eingegebene gerichtete Masse
       querySelector: () => ({ querySelector: (selector) => ({ value: selector === '[data-breite]' ? '123' : '456' }) }),
     },
     window: { location: { href: 'https://beispiel.test/products/p11?variant=111', search: '?variant=111' } },
-    URL, URLSearchParams, setTimeout: (fn) => fn(),
+    URL, URLSearchParams, setTimeout: (fn) => fn(), clearTimeout() {},
   });
   const ziel = new URL(attribute.href);
   assert.equal(ziel.pathname, '/products/p12');

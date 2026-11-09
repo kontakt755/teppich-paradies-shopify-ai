@@ -253,7 +253,42 @@
 
   var OHNE = 'ohne Einfassung';
 
+  // Shopify nennt bei 422 den Grund (Menge, Bestand); sonst bleibt es bei "erneut versuchen".
+  function ablehnung(r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      var err = new Error('add');
+      err.grund = r.status === 422 && d && typeof d.description === 'string' ? d.description : '';
+      throw err;
+    });
+  }
+  // Grund unter dem Knopf; die leere Live-Region steht schon vorher im DOM, damit sie vorgelesen wird.
+  function grundFeld(knopf) {
+    if (!knopf.parentNode) return null;
+    var p = knopf.parentNode.querySelector('[data-add-grund]');
+    if (!p) {
+      p = document.createElement('p');
+      p.className = 'tp-ek__grund';
+      p.setAttribute('data-add-grund', '');
+      p.setAttribute('role', 'status');
+      p.setAttribute('aria-live', 'polite');
+      p.hidden = true;
+      knopf.insertAdjacentElement('afterend', p);
+    }
+    return p;
+  }
+  function grundZeigen(knopf, text) {
+    var p = grundFeld(knopf);
+    if (!p) return;
+    p.textContent = text || '';
+    p.hidden = !text;
+    // Kam der Klick ueber die Kaufleiste unten, liegt der Hinweis sonst ausserhalb des Bildschirms.
+    var lage = p.getBoundingClientRect();
+    if (text && (lage.top < 0 || lage.bottom > window.innerHeight)) p.scrollIntoView({ block: 'center' });
+  }
+
   root.TPLaengenZuschnitt = { rechnen: rechnen, laengeFuer: laengeFuer, eigenschaften: eigenschaften, einfassungenFuer: einfassungenFuer, bandfarbenFuer: bandfarbenFuer, laeuferZeilen: laeuferZeilen, profilZeilen: profilZeilen, lochzahl: lochzahl, schraubeFuer: schraubeFuer, variantVonHorizon: variantVonHorizon, euro: euro, meter: meter, OHNE: OHNE };
+
+  root.TPLaengenZuschnitt.ablehnung = ablehnung;
 
   if (typeof document === 'undefined') return;
 
@@ -275,6 +310,8 @@
     var summeAlt = el.querySelector('[data-summe-alt]');
     var rechenzeile = el.querySelector('[data-rechenzeile]');
     var cta = el.querySelector('[data-cta]');
+    var resetTimer;
+    grundFeld(cta);
     var warenkorb = el.querySelector('[data-warenkorb]');
     var gewaehlt = null;
     var inFlight = false;
@@ -558,6 +595,9 @@
         // Wie beim Laeufer umgekehrt senden: das Profil steht dann oben.
         zeile = pz.length > 1 ? { items: pz.slice().reverse() } : pz[0];
       }
+      clearTimeout(resetTimer);
+      grundZeigen(cta, '');
+      cta.classList.remove('is-error');
       inFlight = true;
       cta.disabled = true;
       cta.textContent = 'Wird hinzugefügt …';
@@ -567,7 +607,7 @@
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(zeile)
       })
-        .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
+        .then(function (r) { if (!r.ok) return ablehnung(r); return r.json(); })
         .then(function (item) {
           // Fenster erst mit fertigem Inhalt oeffnen, sonst steht dort kurz "leer".
           return (window.TPWarenkorbAbschnitte ? window.TPWarenkorbAbschnitte() : Promise.resolve(null)).then(function (sections) {
@@ -588,13 +628,16 @@
           }));
           var drawer = document.querySelector('cart-drawer-component');
           if (drawer && typeof drawer.open === 'function') drawer.open();
-          setTimeout(function () { cta.classList.remove('is-done'); zeigen(); }, 3000);
+          resetTimer = setTimeout(function () { cta.classList.remove('is-done'); zeigen(); }, 3000);
         })
-        .catch(function () {
+        .catch(function (err) {
           inFlight = false;
-          cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
+          var grund = err && err.grund;
+          cta.textContent = grund ? 'Nicht hinzugefügt' : 'Nicht hinzugefügt – erneut versuchen';
           cta.classList.add('is-error');
-          setTimeout(function () { cta.classList.remove('is-error'); zeigen(); }, 3000);
+          if (grund) { cta.disabled = false; grundZeigen(cta, grund); }
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(function () { cta.classList.remove('is-error'); grundZeigen(cta, ''); zeigen(); }, grund ? 8000 : 3000);
         });
     }
 

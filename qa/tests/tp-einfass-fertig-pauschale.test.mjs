@@ -128,7 +128,7 @@ async function runCase(o = {}) {
     document: { querySelectorAll: () => [], querySelector: () => null,
       dispatchEvent: (e) => events.push(e.type), addEventListener: (name, fn) => listeners.set(name, fn) },
     CustomEvent: class { constructor(type) { this.type = type; } },
-    setTimeout(fn) { if (o.variantChange) fn(); },
+    setTimeout(fn) { if (o.variantChange) fn(); }, clearTimeout() {},
     fetch: async (url, options) => {
       requests.push({ url, method: options.method, body: JSON.parse(options.body) });
       return { ok: true, json: async () => ({ auditIntercepted: true }) };

@@ -62,6 +62,40 @@
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var zaehler = 0;
 
+  // Shopify nennt bei 422 den Grund (Menge, Bestand); sonst bleibt es bei "erneut versuchen".
+  function ablehnung(r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      var err = new Error('add');
+      err.grund = r.status === 422 && d && typeof d.description === 'string' ? d.description : '';
+      throw err;
+    });
+  }
+  if (typeof window !== 'undefined') window.TPEinfassAblehnung = ablehnung;
+  // Grund unter dem Knopf; die leere Live-Region steht schon vorher im DOM, damit sie vorgelesen wird.
+  function grundFeld(knopf) {
+    if (!knopf.parentNode) return null;
+    var p = knopf.parentNode.querySelector('[data-add-grund]');
+    if (!p) {
+      p = document.createElement('p');
+      p.className = 'tp-ek__grund';
+      p.setAttribute('data-add-grund', '');
+      p.setAttribute('role', 'status');
+      p.setAttribute('aria-live', 'polite');
+      p.hidden = true;
+      knopf.insertAdjacentElement('afterend', p);
+    }
+    return p;
+  }
+  function grundZeigen(knopf, text) {
+    var p = grundFeld(knopf);
+    if (!p) return;
+    p.textContent = text || '';
+    p.hidden = !text;
+    // Kam der Klick ueber die Kaufleiste unten, liegt der Hinweis sonst ausserhalb des Bildschirms.
+    var lage = p.getBoundingClientRect();
+    if (text && (lage.top < 0 || lage.bottom > window.innerHeight)) p.scrollIntoView({ block: 'center' });
+  }
+
   function fmt(n, d) {
     var s = d == null ? 2 : d;
     return Number(n).toLocaleString('de-DE', { minimumFractionDigits: s, maximumFractionDigits: s });
@@ -201,6 +235,8 @@
     var legende = q('[data-legende]');
     var rechnung = q('[data-rechnung]');
     var cta = q('[data-cta]');
+    var resetTimer;
+    grundFeld(cta);
     var warenkorb = q('[data-warenkorb]');
     var band = null;
     var bandNameLeer = q('[data-band-name]') ? q('[data-band-name]').textContent : '';
@@ -944,6 +980,7 @@
         stand = null;
         rechnung.hidden = true;
         cta.hidden = true;
+        grundZeigen(cta, '');
         cta.disabled = true;
         return;
       }
@@ -1149,6 +1186,9 @@
       // eingerueckte Kante als erste Position ueber dem Teppich.
       var koerper = zeilen.length > 1 ? { items: zeilen.slice().reverse() } : zeilen[0];
 
+      clearTimeout(resetTimer);
+      grundZeigen(cta, '');
+      cta.classList.remove('is-error');
       inFlight = true;
       cta.disabled = true;
       cta.textContent = 'Wird hinzugefügt …';
@@ -1159,7 +1199,7 @@
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(koerper)
       })
-        .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
+        .then(function (r) { if (!r.ok) return ablehnung(r); return r.json(); })
         .then(function (item) {
           // Erst wenn das Zuschnitt-Attribut nachweislich steht, geht der
           // Warenkorb auf. Schlaegt es fehl, bleibt der Artikel im Warenkorb,
@@ -1195,13 +1235,16 @@
           if (drawer && typeof drawer.open === 'function') drawer.open();
           // Neu rechnen statt alten Text zurueck: Eingaben koennen sich
           // inzwischen geaendert haben. Die Fehlermeldung bleibt laenger stehen.
-          setTimeout(function () { cta.classList.remove('is-done', 'is-error'); rechnen(); }, erg.ok ? 3000 : 8000);
+          resetTimer = setTimeout(function () { cta.classList.remove('is-done', 'is-error'); rechnen(); }, erg.ok ? 3000 : 8000);
         })
-        .catch(function () {
+        .catch(function (err) {
           inFlight = false;
-          cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
+          var grund = err && err.grund;
+          cta.textContent = grund ? 'Nicht hinzugefügt' : 'Nicht hinzugefügt – erneut versuchen';
           cta.classList.add('is-error');
-          setTimeout(function () { cta.classList.remove('is-error'); rechnen(); }, 3000);
+          if (grund) { cta.disabled = false; grundZeigen(cta, grund); }
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(function () { cta.classList.remove('is-error'); grundZeigen(cta, ''); rechnen(); }, grund ? 8000 : 3000);
         });
     }
 

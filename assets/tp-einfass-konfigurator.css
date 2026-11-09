@@ -221,6 +221,7 @@
 .tp-ek__cta:disabled { background: var(--tp-ek-soft); color: var(--tp-ek-muted); box-shadow: inset 0 0 0 1px var(--tp-ek-line); cursor: not-allowed; }
 .tp-ek__cta.is-done { background: #145c38; }
 .tp-ek__cta.is-error { background: #a62020; }
+.tp-ek__grund { margin: 8px 0 0; font-size: var(--tp-fs-sm); color: #a62020; overflow-wrap: anywhere; }
 .tp-ek__cta--zweit { background: var(--tp-ek-ink); }
 .tp-ek__warenkorb { display: block; margin-top: 10px; text-align: center; font-size: var(--tp-fs-sm); text-decoration: underline; text-underline-offset: 3px; }
 
