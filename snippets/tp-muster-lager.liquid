@@ -27,6 +27,8 @@
   assign tp_ml_optname = ''
   assign tp_ml_frisch = false
 
+  # shortcut: Frist (7200 s) und SKU-Regel stehen auch in tp-sample-checkout-core.js (sofortListe,
+  # markSofort) und snippets/tp-muster-lieferzeit - bei einer Aenderung alle drei nachziehen.
   if tp_ml_meta.skus != blank and tp_ml_meta.stand != blank
     assign tp_ml_alter = 'now' | date: '%s' | minus: 0
     assign tp_ml_stand = tp_ml_meta.stand | date: '%s' | minus: 0
