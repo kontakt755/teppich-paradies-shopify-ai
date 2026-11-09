@@ -49,7 +49,7 @@ import { bucheVersand, versandNachzuholen, andereBestellungenMitSendung, Versand
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, entfernteBestellt, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { abgleichen as musterSofortAbgleichen, leseStand as musterSofortStand, standPfad as musterSofortPfad } from '../operations/lib/muster-sofort.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
-import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, sofortLieferbar as lagerSofortLieferbar, lieferantJeSchluessel as lagerLieferantJeSchluessel, lieferantVonEintrag as lagerLieferantVon, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
+import { musterSchluessel, lagerGedeckt, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, sofortLieferbar as lagerSofortLieferbar, freiJeSchluessel as lagerFreiJeSchluessel, ersatzAusLager as lagerErsatzAusLager, lieferantJeSchluessel as lagerLieferantJeSchluessel, lieferantVonEintrag as lagerLieferantVon, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, kettelwegText, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { norm as sperrSku, mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
@@ -2258,6 +2258,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const status = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
       let stand;
       try { stand = leseMusterPackStand(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
+      // Der Lagerstand haengt nicht aufzaehlbar am Modell und ginge beim Umbauen fuer den Nachdruck verloren.
+      const lagerStand = modell.musterlagerStand;
       if (nachdruck) {
         const ids = new Set((modell.auftraege || []).filter(a => nachdruck.has(String(a.name || '').replace(/^#/, ''))).map(a => String(a.id)));
         // Gemeinsam gepackte Bestellungen (Packmarke "id1,id2") gehoeren auf dasselbe Blatt.
@@ -2277,9 +2279,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Gesperrte Muster kommen nicht (w-210). Eine kaputte Ablage legt die Packstation nicht lahm, die Seite sagt es aber.
       let sperren = new Map(), sperrenFehler = null;
       try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch (e) { sperrenFehler = e.message; logFehler('mustersperre', `Packstation: ${sperrenFehler}`); }
+      // Ersatz fuer gesperrte Muster (09.11.): Farben desselben Produkts, die im Musterlager frei liegen. Das Lager
+      // wird nur gelesen, wenn ein gesperrtes Muster danach fragt; ein beschaedigtes Lager heisst "kein Ersatz".
+      let lagerFrei = null;
+      const ersatzVon = (handle, p) => {
+        const ziel = this._musterlagerProdukt(handle);
+        if (!ziel || !lagerStand) return [];
+        try { lagerFrei ??= lagerFreiJeSchluessel(leseLager(musterlagerPfad(dir)), lagerStand); } catch { return []; }
+        const kurz = lagerKurzTitel(ziel.produkt.titel);
+        return lagerErsatzAusLager(ziel.farben, lagerFrei, musterSchluessel(p)).map(e => ({ ...e, produkt: kurz }));
+      };
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
         produkte: new Map(katalog.map(p => [p.handle, p])),
+        ersatzVon,
         // Grund samt Beginn: haengt ein Muster laenger, ist es in der Packstation rot wie das To-do auf Heute.
         automatikFallVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId)) || null,
         sperreVon: p => { const k = musterSchluessel(p); return k ? sperren.get(`M-${k}`) || null : null; },

@@ -2394,7 +2394,7 @@
     "settings": [
       {
         "type": "paragraph",
-        "content": "Zwei kurze Zeilen im Kaufbereich der Produktseite und im Warenkorb. Sie nennen nur, was der Checkout wirklich anbietet (Stand 08.10.2026: Kreditkarte, PayPal, Klarna; Abholung am Standort Oranienburg). Ohne Beträge, Raten oder Zinsen. Ändert sich der Checkout, gehört der Text hier zusammen geändert."
+        "content": "Zwei kurze Zeilen im Kaufbereich der Produktseite und im Warenkorb. Sie nennen nur, was der Checkout wirklich anbietet (Stand 09.11.2026: Kreditkarte, Apple Pay, PayPal, Klarna, dazu Rechnung und Raten über Klarna und PayPal; Abholung am Standort Oranienburg). Ohne Beträge, Zinsen oder Laufzeiten. Ändert sich der Checkout, gehört der Text hier zusammen geändert."
       },
       {
         "type": "text",
@@ -2407,8 +2407,8 @@
         "type": "text",
         "id": "tp_hinweis_zahlung",
         "label": "Hinweis zur Zahlung",
-        "info": "Nur Zahlarten nennen, die im Checkout unter Zahlung stehen. Klarna steht dort ohne Zusatz - Rechnung oder Raten erst nennen, wenn das bei Klarna belegt ist. Leer lassen blendet die Zeile aus.",
-        "default": "Zahlung per Kreditkarte, PayPal oder Klarna"
+        "info": "Rechnung und Raten sind seit 09.11.2026 belegt: Klarna (Pay in 30 days, Pay in 3, Financing) und PayPal (Bezahlung nach 30 Tagen, Ratenzahlung) stehen im Checkout. Welche Variante ein Kunde bekommt, entscheidet der Anbieter. Weiterhin keine Beträge, Zinsen oder Laufzeiten nennen. Leer lassen blendet die Zeile aus.",
+        "default": "Auf Rechnung oder in Raten zahlen mit Klarna oder PayPal"
       }
     ]
   },

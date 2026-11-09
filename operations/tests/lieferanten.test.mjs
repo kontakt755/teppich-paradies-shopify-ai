@@ -1133,3 +1133,40 @@ test('Lagerware per Vermerk "aus Lager" (ohne Regel) und als Altfall "bestellt":
   assert.deepEqual(d.ueberfaelligePositionen, [], 'seit 19 Tagen "bestellt", aber nichts beim Lieferanten nachzufragen');
   assert.ok(d.ware.eigenerBestand.some(x => x.artikelnummer === 'A-4711'));
 });
+
+// ---- Kettelpuffer bei mehreren Stuecken und gemischten Kettelwegen (#1684)
+
+/** Zwei gleiche Massteppiche 180 × 250 in einer Bestellung: jedes Stueck ist eine eigene Position. */
+function zweiStueckeModell(route = 'SUPPLIER_TO_TP') {
+  const stueck = (id, gruppe) => zeile({ id, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Sandbeige (036)', quantity: 450, preis: '0.39',
+    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-TNM'], ['farbnummer', '036'], ['bestelleinheit', 'lfm'], ['route', route]],
+    custom: [['preis_pro_001_qm', 'true']],
+    attrs: [{ key: 'Einfassung', value: 'Gekettelt' }, { key: 'Form', value: 'Rechteck' }, { key: 'Maße', value: '180 × 250 cm' },
+      { key: '_Zuschnitt aus Rolle', value: '400 cm' }, { key: '_Gruppe', value: gruppe }] });
+  return aufbereiten({ orders: [bestellung(5, [stueck(30, 'Kx1'), stueck(31, 'Kx2')])] }, { jetzt: JETZT });
+}
+
+test('Kettelpuffer: zwei gleiche Stuecke - jedes einzeln 183 × 253, nie aufaddiert oder doppelt', () => {
+  const m = zweiStueckeModell();
+  const mail = bestellmail({ modell: m, lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
+  assert.equal(mail.lieferziel, 'kettler');
+  assert.deepEqual(mail.kettelPuffer.map(v => [v.fertigmass, v.zuschnittmass]), [['180 × 250 cm', '183 × 253 cm'], ['180 × 250 cm', '183 × 253 cm']]);
+  assert.equal(mail.text.match(/Menge: 1 Stück nach Maß\n {3}Zuschnittmaß: 183 × 253 cm/g)?.length, 2);
+  assert.equal(/186|256|363|366|503|506/.test(mail.text), false, 'keine Doppelzugabe, nichts zusammengezaehlt');
+  // Wiederholt erzeugt: gleiches Ergebnis, Fertigmass in den Quelldaten unveraendert.
+  assert.equal(bestellmail({ modell: m, lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0].text, mail.text);
+  for (const p of m.gruppen[0].positionen) assert.ok(p.ausfuehrung.includes('Fertigmaß: 180 × 250 cm (Rechteck)'));
+});
+
+test('Kettelpuffer: gemischte Kettelwege - nur das Stueck fuer unseren Kettler bekommt +3 cm', () => {
+  const m = zweiStueckeModell('SUPPLIER_DIRECT');
+  const [a, b] = m.gruppen[0].positionen.map(p => p.lineItemId);
+  const r = bestellmail({ modell: m, lieferant: 'A', kettelwege: `${a}=kettler,${b}=lieferant`, stammdaten: STAMM_KETTELT, jetzt: JETZT });
+  const kettler = r.mails.find(x => x.lieferziel === 'kettler');
+  const direkt = r.mails.find(x => x.lieferziel !== 'kettler');
+  assert.deepEqual(kettler.kettelPuffer.map(v => [v.lineItemId, v.zuschnittmass]), [[a, '183 × 253 cm']]);
+  assert.equal(kettler.text.match(/Zuschnittmaß: 183 × 253 cm/g)?.length, 1);
+  assert.deepEqual(direkt.kettelPuffer, []);
+  assert.match(direkt.text, /Fertigmaß: 180 × 250 cm \(Rechteck\)\n {3}Einfassung: Gekettelt/);
+  assert.equal(/Zuschnittmaß|183 × 253/.test(direkt.text), false);
+});
