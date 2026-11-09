@@ -2256,6 +2256,12 @@ lahm: `sperrenFehler` wird als roter Hinweis gezeigt.
 - **„Kunde informieren…“** (`ansichten/kunden/muster-gesperrt.mjs`) sendet nichts. Nur wenn alle Muster des
   Umschlags gesperrt sind, schließt der Dialog die Bestellung mit dem Schritt `muster_nicht_verfuegbar`
   ab; der Schritt gilt immer für die ganze Bestellung.
+  **Ersatz aus dem Musterlager** (seit 2026-11-09): gesperrte Muster tragen in der Packliste `lagerErsatz`
+  (`{farbe, frei, produkt}`, höchstens 3, größter freier Bestand zuerst; Server `ersatzVon` →
+  `ersatzAusLager()` in `operations/lib/musterlager.mjs` über `farbenFuer` des bestellten Produkts samt Musterprodukt).
+  Der Dialog reicht `ersatzFarben(gesperrte)` an `fuelleText` (`lagerFarben`); die Vorlage trägt dafür
+  `{Lagerfarben}`, eine eigene Inhaber-Vorlage ohne den Platzhalter bekommt den Absatz vor dem Gruß. Ohne freie
+  Lagerfarbe (oder bei beschädigtem Lager) bleibt die Mail wie vorher.
 - **„Ohne dieses Muster weiter packen“** (`aktion: 'ohne-muster'`): nur diese Position wird „erledigt“ und über
   `erledigtBuchen` ohne Kundenmail in Shopify gebucht. Sonst bliebe nach dem Verschicken ein leerer Umschlag.
 - **Musterautomatik** (seit 2026-11-05, `operations/lib/muster-bestellautomatik.mjs`): liest dieselben aktiven

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   musterSchluessel, leseLager, einlagern, aendern, entfernen, wendeLagerAn, festzuschreiben, farbenFuer, vorschlaege,
-  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE, GANZER_ARTIKEL, sofortLieferbar,
+  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE, GANZER_ARTIKEL, sofortLieferbar, freiJeSchluessel, ersatzAusLager,
 } from '../lib/musterlager.mjs';
 import { haengeWahlAn, leseEreignisse, wendeAufModellAn, musterOhneLieferant, musterherkunftPfad } from '../lib/musterherkunft.mjs';
 
@@ -277,6 +277,28 @@ test('sofortLieferbar: Einzelmuster nach Rest, Zuschnitt solange nicht leer, lee
   const stand = wendeLagerAn(m, leseLager(file));
   assert.equal(stand.get(a.id).rest, 0, 'das eine Einzelmuster ist reserviert');
   assert.deepEqual(sofortLieferbar(leseLager(file), stand), ['TESTVEL4_102', 'TESTVEL5_102']);
+});
+
+test('ersatzAusLager: nur freie Farben, groesster Posten zuerst, hoechstens 3, nie die Farbe, die nicht kommt', () => {
+  const file = musterlagerPfad(tmp());
+  const e = (k, anzahl) => einlagern(file, { titel: 'T', schluessel: Array.isArray(k) ? k : [k], art: 'einzel', anzahl, actor: 'x', jetzt: AM }).eintrag;
+  e('T-ROT', 5); // die Farbe, die nicht kommt - auch wenn doch ein Stueck liegt
+  e(['T-BLAU', 'T-BLAU-500'], 4); // zwei Breiten, ein Eintrag: zaehlt 4, nicht 8
+  e('T-GRUEN', 7);
+  e('T-GELB', 2);
+  e('T-GRAU', 1);
+  aendern(file, e('T-PINK', 9).id, { leer: true }, { actor: 'x', jetzt: AM });
+  const stand = wendeLagerAn(modellMit([auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-T-GELB')])]), leseLager(file));
+  const frei = freiJeSchluessel(leseLager(file), stand);
+  assert.equal(frei.get('T-GELB'), 1, 'ein Stueck ist reserviert');
+  assert.equal(frei.has('T-PINK'), false, 'leer zaehlt nicht');
+  const farben = [['Rot', ['T-ROT']], ['Blau', ['T-BLAU', 'T-BLAU-500']], ['Grün', ['T-GRUEN']], ['Gelb', ['T-GELB']], ['Grau', ['T-GRAU']], ['Pink', ['T-PINK']], ['Schwarz', ['T-SCHWARZ']]]
+    .map(([farbe, schluessel]) => ({ farbe, schluessel }));
+  assert.deepEqual(ersatzAusLager(farben, frei, 'T-ROT'), [{ farbe: 'Grün', frei: 7 }, { farbe: 'Blau', frei: 4 }, { farbe: 'Gelb', frei: 1 }]);
+  assert.deepEqual(ersatzAusLager(farben, frei, 'T-ROT', 5).map(x => x.farbe), ['Grün', 'Blau', 'Gelb', 'Grau'], 'gleiche Menge: nach Name');
+  assert.deepEqual(ersatzAusLager(farben, new Map(), 'T-ROT'), [], 'leeres Lager: kein Ersatz');
+  assert.deepEqual(ersatzAusLager([{ farbe: GANZER_ARTIKEL, ganzerArtikel: true, schluessel: ['T-GRUEN'] }], frei), [], 'Artikel ohne Farbe hat keinen Farbnamen');
+  assert.deepEqual(ersatzAusLager(null, frei), []);
 });
 
 test('musterLagerMoeglich: bestellt beim Lieferanten, aber im Lager - Angebot nur solange Rest da', () => {

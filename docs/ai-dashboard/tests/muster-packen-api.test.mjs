@@ -6,6 +6,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 import { ohneMusterMoeglich, umschlagAbschliessbar } from '../lib/muster-packen.mjs';
+import { einlagern, aendern, musterlagerPfad } from '../../../operations/lib/musterlager.mjs';
+import { ersatzFarben, fuelleText, NICHT_VERFUEGBAR_VORLAGE } from '../lib/muster-nachfassen.mjs';
 
 // Ausschliesslich synthetische Kunden, Anschriften und Artikel.
 const quelle = { id: 'gid://shopify/ProductVariant/100', sku: 'ORIG-B', title: 'Sand', metafields: { nodes: [] }, product: { id: 'gid://shopify/Product/100', handle: 'testlinea-sand', title: 'Testlinea Sand – Klickvinyl', productType: 'Klickvinyl', metafields: { nodes: [] } } };
@@ -349,6 +351,47 @@ test('Sperre aus mustersperre.json: Muster rot, Umschlag zu klaeren; freigegeben
   fs.writeFileSync(path.join(dir, 'mustersperre.json'), JSON.stringify({ ereignisse: [sperrEreignis('M-GESPERRT-1'), { sku: 'M-GESPERRT-1', am: '2026-10-29T09:00:00Z', von: 'Laden', grund: 'wieder verfuegbar', shopify: { geschrieben: true } }] }));
   assert.equal(api.kundenMusterPacken().kunden[0].muster[0].gesperrt, null);
   assert.equal(api.kundenMusterPacken().kunden[0].bereich, 'warten');
+});
+
+test('Gesperrtes Muster: Farben desselben Produkts aus dem Musterlager kommen als Ersatz in die Mail - ohne Lagerfarbe bleibt sie wie bisher (09.11.)', t => {
+  const { api, dir } = umgebungGesperrt(t, [zweiMuster()]);
+  // Weitere Farben desselben Produkts und eine fremde: im Lager liegen Blau (4, davon eins fuers zweite Muster der
+  // Bestellung reserviert), Gruen (7), Gelb (2), Grau (1), Pink (leer) und Fremd (Farbe eines anderen Produkts).
+  const lex = JSON.parse(fs.readFileSync(path.join(dir, 'lexikon/produkte.json'), 'utf8'));
+  const farben = [['Gruen', 'FREI-2'], ['Gelb', 'FREI-3'], ['Grau', 'FREI-4'], ['Pink', 'FREI-5']];
+  lex.produkte[0].varianten.push(...farben.map(([farbe, sku], i) => ({ id: `gid://shopify/ProductVariant/${110 + i}`, sku, farbe, titel: farbe, einkauf: {} })));
+  lex.produkte.push({ handle: 'anderes-produkt', titel: 'Anderes Produkt', varianten: [{ id: 'gid://shopify/ProductVariant/120', sku: 'FREMD-1', farbe: 'Fremd', titel: 'Fremd', einkauf: {} }] });
+  fs.writeFileSync(path.join(dir, 'lexikon/produkte.json'), JSON.stringify(lex));
+
+  const ohne = api.kundenMusterPacken().kunden[0];
+  assert.equal(ohne.muster[0].gesperrt.imShop, true);
+  assert.equal('lagerErsatz' in ohne.muster[0], false, 'ohne Lager kein Ersatz');
+  const mailOhne = fuelleText(NICHT_VERFUEGBAR_VORLAGE, { kundenname: ohne.name, farben: ['Testlinea: Rot'], lagerFarben: ersatzFarben(ohne.muster.filter(m => m.gesperrt)) });
+  assert.doesNotMatch(mailOhne.text, /Außerdem/);
+
+  const file = musterlagerPfad(dir);
+  const ein = (sku, anzahl) => einlagern(file, { titel: 'Testlinea', schluessel: [sku], art: 'einzel', anzahl, actor: 'Test' }).eintrag;
+  ein('FREI-1', 4); ein('FREI-2', 7); ein('FREI-3', 2); ein('FREI-4', 1); ein('FREMD-1', 9);
+  aendern(file, ein('FREI-5', 3).id, { leer: true }, { actor: 'Test' });
+  const k = api.kundenMusterPacken().kunden[0];
+  const [gesperrt, frei] = k.muster;
+  assert.equal(frei.stand, 'lager', 'das zweite Muster kommt aus dem Lager und reserviert ein Blau');
+  assert.equal('lagerErsatz' in frei, false, 'nur gesperrte Muster tragen Ersatz');
+  // Gruen 7, Blau 3 (4 minus reserviert), Gelb 2; Grau faellt wegen "hoechstens 3" weg, Pink (leer) und Fremd (anderes Produkt) nie.
+  assert.deepEqual(gesperrt.lagerErsatz, [{ farbe: 'Gruen', frei: 7, produkt: 'Testlinea' }, { farbe: 'Blau', frei: 3, produkt: 'Testlinea' }, { farbe: 'Gelb', frei: 2, produkt: 'Testlinea' }]);
+  const mail = fuelleText(NICHT_VERFUEGBAR_VORLAGE, { kundenname: k.name, farben: ['Testlinea: Rot'], lagerFarben: ersatzFarben(k.muster.filter(m => m.gesperrt)) });
+  assert.match(mail.text, /Außerdem haben wir diese Farben sofort da und schicken sie Ihnen gern kostenlos: Gruen, Blau, Gelb\./);
+  assert.doesNotMatch(mail.text, /Grau|Pink|Fremd/);
+  assert.equal(fs.existsSync(path.join(dir, 'muster-packen.json')), false, 'GET schreibt nichts');
+});
+
+test('Beschaedigtes Musterlager: gesperrtes Muster bekommt keinen Ersatz, die Packstation laeuft weiter', t => {
+  const { api, dir } = umgebungGesperrt(t, [zweiMuster()]);
+  fs.writeFileSync(musterlagerPfad(dir), '{kaputt');
+  const k = api.kundenMusterPacken().kunden[0];
+  assert.equal(k.muster[0].gesperrt.imShop, true);
+  assert.equal('lagerErsatz' in k.muster[0], false);
+  assert.equal(fs.readFileSync(musterlagerPfad(dir), 'utf8'), '{kaputt');
 });
 
 test('Beschaedigte mustersperre.json legt die Packstation nicht lahm, sagt es aber', t => {
