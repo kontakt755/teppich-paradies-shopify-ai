@@ -175,4 +175,32 @@ Diese Punkte nicht zurueckbauen.
 
 ## 7. Messung vorher und nachher
 
-Wird nach dem Livegang ergaenzt.
+Live seit PR #2080 (Merge `8897e8eb`). Vorher Lauf `2026-11-09-13-42`,
+nachher `2026-11-09-16-17`, je 5 Runden, Median (Minimum bis Maximum).
+
+| Seite, Variante | Score vorher → nachher | LCP vorher → nachher (s) | TBT vorher → nachher (ms) |
+|---|---|---|---|
+| Startseite, mit Banner | 59 → 69 | 6,0 (4,9-9,8) → 7,3 (6,9-9,9) | 235 → 117 |
+| Startseite, ohne Banner | 62 → 71 | 6,4 (4,9-7,7) → 6,8 (6,7-10,1) | 219 → 121 |
+| Kollektion, mit Banner | 60 → 76 | 4,2 → 4,0 | 657 → 125 |
+| Kollektion, ohne Banner | 72 → 82 | 3,1 → 3,6 | 668 → 143 |
+| PDP, mit Banner | 77 → 70 | 3,4 → 6,1 | 308 → 208 |
+| PDP, ohne Banner | 66 → 70 | 3,4 → 5,8 | 422 → 205 |
+
+**Was belegt ist:** Das LCP-Bild der Startseite laedt in allen 5 Laeufen mit
+500 px und 71 KB (vorher 600 px, 107 KB); die zweite Kachel laedt mit
+Prioritaet "Low" und 31 KB (vorher "High", 42 KB).
+
+**Was nicht belegt ist:** eine LCP-Verbesserung. Die Mediane liegen innerhalb
+der Streuung zwischen zwei Tageszeiten. Die PDP wurde nicht geaendert und
+verschlechterte sich trotzdem von 3,4 auf 5,8 s; im ersten Nachher-Lauf der
+Startseite brauchte allein das Dokument 5,2 s (vorher 2,0 s). Auch die
+niedrigeren TBT-Werte auf allen drei Seiten (auch der unveraenderten PDP)
+sprechen fuer eine andere Rechnerlast, nicht fuer diese Aenderung. Fuer eine
+belastbare Aussage beide Staende zur selben Tageszeit messen oder die
+Felddaten (Search Console, Core Web Vitals) nach 28 Tagen ansehen.
+
+Meta-Descriptions und Produktsprung sind live geprueft (curl ohne
+Preview-Parameter): Restrolle 150 Zeichen, endet auf "12 mm.", Reste 156
+Zeichen mit Komma erhalten, Teppich nach Mass (gepflegt) unveraendert
+177 Zeichen; "Direkt zu den Produkten" auf der Reste-Seite vorhanden.
