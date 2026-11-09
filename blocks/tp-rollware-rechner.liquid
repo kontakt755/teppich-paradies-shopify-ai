@@ -529,7 +529,7 @@
     sichtbar gedaempft (aria-disabled, weiter fokussierbar) und die Zeile
     darunter sagt, was fehlt - nicht erst nach dem Klick.
   {%- endcomment -%}
-  <p class="tp-rwc-note tp-rwc-cta-hint" data-cta-hint aria-live="polite" hidden data-rwc-body></p>
+  <p class="tp-rwc-note tp-rwc-cta-hint" data-cta-hint data-tel="{{ settings.tp_vs_telefon | strip | escape }}" aria-live="polite" hidden data-rwc-body></p>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
   {%- comment -%}
@@ -3091,7 +3091,15 @@ function tpRwcInit{{ tp_rc_id }}() {
       body: JSON.stringify(payload)
     })
       .then(function (r) {
-        if (!r.ok) throw new Error('add failed');
+        // Shopify nennt bei 422 den Grund (z. B. Mengengrenze je Bestellung);
+        // ohne ihn sah der Kunde nur "erneut versuchen" und kam nie weiter.
+        if (!r.ok) {
+          return r.json().catch(function () { return {}; }).then(function (d) {
+            var err = new Error('add failed');
+            err.grund = d && typeof d.description === 'string' ? d.description : '';
+            throw err;
+          });
+        }
         return r.json();
       })
       .then(function (addedItem) {
@@ -3165,14 +3173,24 @@ function tpRwcInit{{ tp_rc_id }}() {
           calculate();
         }, 3000);
       })
-      .catch(function () {
+      .catch(function (err) {
         inFlight = false;
-        cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
+        var grund = err && err.grund;
+        var tel = ctaHint ? ctaHint.getAttribute('data-tel') : '';
+        function zeigeGrund() {
+          if (!grund || !ctaHint) return;
+          ctaHint.textContent = grund + (tel ? ' Größere Mengen bestellen Sie telefonisch: ' + tel + '.' : ' Größere Mengen bestellen Sie gern über unser Kontaktformular.');
+          ctaHint.hidden = false;
+        }
+        cta.textContent = grund ? 'Nicht hinzugefügt' : 'Nicht hinzugefügt – erneut versuchen';
         cta.classList.add('is-error');
+        zeigeGrund();
         setTimeout(function () {
           cta.classList.remove('is-error');
           sperren(false);
           calculate();
+          // calculate() leert den Hinweis - der Grund soll stehen bleiben.
+          zeigeGrund();
         }, 3000);
       });
     }
