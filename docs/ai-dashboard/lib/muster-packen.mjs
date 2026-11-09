@@ -535,3 +535,29 @@ export function handTreffer(kundenListe = [], eingabe = '', ausserhalb = [], { m
   return { woerter: s.woerter, fehlen: s.fehlen, karten: offen.slice(0, max), mehr: Math.max(0, offen.length - max),
     eingelegt: alle.filter(x => x.muster.abgehakt || x.kunde.bereich === 'gepackt'), ausserhalb: s.ausserhalb, fertig: s.fertig, fertigGenauer: s.fertigGenauer };
 }
+
+/**
+ * Sammelliste (09.11.): alle noch nicht eingelegten Muster der packbereiten Umschlaege, gleiche Muster
+ * zusammengefasst, nach Fach sortiert - ein Gang durchs Lager. Lagermuster ohne Fach und angekommene
+ * Lieferanten-Muster (liegen im Eingang) stehen danach.
+ * @returns {{fach: string|null, stand: string, titel: string, farbe: string, anzahl: number, auftraege: string[]}[]}
+ */
+export function sammelliste(kundenListe = []) {
+  const je = new Map();
+  for (const k of kundenListe) {
+    if (k.bereich !== 'packen') continue;
+    for (const m of k.muster) {
+      if (m.abgehakt || m.gesperrt) continue;
+      const fach = m.lagerOrt || null;
+      const schluessel = [fach, m.stand, m.bestellt.titel, m.bestellt.farbe].join('|');
+      if (!je.has(schluessel)) je.set(schluessel, { fach, stand: m.stand, titel: m.bestellt.titel, farbe: m.bestellt.farbe, anzahl: 0, auftraege: [] });
+      const z = je.get(schluessel);
+      z.anzahl += m.anzahl || 1;
+      if (m.orderName && !z.auftraege.includes(m.orderName)) z.auftraege.push(m.orderName);
+    }
+  }
+  const namen = new Intl.Collator('de', { sensitivity: 'base', numeric: true });
+  const rang = z => (z.fach ? 0 : z.stand === 'lager' ? 1 : 2);
+  return [...je.values()].sort((a, b) => rang(a) - rang(b) || namen.compare(a.fach || '', b.fach || '')
+    || namen.compare(a.titel, b.titel) || namen.compare(a.farbe, b.farbe));
+}

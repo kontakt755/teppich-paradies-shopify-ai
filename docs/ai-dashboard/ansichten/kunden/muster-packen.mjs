@@ -40,7 +40,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, aufkleberFuer, aufkleberFuerMuster, frueherGepackt, gepacktNichtVerschickt, umschlagMusterIds, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, aufkleberFuer, aufkleberFuerMuster, frueherGepackt, gepacktNichtVerschickt, umschlagMusterIds, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, sammelliste, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
 import { suchVerweis, suchwert } from '../../lib/suchverweis.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
@@ -172,7 +172,7 @@ function standText(m, { mitPlakette = false } = {}) {
   if (m.stand === 'offen' && mitPlakette) return m.automatikGrund || '';
   if (m.automatikGrund) return `${STAND_TEXT.offen}: ${m.automatikGrund}`;
   // Lagermuster: Ort gleich dazu, damit der Packer weiss, wo er greift.
-  if (m.stand === 'lager') return `${STAND_TEXT.lager}${m.lagerOrt ? ` – liegt: ${m.lagerOrt}` : ''}`;
+  if (m.stand === 'lager') return `${STAND_TEXT.lager}${m.lagerOrt ? ` – Fach ${m.lagerOrt}` : ''}`;
   if (m.stand !== 'bestellt' || !m.bestelltAm) return STAND_TEXT[m.stand] || '';
   return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}${m.direkt ? ' · direkt an den Kunden' : ''}`;
 }
@@ -578,21 +578,23 @@ export function viewKundenMusterPacken() {
   if (!d.verfuegbar) return emptyState('Keine Bestelldaten.', d.hinweis || 'Bitte „Jetzt aktualisieren“.');
   const suche = suchwert(state.route.params, 'mpq').trim();
   // Gesucht wird in beiden Ansichten; Treffer zeigt immer die Umschlagansicht.
-  const modus = !suche && state.route.params.get('mp') === 'laden' ? 'laden' : 'kunde';
+  const modus = !suche && ['laden', 'sammel'].includes(state.route.params.get('mp')) ? state.route.params.get('mp') : 'kunde';
   // Links statt Parameterknoepfe: der Wechsel hebt auch eine laufende Suche auf.
   const modusLink = m => {
     const p = new URLSearchParams(state.route.params);
     for (const k of ['mp', 'mpq', 'mh', 'laden', 'umschlag', 'mpfertig']) p.delete(k);
-    p.set('tab', 'muster'); if (m === 'laden') p.set('mp', 'laden');
+    p.set('tab', 'muster'); if (m !== 'kunde') p.set('mp', m);
     return `#/kunden?${p}`;
   };
-  const umschalter = `<nav class="mp-modus" aria-label="Ansicht">
+  const umschalter = `<nav class="mp-modus no-print" aria-label="Ansicht">
       <a class="btn btn-sm${modus === 'kunde' ? ' btn-primary' : ''}" href="${esc(modusLink('kunde'))}"${modus === 'kunde' ? ' aria-current="page"' : ''}>Bestellung packen</a>
       <a class="btn btn-sm${modus === 'laden' ? ' btn-primary' : ''}" href="${esc(modusLink('laden'))}"${modus === 'laden' ? ' aria-current="page"' : ''}>Muster kommt an</a>
+      <a class="btn btn-sm${modus === 'sammel' ? ' btn-primary' : ''}" href="${esc(modusLink('sammel'))}"${modus === 'sammel' ? ' aria-current="page"' : ''}>Sammelliste</a>
     </nav>`;
   const suchfeld = `<div class="toolbar"><input type="search" data-param="mpq" value="${esc(suchwert(state.route.params, 'mpq'))}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer"></div>`;
   const fehlerHinweis = packFehlerHtml(d);
   if (modus === 'laden') return umschalter + fehlerHinweis + PACKER_INFO + viewMusterKommtAn(d);
+  if (modus === 'sammel') return umschalter + fehlerHinweis + viewSammelliste(d);
   const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt heißt verschickt: „Umschlag gepackt“ trägt ihn als verschickt ein, der Kunde bekommt sofort die Versandmail – danach geht er zur Post. Bestellt ein Kunde an mehreren Tagen, hat jeder Tag seinen eigenen Umschlag – nur Bestellungen vom selben Tag kommen zusammen.</p>${PACKER_INFO}`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
@@ -818,6 +820,22 @@ function handMeldungHtml(d) {
   if (rest) return `<p class="notice mp-meldung" role="status"><strong>✓ Eingelegt in ${esc(umschlagKennung(k))}</strong> · ${esc(k.name)} – noch ${plural(rest, 'Muster', 'Muster')} offen in diesem Umschlag. Nächstes Muster eintippen.</p>`;
   return `<p class="notice mp-meldung mp-komplett" role="status"><strong>✓ ${esc(umschlagKennung(k))} · ${esc(k.name)} ist komplett.</strong> Adresse drucken und zukleben.
     <a class="btn btn-sm btn-primary" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(k.packSchluessel)}">Zum Umschlag</a></p>`;
+}
+
+/** Sammelliste (09.11.): ein Gang durchs Lager fuer alle packbereiten Umschlaege, druckbar per Browser (A4). */
+function viewSammelliste(d) {
+  const zeilen = sammelliste(d.kunden);
+  if (!zeilen.length) return emptyState('Nichts zu holen.', 'Gerade ist kein Umschlag packbereit, oder alles ist schon eingelegt.');
+  const umschlaege = d.kunden.filter(k => k.bereich === 'packen').length;
+  const muster = zeilen.reduce((n, z) => n + z.anzahl, 0);
+  const wo = z => (z.fach ? `<strong>${esc(z.fach)}</strong>` : `<span class="muted">${z.stand === 'lager' ? 'Musterlager, ohne Fach' : 'angekommen'}</span>`);
+  return `<p class="sub mp-hier no-print">Einmal durchs Lager: alle Muster der packbereiten Umschläge, nach Fach sortiert. Darunter stehen Lagermuster ohne Fach und angekommene Muster vom Lieferanten. Ein Fach fehlt? Im Musterlager unter „Ohne Fach“ eintragen.</p>
+    <div class="mp-summe no-print"><button type="button" class="btn" data-drucken>Sammelliste drucken</button></div>
+    <h2 class="mp-titel">Sammelliste · ${plural(muster, 'Muster', 'Muster')} für ${plural(umschlaege, 'Umschlag', 'Umschläge')} <span class="small muted">· ${esc(fmtDateTime(new Date().toISOString()))}</span></h2>
+    <div class="table-scroll mp-sammel-scroll"><table class="tasks mp-sammel">
+      <thead><tr><th>Fach</th><th>Muster</th><th>Anzahl</th><th>Bestellungen</th><th aria-label="Abhaken"></th></tr></thead>
+      <tbody>${zeilen.map(z => `<tr><td>${wo(z)}</td><td>${esc(z.titel)}${z.farbe ? ` · ${esc(z.farbe)}` : ''}</td><td>${z.anzahl}</td><td>${esc(z.auftraege.join(', '))}</td><td class="mp-sammel-haken" aria-hidden="true">☐</td></tr>`).join('')}</tbody>
+    </table></div>`;
 }
 
 /** "Muster kommt an": ein Paket eines Lieferanten auf die richtigen Umschlaege verteilen. */

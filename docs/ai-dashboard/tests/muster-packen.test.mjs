@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, offeneSuche, packSchluessel, packSuche, STAND_TEXT } from '../lib/muster-packen.mjs';
+import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, offeneSuche, packSchluessel, packSuche, sammelliste, STAND_TEXT } from '../lib/muster-packen.mjs';
 import { adressEtikett, adressLayout, ABSENDER } from '../lib/adress-etiketten.mjs';
 import { ETIKETT_FORMATE } from '../lib/muster-etiketten.mjs';
 
@@ -708,4 +708,20 @@ test('Nachbestellung: nachtraeglich hinzugefuegtes Muster traegt das Datum der B
   const r = musterPackliste({ produkte, schluesselVon, jetzt,
     auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102', { nachbestelltAm: '2026-10-21T13:12:22Z' }), pos(13, '101', { nachbestelltAm: 'kaputt' })])] });
   assert.deepEqual(r.kunden[0].muster.map(m => m.nachbestelltAm), [null, '2026-10-21T13:12:22Z', null]);
+});
+
+test('Sammelliste: nur packbereite, nicht eingelegte Muster, gleiche zusammengefasst, nach Fach sortiert (09.11.)', () => {
+  const m = (orderName, titel, farbe, stand, lagerOrt = null, extra = {}) => ({ orderName, bestellt: { titel, farbe }, stand, lagerOrt, anzahl: 1, ...extra });
+  const kunden = [
+    { bereich: 'packen', muster: [m('#1', 'Velours', 'Rot', 'lager', 'B 10'), m('#1', 'Schlinge', 'Grau', 'da'), m('#1', 'Fertig', 'Blau', 'lager', 'A 1', { abgehakt: {} })] },
+    { bereich: 'packen', muster: [m('#2', 'Velours', 'Rot', 'lager', 'B 10', { anzahl: 2 }), m('#2', 'Berber', 'Natur', 'lager', 'B 2'), m('#2', 'Ohne', 'Weiss', 'lager')] },
+    { bereich: 'warten', muster: [m('#3', 'Velours', 'Rot', 'lager', 'A 1')] },
+  ];
+  const l = sammelliste(kunden);
+  assert.deepEqual(l.map(z => [z.fach, z.titel, z.anzahl, z.auftraege.join(',')]), [
+    ['B 2', 'Berber', 1, '#2'],
+    ['B 10', 'Velours', 3, '#1,#2'],
+    [null, 'Ohne', 1, '#2'],
+    [null, 'Schlinge', 1, '#1'],
+  ], 'numerisch nach Fach (B 2 vor B 10), Lager ohne Fach vor Angekommenem; abgehakt und nicht packbereit fallen weg');
 });

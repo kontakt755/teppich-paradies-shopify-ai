@@ -72,7 +72,7 @@ const nochDa = nochDaZaehlbar;
  * ruhig. Das Wort steht auf der Plakette ("× Leer", "! Knapp") und nicht noch einmal im Text.
  */
 function bestandVon(e) {
-  const knappAb = musterlager.daten?.knappAb ?? 5;
+  const knappAb = musterlager.daten?.knappAb ?? 3;
   if (e.leer) return { text: '', ...musterlagerAmpel({ leer: true }) };
   if (zaehlbar(e)) {
     const da = nochDa(e);
@@ -117,10 +117,10 @@ function zeileHtml(e) {
     <div class="ml-was">
       <div class="ml-farbe">${esc(e.farbe || e.titel)}</div>
       <div class="ml-angaben">
+        ${e.ort ? `<span class="ml-fach">Fach ${esc(e.ort)}</span>` : '<span class="muted">ohne Fach</span>'}
         ${ampelPlakette(b.stufe, b.wort)}
         <span>${esc(e.artLabel || arten()[e.art] || e.art)}</span>
         ${b.text ? `<span>${esc(b.text)}</span>` : ''}
-        ${e.ort ? `<span>Platz: ${esc(e.ort)}</span>` : '<span class="muted">kein Platz eingetragen</span>'}
         ${verschickt ? `<span class="muted">${esc(verschickt)}</span>` : ''}
       </div>
       ${fuer.length ? `<div class="ml-fuer">Verschicken an: ${esc(fuer.join(', '))}</div>` : ''}
@@ -158,7 +158,10 @@ export function viewEinkaufMusterlager() {
   if (d?.fehler) return stoerungState(d, 'Das Musterlager');
   if (!d || !d.verfuegbar) return emptyState('Musterlager nicht verfügbar.', d?.hinweis || '');
   const q = (state.route.params.get('mlq') || '').trim().toLowerCase();
-  const eintraege = d.eintraege.filter(e => passt(e, q));
+  // Filter "ohne Fach" (09.11.): damit jedes Lagermuster ein Fach bekommt und die Sammelliste stimmt.
+  const ohneFach = d.eintraege.filter(e => !String(e.ort || '').trim());
+  const nurOhneFach = state.route.params.get('mlf') === 'ohnefach';
+  const eintraege = (nurOhneFach ? ohneFach : d.eintraege).filter(e => passt(e, q));
   const offen = d.eintraege.reduce((s, e) => s + (e.offeneBestellungen?.length || 0), 0);
   const stufen = d.eintraege.map(e => bestandVon(e).stufe);
   const rot = stufen.filter(x => x === 'rot').length;
@@ -185,7 +188,7 @@ export function viewEinkaufMusterlager() {
   if (!d.eintraege.length) {
     liste = emptyState('Noch nichts im Musterlager.', 'Kommt ein Probestück 2 × 1 m oder eine Bahn vom Lieferanten, hier einlagern – „Muster einlagern…“ oder unten bei den Vorschlägen.');
   } else if (!eintraege.length) {
-    liste = emptyState(`Nichts passt zu „${q}“.`, 'Suche leeren oder anders suchen.');
+    liste = nurOhneFach && !q ? emptyState('Jedes Muster hat ein Fach.', 'Filter aufheben, um alle zu sehen.') : emptyState(`Nichts passt zu „${q}“.`, 'Suche leeren oder anders suchen.');
   } else {
     // Je Lieferant ein Abschnitt mit Summe (Wunsch 02.11.), darin je Produkt eine Gruppe mit den Farben.
     const namen = new Intl.Collator('de', { sensitivity: 'base', numeric: true });
@@ -215,7 +218,8 @@ export function viewEinkaufMusterlager() {
   return `${kopf}
     ${sperrFehler}
     ${sperrenOffenHtml(sp.offen || [])}
-    <div class="toolbar search-hero"><input type="search" autocomplete="off" placeholder="Produkt, Farbe oder Lagerplatz suchen" value="${esc(state.route.params.get('mlq') || '')}" data-param="mlq" aria-label="Musterlager durchsuchen"></div>
+    <div class="toolbar search-hero"><input type="search" autocomplete="off" placeholder="Wo liegt …? Farbe, Produkt oder Fach" value="${esc(state.route.params.get('mlq') || '')}" data-param="mlq" aria-label="Musterlager durchsuchen: wo liegt eine Farbe"></div>
+    ${ohneFach.length || nurOhneFach ? `<div class="btn-row ml-filter"><button type="button" class="btn btn-sm${nurOhneFach ? ' btn-primary' : ''}" data-param="mlf" data-value="${nurOhneFach ? '' : 'ohnefach'}" aria-pressed="${nurOhneFach}">Ohne Fach (${ohneFach.length})</button></div>` : ''}
     ${d.eintraege.length ? `<p class="small muted ml-zahlen">${zahlen.join(' · ')}</p>` : ''}
     ${liste}
     ${sperrenImShopHtml(sp.gesperrt || [])}
@@ -309,10 +313,10 @@ function artFelder(gewaehlt) {
 
 function ortFeld(wert = '') {
   const orte = [...new Set((musterlager.daten?.eintraege || []).map(e => e.ort).filter(Boolean))].sort();
-  return `<div class="field"><label for="mlOrt">Lagerplatz</label>
-    <input id="mlOrt" name="ort" maxlength="80" autocomplete="off" placeholder="z. B. Regal B, Fach 3" value="${esc(wert)}"${orte.length ? ' list="mlOrte"' : ''}>
+  return `<div class="field"><label for="mlOrt">Fach</label>
+    <input id="mlOrt" name="ort" maxlength="80" autocomplete="off" placeholder="z. B. B3" value="${esc(wert)}"${orte.length ? ' list="mlOrte"' : ''}>
     ${orte.length ? `<datalist id="mlOrte">${orte.map(o => `<option value="${esc(o)}"></option>`).join('')}</datalist>` : ''}
-    <span class="hint">Damit es beim Verschicken jeder findet.</span></div>`;
+    <span class="hint">Steht in der Packstation und auf der Sammelliste – so findet es jeder.</span></div>`;
 }
 
 /** Sucheingabe gegen das Lexikon; zeigt Treffer als Knoepfe mit data-ml-handle. Der Dialog entscheidet, was ein Klick tut. */
@@ -656,7 +660,7 @@ function restTrefferHtml(t, i) {
     ${t.herstellerOffen ? '<p class="small ml-warn">Beim Lieferanten steht kein Hersteller – Qualität am Lieferschein vergleichen.</p>' : ''}
     ${t.farbeGefunden ? '' : '<p class="small muted">Farbnummer nicht gefunden oder nicht angegeben – passende Farbe ankreuzen.</p>'}
     <div class="ml-farbliste">${farben.map(f => `<label><input type="checkbox" value="${esc(f.farbe)}"${vorab ? ' checked' : ''}> ${esc(f.farbe)}${f.farbnummer && !String(f.farbe).includes(f.farbnummer) ? ` <span class="muted small">${esc(f.farbnummer)}</span>` : ''}${f.imLager ? ' <span class="muted small">(schon im Lager)</span>' : ''}</label>`).join('')}</div>
-    ${lesend ? '' : `<div class="field"><label>Lagerplatz <input name="ort" maxlength="80" autocomplete="off" placeholder="z. B. Regal B, Fach 3"></label></div>`}
+    ${lesend ? '' : `<div class="field"><label>Fach <input name="ort" maxlength="80" autocomplete="off" placeholder="z. B. B3"></label></div>`}
     <div class="btn-row">
       <button type="button" class="btn btn-sm btn-ghost" data-ml-rest-etikett="${i}">Aufkleber</button>
       ${lesend ? '' : `<button type="button" class="btn btn-sm btn-primary" data-ml-rest-einlagern="${i}">Als Verlegerest einlagern</button>`}

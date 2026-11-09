@@ -57,6 +57,8 @@
 .ml-farbe { font-weight: 600; overflow-wrap: anywhere; }
 .ml-farbe-zusatz { font-weight: 400; color: var(--text-2); }
 .ml-angaben { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: .88rem; color: var(--text-2); }
+.ml-fach { font-weight: 600; color: var(--text); }
+.ml-filter { margin: 0 0 10px; }
 .ml-fuer { font-size: .88rem; color: var(--text); }
 .ml-notiz { font-size: .85rem; color: var(--text-3); overflow-wrap: anywhere; }
 .ml-aktionen { flex: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
