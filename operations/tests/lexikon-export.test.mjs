@@ -229,3 +229,12 @@ test('jsonlZuProdukten: Haupt- und Bilder-JSONL zusammen, Produktzeile der Bilde
   assert.equal(produkte[0].variants.length, 1);
   assert.deepEqual(produkte[0].media.nodes.map((m) => m.url), ['u1', 'u2']);
 });
+
+test('aufbereiten liest die flache media-Form aus jsonlZuProdukten direkt (Live-Weg)', async () => {
+  const { aufbereiten } = await import('../lib/lexikon.mjs');
+  const { produkte } = jsonlZuProdukten([
+    { id: 'gid://shopify/Product/1', handle: 'a' },
+    { id: 'gid://shopify/MediaImage/1', __parentId: 'gid://shopify/Product/1', image: { url: 'u1', altText: 'x' } },
+  ].map((z) => JSON.stringify(z)).join('\n'));
+  assert.deepEqual(aufbereiten({ produkte }).produkte[0].bilder, [{ url: 'u1', alt: 'x' }]);
+});
