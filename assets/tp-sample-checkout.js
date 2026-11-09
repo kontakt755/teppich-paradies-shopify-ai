@@ -232,10 +232,16 @@
         status.textContent = 'Kein Muster verfügbar';
         card.appendChild(status);
       } else if (color.sampleSofort) {
+        // Wortlaut Benutzer 09.11.: "sofort lieferbar solange der Vorrat reicht, Muster auf Lager" -
+        // ueberbucht ein Kunde den Vorrat, kommt sein Muster ganz normal vom Lieferanten.
         card.setAttribute('data-sample-sofort', '');
+        var plakette = document.createElement('span');
+        plakette.className = 'tp-sample__card-plakette';
+        plakette.textContent = 'Muster auf Lager';
+        card.appendChild(plakette);
         var sofort = document.createElement('span');
         sofort.className = 'tp-sample__card-sofort';
-        sofort.textContent = 'Sofort lieferbar – schneller Versand';
+        sofort.textContent = 'sofort lieferbar, solange der Vorrat reicht';
         card.appendChild(sofort);
       }
       card.appendChild(check);

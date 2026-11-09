@@ -36,7 +36,11 @@ test('Snippet liest custom.muster_sofort und der Konfigurator zeigt den Hinweis 
   const snippet = read('snippets/tp-muster-sofort.liquid');
   assert.match(snippet, /shop\.metafields\.custom\.muster_sofort/);
   assert.match(read('sections/tp-sample-checkout.liquid'), /render 'tp-muster-sofort'/);
-  assert.match(read('assets/tp-sample-checkout.js'), /Sofort lieferbar – schneller Versand/);
-  const css = read('assets/tp-sample-checkout.css').split('.tp-sample__card-sofort')[1].split('}')[0];
-  assert.doesNotMatch(css, /c8102e|b3261e|tp-hauptaktion/);
+  const js = read('assets/tp-sample-checkout.js');
+  assert.match(js, /'Muster auf Lager'/);
+  assert.match(js, /'sofort lieferbar, solange der Vorrat reicht'/);
+  for (const klasse of ['.tp-sample__card-plakette', '.tp-sample__card-sofort']) {
+    const css = read('assets/tp-sample-checkout.css').split(klasse + ' {')[1].split('}')[0];
+    assert.doesNotMatch(css, /c8102e|b3261e|B0303F|tp-hauptaktion/i);
+  }
 });

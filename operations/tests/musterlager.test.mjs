@@ -295,3 +295,27 @@ test('musterLagerMoeglich: bestellt beim Lieferanten, aber im Lager - Angebot nu
   wendeLagerAn(m3, leseLager(file), { statusAlle: { 'O1::L1': { status: 'geliefert' } } });
   assert.equal(m3.auftraege[0].positionen[0].musterLagerMoeglich, undefined);
 });
+
+test('Ueberbuchung (09.11.): 5 im Lager, 6 bestellen - 5 aus dem Lager, der 6. normal beim Lieferanten, Hinweis weg, nach dem Packen 0', () => {
+  const dir = tmp();
+  const file = musterlagerPfad(dir);
+  const e = einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_101'], art: 'einzel', anzahl: 5, ort: 'Regal M3', actor: 'x', jetzt: AM }).eintrag;
+  const neu = () => modellMit([1, 2, 3, 4, 5, 6].map(i => auftrag(`O${i}`, `2026-10-1${i}`, [muster(`O${i}`, 'L1', 'M-TESTVEL4_101')])));
+  // Nach 4 Bestellungen: noch eins frei, Hinweis steht.
+  const vier = modellMit([1, 2, 3, 4].map(i => auftrag(`O${i}`, `2026-10-1${i}`, [muster(`O${i}`, 'L1', 'M-TESTVEL4_101')])));
+  assert.deepEqual(sofortLieferbar(leseLager(file), wendeLagerAn(vier, leseLager(file))), ['TESTVEL4_101']);
+  const m = neu();
+  const stand = wendeLagerAn(m, leseLager(file));
+  const pos = m.auftraege.map(a => a.positionen[0]);
+  assert.equal(pos.filter(p => p.musterHerkunftQuelle === 'lager').length, 5);
+  assert.deepEqual(pos.filter(p => p.musterHerkunftQuelle !== 'lager').map(p => p.orderId), ['O6'], 'die juengste geht an den Lieferanten');
+  assert.equal(pos[5].musterHerkunft, undefined, 'keine Wahl gesetzt: Musterautomatik bestellt wie immer');
+  assert.deepEqual(sofortLieferbar(leseLager(file), stand), [], 'Hinweis weg, sobald alles reserviert ist');
+  // Alle fuenf gepackt ("raus"): festgeschrieben, Lager 0, nichts reserviert.
+  for (const a of m.auftraege.slice(0, 5)) for (const p of festzuschreiben(a)) haengeWahlAn(musterherkunftPfad(dir), { orderId: a.id, lineItemId: p.lineItemId, herkunft: p.musterHerkunft, actor: 'x', lagerId: p.musterLager.id, jetzt: AM });
+  const m2 = neu();
+  wendeAufModellAn(m2, leseEreignisse(musterherkunftPfad(dir)));
+  const statusAlle = Object.fromEntries([1, 2, 3, 4, 5].map(i => [`O${i}::L1`, { status: 'raus' }]));
+  const st2 = wendeLagerAn(m2, leseLager(file), { statusAlle }).get(e.id);
+  assert.deepEqual([st2.verbraucht, st2.reserviert, st2.rest], [5, 0, 0]);
+});

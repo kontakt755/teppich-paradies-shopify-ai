@@ -3,7 +3,8 @@
   (09.11.2026). Das Control Center schreibt ihre SKUs (ohne "M-") ins
   Shop-Metafeld custom.muster_sofort, sobald sich das Lager aendert
   (operations/lib/muster-sofort.mjs). assets/tp-sample-checkout.js liest das
-  JSON und zeigt an der Farbkarte "Sofort lieferbar - schneller Versand".
+  JSON und zeigt an der Farbkarte die Plakette "Muster auf Lager" und "sofort
+  lieferbar, solange der Vorrat reicht".
   Kein Metafeld: leere Liste, kein Hinweis.
 {%- enddoc -%}
 {%- assign tp_ms = shop.metafields.custom.muster_sofort.value -%}
