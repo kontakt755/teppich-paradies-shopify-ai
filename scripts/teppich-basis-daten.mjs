@@ -48,7 +48,9 @@ export const KOLLEKTIONEN = ['teppich-nach-mass', 'marken-teppiche-nach-mass', '
 export const NAMESPACE = 'custom';
 export const KEY = 'teppich_basis_daten';
 const JE_PAKET = 25;
-const PARALLEL = 4;
+// Einzeln mit Pause: bei 4 parallelen Abrufen drosselte der Shop ab ~100 Seiten mit 429 (07. und 09.11.2026)
+const PARALLEL = 1;
+const PAUSE_MS = 400;
 
 const MIT_WERT = ['pakete', 'theme', 'kollektionen', 'handles'];
 
@@ -139,7 +141,7 @@ export class Keks {
   kopf() { return [...this.werte].map(([k, v]) => `${k}=${v}`).join('; '); }
 }
 
-export async function holen(url, keks, { versuche = 2, vorAbruf } = {}) {
+export async function holen(url, keks, { versuche = 5, vorAbruf, warte = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
   let ziel = url;
   for (let schritt = 0; schritt < 8; schritt++) {
     let antwort;
@@ -147,7 +149,7 @@ export async function holen(url, keks, { versuche = 2, vorAbruf } = {}) {
       await vorAbruf?.();
       antwort = await fetch(ziel, { redirect: 'manual', headers: { cookie: keks.kopf(), 'user-agent': 'tp-teppich-basis-daten' } });
     } catch (e) {
-      if (versuche > 1) return holen(url, keks, { versuche: versuche - 1, vorAbruf });
+      if (versuche > 1) return holen(url, keks, { versuche: versuche - 1, vorAbruf, warte });
       throw e;
     }
     keks.aufnehmen(antwort);
@@ -156,8 +158,9 @@ export async function holen(url, keks, { versuche = 2, vorAbruf } = {}) {
       continue;
     }
     if ((antwort.status === 429 || antwort.status >= 500) && versuche > 1) {
-      await new Promise((r) => setTimeout(r, 1500));
-      return holen(url, keks, { versuche: versuche - 1, vorAbruf });
+      // retry-after des Shops abwarten (Sekunden), sonst 5 s; hoechstens 60 s je Versuch
+      await warte(Math.min(60, Number(antwort.headers.get('retry-after')) || 5) * 1000);
+      return holen(url, keks, { versuche: versuche - 1, vorAbruf, warte });
     }
     return { status: antwort.status, text: await antwort.text(), theme: themeAus(antwort.headers.get('server-timing')), retryAfter: antwort.headers.get('retry-after') };
   }
@@ -206,6 +209,7 @@ async function main(argv) {
     while (i < handles.length) {
       const h = handles[i++];
       try { eintraege.push(await eintragLesen(h, keks, o.theme)); } catch (e) { fehler.push(e.message); }
+      await new Promise((r) => setTimeout(r, PAUSE_MS));
     }
   }));
   eintraege.sort((a, b) => a.handle.localeCompare(b.handle));

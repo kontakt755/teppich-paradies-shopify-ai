@@ -30,7 +30,8 @@
  * 7 Tagen, nicht bestellt, alles unter "Zu klären"). Die Reiter
  * nennen die Zahl der roten Umschlaege.
  * In beiden Ansichten steht oben fuer den Packer, welche Herstelleretiketten abkommen (PACKER_INFO).
- * Das A4-Begleitblatt kommt je Umschlag oder gesammelt als PDF (blattKnopf); Direktversand bekommt keins.
+ * Das A4-Begleitblatt kommt beim Aufkleber-und-Adresse-Druck automatisch mit (ein PDF je Klick), der Knopf blattKnopf
+ * bleibt fuer den Nachdruck; Direktversand bekommt keins.
  */
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast } from '../../kern/helfer.mjs';
@@ -173,7 +174,7 @@ function standText(m, { mitPlakette = false } = {}) {
   // Lagermuster: Ort gleich dazu, damit der Packer weiss, wo er greift.
   if (m.stand === 'lager') return `${STAND_TEXT.lager}${m.lagerOrt ? ` – liegt: ${m.lagerOrt}` : ''}`;
   if (m.stand !== 'bestellt' || !m.bestelltAm) return STAND_TEXT[m.stand] || '';
-  return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}`;
+  return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}${m.direkt ? ' · direkt an den Kunden' : ''}`;
 }
 
 /**
@@ -398,7 +399,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="${ampel ? 'mp-ohne-aufkleber' : 'mp-fehlt'}">${ampel ? 'Kein eindeutiger Aufkleber für' : 'Zuordnung fehlt:'} ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
       : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
-    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.nachbestelltAm ? `<strong class="mp-nachbestellt">Nachbestellung am ${esc(datumKurz(m.nachbestelltAm))}</strong> · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.stand === 'lager' && !m.gesperrt ? 'mp-lager' : m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.lagerMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-auslager="${esc(m.lineItemId)}" title="Liegt im Musterlager${m.lagerMoeglich.ort ? ` (${esc(m.lagerMoeglich.ort)})` : ''}: wer es von dort nimmt, klickt hier – das Lager zählt sofort 1 ab">Aus dem Lager genommen${m.lagerMoeglich.ort ? ` (${esc(m.lagerMoeglich.ort)})` : ''}</button>` : ''}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}</div>
+    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.nachbestelltAm ? `<strong class="mp-nachbestellt">Nachbestellung am ${esc(datumKurz(m.nachbestelltAm))}</strong> · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.stand === 'lager' && !m.gesperrt ? 'mp-lager' : m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.lagerMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-auslager="${esc(m.lineItemId)}" title="Liegt im Musterlager${m.lagerMoeglich.ort ? ` (${esc(m.lagerMoeglich.ort)})` : ''}: wer es von dort nimmt, klickt hier – das Lager zählt sofort 1 ab">Aus dem Lager genommen${m.lagerMoeglich.ort ? ` (${esc(m.lagerMoeglich.ort)})` : ''}</button>` : ''}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}${!lesend && m.stand === 'bestellt' && !m.direkt && !m.abgehakt ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-direkt="${esc(m.lineItemId)}" title="Der Lieferant schickt dieses Muster direkt an den Kunden – bei uns kommt nichts an">Kommt direkt zum Kunden…</button>` : ''}</div>
   </li>`;
 }
 
@@ -847,9 +848,13 @@ function viewNachLaden(d) {
  * Druck je Bestellung. Ist der Lauf vollstaendig beim Drucker, gilt der Umschlag fuer alle Geraete als
  * vorbereitet (#1718); ein abgebrochener Druck vermerkt nichts - dann "Schon gedruckt" waehlen.
  */
-function drucken(liste, titel, { nurOffen = false } = {}) {
+function drucken(liste, titel, { nurOffen = false, blatt = false } = {}) {
   const etiketten = liste.flatMap(k => aufkleberFuer(k, { nurOffen }));
   if (!etiketten.length) return;
+  // Begleitblatt im selben Klick mit (sonst sperrt der Browser den Tab), alle Umschlaege in einem PDF;
+  // vergessen am 09.11. bei #1114/#1115. Direktversand filtert blattNummern heraus.
+  const nummern = blatt ? blattNummern(liste) : '';
+  if (nummern) void blattOeffnen(nummern);
   // Der erste Druck zaehlt; Gepacktes wird nur neu etikettiert.
   const vorbereiten = liste.filter(k => !k.gepackt && !k.gedruckt).map(k => k.packSchluessel);
   oeffneEtikettenDruck({ etiketten, titel, allowEditing: false,
@@ -884,6 +889,21 @@ async function packlisteErneutLaden() {
   } finally {
     packSpeichert = false; kunden.loadingMusterPacken = false; render();
   }
+}
+
+/** "Kommt direkt zum Kunden…": vermerkt nachtraeglich den Direktversand (ueber 'kunde'), z. B. Bestellungen vor dem 24.10. (#1049). */
+async function direktVermerken(m, knopf) {
+  if (!window.confirm(`Schickt der Lieferant dieses Muster direkt an den Kunden?\n\n${m.orderName}: ${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}\n\nDann kommt bei uns nichts an; der Umschlag zeigt „Direktversand prüfen“ statt „Überfällig“.`)) return;
+  packSpeichert = true;
+  knopf.disabled = true;
+  try {
+    await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'direktversand', orderId: m.orderId, lineItemId: m.lineItemId });
+    toast(`${m.orderName}: als Direktversand vermerkt`);
+  } catch (err) {
+    toast(`Nicht vermerkt: ${err.message}`, 'crit');
+  }
+  packSpeichert = false;
+  await packlisteErneutLaden();
 }
 
 /**
@@ -1076,12 +1096,12 @@ function kundeMitMuster(lineItemId) {
 
 /** Klicks im Reiter "Muster packen". Gibt true zurueck, wenn der Klick damit erledigt ist. */
 /** Der Tab muss noch im Klick aufgehen, sonst sperrt ihn der Browser; das PDF kommt danach hinein. */
-async function blattOeffnen(knopf) {
+async function blattOeffnen(nummern, knopf = null) {
   const tab = window.open('', '_blank');
   blattMeldung = null;
-  knopf.disabled = true;
+  if (knopf) knopf.disabled = true;
   try {
-    const antwort = await fetch(`/api/kunden/muster-begleitblatt?${new URLSearchParams({ nummern: knopf.dataset.mpBlatt })}`, { credentials: 'same-origin' });
+    const antwort = await fetch(`/api/kunden/muster-begleitblatt?${new URLSearchParams({ nummern })}`, { credentials: 'same-origin' });
     if (!antwort.ok) throw new Error((await antwort.json().catch(() => null))?.error || 'Das Begleitblatt konnte nicht erstellt werden.');
     const ausgelassen = JSON.parse(decodeURIComponent(antwort.headers.get('X-Tp-Ausgelassen') || '%5B%5D'));
     if (ausgelassen.length) blattMeldung = `Ohne Begleitblatt: ${ausgelassen.map(a => `${a.nummer} – ${a.grund}`).join(' ')}`;
@@ -1147,6 +1167,13 @@ export function musterPackenKlick(e) {
     if (m && !packSpeichert) void musterSperren(m, sperren);
     return true;
   }
+  const direktKnopf = e.target.closest('[data-mp-direkt]');
+  if (direktKnopf) {
+    e.preventDefault();
+    const m = kundeMitMuster(direktKnopf.dataset.mpDirekt)?.muster.find(x => x.lineItemId === direktKnopf.dataset.mpDirekt);
+    if (m && !packSpeichert) void direktVermerken(m, direktKnopf);
+    return true;
+  }
   const frageKnopf = e.target.closest('[data-mp-versand-frage]');
   if (frageKnopf) {
     e.preventDefault();
@@ -1207,7 +1234,7 @@ export function musterPackenKlick(e) {
   const blatt = e.target.closest('[data-mp-blatt]');
   if (blatt) {
     e.preventDefault();
-    void blattOeffnen(blatt);
+    void blattOeffnen(blatt.dataset.mpBlatt, blatt);
     return true;
   }
   const eines = e.target.closest('[data-mp-drucken-muster]');
@@ -1234,7 +1261,9 @@ export function musterPackenKlick(e) {
   if (einzeln) {
     e.preventDefault();
     const k = liste.find(x => x.packSchluessel === einzeln.dataset.mpDrucken);
-    if (k) drucken([k], `Aufkleber · ${k.name}`, { nurOffen: k.bereich !== 'gepackt' && einzeln.dataset.mpAlleAufkleber !== '1' });
+    // "Alle Aufkleber erneut drucken" ist ein Nachdruck: ohne Blatt.
+    const nachdruck = einzeln.dataset.mpAlleAufkleber === '1';
+    if (k) drucken([k], `Aufkleber · ${k.name}`, { nurOffen: k.bereich !== 'gepackt' && !nachdruck, blatt: !nachdruck && k.bereich !== 'gepackt' });
     return true;
   }
   if (e.target.closest('[data-mp-eigene]')) {
@@ -1244,7 +1273,7 @@ export function musterPackenKlick(e) {
   }
   if (e.target.closest('[data-mp-alle]')) {
     e.preventDefault();
-    drucken(liste.filter(k => k.bereich === 'packen' && !k.fehlt.length), 'Aufkleber · alle Kunden in Packreihenfolge', { nurOffen: true });
+    drucken(liste.filter(k => k.bereich === 'packen' && !k.fehlt.length), 'Aufkleber · alle Kunden in Packreihenfolge', { nurOffen: true, blatt: true });
     return true;
   }
   const vorb = e.target.closest('[data-mp-vorbereiten]');
@@ -1252,7 +1281,7 @@ export function musterPackenKlick(e) {
     e.preventDefault();
     // Reihenfolge wie in der Liste; was inzwischen gepackt oder ohne Zuordnung ist, faellt heraus.
     const auswahl = vorb.dataset.mpVorbereiten.split(' ').map(pk => liste.find(k => k.packSchluessel === pk)).filter(k => k && !k.gepackt && !k.fehlt.length);
-    drucken(auswahl, `Aufkleber · ${plural(auswahl.length, 'Umschlag', 'Umschläge')} vorbereiten`, { nurOffen: true });
+    drucken(auswahl, `Aufkleber · ${plural(auswahl.length, 'Umschlag', 'Umschläge')} vorbereiten`, { nurOffen: true, blatt: true });
     return true;
   }
   const a = e.target.closest('[data-mp-aktion]');

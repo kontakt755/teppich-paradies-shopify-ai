@@ -40,7 +40,7 @@ import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { ratgeberFuerBestellung, ratgeberHtml, kurzTitel as ratgeberKurzTitel, RATGEBER, ORDNER as RATGEBER_ORDNER } from '../domains/shopify/ratgeber-pdf/vorlage.mjs';
 import { BlattFehler, anzeigename as blattName, bewertungText, blaetterHtml, istNah, musterZiel, whatsappNummer } from '../domains/shopify/muster-begleitblatt/vorlage.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, bereiteStatusPositionenVor, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, setzeSelbstversand, STATUS_ORDER, UEBER_WERTE, SELBST_SCHRITTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, bereiteStatusPositionenVor, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, vermerkeDirektversand, setzeSelbstversand, STATUS_ORDER, UEBER_WERTE, SELBST_SCHRITTE, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { lagerwarePfad, leseLagerware, markiereLagerware, LagerwareFehler } from '../operations/lib/lagerware.mjs';
 import { lieferwegVon, istLagerware } from '../docs/ai-dashboard/lib/lieferweg.mjs';
 import { erledigtMitMailMoeglich } from '../docs/ai-dashboard/lib/versand.mjs';
@@ -3527,6 +3527,23 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // "Wieder öffnen" macht einen Abschluss rueckgaengig (z. B. versehentlich "Ohne Einkauf
       // abschliessen"). Eigener Weg statt eines Pseudo-Status, damit der Abschluss im Verlauf
       // der Position erhalten bleibt statt ueberschrieben zu werden.
+      // Nachtraeglich: Muster kommt direkt vom Lieferanten zum Kunden (Packstation, #1049).
+      if (aktion === 'direktversand') {
+        const dir = privatDirPath || privatDir();
+        const modell = ladeBestellModell(dir);
+        const p = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].flatMap(a => a.positionen || []).find(z => z.orderId === orderId && z.lineItemId === lineItemId);
+        if (!p?.istMuster) throw new ApiError(400, 'Nur Muster können hier als Direktversand vermerkt werden.');
+        let eintrag;
+        try {
+          eintrag = vermerkeDirektversand(auftragsstatusPfad(dir), { orderId, lineItemId, actor, jetzt: now() });
+        } catch (e) {
+          if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status || 400, e.message);
+          throw e;
+        }
+        audit({ actor, action: 'auftragsstatus-direktversand', orderId, lineItemId });
+        merke(benutzer, actor, 'Muster direkt vom Lieferanten', `${orderId}/${lineItemId}`);
+        return { ok: true, eintrag };
+      }
       if (aktion === 'wiederOeffnen') {
         const file = auftragsstatusPfad(privatDirPath || privatDir());
         let eintrag;
@@ -5295,7 +5312,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const lauf = { seit, fehler: null, fertig: false };
       aktualisierungLauf = lauf;
       audit({ action: 'aktualisierung-start' });
-      execFileP(process.execPath, [skript], { cwd: root, timeout: 10 * 60_000, maxBuffer: 8 * 1024 * 1024 })
+      // shortcut: Lexikon/Bestand nur ueber den Dienst (stuendlich), bei Bedarf npm run daten:aktualisieren -- --nur lexikon
+      // Liste bleibt gleich wie SCHNELLE_TEILE in operations/scripts/sync-dienst.mjs.
+      const schnelleTeile = ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe'];
+      execFileP(process.execPath, [skript, '--nur', schnelleTeile.join(',')], { cwd: root, timeout: 10 * 60_000, maxBuffer: 8 * 1024 * 1024 })
         .then(() => { lauf.fertig = true; })
         .catch(err => {
           lauf.fertig = true;

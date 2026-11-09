@@ -818,12 +818,13 @@ test('aktualisierung: fehlender Zeitpunkt eines Teils liefert veraltet=null stat
 /** Legt unter root/operations/scripts/aktualisieren.mjs ein Fake-Skript ab, das
  * kurz "laeuft" (setTimeout) und dann eine eigene aktualisierung.json schreibt -
  * ohne echten Shopify-Zugang, aber mit demselben Vertrag wie das echte Skript. */
-function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftFehler = false } = {}) {
+function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftFehler = false, argsDatei = null } = {}) {
   const dir = path.join(root, 'operations', 'scripts');
   fs.mkdirSync(dir, { recursive: true });
   const datei = path.join(dir, 'aktualisieren.mjs');
   fs.writeFileSync(datei, `
     import fs from 'node:fs';
+    ${argsDatei ? `fs.writeFileSync(${JSON.stringify(argsDatei)}, JSON.stringify(process.argv.slice(2)));` : ''}
     setTimeout(() => {
       ${wirftFehler ? "throw new Error('absichtlicher Testfehler');" : `
       fs.mkdirSync(${JSON.stringify(privatDir)}, { recursive: true });
@@ -865,6 +866,17 @@ test('aktualisierungStarten: startet den Kindprozess und meldet gestartet:true',
   assert.equal(r.gestartet, true);
   assert.equal(r.laeuft, true);
   assert.ok(r.seit);
+});
+
+test('aktualisierungStarten: holt nur die schnellen Teile (kein lexikon, kein bestand)', async () => {
+  const root = tmpRoot();
+  const dir = wegwerfOrdner('tp-aktualisierung-');
+  const argsDatei = path.join(dir, 'args.json');
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 10, argsDatei });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
+  api.aktualisierungStarten();
+  await warteAufLaufende(api);
+  assert.deepEqual(JSON.parse(fs.readFileSync(argsDatei, 'utf8')), ['--nur', 'bestellungen,kennzahlen,kunden,angebote,warenkoerbe']);
 });
 
 test('aktualisierungStarten: zweiter Aufruf waehrend eines Laufs startet nichts neu ("laeuft bereits")', async () => {

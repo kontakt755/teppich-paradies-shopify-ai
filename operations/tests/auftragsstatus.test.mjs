@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { auftragsstatusPfad, leseAlle, setzeStatus, oeffneWieder, statusVorErledigt, filterGruppe, positionKey, STATUS_ORDER, AuftragsstatusFehler, vermerkeShopifyVersand, setzeZurueckAufOffen, setzeSelbstversand, UEBER_WERTE } from '../lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle, setzeStatus, oeffneWieder, statusVorErledigt, filterGruppe, positionKey, STATUS_ORDER, AuftragsstatusFehler, vermerkeShopifyVersand, setzeZurueckAufOffen, setzeSelbstversand, vermerkeDirektversand, UEBER_WERTE } from '../lib/auftragsstatus.mjs';
 
 function tmpDir() { return fs.mkdtempSync(path.join(os.tmpdir(), 'cc-auftragsstatus-')); }
 
@@ -27,6 +27,16 @@ test('setzeStatus schreibt atomar und ist danach lesbar', () => {
   const key = positionKey('gid://shopify/Order/1', 'gid://shopify/LineItem/1');
   const alle = leseAlle(file);
   assert.equal(alle[key].status, 'bestellt');
+});
+
+test('vermerkeDirektversand: nur bestellte Position, Bestelldatum bleibt (#1049)', () => {
+  const file = auftragsstatusPfad(tmpDir());
+  const o = 'gid://shopify/Order/9', li = 'gid://shopify/LineItem/9';
+  assert.throws(() => vermerkeDirektversand(file, { orderId: o, lineItemId: li, actor: 'tobias' }), e => e instanceof AuftragsstatusFehler && e.status === 409);
+  setzeStatus(file, { orderId: o, lineItemId: li, status: 'bestellt', actor: 'tobias', jetzt: new Date('2026-10-20T05:00:00Z') });
+  const e = vermerkeDirektversand(file, { orderId: o, lineItemId: li, actor: 'inhaber', jetzt: new Date('2026-11-09T10:00:00Z') });
+  assert.deepEqual([e.status, e.ueber, e.bestelltAm, e.aktualisiertVon], ['bestellt', 'kunde', '2026-10-20T05:00:00.000Z', 'inhaber']);
+  assert.equal(leseAlle(file)[positionKey(o, li)].ueber, 'kunde');
 });
 
 test('setzeStatus behaelt frueher gesetzte Felder beim naechsten Schritt', () => {
