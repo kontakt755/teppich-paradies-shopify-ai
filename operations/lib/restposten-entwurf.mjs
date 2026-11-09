@@ -125,7 +125,8 @@ export function planeRestEntwuerfe(input, { locationId } = {}) {
     for (const role of ['raummass', 'kettelteppich']) {
       const raum = role === 'raummass';
       const angebot = {
-        title: `${name} – ${raum ? 'Raummaß' : 'Kettelteppich nach Maß'} – Restposten`,
+        // Kettelteppich heisst wie die uebrigen Teppiche nach Mass (Benutzer 07.11.2026); Raummass bleibt UNLISTED.
+        title: raum ? `${name} – Raummaß – Restposten` : `${name} Teppich nach Maß`,
         handle: handles[role], descriptionHtml: `<p>${raum ? 'Rechteckiger Zuschnitt ohne Einfassung' : 'Rechteckiger Teppich mit umlaufender Kettelung'} aus ${html(name)}.</p>`,
         productType: 'Teppich nach Maß', vendor: text(row.vendor), status: 'DRAFT',
         category: 'gid://shopify/TaxonomyCategory/ha-2-5', templateSuffix: 'einfassung',

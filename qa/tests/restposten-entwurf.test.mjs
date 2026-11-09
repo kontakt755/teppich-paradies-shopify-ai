@@ -113,6 +113,7 @@ test('Zwei- und Dreimeterrollen (06.11.2026): gleiche Preisregel, Raster verbrau
   assert.equal(plan.metafields.find(m => m.owner === 'tpr0301:quelle' && m.key === 'rollenbreite' && !m.ownerVariant).value, '3.0');
   assert.equal(plan.products.find(p => p.key === 'tpr0201:quelle').input.variants[0].price, '34.95');
   assert.equal(plan.products.find(p => p.key === 'tpr0301:quelle').input.title, 'Beispiel – Restposten, 300 cm');
+  assert.equal(plan.products.find(p => p.key === 'tpr0301:kettelteppich').input.title, 'Beispiel Teppich nach Maß');
   // Verknuepfen klappt auch mit dem 3-m-Raster
   let n = 100;
   const live = plan.products.map(p => ({
