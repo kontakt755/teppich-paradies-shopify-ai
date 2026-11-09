@@ -127,3 +127,21 @@ test('Logzeilen der Wache beginnen mit der Uhrzeit (ISO, UTC)', () => {
   p.error('Fehler: x');
   assert.deepEqual(zeilen, ['2026-10-26T12:05:00.000Z Shop-Wache: GRUEN', '2026-10-26T12:05:00.000Z Fehler: x']);
 });
+
+test('langsamer erster Abruf (kalter Cache) wird einmal nachgemessen, nur zweimal langsam ist eine Warnung', async (t) => {
+  let uhr = 0;
+  t.mock.method(Date, 'now', () => uhr);
+  const abrufe = {};
+  const lauf = (dauern) => async (url) => {
+    const pfad = new URL(url).pathname;
+    abrufe[pfad] = (abrufe[pfad] || 0) + 1;
+    uhr += pfad === '/' ? dauern[abrufe[pfad] - 1] : 100;
+    return { status: 200, text: async () => '<title>Teppich Paradies</title> Impressum AGB Widerruf Datenschutz Warenkorb' };
+  };
+  const kalt = await pruefe(lauf([LANGSAM_MS + 1000, 200]), { basis: 'https://shop.test' });
+  assert.equal(abrufe['/'], 2);
+  assert.ok(!kalt.befunde.some((b) => /Startseite laedt langsam/.test(b.titel)));
+  for (const k of Object.keys(abrufe)) delete abrufe[k];
+  const langsam = await pruefe(lauf([LANGSAM_MS + 1000, LANGSAM_MS + 500]), { basis: 'https://shop.test' });
+  assert.ok(langsam.befunde.some((b) => /Startseite laedt langsam/.test(b.titel)));
+});
