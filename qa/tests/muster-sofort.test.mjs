@@ -44,3 +44,15 @@ test('Snippet liest custom.muster_sofort und der Konfigurator zeigt den Hinweis 
     assert.doesNotMatch(css, /c8102e|b3261e|B0303F|tp-hauptaktion/i);
   }
 });
+
+test('sofortListe: nur frische Listen (hoechstens 2 Stunden alt), sonst kein Hinweis', () => {
+  const jetzt = Date.parse('2026-11-09T12:00:00Z');
+  const liste = ['TESTVEL4_101'];
+  assert.deepEqual([...core.sofortListe({ skus: liste, stand: '2026-11-09T11:00:00Z' }, jetzt)], liste);
+  assert.deepEqual([...core.sofortListe({ skus: liste, stand: '2026-11-09T10:00:00Z' }, jetzt)], liste, 'genau 2 Stunden gilt noch');
+  assert.deepEqual([...core.sofortListe({ skus: liste, stand: '2026-11-09T09:59:00Z' }, jetzt)], [], 'Dienst ruht: Hinweis weg');
+  assert.deepEqual([...core.sofortListe({ skus: liste }, jetzt)], [], 'ohne Zeitstempel kein Hinweis');
+  assert.deepEqual([...core.sofortListe({ skus: '', stand: '' }, jetzt)], [], 'leeres Metafeld');
+  assert.deepEqual([...core.sofortListe(null, jetzt)], []);
+  assert.match(read('snippets/tp-muster-sofort.liquid'), /"stand":\{\{ tp_ms\.stand/);
+});

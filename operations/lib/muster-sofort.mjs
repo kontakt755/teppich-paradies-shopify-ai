@@ -24,6 +24,11 @@ export const MUTATION = `mutation MusterSofort($m: [MetafieldsSetInput!]!) {
 
 export const standPfad = dir => path.join(dir, 'muster-sofort-shop.json');
 
+/** Auch ohne Aenderung so oft neu schreiben: das Theme verwirft Listen aelter als 2 Stunden (MAX_ALTER im JS). */
+export const AUFFRISCHEN_MS = 60 * 60 * 1000;
+/** Nach einem Fehler so lange Ruhe, statt jede Minute dieselbe Anfrage zu stellen. */
+export const PAUSE_NACH_FEHLER_MS = 15 * 60 * 1000;
+
 /** Stand der letzten Uebertragung. Fehlt die Datei: nicht freigegeben. Kaputt: wirft (nie blind schreiben). */
 export function leseStand(file) {
   let text;
@@ -32,7 +37,7 @@ export function leseStand(file) {
     throw e;
   }
   const roh = JSON.parse(text);
-  return { aktiv: roh?.aktiv === true, skus: Array.isArray(roh?.skus) ? roh.skus : null, am: roh?.am || null, fehler: roh?.fehler || null };
+  return { aktiv: roh?.aktiv === true, skus: Array.isArray(roh?.skus) ? roh.skus : null, am: roh?.am || null, fehler: roh?.fehler || null, fehlerAm: roh?.fehlerAm || null };
 }
 
 function schreibeStand(file, stand) {
@@ -43,16 +48,21 @@ function schreibeStand(file, stand) {
 
 const gleich = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => x === b[i]);
 
+const alterMs = (iso, jetzt) => (iso ? jetzt.getTime() - new Date(iso).getTime() : Infinity);
+
 /**
  * Bringt das Metafeld auf `skus` (sortiert, aus musterlager.sofortLieferbar). Gegenprobe: liest den Wert
- * zurueck - `userErrors: []` allein ist kein Beleg.
- * @returns {Promise<{status: 'aus'|'unveraendert'|'geschrieben', skus: string[]}>}
+ * zurueck - `userErrors: []` allein ist kein Beleg. Ohne Aenderung schreibt es stuendlich nur den Zeitstempel
+ * neu (Lebenszeichen fuer das Theme). Nach einem Fehler 15 Minuten Pause; geworfen wird nur ein NEUER Fehler,
+ * ein wiederholter kommt als Status zurueck - so steht dieselbe Fehlerzeile nur einmal im Protokoll.
+ * @returns {Promise<{status: 'aus'|'unveraendert'|'pause'|'fehler'|'geschrieben', skus: string[]}>}
  */
 export async function abgleichen({ dir, skus, proxy, jetzt = new Date() }) {
   const file = standPfad(dir);
   const alt = leseStand(file);
   if (!alt.aktiv) return { status: 'aus', skus };
-  if (gleich(alt.skus, skus) && !alt.fehler) return { status: 'unveraendert', skus };
+  if (alt.fehler && alterMs(alt.fehlerAm, jetzt) < PAUSE_NACH_FEHLER_MS) return { status: 'pause', skus, fehler: alt.fehler };
+  if (gleich(alt.skus, skus) && !alt.fehler && alterMs(alt.am, jetzt) < AUFFRISCHEN_MS) return { status: 'unveraendert', skus };
   try {
     const shop = (await proxy.execute(ABFRAGE, {}))?.shop;
     if (!shop?.id) throw new Error('Shop-ID nicht lesbar');
@@ -65,8 +75,10 @@ export async function abgleichen({ dir, skus, proxy, jetzt = new Date() }) {
     schreibeStand(file, { aktiv: true, skus, am: jetzt.toISOString() });
     return { status: 'geschrieben', skus };
   } catch (e) {
-    // Stand bleibt alt, Fehler wird vermerkt: der naechste Lauf versucht es wieder.
-    schreibeStand(file, { aktiv: true, skus: alt.skus, am: alt.am, fehler: String(e?.message || e).slice(0, 300) });
+    // Stand bleibt alt, Fehler wird vermerkt: nach der Pause versucht es der naechste Lauf wieder.
+    const fehler = String(e?.message || e).slice(0, 300);
+    schreibeStand(file, { aktiv: true, skus: alt.skus, am: alt.am, fehler, fehlerAm: jetzt.toISOString() });
+    if (fehler === alt.fehler) return { status: 'fehler', skus, fehler };
     throw e;
   }
 }

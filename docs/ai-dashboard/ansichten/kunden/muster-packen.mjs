@@ -948,12 +948,12 @@ async function ohneMuster(k, m, knopf) {
 /** "Aus dem Lager genommen": das Lagermuster gilt sofort als verbraucht, der Umschlag sieht es als Lagermuster. */
 async function ausLager(k, m, knopf) {
   const name = `${m.vorher?.produktname || m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`;
-  if (!window.confirm(`Muster aus dem Musterlager genommen?\n\n${name}${m.lagerMoeglich.ort ? `\nLiegt: ${m.lagerMoeglich.ort}` : ''}\n\nDas Musterlager zählt sofort 1 ab.`)) return;
+  if (!window.confirm(`Muster aus dem Musterlager genommen?\n\n${name}${m.lagerMoeglich.ort ? `\nLiegt: ${m.lagerMoeglich.ort}` : ''}\n\nDas Musterlager zählt sofort 1 ab. Das beim Lieferanten bestellte Muster kommt trotzdem – bei Ankunft ins Musterlager einlagern.`)) return;
   packSpeichert = true;
   knopf.disabled = true;
   try {
-    await orgSchreiben(ENDPOINT, { packSchluessel: k.packSchluessel, aktion: 'aus-lager', lineItemId: m.lineItemId });
-    toast(`${name}: aus dem Musterlager abgebucht.`);
+    const r = await orgSchreiben(ENDPOINT, { packSchluessel: k.packSchluessel, aktion: 'aus-lager', lineItemId: m.lineItemId });
+    toast(`${name}: aus dem Musterlager abgebucht.${r?.hinweis ? ` ${r.hinweis}` : ''}`, undefined, { dauer: 9000 });
   } catch (err) {
     toast(`Nicht gespeichert: ${err.message}`, 'crit');
   }

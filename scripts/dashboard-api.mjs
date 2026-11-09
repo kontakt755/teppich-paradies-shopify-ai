@@ -1094,6 +1094,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         const e = alle[positionKey(orderId, lineItemId)];
         if (e?.status !== 'bestellt' || e.ueber === 'kunde' || e.uebernahme?.id === 'musterautomatik') continue;
         const p = (auftraege.get(orderId)?.positionen || []).find(x => x.lineItemId === lineItemId);
+        // Von Hand aus dem Musterlager genommen: das Lieferantenmuster ist nicht angekommen (Review #2052).
+        if (p?.musterLagerId) continue;
         const bestellmenge = p?.bestellSoll || p?.bestellmenge || null;
         if (!darfWeiter(beschaffungsStand(e, bestellmenge), 'geliefert')) continue;
         angaben.push({ orderId, lineItemId, status: 'geliefert', actor, bestellmenge, notiz, jetzt: now() });
@@ -1707,6 +1709,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   let musterSofortLauf = null;
   /** Nach einer Lageraenderung: Shop-Hinweis nachziehen, ohne die Antwort aufzuhalten. */
   const musterSofortNachziehen = api => { api.musterSofortAbgleich().catch(e => console.error(`[muster-sofort] ${String(e?.message || e).split('\n')[0]}`)); };
+
+  const AUS_LAGER_HINWEIS = 'Das beim Lieferanten bestellte Muster kommt trotzdem – bei Ankunft ins Musterlager einlagern.';
 
   const LAGER_NICHT_BESTELLEN = 'Dieses Muster liegt noch im Musterlager und wird nicht nachbestellt. Ist es beschädigt oder weg: erst im Musterlager auf „Ist leer“ klicken.';
 
@@ -2426,15 +2430,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === payload.packSchluessel);
         const m = kunde?.muster.find(x => x.lineItemId === lineItemId);
         if (!m?.lagerMoeglich) throw new ApiError(409, 'Dieses Muster liegt nicht (mehr) im Musterlager oder kommt schon von dort. Bitte neu laden.');
+        // Wie die anderen Schreibwege: ohne erkennbare Person kein Abgang (Review #2052).
+        const actor = benutzer?.name || await currentUser();
+        if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
         const dir = privatDirPath || privatDir();
-        const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
         const ort = m.lagerMoeglich.ort;
         haengeWahlAn(musterherkunftPfad(dir), { orderId: m.orderId, lineItemId, herkunft: 'eigen_versand', actor,
           notiz: `Aus dem Musterlager genommen (Packstation)${ort ? ` – ${ort}` : ''}`, lagerId: m.lagerMoeglich.id, jetzt: now() });
         audit({ actor, action: 'musterlager-abgang', orderId: m.orderId, anzahl: 1, hand: true });
         merke(benutzer, actor, 'Aus dem Musterlager genommen', `${m.orderName}: ${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`);
         musterSofortNachziehen(this);
-        return { ok: true, packSchluessel: kunde.packSchluessel, lineItemId };
+        // Die Lieferantenbestellung laeuft weiter: das Muster kommt trotzdem und gehoert dann ins Lager.
+        return { ok: true, packSchluessel: kunde.packSchluessel, lineItemId, hinweis: AUS_LAGER_HINWEIS };
       }
       if (payload?.aktion !== 'verschickt') return this.kundenMusterPackenSetzen(payload, benutzer);
       if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
@@ -3850,6 +3857,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         const dir = privatDirPath || privatDir();
         // Erst die Freigabe: ohne sie wird Shopify nicht einmal angesprochen (auch nicht in Tests).
         if (!musterSofortStand(musterSofortPfad(dir)).aktiv) return { status: 'aus' };
+        // Eine Datenkopie (dashboard:pruefen) traegt die Freigabe mit, darf aber nie den echten Shop schreiben.
+        if (env.TP_DASHBOARD_DATENKOPIE) return { status: 'datenkopie' };
         const modell = ladeBestellModell(dir);
         // Ohne Bestellmodell fehlen die Reservierungen: lieber nichts schreiben als zu viel versprechen.
         if (!modell) return { status: 'ohne-modell' };

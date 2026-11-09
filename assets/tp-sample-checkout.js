@@ -181,7 +181,7 @@
   // SKUs der Muster im Musterlager (snippets/tp-muster-sofort); fehlt oder kaputt: kein Hinweis.
   function sofortListe() {
     var el = document.querySelector('script[data-tp-muster-sofort]');
-    try { return (JSON.parse(el ? el.textContent : 'null') || {}).skus || []; } catch (e) { return []; }
+    try { return core.sofortListe(JSON.parse(el ? el.textContent : 'null')); } catch (e) { return []; }
   }
 
   function renderColors() {

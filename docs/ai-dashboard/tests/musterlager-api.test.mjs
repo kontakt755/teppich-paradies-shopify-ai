@@ -278,11 +278,21 @@ test('Packstation "Aus dem Lager genommen" (09.11.): beim Lieferanten bestellt, 
   assert.equal(m().stand, 'bestellt');
 
   await assert.rejects(api.kundenMusterPackenSchreiben({ aktion: 'aus-lager', packSchluessel: kunde().packSchluessel, lineItemId: 'gid://shopify/LineItem/11' }, { ...MONA, rolle: 'lesen' }), e => e.status === 403);
+  // Ohne erkennbare Person (kein Benutzer, gh nicht angemeldet): kein Abgang unter "Inhaber".
+  await assert.rejects(api.kundenMusterPackenSchreiben({ aktion: 'aus-lager', packSchluessel: kunde().packSchluessel, lineItemId: 'gid://shopify/LineItem/11' }, null), e => e.status === 403);
+  const statusVorher = JSON.parse(fs.readFileSync(path.join(dir, 'auftragsstatus.json'), 'utf8'));
   const a = await api.kundenMusterPackenSchreiben({ aktion: 'aus-lager', packSchluessel: kunde().packSchluessel, lineItemId: 'gid://shopify/LineItem/11' }, MONA);
   assert.equal(a.ok, true);
+  assert.match(a.hinweis, /bei Ankunft ins Musterlager/);
+  // Danach abhaken: die Lieferantenbestellung bleibt "bestellt" - das Muster kam aus dem Lager, nicht vom Lieferanten.
+  await api.kundenMusterPackenSchreiben({ aktion: 'haken', packSchluessel: kunde().packSchluessel, lineItemIds: ['gid://shopify/LineItem/11'], an: true }, MONA);
+  const statusNachher = JSON.parse(fs.readFileSync(path.join(dir, 'auftragsstatus.json'), 'utf8'));
+  const st = x => JSON.stringify(x).match(/LineItem\/11[^}]*?"status":"(\w+)"/)?.[1];
+  assert.equal(st(statusVorher), 'bestellt');
+  assert.equal(st(statusNachher), 'bestellt', 'kein falsches "geliefert" beim Abhaken');
   const stand = api.einkaufMusterlager().eintraege[0].stand;
   assert.deepEqual([stand.verbraucht, stand.reserviert, stand.rest], [1, 1, 1], 'Lager 3: eins genommen, eins reserviert -> 1 frei');
-  assert.deepEqual([m().stand, m().lagerOrt, m().lagerMoeglich], ['lager', 'Regal B', undefined]);
+  assert.deepEqual([m().lagerOrt, m().lagerMoeglich], ['Regal B', undefined]);
   // Zweiter Klick (alte Seite): abgelehnt, kein doppeltes Abzaehlen.
   await assert.rejects(api.kundenMusterPackenSchreiben({ aktion: 'aus-lager', packSchluessel: kunde().packSchluessel, lineItemId: 'gid://shopify/LineItem/11' }, MONA), e => e.status === 409);
   const ev = JSON.parse(fs.readFileSync(path.join(dir, 'musterherkunft.json'), 'utf8')).ereignisse;
@@ -313,4 +323,24 @@ test('Shop-Hinweis "Muster sofort lieferbar": nur mit Freigabe, nur bei Aenderun
   await api.einkaufMusterlagerSetzen({ aktion: 'aendern', id: r.eintraege[0].id, anzahl: 1 }, MONA);
   await api.musterSofortAbgleich();
   assert.deepEqual(skus(), []);
+});
+
+test('Shop-Hinweis: eine Datenkopie schreibt nie, auch wenn sie die Freigabe mitbringt', async () => {
+  const dir = privat();
+  fs.writeFileSync(path.join(dir, 'muster-sofort-shop.json'), JSON.stringify({ aktiv: true }));
+  let aufrufe = 0;
+  const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, env: { TP_DASHBOARD_DATENKOPIE: dir }, shopifyZugang: async () => ({ proxy: { async execute() { aufrufe += 1; return {}; } } }) });
+  assert.deepEqual(await api.musterSofortAbgleich(), { status: 'datenkopie' });
+  assert.equal(aufrufe, 0);
+});
+
+test('Packstation: abgehaktes Muster bekommt keinen Knopf "Aus dem Lager genommen" (kein Fehlklick)', async () => {
+  const { api } = umgebung();
+  await api.einkaufAuftragsstatusSetzen({ orderId: ALT, lineItemId: 'gid://shopify/LineItem/11', status: 'bestellt' }, MONA);
+  await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'testteppich-teppichboden-400cm-500cm', farben: ['Grau'], art: 'einzel', anzahl: 3 }, MONA);
+  const kunde = () => api.kundenMusterPacken().kunden.find(k => k.muster.some(m => m.lineItemId === 'gid://shopify/LineItem/11'));
+  const m = () => kunde().muster.find(x => x.lineItemId === 'gid://shopify/LineItem/11');
+  assert.ok(m().lagerMoeglich);
+  await api.kundenMusterPackenSchreiben({ aktion: 'haken', packSchluessel: kunde().packSchluessel, lineItemIds: ['gid://shopify/LineItem/11'], an: true }, MONA);
+  assert.equal(m().lagerMoeglich, undefined);
 });

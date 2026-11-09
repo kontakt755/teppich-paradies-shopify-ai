@@ -218,6 +218,17 @@
   // "Muster sofort lieferbar" (09.11.2026): das Control Center schreibt die SKUs der Muster, die im
   // Musterlager liegen, ins Shop-Metafeld custom.muster_sofort (snippets/tp-muster-sofort). Vergleich
   // ohne "M-" und ohne Gross/Klein - so fuehrt das Lager die Schluessel.
+  // Liste aus dem Metafeld nur, solange sie frisch ist: ruht der Abgleich (Mac aus), verschwindet der
+  // Hinweis nach 2 Stunden, statt verbrauchte Muster weiter als "auf Lager" zu zeigen. Der Abgleich
+  // schreibt den Zeitstempel stuendlich neu (operations/lib/muster-sofort.mjs, AUFFRISCHEN_MS).
+  var SOFORT_MAX_ALTER_MS = 2 * 60 * 60 * 1000;
+  function sofortListe(meta, jetztMs) {
+    var stand = Date.parse(meta && meta.stand);
+    if (!meta || !Array.isArray(meta.skus) || !isFinite(stand)) return [];
+    var alter = (typeof jetztMs === 'number' ? jetztMs : Date.now()) - stand;
+    return alter <= SOFORT_MAX_ALTER_MS ? meta.skus : [];
+  }
+
   function markSofort(colors, liste) {
     var set = Object.create(null);
     (Array.isArray(liste) ? liste : []).forEach(function (sku) { set[String(sku || '').trim().toUpperCase()] = true; });
@@ -415,6 +426,7 @@
     parseMusterQuelle: parseMusterQuelle,
     applySperrliste: applySperrliste,
     markSofort: markSofort,
+    sofortListe: sofortListe,
     assignSampleVariantsWithBasis: assignSampleVariantsWithBasis,
     getSelectionStatus: getSelectionStatus,
     buildCartItems: buildCartItems,
