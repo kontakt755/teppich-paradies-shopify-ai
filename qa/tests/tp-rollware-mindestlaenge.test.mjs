@@ -78,7 +78,8 @@ function slice(a, b) {
   return rechner.slice(s, e);
 }
 
-async function klick(eingabe, minCm, breiteCm = 200) {
+let letzterHint;
+async function klick(eingabe, minCm, breiteCm = 200, antwort = { ok: true, json: async () => ({}) }) {
   const requests = [];
   const listeners = {};
   const cta = { addEventListener: (t, f) => { listeners[t] = f; }, setAttribute() {}, removeAttribute() {}, classList: { add() {}, remove() {}, toggle() {} } };
@@ -89,13 +90,14 @@ async function klick(eingabe, minCm, breiteCm = 200) {
     selectedWidth: () => breiteCm, artMode: () => 'meter', cmExact: false, bahnenAktiv: () => null,
     target: { id: 1, price: 3249, available: true }, data: {}, farbBreiten: [breiteCm],
     updateExtras: () => ({ items: [], rows: [], sum: 0 }),
-    inFlight: false, cta, ctaHint: { hidden: true }, cartLink: { hidden: true, setAttribute() {} }, errMin: { hidden: true }, errMax: null,
+    inFlight: false, cta, ctaHint: { hidden: true, textContent: '', getAttribute: () => '03301 5733720' }, cartLink: { hidden: true, setAttribute() {} }, errMin: { hidden: true }, errMax: null,
     clearInvalid() {}, markInvalid() {}, zeigeFehlerfeld() {}, calculate() {}, setTimeout() {},
     // Doppeltes-Mass-Pruefung (#20) hat ihren eigenen Test; hier leerer Korb.
     doppeltFreigabe: '', massSignatur: () => '', liegtSchonImKorb: async () => false,
     document: { dispatchEvent() {}, querySelector: () => null }, CustomEvent: class {},
-    fetch: async (url, options) => { requests.push(JSON.parse(options.body)); return { ok: true, json: async () => ({}) }; },
+    fetch: async (url, options) => { requests.push(JSON.parse(options.body)); return antwort; },
   });
+  letzterHint = context.ctaHint;
   vm.runInContext(slice('  function getEffectiveLengthCm() {', '\n  var SVG_NS'), context);
   vm.runInContext(slice('  function fehlendesFeld() {', '\n  var target ='), context);
   vm.runInContext(slice("  cta.addEventListener('click', function () {", '\n\n  // Eine direkt geoeffnete Varianten-URL'), context);
@@ -128,4 +130,19 @@ test('20 m Restrolle gehen mit 80 bzw. 100 m2-Einheiten in den Request, kein The
     assert.equal(r.properties['Rollenbreite'], `${breite} cm`);
     assert.equal(r.properties['Gewünschte Länge'], '2000 cm');
   }
+});
+
+test('Shopify lehnt ab (422): Grund und Telefonnummer stehen unter dem Knopf', async () => {
+  const grund = 'Sie können nur 50 Artikel in den Warenkorb legen.';
+  await klick('2000', 0, 400, { ok: false, status: 422, json: async () => ({ status: 422, description: grund }) });
+  await new Promise((r) => setImmediate(r));
+  assert.equal(letzterHint.hidden, false);
+  assert.match(letzterHint.textContent, /nur 50 Artikel/);
+  assert.match(letzterHint.textContent, /03301 5733720/);
+});
+
+test('429 (zu viele Anfragen): kein Grund, Knopf bleibt bei erneut versuchen', async () => {
+  await klick('2000', 0, 400, { ok: false, status: 429, json: async () => ({ status: 429, description: 'Too many requests' }) });
+  await new Promise((r) => setImmediate(r));
+  assert.equal(letzterHint.hidden, true);
 });
