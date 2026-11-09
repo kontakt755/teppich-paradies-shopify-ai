@@ -461,3 +461,9 @@
   text-align: center;
   color: var(--tp-muted, #595959);
 }
+
+.tp-sample__auch {
+  margin: 0 0 12px;
+  font-size: var(--tp-fs-sm);
+  color: var(--tp-muted, #595959);
+}

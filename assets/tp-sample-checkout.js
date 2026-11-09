@@ -491,6 +491,8 @@
         fieldsetEl.hidden = false;
         var ablaufEl = root.querySelector('[data-sample-ablauf]');
         if (ablaufEl) ablaufEl.hidden = false;
+        var auchEl = root.querySelector('[data-sample-auch]');
+        if (auchEl) auchEl.hidden = !colors.some(function (c) { return c.sampleSofort; });
         renderColors();
         vorauswahl(getParam('farbe'));
       });

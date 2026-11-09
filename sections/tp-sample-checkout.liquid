@@ -136,6 +136,8 @@
   <fieldset class="tp-sample__fieldset" data-sample-fieldset hidden>
     <legend><span data-sample-term="plural">Farben</span> auswählen</legend>
     <p class="tp-sample__count" data-sample-count aria-live="polite">0 von <span data-sample-max>2</span> Mustern ausgewählt</p>
+    {%- comment -%} Nur wenn eine Farbe "Muster auf Lager" traegt: die anderen sind trotzdem bestellbar (Benutzer 09.11.2026) {%- endcomment -%}
+    <p class="tp-sample__auch" data-sample-auch hidden>Auch Farben ohne „Muster auf Lager“ sind als Muster kostenlos bestellbar – wann sie rausgehen, steht an jeder Farbe.</p>
     <div class="tp-sample__grid" data-sample-grid></div>
   </fieldset>
   <button class="tp-sample__submit" type="button" data-sample-submit disabled>Auswahl in den Warenkorb</button>
