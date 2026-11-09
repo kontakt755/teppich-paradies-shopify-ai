@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-11-09T12:19:02Z",
-    "verifiedBy": "Admin API role MAIN nach workflow:live (main ed3cb77c: #2045, #2048, #2052, #2054, #2056; u.a. Musterlager sofort lieferbar #2052)."
+    "verifiedAt": "2026-11-09T13:24:21Z",
+    "verifiedBy": "Admin API role MAIN nach workflow:live (main 87e6cb20: #2066 Reste-Seite, #2067 Muster-Versandzeit je Farbe)."
   },
   "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-11-09T12:19:02Z",
-    "verifiedBy": "Bisheriges Live-Theme (seit main db060df4), nach workflow:live (main ed3cb77c) als Preview getauscht; Rolle UNPUBLISHED per Admin API bestaetigt."
+    "verifiedAt": "2026-11-09T13:24:21Z",
+    "verifiedBy": "Nach #2066 kurz Live (main 813d2a36), nach workflow:live (main 87e6cb20) wieder als Preview getauscht; Rolle UNPUBLISHED per Admin API bestaetigt."
   },
   "fallback": {
     "themeId": "206590509390",
