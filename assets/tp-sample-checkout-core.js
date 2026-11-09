@@ -102,6 +102,7 @@
       return [{
         value: dekor || String(product.title || ''),
         variantId: einzel.id,
+        quellSku: einzel.sku || '',
         image: product.featured_image || '',
         // Ein Produkt = ein Dekor: das Produktbild ist das genaue Bild fuer
         // die Warenkorbzeile (Rundgang 06.11.2026, vorher ohne Bild).
@@ -125,6 +126,7 @@
       colors.push({
         value: value,
         variantId: variant.id,
+        quellSku: variant.sku || '',
         image: exactImage || product.featured_image || '',
         exactImage: exactImage,
       });
@@ -221,6 +223,9 @@
   // Liste aus dem Metafeld nur, solange sie frisch ist: ruht der Abgleich (Mac aus), verschwindet der
   // Hinweis nach 2 Stunden, statt verbrauchte Muster weiter als "auf Lager" zu zeigen. Der Abgleich
   // schreibt den Zeitstempel stuendlich neu (operations/lib/muster-sofort.mjs, AUFFRISCHEN_MS).
+  // Ohne eigene Mustervariante (Vinyl von der Rolle, Restrollen: Rueckfall auf das Sammelprodukt) gilt die
+  // SKU der Quellvariante - dieselbe, die als _Quellvariante_ID im Warenkorb liegt und unter der das Lager
+  // das Muster fuehrt (musterSchluessel in operations/lib/musterlager.mjs).
   var SOFORT_MAX_ALTER_MS = 2 * 60 * 60 * 1000;
   function sofortListe(meta, jetztMs) {
     var stand = Date.parse(meta && meta.stand);
@@ -233,7 +238,7 @@
     var set = Object.create(null);
     (Array.isArray(liste) ? liste : []).forEach(function (sku) { set[String(sku || '').trim().toUpperCase()] = true; });
     return colors.map(function (color) {
-      var sku = String(color.sampleSku || '').trim().toUpperCase().replace(/^M-/, '');
+      var sku = String(color.sampleSku || (color.sampleVariantId ? '' : color.quellSku) || '').trim().toUpperCase().replace(/^M-/, '');
       var copy = {};
       Object.keys(color).forEach(function (name) { copy[name] = color[name]; });
       copy.sampleSofort = Boolean(sku) && set[sku] === true && color.sampleUnavailable !== true;

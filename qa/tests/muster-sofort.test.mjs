@@ -56,3 +56,28 @@ test('sofortListe: nur frische Listen (hoechstens 2 Stunden alt), sonst kein Hin
   assert.deepEqual([...core.sofortListe(null, jetzt)], []);
   assert.match(read('snippets/tp-muster-sofort.liquid'), /"stand":\{\{ tp_ms\.stand/);
 });
+
+// Arrays aus dem vm-Kontext haben einen anderen Prototyp: fuer deepEqual in ein eigenes Array kopieren.
+const flags = (farben) => Array.from(farben, (f) => f.sampleSofort);
+
+test('markSofort: ohne eigene Mustervariante zaehlt die SKU der Quellvariante (Vinyl von der Rolle, Restrolle)', () => {
+  const vinyl = { handle: 'marano-eiche-weiss', id: 1, title: 'Terracora Eiche Weiß – Vinylboden', type: 'Vinyl von der Rolle', tags: [],
+    options: [{ name: 'Breite', position: 1 }],
+    variants: [{ id: 11, option1: '200 cm', available: true, sku: 'CVALL2_770' }, { id: 12, option1: '400 cm', available: true, sku: 'CVALL4_770' }] };
+  const rolle = { handle: 'rustica-restrolle', id: 2, title: 'Rustica 5578 – Restposten', type: 'Teppichboden', tags: ['sonderposten'],
+    options: [{ name: 'Title', position: 1 }], variants: [{ id: 21, option1: 'Default Title', available: true, sku: 'TPR0088-VOR-ROLLE' }] };
+  const liste = ['CVALL2_770', 'TPR0088-VOR-ROLLE'];
+  for (const produkt of [vinyl, rolle]) {
+    const farben = core.markSofort(core.assignSampleVariants(core.getUniqueColors(produkt), null, 'Farbe'), liste);
+    assert.deepEqual(flags(farben), [true], produkt.handle);
+  }
+  assert.deepEqual(flags(core.markSofort(core.assignSampleVariants(core.getUniqueColors(vinyl), null, 'Farbe'), ['CVALL4_770'])), [false], 'nur die Quellvariante der Karte zaehlt');
+});
+
+test('markSofort: mit eigener Mustervariante entscheidet deren SKU, nicht die der Quelle', () => {
+  const quelle = { handle: 'piumera', id: 3, title: 'Piumera', type: 'Teppichboden', tags: [], options: [{ name: 'Farbe', position: 1 }],
+    variants: [{ id: 31, option1: 'Grau', available: true, sku: 'QUELLE_1' }] };
+  const farben = core.assignSampleVariants(core.getUniqueColors(quelle), { options: [{ name: 'Farbe', position: 1 }], variants: [{ id: 91, option1: 'Grau', available: true, sku: 'M-MUSTER_1' }] }, 'Farbe');
+  assert.deepEqual(flags(core.markSofort(farben, ['QUELLE_1'])), [false]);
+  assert.deepEqual(flags(core.markSofort(farben, ['MUSTER_1'])), [true]);
+});
