@@ -98,6 +98,29 @@
         endif
       endif
       assign tp_results_size = collection.products_count | minus: tp_gruppe_abzug
+
+      # Reste & Sonderposten: der Kettelteppich einer Restrolle (service.einfass_basis
+      # zeigt auf die Rolle) bekommt keine eigene Karte, solange seine Rolle in der
+      # Liste steht - die Rollenkarte verlinkt ihn (blocks/tp-card-aktion).
+      # shortcut: nur bis eine Seite voll ist (products_per_page), darueber bleiben
+      # alle Karten, damit die Paginierung nicht verrutscht; bei mehr Rollen auf eine
+      # Vorlauf-Zaehlung wie bei den Gruppen oben umstellen.
+      assign tp_rest_rollen = ''
+      if collection.handle == 'reste-sonderposten' and collection.products_count <= products_per_page
+        for tp_rest_p in collection.products
+          unless tp_rest_p.tags contains 'gekettelt'
+            assign tp_rest_rollen = tp_rest_rollen | append: '|' | append: tp_rest_p.id | append: '|'
+          endunless
+        endfor
+        for tp_rest_p in collection.products
+          if tp_rest_p.tags contains 'gekettelt' and tp_rest_p.metafields.service.einfass_basis.value.id
+            assign tp_rest_marke = '|' | append: tp_rest_p.metafields.service.einfass_basis.value.id | append: '|'
+            if tp_rest_rollen contains tp_rest_marke
+              assign tp_results_size = tp_results_size | minus: 1
+            endif
+          endif
+        endfor
+      endif
     -%}
 
     {% content_for 'block',
@@ -144,6 +167,12 @@
             {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: product -%}{%- endcapture -%}
             {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
             {%- if tp_gruppe_rolle != blank and product.handle != tp_gruppe_traeger -%}
+              {%- continue -%}
+            {%- endif -%}
+          {%- endif -%}
+          {%- if tp_rest_rollen != blank and product.tags contains 'gekettelt' and product.metafields.service.einfass_basis.value.id -%}
+            {%- assign tp_rest_marke = '|' | append: product.metafields.service.einfass_basis.value.id | append: '|' -%}
+            {%- if tp_rest_rollen contains tp_rest_marke -%}
               {%- continue -%}
             {%- endif -%}
           {%- endif -%}

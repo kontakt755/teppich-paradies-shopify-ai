@@ -8,7 +8,8 @@
   ueber den automatischen Shopify-Rabatt.
 
   Restrollen (Tag "sonderposten") zeigen hier ihre Restmenge aus Shopify
-  (snippets/tp-rollenrest, Inhaber 2026-11-03). Ohne gesicherten Bestand keine Angabe.
+  (snippets/tp-rollenrest, Inhaber 2026-11-03) samt Restlaenge bei voller Breite
+  und dem Link zum Kettelteppich derselben Rolle. Ohne gesicherten Bestand keine Angabe.
 {% enddoc %}
 {%- liquid
   capture tp_ca_raw
@@ -25,10 +26,26 @@
     endcapture
     assign tp_ca_rest = tp_ca_rest | strip | split: '|'
     assign tp_ca_rest_qm = tp_ca_rest[2] | times: 1
+    assign tp_ca_rest_m = tp_ca_rest[0] | times: 0.01
+  endif
+  # Kettelteppich derselben Rolle (service.einfass_basis zeigt auf sie): auf der
+  # Reste-Seite hat er keine eigene Karte (sections/main-collection), hier der Weg hin.
+  assign tp_ca_kettel = nil
+  if tp_ca_rest_qm > 0
+    for tp_ca_p in collections['reste-sonderposten'].products
+      if tp_ca_p.tags contains 'gekettelt' and tp_ca_p.available and tp_ca_p.metafields.service.einfass_basis.value.id == closest.product.id
+        assign tp_ca_kettel = tp_ca_p
+        break
+      endif
+    endfor
   endif
 -%}
 {%- if tp_ca_rest_qm > 0 -%}
-  <p class="tp-card-aktion tp-card-aktion--rest" {{ block.shopify_attributes }}>Noch {{ tp_ca_rest_qm }}&nbsp;m²</p>
+  {%- capture tp_ca_rest_m_txt -%}{%- render 'tp-zahl-de', zahl: tp_ca_rest_m -%}{%- endcapture -%}
+  <p class="tp-card-aktion tp-card-aktion--rest" {{ block.shopify_attributes }}>Noch {{ tp_ca_rest_qm }}&nbsp;m² · {{ tp_ca_rest_m_txt | strip }}&nbsp;m Restlänge</p>
+  {%- if tp_ca_kettel -%}
+    <a class="tp-card-aktion__kettel" href="{{ tp_ca_kettel.url }}">Auch als Teppich nach Maß, gekettelt<span class="visually-hidden">: {{ tp_ca_kettel.title | escape }}</span> →</a>
+  {%- endif -%}
 {%- endif -%}
 {%- if tp_ca_raw != blank or tp_ca_leiste contains 'ja' -%}
   <div class="tp-card-aktion__gruppe" {{ block.shopify_attributes }}>
@@ -72,6 +89,16 @@
   .tp-card-aktion--rest {
     font-weight: 600;
     color: var(--tp-ink);
+  }
+
+  .tp-card-aktion__kettel {
+    position: relative;
+    z-index: 1;
+    justify-self: start;
+    font-size: var(--tp-fs-xs);
+    color: var(--tp-ink);
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
   .tp-card-aktion__badge {

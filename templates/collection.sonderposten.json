@@ -64,6 +64,32 @@
           },
           "blocks": {}
         },
+        "tp_abholung": {
+          "type": "text",
+          "name": "Abholung",
+          "settings": {
+            "text": "<p><strong>Im Laden ansehen, selbst abholen:</strong> Im Checkout „Abholung“ statt Versand wählen. <a href=\"#laden\">Zum Laden</a></p>",
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "rte",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": true,
+            "background_color": "#0000000d",
+            "corner_radius": 8,
+            "padding-block-start": 12,
+            "padding-block-end": 12,
+            "padding-inline-start": 16,
+            "padding-inline-end": 16
+          },
+          "blocks": {}
+        },
         "tp_unterkategorien": {
           "type": "tp-unterkategorien",
           "settings": {
@@ -76,6 +102,7 @@
       "block_order": [
         "text_tqQTNE",
         "text_twGGkJ",
+        "tp_abholung",
         "tp_unterkategorien"
       ],
       "name": "Collection heading",
