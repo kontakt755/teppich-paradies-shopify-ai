@@ -123,6 +123,8 @@ test('versandStand fuer die Karte: nicht eingerichtet mit Hinweis; eingerichtet 
   assert.equal(b.mitlesenBis, new Date(JETZT.getTime() + MITLESEN_TAGE * 86400000).toISOString());
   const c = versandStand(dir, { jetzt: new Date(JETZT.getTime() + 10 * 86400000) });
   assert.equal(c.mitlesenBis, null, 'Woche vorbei - keine Kopie mehr');
+  assert.equal(b.ruhtSeit, null, 'Lauf von gestern - laeuft');
+  assert.equal(c.ruhtSeit, JETZT.toISOString(), 'zehn Tage ohne Lauf - pausiert oder stehengeblieben');
 
   fs.writeFileSync(versandPfad(dir), '{kaputt');
   const d = versandStand(dir, { jetzt: JETZT });

@@ -24,7 +24,8 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
-import { musterNachfassen, fuelleText, mailtoLink, vorlageFuer, versandLaeuft, teileNachfassen, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
+import { musterNachfassen, fuelleText, mailtoLink, vorlageFuer, versandLaeuft, teileNachfassen, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN, NICHT_NOETIG } from '../../lib/muster-nachfassen.mjs';
+import { setzeSchritt } from '../kunden/zeitleiste.mjs';
 import { heuteDaten, ladeBestellzeilenNeu } from './daten.mjs';
 import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
 
@@ -62,7 +63,7 @@ function kontaktText(k) {
   return 'keine E-Mail hinterlegt – anrufen nur, wenn der Kunde einen Rückruf möchte';
 }
 
-function zeile(e, texte, lesend, erste, automatisch) {
+function zeile(e, texte, lesend, erste, automatisch, laeuft) {
   // Teppich-Muster bekommen die Teppich-Fassung (Rundgang #7), alle anderen die Vorlage ihrer Stufe.
   const vorlage = vorlageFuer(texte, e);
   const absender = state.session?.benutzer?.name || null;
@@ -74,27 +75,30 @@ function zeile(e, texte, lesend, erste, automatisch) {
   const k = e.kontakt;
   // Direkt senden nur mit eingerichtetem Postfach, E-Mail-Adresse und Text - und nicht in der Rolle "lesen".
   const senden = automatisch && !lesend && k.weg === 'email' && mail;
+  // Mit Firmenpostfach reicht "Senden"; sonst oeffnet "E-Mail öffnen" das Mailprogramm und danach "Erledigt".
   const kontaktKnopf = k.weg === 'rueckruf'
     ? `<a class="btn btn-sm" href="tel:${esc(String(k.telefon).replace(/[^0-9+]/g, ''))}">Anrufen</a>`
-    : k.weg === 'email' ? `<a class="btn btn-sm" href="${esc(mailtoLink(k.email, mail || {}))}">E-Mail öffnen</a>` : '';
+    : k.weg === 'email' && !senden ? `<a class="btn btn-sm" href="${esc(mailtoLink(k.email, mail || {}))}">E-Mail öffnen</a>` : '';
   const abmelden = k.weg === 'email'
     ? `<button type="button" class="btn btn-sm" data-mn-abmelden="${esc(k.email)}" data-mn-order="${esc(e.orderId)}" data-mn-name="${esc(e.orderName)}" title="Der Kunde hat mit „Abmelden“ geantwortet – keine Nachfragen mehr">Abgemeldet</button>`
     : '';
-  // Verschickt der Lauf selbst, ist "Erledigt" nur noch die Ausnahme (z. B. am Telefon nachgefasst) - nicht mehr die Hauptaktion.
-  const haupt = erste && !automatisch ? ' btn-primary' : '';
+  const haupt = erste && !senden ? ' btn-primary' : '';
   const sendenKnopf = senden
-    ? `<button type="button" class="btn btn-sm${erste ? ' btn-primary' : ''}" data-mn-senden="${esc(e.orderId)}" data-mn-stufe="${esc(e.stufe)}" data-mn-an="${esc(k.email)}" data-mn-text="${esc(id)}" data-mn-betreff="${esc(bid)}" title="Geht sofort vom Firmenpostfach an ${esc(k.email)} – mit dem Text unten">Jetzt senden</button>`
+    ? `<button type="button" class="btn btn-sm${erste ? ' btn-primary' : ''}" data-mn-senden="${esc(e.orderId)}" data-mn-stufe="${esc(e.stufe)}" data-mn-an="${esc(k.email)}" data-mn-text="${esc(id)}" data-mn-betreff="${esc(bid)}" title="Geht nach Rückfrage vom Firmenpostfach an ${esc(k.email)} – mit dem Text aus „Mail ansehen“">Senden</button>`
     : '';
+  // "Schon gekauft" erkennt die Zeitleiste selbst (spaetere Bestellung); der Knopf ist fuer Kaeufe im Laden.
   const knoepfe = lesend ? '' : `<div class="heute-mn-knoepfe">
       ${sendenKnopf}
       ${kontaktKnopf}
+      ${senden ? '' : `<button type="button" class="btn btn-sm${haupt}" data-zl-schritt="nachgefasst" data-zl-order="${esc(e.orderId)}">Erledigt – nachgefasst</button>`}
+      <button type="button" class="btn btn-sm" data-mn-nichtnoetig="${esc(e.orderId)}" title="Keine Nachfrage und keine Erinnerung – z. B. Kunde war schon im Laden">Nicht nötig</button>
+      <button type="button" class="btn btn-sm" data-zl-schritt="kunde_hat_bestellt" data-zl-order="${esc(e.orderId)}" title="Wird bei Bestellungen im Shop automatisch erkannt – hier für Käufe im Laden">Schon gekauft</button>
       ${abmelden}
-      <button type="button" class="btn btn-sm${haupt}" data-zl-schritt="nachgefasst" data-zl-order="${esc(e.orderId)}">Erledigt – nachgefasst</button>
     </div>`;
   const wann = e.stufe === 'erinnerung'
     ? `erste Nachfrage ${tageText(e.tage)}${e.zuletzt?.von ? ` (${esc(vonText(e.zuletzt.von))})` : ''}`
     : `verschickt ${tageText(e.tage)}`;
-  const naechsterLauf = automatisch && k.weg === 'email' ? '<div class="s">Geht beim nächsten Lauf automatisch per E-Mail raus.</div>' : '';
+  const naechsterLauf = laeuft && k.weg === 'email' ? '<div class="s">Geht beim nächsten Lauf automatisch per E-Mail raus.</div>' : '';
   return `<div class="heute-mn-zeile" data-mn="${esc(e.orderId)}">
     <div class="heute-mn-kopf">
       <div class="heute-mn-text">
@@ -107,7 +111,7 @@ function zeile(e, texte, lesend, erste, automatisch) {
       ${knoepfe}
     </div>
     ${mail ? `<details class="heute-mn-vorschlag">
-      <summary>Textvorschlag (${esc(e.stufe === 'erinnerung' ? 'kurze Erinnerung' : 'erste E-Mail')})</summary>
+      <summary>Mail ansehen (${esc(e.stufe === 'erinnerung' ? 'kurze Erinnerung' : 'erste E-Mail')})</summary>
       ${senden
         ? `<p class="heute-mn-betreff"><label for="${esc(bid)}">Betreff:</label> <input id="${esc(bid)}" type="text" maxlength="200" value="${esc(mail.betreff)}" data-mn-feld="${esc(schluessel)}" data-mn-art="betreff"></p>`
         : `<p class="heute-mn-betreff"><span>Betreff:</span> ${esc(mail.betreff)}</p>`}
@@ -123,11 +127,19 @@ function zeile(e, texte, lesend, erste, automatisch) {
 const vonText = von => (von === AUTOMATISCH ? 'automatisch per E-Mail' : von);
 
 function fertigZeile(e) {
-  const art = e.anzahl > 1 ? 'Erinnerung' : 'nachgefasst';
+  const art = e.nichtNoetig ? 'Nachfrage nicht nötig' : e.anzahl > 1 ? 'Erinnerung' : 'nachgefasst';
   const wer = e.von === AUTOMATISCH ? ' automatisch per E-Mail' : (e.von ? ` von ${esc(e.von)}` : '');
   return `<div class="heute-mn-fertig">
     <a href="${esc(kundenLink(e))}">${esc(e.kundenname || e.orderName)}</a>
     <span>${esc(e.orderName)} · ${art}${wer} am ${esc(fmtDateTime(e.am))}</span>
+  </div>`;
+}
+
+function gekauftZeile(e) {
+  const wie = e.automatisch ? `automatisch erkannt${e.folgeOrderName ? ` (${esc(e.folgeOrderName)})` : ''}` : 'eingetragen';
+  return `<div class="heute-mn-fertig">
+    <a href="${esc(kundenLink(e))}">${esc(e.kundenname || e.orderName)}</a>
+    <span>${esc(e.orderName)} · schon gekauft am ${esc(fmtDate(e.am))} – ${wie}</span>
   </div>`;
 }
 
@@ -153,6 +165,9 @@ function antwortZeile(h) {
  */
 function versandZeile(v, offen) {
   if (!v) return '';
+  if (v.eingerichtet && v.ruhtSeit) {
+    return `<p class="heute-hinweis">Automatischer Versand ruht seit ${esc(fmtDate(v.ruhtSeit))}. Bitte je Kunde „Mail ansehen“ und „Senden“ klicken.</p>`;
+  }
   if (!v.eingerichtet) {
     return offen ? `<p class="heute-hinweis">${esc(v.hinweis || 'Automatischer Versand nicht eingerichtet.')} Bis dahin per Klick nachfassen.</p>` : '';
   }
@@ -205,10 +220,12 @@ export function musterNachfassenBlock(stand, { eingebettet = false } = {}) {
   const t = heuteDaten.musterTexte;
   const antworten = t?.antwortHinweise || [];
   const abgleichFehler = t?.abgleichFehler || null;
-  const leer = !stand.offen.length && !stand.erledigt.length && !abgemeldet.length && !antworten.length && !abgleichFehler;
+  const gekauft = stand.gekauft || [];
+  const leer = !stand.offen.length && !stand.erledigt.length && !abgemeldet.length && !gekauft.length && !antworten.length && !abgleichFehler;
   if (leer && !eingebettet) return '';
   const texte = t?.verfuegbar ? t.texte : null;
   const automatisch = Boolean(t?.versand?.eingerichtet);
+  const laeuft = versandLaeuft(t);
   const lesend = istNurLesend();
   // Fehlt die Vorlage, geht es trotzdem: Liste und Knopf funktionieren, nur ohne Textvorschlag.
   const hinweis = stand.offen.length && t && !t.verfuegbar ? `<p class="heute-hinweis">Ohne Textvorschlag: ${esc(t.hinweis || 'Textvorlage nicht geladen.')}</p>` : '';
@@ -219,8 +236,9 @@ export function musterNachfassenBlock(stand, { eingebettet = false } = {}) {
     ${versandZeile(t?.versand, stand.offen.length)}
     ${abgleichFehler ? `<p class="notice warn">Postfach-Suche fehlgeschlagen: ${esc(abgleichFehler)}. Solange das so ist, verschickt der Lauf nichts.</p>` : ''}
     ${antworten.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Aus dem Postfach – bitte lesen</p>${antworten.map(antwortZeile).join('')}</div>` : ''}
-    ${stand.offen.length ? `<div class="heute-mn-liste">${stand.offen.map((e, i) => zeile(e, texte, lesend, i === 0, automatisch)).join('')}</div>` : ''}
+    ${stand.offen.length ? `<div class="heute-mn-liste">${stand.offen.map((e, i) => zeile(e, texte, lesend, i === 0, automatisch, laeuft)).join('')}</div>` : ''}
     ${hinweis}
+    ${gekauft.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Schon gekauft – keine Nachfrage nötig</p>${gekauft.map(gekauftZeile).join('')}</div>` : ''}
     ${abgemeldet.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Abgemeldet</p>${abgemeldet.map(abgemeldetZeile).join('')}</div>` : ''}
     ${stand.erledigt.length ? `<div class="heute-mn-erledigt"><p class="heute-mn-unter">Erledigt in den letzten Tagen</p>${stand.erledigt.map(fertigZeile).join('')}</div>` : ''}
     ${leer ? '<p class="small muted">Gerade ist keine Nachfrage fällig und in den letzten Tagen keine verschickt.</p>' : ''}
@@ -235,6 +253,17 @@ export function musterNachfassenBlock(stand, { eingebettet = false } = {}) {
 export function musterNachfassenKlick(e) {
   const senden = e.target.closest('[data-mn-senden]');
   if (senden) { e.preventDefault(); jetztSenden(senden); return true; }
+  const nn = e.target.closest('[data-mn-nichtnoetig]');
+  if (nn) {
+    e.preventDefault();
+    nn.disabled = true;
+    setzeSchritt(nn.dataset.mnNichtnoetig, 'nachgefasst', { notiz: NICHT_NOETIG }).then(async (ok) => {
+      if (!ok) { nn.disabled = false; return; }
+      await ladeBestellzeilenNeu();
+      render();
+    });
+    return true;
+  }
   const zurueck = e.target.closest('[data-mn-zuruecksetzen]');
   if (zurueck) { e.preventDefault(); entwuerfe.delete(zurueck.dataset.mnZuruecksetzen); render(); return true; }
   const knopf = e.target.closest('[data-mn-abmelden]');
