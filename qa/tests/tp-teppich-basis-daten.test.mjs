@@ -191,3 +191,16 @@ test('argumente: Standard-Kollektionen, Fehler bei Unbekanntem', () => {
   assert.throws(() => argumente(['--theme', 'abc']), /Theme-ID/);
   assert.throws(() => argumente(['--pakete']), /ohne Wert/);
 });
+
+test('holen: 429 wartet retry-after ab und versucht es erneut', async () => {
+  const { holen } = await import('../../scripts/teppich-basis-daten.mjs');
+  const alt = globalThis.fetch;
+  const antworten = [new Response('', { status: 429, headers: { 'retry-after': '7' } }), new Response('ok', { status: 200 })];
+  globalThis.fetch = async () => antworten.shift();
+  const gewartet = [];
+  try {
+    const r = await holen('https://x.example/a', { kopf: () => '', aufnehmen() {} }, { warte: async (ms) => { gewartet.push(ms); } });
+    assert.equal(r.status, 200);
+    assert.deepEqual(gewartet, [7000]);
+  } finally { globalThis.fetch = alt; }
+});
