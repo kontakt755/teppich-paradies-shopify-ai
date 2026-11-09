@@ -92,6 +92,7 @@ export async function pruefe(holen, { basis, stichproben = [], jetzt = new Date(
     let seite = await holeSeite(holen, `${wurzel}${vorgabe.pfad}`);
     // Ein langsamer Abruf ist oft nur ein kalter Shopify-Cache (Messung 09.11.:
     // warm < 0,3 s, kalt bis 3,3 s). Erst ein zweiter langsamer Abruf zaehlt.
+    // shortcut: zweite Messung statt Median ueber mehrere Laeufe, bei weiter haeufigen Gelb-Laeufen auf 3 Messungen erhoehen
     if (!seite.fehler && seite.dauerMs > LANGSAM_MS) {
       const nochmal = await holeSeite(holen, `${wurzel}${vorgabe.pfad}`);
       if (!nochmal.fehler && nochmal.dauerMs < seite.dauerMs) seite = nochmal;
