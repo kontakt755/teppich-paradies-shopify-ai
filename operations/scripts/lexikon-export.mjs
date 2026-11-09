@@ -111,7 +111,6 @@ export const BULK_QUERY = `
         }
         lieferzeit: metafield(namespace: "service", key: "lieferzeit") { value }
         featuredImage { url }
-        media(first: 12) { edges { node { ... on MediaImage { id image { url altText } } } } }
         metafields(namespace: "custom", first: 30) { edges { node { namespace key value type } } }
         variants {
           edges {
@@ -134,6 +133,23 @@ export const BULK_QUERY = `
     }
   }
 }`;
+
+// Shopify erlaubt in einer Bulk-Abfrage hoechstens 5 Verbindungen. BULK_QUERY
+// nutzt alle fuenf (products, metafields, variants, einkauf, custom); die
+// Produktbilder laufen deshalb in einer zweiten Abfrage, nacheinander.
+// jsonlZuProdukten fuehrt beide JSONL ueber __parentId zusammen.
+export const BILDER_QUERY = `
+{
+  products(query: "status:active OR status:unlisted OR handle:muster-*") {
+    edges {
+      node {
+        id
+        media(first: 12) { edges { node { ... on MediaImage { id image { url altText } } } } }
+      }
+    }
+  }
+}
+`;
 
 const METAOBJEKT_NODES_QUERY = `
 query LexikonMetaobjekte($ids: [ID!]!) {
@@ -173,6 +189,7 @@ export function jsonlZuProdukten(jsonlText) {
   for (const zeile of zeilen) {
     const obj = JSON.parse(zeile);
     if (typeof obj.id === 'string' && obj.id.includes('/Product/') && !obj.__parentId) {
+      if (produkteById.has(obj.id)) continue; // Produktzeile der Bilder-Abfrage: schon aus der Hauptabfrage da
       const p = { ...obj, metafields: [], variants: [] };
       produkteById.set(obj.id, p);
       produktReihenfolge.push(obj.id);
@@ -288,12 +305,9 @@ export async function loeseMetaobjekteAuf(execute, gids, { batchSize = 100 } = {
   return map;
 }
 
-export async function ladeLive({ pollMs = 5000 } = {}) {
-  const { erzeugeProxy, KEIN_ZUGANG } = await import('../sync/zugang.mjs');
-  const { proxy, art } = await erzeugeProxy();
-  if (art === 'sammeln') throw new Error(`${KEIN_ZUGANG} (Ausweichweg ohne Zugang: --input mit einem MCP-Export)`);
-
-  const start = await proxy.execute(BULK_START, { q: BULK_QUERY });
+/** Startet eine Bulk-Abfrage, wartet bis sie fertig ist und gibt das JSONL zurueck ('' ohne Treffer). */
+async function bulkLauf(proxy, query, pollMs) {
+  const start = await proxy.execute(BULK_START, { q: query });
   const fehler = start?.bulkOperationRunQuery?.userErrors ?? [];
   if (fehler.length) throw new Error(`bulkOperationRunQuery: ${fehler.map(e => e.message).join('; ')}`);
 
@@ -312,12 +326,23 @@ export async function ladeLive({ pollMs = 5000 } = {}) {
     }
   }
   if (status?.status !== 'COMPLETED') throw new Error('Bulk-Operation nicht abgeschlossen (Timeout)');
-  if (!status.url) return { produkte: [] }; // keine Produkte
+  if (!status.url) return '';
 
   const res = await fetch(status.url);
   if (!res.ok) throw new Error(`JSONL-Download fehlgeschlagen: HTTP ${res.status}`);
   const text = await res.text();
-  const roh = jsonlZuProdukten(text);
+  return text;
+}
+
+export async function ladeLive({ pollMs = 5000 } = {}) {
+  const { erzeugeProxy, KEIN_ZUGANG } = await import('../sync/zugang.mjs');
+  const { proxy, art } = await erzeugeProxy();
+  if (art === 'sammeln') throw new Error(`${KEIN_ZUGANG} (Ausweichweg ohne Zugang: --input mit einem MCP-Export)`);
+
+  // Nacheinander, nie gleichzeitig: Shopify erlaubt je Shop nur eine Bulk-Abfrage.
+  const text = await bulkLauf(proxy, BULK_QUERY, pollMs);
+  if (!text) return { produkte: [] }; // keine Produkte
+  const roh = jsonlZuProdukten(`${text}\n${await bulkLauf(proxy, BILDER_QUERY, pollMs)}`);
 
   const gids = sammleMetaobjectGids(roh.produkte);
   if (gids.length) {
@@ -354,10 +379,10 @@ async function main() {
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) {
     console.log('npm run lexikon:export -- --input <export.json> | --live | --jsonl <bulk.jsonl> [--metaobjekte <gid-zu-name.json>] [--ziel <datei.json>]');
-    console.log('  --bulk-query gibt die Massenabfrage aus (fuer bulkOperationRunQuery ueber den Shopify-MCP, Ergebnis dann per --jsonl).');
+    console.log('  --bulk-query gibt beide Massenabfragen aus (Haupt- und Bilder-Abfrage, nacheinander starten; fuer bulkOperationRunQuery ueber den Shopify-MCP, Ergebnis dann per --jsonl haupt.jsonl,bilder.jsonl).');
     return;
   }
-  if (a.bulkQuery) { console.log(BULK_QUERY.trim()); return; }
+  if (a.bulkQuery) { console.log(`${BULK_QUERY.trim()}\n\n# Zweite Abfrage (Bilder), erst nach Ende der ersten starten:\n${BILDER_QUERY.trim()}`); return; }
   const ziel = pruefeZiel(a.ziel);
   let daten;
   if (a.live) {
@@ -367,7 +392,8 @@ async function main() {
     // aus einer manuell (z. B. ueber den Shopify-MCP) gestarteten
     // bulkOperationRunQuery, plus optional eine bereits aufgeloeste
     // GID->Anzeigename-Zuordnung fuer custom.*-Metaobjekt-Referenzen.
-    daten = jsonlZuProdukten(fs.readFileSync(a.jsonl, 'utf8'));
+    // Mehrere Dateien kommagetrennt (Haupt-JSONL zuerst, dann Bilder-JSONL); ohne Bilder-JSONL fehlen die Produktbilder.
+    daten = jsonlZuProdukten(a.jsonl.split(',').map(f => fs.readFileSync(f, 'utf8')).join('\n'));
   } else {
     daten = JSON.parse(fs.readFileSync(a.input, 'utf8'));
   }
