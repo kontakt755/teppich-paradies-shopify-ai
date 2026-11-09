@@ -132,7 +132,8 @@ function produktgruppe(produkt) {
 function bilderListe(produkt) {
   const roh = Array.isArray(produkt?.media?.nodes) ? produkt.media.nodes
     : Array.isArray(produkt?.media?.edges) ? produkt.media.edges.map(e => e.node) : [];
-  return roh.filter(m => text(m?.image?.url)).map(m => ({ url: text(m.image.url), alt: text(m.image.altText) }));
+  // Admin-Form {image:{url,altText}} und die flache Form aus jsonlZuProdukten {url,altText}
+  return roh.map(m => ({ url: text(m?.image?.url ?? m?.url), alt: text(m?.image?.altText ?? m?.altText) })).filter(b => b.url);
 }
 
 function bildUrl(produkt) {

@@ -26,3 +26,6 @@ for (const k of ['LADEN_ZAHLEN_URL', 'LADEN_ZAHLEN_SCHLUESSEL', 'AUFTRAGS_APP_UR
 process.env.TP_TAILSCALE_PRUEFEN = '0';
 // Claude-Verbrauch nicht aus den echten Sitzungsprotokollen dieses Rechners nachrechnen.
 process.env.TP_VERBRAUCH_AUTO = '0';
+// Audit-Protokoll der Servertests in den Wegwerfordner: sonst landen Testzeilen
+// (Mona Mitarbeiter, Order/1) in .router/control-center-audit.jsonl des Checkouts.
+process.env.TP_AUDIT_PATH = path.join(PRIVAT_DIR, 'control-center-audit.jsonl');

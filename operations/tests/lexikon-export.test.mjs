@@ -149,8 +149,15 @@ test('ladeLive fragt den Status ueber die ID der eigenen Operation ab und baut d
   process.env.SHOPIFY_CLIENT_SECRET = 'geheim';
   const json = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
   const abfragen = [];
+  const laeufe = [];
   globalThis.fetch = async (url, init) => {
     if (String(url).endsWith('/admin/oauth/access_token')) return json({ access_token: 'tok', scope: 'read_products', expires_in: 86399 });
+    if (String(url) === 'https://download.example/bilder.jsonl') {
+      return { ok: true, status: 200, text: async () => [
+        JSON.stringify({ id: 'gid://shopify/Product/1' }),
+        JSON.stringify({ id: 'gid://shopify/MediaImage/5', __parentId: 'gid://shopify/Product/1', image: { url: 'https://cdn.example/5.jpg', altText: null } }),
+      ].join('\n') };
+    }
     if (String(url) === 'https://download.example/bulk.jsonl') {
       return { ok: true, status: 200, text: async () => [
         JSON.stringify({ id: 'gid://shopify/Product/1', handle: 'a', title: 'A', status: 'ACTIVE', productType: 'Klickvinyl' }),
@@ -159,12 +166,15 @@ test('ladeLive fragt den Status ueber die ID der eigenen Operation ab und baut d
     }
     const { query, variables } = JSON.parse(init.body);
     abfragen.push({ query, variables });
+    if (/bulkOperationRunQuery/.test(query)) laeufe.push(variables.q);
     if (/bulkOperationRunQuery/.test(query)) return json({ data: { bulkOperationRunQuery: { bulkOperation: { id: 'gid://shopify/BulkOperation/7', status: 'CREATED' }, userErrors: [] } } });
-    return json({ data: { node: { id: 'gid://shopify/BulkOperation/7', status: 'COMPLETED', url: 'https://download.example/bulk.jsonl' } } });
+    return json({ data: { node: { id: 'gid://shopify/BulkOperation/7', status: 'COMPLETED', url: laeufe.length > 1 ? 'https://download.example/bilder.jsonl' : 'https://download.example/bulk.jsonl' } } });
   };
   const roh = await ladeLive({ pollMs: 1 });
   assert.equal(roh.produkte.length, 1);
   assert.equal(roh.produkte[0].variants.length, 1);
+  assert.equal(laeufe.length, 2);
+  assert.equal(roh.produkte[0].media.nodes[0].url, 'https://cdn.example/5.jpg');
   assert.deepEqual(abfragen[1].variables, { id: 'gid://shopify/BulkOperation/7' });
   assert.ok(!/currentBulkOperation/.test(abfragen[1].query));
 });
@@ -191,4 +201,40 @@ test('jsonlZuProdukten: Produktbilder (MediaImage) landen als media in Shop-Reih
   const roh = { ...produkte[0], media: { nodes: produkte[0].media.nodes.map((m) => ({ image: { url: m.url, altText: m.altText } })) } };
   const [p] = aufbereiten({ produkte: [roh] }).produkte;
   assert.deepEqual(p.bilder, [{ url: 'https://cdn.example/1.jpg', alt: 'Draufsicht' }, { url: 'https://cdn.example/2.jpg', alt: null }]);
+});
+
+test('Bulk-Abfragen haben je hoechstens 5 Verbindungen (Shopify-Grenze)', async () => {
+  const { BULK_QUERY, BILDER_QUERY } = await import('../scripts/lexikon-export.mjs');
+  for (const q of [BULK_QUERY, BILDER_QUERY]) {
+    const n = (q.match(/edges\s*\{/g) ?? []).length;
+    assert.ok(n <= 5, `${n} Verbindungen, erlaubt sind 5`);
+  }
+  assert.ok(!/media\(/.test(BULK_QUERY), 'Bilder gehoeren in BILDER_QUERY');
+  assert.match(BILDER_QUERY, /media\(first: 12\)/);
+});
+
+test('jsonlZuProdukten: Haupt- und Bilder-JSONL zusammen, Produktzeile der Bilder-Abfrage dupliziert nichts', () => {
+  const haupt = [
+    { id: 'gid://shopify/Product/1', handle: 'a' },
+    { id: 'gid://shopify/ProductVariant/11', title: 'V', __parentId: 'gid://shopify/Product/1' },
+  ];
+  const bilder = [
+    { id: 'gid://shopify/Product/1' },
+    { id: 'gid://shopify/MediaImage/1', __parentId: 'gid://shopify/Product/1', image: { url: 'u1', altText: null } },
+    { id: 'gid://shopify/MediaImage/2', __parentId: 'gid://shopify/Product/1', image: { url: 'u2', altText: null } },
+  ];
+  const { produkte } = jsonlZuProdukten([...haupt, ...bilder].map((z) => JSON.stringify(z)).join('\n'));
+  assert.equal(produkte.length, 1);
+  assert.equal(produkte[0].handle, 'a');
+  assert.equal(produkte[0].variants.length, 1);
+  assert.deepEqual(produkte[0].media.nodes.map((m) => m.url), ['u1', 'u2']);
+});
+
+test('aufbereiten liest die flache media-Form aus jsonlZuProdukten direkt (Live-Weg)', async () => {
+  const { aufbereiten } = await import('../lib/lexikon.mjs');
+  const { produkte } = jsonlZuProdukten([
+    { id: 'gid://shopify/Product/1', handle: 'a' },
+    { id: 'gid://shopify/MediaImage/1', __parentId: 'gid://shopify/Product/1', image: { url: 'u1', altText: 'x' } },
+  ].map((z) => JSON.stringify(z)).join('\n'));
+  assert.deepEqual(aufbereiten({ produkte }).produkte[0].bilder, [{ url: 'u1', alt: 'x' }]);
 });

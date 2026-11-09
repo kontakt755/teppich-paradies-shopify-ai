@@ -145,3 +145,15 @@ test('langsamer erster Abruf (kalter Cache) wird einmal nachgemessen, nur zweima
   const langsam = await pruefe(lauf([LANGSAM_MS + 1000, LANGSAM_MS + 500]), { basis: 'https://shop.test' });
   assert.ok(langsam.befunde.some((b) => /Startseite laedt langsam/.test(b.titel)));
 });
+
+test('Status 500 wird nicht nachgemessen und bleibt kritisch', async () => {
+  const abrufe = {};
+  const holen = async (url) => {
+    const pfad = new URL(url).pathname;
+    abrufe[pfad] = (abrufe[pfad] || 0) + 1;
+    return { status: pfad === '/' ? 500 : 200, text: async () => '' };
+  };
+  const r = await pruefe(holen, { basis: 'https://shop.test' });
+  assert.equal(abrufe['/'], 1);
+  assert.ok(r.befunde.some((b) => b.art === 'kritisch' && /Startseite antwortet mit 500/.test(b.titel)));
+});
