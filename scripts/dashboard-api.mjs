@@ -5246,7 +5246,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const lauf = { seit, fehler: null, fertig: false };
       aktualisierungLauf = lauf;
       audit({ action: 'aktualisierung-start' });
-      execFileP(process.execPath, [skript], { cwd: root, timeout: 10 * 60_000, maxBuffer: 8 * 1024 * 1024 })
+      // shortcut: Lexikon/Bestand nur ueber den Dienst (stuendlich), bei Bedarf npm run daten:aktualisieren -- --nur lexikon
+      // Liste bleibt gleich wie SCHNELLE_TEILE in operations/scripts/sync-dienst.mjs.
+      const schnelleTeile = ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe'];
+      execFileP(process.execPath, [skript, '--nur', schnelleTeile.join(',')], { cwd: root, timeout: 10 * 60_000, maxBuffer: 8 * 1024 * 1024 })
         .then(() => { lauf.fertig = true; })
         .catch(err => {
           lauf.fertig = true;
