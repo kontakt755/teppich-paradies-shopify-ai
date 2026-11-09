@@ -8,6 +8,8 @@
 > Kunden mit E-Mail-Einwilligung) → Kunden-Tag `bewertung-angefragt`.
 > Mail als eigener Code in Shopify Messaging (Vorlage „Wie gefällt Ihnen Ihr neuer Boden?“).
 > Abschalten: Flow → Workflow deaktivieren. Zettel und Karten sind noch nicht gedruckt.
+> Montagekunden (nicht in Shopify): Entwurf für den 3-Monats-Test mit handgeschriebenen Karten von
+> Briefheld in `briefheld-test-2026-11.md`.
 
 Ziel: mehr **Google-Unternehmensbewertungen**, gleichmäßig über das Jahr (6–10 pro Monat).
 Google gewichtet frische Bewertungen stärker als die Gesamtzahl – darum jede Bestellung
