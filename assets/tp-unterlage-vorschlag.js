@@ -101,7 +101,16 @@
     return t + ', ' + zu;
   }
 
-  root.TPUnterlage = { RAND_CM: RAND_CM, BAHN_AUFSCHLAG: BAHN_AUFSCHLAG, ziel: ziel, vorschlag: vorschlag, rolleBreite: rolleBreite, stueckMasse: stueckMasse, text: text, euro: euro };
+  // Shopify nennt bei 422 den Grund (Menge, Bestand); sonst bleibt es bei "erneut versuchen".
+  function ablehnung(r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      var err = new Error('add');
+      err.grund = r.status === 422 && d && typeof d.description === 'string' ? d.description : '';
+      throw err;
+    });
+  }
+
+  root.TPUnterlage = { ablehnung: ablehnung,  RAND_CM: RAND_CM, BAHN_AUFSCHLAG: BAHN_AUFSCHLAG, ziel: ziel, vorschlag: vorschlag, rolleBreite: rolleBreite, stueckMasse: stueckMasse, text: text, euro: euro };
 
   if (typeof document === 'undefined') return;
 
@@ -130,6 +139,22 @@
       });
     }
 
+    // Grund unter dem Knopf, vorlesbar (aria-live); leer = ausblenden.
+    function grundZeigen(knopf, text) {
+      var p = knopf.parentNode.querySelector('[data-add-grund]');
+      if (!p) {
+        if (!text) return;
+        p = document.createElement('p');
+        p.setAttribute('data-add-grund', '');
+        p.setAttribute('role', 'status');
+        p.setAttribute('aria-live', 'polite');
+        p.style.cssText = 'margin:8px 0 0;font-size:var(--tp-fs-sm);color:#a62020;overflow-wrap:anywhere';
+        knopf.insertAdjacentElement('afterend', p);
+      }
+      p.textContent = text || '';
+      p.hidden = !text;
+    }
+
     tipp.addEventListener('click', function (ev) {
       var knopf = ev.target.closest('[data-uv-knopf]');
       if (!knopf || knopf.disabled || !knopf.dataset.id) return;
@@ -140,7 +165,7 @@
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ items: [{ id: parseInt(knopf.dataset.id, 10), quantity: parseInt(knopf.dataset.menge, 10) }] })
       })
-        .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
+        .then(function (r) { if (!r.ok) return ablehnung(r); return r.json(); })
         .then(function (erg) {
           knopf.textContent = 'Im Warenkorb';
           setTimeout(function () { knopf.classList.remove('is-done'); knopf.textContent = 'Mit in den Warenkorb'; }, 3000);
@@ -150,9 +175,12 @@
             detail: { resource: erg, sourceId: block.id, data: { source: 'product-form-component' } }
           }));
         })
-        .catch(function () {
-          // Fehler bleibt stehen, bis erneut geklickt wird.
-          knopf.textContent = 'Nicht hinzugefügt – bitte erneut versuchen';
+        .catch(function (err) {
+          var grund = err && err.grund;
+          // Ohne Grund bleibt der Fehler stehen, bis erneut geklickt wird.
+          knopf.textContent = grund ? 'Nicht hinzugefügt' : 'Nicht hinzugefügt – bitte erneut versuchen';
+          grundZeigen(knopf, grund);
+          if (grund) setTimeout(function () { grundZeigen(knopf, ''); knopf.textContent = 'Mit in den Warenkorb'; }, 8000);
         })
         .then(function () { knopf.disabled = false; });
     });

@@ -62,6 +62,31 @@
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var zaehler = 0;
 
+  // Shopify nennt bei 422 den Grund (Menge, Bestand); sonst bleibt es bei "erneut versuchen".
+  function ablehnung(r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      var err = new Error('add');
+      err.grund = r.status === 422 && d && typeof d.description === 'string' ? d.description : '';
+      throw err;
+    });
+  }
+  if (typeof window !== 'undefined') window.TPEinfassAblehnung = ablehnung;
+  // Grund unter dem Knopf, vorlesbar (aria-live); leer = ausblenden.
+  function grundZeigen(knopf, text) {
+    var p = knopf.nextElementSibling;
+    if (!p || !p.hasAttribute('data-add-grund')) {
+      if (!text) return;
+      p = document.createElement('p');
+      p.setAttribute('data-add-grund', '');
+      p.setAttribute('role', 'status');
+      p.setAttribute('aria-live', 'polite');
+      p.style.cssText = 'margin:8px 0 0;font-size:var(--tp-fs-sm);color:#a62020;overflow-wrap:anywhere';
+      knopf.insertAdjacentElement('afterend', p);
+    }
+    p.textContent = text;
+    p.hidden = !text;
+  }
+
   function fmt(n, d) {
     var s = d == null ? 2 : d;
     return Number(n).toLocaleString('de-DE', { minimumFractionDigits: s, maximumFractionDigits: s });
@@ -1159,7 +1184,7 @@
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(koerper)
       })
-        .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
+        .then(function (r) { if (!r.ok) return ablehnung(r); return r.json(); })
         .then(function (item) {
           // Erst wenn das Zuschnitt-Attribut nachweislich steht, geht der
           // Warenkorb auf. Schlaegt es fehl, bleibt der Artikel im Warenkorb,
@@ -1197,11 +1222,13 @@
           // inzwischen geaendert haben. Die Fehlermeldung bleibt laenger stehen.
           setTimeout(function () { cta.classList.remove('is-done', 'is-error'); rechnen(); }, erg.ok ? 3000 : 8000);
         })
-        .catch(function () {
+        .catch(function (err) {
           inFlight = false;
-          cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
+          var grund = err && err.grund;
+          cta.textContent = grund ? 'Nicht hinzugefügt' : 'Nicht hinzugefügt – erneut versuchen';
           cta.classList.add('is-error');
-          setTimeout(function () { cta.classList.remove('is-error'); rechnen(); }, 3000);
+          if (grund) { cta.disabled = false; grundZeigen(cta, grund); }
+          setTimeout(function () { cta.classList.remove('is-error'); grundZeigen(cta, ''); rechnen(); }, grund ? 8000 : 3000);
         });
     }
 
