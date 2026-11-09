@@ -10,7 +10,7 @@
  * mit Pruefsumme (SRI) - der Rest des Dashboards braucht ihn nicht.
  */
 import { $, esc, toast } from '../kern/helfer.mjs';
-import { fetchEinkauf } from '../kern/api.mjs';
+import { fetchEinkauf, orgSchreiben } from '../kern/api.mjs';
 import { DRUCK_LIMIT, auswahlSignatur, druckBloecke, druckVorschau, fertigeSeiten, motivSchluessel, setzeMotivAnzahl, weiterAbFuer, weiterAbSchaetzen, weiterNachAbbruch } from '../lib/druckliste.mjs';
 import { ETIKETT, ETIKETT_FORMATE, FREIE_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle, schwarzWeiss } from '../lib/muster-etiketten.mjs';
 import { adressLayout } from '../lib/adress-etiketten.mjs';
@@ -213,7 +213,7 @@ function zeichneVorschau() {
   for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkDichte, #etkFormat, #etkVersatzX, #etkVersatzY, #etkEigen input, #etkFrei input, #etkFrei select, #etkFrei textarea')) e.disabled = beschaeftigt;
   const weg = $('#etkWeg'); if (weg) weg.disabled = beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || verbunden;
   const verbindenKnopf = $('#etkVerbinden');
-  if (verbindenKnopf) { verbindenKnopf.textContent = verbunden ? 'Drucker verbunden' : k.verbindet ? 'Verbinde …' : 'Drucker verbinden'; verbindenKnopf.disabled = verbunden || k.verbindet || verbindungOffen || druck.trennt || beschaeftigt || !!umgebungsHinweis(); }
+  if (verbindenKnopf) { verbindenKnopf.textContent = verbunden ? 'Drucker verbunden' : k.verbindet ? 'Verbinde …' : 'Drucker verbinden'; verbindenKnopf.disabled = macWeg() || verbunden || k.verbindet || verbindungOffen || druck.trennt || beschaeftigt || !!umgebungsHinweis(); }
   const trennen = $('#etkTrennen');
   if (trennen) { trennen.textContent = druck.laeuft ? 'Druck abbrechen' : 'Verbindung trennen'; trennen.hidden = !druck.laeuft && !druck.client?.isConnected?.(); trennen.disabled = druck.trennt || k.schliesst || k.bestaetigt; }
   const knopf = $('#etkDrucken');
@@ -236,6 +236,21 @@ function zeichneVorschau() {
   const bestaetigung = $('#etkBestaetigung');
   if (bestaetigung) bestaetigung.hidden = !k.transportFertig || !!k.teilGedruckt;
   const bestaetigen = $('#etkBestaetigen'); if (bestaetigen) bestaetigen.disabled = beschaeftigt;
+}
+
+// Druck ueber den Mac (operations/niimbot): ohne Chromes Bluetooth-Auswahl, nur am Mac selbst (127.0.0.1).
+const amMac = () => ['127.0.0.1', 'localhost'].includes(location.hostname);
+const macWeg = () => $('#etkWeg')?.value === 'mac';
+const B1_KOPF = 384;
+/** Canvas -> Seite fuer /api/etiketten/mac-druck: 1 Bit je Punkt, hoechstes Bit links; schwarz ist alles ausser reinem Weiss (wie niimbluelib). */
+function alsSeite(c) {
+  const { data } = c.getContext('2d').getImageData(0, 0, c.width, c.height), zb = Math.ceil(c.width / 8), bits = new Uint8Array(zb * c.height);
+  for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+    const i = (y * c.width + x) * 4;
+    if (!(data[i] === 255 && data[i + 1] === 255 && data[i + 2] === 255)) bits[y * zb + (x >> 3)] |= 0x80 >> (x & 7);
+  }
+  let roh = ''; for (const b of bits) roh += String.fromCharCode(b);
+  return { breite: c.width, hoehe: c.height, bits: btoa(roh) };
 }
 
 function status(t, k = druck.kontext) { if (!aktuell(k)) return; const s = k.element.querySelector('#etkStatus'); if (s) s.textContent = t; }
@@ -288,6 +303,7 @@ async function druckerVerbinden(k) {
   const pruefeAbbruch = () => { if (!aktuell(k) || k.verbindungsNr !== generation) throw new Error('Verbindung abgebrochen'); };
   k.verbindet = true; zeichneVorschau();
   try {
+    if (macWeg()) { status('Über den Mac braucht es kein Verbinden – direkt drucken.', k); return; }
     await verbinden($('#etkWeg')?.value || 'bluetooth', k, pruefeAbbruch);
     pruefeAbbruch();
     status('Drucker verbunden. Es wurde nichts gedruckt.', k);
@@ -331,6 +347,17 @@ async function drucken() {
   try {
     k.druckVersucht?.();
     zeichneVorschau();
+    if (weg === 'mac') {
+      // Ein Auftrag, ein Aufruf: der Server verbindet, druckt alles und trennt (shortcut: kein Abbrechen und
+      // kein Weiterdrucken ab Aufkleber n auf diesem Weg; bei Bedarf Fortschritt per Abfrage nachruesten).
+      if (await k.vorDruck?.() === false) throw new Error('Der Druckauftrag konnte nicht geprüft werden. Bitte die Druckliste neu laden.');
+      pruefeAbbruch();
+      status(`Drucke ${etiketten.length} Aufkleber über den Mac …`, k);
+      const canvas = document.createElement('canvas'), kopfBild = document.createElement('canvas');
+      const seiten = etiketten.map(e => { zeichne(canvas, e, druck.versatz); return alsSeite(aufDruckkopf(canvas, kopfBild, B1_KOPF)); });
+      await orgSchreiben('/api/etiketten/mac-druck', { dichte, seiten });
+      pruefeAbbruch();
+    } else {
     client = await verbinden(weg, k, pruefeAbbruch);
     pruefeAbbruch();
     client.on?.('printprogress', fortschritt);
@@ -363,6 +390,7 @@ async function drucken() {
       if (art === 'B1' && beendet === false) throw new Error('Der Drucker hat den Abschluss des Druckteils noch nicht bestätigt');
       task = null;
       gedruckt = block.start + block.etiketten.length;
+    }
     }
     druck.weiter = null;
     // Ein Teildruck (nur ausgewaehlte Motive) markiert nichts als gedruckt: der Auftrag
@@ -549,7 +577,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
       <label>Versatz waagerecht <select id="etkVersatzX">${versatzOptionen(druck.versatz.x, 'nach links', 'nach rechts')}</select></label>
       <label>Versatz senkrecht <select id="etkVersatzY">${versatzOptionen(druck.versatz.y, 'nach oben', 'nach unten')}</select></label>
       <p class="small muted etk-versatz-hilfe">Sitzt der Druck nicht mittig auf dem Etikett, hier gegensteuern – steht z. B. alles zu weit rechts: 1 mm nach links. Gilt für diesen Rechner; die Vorschau bleibt mittig.</p>
-      <label>Verbindung <select id="etkWeg"><option value="bluetooth"${!navigator.bluetooth && hatUsb ? ' disabled' : ''}>Bluetooth</option>${hatUsb ? `<option value="usb"${!navigator.bluetooth ? ' selected' : ''}>USB-Kabel</option>` : ''}</select></label>
+      <label>Verbindung <select id="etkWeg"><option value="bluetooth"${!navigator.bluetooth && hatUsb ? ' disabled' : ''}>Bluetooth</option>${hatUsb ? `<option value="usb"${!navigator.bluetooth ? ' selected' : ''}>USB-Kabel</option>` : ''}${amMac() ? '<option value="mac">Über den Mac (ohne Auswahlfenster)</option>' : ''}</select></label>
     </div></details>
     <p id="etkVerbindungWartet" class="small muted" role="status" hidden>Vorherige Geräteauswahl schließen und das Trennen abwarten. Danach kannst du erneut verbinden.</p>
     <p id="etkStatus" class="small" role="status" aria-live="polite"></p>
@@ -762,6 +790,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   });
   $('#etkWeiterAlle').addEventListener('click', () => { if (druck.laeuft) return; druck.weiter = null; zeichneVorschau(); $('#etkDrucken')?.focus({ preventScroll: true }); });
   $('#etkVerbinden').addEventListener('click', () => { void druckerVerbinden(k); });
+  $('#etkWeg').addEventListener('change', () => zeichneVorschau());
   $('#etkTrennen').addEventListener('click', () => { void trennen(); });
   $('#etkBestaetigen')?.addEventListener('click', () => { void bestaetigen(k); });
   if (druck.client?.isConnected?.()) { $('#etkWeg').value = druck.clientWeg; status('Drucker verbunden.', k); }

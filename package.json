@@ -55,6 +55,7 @@
     "hooks:test": "node scripts/test-temp.mjs --test .claude/hooks/*.test.mjs",
     "lexware:test": "node scripts/test-temp.mjs --test domains/lexware/angebotsassistent/test/*.test.mjs",
     "dashboard:data": "node scripts/build-dashboard-data.mjs",
+    "niimbot:bauen": "sh operations/niimbot/bauen.sh",
     "dashboard": "node scripts/build-dashboard-data.mjs --weiter-mit-alten-daten && node scripts/build-bodenwissen-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
     "dashboard:test": "node scripts/test-temp.mjs --test docs/ai-dashboard/tests/*.test.mjs",
