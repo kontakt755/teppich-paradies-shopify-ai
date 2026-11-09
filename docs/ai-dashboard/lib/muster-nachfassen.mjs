@@ -44,6 +44,15 @@ export const STUFE_LABEL = Object.freeze({ erste: 'Erste Nachfrage', erinnerung:
 export const NACHFASS_KAMPAGNE = 'muster-nachfass';
 
 /**
+ * Notiz am Schritt "nachgefasst", wenn der Laden die Nachfrage per Klick "Nicht nötig" auslaesst
+ * (Kunde war schon im Laden, hat angerufen ...): dann kommt auch keine Erinnerung mehr.
+ */
+export const NICHT_NOETIG = 'Nachfrage nicht nötig';
+
+/** WhatsApp des Ladens (dieselbe Nummer wie im Shop, z. B. sections/footer-group.json). */
+export const WHATSAPP = Object.freeze({ anzeige: '0179 261 22 11', link: 'https://wa.me/491792612211' });
+
+/**
  * Kennung fuer Links in der Muster-Nachfrage: ohne sie kann niemand sehen, ob ein Kauf aus dieser Mail
  * kommt. Sie benennt nur Kampagne und Stufe, nie den Kunden oder die Bestellung.
  */
@@ -119,6 +128,7 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
   const offen = [];
   const fertig = [];
   const stopp = [];
+  const gekauft = [];
   // Stoppliste: wer "Abmelden" geantwortet hat, wird nicht mehr angeschrieben - weder vom Lauf
   // noch per Klick. Er steht getrennt, damit der Laden sieht, warum er fehlt.
   const stoppliste = abgemeldet instanceof Map ? abgemeldet : new Map([...(abgemeldet || [])].map(e => [e, {}]));
@@ -141,14 +151,21 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
       kontakt: kontaktweg(z),
     };
 
+    const nichtNoetig = erledigt(nach) && nach.notiz === NICHT_NOETIG;
     if (erledigt(nach) && nach.am) {
       const vor = tageSeit(nach.am, jetzt);
-      if (vor !== null && vor < ERLEDIGT_ZEIGEN_TAGE) fertig.push({ ...basis, am: nach.am, von: nach.von || null, anzahl: nach.anzahl || 1 });
+      if (vor !== null && vor < ERLEDIGT_ZEIGEN_TAGE) fertig.push({ ...basis, am: nach.am, von: nach.von || null, anzahl: nach.anzahl || 1, ...(nichtNoetig ? { nichtNoetig } : {}) });
+    }
+    // "Schon gekauft": spaetere Bestellung automatisch erkannt oder im Laden eingetragen - die Nachfrage entfaellt.
+    if (erledigt(ergebnis) && ergebnis.ergebnis === 'kunde_hat_bestellt' && ergebnis.am) {
+      const vor = tageSeit(ergebnis.am, jetzt);
+      if (vor !== null && vor <= HOECHSTENS_TAGE) gekauft.push({ ...basis, am: ergebnis.am, automatisch: Boolean(ergebnis.automatisch), folgeOrderName: ergebnis.folgeOrderName || null });
     }
     // Abgeschlossen (Ergebnis eingetragen, spaetere Bestellung erkannt, im alten Modell erledigt): nichts mehr zu tun.
     if (z.zeitleisteAbgeschlossen || erledigt(ergebnis)) continue;
 
     let faellig = null;
+    if (nichtNoetig) continue;
     if (!erledigt(nach)) {
       // Versand bzw. Uebergabe - ohne diesen Schritt hat der Kunde die Muster noch nicht.
       const seit = erledigt(raus) && raus.am ? raus.am : (erledigt(hat) && hat.am ? hat.am : null);
@@ -168,7 +185,8 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
   offen.sort((a, b) => b.tage - a.tage || String(a.datum).localeCompare(String(b.datum)));
   stopp.sort((a, b) => b.tage - a.tage || String(a.datum).localeCompare(String(b.datum)));
   fertig.sort((a, b) => String(b.am).localeCompare(String(a.am)));
-  return { offen, erledigt: fertig, abgemeldet: stopp };
+  gekauft.sort((a, b) => String(b.am).localeCompare(String(a.am)));
+  return { offen, erledigt: fertig, abgemeldet: stopp, gekauft };
 }
 
 /**
@@ -181,7 +199,8 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
  */
 export function versandLaeuft(t) {
   if (!t) return null;
-  return Boolean(t.verfuegbar !== false && t.versand?.eingerichtet && !t.versand?.hinweis);
+  // ruhtSeit: der Lauf ist pausiert oder stehengeblieben (operations/lib/nachfass-versand.mjs versandStand).
+  return Boolean(t.verfuegbar !== false && t.versand?.eingerichtet && !t.versand?.hinweis && !t.versand?.ruhtSeit);
 }
 
 /**
@@ -504,7 +523,23 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
     ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n+((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
   // Der Betreff hat keine Zeile, die wegfallen koennte: ein unbekannter Platzhalter bleibt stehen,
   // damit platzhalterFrei() ihn sieht und der Versandlauf die Mail zurueckhaelt (statt „Ihre Muster,“ zu schicken).
-  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitFirmenangaben(mitAuswahl) };
+  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitFirmenangaben(nachfass ? mitWhatsApp(mitAuswahl) : mitAuswahl) };
+}
+
+/**
+ * WhatsApp als dritter Weg neben Telefon und Antwort-Mail (Auftrag 09.11.2026: Muster sollen zu
+ * Kaeufen fuehren). Hinter die Telefonzeile der Vorlage; ohne sie als eigener Absatz vor dem Gruss.
+ * Eine Vorlage, die WhatsApp schon nennt, bleibt unveraendert.
+ */
+export function mitWhatsApp(text) {
+  const t = String(text ?? '');
+  if (!t.trim() || /whatsapp|wa\.me/i.test(t)) return t;
+  const zeile = `WhatsApp: ${WHATSAPP.anzeige} (${WHATSAPP.link})`;
+  if (/^- Telefon:.*$/m.test(t)) return t.replace(/^- Telefon:.*$/m, m => `${m}\n- ${zeile}`);
+  const absaetze = t.split(/\n{2,}/);
+  const gruss = absaetze.findIndex(a => /^(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(a.trim()));
+  absaetze.splice(gruss >= 0 ? gruss : absaetze.length, 0, `Sie erreichen uns auch per ${zeile}`);
+  return absaetze.join('\n\n');
 }
 
 /** mailto:-Link mit Betreff und Text - oeffnet das Mailprogramm, sendet nichts. */

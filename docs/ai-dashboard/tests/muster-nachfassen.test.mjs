@@ -9,7 +9,7 @@ import {
   musterNachfassen, kontaktweg, texteAusMarkdown, fuelleText, mailtoLink, platzhalterFrei,
   ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN, HOECHSTENS_TAGE, ERLEDIGT_ZEIGEN_TAGE, SHOP_URL,
   versandLaeuft, teileNachfassen, nachfassTodo, nachfragenBuendeln, mitMusterListe,
-  musterArt, vorlageFuer, nameSchreibweise, TEPPICH_VORLAGEN,
+  musterArt, vorlageFuer, nameSchreibweise, TEPPICH_VORLAGEN, NICHT_NOETIG, mitWhatsApp, WHATSAPP,
 } from '../lib/muster-nachfassen.mjs';
 import { musterKaufLinks } from '../lib/muster-kauf-links.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
@@ -92,7 +92,7 @@ test('nicht auf der Liste: Ware, Test, storniert, Ergebnis schon da, abgeschloss
     zeile({ art: 'ware' }), zeile({ test: true }), zeile({ storniert: true }),
     zeile({ ergebnis: true }), zeile({ abgeschlossen: true }),
   ], { jetzt: JETZT });
-  assert.deepEqual(r, { offen: [], erledigt: [], abgemeldet: [] });
+  assert.deepEqual(r, { offen: [], erledigt: [], abgemeldet: [], gekauft: [] });
 });
 
 test('Stoppliste: wer "Abmelden" geantwortet hat, steht unter abgemeldet statt offen - Adresse ohne Gross/Klein', () => {
@@ -404,7 +404,7 @@ test('Nachfass-Links tragen die Kampagnenkennung mit Stufe, andere Mails bleiben
   const vorlage = { betreff: 'Ihre Muster', text: 'Guten Tag {Anrede} {Nachname},\n\nProdukt: {Link Produkt}\nWeitere Muster: {Link Muster}\nVerlegung: {Link Liefer- & Verlegeservice}\n\nFreundliche Grüße\n{Name}' };
   const produkte = [{ titel: 'Testboden', farbe: 'Sand', url: 'https://www.teppich-paradies.net/products/testboden?variant=7' }];
   const mail = fuelleText(vorlage, { kundenname: 'Testkunde', absender: 'Team', produkte, nachfass: 'erste' });
-  const links = mail.text.match(/https:\/\/\S+/g);
+  const links = mail.text.match(/https:\/\/www\.teppich-paradies\S+/g);
   assert.equal(links.length, 3);
   for (const roh of links) {
     const u = new URL(roh);
@@ -418,4 +418,40 @@ test('Nachfass-Links tragen die Kampagnenkennung mit Stufe, andere Mails bleiben
   assert.equal(new URL(fuelleText(vorlage, { kundenname: 'K', absender: 'T', produkte, nachfass: 'erinnerung' }).text.match(/https:\/\/\S+/)[0]).searchParams.get('utm_content'), 'erinnerung');
   assert.doesNotMatch(fuelleText(vorlage, { kundenname: 'K', absender: 'T', produkte }).text, /utm_/, 'ohne Stufe keine Kennung');
   assert.doesNotMatch(mail.text, /Testkunde.*utm_|utm_.*Testkunde/, 'die Kennung nennt keinen Kunden');
+});
+
+test('"Nicht nötig": keine Nachfrage und auch keine Erinnerung, steht als erledigt da', () => {
+  const z = zeile({ raus: 20, nach: [{ tage: ERINNERUNG_NACH_TAGEN + 1 }] });
+  z.verlauf.find(s => s.schritt === 'nachgefasst').notiz = NICHT_NOETIG;
+  const r = musterNachfassen([z], { jetzt: JETZT });
+  assert.deepEqual(r.offen, []);
+  const n = zeile({ raus: 6, nach: [{ tage: 0 }] });
+  n.verlauf.find(s => s.schritt === 'nachgefasst').notiz = NICHT_NOETIG;
+  assert.equal(musterNachfassen([n], { jetzt: JETZT }).erledigt[0].nichtNoetig, true);
+});
+
+test('"Schon gekauft": spaetere Bestellung faellt aus der Liste und steht unter gekauft', () => {
+  const z = zeile({ raus: 8 });
+  z.verlauf[z.verlauf.length - 1] = { schritt: 'ergebnis', ergebnis: 'kunde_hat_bestellt', zustand: 'erledigt', am: vorTagen(1), von: null, automatisch: true, folgeOrderName: '#T999' };
+  const r = musterNachfassen([z], { jetzt: JETZT });
+  assert.deepEqual(r.offen, []);
+  assert.deepEqual(r.gekauft.map(e => [e.orderName, e.automatisch, e.folgeOrderName]), [[z.orderName, true, '#T999']]);
+});
+
+test('ruhender Versand (Lauf pausiert) zaehlt als "laeuft nicht": Nachfragen werden To-dos', () => {
+  const t = { verfuegbar: true, versand: { eingerichtet: true, hinweis: null, ruhtSeit: '2026-11-03T08:30:00.000Z' } };
+  assert.equal(versandLaeuft(t), false);
+  assert.equal(versandLaeuft({ ...t, versand: { ...t.versand, ruhtSeit: null } }), true);
+});
+
+test('WhatsApp steht in der Nachfrage: hinter der Telefonzeile, sonst vor dem Gruss, nie doppelt', () => {
+  const mitTel = mitWhatsApp('Hallo\n\n- Telefon: 03301 573 37 20\n- Oder antworten.\n\nFreundliche Grüße\nTeam');
+  assert.match(mitTel, /- Telefon: 03301 573 37 20\n- WhatsApp: 0179 261 22 11 \(https:\/\/wa\.me\/491792612211\)\n- Oder/);
+  const ohne = mitWhatsApp('Hallo\n\nFreundliche Grüße\nTeam');
+  assert.match(ohne, /Sie erreichen uns auch per WhatsApp: .*\n\nFreundliche Grüße/);
+  assert.equal(mitWhatsApp(mitTel), mitTel);
+  const mail = fuelleText(TEPPICH_VORLAGEN.erinnerung, { kundenname: 'Testkunde', absender: 'Team', nachfass: 'erinnerung' });
+  assert.ok(mail.text.includes(WHATSAPP.link));
+  assert.ok(!fuelleText(TEPPICH_VORLAGEN.erinnerung, { kundenname: 'Testkunde' }).text.includes(WHATSAPP.link), 'nur Nachfass-Mails');
+  assert.doesNotMatch(mail.text, /€|Rabatt/);
 });

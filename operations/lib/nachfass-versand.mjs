@@ -265,6 +265,9 @@ export function mitlesenBis({ ersterVersandAm = null, immer = false } = {}) {
   return Number.isNaN(t) ? null : new Date(t + MITLESEN_TAGE * TAG_MS).toISOString();
 }
 
+/** So viele Tage ohne Lauf gelten als "ruht" (Sonntag dazwischen ist normal). */
+export const RUHE_TAGE = 3;
+
 /**
  * Stand fuer die Karte "Muster nachfassen": eingerichtet?, Hinweis, letzter Lauf, Kopie bis.
  * Liest nur; eine beschaedigte Ablage wird zum Hinweis, nie zur Ausnahme.
@@ -275,9 +278,14 @@ export function versandStand(privatDir, { jetzt = new Date() } = {}) {
   let hinweis = pf.zugang ? null : pf.hinweis;
   try { versand = leseVersand(versandPfad(privatDir)); } catch (e) { hinweis = hinweis || e.message; }
   const bis = pf.zugang?.kopie ? mitlesenBis({ ersterVersandAm: versand?.ersterVersandAm, immer: pf.zugang.kopieImmer }) : null;
+  // Der Lauf kommt Mo-Sa taeglich; laenger still heisst pausiert oder stehengeblieben (seit 03.11.2026
+  // per launchctl pausiert, die Karte sagte trotzdem "geht von selbst raus"). Dann fasst der Laden per Klick nach.
+  const lauf = versand?.letzterLauf?.am ? new Date(versand.letzterLauf.am).getTime() : NaN;
+  const ruhtSeit = Number.isFinite(lauf) && jetzt.getTime() - lauf > RUHE_TAGE * TAG_MS ? versand.letzterLauf.am : null;
   return {
     eingerichtet: Boolean(pf.zugang),
     hinweis,
+    ruhtSeit,
     letzterLauf: versand?.letzterLauf || null,
     mitlesenBis: bis && bis !== 'immer' && new Date(bis).getTime() <= jetzt.getTime() ? null : bis,
     kopie: pf.zugang ? pf.zugang.kopie : null,
