@@ -664,6 +664,8 @@
       <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-muster-fallback-farbe="{{ tp_rc_start_farbe | escape }}" data-muster-ohne-farbe="{{ tp_rc_muster_ohne_farbe | escape }}"{% if tp_rc_muster_grenze != blank %} data-tp-mg-offen{% endif %}{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>
         {{- tp_rc_muster_text | escape -}}
       </a>
+      {%- comment -%} Muster dieser Farbe im Musterlager: sofort lieferbar (09.11.2026, snippets/tp-muster-lager) {%- endcomment -%}
+      {%- render 'tp-muster-lager', product: product -%}
       {%- if tp_rc_muster_grenze != blank -%}
         <p class="tp-rwc-muster-grenze" data-tp-mg-offen{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>Kostenlos, höchstens 2 Vinyl-Muster je Bestellung</p>
         <button class="tp-rwc-muster" type="button" disabled aria-describedby="tp-rwc-muster-grenze-{{ tp_rc_id }}" data-tp-mg-voll{% unless tp_rc_muster_grenze == 'voll' %} hidden{% endunless %}>

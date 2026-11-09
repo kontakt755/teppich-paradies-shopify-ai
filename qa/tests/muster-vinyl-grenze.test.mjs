@@ -113,7 +113,8 @@ const block = read('blocks/tp-muster-cta.liquid')
   .replace(/\{% stylesheet %\}[\s\S]*?\{% endstylesheet %\}/, '')
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
   .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze')
-  .replace("render 'tp-muster-hinweis', kontext: 'produkt'", "echo ''");
+  .replace("render 'tp-muster-hinweis', kontext: 'produkt'", "echo ''")
+  .replace("render 'tp-muster-lager', product: product", "echo ''");
 
 const cta = (tp_test_grenze) => liquid.parseAndRender(block, {
   product: { template_suffix: '', title: 'Eiche Klick', type: 'Klickvinyl', handle: 'eiche-klick', tags: [] },
