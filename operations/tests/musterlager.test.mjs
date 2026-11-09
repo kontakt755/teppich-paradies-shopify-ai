@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   musterSchluessel, leseLager, einlagern, aendern, entfernen, wendeLagerAn, festzuschreiben, farbenFuer, vorschlaege,
-  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE, GANZER_ARTIKEL,
+  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE, GANZER_ARTIKEL, sofortLieferbar,
 } from '../lib/musterlager.mjs';
 import { haengeWahlAn, leseEreignisse, wendeAufModellAn, musterOhneLieferant, musterherkunftPfad } from '../lib/musterherkunft.mjs';
 
@@ -265,4 +265,57 @@ test('Einlagern in ein leer gesetztes Zuschnitt-Stueck ersetzt den Rest statt ih
   assert.equal(r.eintrag.anzahl, 1);
   assert.equal(r.eintrag.leer, false);
   assert.equal(r.eintrag.basisAm, NEU.toISOString());
+});
+
+test('sofortLieferbar: Einzelmuster nach Rest, Zuschnitt solange nicht leer, leer nie', () => {
+  const file = musterlagerPfad(tmp());
+  const a = einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_101'], art: 'einzel', anzahl: 1, actor: 'x', jetzt: AM }).eintrag;
+  einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_102', 'TESTVEL5_102'], art: 'bahn', anzahl: 1, actor: 'x', jetzt: AM });
+  const c = einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_103'], art: 'einzel', anzahl: 2, actor: 'x', jetzt: AM }).eintrag;
+  aendern(file, c.id, { leer: true }, { actor: 'x', jetzt: AM });
+  const m = modellMit([auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_101')])]);
+  const stand = wendeLagerAn(m, leseLager(file));
+  assert.equal(stand.get(a.id).rest, 0, 'das eine Einzelmuster ist reserviert');
+  assert.deepEqual(sofortLieferbar(leseLager(file), stand), ['TESTVEL4_102', 'TESTVEL5_102']);
+});
+
+test('musterLagerMoeglich: bestellt beim Lieferanten, aber im Lager - Angebot nur solange Rest da', () => {
+  const file = musterlagerPfad(tmp());
+  const e = einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_101'], art: 'einzel', anzahl: 1, ort: 'Büro', actor: 'x', jetzt: AM }).eintrag;
+  const m = modellMit([auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_101')])]);
+  wendeLagerAn(m, leseLager(file), { statusAlle: { 'O1::L1': { status: 'bestellt' } } });
+  assert.deepEqual(m.auftraege[0].positionen[0].musterLagerMoeglich, { id: e.id, artLabel: 'Einzelmuster', ort: 'Büro' });
+  assert.equal(m.musterGruppen[0].positionen[0].musterLagerMoeglich.id, e.id, 'auch in der Mustergruppe');
+  // Ein aelterer offener Auftrag hat das letzte reserviert: kein Angebot mehr.
+  const m2 = modellMit([auftrag('O0', '2026-10-01', [muster('O0', 'L0', 'M-TESTVEL4_101')]), auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_101')])]);
+  wendeLagerAn(m2, leseLager(file), { statusAlle: { 'O1::L1': { status: 'bestellt' } } });
+  assert.equal(m2.auftraege[1].positionen[0].musterLagerMoeglich, undefined);
+  // Schon angekommen oder raus: kein Angebot.
+  const m3 = modellMit([auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_101')])]);
+  wendeLagerAn(m3, leseLager(file), { statusAlle: { 'O1::L1': { status: 'geliefert' } } });
+  assert.equal(m3.auftraege[0].positionen[0].musterLagerMoeglich, undefined);
+});
+
+test('Ueberbuchung (09.11.): 5 im Lager, 6 bestellen - 5 aus dem Lager, der 6. normal beim Lieferanten, Hinweis weg, nach dem Packen 0', () => {
+  const dir = tmp();
+  const file = musterlagerPfad(dir);
+  const e = einlagern(file, { titel: 'T', schluessel: ['TESTVEL4_101'], art: 'einzel', anzahl: 5, ort: 'Regal M3', actor: 'x', jetzt: AM }).eintrag;
+  const neu = () => modellMit([1, 2, 3, 4, 5, 6].map(i => auftrag(`O${i}`, `2026-10-1${i}`, [muster(`O${i}`, 'L1', 'M-TESTVEL4_101')])));
+  // Nach 4 Bestellungen: noch eins frei, Hinweis steht.
+  const vier = modellMit([1, 2, 3, 4].map(i => auftrag(`O${i}`, `2026-10-1${i}`, [muster(`O${i}`, 'L1', 'M-TESTVEL4_101')])));
+  assert.deepEqual(sofortLieferbar(leseLager(file), wendeLagerAn(vier, leseLager(file))), ['TESTVEL4_101']);
+  const m = neu();
+  const stand = wendeLagerAn(m, leseLager(file));
+  const pos = m.auftraege.map(a => a.positionen[0]);
+  assert.equal(pos.filter(p => p.musterHerkunftQuelle === 'lager').length, 5);
+  assert.deepEqual(pos.filter(p => p.musterHerkunftQuelle !== 'lager').map(p => p.orderId), ['O6'], 'die juengste geht an den Lieferanten');
+  assert.equal(pos[5].musterHerkunft, undefined, 'keine Wahl gesetzt: Musterautomatik bestellt wie immer');
+  assert.deepEqual(sofortLieferbar(leseLager(file), stand), [], 'Hinweis weg, sobald alles reserviert ist');
+  // Alle fuenf gepackt ("raus"): festgeschrieben, Lager 0, nichts reserviert.
+  for (const a of m.auftraege.slice(0, 5)) for (const p of festzuschreiben(a)) haengeWahlAn(musterherkunftPfad(dir), { orderId: a.id, lineItemId: p.lineItemId, herkunft: p.musterHerkunft, actor: 'x', lagerId: p.musterLager.id, jetzt: AM });
+  const m2 = neu();
+  wendeAufModellAn(m2, leseEreignisse(musterherkunftPfad(dir)));
+  const statusAlle = Object.fromEntries([1, 2, 3, 4, 5].map(i => [`O${i}::L1`, { status: 'raus' }]));
+  const st2 = wendeLagerAn(m2, leseLager(file), { statusAlle }).get(e.id);
+  assert.deepEqual([st2.verbraucht, st2.reserviert, st2.rest], [5, 0, 0]);
 });

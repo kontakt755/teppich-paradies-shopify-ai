@@ -171,6 +171,8 @@ function standText(m, { mitPlakette = false } = {}) {
   if (m.gesperrt) return mitPlakette ? GESPERRT_GRUND[m.gesperrt.imShop ? 'imShop' : 'gemeldet'] : gesperrtText(m);
   if (m.stand === 'offen' && mitPlakette) return m.automatikGrund || '';
   if (m.automatikGrund) return `${STAND_TEXT.offen}: ${m.automatikGrund}`;
+  // Lagermuster: Ort gleich dazu, damit der Packer weiss, wo er greift.
+  if (m.stand === 'lager') return `${STAND_TEXT.lager}${m.lagerOrt ? ` – liegt: ${m.lagerOrt}` : ''}`;
   if (m.stand !== 'bestellt' || !m.bestelltAm) return STAND_TEXT[m.stand] || '';
   return `beim Lieferanten bestellt am ${datumKurz(m.bestelltAm)}${m.automatisch ? ' (automatisch)' : ''}${m.direkt ? ' · direkt an den Kunden' : ''}`;
 }
@@ -397,7 +399,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="${ampel ? 'mp-ohne-aufkleber' : 'mp-fehlt'}">${ampel ? 'Kein eindeutiger Aufkleber für' : 'Zuordnung fehlt:'} ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
       : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
-    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.nachbestelltAm ? `<strong class="mp-nachbestellt">Nachbestellung am ${esc(datumKurz(m.nachbestelltAm))}</strong> · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}${!lesend && m.stand === 'bestellt' && !m.direkt && !m.abgehakt ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-direkt="${esc(m.lineItemId)}" title="Der Lieferant schickt dieses Muster direkt an den Kunden – bei uns kommt nichts an">Kommt direkt zum Kunden…</button>` : ''}</div>
+    <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.nachbestelltAm ? `<strong class="mp-nachbestellt">Nachbestellung am ${esc(datumKurz(m.nachbestelltAm))}</strong> · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.stand === 'lager' && !m.gesperrt ? 'mp-lager' : m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.lagerMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-auslager="${esc(m.lineItemId)}" title="Liegt im Musterlager${m.lagerMoeglich.ort ? ` (${esc(m.lagerMoeglich.ort)})` : ''}: wer es von dort nimmt, klickt hier – das Lager zählt sofort 1 ab">Aus dem Lager genommen${m.lagerMoeglich.ort ? ` (${esc(m.lagerMoeglich.ort)})` : ''}</button>` : ''}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}${!lesend && m.stand === 'bestellt' && !m.direkt && !m.abgehakt ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-direkt="${esc(m.lineItemId)}" title="Der Lieferant schickt dieses Muster direkt an den Kunden – bei uns kommt nichts an">Kommt direkt zum Kunden…</button>` : ''}</div>
   </li>`;
 }
 
@@ -943,6 +945,22 @@ async function ohneMuster(k, m, knopf) {
   await packlisteErneutLaden();
 }
 
+/** "Aus dem Lager genommen": das Lagermuster gilt sofort als verbraucht, der Umschlag sieht es als Lagermuster. */
+async function ausLager(k, m, knopf) {
+  const name = `${m.vorher?.produktname || m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`;
+  if (!window.confirm(`Muster aus dem Musterlager genommen?\n\n${name}${m.lagerMoeglich.ort ? `\nLiegt: ${m.lagerMoeglich.ort}` : ''}\n\nDas Musterlager zählt sofort 1 ab. Das beim Lieferanten bestellte Muster kommt trotzdem – bei Ankunft ins Musterlager einlagern.`)) return;
+  packSpeichert = true;
+  knopf.disabled = true;
+  try {
+    const r = await orgSchreiben(ENDPOINT, { packSchluessel: k.packSchluessel, aktion: 'aus-lager', lineItemId: m.lineItemId });
+    toast(`${name}: aus dem Musterlager abgebucht.${r?.hinweis ? ` ${r.hinweis}` : ''}`, undefined, { dauer: 9000 });
+  } catch (err) {
+    toast(`Nicht gespeichert: ${err.message}`, 'crit');
+  }
+  packSpeichert = false;
+  await packlisteErneutLaden();
+}
+
 async function schreiben(daten, meldung) {
   if (packSpeichert) { toast('Bitte warten, der vorige Packstand wird noch gespeichert.', 'warn'); return; }
   packSpeichert = true;
@@ -1132,6 +1150,14 @@ export function musterPackenKlick(e) {
     const k = kundeMitMuster(ohne.dataset.mpOhne);
     const m = k?.muster.find(x => x.lineItemId === ohne.dataset.mpOhne);
     if (m && !packSpeichert) void ohneMuster(k, m, ohne);
+    return true;
+  }
+  const auslager = e.target.closest('[data-mp-auslager]');
+  if (auslager) {
+    e.preventDefault();
+    const k = kundeMitMuster(auslager.dataset.mpAuslager);
+    const m = k?.muster.find(x => x.lineItemId === auslager.dataset.mpAuslager);
+    if (m?.lagerMoeglich && !packSpeichert) void ausLager(k, m, auslager);
     return true;
   }
   const sperren = e.target.closest('[data-mp-sperren]');

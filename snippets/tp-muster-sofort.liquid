@@ -1,0 +1,12 @@
+{%- doc -%}
+  Muster, die im Musterlager liegen und sofort verschickt werden koennen
+  (09.11.2026). Das Control Center schreibt ihre SKUs (ohne "M-") ins
+  Shop-Metafeld custom.muster_sofort, sobald sich das Lager aendert
+  (operations/lib/muster-sofort.mjs). assets/tp-sample-checkout.js liest das
+  JSON und zeigt an der Farbkarte die Plakette "Muster auf Lager" und "sofort
+  lieferbar, solange der Vorrat reicht".
+  Kein Metafeld: leere Liste, kein Hinweis. Aelter als 2 Stunden (Dienst
+  ruht): das JS verwirft die Liste, der Abgleich frischt stuendlich auf.
+{%- enddoc -%}
+{%- assign tp_ms = shop.metafields.custom.muster_sofort.value -%}
+<script type="application/json" data-tp-muster-sofort>{"skus":{{ tp_ms.skus | default: '' | json }},"stand":{{ tp_ms.stand | default: '' | json }}}</script>

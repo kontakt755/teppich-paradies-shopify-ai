@@ -758,6 +758,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       const musterLauf = () => api.musterBestellungenAutomatisch().catch(() => logFehler('muster-bestellung', 'Automatische Musterbestellung unterbrochen. Bestellstand prüfen.'));
       setInterval(musterLauf, 60_000).unref();
       musterLauf();
+      // Shop-Hinweis "Muster sofort lieferbar": neue Bestellungen reservieren Lagermuster auch ohne Klick im Lager.
+      const sofortLauf = () => api.musterSofortAbgleich().catch(e => logFehler('muster-sofort', String(e?.message || e).split('\n')[0]));
+      setInterval(sofortLauf, 60_000).unref();
+      sofortLauf();
     }
     if (NEUBAU_MINUTEN > 0) {
       setInterval(regelmaessigNeubauen, NEUBAU_MINUTEN * 60_000).unref();

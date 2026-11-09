@@ -251,6 +251,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           automatikGrund: grund,
           // Wo es im Haus liegt (Musterlager), damit die Karte "liegt hier: …" sagen kann.
           lagerOrt: stand === 'lager' && belegt(p.musterLager?.ort) ? text(p.musterLager.ort) : null,
+          // Beim Lieferanten bestellt, liegt aber im Musterlager: Knopf "Aus dem Lager genommen" (09.11.).
+          ...(stand !== 'lager' && stand !== 'da' && !direkt(a, p) && !haken[z.lineItemId] && p.musterLagerMoeglich?.id ? { lagerMoeglich: { id: text(p.musterLagerMoeglich.id), ort: belegt(p.musterLagerMoeglich.ort) ? text(p.musterLagerMoeglich.ort) : null } } : {}),
           // Persoenlich vorbeigebracht: "raus" ohne Versandmail (versandMailFuer im Server) - die Rueckfrage sagt es.
           ...(p.musterHerkunft === 'eigen_vorbei' ? { persoenlich: true } : {}),
           ...(liefertermin ? { liefertermin } : {}),
