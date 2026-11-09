@@ -208,11 +208,13 @@ test('Eingelegt ohne bestaetigten Haken laesst Suchtext und Meldung stehen', asy
 
 test('"Diese Umschläge vorbereiten" druckt die gezeigten Umschläge in Listenreihenfolge und vermerkt sie danach als vorbereitet', async () => {
   const umschlag = (pk, extra = {}) => ({ packSchluessel: pk, name: pk, bereich: 'warten', gepackt: null, gedruckt: null, fehlt: [],
+    bestellungen: [{ orderName: `#10${pk.charCodeAt(0)}` }],
     muster: [{ lineItemId: `${pk}1`, anzahl: 1, etikett: { sku: `M-${pk}` } }], adressAufkleber: { name: pk }, ...extra });
   // C hat inzwischen keine vollstaendige Zuordnung mehr, D wurde zwischendurch gepackt: beide fallen heraus.
   const liste = [umschlag('A'), umschlag('B'), umschlag('C', { fehlt: ['Farbe'] }), umschlag('D', { gepackt: { zeit: 'x' } })];
   let druck = null;
   const vermerkt = [];
+  const blaetter = [];
   const klick = ladeAnsicht('muster-packen.mjs', {
     kunden: { musterPacken: { kunden: liste } },
     aufkleberFuer, plural,
@@ -220,15 +222,40 @@ test('"Diese Umschläge vorbereiten" druckt die gezeigten Umschläge in Listenre
     istNurLesend: () => false,
     orgSchreiben: async (_, body) => { vermerkt.push(`${body.packSchluessel}:${body.aktion}`); },
     fetchEinkauf: async () => null,
+    fetch: async adresse => { blaetter.push(new URL(adresse, 'http://x').searchParams.get('nummern')); throw new Error('kein Netz im Test'); },
+    window: { open: () => ({ close() {} }) },
     document: { querySelector: () => null },
     render: () => {}, toast: () => {},
   }, 'musterPackenKlick');
   const knopf = { dataset: { mpVorbereiten: 'B A C D' } };
   assert.equal(klick({ target: { closest: s => (s === '[data-mp-vorbereiten]' ? knopf : null) }, preventDefault() {} }), true);
+  assert.deepEqual(blaetter, ['1066,1065'], 'Begleitblatt im selben Klick, ein PDF fuer alle Umschlaege');
   assert.deepEqual(Array.from(druck.etiketten, e => e.sku || e.name), ['M-B', 'B', 'M-A', 'A'], 'je Umschlag erst das Muster, dann die Adresse');
   assert.equal(druck.titel, 'Aufkleber · 2 Umschläge vorbereiten');
   assert.deepEqual(vermerkt, [], 'vor dem Druck wird nichts vermerkt');
   druck.druckFertig();
   for (let i = 0; i < 3; i++) await new Promise(r => setImmediate(r));
   assert.deepEqual(vermerkt, ['B:gedruckt', 'A:gedruckt']);
+});
+
+test('Aufkleber und Adresse drucken oeffnet das Begleitblatt mit; Nachdruck und Direktversand nicht (09.11.)', () => {
+  const umschlag = (pk, extra = {}) => ({ packSchluessel: pk, name: pk, bereich: 'packen', gepackt: null, gedruckt: null, fehlt: [],
+    bestellungen: [{ orderName: `#${pk}` }], muster: [{ lineItemId: `${pk}1`, anzahl: 1, etikett: { sku: `M-${pk}` } }], adressAufkleber: { name: pk }, ...extra });
+  const liste = [umschlag('1114'), umschlag('1200', { direktversand: true })];
+  const blaetter = [];
+  let tabs = 0;
+  const klick = ladeAnsicht('muster-packen.mjs', {
+    kunden: { musterPacken: { kunden: liste } }, aufkleberFuer, plural,
+    oeffneEtikettenDruck: () => {}, istNurLesend: () => false, fetchEinkauf: async () => null,
+    fetch: async adresse => { blaetter.push(new URL(adresse, 'http://x').searchParams.get('nummern')); throw new Error('kein Netz im Test'); },
+    window: { open: () => { tabs++; return { close() {} }; } },
+    document: { querySelector: () => null }, render: () => {}, toast: () => {},
+  }, 'musterPackenKlick');
+  const druecke = dataset => klick({ target: { closest: s => (s === '[data-mp-drucken]' ? { dataset } : null) }, preventDefault() {} });
+  druecke({ mpDrucken: '1114' });
+  assert.deepEqual(blaetter, ['1114']);
+  assert.equal(tabs, 1, 'Tab im Klick geoeffnet');
+  druecke({ mpDrucken: '1114', mpAlleAufkleber: '1' });
+  druecke({ mpDrucken: '1200' });
+  assert.deepEqual(blaetter, ['1114'], 'Nachdruck und Direktversand ohne Blatt');
 });
