@@ -74,7 +74,7 @@ test('transition setzt Labels, Assignee und Kommentar und protokolliert', async 
   assert.match(comment[comment.length - 1], /Control Center: Status Geplant → In Arbeit/);
   assert.match(comment[comment.length - 1], /Owner: @ahmet/);
   assert.equal(rebuilt, 1, 'issues.json wird nach dem Schreiben neu erzeugt');
-  const audit = fs.readFileSync(path.join(root, '.router/control-center-audit.jsonl'), 'utf8');
+  const audit = fs.readFileSync(process.env.TP_AUDIT_PATH || path.join(root, '.router/control-center-audit.jsonl'), 'utf8');
   assert.match(audit, /"action":"transition"/);
 });
 
@@ -459,7 +459,7 @@ test('einkaufAuftragsstatusSetzen: wiederOeffnen macht "Ohne Einkauf abschließe
 
   const key = `${pos.orderId}::${pos.lineItemId}`;
   assert.equal(api.einkaufAuftragsstatus().positionen[key].status, null);
-  const audit = fs.readFileSync(path.join(root, '.router', 'control-center-audit.jsonl'), 'utf8');
+  const audit = fs.readFileSync(process.env.TP_AUDIT_PATH || path.join(root, '.router', 'control-center-audit.jsonl'), 'utf8');
   assert.match(audit, /auftragsstatus-wieder-geoeffnet/);
   const protokoll = fs.readFileSync(path.join(PRIVAT_DIR, 'protokoll.jsonl'), 'utf8');
   assert.match(protokoll, /Auftragsstatus wieder geöffnet/);

@@ -56,7 +56,7 @@ function starter(argumente) {
   const posix = process.platform !== 'win32';
   const kind = spawn(process.execPath, argumente, {
     stdio: 'inherit',
-    env: { ...process.env, TMPDIR: ordner, TMP: ordner, TEMP: ordner },
+    env: { ...process.env, TMPDIR: ordner, TMP: ordner, TEMP: ordner, TP_AUDIT_PATH: path.join(ordner, 'control-center-audit.jsonl') },
     // Eigene Gruppe: auch Enkelprozesse bekommen den Abbruch, ohne den Starter
     // oder andere parallel laufende Testsuiten zu treffen.
     detached: posix,
