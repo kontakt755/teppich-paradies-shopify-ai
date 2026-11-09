@@ -140,15 +140,8 @@
   </fieldset>
   <button class="tp-sample__submit" type="button" data-sample-submit disabled>Auswahl in den Warenkorb</button>
   <a class="tp-sample__cart-link" href="{{ routes.cart_url }}" data-sample-cart-link hidden>Zum Warenkorb</a>
-  {%- comment -%} Ablauf nach der Musterbestellung (09.11.2026); Versandmail = Shopify-Versandbestaetigung {%- endcomment -%}
-  <div class="tp-sample__ablauf" data-sample-ablauf hidden>
-    <h2 class="tp-sample__ablauf-titel">So geht es weiter</h2>
-    <ol>
-      <li>Wir packen Ihre Muster – was nicht auf Lager ist, bestellen wir beim Lieferanten oder Hersteller.</li>
-      <li>Sobald die Muster unterwegs sind, bekommen Sie eine Versandmail.</li>
-      <li>Ihre Farbe gefunden? Bestellen Sie online oder bei uns im Laden.</li>
-    </ol>
-  </div>
+  {%- comment -%} Ablauf nach der Musterbestellung, sichtbar sobald Farben geladen sind (assets/tp-sample-checkout.js) {%- endcomment -%}
+  <div data-sample-ablauf hidden>{%- render 'tp-muster-ablauf' -%}</div>
 </section>
 
 {% schema %}

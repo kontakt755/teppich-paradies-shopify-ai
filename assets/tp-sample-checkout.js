@@ -189,8 +189,8 @@
     // Gemessen 09.11.2026 (Shopify-Bestellungen ab 16.10., Bestellung bis Versandbuchung, mittlere 60 %):
     // Lieferant 37 Bestellungen 3-8 Werktage, Hersteller 23 Bestellungen 4-10 - gleich in snippets/tp-muster-lieferzeit.
     var lieferzeit = core.isHerstellerMuster(product)
-      ? 'vom Hersteller, Versand meist nach 4–10 Werktagen'
-      : 'Versand meist nach 3–8 Werktagen';
+      ? 'vom Hersteller, Versand meist nach 4–\u206010 Werktagen'
+      : 'Versand meist nach 3–\u20608 Werktagen';
 
     colors.forEach(function (color) {
       var key = makeCardKey(color);

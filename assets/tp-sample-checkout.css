@@ -461,24 +461,3 @@
   text-align: center;
   color: var(--tp-muted, #595959);
 }
-
-/* So geht es weiter: drei Schritte nach der Auswahl */
-.tp-sample__ablauf {
-  margin: 24px 0 0;
-  padding: 16px;
-  border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
-  border-radius: 8px;
-}
-
-.tp-sample__ablauf-titel {
-  margin: 0 0 8px;
-  font-size: var(--tp-fs-md);
-  font-weight: 600;
-}
-
-.tp-sample__ablauf ol {
-  margin: 0;
-  padding-left: 1.25em;
-  font-size: var(--tp-fs-sm);
-  line-height: 1.5;
-}
