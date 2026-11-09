@@ -135,29 +135,43 @@
         var knopf = box.querySelector('[data-uv-knopf]');
         knopf.dataset.id = String(k.id);
         knopf.dataset.menge = String(k.menge);
+        grundFeld(knopf);
         if (!knopf.classList.contains('is-done')) knopf.textContent = 'Mit in den Warenkorb';
       });
     }
 
-    // Grund unter dem Knopf, vorlesbar (aria-live); leer = ausblenden.
-    function grundZeigen(knopf, text) {
+    // Grund unter dem Knopf; die leere Live-Region steht schon vorher im DOM, damit sie vorgelesen wird.
+    function grundFeld(knopf) {
+      if (!knopf.parentNode) return null;
       var p = knopf.parentNode.querySelector('[data-add-grund]');
       if (!p) {
-        if (!text) return;
         p = document.createElement('p');
+        p.className = 'tp-ek__grund';
         p.setAttribute('data-add-grund', '');
         p.setAttribute('role', 'status');
         p.setAttribute('aria-live', 'polite');
-        p.style.cssText = 'margin:8px 0 0;font-size:var(--tp-fs-sm);color:#a62020;overflow-wrap:anywhere';
+        p.hidden = true;
         knopf.insertAdjacentElement('afterend', p);
       }
+      return p;
+    }
+    function grundZeigen(knopf, text) {
+      var p = grundFeld(knopf);
+      if (!p) return;
       p.textContent = text || '';
       p.hidden = !text;
+      // Kam der Klick ueber die Kaufleiste unten, liegt der Hinweis sonst ausserhalb des Bildschirms.
+      var lage = p.getBoundingClientRect();
+      if (text && (lage.top < 0 || lage.bottom > window.innerHeight)) p.scrollIntoView({ block: 'center' });
     }
 
     tipp.addEventListener('click', function (ev) {
       var knopf = ev.target.closest('[data-uv-knopf]');
       if (!knopf || knopf.disabled || !knopf.dataset.id) return;
+      // Ein alter Ruecksetz-Timer darf den neuen Zustand nicht ueberschreiben.
+      clearTimeout(knopf.tpTimer);
+      grundZeigen(knopf, '');
+      knopf.classList.remove('is-done');
       knopf.disabled = true;
       knopf.textContent = 'Wird hinzugefügt …';
       fetch('/cart/add.js', {
@@ -168,7 +182,7 @@
         .then(function (r) { if (!r.ok) return ablehnung(r); return r.json(); })
         .then(function (erg) {
           knopf.textContent = 'Im Warenkorb';
-          setTimeout(function () { knopf.classList.remove('is-done'); knopf.textContent = 'Mit in den Warenkorb'; }, 3000);
+          knopf.tpTimer = setTimeout(function () { knopf.classList.remove('is-done'); knopf.textContent = 'Mit in den Warenkorb'; }, 3000);
           knopf.classList.add('is-done');
           document.dispatchEvent(new CustomEvent('cart:update', {
             bubbles: true,
@@ -180,7 +194,7 @@
           // Ohne Grund bleibt der Fehler stehen, bis erneut geklickt wird.
           knopf.textContent = grund ? 'Nicht hinzugefügt' : 'Nicht hinzugefügt – bitte erneut versuchen';
           grundZeigen(knopf, grund);
-          if (grund) setTimeout(function () { grundZeigen(knopf, ''); knopf.textContent = 'Mit in den Warenkorb'; }, 8000);
+          if (grund) knopf.tpTimer = setTimeout(function () { grundZeigen(knopf, ''); knopf.textContent = 'Mit in den Warenkorb'; }, 8000);
         })
         .then(function () { knopf.disabled = false; });
     });

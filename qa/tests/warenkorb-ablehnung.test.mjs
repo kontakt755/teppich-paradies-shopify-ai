@@ -1,17 +1,23 @@
 // Warenkorb-Ablehnung: bei 422 mit description sieht der Kunde den Shopify-Grund
 // (Vorbild tp-rollware-rechner); 429/5xx und kaputte Antworten bleiben ohne Grund.
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 // Der Einfass-Konfigurator haengt beim Laden Listener an document.
+const vorher = { window: globalThis.window, document: globalThis.document };
 globalThis.window = globalThis;
 globalThis.document = { readyState: 'complete', querySelectorAll: () => [], addEventListener() {} };
 require('../../assets/tp-einfass-konfigurator.js');
 require('../../assets/tp-laengen-zuschnitt.js');
 require('../../assets/tp-unterlage-vorschlag.js');
+
+// Globale Fakes nach den Tests zuruecknehmen, damit andere Suiten im selben Prozess sauber bleiben.
+after(() => {
+  for (const [k, v] of Object.entries(vorher)) { if (v === undefined) delete globalThis[k]; else globalThis[k] = v; }
+});
 
 const wege = {
   einfass: globalThis.TPEinfassAblehnung,
@@ -41,4 +47,16 @@ test('Fehlerzweig zeigt Grund vorlesbar, Dauer 8 s, sonst 3 s', () => {
     assert.match(s, /return ablehnung\(r\)/, d);
     if (!d.includes('unterlage')) assert.match(s, /grund \? 8000 : 3000/, d);
   }
+});
+
+test('Timer-Wettlauf: neuer Klick loescht den alten Ruecksetz-Timer und leert den Grund, kein Inline-Stil', () => {
+  const lies = (d) => readFileSync(new URL(`../../assets/${d}`, import.meta.url), 'utf8');
+  for (const d of ['tp-einfass-konfigurator.js', 'tp-laengen-zuschnitt.js']) {
+    const s = lies(d);
+    assert.match(s, /clearTimeout\(resetTimer\);\s*grundZeigen\(cta, ''\);/, d);
+    assert.doesNotMatch(s, /cssText/, d);
+  }
+  const u = lies('tp-unterlage-vorschlag.js');
+  assert.match(u, /clearTimeout\(knopf\.tpTimer\);\s*grundZeigen\(knopf, ''\);\s*knopf\.classList\.remove\('is-done'\)/);
+  assert.doesNotMatch(u, /cssText/);
 });

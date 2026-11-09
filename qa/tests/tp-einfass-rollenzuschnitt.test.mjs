@@ -129,7 +129,7 @@ async function runCase(o = {}) {
     window: { location: { search: '' }, TPZuschnitt: { abgleichen: async () => {} } },
     document: { querySelectorAll: () => [], querySelector: () => null, dispatchEvent: (e) => events.push(e.type) },
     CustomEvent: class { constructor(type) { this.type = type; } },
-    setTimeout() {},
+    setTimeout() {}, clearTimeout() {},
     fetch: async (url, options) => {
       requests.push({ url, method: options.method, body: JSON.parse(options.body) });
       return { ok: true, json: async () => ({ auditIntercepted: true }) };
