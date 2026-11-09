@@ -12,5 +12,5 @@
   10 Karten, 10 Kettel-Links führen auf die richtigen Produkte; `npm run -s pruefen` alle 11 Schritte grün.
 - **Risiken/Annahmen:** Zusammenlegung nur, solange die Kollektion auf eine Seite passt (24);
   darüber bleiben alle Karten. Kettelteppiche bleiben in Suche und Teppich-Kategorien einzeln sichtbar.
-- **Offen:** Farbfilter zeigt nur „Grau“ (Farbe fehlt an 9 von 10 Rollen); Sortierung „größter
+- **Nächste Stufe:** Farbfilter zeigt nur „Grau“ (Farbe fehlt an 9 von 10 Rollen); Sortierung „größter
   Abstand zur UVP“ kann Shopify nicht serverseitig.
