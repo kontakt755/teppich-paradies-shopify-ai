@@ -133,8 +133,28 @@ dann `menuUpdate` mit `zurueck.json` (entfernte Punkte kommen ohne alte ID zurü
 = 84 bestehende mit alter ID + 7 neue (Spalten Preisklasse und Marken, fünf Preislinks);
 die 19 entfernten IDs fehlen. Treffer der Preislinks über `custom.meterpreis_bereich`
 (298 Teppichböden, jede Klasse belegt). `npm run menu:guard` und die Sichtprüfung bei
-1440/390 px stehen noch aus (Storefront aus Remote-Sessions gesperrt). Bis zum
+1440/390 px sind am 09.11. nachgeholt (Abschnitt unten). Bis zum
 Theme-Deploy fehlt auf den Seiten Kurz- und Mittelflor die Unterkategorie-Leiste.
+
+## Sichtprüfung Handy/Desktop Teppichboden (2026-11-09, live)
+
+Backlog „Teppichboden Mobile-Menü optimieren“ damit erledigt, ohne weitere Änderung:
+Variante A (w-179) und die Entschlackung vom 04.11. sind live und tragen.
+
+- **390 × 844:** Menü → Teppichboden → Art = 3 Tipps (über die Chip-Zeile der
+  Startseite 1 Tipp bis zur Kollektion). Teppichboden steht oben in Ebene 1, das
+  Teppichboden-Panel passt ganz auf einen Bildschirm (Arten-Kacheln mit Zahl,
+  Weitere, Preisklasse, Raum, Marken). Fotos `handy-menue-2026-11-09-ebene1.jpg`,
+  `handy-teppichboden-2026-11-09.jpg`.
+- **1440 × 900:** Megamenü Teppichboden ohne Scrollen, acht Kacheln plus Spalten
+  Preisklasse/Raum/Marken (`desktop-1440-teppichboden-2026-11-09.jpg`).
+- **`npm run menu:guard`:** alle Teppichboden-Links ohne Fehler; 23 Treffer nur
+  HTTP 429 (Drosselung durch den Shop) bei Zubehör/Laminat/Reste, kein toter Link.
+- **Verbleibender Zeitverlust liegt nicht im Menü,** sondern auf `/collections/teppichboden`:
+  das erste Produkt beginnt bei 1503 px (Kopf 484, Preisklassen 151, Boden-Finder 224,
+  Musterband 358); auf Hochflor bei 1043 px. Das Musterband bleibt bewusst stehen,
+  solange die Musterwirkung gemessen wird (Messtermine 26.11./05.12.); danach ist
+  „Musterband unter die Produkte“ der naheliegende Schritt (spart 358 px am Handy).
 
 ## Restposten und Teppiche nach Zweck (2026-11-04, live)
 
