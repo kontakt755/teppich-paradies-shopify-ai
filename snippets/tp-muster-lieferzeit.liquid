@@ -1,0 +1,58 @@
+{%- doc -%}
+  Warenkorb: wann kommt dieses Muster? Eine Zeile je Musterposition, drei Faelle
+  wie im Musterkonfigurator (assets/tp-sample-checkout.js, tp-sample__lieferzeit):
+  1. SKU im Musterlager (Shop-Metafeld custom.muster_sofort, snippets/tp-muster-sofort;
+     aelter als 2 Stunden = ungueltig, wie sofortListe in tp-sample-checkout-core.js)
+  2. Vorwerk/JAB ohne Tag sonderposten (wie isHerstellerMuster)
+  3. sonst: wir bestellen beim Lieferanten
+
+  Werte gemessen 09.11.2026, Shopify-Bestellungen ab 16.10. (Bestellung bis
+  Versandbuchung, Werktage Mo-Fr, mittlere 60 % der Faelle): Lieferant 37
+  Bestellungen 3-8, Hersteller 23 Bestellungen 4-9 (Median 4 bzw. 5); beim
+  Hersteller waren 6 Bestellungen noch offen (bis 9 Werktage) - daher 4-10.
+  Musterlager erst 1 Bestellung - deshalb ohne Zahl.
+
+  @param {object} line_item - Warenkorbzeile (cart.items)
+{%- enddoc -%}
+{%- capture tpml_muster -%}{%- render 'tp-muster-position', line_item: line_item -%}{%- endcapture -%}
+{%- if tpml_muster contains 'ja' -%}
+  {%- liquid
+    assign tpml_fall = 'lieferant'
+    assign tpml_vendor = line_item.product.vendor | default: '' | downcase | strip
+    if tpml_vendor == 'vorwerk' or tpml_vendor == 'jab anstoetz'
+      unless line_item.product.tags contains 'sonderposten'
+        assign tpml_fall = 'hersteller'
+      endunless
+    endif
+    assign tpml_meta = shop.metafields.custom.muster_sofort.value
+    if tpml_meta.stand != blank
+      assign tpml_alter = 'now' | date: '%s' | minus: 0
+      assign tpml_stand = tpml_meta.stand | date: '%s' | minus: 0
+      assign tpml_alter = tpml_alter | minus: tpml_stand
+      assign tpml_sku = line_item.sku | default: '' | upcase
+      if tpml_sku contains 'M-'
+        assign tpml_kopf = tpml_sku | slice: 0, 2
+        if tpml_kopf == 'M-'
+          assign tpml_sku = tpml_sku | remove_first: 'M-'
+        endif
+      endif
+      if tpml_alter <= 7200 and tpml_meta.skus contains tpml_sku
+        assign tpml_fall = 'lager'
+      endif
+    endif
+  -%}
+  <p class="tp-muster-lieferzeit">
+    {%- case tpml_fall -%}
+      {%- when 'lager' -%}Muster auf Lager – wir packen es direkt.
+      {%- when 'hersteller' -%}Kommt vom Hersteller – Versand meist nach 4–10 Werktagen.
+      {%- else -%}Wir bestellen es beim Lieferanten – Versand meist nach 3–8 Werktagen.
+    {%- endcase -%}
+  </p>
+{%- endif -%}
+{% stylesheet %}
+  .tp-muster-lieferzeit {
+    margin: 0.25rem 0 0;
+    font-size: var(--tp-fs-sm);
+    font-weight: 400;
+  }
+{% endstylesheet %}
