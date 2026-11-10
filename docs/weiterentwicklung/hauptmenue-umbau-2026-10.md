@@ -56,6 +56,15 @@ Erst das Theme, dann das Menü. Das neue Theme läuft mit dem alten Menü
    - `npm run menu:guard`, Shop ohne Preview-Parameter bei 1440 und 390 px ansehen.
 3. Aufräumen: `hauptmenue-entwurf` löschen (`menuDelete`), im Arbeitstheme
    `sections/header-group.json` per `--only` wieder auf den Stand von `main`.
+   Stand 10.11.2026 (w-328): Das Menü `hauptmenue-entwurf` ist im Shop nicht mehr
+   vorhanden (Admin-API `menus` kennt nur `main-menu`, `footer`,
+   `customer-account-main-menu` und `test-weiterentwicklung`); kein Theme und kein
+   Skript verweist mehr darauf (`scripts/menue-umbau.mjs` nutzt den Handle nur als
+   Vorgabe für `--entwurf`). `sections/header-group.json` ist in Live und Preview
+   byteidentisch mit `main` (checksumMd5). Nur das Arbeitstheme steht noch auf dem
+   Stand vom 29.10. und zeigt bereits auf `main-menu`; der `--only`-Abgleich wurde
+   am 10.11. vom Auto-Modus gesperrt und wird bei der nächsten Arbeit im
+   Arbeitstheme mitgenommen.
 
 ## Zurück
 
