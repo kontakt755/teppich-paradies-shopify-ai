@@ -173,8 +173,8 @@ const UMSATZ_TEXT = `Umsatzübersicht
 Buchungstag                Umsatzart                  Buchungstext (gekürzt)                         Betrag
 Wertstellung
 
-30.10.2026                 Überweisung                Muster Soehne BANKDEFFXXX                 -491,00 EUR
-30.10.2026                                            DE00... Rechn...
+09.11.2026                 Überweisung                Muster Soehne BANKDEFFXXX                 -491,00 EUR
+09.11.2026                                            DE00... Rechn...
 
 IBAN: DE00 0000
 20.10.2026                 Lastschrift                Muster Telefon GmbH Vertrag...          -1.029,99 EUR
@@ -186,7 +186,7 @@ IBAN: DE00 0000
 
 test('PDF-Umsatzuebersicht: Buchungen lesen; falsche Anzahl gilt als nicht lesbar', () => {
   const { buchungen } = umsatzPdfLesen(UMSATZ_TEXT);
-  assert.deepEqual(buchungen.map(b => [b.datum, b.betrag, b.art]), [['2026-10-30', -491, 'Überweisung'], ['2026-10-20', -1029.99, 'Lastschrift'], ['2026-10-19', 300, 'Überweisung (Echtzeit)']]);
+  assert.deepEqual(buchungen.map(b => [b.datum, b.betrag, b.art]), [['2026-11-09', -491, 'Überweisung'], ['2026-10-20', -1029.99, 'Lastschrift'], ['2026-10-19', 300, 'Überweisung (Echtzeit)']]);
   assert.equal(buchungen[0].zweck, 'Muster Soehne BANKDEFFXXX DE00... Rechn...');
   assert.throws(() => umsatzPdfLesen(UMSATZ_TEXT.replace('3 Umsätze', '4 Umsätze')), /passt nicht/);
 });
@@ -204,4 +204,37 @@ test('Abgleich ueber Betrag und Empfaenger, wenn der Zweck gekuerzt ist: jede Bu
   assert.match(liste, /Betrag und Empfänger passen/);
   assert.equal(statusVon(liste, '700004'), 'IN DATEI');
   assert.equal(statusVon(liste, '700003'), 'IN DATEI');
+});
+
+test('Veralteter Kontoauszug: zaehlt fuer bezahlt, aber verfallenes Skonto kommt nicht in die Datei', () => {
+  const privat = privatOrdner();
+  const e = sammelLauf({ privat, jetzt: new Date('2026-11-12T09:00:00Z') }); // letzte Buchung 06.11.
+  assert.equal(e.auszugAktuell, false);
+  const liste = listeLesen(privat, e);
+  assert.match(liste, /KONTOAUSZUG VERALTET/);
+  assert.equal(statusVon(liste, '700004'), 'bezahlt');
+  assert.equal(statusVon(liste, '700003'), 'UNKLAR');
+});
+
+test('Kopie derselben Rechnung im Archiv: eine Zahlung im Auszug deckt beide, keine geht in die Datei', () => {
+  const privat = privatOrdner();
+  const monat = path.join(privat, 'belege-archiv', '2026', '10');
+  const pfad = path.join(monat, 'manifest.json');
+  const m = JSON.parse(fs.readFileSync(pfad, 'utf8'));
+  fs.writeFileSync(path.join(monat, 'kopie.xml'), RECHNUNGEN.bezahlt);
+  m.belege.push({ datei: 'kopie.pdf', xmlDatei: 'kopie.xml', format: 'pdf', rolle: 'unklar', anbieterSchluessel: 'lieferant-a.example', dublette: null });
+  fs.writeFileSync(pfad, JSON.stringify(m));
+  const e = sammelLauf({ privat, schreiben: true, jetzt: HEUTE });
+  assert.equal(e.zahlungen, 2);
+  assert.ok(!fs.readFileSync(path.join(privat, 'zahlungen', e.datei), 'utf8').includes('700004'));
+  assert.match(listeLesen(privat, e), /UNKLAR;[^\r]*700004[^\r]*mehrfach im Archiv/);
+});
+
+test('Rechnungsnummer zaehlt im Zweck nur als eigenes Wort', () => {
+  const privat = privatOrdner({ bank: false });
+  const ordner = path.join(privat, 'laden-entlastung-2026-11', 'bank-export');
+  fs.mkdirSync(ordner, { recursive: true });
+  fs.writeFileSync(path.join(ordner, 'u.csv'), `Buchungstag;Buchungstext;Verwendungszweck;Beguenstigter;IBAN;Betrag\n09.11.2026;Überweisung;Kd 47110700001 Abschlag;Muster & Söhne GmbH;${LIEFER};-12,00\n`);
+  const e = sammelLauf({ privat, jetzt: HEUTE });
+  assert.equal(statusVon(listeLesen(privat, e), '700001'), 'IN DATEI');
 });

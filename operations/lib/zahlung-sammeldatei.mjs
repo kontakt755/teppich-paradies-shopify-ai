@@ -11,7 +11,7 @@
  */
 
 import { xmlRechnungLesen, betragLesen } from './belege.mjs';
-import { datumLesen, namePasst, csvFeld } from './belege-bank.mjs';
+import { datumLesen, namePasst, csvFeld, abschnitte, ersterAbschnitt as abschnitt, blatt } from './belege-bank.mjs';
 
 const cent = n => Math.round(n * 100);
 const nurZeichen = s => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -26,7 +26,7 @@ export function ibanGueltig(iban) {
   return rest === 1;
 }
 
-const tagPlus = (iso, tage) => new Date(Date.parse(`${iso}T00:00:00Z`) + tage * 86_400_000).toISOString().slice(0, 10);
+export const tagPlus = (iso, tage) => new Date(Date.parse(`${iso}T00:00:00Z`) + tage * 86_400_000).toISOString().slice(0, 10);
 
 /** Naechster Lauftag nach `heute`: Montag oder Donnerstag. */
 export function naechsterLauf(heute) {
@@ -70,9 +70,6 @@ export function zahlungsbedingungenLesen(text) {
   return raus;
 }
 
-const abschnitt = (xml, name) => new RegExp(`<(?:\\w+:)?${name}(?:\\s[^>]*)?>([\\s\\S]*?)</(?:\\w+:)?${name}>`).exec(xml)?.[1] ?? '';
-const blatt = (xml, name) => new RegExp(`<(?:\\w+:)?${name}(?:\\s[^>]*)?>\\s*([^<]*?)\\s*</(?:\\w+:)?${name}>`).exec(xml)?.[1] ?? '';
-
 /**
  * Eine Rechnungs-XML (Factur-X/ZUGFeRD, CII) pruefen.
  * @returns {{ status: 'ok'|'gutschrift'|'lastschrift'|'unklar', grund?: string, nummer, brutto, skonto, nettoFaellig }}
@@ -86,8 +83,8 @@ export function rechnungPruefen(xml, { iban }) {
   if (!/^[A-Za-z0-9][A-Za-z0-9/._-]{2,29}$/.test(f.nummer || '')) return unklar('Rechnungsnummer nicht lesbar');
   if (f.waehrung !== 'EUR') return unklar('Währung nicht EUR');
   if (f.brutto === null || f.brutto <= 0) return unklar('Rechnungswert nicht lesbar');
-  const mittel = abschnitt(xml, 'SpecifiedTradeSettlementPaymentMeans');
-  if (blatt(mittel, 'TypeCode') === '59') return { ...kopf, status: 'lastschrift', grund: 'Rechnung nennt Lastschrift: nicht überweisen' };
+  const mittel = abschnitte(xml, 'SpecifiedTradeSettlementPaymentMeans');
+  if (mittel.some(m => blatt(m, 'TypeCode') === '59')) return { ...kopf, status: 'lastschrift', grund: 'Rechnung nennt Lastschrift: nicht überweisen' };
   const faellig = Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'DuePayableAmount') || NaN);
   if (cent(faellig) !== cent(f.brutto)) return unklar('offener Betrag weicht vom Rechnungswert ab (Anzahlung?)');
   const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'));
@@ -100,8 +97,9 @@ export function rechnungPruefen(xml, { iban }) {
     if (cent(s.betrag) <= 0 || cent(s.betrag) + cent(s.zahlbetrag) !== cent(f.brutto) || s.betrag > f.brutto * 0.05 || s.bis > b.nettoFaellig) return unklar('Skonto-Angaben nicht stimmig');
     kopf.skonto = s;
   }
-  const ibans = [...xml.matchAll(/<(?:\w+:)?IBANID>\s*([^<]*?)\s*</g)].map(m => m[1].replace(/\s+/g, '').toUpperCase());
-  if (!ibans.includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht auf der Rechnung');
+  // Nur Empfaengerkonten zaehlen, nicht das Konto des Zahlers.
+  const ibans = abschnitte(xml, 'PayeePartyCreditorFinancialAccount').map(k => blatt(k, 'IBANID').replace(/\s+/g, '').toUpperCase());
+  if (!ibans.includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht als Empfängerkonto auf der Rechnung');
   return { ...kopf, status: 'ok' };
 }
 
@@ -132,7 +130,8 @@ export function bankAbgleich(buchungen, offene, lieferanten) {
   const treffer = new Map();
   const empfaenger = (x, o) => (x.iban && x.iban === lieferanten[o.schluessel].iban) || namePasst(x.name, { anbieter: lieferanten[o.schluessel].name, anbieterSchluessel: o.schluessel });
   const stufen = [
-    ['nummer', (x, o) => nurZeichen(x.zweck).includes(nurZeichen(o.nummer))],
+    // Als eigenes Wort: eine Ziffernfolge mitten in IBAN oder Kundennummer ist keine Rechnungsnummer.
+    ['nummer', (x, o) => new RegExp(`(^|[^A-Z0-9])${o.nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^A-Z0-9])`).test(String(x.zweck).toUpperCase())],
     ['betrag', (x, o) => [o.brutto, o.skonto?.zahlbetrag].some(b => b != null && cent(b) === cent(-x.betrag)) && (!o.datum || x.datum >= o.datum)],
   ];
   for (const [ueber, passt] of stufen) {
@@ -173,9 +172,11 @@ export function umsatzPdfLesen(text) {
  * zahlen | spaeter | bezahlt | vorgemerkt | gutschrift | lastschrift | unklar.
  * @param belege [{ schluessel, datei, xml|null }] nur Rechnungen der konfigurierten Lieferanten
  * @param buchungen Kontoauszug oder null (dann kein Bezahlt-Abgleich)
+ * @param auszugAktuell false, wenn der Kontoauszug nicht bis kurz vor heute reicht: dann zaehlt er nur
+ *   fuer „bezahlt“, nicht als Beleg, dass etwas noch offen ist
  * @param vorgemerkt [{ schluessel, nummer, datei }] aus frueheren Sammeldateien
  */
-export function auswaehlen({ belege, konfig, buchungen, vorgemerkt = [], heute }) {
+export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vorgemerkt = [], heute }) {
   const naechster = naechsterLauf(heute);
   const geprueft = belege.map((b) => {
     const lieferant = konfig.lieferanten[b.schluessel];
@@ -185,6 +186,16 @@ export function auswaehlen({ belege, konfig, buchungen, vorgemerkt = [], heute }
     const r = rechnungPruefen(b.xml, lieferant);
     return { ...basis, nummer: r.nummer, datum: r.datum, brutto: r.brutto, skonto: r.skonto, nettoFaellig: r.nettoFaellig, status: r.status, grund: r.grund || '' };
   });
+  // Dieselbe Nummer zweimal im Archiv (Kopie, erneut gesendet): nur die erste zaehlt; weicht der
+  // Betrag ab, keine. Vor dem Bankabgleich, weil eine Buchung nur eine Rechnung deckt.
+  const erste = new Map();
+  for (const z of geprueft.filter(x => x.status === 'ok')) {
+    const k = `${z.schluessel}|${z.nummer}`;
+    const e = erste.get(k);
+    if (!e) { erste.set(k, z); continue; }
+    if (cent(e.brutto) !== cent(z.brutto)) Object.assign(e, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
+    Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv' });
+  }
   const istVorgemerkt = z => vorgemerkt.find(v => v.schluessel === z.schluessel && v.nummer === z.nummer);
   const bank = buchungen
     ? bankAbgleich(buchungen, geprueft.filter(z => z.status === 'ok' && !istVorgemerkt(z)), konfig.lieferanten)
@@ -202,16 +213,10 @@ export function auswaehlen({ belege, konfig, buchungen, vorgemerkt = [], heute }
       return { ...z, status: 'zahlen', zahlbetrag: r.skonto.zahlbetrag, mitSkonto: true, grund: r.skonto.bis === heute ? 'Skontofrist endet heute: heute freigeben' : 'mit Skonto' };
     }
     // Ohne Kontoauszug ist nicht belegt, dass eine Rechnung mit abgelaufener Frist noch offen ist.
-    if (!buchungen && (r.skonto || r.nettoFaellig < heute)) return { ...z, status: 'unklar', grund: `${r.skonto ? 'Skonto verfallen' : 'überfällig'}, ohne Bezahlt-Abgleich nicht in die Datei` };
+    if (!(buchungen && auszugAktuell) && (r.skonto || r.nettoFaellig < heute)) return { ...z, status: 'unklar', grund: `${r.skonto ? 'Skonto verfallen' : 'überfällig'}, ohne aktuellen Bezahlt-Abgleich nicht in die Datei` };
     if (r.nettoFaellig > naechster) return { ...z, status: 'spaeter', grund: `${r.skonto ? 'Skonto verfallen, ' : ''}netto fällig ${r.nettoFaellig}` };
     return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: `${r.skonto ? 'Skonto verfallen, ' : ''}${r.nettoFaellig < heute ? 'überfällig' : 'netto fällig'}` };
   });
-  // Dieselbe Nummer zweimal (zwei verschiedene Belege): keiner von beiden wird bezahlt.
-  const zahl = new Map();
-  for (const z of zeilen) if (z.status === 'zahlen') zahl.set(`${z.schluessel}|${z.nummer}`, (zahl.get(`${z.schluessel}|${z.nummer}`) || 0) + 1);
-  for (const z of zeilen) {
-    if (z.status === 'zahlen' && zahl.get(`${z.schluessel}|${z.nummer}`) > 1) Object.assign(z, { status: 'unklar', zahlbetrag: null, grund: 'Rechnungsnummer mehrfach im Archiv' });
-  }
   return { heute, naechster, zeilen };
 }
 
@@ -294,7 +299,7 @@ const REIHENFOLGE = ['zahlen', 'unklar', 'gutschrift', 'lastschrift', 'spaeter',
 export function pruefliste({ auswahl, abgleich, datei, andere, summeCent }) {
   const kopf = [
     `Sammelüberweisung Lauf ${auswahl.heute}; nächster Lauf ${auswahl.naechster}`,
-    abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en)${abgleich.fehler ? `, ${abgleich.fehler} Datei(en) NICHT LESBAR` : ''}` : 'ACHTUNG: Bezahlt-Abgleich nicht möglich (kein Kontoauszug-Export gefunden). Vor der Freigabe jede Zeile selbst prüfen: nicht schon bezahlt?',
+    abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.aktuell ? '' : ' – ACHTUNG: KONTOAUSZUG VERALTET, neuen Export ablegen; bis dahin jede Zeile selbst prüfen'}${abgleich.fehler ? `, ${abgleich.fehler} Datei(en) NICHT LESBAR` : ''}` : 'ACHTUNG: Bezahlt-Abgleich nicht möglich (kein Kontoauszug-Export gefunden). Vor der Freigabe jede Zeile selbst prüfen: nicht schon bezahlt?',
     datei ? `Datei: ${datei}; ${auswahl.zeilen.filter(z => z.status === 'zahlen').length} Zahlungen; Summe ${de(summeCent / 100)} EUR` : 'Keine Datei: nichts zu zahlen oder Probelauf',
     `Nicht betrachtet: ${andere} Rechnung(en) anderer Lieferanten`,
     '',

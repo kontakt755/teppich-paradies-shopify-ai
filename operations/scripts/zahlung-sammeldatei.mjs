@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { belegeOrdner, berlinTag, istPdf } from '../lib/belege.mjs';
 import { pdfAnalyse } from './belege-monat.mjs';
 import { auszugLesen } from '../lib/belege-bank.mjs';
-import { konfigPruefen, auswaehlen, painBauen, pruefliste, umsatzPdfLesen } from '../lib/zahlung-sammeldatei.mjs';
+import { konfigPruefen, auswaehlen, painBauen, pruefliste, umsatzPdfLesen, tagPlus } from '../lib/zahlung-sammeldatei.mjs';
 
 const BANK_EXPORT = ['laden-entlastung-2026-11', 'bank-export'];
 
@@ -42,7 +42,8 @@ function belegeLesen(privat, lieferanten) {
     for (const mm of fs.readdirSync(path.join(wurzel, jahr)).filter(n => /^\d{2}$/.test(n))) {
       const ordner = path.join(wurzel, jahr, mm);
       for (const b of jsonLesen(path.join(ordner, 'manifest.json'), {}).belege || []) {
-        if (b.nichtMehrGefunden || b.dublette || b.rolle !== 'rechnung') continue;
+        // Auch „unklar“ eingestufte Belege: die XML entscheidet, und nichts faellt still heraus.
+        if (b.nichtMehrGefunden || b.dublette || !['rechnung', 'unklar'].includes(b.rolle)) continue;
         if (!lieferanten[b.anbieterSchluessel]) { andere += 1; continue; }
         const xmlDatei = b.xmlDatei || (b.format === 'xml' ? b.datei : null);
         const pfad = xmlDatei && path.join(ordner, xmlDatei);
@@ -54,7 +55,9 @@ function belegeLesen(privat, lieferanten) {
 }
 
 /** Alle Exporte im Ordner. Kein Ordner, keine Datei oder keine Buchung: kein Abgleich. */
-function bankLesen(privat, pdf) {
+const AUSZUG_HOECHSTALTER_TAGE = 4; // Wochenende plus ein Banktag
+
+function bankLesen(privat, pdf, heute) {
   const ordner = path.join(privat, ...BANK_EXPORT);
   const buchungen = [];
   let dateien = 0;
@@ -66,7 +69,8 @@ function bankLesen(privat, pdf) {
       dateien += 1;
     } catch { fehler += 1; }
   }
-  return { moeglich: buchungen.length > 0, buchungen: buchungen.length, dateien, fehler, liste: buchungen.length ? buchungen : null };
+  const bis = buchungen.map(b => b.datum).sort().at(-1) || null;
+  return { moeglich: buchungen.length > 0, buchungen: buchungen.length, dateien, fehler, bis, aktuell: Boolean(bis) && bis >= tagPlus(heute, -AUSZUG_HOECHSTALTER_TAGE), liste: buchungen.length ? buchungen : null };
 }
 
 /** @returns zahlen fuer die Ausgabe (keine Namen, keine IBAN) */
@@ -79,8 +83,8 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
   const vorgemerkt = jsonLesen(vorgemerktPfad, []);
   const heute = berlinTag(jetzt.toISOString());
   const { belege, andere } = belegeLesen(privat, konfig.lieferanten);
-  const abgleich = bankLesen(privat, pdf);
-  const auswahl = auswaehlen({ belege, konfig, buchungen: abgleich.liste, vorgemerkt, heute });
+  const abgleich = bankLesen(privat, pdf, heute);
+  const auswahl = auswaehlen({ belege, konfig, buchungen: abgleich.liste, auszugAktuell: abgleich.aktuell, vorgemerkt, heute });
 
   // Uhrzeit im Namen: zwei Laeufe am selben Tag ueberschreiben sich nicht und haben eigene Kennungen.
   const stempel = `${heute}-${jetzt.toISOString().slice(11, 19).replace(/:/g, '')}`;
@@ -92,18 +96,19 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
 
   fs.mkdirSync(ordner, { recursive: true, mode: 0o700 });
   if (pain) {
-    fs.writeFileSync(path.join(ordner, datei), pain.xml, { mode: 0o600, flag: 'wx' });
+    // Erst vormerken, dann die Datei: bricht es dazwischen ab, fehlt hoechstens die Datei, nie die Vormerkung.
     const neu = [...vorgemerkt, ...zahlen.map(z => ({ schluessel: z.schluessel, nummer: z.nummer, betrag: z.zahlbetrag, datei, am: heute }))];
     const temp = `${vorgemerktPfad}.${process.pid}.tmp`;
     fs.writeFileSync(temp, `${JSON.stringify(neu, null, 1)}\n`, { mode: 0o600 });
     fs.renameSync(temp, vorgemerktPfad);
+    fs.writeFileSync(path.join(ordner, datei), pain.xml, { mode: 0o600, flag: 'wx' });
   }
   fs.writeFileSync(path.join(ordner, liste), pruefliste({ auswahl, abgleich, datei, andere, summeCent }), { mode: 0o600 });
 
   const status = {};
   for (const z of auswahl.zeilen) status[z.status] = (status[z.status] || 0) + 1;
   return {
-    lauf: heute, naechsterLauf: auswahl.naechster, schreiben, bezahltAbgleich: abgleich.moeglich, bankDateienNichtLesbar: abgleich.fehler,
+    lauf: heute, naechsterLauf: auswahl.naechster, schreiben, bezahltAbgleich: abgleich.moeglich, auszugAktuell: abgleich.aktuell, bankDateienNichtLesbar: abgleich.fehler,
     zahlungen: zahlen.length, summe: summeCent / 100, status, andereLieferanten: andere, ordner, pruefliste: liste, datei,
   };
 }

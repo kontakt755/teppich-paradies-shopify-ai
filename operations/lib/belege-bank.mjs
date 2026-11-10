@@ -154,9 +154,9 @@ export function csvLesen(text) {
 }
 
 const xmlEntity = s => String(s ?? '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
-const abschnitte = (xml, name) => [...xml.matchAll(new RegExp(`<(?:\\w+:)?${name}(?:\\s[^>]*)?>([\\s\\S]*?)</(?:\\w+:)?${name}>`, 'g'))].map(m => m[1]);
-const ersterAbschnitt = (xml, name) => abschnitte(xml, name)[0] ?? '';
-const blatt = (xml, name) => {
+export const abschnitte = (xml, name) => [...xml.matchAll(new RegExp(`<(?:\\w+:)?${name}(?:\\s[^>]*)?>([\\s\\S]*?)</(?:\\w+:)?${name}>`, 'g'))].map(m => m[1]);
+export const ersterAbschnitt = (xml, name) => abschnitte(xml, name)[0] ?? '';
+export const blatt = (xml, name) => {
   const m = new RegExp(`<(?:\\w+:)?${name}(?:\\s[^>]*)?>\\s*([^<]*?)\\s*</(?:\\w+:)?${name}>`).exec(xml);
   return m ? xmlEntity(m[1]) : '';
 };
