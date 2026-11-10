@@ -105,6 +105,9 @@ export function viewHilfe() {
 
     ${heuteKarte()}
 
+    ${hilfeKarte('Der Ladenrechner', `
+      <p>Die Seite <a href="#/laden">Laden</a> zeigt ohne Menü, was im Laden offen ist: links Mails, rechts Rückrufe, Kunden, die sich nicht melden, und eigene Aufgaben. <b>Übernehmen</b> fragt „Wer?“, dann steht dort, wer sich kümmert. Im Browser auf Vollbild stellen.</p>`)}
+
     ${hilfeKarte('Ein Kunde ruft an', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
         <li>Oben auf <b>Suche</b> klicken (oder ⌘K drücken).</li>

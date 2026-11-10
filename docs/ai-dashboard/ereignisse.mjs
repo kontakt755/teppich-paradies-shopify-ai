@@ -50,6 +50,7 @@ import { akquiseKlick, akquiseAenderung } from './ansichten/akquise.mjs';
 import { hausverwaltungenKlick } from './ansichten/hausverwaltungen.mjs';
 import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
+import { ladenKlick, ladenAbsenden, ladenRouteAbgleichen } from './ansichten/laden.mjs';
 import { prozesseKlick, prozesseEingabe, prozesseAbsenden, verwerfeProzessKontext } from './ansichten/prozesse.mjs';
 
 export function bindEvents() {
@@ -60,13 +61,14 @@ export function bindEvents() {
     try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
   }, true);
   fotosEreignisseBinden();
-  document.addEventListener('submit', e => { if (musterlagerAbsenden(e)) return; if (prozesseAbsenden(e)) return; socialAbsenden(e); });
+  document.addEventListener('submit', e => { if (musterlagerAbsenden(e)) return; if (prozesseAbsenden(e)) return; if (ladenAbsenden(e)) return; socialAbsenden(e); });
   window.addEventListener('pagehide', verwerfeProzessKontext);
   window.addEventListener('tp-sitzung-beendet', verwerfeProzessKontext);
   document.addEventListener('click', e => {
     if (e.target.closest('[data-abmelden]')) { verwerfeProzessKontext(); verwerfeVersandkosten(); logout(); return; }
     if (versandkostenKlick(e)) return;
     if (prozesseKlick(e)) return;
+    if (ladenKlick(e)) return;
     if (e.target.closest('[data-fehler-melden]')) { e.preventDefault(); openFehlerMelden(); return; }
     const open = e.target.closest('[data-open]');
     if (open && !e.target.closest('[data-decide]')) { e.preventDefault(); openTask(Number(open.dataset.open)); if (open.dataset.primary) { setTimeout(() => $('#sheetRoot [data-act]')?.focus(), 50); } return; }
@@ -218,6 +220,6 @@ export function bindEvents() {
   $('#syncChip').addEventListener('click', () => navigate(darfAnsicht('insights') ? 'insights' : 'heute'));
   bindeNavigation();
   folgeGeraet();
-  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); musterlagerRouteGeaendert(); if (prev === 'prozesse' && state.route.view !== 'prozesse') verwerfeProzessKontext(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { await ladeAktivitaetsdaten(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
+  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); ladenRouteAbgleichen(); musterlagerRouteGeaendert(); if (prev === 'prozesse' && state.route.view !== 'prozesse') verwerfeProzessKontext(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { await ladeAktivitaetsdaten(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }

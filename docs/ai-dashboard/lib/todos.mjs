@@ -42,6 +42,8 @@ export const FRISTEN = Object.freeze({
   rausgeben: [2, 5],     // Ware liegt bei uns (03.11.: 7/14 Tage liessen 10 Muster liegen)
   angebot: [7, 14],      // Angebot ohne Antwort
   service: [1, 3],       // neue Service-Anfrage, noch niemand hat sich gemeldet
+  kunde_antwortet: [14, 21], // Ansicht Laden: Kunde ist dran (Empfang, Rueckmeldung) und meldet sich nicht
+  laden_aufgabe: [1, 2], // Ansicht Laden: von Hand angelegte Aufgabe (Rolle schneiden, Rechnung kontrollieren ...)
 });
 
 // 'alles' ist die Vereinigung aller Bereiche (Inhaber-Chip "Alles"). 'inhaber' bleibt die
@@ -89,7 +91,7 @@ const mehrzahl = (n, eins, viele) => `${n} ${n === 1 ? eins : viele}`;
 const gleichePerson = (a, b) => Boolean(a && b) && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 
 /** Tagesdatum JJJJ-MM-TT in lokaler Zeit - Wiedervorlagen und Fristen sind Kalendertage. */
-function alsTag(d) {
+export function alsTag(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -216,7 +218,7 @@ function haengtBeiAutomatik(z, lineItemId, jetzt) {
   return werktage !== null ? { grund: fall.grund, seit: fall.seit, werktage } : null;
 }
 
-function rueckrufFaellig(r, heute) {
+export function rueckrufFaellig(r, heute) {
   if (!r || r.testbestellung || r.status === 'erledigt') return false;
   if (r.status === 'angerufen') return Boolean(r.wiedervorlage && r.wiedervorlage <= heute);
   return !r.wiedervorlage || r.wiedervorlage <= heute;

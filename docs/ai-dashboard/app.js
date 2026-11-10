@@ -51,6 +51,7 @@ import { viewInsights } from './ansichten/insights.mjs';
 import { ladeAktivitaetsdaten, viewAktivitaet } from './ansichten/aktivitaet.mjs';
 import { viewHeute } from './ansichten/heute.mjs';
 import { viewProzesse } from './ansichten/prozesse.mjs';
+import { viewLaden, ladenRouteAbgleichen } from './ansichten/laden.mjs';
 import { bindEvents } from './ereignisse.mjs';
 import { pruefeAntworten } from './bausteine/fehler-melden.mjs';
 import { starteDatenstand, zeichneDatenstand } from './bausteine/datenstand.mjs';
@@ -58,7 +59,7 @@ import { starteDienstversion } from './bausteine/dienstversion.mjs';
 import { kundenMenueZahl } from './lib/serviceanfragen.mjs';
 import { faelleFuerMenue } from './ansichten/kunden/faelle.mjs';
 
-const VIEWS = { heute: viewHeute, prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, akquise: viewAkquise, hausverwaltungen: viewHausverwaltungen, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
+const VIEWS = { heute: viewHeute, laden: viewLaden, prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, akquise: viewAkquise, hausverwaltungen: viewHausverwaltungen, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 async function init() {
   registriereAnsichten(VIEWS);
@@ -67,6 +68,7 @@ async function init() {
   // Kunden: sofort faellige Faelle plus alle noch offenen Service-Anfragen - leer, bis beide geladen sind.
   registriereNavZaehler({ bestellungen: () => bestellungenOffen({ art: 'ware' }), packen: musterPackenOffen, fragen: musterAnrufeOffen, kunden: () => kundenMenueZahl(faelleFuerMenue(), kunden.serviceanfragen) });
   parseRoute();
+  ladenRouteAbgleichen();
   bindEvents();
   renderThemeButton();
   await loadSession();

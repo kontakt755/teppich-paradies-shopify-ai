@@ -89,6 +89,8 @@ import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, Lieferbel
 import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
+import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
+import { ladenTodos } from '../docs/ai-dashboard/lib/laden.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -1332,6 +1334,19 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const ids = a => (sperren.size ? (a?.positionen || []).filter(p => p.istMuster && p.sku && p.lineItemId && sperren.has(sperrSku(p.sku))).map(p => p.lineItemId) : []);
     const statusVon = ({ orderId, lineItemId }) => statusAlle[positionKey(orderId, lineItemId)] || null;
     return { ids, zeile: z => (z.auftrag ? { ...z, auftrag: ohneGesperrteKlaerung(z.auftrag, new Set(ids(z.auftrag)), statusVon) } : z) };
+  }
+
+  /**
+   * Bestellzeilen samt naechstem Schritt aus der Zeitleiste (Auftragsfluss + Verlauf), nicht aus dem
+   * Shopify-Versandstatus: Muster, die laengst beim Kunden sind, standen sonst als "Versenden".
+   * Rot nur aus der bereinigten Ampel (sperrBereinigung). Fuer Kunden > Zu tun und die Ansicht Laden.
+   */
+  function bestellzeilenMitSchritt(dir, modell) {
+    const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
+    const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
+    const zl = zeitleisten(dir, modell, statusAlle);
+    return bestellliste(modell, { statusAlle, rueckrufeAlle }).map(sperrBereinigung(dir, statusAlle).zeile)
+      .map(z => ({ ...z, zeitleisteSchritt: zl.get(z.orderId)?.naechsterSchritt ?? null }));
   }
 
   /** Wer kettelt und ob der Kettler-Dialog gilt: fuer die Zeitleiste in Kundenakte und Bestellungen. */
@@ -4867,6 +4882,60 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /**
+     * Ansicht Laden (#/laden): Mails links, Zu tun rechts, je mit Zustaendigkeit. Rein lesend; alles aus
+     * vorhandenen Quellen (Rueckrufe, Zeitleiste) und den Laden-Ablagen im Privatordner.
+     */
+    ladenUebersicht() {
+      const dir = privatDirPath || privatDir();
+      const jetzt = now();
+      const personen = leseLadenPersonen(ladenPersonenPfad(dir));
+      const zustaendig = leseLadenZustaendig(ladenZustaendigPfad(dir));
+      const modell = ladeBestellModell(dir);
+      const rueckrufe = modell ? this.kundenRueckrufe().zeilen || [] : [];
+      const wartet = modell ? kundeWartet(bestellzeilenMitSchritt(dir, modell), { jetzt }) : [];
+      const mails = ladenMails();
+      const mit = e => ({ ...e, zustaendig: zustaendig[e.schluessel] || null });
+      return {
+        verfuegbar: true, personen, jetzt: jetzt.toISOString(),
+        mails: { eingerichtet: mails.eingerichtet, eintraege: mails.eintraege.map(mit) },
+        todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)) }, { jetzt }).map(mit),
+        // Ohne Bestelldaten fehlen nur die Rueckrufe und wartenden Kunden - von Hand angelegte Aufgaben gibt es trotzdem.
+        bestelldatenFehlen: !modell,
+      };
+    },
+
+    /** Uebernehmen (wer = Name aus laden-personen.json) oder Zurueckgeben (wer = null). */
+    ladenZustaendigSetzen({ schluessel, wer = null } = {}, benutzer = null) {
+      const dir = privatDirPath || privatDir();
+      const personen = leseLadenPersonen(ladenPersonenPfad(dir));
+      if (!personen) throw new ApiError(400, 'Die Namensliste für den Laden fehlt noch.');
+      try { setzeLadenZustaendig(ladenZustaendigPfad(dir), { schluessel, wer: wer ?? null, personen, jetzt: now() }); }
+      catch (e) { if (e instanceof LadenFehler) throw new ApiError(400, e.message); throw e; }
+      audit({ actor: anzeigename(benutzer, null), action: 'laden-zustaendig', schluessel, wer: wer ?? null });
+      return { ok: true };
+    },
+
+    ladenAufgabeAnlegen({ art, text } = {}, benutzer = null) {
+      const dir = privatDirPath || privatDir();
+      try {
+        const a = legeLadenAufgabeAn(ladenAufgabenPfad(dir), { art, text, jetzt: now() });
+        audit({ actor: anzeigename(benutzer, null), action: 'laden-aufgabe', id: a.id, art });
+        return { ok: true, id: a.id };
+      } catch (e) { if (e instanceof LadenFehler) throw new ApiError(400, e.message); throw e; }
+    },
+
+    ladenAufgabeErledigen({ id } = {}, benutzer = null) {
+      const dir = privatDirPath || privatDir();
+      try {
+        erledigeLadenAufgabe(ladenAufgabenPfad(dir), { id, jetzt: now() });
+        // Die Zustaendigkeit ist mit der Aufgabe erledigt - sonst bliebe sie als Rest in der Datei.
+        setzeLadenZustaendig(ladenZustaendigPfad(dir), { schluessel: `aufgabe:${id}`, wer: null, jetzt: now() });
+        audit({ actor: anzeigename(benutzer, null), action: 'laden-aufgabe-erledigt', id });
+        return { ok: true };
+      } catch (e) { if (e instanceof LadenFehler) throw new ApiError(400, e.message); throw e; }
+    },
+
+    /**
      * Alles offene je Kunde in einem Eintrag - Bestellungen, Angebote und
      * liegengebliebene Warenkoerbe zusammengefuehrt. Beantwortet die Frage,
      * in der im Laden gedacht wird: wer wartet auf was.
@@ -4877,14 +4946,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!modell) {
         return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       }
-      const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
-      const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
-      // Der naechste Schritt kommt aus der Zeitleiste (Auftragsfluss + Verlauf), nicht aus dem
-      // Shopify-Versandstatus: Muster, die laengst beim Kunden sind, standen sonst als "Versenden".
-      const zl = zeitleisten(dir, modell, statusAlle);
-      // Rot nur aus der bereinigten Ampel: ein gesperrtes Muster ist kein "Zuerst klären" (sperrBereinigung).
-      const bestellzeilen = bestellliste(modell, { statusAlle, rueckrufeAlle }).map(sperrBereinigung(dir, statusAlle).zeile)
-        .map(z => ({ ...z, zeitleisteSchritt: zl.get(z.orderId)?.naechsterSchritt ?? null }));
+      const bestellzeilen = bestellzeilenMitSchritt(dir, modell);
       const angebote = readJsonIfExists(path.join(dir, 'angebote', 'angebote.json'))?.angebote ?? [];
       const warenkoerbe = readJsonIfExists(path.join(dir, 'warenkoerbe', 'warenkoerbe.json'))?.warenkoerbe ?? [];
       const roh = kundenFaelle({ bestellzeilen, angebote, warenkoerbe });

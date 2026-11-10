@@ -3135,3 +3135,45 @@ ohne AB-Vermerk (Altbestand) gilt als bestätigt und mahnt nicht. Muster, Eigenl
 „Zurück auf offen“ verschiebt AB, Bestelldaten und den AB-Liefertermin in den Verlauf, die Anfrage
 bleibt. Jeder Schritt steht im Verlauf der Position und im Auftragsverlauf (`merke`).
 
+## 34. Ansicht Laden (#/laden, seit 2026-11-10, #2090)
+
+Abgespeckte Vollbild-Ansicht für den Ladenrechner: zwei Spalten, links **Mails**, rechts **Zu tun**. Je Spalte
+oben, was noch niemand übernommen hat (rot zuerst, dann das Älteste), darunter eingeklappt „Jemand kümmert sich
+(n)“. Ganz oben höchstens eine rote Zeile „Liegt zu lange: …“ (offene, nicht übernommene Einträge in der roten
+Stufe). Für alle Rollen offen, kein Menüpunkt; die Rolle „lesen“ sieht die Zeilen, aber keine Knöpfe.
+
+**Kiosk.** Der Laden öffnet `http://<Dashboard-Adresse>/#/laden` im Vollbild des Browsers. Solange die Route offen
+ist, trägt `body` die Klasse `nur-laden` (`stile/laden.css`): Seitenleiste, Tab-Leiste, Kopfzeile und Datenstand
+sind weg; beim Verlassen kommt alles zurück. Die Ansicht holt ihre Daten alle 3 Minuten neu, solange sie offen ist
+(nicht, solange jemand einen Namen wählt oder eine Aufgabe tippt). Der Rückweg ist die Adresse `#/heute`.
+
+**Zuständigkeit ohne Login je Person.** „Übernehmen“ fragt „Wer?“ und zeigt je Name einen Knopf; das Ergebnis steht
+als Plakette „<Name> kümmert sich · seit …“ mit „Zurückgeben“ an der Zeile. Wer schneller war, bleibt stehen (kein
+stilles Überschreiben).
+
+**Dateien im Privatordner** (nie im Repository; Logik `operations/lib/laden.mjs`):
+
+| Datei | Inhalt |
+|---|---|
+| `laden-personen.json` | `["Name 1", "Name 2", …]`, von Hand gepflegt, nur gelesen. Fehlt sie, zeigt die Ansicht einen Hinweis, und „Übernehmen“ ist aus. Der Server prüft `wer` gegen diese Liste. |
+| `laden-zustaendig.json` | `{ "<schluessel>": { wer, seit } }`; Schlüssel `rueckruf:<id>`, `fall:<id>`, `aufgabe:<id>`, später `mail:<id>` |
+| `laden-aufgaben.json` | von Hand angelegte Aufgaben: `id`, `art`, `text`, `erstelltAm`, `erledigtAm` (Erledigte erscheinen nicht mehr) |
+
+Wie bei den anderen Ablagen gilt nur eine **fehlende** Datei als leer; beschädigtes JSON wirft (Test
+`operations/tests/laden.test.mjs`).
+
+**Was in „Zu tun“ steht** (nichts doppelt gebaut, Alter und Farbe aus `lib/todos.mjs`):
+
+- **Rückrufe**: offen oder nicht erreicht, Wiedervorlage fällig (`/api/kunden/rueckrufe`, Fristen `FRISTEN.rueckruf`).
+- **Kunde antwortet nicht**: Bestellungen, bei denen laut Zeitleiste der Kunde dran ist (`naechsterSchritt` mit
+  `art: 'wartet'`, `wer: 'kunde'`), erst ab 14 Tagen Wartezeit (`FRISTEN.kunde_antwortet`: 14 gelb, 21 rot); früher stünden alle Musterkunden dort, die sich die Muster noch ansehen.
+- **Eigene Aufgaben** über „Aufgabe dazu“: Art (Rolle schneiden · Rechnung kontrollieren · Angebot kontrollieren ·
+  Sonstiges) und ein kurzer Text (höchstens 200 Zeichen). Gelb nach 1, rot nach 2 Tagen (`FRISTEN.laden_aufgabe`).
+
+**API** (`scripts/dashboard-api.mjs`): `GET /api/laden/uebersicht` (Personen, Mails, To-dos mit Zuständigkeit) und
+`POST /api/laden/zustaendig`, `/api/laden/aufgabe`, `/api/laden/aufgabe-erledigt` (write-Liste, Rolle „lesen“: 403;
+Eingaben serverseitig geprüft). Mails und To-dos teilen sich einen Zeilen-Renderer (`ansichten/laden.mjs`).
+
+**Mails: Abruf folgt.** Das Postfach laden@ und die Filter gibt es noch nicht. `ladenMails()` liefert bis dahin
+`{ eingerichtet: false, eintraege: [] }`; die Spalte zeigt dafür einen Hinweis. Der spätere Abruf liefert nur
+Einträge `{ schluessel: 'mail:<id>', von, text, seit, ton, alterTage, alter, art }`; an der Ansicht ändert sich nichts.
