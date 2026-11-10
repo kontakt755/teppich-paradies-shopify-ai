@@ -1,12 +1,17 @@
 // Einkauf "Je Auftrag" (#1996, 06.11.2026): Teillieferung ohne "Ware ist da", Filter Ware | Muster | Alle,
 // Musterversand als eine Zeile zur Packstation, Kopfzeile zaehlt jeden Auftrag einmal.
 // Erfundene Testdaten - keine Kunden, Lieferanten nur als Pseudonym.
-import test from 'node:test';
+import test, { before, after, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { viewEinkaufAblauf } from '../ansichten/einkauf/ablauf.mjs';
 import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { state } from '../kern/zustand.mjs';
+
+// Feste Uhr: die Ansicht ruft intern new Date() auf, die Fixtures tragen feste Daten ("bestellt 03.11.").
+// Mit der echten Uhr kippt der Auftrag ab 7 Kalendertagen auf "nachhaken" (lib/ampel.mjs) - am 10.11.2026 geschehen.
+before(() => mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-06T10:00:00Z') }));
+after(() => mock.timers.reset());
 
 const pos = (orderId, id, extra = {}) => ({ orderId, orderName: `#T${orderId}`, lineItemId: id, titel: `Artikel ${id}`, farbe: 'Grau', grosshaendlerId: `A-${id}`, bestellmenge: { menge: 1 }, ...extra });
 const auftrag = (id, positionen, datum) => ({ id, name: `#T${id}`, offen: true, datum, positionen, details: { kunde: { name: 'Testkunde' } } });
@@ -25,6 +30,8 @@ const daten = () => ({
   auftraege: [auftrag('o1', [w1, w2], '2026-11-02'), auftrag('o2', [m1], '2026-11-01'), auftrag('o3', [m2, m3], '2026-11-01')],
   kundeInformiert: {}, kundentermine: {}, gesperrteMuster: [],
 });
+// Relativ zu heute: ein fester Tag loest ab 7 Tagen Alter "Nachhaken" aus (Test kippte am 10.11.2026).
+const gestern = new Date(Date.now() - 864e5).toISOString();
 const status = { 'o1::w1': 'geliefert', 'o1::w2': 'bestellt', 'o2::m1': 'geliefert', 'o3::m2': 'geliefert', 'o3::m3': 'bestellt' };
 
 function ansicht(query, { pack = true, ohneWare = false, gesperrt = [], bereichO2 = 'packen' } = {}) {
@@ -35,7 +42,7 @@ function ansicht(query, { pack = true, ohneWare = false, gesperrt = [], bereichO
     einkauf.bestellungen = { ...daten(), gesperrteMuster: gesperrt };
     // Ware schon beim Kunden: kein Warenauftrag mehr unter "Jetzt zu tun".
     if (ohneWare) einkauf.bestellungen.auftraege = einkauf.bestellungen.auftraege.filter(a => a.id !== 'o1');
-    einkauf.auftragsstatus = { positionen: Object.fromEntries(Object.entries(status).map(([k, st]) => [k, { status: st, bestelltAm: '2026-11-03T09:00:00Z' }])) };
+    einkauf.auftragsstatus = { positionen: Object.fromEntries(Object.entries(status).map(([k, st]) => [k, { status: st, bestelltAm: gestern }])) };
     einkauf.lieferanten = { lieferanten: [{ id: 'lieferant-a', stammdaten: { name: 'Lieferant A' } }] };
     kunden.musterPacken = pack ? { verfuegbar: true, offen: 2, zahlen: { packen: 1, warten: 1, klaeren: 0, gepackt: 0 },
       kunden: [{ bestellungen: [{ orderId: 'o2' }], bereich: bereichO2 }, { bestellungen: [{ orderId: 'o3' }], bereich: 'warten' }] } : { verfuegbar: false };
