@@ -29,6 +29,7 @@ test('Der Plan trifft den Aufbau einer bestehenden Restrolle', () => {
   assert.equal(feld(plan, 'tpr0011:raummass', 'max_breite_cm').value, '400');
   assert.equal(feld(plan, 'tpr0011:raummass', 'max_laenge_cm').value, '1000');
   assert.equal(feld(plan, 'tpr0011:quelle', 'florhohe').value, 'ca. 14 mm');
+  assert.equal(feld(plan, 'tpr0011:quelle', 'florklasse').value, 'Hochflor');
   assert.equal(feld(plan, 'tpr0011:quelle', 'vergleich_ist_uvp').value, 'true');
 });
 
