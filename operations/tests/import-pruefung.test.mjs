@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pruefeImporte, jsonlZuProdukten, ueblicheFelder, bericht, istTeppichfliese } from '../lib/import-pruefung.mjs';
+import { florklasseAusMm, pruefeImporte, jsonlZuProdukten, ueblicheFelder, bericht, istTeppichfliese } from '../lib/import-pruefung.mjs';
 import { argumente } from '../scripts/import-pruefen.mjs';
 
 let n = 0;
@@ -388,4 +388,18 @@ test('ganze Kollektion ohne Muster: gilt im Bestand fuer jede Ware mit ohne-must
   const erg = pruefeImporte({ produkte, seit: '2026-11-01' });
   assert.equal(erg.geprueft, 0);
   assert.deepEqual(erg.befunde.map((b) => `${b.handle}:${b.stufe}:${b.regel}`).sort(), [boden, raummass].map((p) => `${p.handle}:fehler:muster-trotz-ohne-muster`).sort());
+});
+
+test('Florklasse: Grenzen 5,0 und 10,0 mm; Rollenware mit Florhoehe ohne passende Klasse ist ein Fehler', () => {
+  assert.deepEqual([4.9, 5, 5.1, 9.9, 10, null, 0].map(florklasseAusMm), ['Kurzflor', 'Kurzflor', 'Mittelflor', 'Mittelflor', 'Hochflor', null, null]);
+  const tb = (title, custom) => produkt({ createdAt: '2026-11-10T08:00:00Z', productType: 'Teppichboden', title, collections: ['teppichboden'], custom });
+  const produkte = [
+    tb('Ohne Klasse 400cm', { florhoehe_mm: '7.5' }),
+    tb('Falsche Klasse 400cm', { florhoehe_mm: '12.0', florklasse: 'Mittelflor' }),
+    tb('Passt 400cm', { florhoehe_mm: '5.0', florklasse: 'Kurzflor' }),
+    tb('Nadelvlies ohne Flor 400cm', {}),
+    tb('Teppichfliese 50x50', { florhoehe_mm: '3.0' }),
+  ];
+  const erg = pruefeImporte({ produkte, seit: '2026-11-01' });
+  assert.deepEqual(erg.befunde.filter((b) => b.regel === 'florklasse').map((b) => b.titel), ['Ohne Klasse 400cm', 'Falsche Klasse 400cm']);
 });

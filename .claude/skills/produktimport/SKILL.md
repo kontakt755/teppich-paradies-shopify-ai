@@ -40,6 +40,11 @@ URLs als `lieferant-a.example`. Rohdaten nur unter `~/teppich-paradies-analyse/l
    festhalten (Quelle, Datum, fehlende Codes). Gleiche Anzahl ist kein Abgleich.
 5. **Paketinhalt je Artikel pruefen** - m² wird zwischen Formaten kopiert.
    Fliesen/Planken: `mindestmenge` = Paketinhalt. Paketprodukte tragen `custom.qm_pro_paket`.
+   **Teppichboden-Rollenware mit Flor traegt `custom.florklasse`** (Kurzflor/Mittelflor/Hochflor),
+   sonst fehlt sie in den Hoehenkategorien: aus der Polhoehe im Datenblatt gerechnet
+   (`custom.florhoehe_mm`: bis 5,0 mm Kurzflor, unter 10 mm Mittelflor, ab 10 mm Hochflor),
+   ohne mm aus der Herstellerangabe „flacher/mittlerer/hoher Flor“. Polhoehe ist nicht
+   Gesamthoehe; ohne Flor (Nadelvlies, Flachgewebe) oder ohne Beleg bleiben beide Felder leer.
 6. **Anlegen mit `productSet` - nur fuer neue Produkte**, Varianten im selben Aufruf.
    Mehrere Produkte: aliasierte `productSet` in einem Request. Syntax nie raten,
    `graphql_schema` fragen. Bestehende Produkte nur mit den schmalen Mutationen

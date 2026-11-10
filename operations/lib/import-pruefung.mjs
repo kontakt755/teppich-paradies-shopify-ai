@@ -27,6 +27,13 @@ export const SKU_UEBLICH_AB = 0.95;
 /** Variantenbilder fehlen nur dort, wo die Produktart sie sonst ueberwiegend hat. */
 export const BILD_UEBLICH_AB = 0.5;
 
+/** Florklasse aus der Polhoehe: bis 5,0 mm Kurzflor, unter 10 mm Mittelflor, ab 10 mm Hochflor (Inhaber 07.10.2026). */
+export function florklasseAusMm(mm) {
+  const n = Number(mm);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n <= 5 ? 'Kurzflor' : n < 10 ? 'Mittelflor' : 'Hochflor';
+}
+
 const MUSTER_PRAEFIX = 'muster-';
 
 const klein = (s) => String(s ?? '').trim().toLowerCase();
@@ -243,6 +250,13 @@ export function pruefeImporte({ produkte, seit, handles = null, nachBezeichnung 
     }
     if (!p.category || p.category === 'Uncategorized') {
       befunde.push(befund(p, 'hinweis', 'shopify-kategorie', 'Shopify-Produktkategorie fehlt (Uncategorized)'));
+    }
+
+    // Die Hoehenkategorien sollen auf custom.florklasse filtern (w-178): Rollenware mit
+    // Florhoehe, aber ohne passende Klasse faellt dann aus Kurz-/Mittel-/Hochflor.
+    const sollKlasse = p.productType === 'Teppichboden' && !/fliese|planke/i.test(p.title ?? '') ? florklasseAusMm(p.custom?.florhoehe_mm) : null;
+    if (sollKlasse && p.custom?.florklasse !== sollKlasse) {
+      befunde.push(befund(p, 'fehler', 'florklasse', `custom.florklasse ${p.custom?.florklasse ? `"${p.custom.florklasse}"` : 'fehlt'}, aus ${p.custom.florhoehe_mm} mm folgt ${sollKlasse}`));
     }
 
     const varianten = p.variants ?? [];

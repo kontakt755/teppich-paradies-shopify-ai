@@ -2,6 +2,7 @@
 // mit Meterware und Raummass, Kettelteppich als eigenes Produkt. Baut auf dem
 // Entwurfsplaner auf und schreibt selbst nichts nach Shopify.
 import { planeRestEntwuerfe, REST_ENTWURF_TAG } from './restposten-entwurf.mjs';
+import { florklasseAusMm } from './import-pruefung.mjs';
 
 const SPERR_TAGS = new Set([REST_ENTWURF_TAG, 'aufmass-fehlt', 'bilder-fehlen', 'freigabe-fehlt']);
 const MAX_ZUSCHNITT_CM = 1000;
@@ -78,6 +79,8 @@ export function planeNeueRestrolle(rolle, { locationId } = {}) {
   metafields.push(
     { owner: `${key}:quelle`, namespace: 'custom', key: 'florhoehe_mm', type: 'number_decimal', value: flor.toFixed(1) },
     { owner: `${key}:quelle`, namespace: 'custom', key: 'florhohe', type: 'single_line_text_field', value: `ca. ${flor} mm` },
+    // Aus der eigenen Messung gerechnet, kein Herstellerbeleg: haelt die Rolle in ihrer Hoehenkategorie.
+    { owner: `${key}:quelle`, namespace: 'custom', key: 'florklasse', type: 'single_line_text_field', value: florklasseAusMm(flor) },
   );
   if (uvp != null) metafields.push({ owner: `${key}:quelle`, namespace: 'preis', key: 'vergleich_ist_uvp', type: 'boolean', value: 'true' });
   for (const role of ['raummass', 'kettelteppich']) {
