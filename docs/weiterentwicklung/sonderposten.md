@@ -473,3 +473,17 @@ Je Punkt eine Entscheidung, Empfehlung zuerst.
    für vier Wochen nach Stufe 1, dann an den Verkäufen entscheiden.
 6. **Fertigmaße aus Restrollen** (Stufe 5)? Empfehlung: erst entscheiden, wenn eBay läuft;
    dieselben Maße dann in beiden Kanälen.
+
+### 12.8 Entschieden am 2026-11-10 (Inhaber, per Klick)
+
+| Nr. | Entscheidung |
+|---|---|
+| 1 | Die 6 Entwurfsrollen gehen online. Preise wie im Entwurf, die beiden auf ,99 werden ,95 (38,95 und 24,95 €/m²). Die Rolle ohne UVP geht ohne Pille online. |
+| 2 | Reste ab 2 m Länge in voller Rollenbreite werden als Einzelstück verkauft, kleinere bleiben Mustermaterial. |
+| 3 | Auslaufware bleibt auf der Einstiegsseite, in getrennten Gruppen (Restrollen, Einzelstücke, Auslauf). |
+| 4 | Online ein Preis, kein Abholpreis. Nur der Satz „Abholung in Oranienburg möglich“. |
+| 5 | Shopping-Kampagne nur für Restrollen: 10 € am Tag, 4 Wochen, danach an den Verkäufen entscheiden. Start nach Stufe 1. |
+| 6 | Fertigmaße aus Restrollen (Stufe 5) werden eingeplant, sobald die Stufen 1 bis 4 laufen. |
+
+Stufe 1 ist damit freigegeben und läuft als eigene Aufgabe. Die Stufen 2 bis 5 brauchen je
+einen eigenen Auftrag.
