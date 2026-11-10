@@ -1,7 +1,7 @@
 {
   "format": "tp-tnm-endpreis-v1",
   "ok": true,
-  "erstellt": "2026-11-09T13:02:33.011Z",
+  "erstellt": "2026-11-10T12:49:42.431Z",
   "theme": "live",
   "produkte": 421,
   "varianten": 4580,
@@ -1899,7 +1899,7 @@
     },
     {
       "id": "gid://shopify/Product/16132122575182",
-      "updatedAt": "2026-11-09T11:59:34Z",
+      "updatedAt": "2026-11-09T23:59:46Z",
       "variantIds": [
         "61140136984910"
       ]
@@ -7058,7 +7058,7 @@
     },
     {
       "id": "gid://shopify/Product/16185087197518",
-      "updatedAt": "2026-11-09T11:05:14Z",
+      "updatedAt": "2026-11-10T01:11:20Z",
       "variantIds": [
         "61331841155406"
       ]
@@ -7072,35 +7072,35 @@
     },
     {
       "id": "gid://shopify/Product/16185090539854",
-      "updatedAt": "2026-11-09T11:05:16Z",
+      "updatedAt": "2026-11-10T01:11:14Z",
       "variantIds": [
         "61331848659278"
       ]
     },
     {
       "id": "gid://shopify/Product/16185091031374",
-      "updatedAt": "2026-11-09T11:05:14Z",
+      "updatedAt": "2026-11-10T01:11:50Z",
       "variantIds": [
         "61331850985806"
       ]
     },
     {
       "id": "gid://shopify/Product/16185091555662",
-      "updatedAt": "2026-11-09T11:05:16Z",
+      "updatedAt": "2026-11-10T01:11:37Z",
       "variantIds": [
         "61331853934926"
       ]
     },
     {
       "id": "gid://shopify/Product/16185094340942",
-      "updatedAt": "2026-11-09T11:05:16Z",
+      "updatedAt": "2026-11-10T01:11:14Z",
       "variantIds": [
         "61331862683982"
       ]
     },
     {
       "id": "gid://shopify/Product/16185094832462",
-      "updatedAt": "2026-11-09T11:05:15Z",
+      "updatedAt": "2026-11-10T01:11:07Z",
       "variantIds": [
         "61331865174350"
       ]
@@ -7122,7 +7122,7 @@
   ],
   "kanalFreigabe": false,
   "hinweis": "Das Manifest veroeffentlicht keine Produkte. Freigabe erst nach verarbeiteter Endpreisquelle.",
-  "katalogHash": "9720c5471c660a63d41cfb00b068cdad45260b6536fd7f67ae5b45b74389f2d3",
+  "katalogHash": "e602bf94a799ea99762578a0beca158dd9c8ca653e25cd5928813453f2db0bfb",
   "entnahmen": [],
   "vorherGoogle": 4580,
   "vorherMeta": 4580
