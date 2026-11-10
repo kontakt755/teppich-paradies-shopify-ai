@@ -25,6 +25,8 @@ const daten = () => ({
   auftraege: [auftrag('o1', [w1, w2], '2026-11-02'), auftrag('o2', [m1], '2026-11-01'), auftrag('o3', [m2, m3], '2026-11-01')],
   kundeInformiert: {}, kundentermine: {}, gesperrteMuster: [],
 });
+// Relativ zu heute: ein fester Tag loest ab 7 Tagen Alter "Nachhaken" aus (Test kippte am 10.11.2026).
+const gestern = new Date(Date.now() - 864e5).toISOString();
 const status = { 'o1::w1': 'geliefert', 'o1::w2': 'bestellt', 'o2::m1': 'geliefert', 'o3::m2': 'geliefert', 'o3::m3': 'bestellt' };
 
 function ansicht(query, { pack = true, ohneWare = false, gesperrt = [], bereichO2 = 'packen' } = {}) {
@@ -35,7 +37,7 @@ function ansicht(query, { pack = true, ohneWare = false, gesperrt = [], bereichO
     einkauf.bestellungen = { ...daten(), gesperrteMuster: gesperrt };
     // Ware schon beim Kunden: kein Warenauftrag mehr unter "Jetzt zu tun".
     if (ohneWare) einkauf.bestellungen.auftraege = einkauf.bestellungen.auftraege.filter(a => a.id !== 'o1');
-    einkauf.auftragsstatus = { positionen: Object.fromEntries(Object.entries(status).map(([k, st]) => [k, { status: st, bestelltAm: '2026-11-03T09:00:00Z' }])) };
+    einkauf.auftragsstatus = { positionen: Object.fromEntries(Object.entries(status).map(([k, st]) => [k, { status: st, bestelltAm: gestern }])) };
     einkauf.lieferanten = { lieferanten: [{ id: 'lieferant-a', stammdaten: { name: 'Lieferant A' } }] };
     kunden.musterPacken = pack ? { verfuegbar: true, offen: 2, zahlen: { packen: 1, warten: 1, klaeren: 0, gepackt: 0 },
       kunden: [{ bestellungen: [{ orderId: 'o2' }], bereich: bereichO2 }, { bestellungen: [{ orderId: 'o3' }], bereich: 'warten' }] } : { verfuegbar: false };
