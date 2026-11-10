@@ -40,7 +40,7 @@ test('Masspruefung Ja verlangt Telefon auch bei Beratung Nein', () => {
 
 test('attributeAus leert nicht benoetigte Felder und kappt den Freitext', () => {
   const a = B.attributeAus({ beratung: 'Nein', telefon: '0176 1234567', zeit: 'Egal', thema: 'x', mass: 'Ja', verlegung: true }, {});
-  assert.deepEqual(a, { Beratung: 'Nein', Telefon: '', 'Rückruf': '', Beratungsthema: '', 'Maßprüfung': '', Verlegung: '' });
+  assert.deepEqual(a, { Beratung: 'Nein', Telefon: '', 'Rückruf': '', Beratungsthema: '', 'Maßprüfung': '', Verlegung: '', 'Nachfrage erlaubt': '' });
   const b = B.attributeAus({ beratung: 'Ja', telefon: ' 0176 1234567 ', zeit: 'Vormittags', thema: 'y'.repeat(600), mass: 'Ja', verlegung: true }, { masspruefung: true, verlegung: true });
   assert.equal(b.Telefon, '0176 1234567');
   assert.equal(b.Beratungsthema.length, 500);
@@ -239,4 +239,15 @@ test('Masspruefung vor dem Zuschnitt wird nicht mehr gefragt, alte Antwort wird 
   const a = B.attributeAus({ beratung: 'Nein', mass: 'Ja', telefon: '0176 1234567' }, { beratungsfrage: false });
   assert.equal(a['Maßprüfung'], '');
   assert.equal(a.Telefon, '');
+});
+
+test('Nachfrage-Einwilligung nur mit Haekchen und nur bei reiner Musterbestellung', () => {
+  assert.equal(B.attributeAus({ nachfrage: true }, { beratungsfrage: false, nachfrage: true })['Nachfrage erlaubt'], 'Ja');
+  assert.equal(B.attributeAus({ nachfrage: false }, { beratungsfrage: false, nachfrage: true })['Nachfrage erlaubt'], '');
+  // Ware dazugelegt: Frage verschwindet, eine alte Antwort wird geleert.
+  assert.equal(B.attributeAus({ nachfrage: true }, { beratungsfrage: false, nachfrage: false })['Nachfrage erlaubt'], '');
+  const snippet = lies('snippets/tp-cart-beratung.liquid');
+  assert.ok(snippet.includes('attributes[Nachfrage erlaubt]'));
+  // Einwilligung nie vorausgewaehlt: checked nur aus cart.attributes.
+  assert.match(snippet, /data-tp-feld="nachfrage" form="cart-form" \{% if tpb_nachfrage_wert == 'Ja' %\}checked/);
 });

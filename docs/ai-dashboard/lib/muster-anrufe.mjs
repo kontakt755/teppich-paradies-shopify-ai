@@ -78,6 +78,18 @@ Teppich Paradies Oranienburg
 Sie möchten keine solchen Nachfragen mehr erhalten? Antworten Sie kurz mit „Abmelden“, dann schreiben wir Ihnen nicht mehr.`,
 });
 
+export const WHATSAPP_TEXT = 'Hallo, hier ist Teppich Paradies Oranienburg. Sie hatten bei uns Muster bestellt. Haben Sie sich schon für eine Farbe entschieden? Bei Fragen helfen wir gern.';
+
+/** wa.me-Link mit fertigem Text; deutsche Nummern ohne Vorwahl 0 bekommen 49. null ohne brauchbare Nummer. */
+export function whatsappLink(telefon, text = WHATSAPP_TEXT) {
+  let n = String(telefon || '').replace(/[^0-9+]/g, '');
+  if (n.startsWith('+')) n = n.slice(1);
+  else if (n.startsWith('00')) n = n.slice(2);
+  else if (n.startsWith('0')) n = `49${n.slice(1)}`;
+  n = n.replace(/\D/g, '');
+  return n.length >= 8 ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : null;
+}
+
 /** mailto:-Link der Rueckfrage fuer eine Zeile der Liste; null ohne E-Mail-Adresse. */
 export function rueckfrageLink(zeile, absender = null) {
   if (!zeile?.email) return null;
@@ -207,6 +219,8 @@ export function musterAnrufliste(zeilen = [], eintraege = {}, { jetzt = new Date
       tage: Math.max(...liste.map(l => l.tage)),
       seit: liste.map(l => l.seit).sort()[0],
       rueckrufWunsch: wunsch,
+      // WhatsApp nur mit Haekchen im Warenkorb (Einwilligung), nie ohne.
+      whatsapp: liste.some(l => l.z.nachfrageErlaubt),
       freigegeben: !nurMitWunsch || wunsch,
       // Ohne Freigabe verlaesst die Nummer den Server gar nicht erst.
       telefon: !nurMitWunsch || wunsch ? nummer : null,

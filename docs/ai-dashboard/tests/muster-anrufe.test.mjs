@@ -333,3 +333,14 @@ test('w-284: Nachfrage-Mails stehen ganz oben im Reiter, die Karte nur mit mn=1 
   // Auch wenn die Anrufliste fehlt oder laedt, bleibt der Stand der Mails sichtbar.
   assert.match(anrufAnsicht({ verfuegbar: false, hinweis: 'Test' }), /Automatische Nachfrage-Mails/);
 });
+
+test('WhatsApp nur mit Einwilligung, Nummer international', () => {
+  assert.match(anrufLib.whatsappLink('0176 123 45 67'), /^https:\/\/wa\.me\/491761234567\?text=Hallo/);
+  assert.match(anrufLib.whatsappLink('+49 (176) 1234567'), /wa\.me\/491761234567\?/);
+  assert.match(anrufLib.whatsappLink('0041 79 123 45 67'), /wa\.me\/41791234567\?/);
+  assert.equal(anrufLib.whatsappLink('–'), null);
+  const r = anrufLib.musterAnrufliste([zeile(91, { nachfrageErlaubt: true }), zeile(92, { nachfrageErlaubt: false })], {}, { jetzt: JETZT, nurMitWunsch: false });
+  const alle = [...r.anrufen, ...r.ohneNummer, ...r.gesperrt];
+  assert.equal(alle.find(z => z.orderIds[0] === 'o91')?.whatsapp, true);
+  assert.equal(alle.find(z => z.orderIds[0] === 'o92')?.whatsapp, false);
+});

@@ -16,7 +16,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { kundenLinkWert } from '../../lib/kunden-linkwert.mjs';
-import { ANRUF_ERGEBNISSE, ANRUF_GRUPPEN, ANRUF_NACH_TAGEN, HOECHSTENS_VERSUCHE, anrufErgebnis, anrufErgebnisText, rueckfrageLink, wiedervorlageTag } from '../../lib/muster-anrufe.mjs';
+import { ANRUF_ERGEBNISSE, ANRUF_GRUPPEN, ANRUF_NACH_TAGEN, HOECHSTENS_VERSUCHE, anrufErgebnis, anrufErgebnisText, rueckfrageLink, whatsappLink, wiedervorlageTag } from '../../lib/muster-anrufe.mjs';
 import { MUSTER_ALTERNATIVEN, MUSTER_VERMUTUNGEN, vermutungGenannt } from '../../lib/muster-ideen.mjs';
 import { kunden, telLink } from './gemeinsam.mjs';
 import { ensureKundenBestellungen } from './bestellungen.mjs';
@@ -55,9 +55,10 @@ function zeileHtml(z, { mitMail = false } = {}) {
   const absender = state.session?.benutzer?.name || null;
   const mail = mitMail ? rueckfrageLink(z, absender) : null;
   const key = esc(z.schluessel);
+  const wa = z.whatsapp ? whatsappLink(z.telefon) : null;
   return `<div class="row rueckruf-row anruf-zeile">
     <div>
-      <div class="t"><a href="${esc(kundeHref)}">${esc(z.kundenname || z.orderNames[0])}</a> <span class="muted small mono">${esc(z.orderNames.join(', '))}</span>${z.rueckrufWunsch ? ' <span class="badge plain">Rückruf gewünscht</span>' : ''}</div>
+      <div class="t"><a href="${esc(kundeHref)}">${esc(z.kundenname || z.orderNames[0])}</a> <span class="muted small mono">${esc(z.orderNames.join(', '))}</span>${z.rueckrufWunsch ? ' <span class="badge plain">Rückruf gewünscht</span>' : ''}${z.whatsapp ? ' <span class="badge plain">WhatsApp erlaubt</span>' : ''}</div>
       <div class="m">verschickt vor ${esc(plural(z.tage, 'Tag', 'Tagen'))}${z.versuche ? ` · ${esc(plural(z.versuche, 'Versuch', 'Versuche'))}` : ''}</div>
       ${z.muster.length ? `<div class="small muted">Muster: ${esc(z.muster.join(' · '))}</div>` : ''}
       ${z.telefon ? `<div class="tel-gross">${telLink(z.telefon)}</div>` : ''}
@@ -68,6 +69,7 @@ function zeileHtml(z, { mitMail = false } = {}) {
     <div class="r rueckruf-actions"${lesend ? ' hidden' : ''}>
       ${mitMail && mail ? `<a class="btn btn-sm" href="${esc(mail)}" title="Öffnet die fertige E-Mail im Mailprogramm. Gesendet wird erst dort.">Rückfrage-Mail öffnen</a>` : ''}
       ${mitMail && !mail ? '<span class="small muted">Keine E-Mail-Adresse</span>' : ''}
+      ${wa ? `<a class="btn btn-sm" href="${esc(wa)}" target="_blank" rel="noopener" title="Öffnet WhatsApp mit fertigem Text. Gesendet wird erst dort.">WhatsApp</a>` : ''}
       <button type="button" class="btn btn-sm" data-anruf-eintragen="${key}">Ergebnis eintragen</button>
     </div>
   </div>`;

@@ -38,7 +38,8 @@
     zeit: 'Rückruf',
     thema: 'Beratungsthema',
     mass: 'Maßprüfung',
-    verlegung: 'Verlegung'
+    verlegung: 'Verlegung',
+    nachfrage: 'Nachfrage erlaubt'
   };
 
   var TEXT = {
@@ -99,6 +100,7 @@
     out[KEYS.thema] = beratung === 'Ja' ? String(werte.thema || '').trim().slice(0, 500) : '';
     out[KEYS.mass] = mass;
     out[KEYS.verlegung] = ctx.verlegung && werte.verlegung ? 'Angefragt' : '';
+    out[KEYS.nachfrage] = ctx.nachfrage && werte.nachfrage ? 'Ja' : '';
     return out;
   }
 
@@ -137,13 +139,15 @@
     var r = el.querySelector('input[data-tp-feld="beratung"]:checked');
     var m = el.querySelector('input[data-tp-feld="mass"]:checked');
     var v = el.querySelector('input[data-tp-feld="verlegung"]');
+    var n = el.querySelector('input[data-tp-feld="nachfrage"]');
     return {
       beratung: r ? r.value : '',
       telefon: q('[data-tp-feld="telefon"]'),
       zeit: q('[data-tp-feld="zeit"]'),
       thema: q('[data-tp-feld="thema"]'),
       mass: m ? m.value : '',
-      verlegung: !!(v && v.checked)
+      verlegung: !!(v && v.checked),
+      nachfrage: !!(n && n.checked)
     };
   }
 
@@ -151,7 +155,8 @@
     return {
       beratungsfrage: el.hasAttribute('data-beratungsfrage'),
       masspruefung: el.hasAttribute('data-masspruefung'),
-      verlegung: el.hasAttribute('data-verlegung')
+      verlegung: el.hasAttribute('data-verlegung'),
+      nachfrage: el.hasAttribute('data-nachfrage')
     };
   }
 
@@ -281,7 +286,7 @@
     // Beobachtet werden Klasse und hidden im ganzen Element; waehrend
     // anzeigen() ist der Beobachter getrennt, damit keine Schleife entsteht.
     if (typeof MutationObserver !== 'undefined') {
-      var optionen = { attributes: true, subtree: true, childList: true, attributeFilter: ['class', 'hidden', 'data-beratungsfrage', 'data-masspruefung'] };
+      var optionen = { attributes: true, subtree: true, childList: true, attributeFilter: ['class', 'hidden', 'data-beratungsfrage', 'data-masspruefung', 'data-nachfrage'] };
       this.beobachter = new MutationObserver(function () {
         self.beobachter.disconnect();
         self.ctx = ctxAus(self);
