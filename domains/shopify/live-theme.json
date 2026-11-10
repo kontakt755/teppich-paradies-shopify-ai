@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-11-09T13:49:30Z",
-    "verifiedBy": "Admin API role MAIN nach workflow:live (main 135e2c24: #2074 Musterseite Plakette bei Vinyl von der Rolle und Restrollen)."
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-11-09T13:49:30Z",
-    "verifiedBy": "Bisheriges Live-Theme (seit main 87e6cb20), nach workflow:live (main 135e2c24) als Preview getauscht; Rolle UNPUBLISHED per Admin API bestaetigt."
+    "verifiedAt": "2026-11-10T08:54:04Z",
+    "verifiedBy": "Admin API role MAIN am 10.11. (themes.updatedAt 2026-11-09T15:47:13Z) nach workflow:live aus ~/Developer/tp-audit-deploy-20261023 (main 8897e8eb: #2080 Theme-Audit 09.11.); der Theme-Tausch-Commit fehlte, nachgetragen aus w-328."
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-11-10T08:54:04Z",
+    "verifiedBy": "Bisheriges Live-Theme (seit main 135e2c24), nach workflow:live (main 8897e8eb) als Preview getauscht; Rolle UNPUBLISHED per Admin API am 10.11. bestaetigt."
   },
   "fallback": {
     "themeId": "206590509390",
