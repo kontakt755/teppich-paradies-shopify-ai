@@ -283,14 +283,16 @@ export function jeEmpfaenger(buchungen) {
     .sort((a, b) => a.summe - b.summe || a.name.localeCompare(b.name, 'de'));
 }
 
+/** Ein CSV-Feld. Formeln aus fremden Namen duerfen in Excel nicht ausgefuehrt werden. */
+export function csvFeld(s) {
+  const t = String(s ?? '');
+  const sicher = /^[=+\-@\t\r]/.test(t) ? `'${t}` : t;
+  return /[";\n]/.test(sicher) ? `"${sicher.replace(/"/g, '""')}"` : sicher;
+}
+
 /** Liste als CSV fuer den Inhaber (Semikolon, Excel-tauglich). */
 export function listeCsv(empfaenger) {
-  const f = (s) => {
-    const t = String(s ?? '');
-    // Formeln aus fremden Namen duerfen in Excel nicht ausgefuehrt werden.
-    const sicher = /^[=+\-@\t\r]/.test(t) ? `'${t}` : t;
-    return /[";\n]/.test(sicher) ? `"${sicher.replace(/"/g, '""')}"` : sicher;
-  };
+  const f = csvFeld;
   const de = n => String(n.toFixed(2)).replace('.', ',');
   const zeilen = [['Empfaenger', 'IBAN', 'Art', 'Buchungen', 'Summe EUR', 'mit Beleg'].join(';')];
   for (const e of empfaenger) zeilen.push([f(e.name), f(e.iban), f(e.art), e.anzahl, de(e.summe), e.mitBeleg].join(';'));

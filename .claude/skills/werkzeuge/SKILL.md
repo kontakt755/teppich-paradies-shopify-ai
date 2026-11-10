@@ -41,6 +41,7 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run -s restrolle:plan` | Plan und Ablaufliste fuer eine neue Restrolle (vier Produkte), schreibt nichts nach Shopify |
 | `npm run -s muster:kauf [-- --tage 90 --nach 30]` | **monatlich**: wie viele Musterkunden binnen 30 Tagen Ware kaufen, je Warengruppe des Musters; Quote nur ueber Muster mit abgelaufenem Fenster, gibt keine Kundendaten aus; nur lesend |
 | `npm run -s belege:monat -- --monat JJJJ-MM [--schreiben]` | **monatlich**: Rechnungs-Archiv und Druck-PDF, Postfach nur lesend, Ablage nur privat (`operations/README.md`) |
+| `npm run -s zahlung:sammeldatei [-- --schreiben]` | SEPA-Sammeldatei (pain.001.001.09) und Pruefliste aus dem Belegarchiv: Skonto vor Fristende, sonst zur Nettofaelligkeit; Bezahlt-Abgleich gegen den Kontoauszug-Export; ohne Flag nur Pruefliste. Loest nie eine Zahlung aus, Ablage nur privat (`zahlungen/`) |
 | `npm run -s belege:bank -- <datei>` | Kontoauszug (CSV, CAMT.053) je Empfaenger: Lastschrift oder Ueberweisung, grobe Zuordnung zu Belegen, Ablage nur privat |
 | `npm run -s teppich:basis-daten` | **nach jedem Teppich-Import**: prueft `custom.teppich_basis_daten` (Gruppe, Qualitaetszeile, Breiten) gegen die Live-Regeln; `-- --pakete <ordner>` legt Schreibpakete + Rollback an → `docs/lessons/renderzeit-kollektionsseite.md` |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
