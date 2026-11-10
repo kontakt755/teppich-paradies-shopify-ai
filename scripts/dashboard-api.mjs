@@ -1346,7 +1346,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
     const zl = zeitleisten(dir, modell, statusAlle);
     return bestellliste(modell, { statusAlle, rueckrufeAlle }).map(sperrBereinigung(dir, statusAlle).zeile)
-      .map(z => ({ ...z, zeitleisteSchritt: zl.get(z.orderId)?.naechsterSchritt ?? null }));
+      // auftragsart kommt aus der Zeitleiste, nicht aus der Bestellliste - die Ansicht Laden filtert damit Muster heraus.
+      .map(z => ({ ...z, auftragsart: zl.get(z.orderId)?.auftragsart ?? null, zeitleisteSchritt: zl.get(z.orderId)?.naechsterSchritt ?? null }));
   }
 
   /** Wer kettelt und ob der Kettler-Dialog gilt: fuer die Zeitleiste in Kundenakte und Bestellungen. */
