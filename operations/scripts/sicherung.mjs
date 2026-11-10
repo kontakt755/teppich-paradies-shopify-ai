@@ -79,6 +79,9 @@ export const SICHERUNGSPFADE = Object.freeze([
   'serviceanfragen-postfach.json',
   // Rechnungs-Archiv (belege:monat): die Originale muessen digital bleiben, gedruckt wird nur eine Kopie.
   'belege-archiv',
+  // Sammelueberweisungen (zahlung:sammeldatei): vorgemerkt.json verhindert doppelte Zahlungen,
+  // dazu Konfiguration, Sammeldateien und Prueflisten.
+  'zahlungen',
   // Lieferantenbelege aus dem Postfach (AB, Lieferschein, Storno) samt Zuordnung und Haken.
   'lieferbelege',
   // Auslauf-Pruefung Lieferant I: die 30-Tage-Fristen stehen nur hier (operations/lib/auslauf-bestand.mjs).
