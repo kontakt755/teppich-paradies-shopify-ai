@@ -1,12 +1,17 @@
 // Einkauf "Je Auftrag" (#1996, 06.11.2026): Teillieferung ohne "Ware ist da", Filter Ware | Muster | Alle,
 // Musterversand als eine Zeile zur Packstation, Kopfzeile zaehlt jeden Auftrag einmal.
 // Erfundene Testdaten - keine Kunden, Lieferanten nur als Pseudonym.
-import test from 'node:test';
+import test, { before, after, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { viewEinkaufAblauf } from '../ansichten/einkauf/ablauf.mjs';
 import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { state } from '../kern/zustand.mjs';
+
+// Feste Uhr: die Ansicht ruft intern new Date() auf, die Fixtures tragen feste Daten ("bestellt 03.11.").
+// Mit der echten Uhr kippt der Auftrag ab 7 Kalendertagen auf "nachhaken" (lib/ampel.mjs) - am 10.11.2026 geschehen.
+before(() => mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-06T10:00:00Z') }));
+after(() => mock.timers.reset());
 
 const pos = (orderId, id, extra = {}) => ({ orderId, orderName: `#T${orderId}`, lineItemId: id, titel: `Artikel ${id}`, farbe: 'Grau', grosshaendlerId: `A-${id}`, bestellmenge: { menge: 1 }, ...extra });
 const auftrag = (id, positionen, datum) => ({ id, name: `#T${id}`, offen: true, datum, positionen, details: { kunde: { name: 'Testkunde' } } });
