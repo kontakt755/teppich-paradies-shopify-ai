@@ -485,5 +485,7 @@ Je Punkt eine Entscheidung, Empfehlung zuerst.
 | 5 | Shopping-Kampagne nur für Restrollen: 10 € am Tag, 4 Wochen, danach an den Verkäufen entscheiden. Start nach Stufe 1. |
 | 6 | Fertigmaße aus Restrollen (Stufe 5) werden eingeplant, sobald die Stufen 1 bis 4 laufen. |
 
-Stufe 1 ist damit freigegeben und läuft als eigene Aufgabe. Die Stufen 2 bis 5 brauchen je
+Stufe 1 lief am 10.11.: Preise und Breiten-Tags sind gesetzt. Die 6 Rollen stehen aber wieder auf
+Entwurf (Inhaber, selber Tag), weil sie nur Zuordnungsfotos haben. Sie gehen erst mit richtigen
+Fotos online, die Shopping-Kampagne startet erst danach. Die Stufen 2 bis 5 brauchen je
 einen eigenen Auftrag.
