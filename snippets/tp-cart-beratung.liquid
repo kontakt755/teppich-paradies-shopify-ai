@@ -80,6 +80,14 @@
   assign tpb_thema = cart.attributes['Beratungsthema'] | default: ''
   assign tpb_masswahl = cart.attributes['Maßprüfung'] | default: ''
   assign tpb_verlegt = cart.attributes['Verlegung'] | default: ''
+  assign tpb_nachfrage_wert = cart.attributes['Nachfrage erlaubt'] | default: ''
+
+  # Freiwillige Einwilligung zur Nachfrage per WhatsApp/Telefon (Inhaber 2026-11-10),
+  # nur bei reiner Musterbestellung. Ohne Haekchen wird nicht per WhatsApp gefragt.
+  assign tpb_nachfrage = false
+  if tpb_muster_zeilen > 0 and tpb_ware_zeilen == 0
+    assign tpb_nachfrage = true
+  endif
   assign tpb_id = 'tpb-' | append: section.id | downcase | replace: '_', ''
 
   # Antwort aus einem frueheren, reinen Musterwarenkorb steht noch am Cart,
@@ -122,7 +130,7 @@
   # Sichtbar ist das Element nur mit echtem Inhalt; zum reinen Aufraeumen
   # haengt es stumm im Dokument.
   assign tpb_sichtbar = false
-  if tpb_frage or tpb_verlegung
+  if tpb_frage or tpb_verlegung or tpb_nachfrage
     assign tpb_sichtbar = true
   endif
   assign tpb_zeigen = tpb_sichtbar
@@ -157,6 +165,7 @@
   class="tp-beratung{% unless tpb_sichtbar %} tp-beratung--stumm{% endunless %}{% if tpb_offen %} tp-beratung-offen{% endif %}"
   {% if tpb_frage %}data-beratungsfrage{% endif %}
   {% if tpb_verlegung %}data-verlegung{% endif %}
+  {% if tpb_nachfrage %}data-nachfrage{% endif %}
   {% if tpb_aufraeumen %}data-aufraeumen{% endif %}
 >
   {%- if tpb_frage -%}
@@ -205,6 +214,13 @@
     <label class="tp-beratung__option tp-beratung__option--einzeln">
       <input type="checkbox" name="attributes[Verlegung]" value="Angefragt" data-tp-feld="verlegung" form="cart-form" {% if tpb_verlegt == 'Angefragt' %}checked{% endif %}>
       <span>Ich interessiere mich für Aufmaß oder Verlegung durch Teppich Paradies</span>
+    </label>
+  {%- endif -%}
+
+  {%- if tpb_nachfrage -%}
+    <label class="tp-beratung__option tp-beratung__option--einzeln">
+      <input type="checkbox" name="attributes[Nachfrage erlaubt]" value="Ja" data-tp-feld="nachfrage" form="cart-form" {% if tpb_nachfrage_wert == 'Ja' %}checked{% endif %}>
+      <span>Sie dürfen mich in ein paar Tagen kurz per WhatsApp oder Telefon fragen, wie mir die Muster gefallen. <em class="tp-beratung__klein">Freiwillig, jederzeit widerrufbar. Bitte an der Kasse Ihre Handynummer angeben.</em></span>
     </label>
   {%- endif -%}
 
@@ -259,6 +275,12 @@
   }
   .tp-beratung__option--einzeln {
     margin-block-start: var(--margin-xs, 0.5rem);
+  }
+  .tp-beratung__klein {
+    display: block;
+    font-style: normal;
+    font-size: var(--tp-fs-xs);
+    color: rgb(from var(--color-foreground) r g b / 0.7);
   }
   .tp-beratung__option input {
     inline-size: 1.15em;

@@ -602,6 +602,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         telefon: telefon ? 'vorhanden' : 'fehlt',
         masspruefung: massProbleme.length ? 'Problem' : (massAttr ? jaNein(massAttr) : 'ok'),
         verlegung: jaNein(verlegung),
+        // Einwilligung aus dem Warenkorb: Nachfrage zu den Mustern per WhatsApp/Telefon (2026-11-10).
+        nachfrage: jaNein(attributWert(order, 'Nachfrage erlaubt')),
       },
       positionen,
       details: vollstaendigeDetails(order, positionen),
