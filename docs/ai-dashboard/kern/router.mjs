@@ -33,7 +33,7 @@ export function darfAnsicht(view) {
 export function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'hausverwaltungen', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
+  const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'hausverwaltungen', 'bildrechte', 'social', 'team', 'laden'].includes(path) ? path : 'heute';
   const view = darfAnsicht(bekannt) ? bekannt : 'heute';
   const params = new URLSearchParams(query);
   // Nachfrage-Mails stehen seit 07.11.2026 unter Kunden › Kunden nach Produkt fragen (w-284) - alte

@@ -22,7 +22,7 @@ const links = text => [...text.matchAll(/<a href="#\/([a-z]+)" data-nav="([a-z]+
 
 // Ansichten ohne eigenen Menuepunkt - mit dem Ort, von dem aus sie verlinkt sind. "Fotos" hatte
 // nie einen Eintrag (Stand 2026-10-12: 0) und wird ueber Social Media und die Suche erreicht.
-const OHNE_MENUEPUNKT = { fotos: 'ansichten/social.mjs' };
+const OHNE_MENUEPUNKT = { fotos: 'ansichten/social.mjs', laden: 'ansichten/hilfe.mjs' }; // Laden: Vollbild fuer den Ladenrechner, bewusst ohne Menue
 
 test('jede Ansicht hat einen Punkt in der Seitenleiste', () => {
   const vorhanden = links(seitenleiste).map(l => l.nav);

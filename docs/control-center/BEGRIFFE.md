@@ -346,3 +346,13 @@ gebraeuchlich), Erfassen.
   nur, wenn Ware (keine Muster, keine Eigenleistung) nie als „raus“ eingetragen war und in Shopify noch offen ist.
   Angehakt bucht Shopify den Versand mit Versandmail wie bei „An Kunden raus“; abgehakt ohne Mail wie bisher.
   Muster bekommen nie eine Mail.
+- **Laden (Ansicht, 10.11.)** = Vollbild-Seite für den Ladenrechner (`#/laden`, kein Menüpunkt), links **Mails**,
+  rechts **Zu tun**. Oben die offenen Einträge, darunter eingeklappt **Jemand kümmert sich**.
+- **Übernehmen / Wer? / Zurückgeben** = ein Eintrag im Laden wird von einer Person übernommen (Name per Knopf, kein
+  Login je Person) und wieder freigegeben. Plakette: „<Name> kümmert sich · seit …“.
+- **Aufgabe dazu** = eine von Hand angelegte Aufgabe im Laden (Rolle schneiden, Rechnung kontrollieren, Angebot
+  kontrollieren, Sonstiges). **Erledigt** nimmt sie aus der Liste.
+- **Kunde antwortet nicht** = Eintrag in „Zu tun“ (Laden), wenn laut Zeitleiste der Kunde dran ist und seit mindestens
+  14 Tagen nichts kam.
+- **Liegt zu lange** = die eine rote Zeile oben auf „Laden“: offene, noch nicht übernommene Einträge in der roten Stufe.
+
