@@ -22,7 +22,6 @@
   Schriftskala, derselbe Akzentton. Der Abschnitt soll als Teil der Seite
   gelesen werden und nicht als eingekaufte Werbeflaeche.
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign tp_sm_ziel = section.settings.cta_link | default: '/pages/muster'

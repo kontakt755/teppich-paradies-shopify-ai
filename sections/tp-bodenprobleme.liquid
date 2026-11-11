@@ -33,7 +33,6 @@
   aktuell hoechstens 5 Artikeln je Bereich unkritisch. Waechst ein Bereich
   ueber 50 Artikel, hier paginate ergaenzen.
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 
 {%- paginate shop.metaobjects.tp_bodenproblem.values by 250 -%}
   {%- assign bp_alle = shop.metaobjects.tp_bodenproblem.values | sort: 'handle' -%}

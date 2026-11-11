@@ -12,7 +12,6 @@
   Die Google-Bewertung wird nur angezeigt, wenn ein Wert eingetragen ist - und dann
   als Zahl aus dem Unternehmensprofil, die der Betreiber selbst pflegt.
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/'
   # Das Richtext-Feld liefert den Text in <p>...</p>. In einem h1 ist ein p nicht

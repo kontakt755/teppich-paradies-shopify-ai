@@ -53,6 +53,8 @@
     {%- endcomment -%}
     {%- render 'tp-mobil' -%}
     {%- render 'tp-gestaltung' -%}
+    {%- comment -%} Einmal je Seite statt je Section (Audit 2026-11-11, Befund 5). Im Kopf: am Seitenende flackern Knoepfe (Uebergang von Grau auf Dunkel). {%- endcomment -%}
+    {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
     {%- render 'tp-megamenu' -%}
     {%- render 'tp-verlegeseite' -%}
 

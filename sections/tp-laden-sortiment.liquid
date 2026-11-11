@@ -24,7 +24,6 @@
   Praefix tp-ldn: Section-CSS wird shopweit gebuendelt - ein geteiltes Praefix
   hat 2026-09-12 fremde Abstaende veraendert (tp-laden-hinweis/tp-lh).
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   assign ldn_band = false
   if section.settings.darstellung == 'band'

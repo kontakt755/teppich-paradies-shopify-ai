@@ -7,7 +7,6 @@
   setzt dort den Betreff und blendet das Feld Bestellnummer ein.
   WhatsApp-Nummer aus den Theme-Einstellungen (tp_vs_whatsapp), wie Boden-Finder.
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   assign rk_kontakt = pages['kontakt'].url | default: '/pages/kontakt' | append: '?thema=reklamation'
   assign rk_wa = settings.tp_vs_whatsapp | strip

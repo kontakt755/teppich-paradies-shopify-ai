@@ -17,7 +17,6 @@
   JavaScript, assets/tp-suche.js) fragt eigene resources[type] an - dort ist
   "article" nicht Teil dieser Aenderung, siehe snippets/tp-suche-ergebnisse.liquid.
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'tp-suche.js' | asset_url }}" type="module" fetchpriority="low"></script>
 
 <div class="tp-hs">
