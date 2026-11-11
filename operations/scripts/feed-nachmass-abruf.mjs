@@ -33,8 +33,10 @@ import { Keks, SHOP } from '../../scripts/teppich-basis-daten.mjs';
 createRequire(import.meta.url)('../../assets/tp-laengen-zuschnitt.js');
 const L = globalThis.TPLaengenZuschnitt;
 
+// title:nach* statt der Wortgruppe 'nach Maß': die liefert ueber die Admin API nichts (Fehllauf 2026-11-11).
+// Zu breite Treffer ("Nachtgrau") faengt gehoertDazu ueber die Adresse ab.
 export const ABFRAGE = `query($nach: String) {
-  products(first: 25, after: $nach, query: "status:active title:'nach Maß' -product_type:'${TNM_TYP}'") {
+  products(first: 25, after: $nach, query: "status:active title:nach* -product_type:'${TNM_TYP}'") {
     pageInfo { hasNextPage endCursor }
     nodes {
       id title productType status onlineStoreUrl updatedAt handle vendor description
