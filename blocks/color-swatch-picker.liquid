@@ -374,7 +374,7 @@
       </div>
     {%- endif -%}
 
-    <div class="color-swatch-picker__list-{{ color_picker_id }}" data-farb-liste>
+    <div class="color-swatch-picker__list-{{ color_picker_id }}" data-farb-liste role="radiogroup" aria-label="{{ color_option.name | escape }}">
       {% for value in color_option.values %}
         {% assign value_name = value | append: '' %}
         {% assign swatch_image = blank %}
