@@ -23,6 +23,8 @@ const links = text => [...text.matchAll(/<a href="#\/([a-z]+)" data-nav="([a-z]+
 // Ansichten ohne eigenen Menuepunkt - mit dem Ort, von dem aus sie verlinkt sind. "Fotos" hatte
 // nie einen Eintrag (Stand 2026-10-12: 0) und wird ueber Social Media und die Suche erreicht.
 const OHNE_MENUEPUNKT = { fotos: 'ansichten/social.mjs', laden: 'ansichten/hilfe.mjs' }; // Laden: Vollbild fuer den Ladenrechner, bewusst ohne Menue
+// Abgespeckt 2026-11-11 (#2143): Aufgabenverwaltung der Technik steht in der Werkbank; die Seiten bleiben ueber die Hilfe und die Suche erreichbar.
+for (const r of ['arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet']) OHNE_MENUEPUNKT[r] = 'ansichten/hilfe.mjs';
 
 test('jede Ansicht hat einen Punkt in der Seitenleiste', () => {
   const vorhanden = links(seitenleiste).map(l => l.nav);
@@ -93,14 +95,14 @@ test('Meldung laesst Klicks durch, bleibt aber ueber einem Schliess-Hintergrund 
 });
 
 
-test('Shop-Hauptwege und vier standardgeschlossene Bereichsgruppen ohne Linkverlust', () => {
+test('Shop-Hauptwege und zwei standardgeschlossene Bereichsgruppen', () => {
   const nav = teil('<nav class="mainnav"', '</nav>');
   const haupt = [...nav.matchAll(/<a [^>]*class="nav-haupt"[^>]*>[\s\S]*?<span>([^<]+)<\/span>/g)].map(m => m[1]);
   assert.deepEqual(haupt, ['Heute', 'Bestellungen', 'Muster bestellen', 'Packstation', 'Lexikon']);
   const gruppen = [...nav.matchAll(/<details class="nav-gruppe"([^>]*)>/g)];
-  assert.equal(gruppen.length, 4);
+  assert.equal(gruppen.length, 2);
   assert.ok(gruppen.every(m => !/\bopen\b/.test(m[1])));
-  for (const titel of ['Kunden &amp; Einkauf', 'Shop &amp; Inhalte', 'Verwaltung', 'Weitere Dashboards']) assert.ok(nav.includes(titel));
+  for (const titel of ['Weitere Bereiche', 'Weitere Dashboards']) assert.ok(nav.includes(titel));
   assert.ok(!nav.includes('id="navMore"'));
 });
 

@@ -121,7 +121,7 @@ function paletteItems(q) {
   items.push({ kind: 'Ansicht', label: 'Versandkosten GLS und GEL vergleichen', run: () => navigate('einkauf', { tab: 'versandkosten' }) });
   const views = [['heute', 'Heute'], ['einkauf', 'Bestellen beim Lieferanten'], ['kunden', 'Kunden'], ['arbeit', 'Technik (GitHub)'], ['freigaben', 'Entscheidungen'], ['bereiche', 'Bereiche'], ['insights', 'Kennzahlen'], ['aktivitaet', 'Verlauf'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben'], ['akquise', 'Genossenschaften & Hausverwaltungen (Aufträge anfragen)'], ['hausverwaltungen', 'Hausverwaltungen (Ansprechpartner, Objekte, Angebote)'], ['shopwache', 'Shop-Kontrolle'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
-  // Ziele unter "Mehr" mit denselben Worten und Rollen wie im Menue (index.html, Shop & Inhalte).
+  // Ziele unter "Mehr" mit denselben Worten und Rollen wie im Menue (index.html, Weitere Bereiche).
   const rolle = state.session?.benutzer?.rolle;
   if (darfAnsicht('sonderposten')) items.push({ kind: 'Ansicht', label: 'Sonderposten', run: () => navigate('sonderposten') });
   if (darfAnsicht('social') && !['lesen', 'mitarbeiter'].includes(rolle)) items.push({ kind: 'Ansicht', label: 'Social Media', run: () => navigate('social') });

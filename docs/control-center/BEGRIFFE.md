@@ -25,6 +25,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 |---|---|---|
 | Akquise | **Genossenschaften** (Seite: „Genossenschaften & Hausverwaltungen“) | Menue, Seite, To-do „Genossenschaften: N Firmen nachfassen“; enthaelt auch Ausschreibungen. Nicht verwechseln mit „Neue Aufträge“ der Auftrags-App-Zahlen |
 | – (neu 28.10.) | **Hausverwaltungen** | Menue „Kunden & Einkauf“, Seite und To-do „Hausverwaltungen: N wieder melden“; Verwaltungen mit Ansprechpartner, Objekten und Angeboten. Die Erstansprache bleibt unter „Genossenschaften“ |
+| Kunden & Einkauf, Shop & Inhalte, Verwaltung (Menuegruppen) | **Weitere Bereiche** | Eine aufklappbare Gruppe statt drei (2026-11-11, #2143); aeltere Zeilen hier nennen noch die alten Gruppennamen. Technik, Entscheidungen, Bereiche, Kennzahlen und Verlauf ohne Menuepunkt (Werkbank) |
 | – (neu 03.11.) | **Wer kettelt?** | Frage im Bestelldialog je gekettelten Teppich: „Lieferant kettelt, direkt an Kunden“ oder „Unser Kettler“; in der Kundenakte kurz „Kettelt“ |
 | Einkauf | **Bestellen** | Menue und Seitentitel; gemeint ist immer: wir bestellen beim Lieferanten. Die Bestellungen der Kunden heissen weiter „Bestellungen“ |
 | Lexikon | **Lexikon** (bleibt, Inhaber/Mitarbeiter 21.10.) | Menue, Seite, Handy-Leiste |

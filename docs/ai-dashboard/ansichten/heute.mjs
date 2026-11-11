@@ -202,6 +202,8 @@ function viewShop() {
   const selbst = selbstAbschickenStand({ daten: kunden.bestellungen, statusAlle: einkauf.auftragsstatus });
   // Eine Bestellung steht einmal (#1996): was rot unter "Probleme" steht, fehlt in "Alte Bestellungen aufräumen".
   const probleme = problemeShop(nf, selbst);
+  // Nur bei Stoerung oder Klaerung; was geklappt hat, steht als Zeile "Musterautomatik" im Hintergrund (#1996).
+  const klaerung = musterAutomatikBlock(kunden.bestellungen, Date.now(), { rot: probleme.rotMuster });
   return `<div class="heute shop-start">
     <header class="heute-geschaeft-kopf shop-start-kopf"><h1>Shop-Übersicht</h1>
       <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
@@ -211,16 +213,18 @@ function viewShop() {
     ${selbstAbschickenBlock(selbst, { lesend: istNurLesend() })}
     ${probleme.html}
     ${inhaberUeberblick()}
-    ${/* Nur bei Stoerung oder Klaerung; was geklappt hat, steht als Zeile "Musterautomatik" unten (#1996). */ ''}
-    ${musterAutomatikBlock(kunden.bestellungen, Date.now(), { rot: probleme.rotMuster })}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, anrufe: musterAnrufeOffen(), lesend: istNurLesend(), nurMuster: true })}
     ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), ohne: probleme.orderIds })}
+    ${/* Abgespeckt (#2143): Nachfassen, Musterautomatik und Datenstand hinter einem Klick; Rotes steht oben unter "Probleme". */ ''}
+    <details class="shop-nebenbereiche" data-collapsible="shop-weiteres"${weiteresOffen() ? ' open' : ''}><summary>Weiteres: Musterautomatik, Nachfassen und Datenstand${klaerung ? ' · Musterautomatik: Klärung nötig' : ''}</summary>
+    ${klaerung}
     ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, nachfassen: nf.alle, texte: heuteDaten.musterTexte })}
     <section class="shop-werkzeuge" aria-label="Shop-Werkzeuge">
       <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
     </section>
     ${/* Wie in den Alltagssichten mit Ueberschrift - Hilfe und Begriffe nennen die Zeilen "Im Hintergrund" (#1996). */ ''}
     <section class="heute-hintergrund" aria-labelledby="heuteHg"><h2 id="heuteHg">Im Hintergrund</h2>${musterAutomatikZeile(kunden.bestellungen)}${darfAnsicht('sonderposten') ? restrollenZeile() : ''}${datenstandZeile('shop')}</section>
+    </details>
     <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik${nebenbereichZusatz(kunden.serviceanfragen)}</summary>
       <nav class="chips" aria-label="Weitere Bereiche">
         <a class="chip" href="#/heute?sicht=laden">Laden &amp; Anfragen</a>
@@ -266,6 +270,11 @@ function problemQuellenFehlen() {
   if (darfAnsicht('einkauf')) teile.push(['Lieferantenbelege', belege.daten], ['Einkaufsdaten', einkauf.bestellungen]);
   if (darfAnsicht('shopwache')) teile.push(['Shop-Kontrolle', shopwache.daten]);
   return arbeitsquellenStand(teile).fehlt;
+}
+
+/** Auf/Zu merkt ereignisse.mjs je Abschnitt (data-collapsible); ohne Wahl zu. */
+function weiteresOffen() {
+  try { return localStorage.getItem('tp-heute-shop-weiteres') === '1'; } catch { return false; }
 }
 
 /** Umsatzzahlen sieht nur der Inhaber (NUR_INHABER im Server); alle anderen beginnen mit den Warenbestellungen. */

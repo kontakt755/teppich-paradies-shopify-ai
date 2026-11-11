@@ -1,0 +1,6 @@
+## 2026-11-11 · Control Center abgespeckt: eine Menügruppe, Startseite kürzer (#2143)
+
+- **Geaendert:** Die drei Menügruppen „Kunden & Einkauf“, „Shop & Inhalte“ und „Verwaltung“ sind eine Gruppe „Weitere Bereiche“. Technik, Entscheidungen, Bereiche, Kennzahlen und Verlauf haben keinen Menüpunkt mehr: Aufgaben, Entscheidungen und Projektstand stehen in der Werkbank (Reiter „Projekte“). Die Seiten selbst bleiben, erreichbar über die Hilfe (Abschnitt Aufgaben), die Suche und die Inhaber-Zeile der Startseite. Auf der Shop-Übersicht stehen „Musterautomatik: Klärung nötig“, „Versand & Kunden nachfassen“, „Lohnen sich die Muster?“ und „Im Hintergrund“ zugeklappt unter „Weiteres“; die Zusammenfassung nennt eine offene Klärung, Auf/Zu wird gemerkt. Nichts wurde gelöscht oder neu gebaut.
+- **Getestet:** `npm run dashboard:test` (1498 bestanden), `npm run dashboard:pruefen` (Desktop und Handy), `npm run -s pruefen`.
+- **Risiken/Annahmen:** Die Umsatzzahl bleibt oben (Inhaber 05.11.: zahlende Warenkunden zuerst). Eine Klärung der Musterautomatik ist nur noch in der Zusammenfassungszeile sichtbar, bis jemand aufklappt. Wer eine der fünf Seiten als Lesezeichen hat, merkt nichts.
+- **Nächste Stufe:** Nach zwei Wochen fragen, ob „Aufgaben“ und „Vorbereiten“ noch gebraucht werden; die fünf Seiten erst entfernen, wenn sie niemand vermisst.
