@@ -40,14 +40,14 @@
   {%- comment -%} D5: klar als Bewertung des Shops, nicht des Produkts. Bleibt Pflicht, weil der Block nahe an Preis und Bildern steht {%- endcomment -%}
   <span class="tp-bewertungsbeleg__label">Shopbewertung bei Google</span>
   {%- if tp_bb_rating != blank -%}
-    <span class="tp-bewertungsbeleg__stars-{{ tp_bb_id }}" aria-label="{{ tp_bb_rating }} von 5 Sternen">
+    <span class="tp-bewertungsbeleg__stars-{{ tp_bb_id }}" aria-hidden="true">
       {%- comment -%} Runden wie Google: 4,9 zeigt fuenf Sterne, nicht vier {%- endcomment -%}
       {%- assign tp_bb_full = tp_bb_rating | replace: ',', '.' | round -%}
       {%- for i in (1..5) -%}
         {%- if i <= tp_bb_full -%}★{%- else -%}☆{%- endif -%}
       {%- endfor -%}
     </span>
-    <span class="tp-bewertungsbeleg__score-{{ tp_bb_id }}">{{ tp_bb_rating }}/5</span>
+    <span class="tp-bewertungsbeleg__score-{{ tp_bb_id }}"><span class="tp-bewertungsbeleg__sr-{{ tp_bb_id }}">{{ tp_bb_rating }} von 5 Sternen, </span>{{ tp_bb_rating }}/5</span>
     {%- if tp_bb_count != blank -%}
       <span class="tp-bewertungsbeleg__count-{{ tp_bb_id }}">aus {{ tp_bb_count }} Bewertungen</span>
     {%- endif -%}
@@ -77,8 +77,17 @@
   .tp-bewertungsbeleg__hinweis .tp-bewertungshinweis { margin-top: 0; }
 
   .tp-bewertungsbeleg__stars-{{ tp_bb_id }} {
-    color: #ffb400;
+    color: #ffb400; /* dekorativ (aria-hidden), die Zahl daneben traegt die Information: 1.4.11 greift nicht, Gold bleibt */
     letter-spacing: 1px;
+  }
+
+  .tp-bewertungsbeleg__sr-{{ tp_bb_id }} {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .tp-bewertungsbeleg__score-{{ tp_bb_id }} {
