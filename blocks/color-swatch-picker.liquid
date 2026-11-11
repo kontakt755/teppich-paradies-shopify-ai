@@ -461,7 +461,7 @@
         {%- liquid
           assign tp_cs_low = value_name | downcase
           assign tp_cs_familie = 'uebrige'
-          assign tp_cs_familie_label = 'Uebrige'
+          assign tp_cs_familie_label = 'Übrige'
 
           if tp_cs_low contains 'grau' or tp_cs_low contains 'anthrazit' or tp_cs_low contains 'schwarz' or tp_cs_low contains 'silber'
             assign tp_cs_familie = 'grau'
@@ -474,7 +474,7 @@
             assign tp_cs_familie_label = 'Blau'
           elsif tp_cs_low contains 'gruen' or tp_cs_low contains 'grün' or tp_cs_low contains 'oliv' or tp_cs_low contains 'salbei'
             assign tp_cs_familie = 'gruen'
-            assign tp_cs_familie_label = 'Gruen'
+            assign tp_cs_familie_label = 'Grün'
           elsif tp_cs_low contains 'rot' or tp_cs_low contains 'bordeaux' or tp_cs_low contains 'orange' or tp_cs_low contains 'terra'
             assign tp_cs_familie = 'rot'
             assign tp_cs_familie_label = 'Rot & Orange'
@@ -483,7 +483,7 @@
             assign tp_cs_familie_label = 'Gelb'
           elsif tp_cs_low contains 'weiss' or tp_cs_low contains 'weiß'
             assign tp_cs_familie = 'weiss'
-            assign tp_cs_familie_label = 'Weiss'
+            assign tp_cs_familie_label = 'Weiß'
           endif
         -%}
         <label
