@@ -1,6 +1,6 @@
 # Sonderposten: Produktstruktur, Pflege und Ladenverkauf
 
-Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phasen 4 und 5). Stand 2026-10-10 (Review-Befunde vom 09.10. eingearbeitet).
+Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phasen 4 und 5). Stand 2026-10-10 (Review-Befunde vom 09.10. eingearbeitet); Abschnitt 12 (Ausbaukonzept) vom 2026-11-10.
 
 ## 1. Grundsatz
 
@@ -282,3 +282,210 @@ sucht) und die vier Auslauf-Kollektionen, die vorher verstreut in den Warengrupp
 (`domains/shopify/menue-restposten-2026-11.json`). Die Beschreibung der Kollektion erklärt die
 beiden Schilder (Sonderposten, Auslaufkollektion); die Chip-Leiste im Kopf kommt aus dem Menü
 und blendet leere Ziele wie „Aktuelle Angebote“ aus.
+
+## 12. Konzept: Ausbau zum eigenen Shopbereich (Entwurf 2026-11-10)
+
+Nur Konzept. Nichts davon ist gebaut, kein Preis und kein Produkt wurde angefasst. Die
+Entscheidungen des Inhabers aus den Abschnitten 8, 10 und 11 und aus dem Skill `preislogik`
+(Sofortkauf, ein Artikel je Rolle, UVP mit Abstand in Rot, Endung ,95, Muster von der Rolle,
+einfache Fotos, Ladenverkauf von Hand) gelten weiter und werden hier nicht neu aufgemacht.
+
+### 12.1 Ist-Stand (Admin API und ShopifyQL, nur lesend, 2026-11-10)
+
+**Was im Bereich steht** (`productsCount` und Produktliste zum Tag `sonderposten`):
+
+| Art | Anzahl | Status | Bemerkung |
+|---|---|---|---|
+| Restrollen (Typ Teppichboden, Vorlage `rolle`) | 10 | aktiv | 718 m² Bestand, Warenwert zum Onlinepreis rund 24.700 €; 7 Rollen 4 m breit, 3 Rollen 5 m; Restlänge 4 bis 22,5 m; 27,95 bis 41,95 €/m², 34 bis 50 % unter UVP |
+| Kettelteppich nach Maß aus der Restrolle | 10 | aktiv | eigenes Produkt je Rolle, in der Kollektionsliste ausgeblendet (`sections/main-collection.liquid`), erreichbar über den Link auf der Karte der Rolle |
+| Raummaß-Produkte | 10 | UNLISTED | nur Abrechnungszeile, nie löschen |
+| Neue Restrollen samt Zuschnitt, Raummaß, Kettel | 6 Rollen (24 Produkte) | Entwurf | 517 m², 23,95 bis 38,99 €/m²; je 1 Bild, ohne Tags `breite_boden:` und `farbe:`, eine Rolle ohne UVP |
+| Einzelstücke (Typ `Sonderposten`, Abschnitte 1 bis 9) | 0 | – | es gibt nur Vorlage und Teststück, beide Entwurf |
+| Auslaufware (Tag `auslauf`, aktiv) | 58 | aktiv | 29 Teppichboden, 24 Teppich nach Maß, 5 Klickvinyl; steht nur in `restposten` |
+
+Die Kollektion `reste-sonderposten` zählt im Admin 54 Produkte, `restposten` 114; im Shop
+sichtbar sind davon die aktiven. Der Shop hat insgesamt 3.033 aktive Produkte.
+
+**Abweichungen, die beim Erheben auffielen** (nicht geändert):
+
+- Abschnitt 3 nennt die Metafelder `sonderposten.*` „noch nicht angelegt“. Alle 14 Definitionen
+  existieren inzwischen.
+- 5 der 10 aktiven Rollen tragen keinen Tag `farbe:`. Ein Farbfilter zeigt sie nicht.
+- Zwei aktive Rollen und zwei Entwürfe enden auf ,99 statt ,95 (`preislogik`, Regel vom 07.11.).
+- Abschnitt 10: Ein verkauftes Einzelstück verschwände nicht mehr von selbst aus der
+  Kollektion (Regel `Tag = sonderposten`). Bisher folgenlos, weil es keine Einzelstücke gibt.
+
+**Wie Kunden hinkommen:**
+
+| Weg | Stand |
+|---|---|
+| Hauptmenü „Angebote & Reste“ | zeigt bis 30.11. auf `/collections/angebote` (Black Week); die Reste stehen als 3. und 4. Unterpunkt („Alle Restposten & Auslauf“, „Restrollen & Reststücke“). Danach wieder `restposten` (`angebote.md` §6) |
+| Startseite | Band `start_restrollen`, 5. Abschnitt, 8 Karten aus `reste-sonderposten`, Knopf „Alle Restrollen ansehen“ |
+| Kategorien | die 10 Rollen stehen vorn in `teppichboden` und den Florarten, Plakette „Restrolle“ und rote Pille „−x % ggü. UVP“; auf „Teppich nach Maß“ eine eigene erste Reihe |
+| Normale Produktseite | `blocks/tp-aktion-hinweis.liquid` zeigt „Von … auch als Restposten“, höchstens 2 Rollen, nur bei gleichem echtem Hersteller. Beim Hausnamen erscheint nichts, also bei den meisten Teppichböden |
+| Suche | „restrolle“, „restposten“ führen auf beide Kollektionen (`snippets/tp-suche-thema.liquid`) |
+| Leere Angebotsseite, Fußzeile | Link auf die Reste |
+| Google & YouTube | Rollen stehen im Kanal; eine eigene Kampagne gibt es nicht (Werkbank w-250) |
+| eBay | vorbereitet, nichts eingestellt (Werkbank w-313) |
+
+**Die Seite selbst** (`templates/collection.sonderposten.json`): Titel, Beschreibung, Hinweis
+„Im Laden ansehen, selbst abholen“, Filter und Sortierung, 24 Karten, darunter das
+Ladensortiment mit „Reste-Regal“. Die Karte einer Rolle zeigt „Noch x m² · y m Restlänge“ und
+den Link zum Kettelteppich. Die Rollenbreite steht nur im Titel. Preisklassen-Kacheln und der
+Filter „Preis je m²“ sind dort nicht eingebunden, der Standard-Preisfilter ist ausgeblendet.
+
+**Zahlen:**
+
+| Was | Wert | Quelle |
+|---|---|---|
+| Online-Bestellungen mit Restrollen seit 09.10. | 0 | ShopifyQL `sales` nach Titel und Tag; Gegenprobe: Teppichboden gesamt 3 Bestellungen im selben Zeitraum |
+| Sitzungen im Shop 29.10. bis 10.11. | 2.421, davon 96 mit Warenkorb, 34 mit Kauf | ShopifyQL `sessions` |
+| Sitzungen, die auf einer Reste-Seite **einsteigen** | 19 (0,8 %), 0 mit Warenkorb | davon 5 `reste-sonderposten`, 1 `restposten`, 11 Rollen-Produktseiten |
+| Ladenverkäufe von den Rollen | bis 06.11. keine Buchung im Protokoll | Stand laut Betriebsnotiz, hier nicht neu gelesen |
+
+Nicht belegbar: Aufrufe der Reste-Seiten **innerhalb** eines Besuchs, Klicks auf Startseitenband
+und Produktverweis (GA4 war über den Auswertungszugang nicht lesbar, ShopifyQL kennt nur die
+Einstiegsseite), die Filter der Kollektion in Search & Discovery und echte Pflegezeiten im Laden.
+
+**Lesart:** Die Technik für Sofortkauf steht. Es fehlen Besucher und Auswahl. Mit 10 Rollen und
+ohne ein einziges Einzelstück ist „Bereich“ zu viel gesagt, und 19 Einstiege in zwölf Tagen
+tragen keinen Verkauf. Ein Umbau der Seite allein ändert daran wenig.
+
+### 12.2 Ziel und Zielkunde
+
+**Ziel:** Lagerware dreht (Inhaber 04.11.: Umschlag vor Marge). Messbar: Verkäufe aus dem Bereich
+je Monat und verkaufte m², nicht Seitenaufrufe.
+
+**Für wen:**
+
+1. **Kleiner Raum, kleines Budget** (Kinderzimmer, Flur, Keller, Mietwohnung, Vermieter): will
+   wissen „reicht das Stück für meinen Raum, was kostet es fertig, wann ist es da“.
+2. **Abholer und Kunden im Umkreis** (rund 50 km): wollen ansehen, mitnehmen oder liefern lassen.
+3. **Teppich-nach-Maß-Käufer**: gekettelter Teppich aus Markenware deutlich unter UVP.
+
+Alle drei fragen zuerst nach **Maß**, dann nach Farbe, dann nach Preis. Das unterscheidet den
+Bereich vom normalen Sortiment, wo jede Länge lieferbar ist.
+
+### 12.3 Seitenaufbau
+
+**Einstieg: eine Seite, `/collections/restposten`.** `reste-sonderposten` bleibt als technische
+Kollektion (Startseitenband, Produktverweis), wird aber nicht zweiter Einstieg.
+
+1. **Kopf:** ein Satz („Lagerware zum kleinen Preis: sofort da, auf Ihr Maß geschnitten“) und
+   drei Fakten als Zeile: sofort ab Lager · Zuschnitt und Kettelung möglich · Muster kostenlos.
+   Vorhanden sind Titel, Beschreibung und Laden-Hinweis; neu wäre nur die Faktenzeile.
+2. **„Passt es in meinen Raum?“** Zwei Felder (Breite, Länge in m). Die Seite blendet Rollen
+   aus, deren Breite oder Restlänge nicht reicht, und sagt bei Räumen über 5 m, dass eine Naht
+   nötig ist. Bei 10 bis 30 Rollen reicht dafür ein kleines Skript über Werte, die
+   `snippets/tp-rollenrest.liquid` schon rechnet (als `data-`Attribute an der Karte). Kein
+   neues Metafeld, kein Search-&-Discovery-Umbau.
+3. **Drei Gruppen statt einer gemischten Liste:** Restrollen · Einzelstücke (sobald es welche
+   gibt, sonst unsichtbar) · Auslaufkollektionen. Heute mischt „neueste zuerst“ 10 Rollen unter
+   58 Auslaufprodukte.
+4. **Filter** aus Search & Discovery, nur was Daten hat: Rollenbreite (`custom.rollenbreite`),
+   Farbe (Tag `farbe:`), Preis je m² (`custom.meterpreis_bereich`, an allen 10 aktiven Rollen
+   gesetzt). Ob sie für diese Kollektion schon eingeschaltet sind, ist nicht geprüft.
+5. **Ladensortiment** mit Reste-Regal bleibt unten.
+
+**Karte** (bestehende `_product-card`, nur `blocks/tp-card-aktion.liquid` ergänzen): Zeile
+„4 m breit · noch 20 m“ statt nur m² und Restlänge. Plakette, rote UVP-Pille, Preis je m² und
+Link zum Kettelteppich bleiben. Für Einzelstücke gibt es `blocks/tp-card-sonderposten.liquid`
+(Art, Maße, Stückpreis) bereits.
+
+**Produktseite:** bleibt. Rolle = Vorlage `rolle` mit Rechner für Meterware und Raummaß,
+Restbestand, UVP-Zeile, Muster. Einzelstück = Vorlage `sonderposten`. Sinnvolle kleine
+Ergänzungen an der Rolle: „zuletzt gemessen am …“ (Datum der letzten Inventur) und ein Satz zu
+Abholung oder Lieferung im Umkreis. Rechner, Warenkorblogik und Musterbestellung werden nicht
+angefasst.
+
+**Zuführung** (wichtiger als die Seite selbst):
+
+- Produktverweis auch beim Hausnamen: „Ähnlich als Restrolle: …“ nach Florart und Farbe statt
+  nur nach Hersteller. Das ist eine Regeländerung in `blocks/tp-aktion-hinweis.liquid`.
+- Schmales Band in den Teppichboden-Kategorien über den Karten („10 Restrollen ab 27,95 €/m²“).
+- Hauptmenü ab 01.12. wieder auf `restposten` (Plan liegt vor).
+- Shopping-Kampagne nur für Restrollen (w-250) und eBay (w-313) als zweite Kanäle.
+
+### 12.4 Daten je Rest
+
+| Angabe | Wofür | Quelle heute | Gepflegt? |
+|---|---|---|---|
+| Rollenbreite | Raum-Prüfung, Filter, Karte | `custom.rollenbreite`, Tag `breite_boden:` | aktive ja; 6 Entwürfe ohne Tag |
+| Restlänge und Bestand in m² | Raum-Prüfung, „Noch x m²“, Kaufgrenze | `custom.max_roll_laenge_cm`, Bestand der Variante | ja, alle 16; Nachmessen alle 30 Tage im Control Center |
+| Farbe | Filter | Tag `farbe:` | 5 von 10 aktiven, 0 von 6 Entwürfen |
+| Preis je m² und Bereich | Karte, Filter | Variante, `custom.meterpreis_bereich` (stündlicher Abgleich) | aktive ja; Entwürfe erst nach Freischaltung |
+| UVP mit Beleg | rote Pille | Vergleichspreis, `preis.vergleich_ist_uvp` | 10 von 10 aktiven; 1 Entwurf ohne |
+| Florhöhe „ca.“ | Technik-Tabelle | `custom.florhohe`, von Hand gemessen | 9 von 10 aktiven; übrige Technikdaten lückenhaft |
+| Fotos | Karte, Produktseite | Draufsicht plus Ecke von oben | aktive 1 bis 4 Bilder; Entwürfe je 1 |
+| Datum der letzten Messung | Vertrauen | Protokoll im Control Center | intern ja, im Shop nicht sichtbar |
+| Einzelstück: Maße, Art, Zustand, Herkunft, Preisbeleg | Karte, Vorlage `sonderposten` | Metafelder `sonderposten.*` (Abschnitt 3) | Definitionen da, kein Stück angelegt |
+| Lagerplatz | Finden im Laden | `sonderposten.lagerort` | nein; Rollen sind im Laden rot markiert |
+| Einkaufspreis | Kalkulation | privat, pauschal angesetzt | nicht je Rolle |
+
+Für die Stufen 1 und 2 fehlt nur wenig: Farb-Tags an 5 Rollen, Tags und Bilder an den 6 Entwürfen.
+
+### 12.5 Pflege im Laden
+
+Zeiten sind Schätzungen, nicht gemessen.
+
+| Vorgang | Heute | Aufwand | Schwachstelle |
+|---|---|---|---|
+| Rolle anlegen | messen, `npm run -s restrolle:plan`, Anlage von vier Produkten über die Admin API durch die KI | Laden rund 10 min je Rolle, Rest automatisch | Preis und UVP braucht jedes Mal den Inhaber |
+| Foto | Ecke von oben aus der Hand plus Etikett | rund 5 min je Rolle | Bodenbild macht die KI, Sichtfreigabe nötig |
+| Online-Verkauf | Bestand bucht sich selbst ab (Zuschnitt-Bündel) | keiner | Zuschnitt und Versand wie bei jeder Meterware |
+| Ladenverkauf | von Hand im Control Center: Sonderposten → Rolle → „Ladenverkauf buchen“ | 1 min | wird es vergessen, verkauft der Shop Meter, die nicht mehr da sind; bisher keine Buchung im Protokoll |
+| Nachmessen | alle 30 Tage, Zeile „Restrollen“ auf „Heute“ | rund 30 min für alle Rollen | einziges Netz gegen vergessene Ladenverkäufe |
+| Einzelstück anlegen | Abschnitt 5 (Vorlage duplizieren, 8 Schritte) | rund 15 min je Stück | lohnt nur ab einer Mindestgröße und einem Mindestpreis |
+
+Folgerung: Rollen kosten wenig Pflege je Euro Warenwert, Einzelstücke viel. Der Ausbau beginnt
+deshalb bei den Rollen und nimmt Einzelstücke erst mit einer Größengrenze dazu.
+
+### 12.6 Ausbaustufen
+
+| Stufe | Inhalt | Aufwand | Nutzen | Braucht |
+|---|---|---|---|---|
+| **1 Sortiment und Daten vollständig** | 6 Entwurfsrollen freischalten (16 statt 10 Rollen, 1.235 statt 718 m²), Farb- und Breiten-Tags ergänzen, in die Kategorien einsortieren, Preisendungen klären; Basiszahlen festhalten (Einstiege, Verkäufe) und GA4 lesbar machen | S | mehr Auswahl sofort, Filter und Raum-Prüfung haben danach Daten, spätere Stufen werden messbar | Freigabe Preise und UVP je Rolle; kein Theme-Code |
+| **2 Einstiegsseite nach Maß** | Faktenzeile, Raum-Prüfung, drei Gruppen, Karte mit Breite und Länge, Filter einschalten | M | beantwortet die erste Kundenfrage auf der Seite statt erst im Rechner | Stufe 1; Theme-PR, Test Desktop und 390 px |
+| **3 Zuführung** | Verweis „ähnlich als Restrolle“ auch beim Hausnamen, Band in den Teppichboden-Kategorien, Menü ab 01.12. auf die Reste, Shopping-Kampagne, eBay | S bis M | hebt den Engpass Besucher; größter Hebel auf Verkäufe | Budget für die Kampagne, eBay-Freigaben (w-313) |
+| **4 Einzelstücke** | Reste ab einer Mindestgröße als Stück mit festem Maß und Stückpreis (Technik aus Abschnitt 1 bis 9 ist gebaut), Kollektionsregel so, dass Verkauftes verschwindet, Gruppe „Einzelstücke“ wird sichtbar | M | macht aus 16 Artikeln einen Bereich zum Stöbern; verwertet Rollenenden | Regel Verkauf gegen Mustermaterial, Pilot nach Abschnitt 9 |
+| **5 Fertigmaße und Laden-Abgleich** | gekettelte Teppiche in Standardmaßen aus Restrollen als fertige Artikel (deckt sich mit der eBay-Vorgabe), Meldung aus der Kasse bei nicht gebuchtem Ladenverkauf (Abschnitt 6, Weg C) | L | Kauf ohne Rechner, weniger Überverkaufsrisiko bei mehr Umsatz | Stufen 1 bis 4 laufen und verkaufen |
+
+Reihenfolge: 1 vor 2, weil eine Maß-Suche über 10 Rollen wenig findet. 3 kann gleich nach 1
+starten und parallel zu 2 laufen. 4 und 5 erst, wenn aus den Rollen Verkäufe kommen.
+
+**Empfehlung: Stufe 1 zuerst.** Sie kostet am wenigsten, braucht keinen Theme-Code und liefert
+die Zahlen, an denen sich die übrigen Stufen messen lassen.
+
+### 12.7 Entscheidungen des Inhabers
+
+Je Punkt eine Entscheidung, Empfehlung zuerst.
+
+1. **Sechs Entwurfsrollen freischalten?** Empfehlung: ja, mit Preis und UVP je Rolle einzeln
+   bestätigt; die Rolle ohne UVP geht ohne Pille online.
+2. **Ab welcher Größe wird ein Rest verkauft statt Mustermaterial?** Empfehlung: ab 2 m Länge
+   in voller Rollenbreite verkaufen, alles darunter bleibt Mustermaterial (Regel vom 21.10.).
+3. **Auslaufware auf derselben Seite?** Empfehlung: ja, eine Einstiegsseite mit getrennten
+   Gruppen; Alternative: Auslauf nur noch in den Warengruppen.
+4. **Abholpreis zeigen?** Der Laden verkauft 5 €/m² günstiger als der Shop. Empfehlung: online
+   ein Preis, dazu der Satz „Abholung in Oranienburg möglich“; ein zweiter Preis wäre eine
+   Preis- und Checkout-Änderung.
+5. **Werbebudget für Restrollen** (Shopping-Kampagne, w-250)? Empfehlung: kleines Tagesbudget
+   für vier Wochen nach Stufe 1, dann an den Verkäufen entscheiden.
+6. **Fertigmaße aus Restrollen** (Stufe 5)? Empfehlung: erst entscheiden, wenn eBay läuft;
+   dieselben Maße dann in beiden Kanälen.
+
+### 12.8 Entschieden am 2026-11-10 (Inhaber, per Klick)
+
+| Nr. | Entscheidung |
+|---|---|
+| 1 | Die 6 Entwurfsrollen gehen online. Preise wie im Entwurf, die beiden auf ,99 werden ,95 (38,95 und 24,95 €/m²). Die Rolle ohne UVP geht ohne Pille online. |
+| 2 | Reste ab 2 m Länge in voller Rollenbreite werden als Einzelstück verkauft, kleinere bleiben Mustermaterial. |
+| 3 | Auslaufware bleibt auf der Einstiegsseite, in getrennten Gruppen (Restrollen, Einzelstücke, Auslauf). |
+| 4 | Online ein Preis, kein Abholpreis. Nur der Satz „Abholung in Oranienburg möglich“. |
+| 5 | Shopping-Kampagne nur für Restrollen: 10 € am Tag, 4 Wochen, danach an den Verkäufen entscheiden. Start nach Stufe 1. |
+| 6 | Fertigmaße aus Restrollen (Stufe 5) werden eingeplant, sobald die Stufen 1 bis 4 laufen. |
+
+Stufe 1 lief am 10.11.: Preise und Breiten-Tags sind gesetzt. Die 6 Rollen stehen aber wieder auf
+Entwurf (Inhaber, selber Tag), weil sie nur Zuordnungsfotos haben. Sie gehen erst mit richtigen
+Fotos online, die Shopping-Kampagne startet erst danach. Die Stufen 2 bis 5 brauchen je
+einen eigenen Auftrag.
