@@ -183,8 +183,13 @@
       </li>
     {% endcapture %}
 
-    {%- comment -%} Navigation Desktop und Handy: tp-vinyl-nav, tp-leisten-nav, tp-drawer-nav {%- endcomment -%}
-    {{ 'tp-nav.css' | asset_url | stylesheet_tag }}
+    {%- comment -%}
+      Navigation Desktop und Handy: tp-vinyl-nav, tp-leisten-nav, tp-drawer-nav.
+      preload: true setzt die Datei in den Link-Header (Early Hints). Ohne ihn entdeckt der Browser
+      sie erst hier, nach dem ganzen Seitenkopf, und alles unterhalb des Menue-Knopfs wartet darauf
+      (Kollektion mobil, 2026-11-11). Die Stelle bleibt, damit die Reihenfolge der Regeln gleich bleibt.
+    {%- endcomment -%}
+    {{ 'tp-nav.css' | asset_url | stylesheet_tag: preload: true }}
 
     <header-menu
       ref="headerMenu"
