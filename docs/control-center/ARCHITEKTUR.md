@@ -2381,8 +2381,9 @@ Direkte Navigation verwendet bestehende Kundenrouten (`tab=bestellungen`, `tab=m
 keine zweite Bestell- oder Packdatenbank. Seit #1614 fuehren Seitenleiste und mobile Leiste
 in derselben Reihenfolge zu Heute, Muster bestellen, Bestellungen und Packstation. Das mobile
 „Mehr“ oeffnet nur das Menueblatt, keine automatisch aufgeklappte Sammelliste.
-Die restlichen Links bleiben in „Kunden & Einkauf“, „Shop & Inhalte“, „Verwaltung“ und
-„Weitere Dashboards“ erhalten. Die Gruppen sind standardmaessig geschlossen; nur eine bewusst
+Die restlichen Links stehen seit 2026-11-11 (#2143) in einer Gruppe „Weitere Bereiche“ und in
+„Weitere Dashboards“; Technik, Entscheidungen, Bereiche, Kennzahlen und Verlauf haben keinen
+Menuepunkt mehr (Werkbank), ihre Seiten bleiben ueber Hilfe und Suche erreichbar. Die Gruppen sind standardmaessig geschlossen; nur eine bewusst
 gewaehlte Gruppe (`tp-nav-gruppe-v2`) und die Gruppe der aktiven Ansicht oeffnen sich.
 Der alte `tp-nav-buero`-Wert wird nicht uebernommen. Rollenrechte und HTTPS-Pruefung externer
 Dashboardlinks bleiben bestehen. „Muster bestellen“ hat bewusst keinen zusaetzlichen Zahlbadge.

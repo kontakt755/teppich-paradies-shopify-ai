@@ -22,9 +22,7 @@ export const MENUE_KURZ = [
   ['Musterlager', 'Muster, die wir selbst da haben: was noch liegt, was reserviert ist, einlagern und Aufkleber drucken. Am Handy unter „Mehr“.'],
   ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
   ['Eigene Aufkleber drucken', 'Aufkleber mit frei getipptem Text, ohne Produkt, zum Beispiel Wegweiser fürs Lager.'],
-  ['Kunden & Einkauf', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften, Hausverwaltungen.'],
-  ['Shop & Inhalte', 'Sonderposten: Reststück oder Rolle im Laden als verkauft buchen, vor Zahlung und Zuschnitt. Bildrechte und Social Media nur mit Büro- oder Inhaberzugang.'],
-  ['Verwaltung', 'Aufgaben, Zugänge und diese Hilfe. Was du siehst, hängt von deinem Zugang ab.'],
+  ['Weitere Bereiche', 'Aufklappen: Kunden suchen, Service-Anfragen, Bestellen beim Lieferanten (mit dem Reiter „Lieferantenpost“ für Auftragsbestätigungen und Lieferscheine), Genossenschaften, Hausverwaltungen, Sonderposten (Reststück oder Rolle im Laden als verkauft buchen, vor Zahlung und Zuschnitt), Aufgaben, Zugänge und diese Hilfe. Bildrechte und Social Media nur mit Büro- oder Inhaberzugang. Was du siehst, hängt von deinem Zugang ab.'],
   ['Fehler melden', 'Ganz unten in der Seitenleiste: kurz schreiben, was nicht stimmt. Die Technik bekommt die Seite mit.'],
 ];
 
@@ -75,12 +73,12 @@ const ABLAEUFE = [
     '<b>× Rot</b> heißt: der Kunde wartet auf uns – ein Muster kommt nicht, eine Angabe fehlt, beim Lieferanten seit 14 Tagen bestellt, seit 7 Tagen bezahlt und nicht bestellt oder nie als verschickt eingetragen. <b>! Gelb</b>: seit 7 Tagen bestellt (nachhaken), noch nicht bestellt oder zu klären. Ohne Zeichen ist alles in Ordnung. Die Reiter oben zählen die roten Umschläge.',
   ]],
   ['Genossenschaft anschreiben', [
-    'Unter <b>Kunden &amp; Einkauf</b> auf <b>Genossenschaften</b>: oben steht „Als Nächstes“ mit der Firma, die jetzt dran ist.',
+    'Unter <b>Weitere Bereiche</b> auf <b>Genossenschaften</b>: oben steht „Als Nächstes“ mit der Firma, die jetzt dran ist.',
     '<b>E-Mail öffnen</b> (der Text steht schon drin) und selbst abschicken – oder <b>Anrufen</b>.',
     'Danach <b>Erledigt: angeschrieben</b> drücken. Zum Nachfassen erscheint die Firma rechtzeitig wieder.',
   ]],
   ['Hausverwaltung pflegen', [
-    'Unter <b>Kunden &amp; Einkauf</b> auf <b>Hausverwaltungen</b>. Neue Verwaltung mit <b>+ Hausverwaltung</b> – der Name genügt.',
+    'Unter <b>Weitere Bereiche</b> auf <b>Hausverwaltungen</b>. Neue Verwaltung mit <b>+ Hausverwaltung</b> – der Name genügt.',
     'Auf den Namen klicken: dort <b>+ Objekt</b> (Adresse, Zahl der Wohnungen) und je Objekt <b>+ Angebot oder Auftrag</b> mit der Lexware-Nummer.',
     'Über <b>Bearbeiten</b> den Stand setzen und ein Datum bei „Wieder melden am“. Ist es so weit, steht die Verwaltung oben in der Liste.',
   ]],
@@ -124,7 +122,7 @@ export function viewHilfe() {
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Unter <b>Kunden &amp; Einkauf</b> auf <b>Bestellen</b>, Reiter <b>Je Lieferant</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
+        <li>Unter <b>Weitere Bereiche</b> auf <b>Bestellen</b>, Reiter <b>Je Lieferant</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
         <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – Warenbestellungen schickst du selbst ab. Nur vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen – die stehen dann schon als „bestellt“ da. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
@@ -170,7 +168,7 @@ export function viewHilfe() {
         <li><b>Anhänge</b>: Bilder, PDF oder Text bis 10 MB direkt an der Aufgabe.</li>
         <li><b>Jetzt prüfen</b> misst Aufgaben mit hinterlegtem Erfolgskriterium am echten Shop – automatisch auch jeden Morgen um 9:30.</li>
       </ul>
-      <p class="small muted" style="margin-top:8px">Der Bereich <b>Technik</b> (unter „Verwaltung“, nur für den Inhaber) ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub-Aufgaben). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
+      <p class="small muted" style="margin-top:8px">Die Arbeit an Shop und Technik ist etwas anderes: sie steht in der Werkbank (unter „Weitere Dashboards“, nur für den Inhaber). Die alten Seiten dazu gibt es noch, nur nicht mehr im Menü: <a href="#/arbeit">Technik</a>, <a href="#/freigaben">Entscheidungen</a>, <a href="#/bereiche">Bereiche</a>, <a href="#/insights">Kennzahlen</a>, <a href="#/aktivitaet">Verlauf</a>. Für den Ladenalltag brauchst du ihn nicht.</p>`)}
 
     ${hilfeKarte('Aufgaben aus ChatGPT oder von einem Zettel übernehmen', `
       <p>Im Bereich <b>Aufgaben</b> oben auf <b>Liste einfügen</b>. Eine Zeile je Aufgabe – Aufzählungszeichen, Nummerierung und Kästchen werden automatisch entfernt, Überschriften übersprungen.</p>

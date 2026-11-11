@@ -71,7 +71,7 @@ test('Menue fuer Mitarbeiter: nur Heute, Kunden, Bestellen, Genossenschaften, Ha
   const sichtbar = links.filter(([, , attr]) => !/data-nur-inhaber|data-nicht-mitarbeiter/.test(attr)).map(([, n]) => n);
   // Sonderposten seit 06.11.2026: im Laden bucht die verkaufende Person (Inhaber 10.10.); die Restlaenge bleibt Inhabersache.
   assert.deepEqual(sichtbar.sort(), ['akquise', 'einkauf', 'hausverwaltungen', 'heute', 'hilfe', 'kunden', 'lexikon', 'sonderposten']);
-  assert.match(html, /data-nav-gruppe="verwaltung"/);
+  assert.match(html, /data-nav-gruppe="weitere"/);
   assert.ok(!html.includes('id="navMore"'), 'keine pauschale Mehr-Gruppe mehr');
   assert.match(html, /id="datenstandLeiste"/);
   const css = fs.readFileSync(path.join(hier, '..', 'app.css'), 'utf8');
