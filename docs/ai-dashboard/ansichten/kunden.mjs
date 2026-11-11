@@ -73,7 +73,7 @@ export function viewKunden() {
     : tab === 'suche' ? viewKundenSuche()
     : viewKundenFaelle();
   const einfacherKopf = `<div class="page-head"><div><h1>${titel}</h1><p class="sub">${beschreibung}</p></div></div>
-    <nav class="chips no-print" aria-label="Bestellungen und Kunden">
+    <nav class="chips chips-zeile no-print" aria-label="Bestellungen und Kunden">
       <a class="chip" href="#/kunden?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit"${tab === 'bestellungen' ? ' aria-current="page"' : ''}>Bestellungen</a>
       <a class="chip" href="#/kunden?tab=muster"${tab === 'muster' ? ' aria-current="page"' : ''}>Packstation</a>
       <a class="chip" href="#/kunden?tab=anrufe"${tab === 'anrufe' ? ' aria-current="page"' : ''}>Kunden nach Produkt fragen</a>

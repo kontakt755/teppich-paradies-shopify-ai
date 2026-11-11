@@ -1,7 +1,10 @@
 /* Kunden → Muster packen (ansichten/kunden/muster-packen.mjs, #1572). Nur Tokens aus app.css.
    Auffallen darf je Karte: welche Bestellung das ist und je Muster Bild + Farbnummer - damit nichts verwechselt wird. */
 
+/* Kurzanleitung: am Handy zugeklappt, damit der erste Umschlag ohne Scrollen zu sehen ist (w-234). */
 .mp-hier { margin: 4px 0 12px; }
+.mp-hier > summary { cursor: pointer; color: var(--text-2); }
+.mp-hier > .sub { margin: 4px 0 0; }
 .mp-packer-info { margin: 0 0 12px; }
 .mp-summe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 0 0 12px; }
 .mp-kunden { display: grid; gap: 12px; }
@@ -122,7 +125,16 @@
 .mp-filterzahl { font-weight: 700; }
 .mp-filterampel { flex-basis: 100%; display: flex; }
 .mp-arbeitsleer { padding: 16px 0; color: var(--text-2); }
-@media (max-width: 760px) { .mp-arbeitsfilter { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Handy: Kopf verdichtet - drei Spalten statt zwei, Ansichtswahl in einer Zeile, Knopf neben der Suche. */
+@media (max-width: 760px) {
+  .mp-arbeitsfilter { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .mp-arbeitsfilter .btn { padding-inline: 6px; column-gap: 4px; font-size: .82rem; }
+  .mp-modus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mp-modus .btn { padding-inline: 6px; white-space: normal; text-align: center; }
+  .mp-hier > summary { padding-block: 11px; }
+  .mp-packer-info { padding-block: 8px; }
+  .mp-suche input[type="search"] { min-width: 0; flex-basis: 120px; }
+}
 /* Zweite Zeile "Umschlag:" (28.10.), wirkt zusammen mit der Arbeitsliste darueber. */
 .mp-umschlagfilter { align-items: center; margin: -8px 0 16px; }
 
