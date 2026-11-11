@@ -1,0 +1,14 @@
+{
+  "format": "tp-nachmass-endpreis-v1",
+  "ok": true,
+  "erstellt": "2026-11-11T10:49:42.299Z",
+  "produkte": 20,
+  "varianten": 345,
+  "zeilen": 345,
+  "groessen": {
+    "1 x 200 cm": 310,
+    "60 x 90 cm": 20,
+    "3 x 100 cm": 15
+  },
+  "ausgelassen": []
+}
