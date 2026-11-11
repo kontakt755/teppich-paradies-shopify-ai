@@ -106,6 +106,7 @@
     "speicher:pruefen": "node operations/scripts/speicher-pruefen.mjs",
     "verbrauch:sammeln": "node operations/scripts/claude-verbrauch.mjs",
     "auslauf:pruefen": "node operations/scripts/auslauf-pruefen.mjs",
+    "verlegefotos:abgleich": "node operations/scripts/verlegefotos-abgleich.mjs",
     "bestand:abgleich": "node operations/scripts/bestand-abgleich.mjs",
     "ausschreibungen:pruefen": "node operations/scripts/ausschreibungen-pruefen.mjs",
     "muster:nachfassen": "node scripts/muster-nachfassen-senden.mjs",
