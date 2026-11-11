@@ -77,14 +77,14 @@ const beleg = (id, o = {}) => ({ id, art: 'rechnung', datum: vorTagen(1), von: '
 
 test('Ware unterwegs: nur Rechnungen bekannter Lieferanten aus 7 Tagen, keine Gutschrift, Bezug aus dem Betreff, kein Betrag', () => {
   const zeilen = wareUnterwegs([
-    beleg('m1', { lieferant: 'A', datum: '2026-11-09T08:00:00Z', refs: { betreffNummern: ['#1041'], kommission: 'Testkommission' } }),
+    beleg('m1', { lieferant: 'A', datum: '2026-11-09T08:00:00Z', refs: { betreffNummern: ['#1041'], kommission: 'Testkommission', belegnummer: '4711' } }),
     beleg('m2', { lieferant: 'A', datum: vorTagen(8) }),
     beleg('m3', { lieferant: null }),
     beleg('m4', { lieferant: 'B', art: 'ab' }),
     beleg('m5', { lieferant: 'B', betreff: 'Gutschrift zu Rechnung RE-1' }),
     beleg('m-6', { lieferant: 'B', datum: vorTagen(0.1), auszug: 'Betrag 123,45 EUR' }),
   ], { jetzt: JETZT });
-  assert.deepEqual(zeilen.map(z => [z.schluessel, z.von, z.bezug]), [['ware:m6', 'Lieferant B', null], ['ware:m1', 'Lieferant A', '#1041 · Testkommission']]);
+  assert.deepEqual(zeilen.map(z => [z.schluessel, z.von, z.bezug]), [['ware:m6', 'Lieferant B', null], ['ware:m1', 'Lieferant A', 'Beleg 4711 · #1041 · Testkommission']]);
   assert.equal(zeilen[1].text, 'Rechnung vom 09.11. da, Ware vermutlich verladen');
   assert.ok(!JSON.stringify(zeilen).includes('123,45'), 'Mailtext und Betrag bleiben draussen');
 });

@@ -638,7 +638,7 @@ test('Routinen als Mac-Dienst: gestoerte oder stumme Routinen werden ein rotes W
   assert.equal(rot[0].id, 'routinen');
   assert.equal(rot[0].ton, 'crit');
   assert.equal(rot[0].titel, 'Mac-Dienst gestört: Lieferbelege aus dem Postfach');
-  assert.equal(rot[0].kontext, 'Werkzeug abgelehnt: Write · Claude Bescheid geben: „Mac-Dienst gestört“');
+  assert.equal(rot[0].kontext, 'Werkzeug abgelehnt: Write · Eine automatische Aufgabe am Mac läuft nicht mehr. Der Inhaber sagt Claude im Chat Bescheid („Mac-Dienst gestört“), dann wird es repariert.');
   // Rundgang 29.10. (A5): kein rotes To-do ohne Weg - der Knopf fuehrt zur Liste in der Shop-Kontrolle.
   assert.deepEqual(rot[0].knopf, { text: 'Ansehen', href: '#/shopwache' });
   assert.equal(rot[0].alterTage, 2);
@@ -647,9 +647,9 @@ test('Routinen als Mac-Dienst: gestoerte oder stumme Routinen werden ein rotes W
   const stumm = mit([{ ...gut[0], stumm: true, stummSeit: vorTagen(3), stummText: 'seit 72 Stunden kein erfolgreicher Lauf (zuletzt: wartet auf Nachziehen)' },
     { ...gut[1], ok: false, meldung: 'Sync-Dienst meldet seit 90 Min. keinen neuen Stand', seit: stunden(2) }]);
   assert.equal(stumm[0].titel, 'Mac-Dienst: 2 Routinen gestört');
-  assert.equal(stumm[0].kontext, 'seit 72 Stunden kein erfolgreicher Lauf (zuletzt: wartet auf Nachziehen) · außerdem Datenstand des Sync-Dienstes · Claude Bescheid geben: „Mac-Dienst gestört“');
+  assert.equal(stumm[0].kontext, 'seit 72 Stunden kein erfolgreicher Lauf (zuletzt: wartet auf Nachziehen) · außerdem Datenstand des Sync-Dienstes · Eine automatische Aufgabe am Mac läuft nicht mehr. Der Inhaber sagt Claude im Chat Bescheid („Mac-Dienst gestört“), dann wird es repariert.');
   assert.equal(stumm[0].alterTage, 3, 'Alter ab dem letzten Erfolg bzw. der Einrichtung');
-  assert.equal(mit([{ ...gut[0], stumm: true }])[0].kontext, 'zu lange kein erfolgreicher Lauf · Claude Bescheid geben: „Mac-Dienst gestört“');
+  assert.equal(mit([{ ...gut[0], stumm: true }])[0].kontext, 'zu lange kein erfolgreicher Lauf · Eine automatische Aufgabe am Mac läuft nicht mehr. Der Inhaber sagt Claude im Chat Bescheid („Mac-Dienst gestört“), dann wird es repariert.');
   // Rot: der Inhaber sieht es auf seiner Startseite, im Laden zaehlt es nicht.
   assert.equal(leiteTodosAb({ shopwache: { routinen: [{ ...gut[0], ok: false, meldung: 'x' }] } }, { sicht: 'inhaber', jetzt: JETZT }).length, 1);
   assert.deepEqual(leiteTodosAb({ shopwache: { routinen: [{ ...gut[0], ok: false, meldung: 'x' }] } }, { sicht: 'laden', jetzt: JETZT }), []);

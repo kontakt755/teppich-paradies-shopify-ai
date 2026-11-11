@@ -105,7 +105,7 @@ function wareAbschnitt(w, lesen) {
       </li>`).join('')}</ul>`;
   return `<section class="laden-spalte laden-ware" aria-labelledby="laden-ware">
     <div class="laden-spalte-kopf"><h2 id="laden-ware">Ware unterwegs</h2></div>
-    <p class="small muted">Hier steht, von welchem Lieferanten in den letzten 7 Tagen eine Rechnung gekommen ist. Dann ist die Ware meist schon verladen.${w.stand ? ` Stand: ${esc(since(w.stand))}.` : ''}</p>
+    <p class="small muted">Hier steht, von welchem Lieferanten in den letzten 7 Tagen eine Rechnung gekommen ist. Dann ist die Ware meist schon verladen.${w.stand ? ` Stand: ${esc(since(w.stand))}` : ''}</p>
     ${inhalt}
   </section>`;
 }
@@ -133,7 +133,7 @@ export function viewLaden() {
   const mailsFehler = d.mails.fehler ? `<div class="notice warn" role="status">${esc(d.mails.fehler)}</div>` : '';
   return `${kopf}
     ${zuLange ? `<div class="notice crit laden-rot" role="status">${esc(zuLange)}</div>` : ''}
-    ${d.personen ? '' : `<div class="notice warn">Die Namen für „Übernehmen“ fehlen noch. Im privaten Ordner eine Datei <span class="mono">laden-personen.json</span> anlegen, zum Beispiel <span class="mono">["Name 1", "Name 2"]</span>.</div>`}
+    ${d.personen ? '' : `<div class="notice warn">Die Namen für „Übernehmen“ fehlen noch. Der Inhaber muss die Namen der Kolleginnen und Kollegen im Laden einmal hinterlegen (Claude im Chat Bescheid geben: „Laden-Namen eintragen“).</div>`}
     ${d.bestelldatenFehlen ? '<div class="notice warn">Die Bestelldaten fehlen. Rückrufe und wartende Kunden erscheinen erst, wenn sie wieder da sind.</div>' : ''}
     <div class="laden-spalten">
       ${spalte(d.mails.eintraege, { id: 'mails', titel: 'Mails', satz: 'Hier stehen die Mails an den Laden. Wer eine übernimmt, antwortet darauf.', leer: mailsLeer, vorspann: mailsFehler }, lesen)}
