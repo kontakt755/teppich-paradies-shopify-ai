@@ -307,7 +307,7 @@ async function main() {
               ueberstand: [...document.querySelectorAll('body *')]
                 .filter(e => {
                   const r = e.getBoundingClientRect();
-                  return r.width > 0 && r.height > 0 && r.right > window.innerWidth + 1 && !e.closest('.table-scroll,.table-wrap,.kanban');
+                  return r.width > 0 && r.height > 0 && r.right > window.innerWidth + 1 && !e.closest('.table-scroll,.table-wrap,.kanban,.chips-zeile');
                 })
                 .slice(0, 5).map(e => {
                   // Pfad ueber die naechsten Vorfahren mit Klasse/ID, damit die Stelle auffindbar ist.
