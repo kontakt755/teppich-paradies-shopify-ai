@@ -89,7 +89,7 @@ import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, Lieferbel
 import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
-import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
+import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
 import { ladenTodos, ladenMailZeilen } from '../docs/ai-dashboard/lib/laden.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
@@ -4896,9 +4896,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const wartet = modell ? kundeWartet(bestellzeilenMitSchritt(dir, modell), { jetzt }) : [];
       const mails = ladenMails(dir, { jetzt });
       const mit = e => ({ ...e, zustaendig: zustaendig[e.schluessel] || null });
+      const telefonisch = leseLadenTelefonisch(ladenTelefonischPfad(dir));
       return {
         verfuegbar: true, personen, jetzt: jetzt.toISOString(),
-        mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: ladenMailZeilen(mails.eintraege, { jetzt }).map(mit) },
+        mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: ladenMailZeilen(mails.eintraege, { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit) },
         todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)) }, { jetzt }).map(mit),
         // Ohne Bestelldaten fehlen nur die Rueckrufe und wartenden Kunden - von Hand angelegte Aufgaben gibt es trotzdem.
         bestelldatenFehlen: !modell,
@@ -4913,6 +4914,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { setzeLadenZustaendig(ladenZustaendigPfad(dir), { schluessel, wer: wer ?? null, personen, jetzt: now() }); }
       catch (e) { if (e instanceof LadenFehler) throw new ApiError(400, e.message); throw e; }
       audit({ actor: anzeigename(benutzer, null), action: 'laden-zustaendig', schluessel, wer: wer ?? null });
+      return { ok: true };
+    },
+
+    /** "Telefonisch erledigt": die Mail verschwindet aus der Liste (nur eine eigene Ablage, das Postfach bleibt unberuehrt). */
+    ladenTelefonischSetzen({ schluessel, wer = null } = {}, benutzer = null) {
+      const dir = privatDirPath || privatDir();
+      try { setzeLadenTelefonisch(ladenTelefonischPfad(dir), { schluessel, wer, jetzt: now() }); }
+      catch (e) { if (e instanceof LadenFehler) throw new ApiError(400, e.message); throw e; }
+      setzeLadenZustaendig(ladenZustaendigPfad(dir), { schluessel, wer: null, jetzt: now() });
+      audit({ actor: anzeigename(benutzer, null), action: 'laden-telefonisch', schluessel });
       return { ok: true };
     },
 

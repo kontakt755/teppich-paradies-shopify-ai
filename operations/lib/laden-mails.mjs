@@ -19,6 +19,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { verbinde, imapText, ImapFehler, mitNurLesen } from './imap-lesen.mjs';
+import { serviceKontaktiertAbgleichen } from './service-kontaktiert.mjs';
+import { serviceanfragenPfad } from './serviceanfragen.mjs';
 import { lesePostfach, ORDNER as NACHFASS_ORDNER, POSTFACH_DATEI as NACHFASS_DATEI } from './nachfass-versand.mjs';
 
 export const MAILS_ZEITLIMIT_MS = 60_000;
@@ -143,12 +145,12 @@ function eintraegeAus(antwort) {
   return aus;
 }
 
-/** Gmail "Gesendet" nur lesend: wann ging eine Mail an diese Adresse raus? Mutiert die Eintraege nicht. */
-async function beantwortetMarkieren(eintraege, { hauptZugang, mitNurLesenFn, tage, verbindenHaupt }) {
-  const adressen = [...new Set(eintraege.map(e => e.adresse).filter(a => a && /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$/.test(a)))];
-  if (!adressen.length) return eintraege;
-  const gesendet = await mitNurLesenFn(hauptZugang, async s => {
-    const uids = (await s.suche(`in:sent newer_than:${tage}d {${adressen.map(a => `to:${a}`).join(' ')}}`)).slice(-100);
+/** Gmail "Gesendet" nur lesend: [{ an: [Adressen], am: ms }] der letzten `tage` Tage an diese Adressen (hoechstens 100). */
+export async function gesendetAn(adressen, { hauptZugang, mitNurLesenFn = mitNurLesen, tage, verbindenHaupt }) {
+  const sauber = [...new Set(adressen.filter(a => a && /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$/.test(a)))];
+  if (!sauber.length) return [];
+  return mitNurLesenFn(hauptZugang, async s => {
+    const uids = (await s.suche(`in:sent newer_than:${tage}d {${sauber.map(a => `to:${a}`).join(' ')}}`)).slice(-100);
     const aus = [];
     for (const uid of uids) {
       const k = kopfzeilen((await s.kopf(uid)).toString('utf8'));
@@ -157,6 +159,11 @@ async function beantwortetMarkieren(eintraege, { hauptZugang, mitNurLesenFn, tag
     }
     return aus;
   }, { verbinden: verbindenHaupt });
+}
+
+/** Markiert Eintraege, an deren Absender nach dem Eingang eine Mail rausging. Mutiert die Eintraege nicht. */
+async function beantwortetMarkieren(eintraege, o) {
+  const gesendet = await gesendetAn(eintraege.map(e => e.adresse), o);
   return eintraege.map((e) => {
     const nach = gesendet.filter(g => g.an.includes(e.adresse) && g.am >= new Date(e.seit).getTime()).map(g => g.am).sort((a, b) => a - b)[0];
     return nach === undefined ? e : { ...e, beantwortetAm: new Date(nach).toISOString() };
@@ -221,6 +228,8 @@ export async function abrufenUndSpeichern(dir, { jetzt = new Date(), abrufen = a
     const haupt = lesePostfach(path.join(dir, NACHFASS_ORDNER, NACHFASS_DATEI));
     const r = await abrufen(z.zugang, { jetzt, hauptZugang: haupt.zugang || null, ...o });
     stand = { abgerufenAm: jetzt.toISOString(), eintraege: r.eintraege, fehler: null };
+    // Mitlaufender Abgleich der Serviceanfragen; scheitert er, bleibt der Mailabruf gueltig. shortcut: laeuft nur, solange die Ansicht Laden offen ist.
+    if (haupt.zugang) await serviceKontaktiertAbgleichen(serviceanfragenPfad(dir), { hauptZugang: haupt.zugang, ...o }).catch(() => {});
   } catch (e) {
     stand = { abgerufenAm: jetzt.toISOString(), eintraege: alt?.eintraege || [], fehler: abrufFehlerText(e) };
   }

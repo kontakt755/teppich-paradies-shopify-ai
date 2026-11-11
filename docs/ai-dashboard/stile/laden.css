@@ -16,6 +16,7 @@ body.nur-laden .page-head.kopf-oben h1 { position: static; width: auto; height: 
 .laden-leer { margin-top: 14px; color: var(--text-2); overflow-wrap: anywhere; }
 .laden-liste { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
 .laden-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.laden-zeile-rot { border-color: var(--crit); }
 .laden-text { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
 .laden-titel { font-weight: 650; }
 .laden-rechts { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
