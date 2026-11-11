@@ -1,11 +1,14 @@
 {%- comment -%}
   TP Sticky-Kontakt (nur Telefon): Anrufen, WhatsApp, Anfrage. Erscheint nach
-  dem ersten Scrollen, nie im Warenkorb, Checkout oder auf Produktseiten
-  (dort liegt der Kaufbutton). Liegt in der Footer-Gruppe.
+  dem ersten Scrollen, nie im Warenkorb, Checkout, auf Produktseiten oder im
+  Musterkonfigurator (dort liegt der Kaufbutton). Liegt in der Footer-Gruppe.
 {%- endcomment -%}
 {%- liquid
   assign zeigen = true
   if template.name == 'cart' or template.name == 'product' or template.name == 'search'
+    assign zeigen = false
+  endif
+  if template.name == 'page' and template.suffix == 'muster'
     assign zeigen = false
   endif
   assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/'
