@@ -398,7 +398,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
     <div class="mp-pfeil" aria-hidden="true">→</div>
     <div class="mp-nachher"><span class="mp-etikett">Unser Aufkleber</span>${m.fehlt.length
       ? `<span class="${ampel ? 'mp-ohne-aufkleber' : 'mp-fehlt'}">${ampel ? 'Kein eindeutiger Aufkleber für' : 'Zuordnung fehlt:'} ${esc(m.bestellt.titel)}${m.bestellt.farbe ? ` – ${esc(m.bestellt.farbe)}` : ''}</span>`
-      : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}`}</div>
+      : `<span><strong>${esc(e.serie)}</strong> · ${esc(e.farbe)}</span><span class="mp-sku">${esc(e.sku)}</span>${druckEinzelnHtml(m, { nachdrucken: true })}${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost mp-druck1" data-mp-inslager="${esc(m.lineItemId)}" title="Ein Muster ist übrig: mit Stückzahl ins Musterlager aufnehmen">Ins Lager aufnehmen…</button>`}`}</div>
     <div class="mp-stand small">${fehltHervor && !m.gesperrt ? `<strong class="mp-fehlt">${imRegal ? 'nicht eingelegt' : 'fehlt'}</strong> · ` : ''}${mehrereBestellungen ? `${esc(m.orderName)} · ` : ''}${m.nachbestelltAm ? `<strong class="mp-nachbestellt">Nachbestellung am ${esc(datumKurz(m.nachbestelltAm))}</strong> · ` : ''}${m.anzahl > 1 ? `${m.anzahl} Stück · ` : ''}${plakette}${stand ? `<span class="${m.stand === 'lager' && !m.gesperrt ? 'mp-lager' : m.ampel || !(m.gesperrt || m.stand === 'offen') ? 'muted' : m.gesperrt ? 'mp-gesperrt' : 'wait-warn'}">${esc(stand)}</span>` : ''}${link}${m.lagerMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-auslager="${esc(m.lineItemId)}" title="Liegt im Musterlager${m.lagerMoeglich.ort ? ` (${esc(m.lagerMoeglich.ort)})` : ''}: wer es von dort nimmt, klickt hier – das Lager zählt sofort 1 ab">Aus dem Lager genommen${m.lagerMoeglich.ort ? ` (${esc(m.lagerMoeglich.ort)})` : ''}</button>` : ''}${m.gesperrt && ohneMoeglich && !lesend ? ` <button type="button" class="btn btn-sm mp-ohne" data-mp-ohne="${esc(m.lineItemId)}">Ohne dieses Muster weiter packen</button>` : ''}${!lesend && sperrbar(m) ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-sperren="${esc(m.lineItemId)}" title="Der Lieferant hat für diese Farbe kein Muster: nur diese Farbe im Shop sperren, die Bestellung bleibt offen">Kein Muster – im Shop sperren…</button>` : ''}${!lesend && m.stand === 'bestellt' && !m.direkt && !m.abgehakt ? ` <button type="button" class="btn btn-sm btn-ghost mp-ohne" data-mp-direkt="${esc(m.lineItemId)}" title="Der Lieferant schickt dieses Muster direkt an den Kunden – bei uns kommt nichts an">Kommt direkt zum Kunden…</button>` : ''}</div>
   </li>`;
 }
@@ -979,6 +979,25 @@ async function ausLager(k, m, knopf) {
   await packlisteErneutLaden();
 }
 
+/** "Ins Lager aufnehmen…": ein uebriges Muster mit Stueckzahl ins Musterlager buchen (derselbe Weg wie Bestellen › Musterlager). */
+async function insLager(k, m, knopf) {
+  const name = `${m.etikett?.serie || m.bestellt.titel}${m.etikett?.farbe || m.bestellt.farbe ? ` – ${m.etikett?.farbe || m.bestellt.farbe}` : ''}`;
+  const eingabe = window.prompt(`Ins Musterlager aufnehmen:\n${name}\n\nWie viele Stück?`, '1');
+  if (eingabe === null) return;
+  const anzahl = Number(eingabe.trim());
+  if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 99) { toast('Bitte eine ganze Stückzahl von 1 bis 99 eingeben.', 'warn'); return; }
+  packSpeichert = true;
+  knopf.disabled = true;
+  try {
+    const r = await orgSchreiben(ENDPOINT, { packSchluessel: k.packSchluessel, aktion: 'ins-lager', lineItemId: m.lineItemId, anzahl });
+    toast(`${name}: ${anzahl} Stück ins Musterlager aufgenommen${r?.gesamt > anzahl ? ` (dort jetzt ${r.gesamt} eingetragen)` : ''}.`, undefined, { dauer: 7000 });
+  } catch (err) {
+    toast(`Nicht gespeichert: ${err.message}`, 'crit');
+  }
+  packSpeichert = false;
+  await packlisteErneutLaden();
+}
+
 async function schreiben(daten, meldung) {
   if (packSpeichert) { toast('Bitte warten, der vorige Packstand wird noch gespeichert.', 'warn'); return; }
   packSpeichert = true;
@@ -1176,6 +1195,14 @@ export function musterPackenKlick(e) {
     const k = kundeMitMuster(auslager.dataset.mpAuslager);
     const m = k?.muster.find(x => x.lineItemId === auslager.dataset.mpAuslager);
     if (m?.lagerMoeglich && !packSpeichert) void ausLager(k, m, auslager);
+    return true;
+  }
+  const inslager = e.target.closest('[data-mp-inslager]');
+  if (inslager) {
+    e.preventDefault();
+    const k = kundeMitMuster(inslager.dataset.mpInslager);
+    const m = k?.muster.find(x => x.lineItemId === inslager.dataset.mpInslager);
+    if (m && !packSpeichert) void insLager(k, m, inslager);
     return true;
   }
   const sperren = e.target.closest('[data-mp-sperren]');

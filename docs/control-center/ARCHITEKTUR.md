@@ -719,6 +719,9 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
   (Treffer bei A/C, nur lesend, 400 ohne Hersteller und Qualität), `POST /api/einkauf/musterlager` mit `aktion: einlagern | aendern |
   entfernen` (Schreibpfad: Rolle „lesen“ 403). Ein beschädigtes `musterlager.json` hält keine
   Bestellansicht auf; nur der Reiter meldet den Fehler, und Schreiben verweigert.
+- **Aus der Packstation (11.11.):** „Ins Lager aufnehmen…“ an der Musterzeile fragt die Stückzahl (1–99) und lagert über
+  `POST /api/kunden/muster-packen` (`aktion: ins-lager`, `lineItemId`, `anzahl`) als Einzelmuster ein – derselbe
+  Schreibweg (`einkaufMusterlagerSetzen`), Schlüssel vom Server aus der Bestellposition samt allen Breiten der Farbe.
 
 ## 9. Startseite „Heute" (seit 2026-09-23)
 

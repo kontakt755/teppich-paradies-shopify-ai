@@ -2472,6 +2472,36 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         // Die Lieferantenbestellung laeuft weiter: das Muster kommt trotzdem und gehoert dann ins Lager.
         return { ok: true, packSchluessel: kunde.packSchluessel, lineItemId, hinweis: AUS_LAGER_HINWEIS };
       }
+      if (payload?.aktion === 'ins-lager') {
+        // Ein Muster ist uebrig (zu viel geliefert, oder der Kunde bekam schon das Lagermuster): ins Musterlager
+        // aufnehmen, ohne die Farbe dort erst zu suchen. Die Artikelnummer kommt von der Bestellposition.
+        if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
+        const lineItemId = typeof payload.lineItemId === 'string' ? payload.lineItemId.trim() : '';
+        const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === payload.packSchluessel);
+        const m = kunde?.muster.find(x => x.lineItemId === lineItemId);
+        if (!m) throw new ApiError(409, 'Dieses Muster steht nicht mehr so in der Liste. Bitte neu laden.');
+        const anzahl = Number(payload.anzahl ?? 1);
+        if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 99) throw new ApiError(400, 'Stückzahl muss eine ganze Zahl von 1 bis 99 sein.');
+        const dir = privatDirPath || privatDir();
+        const p = ladeBestellModell(dir)?.auftraege?.find(a => a.id === m.orderId)?.positionen?.find(x => x.lineItemId === lineItemId);
+        const key = p ? musterSchluessel(p) : null;
+        if (!key) throw new ApiError(409, 'Dieses Muster hat keine eindeutige Artikelnummer – bitte unter Bestellen › Musterlager einlagern.');
+        // Wie beim Einlagern aus der Produktsuche: alle Breiten der Farbe, damit jede Bestellung dieser Farbe das Stueck findet.
+        let ziel = null, farbe = null;
+        // Erst das Produkt vom Aufkleber, sonst das Produkt der Produktsuche, das diese Artikelnummer fuehrt.
+        const perSku = () => this._lexikonProdukte().find(x => !String(x.handle).startsWith('muster-') && (x.varianten || []).some(v => musterSchluessel({ sku: v.sku }) === key))?.handle;
+        for (const h of [m.produktHandle, perSku()]) {
+          ziel = this._musterlagerProdukt(h);
+          farbe = ziel?.farben.find(f => f.schluessel.includes(key)) || null;
+          if (farbe) break;
+        }
+        const r = await this.einkaufMusterlagerSetzen({ aktion: 'einlagern', art: 'einzel', anzahl,
+          schluessel: farbe ? farbe.schluessel : [key], handle: farbe ? ziel.produkt.handle : null,
+          titel: farbe ? lagerKurzTitel(ziel.produkt.titel) : m.bestellt.titel,
+          farbe: farbe ? (farbe.ganzerArtikel ? null : farbe.farbe) : m.bestellt.farbe || null,
+          notiz: `Aus der Packstation (${m.orderName})` }, benutzer);
+        return { ok: true, packSchluessel: kunde.packSchluessel, lineItemId, anzahl, gesamt: r.eintraege[0]?.anzahl ?? null };
+      }
       if (payload?.aktion !== 'verschickt') return this.kundenMusterPackenSetzen(payload, benutzer);
       if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
       const pk = typeof payload.packSchluessel === 'string' ? payload.packSchluessel.trim() : '';
