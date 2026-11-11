@@ -3178,6 +3178,17 @@ Wie bei den anderen Ablagen gilt nur eine **fehlende** Datei als leer; beschädi
 `POST /api/laden/zustaendig`, `/api/laden/aufgabe`, `/api/laden/aufgabe-erledigt` (write-Liste, Rolle „lesen“: 403;
 Eingaben serverseitig geprüft). Mails und To-dos teilen sich einen Zeilen-Renderer (`ansichten/laden.mjs`).
 
+**Ware unterwegs (seit 2026-11-11).** Lieferantenrechnungen gehen nie ans Laden-Postfach, eine Rechnung heißt bei
+vielen Lieferanten aber „Ware wurde verladen“ (Inhaber 11.11.2026). Unter den Spalten steht deshalb je Rechnung der
+letzten 7 Tage eine Zeile „<Lieferant>: Rechnung vom <Datum> da, Ware vermutlich verladen“, mit Bestellnummer oder
+Kommission aus dem Betreff, wenn vorhanden. Kein eigener Postfachabruf: Quelle ist die Lieferbeleg-Ablage des
+stündlichen Laufs (`lieferbelege/belege.json`, Art `rechnung`). Es zählen nur Absender, die die privaten Stammdaten
+(`lieferanten/stammdaten.json`, `postfachDomains`) oder eine Entscheidung im Reiter „Belege“ einem Lieferanten
+zuordnen – Dienstleister stehen dort nicht. Gutschriften, Mahnungen und Stornos zählen nicht. Nie Betrag, Anhang
+oder Mailtext. Ohne Stammdaten ein Hinweis, ohne Zeilen fällt der Abschnitt weg. „Gesehen“ blendet eine Zeile aus
+(`POST /api/laden/telefonisch` mit Schlüssel `ware:<id>`, dieselbe Ablage wie „Telefonisch erledigt“). Es wird
+nichts versendet. Logik: `wareUnterwegs()` in `docs/ai-dashboard/lib/laden.mjs`.
+
 **Mails (seit 2026-11-11): nur lesender IMAP-Abruf.** Das Laden-Postfach ist ein gewöhnliches IMAP-Postfach bei
 einem Hoster (kein Gmail); das Hauptpostfach leitet per Filter dorthin weiter. Zwei weitere Dateien im Privatordner
 (Logik `operations/lib/laden-mails.mjs`):

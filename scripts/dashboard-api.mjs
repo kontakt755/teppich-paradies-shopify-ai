@@ -90,7 +90,7 @@ import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as 
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
-import { ladenTodos, ladenMailZeilen } from '../docs/ai-dashboard/lib/laden.mjs';
+import { ladenTodos, ladenMailZeilen, wareUnterwegs } from '../docs/ai-dashboard/lib/laden.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -4927,7 +4927,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const mails = ladenMails(dir, { jetzt });
       const mit = e => ({ ...e, zustaendig: zustaendig[e.schluessel] || null });
       const telefonisch = leseLadenTelefonisch(ladenTelefonischPfad(dir));
+      // "Ware unterwegs": Rechnungen aus der Lieferbeleg-Ablage, nur von Lieferanten der privaten Stammdaten.
+      // Ohne Stammdaten gibt es keine Zuordnung - dann ein Hinweis statt Zeilen.
+      const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      const ware = { eingerichtet: stammdaten.vorhanden && Object.keys(stammdaten.lieferanten || {}).length > 0, stand: null, fehler: null, eintraege: [] };
+      if (ware.eingerichtet) {
+        try {
+          const ablage = leseBelege(lieferbelegePfad(dir));
+          const belege = Object.values(ablage.belege).map(b => ({ ...b, lieferant: lieferantZurDomain(b.domain || domainVon(b.von), { stammdaten, absender: ablage.absender }) }));
+          ware.stand = ablage.laeufe.filter(l => l.vollstaendig).at(-1)?.am || null;
+          ware.eintraege = wareUnterwegs(belege, { jetzt, nameVon: id => stammdatenFuer(stammdaten, id).name }).filter(e => !telefonisch[e.schluessel]);
+        } catch { ware.fehler = 'Die Liste der Lieferantenbelege ist nicht lesbar. „Ware unterwegs“ fehlt, bis sie wieder da ist.'; }
+      }
       return {
+        ware,
         verfuegbar: true, personen, jetzt: jetzt.toISOString(),
         mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: ladenMailZeilen(mails.eintraege, { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit) },
         todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)) }, { jetzt }).map(mit),

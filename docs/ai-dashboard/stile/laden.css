@@ -11,6 +11,7 @@ body.nur-laden .page-head.kopf-oben h1 { position: static; width: auto; height: 
 .laden-spalten { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
 @media (max-width: 860px) { .laden-spalten { grid-template-columns: minmax(0, 1fr); } }
 .laden-spalte { min-width: 0; }
+.laden-ware { margin-top: 28px; }
 .laden-spalte-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 4px; }
 .laden-spalte-kopf h2 { font-size: var(--tp-fs-lg); }
 .laden-leer { margin-top: 14px; color: var(--text-2); overflow-wrap: anywhere; }

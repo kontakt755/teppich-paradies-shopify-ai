@@ -10,7 +10,9 @@ import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 import { rueckrufePfad, rueckrufAusMailAnlegen } from '../../../operations/lib/rueckrufe.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad } from '../../../operations/lib/laden.mjs';
-import { ladenTodos, liegtZuLange, teileSpalte, ladenMailZeilen } from '../lib/laden.mjs';
+import { ladenTodos, liegtZuLange, teileSpalte, ladenMailZeilen, wareUnterwegs } from '../lib/laden.mjs';
+import { lieferbelegePfad } from '../../../operations/lib/lieferbelege.mjs';
+import { stammdatenPfad } from '../../../operations/lib/lieferanten.mjs';
 import { ladenPostfachPfad, ladenMailsPfad } from '../../../operations/lib/laden-mails.mjs';
 
 const JETZT = new Date('2026-11-10T10:00:00Z');
@@ -69,6 +71,44 @@ test('Mail-Zeilen: Alter in Werktagen, rot erst nach einem Werktag, Portal und R
   assert.equal(je('e').art, 'Rückrufbitte');
   assert.equal(je('d').beantwortetAm, null, 'eine Antwortmail loest ein Portal nicht');
   assert.ok(je('d').nurHaken && !je('a').nurHaken);
+});
+
+const beleg = (id, o = {}) => ({ id, art: 'rechnung', datum: vorTagen(1), von: 'Buchhaltung <rechnung@lieferant-a.example>', domain: 'lieferant-a.example', betreff: 'Rechnung RE-1001', refs: { betreffNummern: [], kommission: null }, ...o });
+
+test('Ware unterwegs: nur Rechnungen bekannter Lieferanten aus 7 Tagen, keine Gutschrift, Bezug aus dem Betreff, kein Betrag', () => {
+  const zeilen = wareUnterwegs([
+    beleg('m1', { lieferant: 'A', datum: '2026-11-09T08:00:00Z', refs: { betreffNummern: ['#1041'], kommission: 'Testkommission' } }),
+    beleg('m2', { lieferant: 'A', datum: vorTagen(8) }),
+    beleg('m3', { lieferant: null }),
+    beleg('m4', { lieferant: 'B', art: 'ab' }),
+    beleg('m5', { lieferant: 'B', betreff: 'Gutschrift zu Rechnung RE-1' }),
+    beleg('m-6', { lieferant: 'B', datum: vorTagen(0.1), auszug: 'Betrag 123,45 EUR' }),
+  ], { jetzt: JETZT });
+  assert.deepEqual(zeilen.map(z => [z.schluessel, z.von, z.bezug]), [['ware:m6', 'Lieferant B', null], ['ware:m1', 'Lieferant A', '#1041 · Testkommission']]);
+  assert.equal(zeilen[1].text, 'Rechnung vom 09.11. da, Ware vermutlich verladen');
+  assert.ok(!JSON.stringify(zeilen).includes('123,45'), 'Mailtext und Betrag bleiben draussen');
+});
+
+test('API: Ware unterwegs braucht die privaten Stammdaten, zeigt nur deren Lieferanten und laesst sich abhaken', () => {
+  const { dir, api } = umgebung();
+  assert.deepEqual(api.ladenUebersicht().ware, { eingerichtet: false, stand: null, fehler: null, eintraege: [] }, 'ohne Stammdaten nichts, nie Beispielzeilen');
+  fs.mkdirSync(path.dirname(stammdatenPfad(dir)), { recursive: true });
+  fs.writeFileSync(stammdatenPfad(dir), JSON.stringify({ version: 1, lieferanten: { A: { anzeigename: 'Testlieferant', postfachDomains: ['lieferant-a.example'] } } }));
+  assert.deepEqual(api.ladenUebersicht().ware, { eingerichtet: true, stand: null, fehler: null, eintraege: [] }, 'ohne Beleg-Ablage leer');
+  fs.mkdirSync(path.dirname(lieferbelegePfad(dir)), { recursive: true });
+  const ablage = { version: 1, absender: {}, geprueft: {}, laeufe: [{ am: vorTagen(0.1), vollstaendig: true }], belege: {
+    abc1: beleg('abc1'),
+    abc2: beleg('abc2', { von: 'x@dienstleister.example', domain: 'dienstleister.example' }),
+  } };
+  fs.writeFileSync(lieferbelegePfad(dir), JSON.stringify(ablage));
+  let w = api.ladenUebersicht().ware;
+  assert.equal(w.stand, vorTagen(0.1));
+  assert.deepEqual(w.eintraege.map(e => [e.schluessel, e.von]), [['ware:abc1', 'Testlieferant']], 'Dienstleister ohne Stammdaten-Eintrag erscheint nicht');
+  api.ladenTelefonischSetzen({ schluessel: 'ware:abc1' });
+  assert.deepEqual(api.ladenUebersicht().ware.eintraege, [], 'abgehakt = weg');
+  fs.writeFileSync(lieferbelegePfad(dir), '{kaputt');
+  w = api.ladenUebersicht().ware;
+  assert.ok(w.fehler && !w.eintraege.length, 'beschaedigte Ablage: Hinweis statt Absturz');
 });
 
 function umgebung({ personen = true } = {}) {

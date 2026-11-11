@@ -20,7 +20,7 @@ import { leseLadenZugang, ladenPostfachPfad, leseMailCache, abrufenUndSpeichern 
 
 export const AUFGABE_ARTEN = Object.freeze(['Rolle schneiden', 'Rechnung kontrollieren', 'Angebot kontrollieren', 'Sonstiges']);
 export const AUFGABE_TEXT_MAX = 200;
-const SCHLUESSEL = /^(rueckruf|fall|aufgabe|mail):[A-Za-z0-9:/._-]{1,120}$/;
+const SCHLUESSEL = /^(rueckruf|fall|aufgabe|mail|ware):[A-Za-z0-9:/._-]{1,120}$/;
 
 export class LadenFehler extends Error {}
 
@@ -79,11 +79,14 @@ export function setzeZustaendig(file, { schluessel, wer, personen, jetzt = new D
   return alle[schluessel];
 }
 
-/** Mails, die der Laden telefonisch erledigt hat: { "<mail:schluessel>": { seit, wer } }. Nur Mails; bleibt klein (14-Tage-Abruf), shortcut: kein Aufraeumen alter Eintraege. */
+/**
+ * Abgehakt im Laden: { "<schluessel>": { seit, wer } } - Mails, die telefonisch erledigt wurden ("mail:"), und gesehene
+ * Zeilen "Ware unterwegs" ("ware:"). Bleibt klein (14- bzw. 7-Tage-Fenster), shortcut: kein Aufraeumen alter Eintraege.
+ */
 export const leseTelefonisch = leseZustaendig;
 
 export function setzeTelefonisch(file, { schluessel, wer = null, jetzt = new Date() } = {}) {
-  if (!/^mail:[A-Za-z0-9]{1,40}$/.test(String(schluessel ?? ''))) throw new LadenFehler('Unbekannter Eintrag');
+  if (!/^(mail|ware):[A-Za-z0-9]{1,40}$/.test(String(schluessel ?? ''))) throw new LadenFehler('Unbekannter Eintrag');
   const alle = leseTelefonisch(file);
   alle[schluessel] ||= { seit: jetzt.toISOString(), wer: wer ? String(wer).slice(0, 40) : null };
   schreibeJson(file, alle);
