@@ -65,9 +65,12 @@ let versandFrage = null;
 let letztesPackZiel = null;
 let letzterPackModus = null;
 let packGebunden = false;
+// Handwahl der Kurzanleitung (null = Standard: am Handy zu, sonst offen) - ueberlebt stille Neuzeichnungen.
+let hierOffen = null;
 function bindePackOffen() {
   if (packGebunden) return;
   document.addEventListener('toggle', e => {
+    if (e.target.matches?.('details.mp-hier')) hierOffen = e.target.open;
     if (e.target.matches?.('details[data-mp-kunde]')) {
       if (e.target.open) packOffen = e.target.dataset.mpKunde;
       else if (packOffen === e.target.dataset.mpKunde) packOffen = null;
@@ -591,11 +594,11 @@ export function viewKundenMusterPacken() {
       <a class="btn btn-sm${modus === 'laden' ? ' btn-primary' : ''}" href="${esc(modusLink('laden'))}"${modus === 'laden' ? ' aria-current="page"' : ''}>Muster kommt an</a>
       <a class="btn btn-sm${modus === 'sammel' ? ' btn-primary' : ''}" href="${esc(modusLink('sammel'))}"${modus === 'sammel' ? ' aria-current="page"' : ''}>Sammelliste</a>
     </nav>`;
-  const suchfeld = `<div class="toolbar"><input type="search" data-param="mpq" value="${esc(suchwert(state.route.params, 'mpq'))}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer"></div>`;
+  const suchfeld = (knopf = '') => `<div class="toolbar mp-suche"><input type="search" data-param="mpq" value="${esc(suchwert(state.route.params, 'mpq'))}" placeholder="Was steht auf dem Muster? z. B. Modena 3N55 – oder Kunde, Bestellnr." aria-label="Packstation durchsuchen, auch nach Hersteller, Produkt und Farbnummer">${knopf}</div>`;
   const fehlerHinweis = packFehlerHtml(d);
   if (modus === 'laden') return umschalter + fehlerHinweis + PACKER_INFO + viewMusterKommtAn(d);
   if (modus === 'sammel') return umschalter + fehlerHinweis + viewSammelliste(d);
-  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt heißt verschickt: „Umschlag gepackt“ trägt ihn als verschickt ein, der Kunde bekommt sofort die Versandmail – danach geht er zur Post. Bestellt ein Kunde an mehreren Tagen, hat jeder Tag seinen eigenen Umschlag – nur Bestellungen vom selben Tag kommen zusammen.</p>${PACKER_INFO}`;
+  const kopf = `${fehlerHinweis}<details class="mp-hier"${hierOffen ?? !globalThis.matchMedia?.('(max-width: 760px)').matches ? ' open' : ''}><summary>So packst du – kurz erklärt</summary><p class="sub">Hier packst du je Bestellung: Umschlag öffnen, Aufkleber samt Adresse drucken, abhaken was da ist, zukleben. Gepackt heißt verschickt: „Umschlag gepackt“ trägt ihn als verschickt ein, der Kunde bekommt sofort die Versandmail – danach geht er zur Post. Bestellt ein Kunde an mehreren Tagen, hat jeder Tag seinen eigenen Umschlag – nur Bestellungen vom selben Tag kommen zusammen.</p></details>${PACKER_INFO}`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const zielKunde = d.kunden.find(k => k.packSchluessel === ziel);
@@ -642,7 +645,7 @@ export function viewKundenMusterPacken() {
   // Ausnahme "noch vorbereiten": nur dieser Chip fuehrt zum Sammelknopf "Diese n Umschlaege vorbereiten".
   const umschlagUnterscheidet = umschlag || imReiter.some(UMSCHLAG_PASST.vorbereiten)
     || UMSCHLAG.some(([w]) => w && ![0, imReiter.length].includes(imReiter.filter(UMSCHLAG_PASST[w]).length));
-  const umschlagFilter = umschlagGilt && umschlagUnterscheidet ? `<nav class="chips mp-umschlagfilter" aria-label="Nach Umschlag filtern"><span class="small muted">Umschlag:</span>${UMSCHLAG.map(([w, label]) =>
+  const umschlagFilter = umschlagGilt && umschlagUnterscheidet ? `<nav class="chips chips-zeile mp-umschlagfilter" aria-label="Nach Umschlag filtern"><span class="small muted">Umschlag:</span>${UMSCHLAG.map(([w, label]) =>
     `<a class="chip" href="${esc(umschlagLink(w))}"${umschlag === w ? ' aria-current="page"' : ''}>${label}<span class="c">${w ? imReiter.filter(UMSCHLAG_PASST[w]).length : imReiter.length}</span></a>`).join('')}</nav>` : '';
   // Wenige Treffer gleich aufklappen und das passende Muster markieren.
   const aufklappen = gefunden && sichtbar.length <= 3;
@@ -665,10 +668,9 @@ export function viewKundenMusterPacken() {
     : ['packen', 'offen'].includes(aktiv) && !suche ? `<p>Eingetroffene Muster legst du unter <a href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a> ein, oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
   const titel = (aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1])
     + (umschlag ? ` · Umschlag ${UMSCHLAG.find(([w]) => w === umschlag)[1]}` : '');
-  if (aktiv === 'erledigt') return `${umschalter}${kopf}${filter}${ausschlussHinweis}${suchfeld}${erledigtHtml(erledigt)}`;
+  if (aktiv === 'erledigt') return `${umschalter}${kopf}${filter}${ausschlussHinweis}${suchfeld()}${erledigtHtml(erledigt)}`;
   return `${umschalter}${kopf}${filter}${umschlagFilter}${ausschlussHinweis}
-    ${suchfeld}
-    <p class="mp-eigene"><button type="button" class="btn btn-sm btn-ghost" data-mp-eigene>Eigene Aufkleber…</button></p>
+    ${suchfeld('<button type="button" class="btn btn-sm btn-ghost" data-mp-eigene>Eigene Aufkleber…</button>')}
     ${suche ? `<p class="small muted">Die Suche berücksichtigt alle offenen Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer. Alle Kunden und Produkte findest du über die Suche oben.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>${fertigHinweis(gefunden.fertig, mitFertigen, suche, gefunden.fertigGenauer)}` : ''}
     ${druck}${blaetter ? `<div class="mp-summe">${blaetter}</div>` : ''}<section class="mp-arbeitsliste" aria-label="${esc(titel)}">${aktiv === 'gepackt' && !gefunden ? gepacktBereich(sichtbar, leer) : `<h2 class="mp-titel">${esc(titel)}</h2>
     ${sichtbar.length ? `<div class="mp-kunden">${sichtbar.map((k, i) => kundeHtml(k, i + 1, { offenBeiSuche: aufklappen, treffer: treffer.get(k.packSchluessel) })).join('')}</div>` : leer}`}</section>

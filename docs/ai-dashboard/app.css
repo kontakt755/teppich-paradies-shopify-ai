@@ -352,6 +352,8 @@ table.tasks .gapc { color: var(--warn); font-size: .8rem; }
 .toolbar input[type="search"], .toolbar select, .org-filterzeile select, .field input, .field select, .field textarea { font: inherit; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--text); font-size: .88rem; }
 .toolbar input[type="search"] { min-width: 220px; flex: 1 1 220px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+/* Am Handy eine Zeile zum Wischen statt bis zu drei Zeilen Hoehe - nur fuer Leisten aus reinen Links. */
+@media (max-width: 760px) { .chips-zeile { flex-wrap: nowrap; overflow-x: auto; } .chips-zeile > * { flex: none; white-space: nowrap; } }
 /* Filter sind Pillen, echte Aktionen sind gefuellte Schaltflaechen. Vorher gab
    es beide Stile fuer dieselbe Aufgabe - im Einkauf schwarz, bei den Kunden
    terrakotta. */
