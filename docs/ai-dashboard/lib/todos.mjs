@@ -978,7 +978,7 @@ function ausRoutinen(quellen, jetzt) {
     id: 'routinen', art: 'routinen', bereich: 'website', ton: 'crit', alterTage: tageSeit(aeltestes, jetzt),
     titel: gestoert.length === 1 ? `Mac-Dienst gestört: ${gestoert[0].titel}` : `Mac-Dienst: ${gestoert.length} Routinen gestört`,
     kontext: [gestoert[0].text, gestoert.length > 1 ? `außerdem ${gestoert.slice(1).map(r => r.titel).join(', ')}` : null,
-      'Claude Bescheid geben: „Mac-Dienst gestört“'].filter(Boolean).join(' · '),
+      'Eine automatische Aufgabe am Mac läuft nicht mehr. Der Inhaber sagt Claude im Chat Bescheid („Mac-Dienst gestört“), dann wird es repariert.'].filter(Boolean).join(' · '),
     // Ohne Knopf war das rote To-do eine Sackgasse; die Shop-Kontrolle listet jede gestoerte Routine.
     knopf: { text: 'Ansehen', href: '#/shopwache' },
   }];

@@ -37,7 +37,7 @@ export function viewShopwache() {
   const rg = gestoerteRoutinen(d?.routinen);
   const routinen = rg.length ? `<div class="notice crit" role="status" style="margin:0 0 12px"><b>Mac-Dienst gestört:</b>
     <ul style="margin:4px 0 4px;padding-left:20px">${rg.map(r => `<li><b>${esc(r.titel)}</b> – ${esc(r.text)}</li>`).join('')}</ul>
-    Claude Bescheid geben: „Mac-Dienst gestört“.</div>` : '';
+    Eine automatische Aufgabe am Mac läuft nicht mehr. Der Inhaber sagt Claude im Chat Bescheid („Mac-Dienst gestört“), dann wird es repariert.</div>` : '';
   // Ziel des To-dos zur Tagessicherung - nur wenn etwas nicht stimmt.
   const sl = sicherungsLage(d?.sicherung);
   const sicherung = sl ? `<p class="notice ${sl.ton === 'crit' ? 'crit' : 'warn'}" role="status" style="margin:0 0 12px"><b>${esc(sl.titel)}:</b> ${esc(sl.kontext)}.</p>` : '';

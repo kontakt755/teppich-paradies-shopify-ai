@@ -95,7 +95,8 @@ export function wareUnterwegs(belege = [], { jetzt = new Date(), nameVon = id =>
     .sort((a, b) => String(b.datum).localeCompare(String(a.datum)))
     .map((b) => {
       const am = new Date(b.datum).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
-      const bezug = [...(b.refs?.betreffNummern || []), b.refs?.kommission].filter(Boolean).join(' · ').slice(0, 80);
+      // Belegnummer (steht schon im Beleg) unterscheidet zwei Rechnungen desselben Lieferanten am selben Tag.
+      const bezug = [b.refs?.belegnummer ? `Beleg ${b.refs.belegnummer}` : null, ...(b.refs?.betreffNummern || []), b.refs?.kommission].filter(Boolean).join(' · ').slice(0, 80);
       return {
         // Gleiche Form wie die Mail-Schluessel, damit der Haken dieselbe Ablage nutzen kann.
         schluessel: `ware:${String(b.id).replace(/[^A-Za-z0-9]/g, '').slice(0, 40)}`,
