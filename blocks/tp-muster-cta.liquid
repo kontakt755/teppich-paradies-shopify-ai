@@ -26,6 +26,11 @@
     im Knopf (auch mobil sichtbar). Dieselbe Zeile zeigt der Musterkonfigurator
     (assets/tp-sample-checkout.js) unter dem Produktnamen.
 
+  Liegt das Muster der gewaehlten Farbe im Musterlager, steht unter dem Knopf
+  "Muster dieser Farbe auf Lager - sofort lieferbar" (snippets/tp-muster-lager,
+  09.11.2026). Auf Rollenware macht das der Rollenware-Rechner (dort ist dieser
+  Block abgeschaltet).
+
   Vinyl-Muster hoechstens 2 je Bestellung (Inhaber 13.10.2026,
   snippets/tp-muster-grenze): Bei Vinyl steht die Grenze im Knopf; liegen
   schon 2 Vinyl-Muster im Warenkorb, ist der Knopf deaktiviert und darunter
@@ -100,6 +105,8 @@
         {%- endif -%}
       {%- endif -%}
     </a>
+    {%- comment -%} Muster dieser Farbe im Musterlager: sofort lieferbar (09.11.2026, snippets/tp-muster-lager) {%- endcomment -%}
+    {%- unless tp_mc_anfrage -%}{%- render 'tp-muster-lager', product: product -%}{%- endunless -%}
     {%- if tp_mc_grenze != blank -%}
       <button class="tp-muster-cta__link-{{ tp_mc_id }} tp-muster-cta-voll" type="button" disabled aria-describedby="tp-muster-cta-grenze-{{ tp_mc_id }}" data-tp-mg-voll{% unless tp_mc_grenze == 'voll' %} hidden{% endunless %}>
         {{- block.settings.label | default: 'Kostenloses Muster anfragen' | escape -}}

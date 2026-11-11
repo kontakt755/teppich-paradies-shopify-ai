@@ -1,0 +1,129 @@
+{%- doc -%}
+  Produktseite: ruhige Zeile "Muster dieser Farbe auf Lager - sofort lieferbar"
+  direkt unter dem Musterknopf (09.11.2026, Packstation: Kunden sollen schon
+  hier sehen, dass das Muster sofort rausgeht, statt erst im Konfigurator).
+  Eingebunden von blocks/tp-muster-cta (alle Templates ausser Rollenware) und
+  blocks/tp-rollware-rechner (Rollenware, dort ist tp-muster-cta abgeschaltet).
+
+  Zusammenhang Produktfarbe <-> Lagermuster wie im Musterkonfigurator
+  (assets/tp-sample-checkout-core.js, assignSampleVariants + markSofort):
+  1. Musterprodukt muster-<handle> des Produkts, sonst muster-<Handle des
+     Teppichbodens> (service.einfass_basis, Teppich nach Mass) - dieselbe
+     Reihenfolge wie sections/tp-muster-basis.
+  2. Je verfuegbarer Mustervariante: SKU "M-<Quell-SKU>" ohne "M-" gegen die
+     Liste im Shop-Metafeld custom.muster_sofort (snippets/tp-muster-sofort).
+  3. Verglichen wird ueber den Farbwert der Mustervariante (ohne Gross/Klein),
+     nicht ueber die SKU der Produktvariante: Wunschmass-Varianten haben keine SKU.
+  Liste aelter als 2 Stunden: keine Zeile (wie sofortListe im Konfigurator).
+  Farbwechsel: assets/tp-muster-lager.js schaltet die Zeile um, der Variantenwaehler
+  rendert den Musterknopf nicht neu.
+
+  @param {object} product - Produkt
+{%- enddoc -%}
+{%- liquid
+  assign tp_ml_meta = shop.metafields.custom.muster_sofort.value
+  assign tp_ml_farben = ''
+  assign tp_ml_index = -1
+  assign tp_ml_optname = ''
+  assign tp_ml_frisch = false
+
+  # shortcut: Frist (7200 s) und SKU-Regel stehen auch in tp-sample-checkout-core.js (sofortListe,
+  # markSofort) und snippets/tp-muster-lieferzeit - bei einer Aenderung alle drei nachziehen.
+  if tp_ml_meta.skus != blank and tp_ml_meta.stand != blank
+    assign tp_ml_alter = 'now' | date: '%s' | minus: 0
+    assign tp_ml_stand = tp_ml_meta.stand | date: '%s' | minus: 0
+    assign tp_ml_alter = tp_ml_alter | minus: tp_ml_stand
+    if tp_ml_alter <= 7200
+      assign tp_ml_frisch = true
+    endif
+  endif
+
+  if tp_ml_frisch
+    # Farboption wie OPTION_NAMES in tp-sample-checkout-core.js
+    for tp_ml_opt in product.options_with_values
+      assign tp_ml_name = tp_ml_opt.name | downcase | strip
+      if tp_ml_name == 'farbe' or tp_ml_name == 'dekor' or tp_ml_name == 'color'
+        assign tp_ml_index = forloop.index0
+        assign tp_ml_optname = tp_ml_opt.name
+        break
+      endif
+    endfor
+  endif
+
+  if tp_ml_index >= 0
+    assign tp_ml_kandidat = 'muster-' | append: product.handle
+    assign tp_ml_muster = all_products[tp_ml_kandidat]
+    if tp_ml_muster.id == blank
+      assign tp_ml_basis = product.metafields.service.einfass_basis.value.handle
+      if tp_ml_basis != blank and tp_ml_basis != product.handle
+        assign tp_ml_kandidat = 'muster-' | append: tp_ml_basis
+        assign tp_ml_muster = all_products[tp_ml_kandidat]
+      endif
+    endif
+
+    # shortcut: Musterprodukte haben genau eine Option (Farbe), daher option1; die Liste im
+    # Metafeld steht in Grossbuchstaben (so schreibt sie das Control Center). Mehrere
+    # Optionen am Musterprodukt waeren ein Umbau der Musterprodukte, dann hier nachziehen.
+    for tp_ml_variante in tp_ml_muster.variants
+      if tp_ml_variante.available
+        assign tp_ml_sku = tp_ml_variante.sku | default: '' | upcase
+        assign tp_ml_kopf = tp_ml_sku | slice: 0, 2
+        if tp_ml_kopf == 'M-'
+          assign tp_ml_sku = tp_ml_sku | remove_first: 'M-'
+        endif
+        if tp_ml_sku != blank and tp_ml_meta.skus contains tp_ml_sku
+          assign tp_ml_farbe = tp_ml_variante.option1 | downcase | strip
+          assign tp_ml_farben = tp_ml_farben | append: tp_ml_farbe | append: '|~|'
+        endif
+      endif
+    endfor
+  endif
+
+  assign tp_ml_liste = tp_ml_farben | split: '|~|'
+  assign tp_ml_aktiv = false
+  if tp_ml_liste.size > 0
+    assign tp_ml_start = product.selected_or_first_available_variant.options[tp_ml_index] | downcase | strip
+    if tp_ml_liste contains tp_ml_start
+      assign tp_ml_aktiv = true
+    endif
+  endif
+-%}
+{%- if tp_ml_liste.size > 0 -%}
+  <p
+    class="tp-muster-lager"
+    data-tp-ms-zeile
+    data-tp-ms-farben="{{ tp_ml_liste | json | escape }}"
+    data-tp-ms-stand="{{ tp_ml_meta.stand | escape }}"
+    data-tp-ms-option="{{ tp_ml_optname | escape }}"
+    {% unless tp_ml_aktiv %}hidden{% endunless %}
+  ><span class="tp-muster-lager__plakette">Muster dieser Farbe auf Lager – sofort lieferbar</span></p>
+  <script src="{{ 'tp-muster-lager.js' | asset_url }}" defer></script>
+{%- endif -%}
+{% stylesheet %}
+  /* Plakette wie im Musterkonfigurator (.tp-sample__card-plakette): weiss auf --tp-ink, bewusst kein Rot */
+  .tp-muster-lager {
+    margin: 8px 0 0;
+    text-align: center;
+  }
+
+  .tp-muster-lager[hidden] {
+    display: none;
+  }
+
+  .tp-muster-lager__plakette {
+    display: inline-block;
+    max-width: 100%;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--tp-ink, #1d1a17);
+    color: #fff;
+    font-size: var(--tp-fs-xs);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  /* Vinyl-Grenze erreicht (snippets/tp-muster-grenze): der Knopf ist gesperrt, dann kein "sofort lieferbar" */
+  [data-tp-muster-grenze='voll'] .tp-muster-lager {
+    display: none;
+  }
+{% endstylesheet %}
