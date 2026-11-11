@@ -233,7 +233,7 @@ class El {
   querySelector(sel) { return this.querySelectorAll(sel)[0] || null; }
 }
 
-async function konfigurator({ product, cartItems, cartNachher = null, bonus = false }) {
+async function konfigurator({ product, cartItems, cartNachher = null, bonus = false, sofort = null }) {
   const requests = [];
   let cartAbrufe = 0;
   async function fetch(url, options = {}) {
@@ -252,8 +252,10 @@ async function konfigurator({ product, cartItems, cartNachher = null, bonus = fa
   rootEl.querySelector = (sel) => { if (!benannt.has(sel)) benannt.set(sel, new El()); return benannt.get(sel); };
   rootEl.querySelectorAll = () => [];
   const window = { TPMusterBonus: bonus, location: { search: `?produkt=${product.handle}`, origin: 'https://shop.example', href: '' }, localStorage: { getItem: () => null, setItem() {} } };
-  const document = { querySelector: (sel) => (sel === '[data-tp-sample-checkout]' ? rootEl : null), createElement: (tag) => new El(tag) };
-  const context = vm.createContext({ window, document, fetch, URLSearchParams, Set, Promise });
+  // sofort: SKUs im Musterlager (snippets/tp-muster-sofort), frisch gestempelt
+  const sofortEl = sofort ? { textContent: JSON.stringify({ skus: sofort, stand: new Date().toISOString() }) } : null;
+  const document = { querySelector: (sel) => (sel === '[data-tp-sample-checkout]' ? rootEl : sel === 'script[data-tp-muster-sofort]' ? sofortEl : null), createElement: (tag) => new El(tag) };
+  const context = vm.createContext({ window, document, fetch, URLSearchParams, Set, Promise, Date });
   vm.runInContext(coreSource, context);
   vm.runInContext(checkoutSource, context);
   const ticks = async () => { for (let i = 0; i < 20; i += 1) await new Promise((r) => setImmediate(r)); };
@@ -312,6 +314,79 @@ test('Konfigurator: mehrere Farben ohne ?farbe= - nichts vorausgewaehlt', async 
   const boxen = k.el('[data-sample-grid]').querySelectorAll('input[type="checkbox"]');
   assert.equal(boxen.length, 2);
   assert.equal(boxen.some((b) => b.checked), false);
+});
+
+// --- Lager-Bonus (Inhaber 11.11.2026, w-325): 3. Muster nur als "Muster auf Lager" ---
+
+const VELOURS = { ...TEPPICH, featured_image: '', options: [{ name: 'Farbe', position: 1 }], variants: [
+  { id: 71, option1: 'Grau', title: 'Grau', available: true, sku: 'VEL4_101' },
+  { id: 72, option1: 'Beige', title: 'Beige', available: true, sku: 'VEL4_102' },
+  { id: 73, option1: 'Rot', title: 'Rot', available: true, sku: 'VEL4_103' },
+] };
+const boxenVon = (k) => k.el('[data-sample-grid]').querySelectorAll('input[type="checkbox"]');
+
+test('Konfigurator: 2 normale Muster gewaehlt - das 3. geht nur als Muster auf Lager und traegt _Muster_Lager', async () => {
+  const k = await konfigurator({ product: VELOURS, cartItems: [], sofort: ['VEL4_101'] });
+  const [grau, beige, rot] = boxenVon(k);
+  assert.match(k.el('[data-sample-count]').textContent, /^0 von 2 Mustern ausgewählt · zusätzlich 1 „Muster auf Lager“ möglich$/);
+  beige.click(); rot.click();
+  assert.equal(grau.disabled, false, 'Lagermuster bleibt waehlbar');
+  assert.match(k.el('[data-sample-count]').textContent, /2 von 2 Mustern ausgewählt · 1 weiteres möglich, wenn es ein „Muster auf Lager“ ist/);
+  grau.click();
+  assert.equal(grau.checked, true);
+  assert.match(k.el('[data-sample-count]').textContent, /^3 von 3 Mustern ausgewählt\./);
+  k.el('[data-sample-submit]').dispatch('click');
+  await k.ticks();
+  const items = k.requests.find((r) => r.url === '/cart/add.js').body.items;
+  assert.deepEqual(items.map((i) => i.properties._Muster_Lager), ['1', undefined, undefined]);
+});
+
+test('Konfigurator: ohne Lagermuster bleibt es bei 2 - auch wenn 2 normale schon im Warenkorb liegen', async () => {
+  const ohne = await konfigurator({ product: VELOURS, cartItems: [] });
+  const [grau, beige, rot] = boxenVon(ohne);
+  beige.click(); rot.click();
+  assert.equal(grau.disabled, true);
+  assert.match(ohne.el('[data-sample-count]').textContent, /^2 von 2 Mustern ausgewählt\. Wählen Sie eine Farbe ab/);
+
+  const voll = await konfigurator({ product: VELOURS, cartItems: [muster('x'), muster('y')], sofort: ['VEL4_101'] });
+  assert.deepEqual(boxenVon(voll).map((b) => b.disabled), [false, true, true], 'nur das Lagermuster ist noch frei');
+  const drei = await konfigurator({ product: VELOURS, cartItems: [muster('x'), muster('y'), { quantity: 1, properties: { _Muster_ID: 'z', _Muster_Lager: '1' } }], sofort: ['VEL4_101'] });
+  assert.deepEqual(boxenVon(drei).map((b) => b.disabled), [true, true, true], 'hoechstens 1 zusaetzliches');
+});
+
+test('Konfigurator: zweiter Tab hat das Lagermuster aus dem Warenkorb genommen und 2 normale gelegt - nichts wird hinzugefuegt', async () => {
+  const lager = { quantity: 1, properties: { _Muster_ID: 'z', _Muster_Lager: '1' } };
+  const k = await konfigurator({ product: VELOURS, cartItems: [lager], cartNachher: [muster('x'), muster('y')] });
+  const [, beige, rot] = boxenVon(k);
+  beige.click(); rot.click();
+  assert.equal(rot.checked, true, 'mit Lagermuster im Warenkorb sind 2 weitere moeglich');
+  k.el('[data-sample-submit]').dispatch('click');
+  await k.ticks();
+  assert.equal(k.requests.some((r) => r.url === '/cart/add.js'), false);
+  assert.match(k.el('[data-sample-error]').textContent, /höchstens 2 Muster/);
+});
+
+test('Grenzlogik: 2 normal, 3 mit Lagermuster, kein 3. ohne, Vinyl unveraendert', () => {
+  const core = ladeCore();
+  const lager = { sampleSofort: true };
+  const normal = { sampleSofort: false };
+  const leer = core.getSampleState({ items: [] });
+  const rest = (produkt, state, auswahl) => core.getLimit(produkt, state, auswahl).remaining;
+  assert.equal(rest(TEPPICH, leer), 2);
+  assert.equal(rest(TEPPICH, leer, [normal, normal, normal]), 2, 'kein 3. ohne Lagermuster');
+  assert.equal(rest(TEPPICH, leer, [normal, normal, lager]), 3);
+  assert.equal(rest(TEPPICH, leer, [lager, lager, lager, lager]), 3, 'nur 1 zusaetzliches, auch bei lauter Lagermustern');
+  const imKorb = core.getSampleState({ items: [muster('a'), { quantity: 1, properties: { _Muster_ID: 'b', _Muster_Lager: '1' } }] });
+  assert.deepEqual([imKorb.count, imKorb.lagerCount, rest(TEPPICH, imKorb)], [2, 1, 1], 'Lagermuster im Warenkorb gibt den Platz frei');
+  // Vinyl: hoechstens 2 Vinyl-Muster, auch wenn es Lagermuster sind
+  const v = core.getLimit(KLICK, leer, [lager, lager]);
+  assert.deepEqual([v.max, v.remaining, v.word], [2, 2, 'Vinyl-Muster']);
+  const zweiVinyl = core.getSampleState({ items: [muster('a', 'vinyl'), muster('b', 'vinyl')] });
+  assert.equal(rest(KLICK, zweiVinyl, [lager]), 0);
+  assert.equal(rest(TEPPICH, zweiVinyl, [lager]), 1, 'Teppich-Lagermuster als 3. neben 2 Vinyl-Mustern');
+  // 2 Teppichmuster im Warenkorb: ein Vinyl-Lagermuster darf das 3. sein
+  const zweiTeppich = core.getSampleState({ items: [muster('a'), muster('b')] });
+  assert.deepEqual([rest(KLICK, zweiTeppich, [lager]), rest(KLICK, zweiTeppich, [normal])], [1, 0]);
 });
 
 // --- Rollenrechner: Beschriftung des Musterknopfs ---

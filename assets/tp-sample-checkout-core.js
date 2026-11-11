@@ -4,6 +4,11 @@
   // der Abonnenten-Bonus entfaellt). Die Grenze ist wie bisher nur eine
   // Browser-Grenze - Muster sind kostenlos, es gibt keine serverseitige Pruefung.
   var MAX_SAMPLES = 2;
+  // Lager-Bonus (Inhaber 11.11.2026, w-325): 1 Muster zusaetzlich, sobald mindestens
+  // eines der Muster ein "Muster auf Lager" ist (markSofort). Die Warenkorbzeile
+  // traegt dafuer _Muster_Lager = 1 (buildCartItems), damit die Regel auch ueber
+  // mehrere Produkte und Tabs am Warenkorb haengt. Die Vinyl-Grenze bleibt.
+  var LAGER_BONUS = 1;
 
   // Vinyl-Muster kosten uns Geld (Inhaber 13.10.2026): sie bleiben fuer den
   // Kunden kostenlos, aber hoechstens 2 je Bestellung. Gezaehlt werden Warenkorbzeilen mit der Property
@@ -149,21 +154,28 @@
   function getSampleState(cart) {
     var keys = new Set();
     var vinylCount = 0;
+    var lagerCount = 0;
     var count = ((cart && cart.items) || []).reduce(function (total, item) {
       if (!item.properties || !item.properties._Muster_ID) return total;
       keys.add(item.properties._Muster_ID);
       if (item.properties._Muster_Gruppe === VINYL_GROUP) vinylCount += Number(item.quantity || 0);
+      if (item.properties._Muster_Lager) lagerCount += Number(item.quantity || 0);
       return total + Number(item.quantity || 0);
     }, 0);
-    return { count: count, vinylCount: vinylCount, remaining: Math.max(0, MAX_SAMPLES - count), keys: keys };
+    return { count: count, vinylCount: vinylCount, lagerCount: lagerCount, remaining: Math.max(0, MAX_SAMPLES - count), keys: keys };
   }
 
   // Welche Grenze fuer dieses Produkt gerade bindet. Fuer Vinyl gelten zwei:
   // die Gesamtgrenze und die Vinyl-Grenze (beide 2). Angezeigt und
   // gezaehlt wird die engere - bei gleichem Rest die Vinyl-Grenze, damit der
   // Kunde liest, warum es nicht weitergeht ("2 von 2 Vinyl-Mustern").
-  function getLimit(product, state) {
-    var total = { max: MAX_SAMPLES, inCart: state.count, remaining: Math.max(0, MAX_SAMPLES - state.count), word: 'Muster' };
+  // auswahl (optional): die im Konfigurator gewaehlten Farben. Liegt ein
+  // Lagermuster im Warenkorb oder in der Auswahl, gilt die Gesamtgrenze + 1;
+  // bonusOffen sagt, dass dieser Platz noch nicht freigeschaltet ist.
+  function getLimit(product, state, auswahl) {
+    var lager = Number(state.lagerCount || 0) + (auswahl || []).filter(function (color) { return color && color.sampleSofort === true; }).length;
+    var max = MAX_SAMPLES + (lager > 0 ? LAGER_BONUS : 0);
+    var total = { max: max, inCart: state.count, remaining: Math.max(0, max - state.count), word: 'Muster', bonusOffen: lager === 0 };
     if (!isVinyl(product)) return total;
     var vinyl = { max: VINYL_MAX, inCart: state.vinylCount, remaining: Math.max(0, VINYL_MAX - state.vinylCount), word: 'Vinyl-Muster' };
     return vinyl.remaining <= total.remaining ? vinyl : total;
@@ -341,7 +353,8 @@
 
   // max/word optional: ohne Angabe die Gesamtgrenze ("Muster"), fuer Vinyl
   // die Vinyl-Grenze aus getLimit ("Vinyl-Muster").
-  function getSelectionStatus(cartCount, selectedCount, max, word) {
+  // bonusOffen: ein "Muster auf Lager" dieser Seite ginge noch zusaetzlich (Lager-Bonus).
+  function getSelectionStatus(cartCount, selectedCount, max, word, bonusOffen) {
     var limit = Number(max) > 0 ? Number(max) : MAX_SAMPLES;
     var wort = word || 'Muster';
     var inCart = Math.max(0, Number(cartCount || 0));
@@ -349,11 +362,14 @@
     var total = Math.min(limit, inCart + newlySelected);
     var remaining = Math.max(0, limit - total);
     var message;
+    var bonus = bonusOffen ? ' · zusätzlich 1 „Muster auf Lager“ möglich' : '';
 
     if (total === 0) {
-      message = '0 von ' + limit + ' ' + wort + 'n ausgewählt';
+      message = '0 von ' + limit + ' ' + wort + 'n ausgewählt' + bonus;
     } else if (total >= limit) {
-      if (inCart === 0) {
+      if (bonusOffen) {
+        message = limit + ' von ' + limit + ' ' + wort + 'n ' + (newlySelected === 0 ? 'im Warenkorb' : 'ausgewählt') + ' · 1 weiteres möglich, wenn es ein „Muster auf Lager“ ist';
+      } else if (inCart === 0) {
         message = limit + ' von ' + limit + ' ' + wort + 'n ausgewählt. Wählen Sie eine Farbe ab, um eine andere auszuwählen.';
       } else if (newlySelected === 0) {
         message = limit + ' von ' + limit + ' ' + wort + 'n im Warenkorb. Entfernen Sie dort zuerst ein ' + wort + ', um ein anderes auszuwählen.';
@@ -363,13 +379,13 @@
     } else {
       var location = newlySelected === 0 ? ' im Warenkorb' : ' insgesamt ausgewählt';
       var possibility = remaining === 1 ? 'noch 1 weiteres möglich' : remaining + ' weitere möglich';
-      message = total + ' von ' + limit + ' ' + wort + 'n' + location + ' · ' + possibility;
+      message = total + ' von ' + limit + ' ' + wort + 'n' + location + ' · ' + possibility + bonus;
     }
 
     return {
       total: total,
       remaining: remaining,
-      limitReached: total >= limit,
+      limitReached: total >= limit && !bonusOffen,
       message: message,
     };
   }
@@ -401,6 +417,8 @@
       }
       // Kennzeichen fuer die Vinyl-Grenze (getSampleState, snippets/tp-muster-grenze).
       if (isVinyl(args.product)) properties._Muster_Gruppe = VINYL_GROUP;
+      // Kennzeichen fuer den Lager-Bonus (getSampleState, getLimit).
+      if (color.sampleSofort === true) properties._Muster_Lager = '1';
       return {
         id: Number(eigeneVariante ? color.sampleVariantId : args.sampleVariantId),
         quantity: 1,
