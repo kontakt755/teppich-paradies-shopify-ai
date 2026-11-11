@@ -55,6 +55,9 @@
       if tmf_label != blank and product.title contains tmf_label
         assign tmf_vorsatz = tmf_name
       endif
+      if product.title contains 'Kettelteppich'
+        assign tmf_vorsatz = tmf_name
+      endif
       assign tmf_inhalt = 'Zuschnitt, ' | append: tmf_kante[1] | append: ' und MwSt.'
       if tmf_art == 'fertig'
         assign tmf_inhalt = tmf_kante[1] | append: ' und die MwSt.'
