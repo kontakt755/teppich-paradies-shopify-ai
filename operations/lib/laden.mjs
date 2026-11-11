@@ -28,6 +28,7 @@ const privat = dir => dir || process.env.TP_PRIVAT_DIR || path.join(os.homedir()
 export const ladenPersonenPfad = dir => path.join(privat(dir), 'laden-personen.json');
 export const ladenZustaendigPfad = dir => path.join(privat(dir), 'laden-zustaendig.json');
 export const ladenAufgabenPfad = dir => path.join(privat(dir), 'laden-aufgaben.json');
+export const ladenTelefonischPfad = dir => path.join(privat(dir), 'laden-telefonisch.json');
 
 /** Datei als JSON; fehlend -> null, leer -> null, beschaedigt oder unlesbar -> Fehler. */
 function leseJson(file) {
@@ -74,6 +75,17 @@ export function setzeZustaendig(file, { schluessel, wer, personen, jetzt = new D
   if (wer === null) { delete alle[schluessel]; schreibeJson(file, alle); return null; }
   if (alle[schluessel] && alle[schluessel].wer !== wer) throw new LadenFehler(`${alle[schluessel].wer} kümmert sich schon darum`);
   alle[schluessel] ||= { wer, seit: jetzt.toISOString() };
+  schreibeJson(file, alle);
+  return alle[schluessel];
+}
+
+/** Mails, die der Laden telefonisch erledigt hat: { "<mail:schluessel>": { seit, wer } }. Nur Mails; bleibt klein (14-Tage-Abruf), shortcut: kein Aufraeumen alter Eintraege. */
+export const leseTelefonisch = leseZustaendig;
+
+export function setzeTelefonisch(file, { schluessel, wer = null, jetzt = new Date() } = {}) {
+  if (!/^mail:[A-Za-z0-9]{1,40}$/.test(String(schluessel ?? ''))) throw new LadenFehler('Unbekannter Eintrag');
+  const alle = leseTelefonisch(file);
+  alle[schluessel] ||= { seit: jetzt.toISOString(), wer: wer ? String(wer).slice(0, 40) : null };
   schreibeJson(file, alle);
   return alle[schluessel];
 }

@@ -11,6 +11,7 @@
  *               der Zustaendigkeit (operations/lib/laden.mjs)
  */
 import { FRISTEN, tageSeit, tonNachAlter, alterText, sortiereTodos, rueckrufFaellig, alsTag } from './todos.mjs';
+import { werktageSeit } from './beschaffung.mjs';
 
 const mehrzahl = (n, eins, viele) => `${n} ${n === 1 ? eins : viele}`;
 
@@ -43,17 +44,31 @@ export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [] } =
   return sortiereTodos(liste);
 }
 
+/** Portal-Anfragen (11880, Kleinanzeigen) und Rueckrufbitten: eine Antwortmail loest sie nie, nur der Haken zaehlt. */
+const PORTAL = /^(Neue Anfrage:|Nutzer-Anfrage)/i;
+const RUECKRUF = /r[uü]ckruf/i;
+export const mailArt = betreff => (PORTAL.test(betreff || '') ? 'Portalanfrage' : RUECKRUF.test(betreff || '') ? 'Rückrufbitte' : null);
+
+/** Ab so vielen Werktagen ohne Antwort ist eine Mail rot (Werkbank w-352: "nach einem Werktag"). */
+export const MAIL_ROT_WERKTAGE = 1;
+
 /**
  * Mails aus dem Abruf (operations/lib/laden-mails.mjs) als Zeilen. Schon aus dem Hauptpostfach
- * beantwortete (beantwortetAm) werden nie gelb oder rot: sie liegen nicht, sie sind nur noch nicht
- * aus dem Laden-Postfach verschwunden. Die Adresse des Absenders verlaesst den Server nicht.
+ * beantwortete (beantwortetAm) werden nie rot: sie liegen nicht, sie sind nur noch nicht aus dem
+ * Laden-Postfach verschwunden - ausser Portal-Anfragen und Rueckrufbitten (nur der Haken "telefonisch
+ * erledigt" zaehlt). Das Alter zaehlt in Werktagen. Die Adresse des Absenders verlaesst den Server nicht.
  */
 export function ladenMailZeilen(mails = [], { jetzt = new Date() } = {}) {
   return mails.map((m) => {
     const alterTage = tageSeit(m.seit, jetzt);
+    const werktage = werktageSeit(m.seit, jetzt);
+    const art = mailArt(m.text);
+    const beantwortet = art ? null : m.beantwortetAm || null;
+    const rot = !beantwortet && werktage !== null && werktage >= MAIL_ROT_WERKTAGE;
     return {
-      schluessel: m.schluessel, von: m.von, text: m.text, seit: m.seit, alterTage, alter: alterText(alterTage),
-      ton: m.beantwortetAm ? '' : tonNachAlter(alterTage, ...FRISTEN.laden_mail), beantwortetAm: m.beantwortetAm || null,
+      schluessel: m.schluessel, art, von: m.von, text: m.text, seit: m.seit, alterTage, werktage,
+      alter: werktage ? mehrzahl(werktage, 'Werktag', 'Werktage') : alterText(alterTage),
+      ton: rot ? 'crit' : '', beantwortetAm: beantwortet, nurHaken: Boolean(art),
     };
   });
 }

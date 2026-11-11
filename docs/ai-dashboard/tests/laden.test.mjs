@@ -50,6 +50,27 @@ test('Mail-Zeilen: Frist aus FRISTEN, beantwortete nie rot, Adresse bleibt draus
   assert.match(liegtZuLange(z, []), /1 Mail /);
 });
 
+test('Mail-Zeilen: Alter in Werktagen, rot erst nach einem Werktag, Portal und Rueckruf nur per Haken', () => {
+  // JETZT = Dienstag 10.11. 10:00 UTC; vorTagen(1) = Montag -> 1 Werktag, vorTagen(3) = Samstag -> 2 Werktage, vorTagen(0) = heute
+  const z = ladenMailZeilen([
+    { schluessel: 'mail:a', von: 'Person A', text: 'Frage', seit: vorTagen(1) },
+    { schluessel: 'mail:b', von: 'Person B', text: 'Frage', seit: vorTagen(0) },
+    { schluessel: 'mail:c', von: 'Person C', text: 'Frage', seit: vorTagen(3), beantwortetAm: vorTagen(1) },
+    { schluessel: 'mail:d', von: 'Portal', text: 'Neue Anfrage: Bodenverlegung ...', seit: vorTagen(3), beantwortetAm: vorTagen(1) },
+    { schluessel: 'mail:e', von: 'Shop', text: 'RÜCKRUF – Musterberatung', seit: vorTagen(1) },
+    { schluessel: 'mail:f', von: 'Person F', text: 'Frage', seit: vorTagen(3) },
+  ], { jetzt: JETZT });
+  const je = k => z.find(m => m.schluessel === `mail:${k}`);
+  assert.deepEqual(z.map(m => m.ton), ['crit', '', '', 'crit', 'crit', 'crit']);
+  assert.equal(je('a').alter, '1 Werktag');
+  assert.equal(je('f').alter, '2 Werktage');
+  assert.equal(je('b').alter, 'heute');
+  assert.equal(je('d').art, 'Portalanfrage');
+  assert.equal(je('e').art, 'Rückrufbitte');
+  assert.equal(je('d').beantwortetAm, null, 'eine Antwortmail loest ein Portal nicht');
+  assert.ok(je('d').nurHaken && !je('a').nurHaken);
+});
+
 function umgebung({ personen = true } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-laden-api-'));
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
@@ -102,6 +123,20 @@ test('API: Mails aus dem Zwischenspeicher, Fehler und Stand gehen mit; frischer 
   assert.equal(api.ladenUebersicht().mails.eintraege[0].zustaendig.wer, 'Person A');
 });
 
+test('API: "Telefonisch erledigt" nimmt die Mail aus der Liste, ohne das Postfach anzufassen', () => {
+  const { dir, api } = umgebung();
+  fs.writeFileSync(ladenPostfachPfad(dir), JSON.stringify({ host: 'imap.example.invalid', benutzer: 'laden@example.invalid', passwort: 'test-passwort' }), { mode: 0o600 });
+  fs.writeFileSync(ladenMailsPfad(dir), JSON.stringify({ abgerufenAm: JETZT.toISOString(), fehler: null, eintraege: [
+    { schluessel: 'mail:0123456789abcdef', von: 'Person A', text: 'Frage', seit: vorTagen(2) },
+    { schluessel: 'mail:fedcba9876543210', von: 'Person B', text: 'Frage 2', seit: vorTagen(2) },
+  ] }));
+  api.ladenZustaendigSetzen({ schluessel: 'mail:0123456789abcdef', wer: 'Person A' });
+  api.ladenTelefonischSetzen({ schluessel: 'mail:0123456789abcdef', wer: 'Person A' });
+  assert.deepEqual(api.ladenUebersicht().mails.eintraege.map(m => m.schluessel), ['mail:fedcba9876543210']);
+  assert.deepEqual(JSON.parse(fs.readFileSync(ladenZustaendigPfad(dir), 'utf8')), {}, 'Zustaendigkeit ist mit erledigt');
+  assert.throws(() => api.ladenTelefonischSetzen({ schluessel: 'rueckruf:x' }), e => e.status === 400);
+});
+
 test('API: Eingaben werden serverseitig geprueft, ohne Namensliste kein Uebernehmen', () => {
   const { dir, api } = umgebung();
   const fehler = (fn, teil) => assert.throws(fn, e => e.status === 400 && teil.test(e.message));
@@ -148,7 +183,7 @@ test('Server: Rolle "lesen" darf die Uebersicht sehen, aber nichts schreiben (40
     const lena = await anmelden('lena', 'platzhalter-lesen-1');
     const mona = await anmelden('mona', 'platzhalter-mitarbeiter-1');
     const neu = { art: 'Sonstiges', text: 'Testaufgabe' };
-    for (const [pfad, rumpf] of [['/api/laden/zustaendig', { schluessel: 'rueckruf:mail-m1', wer: 'Person A' }], ['/api/laden/aufgabe', neu], ['/api/laden/aufgabe-erledigt', { id: 'x' }]]) {
+    for (const [pfad, rumpf] of [['/api/laden/zustaendig', { schluessel: 'rueckruf:mail-m1', wer: 'Person A' }], ['/api/laden/aufgabe', neu], ['/api/laden/aufgabe-erledigt', { id: 'x' }], ['/api/laden/telefonisch', { schluessel: 'mail:0123456789abcdef' }]]) {
       assert.equal((await post(lena, pfad, rumpf)).status, 403, `lesen: ${pfad}`);
     }
     assert.equal((await fetch(`${base}/api/laden/uebersicht`, { headers: { cookie: lena } })).status, 200, 'lesen darf zuschauen');
@@ -160,5 +195,6 @@ test('Server: Rolle "lesen" darf die Uebersicht sehen, aber nichts schreiben (40
     assert.equal(u.todos.find(t => t.aufgabeId === id).zustaendig.wer, 'Person A');
     assert.equal((await post(mona, '/api/laden/aufgabe', { art: 'Sonstiges', text: '' })).status, 400);
     assert.equal((await post(mona, '/api/laden/aufgabe-erledigt', { id })).status, 200);
+    assert.equal((await post(mona, '/api/laden/telefonisch', { schluessel: 'mail:0123456789abcdef' })).status, 200);
   });
 });

@@ -72,9 +72,10 @@ function zeile(e, { lesen }) {
        ${lesen ? '' : laden.wer === e.schluessel
     ? `<span class="laden-wer"><strong>Wer?</strong>${(laden.daten.personen || []).map(n => `<button type="button" class="btn laden-knopf" data-laden-wer="${esc(n)}" data-schluessel="${esc(e.schluessel)}">${esc(n)}</button>`).join('')}<button type="button" class="btn btn-ghost laden-knopf" data-laden-abbrechen>Abbrechen</button></span>`
     : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${esc(e.schluessel)}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>`}`;
-  return `<li class="laden-zeile">
-    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}</div>
-    <div class="laden-rechts">${rechts}</div>
+  const telefon = e.schluessel.startsWith('mail:') && !lesen ? `<button type="button" class="btn laden-knopf" data-laden-telefonisch="${esc(e.schluessel)}">Telefonisch erledigt</button>` : '';
+  return `<li class="laden-zeile${e.ton === 'crit' && e.schluessel.startsWith('mail:') ? ' laden-zeile-rot' : ''}">
+    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}</div>
+    <div class="laden-rechts">${rechts}${telefon}</div>
   </li>`;
 }
 
@@ -146,6 +147,7 @@ export function ladenKlick(e) {
   if ((el = von('data-laden-uebernehmen'))) { laden.wer = el.dataset.ladenUebernehmen; render(); return true; }
   if ((el = von('data-laden-wer'))) { schreiben('/api/laden/zustaendig', { schluessel: el.dataset.schluessel, wer: el.dataset.ladenWer }); return true; }
   if ((el = von('data-laden-zurueck'))) { schreiben('/api/laden/zustaendig', { schluessel: el.dataset.ladenZurueck, wer: null }); return true; }
+  if ((el = von('data-laden-telefonisch'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenTelefonisch, wer: laden.daten?.personen?.length === 1 ? laden.daten.personen[0] : null }, 'Telefonisch erledigt'); return true; }
   if ((el = von('data-laden-erledigt'))) { schreiben('/api/laden/aufgabe-erledigt', { id: el.dataset.ladenErledigt }, 'Erledigt'); return true; }
   if (von('data-laden-neu')) { Object.assign(laden, { formOffen: true, wer: null }); render(); document.querySelector('#main [data-laden-form] input')?.focus(); return true; }
   if (von('data-laden-abbrechen')) { Object.assign(laden, { wer: null, formOffen: false }); render(); return true; }
