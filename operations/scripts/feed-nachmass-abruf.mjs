@@ -112,6 +112,18 @@ export function rechnerPreis(d, variantId, laenge, anzahl) {
   return { summe: erg.summeCent, alt: erg.altSummeCent, menge: erg.menge, preis: t.price, preisAlt: Number(t.compare_at_price) || 0, available: t.available, laeufer };
 }
 
+/** Titel mit allen Optionswerten: sonst tragen z. B. vier Staerken einer Matte denselben Titel. */
+const titel = (produkt, v, groesse) => {
+  const optionen = (v?.selectedOptions ?? []).map((o) => o.value).filter((w) => w && w !== 'Default Title').join(', ');
+  return `${produkt.title}${optionen ? ` ${optionen}` : ''}, ${groesse}`.slice(0, 150);
+};
+
+/** Matten kommen aus dem TnM-Skript, das nur die Farbe in den Titel nimmt. */
+export const mattenZeilen = (produkt, r) => ({
+  ...r,
+  zeilen: r.zeilen.map((z) => ({ ...z, title: titel(produkt, produkt.variants.find((v) => z.googleId.endsWith(`_${nummer(v.id)}`)), z.groesse) })),
+});
+
 /** Zeilen fuer Laeufer und Treppenkanten; jede Abweichung ist ein Fehler, nichts wird geschaetzt. */
 export function zeilenFuerLaengenware(produkt, seite, { shop = SHOP } = {}) {
   const zeilen = [];
@@ -139,13 +151,12 @@ export function zeilenFuerLaengenware(produkt, seite, { shop = SHOP } = {}) {
     }
     const pfad = `/products/${produkt.handle}?variant=${vid}&laenge=${a.laenge}&anzahl=${a.anzahl}`;
     if (a.pfad !== pfad) { melde(v, `Link im JSON-LD weicht ab: ${a.pfad}`); continue; }
-    const optionen = (v.selectedOptions ?? []).map((o) => o.value).filter((w) => w && w !== 'Default Title').join(', ');
     const groesse = k.laeufer ? `${a.laenge} cm lang, eingefasst` : `${a.anzahl} x ${a.laenge} cm`;
     zeilen.push({
       googleId: `shopify_ZZ_${pid}_${vid}`,
       handle: produkt.handle,
       groesse: `${a.anzahl} x ${a.laenge} cm`,
-      title: `${produkt.title}${optionen ? ` ${optionen}` : ''}, ${groesse}`.slice(0, 150),
+      title: titel(produkt, v, groesse),
       price: geld(k.alt || k.summe),
       salePrice: k.alt ? geld(k.summe) : '',
       link: `${shop}${pfad}`,
@@ -170,7 +181,7 @@ export async function feedErzeugen(produkte, { laden = seiteLaden, jetzt, pause 
     try {
       const seite = await laden(p.handle, keks, null, { vorAbruf });
       // Matten laufen ueber den Einfass-Konfigurator wie Teppich nach Mass.
-      const r = seite.lz ? zeilenFuerLaengenware(p, seite) : zeilenFuerProdukt(p, seite);
+      const r = seite.lz ? zeilenFuerLaengenware(p, seite) : mattenZeilen(p, zeilenFuerProdukt(p, seite));
       zeilen.push(...r.zeilen);
       fehler.push(...r.fehler);
     } catch (e) {

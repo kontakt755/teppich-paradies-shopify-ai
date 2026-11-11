@@ -134,12 +134,14 @@ einen Variantenpreis je cm bzw. je 0,01 m² und standen mit 0,18 bis 1,76 EUR in
   `.github/workflows/feed-tnm-preise.yml` die Datei `tp-nachmass-preise.txt` auf den
   Zweig `feed-daten`, mit denselben Spalten wie `tp-tnm-preise.txt`. Bei einer einzigen
   Abweichung zwischen JSON-LD, Rechner und Admin-Preis bleibt die alte Datei stehen.
-- **Freischalten im Merchant Center (von Hand, nach dem ersten gruenen Lauf):** Datei als
-  ergaenzende Quelle anlegen, in den Attributregeln fuer price, sale_price, title, link,
-  unit_pricing_measure, unit_pricing_base_measure wie bei `tp-tnm-preise` verwenden,
-  Stichprobe je Produktart pruefen. Die Sperre **nicht loeschen**, sondern um die
-  Bedingung „`tp-nachmass-preise.price` hat keinen Wert“ ergaenzen: Was der Feed nicht
-  liefert, bleibt aus Shopping (das Skript hat deshalb keinen Vorher-Abgleich).
+- **Freigeschaltet im Merchant Center (2026-11-11):** ergaenzende Quelle
+  „tp-nachmass-preise (automatisch)“, Abruf taeglich 07:00 Uhr; sie steht in den
+  Attributregeln fuer price, sale_price, title, link, unit_pricing_measure und
+  unit_pricing_base_measure vorn. Die Sperre bleibt und hat eine dritte Bedingung:
+  „`tp-nachmass-preise (automatisch).price` enthaelt nicht 'EUR'“ (einen Operator „hat
+  keinen Wert“ gibt es nicht; die Spalte steht im Editor unter „Feedattribute“). Was der
+  Feed nicht liefert, bleibt aus Shopping (das Skript hat deshalb keinen Vorher-Abgleich).
+- **Titel:** Produkttitel, alle Optionswerte (Farbe, Staerke, Ausfuehrung), Beispielgroesse.
 
 ## Wie der Variantenausschluss technisch geht
 
