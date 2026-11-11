@@ -73,6 +73,38 @@ export function ladenMailZeilen(mails = [], { jetzt = new Date() } = {}) {
   });
 }
 
+/** So lange steht eine Lieferantenrechnung als "Ware unterwegs" in der Ansicht. */
+export const WARE_TAGE = 7;
+// Gutschrift, Mahnung und Storno fallen in der Lieferbeleg-Ablage auch unter "rechnung", heissen aber nicht "verladen".
+const KEINE_WARE = /gutschrift|credit ?note|mahnung|zahlungserinnerung|kontoauszug|storno/i;
+
+/**
+ * "Ware unterwegs" (Inhaber 11.11.2026): Rechnungen gehen nie ans Laden-Postfach, aber eine Rechnung heisst bei
+ * vielen Lieferanten "Ware wurde verladen". Quelle ist die Lieferbeleg-Ablage (stuendlicher Postfach-Lauf);
+ * hier nur Rechnungen der letzten WARE_TAGE Tage von Absendern, die die privaten Stammdaten als Lieferant kennen
+ * (`lieferant` gesetzt) - Dienstleister stehen dort nicht. Nie Betrag, Anhang oder Mailtext.
+ * @param {object[]} belege  Belege mit { id, art, datum, betreff, lieferant, refs }
+ * @param {object} o
+ * @param {(id: string) => string} [o.nameVon]  Anzeigename aus den Stammdaten
+ */
+export function wareUnterwegs(belege = [], { jetzt = new Date(), nameVon = id => `Lieferant ${id}` } = {}) {
+  const ab = jetzt.getTime() - WARE_TAGE * 86400000;
+  return belege
+    .filter(b => b?.art === 'rechnung' && b.lieferant && !KEINE_WARE.test(b.betreff || '')
+      && new Date(b.datum).getTime() >= ab && new Date(b.datum).getTime() <= jetzt.getTime())
+    .sort((a, b) => String(b.datum).localeCompare(String(a.datum)))
+    .map((b) => {
+      const am = new Date(b.datum).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
+      const bezug = [...(b.refs?.betreffNummern || []), b.refs?.kommission].filter(Boolean).join(' · ').slice(0, 80);
+      return {
+        // Gleiche Form wie die Mail-Schluessel, damit der Haken dieselbe Ablage nutzen kann.
+        schluessel: `ware:${String(b.id).replace(/[^A-Za-z0-9]/g, '').slice(0, 40)}`,
+        von: nameVon(b.lieferant), text: `Rechnung vom ${am} da, Ware vermutlich verladen`, bezug: bezug || null,
+        seit: b.datum, alter: alterText(tageSeit(b.datum, jetzt)),
+      };
+    });
+}
+
 /** Die eine rote Zeile oben: offene (von niemandem uebernommene) Eintraege in der roten Stufe. */
 export function liegtZuLange(mails = [], todos = []) {
   const rot = l => l.filter(e => !e.zustaendig && e.ton === 'crit').length;

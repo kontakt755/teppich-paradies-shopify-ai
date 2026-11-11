@@ -91,6 +91,25 @@ function spalte(eintraege, { id, titel, satz, leer, kopf = '', vorspann = '' }, 
   </section>`;
 }
 
+/**
+ * "Ware unterwegs": reine Info (keine Aufgabe, niemand uebernimmt sie), darum eigener Abschnitt unter den Spalten.
+ * Leer und eingerichtet = der Abschnitt faellt weg; ohne Lieferantenliste ein Hinweis, nie Beispielzeilen.
+ */
+function wareAbschnitt(w, lesen) {
+  if (!w || (w.eingerichtet && !w.fehler && !w.eintraege.length)) return '';
+  const inhalt = !w.eingerichtet ? '<p class="laden-leer">Die Liste der Lieferanten ist noch nicht hinterlegt. Sobald sie steht, erscheint hier, von wem eine Rechnung gekommen ist.</p>'
+    : w.fehler ? `<div class="notice warn" role="status">${esc(w.fehler)}</div>`
+      : `<ul class="laden-liste">${w.eintraege.map(e => `<li class="laden-zeile">
+        <div class="laden-text"><p class="small muted">${esc(e.von)}${e.bezug ? ` · ${esc(e.bezug)}` : ''}</p><p class="laden-titel">${esc(e.text)}</p></div>
+        <div class="laden-rechts"><span class="laden-plakette">${esc(e.alter || '')}</span>${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-gesehen="${esc(e.schluessel)}">Gesehen</button>`}</div>
+      </li>`).join('')}</ul>`;
+  return `<section class="laden-spalte laden-ware" aria-labelledby="laden-ware">
+    <div class="laden-spalte-kopf"><h2 id="laden-ware">Ware unterwegs</h2></div>
+    <p class="small muted">Hier steht, von welchem Lieferanten in den letzten 7 Tagen eine Rechnung gekommen ist. Dann ist die Ware meist schon verladen.${w.stand ? ` Stand: ${esc(since(w.stand))}.` : ''}</p>
+    ${inhalt}
+  </section>`;
+}
+
 /** Ein stilles Neuzeichnen (Datenabgleich) soll Getipptes nicht wegnehmen: Werte aus dem alten Formular uebernehmen. */
 function aufgabenFormular() {
   const alt = document.querySelector('#main [data-laden-form]')?.elements;
@@ -123,7 +142,8 @@ export function viewLaden() {
     kopf: lesen || laden.formOffen ? '' : '<button type="button" class="btn laden-knopf" data-laden-neu>Aufgabe dazu</button>',
     vorspann: laden.formOffen ? aufgabenFormular() : '',
   }, lesen)}
-    </div>`;
+    </div>
+    ${wareAbschnitt(d.ware, lesen)}`;
 }
 
 async function schreiben(pfad, rumpf, erfolg) {
@@ -148,6 +168,8 @@ export function ladenKlick(e) {
   if ((el = von('data-laden-wer'))) { schreiben('/api/laden/zustaendig', { schluessel: el.dataset.schluessel, wer: el.dataset.ladenWer }); return true; }
   if ((el = von('data-laden-zurueck'))) { schreiben('/api/laden/zustaendig', { schluessel: el.dataset.ladenZurueck, wer: null }); return true; }
   if ((el = von('data-laden-telefonisch'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenTelefonisch, wer: laden.daten?.personen?.length === 1 ? laden.daten.personen[0] : null }, 'Telefonisch erledigt'); return true; }
+  // Gleiche Ablage wie "Telefonisch erledigt": der Haken blendet die Zeile nur aus, am Postfach aendert sich nichts.
+  if ((el = von('data-laden-gesehen'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenGesehen }, 'Gesehen'); return true; }
   if ((el = von('data-laden-erledigt'))) { schreiben('/api/laden/aufgabe-erledigt', { id: el.dataset.ladenErledigt }, 'Erledigt'); return true; }
   if (von('data-laden-neu')) { Object.assign(laden, { formOffen: true, wer: null }); render(); document.querySelector('#main [data-laden-form] input')?.focus(); return true; }
   if (von('data-laden-abbrechen')) { Object.assign(laden, { wer: null, formOffen: false }); render(); return true; }
