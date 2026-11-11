@@ -109,10 +109,25 @@ test('Beantwortet: Gesendet im Hauptpostfach an dieselbe Adresse nach Eingang ma
       : 'To: kunde-b@example.com\r\nDate: Mon, 02 Nov 2026 12:00:00 +0100\r\n\r\n'),
   });
   const r = await abrufenNurLesend(ZUGANG, { verbinden: falscherServer().verbinden, jetzt: JETZT, hauptZugang: { benutzer: 'a', passwort: 'b' }, mitNurLesenFn });
-  assert.match(gefragt[0], /^in:sent newer_than:14d \{to:kunde\.a@example\.com to:kunde-b@example\.com\}$|^in:sent newer_than:14d \{to:kunde-b@example\.com to:kunde\.a@example\.com\}$/);
+  assert.match(gefragt[0], /^in:sent newer_than:14d \{.*to:kunde\.a@example\.com.*\}$/);
+  assert.match(gefragt[0], /to:kunde-b@example\.com/);
   assert.equal(r.eintraege.find(e => e.adresse === 'kunde.a@example.com').beantwortetAm, '2026-11-16T11:00:00.000Z');
   assert.equal(r.eintraege.find(e => e.adresse === 'kunde-b@example.com').beantwortetAm, undefined, 'vor dem Eingang gesendet zaehlt nicht');
   assert.equal(r.markierungFehler, null);
+});
+
+test('Beantwortet: Thread-Abgleich - Antwort an andere Adresse zaehlt, wenn In-Reply-To die Message-ID nennt', async () => {
+  const gefragt = [];
+  const mitNurLesenFn = async (zugang, arbeit) => arbeit({
+    suche: async (q) => { gefragt.push(q); return [21, 22]; },
+    kopf: async uid => Buffer.from(uid === 21
+      ? 'To: andere@example.com\r\nIn-Reply-To: <x@example.com>\r\nReferences: <x@example.com> <ABC@example.com>\r\nDate: Mon, 16 Nov 2026 12:00:00 +0100\r\n\r\n'
+      : 'To: dritte@example.com\r\nDate: Mon, 16 Nov 2026 13:00:00 +0100\r\n\r\n'),
+  });
+  const r = await abrufenNurLesend(ZUGANG, { verbinden: falscherServer().verbinden, jetzt: JETZT, hauptZugang: { benutzer: 'a', passwort: 'b' }, mitNurLesenFn });
+  assert.match(gefragt[0], /subject:"Anfrage Läufer Grüße"/);
+  assert.equal(r.eintraege.find(e => e.adresse === 'kunde.a@example.com').beantwortetAm, '2026-11-16T11:00:00.000Z');
+  assert.equal(r.eintraege.find(e => e.adresse === 'kunde-b@example.com').beantwortetAm, undefined, 'fremde Mail ohne Bezug zaehlt nicht');
 });
 
 test('Beantwortet: scheitert das Hauptpostfach, bleibt der Abruf gueltig', async () => {
