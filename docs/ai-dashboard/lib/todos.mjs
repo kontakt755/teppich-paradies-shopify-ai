@@ -50,8 +50,9 @@ export const FRISTEN = Object.freeze({
 // 'alles' ist die Vereinigung aller Bereiche (Inhaber-Chip "Alles"). 'inhaber' bleibt die
 // fruehere Fokus-Sicht (Freigaben, Rotes, Eigenes) fuer alte Links - der Chip "Alles" zeigte
 // sie bis 2026-10-19 und verschwieg damit normale Laden-Arbeit (Codex-Audit).
-export const SICHTEN = Object.freeze(['inhaber', 'laden', 'website', 'alles']);
-export const SICHT_LABEL = Object.freeze({ inhaber: 'Inhaber', laden: 'Laden', website: 'Website', alles: 'Alles' });
+// 'buero' (seit 2026-11-11, w-234): Freigaben, neue Auftraege, Hausverwaltungen - damit Laden + Website + Buero = Alles.
+export const SICHTEN = Object.freeze(['inhaber', 'laden', 'website', 'buero', 'alles']);
+export const SICHT_LABEL = Object.freeze({ inhaber: 'Inhaber', laden: 'Laden', website: 'Website', buero: 'Büro', alles: 'Alles' });
 
 /**
  * Haengt ein Muster laenger als so viele Werktage aus demselben Grund bei der Musterautomatik, ist es
@@ -1127,8 +1128,7 @@ function alleTodos(quellen, opt) {
 
 function fuerSicht(todos, sicht, alle) {
   const meins = t => alle || t.fuerMich !== false;
-  if (sicht === 'laden') return todos.filter(t => t.bereich === 'laden' && meins(t));
-  if (sicht === 'website') return todos.filter(t => t.bereich === 'website' && meins(t));
+  if (['laden', 'website', 'buero'].includes(sicht)) return todos.filter(t => t.bereich === sicht && meins(t));
   if (sicht === 'alles') return todos.filter(meins);
   // Inhaber: Freigaben, alles Rote - egal bei wem es liegt - und die eigenen faelligen Aufgaben.
   return todos.filter(t => t.bereich === 'buero' || t.ton === 'crit' || t.meine);
@@ -1150,7 +1150,7 @@ function fuerSicht(todos, sicht, alle) {
  *   hausverwaltungen faellige Wiedervorlagen (ansichten/hausverwaltungen.mjs hausverwaltungenFaellig)
  *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`, `routinen`)
  * @param {object} opt
- *   sicht          'inhaber' | 'laden' | 'website'
+ *   sicht          'inhaber' | 'laden' | 'website' | 'buero' | 'alles'
  *   ich            Kuerzel des angemeldeten Benutzers
  *   alle           true: nicht auf die eigene Zustaendigkeit einschraenken (Inhaber schaut in Laden/Website)
  *   lieferantName  id -> Anzeigename (aus den Stammdaten), klartext: Hinweis -> lesbarer Satz
@@ -1163,7 +1163,7 @@ export function leiteTodosAb(quellen = {}, opt = {}) {
 /** Zahlen fuer die Sicht-Chips des Inhabers: was liegt im Laden, was bei der Website, alles - bei wem auch immer. */
 export function zaehleTodos(quellen = {}, opt = {}) {
   const todos = alleTodos(quellen, opt);
-  return { laden: fuerSicht(todos, 'laden', true).length, website: fuerSicht(todos, 'website', true).length, alles: fuerSicht(todos, 'alles', true).length };
+  return Object.fromEntries(['laden', 'website', 'buero', 'alles'].map(s => [s, fuerSicht(todos, s, true).length]));
 }
 
 /**

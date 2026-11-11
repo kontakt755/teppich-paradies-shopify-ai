@@ -217,7 +217,7 @@ test('Inhaber: Freigaben, alles Rote aus Laden und Website, eigene faellige Aufg
 
 test('Sprungfelder: Inhaber sieht in Laden und Website alles, nicht nur Eigenes', () => {
   const quellen = { bestellzeilen: [zeile({})], aufgaben: AUFGABEN };
-  assert.deepEqual(zaehleTodos(quellen, { ich: 'chef', jetzt: JETZT }), { laden: 5, website: 2, alles: 7 });
+  assert.deepEqual(zaehleTodos(quellen, { ich: 'chef', jetzt: JETZT }), { laden: 5, website: 2, buero: 0, alles: 7 });
   const laden = leiteTodosAb(quellen, { sicht: 'laden', ich: 'chef', alle: true, jetzt: JETZT });
   assert.equal(laden.length, 5);
   assert.ok(laden.some(t => t.id === 'aufgabe:a9'), 'auch Aufgaben anderer');
@@ -854,4 +854,14 @@ test('Gesperrtes Muster ohne Artikelnummer: kein "Zuerst klären", sondern "Must
   // Ohne Sperrliste bleibt die Bestellung blockiert.
   const ohne = { ...z, gesperrteMuster: [] };
   assert.ok(leiteTodosAb({ bestellzeilen: [ohne], statusAlle }, { sicht: 'laden', jetzt: JETZT }).some(x => x.art === 'blockiert'));
+});
+
+test('Chip Büro (w-234): Laden + Website + Büro = Alles, die Sicht zeigt nur Büro-Themen', () => {
+  const quellen = { bestellzeilen: [zeile({})], aufgaben: AUFGABEN, freigaben: FREIGABEN };
+  const z = zaehleTodos(quellen, { ich: 'chef', jetzt: JETZT });
+  assert.ok(z.buero > 0, 'Freigaben zaehlen als Büro');
+  assert.equal(z.laden + z.website + z.buero, z.alles);
+  const buero = leiteTodosAb(quellen, { sicht: 'buero', ich: 'chef', alle: true, jetzt: JETZT });
+  assert.equal(buero.length, z.buero, 'Chip-Zahl = Listenlaenge');
+  assert.ok(buero.every(t => t.bereich === 'buero'));
 });
