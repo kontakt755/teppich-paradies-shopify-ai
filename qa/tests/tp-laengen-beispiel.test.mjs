@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Liquid } from 'liquidjs';
-import { zeilenFuerLaengenware, rechnerPreis, googleZeile, gehoertDazu } from '../../operations/scripts/feed-nachmass-abruf.mjs';
+import { zeilenFuerLaengenware, rechnerPreis, googleZeile, gehoertDazu, mattenZeilen } from '../../operations/scripts/feed-nachmass-abruf.mjs';
 import { seiteAuswerten } from '../../scripts/teppich-nach-mass-feed.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -121,6 +121,15 @@ test('Feed: Zeile nur, wenn JSON-LD, Rechner und Admin-Preis uebereinstimmen', (
   const alt = zeilenFuerLaengenware({ ...produkt, variants: [{ ...produkt.variants[0], price: '0.30' }] }, seite());
   assert.match(alt.fehler[0].grund, /Variantenpreis Admin/);
   assert.match(rechnerPreis(seite().lz, 11, 20, 1).fehler, /Mindestens 50 cm/);
+});
+
+test('Matten-Titel tragen alle Optionswerte, damit Staerken unterscheidbar sind', () => {
+  const p = { title: 'Cocora Kokosmatte nach Maß', variants: [
+    { id: 'gid://shopify/ProductVariant/21', selectedOptions: [{ name: 'Farbe', value: 'Natur' }, { name: 'Stärke', value: '17 mm' }] },
+    { id: 'gid://shopify/ProductVariant/22', selectedOptions: [{ name: 'Farbe', value: 'Natur' }, { name: 'Stärke', value: '20 mm' }] },
+  ] };
+  const r = mattenZeilen(p, { fehler: [], zeilen: [{ googleId: 'shopify_ZZ_2_21', groesse: '60 x 90 cm', title: 'alt' }, { googleId: 'shopify_ZZ_2_22', groesse: '60 x 90 cm', title: 'alt' }] });
+  assert.deepEqual(r.zeilen.map((z) => z.title), ['Cocora Kokosmatte nach Maß Natur, 17 mm, 60 x 90 cm', 'Cocora Kokosmatte nach Maß Natur, 20 mm, 60 x 90 cm']);
 });
 
 test('Feed-Auswahl wie die Ausschlussregel im Merchant Center', () => {
