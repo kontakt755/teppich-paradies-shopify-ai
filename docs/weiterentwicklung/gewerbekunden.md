@@ -1,168 +1,139 @@
-# Gewerbekunden aktiv ansprechen: Vorschlag für eine Google-Ads-Testkampagne
+# Gewerbekunden: Google-Ads-Testkampagne „nur Ware“
 
-Werkbank w-345. Stand 2026-11-11. Nur Vorschlag: In Google Ads wurde nichts angelegt oder geändert, im Theme nichts gebaut. Quellen: Shopify-Bestellungen (nur gelesen) und Google Ads Konto 334-557-2870 (nur gelesen, Keyword-Planer, Berichte, Google-Suche).
+Werkbank w-345. Stand 2026-11-11 (überarbeitet nach Klarstellung des Inhabers). Nur Entwurf: In Google Ads, Merchant Center und Shopify wurde nichts angelegt oder geändert, keine Seite veröffentlicht. Quellen: Shopify-Bestellungen (nur gelesen) und Google Ads Konto 334-557-2870 (nur gelesen, Keyword-Planer, Berichte, Google-Suche, Stand der ersten Fassung vom 11.11.).
 
-## 1. Kurzfassung
+## 1. Entscheidung des Inhabers (11.11.)
 
-- **Bestand:** Der Shop liefert keinen Beleg für Gewerbeaufträge. Bezahlte Warenbestellungen gibt es erst seit 15.09.2026: 34 Stück, 10.516 €, Schnitt 309 €, Median 237 €. Keine davon trägt einen Firmennamen. Die größte hat 1.111 €. Das „gut Geld“ bei Büros und Objekten kommt also aus dem Laden und der Verlegung, nicht aus dem Shop. Wie viel, lässt sich aus Shop und Ads nicht ablesen.
-- **Nachfrage:** klein. Zwölf Gewerbebegriffe zusammen rund 1.130 Suchen im Monat bundesweit, der größte („teppichboden büro“) 320. Fast alle mit hohem Wettbewerb, Gebote für den oberen Seitenbereich 0,7 bis 5,3 €. Heutiger Kontodurchschnitt: 0,23 € (Suche) bis 0,37 € (Shopping) je Klick.
-- **Ausschlüsse:** büro, gewerbe, objekt, hotel, praxis, firma, kanzlei und Ähnliches sind nirgends ausgeschlossen. Dafür sperren die zwei Such-Kampagnen „bodenleger“, „verlegen“ und „verlegung“. Eine Verlege-Kampagne wäre damit tot, solange diese Liste daran hängt.
-- **Empfehlung:** kleiner Test, regional (Variante A), 10 € am Tag für 6 Wochen (rund 420 €), Erfolg = Anfragen, nicht Käufe. Das Budget kommt on top, nicht aus „Shopping Teppichboden“.
-- **Zielseite:** `/pages/firmenkunden` ist live und passt für Variante A. Es braucht nur kleine Textänderungen, keine neue Seite (Abschnitt 8).
+Gemeint sind Gewerbekunden, die **Teppichboden als Ware kaufen** (und selbst verlegen lassen). Wir bieten in dieser Kampagne **keine Verlegung** an. Dienstleistungs-Kampagnen laufen weiter über den bestehenden Branchenportal-Vertrag.
 
-## 2. Bestand: größere Aufträge im Shop
+- **Variante A (regional mit Verlegung): nicht gewünscht (Inhaber 11.11.).** Abschnitte dazu sind entfernt.
+- **Variante B (bundesweit nur Ware): wird ausgearbeitet.** Das Budget ist noch nicht freigegeben.
+- Vinyl ist aus Ads genommen und bleibt draußen. Die Kampagne bewirbt Teppichboden (Meterware, Objektqualität) und Teppichfliesen.
 
-Auswertung aller Bestellungen (Admin API, gelesen) mit Gesamtbetrag > 0 €, ohne die Testbestellung #1002.
+## 2. Kurzfassung
 
-| Kennzahl | Wert |
-|---|---|
-| Zeitraum mit echten Bestellungen | 15.09.–11.11.2026 (Shop ist jung; „12 Monate“ gibt es nicht) |
-| Bezahlte Warenbestellungen | 34, zusammen 10.516 € |
-| Schnitt / Median | 309 € / 237 € |
-| Bestellungen ab 500 € | 6 (518 €, 808 €, 839 €, 903 €, 962 €, 1.111 €) |
-| Davon mit Firmenname in der Adresse | 0 |
-| Bestellungen mit Firmenname überhaupt | 1 (kostenloses Muster, Friseurbetrieb) |
+- **Bestand:** Der Shop liefert keinen Beleg für Gewerbeaufträge. 34 bezahlte Warenbestellungen seit 15.09.2026, 10.516 €, Median 237 €, keine mit Firmennamen. Gewerbe ist im Shop nicht erkennbar, deshalb zählt die Kampagne zusätzlich Anfragen (Abschnitt 8).
+- **Nachfrage:** klein. Für Teppichboden und Teppichfliesen im Gewerbe rund 600 Suchen im Monat bundesweit, mit allgemeinen Boden-Begriffen rund 900 (Abschnitt 3). Wettbewerb hoch, Gebote für den oberen Seitenbereich 0,7 bis 5,3 €.
+- **Gegner:** Hersteller und Objektspezialisten (Object Carpet, Interface, Bricoflor, Teppichscheune). Mit Ware allein ist das ein harter Markt. Deshalb nur ein kleiner Test mit klarem Abbruch.
+- **Vorschlag:** 5 € am Tag für 6 Wochen (rund 210 €), Gebotsdeckel 2,00 €, zusätzlich zum bisherigen Budget. Abbruch nach 150 € ohne Anfrage oder Kauf.
 
-Produktgruppen der 6 größten Bestellungen: Teppich nach Maß mit Kettelservice (4, davon eine zusammen mit Klebevinyl/Bauchemie), Teppichboden Meterware (1), Klebevinyl mit Zubehör und Kleber (1). Alle sehen nach Privatkunden aus.
+## 3. Suchbegriffe (nur lesend geprüft)
 
-Folgerungen:
-- Das Adressfeld „Firma“ ist kein brauchbares Merkmal; Gewerbekunden bestellen offenbar nicht im Shop oder tragen es nicht ein.
-- Für die Messung der Kampagne taugt es deshalb nicht. Gemessen werden Anfragen (Abschnitt 7).
-- Nicht ausgewertet (nicht im Shop): Anrufe, Laden, Rechnungen aus Lexware. Die Frage „woher kamen die Großaufträge (Shop, Anruf, Empfehlung)“ kann nur Ahmet oder der Laden beantworten, siehe Frage unten.
+Der Keyword-Planer von HYPD ist im aktuellen Tarif gesperrt (`plan_denied`, 11.11.). Grundlage sind deshalb die Planer-Werte der ersten Fassung (Deutschland, Okt. 2025 bis Sept. 2026) und die Suchbegriffe im Konto. Neue Suchbegriffe liefert erst die Laufzeit (Abschnitt 8, Punkt 5).
 
-## 3. Nachfrage und Klickpreise (Keyword-Planer, Deutschland, Okt. 2025–Sept. 2026)
-
-Gebot = obere Seitenposition, niedrig bis hoch. Anteil an möglichen Impressionen war nicht lesbar. Die erste Abfrage lief mit „Alle Sprachen“, die Ideenlisten mit Deutsch.
-
-| Suchbegriff | Suchen/Monat | Wettbewerb | Gebot niedrig–hoch |
+| Suchbegriff | Suchen/Monat | Gebot niedrig–hoch | Gruppe |
 |---|---|---|---|
-| teppichboden büro | 320 | Hoch | 0,86–2,08 € |
-| bodenbelag büro | 170 | Hoch | 0,70–1,96 € |
-| vinylboden gewerbe | 140 | Hoch | 0,87–2,87 € |
-| teppichboden hotel | 140 | Hoch | 0,97–1,91 € |
-| teppichfliesen büro | 90 | Hoch | 0,73–4,06 € |
-| vinylboden büro | 70 | Hoch | 0,87–2,06 € |
-| büroboden | 70 | Hoch | 0,84–2,81 € |
-| bodenbelag gewerbe | 40 | Hoch | 0,81–2,74 € |
-| teppichboden objekt | 30 | Hoch | 0,69–4,34 € |
-| teppichfliesen gewerbe | 20 | Hoch | 0,95–5,03 € |
-| bodenbelag praxis | 20 | Hoch | 0,70–1,67 € |
-| objektboden | 20 | Hoch | 0,98–5,33 € |
-| bodenleger gewerbe | 10 | Gering | – |
-| objektteppichboden, bodenleger oranienburg, designbelag büro, teppichboden verlegen lassen berlin | 0 / kein Wert | – | – |
-| bodenleger berlin | 390 | Mittel | 1,46–4,67 € |
-| Vergleich: teppichboden kaufen / vinylboden kaufen | 1.600 / 3.600 | Hoch | 0,32–1,34 € / 0,86–2,80 € |
+| teppichboden büro | 320 | 0,86–2,08 € | Teppichboden Gewerbe |
+| teppichboden hotel | 140 | 0,97–1,91 € | Teppichboden Gewerbe |
+| teppichfliesen büro | 90 | 0,73–4,06 € | Teppichfliesen |
+| teppichboden objekt | 30 | 0,69–4,34 € | Teppichboden Gewerbe |
+| teppichfliesen gewerbe | 20 | 0,95–5,03 € | Teppichfliesen |
+| objektteppichboden | kein Wert | – | Teppichboden Gewerbe |
+| bodenbelag büro | 170 | 0,70–1,96 € | Allgemein (Vorsicht, auch Vinyl-Sucher) |
+| büroboden | 70 | 0,84–2,81 € | Allgemein |
+| bodenbelag gewerbe | 40 | 0,81–2,74 € | Allgemein |
+| bodenbelag praxis | 20 | 0,70–1,67 € | Allgemein |
+| objektboden | 20 | 0,98–5,33 € | Allgemein |
 
-Summe der zwölf Gewerbebegriffe mit Wert: 1.130 Suchen im Monat bundesweit. Die Ideenlisten sind winzig (2 Ideen zu „objektteppichboden“, 4 zu „teppichfliesen büro“). Das Thema ist eine Nische.
+Summe Teppichboden/Teppichfliesen: rund 600. Mit den allgemeinen Begriffen: rund 920. **Nicht genommen:** vinylboden gewerbe (140), vinylboden büro (70), designbelag büro (Vinyl ist aus Ads genommen) sowie alle Begriffe mit bodenleger/verlegen (Dienstleistung).
 
-Heutige Gewerbe-Treffer im Konto (13.08.–10.11.): 249 Suchbegriffe mit Gewerbe-Wörtern, zusammen 31 Klicks, 9,41 € Kosten, 0 Conversions. Das sind 0,7 % der 4.393 Klicks des Kontos. Die Begriffe laufen also schon ungezielt mit, mit Zufallstreffern wie „büro teppichboden“ oder „hotel teppichboden“.
+Heutige Gewerbe-Treffer im Konto (13.08.–10.11.): 249 Suchbegriffe mit Gewerbe-Wörtern, 31 Klicks, 9,41 € Kosten, 0 Conversions (0,7 % der Klicks). Die Begriffe laufen schon ungezielt mit; die neue Kampagne sollte sie bündeln und in der alten Kampagne nicht doppelt bedient werden (Abschnitt 6).
 
-Wettbewerb in der Google-Suche (11.11., Standort Oranienburg, nur gelesen):
-- „teppichfliesen büro“: Textanzeigen von Object Carpet, Interface, Bricoflor, wohntec; organisch vorn Teppichscheune, Bricoflor, Desso.
-- „objektteppichboden kaufen“: Interface, auslegware.berlin, Teppichscheune, Object Carpet.
-- „vinylboden büro kaufen“: Shopping-Karten von Brombach, Solzaleben, belago, casando, bricoflor, myvinyl.
-- „bodenleger oranienburg“: Anzeigen von check24 und uns; keine Shopping-Karten.
-- „teppichboden gewerbe“: Object Carpet und Interface.
+## 4. Zielgruppe und Gebiet
 
-Das sind Hersteller und Spezialisten mit Objektsortiment. Mit Ware allein ist dort schwer zu gewinnen. Unsere Stärke ist die Nähe und die Verlegung.
+- **Wer:** Betriebe, Büros, Praxen, Kanzleien, Hotels, Pensionen, Gastronomie, Kitas, Läden, Hausmeister und Objekteinkäufer, die Teppichboden oder Teppichfliesen **kaufen**. Verlegung organisieren sie selbst oder über andere.
+- **Nicht gemeint:** Hausverwaltungen und Wohnungsunternehmen (eigene Seite `/pages/wohnungsunternehmen`), Verlege-Anfragen, Privatkunden.
+- **Gebiet:** ganz Deutschland (Menschen im Gebiet, keine „Interesse“-Standorte), nur Lieferländer des Shops. Versand großer Mengen: vor dem Start klären, ab welcher Menge Speditionsversand gilt und ob die Anzeige darauf hinweisen soll (Frage an Ahmet, Abschnitt 10).
 
-**Auffälligkeit:** Bei „objektteppichboden kaufen“, „vinylboden büro kaufen“ und „bodenleger oranienburg“ läuft eine gesponserte Anzeige von teppich-paradies.net („Teppichboden Gewerbe“, „Verlegeservice“, Hinweis „mit KI erstellt“), die zu keiner aktiven Kampagne passt. Die Quelle war nicht lesbar (möglich: automatisch erzeugte Anzeigenbausteine, ein anderes Konto). Klären, bevor eine neue Kampagne startet, sonst zahlt man doppelt.
+## 5. Kampagnentyp
 
-## 4. Was laufende Kampagnen heute ausschließen
+Neue Such-Kampagne „TP | Search | Gewerbe Ware“, nur Suchnetzwerk (kein Displaynetzwerk), keine Smart-Funktionen, kein Keyword-Vorschlag-Automatismus (am 24.10. abgeschaltet, nicht wieder einschalten). Gebotsstrategie zunächst Klicks maximieren mit Maximalgebot 2,00 € (so fährt das Konto heute); auf Conversions umstellen erst ab 15 Käufen oder Anfragen. Schlüsselwörter als Wortgruppe oder genau, kein weitgehend passend.
 
-Aktiv: Search „Teppichboden Produkte“ (10 €/Tag), Shopping „Teppichboden“ (25 €), Shopping „Teppich nach Maß“ (10 €), alle Standort Deutschland. Vinyl und Laminat/Parkett sind pausiert.
+Kein Shopping-Ableger: „Shopping Teppichboden“ (25 €/Tag) deckt Warenanfragen schon ab. Die neue Such-Kampagne ergänzt nur die Gewerbe-Begriffe, die dort nicht gezielt bedient werden.
 
-- **Nicht ausgeschlossen:** büro, gewerbe, gewerblich, objekt, firma, hotel, praxis, b2b, großhandel, händler, kanzlei, gastronomie.
-- **Ausgeschlossen (nur Search-Kampagnen, Liste „TP Negative Produkte“):** bodenleger, verlegen, verlegen lassen, verlegung.
-- **Gemeinsame Liste „Fachfremd/Jobs/Baumarkt/Wettbewerb“** (71 Wörter) enthält u. a. gebraucht, ebay, jobs, ikea, Baumärkte, Wettbewerber-Namen. Sie ist für die neue Kampagne brauchbar. „TP Negative Produkte“ darf an einer Verlege-Kampagne nicht hängen.
-- Nach der Ausschlussentscheidung vom 07.10. bleiben Wettbewerbernamen wie Teppichscheune bewusst offen (nicht aufnehmen).
+## 6. Anzeigengruppen, Keywords und Ausschlüsse
 
-## 5. Zielgruppe
-
-Kleine und mittlere Betriebe in Berlin/Brandenburg, die Boden und Wand renovieren lassen: Praxen, Kanzleien, Büros, Steuerberater, Hotels und Pensionen, Gastronomie, Kitas, Läden. Sie suchen einen Ansprechpartner, der Ware, Verlegung und Termin zusammen übernimmt, nicht den billigsten Meterpreis. Hausverwaltungen und Wohnungsunternehmen haben eine eigene Seite (`/pages/wohnungsunternehmen`) und gehören nicht in diesen Test.
-
-## 6. Zwei Varianten
-
-| | A: regional mit Verlegung (empfohlen) | B: bundesweit nur Ware |
+| Gruppe | Keywords (Wortgruppe/genau) | Zielseite |
 |---|---|---|
-| Gebiet | Radius um Oranienburg, z. B. 60 km (Berlin, Brandenburg-Nord) | ganz Deutschland |
-| Angebot | Beratung vor Ort, Aufmaß, Ware plus Verlegung, Termine im laufenden Betrieb | Teppichboden Büro & Gewerbe, Teppichfliesen, Muster kostenlos |
-| Ziel | Anfrage („Projekt anfragen“, Anruf, WhatsApp) | Musterbestellung oder Kauf |
-| Suchbegriffe | bodenleger berlin, teppichboden büro verlegen, bodenbelag büro, vinylboden büro, Praxis/Kanzlei | teppichboden büro, teppichfliesen büro/gewerbe, objekt teppichboden |
-| Wettbewerb | Bodenleger, Portale; wir sind lokal im Vorteil | Hersteller und Objektspezialisten mit Hoch-Geboten |
-| Messbarkeit | wenige, aber klar zählbare Anfragen | Käufe zählen mit, aber Gewerbe ist im Shop nicht erkennbar |
-| Risiko | wenig Volumen, hohe Gebote bei „bodenleger berlin“ | Wettbewerb, mehr Streuverlust, Versand großer Mengen |
+| Teppichboden Gewerbe | „teppichboden büro“, „teppichboden hotel“, „teppichboden objekt“, „objektteppichboden“, „teppichboden gewerbe“, „teppichboden praxis“, „teppichboden kanzlei“, „teppichboden gastronomie“, „teppichboden meterware gewerbe“ | `/collections/teppichboden-buero-gewerbe` |
+| Teppichfliesen | „teppichfliesen büro“, „teppichfliesen gewerbe“, „teppichfliesen objekt“ | `/collections/teppichfliesen` |
+| Allgemein Büro/Objekt | „bodenbelag büro“, „büroboden“, „bodenbelag gewerbe“, „bodenbelag praxis“, „objektboden“ | `/collections/teppichboden-buero-gewerbe` |
 
-**Empfehlung A**, weil dort der Vorteil liegt, die Verlegung tatsächlich der Umsatzhebel ist und Anfragen auch aus dem Laden/Telefon mitgezählt werden können. B nur später, wenn A trägt.
+Die Gruppe „Allgemein“ zuletzt und mit niedrigerem Gebot starten; sie zieht Vinyl-Sucher an und wird nach zwei Wochen am Suchbegriffsbericht geprüft.
 
-## 7. Kampagnenaufbau (Variante A), nur Entwurf
+**Ausschlüsse (Dienstleistung, wörtlich als Negative auf Kampagnenebene):**
+verlegen, verlegen lassen, verlegung, verlegeservice, verlegearbeiten, bodenleger, bodenlegerarbeiten, einbau, einbauen, montage, handwerker, fachbetrieb, fachmann, aufmaß, aufmass, installation, sanierung, renovierung, renovieren, maler, tapezieren, estrich, spachteln, angebot einholen, kostenvoranschlag, firma beauftragen.
 
-**Kampagne** „TP | Search | Gewerbe Berlin-Brandenburg“, Suche, nur Suchnetzwerk, Standort Radius um Oranienburg (Menschen in dem Gebiet, keine „Interesse“-Standorte), Gebotsstrategie zunächst Klicks maximieren mit Maximalgebot 2,50 € (Konto fährt heute so), danach auf Conversions umstellen, sobald mindestens 15 Anfragen da sind. Keine Smart-Funktionen, kein Keyword-Vorschlag-Automatismus (am 24.10. abgeschaltet, nicht wieder einschalten).
+**Ausschlüsse (nicht unser Sortiment oder kein Gewerbekunde):**
+vinyl, vinylboden, pvc, laminat, parkett, designbelag, klebevinyl, kork, linoleum, holz, selber, selbst verlegen, diy, anleitung, reinigen, reinigung, gebraucht, ebay, kleinanzeigen, jobs, ausbildung, stellenangebote, mieter, vermieter, wohnzimmer, kinderzimmer, schlafzimmer, auto, kofferraum, treppe, bürostuhl, bürostuhlunterlage, schreibtischunterlage, kostenlos, muster pdf.
 
-**Anzeigengruppen und Keywords** (Wortgruppe/genau, kein weitgehend passend):
+**Listen:** Gemeinsame Liste „TP Ausschluss: Fachfremd/Jobs/Baumarkt/Wettbewerb“ anwenden. „TP Negative Produkte“ (bodenleger, verlegen, verlegen lassen, verlegung) darf jetzt ebenfalls anhängen, denn es gibt keine Verlege-Kampagne mehr. Wettbewerbernamen bleiben nach der Entscheidung vom 07.10. offen (nicht aufnehmen). In den bestehenden Kampagnen „büro“, „objekt“, „gewerbe“ nicht ausschließen, bis die neue Kampagne ein Ergebnis zeigt; sonst gibt es keinen sauberen Vergleich.
 
-| Gruppe | Keywords |
-|---|---|
-| Büro Boden | „teppichboden büro“, „bodenbelag büro“, „büroboden“, „vinylboden büro“, „teppichfliesen büro“ |
-| Praxis/Kanzlei | „bodenbelag praxis“, „teppichboden kanzlei“, „bodenbelag kanzlei“ (Volumen klein, mit Vorsicht) |
-| Bodenleger regional | „bodenleger berlin“, „bodenleger oranienburg“, „teppichboden verlegen büro“, „vinyl verlegen büro“ |
-| Hotel/Gastro | „teppichboden hotel“, „bodenbelag gastronomie“ |
+Nach zwei Wochen Suchbegriffe prüfen und die Liste ergänzen.
 
-**Ausschlüsse:**
-- Gemeinsame Liste „TP Ausschluss: Fachfremd/Jobs/Baumarkt/Wettbewerb“ anwenden.
-- „TP Negative Produkte“ **nicht** anwenden (sperrt „bodenleger/verlegen“).
-- Eigene Negative für diese Kampagne: selber, selbst verlegen, diy, anleitung, reinigen, reinigung, wohnung, gebraucht, jobs, ausbildung, stellenangebote, mieter, vermieter, wohnzimmer, kinderzimmer, kostenlos, bürostuhl, bürostuhlunterlage, schreibtischunterlage.
-- Nach zwei Wochen Suchbegriffe prüfen und ergänzen.
+## 7. Anzeigentexte (Entwurf)
 
-**Anzeigentexte (Entwurf, keine Preis- oder Eigenschaftsversprechen ohne Beleg):**
-- „Boden für Büro und Praxis | Ware, Aufmaß und Verlegung | Teppich Paradies Oranienburg“
-- „Termine im laufenden Betrieb | Festes Angebot | Jetzt Projekt anfragen“
-- „Teppichboden und Vinyl für Gewerbe | Muster kostenlos | Beratung vor Ort“
+Keine Preis-, Brandschutz-, Schallschutz- oder Normversprechen ohne Beleg je Produkt. „Muster kostenlos“ nur für Teppichboden; Teppichfliesen haben seit 06.11. kein Muster, Satz dort weglassen.
 
-**Zielseite:** `/pages/firmenkunden` (Abschnitt 8).
+**Anzeige 1 (Teppichboden Gewerbe)**
+- Überschriften: „Teppichboden für Büro & Gewerbe“ · „Objektqualität ab Lager Oranienburg“ · „Muster kostenlos bestellen“
+- Beschreibung: „Großes Sortiment Teppichboden für Büro, Praxis, Hotel. Meterware nach Maß geschnitten. Versand deutschlandweit.“
 
-**Testbudget:** 10 €/Tag, 6 Wochen, rund 420 €. Begründung: Das Suchvolumen im Gebiet ist klein. Bei geschätzten 1,5–2,5 € Klickpreis reichen 10 € für 4–7 Klicks am Tag, das sind etwa 170–290 Klicks im Test. Weniger als 5 €/Tag liefert zu wenig Daten, mehr als 15 € wird das Volumen kaum ausschöpfen. Das ist eine Annahme, keine Zusage: Der Planer liefert die Zahlen nur bundesweit, regional liegt das Volumen niedriger.
+**Anzeige 2 (Teppichfliesen)**
+- Überschriften: „Teppichfliesen für Büro & Objekt“ · „Große Auswahl, ab Lager“ · „Direkt online bestellen“
+- Beschreibung: „Teppichfliesen für Gewerbe und Büro. Farben und Formate online vergleichen, Menge selbst wählen, Lieferung per Spedition.“
 
-**Messung (Anfragen statt Käufe):**
-1. Conversion „Anfrage Gewerbe“ aus dem Kontaktformular mit Thema, Klick auf Telefon und Klick auf WhatsApp. Auf der Zielseite mit eigenem Ereignis, Einrichtung nach Skill `conversion-tracking`; nichts am Kauf-Hauptziel ändern (siehe `conversion_kauf_ohne_muster`: App-Kauf bleibt primär).
-2. Neue Aktion **sekundär** anlegen, bis Anfragen sauber ankommen.
-3. Zusätzlich im Laden/Telefon fragen („Woher kennen Sie uns?“) und Anfragen in einer Liste zählen; die Anzeigenquelle am Formular als verstecktes Feld mitschicken.
-4. Auswertung nach 3 und 6 Wochen: Klicks, Kosten, Anfragen, Angebote, Aufträge. Weiterführen, wenn Kosten je Anfrage unter dem Wert eines Auftrags liegen. Der Auftragswert ist nicht belegt und kommt von Ahmet.
-5. Abbruch nach 6 Wochen mit weniger als 3 Anfragen.
+**Anzeige 3 (Allgemein)**
+- Überschriften: „Bodenbelag für Büro & Praxis“ · „Teppichboden online kaufen“ · „Teppich Paradies Oranienburg“
+- Beschreibung: „Teppichboden in vielen Farben für Betriebe. Beratung per Telefon oder WhatsApp, Muster kostenlos.“
 
-**Vorarbeiten vor dem Start:** die unbekannte gesponserte Anzeige klären (Abschnitt 3); Datenschutz und Einwilligung beim Formular beachten.
+Vor dem Start belegen: „ab Lager“, „Muster kostenlos“, „Spedition“ und das Lieferland müssen für die genannten Produkte stimmen.
 
-## 8. Zielseite „Für Büro und Gewerbe“
+## 8. Zielseite
 
-Es gibt bereits `/pages/firmenkunden` („Innenausbau für Praxen & Gewerbe – Boden und Wand aus einer Hand“) mit Kopfbereich, Kacheln zu `wohnungsunternehmen` und `teppichboden-buero-gewerbe` (138 Produkte, alles Teppichboden), Abschnitt „Strukturierte Umsetzung“, Bewertungen und Kundenbildern. `/pages/fuer-geschaeftskunden` gibt 404, die Vorlage `page.fuer-geschaeftskunden.json` ist ungenutzt.
+**Sofort nutzbar, ohne Bauarbeit:** die vorhandenen Kollektionen `teppichboden-buero-gewerbe` (138 Produkte, alles Teppichboden) und `teppichfliesen` (70 Produkte). Die Seite `/pages/firmenkunden` ist auf Boden *und* Verlegung ausgelegt und passt **nicht** zu „nur Ware“; sie wird für diese Kampagne nicht verwendet und nicht geändert.
 
-Was fehlt gegenüber dem Vorschlag, ohne neue Blöcke:
-- Teppichfliesen (70 im Shop) und Vinyl tauchen nicht als Kachel auf. Dritte Kachel möglich (vorhandener Block `tp-kachel-raster`, Bild und Link ändern).
-- Ware ist hinter der Verlegung versteckt. Der Kopf spricht Boden *und* Wand an (Maler- und Tapezierarbeiten), das Suchversprechen ist Boden.
-- Anlass „Muster zuerst“ fehlt.
-- Anfrage-Weg: Der Knopf geht zum Kontaktformular, das auch private Anfragen sammelt.
+**Optional, nur als Text (nicht gebaut, nicht veröffentlicht):** `/pages/firmenkunden-ware`
+1. **Kopf:** „Teppichboden und Teppichfliesen für Büro, Praxis und Gewerbe“. Unterzeile: „Ware in Objektqualität, direkt vom Lager in Oranienburg. Muster zuerst, Lieferung per Spedition.“ Knöpfe: „Teppichboden ansehen“, „Teppichfliesen ansehen“, „Mengenanfrage per WhatsApp“.
+2. **Zwei Kacheln:** Teppichboden für Büro & Gewerbe · Teppichfliesen.
+3. **So bestellen Sie:** Muster bestellen (nur Teppichboden) · Menge aus Fläche berechnen (Paketrechner nur bei Teppichfliesen, sofern vorhanden) · bestellen · Lieferung.
+4. **Fragen vor der Bestellung:** Fläche, Belastung, Lieferort. Angaben zu Brandschutz, Schallschutz oder Normen nur nennen, wenn sie je Produkt belegt sind.
+5. **Bewertungen und Kundenbilder:** vorhanden, übernehmen.
+6. **Abschluss:** „Große Menge? Schreiben Sie uns Fläche und Lieferort, wir machen ein Angebot für die Ware.“ mit Kontaktformular `?thema=gewerbe-ware`.
 
-**Gliederung mit Texten (Vorschlag, nur Texte, kein Umbau):**
+Erst bauen, wenn der Test freigegeben ist und die Kollektionsseiten allein zu wenig Anfragen bringen. Der Bau läuft dann nach Skill `theme-regeln` und `deploy`.
 
-1. **Kopf:** „Boden für Büro, Praxis und Gewerbe – Ware und Verlegung aus einer Hand“. Unterzeile: „Teppichboden, Teppichfliesen und Vinyl in Objektqualität, Aufmaß vor Ort, Verlegung zum festen Termin. Für Betriebe in Berlin und Brandenburg.“ Knopf 1: „Projekt anfragen“, Knopf 2: „Muster bestellen“ (kostenlos), Knopf 3: WhatsApp (vorhanden).
-2. **Drei Wege (Kacheln):** Teppichboden für Büro & Gewerbe · Teppichfliesen (neu, Link zu `teppichfliesen`) · Wohnungsunternehmen (vorhanden).
-3. **So läuft es ab:** 1 Eckdaten (Fläche, Nutzung) · 2 Aufmaß und Angebot · 3 Verlegung im Betrieb, Termine nach Absprache · 4 Übergabe. Text bleibt am vorhandenen „Strukturierte Umsetzung“.
-4. **Renovierung im laufenden Betrieb:** vorhandener Hinweis, gekürzt.
-5. **Fragen vor der Anfrage:** Welche Fläche? Wie stark belastet (Publikumsverkehr, Rollstühle)? Welcher Termin? Angaben zu Brandschutz, Schallschutz oder Normen nur nennen, wenn sie je Produkt belegt sind; sonst nicht behaupten.
-6. **Bewertungen und Kundenbilder:** vorhanden, Praxen/Kanzleien bevorzugen, falls vorhanden.
-7. **Abschluss:** „Senden Sie uns Flächen und Wunschtermin, wir melden uns zeitnah.“ mit Kontaktformular `?thema=gewerbe` (Thema im Formular ergänzen, damit die Anfragen gezählt werden können).
+## 9. Messung (Kauf plus Anfrage)
 
-Eine neue Seite wird nicht gebaut. Die Textänderungen sind klein (Kopfzeile, eine Kachel, ein Knopf), aber der Kopf und das Formular-Thema ändern eine bestehende Live-Seite. Nach Skill `theme-regeln` und `deploy` erst nach Ahmets Freigabe der Kampagne, nicht vorab.
+1. **Kauf:** bleibt das Hauptziel (App-Kauf primär, siehe Entscheidung zur Kaufmessung). Nichts am bestehenden Kauf-Ziel ändern.
+2. **Anfrage Gewerbe:** neue **sekundäre** Conversion für Kontaktformular mit `thema=gewerbe-ware`, Klick auf Telefon und Klick auf WhatsApp. Einrichtung nach Skill `conversion-tracking`; Auslösung nur bei bestätigtem Erfolg, nie beim Klick auf „Senden“.
+3. **Herkunft:** Anzeigenquelle (UTM) als verstecktes Feld im Formular mitschicken; im Laden und am Telefon „Woher kennen Sie uns?“ in einer Liste zählen.
+4. **Gewerbe erkennen:** Das Adressfeld „Firma“ ist kein Merkmal (keine einzige bezahlte Bestellung trägt eines). Als Ersatz die Anfragen und die Kampagnenquelle in GA4 (Landeseite, Kampagne) auswerten.
+5. **Auswertung** nach 3 und 6 Wochen: Klicks, Kosten, Käufe, Anfragen, Suchbegriffe. Vorher keine Gebotsänderung außer Ausschlüssen.
 
-## 9. Offene Entscheidungen (an Ahmet)
+**Vorarbeit vor dem Start:** Die unbekannte gesponserte Anzeige von teppich-paradies.net („Teppichboden Gewerbe“, „Verlegeservice“, Hinweis „mit KI erstellt“, gesehen bei „objektteppichboden kaufen“, „vinylboden büro kaufen“, „bodenleger oranienburg“) klären. Sie passt zu keiner aktiven Kampagne und verspricht Verlegung. Möglich: automatisch erzeugte Anzeigenbausteine oder der Branchenportal-Vertrag. Zuerst klären, sonst zahlt man doppelt und wirbt mit Verlegung, die diese Kampagne nicht anbietet.
 
-1. **Testbudget und Region:** Empfehlung Variante A (Berlin/Brandenburg, Radius ca. 60 km um Oranienburg), 10 €/Tag für 6 Wochen, zusätzlich zum bisherigen Budget. Alternativen: B bundesweit nur Ware; erst die unbekannte Anzeige klären und noch nichts starten.
-2. **Wert eines Gewerbeauftrags:** Woher kamen die bisherigen Großaufträge (Laden, Anruf, Empfehlung) und was ist ein typischer Auftrag wert? Damit lässt sich ausrechnen, was eine Anfrage kosten darf.
-3. **Freigabe für die Textänderungen** auf `/pages/firmenkunden` (Abschnitt 8).
+## 10. Budget und Abbruch
 
-## 10. Nicht geprüft
+**Vorschlag: 5 € am Tag, 6 Wochen, rund 210 €, Gebotsdeckel 2,00 €, on top** (nicht aus „Shopping Teppichboden“ nehmen).
 
-- Anteil an möglichen Impressionen (im Planer nicht lesbar), regionales Volumen (Planer nur bundesweit abgefragt).
-- Herkunft der unbekannten gesponserten Anzeige; Inhalt der Liste „Temporaer: Laminat/Parkett“; Kosten der pausierten Search-Vinyl-Kampagne.
-- Gewerbeaufträge außerhalb des Shops.
-- Der Keyword-Planer hat dabei automatisch einen Entwurfsplan „Plan vom Nov. 11, 2026“ gespeichert (kostenlos, kann gelöscht werden). Er beeinflusst keine Kampagne.
+Begründung: Das Volumen ist klein (rund 600 bis 900 Suchen im Monat bundesweit). Bei hohem Wettbewerb ist mit Anzeigen auf den vorderen Plätzen realistisch nur ein Teil davon erreichbar; bei 1 bis 2 € Klickpreis sind das grob 40 bis 90 Klicks im Monat, also 60 bis 130 € im Monat. 5 € am Tag deckt das ab; 10 € am Tag würde das Volumen nicht ausschöpfen. Das ist eine Annahme, keine Zusage: Der Planer liefert nur bundesweite Werte, Gebotsplätze schwanken.
+
+**Abbruchkriterien:**
+- nach 150 € Kosten ohne Kauf und ohne Anfrage: pausieren;
+- nach 6 Wochen weniger als 3 Käufe oder Anfragen zusammen: beenden;
+- Suchbegriffe, die Dienstleistung, Vinyl oder Privatkunden zeigen: sofort als Negative eintragen, nicht erst nach zwei Wochen, wenn sie mehr als 10 % der Klicks ausmachen.
+
+**Weiterführen**, wenn Kosten je Kauf oder Anfrage unter dem Wert eines Gewerbe-Warenauftrags liegen. Der Auftragswert ist nicht belegt und kommt von Ahmet.
+
+## 11. Offene Entscheidungen (an Ahmet)
+
+1. **Budget und Start:** Empfehlung: Test freigeben mit 5 €/Tag für 6 Wochen (rund 210 €), zusätzlich zum bisherigen Budget, Start nach Klärung der unbekannten Anzeige. Alternativen: 10 €/Tag (rund 420 €) oder erst nach der Black Week (ab 01.12.).
+2. **Wert eines Gewerbe-Warenauftrags:** typische Menge und Preis, Spedition ja/nein. Damit lässt sich ausrechnen, was ein Kauf oder eine Anfrage kosten darf.
+
+## 12. Nicht geprüft
+
+- Neue Suchbegriffe aus dem Planer (HYPD-Tarif sperrt die Recherche-Tools), Anteil an möglichen Impressionen, regionales Volumen.
+- Herkunft der unbekannten gesponserten Anzeige; Inhalt der Liste „Temporaer: Laminat/Parkett“.
+- Gewerbeaufträge außerhalb des Shops; Speditionsversand und Mindestmengen.
+- Der Keyword-Planer hat am 11.11. automatisch einen Entwurfsplan „Plan vom Nov. 11, 2026“ gespeichert (kostenlos, löschbar, ohne Wirkung).
