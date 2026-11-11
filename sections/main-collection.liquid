@@ -207,6 +207,27 @@
         paginate: paginate,
         enable_infinite_scroll: section.settings.enable_infinite_scroll
       %}
+      {%- comment -%}
+        Reste & Sonderposten: ItemList der gezeigten Karten (nur Position, Name, URL;
+        keine Preise - Bestand und Preis wechseln, siehe Audit 2026-11-11 Befund 6).
+        Dieselben Karten wie oben: Kettelteppiche mit sichtbarer Rolle entfallen.
+      {%- endcomment -%}
+      {%- if collection.handle == 'reste-sonderposten' and collection.products.size > 0 -%}
+        {%- assign tp_il_pos = 0 -%}
+        <script type="application/ld+json">
+          {"@context":"https://schema.org","@type":"ItemList","name":{{ collection.title | json }},"itemListElement":[
+          {%- for product in collection.products -%}
+            {%- if tp_rest_rollen != blank and product.tags contains 'gekettelt' and product.metafields.service.einfass_basis.value.id -%}
+              {%- assign tp_il_marke = '|' | append: product.metafields.service.einfass_basis.value.id | append: '|' -%}
+              {%- if tp_rest_rollen contains tp_il_marke -%}{%- continue -%}{%- endif -%}
+            {%- endif -%}
+            {%- assign tp_il_pos = tp_il_pos | plus: 1 -%}
+            {%- if tp_il_pos > 1 -%},{%- endif -%}
+            {"@type":"ListItem","position":{{ tp_il_pos }},"name":{{ product.title | json }},"url":{{ request.origin | append: product.url | json }}}
+          {%- endfor -%}
+          ]}
+        </script>
+      {%- endif -%}
     {% endpaginate %}
   </div>
 </results-list>
