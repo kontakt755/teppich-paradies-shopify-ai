@@ -69,7 +69,6 @@
     <div class="tp-s-wrap"><p class="tp-bf__p">Boden-Finder: erscheint auf Kategorieseiten nur in der Kollektion einer aktiven Bodenart.</p></div>
   {%- endif -%}
 {%- else -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 <section
   class="tp-bf{% if section.settings.kompakt %} tp-bf--kompakt{% endif %}"
   id="{{ bf_root_id }}"

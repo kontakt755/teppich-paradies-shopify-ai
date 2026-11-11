@@ -2,7 +2,6 @@
   TP Trust-Streifen: links die Google-Bewertung (nur wenn ein echter Wert
   eingetragen ist), rechts bis zu vier belegbare Aussagen als Bloecke.
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   # Google-Bewertung aus einer Quelle - siehe sections/tp-start-hero.liquid.
   assign tp_gb = shop.metafields.custom.google_bewertung.value

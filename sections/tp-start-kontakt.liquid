@@ -6,7 +6,6 @@
   Auf dem Telefon ist es eingeklappt, bis "Anfrage schreiben" getippt wird.
   Datenschutz-Hinweis mit Link aus snippets/tp-datenschutz-hinweis (w-172, Inhaber 28.10.2026).
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/' -%}
 {%- capture tp_kon_formular -%}
       <div class="tp-kon__card tp-kon__card--form" id="tp-anfrage" role="group" aria-label="Anfrage senden" tabindex="-1">

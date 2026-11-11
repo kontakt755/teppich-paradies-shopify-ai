@@ -4,7 +4,6 @@
   Anfrage, FAQ und Kontakt kommen als eigene Sections (tp-start-kontakt,
   tp-start-faq) darunter.
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/' -%}
 {%- assign tel_link = tel_raw | remove_first: '0' | prepend: '+49' -%}
 

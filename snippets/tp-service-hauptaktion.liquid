@@ -38,7 +38,6 @@
   endif
   assign sha_wa = settings.tp_vs_whatsapp | default: '491792612211' | remove: ' ' | remove: '+'
 -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 <div class="tp-sha{% if ausrichtung == 'mitte' %} tp-sha--mitte{% endif %}" data-tp-service-hauptaktion>
   <div class="tp-sha__knoepfe">
     <a class="tp-s-btn tp-s-btn--primary tp-sha__haupt" href="{{ sha_ziel }}">{{ sha_label | escape }}</a>

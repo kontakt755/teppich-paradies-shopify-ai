@@ -13,7 +13,6 @@
   Gestaltung wie tp-start-muster: dieselben Linien, Schriftskala und
   Akzentfarbe, damit der Abschnitt zur Seite gehoert.
 {%- endcomment -%}
-{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   assign tp_nv_betrag = section.settings.betrag | default: 15
   assign tp_nv_ab = section.settings.mindestwert | default: 100

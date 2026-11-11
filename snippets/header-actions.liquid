@@ -161,7 +161,12 @@
       {% endif %}
     >
       <template id="empty-cart-template">
-        {{ empty_cart_drawer_content }}
+        {%- comment -%} Ist der Warenkorb leer, steht die Ueberschrift schon im Drawer: ID hier weglassen, sonst doppelt (Audit 2026-11-11, Befund 7). {%- endcomment -%}
+        {%- if cart.empty? -%}
+          {{ empty_cart_drawer_content | replace: 'id="cart-drawer-heading-empty"', '' }}
+        {%- else -%}
+          {{ empty_cart_drawer_content }}
+        {%- endif -%}
       </template>
       <button
         class="header-actions__action button-unstyled{% if display_style == 'text' %} header-actions__text-style{% endif %}"
