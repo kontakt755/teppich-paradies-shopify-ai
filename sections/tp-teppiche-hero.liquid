@@ -80,7 +80,7 @@
     </div>
     {%- if tp_th_bild != blank -%}
       <div class="tp-tep-hero__media">
-        {{ tp_th_bild | image_url: width: 1400 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200, 1400', sizes: '(min-width: 900px) 46vw, 100vw', alt: tp_th_bild.alt }}
+        {{ tp_th_bild | image_url: width: 1400 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 700, 900, 1200, 1400', sizes: '(min-width: 900px) 46vw, calc(100vw - 32px)', alt: tp_th_bild.alt }}
         {%- if s.card_title != blank -%}
           <div class="tp-tep-hero__card" aria-hidden="true">
             <strong>{{ s.card_title | escape }}</strong>
