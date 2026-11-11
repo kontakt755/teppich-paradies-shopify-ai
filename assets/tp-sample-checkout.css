@@ -293,6 +293,24 @@
   cursor: not-allowed;
 }
 
+/* Handy: Knopf bleibt am unteren Rand stehen, solange die Farbliste laeuft
+   (Benutzer 11.11.2026). Die Kontaktleiste ist auf dieser Seite aus. */
+@media (max-width: 749px) {
+  .tp-sample__submit {
+    position: sticky;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    z-index: 2;
+    box-shadow: 0 0 0 8px var(--color-background, #fff);
+  }
+
+  /* Deckend statt halb durchsichtig: sonst scheinen die Karten durch. */
+  .tp-sample__submit:disabled {
+    opacity: 1;
+    border-color: #8f8b7f;
+    background: #8f8b7f;
+  }
+}
+
 .tp-sample__submit:focus-visible {
   outline: 2px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
   outline-offset: 2px;
