@@ -138,7 +138,10 @@ test('der eine bestehende Workflow nutzt Proxy-Entry und veroeffentlicht beide Q
   assert.match(yml, /git add tp-tnm-preise\.txt tp-tnm-meta\.tsv tp-tnm-pruefung\.json/);
   assert.match(yml, /name: Vollstaendiges Pruefprotokoll sichern\n\s+if: always\(\)\n\s+uses: actions\/upload-artifact@v\d+/);
   assert.match(yml, /path: tp-tnm-pruefung\.json\n\s+if-no-files-found: warn\n\s+retention-days: 7/);
-  assert.doesNotMatch(yml.slice(yml.indexOf('- name: Auf feed-daten veroeffentlichen'), yml.indexOf('\n  alarm:')), /if: always\(\)|if: failure\(\)/);
+  // Beide Jobs (TNM und nach Mass, w-331) veroeffentlichen nur nach einem gruenen Lauf.
+  const stufen = yml.split('- name: Auf feed-daten veroeffentlichen').slice(1).map((t) => t.split('\n\n')[0]);
+  assert.equal(stufen.length, 2);
+  for (const stufe of stufen) assert.doesNotMatch(stufe, /if: always\(\)|if: failure\(\)/);
   assert.doesNotMatch(yml, /shopify store execute|tnmPreisZeilen|erster Lauf/);
 });
 
@@ -178,7 +181,7 @@ test('eine frueher gefuehrte aktive Restvorlage darf als belegte Entnahme entfal
 test('Fehllauf meldet sich in einem Issue: eigener Job, nur bei failure, offenes wird wiederverwendet', () => {
   const yml = readFileSync(new URL('../../.github/workflows/feed-tnm-preise.yml', import.meta.url), 'utf8');
   const alarm = yml.slice(yml.indexOf('\n  alarm:'));
-  assert.match(alarm, /needs: preise\n\s+if: \$\{\{ failure\(\) \}\}/);
+  assert.match(alarm, /needs: \[preise, nachmass\]\n\s+if: \$\{\{ failure\(\) \}\}/);
   assert.match(alarm, /permissions:\n\s+issues: write/);
   assert.match(alarm, /gh issue list --state open/);
   assert.ok(alarm.indexOf('gh issue comment') < alarm.indexOf('gh issue create'), 'erst wiederverwenden, dann anlegen');

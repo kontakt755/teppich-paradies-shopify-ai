@@ -10,7 +10,8 @@
   (snippets/meta-tags) geben denselben Preis aus, sonst meldet das Merchant Center
   eine Preisabweichung zwischen Feed und Seite.
 
-  Groesse: die erste aus 80 x 150, 120 x 170, 160 x 230, 200 x 300 cm, die fuer diese
+  Groesse: die erste aus 80 x 150, 120 x 170, 160 x 230, 200 x 300 cm (Matten nach
+  Mass, service.produktwort = Matte: davor 60 x 90 cm), die fuer diese
   Farbe bestellbar ist (kuerzere Seite bis zur Breite der Farbe - live wie im
   Konfigurator -, laengere bis service.max_laenge_cm, beide ab service.min_seite_cm,
   Versandgewicht) und bei der der Mindestpreis die Menge NICHT
@@ -172,7 +173,13 @@
 
   assign tmbsp_ergebnis = ''
   if tmbsp_ok
-    assign tmbsp_groessen = groessen | default: '80x150,120x170,160x230,200x300' | split: ','
+    # Matten nach Mass: Fussmatten-Groesse zuerst, wie snippets/tp-teppich-ab-preis (w-331).
+    assign tmbsp_standard = '80x150,120x170,160x230,200x300'
+    assign tmbsp_wort = product.metafields.service.produktwort.value | default: '' | strip | downcase
+    if tmbsp_wort == 'matte'
+      assign tmbsp_standard = '60x90,80x150,120x170,160x230,200x300'
+    endif
+    assign tmbsp_groessen = groessen | default: tmbsp_standard | split: ','
     for tmbsp_g in tmbsp_groessen
       assign tmbsp_teile = tmbsp_g | split: 'x'
       assign tmbsp_w = tmbsp_teile[0] | times: 1

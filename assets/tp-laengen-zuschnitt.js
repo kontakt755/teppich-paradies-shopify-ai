@@ -328,6 +328,20 @@
     var pauschale = d.pauschale && d.pauschale.id && d.pauschale.price > 0 ? d.pauschale : null;
     var breiteAngeboten = null;
 
+    // Beispielgroesse aus Feed und JSON-LD (snippets/tp-laengen-beispiel):
+    // ?laenge=&anzahl= belegt die Felder vor, waehlt den Zuschnitt und beim
+    // Laeufer die erste Einfassung - die Seite zeigt dann den Preis aus dem Feed.
+    var ausLink = false;
+    var linkLaenge = ganzzahl(new URLSearchParams(window.location.search).get('laenge'));
+    if (linkLaenge) {
+      ausLink = true;
+      inLaenge.value = String(linkLaenge);
+      var linkAnzahl = ganzzahl(new URLSearchParams(window.location.search).get('anzahl'));
+      if (linkAnzahl) inAnzahl.value = String(linkAnzahl);
+      var zuschnittWahl = el.querySelector('input[name^="tp-lz-art-"][value="zuschnitt"]');
+      if (zuschnittWahl) zuschnittWahl.checked = true;
+    }
+
     // Profile: Schrauben auf Wunsch (Kaestchen nie vorbelegt).
     var schraubenFeld = el.querySelector('[data-schrauben-feld]');
     var schraubenWahl = el.querySelector('[data-schrauben]');
@@ -413,7 +427,8 @@
       auswahl.appendChild(ohne);
       var art = vorher && vorher !== 'ohne' ? (einfassungen.filter(function (x) { return String(x.id) === vorher; })[0] || {}).art : null;
       var gleich = art ? passend.filter(function (x) { return x.art === art; })[0] : null;
-      auswahl.value = gleich ? String(gleich.id) : (vorher === 'ohne' ? 'ohne' : '');
+      auswahl.value = gleich ? String(gleich.id) : (vorher === 'ohne' ? 'ohne' : (ausLink && passend[0] ? String(passend[0].id) : ''));
+      ausLink = false;
     }
 
     // Bandfarben zur gewaehlten Ausfuehrung: eine Farbe ist fest, mehrere zur Wahl.

@@ -32,9 +32,10 @@ Fehlt eines der Pflichtfelder, rendert der Block nichts (fail closed). Ohne
 - Das Produkt höchstens 20 Metafelder im Namensraum `custom` tragen lassen: der
   Bestellabruf (`operations/sync/orders.mjs`) liest nur die ersten 20, sonst
   fehlt `preis_pro_001_lfm` im Einkauf und dort stünde wieder „950 Stück“.
-- **Nur Onlineshop, nicht Google:** Der Feed meldet den Variantenpreis
-  (0,26 €), Seite und JSON-LD den Meterpreis – Merchant Center wertet das als
-  Preisabweichung (wie bei Teppich nach Maß: nur mit Zusatzquelle).
+- **Google nur mit Zusatzquelle:** Der Kanal meldet den Variantenpreis
+  (0,26 €). Seite, JSON-LD und die Zusatzquelle `tp-nachmass-preise` nennen den
+  Endpreis der Beispielgröße 3 × 100 cm; ohne Zeile dort bleibt das Angebot im
+  Merchant Center gesperrt (→ [google-feed-flaechenware.md](google-feed-flaechenware.md)).
 
 ## Warenkorb und Bestellung
 

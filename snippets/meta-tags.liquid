@@ -297,6 +297,17 @@
           assign tp_og_cents = tp_og_bsp_teile[2] | times: 1
         endif
       endif
+      # Laengenware nach Mass: Endpreis der Beispielgroesse (snippets/tp-laengen-beispiel, w-331).
+      if product.metafields.custom.preis_pro_001_lfm.value == true
+        capture tp_og_bsp
+          render 'tp-laengen-beispiel', product: product, variant: product.selected_or_first_available_variant
+        endcapture
+        assign tp_og_bsp = tp_og_bsp | strip
+        if tp_og_bsp != blank
+          assign tp_og_bsp_teile = tp_og_bsp | split: '|'
+          assign tp_og_cents = tp_og_bsp_teile[2] | times: 1
+        endif
+      endif
     endif
     assign tp_og_euro = tp_og_cents | divided_by: 100
     assign tp_og_rest = tp_og_cents | modulo: 100

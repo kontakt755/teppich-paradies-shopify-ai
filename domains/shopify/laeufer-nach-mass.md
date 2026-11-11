@@ -101,9 +101,10 @@ Preise ändern heißt Variantenpreise ändern: nur mit Freigabe des Inhabers.
 
 ## Veröffentlichung
 
-Läufer nur im Onlineshop, nicht in Google & YouTube: Feed und Seite zeigen
-verschiedene Preise (je cm gegenüber je Meter), Merchant Center lehnt das als
-Preisabweichung ab. Kollektion: Teppiche (manuell sortiert, danach
+In Google Shopping nur über die Zusatzquelle `tp-nachmass-preise` mit dem
+Endpreis der Beispielgröße 200 cm (Einfassung und Pauschale inklusive); der
+Variantenpreis je cm ist im Merchant Center gesperrt
+(→ [google-feed-flaechenware.md](google-feed-flaechenware.md), Abschnitt w-331). Kollektion: Teppiche (manuell sortiert, danach
 `npm run -s auslauf:sortieren`). Keine Muster (`ohne-muster`); Muster bräuchten
 das Versandprofil „Kostenlose Muster“ und damit eine Freigabe.
 
