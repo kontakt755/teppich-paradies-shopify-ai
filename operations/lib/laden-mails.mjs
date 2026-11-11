@@ -139,23 +139,35 @@ function eintraegeAus(antwort) {
     aus.push({
       schluessel: `mail:${crypto.createHash('sha1').update(kennung).digest('hex').slice(0, 16)}`,
       von: von.name || von.adresse || 'Unbekannt', adresse: von.adresse,
-      text: betreff || '(ohne Betreff)', seit: eingang,
+      text: betreff || '(ohne Betreff)', seit: eingang, messageId: (/<[^<>\s]+>/.exec(k['message-id'] || '')?.[0] || '').toLowerCase() || null,
     });
   }
   return aus;
 }
 
-/** Gmail "Gesendet" nur lesend: [{ an: [Adressen], am: ms }] der letzten `tage` Tage an diese Adressen (hoechstens 100). */
-export async function gesendetAn(adressen, { hauptZugang, mitNurLesenFn = mitNurLesen, tage, verbindenHaupt }) {
+/** Message-IDs aus In-Reply-To und References (kleingeschrieben, mit spitzen Klammern). */
+const bezugIds = k => `${k['in-reply-to'] || ''} ${k.references || ''}`.toLowerCase().match(/<[^<>\s]+>/g) || [];
+
+/** Betreff ohne Antwort-/Weiterleitungs-Vorsatz und ohne Zeichen, die die Gmail-Suche umdeuten. */
+const suchBetreff = t => String(t ?? '').replace(/^(\s*(re|aw|fwd?|wg)\s*:)+/i, '').replace(/["{}()\\]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/**
+ * Gmail "Gesendet" nur lesend: [{ an: [Adressen], am: ms, bezug: [Message-IDs] }] der letzten `tage` Tage an diese
+ * Adressen oder mit diesem Betreff (Thread-Abgleich: die Antwort kann an eine andere Adresse gehen; ob sie wirklich
+ * zum Verlauf gehoert, entscheidet bezug). Hoechstens 100.
+ */
+export async function gesendetAn(adressen, { hauptZugang, mitNurLesenFn = mitNurLesen, tage, verbindenHaupt, betreffe = [] }) {
   const sauber = [...new Set(adressen.filter(a => a && /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$/.test(a)))];
+  const themen = [...new Set(betreffe.map(suchBetreff).filter(t => t.length >= 6))].slice(0, 50);
   if (!sauber.length) return [];
   return mitNurLesenFn(hauptZugang, async s => {
-    const uids = (await s.suche(`in:sent newer_than:${tage}d {${sauber.map(a => `to:${a}`).join(' ')}}`)).slice(-100);
+    const suchen = [...sauber.map(a => `to:${a}`), ...themen.map(t => `subject:"${t}"`)];
+    const uids = (await s.suche(`in:sent newer_than:${tage}d {${suchen.join(' ')}}`)).slice(-100);
     const aus = [];
     for (const uid of uids) {
       const k = kopfzeilen((await s.kopf(uid)).toString('utf8'));
       const am = new Date(k.date || '').getTime();
-      if (Number.isFinite(am)) aus.push({ an: empfaenger(k.to), am });
+      if (Number.isFinite(am)) aus.push({ an: empfaenger(k.to), am, bezug: bezugIds(k) });
     }
     return aus;
   }, { verbinden: verbindenHaupt });
@@ -163,9 +175,10 @@ export async function gesendetAn(adressen, { hauptZugang, mitNurLesenFn = mitNur
 
 /** Markiert Eintraege, an deren Absender nach dem Eingang eine Mail rausging. Mutiert die Eintraege nicht. */
 async function beantwortetMarkieren(eintraege, o) {
-  const gesendet = await gesendetAn(eintraege.map(e => e.adresse), o);
+  const gesendet = await gesendetAn(eintraege.map(e => e.adresse), { ...o, betreffe: eintraege.map(e => e.text) });
   return eintraege.map((e) => {
-    const nach = gesendet.filter(g => g.an.includes(e.adresse) && g.am >= new Date(e.seit).getTime()).map(g => g.am).sort((a, b) => a - b)[0];
+    // Antwort = Mail an den Absender ODER im selben Verlauf (In-Reply-To/References nennt die Message-ID des Eintrags).
+    const nach = gesendet.filter(g => (g.an.includes(e.adresse) || (e.messageId && g.bezug?.includes(e.messageId))) && g.am >= new Date(e.seit).getTime()).map(g => g.am).sort((a, b) => a - b)[0];
     return nach === undefined ? e : { ...e, beantwortetAm: new Date(nach).toISOString() };
   });
 }
