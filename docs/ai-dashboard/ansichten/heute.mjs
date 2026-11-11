@@ -76,7 +76,9 @@ const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben
 const SPALTE_SICHTBAR = 8;
 
 /** Sichten mit Chip beim Inhaber; "inhaber" (fruehere Fokus-Sicht) aus alten Links wird "alles". */
-const INHABER_SICHTEN = ['laden', 'website', 'alles'];
+const INHABER_SICHTEN = ['laden', 'website', 'buero', 'alles'];
+/** Sichten ohne Laden-Arbeit: keine Nachfragen, Belege, Restrollen und kein Block Laden & Montage. */
+const OHNE_LADEN = ['website', 'buero'];
 
 const WARTE_SPALTEN = [
   ['lieferant', 'Beim Lieferanten', 'Muster oder Ware bestellt'],
@@ -145,7 +147,7 @@ function nachfassStand(sicht) {
   // Solange die Antwort fehlt, ist offen, ob der Lauf verschickt - dann lieber nichts als To-do zeigen,
   // was gleich von selbst rausgeht (die Zeile "Im Hintergrund" sagt "Lade …").
   const teile = laeuft === null ? { mensch: [], automatisch: alle.offen, ohneWeg: [] } : teileNachfassen(alle.offen, { automatisch: laeuft });
-  const sichtbar = sicht !== 'website';
+  const sichtbar = !OHNE_LADEN.includes(sicht);
   const lauf = t?.versand?.letzterLauf;
   return {
     alle: sichtbar ? alle : { offen: [], erledigt: [], abgemeldet: [] },
@@ -185,7 +187,7 @@ function postfachAbgleichTodo(nf) {
 /** Der taegliche Einstieg ist die Shop-Arbeit; alte Alltagssichten bleiben explizit erreichbar. */
 export function viewHeute() {
   const sicht = state.route.params.get('sicht');
-  return ['laden', 'website', 'alles', 'inhaber'].includes(sicht) ? viewAlltag() : viewShop();
+  return [...INHABER_SICHTEN, 'inhaber'].includes(sicht) ? viewAlltag() : viewShop();
 }
 
 function viewShop() {
@@ -321,7 +323,7 @@ function viewAlltag() {
     ${todoListe(liste)}
     ${hintergrund(wartet, sicht)}
     ${state.route.params.get('ww') ? werWartetBlock(wartet) : ''}
-    ${sicht === 'website' ? '' : ladenUndMontage()}
+    ${OHNE_LADEN.includes(sicht) ? '' : ladenUndMontage()}
     ${istInhaber() ? kennzahlenBlock() : ''}
   </div>`;
 }
@@ -341,7 +343,7 @@ function todoOptionen(sicht) {
  * dasselbe - was dort rot ist, ist es auch oben auf der Startseite.
  */
 function todosDerSicht(sicht, q, nf, opt = todoOptionen(sicht)) {
-  const nfLaden = sicht === 'website' ? nachfassStand('laden') : nf;
+  const nfLaden = OHNE_LADEN.includes(sicht) ? nachfassStand('laden') : nf;
   const eigeneLaden = [
     ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: NACHFRAGE_MAILS_HREF })),
     ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
@@ -352,13 +354,13 @@ function todosDerSicht(sicht, q, nf, opt = todoOptionen(sicht)) {
     // Veraltete Daten: ein To-do fuer den Inhaber, bis der Sync-Dienst wieder liefert (lib/datenstand.mjs).
     ...(istInhaber() ? datenstandTodo(veralteteQuellen(einkauf.aktualisierung)) : []),
   ];
-  const eigene = sicht === 'website' ? [] : eigeneLaden;
+  const eigene = OHNE_LADEN.includes(sicht) ? [] : eigeneLaden;
   return { liste: sortiereTodos([...leiteTodosAb(q, opt), ...eigene]), eigeneLaden };
 }
 
 function chipZahlen(q, opt, laden) {
   const z = zaehleTodos(q, opt);
-  return { laden: z.laden + laden, website: z.website, alles: z.alles + laden };
+  return { ...z, laden: z.laden + laden, alles: z.alles + laden };
 }
 
 function kopf(anzahl, sicht, chips) {
@@ -452,13 +454,13 @@ function hintergrund(wartet, sicht) {
     zeilen.push(`<div class="heute-hg-zeile"><span class="heute-hg-name">Wartet auf andere</span><span class="heute-hg-text">${esc([lieferant ? `${lieferant} beim Lieferanten` : null, kunde ? `${kunde} beim Kunden` : null].filter(Boolean).join(' · '))}</span>${umschalten('ww', 'Ansehen')}</div>`);
   }
 
-  if (sicht !== 'website' && darfAnsicht('einkauf') && belege.daten) {
+  if (!OHNE_LADEN.includes(sicht) && darfAnsicht('einkauf') && belege.daten) {
     // Ablage nicht lesbar: die Zeile bleibt da und sagt es - sonst verschwaende die Pruefung still.
     const l = belege.daten.verfuegbar ? laufStand(belege.daten) : { text: `Lieferantenpost nicht lesbar: ${belege.daten.hinweis || 'unbekannter Fehler'}`, ton: 'warn' };
     zeilen.push(`<div class="heute-hg-zeile${l.ton ? ` ${l.ton}` : ''}"><span class="heute-hg-name">Lieferantenpostfach</span><span class="heute-hg-text">${esc(l.text)}</span><a class="heute-hg-knopf" href="#/einkauf?tab=belege">Lieferantenpost</a></div>`);
   }
 
-  if (sicht !== 'website' && darfAnsicht('sonderposten')) zeilen.push(restrollenZeile());
+  if (!OHNE_LADEN.includes(sicht) && darfAnsicht('sonderposten')) zeilen.push(restrollenZeile());
   zeilen.push(datenstandZeile(sicht));
   return `<section class="heute-hintergrund" aria-labelledby="heuteHg">
     <h2 id="heuteHg">Im Hintergrund</h2>

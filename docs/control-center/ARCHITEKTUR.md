@@ -881,8 +881,9 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 Sortierung: rot vor gelb vor normal, darin das Älteste zuerst.
 
 **Wer sieht was** – ohne neue Rolle: Inhaber (und Notzugang) sehen Freigaben, alles Rote und eigene
-fällige Aufgaben; zwei Sprungfelder zeigen, was im Laden und bei der Website offen ist (`?sicht=laden`
-bzw. `website`, nur für den Inhaber umschaltbar). Mitarbeiter sehen „Laden" (Kunden- und
+fällige Aufgaben; Sprungfelder zeigen, was im Laden, bei der Website und im Büro offen ist (`?sicht=laden`,
+`website`, `buero` – Freigaben, neue Aufträge, Hausverwaltungen; seit 2026-11-11 gilt Laden + Website + Büro = Alles;
+nur für den Inhaber umschaltbar). Mitarbeiter sehen „Laden" (Kunden- und
 Einkaufsschritte, eigene und freie Team-Aufgaben) – oder „Website", wenn die Mehrheit ihrer offenen,
 zugewiesenen Aufgaben in `TECHNISCHE_BEREICHE` liegt (`sichtFuer()`). Der Server gibt dafür je Aufgabe
 `technisch` und `darfAendern` mit (`operations/lib/organisation.mjs`).
@@ -2613,7 +2614,7 @@ die volle Warenliste bleibt erreichbar. Darunter folgen offene Muster nach Liefe
 Packstation aus den bisherigen Quellen. Versand-/Empfangskontrolle, gepackte Umschläge und
 fälliges Nachfassen verweisen in vorhandene Arbeitswege. Lexikon und gemeinsame
 Etiketten-Druckliste bleiben direkt erreichbar. Laden, Aufgaben und Technik sind über
-„Weitere Bereiche“ zugänglich; `sicht=laden|website|alles|inhaber` erhält die Alltagssichten.
+„Weitere Bereiche“ zugänglich; `sicht=laden|website|buero|alles|inhaber` erhält die Alltagssichten.
 
 **Eine Projektion, keine zweite Verwaltung.** `lib/shop-bestellarbeit.mjs` verwendet die Antwort
 von `/api/kunden/bestellungen`. `operations/lib/bestellliste.mjs` liefert `warenFortschritt` und
