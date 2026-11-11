@@ -1,0 +1,65 @@
+/*
+ * Optik-Schicht (2026-11-11): dieselben Inhalte, ruhiger und klarer gegliedert. Wird als letztes
+ * Stylesheet geladen und aendert nur Aussehen - keine Struktur, keine Farbe mit neuer Bedeutung.
+ * Wieder loswerden: die <link>-Zeile in index.html entfernen.
+ */
+:root {
+  /* Zwei Schichten in der Farbe des Untergrunds statt eines grauen Strichs. */
+  --shadow: 0 1px 1px rgba(68, 44, 30, .04), 0 6px 20px -8px rgba(68, 44, 30, .14);
+  --shadow-hoch: 0 2px 4px rgba(68, 44, 30, .06), 0 18px 40px -16px rgba(68, 44, 30, .28);
+}
+html[data-theme="dark"] {
+  --shadow: 0 1px 1px rgba(0, 0, 0, .3), 0 8px 24px -10px rgba(0, 0, 0, .6);
+  --shadow-hoch: 0 2px 4px rgba(0, 0, 0, .35), 0 20px 44px -16px rgba(0, 0, 0, .75);
+}
+
+/* Schrift: Zahlen stehen untereinander, Ueberschriften brechen ausgewogen um. */
+body { font-variant-numeric: tabular-nums; text-rendering: optimizeLegibility; }
+h1, h2, h3 { text-wrap: balance; letter-spacing: -.018em; }
+.heute h1 { font-family: var(--serif); font-size: var(--tp-fs-xl); font-weight: 600; letter-spacing: -.02em; }
+.shop-start-kopf p, .heute-geschaeft-kopf p { max-width: 68ch; text-wrap: pretty; }
+
+/* Startseite: jeder Arbeitsblock ist eine Flaeche, der Hintergrund trennt sie. "Probleme" hat
+   schon einen eigenen Rahmen und bleibt ohne zweiten. */
+.shop-start > .heute-geschaeft, .waren-zahl {
+  margin: 0 0 18px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 16px;
+  background: var(--surface); box-shadow: var(--shadow);
+}
+
+/* Die eine grosse Zahl der Seite. */
+.waren-zahl-kopf { gap: 6px 40px; align-items: flex-end; }
+.waren-zahl-kopf strong { font-family: var(--serif); font-size: var(--tp-fs-xl); font-weight: 600; letter-spacing: -.025em; line-height: 1.05; }
+.waren-zahl-kopf span { margin-top: 4px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+
+/* Menue: der aktive Punkt traegt eine Marke links, alles reagiert weich. */
+.mainnav a, .nav-more-kopf, .side-knopf { position: relative; transition: background-color .15s ease, color .15s ease; }
+.mainnav a[aria-current="page"] { font-weight: 650; }
+.mainnav a[aria-current="page"]::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+
+/* Knoepfe: sichtbar anfassbar. */
+.btn, .chip, .suchknopf { transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .08s ease; }
+.btn { border-radius: 10px; }
+.btn:not(.btn-ghost):not(.btn-link):not(:disabled) { box-shadow: 0 1px 1px rgba(68, 44, 30, .06); }
+.btn:not(:disabled):active, .chip:active { transform: translateY(1px); box-shadow: none; }
+.btn-primary:not(:disabled) { box-shadow: 0 1px 1px rgba(68, 44, 30, .1), 0 6px 14px -6px color-mix(in srgb, var(--accent) 70%, transparent); }
+.card { border-radius: 16px; }
+
+/* Suche: das breiteste Element im Kopf - ein Feld fuer Kunde, Bestellung und Produkt. */
+@media (min-width: 1025px) {
+  .suchknopf { width: min(520px, 42vw); height: 44px; padding: 0 10px 0 14px; border-radius: 12px; border-color: var(--line-strong); box-shadow: var(--shadow); color: var(--text-2); }
+  .suchknopf:hover { border-color: var(--accent); color: var(--text); }
+}
+.palette-backdrop { background: rgba(36, 24, 16, .45); backdrop-filter: blur(3px); }
+.palette { border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-hoch); }
+.palette input { padding: 18px 20px; font-size: var(--tp-fs-lg); }
+.palette li { padding: 10px 12px; }
+
+@media (max-width: 800px) {
+  .shop-start > .heute-geschaeft, .waren-zahl { padding: 16px 14px; border-radius: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .chip, .suchknopf, .mainnav a, .nav-more-kopf, .side-knopf { transition: none; }
+}
+@media print {
+  .shop-start > .heute-geschaeft, .waren-zahl { box-shadow: none; }
+}
