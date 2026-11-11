@@ -397,14 +397,22 @@ export function ohneUeberholtenFehler(stand) {
  * @param {Record<string,{daten:object,datei:string}>} opt.eingaben  Bereits
  *   gelesene Admin-API-Antworten je Teil (MCP-Weg). Ohne `nur` bestimmt diese
  *   Menge, welche Teile laufen: die uebrigen haetten ohne Token nur Fehler.
+ * @param {number} opt.drosselPauseMs  Pause vor der einen Wiederholung, wenn Shopify drosselt.
  */
-export async function aktualisiere({ nur = null, dir = privatDir(), teilFn = TEIL_FN, eingaben = {} } = {}) {
+export async function aktualisiere({ nur = null, dir = privatDir(), teilFn = TEIL_FN, eingaben = {}, drosselPauseMs = 5000 } = {}) {
   const ausEingabe = Object.keys(eingaben);
   const auszufuehren = nur && nur.length ? nur : (ausEingabe.length ? ausEingabe : TEILE);
   const ergebnisse = [];
   for (const teil of auszufuehren) {
     // eslint-disable-next-line no-await-in-loop -- Teile laufen absichtlich nacheinander (ein Fehler darf die anderen nicht verhindern, aber parallele Bulk-Operationen gegen dieselbe Admin API sind nicht noetig).
-    ergebnisse.push(await fuehreAus(teil, () => teilFn[teil](dir, eingaben[teil] ?? null)));
+    let r = await fuehreAus(teil, () => teilFn[teil](dir, eingaben[teil] ?? null));
+    // Shopify bremst kurz nach mehreren Abfragen (Knopf-Lauf 11.11.: Kennzahlen fielen aus, w-334).
+    // Genau eine Wiederholung nach kurzer Pause, dann gilt der Fehler.
+    if (!r.erfolg && /throttled/i.test(r.meldung || '')) {
+      await new Promise(f => setTimeout(f, drosselPauseMs));
+      r = await fuehreAus(teil, () => teilFn[teil](dir, eingaben[teil] ?? null));
+    }
+    ergebnisse.push(r);
   }
 
   // Bestehenden Stand mit uebernehmen, damit Teile, die diesmal nicht liefen

@@ -412,3 +412,23 @@ test('Quellvarianten fuer den Export: Property und Metafeld der Mustervariante, 
   ] } }];
   assert.deepEqual(quellvarianteIdsAus(orders), ['gid://shopify/ProductVariant/111', 'gid://shopify/ProductVariant/222']);
 });
+
+test('gedrosselter Teil wird genau einmal wiederholt', async () => {
+  const dir = tmpDir();
+  let aufrufe = 0;
+  const teilFn = { kennzahlen: async () => { aufrufe += 1; if (aufrufe === 1) throw new Error('Shopify GraphQL: Throttled'); return { anzahl: 3 }; } };
+  const { ergebnisse } = await aktualisiere({ dir, nur: ['kennzahlen'], teilFn, drosselPauseMs: 0 });
+  assert.equal(aufrufe, 2);
+  assert.equal(ergebnisse[0].erfolg, true);
+
+  let immer = 0;
+  const bleibt = { kennzahlen: async () => { immer += 1; throw new Error('Shopify GraphQL: Throttled'); } };
+  const zweiter = await aktualisiere({ dir, nur: ['kennzahlen'], teilFn: bleibt, drosselPauseMs: 0 });
+  assert.equal(immer, 2);
+  assert.equal(zweiter.ergebnisse[0].erfolg, false);
+
+  let anderer = 0;
+  const keinZugang = { kennzahlen: async () => { anderer += 1; throw new Error('Kein Zugang'); } };
+  await aktualisiere({ dir, nur: ['kennzahlen'], teilFn: keinZugang, drosselPauseMs: 0 });
+  assert.equal(anderer, 1);
+});
