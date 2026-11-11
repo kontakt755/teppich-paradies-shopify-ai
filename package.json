@@ -95,6 +95,7 @@
     "muster:kauf": "node operations/scripts/muster-kauf.mjs",
     "feed:titel": "node operations/scripts/feed-titel.mjs",
     "feed:teppich-nach-mass": "node scripts/teppich-nach-mass-feed.mjs",
+    "feed:nachmass": "node operations/scripts/feed-nachmass-abruf.mjs",
     "bodenwissen:guard": "node scripts/bodenwissen-guard.mjs",
     "ki:stand": "node operations/scripts/ki-stand.mjs",
     "changelog:guard": "node scripts/changelog-guard.mjs",

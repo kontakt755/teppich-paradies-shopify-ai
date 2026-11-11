@@ -78,11 +78,65 @@ jobs:
           git commit -q -m "Teppich-nach-Mass-Beispiel-Endpreise $(date -u +%F)"
           git push -q origin feed-daten
 
+  # Laeufer, Treppenkanten und Matten nach Mass (Werkbank w-331): eigene Datei
+  # tp-nachmass-preise.txt. Nach dem TNM-Job, damit nie zwei Jobs gleichzeitig auf
+  # feed-daten pushen; laeuft auch, wenn der TNM-Job scheitert.
+  nachmass:
+    needs: preise
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    env:
+      HAT_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID != '' }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Admin-Token holen (client_credentials)
+        if: ${{ env.HAT_CLIENT_ID == 'true' }}
+        env:
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+        run: node scripts/shopify-oauth.mjs --grant client-credentials --github-env
+
+      - name: Preise erzeugen
+        env:
+          SHOPIFY_ADMIN_TOKEN: ${{ env.SHOPIFY_ADMIN_TOKEN || secrets.SHOPIFY_ADMIN_TOKEN }}
+        run: node operations/scripts/feed-nachmass-abruf.mjs --aus tp-nachmass-preise.txt --pruefung tp-nachmass-pruefung.json
+
+      - name: Pruefprotokoll sichern
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nachmass-pruefung-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tp-nachmass-pruefung.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Auf feed-daten veroeffentlichen
+        run: |
+          mkdir veroeffentlichung && cd veroeffentlichung
+          git init -q -b feed-daten
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git fetch -q --depth=1 origin feed-daten
+          git checkout -q -B feed-daten FETCH_HEAD
+          cp ../tp-nachmass-preise.txt ../tp-nachmass-pruefung.json .
+          git add tp-nachmass-preise.txt tp-nachmass-pruefung.json
+          if git diff --cached --quiet -- tp-nachmass-preise.txt; then echo "keine Preisaenderung"; exit 0; fi
+          git commit -q -m "Nach-Mass-Beispiel-Endpreise $(date -u +%F)"
+          git push -q origin feed-daten
+
   # Fehllaeufe blieben unbemerkt (30.10.-03.11.2026): Jeder Fehllauf meldet sich
   # im selben offenen Issue, Weg wie datenschutz-pruefung.yml. Eigener Job, damit
   # nur er Issues schreiben darf; das Issue nach der Behebung von Hand schliessen.
   alarm:
-    needs: preise
+    needs: [preise, nachmass]
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     permissions:

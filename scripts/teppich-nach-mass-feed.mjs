@@ -195,7 +195,13 @@ export function seiteAuswerten(html) {
   if (m) {
     try { ek = JSON.parse(m[1]); } catch { ek = null; }
   }
-  return { gruppe, ek };
+  // Laengenware nach Mass (blocks/tp-laengen-zuschnitt), fuer operations/scripts/feed-nachmass-abruf.mjs.
+  let lz = null;
+  const ml = html.match(/<script type="application\/json" data-tp-lz-daten>([\s\S]*?)<\/script>/);
+  if (ml) {
+    try { lz = JSON.parse(ml[1]); } catch { lz = null; }
+  }
+  return { gruppe, ek, lz };
 }
 
 const cent = (euro) => Math.round(Number(euro) * 100);

@@ -1,0 +1,113 @@
+{%- doc -%}
+  Beispielgroesse fuer Laengenware nach Mass (Laeufer, Treppenkanten) fuer
+  Suchmaschinen und Kanaele (Werkbank w-331). Gibt
+  "Laenge|Anzahl|Cent|Streich-Cent|Gesamtlaenge in cm|MTR|Link-Zusatz|Namenszusatz"
+  aus oder nichts.
+
+  Warum: Der Variantenpreis gilt je 0,01 lfm (custom.preis_pro_001_lfm). Google
+  zeigte ihn als Artikelpreis (0,18 bis 1,76 EUR). Der Zusatzfeed
+  (operations/scripts/feed-nachmass-abruf.mjs) nennt deshalb den Endpreis einer
+  Beispielgroesse und verlinkt die Seite mit ?variant=&laenge=&anzahl= - der
+  Block tp-laengen-zuschnitt belegt die Felder damit vor. Product-JSON-LD und
+  og:price geben denselben Preis aus, sonst meldet das Merchant Center eine
+  Preisabweichung.
+
+  Beispielgroessen (Inhaber 2026-11-11):
+  - Laeufer (Vorlage laeufer-nach-mass): 1 x 200 cm, mit der ersten Einfassung
+    zur Breite und der Pauschale je Laeufer.
+  - Treppenkante (Vorlage treppenkante-nach-mass): 3 x 100 cm im Zuschnitt =
+    Mindestgesamtlaenge 300 cm (Block-Einstellung min_gesamt_cm, qa/tests prueft
+    das), ohne Schrauben, ohne Sperrgut (100 cm liegt unter der Grenze).
+
+  Rechnung wie assets/tp-laengen-zuschnitt.js (rechnen): Laenge x Anzahl x
+  Variantenpreis + Zusatz je Stueck. Einfass- und Pauschalprodukt sind dieselben
+  Handles wie in der Vorlage (qa/tests prueft das).
+
+  Fail closed - keine Ausgabe, wenn der Block diese Groesse nicht verkaufen
+  wuerde: andere Vorlage, Variante ohne Preis, Laenge ausserhalb der Grenzen
+  (auch der Stangenlaenge), keine Einfassung zur Breite, Pauschale nicht kaufbar,
+  keine Bohrungsangabe.
+
+  @param {object} product - Laengenware nach Mass
+  @param {object} variant - die Variante
+  @param {string} [aktion] - Ergebnis von tp-rabatt-sichtbar ("ja"/"nein"); ohne Angabe wird es hier ermittelt
+{%- enddoc -%}
+{%- liquid
+  assign tlbsp_ergebnis = ''
+  assign tlbsp_laenge = 0
+  assign tlbsp_anzahl = 0
+  assign tlbsp_zusatz = 0
+  assign tlbsp_ok = false
+  if product.metafields.custom.preis_pro_001_lfm.value == true and variant.price > 0
+    assign tlbsp_ok = true
+  endif
+  assign tlbsp_max = product.metafields.service.max_laenge_cm.value | times: 1
+
+  if tlbsp_ok and product.template_suffix == 'laeufer-nach-mass'
+    assign tlbsp_laenge = 200
+    assign tlbsp_anzahl = 1
+    assign tlbsp_breite = ''
+    for tlbsp_o in product.options
+      if tlbsp_o == 'Breite'
+        assign tlbsp_breite = variant.options[forloop.index0]
+      endif
+    endfor
+    assign tlbsp_ef_cent = 0
+    for tlbsp_e in all_products['einfassung-laeufer-schnittkanten'].variants
+      if tlbsp_e.available and tlbsp_e.price > 0 and tlbsp_e.option1 == tlbsp_breite
+        assign tlbsp_ef_cent = tlbsp_e.price
+        break
+      endif
+    endfor
+    assign tlbsp_pv = all_products['wunschmass-pauschale'].selected_or_first_available_variant
+    if tlbsp_breite == blank or tlbsp_ef_cent <= 0
+      assign tlbsp_ok = false
+    endif
+    unless tlbsp_pv.available and tlbsp_pv.price > 0
+      assign tlbsp_ok = false
+    endunless
+    assign tlbsp_zusatz = tlbsp_ef_cent | plus: tlbsp_pv.price
+  elsif tlbsp_ok and product.template_suffix == 'treppenkante-nach-mass'
+    assign tlbsp_laenge = 100
+    assign tlbsp_anzahl = 3
+    if product.metafields.service.bohrung.value.size > 0
+      # Zuschnitt hoechstens bis zur Stangenlaenge der Variante (laengeFuer).
+      assign tlbsp_stange = variant.metafields.service.stange_cm.value | times: 1
+      if tlbsp_stange > 0 and tlbsp_stange < tlbsp_max
+        assign tlbsp_max = tlbsp_stange
+      endif
+    else
+      assign tlbsp_ok = false
+    endif
+  else
+    assign tlbsp_ok = false
+  endif
+
+  if tlbsp_ok
+    assign tlbsp_min = product.metafields.service.min_seite_cm.value | default: 10 | times: 1 | at_least: 1
+    if tlbsp_laenge < tlbsp_min or tlbsp_laenge > tlbsp_max
+      assign tlbsp_ok = false
+    endif
+  endif
+
+  if tlbsp_ok
+    assign tlbsp_aktion = aktion
+    if tlbsp_aktion == nil
+      capture tlbsp_aktion
+        render 'tp-rabatt-sichtbar', product: product
+      endcapture
+      assign tlbsp_aktion = tlbsp_aktion | strip
+    endif
+    assign tlbsp_menge = tlbsp_laenge | times: tlbsp_anzahl
+    assign tlbsp_obendrauf = tlbsp_zusatz | times: tlbsp_anzahl
+    assign tlbsp_cent = tlbsp_menge | times: variant.price | plus: tlbsp_obendrauf
+    assign tlbsp_alt_cent = 0
+    if tlbsp_aktion == 'ja' and variant.compare_at_price > variant.price
+      assign tlbsp_alt_cent = tlbsp_menge | times: variant.compare_at_price | plus: tlbsp_obendrauf
+    endif
+    assign tlbsp_ergebnis = tlbsp_laenge | append: '|' | append: tlbsp_anzahl | append: '|' | append: tlbsp_cent | append: '|' | append: tlbsp_alt_cent | append: '|' | append: tlbsp_menge
+    # Fuer das JSON-LD: Einheit, Link-Zusatz und Namenszusatz.
+    assign tlbsp_ergebnis = tlbsp_ergebnis | append: '|MTR|&laenge=' | append: tlbsp_laenge | append: '&anzahl=' | append: tlbsp_anzahl | append: '|' | append: tlbsp_anzahl | append: ' x ' | append: tlbsp_laenge | append: ' cm'
+  endif
+-%}
+{{- tlbsp_ergebnis -}}

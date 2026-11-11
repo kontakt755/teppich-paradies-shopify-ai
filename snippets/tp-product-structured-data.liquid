@@ -141,6 +141,11 @@
   assign tp_sd_lfm = false
   if product_resource.metafields.custom.preis_pro_001_lfm.value == true
     assign tp_sd_lfm = true
+    # Aktion einmal je Produkt fuer die Beispielgroesse (snippets/tp-laengen-beispiel).
+    capture tp_sd_lfm_aktion
+      render 'tp-rabatt-sichtbar', product: product_resource
+    endcapture
+    assign tp_sd_lfm_aktion = tp_sd_lfm_aktion | strip
   endif
 
   # Teppich nach Mass mit Einfassung: Angebot je Farbe als Beispielgroesse (#1283).
@@ -378,6 +383,15 @@
           endcapture
           assign tp_sd_bsp = tp_sd_bsp | strip
         endif
+        # Laengenware nach Mass: Beispielgroesse statt Meterpreis (w-331). Das Snippet
+        # liefert dieselben Felder 2 bis 4 und dazu Einheit, Link-Zusatz und Namenszusatz.
+        if tp_sd_lfm
+          capture tp_sd_bsp
+            render 'tp-laengen-beispiel', product: product_resource, variant: tp_sd_variant, aktion: tp_sd_lfm_aktion
+          endcapture
+          assign tp_sd_bsp = tp_sd_bsp | strip
+        endif
+        assign tp_sd_bsp_zusatz = ''
         if tp_sd_bsp != blank
           assign tp_sd_bsp_teile = tp_sd_bsp | split: '|'
           assign tp_sd_bsp_w = tp_sd_bsp_teile[0]
@@ -385,7 +399,13 @@
           assign tp_sd_price = tp_sd_bsp_teile[2] | times: 1.0 | divided_by: 100 | round: 2
           assign tp_sd_bsp_alt = tp_sd_bsp_teile[3] | times: 1.0 | divided_by: 100 | round: 2
           assign tp_sd_bsp_flaeche = tp_sd_bsp_teile[4] | times: 1.0 | divided_by: 100
-          assign tp_sd_variant_url = tp_sd_variant_url | append: '&breite=' | append: tp_sd_bsp_w | append: '&laenge=' | append: tp_sd_bsp_l
+          assign tp_sd_bsp_einheit = tp_sd_bsp_teile[5] | default: 'MTK'
+          assign tp_sd_bsp_link = '&breite=' | append: tp_sd_bsp_w | append: '&laenge=' | append: tp_sd_bsp_l
+          assign tp_sd_bsp_link = tp_sd_bsp_teile[6] | default: tp_sd_bsp_link
+          assign tp_sd_bsp_name = tp_sd_bsp_w | append: ' x ' | append: tp_sd_bsp_l | append: ' cm'
+          assign tp_sd_bsp_name = tp_sd_bsp_teile[7] | default: tp_sd_bsp_name
+          assign tp_sd_bsp_zusatz = tp_sd_bsp_name | prepend: ', '
+          assign tp_sd_variant_url = tp_sd_variant_url | append: tp_sd_bsp_link
         endif
         assign tp_sd_image = tp_sd_variant.featured_image | default: product_resource.featured_image
 
@@ -466,9 +486,7 @@
         {%- unless product_resource.has_only_default_variant -%}
           {%- assign tp_sd_name = tp_sd_name | append: ' - ' | append: tp_sd_variant.title -%}
         {%- endunless -%}
-        {%- if tp_sd_bsp != blank -%}
-          {%- assign tp_sd_name = tp_sd_name | append: ', ' | append: tp_sd_bsp_w | append: ' x ' | append: tp_sd_bsp_l | append: ' cm' -%}
-        {%- endif -%}
+        {%- assign tp_sd_name = tp_sd_name | append: tp_sd_bsp_zusatz -%}
         {
           "@type": "Product",
           "@id": {{ tp_sd_variant_url | append: '#variant' | json }},
@@ -506,11 +524,11 @@
                 "referenceQuantity": {
                   "@type": "QuantitativeValue",
                   "value": {{ tp_sd_bsp_flaeche }},
-                  "unitCode": "MTK",
+                  "unitCode": {{ tp_sd_bsp_einheit | json }},
                   "valueReference": {
                     "@type": "QuantitativeValue",
                     "value": 1,
-                    "unitCode": "MTK"
+                    "unitCode": {{ tp_sd_bsp_einheit | json }}
                   }
                 }
               }

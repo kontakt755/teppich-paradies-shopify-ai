@@ -116,6 +116,31 @@ Hinweis: Der sichtbare Seitenpreis muss zum Feedpreis passen. Die Produktseite z
 Ein Mindestbestellwert (z. B. 1 lfm x Rollenbreite) ist im Feed nicht abbildbar - falls der
 Rechner eine Mindestmenge erzwingt, ist das ein Punkt fuer den Inhaber.
 
+## Laeufer, Treppenkanten und Matten nach Mass (Werkbank w-331)
+
+Diese Produkte (Adresse enthaelt `nach-mass`, Produktart nicht „Teppich nach Maß“) haben
+einen Variantenpreis je cm bzw. je 0,01 m² und standen mit 0,18 bis 1,76 EUR in Shopping.
+
+- **Sperre (seit 2026-11-11):** Merchant Center → Datenquelle „Shopify App API“ →
+  Attributregel „ausgeschlossenes Ziel“: Produkttyp enthaelt nicht „Teppich nach Maß“ UND
+  Link enthaelt „nach-mass“ → Shopping-Anzeigen, kostenlose Eintraege, Display.
+- **Beispielpreis (Inhaber 2026-11-11):** Laeufer 200 cm lang mit Einfassung und
+  Pauschale, Matte 60 × 90 cm, Treppenkante 3 × 100 cm (= Mindestgesamtlaenge im
+  Zuschnitt). Quelle auf der Seite: `snippets/tp-laengen-beispiel.liquid` bzw.
+  `snippets/tp-mass-beispiel.liquid` (Matten) in Product-JSON-LD und og:price; der Link
+  `?variant=&laenge=&anzahl=` bzw. `?variant=&breite=&laenge=` belegt den Rechner vor.
+- **Zusatzquelle:** `operations/scripts/feed-nachmass-abruf.mjs` (lokal
+  `npm run -s feed:nachmass -- --aus … --pruefung …`) schreibt im Tageslauf
+  `.github/workflows/feed-tnm-preise.yml` die Datei `tp-nachmass-preise.txt` auf den
+  Zweig `feed-daten`, mit denselben Spalten wie `tp-tnm-preise.txt`. Bei einer einzigen
+  Abweichung zwischen JSON-LD, Rechner und Admin-Preis bleibt die alte Datei stehen.
+- **Freischalten im Merchant Center (von Hand, nach dem ersten gruenen Lauf):** Datei als
+  ergaenzende Quelle anlegen, in den Attributregeln fuer price, sale_price, title, link,
+  unit_pricing_measure, unit_pricing_base_measure wie bei `tp-tnm-preise` verwenden,
+  Stichprobe je Produktart pruefen. Die Sperre **nicht loeschen**, sondern um die
+  Bedingung „`tp-nachmass-preise.price` hat keinen Wert“ ergaenzen: Was der Feed nicht
+  liefert, bleibt aus Shopping (das Skript hat deshalb keinen Vorher-Abgleich).
+
 ## Wie der Variantenausschluss technisch geht
 
 Der Shopify-Google-Kanal kennt keinen Ausschluss einzelner Varianten. Zwei Wege:

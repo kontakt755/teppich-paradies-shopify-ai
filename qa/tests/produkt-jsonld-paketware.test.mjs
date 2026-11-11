@@ -37,7 +37,10 @@ eng.registerTag('doc', {
 });
 eng.registerFilter('image_url', v => (typeof v === 'string' ? v : '//cdn/bild.jpg'));
 eng.registerFilter('json', v => JSON.stringify(v ?? null));
-const metaEng = new Liquid({ strictFilters: false, strictVariables: false });
+// Laengenware ohne Laeufer-/Treppenkanten-Vorlage: das Beispiel-Snippet gibt nichts aus (w-331).
+const metaEng = new Liquid({ strictFilters: false, strictVariables: false, templates: {
+  'tp-laengen-beispiel': readFileSync(join(root, 'snippets/tp-laengen-beispiel.liquid'), 'utf8').replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, ''),
+} });
 // Shopify teilt bei ganzzahligem Divisor ganzzahlig; LiquidJS verwendet JS-Zahlen.
 metaEng.registerFilter('divided_by', (value, divisor) => Number.isInteger(divisor)
   ? Math.floor(Number(value) / divisor) : Number(value) / divisor);
