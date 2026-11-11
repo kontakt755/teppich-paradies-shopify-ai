@@ -495,9 +495,7 @@
           {%- if tp_sd_image -%},
           "image": {{ tp_sd_image | image_url: width: 1920 | prepend: 'https:' | json }}
           {%- endif -%}
-          {%- if tp_sd_description != blank -%},
-          "description": {{ tp_sd_description | json }}
-          {%- endif -%}
+          {%- comment -%} Beschreibung steht einmal am ProductGroup (Audit 2026-11-11 Befund 3), nicht je Variante {%- endcomment -%}
           {%- if tp_sd_gtin_valid -%},
           {{ tp_sd_gtin_property | json }}: {{ tp_sd_gtin | json }}
           {%- endif -%}

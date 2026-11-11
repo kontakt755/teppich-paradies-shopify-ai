@@ -95,7 +95,7 @@ test('Meterware: jede Variante hat offers.price in Euro je m2', async () => {
   assert.equal(off.priceSpecification.price, 23.9, 'Einheitspreis muss gleich offers.price sein');
   assert.equal(off.priceSpecification.referenceQuantity.unitCode, 'MTK');
   assert.equal(d.description, 'Beschreibung');
-  assert.equal(d.hasVariant[0].description, 'Beschreibung');
+  assert.equal(d.hasVariant[0].description, undefined, 'Beschreibung steht nur am ProductGroup');
 });
 
 test('HTML-Beschreibung wird bereinigt und vorhandene Variantenpreise bleiben einzeln korrekt', async () => {
@@ -106,7 +106,7 @@ test('HTML-Beschreibung wird bereinigt und vorhandene Variantenpreise bleiben ei
   ] });
   const d = gruppe(await rendern(p));
   assert.equal(d.description, 'Vorhandene Produktbeschreibung mit Daten.');
-  assert.equal(d.hasVariant[0].description, 'Vorhandene Produktbeschreibung mit Daten.');
+  assert.equal(d.hasVariant[0].description, undefined, 'Beschreibung steht nur am ProductGroup');
   assert.deepEqual(d.hasVariant.map(variant => variant.offers.price), [20.32, 27.97]);
   assert.deepEqual(d.hasVariant.map(variant => variant.offers.priceCurrency), ['EUR', 'EUR']);
 });
@@ -176,7 +176,7 @@ test('Serviceprodukte bekommen weiterhin gar kein JSON-LD', async () => {
   }
 });
 
-test('Standardprodukte nutzen dasselbe ProductGroup mit Einzelpreisen und Variantenbeschreibungen', async () => {
+test('Standardprodukte nutzen dasselbe ProductGroup mit Einzelpreisen ohne Variantenbeschreibung', async () => {
   const p = produkt({ type: 'Sockelleisten', options: ['Farbe'], description: '<p>Vorhandene <strong>Sockelleistenbeschreibung</strong>.</p>', variants: [
     variante({ id: 1, price: 903, compare_at_price: 950, sku: 'SOCKEL-1', barcode: '4002245718333', rollenbreite: 0 }),
     variante({ id: 2, price: 1080, compare_at_price: 1200, sku: 'SOCKEL-2', barcode: 'SOCKEL-2', available: false, rollenbreite: 0 }),
@@ -185,7 +185,7 @@ test('Standardprodukte nutzen dasselbe ProductGroup mit Einzelpreisen und Varian
   assert.equal(d['@type'], 'ProductGroup');
   assert.equal(d.hasVariant.length, 2);
   assert.equal(d.description, 'Vorhandene Sockelleistenbeschreibung.');
-  assert.equal(d.hasVariant[0].description, 'Vorhandene Sockelleistenbeschreibung.');
+  assert.equal(d.hasVariant[0].description, undefined, 'Beschreibung steht nur am ProductGroup');
   assert.deepEqual(d.hasVariant.map(v => v.offers.price), [9.03, 10.8]);
   assert.deepEqual(d.hasVariant.map(v => v.offers.priceCurrency), ['EUR', 'EUR']);
   assert.deepEqual(d.hasVariant.map(v => v.offers.availability), ['https://schema.org/InStock', 'https://schema.org/OutOfStock']);
