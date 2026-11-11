@@ -500,6 +500,9 @@
         if (ablaufEl) ablaufEl.hidden = false;
         var auchEl = root.querySelector('[data-sample-auch]');
         if (auchEl) auchEl.hidden = !colors.some(function (c) { return c.sampleSofort; });
+        // Lager-Bonus (w-325) in der Ueberschrift; bei Vinyl bleibt es bei 2 Vinyl-Mustern.
+        var plusEl = root.querySelector('[data-sample-lager-plus]');
+        if (plusEl) plusEl.hidden = core.isVinyl(product) || !colors.some(function (c) { return c.sampleSofort; });
         renderColors();
         vorauswahl(getParam('farbe'));
       });
