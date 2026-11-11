@@ -143,6 +143,15 @@ Aktionen und Streichpreise bei Teppichboden, Preisstufen der gekettelten Fußlei
 - **Fertig heißt belegt:** umgesetzt und getestet, mit Befehl und Ergebnis. Was nicht getestet werden konnte, steht ausdrücklich als ungetestet im Bericht.
 - Externe 429/503/Timeouts: höchstens ein unmittelbarer Script-Retry (`workflow/retry.mjs`). Einzige Ausnahme: Der HTTP-Check der Preview direkt nach dem Push prüft 5xx (Kaltstart) bis zu zweimal mit Wartezeit nach (`PREVIEW_HTTP_WAITS_MS`); 4xx und bleibende 5xx brechen ab, die Wartezeiten nicht verlängern. Cloud-/Proxy-403 bei Storefront-Zugriff heißt: lokal auf dem Mac ausführen.
 
+## Chat-Wächter (stehende Freigabe des Benutzers, 2026-11-11)
+
+Die geplante Aufgabe `chat-waechter` bringt offene Chats weiter, ohne dass der Benutzer jede Empfehlung einzeln bestätigt. Die Freigabe gilt nur für diese Aufgabe und nur in diesen Grenzen; alle anderen Sitzungen mergen weiter nur auf ausdrücklichen Auftrag.
+
+- **Darf:** in einem wartenden Chat die von Claude empfohlene Option wählen oder die Arbeit fortsetzen lassen (je Chat und Lauf eine vollständige Nachricht), fertige Chats archivieren und **unkritische PRs selbst nach Skill `ship` mergen**, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Voraussetzung je PR: offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch, und der zugehörige Chat meldet die Arbeit als fertig. Höchstens drei Merges je Lauf, nacheinander.
+- **Stoppt und legt vor:** kritische PRs (Preise, SKUs, Varianten, Massenimporte, Checkout, Deploy-Kette, `.claude/hooks/`, dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · Schreiben in Google Ads, Meta oder Merchant Center · alles, was Geld kostet oder ein Budget ändert · Mails an Kunden und Lieferanten · Fragen, die nur der Inhaber entscheidet · Chats ohne klare Empfehlung.
+- **Vorlegen heißt:** im Bericht des Laufs je Punkt den Chat und die eine Zeile nennen, die der Benutzer dort schreiben müsste. Der Wächter gibt in fremden Chats nie eine Freigabe für einen gestoppten Punkt weiter.
+- Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund für den Bericht, kein Hindernis zum Umgehen.
+
 ## Kommunikation
 
 Der Benutzer möchte möglichst wenig Rückfragen.
