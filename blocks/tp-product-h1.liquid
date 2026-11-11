@@ -23,7 +23,13 @@
     {% if closest.product.metafields.service.einfassung.value == 'Raummaß' %}
       <p class="tp-mass-nutzen">Passend für Ihren Raum zugeschnitten.</p>
     {% else %}
-      <p class="tp-mass-nutzen">Ihr Teppich nach Maß – mit rundum verarbeiteter Kante.</p>
+      {%- capture tp_h1_kante -%}{%- render 'tp-mass-kante-wort', product: closest.product -%}{%- endcapture -%}
+      {%- assign tp_h1_kante = tp_h1_kante | strip | split: '|' -%}
+      {% if tp_h1_kante[1] != blank %}
+        <p class="tp-mass-nutzen">Fertig eingefasst geliefert – {{ tp_h1_kante[1] | escape }} im Preis enthalten.</p>
+      {% else %}
+        <p class="tp-mass-nutzen">Ihr Teppich nach Maß – mit rundum verarbeiteter Kante.</p>
+      {% endif %}
     {% endif %}
   {% endif %}
 {% endif %}
