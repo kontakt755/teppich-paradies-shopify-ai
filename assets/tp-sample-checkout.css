@@ -199,11 +199,13 @@
   cursor: not-allowed;
 }
 
-.tp-sample__card[data-sample-unavailable] {
+/* Jede gesperrte Karte sieht gesperrt aus, auch bei erreichter Grenze -
+   am Handy gibt es keinen Mauszeiger, der die Sperre zeigt. */
+.tp-sample__card[aria-disabled='true'] {
   background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.03);
 }
 
-.tp-sample__card[data-sample-unavailable] img {
+.tp-sample__card[aria-disabled='true'] img {
   opacity: 0.55;
 }
 
