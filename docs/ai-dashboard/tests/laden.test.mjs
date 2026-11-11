@@ -10,7 +10,8 @@ import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 import { rueckrufePfad, rueckrufAusMailAnlegen } from '../../../operations/lib/rueckrufe.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad } from '../../../operations/lib/laden.mjs';
-import { ladenTodos, liegtZuLange, teileSpalte } from '../lib/laden.mjs';
+import { ladenTodos, liegtZuLange, teileSpalte, ladenMailZeilen } from '../lib/laden.mjs';
+import { ladenPostfachPfad, ladenMailsPfad } from '../../../operations/lib/laden-mails.mjs';
 
 const JETZT = new Date('2026-11-10T10:00:00Z');
 const vorTagen = n => new Date(JETZT.getTime() - n * 86400000).toISOString();
@@ -38,6 +39,17 @@ test('Rote Zeile: nur offene Eintraege in der roten Stufe, Mails und Aufgaben ge
   assert.equal(offen.length, 2); assert.equal(offen[0], m, 'rot zuerst'); assert.equal(inArbeit.length, 1);
 });
 
+test('Mail-Zeilen: Frist aus FRISTEN, beantwortete nie rot, Adresse bleibt draussen', () => {
+  const z = ladenMailZeilen([
+    { schluessel: 'mail:a', von: 'Person A', adresse: 'a@example.com', text: 'Frage', seit: vorTagen(3) },
+    { schluessel: 'mail:b', von: 'Person B', adresse: 'b@example.com', text: 'Frage 2', seit: vorTagen(3), beantwortetAm: vorTagen(1) },
+    { schluessel: 'mail:c', von: 'Person C', adresse: 'c@example.com', text: 'Neu', seit: vorTagen(0) },
+  ], { jetzt: JETZT });
+  assert.deepEqual(z.map(m => [m.schluessel, m.ton]), [['mail:a', 'crit'], ['mail:b', ''], ['mail:c', '']]);
+  assert.ok(z.every(m => !('adresse' in m)));
+  assert.match(liegtZuLange(z, []), /1 Mail /);
+});
+
 function umgebung({ personen = true } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-laden-api-'));
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
@@ -52,7 +64,7 @@ test('API: Uebersicht, Aufgabe anlegen, uebernehmen, zurueckgeben, erledigen', (
   const { dir, api } = umgebung();
   let d = api.ladenUebersicht();
   assert.deepEqual(d.personen, ['Person A', 'Person B']);
-  assert.deepEqual(d.mails, { eingerichtet: false, eintraege: [] });
+  assert.deepEqual(d.mails, { eingerichtet: false, stand: null, fehler: null, laeuft: false, eintraege: [] });
   assert.equal(d.todos.length, 1);
   assert.equal(d.todos[0].schluessel, 'rueckruf:mail-m1');
   assert.equal(d.todos[0].zustaendig, null);
@@ -71,6 +83,23 @@ test('API: Uebersicht, Aufgabe anlegen, uebernehmen, zurueckgeben, erledigen', (
   api.ladenAufgabeErledigen({ id });
   assert.deepEqual(api.ladenUebersicht().todos.map(t => t.schluessel), ['rueckruf:mail-m1'], 'Erledigtes erscheint nicht mehr');
   assert.deepEqual(JSON.parse(fs.readFileSync(ladenZustaendigPfad(dir), 'utf8')), {}, 'Zustaendigkeit der erledigten Aufgabe ist weg');
+});
+
+test('API: Mails aus dem Zwischenspeicher, Fehler und Stand gehen mit; frischer Speicher loest keinen Abruf aus', () => {
+  const { dir, api } = umgebung();
+  fs.writeFileSync(ladenPostfachPfad(dir), JSON.stringify({ host: 'imap.example.invalid', benutzer: 'laden@example.invalid', passwort: 'test-passwort' }), { mode: 0o600 });
+  fs.writeFileSync(ladenMailsPfad(dir), JSON.stringify({
+    abgerufenAm: JETZT.toISOString(), fehler: 'Kurzer Hinweis',
+    eintraege: [{ schluessel: 'mail:0123456789abcdef', von: 'Person A', adresse: 'a@example.com', text: 'Frage zum Läufer', seit: vorTagen(2) }],
+  }));
+  const d = api.ladenUebersicht();
+  assert.equal(d.mails.eingerichtet, true);
+  assert.equal(d.mails.fehler, 'Kurzer Hinweis');
+  assert.equal(d.mails.stand, JETZT.toISOString());
+  assert.equal(d.mails.laeuft, false);
+  assert.deepEqual(d.mails.eintraege.map(m => [m.schluessel, m.ton, m.zustaendig]), [['mail:0123456789abcdef', 'crit', null]]);
+  api.ladenZustaendigSetzen({ schluessel: 'mail:0123456789abcdef', wer: 'Person A' });
+  assert.equal(api.ladenUebersicht().mails.eintraege[0].zustaendig.wer, 'Person A');
 });
 
 test('API: Eingaben werden serverseitig geprueft, ohne Namensliste kein Uebernehmen', () => {

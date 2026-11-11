@@ -8,7 +8,7 @@
  *
  * Es gibt keinen Login je Person: "Uebernehmen" fragt "Wer?" und zeigt je Name einen Knopf (Namen aus
  * $TP_PRIVAT_DIR/laden-personen.json, nie im Repository). Mails und To-dos teilen sich EINEN Zeilen-
- * Renderer; der Mail-Abruf muss spaeter nur Daten liefern (operations/lib/laden.mjs ladenMails).
+ * Renderer; die Mails kommen aus operations/lib/laden-mails.mjs (nur lesender IMAP-Abruf, Zwischenspeicher).
  * Die Seite laedt alle 3 Minuten neu, solange sie offen ist - ausser jemand waehlt gerade einen Namen
  * oder tippt eine Aufgabe.
  */
@@ -23,7 +23,8 @@ import { liegtZuLange, teileSpalte } from '../lib/laden.mjs';
 const NEU_LADEN_MS = 3 * 60 * 1000;
 const ARTEN = ['Rolle schneiden', 'Rechnung kontrollieren', 'Angebot kontrollieren', 'Sonstiges'];
 
-const laden = { daten: null, laedt: false, timer: null, wer: null, formOffen: false, offen: {} };
+const NACHLADEN_MS = 8 * 1000; // laeuft ein Mail-Abruf, kurz danach noch einmal holen
+const laden = { daten: null, laedt: false, timer: null, nachladen: null, wer: null, formOffen: false, offen: {} };
 
 /** Beim Betreten und Verlassen der Route: Kiosk-Klasse, Auffrischen. Aufruf vor dem Zeichnen. */
 export function ladenRouteAbgleichen() {
@@ -32,7 +33,8 @@ export function ladenRouteAbgleichen() {
   if (an && !laden.timer) laden.timer = setInterval(ladenAuffrischen, NEU_LADEN_MS);
   if (!an && laden.timer) {
     clearInterval(laden.timer);
-    Object.assign(laden, { timer: null, daten: null, wer: null, formOffen: false });
+    clearTimeout(laden.nachladen);
+    Object.assign(laden, { timer: null, nachladen: null, daten: null, wer: null, formOffen: false });
   }
 }
 
@@ -44,6 +46,8 @@ async function holen() {
   if (state.route.view !== 'laden') return;
   merkeAufgeklappt();
   laden.daten = d;
+  // Der Abruf laeuft im Server im Hintergrund: sein Ergebnis kommt erst beim naechsten Holen.
+  if (d.mails?.laeuft && !laden.nachladen) laden.nachladen = setTimeout(() => { laden.nachladen = null; ladenAuffrischen(); }, NACHLADEN_MS);
   render();
 }
 
@@ -69,7 +73,7 @@ function zeile(e, { lesen }) {
     ? `<span class="laden-wer"><strong>Wer?</strong>${(laden.daten.personen || []).map(n => `<button type="button" class="btn laden-knopf" data-laden-wer="${esc(n)}" data-schluessel="${esc(e.schluessel)}">${esc(n)}</button>`).join('')}<button type="button" class="btn btn-ghost laden-knopf" data-laden-abbrechen>Abbrechen</button></span>`
     : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${esc(e.schluessel)}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>`}`;
   return `<li class="laden-zeile">
-    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p></div>
+    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}</div>
     <div class="laden-rechts">${rechts}</div>
   </li>`;
 }
@@ -104,13 +108,15 @@ export function viewLaden() {
   if (d.fehler) return kopf + stoerungState(d, 'Die Übersicht für den Laden');
   const lesen = istNurLesend();
   const zuLange = liegtZuLange(d.mails.eintraege, d.todos);
-  const mailsLeer = d.mails.eingerichtet ? 'Keine Mail offen.' : 'Das Postfach für den Laden ist noch nicht eingerichtet. Sobald es steht, erscheinen hier die Mails.';
+  const mailsLeer = !d.mails.eingerichtet ? 'Das Postfach für den Laden ist noch nicht eingerichtet. Sobald es steht, erscheinen hier die Mails.'
+    : d.mails.stand || d.mails.fehler ? 'Keine Mail offen.' : 'Die Mails werden abgerufen …';
+  const mailsFehler = d.mails.fehler ? `<div class="notice warn" role="status">${esc(d.mails.fehler)}</div>` : '';
   return `${kopf}
     ${zuLange ? `<div class="notice crit laden-rot" role="status">${esc(zuLange)}</div>` : ''}
     ${d.personen ? '' : `<div class="notice warn">Die Namen für „Übernehmen“ fehlen noch. Im privaten Ordner eine Datei <span class="mono">laden-personen.json</span> anlegen, zum Beispiel <span class="mono">["Name 1", "Name 2"]</span>.</div>`}
     ${d.bestelldatenFehlen ? '<div class="notice warn">Die Bestelldaten fehlen. Rückrufe und wartende Kunden erscheinen erst, wenn sie wieder da sind.</div>' : ''}
     <div class="laden-spalten">
-      ${spalte(d.mails.eintraege, { id: 'mails', titel: 'Mails', satz: 'Hier stehen die Mails an den Laden. Wer eine übernimmt, antwortet darauf.', leer: mailsLeer }, lesen)}
+      ${spalte(d.mails.eintraege, { id: 'mails', titel: 'Mails', satz: 'Hier stehen die Mails an den Laden. Wer eine übernimmt, antwortet darauf.', leer: mailsLeer, vorspann: mailsFehler }, lesen)}
       ${spalte(d.todos, {
     id: 'zutun', titel: 'Zu tun', satz: 'Hier stehen Rückrufe, Kunden, die sich nicht melden, und eigene Aufgaben.', leer: 'Nichts offen.',
     kopf: lesen || laden.formOffen ? '' : '<button type="button" class="btn laden-knopf" data-laden-neu>Aufgabe dazu</button>',

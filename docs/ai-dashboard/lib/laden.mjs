@@ -43,6 +43,21 @@ export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [] } =
   return sortiereTodos(liste);
 }
 
+/**
+ * Mails aus dem Abruf (operations/lib/laden-mails.mjs) als Zeilen. Schon aus dem Hauptpostfach
+ * beantwortete (beantwortetAm) werden nie gelb oder rot: sie liegen nicht, sie sind nur noch nicht
+ * aus dem Laden-Postfach verschwunden. Die Adresse des Absenders verlaesst den Server nicht.
+ */
+export function ladenMailZeilen(mails = [], { jetzt = new Date() } = {}) {
+  return mails.map((m) => {
+    const alterTage = tageSeit(m.seit, jetzt);
+    return {
+      schluessel: m.schluessel, von: m.von, text: m.text, seit: m.seit, alterTage, alter: alterText(alterTage),
+      ton: m.beantwortetAm ? '' : tonNachAlter(alterTage, ...FRISTEN.laden_mail), beantwortetAm: m.beantwortetAm || null,
+    };
+  });
+}
+
 /** Die eine rote Zeile oben: offene (von niemandem uebernommene) Eintraege in der roten Stufe. */
 export function liegtZuLange(mails = [], todos = []) {
   const rot = l => l.filter(e => !e.zustaendig && e.ton === 'crit').length;

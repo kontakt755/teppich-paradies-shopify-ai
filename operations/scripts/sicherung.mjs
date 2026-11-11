@@ -157,6 +157,8 @@ export const DIENSTE_ORDNER = 'dienste';
  */
 export const NICHT_GESICHERT = Object.freeze({
   'nachfassen/postfach.json': 'Zugang zum Firmenpostfach - neu anlegen',
+  'laden-postfach.json': 'Zugang zum Laden-Postfach - neu anlegen',
+  'laden-mails.json': 'Zwischenspeicher der Laden-Mails - wird beim naechsten Abruf neu aufgebaut',
   'ek-liste': 'Abgeleitete EK-Tabelle (58 MB, von Hand angestossen), nur gelesen fuer die Warnung im Bestelldialog - fehlt sie, steht dort "Rohertrag unbekannt"',
   'benutzer.json': 'Zugaenge zum Control Center - neu anlegen (npm run benutzer)',
   'dashboard-passwort.txt': 'Notpasswort des Control Centers - neu anlegen',
