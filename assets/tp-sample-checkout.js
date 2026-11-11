@@ -22,15 +22,11 @@
   var colors = [];
   var optionName = 'Farbe';
   var existingKeys = new Set();
-  var cartSampleCount = 0;
-  // Alle Muster im Warenkorb (fuer den Warenkorb-Link) - cartSampleCount ist
-  // bei Vinyl nur die Zahl der Vinyl-Muster, wenn die Vinyl-Grenze bindet.
+  // Warenkorbstand (core.getSampleState). Die Grenze haengt seit dem Lager-Bonus
+  // (w-325) auch an der Auswahl und wird je Frage neu gerechnet: grenze().
+  var cartState = { count: 0, vinylCount: 0, lagerCount: 0 };
+  // Alle Muster im Warenkorb (fuer den Warenkorb-Link).
   var cartTotalCount = 0;
-  var remaining = window.TPSampleCheckoutCore ? window.TPSampleCheckoutCore.MAX_SAMPLES : 3;
-  // Grenze fuer das geladene Produkt (core.getLimit): Gesamtgrenze oder bei
-  // Vinyl die engere Vinyl-Grenze.
-  var limitMax = remaining;
-  var limitWord = 'Muster';
   var submitting = false;
 
   function showError(message) {
@@ -85,17 +81,22 @@
     });
   }
 
-  // Uebernimmt den Warenkorbstand: schon bestellte Farben, Anzahl und die
-  // fuer dieses Produkt bindende Grenze.
+  // Uebernimmt den Warenkorbstand: schon bestellte Farben und Anzahl.
   function applyCart(cart) {
-    var state = core.getSampleState(cart);
-    var limit = core.getLimit(product, state);
-    existingKeys = state.keys;
-    cartSampleCount = limit.inCart;
-    cartTotalCount = state.count;
-    remaining = limit.remaining;
-    limitMax = limit.max;
-    limitWord = limit.word;
+    cartState = core.getSampleState(cart);
+    existingKeys = cartState.keys;
+    cartTotalCount = cartState.count;
+  }
+
+  // Bindende Grenze fuer Warenkorb + Auswahl (+ eine weitere Farbe): Gesamtgrenze,
+  // mit Lagermuster eins mehr, bei Vinyl die engere Vinyl-Grenze (core.getLimit).
+  function grenze(dazu) {
+    var auswahl = colors.filter(function (color) { return selected.has(color.value); });
+    return core.getLimit(product, cartState, dazu ? auswahl.concat(dazu) : auswahl);
+  }
+
+  function passt(color) {
+    return selected.size < grenze(color).remaining;
   }
 
   // Vinyl: Hinweis auf die Grenze von 2 je Bestellung.
@@ -119,7 +120,11 @@
   }
 
   function updateCount() {
-    var status = core.getSelectionStatus(cartSampleCount, selected.size, limitMax, limitWord);
+    var limit = grenze();
+    var bonusOffen = Boolean(limit.bonusOffen) && colors.some(function (color) {
+      return color.sampleSofort && core.isSelectable(color) && !selected.has(color.value) && !existingKeys.has(makeCardKey(color)) && passt(color);
+    });
+    var status = core.getSelectionStatus(limit.inCart, selected.size, limit.max, limit.word, bonusOffen);
     countEl.textContent = status.message;
     countEl.classList.toggle('tp-sample__count--limit', status.limitReached);
     submitEl.disabled = submitting || selected.size === 0;
@@ -129,7 +134,8 @@
       var value = card.getAttribute('data-sample-color');
       var checkbox = card.querySelector('input[type="checkbox"]');
       var alreadyInCart = existingKeys.has(makeCardKey({ value: value }));
-      var blockedByLimit = status.limitReached && !selected.has(value);
+      var color = colors.find(function (entry) { return entry.value === value; });
+      var blockedByLimit = !selected.has(value) && !passt(color);
       // Gesperrtes Muster (Mustervariante nicht verfuegbar): immer deaktiviert.
       var unavailable = card.getAttribute('data-sample-unavailable') !== null;
       checkbox.disabled = unavailable || alreadyInCart || blockedByLimit;
@@ -167,7 +173,7 @@
       checkbox.checked = false;
       return;
     }
-    if (selected.size >= remaining) {
+    if (!passt(color)) {
       checkbox.checked = false;
       return;
     }
@@ -301,13 +307,14 @@
         selected.forEach(function (value) {
           if (existingKeys.has(makeCardKey({ value: value }))) doppelt = true;
         });
-        var ueber = selected.size > remaining;
+        var limit = grenze();
+        var ueber = selected.size > limit.remaining;
         if (doppelt || ueber) {
           selected.clear();
           submitting = false;
           renderColors();
           showError(ueber
-            ? 'Im Warenkorb liegen inzwischen weitere Muster. Je Bestellung sind höchstens ' + limitMax + ' ' + limitWord + ' möglich – bitte wählen Sie erneut.'
+            ? 'Im Warenkorb liegen inzwischen weitere Muster. Je Bestellung sind höchstens ' + limit.max + ' ' + limit.word + ' möglich – bitte wählen Sie erneut.'
             : 'Ein ausgewähltes Muster liegt inzwischen schon im Warenkorb. Bitte prüfen Sie Ihre Auswahl.');
           return;
         }
