@@ -299,6 +299,30 @@ test('Packstation "Aus dem Lager genommen" (09.11.): beim Lieferanten bestellt, 
   assert.deepEqual(ev.map(e => [e.lineItemId, e.lagerId]), [['gid://shopify/LineItem/11', id]]);
 });
 
+test('Packstation "Ins Lager aufnehmen" (11.11.): Stueckzahl ins selbe Musterlager, alle Breiten der Farbe, zweites Mal addiert', async () => {
+  const { api } = umgebung();
+  // Schon angekommen: das Stueck fuer den Kunden liegt hier, ein weiteres ist uebrig.
+  await api.einkaufAuftragsstatusSetzen({ orderId: NEU, lineItemId: 'gid://shopify/LineItem/22', status: 'bestellt' }, MONA);
+  const kunde = () => api.kundenMusterPacken().kunden.find(k => k.muster.some(m => m.lineItemId === 'gid://shopify/LineItem/11'));
+  const ruf = (lineItemId, anzahl, wer = MONA) => api.kundenMusterPackenSchreiben({ aktion: 'ins-lager', packSchluessel: api.kundenMusterPacken().kunden.find(k => k.muster.some(m => m.lineItemId === lineItemId)).packSchluessel, lineItemId, anzahl }, wer);
+  await assert.rejects(ruf('gid://shopify/LineItem/22', 1, { ...MONA, rolle: 'lesen' }), e => e.status === 403);
+  for (const falsch of [0, 1.5, 100, 'x']) await assert.rejects(ruf('gid://shopify/LineItem/22', falsch), e => e.status === 400);
+  await assert.rejects(api.kundenMusterPackenSchreiben({ aktion: 'ins-lager', packSchluessel: kunde().packSchluessel, lineItemId: 'gid://shopify/LineItem/999', anzahl: 1 }, MONA), e => e.status === 409);
+  assert.equal(api.einkaufMusterlager().eintraege.length, 0, 'abgelehnte Aufrufe schreiben nichts');
+
+  const r = await ruf('gid://shopify/LineItem/22', 2);
+  assert.deepEqual([r.ok, r.anzahl, r.gesamt], [true, 2, 2]);
+  const [e] = api.einkaufMusterlager().eintraege;
+  assert.deepEqual([e.titel, e.farbe, e.art, e.anzahl, e.schluessel], ['Testteppich Teppichboden', 'Blau', 'einzel', 2, ['TESTTEP4_102']]);
+  // Ohne Angabe 1 Stueck; dieselbe Farbe steht nicht zweimal im Lager.
+  assert.equal((await ruf('gid://shopify/LineItem/22')).gesamt, 3);
+  // Grau hat zwei Breiten: beide Artikelnummern, wie beim Einlagern aus der Produktsuche.
+  await ruf('gid://shopify/LineItem/11', 1);
+  const grau = api.einkaufMusterlager().eintraege.find(x => x.farbe === 'Grau');
+  assert.deepEqual(grau.schluessel, ['TESTTEP4_101', 'TESTTEP5_101']);
+  assert.equal(api.einkaufMusterlager().eintraege.length, 2);
+});
+
 test('Shop-Hinweis "Muster sofort lieferbar": nur mit Freigabe, nur bei Aenderung, bei 0 sofort weg', async () => {
   const dir = privat();
   let wert = null;

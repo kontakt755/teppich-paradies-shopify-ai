@@ -1,0 +1,6 @@
+## 2026-11-11 · Muster packen: „Ins Lager aufnehmen…“ mit Stückzahl
+
+- **Geaendert:** Jede Musterzeile der Packstation hat neben „Nur diesen nachdrucken“ den Knopf „Ins Lager aufnehmen…“. Er fragt die Stückzahl ab (Vorgabe 1, 1 bis 99) und bucht die Farbe als Einzelmuster ins bestehende Musterlager (`POST kunden/muster-packen`, Aktion `ins-lager`, schreibt über `einkaufMusterlagerSetzen` in `musterlager.json`). Die Artikelnummer kommt vom Server aus der Bestellposition, dazu wie beim Einlagern aus der Produktsuche alle Breiten der Farbe. Liegt die Farbe schon im Lager, kommt die Stückzahl dazu. Der Lagerplatz wird wie bisher unter Bestellen › Musterlager gepflegt. Der Shop-Hinweis „Muster sofort lieferbar“ zieht wie nach jeder Lageränderung von selbst nach.
+- **Getestet:** neuer Test in `tests/musterlager-api.test.mjs` (Rolle „lesen“ 403, falsche Stückzahl 400, fremde Position 409, 2 Stück, zweites Mal addiert, zwei Breiten), `npm run -s pruefen`, Klickstrecke gegen die Datenkopie.
+- **Risiken/Annahmen:** Der Knopf steht an jeder Zeile mit eindeutigem Aufkleber, nicht nur bei „angekommen“ – ein übriges Stück kann es zu jeder Farbe geben. Ein noch offenes Muster derselben Farbe in einer anderen Bestellung bekommt das Lagerstück danach zugeteilt (bestehende Lagerregel).
+- **Nächste Stufe:** keine.

@@ -240,6 +240,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           orderId: a.id, orderName: text(a.name), lineItemId: z.lineItemId,
           anzahl: Number.isInteger(z.anzahl) ? z.anzahl : null, etikett: z.etikett, fehlt: z.fehlt,
           bestellt: { titel: text(p.titel), farbe: text(p.farbe) },
+          // Produkt in der Produktsuche: "Ins Lager aufnehmen" holt darueber alle Breiten der Farbe.
+          produktHandle: text(z.produktHandle) || null,
           // Nachtraeglich zur Bestellung hinzugefuegt (Bestellbearbeitung in Shopify), sonst null.
           nachbestelltAm: belegt(p.nachbestelltAm) && !Number.isNaN(new Date(p.nachbestelltAm).getTime()) ? text(p.nachbestelltAm) : null,
           vorher: v,
