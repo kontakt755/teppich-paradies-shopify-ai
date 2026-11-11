@@ -5,6 +5,7 @@
  *   laden-personen.json     ["Name", ...]  - wer sich im Laden kuemmern kann (von Hand gepflegt, nur gelesen)
  *   laden-zustaendig.json   { "<schluessel>": { wer, seit } }  - wer einen Eintrag uebernommen hat
  *   laden-aufgaben.json     { version, aufgaben: [{ id, art, text, erstelltAm, erledigtAm }] }  - von Hand angelegt
+ * Dazu laden-postfach.json (Zugang) und laden-mails.json (Zwischenspeicher): siehe laden-mails.mjs.
  *
  * Es gibt keinen Login je Person (gemeinsamer Zugang): der Name kommt aus der Liste und wird per
  * Knopf gewaehlt. Gelesen wird wie in operations/lib/fehlermeldungen.mjs: nur eine FEHLENDE Datei
@@ -15,6 +16,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { naechsterSchritt } from './kundenfaelle.mjs';
+import { leseLadenZugang, ladenPostfachPfad, leseMailCache, abrufenUndSpeichern } from './laden-mails.mjs';
 
 export const AUFGABE_ARTEN = Object.freeze(['Rolle schneiden', 'Rechnung kontrollieren', 'Angebot kontrollieren', 'Sonstiges']);
 export const AUFGABE_TEXT_MAX = 200;
@@ -119,11 +121,31 @@ export function kundeWartet(bestellzeilen = [], { jetzt = new Date() } = {}) {
     }));
 }
 
+/** Zwischenspeicher aelter als das: ein neuer Abruf im Hintergrund. */
+const MAIL_FRISCH_MS = 5 * 60 * 1000;
+let mailAbrufLaeuft = false;
+
 /**
- * Mails fuer den Laden. Das Postfach laden@ und die Gmail-Filter gibt es noch nicht; bis der Abruf
- * steht, liefert diese Naht "nicht eingerichtet" und keine Eintraege. Spaeter kommen hier Eintraege
- * der Form { schluessel: 'mail:<id>', von, text, seit } dazu - die Ansicht braucht keine Aenderung.
+ * Mails fuer den Laden (operations/lib/laden-mails.mjs). Bleibt synchron: liefert immer den
+ * Zwischenspeicher und stoesst bei Bedarf EINEN Abruf im Hintergrund an - die Ansicht laedt per Timer
+ * neu und zeigt beim naechsten Mal das Ergebnis. Ohne Zugangsdatei: nicht eingerichtet. Ein Fehler
+ * wirft nie, er steht als `fehler` (kurzer Satz fuer die Ansicht) im Ergebnis.
  */
-export function ladenMails() {
-  return { eingerichtet: false, eintraege: [] };
+export function ladenMails(dir, { jetzt = new Date(), abruf = abrufenUndSpeichern } = {}) {
+  const wurzel = privat(dir);
+  const z = leseLadenZugang(ladenPostfachPfad(wurzel));
+  if (z.fehlt) return { eingerichtet: false, eintraege: [] };
+  if (!z.zugang) return { eingerichtet: true, eintraege: [], stand: null, fehler: z.hinweis, laeuft: false };
+  let cache = null;
+  let fehler = null;
+  try { cache = leseMailCache(wurzel); } catch { fehler = 'Der Zwischenspeicher der Mails ist beschädigt und wird neu aufgebaut.'; }
+  const stand = cache?.abgerufenAm ? new Date(cache.abgerufenAm).getTime() : NaN;
+  if (!mailAbrufLaeuft && !(jetzt.getTime() - stand < MAIL_FRISCH_MS)) {
+    mailAbrufLaeuft = true;
+    Promise.resolve().then(() => abruf(wurzel, { jetzt: new Date() })).catch(() => {}).finally(() => { mailAbrufLaeuft = false; });
+  }
+  return {
+    eingerichtet: true, eintraege: Array.isArray(cache?.eintraege) ? cache.eintraege : [],
+    stand: cache?.abgerufenAm || null, fehler: fehler || cache?.fehler || null, laeuft: mailAbrufLaeuft,
+  };
 }

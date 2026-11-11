@@ -90,7 +90,7 @@ import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as 
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
-import { ladenTodos } from '../docs/ai-dashboard/lib/laden.mjs';
+import { ladenTodos, ladenMailZeilen } from '../docs/ai-dashboard/lib/laden.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -4894,11 +4894,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const modell = ladeBestellModell(dir);
       const rueckrufe = modell ? this.kundenRueckrufe().zeilen || [] : [];
       const wartet = modell ? kundeWartet(bestellzeilenMitSchritt(dir, modell), { jetzt }) : [];
-      const mails = ladenMails();
+      const mails = ladenMails(dir, { jetzt });
       const mit = e => ({ ...e, zustaendig: zustaendig[e.schluessel] || null });
       return {
         verfuegbar: true, personen, jetzt: jetzt.toISOString(),
-        mails: { eingerichtet: mails.eingerichtet, eintraege: mails.eintraege.map(mit) },
+        mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: ladenMailZeilen(mails.eintraege, { jetzt }).map(mit) },
         todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)) }, { jetzt }).map(mit),
         // Ohne Bestelldaten fehlen nur die Rueckrufe und wartenden Kunden - von Hand angelegte Aufgaben gibt es trotzdem.
         bestelldatenFehlen: !modell,

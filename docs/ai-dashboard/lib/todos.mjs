@@ -44,6 +44,7 @@ export const FRISTEN = Object.freeze({
   service: [1, 3],       // neue Service-Anfrage, noch niemand hat sich gemeldet
   kunde_antwortet: [14, 21], // Ansicht Laden: Kunde ist dran (Empfang, Rueckmeldung) und meldet sich nicht
   laden_aufgabe: [1, 2], // Ansicht Laden: von Hand angelegte Aufgabe (Rolle schneiden, Rechnung kontrollieren ...)
+  laden_mail: [1, 2],    // Ansicht Laden: Mail an das Laden-Postfach, noch nicht beantwortet
 });
 
 // 'alles' ist die Vereinigung aller Bereiche (Inhaber-Chip "Alles"). 'inhaber' bleibt die

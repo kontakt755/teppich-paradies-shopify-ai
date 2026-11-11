@@ -3174,6 +3174,27 @@ Wie bei den anderen Ablagen gilt nur eine **fehlende** Datei als leer; beschädi
 `POST /api/laden/zustaendig`, `/api/laden/aufgabe`, `/api/laden/aufgabe-erledigt` (write-Liste, Rolle „lesen“: 403;
 Eingaben serverseitig geprüft). Mails und To-dos teilen sich einen Zeilen-Renderer (`ansichten/laden.mjs`).
 
-**Mails: Abruf folgt.** Das Postfach laden@ und die Filter gibt es noch nicht. `ladenMails()` liefert bis dahin
-`{ eingerichtet: false, eintraege: [] }`; die Spalte zeigt dafür einen Hinweis. Der spätere Abruf liefert nur
-Einträge `{ schluessel: 'mail:<id>', von, text, seit, ton, alterTage, alter, art }`; an der Ansicht ändert sich nichts.
+**Mails (seit 2026-11-11): nur lesender IMAP-Abruf.** Das Laden-Postfach ist ein gewöhnliches IMAP-Postfach bei
+einem Hoster (kein Gmail); das Hauptpostfach leitet per Filter dorthin weiter. Zwei weitere Dateien im Privatordner
+(Logik `operations/lib/laden-mails.mjs`):
+
+| Datei | Inhalt |
+|---|---|
+| `laden-postfach.json` | `{ host, port (Standard 993), benutzer, passwort }`, von Hand angelegt, `chmod 600`. Fehlt sie: „nicht eingerichtet“. Für andere lesbar oder beschädigt: keine Abfrage, die Ansicht zeigt eine Zeile über der Mail-Spalte. |
+| `laden-mails.json` | Zwischenspeicher `{ abgerufenAm, eintraege, fehler }`, nie mit Passwort; bei einem Fehler bleiben die bisherigen Einträge stehen |
+
+Der Abruf sendet ausschließlich `LOGIN`, `EXAMINE INBOX` (der Server muss `[READ-ONLY]` melden, sonst Abbruch),
+`UID SEARCH SINCE <14 Tage> UNANSWERED UNDELETED`, `UID FETCH … BODY.PEEK[HEADER.FIELDS (FROM SUBJECT MESSAGE-ID)]`
+für die neuesten 50 und `LOGOUT` – kein `STORE`, `COPY`, `EXPUNGE`, `APPEND`; die Mails bleiben ungelesen. Schlüssel
+`mail:<16 Hex aus sha1(Message-ID)>`, Betreff und Absender werden dekodiert (RFC 2047), Betreff auf 140 Zeichen gekürzt.
+
+`ladenMails(dir)` bleibt synchron: es liefert den Zwischenspeicher und stößt, wenn er älter als 5 Minuten ist (oder
+fehlt) und kein Abruf läuft, genau einen Abruf im Hintergrund an (Wächter im Modul, Fehler werfen nie). Die Ansicht
+holt nach 8 Sekunden noch einmal, solange `mails.laeuft` gesetzt ist, sonst alle 3 Minuten wie bisher. Frist:
+`FRISTEN.laden_mail` (1 gelb, 2 rot).
+
+**Schon aus dem Hauptpostfach beantwortet.** Antwortet der Laden aus dem Gmail-Hauptpostfach, sieht das Laden-Postfach
+das nicht. Ist der Gmail-Zugang (`nachfassen/postfach.json`) vorhanden, sucht der Abruf in einer nur lesenden Sitzung
+(`mitNurLesen`) in „Gesendet“ nach Mails an die Absender und setzt `beantwortetAm`. Solche Einträge zeigen den ruhigen
+Hinweis „Schon aus dem Hauptpostfach beantwortet“ und zählen nie als „liegt zu lange“. Scheitert dieser Teil, bleibt
+der Abruf gültig (ohne Markierung). Die Absenderadresse verlässt den Server nicht (`ladenMailZeilen`).

@@ -84,5 +84,5 @@ test('Kunde antwortet nicht: nur wenn laut Zeitleiste der Kunde dran ist, nicht 
 });
 
 test('Mails: ohne Postfach nicht eingerichtet und leer', () => {
-  assert.deepEqual(ladenMails(), { eingerichtet: false, eintraege: [] });
+  assert.deepEqual(ladenMails(fs.mkdtempSync(path.join(os.tmpdir(), 'cc-laden-leer-'))), { eingerichtet: false, eintraege: [] });
 });
