@@ -32,7 +32,7 @@ class Element {
     this.value = value; this.tagName = tagName; this.textContent = ''; this.hidden = false;
     this.checked = false; this.options = [{}]; this.attributes = new Map(); this.listeners = new Map(); this.children = [];
     this.classes = new Set();
-    this.classList = { add: name => this.classes.add(name), remove: name => this.classes.delete(name), toggle: (name, on) => on ? this.classes.add(name) : this.classes.delete(name), contains: name => this.classes.has(name) };
+    this.classList = { add: name => this.classes.add(name), remove: name => this.classes.delete(name), toggle: (name, on) => on ? this.classes.add(name) : this.classes.delete(name) };
     this.parentNode = { querySelector: () => new Element('', 'SPAN') };
   }
   get firstChild() { return this.children[0]; }
@@ -74,7 +74,7 @@ function calculator({ art = 'meter', width = '250', length = '1120', rollWidth =
     document: { createElement: tag => new Element('', tag.toUpperCase()), createTextNode: textContent => ({ textContent }) },
   });
   const names = ['artMode', 'selectedWidth', 'getEffectiveLengthCm', 'bahnenAktiv', 'bahnenLoeschen', 'zeigeBahnen',
-    'markInvalid', 'laengenfehlerMelden', 'zeigeGegenprobe', 'maxRaumBreite', 'maxFarbBreite', 'laengeAngehoben', 'fmt', 'fmtMeter', 'rateOf',
+    'markInvalid', 'zeigeGegenprobe', 'maxRaumBreite', 'maxFarbBreite', 'laengeAngehoben', 'fmt', 'fmtMeter', 'rateOf',
     'leisteHoehe', 'leisteStufe', 'leisteStufeFuer', 'leisteVariante', 'leisteMaterial', 'leisteStreifen', 'extrasAllowed', 'farbeText', 'updateExtras'];
   vm.runInContext(names.map(fn).join('\n'), context);
   const tierStart = source.indexOf('  var leisteStufen = (function () {');
