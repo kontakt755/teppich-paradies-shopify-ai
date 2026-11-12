@@ -286,3 +286,16 @@ test('Mail-Zeilen: Lieferantenpost ist reine Info (nie rot, nur Gesehen) - ausse
   assert.deepEqual([kunde.nurInfo, kunde.ton], [false, 'crit']);
   assert.equal(liegtZuLange([ab], []), null, 'Info zaehlt nie als "liegt zu lange"');
 });
+
+test('Mail-Zeilen: eigene Post und Weiterleitungs-Bestaetigung fallen weg, Unzustellbar-Meldung bleibt als Info', () => {
+  const m = (schluessel, adresse) => ({ schluessel, von: 'Absender', adresse, text: 'Betreff', seit: vorTagen(6) });
+  const zeilen = ladenMailZeilen([
+    m('mail:a', 'kontakt@teppich-paradies.net'), m('mail:b', 'verkauf@tp-oranienburg.de'), m('mail:c', 'forwarding-noreply@google.com'),
+    m('mail:d', 'mailer-daemon@hoster.example'), m('mail:e', 'testkunde@example.org'),
+  ], { jetzt: JETZT });
+  assert.deepEqual(zeilen.map(z => z.schluessel), ['mail:d', 'mail:e']);
+  assert.deepEqual([zeilen[0].nurInfo, zeilen[0].ton, zeilen[0].art], [true, '', 'Unzustellbar']);
+  assert.match(zeilen[0].infoText, /nicht angekommen/);
+  assert.equal(zeilen[1].ton, 'crit');
+  assert.ok(zeilen.every(z => !('adresse' in z)), 'Adresse verlaesst den Server nicht');
+});

@@ -82,6 +82,12 @@ export const mailArt = betreff => (PORTAL.test(betreff || '') ? 'Portalanfrage' 
 // Eine Antwort auf unsere Mail (Rueckfrage des Lieferanten) braucht jemanden - ein automatisches Dokument nie.
 const ANTWORT = /^\s*(re|aw|wg|fwd?|antwort)\s*:/i;
 
+// Nie Sache des Ladens (Benutzer 12.11.2026): eigene Mails, die ueber die Weiterleitung zurueckkommen, und
+// Googles Bestaetigung der Weiterleitung. Darauf antwortet niemand, sie wurden sonst nach einem Werktag rot.
+const EIGENE_POST = /@(teppich-paradies\.net|tp-oranienburg\.de)$|^forwarding-noreply@google\.com$/i;
+// Unzustellbar-Meldung: bleibt sichtbar (eine Mail von uns kam nicht an), aber als Info - antworten kann man darauf nicht.
+const UNZUSTELLBAR = /^(mailer-daemon|postmaster)@/i;
+
 /** Ab so vielen Werktagen ohne Antwort ist eine Mail rot (Werkbank w-352: "nach einem Werktag"). */
 export const MAIL_ROT_WERKTAGE = 1;
 
@@ -92,18 +98,20 @@ export const MAIL_ROT_WERKTAGE = 1;
  * erledigt" zaehlt). Das Alter zaehlt in Werktagen. Die Adresse des Absenders verlaesst den Server nicht.
  */
 export function ladenMailZeilen(mails = [], { jetzt = new Date() } = {}) {
-  return mails.map((m) => {
+  return mails.filter(m => !EIGENE_POST.test(m.adresse || '')).map((m) => {
     const alterTage = tageSeit(m.seit, jetzt);
     const werktage = werktageSeit(m.seit, jetzt);
+    const unzustellbar = UNZUSTELLBAR.test(m.adresse || '');
     const art = mailArt(m.text);
     // Lieferantenpost (Benutzer 12.11.2026): Bestaetigungen und Avise sind reine Info - nie rot, nur "Gesehen".
     // shortcut: erkannt an "Absender ist Lieferant und Betreff ist keine Antwort"; eine neue Frage des Lieferanten
     // ohne "Re:/AW:" steht damit auch als Info da. Aendern, wenn so eine Frage einmal liegen bleibt.
-    const nurInfo = Boolean(m.lieferantenpost) && !art && !ANTWORT.test(m.text || '');
+    const nurInfo = unzustellbar || (Boolean(m.lieferantenpost) && !art && !ANTWORT.test(m.text || ''));
     const beantwortet = art || nurInfo ? null : m.beantwortetAm || null;
     const rot = !nurInfo && !beantwortet && werktage !== null && werktage >= MAIL_ROT_WERKTAGE;
     return {
-      schluessel: m.schluessel, art: nurInfo ? 'Lieferant' : art, nurInfo, von: m.von, text: m.text, seit: m.seit, alterTage, werktage,
+      schluessel: m.schluessel, art: unzustellbar ? 'Unzustellbar' : nurInfo ? 'Lieferant' : art, nurInfo,
+      infoText: unzustellbar ? 'Eine Mail von uns ist nicht angekommen. Bitte Adresse prüfen und neu senden.' : null, von: m.von, text: m.text, seit: m.seit, alterTage, werktage,
       alter: werktage ? mehrzahl(werktage, 'Werktag', 'Werktage') : alterText(alterTage),
       ton: rot ? 'crit' : '', beantwortetAm: beantwortet, nurHaken: Boolean(art),
     };
