@@ -59,9 +59,16 @@ ungefragt zusammen - was dabei verloren geht, weiss danach niemand.
      (dieselbe Arbeitskopie); sonst im Uebergabetext den Branch nennen, die
      neue Sitzung checkt ihn in ihrer eigenen Arbeitskopie aus.
    - Erst wenn das Ergebnis den Start meldet: Titel der neuen Sitzung als Link
-     nennen und `mcp__ccd_session_mgmt__archive_session` mit `"self"` aufrufen.
-     Startet sie nicht, bleibt diese Sitzung offen und der Block aus Schritt 4
-     ist die Uebergabe.
+     nennen, sie mit `mcp__ccd_session_mgmt__detach_session` abloesen (sonst
+     wird sie als Nebensitzung mit dieser archiviert oder blockiert das
+     Archivieren) und dann `mcp__ccd_session_mgmt__archive_session` mit
+     `"self"` aufrufen. Wird das Abloesen abgelehnt (geteilte Arbeitskopie),
+     diese Sitzung offen lassen und das sagen. Startet die neue nicht, bleibt
+     diese Sitzung offen und der Block aus Schritt 4 ist die Uebergabe.
+   - Nicht das Refresh-Panel der Mod `handoff` („Start new chat“) nehmen: es
+     legt den Text nur ins Eingabefeld eines neuen Chats - ohne geerbten
+     Modus, ohne Archivieren, und die Mod `brain-dump` fragt dort „Shape it?“
+     (kuerzt die Uebergabe per kleinem Modell; wenn doch: „Send as is“).
    - Nicht archivieren, wenn diese Sitzung angepinnt ist oder noch eine Frage
      an den Benutzer offen hat.
 
