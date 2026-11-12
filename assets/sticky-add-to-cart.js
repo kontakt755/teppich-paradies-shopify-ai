@@ -266,6 +266,9 @@ class StickyAddToCartComponent extends Component {
         this.#ekKaufweg = kaufweg;
         kaufweg.addEventListener('input', () => this.#syncTargetState(), { signal: this.#abortController.signal });
       }
+      // Wechsel zu einer Anfrage-Form verbirgt nur den Konfigurator, nicht den Knopf.
+      const konfig = kaufweg.querySelector('[data-konfig]');
+      if (konfig) this.#targetStateObserver.observe(konfig, { attributes: true, attributeFilter: ['hidden'] });
     }
     this.#syncTargetState();
   }

@@ -173,3 +173,9 @@ test('Konfigurator: Leiste kennt das fehlende Massfeld', () => {
   // Klick geht nie an den verborgenen Knopf
   assert.match(sticky, /const ekFeld = this\.#ekMassFeld\(target\);\s*\n\s*if \(ekFeld\) \{[\s\S]*?return;/);
 });
+
+// Codex-Review #2182: Wechsel zu einer Anfrage-Form aendert nur [data-konfig],
+// nicht den Knopf - die Leiste muss das trotzdem mitbekommen.
+test('Konfigurator: Leiste beobachtet hidden am Konfigurator', () => {
+  assert.match(sticky, /kaufweg\.querySelector\('\[data-konfig\]'\);\s*\n\s*if \(konfig\) this\.#targetStateObserver\.observe\(konfig, \{ attributes: true, attributeFilter: \['hidden'\] \}\);/);
+});
