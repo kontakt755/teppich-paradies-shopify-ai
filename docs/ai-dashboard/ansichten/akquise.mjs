@@ -166,7 +166,7 @@ function alleFirmen(d, faelligIds) {
 
 function ausschreibungen(a, tag) {
   const kopf = `<div class="card-head"><h2>Öffentliche Ausschreibungen</h2>${a ? `<span class="small muted">geprüft ${esc(fmtDateTime(a.geprueftAm))}</span>` : ''}</div>
-    <p class="small">Öffentliche Aufträge für Bodenbeläge – meist zu groß für uns. <b>Nur ansehen</b>, die Abgabe macht der Inhaber.</p>`;
+    <p class="small">Öffentliche Aufträge für Bodenbeläge. „Öffentliche Ausschreibung“ und „Beschränkte Ausschreibung“ sind die kleineren, EU-Verfahren sind meist zu groß für uns. <b>Nur ansehen</b>, die Abgabe macht der Inhaber.</p>`;
   if (!a) return `<section class="card akq-aus">${kopf}<p class="small muted">Die wöchentliche Suche ist noch nicht gelaufen.</p></section>`;
   const t = [...(a.treffer || [])].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')));
   if (!t.length) return `<section class="card akq-aus">${kopf}<p class="small muted">Zurzeit keine passenden Ausschreibungen im Umkreis.</p></section>`;
@@ -179,6 +179,7 @@ function ausschreibungen(a, tag) {
     return `<li><span class="akq-ampel ${ampel}" aria-hidden="true"></span><div>
       <div><b>${esc(titelKurz(x.titel))}</b>${neu.has(x.id) ? ' <span class="badge status freigabe">neu</span>' : ''}</div>
       <div class="small muted">${[x.auftraggeber, x.ort].filter(Boolean).map(esc).join(' · ')}</div>
+      ${x.verfahren || x.wert || x.umfang ? `<div class="small">${[x.verfahren, x.wert ? `geschätzt ${Math.round(x.wert).toLocaleString('de-DE')} €` : '', x.umfang].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
       <div class="small">${esc(hinweis)}${link ? ` · <a href="${esc(link)}" target="_blank" rel="noopener">Bekanntmachung</a>` : ''}</div></div></li>`;
   }).join('')}</ul></section>`;
 }
