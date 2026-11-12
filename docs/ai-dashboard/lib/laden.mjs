@@ -12,6 +12,7 @@
  */
 import { FRISTEN, tageSeit, tonNachAlter, alterText, sortiereTodos, rueckrufFaellig, alsTag } from './todos.mjs';
 import { werktageSeit } from './beschaffung.mjs';
+import { selbstStand } from './lieferweg.mjs';
 
 const mehrzahl = (n, eins, viele) => `${n} ${n === 1 ? eins : viele}`;
 
@@ -20,8 +21,9 @@ const mehrzahl = (n, eins, viele) => `${n} ${n === 1 ? eins : viele}`;
  * @param {object[]} q.rueckrufe    Zeilen von /api/kunden/rueckrufe (mit status, wiedervorlage)
  * @param {object[]} q.kundeWartet  operations/lib/laden.mjs kundeWartet()
  * @param {object[]} q.aufgaben     laden-aufgaben.json
+ * @param {object[]} q.zuschnitte   zuschnitte() - Ware aus eigener Lagerrolle, die noch zu schneiden ist
  */
-export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [] } = {}, { jetzt = new Date() } = {}) {
+export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [], zuschnitte = [] } = {}, { jetzt = new Date() } = {}) {
   const heute = alsTag(jetzt);
   const zeile = (z) => {
     const alterTage = tageSeit(z.seit, jetzt);
@@ -37,11 +39,39 @@ export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [] } =
       schluessel: `fall:${w.orderId}`, art: 'Kunde antwortet nicht', von: w.kundenname,
       text: w.text || 'Wir warten auf den Kunden', seit: new Date(jetzt.getTime() - w.tage * 86400000).toISOString(), frist: FRISTEN.kunde_antwortet,
     })),
+    // Gleiche Frist wie eine von Hand angelegte "Rolle schneiden": nach einem Tag bernstein, nach zwei rot.
+    ...zuschnitte.map(s => zeile({
+      schluessel: `schnitt:${s.orderId}:${s.lineItemId}`, art: 'Zuschneiden', von: [s.orderName, s.kundenname].filter(Boolean).join(' · ') || null,
+      text: s.text, seit: s.seit, frist: FRISTEN.laden_aufgabe, schnitt: { orderId: s.orderId, lineItemId: s.lineItemId },
+    })),
     ...aufgaben.filter(a => !a.erledigtAm).map(a => zeile({
       schluessel: `aufgabe:${a.id}`, art: a.art, von: null, text: a.text, seit: a.erstelltAm, frist: FRISTEN.laden_aufgabe, aufgabeId: a.id,
     })),
   ];
   return sortiereTodos(liste);
+}
+
+const BEZAHLT = ['PAID', 'PARTIALLY_REFUNDED']; // wie lib/todos.mjs: unbezahlt ist der Kunde dran, nicht die Schere
+
+/**
+ * "Zuschneiden" (Benutzer 12.11.2026): bezahlte Bestellungen mit Ware aus eigener Lagerrolle (lib/lieferweg.mjs,
+ * Regeldatei lagerware.json), die noch nicht als zugeschnitten abgehakt ist. Dieselbe Regel wie "Aus eigenem Lager
+ * zuschneiden" unter Bestellen (selbstStand) - hier nur als Zeile fuer den Laden, eine je Position.
+ * @param {object[]} auftraege  Bestellmodell (auftraege mit positionen, lagerware vom Server markiert)
+ * @param {(orderId: string, lineItemId: string) => object|null} eintragVon  Auftragsfluss-Eintrag der Position
+ */
+export function zuschnitte(auftraege = [], eintragVon = () => null) {
+  return auftraege
+    .filter(a => !a.testbestellung && !a.storniert && BEZAHLT.includes(String(a.bezahlt)))
+    .flatMap(a => (a.positionen || [])
+      .filter(p => selbstStand(p, eintragVon(a.id, p.lineItemId)) === 'zuschneiden')
+      .map((p) => {
+        const menge = p.bestellmenge?.text && !/ungekl/i.test(p.bestellmenge.text) ? p.bestellmenge.text : (p.menge ? `Menge ${p.menge}` : null);
+        return {
+          orderId: a.id, lineItemId: p.lineItemId, orderName: a.name || null, kundenname: a.details?.kunde?.name || null, seit: a.datum,
+          text: [p.titel, p.farbe, menge].filter(Boolean).join(' · ').slice(0, 200) || 'Ware aus eigener Lagerrolle',
+        };
+      }));
 }
 
 /** Portal-Anfragen (11880, Kleinanzeigen) und Rueckrufbitten: eine Antwortmail loest sie nie, nur der Haken zaehlt. */

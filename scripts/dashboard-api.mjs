@@ -90,7 +90,7 @@ import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as 
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
-import { ladenTodos, ladenMailZeilen, wareUnterwegs, wareAngekommen } from '../docs/ai-dashboard/lib/laden.mjs';
+import { ladenTodos, ladenMailZeilen, wareUnterwegs, wareAngekommen, zuschnitte } from '../docs/ai-dashboard/lib/laden.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -4925,6 +4925,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const modell = ladeBestellModell(dir);
       const rueckrufe = modell ? this.kundenRueckrufe().zeilen || [] : [];
       const wartet = modell ? kundeWartet(bestellzeilenMitSchritt(dir, modell), { jetzt }) : [];
+      // Zuschneiden: derselbe Auftragsfluss-Stand wie unter Bestellen; "Zugeschnitten" dort oder hier nimmt die Zeile weg.
+      const flussStand = modell ? leseAktuellenStatus(auftragsstatusPfad(dir), modell) : {};
+      const schnitte = modell ? zuschnitte(modell.auftraege, (o, l) => flussStand[positionKey(o, l)] || null) : [];
       const mails = ladenMails(dir, { jetzt });
       const mit = e => ({ ...e, zustaendig: zustaendig[e.schluessel] || null });
       const telefonisch = leseLadenTelefonisch(ladenTelefonischPfad(dir));
@@ -4946,7 +4949,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ware,
         verfuegbar: true, personen, jetzt: jetzt.toISOString(),
         mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: ladenMailZeilen(mails.eintraege, { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit) },
-        todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)) }, { jetzt }).map(mit),
+        todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)), zuschnitte: schnitte }, { jetzt }).map(mit),
         // Ohne Bestelldaten fehlen nur die Rueckrufe und wartenden Kunden - von Hand angelegte Aufgaben gibt es trotzdem.
         bestelldatenFehlen: !modell,
       };
