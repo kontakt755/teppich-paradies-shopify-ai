@@ -105,7 +105,7 @@ function wareAbschnitt(w, lesen) {
       </li>`).join('')}</ul>`;
   return `<section class="laden-spalte laden-ware" aria-labelledby="laden-ware">
     <div class="laden-spalte-kopf"><h2 id="laden-ware">Ware unterwegs</h2></div>
-    <p class="small muted">Hier steht, von welchem Lieferanten in den letzten 7 Tagen eine Rechnung gekommen ist. Dann ist die Ware meist schon verladen.${w.stand ? ` Stand: ${esc(since(w.stand))}` : ''}</p>
+    <p class="small muted">Hier steht, welche Ware in den letzten 7 Tagen beim Kunden oder beim Kettler angekommen ist und von welchem Lieferanten eine Rechnung gekommen ist (dann ist die Ware meist schon verladen). Lieferungen in den Laden stehen hier nicht.${w.stand ? ` Stand: ${esc(since(w.stand))}` : ''}</p>
     ${inhalt}
   </section>`;
 }

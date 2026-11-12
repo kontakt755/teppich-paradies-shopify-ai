@@ -351,6 +351,8 @@ gebraeuchlich), Erfassen.
   rechts **Zu tun**. Oben die offenen Einträge, darunter eingeklappt **Jemand kümmert sich**.
 - **Ware unterwegs / Gesehen (11.11.)** = Abschnitt in der Ansicht Laden: von diesem Lieferanten ist in den letzten
   7 Tagen eine Rechnung gekommen, die Ware ist dann meist schon verladen. „Gesehen“ blendet die Zeile aus.
+- **Ware beim Kunden / beim Kettler angekommen · beim Lieferanten abgeholt · Lieferschein unklar (12.11.)** = Zeilen im
+  selben Abschnitt aus den digitalen Lieferscheinen von Lieferant A. Lieferungen in den Laden stehen dort nicht.
 - **Übernehmen / Wer? / Zurückgeben** = ein Eintrag im Laden wird von einer Person übernommen (Name per Knopf, kein
   Login je Person) und wieder freigegeben. Plakette: „<Name> kümmert sich · seit …“.
 - **Aufgabe dazu** = eine von Hand angelegte Aufgabe im Laden (Rolle schneiden, Rechnung kontrollieren, Angebot

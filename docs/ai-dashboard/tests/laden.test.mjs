@@ -10,7 +10,7 @@ import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 import { rueckrufePfad, rueckrufAusMailAnlegen } from '../../../operations/lib/rueckrufe.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad } from '../../../operations/lib/laden.mjs';
-import { ladenTodos, liegtZuLange, teileSpalte, ladenMailZeilen, wareUnterwegs } from '../lib/laden.mjs';
+import { ladenTodos, liegtZuLange, teileSpalte, ladenMailZeilen, wareUnterwegs, wareAngekommen } from '../lib/laden.mjs';
 import { lieferbelegePfad } from '../../../operations/lib/lieferbelege.mjs';
 import { stammdatenPfad } from '../../../operations/lib/lieferanten.mjs';
 import { ladenPostfachPfad, ladenMailsPfad } from '../../../operations/lib/laden-mails.mjs';
@@ -89,6 +89,20 @@ test('Ware unterwegs: nur Rechnungen bekannter Lieferanten aus 7 Tagen, keine Gu
   assert.ok(!JSON.stringify(zeilen).includes('123,45'), 'Mailtext und Betrag bleiben draussen');
 });
 
+test('Ware angekommen: Lieferscheine an Kunde, Kettler, Abholung und unklare; Laden und Scheine ohne Lieferort nie', () => {
+  const ls = (id, ort, o = {}) => beleg(id, { art: 'lieferschein', lieferant: 'A', lieferort: ort && { ort, am: vorTagen(0) }, betreff: 'Lieferschein', refs: { betreffNummern: ['#1041'], kommission: 'Testkommission', belegnummer: 'KD050_1' }, ...o });
+  const zeilen = wareAngekommen([
+    ls('k1', 'kunde', { datum: vorTagen(1) }), ls('k2', 'kettler', { datum: vorTagen(2) }), ls('k3', 'abholung', { datum: vorTagen(3) }), ls('k4', 'unklar', { datum: vorTagen(4) }),
+    ls('l1', 'laden'), ls('o1', null), ls('o2', undefined), ls('alt', 'kunde', { datum: vorTagen(8) }), ls('fremd', 'kunde', { lieferant: null }), beleg('r1', { lieferant: 'A', lieferort: { ort: 'kunde' } }),
+  ], { jetzt: JETZT });
+  assert.deepEqual(zeilen.map(z => [z.schluessel, z.text]), [
+    ['ware:k1', 'Ware beim Kunden angekommen'], ['ware:k2', 'Ware beim Kettler angekommen'],
+    ['ware:k3', 'Ware beim Lieferanten abgeholt'], ['ware:k4', 'Lieferschein unklar – bitte ansehen'],
+  ]);
+  assert.equal(zeilen[0].bezug, 'Vorgang KD050_1 · #1041 · Testkommission');
+  assert.equal(zeilen[0].von, 'Lieferant A');
+});
+
 test('API: Ware unterwegs braucht die privaten Stammdaten, zeigt nur deren Lieferanten und laesst sich abhaken', () => {
   const { dir, api } = umgebung();
   assert.deepEqual(api.ladenUebersicht().ware, { eingerichtet: false, stand: null, fehler: null, eintraege: [] }, 'ohne Stammdaten nichts, nie Beispielzeilen');
@@ -104,6 +118,11 @@ test('API: Ware unterwegs braucht die privaten Stammdaten, zeigt nur deren Liefe
   let w = api.ladenUebersicht().ware;
   assert.equal(w.stand, vorTagen(0.1));
   assert.deepEqual(w.eintraege.map(e => [e.schluessel, e.von]), [['ware:abc1', 'Testlieferant']], 'Dienstleister ohne Stammdaten-Eintrag erscheint nicht');
+  ablage.belege.abc3 = beleg('abc3', { art: 'lieferschein', datum: vorTagen(2), lieferort: { ort: 'kettler', am: vorTagen(2) } });
+  ablage.belege.abc4 = beleg('abc4', { art: 'lieferschein', lieferort: { ort: 'laden', am: vorTagen(1) } });
+  fs.writeFileSync(lieferbelegePfad(dir), JSON.stringify(ablage));
+  assert.deepEqual(api.ladenUebersicht().ware.eintraege.map(e => [e.schluessel, e.text]), [['ware:abc3', 'Ware beim Kettler angekommen'], ['ware:abc1', 'Rechnung vom 09.11. da, Ware vermutlich verladen']], 'Lieferschein zuerst, Lieferung in den Laden nie');
+  api.ladenTelefonischSetzen({ schluessel: 'ware:abc3' });
   api.ladenTelefonischSetzen({ schluessel: 'ware:abc1' });
   assert.deepEqual(api.ladenUebersicht().ware.eintraege, [], 'abgehakt = weg');
   fs.writeFileSync(lieferbelegePfad(dir), '{kaputt');

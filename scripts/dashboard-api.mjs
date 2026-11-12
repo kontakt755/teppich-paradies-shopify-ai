@@ -90,7 +90,7 @@ import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as 
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
-import { ladenTodos, ladenMailZeilen, wareUnterwegs } from '../docs/ai-dashboard/lib/laden.mjs';
+import { ladenTodos, ladenMailZeilen, wareUnterwegs, wareAngekommen } from '../docs/ai-dashboard/lib/laden.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -4936,7 +4936,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const ablage = leseBelege(lieferbelegePfad(dir));
           const belege = Object.values(ablage.belege).map(b => ({ ...b, lieferant: lieferantZurDomain(b.domain || domainVon(b.von), { stammdaten, absender: ablage.absender }) }));
           ware.stand = ablage.laeufe.filter(l => l.vollstaendig).at(-1)?.am || null;
-          ware.eintraege = wareUnterwegs(belege, { jetzt, nameVon: id => stammdatenFuer(stammdaten, id).name }).filter(e => !telefonisch[e.schluessel]);
+          const o = { jetzt, nameVon: id => stammdatenFuer(stammdaten, id).name };
+          // Angekommenes (Lieferscheine) vor Vermutetem (Rechnungen).
+          ware.eintraege = [...wareAngekommen(belege, o), ...wareUnterwegs(belege, o)].filter(e => !telefonisch[e.schluessel]);
         } catch { ware.fehler = 'Die Liste der Lieferantenbelege ist nicht lesbar. „Ware unterwegs“ fehlt, bis sie wieder da ist.'; }
       }
       return {

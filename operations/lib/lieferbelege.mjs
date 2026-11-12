@@ -269,3 +269,64 @@ export function entscheide(datei, p = {}, { person, jetzt = new Date(), gueltige
     return { beleg: b };
   });
 }
+
+// ---------------------------------------------------------------- Lieferort aus dem Lieferschein-PDF
+
+/** So lange zurueck wird der Lieferort nachgetragen - aelter zeigt die Ansicht Laden ohnehin nicht. */
+export const LIEFERORT_TAGE = 7;
+export const LIEFERORTE = Object.freeze(['laden', 'kettler', 'kunde', 'abholung', 'unklar']);
+
+/** Der Laden steht im Impressum; die Stammdaten gehen vor, wenn dort eine Lieferanschrift hinterlegt ist. */
+const LADEN_ANSCHRIFT = Object.freeze({ plz: '16515', strasse: 'Saarlandstraße' });
+const nurBuchstaben = s => String(s ?? '').toLowerCase().replace(/ß/g, 'ss').replace(/[^a-zäöü0-9]/g, '');
+/** Steht diese Anschrift im Kopf? Postleitzahl plus Anfang der Strasse ("Musterstr." = "Musterstraße"). */
+function anschriftImKopf(kopf, a) {
+  const plz = String(a?.plz ?? '').trim();
+  const strasse = nurBuchstaben(a?.strasse).slice(0, 8);
+  return Boolean(plz && strasse.length >= 5 && new RegExp(`(?<!\\d)${plz}(?!\\d)`).test(kopf) && nurBuchstaben(kopf).includes(strasse));
+}
+
+/**
+ * Wohin ging die Ware laut digitalem Lieferschein (Format von Lieferant A, an 31 echten Belegen geprueft)?
+ * Der Anschriftblock oben ist die Lieferadresse; "Kundenadresse:" weiter unten ist immer unsere eigene und
+ * zaehlt nicht. Bei "Lieferung: Abholung" steht oben eine beliebige Druckadresse (auch die des Endkunden) -
+ * deshalb geht Abholung vor. Der Schein wird bei der Uebergabe mit Unterschrift erzeugt: die Ware ist dann da.
+ * Raten gibt es nicht: was nicht eindeutig ist, ist "unklar"; ein anderes Format ist null (kein solcher Schein).
+ * @param {string} text  Text des PDF
+ * @param {{ laden?: {plz, strasse}, kettler?: {plz, strasse} }} anschriften  aus den privaten Stammdaten
+ * @returns {'laden'|'kettler'|'kunde'|'abholung'|'unklar'|null}
+ */
+export function lieferortAusText(text, { laden: ladenRoh, kettler } = {}) {
+  const laden = ladenRoh?.plz ? ladenRoh : LADEN_ANSCHRIFT;
+  const t = String(text ?? '');
+  if (!/L\s?I\s?E\s?F\s?E\s?R\s?S\s?C\s?H\s?E\s?I\s?N/.test(t) || !/Tour\s*:/.test(t)) return null;
+  if (/Lieferung\s*:\s*Abholung/i.test(t)) return 'abholung';
+  const kopf = t.split(/Ihre Auftragsnummer|Versandliste|^\s*-{10,}|Lieferung\s*:|Kundenadresse/m)[0];
+  const imLaden = anschriftImKopf(kopf, laden);
+  const beimKettler = anschriftImKopf(kopf, kettler);
+  if (imLaden !== beimKettler) return imLaden ? 'laden' : 'kettler';
+  // Ohne hinterlegten Kettler laesst sich "Kunde" nicht von "Kettler" trennen.
+  if (imLaden || !kettler?.plz) return 'unklar';
+  return /(?<!\d)\d{5}(?!\d)\s+\p{Lu}/u.test(kopf) ? 'kunde' : 'unklar';
+}
+
+/** Lieferscheine mit PDF aus den letzten LIEFERORT_TAGE Tagen, deren Lieferort noch niemand gelesen hat. */
+export function lieferorteOffen({ privatDir, jetzt = new Date() } = {}) {
+  const ab = jetzt.getTime() - LIEFERORT_TAGE * 86400000;
+  return Object.values(leseBelege(lieferbelegePfad(privatDir)).belege)
+    .filter(b => b.art === 'lieferschein' && b.lieferort === undefined && Date.parse(b.datum) >= ab && (b.anhaenge || []).some(a => /\.pdf$/i.test(a)))
+    .map(b => ({ id: b.id, von: b.von }));
+}
+
+/** Gelesene Lieferorte ablegen: { <mailId>: 'kunde' | … | null }. null = anderes Format, wird nicht erneut geholt. */
+export function lieferorteSetzen(orte, { privatDir, jetzt = new Date() } = {}) {
+  return mitSperre(lieferbelegePfad(privatDir), (d) => {
+    let n = 0;
+    for (const [id, ort] of Object.entries(orte || {})) {
+      if (!d.belege[id] || (ort !== null && !LIEFERORTE.includes(ort))) continue;
+      d.belege[id].lieferort = ort === null ? null : { ort, am: jetzt.toISOString() };
+      n += 1;
+    }
+    return n;
+  });
+}
