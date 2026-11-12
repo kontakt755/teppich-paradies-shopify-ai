@@ -89,6 +89,9 @@ class StickyAddToCartComponent extends Component {
    */
   #targetUsable = true;
 
+  /** Einfass-Konfigurator, an dessen Massfeldern die Leiste schon lauscht. */
+  #ekKaufweg = null;
+
   /** @type {{ target: HTMLButtonElement, sourceIds: string[], productForm: HTMLElement | null, productId: string | null, packageVariantId: string | null } | null} */
   #pendingCartAdd = null;
 
@@ -257,6 +260,12 @@ class StickyAddToCartComponent extends Component {
         attributes: true,
         attributeFilter: ['data-tp-breite', 'data-tp-laenge'],
       });
+      // Der Einfass-Konfigurator meldet seine Masse nicht am Kaufweg: Eingaben
+      // direkt hoeren, damit "Masse eingeben" zum Feldzustand passt.
+      if (kaufweg.hasAttribute('data-tp-ek') && this.#ekKaufweg !== kaufweg) {
+        this.#ekKaufweg = kaufweg;
+        kaufweg.addEventListener('input', () => this.#syncTargetState(), { signal: this.#abortController.signal });
+      }
     }
     this.#syncTargetState();
   }
@@ -277,8 +286,10 @@ class StickyAddToCartComponent extends Component {
       return;
     }
 
-    const usable = !target.hidden;
     const unvollstaendig = this.#targetIncomplete(target);
+    // Fehlt dem Konfigurator ein Mass, ist sein Knopf verborgen; die Leiste
+    // bleibt trotzdem und fuehrt zum Feld (w-376).
+    const usable = !target.hidden || unvollstaendig;
     addToCartButton.disabled = !unvollstaendig && this.#targetBlocked(target);
 
     const label = addToCartButton.querySelector('.add-to-cart-text__content > span');
@@ -421,6 +432,14 @@ class StickyAddToCartComponent extends Component {
    */
   handleAddToCartClick = () => {
     const target = this.#targetAddToCartButton;
+    // Konfigurator: sein verborgener Knopf darf keinen Klick bekommen
+    // (hinzufuegen() setzt gueltige Masse voraus) - selbst zum Feld springen.
+    const ekFeld = this.#ekMassFeld(target);
+    if (ekFeld) {
+      ekFeld.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      ekFeld.focus({ preventScroll: true });
+      return;
+    }
     // Der Rechner markiert das fehlende Feld, nennt es und scrollt dorthin;
     // sobald er wieder im Bild ist, blendet sich die Leiste selbst aus.
     if (this.#targetIncomplete(target)) {
@@ -469,6 +488,7 @@ class StickyAddToCartComponent extends Component {
    * @param {HTMLButtonElement | null} target
    */
   #targetIncomplete(target) {
+    if (this.#ekMassFeld(target)) return true;
     const kaufweg = target?.closest('.tp-kaufweg');
     return Boolean(
       target &&
@@ -478,6 +498,26 @@ class StickyAddToCartComponent extends Component {
         !target.classList.contains('is-busy') &&
         kaufweg.hasAttribute('data-tp-laenge') &&
         kaufweg.getAttribute('data-tp-laenge') === ''
+    );
+  }
+
+  /**
+   * Einfass-Konfigurator (Teppich nach Mass), dem ein Mass fehlt: Er verbirgt
+   * seinen Knopf, bis Breite und Laenge gueltig sind (assets/tp-einfass-konfigurator.js).
+   * Liefert das erste leere oder als ungueltig markierte sichtbare Massfeld,
+   * sonst null - auch bei Anfrage-Formen (Konfigurator verborgen) und wenn der
+   * Knopf aus anderem Grund fehlt (nicht lieferbar), damit die Leiste dort
+   * nicht "Masse eingeben" verspricht.
+   * @param {HTMLButtonElement | null} target
+   * @returns {HTMLInputElement | null}
+   */
+  #ekMassFeld(target) {
+    const ek = target?.closest('[data-tp-ek]');
+    if (!ek || !target.hidden || ek.querySelector('[data-konfig]')?.hidden) return null;
+    const felder = /** @type {HTMLInputElement[]} */ ([...ek.querySelectorAll('[data-breite], [data-laenge]')]);
+    return (
+      felder.find((f) => !f.closest('[hidden]') && (f.value === '' || f.getAttribute('aria-invalid') === 'true')) ??
+      null
     );
   }
 

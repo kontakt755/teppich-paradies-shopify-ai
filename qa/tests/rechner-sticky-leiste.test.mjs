@@ -145,3 +145,31 @@ test('fruehe Leiste nur auf dem Handy, unterhalb und mit fehlendem Mass', () => 
   // alle drei Einblend-Stellen nutzen dieselbe Regel
   assert.equal((sticky.match(/this\.#leisteZeigen\(rect\)/g) || []).length, 3);
 });
+
+// w-376: Der Einfass-Konfigurator verbirgt seinen Knopf ohne gueltige Masse.
+// Die Leiste fuehrt dann selbst zum ersten fehlenden Feld - nie bei
+// Anfrage-Formen oder wenn der Knopf aus anderem Grund fehlt.
+test('Konfigurator: Leiste kennt das fehlende Massfeld', () => {
+  const rumpf = sticky.match(/#ekMassFeld\(target\) \{([\s\S]*?)\n  \}/)?.[1] ?? '';
+  const ekMassFeld = vm.runInNewContext(`(target) => {${rumpf}}`);
+  const feld = (value, { invalid = false, versteckt = false } = {}) => ({
+    value, getAttribute: (a) => (a === 'aria-invalid' ? String(invalid) : null),
+    closest: (s) => (s === '[hidden]' && versteckt ? {} : null),
+  });
+  const knopf = (felder, { hidden = true, konfigHidden = false } = {}) => {
+    const ek = { querySelector: () => ({ hidden: konfigHidden }), querySelectorAll: () => felder };
+    return { hidden, closest: (s) => (s === '[data-tp-ek]' ? ek : null) };
+  };
+  const b = feld(''), l = feld('');
+  assert.equal(ekMassFeld(knopf([b, l])), b);
+  const l2 = feld('400', { invalid: true });
+  assert.equal(ekMassFeld(knopf([feld('200'), l2])), l2);
+  // Rund: verstecktes Laengenfeld zaehlt nicht
+  assert.equal(ekMassFeld(knopf([feld('200'), feld('', { versteckt: true })])), null);
+  assert.equal(ekMassFeld(knopf([b, l], { hidden: false })), null);
+  assert.equal(ekMassFeld(knopf([b, l], { konfigHidden: true })), null);
+  assert.equal(ekMassFeld({ hidden: true, closest: () => null }), null);
+  assert.equal(ekMassFeld(null), null);
+  // Klick geht nie an den verborgenen Knopf
+  assert.match(sticky, /const ekFeld = this\.#ekMassFeld\(target\);\s*\n\s*if \(ekFeld\) \{[\s\S]*?return;/);
+});

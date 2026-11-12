@@ -49,6 +49,7 @@ function fixture({ kind = 'rolle', image = false } = {}) {
       return null;
     }
     querySelector(selector) { return this.children.get(selector) ?? null; }
+    querySelectorAll() { return []; }
     hasAttribute(name) { return this.attributes.has(name); }
     getAttribute(name) { return this.attributes.get(name) ?? null; }
     setAttribute(name, value) {
