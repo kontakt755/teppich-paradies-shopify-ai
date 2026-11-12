@@ -303,6 +303,9 @@ function versand(s, { zielPlz, abholPlz, warenwert, tarif, jetzt }) {
   Object.assign(eingabe, { 5: packung.l, 6: packung.w, 7: packung.h, 8: packung.kg, 9: packung.anzahl, 10: zielPlz, 11: abholPlz || eingabe[11], 12: 'Ja', 14: Math.max(1, Math.round(warenwert)), 15: packung.art, 17: heute });
   // Beide GEL-Rechnungen bisher (02.11. und 09.11.2026) berechnen das Depot-Avis, nicht das technische.
   eingabe[22] = 'Depot';
+  // Abholung und Ziel in einer Metropole: Ob der Zuschlag ein- oder zweimal faellt, ist bei der Spedition
+  // nicht geklaert. Die Schaetzung nimmt den teureren Fall, statt gar keinen Preis zu nennen.
+  if (eingabe[47] === 'Ungeklaert') eingabe[47] = 'Zweimal';
   // Abgelaufene Dieselwerte: mit dem letzten Stand rechnen und das sagen, statt gar nichts zu zeigen.
   const saetze = tarif.saetze;
   const anpassung = {};
@@ -682,16 +685,19 @@ export function kettelwegVergleich({ auftrag, lineItemIds = [], kosten, ek, tari
     if (es.flatMap(unsicherheiten).length) return null;
     const gruppe = { lieferant, ziel, kosten, adresse, nah, kettlerAdresse: absender.kettelservice, ladenPlz, netto, tarif, jetzt, teiler: 1 };
     const r = wegEinerGruppe({ ...gruppe, eintraege: es, lieferungen: [{ neu: true, eintraege: es }] });
-    if (r.offen.length) return null;
+    let offen = r.offen;
     let gesamt = summe(r.posten.map(x => x.betrag));
     // Andere Ware desselben Lieferanten geht ohnehin direkt: Seine Fracht spart der eigene Weg dann nicht.
     if (ziel === 'kunde' && faelltOhnehinAn && r.z && !r.z.paket) gesamt -= r.z.betrag;
-    // Unser Versand: zusammen als eine Rolle, solange sie tragbar bleibt, sonst je Teppich.
-    if (istZahl(r.versand?.netto) && es.length > 1 && r.s.kg > SCHWELLEN.rolleKg) {
+    // Unser Versand: zusammen als eine Rolle, solange sie tragbar bleibt, sonst je Teppich. Die
+    // gemeinsame Rolle darf dann auch unversendbar sein (privat ab 60 kg), es zaehlen die einzelnen.
+    if (r.versand && !r.versand.selbst && es.length > 1 && r.s.kg > SCHWELLEN.rolleKg) {
       const einzeln = es.map(e => versand(sendung([e]), { zielPlz: plz, abholPlz: ziel === 'kettler' ? absender.kettelservice.plz : ladenPlz, warenwert: netto, tarif, jetzt }).netto);
       if (!einzeln.every(istZahl)) return null;
-      gesamt += summe(einzeln) - r.versand.netto;
+      offen = offen.filter(grund => grund !== r.versand.grund);
+      gesamt += summe(einzeln) - (r.versand.netto ?? 0);
     }
+    if (offen.length) return null;
     // Der Zuschnitt fuer den Kettler ist groesser als das Fertigmass: Der Mehreinkauf gehoert zum Weg.
     const einkauf = es.map(e => e.m.ekSumme);
     return { gesamt, einkauf: einkauf.every(istZahl) ? summe(einkauf) : null };
