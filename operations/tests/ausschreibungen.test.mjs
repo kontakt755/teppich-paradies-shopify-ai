@@ -104,4 +104,7 @@ test('RSS bund.de und Berlin: Suchwort im Titel, PLZ im Umkreis, Frist und Verfa
     <link>javascript:alert(1)</link></item></channel></rss>`;
   const [b] = ausRss(berlin, 'berlin.de');
   assert.deepEqual([b.verfahren, b.ort, b.frist, b.link], ['Öffentliche Ausschreibung (VOB/A)', '13507 Berlin', '2026-12-01', null]);
+  const [e] = ausRss(`<rss><channel><item><title>Maler- und Bodenlegerarbeiten</title><description><![CDATA[Ausführungsort: 13086, Berlin<br>
+    Eröffnungstermin: 14.12.2026<br> Online seit: 12.11.2026 ]]></description><link>https://berlin.example/x</link></item></channel></rss>`, 'berlin.de');
+  assert.deepEqual([e.ort, e.frist], ['13086 Berlin', '2026-12-14']);
 });

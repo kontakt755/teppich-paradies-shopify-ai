@@ -24,7 +24,10 @@ const TED = 'https://api.ted.europa.eu/v3/notices/search';
 const EXPORT = 'https://oeffentlichevergabe.de/api/notice-exports';
 // Die Suche von service.bund.de kennt nur ganze Woerter: je Suchwort ein Feed (alle offenen, neueste 100).
 const BUND = wort => `https://www.service.bund.de/Content/DE/Ausschreibungen/Suche/Formular.html?nn=4641482&resultsPerPage=100&templateQueryString=${encodeURIComponent(wort)}&sortOrder=dateOfIssue_dt+desc&jobsrss=true`;
-const BUND_WOERTER = ['Bodenbelagsarbeiten', 'Bodenbelagarbeiten', 'Bodenbelag', 'Bodenbeläge', 'Teppichboden', 'Linoleum', 'Parkett'];
+const BUND_WOERTER = ['Bodenbelagsarbeiten', 'Bodenbelagarbeiten', 'Bodenbelag', 'Bodenbeläge', 'Bodenlegerarbeiten', 'Teppichboden', 'Linoleum', 'Parkett'];
+// berlin.de verlangt von Robotern eine eindeutige Kennung; service.bund.de setzt Crawl-delay 30.
+const KENNUNG = 'ausschreibungssuche-bodenbelag/1.0';
+const warte = ms => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const BERLIN = 'https://www.berlin.de/vergabeplattform/veroeffentlichungen/bekanntmachungen/feed.rss';
 
 function privatDir() {
@@ -52,7 +55,7 @@ function holeTed(heute) {
 
 function holeRss(url, quelle) {
   // service.bund.de haengt gelegentlich ohne Antwort: kurz warten, einmal wiederholen (mehr nicht, AGENTS.md).
-  const xml = execFileSync('curl', ['-s', '-f', '-L', '-m', '20', '--retry', '1', url], { encoding: 'utf8', maxBuffer: 20e6 });
+  const xml = execFileSync('curl', ['-s', '-f', '-L', '-m', '20', '--retry', '1', '-A', KENNUNG, url], { encoding: 'utf8', maxBuffer: 20e6 });
   if (!xml.includes('<rss')) throw new Error('kein RSS in der Antwort');
   return ausRss(xml, quelle);
 }
@@ -94,7 +97,8 @@ export async function main(argv = process.argv.slice(2)) {
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
-  for (const w of BUND_WOERTER) {
+  for (const [i, w] of BUND_WOERTER.entries()) {
+    if (i) warte(30000);
     try { treffer.push(...holeRss(BUND(w), 'service.bund.de')); } catch (e) { ausfaelle.push({ quelle: `service.bund.de ${w}`, grund: e.message.slice(0, 200) }); }
   }
   try { treffer.push(...holeRss(BERLIN, 'berlin.de')); } catch (e) { ausfaelle.push({ quelle: 'berlin.de', grund: e.message.slice(0, 200) }); }
