@@ -65,10 +65,14 @@ ungefragt zusammen - was dabei verloren geht, weiss danach niemand.
      `"self"` aufrufen. Wird das Abloesen abgelehnt (geteilte Arbeitskopie),
      diese Sitzung offen lassen und das sagen. Startet die neue nicht, bleibt
      diese Sitzung offen und der Block aus Schritt 4 ist die Uebergabe.
-   - Nicht das Refresh-Panel der Mod `handoff` („Start new chat“) nehmen: es
-     legt den Text nur ins Eingabefeld eines neuen Chats - ohne geerbten
-     Modus, ohne Archivieren, und die Mod `brain-dump` fragt dort „Shape it?“
-     (kuerzt die Uebergabe per kleinem Modell; wenn doch: „Send as is“).
+   - Das Refresh-Panel der Mod `handoff` erinnert weiter an die Uebergabe. Ihr
+     Knopf „Start new chat with it“ ist lokal umgebaut (12.11., Quelle
+     `~/Downloads/benai-mods/plugins/handoff/hooks/register.tsx`, Sicherung
+     daneben): er schickt den Auftrag in diesen Chat, mit dem Pfad des fertigen
+     Uebergabetexts. Dann nur diesen Schritt 6 ausfuehren und die Datei woertlich
+     als `prompt` nehmen. Ein Mod-Update ueberschreibt den Umbau; dann oeffnet
+     der Knopf wieder nur einen gefuellten neuen Chat (kein geerbter Modus, kein
+     Archivieren, „Shape it?“ der Mod `brain-dump` - dort „Send as is“).
    - Nicht archivieren, wenn diese Sitzung angepinnt ist oder noch eine Frage
      an den Benutzer offen hat.
 
