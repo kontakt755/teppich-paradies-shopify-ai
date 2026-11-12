@@ -275,3 +275,14 @@ test('Zuschneiden: nur bezahlte, echte Bestellungen mit Lagerware, die noch nich
   assert.equal(z.ton, 'crit', 'nach zwei Tagen rot wie eine eigene Aufgabe');
   assert.deepEqual(z.schnitt, { orderId: 'o1', lineItemId: 'p1' });
 });
+
+test('Mail-Zeilen: Lieferantenpost ist reine Info (nie rot, nur Gesehen) - ausser es ist eine Antwort auf unsere Mail', () => {
+  const m = (schluessel, text, extra = {}) => ({ schluessel, von: 'Lieferant A', text, seit: vorTagen(6), lieferantenpost: true, ...extra });
+  const [ab, rueckfrage, kunde] = ladenMailZeilen([
+    m('mail:a', 'Auftragsbestätigung 123'), m('mail:b', 'AW: Bestellung Testteppich'), m('mail:c', 'Auftragsbestätigung?', { lieferantenpost: false }),
+  ], { jetzt: JETZT });
+  assert.deepEqual([ab.nurInfo, ab.ton, ab.art], [true, '', 'Lieferant']);
+  assert.deepEqual([rueckfrage.nurInfo, rueckfrage.ton], [false, 'crit'], 'Rueckfrage des Lieferanten braucht jemanden');
+  assert.deepEqual([kunde.nurInfo, kunde.ton], [false, 'crit']);
+  assert.equal(liegtZuLange([ab], []), null, 'Info zaehlt nie als "liegt zu lange"');
+});

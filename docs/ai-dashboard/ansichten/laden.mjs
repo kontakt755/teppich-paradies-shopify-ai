@@ -67,7 +67,10 @@ const schnittKnopf = e => (e.schnitt ? `<button type="button" class="btn laden-k
 function zeile(e, { lesen }) {
   const meta = [e.art, e.von].filter(Boolean).map(esc).join(' · ');
   const z = e.zustaendig;
-  const rechts = z
+  // Lieferantenpost ist reine Info: niemand uebernimmt sie, "Gesehen" blendet sie aus (wie bei "Ware unterwegs").
+  const rechts = e.nurInfo
+    ? `<span class="laden-plakette">${esc(e.alter || '')}</span>${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-gesehen="${esc(e.schluessel)}">Gesehen</button>`}`
+    : z
     ? `<span class="laden-plakette">${esc(z.wer)} kümmert sich · ${esc(since(z.seit))}</span>
        ${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-zurueck="${esc(e.schluessel)}">Zurückgeben</button>
        ${e.aufgabeId ? `<button type="button" class="btn laden-knopf" data-laden-erledigt="${esc(e.aufgabeId)}">Erledigt</button>` : ''}${schnittKnopf(e)}`}`
@@ -75,9 +78,9 @@ function zeile(e, { lesen }) {
        ${lesen ? '' : laden.wer === e.schluessel
     ? `<span class="laden-wer"><strong>Wer?</strong>${(laden.daten.personen || []).map(n => `<button type="button" class="btn laden-knopf" data-laden-wer="${esc(n)}" data-schluessel="${esc(e.schluessel)}">${esc(n)}</button>`).join('')}<button type="button" class="btn btn-ghost laden-knopf" data-laden-abbrechen>Abbrechen</button></span>`
     : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${esc(e.schluessel)}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>${schnittKnopf(e)}`}`;
-  const telefon = e.schluessel.startsWith('mail:') && !lesen ? `<button type="button" class="btn laden-knopf" data-laden-telefonisch="${esc(e.schluessel)}">Telefonisch erledigt</button>` : '';
+  const telefon = e.schluessel.startsWith('mail:') && !lesen && !e.nurInfo ? `<button type="button" class="btn laden-knopf" data-laden-telefonisch="${esc(e.schluessel)}">Telefonisch erledigt</button>` : '';
   return `<li class="laden-zeile${e.ton === 'crit' && e.schluessel.startsWith('mail:') ? ' laden-zeile-rot' : ''}">
-    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}</div>
+    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}${e.nurInfo ? '<p class="small muted">Nur zur Info, keine Antwort nötig.</p>' : ''}</div>
     <div class="laden-rechts">${rechts}${telefon}</div>
   </li>`;
 }
@@ -139,7 +142,7 @@ export function viewLaden() {
     ${d.personen ? '' : `<div class="notice warn">Die Namen für „Übernehmen“ fehlen noch. Der Inhaber muss die Namen der Kolleginnen und Kollegen im Laden einmal hinterlegen (Claude im Chat Bescheid geben: „Laden-Namen eintragen“).</div>`}
     ${d.bestelldatenFehlen ? '<div class="notice warn">Die Bestelldaten fehlen. Rückrufe und wartende Kunden erscheinen erst, wenn sie wieder da sind.</div>' : ''}
     <div class="laden-spalten">
-      ${spalte(d.mails.eintraege, { id: 'mails', titel: 'Mails', satz: 'Hier stehen die Mails an den Laden. Wer eine übernimmt, antwortet darauf.', leer: mailsLeer, vorspann: mailsFehler }, lesen)}
+      ${spalte(d.mails.eintraege, { id: 'mails', titel: 'Mails', satz: 'Hier stehen die Mails an den Laden. Wer eine übernimmt, antwortet darauf. Bestätigungen von Lieferanten sind nur zur Info.', leer: mailsLeer, vorspann: mailsFehler }, lesen)}
       ${spalte(d.todos, {
     id: 'zutun', titel: 'Zu tun', satz: 'Hier stehen Rückrufe, Ware zum Zuschneiden aus eigener Rolle, Kunden, die sich nicht melden, und eigene Aufgaben.', leer: 'Nichts offen.',
     kopf: lesen || laden.formOffen ? '' : '<button type="button" class="btn laden-knopf" data-laden-neu>Aufgabe dazu</button>',

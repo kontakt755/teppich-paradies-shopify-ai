@@ -4934,10 +4934,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // "Ware unterwegs": Rechnungen aus der Lieferbeleg-Ablage, nur von Lieferanten der privaten Stammdaten.
       // Ohne Stammdaten gibt es keine Zuordnung - dann ein Hinweis statt Zeilen.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      let belegAbsender = {};
       const ware = { eingerichtet: stammdaten.vorhanden && Object.keys(stammdaten.lieferanten || {}).length > 0, stand: null, fehler: null, eintraege: [] };
       if (ware.eingerichtet) {
         try {
           const ablage = leseBelege(lieferbelegePfad(dir));
+          belegAbsender = ablage.absender || {};
           const belege = Object.values(ablage.belege).map(b => ({ ...b, lieferant: lieferantZurDomain(b.domain || domainVon(b.von), { stammdaten, absender: ablage.absender }) }));
           ware.stand = ablage.laeufe.filter(l => l.vollstaendig).at(-1)?.am || null;
           const o = { jetzt, nameVon: id => stammdatenFuer(stammdaten, id).name };
@@ -4948,7 +4950,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return {
         ware,
         verfuegbar: true, personen, jetzt: jetzt.toISOString(),
-        mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: ladenMailZeilen(mails.eintraege, { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit) },
+        mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: ladenMailZeilen(mails.eintraege.map(m => ({ ...m, lieferantenpost: ware.eingerichtet && Boolean(lieferantZurDomain(domainVon(m.adresse || ''), { stammdaten, absender: belegAbsender })) })), { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit) },
         todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)), zuschnitte: schnitte }, { jetzt }).map(mit),
         // Ohne Bestelldaten fehlen nur die Rueckrufe und wartenden Kunden - von Hand angelegte Aufgaben gibt es trotzdem.
         bestelldatenFehlen: !modell,
