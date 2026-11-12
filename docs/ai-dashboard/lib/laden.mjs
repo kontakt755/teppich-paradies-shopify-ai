@@ -79,6 +79,9 @@ const PORTAL = /^(Neue Anfrage:|Nutzer-Anfrage)/i;
 const RUECKRUF = /r[uü]ckruf/i;
 export const mailArt = betreff => (PORTAL.test(betreff || '') ? 'Portalanfrage' : RUECKRUF.test(betreff || '') ? 'Rückrufbitte' : null);
 
+// Eine Antwort auf unsere Mail (Rueckfrage des Lieferanten) braucht jemanden - ein automatisches Dokument nie.
+const ANTWORT = /^\s*(re|aw|wg|fwd?|antwort)\s*:/i;
+
 /** Ab so vielen Werktagen ohne Antwort ist eine Mail rot (Werkbank w-352: "nach einem Werktag"). */
 export const MAIL_ROT_WERKTAGE = 1;
 
@@ -93,10 +96,14 @@ export function ladenMailZeilen(mails = [], { jetzt = new Date() } = {}) {
     const alterTage = tageSeit(m.seit, jetzt);
     const werktage = werktageSeit(m.seit, jetzt);
     const art = mailArt(m.text);
-    const beantwortet = art ? null : m.beantwortetAm || null;
-    const rot = !beantwortet && werktage !== null && werktage >= MAIL_ROT_WERKTAGE;
+    // Lieferantenpost (Benutzer 12.11.2026): Bestaetigungen und Avise sind reine Info - nie rot, nur "Gesehen".
+    // shortcut: erkannt an "Absender ist Lieferant und Betreff ist keine Antwort"; eine neue Frage des Lieferanten
+    // ohne "Re:/AW:" steht damit auch als Info da. Aendern, wenn so eine Frage einmal liegen bleibt.
+    const nurInfo = Boolean(m.lieferantenpost) && !art && !ANTWORT.test(m.text || '');
+    const beantwortet = art || nurInfo ? null : m.beantwortetAm || null;
+    const rot = !nurInfo && !beantwortet && werktage !== null && werktage >= MAIL_ROT_WERKTAGE;
     return {
-      schluessel: m.schluessel, art, von: m.von, text: m.text, seit: m.seit, alterTage, werktage,
+      schluessel: m.schluessel, art: nurInfo ? 'Lieferant' : art, nurInfo, von: m.von, text: m.text, seit: m.seit, alterTage, werktage,
       alter: werktage ? mehrzahl(werktage, 'Werktag', 'Werktage') : alterText(alterTage),
       ton: rot ? 'crit' : '', beantwortetAm: beantwortet, nurHaken: Boolean(art),
     };
