@@ -145,12 +145,21 @@ Aktionen und Streichpreise bei Teppichboden, Preisstufen der gekettelten Fußlei
 
 ## Chat-Wächter (stehende Freigabe des Benutzers, 2026-11-11)
 
-Die geplante Aufgabe `chat-waechter` bringt offene Chats weiter, ohne dass der Benutzer jede Empfehlung einzeln bestätigt. Die Freigabe gilt nur für diese Aufgabe und nur in diesen Grenzen; alle anderen Sitzungen mergen weiter nur auf ausdrücklichen Auftrag.
+Die geplante Aufgabe `chat-waechter` bringt offene Chats weiter, ohne dass der Benutzer jede Empfehlung einzeln bestätigt. Die Freigabe gilt nur für diese Aufgabe und nur in diesen Grenzen; für alle anderen Sitzungen gilt der Abschnitt „Eigenen PR selbst mergen“ unten.
 
 - **Darf:** in einem wartenden Chat die von Claude empfohlene Option wählen oder die Arbeit fortsetzen lassen (je Chat und Lauf eine vollständige Nachricht), fertige Chats archivieren und **unkritische PRs selbst nach Skill `ship` mergen**, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Voraussetzung je PR: offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch, und der zugehörige Chat meldet die Arbeit als fertig. Höchstens drei Merges je Lauf, nacheinander.
 - **Stoppt und legt vor:** kritische PRs (Preise, SKUs, Varianten, Massenimporte, Checkout, Deploy-Kette, `.claude/hooks/`, dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · Schreiben in Google Ads, Meta oder Merchant Center · alles, was Geld kostet oder ein Budget ändert · Mails an Kunden und Lieferanten · Fragen, die nur der Inhaber entscheidet · Chats ohne klare Empfehlung.
 - **Vorlegen heißt:** im Bericht des Laufs je Punkt den Chat und die eine Zeile nennen, die der Benutzer dort schreiben müsste. Der Wächter gibt in fremden Chats nie eine Freigabe für einen gestoppten Punkt weiter.
 - Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund für den Bericht, kein Hindernis zum Umgehen.
+
+## Eigenen PR selbst mergen (stehende Freigabe des Benutzers, 2026-11-12)
+
+Eine Sitzung fragt bei einem unkritischen PR nicht mehr „Soll ich mergen?“, sondern mergt ihn selbst nach Skill `ship`, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Grund: Der Benutzer hat diese Frage vom 03. bis 12.11. praktisch immer mit Ja beantwortet.
+
+- **Nur der eigene PR:** den diese Sitzung für ihren Auftrag geöffnet hat. Fremde PRs mergt nur der Chat-Wächter oder der Benutzer per `/ship`.
+- **Voraussetzung:** Auftrag vollständig umgesetzt und getestet, offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch.
+- **Weiter nur mit Ja des Benutzers:** kritische PRs (Liste wie beim Chat-Wächter unter „Stoppt und legt vor“, dazu dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · PRs, deren Titel oder Auftrag einen Termin nennt („erst ab …“) · wenn der Benutzer für diesen Auftrag „nur PR“, „nicht mergen“ oder „nur Plan“ gesagt hat.
+- Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund: melden und die eine Zeile nennen, die der Benutzer schreiben müsste, nicht umgehen.
 
 ## Kommunikation
 
