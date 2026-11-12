@@ -623,6 +623,32 @@ export function kettlerAutomatisch(p) {
   return kuerzereSeiteCm(p.ausfuehrung) !== null;
 }
 
+/** Lieferziel der Bestellmail -> Lieferweg (docs/ai-dashboard/lib/lieferweg.mjs). */
+const ZIEL_WEG = Object.freeze({ kunde: 'hersteller', laden: 'uns', kettler: 'kettler' });
+
+/**
+ * Weg, den die Bestellmail fuer eine noch nicht bestellte Warenposition nimmt, wenn im Dialog
+ * nichts gewaehlt wird - dieselbe Regel wie wareMail/wareMailsFuer, damit Plakette und Mail nicht
+ * auseinanderlaufen (Benutzer 12.11.2026: je Position sichtbar, wohin die Ware geht).
+ * null = kein Vorschlag: die Stammroute sagt es schon (Direktversand, Baustelle), der Lieferant
+ * ist ungeklaert, oder "Wer kettelt?" ist erst im Dialog zu entscheiden.
+ */
+export function wegVorschlag(p, stammdaten) {
+  if (!p || p.istMuster || p.eigenleistung || p.lagerware || p.route === ROUTE.SUPPLIER_TO_SITE || p.route === ROUTE.NO_PROCUREMENT) return null;
+  if (!kennung(p.lieferant) || p.lieferant === UNGEKLAERT) return null;
+  const st = stammdatenFuer(stammdaten, p.lieferant);
+  const direkt = p.route === ROUTE.SUPPLIER_DIRECT;
+  if (adresseOk(stammdaten?.absender?.kettelservice) && kettlerAutomatisch(p)) return direkt && st.ware.kettelnMoeglich ? null : 'kettler';
+  return direkt ? null : ZIEL_WEG[st.ware.lieferung ?? 'kunde'] ?? null;
+}
+
+/** Setzt `wegVorschlag` an jede Warenposition des Bestellmodells (alle vier Listen, wie markiereLagerware). */
+export function markiereWegVorschlag(modell, stammdaten) {
+  const listen = [...(modell?.auftraege || []), ...(modell?.testauftraege || []), ...(modell?.gruppen || []), ...(modell?.musterGruppen || [])];
+  for (const l of listen) for (const p of l.positionen || []) { const weg = wegVorschlag(p, stammdaten); if (weg) p.wegVorschlag = weg; }
+  return modell;
+}
+
 /** Wege eines gekettelten Teppichs, wenn der Lieferant selbst ketteln kann. */
 export const KETTELWEGE = Object.freeze(['lieferant', 'kettler']);
 /** Bis zu dieser kuerzeren Seite geht ein Teppich vom Kettler per Paket, darueber per Spedition. */

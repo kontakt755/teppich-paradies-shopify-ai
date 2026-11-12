@@ -65,7 +65,8 @@ test('Lesen: Kundenakte, Bestellliste und Kundensuche tragen naechsterSchritt un
   const zeilen = api.kundenBestellungen().zeilen;
   const z = zeilen.find(x => x.orderId === WARE);
   assert.equal(z.auftragsart, 'ware');
-  assert.deepEqual(z.verlauf.map(s => s.schritt), ['kunde_hat_bestellt', 'bestellt', 'geliefert', 'raus', 'erledigt']);
+  // Unbestellt gilt der Wegvorschlag der Bestellnachricht (direkt an den Kunden, 12.11.2026): kein "geliefert" bei uns.
+  assert.deepEqual(z.verlauf.map(s => s.schritt), ['kunde_hat_bestellt', 'bestellt', 'raus', 'erledigt']);
   assert.equal(z.naechsterSchritt.aktion, 'bestellt');
   assert.equal(z.fortschritt.stufe, 'offen');
 

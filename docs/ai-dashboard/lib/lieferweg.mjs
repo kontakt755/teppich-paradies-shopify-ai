@@ -10,8 +10,8 @@
  *   lager       "aus Lager"              wir schneiden aus eigener Lagerrolle und verschicken selbst
  *
  * Reihenfolge (Inhaber 06.11.2026, #1995): was beim Bestellen vermerkt wurde (eintrag.ueber) >
- * Lagerware nach der privaten Regeldatei (position.lagerware, vom Server gesetzt) > Stammroute
- * (einkauf.route). `belegt` ist false, wenn der Weg nur aus der Stammroute abgeleitet ist: Ware mit
+ * Lagerware nach der privaten Regeldatei (position.lagerware, vom Server gesetzt) > vor dem Bestellen
+ * der Vorschlag der Bestellnachricht (position.wegVorschlag, 12.11.2026) > Stammroute (einkauf.route). `belegt` ist false, wenn der Weg nur aus der Stammroute abgeleitet ist: Ware mit
  * Route "an uns" geht nach der Regel vom 14.10. meist trotzdem direkt an den Kunden - die
  * Plakette sagt dann "nicht vermerkt".
  *
@@ -69,7 +69,7 @@ const wegErgebnis = (weg, belegt) => ({ weg, wort: LIEFERWEG_WORT[weg], belegt }
  * @param {object} [eintrag] Auftragsfluss-Eintrag (ueber, status)
  * @param {object} [ctx]
  * @param {object[]} [ctx.regeln]  Lagerware-Regeln, falls die Position noch nicht markiert ist (Server)
- * @returns {{weg:string, wort:string, belegt:boolean}|null}  null fuer Muster und Eigenleistung
+ * @returns {{weg:string, wort:string, belegt:boolean, vorschlag?:boolean}|null}  null fuer Muster und Eigenleistung
  */
 export function lieferwegVon(p, eintrag = null, ctx = {}) {
   if (!p || p.istMuster || p.eigenleistung) return null;
@@ -79,6 +79,11 @@ export function lieferwegVon(p, eintrag = null, ctx = {}) {
   if (vermerk) return wegErgebnis(vermerk === 'hersteller' && p.route === 'SUPPLIER_TO_SITE' ? 'baustelle' : vermerk, true);
   const regel = p.lagerware === true || (p.lagerware === undefined && Array.isArray(ctx.regeln) && Boolean(lagerRegelFuer(p.sku, ctx.regeln)));
   if (regel && !SCHON_DA.has(status)) return wegErgebnis('lager', true);
+  // Noch kein Schritt: der Weg, den die Bestellnachricht ohne Wahl im Dialog nimmt (p.wegVorschlag, vom
+  // Server gesetzt: Standardweg des Lieferanten, Kettler-Regel). Sonst zeigte die Plakette vor dem Bestellen
+  // "über uns", waehrend die Nachricht direkt an den Kunden bestellt (12.11.2026). Nur ein Vorschlag:
+  // wer Tatsachen prueft (Server: "Ware ist angekommen", "Gepackt"), ruft mit ctx.vorschlag === false.
+  if (!status && ctx.vorschlag !== false && WEGE.includes(p.wegVorschlag)) return { ...wegErgebnis(p.wegVorschlag, false), vorschlag: true };
   return wegErgebnis(ROUTE_WEG[p.route] || 'uns', false);
 }
 
@@ -135,6 +140,7 @@ export function wegeImAuftrag(positionen = [], eintragVon = () => null, ctx = {}
     const bisher = je.get(lw.weg) || { weg: lw.weg, wort: lw.wort, anzahl: 0, belegt: true };
     bisher.anzahl += 1;
     bisher.belegt = bisher.belegt && lw.belegt;
+    bisher.vorschlag = (bisher.vorschlag ?? true) && lw.vorschlag === true;
     je.set(lw.weg, bisher);
   }
   return WEGE.filter(w => je.has(w)).map(w => je.get(w));

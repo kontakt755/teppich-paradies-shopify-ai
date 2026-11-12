@@ -260,3 +260,18 @@ test('Lieferantenkarte: Lagerware steht unter "aus eigenem Lager", nie unter "zu
   assert.equal(k.ueberfaellig.anzahl, 0);
   assert.equal(k.offenGesamt, 2, 'zaehlt trotzdem als offen');
 });
+
+test('12.11.: vor dem Bestellen gilt der Vorschlag der Bestellnachricht, danach Vermerk bzw. Stammroute', () => {
+  const p = { sku: 'X', route: 'WAREHOUSE', wegVorschlag: 'hersteller' };
+  assert.deepEqual(lieferwegVon(p), { weg: 'hersteller', wort: LIEFERWEG_WORT.hersteller, belegt: false, vorschlag: true });
+  // Tatsachenpruefung im Server: ohne Vorschlag.
+  assert.equal(lieferwegVon(p, null, { vorschlag: false }).weg, 'uns');
+  // Bestellt ohne Vermerk (z. B. telefonisch): Stammroute, kein Vorschlag mehr.
+  assert.equal(lieferwegVon(p, { status: 'bestellt' }).weg, 'uns');
+  assert.equal(lieferwegVon(p, { status: 'bestellt', ueber: 'laden' }).belegt, true);
+  // Lagerware geht vor; ein unbekannter Wert zaehlt nicht.
+  assert.equal(lieferwegVon({ ...p, lagerware: true }).weg, 'lager');
+  assert.equal(lieferwegVon({ ...p, wegVorschlag: 'irgendwas' }).weg, 'uns');
+  assert.match(lieferwegPlakette(lieferwegVon(p)), /Vorschlag/);
+  assert.doesNotMatch(lieferwegPlakette(lieferwegVon({ sku: 'X', route: 'WAREHOUSE' })), /Vorschlag/);
+});

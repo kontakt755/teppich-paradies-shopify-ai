@@ -1,0 +1,6 @@
+## 2026-11-12 · Lieferweg vor dem Bestellen zeigt, was die Bestellnachricht wirklich bestellt
+
+- **Geaendert:** Solange eine Warenposition noch nicht bestellt ist, zeigte die Lieferweg-Plakette die Stammroute des Produkts (meist „über uns“), während die Bestellnachricht nach der Regel vom 14.10. direkt an den Kunden bestellt. Jetzt rechnet der Server je Position den Weg der Bestellnachricht aus (Standard „Hersteller → Kunde“, der hinterlegte Standardweg des Lieferanten, gekettelte Maßteppiche „über Kettler“) und die Plakette zeigt ihn gestrichelt als Vorschlag. Kettelt der Lieferant selbst und ist „Wer kettelt?“ noch offen, bleibt es bei der Stammroute. Nach dem Bestellen gilt wie bisher der Vermerk.
+- **Getestet:** `operations/tests/wegvorschlag.test.mjs` (4 Tests), `docs/ai-dashboard/tests/lieferweg.test.mjs` (1 neuer Test), `npm run -s pruefen`, `npm run dashboard:pruefen`.
+- **Risiken/Annahmen:** Der Vorschlag ändert auch die Schritte eines unbestellten Auftrags („Hersteller liefert direkt“ statt „Ware da“). Wer telefonisch bestellt und „bestellt“ ohne Vermerk setzt, bekommt wieder die Stammroute. Die Schreibprüfungen im Server („Ware ist angekommen“, „Gepackt“) rechnen bewusst ohne Vorschlag.
+- **Nächste Stufe:** Hinweis „geht getrennt raus“, wenn Positionen eines Auftrags verschiedene Wege haben.

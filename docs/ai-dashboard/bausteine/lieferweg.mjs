@@ -8,11 +8,12 @@ import { esc } from '../kern/helfer.mjs';
 import { wegeImAuftrag } from '../lib/lieferweg.mjs';
 
 const UNBELEGT = 'nicht vermerkt – aus den Stammdaten';
+const VORSCHLAG = 'Vorschlag – so bestellt die Bestellnachricht, wenn du nichts anderes wählst';
 
 /** Plakette fuer einen Weg ({ weg, wort, belegt } aus lieferwegVon); leer ohne Weg. */
 export function lieferwegPlakette(lw, { anzahl = null } = {}) {
   if (!lw?.weg) return '';
-  const titel = lw.belegt ? `Lieferweg: ${lw.wort}` : `Lieferweg: ${lw.wort} – ${UNBELEGT}`;
+  const titel = lw.belegt ? `Lieferweg: ${lw.wort}` : `Lieferweg: ${lw.wort} – ${lw.vorschlag ? VORSCHLAG : UNBELEGT}`;
   return `<span class="lieferweg${lw.belegt ? '' : ' unbelegt'}" data-lieferweg="${esc(lw.weg)}" title="${esc(titel)}">${anzahl ? `${esc(anzahl)} × ` : ''}${esc(lw.wort)}</span>`;
 }
 
