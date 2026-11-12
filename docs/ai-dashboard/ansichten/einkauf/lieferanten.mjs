@@ -499,8 +499,8 @@ function zielChips(m) {
 function kettelwegWahl(fragen) {
   if (!fragen.length) return '';
   const offen = fragen.filter(f => !f.wahl).length;
-  const knopf = (f, weg, text) => `<button type="button" class="chip" data-lf-kettelweg="${esc(f.lineItemId)}" data-lf-weg="${weg}" aria-pressed="${f.wahl === weg}">${text}${f.empfehlung === weg ? ' (meist günstiger)' : ''}</button>`;
-  const zeile = f => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc([f.orderName, anzeigeWert(f.titel || ''), f.farbe].filter(Boolean).join(' · '))}</div><div class="s">Gekettelt gekauft${f.fertigmass ? `, ${esc(f.fertigmass)}` : ''}</div></div>
+  const knopf = (f, weg, text) => `<button type="button" class="chip" data-lf-kettelweg="${esc(f.lineItemId)}" data-lf-weg="${weg}" aria-pressed="${f.wahl === weg}">${text}${f.empfehlung === weg ? (f.gerechnet ? ' (empfohlen)' : ' (meist günstiger)') : ''}</button>`;
+  const zeile = f => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc([f.orderName, anzeigeWert(f.titel || ''), f.farbe].filter(Boolean).join(' · '))}</div><div class="s">Gekettelt gekauft${f.fertigmass ? `, ${esc(f.fertigmass)}` : ''}</div>${f.vergleich ? `<div class="s">${esc(f.vergleich)}</div>` : ''}</div>
     ${istNurLesend() ? '' : `<div class="lf-zielwahl" role="group" aria-label="Wer kettelt?">${knopf(f, 'lieferant', 'Lieferant kettelt, direkt an Kunden')}${knopf(f, 'kettler', 'Unser Kettler')}</div>`}</li>`;
   return `<section class="lf-mail lf-kettelweg"><div class="notice${offen ? ' warn' : ''}"><strong>Wer kettelt? ${offen ? `Noch ${offen} zu entscheiden` : 'Entschieden'}</strong>
     <p class="small" style="margin:4px 0 0">Das klären wir Fall für Fall. Über 200 cm kurzer Seite ist der Lieferant meist günstiger, weil vom Kettler sonst noch die Spedition dazukommt.${offen ? ' Erst nach der Wahl entsteht die Bestellmail.' : ''}</p></div>
