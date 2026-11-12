@@ -48,6 +48,23 @@ ungefragt zusammen - was dabei verloren geht, weiss danach niemand.
    Rechner hinweg (Skill `control-center`). Issues sind oeffentlich: Lieferanten
    nur als Pseudonym (`AGENTS.md` Punkt 8).
 
+6. **Neue Sitzung selbst starten und diese archivieren** (Benutzer 2026-11-12),
+   nur in der Claude-App und nur, wenn nichts mehr auf den Benutzer wartet:
+   - `mcp__ccd_session__start_session` mit `initiation: "user_asked"`,
+     `context: "fresh"`, dem Uebergabetext aus Schritt 4 als `prompt`, einem
+     Satz Ziel und Stand als `background`. `permission_mode` weglassen: die neue
+     Sitzung erbt den Modus dieser Sitzung (laeuft diese mit „Berechtigungen
+     umgehen“, die neue auch). Hochstufen kann nur der Benutzer per Karte.
+   - Arbeitskopie: steht unter „Nicht committet“ etwas, `use_worktree: false`
+     (dieselbe Arbeitskopie); sonst im Uebergabetext den Branch nennen, die
+     neue Sitzung checkt ihn in ihrer eigenen Arbeitskopie aus.
+   - Erst wenn das Ergebnis den Start meldet: Titel der neuen Sitzung als Link
+     nennen und `mcp__ccd_session_mgmt__archive_session` mit `"self"` aufrufen.
+     Startet sie nicht, bleibt diese Sitzung offen und der Block aus Schritt 4
+     ist die Uebergabe.
+   - Nicht archivieren, wenn diese Sitzung angepinnt ist oder noch eine Frage
+     an den Benutzer offen hat.
+
 ## Uebergabe an Codex
 
 Nur auf ausdruecklichen Auftrag: `Zusammenarbeit/Start.md` im Gedaechtnis-Vault
