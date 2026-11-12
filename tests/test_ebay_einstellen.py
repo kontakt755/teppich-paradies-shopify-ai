@@ -131,6 +131,12 @@ class Kettel(unittest.TestCase):
         for sku in e['artikel']:
             self.assertEqual(e['artikel'][sku]['product']['imageUrls'][:2], erwartet)
 
+    def test_meterware_nimmt_alle_shopbilder_der_rolle(self):
+        r = produkt()
+        r['bilder'] = [{'url': 'https://cdn.example/p.jpg'}, {'url': 'https://cdn.example/seite.jpg'}]
+        e = modul.plane_welle1(liste(), [r], KONFIG)[0]
+        self.assertEqual(e['gruppe']['imageUrls'][:2], ['https://cdn.example/p.jpg', 'https://cdn.example/seite.jpg'])
+
     def test_ohne_bilderliste_bleibt_hauptbild(self):
         k = kettelprodukt()
         k['bild'] = 'https://cdn.example/haupt.jpg'
