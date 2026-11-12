@@ -131,3 +131,17 @@ test('Einfass-Konfigurator meldet kein Stueck: Zeile nur mit Farbe, sonst unvera
   assert.equal(variantenzeile({ attrs: { 'data-tp-ek': '' }, start: 'Grau' }).text, 'Grau');
   assert.equal(variantenzeile({ attrs: { 'data-tp-ek': '' }, farbe: 'Anthrazit' }).text, 'Anthrazit');
 });
+
+// Handy-Kaufweg 12.11.2026: Farbe, Mass, Kauf- und Musterknopf lagen bei 390 px
+// erst ab dem zweiten Bildschirm. Fehlt ein Mass, steht die Leiste ("Muster",
+// "Masse eingeben") deshalb schon, bevor der Kaufweg erreicht ist - nur auf dem
+// Handy, nur unterhalb des Viewports und nie kaufbereit (kein ungesehener Kauf).
+test('fruehe Leiste nur auf dem Handy, unterhalb und mit fehlendem Mass', () => {
+  const regel = sticky.match(/#leisteZeigen\(rect\) \{([\s\S]*?)\n  \}/)?.[1] ?? '';
+  assert.match(regel, /rect\.bottom < 0 \|\| rect\.top < 0/);
+  assert.match(regel, /rect\.top >= window\.innerHeight/);
+  assert.match(regel, /matchMedia\('\(max-width: 749px\)'\)/);
+  assert.match(regel, /this\.#targetIncomplete\(this\.#targetAddToCartButton\)/);
+  // alle drei Einblend-Stellen nutzen dieselbe Regel
+  assert.equal((sticky.match(/this\.#leisteZeigen\(rect\)/g) || []).length, 3);
+});
