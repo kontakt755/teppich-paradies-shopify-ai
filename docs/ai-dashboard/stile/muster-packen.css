@@ -51,7 +51,8 @@
 /* Kopfzeile: was schon im Haus ist (Inhaber 29.10.) - neutral, aber kraeftiger als die Datumszeile. */
 .mp-hier-da { color: var(--text); font-weight: 600; }
 /* Lagermuster: der Packer muss sofort sehen, dass und wo er es im Haus greift (09.11.). */
-.mp-lager { color: var(--text); font-weight: 600; }
+/* Schon im Haus: faellt am Muster auf, damit niemand auf den Lieferanten wartet. */
+.mp-lager { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--warn); color: var(--surface); font-size: 1rem; font-weight: 700; }
 /* Noch nicht bestellt samt Grund: die Farbe traegt die Plakette darueber, der Text bleibt neutral. */
 .mp-hier-offen { color: var(--text-2); }
 .mp-ohne-aufkleber { color: var(--text-2); }
