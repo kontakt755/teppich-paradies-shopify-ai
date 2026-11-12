@@ -346,7 +346,8 @@
 
 <title>
   {%- if request.page_type == 'product' -%}
-    {{ optimized_page_title | escape }}
+    {%- comment -%} page_title kommt schon maskiert: escape machte aus "&" ein sichtbares "&amp;" (2026-11-12) {%- endcomment -%}
+    {{ optimized_page_title | escape_once }}
   {%- elsif request.page_type == 'index' and page_title == shop.name -%}
     {%- comment -%}
       Ohne Homepage-Titel in den Onlineshop-Einstellungen liefert Shopify nur
