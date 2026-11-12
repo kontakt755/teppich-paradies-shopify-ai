@@ -3190,6 +3190,13 @@ oder Mailtext. Ohne Stammdaten ein Hinweis, ohne Zeilen fällt der Abschnitt weg
 (`POST /api/laden/telefonisch` mit Schlüssel `ware:<id>`, dieselbe Ablage wie „Telefonisch erledigt“). Es wird
 nichts versendet. Logik: `wareUnterwegs()` in `docs/ai-dashboard/lib/laden.mjs`.
 
+**Ware angekommen (seit 2026-11-12).** Digitale Lieferscheine von Lieferant A nennen den Lieferort nur im PDF, und der
+Gmail-Konnektor des Claude-Laufs liefert keine Anhänge. Deshalb holt `belege -- uebernehmen` (bzw. `belege -- lieferorte`)
+die PDFs offener Lieferscheine der letzten 7 Tage nur lesend per IMAP, `lieferortAusText` (`operations/lib/lieferbelege.mjs`)
+liest den Anschriftblock und legt am Beleg nur `lieferort.ort` ab (`laden`, `kettler`, `kunde`, `abholung`, `unklar`; `null` =
+anderes Format). `wareAngekommen` (`lib/laden.mjs`) macht daraus die Zeilen im Abschnitt „Ware unterwegs“; `laden` und
+`null` erscheinen nie. Unklares wird als „Lieferschein unklar“ gezeigt, nie geraten.
+
 **Mails (seit 2026-11-11): nur lesender IMAP-Abruf.** Das Laden-Postfach ist ein gewöhnliches IMAP-Postfach bei
 einem Hoster (kein Gmail); das Hauptpostfach leitet per Filter dorthin weiter. Zwei weitere Dateien im Privatordner
 (Logik `operations/lib/laden-mails.mjs`):

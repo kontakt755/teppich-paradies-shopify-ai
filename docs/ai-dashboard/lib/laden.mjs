@@ -106,6 +106,31 @@ export function wareUnterwegs(belege = [], { jetzt = new Date(), nameVon = id =>
     });
 }
 
+const ANGEKOMMEN = Object.freeze({
+  kunde: 'Ware beim Kunden angekommen', kettler: 'Ware beim Kettler angekommen',
+  abholung: 'Ware beim Lieferanten abgeholt', unklar: 'Lieferschein unklar – bitte ansehen',
+});
+
+/**
+ * "Ware angekommen" (Benutzer 12.11.2026): digitale Lieferscheine kommen nicht mehr als Mail in den Laden. Der
+ * Schein entsteht bei der Uebergabe mit Unterschrift, darum "angekommen" und nicht "unterwegs". Der Lieferort
+ * stammt aus dem PDF (operations/lib/lieferbelege.mjs lieferortAusText). Lieferungen an den Laden erscheinen
+ * nicht - die nimmt der Laden selbst an. Gleiche Zeilenform und gleiches Fenster wie wareUnterwegs.
+ */
+export function wareAngekommen(belege = [], { jetzt = new Date(), nameVon = id => `Lieferant ${id}` } = {}) {
+  const ab = jetzt.getTime() - WARE_TAGE * 86400000;
+  return belege
+    .filter(b => b?.art === 'lieferschein' && b.lieferant && ANGEKOMMEN[b.lieferort?.ort]
+      && new Date(b.datum).getTime() >= ab && new Date(b.datum).getTime() <= jetzt.getTime())
+    .sort((a, b) => String(b.datum).localeCompare(String(a.datum)))
+    .map(b => ({
+      schluessel: `ware:${String(b.id).replace(/[^A-Za-z0-9]/g, '').slice(0, 40)}`,
+      von: nameVon(b.lieferant), text: ANGEKOMMEN[b.lieferort.ort],
+      bezug: [b.refs?.belegnummer ? `Vorgang ${b.refs.belegnummer}` : null, ...(b.refs?.betreffNummern || []), b.refs?.kommission].filter(Boolean).join(' · ').slice(0, 80) || null,
+      seit: b.datum, alter: alterText(tageSeit(b.datum, jetzt)),
+    }));
+}
+
 /** Die eine rote Zeile oben: offene (von niemandem uebernommene) Eintraege in der roten Stufe. */
 export function liegtZuLange(mails = [], todos = []) {
   const rot = l => l.filter(e => !e.zustaendig && e.ton === 'crit').length;
