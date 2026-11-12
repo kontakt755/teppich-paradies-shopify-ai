@@ -503,3 +503,6 @@
     transition: none;
   }
 }
+
+/* Sprungziel "Wohnort pruefen" (snippets/tp-service-hauptaktion): nicht unter dem festen Kopf */
+#tp-verlegegebiet { scroll-margin-top: calc(var(--header-height, 80px) + 16px); }

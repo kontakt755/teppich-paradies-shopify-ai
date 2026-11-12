@@ -92,6 +92,7 @@
 {% comment %} CSS ausgelagert nach assets/tp-verlegegebiet.css (Shop 2.0 M10, Performance): nicht mehr im globalen Section-Bundle. {% endcomment %}
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
+  id="tp-verlegegebiet"
   class="tp-vg section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
   style="{% render 'spacing-style', settings: section.settings %}"
   data-testid="tp-verlegegebiet-{{ section.id }}"

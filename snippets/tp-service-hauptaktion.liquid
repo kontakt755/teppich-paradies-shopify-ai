@@ -55,6 +55,17 @@
   {%- if hinweis != blank -%}
     <p class="tp-sha__hinweis">{{ hinweis | escape }}</p>
   {%- endif -%}
+  {%- comment -%}
+    Verlegegebiet im ersten Bildschirm: 69 % der Besucher dieser Seiten kommen
+    aus Berlin (Shopify-Analytics 13.10.-12.11.), oben stand aber nur
+    Oranienburg. Grenze wie die Ortspruefung (sections/tp-verlegegebiet.liquid),
+    Berlin und Potsdam liegen erst ab 50 km ganz darin.
+  {%- endcomment -%}
+  {%- assign sha_km = settings.tp_vs_radius_premium | default: 50 -%}
+  <p class="tp-sha__gebiet">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+    <span>Wir verlegen in {% if sha_km >= 50 %}Berlin, Potsdam und {% endif %}bis ca. {{ sha_km }}&nbsp;km um Oranienburg · <a href="#tp-verlegegebiet">Wohnort prüfen</a></span>
+  </p>
 </div>
 
 {% stylesheet %}
@@ -65,6 +76,10 @@
   .tp-sha__kurz { display: none; }
   .tp-sha__hinweis { margin: 10px 0 0; font-size: var(--tp-fs-sm); color: var(--tp-muted, #595959); }
   .tp-sha--mitte .tp-sha__hinweis { text-align: center; }
+  .tp-sha__gebiet { display: flex; gap: 6px; align-items: flex-start; margin: 10px 0 0; font-size: var(--tp-fs-sm); font-weight: 500; color: var(--tp-ink, #1d1a17); }
+  .tp-sha__gebiet svg { flex: none; width: 16px; height: 16px; margin-top: 2px; }
+  .tp-sha__gebiet a { color: inherit; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+  .tp-sha--mitte .tp-sha__gebiet { justify-content: center; text-align: center; }
 
   /* Schmale Textspalte neben dem Bild (Vinyl, Treppe: rund 540 px): mit der
      Nummer braeuchten die drei Knoepfe 563 px und WhatsApp rutschte in eine
