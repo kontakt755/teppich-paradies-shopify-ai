@@ -48,34 +48,6 @@ ungefragt zusammen - was dabei verloren geht, weiss danach niemand.
    Rechner hinweg (Skill `control-center`). Issues sind oeffentlich: Lieferanten
    nur als Pseudonym (`AGENTS.md` Punkt 8).
 
-6. **Neue Sitzung selbst starten und diese archivieren** (Benutzer 2026-11-12),
-   nur in der Claude-App und nur, wenn nichts mehr auf den Benutzer wartet:
-   - `mcp__ccd_session__start_session` mit `initiation: "user_asked"`,
-     `context: "fresh"`, dem Uebergabetext aus Schritt 4 als `prompt`, einem
-     Satz Ziel und Stand als `background`. `permission_mode` weglassen: die neue
-     Sitzung erbt den Modus dieser Sitzung (laeuft diese mit „Berechtigungen
-     umgehen“, die neue auch). Hochstufen kann nur der Benutzer per Karte.
-   - Arbeitskopie: steht unter „Nicht committet“ etwas, `use_worktree: false`
-     (dieselbe Arbeitskopie); sonst im Uebergabetext den Branch nennen, die
-     neue Sitzung checkt ihn in ihrer eigenen Arbeitskopie aus.
-   - Erst wenn das Ergebnis den Start meldet: Titel der neuen Sitzung als Link
-     nennen, sie mit `mcp__ccd_session_mgmt__detach_session` abloesen (sonst
-     wird sie als Nebensitzung mit dieser archiviert oder blockiert das
-     Archivieren) und dann `mcp__ccd_session_mgmt__archive_session` mit
-     `"self"` aufrufen. Wird das Abloesen abgelehnt (geteilte Arbeitskopie),
-     diese Sitzung offen lassen und das sagen. Startet die neue nicht, bleibt
-     diese Sitzung offen und der Block aus Schritt 4 ist die Uebergabe.
-   - Das Refresh-Panel der Mod `handoff` erinnert weiter an die Uebergabe. Ihr
-     Knopf „Start new chat with it“ ist lokal umgebaut (12.11., Quelle
-     `~/Downloads/benai-mods/plugins/handoff/hooks/register.tsx`, Sicherung
-     daneben): er schickt den Auftrag in diesen Chat, mit dem Pfad des fertigen
-     Uebergabetexts. Dann nur diesen Schritt 6 ausfuehren und die Datei woertlich
-     als `prompt` nehmen. Ein Mod-Update ueberschreibt den Umbau; dann oeffnet
-     der Knopf wieder nur einen gefuellten neuen Chat (kein geerbter Modus, kein
-     Archivieren, „Shape it?“ der Mod `brain-dump` - dort „Send as is“).
-   - Nicht archivieren, wenn diese Sitzung angepinnt ist oder noch eine Frage
-     an den Benutzer offen hat.
-
 ## Uebergabe an Codex
 
 Nur auf ausdruecklichen Auftrag: `Zusammenarbeit/Start.md` im Gedaechtnis-Vault
