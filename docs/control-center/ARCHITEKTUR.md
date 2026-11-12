@@ -549,7 +549,11 @@ Vermerk beim Bestellen (`eintrag.ueber`: kunde, kettler, laden, lager) > Lagerwa
 Position einen Schritt hat; die Regeldatei nur, solange die Ware nicht geliefert ist (was ohne Vermerk
 `lager` schon geliefert ist, kam ueber den Lieferanten). Die Stammroute `OWN_STOCK` ist kein Weg „aus
 Lager“ - `routeFor` bestellt sie beim Lieferanten. `istLagerware()` heisst genau „Weg aus Lager“, damit
-keine Position zugleich bestellt und Lagerware ist. Lagerware sind Artikel, die wir aus
+keine Position zugleich bestellt und Lagerware ist. Vor dem Bestellen (kein Schritt) geht der Stammroute
+der **Wegvorschlag** vor (seit 2026-11-12): `wegVorschlag()` in `operations/lib/lieferanten.mjs` rechnet je
+Position den Weg, den die Bestellmail ohne Wahl im Dialog nimmt (Standard direkt an den Kunden,
+`ware.lieferung` des Lieferanten, Kettler-Regel), der Server setzt ihn als `position.wegVorschlag`. Er ist
+nur Anzeige und Ablauf: Schreibpruefungen im Server rufen `lieferwegVon(…, { vorschlag: false })`. Lagerware sind Artikel, die wir aus
 eigener Rolle zuschneiden, obwohl sie in Shopify als Ware eines Lieferanten gefuehrt werden. Welche das
 sind, steht nur in der privaten Regeldatei `$TP_PRIVAT_DIR/lieferanten/lagerware.json`
 (`{ "regeln": [{ "skuPraefix", "hinweis" }] }`, nie im Git); `operations/lib/lagerware.mjs` markiert die

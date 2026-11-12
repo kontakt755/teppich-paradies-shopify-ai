@@ -74,7 +74,7 @@ import {
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import { warnungenAnhaengen } from '../operations/lib/bestellwarnung.mjs';
-import { leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff, kennungAusLexikon, KETTLER_NAH_PLZ } from '../operations/lib/lieferanten.mjs';
+import { leseStammdaten, stammdatenPfad, stammdatenFuer, markiereWegVorschlag, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff, kennungAusLexikon, KETTLER_NAH_PLZ } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
@@ -429,7 +429,8 @@ const LAGERWARE_KOMMT_NICHT_AN = 'Diese Ware kommt nicht vom Lieferanten zu uns:
 
 function bereiteBestellModell(daten, dir, jetzt) {
   const exportDaten = ladeExport(JSON.stringify(daten));
-  const modell = mitLagerware(mitMusterherkunft(aufbereiten(exportDaten, { jetzt }), dir), dir);
+  // Nach der Lagerware: die bekommt keinen Vorschlag.
+  const modell = markiereWegVorschlag(mitLagerware(mitMusterherkunft(aufbereiten(exportDaten, { jetzt }), dir), dir), leseStammdaten(stammdatenPfad(dir)));
   // Kurz-Ratgeber zum Beilegen (domains/shopify/ratgeber-pdf): dieselbe Zuordnung wie in der
   // Bestellbestaetigung, Muster zaehlen nicht. Leer = kein Knopf "Ratgeber drucken".
   const roh = new Map(exportDaten.orders.map(o => [o?.id, o]));
@@ -1430,7 +1431,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Schon zugeschnittene Lagerware darf als Korrektur zurueck auf "bei uns" (z. B. von "raus").
       const kommtNichtAn = p => {
         if (status !== 'geliefert') return false;
-        const weg = lieferwegVon(p, alle[positionKey(orderId, p.lineItemId)])?.weg;
+        const weg = lieferwegVon(p, alle[positionKey(orderId, p.lineItemId)], { vorschlag: false })?.weg;
         return weg === 'hersteller' || weg === 'baustelle' || (weg === 'lager' && stufe(p) < ziel);
       };
       const auslassen = p => (status === 'bestellt' && (lagerGedeckt(p) || lagerware(p))) || kommtNichtAn(p);
@@ -1539,7 +1540,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const file = auftragsstatusPfad(dir);
     const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)] || null;
     // Derselbe Weg wie ueberall (lib/lieferweg.mjs): ein Vermerk zaehlt nur mit Schritt.
-    const weg = lieferwegVon(p, vorher)?.weg;
+    const weg = lieferwegVon(p, vorher, { vorschlag: false })?.weg;
     if (['hersteller', 'baustelle'].includes(weg)) throw new ApiError(409, 'Der Lieferant schickt diese Ware direkt an den Kunden – bei uns wird nichts zugeschnitten oder gepackt.');
     if (schritt === 'zugeschnitten' && weg !== 'lager') throw new ApiError(409, 'Zugeschnitten wird nur Ware aus eigenem Lager.');
     if (schritt === 'gepackt' && !['lager', 'uns'].includes(weg)) throw new ApiError(409, 'Gepackt wird nur Ware, die wir selbst verschicken.');
