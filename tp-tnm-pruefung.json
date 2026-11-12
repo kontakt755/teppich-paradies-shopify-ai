@@ -1,13 +1,13 @@
 {
   "format": "tp-tnm-endpreis-v1",
   "ok": true,
-  "erstellt": "2026-11-11T12:15:07.207Z",
+  "erstellt": "2026-11-12T12:53:42.002Z",
   "theme": "live",
-  "produkte": 421,
-  "varianten": 4580,
-  "zeilen": 4580,
+  "produkte": 429,
+  "varianten": 4588,
+  "zeilen": 4588,
   "groessen": {
-    "80 x 150 cm": 2653,
+    "80 x 150 cm": 2661,
     "120 x 170 cm": 34,
     "160 x 230 cm": 1893
   },
@@ -1525,7 +1525,7 @@
     },
     {
       "id": "gid://shopify/Product/16123456094542",
-      "updatedAt": "2026-11-04T19:56:40Z",
+      "updatedAt": "2026-11-12T00:26:05Z",
       "variantIds": [
         "61086936367438",
         "61086936400206",
@@ -2415,7 +2415,7 @@
     },
     {
       "id": "gid://shopify/Product/16136019575118",
-      "updatedAt": "2026-11-03T23:17:18Z",
+      "updatedAt": "2026-11-11T17:40:48Z",
       "variantIds": [
         "61154752561486",
         "61154752594254",
@@ -7118,11 +7118,67 @@
       "variantIds": [
         "61331870613838"
       ]
+    },
+    {
+      "id": "gid://shopify/Product/16243234144590",
+      "updatedAt": "2026-11-12T11:28:21Z",
+      "variantIds": [
+        "61598319575374"
+      ]
+    },
+    {
+      "id": "gid://shopify/Product/16243234570574",
+      "updatedAt": "2026-11-12T11:28:26Z",
+      "variantIds": [
+        "61598325244238"
+      ]
+    },
+    {
+      "id": "gid://shopify/Product/16251293729102",
+      "updatedAt": "2026-11-12T11:28:20Z",
+      "variantIds": [
+        "61640745091406"
+      ]
+    },
+    {
+      "id": "gid://shopify/Product/16251294581070",
+      "updatedAt": "2026-11-12T11:30:11Z",
+      "variantIds": [
+        "61640752267598"
+      ]
+    },
+    {
+      "id": "gid://shopify/Product/16251294777678",
+      "updatedAt": "2026-11-12T11:28:21Z",
+      "variantIds": [
+        "61640754299214"
+      ]
+    },
+    {
+      "id": "gid://shopify/Product/16251294974286",
+      "updatedAt": "2026-11-12T11:28:20Z",
+      "variantIds": [
+        "61640756068686"
+      ]
+    },
+    {
+      "id": "gid://shopify/Product/16251295269198",
+      "updatedAt": "2026-11-12T11:28:21Z",
+      "variantIds": [
+        "61640759378254"
+      ]
+    },
+    {
+      "id": "gid://shopify/Product/16251315126606",
+      "updatedAt": "2026-11-12T11:28:26Z",
+      "variantIds": [
+        "61640907587918"
+      ]
     }
   ],
   "kanalFreigabe": false,
   "hinweis": "Das Manifest veroeffentlicht keine Produkte. Freigabe erst nach verarbeiteter Endpreisquelle.",
-  "katalogHash": "e602bf94a799ea99762578a0beca158dd9c8ca653e25cd5928813453f2db0bfb",
+  "katalogHash": "390700def2d7dd14cad46fcac306d9be63771bef023b525a8b42a9219699c3b0",
   "entnahmen": [],
   "vorherGoogle": 4580,
   "vorherMeta": 4580
