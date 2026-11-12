@@ -10,6 +10,10 @@ zu mergen und, falls er Theme oder Dashboard aendert, auszurollen. Fuer nichts
 anderes: keine weiteren PRs, keine fremden Branches. Fehlt die Nummer,
 nachfragen statt raten.
 
+Ohne Aufruf des Benutzers gilt dieser Ablauf nur in den beiden stehenden
+Freigaben aus `AGENTS.md`: „Chat-Waechter“ und „Eigenen PR selbst mergen“
+(unkritische PRs; kritische bleiben beim Benutzer).
+
 Jeder Schritt wird mit der Ausgabe seines Befehls belegt. Bricht ein Schritt
 ab, ist das ein Befund: Ursache beheben oder melden, nie ueberspringen, nie
 einen Guard oder Hook umgehen.
