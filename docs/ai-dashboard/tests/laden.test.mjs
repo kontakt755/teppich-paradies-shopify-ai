@@ -10,7 +10,7 @@ import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 import { rueckrufePfad, rueckrufAusMailAnlegen } from '../../../operations/lib/rueckrufe.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad } from '../../../operations/lib/laden.mjs';
-import { ladenTodos, liegtZuLange, teileSpalte, ladenMailZeilen, wareUnterwegs, wareAngekommen } from '../lib/laden.mjs';
+import { ladenTodos, liegtZuLange, teileSpalte, ladenMailZeilen, wareUnterwegs, wareAngekommen, zuschnitte } from '../lib/laden.mjs';
 import { lieferbelegePfad } from '../../../operations/lib/lieferbelege.mjs';
 import { stammdatenPfad } from '../../../operations/lib/lieferanten.mjs';
 import { ladenPostfachPfad, ladenMailsPfad } from '../../../operations/lib/laden-mails.mjs';
@@ -256,4 +256,22 @@ test('Server: Rolle "lesen" darf die Uebersicht sehen, aber nichts schreiben (40
     assert.equal((await post(mona, '/api/laden/aufgabe-erledigt', { id })).status, 200);
     assert.equal((await post(mona, '/api/laden/telefonisch', { schluessel: 'mail:0123456789abcdef' })).status, 200);
   });
+});
+
+test('Zuschneiden: nur bezahlte, echte Bestellungen mit Lagerware, die noch nicht zugeschnitten ist; Zeile mit Haken-Bezug', () => {
+  const pos = (id, extra = {}) => ({ lineItemId: id, sku: 'TEST_1', titel: 'Testunterlage', farbe: '80 cm', menge: 2, lagerware: true, ...extra });
+  const auftrag = (id, extra = {}) => ({ id, name: `#${id}`, datum: vorTagen(3), bezahlt: 'PAID', details: { kunde: { name: 'Testkunde' } }, positionen: [pos('p1')], ...extra });
+  const stand = { 'o5::p1': { status: 'geliefert', ueber: 'lager' } };
+  const liste = zuschnitte([
+    auftrag('o1', { positionen: [pos('p1'), pos('p2', { lagerware: false }), pos('p3', { istMuster: true })] }),
+    auftrag('o2', { bezahlt: 'PENDING' }), auftrag('o3', { storniert: true }), auftrag('o4', { testbestellung: true }), auftrag('o5'),
+  ], (o, l) => stand[`${o}::${l}`] || null);
+  assert.deepEqual(liste.map(s => `${s.orderId}:${s.lineItemId}`), ['o1:p1']);
+  assert.equal(liste[0].text, 'Testunterlage · 80 cm · Menge 2');
+  const [z] = ladenTodos({ zuschnitte: liste }, { jetzt: JETZT });
+  assert.equal(z.schluessel, 'schnitt:o1:p1');
+  assert.equal(z.art, 'Zuschneiden');
+  assert.equal(z.von, '#o1 · Testkunde');
+  assert.equal(z.ton, 'crit', 'nach zwei Tagen rot wie eine eigene Aufgabe');
+  assert.deepEqual(z.schnitt, { orderId: 'o1', lineItemId: 'p1' });
 });

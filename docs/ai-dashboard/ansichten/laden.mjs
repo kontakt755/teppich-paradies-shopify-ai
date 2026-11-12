@@ -61,17 +61,20 @@ function merkeAufgeklappt() {
   document.querySelectorAll('#main details[data-laden]').forEach(d => { laden.offen[d.dataset.laden] = d.open; });
 }
 
+/** "Zugeschnitten" geht auch ohne Uebernehmen: wer an der Rolle steht, hakt direkt ab. */
+const schnittKnopf = e => (e.schnitt ? `<button type="button" class="btn laden-knopf" data-laden-schnitt-order="${esc(e.schnitt.orderId)}" data-laden-schnitt-item="${esc(e.schnitt.lineItemId)}">Zugeschnitten</button>` : '');
+
 function zeile(e, { lesen }) {
   const meta = [e.art, e.von].filter(Boolean).map(esc).join(' · ');
   const z = e.zustaendig;
   const rechts = z
     ? `<span class="laden-plakette">${esc(z.wer)} kümmert sich · ${esc(since(z.seit))}</span>
        ${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-zurueck="${esc(e.schluessel)}">Zurückgeben</button>
-       ${e.aufgabeId ? `<button type="button" class="btn laden-knopf" data-laden-erledigt="${esc(e.aufgabeId)}">Erledigt</button>` : ''}`}`
+       ${e.aufgabeId ? `<button type="button" class="btn laden-knopf" data-laden-erledigt="${esc(e.aufgabeId)}">Erledigt</button>` : ''}${schnittKnopf(e)}`}`
     : `<span class="laden-plakette${e.ton ? ` ${esc(e.ton)}` : ''}">${esc(e.alter || '')}</span>
        ${lesen ? '' : laden.wer === e.schluessel
     ? `<span class="laden-wer"><strong>Wer?</strong>${(laden.daten.personen || []).map(n => `<button type="button" class="btn laden-knopf" data-laden-wer="${esc(n)}" data-schluessel="${esc(e.schluessel)}">${esc(n)}</button>`).join('')}<button type="button" class="btn btn-ghost laden-knopf" data-laden-abbrechen>Abbrechen</button></span>`
-    : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${esc(e.schluessel)}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>`}`;
+    : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${esc(e.schluessel)}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>${schnittKnopf(e)}`}`;
   const telefon = e.schluessel.startsWith('mail:') && !lesen ? `<button type="button" class="btn laden-knopf" data-laden-telefonisch="${esc(e.schluessel)}">Telefonisch erledigt</button>` : '';
   return `<li class="laden-zeile${e.ton === 'crit' && e.schluessel.startsWith('mail:') ? ' laden-zeile-rot' : ''}">
     <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}</div>
@@ -138,7 +141,7 @@ export function viewLaden() {
     <div class="laden-spalten">
       ${spalte(d.mails.eintraege, { id: 'mails', titel: 'Mails', satz: 'Hier stehen die Mails an den Laden. Wer eine übernimmt, antwortet darauf.', leer: mailsLeer, vorspann: mailsFehler }, lesen)}
       ${spalte(d.todos, {
-    id: 'zutun', titel: 'Zu tun', satz: 'Hier stehen Rückrufe, Kunden, die sich nicht melden, und eigene Aufgaben.', leer: 'Nichts offen.',
+    id: 'zutun', titel: 'Zu tun', satz: 'Hier stehen Rückrufe, Ware zum Zuschneiden aus eigener Rolle, Kunden, die sich nicht melden, und eigene Aufgaben.', leer: 'Nichts offen.',
     kopf: lesen || laden.formOffen ? '' : '<button type="button" class="btn laden-knopf" data-laden-neu>Aufgabe dazu</button>',
     vorspann: laden.formOffen ? aufgabenFormular() : '',
   }, lesen)}
@@ -170,6 +173,8 @@ export function ladenKlick(e) {
   if ((el = von('data-laden-telefonisch'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenTelefonisch, wer: laden.daten?.personen?.length === 1 ? laden.daten.personen[0] : null }, 'Telefonisch erledigt'); return true; }
   // Gleiche Ablage wie "Telefonisch erledigt": der Haken blendet die Zeile nur aus, am Postfach aendert sich nichts.
   if ((el = von('data-laden-gesehen'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenGesehen }, 'Gesehen'); return true; }
+  // Derselbe Haken wie "Zugeschnitten" unter Bestellen (aktion selbstversand) - danach steht die Ware dort unter "noch packen".
+  if ((el = von('data-laden-schnitt-order'))) { schreiben('/api/einkauf/auftragsstatus', { aktion: 'selbstversand', orderId: el.dataset.ladenSchnittOrder, lineItemId: el.dataset.ladenSchnittItem, schritt: 'zugeschnitten', an: true }, 'Zugeschnitten – jetzt packen'); return true; }
   if ((el = von('data-laden-erledigt'))) { schreiben('/api/laden/aufgabe-erledigt', { id: el.dataset.ladenErledigt }, 'Erledigt'); return true; }
   if (von('data-laden-neu')) { Object.assign(laden, { formOffen: true, wer: null }); render(); document.querySelector('#main [data-laden-form] input')?.focus(); return true; }
   if (von('data-laden-abbrechen')) { Object.assign(laden, { wer: null, formOffen: false }); render(); return true; }

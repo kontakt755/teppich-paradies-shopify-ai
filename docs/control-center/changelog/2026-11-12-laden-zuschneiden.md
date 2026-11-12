@@ -1,0 +1,6 @@
+## 2026-11-12 · Ansicht Laden zeigt „Zuschneiden“ aus eigener Lagerrolle
+
+- **Geaendert:** Bezahlte Bestellungen mit Ware aus eigener Lagerrolle (Regeldatei Lagerware) stehen in der Ansicht „Laden“ unter „Zu tun“ als Zeile „Zuschneiden“ – eine je Position, mit Bestellnummer, Kunde, Ware und Menge. Bisher stand der Schritt nur unter „Bestellen“, der Laden sah ihn nicht. Der Knopf „Zugeschnitten“ ist derselbe Haken wie unter Bestellen (danach „noch packen“); „Übernehmen“ geht wie bei jeder anderen Zeile. Nach einem Tag bernstein, nach zwei rot, wie eine von Hand angelegte Aufgabe.
+- **Getestet:** `docs/ai-dashboard/tests/laden.test.mjs` (neuer Test: nur bezahlt, nicht storniert, keine Testbestellung, keine Muster, schon Zugeschnittenes fehlt), `npm run -s pruefen`, `npm run dashboard:pruefen`.
+- **Risiken/Annahmen:** Es erscheint nur, was in der Regeldatei als Lagerware steht (derzeit eine Unterlagen-Linie). Ware, die dort fehlt, wird weiter als Bestellung beim Lieferanten gefuehrt. Eine uebernommene und dann zugeschnittene Zeile laesst ihren Zustaendigkeits-Eintrag in der Ablage stehen (unsichtbar).
+- **Naechste Stufe:** Regeldatei um weitere Lagerware ergaenzen (Entscheidung des Inhabers, welche Rollen im Laden liegen); „Packen“ und „Versand“ als Folgeschritte in derselben Spalte.
