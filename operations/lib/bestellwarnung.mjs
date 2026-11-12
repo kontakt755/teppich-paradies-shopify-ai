@@ -300,6 +300,8 @@ function versand(s, { zielPlz, abholPlz, warenwert, tarif, jetzt }) {
   const heute = new Date(jetzt).toISOString().slice(0, 10);
   const eingabe = Object.fromEntries(tarif.felder.map(f => [f.zeile, f.wert ?? '']));
   Object.assign(eingabe, { 5: packung.l, 6: packung.w, 7: packung.h, 8: packung.kg, 9: packung.anzahl, 10: zielPlz, 11: abholPlz || eingabe[11], 12: 'Ja', 14: Math.max(1, Math.round(warenwert)), 15: packung.art, 17: heute });
+  // Beide GEL-Rechnungen bisher (02.11. und 09.11.2026) berechnen das Depot-Avis, nicht das technische.
+  eingabe[22] = 'Depot';
   // Abgelaufene Dieselwerte: mit dem letzten Stand rechnen und das sagen, statt gar nichts zu zeigen.
   const saetze = tarif.saetze;
   const anpassung = {};
