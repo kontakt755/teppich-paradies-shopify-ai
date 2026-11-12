@@ -886,6 +886,8 @@
     /* V9: Grau nicht heller als #595959 */
     --tp-rwc-muted: #595959;
     --tp-rwc-line: rgb(var(--color-foreground-rgb, 34 34 34) / 0.16);
+    /* Eingabefeld-Rahmen mind. 3:1 auf Weiss (WCAG 1.4.11, Audit 11.11. Befund 3) */
+    --tp-rwc-feld: rgb(var(--color-foreground-rgb, 34 34 34) / 0.55);
     --tp-rwc-surface: var(--color-background, #fcfcfb);
     --tp-rwc-material: rgb(var(--color-foreground-rgb, 34 34 34) / 0.08);
     --tp-rwc-accent: var(--color-primary, #c8891e);
@@ -1022,7 +1024,7 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input {
     width: 100%;
     padding: 10px 42px 10px 12px;
-    border: 1px solid var(--tp-rwc-line);
+    border: 1px solid var(--tp-rwc-feld);
     border-radius: 6px;
     background: var(--tp-rwc-surface);
     font-size: var(--tp-fs-md);
@@ -1285,7 +1287,7 @@
 
   .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-select {
-    width: 100%; max-width: 280px; padding: 12px; border: 1px solid var(--tp-rwc-line); border-radius: 6px;
+    width: 100%; max-width: 280px; padding: 12px; border: 1px solid var(--tp-rwc-feld); border-radius: 6px;
     background: var(--tp-rwc-surface); color: var(--tp-rwc-ink); font: inherit; font-size: var(--tp-fs-md);
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { margin: 0; padding: 0; border: 0; }

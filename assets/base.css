@@ -3120,6 +3120,7 @@ label:has(input[type='checkbox']:disabled) {
 
 .quantity-selector input[type='number'] {
   margin: 0;
+  min-width: 24px; /* WCAG 2.5.8: Mengenfeld war 20 px breit (Audit 11.11. Befund 5) */
   text-align: center;
   border: none;
   appearance: none;
