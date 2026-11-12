@@ -71,6 +71,8 @@ Die Stückzahl jeder Länge wird aus Bestand und Restlänge gerechnet. eBay senk
 - Ist ein Angebot live, ändert das Skript es nur mit `--veroeffentlichen`. Ohne den Schalter bricht es vor der ersten Änderung ab.
 - Eine Rolle, die in Shopify archiviert ist, findet das Skript nicht mehr. Ihr Angebot von Hand beenden.
 
+Bilder der Meterware: alle Shop-Bilder der Rolle in Shop-Reihenfolge (Schrägansicht, Seitenansicht der Schnittkante), höchstens `MAX_BILDER`. Quelle ist die Bilderliste im Lexikon-Export.
+
 ## Hinweis zur Schnittware
 
 Jede Beschreibung trägt den Text aus `HINWEIS_ZUSCHNITT`: alles Zuschnitte, keine Fertigmaße. Das folgt dem Rat des Anwalts. Die Rücknahme-Rahmenbedingung im Verkäufer-Cockpit muss dazu passen; das Skript setzt sie nicht.

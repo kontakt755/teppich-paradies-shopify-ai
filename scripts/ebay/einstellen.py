@@ -231,11 +231,10 @@ def bilder_von(produkt, varianten):
     return gesehen
 
 
-def bilder_kettel(produkt, variante):
-    """Alle Shop-Bilder des Kettelteppichs in Shop-Reihenfolge (Hauptbild, Kettelkante ...).
+def bilder_alle(produkt, variante):
+    """Alle Shop-Bilder des Produkts in Shop-Reihenfolge; ohne Bilderliste (aelterer Export) Hauptbild plus Variantenbild.
 
-    Bilder der Rolle kommen bewusst nicht dazu: deren Schnittkante waere beim gekettelten Teppich irrefuehrend.
-    Ohne Bilderliste im Lexikon (aelterer Export) gilt wie bisher Hauptbild plus Variantenbild.
+    Beim Kettelteppich nur dessen eigene Bilder: die Schnittkante der Rolle waere dort irrefuehrend.
     """
     gesehen = []
     for url in [b.get('url') for b in produkt.get('bilder') or []] + bilder_von(produkt, [variante]):
@@ -336,7 +335,7 @@ def plane_welle1(liste, lexikon, konfig):
         posten, angebote, margen = {}, [], []
         aspekte = merkmale(produkt, konfig, maengel)
         ueberschrift = titel(name, breite)
-        bilder = bilder_von(produkt, [variante])
+        bilder = bilder_alle(produkt, variante)
         if not bilder:
             maengel.append('kein Bild')
         for laenge in laengen:
@@ -460,7 +459,7 @@ def plane_kettel(liste, lexikon, konfig):
         ueberschrift = kettel_titel(name, groessen)
         aspekte = merkmale(produkt, konfig, maengel)
         aspekte['Produktart'] = ['Teppich']
-        bilder = bilder_kettel(produkt, variante)
+        bilder = bilder_alle(produkt, variante)
         if not bilder:
             maengel.append('kein Bild')
         text = beschreibung(
@@ -549,7 +548,7 @@ def plane_einzelmass(liste, lexikon, konfig, name, breite_cm, laenge_cm, preis, 
         groesse = f'{text_laenge(breite_cm)} × {text_laenge(laenge_cm)}'
         text = beschreibung(produkt, [f'Zuschnitt nach Ihrer Anfrage: {groesse}, {euro(flaeche)} m². Restposten.'])
         ueberschrift = titel(zeile['rolle'], None)[:MAX_TITEL - len(groesse) - 1] + ' ' + groesse
-    bilder = bilder_kettel(produkt, variante) if kettel else bilder_von(produkt, [variante])
+    bilder = bilder_alle(produkt, variante)
     if not bilder:
         maengel.append('kein Bild')
     return [{
