@@ -56,7 +56,7 @@
         "gruss": "Viele Grüße\nErika Beispiel\nBeispielhandel GmbH"
       },
       "kosten": {
-        "_hinweis": "Nur Beispielwerte, echte Saetze nur privat. Fuer die Warnung im Bestelldialog (operations/lib/bestellwarnung.mjs): paket = Sendung bis paketBisCm/paketBisKg; fracht = Lieferung per LKW; mindermenge unter mindermengeUnterEk Einkauf; ekAufschlag = Zuschlag auf den Listen-EK (0,1 = 10 %); anKundenNurImLiefergebiet = direkt zum Kunden nur im Nahbereich, sonst ueber uns.",
+        "_hinweis": "Nur Beispielwerte, echte Saetze nur privat. Fuer die Warnung im Bestelldialog (operations/lib/bestellwarnung.mjs): paket = Sendung bis paketBisCm/paketBisKg; fracht = Lieferung per LKW; mindermenge unter mindermengeUnterEk Einkauf; ekAufschlag = Zuschlag auf den Listen-EK (0,1 = 10 %); anKundenNurImLiefergebiet = direkt zum Kunden nur im Nahbereich, sonst ueber uns; kettelnJeLfm = Kettelpreis des Lieferanten je Meter (optional, fuer die Gegenrechnung Wer kettelt); abholungZumKettler = wir holen ab und bringen zum Kettler, dann ohne Fracht und Mindermenge.",
         "paket": 1,
         "paketBisCm": 100,
         "paketBisKg": 10,

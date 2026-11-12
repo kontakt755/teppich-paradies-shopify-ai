@@ -32,6 +32,8 @@ export const SCHWELLEN = Object.freeze({
   wegEuro: 25, // ... aber nicht bei einem Paket auf einer kleinen Bestellung
   mengeEuro: 15, // Mehrkosten, ab denen eine Mengenabweichung genannt wird
   mengeM2: 1, // dasselbe, wenn der Einkaufspreis fehlt
+  rolleKg: 30, // Benutzer 2026-11-12: bis hierhin gehen mehrere Teppiche als eine Rolle raus (#1081: drei Stueck, 25 kg), darueber je Teppich
+  kettelwegEuro: 30, // Benutzer 2026-11-12: erst ab dieser Ersparnis lohnt der eigene Kettelweg den Mehraufwand
 });
 
 // Annahmen fuer das Packstueck, solange nichts Genaueres bekannt ist.
@@ -92,6 +94,7 @@ export function leseLieferkosten(stammdatenDatei) {
       paket: betrag(k.paket), paketBisCm: betrag(k.paketBisCm), paketBisKg: betrag(k.paketBisKg),
       fracht: betrag(k.fracht), mindermenge: betrag(k.mindermenge), mindermengeUnterEk: betrag(k.mindermengeUnterEk),
       ekAufschlag: betrag(k.ekAufschlag) ?? 0, anKundenNurImLiefergebiet: k.anKundenNurImLiefergebiet === true,
+      kettelnJeLfm: betrag(k.kettelnJeLfm), abholungZumKettler: k.abholungZumKettler === true,
     };
   }
   const k = roh?.absender?.kettelservice?.kosten;
@@ -170,7 +173,7 @@ function mengePasstZumMass(p, masse) {
  * Was diese Position nicht sicher rechenbar macht. Jeder Grund fuehrt zu "Rohertrag unbekannt": Die
  * Warnung schaetzt nur, was belegt ist, und rechnet nichts aus einer Vermutung schoen.
  */
-function unsicherheiten({ p, ziel, wegBelegt }) {
+function unsicherheiten({ p, ziel, wegBelegt, kettelpreis = null }) {
   const gruende = [];
   const masse = fertigmass(p);
   const gekettelt = wirdGekettelt(p.ausfuehrung);
@@ -180,7 +183,7 @@ function unsicherheiten({ p, ziel, wegBelegt }) {
   else if (masse && !formRechenbar(masse)) gruende.push(`Form „${masse.form}“, dafür gibt es keine Rechenregel`);
   else if (masse && !mengePasstZumMass(p, masse)) gruende.push('Menge, sie passt nicht zum Fertigmaß');
   if (['abweichung', 'unlesbar', 'waise'].includes(p.masspruefung?.status)) gruende.push('Menge, die Maßprüfung ist offen');
-  if (gekettelt && ziel !== 'kettler') gruende.push('Ketteln außerhalb unseres Kettlers, Preis nicht hinterlegt');
+  if (gekettelt && ziel !== 'kettler' && !(ziel === 'kunde' && kettelpreis !== null)) gruende.push('Ketteln außerhalb unseres Kettlers, Preis nicht hinterlegt');
   // Die Kettlerpreise sind nur fuer gerade Kanten belegt.
   if (gekettelt && ziel === 'kettler' && (masse?.rund || masse?.form === 'Rund' || masse?.form === 'Oval')) gruende.push('Ketteln rund oder oval, Preis nicht belegt');
   if (!gekettelt && (p.ausfuehrung ?? []).some(mussEingefasstWerden)) gruende.push('Einfassung, Kosten nicht hinterlegt');
@@ -298,6 +301,8 @@ function versand(s, { zielPlz, abholPlz, warenwert, tarif, jetzt }) {
   const heute = new Date(jetzt).toISOString().slice(0, 10);
   const eingabe = Object.fromEntries(tarif.felder.map(f => [f.zeile, f.wert ?? '']));
   Object.assign(eingabe, { 5: packung.l, 6: packung.w, 7: packung.h, 8: packung.kg, 9: packung.anzahl, 10: zielPlz, 11: abholPlz || eingabe[11], 12: 'Ja', 14: Math.max(1, Math.round(warenwert)), 15: packung.art, 17: heute });
+  // Beide GEL-Rechnungen bisher (02.11. und 09.11.2026) berechnen das Depot-Avis, nicht das technische.
+  eingabe[22] = 'Depot';
   // Abgelaufene Dieselwerte: mit dem letzten Stand rechnen und das sagen, statt gar nichts zu zeigen.
   const saetze = tarif.saetze;
   const anpassung = {};
@@ -364,7 +369,9 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
   const zuschlaege = lieferungen.map(l => lieferzuschlag(k, sendung(l.eintraege), { ekOderNetto: bezugswert(l.eintraege), teiler: l.neu ? teiler : 1 }));
   const mindermengeGeschaetzt = teiler > 1 && lieferungen.some((l, i) => l.neu && zuschlaege[i]?.mindermenge > 0);
   const z = zuschlaege[lieferungen.findIndex(l => l.neu)] ?? zuschlaege.at(-1);
-  if (zuschlaege.every(Boolean)) {
+  // Wir holen beim Lieferanten ab und bringen die Ware selbst zum Kettler: Fracht und Mindermenge entfallen.
+  const abholung = ziel === 'kettler' && k?.abholungZumKettler === true;
+  if (abholung) { /* kein Posten */ } else if (zuschlaege.every(Boolean)) {
     const n = zuschlaege.length;
     const text = new Set(zuschlaege.map(x => x.text)).size === 1 ? zuschlaege[0].text : 'Lieferung vom Lieferanten';
     posten.push({ text: n > 1 ? `${text} (${n} Lieferungen)` : text, betrag: summe(zuschlaege.map(x => x.betrag)), art: 'weg' });
@@ -378,6 +385,12 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
       if (betragKettler > 0) posten.push({ text: 'Ketteln', betrag: betragKettler, art: 'kettel' });
     }
   }
+  if (ziel === 'kunde' && betrag(k?.kettelnJeLfm) !== null) {
+    const meter = eintraege.filter(e => wirdGekettelt(e.p.ausfuehrung)).map(e => kanteMeter(e.p.ausfuehrung));
+    if (meter.some(x => x === null)) offen.push('Kantenlänge unbekannt');
+    const betragLieferant = summe(meter.filter(x => x !== null)) * k.kettelnJeLfm;
+    if (betragLieferant > 0) posten.push({ text: 'Ketteln beim Lieferanten', betrag: betragLieferant, art: 'kettel' });
+  }
   let versandAngabe = null;
   if (uebersLager || ziel === 'kettler') {
     if (nah) versandAngabe = { selbst: true };
@@ -389,7 +402,7 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
       else posten.push({ text: v.spedition ? `Spedition zum Kunden${v.xxl ? ' (XXL)' : ''}${s.kurzCm ? `, kurze Seite ${Math.round(s.kurzCm)} cm` : ''}` : 'Paket zum Kunden', betrag: v.netto, art: 'weg' });
     }
   }
-  return { posten, offen, z, s, versand: versandAngabe, uebersLager, mindermengeGeschaetzt };
+  return { posten, offen, z: abholung ? null : z, s, versand: versandAngabe, uebersLager, mindermengeGeschaetzt };
 }
 
 // ------------------------------------------------------------------ Warnung je Bestellung
@@ -421,7 +434,7 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   const eintraege = ware.map(p => {
     const { ziel, vermerkt, wegBelegt } = lieferweg({ mailZiel: zielVon.get(p.lineItemId)?.ziel, stand: stand(p), standard: standardziel(p) });
     const k = kosten.lieferanten[p.lieferant] ?? null;
-    return { p, ziel: ziel === 'baustelle' ? 'kunde' : ziel, vermerkt, wegBelegt, teiler: zielVon.get(p.lineItemId)?.teiler ?? 1, m: mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k?.ekAufschlag ?? 0 }) };
+    return { p, ziel: ziel === 'baustelle' ? 'kunde' : ziel, vermerkt, wegBelegt, kettelpreis: k?.kettelnJeLfm ?? null, teiler: zielVon.get(p.lineItemId)?.teiler ?? 1, m: mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k?.ekAufschlag ?? 0 }) };
   });
 
   const zeilenNetto = (auftrag.positionen ?? []).map(p => p.nettoGesamt);
@@ -638,6 +651,68 @@ function warnungFuerInhaber(w) {
 }
 
 /**
+ * Gegenrechnung "Wer kettelt?" fuer die gekettelten Teppiche eines Lieferanten in einer Bestellung
+ * (Benutzer 2026-11-12): Lieferant kettelt und liefert direkt, oder wir holen ab, unser Kettler kettelt
+ * und wir verschicken. Der eigene Weg kostet Arbeit, deshalb gilt er erst ab SCHWELLEN.kettelwegEuro
+ * Ersparnis. Der Lieferant berechnet seine Fracht einmal je Lieferung; unser Versand ist eine Rolle bis
+ * SCHWELLEN.rolleKg, darueber faellt er je Teppich an.
+ *
+ * @returns {{empfehlung:'lieferant'|'kettler', ersparnis:number, text:string, textOhnePreis:string}|null}
+ *   null, wenn ein Preis fehlt oder ein Fall nicht sicher rechenbar ist - dann wird nichts empfohlen.
+ */
+export function kettelwegVergleich({ auftrag, lineItemIds = [], kosten, ek, tarif, absender = null, nahPlz = /^$/, ladenPlz = null, jetzt = new Date(), lieferantName = id => `Lieferant ${id}` }) {
+  const ids = new Set(lineItemIds);
+  const ware = (auftrag?.positionen ?? []).filter(p => !p.istMuster && !p.eigenleistung && Number(p.mengeBestellt) > 0);
+  const teppiche = ware.filter(p => ids.has(p.lineItemId) && wirdGekettelt(p.ausfuehrung));
+  if (!teppiche.length) return null;
+  const lieferant = teppiche[0].lieferant;
+  const k = kosten.lieferanten[lieferant];
+  if (!k || k.kettelnJeLfm === null || k.kettelnJeLfm === undefined || !kosten.kettler || !absender?.kettelservice) return null;
+  const adresse = auftrag.details?.lieferadresse ?? null;
+  const plz = String(adresse?.plz ?? '').trim();
+  const land = String(adresse?.land ?? '').trim();
+  if (!/^\d{5}$/.test(plz) || (land && !/^(deutschland|germany|de)$/i.test(land))) return null;
+  const nah = nahPlz.test(plz);
+  // shortcut: der Status der uebrigen Ware wird nicht gelesen. Liegt dort schon Bestelltes, ist die
+  // Fracht des Lieferanten trotzdem "ohnehin faellig" gerechnet; genauer erst, wenn das jemanden stoert.
+  const faelltOhnehinAn = ware.some(p => p.lieferant === lieferant && !ids.has(p.lineItemId));
+  const netto = summe(teppiche.map(p => p.nettoGesamt).filter(istZahl));
+  const kostenVon = ziel => {
+    const es = teppiche.map(p => ({ p, ziel, vermerkt: false, wegBelegt: true, kettelpreis: k.kettelnJeLfm, m: mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k.ekAufschlag ?? 0 }) }));
+    if (es.flatMap(unsicherheiten).length) return null;
+    const gruppe = { lieferant, ziel, kosten, adresse, nah, kettlerAdresse: absender.kettelservice, ladenPlz, netto, tarif, jetzt, teiler: 1 };
+    const r = wegEinerGruppe({ ...gruppe, eintraege: es, lieferungen: [{ neu: true, eintraege: es }] });
+    if (r.offen.length) return null;
+    let gesamt = summe(r.posten.map(x => x.betrag));
+    // Andere Ware desselben Lieferanten geht ohnehin direkt: Seine Fracht spart der eigene Weg dann nicht.
+    if (ziel === 'kunde' && faelltOhnehinAn && r.z && !r.z.paket) gesamt -= r.z.betrag;
+    // Unser Versand: zusammen als eine Rolle, solange sie tragbar bleibt, sonst je Teppich.
+    if (istZahl(r.versand?.netto) && es.length > 1 && r.s.kg > SCHWELLEN.rolleKg) {
+      const einzeln = es.map(e => versand(sendung([e]), { zielPlz: plz, abholPlz: ziel === 'kettler' ? absender.kettelservice.plz : ladenPlz, warenwert: netto, tarif, jetzt }).netto);
+      if (!einzeln.every(istZahl)) return null;
+      gesamt += summe(einzeln) - r.versand.netto;
+    }
+    // Der Zuschnitt fuer den Kettler ist groesser als das Fertigmass: Der Mehreinkauf gehoert zum Weg.
+    const einkauf = es.map(e => e.m.ekSumme);
+    return { gesamt, einkauf: einkauf.every(istZahl) ? summe(einkauf) : null };
+  };
+  const direkt = kostenVon('kunde');
+  const eigen = kostenVon('kettler');
+  if (!direkt || !eigen) return null;
+  const mitEinkauf = direkt.einkauf !== null && eigen.einkauf !== null;
+  const ersparnis = r2(direkt.gesamt - eigen.gesamt + (mitEinkauf ? direkt.einkauf - eigen.einkauf : 0));
+  const name = lieferantName(lieferant);
+  const zusatz = nah ? ' Fahrt und Abholung sind nicht eingerechnet.' : '';
+  if (ersparnis >= SCHWELLEN.kettelwegEuro) {
+    return { empfehlung: 'kettler', ersparnis, direkt: r2(direkt.gesamt), eigen: r2(eigen.gesamt), text: `Gegenrechnung: Über unseren Kettler etwa ${euro(ersparnis)} günstiger als bei ${name} (Ketteln und Weg etwa ${euro(eigen.gesamt)} statt ${euro(direkt.gesamt)}).${zusatz}`, textOhnePreis: 'Gegenrechnung: Über unseren Kettler ist es deutlich günstiger.' };
+  }
+  const text = ersparnis > 0
+    ? `Gegenrechnung: Unser Kettler wäre nur etwa ${euro(ersparnis)} günstiger als ${name}. Unter ${SCHWELLEN.kettelwegEuro} € lohnt der Mehraufwand nicht.${zusatz}`
+    : `Gegenrechnung: ${name} ist etwa ${euro(-ersparnis)} günstiger als unser Kettler (Ketteln und Weg etwa ${euro(direkt.gesamt)} statt ${euro(eigen.gesamt)}).`;
+  return { empfehlung: 'lieferant', ersparnis, direkt: r2(direkt.gesamt), eigen: r2(eigen.gesamt), text, textOhnePreis: 'Gegenrechnung: Der Lieferant kettelt und liefert direkt, unser Weg lohnt hier nicht.' };
+}
+
+/**
  * Guenstigere Wege, soweit sie aus den Daten folgen. Alles andere bleibt eine Abwaegung von Hand.
  * eintraege: nur, was jetzt noch bestellt wird. Fuer schon Bestelltes laesst sich der Weg nicht mehr waehlen.
  */
@@ -661,11 +736,29 @@ function wegeHinweise({ eintraege, kosten, nah, lieferantName }) {
  * ohne ausdrueckliche Angabe gehen keine Betraege raus.
  */
 export function warnungenAnhaengen(antwort, { modell, privatDir, stammdaten, stammdatenDatei, statusAlle, tarif, nahPlz, jetzt = new Date(), mitPreisen = false }) {
-  if (antwort?.art !== 'ware' || !antwort.mails?.length) return antwort;
+  if (antwort?.art !== 'ware' || (!antwort.mails?.length && !antwort.kettelwege?.length)) return antwort;
   const kosten = leseLieferkosten(stammdatenDatei);
   const ek = leseEkListe(privatDir);
   const absender = stammdaten?.absender ?? null;
   const name = id => (id === 'UNGEKLAERT' ? 'dem nicht zugeordneten Lieferanten' : (stammdaten?.lieferanten?.[id]?.name ?? `Lieferant ${id}`));
+  // Frage "Wer kettelt?": Die Gegenrechnung ersetzt die Faustregel, wo alle Preise hinterlegt sind.
+  // Sie steht einmal je Bestellung, an deren erstem Teppich.
+  const fragen = antwort.kettelwege ?? [];
+  const vergleichJe = new Map();
+  for (const orderId of new Set(fragen.map(f => f.orderId))) {
+    const auftrag = (modell?.auftraege ?? []).find(a => a.id === orderId);
+    vergleichJe.set(orderId, auftrag ? kettelwegVergleich({ auftrag, lineItemIds: fragen.filter(f => f.orderId === orderId).map(f => f.lineItemId), kosten, ek, tarif, absender, nahPlz, ladenPlz: absender?.lieferanschrift?.plz || null, jetzt, lieferantName: name }) : null);
+  }
+  const erklaert = new Set();
+  const kettelwege = fragen.map(f => {
+    const v = vergleichJe.get(f.orderId);
+    if (!v) return f;
+    const erste = !erklaert.has(f.orderId);
+    erklaert.add(f.orderId);
+    return { ...f, empfehlung: v.empfehlung, gerechnet: true, ...(erste ? { vergleich: mitPreisen ? v.text : v.textOhnePreis } : {}) };
+  });
+  if (fragen.length) antwort = { ...antwort, kettelwege };
+  if (!antwort.mails?.length) return antwort;
   const mindestmenge = Object.fromEntries(Object.entries(stammdaten?.lieferanten ?? {}).filter(([, l]) => l.mindestmenge).map(([id, l]) => [id, l.mindestmenge]));
   const sammel = antwort.mails.map(m => ({
     lieferziel: m.lieferziel,
