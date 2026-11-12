@@ -171,11 +171,11 @@ class StickyAddToCartComponent extends Component {
       if (!entry.isIntersecting && !this.#isStuck) {
         // Check if the element is above the viewport (scrolled past) or below (not yet reached)
         const rect = entry.target.getBoundingClientRect();
-        if (rect.bottom < 0 || rect.top < 0) {
+        if (this.#leisteZeigen(rect)) {
           // Element is above viewport - show sticky bar
           this.#showStickyBar();
         }
-        // If rect.top >= 0, element is below viewport - don't show sticky bar yet
+        // Darunter (noch nicht erreicht) nur auf dem Handy mit fehlendem Mass, siehe #leisteZeigen
       } else if (entry.isIntersecting && this.#isStuck) {
         this.#hiddenByBottom = false;
         this.#hideStickyBar();
@@ -195,7 +195,7 @@ class StickyAddToCartComponent extends Component {
           // Footer out of view - check if we should show sticky bar again
           const rect = buyButtonsBlock.getBoundingClientRect();
           // Only show if buy buttons are above the viewport (scrolled past)
-          if (rect.bottom < 0 || rect.top < 0) {
+          if (this.#leisteZeigen(rect)) {
             this.#hiddenByBottom = false;
             this.#showStickyBar();
           }
@@ -320,7 +320,7 @@ class StickyAddToCartComponent extends Component {
       if (this.#isStuck) this.#hideStickyBar();
     } else if (!this.#isStuck && !this.#hiddenByBottom && this.#anchorElement) {
       const rect = this.#anchorElement.getBoundingClientRect();
-      if (rect.bottom < 0 || rect.top < 0) this.#showStickyBar();
+      if (this.#leisteZeigen(rect)) this.#showStickyBar();
     }
 
     this.#updateButtonText();
@@ -478,6 +478,25 @@ class StickyAddToCartComponent extends Component {
         !target.classList.contains('is-busy') &&
         kaufweg.hasAttribute('data-tp-laenge') &&
         kaufweg.getAttribute('data-tp-laenge') === ''
+    );
+  }
+
+  /**
+   * Soll die Leiste bei diesem Stand des Kaufweg-Ankers stehen?
+   * Horizon: erst, wenn der Kaufweg oben aus dem Bild ist. Zusaetzlich auf dem
+   * Handy (bis 749 px), solange ein Mass fehlt und der Kaufweg noch unten
+   * liegt: dort lagen Farbe, Mass, Kauf- und Musterknopf erst ab dem zweiten
+   * Bildschirm (Messung 12.11.2026). Die Leiste bietet dann "Muster" und
+   * "Masse eingeben" (springt zum fehlenden Feld, siehe handleAddToCartClick);
+   * kaufbereit legt sie nichts ungesehen in den Warenkorb.
+   * @param {DOMRect} rect
+   */
+  #leisteZeigen(rect) {
+    if (rect.bottom < 0 || rect.top < 0) return true;
+    return (
+      rect.top >= window.innerHeight &&
+      window.matchMedia('(max-width: 749px)').matches &&
+      this.#targetIncomplete(this.#targetAddToCartButton)
     );
   }
 
