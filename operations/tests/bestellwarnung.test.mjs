@@ -676,3 +676,22 @@ test('Gegenrechnung: mehrere Teppiche gehen bis 30 kg als eine Rolle, darueber z
   // Zwei grosse (zusammen 48 kg): jeder zahlt seinen Versand.
   assert.equal(eigen(['l1', 'l2'], [300, 400], 14), 2 * eigen(['l1'], [300, 400], 14));
 });
+
+test('Gegenrechnung: zwei schwere Teppiche sind zusammen nicht versendbar, einzeln schon', () => {
+  const { b, t } = tarifBasis();
+  for (const f of t.felder) f.wert = b[f.zeile];
+  const gross = (id, masse, kante) => teppich(id, { mengeBestellt: masse[0] * masse[1] / 100, ausfuehrung: [`Fertigmaß: ${masse[0]} × ${masse[1]} cm (Rechteck)`, `Einfassung: Gekettelt, umlaufend ${kante},00 m`] });
+  // 12 m² und 20 m² wiegen zusammen 64 kg: als ein Packstueck an Privat gesperrt (ab 60 kg).
+  const v = vergleiche(auftrag([gross('l1', [300, 400], 14), gross('l2', [400, 500], 18)], '50000'), ['l1', 'l2'], { tarif: t, ladenPlz: '16515', jetzt: new Date('2026-10-22T10:00:00Z') });
+  assert.ok(v, 'Empfehlung trotz gesperrter Sammelrolle');
+  assert.ok(v.eigen > 0);
+});
+
+test('Versand in eine Metropole ab Metropole: Schaetzung mit doppeltem Zuschlag statt ohne Preis', () => {
+  const { b, t } = tarifBasis();
+  for (const f of t.felder) f.wert = b[f.zeile];
+  t.felder.find(f => f.zeile === 47).wert = 'Ungeklaert';
+  const p = teppich('l1', { mengeBestellt: 750, ausfuehrung: ['Fertigmaß: 250 × 300 cm (Rechteck)', 'Einfassung: Gekettelt, umlaufend 11,00 m'] });
+  const v = kettelwegVergleich({ ...basis, ek: EK([eZeile('ART-1', 1)]), kosten: mitKetteln(), absender: { kettelservice: { plz: '10585' } }, auftrag: auftrag([p], '50667'), lineItemIds: ['l1'], tarif: t, ladenPlz: '16515', jetzt: new Date('2026-10-22T10:00:00Z') });
+  assert.ok(v, 'Empfehlung auch zwischen zwei Metropolen');
+});
