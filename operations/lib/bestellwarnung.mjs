@@ -32,6 +32,7 @@ export const SCHWELLEN = Object.freeze({
   wegEuro: 25, // ... aber nicht bei einem Paket auf einer kleinen Bestellung
   mengeEuro: 15, // Mehrkosten, ab denen eine Mengenabweichung genannt wird
   mengeM2: 1, // dasselbe, wenn der Einkaufspreis fehlt
+  rolleKg: 30, // Benutzer 2026-11-12: bis hierhin gehen mehrere Teppiche als eine Rolle raus (#1081: drei Stueck, 25 kg), darueber je Teppich
   kettelwegEuro: 30, // Benutzer 2026-11-12: erst ab dieser Ersparnis lohnt der eigene Kettelweg den Mehraufwand
 });
 
@@ -653,7 +654,8 @@ function warnungFuerInhaber(w) {
  * Gegenrechnung "Wer kettelt?" fuer die gekettelten Teppiche eines Lieferanten in einer Bestellung
  * (Benutzer 2026-11-12): Lieferant kettelt und liefert direkt, oder wir holen ab, unser Kettler kettelt
  * und wir verschicken. Der eigene Weg kostet Arbeit, deshalb gilt er erst ab SCHWELLEN.kettelwegEuro
- * Ersparnis. Der Lieferant berechnet seine Fracht einmal je Lieferung, unser Versand faellt je Teppich an.
+ * Ersparnis. Der Lieferant berechnet seine Fracht einmal je Lieferung; unser Versand ist eine Rolle bis
+ * SCHWELLEN.rolleKg, darueber faellt er je Teppich an.
  *
  * @returns {{empfehlung:'lieferant'|'kettler', ersparnis:number, text:string, textOhnePreis:string}|null}
  *   null, wenn ein Preis fehlt oder ein Fall nicht sicher rechenbar ist - dann wird nichts empfohlen.
@@ -684,8 +686,8 @@ export function kettelwegVergleich({ auftrag, lineItemIds = [], kosten, ek, tari
     let gesamt = summe(r.posten.map(x => x.betrag));
     // Andere Ware desselben Lieferanten geht ohnehin direkt: Seine Fracht spart der eigene Weg dann nicht.
     if (ziel === 'kunde' && faelltOhnehinAn && r.z && !r.z.paket) gesamt -= r.z.betrag;
-    // Unser Versand je Teppich, nicht als ein Packstueck.
-    if (istZahl(r.versand?.netto) && es.length > 1) {
+    // Unser Versand: zusammen als eine Rolle, solange sie tragbar bleibt, sonst je Teppich.
+    if (istZahl(r.versand?.netto) && es.length > 1 && r.s.kg > SCHWELLEN.rolleKg) {
       const einzeln = es.map(e => versand(sendung([e]), { zielPlz: plz, abholPlz: ziel === 'kettler' ? absender.kettelservice.plz : ladenPlz, warenwert: netto, tarif, jetzt }).netto);
       if (!einzeln.every(istZahl)) return null;
       gesamt += summe(einzeln) - r.versand.netto;
@@ -702,12 +704,12 @@ export function kettelwegVergleich({ auftrag, lineItemIds = [], kosten, ek, tari
   const name = lieferantName(lieferant);
   const zusatz = nah ? ' Fahrt und Abholung sind nicht eingerechnet.' : '';
   if (ersparnis >= SCHWELLEN.kettelwegEuro) {
-    return { empfehlung: 'kettler', ersparnis, text: `Gegenrechnung: Über unseren Kettler etwa ${euro(ersparnis)} günstiger als bei ${name} (Ketteln und Weg etwa ${euro(eigen.gesamt)} statt ${euro(direkt.gesamt)}).${zusatz}`, textOhnePreis: 'Gegenrechnung: Über unseren Kettler ist es deutlich günstiger.' };
+    return { empfehlung: 'kettler', ersparnis, direkt: r2(direkt.gesamt), eigen: r2(eigen.gesamt), text: `Gegenrechnung: Über unseren Kettler etwa ${euro(ersparnis)} günstiger als bei ${name} (Ketteln und Weg etwa ${euro(eigen.gesamt)} statt ${euro(direkt.gesamt)}).${zusatz}`, textOhnePreis: 'Gegenrechnung: Über unseren Kettler ist es deutlich günstiger.' };
   }
   const text = ersparnis > 0
     ? `Gegenrechnung: Unser Kettler wäre nur etwa ${euro(ersparnis)} günstiger als ${name}. Unter ${SCHWELLEN.kettelwegEuro} € lohnt der Mehraufwand nicht.${zusatz}`
     : `Gegenrechnung: ${name} ist etwa ${euro(-ersparnis)} günstiger als unser Kettler (Ketteln und Weg etwa ${euro(direkt.gesamt)} statt ${euro(eigen.gesamt)}).`;
-  return { empfehlung: 'lieferant', ersparnis, text, textOhnePreis: 'Gegenrechnung: Der Lieferant kettelt und liefert direkt, unser Weg lohnt hier nicht.' };
+  return { empfehlung: 'lieferant', ersparnis, direkt: r2(direkt.gesamt), eigen: r2(eigen.gesamt), text, textOhnePreis: 'Gegenrechnung: Der Lieferant kettelt und liefert direkt, unser Weg lohnt hier nicht.' };
 }
 
 /**

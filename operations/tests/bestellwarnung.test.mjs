@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { bestellWarnung, kettelwegVergleich, warnungenAnhaengen, warnungFuerMitarbeiter, leseEkListe, leseLieferkosten } from '../lib/bestellwarnung.mjs';
 import { positionKey } from '../lib/auftragsstatus.mjs';
+import { basis as tarifBasis } from './kettelversand-tarif-fixture.mjs';
 
 // Nur Beispielwerte: erfundene Artikel, Preise und Kostensaetze.
 const EK = zeilen => ({ verfuegbar: true, stand: '2099-01-01', zeilen: new Map(zeilen.map(z => [z.artikelnummer, [z]])), handles: new Map() });
@@ -661,4 +662,17 @@ test('warnungenAnhaengen: Gegenrechnung an der Frage "Wer kettelt?", Betraege nu
     assert.equal(inhaber.kettelwege[1].vergleich, undefined);
     assert.doesNotMatch(lauf(false).kettelwege[0].vergleich, /€/);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('Gegenrechnung: mehrere Teppiche gehen bis 30 kg als eine Rolle, darueber zahlt jeder seinen Versand', () => {
+  const { b, t } = tarifBasis();
+  for (const f of t.felder) f.wert = b[f.zeile];
+  const eigen = (stuecke, masse, kante) => {
+    const ps = stuecke.map(id => teppich(id, { mengeBestellt: masse[0] * masse[1] / 100, ausfuehrung: [`Fertigmaß: ${masse[0]} × ${masse[1]} cm (Rechteck)`, `Einfassung: Gekettelt, umlaufend ${kante},00 m`] }));
+    return vergleiche(auftrag(ps, '50000'), stuecke, { tarif: t, ladenPlz: '16515', jetzt: new Date('2026-10-22T10:00:00Z') }).eigen;
+  };
+  // Zwei kleine Teppiche (zusammen 8 kg): ein Versand, also weniger als zweimal der einzelne Weg.
+  assert.ok(eigen(['l1', 'l2'], [100, 200], 6) < 2 * eigen(['l1'], [100, 200], 6) - 1);
+  // Zwei grosse (zusammen 48 kg): jeder zahlt seinen Versand.
+  assert.equal(eigen(['l1', 'l2'], [300, 400], 14), 2 * eigen(['l1'], [300, 400], 14));
 });
