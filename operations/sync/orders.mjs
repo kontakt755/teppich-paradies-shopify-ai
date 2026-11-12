@@ -62,8 +62,8 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
       shippingLine { title code source }
       paymentGatewayNames
       customAttributes { key value }
-      shippingAddress { name address1 address2 zip city country countryCodeV2 phone }
-      billingAddress { name address1 address2 zip city country countryCodeV2 phone }
+      shippingAddress { name company address1 address2 zip city country countryCodeV2 phone }
+      billingAddress { name company address1 address2 zip city country countryCodeV2 phone }
       fulfillments(first: 10) {
         status displayStatus createdAt updatedAt
         trackingInfo { number url company }

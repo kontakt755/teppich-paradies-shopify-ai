@@ -461,3 +461,11 @@ test('Nachbestellung: unvollstaendige Verkaufsliste der Bestellung selbst ergibt
   ] } };
   assert.equal(nachbestellungen(order).size, 0);
 });
+
+test('Lieferadresse fuehrt Firma/Adresszusatz mit - bei Packstationen steht dort die Postnummer', () => {
+  const order = bestellung(6, [paket], {
+    shippingAddress: { name: 'Test Kunde', company: 'Postnummer 000 000 00', address1: 'Packstation 100', zip: '00000', city: 'Teststadt' },
+  });
+  const d = aufbereiten({ orders: [order] }).auftraege[0].details;
+  assert.equal(d.lieferadresse.strasse, 'Postnummer 000 000 00, Packstation 100');
+});

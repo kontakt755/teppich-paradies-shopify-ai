@@ -323,7 +323,9 @@ function adresse(a) {
   if (!a) return null;
   return {
     name: a.name ?? '–',
-    strasse: [a.address1, a.address2].filter(Boolean).join(', ') || '–',
+    // Firma/Adresszusatz zuerst: bei Packstationen steht dort die Postnummer, ohne sie stellt DHL nicht zu.
+    // shortcut: Zusatz faehrt in `strasse` mit, damit Anzeige, Kopieren und Etikett ihn ohne Umbau zeigen; eigenes Feld, sobald jemand nach Firma filtern will.
+    strasse: [a.company, a.address1, a.address2].map(v => String(v ?? '').trim()).filter(Boolean).join(', ') || '–',
     plz: a.zip ?? '–',
     ort: a.city ?? '–',
     land: a.country ?? a.countryCodeV2 ?? '–',
