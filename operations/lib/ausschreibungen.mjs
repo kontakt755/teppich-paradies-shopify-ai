@@ -22,7 +22,7 @@ export const NUTS = ['DE40A', 'DE409', 'DE405', 'DE300', 'DE408', 'DE403', 'DE40
  */
 const PLZ_UMKREIS = /^(1[023]|14[0-7]|153|16[0-8])/;
 /** Suchwoerter im Titel - fuer Feeds ohne CPV und Bekanntmachungen mit zu allgemeiner CPV. */
-const BODEN = /bodenbel[aä]g|teppich|linoleum|parkett/i;
+const BODEN = /bodenbel[aä]g|bodenleg|teppich|linoleum|parkett/i;
 
 const cpvPasst = id => CPV.some(p => String(id || '').startsWith(p));
 const plzAus = text => String(text || '').match(/\b\d{5}\b/)?.[0] || '';
@@ -121,9 +121,10 @@ export function ausRss(xml, quelle) {
     const feld = name => klartext(roh.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`))?.[1]);
     const titel = feld('title');
     const text = feld('description');
-    const [, plz = '', ort = ''] = text.match(/(?:Erfüllungsort|Ausführungsort):\s*(\d{5})?[,\s]*([^:]*?)\s*(?:Vergabestelle|Ablauf|Angebotsfrist|Online seit|$)/) || [];
+    const [, plz = '', ort = ''] = text.match(/(?:Erfüllungsort|Ausführungsort):\s*(\d{5})?[,\s]*([^:]*?)\s*(?:Vergabestelle|Ablauf|Angebotsfrist|Eröffnungstermin|Online seit|$)/) || [];
     if (!BODEN.test(titel) || !imUmkreis('', plz)) continue;
-    const [, t, m, j] = text.match(/Angebotsfrist:\s*(\d\d)\.(\d\d)\.(\d{4})/) || [];
+    // Berlin nennt bei rund jedem dritten Eintrag nur den Eroeffnungstermin: der gilt dann als Frist.
+    const [, t, m, j] = text.match(/Angebotsfrist:\s*(\d\d)\.(\d\d)\.(\d{4})/) || text.match(/Eröffnungstermin:\s*(\d\d)\.(\d\d)\.(\d{4})/) || [];
     const link = sichereUrl(feld('link').replace(/#.*$/, ''));
     treffer.push({
       quelle,
