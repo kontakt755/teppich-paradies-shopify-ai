@@ -31,7 +31,7 @@ class Element {
   constructor(value = '', tagName = 'INPUT') {
     this.value = value; this.tagName = tagName; this.textContent = ''; this.hidden = false;
     this.checked = false; this.options = [{}]; this.attributes = new Map(); this.listeners = new Map(); this.children = [];
-    this.classes = new Set();
+    this.classes = new Set(); this.dataset = {};
     this.classList = { add: name => this.classes.add(name), remove: name => this.classes.delete(name), toggle: (name, on) => on ? this.classes.add(name) : this.classes.delete(name) };
     this.parentNode = { querySelector: () => new Element('', 'SPAN') };
   }

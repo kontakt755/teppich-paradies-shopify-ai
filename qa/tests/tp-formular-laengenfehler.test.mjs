@@ -171,3 +171,37 @@ test('Nicht bestellbarer Rest hat keinen irrefuehrenden Bereich von 100 bis unte
     assert.ok(!form.feld.getAttribute('aria-describedby').split(' ').includes(form.hinweise[0].id));
   }
 });
+
+// Audit 11.11.2026 Befund 2 (w-367): Beim Verlassen feuert change vor blur.
+// Die Ebene hatte die Meldung waehrend des Tippens selbst ausgeblendet und las
+// beim change diesen eigenen Stand als Rechner-Entscheidung - "5 cm" blieb
+// ohne Fehler, ohne aria-invalid und mit gruener Bestaetigung.
+test('Mindestlänge bleibt nach change und Verlassen sichtbar, Gegenprobe weicht', async () => {
+  const form = setup();
+  form.min.dataset.tpRechner = '1';
+  await form.input(['min', 'echo']);
+  assert.equal(form.min.hidden, true, 'beim Tippen noch kein Fehler');
+  form.root.emit('change');
+  await Promise.resolve();
+  form.feld.emit('blur');
+  assert.equal(form.min.hidden, false);
+  assert.equal(form.feld.getAttribute('aria-invalid'), 'true');
+  assert.equal(form.echo.hidden, true);
+  const ids = form.feld.getAttribute('aria-describedby').split(' ');
+  assert.ok(ids.includes(form.min.id));
+  assert.ok(!ids.includes(form.echo.id));
+  // Gueltige Laenge danach: Fehler weg, Bestaetigung wieder da.
+  form.feld.emit('focus');
+  form.min.dataset.tpRechner = '0';
+  await form.input(['echo']);
+  form.feld.emit('blur');
+  assert.equal(form.min.hidden, true);
+  assert.equal(form.feld.getAttribute('aria-invalid'), null);
+  assert.equal(form.echo.hidden, false);
+});
+
+test('Rechner haelt seine Mindestlaengen-Entscheidung fuer die Formular-Ebene fest', () => {
+  const rechner = readFileSync(fileURLToPath(new URL('../../blocks/tp-rollware-rechner.liquid', import.meta.url)), 'utf8');
+  assert.match(rechner, /errMin\.hidden = badInput[^\n]*\n(\s*\/\/[^\n]*\n)*\s*errMin\.dataset\.tpRechner = errMin\.hidden \? "0" : "1";/);
+  assert.match(rechner, /\.tp-rwc-input\[aria-invalid="true"\],/);
+});

@@ -1259,6 +1259,7 @@
   /* Fehlendes Pflichtfeld: roter Rahmen am Eingabefeld selbst, damit die
      Meldung unter dem Button nicht die einzige Spur ist. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input.is-invalid,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input[aria-invalid="true"],
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-select.is-invalid {
     border-color: #a62020;
     box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.18);
@@ -2608,6 +2609,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     // "0" oder "-5" sind keine leere Eingabe: dann Mindestlaenge zeigen.
     var lenEingegeben = String(lengthInput.value || '').trim() !== '';
     errMin.hidden = badInput || blocked || tooLong || !((len > 0 && len < 100) || (lenEingegeben && len === 0));
+    // Entscheidung fuer snippets/tp-formular.liquid festhalten: die Ebene blendet
+    // errMin bis zum Verlassen des Feldes aus und darf das nicht als Rechner-Stand lesen.
+    errMin.dataset.tpRechner = errMin.hidden ? "0" : "1";
     if (errMax) {
       errMax.textContent = {{ tp_rc_bestand_gefuehrt | json }}
         ? 'Für diesen Sonderposten sind höchstens ' + (MAX_LENGTH_CM / 100).toLocaleString('de-DE') + ' m Länge verfügbar.'

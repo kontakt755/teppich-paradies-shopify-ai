@@ -99,13 +99,24 @@
         // Ereignisses - unabhaengig davon, ob der Rechner seinen vor oder nach
         // diesem registriert hat.
         var wurdeVerlassen = false;
-        var rechnerZeigt = !fehlerMin.hidden;
+        // Der Rechner haelt seine Entscheidung in data-tp-rechner fest. hidden
+        // allein taugt nicht: abgleichen() blendet die Meldung bis zum Verlassen
+        // selbst aus, und das change-Ereignis beim Verlassen las diesen eigenen
+        // Stand als "Rechner zeigt nichts" - "5 cm" blieb dann stumm und mit
+        // gruener Bestaetigung (Audit 11.11.2026, Befund 2).
+        function rechnerEntscheidung() {
+          var d = fehlerMin.dataset && fehlerMin.dataset.tpRechner;
+          return d ? d === '1' : !fehlerMin.hidden;
+        }
+        var rechnerZeigt = rechnerEntscheidung();
 
         function abgleichen() {
           var zeigen = wurdeVerlassen && rechnerZeigt;
           fehlerMin.hidden = !zeigen;
           var aktiverFehler = fehler.find(function (el) { return el && !el.hidden; });
           var eingabefehler = [fehlerMin, fehlerFormat, fehlerMax].some(function (el) { return el && !el.hidden; });
+          // Keine gruene Bestaetigung ("Laenge = 5 cm") neben einem Eingabefehler.
+          if (eingabefehler && gegenprobe) gegenprobe.hidden = true;
           var ids = basisIds.slice();
           if (!hinweis.hidden) ids.push(hinweis.id);
           if (mindestHinweis && !mindestHinweis.hidden) ids.push(mindestHinweis.id);
@@ -123,7 +134,7 @@
 
         function nachRechner() {
           Promise.resolve().then(function () {
-            rechnerZeigt = !fehlerMin.hidden;
+            rechnerZeigt = rechnerEntscheidung();
             abgleichen();
           });
         }
