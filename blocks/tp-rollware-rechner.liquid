@@ -330,19 +330,19 @@
       {%- if tp_rc_min_laenge_cm > 0 -%}
         <p class="tp-rwc-note" data-mindest-hint>Mindestbestellmenge: {{ tp_rc_min_laenge_m }} m Länge. Kürzere Längen liefern und berechnen wir mit {{ tp_rc_min_laenge_m }} m.</p>
       {%- endif -%}
-      <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge {% if tp_rc_min_laenge_cm > 0 %}{{ tp_rc_min_laenge_m }} m{% else %}100 cm{% endif %}</p>
+      <p class="tp-rwc-note tp-rwc-note-error" id="tp-rwc-len-min-{{ tp_rc_id }}" data-error-min hidden>Mindestlänge {% if tp_rc_min_laenge_cm > 0 %}{{ tp_rc_min_laenge_m }} m{% else %}100 cm{% endif %}</p>
       {%- comment -%}
         Das Attribut heisst noch data-error-comma, meldet aber jede nicht
         lesbare Angabe (Buchstaben, zwei Kommas, Minus).
       {%- endcomment -%}
-      <p class="tp-rwc-note tp-rwc-note-error" data-error-comma hidden>Bitte nur eine Zahl in cm eingeben – zum Beispiel 350.</p>
+      <p class="tp-rwc-note tp-rwc-note-error" id="tp-rwc-len-format-{{ tp_rc_id }}" data-error-comma hidden>Bitte nur eine Zahl in cm eingeben – zum Beispiel 350.</p>
       {%- comment -%}
         Der Bestand wird bei Rollenware nicht getrackt, Shopify nimmt also jede
         Menge an. Ohne Obergrenze landete ein Vertipper (4000 statt 400)
         kommentarlos als Bestellung ueber mehrere hundert Quadratmeter im
         Warenkorb. Darueber wird beraten statt blockiert.
       {%- endcomment -%}
-      <p class="tp-rwc-note tp-rwc-note-error" data-error-max hidden></p>
+      <p class="tp-rwc-note tp-rwc-note-error" id="tp-rwc-len-max-{{ tp_rc_id }}" data-error-max hidden></p>
       {%- comment -%}
         Bahnen aus dem Raummass-Helfer (z. B. 2 x 200 x 560 statt 1 x 400 x 560):
         eine Warenkorbzeile ueber die Gesamtlaenge, Vermerk "Zuschnitt" fuer
@@ -1259,6 +1259,7 @@
   /* Fehlendes Pflichtfeld: roter Rahmen am Eingabefeld selbst, damit die
      Meldung unter dem Button nicht die einzige Spur ist. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input.is-invalid,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input[aria-invalid="true"],
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-select.is-invalid {
     border-color: #a62020;
     box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.18);
@@ -1615,6 +1616,23 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
       if (on) el.setAttribute('aria-invalid', 'true');
       else el.removeAttribute('aria-invalid');
+    }
+  }
+
+  // Laengenfehler am Feld selbst melden (WCAG 3.3.1/4.1.2, Audit 11.11.
+  // Befund 2): sichtbare Fehlerzeile per aria-describedby ans Feld haengen,
+  // aria-invalid setzen und die gruene Bestaetigung ausblenden. Wie beim
+  // Einfass-Konfigurator. Die Markierung nach einem Kaufversuch ohne Laenge
+  // (is-invalid, siehe markInvalid) bleibt stehen, bis der Kunde tippt.
+  function laengenfehlerMelden() {
+    var fehler = [errComma, errMin, errMax].filter(function (el) { return el && !el.hidden; });
+    var ids = [lengthEcho && lengthEcho.id].concat(fehler.map(function (el) { return el.id; })).filter(Boolean);
+    lengthInput.setAttribute('aria-describedby', ids.join(' '));
+    if (fehler.length) {
+      lengthInput.setAttribute('aria-invalid', 'true');
+      if (lengthEcho) lengthEcho.hidden = true;
+    } else if (!lengthInput.classList.contains('is-invalid')) {
+      lengthInput.removeAttribute('aria-invalid');
     }
   }
 
@@ -2614,6 +2632,7 @@ function tpRwcInit{{ tp_rc_id }}() {
         : 'Über ' + (MAX_LENGTH_CM / 100) + ' m Länge beraten wir Sie lieber persönlich – bitte kurz anrufen, damit Zuschnitt und Lieferung passen.';
       errMax.hidden = !tooLong;
     }
+    laengenfehlerMelden();
 
     target = findVariant(w);
     syncHeadlinePrice(target);
