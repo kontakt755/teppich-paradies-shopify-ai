@@ -167,6 +167,13 @@
       padding-top: 0;
     }
 
+    /* Teppich nach Mass: Hinweis und "Jetzt konfigurieren" stehen immer, der
+       Link "Muster anfordern" nur manchmal darunter. Unten ausgerichtet rutschte
+       der Knopf der Nachbarkarte ohne Link um eine Zeile tiefer (2026-11-12). */
+    .tp-kartenraster .product-card__content > .tp-card-actions--teppich {
+      align-self: start;
+    }
+
     /* Zweizeilige Reserve fuer den Titel ist hier unnoetig: die Titelspur ist
        so hoch wie der laengste Titel der Reihe. */
     .tp-kartenraster .product-card__content :where(.tp-card-title__link) [role='heading'] {

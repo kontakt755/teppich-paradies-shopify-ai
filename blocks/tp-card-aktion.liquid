@@ -40,15 +40,18 @@
     endfor
   endif
 -%}
+{%- comment -%} Eine Gruppe fuer alles: das Kartenraster (snippets/tp-kartenraster) kennt
+  nur .tp-card-aktion__gruppe als Spur; ein loses Kind (Kettel-Link) warf die Karte
+  aufs Flex-Layout zurueck und zog die Nachbarkarte auseinander (2026-11-12). {%- endcomment -%}
+{%- if tp_ca_rest_qm > 0 or tp_ca_raw != blank or tp_ca_leiste contains 'ja' -%}
+  <div class="tp-card-aktion__gruppe" {{ block.shopify_attributes }}>
+{%- endif -%}
 {%- if tp_ca_rest_qm > 0 -%}
   {%- capture tp_ca_rest_m_txt -%}{%- render 'tp-zahl-de', zahl: tp_ca_rest_m -%}{%- endcapture -%}
-  <p class="tp-card-aktion tp-card-aktion--rest" {{ block.shopify_attributes }}>Noch {{ tp_ca_rest_qm }}&nbsp;m² · {{ tp_ca_rest_m_txt | strip }}&nbsp;m Restlänge</p>
+  <p class="tp-card-aktion tp-card-aktion--rest">Noch {{ tp_ca_rest_qm }}&nbsp;m² · {{ tp_ca_rest_m_txt | strip }}&nbsp;m Restlänge</p>
   {%- if tp_ca_kettel -%}
     <a class="tp-card-aktion__kettel" href="{{ tp_ca_kettel.url }}">Auch als Teppich nach Maß, gekettelt<span class="visually-hidden">: {{ tp_ca_kettel.title | escape }}</span> →</a>
   {%- endif -%}
-{%- endif -%}
-{%- if tp_ca_raw != blank or tp_ca_leiste contains 'ja' -%}
-  <div class="tp-card-aktion__gruppe" {{ block.shopify_attributes }}>
 {%- endif -%}
 {%- if tp_ca_raw != blank -%}
   {%- liquid
@@ -66,7 +69,7 @@
     <span class="tp-card-aktion__text">ab 10&nbsp;m²</span>
   </p>
 {%- endif -%}
-{%- if tp_ca_raw != blank or tp_ca_leiste contains 'ja' -%}
+{%- if tp_ca_rest_qm > 0 or tp_ca_raw != blank or tp_ca_leiste contains 'ja' -%}
   </div>
 {%- endif -%}
 
