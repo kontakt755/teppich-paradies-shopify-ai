@@ -199,23 +199,53 @@ export function findeZugang(token, liste = liesZugaenge(), { jetzt = new Date() 
 // --- Tageszaehler ------------------------------------------------------------
 // Wie viele Uploads und Bytes je Link-Name heute angekommen sind. Liegt als Datei neben den
 // Zugaengen, damit ein Neustart des Dienstes die Grenze nicht zuruecksetzt. Es zaehlt nur der
-// laufende Tag (UTC); ein neuer Tag beginnt mit einer leeren Datei.
+// laufende Tag (UTC); ein neuer Tag beginnt mit einer leeren Datei. Ist die Datei kaputt, gilt
+// das Limit fuer den Rest des Tages (nie aufheben, im Zweifel sperren).
 
 export function tagVon(jetzt = new Date()) { return jetzt.toISOString().slice(0, 10); }
 
-/** Stand des Tages: { uploads, bytes } je Name. Unlesbare Datei = leer (die naechste Zaehlung schreibt sie neu). */
-export function liesTageszaehler(tag, datei = uploadZaehlerPfad()) {
+/**
+ * Liest den Tageszaehler. Fehlende Datei oder anderer Tag = leer. Eine unlesbare oder
+ * unsinnige Datei darf das Tageslimit nie aufheben: sie wird fuer den heutigen Tag als
+ * Sperre neu geschrieben (`defekt`), im Zweifel gilt das Limit. Ab dem naechsten Tag heilt sie.
+ */
+function liesStand(tag, datei) {
+  let d;
   try {
-    const d = JSON.parse(fs.readFileSync(datei, 'utf8'));
-    return d?.tag === tag && d.je && typeof d.je === 'object' ? d.je : {};
+    d = JSON.parse(fs.readFileSync(datei, 'utf8'));
   } catch (e) {
-    if (e?.code !== 'ENOENT') console.error(`[upload] Tageszaehler unlesbar, beginnt neu: ${e.message}`);
-    return {};
+    if (e?.code === 'ENOENT') return { je: {}, defekt: false };
+    console.error(`[upload] Tageszaehler unlesbar, Tageslimit gilt als erreicht: ${e.message}`);
+    return sperreHeute(tag, datei);
   }
+  if (d && typeof d === 'object' && d.defekt === true && d.tag === tag) return { je: {}, defekt: true };
+  if (!d || typeof d !== 'object' || typeof d.tag !== 'string' || !d.je || typeof d.je !== 'object' || Array.isArray(d.je)) {
+    console.error('[upload] Tageszaehler hat ein unerwartetes Format, Tageslimit gilt als erreicht');
+    return sperreHeute(tag, datei);
+  }
+  return { je: d.tag === tag ? d.je : {}, defekt: false };
 }
 
+function sperreHeute(tag, datei) {
+  try {
+    fs.mkdirSync(path.dirname(datei), { recursive: true });
+    const tmp = `${datei}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify({ tag, je: {}, defekt: true }, null, 2), { mode: 0o600 });
+    fs.renameSync(tmp, datei);
+  } catch (e) { console.error(`[upload] Sperre konnte nicht geschrieben werden: ${e.message}`); }
+  return { je: {}, defekt: true };
+}
+
+/** Stand des Tages: { uploads, bytes } je Name. */
+export function liesTageszaehler(tag, datei = uploadZaehlerPfad()) {
+  return liesStand(tag, datei).je;
+}
+
+/** Heutiger Stand eines Namens. Bei defekter Datei: Limit erreicht (`defekt: true`). */
 export function standHeute(name, tag, datei = uploadZaehlerPfad()) {
-  const e = liesTageszaehler(tag, datei)[name] || {};
+  const { je, defekt } = liesStand(tag, datei);
+  if (defekt) return { uploads: GRENZEN.maxUploadsJeTag, bytes: GRENZEN.maxBytesJeTag, defekt: true };
+  const e = je[name] || {};
   return { uploads: Number(e.uploads) || 0, bytes: Number(e.bytes) || 0 };
 }
 
@@ -225,7 +255,9 @@ export function standHeute(name, tag, datei = uploadZaehlerPfad()) {
  * ersetzt die Datei (so heilt sie sich auch nach einer verstellten Uhr).
  */
 export function zaehleHeute(name, tag, { uploads = 0, bytes = 0 } = {}, datei = uploadZaehlerPfad()) {
-  const je = liesTageszaehler(tag, datei);
+  const stand = liesStand(tag, datei);
+  if (stand.defekt) return { uploads: GRENZEN.maxUploadsJeTag, bytes: GRENZEN.maxBytesJeTag, defekt: true };
+  const je = stand.je;
   const alt = je[name] || {};
   je[name] = { uploads: (Number(alt.uploads) || 0) + uploads, bytes: (Number(alt.bytes) || 0) + bytes };
   fs.mkdirSync(path.dirname(datei), { recursive: true });

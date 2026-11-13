@@ -36,8 +36,35 @@ const DUZEN = /\b(du|dich|dir|dein(e|er|en|em)?|euch|eure?[nrms]?|ihr habt|schau
 // Strassenwort gefolgt von einer Hausnummer - als eigenes Wort ("Bernauer Straße 12") oder angehaengt ("Musterweg 5").
 const ADRESSE = /(?:stra(?:ß|ss)e|str\.|weg|allee|gasse|platz|damm|ring|chaussee)\s+\d+/iu;
 const EIGENE_ADRESSE = /saarlandstra(ß|ss)e\s*73/i;
+// Kontaktdaten: Telefonnummern (ab 7 Ziffern, auch mit +49, Leerzeichen, Bindestrich, Schraegstrich)
+// und E-Mail-Adressen. Eigene Nummer und eigene Domain des Betriebs sind erlaubt.
+const TELEFON = /(?<![\w@])(?:\+|00)?\d[\d\s\-\/().]{4,}\d(?![\w])/gu;
+const MAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/giu;
+const EIGENE_MAIL = /@(?:www\.)?teppich-paradies\.net$/i;
+const DATUM = /\b\d{1,2}\.\s?\d{1,2}\.\s?\d{2,4}\b/g;
 const PREIS = /\d+(?:[.,]\d{1,2})?\s*(€|eur\b|euro\b)/i;
 const EMOJI = /\p{Extended_Pictographic}/gu;
+
+const ziffern = z => String(z).replace(/\D/g, '');
+const EIGENE_NUMMERN = [ziffern(BETRIEB.telefon), ziffern(BETRIEB.telefon).replace(/^0/, '49')];
+
+/**
+ * Kontaktdaten im Text: Telefonnummern und E-Mail-Adressen (ausser den eigenen des Betriebs),
+ * dazu eine Adresse mit Hausnummer. Gibt Fehlertexte zurueck; leer = unauffaellig.
+ * Namen von Personen erkennt keine Regel sicher - das deckt diese Pruefung nicht ab.
+ */
+export function kontaktFehler(text) {
+  const t = String(text ?? '');
+  const fehler = [];
+  const ohneEigene = t.replace(EIGENE_ADRESSE, '');
+  if (ADRESSE.test(ohneEigene)) fehler.push('Text enthält eine Adresse – nie genauer als der Ort.');
+  if ((t.match(MAIL) ?? []).some(m => !EIGENE_MAIL.test(m))) fehler.push('Text enthält eine E-Mail-Adresse – nur die des Betriebs ist erlaubt.');
+  const ohneDatumPreis = t.replace(MAIL, ' ').replace(DATUM, ' ').replace(new RegExp(PREIS.source, 'gi'), ' ');
+  const nummern = (ohneDatumPreis.match(TELEFON) ?? []).map(ziffern).filter(z => z.length >= 7);
+  const fremd = nummern.some(z => !EIGENE_NUMMERN.some(e => z === e || z.endsWith(e)));
+  if (fremd) fehler.push('Text enthält eine Telefonnummer – nur die des Betriebs ist erlaubt.');
+  return fehler;
+}
 
 /**
  * Prueft einen Beitragstext. `fehler` verhindern den Entwurf, `hinweise`
@@ -49,8 +76,7 @@ export function pruefeText(text, { hashtags = [] } = {}) {
   if (t.length < 40) fehler.push('Text zu kurz – es fehlt, was zu sehen ist.');
   if (t.length > 2000) fehler.push('Text zu lang (über 2000 Zeichen).');
   for (const f of FLOSKELN) { const m = f.exec(t); if (m) fehler.push(`Floskel: „${m[0]}“`); }
-  const ohneEigene = t.replace(EIGENE_ADRESSE, '');
-  if (ADRESSE.test(ohneEigene)) fehler.push('Text enthält eine Adresse – nie genauer als der Ort.');
+  fehler.push(...kontaktFehler(t));
   if ((t.match(EMOJI) ?? []).length > 1) hinweise.push('Mehr als ein Emoji.');
   if ((t.match(/!/g) ?? []).length > 1) hinweise.push('Mehrere Ausrufezeichen.');
   if (DUZEN.test(t)) hinweise.push('Anrede: Text duzt – im Shop siezen wir.');
@@ -146,6 +172,12 @@ const TAT = {
   'Aufmaß': 'aufgemessen',
 };
 
+/** Darf der Freitext des Monteurs in einen Beitragstext? Sonst bleibt er draussen (steht weiter im Inhalt). */
+export function besonderheitSauber(roh) {
+  const t = String(roh ?? '');
+  return kontaktFehler(t).length === 0 && !FLOSKELN.some(f => f.test(t)) && !DUZEN.test(t);
+}
+
 /**
  * Notfalltext aus den reinen Angaben - damit ein Entwurf auch dann entsteht,
  * wenn die Redaktion einmal nicht laeuft. Bewusst schlicht; er behauptet
@@ -162,7 +194,8 @@ export function grundtext(inhalt, wechsel = 0) {
     const ort = inhalt.daten?.ortBekannt === false ? null : inhalt.ort;
     const wo = ort ? `In ${ort} haben wir` : 'Bei diesem Projekt haben wir';
     const raum = inhalt.raum ? ` – hier im ${inhalt.raum === 'Küche' ? 'Bereich Küche' : inhalt.raum}` : '';
-    const extra = inhalt.besonderheit ? ` ${inhalt.besonderheit.replace(/\s*$/, '').replace(/([^.!?])$/, '$1.')}` : '';
+    // Freitext des Monteurs: nur uebernehmen, wenn er keine Kontaktdaten, Adresse oder Floskel traegt.
+    const extra = inhalt.besonderheit && besonderheitSauber(inhalt.besonderheit) ? ` ${inhalt.besonderheit.replace(/\s*$/, '').replace(/([^.!?])$/, '$1.')}` : '';
     return `${wo} ${reihe}${raum}.${extra}\n\n${cta(inhalt.typ, wechsel)}`;
   }
   const name = inhalt.produkt_titel || inhalt.titel;

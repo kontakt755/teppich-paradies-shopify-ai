@@ -86,6 +86,13 @@ helles, warmes Tageslicht, saubere Wände, aufgeräumt, Architekturmagazin-Look.
    covering exactly as in the photo: <Bodenart, Farbe, Struktur>, same layout and
    camera viewpoint.“ Kostet 0,5 Credits; vorher `balance` – unter 10 Credits
    keine Bearbeitung mehr, im Bericht melden.
+   **Gemusterte oder gerichtete Ware wird nie per KI neu erzeugt** (Muster, Streifen,
+   Schlinge, Rauten): Das Modell zeichnet sie neu, statt das Foto zu übernehmen
+   (`docs/lessons/ki-bilder.md`). Bei solchen Böden nur das Original verwenden, KI
+   höchstens für Licht und Wände, und den Boden im Ergebnis Pixel für Pixel mit dem
+   Original vergleichen. Jede eingesetzte Fassung trägt automatisch die
+   IPTC-Kennzeichnung „KI-erzeugt“ (`bearbeitung ersetzen` schreibt sie in
+   `lib/ki-kennzeichnung.mjs`).
 3. Ergebnis mit `jobs_wait` abholen, die `result_url` per curl laden und
    **ansehen**: Ist der Boden noch derselbe (Material, Farbe, Struktur)? Kein
    Gesicht dazugekommen? Geländer, Fenster, Deko dürfen sich ändern – das ist dem

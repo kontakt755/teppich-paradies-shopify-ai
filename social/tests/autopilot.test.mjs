@@ -1,3 +1,4 @@
+import { kennzeichneKiBild, traegtKiKennzeichnung } from '../lib/ki-kennzeichnung.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -6,7 +7,8 @@ import { ersetzeBild } from '../lib/bearbeitung.mjs';
 import { autoFreigabeMoeglich, freigebenAutomatisch } from '../lib/freigabe.mjs';
 import { testDb, tmpDir } from './_hilfe.mjs';
 
-const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1]);
+// Kleinstes gueltiges Geruest: SOI, JFIF-Segment, Scan-Start, Ende.
+const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0]), Buffer.from([0xff, 0xda, 0, 4, 0, 0, 1, 2, 0xff, 0xd9])]);
 const TEXT = 'Neuer Teppichboden im Flur, sauber an die Treppe angeschlossen. Im Shop ansehen.';
 
 function baustelle(db, { einwilligung = true, datenschutz = 'ok', quelle = 'baustelle', typ = 'kundenprojekt' } = {}) {
@@ -55,12 +57,31 @@ test('Bild ersetzen: bearbeitete Fassung unter bearbeitet/, Original bleibt, Bed
   const r = ersetzeBild(db, m, neu, { dir });
   assert.equal(r.pfad, path.join('bearbeitet', `${id}-${m}.jpg`)); assert.equal(r.url, 'https://cdn.shopify.com/a.jpg');
   assert.ok(fs.existsSync(path.join(dir, r.pfad)));
+  assert.ok(traegtKiKennzeichnung(fs.readFileSync(path.join(dir, r.pfad))), 'bearbeitete Fassung traegt die IPTC-Kennzeichnung');
   const png = path.join(dir, 'neu.png'); fs.writeFileSync(png, Buffer.concat([Buffer.from([0x89]), Buffer.from('PNG\r\n\x1a\n'), Buffer.alloc(8)]));
   let gewandelt = null;
   ersetzeBild(db, m, png, { dir, wandle: (q, z) => { gewandelt = [q, z]; fs.writeFileSync(z, JPEG); } });
   assert.equal(gewandelt[0], png);
+  assert.ok(traegtKiKennzeichnung(fs.readFileSync(path.join(dir, r.pfad))), 'auch nach der Umwandlung aus PNG');
   const gesperrt = db.mediumAnlegen(id, { art: 'bild', url: 'x', pruefung: 'ok', datenschutz: 'bedenken' });
   assert.throws(() => ersetzeBild(db, gesperrt, neu, { dir }), /Bedenken/);
+  const kaputt = path.join(dir, 'kaputt.jpg'); fs.writeFileSync(kaputt, Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0xff, 0xff, 1, 2]));
+  assert.throws(() => ersetzeBild(db, m, kaputt, { dir }), /Kennzeichnung/);
+  assert.ok(traegtKiKennzeichnung(fs.readFileSync(path.join(dir, r.pfad))), 'fehlgeschlagener Versuch laesst die bisherige Fassung stehen' );
   fs.writeFileSync(path.join(dir, 'kein.jpg'), 'text');
   assert.throws(() => ersetzeBild(db, m, path.join(dir, 'kein.jpg'), { dir }), /Nur JPG/);
+});
+
+test('KI-Kennzeichnung: XMP wird gesetzt, ersetzt altes XMP, laesst Bilddaten und andere Segmente unberuehrt', () => {
+  const exif = Buffer.from([0xff, 0xe1, 0, 8, 0x45, 0x78, 0x69, 0x66, 0, 0]);
+  const dqt = Buffer.from([0xff, 0xdb, 0, 4, 1, 2]);
+  const sos = Buffer.from([0xff, 0xda, 0, 4, 0, 0, 0xaa, 0xbb, 0xff, 0xd9]);
+  const jpg = Buffer.concat([Buffer.from([0xff, 0xd8]), exif, dqt, sos]);
+  assert.equal(traegtKiKennzeichnung(jpg), false);
+  const a = kennzeichneKiBild(jpg);
+  assert.ok(traegtKiKennzeichnung(a)); assert.ok(a.includes(exif) && a.includes(dqt) && a.subarray(a.length - sos.length).equals(sos));
+  assert.match(a.toString('latin1'), /trainedAlgorithmicMedia/);
+  const b = kennzeichneKiBild(a);
+  assert.equal(b.length, a.length, 'zweimal kennzeichnen verdoppelt nichts');
+  assert.throws(() => kennzeichneKiBild(Buffer.from('kein jpeg')), /Kein JPEG/);
 });

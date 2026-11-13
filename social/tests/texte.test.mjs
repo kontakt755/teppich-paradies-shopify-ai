@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cta, fertigerText, grundtext, hashtags, pruefeText, shopLink } from '../lib/texte.mjs';
+import { besonderheitSauber, cta, kontaktFehler, fertigerText, grundtext, hashtags, pruefeText, shopLink } from '../lib/texte.mjs';
 
 const GUT = 'Heute haben wir in Oranienburg einen alten Teppichboden entfernt, den Untergrund vorbereitet und anschließend neuen Klebevinyl verlegt.';
 
@@ -48,4 +48,25 @@ test('Shop-Link traegt die Herkunft, Instagram-Text keinen Link', () => {
   assert.match(l, /utm_source=facebook&utm_medium=social&utm_campaign=organisch&utm_content=b7$/);
   assert.equal(fertigerText({ text: 'A', tags: ['#b'], link: l, plattform: 'instagram' }), 'A\n\n#b');
   assert.equal(fertigerText({ text: 'A', tags: ['#b'], link: l, plattform: 'facebook' }), `A\n\n${l}\n\n#b`);
+});
+
+test('Telefonnummern und E-Mail-Adressen sind ein Fehler, eigene Kontaktdaten und Datum/Preis nicht', () => {
+  const f = t => pruefeText(`${GUT} ${t}`).fehler.join(' | ');
+  for (const t of ['Rufen Sie 0171 1234567 an.', 'Tel. +49 171 1234567.', 'Telefon 03301/123456.', 'Mobil 0049 30 123 456 78.', 'Melden bei 030-1234567.', 'Mail an max.muster@example.de bitte.', 'Kontakt: info@lieferant-a.example'])
+    assert.ok(f(t), `muss sperren: ${t}`);
+  assert.match(f('Rufen Sie 0171 1234567 an.'), /Telefonnummer/);
+  assert.match(f('Mail an max.muster@example.de bitte.'), /E-Mail/);
+  for (const t of ['Rufen Sie an: 03301 573 37 20.', 'Rufen Sie an: 03301 5733720.', 'Rufen Sie an: +49 3301 5733720.', 'Schreiben Sie an kontakt@teppich-paradies.net.',
+    'Stand 13.11.2026.', 'Ab 1.299,00 € je Stück.', 'Zimmer 12 m² und 24,90 € je m².', 'In 16515 Oranienburg verlegt.', 'Artikel 620 in Farbe 1234.'])
+    assert.equal(f(t), '', `muss durchgehen: ${t}`);
+  assert.equal(pruefeText(`${GUT}\n\n${cta('handwerk', 2)}`).ok, true, 'der Standard-Handlungsaufruf mit Telefon bleibt erlaubt');
+});
+
+test('Freitext des Monteurs gelangt nur sauber in den Grundtext', () => {
+  const basis = { quelle: 'baustelle', typ: 'kundenprojekt', ort: 'Velten', bodenart: 'Klebevinyl', taetigkeit: 'Verlegung' };
+  assert.match(grundtext({ ...basis, besonderheit: 'Der Boden lag auf altem Estrich' }), /Estrich\./);
+  for (const b of ['Frau Meier erreichen Sie unter 0171 1234567', 'Bei max@example.de melden', 'Bernauer Straße 12, dritter Stock', 'Ein echter Hingucker'])
+    assert.doesNotMatch(grundtext({ ...basis, besonderheit: b }), /Meier|max@|Bernauer|Hingucker/, `draussen: ${b}`);
+  assert.equal(besonderheitSauber('Unebener Untergrund, Spachtelmasse nötig'), true);
+  assert.deepEqual(kontaktFehler('Nur Text'), []);
 });

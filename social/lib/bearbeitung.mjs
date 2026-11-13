@@ -5,12 +5,18 @@
  * Licht, aufgeraeumt) und setzt das Ergebnis hier ein. Das Original bleibt auf
  * der Platte liegen; das Medium zeigt danach auf die Fassung unter
  * `bearbeitet/`, die Werkstatt rendert ab dann mit ihr.
+ *
+ * Jede eingesetzte Fassung bekommt die IPTC-Kennzeichnung "KI-erzeugt"
+ * (DigitalSourceType = trainedAlgorithmicMedia, docs/lessons/ki-bilder.md);
+ * auch die Umwandlung aus PNG/WebP schreibt sie neu. Gemusterte Ware wird nie
+ * per KI neu erzeugt (social/REDAKTION.md).
  */
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { erkenneTyp } from './eingang.mjs';
+import { kennzeichneKiBild } from './ki-kennzeichnung.mjs';
 import { socialDir } from './pfade.mjs';
 
 export class BearbeitungFehler extends Error {}
@@ -29,8 +35,12 @@ export function ersetzeBild(db, mediumId, datei, { dir = socialDir(), von = 'red
   const rel = path.join('bearbeitet', `${m.inhalt_id}-${m.id}.jpg`);
   const ziel = path.join(dir, rel);
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
-  if (typ === 'image/jpeg') fs.copyFileSync(datei, ziel); else wandle(datei, ziel);
+  const tmp = `${ziel}.neu`;
+  if (typ === 'image/jpeg') fs.copyFileSync(datei, tmp); else wandle(datei, tmp);
+  // Kennzeichnung nach dem Kopieren/Wandeln schreiben, sonst geht sie mit der Umwandlung verloren.
+  try { fs.writeFileSync(tmp, kennzeichneKiBild(fs.readFileSync(tmp))); fs.renameSync(tmp, ziel); }
+  catch (e) { fs.rmSync(tmp, { force: true }); throw new BearbeitungFehler(`KI-Kennzeichnung nicht möglich (${e.message}) – Bild nicht eingesetzt`); }
   db.mediumAendern(m.id, { pfad: rel });
-  db.ereignis(von, 'bild-bearbeitet', `medium:${m.id}`, { vorher: m.pfad ?? m.url, nachher: rel });
+  db.ereignis(von, 'bild-bearbeitet', `medium:${m.id}`, { vorher: m.pfad ?? m.url, nachher: rel, kiKennzeichnung: 'trainedAlgorithmicMedia' });
   return db.medium(m.id);
 }
