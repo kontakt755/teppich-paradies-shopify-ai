@@ -1203,7 +1203,7 @@ laufen von Hand, einmal im Monat.
 ```
 npm run -s belege:monat -- --monat 2026-10              # Probelauf: liest, schreibt nichts
 npm run -s belege:monat -- --monat 2026-10 --schreiben  # legt ab und baut das Druck-PDF
-npm run -s belege:bank -- <kontoauszug.csv|camt053.xml> # Liste je Empfaenger, grobe Zuordnung
+npm run -s belege:bank -- <kontoauszug.csv|camt053.xml|kontoauszug.pdf> # Liste je Empfaenger, grobe Zuordnung
 ```
 
 - **Postfach nur lesend:** `lib/imap-lesen.mjs` oeffnet mit `EXAMINE`, holt nur per `BODY.PEEK` und
@@ -1216,8 +1216,9 @@ npm run -s belege:bank -- <kontoauszug.csv|camt053.xml> # Liste je Empfaenger, g
   Zahlungsdienste fallen heraus; was nicht eindeutig ist, wird „unklar“ und steht im Deckblatt.
   Betrag und Rechnungsnummer nur aus XML oder als einziger Wert hinter einem Stichwort im PDF-Text,
   sonst leer und „Prüfen“. Die Summe sagt ausdruecklich, wenn sie deshalb unvollstaendig ist.
-- **Bank** (`lib/belege-bank.mjs`): CSV-Export oder CAMT.053, Ergebnis nur unter
-  `belege-archiv/bank/`. Guete der Zuordnung: `nummer`, `betrag-und-name`, `nur-betrag` (nur Hinweis).
+- **Bank** (`lib/belege-bank.mjs`): CSV-Export, CAMT.053 oder der monatliche Kontoauszug als PDF
+  (voller Verwendungszweck; alter Kontostand plus Buchungen muss den neuen ergeben, sonst Abbruch;
+  die Umsatzuebersicht als PDF ist damit nicht gemeint), Ergebnis nur unter `belege-archiv/bank/`. Guete der Zuordnung: `nummer`, `betrag-und-name`, `nur-betrag` (nur Hinweis).
 - **Werkzeuge:** `~/.venvs/analyse` (pypdf, `TP_ANALYSE_PYTHON`), `weasyprint` fuer das Deckblatt.
 - Die Konsolenausgabe nennt nur Zahlen. Ein vollstaendiger Lauf dauert rund 7 Minuten.
 
