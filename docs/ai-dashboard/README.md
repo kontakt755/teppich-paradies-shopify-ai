@@ -66,12 +66,12 @@ diese Anpassung. Beim Abmelden werden Tarif und Eingaben verworfen.
 
 Den Dieselzuschlag der Spedition (`GEL Diesel`, `GEL gültig von`, `GEL gültig bis`) traegt
 der Mac-Dienst `net.teppich-paradies.gel-diesel` jede Woche selbst nach (dienstags und
-montags 9:30 Uhr, von Hand: `npm run -s gel-diesel:nachtragen`). Er liest den Wert der
+montags 9:30 Uhr, von Hand: `npm run -s gel-diesel:nachtragen`, nur ansehen mit `-- --trocken`). Er liest den Wert der
 laufenden ISO-Woche von der oeffentlichen Seite der Spedition (Zeilen „KW NN/JJJJ“, der Wert
 gilt Montag bis Sonntag) und aendert nur diese drei Felder; vorher entsteht
-`tarife.json.bak-gel-diesel`, ersetzt wird erst nach der Gegenpruefung mit
+`tarife.json.bak-<Datum>-gel-diesel`, ersetzt wird erst nach der Gegenpruefung mit
 `pruefeVersandtarif`, ohne Aenderung wird nichts geschrieben. Fehlt die Woche oder liegt der
-Wert ausserhalb 0–60 %, bleibt die Datei unveraendert; der Fehler steht in
+Wert ausserhalb 5–60 %, bleibt die Datei unveraendert; der Fehler steht in
 `~/Library/Logs/teppich-paradies-gel-diesel.log` und erscheint im Systemzustand als
 „Mac-Dienst gestoert“. Der monatliche GLS-Floater bleibt von Hand. Einrichtung und Technik:
 `operations/README.md`, Abschnitt „Dieselzuschlag der Spedition“.

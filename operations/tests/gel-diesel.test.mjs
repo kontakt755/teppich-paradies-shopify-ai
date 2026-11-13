@@ -60,7 +60,9 @@ test('Seite: fehlende Woche, unplausibler oder widerspruechlicher Wert ist ein F
   assert.throws(() => gelDieselAusSeite('KW 46/2026* 61,0%', '2026-11-10'), /nicht plausibel/);
   assert.throws(() => gelDieselAusSeite('KW 46/2026* 246%', '2026-11-10'), /nicht plausibel/);
   assert.equal(gelDieselAusSeite('KW 46/2026* 60,0%', '2026-11-10').satz, 0.6, 'Grenze gilt');
-  assert.equal(gelDieselAusSeite(SEITE, '2026-05-14').satz, 0, '0 % ist erlaubt');
+  assert.throws(() => gelDieselAusSeite(SEITE, '2026-05-14'), /0,0 % ist nicht plausibel \(erlaubt 5 bis 60 %\)/, '0 % ist ein Seitenfehler, kein Satz');
+  assert.throws(() => gelDieselAusSeite('KW 46/2026* 4,9%', '2026-11-10'), /nicht plausibel/);
+  assert.equal(gelDieselAusSeite('KW 46/2026* 5,0%', '2026-11-10').satz, 0.05, 'untere Grenze gilt');
   assert.throws(() => gelDieselAusSeite('KW 46/2026* 24,6% KW 46/2026* 24,7%', '2026-11-10'), /verschiedenen Werten/);
   assert.equal(gelDieselAusSeite('KW 46/2026* 24,6% KW 46/2026* 24.6%', '2026-11-10').satz, 0.246, 'derselbe Wert zweimal ist kein Widerspruch');
 });
@@ -103,8 +105,8 @@ test('Nachtragen: nur drei Felder aendern sich, Format bleibt, Sicherung und Geg
     .replace('"GEL gültig von": "2026-11-02"', '"GEL gültig von": "2026-11-09"').replace('"GEL gültig bis": "2026-11-08"', '"GEL gültig bis": "2026-11-15"');
   assert.notEqual(erwartet, vorher);
   assert.equal(fs.readFileSync(datei, 'utf8'), erwartet, 'Rest der Datei Zeichen fuer Zeichen gleich');
-  assert.equal(fs.readFileSync(`${datei}.bak-gel-diesel`, 'utf8'), vorher, 'Sicherung ist der Stand davor');
-  assert.deepEqual(dateien(ordner), ['tarife.json', 'tarife.json.bak-gel-diesel'], 'keine Nebendatei uebrig');
+  assert.equal(fs.readFileSync(`${datei}.bak-2026-11-12-gel-diesel`, 'utf8'), vorher, 'datierte Sicherung ist der Stand davor');
+  assert.deepEqual(dateien(ordner), ['tarife.json', 'tarife.json.bak-2026-11-12-gel-diesel'], 'keine Nebendatei uebrig');
   assert.equal(fs.statSync(datei).mode & 0o777, 0o600);
   assert.equal(leseVersandtarife(datei).verfuegbar, true);
   assert.equal(gelDieselMeldung(r), 'GEL-Diesel: 30,0 % → 20,4 %, gültig 09.11.–15.11.2026.');
@@ -113,7 +115,7 @@ test('Nachtragen: nur drei Felder aendern sich, Format bleibt, Sicherung und Geg
 test('Nachtragen: ohne Aenderung wird nichts geschrieben, auch keine Sicherung', t => {
   const { datei, ordner } = umgebung(t);
   gelDieselNachtragen(datei, SEITE, '2026-11-12');
-  fs.rmSync(`${datei}.bak-gel-diesel`);
+  fs.rmSync(`${datei}.bak-2026-11-12-gel-diesel`);
   const alt = new Date('2020-01-01T00:00:00Z');
   fs.utimesSync(datei, alt, alt);
   const r = gelDieselNachtragen(datei, SEITE, '2026-11-14');
@@ -121,6 +123,16 @@ test('Nachtragen: ohne Aenderung wird nichts geschrieben, auch keine Sicherung',
   assert.equal(fs.statSync(datei).mtimeMs, alt.getTime(), 'Datei nicht angefasst');
   assert.deepEqual(dateien(ordner), ['tarife.json']);
   assert.equal(gelDieselMeldung(r), 'GEL-Diesel unverändert: 20,4 %, gültig 09.11.–15.11.2026.');
+});
+
+test('Nachtragen: Trockenlauf rechnet und prueft, schreibt aber nichts', t => {
+  const { datei, ordner } = umgebung(t);
+  const vorher = fs.readFileSync(datei);
+  const r = gelDieselNachtragen(datei, SEITE, '2026-11-12', { trocken: true });
+  assert.deepEqual(r, { geaendert: true, trocken: true, alt: { satz: 0.3, von: '2026-11-02', bis: '2026-11-08' }, neu: { satz: 0.204, von: '2026-11-09', bis: '2026-11-15' } });
+  assert.ok(vorher.equals(fs.readFileSync(datei)), 'Datei unveraendert');
+  assert.deepEqual(dateien(ordner), ['tarife.json'], 'keine Sicherung, keine Nebendatei');
+  assert.throws(() => gelDieselNachtragen(datei, SEITE, '2026-07-22', { trocken: true }), /steht nicht auf der GEL-Seite/, 'Fehler zaehlen auch im Trockenlauf');
 });
 
 test('Nachtragen: bei jedem Fehler bleibt die Datei unveraendert, ohne Sicherung und Nebendatei', t => {
@@ -159,6 +171,22 @@ test('Skript: schreibt, meldet in einem Satz und setzt den Status auf ok', async
   // Zweiter Lauf am Folgetag: nichts mehr zu tun.
   await main([], { env, jetzt: new Date(DIENSTAG.getTime() + 86_400_000), aus: z => ausgabe.push(z), fehler: z => ausgabe.push(z), ladeSeite: async () => SEITE });
   assert.match(ausgabe[1], /GEL-Diesel unverändert: 19,8 %/);
+});
+
+test('Skript --trocken: zeigt nur, was geschrieben wuerde - weder Tarifdatei noch Status noch Mitteilung', async t => {
+  const { privat, datei, ordner, env } = umgebung(t);
+  const vorher = fs.readFileSync(datei);
+  const ausgabe = [];
+  const deps = seite => ({ env, jetzt: DIENSTAG, aus: z => ausgabe.push(z), fehler: z => ausgabe.push(z), ladeSeite: async () => seite, melde: () => assert.fail('keine Mitteilung') });
+  assert.equal(await main(['--trocken'], deps(SEITE)), 0);
+  assert.deepEqual(ausgabe, [`${DIENSTAG.toISOString()} TROCKENLAUF, nichts geschrieben: GEL-Diesel: 30,0 % → 19,8 %, gültig 16.11.–22.11.2026.`]);
+  assert.ok(vorher.equals(fs.readFileSync(datei)));
+  assert.deepEqual(dateien(ordner), ['tarife.json']);
+  assert.deepEqual(liesStatus(privat, 'gel-diesel'), {}, 'kein Status geschrieben');
+  assert.equal(await main(['--trocken'], deps('KW 40/2026* 20,0%')), 1, 'Fehler im Trockenlauf: Exit 1, aber kein roter Status');
+  assert.match(ausgabe[1], /GEL-Diesel FEHLER: KW 47\/2026 steht nicht/);
+  assert.deepEqual(liesStatus(privat, 'gel-diesel'), {});
+  assert.equal(await main(['--trocken', '--jetzt'], { env, fehler: () => {} }), 2);
 });
 
 test('Skript: Fehler steht im Protokoll und im Status, Mitteilung nur beim ersten Mal, Datei bleibt', async t => {

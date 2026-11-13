@@ -757,7 +757,7 @@ zog Karten in falsche Bereiche. Regel, Bereiche und Tests: `scripts/preisfilter-
 
 ## Dieselzuschlag der Spedition (wöchentlich)
 
-`npm run -s gel-diesel:nachtragen` (`scripts/gel-diesel-nachtragen.mjs`, Logik in
+`npm run -s gel-diesel:nachtragen` (Probelauf ohne Schreiben: `-- --trocken`; `scripts/gel-diesel-nachtragen.mjs`, Logik in
 `lib/gel-diesel.mjs`, Tests `tests/gel-diesel.test.mjs`) hält die drei Felder `GEL Diesel`,
 `GEL gültig von` und `GEL gültig bis` in `$TP_PRIVAT_DIR/versandkosten/tarife.json` aktuell, die der
 Kostenvergleich Paketdienst/Spedition liest. Quelle ist die öffentliche Seite
@@ -766,10 +766,10 @@ Punkt). Der Wert einer Kalenderwoche gilt Montag bis Sonntag dieser ISO-Woche (b
 die Überschrift „Abrechnung KW …“ nennt schon die Folgewoche und wird nicht gelesen.
 
 - Der Lauf nimmt das Berliner Datum, sucht die ISO-Woche und trägt Satz und Zeitraum ein. Fehlt
-  die Woche, steht sie mit zwei Werten da oder liegt der Wert außerhalb von 0–60 %, ist das ein
+  die Woche, steht sie mit zwei Werten da oder liegt der Wert außerhalb von 5–60 %, ist das ein
   Fehler – nie ein geratener Wert.
 - Geändert werden nur diese drei Felder (der Rest der Datei bleibt Zeichen für Zeichen). Vorher:
-  Sicherung `tarife.json.bak-gel-diesel` (eine, wird je Änderung ersetzt). Dann neue Fassung in
+  datierte Sicherung `tarife.json.bak-<Datum>-gel-diesel`. Dann neue Fassung in
   eine Nebendatei, Gegenprobe mit `pruefeVersandtarif`, erst danach ersetzen. Jeder Fehler lässt
   die Datei unverändert. Ohne Änderung wird nichts geschrieben.
 - Ausgabe: ein Satz, z. B. „GEL-Diesel: 24,6 % → 23,7 %, gültig 16.11.–22.11.2026.“ oder

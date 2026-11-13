@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import { pruefeVersandtarif } from '../../docs/ai-dashboard/lib/versandkosten.mjs';
 
 export const GEL_SEITE = 'https://www.gel-express.de/de/kraftstoff-zuschlag/';
+export const GEL_MIN_SATZ = 0.05;
 export const GEL_MAX_SATZ = 0.6;
 const FELDER = ['GEL Diesel', 'GEL gültig von', 'GEL gültig bis'];
 const TAG_MS = 86_400_000;
@@ -27,7 +28,7 @@ export function isoWoche(datum) {
 /**
  * Liest den Zuschlag der ISO-Woche von `datum` aus Seitentext oder HTML ("KW 46/2026*" gefolgt
  * von "24,6%", Komma oder Punkt). Fehlt die Woche, ist sie widerspruechlich oder liegt der Wert
- * ausserhalb von 0 bis 60 %, gibt es einen Fehler statt eines geratenen Werts.
+ * ausserhalb von 5 bis 60 %, gibt es einen Fehler statt eines geratenen Werts.
  * @returns {{satz: number, von: string, bis: string}} Anteil 0 bis 1, Montag und Sonntag als ISO-Datum
  */
 export function gelDieselAusSeite(seite, datum) {
@@ -43,7 +44,7 @@ export function gelDieselAusSeite(seite, datum) {
   if (!werte.size) throw new Error(`${kw} steht nicht auf der GEL-Seite.`);
   if (werte.size > 1) throw new Error(`${kw} steht mit verschiedenen Werten auf der GEL-Seite (${[...werte].join(' / ')}).`);
   const satz = Math.round(Number([...werte][0]) * 100) / 10_000;
-  if (satz < 0 || satz > GEL_MAX_SATZ) throw new Error(`${kw}: ${(satz * 100).toFixed(1).replace('.', ',')} % ist nicht plausibel (erlaubt 0 bis 60 %).`);
+  if (satz < GEL_MIN_SATZ || satz > GEL_MAX_SATZ) throw new Error(`${kw}: ${(satz * 100).toFixed(1).replace('.', ',')} % ist nicht plausibel (erlaubt 5 bis 60 %).`);
   return { satz, von: w.von, bis: w.bis };
 }
 
@@ -61,10 +62,11 @@ export function gelDieselMeldung({ geaendert, alt, neu }) {
 /**
  * Traegt Satz und Zeitraum der Woche von `datum` in die Tarifdatei ein - nur diese drei Felder,
  * der Rest der Datei bleibt Zeichen fuer Zeichen. Ohne Aenderung wird nichts geschrieben. Sonst:
- * Sicherung `<datei>.bak-gel-diesel`, neue Fassung in eine Nebendatei, mit pruefeVersandtarif
- * gegenpruefen, dann erst ersetzen. Bei jedem Fehler bleibt die Datei unveraendert.
+ * datierte Sicherung `<datei>.bak-<datum>-gel-diesel`, neue Fassung in eine Nebendatei, mit
+ * pruefeVersandtarif gegenpruefen, dann erst ersetzen. Bei jedem Fehler bleibt die Datei
+ * unveraendert. Mit `trocken` wird alles gerechnet und geprueft, aber nichts geschrieben.
  */
-export function gelDieselNachtragen(datei, seite, datum) {
+export function gelDieselNachtragen(datei, seite, datum, { trocken = false } = {}) {
   const neu = gelDieselAusSeite(seite, datum);
   const roh = fs.readFileSync(datei, 'utf8');
   const tarif = JSON.parse(roh);
@@ -85,11 +87,12 @@ export function gelDieselNachtragen(datei, seite, datum) {
   const geschrieben = JSON.parse(text);
   if (JSON.stringify(geschrieben) !== JSON.stringify(erwartet)) throw new Error('Die Änderung hätte mehr als die drei GEL-Felder berührt.');
   pruefeVersandtarif(geschrieben);
+  if (trocken) return { geaendert: true, trocken: true, alt, neu };
 
   const modus = fs.statSync(datei).mode & 0o777;
   const nebendatei = `${datei}.${process.pid}.tmp`;
   try {
-    fs.copyFileSync(datei, `${datei}.bak-gel-diesel`);
+    fs.copyFileSync(datei, `${datei}.bak-${datum}-gel-diesel`);
     fs.writeFileSync(nebendatei, text, { mode: modus });
     pruefeVersandtarif(JSON.parse(fs.readFileSync(nebendatei, 'utf8')));
     fs.renameSync(nebendatei, datei);

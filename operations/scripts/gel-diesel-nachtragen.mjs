@@ -3,12 +3,14 @@
  * Dieselzuschlag der Spedition (GEL) nachtragen - woechentlich, ohne KI (launchd-Dienst
  * net.teppich-paradies.gel-diesel, dienstags und montags vormittags):
  *
- *   npm run -s gel-diesel:nachtragen
+ *   npm run -s gel-diesel:nachtragen              (schreibt)
+ *   npm run -s gel-diesel:nachtragen -- --trocken  (zeigt nur, was geschrieben wuerde)
  *
  * Laedt https://www.gel-express.de/de/kraftstoff-zuschlag/, liest den Wert der laufenden ISO-Woche
  * (Berliner Datum) und schreibt "GEL Diesel", "GEL gültig von" und "GEL gültig bis" gemeinsam in
  * $TP_PRIVAT_DIR/versandkosten/tarife.json (operations/lib/gel-diesel.mjs). Ohne Aenderung wird
- * nichts geschrieben. Eine Zeile Ausgabe; ein Fehler steht im Dienstprotokoll, und der Status
+ * nichts geschrieben; der Trockenlauf rechnet und prueft alles, schreibt aber weder die Tarifdatei
+ * noch den Status. Eine Zeile Ausgabe; ein Fehler steht im Dienstprotokoll, und der Status
  * unter $TP_PRIVAT_DIR/routinen/gel-diesel/ macht ein rotes To-do im Control Center (wie bei den
  * anderen Mac-Diensten, operations/lib/routinen.mjs), die Mac-Mitteilung nur beim ersten Fehler.
  * Nur lesender Abruf der oeffentlichen Seite; nichts im Shop, bei GLS oder GEL wird gebucht.
@@ -48,16 +50,20 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   const aus = deps.aus || console.log;
   const fehlerAus = deps.fehler || console.error;
   const jetzt = deps.jetzt || new Date();
-  if (argv.length) { fehlerAus(`Unbekanntes Argument: ${argv.join(' ')}`); return 2; }
+  const unbekannt = argv.filter(a => a !== '--trocken');
+  if (unbekannt.length) { fehlerAus(`Unbekanntes Argument: ${unbekannt.join(' ')}`); return 2; }
+  const trocken = argv.includes('--trocken');
   const privat = privatDir(env);
   try {
     const seite = await (deps.ladeSeite || ladeSeite)();
-    const text = gelDieselMeldung(gelDieselNachtragen(versandtarifePfad(privat), seite, berlinZeit(jetzt).datum));
+    const text = gelDieselMeldung(gelDieselNachtragen(versandtarifePfad(privat), seite, berlinZeit(jetzt).datum, { trocken }));
+    if (trocken) { aus(`${jetzt.toISOString()} TROCKENLAUF, nichts geschrieben: ${text}`); return 0; }
     aus(`${jetzt.toISOString()} ${text}`);
     schreibStatus(privat, 'gel-diesel', { ok: true, art: null, meldung: text }, jetzt);
     return 0;
   } catch (e) {
     fehlerAus(`${jetzt.toISOString()} GEL-Diesel FEHLER: ${e.message}`);
+    if (trocken) return 1; // ein Probelauf meldet nichts an das Control Center
     const { mitteilen } = schreibStatus(privat, 'gel-diesel', { ok: false, art: 'nachtragen', meldung: e.message }, jetzt);
     if (mitteilen) (deps.melde || mitteilung)(TITEL, e.message);
     return 1;
