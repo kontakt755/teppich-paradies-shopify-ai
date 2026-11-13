@@ -1,0 +1,6 @@
+## 2026-11-13 · Fakturasperre bei Bestellungen im Großhandel
+
+- **Geaendert:** Neuer Schalter `ware.fakturasperre` in den privaten Lieferanten-Stammdaten. Ist er gesetzt, steht in der Warenbestellmail vor der Bitte um Bestaetigung: „Bitte setzen Sie für diese Bestellung eine Fakturasperre und leiten Sie sie an Ihren Außendienstmitarbeiter weiter, damit er unsere Preise hinterlegt, bevor die Rechnung erstellt wird.“ (bei `duzen` in Du-Form). Der Bestelldialog zeigt dazu den Hinweis „Fakturasperre anfordern“; bei Bestellung per Telefon oder Portal mit der Bitte, es ausdruecklich zu sagen. Grund (Inhaber): Beim Großhandel steht sonst oft die UVP auf der Rechnung, solange der Außendienst keine Preise hinterlegt hat. Mustermails bleiben unveraendert.
+- **Getestet:** `operations/tests/lieferanten.test.mjs` (neu: ohne Schalter kein Satz, mit Schalter Sie- und Du-Form vor der Bestaetigungsbitte), `docs/ai-dashboard/tests/bezugsweg-hinweis.test.mjs` (Hinweis im Dialog je Bestellweg), `npm run -s pruefen`.
+- **Risiken/Annahmen:** Welche Lieferanten Großhaendler sind, steht nur in den privaten Stammdaten (gesetzt fuer A, B, C).
+- **Naechste Stufe:** Abgleich der Rechnungspreise gegen den erwarteten EK beim Belegeingang, falls trotz Sperre UVP-Rechnungen kommen.

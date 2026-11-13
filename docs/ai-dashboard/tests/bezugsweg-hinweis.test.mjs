@@ -7,7 +7,7 @@ import vm from 'node:vm';
 // kettelpuffer-hinweis.test.mjs ohne Importe geladen.
 const quelle = fs.readFileSync(new URL('../ansichten/einkauf/lieferanten.mjs', import.meta.url), 'utf8')
   .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];\s*/gm, '').replace(/^export\s/gm, '');
-const { bezugswegHinweis } = vm.runInNewContext(`${quelle}\n({ bezugswegHinweis })`, {
+const { bezugswegHinweis, fakturasperreHinweis } = vm.runInNewContext(`${quelle}\n({ bezugswegHinweis, fakturasperreHinweis })`, {
   state: {}, einkauf: {}, esc: v => String(v ?? '').replace(/</g, '&lt;'), anzeigeWert: v => v,
 });
 
@@ -30,4 +30,10 @@ test('Bezugsweg: ohne Daten kein Hinweis, Werte werden maskiert', () => {
   assert.equal(bezugswegHinweis({}), '');
   assert.equal(bezugswegHinweis({ bezugsweg: { nah: [], weit: [] } }), '');
   assert.doesNotMatch(bezugswegHinweis({ bezugsweg: { nah: [{ orderName: '<b>x</b>', ort: '' }], weit: [] } }), /<b>x/);
+});
+
+test('Fakturasperre: Grosshandel bekommt den Hinweis, sonst nichts', () => {
+  assert.equal(fakturasperreHinweis({}), '');
+  assert.match(fakturasperreHinweis({ fakturasperre: true, weg: 'mail' }), /Fakturasperre anfordern[\s\S]*steht schon in der Mail/);
+  assert.match(fakturasperreHinweis({ fakturasperre: true, weg: 'telefon' }), /ausdrücklich sagen/);
 });
