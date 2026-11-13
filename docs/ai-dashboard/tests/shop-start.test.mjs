@@ -122,7 +122,7 @@ const TEST_BESTELLUNGEN = { verfuegbar: true, zeilen: [{
   positionsstatus: { l1: null, u1: { status: 'geliefert', geliefertAm: '2026-11-05T09:00:00Z' } },
   auftrag: { positionen: [
     { lineItemId: 'l1', titel: 'Testunterlage', farbe: 'grau', kundenmenge: '6 m²', sku: 'TEST-LAGER-1', lagerware: true, lagerHinweis: 'Rolle hinten links' },
-    { lineItemId: 'u1', titel: 'Testboden', farbe: 'beige', kundenmenge: '12 m²', sku: 'TEST-WARE-1', route: 'SUPPLIER_TO_TP' },
+    { lineItemId: 'u1', titel: 'Testboden', farbe: 'beige', kundenmenge: '1200 × 0,01 m² = 12,00 m² · 300 × 400 cm', sku: 'TEST-WARE-1', route: 'SUPPLIER_TO_TP' },
   ] },
 }] };
 
@@ -141,6 +141,8 @@ test('Von uns abschicken (#1995): direkt unter den Warenbestellungen, nur mit Ar
   assert.ok(waren < block && block < r.html.indexOf('heute-probleme'), 'unter den Warenbestellungen, vor den Problemen');
   assert.match(r.html, /noch zuschneiden/); assert.match(r.html, /eingetroffen – noch packen/);
   assert.match(r.html, /Rolle hinten links/, 'Hinweis aus der Regeldatei');
+  // Mengen ohne die Shop-Stueckelung in Hundertsteln - wie in der Bestellliste (lib/bestellinhalt.mjs mengeKurz).
+  assert.match(r.html, /Testboden · beige · 12,00 m² · 300 × 400 cm/); assert.doesNotMatch(r.html, /× 0,01 m²/);
   assert.match(r.html, /data-selbst="zugeschnitten"/); assert.match(r.html, /data-selbst="gepackt"/);
   assert.match(r.html, /data-af-set data-af-status="raus"/, '"Verschickt…" oeffnet den vorhandenen Versand-Dialog');
   assert.doesNotMatch(r.html, /#TEST-1<\/div>|rausgeben: #TEST-1/, 'das To-do zu derselben Position steht nicht ein zweites Mal');
