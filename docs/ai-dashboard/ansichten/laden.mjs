@@ -61,8 +61,11 @@ function merkeAufgeklappt() {
   document.querySelectorAll('#main details[data-laden]').forEach(d => { laden.offen[d.dataset.laden] = d.open; });
 }
 
-/** "Zugeschnitten" geht auch ohne Uebernehmen: wer an der Rolle steht, hakt direkt ab. */
-const schnittKnopf = e => (e.schnitt ? `<button type="button" class="btn laden-knopf" data-laden-schnitt-order="${esc(e.schnitt.orderId)}" data-laden-schnitt-item="${esc(e.schnitt.lineItemId)}">Zugeschnitten</button>` : '');
+/** "Zugeschnitten"/"Gepackt" geht auch ohne Uebernehmen: wer an der Rolle oder am Packtisch steht, hakt direkt ab. */
+const schnittKnopf = (e) => {
+  const b = e.schnitt || e.packen;
+  return b ? `<button type="button" class="btn laden-knopf" data-laden-schnitt-order="${esc(b.orderId)}" data-laden-schnitt-item="${esc(b.lineItemId)}" data-laden-schritt="${e.schnitt ? 'zugeschnitten' : 'gepackt'}">${e.schnitt ? 'Zugeschnitten' : 'Gepackt'}</button>` : '';
+};
 
 function zeile(e, { lesen }) {
   const meta = [e.art, e.von].filter(Boolean).map(esc).join(' · ');
@@ -80,7 +83,7 @@ function zeile(e, { lesen }) {
     : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${esc(e.schluessel)}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>${schnittKnopf(e)}`}`;
   const telefon = e.schluessel.startsWith('mail:') && !lesen && !e.nurInfo ? `<button type="button" class="btn laden-knopf" data-laden-telefonisch="${esc(e.schluessel)}">Telefonisch erledigt</button>` : '';
   return `<li class="laden-zeile${e.ton === 'crit' && e.schluessel.startsWith('mail:') ? ' laden-zeile-rot' : ''}">
-    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}${e.nurInfo ? `<p class="small muted">${esc(e.infoText || 'Nur zur Info, keine Antwort nötig.')}</p>` : ''}</div>
+    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}${e.nurInfo ? `<p class="small muted">${esc(e.infoText || 'Nur zur Info, keine Antwort nötig.')}</p>` : ''}${e.hinweis ? `<p class="small muted">${esc(e.hinweis)}</p>` : ''}</div>
     <div class="laden-rechts">${rechts}${telefon}</div>
   </li>`;
 }
@@ -176,8 +179,8 @@ export function ladenKlick(e) {
   if ((el = von('data-laden-telefonisch'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenTelefonisch, wer: laden.daten?.personen?.length === 1 ? laden.daten.personen[0] : null }, 'Telefonisch erledigt'); return true; }
   // Gleiche Ablage wie "Telefonisch erledigt": der Haken blendet die Zeile nur aus, am Postfach aendert sich nichts.
   if ((el = von('data-laden-gesehen'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenGesehen }, 'Gesehen'); return true; }
-  // Derselbe Haken wie "Zugeschnitten" unter Bestellen (aktion selbstversand) - danach steht die Ware dort unter "noch packen".
-  if ((el = von('data-laden-schnitt-order'))) { schreiben('/api/einkauf/auftragsstatus', { aktion: 'selbstversand', orderId: el.dataset.ladenSchnittOrder, lineItemId: el.dataset.ladenSchnittItem, schritt: 'zugeschnitten', an: true }, 'Zugeschnitten – jetzt packen'); return true; }
+  // Dieselben Haken wie "Zugeschnitten"/"Gepackt" unter Bestellen (aktion selbstversand) - die Zeile wandert danach zum naechsten Schritt.
+  if ((el = von('data-laden-schnitt-order'))) { const gepackt = el.dataset.ladenSchritt === 'gepackt'; schreiben('/api/einkauf/auftragsstatus', { aktion: 'selbstversand', orderId: el.dataset.ladenSchnittOrder, lineItemId: el.dataset.ladenSchnittItem, schritt: gepackt ? 'gepackt' : 'zugeschnitten', an: true }, gepackt ? 'Gepackt – jetzt verschicken' : 'Zugeschnitten – jetzt packen'); return true; }
   if ((el = von('data-laden-erledigt'))) { schreiben('/api/laden/aufgabe-erledigt', { id: el.dataset.ladenErledigt }, 'Erledigt'); return true; }
   if (von('data-laden-neu')) { Object.assign(laden, { formOffen: true, wer: null }); render(); document.querySelector('#main [data-laden-form] input')?.focus(); return true; }
   if (von('data-laden-abbrechen')) { Object.assign(laden, { wer: null, formOffen: false }); render(); return true; }
