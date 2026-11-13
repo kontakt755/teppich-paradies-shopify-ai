@@ -91,19 +91,25 @@ export function musterlagerPfad(privatDir) {
 
 const norm = v => String(v ?? '').trim().toUpperCase();
 
+// Restrollen: Rolle, Kettelteppich, Raummass und Zuschnitt tragen je eine eigene SKU
+// (<Rolle>-VOR-ROLLE | -KETTEL | -RAUM | -ZS-<cm>, restposten-entwurf.mjs). Das Muster schneiden wir
+// immer von derselben Rolle - ohne das fand eine Bestellung ueber den Kettelteppich das Lagermuster nicht.
+const aufRolle = k => k.replace(/-VOR-(?:KETTEL|RAUM|ZS-\d+)$/, '-VOR-ROLLE');
+
 /**
  * Schluessel eines Musters: SKU ohne "M-" (Mustervarianten tragen M-<SKU der Quellvariante>,
  * bei "Teppich nach Maß" bewusst die der Teppichboden-Qualitaet - dasselbe physische Muster).
  * Sammelprodukt "Kostenloses Muster" (TP-MUSTER): SKU der Quellvariante.
+ * Restrollen: immer die SKU der Rolle (aufRolle).
  */
 export function musterSchluessel(pos) {
   const sku = norm(pos?.sku);
-  if (sku.startsWith('M-')) return sku.slice(2) || null;
+  if (sku.startsWith('M-')) return aufRolle(sku.slice(2)) || null;
   if (sku.startsWith('TP-MUSTER')) {
     const q = norm(pos?.musterQuelle?.sku);
-    return q && q !== UNGEKLAERT ? q : null;
+    return q && q !== UNGEKLAERT ? aufRolle(q) : null;
   }
-  return sku && sku !== UNGEKLAERT ? sku : null;
+  return sku && sku !== UNGEKLAERT ? aufRolle(sku) : null;
 }
 
 function clip(text, max) {
@@ -160,7 +166,7 @@ function verlaufMit(e, eintrag) {
 export function einlagern(file, { titel, farbe, handle = null, schluessel = [], art, anzahl = 1, ort = null, notiz = null, actor, jetzt = new Date(), verbrauchtVon = () => 0 } = {}) {
   if (!actor) throw new MusterlagerFehler('actor ist Pflicht');
   if (!LAGER_ART_WERTE.includes(art)) throw new MusterlagerFehler(`Unbekannte Art „${art}"`);
-  const keys = [...new Set((schluessel || []).map(norm).filter(k => k && k !== UNGEKLAERT))];
+  const keys = [...new Set((schluessel || []).map(k => aufRolle(norm(k))).filter(k => k && k !== UNGEKLAERT))];
   if (!keys.length) throw new MusterlagerFehler('Ohne Artikelnummer (SKU) lässt sich das Muster keiner Bestellung zuordnen');
   const t = clip(titel, 160);
   if (!t) throw new MusterlagerFehler('Produkt fehlt');
