@@ -97,11 +97,16 @@ export function alsTag(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Rot vor Gelb vor normal, darin das Aelteste zuerst. Stabil: Gleiches bleibt in Eingangsreihenfolge. */
+/**
+ * Rot vor Gelb vor normal, darin das Aelteste zuerst. Stabil: Gleiches bleibt in Eingangsreihenfolge.
+ * `zuerst` stellt ein To-do in seiner Farbe nach vorn: Einkauf ueber Verkauf ist am ersten Tag am
+ * dringendsten und stuende sonst hinter den drei aeltesten Problemen eingeklappt (Benutzer 2026-11-13).
+ */
 export function sortiereTodos(todos) {
   return todos
     .map((t, i) => [t, i])
     .sort(([a, ai], [b, bi]) => (TON_RANG[a.ton] ?? 2) - (TON_RANG[b.ton] ?? 2)
+      || Number(!!b.zuerst) - Number(!!a.zuerst)
       || (b.alterTage ?? -1) - (a.alterTage ?? -1)
       || ai - bi)
     .map(([t]) => t);

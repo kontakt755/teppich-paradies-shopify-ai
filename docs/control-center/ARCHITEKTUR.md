@@ -2006,6 +2006,30 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
 - **Offen**: Anhänge (PDF) liest der Lauf nicht – Nummern nur aus Betreff, Text und Dateinamen. „AB
   fehlt seit N Tagen“ ist bewusst keine Regel, solange die Abdeckung des Postfachs nicht belegt ist.
 
+
+**Einkauf über Verkauf (seit 2026-11-13).** Anlass war eine Bestellung, bei der die Auftragsbestätigung von Lieferant C
+mehr nannte, als der Kunde netto bezahlt hatte; aufgefallen ist es erst in einer Auswertung. Seitdem holt
+`belege -- uebernehmen` (bzw. `belege -- preise`) die PDFs neuer Auftragsbestätigungen und Rechnungen der letzten 7 Tage
+nur lesend per IMAP, `preiseAusText` (`operations/lib/lieferbelege.mjs`) liest je Zeile Artikelnummer, Menge und Nettowert
+und legt sie am Beleg als `preise.positionen` ab (`null` = anderes Format, wird nicht erneut geholt; der PDF-Text wird nie
+gespeichert). `einkaufUeberVerkauf` (`docs/ai-dashboard/lib/einkauf-ueber-verkauf.mjs`) vergleicht im Server je
+Bestellposition: Einkauf netto je Stück mal bestellte Menge gegen `nettoGesamt` der Position (Shopify, nach allen
+Rabatten). Liegt der Einkauf auf oder über dem Verkauf, steht die Position als Abweichung `einkauf_ueber_verkauf` rot in
+der Lieferantenpost unter „Zu prüfen“, an der Auftragskarte unter „Je Auftrag“ und auf „Heute“ unter den Problemen, mit
+dem Knopf „Nachricht an Vertreter“ (fertiger Text zum Kopieren oder fürs Mailprogramm). Gesendet wird nichts, und der
+Preis im Shop bleibt unberührt.
+
+- **Zuordnung:** Die Artikelnummer des Lieferanten muss unsere SKU sein und die Zeile in Stück berechnet werden. Ist der
+  Beleg einer Bestellung zugeordnet, gilt er nur für sie; sonst für Bestellungen bis 21 Tage vor dem Beleg. Je Position
+  zählt der jüngste Beleg: eine geänderte Auftragsbestätigung mit dem richtigen Preis hebt die Warnung von selbst auf,
+  sonst „Erledigt“ an der Zeile (quittiert den Beleg für diese Bestellung).
+- **Rollen:** Beträge und den Text bekommt nur der Inhaber (auch der Notzugang), wie bei der Rohertrag-Warnung im
+  Bestelldialog. Alle anderen sehen die rote Zeile ohne Beträge; `preise` verlässt den Server nie mit der Belegliste.
+- **Vertreter:** Name, Mailadresse und `duzen` stehen freiwillig je Lieferant unter `vertreter` in den privaten
+  Stammdaten. Ohne Eintrag gibt es den Text nur zum Kopieren, in der Sie-Form.
+- **Grenzen:** Gelesen wird bisher nur das Beleglayout von Lieferant C. Meterware (Lieferant rechnet in lfm oder m², seine
+  Artikelnummer ist nicht unsere SKU) und Belege anderer Lieferanten lösen noch keine Warnung aus.
+
 ## 26. Muster-Etiketten drucken (seit 2026-10-20, #1473)
 
 Etikettendrucker Niimbot B1, Etikett 50 × 50 mm (400 × 400 px, 203 dpi, Druckrichtung „top“ –

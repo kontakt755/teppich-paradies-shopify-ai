@@ -16,6 +16,8 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { auftragsAblauf, einordnung, jetztRang, kundenNachricht, nachfrageNachricht, auftragsAmpel, grundZahlen, GRUND_REIHENFOLGE, teilstandText } from '../../lib/auftrags-ablauf.mjs';
 import { WARTESCHWELLEN, warteTitel } from '../../lib/ampel.mjs';
 import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
+import { textDialog } from '../../bausteine/text-dialog.mjs';
+import { preiswarnungHtml } from './belege.mjs';
 import { referenzKnopf } from './referenz.mjs';
 import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten.mjs';
 import {
@@ -111,7 +113,7 @@ function auftragKarte({ a, ab, e }) {
   const amp = auftragsAmpel(ab, e);
   const k = kundeUndOrt(a.id);
   const wer = [k.name, k.ort].filter(Boolean).join(' · ');
-  const inhalt = gesperrtHtml(ab) + packstationHtml(e) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab) + selbstHtml(ab)
+  const inhalt = preiswarnungHtml(a.id) + gesperrtHtml(ab) + packstationHtml(e) + (ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab) + selbstHtml(ab)
     : ['bestellt', 'lieferung'].includes(ab.jetzt) ? lieferungHtml(a, ab, e)
     : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`);
   const bestellt = ab.bestelltAm && ab.jetzt !== 'vorbereiten' ? `<span class="small muted">bestellt ${esc(fmtDate(ab.bestelltAm))}</span>` : '';
@@ -171,22 +173,6 @@ function verzugHtml(a, ab, e) {
   ].filter(Boolean).join(', ');
   return `<div class="notice ${rot.length ? 'crit' : 'warn'} ab-aktion ab-aktion-zeile"><span><strong>${rot.length ? 'Überfällig – beim Lieferanten nachfragen:' : 'Beim Lieferanten nachhaken:'}</strong> ${plural(e.verzug.length, 'Artikel', 'Artikel')} ${esc(was)}.</span>
     ${istNurLesend() ? '' : `<div class="ab-knoepfe"><button type="button" class="btn btn-sm" data-ab-nachfrage="${esc(a.id)}">Nachfrage-Nachricht</button></div>`}</div>`;
-}
-
-/** Dialog mit fertigem Text: kopieren oder im Mailprogramm oeffnen - abgeschickt wird nur von Hand. */
-function textDialog({ titel, an, telefon, betreff, text, nachher = '' }) {
-  const mailto = an ? `mailto:${encodeURIComponent(an)}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(text)}` : '';
-  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="abTxtTitel" data-dialog>
-    <h2 id="abTxtTitel">${esc(titel)}</h2>
-    <p class="small">${an ? `An: <b>${esc(an)}</b>` : '<span class="muted">Keine E-Mail-Adresse hinterlegt – Text kopieren.</span>'}${telefon ? ` · Telefon: <a href="tel:${esc(telefon.replace(/[^\d+]/g, ''))}">${esc(telefon)}</a>` : ''}<br>Betreff: ${esc(betreff)}</p>
-    <textarea id="abTxt" class="ab-text-feld" rows="12" readonly>${esc(text)}</textarea>
-    <p class="small muted">Es wird nichts automatisch gesendet.</p>
-    ${nachher}
-    <div class="actions"><button type="button" class="btn" data-close-dialog>Schließen</button>
-      <button type="button" class="btn" data-kopieren="abTxt">Text kopieren</button>
-      ${mailto ? `<a class="btn btn-primary" href="${esc(mailto)}">Im Mailprogramm öffnen</a>` : ''}</div>
-  </div></div>`;
-  $('#dialogRoot [data-kopieren]')?.focus();
 }
 
 const echt = v => (v && v !== '–' && v !== 'UNGEKLAERT' ? String(v).trim() : '');
