@@ -203,4 +203,45 @@
     }
   }
   {% endif %}
+
+  /* cookie-hinweis-anfang */
+  /* Shopify-Cookie-Hinweis (#shopify-pc__banner, kommt per Skript von Shopify)
+     nahm am Telefon 320 px = 38 % der Hoehe (390 x 844): 32 px Rand, drei
+     Knoepfe untereinander. Nur Layout, Texte und Funktion bleiben - Akzeptieren
+     und Ablehnen sind gleich gross und gleich gestaltet. Die Reihenfolge der
+     Knoepfe (Akzeptieren, Ablehnen, dann Einstellungen) setzt Shopify selbst.
+     Die Regeln beginnen mit der ID, damit sie die Shopify-Stile schlagen, egal
+     wann diese eingefuegt werden. Desktop bleibt unberuehrt. */
+  @media screen and (max-width: 480px) {
+    #shopify-pc__banner.shopify-pc__banner__dialog {
+      padding: 14px 16px;
+    }
+
+    #shopify-pc__banner h2 {
+      margin: 0 0 4px;
+      font-size: 100%;
+    }
+
+    #shopify-pc__banner .shopify-pc__banner__body {
+      margin-bottom: 6px;
+    }
+
+    #shopify-pc__banner .shopify-pc__banner__btns {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    #shopify-pc__banner button {
+      margin: 0;
+      padding: 8px 10px;
+      flex: 1 1 40%;
+    }
+
+    #shopify-pc__banner button.shopify-pc__banner__btn-manage-prefs {
+      flex: 1 1 100%;
+      padding: 6px 2px;
+    }
+  }
+  /* cookie-hinweis-ende */
 </style>
