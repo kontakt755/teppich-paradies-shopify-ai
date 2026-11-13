@@ -90,7 +90,7 @@ import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as 
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
-import { ladenTodos, ladenMailZeilen, wareUnterwegs, wareAngekommen, zuschnitte } from '../docs/ai-dashboard/lib/laden.mjs';
+import { ladenTodos, ladenMailZeilen, gruppiereMails, wareUnterwegs, wareAngekommen, zuschnitte } from '../docs/ai-dashboard/lib/laden.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -4950,7 +4950,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return {
         ware,
         verfuegbar: true, personen, jetzt: jetzt.toISOString(),
-        mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: ladenMailZeilen(mails.eintraege.map(m => ({ ...m, lieferantenpost: ware.eingerichtet && Boolean(lieferantZurDomain(domainVon(m.adresse || ''), { stammdaten, absender: belegAbsender })) })), { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit) },
+        mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: gruppiereMails(ladenMailZeilen(mails.eintraege.map(m => ({ ...m, lieferantenpost: ware.eingerichtet && Boolean(lieferantZurDomain(domainVon(m.adresse || ''), { stammdaten, absender: belegAbsender })) })), { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit)) },
         todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)), zuschnitte: schnitte }, { jetzt }).map(mit),
         // Ohne Bestelldaten fehlen nur die Rueckrufe und wartenden Kunden - von Hand angelegte Aufgaben gibt es trotzdem.
         bestelldatenFehlen: !modell,

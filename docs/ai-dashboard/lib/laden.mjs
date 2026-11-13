@@ -194,6 +194,30 @@ export function wareAngekommen(belege = [], { jetzt = new Date(), nameVon = id =
     }));
 }
 
+/**
+ * Mehrere offene Mails desselben Absenders werden eine Zeile (Benutzer 13.11.2026: "viel zu viel"): neuester Betreff,
+ * Alter und Farbe der aeltesten, `schluessel` bleibt der der neuesten, `alle` traegt alle Schluessel fuer die Knoepfe.
+ * Lieferanten-Info wird nie zusammengelegt (eigener, eingeklappter Bereich in der Ansicht).
+ */
+export function gruppiereMails(zeilen = []) {
+  const gruppen = new Map();
+  for (const z of zeilen) {
+    const k = z.nurInfo ? z.schluessel : `von:${z.von}`;
+    if (!gruppen.has(k)) gruppen.set(k, []);
+    gruppen.get(k).push(z);
+  }
+  return [...gruppen.values()].map((g) => {
+    if (g.length === 1) return g[0];
+    const neu = g.reduce((a, b) => (String(b.seit) > String(a.seit) ? b : a));
+    const alt = g.reduce((a, b) => (String(b.seit) < String(a.seit) ? b : a));
+    return {
+      ...neu, seit: alt.seit, alterTage: alt.alterTage, werktage: alt.werktage, alter: alt.alter, anzahl: g.length,
+      ton: g.some(z => z.ton === 'crit') ? 'crit' : neu.ton, alle: g.map(z => z.schluessel),
+      zustaendig: g.find(z => z.zustaendig)?.zustaendig || null, beantwortetAm: g.every(z => z.beantwortetAm) ? neu.beantwortetAm : null,
+    };
+  });
+}
+
 /** Die eine rote Zeile oben: offene (von niemandem uebernommene) Eintraege in der roten Stufe. */
 export function liegtZuLange(mails = [], todos = []) {
   const rot = l => l.filter(e => !e.zustaendig && e.ton === 'crit').length;

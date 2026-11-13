@@ -234,6 +234,7 @@ test('Angebotsantwort: Annahme ohne Frage wird markiert, nur Angebotsantworten w
 
 test('angebotAngenommen: Stichworte im eigenen Teil', () => {
   assert.equal(angebotAngenommen('Vielen Dank für Ihr Angebot. Wir nehmen gern den London-Teppich und haben hierfür auch die Anzahlung getätigt. Leider können wir den Cosmo-Teppich nicht nehmen.'), true);
+  assert.equal(angebotAngenommen('wir nehmen das Angebot an und bitten um Lieferung. Bitte teilen Sie uns einen Liefertermin mit.'), true);
   assert.equal(angebotAngenommen('Ist der Teppich fußbodenheizungstauglich?'), false);
   assert.equal(angebotAngenommen('Danke, wir melden uns. Von: Teppich Paradies ... Anzahlung'), false);
 });
