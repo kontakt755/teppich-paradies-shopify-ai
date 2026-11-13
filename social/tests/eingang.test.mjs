@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
-import { ablaufVon, bereinigeOrt, EingangFehler, erkenneTyp, findeZugang, liesZugaenge, LINK_GUELTIG_TAGE, pruefeAngaben, standHeute, titelFuer, zaehleHeute, zugangAnlegen, zugangGueltig, zugangSperren } from '../lib/eingang.mjs';
+import { GRENZEN, ablaufVon, bereinigeOrt, EingangFehler, erkenneTyp, findeZugang, liesZugaenge, LINK_GUELTIG_TAGE, pruefeAngaben, standHeute, titelFuer, zaehleHeute, zugangAnlegen, zugangGueltig, zugangSperren } from '../lib/eingang.mjs';
 import { tmpDir } from './_hilfe.mjs';
 
 test('Einwilligung wird nicht mehr abgefragt, sie liegt immer vor', () => {
@@ -57,8 +57,21 @@ test('Tageszaehler: zaehlt je Name, beginnt jeden Tag neu, kaputte Datei faengt 
   assert.deepEqual(standHeute('Team', '2026-10-27', datei), { uploads: 0, bytes: 0 });
   zaehleHeute('Team', '2026-10-27', { uploads: 1 }, datei);
   assert.deepEqual(JSON.parse(fs.readFileSync(datei, 'utf8')), { tag: '2026-10-27', je: { Team: { uploads: 1, bytes: 0 } } }, 'der Vortag faellt weg');
-  fs.writeFileSync(datei, '{kaputt');
-  assert.deepEqual(standHeute('Team', '2026-10-27', datei), { uploads: 0, bytes: 0 });
+});
+
+test('Tageszaehler: kaputte Datei hebt das Limit nicht auf, sie sperrt den Tag und heilt am naechsten', (t) => {
+  const datei = path.join(tmpDir(t), 'upload-tageszaehler.json');
+  const voll = { uploads: GRENZEN.maxUploadsJeTag, bytes: GRENZEN.maxBytesJeTag, defekt: true };
+  for (const kaputt of ['{kaputt', '', '[]', 'null', '{"tag":"2026-10-27"}', '{"tag":5,"je":{}}', '{"tag":"2026-10-27","je":[1]}']) {
+    fs.writeFileSync(datei, kaputt);
+    assert.deepEqual(standHeute('Team', '2026-10-27', datei), voll, `kaputt: ${kaputt}`);
+    assert.deepEqual(standHeute('Team', '2026-10-27', datei), voll, 'bleibt gesperrt, auch beim zweiten Lesen');
+    assert.deepEqual(zaehleHeute('Team', '2026-10-27', { uploads: 1 }, datei), voll, 'Zaehlen schreibt die Sperre nicht frei');
+    assert.deepEqual(standHeute('Ali', '2026-10-27', datei), voll, 'gilt fuer alle Namen');
+  }
+  assert.deepEqual(standHeute('Team', '2026-10-28', datei), { uploads: 0, bytes: 0 }, 'am naechsten Tag zaehlt es wieder');
+  zaehleHeute('Team', '2026-10-28', { uploads: 1 }, datei);
+  assert.deepEqual(standHeute('Team', '2026-10-28', datei), { uploads: 1, bytes: 0 });
 });
 
 test('Dateityp kommt aus dem Inhalt, nicht aus dem Namen', () => {
