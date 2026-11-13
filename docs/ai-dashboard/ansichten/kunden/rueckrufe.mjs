@@ -44,6 +44,9 @@ async function setzeRueckrufStatus(orderId, status, notiz, wiedervorlage = null)
       const zeile = kunden.rueckrufe.zeilen.find(z => z.orderId === orderId);
       if (zeile) Object.assign(zeile, j.eintrag);
     }
+    // Die rote Marke "Falsch geliefert" an der Bestellung zeigt denselben Stand, ohne die Liste neu zu laden.
+    const bestellung = kunden.bestellungen?.zeilen?.find(z => z.orderId === orderId);
+    if (bestellung) { bestellung.rueckrufStatus = status; if (status === 'erledigt') bestellung.rueckrufThema = null; }
     toast(`Rückruf: ${RUECKRUF_STATUS_LABEL[status]}`);
     render();
     return true;

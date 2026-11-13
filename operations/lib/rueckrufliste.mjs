@@ -40,7 +40,9 @@ export function rueckrufZeile(auftrag, eintrag = null) {
   const zeit = ersteWert(b, k => /zeit|wann|uhrzeit/i.test(k));
   const telefonAngabe = b['Telefon'] ?? ersteWert(b, k => /telefon/i.test(k));
   const kundeTelefon = auftrag?.details?.kunde?.telefon;
-  const telefon = !kundeTelefon || kundeTelefon === '–' ? (telefonAngabe || null) : kundeTelefon;
+  // Viele Kunden tragen die Nummer nur in der Lieferadresse ein - sonst stuende hier "keine Telefonnummer".
+  const adressTelefon = [auftrag?.details?.lieferadresse?.telefon, auftrag?.details?.rechnungsadresse?.telefon].find(t => t && t !== '–');
+  const telefon = !kundeTelefon || kundeTelefon === '–' ? (telefonAngabe || adressTelefon || null) : kundeTelefon;
   const c = auftrag?.checks || {};
   const themen = [];
   if (istManuell(eintrag)) themen.push(eintrag.thema);

@@ -46,3 +46,9 @@ test('Von Hand gemeldet („Falsch geliefert“): in der Liste auch ohne Wunsch 
   const l = rueckrufliste({ auftraege: [auftrag(5, {}), auftrag(6, {}), auftrag(1, { beratung: 'Ja' })] }, leseAlle(file));
   assert.deepEqual(l.map(z => [z.orderId, z.thema]), [[1, 'Beratung gewünscht'], [5, grund]]);
 });
+
+test('Telefon: steht die Nummer nur in der Lieferadresse, wird sie genommen', () => {
+  const nurAdresse = auftrag(1, { beratung: 'Ja' }, { details: { kunde: { name: 'Max Muster', telefon: '–' }, beratungsangaben: {}, lieferadresse: { telefon: '030 000000' } } });
+  assert.equal(rueckrufZeile(nurAdresse).telefon, '030 000000');
+  assert.equal(rueckrufZeile(auftrag(2, { beratung: 'Ja' })).telefon, '0170 0000000', 'die Nummer am Kunden geht vor');
+});
