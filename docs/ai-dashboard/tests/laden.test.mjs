@@ -324,3 +324,11 @@ test('Mail-Zeilen: eigene Post und Weiterleitungs-Bestaetigung fallen weg, Unzus
   assert.equal(zeilen[1].ton, 'crit');
   assert.ok(zeilen.every(z => !('adresse' in z)), 'Adresse verlaesst den Server nicht');
 });
+
+test('Mails: angenommene Angebote stehen nicht in der Liste', () => {
+  const z = ladenMailZeilen([
+    { schluessel: 'mail:a', von: 'Kunde', adresse: 'k@example.com', text: 'Aw: Angebot AG324', seit: '2026-11-01T10:00:00Z', angenommen: true },
+    { schluessel: 'mail:b', von: 'Kunde', adresse: 'k@example.com', text: 'Aw: Angebot AG325', seit: '2026-11-01T10:00:00Z' },
+  ], { jetzt: new Date('2026-11-13T10:00:00Z') });
+  assert.deepEqual(z.map(e => e.schluessel), ['mail:b']);
+});
