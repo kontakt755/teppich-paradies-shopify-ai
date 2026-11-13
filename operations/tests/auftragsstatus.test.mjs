@@ -39,6 +39,18 @@ test('vermerkeDirektversand: nur bestellte Position, Bestelldatum bleibt (#1049)
   assert.equal(leseAlle(file)[positionKey(o, li)].ueber, 'kunde');
 });
 
+test('vermerkeDirektversand: "kommt zu uns" und offene Position als bestellt (Unterlagen, 13.11.2026)', () => {
+  const file = auftragsstatusPfad(tmpDir());
+  const o = 'gid://shopify/Order/10', li = 'gid://shopify/LineItem/10';
+  assert.throws(() => vermerkeDirektversand(file, { orderId: o, lineItemId: li, actor: 'tobias', ueber: 'kettler' }), AuftragsstatusFehler);
+  const neu = vermerkeDirektversand(file, { orderId: o, lineItemId: li, actor: 'tobias', ueber: 'laden', auchOffen: true, jetzt: new Date('2026-11-13T10:00:00Z') });
+  assert.deepEqual([neu.status, neu.ueber, neu.bestelltAm, neu.bestelltVon], ['bestellt', 'laden', '2026-11-13T10:00:00.000Z', 'tobias']);
+  const direkt = vermerkeDirektversand(file, { orderId: o, lineItemId: li, actor: 'inhaber', auchOffen: true, jetzt: new Date('2026-11-14T10:00:00Z') });
+  assert.deepEqual([direkt.ueber, direkt.bestelltAm], ['kunde', '2026-11-13T10:00:00.000Z'], 'Bestelldatum bleibt');
+  setzeStatus(file, { orderId: o, lineItemId: li, status: 'geliefert', actor: 'tobias' });
+  assert.throws(() => vermerkeDirektversand(file, { orderId: o, lineItemId: li, actor: 'tobias', auchOffen: true }), e => e.status === 409, 'schon eingetroffen: erst zuruecknehmen');
+});
+
 test('setzeStatus behaelt frueher gesetzte Felder beim naechsten Schritt', () => {
   const dir = tmpDir();
   const file = auftragsstatusPfad(dir);

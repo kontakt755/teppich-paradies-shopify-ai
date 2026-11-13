@@ -171,3 +171,22 @@ test('E8/G2: alter Vermerk "direkt an Kunden" ohne Schritt macht Lagerware nicht
   const r = await u.setze(L.lager, { aktion: 'selbstversand', schritt: 'zugeschnitten', an: true });
   assert.deepEqual([r.eintrag.status, r.eintrag.ueber], ['geliefert', 'lager']);
 });
+
+test('aktion direktversand fuer Unterlagen: "Hersteller schickt direkt" und "kommt zu uns" (13.11.2026)', async () => {
+  // Rolle im Laden: der Klick traegt bestellt + Vermerk ein - danach ist bei uns nichts mehr zu schneiden.
+  const u = umgebung();
+  await assert.rejects(() => u.setze(L.lager, { aktion: 'direktversand' }, { ...mitarbeiter, rolle: 'lesen' }), fehler(403));
+  await assert.rejects(() => u.setze(L.lager, { aktion: 'direktversand', ueber: 'laden' }), fehler(409), 'Rolle liegt im Laden: nicht zu uns bestellen');
+  await assert.rejects(() => u.setze(L.ware, { aktion: 'direktversand' }), fehler(400), 'keine Unterlage aus der Liste');
+  const r = await u.setze(L.lager, { aktion: 'direktversand' });
+  assert.deepEqual([r.eintrag.status, r.eintrag.ueber, r.eintrag.bestelltVon], ['bestellt', 'kunde', 'Testperson']);
+  await assert.rejects(() => u.setze(L.lager, { aktion: 'selbstversand', schritt: 'zugeschnitten', an: true }), fehler(409), 'direkt: nichts zu schneiden');
+  // Keine Rolle im Laden: beide Wege; der zweite Klick aendert nur den Vermerk, das Bestelldatum bleibt.
+  const o = umgebung({ regeln: { regeln: [], ohneRolle: [{ skuPraefix: 'TEST-LAGER' }] } });
+  const zuUns = await o.setze(L.lager, { aktion: 'direktversand', ueber: 'laden' });
+  assert.deepEqual([zuUns.eintrag.status, zuUns.eintrag.ueber], ['bestellt', 'laden']);
+  const direkt = await o.setze(L.lager, { aktion: 'direktversand', ueber: 'kunde' });
+  assert.deepEqual([direkt.eintrag.ueber, direkt.eintrag.bestelltAm], ['kunde', zuUns.eintrag.bestelltAm]);
+  const p = o.api.kundenBestellungen().zeilen.find(x => x.orderId === O).auftrag.positionen.find(x => x.lineItemId === L.lager);
+  assert.deepEqual([p.ohneRolle, p.lagerware], [true, undefined]);
+});

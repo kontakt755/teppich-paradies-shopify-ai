@@ -593,7 +593,18 @@ Ansicht Laden) liest die uebrige Ware derselben Bestellung: geht sie belegt durc
 „an uns“/„Kettler“, schon eingetroffen, oder bestellt mit Kettelservice in der Bestellung), heisst es
 „Zusammen mit …“; geht sie belegt direkt, „Allein als Päckchen“. Ein Vorschlag vor dem Bestellen und eine
 Bestellung ohne Vermerk sind kein Beleg – dann steht „Versandweg noch offen“ statt einer Vermutung (am
-12.11. lag ein geschnittenes Vlies im Lager, weil der Teppich direkt vom Hersteller kam).
+12.11. lag ein geschnittenes Vlies im Lager, weil der Teppich direkt vom Hersteller kam). Dasselbe gilt
+fuer den eigenen Weg der Unterlage: ohne Rolle im Laden und ohne Vermerk heisst es „Noch nicht bestellt“
+bzw. „Weg nicht vermerkt“, nie „Allein als Päckchen“.
+
+Abhaken auf der Seite: „Zugeschnitten“/„Gepackt“/„Verschickt…“ wie bisher, dazu „Bestellt – Hersteller
+schickt direkt“ und „Bestellt – kommt zu uns“ (`bestellwegKnoepfe`, `vermerkeBestellweg` in
+`einkauf/auftragsfluss.mjs`). Sie nutzen `aktion: 'direktversand'` von `POST /api/einkauf/auftragsstatus`,
+das seit 2026-11-13 ausser Mustern auch Unterlagen aus der Liste annimmt (`ueber: 'kunde'|'laden'`;
+andere Ware 400, „kommt zu uns“ bei Rolle im Laden 409). `vermerkeDirektversand` traegt dabei eine
+Position ohne Schritt als bestellt ein (`auchOffen`) und laesst ein vorhandenes Bestelldatum stehen.
+Das ist die einzige Stelle, an der Lagerware „bestellt“ werden darf – bewusst je Position, mit Vermerk
+„direkt“, danach gilt der Weg „Hersteller → Kunde“ und „Zugeschnitten“ ist gesperrt.
 
 ### Warnung vor dem Bestellen (seit 2026-11-05)
 

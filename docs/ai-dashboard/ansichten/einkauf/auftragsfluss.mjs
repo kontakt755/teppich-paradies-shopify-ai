@@ -244,6 +244,40 @@ export async function setzeSelbstversand(pos, schritt, an = true) {
  * (der vorhandene Versand-Dialog). Angaben stehen als data-Attribute am Knopf. Rolle "lesen": nichts.
  * `rueckgaengig`: kleiner Knopf, der den zuletzt gesetzten Schritt zuruecknimmt.
  */
+const WEG_TEXT = { kunde: 'Hersteller schickt direkt', laden: 'kommt zu uns' };
+
+/**
+ * Unterlage aus der Liste (Bereich "Noch zu schneiden"): als bestellt vermerken, mit Weg - der Hersteller
+ * schickt direkt ('kunde') oder die Ware kommt zu uns ('laden'). Derselbe Endpunkt wie der Direktversand
+ * der Packstation (aktion direktversand); ein Bestelldatum, das schon dasteht, bleibt.
+ */
+export async function vermerkeBestellweg(pos, ueber) {
+  if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return false; }
+  try {
+    const r = await fetch('/api/einkauf/auftragsstatus', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ aktion: 'direktversand', orderId: pos.orderId, lineItemId: pos.lineItemId, ueber }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Nicht gespeichert: ${j.error || r.status}`, 'crit'); return false; }
+    if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
+    einkauf.auftragsstatus.positionen[afKey(pos.orderId, pos.lineItemId)] = j.eintrag;
+    toast(`Bestellt – ${WEG_TEXT[ueber] || ueber}: eingetragen`);
+    render();
+    await ladeKundenArbeitsstandNeu();
+    render();
+    return true;
+  } catch (e) { toast(`Nicht gespeichert: ${e.message}`, 'crit'); return false; }
+}
+
+/** Knoepfe dazu; `laden: false` laesst "kommt zu uns" weg (Rolle liegt im Laden). */
+export function bestellwegKnoepfe(p, { laden = true, klasse = 'btn btn-sm' } = {}) {
+  if (istNurLesend() || !p?.lineItemId) return '';
+  const daten = `data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}"`;
+  return ['kunde', ...(laden ? ['laden'] : [])]
+    .map(u => `<button type="button" class="${klasse}" data-bestellweg="${u}" ${daten}>Bestellt – ${WEG_TEXT[u]}</button>`).join('');
+}
+
 export function selbstKnoepfe(p, eintrag, { klasse = 'btn btn-sm', haupt = false, rueckgaengig = false } = {}) {
   if (istNurLesend() || !p?.lineItemId) return '';
   const stand = selbstStand(p, eintrag);
@@ -680,6 +714,13 @@ export function einkaufKlickStatus(e) {
     if (!positionen.length) { toast('Die Muster sind nicht in den aktuellen Daten. Bitte aktualisieren.', 'crit'); return true; }
     angekommen.disabled = true;   // gegen den Doppelklick - danach wird ohnehin neu gezeichnet
     markiereMusterAngekommen(positionen).then(ok => { if (!ok) angekommen.disabled = false; });
+    return true;
+  }
+  const bestellweg = e.target.closest('[data-bestellweg]');
+  if (bestellweg) {
+    e.preventDefault();
+    bestellweg.disabled = true;   // gegen den Doppelklick - danach wird ohnehin neu gezeichnet
+    vermerkeBestellweg({ orderId: bestellweg.dataset.afOrder, lineItemId: bestellweg.dataset.afItem }, bestellweg.dataset.bestellweg).then(ok => { if (!ok) bestellweg.disabled = false; });
     return true;
   }
   const selbst = e.target.closest('[data-selbst]');
