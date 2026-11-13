@@ -236,6 +236,15 @@ gebraeuchlich), Erfassen.
   sondern unter diesem Satz; „Als bestellt markieren“ sagt **Aus eigenem Lager – nicht bestellen, als
   zugeschnitten markieren**.
 - **Ist beim Kunden…** = statt „Ist eingetroffen“ bei Ware, die der Hersteller direkt liefert (bei uns kommt nichts an).
+- **Noch zu schneiden** (13.11.2026) = eigener Punkt ganz oben in der Seitenleiste, mit Zahl. Unterlagen als
+  Rollenware aus bezahlten, offenen Bestellungen, groß das Schnittmaß (**80 cm breit × 3 m**). Drei Gruppen:
+  **Jetzt schneiden** (Rolle liegt im Laden), **Geschnitten – noch nicht verschickt**, **Nicht schneiden**
+  (**Keine Rolle im Laden** oder der Hersteller schickt direkt). Die Zahl am Menüpunkt zählt nur „Jetzt schneiden“.
+- **Versandweg** der Unterlage, fett in jeder Zeile (auch unter „Von uns abschicken“ und in der Ansicht Laden):
+  **Allein als Päckchen**, **Zusammen mit dem Teppich** (einrollen; dazu, ob der Teppich vom Hersteller zu uns
+  kommt oder wir ihn selbst ketteln, und ob er schon da ist), **Zusammen mit der übrigen Ware**,
+  **Hersteller schickt direkt**. Bernstein **Versandweg noch offen**, solange der Teppich nicht bestellt ist
+  oder beim Bestellen kein Weg vermerkt wurde – dann erst klären, dann verschicken.
 
 ## Lieferantenstand (06.11.2026)
 

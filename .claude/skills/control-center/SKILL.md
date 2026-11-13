@@ -234,6 +234,11 @@ kann dafuer weg?
   Besitzer-PID sowie offene Dateien/cwd nachweislich frei sind. Unmarkierte Altordner
   nie allein nach Name/Alter loeschen. Screenshots ohne `--aus` werden genauso nach
   drei Tagen bereinigt; `--aus` behaelt die Ablage dauerhaft.
+- **Die Datenkopie der Pruef-Instanz ist nicht ueberall eine Kopie.** Grosse Nur-Lese-Ordner sind
+  verlinkt (`NUR_LESEN` in `scripts/dashboard-pruefen.mjs`). Wer dort von Hand eine Datei aendert,
+  aendert die echte, die der laufende Dienst liest - am 2026-11-13 so mit `lieferanten/lagerware.json`
+  passiert (seitdem wird `lieferanten` kopiert). Vor jedem Schreiben in die Kopie `ls -ld <ordner>`:
+  ein `->` heisst Finger weg; `ls -la <ordner>/` zeigt den Link nicht.
 - **Auftragsfluss-Stand** (`auftragsstatus.json`) gibt es nur lokal; er wird
   von `npm run daten:sichern` gesichert. Aktionen, die ihn schreiben, immer
   mit Grund/Notiz und ueber den Filter „Erledigt" nachvollziehbar.

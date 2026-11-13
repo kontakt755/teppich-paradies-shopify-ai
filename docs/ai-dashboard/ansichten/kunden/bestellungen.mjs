@@ -52,7 +52,7 @@ export function ensureKundenBestellungen() {
   kunden.loadingBestellungen = true;
   fetchEinkauf('/api/kunden/bestellungen').then(d => {
     kunden.bestellungen = d; kunden.loadingBestellungen = false;
-    if (['heute', 'kunden'].includes(state.route.view)) render();
+    if (['heute', 'kunden', 'zuschnitt'].includes(state.route.view)) render();
   });
 }
 

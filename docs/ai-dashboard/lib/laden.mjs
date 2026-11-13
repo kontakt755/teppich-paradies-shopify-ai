@@ -13,6 +13,7 @@
 import { FRISTEN, tageSeit, tonNachAlter, alterText, sortiereTodos, rueckrufFaellig, alsTag } from './todos.mjs';
 import { werktageSeit } from './beschaffung.mjs';
 import { selbstStand, selbstStandText, lieferwegVon } from './lieferweg.mjs';
+import { versandweg } from './zuschnitt.mjs';
 
 const mehrzahl = (n, eins, viele) => `${n} ${n === 1 ? eins : viele}`;
 
@@ -47,7 +48,7 @@ export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [], zu
       return zeile({
         schluessel: `${vorsatz}:${s.orderId}:${s.lineItemId}`, art, von: [s.orderName, s.kundenname].filter(Boolean).join(' · ') || null,
         text: s.text, seit: s.seit, frist: FRISTEN.laden_aufgabe,
-        ...(vorsatz === 'schnitt' ? { schnitt: bezug } : { hinweis: s.hinweis }), ...(vorsatz === 'packen' ? { packen: bezug } : {}),
+        hinweis: s.hinweis, ...(vorsatz === 'schnitt' ? { schnitt: bezug } : {}), ...(vorsatz === 'packen' ? { packen: bezug } : {}),
       });
     }),
     ...aufgaben.filter(a => !a.erledigtAm).map(a => zeile({
@@ -82,10 +83,14 @@ export function zuschnitte(auftraege = [], eintragVon = () => null) {
       .filter(x => x.stand)
       .map(({ p, eintrag, stand }) => {
         const menge = p.bestellmenge?.text && !/ungekl/i.test(p.bestellmenge.text) ? p.bestellmenge.text : (p.menge ? `Menge ${p.menge}` : null);
+        const lw = lieferwegVon(p, eintrag);
+        // Selbst Geschnittenes: allein als Paeckchen oder mit dem Teppich einrollen? (lib/zuschnitt.mjs, 13.11.2026)
+        const weg = lw?.weg === 'lager' ? versandweg(p, a.positionen, q => eintragVon(a.id, q.lineItemId)) : null;
         return {
           orderId: a.id, lineItemId: p.lineItemId, orderName: a.name || null, kundenname: a.details?.kunde?.name || null, stand,
           seit: (stand === 'versand' ? eintrag?.selbstversand?.gepackt?.am : stand === 'packen' ? eintrag?.geliefertAm : null) || a.datum,
-          hinweis: stand === 'zuschneiden' ? null : [selbstStandText(stand, lieferwegVon(p, eintrag)?.weg, eintrag), stand === 'versand' ? VERSAND_WO : null].filter(Boolean).join('. ').replace(/^./, c => c.toUpperCase()),
+          hinweis: [stand === 'zuschneiden' ? null : selbstStandText(stand, lw?.weg, eintrag), weg ? `Versand: ${[weg.kurz, weg.text.replace(/\.$/, '')].filter(Boolean).join(' – ')}` : null, stand === 'versand' ? VERSAND_WO : null]
+            .filter(Boolean).join('. ').replace(/^./, c => c.toUpperCase()) || null,
           text: [p.titel, p.farbe, menge].filter(Boolean).join(' · ').slice(0, 200) || 'Ware aus eigener Lagerrolle',
         };
       }));

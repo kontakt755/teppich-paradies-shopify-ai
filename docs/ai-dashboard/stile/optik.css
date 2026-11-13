@@ -21,7 +21,7 @@ h1, h2, h3 { text-wrap: balance; letter-spacing: -.018em; }
 
 /* Startseite: jeder Arbeitsblock ist eine Flaeche, der Hintergrund trennt sie. "Probleme" hat
    schon einen eigenen Rahmen und bleibt ohne zweiten. */
-.shop-start > .heute-geschaeft, .waren-zahl {
+.shop-start > .heute-geschaeft, .zuschnitt > .heute-geschaeft, .waren-zahl {
   margin: 0 0 18px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 16px;
   background: var(--surface); box-shadow: var(--shadow);
 }
@@ -60,11 +60,11 @@ h1, h2, h3 { text-wrap: balance; letter-spacing: -.018em; }
 .palette li { padding: 10px 12px; }
 
 @media (max-width: 800px) {
-  .shop-start > .heute-geschaeft, .waren-zahl { padding: 16px 14px; border-radius: 14px; }
+  .shop-start > .heute-geschaeft, .zuschnitt > .heute-geschaeft, .waren-zahl { padding: 16px 14px; border-radius: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .btn, .chip, .suchknopf, .mainnav a, .nav-more-kopf, .side-knopf { transition: none; }
 }
 @media print {
-  .shop-start > .heute-geschaeft, .waren-zahl { box-shadow: none; }
+  .shop-start > .heute-geschaeft, .zuschnitt > .heute-geschaeft, .waren-zahl { box-shadow: none; }
 }
