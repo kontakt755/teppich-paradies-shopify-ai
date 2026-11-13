@@ -115,7 +115,8 @@ export const MAIL_ROT_WERKTAGE = 1;
  * erledigt" zaehlt). Das Alter zaehlt in Werktagen. Die Adresse des Absenders verlaesst den Server nicht.
  */
 export function ladenMailZeilen(mails = [], { jetzt = new Date() } = {}) {
-  return mails.filter(m => !EIGENE_POST.test(m.adresse || '')).map((m) => {
+  // Angenommene Angebote (Abruf markiert sie) sind erledigt - nichts zu tun im Laden (Benutzer 13.11.2026).
+  return mails.filter(m => !EIGENE_POST.test(m.adresse || '') && !m.angenommen).map((m) => {
     const alterTage = tageSeit(m.seit, jetzt);
     const werktage = werktageSeit(m.seit, jetzt);
     const unzustellbar = UNZUSTELLBAR.test(m.adresse || '');

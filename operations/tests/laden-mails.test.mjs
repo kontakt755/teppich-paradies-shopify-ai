@@ -7,7 +7,7 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { ImapFehler } from '../lib/imap-lesen.mjs';
 import {
-  abrufenNurLesend, abrufenUndSpeichern, leseLadenZugang, ladenPostfachPfad, ladenMailsPfad, dekodiereKopf, absenderAusFrom, internaldate,
+  abrufenNurLesend, abrufenUndSpeichern, angebotAngenommen, leseLadenZugang, ladenPostfachPfad, ladenMailsPfad, dekodiereKopf, absenderAusFrom, internaldate,
 } from '../lib/laden-mails.mjs';
 import { ladenMails, setzeZustaendig } from '../lib/laden.mjs';
 
@@ -20,6 +20,12 @@ const b64 = t => `=?utf-8?B?${Buffer.from(t).toString('base64')}?=`;
 const KOEPFE = {
   5: `From: =?utf-8?Q?M=C3=BCller?= <Kunde.A@Example.com>\r\nSubject: ${b64('Anfrage Läufer')}\r\n =?iso-8859-1?Q?_Gr=FC=DFe?=\r\nMessage-ID: <abc@example.com>\r\n\r\n`,
   7: 'From: kunde-b@example.com\r\nSubject: Preis?\r\n\r\n',
+  8: 'From: kunde-c@example.com\r\nSubject: Aw: Angebot AG324 von Teppich Paradies\r\n\r\n',
+  9: 'From: kunde-d@example.com\r\nSubject: AW: Angebot AG325 von Teppich Paradies\r\n\r\n',
+};
+const RUMPF = {
+  8: 'Content-Type: text/plain; charset=utf-8\r\n\r\nWir nehmen gern den Teppich und haben die Anzahlung getätigt.\r\n\r\nAm 30.10. schrieb Teppich Paradies: Haben Sie Fragen?\r\n',
+  9: 'Content-Type: text/plain; charset=utf-8\r\n\r\nWir nehmen gern den Teppich. Wann können Sie liefern?\r\n',
 };
 
 /** Falscher IMAP-Server fuer ein gewoehnliches Postfach: merkt sich die Befehle. */
@@ -35,7 +41,10 @@ function falscherServer({ anmeldungOk = true, examine = '[READ-ONLY] geoeffnet',
       if (cmd.startsWith('LOGIN')) senden(anmeldungOk ? `${marke} OK angemeldet\r\n` : `${marke} NO [AUTHENTICATIONFAILED] falsch\r\n`);
       else if (cmd.startsWith('EXAMINE')) senden(`* 3 EXISTS\r\n${marke} OK ${examine}\r\n`);
       else if (cmd.startsWith('UID SEARCH')) senden(`* SEARCH ${uids.join(' ')}\r\n${marke} OK\r\n`);
-      else if (cmd.startsWith('UID FETCH')) {
+      else if (cmd.startsWith('UID FETCH') && cmd.includes('BODY.PEEK[]<')) {
+        const wahl = cmd.split(' ')[2].split(',');
+        senden(`${wahl.map((u, i) => `* ${i + 1} FETCH (UID ${u} BODY[]<0> {${Buffer.byteLength(RUMPF[u])}}\r\n${RUMPF[u]})\r\n`).join('')}${marke} OK\r\n`);
+      } else if (cmd.startsWith('UID FETCH')) {
         const wahl = cmd.split(' ')[2].split(',');
         senden(`${wahl.map((u, i) => `* ${i + 1} FETCH (UID ${u} INTERNALDATE "1${u}-Nov-2026 09:00:00 +0100" BODY[HEADER.FIELDS (FROM SUBJECT MESSAGE-ID)] {${Buffer.byteLength(KOEPFE[u])}}\r\n${KOEPFE[u]})\r\n`).join('')}${marke} OK\r\n`);
       } else if (cmd.startsWith('LOGOUT')) senden(`* BYE\r\n${marke} OK\r\n`);
@@ -210,4 +219,21 @@ test('ladenMails: Zugangsproblem als Hinweis ohne Abruf, ein Fehler im Abruf wir
   await new Promise(r2 => setTimeout(r2, 20));
   fs.writeFileSync(ladenMailsPfad(dir), '{kaputt');
   assert.match(ladenMails(dir, { jetzt: JETZT, abruf: async () => {} }).fehler, /Zwischenspeicher/);
+});
+
+test('Angebotsantwort: Annahme ohne Frage wird markiert, nur Angebotsantworten werden gelesen', async () => {
+  const s = falscherServer({ uids: [7, 8, 9] });
+  const r = await abrufenNurLesend(ZUGANG, { verbinden: s.verbinden, jetzt: JETZT });
+  assert.match(s.befehle[4], /^UID FETCH 8,9 \(UID BODY\.PEEK\[\]<0\.65536>\)$/);
+  assert.ok(!s.befehle.some(c => /\b(STORE|COPY|EXPUNGE|APPEND|SELECT)\b/.test(c)));
+  const von = a => r.eintraege.find(e => e.adresse === a);
+  assert.equal(von('kunde-c@example.com').angenommen, true, 'Frage steht nur im Zitat');
+  assert.equal(von('kunde-d@example.com').angenommen, undefined, 'Rueckfrage bleibt stehen');
+  assert.equal(von('kunde-b@example.com').angenommen, undefined);
+});
+
+test('angebotAngenommen: Stichworte im eigenen Teil', () => {
+  assert.equal(angebotAngenommen('Vielen Dank für Ihr Angebot. Wir nehmen gern den London-Teppich und haben hierfür auch die Anzahlung getätigt. Leider können wir den Cosmo-Teppich nicht nehmen.'), true);
+  assert.equal(angebotAngenommen('Ist der Teppich fußbodenheizungstauglich?'), false);
+  assert.equal(angebotAngenommen('Danke, wir melden uns. Von: Teppich Paradies ... Anzahlung'), false);
 });

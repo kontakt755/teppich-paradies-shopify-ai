@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { verbinde, imapText, ImapFehler, mitNurLesen } from './imap-lesen.mjs';
+import { zerlegeMail } from './mime.mjs';
 import { serviceKontaktiertAbgleichen } from './service-kontaktiert.mjs';
 import { serviceanfragenPfad } from './serviceanfragen.mjs';
 import { lesePostfach, ORDNER as NACHFASS_ORDNER, POSTFACH_DATEI as NACHFASS_DATEI } from './nachfass-versand.mjs';
@@ -137,12 +138,27 @@ function eintraegeAus(antwort) {
     const betreff = dekodiereKopf(k.subject).replace(/\s+/g, ' ').trim().slice(0, BETREFF_MAX);
     const kennung = k['message-id'] || `${uid}:${eingang}`;
     aus.push({
+      uid: Number(uid),
       schluessel: `mail:${crypto.createHash('sha1').update(kennung).digest('hex').slice(0, 16)}`,
       von: von.name || von.adresse || 'Unbekannt', adresse: von.adresse,
       text: betreff || '(ohne Betreff)', seit: eingang, messageId: (/<[^<>\s]+>/.exec(k['message-id'] || '')?.[0] || '').toLowerCase() || null,
     });
   }
   return aus;
+}
+
+// Antwort des Kunden auf ein Angebot ("Aw: Angebot AG324 von ..."). Nimmt er an, ist im Laden nichts zu tun (Benutzer 13.11.2026).
+export const ANGEBOT_ANTWORT = /^\s*(re|aw|wg|fwd?)\s*:.*\bAngebot\s+AG\s?\d+/i;
+const ZITAT = /(\bAm\s.{4,120}?schrieb|-{3,}\s*Urspr|\bVon:\s|\bFrom:\s|\bGesendet:\s|\n>)/i;
+const ANNAHME = /\bnehmen\s+(wir\s+)?gerne?\b|\bAnzahlung\b|\bangenommen\b|\beinverstanden\b|\bbeauftragen\b|\bAuftrag\s+erteil/i;
+
+/**
+ * Nur der eigene Teil der Antwort (ohne zitiertes Angebot): Annahmewort und keine Frage.
+ * shortcut: Stichworte statt Verstehen; eine Annahme mit Rueckfrage bleibt stehen, ein "nehmen gern ... nicht" faellt raus.
+ */
+export function angebotAngenommen(text) {
+  const eigen = String(text ?? '').split(ZITAT)[0];
+  return ANNAHME.test(eigen) && !eigen.includes('?');
 }
 
 /** Message-IDs aus In-Reply-To und References (kleingeschrieben, mit spitzen Klammern). */
@@ -206,6 +222,16 @@ export async function abrufenNurLesend(zugang, { verbinden, jetzt = new Date(), 
     eintraege = uids.length
       ? eintraegeAus(antwortOk(await v.befehl(`UID FETCH ${uids.join(',')} (UID INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM SUBJECT MESSAGE-ID)])`), 'FETCH'))
       : [];
+    // Nur Antworten auf Angebote: Text lesen (BODY.PEEK, bleibt ungelesen) und Annahmen markieren.
+    const angebot = eintraege.filter(e => ANGEBOT_ANTWORT.test(e.text));
+    if (angebot.length) {
+      const r = antwortOk(await v.befehl(`UID FETCH ${angebot.map(e => e.uid).join(',')} (UID BODY.PEEK[]<0.65536>)`), 'FETCH');
+      for (const z of r.eintraege) {
+        const uid = Number(/\bUID (\d+)/i.exec(z.aussen)?.[1]);
+        const e = angebot.find(x => x.uid === uid);
+        if (e && z.literale[0] && angebotAngenommen(zerlegeMail(z.literale[0]).text)) e.angenommen = true;
+      }
+    }
   } finally {
     await v.schliessen();
   }
