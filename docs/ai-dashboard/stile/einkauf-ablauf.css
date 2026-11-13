@@ -34,12 +34,17 @@
 
 /* Arbeitsliste (2026-10-20): "Jetzt zu tun" offen, der Rest in eingeklappten Gruppen. */
 .ab-titel { font-size: 1rem; margin: 4px 0 8px; }
+.ab-titel .small { font-weight: 400; }
 .ab-gruppe { margin-top: 16px; }
 .ab-gruppe-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
 .ab-gruppe-kopf .small { font-weight: 400; }
 .ab-gruppe .ab-raster { margin-top: 10px; }
 .ab-aktion { margin: 0 0 8px; }
 .ab-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+/* Hinweis und Knopf in einer Zeile, solange der Platz reicht - vorher stand der Knopf allein darunter. */
+.ab-aktion-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; }
+.ab-aktion-zeile > span { flex: 1 1 16em; min-width: 0; }
+.ab-aktion-zeile .ab-knoepfe { margin-top: 0; }
 .ab-text-feld { width: 100%; box-sizing: border-box; font: inherit; font-size: .9rem; overflow-wrap: anywhere; }
 
 /* Teillieferung (06.11.2026): ruhig, ohne Bernstein - zu tun ist nur warten. */

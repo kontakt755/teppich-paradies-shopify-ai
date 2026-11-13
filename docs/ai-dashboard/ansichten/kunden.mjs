@@ -61,6 +61,7 @@ export function viewKunden() {
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'service'}" data-param="tab" data-value="service">Service-Anfragen${s_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'angebote'}" data-param="tab" data-value="angebote">Angebote</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'warenkoerbe'}" data-param="tab" data-value="warenkoerbe">Liegengeblieben</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'musterwirkung'}" data-param="tab" data-value="musterwirkung">Musterwirkung</button>
     </div>`;
   const body = tab === 'bestellungen' ? viewKundenBestellungen()
     : tab === 'musterwirkung' ? viewMusterwirkung()
@@ -72,14 +73,10 @@ export function viewKunden() {
     : tab === 'warenkoerbe' ? viewKundenWarenkoerbe()
     : tab === 'suche' ? viewKundenSuche()
     : viewKundenFaelle();
-  const einfacherKopf = `<div class="page-head"><div><h1>${titel}</h1><p class="sub">${beschreibung}</p></div></div>
-    <nav class="chips chips-zeile no-print" aria-label="Bestellungen und Kunden">
-      <a class="chip" href="#/kunden?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit"${tab === 'bestellungen' ? ' aria-current="page"' : ''}>Bestellungen</a>
-      <a class="chip" href="#/kunden?tab=muster"${tab === 'muster' ? ' aria-current="page"' : ''}>Packstation</a>
-      <a class="chip" href="#/kunden?tab=anrufe"${tab === 'anrufe' ? ' aria-current="page"' : ''}>Kunden nach Produkt fragen</a>
-      <a class="chip" href="#/kunden?tab=musterwirkung"${tab === 'musterwirkung' ? ' aria-current="page"' : ''}>Musterwirkung</a>
-      <a class="chip" href="#/kunden">Weitere Kundenansichten</a>
-    </nav>`;
+  // Ohne eigene Chip-Zeile (13.11.2026): Bestellungen, Packstation und "Kunden nach Produkt fragen" stehen
+  // schon in der Seitenleiste, die Zeile zeigte dieselben Ziele ein zweites Mal. "Musterwirkung" ist seitdem
+  // ein Reiter unter "Kunden" und bleibt von der Shop-Uebersicht aus verlinkt.
+  const einfacherKopf = `<div class="page-head"><div><h1>${titel}</h1><p class="sub">${beschreibung}</p></div></div>`;
   return (['bestellungen', 'muster', 'anrufe', 'musterwirkung'].includes(tab) ? einfacherKopf : head) + body;
 }
 

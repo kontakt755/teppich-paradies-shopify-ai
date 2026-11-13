@@ -19,6 +19,7 @@ import { lieferwegVon, selbstStand, selbstStandText } from '../../lib/lieferweg.
 import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { FRISTEN, alterText, tageSeit, tonNachAlter } from '../../lib/todos.mjs';
 import { vorgangsLink } from '../../lib/vorgangslink.mjs';
+import { mengeKurz } from '../../lib/bestellinhalt.mjs';
 import { selbstKnoepfe } from '../einkauf/auftragsfluss.mjs';
 
 /** Mehr Zeilen klappen auf - am Handy bleibt der Muster-Block sonst unter dem ersten Bildschirm. */
@@ -73,7 +74,7 @@ function zeile(x, { erste, lesend }) {
   const { z, p } = x;
   const ziel = z.kundenSchluessel ? vorgangsLink('kunden', { kunde: z.kundenSchluessel, auftrag: z.orderId })
     : `#/kunden?${new URLSearchParams({ tab: 'bestellungen', bart: 'ware', bfilter: 'alle', bq: z.orderName || z.orderId || '' })}`;
-  const menge = p.kundenmenge || p.menge;
+  const menge = p.kundenmenge ? mengeKurz(p.kundenmenge) : p.menge;
   const artikel = [p.titel, p.farbe, menge].filter(v => v !== undefined && v !== null && String(v).trim() && v !== 'UNGEKLAERT').map(String);
   // Die Marke nennt den Bezug (#1996): "Liegt seit 8 Tagen hier" bzw. beim Zuschnitt "Kunde wartet 3 Tage".
   const alter = x.tage === null ? '' : `<span class="heute-alter${x.ton ? ` ${x.ton}` : ''}">${esc(alterText(x.tage, x.stand === 'zuschneiden' ? 'kunde' : 'hier'))}</span>`;

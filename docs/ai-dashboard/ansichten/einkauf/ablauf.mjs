@@ -149,7 +149,7 @@ function informierenHtml(a, e) {
   if (inf && e.wareDa.length) return `${teil}<p class="small ab-informiert" style="margin:8px 0 0">✓ Kunde informiert am ${esc(fmtDate(inf.am))}${inf.von ? ` (${esc(inf.von)})` : ''} – Termin für Lieferung, Verlegung oder Abholung abstimmen.${referenzKnopf(a)}</p>`;
   if (!e.gruende.includes('informieren')) return teil;
   const lesend = istNurLesend();
-  return `<div class="notice warn ab-aktion"><strong>Ware ist da – Kunde noch nicht informiert.</strong>
+  return `<div class="notice warn ab-aktion ab-aktion-zeile"><strong>Ware ist da – Kunde noch nicht informiert.</strong>
     ${lesend ? '' : `<div class="ab-knoepfe"><button type="button" class="btn btn-primary btn-sm" data-ab-kunde="${esc(a.id)}">Nachricht an Kunde</button>
     <button type="button" class="btn btn-sm" data-ab-informiert="${esc(a.id)}">Kunde informiert</button></div>`}</div>`;
 }
@@ -169,7 +169,7 @@ function verzugHtml(a, ab, e) {
     termin ? `bestätigter Liefertermin ${fmtDate(termin)} überschritten` : null,
     max !== null ? `seit ${plural(max, 'Tag', 'Tagen')} bestellt und noch nicht da` : null,
   ].filter(Boolean).join(', ');
-  return `<div class="notice ${rot.length ? 'crit' : 'warn'} ab-aktion"><strong>${rot.length ? 'Überfällig – beim Lieferanten nachfragen:' : 'Beim Lieferanten nachhaken:'}</strong> ${plural(e.verzug.length, 'Artikel', 'Artikel')} ${esc(was)}.
+  return `<div class="notice ${rot.length ? 'crit' : 'warn'} ab-aktion ab-aktion-zeile"><span><strong>${rot.length ? 'Überfällig – beim Lieferanten nachfragen:' : 'Beim Lieferanten nachhaken:'}</strong> ${plural(e.verzug.length, 'Artikel', 'Artikel')} ${esc(was)}.</span>
     ${istNurLesend() ? '' : `<div class="ab-knoepfe"><button type="button" class="btn btn-sm" data-ab-nachfrage="${esc(a.id)}">Nachfrage-Nachricht</button></div>`}</div>`;
 }
 
@@ -338,9 +338,11 @@ export function viewEinkaufAblauf() {
   const z = grundZahlen(jetzt.map(x => x.e));
   const teile = GRUND_REIHENFOLGE.filter(g => z[g]).map(g => `${z[g]}× ${GRUND_TEXT[g]}`);
   const sicht = liste.filter(x => passtArt(x, art));
-  return `${chips}<p class="sub ab-einleitung">${jetzt.length ? `<strong>${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun</strong> (${esc(teile.join(' · '))})` : '<strong>Gerade nichts zu tun.</strong>'} · Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.</p>
-    ${versandZeile}
-    ${jetzt.length ? `<h2 class="ab-titel">Jetzt zu tun</h2><div class="ab-raster">${jetzt.map(auftragKarte).join('')}</div>` : ''}
+  // Eine Ueberschrift mit Zahl und Gruenden (13.11.2026): vorher stand derselbe Satz als Absatz und darunter
+  // noch einmal "Jetzt zu tun" - am Handy fuellte der Kopf den ganzen ersten Bildschirm. Die Reihenfolge
+  // erklaert der Tooltip; sie ist an den Karten ohnehin zu sehen.
+  return `${chips}${versandZeile}
+    ${jetzt.length ? `<h2 class="ab-titel" title="Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.">${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun <span class="small muted">· ${esc(teile.join(' · '))}</span></h2><div class="ab-raster">${jetzt.map(auftragKarte).join('')}</div>` : '<p class="sub ab-einleitung"><strong>Gerade nichts zu tun.</strong></p>'}
     ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – nachhaken ab ${WARTESCHWELLEN.nachhakenTage} Tagen`, sicht.filter(x => x.e.gruppe === 'unterwegs'))}
     ${gruppe('kunde', 'Beim Kunden', 'Kunde informiert oder Ware raus – Termin bzw. Abschluss', sicht.filter(x => x.e.gruppe === 'beiKunde'))}`;
 }

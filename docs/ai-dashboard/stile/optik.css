@@ -45,8 +45,13 @@ h1, h2, h3 { text-wrap: balance; letter-spacing: -.018em; }
 .card { border-radius: 16px; }
 
 /* Suche: das breiteste Element im Kopf - ein Feld fuer Kunde, Bestellung und Produkt. */
-@media (min-width: 1025px) {
-  .suchknopf { width: min(520px, 42vw); height: 44px; padding: 0 10px 0 14px; border-radius: 12px; border-color: var(--line-strong); box-shadow: var(--shadow); color: var(--text-2); }
+/* Erst ab 1181 px: darunter macht app.css die Suche zum Symbol. Mit der alten Grenze 1025 px gewann diese
+   Regel dazwischen und liess ein 462 px breites, leeres Feld stehen - vom Seitentitel blieb "…". */
+@media (min-width: 1181px) {
+  /* Die feste Breite schnitt den Seitentitel ab ("Bestell…" bei 1280 px, der laengste Titel sogar bei
+     1440 px): das Feld waechst jetzt erst mit dem freien Platz. 970 px = Seitenleiste, Raender, Sitzung,
+     Hell/Dunkel und der laengste Titel "Kunden nach Produkt fragen" (302 px, gemessen 13.11.2026). */
+  .suchknopf { width: clamp(200px, calc(100vw - 970px), 520px); height: 44px; padding: 0 10px 0 14px; border-radius: 12px; border-color: var(--line-strong); box-shadow: var(--shadow); color: var(--text-2); }
   .suchknopf:hover { border-color: var(--accent); color: var(--text); }
 }
 .palette-backdrop { background: rgba(36, 24, 16, .45); backdrop-filter: blur(3px); }

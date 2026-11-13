@@ -71,14 +71,17 @@ test('Vorgabe "Ware", solange ein Warenauftrag zu tun ist; Musterversand als ein
   // Die Zeile zaehlt Auftraege wie der Chip "Muster" - "Packbereit" der Packstation zaehlt Umschlaege (Review 06.11.2026).
   assert.match(html, /href="#\/kunden\?tab=muster&amp;mpbereich=packen">1 Musterauftrag zum Verschicken → Packstation</);
   // Kopfzeile zaehlt nur, was im Filter steht - und jeden Auftrag einmal.
-  assert.match(html, /<strong>1 Auftrag jetzt zu tun<\/strong> \(1× von uns abschicken\)/);
+  assert.match(html, />1 Auftrag jetzt zu tun <span class="small muted">· 1× von uns abschicken<\/span><\/h2>/);
 });
 
 test('"Alle" zeigt wieder alle Karten; Kopfzeile: Teilzahlen ergeben die Gesamtzahl', () => {
   const html = ansicht('art=alle');
-  assert.match(html, /<strong>2 Aufträge jetzt zu tun<\/strong> \(1× von uns abschicken · 1× Muster verschicken\)/);
+  assert.match(html, />2 Aufträge jetzt zu tun <span class="small muted">· 1× von uns abschicken · 1× Muster verschicken<\/span><\/h2>/);
+  // Die Zahl steht genau einmal: keine zweite Ueberschrift "Jetzt zu tun" unter dem Kopf.
+  assert.equal(html.split('jetzt zu tun').length - 1, 1);
+  assert.doesNotMatch(html, />Jetzt zu tun</);
   assert.doesNotMatch(html, /ab-packbereit/, 'die Musterkarte steht selbst da');
-  const jetzt = html.slice(html.indexOf('Jetzt zu tun'), html.indexOf('ab-gruppe'));
+  const jetzt = html.slice(html.indexOf('jetzt zu tun'), html.indexOf('ab-gruppe'));
   assert.deepEqual(karten(jetzt), ['#To1', '#To2']);
   // 1 von 2 Mustern da: wartet eingeklappt unter "Unterwegs", nie "Beim Kunden".
   assert.match(html, /Unterwegs \(1\)/);
