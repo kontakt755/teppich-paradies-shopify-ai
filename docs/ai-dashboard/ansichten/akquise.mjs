@@ -15,7 +15,7 @@ import { emptyState } from '../bausteine/karten.mjs';
 import {
   AKQUISE_LABEL, WIEDERVORLAGE_TAGE, SPAETER_TAGE, faelligeWiedervorlagen, nachrichtFuer,
   naechsteFirmen, akquiseFortschritt, warumInteressant, kontaktTeile, mailtoLink, tageBis, plusTage,
-  titelKurz, richtpreisZeile, angebotsEntwurf, angeschriebenVon, sichereUrl,
+  titelKurz, richtpreisZeile, angebotsEntwurf, angeschriebenVon, sichereUrl, kleineZuerst,
 } from '../lib/akquise.mjs';
 
 // gewaehlt: Firma, die der Nutzer aus der Liste nach oben geholt hat; antwort: offenes Antwort-Feld.
@@ -166,9 +166,9 @@ function alleFirmen(d, faelligIds) {
 
 function ausschreibungen(a, tag) {
   const kopf = `<div class="card-head"><h2>Öffentliche Ausschreibungen</h2>${a ? `<span class="small muted">geprüft ${esc(fmtDateTime(a.geprueftAm))}</span>` : ''}</div>
-    <p class="small">Öffentliche Aufträge für Bodenbeläge. „Öffentliche Ausschreibung“ und „Beschränkte Ausschreibung“ sind die kleineren, EU-Verfahren sind meist zu groß für uns. <b>Nur ansehen</b>, die Abgabe macht der Inhaber.</p>`;
+    <p class="small">Öffentliche Aufträge für Bodenbeläge. „Öffentliche Ausschreibung“ und „Beschränkte Ausschreibung“ sind die kleineren, EU-Verfahren sind meist zu groß für uns. Kleine und nahe Aufträge stehen oben. <b>Nur ansehen</b>, die Abgabe macht der Inhaber.</p>`;
   if (!a) return `<section class="card akq-aus">${kopf}<p class="small muted">Die wöchentliche Suche ist noch nicht gelaufen.</p></section>`;
-  const t = [...(a.treffer || [])].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')));
+  const t = [...(a.treffer || [])].sort(kleineZuerst);
   if (!t.length) return `<section class="card akq-aus">${kopf}<p class="small muted">Zurzeit keine passenden Ausschreibungen im Umkreis.</p></section>`;
   const neu = new Set((a.neu || []).map(x => x.id || x));
   return `<section class="card akq-aus">${kopf}<ul class="akq-aus-liste">${t.map(x => {

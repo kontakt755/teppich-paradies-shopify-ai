@@ -217,6 +217,15 @@ export function titelKurz(titel) {
   return t;
 }
 
+/**
+ * Reihenfolge der Ausschreibungen (Benutzer 13.11.2026: "wir muessen es auch gestemmt kriegen"):
+ * kleine Verfahren vor EU-Verfahren, Oberhavel/Barnim/Ruppin (PLZ 16…) vor dem Rest, dann nach Frist.
+ * shortcut: gross = Quelle TED oder "EU" in der Verfahrensart, nah = PLZ 16… im Ortsfeld (ein Ort
+ * ohne PLZ zaehlt als nicht nah); Auftragswert oder Entfernung erst, wenn die Feeds sie verlaesslich nennen.
+ */
+const rang = t => `${t.quelle === 'TED' || /\bEU\b/.test(t.verfahren || '') ? 1 : 0}${/\b16\d{3}\b/.test(t.ort || '') ? 0 : 1}${t.frist || '9'}`;
+export const kleineZuerst = (a, b) => rang(a).localeCompare(rang(b));
+
 const euro = n => `${Number(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
 /**
