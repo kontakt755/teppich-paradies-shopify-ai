@@ -90,3 +90,13 @@ test('Klaerfall ohne rotes To-do bleibt im Block, auch wenn er seit Tagen haengt
   const rotBezahlt = rotMuster(leiteTodosAb({ bestellzeilen: [bezahlt], statusAlle: {} }, { sicht: 'laden', jetzt: new Date(jetzt) }));
   assert.equal(musterAutomatikBlock({ ...daten, zeilen: [bezahlt] }, jetzt, { rot: rotBezahlt }), '');
 });
+
+test('Kurzform fuer die Bestellliste: nur wann und wohin, Klaerung bleibt; ausfuehrlich erst aufgeklappt', () => {
+  const mail = (am, lieferziel) => ({ am, an: 'muster@lieferant-a.example', lieferziel, positionen: [{ menge: 1, titel: 'Muster Testboden', farbe: 'Grau' }] });
+  const kurz = musterAutomatikHtml({ bestellt: [mail('2026-11-12T09:00:00Z', 'geschaeft'), mail('2026-11-13T09:00:00Z', 'geschaeft')], klaeren: [{ grund: 'Zweite Farbe fehlt' }] }, { kurz: true });
+  assert.match(kurz, /Muster bestellt am 12\.11\., 13\.11\. · zu uns ins Geschäft/);
+  assert.doesNotMatch(kurz, /lieferant-a\.example|Testboden/, 'Kontakt und Produkt stehen nur in der aufgeklappten Zeile');
+  assert.match(kurz, /Klärung nötig/);
+  // Verschiedene Ziele: kein Ziel behaupten.
+  assert.doesNotMatch(musterAutomatikHtml({ bestellt: [mail('2026-11-12T09:00:00Z', 'kunde'), mail('2026-11-12T10:00:00Z', 'geschaeft')] }, { kurz: true }), /zum Kunden|ins Geschäft/);
+});

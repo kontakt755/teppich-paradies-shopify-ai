@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {berechneVersand,istMetropole} from '../lib/versandkosten.mjs';
+import {berechneVersand,dieselFortschreiben,istMetropole} from '../lib/versandkosten.mjs';
 import {leseVersandtarife} from '../../../operations/lib/versandtarife.mjs';
 const saetze={
   "GLS Energie": 0.1,
@@ -131,4 +131,15 @@ test('Jede Grundpreisspalte muss endlich und nichtnegativ sein',()=>{
   const {b,t}=basis();t[table][1][spalte]=wert;assert(berechneVersand(b,t).fehler);
  }
  const {b,t}=basis();t.gls[1][1]=0;assert.equal(berechneVersand(b,t).fehler,undefined);
+});
+
+test('Abgelaufener Dieselzeitraum: Vergleich rechnet mit dem letzten Wert weiter und nennt ihn',()=>{
+  const alt={'GLS gültig von':'2026-11-01','GLS gültig bis':'2026-11-30','GEL gültig von':'2026-10-19','GEL gültig bis':'2026-10-25'};
+  const d=dieselFortschreiben(alt,{},'2026-11-13');
+  assert.deepEqual(d.anpassung,{'GEL gültig bis':'2026-11-13'});
+  assert.deepEqual(d.veraltet,[{name:'GEL',bis:'2026-10-25'}]);
+  // Im Zeitraum: nichts anfassen. Eigene Eingabe geht vor. Ohne gueltiges Datum keine Fortschreibung.
+  assert.deepEqual(dieselFortschreiben(alt,{},'2026-10-20'),{anpassung:{},veraltet:[]});
+  assert.deepEqual(dieselFortschreiben(alt,{'GEL gültig bis':'2026-10-31'},'2026-11-13'),{anpassung:{'GEL gültig bis':'2026-10-31'},veraltet:[]});
+  assert.deepEqual(dieselFortschreiben(alt,{},'').veraltet,[]);
 });

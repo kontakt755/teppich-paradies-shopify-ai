@@ -1,0 +1,29 @@
+/* Kunden › Bestellungen (ansichten/kunden/bestellungen.mjs): Filterleiste und Listenkopf. Nur Tokens aus app.css.
+   Suche, Art und Arbeitsliste stehen in EINER Leiste, Seltenes eingeklappt darunter (13.11.2026) -
+   vorher acht Zeilen untereinander, bevor die erste Bestellung kam. */
+.bq-leiste { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.bq-leiste .toolbar, .bq-leiste .chips { margin: 0; }
+.bq-wahl { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.bq-extras { display: flex; flex-wrap: wrap; gap: 2px 24px; font-size: .88rem; color: var(--text-2); }
+.bq-extras > details > summary { cursor: pointer; padding: 2px 0; }
+/* Aufgeklappt bekommt der Bereich die ganze Breite - der andere rutscht darunter. */
+.bq-extras > details[open] { flex-basis: 100%; }
+.bq-extras > details[open] > summary { margin-bottom: 6px; }
+.bq-listenkopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; margin: 0 0 8px; }
+.bq-listenkopf p, .bq-listenkopf .chips { margin: 0; }
+/* Kurzform der Musterbestellung in der Liste: Auskunft, kein eigener Blickfang. */
+.bq-inhalt-kurz { color: var(--text-2); font-size: .82rem; }
+/* "Musteraufkleber ansehen" am Zeilenende statt mitten im Text. */
+.bq-inhalt-zeile .bq-aufkleber { margin-left: auto; font-weight: 500; }
+@media (max-width: 760px) {
+  .bq-leiste { padding: 10px; }
+  .bq-extras > details > summary { padding: 9px 0; }
+  .bq-inhalt-zeile .bq-aufkleber { margin-left: 0; }
+}
+.notice + .bq-leiste { margin-top: 10px; }
+/* Handy: Art und Arbeitsliste je als Wischzeile (.chips-zeile aus app.css) statt vier umbrochener Zeilen. */
+@media (max-width: 760px) {
+  .bq-wahl { flex-direction: column; flex-wrap: nowrap; gap: 8px; }
+  /* Ohne die Begrenzung dehnt die Wischzeile die ganze Leiste ueber den Rand. */
+  .bq-wahl .chips { min-width: 0; max-width: 100%; }
+}

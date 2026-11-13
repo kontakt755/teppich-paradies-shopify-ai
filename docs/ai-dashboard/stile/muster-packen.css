@@ -13,11 +13,12 @@
 /* Farbiger Rand links nur noch aus der Ampel (app.css, .ampel-karte): bis 06.11. trugen "Zu klären" einen
    Bernstein-Rahmen und angefangene Umschlaege einen Bernstein-Balken - zwei Raender mit anderer Bedeutung. */
 .mp-kopf { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
-.mp-wer { min-width: 0; }
+.mp-wer { min-width: 0; flex: 1 1 260px; }
 .mp-wer h3 { margin: 0 0 2px; font-family: var(--serif); font-size: 1.15rem; }
 .mp-pos { display: inline-flex; align-items: center; justify-content: center; min-width: 1.6em; height: 1.6em; margin-right: 8px; border-radius: 999px; background: var(--text); color: var(--surface); font-family: var(--font); font-size: .8rem; vertical-align: 2px; }
-/* margin-left:auto haelt den Block auch nach einem Umbruch rechtsbuendig - sonst springt er je Karte. */
-.mp-meta { display: grid; justify-items: end; gap: 2px; margin-left: auto; text-align: right; }
+/* Feste zweite Spalte, linksbuendig (13.11.2026): Plakette, Stand und Daten beginnen auf jeder Karte an
+   derselben Kante. Vorher rechtsbuendig mit wechselnder Zeilenlaenge - das Auge fand keinen Halt. */
+.mp-meta { display: grid; justify-items: start; gap: 2px; flex: 0 0 min(44%, 430px); text-align: left; }
 .mp-nr { color: var(--accent); font-size: 1.05rem; }
 .mp-kunde .notice { margin: 10px 0 0; }
 
@@ -61,8 +62,6 @@
 .mp-bereich > summary { cursor: pointer; list-style: none; padding: 4px 0 8px; }
 .mp-bereich > summary::-webkit-details-marker { display: none; }
 .mp-titel { display: inline; margin: 0; font-size: 1.1rem; }
-.mp-titel::before { content: '▸ '; color: var(--text-3); }
-.mp-bereich[open] .mp-titel::before { content: '▾ '; }
 .mp-notiz { flex: 1 1 220px; min-width: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; }
 .mp-pfeil { padding-top: 24px; color: var(--accent); font-weight: 700; }
 .mp-sku { font-family: var(--mono); font-size: .85rem; color: var(--text-2); }
@@ -104,7 +103,7 @@
   .mp-notiz { flex: 1 1 100%; min-height: 44px; }
   .mp-pfeil { display: none; }
   .mp-stand { padding-top: 0; }
-  .mp-meta { justify-items: start; margin-left: 0; text-align: left; }
+  .mp-meta { flex-basis: 100%; }
   .mp-aktionen .btn { flex: 1 1 100%; min-height: 44px; }
 }
 
@@ -121,6 +120,10 @@
 
 /* Eine Arbeitsliste zur Zeit; Mengen stehen ausschliesslich in der Filterleiste. */
 .mp-arbeitsfilter { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+/* Breiter Bildschirm: alle sechs Listen in einer Zeile statt 4 + 2. */
+@media (min-width: 1100px) { .mp-arbeitsfilter { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.mp-arbeitsfilter .mp-null { color: var(--text-3); }
+.mp-arbeitsfilter .mp-null .mp-filterzahl { font-weight: 400; }
 /* flex-wrap: rote Umschlaege im Reiter ("× 2 überfällig") stehen in eigener Zeile unter Name und Zahl. */
 .mp-arbeitsfilter .btn { display: flex; flex-wrap: wrap; align-content: center; justify-content: space-between; gap: 2px 8px; min-height: 44px; white-space: normal; text-align: left; }
 .mp-filterzahl { font-weight: 700; }
@@ -180,16 +183,13 @@
 }
 
 /* Reiter Gepackt: "Verschickt – Kunde informieren…" steht im Kopf des Umschlags, das Eintragen braucht kein Aufklappen. */
-.mp-kopfknoepfe { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; margin-top: 6px; }
+.mp-kopfknoepfe { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; }
 .mp-gepackt-regel { margin: 0 0 8px; }
 /* Rueckfrage vor dem Verschicken (Gepackt = verschickt): in der Karte, ersetzt die Knoepfe, die sie gestellt haben. */
 .mp-versandfrage { margin-top: 12px; }
 .mp-versandfrage p { margin: 0 0 6px; }
 .mp-versandfrage strong { color: var(--text); }
 .mp-versandfrage .mp-aktionen { margin-top: 8px; }
-@media (max-width: 767px) {
-  .mp-kopfknoepfe { justify-content: flex-start; }
-}
 /* Sammelliste (09.11.): ganze Liste auf dem Blatt, nicht in einem Scrollfenster abgeschnitten. */
 .table-scroll.mp-sammel-scroll { max-height: none; }
 @media print { .table-scroll.mp-sammel-scroll { overflow: visible; } .mp-sammel tr { break-inside: avoid; } }

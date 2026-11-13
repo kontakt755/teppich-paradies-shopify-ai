@@ -37,7 +37,7 @@ function ansicht(query = 'tab=bestellungen', zeilen = []) {
 }
 const filterKnoepfe = html => [...html.matchAll(/<button\b[^>]*\bdata-param="bfilter"[^>]*>[\s\S]*?<\/button>/g)].map(m => m[0]);
 const werte = html => filterKnoepfe(html).map(x => x.match(/data-value="([^"]*)"/)[1]);
-const haupt = html => html.match(/<div class="chips bq-filter-haupt"[\s\S]*?<\/div>/)?.[0];
+const haupt = html => html.match(/<div class="chips chips-zeile bq-filter-haupt"[\s\S]*?<\/div>/)?.[0];
 const weitere = html => html.match(/<details class="bq-filter-extra"[\s\S]*?<\/details>/)?.[0];
 const summary = html => weitere(html).match(/<summary>([\s\S]*?)<\/summary>/)[1];
 

@@ -6,6 +6,10 @@
 .vk-vergleich { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px; }
 .vk-preis { font-family:var(--serif);font-size:1.7em;font-weight:600;margin:12px 0; }
 .vk-gruende { padding-left:20px;color:var(--warn); }
+/* Guenstigerer Dienst: Akzent = die empfohlene Wahl. Veralteter Dieselwert: zu tun (Bernstein). */
+.vk-wahl { border-color:var(--accent); }
+.vk-guenstiger { margin-left:8px;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:.8rem;font-weight:600;white-space:nowrap; }
+.vk-veraltet { color:var(--warn); }
 .vk-hinweise dt { font-weight:600;margin-top:16px; }
 .vk-hinweise dd { margin:4px 0;overflow-wrap:anywhere;color:var(--text-2); }
 #vk-ergebnisse table td:not(:first-child) { text-align:right;white-space:nowrap; }
