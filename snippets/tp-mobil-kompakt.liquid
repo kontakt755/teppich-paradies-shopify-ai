@@ -1,0 +1,12 @@
+{%- comment -%}
+  Handy-Kompaktansicht der Kategorieseiten (Werkbank w-375, Inhaber 13.11.2026):
+  Test nur auf diesen zwei Kategorien, damit Vorher/Nachher messbar bleibt.
+  Gibt "ja" aus, wenn die aktuelle Kategorie dazugehoert, sonst nichts.
+  Aufruf: {%- capture x -%}{%- render 'tp-mobil-kompakt' -%}{%- endcapture -%}
+  Weitere Kategorien erst nach der Auswertung (Handle in die Zeile unten).
+  Die Vorwerk-Kategorie teilt ihre Vorlage mit JAB, deshalb gilt hier das Handle
+  und nicht die Vorlage.
+{%- endcomment -%}
+{%- case collection.handle -%}
+  {%- when 'teppichboden', 'vorwerk-teppichboden' -%}ja
+{%- endcase -%}
