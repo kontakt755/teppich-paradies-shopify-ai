@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
-import { leseAkquiseCsv, wendeAenderungAn, faelligeWiedervorlagen, vorlageAusMarkdown, nachrichtFuer, akquiseId, naechsteFirmen, akquiseFortschritt, kontaktTeile, mailtoLink, warumInteressant, kmAbOranienburg, tageBis, titelKurz, richtpreisZeile, angebotsEntwurf, pruefeReferenz, angeschriebenVon, sichereUrl } from '../lib/akquise.mjs';
+import { leseAkquiseCsv, wendeAenderungAn, faelligeWiedervorlagen, vorlageAusMarkdown, nachrichtFuer, akquiseId, naechsteFirmen, akquiseFortschritt, kontaktTeile, mailtoLink, warumInteressant, kmAbOranienburg, tageBis, titelKurz, richtpreisZeile, angebotsEntwurf, pruefeReferenz, angeschriebenVon, sichereUrl, dtvpUmkreissuche } from '../lib/akquise.mjs';
 import { ausTed } from '../../../operations/lib/ausschreibungen.mjs';
 import { leiteTodosAb } from '../lib/todos.mjs';
 
@@ -203,4 +203,18 @@ test('Kundentermin: am Vortag ein To-do im Laden mit fertigem Erinnerungstext', 
   assert.equal(t.length, 1);
   assert.equal(t[0].titel, 'Kunde an Termin morgen erinnern: #1001');
   assert.match(t[0].knopf.kopiertext, /^Guten Tag Frau Muster,[\s\S]*morgen, 21\.10\.2026, zu Ihrer Bestellung #1001/);
+});
+
+test('DTVP-Umkreissuche: Link mit Base64-Suche (URL-Variante, ohne "="), Felder und Regeln stimmen', () => {
+  const url = dtvpUmkreissuche();
+  const [basis, hash] = url.split('#');
+  assert.equal(basis, 'https://www.dtvp.de/Center/common/project/search.do?method=showExtendedSearch&fromExternal=true');
+  assert.match(hash, /^[A-Za-z0-9_-]+$/); // kein "=", "+", "/"
+  const s = JSON.parse(Buffer.from(hash, 'base64url').toString('utf8'));
+  assert.deepEqual(s.location, { postalCode: '16515', distance: '100' });
+  assert.equal(s.searchText, 'Bodenbelag');
+  assert.deepEqual(s.publicationTypes, ['Tender']);
+  assert.deepEqual(s.contractingRules, ['VOL', 'VOB', 'VSVGV', 'SEKTVO', 'OTHER']);
+  assert.ok(!s.contractingRules.includes('UNDEFINED')); // sonst HTTP 400 bei dtvp.de
+  assert.equal(s.sort.order[0].direction, 'DESC');
 });
