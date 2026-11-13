@@ -13,6 +13,12 @@
 #   bash operations/scripts/dienste-einrichten.sh --nur-nachziehen
 #   bash operations/scripts/dienste-einrichten.sh --routinen
 #   bash operations/scripts/dienste-einrichten.sh --postfach-entwuerfe
+#   bash operations/scripts/dienste-einrichten.sh --gel-diesel
+#
+# --gel-diesel richtet net.teppich-paradies.gel-diesel ein: traegt den woechentlichen Dieselzuschlag
+# der Spedition (GEL) dienstags und montags 9:30 Uhr in die private Tarifdatei ein
+# (operations/scripts/gel-diesel-nachtragen.mjs). Die Plist zeigt auf ~/tp-dashboard, deshalb
+# laesst sich der Schalter aus jedem Checkout setzen; ohne das Skript dort schlaegt der Lauf fehl.
 #
 # --postfach-entwuerfe richtet net.teppich-paradies.postfach-entwuerfe einzeln ein (Antwort-
 # Entwuerfe in Gmail, nie senden). Gehoert bewusst nicht zu --routinen: Ein erneutes --routinen
@@ -52,9 +58,10 @@ SYNC_PLIST="${LAUNCH_AGENTS_DIR}/${SYNC_LABEL}.plist"
 SICHERUNG_LABEL="net.teppich-paradies.sicherung"
 AUSSER_HAUS_LABEL="net.teppich-paradies.sicherung-ausser-haus"
 NACHZIEHEN_LABEL="net.teppich-paradies.nachziehen"
+GEL_DIESEL_LABEL="net.teppich-paradies.gel-diesel"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel]\n' >&2
   exit 1
 fi
 
@@ -232,6 +239,21 @@ postfach_entwuerfe_einrichten() {
   hinweis "Auswertung: npm run -s entwuerfe -- auswerten"
 }
 
+gel_diesel_einrichten() {
+  schritt "GEL-Dieselzuschlag woechentlich nachtragen (${GEL_DIESEL_LABEL})"
+  vorlage_einrichten "${GEL_DIESEL_LABEL}" || return 1
+  ok "Eingerichtet: dienstags und montags 9:30 Uhr; ohne KI-Kontingent, nur lesender Abruf."
+  if [[ ! -f "${HOME}/tp-dashboard/operations/scripts/gel-diesel-nachtragen.mjs" ]]; then
+    fehlt "Das Skript fehlt in ~/tp-dashboard noch - erst main nachziehen (npm run -s betrieb:nachziehen -- --status); bis dahin schlaegt der Lauf fehl."
+  fi
+  hinweis "Probe: cd ~/tp-dashboard && npm run -s gel-diesel:nachtragen"
+  hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-gel-diesel.log"
+}
+
+if [[ "${1:-}" == "--gel-diesel" ]]; then
+  gel_diesel_einrichten
+  exit 0
+fi
 if [[ "${1:-}" == "--postfach-entwuerfe" ]]; then
   postfach_entwuerfe_einrichten
   exit 0

@@ -755,6 +755,35 @@ zog Karten in falsche Bereiche. Regel, Bereiche und Tests: `scripts/preisfilter-
 - Grenze: dieser Lauf schreibt genau das eine Produkt-Metafeld `custom.meterpreis_bereich`;
   nie Preise, Vergleichspreise, Varianten oder andere Felder.
 
+## Dieselzuschlag der Spedition (wöchentlich)
+
+`npm run -s gel-diesel:nachtragen` (`scripts/gel-diesel-nachtragen.mjs`, Logik in
+`lib/gel-diesel.mjs`, Tests `tests/gel-diesel.test.mjs`) hält die drei Felder `GEL Diesel`,
+`GEL gültig von` und `GEL gültig bis` in `$TP_PRIVAT_DIR/versandkosten/tarife.json` aktuell, die der
+Kostenvergleich Paketdienst/Spedition liest. Quelle ist die öffentliche Seite
+`https://www.gel-express.de/de/kraftstoff-zuschlag/` (Zeilen „KW 46/2026* 24,6%“, Komma oder
+Punkt). Der Wert einer Kalenderwoche gilt Montag bis Sonntag dieser ISO-Woche (belegt 13.11.2026);
+die Überschrift „Abrechnung KW …“ nennt schon die Folgewoche und wird nicht gelesen.
+
+- Der Lauf nimmt das Berliner Datum, sucht die ISO-Woche und trägt Satz und Zeitraum ein. Fehlt
+  die Woche, steht sie mit zwei Werten da oder liegt der Wert außerhalb von 0–60 %, ist das ein
+  Fehler – nie ein geratener Wert.
+- Geändert werden nur diese drei Felder (der Rest der Datei bleibt Zeichen für Zeichen). Vorher:
+  Sicherung `tarife.json.bak-gel-diesel` (eine, wird je Änderung ersetzt). Dann neue Fassung in
+  eine Nebendatei, Gegenprobe mit `pruefeVersandtarif`, erst danach ersetzen. Jeder Fehler lässt
+  die Datei unverändert. Ohne Änderung wird nichts geschrieben.
+- Ausgabe: ein Satz, z. B. „GEL-Diesel: 24,6 % → 23,7 %, gültig 16.11.–22.11.2026.“ oder
+  „unverändert“. Netzfehler und 5xx: genau ein Wiederholversuch nach 30 s (`workflow/retry.mjs`).
+- Dienst: Vorlage `launchagents/net.teppich-paradies.gel-diesel.plist.vorlage`, Einrichten mit
+  `bash operations/scripts/dienste-einrichten.sh --gel-diesel` (aus jedem Checkout möglich, die
+  Plist zeigt auf `~/tp-dashboard`). Dienstags 9:30 (die Seite wird dienstags aktualisiert) und
+  montags 9:30 als Nachholer, ohne KI-Kontingent. Protokoll: `~/Library/Logs/teppich-paradies-gel-diesel.log`.
+- Meldeweg: der Lauf schreibt `$TP_PRIVAT_DIR/routinen/gel-diesel/status.json` (`STATUS_DATEIEN` in
+  `lib/routinen.mjs`). Ein Fehler erscheint im Systemzustand/Shop-Kontrolle und als rotes To-do
+  „Mac-Dienst gestört“, die Mac-Mitteilung nur beim ersten Fehler; acht Tage ohne Erfolg melden
+  den Dienst als stumm.
+- Nicht dabei: der GLS-Floater (monatlich, andere Formel) – bleibt von Hand.
+
 ## Google-Bewertung im Shop (monatlich)
 
 `npm run -s google-bewertung -- --schreiben` holt Note und Anzahl aus der Datenquelle des
