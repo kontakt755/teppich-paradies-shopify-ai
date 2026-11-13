@@ -68,27 +68,29 @@ const schnittKnopf = (e) => {
 };
 
 function zeile(e, { lesen }) {
-  const meta = [e.art, e.von].filter(Boolean).map(esc).join(' · ');
+  const meta = [e.art, e.von, e.anzahl ? `${e.anzahl} Mails` : null].filter(Boolean).map(esc).join(' · ');
+  // Zusammengelegte Mails eines Absenders: jeder Knopf gilt fuer alle (Schluessel mit Komma, siehe ladenKlick).
+  const k = esc((e.alle || [e.schluessel]).join(','));
   const z = e.zustaendig;
   // Lieferantenpost ist reine Info: niemand uebernimmt sie, "Gesehen" blendet sie aus (wie bei "Ware unterwegs").
   const rechts = e.nurInfo
     ? `<span class="laden-plakette">${esc(e.alter || '')}</span>${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-gesehen="${esc(e.schluessel)}">Gesehen</button>`}`
     : z
     ? `<span class="laden-plakette">${esc(z.wer)} kümmert sich · ${esc(since(z.seit))}</span>
-       ${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-zurueck="${esc(e.schluessel)}">Zurückgeben</button>
+       ${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-zurueck="${k}">Zurückgeben</button>
        ${e.aufgabeId ? `<button type="button" class="btn laden-knopf" data-laden-erledigt="${esc(e.aufgabeId)}">Erledigt</button>` : ''}${schnittKnopf(e)}`}`
     : `<span class="laden-plakette${e.ton ? ` ${esc(e.ton)}` : ''}">${esc(e.alter || '')}</span>
-       ${lesen ? '' : laden.wer === e.schluessel
-    ? `<span class="laden-wer"><strong>Wer?</strong>${(laden.daten.personen || []).map(n => `<button type="button" class="btn laden-knopf" data-laden-wer="${esc(n)}" data-schluessel="${esc(e.schluessel)}">${esc(n)}</button>`).join('')}<button type="button" class="btn btn-ghost laden-knopf" data-laden-abbrechen>Abbrechen</button></span>`
-    : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${esc(e.schluessel)}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>${schnittKnopf(e)}`}`;
-  const telefon = e.schluessel.startsWith('mail:') && !lesen && !e.nurInfo ? `<button type="button" class="btn laden-knopf" data-laden-telefonisch="${esc(e.schluessel)}">Telefonisch erledigt</button>` : '';
+       ${lesen ? '' : laden.wer === (e.alle || [e.schluessel]).join(',')
+    ? `<span class="laden-wer"><strong>Wer?</strong>${(laden.daten.personen || []).map(n => `<button type="button" class="btn laden-knopf" data-laden-wer="${esc(n)}" data-schluessel="${k}">${esc(n)}</button>`).join('')}<button type="button" class="btn btn-ghost laden-knopf" data-laden-abbrechen>Abbrechen</button></span>`
+    : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${k}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>${schnittKnopf(e)}`}`;
+  const telefon = e.schluessel.startsWith('mail:') && !lesen && !e.nurInfo ? `<button type="button" class="btn laden-knopf" data-laden-telefonisch="${k}">Telefonisch erledigt</button>` : '';
   return `<li class="laden-zeile${e.ton === 'crit' && e.schluessel.startsWith('mail:') ? ' laden-zeile-rot' : ''}">
-    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}${e.nurInfo ? `<p class="small muted">${esc(e.infoText || 'Nur zur Info, keine Antwort nötig.')}</p>` : ''}${e.hinweis ? `<p class="small muted">${esc(e.hinweis)}</p>` : ''}</div>
+    <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}${e.infoText ? `<p class="small muted">${esc(e.infoText)}</p>` : ''}${e.hinweis ? `<p class="small muted">${esc(e.hinweis)}</p>` : ''}</div>
     <div class="laden-rechts">${rechts}${telefon}</div>
   </li>`;
 }
 
-function spalte(eintraege, { id, titel, satz, leer, kopf = '', vorspann = '' }, lesen) {
+function spalte(eintraege, { id, titel, satz, leer, kopf = '', vorspann = '', nachspann = '' }, lesen) {
   const { offen, inArbeit } = teileSpalte(eintraege);
   const liste = l => `<ul class="laden-liste">${l.map(e => zeile(e, { lesen })).join('')}</ul>`;
   return `<section class="laden-spalte" aria-labelledby="laden-${id}">
@@ -97,6 +99,7 @@ function spalte(eintraege, { id, titel, satz, leer, kopf = '', vorspann = '' }, 
     ${vorspann}
     ${offen.length ? liste(offen) : `<p class="laden-leer">${esc(leer)}</p>`}
     ${inArbeit.length ? `<details class="laden-kuemmert" data-laden="${id}"${laden.offen[id] ? ' open' : ''}><summary>Jemand kümmert sich (${inArbeit.length})</summary>${liste(inArbeit)}</details>` : ''}
+    ${nachspann}
   </section>`;
 }
 
@@ -114,7 +117,7 @@ function wareAbschnitt(w, lesen) {
       </li>`).join('')}</ul>`;
   return `<section class="laden-spalte laden-ware" aria-labelledby="laden-ware">
     <div class="laden-spalte-kopf"><h2 id="laden-ware">Ware unterwegs</h2></div>
-    <p class="small muted">Hier steht, welche Ware in den letzten 7 Tagen beim Kunden oder beim Kettler angekommen ist und von welchem Lieferanten eine Rechnung gekommen ist (dann ist die Ware meist schon verladen). Lieferungen in den Laden stehen hier nicht.${w.stand ? ` Stand: ${esc(since(w.stand))}` : ''}</p>
+    <p class="small muted">Letzte 7 Tage, nur Info.${w.stand ? ` Stand: ${esc(since(w.stand))}` : ''}</p>
     ${inhalt}
   </section>`;
 }
@@ -139,15 +142,19 @@ export function viewLaden() {
   const zuLange = liegtZuLange(d.mails.eintraege, d.todos);
   const mailsLeer = !d.mails.eingerichtet ? 'Das Postfach für den Laden ist noch nicht eingerichtet. Sobald es steht, erscheinen hier die Mails.'
     : d.mails.stand || d.mails.fehler ? 'Keine Mail offen.' : 'Die Mails werden abgerufen …';
+  // Lieferanten-Info (Avis, Lieferscheine, Auftragsbestaetigungen) eingeklappt unter den Mails: niemand muss darauf antworten.
+  const info = d.mails.eintraege.filter(e => e.nurInfo && e.art === 'Lieferant');
+  const mailZeilen = d.mails.eintraege.filter(e => !info.includes(e));
+  const infoTeil = info.length ? `<details class="laden-kuemmert" data-laden="lieferant"${laden.offen.lieferant ? ' open' : ''}><summary>Lieferanten-Post, nur Info (${info.length})</summary><ul class="laden-liste">${info.map(e => zeile(e, { lesen })).join('')}</ul></details>` : '';
   const mailsFehler = d.mails.fehler ? `<div class="notice warn" role="status">${esc(d.mails.fehler)}</div>` : '';
   return `${kopf}
     ${zuLange ? `<div class="notice crit laden-rot" role="status">${esc(zuLange)}</div>` : ''}
     ${d.personen ? '' : `<div class="notice warn">Die Namen für „Übernehmen“ fehlen noch. Der Inhaber muss die Namen der Kolleginnen und Kollegen im Laden einmal hinterlegen (Claude im Chat Bescheid geben: „Laden-Namen eintragen“).</div>`}
     ${d.bestelldatenFehlen ? '<div class="notice warn">Die Bestelldaten fehlen. Rückrufe und wartende Kunden erscheinen erst, wenn sie wieder da sind.</div>' : ''}
     <div class="laden-spalten">
-      ${spalte(d.mails.eintraege, { id: 'mails', titel: 'Mails', satz: 'Hier stehen die Mails an den Laden. Wer eine übernimmt, antwortet darauf. Bestätigungen von Lieferanten sind nur zur Info.', leer: mailsLeer, vorspann: mailsFehler }, lesen)}
+      ${spalte(mailZeilen, { id: 'mails', titel: 'Mails', satz: 'Wer übernimmt, antwortet.', leer: mailsLeer, vorspann: mailsFehler, nachspann: infoTeil }, lesen)}
       ${spalte(d.todos, {
-    id: 'zutun', titel: 'Zu tun', satz: 'Hier stehen Rückrufe, Ware zum Zuschneiden aus eigener Rolle, Kunden, die sich nicht melden, und eigene Aufgaben.', leer: 'Nichts offen.',
+    id: 'zutun', titel: 'Zu tun', satz: 'Rückrufe, Zuschnitt, Packen und eigene Aufgaben.', leer: 'Nichts offen.',
     kopf: lesen || laden.formOffen ? '' : '<button type="button" class="btn laden-knopf" data-laden-neu>Aufgabe dazu</button>',
     vorspann: laden.formOffen ? aufgabenFormular() : '',
   }, lesen)}
@@ -155,9 +162,10 @@ export function viewLaden() {
     ${wareAbschnitt(d.ware, lesen)}`;
 }
 
+/** rumpf darf eine Liste sein (zusammengelegte Mails): nacheinander, beim ersten Fehler Schluss. */
 async function schreiben(pfad, rumpf, erfolg) {
   try {
-    await orgSchreiben(pfad, rumpf);
+    for (const r of [rumpf].flat()) await orgSchreiben(pfad, r);
   } catch (err) {
     // Auswahl und Eingabe bleiben stehen, damit nichts neu getippt werden muss.
     toast(`Fehler: ${err.message}`, 'crit');
@@ -174,9 +182,10 @@ export function ladenKlick(e) {
   const von = a => t.closest(`[${a}]`);
   let el;
   if ((el = von('data-laden-uebernehmen'))) { laden.wer = el.dataset.ladenUebernehmen; render(); return true; }
-  if ((el = von('data-laden-wer'))) { schreiben('/api/laden/zustaendig', { schluessel: el.dataset.schluessel, wer: el.dataset.ladenWer }); return true; }
-  if ((el = von('data-laden-zurueck'))) { schreiben('/api/laden/zustaendig', { schluessel: el.dataset.ladenZurueck, wer: null }); return true; }
-  if ((el = von('data-laden-telefonisch'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenTelefonisch, wer: laden.daten?.personen?.length === 1 ? laden.daten.personen[0] : null }, 'Telefonisch erledigt'); return true; }
+  const alle = v => String(v).split(',');
+  if ((el = von('data-laden-wer'))) { schreiben('/api/laden/zustaendig', alle(el.dataset.schluessel).map(schluessel => ({ schluessel, wer: el.dataset.ladenWer }))); return true; }
+  if ((el = von('data-laden-zurueck'))) { schreiben('/api/laden/zustaendig', alle(el.dataset.ladenZurueck).map(schluessel => ({ schluessel, wer: null }))); return true; }
+  if ((el = von('data-laden-telefonisch'))) { const wer = laden.daten?.personen?.length === 1 ? laden.daten.personen[0] : null; schreiben('/api/laden/telefonisch', alle(el.dataset.ladenTelefonisch).map(schluessel => ({ schluessel, wer })), 'Telefonisch erledigt'); return true; }
   // Gleiche Ablage wie "Telefonisch erledigt": der Haken blendet die Zeile nur aus, am Postfach aendert sich nichts.
   if ((el = von('data-laden-gesehen'))) { schreiben('/api/laden/telefonisch', { schluessel: el.dataset.ladenGesehen }, 'Gesehen'); return true; }
   // Dieselben Haken wie "Zugeschnitten"/"Gepackt" unter Bestellen (aktion selbstversand) - die Zeile wandert danach zum naechsten Schritt.

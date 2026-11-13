@@ -334,3 +334,16 @@ test('Mails: angenommene Angebote stehen nicht in der Liste', () => {
   ], { jetzt: new Date('2026-11-13T10:00:00Z') });
   assert.deepEqual(z.map(e => e.schluessel), ['mail:b']);
 });
+
+test('Mails: gleicher Absender wird eine Zeile, Lieferanten-Info nie', async () => {
+  const { gruppiereMails } = await import('../lib/laden.mjs');
+  const z = gruppiereMails([
+    { schluessel: 'mail:1', von: 'K', text: 'neu', seit: '2026-11-12T10:00:00Z', alter: '1 Werktag', ton: '' },
+    { schluessel: 'mail:2', von: 'K', text: 'alt', seit: '2026-11-02T10:00:00Z', alter: '9 Werktage', ton: 'crit', zustaendig: { wer: 'A' } },
+    { schluessel: 'mail:3', von: 'L', text: 'Avis', nurInfo: true, seit: '2026-11-12T10:00:00Z' },
+    { schluessel: 'mail:4', von: 'L', text: 'Avis 2', nurInfo: true, seit: '2026-11-12T11:00:00Z' },
+  ]);
+  assert.equal(z.length, 3);
+  const k = z.find(e => e.von === 'K');
+  assert.deepEqual([k.text, k.alter, k.ton, k.anzahl, k.alle, k.zustaendig.wer], ['neu', '9 Werktage', 'crit', 2, ['mail:1', 'mail:2'], 'A']);
+});

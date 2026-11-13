@@ -149,8 +149,10 @@ function eintraegeAus(antwort) {
 
 // Antwort des Kunden auf ein Angebot ("Aw: Angebot AG324 von ..."). Nimmt er an, ist im Laden nichts zu tun (Benutzer 13.11.2026).
 export const ANGEBOT_ANTWORT = /^\s*(re|aw|wg|fwd?)\s*:.*\bAngebot\s+AG\s?\d+/i;
+// Bestaetigung des Kunden als eigene Mail ("ANGEBOTSBESTAETIGUNG ... Angebot AG 361"): angenommen ohne Text zu lesen.
+export const ANGEBOT_BESTAETIGT = /angebotsbest[aä]tigung/i;
 const ZITAT = /(\bAm\s.{4,120}?schrieb|-{3,}\s*Urspr|\bVon:\s|\bFrom:\s|\bGesendet:\s|\n>)/i;
-const ANNAHME = /\bnehmen\s+(wir\s+)?gerne?\b|\bAnzahlung\b|\bangenommen\b|\beinverstanden\b|\bbeauftragen\b|\bAuftrag\s+erteil/i;
+const ANNAHME = /\bnehmen\s+(wir\s+)?gerne?\b|\bnehmen\s+(wir\s+)?(das|Ihr)\s+Angebot\s+an\b|\bAnzahlung\b|\bangenommen\b|\beinverstanden\b|\bbeauftragen\b|\bAuftrag\s+erteil/i;
 
 /**
  * Nur der eigene Teil der Antwort (ohne zitiertes Angebot): Annahmewort und keine Frage.
@@ -223,7 +225,8 @@ export async function abrufenNurLesend(zugang, { verbinden, jetzt = new Date(), 
       ? eintraegeAus(antwortOk(await v.befehl(`UID FETCH ${uids.join(',')} (UID INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM SUBJECT MESSAGE-ID)])`), 'FETCH'))
       : [];
     // Nur Antworten auf Angebote: Text lesen (BODY.PEEK, bleibt ungelesen) und Annahmen markieren.
-    const angebot = eintraege.filter(e => ANGEBOT_ANTWORT.test(e.text));
+    for (const e of eintraege) if (ANGEBOT_BESTAETIGT.test(e.text)) e.angenommen = true;
+    const angebot = eintraege.filter(e => !e.angenommen && ANGEBOT_ANTWORT.test(e.text));
     if (angebot.length) {
       const r = antwortOk(await v.befehl(`UID FETCH ${angebot.map(e => e.uid).join(',')} (UID BODY.PEEK[]<0.65536>)`), 'FETCH');
       for (const z of r.eintraege) {
