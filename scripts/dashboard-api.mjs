@@ -3600,16 +3600,21 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         const dir = privatDirPath || privatDir();
         const modell = ladeBestellModell(dir);
         const p = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].flatMap(a => a.positionen || []).find(z => z.orderId === orderId && z.lineItemId === lineItemId);
-        if (!p?.istMuster) throw new ApiError(400, 'Nur Muster können hier als Direktversand vermerkt werden.');
+        // Seit 13.11.2026 auch Unterlagen aus der Liste (Bereich "Noch zu schneiden"): der Laden vermerkt,
+        // dass der Hersteller direkt schickt oder die bestellte Ware zu uns kommt. Sonst blieb nur "Zugeschnitten".
+        const unterlage = Boolean(p && !p.istMuster && (p.lagerware || p.ohneRolle));
+        if (!p?.istMuster && !unterlage) throw new ApiError(400, 'Nur Muster und Unterlagen aus der Rolle können hier vermerkt werden.');
+        const ueber = unterlage && payload.ueber === 'laden' ? 'laden' : 'kunde';
+        if (ueber === 'laden' && p.lagerware) throw new ApiError(409, 'Von dieser Unterlage liegt eine Rolle im Laden – sie wird geschnitten, nicht zu uns bestellt.');
         let eintrag;
         try {
-          eintrag = vermerkeDirektversand(auftragsstatusPfad(dir), { orderId, lineItemId, actor, jetzt: now() });
+          eintrag = vermerkeDirektversand(auftragsstatusPfad(dir), { orderId, lineItemId, actor, ueber, auchOffen: unterlage, jetzt: now() });
         } catch (e) {
           if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status || 400, e.message);
           throw e;
         }
         audit({ actor, action: 'auftragsstatus-direktversand', orderId, lineItemId });
-        merke(benutzer, actor, 'Muster direkt vom Lieferanten', `${orderId}/${lineItemId}`);
+        merke(benutzer, actor, p.istMuster ? 'Muster direkt vom Lieferanten' : ueber === 'laden' ? 'Unterlage bestellt, kommt zu uns' : 'Unterlage direkt vom Hersteller', `${orderId}/${lineItemId}`);
         return { ok: true, eintrag };
       }
       if (aktion === 'wiederOeffnen') {

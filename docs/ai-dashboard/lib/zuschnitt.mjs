@@ -32,13 +32,17 @@ const STAND = { geliefert: 'liegt schon hier', bestellt: 'ist bestellt und noch 
  * @returns {{art:string, kurz:string, text:string}|null}  null fuer Muster und Eigenleistung
  */
 export function versandweg(p, positionen = [], eintragVon = () => null) {
-  const eigen = lieferwegVon(p, eintragVon(p));
+  const eigenEintrag = eintragVon(p);
+  const eigen = lieferwegVon(p, eigenEintrag);
   if (!eigen) return null;
-  if (DIREKT.has(eigen.weg)) {
-    return eigen.vorschlag
-      ? { art: 'unklar', kurz: 'Noch nicht bestellt', text: 'Voraussichtlich schickt der Hersteller direkt an den Kunden. Fest steht der Weg erst mit der Bestellung.' }
-      : { art: 'hersteller', kurz: 'Hersteller schickt direkt', text: 'Nichts schneiden: Der Hersteller schickt die Unterlage direkt an den Kunden.' };
+  // Auch der eigene Weg muss belegt sein (Rolle im Laden, Vermerk) oder die Ware liegt schon hier. Am 13.11.
+  // stand eine ohne Vermerk bestellte Unterlage als "Allein als Päckchen" da, der Hersteller schickte sie direkt.
+  if (!eigen.belegt && eigenEintrag?.status !== 'geliefert') {
+    return eigenEintrag?.status
+      ? { art: 'unklar', kurz: 'Weg nicht vermerkt', text: 'Bestellt, aber ohne Vermerk, ob der Hersteller direkt schickt oder die Ware zu uns kommt. Bitte hier auswählen.' }
+      : { art: 'unklar', kurz: 'Noch nicht bestellt', text: `Voraussichtlich ${eigen.wort}. Fest steht der Weg erst mit der Bestellung.` };
   }
+  if (DIREKT.has(eigen.weg)) return { art: 'hersteller', kurz: 'Hersteller schickt direkt', text: 'Nichts schneiden: Der Hersteller schickt die Unterlage direkt an den Kunden.' };
   const kettelnWir = positionen.some(q => q?.eigenleistung && /kettel/i.test(q.titel || ''));
   const andere = positionen
     .filter(q => q && q.lineItemId !== p.lineItemId && !q.istMuster && !q.eigenleistung && !q.lagerware && !q.ohneRolle && (q.menge ?? 1) > 0)

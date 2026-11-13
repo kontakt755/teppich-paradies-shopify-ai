@@ -245,6 +245,10 @@ gebraeuchlich), Erfassen.
   kommt oder wir ihn selbst ketteln, und ob er schon da ist), **Zusammen mit der übrigen Ware**,
   **Hersteller schickt direkt**. Bernstein **Versandweg noch offen**, solange der Teppich nicht bestellt ist
   oder beim Bestellen kein Weg vermerkt wurde – dann erst klären, dann verschicken.
+- **Bestellt – Hersteller schickt direkt** / **Bestellt – kommt zu uns** = Abhaken unter „Noch zu schneiden“,
+  wenn eine Unterlage nicht geschnitten, sondern bestellt wurde. Trägt „bestellt“ mit dem Weg ein; ein
+  Bestelldatum, das schon dasteht, bleibt. Solange nichts abgehakt ist, steht bernstein **Weg nicht vermerkt**
+  bzw. **Noch nicht bestellt**. **Zurück auf offen…** nimmt den Vermerk zurück.
 
 ## Lieferantenstand (06.11.2026)
 

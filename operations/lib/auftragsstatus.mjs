@@ -264,15 +264,26 @@ export function vermerkeShopifyVersand(file, { orderId, lineItemId, vermerk } = 
 /**
  * Vermerkt nachtraeglich "direkt vom Lieferanten zum Kunden" (ueber 'kunde') an einer bestellten Position,
  * ohne Schritt und Bestelldatum zu aendern - fuer Bestellungen vor dem Vermerk im Bestellmail-Dialog (#1049).
+ * Seit 13.11.2026 auch fuer Unterlagen unter "Noch zu schneiden": `ueber` 'laden' vermerkt "kommt zu uns",
+ * und mit `auchOffen` wird eine Position ohne Schritt dabei als bestellt eingetragen (der Knopf heisst
+ * "Bestellt – …": bestellt wurde am Telefon oder im Portal, nicht ueber die Bestellmail).
  */
-export function vermerkeDirektversand(file, { orderId, lineItemId, actor, jetzt = new Date() } = {}) {
+export function vermerkeDirektversand(file, { orderId, lineItemId, actor, ueber = 'kunde', auchOffen = false, jetzt = new Date() } = {}) {
   const key = positionKey(orderId, lineItemId);
   if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
   if (!actor) throw new AuftragsstatusFehler('actor (gh-Login) ist Pflicht');
+  if (!['kunde', 'laden'].includes(ueber)) throw new AuftragsstatusFehler(`Unbekannter Weg „${ueber}“`);
   const alle = leseAlle(file);
   const bisher = alle[key];
+  const zeit = jetzt.toISOString();
+  if (auchOffen && !bisher?.status) {
+    alle[key] = { ...bisher, orderId: String(orderId), lineItemId: String(lineItemId), status: 'bestellt', bestelltAm: zeit, bestelltVon: actor,
+      lieferantBestellnummer: bisher?.lieferantBestellnummer || null, ueber, aktualisiertAm: zeit, aktualisiertVon: actor };
+    schreibeAlle(file, alle);
+    return alle[key];
+  }
   if (bisher?.status !== 'bestellt') throw new AuftragsstatusFehler('Nur eine beim Lieferanten bestellte Position kann als Direktversand vermerkt werden.', 409);
-  alle[key] = { ...bisher, ueber: 'kunde', aktualisiertAm: jetzt.toISOString(), aktualisiertVon: actor };
+  alle[key] = { ...bisher, ueber, aktualisiertAm: zeit, aktualisiertVon: actor };
   schreibeAlle(file, alle);
   return alle[key];
 }

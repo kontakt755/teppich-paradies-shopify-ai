@@ -46,6 +46,13 @@ test('Versandweg: allein, mit dem Teppich, Hersteller direkt - und nie geraten',
 
   assert.equal(weg([unterlage()], { u1: { status: 'bestellt', ueber: 'kunde' } }).art, 'hersteller');
   assert.equal(weg([unterlage({ lagerware: false, ohneRolle: true, wegVorschlag: 'hersteller' })]).art, 'unklar', 'Vorschlag direkt: noch nicht bestellt');
+  // Keine Rolle im Laden: ohne Vermerk nie "Allein als Päckchen" - so stand am 13.11. eine direkt bestellte Unterlage da.
+  const ohne = unterlage({ lagerware: false, ohneRolle: true });
+  assert.equal(weg([ohne]).kurz, 'Noch nicht bestellt');
+  assert.equal(weg([ohne], { u1: { status: 'bestellt' } }).kurz, 'Weg nicht vermerkt');
+  assert.equal(weg([ohne], { u1: { status: 'bestellt', ueber: 'laden' } }).art, 'allein', 'bestellt zu uns: danach von uns als Päckchen');
+  assert.equal(weg([ohne], { u1: { status: 'bestellt', ueber: 'kunde' } }).art, 'hersteller');
+  assert.equal(weg([ohne], { u1: { status: 'geliefert' } }).art, 'allein', 'liegt schon hier');
   assert.equal(versandweg({ istMuster: true }, []), null);
 });
 
