@@ -16,7 +16,7 @@
           "type": "text",
           "name": "Title",
           "settings": {
-            "text": "<h1>Black Week: 15 % auf ausgewählten Teppichboden und Vinyl</h1>",
+            "text": "<h1>Black Week 2026 ist beendet</h1>",
             "width": "fit-content",
             "max_width": "normal",
             "alignment": "left",
@@ -42,7 +42,7 @@
           "type": "text",
           "name": "Bedingungen",
           "settings": {
-            "text": "<p>Bis 30.11.2026: 15 % auf alle Produkte dieser Seite, im angezeigten Preis bereits abgezogen. Der Verlegeservice gilt zum regulären Preis.</p>",
+            "text": "<p>Die Aktion lief bis 30.11.2026. Für alle Produkte dieser Seite gelten wieder die regulären Preise. Reduzierte Ware finden Sie bei den <a href=\"/collections/restposten\">Resten und Sonderposten</a>.</p>",
             "width": "fit-content",
             "max_width": "normal",
             "alignment": "left",
