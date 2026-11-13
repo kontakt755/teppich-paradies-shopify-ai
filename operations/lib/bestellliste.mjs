@@ -12,6 +12,7 @@
 import { kundenSchluessel } from './kundensuche.mjs';
 import { positionKey, STATUS_ORDER, STATUS_LABEL } from './auftragsstatus.mjs';
 import { versandNachzuholen, versandGebucht } from './versand.mjs';
+import { istManuell } from './rueckrufliste.mjs';
 import { bestellZahlungOffen } from '../../docs/ai-dashboard/lib/bestellarbeit.mjs';
 
 const NICHT_HINTERLEGT = null;
@@ -150,6 +151,8 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     // Der lokal gepflegte Rueckrufstand gehoert an die Zeile: ohne ihn stuende
     // ein bereits erledigter Rueckruf in jeder Arbeitsliste weiter ganz oben.
     rueckrufStatus: rueckruf?.status ?? null,
+    // Von Hand gemeldet ("Falsch geliefert: ..."): rote Marke an der Bestellung, bis der Rueckruf erledigt ist.
+    rueckrufThema: istManuell(rueckruf) && rueckruf.status !== 'erledigt' ? rueckruf.thema : null,
     status: auftrag.status,
     ampel: auftrag.ampel,
     adminUrl: auftrag.adminUrl,

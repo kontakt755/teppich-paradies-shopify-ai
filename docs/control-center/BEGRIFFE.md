@@ -362,3 +362,6 @@ gebraeuchlich), Erfassen.
   14 Tagen nichts kam.
 - **Liegt zu lange** = die eine rote Zeile oben auf „Laden“: offene, noch nicht übernommene Einträge in der roten Stufe.
 
+- **Falsch geliefert – Kunde anrufen (13.11.)** = Wahl unter „Etwas anderes ist passiert …“ an einer Bestellung. Der Kunde
+  kommt mit dem eingetragenen Grund in die Rückrufliste; die Bestellung trägt eine rote Marke „Falsch geliefert: … ·
+  Kunde anrufen“, bis der Rückruf dort auf **Erledigt** steht.

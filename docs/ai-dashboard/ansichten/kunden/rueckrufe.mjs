@@ -44,6 +44,9 @@ async function setzeRueckrufStatus(orderId, status, notiz, wiedervorlage = null)
       const zeile = kunden.rueckrufe.zeilen.find(z => z.orderId === orderId);
       if (zeile) Object.assign(zeile, j.eintrag);
     }
+    // Die rote Marke "Falsch geliefert" an der Bestellung zeigt denselben Stand, ohne die Liste neu zu laden.
+    const bestellung = kunden.bestellungen?.zeilen?.find(z => z.orderId === orderId);
+    if (bestellung) { bestellung.rueckrufStatus = status; if (status === 'erledigt') bestellung.rueckrufThema = null; }
     toast(`Rückruf: ${RUECKRUF_STATUS_LABEL[status]}`);
     render();
     return true;
@@ -142,7 +145,7 @@ export function viewKundenRueckrufe() {
   const tests = zeilen.filter(z => z.status !== 'erledigt' && z.testbestellung);
   return `
     ${auftrag ? '<p><a href="#/heute">← Zurück zu Heute</a> · <a href="#/kunden?tab=rueckrufe">Alle Rückrufe</a></p>' : ''}
-    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch, Maßprüfung „Ja" oder angefragter Verlegung und jede Musterberatung aus dem Warenkorb – „Nicht erreicht“ zuerst, sonst älteste zuerst. Nachgefasst wird nur hier, nicht in der Laden-Ansicht. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
+    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch, Maßprüfung „Ja" oder angefragter Verlegung, jede Musterberatung aus dem Warenkorb und jede als „Falsch geliefert“ gemeldete Bestellung – „Nicht erreicht“ zuerst, sonst älteste zuerst. Nachgefasst wird nur hier, nicht in der Laden-Ansicht. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
     <div class="rows">${offen.length ? offen.map(rueckrufZeileHtml).join('') : emptyState('Keine offenen Rückrufe.', '')}</div>
     ${tests.length ? `<details style="margin-top:14px"><summary>${tests.length} aus Testbestellungen</summary><div class="rows">${tests.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
     ${erledigt.length ? `<details ${auftrag ? 'open' : ''} style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
