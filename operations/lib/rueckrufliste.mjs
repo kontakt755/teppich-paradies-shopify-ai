@@ -31,7 +31,10 @@ export function istRueckrufKandidat(auftrag) {
   return c.beratung === 'Ja' || c.masspruefung === 'Ja' || c.verlegung === 'Angefragt';
 }
 
-export function rueckrufZeile(auftrag) {
+/** Von Hand an der Bestellung angelegt ("Falsch geliefert – Kunde anrufen", rueckrufe.mjs `thema`). */
+export const istManuell = eintrag => eintrag?.quelle === 'manuell' && Boolean(eintrag.thema);
+
+export function rueckrufZeile(auftrag, eintrag = null) {
   const b = auftrag?.details?.beratungsangaben || {};
   const themaKey = ersteWert(b, k => /thema/i.test(k)) ?? null;
   const zeit = ersteWert(b, k => /zeit|wann|uhrzeit/i.test(k));
@@ -40,6 +43,7 @@ export function rueckrufZeile(auftrag) {
   const telefon = !kundeTelefon || kundeTelefon === '–' ? (telefonAngabe || null) : kundeTelefon;
   const c = auftrag?.checks || {};
   const themen = [];
+  if (istManuell(eintrag)) themen.push(eintrag.thema);
   if (c.beratung === 'Ja') themen.push(themaKey ? String(themaKey) : 'Beratung gewünscht');
   if (c.masspruefung === 'Ja') themen.push('Maßprüfung');
   if (c.verlegung === 'Angefragt') themen.push('Interesse an Aufmaß/Verlegung');
@@ -86,6 +90,6 @@ export function mailRueckrufZeilen(statusAlle = {}) {
 /** Aelteste zuerst (laengstes Warten zuerst abarbeiten). Mit `statusAlle` auch die Rueckrufe aus Mails. */
 export function rueckrufliste(modell, statusAlle = null) {
   const alle = [...(modell?.auftraege ?? []), ...(modell?.testauftraege ?? [])];
-  return [...alle.filter(istRueckrufKandidat).map(rueckrufZeile), ...mailRueckrufZeilen(statusAlle)]
+  return [...alle.filter(a => istRueckrufKandidat(a) || istManuell(statusAlle?.[a.id])).map(a => rueckrufZeile(a, statusAlle?.[a.id])), ...mailRueckrufZeilen(statusAlle)]
     .sort((a, b) => String(a.datum ?? '').localeCompare(String(b.datum ?? '')));
 }

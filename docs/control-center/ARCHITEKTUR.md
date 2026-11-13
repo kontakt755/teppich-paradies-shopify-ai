@@ -1589,6 +1589,10 @@ Styles `stile/serviceanfragen.css`.
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
   Zeile zeigt „aus dem Postfach übernommen“. Ein Test prüft, dass jeder Betreff aus `templates/` in
   der Liste steht oder bewusst ausgenommen ist – eine neue Serviceseite fällt so auf.
+- **Falschlieferung wird ein Rückruf (seit 2026-11-13):** „Falsch geliefert – Kunde anrufen“ im Dialog
+  „Etwas anderes ist passiert …“ schreibt über `POST /api/kunden/rueckrufe` (`thema`) einen Eintrag mit
+  `quelle: 'manuell'` zur Bestellung. `rueckrufliste()` nimmt solche Bestellungen auch ohne Wunsch an der
+  Kasse auf (`istManuell`), die Bestellzeile trägt `rueckrufThema`, bis der Rückruf erledigt ist.
 - **Musterberatung wird ein Rückruf (seit 2026-11-06):** „Lieber erst beraten lassen?“ im reinen
   Muster-Warenkorb (`snippets/tp-muster-beratungsanfrage.liquid`) schickt Betreff
   `RÜCKRUF – Musterberatung` mit `Muster:` (Musterliste, „ · “ getrennt), Name, Telefon, E-Mail, Text.

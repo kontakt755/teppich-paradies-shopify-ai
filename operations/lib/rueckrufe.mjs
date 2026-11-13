@@ -173,9 +173,11 @@ export function rueckrufAusMailAnlegen(file, f = {}, { actor, jetzt = new Date()
  * @param {string} p.actor     wer die Aktion ausgeloest hat
  * @param {string} [p.notiz]
  * @param {string} [p.wiedervorlage]  YYYY-MM-DD: wann nochmal versuchen
+ * @param {string} [p.thema]  Grund eines von Hand angelegten Rueckrufs (z. B. "Falsch geliefert: ...") -
+ *                            die Bestellung steht damit in der Rueckrufliste, auch ohne Beratungswunsch
  * @param {Date}   [p.jetzt]
  */
-export function setzeStatus(file, { orderId, status, actor, notiz = null, wiedervorlage = null, jetzt = new Date() } = {}) {
+export function setzeStatus(file, { orderId, status, actor, notiz = null, wiedervorlage = null, thema = null, jetzt = new Date() } = {}) {
   const key = String(orderId ?? '').trim();
   if (!key) throw new RueckrufFehler('orderId ist Pflicht');
   if (!RUECKRUF_STATUS.includes(status)) throw new RueckrufFehler(`Unbekannter Status "${status}"`);
@@ -197,6 +199,7 @@ export function setzeStatus(file, { orderId, status, actor, notiz = null, wieder
     [`${status}Von`]: actor,
   };
   if (notiz !== null) eintrag.notiz = clip(notiz, 2000);
+  if (clip(thema, 300)) { eintrag.thema = clip(thema, 300); eintrag.quelle = bisher.quelle || 'manuell'; }
   // Ein erledigter Vorgang braucht keine Wiedervorlage mehr.
   if (status === 'erledigt') eintrag.wiedervorlage = null;
   else if (wiedervorlage !== null) eintrag.wiedervorlage = wiedervorlage || null;

@@ -171,7 +171,7 @@ function bestellzeileAktionen(z) {
     ${!lesend && !z.fertig && z.anzahlArtikel ? `<button type="button" class="btn btn-sm btn-primary" data-bq-fertig="${esc(z.orderId)}">Kunde fertig …</button>` : ''}
     ${(z.auftrag?.positionen || []).some(p => p?.istMuster) ? `<button type="button" class="btn btn-sm" data-bq-etiketten="${esc(z.orderId)}">Aufkleber drucken</button>` : ''}
     ${ratgeberKnopf(z.auftrag, z.orderId)}
-    ${z.beratungOffen ? `<a class="btn btn-sm" href="#/kunden?tab=rueckrufe">Zur Rückrufliste →</a>` : ''}
+    ${z.beratungOffen || z.rueckrufThema ? `<a class="btn btn-sm" href="#/kunden?tab=rueckrufe">Zur Rückrufliste →</a>` : ''}
   </div>`;
 }
 
@@ -298,6 +298,13 @@ async function hakenSetzen(orderId, erledigt) {
   render();
 }
 
+// Von Hand gemeldet (Zeitleiste "Falsch geliefert – Kunde anrufen"): rot, bis der Rueckruf erledigt ist.
+const RUECKRUF_STAND = { offen: 'Kunde anrufen', nicht_erreicht: 'Kunde nicht erreicht – nochmal anrufen', angerufen: 'Kunde angerufen' };
+function rueckrufMarke(z) {
+  if (!z.rueckrufThema) return '';
+  return `<div><a class="badge level-kritisch" style="white-space:normal;border-radius:8px" href="#/kunden?tab=rueckrufe&auftrag=${encodeURIComponent(z.orderId)}" onclick="event.stopPropagation()" title="Zur Rückrufliste – dort abhaken">${esc(z.rueckrufThema)} · ${esc(RUECKRUF_STAND[z.rueckrufStatus] || RUECKRUF_STAND.offen)}</a></div>`;
+}
+
 function bestellzeileHtml(z, { grund = '' } = {}) {
   const offen = kunden.erweitert.has(z.orderId);
   const offenKlasse = offen ? ' offen' : '';
@@ -307,7 +314,7 @@ function bestellzeileHtml(z, { grund = '' } = {}) {
   const inhalt = inhaltHtml(z, { kurz: !offen });
   return `<tr class="bq-row${offenKlasse}${inhalt ? ' mit-inhalt' : ''}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
       <td data-l="Bestellnr.">${hakenKnopf(z)}<a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${neuBadge(z)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
-      <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}<div class="small muted">${fmtDateTime(z.datum)} · ${betragText(z)}</div>${grund}</td>
+      <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}<div class="small muted">${fmtDateTime(z.datum)} · ${betragText(z)}</div>${rueckrufMarke(z)}${grund}</td>
       <td data-l="Stand"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span>${warenPlakette(z)}${z.zahlungsstatus !== 'PAID' ? `<div class="small">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</div>` : ''}</td>
       <td data-l="Nächster Schritt">${esc(arbeitsstand(z).naechstes)}</td>
     </tr>
@@ -322,7 +329,7 @@ function bestellzeileKarte(z, gruppiert = false, { grund = '' } = {}) {
     <div>
       <div class="t">${hakenKnopf(z)}${esc(z.orderName)}${neuBadge(z)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${betragText(z)} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
-      ${grund}${inhalt ? `<div class="bq-inhalt-mobil">${inhalt}</div>` : ''}
+      ${rueckrufMarke(z)}${grund}${inhalt ? `<div class="bq-inhalt-mobil">${inhalt}</div>` : ''}
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span>${warenPlakette(z)}</div>
       <div class="m">${esc(arbeitsstand(z).naechstes)}</div>
     </div>

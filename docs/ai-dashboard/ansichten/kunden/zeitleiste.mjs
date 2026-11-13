@@ -37,7 +37,8 @@ const WAHL = {
   ware: [['bestellt', 'Ware beim Lieferanten bestellt'], ['geliefert', 'Ware ist bei uns angekommen'], ['raus', 'An den Kunden raus'], ['erledigt', 'Erledigt – Auftrag abschließen']],
 };
 // Hinweiszeile unter einer Wahl (Inhaber 2026-10-16).
-const WAHL_HINWEIS = { muster_nicht_verfuegbar: 'Der Kunde meldet sich und bestellt neue Muster; der Auftrag ist damit abgeschlossen.' };
+const WAHL_HINWEIS = { muster_nicht_verfuegbar: 'Der Kunde meldet sich und bestellt neue Muster; der Auftrag ist damit abgeschlossen.',
+  falsch_geliefert: 'Unten eintragen, was falsch war. Der Kunde kommt in die Rückrufliste, die Bestellung trägt eine rote Marke, bis der Rückruf erledigt ist.' };
 // Ergebnisse, die nur am Auftrag haengen - der letzte davon laesst sich zuruecknehmen.
 const ERGEBNISSE = ['kunde_hat_bestellt', 'kein_interesse', 'muster_nicht_verfuegbar'];
 const ERGEBNIS_WAHL = [['kunde_hat_bestellt', 'Kunde hat bestellt'], ['kein_interesse', 'Kein Interesse'], ['nachgefasst', 'Nochmal nachgefasst – er überlegt noch']];
@@ -248,7 +249,7 @@ async function ladeNeu() {
 /** Noch nicht bestellter gekettelter Direktversand: `kettelweg` kommt vom Server erst mit Status. */
 const offeneKettelwege = a => (a?.auftragsart === 'ware' ? a.positionen ?? [] : []).filter(p => p.lineItemId && kettelwegNoetig(p) && !p.kettelweg);
 
-export async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null, kundeInformieren = false } = {}) {
+export async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null, kettelwege = null, kundeInformieren = false, meldung = null } = {}) {
   let antwort;
   try {
     antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug, ...(muster ? { muster } : {}), ...(kettelwege ? { kettelwege } : {}), ...(kundeInformieren ? { kundeInformieren: true } : {}) });
@@ -258,7 +259,7 @@ export async function setzeSchritt(orderId, schritt, { notiz = null, bezug = nul
   }
   // "Kunde hat Muster" bei Mustern aus eigenem Bestand setzt "raus" mit und bucht in Shopify -
   // was dabei herauskam, gehoert in dieselbe Rueckmeldung.
-  const r = versandRueckmeldung(GESETZT_TEXT[schritt] || 'Gespeichert', antwort?.shopify);
+  const r = versandRueckmeldung(meldung || GESETZT_TEXT[schritt] || 'Gespeichert', antwort?.shopify);
   // "Muster nicht verfuegbar": was im Shop gesperrt wurde (oder warum nicht) gehoert dazu.
   const sp = antwort?.mustersperre;
   if (sp?.meldung) {
@@ -268,6 +269,22 @@ export async function setzeSchritt(orderId, schritt, { notiz = null, bezug = nul
   toast(r.text, r.ton, r.ton ? { dauer: 9000 } : {});
   await ladeNeu();
   return true;
+}
+
+/**
+ * "Falsch geliefert – Kunde anrufen": legt einen Rueckruf mit Grund an (Rueckrufliste, Heute, rote Marke
+ * an der Bestellung) und haelt denselben Satz im Verlauf fest. Abgehakt wird in der Rueckrufliste.
+ */
+async function meldeFalschlieferung(orderId, was) {
+  const thema = `Falsch geliefert: ${was}`;
+  try {
+    await orgSchreiben('/api/kunden/rueckrufe', { orderId, status: 'offen', thema });
+  } catch (e) {
+    toast(`Nicht gespeichert: ${e.message}`, 'crit');
+    return false;
+  }
+  kunden.rueckrufe = null;   // Rueckrufliste und Heute holen den neuen Eintrag
+  return setzeSchritt(orderId, 'notiz', { notiz: `${thema} – Kunde anrufen`, meldung: 'Falsch geliefert eingetragen – der Kunde steht in der Rückrufliste' });
 }
 
 // Textvorschlag "Muster nicht verfuegbar": einmal je Sitzung vom Server (Vorlage des Inhabers oder eingebauter Vorschlag).
@@ -357,6 +374,7 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     <fieldset class="zl-wahl"><legend>Was ist passiert?</legend>
       ${wahl.map(([w, t]) => radio(w, t)).join('')}
       ${nurErgebnis ? '' : radio('notiz', 'Nur eine Notiz festhalten', ' class="zl-wahl-trenner"')}
+      ${nurErgebnis || istNurLesend() ? '' : radio('falsch_geliefert', 'Falsch geliefert – Kunde anrufen')}
       ${!nurErgebnis && letzterWert ? radio(`zurueck:${letzterWert}`, `„${letzter.label}“ zurücknehmen (war ein Versehen)`) : ''}
       ${!nurErgebnis && hatSchritte ? radio('zurueckAufOffen', 'Alles zurück auf „noch zu bestellen“ (z. B. versehentlich „bestellt“ geklickt)') : ''}
     </fieldset>
@@ -377,12 +395,16 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     const daten = new FormData(form);
     const wert = String(daten.get('schritt') || '');
     const notiz = String(daten.get('notiz') || '').trim() || null;
-    if (wert === 'notiz' && !notiz) { toast('Bitte die Notiz eintragen', 'warn'); form.querySelector('textarea').focus(); return; }
+    if (['notiz', 'falsch_geliefert'].includes(wert) && !notiz) { toast(wert === 'notiz' ? 'Bitte die Notiz eintragen' : 'Bitte eintragen, was falsch geliefert wurde', 'warn'); form.querySelector('#zlNotiz').focus(); return; }
     // Die angekreuzten Farben stehen in der Notiz; ohne Farbe muss der Freitext sie nennen.
     const nvMuster = wert === 'muster_nicht_verfuegbar' ? daten.getAll('nvMuster').map(String) : null;
     if (nvMuster && !nvMuster.length && !notiz) { toast('Bitte die betroffenen Farben ankreuzen oder in der Notiz nennen', 'warn'); form.querySelector('textarea').focus(); return; }
     const knopf = form.querySelector('[type=submit]');
     knopf.disabled = true;
+    if (wert === 'falsch_geliefert') {
+      if (await meldeFalschlieferung(orderId, notiz)) $('#dialogRoot').innerHTML = ''; else knopf.disabled = false;
+      return;
+    }
     if (wert === 'zurueckAufOffen' || wert.startsWith('herkunft:')) {
       let fertig;
       if (wert === 'zurueckAufOffen') {

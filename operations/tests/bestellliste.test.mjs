@@ -224,3 +224,11 @@ test('fehlende Kennungen bleiben in Bestellliste und Kundenfortschritt offen, au
     assert.equal(kunde.offene, 1);
   }
 });
+
+test('Von Hand gemeldete Falschlieferung steht an der Bestellzeile, bis der Rueckruf erledigt ist', () => {
+  const id = modell.auftraege.find(a => a.name === '#T1').id;
+  const zeile = eintrag => bestellliste(modell, { rueckrufeAlle: { [id]: eintrag } }).find(z => z.orderId === id);
+  assert.equal(zeile({ quelle: 'manuell', thema: 'Falsch geliefert: 1 m statt 6 m', status: 'angerufen' }).rueckrufThema, 'Falsch geliefert: 1 m statt 6 m');
+  assert.equal(zeile({ quelle: 'manuell', thema: 'Falsch geliefert: 1 m statt 6 m', status: 'erledigt' }).rueckrufThema, null);
+  assert.equal(zeile({ status: 'offen' }).rueckrufThema, null, 'Rueckruf aus dem Beratungswunsch traegt keine rote Marke');
+});

@@ -3072,14 +3072,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      */
     async kundenRueckrufSetzen(payload = {}, benutzer = null) {
       const actor = benutzer?.name || benutzer?.kuerzel || await currentUser() || 'Unbekannt';
-      const { orderId, status, notiz, wiedervorlage } = payload || {};
+      const { orderId, status, notiz, wiedervorlage, thema } = payload || {};
       if (!orderId) throw new ApiError(400, 'orderId ist Pflicht');
       if (!RUECKRUF_STATUS.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${RUECKRUF_STATUS.join(', ')} sein`] });
       const dir = privatDirPath || privatDir();
       const file = rueckrufePfad(dir);
       let eintrag;
       try {
-        eintrag = setzeRueckrufStatus(file, { orderId, status, actor, notiz, wiedervorlage, jetzt: now() });
+        eintrag = setzeRueckrufStatus(file, { orderId, status, actor, notiz, wiedervorlage, thema, jetzt: now() });
       } catch (e) {
         if (e instanceof RueckrufFehler) throw new ApiError(400, e.message);
         throw e;

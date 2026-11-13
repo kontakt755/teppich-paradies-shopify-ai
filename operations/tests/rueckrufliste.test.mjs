@@ -4,7 +4,11 @@
 // Namen und Nummern erfunden.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { istRueckrufKandidat, rueckrufZeile, rueckrufliste } from '../lib/rueckrufliste.mjs';
+import { setzeStatus, leseAlle } from '../lib/rueckrufe.mjs';
 
 const auftrag = (id, checks, extra = {}) => ({
   id, name: '#' + id, datum: `2026-10-1${id}T09:00:00Z`, checks: Object.assign({ beratung: '–', masspruefung: 'ok', verlegung: '–' }, checks),
@@ -30,4 +34,15 @@ test('Liste: aelteste zuerst, Testbestellungen mit Kennzeichen, ohne Wunsch nich
   const l = rueckrufliste({ auftraege: [auftrag(3, { verlegung: 'Angefragt' }), auftrag(1, { beratung: 'Ja' }), auftrag(5, {})],
     testauftraege: [auftrag(2, { verlegung: 'Angefragt' }, { testbestellung: true })] });
   assert.deepEqual(l.map(z => [z.orderId, z.testbestellung]), [[1, false], [2, true], [3, false]]);
+});
+
+test('Von Hand gemeldet („Falsch geliefert“): in der Liste auch ohne Wunsch an der Kasse, Grund bleibt beim Abhaken', () => {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tp-rueckruf-')), 'rueckrufe.json');
+  const grund = 'Falsch geliefert: Unterlage 1 m statt 6 m';
+  assert.equal(setzeStatus(file, { orderId: 5, status: 'offen', actor: 'Ben', thema: grund }).quelle, 'manuell');
+  setzeStatus(file, { orderId: 5, status: 'angerufen', actor: 'Ben', notiz: 'Kunde hat 1 m bekommen' });
+  // Ein Eintrag ohne Grund (alter Stand, Tippfehler in der ID) holt keine Bestellung in die Liste.
+  setzeStatus(file, { orderId: 6, status: 'offen', actor: 'Ben' });
+  const l = rueckrufliste({ auftraege: [auftrag(5, {}), auftrag(6, {}), auftrag(1, { beratung: 'Ja' })] }, leseAlle(file));
+  assert.deepEqual(l.map(z => [z.orderId, z.thema]), [[1, 'Beratung gewünscht'], [5, grund]]);
 });
