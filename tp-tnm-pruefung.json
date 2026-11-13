@@ -1,7 +1,7 @@
 {
   "format": "tp-tnm-endpreis-v1",
   "ok": true,
-  "erstellt": "2026-11-12T12:53:42.002Z",
+  "erstellt": "2026-11-13T12:23:25.029Z",
   "theme": "live",
   "produkte": 429,
   "varianten": 4588,
@@ -7121,56 +7121,56 @@
     },
     {
       "id": "gid://shopify/Product/16243234144590",
-      "updatedAt": "2026-11-12T11:28:21Z",
+      "updatedAt": "2026-11-12T22:17:31Z",
       "variantIds": [
         "61598319575374"
       ]
     },
     {
       "id": "gid://shopify/Product/16243234570574",
-      "updatedAt": "2026-11-12T11:28:26Z",
+      "updatedAt": "2026-11-12T22:43:17Z",
       "variantIds": [
         "61598325244238"
       ]
     },
     {
       "id": "gid://shopify/Product/16251293729102",
-      "updatedAt": "2026-11-12T11:28:20Z",
+      "updatedAt": "2026-11-12T22:35:30Z",
       "variantIds": [
         "61640745091406"
       ]
     },
     {
       "id": "gid://shopify/Product/16251294581070",
-      "updatedAt": "2026-11-12T11:30:11Z",
+      "updatedAt": "2026-11-12T22:35:31Z",
       "variantIds": [
         "61640752267598"
       ]
     },
     {
       "id": "gid://shopify/Product/16251294777678",
-      "updatedAt": "2026-11-12T11:28:21Z",
+      "updatedAt": "2026-11-12T22:35:33Z",
       "variantIds": [
         "61640754299214"
       ]
     },
     {
       "id": "gid://shopify/Product/16251294974286",
-      "updatedAt": "2026-11-12T11:28:20Z",
+      "updatedAt": "2026-11-12T22:35:36Z",
       "variantIds": [
         "61640756068686"
       ]
     },
     {
       "id": "gid://shopify/Product/16251295269198",
-      "updatedAt": "2026-11-12T11:28:21Z",
+      "updatedAt": "2026-11-12T22:35:38Z",
       "variantIds": [
         "61640759378254"
       ]
     },
     {
       "id": "gid://shopify/Product/16251315126606",
-      "updatedAt": "2026-11-12T11:28:26Z",
+      "updatedAt": "2026-11-12T22:43:18Z",
       "variantIds": [
         "61640907587918"
       ]
@@ -7178,8 +7178,8 @@
   ],
   "kanalFreigabe": false,
   "hinweis": "Das Manifest veroeffentlicht keine Produkte. Freigabe erst nach verarbeiteter Endpreisquelle.",
-  "katalogHash": "390700def2d7dd14cad46fcac306d9be63771bef023b525a8b42a9219699c3b0",
+  "katalogHash": "f35930b04a74bd19578409570f7f50ce1401d2c6a3a382979ec5f4496159eacd",
   "entnahmen": [],
-  "vorherGoogle": 4580,
-  "vorherMeta": 4580
+  "vorherGoogle": 4588,
+  "vorherMeta": 4588
 }
