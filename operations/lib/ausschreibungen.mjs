@@ -1,8 +1,8 @@
 /**
  * Ausschreibungen Bodenbelag: reine Funktionen fuer operations/scripts/ausschreibungen-pruefen.mjs.
  * Quellen ohne Konto: TED-Suche (EU-weit, oberhalb der Schwellenwerte), die Tagesexporte von
- * oeffentlichevergabe.de (OCDS, auch unterhalb der Schwelle) und die RSS-Feeds von service.bund.de
- * und der Vergabeplattform Berlin.
+ * oeffentlichevergabe.de (OCDS, auch unterhalb der Schwelle), die RSS-Feeds von service.bund.de
+ * und der Vergabeplattform Berlin und die oeffentliche CPV-Liste von dtvp.de.
  * Nationale Bekanntmachungen (z. B. vom Vergabemarktplatz Brandenburg) tragen dort nur
  * die grobe Region DE3/DE4, die PLZ im Ortsfeld ("15745 Wildau") und keine Frist.
  */
@@ -140,6 +140,35 @@ export function ausRss(xml, quelle) {
     });
   }
   return treffer;
+}
+
+/**
+ * shortcut: dtvp.de nennt in der Liste keinen Ort (Details erst nach Anmeldung) - Berlin/Brandenburg nur am
+ * Namen in Titel oder Vergabestelle. Vergabestellen ohne Ortsnamen fallen durch; genauer erst mit der
+ * Umkreissuche von DTVP, die ein Konto oder die Sitzung eines Browsers braucht.
+ * Strassennamen ("Berliner Str. 5" in Duisburg) zaehlen nicht als Ort.
+ */
+const DTVP_REGION = /\b(berlin|brandenburg|potsdam|oranienburg|oberhavel|hennigsdorf|velten|barnim|bernau|eberswalde|havelland|falkensee|nauen|neuruppin|strausberg|gesobau|degewo|howoge)(?!er\s+(str|platz|allee|ring|tor|weg|damm|chaussee))/i;
+const isoTag = s => String(s || '').match(/(\d\d)\.(\d\d)\.(\d{4})/)?.slice(1).reverse().join('-') || null;
+
+/**
+ * Oeffentliche Liste von dtvp.de je CPV-Code (HTML-Tabelle, neueste zuerst) -> offene Ausschreibungen
+ * ab `abTag` in Berlin/Brandenburg. `fertig`: die Seite reicht bis vor `abTag` oder ist leer - nicht weiterblaettern.
+ */
+export function ausDtvp(html, abTag) {
+  const treffer = [];
+  let fertig = true;
+  for (const roh of String(html || '').split(/<tr[\s>]/).slice(1)) {
+    const [art, pid] = roh.match(/\/(public|secured)\/company\/projectForwarding\.do[^"']*?\bpid=(\d+)/)?.slice(1) || [];
+    const [seit, frist, titel, typ, auftraggeber] = [...roh.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(m => klartext(m[1]));
+    if (!pid || !auftraggeber) continue;
+    fertig = isoTag(seit) < abTag;
+    // "Vergebener Auftrag" ist vergeben, "Beabsichtigte Ausschreibung" noch nicht ausgeschrieben - kein To-do.
+    if (fertig || /Vergebener|Beabsichtigte/.test(typ) || !DTVP_REGION.test(`${titel} ${auftraggeber}`)) continue;
+    const link = `https://www.dtvp.de/Center/${art}/company/projectForwarding.do?pid=${pid}`;
+    treffer.push({ quelle: 'dtvp.de', id: link, titel, auftraggeber, ort: '', frist: isoTag(frist), link, verfahren: typ, wert: null, umfang: '' });
+  }
+  return { treffer, fertig };
 }
 
 /**

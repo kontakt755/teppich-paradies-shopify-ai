@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tedAbfrage, ausTed, ausOcds, ausRss, imUmkreis, bereinigen, neuSeit } from '../lib/ausschreibungen.mjs';
+import { tedAbfrage, ausTed, ausOcds, ausRss, ausDtvp, imUmkreis, bereinigen, neuSeit } from '../lib/ausschreibungen.mjs';
 
 // Nur erfundene Daten.
 const release = (cpv, region, titel = 'Bodenbelag Kita') => ({
@@ -115,4 +115,45 @@ test('RSS bund.de und Berlin: Suchwort im Titel, PLZ im Umkreis, Frist und Verfa
   const [e] = ausRss(`<rss><channel><item><title>Maler- und Bodenlegerarbeiten</title><description><![CDATA[Ausführungsort: 13086, Berlin<br>
     Eröffnungstermin: 14.12.2026<br> Online seit: 12.11.2026 ]]></description><link>https://berlin.example/x</link></item></channel></rss>`, 'berlin.de');
   assert.deepEqual([e.ort, e.frist], ['13086 Berlin', '2026-12-14']);
+});
+
+test('dtvp.de: offene Ausschreibungen mit Berlin/Brandenburg im Namen, Frist, Link ohne Sitzungskennung', () => {
+  // Aufbau wie die Antwort der oeffentlichen CPV-Liste vom 13.11.2026 (gekuerzt), Inhalte erfunden.
+  const zeile = (seit, frist, titel, typ, stelle, pid, art = 'secured') => `<tr>
+    <td style="width: 120px; text-align: center;"><abbr title='${seit} um 13:33 Uhr'>
+      ${seit} </abbr></td>
+    <td style="width: 140px; text-align: center;">${frist ? `<abbr title='${frist} um 12:00 Uhr'> ${frist} </abbr>` : '<abbr title="Die Frist ist bei diesem Verfahren nicht vorhanden">nv</abbr>'}</td>
+    <td class="word-break">
+      ${titel}
+    </td>
+    <td style="width: 120px;">VOB/A<br />${typ}</td>
+    <td style="min-width:200px;">${stelle}</td>
+    <td style="width: 80px;text-align:center;"><a class="noTextDecorationLink" href="https://www.dtvp.de/Center/${art}/company/projectForwarding.do;jsessionid=abc.node1?pid=${pid}" target="_blank"><img alt="Projektraum"></a></td>
+  </tr>`;
+  const seite = (...zeilen) => `<table><thead><tr><th>Ver&ouml;ffentlicht</th><th>Kurzbezeichnung</th></tr></thead><tbody>${zeilen.join('')}</tbody></table>
+    <table><tr><td>Auftragsgegenstand</td><td>Anzahl Bekanntmachungen</td></tr></table>`;
+  const html = seite(
+    zeile('12.11.2026', '26.11.2026', 'Rahmenvereinbarung Gewerk 08 Bodenbelags- und Parkettarbeiten &quot;Nord&quot;', 'Ausschreibung', 'Bezirksamt Musterbezirk von Berlin', 101),
+    zeile('12.11.2026', null, 'Bodenbelagsarbeiten Rathaus', 'Vergebener Auftrag', 'Stadt Potsdam', 102),
+    zeile('11.11.2026', null, 'Bodenbelagsarbeiten Kita', 'Beabsichtigte Ausschreibung', 'Stadt Bernau bei Berlin', 103),
+    zeile('11.11.2026', '01.12.2026', 'Bodenbelagsarbeiten Schule, Berliner Str. 5', 'Ausschreibung', 'Stadt Musterstadt am Rhein', 104),
+    zeile('10.11.2026', '02.12.2026', 'Hochschule, Maler- und Bodenbelagsarbeiten', 'Ausschreibung', 'Brandenburgischer Landesbetrieb für Bauen', 105, 'public'),
+    zeile('10.11.2026', '03.12.2026', 'Los 11 Bodenbelagsarbeiten', 'Ausschreibung', 'Neubrandenburger Wohnungsgesellschaft mbH', 106),
+  );
+  const { treffer, fertig } = ausDtvp(html, '2026-11-06');
+  assert.equal(fertig, false, 'alles neuer als der Stichtag: weiterblaettern');
+  assert.deepEqual(treffer.map(t => t.id.split('pid=')[1]), ['101', '105']);
+  const [t, b] = treffer;
+  assert.deepEqual([t.quelle, t.titel, t.auftraggeber, t.frist, t.verfahren, t.ort],
+    ['dtvp.de', 'Rahmenvereinbarung Gewerk 08 Bodenbelags- und Parkettarbeiten "Nord"', 'Bezirksamt Musterbezirk von Berlin', '2026-11-26', 'VOB/A Ausschreibung', '']);
+  assert.equal(t.link, 'https://www.dtvp.de/Center/secured/company/projectForwarding.do?pid=101');
+  assert.equal(b.link, 'https://www.dtvp.de/Center/public/company/projectForwarding.do?pid=105');
+  // Stichtag mitten in der Seite: aeltere Zeilen fallen weg, danach ist Schluss. Leere Seite ebenso.
+  const alt = ausDtvp(html, '2026-11-11');
+  assert.deepEqual([alt.fertig, alt.treffer.length], [true, 1]);
+  assert.deepEqual(ausDtvp('<html>Wartung</html>', '2026-11-06'), { treffer: [], fertig: true });
+  // Doppel aus dem Export des Bundes (ohne Frist): faellt zusammen, die Frist kommt von dtvp.de.
+  const [e, e2] = bereinigen([{ quelle: 'oeffentlichevergabe.de', id: 'ocds-1', titel: t.titel, auftraggeber: t.auftraggeber, ort: '13437 Berlin', frist: null }, t], '2026-11-13');
+  assert.equal(e2, undefined);
+  assert.deepEqual([e.id, e.ort, e.frist], ['ocds-1', '13437 Berlin', '2026-11-26']);
 });
