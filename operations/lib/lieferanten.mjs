@@ -173,6 +173,8 @@ function pruefeLieferant(id, roh, fehler) {
       nachBezeichnung: w.nachBezeichnung === true,
       // Der Lieferant kettelt auch selbst: wer kettelt, wird dann je Teppich entschieden.
       kettelnMoeglich: w.kettelnMoeglich === true,
+      // Grosshaendler mit oft utopischer UVP: die Warenmail bittet um Fakturasperre, bis der Aussendienst unsere Preise hinterlegt hat.
+      fakturasperre: w.fakturasperre === true,
     },
     muster: {
       weg: p.auswahl(m.weg, 'muster.weg', BESTELLWEGE),
@@ -597,6 +599,12 @@ function fertigeMail({ st, art, an, betreff, zeilen, aufgenommen, fehlt, extra =
   };
 }
 
+// Inhaber 2026-11-13: beim Grosshandel steht sonst oft die UVP auf der Rechnung, solange der Aussendienst keine Preise hinterlegt hat.
+const FAKTURASPERRE_TEXT = Object.freeze({
+  sie: 'Bitte setzen Sie für diese Bestellung eine Fakturasperre und leiten Sie sie an Ihren Außendienstmitarbeiter weiter, damit er unsere Preise hinterlegt, bevor die Rechnung erstellt wird.',
+  du: 'Bitte setz für diese Bestellung eine Fakturasperre und leite sie an euren Außendienstmitarbeiter weiter, damit er unsere Preise hinterlegt, bevor die Rechnung erstellt wird.',
+});
+
 const ZIEL_JE_AUFTRAG = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE]);
 
 /** Kettel-/Einfassungszeile aus der Kundenbestellung ("Einfassung: Gekettelt, umlaufend ..."). */
@@ -825,6 +833,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
   } else {
     zeilen.push('Lieferung bitte an unsere bekannte Geschäftsadresse.');
   }
+  if (st.ware.fakturasperre) zeilen.push('', FAKTURASPERRE_TEXT[du ? 'du' : 'sie']);
   zeilen.push('', bestaetigen, '', gruss);
   const betreff = ['Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, anKettler ? 'Lieferung an Kettelservice' : null, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
   // Vorschlag fuer den Dialog: welche offenen Positionen sich fuer den Kettler anbieten.
@@ -851,6 +860,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       kettelwegGewaehlt,
       kettelnBeimLieferanten: !anKettler && aufgenommen.some(p => kettelwege[p.lineItemId] === 'lieferant' && wirdGekettelt(p.ausfuehrung)),
       kettelPuffer,
+      fakturasperre: st.ware.fakturasperre,
       // Zum Kettler oder auf die Baustelle ist der Weg schon entschieden.
       bezugsweg: anKettler || gruppe.route === ROUTE.SUPPLIER_TO_SITE ? { nah: [], weit: [] } : bezugswegHinweis(offen, adressen),
       bereitsBestellt: alle.length - offen.length - ausLager.length,

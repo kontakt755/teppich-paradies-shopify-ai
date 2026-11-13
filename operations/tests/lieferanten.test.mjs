@@ -733,6 +733,19 @@ test('Ware: duzen in den Stammdaten - die ganze Mail ohne "Sie"', () => {
   assert.match(text, /Viele Grüße/);
 });
 
+test('Ware: ware.fakturasperre bittet in der Mail um Fakturasperre und Weiterleitung an den Aussendienst', () => {
+  const ohne = bestellmail({ modell: massteppichModell(), lieferant: 'A', stammdaten: pruefeStammdaten({ lieferanten: { A: {} } }), jetzt: JETZT }).mails[0];
+  assert.equal(/Fakturasperre/.test(ohne.text), false);
+  assert.equal(ohne.fakturasperre, false);
+  const sie = bestellmail({ modell: massteppichModell(), lieferant: 'A', stammdaten: pruefeStammdaten({ lieferanten: { A: { ware: { fakturasperre: true } } } }), jetzt: JETZT }).mails[0];
+  assert.equal(sie.fakturasperre, true);
+  assert.match(sie.text, /Bitte setzen Sie für diese Bestellung eine Fakturasperre und leiten Sie sie an Ihren Außendienstmitarbeiter weiter/);
+  assert.ok(sie.text.indexOf('Fakturasperre') < sie.text.indexOf('Bitte bestätigen Sie'), 'vor der Bitte um Bestaetigung');
+  const du = bestellmail({ modell: massteppichModell(), lieferant: 'A', stammdaten: pruefeStammdaten({ lieferanten: { A: { ware: { fakturasperre: true }, mail: { duzen: true } } } }), jetzt: JETZT }).mails[0];
+  assert.match(du.text, /Bitte setz für diese Bestellung eine Fakturasperre/);
+  assert.equal(/\bSie\b/.test(du.text), false);
+});
+
 // ------------------------------------------- Ware ueber unseren Kettelservice (2026-10-19)
 
 const ROH = JSON.parse(fs.readFileSync(new URL('../lib/lieferanten.beispiel.json', import.meta.url), 'utf8'));

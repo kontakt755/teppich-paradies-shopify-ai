@@ -469,6 +469,14 @@ const euroGanz = x => `${Math.round(x).toLocaleString('de-DE')} €`;
  * Warnung vor dem Bestellen (bestellwarnung.mjs): Schaetzung des Servers, nur ein Hinweis. Normalfall:
  * nichts. Fehlt nur der Einkaufspreis: eine leise Zeile. Es wird nichts gesperrt.
  */
+/** Grosshandel (Inhaber 2026-11-13): Rechnung erst, wenn der Aussendienst unsere Preise hinterlegt hat. */
+function fakturasperreHinweis(m) {
+  if (!m.fakturasperre) return '';
+  const weg = m.weg === 'mail' || !m.weg ? 'Die Bitte steht schon in der Mail.' : 'Bitte bei der Bestellung ausdrücklich sagen.';
+  return `<div class="notice warn lf-fakturasperre"><strong>Fakturasperre anfordern</strong>
+    <span class="small">Großhandel: Ohne hinterlegte Preise des Außendienstes kommt sonst die UVP auf die Rechnung. Um Fakturasperre bitten und an den Außendienstmitarbeiter weiterleiten lassen. ${weg}</span></div>`;
+}
+
 function kostenWarnung(m) {
   const liste = m.kostenWarnungen || [];
   return liste.map(w => {
@@ -559,7 +567,7 @@ function mailAbschnitt(m, i, mehrere) {
         <div class="field"><label for="lfNr${i}">Bestellnummer des Lieferanten (aus der Auftragsbestätigung)</label><input id="lfNr${i}" maxlength="200" placeholder="z. B. 2026-4711"><span class="small muted">Damit die Auftragsbestätigung automatisch zugeordnet wird. Optional.</span></div>
         <div class="lf-frage-knoepfe"><button type="button" class="btn btn-primary" data-lf-markieren="${i}">${plural(n, wort, wort)} als bestellt markieren</button><button type="button" class="btn btn-ghost" data-lf-nicht="${i}">Noch nicht</button></div>
       </div>`;
-  return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${kostenWarnung(m)}${bezugswegHinweis(m)}
+  return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${kostenWarnung(m)}${fakturasperreHinweis(m)}${bezugswegHinweis(m)}
     ${uebernahmeBlock(m.positionen).replaceAll('data-einkauf-uebernahme=', 'data-lf-uebernahme=')}
     <dl class="lf-mailkopf"><dt>An</dt><dd>${an}</dd><dt>Betreff</dt><dd>${esc(m.betreff)}</dd></dl>
     <pre class="lf-mailtext" tabindex="0">${esc(m.text)}</pre>
