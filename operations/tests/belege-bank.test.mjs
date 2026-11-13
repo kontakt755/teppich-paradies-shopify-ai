@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { auszugLesen, bankText, csvLesen, camtLesen, artErkennen, datumLesen, bankBetrag, zuordnen, jeEmpfaenger, listeCsv, namePasst, spaltenErkennen } from '../lib/belege-bank.mjs';
+import { auszugLesen, bankText, csvLesen, camtLesen, kontoauszugPdfLesen, artErkennen, datumLesen, bankBetrag, zuordnen, jeEmpfaenger, listeCsv, namePasst, spaltenErkennen } from '../lib/belege-bank.mjs';
 import { bankLauf } from '../scripts/belege-bank.mjs';
 
 // Alle Daten erfunden.
@@ -88,6 +88,67 @@ test('Datei am Inhalt erkannt, ZIP wird abgelehnt statt geraten', () => {
   assert.equal(auszugLesen(Buffer.from(CAMT)).format, 'camt');
   assert.equal(auszugLesen(Buffer.from(CSV_A)).format, 'csv');
   assert.throws(() => auszugLesen(Buffer.from('PK\x03\x04')), /entpacken/);
+});
+
+// Layout-Text wie aus belege_pdf.py: Name, Valuta, Betrag (Minus hinten = Last), darunter der Zweck.
+const AUSZUG_PDF = [
+  'Kontoauszug vom 30.10.2026                                    USt-IdNr.: DE 000',
+  'Muster GmbH',
+  '                                                    zu Ihren Lasten        zu Ihren Gunsten',
+  '  Alter Kontostand vom 30.09.2026                                                  1.000,00',
+  '  Angaben zu den Umsätzen                              Valuta',
+  '  Buchungsdatum:  01.10.2026',
+  '  Muster Telefon GmbH                                  01.10.             29,99-',
+  '  Rechnung RE-55 Abo',
+  '  Mandatsref: M-1',
+  '  Gläubiger-ID:',
+  '  DE98ZZZ00000000001',
+  '  SEPA-BASISLASTSCHRIFT wiederholend',
+  '  Muster Farben KG                                     01.10.          1.190,00-',
+  '  und Lacke',
+  '  COBADEFFXXX',
+  '  DE00123456780000000002',
+  '  Kd 1 / Rechnungsnr.: 77',
+  '  Folgeseite vorhanden',
+  'Kontoauszug vom 30.10.2026                                    USt-IdNr.: DE 000',
+  'Muster GmbH',
+  '  Angaben zu den Umsätzen                              Valuta',
+  '  11 / 30.09.2026',
+  '  Buchungsdatum:  02.10.2026',
+  '  Frau Beispiel                                        02.10.                             500,00',
+  '  Kunde',
+  '  Hinweis der Bank                                     02.10.                               0,00',
+  '  ab 2027 neues Entgelt',
+  '  Kontoführung                                         31.10.             10,00-',
+  '  Kontoführung          10,00- EUR',
+  '  Neuer Kontostand vom 30.10.2026                                                    270,01',
+].join('\n');
+
+test('Kontoauszug-PDF: Buchungen ueber den Seitenwechsel, Probe gegen den Kontostand', () => {
+  const { format, buchungen, nichtLesbar } = kontoauszugPdfLesen(AUSZUG_PDF);
+  assert.equal(format, 'pdf-auszug');
+  assert.equal(nichtLesbar, 0);
+  assert.deepEqual(buchungen.map(b => [b.datum, b.betrag, b.art]), [
+    ['2026-10-01', -29.99, 'lastschrift'], ['2026-10-01', -1190, 'ueberweisung'], ['2026-10-02', 500, 'unklar'], ['2026-10-02', -10, 'bank'],
+  ]);
+  assert.equal(buchungen[0].iban, '', 'die Glaeubiger-ID ist kein Gegenkonto');
+  assert.equal(buchungen[1].iban, 'DE00123456780000000002');
+  assert.equal(buchungen[1].name, 'Muster Farben KG und Lacke', 'langer Name laeuft in die zweite Zeile');
+  assert.equal(buchungen[1].zweck, 'Kd 1 / Rechnungsnr.: 77 11 / 30.09.2026', 'Seitenkopf gehoert nicht zum Zweck');
+  // Die im Auszug umbrochene Rechnungsnummer wird trotzdem gefunden.
+  assert.equal(zuordnen(buchungen, [BELEG({ rechnungsnummer: '7711', brutto: 1 })]).buchungen[1].beleg.guete, 'nummer');
+  assert.throws(() => kontoauszugPdfLesen(AUSZUG_PDF.replace('270,01', '270,02')), /Kontostand/);
+  assert.throws(() => kontoauszugPdfLesen('nur Text'), /Kontostand/);
+});
+
+test('Lauf: PDF geht ueber den PDF-Helfer, nicht ueber den CSV-Leser', () => {
+  const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'belege-bank-'));
+  const datei = path.join(privat, 'auszug.pdf');
+  fs.writeFileSync(datei, '%PDF-1.7 erfunden');
+  const e = bankLauf({ datei, privat, pdf: () => ({ text: AUSZUG_PDF }) });
+  assert.equal(e.format, 'pdf-auszug');
+  assert.deepEqual([e.buchungen, e.ausgaben, e.arten], [4, 3, { lastschrift: 1, ueberweisung: 1, bank: 1 }]);
+  fs.rmSync(privat, { recursive: true, force: true });
 });
 
 const BELEG = (x) => ({ rolle: 'rechnung', anbieter: 'Muster Telefon', anbieterSchluessel: 'muster-telefon.example', brutto: null, rechnungsnummer: null, datei: 'd', tag: '2026-10-01', ...x });

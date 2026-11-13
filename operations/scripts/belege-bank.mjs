@@ -3,7 +3,10 @@
  * Kontoauszug je Empfaenger auflisten (Inhaber 03.11.2026): Lastschrift oder Ueberweisung, Summe,
  * grobe Zuordnung zu den archivierten Belegen.
  *
- *   npm run -s belege:bank -- <datei.csv|datei.xml>
+ *   npm run -s belege:bank -- <datei.csv|datei.xml|kontoauszug.pdf>
+ *
+ * PDF heisst hier der monatliche Kontoauszug (mit altem und neuem Kontostand), nicht die
+ * Umsatzuebersicht: deren Verwendungszweck ist gekuerzt.
  *
  * Liest die Datei und die Manifeste aus belege-archiv; schreibt nur nach
  * $TP_PRIVAT_DIR/belege-archiv/bank/. Die Ausgabe nennt nur Zahlen, Namen und IBAN stehen nur in
@@ -13,8 +16,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { auszugLesen, zuordnen, jeEmpfaenger, listeCsv } from '../lib/belege-bank.mjs';
-import { belegeOrdner, monatDavor } from '../lib/belege.mjs';
+import { auszugLesen, kontoauszugPdfLesen, zuordnen, jeEmpfaenger, listeCsv } from '../lib/belege-bank.mjs';
+import { belegeOrdner, monatDavor, istPdf } from '../lib/belege.mjs';
+import { pdfAnalyse } from './belege-monat.mjs';
 
 /** Belege der Buchungsmonate und des Monats davor: Rechnungen werden oft spaeter bezahlt. */
 export function belegeZuMonaten(monate, privat) {
@@ -34,8 +38,9 @@ export function belegeZuMonaten(monate, privat) {
 }
 
 /** @returns zahlen fuer die Ausgabe (keine Namen, keine IBAN) */
-export function bankLauf({ datei, privat, jetzt = new Date() }) {
-  const auszug = auszugLesen(fs.readFileSync(datei));
+export function bankLauf({ datei, privat, jetzt = new Date(), pdf = pdfAnalyse }) {
+  const inhalt = fs.readFileSync(datei);
+  const auszug = istPdf(inhalt) ? kontoauszugPdfLesen(pdf(inhalt).text) : auszugLesen(inhalt);
   const monate = [...new Set(auszug.buchungen.map(b => b.datum.slice(0, 7)))].sort();
   const { belege, gelesen } = belegeZuMonaten(monate, privat);
   const { buchungen, ohneBuchung } = zuordnen(auszug.buchungen, belege);
@@ -60,7 +65,7 @@ export function bankLauf({ datei, privat, jetzt = new Date() }) {
 
 function main(args) {
   const datei = args.find(a => !a.startsWith('--'));
-  if (!datei) throw new Error('Aufruf: belege:bank -- <datei.csv|datei.xml>');
+  if (!datei) throw new Error('Aufruf: belege:bank -- <datei.csv|datei.xml|kontoauszug.pdf>');
   const e = bankLauf({ datei, privat: process.env.TP_PRIVAT_DIR || undefined });
   console.log(JSON.stringify(e, null, 1));
   if (e.nichtLesbar) process.exitCode = 1;

@@ -107,7 +107,7 @@ export function artErkennen({ text = '', mandat = '', glaeubiger = '' }) {
   if (/lastschrift|basis-?ls|sepa-?ls|direct debit/.test(t)) return 'lastschrift';
   if (/kartenzahlung|girocard|debitkarte|kreditkarte|\bvisa\b|mastercard/.test(t)) return 'karte';
   if (/(ü|ue)berweisung|dauerauftrag|echtzeit|credit transfer|gutschrift/.test(t)) return 'ueberweisung';
-  if (/entgelt|geb(ü|ue)hr|abschluss|zinsen/.test(t)) return 'bank';
+  if (/entgelt|geb(ü|ue)hr|abschluss|zinsen|kontof(ü|ue)hrung/.test(t)) return 'bank';
   return 'unklar';
 }
 
@@ -151,6 +151,58 @@ export function csvLesen(text) {
     });
   }
   return { format: 'csv', buchungen, nichtLesbar };
+}
+
+const AUSZUG_BETRAG = String.raw`(\d{1,3}(?:\.\d{3})*,\d{2}-?)\s*$`;
+const AUSZUG_BUCHUNG = new RegExp(String.raw`^\s*(\S.*?)\s{2,}\d{2}\.\d{2}\.\s{2,}${AUSZUG_BETRAG}`);
+const AUSZUG_STAND = new RegExp(String.raw`^\s*(Alter|Neuer) Kontostand vom \S+\s+${AUSZUG_BETRAG}`);
+const BIC_ZEILE = /^[A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$/;
+const IBAN_ZEILE = /^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/;
+
+/**
+ * Monatlicher Kontoauszug als PDF (Layout-Text aus belege_pdf.py) zu Buchungen. Anders als die
+ * Umsatzuebersicht traegt er den vollen Verwendungszweck. Probe: alter Kontostand plus alle
+ * Buchungen muss den neuen Kontostand ergeben, sonst gilt die Datei als nicht lesbar.
+ */
+export function kontoauszugPdfLesen(text) {
+  const stand = {};
+  const roh = [];
+  let datum = null;
+  let aktuell = null;
+  let imKopf = false;
+  for (const zeile of String(text ?? '').split(/\r?\n/)) {
+    const s = AUSZUG_STAND.exec(zeile);
+    if (s) { stand[s[1]] = betragLesen(s[2]); aktuell = null; continue; }
+    // Seitenkopf (Anschrift, Berater) bis zur Spaltenzeile gehoert zu keiner Buchung.
+    if (/^Kontoauszug vom \d/.test(zeile)) imKopf = true;
+    if (/^\s*Angaben zu den Umsätzen/.test(zeile)) { imKopf = false; continue; }
+    const kurz = zeile.trim();
+    if (imKopf || !kurz || kurz === 'Folgeseite vorhanden') continue;
+    const tag = /^Buchungsdatum:\s*(\S+)/.exec(kurz);
+    if (tag) { datum = datumLesen(tag[1]); continue; }
+    const m = AUSZUG_BUCHUNG.exec(zeile);
+    if (!m) { aktuell?.zeilen.push(kurz); continue; }
+    const betrag = betragLesen(m[2]);
+    // Hinweise der Bank stehen als Zeile mit 0,00 im Auszug: keine Buchung.
+    aktuell = betrag === 0 ? null : { datum, betrag, name: m[1].trim(), zeilen: [] };
+    if (aktuell) roh.push(aktuell);
+  }
+  const cent = n => Math.round(n * 100);
+  const summe = roh.reduce((a, b) => a + cent(b.betrag), 0);
+  if (stand.Alter == null || stand.Neuer == null || roh.some(b => !b.datum) || cent(stand.Alter) + summe !== cent(stand.Neuer)) {
+    throw new Error('Kontoauszug-PDF: Buchungen passen nicht zu altem und neuem Kontostand');
+  }
+  const buchungen = roh.map(({ datum: tag, betrag, name, zeilen }) => {
+    // Das Gegenkonto nennt der Auszug nur bei Ueberweisungen: BIC, dann IBAN, direkt unter dem Namen.
+    // Ein langer Name laeuft vorher in die naechste Zeile.
+    const k = zeilen.findIndex((z, i) => i < 3 && BIC_ZEILE.test(z) && IBAN_ZEILE.test(zeilen[i + 1] || ''));
+    const iban = k >= 0 ? zeilen[k + 1] : '';
+    const voll = [name, ...zeilen.slice(0, Math.max(k, 0))].join(' ');
+    const zweck = zeilen.slice(k >= 0 ? k + 2 : 0).join(' ');
+    const art = iban && betrag < 0 ? 'ueberweisung' : artErkennen({ text: `${voll} ${zweck}` });
+    return { datum: tag, betrag, waehrung: 'EUR', name: voll, iban, zweck, art };
+  });
+  return { format: 'pdf-auszug', buchungen, nichtLesbar: 0 };
 }
 
 const xmlEntity = s => String(s ?? '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
