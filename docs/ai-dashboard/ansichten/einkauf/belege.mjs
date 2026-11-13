@@ -22,6 +22,8 @@ import { lieferantName as lieferantAnzeige } from '../../lib/einkauf-lieferanten
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ART_LABEL, ART_KURZ, STAND_LABEL, SHOPIFY_LABEL, FREEMAIL, adresseVon, belegArbeit as arbeitAus, belegFilter } from '../../lib/lieferbelege.mjs';
+import { preisZeile } from '../../lib/einkauf-ueber-verkauf.mjs';
+import { textDialog } from '../../bausteine/text-dialog.mjs';
 
 export const belege = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -101,12 +103,29 @@ function zeile({ ton = '', titel, kontext, knoepfe }) {
   </li>`;
 }
 
+/** Fertiger Text an den Vertreter - den Entwurf gibt der Server nur dem Inhaber mit. */
+const vertreterKnopf = (a, klasse = ' btn-primary') => (a.entwurf ? `<button type="button" class="btn btn-sm${klasse}" data-bl-vertreter="${esc(a.id)}">Nachricht an Vertreter</button>` : '');
+
+/** Rot an der Auftragskarte unter "Je Auftrag": Einkauf ueber Verkauf, je Position (lib/einkauf-ueber-verkauf.mjs). */
+export function preiswarnungHtml(orderId) {
+  return (belege.daten?.abweichungen || []).filter(a => a.art === 'einkauf_ueber_verkauf' && a.orderId === orderId)
+    .map(a => `<div class="notice crit ab-aktion ab-aktion-zeile"><span><strong>Einkauf über Verkauf:</strong> ${esc(a.titel || a.sku)} · ${esc(preisZeile(a))}</span>
+    <div class="ab-knoepfe">${vertreterKnopf(a, '')}</div></div>`).join('');
+}
+
 function abweichungHtml(a) {
   const b = belegVon(a.belegId);
   const lesend = istNurLesend();
   const wer = esc(lieferantName(a.lieferant) || 'Lieferant');
   const erledigt = lesend ? '' : `<button type="button" class="btn btn-sm" data-bl-erledigt="${esc(a.belegId)}" data-bl-order="${esc(a.orderId)}">Erledigt</button>`;
   const zum = `<a class="btn btn-sm btn-ghost" href="${esc(auftragLink(a.orderId))}">Zum Auftrag</a>`;
+  if (a.art === 'einkauf_ueber_verkauf') {
+    return zeile({
+      ton: 'crit', titel: `Einkauf über Verkauf: ${esc(`${a.orderName}${a.kundenname ? ` ${a.kundenname}` : ''}`)} – ${esc(a.titel || a.sku)}`,
+      kontext: `${wer} · ${esc(preisZeile(a))}. Der Vertreter kann einen Preis für uns hinterlegen; der Preis im Shop bleibt, wie er ist.`,
+      knoepfe: `${vertreterKnopf(a)}${gmailKnopf(b)}${zum}${erledigt}`,
+    });
+  }
   if (a.art === 'ab_pruefen') {
     // Zur Pruefung anbieten, nie selbst bestaetigen: der Knopf oeffnet den AB-Dialog der Position
     // (ansichten/einkauf/lieferantenstand.mjs) mit AB-Nummer und Gmail-Link als Vorschlag.
@@ -429,9 +448,15 @@ function oeffneZuordnen(b, { nur = null } = {}) {
 
 /** Klicks der Ansicht. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function einkaufKlickBelege(ev) {
-  const k = ev.target.closest('[data-bl-erledigt], [data-bl-annehmen], [data-bl-waehlen], [data-bl-ablehnen], [data-bl-keinshop], [data-bl-zuordnen], [data-bl-loesen], [data-bl-wieder], [data-bl-absender]');
+  const k = ev.target.closest('[data-bl-erledigt], [data-bl-annehmen], [data-bl-waehlen], [data-bl-ablehnen], [data-bl-keinshop], [data-bl-zuordnen], [data-bl-loesen], [data-bl-wieder], [data-bl-absender], [data-bl-vertreter]');
   if (!k) return false;
   const ds = k.dataset;
+  if (ds.blVertreter) {
+    // Steht auch auf "Heute" und an der Auftragskarte. Eingespielt ist: die Mail mit dem Beleg weiterleiten.
+    const a = belege.daten?.abweichungen?.find(x => x.id === ds.blVertreter);
+    if (a?.entwurf) textDialog({ titel: `Nachricht an den Vertreter: ${a.orderName}`, ...a.entwurf, nachher: `<p class="small">Am einfachsten: die Mail mit dem Beleg weiterleiten und diesen Text einfügen. ${gmailKnopf(belegVon(a.belegId))}</p>` });
+    return true;
+  }
   if (ds.blAbsender) {
     if (!window.confirm(`Schreiben von ${ds.blAbsender} gehören nicht zu Shop-Bestellungen? Sie stehen dann nicht mehr unter „Zu prüfen“ (außer mit einer Bestellnummer im Betreff).`)) return true;
     aktion(k, { aktion: 'absender_kein_shop', domain: ds.blAbsender }, `${ds.blAbsender}: kein Shop-Lieferant`);

@@ -1,5 +1,6 @@
 import { kalendertage } from './kalendertage.mjs';
 import { UNGEKLAERT } from './einkauf-lieferanten.mjs';
+import { preisZeile } from './einkauf-ueber-verkauf.mjs';
 /**
  * Lieferantenbelege aus dem Firmenpostfach: Auftragsbestaetigung (AB), Lieferschein, Avis,
  * Storno - erkannt, einer Shop-Bestellung zugeordnet und gegen Dashboard und Shopify
@@ -194,6 +195,8 @@ export function kandidatenAus(bestellzeilen = [], statusAlle = {}) {
   return (bestellzeilen || []).filter(z => z?.auftrag && !z.testbestellung && !z.storniert).map(z => {
     const positionen = (z.auftrag.positionen || []).filter(p => p.lineItemId).map(p => ({
       lineItemId: p.lineItemId, lieferant: p.lieferant || null, istMuster: !!p.istMuster, titel: p.titel || null,
+      // Fuer den Preisvergleich mit AB und Rechnung (einkauf-ueber-verkauf.mjs): netto nach Rabatten, ganze Zeile.
+      sku: p.sku || null, nettoGesamt: typeof p.nettoGesamt === 'number' ? p.nettoGesamt : null, mengeBestellt: typeof p.mengeBestellt === 'number' ? p.mengeBestellt : null,
       // Eigenleistung (Kettelservice, Fertigungspauschale): nichts beim Lieferanten zu bestellen.
       eigenleistung: !!p.eigenleistung,
       // menge = in Shopify noch offene Menge, mengeBestellt = bestellte (bestelluebersicht.mjs);
@@ -550,7 +553,15 @@ export function belegTodos(d, { jetzt = new Date(), href = '#/einkauf?tab=belege
   const tage = iso => kalendertage(iso, jetzt);
   const name = id => d.lieferanten?.[id] || (id ? `Lieferant ${id}` : 'Lieferant');
   const fuer = x => `${x.orderName}${x.kundenname ? ` ${x.kundenname}` : ''}`;
-  const todos = a.abweichungen.map(x => (x.art === 'ab_pruefen'
+  const todos = a.abweichungen.map(x => (x.art === 'einkauf_ueber_verkauf'
+    ? {
+      id: `beleg-${x.id}`, art: 'beleg_preis', bereich: 'laden', ton: 'crit', zuerst: true, alterTage: tage(x.datum),
+      titel: `Einkauf über Verkauf: ${fuer(x)} – ${x.titel || x.sku}`,
+      kontext: `${name(x.lieferant)} · ${preisZeile(x)}`,
+      // Den Text gibt der Server nur dem Inhaber mit - sonst fuehrt der Knopf zur Lieferantenpost.
+      knopf: x.entwurf ? { text: 'Nachricht an Vertreter', vertreter: x.id, href } : { text: 'Ansehen', href },
+    }
+    : x.art === 'ab_pruefen'
     ? {
       id: `beleg-${x.id}`, art: 'beleg_ab', bereich: 'laden', ton: 'warn', alterTage: tage(x.datum),
       titel: `Auftragsbestätigung prüfen: ${fuer(x)}`,

@@ -13,7 +13,8 @@
  *
  * Aufbau:
  *   belege   { <mailId>: { id, threadId, datum, von, domain, betreff, auszug, anhaenge, quelle,
- *              art, artGrund, refs, viewUrl, aufgenommenAm, entscheidung, erledigt, quittiert } }
+ *              art, artGrund, refs, viewUrl, aufgenommenAm, entscheidung, erledigt, quittiert, lieferort, preise } }
+ *            preise { positionen: [{ artikel, menge, einheit, netto }], am } - Einkaufspreise aus dem PDF (AB, Rechnung)
  *            quittiert { <orderId>: { am, von } } - erledigt nur fuer diese Bestellung (Sammelbeleg)
  *   absender { <domain>: { art: 'kein_shop'|'lieferant', lieferant?, von, am } }
  *   geprueft { <mailId>: { am, grund } }   Mails ohne Beleg - nicht jeden Lauf neu ansehen
@@ -325,6 +326,52 @@ export function lieferorteSetzen(orte, { privatDir, jetzt = new Date() } = {}) {
     for (const [id, ort] of Object.entries(orte || {})) {
       if (!d.belege[id] || (ort !== null && !LIEFERORTE.includes(ort))) continue;
       d.belege[id].lieferort = ort === null ? null : { ort, am: jetzt.toISOString() };
+      n += 1;
+    }
+    return n;
+  });
+}
+
+// ---------------------------------------------------------------- Einkaufspreise aus AB und Rechnung
+
+/** Wie beim Lieferort: so weit reicht die Postfachsuche des Laufs zurueck (newer_than:10d). */
+export const PREISE_TAGE = 7;
+const PREISE_MAX = 60;
+const ZAHL = String.raw`\d{1,3}(?:\.\d{3})*,\d+`;
+const zahl = s => Number(String(s).replace(/\./g, '').replace(',', '.'));
+// Pos. Material-Nr. [Geb.fakt.] Menge ME = Menge VPME E-Preis Gesamtwert
+const PREISZEILE = new RegExp(String.raw`^\d+ (\d{4}-\d{6}) (?:${ZAHL} )?(\d+(?:,\d+)?) ([A-Z]{2,4}) = ${ZAHL} [A-Z]{2,4} ${ZAHL} (${ZAHL})\*?$`);
+
+/**
+ * Positionen mit Einkaufspreis aus Auftragsbestaetigung oder Rechnung (Format von Lieferant C, an 12
+ * echten Zeilen aus 9 Belegen geprueft). Der Einzelpreis gilt dort je Verpackungseinheit (kg, m²) -
+ * verglichen wird deshalb der Gesamtwert der Zeile gegen die Menge in der Verkaufseinheit.
+ * shortcut: nur dieses eine Beleglayout; andere Lieferanten liefern null, bis ihr Format hier steht.
+ * @returns {null | Array<{artikel: string, menge: number, einheit: string, netto: number}>}  null = anderes Format
+ */
+export function preiseAusText(text) {
+  const zeilen = String(text ?? '').split('\n').map(l => l.replace(/\s+/g, ' ').trim());
+  if (!zeilen.some(l => /^Pos\. Material-Nr\./.test(l))) return null;
+  return zeilen.map(l => PREISZEILE.exec(l)).filter(Boolean).slice(0, PREISE_MAX)
+    .map(m => ({ artikel: m[1], menge: zahl(m[2]), einheit: m[3], netto: zahl(m[4]) }));
+}
+
+/** AB und Rechnungen mit PDF aus den letzten PREISE_TAGE Tagen, deren Preise noch niemand gelesen hat - neueste zuerst. */
+export function preiseOffen({ privatDir, jetzt = new Date() } = {}) {
+  const ab = jetzt.getTime() - PREISE_TAGE * 86400000;
+  return Object.values(leseBelege(lieferbelegePfad(privatDir)).belege)
+    .filter(b => ['ab', 'rechnung'].includes(b.art) && b.preise === undefined && Date.parse(b.datum) >= ab && (b.anhaenge || []).some(a => /\.pdf$/i.test(a)))
+    .sort((a, b) => String(b.datum).localeCompare(String(a.datum)))
+    .map(b => ({ id: b.id, von: b.von }));
+}
+
+/** Gelesene Preise ablegen: { <mailId>: [Positionen] }. Leer = kein lesbares Format, wird nicht erneut geholt. */
+export function preiseSetzen(preise, { privatDir, jetzt = new Date() } = {}) {
+  return mitSperre(lieferbelegePfad(privatDir), (d) => {
+    let n = 0;
+    for (const [id, positionen] of Object.entries(preise || {})) {
+      if (!d.belege[id] || !Array.isArray(positionen)) continue;
+      d.belege[id].preise = positionen.length ? { positionen, am: jetzt.toISOString() } : null;
       n += 1;
     }
     return n;

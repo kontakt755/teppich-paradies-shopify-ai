@@ -403,6 +403,8 @@ function todoZeile(t, erste, unten = '') {
     ? `<button type="button" class="${klasse}" data-entfernt-abhaken="${esc(k.abhaken)}" title="Erst beim Lieferanten stornieren, dann hier mit Notiz abhaken">${esc(k.text)}</button>`
     : k.aufgabe
     ? `<button type="button" class="${klasse}" data-open="${esc(k.aufgabe)}" data-primary="1">${esc(k.text)}</button>`
+    : k.vertreter
+    ? `<button type="button" class="${klasse}" data-bl-vertreter="${esc(k.vertreter)}">${esc(k.text)}</button>`
     : k.schritt && !istNurLesend()
       ? `<button type="button" class="${klasse}" data-zl-schritt="${esc(k.schritt.aktion)}" data-zl-order="${esc(k.schritt.orderId)}">${esc(k.text)}</button>`
       : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen || k.abhaken ? 'Ansehen' : k.text)}</a>`;

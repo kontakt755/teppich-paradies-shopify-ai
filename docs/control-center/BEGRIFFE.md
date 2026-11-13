@@ -31,6 +31,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Lexikon | **Lexikon** (bleibt, Inhaber/Mitarbeiter 21.10.) | Menue, Seite, Handy-Leiste |
 | Belege (Reiter) | **Lieferantenpost** | Reiter unter „Bestellen“; ein einzelnes Stueck ist ein „Schreiben“ |
 | AB | **Auftragsbestätigung** | ausgeschrieben in Ueberschriften und Feldern |
+| – (neu 13.11.) | **Einkauf über Verkauf** | rote Zeile in Lieferantenpost, an der Auftragskarte und auf „Heute“: der Lieferant berechnet mehr, als der Kunde netto bezahlt hat. Knopf „Nachricht an Vertreter“ (fertiger Text, nichts wird gesendet) |
 | Wiedervorlage | **wieder melden (am)** | Spalten, Kacheln, Leerzustaende |
 | Arbeitsplatz | **Vorbereiten** | E-Mail, Angebot, Recherche vorbereiten |
 | Aufgaben & Organisation | **Aufgaben** | |

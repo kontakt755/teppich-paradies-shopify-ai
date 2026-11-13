@@ -12,7 +12,7 @@ import {
   klassifiziere, referenzen, aktuellerTeil, domainVon, lieferantZurDomain, kandidatenAus, ordneZu,
   zuordnungMitEntscheidung, abgleich, belegMarke, belegFilter,
 } from '../lib/lieferbelege.mjs';
-import { lieferbelegePfad, leseBelege, uebernehmen, entscheide, bekannt, LieferbelegFehler } from '../../../operations/lib/lieferbelege.mjs';
+import { lieferbelegePfad, leseBelege, uebernehmen, entscheide, bekannt, LieferbelegFehler, preiseSetzen } from '../../../operations/lib/lieferbelege.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 
 const JETZT = new Date('2026-10-16T10:00:00Z');
@@ -663,4 +663,29 @@ test('Nachpruefung #1432: verwaiste Sperre raeumt nur, wer die Raeum-Sperre hat;
   assert.equal(uebernehmen([mail('m1', 'Auftragsbestätigung 1')], { privatDir: dir }).neu.length, 1);
   assert.equal(fs.existsSync(`${datei}.lock`), false);
   assert.equal(fs.existsSync(`${datei}.lock.raeumen`), false);
+});
+
+test('einkaufBelege: Einkauf ueber Verkauf steht rot vorn; Betraege und Text nur fuer den Inhaber, gelesene Preise nie in der Belegliste', () => {
+  const dir = privat();
+  const datei = path.join(dir, 'bestelluebersicht', 'orders.json');
+  const o = JSON.parse(fs.readFileSync(datei, 'utf8'));
+  o.orders[0].lineItems.nodes[0].priceAfterAllDiscountsBeforeTaxesSet = { shopMoney: { amount: '5.00', currencyCode: 'EUR' } };
+  fs.writeFileSync(datei, JSON.stringify(o));
+  // m1 ist die AB von Lieferant A zu #9001 (sicher zugeordnet); die Artikelnummer ist dort unsere SKU.
+  preiseSetzen({ m1: [{ artikel: 'TEST-A-1', menge: 1, einheit: 'STK', netto: 6 }] }, { privatDir: dir, jetzt: JETZT });
+
+  const inhaber = apiFuer(dir).einkaufBelege();
+  const w = inhaber.abweichungen[0];
+  assert.deepEqual([w.art, w.ton, w.orderName, w.einkauf, w.verkauf, w.differenz, w.belegnummer], ['einkauf_ueber_verkauf', 'crit', '#9001', 6, 5, 1, '4711']);
+  assert.equal(w.entwurf.an, 'max.beispiel@lieferant-a.example');
+  assert.match(w.entwurf.text, /^Hallo Max,/);
+  assert.ok(inhaber.belege.every(b => !('preise' in b)));
+
+  const mitarbeiter = apiFuer(dir).einkaufBelege({ rolle: 'mitarbeiter', name: 'Test' }).abweichungen[0];
+  assert.equal(mitarbeiter.art, 'einkauf_ueber_verkauf');
+  assert.deepEqual(['einkauf', 'verkauf', 'differenz', 'entwurf'].filter(f => f in mitarbeiter), [], JSON.stringify(mitarbeiter));
+
+  // "Erledigt" an der Zeile quittiert den Beleg fuer diese Bestellung - die Warnung ist weg.
+  const danach = apiFuer(dir).einkaufBelegSetzen({ aktion: 'erledigt', mailId: 'm1', orderId: 'gid://shopify/Order/9001' });
+  assert.ok(!danach.abweichungen.some(a => a.art === 'einkauf_ueber_verkauf'));
 });

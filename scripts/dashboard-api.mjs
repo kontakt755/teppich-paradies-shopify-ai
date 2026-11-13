@@ -87,6 +87,7 @@ import { musterKennzahlen } from '../docs/ai-dashboard/lib/muster-ideen.mjs';
 import { musterAnrufePfad, leseMusterAnrufe, trageAnrufEin, MusterAnrufFehler } from '../operations/lib/muster-anrufe.mjs';
 import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
 import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
+import { einkaufUeberVerkauf, ohneBetraege, vertreterNachricht } from '../docs/ai-dashboard/lib/einkauf-ueber-verkauf.mjs';
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
@@ -3190,8 +3191,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Zuordnung zur Bestellung (sicher / Vorschlag / keine) und der Abgleich je Auftrag gegen
      * Auftragsfluss und Shopify. Gelesen wird nur die private Ablage - das Postfach liest der
      * geplante Claude-Lauf (operations/scripts/lieferbelege.mjs). Siehe ARCHITEKTUR §25.
+     * Einkauf ueber Verkauf steht rot bei den Abweichungen; Betraege und den Text an den Vertreter
+     * bekommt nur der Inhaber (auch der Notzugang: benutzer === null), wie bei der Rohertrag-Warnung.
      */
-    einkaufBelege() {
+    einkaufBelege(benutzer = null) {
       const dir = privatDirPath || privatDir();
       let ablage;
       try { ablage = leseBelege(lieferbelegePfad(dir)); }
@@ -3209,8 +3212,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const belege = ordneAlleZu(mitLieferant, kandidaten, { absender: ablage.absender })
         .sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
       const { zeilen: abgleichZeilen, abweichungen } = belegAbgleich({ belege, kandidaten, jetzt: now() });
+      const mitPreisen = !benutzer || benutzer.rolle === 'inhaber';
+      const absenderZeilen = [k.stammdaten.absender?.kontaktName, k.stammdaten.absender?.firma];
+      abweichungen.unshift(...einkaufUeberVerkauf({ belege, kandidaten }).map(w => (mitPreisen
+        ? { ...w, entwurf: vertreterNachricht(w, { vertreter: k.stammdaten.lieferanten?.[w.lieferant]?.vertreter, absender: absenderZeilen }) }
+        : ohneBetraege(w))));
       // Name und Nummer nur der Bestellungen, die eine Zeile, ein Beleg oder ein Vorschlag nennt.
-      const genannt = new Set([...abgleichZeilen.map(z => z.orderId), ...belege.flatMap(b => b.zuordnung.orderIds)]);
+      const genannt = new Set([...abgleichZeilen.map(z => z.orderId), ...abweichungen.map(a => a.orderId), ...belege.flatMap(b => b.zuordnung.orderIds)]);
       const auftraege = Object.fromEntries(kandidaten.filter(c => genannt.has(c.orderId)).map(c => [c.orderId, { orderName: c.orderName, kundenname: c.kundenname, datum: c.datum }]));
       // Fuer "Zu Bestellung zuordnen": Shop-Bestellungen der letzten 120 Tage mit Lieferanten-Positionen.
       const grenze = now().getTime() - 120 * 86400000;
@@ -3221,7 +3229,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return {
         verfuegbar: true, hinweis: k.hinweis,
         letzterLauf: ablage.laeufe.at(-1) || null,
-        belege, zeilen: abgleichZeilen, abweichungen, auftraege, auswahl, lieferanten,
+        // Die gelesenen Einkaufspreise bleiben im Server - die Belegliste geht an jede Rolle.
+        belege: belege.map(({ preise, ...b }) => b), zeilen: abgleichZeilen, abweichungen, auftraege, auswahl, lieferanten,
         absender: ablage.absender,
       };
     },
@@ -3252,7 +3261,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (e instanceof LieferbelegFehler) throw new ApiError(400, e.message);
         throw e;
       }
-      return { ok: true, ...this.einkaufBelege() };
+      return { ok: true, ...this.einkaufBelege(benutzer) };
     },
 
     /**

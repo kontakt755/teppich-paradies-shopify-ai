@@ -158,6 +158,7 @@ function pruefeLieferant(id, roh, fehler) {
   const w = p.objekt(roh.ware, 'ware');
   const m = p.objekt(roh.muster, 'muster');
   const ml = p.objekt(roh.mail, 'mail');
+  const v = p.objekt(roh.vertreter, 'vertreter');
   const l = {
     id,
     anzeigename: p.text(roh.anzeigename, 'anzeigename'),
@@ -198,6 +199,9 @@ function pruefeLieferant(id, roh, fehler) {
       gruss: p.text(ml.gruss, 'mail.gruss', 400),
       duzen: ml.duzen === true,
     },
+    // Aussendienst: an ihn geht die Bitte um einen Preis, wenn der Einkauf ueber dem Verkauf liegt
+    // (docs/ai-dashboard/lib/einkauf-ueber-verkauf.mjs). Freiwillig - ohne ihn gibt es den Text nur zum Kopieren.
+    vertreter: { name: p.text(v.name, 'vertreter.name', 120), mail: p.mail(v.mail, 'vertreter.mail'), duzen: v.duzen === true },
   };
   l.fehlend = fehlendeAngaben(l);
   l.hinterlegt = istHinterlegt(l);
