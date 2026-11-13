@@ -31,6 +31,11 @@ test('musterSchluessel: M- ab, Sammelprodukt ueber die Quellvariante, UNGEKLAERT
   assert.equal(musterSchluessel({ sku: 'TP-MUSTER-000', musterQuelle: null }), null);
   assert.equal(musterSchluessel({ sku: 'UNGEKLAERT' }), null);
   assert.equal(musterSchluessel({ sku: 'TESTVEL4_102' }), 'TESTVEL4_102');
+  // Restrolle: Kettelteppich, Raummass und Zuschnitt sind dasselbe Muster wie die Rolle.
+  for (const form of ['ROLLE', 'KETTEL', 'RAUM', 'ZS-125']) {
+    assert.equal(musterSchluessel({ sku: 'TP-MUSTER-000', musterQuelle: { sku: `tpr0001-vor-${form}` } }), 'TPR0001-VOR-ROLLE');
+  }
+  assert.equal(musterSchluessel({ sku: 'TESTVOR-KETTEL' }), 'TESTVOR-KETTEL');
 });
 
 test('einlagern: legt an, gleiche Art und gleiches Muster zaehlt dazu, andere Art steht getrennt', () => {
@@ -73,6 +78,15 @@ test('aendern und entfernen: nur uebergebene Felder, Verlauf mit wer, entfernt b
   const l = leseLager(file);
   assert.equal(l.eintraege.length, 0);
   assert.equal(l.entfernt[0].entferntVon, 'Mitarbeiter 1');
+});
+
+test('Restrolle: Muster ueber den Kettelteppich findet das Lagermuster der Rolle', () => {
+  const file = musterlagerPfad(tmp());
+  const { eintrag } = einlagern(file, { titel: 'Testrolle', schluessel: ['TPR0001-VOR-ZS-125', 'tpr0001-vor-raum'], art: 'einzel', anzahl: 2, ort: 'Fach 3', actor: 'x', jetzt: AM });
+  assert.deepEqual(eintrag.schluessel, ['TPR0001-VOR-ROLLE'], 'alle Verkaufsformen = ein Schluessel');
+  const m = modellMit([auftrag('O1', '2026-10-11T10:00:00Z', [muster('O1', 'L1', 'TP-MUSTER-000', { musterQuelle: { sku: 'TPR0001-VOR-KETTEL' } })])]);
+  wendeLagerAn(m, leseLager(file));
+  assert.equal(m.auftraege[0].positionen[0].musterLager?.ort, 'Fach 3');
 });
 
 test('wendeLagerAn: offene Musterposition kommt automatisch aus dem Lager und faellt aus der Bestellung', () => {
