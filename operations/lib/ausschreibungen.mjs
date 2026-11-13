@@ -6,7 +6,7 @@
  * Nationale Bekanntmachungen (z. B. vom Vergabemarktplatz Brandenburg) tragen dort nur
  * die grobe Region DE3/DE4, die PLZ im Ortsfeld ("15745 Wildau") und keine Frist.
  */
-import { titelKurz, sichereUrl } from '../../docs/ai-dashboard/lib/akquise.mjs';
+import { titelKurz, sichereUrl, kleineZuerst } from '../../docs/ai-dashboard/lib/akquise.mjs';
 
 /**
  * CPV-Familien (Anfang der Nummer): Bodenbelagsarbeiten 454321xx (Verlegen, Parkett, Doppelboden,
@@ -144,7 +144,8 @@ export function ausRss(xml, quelle) {
 
 /**
  * Doppelte zusammenfassen (gleicher Titel; Auftraggeber nur, wenn beide ihn nennen - der Berliner Feed
- * nennt keinen), fehlende Angaben aus dem Doppel ergaenzen, abgelaufene weg, nach Frist sortieren.
+ * nennt keinen), fehlende Angaben aus dem Doppel ergaenzen, abgelaufene weg, kleine und nahe zuerst
+ * (kleineZuerst, dieselbe Reihenfolge wie in der Ansicht), darin nach Frist.
  */
 export function bereinigen(treffer, heute) {
   const liste = [];
@@ -156,8 +157,7 @@ export function bereinigen(treffer, heute) {
     if (!gleich) liste.push({ ...t });
     else for (const [k, v] of Object.entries(t)) if (!gleich[k] && v) gleich[k] = v;
   }
-  return liste.filter(t => !(t.frist && t.frist < heute))
-    .sort((a, b) => String(a.frist || '9').localeCompare(String(b.frist || '9')));
+  return liste.filter(t => !(t.frist && t.frist < heute)).sort(kleineZuerst);
 }
 
 /** Neu seit dem letzten Lauf (nach id). */

@@ -69,6 +69,14 @@ test('bereinigen und neuSeit', () => {
   const [e, e2] = bereinigen([{ id: 'o', titel: 'Boden Kita', auftraggeber: 'Amt', frist: null }, { id: 'r', titel: 'boden kita', auftraggeber: '', frist: '2026-11-20', verfahren: 'UVgO' }, { id: 'u', titel: 'Boden  Kita', auftraggeber: 'Amt\n', frist: null }], '2026-10-19');
   assert.equal(e2, undefined);
   assert.deepEqual([e.id, e.frist, e.verfahren], ['o', '2026-11-20', 'UVgO']);
+  // Kleine und nahe zuerst: Oberhavel vor Berlin, EU-Verfahren ans Ende - auch mit der fruehesten Frist.
+  assert.deepEqual(bereinigen([
+    { id: 'eu', titel: 'A', quelle: 'TED', ort: 'Berlin', frist: '2026-10-20' },
+    { id: 'berlin', titel: 'B', verfahren: 'Öffentliche Ausschreibung', ort: '13086 Berlin', frist: '2026-10-25' },
+    { id: 'nah', titel: 'C', verfahren: 'Beschränkte Ausschreibung', ort: '16515 Oranienburg', frist: '2026-11-30' },
+    { id: 'ohne-frist', titel: 'D', verfahren: 'Öffentliche Ausschreibung', ort: 'Potsdam', frist: null },
+    { id: 'eu-klartext', titel: 'E', verfahren: 'Offenes Verfahren (EU)', ort: '16515 Oranienburg', frist: '2026-10-21' },
+  ], '2026-10-19').map(t => t.id), ['nah', 'berlin', 'ohne-frist', 'eu-klartext', 'eu']);
 });
 
 test('Umkreis: NUTS-3 genau, Berlin als Land, sonst PLZ', () => {
