@@ -2,10 +2,10 @@ import { esc } from '../../kern/helfer.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
-import { berechneVersand, BETRAGSZEILEN } from '../../lib/versandkosten.mjs';
+import { berechneVersand, dieselFortschreiben, BETRAGSZEILEN } from '../../lib/versandkosten.mjs';
 
 let tarif=null,hinweis='',laden=false,generation=0;
-let werte={},saetze={};
+let werte={},saetze={},portale={};
 export function verwirfVersandtarif(){generation++;tarif=null;hinweis='';laden=false;}
 const geld=v=>v===null?'Nicht berechenbar':new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(v);
 const heute=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -15,7 +15,7 @@ async function lade(){
   if(laden)return;laden=true;const token=generation;
   const daten=await fetchEinkauf('/api/einkauf/versandtarife');
   if(token!==generation)return;
-  laden=false;tarif=daten?.verfuegbar?daten.tarif:null;hinweis=daten?.hinweis||'Versandtarife nicht verfügbar.';
+  laden=false;tarif=daten?.verfuegbar?daten.tarif:null;portale=daten?.portale||{};hinweis=daten?.hinweis||'Versandtarife nicht verfügbar.';
   if(tarif&&!Object.keys(werte).length){werte=Object.fromEntries(tarif.felder.map(f=>[f.zeile,f.wert??'']));werte[17]=heute();}
   if(state.route.view==='einkauf'&&state.route.params.get('tab')==='versandkosten')render();
 }
@@ -26,9 +26,19 @@ function feld(f){
   return `<div class="field"><label for="${id}">${esc(f.label)}</label>${select||`<input id="${id}" type="${f.typ==='date'?'date':f.typ==='number'?'number':'text'}" value="${esc(value)}" ${attr} data-vk-feld="${f.zeile}" data-focus-erhalten>`}<span class="small muted">${esc(f.hinweis||'')}</span></div>`;
 }
 function ergebnis(){
-  const result=berechneVersand(werte,tarif,saetze);
+  // Abgelaufener Dieselzeitraum: mit dem letzten hinterlegten Wert rechnen und es an der Karte sagen.
+  const diesel=dieselFortschreiben(tarif.saetze,saetze,werte[17]);
+  const result=berechneVersand(werte,tarif,diesel.anpassung);
   if(result.fehler)return `<div class="notice warn" role="status">${esc(result.fehler)}</div>`;
-  const karte=(name,v)=>`<section class="card vk-ergebnis"><h3>${name}</h3><p class="vk-preis">${geld(v.netto)}</p>${v.netto===null?`<ul class="vk-gruende">${v.gruende.map(g=>`<li>${esc(g)}</li>`).join('')}</ul>`:`<p class="small muted">netto · ${geld(v.brutto)} Brutto-Planung</p>`}<p class="small">Abrechnungsgewicht: ${esc(v.gewicht.toLocaleString('de-DE',{maximumFractionDigits:2}))} kg${name==='GLS'?' je Paket':''}</p></section>`;
+  // Der guenstigere Dienst faellt auf (nur wenn beide einen Preis haben) - dafuer ist der Vergleich da.
+  const beide=result.gls.netto!==null&&result.gel.netto!==null&&result.gls.netto!==result.gel.netto;
+  const wahl=beide?(result.gls.netto<result.gel.netto?'GLS':'GEL'):null;
+  const spart=beide?Math.abs(result.gls.netto-result.gel.netto):0;
+  const tag=iso=>iso.slice(8,10)+'.'+iso.slice(5,7)+'.';
+  const karte=(name,v)=>{
+    const alt=diesel.veraltet.find(x=>x.name===name);
+    return `<section class="card vk-ergebnis${wahl===name?' vk-wahl':''}"><h3>${name}${wahl===name?` <span class="vk-guenstiger">günstiger · spart ${geld(spart)}</span>`:''}</h3><p class="vk-preis">${geld(v.netto)}</p>${v.netto===null?`<ul class="vk-gruende">${v.gruende.map(g=>`<li>${esc(g)}</li>`).join('')}</ul>`:`<p class="small muted">netto · ${geld(v.brutto)} Brutto-Planung</p>`}${alt&&v.netto!==null?`<p class="small vk-veraltet">Mit dem letzten Dieselwert gerechnet (galt bis ${tag(alt.bis)}). Den aktuellen trägst du unten bei „Tarifstand und Dieselwerte“ ein.</p>`:''}<p class="small">Abrechnungsgewicht: ${esc(v.gewicht.toLocaleString('de-DE',{maximumFractionDigits:2}))} kg${name==='GLS'?' je Paket':''}</p>${portale[name]&&v.netto!==null?`<p><a class="btn btn-sm" href="${esc(portale[name])}" target="_blank" rel="noopener noreferrer">${name}-Schein im Portal erstellen</a></p>`:''}</section>`;
+  };
   const rows=Object.keys(BETRAGSZEILEN).filter(k=>result.gls.teile[k]||result.gel.teile[k]);
   return `<div class="vk-vergleich" aria-live="polite">${karte('GLS',result.gls)}${karte('GEL',result.gel)}</div>
     <p class="small muted">${esc(result.gebiet)} · GEL: ${result.xxl?'XXL':'Standard'} · Avis: ${esc(result.avis)}</p>

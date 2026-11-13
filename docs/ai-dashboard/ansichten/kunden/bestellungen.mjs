@@ -236,16 +236,16 @@ function weitereAngaben(z, tagListe) {
  * Was bestellt wurde, ohne Aufklappen (Inhaber 2026-10-13): bei Mustern Produkt und Farben und
  * woher sie kommen, bei Ware die Artikel. Steht unter der Zeile ueber die ganze Breite.
  */
-function inhaltHtml(z) {
+function inhaltHtml(z, { kurz = false } = {}) {
   const i = bestellinhalt(z.auftrag?.positionen);
   const zeilen = [];
   if (i.muster.anzahl) {
-    zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art">${esc(i.muster.anzahl === 1 ? '1 Muster' : `${i.muster.anzahl} Muster`)}</span> <span class="bq-was">${esc(i.muster.text)}</span>${i.muster.herkunft ? ` <span class="bq-herkunft">${esc(i.muster.herkunft)}</span>` : ''}<button type="button" class="btn btn-sm btn-ghost" data-bq-musteretiketten-open="${esc(z.orderId)}">Musteraufkleber ansehen</button></div>`);
+    zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art">${esc(i.muster.anzahl === 1 ? '1 Muster' : `${i.muster.anzahl} Muster`)}</span> <span class="bq-was">${esc(i.muster.text)}</span>${i.muster.herkunft ? ` <span class="bq-herkunft">${esc(i.muster.herkunft)}</span>` : ''}<button type="button" class="btn btn-sm btn-ghost bq-aufkleber" data-bq-musteretiketten-open="${esc(z.orderId)}">Musteraufkleber ansehen</button></div>`);
   }
   if (i.ware.anzahl) {
     zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art bq-art-ware">${esc(i.ware.anzahl === 1 ? '1 Artikel' : `${i.ware.anzahl} Artikel`)}</span> <span class="bq-was">${esc(i.ware.text)}</span></div>`);
   }
-  if (z.musterAutomatik) zeilen.push(musterAutomatikHtml(z.musterAutomatik));
+  if (z.musterAutomatik) zeilen.push(musterAutomatikHtml(z.musterAutomatik, { kurz }));
   return zeilen.join('');
 }
 
@@ -298,14 +298,16 @@ async function hakenSetzen(orderId, erledigt) {
   render();
 }
 
-function bestellzeileHtml(z) {
-  const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
+function bestellzeileHtml(z, { grund = '' } = {}) {
+  const offen = kunden.erweitert.has(z.orderId);
+  const offenKlasse = offen ? ' offen' : '';
   const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
   const pk = fortschrittKlasse(sichtbarerFortschritt(z)?.stufe);
-  const inhalt = inhaltHtml(z);
+  // Zugeklappt die Kurzform, aufgeklappt die ganze Musterbestellung (wann, was, an wen).
+  const inhalt = inhaltHtml(z, { kurz: !offen });
   return `<tr class="bq-row${offenKlasse}${inhalt ? ' mit-inhalt' : ''}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
       <td data-l="Bestellnr.">${hakenKnopf(z)}<a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${neuBadge(z)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
-      <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}<div class="small muted">${fmtDateTime(z.datum)} · ${betragText(z)}</div></td>
+      <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}<div class="small muted">${fmtDateTime(z.datum)} · ${betragText(z)}</div>${grund}</td>
       <td data-l="Stand"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span>${warenPlakette(z)}${z.zahlungsstatus !== 'PAID' ? `<div class="small">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</div>` : ''}</td>
       <td data-l="Nächster Schritt">${esc(arbeitsstand(z).naechstes)}</td>
     </tr>
@@ -313,13 +315,14 @@ function bestellzeileHtml(z) {
     ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="4">${musteretikettenBlock(z)}${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}<details><summary>Kontakt, Zahlung und weitere Angaben</summary>${kontaktZelle(z)}${weitereAngaben(z, tagListe)}</details><details><summary>Artikel und Beleg ansehen</summary>${kundenAuftragKarte(z.auftrag, { ohneStatus: true })}</details>${bestellzeileAktionen(z)}</td></tr>` : ''}`;
 }
 
-function bestellzeileKarte(z, gruppiert = false) {
+function bestellzeileKarte(z, gruppiert = false, { grund = '' } = {}) {
+  const inhalt = inhaltHtml(z, { kurz: !kunden.erweitert.has(z.orderId) });
   const pk = fortschrittKlasse(sichtbarerFortschritt(z)?.stufe);
   return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname || 'unbekannt')} auf- oder zuklappen">
     <div>
       <div class="t">${hakenKnopf(z)}${esc(z.orderName)}${neuBadge(z)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${betragText(z)} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
-      ${inhaltHtml(z) ? `<div class="bq-inhalt-mobil">${inhaltHtml(z)}</div>` : ''}
+      ${grund}${inhalt ? `<div class="bq-inhalt-mobil">${inhalt}</div>` : ''}
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span>${warenPlakette(z)}</div>
       <div class="m">${esc(arbeitsstand(z).naechstes)}</div>
     </div>
@@ -365,13 +368,14 @@ export function viewKundenBestellungen() {
       <button type="button" class="btn btn-sm" ${seite >= seiten ? 'disabled' : ''} data-param="bseite" data-value="${seite + 1}">Weiter →</button></div>` : '';
   const filterKnopf = f => `<button type="button" class="chip" data-param="bfilter" data-value="${f === 'nicht_fertig' ? '' : f}" aria-pressed="${filter === f}">${esc(BQ_FILTER_LABEL[f])}</button>`;
   const weitererFilterAktiv = FILTERCHIPS_WEITERE.includes(filter);
-  const chips = `<div class="chips bq-filter-haupt" style="margin:8px 0" role="group" aria-label="Bestellarbeit filtern">
+  const chips = `<div class="chips chips-zeile bq-filter-haupt" role="group" aria-label="Bestellarbeit filtern">
     ${FILTERCHIPS_KUNDEN.map(filterKnopf).join('')}
-  </div><details class="bq-filter-extra"${weitererFilterAktiv ? ' open' : ''}>
+  </div>`;
+  const chipsWeitere = `<details class="bq-filter-extra"${weitererFilterAktiv ? ' open' : ''}>
     <summary>Weitere Filter${weitererFilterAktiv ? ` · ${esc(BQ_FILTER_LABEL[filter])}` : ''}</summary>
     <div class="chips" role="group" aria-label="Weitere Bestellfilter">${FILTERCHIPS_WEITERE.map(filterKnopf).join('')}</div>
   </details>`;
-  const artWahl = `<div class="chips" role="group" aria-label="Bestellart">
+  const artWahl = `<div class="chips chips-zeile" role="group" aria-label="Bestellart">
     ${[['ware', 'Waren'], ['muster', 'Muster'], ['alle', 'Waren und Muster']].map(([wert, label]) => `<button type="button" class="chip" data-param="bart" data-value="${wert === 'alle' ? '' : wert}" aria-pressed="${art === wert}">${label}</button>`).join('')}
   </div>`;
   // Kein data-param hier: der generische Handler wuerde vorher greifen und nur
@@ -384,12 +388,17 @@ export function viewKundenBestellungen() {
     return w ? `<span class="bq-grund bq-rang-${w.rang}">${esc(w.grund)}</span>` : '';
   };
   const gruppenkopf = g => `<tr class="bq-gruppenkopf"><th colspan="4" scope="rowgroup"><span>${esc(g.name)}</span>${grund(g)}<span class="small muted">${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></th></tr>`;
+  // Ein Kunde, eine Bestellung (der Normalfall): keine eigene Kopfzeile - der Name stand sonst zweimal
+  // untereinander. Warum die Bestellung dort steht, sagt dann die Zeile selbst.
+  const allein = g => g.zeilen.length === 1;
+  const grundZeile = g => grund(g) ? `<div>${grund(g)}</div>` : '';
   const tabelle = zeilen.length ? gruppen
-    ? gruppen.map(g => `<tbody class="bq-tbody-desktop bq-kundengruppe">${gruppenkopf(g)}${g.zeilen.map(bestellzeileHtml).join('')}</tbody>`).join('')
+    ? gruppen.map(g => `<tbody class="bq-tbody-desktop bq-kundengruppe">${allein(g) ? bestellzeileHtml(g.zeilen[0], { grund: grundZeile(g) }) : gruppenkopf(g) + g.zeilen.map(z => bestellzeileHtml(z)).join('')}</tbody>`).join('')
     : `<tbody class="bq-tbody-desktop">${sichtbar.map(bestellzeileHtml).join('')}</tbody>`
     : `<tbody><tr><td colspan="4">${emptyState('Keine Treffer.', '')}</td></tr></tbody>`;
   const karten = zeilen.length ? gruppen
-    ? gruppen.map(g => `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${grund(g)}${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
+    ? gruppen.map(g => allein(g) ? bestellzeileKarte(g.zeilen[0], false, { grund: grundZeile(g) })
+      : `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${grund(g)}${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
     : sichtbar.map(z => bestellzeileKarte(z)).join('')
     : emptyState('Keine Treffer.', '');
   const pruefen = zeilenNachArt(d.zeilen, art).filter(z => pruefgruende(z).length).length;
@@ -397,28 +406,35 @@ export function viewKundenBestellungen() {
   alleLink.set('bfilter', 'alle'); alleLink.delete('bseite');
   const pruefLink = new URLSearchParams(params);
   pruefLink.set('bfilter', 'pruefen'); pruefLink.delete('bseite');
+  // Die beiden Sortierknoepfe sagen ihre Reihenfolge selbst; nur eine Spaltensortierung wird benannt.
+  const sortiert = sort === 'wichtigkeit' || (sort === 'datum' && dir === 'desc') ? '' : ` · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'}`;
+  // Eine Leiste statt acht Zeilen (13.11.2026): Suche, Art und Arbeitsliste zusammen, Seltenes eingeklappt
+  // in einer Zeile; die Sortierung steht am Listenkopf. Dass Muster automatisch bestellt werden, ist der
+  // Normalfall und steht nicht mehr als Dauersatz oben - nur eine Stoerung der Automatik wird gemeldet.
   return `
     ${art !== 'ware' && d.musterAutomatik?.hinweis ? `<p class="notice warn">${esc(d.musterAutomatik.hinweis)}</p>` : ''}
-    ${art !== 'ware' && d.musterAutomatik?.aktiv ? '<p class="small muted">Neue vollständige, kostenlose Muster werden automatisch bestellt. Bestellte Muster und Klärfälle stehen direkt beim Kunden.</p>' : ''}
     ${pruefen && filter !== 'pruefen' ? `<p class="notice warn"><a href="#/kunden?${esc(pruefLink)}">${plural(pruefen, 'Bestellung braucht', 'Bestellungen brauchen')} Kontrolle</a> – etwa ein manueller Haken ohne Versandnachweis oder unklare Artikel.</p>` : ''}
     ${filter === 'pruefen' ? '<p class="notice warn">Hier bleiben auch manuell abgehakte Fälle sichtbar. Prüfe den Versand- und Artikelstand, bevor du einen Fall abschließt.</p>' : ''}
-    ${filter === 'alle' ? '<p class="small muted">Alle echten Bestellungen im Betriebsbestand: letzte 90 Tage sowie ältere mit offenem Versand oder offener Zahlung. Ältere vollständig abgeschlossene Bestellungen findest du in Shopify.</p>' : ''}
-    <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
-    ${artWahl}
-    ${art === 'muster' ? '' : ratgeberVorlagenHtml(d.ratgeberVorlagen)}
-    ${art === 'ware' ? '<p class="small muted">Warenfortschritt und nächster Schritt beziehen sich auf die Warenpositionen. Gemischte Bestellungen behalten ihre Muster in den Details; der Betrag ist der ganze Bestellwert.</p>' : ''}
-    ${params.get('bq') && filter !== 'alle' ? `<p class="small muted">Die Suche gilt für „${esc(BQ_FILTER_LABEL[filter] || filter)}“. <a href="#/kunden?${esc(alleLink)}">In allen Bestellungen suchen →</a></p>` : ''}
-    ${chips}
-    <div class="chips" role="group" aria-label="Sortierung">
-      <button class="chip" data-bq-neueste aria-pressed="${sort === 'datum' && dir === 'desc'}">Neueste zuerst</button>
-      <button class="chip" data-param="bsort" data-value="wichtigkeit" aria-pressed="${sort === 'wichtigkeit'}">Dringendes zuerst</button>
+    <div class="bq-leiste">
+      <div class="toolbar"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
+      <div class="bq-wahl">${artWahl}${chips}</div>
+      <div class="bq-extras">${chipsWeitere}${art === 'muster' ? '' : ratgeberVorlagenHtml(d.ratgeberVorlagen)}</div>
     </div>
-    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'}${seiten > 1 ? ` · Seite ${seite} von ${seiten}` : ''} · ${sort === 'wichtigkeit' ? 'Sortiert nach Wichtigkeit: es fehlt etwas → unterwegs → nicht bezahlt → raus oder erledigt, je die älteste zuerst' : `Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'}`} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
+    ${params.get('bq') && filter !== 'alle' ? `<p class="small muted">Die Suche gilt für „${esc(BQ_FILTER_LABEL[filter] || filter)}“. <a href="#/kunden?${esc(alleLink)}">In allen Bestellungen suchen →</a></p>` : ''}
+    ${filter === 'alle' ? '<p class="small muted">Alle echten Bestellungen im Betriebsbestand: letzte 90 Tage sowie ältere mit offenem Versand oder offener Zahlung. Ältere vollständig abgeschlossene Bestellungen findest du in Shopify.</p>' : ''}
+    <div class="bq-listenkopf">
+      <p class="small muted">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'}${seiten > 1 ? ` · Seite ${seite} von ${seiten}` : ''}${sortiert} · Zeile anklicken für Details</p>
+      <div class="chips" role="group" aria-label="Sortierung">
+        <button class="chip" data-bq-neueste aria-pressed="${sort === 'datum' && dir === 'desc'}">Neueste zuerst</button>
+        <button class="chip" data-param="bsort" data-value="wichtigkeit" aria-pressed="${sort === 'wichtigkeit'}" title="Es fehlt etwas → unterwegs → nicht bezahlt → raus oder erledigt, je die älteste zuerst">Dringendes zuerst</button>
+      </div>
+    </div>
     <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
     ${tabelle}
     </table></div>
     <div class="rows bq-karten">${karten}</div>
     ${blaettern}
+    ${art === 'ware' ? '<p class="small muted">Stand und nächster Schritt beziehen sich auf die Ware. Gemischte Bestellungen behalten ihre Muster in den Details; der Betrag ist der ganze Bestellwert.</p>' : ''}
     ${erledigt.length || erledigtAelter ? `<details class="bq-erledigt"${filter === 'fertig' ? ' open' : ''}><summary>Abgehakt / versandt · ${plural(erledigt.length, 'Bestellung', 'Bestellungen')}${erledigtAelter ? ` <span class="small muted">· letzte ${ERLEDIGT_TAGE} Tage, ${erledigtAelter} ältere über die Suche</span>` : ''}</summary>
       <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead><tbody class="bq-tbody-desktop">${erledigt.map(bestellzeileHtml).join('')}</tbody></table></div>
       <div class="rows bq-karten">${erledigt.map(z => bestellzeileKarte(z)).join('')}</div>

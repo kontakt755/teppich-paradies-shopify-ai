@@ -44,8 +44,10 @@ sind (`setup-dashboard.sh`), gilt: `status:blockiert` + `reviewer:mensch` = Wart
 Unter **Bestellen → Versandkosten** (`#/einkauf?tab=versandkosten`, auch per
 Befehlspalette) vergleicht der interne Rechner Paket- und Speditionskosten.
 Grundtarif, Volumengewicht, PLZ-Zuschlaege und gewaehlte Zusatzleistungen werden
-einzeln ausgewiesen. Ohne vollstaendige Angaben oder passenden Dieselzeitraum
-gibt es keine Gesamtsumme. Die Bruttoanzeige ist eine pauschale Planung.
+einzeln ausgewiesen. Ohne vollstaendige Angaben gibt es keine Gesamtsumme. Ist
+der Dieselzeitraum abgelaufen, rechnet der Vergleich mit dem letzten hinterlegten
+Wert weiter und sagt das an der Karte (`dieselFortschreiben`); der guenstigere
+Dienst ist markiert. Die Bruttoanzeige ist eine pauschale Planung.
 
 Vertragsdaten und Inselmatrix liegen ausschliesslich in
 `$TP_PRIVAT_DIR/versandkosten/tarife.json`. `GET /api/einkauf/versandtarife` liest

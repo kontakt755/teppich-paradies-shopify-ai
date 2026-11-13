@@ -15,6 +15,24 @@ export function istMetropole(plz) {
   const n = Number(plz);
   return [[10115,14199],[20095,21149],[22041,22769],[50667,51149],[80331,81929]].some(([a,b])=>n>=a&&n<=b);
 }
+/**
+ * Dieselwerte gelten nur fuer ihren Zeitraum (GLS monatlich, GEL woechentlich). Liegt das Versanddatum
+ * danach, rechnet der Vergleich mit dem letzten hinterlegten Wert weiter und sagt das - sonst hiess es
+ * "Nicht berechenbar", sobald eine Woche niemand den Wert nachgetragen hat (wie im Bestelldialog,
+ * operations/lib/bestellwarnung.mjs). Ein selbst eingetragenes "gültig bis" geht vor.
+ * @returns {{anpassung: object, veraltet: {name: string, bis: string}[]}}
+ */
+export function dieselFortschreiben(saetze, anpassung = {}, datum) {
+  const neu = { ...anpassung }, veraltet = [];
+  if (!istDatum(datum)) return { anpassung: neu, veraltet };
+  for (const name of ['GLS', 'GEL']) {
+    const bis = name + ' gültig bis';
+    if (Object.hasOwn(anpassung, bis) || !istDatum(saetze?.[bis]) || datum <= saetze[bis]) continue;
+    neu[bis] = datum;
+    veraltet.push({ name, bis: saetze[bis] });
+  }
+  return { anpassung: neu, veraltet };
+}
 export function pruefeVersandtarif(t) {
   if (!t || t.version !== 1 || !Array.isArray(t.felder) || !t.saetze || !Array.isArray(t.gls) || !Array.isArray(t.gel) || !t.inseln || !Array.isArray(t.hinweise)) throw new Error('Tarifdatei unvollständig.');
   if(t.hinweise.some(zeile=>!Array.isArray(zeile)||zeile.length!==2||zeile.some(v=>typeof v!=='string')))throw new Error('Tarifhinweise ungültig.');

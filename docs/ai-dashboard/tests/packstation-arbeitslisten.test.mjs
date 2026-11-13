@@ -42,8 +42,8 @@ test('Standard zeigt alle offenen Umschlaege sofort, Packbereit zuerst, Gepackte
 
 test('Kopf am Handy verdichtet (w-234): Kurzanleitung einklappbar, Eigene Aufkleber neben der Suche, Filter als Wischzeile', () => {
   const h = ansicht('tab=muster', [kunde(1, 'packen')]);
-  // Ohne Browser (kein matchMedia) gilt der Rechner: Anleitung offen.
-  assert.match(h, /<details class="mp-hier" open><summary>So packst du – kurz erklärt<\/summary><p class="sub">Hier packst du je Bestellung/);
+  // Seit 13.11.2026 ueberall zugeklappt, bis jemand sie oeffnet - auch am Rechner steht der erste Umschlag weiter oben.
+  assert.match(h, /<details class="mp-hier"><summary>So packst du – kurz erklärt<\/summary><p class="sub">Hier packst du je Bestellung/);
   assert.match(h, /<div class="toolbar mp-suche"><input type="search" data-param="mpq"[^>]*><button[^>]*data-mp-eigene>/);
   assert.doesNotMatch(ansicht('tab=muster&mpbereich=erledigt', [kunde(1, 'packen')]), /data-mp-eigene/, 'Erledigt bleibt ohne Aufkleberknopf');
 });

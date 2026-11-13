@@ -43,3 +43,10 @@ test('bestellinhalt: Art der Bestellung und beide Teile getrennt', () => {
   assert.equal(g.art, 'gemischt');
   assert.deepEqual([g.muster.anzahl, g.muster.text, g.ware.anzahl, g.ware.text], [1, 'Testvelours: Sand', 1, 'Teppichunterlage']);
 });
+
+test('wareText: Shop-Stueckelung (Hundertstel) faellt weg, Flaeche bzw. Laenge und Mass bleiben', () => {
+  const w = kundenmenge => wareText([{ istMuster: false, titel: 'Testteppich', farbe: 'Taupe', kundenmenge }]);
+  assert.equal(w('1050 × 0,01 m² = 10,50 m² · 300 × 350 cm'), 'Testteppich (Taupe, 10,50 m² · 300 × 350 cm)');
+  assert.equal(w('800 × 0,01 lfm = 8,00 lfm'), 'Testteppich (Taupe, 8,00 lfm)');
+  assert.equal(w('6 lfm'), 'Testteppich (Taupe, 6 lfm)');
+});

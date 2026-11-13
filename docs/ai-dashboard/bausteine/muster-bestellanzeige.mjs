@@ -1,13 +1,22 @@
-import { esc, fmtDateTime, plural } from '../kern/helfer.mjs';
+import { esc, fmtDate, fmtDateTime, plural } from '../kern/helfer.mjs';
 import { vorgangsLink } from '../lib/vorgangslink.mjs';
 
 const SIEBEN_TAGE_MS = 7 * 864e5;
 const ALLE_MUSTER = '#/kunden?tab=bestellungen&amp;bart=muster';
 
-/** Ausfuehrlich je Kunde - so steht es unter Kunden › Bestellungen (#1648) und bleibt dort unveraendert. */
-export function musterAutomatikHtml(a) {
+/**
+ * Je Kunde unter Kunden › Bestellungen (#1648). Ausfuehrlich (wann, was, an wen) in der aufgeklappten
+ * Bestellung; `kurz` fuer die Liste: Produkt und Farben stehen dort schon in der Zeile darueber, der Stand
+ * in der Spalte - es bleibt nur, wann bestellt wurde und wohin die Muster gehen (13.11.2026).
+ */
+export function musterAutomatikHtml(a, { kurz = false } = {}) {
   const zeilen = [];
-  for (const s of a.bestellt || []) {
+  if (kurz && a.bestellt?.length) {
+    const tage = [...new Set(a.bestellt.map(s => fmtDate(s.am).slice(0, 6)))];
+    const ziele = [...new Set(a.bestellt.map(s => s.lieferziel === 'kunde' ? 'direkt zum Kunden' : 'zu uns ins Geschäft'))];
+    zeilen.push(`<div class="bq-inhalt-zeile bq-inhalt-kurz">Muster bestellt am ${esc(tage.join(', '))}${ziele.length === 1 ? ` · ${ziele[0]}` : ''}</div>`);
+  }
+  for (const s of kurz ? [] : a.bestellt || []) {
     const inhalt = s.positionen.map(p => [p.menge + '×', p.titel, p.farbe].filter(Boolean).join(' ')).join(' · ');
     zeilen.push(`<div class="bq-inhalt-zeile"><strong>Muster bestellt</strong> · ${esc(fmtDateTime(s.am))} · ${esc(inhalt)} · an ${esc(s.an)} · ${s.lieferziel === 'kunde' ? 'direkt zum Kunden' : 'zu uns ins Geschäft'}</div>`);
   }

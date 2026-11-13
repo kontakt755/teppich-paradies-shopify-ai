@@ -72,7 +72,10 @@ export function musterHerkunftText(positionen = []) {
 export function wareText(positionen = [], { max = 3 } = {}) {
   const ware = (positionen || []).filter(p => p && !p.istMuster);
   const zeile = p => {
-    const zusatz = [leer(p.farbe) ? null : p.farbe, leer(p.kundenmenge) ? null : p.kundenmenge].filter(Boolean);
+    // "1050 × 0,01 m² = 10,50 m² · 300 × 350 cm" -> "10,50 m² · 300 × 350 cm": die Shop-Stueckelung
+    // (Menge in Hundertsteln) steht weiter im Beleg, in der Uebersicht zaehlt die Flaeche bzw. Laenge.
+    const menge = leer(p.kundenmenge) ? null : String(p.kundenmenge).replace(/^\d+ × 0,01 (?:m²|lfm) = /, '');
+    const zusatz = [leer(p.farbe) ? null : p.farbe, menge].filter(Boolean);
     return `${leer(p.titel) ? 'Artikel' : p.titel}${zusatz.length ? ` (${zusatz.join(', ')})` : ''}`;
   };
   const text = ware.slice(0, max).map(zeile).join(' · ');
