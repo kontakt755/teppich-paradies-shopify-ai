@@ -266,14 +266,39 @@ test('Zuschneiden: nur bezahlte, echte Bestellungen mit Lagerware, die noch nich
     auftrag('o1', { positionen: [pos('p1'), pos('p2', { lagerware: false }), pos('p3', { istMuster: true })] }),
     auftrag('o2', { bezahlt: 'PENDING' }), auftrag('o3', { storniert: true }), auftrag('o4', { testbestellung: true }), auftrag('o5'),
   ], (o, l) => stand[`${o}::${l}`] || null);
-  assert.deepEqual(liste.map(s => `${s.orderId}:${s.lineItemId}`), ['o1:p1']);
+  assert.deepEqual(liste.map(s => `${s.orderId}:${s.lineItemId}:${s.stand}`), ['o1:p1:zuschneiden', 'o5:p1:packen']);
   assert.equal(liste[0].text, 'Testunterlage · 80 cm · Menge 2');
-  const [z] = ladenTodos({ zuschnitte: liste }, { jetzt: JETZT });
+  const z = ladenTodos({ zuschnitte: liste }, { jetzt: JETZT }).find(t => t.art === 'Zuschneiden');
   assert.equal(z.schluessel, 'schnitt:o1:p1');
   assert.equal(z.art, 'Zuschneiden');
   assert.equal(z.von, '#o1 · Testkunde');
   assert.equal(z.ton, 'crit', 'nach zwei Tagen rot wie eine eigene Aufgabe');
   assert.deepEqual(z.schnitt, { orderId: 'o1', lineItemId: 'p1' });
+});
+
+test('Packen: zugeschnittene Lagerware und bei uns eingetroffene Ware; eigener Schluessel, Haken-Bezug fuer "Gepackt", Alter ab dem Schritt davor', () => {
+  const pos = (id, extra = {}) => ({ lineItemId: id, sku: 'TEST_1', titel: 'Testunterlage', menge: 1, lagerware: true, ...extra });
+  const stand = {
+    'o1::p1': { status: 'geliefert', ueber: 'lager', geliefertAm: vorTagen(0), selbstversand: { zugeschnitten: { am: vorTagen(0) } } },
+    'o1::p2': { status: 'geliefert', geliefertAm: vorTagen(3) },
+    'o1::p3': { status: 'bestellt' }, 'o1::p4': { status: 'raus' },
+  };
+  const liste = zuschnitte([{ id: 'o1', name: '#o1', datum: vorTagen(9), bezahlt: 'PAID', positionen: [pos('p1'), pos('p2', { lagerware: false }), pos('p3', { lagerware: false }), pos('p4')] }], (o, l) => stand[`${o}::${l}`] || null);
+  assert.deepEqual(liste.map(s => `${s.lineItemId}:${s.stand}`), ['p1:packen', 'p2:packen']);
+  const [alt, neu] = ladenTodos({ zuschnitte: liste }, { jetzt: JETZT });
+  assert.deepEqual([alt.schluessel, alt.art, alt.ton, alt.hinweis], ['packen:o1:p2', 'Packen', 'crit', 'Eingetroffen – noch packen']);
+  assert.deepEqual([neu.schluessel, neu.hinweis, neu.ton], ['packen:o1:p1', 'Zugeschnitten – noch packen', ''], 'frisch zugeschnitten ist nicht rot, obwohl die Bestellung alt ist');
+  assert.deepEqual(neu.packen, { orderId: 'o1', lineItemId: 'p1' });
+  assert.equal(neu.schnitt, undefined);
+});
+
+test('Versand: gepackte Ware als Zeile ohne Haken, mit Satz, wo verschickt wird', () => {
+  const stand = { 'o1::p1': { status: 'geliefert', ueber: 'lager', geliefertAm: vorTagen(2), selbstversand: { zugeschnitten: { am: vorTagen(2) }, gepackt: { am: vorTagen(1) } } } };
+  const liste = zuschnitte([{ id: 'o1', name: '#o1', datum: vorTagen(9), bezahlt: 'PAID', positionen: [{ lineItemId: 'p1', titel: 'Testunterlage', menge: 1, lagerware: true }] }], (o, l) => stand[`${o}::${l}`] || null);
+  const [z] = ladenTodos({ zuschnitte: liste }, { jetzt: JETZT });
+  assert.deepEqual([z.schluessel, z.art, z.ton], ['versand:o1:p1', 'Versand', 'warn']);
+  assert.match(z.hinweis, /^Gepackt – wartet auf Versand\. Verschickt wird im Büro unter „Bestellen“/);
+  assert.equal(z.schnitt ?? z.packen, undefined, 'kein Schreibknopf');
 });
 
 test('Mail-Zeilen: Lieferantenpost ist reine Info (nie rot, nur Gesehen) - ausser es ist eine Antwort auf unsere Mail', () => {

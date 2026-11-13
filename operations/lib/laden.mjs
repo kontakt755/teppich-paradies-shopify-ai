@@ -20,7 +20,7 @@ import { leseLadenZugang, ladenPostfachPfad, leseMailCache, abrufenUndSpeichern 
 
 export const AUFGABE_ARTEN = Object.freeze(['Rolle schneiden', 'Rechnung kontrollieren', 'Angebot kontrollieren', 'Sonstiges']);
 export const AUFGABE_TEXT_MAX = 200;
-const SCHLUESSEL = /^(rueckruf|fall|aufgabe|mail|ware|schnitt):[A-Za-z0-9:/._-]{1,120}$/;
+const SCHLUESSEL = /^(rueckruf|fall|aufgabe|mail|ware|schnitt|packen|versand):[A-Za-z0-9:/._-]{1,120}$/;
 
 export class LadenFehler extends Error {}
 

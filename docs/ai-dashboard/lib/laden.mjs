@@ -12,7 +12,7 @@
  */
 import { FRISTEN, tageSeit, tonNachAlter, alterText, sortiereTodos, rueckrufFaellig, alsTag } from './todos.mjs';
 import { werktageSeit } from './beschaffung.mjs';
-import { selbstStand } from './lieferweg.mjs';
+import { selbstStand, selbstStandText, lieferwegVon } from './lieferweg.mjs';
 
 const mehrzahl = (n, eins, viele) => `${n} ${n === 1 ? eins : viele}`;
 
@@ -21,7 +21,7 @@ const mehrzahl = (n, eins, viele) => `${n} ${n === 1 ? eins : viele}`;
  * @param {object[]} q.rueckrufe    Zeilen von /api/kunden/rueckrufe (mit status, wiedervorlage)
  * @param {object[]} q.kundeWartet  operations/lib/laden.mjs kundeWartet()
  * @param {object[]} q.aufgaben     laden-aufgaben.json
- * @param {object[]} q.zuschnitte   zuschnitte() - Ware aus eigener Lagerrolle, die noch zu schneiden ist
+ * @param {object[]} q.zuschnitte   zuschnitte() - Ware, die wir selbst verschicken: noch zu schneiden, zu packen oder zu verschicken
  */
 export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [], zuschnitte = [] } = {}, { jetzt = new Date() } = {}) {
   const heute = alsTag(jetzt);
@@ -40,10 +40,16 @@ export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [], zu
       text: w.text || 'Wir warten auf den Kunden', seit: new Date(jetzt.getTime() - w.tage * 86400000).toISOString(), frist: FRISTEN.kunde_antwortet,
     })),
     // Gleiche Frist wie eine von Hand angelegte "Rolle schneiden": nach einem Tag bernstein, nach zwei rot.
-    ...zuschnitte.map(s => zeile({
-      schluessel: `schnitt:${s.orderId}:${s.lineItemId}`, art: 'Zuschneiden', von: [s.orderName, s.kundenname].filter(Boolean).join(' · ') || null,
-      text: s.text, seit: s.seit, frist: FRISTEN.laden_aufgabe, schnitt: { orderId: s.orderId, lineItemId: s.lineItemId },
-    })),
+    // Je Stand ein eigener Schluessel: wer das Zuschneiden uebernommen hat, hat nicht auch das Packen uebernommen.
+    ...zuschnitte.map((s) => {
+      const [vorsatz, art] = SELBST_ZEILE[s.stand] || SELBST_ZEILE.zuschneiden;
+      const bezug = { orderId: s.orderId, lineItemId: s.lineItemId };
+      return zeile({
+        schluessel: `${vorsatz}:${s.orderId}:${s.lineItemId}`, art, von: [s.orderName, s.kundenname].filter(Boolean).join(' · ') || null,
+        text: s.text, seit: s.seit, frist: FRISTEN.laden_aufgabe,
+        ...(vorsatz === 'schnitt' ? { schnitt: bezug } : { hinweis: s.hinweis }), ...(vorsatz === 'packen' ? { packen: bezug } : {}),
+      });
+    }),
     ...aufgaben.filter(a => !a.erledigtAm).map(a => zeile({
       schluessel: `aufgabe:${a.id}`, art: a.art, von: null, text: a.text, seit: a.erstelltAm, frist: FRISTEN.laden_aufgabe, aufgabeId: a.id,
     })),
@@ -51,12 +57,19 @@ export function ladenTodos({ rueckrufe = [], kundeWartet = [], aufgaben = [], zu
   return sortiereTodos(liste);
 }
 
+// Stand aus selbstStand -> [Schluessel-Vorsatz, Art]. "schnitt" bleibt, wie es seit 12.11.2026 in laden-zustaendig.json steht.
+const SELBST_ZEILE = { zuschneiden: ['schnitt', 'Zuschneiden'], packen: ['packen', 'Packen'], versand: ['versand', 'Versand'] };
+// Im Laden gibt es kein Menue und keinen Versand-Dialog: die Zeile sagt nur, wo verschickt wird.
+const VERSAND_WO = 'Verschickt wird im Büro unter „Bestellen“ – die Zeile verschwindet, sobald der Versand dort gebucht ist.';
+
 const BEZAHLT = ['PAID', 'PARTIALLY_REFUNDED']; // wie lib/todos.mjs: unbezahlt ist der Kunde dran, nicht die Schere
 
 /**
  * "Zuschneiden" (Benutzer 12.11.2026): bezahlte Bestellungen mit Ware aus eigener Lagerrolle (lib/lieferweg.mjs,
  * Regeldatei lagerware.json), die noch nicht als zugeschnitten abgehakt ist. Dieselbe Regel wie "Aus eigenem Lager
  * zuschneiden" unter Bestellen (selbstStand) - hier nur als Zeile fuer den Laden, eine je Position.
+ * Seit 13.11.2026 auch die Folgeschritte derselben Regel: "packen" (zugeschnitten oder bei uns eingetroffen)
+ * und "versand" (gepackt). Feld stand sagt, welcher; seit zaehlt ab dem Schritt davor, nicht ab Bestelldatum.
  * @param {object[]} auftraege  Bestellmodell (auftraege mit positionen, lagerware vom Server markiert)
  * @param {(orderId: string, lineItemId: string) => object|null} eintragVon  Auftragsfluss-Eintrag der Position
  */
@@ -64,11 +77,15 @@ export function zuschnitte(auftraege = [], eintragVon = () => null) {
   return auftraege
     .filter(a => !a.testbestellung && !a.storniert && BEZAHLT.includes(String(a.bezahlt)))
     .flatMap(a => (a.positionen || [])
-      .filter(p => selbstStand(p, eintragVon(a.id, p.lineItemId)) === 'zuschneiden')
-      .map((p) => {
+      .map(p => ({ p, eintrag: eintragVon(a.id, p.lineItemId) }))
+      .map(x => ({ ...x, stand: selbstStand(x.p, x.eintrag) }))
+      .filter(x => x.stand)
+      .map(({ p, eintrag, stand }) => {
         const menge = p.bestellmenge?.text && !/ungekl/i.test(p.bestellmenge.text) ? p.bestellmenge.text : (p.menge ? `Menge ${p.menge}` : null);
         return {
-          orderId: a.id, lineItemId: p.lineItemId, orderName: a.name || null, kundenname: a.details?.kunde?.name || null, seit: a.datum,
+          orderId: a.id, lineItemId: p.lineItemId, orderName: a.name || null, kundenname: a.details?.kunde?.name || null, stand,
+          seit: (stand === 'versand' ? eintrag?.selbstversand?.gepackt?.am : stand === 'packen' ? eintrag?.geliefertAm : null) || a.datum,
+          hinweis: stand === 'zuschneiden' ? null : [selbstStandText(stand, lieferwegVon(p, eintrag)?.weg, eintrag), stand === 'versand' ? VERSAND_WO : null].filter(Boolean).join('. ').replace(/^./, c => c.toUpperCase()),
           text: [p.titel, p.farbe, menge].filter(Boolean).join(' · ').slice(0, 200) || 'Ware aus eigener Lagerrolle',
         };
       }));
