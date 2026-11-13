@@ -203,6 +203,21 @@ export function sichereUrl(url) {
   }
 }
 
+/**
+ * Link zur fertigen Umkreissuche von dtvp.de (100 km um Oranienburg, Suchtext "Bodenbelag"), die ohne
+ * Anmeldung laeuft. Die Suche steckt als Base64 (URL-Variante, ohne "=") im Teil nach dem "#".
+ * Falle: "UNDEFINED" darf in contractingRules NICHT stehen, sonst antwortet dtvp.de mit HTTP 400.
+ */
+export function dtvpUmkreissuche() {
+  const suche = {
+    cpvCodes: [], contractingRules: ['VOL', 'VOB', 'VSVGV', 'SEKTVO', 'OTHER'], publicationTypes: ['Tender'],
+    location: { postalCode: '16515', distance: '100' }, pageNumber: '1', searchText: 'Bodenbelag',
+    sort: { order: [{ property: 'PROJECT_PUBLICATION_DATE_LNG', direction: 'DESC' }] },
+  };
+  const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(suche))));
+  return `https://www.dtvp.de/Center/common/project/search.do?method=showExtendedSearch&fromExternal=true#${b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+}
+
 const LAENDER = /^(Deutschland|Germany|Allemagne|Österreich|Austria|Schweiz|Polen|Poland)$/i;
 
 /**
