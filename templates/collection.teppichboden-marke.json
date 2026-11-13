@@ -1086,12 +1086,17 @@
         "tp_kategorie_produktsprung": {
           "type": "tp-kategorie-produktsprung",
           "settings": {}
+        },
+        "tp_mobil_kompakt": {
+          "type": "tp-mobil-kompakt",
+          "settings": {}
         }
       },
       "block_order": [
         "text_tqQTNE",
         "tp_kategorie_produktsprung",
         "text_twGGkJ",
+        "tp_mobil_kompakt",
         "tp_unterkategorien"
       ],
       "name": "Collection heading",

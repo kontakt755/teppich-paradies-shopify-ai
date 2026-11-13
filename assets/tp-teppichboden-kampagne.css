@@ -55,3 +55,10 @@
   .tp-tbk__button { width: 100%; }
   .tp-tbk__facts { gap: 8px 14px; }
 }
+/* Handy-Kompaktansicht (w-375, nur Testkategorien): der Kasten steht am Handy
+   im Produktraster (tp-tbk--einschub) statt davor (tp-tbk--nur-desktop). */
+.tp-tbk--einschub { display: none; }
+@media (max-width: 749px) {
+  .tp-tbk-section:has(.tp-tbk--nur-desktop) { display: none; }
+  .tp-tbk--einschub { display: block; margin-block: 4px; }
+}

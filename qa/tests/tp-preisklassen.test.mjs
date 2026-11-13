@@ -22,12 +22,19 @@ const DEF = ohneDoc(lies('snippets/tp-preisklassen-def.liquid'));
 const SECTION = ohneScript(ohneBloecke(lies('sections/tp-preisklassen.liquid')));
 const PARAM = `filter.p.m.${NAMESPACE}.${KEY}`;
 
+// Zweites Snippet: Handy-Kompaktansicht (w-375), im Test ohne Kategorie, also ausgeschaltet.
+const MOBIL = ohneDoc(lies('snippets/tp-mobil-kompakt.liquid'));
+const snippet = (f) => {
+  if (f.endsWith('tp-preisklassen-def.liquid')) return DEF;
+  if (f.endsWith('tp-mobil-kompakt.liquid')) return MOBIL;
+  throw new Error(`unbekannt: ${f}`);
+};
 const engine = new Liquid({
   fs: {
-    readFileSync: (f) => { if (f.endsWith('tp-preisklassen-def.liquid')) return DEF; throw new Error(`unbekannt: ${f}`); },
-    existsSync: (f) => f.endsWith('tp-preisklassen-def.liquid'),
-    exists: async (f) => f.endsWith('tp-preisklassen-def.liquid'),
-    readFile: async (f) => DEF,
+    readFileSync: snippet,
+    existsSync: (f) => f.endsWith('tp-preisklassen-def.liquid') || f.endsWith('tp-mobil-kompakt.liquid'),
+    exists: async (f) => f.endsWith('tp-preisklassen-def.liquid') || f.endsWith('tp-mobil-kompakt.liquid'),
+    readFile: async (f) => snippet(f),
     resolve: (_dir, file, ext) => file + ext,
   },
   extname: '.liquid',

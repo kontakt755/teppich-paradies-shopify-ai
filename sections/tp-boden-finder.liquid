@@ -52,6 +52,10 @@
       endif
     endfor
   endif
+  # Handy-Kompaktansicht nur auf den Testkategorien (w-375).
+  capture bf_mk
+    render 'tp-mobil-kompakt'
+  endcapture
   assign bf_fragen = 4
   if bf_vorwahl != blank
     assign bf_fragen = 3
@@ -70,7 +74,7 @@
   {%- endif -%}
 {%- else -%}
 <section
-  class="tp-bf{% if section.settings.kompakt %} tp-bf--kompakt{% endif %}"
+  class="tp-bf{% if section.settings.kompakt %} tp-bf--kompakt{% endif %}{% if bf_mk contains 'ja' %} tp-bf--mobil-kompakt{% endif %}"
   id="{{ bf_root_id }}"
   data-bf-root
   aria-labelledby="tp-bf-h-{{ section.id }}"
@@ -468,6 +472,17 @@
     .tp-bf--kompakt .tp-bf__aktionen { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
     .tp-bf--kompakt .tp-bf__start { flex: 1 1 100%; min-height: 46px; }
     .tp-bf--kompakt .tp-bf__bequem-link { margin: 0 auto; font-size: var(--font-size--sm); }
+  }
+  /* Handy-Kompaktansicht (w-375, nur Testkategorien): Ueberschrift, Knopf, Link. */
+  @media (max-width: 749px) {
+    .tp-bf--mobil-kompakt { padding-block: 0 8px; }
+    .tp-bf--mobil-kompakt .tp-bf__band { gap: 8px; padding: 12px 14px; }
+    .tp-bf--mobil-kompakt .tp-bf__muster,
+    .tp-bf--mobil-kompakt .tp-bf__kicker { display: none; }
+    .tp-bf--mobil-kompakt .tp-bf__text { padding-right: 0; }
+    .tp-bf--mobil-kompakt .tp-bf__h { font-size: var(--tp-fs-md); }
+    .tp-bf--mobil-kompakt .tp-bf__start { min-height: 44px; }
+    .tp-bf--mobil-kompakt .tp-bf__bequem-link { min-height: 32px; padding: 0; }
   }
 {% endstylesheet %}
 

@@ -57,6 +57,11 @@
     assign pk_rest = pk_rest | append: '&sort_by=' | append: pk_col.sort_by
   endif
 
+  # Handy-Kompaktansicht nur auf den Testkategorien (w-375).
+  capture pk_mk
+    render 'tp-mobil-kompakt'
+  endcapture
+
   assign pk_def = ''
   if pk_filter != nil
     capture pk_def
@@ -114,7 +119,7 @@
 
 <tp-preisklassen section-id="{{ section.id }}">
 {%- if pk_anzahl_klassen >= 2 -%}
-  <div class="tp-pk section section--page-width color-{{ s.color_scheme }}" style="padding-block: {{ s.padding_top }}px {{ s.padding_bottom }}px;">
+  <div class="tp-pk section section--page-width color-{{ s.color_scheme }}{% if pk_mk contains 'ja' %} tp-pk--kompakt{% endif %}" style="padding-block: {{ s.padding_top }}px {{ s.padding_bottom }}px;">
     <nav class="tp-pk__nav" aria-label="{{ s.heading | default: 'Preisklasse' | escape }}">
       <div class="tp-pk__kopf">
         <h2 class="tp-pk__titel">{{ s.heading | escape }}</h2>
@@ -178,6 +183,24 @@
     .tp-pk__liste::-webkit-scrollbar { display: none; }
     .tp-pk__liste > li { flex: none; width: 152px; scroll-snap-align: start; }
     .tp-pk__kachel { padding: 12px 14px; }
+  }
+  /* Handy-Kompaktansicht (w-375, nur Testkategorien): Preisklassen als schmale
+     Chips in einer Zeile. Die Trefferzahl bleibt fuer Screenreader im Text. */
+  @media screen and (max-width: 749px) {
+    .tp-pk--kompakt .tp-pk__lead { display: none; }
+    .tp-pk--kompakt .tp-pk__kopf { margin-block-end: 8px; }
+    .tp-pk--kompakt .tp-pk__titel { font-size: var(--tp-fs-md); }
+    .tp-pk--kompakt .tp-pk__liste { gap: 8px; }
+    .tp-pk--kompakt .tp-pk__liste > li { width: auto; }
+    .tp-pk--kompakt .tp-pk__kachel {
+      position: relative; /* haelt die versteckte Trefferzahl (absolut) im wischbaren Streifen, sonst waechst die Seite seitwaerts */
+      flex-direction: row; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 999px; white-space: nowrap;
+    }
+    .tp-pk--kompakt .tp-pk__name,
+    .tp-pk--kompakt .tp-pk__bereich { font-size: var(--tp-fs-sm); }
+    .tp-pk--kompakt .tp-pk__anzahl {
+      position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
   }
 {% endstylesheet %}
 

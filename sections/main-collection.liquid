@@ -154,6 +154,12 @@
           endfor
         endif
       -%}
+      {%- comment -%}
+        Handy-Kompaktansicht (w-375, nur Testkategorien aus snippets/tp-mobil-kompakt):
+        der Musterkasten steht am Handy nach dem 4. Produkt der ersten Seite im Raster
+        (bei weniger Treffern nach dem letzten) statt vor dem Raster.
+      {%- endcomment -%}
+      {%- capture tp_mk -%}{%- render 'tp-mobil-kompakt' -%}{%- endcapture -%}
       {% capture children %}
         {% for product in collection.products %}
           {%- comment -%}
@@ -187,6 +193,20 @@
             {% content_for 'block', type: '_product-card', id: 'product-card', closest.product: product, card_index: forloop.index0 %}
             {% # theme-check-enable %}
           </li>
+          {%- if tp_mk contains 'ja' and paginate.current_page == 1 -%}
+            {%- assign tp_einschub_hier = false -%}
+            {%- if forloop.index == 4 -%}
+              {%- assign tp_einschub_hier = true -%}
+            {%- elsif forloop.last and forloop.index < 4 -%}
+              {%- assign tp_einschub_hier = true -%}
+            {%- endif -%}
+            {%- if tp_einschub_hier -%}
+              <li class="tp-raster-einschub" id="tp-raster-einschub-{{ section.id }}">
+                {{ 'tp-teppichboden-kampagne.css' | asset_url | stylesheet_tag }}
+                {%- render 'tp-teppichboden-kampagne-kasten', variante: 'einschub' -%}
+              </li>
+            {%- endif -%}
+          {%- endif -%}
         {% endfor %}
       {% endcapture %}
 
@@ -241,6 +261,17 @@
   .tp-raster-preisangabe {
     text-align: right;
     margin-block-end: 8px;
+  }
+
+  /* Einschub im Raster (Handy-Kompaktansicht, w-375): nur bis 749 px, ueber die ganze Rasterbreite. */
+  .tp-raster-einschub {
+    display: none;
+  }
+  @media screen and (max-width: 749px) {
+    .tp-raster-einschub {
+      display: block;
+      grid-column: 1 / -1;
+    }
   }
 
   /* Telefon: results-list ist dort kein Raster, der Hinweis lief bis an den
