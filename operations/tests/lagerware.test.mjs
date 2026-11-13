@@ -17,9 +17,9 @@ function regeldatei(inhalt) {
 }
 
 test('fehlende Datei = keine Regeln; vorhandene Regeln werden getrimmt gelesen', () => {
-  assert.deepEqual(leseLagerware(regeldatei()), { vorhanden: false, regeln: [] });
+  assert.deepEqual(leseLagerware(regeldatei()), { vorhanden: false, regeln: [], ohneRolle: [] });
   const file = regeldatei({ _zweck: 'Test', regeln: [{ skuPraefix: ' TEST-LAGER ', hinweis: ' Rolle im Lager ' }, { skuPraefix: 'TEST-ROLLE' }] });
-  assert.deepEqual(leseLagerware(file), { vorhanden: true, regeln: [{ skuPraefix: 'TEST-LAGER', hinweis: 'Rolle im Lager' }, { skuPraefix: 'TEST-ROLLE', hinweis: null }] });
+  assert.deepEqual(leseLagerware(file), { vorhanden: true, regeln: [{ skuPraefix: 'TEST-LAGER', hinweis: 'Rolle im Lager' }, { skuPraefix: 'TEST-ROLLE', hinweis: null }], ohneRolle: [] });
   assert.ok(lagerwarePfad('/x').endsWith(path.join('lieferanten', 'lagerware.json')));
 });
 

@@ -65,6 +65,8 @@
       </a>
       <nav class="mainnav" id="mainnav" aria-label="Hauptnavigation">
         <!-- Shop-Kerngeschaeft in Arbeitsreihenfolge; weitere Bereiche bleiben geschlossen. -->
+        <!-- Ganz oben, damit der Laden es zuerst sieht (Benutzer 13.11.2026). Ohne nav-haupt: am Handy im Blatt "Mehr". -->
+        <a href="#/zuschnitt" data-nav="zuschnitt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.500" cy="6.500" r="2.500"/><circle cx="6.500" cy="17.500" r="2.500"/><path d="M8.500 8 20 18M8.500 16 20 6"/></svg><span>Noch zu schneiden</span><span class="nav-count" data-nav-zahl="zuschnitt" hidden></span></a>
         <a href="#/heute" data-nav="heute" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg><span>Heute</span><span class="nav-count" data-nav-zahl="heute" hidden></span></a>
         <a href="#/kunden?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit" data-nav="kunden" data-nav-tab="bestellungen" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span>Bestellungen</span><span class="nav-count" data-nav-zahl="bestellungen" hidden></span></a>
         <a href="#/einkauf?tab=lieferant&amp;art=muster&amp;af=offen" data-nav="einkauf" data-nav-einkauf="muster" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Muster bestellen</span></a>

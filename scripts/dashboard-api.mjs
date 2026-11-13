@@ -409,7 +409,8 @@ let lagerwareGemeldet = null;
  */
 function mitLagerware(modell, dir) {
   try {
-    markiereLagerware(modell, leseLagerware(lagerwarePfad(dir)).regeln);
+    const liste = leseLagerware(lagerwarePfad(dir));
+    markiereLagerware(modell, liste.regeln, liste.ohneRolle);
     lagerwareGemeldet = null;
   } catch (e) {
     if (!(e instanceof LagerwareFehler)) throw e;

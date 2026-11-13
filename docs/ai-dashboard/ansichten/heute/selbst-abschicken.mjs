@@ -16,6 +16,7 @@
  */
 import { esc, plural } from '../../kern/helfer.mjs';
 import { lieferwegVon, selbstStand, selbstStandText } from '../../lib/lieferweg.mjs';
+import { versandweg } from '../../lib/zuschnitt.mjs';
 import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { FRISTEN, alterText, tageSeit, tonNachAlter } from '../../lib/todos.mjs';
 import { vorgangsLink } from '../../lib/vorgangslink.mjs';
@@ -52,10 +53,11 @@ export function selbstAbschickenStand({ daten, statusAlle = null, jetzt = new Da
   const zeilen = [];
   for (const z of daten.zeilen) {
     if (!z || z.testbestellung || z.storniert || z.archiviert || z.offen === false || z.fulfillmentstatus === 'FULFILLED') continue;
+    const eintragVon = q => (frisch ? frisch[`${z.orderId}::${q.lineItemId}`] : z.positionsstatus?.[q.lineItemId]) || null;
     for (const p of z.auftrag?.positionen || []) {
       if (!p?.lineItemId || p.istMuster || (p.menge ?? 1) <= 0) continue;
       const key = `${z.orderId}::${p.lineItemId}`;
-      const eintrag = frisch ? (frisch[key] || null) : (z.positionsstatus?.[p.lineItemId] || null);
+      const eintrag = eintragVon(p);
       const stand = selbstStand(p, eintrag);
       if (!stand) continue;
       const lw = lieferwegVon(p, eintrag);
@@ -63,6 +65,8 @@ export function selbstAbschickenStand({ daten, statusAlle = null, jetzt = new Da
       zeilen.push({
         key, z, p: { ...p, orderId: z.orderId, orderName: z.orderName || '' }, eintrag, stand, lw, tage,
         ton: tonNachAlter(tage, ...FRISTEN.rausgeben),
+        // Selbst Geschnittenes: allein als Paeckchen oder mit dem Teppich? (lib/zuschnitt.mjs, 13.11.2026)
+        weg: lw?.weg === 'lager' ? versandweg(p, z.auftrag.positionen, eintragVon) : null,
       });
     }
   }
@@ -83,7 +87,8 @@ function zeile(x, { erste, lesend }) {
       <strong><a href="${esc(ziel)}">${esc(z.orderName || 'Bestellung')}</a> · ${esc(z.kundenname || 'Kunde nicht hinterlegt')}</strong>
       <p>${esc(artikel.join(' · ') || 'Artikel nicht hinterlegt')}</p>
       <p class="selbst-stand">${lieferwegPlakette(x.lw)} <span>${esc(selbstStandText(x.stand, x.lw?.weg, x.eintrag))}</span> ${alter}</p>
-      ${p.lagerHinweis && x.lw?.weg === 'lager' ? `<p class="selbst-hinweis">${esc(p.lagerHinweis)}</p>` : ''}</div>
+      ${p.lagerHinweis && x.lw?.weg === 'lager' ? `<p class="selbst-hinweis">${esc(p.lagerHinweis)}</p>` : ''}
+      ${x.weg ? `<p class="zuschnitt-weg${x.weg.art === 'unklar' ? ' warn' : ''}"><strong>${esc(x.weg.kurz)}</strong> ${esc(x.weg.text)}</p>` : ''}</div>
       ${knoepfe ? `<div class="selbst-knoepfe">${knoepfe}</div>` : ''}</div>`;
 }
 

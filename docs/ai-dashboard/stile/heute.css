@@ -275,3 +275,10 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
   .selbst-abschicken .selbst-knoepfe { justify-content: flex-start; }
   .selbst-abschicken .selbst-knoepfe .btn { min-height: 44px; }
 }
+
+/* Noch zu schneiden (ansichten/zuschnitt.mjs): das Mass ist das Erste, was an der Rolle gebraucht wird;
+   der Versandweg steht als eigener Satz, bernstein nur, solange er offen ist. */
+.zuschnitt .zuschnitt-mass { font-size: var(--tp-fs-lg); }
+.zuschnitt > .empty, .zuschnitt > .notice { margin-bottom: 18px; }
+.heute-bestellzeile .zuschnitt-weg { margin-top: 4px; color: var(--text); }
+.heute-bestellzeile .zuschnitt-weg.warn strong { color: var(--warn); }

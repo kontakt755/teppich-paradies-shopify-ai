@@ -4,7 +4,13 @@
  * schickt keine Einzelzuschnitte). Welche Artikel das sind, steht nur in der privaten Regeldatei
  * $TP_PRIVAT_DIR/lieferanten/lagerware.json - nie im Repository:
  *
- *   { "_zweck": "…", "regeln": [{ "skuPraefix": "<Praefix>", "hinweis": "<Text fuer den Laden>" }] }
+ *   { "_zweck": "…", "regeln": [{ "skuPraefix": "<Praefix>", "hinweis": "<Text fuer den Laden>" }],
+ *     "ohneRolle": [{ "skuPraefix": "<Praefix>", "hinweis": "<Text>" }] }
+ *
+ * `regeln` = die Rolle liegt im Laden. `ohneRolle` (optional, 13.11.2026) = Unterlagen, die wir schneiden
+ * wuerden, von denen aber keine Rolle im Laden liegt: keine Lagerware, sie werden normal bestellt und
+ * stehen unter "Noch zu schneiden" als "nichts zu schneiden" (docs/ai-dashboard/lib/zuschnitt.mjs).
+ * Passt eine SKU auf beide Listen, gewinnt `ohneRolle` - so faellt eine einzelne Breite aus einer Regel heraus.
  *
  * Fehlt die Datei, gibt es keine Regeln. Ist sie beschaedigt, wirft das Lesen - nie still leer
  * (Skill control-center, Fallstrick "Eine lokale Ablage liest nur eine FEHLENDE Datei als leer"):
@@ -27,7 +33,7 @@ export function leseLagerware(file = lagerwarePfad()) {
   try {
     text = fs.readFileSync(file, 'utf8');
   } catch (e) {
-    if (e?.code === 'ENOENT') return { vorhanden: false, regeln: [] };
+    if (e?.code === 'ENOENT') return { vorhanden: false, regeln: [], ohneRolle: [] };
     throw new LagerwareFehler(`${path.basename(file)} ist nicht lesbar (${e?.code || e?.message}) – Lagerware wird nicht erkannt.`);
   }
   let roh;
@@ -35,24 +41,29 @@ export function leseLagerware(file = lagerwarePfad()) {
     throw new LagerwareFehler(`${path.basename(file)} ist beschädigt – Lagerware wird nicht erkannt. Bitte die Datei reparieren oder aus der Sicherung holen.`);
   }
   const regeln = roh?.regeln;
-  if (!roh || typeof roh !== 'object' || Array.isArray(roh) || !Array.isArray(regeln)
-    || regeln.some(r => !r || typeof r !== 'object' || Array.isArray(r) || typeof r.skuPraefix !== 'string' || r.skuPraefix.trim().length < 2
-      || (r.hinweis != null && typeof r.hinweis !== 'string'))) {
+  const ohneRolle = roh?.ohneRolle ?? [];
+  const kaputt = r => !r || typeof r !== 'object' || Array.isArray(r) || typeof r.skuPraefix !== 'string' || r.skuPraefix.trim().length < 2
+    || (r.hinweis != null && typeof r.hinweis !== 'string');
+  if (!roh || typeof roh !== 'object' || Array.isArray(roh) || !Array.isArray(regeln) || !Array.isArray(ohneRolle) || regeln.some(kaputt) || ohneRolle.some(kaputt)) {
     throw new LagerwareFehler(`${path.basename(file)} hat einen ungültigen Aufbau (erwartet: regeln mit skuPraefix und hinweis) – Lagerware wird nicht erkannt.`);
   }
-  return { vorhanden: true, regeln: regeln.map(r => ({ skuPraefix: r.skuPraefix.trim(), hinweis: r.hinweis ? String(r.hinweis).trim().slice(0, 300) : null })) };
+  const sauber = r => ({ skuPraefix: r.skuPraefix.trim(), hinweis: r.hinweis ? String(r.hinweis).trim().slice(0, 300) : null });
+  return { vorhanden: true, regeln: regeln.map(sauber), ohneRolle: ohneRolle.map(sauber) };
 }
 
 /**
  * Markiert im Bestellmodell jede Warenposition, deren SKU zu einer Regel passt: `lagerware: true`
  * und `lagerHinweis`. Muster und Eigenleistungen nie. Alle vier Listen, weil `gruppen` Kopien
  * der Positionen enthalten (bestelluebersicht.mjs). Gibt die Zahl markierter Auftragspositionen zurueck.
+ * SKUs aus `ohneRolle` bekommen `ohneRolle: true` und sind keine Lagerware (nicht mitgezaehlt).
  */
-export function markiereLagerware(modell, regeln = []) {
-  if (!modell || !regeln.length) return 0;
+export function markiereLagerware(modell, regeln = [], ohneRolle = []) {
+  if (!modell || !(regeln.length || ohneRolle.length)) return 0;
   let anzahl = 0;
   const markiere = (p, zaehlen) => {
     if (!p || p.istMuster || p.eigenleistung) return;
+    const fehlt = lagerRegelFuer(p.sku, ohneRolle);
+    if (fehlt) { p.ohneRolle = true; p.lagerHinweis = fehlt.hinweis || null; return; }
     const regel = lagerRegelFuer(p.sku, regeln);
     if (!regel) return;
     p.lagerware = true;

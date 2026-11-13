@@ -81,7 +81,7 @@ function zeichne() {
     return;
   }
   main.innerHTML = aufgabenHinweis(ohneAufgaben) + ansichten[state.route.view]();
-  document.title = `${{ heute: 'Heute', laden: 'Laden', prozesse: 'Vorbereiten', arbeit: 'Technik', freigaben: 'Entscheidungen', bereiche: 'Bereiche', insights: 'Kennzahlen', aktivitaet: 'Verlauf', einkauf: 'Bestellen', kunden: !state.route.params.get('kunde') && state.route.params.get('tab') === 'muster' ? 'Packstation' : !state.route.params.get('kunde') && state.route.params.get('tab') === 'bestellungen' ? 'Bestellungen' : 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Kontrolle', organisation: 'Aufgaben', sonderposten: 'Sonderposten', akquise: 'Genossenschaften', hausverwaltungen: 'Hausverwaltungen', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', zuschnitt: 'Noch zu schneiden', laden: 'Laden',prozesse: 'Vorbereiten', arbeit: 'Technik', freigaben: 'Entscheidungen', bereiche: 'Bereiche', insights: 'Kennzahlen', aktivitaet: 'Verlauf', einkauf: 'Bestellen', kunden: !state.route.params.get('kunde') && state.route.params.get('tab') === 'muster' ? 'Packstation' : !state.route.params.get('kunde') && state.route.params.get('tab') === 'bestellungen' ? 'Bestellungen' : 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Kontrolle', organisation: 'Aufgaben', sonderposten: 'Sonderposten', akquise: 'Genossenschaften', hausverwaltungen: 'Hausverwaltungen', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   if (lokalerFokus?.id) {
     const feld = document.getElementById(lokalerFokus.id);

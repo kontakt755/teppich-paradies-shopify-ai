@@ -68,14 +68,14 @@ import { ladePuppeteer } from './puppeteer-laden.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=anrufe', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'hausverwaltungen', 'team', 'hilfe', 'laden'];
+const ALLE_ANSICHTEN = ['heute', 'zuschnitt', 'prozesse','prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=anrufe', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'hausverwaltungen', 'team', 'hilfe', 'laden'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
 // der Baustelle), ist das Handy kein Sonderfall mehr: jede Ansicht wird bei jeder Breite geprueft.
 const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800'], [390, 844, 'handy'], [360, 740, 'b360']];
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
-const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten', 'bildrechte', 'ek-liste'];
+const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'bildrechte', 'ek-liste'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
 const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'sicherungsstand.json', 'auftragsstatus.json', 'kettelversand.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json', 'muster-druckliste.json', 'mustersperre.json', 'prozesslinks.json',
   // Kunden & Auftraege, Warenkoerbe, Shop-Wache, Bestand und Erfuellung: ohne diese Ordner
@@ -88,7 +88,10 @@ const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation'
   'social/upload-zugaenge.json', 'social/upload-links.json',
   // Textvorlage fuer "Muster nachfassen" auf Heute. Der Ordner nachfassen/ bleibt bewusst draussen:
   // mit der echten postfach.json schickte ein Klick auf "Jetzt senden" in der Pruefung echte Mails.
-  'muster-bestellung', 'muster-nachfassen-texte.md', 'versandkosten'];
+  'muster-bestellung', 'muster-nachfassen-texte.md', 'versandkosten',
+  // Stammdaten und Lagerliste (klein). Bis 13.11.2026 verlinkt: wer in der "Kopie" eine andere Lagerliste
+  // ausprobierte, schrieb durch den Link in die echte Datei, die der laufende Dienst liest.
+  'lieferanten'];
 
 // Spiegel von ANSICHT_ROLLEN in docs/ai-dashboard/kern/router.mjs: diese Ansichten sieht nur der
 // Inhaber; Mitarbeiter und "lesen" landen dort ohnehin auf "Heute". "social" ist fuer "lesen"

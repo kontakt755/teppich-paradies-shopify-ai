@@ -577,6 +577,24 @@ zurueck); aus dem To-do „Ware ist da – rausgeben“ nimmt sie nur die Positi
 teilweise gelieferten Auftraegen jeden Schritt nur fuer die Positionen, die ihn gehen; „Geliefert an uns“
 zaehlt nur Ware vom Lieferanten.
 
+### Noch zu schneiden und Versandweg der Unterlage (seit 2026-11-13, #2208)
+
+Eigene Ansicht `#/zuschnitt` (`ansichten/zuschnitt.mjs`), erster Punkt der Seitenleiste mit Zaehler, fuer
+jede Rolle sichtbar. Sie zeigt Unterlagen als Rollenware aus bezahlten, offenen Bestellungen in drei Gruppen
+(`lib/zuschnitt.mjs zuschnittStand`): „Jetzt schneiden“ (`selbstStand` = zuschneiden), „Geschnitten – noch
+nicht verschickt“ (packen/versand) und „Nicht schneiden“. Welche Artikel dazugehoeren, steht weiter nur in
+`lieferanten/lagerware.json`: `regeln` = Rolle liegt im Laden (Lagerware wie bisher), die neue, optionale
+Liste `ohneRolle` = keine Rolle im Laden. `ohneRolle` ist keine Lagerware (Bestellmail und „bestellt“
+bleiben moeglich), setzt `position.ohneRolle` und gewinnt gegen `regeln`, damit eine einzelne Breite aus
+einer Regel herausfaellt. Ist eine Rolle leer oder neu da, wird der Eintrag zwischen den Listen verschoben.
+
+Der Versandweg (`versandweg()`, dieselbe Funktion fuer die Seite, „Von uns abschicken“ und die Zeilen der
+Ansicht Laden) liest die uebrige Ware derselben Bestellung: geht sie belegt durch unsere Haende (Vermerk
+„an uns“/„Kettler“, schon eingetroffen, oder bestellt mit Kettelservice in der Bestellung), heisst es
+„Zusammen mit …“; geht sie belegt direkt, „Allein als Päckchen“. Ein Vorschlag vor dem Bestellen und eine
+Bestellung ohne Vermerk sind kein Beleg – dann steht „Versandweg noch offen“ statt einer Vermutung (am
+12.11. lag ein geschnittenes Vlies im Lager, weil der Teppich direkt vom Hersteller kam).
+
 ### Warnung vor dem Bestellen (seit 2026-11-05)
 
 Der Bestellmail-Dialog zeigt je Kommission eine Schätzung, bevor beim Lieferanten bestellt wird
