@@ -597,6 +597,8 @@ export const STATUS_DATEIEN = Object.freeze([
   { id: 'serviceanfragen', datei: 'postfach/status-serviceanfragen.json', titel: 'Service-Anfragen aus dem Postfach', label: LAEUFE.postfach.label, fenster: ARBEITSZEIT, stummNachMin: 300 },
   { id: 'postfach-entwuerfe', datei: 'postfach-entwuerfe/status.json', titel: 'Postfach: Einordnung und Antwort-Entwürfe', label: LAEUFE['postfach-entwuerfe'].label, fenster: ARBEITSZEIT, stummNachMin: 300 },
   { id: 'daten-gesundheit', datei: 'datenstand/status.json', titel: 'Datenstand des Sync-Dienstes', label: 'net.teppich-paradies.datenstand', fenster: null, stummNachMin: 180 },
+  // Woechentlich (Mo und Di vormittags): 8 Tage ohne Erfolg heisst, ein ganzer Zyklus ist ausgefallen.
+  { id: 'gel-diesel', datei: 'gel-diesel/status.json', titel: 'GEL-Dieselzuschlag', label: 'net.teppich-paradies.gel-diesel', fenster: null, stummNachMin: 11_520 },
   { id: 'codex-stand', datei: 'ki-stand/codex.json', titel: 'Codex-Kontingent', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 180 },
   { id: 'muster-versand', datei: 'ki-stand/muster.json', titel: 'Musterautomatik', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 180 },
   { id: 'claude-stand', datei: 'ki-stand/claude.json', titel: 'Claude-Code-Stand', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 12_000 },

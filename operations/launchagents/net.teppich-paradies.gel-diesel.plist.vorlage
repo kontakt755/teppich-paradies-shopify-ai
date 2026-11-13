@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.gel-diesel</string>
+
+  <!-- Dieselzuschlag der Spedition einmal je Woche nachtragen (operations/scripts/gel-diesel-nachtragen.mjs):
+       liest den Wert der laufenden Kalenderwoche von der oeffentlichen GEL-Seite und schreibt
+       Satz und Zeitraum in $TP_PRIVAT_DIR/versandkosten/tarife.json. Die Seite wird dienstags
+       aktualisiert, deshalb dienstags 9:30; montags 9:30 holt nach, was am Dienstag davor ausfiel.
+       Ohne Aenderung schreibt der Lauf nichts. Ohne KI-Kontingent, nur lesender Abruf.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard, damit der Dienst unabhaengig davon ist,
+       von wo aus er eingerichtet wurde. Ein Fehler steht im Protokoll unten und als Status im
+       Control Center (Systemzustand, To-do "Mac-Dienst gestoert").
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-gel-diesel -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__HOME__/tp-dashboard/operations/scripts/gel-diesel-nachtragen.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>__HOME__/tp-dashboard</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>PATH</key><string>__NODE_DIR__:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+  <!-- Wochentag 2 ist Dienstag, 1 Montag. Verpasste Zeiten im Ruhezustand holt launchd beim Aufwachen nach. -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+  </array>
+  <key>RunAtLoad</key><false/>
+  <key>ProcessType</key><string>Background</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/teppich-paradies-gel-diesel.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/teppich-paradies-gel-diesel.log</string>
+</dict>
+</plist>
