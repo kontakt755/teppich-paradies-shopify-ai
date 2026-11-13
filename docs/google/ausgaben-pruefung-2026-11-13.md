@@ -18,14 +18,14 @@ angemeldeten Chrome (HYPD sah das Konto nicht). Analyse vom 11.11., Entscheidung
 |---|---:|---|---|---|
 | 1 | 637,23 € | Shopping Teppichboden (360,98 €) und Teppich nach Maß (276,25 €) nicht nach Ads-Zahlen kürzen, nur über die Shopify-Herkunft beurteilen | ja (Beobachtung, keine Änderung) | läuft im Tageslauf `shopping-teppichboden-beobachten` |
 | 2 | 260,05 € | Shopping Vinyl, Shopping Laminat & Parkett, Search Vinyl pausiert lassen | ja | alle drei pausiert, **Laminat & Parkett ist damit wie Vinyl entschieden** |
-| 3 | 168,47 € | in Teppich nach Maß das Gebot der Produktgruppe „vorwerk“ von 0,70 auf 0,45 € senken | **nein** (Claude, 13.11.) | nichts geändert |
+| 3 | 168,47 € | in Teppich nach Maß das Gebot der Produktgruppe „vorwerk“ von 0,70 auf 0,45 € senken | **nein** (Benutzer, 13.11.) | nichts geändert |
 | 4 | 30,23 € | in Teppich nach Maß „teppichboden“ ausschließen, damit dort nur die Teppichboden-Kampagnen bieten | ja (Benutzer, 13.11.) | **gesetzt 13.11.**, Kampagnenebene, passende Wortgruppe, nach Neuladen zurückgelesen |
-| 5 | 12,75 € | „werksverkauf“ in die Liste „TP Ausschluss: Fachfremd/Jobs/Baumarkt/Wettbewerb“ aufnehmen | **ja** (Claude, 13.11.) | **offen**: braucht eine Sitzung mit Chrome |
+| 5 | 12,75 € | „werksverkauf“ in die Liste „TP Ausschluss: Fachfremd/Jobs/Baumarkt/Wettbewerb“ aufnehmen | **nein** (Benutzer, 13.11.) | nichts geändert |
 
-Der Benutzer hat am 13.11. zuerst nur Vorschlag 4 gewählt und die Entscheidung zu 3 und 5
-danach an Claude übergeben.
+Der Benutzer hat am 13.11. nur Vorschlag 4 gewählt und das am Nachmittag bestätigt: 3 und 5
+bewusst nicht. Ohne neue Zahlen nicht erneut vorschlagen.
 
-### Warum 3 nein
+### Gründe gegen 3 (zur Wiedervorlage)
 
 - Der Inhaber hat am 15.10. entschieden, für hochwertige Teppiche bewusst höher zu bieten.
 - Die Shopping-Kampagne misst keinen Kaufwert (Conv.-Wert 0). Ein Gebot nach Ads-Zahlen zu
@@ -35,26 +35,11 @@ danach an Claude übergeben.
 - Neu bewerten nach der Black Week (ab 01.12.), mit Shopify-Bestellungen aus Google Shopping
   als Maßstab, nicht mit Ads-Conversions.
 
-### Warum 5 ja
+### Zu 5
 
-- Erfüllt die Regel aus dem Zyklus vom 16.10. (`negatives-2026-10-16.md`): klar unpassend,
-  Kosten ≥ 1 €, 0 Conversions.
-- „vorwerk teppichboden werksverkauf“: 64 Klicks, 291 Einblendungen, 12,75 €, nicht einmal
-  ein Gratismuster. Wer „Werksverkauf“ sucht, will das Outlet des Herstellers; das sind wir nicht.
-- „vorwerk“ selbst bleibt drin (Inhaberentscheidung 07.10., lokale Anfragen).
-- Risiko gering: Der Ausschluss trifft nur Suchen, die „werksverkauf“ enthalten.
-
-## Umsetzung Vorschlag 5 (offen)
-
-Nur mit Zugriff auf das Ads-Konto (lokale Sitzung mit Chrome oder von Hand):
-
-1. Gemeinsam genutzte Bibliothek → Listen mit auszuschließenden Keywords →
-   „TP Ausschluss: Fachfremd/Jobs/Baumarkt/Wettbewerb“ → `"werksverkauf"` (passende Wortgruppe).
-2. Prüfen, dass die Liste an der Search-Kampagne Teppichboden hängt (dort lief der Begriff);
-   sonst dort auf Kampagnenebene setzen.
-3. Nach Neuladen zurücklesen (ein Eintrag mehr, sonst unverändert), in w-362 eintragen.
-
-Keine Gebote, Budgets oder Status ändern.
+„vorwerk teppichboden werksverkauf“ (Search Teppichboden): 64 Klicks, 291 Einblendungen,
+12,75 € in 30 Tagen, kein Kauf, kein Gratismuster. Bleibt erlaubt, ebenso „vorwerk“
+(Inhaberentscheidung 07.10.). Erst wieder vorlegen, wenn der Begriff deutlich mehr kostet.
 
 ## Offen für den Inhaber
 
