@@ -1,7 +1,7 @@
 {
   "format": "tp-tnm-endpreis-v1",
   "ok": true,
-  "erstellt": "2026-11-13T12:23:25.029Z",
+  "erstellt": "2026-11-14T11:38:42.400Z",
   "theme": "live",
   "produkte": 429,
   "varianten": 4588,
@@ -3696,7 +3696,7 @@
     },
     {
       "id": "gid://shopify/Product/16136300822862",
-      "updatedAt": "2026-11-08T02:57:51Z",
+      "updatedAt": "2026-11-14T07:59:45Z",
       "variantIds": [
         "61156269719886",
         "61156269752654",
@@ -7178,7 +7178,7 @@
   ],
   "kanalFreigabe": false,
   "hinweis": "Das Manifest veroeffentlicht keine Produkte. Freigabe erst nach verarbeiteter Endpreisquelle.",
-  "katalogHash": "f35930b04a74bd19578409570f7f50ce1401d2c6a3a382979ec5f4496159eacd",
+  "katalogHash": "e6caa2bed46d7d38230220947b7b4c18ea38085a444a2ffd1c3d960c33b4dd20",
   "entnahmen": [],
   "vorherGoogle": 4588,
   "vorherMeta": 4588
