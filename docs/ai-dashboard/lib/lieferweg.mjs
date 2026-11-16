@@ -146,6 +146,11 @@ export function wegeImAuftrag(positionen = [], eintragVon = () => null, ctx = {}
   return WEGE.filter(w => je.has(w)).map(w => je.get(w));
 }
 
+/** Lager, Kettler und ueber uns allein erfordern kein getrenntes Packen: gleicher Abgangsort. */
+export function getrenntRaus(wege = []) {
+  return new Set(wege.map(({ weg }) => weg === 'hersteller' || weg === 'baustelle' ? weg : 'uns')).size > 1;
+}
+
 /** Eine Zeile fuer den Auftrag: "1 × Hersteller → Kunde · 1 × aus Lager"; leer ohne Warenposition. */
 export function lieferwegKurz(positionen = [], eintragVon = () => null, ctx = {}) {
   return wegeImAuftrag(positionen, eintragVon, ctx).map(w => `${w.anzahl} × ${w.wort}`).join(' · ');

@@ -1,7 +1,7 @@
 // Lieferweg und "Von uns abschicken" (#1995) - nur erfundene Testdaten (TEST-LAGER-1 ...).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LIEFERWEG_WORT, lagerRegelFuer, lieferwegVon, istLagerware, selbstStand, selbstStandText, wegeImAuftrag, lieferwegKurz } from '../lib/lieferweg.mjs';
+import { LIEFERWEG_WORT, lagerRegelFuer, lieferwegVon, istLagerware, selbstStand, selbstStandText, wegeImAuftrag, getrenntRaus, lieferwegKurz } from '../lib/lieferweg.mjs';
 import { lieferwegPlakette, lieferwegeAuftrag } from '../bausteine/lieferweg.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -101,6 +101,40 @@ test('gemischte Auftraege: #1119 (Direktware + Lagerware), #1104 (Lagerware geli
   // Ein einziger Weg: keine Zahl vor dem Wort.
   assert.equal(lieferwegeAuftrag([ware()], () => ({ status: 'bestellt', ueber: 'kunde' })).includes('×'), false);
   assert.match(lieferwegPlakette(lieferwegVon(ware())), /class="lieferweg unbelegt"[^>]*title="Lieferweg: über uns – nicht vermerkt – aus den Stammdaten"/);
+});
+
+test('geht getrennt raus: verschiedene Abgangsorte mit Plakette innerhalb der Lieferwege', () => {
+  const plakette = '<span class="lieferweg getrennt" title="Teile dieses Auftrags gehen von verschiedenen Orten zum Kunden – nicht zusammen packen">geht getrennt raus</span>';
+  for (const [name, positionen] of [
+    ['hersteller + lager', [ware({ route: 'SUPPLIER_DIRECT' }), unterlage({ lagerware: true })]],
+    ['hersteller + baustelle', [ware({ route: 'SUPPLIER_DIRECT' }), ware({ route: 'SUPPLIER_TO_SITE' })]],
+  ]) {
+    assert.equal(getrenntRaus(wegeImAuftrag(positionen)), true, name);
+    const html = lieferwegeAuftrag(positionen);
+    assert.ok(html.startsWith('<span class="lieferwege">'), name);
+    assert.ok(html.endsWith(`${plakette}</span>`), name);
+  }
+});
+
+test('gemeinsamer Abgang bei uns: lager + uns und uns + kettler ohne Trennhinweis', () => {
+  for (const positionen of [
+    [unterlage({ lagerware: true }), ware()],
+    [ware(), ware({ wegVorschlag: 'kettler' })],
+    [unterlage({ lagerware: true }), ware(), ware({ wegVorschlag: 'kettler' })],
+  ]) {
+    assert.equal(getrenntRaus(wegeImAuftrag(positionen)), false);
+    assert.doesNotMatch(lieferwegeAuftrag(positionen), /getrennt/);
+  }
+});
+
+test('ein Weg oder keine Ware: kein Trennhinweis', () => {
+  for (const wegVorschlag of Object.keys(LIEFERWEG_WORT)) {
+    const positionen = [ware({ wegVorschlag }), ware({ wegVorschlag })];
+    assert.equal(getrenntRaus(wegeImAuftrag(positionen)), false, wegVorschlag);
+    assert.doesNotMatch(lieferwegeAuftrag(positionen), /getrennt/);
+  }
+  assert.equal(getrenntRaus(wegeImAuftrag([])), false);
+  assert.equal(lieferwegeAuftrag([]), '');
 });
 
 test('#1078: Hersteller-Direktware wird "Je Auftrag" nie "Ist eingetroffen" - Lagerware kein Grund "Kunde informieren"', () => {
