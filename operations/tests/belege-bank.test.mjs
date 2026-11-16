@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { auszugLesen, bankText, csvLesen, camtLesen, kontoauszugPdfLesen, artErkennen, datumLesen, bankBetrag, zuordnen, jeEmpfaenger, listeCsv, namePasst, spaltenErkennen } from '../lib/belege-bank.mjs';
+import { auszugLesen, bankText, csvLesen, camtLesen, kontoauszugPdfLesen, artErkennen, datumLesen, bankBetrag, zuordnen, jeEmpfaenger, listeCsv, namePasst, nummernAusDateiname, spaltenErkennen } from '../lib/belege-bank.mjs';
 import { bankLauf } from '../scripts/belege-bank.mjs';
 
 // Alle Daten erfunden.
@@ -170,6 +170,44 @@ test('Zuordnung: Nummer vor Betrag und Name, nur Betrag ist Hinweis, jeder Beleg
   assert.equal(zwei.buchungen[0].beleg, null);
   assert.equal(namePasst('Muster Telefon GmbH', { anbieter: 'x', anbieterSchluessel: 'telefon.example' }), true);
   assert.equal(namePasst('GmbH & Co. KG', { anbieter: 'Andere GmbH & Co. KG' }), false);
+});
+
+const guete = (buchung, belege) => zuordnen([buchung], belege).buchungen[0].beleg?.guete ?? null;
+
+test('Zuordnung: Skonto mit Nummer aus dem Dateinamen ist ein eigener Treffer', () => {
+  const beleg = [BELEG({ anbieter: 'Muster Metall', anbieterSchluessel: 'metall.example', originalName: 'RG 44556677 20261016.pdf', brutto: 123.45 })];
+  const zahlung = betrag => guete({ betrag, name: 'Fremder Name AG', zweck: 'Kd.-Nr.:123456, Rg.-Nr.:44556677, - 3 Prozent Skonto' }, beleg);
+  assert.equal(zahlung(-119.75), 'nummer-skonto', '3 %, auf den Cent gerundet');
+  assert.equal(zahlung(-120.98), 'nummer-skonto', '2 %');
+  assert.equal(zahlung(-123.45), 'nummer', 'voller Betrag');
+  assert.equal(zahlung(-117.28), null, '5 % ist kein ueblicher Satz');
+  assert.equal(guete({ betrag: -119.75, name: 'Fremder Name AG', zweck: 'Rg.-Nr.:99887766' }, beleg), null, 'andere Nummer');
+});
+
+test('Zuordnung: unklarer Beleg zaehlt nur mit Nummer und Betrag', () => {
+  const unklar = [BELEG({ rolle: 'unklar', anbieter: 'Muster Verpackung', anbieterSchluessel: 'verpackung.example', rechnungsnummer: '5566778', brutto: 88.5 })];
+  // Der Auszug bricht die Nummer um, und gezahlt wird an eine Factoring-Firma mit anderem Namen.
+  const r = zuordnen([{ betrag: -88.5, name: 'Muster Factoring GmbH', zweck: 'Kundennummer:1234567,Rechnung Nr.55 66778, 17.09.2026' }], unklar);
+  assert.equal(r.buchungen[0].beleg.guete, 'nummer');
+  assert.deepEqual(r.ohneBuchung, []);
+  assert.equal(guete({ betrag: -90, name: 'X', zweck: 'Rechnung Nr.5566778' }, unklar), null, 'Nummer ohne passenden Betrag reicht nicht');
+  assert.equal(guete({ betrag: -88.5, name: 'Muster Verpackung', zweck: 'ohne Nummer' }, unklar), null, 'Betrag und Name reichen nicht');
+  assert.deepEqual(zuordnen([], unklar).ohneBuchung, [], 'unklare Belege stehen nie unter „ohne Buchung“');
+  // Eine kurze Nummer steht zufaellig im Datum: ohne passenden Betrag kein Treffer.
+  assert.equal(guete({ betrag: -50, name: 'X', zweck: 'Abschlag 01.10.2026' }, [BELEG({ rolle: 'unklar', rechnungsnummer: '2026', brutto: 88.5 })]), null);
+});
+
+test('Zuordnung: Beleg ohne lesbaren Betrag ueber Nummer im Dateinamen und Name', () => {
+  const beleg = [BELEG({ anbieter: 'Muster Kettelei', anbieterSchluessel: 'kettelei@mail.example', originalName: ' RE-4711 01.10.2026 19_01_07.pdf' })];
+  const zahlung = (name, zweck) => guete({ betrag: -1300.5, name, zweck }, beleg);
+  assert.equal(zahlung('Muster Kettelei GmbH', 'RE-4711 Kundnr.: 10001, 01.10.2026'), 'nummer-ohne-betrag');
+  assert.equal(zahlung('Ganz Anders AG', 'RE-4711 Kundnr.: 10001'), null, 'ohne Betrag muss der Name passen');
+  assert.equal(zahlung('Muster Kettelei GmbH', 'Abschlag 01.10.2026'), null, 'das Datum im Dateinamen ist keine Nummer');
+  assert.deepEqual(nummernAusDateiname(' RE-4711 01.10.2026 19_01_07.pdf'), ['RE4711']);
+  assert.deepEqual(nummernAusDateiname('RG 44556677 20261016.pdf'), ['44556677']);
+  assert.deepEqual(nummernAusDateiname('Rechnung 10-2026 Nr 4711.pdf'), [], 'Monat und kurze Nummer');
+  // Eine gelesene Rechnungsnummer geht vor: der Dateiname wird dann nicht befragt.
+  assert.equal(guete({ betrag: -5, name: 'Muster Kettelei', zweck: 'RE-4711' }, [BELEG({ anbieter: 'Muster Kettelei', rechnungsnummer: 'RE-9000', originalName: 'RE-4711.pdf' })]), null);
 });
 
 test('Liste je Empfaenger: Summe, Art, nur Ausgaben; CSV ohne ausfuehrbare Formeln', () => {

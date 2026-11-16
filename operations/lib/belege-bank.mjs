@@ -284,32 +284,58 @@ export function namePasst(empfaenger, beleg) {
   return [...worte(beleg.anbieter), ...worte(domainStamm)].some(w => e.has(w));
 }
 
+const DATUM_IM_NAMEN = /^\d{1,4}([.-]\d{1,4}){1,2}$|^(19|20)\d\d(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$|^(0[1-9]|[12]\d|3[01])(0[1-9]|1[0-2])(19|20)\d\d$/;
+
 /**
- * Grobe Zuordnung Buchung -> Beleg. Guete: 'nummer' (Rechnungsnummer im Zweck), 'betrag-und-name',
- * 'nur-betrag' (genau ein Beleg mit diesem Betrag, nur ein Hinweis). Jeder Beleg hoechstens einmal.
+ * Nummern aus dem urspruenglichen Dateinamen, fuer Belege, deren PDF keine Rechnungsnummer hergab.
+ * Nur Teile mit mindestens sechs Zeichen und vier Ziffern am Stueck; ein Datum ist keine Nummer.
+ */
+export function nummernAusDateiname(name) {
+  return String(name ?? '').replace(/\.[a-z0-9]{2,5}$/i, '').split(/[\s_]+/)
+    .filter(t => !DATUM_IM_NAMEN.test(t)).map(nurZeichen).filter(n => n.length >= 6 && /\d{4}/.test(n));
+}
+
+const hatBetrag = b => b.brutto !== null && b.brutto !== undefined;
+const betragGleich = (x, b) => hatBetrag(b) && Math.abs(Math.abs(x.betrag) - Math.abs(b.brutto)) < 0.005;
+/** Zahlung = Rechnung minus 2, 3 oder 4 % Skonto, auf den Cent gerundet. */
+const mitSkonto = (x, b) => hatBetrag(b) && [2, 3, 4].some(p => Math.abs(Math.abs(x.betrag) - Math.abs(b.brutto) * (100 - p) / 100) < 0.0051);
+const gelesen = (b) => { const n = nurZeichen(b.rechnungsnummer); return n.length >= 4 && /\d/.test(n) ? n : null; };
+/** Der Auszug bricht Nummern um („11 72766“): verglichen wird ohne Leer- und Satzzeichen. */
+const nummerImZweck = (x, b) => Boolean(gelesen(b)) && nurZeichen(x.zweck).includes(gelesen(b));
+const dateiNummerImZweck = (x, b) => !gelesen(b) && nummernAusDateiname(b.originalName).some(n => nurZeichen(x.zweck).includes(n));
+
+/**
+ * Grobe Zuordnung Buchung -> Beleg, jeder Beleg hoechstens einmal. Guete:
+ * - 'nummer': gelesene Rechnungsnummer im Zweck. Stammt die Nummer nur aus dem Dateinamen oder ist
+ *   die Rolle des Belegs 'unklar', muss zusaetzlich der Betrag stimmen.
+ * - 'nummer-skonto': wie diese schwaecheren Nummern, Betrag = Rechnung minus Skonto.
+ * - 'nummer-ohne-betrag': Beleg ohne lesbaren Betrag, Nummer aus dem Dateinamen und Name passen.
+ * - 'betrag-und-name', 'nur-betrag' (genau ein Beleg mit diesem Betrag, nur ein Hinweis).
  */
 export function zuordnen(buchungen, belege) {
   const frei = belege.filter(b => b.rolle === 'rechnung' && !b.dublette);
+  const mitUnklaren = [...frei, ...belege.filter(b => b.rolle === 'unklar' && !b.dublette)];
   const vergeben = new Set();
   const nimm = (b, guete) => { vergeben.add(b); return { datei: b.datei, anbieter: b.anbieter, tag: b.tag, rechnungsnummer: b.rechnungsnummer, brutto: b.brutto, guete }; };
   const raus = buchungen.map(x => ({ ...x, beleg: null }));
+  const schwacheNummer = (x, b) => nummerImZweck(x, b) || dateiNummerImZweck(x, b);
   const stufen = [
-    (x, b) => {
-      const n = nurZeichen(b.rechnungsnummer);
-      return n.length >= 4 && /\d/.test(n) && nurZeichen(x.zweck).includes(n) ? 'nummer' : null;
-    },
-    (x, b) => (b.brutto !== null && b.brutto !== undefined && Math.abs(Math.abs(x.betrag) - Math.abs(b.brutto)) < 0.005 && namePasst(x.name, b) ? 'betrag-und-name' : null),
+    ['nummer', frei, nummerImZweck],
+    ['nummer', mitUnklaren, (x, b) => betragGleich(x, b) && schwacheNummer(x, b)],
+    ['nummer-skonto', mitUnklaren, (x, b) => mitSkonto(x, b) && schwacheNummer(x, b)],
+    ['nummer-ohne-betrag', frei, (x, b) => !hatBetrag(b) && dateiNummerImZweck(x, b) && namePasst(x.name, b)],
+    ['betrag-und-name', frei, (x, b) => betragGleich(x, b) && namePasst(x.name, b)],
   ];
-  for (const stufe of stufen) {
+  for (const [guete, aus, passt] of stufen) {
     for (const x of raus) {
       if (x.beleg || x.betrag >= 0) continue;
-      const beleg = frei.find(b => !vergeben.has(b) && stufe(x, b));
-      if (beleg) x.beleg = nimm(beleg, stufe(x, beleg));
+      const beleg = aus.find(b => !vergeben.has(b) && passt(x, b));
+      if (beleg) x.beleg = nimm(beleg, guete);
     }
   }
   for (const x of raus) {
     if (x.beleg || x.betrag >= 0) continue;
-    const gleich = frei.filter(b => !vergeben.has(b) && b.brutto !== null && b.brutto !== undefined && Math.abs(Math.abs(x.betrag) - Math.abs(b.brutto)) < 0.005);
+    const gleich = frei.filter(b => !vergeben.has(b) && betragGleich(x, b));
     if (gleich.length === 1) x.beleg = nimm(gleich[0], 'nur-betrag');
   }
   return { buchungen: raus, ohneBuchung: frei.filter(b => !vergeben.has(b)) };
