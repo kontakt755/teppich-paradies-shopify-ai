@@ -1219,7 +1219,14 @@ npm run -s belege:bank -- <kontoauszug.csv|camt053.xml|kontoauszug.pdf> # Liste 
   sonst leer und „Prüfen“. Die Summe sagt ausdruecklich, wenn sie deshalb unvollstaendig ist.
 - **Bank** (`lib/belege-bank.mjs`): CSV-Export, CAMT.053 oder der monatliche Kontoauszug als PDF
   (voller Verwendungszweck; alter Kontostand plus Buchungen muss den neuen ergeben, sonst Abbruch;
-  die Umsatzuebersicht als PDF ist damit nicht gemeint), Ergebnis nur unter `belege-archiv/bank/`. Guete der Zuordnung: `nummer`, `betrag-und-name`, `nur-betrag` (nur Hinweis).
+  die Umsatzuebersicht als PDF ist damit nicht gemeint), Ergebnis nur unter `belege-archiv/bank/`. Guete der Zuordnung, in dieser Reihenfolge:
+  `nummer` (gelesene Rechnungsnummer im Zweck; steht die Nummer nur im Dateinamen des Anhangs oder
+  hat der Beleg die Rolle „unklar“, muss zusaetzlich der Betrag stimmen), `nummer-skonto` (solche
+  schwaecheren Nummern, Zahlung = Rechnung minus 2, 3 oder 4 % Skonto), `nummer-ohne-betrag` (Beleg
+  ohne lesbaren Betrag: Nummer aus dem Dateinamen im Zweck und Empfaenger passt zum Anbieter; der
+  Betrag ist nicht geprueft), `betrag-und-name`, `nur-betrag` (nur Hinweis). Aus dem Dateinamen
+  zaehlen nur Teile mit mindestens sechs Zeichen und vier Ziffern am Stueck, kein Datum.
+  Sammellastschriften mit „Siehe Avis“ bleiben offen, solange das Avis nicht als Mail vorliegt.
 - **Werkzeuge:** `~/.venvs/analyse` (pypdf, `TP_ANALYSE_PYTHON`), `weasyprint` fuer das Deckblatt.
 - Die Konsolenausgabe nennt nur Zahlen. Ein vollstaendiger Lauf dauert rund 7 Minuten.
 
