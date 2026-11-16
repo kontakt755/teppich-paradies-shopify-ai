@@ -227,6 +227,7 @@ gebraeuchlich), Erfassen.
   (wir schneiden aus eigener Rolle zu und verschicken selbst). Gestrichelt mit Hinweis
   **nicht vermerkt – aus den Stammdaten**, solange beim Bestellen nichts vermerkt wurde. Vor dem
   Bestellen steht dort **Vorschlag – so bestellt die Bestellnachricht, wenn du nichts anderes wählst**.
+- **geht getrennt raus** = Warenpositionen eines Auftrags gehen von verschiedenen Orten ab: Hersteller → Kunde, Hersteller → Baustelle oder von uns; über uns, aus Lager und über Kettler zählen zusammen – nicht zusammen packen.
 - **Von uns abschicken (N)** = Block auf der Shop-Übersicht direkt unter den Warenbestellungen, nur wenn
   etwas zu tun ist: Ware aus eigenem Lager und bei uns eingetroffene Ware, die wir selbst verschicken.
   Stand je Zeile: **noch zuschneiden**, **zugeschnitten – noch packen** (nur nach „Zugeschnitten“, sonst

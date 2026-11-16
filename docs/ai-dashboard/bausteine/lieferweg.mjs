@@ -5,7 +5,7 @@
  * im Titel. Styles: app.css, Abschnitt "Lieferweg".
  */
 import { esc } from '../kern/helfer.mjs';
-import { wegeImAuftrag } from '../lib/lieferweg.mjs';
+import { wegeImAuftrag, getrenntRaus } from '../lib/lieferweg.mjs';
 
 const UNBELEGT = 'nicht vermerkt – aus den Stammdaten';
 const VORSCHLAG = 'Vorschlag – so bestellt die Bestellnachricht, wenn du nichts anderes wählst';
@@ -23,5 +23,6 @@ export function lieferwegeAuftrag(positionen = [], eintragVon = () => null) {
   if (!wege.length) return '';
   // Nur ein Weg mit einer Position: die Zahl sagt nichts.
   const mitZahl = wege.length > 1 || wege[0].anzahl > 1;
-  return `<span class="lieferwege">${wege.map(w => lieferwegPlakette(w, { anzahl: mitZahl ? w.anzahl : null })).join('')}</span>`;
+  const getrennt = getrenntRaus(wege) ? '<span class="lieferweg getrennt" title="Teile dieses Auftrags gehen von verschiedenen Orten zum Kunden – nicht zusammen packen">geht getrennt raus</span>' : '';
+  return `<span class="lieferwege">${wege.map(w => lieferwegPlakette(w, { anzahl: mitZahl ? w.anzahl : null })).join('')}${getrennt}</span>`;
 }
