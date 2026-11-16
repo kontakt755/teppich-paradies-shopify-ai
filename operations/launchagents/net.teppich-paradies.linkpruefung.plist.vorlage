@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.linkpruefung</string>
+
+  <!-- Nur lesend, w-363: vorhandene Link- und Sitemap-Listen nachts fortsetzen.
+       HTTP 429 = Abbruch und naechste Nacht weiter. Nach Abschluss entladen.
+       Einrichten: Logordner anlegen, __HOME__ ersetzen, nach ~/Library/LaunchAgents
+       kopieren und mit launchctl bootstrap laden (siehe operations/README.md). -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; date &amp;&amp; exec npm run -s linkpruefung -- --bis 06:00</string>
+  </array>
+
+  <!-- Taeglich 1:30 Ortszeit, Ende spaetestens 06:00. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>1</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/linkpruefung-2026-11-11/lauf.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/linkpruefung-2026-11-11/lauf.log</string>
+</dict>
+</plist>

@@ -1230,6 +1230,36 @@ npm run -s belege:bank -- <kontoauszug.csv|camt053.xml|kontoauszug.pdf> # Liste 
 - **Werkzeuge:** `~/.venvs/analyse` (pypdf, `TP_ANALYSE_PYTHON`), `weasyprint` fuer das Deckblatt.
 - Die Konsolenausgabe nennt nur Zahlen. Ein vollstaendiger Lauf dauert rund 7 Minuten.
 
+## Naechtliche Linkpruefung (w-363)
+
+`npm run -s linkpruefung -- --bis 06:00` prueft den oeffentlichen Shop ausschliesslich
+mit GET. Es liest die bereits gesammelten `links.json` und `sitemap-urls.json` unter
+`$TP_PRIVAT_DIR/linkpruefung-2026-11-11` (Standard: `~/teppich-paradies-analyse/…`;
+`LINKPRUEFUNG_DIR` ueberschreibt den ganzen Ordner). Keine neue Link-Sammlung.
+Zuerst werden Links, dann Sitemap-URLs ab der Laenge der jeweiligen `*-status.json`
+fortgesetzt. `--ab-links N` / `--ab-sitemap N` kuerzen den gespeicherten Stand auf N;
+ein groesserer Index als der vorhandene Stand wird abgelehnt.
+
+Mindestens 1 Sekunde zwischen Abrufen, auch in Weiterleitungsketten (maximal sechs
+Spruenge), nach je 50 Anfragen 60 Sekunden Pause. HTTP 429 beendet den Lauf mit Exit 2,
+ohne den betroffenen Eintrag zu speichern: naechste Nacht wird er wiederholt.
+Netzwerkfehler stehen als `ERR` mit `error`-Meldung im Ergebnis. Ergebnisse werden alle
+zehn Eintraege und beim Beenden atomar gespeichert. `--bis HH:MM` ist Ortszeit
+(Standard 06:00, bei Start nach der Endzeit am Folgetag). Bei vollstaendigem Stand
+enthaelt `befunde.json` alle Fehler und Weiterleitungsketten; weitere Laeufe rufen
+keine URLs mehr ab. Jeder Lauf endet mit `Stand: links i/n, sitemap j/m`.
+
+**Dienst-Vorlage:** `operations/launchagents/net.teppich-paradies.linkpruefung.plist.vorlage`,
+taeglich 01:30 bis 06:00 im Dienst-Checkout `~/tp-dashboard`.
+**Einrichten:** nach Uebernahme ins Dienst-Checkout den privaten Daten-/Logordner samt
+Eingabedateien bereitstellen, `__HOME__` in der Vorlage ersetzen, als
+`~/Library/LaunchAgents/net.teppich-paradies.linkpruefung.plist` ablegen und mit
+`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.teppich-paradies.linkpruefung.plist`
+laden. Bei abweichendem Datenordner auch die Umgebung und Logpfade der Plist anpassen.
+Log: `~/teppich-paradies-analyse/linkpruefung-2026-11-11/lauf.log`.
+**Nach Abschluss entladen:** `launchctl bootout gui/$(id -u)/net.teppich-paradies.linkpruefung`;
+die installierte Plist entfernen, damit der Dienst nach Anmeldung nicht erneut laeuft.
+
 ## Shop-Wache und Aufgabenwaechter (Mac-Dienste ohne Vorlage)
 
 `npm run shop:wache` (Dienst `net.teppich-paradies.shopwache`, stuendlich zur Minute 5) prueft den
