@@ -1,13 +1,13 @@
 {
   "format": "tp-tnm-endpreis-v1",
   "ok": true,
-  "erstellt": "2026-11-15T12:07:54.098Z",
+  "erstellt": "2026-11-16T12:55:45.628Z",
   "theme": "live",
-  "produkte": 429,
-  "varianten": 4588,
-  "zeilen": 4588,
+  "produkte": 428,
+  "varianten": 4585,
+  "zeilen": 4585,
   "groessen": {
-    "80 x 150 cm": 2661,
+    "80 x 150 cm": 2658,
     "120 x 170 cm": 34,
     "160 x 230 cm": 1893
   },
@@ -980,7 +980,7 @@
     },
     {
       "id": "gid://shopify/Product/16120648466766",
-      "updatedAt": "2026-11-06T15:50:56Z",
+      "updatedAt": "2026-11-16T05:30:02Z",
       "variantIds": [
         "61069485506894",
         "61069485539662",
@@ -1004,7 +1004,6 @@
         "61069486129486",
         "61069486162254",
         "61069486195022",
-        "61069486227790",
         "61069486260558"
       ]
     },
@@ -1017,14 +1016,6 @@
         "61069489537358",
         "61069489570126",
         "61069489602894"
-      ]
-    },
-    {
-      "id": "gid://shopify/Product/16120649318734",
-      "updatedAt": "2026-11-03T23:15:44Z",
-      "variantIds": [
-        "61069492846926",
-        "61069492879694"
       ]
     },
     {
@@ -7178,8 +7169,23 @@
   ],
   "kanalFreigabe": false,
   "hinweis": "Das Manifest veroeffentlicht keine Produkte. Freigabe erst nach verarbeiteter Endpreisquelle.",
-  "katalogHash": "b1533d27848cc186ebeb4929cd02edb79d770e7a439f6d6f5623bc522cde00b2",
-  "entnahmen": [],
+  "katalogHash": "fc85661314c74df67ac08147246f17bef3b7bb58b146a497ef7cdd1e272dd5e9",
+  "entnahmen": [
+    {
+      "variantId": "gid://shopify/ProductVariant/61069492846926",
+      "productId": "gid://shopify/Product/16120649318734",
+      "status": "ARCHIVED"
+    },
+    {
+      "variantId": "gid://shopify/ProductVariant/61069492879694",
+      "productId": "gid://shopify/Product/16120649318734",
+      "status": "ARCHIVED"
+    },
+    {
+      "variantId": "gid://shopify/ProductVariant/61069486227790",
+      "status": "DELETED"
+    }
+  ],
   "vorherGoogle": 4588,
   "vorherMeta": 4588
 }
