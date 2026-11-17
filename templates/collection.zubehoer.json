@@ -42,9 +42,9 @@
         "motiv_pflege": {
           "type": "motiv",
           "settings": {
-            "product": "designbodenpflege-matt",
+            "product": "pu-reiniger-fuer-hartboeden",
             "collection": "",
-            "alt": "Pflege für Designböden",
+            "alt": "Dr. Schutz PU-Reiniger für Designböden",
             "link": ""
           }
         }
@@ -144,7 +144,7 @@
             "benefit": "Gepflegt bleibt schön.",
             "text": "Reiniger und Pflege, abgestimmt auf Teppich, Laminat und Designböden.",
             "image": "",
-            "product": "designbodenpflege-matt",
+            "product": "pu-reiniger-fuer-hartboeden",
             "icon": "reinigung",
             "cta": "Ansehen",
             "sub_collection_1": "",
