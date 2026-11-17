@@ -120,7 +120,7 @@
           "type": "kategorie",
           "settings": {
             "collection": "bodenleisten",
-            "bild": "shopify://shop_images/1310680-8FXC-prod.jpg",
+            "bild": "shopify://shop_images/belmora-sockelleiste-profiliert-18x78mm-raum-1.jpg",
             "titel": "Bodenleisten",
             "untertitel": "Passend zu jedem Boden",
             "zahl_zeigen": true,
@@ -131,7 +131,7 @@
           "type": "kategorie",
           "settings": {
             "collection": "zubehoer",
-            "bild": "shopify://shop_images/products_473388.jpg",
+            "bild": "shopify://shop_images/ratgeber-teppichboden-verlegen-titel.png",
             "titel": "Zubehör",
             "untertitel": "Kleber, Profile, Unterlagen",
             "zahl_zeigen": true,
