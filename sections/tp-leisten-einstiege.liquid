@@ -74,13 +74,6 @@
               when 'hdf'
                 assign label = 'HDF'
             endcase
-            assign sample_image = blank
-            for p in collection.products
-              if p.tags contains tag and p.featured_image != blank
-                assign sample_image = p.featured_image
-                break
-              endif
-            endfor
             capture material_url
               render 'tp-leisten-filter-url', collection: collection, tag: tag
             endcapture
@@ -88,9 +81,6 @@
           <li class="tp-le__tile-item">
             <a class="tp-le__tile" href="{{ material_url | strip | escape }}#bodenleisten-produkte"
               {% if current_tags contains tag %}aria-current="true"{% endif %}>
-              {%- if sample_image != blank -%}
-                <span class="tp-le__tile-media">{{ sample_image | image_url: width: 300 | image_tag: loading: 'lazy', widths: '150, 300', sizes: '96px', alt: '' }}</span>
-              {%- endif -%}
               <span class="tp-le__tile-body">
                 <span class="tp-le__tile-title">{{ label | escape }}</span>
                 {%- if text != blank -%}<span class="tp-le__tile-text">{{ text | escape }}</span>{%- endif -%}
