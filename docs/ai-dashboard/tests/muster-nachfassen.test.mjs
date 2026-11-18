@@ -10,7 +10,7 @@ import {
   ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN, HOECHSTENS_TAGE, ERLEDIGT_ZEIGEN_TAGE, SHOP_URL,
   versandLaeuft, teileNachfassen, nachfassTodo, nachfragenBuendeln, mitMusterListe,
   musterArt, vorlageFuer, nameSchreibweise, TEPPICH_VORLAGEN, NICHT_NOETIG, mitWhatsApp, WHATSAPP,
-  ersatzFarben, NICHT_VERFUEGBAR_VORLAGE,
+  ersatzFarben, NICHT_VERFUEGBAR_VORLAGE, adresseGesperrt,
 } from '../lib/muster-nachfassen.mjs';
 import { musterKaufLinks } from '../lib/muster-kauf-links.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
@@ -501,4 +501,12 @@ test('ersatzFarben: Farben, die der Kunde im selben Umschlag ohnehin bekommt, we
   const blau = { bestellt: { farbe: 'Blau (2)' } }; // liegt im Umschlag, nicht gesperrt
   assert.deepEqual(ersatzFarben([rot], 3, [rot, blau]), ['Grün (4)']);
   assert.deepEqual(ersatzFarben([rot]), ['Blau (2)', 'Grün (4)'], 'ohne Umschlag wie bisher');
+});
+
+test('adresseGesperrt: eine Mail je Adresse in 10 Tagen', () => {
+  const s = [{ an: 'K@example.invalid', am: vorTagen(3), status: 'gesendet' }, { an: 'alt@example.invalid', am: vorTagen(12), status: 'gesendet' }, { an: 'fehl@example.invalid', am: vorTagen(1), status: 'fehler' }];
+  assert.equal(adresseGesperrt(s, ' k@example.invalid', JETZT), true);
+  assert.equal(adresseGesperrt(s, 'alt@example.invalid', JETZT), false);
+  assert.equal(adresseGesperrt(s, 'fehl@example.invalid', JETZT), false);
+  assert.equal(adresseGesperrt(s, '', JETZT), false);
 });

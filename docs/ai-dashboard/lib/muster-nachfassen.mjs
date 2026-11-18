@@ -244,6 +244,21 @@ export function nachfassTodo(e, { ansehenHref }) {
 }
 
 /**
+ * Mail-Sperre je Adresse (Inhaber 13.11.2026, w-377): an dieselbe Adresse hoechstens eine
+ * Nachfrage-Mail in ERINNERUNG_NACH_TAGEN Tagen, auch wenn der Kunde zwischendurch neue Muster
+ * bestellt. Die Bestellung bleibt faellig und geht nach Ablauf der Frist raus (bis HOECHSTENS_TAGE).
+ * @param {{an?: string, am?: string, status?: string}[]} sendungen  Versandprotokoll (versand.sendungen)
+ * @returns {boolean} true = Adresse ist noch gesperrt
+ */
+export function adresseGesperrt(sendungen = [], an, jetzt = new Date()) {
+  const key = String(an ?? '').trim().toLowerCase();
+  if (!key) return false;
+  return sendungen.some(s => String(s?.an ?? '').trim().toLowerCase() === key
+    && (s.status === 'gesendet' || s.status === 'sendet' || s.status === 'vermerkt')
+    && tageSeit(s.am, jetzt) < ERINNERUNG_NACH_TAGEN);
+}
+
+/**
  * Faellige E-Mail-Nachfragen je Empfaengeradresse buendeln (Inhaber 03.11.2026): am 02.11. bekam
  * ein Kunde mit drei Musterbestellungen drei gleiche Mails in derselben Sekunde, weil der Lauf
  * je Bestellung eine schickte. Gross/Klein der Adresse zaehlt nicht.

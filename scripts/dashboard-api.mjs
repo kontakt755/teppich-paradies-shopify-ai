@@ -29,7 +29,7 @@ import { kalendertag } from '../docs/ai-dashboard/lib/kalendertage.mjs';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
-import { texteAusMarkdown, musterKurz, musterNachfassen, nachfragenBuendeln, mitMusterListe, fuelleText, platzhalterFrei, vorlageFuer, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { texteAusMarkdown, musterKurz, musterNachfassen, nachfragenBuendeln, adresseGesperrt, mitMusterListe, fuelleText, platzhalterFrei, vorlageFuer, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs';
 import { grenzeFuer } from '../docs/ai-dashboard/lib/datenstand.mjs';
 import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, hinweisePfad, leseHinweise, merkeAbgleich, aktuelleHinweise, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
@@ -2857,6 +2857,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
             ergebnis.fehler.push({ ...kurz, fehler: `Zeitleiste nicht nachgetragen: ${err?.message || err}` });
           }
           sichern();
+          continue;
+        }
+        // Hoechstens eine Mail je Adresse in 10 Tagen (w-377): bleibt faellig, geht spaeter raus.
+        if (e.stufe === 'erste' && adresseGesperrt(versand.sendungen, e.kontakt.email, jetzt)) {
+          ergebnis.uebersprungen.push({ ...kurz, grund: 'an diese Adresse ging vor weniger als 10 Tagen eine Nachfrage' });
           continue;
         }
         zuSenden.push(e);
