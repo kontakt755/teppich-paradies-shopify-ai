@@ -1,0 +1,6 @@
+## 2026-11-18 · Heute: Probleme „neu seit gestern“ (Vortagesstand)
+
+- **Geaendert:** Die Shop-Übersicht markiert unter „Probleme“ jedes rote To-do, das seit dem letzten früheren Tag neu rot ist („neu“), stellt es nach vorn und zählt es im Titel. So fallen auch ältere Aufträge auf, die erst jetzt rot wurden (offene Stufe aus #561). Vortagesstand lokal in `$TP_PRIVAT_DIR/heute-rotstand.json` (`operations/lib/rotstand.mjs`), Schreibweg `POST /api/heute/rotstand` (write-Liste). (#2241)
+- **Getestet:** `operations/tests/rotstand.test.mjs` (erster Tag, Folgetag, Wochenende, 8 Tage, Lesefehler-Regel, Eingabe), `shop-start-probleme.test.mjs` (+1: Reihenfolge und Zählung), `laden.test.mjs` (Rolle „lesen“ 403, Mitarbeiter 200, Datei im Privatordner, 400 bei falscher Eingabe); `npm run dashboard:test` 1530/1530, `npm run -s pruefen`, `npm run dashboard:pruefen`.
+- **Risiken/Annahmen:** „Neu“ entsteht erst ab dem zweiten Tag mit Eintrag; ein Tag ohne geöffnetes Dashboard verschiebt den Vergleich auf den letzten Tag mit Eintrag („seit Freitag“). Rolle „lesen“ sieht keine Marke. Nur die Shop-Übersicht, nicht die Alltagssichten.
+- **Naechste Stufe:** Marke auch in der Gesamtübersicht, falls gewünscht.

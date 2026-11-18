@@ -85,6 +85,7 @@ import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { musterAnrufliste, anrufErgebnis, anrufErgebnisText } from '../docs/ai-dashboard/lib/muster-anrufe.mjs';
 import { musterKennzahlen } from '../docs/ai-dashboard/lib/muster-ideen.mjs';
 import { musterAnrufePfad, leseMusterAnrufe, trageAnrufEin, MusterAnrufFehler } from '../operations/lib/muster-anrufe.mjs';
+import { rotstandPfad, merkeRot, RotstandFehler } from '../operations/lib/rotstand.mjs';
 import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
 import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
 import { einkaufUeberVerkauf, ohneBetraege, vertreterNachricht } from '../docs/ai-dashboard/lib/einkauf-ueber-verkauf.mjs';
@@ -3113,6 +3114,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ...musterAnrufliste(bestellungen.zeilen, leseMusterAnrufe(musterAnrufePfad(dir)), { jetzt: now(), abgemeldet }),
         kennzahlen: musterKennzahlen(bestellungen.zeilen, wirkung, { jetzt: now() }),
       };
+    },
+
+    /**
+     * "Heute": die jetzt roten To-do-IDs fuer den Tag merken und zurueckgeben, welche davon seit dem
+     * Vortag neu rot sind (#2241, operations/lib/rotstand.mjs). Eine kaputte Ablage ist ein 500, nie leer.
+     */
+    heuteRotstandMerken(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine Änderungen vornehmen.');
+      try {
+        return merkeRot(rotstandPfad(privatDirPath || privatDir()), payload?.ids, { jetzt: now() });
+      } catch (e) {
+        if (e instanceof RotstandFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
     },
 
     /**

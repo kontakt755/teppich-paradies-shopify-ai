@@ -2703,6 +2703,15 @@ erhalten. Mobil stehen Bestellungen, Muster bestellen, Packstation und Lexikon d
 Mehr öffnet die bestehende Seitenleiste. Der Hausknopf im Kopf führt zur Shop-Übersicht.
 Rollenrechte und die vorhandene geschützte Datenaktualisierung bleiben erhalten.
 
+**Neu seit gestern (#2241, 18.11.2026).** Unter „Probleme“ trägt jedes To-do, das seit dem letzten früheren
+Tag neu rot ist, die Marke „neu“; solche Einträge stehen zuerst, der Titel zählt sie („Probleme · 4 · 1 neu seit
+gestern“, nach Pausen „seit Freitag“). Damit fallen auch alte Aufträge auf, die erst jetzt rot wurden (offen seit
+#561). Der Browser meldet die IDs der roten To-dos per `POST /api/heute/rotstand` (write-Liste, Rolle „lesen“ 403,
+nur wenn sich die Menge ändert); `operations/lib/rotstand.mjs` vereinigt sie je Kalendertag (Berlin) in
+`$TP_PRIVAT_DIR/heute-rotstand.json` (8 Tage) und vergleicht mit dem letzten früheren Tag. Am ersten Tag ist nichts
+neu. Nur eine fehlende Datei gilt als leer; kaputtes JSON ist ein 500 und wird nicht überschrieben. Scheitert der
+Abruf, fehlt nur die Marke.
+
 **Probleme oben (w-206, 29.10.2026).** Die Shop-Übersicht zeigt direkt unter dem Titel die roten
 To-dos als Block „Probleme · N“ (`ansichten/heute/probleme.mjs`, reine Funktion; `problemeShop()` in
 `heute.mjs` sammelt). Seit dem Rundgang vom 26.10. stand die To-do-Liste nur in den Alltagssichten;

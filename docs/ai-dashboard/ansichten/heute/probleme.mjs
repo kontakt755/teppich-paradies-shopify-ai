@@ -62,13 +62,17 @@ export function rotMuster(todos) {
  * @returns {string} HTML oder '' ohne rotes To-do und ohne fehlende Quelle
  */
 export function problemeBlock(todos, { zeile, fehlen = [] }) {
-  const rot = nurProbleme(todos);
+  // Neu rot Gewordenes zuerst - sonst laege es bei mehr als drei Problemen eingeklappt.
+  const alle = nurProbleme(todos);
+  const rot = [...alle.filter(t => t.neuSeit), ...alle.filter(t => !t.neuSeit)];
   const hinweis = fehlen.length ? `<p class="heute-unvollstaendig" role="status"><b>Liste unvollständig:</b> ${esc(fehlen.join(', '))} ${fehlen.length === 1 ? 'konnte' : 'konnten'} nicht geladen werden, ein Problem kann hier fehlen. Seite neu laden; bleibt es so, Claude Bescheid geben.</p>` : '';
   if (!rot.length) return hinweis ? `<section class="heute-probleme" aria-label="Probleme">${hinweis}</section>` : '';
   const oben = rot.slice(0, PROBLEME_SICHTBAR);
   const rest = rot.slice(PROBLEME_SICHTBAR);
+  // Markierung "neu" setzt heute.mjs aus dem Vortagesstand (heute/rotstand.mjs, #2241).
+  const neu = rot.filter(t => t.neuSeit);
   return `<section class="heute-probleme" aria-labelledby="heuteProbleme"><div class="heute-geschaeft-kopf">
-    <h2 id="heuteProbleme">Probleme · ${rot.length}</h2>
+    <h2 id="heuteProbleme">Probleme · ${rot.length}${neu.length ? ` <span class="muted">· ${neu.length} neu ${esc(neu[0].neuSeit)}</span>` : ''}</h2>
     <p>Rot heißt: das muss heute jemand lösen. Alles Weitere steht unter „Weitere Bereiche“.</p></div>
     <div class="heute-todos">${oben.map(zeile).join('')}${rest.length
     ? `<details class="heute-rest"><summary>${PROBLEME_SICHTBAR} von ${rot.length} – alle anzeigen</summary>${rest.map(zeile).join('')}</details>` : ''}</div>

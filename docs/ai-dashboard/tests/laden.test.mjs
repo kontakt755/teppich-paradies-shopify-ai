@@ -242,7 +242,7 @@ test('Server: Rolle "lesen" darf die Uebersicht sehen, aber nichts schreiben (40
     const lena = await anmelden('lena', 'platzhalter-lesen-1');
     const mona = await anmelden('mona', 'platzhalter-mitarbeiter-1');
     const neu = { art: 'Sonstiges', text: 'Testaufgabe' };
-    for (const [pfad, rumpf] of [['/api/laden/zustaendig', { schluessel: 'rueckruf:mail-m1', wer: 'Person A' }], ['/api/laden/aufgabe', neu], ['/api/laden/aufgabe-erledigt', { id: 'x' }], ['/api/laden/telefonisch', { schluessel: 'mail:0123456789abcdef' }]]) {
+    for (const [pfad, rumpf] of [['/api/laden/zustaendig', { schluessel: 'rueckruf:mail-m1', wer: 'Person A' }], ['/api/laden/aufgabe', neu], ['/api/laden/aufgabe-erledigt', { id: 'x' }], ['/api/laden/telefonisch', { schluessel: 'mail:0123456789abcdef' }], ['/api/heute/rotstand', { ids: ['test:1'] }]]) {
       assert.equal((await post(lena, pfad, rumpf)).status, 403, `lesen: ${pfad}`);
     }
     assert.equal((await fetch(`${base}/api/laden/uebersicht`, { headers: { cookie: lena } })).status, 200, 'lesen darf zuschauen');
@@ -255,6 +255,12 @@ test('Server: Rolle "lesen" darf die Uebersicht sehen, aber nichts schreiben (40
     assert.equal((await post(mona, '/api/laden/aufgabe', { art: 'Sonstiges', text: '' })).status, 400);
     assert.equal((await post(mona, '/api/laden/aufgabe-erledigt', { id })).status, 200);
     assert.equal((await post(mona, '/api/laden/telefonisch', { schluessel: 'mail:0123456789abcdef' })).status, 200);
+    // Vortagesstand der Probleme (#2241): Schreibweg, erster Tag ohne Vergleich, Datei im Privatordner.
+    const rot = await post(mona, '/api/heute/rotstand', { ids: ['test:1'] });
+    assert.equal(rot.status, 200);
+    assert.deepEqual(await rot.json(), { vortag: null, neu: [] });
+    assert.ok(fs.existsSync(path.join(dir, 'heute-rotstand.json')));
+    assert.equal((await post(mona, '/api/heute/rotstand', { ids: 'kein-array' })).status, 400);
   });
 });
 
