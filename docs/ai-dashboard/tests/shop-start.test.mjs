@@ -42,6 +42,8 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
     // Inhaberzeile (Rundgang 26.10., #44): eigener Baustein, hier nur ihr Platz und ihre Abrufe.
     // Restrollen-Zeile (2026-11-06): eigener Baustein mit eigenem Test (sonderposten-restrollen.test.mjs).
     restrollenZeile: () => '',
+    // Fragen von Claude (Werkbank): eigener Baustein in ansichten/freigaben.mjs, Test werkbank-fragen-ansicht.test.mjs.
+    werkbankFragenZeile: () => '',
     warenkennzahlBlock: block('Warenkennzahl'), inhaberZeile: block('Inhaberzeile'), nebenbereichZusatz: () => ' · 2 offene Anfragen', shopwache: { daten: null },
   });
   return { html: api.viewHeute(), geladen, bloecke, sichten, waren };

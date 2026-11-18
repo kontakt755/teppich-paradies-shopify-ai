@@ -59,6 +59,7 @@
     "dashboard": "node scripts/build-dashboard-data.mjs --weiter-mit-alten-daten && node scripts/build-bodenwissen-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
     "dashboard:test": "node scripts/test-temp.mjs --test docs/ai-dashboard/tests/*.test.mjs",
+    "werkbank:frage": "node scripts/werkbank-frage.mjs",
     "dashboard:pruefen": "node scripts/dashboard-pruefen.mjs",
     "task": "node scripts/task.mjs",
     "benutzer": "node operations/scripts/benutzer.mjs",

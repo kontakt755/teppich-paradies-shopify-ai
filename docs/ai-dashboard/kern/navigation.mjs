@@ -60,7 +60,10 @@ function oeffneMehr() {
  */
 export function aktualisiereNavZahlen() {
   if (typeof document === 'undefined') return;
-  const freigaben = darfAnsicht('freigaben') ? offeneEntscheidungen(state.tasks).length : 0;
+  // Plus offene Fragen von Claude (app.js meldet sie als Zaehler "freigaben" an).
+  let fragen = 0;
+  try { fragen = zaehler.freigaben?.() || 0; } catch { fragen = 0; }
+  const freigaben = darfAnsicht('freigaben') ? offeneEntscheidungen(state.tasks).length + fragen : 0;
   setzeZahl($('#navFreigaben'), freigaben);
   // Entscheidungen bleiben auch in der geschlossenen Verwaltungsgruppe sichtbar.
   setzeZahl($('#navMoreCount'), freigaben);

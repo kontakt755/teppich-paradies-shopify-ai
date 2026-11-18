@@ -102,6 +102,7 @@ import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefe
 import { wendeHvAenderungAn, leererBestand as leererHvBestand } from '../docs/ai-dashboard/lib/hausverwaltungen.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, korrigiereRollenbestand, SonderpostenFehler, ladenStandAusProtokoll } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
+import { fragenPfad, leseFragen, frageBeantworten, fragenUebersicht, WerkbankFrageFehler } from '../operations/lib/werkbank-fragen.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
 import { dashboardLinks } from './weitere-dashboards.mjs';
 import { logFehler } from './dashboard-log.mjs';
@@ -5113,6 +5114,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         return { ok: true, id: meldung.id, doppelt };
       } catch (e) {
         if (e instanceof FehlermeldungFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+    },
+
+    /** Fragen von Claude zu Werkbank-Aufgaben: alle offenen und die zuletzt beantworteten. */
+    werkbankFragen() {
+      try { return { verfuegbar: true, ...fragenUebersicht(leseFragen(fragenPfad(privatDirPath || privatDir()))) }; } catch (e) {
+        if (e instanceof WerkbankFrageFehler) throw new ApiError(500, e.message);
+        throw e;
+      }
+    },
+
+    /** Antwort auf eine Frage; Claude holt sie beim naechsten Lauf ab (npm run werkbank:frage -- beantwortet). */
+    werkbankFrageAntworten(payload = {}, { benutzer = null } = {}) {
+      try {
+        const f = frageBeantworten(fragenPfad(privatDirPath || privatDir()), payload || {}, { von: benutzer?.name || benutzer?.kuerzel || 'Inhaber', jetzt: now() });
+        merke(benutzer, null, 'Frage beantwortet', `${f.id}: ${f.antwort.label || 'Freitext'}`);
+        return { ok: true, id: f.id };
+      } catch (e) {
+        if (e instanceof WerkbankFrageFehler) throw new ApiError(400, e.message);
         throw e;
       }
     },

@@ -46,6 +46,7 @@ import { openMeinPasswort, teamKlick, teamAenderung } from './ansichten/team.mjs
 import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
 import { socialEingabe, socialAbsenden, socialKlick } from './ansichten/social.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
+import { freigabenAbsenden } from './ansichten/freigaben.mjs';
 import { akquiseKlick, akquiseAenderung } from './ansichten/akquise.mjs';
 import { hausverwaltungenKlick } from './ansichten/hausverwaltungen.mjs';
 import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
@@ -61,7 +62,7 @@ export function bindEvents() {
     try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
   }, true);
   fotosEreignisseBinden();
-  document.addEventListener('submit', e => { if (musterlagerAbsenden(e)) return; if (prozesseAbsenden(e)) return; if (ladenAbsenden(e)) return; socialAbsenden(e); });
+  document.addEventListener('submit', e => { if (freigabenAbsenden(e)) return; if (musterlagerAbsenden(e)) return; if (prozesseAbsenden(e)) return; if (ladenAbsenden(e)) return; socialAbsenden(e); });
   window.addEventListener('pagehide', verwerfeProzessKontext);
   window.addEventListener('tp-sitzung-beendet', verwerfeProzessKontext);
   document.addEventListener('click', e => {

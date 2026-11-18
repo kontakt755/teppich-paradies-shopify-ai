@@ -45,6 +45,7 @@ import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureMusterPacken } from './kunden/muster-packen.mjs';
 import { ensureMusterAnrufe, musterAnrufeOffen } from './kunden/muster-anrufe.mjs';
+import { werkbankFragenZeile } from './freigaben.mjs';
 import { bestellungenOffen } from './kunden/bestellungen.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
@@ -213,6 +214,7 @@ function viewShop() {
     ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), lieferantName })}
     ${selbstAbschickenBlock(selbst, { lesend: istNurLesend() })}
     ${probleme.html}
+    ${werkbankFragenZeile()}
     ${inhaberUeberblick()}
     ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, anrufe: musterAnrufeOffen(), lesend: istNurLesend(), nurMuster: true })}
     ${aufraeumenBlock({ daten: kunden.bestellungen, lesend: istNurLesend(), ohne: probleme.orderIds })}

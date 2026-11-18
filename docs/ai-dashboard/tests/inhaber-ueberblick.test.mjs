@@ -8,6 +8,8 @@ import { viewFreigaben } from '../ansichten/freigaben.mjs';
 import { state } from '../kern/zustand.mjs';
 
 globalThis.document ||= { addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; } };
+// viewFreigaben laedt die Fragen von Claude; der Abruf bleibt hier haengen (eigener Test: werkbank-fragen-ansicht.test.mjs).
+globalThis.fetch = () => new Promise(() => {});
 
 const JETZT = new Date('2026-10-26T09:00:00Z');
 const aufgabe = (number, felder = {}) => ({ number, title: `Testaufgabe ${number}`, open: true, status: 'bereit', isDecision: false,
