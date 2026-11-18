@@ -1,0 +1,6 @@
+## 2026-11-18 · Lexware-Angebote nachfassen
+
+- **Geaendert:** Kunden › Angebote zeigt oben die offenen Lexware-Angebote mit Nummer, Kunde, Betrag, Angebotsdatum und „seit X Tagen ohne Rückmeldung“. Fällig ab Tag 5, nach einem Anruf ab Tag 12 noch einmal, „nicht erreicht“ am Folgetag wieder. Knöpfe „Nicht erreicht“, „Angerufen“, „Erledigt“ (lokal in `lexware-angebote/nachfass.json`, gleiche Ablage wie die Rückrufe), Link „In Lexware öffnen“. Der Reiter trägt die Zahl der fälligen Angebote. Neue Route `/api/angebote/lexware` (GET, POST mit Schreibrecht). Die Daten legt eine Claude-Routine über den Lexware-Konnektor ab (`operations/scripts/lexware-angebote-ablegen.mjs`, nur lesend); der Dienst selbst hat keinen Lexware-Schlüssel (w-351).
+- **Getestet:** `node --test operations/tests/lexware-angebote.test.mjs` (Ablage, Fälligkeit), `npm run dashboard:test`, `npm run dashboard:pruefen`, Abruf von 91 offenen Angeboten über den Konnektor.
+- **Risiken/Annahmen:** Keine Telefonnummer in der Liste – die steht am Kontakt in Lexware. Die Liste ist so aktuell wie der letzte Routinenlauf; angenommene Angebote verschwinden erst beim nächsten Abruf.
+- **Naechste Stufe:** Telefonnummer je Kontakt mit abrufen; Block auf „Heute“; nach vier Wochen Nachfass-Quote messen.

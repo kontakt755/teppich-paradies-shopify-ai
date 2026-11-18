@@ -4,7 +4,7 @@
  * sehen, wer wartet, worauf, und wie er denjenigen erreicht.
  */
 import { state } from '../../kern/zustand.mjs';
-import { esc, geldText } from '../../kern/helfer.mjs';
+import { esc, fmtDate, fmtDateTime, geldText, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
@@ -19,6 +19,80 @@ export function ensureKundenAngebote() {
     kunden.angebote = d; kunden.loadingAngebote = false;
     if (['heute', 'kunden'].includes(state.route.view)) render();
   });
+}
+
+export function ensureLexwareAngebote() {
+  if (kunden.lexware || kunden.loadingLexware) return;
+  kunden.loadingLexware = true;
+  fetchEinkauf('/api/angebote/lexware').then(d => {
+    kunden.lexware = d; kunden.loadingLexware = false;
+    if (['heute', 'kunden'].includes(state.route.view)) render();
+  });
+}
+
+/** Zahl am Reiter: heute faellige Lexware-Angebote (dieselbe Menge wie der Block darunter). */
+export function lexwareFaelligAnzahl() {
+  return (kunden.lexware?.zeilen || []).filter(z => z.faellig).length;
+}
+
+const NACHFASS_LABEL = { offen: 'Offen', nicht_erreicht: 'Nicht erreicht', angerufen: 'Angerufen', erledigt: 'Erledigt' };
+
+function lexwareZeile(z) {
+  const stand = z.status !== 'offen' ? `<span class="small muted">${esc(NACHFASS_LABEL[z.status] || z.status)}${z.aktualisiertVon ? ` von ${esc(z.aktualisiertVon)}` : ''}${z.aktualisiertAm ? `, ${esc(fmtDateTime(z.aktualisiertAm))}` : ''}</span>` : '';
+  const knoepfe = istNurLesend() ? '' : ['nicht_erreicht', 'angerufen', 'erledigt'].map(s => `<button type="button" class="btn btn-sm${z.status === s ? ' btn-primary' : ' btn-ghost'}" data-lexware-nachfass="${esc(z.id)}" data-status="${s}">${esc(NACHFASS_LABEL[s])}</button>`).join('');
+  return `<div class="row">
+    <div>
+      <div class="t">${esc(z.nummer)} · ${esc(z.kunde || 'ohne Kundennamen')} ${z.faellig ? '<span class="badge gap">nachfassen</span>' : ''}</div>
+      <div class="m">vom ${esc(fmtDate(z.datum))} · seit ${z.alterTage} ${z.alterTage === 1 ? 'Tag' : 'Tagen'} ohne Rückmeldung</div>
+      ${stand ? `<div>${stand}</div>` : ''}
+    </div>
+    <div class="r">
+      <div class="t">${betragText(z.betrag, z.waehrung)}</div>
+      ${z.url ? `<a class="btn btn-sm" href="${esc(z.url)}" target="_blank" rel="noopener" title="Kontakt und Telefonnummer stehen im Angebot">In Lexware öffnen ↗</a>` : ''}
+    </div>
+    ${knoepfe ? `<div class="r" style="grid-column:1 / -1">${knoepfe}</div>` : ''}
+  </div>`;
+}
+
+/**
+ * Offene Lexware-Angebote (w-351): ab Tag 5 anrufen, nach einem Anruf ab Tag 12 noch einmal.
+ * Angenommene oder abgelehnte Angebote fallen beim naechsten Abruf von selbst heraus.
+ */
+function lexwareBlock() {
+  ensureLexwareAngebote();
+  const d = kunden.lexware;
+  if (!d && kunden.loadingLexware) return `<div class="empty">Lade Lexware-Angebote …</div>`;
+  if (d?.fehler) return stoerungState(d, 'Die Lexware-Angebote');
+  if (!d || !d.verfuegbar) return emptyState('Noch keine Lexware-Angebote abgerufen.', d?.hinweis || '');
+  const offen = d.zeilen.filter(z => z.status !== 'erledigt');
+  const faellig = offen.filter(z => z.faellig);
+  const rest = offen.filter(z => !z.faellig);
+  const summe = faellig.reduce((s, z) => s + (z.betrag || 0), 0);
+  return `
+    <h2 style="margin:0 0 6px">Lexware-Angebote nachfassen</h2>
+    <p class="small muted" style="margin:0 0 10px">Offene Angebote aus Lexware, Stand ${esc(fmtDateTime(d.stand))}. Ab 5 Tagen ohne Rückmeldung anrufen, nach einem Anruf ab Tag 12 noch einmal.${faellig.length ? ` Heute ${faellig.length} dran, zusammen ${geldText({ betrag: summe })}.` : ''}</p>
+    <div class="rows">${faellig.length ? faellig.map(lexwareZeile).join('') : emptyState('Heute ist kein Angebot zum Nachfassen dran.', '')}</div>
+    ${rest.length ? `<details style="margin-top:10px"><summary>${rest.length} weitere offene Angebote (noch nicht dran)</summary><div class="rows">${rest.map(lexwareZeile).join('')}</div></details>` : ''}`;
+}
+
+async function lexwareNachfassSetzen(id, status) {
+  try {
+    const r = await fetch('/api/angebote/lexware', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, status }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return; }
+    // Faelligkeit rechnet der Server; neu laden statt im Browser nachrechnen.
+    kunden.lexware = null;
+    ensureLexwareAngebote();
+    toast(`Angebot: ${NACHFASS_LABEL[status]}`);
+  } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); }
+}
+
+export function lexwareKlick(e) {
+  const b = e.target.closest('[data-lexware-nachfass]');
+  if (!b) return false;
+  e.preventDefault();
+  lexwareNachfassSetzen(b.dataset.lexwareNachfass, b.dataset.status);
+  return true;
 }
 
 export function ensureKundenWarenkoerbe() {
@@ -103,10 +177,12 @@ export function viewKundenAngebote() {
   const d = kunden.angebote;
   if (!d && kunden.loadingAngebote) return `<div class="empty">Lade Angebote …</div>`;
   if (d?.fehler) return stoerungState(d, 'Die Angebote');
-  if (!d || !d.verfuegbar) return emptyState('Keine Angebote exportiert.', d?.hinweis || 'Daten aktualisieren (braucht den Shopify-Zugang).');
+  const lexware = lexwareBlock();
+  if (!d || !d.verfuegbar) return lexware;
   const offen = (d.angebote || []).filter(a => ANGEBOT_OFFEN.has(a.status));
   const rest = (d.angebote || []).filter(a => !ANGEBOT_OFFEN.has(a.status));
-  return `
+  return `${lexware}
+    <h2 style="margin:22px 0 6px">Shop-Angebote</h2>
     <p class="small muted" style="margin:0 0 10px">Angebote sind Entwurfsbestellungen aus Shopify. „Offen" heißt: verschickt oder angelegt, aber noch nicht bezahlt – dort wartet jemand auf eine Antwort.</p>
     ${offen.length && !d.kontodaten && !istNurLesend() ? '<p class="notice warn">Für den WhatsApp-Text fehlen die Kontodaten oder die IBAN stimmt nicht. Bitte den Inhaber fragen.</p>' : ''}
     <div class="rows">${offen.length ? offen.map(a => angebotZeile(a, d.kontodaten)).join('') : emptyState('Kein offenes Angebot.', 'Nichts zu tun.')}</div>
