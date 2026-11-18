@@ -60,7 +60,7 @@ function fallPunkt(p) {
   return `<li class="fall-punkt">
     <div><span class="badge ${klasse}">${esc(wer + p.schritt.text)}</span></div>
     ${p.schritt.hinweis ? `<div class="small muted">${esc(p.schritt.hinweis)}</div>` : ''}
-    <div class="small">${esc(FALL_QUELLE_LABEL[p.quelle] || p.quelle)}${p.bezug ? ` ${esc(p.bezug)}` : ''}${p.tage !== null ? ` · seit ${p.tage === 0 ? 'heute' : `${p.tage} Tagen`}` : ''}${p.betrag ? ` · ${esc(fmtPreis(p.betrag))} ${esc(p.waehrung)}` : ''}</div>
+    <div class="small">${esc(FALL_QUELLE_LABEL[p.quelle] || p.quelle)}${p.bezug ? ` ${esc(p.bezug)}` : ''}${p.tage !== null ? ` · seit ${p.tage === 0 ? 'heute' : `${p.tage} ${p.tage === 1 ? 'Tag' : 'Tagen'}`}` : ''}${p.betrag ? ` · ${esc(fmtPreis(p.betrag))} ${esc(p.waehrung)}` : ''}</div>
     <div class="small">${p.moechte.length ? esc(p.moechte.join(' · ')) : '<span class="muted">keine Positionen</span>'}${nachschlagen}</div>
     ${p.adminUrl ? `<a class="small" href="${esc(p.adminUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">In Shopify öffnen ↗</a>` : ''}
   </li>`;
