@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { aktualisiere, argumente, standNachLauf, ohneUeberholtenFehler, quellvarianteIdsAus, TEIL_FN } from '../scripts/aktualisieren.mjs';
+import { aktualisiere, argumente, standNachLauf, ohneUeberholtenFehler, quellvarianteIdsAus, frischeBestellungen, TEIL_FN } from '../scripts/aktualisieren.mjs';
 
 // Die Tests "ohne Zugang" duerfen nie den echten Zugang des Rechners finden -
 // sonst liefen sie auf dem Betriebsrechner gegen Shopify.
@@ -431,4 +431,16 @@ test('gedrosselter Teil wird genau einmal wiederholt', async () => {
   const keinZugang = { kennzahlen: async () => { anderer += 1; throw new Error('Kein Zugang'); } };
   await aktualisiere({ dir, nur: ['kennzahlen'], teilFn: keinZugang, drosselPauseMs: 0 });
   assert.equal(anderer, 1);
+});
+
+test('frischeBestellungen: Kennzahlen nehmen orders.json desselben Laufs, nie eine alte oder fehlende (w-166)', () => {
+  const dir = tmpDir();
+  assert.equal(frischeBestellungen(dir), null);
+  fs.mkdirSync(path.join(dir, 'bestelluebersicht'));
+  const datei = path.join(dir, 'bestelluebersicht', 'orders.json');
+  const jetzt = Date.parse('2026-11-18T12:00:00Z');
+  fs.writeFileSync(datei, JSON.stringify({ exportiertAm: '2026-11-18T11:55:00Z', orders: [{ id: 1 }] }));
+  assert.deepEqual(frischeBestellungen(dir, { jetzt }), { orders: [{ id: 1 }] });
+  fs.writeFileSync(datei, JSON.stringify({ exportiertAm: '2026-11-18T11:00:00Z', orders: [{ id: 1 }] }));
+  assert.equal(frischeBestellungen(dir, { jetzt }), null);
 });
