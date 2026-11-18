@@ -68,7 +68,8 @@ import { selbstAbschickenStand, selbstAbschickenBlock } from './heute/selbst-abs
 import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 import { aufraeumenBlock, aufraeumenUnterProblem } from './heute/aufraeumen.mjs';
 import { inhaberZeile, nebenbereichZusatz } from './heute/inhaber-zeile.mjs';
-import { problemeBlock, problemOrderIds, rotMuster } from './heute/probleme.mjs';
+import { problemeBlock, problemOrderIds, rotMuster, nurProbleme } from './heute/probleme.mjs';
+import { rotstand, meldeRotstand, seitText } from './heute/rotstand.mjs';
 import { restrollenZeile } from './heute/restrollen.mjs';
 import { warenkennzahlBlock } from './heute/warenkennzahl.mjs';
 
@@ -255,8 +256,11 @@ function problemeShop(nf, selbst = null) {
   const sicht = istInhaber() ? 'alles' : gewaehlteSicht(q.aufgaben);
   // "Ware ist da – rausgeben" ohne die Positionen, die schon im Block "Von uns abschicken" stehen -
   // nicht ein zweites Mal rot. Bleibt nichts uebrig (nur Ware ueber uns), faellt das To-do weg.
-  const liste = todosDerSicht(sicht, q, nf).liste.map(t => rausgebenOhne(t, selbst?.schluessel)).filter(Boolean);
   const lesend = istNurLesend();
+  // Vortagesstand (#2241): was seit dem letzten Tag neu rot ist, traegt die Markierung "neu".
+  const liste = todosDerSicht(sicht, q, nf).liste.map(t => rausgebenOhne(t, selbst?.schluessel)).filter(Boolean)
+    .map(t => (rotstand.neu.has(t.id) ? { ...t, neuSeit: seitText(rotstand.vortag) } : t));
+  if (!lesend) meldeRotstand(nurProbleme(liste).map(t => t.id).filter(Boolean));
   // Jede Bestellung einmal: die Aufraeumzeile haengt nur am ersten roten Eintrag ihrer Bestellung.
   const schonGezeigt = new Set();
   const zeile = t => todoZeile(t, false, aufraeumenUnterProblem(t, { daten: kunden.bestellungen, lesend, schonGezeigt }));
@@ -410,7 +414,7 @@ function todoZeile(t, erste, unten = '') {
       : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen || k.abhaken ? 'Ansehen' : k.text)}</a>`;
   const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage, t.alterBezug))}</span>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
-    <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
+    <div class="heute-todo-text"><div class="t">${t.neuSeit ? `<span class="heute-neu" title="${esc(`Neu rot ${t.neuSeit}`)}">neu</span> ` : ''}${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
     ${alter}${knopf}${unten}
   </div>`;
 }

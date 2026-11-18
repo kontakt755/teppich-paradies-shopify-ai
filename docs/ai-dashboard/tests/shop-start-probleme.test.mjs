@@ -59,3 +59,12 @@ test('w-222: gescheiterter Abruf wird genannt, auch ohne rotes To-do', () => {
   assert.match(mit, /Rückrufe, Abgleich mit Shopify &lt;x&gt; konnten nicht geladen werden/);
   assert.equal(problemeBlock([], { zeile, fehlen: [] }), '', 'alles geladen, nichts rot: weiter kein Block');
 });
+
+test('Vortagesstand (#2241): neu rot Gewordenes steht zuerst und wird im Titel gezaehlt', () => {
+  const liste = ['a', 'b', 'c', 'd'].map(id => todo(id, 'crit'));
+  liste[3] = { ...liste[3], neuSeit: 'seit gestern' };
+  const html = problemeBlock(liste, { zeile });
+  assert.deepEqual(zeilen(html).slice(0, 1), ['d'], 'sonst laege es eingeklappt');
+  assert.match(html, /Probleme · 4 <span class="muted">· 1 neu seit gestern<\/span>/);
+  assert.doesNotMatch(problemeBlock(liste.slice(0, 3), { zeile }), /neu seit/);
+});

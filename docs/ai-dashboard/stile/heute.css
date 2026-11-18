@@ -124,6 +124,8 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
 .heute-alter { padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: .78rem; font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .heute-alter.warn { background: var(--warn-soft); color: var(--warn); }
 .heute-alter.crit { background: var(--crit-soft); color: var(--crit); }
+/* Vortagesstand (#2241): neu rot seit gestern - kleine Marke vor dem Titel, Farbe wie das Problem selbst. */
+.heute-neu { padding: 0 6px; border: 1px solid var(--crit); border-radius: 999px; color: var(--crit); font-size: .72rem; font-weight: 700; vertical-align: 1px; }
 .heute-spalte-mehr { display: block; padding: 9px 16px; border-top: 1px solid var(--line); font-size: .85rem; color: var(--accent); }
 
 /* ---------- Kennzahlen ---------- */
