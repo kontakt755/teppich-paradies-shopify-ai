@@ -10,7 +10,7 @@ import { ensureKundenRueckrufe, openRueckrufDialog, viewKundenRueckrufe } from '
 import { ensureMusterAnrufe, musterAnrufeKlick, musterAnrufeOffen, viewMusterAnrufe } from './kunden/muster-anrufe.mjs';
 import { viewKundenSuche, viewKundenDetail } from './kunden/akte.mjs';
 import { viewKundenBestellungen, ensureKundenBestellungen } from './kunden/bestellungen.mjs';
-import { viewKundenAngebote, viewKundenWarenkoerbe } from './kunden/angebote.mjs';
+import { ensureLexwareAngebote, lexwareFaelligAnzahl, lexwareKlick, viewKundenAngebote, viewKundenWarenkoerbe } from './kunden/angebote.mjs';
 import { fallMarkeSetzen, viewKundenFaelle } from './kunden/faelle.mjs';
 import { ensureServiceanfragen, serviceKlick, serviceOffenAnzahl, viewKundenServiceanfragen } from './kunden/serviceanfragen.mjs';
 import { ensureMusterPacken, musterPackenKlick, musterPackenOffen, viewKundenMusterPacken } from './kunden/muster-packen.mjs';
@@ -48,6 +48,7 @@ export function viewKunden() {
   ensureServiceanfragen();
   ensureMusterPacken();
   ensureMusterAnrufe();
+  ensureLexwareAngebote();
   const titel = tab === 'anrufe' ? 'Kunden nach Produkt fragen' : tab === 'musterwirkung' ? 'Musterwirkung' : tab === 'muster' ? 'Packstation' : tab === 'bestellungen' ? 'Bestellungen' : 'Kunden';
   const beschreibung = tab === 'anrufe' ? 'Hier fragst du nach, wie die Muster angekommen sind, und hältst fest, warum gekauft wird oder nicht. Oben steht, was die automatischen Nachfrage-Mails gerade tun.' : tab === 'musterwirkung' ? 'Hier vergleichst du Musteraufwand und beobachtete Warenkäufe – mit klarer Datenabdeckung.' : tab === 'muster' ? 'Hier findest du packbereite Umschläge, fehlende Muster und den gemeinsamen Packstand.' : tab === 'bestellungen' ? 'Hier bearbeitest du Kundenbestellungen und siehst den nächsten Schritt.' : 'Hier findest du Kunden am Telefon schnell, ihre Bestellungen und wer zurückgerufen werden möchte.';
   const head = `<div class="page-head"><div><h1>${titel}</h1><p class="sub">${beschreibung}</p></div></div>
@@ -59,7 +60,7 @@ export function viewKunden() {
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'anrufe'}" data-param="tab" data-value="anrufe">Kunden nach Produkt fragen${a_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'service'}" data-param="tab" data-value="service">Service-Anfragen${s_badge()}</button>
-      <button type="button" class="tab" role="tab" aria-selected="${tab === 'angebote'}" data-param="tab" data-value="angebote">Angebote</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'angebote'}" data-param="tab" data-value="angebote">Angebote${l_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'warenkoerbe'}" data-param="tab" data-value="warenkoerbe">Liegengeblieben</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'musterwirkung'}" data-param="tab" data-value="musterwirkung">Musterwirkung</button>
     </div>`;
@@ -94,6 +95,11 @@ function r_badge() {
   return n ? ` <span class="badge gap">${n}</span>` : '';
 }
 
+function l_badge() {
+  const n = lexwareFaelligAnzahl();
+  return n ? ` <span class="badge gap">${n}</span>` : '';
+}
+
 function a_badge() {
   const n = musterAnrufeOffen();
   return n ? ` <span class="badge gap">${n}</span>` : '';
@@ -121,6 +127,7 @@ export function kundenKlickAkte(e) {
   if (serviceKlick(e)) return true;
   if (musterPackenKlick(e)) return true;
   if (musterAnrufeKlick(e)) return true;
+  if (lexwareKlick(e)) return true;
   const rueckrufBtn = e.target.closest('[data-rueckruf-open]');
   if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return true; }
   return false;

@@ -93,6 +93,7 @@ import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abg
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
 import { ladenTodos, ladenMailZeilen, gruppiereMails, wareUnterwegs, wareAngekommen, zuschnitte } from '../docs/ai-dashboard/lib/laden.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
+import { lexwareAngebotePfad, lexwareNachfassPfad, nachfassFaellig, alterTage } from '../operations/lib/lexware-angebote.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
@@ -5134,6 +5135,43 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Kontodaten fuer den WhatsApp-Text: nur privat und nur mit gueltiger IBAN, sonst kein Text.
       const kontodaten = kontodatenPruefen(readJsonIfExists(path.join(dir, 'angebote', 'kontodaten.json')));
       return { verfuegbar: true, quelle: file, ...daten, kontodaten };
+    },
+
+    /** Offene Lexware-Angebote mit Nachfass-Stand (w-351); faellige zuerst, dann die aeltesten. */
+    lexwareAngebote() {
+      const dir = privatDirPath || privatDir();
+      const file = lexwareAngebotePfad(dir);
+      const daten = readJsonIfExists(file);
+      if (!daten || !Array.isArray(daten.angebote)) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Die Lexware-Angebote wurden noch nicht abgerufen. Das macht die Claude-Routine „Lexware-Angebote“ werktags früh.' };
+      }
+      const status = leseRueckrufe(lexwareNachfassPfad(dir));
+      const jetzt = now();
+      const zeilen = daten.angebote.map(a => {
+        const s = status[a.id] || {};
+        return { ...a, alterTage: alterTage(a.datum, jetzt), faellig: nachfassFaellig(a, s, jetzt), status: s.status || 'offen', notiz: s.notiz || null, aktualisiertAm: s.aktualisiertAm || null, aktualisiertVon: s.aktualisiertVon || null };
+      }).sort((x, y) => (y.faellig - x.faellig) || (y.alterTage - x.alterTage));
+      return { verfuegbar: true, stand: daten.stand || null, zeilen };
+    },
+
+    async lexwareAngebotSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || benutzer?.kuerzel || await currentUser() || 'Unbekannt';
+      const { id, status, notiz } = payload || {};
+      if (!id) throw new ApiError(400, 'id ist Pflicht');
+      if (!RUECKRUF_STATUS.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`);
+      const dir = privatDirPath || privatDir();
+      const daten = readJsonIfExists(lexwareAngebotePfad(dir));
+      if (!daten?.angebote?.some(a => a.id === id)) throw new ApiError(404, 'Angebot nicht in der Liste');
+      let eintrag;
+      try {
+        eintrag = setzeRueckrufStatus(lexwareNachfassPfad(dir), { orderId: id, status, actor, notiz, jetzt: now() });
+      } catch (e) {
+        if (e instanceof RueckrufFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+      audit({ actor, action: 'lexware-nachfassen', id, status });
+      merke(benutzer, actor, 'Angebot nachgefasst', `${daten.angebote.find(a => a.id === id).nummer}: ${status}`);
+      return { ok: true, eintrag };
     },
 
     /** Abgebrochene Warenkoerbe der letzten 30 Tage - verlorener Umsatz. */
