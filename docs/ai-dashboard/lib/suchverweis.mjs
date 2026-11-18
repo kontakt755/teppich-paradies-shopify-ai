@@ -10,7 +10,7 @@
  * Nach einem Neuladen ist der Speicher leer. Die Kennung des Seitenlaufs sorgt dafuer, dass ein alter
  * Verweis dann nichts mehr findet, statt zufaellig den Begriff einer neueren Suche zu zeigen.
  */
-const GESCHUETZT = ['kq', 'mpq', 'mpfertig'];
+const GESCHUETZT = ['kq', 'mpq', 'mpfertig', 'abq'];
 const VERWEIS = /^sv-[a-z0-9]+-\d+$/;
 const seitenlauf = Math.random().toString(36).slice(2, 8) || 'x';
 const begriffe = new Map();

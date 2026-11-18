@@ -29,6 +29,7 @@ import { lieferwegVon, selbstStandText } from '../../lib/lieferweg.mjs';
 import { lieferwegPlakette, lieferwegeAuftrag } from '../../bausteine/lieferweg.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { ensureMusterPacken } from '../kunden/muster-packen.mjs';
+import { suchwert } from '../../lib/suchverweis.mjs';
 
 function lieferantName(id) {
   return lieferantAnzeige(id, einkauf.lieferanten?.lieferanten || []);
@@ -301,6 +302,16 @@ export function viewEinkaufAblauf() {
     .map(a => { const ab = auftragsAblauf(a, d, afEintragFuer); return { a, ab, e: einordnung(ab, informiertFuer(a.id), new Date(), { umschlag: umschlagBereich(a.id) }) }; })
     .sort((x, y) => jetztRang(x.e, x.ab) - jetztRang(y.e, y.ab) || String(x.a.datum).localeCompare(String(y.a.datum)));
   if (!liste.length) return emptyState('Keine offenen Kundenbestellungen.', 'Neue Bestellungen aus dem Shop erscheinen hier von selbst.');
+  // Suche nach Bestellnummer oder Kunde (Name, Ort): ueber alle offenen Auftraege, Art- und Gruppenfilter
+  // zaehlen dann nicht. Der Begriff steht nur als Verweis in der Adresse (Kundennamen, w-266).
+  const roh = suchwert(state.route.params, 'abq');
+  const suche = `<div class="toolbar ab-suche"><input type="search" autocomplete="off" placeholder="#Nummer oder Kundenname" value="${esc(roh)}" data-param="abq" aria-label="Aufträge nach Nummer oder Kunde durchsuchen"></div>`;
+  const worte = roh.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (worte.length) {
+    const treffer = liste.filter(x => { const k = kundeUndOrt(x.a.id); const t = `${x.a.name} ${k.name} ${k.ort}`.toLowerCase(); return worte.every(w => t.includes(w)); });
+    return `${suche}<p class="sub ab-einleitung"><strong>${plural(treffer.length, 'offener Auftrag', 'offene Aufträge')} gefunden</strong> · <a href="#/einkauf">Suche aufheben</a></p>
+      ${treffer.length ? `<div class="ab-raster">${treffer.map(auftragKarte).join('')}</div>` : '<p class="small muted">Kein offener Auftrag passt. Erledigte Aufträge findest du unter <a href="#/kunden">Kunden</a>.</p>'}`;
+  }
   const f = FILTER[state.route.params.get('ab')];
   if (f) {
     const treffer = liste.filter(x => f.passt(x.e));
@@ -327,7 +338,7 @@ export function viewEinkaufAblauf() {
   // Eine Ueberschrift mit Zahl und Gruenden (13.11.2026): vorher stand derselbe Satz als Absatz und darunter
   // noch einmal "Jetzt zu tun" - am Handy fuellte der Kopf den ganzen ersten Bildschirm. Die Reihenfolge
   // erklaert der Tooltip; sie ist an den Karten ohnehin zu sehen.
-  return `${chips}${versandZeile}
+  return `${suche}${chips}${versandZeile}
     ${jetzt.length ? `<h2 class="ab-titel" title="Warenaufträge zuerst, dann Muster bestellen und klären, zuletzt Muster verschicken; darin älteste zuerst.">${plural(jetzt.length, 'Auftrag', 'Aufträge')} jetzt zu tun <span class="small muted">· ${esc(teile.join(' · '))}</span></h2><div class="ab-raster">${jetzt.map(auftragKarte).join('')}</div>` : '<p class="sub ab-einleitung"><strong>Gerade nichts zu tun.</strong></p>'}
     ${gruppe('unterwegs', 'Unterwegs', `beim Lieferanten bestellt, kommt noch – nachhaken ab ${WARTESCHWELLEN.nachhakenTage} Tagen`, sicht.filter(x => x.e.gruppe === 'unterwegs'))}
     ${gruppe('kunde', 'Beim Kunden', 'Kunde informiert oder Ware raus – Termin bzw. Abschluss', sicht.filter(x => x.e.gruppe === 'beiKunde'))}`;

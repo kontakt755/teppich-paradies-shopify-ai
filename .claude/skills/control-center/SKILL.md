@@ -247,7 +247,6 @@ kann dafuer weg?
 
 Vor dem Umsetzen als Aufgabe anlegen und mit dem Inhaber abstimmen:
 
-- Einkauf: Suche/Filter nach Auftrag oder Kunde.
 - Heute „Seit gestern neu": Vortagesstand der Ampeln sichern, damit auch
   aeltere Auftraege erscheinen, die erst jetzt rot geworden sind.
 - Arbeit: Owner-Filter und Spalte automatisch einblenden, sobald mehr als eine
