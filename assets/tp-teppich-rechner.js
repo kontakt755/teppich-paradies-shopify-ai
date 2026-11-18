@@ -386,7 +386,20 @@
   }
 
   function alle() { document.querySelectorAll('[data-tp-rechner-root]').forEach(function (r) { laden(r); }); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alle);
-  else alle();
+  // Preisdaten (147 KB) erst nach dem Laden holen, damit sie das Heldenbild nicht bremsen;
+  // wer vorher ins Formular greift, loest das Laden sofort aus (laden ist idempotent).
+  function spaeter() {
+    document.querySelectorAll('[data-tp-rechner-root]').forEach(function (r) {
+      var f = r.querySelector('[data-tp-rechner]');
+      if (f) f.addEventListener('submit', function (e) { if (!r.getAttribute('data-tp-rechner-laedt') && !r.getAttribute('data-tp-rechner-bereit')) { e.preventDefault(); laden(r, true); } }, { once: true });
+      ['pointerdown', 'focusin', 'keydown'].forEach(function (t) {
+        r.addEventListener(t, function () { laden(r); }, { capture: true, once: true });
+      });
+    });
+    if (document.readyState === 'complete') setTimeout(alle, 0);
+    else window.addEventListener('load', function () { setTimeout(alle, 0); }, { once: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', spaeter);
+  else spaeter();
   document.addEventListener('shopify:section:load', alle);
 })();
