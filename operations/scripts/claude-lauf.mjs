@@ -86,6 +86,22 @@ export function claudeUmgebung(env, lauf, teil) {
   return { ...sauber, USER: nutzer, LOGNAME: env.LOGNAME || nutzer, CLAUDE_CODE_ENTRYPOINT: 'claude-desktop', TP_ROUTINE: `${lauf}/${teil.id}` };
 }
 
+/**
+ * Fehlt ein Pflichtwerkzeug, kann die Abo-Anmeldung abgelaufen sein (17.11.2026, w-166:
+ * Refresh-Token mit fester Laufzeit; ohne Anmeldung fehlen alle claude.ai-Konnektoren samt Gmail).
+ * Dann zeigt `claude auth status` loggedIn false - das braucht einen Menschen, keine Codeaenderung.
+ */
+export function anmeldungPruefen(bewertung, { bin, env, ausfuehren = execFileSync }) {
+  if (bewertung.art !== 'werkzeug-fehlt') return bewertung;
+  let text = '';
+  // Abgemeldet endet `claude auth status` mit Exit 1 - das JSON steht trotzdem auf stdout.
+  try { text = ausfuehren(bin, ['auth', 'status'], { env, encoding: 'utf8', timeout: 30_000 }); } catch (e) { text = String(e?.stdout || ''); }
+  let angemeldet = true;
+  try { angemeldet = JSON.parse(text).loggedIn !== false; } catch { /* unklar: Meldung bleibt */ }
+  if (angemeldet) return bewertung;
+  return { ...bewertung, art: 'nicht-angemeldet', meldung: 'claude ist nicht angemeldet (Abo-Anmeldung abgelaufen) – am Mac im Terminal `claude auth login` ausführen und im Browser mit dem claude.ai-Konto bestätigen. Lauf abgebrochen, nichts ausgeführt.' };
+}
+
 /** macOS-Mitteilung (operations/lib/mac-mitteilung.mjs, auch von der Shop-Wache genutzt). */
 export { mitteilung };
 
@@ -242,7 +258,7 @@ export async function teilAusfuehren(lauf, teil, o) {
   const start = new Date();
   const r = await starte(bin, args, { cwd: dienst, env: claudeUmgebung(env, lauf, teil), zeitlimitMs: def.zeitlimitMin * 60_000, pflicht: def.pflicht });
   leereOrdner(arbeit);
-  const bewertung = bewerteLauf(r);
+  const bewertung = anmeldungPruefen(bewerteLauf(r), { bin, env: claudeUmgebung(env, lauf, teil) });
   const protokolle = path.join(routinenDir(privat), lauf, 'laeufe');
   fs.mkdirSync(protokolle, { recursive: true, mode: 0o700 });
   alteProtokolleWeg(protokolle, jetzt);

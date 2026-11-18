@@ -1115,7 +1115,10 @@ die Abo-Anmeldung im Schlüsselbund nicht), API-Schlüssel und Variablen einer u
 Claude-Sitzung fallen weg, `CLAUDE_CODE_ENTRYPOINT=claude-desktop` (undokumentiert: ohne diese
 Kennung fehlen Artifact/ArtifactData in `claude -p`). Das init-Ereignis von `claude -p` wird gegen
 die Pflichtwerkzeuge des Laufs geprüft; fehlt eines, endet der Lauf sofort mit „werkzeug-fehlt“
-(Störung), bevor Claude etwas tut. Beim Zeitlimit endet die ganze Prozessgruppe.
+(Störung), bevor Claude etwas tut. Meldet `claude auth status` dabei `loggedIn: false`, heißt die
+Störung „nicht-angemeldet“: Die Abo-Anmeldung ist abgelaufen (Refresh-Token mit fester Laufzeit,
+zuletzt 17.11.2026) und ein Mensch muss am Mac `claude auth login` ausführen. Beim Zeitlimit endet
+die ganze Prozessgruppe.
 
 **Werkzeuge** (`lib/routinen.mjs`, `LAEUFE`; `--trocken` zeigt sie vollständig):
 - *Fehlermeldungen:* `--restricted --strict-mcp-config` (keine Benutzer-/Projekteinstellungen und

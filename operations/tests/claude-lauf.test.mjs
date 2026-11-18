@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { main, befehlAnzeige, argumente, starteClaude, claudeUmgebung } from '../scripts/claude-lauf.mjs';
+import { main, befehlAnzeige, argumente, starteClaude, claudeUmgebung, anmeldungPruefen } from '../scripts/claude-lauf.mjs';
 import { liesStatus, arbeitsOrdner, auftragPfad, sperrPfad, nimmSperre, LAEUFE } from '../lib/routinen.mjs';
 
 // Montag 26.10.2026, 10:00 Uhr in Berlin - im Zeitfenster.
@@ -267,4 +267,14 @@ test('--trocken: zeigt Befehl, Werkzeuglisten und Kopf, startet nichts, schreibt
 
 test('Befehlsanzeige: Werte mit Leerzeichen gequotet, Prompt verdeckt', () => {
   assert.equal(befehlAnzeige('claude', ['-p', 'Bash(cd /x y)', '--', 'geheim']), "claude -p 'Bash(cd /x y)' -- <PROMPT>");
+});
+
+test('anmeldungPruefen: fehlendes Werkzeug bei abgelaufener Abo-Anmeldung heisst nicht-angemeldet (w-166)', () => {
+  const fehlt = { ok: false, art: 'werkzeug-fehlt', meldung: 'x' };
+  const abgemeldet = () => { const e = new Error('exit 1'); e.stdout = '{"loggedIn": false}'; throw e; };
+  assert.equal(anmeldungPruefen(fehlt, { bin: 'claude', env: {}, ausfuehren: abgemeldet }).art, 'nicht-angemeldet');
+  assert.equal(anmeldungPruefen(fehlt, { bin: 'claude', env: {}, ausfuehren: () => '{"loggedIn": true}' }).art, 'werkzeug-fehlt');
+  assert.equal(anmeldungPruefen(fehlt, { bin: 'claude', env: {}, ausfuehren: () => { throw new Error('weg'); } }).art, 'werkzeug-fehlt');
+  const gut = { ok: true, art: 'ok' };
+  assert.equal(anmeldungPruefen(gut, { bin: 'claude', env: {}, ausfuehren: abgemeldet }), gut);
 });

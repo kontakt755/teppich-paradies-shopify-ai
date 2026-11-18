@@ -142,10 +142,22 @@ async function teilLexikon(dir) {
   return { anzahl: modell.anzahl };
 }
 
+/** Bestellungen aus dem Bestell-Teil desselben Laufs (orders.json, hoechstens maxMin alt), sonst null. */
+export function frischeBestellungen(dir, { jetzt = Date.now(), maxMin = 15 } = {}) {
+  try {
+    const j = JSON.parse(fs.readFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), 'utf8'));
+    const alter = jetzt - new Date(j.exportiertAm).getTime();
+    return Array.isArray(j.orders) && alter >= 0 && alter <= maxMin * 60000 ? { orders: j.orders } : null;
+  } catch { return null; }
+}
+
 async function teilKennzahlen(dir) {
   const { ladeLive } = await import('./kennzahlen-export.mjs');
   const { schnappschuss } = await import('../lib/kennzahlen.mjs');
-  const daten = await ladeLive(35);
+  // Der Bestell-Teil laeuft direkt davor und holt alle seit 90 Tagen angelegten Bestellungen
+  // (Kennzahlen zaehlen nach createdAt, hoechstens 30 Tage). Ein zweiter Abruf derselben Daten
+  // wurde ab 18.11. bei jedem Lauf gedrosselt (w-166) - deshalb nur ohne frische Datei live.
+  const daten = frischeBestellungen(dir) ?? await ladeLive(35);
   const schnapp = schnappschuss(daten);
   const ziel = path.join(dir, 'kennzahlen', 'shop-snapshot.json');
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
