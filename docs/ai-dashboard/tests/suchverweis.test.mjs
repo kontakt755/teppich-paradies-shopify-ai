@@ -120,3 +120,10 @@ test('Tippen im Suchfeld geht vor dem Schreiben in die Adresse durch die Bereini
   const quelle = fs.readFileSync(new URL('../ereignisse.mjs', import.meta.url), 'utf8');
   assert.match(quelle, /if \(el\.value\) p\.set\(key, el\.value\)[\s\S]{0,200}verbergeSuchbegriffe\(p\);\s*history\.replaceState/);
 });
+
+test('Bestellen-Suche (abq): Kundenname steht nur als Verweis in der Adresse', () => {
+  const b = browser(`#/einkauf?abq=${encodeURIComponent('Testkunde Musterstadt')}`);
+  parseRoute();
+  assert.equal(suchwert(state.route.params, 'abq'), 'Testkunde Musterstadt');
+  assert.deepEqual(klartext([b.hash()], 'Testkunde'), []);
+});
