@@ -3292,3 +3292,20 @@ das nicht. Ist der Gmail-Zugang (`nachfassen/postfach.json`) vorhanden, sucht de
 (`mitNurLesen`) in „Gesendet“ nach Mails an die Absender und setzt `beantwortetAm`. Solche Einträge zeigen den ruhigen
 Hinweis „Schon aus dem Hauptpostfach beantwortet“ und zählen nie als „liegt zu lange“. Scheitert dieser Teil, bleibt
 der Abruf gültig (ohne Markierung). Die Absenderadresse verlässt den Server nicht (`ladenMailZeilen`).
+
+## 35. Fragen von Claude zu Werkbank-Aufgaben (18.11.2026, #2250)
+
+Claude-Läufe nehmen offene Werkbank-Aufgaben selbst. Fehlt eine Entscheidung, legt der Lauf eine Frage an; der
+Benutzer beantwortet sie unter „Entscheidungen“, der nächste Lauf macht weiter.
+
+- **Speicher:** `$TP_PRIVAT_DIR/werkbank-fragen.json` (`operations/lib/werkbank-fragen.mjs`), nie im Repository –
+  die öffentlichen GitHub-Issues der bisherigen Entscheidungen taugen nicht für Werkbank-Inhalte. Fehlende Datei = leer,
+  kaputtes JSON = Fehler. Eintrag: `id` (`q-<werkbankId>-<n>`), `werkbankId`, `titel`, `frage`, `optionen` (2–4,
+  Empfehlung zuerst), `empfehlung`, `freitextErlaubt`, `gestellt`, `antwort` {`label`, `freitext`, `von`, `am`} oder null,
+  `uebernommen`.
+- **Befehl:** `npm run -s werkbank:frage -- neu --datei <json> | offen | beantwortet | uebernommen <id>`. Gleiche offene
+  Frage zur selben Aufgabe wird nicht doppelt angelegt.
+- **API:** `GET /api/werkbank/fragen` (offen + 10 zuletzt beantwortete), `POST /api/werkbank/antworten` (in der
+  `write`-Liste). Rolle „lesen“ bekommt für beides 403; `von` kommt aus der Sitzung. Eine Frage wird nur einmal beantwortet.
+- **Ansicht:** Abschnitt oben in `ansichten/freigaben.mjs`; Zahl über `registriereNavZaehler({ freigaben })` im Zähler
+  „Weitere Bereiche“/„Mehr“, auf Heute eine Zeile (`werkbankFragenZeile`). Geladen nur, wenn `darfAnsicht('freigaben')`.

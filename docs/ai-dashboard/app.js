@@ -45,7 +45,7 @@ import { viewShopwache } from './ansichten/shopwache.mjs';
 import { viewRatgeber } from './ansichten/ratgeber.mjs';
 import { viewHilfe } from './ansichten/hilfe.mjs';
 import { viewArbeit } from './ansichten/arbeit.mjs';
-import { viewFreigaben } from './ansichten/freigaben.mjs';
+import { viewFreigaben, werkbankFragenOffen } from './ansichten/freigaben.mjs';
 import { viewBereiche } from './ansichten/bereiche.mjs';
 import { viewInsights } from './ansichten/insights.mjs';
 import { ladeAktivitaetsdaten, viewAktivitaet } from './ansichten/aktivitaet.mjs';
@@ -67,7 +67,7 @@ async function init() {
   registriereNachZeichnen(zeichneDatenstand);
   // Zaehler in der Navigation: nur, was ohnehin geladen ist - kein eigener Abruf dafuer.
   // Kunden: sofort faellige Faelle plus alle noch offenen Service-Anfragen - leer, bis beide geladen sind.
-  registriereNavZaehler({ zuschnitt: zuschnittOffen, bestellungen: () => bestellungenOffen({ art: 'ware' }),packen: musterPackenOffen, fragen: musterAnrufeOffen, kunden: () => kundenMenueZahl(faelleFuerMenue(), kunden.serviceanfragen) });
+  registriereNavZaehler({ freigaben: werkbankFragenOffen, zuschnitt: zuschnittOffen, bestellungen: () => bestellungenOffen({ art: 'ware' }),packen: musterPackenOffen, fragen: musterAnrufeOffen, kunden: () => kundenMenueZahl(faelleFuerMenue(), kunden.serviceanfragen) });
   parseRoute();
   ladenRouteAbgleichen();
   bindEvents();

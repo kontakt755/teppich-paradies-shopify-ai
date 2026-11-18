@@ -2,13 +2,18 @@
  * Ansicht "Freigaben" (#/freigaben, nur Inhaber): Entscheidungen, die auf einen Menschen warten.
  */
 import { state } from '../kern/zustand.mjs';
-import { esc, fmtDate, since, newIssueUrl } from '../kern/helfer.mjs';
+import { esc, fmtDate, since, newIssueUrl, plural, toast } from '../kern/helfer.mjs';
+import { fetchEinkauf, orgSchreiben } from '../kern/api.mjs';
+import { render } from '../kern/render.mjs';
+import { darfAnsicht } from '../kern/router.mjs';
+import { aktualisiereNavZahlen } from '../kern/navigation.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
 import { prioBadge, statusBadge, taskLink, taskRow, echterSchritt } from '../bausteine/aufgaben.mjs';
 import { entscheidungsGruppen } from '../lib/model.mjs';
 import { personName } from '../kern/konfig.mjs';
 
 export function viewFreigaben() {
+  ensureWerkbankFragen();
   const gruppen = entscheidungsGruppen(state.tasks);
   const open = gruppen.fuerDich.sort((a, b) => a.priorityRank - b.priorityRank);
   const reviews = state.tasks.filter(t => t.status === 'review');
@@ -16,6 +21,7 @@ export function viewFreigaben() {
   return `
     <div class="page-head"><div><h1>Entscheidungen</h1><p class="sub">Hier entscheidest du, was auf dich wartet – jede Frage mit Empfehlung.</p></div>
       <a class="btn" href="${newIssueUrl({ template: 'entscheidung.yml' })}" target="_blank" rel="noopener">Entscheidung anlegen ↗</a></div>
+    ${fragenBlock()}
     <section class="card"><div class="card-head"><h2>Offen (${open.length})</h2></div>
       ${open.length ? `<div class="grid grid-2">${open.map(decisionCard).join('')}</div>` : emptyState('Nichts zu entscheiden.', 'Wenn eine Entscheidung ansteht, lege sie mit Frage, Optionen und Empfehlung an.', { href: newIssueUrl({ template: 'entscheidung.yml' }), text: 'Entscheidung anlegen ↗' })}
       ${werkbankHinweis()}
@@ -82,4 +88,71 @@ function decisionCard(t) {
       </div></details>
     </div>
   </article>`;
+}
+
+/*
+ * Fragen von Claude zu Werkbank-Aufgaben (privat, $TP_PRIVAT_DIR/werkbank-fragen.json). Ein
+ * Claude-Lauf legt sie per `npm run werkbank:frage -- neu` an, wenn er nicht weiterkommt, und holt
+ * die Antwort beim naechsten Lauf ab. Nur wer "Entscheidungen" sehen darf, laedt sie.
+ */
+let fragen = null;
+let fragenLaden = false;
+
+export function ensureWerkbankFragen() {
+  if (fragen || fragenLaden || !darfAnsicht('freigaben')) return;
+  fragenLaden = true;
+  fetchEinkauf('/api/werkbank/fragen').then(d => {
+    fragen = d; fragenLaden = false;
+    if (['heute', 'freigaben'].includes(state.route?.view)) render(); else aktualisiereNavZahlen();
+  });
+}
+
+/** Zahl am Menuepunkt "Entscheidungen" und auf "Heute". */
+export function werkbankFragenOffen() { return fragen?.offen?.length || 0; }
+
+/** Eine Zeile auf "Heute", nur wenn Claude wartet. */
+export function werkbankFragenZeile() {
+  ensureWerkbankFragen();
+  const n = werkbankFragenOffen();
+  if (!n) return '';
+  return `<p class="notice warn werkbank-fragen-zeile"><a href="#/freigaben"><b>${esc(plural(n, 'Frage', 'Fragen'))} von Claude</b> – Claude kommt bei einer Werkbank-Aufgabe ohne deine Antwort nicht weiter. Beantworten →</a></p>`;
+}
+
+function fragenBlock() {
+  if (!fragen) return darfAnsicht('freigaben') ? '<section class="card"><p class="small muted">Fragen von Claude werden geladen …</p></section>' : '';
+  if (!fragen.verfuegbar) return `<section class="card"><p class="notice warn">Fragen von Claude konnten nicht geladen werden: ${esc(fragen.hinweis || 'unbekannter Fehler')}</p></section>`;
+  const { offen = [], beantwortet = [] } = fragen;
+  if (!offen.length && !beantwortet.length) return '';
+  return `<section class="card werkbank-fragen"><div class="card-head"><h2>Fragen von Claude (${offen.length})</h2><span class="more muted">zu Werkbank-Aufgaben</span></div>
+    ${offen.length ? `<div class="grid grid-2">${offen.map(frageKarte).join('')}</div>` : '<p class="small muted">Keine offene Frage – Claude arbeitet weiter.</p>'}
+    ${beantwortet.length ? `<details class="werkbank-beantwortet"><summary>Beantwortet (${beantwortet.length}) – Claude macht beim nächsten Lauf weiter</summary>
+      <div class="rows">${beantwortet.map(f => `<div class="row"><div><div class="t">${esc(f.werkbankId)} · ${esc(f.frage)}</div><div class="m"><span>Antwort: <b>${esc(f.antwort.label || '')}</b>${f.antwort.freitext ? ` – ${esc(f.antwort.freitext)}` : ''}</span><span>${esc(f.antwort.von || '')}, ${fmtDate(f.antwort.am)}</span><span>${f.uebernommen ? 'von Claude übernommen' : 'wartet auf den nächsten Lauf'}</span></div></div></div>`).join('')}</div>
+    </details>` : ''}
+  </section>`;
+}
+
+function frageKarte(f) {
+  // Die Empfehlung ist vorgewaehlt: wer ihr folgt, braucht nur "Antwort senden".
+  return `<form class="card werkbank-frage" style="box-shadow:none" data-werkbank-frage="${esc(f.id)}">
+    <div class="card-head"><h3>${esc(f.werkbankId)}${f.titel ? ` · ${esc(f.titel)}` : ''}</h3><span class="small muted">gefragt ${since(f.gestellt)}</span></div>
+    <fieldset class="zl-wahl"><legend>${esc(f.frage)}</legend>
+      ${f.optionen.map(o => `<label><input type="radio" name="label" value="${esc(o.label)}"${o.label === f.empfehlung ? ' checked' : ''}><span class="zl-wahl-text"><span>${esc(o.label)}${o.label === f.empfehlung ? ' <span class="badge p3">Empfehlung</span>' : ''}</span>${o.beschreibung ? `<span class="small muted">${esc(o.beschreibung)}</span>` : ''}</span></label>`).join('')}
+    </fieldset>
+    ${f.freitextErlaubt ? `<label class="werkbank-freitext" style="display:grid;gap:4px;margin-top:10px"><span class="small muted">Ergänzung (optional)</span><textarea name="freitext" rows="2" maxlength="1000" style="width:100%;font:inherit"></textarea></label>` : ''}
+    <div class="decide-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">Antwort senden</button></div>
+  </form>`;
+}
+
+/** Absenden einer Frage-Karte (aus ereignisse.mjs, submit). */
+export function freigabenAbsenden(e) {
+  const form = e.target.closest?.('form[data-werkbank-frage]');
+  if (!form) return false;
+  e.preventDefault();
+  const daten = new FormData(form);
+  const knopf = form.querySelector('button[type="submit"]');
+  knopf.disabled = true;
+  orgSchreiben('/api/werkbank/antworten', { id: form.dataset.werkbankFrage, label: daten.get('label') || '', freitext: daten.get('freitext') || '' })
+    .then(() => { toast('Antwort gesendet – Claude macht beim nächsten Lauf weiter.', 'ok'); fragen = null; ensureWerkbankFragen(); })
+    .catch(err => { knopf.disabled = false; toast(`Antwort nicht gesendet: ${err.message}`, 'crit'); });
+  return true;
 }
