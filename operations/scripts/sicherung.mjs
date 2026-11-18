@@ -121,6 +121,7 @@ export const SICHERUNGSPFADE = Object.freeze([
   // Betriebsaufgaben (Aufgaben & Organisation), Rueckrufe und Fallmarken gibt es nur hier.
   'organisation',
   'rueckrufe.json',
+  'lexware-angebote', // Nachfass-Stand (w-351); offen.json holt die Routine neu
   'muster-anrufe.json',
   'fallmarken.json',
   // Lieferanten-Stammdaten (Bestellweg, Ansprechperson, Kundennummer), die Basisadresse von

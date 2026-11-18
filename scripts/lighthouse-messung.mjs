@@ -60,6 +60,7 @@ export const BASIS = 'https://www.teppich-paradies.net';
 export const SEITEN = [
   { id: 'start', name: 'Startseite', pfad: '/' },
   { id: 'kollektion', name: 'Kollektion Teppichboden', pfad: '/collections/teppichboden' },
+  { id: 'nachmass', name: 'Teppich nach Mass', pfad: '/collections/teppich-nach-mass' },
   { id: 'pdp', name: 'PDP Piumera', pfad: '/products/piumera-teppichboden-400cm-500cm' },
 ];
 

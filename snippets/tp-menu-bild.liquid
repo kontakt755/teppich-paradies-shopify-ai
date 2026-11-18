@@ -50,7 +50,7 @@
       endunless
     endfor
     assign tp_mb_src_klein = tp_mb_src | replace: 'width=800', 'width=' | append: tp_mb_widths.first
-    echo '<img src="' | append: tp_mb_src_klein | append: '" srcset="' | append: tp_mb_srcset | append: '" sizes="' | append: tp_mb_sizes | append: '" alt="" loading="lazy" fetchpriority="low" class="' | append: class | append: '">'
+    echo '<img src="' | append: tp_mb_src_klein | append: '" srcset="' | append: tp_mb_srcset | append: '" sizes="' | append: tp_mb_sizes | append: '" alt="" width="800" height="450" loading="lazy" fetchpriority="low" class="' | append: class | append: '">'
   else
     render 'link-featured-image', link: link, class: class, sizes: tp_mb_sizes, widths: widths
   endif

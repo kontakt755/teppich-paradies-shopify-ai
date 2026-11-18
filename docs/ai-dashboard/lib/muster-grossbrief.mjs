@@ -2,12 +2,14 @@
  * Post-Preisliste am 22.10.2026 geprueft: deutschepost.de/de/b/brief_postkarte.html.
  * Ab 2027 werden Formate geaendert; danach keine alte Freigabe anzeigen.
  */
+import { kalendertag } from './kalendertage.mjs';
+
 export const GROSSBRIEF = Object.freeze({ preis: '1,80 €', bis: '2026-12-31', maxGramm: 500, maxDickeMm: 20, minLaengeMm: 100, maxLaengeMm: 353, minBreiteMm: 70, maxBreiteMm: 250 });
 
 const zahl = v => typeof v === 'number' ? v : typeof v === 'string' && /^\d+(?:[.,]\d+)?$/.test(v.trim()) ? Number(v.trim().replace(',', '.')) : NaN;
 const inland = v => /^(DE|DEU|Deutschland|Germany)$/i.test(String(v || '').trim());
 
-export function pruefeGrossbrief(kunde, messung = {}, { heute = new Date().toISOString().slice(0, 10) } = {}) {
+export function pruefeGrossbrief(kunde, messung = {}, { heute = kalendertag(new Date()) } = {}) {
   const fehlt = [];
   if (!kunde?.gepackt) fehlt.push('Umschlag zuerst als gepackt bestätigen.');
   if (!inland(kunde?.adresse?.land)) fehlt.push('Großbrief ist hier nur für eine bestätigte Lieferanschrift in Deutschland vorbereitet.');

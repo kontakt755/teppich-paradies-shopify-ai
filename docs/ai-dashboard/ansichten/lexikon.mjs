@@ -696,7 +696,7 @@ function offeneBestellungenBlock(offene = [], wartende = []) {
     <div class="card-head"><h2>${titel}</h2><a class="more" href="#/kunden">Kunden öffnen →</a></div>
     ${ware.length ? `<ul>${ware.map(zeile).join('')}</ul>` : ''}
     ${muster.length ? `${ware.length ? '<h3>Muster noch offen</h3>' : ''}<ul>${muster.map(zeile).join('')}</ul>` : ''}
-    ${uebrige.length ? `<h3>Außerdem warten</h3><ul>${uebrige.map(w => `<li><b>${esc(w.kunde)}</b>${w.bezug ? ` · ${esc(w.bezug)}` : ''}${w.tage !== null && w.tage !== undefined ? ` · seit ${w.tage === 0 ? 'heute' : `${w.tage} Tagen`}` : ''} – ${esc(w.schritt)}</li>`).join('')}</ul>` : ''}
+    ${uebrige.length ? `<h3>Außerdem warten</h3><ul>${uebrige.map(w => `<li><b>${esc(w.kunde)}</b>${w.bezug ? ` · ${esc(w.bezug)}` : ''}${w.tage !== null && w.tage !== undefined ? ` · seit ${w.tage === 0 ? 'heute' : `${w.tage} ${w.tage === 1 ? 'Tag' : 'Tagen'}`}` : ''} – ${esc(w.schritt)}</li>`).join('')}</ul>` : ''}
   </section>`;
 }
 
