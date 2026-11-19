@@ -113,17 +113,20 @@ const betragImText = (text, n) => {
 /**
  * Reine PDF-Rechnung (ohne Factur-X): Nummer und Bruttobetrag kommen aus dem Archiv (belege:monat),
  * und beide muessen samt Empfaenger-IBAN aus der Konfiguration woertlich im PDF-Text stehen.
- * Faelligkeit und Skonto werden nicht gelesen: gezahlt wird der volle Betrag, und nur mit aktuellem
- * Kontoauszug (siehe auswaehlen). Jeder Hinweis auf Einzug, Vorkasse oder Gutschrift macht sie unklar.
+ * Die Faelligkeit wird nicht gelesen: gezahlt wird der volle Betrag, nur in EUR und nur mit aktuellem
+ * Kontoauszug (siehe auswaehlen). Jeder Hinweis auf Skonto, Einzug, Vorkasse oder Gutschrift macht sie unklar.
  */
-export function pdfRechnungPruefen({ text, nummer, brutto, datum }, { iban }) {
+export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { iban }) {
   const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true };
   const unklar = grund => ({ ...kopf, status: 'unklar', grund });
   const t = String(text ?? '');
   if (!t.trim()) return unklar('PDF-Text nicht lesbar');
+  if (waehrung !== 'EUR') return unklar('Währung nicht eindeutig EUR');
   if (!/^[A-Za-z0-9][A-Za-z0-9/._-]{2,29}$/.test(nummer || '') || !nurZeichen(t).includes(nurZeichen(nummer))) return unklar('Rechnungsnummer nicht sicher im PDF');
   if (typeof brutto !== 'number' || !(brutto > 0) || !betragImText(t, brutto)) return unklar('Rechnungsbetrag nicht sicher im PDF');
   if (/gutschrift|storno|korrekturrechnung/i.test(t)) return unklar('PDF nennt Gutschrift oder Storno');
+  // Skonto: eine schon mit Abzug bezahlte Rechnung erkennt der Bankabgleich ohne Skontobetrag nicht sicher.
+  if (/skonto/i.test(t)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
   if (/lastschrift|abgebucht|eingezogen|bankeinzug|einzugserm|mandat/i.test(t)) return unklar('PDF nennt Lastschrift oder Einzug');
   if (/bereits (bezahlt|beglichen|erhalten)|dankend erhalten|vorkasse|anzahlung|abschlag|teilzahlung|paypal|kreditkarte/i.test(t)) return unklar('PDF nennt Vorkasse, Anzahlung oder schon bezahlt');
   if (!nurZeichen(t).includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht im PDF');
@@ -237,7 +240,7 @@ export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vo
     // PDF ohne gelesene Faelligkeit: offen ist sie nur belegt, wenn der Auszug bis kurz vor heute reicht.
     if (r.pdf) {
       if (!(buchungen && auszugAktuell)) return { ...z, status: 'unklar', grund: 'PDF-Rechnung: nur mit aktuellem Kontoauszug in die Datei' };
-      return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: 'PDF-Rechnung: voller Betrag, Skonto und Fälligkeit nicht gelesen' };
+      return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: 'PDF-Rechnung: voller Betrag, Fälligkeit nicht gelesen' };
     }
     if (r.skonto && r.skonto.bis >= heute) {
       // Frist bis einschliesslich naechstem Lauftag: eine Zahlung erst dann kaeme zu spaet an.

@@ -242,14 +242,16 @@ test('Rechnungsnummer zaehlt im Zweck nur als eigenes Wort', () => {
 const PDF_TEXT = `Rechnung Nr. R-2026-501\nRechnungsdatum 03.11.2026\nGesamtbetrag 1.234,50 EUR\nBitte überweisen Sie auf IBAN ${LIEFER.replace(/(.{4})/g, '$1 ')}\n`;
 
 test('PDF-Rechnung: Nummer, Betrag und IBAN muessen im Text stehen; Einzug, Vorkasse, Gutschrift sind unklar', () => {
-  const r = { text: PDF_TEXT, nummer: 'R-2026-501', brutto: 1234.5, datum: '2026-11-03' };
+  const r = { text: PDF_TEXT, nummer: 'R-2026-501', brutto: 1234.5, waehrung: 'EUR', datum: '2026-11-03' };
+  assert.equal(pdfRechnungPruefen({ ...r, waehrung: 'CHF' }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...r, waehrung: null }, { iban: LIEFER }).status, 'unklar');
   assert.equal(pdfRechnungPruefen(r, { iban: LIEFER }).status, 'ok');
   assert.equal(pdfRechnungPruefen(r, { iban: FREMD }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ ...r, brutto: 234.5 }, { iban: LIEFER }).status, 'unklar'); // 234,50 steckt nur in 1.234,50
   assert.equal(pdfRechnungPruefen({ ...r, nummer: 'R-2026-999' }, { iban: LIEFER }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ ...r, brutto: null }, { iban: LIEFER }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ ...r, text: '' }, { iban: LIEFER }).status, 'unklar');
-  for (const satz of ['Der Betrag wird per SEPA-Lastschrift eingezogen.', 'Betrag dankend erhalten.', 'Gutschrift Nr. 5', 'Anzahlung 30 %'])
+  for (const satz of ['Der Betrag wird per SEPA-Lastschrift eingezogen.', 'Betrag dankend erhalten.', 'Gutschrift Nr. 5', 'Anzahlung 30 %', 'Bei Zahlung bis 10.11. 2 % Skonto'])
     assert.equal(pdfRechnungPruefen({ ...r, text: `${PDF_TEXT}${satz}` }, { iban: LIEFER }).status, 'unklar', satz);
 });
 
@@ -258,7 +260,7 @@ test('PDF-Rechnung im Lauf: nur mit aktuellem Auszug in die Datei, voller Betrag
   const monat = path.join(privat, 'belege-archiv', '2026', '11');
   fs.mkdirSync(monat, { recursive: true });
   for (const n of ['neu', 'alt']) fs.writeFileSync(path.join(monat, `${n}.pdf`), '%PDF-1.4 erfunden');
-  const pdfBeleg = (datei, tag) => ({ datei, format: 'pdf', pdfLesbar: true, rolle: 'rechnung', anbieterSchluessel: 'lieferant-a.example', dublette: null, rechnungsnummer: 'R-2026-501', brutto: 1234.5, tag });
+  const pdfBeleg = (datei, tag) => ({ datei, format: 'pdf', pdfLesbar: true, rolle: 'rechnung', anbieterSchluessel: 'lieferant-a.example', dublette: null, rechnungsnummer: 'R-2026-501', brutto: 1234.5, waehrung: 'EUR', tag });
   fs.writeFileSync(path.join(monat, 'manifest.json'), JSON.stringify({ belege: [pdfBeleg('neu.pdf', '2026-11-03'), pdfBeleg('alt.pdf', '2026-10-20')] }));
   const pdf = () => ({ text: PDF_TEXT });
 

@@ -56,7 +56,7 @@ function belegeLesen(privat, lieferanten, pdf) {
           if (tag < PDF_AB) { vorStart += 1; continue; }
           const pdfPfad = path.join(ordner, b.datei);
           const text = b.pdfLesbar && fs.existsSync(pdfPfad) ? String(pdf(fs.readFileSync(pdfPfad))?.text || '') : '';
-          belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, datum: tag || null } });
+          belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, waehrung: b.waehrung || null, datum: tag || null } });
           continue;
         }
         belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml });
