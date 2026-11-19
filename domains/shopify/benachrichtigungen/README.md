@@ -267,9 +267,11 @@ Produkttyp). Inhalte, Druck und Zuordnung: `../ratgeber-pdf/README.md`.
   Metafeld leer, steht statt des Codes „Ihren Gutscheincode nennen wir Ihnen
   gern“ mit Telefonnummer. Repo-Datei und Admin-Fassung bleiben damit 1:1
   gleich, eine Ausnahme von der Prüfsummenregel ist nicht nötig.
-  **Im Admin eingesetzt: noch nicht** (Stand 2026-11-19, wartet auf die
-  Freigabe der Mail; dort steht bis dahin die Fassung ohne Kasten, per SHA-256
-  abgeglichen).
+  **Im Admin eingesetzt am 2026-11-19** (Freigabe des Benutzers im Chat): beide
+  Blöcke stehen dort 1:1 wie hier, nach dem Speichern und Neuladen per SHA-256
+  gegen die Repo-Dateien abgeglichen. Die Vorschau beider Vorlagen rendert
+  ohne Liquid-Fehler. Den Kasten selbst zeigt sie nicht, weil die
+  Beispielbestellung Ware enthält – echte Daten sieht er beim Testkauf am 01.12.
 
 Abgleich ohne Abschreiben: im Editor den Block über den Kopfkommentar suchen
 und gegen `raw.githubusercontent.com/<repo>/<commit>/…` vergleichen
