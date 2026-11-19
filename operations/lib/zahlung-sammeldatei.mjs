@@ -90,7 +90,8 @@ export function rechnungPruefen(xml, { iban }) {
   const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'));
   // Ohne lesbares Skonto nur, wenn in keinem Bedingungsblock Skonto steht: dann ist der volle Betrag richtig.
   // Roh gelesen, damit auch CDATA oder andere Unterfelder zaehlen.
-  const alleBedingungen = abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n');
+  // Lexware schreibt „#SKONTO#TAGE=7#PROZENT=0.00#“ auch ohne Skonto: 0 % zaehlt nicht als Skonto.
+  const alleBedingungen = abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n').replace(/#SKONTO#TAGE=\d+#PROZENT=0+(?:[.,]0+)?#/gi, '');
   if (!b?.skonto && /skonto|discount/i.test(alleBedingungen)) return unklar('Zahlungsbedingungen mit Skonto nicht lesbar');
   if (b) kopf.nettoFaellig = b.nettoFaellig;
   if (b && cent(b.nettoBetrag) !== cent(f.brutto)) return unklar('Nettozahlung weicht vom Rechnungswert ab');

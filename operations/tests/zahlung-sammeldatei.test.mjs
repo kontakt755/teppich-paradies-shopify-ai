@@ -351,3 +351,9 @@ test('Strukturiertes Skonto (ApplicableTradePaymentDiscountTerms): nicht voll fr
     .replace('</ram:Description>', '</ram:Description><ram:ApplicableTradePaymentDiscountTerms><ram:CalculationPercent>2</ram:CalculationPercent><ram:ActualDiscountAmount>2.40</ram:ActualDiscountAmount></ram:ApplicableTradePaymentDiscountTerms>');
   assert.equal(rechnungPruefen(xml, { iban: LIEFER }).status, 'unklar');
 });
+
+test('Lexware-Kennung mit 0 % Skonto ist kein Skonto, mit 2 % schon', () => {
+  const mit = p => rechnungXml({ nummer: '700014', brutto: '120.00', bedingungen: `Zahlbar per Überweisung bis zum 25.11.2026#SKONTO#TAGE=7#PROZENT=${p}#` });
+  assert.equal(rechnungPruefen(mit('0.00'), { iban: LIEFER }).status, 'ok');
+  assert.equal(rechnungPruefen(mit('2.00'), { iban: LIEFER }).status, 'unklar');
+});
