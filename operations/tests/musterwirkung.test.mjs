@@ -221,3 +221,14 @@ test('Zustellung braucht vollstaendigen nicht stornierten Sendungsbeleg mit zeit
   const z = analyse([bestellung(1, '2026-09-01', true, { displayFulfillmentStatus: 'FULFILLED', fulfillments: [gut, { status: 'CANCELLED' }] })]).zahlen;
   assert.equal(z.musterkundenMitZustellnachweis, 1, 'stornierter alter Sendungsversuch zaehlt nicht als aktive Sendung');
 });
+
+// Erstattungsregel Musterversand (Inhaber 19.11.2026): die Muster gingen trotzdem raus.
+test('Musterversand erstattet: Musterbestellung bleibt in der Auswertung, erstattete Position nicht', () => {
+  const bleibt = analyse([bestellung(1, '2026-09-01', true, { displayFinancialStatus: 'REFUNDED' }), bestellung(2, '2026-09-11')]);
+  assert.equal(bleibt.zahlen.musterbestellungen, 1);
+  assert.equal(bleibt.zahlen.musterkundenMitWarenkauf, 1);
+  assert.equal(bleibt.qualitaet.vollErstatteteBestellungen, 0);
+  const raus = analyse([bestellung(1, '2026-09-01', true, { displayFinancialStatus: 'REFUNDED', lineItems: { nodes: [{ ...position(true, 0), currentQuantity: 0 }] } })]);
+  assert.equal(raus.zahlen.musterbestellungen, 0);
+  assert.equal(raus.qualitaet.vollErstatteteBestellungen, 1);
+});

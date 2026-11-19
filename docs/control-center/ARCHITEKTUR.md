@@ -884,6 +884,11 @@ Kennzahlen-Export ist die Summe der reinen Musterbestellungen: Kachel „davon M
 30 Tagen > 0), nie Teil von `ware.umsatz`. `mitBetrag` und der Schnitt lassen reine Musterbestellungen aus.
 Die Nachfass-Mail erinnert bei bezahltem Musterversand (`versandBezahlt`, Betrag der reinen Musterbestellung
 > 0) an den Gutschein aus der Bestellbestätigung, bis 31.03.2027; der Code steht nie im Repository.
+Erstattungsregel (Inhaber 19.11.2026): fehlt ein bestelltes Muster, erstattet ein Mensch in Shopify den
+Musterversand ganz, die lieferbaren Muster gehen trotzdem raus. `nurMusterversandErstattet()`
+(`operations/lib/muster.mjs`): reine Musterbestellung, voll erstattet, keine Position entfernt, nicht
+storniert (eine Teilerstattung bleibt „Restumfang prüfen“). Die Bestellübersicht führt sie dann als `bezahlt: PAID` (Automatik, Packliste, Listen laufen
+weiter), die Musterwirkung zählt sie mit. Storniert oder Positionen erstattet: wie bisher heraus.
 
 **Kennzahl „Ø je Bestellung ohne Muster“** (seit 2026-10-12, bis 19.11. „Ø je bezahlter Bestellung“): Umsatz geteilt durch die Bestellungen **mit
 Betrag** – Musterbestellungen zählen nicht mit (vorher lag der Schnitt dadurch bei einem

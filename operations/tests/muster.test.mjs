@@ -47,3 +47,14 @@ test('leerer Warenkorb ist keine Musterbestellung', () => {
 test('Merkmalsliste bleibt die dokumentierte', () => {
   assert.deepEqual([...MUSTER_MERKMALE], ['_Muster_ID', 'M-', 'TP-MUSTER', 'Musterservice']);
 });
+
+test('nurMusterversandErstattet: nur Muster, keine Position erstattet, nicht storniert', async () => {
+  const { nurMusterversandErstattet } = await import('../lib/muster.mjs');
+  const o = (extra = {}, zeile = {}) => ({ displayFinancialStatus: 'REFUNDED', lineItems: { nodes: [{ sku: 'M-TEST_1', quantity: 1, currentQuantity: 1, ...zeile }] }, ...extra });
+  assert.equal(nurMusterversandErstattet(o()), true);
+  assert.equal(nurMusterversandErstattet(o({ displayFinancialStatus: 'PAID' })), false);
+  assert.equal(nurMusterversandErstattet(o({ cancelledAt: '2026-12-02T10:00:00Z' })), false);
+  assert.equal(nurMusterversandErstattet(o({}, { currentQuantity: 0 })), false);
+  assert.equal(nurMusterversandErstattet(o({}, { sku: 'TEST-WARE' })), false);
+  assert.equal(nurMusterversandErstattet({ displayFinancialStatus: 'REFUNDED', lineItems: { nodes: [] } }), false);
+});

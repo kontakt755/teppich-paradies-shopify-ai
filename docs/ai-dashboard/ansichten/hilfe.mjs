@@ -70,6 +70,7 @@ const ABLAEUFE = [
     '<b>3 · Zukleben und verschicken</b>: Umschlag zukleben, dann <b>Umschlag gepackt – verschicken…</b> und in der Karte bestätigen. Gepackt heißt verschickt: der Kunde bekommt sofort die Versandmail, danach geht der Umschlag zur Post. Zurücknehmen geht dann nicht mehr.',
     'Steht etwas im Reiter <b>Gepackt</b>, wurde es nie als verschickt eingetragen. Liegt der Umschlag noch im Regal: zur Post und <b>Verschickt – Kunde informieren…</b>. War er schon früher raus: <b>War schon früher raus…</b> (ohne Versandmail).',
     'Kommt ein Paket Muster vom Lieferanten: Reiter <b>Muster kommt an</b>. Eintippen, was auf dem Muster steht – die Karte sagt, in welchen Umschlag es gehört.',
+    'Kommt ein Muster nicht und der Kunde hat den Musterversand bezahlt: die 4,99 € in Shopify ganz erstatten, die übrigen Muster trotzdem verschicken.',
     '<b>× Rot</b> heißt: der Kunde wartet auf uns – ein Muster kommt nicht, eine Angabe fehlt, beim Lieferanten seit 14 Tagen bestellt, seit 7 Tagen bezahlt und nicht bestellt oder nie als verschickt eingetragen. <b>! Gelb</b>: seit 7 Tagen bestellt (nachhaken), noch nicht bestellt oder zu klären. Ohne Zeichen ist alles in Ordnung. Die Reiter oben zählen die roten Umschläge.',
   ]],
   ['Genossenschaft anschreiben', [
@@ -152,7 +153,7 @@ export function viewHilfe() {
       <ul style="margin:0;padding-left:20px;line-height:1.9">
         <li><b>Position:</b> eine Zeile einer Kundenbestellung, meist ein Artikel in einer Farbe oder Größe. Eine Bestellung kann mehrere Positionen haben.</li>
         <li><b>Ampel:</b> <b>× Rot</b> hält auf (Angabe fehlt, Muster nicht lieferbar, 14 Tage beim Lieferanten, Liefertermin vorbei), <b>! Gelb</b> ist zu tun (noch nicht bestellt, seit 7 Tagen bestellt: nachhaken). Ohne Zeichen ist alles in Ordnung – Grün gibt es nicht.</li>
-        <li><b>Musterversand:</b> Eine Bestellung nur mit Mustern bleibt eine Musterbestellung, auch wenn der Kunde den Musterversand bezahlt hat. Sie zählt nie zum Warenumsatz; die Einnahmen stehen auf „Heute“ als eigene Zahl. Wird sie ganz erstattet, verschwindet sie aus Musterautomatik und Auswertung. Bei einer Teilerstattung bestellt die Automatik nichts, bis jemand geklärt hat, was gilt. Erstatten kann nur ein Mensch in Shopify.</li>
+        <li><b>Musterversand:</b> Eine Bestellung nur mit Mustern bleibt eine Musterbestellung, auch wenn der Kunde den Musterversand bezahlt hat. Sie zählt nie zum Warenumsatz; die Einnahmen stehen auf „Heute“ als eigene Zahl. Fehlt auch nur ein bestelltes Muster, bekommt der Kunde den Musterversand (4,99 €) ganz zurück; die lieferbaren Muster gehen trotzdem raus. Die Erstattung machst du selbst in Shopify, das Dashboard erstattet nie. Die Bestellung bleibt danach in Musterautomatik, Packstation und Auswertung. Nur wenn sie storniert ist oder die Muster selbst erstattet wurden, fällt sie heraus.</li>
         <li><b>Artikelnummer beim Lieferanten:</b> die Nummer, unter der der Lieferant den Artikel führt – nicht unsere SKU im Shop.</li>
         <li><b>Teillieferung:</b> ein Teil der Ware ist bei uns, der Rest noch beim Lieferanten. Dann steht „Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: …“, und der Kunde wird erst informiert, wenn alles da ist.</li>
       </ul>`)}

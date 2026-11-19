@@ -45,6 +45,7 @@ export function oeffneKundeInformieren(k, { lesend = false, danach } = {}) {
     <h2 id="mpInfoTitel">Kunde informieren · ${esc(k.name)}</h2>
     <p>${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : 'Diese Muster kommen nicht')} – ${esc(farben.join('; '))}. Gesendet wird hier nichts: Text kopieren oder im Mailprogramm öffnen.</p>
     ${lagerFarben.length ? `<p class="small">Sofort aus dem Musterlager: ${esc(lagerFarben.join(', '))} – die Mail bietet dem Kunden diese Farben als Ersatz an.</p>` : ''}
+    <p class="small">Hat der Kunde den Musterversand bezahlt: die 4,99 € in Shopify ganz erstatten. Die übrigen Muster gehen trotzdem raus.</p>
     <p class="small"><span class="muted">Betreff:</span> <span data-mp-info-betreff>${esc(erste.betreff || '')}</span></p>
     <label class="visually-hidden" for="mpInfoText">Text der E-Mail</label>
     <textarea id="mpInfoText" readonly rows="23">${esc(erste.text || '')}</textarea>
