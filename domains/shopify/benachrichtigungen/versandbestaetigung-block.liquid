@@ -14,6 +14,12 @@
   Masszeilen (Teppich nach Mass, Meterware, Kettelservice ...) zeigen Mass und
   Flaeche statt der internen Menge in 0,01-Schritten (#26, Beispiel #1035:
   "1 x Rivena Teppich nach Mass - Sandbeige (036) (250 x 310 cm, 7,75 m2)").
+
+  Musterversand gegen Gebuehr (Test 01.12.2026 bis 31.01.2027): Im Musterkasten
+  steht zwischen TP-MUSTERGEBUEHR START/ENDE der Gutschein, aber nur bei reiner
+  Musterbestellung mit bezahltem Versand (shipping_price > 0), nie nach Datum.
+  Der Code kommt aus dem Shop-Metafeld custom.muster_gutscheincode und steht
+  nie in dieser Datei. Rueckbau: Text zwischen den Markierungen loeschen.
 {%- endcomment -%}
 
 {%- liquid
@@ -93,7 +99,7 @@
 {%- if tp_vm_anzahl > 0 -%}
 <div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#15171a;margin:20px 0 24px;padding:16px 16px 6px;border:1px solid #e3e0dc;border-radius:8px;">
   <p style="margin:0 0 8px;font-size:18px;font-weight:bold;">{% if tp_vm_anzahl == 1 %}Ihr Muster ist unterwegs{% else %}Ihre Muster sind unterwegs{% endif %}</p>
-  <p style="margin:0 0 12px;">{% if tp_vm_anzahl == 1 %}Ihr kostenloses Muster aus der Bestellung {{ name | escape }} ist per Post auf dem Weg zu Ihnen.{% else %}Ihre kostenlosen Muster aus der Bestellung {{ name | escape }} sind per Post auf dem Weg zu Ihnen.{% endif %}
+  <p style="margin:0 0 12px;">{% if tp_vm_anzahl == 1 %}Ihr Muster aus der Bestellung {{ name | escape }} ist per Post auf dem Weg zu Ihnen.{% else %}Ihre Muster aus der Bestellung {{ name | escape }} sind per Post auf dem Weg zu Ihnen.{% endif %}
     {%- if tp_vm_hersteller > 0 %} Muster mit dem Hinweis „direkt vom Hersteller“ schickt der Hersteller selbst – oft in einem eigenen Umschlag und zu einem anderen Zeitpunkt.{% endif -%}
   </p>
 
@@ -198,6 +204,41 @@
     <li style="margin:0 0 4px;">Passt eine Farbe? Dann bestellen Sie einfach online: Link oben öffnen, Maße eingeben – der Rechner zeigt Menge und Preis.</li>
     <li style="margin:0 0 4px;">Lieber persönlich? Rufen Sie uns an: <a href="tel:+4933015733720" style="color:#15171a;">03301 573 37 20</a> (Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr). Nennen Sie einfach Ihre Bestellnummer {{ name | escape }}, wir rechnen die Menge gern mit Ihnen aus.</li>
   </ul>
+  {%- comment -%} TP-MUSTERGEBUEHR START {%- endcomment -%}
+  {%- liquid
+    assign tp_vm_ware = 0
+    for tp_vm_ol in line_items
+      assign tp_vm_ist = false
+      assign tp_vm_kopf = tp_vm_ol.sku | slice: 0, 2
+      if tp_vm_kopf == 'M-' or tp_vm_ol.sku == 'TP-MUSTER-000'
+        assign tp_vm_ist = true
+      endif
+      for p in tp_vm_ol.properties
+        if p.first == '_Muster_ID' and p.last != blank
+          assign tp_vm_ist = true
+        endif
+      endfor
+      unless tp_vm_ist
+        assign tp_vm_ware = tp_vm_ware | plus: 1
+      endunless
+    endfor
+    assign tp_vm_code_feld = shop.metafields.custom.muster_gutscheincode
+    assign tp_vm_code = tp_vm_code_feld.value | default: tp_vm_code_feld | strip
+  -%}
+  {%- comment -%}line_items.size > 0: fehlt die Bestellliste, lieber kein Kasten als einer in der Mischbestellung{%- endcomment -%}
+  {%- if line_items.size > 0 and tp_vm_ware == 0 and shipping_price > 0 -%}
+    <div style="margin:0 0 12px;padding:12px 14px;background:#f7f3ee;border-radius:8px;">
+      <p style="margin:0 0 4px;font-weight:bold;">Ihr Gutschein für den Musterversand</p>
+      <p style="margin:0 0 8px;">Wenn Sie bei uns bestellen, rechnen wir Ihnen die 4,99 € für den Musterversand an.</p>
+      {%- if tp_vm_code != blank -%}
+        <p style="margin:0 0 8px;">Ihr Gutscheincode: <strong style="font-size:17px;letter-spacing:1px;">{{ tp_vm_code | escape }}</strong></p>
+      {%- else -%}
+        <p style="margin:0 0 8px;">Ihren Gutscheincode nennen wir Ihnen gern: 03301 573 37 20 oder einfach per Antwort auf diese E-Mail.</p>
+      {%- endif -%}
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#5e5853;">Gilt ab 150 € Warenwert, einmal einlösbar bis 31.03.2027. Code im Warenkorb eingeben. Nicht mit anderen Gutscheincodes kombinierbar.</p>
+    </div>
+  {%- endif -%}
+  {%- comment -%} TP-MUSTERGEBUEHR ENDE {%- endcomment -%}
   <p style="margin:0 0 10px;font-size:13px;line-height:1.5;color:#5e5853;">Sie möchten solche Hinweise zu unseren Produkten nicht mehr per E-Mail? Sie können der Nutzung Ihrer E-Mail-Adresse für Werbung jederzeit widersprechen, einfach per Antwort auf diese E-Mail{% if shop.email != blank %} oder an <a href="mailto:{{ shop.email | escape }}" style="color:#5e5853;">{{ shop.email | escape }}</a>{% endif %}. Dafür entstehen Ihnen keine anderen Kosten als die Übermittlungskosten nach den Basistarifen.</p>
 </div>
 {%- endif -%}
