@@ -88,10 +88,13 @@ export function rechnungPruefen(xml, { iban }) {
   const faellig = Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'DuePayableAmount') || NaN);
   if (cent(faellig) !== cent(f.brutto)) return unklar('offener Betrag weicht vom Rechnungswert ab (Anzahlung?)');
   const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'));
-  if (!b) return unklar('Zahlungsbedingungen nicht lesbar');
-  kopf.nettoFaellig = b.nettoFaellig;
-  if (cent(b.nettoBetrag) !== cent(f.brutto)) return unklar('Nettozahlung weicht vom Rechnungswert ab');
-  if (b.skonto) {
+  // Ohne lesbares Skonto nur, wenn in keinem Bedingungsblock Skonto steht: dann ist der volle Betrag richtig.
+  // Roh gelesen, damit auch CDATA oder andere Unterfelder zaehlen.
+  const alleBedingungen = abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n');
+  if (!b?.skonto && /skonto|discount/i.test(alleBedingungen)) return unklar('Zahlungsbedingungen mit Skonto nicht lesbar');
+  if (b) kopf.nettoFaellig = b.nettoFaellig;
+  if (b && cent(b.nettoBetrag) !== cent(f.brutto)) return unklar('Nettozahlung weicht vom Rechnungswert ab');
+  if (b?.skonto) {
     const s = b.skonto;
     // Plausibel: Skonto plus Zahlbetrag ergibt den Rechnungswert, hoechstens 5 %, Frist nicht nach der Nettofaelligkeit.
     if (cent(s.betrag) <= 0 || cent(s.betrag) + cent(s.zahlbetrag) !== cent(f.brutto) || s.betrag > f.brutto * 0.05 || s.bis > b.nettoFaellig) return unklar('Skonto-Angaben nicht stimmig');
@@ -161,14 +164,22 @@ export function bankAbgleich(buchungen, offene, lieferanten) {
   const empfaenger = (x, o) => (x.iban && x.iban === lieferanten[o.schluessel].iban) || namePasst(x.name, { anbieter: lieferanten[o.schluessel].name, anbieterSchluessel: o.schluessel });
   const stufen = [
     // Als eigenes Wort: eine Ziffernfolge mitten in IBAN oder Kundennummer ist keine Rechnungsnummer.
-    ['nummer', (x, o) => new RegExp(`(^|[^A-Z0-9])${o.nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^A-Z0-9])`).test(String(x.zweck).toUpperCase())],
+    // Reine Ziffern duerfen rechts an Buchstaben grenzen („208415TP050“), links nie („RE700001“ ist eine andere Nummer).
+    ['nummer', (x, o) => {
+      const rechts = /^\d+$/.test(o.nummer) ? '0-9' : 'A-Z0-9';
+      return new RegExp(`(^|[^A-Z0-9])${o.nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^${rechts}])`).test(String(x.zweck).toUpperCase());
+    }],
     ['betrag', (x, o) => [o.brutto, o.skonto?.zahlbetrag].some(b => b != null && cent(b) === cent(-x.betrag)) && (!o.datum || x.datum >= o.datum)],
   ];
   for (const [ueber, passt] of stufen) {
     for (const o of offene) {
       if (treffer.has(o)) continue;
       const buchung = [...frei].find(x => empfaenger(x, o) && passt(x, o));
-      if (buchung) { frei.delete(buchung); treffer.set(o, { buchung, ueber }); }
+      if (!buchung) continue;
+      frei.delete(buchung);
+      // Passt eine Buchung ueber die Nummer zu mehreren Rechnungen, gilt keine als bezahlt und keine als offen.
+      const auch = ueber === 'nummer' ? offene.filter(p => p !== o && !treffer.has(p) && empfaenger(buchung, p) && passt(buchung, p)) : [];
+      for (const p of [o, ...auch]) treffer.set(p, { buchung, ueber, mehrdeutig: auch.length > 0 });
     }
   }
   return treffer;
@@ -235,22 +246,16 @@ export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vo
     const vor = istVorgemerkt(z);
     if (vor) return { ...z, status: 'vorgemerkt', grund: `schon in ${vor.datei}` };
     const t = bank.get(z);
+    if (t?.mehrdeutig) return { ...z, status: 'unklar', grund: `Zahlung vom ${t.buchung.datum} passt zu mehreren Rechnungsnummern` };
     if (t) return { ...z, status: 'bezahlt', grund: `laut Kontoauszug am ${t.buchung.datum}${t.ueber === 'betrag' ? ' (Betrag und Empfänger passen, Nummer nicht sichtbar)' : ''}` };
     const r = z;
-    // PDF ohne gelesene Faelligkeit: offen ist sie nur belegt, wenn der Auszug bis kurz vor heute reicht.
-    if (r.pdf) {
-      if (!(buchungen && auszugAktuell)) return { ...z, status: 'unklar', grund: 'PDF-Rechnung: nur mit aktuellem Kontoauszug in die Datei' };
-      return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: 'PDF-Rechnung: voller Betrag, Fälligkeit nicht gelesen' };
-    }
+    // Benutzer 19.11.2026: jede offene Rechnung im Freitagslauf ihrer Woche zahlen, nicht auf Fristen warten.
+    // Weil dann auch von Hand Bezahltes auftauchen kann, nur mit vollstaendigem, aktuellem Auszug.
+    if (!(buchungen && auszugAktuell)) return { ...z, status: 'unklar', grund: 'ohne aktuellen, vollständigen Kontoauszug nicht in die Datei' };
     if (r.skonto && r.skonto.bis >= heute) {
-      // Frist bis einschliesslich naechstem Lauftag: eine Zahlung erst dann kaeme zu spaet an.
-      if (r.skonto.bis > naechster) return { ...z, status: 'spaeter', grund: `Skonto bis ${r.skonto.bis}, im Lauf davor` };
       return { ...z, status: 'zahlen', zahlbetrag: r.skonto.zahlbetrag, mitSkonto: true, grund: r.skonto.bis === heute ? 'Skontofrist endet heute: heute freigeben' : 'mit Skonto' };
     }
-    // Ohne Kontoauszug ist nicht belegt, dass eine Rechnung mit abgelaufener Frist noch offen ist.
-    if (!(buchungen && auszugAktuell) && (r.skonto || r.nettoFaellig < heute)) return { ...z, status: 'unklar', grund: `${r.skonto ? 'Skonto verfallen' : 'überfällig'}, ohne aktuellen Bezahlt-Abgleich nicht in die Datei` };
-    if (r.nettoFaellig > naechster) return { ...z, status: 'spaeter', grund: `${r.skonto ? 'Skonto verfallen, ' : ''}netto fällig ${r.nettoFaellig}` };
-    return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: `${r.skonto ? 'Skonto verfallen, ' : ''}${r.nettoFaellig < heute ? 'überfällig' : 'netto fällig'}` };
+    return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: r.pdf ? 'PDF-Rechnung: voller Betrag' : r.skonto ? 'Skonto verfallen, voller Betrag' : 'voller Betrag' };
   });
   return { heute, naechster, zeilen };
 }
