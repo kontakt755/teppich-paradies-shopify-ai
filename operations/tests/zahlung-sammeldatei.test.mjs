@@ -99,27 +99,27 @@ test('Rechnung pruefen: Anzahlung und Lastschrift auf der Rechnung', () => {
   assert.equal(rechnungPruefen(rechnungXml({ nummer: '700012', brutto: '100.00', bedingungen: b }), { iban: LIEFER }).status, 'ok');
 });
 
-test('Lauf mit Kontoauszug: Skonto offen, verfallen, bezahlt, unlesbar, Gutschrift', () => {
+test('Lauf mit Kontoauszug: alles Offene sofort, Skonto offen, verfallen, bezahlt, unlesbar, Gutschrift', () => {
   const privat = privatOrdner();
   const e = sammelLauf({ privat, schreiben: true, jetzt: HEUTE });
   assert.equal(e.bezahltAbgleich, true);
-  assert.equal(e.zahlungen, 2);
-  assert.equal(e.summe, 791); // 491,00 mit Skonto + 300,00 netto
-  assert.deepEqual(e.status, { zahlen: 2, spaeter: 1, bezahlt: 1, unklar: 4, gutschrift: 1, lastschrift: 1 });
+  assert.equal(e.zahlungen, 3);
+  assert.equal(e.summe, 1967); // 491,00 und 1.176,00 mit Skonto + 300,00 voll (nicht auf die Frist warten)
+  assert.deepEqual(e.status, { zahlen: 3, bezahlt: 1, unklar: 4, gutschrift: 1, lastschrift: 1 });
   assert.equal(e.andereLieferanten, 1);
 
   const xml = fs.readFileSync(path.join(privat, 'zahlungen', e.datei), 'utf8');
   assert.match(xml, /pain\.001\.001\.09/);
-  assert.equal((xml.match(/<CtrlSum>791\.00<\/CtrlSum>/g) || []).length, 2);
-  assert.equal((xml.match(/<NbOfTxs>2<\/NbOfTxs>/g) || []).length, 2);
+  assert.equal((xml.match(/<CtrlSum>1967\.00<\/CtrlSum>/g) || []).length, 2);
+  assert.equal((xml.match(/<NbOfTxs>3<\/NbOfTxs>/g) || []).length, 2);
   assert.match(xml, /<InstdAmt Ccy="EUR">491\.00<\/InstdAmt>[\s\S]*<Nm>Muster &amp; Soehne GmbH<\/Nm>[\s\S]*<Ustrd>RE 700001 Kd 4711 abzgl Skonto 9,00 EUR<\/Ustrd>/);
   assert.match(xml, /<Ustrd>RE 700003 Kd 4711<\/Ustrd>/);
   assert.ok(!xml.includes(FREMD));
-  for (const n of ['700002', '700004', '700005', '700006', '700007', '700008']) assert.ok(!xml.includes(n), n);
+  for (const n of ['700004', '700005', '700006', '700007', '700008']) assert.ok(!xml.includes(n), n);
 
   const liste = listeLesen(privat, e);
   assert.equal(statusVon(liste, '700001'), 'IN DATEI');
-  assert.equal(statusVon(liste, '700002'), 'später');
+  assert.equal(statusVon(liste, '700002'), 'IN DATEI');
   assert.equal(statusVon(liste, '700004'), 'bezahlt');
   assert.equal(statusVon(liste, '700005'), 'UNKLAR');
   assert.equal(statusVon(liste, '700006'), 'Gutschrift');
@@ -132,15 +132,15 @@ test('Lauf mit Kontoauszug: Skonto offen, verfallen, bezahlt, unlesbar, Gutschri
   const zweiter = sammelLauf({ privat, schreiben: true, jetzt: new Date('2026-11-10T10:00:00Z') });
   assert.equal(zweiter.zahlungen, 0);
   assert.equal(zweiter.datei, null);
-  assert.equal(zweiter.status.vorgemerkt, 2);
+  assert.equal(zweiter.status.vorgemerkt, 3);
 });
 
-test('Ohne Kontoauszug: deutlicher Hinweis, verfallenes Skonto nicht in die Datei; Probelauf schreibt keine Datei', () => {
+test('Ohne Kontoauszug: deutlicher Hinweis, nichts in die Datei; Probelauf schreibt keine Datei', () => {
   const privat = privatOrdner({ bank: false });
   const e = sammelLauf({ privat, jetzt: HEUTE });
   assert.equal(e.bezahltAbgleich, false);
   assert.equal(e.datei, null);
-  assert.equal(e.zahlungen, 2); // 700001 und 700004 mit offenem Skonto
+  assert.equal(e.zahlungen, 0); // sofort zahlen heisst: nur mit Beleg, dass noch nichts bezahlt ist
   const liste = listeLesen(privat, e);
   assert.match(liste, /Bezahlt-Abgleich nicht möglich/);
   assert.equal(statusVon(liste, '700003'), 'UNKLAR');
@@ -225,7 +225,7 @@ test('Kopie derselben Rechnung im Archiv: eine Zahlung im Auszug deckt beide, ke
   m.belege.push({ datei: 'kopie.pdf', xmlDatei: 'kopie.xml', format: 'pdf', rolle: 'unklar', anbieterSchluessel: 'lieferant-a.example', dublette: null });
   fs.writeFileSync(pfad, JSON.stringify(m));
   const e = sammelLauf({ privat, schreiben: true, jetzt: HEUTE });
-  assert.equal(e.zahlungen, 2);
+  assert.equal(e.zahlungen, 3);
   assert.ok(!fs.readFileSync(path.join(privat, 'zahlungen', e.datei), 'utf8').includes('700004'));
   assert.match(listeLesen(privat, e), /UNKLAR;[^\r]*700004[^\r]*mehrfach im Archiv/);
 });
@@ -274,7 +274,7 @@ test('PDF-Rechnung im Lauf: nur mit aktuellem Auszug in die Datei, voller Betrag
   const privat2 = privatOrdner();
   fs.cpSync(monat, path.join(privat2, 'belege-archiv', '2026', '11'), { recursive: true });
   const spaet = sammelLauf({ privat: privat2, jetzt: new Date('2026-11-13T09:00:00Z'), pdf });
-  assert.match(listeLesen(privat2, spaet), /UNKLAR;[^\r]*R-2026-501[^\r]*nur mit aktuellem Kontoauszug/);
+  assert.match(listeLesen(privat2, spaet), /UNKLAR;[^\r]*R-2026-501[^\r]*ohne aktuellen, vollständigen Kontoauszug/);
 });
 
 test('Ungelesene Buchung im Auszug: gilt als unvollstaendig, verfallenes Skonto nicht in die Datei', () => {
@@ -296,4 +296,21 @@ test('Buchung mit unlesbarem Datum sperrt ebenfalls, Saldozeile nicht', () => {
   assert.equal(sammelLauf({ privat, jetzt: HEUTE }).auszugAktuell, true);
   fs.appendFileSync(datei, `kaputt;Überweisung;RE 700003 Gesamtsumme;Muster & Söhne GmbH;${LIEFER};-300,00\n`);
   assert.equal(sammelLauf({ privat, jetzt: HEUTE }).auszugAktuell, false);
+});
+
+test('Bankabgleich: reine Ziffern-Rechnungsnummer darf an Buchstaben grenzen, nie an Ziffern', () => {
+  const privat = privatOrdner({ bank: false });
+  const ordner = path.join(privat, 'laden-entlastung-2026-11', 'bank-export');
+  fs.mkdirSync(ordner, { recursive: true });
+  fs.writeFileSync(path.join(ordner, 'u.csv'), `Buchungstag;Buchungstext;Verwendungszweck;Beguenstigter;IBAN;Betrag\n09.11.2026;Überweisung;Rechnungs Nummer 700002TP050 abzgl Gutschrift;Muster & Söhne GmbH;${LIEFER};-1000,00\n09.11.2026;Überweisung;Kd 1700001;Muster & Söhne GmbH;${LIEFER};-1,00\n`);
+  const liste = listeLesen(privat, sammelLauf({ privat, jetzt: HEUTE }));
+  assert.equal(statusVon(liste, '700002'), 'bezahlt');
+  assert.equal(statusVon(liste, '700001'), 'IN DATEI');
+});
+
+test('XML ohne lesbare Bedingungen: ohne Skonto voller Betrag, mit Skonto-Wort unklar', () => {
+  const ohne = rechnungPruefen(rechnungXml({ nummer: '700010', brutto: '120.00', bedingungen: 'Zahlbar per Überweisung bis zum 25.11.2026' }), { iban: LIEFER });
+  assert.equal(ohne.status, 'ok');
+  assert.equal(ohne.skonto, null);
+  assert.equal(rechnungPruefen(RECHNUNGEN.unlesbar, { iban: LIEFER }).status, 'unklar');
 });
