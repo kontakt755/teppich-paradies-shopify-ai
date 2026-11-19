@@ -246,7 +246,8 @@ test('CSV der Commerzbank: „IBAN Kontoinhaber“ ist unser Konto, nicht der Em
   const s = spaltenErkennen(kopf.split(';'));
   assert.equal(s.iban, -1);
   const r = csvLesen(`${kopf}\n25.09.2026;25.09.2026;Überweisung;Muster GmbH Rechnung 900001KD1;-461,2;EUR;DE00;;;Muster GmbH;RE 900001\nEndsaldo;;;;1.234,56;EUR;;;;;\n`);
-  assert.equal(r.datumOhneBetrag, 0); // Saldozeile zaehlt nicht als ungelesene Buchung
+  assert.equal(r.unlesbareBuchungen, 0); // Saldozeile zaehlt nicht als ungelesene Buchung
+  assert.equal(csvLesen(`${kopf}\nkaputt;;Überweisung;Muster GmbH;-10,00;EUR;;;;Muster GmbH;RE 1\n`).unlesbareBuchungen, 1);
   assert.equal(r.buchungen.length, 1);
   assert.equal(r.buchungen[0].betrag, -461.2);
   assert.equal(r.buchungen[0].iban, '');

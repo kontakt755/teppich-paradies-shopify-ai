@@ -128,7 +128,7 @@ export function csvLesen(text) {
   if (!spalten) throw new Error('CSV: keine Kopfzeile mit Datum und Betrag gefunden');
   const buchungen = [];
   let nichtLesbar = 0;
-  let datumOhneBetrag = 0; // echte Buchung mit unlesbarem Betrag, anders als Saldo-/Fusszeilen
+  let unlesbareBuchungen = 0; // alles ausser erkannten Saldo-/Summenzeilen
   const wert = (f, i) => (i >= 0 ? f[i] ?? '' : '');
   for (const zeile of zeilen.slice(start)) {
     if (!zeile.trim()) continue;
@@ -143,7 +143,10 @@ export function csvLesen(text) {
       else if (haben !== null) betrag = Math.abs(haben);
     }
     if (betrag !== null && spalten.sollHaben >= 0 && /^s/i.test(wert(f, spalten.sollHaben))) betrag = -Math.abs(betrag);
-    if (!datum || betrag === null) { if (f.some(Boolean)) nichtLesbar += 1; if (datum) datumOhneBetrag += 1; continue; }
+    if (!datum || betrag === null) {
+      if (f.some(Boolean)) { nichtLesbar += 1; if (!/saldo|kontostand|summe/i.test(f.join(' '))) unlesbareBuchungen += 1; }
+      continue;
+    }
     const zweck = wert(f, spalten.zweck);
     const mandat = wert(f, spalten.mandat);
     const glaeubiger = wert(f, spalten.glaeubiger);
@@ -153,7 +156,7 @@ export function csvLesen(text) {
       art: artErkennen({ text: wert(f, spalten.art) || zweck, mandat, glaeubiger }),
     });
   }
-  return { format: 'csv', buchungen, nichtLesbar, datumOhneBetrag };
+  return { format: 'csv', buchungen, nichtLesbar, unlesbareBuchungen };
 }
 
 const AUSZUG_BETRAG = String.raw`(\d{1,3}(?:\.\d{3})*,\d{2}-?)\s*$`;

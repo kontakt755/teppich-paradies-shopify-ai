@@ -288,3 +288,12 @@ test('Ungelesene Buchung im Auszug: gilt als unvollstaendig, verfallenes Skonto 
   assert.match(liste, /1 Buchung\(en\) NICHT LESBAR/);
   assert.equal(statusVon(liste, '700003'), 'UNKLAR');
 });
+
+test('Buchung mit unlesbarem Datum sperrt ebenfalls, Saldozeile nicht', () => {
+  const privat = privatOrdner();
+  const datei = path.join(privat, 'laden-entlastung-2026-11', 'bank-export', 'umsaetze.csv');
+  fs.appendFileSync(datei, 'Endsaldo;;;;;1.000,00\n');
+  assert.equal(sammelLauf({ privat, jetzt: HEUTE }).auszugAktuell, true);
+  fs.appendFileSync(datei, `kaputt;Überweisung;RE 700003;Muster & Söhne GmbH;${LIEFER};-300,00\n`);
+  assert.equal(sammelLauf({ privat, jetzt: HEUTE }).auszugAktuell, false);
+});
