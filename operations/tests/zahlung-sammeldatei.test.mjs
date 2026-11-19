@@ -345,3 +345,9 @@ test('Skonto in CDATA: nicht voll freigeben', () => {
   const xml = rechnungXml({ nummer: '700012', brutto: '120.00', bedingungen: '<![CDATA[3 % Skonto bei Zahlung in 8 Tagen]]>' });
   assert.equal(rechnungPruefen(xml, { iban: LIEFER }).status, 'unklar');
 });
+
+test('Strukturiertes Skonto (ApplicableTradePaymentDiscountTerms): nicht voll freigeben', () => {
+  const xml = rechnungXml({ nummer: '700013', brutto: '120.00', bedingungen: 'Zahlbar bis 25.11.2026' })
+    .replace('</ram:Description>', '</ram:Description><ram:ApplicableTradePaymentDiscountTerms><ram:CalculationPercent>2</ram:CalculationPercent><ram:ActualDiscountAmount>2.40</ram:ActualDiscountAmount></ram:ApplicableTradePaymentDiscountTerms>');
+  assert.equal(rechnungPruefen(xml, { iban: LIEFER }).status, 'unklar');
+});
