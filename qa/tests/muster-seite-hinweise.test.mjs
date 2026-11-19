@@ -158,6 +158,7 @@ async function ohneMuster(produkt) {
     fehler: rootEl.querySelector('[data-sample-error]'),
     intro: rootEl.querySelector('[data-sample-intro]'),
     submit: rootEl.querySelector('[data-sample-submit]'),
+    anrechnung: rootEl.querySelector('[data-sample-anrechnung]'),
   };
 }
 
@@ -166,6 +167,7 @@ test('Produkt ohne Muster: neutraler Hinweis mit Beratung und Rueckweg, ohne Int
   assert.equal(r.fehler.hidden, true, 'kein roter Fehlerkasten');
   assert.equal(r.hinweis.hidden, false);
   assert.equal(r.hinweis.textContent, 'Für diesen Boden gibt es leider keine Muster. Wir beraten Sie gern.');
+  assert.equal(r.anrechnung.hidden, true, 'ohne Muster auch keine Zeile zur Anrechnung');
   assert.deepEqual(r.links, [
     { text: 'Beratung anfragen', href: '/pages/kontakt?thema=beratung' },
     { text: 'Zurück zu Ethona Teppichfliese 50x50cm', href: '/products/ethona-teppichfliese-50x50cm' },
@@ -180,6 +182,7 @@ test('Laminat: Link "Muster anfragen" ohne Preis und ohne "kostenlos", neutral',
   assert.equal(r.hinweis.hidden, false);
   assert.equal(r.links[0].text, 'Muster anfragen');
   assert.match(r.links[0].href, /^\/pages\/kontakt\?thema=musteranfrage&produkt=Ribe%20Eiche/);
+  assert.equal(r.anrechnung.hidden, true, 'Anfrage ohne Preisangabe: keine Zeile zur Anrechnung ab 150 €');
   assert.equal(r.links[1].href, '/products/ribe-eiche-sand-laminat-8mm');
   assert.equal(r.intro.hidden, true);
   assert.equal(r.submit.hidden, true);

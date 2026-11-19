@@ -427,6 +427,9 @@
         // dann nicht zum Hinweis darunter (Laminat, Parkett, Kork, ohne Muster).
         var infoEl = root.querySelector('[data-sample-info]');
         if (infoEl) infoEl.hidden = true;
+        // Dasselbe gilt fuer die Zeile mit der Anrechnung ab 150 €: Anfrage und "keine Muster" ohne Preisangabe.
+        var anrechnungEl = root.querySelector('[data-sample-anrechnung]');
+        if (anrechnungEl) anrechnungEl.hidden = true;
         // Kein Warenkorbweg: Auswahl-Intro und Knopf passen nicht, der Hinweis
         // steht neutral statt als Fehler (Rundgang 06.11.2026).
         var introEl = root.querySelector('[data-sample-intro]');
