@@ -80,7 +80,8 @@ function bankLesen(privat, pdf, heute) {
       const inhalt = fs.readFileSync(path.join(ordner, name));
       const r = istPdf(inhalt) ? umsatzPdfLesen(pdf(inhalt).text) : auszugLesen(inhalt);
       buchungen.push(...r.buchungen);
-      zeilenNichtLesbar += r.nichtLesbar || 0;
+      // CSV: nur Zeilen mit Datum zaehlen; Saldo- und Fusszeilen haben keins.
+      zeilenNichtLesbar += (r.datumOhneBetrag ?? r.nichtLesbar) || 0;
       dateien += 1;
     } catch { fehler += 1; }
   }
