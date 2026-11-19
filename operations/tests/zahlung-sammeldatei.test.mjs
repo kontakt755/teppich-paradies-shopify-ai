@@ -314,3 +314,29 @@ test('XML ohne lesbare Bedingungen: ohne Skonto voller Betrag, mit Skonto-Wort u
   assert.equal(ohne.skonto, null);
   assert.equal(rechnungPruefen(RECHNUNGEN.unlesbar, { iban: LIEFER }).status, 'unklar');
 });
+
+test('Nummernabgleich: RE700001 ist nicht 700001; passt eine Zahlung zu zwei Nummern, wird keine gezahlt', () => {
+  const privat = privatOrdner({ bank: false });
+  const monat = path.join(privat, 'belege-archiv', '2026', '10');
+  const pfad = path.join(monat, 'manifest.json');
+  const m = JSON.parse(fs.readFileSync(pfad, 'utf8'));
+  fs.writeFileSync(path.join(monat, 're.xml'), rechnungXml({ nummer: 'RE700001', brutto: '77.00', bedingungen: 'Zahlbar sofort' }));
+  m.belege.push({ datei: 're.pdf', xmlDatei: 're.xml', format: 'pdf', rolle: 'rechnung', anbieterSchluessel: 'lieferant-a.example', dublette: null });
+  fs.writeFileSync(pfad, JSON.stringify(m));
+  const ordner = path.join(privat, 'laden-entlastung-2026-11', 'bank-export');
+  fs.mkdirSync(ordner, { recursive: true });
+  fs.writeFileSync(path.join(ordner, 'u.csv'), `Buchungstag;Buchungstext;Verwendungszweck;Beguenstigter;IBAN;Betrag\n09.11.2026;Überweisung;RE700001;Muster & Söhne GmbH;${LIEFER};-77,00\n`);
+  let liste = listeLesen(privat, sammelLauf({ privat, jetzt: HEUTE }));
+  assert.equal(statusVon(liste, 'RE700001'), 'bezahlt');
+  assert.equal(statusVon(liste, '700001'), 'IN DATEI');
+  fs.writeFileSync(path.join(ordner, 'u.csv'), `Buchungstag;Buchungstext;Verwendungszweck;Beguenstigter;IBAN;Betrag\n09.11.2026;Überweisung;RE700001 und 700001;Muster & Söhne GmbH;${LIEFER};-568,00\n`);
+  liste = listeLesen(privat, sammelLauf({ privat, jetzt: HEUTE }));
+  assert.equal(statusVon(liste, 'RE700001'), 'UNKLAR');
+  assert.equal(statusVon(liste, '700001'), 'UNKLAR');
+});
+
+test('Skonto in einem zweiten Bedingungsblock: nicht voll freigeben', () => {
+  const xml = rechnungXml({ nummer: '700011', brutto: '120.00', bedingungen: 'Zahlbar bis 25.11.2026' })
+    .replace('</ram:SpecifiedTradePaymentTerms>', '</ram:SpecifiedTradePaymentTerms><ram:SpecifiedTradePaymentTerms><ram:Description>3 % Skonto bei Zahlung in 8 Tagen</ram:Description></ram:SpecifiedTradePaymentTerms>');
+  assert.equal(rechnungPruefen(xml, { iban: LIEFER }).status, 'unklar');
+});

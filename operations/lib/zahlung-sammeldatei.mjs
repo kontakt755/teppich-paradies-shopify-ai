@@ -87,10 +87,10 @@ export function rechnungPruefen(xml, { iban }) {
   if (mittel.some(m => blatt(m, 'TypeCode') === '59')) return { ...kopf, status: 'lastschrift', grund: 'Rechnung nennt Lastschrift: nicht überweisen' };
   const faellig = Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'DuePayableAmount') || NaN);
   if (cent(faellig) !== cent(f.brutto)) return unklar('offener Betrag weicht vom Rechnungswert ab (Anzahlung?)');
-  const text = blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description');
-  const b = zahlungsbedingungenLesen(text);
-  // Ohne lesbare Bedingungen nur, wenn kein Skonto im Spiel ist: dann ist der volle Betrag richtig.
-  if (!b && /skonto/i.test(text)) return unklar('Zahlungsbedingungen mit Skonto nicht lesbar');
+  const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'));
+  // Ohne lesbares Skonto nur, wenn in keinem Bedingungsblock Skonto steht: dann ist der volle Betrag richtig.
+  const alleBedingungen = abschnitte(xml, 'SpecifiedTradePaymentTerms').map(k => blatt(k, 'Description')).join('\n');
+  if (!b?.skonto && /skonto/i.test(alleBedingungen)) return unklar('Zahlungsbedingungen mit Skonto nicht lesbar');
   if (b) kopf.nettoFaellig = b.nettoFaellig;
   if (b && cent(b.nettoBetrag) !== cent(f.brutto)) return unklar('Nettozahlung weicht vom Rechnungswert ab');
   if (b?.skonto) {
@@ -163,10 +163,10 @@ export function bankAbgleich(buchungen, offene, lieferanten) {
   const empfaenger = (x, o) => (x.iban && x.iban === lieferanten[o.schluessel].iban) || namePasst(x.name, { anbieter: lieferanten[o.schluessel].name, anbieterSchluessel: o.schluessel });
   const stufen = [
     // Als eigenes Wort: eine Ziffernfolge mitten in IBAN oder Kundennummer ist keine Rechnungsnummer.
-    // Reine Ziffern duerfen an Buchstaben grenzen („208415TP050“), nie an weitere Ziffern (IBAN, Kundennummer).
+    // Reine Ziffern duerfen rechts an Buchstaben grenzen („208415TP050“), links nie („RE700001“ ist eine andere Nummer).
     ['nummer', (x, o) => {
-      const rand = /^\d+$/.test(o.nummer) ? '0-9' : 'A-Z0-9';
-      return new RegExp(`(^|[^${rand}])${o.nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^${rand}])`).test(String(x.zweck).toUpperCase());
+      const rechts = /^\d+$/.test(o.nummer) ? '0-9' : 'A-Z0-9';
+      return new RegExp(`(^|[^A-Z0-9])${o.nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^${rechts}])`).test(String(x.zweck).toUpperCase());
     }],
     ['betrag', (x, o) => [o.brutto, o.skonto?.zahlbetrag].some(b => b != null && cent(b) === cent(-x.betrag)) && (!o.datum || x.datum >= o.datum)],
   ];
@@ -174,7 +174,11 @@ export function bankAbgleich(buchungen, offene, lieferanten) {
     for (const o of offene) {
       if (treffer.has(o)) continue;
       const buchung = [...frei].find(x => empfaenger(x, o) && passt(x, o));
-      if (buchung) { frei.delete(buchung); treffer.set(o, { buchung, ueber }); }
+      if (!buchung) continue;
+      frei.delete(buchung);
+      // Passt eine Buchung ueber die Nummer zu mehreren Rechnungen, gilt keine als bezahlt und keine als offen.
+      const auch = ueber === 'nummer' ? offene.filter(p => p !== o && !treffer.has(p) && empfaenger(buchung, p) && passt(buchung, p)) : [];
+      for (const p of [o, ...auch]) treffer.set(p, { buchung, ueber, mehrdeutig: auch.length > 0 });
     }
   }
   return treffer;
@@ -241,6 +245,7 @@ export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vo
     const vor = istVorgemerkt(z);
     if (vor) return { ...z, status: 'vorgemerkt', grund: `schon in ${vor.datei}` };
     const t = bank.get(z);
+    if (t?.mehrdeutig) return { ...z, status: 'unklar', grund: `Zahlung vom ${t.buchung.datum} passt zu mehreren Rechnungsnummern` };
     if (t) return { ...z, status: 'bezahlt', grund: `laut Kontoauszug am ${t.buchung.datum}${t.ueber === 'betrag' ? ' (Betrag und Empfänger passen, Nummer nicht sichtbar)' : ''}` };
     const r = z;
     // Benutzer 19.11.2026: jede offene Rechnung im Freitagslauf ihrer Woche zahlen, nicht auf Fristen warten.
