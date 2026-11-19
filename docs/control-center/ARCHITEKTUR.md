@@ -878,8 +878,15 @@ Kontext und genau ein Knopf –, darunter „Wer wartet auf was" (wir / Lieferan
 falsch. Was davon nicht doppelt war, lebt weiter: eine Shop-Wache, die sich seit mehr als drei Stunden nicht
 gemeldet hat, ist jetzt ein To-do (nur Inhaber), „GitHub synchronisieren“ steht in „Entwicklung“.
 
-**Kennzahl „Ø je bezahlter Bestellung“** (seit 2026-10-12): Umsatz geteilt durch die Bestellungen **mit
-Betrag** – kostenlose Musterbestellungen zählen nicht mit (vorher lag der Schnitt dadurch bei einem
+**Musterversand (Test 01.12.2026–31.01.2027):** Reine Musterbestellungen kosten dann 4,99 € Versand. Muster
+erkennt überall die Position (`operations/lib/muster.mjs`), nie der Betrag. `muster.versandEinnahmen` im
+Kennzahlen-Export ist die Summe der reinen Musterbestellungen: Kachel „davon Musterversand“ (nur wenn in
+30 Tagen > 0), nie Teil von `ware.umsatz`. `mitBetrag` und der Schnitt lassen reine Musterbestellungen aus.
+Die Nachfass-Mail erinnert bei bezahltem Musterversand (`versandBezahlt`, Betrag der reinen Musterbestellung
+> 0) an den Gutschein aus der Bestellbestätigung, bis 31.03.2027; der Code steht nie im Repository.
+
+**Kennzahl „Ø je Bestellung ohne Muster“** (seit 2026-10-12, bis 19.11. „Ø je bezahlter Bestellung“): Umsatz geteilt durch die Bestellungen **mit
+Betrag** – Musterbestellungen zählen nicht mit (vorher lag der Schnitt dadurch bei einem
 Bruchteil des echten). Gerechnet in
 `lib/kennzahlen.mjs` aus `umsatz`, `bestellungen` und `kostenlos`, damit auch ein älterer Export stimmt;
 `operations/lib/kennzahlen.mjs` liefert seither `mitBetrag` und den korrigierten `durchschnitt`.

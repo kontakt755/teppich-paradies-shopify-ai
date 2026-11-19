@@ -2872,7 +2872,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
       for (const b of nachfragenBuendeln(zuSenden)) {
         const kurzVon = e => ({ orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname });
-        const mail = mitMusterListe(fuelleText(vorlageFuer(vorlage.texte, b), { kundenname: b.kundenname, absender: unterschrift, produkte: b.produkte, nachfass: b.stufe }), b);
+        const mail = mitMusterListe(fuelleText(vorlageFuer(vorlage.texte, b), { kundenname: b.kundenname, absender: unterschrift, produkte: b.produkte, nachfass: b.stufe, versandBezahlt: b.versandBezahlt }), b);
         if (!platzhalterFrei(mail)) {
           for (const e of b.eintraege) ergebnis.fehler.push({ ...kurzVon(e), fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[b.stufe]}“ fehlt.` });
           continue;
@@ -2973,7 +2973,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         mail = { betreff: String(payload.betreff ?? '').trim(), text: String(payload.text).replace(/\r\n/g, '\n').trim() };
       } else {
         const vorlage = this.kundenMusterTexte();
-        mail = vorlage.verfuegbar ? fuelleText(vorlageFuer(vorlage.texte, e), { kundenname: e.kundenname, absender: actor, produkte: e.produkte, nachfass: e.stufe }) : null;
+        mail = vorlage.verfuegbar ? fuelleText(vorlageFuer(vorlage.texte, e), { kundenname: e.kundenname, absender: actor, produkte: e.produkte, nachfass: e.stufe, versandBezahlt: e.versandBezahlt }) : null;
         if (!mail) throw new ApiError(409, vorlage.hinweis || `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.`);
       }
       if (!mail.betreff || /[\r\n]/.test(mail.betreff) || mail.betreff.length > 200) throw new ApiError(400, 'Bitte einen Betreff in einer Zeile angeben (höchstens 200 Zeichen).');

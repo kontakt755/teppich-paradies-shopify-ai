@@ -39,6 +39,10 @@ const FESTE_LINKS = Object.freeze({
   'Link Liefer- & Verlegeservice': `${SHOP_URL}/pages/liefer-verlegeservice`,
 });
 
+/** Musterversand-Test (Inhaber 19.11.2026): Gutschein aus der Bestellbestaetigung, einloesbar bis 31.03.2027. */
+const GUTSCHEIN_BIS = new Date('2027-04-01T00:00:00+02:00');
+const GUTSCHEIN_HINWEIS = 'Übrigens: Die Versandkosten Ihrer Musterbestellung rechnen wir Ihnen an. Den Gutscheincode dafür finden Sie in Ihrer Bestellbestätigung – er gilt ab 150 € Warenwert und ist bis 31.03.2027 einlösbar.';
+
 export const STUFE_LABEL = Object.freeze({ erste: 'Erste Nachfrage', erinnerung: 'Erinnerung' });
 
 export const NACHFASS_KAMPAGNE = 'muster-nachfass';
@@ -149,6 +153,9 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
       art: musterArt(z.auftrag?.positionen),
       produkte: sichereMusterLinks(z.musterKaufLinks),
       kontakt: kontaktweg(z),
+      // Reine Musterbestellung mit Betrag = bezahlter Musterversand (Test ab 01.12.2026): nur diese
+      // Kunden haben einen Gutschein in der Bestellbestaetigung, alte Gratisbestellungen nicht.
+      versandBezahlt: Number(z.gesamtbetrag) > 0,
     };
 
     const nichtNoetig = erledigt(nach) && nach.notiz === NICHT_NOETIG;
@@ -290,6 +297,7 @@ export function nachfragenBuendeln(eintraege = []) {
       kundenname: liste.find(e => e.kundenname)?.kundenname || null,
       produkte,
       muster: [...new Set(liste.flatMap(e => e.muster || []))],
+      versandBezahlt: liste.some(e => e.versandBezahlt),
       eintraege: liste,
     };
   });
@@ -418,7 +426,7 @@ Wenn Sie Fragen haben – zum passenden Maß, zur Form, zur Einfassung oder zu e
 - Oder einfach auf diese E-Mail antworten.
 
 Ihr gewähltes Produkt finden Sie hier: {Link Produkt}
-Weitere Muster können Sie jederzeit kostenlos nachbestellen: {Link Muster}
+Weitere Muster können Sie jederzeit nachbestellen: {Link Muster}
 
 Freundliche Grüße
 {Name}
@@ -530,9 +538,11 @@ export function mitFirmenangaben(text) {
  * @param {string[]} [p.farben]  nur "Muster nicht verfuegbar": betroffene Muster, je Eintrag "Produkt: Farbe"
  * @param {string[]} [p.lagerFarben]  nur "Muster nicht verfuegbar": Farben, die im Musterlager liegen (ersatzFarben)
  * @param {string|null} [p.nachfass]  Stufe der Muster-Nachfrage (erste, erinnerung): die Links bekommen die Kampagnenkennung
+ * @param {boolean} [p.versandBezahlt]  nur Nachfrage: der Kunde hat den Musterversand bezahlt - Hinweis auf den Gutschein
+ * @param {Date} [p.jetzt]
  * @returns {{ betreff: string, text: string }|null}
  */
-export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [], farben = [], lagerFarben = [], nachfass = null } = {}) {
+export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [], farben = [], lagerFarben = [], nachfass = null, versandBezahlt = false, jetzt = new Date() } = {}) {
   if (!vorlage?.text) return null;
   const link = url => (nachfass ? nachfassLink(url, nachfass) : url);
   const werte = Object.fromEntries(Object.entries(FESTE_LINKS).map(([name, url]) => [name, link(url)]));
@@ -541,7 +551,7 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
   if (farbZeilen.length) werte.Farben = farbZeilen.map(f => `– ${f}`).join('\n');
   // Ersatz aus dem Musterlager (09.11.2026): Farben, die wir sofort da haben - ersatzFarben() waehlt sie aus.
   const lager = (lagerFarben || []).map(f => String(f ?? '').replace(/[{}]/g, '').trim()).filter(Boolean);
-  const lagerAbsatz = lager.length ? `Außerdem haben wir ${lager.length === 1 ? 'diese Farbe' : 'diese Farben'} sofort da und schicken sie Ihnen gern kostenlos: ${lager.join(', ')}. Eine kurze Antwort auf diese E-Mail genügt.` : '';
+  const lagerAbsatz = lager.length ? `Außerdem haben wir ${lager.length === 1 ? 'diese Farbe' : 'diese Farben'} sofort da und schicken sie Ihnen gern zu: ${lager.join(', ')}. Eine kurze Antwort auf diese E-Mail genügt.` : '';
   if (lagerAbsatz) werte.Lagerfarben = lagerAbsatz;
   const links = sichereMusterLinks(produkte);
   const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${link(p.url)}`).join('\n\n');
@@ -571,9 +581,12 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
   const mitAuswahl = auswahl && !vorlage.text.includes('{Link Produkt}') ? vorGruss(text, block) : text;
   // Eigene Vorlage des Inhabers ohne {Lagerfarben}: der Ersatz steht dann vor dem Gruss, nicht gar nicht.
   const mitLager = lagerAbsatz && !vorlage.text.includes('{Lagerfarben}') ? vorGruss(mitAuswahl, lagerAbsatz) : mitAuswahl;
+  // Bezahlter Musterversand: an den Gutschein aus der Bestellbestaetigung erinnern. Der Code steht
+  // nur dort, nie hier. Eine Vorlage des Inhabers, die den Gutschein selbst nennt, bleibt unveraendert.
+  const mitGutschein = nachfass && versandBezahlt && jetzt < GUTSCHEIN_BIS && !/gutschein/i.test(vorlage.text) ? vorGruss(mitLager, GUTSCHEIN_HINWEIS) : mitLager;
   // Der Betreff hat keine Zeile, die wegfallen koennte: ein unbekannter Platzhalter bleibt stehen,
   // damit platzhalterFrei() ihn sieht und der Versandlauf die Mail zurueckhaelt (statt „Ihre Muster,“ zu schicken).
-  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitFirmenangaben(nachfass ? mitWhatsApp(mitLager) : mitLager) };
+  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitFirmenangaben(nachfass ? mitWhatsApp(mitGutschein) : mitGutschein) };
 }
 
 /**

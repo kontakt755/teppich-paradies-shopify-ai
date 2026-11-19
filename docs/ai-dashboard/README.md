@@ -111,7 +111,7 @@ docs/ai-dashboard/
   lib/muster-etiketten.mjs      Muster-Etiketten 50 × 50 mm: Daten (Serie, Farbe, SKU, Technik) und Layout – testbar ohne Drucker
   lib/adress-etiketten.mjs      Adressaufkleber (Absender, Empfänger, Bestellnummer) auf derselben Rolle – testbar ohne Drucker
   lib/muster-packen.mjs         „Muster packen“: offene Musterbestellungen je Kunde, vorher/nachher, Aufkleberreihenfolge – Browser UND Server
-  lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
+  lib/kennzahlen.mjs            „Ø je Bestellung ohne Muster“ für die Kennzahlen auf „Heute“
   lib/verbrauch.mjs             Modellnamen und Tokenzahlen für die Kachel „Claude-Verbrauch“ (Insights)
   lib/serviceanfragen.mjs       Service-Anfragen: Werte, Prüfung, Formular-Mail lesen, Auswertung je Woche/Quelle – Browser UND Server
   lib/laden.mjs                 Ansicht Laden: Zeilen aus Rückrufen, wartenden Kunden und eigenen Aufgaben, rote Zeile – Browser UND Server
