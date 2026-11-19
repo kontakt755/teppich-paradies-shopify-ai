@@ -204,6 +204,36 @@ test('#26 Versandbestaetigung: Teillieferung der Fussleiste zeigt die versandte 
   assert.match(voll, /<li>Gekettelte Fußleiste – 6 cm \(12 m\)<\/li>/);
 });
 
+// ---- Musterkasten in der Versandbestaetigung (w-275, im Admin seit 19.11.2026)
+const mfl = (sku, title, variant_title, props = {}, handle = '') => ({ quantity: 1, line_item: { sku, title, variant_title, properties: P(props), product: { handle }, variant: { metafields: {} } } });
+const UTM = 'utm_source=versandmail&amp;utm_medium=email&amp;utm_campaign=muster-versandmail';
+
+test('Musterkasten: Farblink mit Variante und UTM, Rechner-Knopf, Widerspruchssatz, Herstellermuster', async () => {
+  const html = await eng.parseAndRender(versand, { ...vctx([
+    mfl('M-TEST_069', 'Muster Testvelours Teppichboden', 'Creme (069)', { _Muster_ID: 'x', _Quellprodukt: 'testvelours-teppichboden', _Quellvariante_ID: '123' }),
+    mfl('M-VW-TEST-1', 'Muster Testmarke Teppich nach Maß', 'Grau', {}, 'muster-testmarke-teppich-nach-mass'),
+  ]), shop: { email: 'laden@example.com' } });
+  assert.match(html, /Ihre Muster sind unterwegs/);
+  assert.match(html, /<strong>Testvelours Teppichboden<\/strong> – Creme \(069\)/);
+  assert.ok(html.includes(`href="https://www.teppich-paradies.net/products/testvelours-teppichboden?variant=123&amp;${UTM}&amp;utm_content=farbe"`));
+  assert.match(html, /utm_content=rechner"[^>]*>Menge und Preis berechnen</);
+  assert.match(html, /Testmarke Teppich nach Maß<\/strong> – Grau <span[^>]*>\(direkt vom Hersteller\)/);
+  assert.ok(html.includes(`products/testmarke-teppich-nach-mass?${UTM}&amp;utm_content=rechner"`), 'ohne Properties: Handle ohne "muster-", keine Variante');
+  assert.match(html, />Wunschmaß eingeben und Preis sehen</);
+  assert.match(html, /jederzeit widersprechen[^<]*<a href="mailto:laden@example\.com"/);
+});
+
+test('Musterkasten: nur bei Mustern in dieser Sendung, Mischsendung nennt nur das Muster, Eingaben escaped', async () => {
+  const ware = { quantity: 2, line_item: { sku: 'TEST_400', title: 'Testleiste', variant_title: 'Eiche', properties: [] } };
+  const ohne = await eng.parseAndRender(versand, vctx([ware]));
+  assert.doesNotMatch(ohne, /Muster (ist|sind) unterwegs|widersprechen|utm_/);
+  const misch = await eng.parseAndRender(versand, vctx([ware, mfl('TP-MUSTER-000', 'Kostenloses Muster', '', { Produkt: '<b>Testvinyl</b>', Farbe: 'Eiche', _Quellprodukt: 'a"b/../x' })]));
+  assert.match(misch, /Ihr Muster ist unterwegs/);
+  assert.match(misch, /&lt;b&gt;Testvinyl&lt;\/b&gt;<\/strong> – Eiche/);
+  assert.doesNotMatch(misch, /<b>Testvinyl|<strong>Testleiste/);
+  assert.ok(misch.includes('products/a%22b%2F..%2Fx?utm_source'), 'fremder Handle bleibt im Shop-Pfad');
+});
+
 // ---- Ratgeber zur Bestellung: Produkttyp waehlt den Kurz-Ratgeber (PDF)
 const mitTyp = (l, type) => ({ ...l, product: { type } });
 const RG_URL = 'https://www.teppich-paradies.net/cdn/shop/files/';

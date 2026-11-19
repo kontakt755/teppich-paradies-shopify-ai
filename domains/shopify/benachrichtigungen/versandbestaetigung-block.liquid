@@ -61,6 +61,148 @@
     </div>
   {%- endif -%}
 
+{%- comment -%} TP-MUSTER-VERSANDMAIL START (Fassung B, eingesetzt 19.11.2026, Freigabe Ahmet; Doku: vorbereitung-2026-11-06/versandmail-muster) {%- endcomment -%}
+{%- liquid
+  assign tp_vm_shop = 'https://www.teppich-paradies.net/products/'
+  assign tp_vm_utm = 'utm_source=versandmail&utm_medium=email&utm_campaign=muster-versandmail'
+  assign tp_vm_anzahl = 0
+  assign tp_vm_hersteller = 0
+  for tp_vm_fl in fulfillment.fulfillment_line_items
+    assign tp_vm_li = tp_vm_fl.line_item
+    assign tp_vm_ist = false
+    assign tp_vm_kopf = tp_vm_li.sku | slice: 0, 2
+    if tp_vm_kopf == 'M-' or tp_vm_li.sku == 'TP-MUSTER-000'
+      assign tp_vm_ist = true
+    endif
+    for p in tp_vm_li.properties
+      if p.first == '_Muster_ID' and p.last != blank
+        assign tp_vm_ist = true
+      endif
+    endfor
+    if tp_vm_ist
+      assign tp_vm_anzahl = tp_vm_anzahl | plus: 1
+      assign tp_vm_sku5 = tp_vm_li.sku | slice: 0, 5
+      assign tp_vm_sku6 = tp_vm_li.sku | slice: 0, 6
+      if tp_vm_sku5 == 'M-VW-' or tp_vm_sku6 == 'M-JAB-'
+        assign tp_vm_hersteller = tp_vm_hersteller | plus: 1
+      endif
+    endif
+  endfor
+-%}
+
+{%- if tp_vm_anzahl > 0 -%}
+<div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#15171a;margin:20px 0 24px;padding:16px 16px 6px;border:1px solid #e3e0dc;border-radius:8px;">
+  <p style="margin:0 0 8px;font-size:18px;font-weight:bold;">{% if tp_vm_anzahl == 1 %}Ihr Muster ist unterwegs{% else %}Ihre Muster sind unterwegs{% endif %}</p>
+  <p style="margin:0 0 12px;">{% if tp_vm_anzahl == 1 %}Ihr kostenloses Muster aus der Bestellung {{ name | escape }} ist per Post auf dem Weg zu Ihnen.{% else %}Ihre kostenlosen Muster aus der Bestellung {{ name | escape }} sind per Post auf dem Weg zu Ihnen.{% endif %}
+    {%- if tp_vm_hersteller > 0 %} Muster mit dem Hinweis „direkt vom Hersteller“ schickt der Hersteller selbst – oft in einem eigenen Umschlag und zu einem anderen Zeitpunkt.{% endif -%}
+  </p>
+
+  {%- for tp_vm_fl in fulfillment.fulfillment_line_items -%}
+    {%- liquid
+      assign tp_vm_li = tp_vm_fl.line_item
+      assign tp_vm_ist = false
+      assign tp_vm_kopf = tp_vm_li.sku | slice: 0, 2
+      if tp_vm_kopf == 'M-' or tp_vm_li.sku == 'TP-MUSTER-000'
+        assign tp_vm_ist = true
+      endif
+      assign tp_vm_handle = ''
+      assign tp_vm_vid = 0
+      assign tp_vm_produkt = ''
+      assign tp_vm_farbe = ''
+      for p in tp_vm_li.properties
+        assign tp_vm_w = p.last | strip
+        if tp_vm_w == blank
+          continue
+        endif
+        case p.first
+          when '_Muster_ID'
+            assign tp_vm_ist = true
+          when '_Quellprodukt'
+            assign tp_vm_handle = tp_vm_w
+          when '_Quellvariante_ID'
+            assign tp_vm_vid = tp_vm_w | plus: 0
+          when 'Produkt'
+            assign tp_vm_produkt = tp_vm_w
+          when 'Farbe', 'Dekor'
+            assign tp_vm_farbe = tp_vm_w
+        endcase
+      endfor
+      if tp_vm_handle == '' or tp_vm_vid == 0
+        assign tp_vm_qv = tp_vm_li.variant.metafields.einkauf.quellvariante.value
+        if tp_vm_qv.id != blank
+          if tp_vm_vid == 0
+            assign tp_vm_vid = tp_vm_qv.id | plus: 0
+          endif
+          if tp_vm_handle == '' and tp_vm_qv.product.handle != blank
+            assign tp_vm_handle = tp_vm_qv.product.handle
+          endif
+        else
+          assign tp_vm_qv_text = tp_vm_qv | append: ''
+          if tp_vm_vid == 0 and tp_vm_qv_text contains 'gid://shopify/ProductVariant/'
+            assign tp_vm_vid = tp_vm_qv_text | split: '/' | last | plus: 0
+          endif
+        endif
+      endif
+      if tp_vm_handle == ''
+        assign tp_vm_mh = tp_vm_li.product.handle | default: ''
+        assign tp_vm_mh_kopf = tp_vm_mh | slice: 0, 7
+        if tp_vm_mh_kopf == 'muster-'
+          assign tp_vm_handle = tp_vm_mh | remove_first: 'muster-'
+        endif
+      endif
+
+      if tp_vm_produkt == ''
+        assign tp_vm_produkt = tp_vm_li.title | remove_first: 'Muster ' | strip
+      endif
+      if tp_vm_farbe == '' and tp_vm_li.variant_title != blank and tp_vm_li.variant_title != 'Default Title'
+        assign tp_vm_farbe = tp_vm_li.variant_title
+      endif
+      if tp_vm_farbe != '' and tp_vm_produkt contains tp_vm_farbe
+        assign tp_vm_farbe = ''
+      endif
+      assign tp_vm_sku5 = tp_vm_li.sku | slice: 0, 5
+      assign tp_vm_sku6 = tp_vm_li.sku | slice: 0, 6
+
+      assign tp_vm_link = ''
+      if tp_vm_handle != ''
+        assign tp_vm_h_enc = tp_vm_handle | url_encode
+        assign tp_vm_link = tp_vm_shop | append: tp_vm_h_enc
+        if tp_vm_vid > 0
+          assign tp_vm_link = tp_vm_link | append: '?variant=' | append: tp_vm_vid | append: '&'
+        else
+          assign tp_vm_link = tp_vm_link | append: '?'
+        endif
+        assign tp_vm_link = tp_vm_link | append: tp_vm_utm
+      endif
+      assign tp_vm_rechner = 'Menge und Preis berechnen'
+      if tp_vm_handle contains 'nach-mass'
+        assign tp_vm_rechner = 'Wunschmaß eingeben und Preis sehen'
+      endif
+    -%}
+    {%- if tp_vm_ist -%}
+    <div style="margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid #eeebe7;">
+      <p style="margin:0 0 6px;"><strong>{{ tp_vm_produkt | escape }}</strong>{% if tp_vm_farbe != '' %} – {{ tp_vm_farbe | escape }}{% endif %}{% if tp_vm_sku5 == 'M-VW-' or tp_vm_sku6 == 'M-JAB-' %} <span style="color:#5e5853;">(direkt vom Hersteller)</span>{% endif %}</p>
+      {%- if tp_vm_link != '' -%}
+      <p style="margin:0;">
+        <a href="{{ tp_vm_link | append: '&utm_content=farbe' | escape }}" style="color:#15171a;text-decoration:underline;margin-right:14px;">{% if tp_vm_farbe != '' %}Farbe ansehen{% else %}Produkt ansehen{% endif %}</a>
+        <a href="{{ tp_vm_link | append: '&utm_content=rechner' | escape }}" style="display:inline-block;margin-top:8px;padding:9px 16px;background:#15171a;color:#ffffff;text-decoration:none;border-radius:6px;">{{ tp_vm_rechner }}</a>
+      </p>
+      {%- endif -%}
+    </div>
+    {%- endif -%}
+  {%- endfor -%}
+
+  <p style="margin:4px 0 6px;font-weight:bold;">So geht es weiter</p>
+  <ul style="margin:0 0 12px;padding-left:20px;">
+    <li style="margin:0 0 4px;">Legen Sie {% if tp_vm_anzahl == 1 %}das Muster{% else %}die Muster{% endif %} dort hin, wo der Boden später liegt, und sehen Sie {% if tp_vm_anzahl == 1 %}es{% else %}sie{% endif %} bei Tageslicht und am Abend an.</li>
+    <li style="margin:0 0 4px;">Passt eine Farbe? Dann bestellen Sie einfach online: Link oben öffnen, Maße eingeben – der Rechner zeigt Menge und Preis.</li>
+    <li style="margin:0 0 4px;">Lieber persönlich? Rufen Sie uns an: <a href="tel:+4933015733720" style="color:#15171a;">03301 573 37 20</a> (Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr). Nennen Sie einfach Ihre Bestellnummer {{ name | escape }}, wir rechnen die Menge gern mit Ihnen aus.</li>
+  </ul>
+  <p style="margin:0 0 10px;font-size:13px;line-height:1.5;color:#5e5853;">Sie möchten solche Hinweise zu unseren Produkten nicht mehr per E-Mail? Sie können der Nutzung Ihrer E-Mail-Adresse für Werbung jederzeit widersprechen, einfach per Antwort auf diese E-Mail{% if shop.email != blank %} oder an <a href="mailto:{{ shop.email | escape }}" style="color:#5e5853;">{{ shop.email | escape }}</a>{% endif %}. Dafür entstehen Ihnen keine anderen Kosten als die Übermittlungskosten nach den Basistarifen.</p>
+</div>
+{%- endif -%}
+{%- comment -%} TP-MUSTER-VERSANDMAIL ENDE {%- endcomment -%}
+
   <p style="margin:0 0 6px;font-weight:bold;">Inhalt dieser Sendung</p>
   <ul style="margin:0 0 16px;padding-left:20px;">
     {%- for line in fulfillment.fulfillment_line_items -%}
