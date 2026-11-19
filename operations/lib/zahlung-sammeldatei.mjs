@@ -89,7 +89,8 @@ export function rechnungPruefen(xml, { iban }) {
   if (cent(faellig) !== cent(f.brutto)) return unklar('offener Betrag weicht vom Rechnungswert ab (Anzahlung?)');
   const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'));
   // Ohne lesbares Skonto nur, wenn in keinem Bedingungsblock Skonto steht: dann ist der volle Betrag richtig.
-  const alleBedingungen = abschnitte(xml, 'SpecifiedTradePaymentTerms').map(k => blatt(k, 'Description')).join('\n');
+  // Roh gelesen, damit auch CDATA oder andere Unterfelder zaehlen.
+  const alleBedingungen = abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n');
   if (!b?.skonto && /skonto/i.test(alleBedingungen)) return unklar('Zahlungsbedingungen mit Skonto nicht lesbar');
   if (b) kopf.nettoFaellig = b.nettoFaellig;
   if (b && cent(b.nettoBetrag) !== cent(f.brutto)) return unklar('Nettozahlung weicht vom Rechnungswert ab');

@@ -340,3 +340,8 @@ test('Skonto in einem zweiten Bedingungsblock: nicht voll freigeben', () => {
     .replace('</ram:SpecifiedTradePaymentTerms>', '</ram:SpecifiedTradePaymentTerms><ram:SpecifiedTradePaymentTerms><ram:Description>3 % Skonto bei Zahlung in 8 Tagen</ram:Description></ram:SpecifiedTradePaymentTerms>');
   assert.equal(rechnungPruefen(xml, { iban: LIEFER }).status, 'unklar');
 });
+
+test('Skonto in CDATA: nicht voll freigeben', () => {
+  const xml = rechnungXml({ nummer: '700012', brutto: '120.00', bedingungen: '<![CDATA[3 % Skonto bei Zahlung in 8 Tagen]]>' });
+  assert.equal(rechnungPruefen(xml, { iban: LIEFER }).status, 'unklar');
+});
