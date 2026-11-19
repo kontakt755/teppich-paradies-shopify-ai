@@ -149,13 +149,32 @@ test('schnappschuss: Ware und Muster getrennt, Kunden eindeutig, Vorwoche ohne U
     { ...kauf(2, { gesamt: 70, zwischen: 70, kunde: 'g', positionen: [warenPos(58)] }), cancelledAt: '2026-09-22T10:00:00Z' },
   ], { jetzt: JETZT });
   assert.deepEqual(s.zeitraeume['7'].ware, { umsatz: 150, kunden: 1, bestellungen: 2 }, 'zwei Kaeufe desselben Kunden, unbezahlt und storniert zaehlen nicht');
-  assert.deepEqual(s.zeitraeume['7'].muster, { bestellungen: 1, kunden: 1 }, 'gemischte Bestellung ist Ware, nicht Muster');
+  assert.deepEqual(s.zeitraeume['7'].muster, { bestellungen: 1, kunden: 1, versandEinnahmen: 0 }, 'gemischte Bestellung ist Ware, nicht Muster');
   assert.equal(s.zeitraeume['7'].umsatz, 154.99, 'der Umsatz mit Versand bleibt daneben erhalten');
   assert.deepEqual(s.vorwoche.ware, { umsatz: 200, kunden: 1, bestellungen: 1 });
-  assert.deepEqual(s.vorwoche.muster, { bestellungen: 1, kunden: 1 });
+  assert.deepEqual(s.vorwoche.muster, { bestellungen: 1, kunden: 1, versandEinnahmen: 0 });
 });
 
 test('schnappschuss: Bestellung genau auf der Grenze steht nur in einem der beiden Fenster', () => {
   const s = schnappschuss([kauf(7, { gesamt: 10, zwischen: 10, positionen: [warenPos(8)] })], { jetzt: JETZT });
   assert.equal(s.zeitraeume['7'].ware.bestellungen + s.vorwoche.ware.bestellungen, 1);
+});
+
+// Musterversand-Test ab 01.12.2026: reine Musterbestellungen kosten 4,99 € Versand.
+test('bezahlter Musterversand: 4,99 € bleibt Muster, Muster + Ware ist Warenkauf', () => {
+  const muster = { title: 'Muster', quantity: 1, sku: 'M-TEST-1', originalUnitPriceSet: { shopMoney: { amount: '0' } } };
+  const ware = { title: 'Testvinyl', quantity: 1, sku: 'TV-1', originalUnitPriceSet: { shopMoney: { amount: '100' } } };
+  const mitSumme = (o, zwischensumme) => ({ ...o, currentSubtotalPriceSet: { shopMoney: { amount: String(zwischensumme), currencyCode: 'EUR' } } });
+  const z = schnappschuss([
+    mitSumme(bestellung(1, 4.99, { positionen: [muster] }), 0),
+    mitSumme(bestellung(2, 4.99, { positionen: [muster, muster] }), 0),
+    mitSumme(bestellung(3, 0, { positionen: [muster] }), 0),                  // alte Gratisbestellung
+    mitSumme(bestellung(4, 104.99, { positionen: [muster, ware] }), 100),     // Muster + Ware unter der Freigrenze
+  ], { jetzt: JETZT }).zeitraeume['7'];
+  assert.deepEqual(z.muster, { bestellungen: 3, kunden: 1, versandEinnahmen: 9.98 });
+  assert.equal(z.ware.bestellungen, 1);
+  assert.equal(z.ware.umsatz, 100);
+  assert.equal(z.umsatz, 114.97);
+  assert.equal(z.mitBetrag, 1);
+  assert.equal(z.durchschnitt, 104.99);
 });

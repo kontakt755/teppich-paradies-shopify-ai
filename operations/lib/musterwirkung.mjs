@@ -1,5 +1,5 @@
 /** Beobachtete Muster-/Kaufverlaeufe aus dem privaten Betriebsbestand. Keine Ein-/Ausgabe. */
-import { istMusterPosition } from './muster.mjs';
+import { istMusterPosition, nurMusterversandErstattet } from './muster.mjs';
 import { istTestbestellung } from './testbestellung.mjs';
 import { istEigenleistung } from './bestelluebersicht.mjs';
 import { ladeBestellungen } from './kennzahlen.mjs';
@@ -90,7 +90,7 @@ export function musterwirkung(daten, { jetzt = new Date(), beobachtungTage = 30 
   const orders = identitaetsbelege.filter(o => {
     if (istTestbestellung(o)) { qualitaet.testbestellungen++; return false; }
     if (o.cancelledAt) { qualitaet.stornierteBestellungen++; return false; }
-    if (o.displayFinancialStatus === 'REFUNDED') { qualitaet.vollErstatteteBestellungen++; return false; }
+    if (o.displayFinancialStatus === 'REFUNDED' && !nurMusterversandErstattet(o)) { qualitaet.vollErstatteteBestellungen++; return false; }
     return true;
   });
   // Identitaetsbelege gelten auch bei Storno/Erstattung: deren Ausschluss darf eine geteilte Mail nicht eindeutig machen.
@@ -114,7 +114,7 @@ export function musterwirkung(daten, { jetzt = new Date(), beobachtungTage = 30 
     if (alle.some(p => !p || !Number.isInteger(menge(p)) || menge(p) < 0)) { qualitaet.ungueltigeMengen++; continue; }
     const aktiv = alle.filter(p => menge(p) > 0);
     const muster = aktiv.filter(istMuster), ware = aktiv.filter(istWare);
-    const bezahlt = ['PAID', 'PARTIALLY_REFUNDED'].includes(o.displayFinancialStatus);
+    const bezahlt = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'].includes(o.displayFinancialStatus);
     if (!bezahlt) { qualitaet.unbezahlteBestellungen++; continue; }
     if (muster.length && ware.length) qualitaet.gemischteBestellungen++;
     let kauf = false, kaufUnklar = false;

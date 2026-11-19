@@ -469,3 +469,13 @@ test('Lieferadresse fuehrt Firma/Adresszusatz mit - bei Packstationen steht dort
   const d = aufbereiten({ orders: [order] }).auftraege[0].details;
   assert.equal(d.lieferadresse.strasse, 'Postnummer 000 000 00, Packstation 100');
 });
+
+// Erstattungsregel Musterversand (Inhaber 19.11.2026): Automatik und Packliste lesen `bezahlt`.
+test('Musterversand erstattet: reine Musterbestellung bleibt bezahlt; erstattete Position oder Ware nicht', () => {
+  const stand = (zeilen, status = 'REFUNDED') => aufbereiten({ orders: [bestellung(9, zeilen, { displayFinancialStatus: status })], quellvarianten: [quellvariante] }, { jetzt: new Date('2026-12-07T00:00:00Z') }).auftraege[0];
+  assert.equal(stand([musterM, musterFrei]).bezahlt, 'PAID');
+  assert.equal(stand([musterM], 'PARTIALLY_REFUNDED').bezahlt, 'PARTIALLY_REFUNDED', 'Teilerstattung: weiter Restumfang pruefen');
+  assert.ok(!stand([musterM]).hinweise.some(h => /Zahlung/.test(h)));
+  assert.equal(stand([{ ...musterM, currentQuantity: 0 }, musterFrei]).bezahlt, 'REFUNDED', 'Position erstattet = raus');
+  assert.equal(stand([musterM, paket]).bezahlt, 'REFUNDED', 'mit Ware gilt die Regel nicht');
+});

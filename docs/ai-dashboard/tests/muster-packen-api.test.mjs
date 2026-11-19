@@ -380,7 +380,7 @@ test('Gesperrtes Muster: Farben desselben Produkts aus dem Musterlager kommen al
   // Gruen 7, Blau 3 (4 minus reserviert), Gelb 2; Grau faellt wegen "hoechstens 3" weg, Pink (leer) und Fremd (anderes Produkt) nie.
   assert.deepEqual(gesperrt.lagerErsatz, [{ farbe: 'Gruen', frei: 7, produkt: 'Testlinea' }, { farbe: 'Blau', frei: 3, produkt: 'Testlinea' }, { farbe: 'Gelb', frei: 2, produkt: 'Testlinea' }]);
   const mail = fuelleText(NICHT_VERFUEGBAR_VORLAGE, { kundenname: k.name, farben: ['Testlinea: Rot'], lagerFarben: ersatzFarben(k.muster.filter(m => m.gesperrt)) });
-  assert.match(mail.text, /Außerdem haben wir diese Farben sofort da und schicken sie Ihnen gern kostenlos: Gruen, Blau, Gelb\./);
+  assert.match(mail.text, /Außerdem haben wir diese Farben sofort da und schicken sie Ihnen gern zu: Gruen, Blau, Gelb\./);
   assert.doesNotMatch(mail.text, /Grau|Pink|Fremd/);
   assert.equal(fs.existsSync(path.join(dir, 'muster-packen.json')), false, 'GET schreibt nichts');
 });

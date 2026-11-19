@@ -551,7 +551,7 @@ function ladenUndMontage() {
   ].join('');
 }
 
-/** Schnitt je bezahlter Bestellung fuer die Kachel; ohne Bestellung mit Betrag ein Strich. */
+/** Schnitt je Bestellung mit Betrag, ohne reine Musterbestellungen; ohne solche Bestellung ein Strich. */
 function schnittText(z, geld) {
   if (!z) return null;
   const n = schnittJeBezahlter(z);
@@ -581,9 +581,10 @@ function kennzahlenBlock() {
     <div class="heute-block-kopf"><h2 id="heuteKpi">Kennzahlen</h2><span>${esc(hinweis)}</span></div>
     <div class="heute-kpis">
       ${kachel('Bestellungen', zahl(z7?.bestellungen), zahl(z30?.bestellungen))}
-      ${kachel('davon kostenlose Muster', zahl(z7?.kostenlos), zahl(z30?.kostenlos))}
+      ${kachel('davon nur Muster', zahl(z7?.muster?.bestellungen ?? z7?.kostenlos), zahl(z30?.muster?.bestellungen ?? z30?.kostenlos))}
       ${kachel('Umsatz mit Versand', geld(z7?.umsatz, z7), geld(z30?.umsatz, z30))}
-      ${kachel('Ø je bezahlter Bestellung', schnittText(z7, geld), schnittText(z30, geld))}
+      ${z30?.muster?.versandEinnahmen > 0 ? kachel('davon Musterversand', geld(z7?.muster?.versandEinnahmen, z7), geld(z30.muster.versandEinnahmen, z30)) : ''}
+      ${kachel('Ø je Bestellung ohne Muster', schnittText(z7, geld), schnittText(z30, geld))}
     </div>
   </section>`;
 }
