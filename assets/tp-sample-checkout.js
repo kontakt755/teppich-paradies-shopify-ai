@@ -371,7 +371,7 @@
 
     // Musterprodukt der Qualitaet zuerst (eigene Variante je Farbe). Fehlt es
     // bei einem Teppich nach Mass, das Musterprodukt des Teppichbodens
-    // (ladeBasisMuster). Das Sammelprodukt "Kostenloses Muster" bleibt der
+    // (ladeBasisMuster). Das Sammelprodukt (Handle kostenloses-muster) bleibt der
     // Rueckfall fuer alles, was keine eigene Mustervariante findet.
     function fetchOptional(url) {
       return fetchJson(url).catch(function () { return null; });
@@ -434,10 +434,10 @@
         submitEl.hidden = true;
         var produktLink = { text: 'Zurück zu ' + product.title, href: '/products/' + handle };
         if (musterAufAnfrage(product)) {
-          // Laminat, Parkett, Kork: kostenlos, aber nur auf Anfrage
+          // Laminat, Parkett, Kork: Muster nur auf Anfrage, ohne Preisangabe
           // (Inhaber 14.10.2026, blocks/tp-muster-cta). Alte Links landen hier.
-          // Linktext ohne "kostenlos" wie der Knopf auf der Produktseite (w-161).
-          zeigeOhneMuster('Muster für ' + product.title + ' sind kostenlos wie alle unsere Muster. Weil sie wertiger sind, senden wir sie nach kurzer Anfrage zu.', [
+          // Linktext wie der Knopf auf der Produktseite (w-161).
+          zeigeOhneMuster('Muster für ' + product.title + ' gibt es auf Anfrage. Wir melden uns bei Ihnen.', [
             { text: 'Muster anfragen', href: '/pages/kontakt?thema=musteranfrage&produkt=' + encodeURIComponent(product.title) + '&handle=' + encodeURIComponent(product.handle) },
             produktLink,
           ]);

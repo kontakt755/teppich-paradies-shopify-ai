@@ -34,7 +34,7 @@
           "settings": {
             "marker_type": "icon",
             "emoji": "⌁",
-            "text": "Bis zu zwei Muster je Bestellung kostenlos"
+            "text": "Bis zu zwei Muster je Bestellung"
           }
         }
       },
@@ -48,7 +48,7 @@
         "image": "shopify://shop_images/kunstrasen-garten.jpg",
         "heading": "Kunstrasen als Meterware",
         "subheading": "8 Qualitäten von 6 bis 45 mm Florhöhe",
-        "body": "<p>Für Balkon, Terrasse und Garten: Wählen Sie Breite und Länge, wir schneiden den Kunstrasen zu und liefern deutschlandweit. Erst unsicher? Bestellen Sie vorher kostenlose Muster.</p>",
+        "body": "<p>Für Balkon, Terrasse und Garten: Wählen Sie Breite und Länge, wir schneiden den Kunstrasen zu und liefern deutschlandweit. Erst unsicher? Bestellen Sie vorher Muster.</p>",
         "content_width": 1440,
         "column_gap": 48,
         "image_radius": 14,
@@ -288,7 +288,7 @@
           "type": "step",
           "settings": {
             "title": "Qualität wählen",
-            "text": "Nach Florhöhe und Farbton. Bis zu zwei Muster je Bestellung kostenlos."
+            "text": "Nach Florhöhe und Farbton. Bis zu zwei Muster je Bestellung."
           }
         },
         "s2": {
@@ -348,7 +348,7 @@
           "type": "frage",
           "settings": {
             "question": "Kann ich den Kunstrasen vorher ansehen?",
-            "answer": "<p>Ja. Bis zu zwei Muster je Bestellung kostenlos. Wählen Sie die Qualität am Produkt oder auf der <a href=\"/pages/muster\">Musterseite</a>.</p>"
+            "answer": "<p>Ja. Bis zu zwei Muster je Bestellung. Wählen Sie die Qualität am Produkt oder auf der <a href=\"/pages/muster\">Musterseite</a>.</p>"
           }
         },
         "versand": {

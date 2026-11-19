@@ -1,7 +1,7 @@
 {%- comment -%}
   Versandkostenhinweis fuer jeden gefuellten Warenkorb. Die Speditionsart
   wird getrennt ermittelt; Varianten-Rollenbreiten sind die aktuelle Quelle.
-  Muster verwenden die gemeinsame Mustererkennung und ihr kostenloses Profil.
+  Muster verwenden die gemeinsame Mustererkennung und ihr eigenes Versandprofil.
   Liegt mindestens ein Muster im Warenkorb (auch gemischt mit Ware), folgt
   der voruebergehende Geduld-Hinweis (snippets/tp-muster-hinweis).
 {%- endcomment -%}
@@ -27,7 +27,7 @@
   {%- assign tp_cart_versandfrei_cent = settings.tp_versand_frei_ab | times: 100 -%}
   <p class="tp-cart-shipping-note">
     {%- if tp_cart_only_samples -%}
-      <strong>Kostenloser Musterversand innerhalb Deutschlands.</strong>
+      <strong>Musterversand innerhalb Deutschlands: 4,99 €.</strong> Ab 150 € Warenwert angerechnet.
     {%- elsif cart.total_price >= tp_cart_versandfrei_cent -%}
       <strong>Versandkostenfrei in Deutschland.</strong>
     {%- elsif settings.tp_versand_preis != blank -%}

@@ -32,10 +32,13 @@ test('Musterseite nennt Groesse und Versand, ohne Ankunftszeit', () => {
   const section = read('sections/tp-sample-checkout.liquid');
   const info = /<p class="tp-sample__info" data-sample-info>([^<]+)<\/p>/.exec(section);
   assert.ok(info, 'Zeile unter der Ueberschrift');
-  assert.equal(info[1], 'Muster ca. A5 · kostenloser Versand');
+  assert.equal(info[1], 'Muster ca. A5 · Versand 4,99 € je Bestellung');
+  // Mustergebuehr-Test: Anrechnung und Gutscheincode stehen immer sichtbar darunter
+  assert.match(section, /data-sample-anrechnung>Die 4,99 € rechnen wir Ihnen ab 150 € Warenwert an\. Den Gutscheincode finden Sie in Ihrer Bestellbestätigung\./);
   const hersteller = /<p class="tp-sample__info" data-sample-hersteller hidden>([^<]+)<\/p>/.exec(section);
   assert.ok(hersteller, 'Herstellerzeile, anfangs versteckt');
   assert.match(hersteller[1], /direkt vom Hersteller/);
+  assert.match(hersteller[1], /Versand 4,99 € je Bestellung/);
   assert.doesNotMatch(info[1] + hersteller[1], /Werktag|Tage/, 'keine Lieferzeit ohne Festlegung des Inhabers');
   // Reihenfolge: direkt unter der Ueberschrift
   assert.ok(section.indexOf('data-sample-info') > section.indexOf('</h1>'));
@@ -171,7 +174,7 @@ test('Produkt ohne Muster: neutraler Hinweis mit Beratung und Rueckweg, ohne Int
   assert.equal(r.submit.hidden, true);
 });
 
-test('Laminat: Link "Muster anfragen" ohne "Kostenloses", neutral', async () => {
+test('Laminat: Link "Muster anfragen" ohne Preis und ohne "kostenlos", neutral', async () => {
   const r = await ohneMuster({ handle: 'ribe-eiche-sand-laminat-8mm', id: 4, title: 'Ribe Eiche Sand Laminat 8mm', type: 'Laminat', tags: [], variants: [] });
   assert.equal(r.fehler.hidden, true);
   assert.equal(r.hinweis.hidden, false);
@@ -180,5 +183,6 @@ test('Laminat: Link "Muster anfragen" ohne "Kostenloses", neutral', async () => 
   assert.equal(r.links[1].href, '/products/ribe-eiche-sand-laminat-8mm');
   assert.equal(r.intro.hidden, true);
   assert.equal(r.submit.hidden, true);
-  assert.doesNotMatch(read('assets/tp-sample-checkout.js'), /Kostenloses Muster anfragen/);
+  assert.doesNotMatch(read('assets/tp-sample-checkout.js'), /Kostenloses Muster anfragen|sind kostenlos wie alle/);
+  assert.match(read('assets/tp-sample-checkout.js'), /gibt es auf Anfrage\. Wir melden uns bei Ihnen\./);
 });

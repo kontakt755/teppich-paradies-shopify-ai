@@ -317,8 +317,8 @@
             "tp_muster_cta_1": {
               "type": "tp-muster-cta",
               "settings": {
-                "label": "Kostenloses Muster anfragen",
-                "hinweis": "Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei"
+                "label": "Muster bestellen",
+                "hinweis": "Versand 4,99 € je Bestellung"
               }
             },
             "tp_zubehoer_empfehlung": {

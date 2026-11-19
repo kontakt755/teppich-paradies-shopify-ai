@@ -54,7 +54,7 @@ for (const view of ['cart', 'drawer']) {
       [4999, [item()], {}, /ab 50 € Bestellwert/],
       [5000, [item()], {}, /Versandkostenfrei in Deutschland\./],
       [6000, [item()], { tp_versand_frei_ab: 75 }, /ab 75 € Bestellwert/],
-      [0, [item(true)], {}, /Kostenloser Musterversand innerhalb Deutschlands\./],
+      [0, [item(true)], {}, /Musterversand innerhalb Deutschlands: 4,99 €\.<\/strong> Ab 150 € Warenwert angerechnet\./],
       [4000, [item(true), item()], {}, /ab 50 € Bestellwert/],
     ]) {
       const html = await render(view, context(total, items, { settings, cart: { original_total_price: 10000 } }));
