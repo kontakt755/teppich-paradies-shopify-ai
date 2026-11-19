@@ -67,7 +67,7 @@ export function spaltenErkennen(felder) {
     haben: erste(/^(haben|eingang)\b/),
     sollHaben: erste(/^s\/h$|soll\s*\/\s*haben/),
     name: [/zahlungsempfaenger/, /beguenstigter/, /zahlungsbeteiligter/, /empfaenger/, /auftraggeber/, /^name\b/].map(re => erste(re, /auftragskonto|iban|bic|konto/)).find(i => i >= 0) ?? -1,
-    iban: erste(/iban/),
+    iban: erste(/iban/, /auftragskonto|kontoinhaber/), // Commerzbank: „IBAN Kontoinhaber“ ist unser Konto
     art: erste(/^(buchungstext|umsatzart|umsatztyp|transaktionsart|art)\b/),
     zweck: erste(/verwendungszweck/),
     glaeubiger: erste(/glaeubiger/),
@@ -93,6 +93,8 @@ export function bankBetrag(text) {
   const s = String(text ?? '').replace(/€|EUR/gi, '').replace(/^\+/, '').trim();
   if (!s) return null;
   if (/^-?\d+$/.test(s)) return Number(s);
+  // Commerzbank-CSV kuerzt die Null am Ende: -461,2 heisst -461,20.
+  if (/^-?\d+,\d$/.test(s)) return Number(s.replace(',', '.'));
   return betragLesen(s);
 }
 

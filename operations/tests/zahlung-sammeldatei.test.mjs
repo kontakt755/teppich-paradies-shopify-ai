@@ -276,3 +276,15 @@ test('PDF-Rechnung im Lauf: nur mit aktuellem Auszug in die Datei, voller Betrag
   const spaet = sammelLauf({ privat: privat2, jetzt: new Date('2026-11-13T09:00:00Z'), pdf });
   assert.match(listeLesen(privat2, spaet), /UNKLAR;[^\r]*R-2026-501[^\r]*nur mit aktuellem Kontoauszug/);
 });
+
+test('Ungelesene Buchung im Auszug: gilt als unvollstaendig, verfallenes Skonto nicht in die Datei', () => {
+  const privat = privatOrdner();
+  const datei = path.join(privat, 'laden-entlastung-2026-11', 'bank-export', 'umsaetze.csv');
+  fs.appendFileSync(datei, `07.11.2026;Überweisung;RE 700003;Muster & Söhne GmbH;${LIEFER};kaputt\n`);
+  const e = sammelLauf({ privat, jetzt: HEUTE });
+  assert.equal(e.auszugAktuell, false);
+  assert.equal(e.bankZeilenNichtLesbar, 1);
+  const liste = listeLesen(privat, e);
+  assert.match(liste, /1 Buchung\(en\) NICHT LESBAR/);
+  assert.equal(statusVon(liste, '700003'), 'UNKLAR');
+});

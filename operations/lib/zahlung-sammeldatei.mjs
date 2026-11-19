@@ -334,7 +334,7 @@ const REIHENFOLGE = ['zahlen', 'unklar', 'gutschrift', 'lastschrift', 'spaeter',
 export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdfAb = '', summeCent }) {
   const kopf = [
     `Sammelüberweisung Lauf ${auswahl.heute}; nächster Lauf ${auswahl.naechster}`,
-    abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.aktuell ? '' : ' – ACHTUNG: KONTOAUSZUG VERALTET, neuen Export ablegen; bis dahin jede Zeile selbst prüfen'}${abgleich.fehler ? `, ${abgleich.fehler} Datei(en) NICHT LESBAR` : ''}` : 'ACHTUNG: Bezahlt-Abgleich nicht möglich (kein Kontoauszug-Export gefunden). Vor der Freigabe jede Zeile selbst prüfen: nicht schon bezahlt?',
+    abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.aktuell ? '' : ' – ACHTUNG: KONTOAUSZUG VERALTET, neuen Export ablegen; bis dahin jede Zeile selbst prüfen'}${abgleich.fehler ? `, ${abgleich.fehler} Datei(en) NICHT LESBAR` : ''}${abgleich.zeilenNichtLesbar ? `, ${abgleich.zeilenNichtLesbar} Buchung(en) NICHT LESBAR – Auszug gilt als unvollständig` : ''}` : 'ACHTUNG: Bezahlt-Abgleich nicht möglich (kein Kontoauszug-Export gefunden). Vor der Freigabe jede Zeile selbst prüfen: nicht schon bezahlt?',
     datei ? `Datei: ${datei}; ${auswahl.zeilen.filter(z => z.status === 'zahlen').length} Zahlungen; Summe ${de(summeCent / 100)} EUR` : 'Keine Datei: nichts zu zahlen oder Probelauf',
     `Nicht betrachtet: ${andere} Rechnung(en) anderer Lieferanten${vorStart ? `, ${vorStart} reine PDF-Rechnung(en) vor ${pdfAb}` : ''}`,
     '',

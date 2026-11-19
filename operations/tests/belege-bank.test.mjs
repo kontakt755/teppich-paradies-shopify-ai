@@ -56,6 +56,8 @@ test('Lesehilfen: nichts wird erraten', () => {
   assert.equal(bankBetrag('+5,00'), 5);
   assert.equal(bankBetrag('12'), 12);
   assert.equal(bankBetrag('abc'), null);
+  assert.equal(bankBetrag('-461,2'), -461.2); // Commerzbank-CSV kuerzt die Null
+  assert.equal(bankBetrag('1,2345'), null);
   assert.equal(artErkennen({ text: 'Sonstiges' }), 'unklar');
   assert.equal(artErkennen({ text: 'Sonstiges', mandat: 'M1' }), 'lastschrift');
 });
@@ -237,4 +239,14 @@ test('Lauf: schreibt nur in den Privatordner, Rueckgabe ohne Namen und IBAN', ()
   assert.equal(liste.empfaenger.length, 3);
   assert.equal(fs.statSync(path.join(e.ordner, 'liste-2026-10_2026-10.csv')).mode & 0o077, 0);
   fs.rmSync(privat, { recursive: true, force: true });
+});
+
+test('CSV der Commerzbank: „IBAN Kontoinhaber“ ist unser Konto, nicht der Empfaenger', () => {
+  const kopf = 'Buchungstag;Wertstellung;Umsatzart;Buchungstext;Betrag;Währung;IBAN Kontoinhaber;Kategorie;Sender;Empfänger;Verwendungszweck';
+  const s = spaltenErkennen(kopf.split(';'));
+  assert.equal(s.iban, -1);
+  const r = csvLesen(`${kopf}\n25.09.2026;25.09.2026;Überweisung;Jordan Rechnung 117466TP050;-461,2;EUR;DE00;;;Jordan;RE 117466\n`);
+  assert.equal(r.nichtLesbar, 0);
+  assert.equal(r.buchungen[0].betrag, -461.2);
+  assert.equal(r.buchungen[0].iban, '');
 });

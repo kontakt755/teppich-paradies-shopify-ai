@@ -74,15 +74,19 @@ function bankLesen(privat, pdf, heute) {
   const buchungen = [];
   let dateien = 0;
   let fehler = 0;
+  let zeilenNichtLesbar = 0;
   for (const name of fs.existsSync(ordner) ? fs.readdirSync(ordner).filter(n => !n.startsWith('.')) : []) {
     try {
       const inhalt = fs.readFileSync(path.join(ordner, name));
-      buchungen.push(...(istPdf(inhalt) ? umsatzPdfLesen(pdf(inhalt).text) : auszugLesen(inhalt)).buchungen);
+      const r = istPdf(inhalt) ? umsatzPdfLesen(pdf(inhalt).text) : auszugLesen(inhalt);
+      buchungen.push(...r.buchungen);
+      zeilenNichtLesbar += r.nichtLesbar || 0;
       dateien += 1;
     } catch { fehler += 1; }
   }
   const bis = buchungen.map(b => b.datum).sort().at(-1) || null;
-  return { moeglich: buchungen.length > 0, buchungen: buchungen.length, dateien, fehler, bis, aktuell: Boolean(bis) && bis >= tagPlus(heute, -AUSZUG_HOECHSTALTER_TAGE), liste: buchungen.length ? buchungen : null };
+  // Eine ungelesene Zeile kann eine schon bezahlte Rechnung sein: dann gilt der Auszug als nicht aktuell.
+  return { moeglich: buchungen.length > 0, buchungen: buchungen.length, dateien, fehler, zeilenNichtLesbar, bis, aktuell: Boolean(bis) && !zeilenNichtLesbar && bis >= tagPlus(heute, -AUSZUG_HOECHSTALTER_TAGE), liste: buchungen.length ? buchungen : null };
 }
 
 /** @returns zahlen fuer die Ausgabe (keine Namen, keine IBAN) */
@@ -120,7 +124,7 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
   const status = {};
   for (const z of auswahl.zeilen) status[z.status] = (status[z.status] || 0) + 1;
   return {
-    lauf: heute, naechsterLauf: auswahl.naechster, schreiben, bezahltAbgleich: abgleich.moeglich, auszugAktuell: abgleich.aktuell, bankDateienNichtLesbar: abgleich.fehler,
+    lauf: heute, naechsterLauf: auswahl.naechster, schreiben, bezahltAbgleich: abgleich.moeglich, auszugAktuell: abgleich.aktuell, bankDateienNichtLesbar: abgleich.fehler, bankZeilenNichtLesbar: abgleich.zeilenNichtLesbar,
     zahlungen: zahlen.length, summe: summeCent / 100, status, andereLieferanten: andere, pdfVorStart: vorStart, ordner, pruefliste: liste, datei,
   };
 }
