@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * SEPA-Sammeldatei fuer Lieferantenrechnungen (Inhaber 10.11.2026), gedacht fuer Montag und Donnerstag.
+ * SEPA-Sammeldatei fuer Lieferantenrechnungen (Inhaber 10.11.2026), freitags (Benutzer 19.11.2026, LaunchAgent net.teppich-paradies.sammeldatei).
  *
  *   npm run -s zahlung:sammeldatei                # Probelauf: schreibt nur die Pruefliste
  *   npm run -s zahlung:sammeldatei -- --schreiben # schreibt Sammeldatei und merkt die Rechnungen vor
@@ -30,14 +30,17 @@ import { auszugLesen } from '../lib/belege-bank.mjs';
 import { konfigPruefen, auswaehlen, painBauen, pruefliste, umsatzPdfLesen, tagPlus } from '../lib/zahlung-sammeldatei.mjs';
 
 const BANK_EXPORT = ['laden-entlastung-2026-11', 'bank-export'];
+// Reine PDF-Rechnungen erst ab hier: aeltere sind ueber die Bank bezahlt worden, bevor es die Datei gab.
+const PDF_AB = '2026-11-01';
 
 const jsonLesen = (pfad, ersatz) => (fs.existsSync(pfad) ? JSON.parse(fs.readFileSync(pfad, 'utf8')) : ersatz);
 
-/** Rechnungen aller archivierten Monate; XML-Text nur fuer konfigurierte Lieferanten. */
-function belegeLesen(privat, lieferanten) {
+/** Rechnungen aller archivierten Monate; XML- bzw. PDF-Text nur fuer konfigurierte Lieferanten. */
+function belegeLesen(privat, lieferanten, pdf) {
   const wurzel = belegeOrdner(privat);
   const belege = [];
   let andere = 0;
+  let vorStart = 0;
   for (const jahr of fs.existsSync(wurzel) ? fs.readdirSync(wurzel).filter(n => /^\d{4}$/.test(n)) : []) {
     for (const mm of fs.readdirSync(path.join(wurzel, jahr)).filter(n => /^\d{2}$/.test(n))) {
       const ordner = path.join(wurzel, jahr, mm);
@@ -47,11 +50,20 @@ function belegeLesen(privat, lieferanten) {
         if (!lieferanten[b.anbieterSchluessel]) { andere += 1; continue; }
         const xmlDatei = b.xmlDatei || (b.format === 'xml' ? b.datei : null);
         const pfad = xmlDatei && path.join(ordner, xmlDatei);
-        belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: pfad && fs.existsSync(pfad) ? fs.readFileSync(pfad, 'utf8') : null });
+        const xml = pfad && fs.existsSync(pfad) ? fs.readFileSync(pfad, 'utf8') : null;
+        const tag = b.rechnungsdatum || b.tag || '';
+        if (!xml && !lieferanten[b.anbieterSchluessel].lastschrift && b.format === 'pdf') {
+          if (tag < PDF_AB) { vorStart += 1; continue; }
+          const pdfPfad = path.join(ordner, b.datei);
+          const text = b.pdfLesbar && fs.existsSync(pdfPfad) ? String(pdf(fs.readFileSync(pdfPfad))?.text || '') : '';
+          belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, waehrung: b.waehrung || null, datum: tag || null } });
+          continue;
+        }
+        belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml });
       }
     }
   }
-  return { belege, andere };
+  return { belege, andere, vorStart };
 }
 
 /** Alle Exporte im Ordner. Kein Ordner, keine Datei oder keine Buchung: kein Abgleich. */
@@ -82,7 +94,7 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
   const vorgemerktPfad = path.join(ordner, 'vorgemerkt.json');
   const vorgemerkt = jsonLesen(vorgemerktPfad, []);
   const heute = berlinTag(jetzt.toISOString());
-  const { belege, andere } = belegeLesen(privat, konfig.lieferanten);
+  const { belege, andere, vorStart } = belegeLesen(privat, konfig.lieferanten, pdf);
   const abgleich = bankLesen(privat, pdf, heute);
   const auswahl = auswaehlen({ belege, konfig, buchungen: abgleich.liste, auszugAktuell: abgleich.aktuell, vorgemerkt, heute });
 
@@ -103,13 +115,13 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
     fs.renameSync(temp, vorgemerktPfad);
     fs.writeFileSync(path.join(ordner, datei), pain.xml, { mode: 0o600, flag: 'wx' });
   }
-  fs.writeFileSync(path.join(ordner, liste), pruefliste({ auswahl, abgleich, datei, andere, summeCent }), { mode: 0o600 });
+  fs.writeFileSync(path.join(ordner, liste), pruefliste({ auswahl, abgleich, datei, andere, vorStart, pdfAb: PDF_AB, summeCent }), { mode: 0o600 });
 
   const status = {};
   for (const z of auswahl.zeilen) status[z.status] = (status[z.status] || 0) + 1;
   return {
     lauf: heute, naechsterLauf: auswahl.naechster, schreiben, bezahltAbgleich: abgleich.moeglich, auszugAktuell: abgleich.aktuell, bankDateienNichtLesbar: abgleich.fehler,
-    zahlungen: zahlen.length, summe: summeCent / 100, status, andereLieferanten: andere, ordner, pruefliste: liste, datei,
+    zahlungen: zahlen.length, summe: summeCent / 100, status, andereLieferanten: andere, pdfVorStart: vorStart, ordner, pruefliste: liste, datei,
   };
 }
 

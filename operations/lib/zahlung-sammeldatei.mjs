@@ -28,11 +28,11 @@ export function ibanGueltig(iban) {
 
 export const tagPlus = (iso, tage) => new Date(Date.parse(`${iso}T00:00:00Z`) + tage * 86_400_000).toISOString().slice(0, 10);
 
-/** Naechster Lauftag nach `heute`: Montag oder Donnerstag. */
+/** Naechster Lauftag nach `heute`: Freitag (Benutzer 19.11.2026, vorher Montag und Donnerstag). */
 export function naechsterLauf(heute) {
   for (let i = 1; i <= 7; i += 1) {
     const tag = tagPlus(heute, i);
-    if ([1, 4].includes(new Date(`${tag}T00:00:00Z`).getUTCDay())) return tag;
+    if (new Date(`${tag}T00:00:00Z`).getUTCDay() === 5) return tag;
   }
   throw new Error(`kein Lauftag nach ${heute}`);
 }
@@ -100,6 +100,36 @@ export function rechnungPruefen(xml, { iban }) {
   // Nur Empfaengerkonten zaehlen, nicht das Konto des Zahlers.
   const ibans = abschnitte(xml, 'PayeePartyCreditorFinancialAccount').map(k => blatt(k, 'IBANID').replace(/\s+/g, '').toUpperCase());
   if (!ibans.includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht als Empfängerkonto auf der Rechnung');
+  return { ...kopf, status: 'ok' };
+}
+
+/** Betrag so, wie er auf deutschen Rechnungen steht: 1.234,56 oder 1234,56. */
+const betragImText = (text, n) => {
+  const [e, c] = n.toFixed(2).split('.');
+  const mitPunkt = e.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return [`${mitPunkt},${c}`, `${e},${c}`].some(b => new RegExp(`(^|[^0-9.,])${b.replace(/\./g, '\\.')}($|[^0-9])`).test(text));
+};
+
+/**
+ * Reine PDF-Rechnung (ohne Factur-X): Nummer und Bruttobetrag kommen aus dem Archiv (belege:monat),
+ * und beide muessen samt Empfaenger-IBAN aus der Konfiguration woertlich im PDF-Text stehen.
+ * Die Faelligkeit wird nicht gelesen: gezahlt wird der volle Betrag, nur in EUR und nur mit aktuellem
+ * Kontoauszug (siehe auswaehlen). Jeder Hinweis auf Skonto, Einzug, Vorkasse oder Gutschrift macht sie unklar.
+ */
+export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { iban }) {
+  const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true };
+  const unklar = grund => ({ ...kopf, status: 'unklar', grund });
+  const t = String(text ?? '');
+  if (!t.trim()) return unklar('PDF-Text nicht lesbar');
+  if (waehrung !== 'EUR') return unklar('Währung nicht eindeutig EUR');
+  if (!/^[A-Za-z0-9][A-Za-z0-9/._-]{2,29}$/.test(nummer || '') || !nurZeichen(t).includes(nurZeichen(nummer))) return unklar('Rechnungsnummer nicht sicher im PDF');
+  if (typeof brutto !== 'number' || !(brutto > 0) || !betragImText(t, brutto)) return unklar('Rechnungsbetrag nicht sicher im PDF');
+  if (/gutschrift|storno|korrekturrechnung/i.test(t)) return unklar('PDF nennt Gutschrift oder Storno');
+  // Skonto: eine schon mit Abzug bezahlte Rechnung erkennt der Bankabgleich ohne Skontobetrag nicht sicher.
+  if (/skonto/i.test(t)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+  if (/lastschrift|abgebucht|eingezogen|bankeinzug|einzugserm|mandat/i.test(t)) return unklar('PDF nennt Lastschrift oder Einzug');
+  if (/bereits (bezahlt|beglichen|erhalten)|dankend erhalten|vorkasse|anzahlung|abschlag|teilzahlung|paypal|kreditkarte/i.test(t)) return unklar('PDF nennt Vorkasse, Anzahlung oder schon bezahlt');
+  if (!nurZeichen(t).includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht im PDF');
   return { ...kopf, status: 'ok' };
 }
 
@@ -182,9 +212,9 @@ export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vo
     const lieferant = konfig.lieferanten[b.schluessel];
     const basis = { schluessel: b.schluessel, lieferant: lieferant.name, beleg: b.datei, nummer: null, datum: null, brutto: null, skonto: null, nettoFaellig: null, zahlbetrag: null };
     if (lieferant.lastschrift) return { ...basis, status: 'lastschrift', grund: 'Lieferant zieht per Lastschrift ein' };
-    if (!b.xml) return { ...basis, status: 'unklar', grund: 'keine XML-Rechnung im Archiv' };
-    const r = rechnungPruefen(b.xml, lieferant);
-    return { ...basis, nummer: r.nummer, datum: r.datum, brutto: r.brutto, skonto: r.skonto, nettoFaellig: r.nettoFaellig, status: r.status, grund: r.grund || '' };
+    if (!b.xml && !b.pdf) return { ...basis, status: 'unklar', grund: 'keine XML-Rechnung im Archiv' };
+    const r = b.xml ? rechnungPruefen(b.xml, lieferant) : pdfRechnungPruefen(b.pdf, lieferant);
+    return { ...basis, nummer: r.nummer, datum: r.datum, brutto: r.brutto, skonto: r.skonto, nettoFaellig: r.nettoFaellig, pdf: Boolean(r.pdf), status: r.status, grund: r.grund || '' };
   });
   // Dieselbe Nummer zweimal im Archiv (Kopie, erneut gesendet): nur die erste zaehlt; weicht der
   // Betrag ab, keine. Vor dem Bankabgleich, weil eine Buchung nur eine Rechnung deckt.
@@ -207,6 +237,11 @@ export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vo
     const t = bank.get(z);
     if (t) return { ...z, status: 'bezahlt', grund: `laut Kontoauszug am ${t.buchung.datum}${t.ueber === 'betrag' ? ' (Betrag und Empfänger passen, Nummer nicht sichtbar)' : ''}` };
     const r = z;
+    // PDF ohne gelesene Faelligkeit: offen ist sie nur belegt, wenn der Auszug bis kurz vor heute reicht.
+    if (r.pdf) {
+      if (!(buchungen && auszugAktuell)) return { ...z, status: 'unklar', grund: 'PDF-Rechnung: nur mit aktuellem Kontoauszug in die Datei' };
+      return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: 'PDF-Rechnung: voller Betrag, Fälligkeit nicht gelesen' };
+    }
     if (r.skonto && r.skonto.bis >= heute) {
       // Frist bis einschliesslich naechstem Lauftag: eine Zahlung erst dann kaeme zu spaet an.
       if (r.skonto.bis > naechster) return { ...z, status: 'spaeter', grund: `Skonto bis ${r.skonto.bis}, im Lauf davor` };
@@ -296,12 +331,12 @@ const STATUS_TEXT = { zahlen: 'IN DATEI', spaeter: 'später', bezahlt: 'bezahlt'
 const REIHENFOLGE = ['zahlen', 'unklar', 'gutschrift', 'lastschrift', 'spaeter', 'vorgemerkt', 'bezahlt'];
 
 /** Pruefliste fuer den Inhaber (Semikolon, Excel-tauglich). */
-export function pruefliste({ auswahl, abgleich, datei, andere, summeCent }) {
+export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdfAb = '', summeCent }) {
   const kopf = [
     `Sammelüberweisung Lauf ${auswahl.heute}; nächster Lauf ${auswahl.naechster}`,
     abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.aktuell ? '' : ' – ACHTUNG: KONTOAUSZUG VERALTET, neuen Export ablegen; bis dahin jede Zeile selbst prüfen'}${abgleich.fehler ? `, ${abgleich.fehler} Datei(en) NICHT LESBAR` : ''}` : 'ACHTUNG: Bezahlt-Abgleich nicht möglich (kein Kontoauszug-Export gefunden). Vor der Freigabe jede Zeile selbst prüfen: nicht schon bezahlt?',
     datei ? `Datei: ${datei}; ${auswahl.zeilen.filter(z => z.status === 'zahlen').length} Zahlungen; Summe ${de(summeCent / 100)} EUR` : 'Keine Datei: nichts zu zahlen oder Probelauf',
-    `Nicht betrachtet: ${andere} Rechnung(en) anderer Lieferanten`,
+    `Nicht betrachtet: ${andere} Rechnung(en) anderer Lieferanten${vorStart ? `, ${vorStart} reine PDF-Rechnung(en) vor ${pdfAb}` : ''}`,
     '',
   ];
   const zeilen = [['Status', 'Lieferant', 'Rechnung', 'Rechnungsdatum', 'Rechnungswert', 'Skonto', 'Skonto bis', 'Netto fällig', 'Zahlbetrag', 'Hinweis', 'Beleg'].join(';')];

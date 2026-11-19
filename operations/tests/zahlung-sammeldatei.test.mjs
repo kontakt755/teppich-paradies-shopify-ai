@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, painGegenpruefen, umsatzPdfLesen } from '../lib/zahlung-sammeldatei.mjs';
+import { ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen } from '../lib/zahlung-sammeldatei.mjs';
 import { sammelLauf } from '../scripts/zahlung-sammeldatei.mjs';
 
 // Alle Daten erfunden. IBANs aus Fantasie-Kontonummern mit gerechneter Pruefziffer.
@@ -16,7 +16,7 @@ function erfundeneIban(konto) {
 const EIGEN = erfundeneIban(1);
 const LIEFER = erfundeneIban(2);
 const FREMD = erfundeneIban(3);
-const HEUTE = new Date('2026-11-10T09:00:00Z'); // Dienstag, naechster Lauf Donnerstag 12.11.
+const HEUTE = new Date('2026-11-10T09:00:00Z'); // Dienstag, naechster Lauf Freitag 13.11.
 
 const mitSkonto = (bis, skonto, zahl, netto, brutto) => `Zahlung bis ${bis} 2,00 % Skonto ${skonto} EUR Zahlung ${zahl} EUR\nNettofälligkeit ${netto} netto Zahlung ${brutto} EUR`;
 
@@ -49,7 +49,7 @@ function privatOrdner({ bank = true } = {}) {
   const beleg = (name, schluessel, extra = {}) => ({ datei: `${name}.pdf`, xmlDatei: `${name}.xml`, format: 'pdf', rolle: 'rechnung', anbieterSchluessel: schluessel, dublette: null, ...extra });
   const belege = Object.keys(RECHNUNGEN).map(n => beleg(n, 'lieferant-a.example'));
   for (const [n, xml] of Object.entries(RECHNUNGEN)) fs.writeFileSync(path.join(monat, `${n}.xml`), xml);
-  belege.push(beleg('ohne-xml', 'lieferant-a.example', { xmlDatei: undefined }));
+  belege.push(beleg('ohne-xml', 'lieferant-a.example', { xmlDatei: undefined, tag: '2026-11-02' }));
   belege.push(beleg('einzug', 'lieferant-b.example'));
   belege.push(beleg('fremd', 'lieferant-c.example'));
   belege.push(beleg('lieferschein', 'lieferant-a.example', { rolle: 'beilage' }));
@@ -77,9 +77,9 @@ test('IBAN-Pruefziffer und Lauftage', () => {
   assert.equal(ibanGueltig(LIEFER), true);
   assert.equal(ibanGueltig(LIEFER.replace(/.$/, c => (c === '9' ? '8' : '9'))), false);
   assert.equal(ibanGueltig('DE12'), false);
-  assert.equal(naechsterLauf('2026-11-10'), '2026-11-12');
-  assert.equal(naechsterLauf('2026-11-12'), '2026-11-16');
-  assert.equal(naechsterLauf('2026-11-16'), '2026-11-19');
+  assert.equal(naechsterLauf('2026-11-10'), '2026-11-13');
+  assert.equal(naechsterLauf('2026-11-13'), '2026-11-20');
+  assert.equal(naechsterLauf('2026-11-19'), '2026-11-20');
 });
 
 test('Zahlungsbedingungen: mit Skonto, ohne Skonto, nicht sicher', () => {
@@ -125,7 +125,7 @@ test('Lauf mit Kontoauszug: Skonto offen, verfallen, bezahlt, unlesbar, Gutschri
   assert.equal(statusVon(liste, '700006'), 'Gutschrift');
   assert.equal(statusVon(liste, '700007'), 'UNKLAR');
   assert.equal(statusVon(liste, '700008'), 'UNKLAR');
-  assert.match(liste, /UNKLAR;[^\r]*keine XML-Rechnung/);
+  assert.match(liste, /UNKLAR;[^\r]*PDF-Text nicht lesbar/);
   assert.match(liste, /Lastschrift;/);
 
   // Zweiter Lauf: was schon in einer Datei steht, wird nie ein zweites Mal ueberwiesen.
@@ -237,4 +237,42 @@ test('Rechnungsnummer zaehlt im Zweck nur als eigenes Wort', () => {
   fs.writeFileSync(path.join(ordner, 'u.csv'), `Buchungstag;Buchungstext;Verwendungszweck;Beguenstigter;IBAN;Betrag\n09.11.2026;Überweisung;Kd 47110700001 Abschlag;Muster & Söhne GmbH;${LIEFER};-12,00\n`);
   const e = sammelLauf({ privat, jetzt: HEUTE });
   assert.equal(statusVon(listeLesen(privat, e), '700001'), 'IN DATEI');
+});
+
+const PDF_TEXT = `Rechnung Nr. R-2026-501\nRechnungsdatum 03.11.2026\nGesamtbetrag 1.234,50 EUR\nBitte überweisen Sie auf IBAN ${LIEFER.replace(/(.{4})/g, '$1 ')}\n`;
+
+test('PDF-Rechnung: Nummer, Betrag und IBAN muessen im Text stehen; Einzug, Vorkasse, Gutschrift sind unklar', () => {
+  const r = { text: PDF_TEXT, nummer: 'R-2026-501', brutto: 1234.5, waehrung: 'EUR', datum: '2026-11-03' };
+  assert.equal(pdfRechnungPruefen({ ...r, waehrung: 'CHF' }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...r, waehrung: null }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen(r, { iban: LIEFER }).status, 'ok');
+  assert.equal(pdfRechnungPruefen(r, { iban: FREMD }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...r, brutto: 234.5 }, { iban: LIEFER }).status, 'unklar'); // 234,50 steckt nur in 1.234,50
+  assert.equal(pdfRechnungPruefen({ ...r, nummer: 'R-2026-999' }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...r, brutto: null }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...r, text: '' }, { iban: LIEFER }).status, 'unklar');
+  for (const satz of ['Der Betrag wird per SEPA-Lastschrift eingezogen.', 'Betrag dankend erhalten.', 'Gutschrift Nr. 5', 'Anzahlung 30 %', 'Bei Zahlung bis 10.11. 2 % Skonto'])
+    assert.equal(pdfRechnungPruefen({ ...r, text: `${PDF_TEXT}${satz}` }, { iban: LIEFER }).status, 'unklar', satz);
+});
+
+test('PDF-Rechnung im Lauf: nur mit aktuellem Auszug in die Datei, voller Betrag; aeltere als der Start bleiben draussen', () => {
+  const privat = privatOrdner();
+  const monat = path.join(privat, 'belege-archiv', '2026', '11');
+  fs.mkdirSync(monat, { recursive: true });
+  for (const n of ['neu', 'alt']) fs.writeFileSync(path.join(monat, `${n}.pdf`), '%PDF-1.4 erfunden');
+  const pdfBeleg = (datei, tag) => ({ datei, format: 'pdf', pdfLesbar: true, rolle: 'rechnung', anbieterSchluessel: 'lieferant-a.example', dublette: null, rechnungsnummer: 'R-2026-501', brutto: 1234.5, waehrung: 'EUR', tag });
+  fs.writeFileSync(path.join(monat, 'manifest.json'), JSON.stringify({ belege: [pdfBeleg('neu.pdf', '2026-11-03'), pdfBeleg('alt.pdf', '2026-10-20')] }));
+  const pdf = () => ({ text: PDF_TEXT });
+
+  // Auszug reicht bis 06.11.: am 10.11. aktuell genug
+  const e = sammelLauf({ privat, schreiben: true, jetzt: HEUTE, pdf });
+  assert.equal(e.pdfVorStart, 1);
+  assert.equal(statusVon(listeLesen(privat, e), 'R-2026-501'), 'IN DATEI');
+  assert.match(fs.readFileSync(path.join(privat, 'zahlungen', e.datei), 'utf8'), /<InstdAmt Ccy="EUR">1234\.50<\/InstdAmt>[\s\S]*<Ustrd>RE R-2026-501 Kd 4711<\/Ustrd>/);
+
+  // Veralteter Auszug: PDF-Rechnung nicht in die Datei
+  const privat2 = privatOrdner();
+  fs.cpSync(monat, path.join(privat2, 'belege-archiv', '2026', '11'), { recursive: true });
+  const spaet = sammelLauf({ privat: privat2, jetzt: new Date('2026-11-13T09:00:00Z'), pdf });
+  assert.match(listeLesen(privat2, spaet), /UNKLAR;[^\r]*R-2026-501[^\r]*nur mit aktuellem Kontoauszug/);
 });

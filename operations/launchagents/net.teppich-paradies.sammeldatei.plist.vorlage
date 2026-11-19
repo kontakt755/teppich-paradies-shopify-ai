@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.sammeldatei</string>
+
+  <!-- SEPA-Sammeldatei fuer Lieferantenrechnungen ohne Lastschrift (Benutzer 19.11.2026: freitags).
+       Holt erst die Rechnungen des laufenden Monats ins Archiv (in der ersten Monatswoche auch die
+       des Vormonats), dann baut operations/scripts/zahlung-sammeldatei.mjs Datei und Pruefliste unter
+       $TP_PRIVAT_DIR/zahlungen/. Loest keine Zahlung aus: hochladen und freigeben macht der Inhaber
+       bei der Bank. Reine PDF-Rechnungen kommen nur mit aktuellem Kontoauszug in die Datei
+       (Umsatz-Export vorher nach laden-entlastung-2026-11/bank-export/ legen).
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-sammeldatei -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>date; m=$(date +%Y-%m); v=$(date -v-1m +%Y-%m); if [ "$(date +%d)" -le 7 ]; then __NODE_PFAD__ operations/scripts/belege-monat.mjs --monat "$v" --schreiben || exit 1; fi; __NODE_PFAD__ operations/scripts/belege-monat.mjs --monat "$m" --schreiben || exit 1; exec __NODE_PFAD__ operations/scripts/zahlung-sammeldatei.mjs --schreiben</string>
+  </array>
+  <key>WorkingDirectory</key><string>__HOME__/tp-dashboard</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>PATH</key><string>__NODE_DIR__:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+  <!-- Wochentag 5 ist Freitag. Verpasste Zeiten im Ruhezustand holt launchd beim Aufwachen nach. -->
+  <key>StartCalendarInterval</key>
+  <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>ProcessType</key><string>Background</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/teppich-paradies-sammeldatei.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/teppich-paradies-sammeldatei.log</string>
+</dict>
+</plist>

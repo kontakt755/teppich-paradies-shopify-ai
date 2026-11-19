@@ -14,6 +14,7 @@
 #   bash operations/scripts/dienste-einrichten.sh --routinen
 #   bash operations/scripts/dienste-einrichten.sh --postfach-entwuerfe
 #   bash operations/scripts/dienste-einrichten.sh --gel-diesel
+#   bash operations/scripts/dienste-einrichten.sh --sammeldatei
 #
 # --gel-diesel richtet net.teppich-paradies.gel-diesel ein: traegt den woechentlichen Dieselzuschlag
 # der Spedition (GEL) dienstags und montags 9:30 Uhr in die private Tarifdatei ein
@@ -59,9 +60,10 @@ SICHERUNG_LABEL="net.teppich-paradies.sicherung"
 AUSSER_HAUS_LABEL="net.teppich-paradies.sicherung-ausser-haus"
 NACHZIEHEN_LABEL="net.teppich-paradies.nachziehen"
 GEL_DIESEL_LABEL="net.teppich-paradies.gel-diesel"
+SAMMELDATEI_LABEL="net.teppich-paradies.sammeldatei"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--sammeldatei" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --sammeldatei]\n' >&2
   exit 1
 fi
 
@@ -250,6 +252,22 @@ gel_diesel_einrichten() {
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-gel-diesel.log"
 }
 
+sammeldatei_einrichten() {
+  schritt "SEPA-Sammeldatei freitags 10 Uhr (${SAMMELDATEI_LABEL})"
+  if [[ ! -f "${HOME}/teppich-paradies-analyse/zahlungen/konfiguration.json" ]]; then
+    fehler "Konfiguration fehlt: ~/teppich-paradies-analyse/zahlungen/konfiguration.json"
+    return 1
+  fi
+  vorlage_einrichten "${SAMMELDATEI_LABEL}" || return 1
+  ok "Eingerichtet: freitags 10 Uhr Belege archivieren, dann Sammeldatei und Pruefliste schreiben."
+  hinweis "Vorher den Umsatz-Export der Bank nach ~/teppich-paradies-analyse/laden-entlastung-2026-11/bank-export/ legen."
+  hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-sammeldatei.log"
+}
+
+if [[ "${1:-}" == "--sammeldatei" ]]; then
+  sammeldatei_einrichten
+  exit 0
+fi
 if [[ "${1:-}" == "--gel-diesel" ]]; then
   gel_diesel_einrichten
   exit 0
