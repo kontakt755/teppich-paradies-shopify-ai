@@ -47,6 +47,14 @@
 
   Kein eigener Knopf "Bestellstatus ansehen": die Standardvorlage hat darunter
   schon "Bestellung ansehen" (im Admin so entfernt, uebernommen 2026-10-28).
+
+  Musterversand gegen Gebuehr (Test 01.12.2026 bis 31.01.2027): Der Kasten
+  zwischen TP-MUSTERGEBUEHR START/ENDE erscheint nur bei reiner
+  Musterbestellung mit bezahltem Versand (shipping_price > 0). Verzweigt wird
+  ueber den Betrag, nicht ueber das Datum: fruehere Gratisbestellungen und
+  Mischbestellungen (dort faellt keine Mustergebuehr an) bekommen ihn nicht.
+  Der Gutscheincode steht nie in dieser Datei, er kommt aus dem Shop-Metafeld
+  custom.muster_gutscheincode. Rueckbau: Text zwischen den Markierungen loeschen.
 {%- endcomment -%}
 
 {%- liquid
@@ -126,6 +134,12 @@
   else
     assign tp_k_typ = 'misch'
   endif
+  assign tp_k_gebuehr = false
+  if tp_k_typ == 'muster' and shipping_price > 0
+    assign tp_k_gebuehr = true
+  endif
+  assign tp_k_code_feld = shop.metafields.custom.muster_gutscheincode
+  assign tp_k_code = tp_k_code_feld.value | default: tp_k_code_feld | strip
   assign tp_k_beratung = attributes['Beratung']
   assign tp_k_telefon = attributes['Telefon']
   assign tp_k_zeit = attributes['Rückruf']
@@ -145,9 +159,9 @@
   {%- if tp_k_typ == 'muster' -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Musterbestellung bei Teppich Paradies.</p>
     {%- if tp_k_hersteller > 0 -%}
-      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) kommen kostenlos per Post zu Ihnen. Muster mit dem Hinweis „direkt vom Hersteller“ schickt der Hersteller selbst an Sie – auch in getrennten Umschlägen und zu unterschiedlichen Zeiten. So holen Sie das meiste heraus:</p>
+      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) kommen per Post zu Ihnen. Muster mit dem Hinweis „direkt vom Hersteller“ schickt der Hersteller selbst an Sie – auch in getrennten Umschlägen und zu unterschiedlichen Zeiten. So holen Sie das meiste heraus:</p>
     {%- else -%}
-      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) gehen in den nächsten Werktagen kostenlos per Post an Sie raus. So holen Sie das meiste heraus:</p>
+      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) gehen in den nächsten Werktagen per Post an Sie raus. So holen Sie das meiste heraus:</p>
     {%- endif -%}
     <ul style="margin:0 0 16px;padding-left:20px;">
       <li>Legen Sie die Muster dort aus, wo der Boden später liegt – und schauen Sie sie bei Tageslicht und bei Kunstlicht an.</li>
@@ -174,12 +188,26 @@
       {%- endfor -%}
     </ul>
     <p style="margin:0 0 16px;">Gefällt Ihnen ein Muster? Über die Links oben kommen Sie direkt zurück zum Produkt und können Ihre Maße eingeben.</p>
+    {%- comment -%} TP-MUSTERGEBUEHR START {%- endcomment -%}
+    {%- if tp_k_gebuehr -%}
+      <div style="margin:0 0 16px;padding:14px 16px;background:#f7f3ee;border-radius:8px;">
+        <p style="margin:0 0 4px;font-weight:bold;">Musterversand: {{ shipping_price | money }}</p>
+        <p style="margin:0 0 8px;">Wenn Sie später bei uns bestellen, rechnen wir Ihnen 4,99 € an.</p>
+        {%- if tp_k_code != blank -%}
+          <p style="margin:0 0 8px;">Ihr Gutscheincode: <strong style="font-size:17px;letter-spacing:1px;">{{ tp_k_code | escape }}</strong></p>
+        {%- else -%}
+          <p style="margin:0 0 8px;">Ihren Gutscheincode nennen wir Ihnen gern: 03301 573 37 20 oder einfach per Antwort auf diese E-Mail.</p>
+        {%- endif -%}
+        <p style="margin:0;font-size:13px;line-height:1.5;color:#5e5853;">Gilt ab 150 € Warenwert, einmal einlösbar bis 31.03.2027. Code im Warenkorb eingeben. Nicht mit anderen Gutscheincodes kombinierbar.</p>
+      </div>
+    {%- endif -%}
+    {%- comment -%} TP-MUSTERGEBUEHR ENDE {%- endcomment -%}
   {%- elsif tp_k_typ == 'misch' -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>
     {%- if tp_k_abholung -%}
-      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster kommen per Post zu Ihnen{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware holen Sie bei uns im Laden ab. Wir melden uns, sobald sie zur Abholung bereitliegt – bitte kommen Sie erst nach unserer Nachricht.</p>
+      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und Muster. Die Muster kommen per Post zu Ihnen{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware holen Sie bei uns im Laden ab. Wir melden uns, sobald sie zur Abholung bereitliegt – bitte kommen Sie erst nach unserer Nachricht.</p>
     {%- else -%}
-      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster gehen vorab per Post raus{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware bereiten wir für den Versand vor. Wir melden uns, sobald die Ware unterwegs ist.</p>
+      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und Muster. Die Muster gehen vorab per Post raus{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware bereiten wir für den Versand vor. Wir melden uns, sobald die Ware unterwegs ist.</p>
     {%- endif -%}
   {%- else -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>

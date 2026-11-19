@@ -11,6 +11,8 @@ const B = join(root, 'domains', 'shopify', 'benachrichtigungen');
 const bestell = readFileSync(join(B, 'bestellbestaetigung-block.liquid'), 'utf8');
 const versand = readFileSync(join(B, 'versandbestaetigung-block.liquid'), 'utf8');
 const eng = new Liquid();
+// Shopify-Filter money im Format des Shops ("{{amount_with_comma_separator}} €"), Eingabe in Cent
+eng.registerFilter('money', (cent) => `${(Number(cent) / 100).toFixed(2).replace('.', ',')} €`);
 const P = (o) => Object.entries(o);
 const line = (title, sku, props = {}, variant_title = '') => ({ title, sku, quantity: 1, variant_title, properties: P(props) });
 const base = { name: '#1010', order_status_url: 'https://shop/status', billing_address: { first_name: 'Anna', last_name: 'Muster' }, customer: {} };
@@ -35,7 +37,7 @@ test('Warenbestellung mit Beratung, Masspruefung und Verlegung bestaetigt alle d
 
 test('Mischbestellung und Bestellung ohne Angaben', async () => {
   const misch = await eng.parseAndRender(bestell, { ...base, attributes: { Beratung: 'Nein' }, line_items: [line('Piumera', 'TEPDOLCE4_004'), line('Kostenloses Muster', 'TP-MUSTER-000')] });
-  assert.match(misch, /Ware und kostenlose Muster/);
+  assert.match(misch, /Ware und Muster\./);
   assert.match(misch, /Fragen zu Ihrer Bestellung\? Rufen Sie uns an/);
   assert.doesNotMatch(misch, /So geht es weiter/);
 });
@@ -94,7 +96,7 @@ test('#25 Herstellermuster (M-VW-, M-JAB-): direkt vom Hersteller, getrennte Ums
   const jab = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [line('Muster Testvinyl', 'M-JAB-TEST-1'), line('Testleiste', 'TEST_1')] });
   assert.match(jab, /einige direkt vom Hersteller und in getrennten Umschlägen/);
   const eigen = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [line('Muster Testvelours', 'M-TEST_036')] });
-  assert.match(eigen, /in den nächsten Werktagen kostenlos per Post/);
+  assert.match(eigen, /in den nächsten Werktagen per Post/);
   assert.doesNotMatch(eigen, /Hersteller/);
 });
 
@@ -232,6 +234,62 @@ test('Musterkasten: nur bei Mustern in dieser Sendung, Mischsendung nennt nur da
   assert.match(misch, /&lt;b&gt;Testvinyl&lt;\/b&gt;<\/strong> – Eiche/);
   assert.doesNotMatch(misch, /<b>Testvinyl|<strong>Testleiste/);
   assert.ok(misch.includes('products/a%22b%2F..%2Fx?utm_source'), 'fremder Handle bleibt im Shop-Pfad');
+});
+
+// ---- Musterversand gegen Gebuehr (Test 01.12.2026 bis 31.01.2027): Gutscheinkasten nur ueber den Versandbetrag
+const CODE = 'TESTCODE-NUR-IM-TEST';
+const mitCode = { shop: { email: 'laden@example.com', metafields: { custom: { muster_gutscheincode: { value: CODE } } } } };
+const KASTEN = /Gilt ab 150 € Warenwert, einmal einlösbar bis 31\.03\.2027\. Code im Warenkorb eingeben\. Nicht mit anderen Gutscheincodes kombinierbar\./;
+const musterzeile = line('Muster Testvelours', 'M-TEST_036', { _Muster_ID: 'x' });
+const warenzeile = line('Testleiste', 'TEST_1');
+
+test('Mustergebuehr Bestellmail: Kasten mit Preis, Code und Bedingungen nur bei reiner Musterbestellung mit bezahltem Versand', async () => {
+  const bezahlt = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, shipping_price: 499, line_items: [musterzeile] });
+  assert.match(bezahlt, /Musterversand: 4,99 €/);
+  assert.match(bezahlt, new RegExp(`Ihr Gutscheincode: <strong[^>]*>${CODE}</strong>`));
+  assert.match(bezahlt, KASTEN);
+  for (const [fall, ctx] of Object.entries({
+    'fruehere Gratisbestellung': { shipping_price: 0, line_items: [musterzeile] },
+    'ohne Versandbetrag': { line_items: [musterzeile] },
+    'Mischbestellung mit Versandkosten': { shipping_price: 499, line_items: [warenzeile, musterzeile] },
+    'Warenbestellung mit Versandkosten': { shipping_price: 499, line_items: [warenzeile] },
+  })) {
+    const html = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, ...ctx });
+    assert.doesNotMatch(html, /Gutschein|Musterversand|4,99|150 €/, fall);
+    assert.ok(!html.includes(CODE), fall);
+  }
+});
+
+test('Mustergebuehr Versandmail: Gutschein im Musterkasten nur bei reiner Musterbestellung mit bezahltem Versand', async () => {
+  const sendung = [mfl('M-TEST_036', 'Muster Testvelours', 'Sand', { _Muster_ID: 'x', _Quellprodukt: 'testvelours' })];
+  const bezahlt = await eng.parseAndRender(versand, { ...vctx(sendung), ...mitCode, shipping_price: 499, line_items: [musterzeile] });
+  assert.match(bezahlt, /rechnen wir Ihnen die 4,99 € für den Musterversand an/);
+  assert.match(bezahlt, new RegExp(`Ihr Gutscheincode: <strong[^>]*>${CODE}</strong>`));
+  assert.match(bezahlt, KASTEN);
+  for (const [fall, ctx] of Object.entries({
+    'fruehere Gratisbestellung': { shipping_price: 0, line_items: [musterzeile] },
+    'Mischbestellung, Muster reisen allein': { shipping_price: 499, line_items: [warenzeile, musterzeile] },
+    'Bestellliste fehlt': { shipping_price: 499 },
+  })) {
+    const html = await eng.parseAndRender(versand, { ...vctx(sendung), ...mitCode, ...ctx });
+    assert.match(html, /Ihr Muster ist unterwegs/, fall);
+    assert.doesNotMatch(html, /Gutschein|4,99|150 €/, fall);
+    assert.ok(!html.includes(CODE), fall);
+  }
+});
+
+test('Mustergebuehr: ohne Metafeld kein leerer Code, Eingabe escaped, kein "kostenlos" mehr und kein Code in den Dateien', async () => {
+  const ohne = await eng.parseAndRender(bestell, { ...base, attributes: {}, shipping_price: 499, line_items: [musterzeile] });
+  assert.match(ohne, /Ihren Gutscheincode nennen wir Ihnen gern: 03301 573 37 20/);
+  assert.doesNotMatch(ohne, /Ihr Gutscheincode:/);
+  // Metafeld ohne Definition kann als blosser Text ankommen
+  const text = await eng.parseAndRender(bestell, { ...base, attributes: {}, shipping_price: 499, line_items: [musterzeile], shop: { metafields: { custom: { muster_gutscheincode: '<b>X1</b>' } } } });
+  assert.match(text, /&lt;b&gt;X1&lt;\/b&gt;<\/strong>/);
+  for (const [name, quelle] of [['Bestellmail', bestell], ['Versandmail', versand]]) {
+    assert.doesNotMatch(quelle.replace(/\{%-? comment[\s\S]*?endcomment -?%\}/g, ''), /kostenlos|gratis/i, name);
+    // Der echte Code gehoert ins Shop-Metafeld, nie ins oeffentliche Repository
+    assert.doesNotMatch(quelle, /Gutscheincode:\s*<strong[^>]*>(?!\{\{)/, name);
+  }
 });
 
 // ---- Ratgeber zur Bestellung: Produkttyp waehlt den Kurz-Ratgeber (PDF)
