@@ -144,7 +144,7 @@ export function csvLesen(text) {
     }
     if (betrag !== null && spalten.sollHaben >= 0 && /^s/i.test(wert(f, spalten.sollHaben))) betrag = -Math.abs(betrag);
     if (!datum || betrag === null) {
-      if (f.some(Boolean)) { nichtLesbar += 1; if (!/saldo|kontostand|summe/i.test(f.join(' '))) unlesbareBuchungen += 1; }
+      if (f.some(Boolean)) { nichtLesbar += 1; if (!/^\s*(end|anfangs|schluss)?saldo|kontostand|summe/i.test(wert(f, spalten.datum))) unlesbareBuchungen += 1; }
       continue;
     }
     const zweck = wert(f, spalten.zweck);
