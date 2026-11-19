@@ -233,6 +233,18 @@ Produkttyp). Inhalte, Druck und Zuordnung: `../ratgeber-pdf/README.md`.
   HTML-Titel. Betreff im Admin: „Eine Sendung aus der Bestellung {{ name }} ist
   unterwegs“. Die Zeile „Trackingnummer“ erscheint nur, wenn eine Nummer
   eingetragen ist. Musterbriefe aus der Packstation haben keine (#1811).
+  **Stand 2026-11-19 (abgeglichen per Prüfsumme):** Der Absatz oben ist
+  überholt – im Admin steht `versandbestaetigung-block.liquid` 1:1, also mit
+  Tracking-Teil, Speditionshinweis, Maßzeilen und Bestellstatus-Link.
+- **Musterkasten in der Versandbestätigung (seit 2026-11-19, Freigabe Inhaber):**
+  Zwischen den Markierungen `TP-MUSTER-VERSANDMAIL START/ENDE`, nach dem
+  Speditionshinweis und vor „Inhalt dieser Sendung“. Erscheint nur, wenn in
+  dieser Sendung ein Muster steckt (SKU `M-…`, `TP-MUSTER-000`, Property
+  `_Muster_ID`): je Muster ein Link auf die Farbe und ein Knopf zum Rechner
+  (`utm_campaign=muster-versandmail`), Telefonnummer, Satz zum
+  Widerspruchsrecht. Kein Rabatt, keine Preise. Der Block prüft die Stoppliste
+  des Nachfass-Dienstes nicht. Rückbau: Text zwischen den beiden Markierungen
+  löschen (Admin und hier).
 
 Abgleich ohne Abschreiben: im Editor den Block über den Kopfkommentar suchen
 und gegen `raw.githubusercontent.com/<repo>/<commit>/…` vergleichen
