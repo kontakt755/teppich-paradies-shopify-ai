@@ -10,7 +10,7 @@
  * Kontodaten, Namen und Betraege stehen nur im Privatordner.
  */
 
-import { xmlRechnungLesen, betragLesen } from './belege.mjs';
+import { xmlRechnungLesen, betragLesen, pdfTextLesen } from './belege.mjs';
 import { datumLesen, namePasst, csvFeld, csvZeile, abschnitte, ersterAbschnitt as abschnitt, blatt } from './belege-bank.mjs';
 
 const cent = n => Math.round(n * 100);
@@ -122,7 +122,10 @@ export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0 }) {
   const alle = [...String(text ?? '').matchAll(/#SKONTO#TAGE=(\d{1,3})#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#(?:BASISBETRAG=(\d+(?:\.\d{1,2})?)#)?(?![A-Z]+=)/gi)];
   if (alle.length !== (String(text ?? '').match(/#SKONTO#/gi) || []).length) return null;
   const treffer = alle.filter(m => Number(m[2]) > 0);
-  if (treffer.length !== 1 || !/^\d{4}-\d{2}-\d{2}$/.test(datum || '') || !(brutto > 0)) return null;
+  // Echter Kalendertag, sonst wirft tagPlus und der ganze Lauf bricht ab.
+  const tag = /^\d{4}-\d{2}-\d{2}$/.test(datum || '') ? new Date(`${datum}T00:00:00Z`) : null;
+  const tagOk = Boolean(tag) && !Number.isNaN(tag.getTime()) && tag.toISOString().slice(0, 10) === datum;
+  if (treffer.length !== 1 || !tagOk || !(brutto > 0)) return null;
   const [, tage, prozent, basisText] = treffer[0];
   // Zuschlaege (Fracht) ohne angegebene Basis: Skontobasis unbekannt, lieber voll zahlen als zu wenig.
   if (basisText === undefined && zuschlaege > 0) return { nettoFaellig: null, nettoBetrag: brutto, skonto: null, vollerBetrag: true };
@@ -150,19 +153,14 @@ export const pdfTextGlaetten = text => String(text ?? '')
   .replace(/\b(?:[A-Za-zÄÖÜäöü] ){3,}[A-Za-zÄÖÜäöü]\b/g, m => m.replace(/ /g, ''))
   .replace(/(\d) +, *(\d{2})(?!\d)/g, '$1,$2');
 
-/** Nur ein eindeutiger Treffer zaehlt; zwei verschiedene Werte heisst: nicht sicher. */
-const einzig = (text, re) => {
-  const werte = [...new Set([...text.matchAll(re)].map(m => m[1]))];
-  return werte.length === 1 ? werte[0] : null;
-};
-
 export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { iban }) {
   const t = pdfTextGlaetten(text);
-  // Fehlen Nummer oder Betrag im Archiv, aus dem PDF – nur mit eindeutigem Stichwort.
-  nummer ||= einzig(t, /Rechnung\s*(?:Nr\.?|Nummer)\s*:?\s*([A-Z0-9][A-Z0-9/._-]{3,29})/gi);
-  // Nur ganze Stichwoerter (nicht „Nettogesamtbetrag“); verschiedene Endbetraege heisst: nicht sicher.
-  if (brutto === null || brutto === undefined) {
-    brutto = betragLesen(einzig(t, /(?<![A-Za-zÄÖÜäöüß-])(?:Gesamtbetrag|Rechnungsbetrag|Rechnungsendbetrag|Endbetrag|Zahlbetrag)\s*:?\s*(?:EUR|€)?\s*(\d{1,3}(?:\.\d{3})*,\d{2})(?!\d)/gi) ?? '');
+  // Fehlen Nummer oder Betrag im Archiv: derselbe Leser wie belege:monat, auf dem geglaetteten Text
+  // (er schliesst Netto-Zeilen aus und gibt bei mehreren verschiedenen Betraegen nichts zurueck).
+  if (!nummer || brutto === null || brutto === undefined) {
+    const felder = pdfTextLesen(t);
+    nummer ||= felder.nummer ?? null;
+    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? null;
   }
   const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true };
   const unklar = grund => ({ ...kopf, status: 'unklar', grund });

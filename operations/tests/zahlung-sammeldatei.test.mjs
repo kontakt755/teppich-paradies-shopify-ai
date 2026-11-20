@@ -411,3 +411,10 @@ test('Review-Faelle: Nettogesamtbetrag ist kein Endbetrag, unlesbare Skontobasis
   const liste = 'Kopf\r\nzweite\r\nIN DATEI;"Lieferant A; Abteilung B";R-1;2026-11-19;10,00;;;;10,00;voller Betrag;x.pdf\r\n';
   assert.match(mailInhalt(liste, { lauf: '2026-11-20', datei: 'd.xml', zahlungen: 1, summe: 10 }).text, /- Lieferant A; Abteilung B, Rechnung R-1 vom 2026-11-19: 10,00 EUR \(voller Betrag\)/);
 });
+
+test('Review Runde 2: „Netto Gesamtbetrag“ zaehlt nicht, unmoegliches Datum sperrt ohne Abbruch', () => {
+  const text = `Rechnung Nr. 900101\nIBAN ${LIEFER}\nNetto Gesamtbetrag EUR 100 , 00\nRechnungssumme EUR 119 , 00\n`;
+  assert.equal(pdfRechnungPruefen({ text, nummer: null, brutto: null, waehrung: 'EUR' }, { iban: LIEFER }).brutto, 119);
+  assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=4.00#', { datum: '2026-13-01', brutto: 100 }), null);
+  assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=4.00#', { datum: '2026-02-30', brutto: 100 }), null);
+});
