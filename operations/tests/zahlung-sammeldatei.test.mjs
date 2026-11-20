@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen } from '../lib/zahlung-sammeldatei.mjs';
-import { sammelLauf } from '../scripts/zahlung-sammeldatei.mjs';
+import { ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt } from '../lib/zahlung-sammeldatei.mjs';
+import { sammelLauf, laufMailen } from '../scripts/zahlung-sammeldatei.mjs';
 
 // Alle Daten erfunden. IBANs aus Fantasie-Kontonummern mit gerechneter Pruefziffer.
 function erfundeneIban(konto) {
@@ -249,7 +249,8 @@ test('PDF-Rechnung: Nummer, Betrag und IBAN muessen im Text stehen; Einzug, Vork
   assert.equal(pdfRechnungPruefen(r, { iban: FREMD }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ ...r, brutto: 234.5 }, { iban: LIEFER }).status, 'unklar'); // 234,50 steckt nur in 1.234,50
   assert.equal(pdfRechnungPruefen({ ...r, nummer: 'R-2026-999' }, { iban: LIEFER }).status, 'unklar');
-  assert.equal(pdfRechnungPruefen({ ...r, brutto: null }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...r, brutto: null }, { iban: LIEFER }).brutto, 1234.5); // aus „Gesamtbetrag“
+  assert.equal(pdfRechnungPruefen({ ...r, brutto: null, text: PDF_TEXT.replace('Gesamtbetrag', 'Summe') }, { iban: LIEFER }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ ...r, text: '' }, { iban: LIEFER }).status, 'unklar');
   for (const satz of ['Der Betrag wird per SEPA-Lastschrift eingezogen.', 'Betrag dankend erhalten.', 'Gutschrift Nr. 5', 'Anzahlung 30 %', 'Bei Zahlung bis 10.11. 2 % Skonto'])
     assert.equal(pdfRechnungPruefen({ ...r, text: `${PDF_TEXT}${satz}` }, { iban: LIEFER }).status, 'unklar', satz);
@@ -352,8 +353,50 @@ test('Strukturiertes Skonto (ApplicableTradePaymentDiscountTerms): nicht voll fr
   assert.equal(rechnungPruefen(xml, { iban: LIEFER }).status, 'unklar');
 });
 
-test('Lexware-Kennung mit 0 % Skonto ist kein Skonto, mit 2 % schon', () => {
+test('Lexware-Kennung mit 0 % Skonto ist kein Skonto, mit 2 % wird es gerechnet', () => {
   const mit = p => rechnungXml({ nummer: '700014', brutto: '120.00', bedingungen: `Zahlbar per Überweisung bis zum 25.11.2026#SKONTO#TAGE=7#PROZENT=${p}#` });
   assert.equal(rechnungPruefen(mit('0.00'), { iban: LIEFER }).status, 'ok');
-  assert.equal(rechnungPruefen(mit('2.00'), { iban: LIEFER }).status, 'unklar');
+  assert.deepEqual(rechnungPruefen(mit('2.00'), { iban: LIEFER }).skonto, { bis: '2026-11-04', betrag: 2.4, zahlbetrag: 117.6 }); // XRechnung-Skonto ab Rechnungsdatum 28.10.
+});
+
+test('XRechnung-Skonto „#SKONTO#TAGE#PROZENT#“: Frist ab Rechnungsdatum, mit Fracht ohne Basis voller Betrag', () => {
+  assert.deepEqual(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=04.00#', { datum: '2026-11-19', brutto: 71.53 }),
+    { nettoFaellig: null, nettoBetrag: 71.53, skonto: { bis: '2026-11-29', betrag: 2.86, zahlbetrag: 68.67 } });
+  assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=04.00#', { datum: '2026-11-19', brutto: 71.53, zuschlaege: 27.85 }).vollerBetrag, true);
+  assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=04.00##SKONTO#TAGE=20#PROZENT=02.00#', { datum: '2026-11-19', brutto: 71.53 }), null);
+  assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=09.00#', { datum: '2026-11-19', brutto: 71.53 }), null);
+  // XML ohne Empfaengerkonto: IBAN muss im PDF stehen
+  const xml = rechnungXml({ nummer: '700020', brutto: '100.00', bedingungen: '#SKONTO#TAGE=10#PROZENT=02.00#' }).replace(/<ram:PayeePartyCreditorFinancialAccount>.*?<\/ram:PayeePartyCreditorFinancialAccount>/, '');
+  const ok = rechnungPruefen(xml, { iban: LIEFER }, () => `Bankverbindung IBAN ${LIEFER}`);
+  assert.equal(ok.status, 'ok');
+  assert.deepEqual(ok.skonto, { bis: '2026-11-07', betrag: 2, zahlbetrag: 98 });
+  assert.equal(rechnungPruefen(xml, { iban: LIEFER }, () => `IBAN ${FREMD}`).status, 'unklar');
+});
+
+test('PDF in gesperrter Schrift (Spedition): Nummer und Betrag aus dem PDF, nur eindeutig', () => {
+  const text = `R e c h n u n g  Nr. 17718713  Kunde: 22627\nIBAN: ${LIEFER}\nNetto-Zwischensumme EUR 53 , 47\nGesamtbetrag EUR 63 , 63\n`;
+  const r = pdfRechnungPruefen({ text, nummer: null, brutto: null, waehrung: 'EUR', datum: '2026-11-16' }, { iban: LIEFER });
+  assert.equal(r.status, 'ok');
+  assert.equal(r.nummer, '17718713');
+  assert.equal(r.brutto, 63.63);
+  assert.equal(pdfRechnungPruefen({ text: `${text}Gesamtbetrag EUR 70 , 00\n`, nummer: null, brutto: null, waehrung: 'EUR' }, { iban: LIEFER }).status, 'unklar');
+});
+
+test('Mail an den Laden: Text aus der Pruefliste, Datei und Liste im Anhang; ohne mailAn keine Mail', async () => {
+  const privat = privatOrdner();
+  const e = sammelLauf({ privat, schreiben: true, jetzt: HEUTE });
+  assert.equal(await laufMailen({ privat, ergebnis: e, senden: async () => assert.fail('darf nicht senden') }), 'keine Mail: mailAn fehlt in der Konfiguration');
+  const k = path.join(privat, 'zahlungen', 'konfiguration.json');
+  fs.writeFileSync(k, JSON.stringify({ ...JSON.parse(fs.readFileSync(k, 'utf8')), mailAn: 'laden@example.com' }));
+  fs.mkdirSync(path.join(privat, 'nachfassen'));
+  fs.writeFileSync(path.join(privat, 'nachfassen', 'postfach.json'), JSON.stringify({ host: 'smtp.example.com', port: 465, benutzer: 'a@example.com', passwort: 'x', absender: 'a@example.com' }), { mode: 0o600 });
+  let gesendet;
+  assert.equal(await laufMailen({ privat, ergebnis: e, senden: async (zugang, mail) => { gesendet = mail; } }), 'gesendet an laden@example.com');
+  assert.deepEqual(gesendet.an, ['laden@example.com']);
+  assert.equal(gesendet.betreff, 'Sammelüberweisung 2026-11-10: 3 Zahlungen, 1967,00 EUR');
+  assert.match(gesendet.text, /- Muster & Söhne GmbH, Rechnung 700001 vom 2026-10-28: 491,00 EUR \(mit Skonto\)/);
+  assert.match(gesendet.text, /Von Hand prüfen \(4\):/);
+  assert.deepEqual(gesendet.anhaenge.map(a => a.name), [e.datei, e.pruefliste]);
+  const { betreff } = mailInhalt('', { lauf: '2026-11-13', datei: null, zahlungen: 0, summe: 0 });
+  assert.equal(betreff, 'Sammelüberweisung 2026-11-13: keine Datei');
 });

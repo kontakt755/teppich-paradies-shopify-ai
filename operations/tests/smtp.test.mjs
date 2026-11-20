@@ -74,3 +74,13 @@ test('Zugang: ohne Verschluesselung nur lokal, host/port Pflicht', async () => {
   await assert.rejects(sendeMail({ host: '', port: 465 }, MAIL), /host, port/);
   await assert.rejects(sendeMail({ host: '127.0.0.1', port: 1, sicherheit: 'ssl' }, MAIL), /Unbekannte Verschlüsselung/);
 });
+
+test('Nachricht mit Anhang: multipart/mixed, Anhang base64, ungueltiger Dateiname bricht ab', () => {
+  const { daten } = baueNachricht({ von: 'a@example.com', an: ['b@example.com'], betreff: 'Datei', text: 'Hallo', anhaenge: [{ name: 'liste.csv', typ: 'text/csv', inhalt: Buffer.from('a;b\n1;2') }] });
+  const grenze = /boundary="([^"]+)"/.exec(daten)[1];
+  assert.match(daten, /Content-Type: multipart\/mixed/);
+  assert.equal(daten.split(`--${grenze}`).length, 4); // Text, Anhang, Schluss
+  assert.match(daten, /filename="liste.csv"/);
+  assert.ok(daten.includes(Buffer.from('a;b\n1;2').toString('base64')));
+  assert.throws(() => baueNachricht({ von: 'a@example.com', an: ['b@example.com'], betreff: 'x', text: 'y', anhaenge: [{ name: '../boese', typ: 'text/csv', inhalt: '' }] }), SmtpFehler);
+});

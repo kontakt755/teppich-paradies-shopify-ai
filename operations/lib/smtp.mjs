@@ -2,7 +2,8 @@
  * Kleiner SMTP-Versand ohne Fremdpaket (Muster-Nachfassen, Inhaberentscheidung w-119 vom
  * 2026-10-16: die Nachfrage geht automatisch vom Firmenpostfach raus).
  *
- * Bewusst klein: ein Empfaenger-Kreis je Mail, reiner Text, UTF-8. Kein Anhang, kein HTML.
+ * Bewusst klein: ein Empfaenger-Kreis je Mail, reiner Text, UTF-8, kein HTML. Anhaenge nur fuer
+ * interne Mails (Sammeldatei an den Laden).
  * Verbindung: implizites TLS (Port 465) oder STARTTLS (Port 587); "keine" Verschluesselung
  * gibt es nur fuer 127.0.0.1/localhost - das braucht der Test mit dem Fake-Server.
  * Anmeldung: AUTH PLAIN, sonst AUTH LOGIN. Das Passwort steht nie in einer Fehlermeldung.
@@ -68,9 +69,10 @@ function datumKopf(d) {
  * @param {string} p.text
  * @param {string} [p.messageId]
  * @param {Date|string} [p.datum]
+ * @param {{name: string, typ: string, inhalt: Buffer|string}[]} [p.anhaenge]
  * @returns {{ messageId: string, daten: string }}
  */
-export function baueNachricht({ von, an, betreff, text, messageId = null, datum = new Date() } = {}) {
+export function baueNachricht({ von, an, betreff, text, messageId = null, datum = new Date(), anhaenge = [] } = {}) {
   const vonAdresse = typeof von === 'string' ? adresse(von) : adresse(von?.adresse);
   if (!vonAdresse) throw new SmtpFehler('Absenderadresse fehlt oder ist ungültig', { schritt: 'nachricht' });
   const empfaenger = (Array.isArray(an) ? an : [an]).map(adresse).filter(Boolean);
@@ -84,10 +86,20 @@ export function baueNachricht({ von, an, betreff, text, messageId = null, datum 
     `Subject: ${kodiereKopf(betreff)}`,
     `Message-ID: ${id}`,
     'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset=utf-8',
-    'Content-Transfer-Encoding: base64',
   ];
-  return { messageId: id, daten: `${kopf.join('\r\n')}\r\n\r\n${rumpf.join('\r\n')}\r\n` };
+  const textTeil = ['Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64'];
+  if (!anhaenge.length) return { messageId: id, daten: `${[...kopf, ...textTeil].join('\r\n')}\r\n\r\n${rumpf.join('\r\n')}\r\n` };
+  const grenze = `=_tp_${randomUUID()}`;
+  const teile = [`${textTeil.join('\r\n')}\r\n\r\n${rumpf.join('\r\n')}`];
+  for (const a of anhaenge) {
+    const name = String(a?.name ?? '');
+    if (!/^[A-Za-z0-9._-]{1,100}$/.test(name)) throw new SmtpFehler('Anhang: Dateiname ungültig', { schritt: 'nachricht' });
+    if (!/^[a-z]+\/[a-z0-9.+-]+$/i.test(String(a?.typ ?? ''))) throw new SmtpFehler('Anhang: Dateityp ungültig', { schritt: 'nachricht' });
+    const b64 = Buffer.from(a.inhalt ?? '').toString('base64').match(/.{1,76}/g) || [];
+    teile.push(`Content-Type: ${a.typ}; name="${name}"\r\nContent-Disposition: attachment; filename="${name}"\r\nContent-Transfer-Encoding: base64\r\n\r\n${b64.join('\r\n')}`);
+  }
+  kopf.push(`Content-Type: multipart/mixed; boundary="${grenze}"`);
+  return { messageId: id, daten: `${kopf.join('\r\n')}\r\n\r\n${teile.map(t => `--${grenze}\r\n${t}\r\n`).join('')}--${grenze}--\r\n` };
 }
 
 /** Zeilen, die mit einem Punkt beginnen, bekommen im DATA-Block einen zweiten (RFC 5321, 4.5.2). */

@@ -27,7 +27,9 @@ import { fileURLToPath } from 'node:url';
 import { belegeOrdner, berlinTag, istPdf } from '../lib/belege.mjs';
 import { pdfAnalyse } from './belege-monat.mjs';
 import { auszugLesen } from '../lib/belege-bank.mjs';
-import { konfigPruefen, auswaehlen, painBauen, pruefliste, umsatzPdfLesen, tagPlus } from '../lib/zahlung-sammeldatei.mjs';
+import { konfigPruefen, auswaehlen, painBauen, pruefliste, umsatzPdfLesen, tagPlus, mailInhalt } from '../lib/zahlung-sammeldatei.mjs';
+import { lesePostfach, postfachPfad } from '../lib/nachfass-versand.mjs';
+import { sendeMail } from '../lib/smtp.mjs';
 
 const BANK_EXPORT = ['laden-entlastung-2026-11', 'bank-export'];
 // Reine PDF-Rechnungen erst ab hier: aeltere sind ueber die Bank bezahlt worden, bevor es die Datei gab.
@@ -59,7 +61,10 @@ function belegeLesen(privat, lieferanten, pdf) {
           belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, waehrung: b.waehrung || null, datum: tag || null } });
           continue;
         }
-        belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml });
+        // Fehlt in der XML das Empfaengerkonto, darf es im PDF derselben Mail stehen (nur bei Bedarf gelesen).
+        const pdfPfad = b.format === 'pdf' && b.datei ? path.join(ordner, b.datei) : null;
+        const pdfText = () => (pdfPfad && b.pdfLesbar && fs.existsSync(pdfPfad) ? String(pdf(fs.readFileSync(pdfPfad))?.text || '') : '');
+        belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml, pdfText });
       }
     }
   }
@@ -130,12 +135,36 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
   };
 }
 
+/**
+ * Pruefliste und Datei per Mail an `mailAn` aus der Konfiguration, ueber das Firmenpostfach des
+ * Nachfassens. Ohne `mailAn` oder Postfach: keine Mail, nur ein Hinweis im Ergebnis.
+ */
+export async function laufMailen({ privat, ergebnis, senden = sendeMail }) {
+  const konfig = konfigPruefen(JSON.parse(fs.readFileSync(path.join(privat, 'zahlungen', 'konfiguration.json'), 'utf8')));
+  if (!konfig.mailAn) return 'keine Mail: mailAn fehlt in der Konfiguration';
+  const pf = lesePostfach(postfachPfad(privat));
+  if (!pf.zugang) return `keine Mail: ${pf.hinweis}`;
+  const ordner = path.join(privat, 'zahlungen');
+  const liste = fs.readFileSync(path.join(ordner, ergebnis.pruefliste));
+  const { betreff, text } = mailInhalt(liste.toString('utf8'), { lauf: ergebnis.lauf, datei: ergebnis.datei, zahlungen: ergebnis.zahlungen, summe: ergebnis.summe });
+  const anhaenge = [{ name: ergebnis.pruefliste, typ: 'text/csv', inhalt: liste }];
+  if (ergebnis.datei) anhaenge.unshift({ name: ergebnis.datei, typ: 'application/xml', inhalt: fs.readFileSync(path.join(ordner, ergebnis.datei)) });
+  await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [konfig.mailAn], betreff, text, anhaenge });
+  return `gesendet an ${konfig.mailAn}`;
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    const fremd = args.filter(a => a !== '--schreiben');
-    if (fremd.length) throw new Error(`Unbekanntes Argument: ${fremd.join(' ')} (erlaubt: --schreiben)`);
-    console.log(JSON.stringify(sammelLauf({ privat: process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse'), schreiben: args.includes('--schreiben') }), null, 1));
+    const fremd = args.filter(a => !['--schreiben', '--mail'].includes(a));
+    if (fremd.length) throw new Error(`Unbekanntes Argument: ${fremd.join(' ')} (erlaubt: --schreiben, --mail)`);
+    const privat = process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
+    const ergebnis = sammelLauf({ privat, schreiben: args.includes('--schreiben') });
+    // Die Mail ist Zugabe: scheitert sie, bleibt der Lauf gueltig, aber der Exit-Code meldet es.
+    if (args.includes('--mail')) {
+      try { ergebnis.mail = await laufMailen({ privat, ergebnis }); } catch (e) { ergebnis.mail = `FEHLER: ${String(e?.message || e).slice(0, 120)}`; process.exitCode = 1; }
+    }
+    console.log(JSON.stringify(ergebnis, null, 1));
   } catch (e) {
     console.error(String(e?.message || e));
     process.exitCode = 1;

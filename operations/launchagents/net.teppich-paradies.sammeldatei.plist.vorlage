@@ -15,7 +15,7 @@
   <array>
     <string>/bin/bash</string>
     <string>-c</string>
-    <string>date; m=$(date +%Y-%m); v=$(date -v-1m +%Y-%m); if [ "$(date +%d)" -le 7 ]; then __NODE_PFAD__ operations/scripts/belege-monat.mjs --monat "$v" --schreiben || exit 1; fi; __NODE_PFAD__ operations/scripts/belege-monat.mjs --monat "$m" --schreiben || exit 1; exec __NODE_PFAD__ operations/scripts/zahlung-sammeldatei.mjs --schreiben</string>
+    <string>date; m=$(date +%Y-%m); v=$(date -v-1m +%Y-%m); if [ "$(date +%d)" -le 7 ]; then __NODE_PFAD__ operations/scripts/belege-monat.mjs --monat "$v" --schreiben || exit 1; fi; __NODE_PFAD__ operations/scripts/belege-monat.mjs --monat "$m" --schreiben || exit 1; exec __NODE_PFAD__ operations/scripts/zahlung-sammeldatei.mjs --schreiben --mail</string>
   </array>
   <key>WorkingDirectory</key><string>__HOME__/tp-dashboard</string>
   <key>EnvironmentVariables</key>
