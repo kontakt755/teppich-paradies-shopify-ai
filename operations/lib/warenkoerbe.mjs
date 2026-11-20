@@ -2,6 +2,7 @@
 // verlorener Umsatz, den heute niemand sieht.
 
 import { istTestkontakt } from './kundenfaelle.mjs';
+import { istMusterPosition, istNurMusterBestellung } from './muster.mjs';
 
 export function ladeWarenkoerbe(daten) {
   const j = typeof daten === 'string' ? JSON.parse(daten) : daten;
@@ -21,6 +22,12 @@ function betrag(c) {
 /** Ein abgebrochener Warenkorb: Zeitpunkt, Kunde/E-Mail, Wert, Positionen. */
 export function warenkorbEintrag(c) {
   const adresse = c.shippingAddress || c.billingAddress || null;
+  const positionen = (c.lineItems?.nodes ?? []).map(li => ({
+    titel: li.title,
+    menge: Number(li.quantity) || 0,
+    sku: li.sku || null,
+    istMuster: istMusterPosition({ sku: li.sku, produktTyp: li.variant?.product?.productType }),
+  }));
   return {
     id: c.id,
     nummer: c.name || null,
@@ -34,7 +41,8 @@ export function warenkorbEintrag(c) {
     abgeschlossenAm: c.completedAt || null,
     wiederhergestelltUrl: c.abandonedCheckoutUrl || null,
     ort: adresse ? [adresse.city, adresse.country].filter(Boolean).join(', ') || null : null,
-    positionen: (c.lineItems?.nodes ?? []).map(li => ({ titel: li.title, menge: Number(li.quantity) || 0 })),
+    positionen,
+    nurMuster: istNurMusterBestellung(positionen),
   };
 }
 
@@ -50,11 +58,16 @@ export function aufbereiten(daten, opt = {}) {
   // verlorener Umsatz - sie machten am 2026-10-12 rund 3.150 von 3.338 € aus.
   const offen = alle.filter(c => !c.abgeschlossenAm && !istTestkontakt(c));
   offen.sort((a, b) => (b.zeitpunkt || '').localeCompare(a.zeitpunkt || ''));
-  const gesamtwert = offen.reduce((s, c) => s + c.wert, 0);
+  // Reine Musterkoerbe (ab 01.12. 4,99 € Versand) zaehlen getrennt: kein verlorener Warenumsatz.
+  const ware = offen.filter(c => !c.nurMuster);
+  const muster = offen.filter(c => c.nurMuster);
+  const gesamtwert = ware.reduce((s, c) => s + c.wert, 0);
   return {
     erstellt: (opt.jetzt ?? new Date()).toISOString(),
     anzahl: alle.length,
-    offenAnzahl: offen.length,
+    offenAnzahl: ware.length,
+    musterOffenAnzahl: muster.length,
+    musterOffenWert: Math.round(muster.reduce((s, c) => s + c.wert, 0) * 100) / 100,
     offenWert: Math.round(gesamtwert * 100) / 100,
     warenkoerbe: offen,
     // Nachtraeglich doch abgeschlossene bleiben belegbar, aber getrennt.

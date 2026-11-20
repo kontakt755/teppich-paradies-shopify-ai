@@ -50,3 +50,17 @@ test('aufbereiten: Testkaeufe (reservierte Domaenen wie example.com) sind kein v
   assert.equal(modell.testAusgeblendet, 1);
   assert.ok(modell.warenkoerbe.every(w => w.email !== 'qa-test@example.com'));
 });
+
+test('aufbereiten: reine Musterkoerbe zaehlen getrennt und nicht in den offenen Warenwert', () => {
+  const muster = checkout(1);
+  muster.lineItems = { nodes: [{ title: 'Muster Eiche', quantity: 1, sku: 'M-ABC-1', variant: { product: { productType: 'Vinyl' } } }] };
+  const gemischt = checkout(2);
+  gemischt.lineItems = { nodes: [{ title: 'Muster', quantity: 1, sku: 'M-X', variant: null }, { title: 'Vinyl', quantity: 2, sku: 'V-1', variant: null }] };
+  const modell = aufbereiten({ checkouts: [muster, gemischt, checkout(3)] });
+  assert.equal(modell.musterOffenAnzahl, 1);
+  assert.equal(modell.musterOffenWert, 30);
+  assert.equal(modell.offenAnzahl, 2);
+  assert.equal(modell.offenWert, 60 + 90);
+  assert.equal(modell.warenkoerbe.length, 3);
+  assert.equal(modell.warenkoerbe.find(w => w.nummer === '#C1').nurMuster, true);
+});
