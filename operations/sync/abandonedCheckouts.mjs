@@ -20,7 +20,7 @@ query OpsAbandonedCheckouts($first: Int!, $after: String, $query: String) {
       shippingAddress { name city country }
       lineItems(first: 50) {
         nodes {
-          title quantity
+          title quantity sku variant { product { productType } }
         }
       }
     }
@@ -79,7 +79,7 @@ export function baueBulkQuery(tageFenster = STANDARD_TAGE_FENSTER, jetzt = () =>
         subtotalPriceSet { shopMoney { amount currencyCode } }
         billingAddress { name city country }
         shippingAddress { name city country }
-        lineItems { edges { node { title quantity } } }
+        lineItems { edges { node { title quantity sku variant { product { productType } } } } }
       }
     }
   }
