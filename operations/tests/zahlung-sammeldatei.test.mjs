@@ -400,3 +400,14 @@ test('Mail an den Laden: Text aus der Pruefliste, Datei und Liste im Anhang; ohn
   const { betreff } = mailInhalt('', { lauf: '2026-11-13', datei: null, zahlungen: 0, summe: 0 });
   assert.equal(betreff, 'Sammelüberweisung 2026-11-13: keine Datei');
 });
+
+test('Review-Faelle: Nettogesamtbetrag ist kein Endbetrag, unlesbare Skontobasis sperrt, Semikolon im Namen', () => {
+  const text = `Rechnung Nr. 900100\nIBAN ${LIEFER}\nNettogesamtbetrag EUR 100 , 00\nRechnungsendbetrag EUR 119 , 00\n`;
+  const r = pdfRechnungPruefen({ text, nummer: null, brutto: null, waehrung: 'EUR' }, { iban: LIEFER });
+  assert.equal(r.brutto, 119);
+  assert.equal(pdfRechnungPruefen({ text: `${text}Gesamtbetrag EUR 100 , 00\n`, nummer: null, brutto: null, waehrung: 'EUR' }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=4.00#BASISBETRAG=50,00#', { datum: '2026-11-19', brutto: 100 }), null);
+  assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=4.00#BASISBETRAG=50.00#', { datum: '2026-11-19', brutto: 100 }).skonto.betrag, 2);
+  const liste = 'Kopf\r\nzweite\r\nIN DATEI;"Lieferant A; Abteilung B";R-1;2026-11-19;10,00;;;;10,00;voller Betrag;x.pdf\r\n';
+  assert.match(mailInhalt(liste, { lauf: '2026-11-20', datei: 'd.xml', zahlungen: 1, summe: 10 }).text, /- Lieferant A; Abteilung B, Rechnung R-1 vom 2026-11-19: 10,00 EUR \(voller Betrag\)/);
+});

@@ -11,7 +11,7 @@
  */
 
 import { xmlRechnungLesen, betragLesen } from './belege.mjs';
-import { datumLesen, namePasst, csvFeld, abschnitte, ersterAbschnitt as abschnitt, blatt } from './belege-bank.mjs';
+import { datumLesen, namePasst, csvFeld, csvZeile, abschnitte, ersterAbschnitt as abschnitt, blatt } from './belege-bank.mjs';
 
 const cent = n => Math.round(n * 100);
 const nurZeichen = s => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -118,8 +118,10 @@ export function rechnungPruefen(xml, { iban }, pdfText = () => '') {
  * vom Rechnungsdatum. Nur genau eine Kennung mit mehr als 0 %; sonst null (dann sperrt der Aufrufer).
  */
 export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0 }) {
-  const treffer = [...String(text ?? '').matchAll(/#SKONTO#TAGE=(\d{1,3})#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#(?:BASISBETRAG=(-?\d+(?:\.\d{1,2})?)#)?/gi)]
-    .filter(m => Number(m[2]) > 0);
+  // Jede Kennung muss vollstaendig lesbar sein; ein uebriges Feld (z. B. „BASISBETRAG=50,00#“) sperrt.
+  const alle = [...String(text ?? '').matchAll(/#SKONTO#TAGE=(\d{1,3})#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#(?:BASISBETRAG=(\d+(?:\.\d{1,2})?)#)?(?![A-Z]+=)/gi)];
+  if (alle.length !== (String(text ?? '').match(/#SKONTO#/gi) || []).length) return null;
+  const treffer = alle.filter(m => Number(m[2]) > 0);
   if (treffer.length !== 1 || !/^\d{4}-\d{2}-\d{2}$/.test(datum || '') || !(brutto > 0)) return null;
   const [, tage, prozent, basisText] = treffer[0];
   // Zuschlaege (Fracht) ohne angegebene Basis: Skontobasis unbekannt, lieber voll zahlen als zu wenig.
@@ -158,7 +160,10 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { 
   const t = pdfTextGlaetten(text);
   // Fehlen Nummer oder Betrag im Archiv, aus dem PDF – nur mit eindeutigem Stichwort.
   nummer ||= einzig(t, /Rechnung\s*(?:Nr\.?|Nummer)\s*:?\s*([A-Z0-9][A-Z0-9/._-]{3,29})/gi);
-  if (brutto === null || brutto === undefined) brutto = betragLesen(einzig(t, /Gesamtbetrag\s*(?:EUR|€)?\s*(\d{1,3}(?:\.\d{3})*,\d{2})(?!\d)/gi) ?? '');
+  // Nur ganze Stichwoerter (nicht „Nettogesamtbetrag“); verschiedene Endbetraege heisst: nicht sicher.
+  if (brutto === null || brutto === undefined) {
+    brutto = betragLesen(einzig(t, /(?<![A-Za-zÄÖÜäöüß-])(?:Gesamtbetrag|Rechnungsbetrag|Rechnungsendbetrag|Endbetrag|Zahlbetrag)\s*:?\s*(?:EUR|€)?\s*(\d{1,3}(?:\.\d{3})*,\d{2})(?!\d)/gi) ?? '');
+  }
   const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true };
   const unklar = grund => ({ ...kopf, status: 'unklar', grund });
   if (!t.trim()) return unklar('PDF-Text nicht lesbar');
@@ -379,7 +384,7 @@ export function painGegenpruefen(xml, { anzahl, summeCent }) {
  */
 export function mailInhalt(prueflisteText, { lauf, datei, zahlungen, summe }) {
   const zeilen = String(prueflisteText).replace(/^\uFEFF/, '').split(/\r?\n/);
-  const spalten = z => z.split(';').map(f => f.replace(/^"|"$/g, '').replace(/""/g, '"'));
+  const spalten = z => csvZeile(z, ';');
   const auswahl = status => zeilen.filter(z => z.startsWith(`${status};`)).map(spalten);
   const de = n => n.toFixed(2).replace('.', ',');
   const inDatei = auswahl('IN DATEI').map(f => `- ${f[1]}, Rechnung ${f[2]} vom ${f[3]}: ${f[8]} EUR (${f[9]})`);
