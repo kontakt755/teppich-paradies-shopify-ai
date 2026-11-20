@@ -25,6 +25,8 @@ export const LABEL_SUCHEN = Object.freeze([
   { kurz: '08', q: 'label:08-rechnungen' },
   { kurz: '99', q: 'label:99-altbestand-rechnung' },
   { kurz: 'W', q: 'label:wiederhergestellt-03.11.' },
+  // Netz unter dem Gmail-Filter: Rechnung im Betreff und Anhang, aber kein Label 08 (neuer Lieferant, geaenderter Absender).
+  { kurz: 'S', q: 'has:attachment -label:08-rechnungen subject:(rechnung OR invoice OR gutschrift OR faktura OR factuur)' },
 ]);
 
 /**
