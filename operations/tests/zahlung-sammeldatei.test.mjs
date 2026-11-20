@@ -514,3 +514,15 @@ test('Gleiche Nummer an verschiedenen Tagen: zwei Zeilen; eine aeltere Zahlung m
   const zeilen = auswaehlen({ belege: [], fremde, konfig, buchungen, heute: '2026-11-20' }).zeilen;
   assert.deepEqual(zeilen.map(z => [z.datum, z.status]), [['2026-11-01', 'bezahlt'], ['2026-11-18', 'unklar']]);
 });
+
+test('Lesbare Rechnung und unklare Fassung derselben Nummer mit anderem Betrag: keine wird gezahlt oder als bezahlt verbucht', () => {
+  const konfig = { lieferanten: { 'lieferant-a.example': { name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: '' } } };
+  const lesbar = rechnungXml({ nummer: '700011', brutto: '100.00', bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', '100,00') });
+  const unklar = rechnungXml({ nummer: '700011', brutto: '150.00', bedingungen: 'Zahlbar nach Vereinbarung, 2 % Skonto möglich' });
+  const belege = [{ schluessel: 'lieferant-a.example', datei: 'a.pdf', xml: lesbar, pdfText: () => '' }, { schluessel: 'lieferant-a.example', datei: 'b.pdf', xml: unklar, pdfText: () => '' }];
+  const ohneBank = auswaehlen({ belege, konfig, buchungen: [], heute: '2026-11-10' }).zeilen;
+  assert.deepEqual(ohneBank.map(z => z.status), ['unklar', 'unklar']);
+  assert.match(ohneBank[0].grund, /mehrfach im Archiv mit anderem Betrag/);
+  const mitBank = auswaehlen({ belege, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 700011' }], heute: '2026-11-10' }).zeilen;
+  assert.deepEqual(mitBank.map(z => z.status), ['unklar', 'unklar']);
+});

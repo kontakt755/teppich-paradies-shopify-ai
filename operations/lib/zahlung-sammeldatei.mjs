@@ -300,6 +300,15 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
     if (cent(e.brutto) !== cent(z.brutto)) Object.assign(e, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
     Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv' });
   }
+  // Eine unklare Fassung derselben Nummer mit anderem Betrag (Korrektur, zweite Rechnung) sperrt auch die lesbare.
+  const unklarBetrag = new Map();
+  for (const z of geprueft.filter(x => x.status === 'unklar' && x.nummer && x.brutto != null)) {
+    const k = `${z.schluessel}|${z.nummer}`;
+    unklarBetrag.set(k, [...(unklarBetrag.get(k) || []), cent(z.brutto)]);
+  }
+  for (const z of geprueft.filter(x => x.status === 'ok')) {
+    if ((unklarBetrag.get(`${z.schluessel}|${z.nummer}`) || []).some(c => c !== cent(z.brutto))) Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
+  }
   const istVorgemerkt = z => vorgemerkt.find(v => v.schluessel === z.schluessel && v.nummer === z.nummer);
   const ok = geprueft.filter(z => z.status === 'ok' && !istVorgemerkt(z));
   const okNummern = new Set(geprueft.filter(z => z.status === 'ok').map(z => `${z.schluessel}|${z.nummer}`));
