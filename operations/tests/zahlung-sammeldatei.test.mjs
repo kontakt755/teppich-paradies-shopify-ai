@@ -529,4 +529,13 @@ test('Lesbare Rechnung und unklare Fassung derselben Nummer mit anderem Betrag: 
   const offen = rechnungXml({ nummer: '700012', brutto: '100.00', bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', '100,00') });
   const dazu = auswaehlen({ belege: [...belege, { schluessel: 'lieferant-a.example', datei: 'c.pdf', xml: offen, pdfText: () => '' }], konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 700011' }], heute: '2026-11-10' }).zeilen;
   assert.equal(dazu.find(z => z.nummer === '700012').status, 'zahlen');
+  // Auch kurze Nummern: eine Zahlung "RE 123" deckt die offene 124 gleichen Betrags nicht.
+  const kurz = n => rechnungXml({ nummer: n, brutto: '100.00', bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', '100,00') });
+  const kurzBelege = [
+    { schluessel: 'lieferant-a.example', datei: 'k1.pdf', xml: kurz('123'), pdfText: () => '' },
+    { schluessel: 'lieferant-a.example', datei: 'k2.pdf', xml: rechnungXml({ nummer: '123', brutto: '150.00', bedingungen: 'Zahlbar nach Vereinbarung, 2 % Skonto möglich' }), pdfText: () => '' },
+    { schluessel: 'lieferant-a.example', datei: 'k3.pdf', xml: kurz('124'), pdfText: () => '' },
+  ];
+  const kurzZeilen = auswaehlen({ belege: kurzBelege, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 123' }], heute: '2026-11-10' }).zeilen;
+  assert.equal(kurzZeilen.find(z => z.nummer === '124').status, 'zahlen');
 });

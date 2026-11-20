@@ -217,7 +217,7 @@ export function bankAbgleich(buchungen, offene, lieferanten, bekannteNummern = [
   const frei = new Set(buchungen.filter(x => x.betrag < 0));
   const treffer = new Map();
   const empfaenger = (x, o) => (x.iban && x.iban === lieferanten[o.schluessel].iban) || namePasst(x.name, { anbieter: lieferanten[o.schluessel].name, anbieterSchluessel: o.schluessel });
-  const nenntAndere = (x, o) => bekannteNummern.some(n => n.schluessel === o.schluessel && n.nummer !== o.nummer && String(n.nummer).replace(/[^A-Za-z0-9]/g, '').length >= 4 && nummerIm(x.zweck, n.nummer));
+  const nenntAndere = (x, o) => bekannteNummern.some(n => n.schluessel === o.schluessel && n.nummer !== o.nummer && nummerIm(x.zweck, n.nummer));
   const stufen = [
     ['nummer', (x, o) => {
       if (!o.nummer) return false;
