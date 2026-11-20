@@ -162,7 +162,9 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { 
     nummer ||= felder.nummer ?? null;
     if (brutto === null || brutto === undefined) brutto = felder.brutto ?? null;
   }
-  const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true };
+  // Ausdruecklich als Anhang einer Rechnung bezeichnet (Leistungsuebersicht), ohne Storno oder Korrektur.
+  const anhang = /(anhang|anlage)\s+zu(r)?\s+rechnung/i.test(t) && !/gutschrift|storno|korrektur/i.test(t);
+  const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true, anhang };
   const unklar = grund => ({ ...kopf, status: 'unklar', grund });
   if (!t.trim()) return unklar('PDF-Text nicht lesbar');
   if (waehrung !== 'EUR') return unklar('Währung nicht eindeutig EUR');
@@ -291,7 +293,7 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
     if (lieferant.lastschrift) return { ...basis, status: 'lastschrift', grund: 'Lieferant zieht per Lastschrift ein' };
     if (!b.xml && !b.pdf) return { ...basis, status: 'unklar', grund: 'keine XML-Rechnung im Archiv' };
     const r = b.xml ? rechnungPruefen(b.xml, lieferant, b.pdfText) : pdfRechnungPruefen(b.pdf, lieferant);
-    return { ...basis, nummer: r.nummer || b.nummer || b.pdf?.nummer || null, datum: r.datum, brutto: r.brutto, skonto: r.skonto, nettoFaellig: r.nettoFaellig, pdf: Boolean(r.pdf), status: r.status, grund: r.grund || '' };
+    return { ...basis, nummer: r.nummer || b.nummer || b.pdf?.nummer || null, datum: r.datum, brutto: r.brutto, skonto: r.skonto, nettoFaellig: r.nettoFaellig, pdf: Boolean(r.pdf), anhang: Boolean(r.anhang), status: r.status, grund: r.grund || '' };
   });
   // Nicht eingetragene Absender: nie in die Datei, aber sichtbar, bis sie bezahlt oder erledigt sind.
   const fremdeLieferanten = {};
@@ -326,10 +328,11 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
   for (const z of geprueft.filter(x => x.status === 'ok')) {
     if ((unklarBetrag.get(`${z.schluessel}|${z.nummer}`) || []).some(c => c !== cent(z.brutto))) Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
   }
-  // Anhang oder Kopie ohne Betrag zu einer lesbaren Rechnung derselben Nummer (Leistungsuebersicht): nichts zu pruefen.
+  // Ausdruecklicher Anhang ohne Betrag zu einer lesbaren Rechnung derselben Nummer: nichts zu pruefen.
+  // Storno, Korrektur oder ein sonst unlesbares Dokument bleibt unklar.
   const lesbar = new Set(geprueft.filter(x => x.status === 'ok').map(x => `${x.schluessel}|${x.nummer}`));
   for (const z of geprueft) {
-    if (z.status === 'unklar' && z.brutto == null && z.nummer && lesbar.has(`${z.schluessel}|${z.nummer}`)) Object.assign(z, { status: 'erledigt', grund: 'Anhang oder Kopie zur Rechnung gleicher Nummer (ohne Betrag)' });
+    if (z.status === 'unklar' && z.anhang && z.brutto == null && z.nummer && lesbar.has(`${z.schluessel}|${z.nummer}`)) Object.assign(z, { status: 'erledigt', grund: 'Anhang zur Rechnung gleicher Nummer (ohne Betrag)' });
   }
   const istVorgemerkt = z => vorgemerkt.find(v => v.schluessel === z.schluessel && v.nummer === z.nummer);
   const ok = geprueft.filter(z => z.status === 'ok' && !istVorgemerkt(z));

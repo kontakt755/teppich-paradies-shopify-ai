@@ -506,9 +506,12 @@ test('Anhang ohne Betrag zur lesbaren Rechnung gleicher Nummer: erledigt, nicht 
     { schluessel: 'lieferant-a.example', datei: 'r.pdf', xml: rechnungXml({ nummer: '700020', brutto: '100.00', bedingungen: 'Zahlbar sofort' }), pdfText: () => '' },
     { schluessel: 'lieferant-a.example', datei: 'anhang.pdf', xml: null, pdf: { text: 'Anhang zu Rechnungs-Nr.: 700020', nummer: '700020', brutto: null, waehrung: null, datum: '2026-11-05' } },
     { schluessel: 'lieferant-a.example', datei: 'allein.pdf', xml: null, pdf: { text: 'Rechnungs-Nr.: 700021', nummer: '700021', brutto: null, waehrung: null, datum: '2026-11-05' } },
+    { schluessel: 'lieferant-a.example', datei: 'storno.pdf', xml: null, pdf: { text: 'Storno zu Rechnungs-Nr.: 700020', nummer: '700020', brutto: null, waehrung: null, datum: '2026-11-06' } },
+    { schluessel: 'lieferant-a.example', datei: 'kopie.pdf', xml: null, pdf: { text: 'Rechnungs-Nr.: 700020 Kopie', nummer: '700020', brutto: null, waehrung: null, datum: '2026-11-05' } },
+    { schluessel: 'lieferant-a.example', datei: 'anhang-storno.pdf', xml: null, pdf: { text: 'Anhang zu Rechnung 700020: Korrektur', nummer: '700020', brutto: null, waehrung: null, datum: '2026-11-06' } },
   ];
   const zeilen = auswaehlen({ belege, konfig, buchungen: [], heute: '2026-11-10' }).zeilen;
-  assert.deepEqual(zeilen.map(z => [z.beleg, z.status]), [['r.pdf', 'zahlen'], ['anhang.pdf', 'erledigt'], ['allein.pdf', 'unklar']]);
+  assert.deepEqual(zeilen.map(z => [z.beleg, z.status]), [['r.pdf', 'zahlen'], ['anhang.pdf', 'erledigt'], ['allein.pdf', 'unklar'], ['storno.pdf', 'unklar'], ['kopie.pdf', 'unklar'], ['anhang-storno.pdf', 'unklar']]);
 });
 
 test('Gleiche Rechnungsnummer mit anderem Betrag: eine Buchung macht keine der beiden bezahlt, beide bleiben sichtbar', () => {
