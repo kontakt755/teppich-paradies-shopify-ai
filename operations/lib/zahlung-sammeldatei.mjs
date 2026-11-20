@@ -10,8 +10,8 @@
  * Kontodaten, Namen und Betraege stehen nur im Privatordner.
  */
 
-import { xmlRechnungLesen, betragLesen } from './belege.mjs';
-import { datumLesen, namePasst, csvFeld, abschnitte, ersterAbschnitt as abschnitt, blatt } from './belege-bank.mjs';
+import { xmlRechnungLesen, betragLesen, pdfTextLesen } from './belege.mjs';
+import { datumLesen, namePasst, csvFeld, csvZeile, abschnitte, ersterAbschnitt as abschnitt, blatt } from './belege-bank.mjs';
 
 const cent = n => Math.round(n * 100);
 const nurZeichen = s => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -74,7 +74,7 @@ export function zahlungsbedingungenLesen(text) {
  * Eine Rechnungs-XML (Factur-X/ZUGFeRD, CII) pruefen.
  * @returns {{ status: 'ok'|'gutschrift'|'lastschrift'|'unklar', grund?: string, nummer, brutto, skonto, nettoFaellig }}
  */
-export function rechnungPruefen(xml, { iban }) {
+export function rechnungPruefen(xml, { iban }, pdfText = () => '') {
   const f = xmlRechnungLesen(xml);
   const kopf = { nummer: f?.nummer ?? null, datum: f?.datum ?? null, brutto: f?.brutto ?? null, skonto: null, nettoFaellig: null };
   const unklar = grund => ({ ...kopf, status: 'unklar', grund });
@@ -87,24 +87,52 @@ export function rechnungPruefen(xml, { iban }) {
   if (mittel.some(m => blatt(m, 'TypeCode') === '59')) return { ...kopf, status: 'lastschrift', grund: 'Rechnung nennt Lastschrift: nicht überweisen' };
   const faellig = Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'DuePayableAmount') || NaN);
   if (cent(faellig) !== cent(f.brutto)) return unklar('offener Betrag weicht vom Rechnungswert ab (Anzahlung?)');
-  const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'));
+  const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'))
+    ?? xrechnungSkontoLesen(abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n'), {
+      datum: f.datum, brutto: f.brutto,
+      zuschlaege: Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'ChargeTotalAmount') || 0),
+    });
   // Ohne lesbares Skonto nur, wenn in keinem Bedingungsblock Skonto steht: dann ist der volle Betrag richtig.
   // Roh gelesen, damit auch CDATA oder andere Unterfelder zaehlen.
   // Lexware schreibt „#SKONTO#TAGE=7#PROZENT=0.00#“ auch ohne Skonto: 0 % zaehlt nicht als Skonto.
   const alleBedingungen = abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n').replace(/#SKONTO#TAGE=\d+#PROZENT=0+(?:[.,]0+)?#/gi, '');
-  if (!b?.skonto && /skonto|discount/i.test(alleBedingungen)) return unklar('Zahlungsbedingungen mit Skonto nicht lesbar');
+  if (!b?.skonto && !b?.vollerBetrag && /skonto|discount/i.test(alleBedingungen)) return unklar('Zahlungsbedingungen mit Skonto nicht lesbar');
   if (b) kopf.nettoFaellig = b.nettoFaellig;
   if (b && cent(b.nettoBetrag) !== cent(f.brutto)) return unklar('Nettozahlung weicht vom Rechnungswert ab');
   if (b?.skonto) {
     const s = b.skonto;
     // Plausibel: Skonto plus Zahlbetrag ergibt den Rechnungswert, hoechstens 5 %, Frist nicht nach der Nettofaelligkeit.
-    if (cent(s.betrag) <= 0 || cent(s.betrag) + cent(s.zahlbetrag) !== cent(f.brutto) || s.betrag > f.brutto * 0.05 || s.bis > b.nettoFaellig) return unklar('Skonto-Angaben nicht stimmig');
+    if (cent(s.betrag) <= 0 || cent(s.betrag) + cent(s.zahlbetrag) !== cent(f.brutto) || s.betrag > f.brutto * 0.05 || (b.nettoFaellig && s.bis > b.nettoFaellig)) return unklar('Skonto-Angaben nicht stimmig');
     kopf.skonto = s;
   }
   // Nur Empfaengerkonten zaehlen, nicht das Konto des Zahlers.
   const ibans = abschnitte(xml, 'PayeePartyCreditorFinancialAccount').map(k => blatt(k, 'IBANID').replace(/\s+/g, '').toUpperCase());
-  if (!ibans.includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht als Empfängerkonto auf der Rechnung');
+  // Ohne Empfaengerkonto in der XML (z. B. Hauptlieferant B): dann muss es im PDF derselben Rechnung stehen.
+  const ibanBelegt = ibans.length ? ibans.includes(iban) : nurZeichen(pdfText()).includes(iban);
+  if (!ibanBelegt) return unklar('IBAN aus der Konfiguration steht nicht als Empfängerkonto auf der Rechnung');
   return { ...kopf, status: 'ok' };
+}
+
+/**
+ * Skonto als XRechnung-Kennung „#SKONTO#TAGE=10#PROZENT=4.00#“ (optional „BASISBETRAG=…#“), gerechnet
+ * vom Rechnungsdatum. Nur genau eine Kennung mit mehr als 0 %; sonst null (dann sperrt der Aufrufer).
+ */
+export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0 }) {
+  // Jede Kennung muss vollstaendig lesbar sein; ein uebriges Feld (z. B. „BASISBETRAG=50,00#“) sperrt.
+  const alle = [...String(text ?? '').matchAll(/#SKONTO#TAGE=(\d{1,3})#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#(?:BASISBETRAG=(\d+(?:\.\d{1,2})?)#)?(?![A-Z]+=)/gi)];
+  if (alle.length !== (String(text ?? '').match(/#SKONTO#/gi) || []).length) return null;
+  const treffer = alle.filter(m => Number(m[2]) > 0);
+  // Echter Kalendertag, sonst wirft tagPlus und der ganze Lauf bricht ab.
+  const tag = /^\d{4}-\d{2}-\d{2}$/.test(datum || '') ? new Date(`${datum}T00:00:00Z`) : null;
+  const tagOk = Boolean(tag) && !Number.isNaN(tag.getTime()) && tag.toISOString().slice(0, 10) === datum;
+  if (treffer.length !== 1 || !tagOk || !(brutto > 0)) return null;
+  const [, tage, prozent, basisText] = treffer[0];
+  // Zuschlaege (Fracht) ohne angegebene Basis: Skontobasis unbekannt, lieber voll zahlen als zu wenig.
+  if (basisText === undefined && zuschlaege > 0) return { nettoFaellig: null, nettoBetrag: brutto, skonto: null, vollerBetrag: true };
+  const basis = basisText === undefined ? brutto : Number(basisText);
+  if (!(basis > 0) || cent(basis) > cent(brutto) || Number(prozent) > 5) return null;
+  const betrag = Math.round(basis * Number(prozent)) / 100;
+  return { nettoFaellig: null, nettoBetrag: brutto, skonto: { bis: tagPlus(datum, Number(tage)), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 } };
 }
 
 /** Betrag so, wie er auf deutschen Rechnungen steht: 1.234,56 oder 1234,56. */
@@ -120,10 +148,22 @@ const betragImText = (text, n) => {
  * Die Faelligkeit wird nicht gelesen: gezahlt wird der volle Betrag, nur in EUR und nur mit aktuellem
  * Kontoauszug (siehe auswaehlen). Jeder Hinweis auf Skonto, Einzug, Vorkasse oder Gutschrift macht sie unklar.
  */
+/** Gesperrter Druck (Spedition): „R e c h n u n g“ und „63 , 63“ werden zu „Rechnung“ und „63,63“. */
+export const pdfTextGlaetten = text => String(text ?? '')
+  .replace(/\b(?:[A-Za-zÄÖÜäöü] ){3,}[A-Za-zÄÖÜäöü]\b/g, m => m.replace(/ /g, ''))
+  .replace(/(\d) +, *(\d{2})(?!\d)/g, '$1,$2');
+
 export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { iban }) {
+  const t = pdfTextGlaetten(text);
+  // Fehlen Nummer oder Betrag im Archiv: derselbe Leser wie belege:monat, auf dem geglaetteten Text
+  // (er schliesst Netto-Zeilen aus und gibt bei mehreren verschiedenen Betraegen nichts zurueck).
+  if (!nummer || brutto === null || brutto === undefined) {
+    const felder = pdfTextLesen(t);
+    nummer ||= felder.nummer ?? null;
+    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? null;
+  }
   const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true };
   const unklar = grund => ({ ...kopf, status: 'unklar', grund });
-  const t = String(text ?? '');
   if (!t.trim()) return unklar('PDF-Text nicht lesbar');
   if (waehrung !== 'EUR') return unklar('Währung nicht eindeutig EUR');
   if (!/^[A-Za-z0-9][A-Za-z0-9/._-]{2,29}$/.test(nummer || '') || !nurZeichen(t).includes(nurZeichen(nummer))) return unklar('Rechnungsnummer nicht sicher im PDF');
@@ -148,7 +188,10 @@ export function konfigPruefen(k) {
     if (!lastschrift && (!String(l.name || '').trim() || !ibanGueltig(l.iban))) throw new Error(`Konfiguration: Lieferant ${schluessel} braucht name und gültige iban`);
     lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift };
   }
-  return { auftraggeber: { name: a.name.trim(), iban: iban(a.iban), bic: a.bic }, lieferanten };
+  // Optional: an wen Pruefliste und Datei nach dem Lauf gehen (Benutzer 20.11.2026: Laden-Postfach).
+  const mailAn = k.mailAn === undefined ? null : String(k.mailAn).trim().toLowerCase();
+  if (mailAn !== null && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(mailAn)) throw new Error('Konfiguration: mailAn ist keine gültige Adresse');
+  return { auftraggeber: { name: a.name.trim(), iban: iban(a.iban), bic: a.bic }, lieferanten, mailAn };
 }
 
 /**
@@ -225,7 +268,7 @@ export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vo
     const basis = { schluessel: b.schluessel, lieferant: lieferant.name, beleg: b.datei, nummer: null, datum: null, brutto: null, skonto: null, nettoFaellig: null, zahlbetrag: null };
     if (lieferant.lastschrift) return { ...basis, status: 'lastschrift', grund: 'Lieferant zieht per Lastschrift ein' };
     if (!b.xml && !b.pdf) return { ...basis, status: 'unklar', grund: 'keine XML-Rechnung im Archiv' };
-    const r = b.xml ? rechnungPruefen(b.xml, lieferant) : pdfRechnungPruefen(b.pdf, lieferant);
+    const r = b.xml ? rechnungPruefen(b.xml, lieferant, b.pdfText) : pdfRechnungPruefen(b.pdf, lieferant);
     return { ...basis, nummer: r.nummer, datum: r.datum, brutto: r.brutto, skonto: r.skonto, nettoFaellig: r.nettoFaellig, pdf: Boolean(r.pdf), status: r.status, grund: r.grund || '' };
   });
   // Dieselbe Nummer zweimal im Archiv (Kopie, erneut gesendet): nur die erste zaehlt; weicht der
@@ -331,6 +374,28 @@ export function painGegenpruefen(xml, { anzahl, summeCent }) {
   const ok = betraege.length === anzahl && summe === summeCent && kontroll.length === 2 && kontroll.every(k => k === summe)
     && zahl.length === 2 && zahl.every(n => n === anzahl) && ibans.length === anzahl + 1 && ibans.every(ibanGueltig);
   if (!ok) throw new Error('Sammeldatei: Gegenprüfung von Anzahl, Kontrollsumme oder IBAN fehlgeschlagen – nichts geschrieben');
+}
+
+/**
+ * Mailtext fuer den Laden aus der Pruefliste: was in der Datei steht und was von Hand zu klaeren ist.
+ * @returns {{ betreff: string, text: string }}
+ */
+export function mailInhalt(prueflisteText, { lauf, datei, zahlungen, summe }) {
+  const zeilen = String(prueflisteText).replace(/^\uFEFF/, '').split(/\r?\n/);
+  const spalten = z => csvZeile(z, ';');
+  const auswahl = status => zeilen.filter(z => z.startsWith(`${status};`)).map(spalten);
+  const de = n => n.toFixed(2).replace('.', ',');
+  const inDatei = auswahl('IN DATEI').map(f => `- ${f[1]}, Rechnung ${f[2]} vom ${f[3]}: ${f[8]} EUR (${f[9]})`);
+  const unklar = auswahl('UNKLAR').map(f => `- ${f[1]}, Rechnung ${f[2] || '?'} vom ${f[3] || '?'}${f[4] ? `, ${f[4]} EUR` : ''}: ${f[9]}`);
+  const betreff = datei ? `Sammelüberweisung ${lauf}: ${zahlungen} Zahlungen, ${de(summe)} EUR` : `Sammelüberweisung ${lauf}: keine Datei`;
+  const text = [
+    datei ? `Im Anhang die Sammeldatei für die Commerzbank (${datei}) und die Prüfliste.` : 'Heute gibt es keine Sammeldatei. Die Prüfliste hängt an.',
+    datei ? 'Bitte erst die Prüfliste ansehen, dann die Datei im Online-Banking hochladen und freigeben.' : '',
+    '', `In der Datei (${zahlungen}):`, ...(inDatei.length ? inDatei : ['- nichts']),
+    '', `Von Hand prüfen (${unklar.length}):`, ...(unklar.length ? unklar : ['- nichts']),
+    '', zeilen[1] || '',
+  ].filter((z, i, a) => z !== '' || a[i - 1] !== '');
+  return { betreff, text: text.join('\n') };
 }
 
 const STATUS_TEXT = { zahlen: 'IN DATEI', spaeter: 'später', bezahlt: 'bezahlt', vorgemerkt: 'schon in Datei', gutschrift: 'Gutschrift', lastschrift: 'Lastschrift', unklar: 'UNKLAR' };
