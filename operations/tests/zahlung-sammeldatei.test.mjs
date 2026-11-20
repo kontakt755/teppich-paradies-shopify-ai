@@ -424,7 +424,7 @@ test('Nicht eingetragener Absender ab 01.11.: mit Namen in der Pruefliste, bezah
   const monat = path.join(privat, 'belege-archiv', '2026', '10');
   const m = JSON.parse(fs.readFileSync(path.join(monat, 'manifest.json'), 'utf8'));
   const fremd = (name, nummer, extra = {}) => ({ datei: `${name}.pdf`, format: 'pdf', rolle: 'rechnung', anbieterSchluessel: 'paket.example', anbieter: 'Paketdienst Beispiel', rechnungsnummer: nummer, brutto: 45.43, rechnungsdatum: '2026-11-18', dublette: null, ...extra });
-  m.belege.push(fremd('paket-offen', '3110623576'), fremd('paket-offen-anhang', '3110623576', { brutto: null }), fremd('paket-bezahlt', '3110622954'), fremd('paket-bezahlt-anhang', '3110622954', { brutto: null }), fremd('paket-alt', '3110000001', { rechnungsdatum: '2026-10-20' }), fremd('paket-gutschrift', '3110000002', { art: 'gutschrift' }));
+  m.belege.push(fremd('paket-offen', '3110623576'), fremd('paket-offen-anhang', '3110623576', { brutto: null }), fremd('paket-bezahlt', '3110622954', { rechnungsdatum: '2026-11-12' }), fremd('paket-bezahlt-anhang', '3110622954', { brutto: null, rechnungsdatum: '2026-11-12' }), fremd('paket-alt', '3110000001', { rechnungsdatum: '2026-10-20' }), fremd('paket-gutschrift', '3110000002', { art: 'gutschrift' }));
   fs.writeFileSync(path.join(monat, 'manifest.json'), JSON.stringify(m));
   const bank = path.join(privat, 'laden-entlastung-2026-11', 'bank-export', 'umsaetze.csv');
   fs.appendFileSync(bank, `12.11.2026;Überweisung;Beleg-Nr.:3110622954;Paketdienst Beispiel GmbH;${FREMD};-54,67\n`);
@@ -505,4 +505,12 @@ test('Gleiche Rechnungsnummer mit anderem Betrag: eine Buchung macht keine der b
   const paket = zeilen.filter(z => z.nummer === '3110000009');
   assert.deepEqual(paket.map(z => [z.status, z.brutto]), [['unklar', 100], ['unklar', 150]], 'Anhang ohne Betrag faellt weg, anderer Betrag bleibt');
   assert.match(paket[0].grund, /mehrfach mit anderem Betrag/);
+});
+
+test('Gleiche Nummer an verschiedenen Tagen: zwei Zeilen; eine aeltere Zahlung macht die neuere unklare Rechnung nicht bezahlt', () => {
+  const konfig = { lieferanten: {} };
+  const fremde = ['2026-11-01', '2026-11-18'].map((datum, i) => ({ schluessel: 'paket.example', anbieter: 'Paketdienst Beispiel', datei: `p${i}.pdf`, nummer: '3110000010', brutto: 45.43, datum }));
+  const buchungen = [{ datum: '2026-11-03', betrag: -45.43, name: 'Paketdienst Beispiel GmbH', iban: '', zweck: 'Beleg-Nr. 3110000010' }];
+  const zeilen = auswaehlen({ belege: [], fremde, konfig, buchungen, heute: '2026-11-20' }).zeilen;
+  assert.deepEqual(zeilen.map(z => [z.datum, z.status]), [['2026-11-01', 'bezahlt'], ['2026-11-18', 'unklar']]);
 });

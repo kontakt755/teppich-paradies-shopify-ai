@@ -211,6 +211,8 @@ export function bankAbgleich(buchungen, offene, lieferanten) {
     // Reine Ziffern duerfen rechts an Buchstaben grenzen („208415TP050“), links nie („RE700001“ ist eine andere Nummer).
     ['nummer', (x, o) => {
       if (!o.nummer) return false;
+      // Unklare (nurNachDatum): eine Zahlung vor dem Rechnungsdatum gehoert zu einer frueheren Rechnung.
+      if (o.nurNachDatum && o.datum && x.datum < o.datum) return false;
       const rechts = /^\d+$/.test(o.nummer) ? '0-9' : 'A-Z0-9';
       return new RegExp(`(^|[^A-Z0-9])${o.nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^${rechts}])`).test(String(x.zweck).toUpperCase());
     }],
@@ -225,7 +227,7 @@ export function bankAbgleich(buchungen, offene, lieferanten) {
       // Passt eine Buchung ueber die Nummer zu mehreren Rechnungen, gilt keine als bezahlt und keine als offen.
       // Belege mit derselben Nummer desselben Absenders (Rechnung plus Anhang) sind eine Rechnung.
       const auch = ueber === 'nummer' ? offene.filter(p => p !== o && !treffer.has(p) && empfaenger(buchung, p) && passt(buchung, p)) : [];
-      const mehrdeutig = auch.some(p => p.schluessel !== o.schluessel || p.nummer !== o.nummer);
+      const mehrdeutig = auch.some(p => p.schluessel !== o.schluessel || p.nummer !== o.nummer || (p.datum && o.datum && p.datum !== o.datum));
       for (const p of [o, ...auch]) treffer.set(p, { buchung, ueber, mehrdeutig });
     }
   }
@@ -277,10 +279,10 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
   // Nicht eingetragene Absender: nie in die Datei, aber sichtbar, bis sie bezahlt oder erledigt sind.
   const fremdeLieferanten = {};
   const fremdGesehen = new Map();
-  // Rechnung und Anhang (ohne Betrag) oder Kopie mit derselben Nummer: eine Zeile, die mit Betrag zuerst.
-  // Ein anderer Betrag bei gleicher Nummer bleibt als eigene Zeile sichtbar.
+  // Rechnung und Anhang (ohne Betrag) oder Kopie mit Nummer und Datum gleich: eine Zeile, die mit Betrag zuerst.
+  // Ein anderer Betrag oder ein anderes Datum bei gleicher Nummer bleibt als eigene Zeile sichtbar.
   for (const f of [...fremde].sort((a, b) => (a.brutto === null) - (b.brutto === null))) {
-    const k = f.nummer && `${f.schluessel}|${f.nummer}`;
+    const k = f.nummer && `${f.schluessel}|${f.nummer}|${f.datum}`;
     const schon = (k && fremdGesehen.get(k)) || [];
     if (schon.length && (f.brutto === null || schon.some(b => cent(b) === cent(f.brutto)))) continue;
     if (k) fremdGesehen.set(k, [...schon, f.brutto]);
@@ -312,7 +314,7 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
   // Unklare nur ueber eine echte Rechnungsnummer (ohne Betrag): ein gleicher Betrag soll keine offene Rechnung verdecken.
   const unklare = geprueft
     .filter(z => z.status === 'unklar' && String(z.nummer || '').replace(/[^A-Za-z0-9]/g, '').length >= 4 && !okNummern.has(`${z.schluessel}|${z.nummer}`) && !konflikt(z))
-    .map(z => ({ ...z, brutto: null, skonto: null, quelle: z }));
+    .map(z => ({ ...z, brutto: null, skonto: null, nurNachDatum: true, quelle: z }));
   const treffer = buchungen ? bankAbgleich(buchungen, [...ok, ...unklare], { ...fremdeLieferanten, ...konfig.lieferanten }) : new Map();
   const bank = new Map([...treffer].map(([k, v]) => [k.quelle || k, v]));
   const zeilen = geprueft.map((z) => {

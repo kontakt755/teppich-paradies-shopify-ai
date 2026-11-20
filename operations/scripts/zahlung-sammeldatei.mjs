@@ -123,7 +123,9 @@ export function exporteZusammenfuehren(jeDatei) {
   }
   const spannen = jeDatei.filter(l => l.length).map(l => l.map(b => b.datum).sort()).map(d => [d[0], d.at(-1)]).sort((a, b) => a[0].localeCompare(b[0]));
   // Gebucht wird nur an Banktagen: Luecke erst, wenn ein Werktag zwischen zwei Exporten fehlt.
-  // shortcut: Feiertage zaehlen als Werktag (dann eine Luecke zu viel, sicher), reicht fuer Hand-Exporte.
+  // shortcut: der CSV-Export nennt keinen Zeitraum, also zaehlen Buchungstage. Ein Feiertag oder ein Werktag ohne
+  // Umsatz zwischen zwei Exporten meldet eine Luecke zu viel (sicher: die Mail verlangt dann einen 30-Tage-Export).
+  // Besser erst mit einem Bankformat, das den Zeitraum traegt (CAMT.053).
   const werktagDazwischen = (a, b) => {
     for (let t = tagPlus(a, 1); t < b; t = tagPlus(t, 1)) if (![0, 6].includes(new Date(`${t}T12:00:00Z`).getUTCDay())) return true;
     return false;
