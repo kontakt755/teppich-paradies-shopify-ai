@@ -21,6 +21,16 @@ test('Neue Entwuerfe sind gesperrt, ohne erfundene Masse, Fotos, Hersteller und 
   assert.ok(plan.metafields.filter(m => m.key.startsWith('max_')).every(m => m.value === '0'));
   assert.ok(!plan.products.some(p => p.input.files || p.input.compareAtPrice));
 });
+test('Raummass und Kettel tragen teppich-nach-mass UND sonderposten, sonst storniert der Flow die Bestellung', () => {
+  // Flow "Zuschnitt-Bestellungen automatisch stornieren" verschont nur Bestellungen mit einer Position,
+  // die beide Tags traegt (Vorfall #1187, 19.11.2026). Bundle und Rolle duerfen teppich-nach-mass nicht tragen.
+  const plan = planeRestEntwuerfe({ records: [row()] }, { locationId });
+  const tags = role => plan.products.find(p => p.role === role).input.tags;
+  for (const role of ['raummass', 'kettelteppich']) {
+    assert.ok(tags(role).includes('teppich-nach-mass') && tags(role).includes('sonderposten'), role);
+  }
+  for (const role of ['quelle', 'zuschnitt']) assert.ok(!tags(role).includes('teppich-nach-mass'), role);
+});
 test('Materialpreis bleibt centgenau, Wunschmasspreis nutzt delegierte volle Euro', () => {
   const plan = planeRestEntwuerfe({ records: [row()] }, { locationId });
   assert.equal(plan.products[0].input.variants[0].price, '34.95');
