@@ -122,10 +122,16 @@ export function exporteZusammenfuehren(jeDatei) {
     }
   }
   const spannen = jeDatei.filter(l => l.length).map(l => l.map(b => b.datum).sort()).map(d => [d[0], d.at(-1)]).sort((a, b) => a[0].localeCompare(b[0]));
+  // Gebucht wird nur an Banktagen: Luecke erst, wenn ein Werktag zwischen zwei Exporten fehlt.
+  // shortcut: Feiertage zaehlen als Werktag (dann eine Luecke zu viel, sicher), reicht fuer Hand-Exporte.
+  const werktagDazwischen = (a, b) => {
+    for (let t = tagPlus(a, 1); t < b; t = tagPlus(t, 1)) if (![0, 6].includes(new Date(`${t}T12:00:00Z`).getUTCDay())) return true;
+    return false;
+  };
   let luecke = null;
   let bis = spannen[0]?.[1];
   for (const [von, ende] of spannen.slice(1)) {
-    if (von > bis && !luecke) luecke = `${bis} bis ${von}`;
+    if (von > bis && werktagDazwischen(bis, von) && !luecke) luecke = `${bis} bis ${von}`;
     if (ende > bis) bis = ende;
   }
   return { buchungen, luecke };

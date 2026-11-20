@@ -276,12 +276,14 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
   });
   // Nicht eingetragene Absender: nie in die Datei, aber sichtbar, bis sie bezahlt oder erledigt sind.
   const fremdeLieferanten = {};
-  const fremdGesehen = new Set();
-  // Rechnung und Anhang mit derselben Nummer: eine Zeile, die mit Betrag zuerst.
+  const fremdGesehen = new Map();
+  // Rechnung und Anhang (ohne Betrag) oder Kopie mit derselben Nummer: eine Zeile, die mit Betrag zuerst.
+  // Ein anderer Betrag bei gleicher Nummer bleibt als eigene Zeile sichtbar.
   for (const f of [...fremde].sort((a, b) => (a.brutto === null) - (b.brutto === null))) {
     const k = f.nummer && `${f.schluessel}|${f.nummer}`;
-    if (k && fremdGesehen.has(k)) continue;
-    if (k) fremdGesehen.add(k);
+    const schon = (k && fremdGesehen.get(k)) || [];
+    if (schon.length && (f.brutto === null || schon.some(b => cent(b) === cent(f.brutto)))) continue;
+    if (k) fremdGesehen.set(k, [...schon, f.brutto]);
     fremdeLieferanten[f.schluessel] = { name: f.anbieter, iban: '' };
     geprueft.push({ schluessel: f.schluessel, lieferant: f.anbieter, beleg: f.datei, nummer: f.nummer, datum: f.datum, brutto: f.brutto, skonto: null, nettoFaellig: null, zahlbetrag: null, status: 'unklar', grund: 'Lieferant nicht eingetragen: von Hand zahlen oder IBAN eintragen lassen' });
   }
@@ -299,9 +301,17 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
   const istVorgemerkt = z => vorgemerkt.find(v => v.schluessel === z.schluessel && v.nummer === z.nummer);
   const ok = geprueft.filter(z => z.status === 'ok' && !istVorgemerkt(z));
   const okNummern = new Set(geprueft.filter(z => z.status === 'ok').map(z => `${z.schluessel}|${z.nummer}`));
+  // Gleiche Nummer mit verschiedenen Betraegen: bleibt unklar, keine Buchung darf das aufloesen.
+  const betraege = new Map();
+  for (const z of geprueft.filter(x => x.status === 'unklar' && x.nummer && x.brutto != null)) {
+    const k = `${z.schluessel}|${z.nummer}`;
+    betraege.set(k, new Set([...(betraege.get(k) || []), cent(z.brutto)]));
+  }
+  const konflikt = z => (betraege.get(`${z.schluessel}|${z.nummer}`)?.size || 0) > 1;
+  for (const z of geprueft) if (z.status === 'unklar' && konflikt(z) && !/anderem Betrag/.test(z.grund)) z.grund += '; Rechnungsnummer mehrfach mit anderem Betrag';
   // Unklare nur ueber eine echte Rechnungsnummer (ohne Betrag): ein gleicher Betrag soll keine offene Rechnung verdecken.
   const unklare = geprueft
-    .filter(z => z.status === 'unklar' && String(z.nummer || '').replace(/[^A-Za-z0-9]/g, '').length >= 4 && !okNummern.has(`${z.schluessel}|${z.nummer}`))
+    .filter(z => z.status === 'unklar' && String(z.nummer || '').replace(/[^A-Za-z0-9]/g, '').length >= 4 && !okNummern.has(`${z.schluessel}|${z.nummer}`) && !konflikt(z))
     .map(z => ({ ...z, brutto: null, skonto: null, quelle: z }));
   const treffer = buchungen ? bankAbgleich(buchungen, [...ok, ...unklare], { ...fremdeLieferanten, ...konfig.lieferanten }) : new Map();
   const bank = new Map([...treffer].map(([k, v]) => [k.quelle || k, v]));

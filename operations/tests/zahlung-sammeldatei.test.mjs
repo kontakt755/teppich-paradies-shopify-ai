@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt } from '../lib/zahlung-sammeldatei.mjs';
+import { auswaehlen, ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt } from '../lib/zahlung-sammeldatei.mjs';
 import { sammelLauf, laufMailen, exporteHolen, exporteZusammenfuehren } from '../scripts/zahlung-sammeldatei.mjs';
 
 // Alle Daten erfunden. IBANs aus Fantasie-Kontonummern mit gerechneter Pruefziffer.
@@ -478,6 +478,8 @@ test('Kontoauszug: Exporte aus Downloads holen, Ueberlappung zaehlt einmal, Luec
   assert.equal(r.buchungen.length, 4, 'zwei gleiche Buchungen in einer Datei bleiben zwei, die Ueberlappung zaehlt nicht doppelt');
   assert.equal(r.luecke, null);
   assert.equal(exporteZusammenfuehren([alt, [b('2026-11-09', -30)]]).luecke, '2026-11-05 bis 2026-11-09');
+  assert.equal(exporteZusammenfuehren([alt, [b('2026-11-06', -30)]]).luecke, null, 'Folgetag ist keine Luecke');
+  assert.equal(exporteZusammenfuehren([[b('2026-11-06', -10)], [b('2026-11-09', -30)]]).luecke, null, 'Wochenende ist keine Luecke');
 });
 
 test('Mail: veralteter Kontoauszug steht oben und im Betreff', () => {
@@ -487,4 +489,20 @@ test('Mail: veralteter Kontoauszug steht oben und im Betreff', () => {
   assert.equal(e.datei, null);
   assert.match(betreff, /keine Datei, \d+ von Hand prüfen – Kontoauszug fehlt$/);
   assert.match(text.split('\n')[0], /^ACHTUNG: KONTOAUSZUG VERALTET: Umsätze bei der Commerzbank als CSV exportieren/);
+});
+
+test('Gleiche Rechnungsnummer mit anderem Betrag: eine Buchung macht keine der beiden bezahlt, beide bleiben sichtbar', () => {
+  const konfig = { lieferanten: { 'lieferant-a.example': { name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: '' } } };
+  const xml = brutto => rechnungXml({ nummer: '700009', brutto, bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', brutto) });
+  const belege = [{ schluessel: 'lieferant-a.example', datei: 'a.pdf', xml: xml('100.00'), pdfText: () => '' }, { schluessel: 'lieferant-a.example', datei: 'b.pdf', xml: xml('150.00'), pdfText: () => '' }];
+  const fremde = [100, 150, null].map((brutto, i) => ({ schluessel: 'paket.example', anbieter: 'Paketdienst Beispiel', datei: `p${i}.pdf`, nummer: '3110000009', brutto, datum: '2026-11-05' }));
+  const buchungen = [
+    { datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 700009' },
+    { datum: '2026-11-09', betrag: -100, name: 'Paketdienst Beispiel GmbH', iban: '', zweck: 'Beleg-Nr. 3110000009' },
+  ];
+  const { zeilen } = auswaehlen({ belege, fremde, konfig, buchungen, heute: '2026-11-10' });
+  assert.deepEqual(zeilen.filter(z => z.nummer === '700009').map(z => z.status), ['unklar', 'unklar']);
+  const paket = zeilen.filter(z => z.nummer === '3110000009');
+  assert.deepEqual(paket.map(z => [z.status, z.brutto]), [['unklar', 100], ['unklar', 150]], 'Anhang ohne Betrag faellt weg, anderer Betrag bleibt');
+  assert.match(paket[0].grund, /mehrfach mit anderem Betrag/);
 });
