@@ -525,4 +525,8 @@ test('Lesbare Rechnung und unklare Fassung derselben Nummer mit anderem Betrag: 
   assert.match(ohneBank[0].grund, /mehrfach im Archiv mit anderem Betrag/);
   const mitBank = auswaehlen({ belege, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 700011' }], heute: '2026-11-10' }).zeilen;
   assert.deepEqual(mitBank.map(z => z.status), ['unklar', 'unklar']);
+  // Die Zahlung nennt 700011: sie darf eine andere offene Rechnung gleichen Betrags nicht ueber den Betrag decken.
+  const offen = rechnungXml({ nummer: '700012', brutto: '100.00', bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', '100,00') });
+  const dazu = auswaehlen({ belege: [...belege, { schluessel: 'lieferant-a.example', datei: 'c.pdf', xml: offen, pdfText: () => '' }], konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 700011' }], heute: '2026-11-10' }).zeilen;
+  assert.equal(dazu.find(z => z.nummer === '700012').status, 'zahlen');
 });
