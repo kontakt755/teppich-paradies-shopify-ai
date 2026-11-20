@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt } from '../lib/zahlung-sammeldatei.mjs';
-import { sammelLauf, laufMailen } from '../scripts/zahlung-sammeldatei.mjs';
+import { auswaehlen, ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt } from '../lib/zahlung-sammeldatei.mjs';
+import { sammelLauf, laufMailen, exporteHolen, exporteZusammenfuehren } from '../scripts/zahlung-sammeldatei.mjs';
 
 // Alle Daten erfunden. IBANs aus Fantasie-Kontonummern mit gerechneter Pruefziffer.
 function erfundeneIban(konto) {
@@ -393,7 +393,7 @@ test('Mail an den Laden: Text aus der Pruefliste, Datei und Liste im Anhang; ohn
   let gesendet;
   assert.equal(await laufMailen({ privat, ergebnis: e, senden: async (zugang, mail) => { gesendet = mail; } }), 'gesendet an laden@example.com');
   assert.deepEqual(gesendet.an, ['laden@example.com']);
-  assert.equal(gesendet.betreff, 'Sammelüberweisung 2026-11-10: 3 Zahlungen, 1967,00 EUR');
+  assert.equal(gesendet.betreff, 'Sammelüberweisung 2026-11-10: 3 Zahlungen, 1967,00 EUR, 4 von Hand prüfen');
   assert.match(gesendet.text, /- Muster & Söhne GmbH, Rechnung 700001 vom 2026-10-28: 491,00 EUR \(mit Skonto\)/);
   assert.match(gesendet.text, /Von Hand prüfen \(4\):/);
   assert.deepEqual(gesendet.anhaenge.map(a => a.name), [e.datei, e.pruefliste]);
@@ -417,4 +417,100 @@ test('Review Runde 2: „Netto Gesamtbetrag“ zaehlt nicht, unmoegliches Datum 
   assert.equal(pdfRechnungPruefen({ text, nummer: null, brutto: null, waehrung: 'EUR' }, { iban: LIEFER }).brutto, 119);
   assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=4.00#', { datum: '2026-13-01', brutto: 100 }), null);
   assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=4.00#', { datum: '2026-02-30', brutto: 100 }), null);
+});
+
+test('Nicht eingetragener Absender ab 01.11.: mit Namen in der Pruefliste, bezahlt nur ueber Nummer und Name im Kontoauszug', () => {
+  const privat = privatOrdner();
+  const monat = path.join(privat, 'belege-archiv', '2026', '10');
+  const m = JSON.parse(fs.readFileSync(path.join(monat, 'manifest.json'), 'utf8'));
+  const fremd = (name, nummer, extra = {}) => ({ datei: `${name}.pdf`, format: 'pdf', rolle: 'rechnung', anbieterSchluessel: 'paket.example', anbieter: 'Paketdienst Beispiel', rechnungsnummer: nummer, brutto: 45.43, rechnungsdatum: '2026-11-18', dublette: null, ...extra });
+  m.belege.push(fremd('paket-offen', '3110623576'), fremd('paket-offen-anhang', '3110623576', { brutto: null }), fremd('paket-bezahlt', '3110622954', { rechnungsdatum: '2026-11-12' }), fremd('paket-bezahlt-anhang', '3110622954', { brutto: null, rechnungsdatum: '2026-11-12' }), fremd('paket-alt', '3110000001', { rechnungsdatum: '2026-10-20' }), fremd('paket-gutschrift', '3110000002', { art: 'gutschrift' }));
+  fs.writeFileSync(path.join(monat, 'manifest.json'), JSON.stringify(m));
+  const bank = path.join(privat, 'laden-entlastung-2026-11', 'bank-export', 'umsaetze.csv');
+  fs.appendFileSync(bank, `12.11.2026;Überweisung;Beleg-Nr.:3110622954;Paketdienst Beispiel GmbH;${FREMD};-54,67\n`);
+  const e = sammelLauf({ privat, jetzt: HEUTE });
+  const liste = listeLesen(privat, e);
+  assert.equal(statusVon(liste, '3110623576'), 'UNKLAR');
+  assert.match(liste, /Paketdienst Beispiel;3110623576;.*Lieferant nicht eingetragen/);
+  assert.equal(statusVon(liste, '3110622954'), 'bezahlt');
+  assert.equal(liste.split('\r\n').filter(z => z.includes(';3110623576;')).length, 1, 'Anhang mit gleicher Nummer: eine Zeile');
+  assert.match(liste, /;3110623576;2026-11-18;45,43;/);
+  assert.equal(statusVon(liste, '3110000001'), undefined, 'vor dem Start nur gezaehlt');
+  assert.equal(statusVon(liste, '3110000002'), undefined, 'Gutschrift wird nicht ueberwiesen');
+  assert.match(liste, /Nicht betrachtet: 3 Rechnung/);
+});
+
+test('Unklare Rechnung: als bezahlt nur ueber die Nummer im Verwendungszweck, ein gleicher Betrag reicht nicht', () => {
+  const privat = privatOrdner();
+  const bank = path.join(privat, 'laden-entlastung-2026-11', 'bank-export', 'umsaetze.csv');
+  // 700005 (Skonto unlesbar) mit Nummer bezahlt; 700007 (fremde IBAN) nur Betrag und Name, keine Nummer.
+  fs.appendFileSync(bank, `07.11.2026;Überweisung;Re.-Nr.: 700005;Muster & Söhne GmbH;${LIEFER};-80,00\n08.11.2026;Überweisung;Wareneinkauf;Muster & Söhne GmbH;${LIEFER};-400,00\n`);
+  const liste = listeLesen(privat, sammelLauf({ privat, jetzt: HEUTE }));
+  assert.equal(statusVon(liste, '700005'), 'bezahlt');
+  assert.match(liste, /bezahlt;[^\r]*700005;[^\r]*vorher: /);
+  assert.equal(statusVon(liste, '700007'), 'UNKLAR');
+});
+
+test('erledigt.json: Beleg ohne Zahlung faellt aus Datei und Mail, bleibt in der Pruefliste', () => {
+  const privat = privatOrdner();
+  fs.writeFileSync(path.join(privat, 'zahlungen', 'erledigt.json'), JSON.stringify({ 'unlesbar.pdf': 'Anschreiben, keine Rechnung' }));
+  const e = sammelLauf({ privat, jetzt: HEUTE });
+  const liste = listeLesen(privat, e);
+  assert.match(liste, /^erledigt;[^\r]*700005;[^\r]*Anschreiben, keine Rechnung/m);
+  assert.doesNotMatch(mailInhalt(liste, { lauf: e.lauf, datei: null, zahlungen: 0, summe: 0 }).text, /700005/);
+});
+
+test('Kontoauszug: Exporte aus Downloads holen, Ueberlappung zaehlt einmal, Luecke sperrt', () => {
+  const quelle = fs.mkdtempSync(path.join(os.tmpdir(), 'downloads-'));
+  const ziel = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'bank-')), 'bank-export');
+  fs.writeFileSync(path.join(quelle, `${EIGEN}_EUR_19-11-2026_1435.csv`), 'x');
+  fs.writeFileSync(path.join(quelle, `${FREMD}_EUR_19-11-2026_1435.csv`), 'x');
+  fs.writeFileSync(path.join(quelle, 'rechnung.pdf'), 'x');
+  assert.equal(exporteHolen(ziel, EIGEN, quelle), 1);
+  assert.deepEqual(fs.readdirSync(ziel), [`${EIGEN}_EUR_19-11-2026_1435.csv`]);
+  assert.equal(exporteHolen(ziel, EIGEN, quelle), 0, 'schon da');
+  assert.equal(exporteHolen(ziel, EIGEN, path.join(quelle, 'fehlt')), null);
+
+  const b = (datum, betrag, zweck = 'RE 1') => ({ datum, betrag, name: 'A', iban: '', zweck });
+  const alt = [b('2026-11-02', -10), b('2026-11-05', -20), b('2026-11-05', -20)];
+  const neu = [b('2026-11-05', -20), b('2026-11-06', -30)];
+  const r = exporteZusammenfuehren([alt, neu]);
+  assert.equal(r.buchungen.length, 4, 'zwei gleiche Buchungen in einer Datei bleiben zwei, die Ueberlappung zaehlt nicht doppelt');
+  assert.equal(r.luecke, null);
+  assert.equal(exporteZusammenfuehren([alt, [b('2026-11-09', -30)]]).luecke, '2026-11-05 bis 2026-11-09');
+  assert.equal(exporteZusammenfuehren([alt, [b('2026-11-06', -30)]]).luecke, null, 'Folgetag ist keine Luecke');
+  assert.equal(exporteZusammenfuehren([[b('2026-11-06', -10)], [b('2026-11-09', -30)]]).luecke, null, 'Wochenende ist keine Luecke');
+});
+
+test('Mail: veralteter Kontoauszug steht oben und im Betreff', () => {
+  const privat = privatOrdner();
+  const e = sammelLauf({ privat, schreiben: true, jetzt: new Date('2026-11-20T09:00:00Z') });
+  const { betreff, text } = mailInhalt(listeLesen(privat, e), { lauf: e.lauf, datei: e.datei, zahlungen: e.zahlungen, summe: e.summe });
+  assert.equal(e.datei, null);
+  assert.match(betreff, /keine Datei, \d+ von Hand prüfen – Kontoauszug fehlt$/);
+  assert.match(text.split('\n')[0], /^ACHTUNG: KONTOAUSZUG VERALTET: Umsätze bei der Commerzbank als CSV exportieren/);
+});
+
+test('Gleiche Rechnungsnummer mit anderem Betrag: eine Buchung macht keine der beiden bezahlt, beide bleiben sichtbar', () => {
+  const konfig = { lieferanten: { 'lieferant-a.example': { name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: '' } } };
+  const xml = brutto => rechnungXml({ nummer: '700009', brutto, bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', brutto) });
+  const belege = [{ schluessel: 'lieferant-a.example', datei: 'a.pdf', xml: xml('100.00'), pdfText: () => '' }, { schluessel: 'lieferant-a.example', datei: 'b.pdf', xml: xml('150.00'), pdfText: () => '' }];
+  const fremde = [100, 150, null].map((brutto, i) => ({ schluessel: 'paket.example', anbieter: 'Paketdienst Beispiel', datei: `p${i}.pdf`, nummer: '3110000009', brutto, datum: '2026-11-05' }));
+  const buchungen = [
+    { datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 700009' },
+    { datum: '2026-11-09', betrag: -100, name: 'Paketdienst Beispiel GmbH', iban: '', zweck: 'Beleg-Nr. 3110000009' },
+  ];
+  const { zeilen } = auswaehlen({ belege, fremde, konfig, buchungen, heute: '2026-11-10' });
+  assert.deepEqual(zeilen.filter(z => z.nummer === '700009').map(z => z.status), ['unklar', 'unklar']);
+  const paket = zeilen.filter(z => z.nummer === '3110000009');
+  assert.deepEqual(paket.map(z => [z.status, z.brutto]), [['unklar', 100], ['unklar', 150]], 'Anhang ohne Betrag faellt weg, anderer Betrag bleibt');
+  assert.match(paket[0].grund, /mehrfach mit anderem Betrag/);
+});
+
+test('Gleiche Nummer an verschiedenen Tagen: zwei Zeilen; eine aeltere Zahlung macht die neuere unklare Rechnung nicht bezahlt', () => {
+  const konfig = { lieferanten: {} };
+  const fremde = ['2026-11-01', '2026-11-18'].map((datum, i) => ({ schluessel: 'paket.example', anbieter: 'Paketdienst Beispiel', datei: `p${i}.pdf`, nummer: '3110000010', brutto: 45.43, datum }));
+  const buchungen = [{ datum: '2026-11-03', betrag: -45.43, name: 'Paketdienst Beispiel GmbH', iban: '', zweck: 'Beleg-Nr. 3110000010' }];
+  const zeilen = auswaehlen({ belege: [], fremde, konfig, buchungen, heute: '2026-11-20' }).zeilen;
+  assert.deepEqual(zeilen.map(z => [z.datum, z.status]), [['2026-11-01', 'bezahlt'], ['2026-11-18', 'unklar']]);
 });
