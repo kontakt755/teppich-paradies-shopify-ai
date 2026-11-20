@@ -19,7 +19,9 @@
  * nicht freigegeben, die Eintraege mit ihrem Dateinamen dort von Hand loeschen.
  * zahlungen/erledigt.json: { "<Belegdatei>": "Grund" } fuer Belege ohne Zahlung (Anschreiben, eigene Rechnung).
  * Kontoauszug: der Commerzbank-CSV-Export des eigenen Kontos wird aus ~/Downloads geholt; mehrere
- * Exporte werden zusammengefuehrt, eine Luecke zwischen ihnen sperrt die Datei.
+ * Exporte werden zusammengefuehrt, eine Luecke oder unlesbare Buchung sperrt die Datei. Ein neuer Export
+ * ist freiwillig (Benutzer 20.11.2026): was nach der letzten Buchung bezahlt wurde, kennt die Vormerkliste,
+ * deshalb werden Lieferantenrechnungen nicht mehr von Hand ueberwiesen.
  * Rechnungen nicht eingetragener Absender (ab PDF_AB) stehen mit Namen als UNKLAR in der Pruefliste.
  * Die Ausgabe nennt nur Zahlen.
  */
@@ -175,7 +177,7 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
   const abgleich = bankLesen(privat, pdf, heute, { iban: konfig.auftraggeber.iban, downloads });
   // zahlungen/erledigt.json: { "<Belegdatei>": "Grund" } fuer Belege, die keine Zahlung brauchen (Anschreiben, Anhang, eigene Rechnung).
   const erledigt = jsonLesen(path.join(ordner, 'erledigt.json'), {});
-  const auswahl = auswaehlen({ belege, fremde, erledigt, konfig, buchungen: abgleich.liste, auszugAktuell: abgleich.aktuell, vorgemerkt, heute });
+  const auswahl = auswaehlen({ belege, fremde, erledigt, konfig, buchungen: abgleich.liste, auszugGesperrt: !abgleich.moeglich || Boolean(abgleich.luecke) || abgleich.fehler > 0 || abgleich.zeilenNichtLesbar > 0, vorgemerkt, heute });
 
   // Uhrzeit im Namen: zwei Laeufe am selben Tag ueberschreiben sich nicht und haben eigene Kennungen.
   const stempel = `${heute}-${jetzt.toISOString().slice(11, 19).replace(/:/g, '')}`;

@@ -278,11 +278,12 @@ export function umsatzPdfLesen(text) {
  * zahlen | spaeter | bezahlt | vorgemerkt | gutschrift | lastschrift | unklar.
  * @param belege [{ schluessel, datei, xml|null }] nur Rechnungen der konfigurierten Lieferanten
  * @param buchungen Kontoauszug oder null (dann kein Bezahlt-Abgleich)
- * @param auszugAktuell false, wenn der Kontoauszug nicht bis kurz vor heute reicht: dann zaehlt er nur
- *   fuer „bezahlt“, nicht als Beleg, dass etwas noch offen ist
+ * @param auszugGesperrt true ohne Kontoauszug, mit unlesbarer Buchung oder Luecke: dann nichts in die Datei.
+ *   Ein nur veralteter Auszug sperrt nicht (Benutzer 20.11.2026: kein woechentlicher Export); was danach
+ *   bezahlt wurde, kennt nur die Vormerkliste, deshalb werden Lieferantenrechnungen nicht mehr von Hand ueberwiesen.
  * @param vorgemerkt [{ schluessel, nummer, datei }] aus frueheren Sammeldateien
  */
-export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchungen, auszugAktuell = true, vorgemerkt = [], heute }) {
+export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchungen, auszugGesperrt = false, vorgemerkt = [], heute }) {
   const naechster = naechsterLauf(heute);
   const geprueft = belege.map((b) => {
     const lieferant = konfig.lieferanten[b.schluessel];
@@ -325,6 +326,11 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
   for (const z of geprueft.filter(x => x.status === 'ok')) {
     if ((unklarBetrag.get(`${z.schluessel}|${z.nummer}`) || []).some(c => c !== cent(z.brutto))) Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
   }
+  // Anhang oder Kopie ohne Betrag zu einer lesbaren Rechnung derselben Nummer (Leistungsuebersicht): nichts zu pruefen.
+  const lesbar = new Set(geprueft.filter(x => x.status === 'ok').map(x => `${x.schluessel}|${x.nummer}`));
+  for (const z of geprueft) {
+    if (z.status === 'unklar' && z.brutto == null && z.nummer && lesbar.has(`${z.schluessel}|${z.nummer}`)) Object.assign(z, { status: 'erledigt', grund: 'Anhang oder Kopie zur Rechnung gleicher Nummer (ohne Betrag)' });
+  }
   const istVorgemerkt = z => vorgemerkt.find(v => v.schluessel === z.schluessel && v.nummer === z.nummer);
   const ok = geprueft.filter(z => z.status === 'ok' && !istVorgemerkt(z));
   const okNummern = new Set(geprueft.filter(z => z.status === 'ok').map(z => `${z.schluessel}|${z.nummer}`));
@@ -355,8 +361,7 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
     if (t) return { ...z, status: 'bezahlt', grund: `laut Kontoauszug am ${t.buchung.datum}${t.ueber === 'betrag' ? ' (Betrag und Empfänger passen, Nummer nicht sichtbar)' : ''}` };
     const r = z;
     // Benutzer 19.11.2026: jede offene Rechnung im Freitagslauf ihrer Woche zahlen, nicht auf Fristen warten.
-    // Weil dann auch von Hand Bezahltes auftauchen kann, nur mit vollstaendigem, aktuellem Auszug.
-    if (!(buchungen && auszugAktuell)) return { ...z, status: 'unklar', grund: 'ohne aktuellen, vollständigen Kontoauszug nicht in die Datei' };
+    if (!buchungen || auszugGesperrt) return { ...z, status: 'unklar', grund: 'ohne lesbaren, lückenlosen Kontoauszug nicht in die Datei' };
     if (r.skonto && r.skonto.bis >= heute) {
       return { ...z, status: 'zahlen', zahlbetrag: r.skonto.zahlbetrag, mitSkonto: true, grund: r.skonto.bis === heute ? 'Skontofrist endet heute: heute freigeben' : 'mit Skonto' };
     }
@@ -449,7 +454,7 @@ export function mailInhalt(prueflisteText, { lauf, datei, zahlungen, summe }) {
   const inDatei = auswahl('IN DATEI').map(f => `- ${f[1]}, Rechnung ${f[2]} vom ${f[3]}: ${f[8]} EUR (${f[9]})`);
   const unklar = auswahl('UNKLAR').map(f => `- ${f[1]}, Rechnung ${f[2] || '?'} vom ${f[3] || '?'}${f[4] ? `, ${f[4]} EUR` : ''}: ${f[9]}`);
   const warnung = /ACHTUNG/.test(zeilen[1] || '') ? zeilen[1].replace(/^.*?ACHTUNG: /, 'ACHTUNG: ') : '';
-  const betreff = `${datei ? `Sammelüberweisung ${lauf}: ${zahlungen} Zahlungen, ${de(summe)} EUR` : `Sammelüberweisung ${lauf}: keine Datei`}${unklar.length ? `, ${unklar.length} von Hand prüfen` : ''}${warnung ? ' – Kontoauszug fehlt' : ''}`;
+  const betreff = `${datei ? `Sammelüberweisung ${lauf}: ${zahlungen} Zahlungen, ${de(summe)} EUR` : `Sammelüberweisung ${lauf}: keine Datei`}${unklar.length ? `, ${unklar.length} von Hand prüfen` : ''}${warnung ? ' – Kontoauszug prüfen' : ''}`;
   const text = [
     ...(warnung ? [warnung, ''] : []),
     datei ? `Im Anhang die Sammeldatei für die Commerzbank (${datei}) und die Prüfliste.` : 'Heute gibt es keine Sammeldatei. Die Prüfliste hängt an.',
@@ -468,7 +473,7 @@ const REIHENFOLGE = ['zahlen', 'unklar', 'gutschrift', 'lastschrift', 'spaeter',
 export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdfAb = '', summeCent }) {
   const kopf = [
     `Sammelüberweisung Lauf ${auswahl.heute}; nächster Lauf ${auswahl.naechster}`,
-    abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.aktuell ? '' : ` – ACHTUNG: KONTOAUSZUG ${abgleich.luecke ? `HAT EINE LÜCKE (${abgleich.luecke})` : 'VERALTET'}: Umsätze bei der Commerzbank als CSV exportieren (Zeitraum mindestens die letzten 30 Tage) und in Downloads speichern, dann neu laufen lassen; bis dahin jede Zeile selbst prüfen`}${abgleich.fehler ? `, ${abgleich.fehler} Datei(en) NICHT LESBAR` : ''}${abgleich.zeilenNichtLesbar ? `, ${abgleich.zeilenNichtLesbar} Buchung(en) NICHT LESBAR – Auszug gilt als unvollständig` : ''}` : 'ACHTUNG: Bezahlt-Abgleich nicht möglich (kein Kontoauszug-Export gefunden). Vor der Freigabe jede Zeile selbst prüfen: nicht schon bezahlt?',
+    abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.luecke || abgleich.fehler || abgleich.zeilenNichtLesbar ? ` – ACHTUNG: KONTOAUSZUG UNVOLLSTÄNDIG${abgleich.luecke ? ` (Lücke ${abgleich.luecke})` : ''}${abgleich.fehler ? ` (${abgleich.fehler} Datei(en) nicht lesbar)` : ''}${abgleich.zeilenNichtLesbar ? ` (${abgleich.zeilenNichtLesbar} Buchung(en) nicht lesbar)` : ''}: keine Datei. Umsätze der letzten 30 Tage bei der Commerzbank als CSV in Downloads speichern, dann neu laufen lassen` : abgleich.aktuell ? '' : `; danach schützt die Vormerkliste vor doppelter Zahlung (Lieferantenrechnungen nicht von Hand überweisen; ein neuer CSV-Export in Downloads ist freiwillig)`}` : 'ACHTUNG: Kein Kontoauszug-Export gefunden: keine Datei. Einmal die Umsätze der letzten 90 Tage bei der Commerzbank als CSV in Downloads speichern.',
     datei ? `Datei: ${datei}; ${auswahl.zeilen.filter(z => z.status === 'zahlen').length} Zahlungen; Summe ${de(summeCent / 100)} EUR` : 'Keine Datei: nichts zu zahlen oder Probelauf',
     `Nicht betrachtet: ${andere} Rechnung(en) anderer Lieferanten${vorStart ? `, ${vorStart} reine PDF-Rechnung(en) vor ${pdfAb}` : ''}`,
     '',
