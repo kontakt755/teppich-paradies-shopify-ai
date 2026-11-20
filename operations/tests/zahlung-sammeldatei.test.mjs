@@ -514,3 +514,48 @@ test('Gleiche Nummer an verschiedenen Tagen: zwei Zeilen; eine aeltere Zahlung m
   const zeilen = auswaehlen({ belege: [], fremde, konfig, buchungen, heute: '2026-11-20' }).zeilen;
   assert.deepEqual(zeilen.map(z => [z.datum, z.status]), [['2026-11-01', 'bezahlt'], ['2026-11-18', 'unklar']]);
 });
+
+test('Lesbare Rechnung und unklare Fassung derselben Nummer mit anderem Betrag: keine wird gezahlt oder als bezahlt verbucht', () => {
+  const konfig = { lieferanten: { 'lieferant-a.example': { name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: '' } } };
+  const lesbar = rechnungXml({ nummer: '700011', brutto: '100.00', bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', '100,00') });
+  const unklar = rechnungXml({ nummer: '700011', brutto: '150.00', bedingungen: 'Zahlbar nach Vereinbarung, 2 % Skonto möglich' });
+  const belege = [{ schluessel: 'lieferant-a.example', datei: 'a.pdf', xml: lesbar, pdfText: () => '' }, { schluessel: 'lieferant-a.example', datei: 'b.pdf', xml: unklar, pdfText: () => '' }];
+  const ohneBank = auswaehlen({ belege, konfig, buchungen: [], heute: '2026-11-10' }).zeilen;
+  assert.deepEqual(ohneBank.map(z => z.status), ['unklar', 'unklar']);
+  assert.match(ohneBank[0].grund, /mehrfach im Archiv mit anderem Betrag/);
+  const mitBank = auswaehlen({ belege, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 700011' }], heute: '2026-11-10' }).zeilen;
+  assert.deepEqual(mitBank.map(z => z.status), ['unklar', 'unklar']);
+  // Die Zahlung nennt 700011: sie darf eine andere offene Rechnung gleichen Betrags nicht ueber den Betrag decken.
+  const offen = rechnungXml({ nummer: '700012', brutto: '100.00', bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', '100,00') });
+  const dazu = auswaehlen({ belege: [...belege, { schluessel: 'lieferant-a.example', datei: 'c.pdf', xml: offen, pdfText: () => '' }], konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 700011' }], heute: '2026-11-10' }).zeilen;
+  assert.equal(dazu.find(z => z.nummer === '700012').status, 'zahlen');
+  // Auch kurze Nummern: eine Zahlung "RE 123" deckt die offene 124 gleichen Betrags nicht.
+  const kurz = n => rechnungXml({ nummer: n, brutto: '100.00', bedingungen: mitSkonto('11.11.26', '2,00', '98,00', '27.11.26', '100,00') });
+  const kurzBelege = [
+    { schluessel: 'lieferant-a.example', datei: 'k1.pdf', xml: kurz('123'), pdfText: () => '' },
+    { schluessel: 'lieferant-a.example', datei: 'k2.pdf', xml: rechnungXml({ nummer: '123', brutto: '150.00', bedingungen: 'Zahlbar nach Vereinbarung, 2 % Skonto möglich' }), pdfText: () => '' },
+    { schluessel: 'lieferant-a.example', datei: 'k3.pdf', xml: kurz('124'), pdfText: () => '' },
+  ];
+  const kurzZeilen = auswaehlen({ belege: kurzBelege, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 123' }], heute: '2026-11-10' }).zeilen;
+  assert.equal(kurzZeilen.find(z => z.nummer === '124').status, 'zahlen');
+  // Eine Zahlung fuer „123A“ oder „R-123“ (gesperrt, Betragskonflikt) gehoert nicht zur offenen „123“.
+  for (const lang of ['123A', 'R-123']) {
+    const b2 = [
+      { schluessel: 'lieferant-a.example', datei: 'l1.pdf', xml: kurz(lang), pdfText: () => '' },
+      { schluessel: 'lieferant-a.example', datei: 'l2.pdf', xml: rechnungXml({ nummer: lang, brutto: '150.00', bedingungen: 'Zahlbar nach Vereinbarung, 2 % Skonto möglich' }), pdfText: () => '' },
+      { schluessel: 'lieferant-a.example', datei: 'l3.pdf', xml: kurz('123'), pdfText: () => '' },
+    ];
+    const z = auswaehlen({ belege: b2, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: `RE ${lang}` }], heute: '2026-11-10' }).zeilen;
+    assert.equal(z.find(r => r.nummer === '123').status, 'zahlen', lang);
+  }
+  // Verschachtelt („R-123“ und „R-123-123“, beide gesperrt): in beiden Archiv-Reihenfolgen bleibt „123“ offen.
+  const gesperrt = n => [
+    { schluessel: 'lieferant-a.example', datei: `${n}-a.pdf`, xml: kurz(n), pdfText: () => '' },
+    { schluessel: 'lieferant-a.example', datei: `${n}-b.pdf`, xml: rechnungXml({ nummer: n, brutto: '150.00', bedingungen: 'Zahlbar nach Vereinbarung, 2 % Skonto möglich' }), pdfText: () => '' },
+  ];
+  for (const reihe of [['R-123', 'R-123-123'], ['R-123-123', 'R-123']]) {
+    const b3 = [...gesperrt(reihe[0]), ...gesperrt(reihe[1]), { schluessel: 'lieferant-a.example', datei: 'n.pdf', xml: kurz('123'), pdfText: () => '' }];
+    const z = auswaehlen({ belege: b3, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE R-123-123' }], heute: '2026-11-10' }).zeilen;
+    assert.equal(z.find(r => r.nummer === '123').status, 'zahlen', reihe.join(' vor '));
+  }
+});

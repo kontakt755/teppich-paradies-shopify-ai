@@ -202,21 +202,37 @@ export function konfigPruefen(k) {
  * @param lieferanten aus der Konfiguration: schluessel -> { name, iban }
  * @returns Map(offene-Eintrag -> { buchung, ueber: 'nummer'|'betrag' })
  */
-export function bankAbgleich(buchungen, offene, lieferanten) {
+// Als eigenes Wort: eine Ziffernfolge mitten in IBAN oder Kundennummer ist keine Rechnungsnummer.
+// Reine Ziffern duerfen rechts an Buchstaben grenzen („208415TP050“), links nie („RE700001“ ist eine andere Nummer).
+const nummerIm = (zweck, nummer) => {
+  const rechts = /^\d+$/.test(nummer) ? '0-9' : 'A-Z0-9';
+  return new RegExp(`(^|[^A-Z0-9])${nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^${rechts}])`).test(String(zweck).toUpperCase());
+};
+
+/**
+ * @param bekannteNummern alle Rechnungsnummern im Archiv ({ schluessel, nummer }), auch gesperrte:
+ *   eine Buchung, die eine andere Rechnung desselben Absenders nennt, deckt nie ueber den Betrag.
+ */
+export function bankAbgleich(buchungen, offene, lieferanten, bekannteNummern = []) {
   const frei = new Set(buchungen.filter(x => x.betrag < 0));
   const treffer = new Map();
   const empfaenger = (x, o) => (x.iban && x.iban === lieferanten[o.schluessel].iban) || namePasst(x.name, { anbieter: lieferanten[o.schluessel].name, anbieterSchluessel: o.schluessel });
+  const nenntAndere = (x, o) => bekannteNummern.some(n => n.schluessel === o.schluessel && n.nummer !== o.nummer && nummerIm(x.zweck, n.nummer));
   const stufen = [
-    // Als eigenes Wort: eine Ziffernfolge mitten in IBAN oder Kundennummer ist keine Rechnungsnummer.
-    // Reine Ziffern duerfen rechts an Buchstaben grenzen („208415TP050“), links nie („RE700001“ ist eine andere Nummer).
     ['nummer', (x, o) => {
       if (!o.nummer) return false;
       // Unklare (nurNachDatum): eine Zahlung vor dem Rechnungsdatum gehoert zu einer frueheren Rechnung.
       if (o.nurNachDatum && o.datum && x.datum < o.datum) return false;
-      const rechts = /^\d+$/.test(o.nummer) ? '0-9' : 'A-Z0-9';
-      return new RegExp(`(^|[^A-Z0-9])${o.nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^${rechts}])`).test(String(x.zweck).toUpperCase());
+      // Laengere bekannte Nummern, die diese enthalten („123A“, „R-123“ zu „123“), zaehlen nicht als Treffer:
+      // sie werden vorher aus dem Zweck genommen. Steht „123“ zusaetzlich allein da, bleibt der Treffer.
+      // Laengste zuerst: sonst zerlegt „R-123“ die „R-123-123“ und laesst „-123“ stehen.
+      let zweck = String(x.zweck).toUpperCase();
+      const laengere = bekannteNummern.filter(n => n.schluessel === o.schluessel).map(n => String(n.nummer).toUpperCase())
+        .filter(lang => lang !== o.nummer.toUpperCase() && lang.includes(o.nummer.toUpperCase())).sort((a, b) => b.length - a.length);
+      for (const lang of laengere) zweck = zweck.split(lang).join(' ');
+      return nummerIm(zweck, o.nummer);
     }],
-    ['betrag', (x, o) => [o.brutto, o.skonto?.zahlbetrag].some(b => b != null && cent(b) === cent(-x.betrag)) && (!o.datum || x.datum >= o.datum)],
+    ['betrag', (x, o) => [o.brutto, o.skonto?.zahlbetrag].some(b => b != null && cent(b) === cent(-x.betrag)) && (!o.datum || x.datum >= o.datum) && !nenntAndere(x, o)],
   ];
   for (const [ueber, passt] of stufen) {
     for (const o of offene) {
@@ -300,6 +316,15 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
     if (cent(e.brutto) !== cent(z.brutto)) Object.assign(e, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
     Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv' });
   }
+  // Eine unklare Fassung derselben Nummer mit anderem Betrag (Korrektur, zweite Rechnung) sperrt auch die lesbare.
+  const unklarBetrag = new Map();
+  for (const z of geprueft.filter(x => x.status === 'unklar' && x.nummer && x.brutto != null)) {
+    const k = `${z.schluessel}|${z.nummer}`;
+    unklarBetrag.set(k, [...(unklarBetrag.get(k) || []), cent(z.brutto)]);
+  }
+  for (const z of geprueft.filter(x => x.status === 'ok')) {
+    if ((unklarBetrag.get(`${z.schluessel}|${z.nummer}`) || []).some(c => c !== cent(z.brutto))) Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
+  }
   const istVorgemerkt = z => vorgemerkt.find(v => v.schluessel === z.schluessel && v.nummer === z.nummer);
   const ok = geprueft.filter(z => z.status === 'ok' && !istVorgemerkt(z));
   const okNummern = new Set(geprueft.filter(z => z.status === 'ok').map(z => `${z.schluessel}|${z.nummer}`));
@@ -315,7 +340,7 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
   const unklare = geprueft
     .filter(z => z.status === 'unklar' && String(z.nummer || '').replace(/[^A-Za-z0-9]/g, '').length >= 4 && !okNummern.has(`${z.schluessel}|${z.nummer}`) && !konflikt(z))
     .map(z => ({ ...z, brutto: null, skonto: null, nurNachDatum: true, quelle: z }));
-  const treffer = buchungen ? bankAbgleich(buchungen, [...ok, ...unklare], { ...fremdeLieferanten, ...konfig.lieferanten }) : new Map();
+  const treffer = buchungen ? bankAbgleich(buchungen, [...ok, ...unklare], { ...fremdeLieferanten, ...konfig.lieferanten }, geprueft.filter(z => z.nummer)) : new Map();
   const bank = new Map([...treffer].map(([k, v]) => [k.quelle || k, v]));
   const zeilen = geprueft.map((z) => {
     if (z.status === 'unklar') {
