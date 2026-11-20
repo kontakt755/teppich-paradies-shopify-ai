@@ -548,4 +548,14 @@ test('Lesbare Rechnung und unklare Fassung derselben Nummer mit anderem Betrag: 
     const z = auswaehlen({ belege: b2, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: `RE ${lang}` }], heute: '2026-11-10' }).zeilen;
     assert.equal(z.find(r => r.nummer === '123').status, 'zahlen', lang);
   }
+  // Verschachtelt („R-123“ und „R-123-123“, beide gesperrt): in beiden Archiv-Reihenfolgen bleibt „123“ offen.
+  const gesperrt = n => [
+    { schluessel: 'lieferant-a.example', datei: `${n}-a.pdf`, xml: kurz(n), pdfText: () => '' },
+    { schluessel: 'lieferant-a.example', datei: `${n}-b.pdf`, xml: rechnungXml({ nummer: n, brutto: '150.00', bedingungen: 'Zahlbar nach Vereinbarung, 2 % Skonto möglich' }), pdfText: () => '' },
+  ];
+  for (const reihe of [['R-123', 'R-123-123'], ['R-123-123', 'R-123']]) {
+    const b3 = [...gesperrt(reihe[0]), ...gesperrt(reihe[1]), { schluessel: 'lieferant-a.example', datei: 'n.pdf', xml: kurz('123'), pdfText: () => '' }];
+    const z = auswaehlen({ belege: b3, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE R-123-123' }], heute: '2026-11-10' }).zeilen;
+    assert.equal(z.find(r => r.nummer === '123').status, 'zahlen', reihe.join(' vor '));
+  }
 });
