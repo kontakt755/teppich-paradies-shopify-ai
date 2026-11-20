@@ -142,7 +142,7 @@ test('Ohne Kontoauszug: deutlicher Hinweis, nichts in die Datei; Probelauf schre
   assert.equal(e.datei, null);
   assert.equal(e.zahlungen, 0); // sofort zahlen heisst: nur mit Beleg, dass noch nichts bezahlt ist
   const liste = listeLesen(privat, e);
-  assert.match(liste, /Bezahlt-Abgleich nicht möglich/);
+  assert.match(liste, /Kein Kontoauszug-Export gefunden: keine Datei/);
   assert.equal(statusVon(liste, '700003'), 'UNKLAR');
   assert.deepEqual(fs.readdirSync(path.join(privat, 'zahlungen')).filter(n => /\.xml$|vorgemerkt/.test(n)), []);
 });
@@ -206,14 +206,18 @@ test('Abgleich ueber Betrag und Empfaenger, wenn der Zweck gekuerzt ist: jede Bu
   assert.equal(statusVon(liste, '700003'), 'IN DATEI');
 });
 
-test('Veralteter Kontoauszug: zaehlt fuer bezahlt, aber verfallenes Skonto kommt nicht in die Datei', () => {
+test('Veralteter Kontoauszug (kein woechentlicher Export): zaehlt fuer bezahlt, Offenes kommt in die Datei, nie zweimal', () => {
   const privat = privatOrdner();
-  const e = sammelLauf({ privat, jetzt: new Date('2026-11-12T09:00:00Z') }); // letzte Buchung 06.11.
+  const e = sammelLauf({ privat, schreiben: true, jetzt: new Date('2026-11-12T09:00:00Z') }); // letzte Buchung 06.11.
   assert.equal(e.auszugAktuell, false);
   const liste = listeLesen(privat, e);
-  assert.match(liste, /KONTOAUSZUG VERALTET/);
+  assert.match(liste, /schützt die Vormerkliste vor doppelter Zahlung/);
+  assert.doesNotMatch(liste, /ACHTUNG/);
   assert.equal(statusVon(liste, '700004'), 'bezahlt');
-  assert.equal(statusVon(liste, '700003'), 'UNKLAR');
+  assert.equal(statusVon(liste, '700003'), 'IN DATEI');
+  const zweiter = sammelLauf({ privat, schreiben: true, jetzt: new Date('2026-11-13T09:00:00Z') });
+  assert.equal(zweiter.zahlungen, 0);
+  assert.equal(statusVon(listeLesen(privat, zweiter), '700003'), 'schon in Datei');
 });
 
 test('Kopie derselben Rechnung im Archiv: eine Zahlung im Auszug deckt beide, keine geht in die Datei', () => {
@@ -271,11 +275,11 @@ test('PDF-Rechnung im Lauf: nur mit aktuellem Auszug in die Datei, voller Betrag
   assert.equal(statusVon(listeLesen(privat, e), 'R-2026-501'), 'IN DATEI');
   assert.match(fs.readFileSync(path.join(privat, 'zahlungen', e.datei), 'utf8'), /<InstdAmt Ccy="EUR">1234\.50<\/InstdAmt>[\s\S]*<Ustrd>RE R-2026-501 Kd 4711<\/Ustrd>/);
 
-  // Veralteter Auszug: PDF-Rechnung nicht in die Datei
+  // Veralteter Auszug (Benutzer 20.11.2026): sperrt nicht mehr, die Vormerkliste schuetzt
   const privat2 = privatOrdner();
   fs.cpSync(monat, path.join(privat2, 'belege-archiv', '2026', '11'), { recursive: true });
   const spaet = sammelLauf({ privat: privat2, jetzt: new Date('2026-11-13T09:00:00Z'), pdf });
-  assert.match(listeLesen(privat2, spaet), /UNKLAR;[^\r]*R-2026-501[^\r]*ohne aktuellen, vollständigen Kontoauszug/);
+  assert.equal(statusVon(listeLesen(privat2, spaet), 'R-2026-501'), 'IN DATEI');
 });
 
 test('Ungelesene Buchung im Auszug: gilt als unvollstaendig, verfallenes Skonto nicht in die Datei', () => {
@@ -286,7 +290,7 @@ test('Ungelesene Buchung im Auszug: gilt als unvollstaendig, verfallenes Skonto 
   assert.equal(e.auszugAktuell, false);
   assert.equal(e.bankZeilenNichtLesbar, 1);
   const liste = listeLesen(privat, e);
-  assert.match(liste, /1 Buchung\(en\) NICHT LESBAR/);
+  assert.match(liste, /KONTOAUSZUG UNVOLLSTÄNDIG \(1 Buchung\(en\) nicht lesbar\): keine Datei/);
   assert.equal(statusVon(liste, '700003'), 'UNKLAR');
 });
 
@@ -482,13 +486,32 @@ test('Kontoauszug: Exporte aus Downloads holen, Ueberlappung zaehlt einmal, Luec
   assert.equal(exporteZusammenfuehren([[b('2026-11-06', -10)], [b('2026-11-09', -30)]]).luecke, null, 'Wochenende ist keine Luecke');
 });
 
-test('Mail: veralteter Kontoauszug steht oben und im Betreff', () => {
+test('Mail: unvollstaendiger Kontoauszug steht oben und im Betreff, ein nur veralteter nicht', () => {
   const privat = privatOrdner();
+  fs.appendFileSync(path.join(privat, 'laden-entlastung-2026-11', 'bank-export', 'umsaetze.csv'), `07.11.2026;Überweisung;RE 700003;Muster & Söhne GmbH;${LIEFER};kaputt\n`);
   const e = sammelLauf({ privat, schreiben: true, jetzt: new Date('2026-11-20T09:00:00Z') });
   const { betreff, text } = mailInhalt(listeLesen(privat, e), { lauf: e.lauf, datei: e.datei, zahlungen: e.zahlungen, summe: e.summe });
   assert.equal(e.datei, null);
-  assert.match(betreff, /keine Datei, \d+ von Hand prüfen – Kontoauszug fehlt$/);
-  assert.match(text.split('\n')[0], /^ACHTUNG: KONTOAUSZUG VERALTET: Umsätze bei der Commerzbank als CSV exportieren/);
+  assert.match(betreff, /keine Datei, \d+ von Hand prüfen – Kontoauszug prüfen$/);
+  assert.match(text.split('\n')[0], /^ACHTUNG: KONTOAUSZUG UNVOLLSTÄNDIG/);
+  const veraltet = privatOrdner();
+  const v = sammelLauf({ privat: veraltet, schreiben: true, jetzt: new Date('2026-11-20T09:00:00Z') });
+  assert.ok(v.datei);
+  assert.doesNotMatch(mailInhalt(listeLesen(veraltet, v), { lauf: v.lauf, datei: v.datei, zahlungen: v.zahlungen, summe: v.summe }).betreff, /Kontoauszug/);
+});
+
+test('Anhang ohne Betrag zur lesbaren Rechnung gleicher Nummer: erledigt, nicht von Hand pruefen', () => {
+  const konfig = { lieferanten: { 'lieferant-a.example': { name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: '' } } };
+  const belege = [
+    { schluessel: 'lieferant-a.example', datei: 'r.pdf', xml: rechnungXml({ nummer: '700020', brutto: '100.00', bedingungen: 'Zahlbar sofort' }), pdfText: () => '' },
+    { schluessel: 'lieferant-a.example', datei: 'anhang.pdf', xml: null, pdf: { text: 'Anhang zu Rechnungs-Nr.: 700020', nummer: '700020', brutto: null, waehrung: null, datum: '2026-11-05' } },
+    { schluessel: 'lieferant-a.example', datei: 'allein.pdf', xml: null, pdf: { text: 'Rechnungs-Nr.: 700021', nummer: '700021', brutto: null, waehrung: null, datum: '2026-11-05' } },
+    { schluessel: 'lieferant-a.example', datei: 'storno.pdf', xml: null, pdf: { text: 'Storno zu Rechnungs-Nr.: 700020', nummer: '700020', brutto: null, waehrung: null, datum: '2026-11-06' } },
+    { schluessel: 'lieferant-a.example', datei: 'kopie.pdf', xml: null, pdf: { text: 'Rechnungs-Nr.: 700020 Kopie', nummer: '700020', brutto: null, waehrung: null, datum: '2026-11-05' } },
+    { schluessel: 'lieferant-a.example', datei: 'anhang-storno.pdf', xml: null, pdf: { text: 'Anhang zu Rechnung 700020: Korrektur', nummer: '700020', brutto: null, waehrung: null, datum: '2026-11-06' } },
+  ];
+  const zeilen = auswaehlen({ belege, konfig, buchungen: [], heute: '2026-11-10' }).zeilen;
+  assert.deepEqual(zeilen.map(z => [z.beleg, z.status]), [['r.pdf', 'zahlen'], ['anhang.pdf', 'erledigt'], ['allein.pdf', 'unklar'], ['storno.pdf', 'unklar'], ['kopie.pdf', 'unklar'], ['anhang-storno.pdf', 'unklar']]);
 });
 
 test('Gleiche Rechnungsnummer mit anderem Betrag: eine Buchung macht keine der beiden bezahlt, beide bleiben sichtbar', () => {
