@@ -223,7 +223,14 @@ export function bankAbgleich(buchungen, offene, lieferanten, bekannteNummern = [
       if (!o.nummer) return false;
       // Unklare (nurNachDatum): eine Zahlung vor dem Rechnungsdatum gehoert zu einer frueheren Rechnung.
       if (o.nurNachDatum && o.datum && x.datum < o.datum) return false;
-      return nummerIm(x.zweck, o.nummer);
+      // Laengere bekannte Nummern, die diese enthalten („123A“, „R-123“ zu „123“), zaehlen nicht als Treffer:
+      // sie werden vorher aus dem Zweck genommen. Steht „123“ zusaetzlich allein da, bleibt der Treffer.
+      let zweck = String(x.zweck).toUpperCase();
+      for (const n of bekannteNummern) {
+        const lang = String(n.nummer).toUpperCase();
+        if (n.schluessel === o.schluessel && lang !== o.nummer.toUpperCase() && lang.includes(o.nummer.toUpperCase())) zweck = zweck.split(lang).join(' ');
+      }
+      return nummerIm(zweck, o.nummer);
     }],
     ['betrag', (x, o) => [o.brutto, o.skonto?.zahlbetrag].some(b => b != null && cent(b) === cent(-x.betrag)) && (!o.datum || x.datum >= o.datum) && !nenntAndere(x, o)],
   ];

@@ -538,4 +538,14 @@ test('Lesbare Rechnung und unklare Fassung derselben Nummer mit anderem Betrag: 
   ];
   const kurzZeilen = auswaehlen({ belege: kurzBelege, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE 123' }], heute: '2026-11-10' }).zeilen;
   assert.equal(kurzZeilen.find(z => z.nummer === '124').status, 'zahlen');
+  // Eine Zahlung fuer „123A“ oder „R-123“ (gesperrt, Betragskonflikt) gehoert nicht zur offenen „123“.
+  for (const lang of ['123A', 'R-123']) {
+    const b2 = [
+      { schluessel: 'lieferant-a.example', datei: 'l1.pdf', xml: kurz(lang), pdfText: () => '' },
+      { schluessel: 'lieferant-a.example', datei: 'l2.pdf', xml: rechnungXml({ nummer: lang, brutto: '150.00', bedingungen: 'Zahlbar nach Vereinbarung, 2 % Skonto möglich' }), pdfText: () => '' },
+      { schluessel: 'lieferant-a.example', datei: 'l3.pdf', xml: kurz('123'), pdfText: () => '' },
+    ];
+    const z = auswaehlen({ belege: b2, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: `RE ${lang}` }], heute: '2026-11-10' }).zeilen;
+    assert.equal(z.find(r => r.nummer === '123').status, 'zahlen', lang);
+  }
 });
