@@ -1,0 +1,75 @@
+{%- comment -%}
+  Harmonisierte Mitteilung zur gesetzlichen Gewaehrleistung (Art. 22a RL
+  2011/83/EU, Art. 246a Par. 1 EGBGB, Anhang I DVO (EU) 2025/1960), Pflicht
+  seit 27.09.2026 (Shop-Check 2026-11-20).
+  Leitlinien der Kommission (1.4.2026): online die vollstaendige Mitteilung,
+  ein Satz wie "Ihre gesetzlichen Gewaehrleistungsrechte" darf sie beim ersten
+  Klick aufklappen; zusaetzlich immer ein klickbarer Link auf dasselbe Ziel wie
+  der QR-Code. Die Grafik darf nicht beschnitten, verzerrt oder veraendert
+  werden: nur als ganzes Bild einbinden, nie nachbauen.
+  Bilddateien: deutsche Fassung, unveraendert aus der SVG der Kommission in
+  WebP umgewandelt (700 und 1400 px breit, weisser Hintergrund).
+  Aufruf: {% render 'tp-gewaehrleistung' %}
+  Optional: kompakt: true (Footer, ohne Rahmen).
+{%- endcomment -%}
+<details class="tp-gewaehrleistung{% if kompakt %} tp-gewaehrleistung--kompakt{% endif %}">
+  <summary class="tp-gewaehrleistung__ausloeser">Ihre gesetzlichen Gewährleistungsrechte</summary>
+  <div class="tp-gewaehrleistung__inhalt">
+    <img
+      class="tp-gewaehrleistung__bild"
+      src="{{ 'tp-eu-gewaehrleistung-de-700.webp' | asset_url }}"
+      srcset="{{ 'tp-eu-gewaehrleistung-de-700.webp' | asset_url }} 700w, {{ 'tp-eu-gewaehrleistung-de-1400.webp' | asset_url }} 1400w"
+      sizes="(min-width: 750px) 520px, 100vw"
+      width="700"
+      height="991"
+      loading="lazy"
+      decoding="async"
+      alt="Gesetzliche Gewährleistung: Mindestens zwei Jahre gesetzliche Gewährleistung der Vertragsmäßigkeit für Waren, die in der Europäischen Union verkauft werden. In einigen Ländern gilt ein längerer Zeitraum; für gebrauchte Waren kann ein kürzerer Zeitraum gelten, jedoch nicht weniger als ein Jahr. Verbraucherinnen und Verbraucher können ihre Rechte geltend machen, z. B. wenn die Waren nicht der Beschreibung entsprechen oder nicht bestimmungsgemäß funktionieren. Verkäufer haften für jede Vertragswidrigkeit, die zum Zeitpunkt der Lieferung bestand und innerhalb des Zeitraums der gesetzlichen Gewährleistung erkennbar wird, und müssen kostenlose Nachbesserung oder kostenlose Ersatzlieferung, in bestimmten Fällen eine Preisminderung oder eine vollständige Erstattung des Kaufpreises anbieten. Was ist zu tun, wenn Sie vertragswidrige Waren erhalten? 1. Melden Sie dem Verkäufer das Problem so bald wie möglich. 2. Legen Sie einen Kaufnachweis vor, z. B. die Quittung, Rechnung oder einen Kontoauszug. Verkäufer und Hersteller können auch gewerbliche Garantien gewähren, die unabhängig von der gesetzlichen Gewährleistung gelten; die GARAN-Kennzeichnung zeigt eine gewerbliche Haltbarkeitsgarantie des Herstellers."
+    >
+    <p class="tp-gewaehrleistung__link">
+      Mehr zu Ihren Rechten:
+      <a href="https://europa.eu/youreurope/garantien" target="_blank" rel="noopener">europa.eu/youreurope/garantien</a>
+    </p>
+  </div>
+</details>
+
+{% stylesheet %}
+  .tp-gewaehrleistung {
+    margin-block: 16px 0;
+    border: 1px solid rgb(var(--color-foreground-rgb, 0 0 0) / 0.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: var(--tp-fs-sm);
+  }
+
+  .tp-gewaehrleistung--kompakt {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin-block: 8px 0;
+  }
+
+  .tp-gewaehrleistung__ausloeser {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--tp-ink, currentColor);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .tp-gewaehrleistung__inhalt {
+    margin-top: 12px;
+  }
+
+  .tp-gewaehrleistung__bild {
+    display: block;
+    width: 100%;
+    max-width: 520px;
+    height: auto;
+  }
+
+  .tp-gewaehrleistung__link {
+    margin: 8px 0 0;
+    font-size: var(--tp-fs-sm);
+  }
+{% endstylesheet %}

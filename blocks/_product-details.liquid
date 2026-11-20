@@ -31,6 +31,12 @@
       Desktop in eine dritte Rasterzelle.
     {%- endcomment -%}
     {% render 'tp-preisangabe' %}
+    {%- comment -%}
+      EU-Mitteilung zur gesetzlichen Gewaehrleistung, Pflicht seit 27.09.2026
+      (snippets/tp-gewaehrleistung.liquid). Gleicher Grund wie oben: in der
+      Detailspalte, damit sie auf jeder Produktvorlage vor dem Kauf steht.
+    {%- endcomment -%}
+    {% render 'tp-gewaehrleistung' %}
   {% endcapture %}
 
   {% render 'group', children: children, settings: block_settings, shopify_attributes: block.shopify_attributes %}
