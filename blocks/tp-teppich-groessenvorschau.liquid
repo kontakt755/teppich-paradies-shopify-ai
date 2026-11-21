@@ -214,12 +214,10 @@
       const checkedRadio = document.querySelector(
         widthFieldsetSelector + ' input[type="radio"]:checked'
       );
-      console.log(checkedRadio)
 
       if (!checkedRadio) return null;
 
       currentBreite = parseBreiteValue(checkedRadio.value);
-      console.log(currentBreite)
       return currentBreite;
     }
 
