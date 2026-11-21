@@ -1,5 +1,5 @@
 {% comment %}
-  Mobiler Musterkonfigurator: laedt Quellprodukt, kostenlosen Musterartikel
+  Mobiler Musterkonfigurator: laedt Quellprodukt, Musterartikel
   und Warenkorb ueber die Shopify Ajax APIs und baut bis zu zwei eindeutige
   Farbauswahlen als getrennte Warenkorbpositionen. Reine Domainlogik lebt in
   assets/tp-sample-checkout-core.js.
@@ -13,9 +13,10 @@
 <script src="{{ 'tp-sample-checkout.js' | asset_url }}" defer></script>
 
 {%- render 'tp-muster-sofort' -%}
+<script type="application/json" data-tp-hersteller-handles>{%- render 'tp-herstellermuster', liste: true -%}</script>
 <section class="tp-sample" data-tp-sample-checkout>
   <header class="tp-sample__header">
-    <p class="tp-sample__eyebrow">Kostenloser Musterservice</p>
+    <p class="tp-sample__eyebrow">Musterservice</p>
     <h1>Bis zu <span data-sample-max>2</span> <span data-sample-term="plural">Farben</span> zu Hause vergleichen<span data-sample-lager-plus hidden> – mit „Muster auf Lager“ sogar 3</span></h1>
     {%- comment -%}
       Groesse und Versand (Rundgang 26.10.2026; A5 = Zuschnitt laut Inhaber 15.10., w-091).
@@ -23,12 +24,13 @@
       tauscht assets/tp-sample-checkout.js die Zeile. Eine Ankunftszeit steht hier erst,
       wenn der Inhaber sie festgelegt hat.
     {%- endcomment -%}
-    <p class="tp-sample__info" data-sample-info>Muster ca. A5 · kostenloser Versand</p>
-    <p class="tp-sample__info" data-sample-hersteller hidden>Kostenloser Versand · kommt direkt vom Hersteller, eventuell in getrennten Umschlägen</p>
+    <p class="tp-sample__info" data-sample-info>Muster ca. A5 · Versand 4,99 € je Bestellung</p>
+    <p class="tp-sample__info" data-sample-hersteller hidden>Muster kostenlos, Versand direkt vom Hersteller · eventuell in getrennten Umschlägen</p>
+    <p class="tp-sample__info" data-sample-anrechnung>Die 4,99 € rechnen wir Ihnen ab 150 € Warenwert an. Den Gutscheincode finden Sie in Ihrer Bestellbestätigung. Im Laden ansehen und beraten lassen: kostenlos.</p>
     {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis) {%- endcomment -%}
     {%- render 'tp-muster-hinweis', kontext: 'musterseite' -%}
     {%- comment -%} Vinyl: hoechstens 2 Muster je Bestellung (Inhaber 02.11.2026, assets/tp-sample-checkout-core.js) {%- endcomment -%}
-    <p class="tp-sample__vinyl" data-sample-vinyl hidden>Vinyl-Muster sind kostenlos – höchstens 2 je Bestellung.</p>
+    <p class="tp-sample__vinyl" data-sample-vinyl hidden>Höchstens 2 Vinyl-Muster je Bestellung.</p>
     <p data-sample-intro>Wählen Sie Ihre <span data-sample-term="plural">Farben</span> aus. Die Nummer wird automatisch übernommen.</p>
   </header>
   {% comment %}
@@ -40,7 +42,7 @@
       Bis 2026-09-15 stand hier nur eine Anleitung ("Oeffnen Sie einen Bodenbelag
       und waehlen Sie dort ...") plus Kategorielinks. Das war eine Sackgasse an
       der meistbeworbenen Stelle des Shops: Die Top-Leiste wirbt auf JEDER Seite
-      mit "Bis zu zwei Muster je Bestellung kostenlos" und verlinkt genau hierher. Wer klickte,
+      mit dem Musterangebot und verlinkt genau hierher. Wer klickte,
       wurde weggeschickt, statt bestellen zu koennen.
 
       Jetzt stehen die Produkte direkt hier. Ein Tipp fuehrt in den
@@ -101,7 +103,7 @@
 
             {%- endcomment -%}
             <p class="tp-sample__gruppe-hinweis">
-              Öffnen Sie das Dekor. Wenn dafür ein Muster verfügbar ist, finden Sie dort „Kostenloses Muster anfragen“.
+              Öffnen Sie das Dekor. Wenn dafür ein Muster verfügbar ist, finden Sie dort „Muster bestellen“.
               Bei Fragen zu einem Dekor <a href="/pages/kontakt?thema=beratung">beraten wir Sie gern</a>.
             </p>
           {%- endif -%}
@@ -110,7 +112,7 @@
       {%- endif -%}
     {%- endfor -%}
 
-    {%- comment -%} Laminat, Parkett, Kork: nur auf Anfrage (Inhaber 14.10.2026, blocks/tp-muster-cta), Knopf "Muster anfragen" ohne "kostenlos" (w-161, 28.10.2026) {%- endcomment -%}
+    {%- comment -%} Laminat, Parkett, Kork: nur auf Anfrage (Inhaber 14.10.2026, blocks/tp-muster-cta), Knopf "Muster anfragen" ohne Preisangabe (w-161, 28.10.2026) {%- endcomment -%}
     <section class="tp-sample__gruppe">
       <h2 class="tp-sample__gruppe-titel">Parkett, Laminat und Kork</h2>
       <p class="tp-sample__gruppe-hinweis">
@@ -137,7 +139,7 @@
     <legend><span data-sample-term="plural">Farben</span> auswählen</legend>
     <p class="tp-sample__count" data-sample-count aria-live="polite">0 von <span data-sample-max>2</span> Mustern ausgewählt</p>
     {%- comment -%} Nur wenn eine Farbe "Muster auf Lager" traegt: die anderen sind trotzdem bestellbar (Benutzer 09.11.2026) {%- endcomment -%}
-    <p class="tp-sample__auch" data-sample-auch hidden>Auch Farben ohne „Muster auf Lager“ sind als Muster kostenlos bestellbar – wann sie rausgehen, steht an jeder Farbe.</p>
+    <p class="tp-sample__auch" data-sample-auch hidden>Auch Farben ohne „Muster auf Lager“ sind als Muster bestellbar – wann sie rausgehen, steht an jeder Farbe.</p>
     <div class="tp-sample__grid" data-sample-grid></div>
   </fieldset>
   <button class="tp-sample__submit" type="button" data-sample-submit disabled>Auswahl in den Warenkorb</button>

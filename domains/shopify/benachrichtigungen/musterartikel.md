@@ -115,22 +115,40 @@ Code: `assets/tp-sample-checkout-core.js` (`basisSectionUrl`,
 
 ## Versandprofil - der Schritt, den man vergisst
 
-Musterbestellungen sind versandkostenfrei, und das haengt **nicht** am Preis 0,00
-EUR, sondern am Versandprofil **"Kostenlose Muster"** (Zone Deutschland, Methode
-"Kostenloser Musterversand", 0,00 EUR). Bis 2026-09-16 lag darin nur das
+**Bis 30.11.2026** waren Musterbestellungen versandkostenfrei. **Ab 01.12.2026**
+(Mustergebuehr-Test bis 31.01.2027, Plan vom 19.11.2026) kostet eine reine
+Mustersendung 4,99 € Versand je Bestellung, ab 150 € Warenwert per Gutschein
+angerechnet. Das haengt **nicht** am Preis des Musterartikels (0,00 EUR), sondern am
+Versandprofil **"Kostenlose Muster"** (Profilname bleibt, Zone Deutschland). Ab
+dem 01.12. hat die Zone zwei Tarife statt einem:
+
+| Tarif | Bedingung (Warenkorbwert nach Rabatten) | Preis |
+|---|---|---|
+| "Musterversand" | bis 0,00 EUR | 4,99 € |
+| (zweiter Tarif) | ab 0,01 EUR | 0,00 EUR |
+
+So zahlt ein reiner Musterkorb 4,99 €, und Muster reisen mit Ware ohne Aufpreis
+mit (die Ware zahlt im allgemeinen Profil: 4,99 € unter 50 €, ab 50 € nichts).
+Annahme: die Preisbedingung zaehlt den ganzen Warenkorb, nicht nur die Artikel
+des Profils - das belegt der Vorab-Test (Plan Abschnitt 5). Geschaltet wird der
+Tarif erst nach Freigabe des Inhabers am 01.12.; bis dahin gilt der alte
+0,00-EUR-Tarif "Kostenloser Musterversand". Die Texte im Theme (Warenkorb,
+Versandseite, Musterseite) nennen den Preis ab demselben Tag
+(`qa/tests/muster-texte.test.mjs` bewacht das). Bis 2026-09-16 lag im Profil nur das
 Sammelprodukt `kostenloses-muster`.
 
 **Jedes neue Musterprodukt muss in dieses Profil**, sonst faellt es ins
-allgemeine Profil und der Kunde zahlt bei einer reinen Musterbestellung
-ploetzlich Versand. Das ist beim Anlegen der 87 Musterprodukte beinahe
-passiert und wurde nachgezogen: das Profil enthaelt jetzt 88 Produkte.
+allgemeine Profil und der Kunde zahlt bei einer reinen Musterbestellung dessen
+Versand statt des Musterversands. Das ist beim Anlegen der 87 Musterprodukte
+beinahe passiert und wurde nachgezogen: das Profil enthaelt jetzt 88 Produkte.
 
 **Nur Deutschland, und das ist Absicht.** Das Profil hat genau eine Zone
-(Deutschland, 0,00 EUR). Der Inhaber hat am 2026-09-16 bestaetigt: Muster und
+(Deutschland). Der Inhaber hat am 2026-09-16 bestaetigt: Muster und
 Produkte gehen ausschliesslich nach Deutschland. Wer aus dem Ausland
 ausschliesslich Muster bestellt, bekommt deshalb keine Versandart angeboten -
 gewollt, keine Fehlkonfiguration. Wer die Zone spaeter erweitert, verschickt
-Muster gratis ins Ausland; das ist eine Preisentscheidung, keine technische.
+Muster ins Ausland zu den Tarifen dieses Profils; das ist eine Preisentscheidung,
+keine technische.
 
 Nachtragen ueber die Admin API:
 
@@ -159,5 +177,6 @@ Versand.
 
 - Varianten-SKUs der Verkaufsprodukte (Vorgabe des Inhabers, PR #336)
 - Preise, Versand, Checkout
-- `MAX_SAMPLES` = 3; die Zaehlung erkennt Muster jetzt an `_Muster_ID` statt an
-  einer festen Varianten-ID, wirkt also ueber alle Musterprodukte hinweg
+- `MAX_SAMPLES` = 2 (Inhaber 02.11.2026, plus 1 bei einem "Muster auf Lager",
+  `LAGER_BONUS`; Vinyl hoechstens 2); die Zaehlung erkennt Muster jetzt an `_Muster_ID`
+  statt an einer festen Varianten-ID, wirkt also ueber alle Musterprodukte hinweg

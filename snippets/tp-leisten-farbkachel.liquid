@@ -100,7 +100,7 @@
 
   assign tp_fk_titel = tp_fk_name
   if tp_fk_art == 'ohne'
-    assign tp_fk_titel = tp_fk_name | append: ' – noch kein Musterbild, kostenloses Muster unten anfragen'
+    assign tp_fk_titel = tp_fk_name | append: ' – noch kein Musterbild, Muster unten bestellen'
   endif
   if value.available == false
     assign tp_fk_titel = tp_fk_titel | append: ' – zurzeit nicht verfügbar'

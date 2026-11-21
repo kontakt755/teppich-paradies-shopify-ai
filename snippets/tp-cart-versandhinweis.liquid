@@ -1,7 +1,7 @@
 {%- comment -%}
   Versandkostenhinweis fuer jeden gefuellten Warenkorb. Die Speditionsart
   wird getrennt ermittelt; Varianten-Rollenbreiten sind die aktuelle Quelle.
-  Muster verwenden die gemeinsame Mustererkennung und ihr kostenloses Profil.
+  Muster verwenden die gemeinsame Mustererkennung und ihr eigenes Versandprofil.
   Liegt mindestens ein Muster im Warenkorb (auch gemischt mit Ware), folgt
   der voruebergehende Geduld-Hinweis (snippets/tp-muster-hinweis).
 {%- endcomment -%}
@@ -9,10 +9,18 @@
   {%- assign tp_cart_only_samples = true -%}
   {%- assign tp_cart_has_spedition_item = false -%}
   {%- assign tp_cart_has_sample = false -%}
+  {%- assign tp_cart_herst = 0 -%}
+  {%- assign tp_cart_bezahlt = 0 -%}
   {%- for item in cart.items -%}
     {%- capture tp_cart_sample -%}{%- render 'tp-muster-position', line_item: item -%}{%- endcapture -%}
     {%- if tp_cart_sample contains 'ja' -%}
       {%- assign tp_cart_has_sample = true -%}
+      {%- capture tp_cart_hersteller -%}{%- render 'tp-herstellermuster', product: item.product -%}{%- endcapture -%}
+      {%- if tp_cart_hersteller contains 'ja' -%}
+        {%- assign tp_cart_herst = tp_cart_herst | plus: 1 -%}
+      {%- else -%}
+        {%- assign tp_cart_bezahlt = tp_cart_bezahlt | plus: 1 -%}
+      {%- endif -%}
     {%- else -%}
       {%- liquid
         assign tp_cart_only_samples = false
@@ -26,8 +34,12 @@
   {%- endfor -%}
   {%- assign tp_cart_versandfrei_cent = settings.tp_versand_frei_ab | times: 100 -%}
   <p class="tp-cart-shipping-note">
-    {%- if tp_cart_only_samples -%}
-      <strong>Kostenloser Musterversand innerhalb Deutschlands.</strong>
+    {%- if tp_cart_only_samples and tp_cart_bezahlt == 0 -%}
+      <strong>Muster kostenlos, Versand direkt vom Hersteller.</strong>
+    {%- elsif tp_cart_only_samples and tp_cart_herst > 0 -%}
+      <strong>Herstellermuster kostenlos, die übrigen Muster zusammen 4,99 € Versand.</strong> Ab 150 € Warenwert angerechnet.
+    {%- elsif tp_cart_only_samples -%}
+      <strong>Musterversand innerhalb Deutschlands: 4,99 €.</strong> Ab 150 € Warenwert angerechnet.
     {%- elsif cart.total_price >= tp_cart_versandfrei_cent -%}
       <strong>Versandkostenfrei in Deutschland.</strong>
     {%- elsif settings.tp_versand_preis != blank -%}

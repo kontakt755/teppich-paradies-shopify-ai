@@ -6,7 +6,7 @@ import { Liquid } from 'liquidjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
-const templates = Object.fromEntries(['cart-summary', 'tax-info', 'tp-cart-versandhinweis', 'tp-muster-position', 'tp-cart-leisten-paket', 'tp-leisten-paket', 'tp-aktion-laufend', 'tp-muster-hinweis', 'tp-muster-ablauf'].map(name => [name, read(`snippets/${name}.liquid`)]));
+const templates = Object.fromEntries(['cart-summary', 'tax-info', 'tp-cart-versandhinweis', 'tp-muster-position', 'tp-herstellermuster', 'tp-cart-leisten-paket', 'tp-leisten-paket', 'tp-aktion-laufend', 'tp-muster-hinweis', 'tp-muster-ablauf'].map(name => [name, read(`snippets/${name}.liquid`)]));
 for (const name of ['tp-cart-checkout-menge', 'tp-cart-unterlage-hinweis', 'tp-cart-beratung', 'tp-muster-beratungsanfrage', 'tp-zahlung-abholung', 'border-override', 'cart-bubble', 'cart-products']) templates[name] = '';
 templates['cart-items-component'] = '{{ children }}';
 templates['accordion-custom-component'] = '{{ children }}';
@@ -54,7 +54,7 @@ for (const view of ['cart', 'drawer']) {
       [4999, [item()], {}, /ab 50 € Bestellwert/],
       [5000, [item()], {}, /Versandkostenfrei in Deutschland\./],
       [6000, [item()], { tp_versand_frei_ab: 75 }, /ab 75 € Bestellwert/],
-      [0, [item(true)], {}, /Kostenloser Musterversand innerhalb Deutschlands\./],
+      [0, [item(true)], {}, /Musterversand innerhalb Deutschlands: 4,99 €\.<\/strong> Ab 150 € Warenwert angerechnet\./],
       [4000, [item(true), item()], {}, /ab 50 € Bestellwert/],
     ]) {
       const html = await render(view, context(total, items, { settings, cart: { original_total_price: 10000 } }));

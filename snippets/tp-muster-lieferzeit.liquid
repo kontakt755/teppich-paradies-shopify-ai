@@ -3,7 +3,7 @@
   wie im Musterkonfigurator (assets/tp-sample-checkout.js, tp-sample__lieferzeit):
   1. SKU im Musterlager (Shop-Metafeld custom.muster_sofort, snippets/tp-muster-sofort;
      aelter als 2 Stunden = ungueltig, wie sofortListe in tp-sample-checkout-core.js)
-  2. Vorwerk/JAB ohne Tag sonderposten (wie isHerstellerMuster)
+  2. Herstellermuster (snippets/tp-herstellermuster, wie isHerstellerMuster)
   3. sonst: wir bestellen beim Lieferanten
 
   Werte gemessen 09.11.2026, Shopify-Bestellungen ab 16.10. (Bestellung bis
@@ -18,11 +18,11 @@
 {%- if tpml_muster contains 'ja' -%}
   {%- liquid
     assign tpml_fall = 'lieferant'
-    assign tpml_vendor = line_item.product.vendor | default: '' | downcase | strip
-    if tpml_vendor == 'vorwerk' or tpml_vendor == 'jab anstoetz'
-      unless line_item.product.tags contains 'sonderposten'
-        assign tpml_fall = 'hersteller'
-      endunless
+    capture tpml_hersteller
+      render 'tp-herstellermuster', product: line_item.product
+    endcapture
+    if tpml_hersteller contains 'ja'
+      assign tpml_fall = 'hersteller'
     endif
     assign tpml_meta = shop.metafields.custom.muster_sofort.value
     if tpml_meta.stand != blank
