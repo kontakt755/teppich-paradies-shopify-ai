@@ -785,7 +785,7 @@
       },
       "name": "Featured collection",
       "settings": {
-        "collection": "black-week-2026",
+        "collection": "angebote-teppichboden",
         "layout_type": "carousel",
         "carousel_on_mobile": true,
         "max_products": 4,
@@ -1660,13 +1660,13 @@
       "type": "tp-start-tabs",
       "settings": {
         "heading": "Aktuelle Angebote",
-        "text": "Black Week bis 30.11.: 15 % auf ausgewählten Teppichboden und Vinyl, Preise schon reduziert."
+        "text": "Reduzierte Bodenbeläge und Zubehör, sortiert nach Kategorie. Der Rabatt steht direkt am Produkt."
       },
       "blocks": {
         "a1": {
           "type": "tab",
           "settings": {
-            "label": "Black Week −15 %",
+            "label": "Teppichboden",
             "section_id": "angebote_teppichboden"
           }
         },
