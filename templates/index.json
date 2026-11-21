@@ -250,7 +250,7 @@
         "t2": {
           "type": "aussage",
           "settings": {
-            "text": "Bis zu zwei Muster je Bestellung kostenlos"
+            "text": "Bis zu zwei Muster je Bestellung"
           }
         },
         "t3": {
@@ -284,7 +284,7 @@
         "online_eyebrow": "Online-Shop · deutschlandweit",
         "online_titel": "Boden aussuchen, Maß eingeben, liefern lassen",
         "online_text": "Rollenware im Wunschmaß zugeschnitten, Paketware nach Fläche berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. In Deutschland ab [versandfrei] € Bestellwert versandkostenfrei.",
-        "online_punkte": "Rollenware im Wunschmaß, Bis zu zwei Muster je Bestellung kostenlos, Versand deutschlandweit",
+        "online_punkte": "Rollenware im Wunschmaß, Bis zu zwei Muster je Bestellung, Versand deutschlandweit",
         "online_cta": "Zum Sortiment",
         "service_eyebrow": "Verlegeservice · bis 50 km um Oranienburg",
         "service_titel": "Aufmaß, Lieferung, Untergrund, Verlegung, Leisten",
@@ -377,7 +377,7 @@
           "type": "fakt",
           "settings": {
             "wert": "2.500+",
-            "label": "Bodenbeläge online, Muster kostenlos"
+            "label": "Bodenbeläge online, Muster bestellbar"
           }
         },
         "f2": {
@@ -488,7 +488,7 @@
           "type": "frage",
           "settings": {
             "frage": "Kann ich vorher ein Muster bekommen?",
-            "antwort": "<p>Bis zu zwei Muster je Bestellung kostenlos. Die Muster wählen Sie direkt auf der Produktseite oder über „Muster bestellen“.</p>"
+            "antwort": "<p>Bis zu zwei Muster je Bestellung. Die Muster wählen Sie direkt auf der Produktseite oder über „Muster bestellen“.</p>"
           }
         },
         "q3": {
@@ -569,14 +569,14 @@
           "type": "schritt",
           "settings": {
             "titel": "Muster anfragen",
-            "text": "Auf der Produktseite „Kostenloses Muster anfragen“ wählen. Belag und Farbe werden übernommen."
+            "text": "Auf der Produktseite „Muster bestellen“ wählen. Belag und Farbe werden übernommen."
           }
         },
         "schritt_3": {
           "type": "schritt",
           "settings": {
             "titel": "Zu Hause vergleichen",
-            "text": "Bis zu zwei Muster je Bestellung kostenlos – in Ruhe im eigenen Raum vergleichen."
+            "text": "Bis zu zwei Muster je Bestellung – in Ruhe im eigenen Raum vergleichen."
           }
         }
       },
@@ -586,12 +586,12 @@
         "schritt_3"
       ],
       "settings": {
-        "eyebrow": "Kostenloser Musterservice",
+        "eyebrow": "Musterservice",
         "titel": "Farbe zu Hause sehen, dann entscheiden",
-        "text": "Bildschirme zeigen Farben unterschiedlich. Bis zu zwei Muster je Bestellung kostenlos: nach Hause bestellen und in Ihrem eigenen Licht vergleichen.",
+        "text": "Bildschirme zeigen Farben unterschiedlich. Bestellen Sie Muster nach Hause und vergleichen Sie sie in Ihrem eigenen Licht.",
         "cta_text": "Muster bestellen",
         "cta_link": "/pages/muster",
-        "hinweis": "Bis zu zwei Muster je Bestellung kostenlos · Versand innerhalb Deutschlands"
+        "hinweis": "Bis zu zwei Muster je Bestellung. Versand 4,99 €, ab 150 € Warenwert angerechnet."
       },
       "disabled": true
     },
@@ -1930,7 +1930,7 @@
             "bild_alt": "Teppichmuster in mehreren Farben neben einem Maßband",
             "fokus": "object-position: 50% 50%",
             "titel": "Muster bestellen",
-            "text": "<p>Bis zu zwei Muster je Bestellung kostenlos nach Hause bestellen und im eigenen Licht vergleichen.</p>",
+            "text": "<p>Bis zu zwei Muster je Bestellung nach Hause bestellen und im eigenen Licht vergleichen.</p>",
             "link_label": "Muster bestellen",
             "link": "/pages/muster"
           }

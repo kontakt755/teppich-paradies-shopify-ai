@@ -16,7 +16,7 @@
         "kicker": "Zentimetergenau nach Ihrem Maß",
         "heading": "Teppich nach Maß",
         "text": "Qualität und Farbe wählen, Breite und Länge eingeben – wir fertigen Ihren Teppich auf den Zentimeter genau, rundum eingefasst. Der Preis steht sofort.",
-        "usps": "Wunschmaß je nach Qualität bis 10 m Länge\nRundum eingefasst\nBis zu zwei Muster je Bestellung kostenlos",
+        "usps": "Wunschmaß je nach Qualität bis 10 m Länge\nRundum eingefasst\nBis zu zwei Muster je Bestellung",
         "card_title": "",
         "card_text": "",
         "btn1_label": "[anzahl] Qualitäten ansehen",
@@ -1173,7 +1173,7 @@
           "type": "step",
           "settings": {
             "title": "Farbe wählen",
-            "text": "Farbtöne je Qualität ansehen. Bis zu zwei Muster je Bestellung kostenlos."
+            "text": "Farbtöne je Qualität ansehen. Bis zu zwei Muster je Bestellung."
           }
         },
         "s2": {
@@ -1238,7 +1238,7 @@
           "settings": {
             "icon": "muster",
             "title": "Muster vor dem Kauf",
-            "text": "Bis zu zwei Muster je Bestellung kostenlos – so sehen Sie die Farbe im eigenen Licht.",
+            "text": "Bis zu zwei Muster je Bestellung – so sehen Sie die Farbe im eigenen Licht.",
             "link": "none"
           }
         }
@@ -1285,7 +1285,7 @@
           "type": "frage",
           "settings": {
             "question": "Kann ich die Farbe vorher sehen?",
-            "answer": "<p>Ja. Bis zu zwei Muster je Bestellung kostenlos – die Farbe wirkt im eigenen Licht oft anders als am Bildschirm.</p>"
+            "answer": "<p>Ja. Bis zu zwei Muster je Bestellung – die Farbe wirkt im eigenen Licht oft anders als am Bildschirm.</p>"
           }
         },
         "f5": {

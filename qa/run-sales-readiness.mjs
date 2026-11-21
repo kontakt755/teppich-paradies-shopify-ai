@@ -383,9 +383,10 @@ async function sampleFlow({ page, context, result, setPhase }) {
   await page.goto(targetUrl(`/products/${sourceHandle}`, baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('sample-configurator');
   await freieSicht(page);
-  // Seit K7 (#691) heisst der Knopf der Rollenware 'Kostenloses Muster in <Farbe>'
-  // und sitzt unter dem Warenkorb-Knopf; andere Vorlagen behalten 'anfragen'.
-  await zentriertKlicken(page.getByRole('link', { name: /Kostenloses Muster (anfragen|in\s)/i }).first(), { timeout: 10_000 });
+  // Seit K7 (#691) heisst der Knopf der Rollenware 'Muster in <Farbe> bestellen' (vorher 'Kostenloses
+  // Muster in <Farbe>', Mustergebuehr-Test ab 01.12.2026) und sitzt unter dem Warenkorb-Knopf; andere
+  // Vorlagen: 'Muster bestellen'. Nur im Hauptinhalt suchen, Menue und Footer tragen denselben Linktext.
+  await zentriertKlicken(page.locator('main').getByRole('link', { name: /^\s*Muster (bestellen|in\s)/i }).first(), { timeout: 10_000 });
   // Seit c1c5185 (snippets/tp-musteroption) entscheidet das Produkt ueber das
   // Ziel: mit Farb- oder Dekoroption der Musterkonfigurator /pages/muster,
   // sonst das Kontaktformular im Musterbestellungs-Modus. Piumera hat eine
