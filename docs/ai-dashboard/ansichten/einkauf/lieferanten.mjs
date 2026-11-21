@@ -463,6 +463,22 @@ function bezugswegHinweis(m) {
   return naheZeile + weiteZeile;
 }
 
+/**
+ * Sammeln statt einzeln bestellen (Inhaber 2026-11-11, Werkbank w-343): Wird Ware fuer EINEN Auftrag
+ * bestellt, steht hier, wie viel beim selben Lieferanten aus anderen Auftraegen noch offen ist.
+ * Nur ein Hinweis; ein Klick laedt den Dialog mit allen offenen Positionen des Lieferanten.
+ */
+function sammelHinweis() {
+  if (!dialog.auftrag || dialog.art !== 'ware') return '';
+  const k = karten().find(x => x.id === dialog.lieferant);
+  const andere = (k?.ware.zuBestellen || []).filter(x => x.pos?.orderId && x.pos.orderId !== dialog.auftrag && x.ampel?.grund !== 'blockiert');
+  if (!andere.length) return '';
+  const auftraege = new Set(andere.map(x => x.pos.orderId)).size;
+  return `<div class="notice lf-sammeln"><strong>Sammeln? Beim selben Lieferanten ${andere.length === 1 ? 'ist noch 1 Position' : `sind noch ${andere.length} Positionen`} aus ${plural(auftraege, 'anderem Auftrag', 'anderen Aufträgen')} offen</strong>
+    <span class="small">Zusammen bestellen spart Fracht und Kleinmengenzuschlag. Nicht eilig? Mitbestellen, bei Abholung erst recht.</span>
+    <button type="button" class="btn btn-sm" data-lf-sammeln>Alle offenen zusammen bestellen</button></div>`;
+}
+
 const euroGanz = x => `${Math.round(x).toLocaleString('de-DE')} €`;
 
 /**
@@ -585,7 +601,7 @@ function zeichneDialog() {
   else if (d.fehler) inhalt = `<p class="notice crit">Die Bestellung konnte nicht geladen werden. ${esc(d.hinweis || '')}</p>`;
   else if (!d.verfuegbar) inhalt = `<p class="notice">${esc(d.hinweis || 'Bestelldaten fehlen.')}</p>`;
   else if (!d.mails.length && !d.kettelwege?.length) inhalt = `<p class="lf-leer">${dialog.art === 'muster' ? 'Keine offenen Muster bei diesem Lieferanten.' : 'Keine offene Ware bei diesem Lieferanten.'}</p>`;
-  else inhalt = (d.kostenWarnungFehlt ? '<p class="small muted">Rohertrag konnte gerade nicht geschätzt werden. Bestellen geht trotzdem.</p>' : '') + kettelwegWahl(d.kettelwege || []) + d.mails.map((m, i) => mailAbschnitt(m, i, d.mails.length > 1)).join('');
+  else inhalt = sammelHinweis() + (d.kostenWarnungFehlt ? '<p class="small muted">Rohertrag konnte gerade nicht geschätzt werden. Bestellen geht trotzdem.</p>' : '') + kettelwegWahl(d.kettelwege || []) + d.mails.map((m, i) => mailAbschnitt(m, i, d.mails.length > 1)).join('');
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop lf-dialog-boden" data-close-dialog><div class="dialog lf-dialog" role="dialog" aria-modal="true" aria-labelledby="lfTitel">
     <h2 id="lfTitel" class="lf-name">${titel}</h2>
     <p class="notice warn" data-lf-fehler role="alert"${dialog.fehler ? '' : ' hidden'}>${esc(dialog.fehler || '')}</p>
@@ -816,6 +832,12 @@ export function einkaufKlickLieferanten(e) {
   if (mail) {
     // Bei <a> (Portal, Telefon) laeuft der Link normal weiter - kein preventDefault.
     openBestellmailDialog(mail.dataset.lfMail, mail.dataset.lfArt, { auftrag: mail.dataset.lfAuftrag || null });
+    return true;
+  }
+  if (e.target.closest('[data-lf-sammeln]')) {
+    Object.assign(dialog, { auftrag: null, daten: null, fehler: null, kettelwege: new Map(), markiert: new Set(), gesetzt: new Map() });
+    zeichneDialog();
+    ladeDialog();
     return true;
   }
   const auf = e.target.closest('[data-lf-auf]');

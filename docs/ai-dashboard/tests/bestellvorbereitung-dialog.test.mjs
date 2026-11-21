@@ -46,6 +46,7 @@ function umgebung(optionen = {}) {
     istNurLesend: () => config.lesend,
     uebernahmeBlock: () => config.lesend ? '' : '<button data-einkauf-uebernahme="freigeben">Freigeben</button><button data-einkauf-uebernahme="uebernehmen">Als Inhaber übernehmen</button>',
     anzeigeWert: v => v,
+    lieferantenKarten: () => config.karten || [], SCHWELLEN_STANDARD: {}, blockGruende: () => [],
     gmailLink: () => ({ url: 'https://mail.google.com/test' }), telLink: n => `tel:${n}`,
     toast: (...args) => toasts.push(args), render() { ablauf.push('render'); },
     afEintragFuer: () => ({ status: 'bestellt' }), kundeUndOrt: () => ({ name: 'Testkunde', ort: 'Testort' }),
@@ -394,4 +395,25 @@ test('Warnung: Normalfall leer, unbekannt leise, Verlust rot mit Rechnung, immer
   assert.match(rot, /Anderer Weg/);
   assert.match(rot, /Schätzung/);
   assert.match(rot, /bestellen bleibt möglich/);
+});
+
+test('Sammelhinweis: Ware fuer einen Auftrag zeigt offene Positionen anderer Auftraege und laedt auf Klick alle', async () => {
+  const pos = (orderId, grund = null) => ({ pos: { orderId }, ampel: { grund } });
+  const u = umgebung({ karten: [{ id: 'TEST', ware: { zuBestellen: [pos('test-order'), pos('a1'), pos('a1'), pos('a2'), pos('a3', 'blockiert')] } }] });
+  u.openBestellmailDialog('TEST', 'ware'); await tick();
+  assert.match(u.root.innerHTML, /sind noch 3 Positionen aus 2 anderen Aufträgen offen/);
+  const posts = u.posts.length;
+  u.einkaufKlickLieferanten({ target: { closest: sel => sel === '[data-lf-sammeln]' ? {} : null } }); await tick();
+  assert.equal(u.dialog.auftrag, null);
+  assert.equal(u.posts.at(-1).payload.auftrag, '');
+  assert.ok(u.posts.length > posts);
+  assert.doesNotMatch(u.root.innerHTML, /lf-sammeln/);
+});
+
+test('Sammelhinweis: nichts anderes offen oder Muster - kein Hinweis', async () => {
+  const u = umgebung({ karten: [{ id: 'TEST', ware: { zuBestellen: [{ pos: { orderId: 'test-order' }, ampel: {} }] } }] });
+  u.openBestellmailDialog('TEST', 'ware'); await tick();
+  assert.doesNotMatch(u.root.innerHTML, /lf-sammeln/);
+  await u.oeffnen();
+  assert.doesNotMatch(u.root.innerHTML, /lf-sammeln/);
 });

@@ -10,8 +10,8 @@
  * Kontodaten, Namen und Betraege stehen nur im Privatordner.
  */
 
-import { xmlRechnungLesen, betragLesen } from './belege.mjs';
-import { datumLesen, namePasst, csvFeld, abschnitte, ersterAbschnitt as abschnitt, blatt } from './belege-bank.mjs';
+import { xmlRechnungLesen, betragLesen, pdfTextLesen } from './belege.mjs';
+import { datumLesen, namePasst, csvFeld, csvZeile, abschnitte, ersterAbschnitt as abschnitt, blatt } from './belege-bank.mjs';
 
 const cent = n => Math.round(n * 100);
 const nurZeichen = s => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -28,11 +28,11 @@ export function ibanGueltig(iban) {
 
 export const tagPlus = (iso, tage) => new Date(Date.parse(`${iso}T00:00:00Z`) + tage * 86_400_000).toISOString().slice(0, 10);
 
-/** Naechster Lauftag nach `heute`: Montag oder Donnerstag. */
+/** Naechster Lauftag nach `heute`: Freitag (Benutzer 19.11.2026, vorher Montag und Donnerstag). */
 export function naechsterLauf(heute) {
   for (let i = 1; i <= 7; i += 1) {
     const tag = tagPlus(heute, i);
-    if ([1, 4].includes(new Date(`${tag}T00:00:00Z`).getUTCDay())) return tag;
+    if (new Date(`${tag}T00:00:00Z`).getUTCDay() === 5) return tag;
   }
   throw new Error(`kein Lauftag nach ${heute}`);
 }
@@ -74,7 +74,7 @@ export function zahlungsbedingungenLesen(text) {
  * Eine Rechnungs-XML (Factur-X/ZUGFeRD, CII) pruefen.
  * @returns {{ status: 'ok'|'gutschrift'|'lastschrift'|'unklar', grund?: string, nummer, brutto, skonto, nettoFaellig }}
  */
-export function rechnungPruefen(xml, { iban }) {
+export function rechnungPruefen(xml, { iban }, pdfText = () => '') {
   const f = xmlRechnungLesen(xml);
   const kopf = { nummer: f?.nummer ?? null, datum: f?.datum ?? null, brutto: f?.brutto ?? null, skonto: null, nettoFaellig: null };
   const unklar = grund => ({ ...kopf, status: 'unklar', grund });
@@ -87,19 +87,95 @@ export function rechnungPruefen(xml, { iban }) {
   if (mittel.some(m => blatt(m, 'TypeCode') === '59')) return { ...kopf, status: 'lastschrift', grund: 'Rechnung nennt Lastschrift: nicht überweisen' };
   const faellig = Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'DuePayableAmount') || NaN);
   if (cent(faellig) !== cent(f.brutto)) return unklar('offener Betrag weicht vom Rechnungswert ab (Anzahlung?)');
-  const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'));
-  if (!b) return unklar('Zahlungsbedingungen nicht lesbar');
-  kopf.nettoFaellig = b.nettoFaellig;
-  if (cent(b.nettoBetrag) !== cent(f.brutto)) return unklar('Nettozahlung weicht vom Rechnungswert ab');
-  if (b.skonto) {
+  const b = zahlungsbedingungenLesen(blatt(abschnitt(xml, 'SpecifiedTradePaymentTerms'), 'Description'))
+    ?? xrechnungSkontoLesen(abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n'), {
+      datum: f.datum, brutto: f.brutto,
+      zuschlaege: Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'ChargeTotalAmount') || 0),
+    });
+  // Ohne lesbares Skonto nur, wenn in keinem Bedingungsblock Skonto steht: dann ist der volle Betrag richtig.
+  // Roh gelesen, damit auch CDATA oder andere Unterfelder zaehlen.
+  // Lexware schreibt „#SKONTO#TAGE=7#PROZENT=0.00#“ auch ohne Skonto: 0 % zaehlt nicht als Skonto.
+  const alleBedingungen = abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n').replace(/#SKONTO#TAGE=\d+#PROZENT=0+(?:[.,]0+)?#/gi, '');
+  if (!b?.skonto && !b?.vollerBetrag && /skonto|discount/i.test(alleBedingungen)) return unklar('Zahlungsbedingungen mit Skonto nicht lesbar');
+  if (b) kopf.nettoFaellig = b.nettoFaellig;
+  if (b && cent(b.nettoBetrag) !== cent(f.brutto)) return unklar('Nettozahlung weicht vom Rechnungswert ab');
+  if (b?.skonto) {
     const s = b.skonto;
     // Plausibel: Skonto plus Zahlbetrag ergibt den Rechnungswert, hoechstens 5 %, Frist nicht nach der Nettofaelligkeit.
-    if (cent(s.betrag) <= 0 || cent(s.betrag) + cent(s.zahlbetrag) !== cent(f.brutto) || s.betrag > f.brutto * 0.05 || s.bis > b.nettoFaellig) return unklar('Skonto-Angaben nicht stimmig');
+    if (cent(s.betrag) <= 0 || cent(s.betrag) + cent(s.zahlbetrag) !== cent(f.brutto) || s.betrag > f.brutto * 0.05 || (b.nettoFaellig && s.bis > b.nettoFaellig)) return unklar('Skonto-Angaben nicht stimmig');
     kopf.skonto = s;
   }
   // Nur Empfaengerkonten zaehlen, nicht das Konto des Zahlers.
   const ibans = abschnitte(xml, 'PayeePartyCreditorFinancialAccount').map(k => blatt(k, 'IBANID').replace(/\s+/g, '').toUpperCase());
-  if (!ibans.includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht als Empfängerkonto auf der Rechnung');
+  // Ohne Empfaengerkonto in der XML (z. B. Hauptlieferant B): dann muss es im PDF derselben Rechnung stehen.
+  const ibanBelegt = ibans.length ? ibans.includes(iban) : nurZeichen(pdfText()).includes(iban);
+  if (!ibanBelegt) return unklar('IBAN aus der Konfiguration steht nicht als Empfängerkonto auf der Rechnung');
+  return { ...kopf, status: 'ok' };
+}
+
+/**
+ * Skonto als XRechnung-Kennung „#SKONTO#TAGE=10#PROZENT=4.00#“ (optional „BASISBETRAG=…#“), gerechnet
+ * vom Rechnungsdatum. Nur genau eine Kennung mit mehr als 0 %; sonst null (dann sperrt der Aufrufer).
+ */
+export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0 }) {
+  // Jede Kennung muss vollstaendig lesbar sein; ein uebriges Feld (z. B. „BASISBETRAG=50,00#“) sperrt.
+  const alle = [...String(text ?? '').matchAll(/#SKONTO#TAGE=(\d{1,3})#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#(?:BASISBETRAG=(\d+(?:\.\d{1,2})?)#)?(?![A-Z]+=)/gi)];
+  if (alle.length !== (String(text ?? '').match(/#SKONTO#/gi) || []).length) return null;
+  const treffer = alle.filter(m => Number(m[2]) > 0);
+  // Echter Kalendertag, sonst wirft tagPlus und der ganze Lauf bricht ab.
+  const tag = /^\d{4}-\d{2}-\d{2}$/.test(datum || '') ? new Date(`${datum}T00:00:00Z`) : null;
+  const tagOk = Boolean(tag) && !Number.isNaN(tag.getTime()) && tag.toISOString().slice(0, 10) === datum;
+  if (treffer.length !== 1 || !tagOk || !(brutto > 0)) return null;
+  const [, tage, prozent, basisText] = treffer[0];
+  // Zuschlaege (Fracht) ohne angegebene Basis: Skontobasis unbekannt, lieber voll zahlen als zu wenig.
+  if (basisText === undefined && zuschlaege > 0) return { nettoFaellig: null, nettoBetrag: brutto, skonto: null, vollerBetrag: true };
+  const basis = basisText === undefined ? brutto : Number(basisText);
+  if (!(basis > 0) || cent(basis) > cent(brutto) || Number(prozent) > 5) return null;
+  const betrag = Math.round(basis * Number(prozent)) / 100;
+  return { nettoFaellig: null, nettoBetrag: brutto, skonto: { bis: tagPlus(datum, Number(tage)), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 } };
+}
+
+/** Betrag so, wie er auf deutschen Rechnungen steht: 1.234,56 oder 1234,56. */
+const betragImText = (text, n) => {
+  const [e, c] = n.toFixed(2).split('.');
+  const mitPunkt = e.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return [`${mitPunkt},${c}`, `${e},${c}`].some(b => new RegExp(`(^|[^0-9.,])${b.replace(/\./g, '\\.')}($|[^0-9])`).test(text));
+};
+
+/**
+ * Reine PDF-Rechnung (ohne Factur-X): Nummer und Bruttobetrag kommen aus dem Archiv (belege:monat),
+ * und beide muessen samt Empfaenger-IBAN aus der Konfiguration woertlich im PDF-Text stehen.
+ * Die Faelligkeit wird nicht gelesen: gezahlt wird der volle Betrag, nur in EUR und nur mit aktuellem
+ * Kontoauszug (siehe auswaehlen). Jeder Hinweis auf Skonto, Einzug, Vorkasse oder Gutschrift macht sie unklar.
+ */
+/** Gesperrter Druck (Spedition): „R e c h n u n g“ und „63 , 63“ werden zu „Rechnung“ und „63,63“. */
+export const pdfTextGlaetten = text => String(text ?? '')
+  .replace(/\b(?:[A-Za-zÄÖÜäöü] ){3,}[A-Za-zÄÖÜäöü]\b/g, m => m.replace(/ /g, ''))
+  .replace(/(\d) +, *(\d{2})(?!\d)/g, '$1,$2');
+
+export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { iban }) {
+  const t = pdfTextGlaetten(text);
+  // Fehlen Nummer oder Betrag im Archiv: derselbe Leser wie belege:monat, auf dem geglaetteten Text
+  // (er schliesst Netto-Zeilen aus und gibt bei mehreren verschiedenen Betraegen nichts zurueck).
+  if (!nummer || brutto === null || brutto === undefined) {
+    const felder = pdfTextLesen(t);
+    nummer ||= felder.nummer ?? null;
+    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? null;
+  }
+  // Ausdruecklich als Anhang einer Rechnung bezeichnet (Leistungsuebersicht), ohne Storno oder Korrektur.
+  const anhang = /(anhang|anlage)\s+zu(r)?\s+rechnung/i.test(t) && !/gutschrift|storno|korrektur/i.test(t);
+  const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true, anhang };
+  const unklar = grund => ({ ...kopf, status: 'unklar', grund });
+  if (!t.trim()) return unklar('PDF-Text nicht lesbar');
+  if (waehrung !== 'EUR') return unklar('Währung nicht eindeutig EUR');
+  if (!/^[A-Za-z0-9][A-Za-z0-9/._-]{2,29}$/.test(nummer || '') || !nurZeichen(t).includes(nurZeichen(nummer))) return unklar('Rechnungsnummer nicht sicher im PDF');
+  if (typeof brutto !== 'number' || !(brutto > 0) || !betragImText(t, brutto)) return unklar('Rechnungsbetrag nicht sicher im PDF');
+  if (/gutschrift|storno|korrekturrechnung/i.test(t)) return unklar('PDF nennt Gutschrift oder Storno');
+  // Skonto: eine schon mit Abzug bezahlte Rechnung erkennt der Bankabgleich ohne Skontobetrag nicht sicher.
+  if (/skonto/i.test(t)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+  if (/lastschrift|abgebucht|eingezogen|bankeinzug|einzugserm|mandat/i.test(t)) return unklar('PDF nennt Lastschrift oder Einzug');
+  if (/bereits (bezahlt|beglichen|erhalten)|dankend erhalten|vorkasse|anzahlung|abschlag|teilzahlung|paypal|kreditkarte/i.test(t)) return unklar('PDF nennt Vorkasse, Anzahlung oder schon bezahlt');
+  if (!nurZeichen(t).includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht im PDF');
   return { ...kopf, status: 'ok' };
 }
 
@@ -114,7 +190,10 @@ export function konfigPruefen(k) {
     if (!lastschrift && (!String(l.name || '').trim() || !ibanGueltig(l.iban))) throw new Error(`Konfiguration: Lieferant ${schluessel} braucht name und gültige iban`);
     lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift };
   }
-  return { auftraggeber: { name: a.name.trim(), iban: iban(a.iban), bic: a.bic }, lieferanten };
+  // Optional: an wen Pruefliste und Datei nach dem Lauf gehen (Benutzer 20.11.2026: Laden-Postfach).
+  const mailAn = k.mailAn === undefined ? null : String(k.mailAn).trim().toLowerCase();
+  if (mailAn !== null && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(mailAn)) throw new Error('Konfiguration: mailAn ist keine gültige Adresse');
+  return { auftraggeber: { name: a.name.trim(), iban: iban(a.iban), bic: a.bic }, lieferanten, mailAn };
 }
 
 /**
@@ -125,20 +204,49 @@ export function konfigPruefen(k) {
  * @param lieferanten aus der Konfiguration: schluessel -> { name, iban }
  * @returns Map(offene-Eintrag -> { buchung, ueber: 'nummer'|'betrag' })
  */
-export function bankAbgleich(buchungen, offene, lieferanten) {
+// Als eigenes Wort: eine Ziffernfolge mitten in IBAN oder Kundennummer ist keine Rechnungsnummer.
+// Reine Ziffern duerfen rechts an Buchstaben grenzen („208415TP050“), links nie („RE700001“ ist eine andere Nummer).
+const nummerIm = (zweck, nummer) => {
+  const rechts = /^\d+$/.test(nummer) ? '0-9' : 'A-Z0-9';
+  return new RegExp(`(^|[^A-Z0-9])${nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^${rechts}])`).test(String(zweck).toUpperCase());
+};
+
+/**
+ * @param bekannteNummern alle Rechnungsnummern im Archiv ({ schluessel, nummer }), auch gesperrte:
+ *   eine Buchung, die eine andere Rechnung desselben Absenders nennt, deckt nie ueber den Betrag.
+ */
+export function bankAbgleich(buchungen, offene, lieferanten, bekannteNummern = []) {
   const frei = new Set(buchungen.filter(x => x.betrag < 0));
   const treffer = new Map();
   const empfaenger = (x, o) => (x.iban && x.iban === lieferanten[o.schluessel].iban) || namePasst(x.name, { anbieter: lieferanten[o.schluessel].name, anbieterSchluessel: o.schluessel });
+  const nenntAndere = (x, o) => bekannteNummern.some(n => n.schluessel === o.schluessel && n.nummer !== o.nummer && nummerIm(x.zweck, n.nummer));
   const stufen = [
-    // Als eigenes Wort: eine Ziffernfolge mitten in IBAN oder Kundennummer ist keine Rechnungsnummer.
-    ['nummer', (x, o) => new RegExp(`(^|[^A-Z0-9])${o.nummer.toUpperCase().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}($|[^A-Z0-9])`).test(String(x.zweck).toUpperCase())],
-    ['betrag', (x, o) => [o.brutto, o.skonto?.zahlbetrag].some(b => b != null && cent(b) === cent(-x.betrag)) && (!o.datum || x.datum >= o.datum)],
+    ['nummer', (x, o) => {
+      if (!o.nummer) return false;
+      // Unklare (nurNachDatum): eine Zahlung vor dem Rechnungsdatum gehoert zu einer frueheren Rechnung.
+      if (o.nurNachDatum && o.datum && x.datum < o.datum) return false;
+      // Laengere bekannte Nummern, die diese enthalten („123A“, „R-123“ zu „123“), zaehlen nicht als Treffer:
+      // sie werden vorher aus dem Zweck genommen. Steht „123“ zusaetzlich allein da, bleibt der Treffer.
+      // Laengste zuerst: sonst zerlegt „R-123“ die „R-123-123“ und laesst „-123“ stehen.
+      let zweck = String(x.zweck).toUpperCase();
+      const laengere = bekannteNummern.filter(n => n.schluessel === o.schluessel).map(n => String(n.nummer).toUpperCase())
+        .filter(lang => lang !== o.nummer.toUpperCase() && lang.includes(o.nummer.toUpperCase())).sort((a, b) => b.length - a.length);
+      for (const lang of laengere) zweck = zweck.split(lang).join(' ');
+      return nummerIm(zweck, o.nummer);
+    }],
+    ['betrag', (x, o) => [o.brutto, o.skonto?.zahlbetrag].some(b => b != null && cent(b) === cent(-x.betrag)) && (!o.datum || x.datum >= o.datum) && !nenntAndere(x, o)],
   ];
   for (const [ueber, passt] of stufen) {
     for (const o of offene) {
       if (treffer.has(o)) continue;
       const buchung = [...frei].find(x => empfaenger(x, o) && passt(x, o));
-      if (buchung) { frei.delete(buchung); treffer.set(o, { buchung, ueber }); }
+      if (!buchung) continue;
+      frei.delete(buchung);
+      // Passt eine Buchung ueber die Nummer zu mehreren Rechnungen, gilt keine als bezahlt und keine als offen.
+      // Belege mit derselben Nummer desselben Absenders (Rechnung plus Anhang) sind eine Rechnung.
+      const auch = ueber === 'nummer' ? offene.filter(p => p !== o && !treffer.has(p) && empfaenger(buchung, p) && passt(buchung, p)) : [];
+      const mehrdeutig = auch.some(p => p.schluessel !== o.schluessel || p.nummer !== o.nummer || (p.datum && o.datum && p.datum !== o.datum));
+      for (const p of [o, ...auch]) treffer.set(p, { buchung, ueber, mehrdeutig });
     }
   }
   return treffer;
@@ -172,20 +280,35 @@ export function umsatzPdfLesen(text) {
  * zahlen | spaeter | bezahlt | vorgemerkt | gutschrift | lastschrift | unklar.
  * @param belege [{ schluessel, datei, xml|null }] nur Rechnungen der konfigurierten Lieferanten
  * @param buchungen Kontoauszug oder null (dann kein Bezahlt-Abgleich)
- * @param auszugAktuell false, wenn der Kontoauszug nicht bis kurz vor heute reicht: dann zaehlt er nur
- *   fuer „bezahlt“, nicht als Beleg, dass etwas noch offen ist
+ * @param auszugGesperrt true ohne Kontoauszug, mit unlesbarer Buchung oder Luecke: dann nichts in die Datei.
+ *   Ein nur veralteter Auszug sperrt nicht (Benutzer 20.11.2026: kein woechentlicher Export); was danach
+ *   bezahlt wurde, kennt nur die Vormerkliste, deshalb werden Lieferantenrechnungen nicht mehr von Hand ueberwiesen.
  * @param vorgemerkt [{ schluessel, nummer, datei }] aus frueheren Sammeldateien
  */
-export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vorgemerkt = [], heute }) {
+export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchungen, auszugGesperrt = false, vorgemerkt = [], heute }) {
   const naechster = naechsterLauf(heute);
   const geprueft = belege.map((b) => {
     const lieferant = konfig.lieferanten[b.schluessel];
     const basis = { schluessel: b.schluessel, lieferant: lieferant.name, beleg: b.datei, nummer: null, datum: null, brutto: null, skonto: null, nettoFaellig: null, zahlbetrag: null };
     if (lieferant.lastschrift) return { ...basis, status: 'lastschrift', grund: 'Lieferant zieht per Lastschrift ein' };
-    if (!b.xml) return { ...basis, status: 'unklar', grund: 'keine XML-Rechnung im Archiv' };
-    const r = rechnungPruefen(b.xml, lieferant);
-    return { ...basis, nummer: r.nummer, datum: r.datum, brutto: r.brutto, skonto: r.skonto, nettoFaellig: r.nettoFaellig, status: r.status, grund: r.grund || '' };
+    if (!b.xml && !b.pdf) return { ...basis, status: 'unklar', grund: 'keine XML-Rechnung im Archiv' };
+    const r = b.xml ? rechnungPruefen(b.xml, lieferant, b.pdfText) : pdfRechnungPruefen(b.pdf, lieferant);
+    return { ...basis, nummer: r.nummer || b.nummer || b.pdf?.nummer || null, datum: r.datum, brutto: r.brutto, skonto: r.skonto, nettoFaellig: r.nettoFaellig, pdf: Boolean(r.pdf), anhang: Boolean(r.anhang), status: r.status, grund: r.grund || '' };
   });
+  // Nicht eingetragene Absender: nie in die Datei, aber sichtbar, bis sie bezahlt oder erledigt sind.
+  const fremdeLieferanten = {};
+  const fremdGesehen = new Map();
+  // Rechnung und Anhang (ohne Betrag) oder Kopie mit Nummer und Datum gleich: eine Zeile, die mit Betrag zuerst.
+  // Ein anderer Betrag oder ein anderes Datum bei gleicher Nummer bleibt als eigene Zeile sichtbar.
+  for (const f of [...fremde].sort((a, b) => (a.brutto === null) - (b.brutto === null))) {
+    const k = f.nummer && `${f.schluessel}|${f.nummer}|${f.datum}`;
+    const schon = (k && fremdGesehen.get(k)) || [];
+    if (schon.length && (f.brutto === null || schon.some(b => cent(b) === cent(f.brutto)))) continue;
+    if (k) fremdGesehen.set(k, [...schon, f.brutto]);
+    fremdeLieferanten[f.schluessel] = { name: f.anbieter, iban: '' };
+    geprueft.push({ schluessel: f.schluessel, lieferant: f.anbieter, beleg: f.datei, nummer: f.nummer, datum: f.datum, brutto: f.brutto, skonto: null, nettoFaellig: null, zahlbetrag: null, status: 'unklar', grund: 'Lieferant nicht eingetragen: von Hand zahlen oder IBAN eintragen lassen' });
+  }
+  for (const z of geprueft) if (erledigt[z.beleg]) Object.assign(z, { status: 'erledigt', grund: String(erledigt[z.beleg]) });
   // Dieselbe Nummer zweimal im Archiv (Kopie, erneut gesendet): nur die erste zaehlt; weicht der
   // Betrag ab, keine. Vor dem Bankabgleich, weil eine Buchung nur eine Rechnung deckt.
   const erste = new Map();
@@ -196,26 +319,56 @@ export function auswaehlen({ belege, konfig, buchungen, auszugAktuell = true, vo
     if (cent(e.brutto) !== cent(z.brutto)) Object.assign(e, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
     Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv' });
   }
+  // Eine unklare Fassung derselben Nummer mit anderem Betrag (Korrektur, zweite Rechnung) sperrt auch die lesbare.
+  const unklarBetrag = new Map();
+  for (const z of geprueft.filter(x => x.status === 'unklar' && x.nummer && x.brutto != null)) {
+    const k = `${z.schluessel}|${z.nummer}`;
+    unklarBetrag.set(k, [...(unklarBetrag.get(k) || []), cent(z.brutto)]);
+  }
+  for (const z of geprueft.filter(x => x.status === 'ok')) {
+    if ((unklarBetrag.get(`${z.schluessel}|${z.nummer}`) || []).some(c => c !== cent(z.brutto))) Object.assign(z, { status: 'unklar', grund: 'Rechnungsnummer mehrfach im Archiv mit anderem Betrag' });
+  }
+  // Ausdruecklicher Anhang ohne Betrag zu einer lesbaren Rechnung derselben Nummer: nichts zu pruefen.
+  // Storno, Korrektur oder ein sonst unlesbares Dokument bleibt unklar.
+  const lesbar = new Set(geprueft.filter(x => x.status === 'ok').map(x => `${x.schluessel}|${x.nummer}`));
+  for (const z of geprueft) {
+    if (z.status === 'unklar' && z.anhang && z.brutto == null && z.nummer && lesbar.has(`${z.schluessel}|${z.nummer}`)) Object.assign(z, { status: 'erledigt', grund: 'Anhang zur Rechnung gleicher Nummer (ohne Betrag)' });
+  }
   const istVorgemerkt = z => vorgemerkt.find(v => v.schluessel === z.schluessel && v.nummer === z.nummer);
-  const bank = buchungen
-    ? bankAbgleich(buchungen, geprueft.filter(z => z.status === 'ok' && !istVorgemerkt(z)), konfig.lieferanten)
-    : new Map();
+  const ok = geprueft.filter(z => z.status === 'ok' && !istVorgemerkt(z));
+  const okNummern = new Set(geprueft.filter(z => z.status === 'ok').map(z => `${z.schluessel}|${z.nummer}`));
+  // Gleiche Nummer mit verschiedenen Betraegen: bleibt unklar, keine Buchung darf das aufloesen.
+  const betraege = new Map();
+  for (const z of geprueft.filter(x => x.status === 'unklar' && x.nummer && x.brutto != null)) {
+    const k = `${z.schluessel}|${z.nummer}`;
+    betraege.set(k, new Set([...(betraege.get(k) || []), cent(z.brutto)]));
+  }
+  const konflikt = z => (betraege.get(`${z.schluessel}|${z.nummer}`)?.size || 0) > 1;
+  for (const z of geprueft) if (z.status === 'unklar' && konflikt(z) && !/anderem Betrag/.test(z.grund)) z.grund += '; Rechnungsnummer mehrfach mit anderem Betrag';
+  // Unklare nur ueber eine echte Rechnungsnummer (ohne Betrag): ein gleicher Betrag soll keine offene Rechnung verdecken.
+  const unklare = geprueft
+    .filter(z => z.status === 'unklar' && String(z.nummer || '').replace(/[^A-Za-z0-9]/g, '').length >= 4 && !okNummern.has(`${z.schluessel}|${z.nummer}`) && !konflikt(z))
+    .map(z => ({ ...z, brutto: null, skonto: null, nurNachDatum: true, quelle: z }));
+  const treffer = buchungen ? bankAbgleich(buchungen, [...ok, ...unklare], { ...fremdeLieferanten, ...konfig.lieferanten }, geprueft.filter(z => z.nummer)) : new Map();
+  const bank = new Map([...treffer].map(([k, v]) => [k.quelle || k, v]));
   const zeilen = geprueft.map((z) => {
+    if (z.status === 'unklar') {
+      const t = bank.get(z);
+      return t && !t.mehrdeutig ? { ...z, status: 'bezahlt', grund: `laut Kontoauszug am ${t.buchung.datum} (Nummer im Verwendungszweck; vorher: ${z.grund})` } : z;
+    }
     if (z.status !== 'ok') return z;
     const vor = istVorgemerkt(z);
     if (vor) return { ...z, status: 'vorgemerkt', grund: `schon in ${vor.datei}` };
     const t = bank.get(z);
+    if (t?.mehrdeutig) return { ...z, status: 'unklar', grund: `Zahlung vom ${t.buchung.datum} passt zu mehreren Rechnungsnummern` };
     if (t) return { ...z, status: 'bezahlt', grund: `laut Kontoauszug am ${t.buchung.datum}${t.ueber === 'betrag' ? ' (Betrag und Empfänger passen, Nummer nicht sichtbar)' : ''}` };
     const r = z;
+    // Benutzer 19.11.2026: jede offene Rechnung im Freitagslauf ihrer Woche zahlen, nicht auf Fristen warten.
+    if (!buchungen || auszugGesperrt) return { ...z, status: 'unklar', grund: 'ohne lesbaren, lückenlosen Kontoauszug nicht in die Datei' };
     if (r.skonto && r.skonto.bis >= heute) {
-      // Frist bis einschliesslich naechstem Lauftag: eine Zahlung erst dann kaeme zu spaet an.
-      if (r.skonto.bis > naechster) return { ...z, status: 'spaeter', grund: `Skonto bis ${r.skonto.bis}, im Lauf davor` };
       return { ...z, status: 'zahlen', zahlbetrag: r.skonto.zahlbetrag, mitSkonto: true, grund: r.skonto.bis === heute ? 'Skontofrist endet heute: heute freigeben' : 'mit Skonto' };
     }
-    // Ohne Kontoauszug ist nicht belegt, dass eine Rechnung mit abgelaufener Frist noch offen ist.
-    if (!(buchungen && auszugAktuell) && (r.skonto || r.nettoFaellig < heute)) return { ...z, status: 'unklar', grund: `${r.skonto ? 'Skonto verfallen' : 'überfällig'}, ohne aktuellen Bezahlt-Abgleich nicht in die Datei` };
-    if (r.nettoFaellig > naechster) return { ...z, status: 'spaeter', grund: `${r.skonto ? 'Skonto verfallen, ' : ''}netto fällig ${r.nettoFaellig}` };
-    return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: `${r.skonto ? 'Skonto verfallen, ' : ''}${r.nettoFaellig < heute ? 'überfällig' : 'netto fällig'}` };
+    return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: r.pdf ? 'PDF-Rechnung: voller Betrag' : r.skonto ? 'Skonto verfallen, voller Betrag' : 'voller Betrag' };
   });
   return { heute, naechster, zeilen };
 }
@@ -292,16 +445,40 @@ export function painGegenpruefen(xml, { anzahl, summeCent }) {
   if (!ok) throw new Error('Sammeldatei: Gegenprüfung von Anzahl, Kontrollsumme oder IBAN fehlgeschlagen – nichts geschrieben');
 }
 
-const STATUS_TEXT = { zahlen: 'IN DATEI', spaeter: 'später', bezahlt: 'bezahlt', vorgemerkt: 'schon in Datei', gutschrift: 'Gutschrift', lastschrift: 'Lastschrift', unklar: 'UNKLAR' };
-const REIHENFOLGE = ['zahlen', 'unklar', 'gutschrift', 'lastschrift', 'spaeter', 'vorgemerkt', 'bezahlt'];
+/**
+ * Mailtext fuer den Laden aus der Pruefliste: was in der Datei steht und was von Hand zu klaeren ist.
+ * @returns {{ betreff: string, text: string }}
+ */
+export function mailInhalt(prueflisteText, { lauf, datei, zahlungen, summe }) {
+  const zeilen = String(prueflisteText).replace(/^\uFEFF/, '').split(/\r?\n/);
+  const spalten = z => csvZeile(z, ';');
+  const auswahl = status => zeilen.filter(z => z.startsWith(`${status};`)).map(spalten);
+  const de = n => n.toFixed(2).replace('.', ',');
+  const inDatei = auswahl('IN DATEI').map(f => `- ${f[1]}, Rechnung ${f[2]} vom ${f[3]}: ${f[8]} EUR (${f[9]})`);
+  const unklar = auswahl('UNKLAR').map(f => `- ${f[1]}, Rechnung ${f[2] || '?'} vom ${f[3] || '?'}${f[4] ? `, ${f[4]} EUR` : ''}: ${f[9]}`);
+  const warnung = /ACHTUNG/.test(zeilen[1] || '') ? zeilen[1].replace(/^.*?ACHTUNG: /, 'ACHTUNG: ') : '';
+  const betreff = `${datei ? `Sammelüberweisung ${lauf}: ${zahlungen} Zahlungen, ${de(summe)} EUR` : `Sammelüberweisung ${lauf}: keine Datei`}${unklar.length ? `, ${unklar.length} von Hand prüfen` : ''}${warnung ? ' – Kontoauszug prüfen' : ''}`;
+  const text = [
+    ...(warnung ? [warnung, ''] : []),
+    datei ? `Im Anhang die Sammeldatei für die Commerzbank (${datei}) und die Prüfliste.` : 'Heute gibt es keine Sammeldatei. Die Prüfliste hängt an.',
+    datei ? 'Bitte erst die Prüfliste ansehen, dann die Datei im Online-Banking hochladen und freigeben.' : '',
+    '', `In der Datei (${zahlungen}):`, ...(inDatei.length ? inDatei : ['- nichts']),
+    '', `Von Hand prüfen (${unklar.length}):`, ...(unklar.length ? unklar : ['- nichts']),
+    '', zeilen[1] || '',
+  ].filter((z, i, a) => z !== '' || a[i - 1] !== '');
+  return { betreff, text: text.join('\n') };
+}
+
+const STATUS_TEXT = { zahlen: 'IN DATEI', spaeter: 'später', bezahlt: 'bezahlt', vorgemerkt: 'schon in Datei', gutschrift: 'Gutschrift', lastschrift: 'Lastschrift', unklar: 'UNKLAR', erledigt: 'erledigt' };
+const REIHENFOLGE = ['zahlen', 'unklar', 'gutschrift', 'lastschrift', 'spaeter', 'vorgemerkt', 'bezahlt', 'erledigt'];
 
 /** Pruefliste fuer den Inhaber (Semikolon, Excel-tauglich). */
-export function pruefliste({ auswahl, abgleich, datei, andere, summeCent }) {
+export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdfAb = '', summeCent }) {
   const kopf = [
     `Sammelüberweisung Lauf ${auswahl.heute}; nächster Lauf ${auswahl.naechster}`,
-    abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.aktuell ? '' : ' – ACHTUNG: KONTOAUSZUG VERALTET, neuen Export ablegen; bis dahin jede Zeile selbst prüfen'}${abgleich.fehler ? `, ${abgleich.fehler} Datei(en) NICHT LESBAR` : ''}` : 'ACHTUNG: Bezahlt-Abgleich nicht möglich (kein Kontoauszug-Export gefunden). Vor der Freigabe jede Zeile selbst prüfen: nicht schon bezahlt?',
+    abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.luecke || abgleich.fehler || abgleich.zeilenNichtLesbar ? ` – ACHTUNG: KONTOAUSZUG UNVOLLSTÄNDIG${abgleich.luecke ? ` (Lücke ${abgleich.luecke})` : ''}${abgleich.fehler ? ` (${abgleich.fehler} Datei(en) nicht lesbar)` : ''}${abgleich.zeilenNichtLesbar ? ` (${abgleich.zeilenNichtLesbar} Buchung(en) nicht lesbar)` : ''}: keine Datei. Umsätze der letzten 30 Tage bei der Commerzbank als CSV in Downloads speichern, dann neu laufen lassen` : abgleich.aktuell ? '' : `; danach schützt die Vormerkliste vor doppelter Zahlung (Lieferantenrechnungen nicht von Hand überweisen; ein neuer CSV-Export in Downloads ist freiwillig)`}` : 'ACHTUNG: Kein Kontoauszug-Export gefunden: keine Datei. Einmal die Umsätze der letzten 90 Tage bei der Commerzbank als CSV in Downloads speichern.',
     datei ? `Datei: ${datei}; ${auswahl.zeilen.filter(z => z.status === 'zahlen').length} Zahlungen; Summe ${de(summeCent / 100)} EUR` : 'Keine Datei: nichts zu zahlen oder Probelauf',
-    `Nicht betrachtet: ${andere} Rechnung(en) anderer Lieferanten`,
+    `Nicht betrachtet: ${andere} Rechnung(en) anderer Lieferanten${vorStart ? `, ${vorStart} reine PDF-Rechnung(en) vor ${pdfAb}` : ''}`,
     '',
   ];
   const zeilen = [['Status', 'Lieferant', 'Rechnung', 'Rechnungsdatum', 'Rechnungswert', 'Skonto', 'Skonto bis', 'Netto fällig', 'Zahlbetrag', 'Hinweis', 'Beleg'].join(';')];

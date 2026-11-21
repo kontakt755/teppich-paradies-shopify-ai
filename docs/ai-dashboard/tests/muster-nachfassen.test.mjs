@@ -346,7 +346,7 @@ test('Teppich-Fassung: Wunschmass, Form, Einfassung, Lieferzeit - keine Rollenbr
   assert.doesNotMatch(mail.text, /Werktage/, 'keine feste Zahl (w-246)');
   assert.doesNotMatch(mail.text, /Rollenbreite|verlege|Verlegeteam|von der Rolle|Boden/i);
   assert.match(mail.text, new RegExp(`Ihre gewählten Produkte finden Sie hier:\\nTestvelours Teppich nach Maß · Sand\\n${SHOP_URL}/products/test-teppich-1\\?variant=101\\n\\nTestvelours`));
-  assert.match(mail.text, /variant=103\n\nWeitere Muster können Sie jederzeit kostenlos nachbestellen: /, 'Leerzeile nach der Linkliste');
+  assert.match(mail.text, /variant=103\n\nWeitere Muster können Sie jederzeit nachbestellen: /, 'Leerzeile nach der Linkliste');
   assert.doesNotMatch(mail.text, /[{}<>]/);
   assert.doesNotMatch(mail.text, /[ \t]\n/, 'keine Leerzeichen am Zeilenende');
   assert.ok(platzhalterFrei(mail));
@@ -462,7 +462,7 @@ const nv = extra => fuelleText(NICHT_VERFUEGBAR_VORLAGE, { kundenname: 'Erika Be
 
 test('Mail "nicht verfuegbar": Lagerfarben stehen als Angebot im Text, ohne Lagerfarben bleibt der Text wie bisher', () => {
   const mit = nv({ lagerFarben: ['Nougat (271)', 'Steingrau (373)'] });
-  assert.match(mit.text, /Außerdem haben wir diese Farben sofort da und schicken sie Ihnen gern kostenlos: Nougat \(271\), Steingrau \(373\)\. Eine kurze Antwort auf diese E-Mail genügt\./);
+  assert.match(mit.text, /Außerdem haben wir diese Farben sofort da und schicken sie Ihnen gern zu: Nougat \(271\), Steingrau \(373\)\. Eine kurze Antwort auf diese E-Mail genügt\./);
   assert.match(mit.text, /– Fame Teppichboden: Rot \(123\)/, 'die nicht lieferbare Farbe steht weiter in der Liste');
   assert.ok(mit.text.indexOf('Außerdem haben wir') > mit.text.indexOf('direkt im Shop bestellen'), 'nach dem Hinweis auf den Shop');
   assert.ok(mit.text.indexOf('Außerdem haben wir') < mit.text.indexOf('Bei Fragen helfen wir'), 'vor dem Schluss');
@@ -509,4 +509,20 @@ test('adresseGesperrt: eine Mail je Adresse in 10 Tagen', () => {
   assert.equal(adresseGesperrt(s, 'alt@example.invalid', JETZT), false);
   assert.equal(adresseGesperrt(s, 'fehl@example.invalid', JETZT), false);
   assert.equal(adresseGesperrt(s, '', JETZT), false);
+});
+
+// Musterversand-Test ab 01.12.2026: Gutschein-Erinnerung nur, wenn der Musterversand bezahlt wurde.
+test('Nachfrage: Gutschein-Hinweis nur bei bezahltem Musterversand, nie mit Code, nicht nach dem 31.03.2027', () => {
+  const im = new Date('2026-12-10T08:00:00Z');
+  const bezahlt = { ...zeile(), gesamtbetrag: 4.99 }, gratis = { ...zeile(), gesamtbetrag: 0 };
+  const [a, b] = [bezahlt, gratis].map(z => musterNachfassen([z], { jetzt: JETZT }).offen[0]);
+  assert.equal(a.versandBezahlt, true);
+  assert.equal(b.versandBezahlt, false);
+  assert.equal(nachfragenBuendeln([a, b])[0].versandBezahlt, true);
+  const mail = e => fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde Eins', absender: 'Anna', nachfass: 'erste', versandBezahlt: e.versandBezahlt, jetzt: im }).text;
+  assert.match(mail(a), /Gutscheincode dafür finden Sie in Ihrer Bestellbestätigung – er gilt ab 150 € Warenwert und ist bis 31\.03\.2027 einlösbar\.\n\nFreundliche Grüße/);
+  assert.doesNotMatch(mail(b), /Gutschein/);
+  assert.doesNotMatch(mail(a) + mail(b), /kostenlos|gratis/i);
+  const spaeter = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'Testkunde Eins', nachfass: 'erste', versandBezahlt: true, jetzt: new Date('2027-04-01T08:00:00Z') }).text;
+  assert.doesNotMatch(spaeter, /Gutschein/);
 });

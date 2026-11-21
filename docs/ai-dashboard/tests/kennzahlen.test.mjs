@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 
-// Kachel "Ø je bezahlter Bestellung" auf Heute. Nur erfundene Zahlen: 10 Bestellungen, davon 8
+// Kachel "Ø je Bestellung ohne Muster" auf Heute. Nur erfundene Zahlen: 10 Bestellungen, davon 8
 // kostenlose Muster - frueher wurde der Umsatz durch alle 10 geteilt.
 
 test('Schnitt nur ueber Bestellungen mit Betrag - auch bei einem Export ohne mitBetrag', () => {
@@ -18,4 +18,9 @@ test('Nur kostenlose Muster: 0 (die Kachel zeigt einen Strich); ganz alter Expor
   assert.equal(schnittJeBezahlter({ bestellungen: 0, umsatz: 0 }), 0);
   assert.equal(schnittJeBezahlter(null), null);
   assert.equal(schnittJeBezahlter({ bestellungen: 2 }), null);
+});
+
+test('Bezahlter Musterversand zaehlt nicht in den Schnitt', () => {
+  // 1 Warenbestellung 104,99 €, 2 Musterbestellungen je 4,99 €.
+  assert.equal(schnittJeBezahlter({ bestellungen: 3, kostenlos: 0, mitBetrag: 1, umsatz: 114.97, muster: { bestellungen: 2, versandEinnahmen: 9.98 } }), 104.99);
 });

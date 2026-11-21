@@ -16,7 +16,7 @@ import { gruppieren } from './einkauf.mjs';
 import { ableiten } from './status.mjs';
 import { procurementReady, GRUPPE } from './ampel.mjs';
 import { normalisiereLineItem } from '../sync/orders.mjs';
-import { istMusterPosition as musterRegel } from './muster.mjs';
+import { istMusterPosition as musterRegel, nurMusterversandErstattet } from './muster.mjs';
 import { istTestbestellung } from './testbestellung.mjs';
 import { kettelZuschnitt, wirdGekettelt } from './kettelpuffer.mjs';
 import { ROUTE } from './route.mjs';
@@ -576,7 +576,10 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     if (ohneId.length) rot(`${ohneId.length} Position(en) ohne Großhändler-ID`, { ohneIdGrund: true });
     if (mengeOffen.length) gelb(`${mengeOffen.length} Einkaufsmenge(n) UNGEKLAERT`);
     if (jaNein(verlegung) === 'Ja') gelb('Verlegung gebucht');
-    if (!['PAID', 'PARTIALLY_REFUNDED'].includes(String(order.displayFinancialStatus))) gelb(`Zahlung: ${order.displayFinancialStatus ?? '–'}`);
+    // Nur der Musterversand erstattet (ein Muster fehlte): die uebrigen Muster gehen trotzdem raus -
+    // Automatik, Packliste und Listen lesen `bezahlt` und behandeln die Bestellung weiter als bezahlt.
+    const bezahlt = nurMusterversandErstattet(order) ? 'PAID' : order.displayFinancialStatus ?? '–';
+    if (!['PAID', 'PARTIALLY_REFUNDED'].includes(String(bezahlt))) gelb(`Zahlung: ${bezahlt}`);
     if (!offen) { ampel = 'grau'; hinweise.unshift(order.cancelledAt ? 'Storniert' : order.closedAt ? 'In Shopify archiviert' : 'Erledigt'); }
 
     const auftrag = {
@@ -587,7 +590,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       storniert: !!order.cancelledAt,
       archiviert: !!order.closedAt,
       testbestellung: istTest,
-      bezahlt: order.displayFinancialStatus ?? '–',
+      bezahlt,
       erfuellt: order.displayFulfillmentStatus ?? '–',
       // Sendungen aus Shopify (Zeitleiste: "an Kunden raus" bzw. "zugestellt" automatisch erkennen).
       sendungen: knoten(order.fulfillments).map(f => ({ status: f.displayStatus || f.status || null, am: f.createdAt || null, aktualisiertAm: f.updatedAt || null,

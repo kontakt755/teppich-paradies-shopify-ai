@@ -10,6 +10,43 @@ Entscheidung – das sind Inhabersachen. **Echte Codes stehen nie im Repository*
 Ein Rabattcode wirkt nicht auf bereits reduzierte Ware und nicht zusammen mit
 einem anderen Code.
 
+### Ausnahme: Gutschein für den Musterversand (Inhaber 2026-11-19)
+
+Im Test „Musterversand 4,99 €“ (01.12.2026 bis 31.01.2027) bekommt jede reine
+Musterbestellung in der Bestellmail einen Gutschein, der die 4,99 € beim
+späteren Kauf anrechnet. Für diesen einen Rabatt gilt die Regel oben nicht:
+
+| | Regel für Marketingcodes | Gutschein Musterversand |
+|---|---|---|
+| Titel | `KANAL · Kampagne · JJJJ-MM` | `MUSTER · Versandanrechnung · 2026-12` |
+| Gilt für | nur `intern-regulaerer-preis` | **alle Ware, auch reduzierte und Restrollen** |
+| Wert | Prozent auf die Produkte | 4,99 € auf die Bestellung, ab 150 € Warenwert |
+| Kombinierbar | mit nichts | mit Produktrabatten ja, mit anderen Codes nein |
+| Nutzung, Laufzeit | einmal je Kunde, mit Enddatum | einmal je Kunde, 01.12.2026 bis 31.03.2027 |
+
+Warum: Der Gutschein ist kein Preisnachlass, sondern gibt eine bezahlte Gebühr
+zurück. Wer nach dem Muster eine Restrolle oder Aktionsware kauft, soll sie
+genauso angerechnet bekommen. Der Code steht nicht hier, sondern im
+Shop-Metafeld `custom.muster_gutscheincode` (siehe
+`domains/shopify/benachrichtigungen/README.md`).
+
+Belegt am 2026-11-19 an Warenkorb und Kasse mit zwei Wegwerf-Codes (nur an
+diesem Tag gültig, danach deaktiviert, 0 Einlösungen):
+
+| Fall | Ergebnis |
+|---|---|
+| 149,00 € Ware | abgelehnt („… ist für die Artikel in Ihrem Warenkorb nicht gültig“) |
+| 150,00 € Ware | 4,99 € Abzug als Bestellrabatt, Gesamt 145,01 € |
+| Ware mit laufendem automatischem Rabatt, der nicht mit Bestellrabatten kombiniert | abgelehnt, auch wenn daneben 150 € Ware ohne Aktion liegen; es bleibt nur der automatische Rabatt |
+| Produktrabatt, der Bestellrabatte erlaubt, dazu der Gutschein | beide werden abgezogen, sobald **nach** dem Produktrabatt noch 150 € bleiben (150,30 € ja, 149,85 € nein) |
+
+**Folge für jede Aktion bis 31.03.2027:** Ein automatischer Rabatt, der in
+dieser Zeit läuft, braucht „kombinierbar mit Bestellrabatten“
+(`combinesWith.orderDiscounts: true`), sonst ist der Gutschein bei jedem
+Warenkorb mit einem Aktionsartikel wertlos. Streichpreise (Weg A unten) stören
+nicht. Mit einem anderen Code geht der Gutschein nie zusammen, das steht so
+in der Mail.
+
 ## So bildet Shopify das zuverlässig ab (ohne App)
 
 1. **Interne Kollektion** `intern-regulaerer-preis` („Intern: Regulärer Preis

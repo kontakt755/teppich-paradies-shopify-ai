@@ -61,7 +61,9 @@ function warenUndMuster(orders, kundeVon) {
       kunden: new Set(ware.map(kundeOder)).size,
       bestellungen: ware.length,
     },
-    muster: { bestellungen: muster.length, kunden: new Set(muster.map(kundeOder)).size },
+    // versandEinnahmen: was reine Musterbestellungen gekostet haben (Musterversand, Test ab 01.12.2026).
+    // Eigene Zahl, nie Teil von ware.umsatz.
+    muster: { bestellungen: muster.length, kunden: new Set(muster.map(kundeOder)).size, versandEinnahmen: runden(muster.reduce((s, o) => s + betrag(o), 0)) },
   };
 }
 
@@ -108,20 +110,21 @@ export function schnappschuss(daten, opt = {}) {
     const drin = orders.filter(o => imFenster(o, ab, jetzt));
     const gezaehlt = drin.filter(zaehlt);
     const umsatz = gezaehlt.reduce((s, o) => s + betrag(o), 0);
-    // Der Schnitt nur ueber Bestellungen mit Betrag: kostenlose Musterbestellungen (oft die
-    // Mehrheit) drueckten ihn sonst auf einen Wert, den kein Kunde je bezahlt hat.
-    const mitBetrag = gezaehlt.filter(o => betrag(o) > 0).length;
+    // Der Schnitt nur ueber Bestellungen mit Betrag und ohne reine Musterbestellungen (oft die
+    // Mehrheit): sie drueckten ihn sonst auf einen Wert, den kein Warenkunde je bezahlt hat.
+    // Muster erkennt die Position, nicht der Betrag - mit Musterversand kosten sie 4,99 €.
+    const wm = warenUndMuster(gezaehlt, kundeVon);
+    const mitBetrag = gezaehlt.filter(o => betrag(o) > 0 && !istNurMusterBestellung(positionen(o))).length;
     zeitraeume[String(t)] = {
       bestellungen: gezaehlt.length,
       umsatz: runden(umsatz),
       waehrung,
       mitBetrag,
-      durchschnitt: mitBetrag ? runden(umsatz / mitBetrag) : 0,
+      durchschnitt: mitBetrag ? runden((umsatz - wm.muster.versandEinnahmen) / mitBetrag) : 0,
       storniert: drin.length - gezaehlt.length,
-      // Bezahlte Bestellungen ohne Betrag - in der Praxis kostenlose Musterbestellungen.
-      // Damit erklaert das Dashboard "Umsatz 0 €" statt wie ein Datenfehler auszusehen.
+      // Bezahlte Bestellungen ohne Betrag. Keine Muster-Erkennung: die steht in muster.bestellungen.
       kostenlos: gezaehlt.filter(o => betrag(o) === 0).length,
-      ...warenUndMuster(gezaehlt, kundeVon),
+      ...wm,
     };
   }
 

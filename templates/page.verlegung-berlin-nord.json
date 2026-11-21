@@ -1,0 +1,185 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "tp_verlegegebiet": {
+      "type": "tp-verlegegebiet",
+      "settings": {
+        "eyebrow": "Berlin-Nord und Oberhavel",
+        "heading": "Liegt Ihr Wohnort im Verlegegebiet?",
+        "intro": "Geben Sie Ihre Postleitzahl ein. Sie sehen die Entfernung zu unserem Geschäft in Oranienburg und die passende Lieferpauschale.",
+        "rollenware_stufen": true,
+        "aktionshinweis": false,
+        "hinweis": "",
+        "cta_zeigen": false,
+        "cta_link": "/pages/verlegung-berlin-nord#tp-anfrage",
+        "cta2_link": "https://wa.me/491792612211",
+        "versand_link": "/collections/all",
+        "vertrauen": "",
+        "padding-block-start": 40,
+        "padding-block-end": 24
+      }
+    },
+    "tp_verlege_ablauf": {
+      "type": "tp-verlege-ablauf",
+      "settings": {
+        "maler": false
+      }
+    },
+    "faq": {
+      "type": "tp-start-faq",
+      "settings": {
+        "heading": "Häufige Fragen zur Verlegung in Berlin-Nord",
+        "erste_offen": true
+      },
+      "blocks": {
+        "q1": {
+          "type": "frage",
+          "settings": {
+            "frage": "Kommen Sie zum Aufmaß auch nach Berlin?",
+            "antwort": "<p>Ja. Unsere Bodenleger fahren bis etwa 50 km um Oranienburg, das schließt den Norden Berlins ein. Das Aufmaß vor Ort ist kostenlos, danach erhalten Sie ein verbindliches Festpreisangebot.</p>"
+          }
+        },
+        "q2": {
+          "type": "frage",
+          "settings": {
+            "frage": "Was kostet die Anfahrt nach Berlin-Nord?",
+            "antwort": "<p>Bei Rollenware hängt die Lieferpauschale von der Luftlinie zu unserem Geschäft ab: bis 15 km 39 €, bis 30 km 49 €, bis 50 km 69 €. Kostenlos sind Lieferung und lose Verlegung nur ab 649 € Warenwert und bis 15 km. Alle Preise stehen unter <a href=\"/pages/liefer-verlegeservice\">Liefer- &amp; Verlegeservice</a>.</p>"
+          }
+        },
+        "q3": {
+          "type": "frage",
+          "settings": {
+            "frage": "Muss ich für die Auswahl nach Oranienburg kommen?",
+            "antwort": "<p>Nein. Sie können Böden online aussuchen und Muster bestellen. Wer die Ware lieber anfassen möchte, findet sie in unserem Geschäft in der Saarlandstraße 73–81, Mo–Fr 8:30–18:00 und Sa 8:30–14:30 Uhr.</p>"
+          }
+        },
+        "q4": {
+          "type": "frage",
+          "settings": {
+            "frage": "Welche Böden verlegen Sie?",
+            "antwort": "<p>Teppichboden, Vinyl von der Rolle, Klick- und Klebevinyl, Laminat und Parkett, dazu <a href=\"/pages/treppenverlegung\">Treppen</a>. Für Klick- und Klebevinyl, Laminat und Parkett erstellen wir nach dem Aufmaß ein individuelles Angebot.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4"
+      ]
+    },
+    "tp_bewertung": {
+      "type": "tp-start-trust",
+      "settings": {
+        "rating_wert": "",
+        "rating_text": "",
+        "rating_link": ""
+      },
+      "blocks": {
+        "aufmass": {
+          "type": "aussage",
+          "settings": {
+            "text": "Kostenloses Aufmaß vor Ort"
+          }
+        },
+        "team": {
+          "type": "aussage",
+          "settings": {
+            "text": "Eigenes Verlegeteam aus Oranienburg"
+          }
+        },
+        "gebiet": {
+          "type": "aussage",
+          "settings": {
+            "text": "Eigener Verlegeservice bis 50 km"
+          }
+        }
+      },
+      "block_order": [
+        "aufmass",
+        "team",
+        "gebiet"
+      ]
+    },
+    "tp_anfrage": {
+      "type": "tp-start-kontakt",
+      "settings": {
+        "heading": "Verlegung in Berlin-Nord anfragen",
+        "text": "Rufen Sie an, schicken Sie Fotos per WhatsApp oder schreiben Sie uns. Wir melden uns am nächsten Werktag und vereinbaren das kostenlose Aufmaß bei Ihnen.",
+        "telefon": "03301 573 37 20",
+        "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
+        "whatsapp": "https://wa.me/491792612211",
+        "anliegen": "Boden verlegen lassen",
+        "betreff": "Anfrage Liefer- und Verlegeservice",
+        "form_text": "Für Aufmaß, Angebot und Verlegung in Berlin-Nord und Oberhavel. Bitte nennen Sie Ihre Postleitzahl.",
+        "nachricht_label": "Nachricht (Postleitzahl, Räume, ungefähre Fläche, Wunschboden)",
+        "wa_text": "Fotos vom Raum und vom Untergrund schicken – wir antworten in den Öffnungszeiten.",
+        "foto_hinweis": "Fotos vom Raum oder einen Grundriss schicken Sie uns am einfachsten per WhatsApp.",
+        "formular_zuerst": true
+      }
+    }
+  },
+  "order": [
+    "main",
+    "tp_verlegegebiet",
+    "tp_verlege_ablauf",
+    "faq",
+    "tp_bewertung",
+    "tp_anfrage"
+  ]
+}

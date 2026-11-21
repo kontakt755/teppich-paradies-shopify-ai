@@ -547,12 +547,71 @@
         "padding-block-start": 16,
         "padding-block-end": 16
       }
+    },
+    "klick_faq": {
+      "type": "tp-teppichboden-faq",
+      "blocks": {
+        "unterschied": {
+          "type": "frage",
+          "settings": {
+            "question": "Was ist der Unterschied zwischen Klickvinyl und Klebevinyl?",
+            "answer": "<p>Klickvinyl wird per Klicksystem schwimmend verlegt, ohne vollflächige Verklebung. Einzelne Planken lassen sich später austauschen. <a href=\"/collections/vinylboden-klebevinyl\">Klebevinyl</a> wird vollflächig verklebt, ist besonders flach und eignet sich bei geringer Aufbauhöhe und stark genutzten Flächen.</p>"
+          }
+        },
+        "raeume": {
+          "type": "frage",
+          "settings": {
+            "question": "Kann ich Klickvinyl in Küche und Bad verlegen?",
+            "answer": "<p>Klickvinyl ist wasserfest und deshalb auch für Küche und Bad gedacht. Ob ein Boden für Fußbodenheizung geeignet ist, steht je Produkt in den technischen Daten.</p>"
+          }
+        },
+        "menge": {
+          "type": "frage",
+          "settings": {
+            "question": "Wie viele Pakete brauche ich?",
+            "answer": "<p>Geben Sie auf der Produktseite Ihre Raummaße ein. Der Rechner zeigt, wie viele Pakete Sie brauchen. Die Preise stehen pro Quadratmeter.</p>"
+          }
+        },
+        "unterlage": {
+          "type": "frage",
+          "settings": {
+            "question": "Brauche ich eine Unterlage?",
+            "answer": "<p>Bei manchen Produkten ist die Unterlage schon integriert, das steht in den technischen Daten. Sonst finden Sie passende <a href=\"/collections/zubehoer-verlegeunterlagen\">Verlegeunterlagen im Zubehör</a>.</p>"
+          }
+        },
+        "verlegung": {
+          "type": "frage",
+          "settings": {
+            "question": "Verlegen Sie Klickvinyl auch?",
+            "answer": "<p>Ja, mit unserem eigenen Team bis etwa 50 km um Oranienburg. Nach dem kostenlosen Aufmaß erhalten Sie ein Festpreisangebot. Mehr dazu unter <a href=\"/pages/vinylboden-verlegen\">Vinyl verlegen lassen</a>.</p>"
+          }
+        },
+        "versand": {
+          "type": "frage",
+          "settings": {
+            "question": "Wie wird geliefert?",
+            "answer": "<p>Deutschlandweit per Paketdienst oder Spedition, ab 50 € Bestellwert versandkostenfrei. Einzelheiten unter <a href=\"/pages/versand-lieferung\">Versand &amp; Lieferung</a>.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "unterschied",
+        "raeume",
+        "menge",
+        "unterlage",
+        "verlegung",
+        "versand"
+      ],
+      "settings": {
+        "heading": "Häufige Fragen zu Klickvinyl"
+      }
     }
   },
   "order": [
     "hero_split_3Brp8z",
     "divider_3gdxTx",
     "main",
+    "klick_faq",
     "carousel_hpxcyi"
   ]
 }

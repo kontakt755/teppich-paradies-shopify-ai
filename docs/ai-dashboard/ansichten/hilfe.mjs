@@ -16,7 +16,7 @@ function hilfeKarte(titel, inhalt) {
 export const MENUE_KURZ = [
   ['Heute', 'Die Shop-Übersicht: zuerst die Warenbestellungen, dann Probleme, Muster und Versand. Ein Knopf je Zeile führt direkt hin.'],
   ['Bestellungen', 'Alle Bestellungen der Kunden: was offen ist und was als Nächstes dran ist.'],
-  ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen.'],
+  ['Muster bestellen', 'Muster, die noch beim Lieferanten bestellt werden müssen. Vollständige Muster, die uns der Lieferant kostenlos schickt, kann das Dashboard selbst per Mail bestellen.'],
   ['Kunden nach Produkt fragen', 'Wer seit 5 Tagen Muster hat, wird gefragt, wie sie angekommen sind: Anruf oder Rückfrage-Mail. Ergebnis anklicken, Notiz eintippen. Ganz oben steht der Stand der automatischen Nachfrage-Mails („Ansehen“ zeigt die einzelnen Kunden und Texte), darunter, welche Gründe bisher genannt wurden. Am Handy unter „Mehr“.'],
   ['Packstation', 'Musterumschläge packen. Reiter „Bestellung packen“: je Bestelltag ein Umschlag, Bestellungen eines Kunden vom selben Tag zusammen. Reiter „Muster kommt an“: ein eingetroffenes Muster in den richtigen Umschlag.'],
   ['Musterlager', 'Muster, die wir selbst da haben: was noch liegt, was reserviert ist, einlagern und Aufkleber drucken. Am Handy unter „Mehr“.'],
@@ -70,6 +70,7 @@ const ABLAEUFE = [
     '<b>3 · Zukleben und verschicken</b>: Umschlag zukleben, dann <b>Umschlag gepackt – verschicken…</b> und in der Karte bestätigen. Gepackt heißt verschickt: der Kunde bekommt sofort die Versandmail, danach geht der Umschlag zur Post. Zurücknehmen geht dann nicht mehr.',
     'Steht etwas im Reiter <b>Gepackt</b>, wurde es nie als verschickt eingetragen. Liegt der Umschlag noch im Regal: zur Post und <b>Verschickt – Kunde informieren…</b>. War er schon früher raus: <b>War schon früher raus…</b> (ohne Versandmail).',
     'Kommt ein Paket Muster vom Lieferanten: Reiter <b>Muster kommt an</b>. Eintippen, was auf dem Muster steht – die Karte sagt, in welchen Umschlag es gehört.',
+    'Kommt ein Muster nicht und der Kunde hat den Musterversand bezahlt: die 4,99 € in Shopify ganz erstatten, die übrigen Muster trotzdem verschicken.',
     '<b>× Rot</b> heißt: der Kunde wartet auf uns – ein Muster kommt nicht, eine Angabe fehlt, beim Lieferanten seit 14 Tagen bestellt, seit 7 Tagen bezahlt und nicht bestellt oder nie als verschickt eingetragen. <b>! Gelb</b>: seit 7 Tagen bestellt (nachhaken), noch nicht bestellt oder zu klären. Ohne Zeichen ist alles in Ordnung. Die Reiter oben zählen die roten Umschläge.',
   ]],
   ['Genossenschaft anschreiben', [
@@ -124,7 +125,7 @@ export function viewHilfe() {
       <ol style="margin:0;padding-left:20px;line-height:1.9">
         <li>Unter <b>Weitere Bereiche</b> auf <b>Bestellen</b>, Reiter <b>Je Lieferant</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
-        <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – Warenbestellungen schickst du selbst ab. Nur vollständige, kostenlose Muster kann das Dashboard selbst per Mail bestellen – die stehen dann schon als „bestellt“ da. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
+        <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – Warenbestellungen schickst du selbst ab. Nur vollständige Muster, die uns der Lieferant kostenlos schickt, kann das Dashboard selbst per Mail bestellen – die stehen dann schon als „bestellt“ da. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
         <li><b>Positionen bearbeiten</b> klappt die einzelnen Artikel auf: Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen.</li>
         <li>Versehentlich „bestellt“ geklickt? <b>Rückgängig</b> direkt danach, oder später <b>Zurück auf offen…</b> am Artikel bzw. <b>Alle zurück auf offen…</b> an der Karte.</li>
@@ -152,6 +153,7 @@ export function viewHilfe() {
       <ul style="margin:0;padding-left:20px;line-height:1.9">
         <li><b>Position:</b> eine Zeile einer Kundenbestellung, meist ein Artikel in einer Farbe oder Größe. Eine Bestellung kann mehrere Positionen haben.</li>
         <li><b>Ampel:</b> <b>× Rot</b> hält auf (Angabe fehlt, Muster nicht lieferbar, 14 Tage beim Lieferanten, Liefertermin vorbei), <b>! Gelb</b> ist zu tun (noch nicht bestellt, seit 7 Tagen bestellt: nachhaken). Ohne Zeichen ist alles in Ordnung – Grün gibt es nicht.</li>
+        <li><b>Musterversand:</b> Eine Bestellung nur mit Mustern bleibt eine Musterbestellung, auch wenn der Kunde den Musterversand bezahlt hat. Sie zählt nie zum Warenumsatz; die Einnahmen stehen auf „Heute“ als eigene Zahl. Fehlt auch nur ein bestelltes Muster, bekommt der Kunde den Musterversand (4,99 €) ganz zurück; die lieferbaren Muster gehen trotzdem raus. Die Erstattung machst du selbst in Shopify, das Dashboard erstattet nie. Die Bestellung bleibt danach in Musterautomatik, Packstation und Auswertung. Nur wenn sie storniert ist oder die Muster selbst erstattet wurden, fällt sie heraus.</li>
         <li><b>Artikelnummer beim Lieferanten:</b> die Nummer, unter der der Lieferant den Artikel führt – nicht unsere SKU im Shop.</li>
         <li><b>Teillieferung:</b> ein Teil der Ware ist bei uns, der Rest noch beim Lieferanten. Dann steht „Teillieferung: 1 von 2 Warenartikeln da – fehlt noch: …“, und der Kunde wird erst informiert, wenn alles da ist.</li>
       </ul>`)}

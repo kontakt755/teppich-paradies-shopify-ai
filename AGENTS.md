@@ -72,6 +72,7 @@ Jeder Punkt hat eine komplette Sitzung gekostet. Vor dem Loslegen lesen. Die Vor
 - **7. Ein Produktimport ohne geklaerte Namensregeln wird zweimal gebaut** — am naechstliegenden fertigen Produkt entlangbauen. → `docs/lessons/produktimport.md`, `domains/shopify/produktimport-arbeitsweise.md`
 - **8. Lieferantennamen gehoeren nicht ins Repository.** In Dateien, Commit-/PR-Texten und `npm run task`-Notizen nur Pseudonyme: **Lieferant A, B, C …** (fortlaufend, Schluessel nur privat), **Hausmarke von A**, Linien **A-1** bis **A-3**, URLs als `lieferant-a.example`; SKUs bleiben unveraendert. → `docs/lessons/produktimport.md`, `domains/lieferanten/AUSGELAGERT.md`
 - **9. Ein PR, der gegen `main` sauber ist, kann trotzdem nie geprueft werden** — nach jedem Merge `npm run pr:doctor [-- --fix]`. → `docs/lessons/pr-basis-und-historie.md`
+- **10. Ein Shopify-Flow-Entwurf ist nicht live, bis die Uebersicht ihn unter „Aktiver Workflow“ zeigt** — selbst nachsehen, nie „laut Benutzer angewendet“ notieren; Raummass/Kettel einer Restrolle brauchen `teppich-nach-mass` + `sonderposten`. → `docs/lessons/flow-entwurf-nie-angewendet.md`
 
 ## Deploy
 

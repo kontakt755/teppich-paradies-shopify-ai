@@ -192,7 +192,7 @@ export function viewKundenAngebote() {
 function warenkorbZeile(w) {
   return `<div class="row">
     <div>
-      <div class="t">${esc(w.kunde || 'ohne Namen')} ${liegtSeit(w.zeitpunkt)}</div>
+      <div class="t">${esc(w.kunde || 'ohne Namen')} ${liegtSeit(w.zeitpunkt)}${w.nurMuster ? ' <span class="small muted">· nur Muster</span>' : ''}</div>
       <div class="m">${positionenKurz(w.positionen)}</div>
       <div class="small">${kontaktZeile(w)}</div>
     </div>
@@ -210,8 +210,9 @@ export function viewKundenWarenkoerbe() {
   if (d?.fehler) return stoerungState(d, 'Die Warenkörbe');
   if (!d || !d.verfuegbar) return emptyState('Keine Warenkörbe exportiert.', d?.hinweis || 'Daten aktualisieren (braucht den Shopify-Zugang).');
   const liste = [...(d.warenkoerbe || [])].sort((a, b) => (b.wert || 0) - (a.wert || 0));
-  const summe = liste.reduce((s, w) => s + (w.wert || 0), 0);
+  const summe = liste.filter(w => !w.nurMuster).reduce((s, w) => s + (w.wert || 0), 0);
+  const musterAnzahl = liste.filter(w => w.nurMuster).length;
   return `
-    <p class="small muted" style="margin:0 0 10px">Kunden, die den Kauf abgebrochen haben – nach Wert sortiert, zusammen ${geldText({ betrag: summe })}. Anrufen oder anschreiben lohnt sich meist bei den obersten.${d.testAusgeblendet ? ` ${d.testAusgeblendet === 1 ? 'Ein Testkauf ist' : `${d.testAusgeblendet} Testkäufe sind`} ausgeblendet.` : ''}</p>
+    <p class="small muted" style="margin:0 0 10px">Kunden, die den Kauf abgebrochen haben – nach Wert sortiert, zusammen ${geldText({ betrag: summe })}${musterAnzahl ? ` (ohne ${musterAnzahl} reine Musterkörbe)` : ''}. Anrufen oder anschreiben lohnt sich meist bei den obersten.${d.testAusgeblendet ? ` ${d.testAusgeblendet === 1 ? 'Ein Testkauf ist' : `${d.testAusgeblendet} Testkäufe sind`} ausgeblendet.` : ''}</p>
     <div class="rows">${liste.length ? liste.map(warenkorbZeile).join('') : emptyState('Kein liegengebliebener Warenkorb.', '')}</div>`;
 }

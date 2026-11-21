@@ -242,13 +242,49 @@ Produkttyp). Inhalte, Druck und Zuordnung: `../ratgeber-pdf/README.md`.
   dieser Sendung ein Muster steckt (SKU `M-…`, `TP-MUSTER-000`, Property
   `_Muster_ID`): je Muster ein Link auf die Farbe und ein Knopf zum Rechner
   (`utm_campaign=muster-versandmail`), Telefonnummer, Satz zum
-  Widerspruchsrecht. Kein Rabatt, keine Preise. Der Block prüft die Stoppliste
+  Widerspruchsrecht. Kein Rabatt, keine Preise – einzige Ausnahme ist der
+  Gutschein für den Musterversand (nächster Punkt). Der Block prüft die Stoppliste
   des Nachfass-Dienstes nicht. Rückbau: Text zwischen den beiden Markierungen
   löschen (Admin und hier).
+- **Musterversand gegen Gebühr (Test 01.12.2026 bis 31.01.2027, Plan des
+  Inhabers vom 19.11.2026):** Beide Kundenblöcke sagen bei Mustern nicht mehr
+  „kostenlos“. Zwischen den Markierungen `TP-MUSTERGEBUEHR START/ENDE` steht
+  ein Kasten mit dem Gutschein (4,99 € ab 150 € Warenwert, einmal einlösbar bis
+  31.03.2027, nicht mit anderen Gutscheincodes kombinierbar). Er erscheint nur
+  bei **reiner Musterbestellung mit bezahltem Versand** (`shipping_price > 0`),
+  in der Bestellbestätigung mit dem bezahlten Betrag, in der Versandbestätigung
+  im Musterkasten. Verzweigt wird über den Betrag, nie über das Datum: frühere
+  Gratisbestellungen und Mischbestellungen (dort fällt keine Mustergebühr an)
+  bekommen keinen Kasten. Die Blöcke können deshalb schon vor dem 01.12. im
+  Admin stehen. Rückbau: Text zwischen den Markierungen löschen.
+- **Der Gutscheincode steht nie im Repository.** Die Blöcke lesen ihn aus dem
+  Shop-Metafeld `custom.muster_gutscheincode` (Text, ohne Definition; setzen
+  per `metafieldsSet` auf die Shop-ID). Belegt am 2026-11-19 in der
+  Admin-Vorschau beider Vorlagen: `shop.metafields.custom.<key>` liefert in
+  Benachrichtigungsvorlagen direkt den Wert, `.value` ist dort leer – deshalb
+  `feld.value | default: feld`. In der Versandbestätigung sind auch
+  `shipping_price` (Cent) und `line_items` der Bestellung vorhanden. Ist das
+  Metafeld leer, steht statt des Codes „Ihren Gutscheincode nennen wir Ihnen
+  gern“ mit Telefonnummer. Repo-Datei und Admin-Fassung bleiben damit 1:1
+  gleich, eine Ausnahme von der Prüfsummenregel ist nicht nötig.
+  **Im Admin eingesetzt am 2026-11-19** (Freigabe des Benutzers im Chat): beide
+  Blöcke stehen dort 1:1 wie hier, nach dem Speichern und Neuladen per SHA-256
+  gegen die Repo-Dateien abgeglichen. Die Vorschau beider Vorlagen rendert
+  ohne Liquid-Fehler. Den Kasten selbst zeigt sie nicht, weil die
+  Beispielbestellung Ware enthält – echte Daten sieht er beim Testkauf am 01.12.
 
 Abgleich ohne Abschreiben: im Editor den Block über den Kopfkommentar suchen
 und gegen `raw.githubusercontent.com/<repo>/<commit>/…` vergleichen
 (Zeilen-Diff im Browser), dann nur ersetzen, wenn der Anker genau einmal trifft.
+
+Prüfsumme (so gemacht am 2026-11-19): Der Editor ist CodeMirror, der ganze
+Vorlagentext steht in `document.querySelector('.cm-content').cmView.view.state.doc`.
+Den Block ab dem Kopfkommentar in der Länge der Repo-Datei (ohne Zeilenumbruch
+am Ende) herausschneiden, SHA-256 bilden und mit dem der Datei vergleichen.
+Die neue Fassung kommt ohne Abtippen in die Seite: Datei über ein eigens
+angelegtes `<input type="file">` hochladen, dort lesen, Prüfsumme vergleichen
+und per `view.dispatch({changes: …})` genau den alten Block ersetzen. Die
+Vorschau rendert den ungespeicherten Stand, „Verwerfen“ stellt den alten wieder her.
 
 Tests: `qa/tests/kundenmail-bloecke.test.mjs`,
 `qa/tests/bestellmail-beratung.test.mjs`. Nach dem Einsetzen im Admin die

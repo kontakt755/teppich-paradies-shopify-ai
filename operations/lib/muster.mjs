@@ -56,4 +56,26 @@ export function istNurMusterBestellung(positionen = []) {
   return liste.every((p) => istMusterPosition(p));
 }
 
+/**
+ * Erstattungsregel Musterversand (Inhaber 19.11.2026): fehlt ein bestelltes Muster, erstattet ein
+ * Mensch die Versandkosten; die lieferbaren Muster gehen trotzdem raus. Shopify meldet die Bestellung
+ * dann als erstattet. Sie bleibt in Bearbeitung, solange sie nur aus Mustern besteht und
+ * keine Position entfernt oder erstattet wurde (currentQuantity = quantity). Storno bleibt Storno.
+ * Eine Teilerstattung bleibt wie bisher ein Fall fuer "Restumfang pruefen" (Packstation).
+ *
+ * @param {object} order  Bestellung aus dem Admin-API-Export (lineItems als Liste oder { nodes })
+ * @returns {boolean}
+ */
+export function nurMusterversandErstattet(order) {
+  if (order?.cancelledAt || order?.displayFinancialStatus !== 'REFUNDED') return false;
+  const zeilen = Array.isArray(order.lineItems) ? order.lineItems : order.lineItems?.nodes;
+  if (!Array.isArray(zeilen) || !zeilen.length || order.lineItems?.pageInfo?.hasNextPage) return false;
+  return zeilen.every((li) => Number(li?.quantity) > 0 && Number(li.currentQuantity ?? li.quantity) === Number(li.quantity)
+    && istMusterPosition({
+      sku: li.sku ?? li.variant?.sku,
+      properties: Object.fromEntries((li.customAttributes ?? []).map((a) => [a.key, a.value])),
+      produktTyp: li.variant?.product?.productType,
+    }));
+}
+
 export const MUSTER_MERKMALE = Object.freeze(['_Muster_ID', 'M-', 'TP-MUSTER', 'Musterservice']);
