@@ -25,6 +25,7 @@ const block = read('blocks/tp-muster-cta.liquid')
   .replace(/\{% stylesheet %\}[\s\S]*?\{% endstylesheet %\}/, '')
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
   .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze')
+  .replace("render 'tp-herstellermuster', product: product", "echo ''")
   .replace("render 'tp-muster-hinweis', kontext: 'produkt'", "echo ''")
   .replace("render 'tp-muster-lager', product: product", "echo ''");
 assert.ok(block.includes('echo tp_test_url'), 'Snippet-Aufruf im Block nicht gefunden');

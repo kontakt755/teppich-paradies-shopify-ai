@@ -33,10 +33,13 @@ function dateien() {
 const VERBOTEN = /kostenlos|gratis|kostenfrei|versandkostenfrei/i;
 const SATZGRENZE = /[.!?;|,<>"\n\\]|\s[–—·]\s/;
 // Ausnahmen (kurze Liste): Ladenberatung bleibt kostenlos, Kautschuk hat keine Muster.
-const AUSNAHMEN = [/im Laden/i, /keine kostenlosen Muster hinterlegt/i];
+// Herstellermuster (Inhaber 21.11.2026): D, E, H schicken kostenlos direkt an den Kunden.
+// Der freigegebene Herstellersatz enthaelt ein Komma und wuerde sonst an "Muster kostenlos" zerbrechen.
+const HERSTELLERSATZ = /Muster kostenlos, Versand direkt vom Hersteller/g;
+const AUSNAHMEN = [/im Laden/i, /keine kostenlosen Muster hinterlegt/i, /Hersteller/i];
 
 function verstoesse(rel) {
-  const text = readFileSync(path.join(root, rel), 'utf8').replace(/kostenloses-muster/gi, 'sammelprodukt');
+  const text = readFileSync(path.join(root, rel), 'utf8').replace(/kostenloses-muster/gi, 'sammelprodukt').replace(HERSTELLERSATZ, 'Herstellermuster');
   const treffer = [];
   for (const satz of text.split(SATZGRENZE)) {
     if (!/muster/i.test(satz) || !VERBOTEN.test(satz)) continue;
@@ -63,7 +66,7 @@ test('Waechter: kein Gratisversprechen bei Mustern im Theme', () => {
 
 test('Waechter erkennt die alten Wortlaute, laesst Ladenberatung und Kautschuk durch', () => {
   const pruefe = (text) => {
-    const satz = text.replace(/kostenloses-muster/gi, 'sammelprodukt').split(SATZGRENZE)
+    const satz = text.replace(/kostenloses-muster/gi, 'sammelprodukt').replace(HERSTELLERSATZ, 'Herstellermuster').split(SATZGRENZE)
       .filter((s) => /muster/i.test(s) && VERBOTEN.test(s) && !AUSNAHMEN.some((a) => a.test(s)));
     return satz.length;
   };
@@ -74,12 +77,15 @@ test('Waechter erkennt die alten Wortlaute, laesst Ladenberatung und Kautschuk d
     'Kostenloser Musterversand innerhalb Deutschlands.',
     'Vinyl-Muster sind kostenlos – höchstens 2 je Bestellung.',
     'Muster verschicken wir innerhalb Deutschlands kostenlos.',
+    'Muster kostenlos zu Ihnen nach Hause.',
   ]) assert.equal(pruefe(alt), 1, alt);
   for (const ok of [
     'Im Laden ansehen und beraten lassen: kostenlos.',
     'Muster im Laden ansehen: kostenlos.',
     'Für die angebotenen Kautschukböden sind keine kostenlosen Muster hinterlegt.',
     'Ab 50 € Bestellwert versandkostenfrei. Muster verschicken wir für 4,99 €.',
+    'Muster kostenlos, Versand direkt vom Hersteller',
+    'Muster: vom Hersteller kostenlos, sonst 4,99 € Versand',
     "var SAMPLE_HANDLE = 'kostenloses-muster';",
   ]) assert.equal(pruefe(ok), 0, ok);
 });
@@ -113,4 +119,16 @@ test('Produktvorlagen: Knopf "Muster bestellen" mit Preiszeile', () => {
     assert.match(t, /"label": "Muster bestellen"/, n);
     assert.match(t, /"hinweis": "Versand 4,99 € je Bestellung"/, n);
   }
+});
+
+// Herstellermuster (Inhaber 21.11.2026): kostenlos nur dort, wo Liquid/JS es je Muster entscheiden.
+test('Herstellermuster: Wortlaut kostenlos an Produkt, Farbauswahl, Teppich-Versand, Warenkorb, Musterseite, Versandseite', () => {
+  const wort = /Muster kostenlos, Versand direkt vom Hersteller/;
+  for (const d of ['blocks/tp-muster-cta.liquid', 'snippets/tp-farbauswahl.liquid', 'sections/tp-sample-checkout.liquid', 'snippets/tp-cart-versandhinweis.liquid']) {
+    assert.match(readFileSync(path.join(root, d), 'utf8'), wort, d);
+  }
+  assert.match(readFileSync(path.join(root, 'blocks/tp-teppich-versand.liquid'), 'utf8'), /kostenlos, Versand direkt vom Hersteller/);
+  assert.match(readFileSync(path.join(root, 'sections/tp-shipping-delivery.liquid'), 'utf8'), /Hersteller direkt an Sie schickt, sind kostenlos/);
+  // bezahlt bleibt wie in #2254
+  assert.match(readFileSync(path.join(root, 'blocks/tp-muster-cta.liquid'), 'utf8'), /Versand 4,99 € je Bestellung/);
 });

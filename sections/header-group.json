@@ -555,7 +555,7 @@
         "a2": {
           "type": "aussage",
           "settings": {
-            "text": "Muster für 4,99 € Versand nach Hause, ab 150 € Einkauf angerechnet",
+            "text": "Muster: vom Hersteller kostenlos, sonst 4,99 € Versand, ab 150 € Einkauf angerechnet",
             "link": "shopify://pages/muster"
           }
         },

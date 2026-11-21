@@ -77,6 +77,10 @@
     endcapture
     assign tp_mc_grenze = tp_mc_grenze | strip
   endunless
+  # Herstellermuster (snippets/tp-herstellermuster): kostenlos direkt vom Hersteller
+  capture tp_mc_hersteller
+    render 'tp-herstellermuster', product: product
+  endcapture
   # Geschenkgutschein: kein Muster (w-034)
   if product.gift_card?
     assign tp_mc_url = ''
@@ -97,6 +101,8 @@
         {{ block.settings.label | default: 'Muster bestellen' | escape }}
         {%- if tp_mc_grenze != blank -%}
           <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Höchstens 2 Vinyl-Muster je Bestellung. Versand 4,99 € je Bestellung</small>
+        {%- elsif tp_mc_hersteller contains 'ja' -%}
+          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Muster kostenlos, Versand direkt vom Hersteller</small>
         {%- elsif block.settings.hinweis != blank -%}
           <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</small>
         {%- endif -%}

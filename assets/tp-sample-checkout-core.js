@@ -31,11 +31,15 @@
 
   // Sonderposten (Tag sonderposten) liegen bei uns im Lager - dort passt der
   // Hinweis "kommt direkt vom Hersteller" nicht (Rundgang 06.11.2026).
-  function isHerstellerMuster(product) {
+  // Lieferant H (Vendor TeppichParadies) hat im Theme kein lesbares Merkmal:
+  // handlesH ist die Liste aus snippets/tp-herstellermuster (Musterseite gibt sie
+  // weiter), dieselbe wie im Liquid. Herstellermuster = kostenlos (Inhaber 21.11.2026).
+  function isHerstellerMuster(product, handlesH) {
     if (!product) return false;
     var tags = Array.isArray(product.tags) ? product.tags : String(product.tags || '').split(',');
     var sonderposten = tags.some(function (tag) { return String(tag || '').trim().toLowerCase() === 'sonderposten'; });
     if (sonderposten) return false;
+    if (Array.isArray(handlesH) && handlesH.indexOf(String(product.handle || '')) !== -1) return true;
     return HERSTELLER_MUSTER.indexOf(String(product.vendor || '').trim().toLowerCase()) !== -1;
   }
 

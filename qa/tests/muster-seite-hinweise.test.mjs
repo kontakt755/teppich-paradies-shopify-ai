@@ -28,6 +28,19 @@ test('Herstellermuster: nur JAB Anstoetz und Vorwerk, egal wie geschrieben', () 
   assert.equal(core.isHerstellerMuster(null), false);
 });
 
+test('Herstellermuster: Lieferant H ueber Handle-Liste, dieselbe Liste wie im Liquid', () => {
+  const core = ladeCore();
+  const h = ['arvessa-teppichboden-400cm'];
+  assert.equal(core.isHerstellerMuster({ vendor: 'TeppichParadies', handle: 'arvessa-teppichboden-400cm' }, h), true);
+  assert.equal(core.isHerstellerMuster({ vendor: 'TeppichParadies', handle: 'anderes-teppichboden-400cm' }, h), false);
+  assert.equal(core.isHerstellerMuster({ vendor: 'TeppichParadies', handle: 'arvessa-teppichboden-400cm' }), false);
+  assert.equal(core.isHerstellerMuster({ vendor: 'TeppichParadies', handle: 'arvessa-teppichboden-400cm', tags: ['sonderposten'] }, h), false);
+  const liste = read('snippets/tp-herstellermuster.liquid').match(/assign tphm_h = '([^']+)'/)[1].split(' ');
+  assert.equal(liste.length, 33);
+  assert.ok(liste.includes('arvessa-teppichboden-400cm'));
+  assert.match(read('sections/tp-sample-checkout.liquid'), /data-tp-hersteller-handles>\{%- render 'tp-herstellermuster', liste: true/);
+});
+
 test('Musterseite nennt Groesse und Versand, ohne Ankunftszeit', () => {
   const section = read('sections/tp-sample-checkout.liquid');
   const info = /<p class="tp-sample__info" data-sample-info>([^<]+)<\/p>/.exec(section);
@@ -37,8 +50,8 @@ test('Musterseite nennt Groesse und Versand, ohne Ankunftszeit', () => {
   assert.match(section, /data-sample-anrechnung>Die 4,99 € rechnen wir Ihnen ab 150 € Warenwert an\. Den Gutscheincode finden Sie in Ihrer Bestellbestätigung\./);
   const hersteller = /<p class="tp-sample__info" data-sample-hersteller hidden>([^<]+)<\/p>/.exec(section);
   assert.ok(hersteller, 'Herstellerzeile, anfangs versteckt');
-  assert.match(hersteller[1], /direkt vom Hersteller/);
-  assert.match(hersteller[1], /Versand 4,99 € je Bestellung/);
+  assert.equal(hersteller[1], 'Muster kostenlos, Versand direkt vom Hersteller · eventuell in getrennten Umschlägen');
+  assert.doesNotMatch(hersteller[1], /4,99/);
   assert.doesNotMatch(info[1] + hersteller[1], /Werktag|Tage/, 'keine Lieferzeit ohne Festlegung des Inhabers');
   // Reihenfolge: direkt unter der Ueberschrift
   assert.ok(section.indexOf('data-sample-info') > section.indexOf('</h1>'));
@@ -49,7 +62,7 @@ test('Konfigurator tauscht die Zeile bei Herstellermustern', () => {
   const js = read('assets/tp-sample-checkout.js');
   assert.match(js, /function showHerstellerHinweis\(\)/);
   assert.match(js, /showVinylLimit\(\);\s*showHerstellerHinweis\(\);/);
-  assert.match(js, /core\.isHerstellerMuster\(product\)/);
+  assert.match(js, /core\.isHerstellerMuster\(product, herstellerHandles\(\)\)/);
   // Ohne Musterweg (Laminat, Parkett, Kork, ohne-muster) keine Zeile zu Groesse und Versand
   assert.match(js, /if \(!core\.canSample\(product\)\) \{\s*loadingEl\.hidden = true;[\s\S]{0,200}?querySelector\('\[data-sample-info\]'\);\s*if \(infoEl\) infoEl\.hidden = true;/);
 });

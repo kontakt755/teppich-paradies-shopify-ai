@@ -14,6 +14,7 @@ const engine = new Liquid({ templates: {
   'tp-aktion-laufend': liquidSource('snippets/tp-aktion-laufend.liquid'),
   'tp-musteroption': liquidSource('snippets/tp-musteroption.liquid'),
   'tp-muster-grenze': '',
+  'tp-herstellermuster': liquidSource('snippets/tp-herstellermuster.liquid'),
   'tp-muster-hinweis': '',
   'tp-muster-lager': '',
   'tp-zahlung-abholung': '',

@@ -113,6 +113,7 @@ const block = read('blocks/tp-muster-cta.liquid')
   .replace(/\{% stylesheet %\}[\s\S]*?\{% endstylesheet %\}/, '')
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
   .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze')
+  .replace("render 'tp-herstellermuster', product: product", "echo ''")
   .replace("render 'tp-muster-hinweis', kontext: 'produkt'", "echo ''")
   .replace("render 'tp-muster-lager', product: product", "echo ''");
 
@@ -398,7 +399,8 @@ const rechner = read('blocks/tp-rollware-rechner.liquid');
 const rcStart = rechner.indexOf("{%- liquid\n    capture tp_rc_muster_url");
 const rcLiquid = rechner.slice(rcStart, rechner.indexOf('-%}', rcStart) + 3)
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
-  .replace("render 'tp-muster-grenze', product: product", "echo ''");
+  .replace("render 'tp-muster-grenze', product: product", "echo ''")
+  .replace("render 'tp-herstellermuster', product: product", "echo ''");
 
 async function rcKnopf(product, url = '/pages/muster?produkt=x') {
   const out = await liquid.parseAndRender(rcLiquid + '{{ tp_rc_muster_text }}|{{ tp_rc_muster_url }}', {
