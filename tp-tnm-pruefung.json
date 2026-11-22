@@ -1,7 +1,7 @@
 {
   "format": "tp-tnm-endpreis-v1",
   "ok": true,
-  "erstellt": "2026-11-20T13:04:09.373Z",
+  "erstellt": "2026-11-22T12:46:01.358Z",
   "theme": "live",
   "produkte": 428,
   "varianten": 4585,
@@ -1009,7 +1009,7 @@
     },
     {
       "id": "gid://shopify/Product/16120649154894",
-      "updatedAt": "2026-11-19T22:10:30Z",
+      "updatedAt": "2026-11-22T05:54:58Z",
       "variantIds": [
         "61069489471822",
         "61069489504590",
@@ -1095,7 +1095,7 @@
     },
     {
       "id": "gid://shopify/Product/16121034735950",
-      "updatedAt": "2026-11-19T22:10:27Z",
+      "updatedAt": "2026-11-21T12:41:38Z",
       "variantIds": [
         "61071229419854",
         "61071229452622",
@@ -1629,14 +1629,14 @@
     },
     {
       "id": "gid://shopify/Product/16128935985486",
-      "updatedAt": "2026-11-05T07:03:49Z",
+      "updatedAt": "2026-11-22T05:55:05Z",
       "variantIds": [
         "61118547984718"
       ]
     },
     {
       "id": "gid://shopify/Product/16128937427278",
-      "updatedAt": "2026-11-05T07:07:31Z",
+      "updatedAt": "2026-11-22T05:55:01Z",
       "variantIds": [
         "61118570824014",
         "61118570856782",
@@ -1667,21 +1667,21 @@
     },
     {
       "id": "gid://shopify/Product/16128938279246",
-      "updatedAt": "2026-11-05T07:05:41Z",
+      "updatedAt": "2026-11-22T05:55:03Z",
       "variantIds": [
         "61118587732302"
       ]
     },
     {
       "id": "gid://shopify/Product/16128938672462",
-      "updatedAt": "2026-11-04T09:03:32Z",
+      "updatedAt": "2026-11-22T05:55:03Z",
       "variantIds": [
         "61118591664462"
       ]
     },
     {
       "id": "gid://shopify/Product/16128938869070",
-      "updatedAt": "2026-11-05T07:07:53Z",
+      "updatedAt": "2026-11-22T05:55:04Z",
       "variantIds": [
         "61118595137870",
         "61118595170638",
@@ -1691,7 +1691,7 @@
     },
     {
       "id": "gid://shopify/Product/16128939196750",
-      "updatedAt": "2026-11-04T09:03:32Z",
+      "updatedAt": "2026-11-22T05:55:05Z",
       "variantIds": [
         "61118601822542"
       ]
@@ -1723,7 +1723,7 @@
     },
     {
       "id": "gid://shopify/Product/16128939950414",
-      "updatedAt": "2026-11-04T09:03:31Z",
+      "updatedAt": "2026-11-22T05:55:06Z",
       "variantIds": [
         "61118620827982",
         "61118620860750",
@@ -1733,7 +1733,7 @@
     },
     {
       "id": "gid://shopify/Product/16128940147022",
-      "updatedAt": "2026-11-05T07:05:04Z",
+      "updatedAt": "2026-11-22T05:55:07Z",
       "variantIds": [
         "61118624301390"
       ]
@@ -1747,7 +1747,7 @@
     },
     {
       "id": "gid://shopify/Product/16128940474702",
-      "updatedAt": "2026-11-04T09:03:32Z",
+      "updatedAt": "2026-11-22T05:55:09Z",
       "variantIds": [
         "61118630854990",
         "61118630887758",
@@ -1758,7 +1758,7 @@
     },
     {
       "id": "gid://shopify/Product/16128940638542",
-      "updatedAt": "2026-11-05T07:05:24Z",
+      "updatedAt": "2026-11-22T05:55:08Z",
       "variantIds": [
         "61118634164558"
       ]
@@ -1784,7 +1784,7 @@
     },
     {
       "id": "gid://shopify/Product/16128941031758",
-      "updatedAt": "2026-11-09T10:36:53Z",
+      "updatedAt": "2026-11-22T05:55:08Z",
       "variantIds": [
         "61118643175758",
         "61118643208526",
@@ -1795,7 +1795,7 @@
     },
     {
       "id": "gid://shopify/Product/16128941195598",
-      "updatedAt": "2026-11-05T07:02:52Z",
+      "updatedAt": "2026-11-22T05:55:10Z",
       "variantIds": [
         "61118646485326",
         "61118646518094",
@@ -1805,7 +1805,7 @@
     },
     {
       "id": "gid://shopify/Product/16128941359438",
-      "updatedAt": "2026-11-05T07:07:22Z",
+      "updatedAt": "2026-11-22T05:55:09Z",
       "variantIds": [
         "61118652318030",
         "61118652350798",
@@ -1835,7 +1835,7 @@
     },
     {
       "id": "gid://shopify/Product/16128996671822",
-      "updatedAt": "2026-11-05T07:04:32Z",
+      "updatedAt": "2026-11-22T05:55:07Z",
       "variantIds": [
         "61120072646990",
         "61120072679758"
@@ -1859,14 +1859,14 @@
     },
     {
       "id": "gid://shopify/Product/16128996901198",
-      "updatedAt": "2026-11-05T07:30:02Z",
+      "updatedAt": "2026-11-22T05:55:03Z",
       "variantIds": [
         "61120074547534"
       ]
     },
     {
       "id": "gid://shopify/Product/16128997032270",
-      "updatedAt": "2026-11-05T07:30:26Z",
+      "updatedAt": "2026-11-22T05:55:00Z",
       "variantIds": [
         "61120074711374"
       ]
@@ -4466,7 +4466,7 @@
     },
     {
       "id": "gid://shopify/Product/16136312553806",
-      "updatedAt": "2026-11-19T22:12:05Z",
+      "updatedAt": "2026-11-22T08:01:36Z",
       "variantIds": [
         "61156306223438",
         "61156306256206",
@@ -5203,7 +5203,7 @@
     },
     {
       "id": "gid://shopify/Product/16136329101646",
-      "updatedAt": "2026-11-19T22:12:17Z",
+      "updatedAt": "2026-11-21T11:20:06Z",
       "variantIds": [
         "61156358422862",
         "61156358455630",
@@ -7169,7 +7169,7 @@
   ],
   "kanalFreigabe": false,
   "hinweis": "Das Manifest veroeffentlicht keine Produkte. Freigabe erst nach verarbeiteter Endpreisquelle.",
-  "katalogHash": "3b86f5a765b0b2689851e2012f5cc5fbcdd28c772bdb95567a2435a5547d895e",
+  "katalogHash": "2d3b8c0eef97ab541c14ab22d07c63e5c69940dce19d9265e9f00563545cc151",
   "entnahmen": [],
   "vorherGoogle": 4585,
   "vorherMeta": 4585
