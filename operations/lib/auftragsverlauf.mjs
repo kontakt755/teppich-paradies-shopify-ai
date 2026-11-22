@@ -655,21 +655,47 @@ export function dringendsterSchritt(schritte = []) {
  *
  * @returns {Map<string, object>} orderId -> zeitleiste()
  */
+const ohneWert = v => v === undefined || v === null || String(v).trim() === '' || String(v).trim() === '–';
+
+/**
+ * Merkmale, ueber die eine spaetere Bestellung derselben Person zugeordnet wird:
+ * der Kundenschluessel (E-Mail, sonst Telefon, sonst Name) und zusaetzlich Name + PLZ der
+ * Lieferadresse (ersatzweise Rechnungsadresse). Name + PLZ greift nur, wenn beides gesetzt ist.
+ * Telefon bewusst nicht zusaetzlich: im Laden angelegte Bestellungen tragen teils die Ladennummer.
+ */
+export function folgeMerkmale(auftrag) {
+  const merkmale = [kundenSchluessel(auftrag)];
+  const k = auftrag?.details?.kunde || {};
+  const l = auftrag?.details?.lieferadresse || auftrag?.details?.rechnungsadresse || {};
+  const name = ohneWert(l.name) ? k.name : l.name;
+  if (!ohneWert(name) && !ohneWert(l.plz)) {
+    const n = String(name).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\b(frau|herr|dr)\b\.?/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+    if (n) merkmale.push(`np:${n}|${String(l.plz).trim()}`);
+  }
+  return [...new Set(merkmale)];
+}
+
 /**
  * @param {(auftrag:object)=>string[]|Set<string>|null} [opt.gesperrtFuer] lineItemIds gesperrter Muster je Auftrag
  *        (Mustersperre, im Server aus mustersperre.json - dieselbe Liste wie `gesperrteMuster` der Bestellungen)
  */
 export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {}, gepackt = {}, gesperrtFuer = () => null, jetzt = new Date() } = {}) {
   const alle = [...(modell?.auftraege ?? []), ...(modell?.testauftraege ?? [])];
-  const jeKunde = new Map();
+  // Folgebestellung ueber alle Erkennungsmerkmale: E-Mail/Telefon (kundenSchluessel) und
+  // Name + PLZ der Lieferadresse. Grund (2026-11-22): Kundin bestellte Muster mit privater und
+  // Ware mit Firmenadresse - die Nachfrage "passt die Farbe?" kam einen Tag nach dem Kauf.
+  const jeMerkmal = new Map();
   for (const a of alle) {
-    const k = kundenSchluessel(a);
-    if (!jeKunde.has(k)) jeKunde.set(k, []);
-    jeKunde.get(k).push(a);
+    for (const k of folgeMerkmale(a)) {
+      if (!jeMerkmal.has(k)) jeMerkmal.set(k, []);
+      jeMerkmal.get(k).push(a);
+    }
   }
+  const kandidaten = (a) => [...new Set(folgeMerkmale(a).flatMap(k => jeMerkmal.get(k) || []))];
   const ergebnis = new Map();
   for (const a of alle) {
-    const folge = auftragsart(a) === AUFTRAGSART.MUSTER && !a.testbestellung ? folgebestellung(a, jeKunde.get(kundenSchluessel(a))) : null;
+    const folge = auftragsart(a) === AUFTRAGSART.MUSTER && !a.testbestellung ? folgebestellung(a, kandidaten(a)) : null;
     ergebnis.set(a.id, zeitleiste(a, { statusAlle, ereignisse: verlaufAlle[a.id]?.ereignisse ?? [], folge, gepacktAm: gepacktAmFuer(a.id, gepackt), gesperrt: gesperrtFuer(a), jetzt }));
   }
   return ergebnis;
