@@ -340,6 +340,8 @@ test('Teppich-Fassung: Wunschmass, Form, Einfassung, Lieferzeit - keine Rollenbr
   const mail = fuelleText(TEPPICH_VORLAGEN.erste, { kundenname: 'testkunde eins', absender: 'Ihr Team von Teppich Paradies', produkte });
   assert.match(mail.text, /^Guten Tag Testkunde Eins,/);
   assert.match(mail.text, /Wunschmaß/);
+  assert.match(mail.text, /Handyfoto vom Raum/, 'bittet zuerst um Mass oder Foto');
+  assert.ok(mail.text.indexOf('Handyfoto') < mail.text.indexOf('Produktseite'), 'Angebot vor dem Selbstbestellen');
   assert.match(mail.text, /Maß und Form/);
   assert.match(mail.text, /Einfassung, zum Beispiel gekettelt/);
   assert.match(mail.text, /\nDie Lieferzeit finden Sie auf der Produktseite\.\n/);
@@ -364,7 +366,8 @@ test('Teppich-Fassung: Wunschmass, Form, Einfassung, Lieferzeit - keine Rollenbr
   assert.ok(platzhalterFrei(ohneLinks));
 
   const erinnerung = fuelleText(TEPPICH_VORLAGEN.erinnerung, { kundenname: 'TESTKUNDE ZWEI', absender: 'Team', produkte: [link(1, 'Testvelours Teppich nach Maß', 'Sand')] });
-  assert.equal(erinnerung.betreff, 'Noch Fragen zu Ihrem Teppich?');
+  assert.equal(erinnerung.betreff, 'Ihr Teppich nach Maß – sollen wir Ihnen den Preis ausrechnen?');
+  assert.match(erinnerung.text, /Wunschmaß oder ein Foto vom Raum/);
   assert.match(erinnerung.text, /^Guten Tag Testkunde Zwei,/);
   assert.match(erinnerung.text, /Ihr gewähltes Produkt finden Sie hier:\nTestvelours Teppich nach Maß · Sand\n.+variant=101\n\nFreundliche Grüße/);
   assert.doesNotMatch(erinnerung.text, /Boden|Menge/);

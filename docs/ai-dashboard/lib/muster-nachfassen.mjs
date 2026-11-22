@@ -406,24 +406,23 @@ export function ersatzFarben(gesperrte, max = 3, imUmschlag = []) {
  * unterscheidet sie sich je Produkt, faellt die Zeile weg - nichts wird geraten.
  */
 export const TEPPICH_VORLAGEN = Object.freeze({
+  // Fassung 22.11.2026: Bisher kamen auf rund 100 Nachfragen 3 Klicks und kein Kauf. Grosse
+  // Kaeufe laufen ueber ein Gespraech - die Mail bittet deshalb zuerst um Mass oder Foto und
+  // bietet an, den Preis auszurechnen; der Weg ueber die Produktseite steht danach.
   erste: Object.freeze({
     betreff: 'Ihre Muster von Teppich Paradies – passt die Farbe?',
     text: `Guten Tag {Anrede} {Nachname},
 
-Ihre Muster sollten inzwischen bei Ihnen angekommen sein. Wir hoffen, sie helfen Ihnen bei der Entscheidung.
+Ihre Muster sollten inzwischen bei Ihnen angekommen sein. Ein Tipp zum Vergleichen: Legen Sie sie dort aus, wo der Teppich später liegen soll, und schauen Sie sie bei Tageslicht und abends bei Lampenlicht an.
 
-Ein paar Tipps zum Vergleichen:
-- Legen Sie die Muster dort aus, wo der Teppich später liegen soll.
-- Schauen Sie sie bei Tageslicht und am Abend bei Lampenlicht an – die Farbe wirkt jeweils etwas anders.
-- Halten Sie sie neben Möbel, Türen oder Wandfarbe.
+Passt eine der Farben? Dann schicken Sie uns einfach Ihr Wunschmaß – oder ein Handyfoto vom Raum mit den ungefähren Maßen. Wir rechnen Ihnen den genauen Preis aus und sagen Ihnen, welche Größe, Form und Einfassung zu Ihrem Raum passt. Ganz unverbindlich.
 
-Ihr Teppich wird in Ihrem Wunschmaß gefertigt. Auf der Produktseite geben Sie Maß und Form ein, wählen – je nach Modell – die Einfassung, zum Beispiel gekettelt, und sehen sofort den Preis.
-{LieferzeitHinweis}
-
-Wenn Sie Fragen haben – zum passenden Maß, zur Form, zur Einfassung oder zu einer anderen Farbe – melden Sie sich gern. Wir beraten Sie persönlich:
-
+So erreichen Sie uns:
 - Telefon: 03301 573 37 20 (Mo–Fr 8:30–18:00, Sa 8:30–14:30)
 - Oder einfach auf diese E-Mail antworten.
+
+Lieber gleich selbst bestellen? Ihr Teppich wird in Ihrem Wunschmaß gefertigt. Auf der Produktseite geben Sie Maß und Form ein, wählen – je nach Modell – die Einfassung, zum Beispiel gekettelt, und sehen sofort den Preis.
+{LieferzeitHinweis}
 
 Ihr gewähltes Produkt finden Sie hier: {Link Produkt}
 Weitere Muster können Sie jederzeit nachbestellen: {Link Muster}
@@ -435,10 +434,13 @@ Teppich Paradies Oranienburg
 Sie möchten keine solchen Nachfragen mehr erhalten? Antworten Sie kurz mit „Abmelden“, dann schreiben wir Ihnen nicht mehr.`,
   }),
   erinnerung: Object.freeze({
-    betreff: 'Noch Fragen zu Ihrem Teppich?',
+    betreff: 'Ihr Teppich nach Maß – sollen wir Ihnen den Preis ausrechnen?',
     text: `Guten Tag {Anrede} {Nachname},
 
-haben Sie sich schon für eine Farbe entschieden? Wenn Sie noch unsicher sind – beim Maß, bei der Form oder bei der Einfassung –, helfen wir Ihnen gern: telefonisch unter 03301 573 37 20 oder per Antwort auf diese E-Mail.
+haben Sie sich schon für eine Farbe entschieden? Schicken Sie uns Ihr Wunschmaß oder ein Foto vom Raum – wir rechnen Ihnen den genauen Preis aus und beraten Sie zu Größe, Form und Einfassung. Ganz unverbindlich.
+
+- Telefon: 03301 573 37 20 (Mo–Fr 8:30–18:00, Sa 8:30–14:30)
+- Oder einfach auf diese E-Mail antworten.
 
 Ihr gewähltes Produkt finden Sie hier: {Link Produkt}
 
