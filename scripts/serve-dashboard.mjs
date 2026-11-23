@@ -323,6 +323,9 @@ const NUR_INHABER = new Set([
   'org/pruefen',
   // Claude-Verbrauch (#671): Sitzungstitel aller KI-Sitzungen - Inhabersache wie "Insights".
   'verbrauch/claude',
+  // Lexware-Angebote: Kunde, Betrag und Link ins Angebot. Mitarbeiter sollen keine Einsicht in
+  // Lexware haben (Inhaber 2026-11-23); bisher sperrte nur die Oberflaeche nichts davon.
+  'angebote/lexware',
 ]);
 
 function darfPfad(benutzer, simple, taskOp) {
