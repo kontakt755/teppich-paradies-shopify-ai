@@ -29,7 +29,7 @@
     und Oeffnungszeiten, Abholung erst nach unserer Nachricht.
   - Ware: keine Sendungsverfolgung versprechen (Ware kommt oft direkt vom
     Lieferanten, meist ohne Sendungsnummer), nur "wir melden uns".
-  - Herstellermuster (SKU M-VW-..., M-JAB-...) schickt der Hersteller direkt,
+  - Herstellermuster (SKU M-VW-..., M-JAB-...) kommen ueber den Laden (Klarstellung 23.11.2026),
     auch in getrennten Umschlaegen. Fuer sie steht kein Zeitrahmen da, bis der
     Inhaber einen festlegt.
   - Je Warenposition die Lieferzeit aus dem Produktfeld service.lieferzeit,
@@ -167,7 +167,7 @@
   {%- if tp_k_typ == 'muster' -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Musterbestellung bei Teppich Paradies.</p>
     {%- if tp_k_hersteller > 0 -%}
-      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) kommen per Post zu Ihnen. Muster mit dem Hinweis „direkt vom Hersteller“ schickt der Hersteller selbst an Sie – auch in getrennten Umschlägen und zu unterschiedlichen Zeiten. So holen Sie das meiste heraus:</p>
+      <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) kommen per Post zu Ihnen. Muster mit dem Hinweis „vom Hersteller“ bestellen wir für Sie beim Hersteller und schicken sie weiter, sobald sie bei uns sind – sie kommen eventuell etwas später in einer eigenen Sendung. So holen Sie das meiste heraus:</p>
     {%- else -%}
       <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) gehen in den nächsten Werktagen per Post an Sie raus. So holen Sie das meiste heraus:</p>
     {%- endif -%}
@@ -192,7 +192,7 @@
           {%- assign tp_k_sku5 = line.sku | slice: 0, 5 -%}
           {%- assign tp_k_sku6 = line.sku | slice: 0, 6 -%}
           {%- assign tp_k_h_handle = line.product.handle | default: '' | remove_first: 'muster-' -%}
-          {%- if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-' or tp_k_h_liste contains tp_k_h_handle %} (direkt vom Hersteller){% endif -%}
+          {%- if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-' or tp_k_h_liste contains tp_k_h_handle %} (vom Hersteller){% endif -%}
         </li>
       {%- endfor -%}
     </ul>
@@ -202,7 +202,7 @@
       <div style="margin:0 0 16px;padding:14px 16px;background:#f7f3ee;border-radius:8px;">
         <p style="margin:0 0 4px;font-weight:bold;">Musterversand: {{ shipping_price | money }}</p>
         {%- if tp_k_hersteller > 0 -%}
-          <p style="margin:0 0 8px;">Die 4,99 € gelten für die übrigen Muster. Muster direkt vom Hersteller sind kostenlos.</p>
+          <p style="margin:0 0 8px;">Die 4,99 € gelten für die übrigen Muster. Muster vom Hersteller sind kostenlos.</p>
         {%- endif -%}
         <p style="margin:0 0 8px;">Wenn Sie später bei uns bestellen, rechnen wir Ihnen 4,99 € an.</p>
         {%- if tp_k_code != blank -%}
@@ -214,16 +214,16 @@
       </div>
     {%- elsif tp_k_nur_hersteller -%}
       <div style="margin:0 0 16px;padding:14px 16px;background:#f7f3ee;border-radius:8px;">
-        <p style="margin:0;">Ihre Muster schickt der Hersteller kostenlos direkt an Sie.</p>
+        <p style="margin:0;">Ihre Muster vom Hersteller sind kostenlos, auch der Versand.</p>
       </div>
     {%- endif -%}
     {%- comment -%} TP-MUSTERGEBUEHR ENDE {%- endcomment -%}
   {%- elsif tp_k_typ == 'misch' -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>
     {%- if tp_k_abholung -%}
-      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und Muster. Die Muster kommen per Post zu Ihnen{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware holen Sie bei uns im Laden ab. Wir melden uns, sobald sie zur Abholung bereitliegt – bitte kommen Sie erst nach unserer Nachricht.</p>
+      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und Muster. Die Muster kommen per Post zu Ihnen{% if tp_k_hersteller > 0 %}, einige vom Hersteller kommen etwas später in einer eigenen Sendung{% endif %}. Die Ware holen Sie bei uns im Laden ab. Wir melden uns, sobald sie zur Abholung bereitliegt – bitte kommen Sie erst nach unserer Nachricht.</p>
     {%- else -%}
-      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und Muster. Die Muster gehen vorab per Post raus{% if tp_k_hersteller > 0 %}, einige direkt vom Hersteller und in getrennten Umschlägen{% endif %}. Die Ware bereiten wir für den Versand vor. Wir melden uns, sobald die Ware unterwegs ist.</p>
+      <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und Muster. Die Muster gehen vorab per Post raus{% if tp_k_hersteller > 0 %}, einige vom Hersteller kommen etwas später in einer eigenen Sendung{% endif %}. Die Ware bereiten wir für den Versand vor. Wir melden uns, sobald die Ware unterwegs ist.</p>
     {%- endif -%}
   {%- else -%}
     <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>

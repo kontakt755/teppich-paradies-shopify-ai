@@ -103,7 +103,7 @@
 <div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#15171a;margin:20px 0 24px;padding:16px 16px 6px;border:1px solid #e3e0dc;border-radius:8px;">
   <p style="margin:0 0 8px;font-size:18px;font-weight:bold;">{% if tp_vm_anzahl == 1 %}Ihr Muster ist unterwegs{% else %}Ihre Muster sind unterwegs{% endif %}</p>
   <p style="margin:0 0 12px;">{% if tp_vm_anzahl == 1 %}Ihr Muster aus der Bestellung {{ name | escape }} ist per Post auf dem Weg zu Ihnen.{% else %}Ihre Muster aus der Bestellung {{ name | escape }} sind per Post auf dem Weg zu Ihnen.{% endif %}
-    {%- if tp_vm_hersteller > 0 %} Muster mit dem Hinweis „direkt vom Hersteller“ schickt der Hersteller selbst – oft in einem eigenen Umschlag und zu einem anderen Zeitpunkt.{% endif -%}
+    {%- if tp_vm_hersteller > 0 %} Muster mit dem Hinweis „vom Hersteller“ kommen eventuell später in einer eigenen Sendung.{% endif -%}
   </p>
 
   {%- for tp_vm_fl in fulfillment.fulfillment_line_items -%}
@@ -191,7 +191,7 @@
     -%}
     {%- if tp_vm_ist -%}
     <div style="margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid #eeebe7;">
-      <p style="margin:0 0 6px;"><strong>{{ tp_vm_produkt | escape }}</strong>{% if tp_vm_farbe != '' %} – {{ tp_vm_farbe | escape }}{% endif %}{% if tp_vm_sku5 == 'M-VW-' or tp_vm_sku6 == 'M-JAB-' or tp_vm_h_liste contains tp_vm_h_handle %} <span style="color:#5e5853;">(direkt vom Hersteller)</span>{% endif %}</p>
+      <p style="margin:0 0 6px;"><strong>{{ tp_vm_produkt | escape }}</strong>{% if tp_vm_farbe != '' %} – {{ tp_vm_farbe | escape }}{% endif %}{% if tp_vm_sku5 == 'M-VW-' or tp_vm_sku6 == 'M-JAB-' or tp_vm_h_liste contains tp_vm_h_handle %} <span style="color:#5e5853;">(vom Hersteller)</span>{% endif %}</p>
       {%- if tp_vm_link != '' -%}
       <p style="margin:0;">
         <a href="{{ tp_vm_link | append: '&utm_content=farbe' | escape }}" style="color:#15171a;text-decoration:underline;margin-right:14px;">{% if tp_vm_farbe != '' %}Farbe ansehen{% else %}Produkt ansehen{% endif %}</a>
