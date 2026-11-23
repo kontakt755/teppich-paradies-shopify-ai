@@ -55,6 +55,19 @@ Weil das Pixel `customData` komplett weiterreicht, kommen die Felder `ziel`,
 Änderung mit. Sichtbar in GA4-Berichten erst als benutzerdefinierte Dimension
 (Ereignisbereich).
 
+**Nachtrag 23.11. (Stand des Admin-Codes, Wirkung noch nicht belegt):** Der Code im
+Admin weicht von der Vorlage unten ab und ist maßgeblich: Er setzt vorab
+`gtag('consent', 'default', …)` aus `init.customerPrivacy`, gibt jedem Theme-Ereignis
+und `tp_bestellung_typ` die echte Seiten-URL als `page_location` mit
+(`event.context.document.location.href`) und sendet kein eigenes `purchase`
+(das kommt nur von der Google-&-YouTube-App). Die GA4-Prüfung 17.–23.11. zeigte
+trotzdem Sandbox-URLs als `page_location` bei `scroll` (Ursache: automatische
+Messung von gtag nutzt die Konfiguration, nicht die Ereignisparameter), und
+`tp_ratgeber_cta_klick` hatte 0 Ereignisse. Am 23.11. wurde deshalb die Zeile
+`gtag('config', GA4, { send_page_view: false, page_location: init.context.document.location.href });`
+im Admin gespeichert (Freigabe Tobias). Nachprüfen ab 25.11. in GA4: `scroll` ohne
+`web-pixels@…/sandbox`-URL, `tp_ratgeber_cta_klick` > 0 (Werkbank w-184).
+
 Shopify-Admin → Einstellungen → Kundenereignisse → Pixel **„TP Funnel und
 Musterbestellung“** (angelegt, noch leer und nicht verbunden). Einwilligung:
 Erforderlich, Marketing + Analysen. Code einfügen → Speichern → Verbinden.
