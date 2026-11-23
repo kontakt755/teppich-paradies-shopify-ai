@@ -53,7 +53,6 @@
   Musterbestellung mit bezahltem Versand (shipping_price > 0). Verzweigt wird
   ueber den Betrag, nicht ueber das Datum: fruehere Gratisbestellungen und
   Mischbestellungen (dort faellt keine Mustergebuehr an) bekommen ihn nicht.
-  Dritter Zweig (21.11.2026): reine Herstellermuster, Versand 0 EUR - kostenloser Satz, kein Gutschein.
   Der Gutscheincode steht nie in dieser Datei, er kommt aus dem Shop-Metafeld
   custom.muster_gutscheincode. Rueckbau: Text zwischen den Markierungen loeschen.
 {%- endcomment -%}
@@ -62,8 +61,6 @@
   assign tp_k_muster = 0
   assign tp_k_ware = 0
   assign tp_k_hersteller = 0
-  # Lieferant H: SKU-Praefix nicht eindeutig (M-H...), deshalb Handle-Liste wie snippets/tp-herstellermuster.liquid im Theme (33 Produkte, Stand 21.11.2026)
-  assign tp_k_h_liste = 'arvessa-teppichboden-400cm belisca-teppichboden-400cm bergana-teppichboden-400cm-500cm brumina-teppichboden-400cm-500cm bruneva-teppichboden-400cm coravia-teppichboden-400cm corlana-teppichboden-400cm-500cm corsella-teppichboden-400cm corvina-teppichboden-400cm dunessa-teppichboden-400cm-500cm feldessa-teppichboden-400cm felisa-teppichboden-400cm-500cm fiordessa-teppichboden-400cm-500cm karessa-teppichboden-400cm lanzetta-teppichboden-400cm-500cm linara-teppichboden-400cm linvara-teppichboden-400cm marlena-teppichboden-400cm-500cm mavena-teppichboden-400cm mirvella-teppichboden-400cm nivessa-teppichboden-400cm olvessa-teppichboden-400cm-500cm ondessa-teppichboden-400cm-500cm ordella-teppichboden-400cm safrella-teppichboden-400cm solvina-teppichboden-400cm sovrana-teppichboden-400cm tavessa-teppichboden-400cm tessira-teppichboden-400cm tramella-teppichboden-400cm varenta-teppichboden-400cm-500cm velaria-teppichboden-400cm zandora-teppichboden-400cm' | split: ' '
   assign tp_k_lieferzeiten = 0
   assign tp_k_ratgeber = ','
   for line in line_items
@@ -81,8 +78,7 @@
       assign tp_k_muster = tp_k_muster | plus: 1
       assign tp_k_sku5 = line.sku | slice: 0, 5
       assign tp_k_sku6 = line.sku | slice: 0, 6
-      assign tp_k_h_handle = line.product.handle | default: '' | remove_first: 'muster-'
-      if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-' or tp_k_h_liste contains tp_k_h_handle
+      if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-'
         assign tp_k_hersteller = tp_k_hersteller | plus: 1
       endif
     else
@@ -139,12 +135,8 @@
     assign tp_k_typ = 'misch'
   endif
   assign tp_k_gebuehr = false
-  assign tp_k_nur_hersteller = false
   if tp_k_typ == 'muster' and shipping_price > 0
     assign tp_k_gebuehr = true
-  elsif tp_k_typ == 'muster' and tp_k_hersteller == tp_k_muster
-    # Herstellermuster kostenlos (Inhaber 21.11.2026): nichts bezahlt, kein Gutschein
-    assign tp_k_nur_hersteller = true
   endif
   assign tp_k_code_feld = shop.metafields.custom.muster_gutscheincode
   assign tp_k_code = tp_k_code_feld.value | default: tp_k_code_feld | strip
@@ -191,8 +183,7 @@
           {%- if tp_k_farbe != blank %} – {{ tp_k_farbe | escape }}{% endif -%}
           {%- assign tp_k_sku5 = line.sku | slice: 0, 5 -%}
           {%- assign tp_k_sku6 = line.sku | slice: 0, 6 -%}
-          {%- assign tp_k_h_handle = line.product.handle | default: '' | remove_first: 'muster-' -%}
-          {%- if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-' or tp_k_h_liste contains tp_k_h_handle %} (direkt vom Hersteller){% endif -%}
+          {%- if tp_k_sku5 == 'M-VW-' or tp_k_sku6 == 'M-JAB-' %} (direkt vom Hersteller){% endif -%}
         </li>
       {%- endfor -%}
     </ul>
@@ -201,9 +192,6 @@
     {%- if tp_k_gebuehr -%}
       <div style="margin:0 0 16px;padding:14px 16px;background:#f7f3ee;border-radius:8px;">
         <p style="margin:0 0 4px;font-weight:bold;">Musterversand: {{ shipping_price | money }}</p>
-        {%- if tp_k_hersteller > 0 -%}
-          <p style="margin:0 0 8px;">Die 4,99 € gelten für die übrigen Muster. Muster direkt vom Hersteller sind kostenlos.</p>
-        {%- endif -%}
         <p style="margin:0 0 8px;">Wenn Sie später bei uns bestellen, rechnen wir Ihnen 4,99 € an.</p>
         {%- if tp_k_code != blank -%}
           <p style="margin:0 0 8px;">Ihr Gutscheincode: <strong style="font-size:17px;letter-spacing:1px;">{{ tp_k_code | escape }}</strong></p>
@@ -211,10 +199,6 @@
           <p style="margin:0 0 8px;">Ihren Gutscheincode nennen wir Ihnen gern: 03301 573 37 20 oder einfach per Antwort auf diese E-Mail.</p>
         {%- endif -%}
         <p style="margin:0;font-size:13px;line-height:1.5;color:#5e5853;">Gilt ab 150 € Warenwert, einmal einlösbar bis 31.03.2027. Code im Warenkorb eingeben. Nicht mit anderen Gutscheincodes kombinierbar.</p>
-      </div>
-    {%- elsif tp_k_nur_hersteller -%}
-      <div style="margin:0 0 16px;padding:14px 16px;background:#f7f3ee;border-radius:8px;">
-        <p style="margin:0;">Ihre Muster schickt der Hersteller kostenlos direkt an Sie.</p>
       </div>
     {%- endif -%}
     {%- comment -%} TP-MUSTERGEBUEHR ENDE {%- endcomment -%}
