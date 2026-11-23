@@ -286,10 +286,39 @@ test('Mustergebuehr: ohne Metafeld kein leerer Code, Eingabe escaped, kein "kost
   const text = await eng.parseAndRender(bestell, { ...base, attributes: {}, shipping_price: 499, line_items: [musterzeile], shop: { metafields: { custom: { muster_gutscheincode: '<b>X1</b>' } } } });
   assert.match(text, /&lt;b&gt;X1&lt;\/b&gt;<\/strong>/);
   for (const [name, quelle] of [['Bestellmail', bestell], ['Versandmail', versand]]) {
-    assert.doesNotMatch(quelle.replace(/\{%-? comment[\s\S]*?endcomment -?%\}/g, ''), /kostenlos|gratis/i, name);
+    // einzige Ausnahme: Herstellermuster bleiben kostenlos (Inhaber 21.11.2026)
+    const ohneHersteller = quelle.replace(/\{%-? comment[\s\S]*?endcomment -?%\}/g, '').replace(/^\s*#.*$/gm, '').replace('schickt der Hersteller kostenlos direkt an Sie', '').replace('Muster direkt vom Hersteller sind kostenlos', '');
+    assert.doesNotMatch(ohneHersteller, /kostenlos|gratis/i, name);
     // Der echte Code gehoert ins Shop-Metafeld, nie ins oeffentliche Repository
     assert.doesNotMatch(quelle, /Gutscheincode:\s*<strong[^>]*>(?!\{\{)/, name);
   }
+});
+
+test('Herstellermuster kostenlos: eigener Satz ohne Gutschein, Mischkorb erklaert die 4,99 EUR, Lieferant H ueber genaue Handle-Liste', async () => {
+  const vw = line('Muster Testmarke Bingo Teppichboden', 'M-VW-TEST-5Y91-400', {}, 'Silbergrau (5Y91)');
+  const hZeile = { ...line('Muster Arvessa Teppichboden', 'M-H-TEST-1', {}, 'Sand'), product: { handle: 'muster-arvessa-teppichboden-400cm' } };
+  const teil = { ...line('Muster Fremd', 'M-TEST_1', {}, 'Sand'), product: { handle: 'muster-bergana-teppichboden-400cm' } };
+  const ohneHandle = { ...line('Muster Fremd', 'M-TEST_2', {}, 'Sand'), product: { handle: '' } };
+  for (const [fall, zeilen] of Object.entries({ Praefix: [vw], 'Lieferant H': [hZeile] })) {
+    const nur = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, shipping_price: 0, line_items: zeilen });
+    assert.match(nur, /Ihre Muster schickt der Hersteller kostenlos direkt an Sie\./, fall);
+    assert.match(nur, /\(direkt vom Hersteller\)/, fall);
+    assert.doesNotMatch(nur, /Gutschein|4,99|150 €/, fall);
+    assert.ok(!nur.includes(CODE), fall);
+  }
+  const misch = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, shipping_price: 499, line_items: [vw, musterzeile] });
+  assert.match(misch, /Die 4,99 € gelten für die übrigen Muster\. Muster direkt vom Hersteller sind kostenlos\./);
+  assert.match(misch, KASTEN);
+  // Teiltreffer und leerer Handle sind keine Herstellermuster
+  for (const [fall, zeile] of Object.entries({ Teiltreffer: teil, 'ohne Handle': ohneHandle })) {
+    const html = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, shipping_price: 0, line_items: [zeile] });
+    assert.doesNotMatch(html, /Hersteller/, fall);
+  }
+  const sendung = [mfl('M-H-TEST-1', 'Muster Arvessa Teppichboden', 'Sand', { _Muster_ID: 'x' })];
+  sendung[0].line_item.product = { handle: 'muster-arvessa-teppichboden-400cm' };
+  const vers = await eng.parseAndRender(versand, { ...vctx(sendung), shipping_price: 0, line_items: [hZeile] });
+  assert.match(vers, /\(direkt vom Hersteller\)/);
+  assert.match(vers, /schickt der Hersteller selbst/);
 });
 
 // ---- Ratgeber zur Bestellung: Produkttyp waehlt den Kurz-Ratgeber (PDF)
