@@ -321,7 +321,7 @@
               "disabled": true,
               "settings": {
                 "label": "Muster bestellen",
-                "hinweis": "Versand 4,99 € je Bestellung"
+                "hinweis": "Musterversand 4,99 € je Bestellung"
               }
             },
             "tp_zubehoer_empfehlung": {

@@ -329,7 +329,7 @@
               "type": "tp-muster-cta",
               "settings": {
                 "label": "Muster bestellen",
-                "hinweis": "Versand 4,99 € je Bestellung"
+                "hinweis": "Musterversand 4,99 € je Bestellung"
               }
             },
             "tp_teppich_struktur_1": {

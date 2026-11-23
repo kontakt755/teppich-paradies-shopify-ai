@@ -35,7 +35,7 @@ const SATZGRENZE = /[.!?;|,<>"\n\\]|\s[–—·]\s/;
 // Ausnahmen (kurze Liste): Ladenberatung bleibt kostenlos, Kautschuk hat keine Muster.
 // Herstellermuster (Inhaber 21.11.2026): D, E, H schicken kostenlos direkt an den Kunden.
 // Der freigegebene Herstellersatz enthaelt ein Komma und wuerde sonst an "Muster kostenlos" zerbrechen.
-const HERSTELLERSATZ = /Muster kostenlos, Versand direkt vom Hersteller/g;
+const HERSTELLERSATZ = /Muster kostenlos inklusive Versand, direkt vom Hersteller/g;
 const AUSNAHMEN = [/im Laden/i, /keine kostenlosen Muster hinterlegt/i, /Hersteller/i];
 
 function verstoesse(rel) {
@@ -84,7 +84,7 @@ test('Waechter erkennt die alten Wortlaute, laesst Ladenberatung und Kautschuk d
     'Muster im Laden ansehen: kostenlos.',
     'Für die angebotenen Kautschukböden sind keine kostenlosen Muster hinterlegt.',
     'Ab 50 € Bestellwert versandkostenfrei. Muster verschicken wir für 4,99 €.',
-    'Muster kostenlos, Versand direkt vom Hersteller',
+    'Muster kostenlos inklusive Versand, direkt vom Hersteller',
     'Muster: vom Hersteller kostenlos, sonst 4,99 € Versand',
     "var SAMPLE_HANDLE = 'kostenloses-muster';",
   ]) assert.equal(pruefe(ok), 0, ok);
@@ -117,18 +117,18 @@ test('Produktvorlagen: Knopf "Muster bestellen" mit Preiszeile', () => {
   for (const n of mitKnopf) {
     const t = readFileSync(path.join(root, 'templates', n), 'utf8');
     assert.match(t, /"label": "Muster bestellen"/, n);
-    assert.match(t, /"hinweis": "Versand 4,99 € je Bestellung"/, n);
+    assert.match(t, /"hinweis": "Musterversand 4,99 € je Bestellung"/, n);
   }
 });
 
 // Herstellermuster (Inhaber 21.11.2026): kostenlos nur dort, wo Liquid/JS es je Muster entscheiden.
 test('Herstellermuster: Wortlaut kostenlos an Produkt, Farbauswahl, Teppich-Versand, Warenkorb, Musterseite, Versandseite', () => {
-  const wort = /Muster kostenlos, Versand direkt vom Hersteller/;
+  const wort = /Muster kostenlos inklusive Versand, direkt vom Hersteller/;
   for (const d of ['blocks/tp-muster-cta.liquid', 'snippets/tp-farbauswahl.liquid', 'sections/tp-sample-checkout.liquid', 'snippets/tp-cart-versandhinweis.liquid']) {
     assert.match(readFileSync(path.join(root, d), 'utf8'), wort, d);
   }
-  assert.match(readFileSync(path.join(root, 'blocks/tp-teppich-versand.liquid'), 'utf8'), /kostenlos, Versand direkt vom Hersteller/);
+  assert.match(readFileSync(path.join(root, 'blocks/tp-teppich-versand.liquid'), 'utf8'), /kostenlos inklusive Versand, direkt vom Hersteller/);
   assert.match(readFileSync(path.join(root, 'sections/tp-shipping-delivery.liquid'), 'utf8'), /Hersteller direkt an Sie schickt, sind kostenlos/);
   // bezahlt bleibt wie in #2254
-  assert.match(readFileSync(path.join(root, 'blocks/tp-muster-cta.liquid'), 'utf8'), /Versand 4,99 € je Bestellung/);
+  assert.match(readFileSync(path.join(root, 'blocks/tp-muster-cta.liquid'), 'utf8'), /Musterversand 4,99 € je Bestellung/);
 });

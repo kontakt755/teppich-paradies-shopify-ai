@@ -45,12 +45,12 @@ test('Musterseite nennt Groesse und Versand, ohne Ankunftszeit', () => {
   const section = read('sections/tp-sample-checkout.liquid');
   const info = /<p class="tp-sample__info" data-sample-info>([^<]+)<\/p>/.exec(section);
   assert.ok(info, 'Zeile unter der Ueberschrift');
-  assert.equal(info[1], 'Muster ca. A5 · Versand 4,99 € je Bestellung');
+  assert.equal(info[1], 'Muster ca. A5 · Musterversand 4,99 € je Bestellung');
   // Mustergebuehr-Test: Anrechnung und Gutscheincode stehen immer sichtbar darunter
   assert.match(section, /data-sample-anrechnung>Die 4,99 € rechnen wir Ihnen ab 150 € Warenwert an\. Den Gutscheincode finden Sie in Ihrer Bestellbestätigung\./);
   const hersteller = /<p class="tp-sample__info" data-sample-hersteller hidden>([^<]+)<\/p>/.exec(section);
   assert.ok(hersteller, 'Herstellerzeile, anfangs versteckt');
-  assert.equal(hersteller[1], 'Muster kostenlos, Versand direkt vom Hersteller · eventuell in getrennten Umschlägen');
+  assert.equal(hersteller[1], 'Muster kostenlos inklusive Versand, direkt vom Hersteller · eventuell in getrennten Umschlägen');
   assert.doesNotMatch(hersteller[1], /4,99/);
   assert.doesNotMatch(info[1] + hersteller[1], /Werktag|Tage/, 'keine Lieferzeit ohne Festlegung des Inhabers');
   // Reihenfolge: direkt unter der Ueberschrift

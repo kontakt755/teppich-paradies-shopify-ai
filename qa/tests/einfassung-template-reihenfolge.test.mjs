@@ -36,7 +36,7 @@ test('Muster-Aufruf behaelt seine Einstellungen (nur die Position aendert sich)'
   const id = order[index('tp-muster-cta')];
   assert.deepEqual(details.blocks[id].settings, {
     label: 'Muster bestellen',
-    hinweis: 'Versand 4,99 € je Bestellung',
+    hinweis: 'Musterversand 4,99 € je Bestellung',
   });
 });
 

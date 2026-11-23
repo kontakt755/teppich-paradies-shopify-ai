@@ -1,4 +1,4 @@
-// Vinyl-Muster: hoechstens 2 je Bestellung (Inhaber 02.11.2026); Versand 4,99 € je Bestellung (Mustergebuehr-Test).
+// Vinyl-Muster: hoechstens 2 je Bestellung (Inhaber 02.11.2026); Musterversand 4,99 € je Bestellung (Mustergebuehr-Test).
 // Durchgesetzt im Musterkonfigurator (assets/tp-sample-checkout-core.js +
 // tp-sample-checkout.js), sichtbar gemacht auf der Produktseite
 // (snippets/tp-muster-grenze, blocks/tp-muster-cta, blocks/tp-rollware-rechner).
@@ -131,7 +131,7 @@ const vollKnopf = /<button class="[^"]*tp-muster-cta-voll"[^>]*disabled[^>]*>/;
 test('Produktseite: Vinyl unter der Grenze zeigt den Hinweis statt "Bis zu 2 Farben"', async () => {
   const html = await cta('vinyl');
   assert.doesNotMatch(html.match(offenerLink)[1], /hidden/);
-  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung\. Versand 4,99 € je Bestellung/);
+  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung\. Musterversand 4,99 € je Bestellung/);
   assert.doesNotMatch(html, /Bis zu 2 Farben/);
   assert.match(html.match(vollKnopf)[0], /hidden/, 'deaktivierter Knopf liegt verborgen bereit');
   assert.match(html, /data-tp-muster-grenze="vinyl"/);
@@ -143,7 +143,7 @@ test('Produktseite: bei 2 Vinyl-Mustern ist der Knopf deaktiviert und erklaert',
   assert.doesNotMatch(html.match(vollKnopf)[0], /hidden/);
   assert.match(html.match(offenerLink)[1], /hidden/, 'Link zum Konfigurator verborgen');
   // Nach cart:update wird der Link wieder sichtbar - dann mit Vinyl-Hinweis, nicht "Bis zu 2 Farben"
-  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung\. Versand 4,99 € je Bestellung/);
+  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung\. Musterversand 4,99 € je Bestellung/);
   assert.doesNotMatch(html, /Bis zu 2 Farben/);
   assert.match(html, /<p class="tp-muster-cta-grenze"[^>]*data-tp-mg-voll>\s*2 von 2 Vinyl-Mustern im Warenkorb/);
   assert.match(html, /href="\/cart"/);

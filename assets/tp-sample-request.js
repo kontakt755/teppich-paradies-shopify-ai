@@ -85,7 +85,7 @@
 
       var introText = root.querySelector('[data-tp-intro]');
       if (introText) {
-        introText.textContent = 'Wir senden Ihnen gerne ein Muster von ' + product.title + '. Versand 4,99 € je Bestellung, ab 150 € Warenwert angerechnet.';
+        introText.textContent = 'Wir senden Ihnen gerne ein Muster von ' + product.title + '. Musterversand 4,99 € je Bestellung, ab 150 € Warenwert angerechnet.';
       }
 
       var nameEl = root.querySelector('[data-tp-product-name]');
