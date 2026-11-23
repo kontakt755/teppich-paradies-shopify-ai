@@ -128,7 +128,7 @@ test('Herstellermuster: Wortlaut kostenlos an Produkt, Farbauswahl, Teppich-Vers
     assert.match(readFileSync(path.join(root, d), 'utf8'), wort, d);
   }
   assert.match(readFileSync(path.join(root, 'blocks/tp-teppich-versand.liquid'), 'utf8'), /Muster vom Hersteller bestellen · kostenlos, auch der Versand/);
-  assert.match(readFileSync(path.join(root, 'sections/tp-shipping-delivery.liquid'), 'utf8'), /Hersteller direkt an Sie schickt, sind kostenlos/);
+  assert.match(readFileSync(path.join(root, 'sections/tp-shipping-delivery.liquid'), 'utf8'), /Herstellermuster sind kostenlos, auch der Versand/);
   // bezahlt bleibt wie in #2254
   assert.match(readFileSync(path.join(root, 'blocks/tp-muster-cta.liquid'), 'utf8'), /Musterversand 4,99 € je Bestellung/);
 });

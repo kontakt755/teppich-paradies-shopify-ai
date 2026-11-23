@@ -50,7 +50,7 @@ test('Musterseite nennt Groesse und Versand, ohne Ankunftszeit', () => {
   assert.match(section, /data-sample-anrechnung>Die 4,99 € rechnen wir Ihnen ab 150 € Warenwert an\. Den Gutscheincode finden Sie in Ihrer Bestellbestätigung\./);
   const hersteller = /<p class="tp-sample__info" data-sample-hersteller hidden>([^<]+)<\/p>/.exec(section);
   assert.ok(hersteller, 'Herstellerzeile, anfangs versteckt');
-  assert.equal(hersteller[1], 'Muster vom Hersteller: kostenlos, auch der Versand · eventuell in getrennten Umschlägen');
+  assert.equal(hersteller[1], 'Muster vom Hersteller: kostenlos, auch der Versand');
   assert.doesNotMatch(hersteller[1], /4,99/);
   assert.doesNotMatch(info[1] + hersteller[1], /Werktag|Tage/, 'keine Lieferzeit ohne Festlegung des Inhabers');
   // Reihenfolge: direkt unter der Ueberschrift
