@@ -73,6 +73,14 @@ test('Klickvinyl mit Tag muster-klebevariante: Zusatzzeile, Musterweg bleibt', a
   assert.match(ohne, /Kostenloses Muster anfragen/);
 });
 
+test('Marken-Einfassung: Zusatzzeile "Muster zeigt den Teppich" (w-381)', async () => {
+  const html = await cta({ handle: 'x-paspel', type: 'Teppich nach Maß', tags: ['marken-einfassung'] });
+  assert.match(html, /href="\/pages\/muster\?produkt=x-paspel"/);
+  assert.match(html, /Das Muster zeigt den Teppich, nicht die Einfassung\./);
+  assert.doesNotMatch(await cta({ handle: 'x', type: 'Teppich nach Maß', tags: [] }), /nicht die Einfassung/);
+  assert.doesNotMatch(await cta({ handle: 'x', type: 'Teppich nach Maß', tags: ['marken-einfassung', 'ohne-muster'] }), /<a /);
+});
+
 test('Vinyl von der Rolle und Linoleum mit ohne-muster: kein Musterknopf', async () => {
   for (const type of ['Vinyl von der Rolle', 'Linoleumboden']) {
     assert.doesNotMatch(await cta({ handle: 'x', type, tags: ['ohne-muster'] }), /<a /, type);
