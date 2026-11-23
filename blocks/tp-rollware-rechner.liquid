@@ -654,6 +654,10 @@
       render 'tp-muster-grenze', product: product
     endcapture
     assign tp_rc_muster_grenze = tp_rc_muster_grenze | strip
+    # Herstellermuster (snippets/tp-herstellermuster): kostenlos, sonst stuende hier faelschlich 4,99 €
+    capture tp_rc_hersteller
+      render 'tp-herstellermuster', product: product
+    endcapture
   -%}
   {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
     {%- comment -%}
@@ -676,7 +680,7 @@
         </p>
         <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
       {%- else -%}
-        <p class="tp-rwc-muster-grenze">Musterversand 4,99 € je Bestellung</p>
+        <p class="tp-rwc-muster-grenze">{% if tp_rc_hersteller contains 'ja' %}Muster kostenlos inklusive Versand, direkt vom Hersteller{% else %}Musterversand 4,99 € je Bestellung · ab 150 € Einkauf angerechnet{% endif %}</p>
       {%- endif -%}
       {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis); auf Rollenware ist tp-muster-cta abgeschaltet {%- endcomment -%}
       {%- render 'tp-muster-hinweis', kontext: 'produkt' -%}

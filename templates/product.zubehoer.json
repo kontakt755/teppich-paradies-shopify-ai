@@ -316,7 +316,7 @@
               "type": "tp-muster-cta",
               "settings": {
                 "label": "Muster bestellen",
-                "hinweis": "Musterversand 4,99 € je Bestellung"
+                "hinweis": "Musterversand 4,99 € je Bestellung · ab 150 € Einkauf angerechnet"
               }
             },
             "tp_bewertungsbeleg_zubehoer": {

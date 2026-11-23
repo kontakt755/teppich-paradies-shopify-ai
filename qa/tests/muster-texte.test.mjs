@@ -117,7 +117,7 @@ test('Produktvorlagen: Knopf "Muster bestellen" mit Preiszeile', () => {
   for (const n of mitKnopf) {
     const t = readFileSync(path.join(root, 'templates', n), 'utf8');
     assert.match(t, /"label": "Muster bestellen"/, n);
-    assert.match(t, /"hinweis": "Musterversand 4,99 € je Bestellung"/, n);
+    assert.match(t, /"hinweis": "Musterversand 4,99 € je Bestellung · ab 150 € Einkauf angerechnet"/, n);
   }
 });
 
@@ -131,4 +131,11 @@ test('Herstellermuster: Wortlaut kostenlos an Produkt, Farbauswahl, Teppich-Vers
   assert.match(readFileSync(path.join(root, 'sections/tp-shipping-delivery.liquid'), 'utf8'), /Hersteller direkt an Sie schickt, sind kostenlos/);
   // bezahlt bleibt wie in #2254
   assert.match(readFileSync(path.join(root, 'blocks/tp-muster-cta.liquid'), 'utf8'), /Musterversand 4,99 € je Bestellung/);
+});
+
+// 23.11.2026: Der Rollenware-Rechner zeigte auch bei Herstellermustern die 4,99 €.
+test('Rollenware-Rechner: Herstellermuster ohne Preiszeile 4,99 €', () => {
+  const t = readFileSync(path.join(root, 'blocks/tp-rollware-rechner.liquid'), 'utf8');
+  assert.match(t, /render 'tp-herstellermuster', product: product/);
+  assert.match(t, /tp_rc_hersteller contains 'ja' %\}Muster kostenlos inklusive Versand, direkt vom Hersteller\{% else %\}Musterversand 4,99 €/);
 });
