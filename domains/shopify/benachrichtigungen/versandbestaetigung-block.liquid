@@ -73,6 +73,8 @@
   assign tp_vm_utm = 'utm_source=versandmail&utm_medium=email&utm_campaign=muster-versandmail'
   assign tp_vm_anzahl = 0
   assign tp_vm_hersteller = 0
+  # Lieferant H: SKU-Praefix nicht eindeutig, deshalb dieselbe Handle-Liste wie in bestellbestaetigung-block.liquid (33 Produkte, Stand 21.11.2026)
+  assign tp_vm_h_liste = 'arvessa-teppichboden-400cm belisca-teppichboden-400cm bergana-teppichboden-400cm-500cm brumina-teppichboden-400cm-500cm bruneva-teppichboden-400cm coravia-teppichboden-400cm corlana-teppichboden-400cm-500cm corsella-teppichboden-400cm corvina-teppichboden-400cm dunessa-teppichboden-400cm-500cm feldessa-teppichboden-400cm felisa-teppichboden-400cm-500cm fiordessa-teppichboden-400cm-500cm karessa-teppichboden-400cm lanzetta-teppichboden-400cm-500cm linara-teppichboden-400cm linvara-teppichboden-400cm marlena-teppichboden-400cm-500cm mavena-teppichboden-400cm mirvella-teppichboden-400cm nivessa-teppichboden-400cm olvessa-teppichboden-400cm-500cm ondessa-teppichboden-400cm-500cm ordella-teppichboden-400cm safrella-teppichboden-400cm solvina-teppichboden-400cm sovrana-teppichboden-400cm tavessa-teppichboden-400cm tessira-teppichboden-400cm tramella-teppichboden-400cm varenta-teppichboden-400cm-500cm velaria-teppichboden-400cm zandora-teppichboden-400cm' | split: ' '
   for tp_vm_fl in fulfillment.fulfillment_line_items
     assign tp_vm_li = tp_vm_fl.line_item
     assign tp_vm_ist = false
@@ -89,7 +91,8 @@
       assign tp_vm_anzahl = tp_vm_anzahl | plus: 1
       assign tp_vm_sku5 = tp_vm_li.sku | slice: 0, 5
       assign tp_vm_sku6 = tp_vm_li.sku | slice: 0, 6
-      if tp_vm_sku5 == 'M-VW-' or tp_vm_sku6 == 'M-JAB-'
+      assign tp_vm_h_handle = tp_vm_li.product.handle | default: '' | remove_first: 'muster-'
+      if tp_vm_sku5 == 'M-VW-' or tp_vm_sku6 == 'M-JAB-' or tp_vm_h_liste contains tp_vm_h_handle
         assign tp_vm_hersteller = tp_vm_hersteller | plus: 1
       endif
     endif
@@ -168,6 +171,7 @@
       endif
       assign tp_vm_sku5 = tp_vm_li.sku | slice: 0, 5
       assign tp_vm_sku6 = tp_vm_li.sku | slice: 0, 6
+      assign tp_vm_h_handle = tp_vm_li.product.handle | default: '' | remove_first: 'muster-'
 
       assign tp_vm_link = ''
       if tp_vm_handle != ''
@@ -187,7 +191,7 @@
     -%}
     {%- if tp_vm_ist -%}
     <div style="margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid #eeebe7;">
-      <p style="margin:0 0 6px;"><strong>{{ tp_vm_produkt | escape }}</strong>{% if tp_vm_farbe != '' %} – {{ tp_vm_farbe | escape }}{% endif %}{% if tp_vm_sku5 == 'M-VW-' or tp_vm_sku6 == 'M-JAB-' %} <span style="color:#5e5853;">(direkt vom Hersteller)</span>{% endif %}</p>
+      <p style="margin:0 0 6px;"><strong>{{ tp_vm_produkt | escape }}</strong>{% if tp_vm_farbe != '' %} – {{ tp_vm_farbe | escape }}{% endif %}{% if tp_vm_sku5 == 'M-VW-' or tp_vm_sku6 == 'M-JAB-' or tp_vm_h_liste contains tp_vm_h_handle %} <span style="color:#5e5853;">(direkt vom Hersteller)</span>{% endif %}</p>
       {%- if tp_vm_link != '' -%}
       <p style="margin:0;">
         <a href="{{ tp_vm_link | append: '&utm_content=farbe' | escape }}" style="color:#15171a;text-decoration:underline;margin-right:14px;">{% if tp_vm_farbe != '' %}Farbe ansehen{% else %}Produkt ansehen{% endif %}</a>

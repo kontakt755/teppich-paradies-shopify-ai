@@ -550,6 +550,22 @@ test('Gesperrtes Muster: "Muster kommt nicht – Kunde informieren" vor "bestell
   assert.equal(zeitleiste(a, { statusAlle: {}, jetzt: am(3) }).naechsterSchritt.text, 'Muster beim Lieferanten bestellen');
 });
 
+test('Automatisch erkannt: Ware mit anderer E-Mail, aber gleichem Namen und gleicher PLZ', () => {
+  const mitAdresse = (order, { email, name, zip }) => ({ ...order, email, customer: { ...order.customer, email, displayName: name },
+    shippingAddress: { name, address1: 'Teststrasse 1', zip, city: 'Testort', country: 'Germany' } });
+  const modell = modellAus(
+    mitAdresse(bestellung(1, [muster(1)], { kunde: 1, erstellt: 1 }), { email: 'privat@example.invalid', name: 'Frau Test-Kundin', zip: '01234' }),
+    mitAdresse(bestellung(2, [ware(2)], { kunde: 2, erstellt: 8 }), { email: 'firma@example.invalid', name: 'Test-Kundin', zip: '01234' }),
+    // gleicher Name, andere PLZ: keine Zuordnung
+    mitAdresse(bestellung(3, [muster(3)], { kunde: 3, erstellt: 1 }), { email: 'drei@example.invalid', name: 'Max Muster', zip: '11111' }),
+    mitAdresse(bestellung(4, [ware(4)], { kunde: 4, erstellt: 8 }), { email: 'vier@example.invalid', name: 'Max Muster', zip: '22222' }),
+  );
+  const zl = zeitleistenFuerModell(modell, { jetzt: am(10) });
+  const e1 = zl.get('gid://shopify/Order/1').verlauf.at(-1);
+  assert.deepEqual([e1.zustand, e1.ergebnis, e1.folgeOrderName], ['erledigt', 'kunde_hat_bestellt', '#T2']);
+  assert.equal(zl.get('gid://shopify/Order/3').verlauf.at(-1).zustand, 'offen');
+});
+
 test('zeitleistenFuerModell reicht die Sperrliste je Auftrag weiter', () => {
   const m = modellAus(bestellung(1, [muster(1)]), bestellung(2, [muster(2)], { kunde: 2 }));
   const gesperrt = m.auftraege[0].positionen[0].lineItemId;

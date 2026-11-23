@@ -109,6 +109,10 @@
         {%- if product.tags contains 'muster-klebevariante' -%}
           <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Das Muster zeigt dasselbe Dekor in der Klebeausführung.</small>
         {%- endif -%}
+        {%- comment -%} Marken-Einfassung (Paspel, Kontrast, Cover, Deluxe): das Muster kommt vom Teppichboden (Inhaber 18.11.2026, w-381) {%- endcomment -%}
+        {%- if product.tags contains 'marken-einfassung' -%}
+          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Das Muster zeigt den Teppich, nicht die Einfassung.</small>
+        {%- endif -%}
       {%- endif -%}
     </a>
     {%- comment -%} Muster dieser Farbe im Musterlager: sofort lieferbar (09.11.2026, snippets/tp-muster-lager) {%- endcomment -%}
