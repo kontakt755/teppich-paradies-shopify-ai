@@ -124,7 +124,7 @@ test('Produktvorlagen: Knopf "Muster bestellen" mit Preiszeile', () => {
 // Herstellermuster (Inhaber 21.11.2026): kostenlos nur dort, wo Liquid/JS es je Muster entscheiden.
 test('Herstellermuster: Wortlaut kostenlos an Produkt, Farbauswahl, Teppich-Versand, Warenkorb, Musterseite, Versandseite', () => {
   const wort = /Muster kostenlos inklusive Versand, direkt vom Hersteller/;
-  for (const d of ['blocks/tp-muster-cta.liquid', 'snippets/tp-farbauswahl.liquid', 'sections/tp-sample-checkout.liquid', 'snippets/tp-cart-versandhinweis.liquid']) {
+  for (const d of ['snippets/tp-farbauswahl.liquid', 'sections/tp-sample-checkout.liquid', 'snippets/tp-cart-versandhinweis.liquid']) {
     assert.match(readFileSync(path.join(root, d), 'utf8'), wort, d);
   }
   assert.match(readFileSync(path.join(root, 'blocks/tp-teppich-versand.liquid'), 'utf8'), /kostenlos inklusive Versand, direkt vom Hersteller/);
@@ -137,5 +137,9 @@ test('Herstellermuster: Wortlaut kostenlos an Produkt, Farbauswahl, Teppich-Vers
 test('Rollenware-Rechner: Herstellermuster ohne Preiszeile 4,99 €', () => {
   const t = readFileSync(path.join(root, 'blocks/tp-rollware-rechner.liquid'), 'utf8');
   assert.match(t, /render 'tp-herstellermuster', product: product/);
-  assert.match(t, /tp_rc_hersteller contains 'ja' %\}Muster kostenlos inklusive Versand, direkt vom Hersteller\{% else %\}Musterversand 4,99 €/);
+  assert.match(t, /tp_rc_hersteller contains 'ja' %\}Inklusive Versand, der Hersteller schickt es direkt zu Ihnen\{% else %\}Musterversand 4,99 €/);
+  // Der Knopf selbst sagt kostenlos (Chat 23.11.2026), im Rechner und im Musterknopf.
+  for (const d of ['blocks/tp-rollware-rechner.liquid', 'blocks/tp-muster-cta.liquid']) {
+    assert.match(readFileSync(path.join(root, d), 'utf8'), /Kostenloses Muster vom Hersteller/, d);
+  }
 });
