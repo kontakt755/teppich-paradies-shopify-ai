@@ -690,7 +690,7 @@
         </p>
         <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
       {%- else -%}
-        <p class="tp-rwc-muster-grenze">{% if tp_rc_hersteller contains 'ja' %}Inklusive Versand, der Hersteller schickt es direkt zu Ihnen{% else %}Musterversand 4,99 € je Bestellung · ab 150 € Einkauf angerechnet{% endif %}</p>
+        <p class="tp-rwc-muster-grenze">{% if tp_rc_hersteller contains 'ja' %}Für Sie kostenlos, auch der Versand{% else %}Musterversand 4,99 € je Bestellung · ab 150 € Einkauf angerechnet{% endif %}</p>
       {%- endif -%}
       {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis); auf Rollenware ist tp-muster-cta abgeschaltet {%- endcomment -%}
       {%- render 'tp-muster-hinweis', kontext: 'produkt' -%}

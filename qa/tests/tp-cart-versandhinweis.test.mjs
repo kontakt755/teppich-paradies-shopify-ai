@@ -47,7 +47,7 @@ test('unter der Schwelle: Versandbetrag und Rest bis versandkostenfrei', async (
 const hm = (handle, vendor = 'TeppichParadies') => ({ sku: 'M-X', properties: {}, variant: { metafields: { custom: { rollenbreite: { value: null } } } }, product: { type: 'Musterservice', handle, vendor, tags: [], metafields: { custom: { qm_pro_paket: { value: null } } } } });
 test('Warenkorb: nur Herstellermuster kostenlos, gemischt einmal 4,99 €, nur andere wie bisher', async () => {
   const nur = await renderPreis([hm('muster-jab-x', 'JAB Anstoetz'), hm('muster-arvessa-teppichboden-400cm')], 0);
-  assert.match(nur, /Muster kostenlos inklusive Versand, direkt vom Hersteller/);
+  assert.match(nur, /Muster vom Hersteller: kostenlos, auch der Versand/);
   assert.doesNotMatch(nur, /4,99|angerechnet/);
   const gemischt = await renderPreis([hm('muster-vw-x', 'Vorwerk'), hm('muster-nicht-h-400cm')], 0);
   assert.match(gemischt.replace(/\s+/g, ' '), /Herstellermuster kostenlos, die übrigen Muster zusammen 4,99 € Versand\.<\/strong> Ab 150 € Warenwert angerechnet/);

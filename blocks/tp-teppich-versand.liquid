@@ -27,7 +27,7 @@
 <div class="tp-teppich-versand-{{ tp_tv2_id }}" {{ block.shopify_attributes }}>
   {%- if tp_tv2_sample_url != blank -%}
     <a class="tp-teppich-versand__sample-{{ tp_tv2_id }}" href="{{ tp_tv2_sample_url }}">
-      {% if tp_tv2_hersteller contains 'ja' %}Muster bestellen · kostenlos inklusive Versand, direkt vom Hersteller{% else %}Muster bestellen · Musterversand 4,99 € je Bestellung{% endif %}
+      {% if tp_tv2_hersteller contains 'ja' %}Muster vom Hersteller bestellen · kostenlos, auch der Versand{% else %}Muster bestellen · Musterversand 4,99 € je Bestellung{% endif %}
     </a>
   {%- endif -%}
 
