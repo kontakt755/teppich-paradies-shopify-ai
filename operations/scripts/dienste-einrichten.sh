@@ -295,6 +295,14 @@ mail_entwuerfe_einrichten() {
     fehlt "Das Skript fehlt in ~/tp-dashboard noch - erst main nachziehen; bis dahin schlaegt der Lauf fehl."
   fi
   hinweis "Aus der Cloud: Auftraege in ~/Dropbox/TP Mail-Entwuerfe/, Formularvorlagen in ~/teppich-paradies-analyse/mail-entwuerfe/vorlagen/"
+  # Nur-online-Platzhalter darf launchd nicht laden (24.11.2026); der Ordner muss offline verfuegbar sein.
+  # shortcut: com.dropbox.fp_hydration_policy ist ein undokumentiertes Dropbox-Attribut; fehlt es, nur Hinweis.
+  local dropbox_ordner="${HOME}/Dropbox/TP Mail-Entwuerfe"
+  if xattr -p com.dropbox.fp_hydration_policy "${dropbox_ordner}" >/dev/null 2>&1; then
+    ok "Dropbox-Ordner 'TP Mail-Entwuerfe' ist offline verfuegbar."
+  else
+    fehlt "Einrichtungsschritt: Dropbox-Ordner 'TP Mail-Entwuerfe' im Finder per Rechtsklick auf 'Offline verfuegbar' stellen."
+  fi
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-mail-entwuerfe.log"
 }
 

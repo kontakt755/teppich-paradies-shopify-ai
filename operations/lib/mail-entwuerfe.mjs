@@ -55,19 +55,47 @@ export function dropboxOrdner(env = process.env) {
  * Verschiebt alle Dateien aus dem Dropbox-Ordner nach eingang/ - danach liegen keine Kundendaten
  * mehr in der Dropbox. Was spaeter nachsynchronisiert, holt der naechste Lauf. Unterordner,
  * versteckte Dateien und Namen, die in eingang/ schon belegt sind, bleiben liegen.
+ * Eine nicht lesbare Datei bleibt ebenfalls liegen (naechster Lauf versucht es erneut) und steht in
+ * `fehler`; die uebrigen werden trotzdem geholt. EDEADLK heisst: Dropbox-Platzhalter, nur online.
  */
-export function holeAusDropbox(quelle, eingang) {
-  if (!quelle) return [];
+export function holeAusDropbox(quelle, eingang, { kopieren = fs.copyFileSync } = {}) {
+  if (!quelle) return { geholt: [], fehler: [] };
   fs.mkdirSync(quelle, { recursive: true });
   fs.mkdirSync(eingang, { recursive: true, mode: 0o700 });
   const geholt = [];
+  const fehler = [];
   for (const e of fs.readdirSync(quelle, { withFileTypes: true })) {
     if (!e.isFile() || e.name.startsWith('.') || fs.existsSync(path.join(eingang, e.name))) continue;
-    fs.copyFileSync(path.join(quelle, e.name), path.join(eingang, e.name));
+    try {
+      kopieren(path.join(quelle, e.name), path.join(eingang, e.name));
+    } catch (err) {
+      // Halbe Kopie weg, sonst blockiert sie den naechsten Versuch und gilt als Auftrag.
+      fs.rmSync(path.join(eingang, e.name), { force: true });
+      fehler.push({ datei: e.name, nurOnline: err.code === 'EDEADLK' || err.errno === -11, grund: err.message });
+      continue;
+    }
     fs.rmSync(path.join(quelle, e.name));
     geholt.push(e.name);
   }
-  return geholt;
+  return { geholt, fehler };
+}
+
+/** So lange darf eine Dropbox-Datei unlesbar sein, bevor das Control Center es meldet. */
+export const DROPBOX_MELDEN_NACH_MS = 15 * 60_000;
+
+/**
+ * Stand fuer die Statusdatei aus den Fehlern dieses Laufs. `haengt` merkt sich je Datei den ersten
+ * Fehlschlag (aus dem alten Stand); ok: false erst, wenn eine Datei laenger als 15 Minuten haengt.
+ */
+export function dropboxStand(fehler, alt = {}, jetzt = new Date()) {
+  const haengt = {};
+  for (const f of fehler) haengt[f.datei] = alt.haengt?.[f.datei] || jetzt.toISOString();
+  const lange = fehler.filter(f => jetzt.getTime() - Date.parse(haengt[f.datei]) >= DROPBOX_MELDEN_NACH_MS);
+  if (!lange.length) return { ok: true, haengt, art: null, meldung: '' };
+  const namen = lange.map(f => f.datei).join(', ');
+  return lange.every(f => f.nurOnline)
+    ? { ok: false, haengt, art: 'dropbox-nur-online', meldung: `Dropbox-Datei nur online, Ordner offline verfügbar machen (${namen})` }
+    : { ok: false, haengt, art: 'dropbox-unlesbar', meldung: `Dropbox-Datei nicht lesbar: ${namen} – ${lange.find(f => !f.nurOnline).grund}`.slice(0, 300) };
 }
 
 const PDF_FORMULAR = fileURLToPath(new URL('../scripts/pdf_formular.py', import.meta.url));

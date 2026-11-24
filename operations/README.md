@@ -812,6 +812,15 @@ Gmail nur noch Senden.
 - **Aus der Cloud (Cloud-Sitzung, ChatGPT):** Auftrag als Textdatei in den Dropbox-Ordner
   `~/Dropbox/TP Mail-Entwuerfe/` (über den Dropbox-Konnektor; anderer Ordner: `TP_MAIL_DROPBOX`). Jeder
   Lauf verschiebt alle Dateien von dort nach `eingang/`, danach liegt nichts mehr in der Dropbox.
+  **Einrichtungsschritt:** den Ordner im Finder per Rechtsklick auf „Offline verfügbar“ stellen.
+  Über den Konnektor abgelegte Dateien liegen sonst nur als Online-Platzhalter vor, und ein
+  launchd-Dienst darf sie nicht herunterladen (EDEADLK, im Protokoll „Unknown system error -11“; erster
+  Cloud-Auftrag 24.11.2026). Zusätzlich startet die Plist Node über `scripts/dataless-erlauben.py`
+  (`setiopolicy_np`, erlaubt das Nachladen; unter launchd geprüft). Eine nicht lesbare Datei bleibt
+  liegen und wird jeden Lauf neu versucht; die übrigen Dateien und `eingang/` laufen weiter. Hängt
+  eine Datei länger als 15 Minuten, wird der Dienst im Control Center rot („Dropbox-Datei nur online,
+  Ordner offline verfügbar machen“, Statusdatei `routinen/mail-entwuerfe/status.json`) und der Mac
+  zeigt eine Mitteilung.
 - **Formular statt fertigem PDF:** `"formular": {"vorlage": "antrag.pdf", "werte": {"Feld": "Wert"}, "name": "Antrag Müller.pdf"}`.
   Die leere Vorlage liegt einmalig in `mail-entwuerfe/vorlagen/` (oder neben dem Auftrag). Der Mac füllt sie
   mit `scripts/pdf_formular.py` (Python aus `~/.venvs/analyse`, anderes: `TP_PYTHON`); Feldnamen und
@@ -832,8 +841,8 @@ Gmail nur noch Senden.
 - Dienst: Vorlage `launchagents/net.teppich-paradies.mail-entwuerfe.plist.vorlage`, Einrichten mit
   `bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe` (Plist zeigt auf `~/tp-dashboard`).
   Leerer Eingang: keine Anmeldung. Protokoll `~/Library/Logs/teppich-paradies-mail-entwuerfe.log`.
-- Noch nicht dabei (shortcut): Statusdatei für den Systemzustand im Control Center; Fehler stehen
-  bisher nur im Protokoll und in `fehler/`.
+- Im Control Center meldet der Dienst bisher nur Dropbox-Dateien, die nicht abgeholt werden können;
+  unbrauchbare Aufträge stehen weiter nur im Protokoll und in `fehler/`.
 
 ## Google-Bewertung im Shop (monatlich)
 

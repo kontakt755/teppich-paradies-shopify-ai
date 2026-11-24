@@ -8,14 +8,22 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { privatDir } from '../lib/routinen.mjs';
+import { liesStatus, privatDir, schreibStatus } from '../lib/routinen.mjs';
+import { mitteilung } from '../lib/mac-mitteilung.mjs';
 import { lesePostfach } from '../lib/nachfass-versand.mjs';
 import { postfachZugangPfad } from '../lib/postfach-vorpruefung.mjs';
-import { dropboxOrdner, durchgang, holeAusDropbox, ordner } from '../lib/mail-entwuerfe.mjs';
+import { dropboxOrdner, dropboxStand, durchgang, holeAusDropbox, ordner } from '../lib/mail-entwuerfe.mjs';
 
-export async function main({ privat = privatDir(), dropbox = dropboxOrdner(), aus = t => console.log(t), zugangLesen = lesePostfach, ablegen, fuellen } = {}) {
+export async function main({ privat = privatDir(), dropbox = dropboxOrdner(), aus = t => console.log(t), zugangLesen = lesePostfach, ablegen, fuellen, kopieren, melden = mitteilung, jetzt = new Date() } = {}) {
   const { eingang } = ordner(privat);
-  for (const n of holeAusDropbox(dropbox, eingang)) aus(`${new Date().toISOString()} aus Dropbox geholt: ${n}`);
+  const { geholt, fehler } = holeAusDropbox(dropbox, eingang, kopieren ? { kopieren } : {});
+  for (const n of geholt) aus(`${new Date().toISOString()} aus Dropbox geholt: ${n}`);
+  for (const f of fehler) aus(`${new Date().toISOString()} Dropbox-Datei bleibt liegen: ${f.datei}: ${f.grund}`);
+  // Status fuers Control Center (rotes To-do "Mac-Dienst gestoert"), bevor der Eingang laeuft.
+  let alt = {};
+  try { alt = liesStatus(privat, 'mail-entwuerfe'); } catch { alt = {}; }
+  const { stand, mitteilen } = schreibStatus(privat, 'mail-entwuerfe', dropboxStand(fehler, alt, jetzt), jetzt);
+  if (mitteilen) melden('Mail-Entwürfe', stand.meldung);
   // Leerer Eingang: nichts tun, auch keine Anmeldung.
   if (!fs.existsSync(eingang) || !fs.readdirSync(eingang).some(n => n.endsWith('.json') && !n.startsWith('.'))) return 0;
   const z = zugangLesen(postfachZugangPfad(privat));

@@ -6,8 +6,9 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { durchgang, entwurfAblegen, gitHolen, holeAusDropbox, ordner, pruefeAuftrag } from '../lib/mail-entwuerfe.mjs';
+import { dropboxStand, durchgang, entwurfAblegen, gitHolen, holeAusDropbox, ordner, pruefeAuftrag } from '../lib/mail-entwuerfe.mjs';
 import { main } from '../scripts/mail-entwuerfe.mjs';
+import { liesStatus } from '../lib/routinen.mjs';
 
 const ZUGANG = { benutzer: 'kontakt@beispiel.test', passwort: 'geheim', absender: 'kontakt@beispiel.test', absenderName: 'Beispiel' };
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'mail-entwuerfe-'));
@@ -100,10 +101,63 @@ test('Dropbox: Dateien wandern nach eingang/, Unterordner, versteckte und belegt
   fs.mkdirSync(eingang, { recursive: true });
   for (const n of ['a.json', '.dropbox', 'b.json']) fs.writeFileSync(path.join(quelle, n), n);
   fs.writeFileSync(path.join(eingang, 'b.json'), 'alt');
-  assert.deepEqual(holeAusDropbox(quelle, eingang), ['a.json']);
+  assert.deepEqual(holeAusDropbox(quelle, eingang), { geholt: ['a.json'], fehler: [] });
   assert.deepEqual(fs.readdirSync(quelle).sort(), ['.dropbox', 'b.json', 'unter']);
   assert.equal(fs.readFileSync(path.join(eingang, 'a.json'), 'utf8'), 'a.json');
-  assert.deepEqual(holeAusDropbox(null, eingang), []);
+  assert.deepEqual(holeAusDropbox(null, eingang), { geholt: [], fehler: [] });
+});
+
+// So meldet macOS unter launchd eine Dropbox-Datei, die nur online liegt (24.11.2026).
+const nurOnline = (von, nach) => {
+  if (!path.basename(von).startsWith('online')) return fs.copyFileSync(von, nach);
+  fs.writeFileSync(nach, '{"an'); // halbe Kopie
+  throw Object.assign(new Error(`Unknown system error -11, copyfile '${von}'`), { errno: -11, code: 'Unknown system error -11' });
+};
+
+test('Dropbox: EDEADLK bei einer Datei - Lauf geht weiter, Datei bleibt liegen, nach 15 Minuten rotes To-do', async () => {
+  const privat = tmp();
+  const quelle = path.join(tmp(), 'TP Mail-Entwuerfe');
+  const { eingang } = ordner(privat);
+  fs.mkdirSync(quelle, { recursive: true });
+  fs.writeFileSync(path.join(quelle, 'online.json'), '{}');
+  fs.writeFileSync(path.join(quelle, 'lokal.txt'), 'x');
+  auftrag(privat, 'a.json', { an: 'k@beispiel.test', betreff: 'x', text: 'Hallo' });
+  const r = holeAusDropbox(quelle, eingang, { kopieren: nurOnline });
+  assert.deepEqual(r.geholt, ['lokal.txt']);
+  assert.equal(r.fehler[0].datei, 'online.json');
+  assert.equal(r.fehler[0].nurOnline, true);
+  assert.ok(fs.existsSync(path.join(quelle, 'online.json')));
+  assert.ok(!fs.existsSync(path.join(eingang, 'online.json')), 'halbe Kopie entfernt');
+
+  // Ueber main: Auftrag in eingang/ wird trotzdem angelegt, erst nach 15 Minuten gemeldet.
+  const meldungen = [];
+  const lauf = (jetzt, kopieren = nurOnline) => main({ privat, dropbox: quelle, aus: () => {}, zugangLesen: () => ({ zugang: ZUGANG }), ablegen: async () => {}, kopieren, melden: (t, m) => meldungen.push(m), jetzt });
+  const t0 = new Date('2026-11-24T09:53:00Z');
+  assert.equal(await lauf(t0), 0);
+  assert.ok(!fs.existsSync(path.join(eingang, 'a.json')), 'Auftrag aus eingang/ verarbeitet');
+  assert.equal(liesStatus(privat, 'mail-entwuerfe').ok, true);
+  await lauf(new Date(t0.getTime() + 10 * 60_000));
+  assert.deepEqual(meldungen, []);
+  await lauf(new Date(t0.getTime() + 15 * 60_000));
+  const s = liesStatus(privat, 'mail-entwuerfe');
+  assert.equal(s.ok, false);
+  assert.equal(s.art, 'dropbox-nur-online');
+  assert.match(s.meldung, /^Dropbox-Datei nur online, Ordner offline verfügbar machen \(online\.json\)/);
+  assert.equal(meldungen.length, 1);
+  await lauf(new Date(t0.getTime() + 20 * 60_000));
+  assert.equal(meldungen.length, 1, 'nur einmal mitteilen');
+  // Datei wieder lesbar: geholt, Stand wieder ok.
+  await lauf(new Date(t0.getTime() + 25 * 60_000), fs.copyFileSync);
+  assert.ok(!fs.existsSync(path.join(quelle, 'online.json')), 'nichts mehr in der Dropbox');
+  assert.equal(liesStatus(privat, 'mail-entwuerfe').ok, true);
+});
+
+test('dropboxStand: andere Lesefehler heissen nicht "nur online"', () => {
+  const t = new Date('2026-11-24T10:00:00Z');
+  const s = dropboxStand([{ datei: 'x.json', nurOnline: false, grund: 'EACCES: permission denied' }], { haengt: { 'x.json': '2026-11-24T09:00:00Z' } }, t);
+  assert.equal(s.art, 'dropbox-unlesbar');
+  assert.match(s.meldung, /EACCES/);
+  assert.deepEqual(dropboxStand([], { haengt: { 'x.json': '2026-11-24T09:00:00Z' } }, t), { ok: true, haengt: {}, art: null, meldung: '' });
 });
 
 test('Formular: Vorlage aus vorlagen/ wird gefuellt, angehaengt und bleibt liegen; Fehler beim Fuellen -> fehler/', async () => {
