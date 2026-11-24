@@ -19,6 +19,7 @@ import { render } from '../kern/render.mjs';
 import { istNurLesend } from '../kern/sitzung.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { liegtZuLange, teileSpalte } from '../lib/laden.mjs';
+import { wochenZeile } from '../lib/rechnungspruefung.mjs';
 
 const NEU_LADEN_MS = 3 * 60 * 1000;
 const ARTEN = ['Rolle schneiden', 'Rechnung kontrollieren', 'Angebot kontrollieren', 'Sonstiges'];
@@ -67,6 +68,9 @@ const schnittKnopf = (e) => {
   return b ? `<button type="button" class="btn laden-knopf" data-laden-schnitt-order="${esc(b.orderId)}" data-laden-schnitt-item="${esc(b.lineItemId)}" data-laden-schritt="${e.schnitt ? 'zugeschnitten' : 'gepackt'}">${e.schnitt ? 'Zugeschnitten' : 'Gepackt'}</button>` : '';
 };
 
+/** Rechnung mit Abweichung (lib/rechnungspruefung.mjs): "Erledigt" nimmt sie aus der Liste - dieselbe Ablage wie "Gesehen". */
+const erledigtKnopf = e => (e.erledigen ? `<button type="button" class="btn laden-knopf" data-laden-gesehen="${esc(e.schluessel)}">Erledigt</button>` : '');
+
 function zeile(e, { lesen }) {
   const meta = [e.art, e.von, e.anzahl ? `${e.anzahl} Mails` : null].filter(Boolean).map(esc).join(' · ');
   // Zusammengelegte Mails eines Absenders: jeder Knopf gilt fuer alle (Schluessel mit Komma, siehe ladenKlick).
@@ -78,13 +82,13 @@ function zeile(e, { lesen }) {
     : z
     ? `<span class="laden-plakette">${esc(z.wer)} kümmert sich · ${esc(since(z.seit))}</span>
        ${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-zurueck="${k}">Zurückgeben</button>
-       ${e.aufgabeId ? `<button type="button" class="btn laden-knopf" data-laden-erledigt="${esc(e.aufgabeId)}">Erledigt</button>` : ''}${schnittKnopf(e)}`}`
+       ${e.aufgabeId ? `<button type="button" class="btn laden-knopf" data-laden-erledigt="${esc(e.aufgabeId)}">Erledigt</button>` : ''}${schnittKnopf(e)}${erledigtKnopf(e)}`}`
     : `<span class="laden-plakette${e.ton ? ` ${esc(e.ton)}` : ''}">${esc(e.alter || '')}</span>
        ${lesen ? '' : laden.wer === (e.alle || [e.schluessel]).join(',')
     ? `<span class="laden-wer"><strong>Wer?</strong>${(laden.daten.personen || []).map(n => `<button type="button" class="btn laden-knopf" data-laden-wer="${esc(n)}" data-schluessel="${k}">${esc(n)}</button>`).join('')}<button type="button" class="btn btn-ghost laden-knopf" data-laden-abbrechen>Abbrechen</button></span>`
-    : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${k}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>${schnittKnopf(e)}`}`;
+    : `<button type="button" class="btn laden-knopf" data-laden-uebernehmen="${k}"${laden.daten.personen ? '' : ' disabled'}>Übernehmen</button>${schnittKnopf(e)}${erledigtKnopf(e)}`}`;
   const telefon = e.schluessel.startsWith('mail:') && !lesen && !e.nurInfo ? `<button type="button" class="btn laden-knopf" data-laden-telefonisch="${k}">Telefonisch erledigt</button>` : '';
-  return `<li class="laden-zeile${e.ton === 'crit' && e.schluessel.startsWith('mail:') ? ' laden-zeile-rot' : ''}">
+  return `<li class="laden-zeile${e.rot || (e.ton === 'crit' && e.schluessel.startsWith('mail:')) ? ' laden-zeile-rot' : ''}">
     <div class="laden-text"><p class="small muted">${meta}</p><p class="laden-titel">${esc(e.text)}</p>${e.beantwortetAm ? '<p class="small muted">Schon aus dem Hauptpostfach beantwortet</p>' : ''}${e.nurHaken ? '<p class="small muted">Hier zählt nur der Haken: bitte anrufen und danach abhaken.</p>' : ''}${e.infoText ? `<p class="small muted">${esc(e.infoText)}</p>` : ''}${e.hinweis ? `<p class="small muted">${esc(e.hinweis)}</p>` : ''}</div>
     <div class="laden-rechts">${rechts}${telefon}</div>
   </li>`;
@@ -122,6 +126,25 @@ function wareAbschnitt(w, lesen) {
   </section>`;
 }
 
+/**
+ * Rechnungspruefung (Probebetrieb, w-414): die Wochenzeile als Lebenszeichen und, eingeklappt, Rechnungen, die der
+ * Pruefer nicht sicher lesen oder keiner AB zuordnen konnte. Abweichungen stehen rot unter "Zu tun".
+ */
+function rechnungAbschnitt(r, lesen) {
+  if (!r) return '';
+  const w = wochenZeile(r, { jetzt: new Date(laden.daten.jetzt) });
+  const np = r.nichtPruefbar || [];
+  const liste = np.length ? `<details class="laden-kuemmert" data-laden="rechnungen"${laden.offen.rechnungen ? ' open' : ''}><summary>Nicht automatisch prüfbar, bitte ansehen (${np.length})</summary><ul class="laden-liste">${np.map(e => `<li class="laden-zeile">
+      <div class="laden-text"><p class="small muted">${esc(e.anbieter || '')}</p><p class="laden-titel">${esc(`Rechnung${e.nummer ? ` ${e.nummer}` : ''}`)}</p><p class="small muted">${esc(e.grund || '')}</p></div>
+      <div class="laden-rechts">${lesen ? '' : `<button type="button" class="btn laden-knopf" data-laden-gesehen="rechnung:${esc(e.schluessel)}">Gesehen</button>`}</div>
+    </li>`).join('')}</ul></details>` : '';
+  return `<section class="laden-spalte laden-ware" aria-labelledby="laden-rechnungen">
+    <div class="laden-spalte-kopf"><h2 id="laden-rechnungen">Rechnungen</h2></div>
+    <p class="${w.ton ? `notice ${esc(w.ton)}` : 'small muted'}" role="status">${esc(w.text)}</p>
+    ${liste}
+  </section>`;
+}
+
 /** Ein stilles Neuzeichnen (Datenabgleich) soll Getipptes nicht wegnehmen: Werte aus dem alten Formular uebernehmen. */
 function aufgabenFormular() {
   const alt = document.querySelector('#main [data-laden-form]')?.elements;
@@ -154,12 +177,13 @@ export function viewLaden() {
     <div class="laden-spalten">
       ${spalte(mailZeilen, { id: 'mails', titel: 'Mails', satz: 'Wer übernimmt, antwortet.', leer: mailsLeer, vorspann: mailsFehler, nachspann: infoTeil }, lesen)}
       ${spalte(d.todos, {
-    id: 'zutun', titel: 'Zu tun', satz: 'Rückrufe, Zuschnitt, Packen und eigene Aufgaben.', leer: 'Nichts offen.',
+    id: 'zutun', titel: 'Zu tun', satz: 'Rückrufe, Zuschnitt, Packen, Rechnungen und eigene Aufgaben.', leer: 'Nichts offen.',
     kopf: lesen || laden.formOffen ? '' : '<button type="button" class="btn laden-knopf" data-laden-neu>Aufgabe dazu</button>',
     vorspann: laden.formOffen ? aufgabenFormular() : '',
   }, lesen)}
     </div>
-    ${wareAbschnitt(d.ware, lesen)}`;
+    ${wareAbschnitt(d.ware, lesen)}
+    ${rechnungAbschnitt(d.rechnungen, lesen)}`;
 }
 
 /** rumpf darf eine Liste sein (zusammengelegte Mails): nacheinander, beim ersten Fehler Schluss. */

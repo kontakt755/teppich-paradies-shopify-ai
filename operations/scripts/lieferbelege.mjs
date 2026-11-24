@@ -47,16 +47,17 @@ const LIEFERORTE_JE_LAUF = 10;
 /**
  * PDF-Texte der genannten Belegmails (nur lesend per IMAP, gleicher Zugang wie die Vorpruefung).
  * Der Claude-Lauf kann das nicht: der Gmail-Konnektor liefert keine Anhaenge. Der Text wird nie gespeichert.
+ * Auch der Rechnungspruefer holt so die AB-Texte (operations/scripts/rechnungen-pruefen.mjs, zeitraum laenger).
  * @returns {null | Object<string, string[]>}  null = kein Zugang; eine nicht gefundene Mail fehlt im Ergebnis
  */
-async function pdfTexte(offen, { privatDir, sitzung, analyse, zugang }) {
+export async function pdfTexte(offen, { privatDir, sitzung = mitNurLesen, analyse = pdfAnalyse, zugang, zeitraum = '10d' }) {
   const zug = zugang || lesePostfach(path.join(path.dirname(path.dirname(stammdatenPfad(privatDir))), 'nachfassen', 'postfach.json')).zugang;
   if (!zug) return null;
   const adressen = [...new Set(offen.map(b => /[^\s<>"]+@[^\s<>"]+/.exec(b.von || '')?.[0]).filter(a => a && /^[\x21-\x7e]+$/.test(a)))];
   const roh = await sitzung(zug, async (s) => {
     const aus = {};
     for (const adresse of adressen) {
-      const uids = await s.suche(`from:${adresse} has:attachment newer_than:10d`);
+      const uids = await s.suche(`from:${adresse} has:attachment newer_than:${zeitraum}`);
       for (const d of await s.daten(uids)) if (offen.some(b => b.id === d.id)) aus[d.id] = await s.nachricht(d.uid);
     }
     return aus;
