@@ -181,7 +181,7 @@ export function bruttoAusSummen(text) {
     if (st > 0 && da.has(st) && da.has(n + st)) treffer.add(n + st);
   }
   // Rabatt, Abzug, Anzahlung oder negative Betraege: das Gesamt liegt dann nicht am Ende der Rechenprobe.
-  if (/rabatt|nachlass|abzug|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)[-−–]\s*\d+,\d{2}/i.test(String(text ?? ''))) return null;
+  if (/rabatt|nachlass|abzug|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)[-−–]\s*\d+,\d{2}|\d,\d{2}\s*[-−–](?!\s*\d)/i.test(String(text ?? ''))) return null;
   // Nur das Rechnungsgesamt: der groesste Betrag im Text (eine Positionssumme daneben zaehlt nicht).
   return treffer.size === 1 && [...treffer][0] === Math.max(...werte) ? [...treffer][0] / 100 : null;
 }
@@ -246,8 +246,16 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rech
     // Jeder Hinweis auf eine Teilbasis irgendwo in der Rechnung sperrt (auch ueber Zeilenumbrueche hinweg).
     const eingeschraenkt = !nurNettoziel || /ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|skontierf|nicht\s+skont|nicht\s+abzugsf|material|waren|fracht|versand|porto|nur\s+auf|teilbetrag|\(\s*(?:ohne|nicht|exkl)/i.test(t);
     // Nur mit Vorlage und nur, wenn die Rechnung genau deren Stufe nennt (sonst ist etwas anders: von Hand).
-    const wieVorlage = Boolean(vorlage) && verschieden.size === 1 && Number(stufen[0][1]) === vorlage.skontoTage && satz === vorlage.skontoProzent;
-    if (!wieVorlage || (t.match(/skonto/gi) || []).length !== stufen.length || eingeschraenkt || !echterIsoTag(rdatum)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+    // Positivliste: die bestaetigten Bedingungen stehen wortgleich (Leerraum egal) in der Rechnung, und ausserhalb
+    // davon nennt sie weder Skonto noch Netto/Basis noch eine Teilbasis.
+    const flach = t.replace(/\s+/g, ' ');
+    const rest = vorlage?.bedingungen ? flach.split(vorlage.bedingungen).join(' ') : flach;
+    const wieVorlage = Boolean(vorlage?.bedingungen) && flach.includes(vorlage.bedingungen) && !/skonto|netto|basis|betrag\s+ohne|abzugsf/i.test(rest)
+      && verschieden.size === 1 && Number(stufen[0][1]) === vorlage.skontoTage && satz === vorlage.skontoProzent;
+    // Widerspruechliche beschriftete Gesamtbetraege oder ein anderer als der Archivbetrag: nicht rechnen.
+    const gesamt = pdfTextLesen(t);
+    const widerspruch = gesamt.betragMehrdeutig || (gesamt.brutto != null && cent(gesamt.brutto) !== cent(brutto));
+    if (!wieVorlage || widerspruch || (t.match(/skonto/gi) || []).length !== stufen.length || eingeschraenkt || !echterIsoTag(rdatum)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
     const betrag = Math.round(brutto * satz) / 100;
     kopf.skonto = { bis: tagPlus(rdatum, Number(stufen[0][1])), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 };
   }
@@ -270,7 +278,7 @@ export function konfigPruefen(k) {
     // reinen PDF-Rechnung automatisch gerechnet, und nur der Betrag dieses Lieferanten darf aus der Rechenprobe kommen.
     const v = l.vorlage;
     if (v !== undefined && !(Number.isInteger(v?.skontoTage) && v.skontoTage > 0 && v.skontoTage <= 60 && v.skontoProzent > 0 && v.skontoProzent <= 5)) throw new Error(`Konfiguration: Lieferant ${schluessel} hat eine ungültige vorlage`);
-    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift, sepaAnfrage: String(l.sepaAnfrage || '').trim(), vorlage: v ? { skontoTage: v.skontoTage, skontoProzent: Number(v.skontoProzent), rechenprobe: v.rechenprobe === true, datumVor: String(v.datumVor || '').trim() || null } : null };
+    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift, sepaAnfrage: String(l.sepaAnfrage || '').trim(), vorlage: v ? { skontoTage: v.skontoTage, skontoProzent: Number(v.skontoProzent), rechenprobe: v.rechenprobe === true, datumVor: String(v.datumVor || '').trim() || null, bedingungen: String(v.bedingungen || '').replace(/\s+/g, ' ').trim() || null } : null };
   }
   // Optional: an wen Pruefliste und Datei nach dem Lauf gehen (Benutzer 20.11.2026: Laden-Postfach).
   const mailAn = k.mailAn === undefined ? null : String(k.mailAn).trim().toLowerCase();

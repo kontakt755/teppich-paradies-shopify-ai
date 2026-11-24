@@ -23,11 +23,11 @@ def pain(*tx):
             f"<DbtrAcct><Id><IBAN>{EIGEN}</IBAN></Id></DbtrAcct>{teile}</PmtInf>")
 
 
-def beleg(nummer, brutto, text, art="rechnung", schluessel="muster.de"):
-    return {"schluessel": schluessel, "nummer": nummer, "brutto": brutto, "datum": "2026-11-10", "rechnungsdatum": "2026-11-10", "art": art, "datei": f"{nummer}.pdf", "text": lambda: text}
+def beleg(nummer, brutto, text, art="rechnung", schluessel="muster.de", xml=True):
+    return {"xml": xml, "schluessel": schluessel, "nummer": nummer, "brutto": brutto, "datum": "2026-11-10", "rechnungsdatum": "2026-11-10", "art": art, "datei": f"{nummer}.pdf", "text": lambda: text}
 
 
-LIEFERANTEN = {"muster.de": {"name": "Muster Teppich GmbH", "iban": LIEF, "vorlage": {"skontoTage": 10, "skontoProzent": 3, "rechenprobe": True, "datumVor": "Berlin"}}, "zieht.de": {"zahlart": "lastschrift"}}
+LIEFERANTEN = {"muster.de": {"name": "Muster Teppich GmbH", "iban": LIEF, "vorlage": {"skontoTage": 10, "skontoProzent": 3, "rechenprobe": True, "datumVor": "Berlin", "bedingungen": "Zahlbar: 10 Tage -3% Skonto 30 Tage Netto"}}, "zieht.de": {"zahlart": "lastschrift"}}
 
 
 def pruefen(xml, belege, buchungen=(), andere=None):
@@ -119,9 +119,9 @@ class Zwischenpruefer(unittest.TestCase):
         self.assertTrue(any("Lastschrift" in x for x in f))
 
     def test_spaltensatz_brutto_aus_netto_und_steuer(self):
-        text = f"Gesamt: zzgl. 19% MwSt: Rechnungsbetrag: 429,81 € 81,66 € 511,47 € Zahlbar: 10 Tage -3% Skonto IBAN {LIEF}"
+        text = f"Gesamt:\nzzgl. 19% MwSt:\nRechnungsbetrag:\n429,81 €\n81,66 €\n511,47 €\nZahlbar: 10 Tage -3% Skonto\n30 Tage\nNetto\nIBAN {LIEF}"
         self.assertEqual(z.brutto_aus_summen(text), 511.47)
-        b = {**beleg("115-2026", None, f"Berlin 13. November 2026 {text}"), "datum": "2026-11-13", "rechnungsdatum": None}
+        b = {**beleg("115-2026", None, f"Berlin 13. November 2026 {text}", xml=False), "datum": "2026-11-13", "rechnungsdatum": None}
         f, h = pruefen(pain(("115-2026", 496.13, LIEF, "RE 115-2026 abzgl Skonto 15,34 EUR")), [b])
         self.assertEqual(f, [])
         self.assertTrue(any("511.47 aus Netto + MwSt" in x for x in h))
@@ -170,6 +170,18 @@ class Zwischenpruefer(unittest.TestCase):
         t = f"Berlin 13. November 2026\nRechnungsbetrag 119,00 10 Tage -3% Skonto\nauf den Materialwert IBAN {LIEF}"
         f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [{**beleg("100", 119.0, t), "rechnungsdatum": None}])
         self.assertTrue(any("Teil des Betrags" in x for x in f))
+
+    def test_codex_pr_2306_runde_2(self):
+        self.assertIsNone(z.brutto_aus_summen("100,00- 19,00- 119,00-"))
+        ok = f"Berlin 13. November 2026\nRechnungsbetrag 119,00 Zahlbar: 10 Tage -3% Skonto 30 Tage Netto IBAN {LIEF}"
+        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [{**beleg("100", 119.0, ok, xml=False), "rechnungsdatum": None}])
+        self.assertEqual(f, [])
+        fort = ok.replace("Skonto 30", "Skonto\nauf den Nettobetrag\n30")
+        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [{**beleg("100", 119.0, fort, xml=False), "rechnungsdatum": None}])
+        self.assertTrue(any("wortgleich" in x for x in f))
+        zwei = ok + " Zahlbetrag 107,10"
+        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [{**beleg("100", 119.0, zwei, xml=False), "rechnungsdatum": None}])
+        self.assertTrue(any("widerspruechliche" in x for x in f))
 
     def test_bankexport_mit_spalte_iban(self):
         import tempfile
