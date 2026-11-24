@@ -1,0 +1,34 @@
+{%- comment -%}
+  Sperre gegen fremde Spiegelseiten (Befund 24.11.2026: teppich-paradies.live
+  spiegelt den Shop ueber einen fremden Proxy und ersetzt dabei jedes
+  "teppich-paradies.net" im HTML). Laeuft der Shop unter einem fremden Host,
+  leitet das Skript sofort auf die echte Domain um. Die Domain steht deshalb
+  absichtlich nicht als Klartext im Code. Shopifys exit_interstitial-Skript
+  (steht vor allem anderen im head) biegt location.replace und Meta-Refresh
+  in Chrome auf /url?q= um (404). Die Umleitung startet deshalb aus einem
+  sandboxed Iframe, dessen Navigation die Seite nicht abbrechen kann.
+  Erlaubt: echte Domain, myshopify/Vorschau/Theme-Editor, Google-Uebersetzer,
+  Google-Cache, Webarchiv, lokale Entwicklung.
+{%- endcomment -%}
+<script>
+  (function (l) {
+    var d = ['teppich', 'paradies'].join('-') + '.' + 'ten'.split('').reverse().join('');
+    var h = l.hostname;
+    var ok =
+      h === d ||
+      h === 'www.' + d ||
+      h === 'localhost' ||
+      h === '127.0.0.1' ||
+      /(^|\.)(myshopify\.com|shopifypreview\.com|shopify\.com|translate\.goog|googleusercontent\.com|archive\.org)$/.test(h);
+    if (ok) return;
+    var u = ('https://www.' + d + l.pathname + l.search + l.hash).replace(/["<>]/g, encodeURIComponent);
+    // Abgeschottetes Iframe: Navigationen eines fremden Ursprungs darf die Seite nicht abbrechen
+    var f = document.createElement('iframe');
+    f.setAttribute('sandbox', 'allow-scripts allow-top-navigation');
+    f.style.display = 'none';
+    f.srcdoc = '<scr' + 'ipt>top.location.href=' + JSON.stringify(u) + '</scr' + 'ipt>';
+    document.documentElement.appendChild(f);
+    // Rueckfall, falls das Iframe nicht greift
+    document.write('<meta http-equiv="refresh" content="3;url=' + u + '">');
+  })(window.location);
+</script>
