@@ -63,7 +63,7 @@ Kein Pflicht-Review. Fuer die in `AGENTS.md` genannten kritischen Aenderungen
 vor dem Merge den PR pruefen lassen: Codex mit `npm run -s ki:frag -- review <PR>`
 (an den Head-Commit gebunden, vor dem Merge `review-stand <PR>`) oder
 `/code-review` als Claude-Pruefung. Ablauf allein/mit Codex, Rundenlimit und
-Kontingent: `AGENTS.md`, Abschnitt „Zusammenarbeit Claude und Codex“.
+Kontingent: Skill `codex`, Abschnitt „Zusammenarbeit Claude und Codex“.
 
 ## Hooks und Berechtigungen
 
