@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { belegeOrdner, berlinTag, istPdf, istEigen } from '../lib/belege.mjs';
 import { pdfAnalyse } from './belege-monat.mjs';
 import { auszugLesen } from '../lib/belege-bank.mjs';
-import { konfigPruefen, auswaehlen, painBauen, pruefliste, umsatzPdfLesen, tagPlus, mailInhalt } from '../lib/zahlung-sammeldatei.mjs';
+import { konfigPruefen, auswaehlen, painBauen, pruefliste, umsatzPdfLesen, tagPlus, mailInhalt, lastschriftFazit } from '../lib/zahlung-sammeldatei.mjs';
 import { lesePostfach, postfachPfad } from '../lib/nachfass-versand.mjs';
 import { sendeMail } from '../lib/smtp.mjs';
 
@@ -196,7 +196,7 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
     fs.renameSync(temp, vorgemerktPfad);
     fs.writeFileSync(path.join(ordner, datei), pain.xml, { mode: 0o600, flag: 'wx' });
   }
-  fs.writeFileSync(path.join(ordner, liste), pruefliste({ auswahl, abgleich, datei, andere, vorStart, pdfAb: PDF_AB, summeCent }), { mode: 0o600 });
+  fs.writeFileSync(path.join(ordner, liste), pruefliste({ auswahl, abgleich, datei, andere, vorStart, pdfAb: PDF_AB, summeCent, fazit: lastschriftFazit({ buchungen: abgleich.liste, konfig, heute }) }), { mode: 0o600 });
 
   const status = {};
   for (const z of auswahl.zeilen) status[z.status] = (status[z.status] || 0) + 1;

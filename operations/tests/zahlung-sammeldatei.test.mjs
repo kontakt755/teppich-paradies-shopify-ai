@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { auswaehlen, ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt } from '../lib/zahlung-sammeldatei.mjs';
+import { auswaehlen, ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt, lastschriftFazit } from '../lib/zahlung-sammeldatei.mjs';
 import { sammelLauf, laufMailen, exporteHolen, exporteZusammenfuehren } from '../scripts/zahlung-sammeldatei.mjs';
 
 // Alle Daten erfunden. IBANs aus Fantasie-Kontonummern mit gerechneter Pruefziffer.
@@ -581,4 +581,31 @@ test('Lesbare Rechnung und unklare Fassung derselben Nummer mit anderem Betrag: 
     const z = auswaehlen({ belege: b3, konfig, buchungen: [{ datum: '2026-11-09', betrag: -100, name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: 'RE R-123-123' }], heute: '2026-11-10' }).zeilen;
     assert.equal(z.find(r => r.nummer === '123').status, 'zahlen', reihe.join(' vor '));
   }
+});
+
+test('Fehler 20.11.2026: Datum mit Leerzeichen, Skonto nur auf Ware, Skonto-Vorschlag im PDF', () => {
+  // Lieferant A schrieb „Zahlung bis 23 11 26“ statt „23.11.26“
+  assert.deepEqual(zahlungsbedingungenLesen('Zahlung bis 23 11 26 2,00 % Skonto 10,41 EUR Zahlung 558,77 EUR Nettofälligkeit 9.12.26 netto Zahlung 569,18 EUR').skonto,
+    { bis: '2026-11-23', betrag: 10.41, zahlbetrag: 558.77 });
+  // Fracht: Skonto nur auf den Warenanteil (so am 06.11.2026 bezahlt: 302,24 -> 290,39)
+  assert.deepEqual(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=04.00#', { datum: '2026-11-06', brutto: 302.24, zuschlaege: 4.98, warensumme: 249, steuerbasis: 253.98 }).skonto,
+    { bis: '2026-11-16', betrag: 11.85, zahlbetrag: 290.39 });
+  // Summen gehen nicht auf: voller Betrag
+  assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=04.00#', { datum: '2026-11-06', brutto: 302.24, zuschlaege: 4.98, warensumme: 249, steuerbasis: 260 }).vollerBetrag, true);
+  const pdf = pdfRechnungPruefen({ text: `Rechnung Nr. 417546 Gesamtbetrag 105,11 Zahlbar innerhalb von 10 Tagen mit 4% Skonto, innerhalb von 30 Tagen ohne Abzug. IBAN ${LIEFER}`, nummer: '417546', brutto: 105.11, waehrung: 'EUR', datum: '2026-11-06' }, { iban: LIEFER });
+  assert.equal(pdf.status, 'unklar');
+  assert.match(pdf.grund, /Vorschlag: 4 % Skonto bis 2026-11-16 = 100,91 EUR/);
+});
+
+test('Wochenfazit: wiederkehrende Ueberweisungen, Stand der Lastschrift-Anfrage, eigene Umbuchung zaehlt nicht', () => {
+  const konfig = { auftraggeber: { name: 'Muster Boden GmbH' }, lieferanten: { 'a.de': { name: 'A Handels GmbH', sepaAnfrage: 'angefragt' }, 'b.de': { name: 'B GmbH', lastschrift: true } } };
+  const u = (datum, betrag, name) => ({ datum, betrag, name, art: 'ueberweisung' });
+  const f = lastschriftFazit({ konfig, heute: '2026-11-24', buchungen: [
+    u('2026-11-02', -10, 'A Handels GmbH'), u('2026-11-03', -5, 'Handels A'), u('2026-11-04', -7, 'Timzo Teppichböden'), u('2026-11-05', -3, 'Timzo Teppichboeden'),
+    u('2026-11-06', -1, 'Einmal KG'), u('2026-11-07', -9, 'Muster Boden GmbH'), u('2026-11-08', -9, 'Muster Boden GmbH'), u('2026-05-01', -9, 'Einmal KG'),
+    { ...u('2026-11-09', -2, 'Einmal KG'), art: 'lastschrift' }] });
+  assert.deepEqual(f, [
+    { name: 'A Handels GmbH', anzahl: 2, letzte: '2026-11-03', stand: 'angefragt', summe: 15 },
+    { name: 'Timzo Teppichböden', anzahl: 2, letzte: '2026-11-05', stand: '', summe: 10 },
+  ]);
 });
