@@ -676,3 +676,17 @@ test('Spaltensatz aus der Texterkennung: Brutto nur ueber die Rechenprobe Netto 
   assert.equal(pdfRechnungPruefen({ ...ohne, text: `zahlbar bis 23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ ...ohne, text: `Rechnungsdatum: 03/11/2026\nBerlin 23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
 });
+
+test('Gutschrift, die eine spaetere Zahlung im Zweck nennt, ist verrechnet (auch zerrissen geschrieben)', () => {
+  const konfig = { lieferanten: { 'lieferant-a.example': { name: 'Muster & Söhne GmbH', iban: LIEFER, zweck: '' } } };
+  const g = nummer => ({ schluessel: 'lieferant-a.example', datei: `g${nummer}.pdf`, xml: rechnungXml({ nummer, brutto: '50.00', typ: '381', bedingungen: 'Gutschrift' }), pdfText: () => '' });
+  const belege = [g('105190'), g('208860'), g('300001'), g('300002')];
+  const buchungen = [
+    { datum: '2026-11-12', betrag: -320.22, name: 'Muster', iban: LIEFER, zweck: 'Rechnungs Nummer 208415TP050 -Gut schrift Nummer208860TP050/ 11.11.20 26' },
+    { datum: '2026-10-29', betrag: -156.29, name: 'Muster', iban: LIEFER, zweck: 'Re.-Nr.: 156153 / -2 Skonto/ - Gutschrift 1051 90 45,65 Euro' },
+    { datum: '2026-11-12', betrag: -10, name: 'Andere GmbH', iban: FREMD, zweck: 'Gutschrift 300001' },
+    { datum: '2026-11-12', betrag: -10, name: 'Muster', iban: LIEFER, zweck: 'Gutschrift 3000021' },
+  ];
+  const { zeilen } = auswaehlen({ belege, konfig, buchungen, heute: '2026-11-20' });
+  assert.deepEqual(zeilen.map(z => [z.nummer, z.status]), [['105190', 'erledigt'], ['208860', 'erledigt'], ['300001', 'gutschrift'], ['300002', 'gutschrift']]);
+});

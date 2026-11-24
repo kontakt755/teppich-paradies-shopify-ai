@@ -441,7 +441,19 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
     .map(z => ({ ...z, brutto: null, skonto: null, nurNachDatum: true, quelle: z }));
   const treffer = buchungen ? bankAbgleich(buchungen, [...ok, ...unklare], { ...fremdeLieferanten, ...konfig.lieferanten }, geprueft.filter(z => z.nummer)) : new Map();
   const bank = new Map([...treffer].map(([k, v]) => [k.quelle || k, v]));
+  // Gutschrift gilt als verrechnet, wenn eine spaetere Zahlung an denselben Empfaenger sie im Zweck nennt.
+  // Die Bank zerreisst Text an Zeilengrenzen („Gut schrift Nummer208860TP050“, „Gutschrift 1051 90“).
+  const alle = { ...fremdeLieferanten, ...konfig.lieferanten };
+  const verrechnet = (z) => {
+    const muster = new RegExp(`GUT\\s?SCHRIFT[^0-9]{0,20}${[...String(z.nummer).toUpperCase()].map(c => c.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('\\s?')}(?![0-9])`);
+    return (buchungen || []).find(x => x.betrag < 0 && (!z.datum || x.datum >= z.datum) && muster.test(String(x.zweck).toUpperCase())
+      && ((x.iban && x.iban === alle[z.schluessel]?.iban) || namePasst(x.name, { anbieter: alle[z.schluessel]?.name, anbieterSchluessel: z.schluessel })));
+  };
   const zeilen = geprueft.map((z) => {
+    if (z.status === 'gutschrift' && z.nummer) {
+      const b = verrechnet(z);
+      return b ? { ...z, status: 'erledigt', grund: `laut Kontoauszug am ${b.datum} mit einer Zahlung verrechnet` } : z;
+    }
     if (z.status === 'unklar') {
       const t = bank.get(z);
       return t && !t.mehrdeutig ? { ...z, status: 'bezahlt', grund: `laut Kontoauszug am ${t.buchung.datum} (Nummer im Verwendungszweck; vorher: ${z.grund})` } : z;
