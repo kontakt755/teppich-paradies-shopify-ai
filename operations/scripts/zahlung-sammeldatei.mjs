@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import { belegeOrdner, berlinTag, istPdf, istEigen } from '../lib/belege.mjs';
 import { pdfAnalyse } from './belege-monat.mjs';
 import { auszugLesen } from '../lib/belege-bank.mjs';
@@ -206,18 +207,34 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
   };
 }
 
+const PYTHON = process.env.TP_ANALYSE_PYTHON || path.join(os.homedir(), '.venvs', 'analyse', 'bin', 'python');
+
+/**
+ * Zwischenpruefer (Benutzer 24.11.2026): unabhaengige Kontrolle der fertigen Datei in Python, ohne KI.
+ * @returns {{ frei: boolean, bericht: string }} frei nur bei Exit 0; kann er nicht laufen, gilt die Datei nicht als frei.
+ */
+export function zwischenpruefen(privat, datei) {
+  const r = spawnSync(PYTHON, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'zahlung_zwischenpruefer.py'), path.join(privat, 'zahlungen', datei)],
+    { env: { ...process.env, TP_PRIVAT_DIR: privat }, encoding: 'utf8', timeout: 300_000 });
+  const bericht = String(r.stdout || '').trim() || `Zwischenpruefer lief nicht: ${String(r.error?.message || r.stderr || '').slice(0, 200)}`;
+  return { frei: r.status === 0, bericht };
+}
+
 /**
  * Pruefliste und Datei per Mail an `mailAn` aus der Konfiguration, ueber das Firmenpostfach des
  * Nachfassens. Ohne `mailAn` oder Postfach: keine Mail, nur ein Hinweis im Ergebnis.
  */
-export async function laufMailen({ privat, ergebnis, senden = sendeMail }) {
+export async function laufMailen({ privat, ergebnis, senden = sendeMail, pruefen = zwischenpruefen }) {
   const konfig = konfigPruefen(JSON.parse(fs.readFileSync(path.join(privat, 'zahlungen', 'konfiguration.json'), 'utf8')));
   if (!konfig.mailAn) return 'keine Mail: mailAn fehlt in der Konfiguration';
   const pf = lesePostfach(postfachPfad(privat));
   if (!pf.zugang) return `keine Mail: ${pf.hinweis}`;
   const ordner = path.join(privat, 'zahlungen');
   const liste = fs.readFileSync(path.join(ordner, ergebnis.pruefliste));
-  const { betreff, text } = mailInhalt(liste.toString('utf8'), { lauf: ergebnis.lauf, datei: ergebnis.datei, zahlungen: ergebnis.zahlungen, summe: ergebnis.summe });
+  const inhalt = mailInhalt(liste.toString('utf8'), { lauf: ergebnis.lauf, datei: ergebnis.datei, zahlungen: ergebnis.zahlungen, summe: ergebnis.summe });
+  const pruef = ergebnis.datei ? pruefen(privat, ergebnis.datei) : null;
+  const betreff = pruef && !pruef.frei ? `NICHT HOCHLADEN – ${inhalt.betreff}` : inhalt.betreff;
+  const text = pruef ? `${pruef.frei ? '' : 'Der Zwischenprüfer hat Fehler gefunden: diese Datei NICHT hochladen.\n\n'}${inhalt.text}\n\n${pruef.bericht}` : inhalt.text;
   const anhaenge = [{ name: ergebnis.pruefliste, typ: 'text/csv', inhalt: liste }];
   if (ergebnis.datei) anhaenge.unshift({ name: ergebnis.datei, typ: 'application/xml', inhalt: fs.readFileSync(path.join(ordner, ergebnis.datei)) });
   await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [konfig.mailAn], betreff, text, anhaenge });
