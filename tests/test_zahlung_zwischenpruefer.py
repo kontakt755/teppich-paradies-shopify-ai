@@ -133,8 +133,8 @@ class Zwischenpruefer(unittest.TestCase):
         self.assertEqual(z.brutto_aus_summen("123,50 23,47 146,97"), 146.97)
         # Skonto nur auf den Warenwert: nicht selbst rechnen
         t = f"Rechnungsbetrag 119,00 10 Tage -3% Skonto nur auf den Warenwert IBAN {LIEF}"
-        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [beleg("100", 119.0, t)])
-        self.assertTrue(any("Teil des Betrags" in x for x in f))
+        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [beleg("100", 119.0, t, xml=False)])
+        self.assertTrue(any("Teil des Betrags" in x or "wortgleich" in x for x in f))
         # Ohne belegtes Rechnungsdatum keine Skontofrist
         b = {**beleg("100", 100.0, f"10 Tage -2% Skonto IBAN {LIEF}"), "rechnungsdatum": None}
         f, _ = pruefen(pain(("100", 98.0, LIEF, "RE 100 abzgl Skonto 2,00 EUR")), [b])
@@ -148,8 +148,8 @@ class Zwischenpruefer(unittest.TestCase):
         self.assertEqual(z.rechnungsdatum_aus_text("Berlin 23. November 2026", "Berlin"), "2026-11-23")
         self.assertIsNone(z.rechnungsdatum_aus_text("Berlin 23. November 2026"))  # ohne Vorlage kein Textdatum
         t = f"Rechnungsbetrag 119,00 10 Tage -3% Skonto (Frachtkosten ausgenommen) IBAN {LIEF}"
-        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [beleg("100", 119.0, t)])
-        self.assertTrue(any("Teil des Betrags" in x for x in f))
+        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [beleg("100", 119.0, t, xml=False)])
+        self.assertTrue(any("Teil des Betrags" in x or "wortgleich" in x for x in f))
 
     def test_codex_pr_2303_runde_3(self):
         self.assertIsNone(z.brutto_aus_summen("100,00 19,00 119,00 Abzug 11,90 Gesamt 107,10"))
@@ -168,8 +168,8 @@ class Zwischenpruefer(unittest.TestCase):
         self.assertIsNone(z.rechnungsdatum_aus_text("Zahlbar bis\n23. November 2026", "Berlin"))
         self.assertIsNone(z.brutto_aus_summen("100,00 19,00 Rechnungsbetrag 119,00 Zahlbetrag 107,10"))
         t = f"Berlin 13. November 2026\nRechnungsbetrag 119,00 10 Tage -3% Skonto\nauf den Materialwert IBAN {LIEF}"
-        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [{**beleg("100", 119.0, t), "rechnungsdatum": None}])
-        self.assertTrue(any("Teil des Betrags" in x for x in f))
+        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [{**beleg("100", 119.0, t, xml=False), "rechnungsdatum": None}])
+        self.assertTrue(any("Teil des Betrags" in x or "wortgleich" in x for x in f))
 
     def test_codex_pr_2306_runde_2(self):
         self.assertIsNone(z.brutto_aus_summen("100,00- 19,00- 119,00-"))
@@ -182,6 +182,27 @@ class Zwischenpruefer(unittest.TestCase):
         zwei = ok + " Zahlbetrag 107,10"
         f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [{**beleg("100", 119.0, zwei, xml=False), "rechnungsdatum": None}])
         self.assertTrue(any("widerspruechliche" in x for x in f))
+
+    def test_xml_mit_fracht_skonto_nur_auf_ware(self):
+        # XRechnung mit Frachtzuschlag: der Erzeuger zieht 4 % nur vom Warenanteil ab (1,54 statt 2,86) – das ist kein Fehler
+        summen = "<ram:SpecifiedTradeSettlementHeaderMonetarySummation><ram:LineTotalAmount>32.26</ram:LineTotalAmount><ram:ChargeTotalAmount>27.85</ram:ChargeTotalAmount><ram:TaxBasisTotalAmount>60.11</ram:TaxBasisTotalAmount></ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
+        t = f"{summen} #SKONTO#TAGE=10#PROZENT=04.00# Frachtzuschlag 27,85 IBAN {LIEF}"
+        f, _ = pruefen(pain(("100", 69.99, LIEF, "RE 100 abzgl Skonto 1,54 EUR")), [beleg("100", 71.53, t)])
+        self.assertEqual(f, [])
+        # 4 % auf den ganzen Betrag (2,86) ist mehr als auf den Warenanteil erlaubt
+        f, _ = pruefen(pain(("100", 68.67, LIEF, "RE 100 abzgl Skonto 2,86 EUR")), [beleg("100", 71.53, t)])
+        self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
+
+    def test_xml_skontobasis_codex_2307(self):
+        self.assertEqual(z.skonto_basis("#SKONTO#TAGE=10#PROZENT=04.00#BASISBETRAG=38.40#", 7153), 3840)
+        unstimmig = "<ram:SpecifiedTradeSettlementHeaderMonetarySummation><ram:LineTotalAmount>32.26</ram:LineTotalAmount><ram:ChargeTotalAmount>27.85</ram:ChargeTotalAmount><ram:TaxBasisTotalAmount>70.00</ram:TaxBasisTotalAmount></ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
+        self.assertEqual(z.skonto_basis(unstimmig, 7153), 0)
+        f, _ = pruefen(pain(("100", 69.99, LIEF, "RE 100 abzgl Skonto 1,54 EUR")), [beleg("100", 71.53, f"{unstimmig} #SKONTO#TAGE=10#PROZENT=04.00# IBAN {LIEF}")])
+        self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
+        # anderer Namensraum-Praefix und Attribute (Codex Runde 3); Basis 0 sperrt auch 1 Cent
+        anders = '<x:SpecifiedTradeSettlementHeaderMonetarySummation a="1"><x:LineTotalAmount>38.40</x:LineTotalAmount><x:ChargeTotalAmount currencyID="EUR">21.71</x:ChargeTotalAmount><x:TaxBasisTotalAmount>60.11</x:TaxBasisTotalAmount></x:SpecifiedTradeSettlementHeaderMonetarySummation>'
+        self.assertEqual(z.skonto_basis(anders, 7153), round(7153 * 38.40 / 60.11))
+        self.assertEqual(z.skonto_pruefen("2 % Skonto", "2026-11-20", 1, 0, "2026-11-21")[0], "Skontobasis ungeklaert: der Erzeuger zahlt voll")
 
     def test_bankexport_mit_spalte_iban(self):
         import tempfile

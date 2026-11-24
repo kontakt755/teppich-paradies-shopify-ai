@@ -135,11 +135,31 @@ def skonto_stufen(text, rechnungsdatum):
     return [x for x in stufen if 0 < x[1] <= SKONTO_MAX * 100]
 
 
-def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute):
+def skonto_basis(xml_text, brutto_cent):
+    """Skontobasis einer XRechnung wie im Erzeuger: mit Zuschlaegen (Fracht) und ohne angegebene Basis nur der
+    Warenanteil, brutto x Warensumme / Steuerbasis; geht die Summe nicht auf, der volle Betrag."""
+    block = re.search(r"<(?:[\w.-]+:)?SpecifiedTradeSettlementHeaderMonetarySummation\b[^>]*>(.*?)</(?:[\w.-]+:)?SpecifiedTradeSettlementHeaderMonetarySummation>", xml_text, re.S)
+    feld = lambda n: (lambda m: float(m.group(1)) if m else None)(re.search(rf"<(?:[\w.-]+:)?{n}\b[^>]*>\s*([\d.]+)\s*<", block.group(1))) if block else None
+    zuschlag, ware, basis, nachlass = feld("ChargeTotalAmount") or 0, feld("LineTotalAmount"), feld("TaxBasisTotalAmount"), feld("AllowanceTotalAmount") or 0
+    explizit = re.findall(r"#SKONTO#TAGE=\d+#PROZENT=[\d.]+#BASISBETRAG=(\d+(?:\.\d{1,2})?)#", xml_text)
+    if explizit:
+        return round(float(explizit[0]) * 100) if len(set(explizit)) == 1 else 0
+    if zuschlag <= 0:
+        return brutto_cent
+    if ware and basis and not nachlass and round((ware + zuschlag) * 100) == round(basis * 100):
+        return round(brutto_cent * ware / basis)
+    return 0  # Basis ungeklaert: der Erzeuger zahlt dann voll, jeder Abzug ist ein Fehler
+
+
+def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute, teilbasis_sperrt=True):
     """@returns (None, frist) wenn der Abzug zu einer noch laufenden Stufe passt, sonst (Grund, None).
     Satz und Frist gehoeren zusammen: eine abgelaufene hoehere Stufe zaehlt nicht."""
+    if brutto_cent <= 0:
+        return "Skontobasis ungeklaert: der Erzeuger zahlt voll", None
     stufen = skonto_stufen(text, rechnungsdatum)
-    if re.search(r"ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|skontierf|nicht\s+skont|nicht\s+abzugsf|material|waren|fracht|versand|porto|nur\s+auf|teilbetrag|\(\s*(?:ohne|nicht|exkl)", text, re.I) and not any(b is not None for _, _, b in stufen):
+    # Nur fuer reine PDF-Rechnungen (wie der Erzeuger): bei XML rechnet der Erzeuger die Basis aus den Summen
+    # (z. B. Skonto nur auf den Warenanteil ohne Fracht); dort zaehlt nur die Obergrenze Satz x Rechnungsbetrag.
+    if teilbasis_sperrt and re.search(r"ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|skontierf|nicht\s+skont|nicht\s+abzugsf|material|waren|fracht|versand|porto|nur\s+auf|teilbetrag|\(\s*(?:ohne|nicht|exkl)", text, re.I) and not any(b is not None for _, _, b in stufen):
         return "Skonto nur auf einen Teil des Betrags: selbst pruefen", None
     if not stufen:
         return "Skontobedingung auf der Rechnung nicht lesbar", None
@@ -310,7 +330,7 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=No
                 elif not b.get("xml") and (len(gesamt) > 1 or (gesamt and cent(gesamt.pop().replace(".", "").replace(",", ".")) != cent(b["brutto"]))):
                     fehler.append(f"{wer}: widerspruechliche Gesamtbetraege auf der Rechnung")
                 # Skontofrist nur ab belegtem Rechnungsdatum (Archiv oder ausgeschrieben im Text), nie ab dem Maileingang.
-                grund, frist = skonto_pruefen(text, b.get("rechnungsdatum") or rechnungsdatum_aus_text(text, vorlage.get("datumVor")), abzug, cent(b["brutto"]), heute)
+                grund, frist = skonto_pruefen(text, b.get("rechnungsdatum") or rechnungsdatum_aus_text(text, vorlage.get("datumVor")), abzug, skonto_basis(text, cent(b["brutto"])) if b.get("xml") else cent(b["brutto"]), heute, teilbasis_sperrt=not b.get("xml"))
                 if abzug > cent(b["brutto"]) * SKONTO_MAX or genannt not in z["zweck"] or grund:
                     fehler.append(f"{wer}: Abzug {genannt} EUR nicht als Skonto belegt (Rechnung {b['brutto']:.2f}){': ' + grund if grund else ''}")
                 else:
