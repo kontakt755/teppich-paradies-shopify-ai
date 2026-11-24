@@ -3352,7 +3352,8 @@ Vertreter prüft weiter ein Mensch an der AB; der Prüfer übernimmt nur den mec
   folgt der Frist einer Laden-Aufgabe. Darunter der Abschnitt **Rechnungen** mit der Wochenzeile „geprüft · passt ·
   offen“ als Lebenszeichen (bleibt der Lauf mehr als 8 Tage aus, wird sie gelb und auf Heute steht ein To-do) und,
   eingeklappt, die nicht prüfbaren der letzten 14 Tage mit „Gesehen“. Einkaufspreise und der Entwurf an den
-  Lieferanten (Knopf „Text für den Lieferanten“, nur kopieren, nie senden) nur für den Inhaber.
-- **Mail an verkauf@:** vorbereitet, aber aus. Mit `mailAnVerkauf: true` geht je Rechnung mit Abweichung genau eine
-  Mail (ohne Einkaufspreise) an `verkaufAn`; eingeschaltet wird das erst nach ausdrücklichem Ja des Benutzers. Nie
-  eine Mail an Lieferanten.
+  Lieferanten (Knopf „Text für den Lieferanten“ auf Heute, nur kopieren, nie senden) für alle – Benutzer 24.11.:
+  Mitarbeiter dürfen hier EK sehen (anders als bei „Einkauf über Verkauf“).
+- **Mail an verkauf@:** seit 24.11. eingeschaltet (Ja des Benutzers). Mit `mailAnVerkauf: true` geht je Rechnung mit
+  Abweichung genau eine Mail mit Beträgen an `verkaufAn`, auch für noch nicht gemeldete der letzten 30 Tage
+  (`gemeldetAm`). Nie eine Mail an Lieferanten.

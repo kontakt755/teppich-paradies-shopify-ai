@@ -166,7 +166,7 @@ test('API: Uebersicht, Aufgabe anlegen, uebernehmen, zurueckgeben, erledigen', (
   assert.deepEqual(JSON.parse(fs.readFileSync(ladenZustaendigPfad(dir), 'utf8')), {}, 'Zustaendigkeit der erledigten Aufgabe ist weg');
 });
 
-test('API: Rechnungspruefung - Abweichung rot unter Zu tun, ohne Einkaufspreise; Erledigt nimmt sie heraus; Heute mit Betraegen nur fuer den Inhaber', () => {
+test('API: Rechnungspruefung - Abweichung rot unter Zu tun, mit Betraegen fuer alle (Benutzer 24.11.); Erledigt nimmt sie heraus', () => {
   const { dir, api } = umgebung();
   fs.mkdirSync(path.dirname(rechnungspruefungPfad(dir)), { recursive: true });
   fs.writeFileSync(rechnungspruefungPfad(dir), JSON.stringify({ laeufe: [{ am: vorTagen(1) }], rechnungen: {
@@ -176,11 +176,10 @@ test('API: Rechnungspruefung - Abweichung rot unter Zu tun, ohne Einkaufspreise;
   let d = api.ladenUebersicht();
   const zeile = d.todos.find(t => t.schluessel === 'rechnung:abc123');
   assert.equal(zeile.rot, true);
-  assert.doesNotMatch(JSON.stringify(d), /"ab":10|"brutto"/, 'die Ansicht Laden bekommt keine Einkaufspreise');
+  assert.match(zeile.hinweis, /10,00 € laut AB, 11,00 €/, 'Mitarbeiter duerfen EK sehen');
   assert.deepEqual(d.rechnungen.woche, { geprueft: 2, passt: 0, offen: 2 });
   assert.deepEqual(d.rechnungen.nichtPruefbar.map(e => e.schluessel), ['def456']);
-  assert.equal(api.einkaufBelege({ rolle: 'mitarbeiter' }).rechnungen.abweichungen[0].entwurf, undefined, 'Entwurf nur fuer den Inhaber');
-  assert.match(api.einkaufBelege({ rolle: 'inhaber' }).rechnungen.abweichungen[0].entwurf.text, /Gutschrift über 5,00 €/);
+  assert.match(api.einkaufBelege({ rolle: 'mitarbeiter' }).rechnungen.abweichungen[0].entwurf.text, /Gutschrift über 5,00 €/);
   api.ladenTelefonischSetzen({ schluessel: 'rechnung:abc123' });
   d = api.ladenUebersicht();
   assert.equal(d.todos.some(t => t.schluessel === 'rechnung:abc123'), false, 'Erledigt = weg');

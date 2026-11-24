@@ -370,7 +370,8 @@ gebraeuchlich), Erfassen.
 - **Ware beim Kunden / beim Kettler angekommen · beim Lieferanten abgeholt · Lieferschein unklar (12.11.)** = Zeilen im
   selben Abschnitt aus den digitalen Lieferscheinen von Lieferant A. Lieferungen in den Laden stehen dort nicht.
 - **Rechnung prüfen / Rechnungen (24.11.)** = rote Zeile unter „Zu tun“ in der Ansicht Laden: die automatische
-  Rechnungsprüfung hat eine Abweichung zur Auftragsbestätigung gefunden; „Erledigt“ nimmt sie heraus. Abschnitt
+  Rechnungsprüfung hat eine Abweichung zur Auftragsbestätigung gefunden (mit AB-Preis, Rechnungspreis und Betrag zu
+  viel; dieselbe Meldung kommt einmal als Mail an verkauf@); „Erledigt“ nimmt sie heraus. Abschnitt
   **Rechnungen** darunter: „geprüft · passt · offen“ der letzten 7 Tage und, eingeklappt, **nicht automatisch prüfbar**
   (keine AB gefunden oder Beleg nicht sicher lesbar) mit „Gesehen“.
 - **Übernehmen / Wer? / Zurückgeben** = ein Eintrag im Laden wird von einer Person übernommen (Name per Knopf, kein

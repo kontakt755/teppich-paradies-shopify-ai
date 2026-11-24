@@ -3222,7 +3222,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       // Rechnungspruefung (w-414): steht in jeder Antwort, auch wenn Belege oder Bestellungen fehlen.
       const mitPreisen = !benutzer || benutzer.rolle === 'inhaber';
-      const rechnungen = this._rechnungspruefung({ mitBetraegen: mitPreisen });
+      const rechnungen = this._rechnungspruefung();
       let ablage;
       try { ablage = leseBelege(lieferbelegePfad(dir)); }
       catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message, rechnungen }; throw e; }
@@ -3264,12 +3264,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /**
      * Ergebnisse des Rechnungspruefers (operations/scripts/rechnungen-pruefen.mjs) fuer Heute und Laden.
      * "Erledigt"/"Gesehen" im Laden blendet eine Rechnung aus (Ablage laden-telefonisch, Schluessel "rechnung:").
-     * Einkaufspreise und der Entwurf an den Lieferanten nur mit mitBetraegen (Inhaber). Kaputte Datei = null.
+     * Mit Einkaufspreisen und Entwurf an den Lieferanten fuer alle (Benutzer 24.11.: Mitarbeiter duerfen EK sehen).
+     * Kaputte Datei = null.
      */
-    _rechnungspruefung({ mitBetraegen = false } = {}) {
+    _rechnungspruefung() {
       const dir = privatDirPath || privatDir();
       try {
-        return rechnungsStand(leseRechnungspruefung(rechnungspruefungPfad(dir)), { jetzt: now(), gesehen: leseLadenTelefonisch(ladenTelefonischPfad(dir)), mitBetraegen });
+        return rechnungsStand(leseRechnungspruefung(rechnungspruefungPfad(dir)), { jetzt: now(), gesehen: leseLadenTelefonisch(ladenTelefonischPfad(dir)), mitBetraegen: true });
       } catch { return null; }
     },
 

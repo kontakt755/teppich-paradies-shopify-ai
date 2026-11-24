@@ -4,8 +4,8 @@
  * Wochenzeile "geprueft / passt / offen" als Lebenszeichen und die Texte (Mail an verkauf@, Entwurf fuer den
  * Lieferanten zum Kopieren). Reine Funktionen ohne DOM, ohne Dateien - Server, Browser und Tests nutzen sie gleich.
  *
- * Einkaufspreise sieht nur der Inhaber (wie lib/einkauf-ueber-verkauf.mjs): ohne `mitBetraegen` nennt eine
- * Abweichung nur Position und Art - das reicht, um Rechnung und AB nebeneinanderzulegen.
+ * Einkaufspreise duerfen hier auch die Mitarbeiter sehen (Benutzer 24.11.2026); der Server ruft `rechnungsStand`
+ * deshalb mit `mitBetraegen`. Ohne die Option nennt eine Abweichung nur Position und Art.
  */
 import { tageSeit, alterText, tonNachAlter, FRISTEN } from './todos.mjs';
 
@@ -80,7 +80,7 @@ export function rechnungLadenZeilen(stand, { jetzt = new Date() } = {}) {
       schluessel: `rechnung:${e.schluessel}`, art: 'Rechnung prüfen', von: e.anbieter || null, seit: e.eingang, alterTage, alter: alterText(alterTage),
       ton: tonNachAlter(alterTage, ...FRISTEN.laden_aufgabe), rot: true,
       text: `${titel(e)}: ${mehrzahl(e.abweichungen.length, 'Abweichung', 'Abweichungen')} zur Auftragsbestätigung`,
-      hinweis: `${e.abweichungen.map(a => abweichungText(a)).join(' · ')}. Rechnung und AB nebeneinanderlegen; stimmt die Rechnung nicht, Lieferant bzw. Vertreter anrufen.`,
+      hinweis: `${e.abweichungen.map(a => abweichungText(a, { mitBetraegen: Boolean(e.entwurf) })).join(' · ')}${e.entwurf && summe(e) > 0 ? ` · zusammen ${eur(summe(e))} zu viel` : ''}. Rechnung und AB nebeneinanderlegen; stimmt die Rechnung nicht, Lieferant bzw. Vertreter anrufen.`,
       erledigen: true,
     };
   });
@@ -113,15 +113,17 @@ export function rechnungTodos(stand, { jetzt = new Date(), href = '#/laden' } = 
   return todos;
 }
 
-/** Mail an verkauf@ (nur mit eingeschaltetem Schalter, siehe operations/scripts/rechnungen-pruefen.mjs). Ohne Betraege. */
+/** Mail an verkauf@ (nur mit eingeschaltetem Schalter, siehe operations/scripts/rechnungen-pruefen.mjs), mit Betraegen. */
 export function rechnungMail(e) {
   return {
     betreff: `Rechnung prüfen: ${titel(e)} weicht von der AB ab`,
     text: [
       'Hallo,', '',
       `die automatische Prüfung hat bei der ${titel(e)} Abweichungen zur Auftragsbestätigung gefunden:`, '',
-      ...e.abweichungen.map(a => `- ${abweichungText(a)}`), '',
+      ...e.abweichungen.map(a => `- ${abweichungText(a, { mitBetraegen: true })}`),
+      ...(summe(e) > 0 ? [`Zusammen ${eur(summe(e))} netto zu viel.`] : []), '',
       'Bitte Rechnung und AB nebeneinanderlegen. Stimmt die Rechnung nicht, den Lieferanten bzw. Vertreter anrufen.',
+      'Ein Textvorschlag für den Lieferanten steht im Control Center auf „Heute“ („Text für den Lieferanten“).',
       'Erledigt wird die Zeile im Control Center unter Laden („Erledigt“).', '',
       '(Automatische Nachricht aus dem Probebetrieb der Rechnungsprüfung)',
     ].join('\n'),

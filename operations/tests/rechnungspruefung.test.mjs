@@ -167,7 +167,8 @@ test('Control Center: Wochenzeile, rote Zeilen ohne Einkaufspreise, Entwurf nur 
   assert.equal(laden[0].rot, true);
   assert.equal(laden[0].ton, 'crit', 'Plakette nach Frist einer Laden-Aufgabe: nach 2 Tagen rot');
   assert.equal(rechnungLadenZeilen(s, { jetzt: new Date('2026-11-19T12:00:00Z') })[0].ton, '', 'frisch: Zeile rot, Plakette noch nicht');
-  assert.doesNotMatch(laden[0].hinweis, /€/);
+  assert.doesNotMatch(laden[0].hinweis, /€/, 'ohne mitBetraegen keine Betraege');
+  assert.match(rechnungLadenZeilen(rechnungsStand(ERG, { jetzt, mitBetraegen: true }), { jetzt })[0].hinweis, /zusammen 10,00 € zu viel/);
   const todos = rechnungTodos(s, { jetzt });
   assert.deepEqual(todos.map(t => [t.id, t.ton]), [['rechnung-aaaa', 'crit'], ['rechnungen-nicht-pruefbar', '']]);
   assert.equal(todos[0].knopf.href, '#/laden');
@@ -175,7 +176,7 @@ test('Control Center: Wochenzeile, rote Zeilen ohne Einkaufspreise, Entwurf nur 
   assert.equal(inhaber[0].knopf.vertreter, 'rechnung-aaaa');
   assert.match(inhaber[0].kontext, /10,00 € mehr/);
   assert.match(lieferantEntwurf(ERG.rechnungen.a).text, /Gutschrift über 10,00 € netto/);
-  assert.doesNotMatch(rechnungMail(ERG.rechnungen.a).text, /€/, 'Mail an verkauf@ ohne Einkaufspreise');
+  assert.match(rechnungMail(ERG.rechnungen.a).text, /Zusammen 10,00 € netto zu viel/, 'Mail an verkauf@ mit Betraegen (Benutzer 24.11.)');
   // Lebenszeichen: bleibt der Lauf aus, steht es auf Heute.
   const spaet = new Date('2026-12-05T10:00:00Z');
   assert.ok(rechnungTodos(rechnungsStand(ERG, { jetzt: spaet }), { jetzt: spaet }).some(t => t.id === 'rechnungen-lauf'));
@@ -217,14 +218,15 @@ test('rechnungenPruefen: Warenrechnung aus dem Archiv, AB aus der Lieferbeleg-Ab
   const nochmal = await rechnungenPruefen({ privatDir: dir, monat: '2026-11', schreiben: true, jetzt, analyse, texte, senden });
   assert.equal(nochmal.geprueft, 0, 'schon gepruefte Rechnungen bleiben');
 
-  // Schalter an (erst nach Ja des Benutzers): genau eine Mail an verkauf@, ohne Einkaufspreise.
-  fs.rmSync(ergebnissePfad(dir));
+  // Schalter an (Ja des Benutzers 24.11.): die schon gefundene Abweichung geht genau einmal an verkauf@, mit Betraegen.
   fs.writeFileSync(einstellungenPfad(dir), JSON.stringify({ mailAnVerkauf: true, verkaufAn: 'verkauf@example.test' }));
   fs.mkdirSync(path.join(dir, 'nachfassen'));
   fs.writeFileSync(path.join(dir, 'nachfassen', 'postfach.json'), JSON.stringify({ host: 'smtp.example.test', port: 465, benutzer: 'x', passwort: 'test', absender: 'laden@example.test' }), { mode: 0o600 });
   const mitMail = await rechnungenPruefen({ privatDir: dir, monat: '2026-11', schreiben: true, jetzt, analyse, texte, senden });
-  assert.equal(mitMail.gemeldet, 1);
+  assert.deepEqual([mitMail.geprueft, mitMail.gemeldet], [0, 1], 'nachgeholt, ohne neu zu pruefen');
   assert.deepEqual(gesendet[0].an, ['verkauf@example.test']);
-  assert.doesNotMatch(gesendet[0].text, /€/);
-  assert.ok(Object.values(leseErgebnisse(ergebnissePfad(dir)).rechnungen)[0].gemeldetAm, 'nur einmal je Rechnung');
+  assert.match(gesendet[0].text, /10,00 €/);
+  assert.ok(Object.values(leseErgebnisse(ergebnissePfad(dir)).rechnungen)[0].gemeldetAm);
+  const danach = await rechnungenPruefen({ privatDir: dir, monat: '2026-11', schreiben: true, jetzt, analyse, texte, senden });
+  assert.equal(danach.gemeldet, 0, 'nur einmal je Rechnung');
 });

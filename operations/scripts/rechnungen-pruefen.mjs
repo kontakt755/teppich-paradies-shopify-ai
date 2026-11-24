@@ -10,8 +10,8 @@
  * neue Rechnungen und solche, die in den letzten 14 Tagen nicht pruefbar waren (die AB kann spaeter kommen).
  * AB-Texte kommen nur lesend aus dem Postfach (wie bei den Lieferbelegen) und werden nie gespeichert.
  * Ergebnis: $TP_PRIVAT_DIR/rechnungspruefung/ergebnisse.json - das Control Center zeigt es (Heute, Laden).
- * Mail an verkauf@ nur mit einstellungen.json "mailAnVerkauf": true; eingeschaltet wird das erst nach
- * ausdruecklichem Ja des Benutzers. Nie eine Mail an Lieferanten. Die Ausgabe nennt nur Zahlen.
+ * Mail an verkauf@ nur mit einstellungen.json "mailAnVerkauf": true (Ja des Benutzers 24.11.2026), je Abweichung
+ * einmal, auch fuer schon gefundene der letzten 30 Tage. Nie eine Mail an Lieferanten. Die Ausgabe nennt nur Zahlen.
  */
 
 import fs from 'node:fs';
@@ -33,6 +33,8 @@ const AB_FENSTER_TAGE = 150;
 /** So lange wird eine nicht pruefbare Rechnung erneut versucht. */
 const NOCHMAL_TAGE = 14;
 const LAEUFE_MAX = 60;
+/** Bis so weit zurueck werden noch nicht gemeldete Abweichungen per Mail nachgeholt. */
+const MAIL_NACHHOLEN_TAGE = 30;
 
 const jsonLesen = (p, ersatz) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return ersatz; } };
 
@@ -96,11 +98,14 @@ export async function rechnungenPruefen({ privatDir, monat, schreiben = false, j
   const zahlen = { monat, faellig: faellig.length, geprueft: Object.keys(neu).length, abGeholt: Object.keys(abTexte).length, passt: 0, abweichung: 0, nicht_pruefbar: 0 };
   for (const e of Object.values(neu)) zahlen[e.ergebnis] += 1;
 
-  // Mail an verkauf@ nur mit eingeschaltetem Schalter und nur einmal je Rechnung.
+  // Mail an verkauf@ nur mit eingeschaltetem Schalter und nur einmal je Rechnung - auch fuer Abweichungen aus
+  // frueheren Laeufen, die noch keine Mail hatten (Schalter spaeter eingeschaltet).
+  const alle = { ...ablage.rechnungen, ...neu };
   let gemeldet = 0;
   if (schreiben && einst.mailAnVerkauf && einst.verkaufAn) {
     const pf = lesePostfach(postfachPfad(privat));
-    for (const e of Object.values(neu).filter(x => x.ergebnis === 'abweichung' && !x.gemeldetAm)) {
+    const ab = jetzt.getTime() - MAIL_NACHHOLEN_TAGE * TAG_MS;
+    for (const e of Object.values(alle).filter(x => x.ergebnis === 'abweichung' && !x.gemeldetAm && Date.parse(x.eingang) >= ab)) {
       if (!pf.zugang) break;
       const m = rechnungMail(e);
       await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [einst.verkaufAn], betreff: m.betreff, text: m.text });
@@ -113,7 +118,7 @@ export async function rechnungenPruefen({ privatDir, monat, schreiben = false, j
   const pfad = ergebnissePfad(privat);
   fs.mkdirSync(path.dirname(pfad), { recursive: true, mode: 0o700 });
   const daten = {
-    version: 1, rechnungen: { ...ablage.rechnungen, ...neu },
+    version: 1, rechnungen: alle,
     laeufe: [...ablage.laeufe, { am: jetzt.toISOString(), ...zahlen, gemeldet }].slice(-LAEUFE_MAX),
   };
   const temp = `${pfad}.${process.pid}.tmp`;
