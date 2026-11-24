@@ -888,7 +888,9 @@ function drucken(liste, titel, { nurOffen = false, blatt = false } = {}) {
   if (nummern) void blattOeffnen(nummern);
   // Der erste Druck zaehlt; Gepacktes wird nur neu etikettiert.
   const vorbereiten = liste.filter(k => !k.gepackt && !k.gedruckt).map(k => k.packSchluessel);
-  oeffneEtikettenDruck({ etiketten, titel, allowEditing: false,
+  // Anzahl je Motiv nur bei einer Bestellung: im Sammeldruck wuerden gleiche Motive mehrerer Kunden
+  // an einer Stelle zusammengezogen und die Packreihenfolge der Rolle stimmte nicht mehr.
+  oeffneEtikettenDruck({ etiketten, titel, allowEditing: false, mehrfach: liste.length === 1,
     hinweis: 'Je Kunde erst die Muster, zuletzt die Adresse – so kommt die Rolle in Packreihenfolge heraus. Nach dem Druck steht der Umschlag als „vorbereitet“ in der Packstation; versandt oder gebucht wird nichts.',
     druckFertig: () => { void vermerkeGedruckt(vorbereiten); },
     beiSchliessen: ({ versucht } = {}) => { if (versucht) render(); return true; } });
