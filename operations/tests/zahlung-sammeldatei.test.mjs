@@ -395,12 +395,17 @@ test('Mail an den Laden: Text aus der Pruefliste, Datei und Liste im Anhang; ohn
   fs.mkdirSync(path.join(privat, 'nachfassen'));
   fs.writeFileSync(path.join(privat, 'nachfassen', 'postfach.json'), JSON.stringify({ host: 'smtp.example.com', port: 465, benutzer: 'a@example.com', passwort: 'x', absender: 'a@example.com' }), { mode: 0o600 });
   let gesendet;
-  assert.equal(await laufMailen({ privat, ergebnis: e, senden: async (zugang, mail) => { gesendet = mail; } }), 'gesendet an laden@example.com');
+  assert.equal(await laufMailen({ privat, ergebnis: e, senden: async (zugang, mail) => { gesendet = mail; }, pruefen: () => ({ frei: true, bericht: 'FREI: Testdatei' }) }), 'gesendet an laden@example.com');
   assert.deepEqual(gesendet.an, ['laden@example.com']);
   assert.equal(gesendet.betreff, 'Sammelüberweisung 2026-11-10: 3 Zahlungen, 1967,00 EUR, 4 von Hand prüfen');
   assert.match(gesendet.text, /- Muster & Söhne GmbH, Rechnung 700001 vom 2026-10-28: 491,00 EUR \(mit Skonto\)/);
   assert.match(gesendet.text, /Von Hand prüfen \(4\):/);
   assert.deepEqual(gesendet.anhaenge.map(a => a.name), [e.datei, e.pruefliste]);
+  assert.match(gesendet.text, /FREI: Testdatei$/);
+  // Findet der Zwischenpruefer Fehler (oder laeuft nicht), steht das in Betreff und erster Zeile.
+  await laufMailen({ privat, ergebnis: e, senden: async (zugang, mail) => { gesendet = mail; }, pruefen: () => ({ frei: false, bericht: 'FEHLER x' }) });
+  assert.match(gesendet.betreff, /^NICHT HOCHLADEN – Sammelüberweisung/);
+  assert.match(gesendet.text, /^Der Zwischenprüfer hat Fehler gefunden/);
   const { betreff } = mailInhalt('', { lauf: '2026-11-13', datei: null, zahlungen: 0, summe: 0 });
   assert.equal(betreff, 'Sammelüberweisung 2026-11-13: keine Datei');
 });
