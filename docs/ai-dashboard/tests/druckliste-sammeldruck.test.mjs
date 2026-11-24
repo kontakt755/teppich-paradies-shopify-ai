@@ -56,6 +56,17 @@ test('Stueckzahl nur bei Einzeldrucken: Sammeldruck und Bestaetigung behalten ih
   const baustein = await lies('bausteine/etiketten-druck.mjs');
   assert.match(baustein, /druck\.mehrfach = mehrfach && !freierText && !beiBestaetigen/);
   assert.match(await lies('ansichten/kunden/muster-packen.mjs'), /allowEditing: false, mehrfach: true,\n\s+hinweis: `Gehört in/);
+  // Packstation: Anzahl nur beim Druck einer einzelnen Bestellung, nie im Sammeldruck mehrerer Kunden.
+  assert.match(await lies('ansichten/kunden/muster-packen.mjs'), /allowEditing: false, mehrfach: liste\.length === 1,/);
   assert.doesNotMatch(await lies('ansichten/muster-druckliste.mjs'), /mehrfach/);
   assert.doesNotMatch(await lies('ansichten/kunden/musteretiketten.mjs'), /mehrfach/);
+});
+
+test('Bestelldruck: geaenderte Anzahl zaehlt in Summe und Reihenfolge, Adresse bleibt zuletzt', () => {
+  const a = etikett(1), b = etikett(2), adresse = { ...etikett(3), serie: 'Adresse' };
+  const liste = setzeMotivAnzahl([a, b, adresse], motivSchluessel(a), 2);
+  assert.deepEqual(liste.map(e => e.sku), [a.sku, a.sku, b.sku, adresse.sku]);
+  assert.equal(liste.length, 4);
+  assert.equal(druckVorschau(liste).motive, 3);
+  assert.deepEqual(druckVorschau(liste).eintraege.map(e => e.anzahl), [2, 1, 1]);
 });
