@@ -894,6 +894,10 @@ Musterversand ganz, die lieferbaren Muster gehen trotzdem raus. `nurMusterversan
 (`operations/lib/muster.mjs`): reine Musterbestellung, voll erstattet, keine Position entfernt, nicht
 storniert (eine Teilerstattung bleibt „Restumfang prüfen“). Die Bestellübersicht führt sie dann als `bezahlt: PAID` (Automatik, Packliste, Listen laufen
 weiter), die Musterwirkung zählt sie mit. Storniert oder Positionen erstattet: wie bisher heraus.
+Die Bestellung trägt dazu `musterversand`: `bezahlt` (reine Musterbestellung, bezahlt, Betrag > 0) oder `erstattet`;
+Gratisbestellungen tragen nichts. Die Packstation zeigt bei `bezahlt` und einem gesperrten Muster den Hinweis
+„4,99 € in Shopify erstatten (komplett)“ mit Link zur Bestellung (`musterversandErstattung()`,
+`versandErstattungHtml()`), bei `erstattet` das Kennzeichen „Versand erstattet“. Erstattet wird nie vom Control Center.
 
 **Kennzahl „Ø je Bestellung ohne Muster“** (seit 2026-10-12, bis 19.11. „Ø je bezahlter Bestellung“): Umsatz geteilt durch die Bestellungen **mit
 Betrag** – Musterbestellungen zählen nicht mit (vorher lag der Schnitt dadurch bei einem

@@ -31,6 +31,20 @@ export const ohneMusterMoeglich = (k, m) => !!m?.gesperrt
   && (k.muster.some(x => !x.gesperrt) || k.bestellungen.some(b => b.orderId === m.orderId && b.mitWare));
 
 /** Darf "Kunde informieren…" abschliessen? Der Schritt gilt je ganze Bestellung, also nie, wo Ware oder ein lieferbares Muster dranhaengt. */
+/**
+ * Erstattungsregel Musterversand (Inhaber 19.11.2026): fehlt ein Muster, erstattet ein Mensch in Shopify die
+ * 4,99 € ganz; die uebrigen Muster gehen trotzdem raus. Nur fuer Bestellungen mit bezahltem Musterversand.
+ * shortcut: der Hinweis haengt am gesperrten Muster im Umschlag; nach "Ohne dieses Muster weiter packen" ist er weg.
+ * Aendern, falls Erstattungen in der Praxis vergessen werden (dann den Schritt je Position auswerten).
+ * @param {object} k  Umschlag aus der Packliste
+ * @returns {{erstatten: object[], erstattet: object[]}}  erstatten = Bestellungen mit gesperrtem Muster, noch nicht erstattet
+ */
+export function musterversandErstattung(k) {
+  const fehlt = new Set((k.muster || []).filter(m => m.gesperrt).map(m => m.orderId));
+  const b = k.bestellungen || [];
+  return { erstatten: b.filter(x => x.musterversand === 'bezahlt' && fehlt.has(x.orderId)), erstattet: b.filter(x => x.musterversand === 'erstattet') };
+}
+
 export const umschlagAbschliessbar = k => k.muster.every(m => m.gesperrt) && !k.bestellungen.some(b => b.mitWare);
 
 export const umschlagKennung = k => (k.bestellungen || []).map(b => b.orderName).filter(Boolean).join(' / ') || k.packSchluessel;
@@ -213,7 +227,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       if (a.bezahlt === 'PARTIALLY_REFUNDED') { g.teilweiseErstattet = true; g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.'); }
       if (positionen.some(p => direkt(a, p))) { g.direktversand = true; g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.'); }
       // Gleiche Regel wie auftragsart(): mit Ware kennt die Bestellung den Schritt "Muster nicht verfuegbar" nicht.
-      g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null, ...((a.positionen || []).some(p => p?.istMuster !== true) ? { mitWare: true } : {}) });
+      g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null, ...((a.positionen || []).some(p => p?.istMuster !== true) ? { mitWare: true } : {}),
+        ...(a.musterversand ? { musterversand: a.musterversand, adminUrl: a.adminUrl || null } : {}) });
       // Die neueste Bestellung traegt die aktuellste Anschrift.
       if (!g.adresse || (a.datum || '') >= (g.adresse.datum || '')) {
         g.adresse = { ...(a.details?.lieferadresse || {}), datum: a.datum || '' };

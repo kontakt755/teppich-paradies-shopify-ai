@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, offeneSuche, packSchluessel, packSuche, sammelliste, STAND_TEXT } from '../lib/muster-packen.mjs';
+import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, offeneSuche, packSchluessel, packSuche, sammelliste, STAND_TEXT, musterversandErstattung } from '../lib/muster-packen.mjs';
 import { adressEtikett, adressLayout, ABSENDER } from '../lib/adress-etiketten.mjs';
 import { ETIKETT_FORMATE } from '../lib/muster-etiketten.mjs';
 
@@ -724,4 +724,22 @@ test('Sammelliste: nur packbereite, nicht eingelegte Muster, gleiche zusammengef
     [null, 'Ohne', 1, '#2'],
     [null, 'Schlinge', 1, '#1'],
   ], 'numerisch nach Fach (B 2 vor B 10), Lager ohne Fach vor Angekommenem; abgehakt und nicht packbereit fallen weg');
+});
+
+// Erstattungsregel Musterversand (Inhaber 19.11.2026, w-399): Hinweis nur bei bezahltem Musterversand und gesperrtem Muster.
+test('Musterversand: erstatten nur bei bezahltem Versand mit gesperrtem Muster; erstattete Bestellung bleibt im Packablauf', () => {
+  const sperreVon = p => (p.lineItemId.endsWith('/961') ? { imShop: true } : null);
+  const fall = (id, extra) => musterPackliste({ produkte, schluesselVon, jetzt, sperreVon, auftraege: [
+    auftrag(id, '2026-12-02', 'Anna Test', [pos(961, '101'), pos(962, '101')], { adminUrl: 'https://admin.example/9', ...extra })] }).kunden[0];
+  const bezahlt = musterversandErstattung(fall(96, { musterversand: 'bezahlt' }));
+  assert.deepEqual(bezahlt.erstatten.map(b => [b.orderName, b.adminUrl]), [['#T96', 'https://admin.example/9']]);
+  assert.equal(bezahlt.erstattet.length, 0);
+  assert.deepEqual(musterversandErstattung(fall(96, {})), { erstatten: [], erstattet: [] }, 'kostenlose Musterbestellung: kein Hinweis');
+  // Voll erstattet: operations/lib/bestelluebersicht.mjs meldet weiter bezahlt PAID - der Umschlag bleibt, mit Kennzeichen.
+  const erstattet = fall(96, { musterversand: 'erstattet' });
+  assert.equal(erstattet.muster.length, 2);
+  assert.deepEqual(musterversandErstattung(erstattet).erstattet.map(b => b.orderName), ['#T96']);
+  assert.equal(musterversandErstattung(erstattet).erstatten.length, 0, 'schon erstattet: nicht noch einmal auffordern');
+  const ohneSperre = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(97, '2026-12-02', 'Berta Beispiel', [pos(971, '101')], { musterversand: 'bezahlt' })] }).kunden[0];
+  assert.equal(musterversandErstattung(ohneSperre).erstatten.length, 0, 'nichts fehlt: nichts erstatten');
 });

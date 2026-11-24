@@ -582,6 +582,12 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     if (!['PAID', 'PARTIALLY_REFUNDED'].includes(String(bezahlt))) gelb(`Zahlung: ${bezahlt}`);
     if (!offen) { ampel = 'grau'; hinweise.unshift(order.cancelledAt ? 'Storniert' : order.closedAt ? 'In Shopify archiviert' : 'Erledigt'); }
 
+    const details = vollstaendigeDetails(order, positionen);
+    // Bezahlter Musterversand (Test ab 01.12.2026), nur reine Musterbestellungen: 'bezahlt' = bei einem
+    // fehlenden Muster ist die Erstattung faellig, 'erstattet' = schon geschehen. Gratisbestellungen: nichts.
+    const musterversand = nurMusterversandErstattet(order) ? 'erstattet'
+      : order.displayFinancialStatus === 'PAID' && positionen.length && positionen.every(p => p.istMuster) && details.summen.gesamt?.betrag > 0 ? 'bezahlt' : null;
+
     const auftrag = {
       id: order.id,
       name: order.name,
@@ -591,6 +597,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       archiviert: !!order.closedAt,
       testbestellung: istTest,
       bezahlt,
+      ...(musterversand ? { musterversand } : {}),
       erfuellt: order.displayFulfillmentStatus ?? '–',
       // Sendungen aus Shopify (Zeitleiste: "an Kunden raus" bzw. "zugestellt" automatisch erkennen).
       sendungen: knoten(order.fulfillments).map(f => ({ status: f.displayStatus || f.status || null, am: f.createdAt || null, aktualisiertAm: f.updatedAt || null,
@@ -611,7 +618,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         nachfrage: jaNein(attributWert(order, 'Nachfrage erlaubt')),
       },
       positionen,
-      details: vollstaendigeDetails(order, positionen),
+      details,
     };
     (istTest ? testauftraege : auftraege).push(auftrag);
   }
