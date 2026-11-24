@@ -1,0 +1,58 @@
+{%- doc -%}
+  Kategorietext aus der Kollektionsbeschreibung, geteilt an der ersten <h2>
+  (Kategorietexte 2026-11-24). Fuer Vorlagen, die die Beschreibung oben im Kopf
+  zeigen: oben "einleitung" (alles vor der ersten <h2>), unter dem Produktraster
+  "rest" (ab der ersten <h2>, inklusive "Häufige Fragen"). Ohne <h2> bleibt die
+  Beschreibung ganz oben und unten erscheint nichts - bestehende Texte aendern
+  sich nicht. "alles" fuer Vorlagen, deren Kopf eigenen Text hat (Hero).
+  FAQ-Markup: snippets/tp-seiten-faq-structured-data.
+{%- enddoc -%}
+
+{%- liquid
+  assign tpkt_html = collection.description
+  assign tpkt_teile = tpkt_html | split: '<h2'
+  if block.settings.teil == 'rest'
+    if tpkt_teile.size > 1
+      assign tpkt_html = tpkt_html | remove_first: tpkt_teile[0]
+    else
+      assign tpkt_html = ''
+    endif
+  elsif block.settings.teil == 'einleitung'
+    assign tpkt_html = tpkt_teile[0]
+  endif
+-%}
+
+{%- if tpkt_html != blank -%}
+  <div
+    class="spacing-style text-block rte tp-kategorie-text"
+    style="--width: fit-content; --max-width: var(--max-width--body-normal);"
+    {{ block.shopify_attributes }}
+  >
+    {{ tpkt_html }}
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Kategorietext",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "teil",
+      "label": "Teil der Beschreibung",
+      "options": [
+        { "value": "einleitung", "label": "Einleitung (vor der ersten H2)" },
+        { "value": "rest", "label": "Rest (ab der ersten H2)" },
+        { "value": "alles", "label": "Ganze Beschreibung" }
+      ],
+      "default": "einleitung"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Kategorietext"
+    }
+  ]
+}
+{% endschema %}

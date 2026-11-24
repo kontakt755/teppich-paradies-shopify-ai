@@ -47,3 +47,18 @@ test('fail closed: falsche Ebene oder abweichende Ueberschrift gibt nichts aus',
   assert.equal(await faq(produkt, 'h2'), null);
   assert.equal(await faq('<h2>Häufige Fragen zum Ketteln</h2><h3>F?</h3><p>A</p>', 'h2'), null);
 });
+
+// Kategorietexte (2026-11-24): blocks/tp-kategorie-text teilt die Beschreibung an der ersten h2.
+const block = new Liquid();
+const teil = (html, t) => block.parseAndRender(
+  ohneDoc('blocks/tp-kategorie-text.liquid').replace(/{%\s*schema\s*%}[\s\S]*$/, ''),
+  { collection: { description: html }, block: { settings: { teil: t }, shopify_attributes: '' } },
+).then((s) => s.replace(/<[^>]*class="spacing-style[^>]*>|<\/div>/g, '').trim());
+
+test('Kategorietext: Einleitung oben, Rest ab der ersten h2, ohne h2 unten nichts', async () => {
+  assert.equal(await teil(seite.replace('<h2>', '<p>Intro</p><h2>'), 'einleitung'), '<p>Intro</p>');
+  assert.ok((await teil('<p>Intro</p>' + seite, 'rest')).startsWith('<h2>Versand</h2>'));
+  assert.equal(await teil('<p>Nur Intro</p>', 'rest'), '');
+  assert.equal(await teil('<p>Nur Intro</p>', 'einleitung'), '<p>Nur Intro</p>');
+  assert.equal(await teil('<p>I</p><h2>X</h2>', 'alles'), '<p>I</p><h2>X</h2>');
+});
