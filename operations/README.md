@@ -788,6 +788,34 @@ die Überschrift „Abrechnung KW …“ nennt schon die Folgewoche und wird nic
   den Dienst als stumm.
 - Nicht dabei: der GLS-Floater (monatlich, andere Formel) – bleibt von Hand.
 
+## Mail-Entwürfe aus dem Ordner (alle 5 Minuten)
+
+Für Entwürfe mit Anhang, die eine KI nicht selbst hochladen kann (Cloud-Sitzung, geplante
+Aufgabe, ChatGPT): Anhänge und **zuletzt** eine JSON-Datei nach
+`$TP_PRIVAT_DIR/mail-entwuerfe/eingang/` legen:
+
+```json
+{ "an": ["kunde@beispiel.de"], "cc": [], "betreff": "…", "text": "Klartext …", "anhaenge": ["formular.pdf"] }
+```
+
+`npm run -s mail-entwuerfe` (`scripts/mail-entwuerfe.mjs`, Logik `lib/mail-entwuerfe.mjs`, Tests
+`tests/mail-entwuerfe.test.mjs`) baut daraus die Mail (`baueNachricht` aus `lib/smtp.mjs`) und legt sie
+per IMAP `APPEND` in den Ordner mit dem Kennzeichen `\Drafts` von kontakt@ – Zugang wie der
+Nachfass-Versand (`nachfassen/postfach.json`, App-Passwort), kein eigenes OAuth. Der Benutzer klickt in
+Gmail nur noch Senden.
+
+- **Sendet nie:** kein SMTP-Aufruf, `APPEND` nur in den Entwürfe-Ordner.
+- Danach liegen Auftrag und Anhänge unter `erledigt/<Zeit>-<Name>/`. Unbrauchbare Aufträge (kaputtes
+  JSON, ungültige Adresse, Pfad im Anhangsnamen, Dateityp außer pdf/jpg/png/txt/csv/zip/docx/xlsx,
+  über 20 MB) gehen mit `FEHLER.txt` nach `fehler/`. Fehlt ein Anhang noch (Sync unterwegs), wartet
+  der Auftrag bis zu 24 h. Scheitert die Anmeldung oder das Netz, bleibt er liegen.
+- Anhangsnamen erscheinen in der Mail ohne Umlaute und Leerzeichen (`Formular ä 1.pdf` → `Formular_a_1.pdf`).
+- Dienst: Vorlage `launchagents/net.teppich-paradies.mail-entwuerfe.plist.vorlage`, Einrichten mit
+  `bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe` (Plist zeigt auf `~/tp-dashboard`).
+  Leerer Eingang: keine Anmeldung. Protokoll `~/Library/Logs/teppich-paradies-mail-entwuerfe.log`.
+- Noch nicht dabei (shortcut): Statusdatei für den Systemzustand im Control Center; Fehler stehen
+  bisher nur im Protokoll und in `fehler/`.
+
 ## Google-Bewertung im Shop (monatlich)
 
 `npm run -s google-bewertung -- --schreiben` holt Note und Anzahl aus der Datenquelle des

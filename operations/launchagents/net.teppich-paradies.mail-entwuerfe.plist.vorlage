@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.mail-entwuerfe</string>
+
+  <!-- Gmail-Entwuerfe mit Anhang aus $TP_PRIVAT_DIR/mail-entwuerfe/eingang/ anlegen
+       (operations/scripts/mail-entwuerfe.mjs): je Auftrag eine JSON-Datei plus Anhaenge daneben,
+       IMAP APPEND in den Entwuerfe-Ordner von kontakt@, danach nach erledigt/ bzw. fehler/.
+       Sendet nie. Leerer Eingang: keine Anmeldung. Ohne KI-Kontingent.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard.
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-mail-entwuerfe -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__HOME__/tp-dashboard/operations/scripts/mail-entwuerfe.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>__HOME__/tp-dashboard</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>PATH</key><string>__NODE_DIR__:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+  <key>StartInterval</key><integer>300</integer>
+  <key>RunAtLoad</key><true/>
+  <key>ProcessType</key><string>Background</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/teppich-paradies-mail-entwuerfe.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/teppich-paradies-mail-entwuerfe.log</string>
+</dict>
+</plist>

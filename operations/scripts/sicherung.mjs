@@ -158,6 +158,7 @@ export const DIENSTE_ORDNER = 'dienste';
  */
 export const NICHT_GESICHERT = Object.freeze({
   'nachfassen/postfach.json': 'Zugang zum Firmenpostfach - neu anlegen',
+  'mail-entwuerfe': 'Durchgangsordner fuer Entwurfsauftraege - die Entwuerfe selbst liegen in Gmail',
   'laden-postfach.json': 'Zugang zum Laden-Postfach - neu anlegen',
   'laden-mails.json': 'Zwischenspeicher der Laden-Mails - wird beim naechsten Abruf neu aufgebaut',
   'ek-liste': 'Abgeleitete EK-Tabelle (58 MB, von Hand angestossen), nur gelesen fuer die Warnung im Bestelldialog - fehlt sie, steht dort "Rohertrag unbekannt"',

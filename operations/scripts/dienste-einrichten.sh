@@ -15,6 +15,11 @@
 #   bash operations/scripts/dienste-einrichten.sh --postfach-entwuerfe
 #   bash operations/scripts/dienste-einrichten.sh --gel-diesel
 #   bash operations/scripts/dienste-einrichten.sh --sammeldatei
+#   bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe
+#
+# --mail-entwuerfe richtet net.teppich-paradies.mail-entwuerfe ein: alle 5 Minuten Gmail-Entwuerfe
+# mit Anhang aus ~/teppich-paradies-analyse/mail-entwuerfe/eingang/ anlegen, nie senden
+# (operations/scripts/mail-entwuerfe.mjs). Plist zeigt auf ~/tp-dashboard.
 #
 # --gel-diesel richtet net.teppich-paradies.gel-diesel ein: traegt den woechentlichen Dieselzuschlag
 # der Spedition (GEL) dienstags und montags 9:30 Uhr in die private Tarifdatei ein
@@ -61,9 +66,10 @@ AUSSER_HAUS_LABEL="net.teppich-paradies.sicherung-ausser-haus"
 NACHZIEHEN_LABEL="net.teppich-paradies.nachziehen"
 GEL_DIESEL_LABEL="net.teppich-paradies.gel-diesel"
 SAMMELDATEI_LABEL="net.teppich-paradies.sammeldatei"
+MAIL_ENTWUERFE_LABEL="net.teppich-paradies.mail-entwuerfe"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--sammeldatei" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --sammeldatei]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--sammeldatei" && "$1" != "--mail-entwuerfe" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --sammeldatei | --mail-entwuerfe]\n' >&2
   exit 1
 fi
 
@@ -264,6 +270,26 @@ sammeldatei_einrichten() {
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-sammeldatei.log"
 }
 
+mail_entwuerfe_einrichten() {
+  schritt "Gmail-Entwuerfe aus dem Ordner (${MAIL_ENTWUERFE_LABEL})"
+  if [[ ! -f "${HOME}/teppich-paradies-analyse/nachfassen/postfach.json" ]]; then
+    fehler "Postfach-Zugang fehlt: ~/teppich-paradies-analyse/nachfassen/postfach.json"
+    return 1
+  fi
+  mkdir -p "${HOME}/teppich-paradies-analyse/mail-entwuerfe/eingang"
+  chmod 700 "${HOME}/teppich-paradies-analyse/mail-entwuerfe"
+  vorlage_einrichten "${MAIL_ENTWUERFE_LABEL}" || return 1
+  ok "Alle 5 Minuten: Auftraege aus mail-entwuerfe/eingang/ werden Entwuerfe in kontakt@; sendet nie."
+  if [[ ! -f "${HOME}/tp-dashboard/operations/scripts/mail-entwuerfe.mjs" ]]; then
+    fehlt "Das Skript fehlt in ~/tp-dashboard noch - erst main nachziehen; bis dahin schlaegt der Lauf fehl."
+  fi
+  hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-mail-entwuerfe.log"
+}
+
+if [[ "${1:-}" == "--mail-entwuerfe" ]]; then
+  mail_entwuerfe_einrichten
+  exit 0
+fi
 if [[ "${1:-}" == "--sammeldatei" ]]; then
   sammeldatei_einrichten
   exit 0

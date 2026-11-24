@@ -17,7 +17,8 @@
  * Unzustellbar-Meldung): nachrichtenNurLesend() holt erst die Koepfe und nur fuer die passenden
  * den Rumpf. Das Rechnungs-Archiv (belege:monat) holt ganze Nachrichten (mitNurLesen).
  * Beides unter EXAMINE und nur mit BODY.PEEK - das setzt kein \Seen. Es gibt hier bewusst keinen
- * Befehl, der etwas aendert (kein STORE, COPY, EXPUNGE, APPEND).
+ * Befehl, der etwas aendert (kein STORE, COPY, EXPUNGE, APPEND). Einzige schreibende Stelle ist
+ * lib/mail-entwuerfe.mjs: APPEND in den Entwuerfe-Ordner ueber verbinde() mit Literal.
  */
 
 import tls from 'node:tls';
@@ -168,6 +169,8 @@ export function verbinde({ host, port = 993, verbinden = tls.connect, zeitLimitM
         return resolve({ befehl, schliessen });
       }
       if (!warten) return;
+      // Fortsetzung (+): der Server will das angekuendigte Literal (APPEND).
+      if (warten.literal && /^\+/.test(z)) { sock.write(warten.literal); sock.write('\r\n'); warten.literal = null; return; }
       const m = /^(A\d+) (OK|NO|BAD)\b ?(.*)$/i.exec(z);
       if (m && m[1] === warten.marke) {
         const w = warten;
@@ -230,14 +233,15 @@ export function verbinde({ host, port = 993, verbinden = tls.connect, zeitLimitM
     });
     sock.on('error', e => fehler(new ImapFehler(`IMAP: ${e.code || e.message}`)));
     sock.on('close', () => fehler(new ImapFehler('IMAP: Verbindung beendet')));
-    function befehl(text) {
+    /** literal (Buffer): wird als {n} angekuendigt und nach der Fortsetzung des Servers gesendet. */
+    function befehl(text, literal = null) {
       if (beendet) return Promise.reject(new ImapFehler('IMAP: Verbindung schon beendet'));
       if (/[\r\n]/.test(text)) return Promise.reject(new ImapFehler('IMAP: Zeilenumbruch im Befehl'));
       nr += 1;
       const marke = `A${nr}`;
       return new Promise((res, rej) => {
-        warten = { marke, resolve: res, reject: rej };
-        sock.write(`${marke} ${text}\r\n`);
+        warten = { marke, resolve: res, reject: rej, literal };
+        sock.write(`${marke} ${text}${literal ? ` {${literal.length}}` : ''}\r\n`);
       });
     }
     async function schliessen() {
@@ -250,12 +254,12 @@ export function verbinde({ host, port = 993, verbinden = tls.connect, zeitLimitM
   });
 }
 
-function pruefe(antwort, was) {
+export function pruefe(antwort, was) {
   if (antwort.status !== 'OK') throw new ImapFehler(`IMAP ${was}: ${antwort.status} ${String(antwort.text || '').slice(0, 120)}`);
   return antwort;
 }
 
-async function anmelden(v, zugang) {
+export async function anmelden(v, zugang) {
   const anmeldung = await v.befehl(`LOGIN ${imapText(zugang.benutzer)} ${imapText(zugang.passwort)}`);
   if (anmeldung.status !== 'OK') throw new ImapFehler('IMAP-Anmeldung abgelehnt (App-Passwort oder IMAP im Postfach nicht freigegeben)');
 }

@@ -111,6 +111,7 @@
     "auslauf:pruefen": "node operations/scripts/auslauf-pruefen.mjs",
     "linkpruefung": "node operations/scripts/linkpruefung.mjs",
     "gel-diesel:nachtragen": "node operations/scripts/gel-diesel-nachtragen.mjs",
+    "mail-entwuerfe": "node operations/scripts/mail-entwuerfe.mjs",
     "verlegefotos:abgleich": "node operations/scripts/verlegefotos-abgleich.mjs",
     "bestand:abgleich": "node operations/scripts/bestand-abgleich.mjs",
     "ausschreibungen:pruefen": "node operations/scripts/ausschreibungen-pruefen.mjs",
