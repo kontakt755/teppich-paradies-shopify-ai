@@ -10,21 +10,41 @@
   shortcut: Kachelbild = Bild der ersten Variante ohne Pruefung auf Serienfotos
   (wie in snippets/tp-leisten-farbkachel); erst noetig, wenn ein Produkt mit
   geteilten Variantenbildern hier eingetragen wird.
+
+  Ohne eingetragenes Produkt (SEO Phase 4): erstes Produkt der Kategorie vom
+  Typ Teppichboden mit Option Farbe (die Meterware), sonst das erste mit Farbe.
+  So reicht die Vorlage collection.farbuebersicht fuer jede Qualitaets-Kategorie.
+  [kategorie] in Ueberschrift und Text = Titel der Kategorie.
 {%- endcomment -%}
 
 {%- liquid
   assign tp_fu_produkt = section.settings.produkt
+  if tp_fu_produkt == blank and collection
+    for tp_fu_p in collection.products limit: 50
+      if tp_fu_p.options_by_name['Farbe'] == blank
+        continue
+      endif
+      if tp_fu_p.type == 'Teppichboden'
+        assign tp_fu_produkt = tp_fu_p
+        break
+      endif
+      if tp_fu_produkt == blank
+        assign tp_fu_produkt = tp_fu_p
+      endif
+    endfor
+  endif
   assign tp_fu_option = tp_fu_produkt.options_by_name['Farbe']
+  assign tp_fu_kategorie = collection.title | default: tp_fu_produkt.title
 -%}
 
 {%- if tp_fu_option != blank -%}
   {%- assign tp_fu_index = tp_fu_option.position | minus: 1 -%}
   <div class="tp-fu" aria-labelledby="tp-fu-titel-{{ section.id }}">
     <h2 id="tp-fu-titel-{{ section.id }}" class="tp-fu__titel">
-      {{- section.settings.titel | replace: '[anzahl]', tp_fu_option.values.size | escape -}}
+      {{- section.settings.titel | replace: '[anzahl]', tp_fu_option.values.size | replace: '[kategorie]', tp_fu_kategorie | escape -}}
     </h2>
     {%- if section.settings.text != blank -%}
-      <div class="tp-fu__text rte">{{ section.settings.text }}</div>
+      <div class="tp-fu__text rte">{{ section.settings.text | replace: '[kategorie]', tp_fu_kategorie }}</div>
     {%- endif -%}
     <ul class="tp-fu__raster" role="list">
       {%- for tp_fu_wert in tp_fu_option.values -%}
@@ -92,8 +112,8 @@
   "tag": "section",
   "class": "tp-fu-section",
   "settings": [
-    { "type": "product", "id": "produkt", "label": "Produkt mit der Option Farbe" },
-    { "type": "text", "id": "titel", "label": "Überschrift ([anzahl] = Zahl der Farben)", "default": "Alle [anzahl] Farben" },
+    { "type": "product", "id": "produkt", "label": "Produkt mit der Option Farbe", "info": "Leer = Meterware der Kategorie automatisch" },
+    { "type": "text", "id": "titel", "label": "Überschrift ([anzahl] = Zahl der Farben, [kategorie] = Kategorietitel)", "default": "[kategorie]: alle [anzahl] Farben mit Farbcode" },
     { "type": "richtext", "id": "text", "label": "Text unter der Überschrift" }
   ],
   "presets": [{ "name": "TP Farbübersicht" }]
