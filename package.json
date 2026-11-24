@@ -110,6 +110,7 @@
     "verbrauch:sammeln": "node operations/scripts/claude-verbrauch.mjs",
     "auslauf:pruefen": "node operations/scripts/auslauf-pruefen.mjs",
     "linkpruefung": "node operations/scripts/linkpruefung.mjs",
+    "spiegel:waechter": "node operations/scripts/spiegel-waechter.mjs",
     "gel-diesel:nachtragen": "node operations/scripts/gel-diesel-nachtragen.mjs",
     "mail-entwuerfe": "node operations/scripts/mail-entwuerfe.mjs",
     "verlegefotos:abgleich": "node operations/scripts/verlegefotos-abgleich.mjs",
