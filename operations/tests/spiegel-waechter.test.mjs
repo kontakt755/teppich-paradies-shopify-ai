@@ -35,3 +35,11 @@ test('main: ruhig, dann Befund nur einmal melden', async () => {
   assert.equal(await main(['--trocken'], deps(false)), 1);
   assert.equal(meldungen.length, 1);
 });
+
+test('kandidatenHosts: Schreibweise ohne Bindestrich dabei, eigene Domain nie', async () => {
+  const { kandidatenHosts } = await import('../scripts/spiegel-waechter.mjs');
+  const h = kandidatenHosts();
+  assert.ok(h.includes('teppichparadies.de') && h.includes('www.teppich-paradies.shop'));
+  assert.ok(BEKANNT.every(b => h.includes(b)));
+  assert.ok(!h.includes('teppich-paradies.net') && !h.includes('www.teppich-paradies.net'));
+});

@@ -20,17 +20,21 @@ import { mitteilung } from '../lib/mac-mitteilung.mjs';
 
 export const TITEL = 'Fremde Spiegelseite des Shops';
 export const SHOP = 'sjjyq1-6w.myshopify.com';
-const NAME = 'teppich-paradies';
+// shortcut: feste Liste aehnlicher Namen; die crt.sh-Volltextsuche fand am 24.11. nicht einmal
+// die bekannte .live-Kopie und taugt deshalb nicht als Alarmquelle. Ein Spiegel unter ganz
+// anderem Namen faellt hier nicht auf.
+const NAMEN = ['teppich-paradies', 'teppichparadies', 'teppich-paradies-shop', 'teppichparadies-shop'];
 // Bekannte Spiegelseite (Befund 24.11.): hier ist nur das Fehlen der Sperre ein Alarm.
 export const BEKANNT = ['www.teppich-paradies.live', 'teppich-paradies.live'];
-const KANDIDATEN = ['shop', 'store', 'online', 'de', 'com', 'live'];
+const KANDIDATEN = ['shop', 'store', 'online', 'de', 'com', 'live', 'net', 'info', 'eu', 'org', 'site', 'xyz', 'top', 'website', 'shopping', 'biz'];
+const EIGENE = ['teppich-paradies.net', 'www.teppich-paradies.net'];
 // Erkennungsmerkmal aus snippets/tp-host-sperre.liquid (Domain steht dort nur zerlegt).
 export const SPERRE_MERKMAL = "split('').reverse";
 
 export function kandidatenHosts() {
   const h = [];
-  for (const t of KANDIDATEN) h.push(`www.${NAME}.${t}`, `${NAME}.${t}`);
-  return [...new Set([...BEKANNT, ...h])];
+  for (const n of NAMEN) for (const t of KANDIDATEN) h.push(`www.${n}.${t}`, `${n}.${t}`);
+  return [...new Set([...BEKANNT, ...h])].filter(x => !EIGENE.includes(x));
 }
 
 /** Reine Auswertung einer Antwort: zeigt der Host unseren Shop, und steht die Sperre im HTML? */
