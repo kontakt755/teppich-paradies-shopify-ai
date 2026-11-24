@@ -21,7 +21,7 @@ import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-
 import { musterlagerBlock, musterlagerEingabe } from './lexikon-musterlager.mjs';
 import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 import { ZEICHEN } from '../lib/ampel.mjs';
-import { ampelPlakette, ampelRand } from '../bausteine/ampel.mjs';
+import { ampelPlakette, ampelRand, ausgelaufenPlakette } from '../bausteine/ampel.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
@@ -232,7 +232,7 @@ function lexikonTrefferKarte(p) {
   return `<div class="lex-karte${ampelRand(p.ampel?.stufe, 'karte')}" data-lex-open="${esc(p.handle)}" tabindex="0" role="button">
     ${bild}
     <div>
-      <div class="t">${esc(p.titel)}</div>
+      <div class="t">${esc(p.titel)}${p.status === 'ARCHIVED' ? ` ${ausgelaufenPlakette()}` : ''}</div>
       <div class="m">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT} · ${p.farbenAnzahl} Farbe${p.farbenAnzahl === 1 ? '' : 'n'}</div>
       ${ampelZeile(p.ampel)}
       ${suchHinweisKurz(p)}
@@ -413,6 +413,7 @@ function produktKarte(p, normaleVarianten, ampel = null) {
       <div class="lex-produkt-titel">
         <div class="gruppe">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${statusHinweis(p.status)}</div>
         <h1>${esc(p.titel)}</h1>
+        ${p.status === 'ARCHIVED' ? `<p>${ausgelaufenPlakette()} <span class="small">Nicht mehr im Shop und nicht mehr lieferbar. Die Angaben bleiben für Muster und alte Bestellungen stehen.</span></p>` : ''}
         ${ampelZeile(ampel)}
       </div>
       ${minPreis ? `<div class="lex-produkt-preis"><span>ab</span><b>${esc(preisText(minPreis.betrag, minPreis.einheit))}</b></div>` : ''}
@@ -427,7 +428,7 @@ function produktKarte(p, normaleVarianten, ampel = null) {
 }
 
 // Shopify-Status in Klartext. "Aktiv" ist der Normalfall und steht nicht da - nur Abweichungen.
-const PRODUKT_STATUS = { DRAFT: 'Entwurf – nicht im Shop', ARCHIVED: 'archiviert – nicht im Shop', UNLISTED: 'nicht gelistet' };
+const PRODUKT_STATUS = { DRAFT: 'Entwurf – nicht im Shop', ARCHIVED: 'ausgelaufen – nicht mehr im Shop', UNLISTED: 'nicht gelistet' };
 function statusHinweis(status) {
   if (!status || status === 'ACTIVE') return '';
   return ` · ${esc(PRODUKT_STATUS[status] || String(status).toLowerCase())}`;

@@ -242,6 +242,9 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           bestellt: { titel: text(p.titel), farbe: text(p.farbe) },
           // Produkt in der Produktsuche: "Ins Lager aufnehmen" holt darueber alle Breiten der Farbe.
           produktHandle: text(z.produktHandle) || null,
+          // Bestelltes (Muster-)Produkt ist im Shop archiviert: einen Aufkleber gibt es dafuer bewusst nicht mehr
+          // (der QR-Code fuehrte ins Leere) - die Zeile sagt aber, warum, statt nur "Zuordnung fehlt".
+          ...(produkte.get(p.handle)?.status === 'ARCHIVED' ? { ausgelaufen: true } : {}),
           // Nachtraeglich zur Bestellung hinzugefuegt (Bestellbearbeitung in Shopify), sonst null.
           nachbestelltAm: belegt(p.nachbestelltAm) && !Number.isNaN(new Date(p.nachbestelltAm).getTime()) ? text(p.nachbestelltAm) : null,
           vorher: v,

@@ -675,6 +675,11 @@ DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`)
   „Portal“ oder „Anrufen“. Ohne Stammdaten steht dort, was fehlt („Was fehlt?“ führt zum Lieferant-Detail,
   wenn es einen Eintrag gibt). Daten: `link.schnellzugriff` bzw. `original.schnellzugriff` aus
   `/api/lexikon/produkt` (`operations/README.md`, „Schnellzugriff im Lexikon“).
+- **Ausgelaufenes bleibt auffindbar (seit 2026-11-24):** Der Lexikon-Export lädt auch archivierte Produkte und führt sie
+  getrennt unter `archiviert` (nicht in `produkte` – das heißt weiter „gibt es im Shop“). Nur Suchen und Zuordnungen lesen
+  beides (`_lexikonMitArchiv()` in `dashboard-api.mjs`): Produktsuche und Produktblatt, Einlagern im Musterlager, Packstation,
+  Druckliste. Die Oberfläche kennzeichnet sie mit „! Ausgelaufen“; Musterautomatik, Bestellampel, Kauflinks und Vorschläge
+  bleiben ohne Archiv, ein Musteraufkleber entsteht für Ausgelaufenes nicht.
 
 ### 8b. Muster: Inhalt auf einen Blick und Musterlager (seit 2026-10-13)
 

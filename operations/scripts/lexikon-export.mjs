@@ -88,8 +88,9 @@ export function pruefeZiel(datei, repo = REPO) {
 // zusaetzlich alle Handles mit dem Praefix muster- laden, unabhaengig vom
 // Status - und alle uebrigen UNLISTED-Produkte (per Direktlink kaeuflich,
 // z. B. Einzelanfertigungen), die der Handexport ebenfalls enthielt.
-// Archivierte Muster kommen dadurch mit; lib/lexikon.mjs::aufbereiten
-// laesst sie weg (gilt so auch fuer --jsonl und --input).
+// Archivierte (ausgelaufene) Produkte und Muster kommen mit (status:archived):
+// lib/lexikon.mjs::aufbereiten fuehrt sie getrennt unter `archiviert`, nicht
+// in `produkte` (gilt so auch fuer --jsonl und --input).
 //
 // Bewusst OHNE templateSuffix: die Produktgruppe im Lexikon ist der
 // productType ("Klickvinyl", "Teppichboden", ...). Mit templateSuffix in der
@@ -102,7 +103,7 @@ export function pruefeZiel(datei, repo = REPO) {
 // gibt sie aus, damit niemand sie von Hand nachbauen muss.
 export const BULK_QUERY = `
 {
-  products(query: "status:active OR status:unlisted OR handle:muster-*") {
+  products(query: "status:active OR status:unlisted OR status:archived OR handle:muster-*") {
     edges {
       node {
         id handle title status productType onlineStoreUrl tags isGiftCard
@@ -140,7 +141,7 @@ export const BULK_QUERY = `
 // jsonlZuProdukten fuehrt beide JSONL ueber __parentId zusammen.
 export const BILDER_QUERY = `
 {
-  products(query: "status:active OR status:unlisted OR handle:muster-*") {
+  products(query: "status:active OR status:unlisted OR status:archived OR handle:muster-*") {
     edges {
       node {
         id
