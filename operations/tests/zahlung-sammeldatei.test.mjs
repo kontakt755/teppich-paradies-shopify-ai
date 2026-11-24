@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { auswaehlen, ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt, lastschriftFazit } from '../lib/zahlung-sammeldatei.mjs';
-import { sammelLauf, laufMailen, exporteHolen, exporteZusammenfuehren } from '../scripts/zahlung-sammeldatei.mjs';
+import { sammelLauf, laufMailen, exporteHolen, exporteZusammenfuehren, mitOcr } from '../scripts/zahlung-sammeldatei.mjs';
 
 // Alle Daten erfunden. IBANs aus Fantasie-Kontonummern mit gerechneter Pruefziffer.
 function erfundeneIban(konto) {
@@ -613,4 +613,16 @@ test('Wochenfazit: wiederkehrende Ueberweisungen, Stand der Lastschrift-Anfrage,
     { name: 'A Handels GmbH', anzahl: 2, letzte: '2026-11-03', stand: 'angefragt', summe: 15 },
     { name: 'Timzo Teppichböden', anzahl: 2, letzte: '2026-11-05', stand: '', summe: 10 },
   ]);
+});
+
+test('IBAN nur als Bild im PDF: Texterkennung nur dann, und nur ihr Ergebnis zaehlt', () => {
+  let aufrufe = 0;
+  const ocr = () => { aufrufe += 1; return `IBAN: ${LIEFER.replace(/(.{4})/g, '$1 ')}`; };
+  assert.equal(mitOcr(`Rechnung IBAN ${LIEFER}`, LIEFER, 'x.pdf', ocr), `Rechnung IBAN ${LIEFER}`);
+  assert.equal(aufrufe, 0);
+  assert.match(mitOcr('Rechnung ohne Konto', LIEFER, 'x.pdf', ocr), /IBAN: /);
+  assert.equal(aufrufe, 1);
+  // Erkennt die Texterkennung nichts, bleibt die IBAN unbelegt
+  assert.equal(pdfRechnungPruefen({ text: mitOcr('Rechnung Nr. 700099 Gesamtbetrag 50,00', LIEFER, 'x.pdf', () => ''), nummer: '700099', brutto: 50, waehrung: 'EUR' }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ text: mitOcr('Rechnung Nr. 700099 Gesamtbetrag 50,00', LIEFER, 'x.pdf', ocr), nummer: '700099', brutto: 50, waehrung: 'EUR' }, { iban: LIEFER }).status, 'ok');
 });

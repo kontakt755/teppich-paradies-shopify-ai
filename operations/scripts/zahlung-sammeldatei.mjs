@@ -44,8 +44,21 @@ const PDF_AB = '2026-11-01';
 
 const jsonLesen = (pfad, ersatz) => (fs.existsSync(pfad) ? JSON.parse(fs.readFileSync(pfad, 'utf8')) : ersatz);
 
+/**
+ * Texterkennung (macOS Vision, lokal, pdf_ocr.swift) fuer PDFs, deren Bankverbindung nur als Bild drinsteht
+ * (Benutzer 24.11.2026: zwei Lieferanten mit IBAN im Bild-Fuss). Ohne swift (Linux, CI): leerer Text.
+ */
+export function ocrText(pfad) {
+  const r = spawnSync('swift', [path.join(path.dirname(fileURLToPath(import.meta.url)), 'pdf_ocr.swift'), pfad], { encoding: 'utf8', timeout: 300_000 });
+  return r.status === 0 ? String(r.stdout || '') : '';
+}
+
+/** PDF-Text; fehlt die erwartete IBAN darin, wird zusaetzlich die Texterkennung angehaengt. */
+export const mitOcr = (text, iban, pfad, ocr) => (!iban || nurIban(text).includes(iban) ? text : `${text}\n${ocr(pfad)}`);
+const nurIban = s => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
 /** Rechnungen aller archivierten Monate; XML- bzw. PDF-Text nur fuer konfigurierte Lieferanten. */
-function belegeLesen(privat, lieferanten, pdf) {
+function belegeLesen(privat, lieferanten, pdf, ocr = ocrText) {
   const wurzel = belegeOrdner(privat);
   const belege = [];
   const fremde = [];
@@ -71,13 +84,14 @@ function belegeLesen(privat, lieferanten, pdf) {
         if (!xml && !lieferanten[b.anbieterSchluessel].lastschrift && b.format === 'pdf') {
           if (tag < PDF_AB) { vorStart += 1; continue; }
           const pdfPfad = path.join(ordner, b.datei);
-          const text = b.pdfLesbar && fs.existsSync(pdfPfad) ? String(pdf(fs.readFileSync(pdfPfad))?.text || '') : '';
+          const roh = b.pdfLesbar && fs.existsSync(pdfPfad) ? String(pdf(fs.readFileSync(pdfPfad))?.text || '') : '';
+          const text = roh && mitOcr(roh, lieferanten[b.anbieterSchluessel].iban, pdfPfad, ocr);
           belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, waehrung: b.waehrung || null, datum: tag || null } });
           continue;
         }
         // Fehlt in der XML das Empfaengerkonto, darf es im PDF derselben Mail stehen (nur bei Bedarf gelesen).
         const pdfPfad = b.format === 'pdf' && b.datei ? path.join(ordner, b.datei) : null;
-        const pdfText = () => (pdfPfad && b.pdfLesbar && fs.existsSync(pdfPfad) ? String(pdf(fs.readFileSync(pdfPfad))?.text || '') : '');
+        const pdfText = () => (pdfPfad && b.pdfLesbar && fs.existsSync(pdfPfad) ? mitOcr(String(pdf(fs.readFileSync(pdfPfad))?.text || ''), lieferanten[b.anbieterSchluessel].iban, pdfPfad, ocr) : '');
         belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, nummer: b.rechnungsnummer || null, xml, pdfText });
       }
     }
@@ -166,7 +180,7 @@ function bankLesen(privat, pdf, heute, { iban, downloads }) {
 }
 
 /** @returns zahlen fuer die Ausgabe (keine Namen, keine IBAN) */
-export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf = pdfAnalyse, downloads = null }) {
+export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf = pdfAnalyse, downloads = null, ocr = ocrText }) {
   const ordner = path.join(privat, 'zahlungen');
   const konfigPfad = path.join(ordner, 'konfiguration.json');
   if (!fs.existsSync(konfigPfad)) throw new Error(`Konfiguration fehlt: ${konfigPfad} (Aufbau steht im Kopf des Skripts)`);
@@ -174,7 +188,7 @@ export function sammelLauf({ privat, schreiben = false, jetzt = new Date(), pdf 
   const vorgemerktPfad = path.join(ordner, 'vorgemerkt.json');
   const vorgemerkt = jsonLesen(vorgemerktPfad, []);
   const heute = berlinTag(jetzt.toISOString());
-  const { belege, fremde, andere, vorStart } = belegeLesen(privat, konfig.lieferanten, pdf);
+  const { belege, fremde, andere, vorStart } = belegeLesen(privat, konfig.lieferanten, pdf, ocr);
   const abgleich = bankLesen(privat, pdf, heute, { iban: konfig.auftraggeber.iban, downloads });
   // zahlungen/erledigt.json: { "<Belegdatei>": "Grund" } fuer Belege, die keine Zahlung brauchen (Anschreiben, Anhang, eigene Rechnung).
   const erledigt = jsonLesen(path.join(ordner, 'erledigt.json'), {});
