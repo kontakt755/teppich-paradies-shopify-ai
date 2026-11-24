@@ -28,7 +28,8 @@ test('beide Vorlagen setzen den Kompakt-Block hinter die Einleitung', () => {
     const bloecke = Object.entries(kopf.blocks).filter(([, b]) => b.type === 'tp-mobil-kompakt');
     assert.equal(bloecke.length, 1, `${vorlage}: genau ein Kompakt-Block`);
     const reihenfolge = kopf.block_order;
-    const beschreibung = reihenfolge.findIndex((id) => kopf.blocks[id]?.settings?.text === '{{ closest.collection.description }}');
+    const beschreibung = reihenfolge.findIndex((id) => kopf.blocks[id]?.settings?.text === '{{ closest.collection.description }}'
+      || (kopf.blocks[id]?.type === 'tp-kategorie-text' && kopf.blocks[id].settings.teil === 'einleitung'));
     assert.ok(beschreibung >= 0, `${vorlage}: Beschreibungsblock gefunden`);
     assert.equal(reihenfolge[beschreibung + 1], bloecke[0][0], `${vorlage}: Kompakt-Block steht direkt hinter der Einleitung`);
   }
