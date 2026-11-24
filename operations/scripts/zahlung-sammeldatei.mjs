@@ -87,7 +87,7 @@ function belegeLesen(privat, lieferanten, pdf, ocr = ocrText) {
           const roh = b.pdfLesbar && fs.existsSync(pdfPfad) ? String(pdf(fs.readFileSync(pdfPfad))?.text || '') : '';
           // Ohne Betrag im Archiv steht er meist nur im Bild: dann ebenfalls Texterkennung.
           const text = roh && mitOcr(roh, lieferanten[b.anbieterSchluessel].iban, pdfPfad, ocr, b.brutto == null);
-          belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, waehrung: b.waehrung || null, datum: tag || null } });
+          belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, waehrung: b.waehrung || null, datum: tag || null, rechnungsdatum: b.rechnungsdatum || null } });
           continue;
         }
         // Fehlt in der XML das Empfaengerkonto, darf es im PDF derselben Mail stehen (nur bei Bedarf gelesen).

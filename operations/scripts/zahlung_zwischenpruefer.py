@@ -139,6 +139,8 @@ def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute):
     """@returns (None, frist) wenn der Abzug zu einer noch laufenden Stufe passt, sonst (Grund, None).
     Satz und Frist gehoeren zusammen: eine abgelaufene hoehere Stufe zaehlt nicht."""
     stufen = skonto_stufen(text, rechnungsdatum)
+    if re.search(r"skonto\s*[,:]?\s*(?:nur|auf|ausgenommen|ohne|nicht|exkl)|skontof(?:ä|ae)hig|nicht\s+skont|warenwert|ohne\s+(?:fracht|versand)", text, re.I) and not any(b is not None for _, _, b in stufen):
+        return "Skonto nur auf einen Teil des Betrags: selbst pruefen", None
     if not stufen:
         return "Skontobedingung auf der Rechnung nicht lesbar", None
     passend = [f for f, satz, betrag in stufen if (abzug == betrag if betrag is not None else abzug <= round(brutto_cent * satz / 100) + 1)]
@@ -150,9 +152,21 @@ def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute):
 
 def brutto_aus_summen(text):
     """Genau ein Betrag X mit Netto N und Steuer S (19 % oder 7 %, auf den Cent) und N + S = X im Text; sonst None."""
-    werte = {cent(m.replace(".", "").replace(",", ".")) for m in re.findall(r"(?<![0-9.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})(?![0-9])", text)}
-    treffer = {n + round(n * q / 100) for n in werte for q in (19, 7) if round(n * q / 100) > 0 and round(n * q / 100) in werte and n + round(n * q / 100) in werte}
-    return treffer.pop() / 100 if len(treffer) == 1 else None
+    werte = {int(m.replace(".", "").replace(",", "")) for m in re.findall(r"(?<![0-9.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})(?![0-9])", text)}
+    steuer = lambda n, q: (n * q + 50) // 100  # kaufmaennisch wie Math.round im Erzeuger (Cent, positiv)
+    treffer = {n + steuer(n, q) for n in werte for q in (19, 7) if steuer(n, q) > 0 and steuer(n, q) in werte and n + steuer(n, q) in werte}
+    # Nur das Rechnungsgesamt: der groesste Betrag im Text.
+    return treffer.pop() / 100 if len(treffer) == 1 and max(treffer) == max(werte) else None
+
+
+MONATE = ["januar", "februar", "maerz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"]
+
+
+def monats_datum(text):
+    """Genau ein ausgeschriebenes Datum („23. November 2026“) im Text, sonst None."""
+    d = {f"{j}-{MONATE.index(m.lower().replace('ä', 'ae')) + 1:02d}-{int(t):02d}"
+         for t, m, j in re.findall(r"(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})", text, re.I)}
+    return d.pop() if len(d) == 1 else None
 
 
 def ocr_text(pfad):
@@ -199,7 +213,7 @@ def archiv_lesen(privat):
                 merk["t"] = " ".join(teile)
                 return merk["t"]
             belege.append({"schluessel": b.get("anbieterSchluessel"), "nummer": str(b.get("rechnungsnummer") or ""), "brutto": b.get("brutto"),
-                           "datum": b.get("rechnungsdatum") or b.get("tag") or "", "art": b.get("art"), "datei": b.get("datei"), "text": text,
+                           "datum": b.get("rechnungsdatum") or b.get("tag") or "", "rechnungsdatum": b.get("rechnungsdatum"), "art": b.get("art"), "datei": b.get("datei"), "text": text,
                            "pfad": ordner / b["datei"] if b.get("datei") and str(b["datei"]).lower().endswith(".pdf") else None})
     return belege
 
@@ -266,7 +280,8 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=No
                 hinweise.append(f"{wer}: Rechnung nennt Skonto, die Datei zahlt den vollen Betrag")
             elif abzug > 0:
                 genannt = f"{abzug // 100},{abzug % 100:02d}"
-                grund, frist = skonto_pruefen(text, b["datum"], abzug, cent(b["brutto"]), heute)
+                # Skontofrist nur ab belegtem Rechnungsdatum (Archiv oder ausgeschrieben im Text), nie ab dem Maileingang.
+                grund, frist = skonto_pruefen(text, b.get("rechnungsdatum") or monats_datum(text), abzug, cent(b["brutto"]), heute)
                 if abzug > cent(b["brutto"]) * SKONTO_MAX or genannt not in z["zweck"] or grund:
                     fehler.append(f"{wer}: Abzug {genannt} EUR nicht als Skonto belegt (Rechnung {b['brutto']:.2f}){': ' + grund if grund else ''}")
                 else:

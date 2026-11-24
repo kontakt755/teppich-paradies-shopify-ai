@@ -180,11 +180,22 @@ export function bruttoAusSummen(text) {
     const st = Math.round(n * q / 100);
     if (st > 0 && da.has(st) && da.has(n + st)) treffer.add(n + st);
   }
-  return treffer.size === 1 ? [...treffer][0] / 100 : null;
+  // Nur das Rechnungsgesamt: der groesste Betrag im Text (eine Positionssumme daneben zaehlt nicht).
+  return treffer.size === 1 && [...treffer][0] === Math.max(...werte) ? [...treffer][0] / 100 : null;
 }
 
-export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { iban }) {
+const MONATE = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
+/** Genau ein ausgeschriebenes Datum („23. November 2026“) im Text, sonst null. */
+export function monatsDatum(text) {
+  const d = new Set([...String(text ?? '').matchAll(/(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})/gi)]
+    .map(m => `${m[3]}-${String(MONATE.indexOf(m[2].toLowerCase().replace('maerz', 'märz')) + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`));
+  return d.size === 1 ? [...d][0] : null;
+}
+
+export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rechnungsdatum }, { iban }) {
   const t = pdfTextGlaetten(text);
+  // Skontofrist nur ab einem belegten Rechnungsdatum (Archiv oder Text), nie ab dem Eingangstag der Mail.
+  const rdatum = rechnungsdatum ?? (rechnungsdatum === undefined ? datum : null) ?? pdfTextLesen(t).datum ?? monatsDatum(t);
   // Fehlen Nummer oder Betrag im Archiv: derselbe Leser wie belege:monat, auf dem geglaetteten Text
   // (er schliesst Netto-Zeilen aus und gibt bei mehreren verschiedenen Betraegen nichts zurueck).
   if (!nummer || brutto === null || brutto === undefined || !waehrung) {
@@ -216,9 +227,11 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { 
     // aber jedes Wort Skonto muss zu einer gelesenen Stufe gehoeren.
     const verschieden = new Set(stufen.map(m => `${Number(m[1])}|${m[2]}`));
     const satz = verschieden.size === 1 ? Number(stufen[0][2].replace(',', '.')) : NaN;
-    if ((t.match(/skonto/gi) || []).length !== stufen.length || !(satz > 0 && satz <= 5) || !/^\d{4}-\d{2}-\d{2}$/.test(datum || '')) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+    // Eingeschraenkte Basis („nur auf den Warenwert“, „ohne Fracht“, skontofaehig): nicht selbst rechnen.
+    const eingeschraenkt = /skonto\s*[,:]?\s*(?:nur|auf|ausgenommen|ohne|nicht|exkl)|skontof(?:ä|ae)hig|nicht\s+skont|warenwert|ohne\s+(?:fracht|versand)/i.test(t);
+    if ((t.match(/skonto/gi) || []).length !== stufen.length || !(satz > 0 && satz <= 5) || eingeschraenkt || !/^\d{4}-\d{2}-\d{2}$/.test(rdatum || '')) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
     const betrag = Math.round(brutto * satz) / 100;
-    kopf.skonto = { bis: tagPlus(datum, Number(stufen[0][1])), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 };
+    kopf.skonto = { bis: tagPlus(rdatum, Number(stufen[0][1])), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 };
   }
   if (/lastschrift|abgebucht|eingezogen|bankeinzug|einzugserm|mandat/i.test(t)) return unklar('PDF nennt Lastschrift oder Einzug');
   if (/bereits (bezahlt|beglichen|erhalten)|dankend erhalten|vorkasse|anzahlung|abschlag|teilzahlung|paypal|kreditkarte/i.test(t)) return unklar('PDF nennt Vorkasse, Anzahlung oder schon bezahlt');

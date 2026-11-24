@@ -24,7 +24,7 @@ def pain(*tx):
 
 
 def beleg(nummer, brutto, text, art="rechnung", schluessel="muster.de"):
-    return {"schluessel": schluessel, "nummer": nummer, "brutto": brutto, "datum": "2026-11-10", "art": art, "datei": f"{nummer}.pdf", "text": lambda: text}
+    return {"schluessel": schluessel, "nummer": nummer, "brutto": brutto, "datum": "2026-11-10", "rechnungsdatum": "2026-11-10", "art": art, "datei": f"{nummer}.pdf", "text": lambda: text}
 
 
 LIEFERANTEN = {"muster.de": {"name": "Muster Teppich GmbH", "iban": LIEF}, "zieht.de": {"zahlart": "lastschrift"}}
@@ -121,10 +121,24 @@ class Zwischenpruefer(unittest.TestCase):
     def test_spaltensatz_brutto_aus_netto_und_steuer(self):
         text = f"Gesamt: zzgl. 19% MwSt: Rechnungsbetrag: 429,81 € 81,66 € 511,47 € Zahlbar: 10 Tage -3% Skonto IBAN {LIEF}"
         self.assertEqual(z.brutto_aus_summen(text), 511.47)
-        b = {**beleg("115-2026", None, text), "datum": "2026-11-13"}
+        b = {**beleg("115-2026", None, f"Berlin 13. November 2026 {text}"), "datum": "2026-11-13", "rechnungsdatum": None}
         f, h = pruefen(pain(("115-2026", 496.13, LIEF, "RE 115-2026 abzgl Skonto 15,34 EUR")), [b])
         self.assertEqual(f, [])
         self.assertTrue(any("511.47 aus Netto + MwSt" in x for x in h))
+
+    def test_codex_pr_2303(self):
+        # Positionssumme neben dem Gesamt zaehlt nicht
+        self.assertIsNone(z.brutto_aus_summen("100,00 19,00 119,00 50,00 169,00"))
+        # Halbcent wie im Erzeuger: 123,50 * 19 % = 23,465 -> 23,47
+        self.assertEqual(z.brutto_aus_summen("123,50 23,47 146,97"), 146.97)
+        # Skonto nur auf den Warenwert: nicht selbst rechnen
+        t = f"Rechnungsbetrag 119,00 10 Tage -3% Skonto nur auf den Warenwert IBAN {LIEF}"
+        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [beleg("100", 119.0, t)])
+        self.assertTrue(any("Teil des Betrags" in x for x in f))
+        # Ohne belegtes Rechnungsdatum keine Skontofrist
+        b = {**beleg("100", 100.0, f"10 Tage -2% Skonto IBAN {LIEF}"), "rechnungsdatum": None}
+        f, _ = pruefen(pain(("100", 98.0, LIEF, "RE 100 abzgl Skonto 2,00 EUR")), [b])
+        self.assertTrue(any("nicht lesbar" in x for x in f))
 
     def test_bankexport_mit_spalte_iban(self):
         import tempfile
