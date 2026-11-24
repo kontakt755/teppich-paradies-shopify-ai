@@ -820,11 +820,14 @@ Gmail nur noch Senden.
 - **Fertige Dateien aus einem privaten Repository** (z. B. VMA als `.xlsx`, die ein Cloud-Chat nicht
   über die Dropbox hochladen kann):
   `"anhaenge_git": {"repo": "kontakt755/teppich-paradies-vma", "commit": "<voller Hash>", "dateien": [{"pfad": "ausgabe/2026-11/<Datei>.xlsx", "sha256": "<Prüfsumme>"}]}`.
-  Der Mac liest jede Datei genau aus diesem Commit (`gh api`, Konto des Mac) und vergleicht die Prüfsumme.
+  Der Mac holt genau diesen Commit per SSH mit dem Deploy-Key `~/.ssh/vma_deploy` (nur lesend, im
+  VMA-Repository unter Settings → Deploy keys eingetragen; anderer Schlüssel: `TP_VMA_SCHLUESSEL`) in
+  `mail-entwuerfe/git/`, liest die Datei mit `git cat-file` und vergleicht die Prüfsumme. Verbunden wird
+  nur gegen den veröffentlichten Host-Schlüssel von GitHub.
   Erlaubt sind nur Repositorys aus `GIT_ERLAUBT` in `lib/mail-entwuerfe.mjs` (bisher nur dieses, nur unter
   `ausgabe/`), Pfade ohne `..`, Dateitypen und 20-MB-Grenze wie bei `anhaenge`. Falsche Prüfsumme, falscher
-  Pfad oder Commit (GitHub meldet 404, auch ohne Leserecht des Mac-Kontos): Auftrag nach `fehler/`.
-  Zeitlimit oder Netz: Auftrag bleibt liegen. `gh` aus `/opt/homebrew/bin`, anderes: `TP_GH`.
+  Pfad oder Commit: Auftrag nach `fehler/`. Kein Zugang (Schlüssel fehlt), Zeitlimit oder Netz: Auftrag
+  bleibt liegen und steht im Protokoll.
 - Anhangsnamen erscheinen in der Mail ohne Umlaute und Leerzeichen (`Formular ä 1.pdf` → `Formular_a_1.pdf`).
 - Dienst: Vorlage `launchagents/net.teppich-paradies.mail-entwuerfe.plist.vorlage`, Einrichten mit
   `bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe` (Plist zeigt auf `~/tp-dashboard`).

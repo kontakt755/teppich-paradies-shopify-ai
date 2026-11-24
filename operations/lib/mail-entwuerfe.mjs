@@ -15,7 +15,7 @@
  * der Mac fuellt die Vorlage (aus eingang/ oder vorlagen/) mit scripts/pdf_formular.py.
  * Fertige Dateien aus einem privaten Repository (z. B. VMA als .xlsx) kommen per
  * "anhaenge_git": { repo, commit, dateien: [{ pfad, sha256 }] } - der Mac liest sie genau aus diesem
- * Commit (gh api) und vergleicht die Pruefsumme.
+ * Commit (SSH mit Deploy-Key ~/.ssh/vma_deploy) und vergleicht die Pruefsumme.
  */
 
 import fs from 'node:fs';
@@ -91,17 +91,28 @@ export const anzeigeName = n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').repla
 /** Nur aus diesen Repositorys, nur unterhalb des genannten Ordners. */
 export const GIT_ERLAUBT = Object.freeze({ 'kontakt755/teppich-paradies-vma': 'ausgabe/' });
 
-/** Liest eine Datei genau aus einem Commit (gh api, rohe Bytes). 404 heisst: Auftrag falsch. */
-export function gitHolen(repo, commit, pfad, { gh = process.env.TP_GH || ['/opt/homebrew/bin/gh', '/usr/local/bin/gh'].find(p => fs.existsSync(p)) || 'gh' } = {}) {
-  const url = `repos/${repo}/contents/${pfad.split('/').map(encodeURIComponent).join('/')}?ref=${commit}`;
-  try {
-    return execFileSync(gh, ['api', '-H', 'Accept: application/vnd.github.raw', url], { stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000, maxBuffer: 40 * 1024 * 1024 });
-  } catch (e) {
-    const meldung = String(e.stderr || e.message).trim().split('\n').pop().slice(0, 160);
-    const fehler = new Error(`Git: ${pfad}: ${meldung}`);
-    fehler.auftragFalsch = /HTTP 404/.test(meldung);
-    throw fehler;
+/** Veroeffentlichter Host-Schluessel von GitHub: nur gegen diesen verbinden. */
+const GITHUB_HOSTKEY = 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl';
+
+/**
+ * Liest eine Datei genau aus einem Commit: holt ihn per SSH mit dem Deploy-Key (nur lesend, nur
+ * fuer dieses Repository) in einen Zwischenspeicher (git-Ordner ohne Arbeitskopie) und liest die
+ * Bytes mit cat-file. Unbekannter Commit oder Pfad: auftragFalsch. Kein Zugang oder Netz: nicht -
+ * der Auftrag bleibt liegen, bis der Schluessel eingetragen ist.
+ */
+export function gitHolen(repo, commit, pfad, { cache, url = `git@github.com:${repo}.git`, schluessel = process.env.TP_VMA_SCHLUESSEL || path.join(os.homedir(), '.ssh/vma_deploy') } = {}) {
+  fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
+  const hosts = path.join(cache, 'known_hosts');
+  fs.writeFileSync(hosts, `${GITHUB_HOSTKEY}\n`);
+  const dir = path.join(cache, `${repo.replace('/', '__')}.git`);
+  const ssh = `ssh -i '${schluessel}' -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile='${hosts}'`;
+  const lauf = args => execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000, maxBuffer: 40 * 1024 * 1024, env: { ...process.env, GIT_SSH_COMMAND: ssh } });
+  const fehler = (e, falsch) => Object.assign(new Error(`Git: ${pfad}: ${String(e.stderr || e.message).trim().split('\n').pop().slice(0, 160)}`), { auftragFalsch: falsch });
+  if (!fs.existsSync(dir)) execFileSync('git', ['init', '-q', '--bare', dir]);
+  try { lauf(['cat-file', '-e', `${commit}^{commit}`]); } catch {
+    try { lauf(['fetch', '-q', '--depth=1', url, commit]); } catch (e) { throw fehler(e, /not our ref|unadvertised object|couldn't find remote ref|no such remote ref/i.test(String(e.stderr))); }
   }
+  try { return lauf(['cat-file', 'blob', `${commit}:${pfad}`]); } catch (e) { throw fehler(e, true); }
 }
 
 const liste = w => (w == null ? [] : Array.isArray(w) ? w : [w]);
@@ -185,8 +196,9 @@ function verschiebe(dateien, von, nach) {
  * Ein Durchgang ueber eingang/. Ergebnis je Auftrag { datei, status: angelegt|fehler|wartet, grund? }.
  * Scheitert das Ablegen (Netz, Anmeldung), bleibt der Auftrag liegen und der Fehler geht nach oben.
  */
-export async function durchgang({ privat, zugang, ablegen = entwurfAblegen, fuellen = formularFuellen, holen = gitHolen, jetzt = new Date() }) {
+export async function durchgang({ privat, zugang, ablegen = entwurfAblegen, fuellen = formularFuellen, holen = null, jetzt = new Date() }) {
   const o = ordner(privat);
+  const hole = holen || ((r, c, p) => gitHolen(r, c, p, { cache: path.join(o.basis, 'git') }));
   fs.mkdirSync(o.eingang, { recursive: true, mode: 0o700 });
   const ergebnis = [];
   for (const datei of fs.readdirSync(o.eingang).filter(n => n.endsWith('.json') && !n.startsWith('.')).sort()) {
@@ -212,7 +224,7 @@ export async function durchgang({ privat, zugang, ablegen = entwurfAblegen, fuel
     if (p.git && !p.fehler) {
       try {
         for (const d of p.git.dateien) {
-          const inhalt = holen(p.git.repo, p.git.commit, d.pfad);
+          const inhalt = hole(p.git.repo, p.git.commit, d.pfad);
           if (createHash('sha256').update(inhalt).digest('hex') !== d.sha256) throw Object.assign(new Error(`sha256 weicht ab: ${d.pfad}`), { auftragFalsch: true });
           p.auftrag.anhaenge.push({ name: anzeigeName(path.posix.basename(d.pfad)), typ: TYPEN[path.extname(d.pfad).slice(1).toLowerCase()], inhalt });
         }
