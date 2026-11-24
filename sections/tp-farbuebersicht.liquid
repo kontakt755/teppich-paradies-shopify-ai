@@ -1,0 +1,101 @@
+{%- comment -%}
+  Farbuebersicht einer Qualitaet auf ihrer Kategorie (SEO Phase 3, 2026-11-24):
+  je Farbe eine Kachel mit Variantenbild, Name und Farbcode; der Klick oeffnet
+  das Produkt mit dieser Farbe vorausgewaehlt (?variant=). Ersetzt 34
+  Einzelprodukte je Farbe - Varianten und SKUs bleiben unveraendert.
+
+  Farbe = Produktoption "Farbe" im Format "Name (Code)". Fehlt die Klammer,
+  steht nur der Name auf der Kachel. Ziel ist die erste Variante der Farbe
+  (bei Modena 400 cm).
+  shortcut: Kachelbild = Bild der ersten Variante ohne Pruefung auf Serienfotos
+  (wie in snippets/tp-leisten-farbkachel); erst noetig, wenn ein Produkt mit
+  geteilten Variantenbildern hier eingetragen wird.
+{%- endcomment -%}
+
+{%- liquid
+  assign tp_fu_produkt = section.settings.produkt
+  assign tp_fu_option = tp_fu_produkt.options_by_name['Farbe']
+-%}
+
+{%- if tp_fu_option != blank -%}
+  {%- assign tp_fu_index = tp_fu_option.position | minus: 1 -%}
+  <div class="tp-fu" aria-labelledby="tp-fu-titel-{{ section.id }}">
+    <h2 id="tp-fu-titel-{{ section.id }}" class="tp-fu__titel">
+      {{- section.settings.titel | replace: '[anzahl]', tp_fu_option.values.size | escape -}}
+    </h2>
+    {%- if section.settings.text != blank -%}
+      <div class="tp-fu__text rte">{{ section.settings.text }}</div>
+    {%- endif -%}
+    <ul class="tp-fu__raster" role="list">
+      {%- for tp_fu_wert in tp_fu_option.values -%}
+        {%- liquid
+          assign tp_fu_voll = tp_fu_wert.name | default: tp_fu_wert
+          assign tp_fu_variante = null
+          for tp_fu_v in tp_fu_produkt.variants
+            if tp_fu_v.options[tp_fu_index] == tp_fu_voll
+              assign tp_fu_variante = tp_fu_v
+              break
+            endif
+          endfor
+          assign tp_fu_teile = tp_fu_voll | split: ' ('
+          assign tp_fu_name = tp_fu_teile | first
+          assign tp_fu_code = ''
+          if tp_fu_teile.size > 1
+            assign tp_fu_code = tp_fu_teile | last | remove: ')'
+          endif
+        -%}
+        {%- if tp_fu_variante -%}
+          <li class="tp-fu__kachel">
+            <a href="{{ tp_fu_variante.url }}" class="tp-fu__link">
+              <span class="tp-fu__bild">
+                {%- if tp_fu_variante.featured_image -%}
+                  {{- tp_fu_variante.featured_image | image_url: width: 300 | image_tag: loading: 'lazy', sizes: '(min-width: 750px) 160px, 30vw', widths: '150, 220, 300', alt: '' -}}
+                {%- endif -%}
+              </span>
+              <span class="tp-fu__name">{{ tp_fu_name | escape }}</span>
+              {%- if tp_fu_code != blank -%}
+                <span class="tp-fu__code">Farbcode {{ tp_fu_code | escape }}</span>
+              {%- endif -%}
+            </a>
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-fu { max-width: var(--page-width, 1320px); margin-inline: auto; padding: 24px var(--page-margin, 16px); }
+  .tp-fu__titel { margin: 0 0 8px; font-size: var(--tp-fs-xl); font-weight: 700; }
+  .tp-fu__text { margin: 0 0 16px; font-size: var(--tp-fs-md); max-width: 70ch; }
+  .tp-fu__raster {
+    display: grid; gap: 16px 12px; margin: 0; padding: 0; list-style: none;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .tp-fu__link { display: grid; gap: 4px; color: var(--tp-ink, var(--color-foreground)); text-decoration: none; }
+  .tp-fu__link:hover .tp-fu__name, .tp-fu__link:focus-visible .tp-fu__name { text-decoration: underline; text-underline-offset: 3px; }
+  .tp-fu__bild {
+    display: block; aspect-ratio: 1; overflow: hidden; border-radius: 6px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+  }
+  .tp-fu__bild img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tp-fu__name { font-size: var(--tp-fs-sm); font-weight: 600; line-height: 1.3; }
+  .tp-fu__code { font-size: var(--tp-fs-xs); font-weight: 500; color: #595959; }
+  @media (max-width: 749px) {
+    .tp-fu__raster { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Farbübersicht",
+  "tag": "section",
+  "class": "tp-fu-section",
+  "settings": [
+    { "type": "product", "id": "produkt", "label": "Produkt mit der Option Farbe" },
+    { "type": "text", "id": "titel", "label": "Überschrift ([anzahl] = Zahl der Farben)", "default": "Alle [anzahl] Farben" },
+    { "type": "richtext", "id": "text", "label": "Text unter der Überschrift" }
+  ],
+  "presets": [{ "name": "TP Farbübersicht" }]
+}
+{% endschema %}

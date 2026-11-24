@@ -68,7 +68,7 @@
           "type": "text",
           "name": "Abholung",
           "settings": {
-            "text": "<p><strong>Im Laden ansehen, selbst abholen:</strong> Im Checkout „Abholung“ statt Versand wählen. <a href=\"#laden\">Zum Laden</a></p>",
+            "text": "<p><strong>Im Laden ansehen, selbst abholen:</strong> Im Checkout „Abholung“ statt Versand wählen. <a href=\"#laden\">Zum Laden</a></p><p>Aus einem Rest wird in unserer Werkstatt ein Teppich mit sauberer Kante: <a href=\"/pages/kettelteppich-nach-mass\">Teppich ketteln lassen</a></p>",
             "width": "fit-content",
             "max_width": "normal",
             "alignment": "left",

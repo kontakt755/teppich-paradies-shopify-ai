@@ -393,6 +393,11 @@
         "So rechnen wir" ist aus der Kundenansicht entfernt (Entscheidung des
         Inhabers 2026-09-20); gerechnet wird unveraendert im Skript.
       {%- endcomment -%}
+      {%- comment -%} Interner Link zur Kettel-Seite (SEO Phase 3): Kantenarten erklaert, auch fuer eigene Ware {%- endcomment -%}
+      {%- assign tp_ek_kettelseite = pages['kettelteppich-nach-mass'] -%}
+      {%- if tp_ek_art != 'raummass' and tp_ek_kettelseite.url != blank -%}
+        <p class="tp-ek__preishinweis tp-ek__kettelseite">Kantenarten im Vergleich, auch für eigene Ware: <a href="{{ tp_ek_kettelseite.url }}">Teppich ketteln lassen</a></p>
+      {%- endif -%}
       <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
         <div class="tp-ek__summe"><span>Gesamtpreis für Ihr Maß</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
         {%- comment -%}
