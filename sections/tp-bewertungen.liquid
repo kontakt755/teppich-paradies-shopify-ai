@@ -8,6 +8,37 @@
 <div id="bewertungen" class="tp-bewertungen">
   {%- render 'tp-bewertungshinweis', kurz: true -%}
   {% content_for 'blocks' %}
+  {%- comment -%}
+    Datenschutz-Hinweis im Formular der App: Die Formulartexte lassen sich im
+    Gratis-Tarif nicht aendern, und das Formular oeffnet als eigenes Fenster
+    ausserhalb dieses Abschnitts. Das Skript haengt den Hinweis deshalb unten
+    in den Block mit dem Datenschutz-Satz der App (der nur auf Judge.me verweist),
+    sonst unten an das Formularfenster (.jdgm-write-review-modal).
+    shortcut: haengt an der Klasse der App; aendert Judge.me sie, fehlt der
+    Hinweis still - nach App-Updates im Formular nachsehen.
+  {%- endcomment -%}
+  <template id="tp-bewertung-ds">
+    <p class="tp-bewertung-ds">
+      Mit dem Absenden willigen Sie ein, dass wir Ihre Bewertung mit Ihrem Namen veröffentlichen. Ihre
+      E-Mail-Adresse wird nicht veröffentlicht. Mehr dazu in unserer
+      <a href="{{ shop.privacy_policy.url | default: '/policies/privacy-policy' }}" target="_blank">Datenschutzerklärung</a>.
+    </p>
+  </template>
+  <script>
+    (() => {
+      const vorlage = document.getElementById('tp-bewertung-ds');
+      const anhaengen = () => {
+        for (const fenster of document.querySelectorAll('.jdgm-write-review-modal')) {
+          const stellen = fenster.querySelectorAll('.jdgm-write-review-modal__gdpr-statement');
+          for (const stelle of stellen) {
+            if (!stelle.querySelector('.tp-bewertung-ds')) stelle.append(vorlage.content.cloneNode(true));
+          }
+          if (!stellen.length && !fenster.querySelector('.tp-bewertung-ds')) fenster.append(vorlage.content.cloneNode(true));
+        }
+      };
+      new MutationObserver(anhaengen).observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
 </div>
 
 {% stylesheet %}
@@ -17,6 +48,22 @@
     padding-inline: var(--page-margin, 20px);
     padding-block: 32px;
     scroll-margin-top: 80px;
+  }
+
+  /* Im Formular erbt der Satz Schrift und Farbe vom Datenschutz-Satz der App */
+  .tp-bewertung-ds {
+    margin: 8px 0 0;
+  }
+
+  .jdgm-write-review-modal > .tp-bewertung-ds {
+    margin: 16px 24px 24px;
+    font-size: var(--tp-fs-xs);
+    text-align: center;
+  }
+
+  .tp-bewertung-ds a {
+    color: inherit;
+    text-decoration: underline;
   }
 {% endstylesheet %}
 
