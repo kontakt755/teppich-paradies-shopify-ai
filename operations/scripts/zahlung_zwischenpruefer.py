@@ -4,7 +4,7 @@ unabhaengig vom Erzeuger (zahlung-sammeldatei.mjs), bevor die Datei zur Bank geh
 
   ~/.venvs/analyse/bin/python operations/scripts/zahlung_zwischenpruefer.py [sammeldatei.xml ...]
 
-Ohne Argument: alle noch nicht verworfenen sammeldatei-*.xml im Privatordner ($TP_PRIVAT_DIR/zahlungen).
+Ohne Argument: alle Dateien, die in $TP_PRIVAT_DIR/zahlungen/vorgemerkt.json stehen (also nicht verworfen sind).
 Prueft je Zahlung: Rechnung im Archiv, Empfaenger-IBAN (Pruefziffer, Konfiguration, steht auf der
 Rechnung, frueher an dieselbe IBAN gezahlt), Betrag (Rechnungswert oder hoechstens 5 % Skonto, das
 auf der Rechnung steht), nicht schon laut Kontoauszug bezahlt, nicht in einer anderen Datei, keine
@@ -102,6 +102,16 @@ def glaetten(text):
     return re.sub(r"(\d) +, *(\d{2})(?!\d)", r"\1,\2", t)
 
 
+def skonto_belegt(text, abzug, brutto_cent):
+    """Abzug steht als Betrag auf der Rechnung oder passt zu einem dort genannten Skontosatz (eine Cent Rundung)."""
+    if re.search(rf"(^|[^0-9.,]){abzug // 100},{abzug % 100:02d}($|[^0-9])", text):
+        return True
+    saetze = [float(x.replace(",", ".")) for x in re.findall(r"(\d{1,2}(?:[.,]\d{1,2})?)\s*%\s*Skonto", text, re.I)]
+    saetze += [float(x) for x in re.findall(r"#SKONTO#TAGE=\d+#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#", text, re.I)]
+    saetze = [x for x in saetze if 0 < x <= SKONTO_MAX * 100]
+    return bool(saetze) and abzug <= round(brutto_cent * max(saetze) / 100) + 1
+
+
 def pdf_text(pfad):
     import logging
     from pypdf import PdfReader  # nur hier: Tests laufen ohne pypdf
@@ -151,6 +161,7 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere):
         fehler.append(f"Kopf passt nicht: Anzahl {kopf['anzahl']} bei {len(zahlungen)} Zahlungen, Kontrollsumme {kopf['summe']} bei {gesamt}")
     if not iban_gueltig(kopf["schuldner"]):
         fehler.append("Auftraggeber-IBAN ungueltig")
+    gesehen = set()
     for z in zahlungen:
         nummer = re.sub(r"^RE-", "", z["ende"])
         wer = f"{z['name']} RE {nummer}"
@@ -191,12 +202,13 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere):
                 hinweise.append(f"{wer}: Rechnung nennt Skonto, die Datei zahlt den vollen Betrag")
             elif abzug > 0:
                 genannt = f"{abzug // 100},{abzug % 100:02d}"
-                if abzug > cent(b["brutto"]) * SKONTO_MAX or not re.search(r"skonto", text, re.I) or genannt not in z["zweck"]:
+                if abzug > cent(b["brutto"]) * SKONTO_MAX or not re.search(r"skonto", text, re.I) or genannt not in z["zweck"] or not skonto_belegt(text, abzug, cent(b["brutto"])):
                     fehler.append(f"{wer}: Abzug {genannt} EUR nicht als Skonto belegt (Rechnung {b['brutto']:.2f})")
                 else:
                     hinweise.append(f"{wer}: Skonto {genannt} EUR ({abzug / cent(b['brutto']) * 100:.1f} %) – Frist auf der Rechnung beachten")
         for x in buchungen:
-            if x["betrag"] < 0 and x["datum"] >= (b["datum"] or "") and nummer_im(x["text"], nummer):
+            gleicher = nur_zeichen(z["iban"]) in x["ibans"] or (konfig and worte(x["name"]) & worte(lieferanten[konfig[0]].get("name")))
+            if x["betrag"] < 0 and gleicher and x["datum"] >= (b["datum"] or "") and nummer_im(x["text"], nummer):
                 fehler.append(f"{wer}: laut Kontoauszug schon bezahlt am {x['datum']} ({-x['betrag']:.2f} EUR)")
                 break
         frueher = {i for x in buchungen if x["betrag"] < 0 and konfig and worte(x["name"]) & worte(lieferanten[konfig[0]].get("name")) for i in x["ibans"]}
@@ -204,8 +216,12 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere):
             hinweise.append(f"{wer}: frueher an eine andere IBAN dieses Namens gezahlt – Konto vor Freigabe pruefen")
         if not frueher:
             hinweise.append(f"{wer}: an diese IBAN noch nie ueberwiesen (laut Kontoauszug)")
+        schluessel = (nur_zeichen(z["iban"]), nur_zeichen(nummer))
+        if schluessel in gesehen:
+            fehler.append(f"{wer}: steht zweimal in dieser Datei")
+        gesehen.add(schluessel)
         for andere_datei, nummern in andere.items():
-            if andere_datei != name and nur_zeichen(nummer) in nummern:
+            if andere_datei != name and schluessel in nummern:
                 fehler.append(f"{wer}: steht auch in {andere_datei}")
     return fehler, hinweise
 
@@ -214,9 +230,11 @@ def main(argv):
     privat = Path(os.environ.get("TP_PRIVAT_DIR") or Path.home() / "teppich-paradies-analyse")
     ordner = privat / "zahlungen"
     konfig = json.loads((ordner / "konfiguration.json").read_text("utf-8"))
-    dateien = [Path(a) for a in argv] or sorted(ordner.glob("sammeldatei-*.xml"))
-    aktive = sorted(ordner.glob("sammeldatei-*.xml"))
-    andere = {p.name: {nur_zeichen(re.sub(r"^RE-", "", z["ende"])) for z in sepa_lesen(p.read_text("utf-8"))[1]} for p in set(aktive) | set(dateien)}
+    # Aktiv ist, was in vorgemerkt.json steht: eine verworfene Datei verliert dort ihre Eintraege.
+    vorgemerkt = json.loads((ordner / "vorgemerkt.json").read_text("utf-8")) if (ordner / "vorgemerkt.json").exists() else []
+    aktive = {ordner / v["datei"] for v in vorgemerkt if v.get("datei") and (ordner / v["datei"]).exists()}
+    dateien = [Path(a) for a in argv] or sorted(aktive)
+    andere = {p.name: {(nur_zeichen(z["iban"]), nur_zeichen(re.sub(r"^RE-", "", z["ende"]))) for z in sepa_lesen(p.read_text("utf-8"))[1]} for p in aktive | set(dateien)}
     belege = archiv_lesen(privat)
     buchungen = bank_lesen(privat / "laden-entlastung-2026-11" / "bank-export")
     bis = max((b["datum"] for b in buchungen), default="keiner")

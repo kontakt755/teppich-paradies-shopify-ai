@@ -48,7 +48,7 @@ class Zwischenpruefer(unittest.TestCase):
         self.assertIn("RE 100: Abzug 10,00 EUR nicht als Skonto belegt", text)
         self.assertIn("RE 100: laut Kontoauszug schon bezahlt am 2026-11-12", text)
         self.assertIn("RE 200: IBAN steht nicht auf der Rechnung", text)
-        self.assertIn("RE 200: steht auch in alt.xml", text)
+        self.assertNotIn("RE 200: steht auch in alt.xml", text)  # alt.xml kennt nur eine Nummer ohne Konto
         self.assertIn("RE 300: Beleg ist eine Gutschrift", text)
         self.assertIn("RE 999: IBAN steht bei keinem eingetragenen Lieferanten", text)
 
@@ -61,6 +61,25 @@ class Zwischenpruefer(unittest.TestCase):
     def test_nummer_als_eigenes_wort(self):
         self.assertTrue(z.nummer_im("Re 208415TP050", "208415"))
         self.assertFalse(z.nummer_im("Kd 12084151", "208415"))
+
+
+    def test_codex_runde_1(self):
+        # Skonto nur bis zum belegten Satz: 2 % belegt, 5 % abgezogen
+        f, _ = pruefen(pain(("100", 95.0, LIEF, "RE 100 abzgl Skonto 5,00 EUR")), [beleg("100", 100.0, f"2 % Skonto IBAN {LIEF}")])
+        self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
+        # Skontobetrag steht woertlich auf der Rechnung (Lieferant A rechnet auf den Warenanteil)
+        f, _ = pruefen(pain(("100", 98.4, LIEF, "RE 100 abzgl Skonto 1,60 EUR")), [beleg("100", 100.0, f"Skonto 1,60 EUR IBAN {LIEF}")])
+        self.assertEqual(f, [])
+        # Zweimal dieselbe Rechnung in einer Datei
+        f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100"), ("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"IBAN {LIEF}")])
+        self.assertTrue(any("zweimal in dieser Datei" in x for x in f))
+        # Fremde Abbuchung mit derselben Nummer macht die Rechnung nicht bezahlt
+        fremd = {"datum": "2026-11-12", "betrag": -7.0, "name": "Andere Firma", "ibans": [FREMD], "text": "Bestellung 100"}
+        f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"IBAN {LIEF}")], buchungen=[fremd])
+        self.assertFalse(any("schon bezahlt" in x for x in f))
+        # Gleiche Nummer bei anderem Konto in anderer Datei sperrt nicht, gleiches Konto sperrt
+        f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"IBAN {LIEF}")], andere={"a.xml": {(FREMD, "100")}, "b.xml": {(LIEF, "100")}})
+        self.assertEqual([x for x in f if "steht auch" in x], ["Muster Teppich GmbH RE 100: steht auch in b.xml"])
 
 
 if __name__ == "__main__":
