@@ -47,7 +47,7 @@ import { versandRueckmeldung } from '../../lib/versand.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { GESPERRT_GRUND, GESPERRT_KURZ, gesperrteNamen, oeffneKundeInformieren } from './muster-gesperrt.mjs';
 import { packRotZaehlung } from '../../lib/ampel.mjs';
-import { ampelPlakette, ampelRand, lagerPlakette } from '../../bausteine/ampel.mjs';
+import { ampelPlakette, ampelRand, ausgelaufenPlakette, lagerPlakette } from '../../bausteine/ampel.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { kunden } from './gemeinsam.mjs';
 
@@ -401,6 +401,7 @@ function zeileHtml(m, mehrereBestellungen, { lesend, fehltHervor = false, treffe
       <span class="mp-etikett">Auf dem Muster${m.lieferant ? ` · <span class="mp-laden">${esc(m.lieferant)}</span>` : ''}${treffer ? ' · <strong class="mp-treffertext">passt zur Suche</strong>' : ''}</span>
       <span>${esc(name)}</span>
       ${farbNrHtml(v)}
+      ${m.ausgelaufen ? `<span>${ausgelaufenPlakette()} <span class="small">nicht mehr im Shop, deshalb kein Aufkleber</span></span>` : ''}
       ${m.verwechselbar ? '<span class="mp-achtung">Ähnliches Muster im selben Umschlag – Farbnummer prüfen</span>' : ''}
     </div>
     <div class="mp-pfeil" aria-hidden="true">→</div>
@@ -804,6 +805,7 @@ function karteHtml({ kunde: k, muster: m }, { erste = false, lesend = false } = 
       <span class="mp-etikett">Auf dem Muster${m.lieferant ? ` · <span class="mp-laden">${esc(m.lieferant)}</span>` : ''}</span>
       <span class="mp-karte-name">${esc(v.produktname || v.kollektion || m.bestellt.titel)}</span>
       ${farbNrHtml(v)}
+      ${m.ausgelaufen ? `<span>${ausgelaufenPlakette()} <span class="small">nicht mehr im Shop, deshalb kein Aufkleber</span></span>` : ''}
       ${m.verwechselbar ? '<span class="mp-achtung">Ähnliches Muster im selben Umschlag – Farbnummer prüfen</span>' : ''}
     </div>
     <div class="mp-karte-ziel">

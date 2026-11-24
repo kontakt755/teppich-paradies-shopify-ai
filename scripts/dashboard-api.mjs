@@ -2315,7 +2315,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       };
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
-        produkte: new Map(katalog.map(p => [p.handle, p])),
+        // Mit Ausgelaufenem: die Zeile eines Musters, dessen Produkt inzwischen archiviert ist, sagt dann "ausgelaufen".
+        produkte: new Map(this._lexikonMitArchiv().map(p => [p.handle, p])),
         ersatzVon,
         // Grund samt Beginn: haengt ein Muster laenger, ist es in der Packstation rot wie das To-do auf Heute.
         automatikFallVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId)) || null,
@@ -2497,9 +2498,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         // Wie beim Einlagern aus der Produktsuche: alle Breiten der Farbe, damit jede Bestellung dieser Farbe das Stueck findet.
         let ziel = null, farbe = null;
         // Erst das Produkt vom Aufkleber, sonst das Produkt der Produktsuche, das diese Artikelnummer fuehrt.
-        const perSku = () => this._lexikonProdukte().find(x => !String(x.handle).startsWith('muster-') && (x.varianten || []).some(v => musterSchluessel({ sku: v.sku }) === key))?.handle;
+        const perSku = () => this._lexikonMitArchiv().find(x => !String(x.handle).startsWith('muster-') && (x.varianten || []).some(v => musterSchluessel({ sku: v.sku }) === key))?.handle;
         for (const h of [m.produktHandle, perSku()]) {
-          ziel = this._musterlagerProdukt(h);
+          ziel = this._musterlagerProdukt(h, { mitArchiv: true });
           farbe = ziel?.farben.find(f => f.schluessel.includes(key)) || null;
           if (farbe) break;
         }
@@ -3748,10 +3749,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           offen.get(p.musterLager.id).push({ orderId: a.id, orderName: a.name, kunde: kunde(a), wartetAufLieferant: lagerWartetAufLieferant(a, statusAlle) });
         }
       }
-      const gruppen = new Map(this._lexikonProdukte().map(x => [x.handle, x.produktgruppe || null]));
+      const gruppen = new Map(this._lexikonMitArchiv().map(x => [x.handle, x.produktgruppe || null]));
       const { index: acIndex, jeSku } = this._resteIndex();
       // Lieferant je Eintrag ueber die Artikelnummern, der Name kommt aus den privaten Stammdaten.
-      const lieferantJe = lagerLieferantJeSchluessel(this._lexikonProdukte(), kennungAusLexikon);
+      const lieferantJe = lagerLieferantJeSchluessel(this._lexikonMitArchiv(), kennungAusLexikon);
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
       const lieferantVon = e => { const id = lagerLieferantVon(e, lieferantJe); return id ? { id, name: stammdatenFuer(stammdaten, id).name || `Lieferant ${id}` } : null; };
       return {
@@ -3923,8 +3924,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Farben eines Lexikon-Produkts zum Einlagern, mit Kennzeichen "schon im Lager". */
     einkaufMusterlagerFarben({ handle = '' } = {}) {
       const dir = privatDirPath || privatDir();
-      const ziel = this._musterlagerProdukt(handle);
+      const ziel = this._musterlagerProdukt(handle, { mitArchiv: true });
       if (!ziel) return { verfuegbar: false, hinweis: 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.' };
+      // Ausgelaufen: einlagern geht (das Muster liegt ja hier), im Shop sperren nicht - dort gibt es nichts mehr.
+      const ausgelaufen = ziel.produkt.status === 'ARCHIVED';
       let imLager = new Set();
       try { imLager = new Set(leseLager(musterlagerPfad(dir)).eintraege.filter(e => !e.leer).flatMap(e => e.schluessel)); } catch { /* Lager kaputt: nur ohne Kennzeichen */ }
       // Fuer "Muster sperren…": welche Farbe einen eigenen Musterartikel hat und welche schon gesperrt ist.
@@ -3932,19 +3935,19 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* Ablage kaputt: der Musterlager-Reiter meldet es, Sperren lehnt der Server ab */ }
       return {
         verfuegbar: true, handle: ziel.produkt.handle, titel: lagerKurzTitel(ziel.produkt.titel), produktgruppe: ziel.produkt.produktgruppe || null,
-        bild: ziel.produkt.bild || null,
+        bild: ziel.produkt.bild || null, ...(ausgelaufen ? { ausgelaufen: true } : {}),
         farben: ziel.farben.map(f => {
           const skus = musterSkusDerFarbe(ziel.muster, f.farbe);
-          return { ...f, imLager: f.schluessel.some(k => imLager.has(k)), sperrbar: skus.length === 1, gesperrt: skus.some(sku => sperren.has(sku)) };
+          return { ...f, imLager: f.schluessel.some(k => imLager.has(k)), sperrbar: skus.length === 1 && !ausgelaufen, gesperrt: skus.some(sku => sperren.has(sku)) };
         }),
       };
     },
 
     /** Lexikon-Produkt samt Musterprodukt und Farben; auch wenn das Musterprodukt selbst gewaehlt wurde. */
-    _musterlagerProdukt(handle) {
+    _musterlagerProdukt(handle, { mitArchiv = false } = {}) {
       const h = String(handle || '').trim();
       if (!h) return null;
-      const produkte = this._lexikonProdukte();
+      const produkte = mitArchiv ? this._lexikonMitArchiv() : this._lexikonProdukte();
       const je = new Map(produkte.map(x => [x.handle, x]));
       const gewaehlt = je.get(h);
       if (!gewaehlt) return null;
@@ -3997,7 +4000,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const { handle, farben, schluessel, titel, farbe, art, anzahl, ort, notiz } = payload;
           let ziele;
           if (handle && Array.isArray(farben) && farben.length) {
-            const z = this._musterlagerProdukt(handle);
+            const z = this._musterlagerProdukt(handle, { mitArchiv: true });
             if (!z) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.');
             const gesucht = new Set(farben.map(f => String(f)));
             ziele = z.farben.filter(f => gesucht.has(f.farbe)).map(f => ({ titel: lagerKurzTitel(z.produkt.titel), farbe: f.ganzerArtikel ? null : f.farbe, handle: z.produkt.handle, schluessel: f.schluessel }));
@@ -4098,7 +4101,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const { aktion, vorgangId, eintraege, druckauftragId, entfernenIds } = payload;
       let eintrag;
       if (aktion === 'vormerken') {
-        const produkte = this._lexikonProdukte();
+        const produkte = this._lexikonMitArchiv();
         const je = new Map(produkte.map(p => [p.handle, p]));
         const produkt = je.get(payload.handle);
         if (!produkt) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden. Bitte neu suchen.');
@@ -4162,8 +4165,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       const begriffe = suchbegriffe(q);
       const passendJe = new Map();
+      // Ausgelaufenes nur bei einer Suche und hinter den lieferbaren Treffern; beim Durchblaettern bleibt die Liste, wie sie war.
       const treffer = begriffe.length
-        ? daten.produkte.filter(p => {
+        ? this._lexikonMitArchiv().filter(p => {
           const t = lexikonTreffer(p, begriffe);
           if (t.passt) passendJe.set(p, t.varianten);
           return t.passt;
@@ -4277,7 +4281,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           befehl: 'npm run lexikon:export',
         };
       }
-      const produkt = daten.produkte.find(p => p.handle === handle);
+      const produkt = this._lexikonMitArchiv().find(p => p.handle === handle);
       if (!produkt) return { verfuegbar: false, quelle: file, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
       // Rueckweg zum Kunden: wer wartet gerade auf genau dieses Produkt? Wer im
       // Kundengespraech nachschlaegt, sieht so sofort, dass da noch etwas offen
@@ -4520,9 +4524,22 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return Array.isArray(daten?.produkte) ? daten.produkte : [];
     },
 
+    /**
+     * Produkte samt Ausgelaufenem (`archiviert` im Export, Status ARCHIVED). Nur fuer Suchen und Zuordnungen:
+     * im Laden liegen dazu weiter Muster und alte Bestellungen (Benutzer 2026-11-24). Alles, was "gibt es im
+     * Shop" bedeutet (Musterautomatik, Bestellampel, Kauflinks, Vorschlaege), bleibt bei _lexikonProdukte().
+     */
+    _lexikonMitArchiv() {
+      const daten = readJsonGecacht(path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json'));
+      const produkte = Array.isArray(daten?.produkte) ? daten.produkte : [];
+      if (!Array.isArray(daten?.archiviert) || !daten.archiviert.length) return produkte;
+      if (this._archivCache?.daten !== daten) this._archivCache = { daten, alle: [...produkte, ...daten.archiviert] };
+      return this._archivCache.alle;
+    },
+
     /** Lieferantenangaben je Bestellposition; ein kaputtes Lexikon darf die Kundensuche am Telefon nicht stoppen. */
     _positionSuchtext() {
-      try { return positionSuchtext(this._lexikonProdukte()); } catch { return null; }
+      try { return positionSuchtext(this._lexikonMitArchiv()); } catch { return null; }
     },
 
     /**

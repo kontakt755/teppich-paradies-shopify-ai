@@ -297,14 +297,26 @@ function produktListe(exportDaten) {
  * @returns {{erstellt: string, anzahl: number, produkte: Array}}
  */
 export function aufbereiten(exportDaten, opt = {}) {
-  // Archivierte Produkte gibt es im Shop nicht mehr und gehoeren nicht ins
-  // Lexikon (Inhaber 2026-10-05). Der Export laedt Musterprodukte ueber
-  // handle:muster-* unabhaengig vom Status, also auch archivierte - sie
-  // fallen hier heraus, und ein Verweis auf ein archiviertes Muster zaehlt
-  // nicht als vorhandenes Muster.
+  const modell = baueModell(exportDaten, opt, false);
+  // Ausgelaufenes (archiviert) getrennt unter `archiviert`: im Laden liegen dazu weiter Muster und alte
+  // Bestellungen, die Suchen im Control Center muessen es finden (Benutzer 2026-11-24). `produkte` bleibt
+  // ohne Archiv - alles, was "gibt es im Shop" daraus liest, aendert sich nicht. Zweiter Durchlauf ueber
+  // alle Produkte, damit ausgelaufene Muster ihr Original finden.
+  if (produktListe(exportDaten).some(istArchiviert)) {
+    modell.archiviert = baueModell(exportDaten, opt, true).produkte.filter((p) => p.status === 'ARCHIVED');
+  }
+  return modell;
+}
+
+function baueModell(exportDaten, opt, mitArchiv) {
+  // Archivierte Produkte gibt es im Shop nicht mehr und gehoeren nicht in die
+  // Produktliste des Lexikons (Inhaber 2026-10-05). Der Export laedt sie mit
+  // (auch Musterprodukte ueber handle:muster-*) - sie fallen hier heraus, und
+  // ein Verweis auf ein archiviertes Muster zaehlt nicht als vorhandenes Muster.
   const alle = produktListe(exportDaten);
-  const archiviert = new Set(alle.filter(istArchiviert).map((p) => text(p.handle)).filter(Boolean));
-  const produkte = alle.filter((p) => !istArchiviert(p));
+  const istWeg = (p) => !mitArchiv && istArchiviert(p);
+  const archiviert = new Set(alle.filter(istWeg).map((p) => text(p.handle)).filter(Boolean));
+  const produkte = alle.filter((p) => !istWeg(p));
   const jetzt = opt.jetzt ?? new Date();
   const lieferantSuchen = opt.lieferantSuchen ?? {};
   // Fuer die Muster-Verknuepfung ueber den Produkt-Handle (muster-<handle>)

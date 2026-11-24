@@ -33,3 +33,6 @@ export function ampelPlakette(stufe, wort, { titel = '', haken = false } = {}) {
 export function lagerPlakette(ort = '', zusatz = '') {
   return `<strong class="lager-plakette"><span aria-hidden="true">✓ </span>IM LAGER${ort ? ` – Fach ${esc(ort)}` : ''}${zusatz ? `<span class="lager-plakette-zusatz">${esc(zusatz)}</span>` : ''}</strong>`;
 }
+
+/** "! Ausgelaufen": das Produkt ist im Shop archiviert. Es bleibt auffindbar (Muster, alte Bestellungen), ist aber nicht mehr lieferbar. */
+export const ausgelaufenPlakette = () => ampelPlakette('gelb', 'Ausgelaufen', { titel: 'Im Shop archiviert – nicht mehr lieferbar, nicht mehr bestellen' });
