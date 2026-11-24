@@ -14,7 +14,8 @@ import {
 import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../../lib/einkauf-uebersicht.mjs';
 import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { warteWort, warteTitel } from '../../lib/ampel.mjs';
-import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
+import { ampelPlakette, ampelRand, lagerPlakette } from '../../bausteine/ampel.mjs';
+import { imLagerVon } from '../../lib/musterlager-bestand.mjs';
 import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { lieferwegVon } from '../../lib/lieferweg.mjs';
 import { state } from '../../kern/zustand.mjs';
@@ -108,9 +109,10 @@ function postenZeile(x, namen) {
   // Bei Mustern auch der Ort: so sieht man, ob der Kunde in der Naehe wohnt (vorbeibringen).
   const ort = p.istMuster ? kundeUndOrt(p.orderId).ort : '';
   // Aus dem Musterlager: wo es liegt - das ist beim Verschicken die erste Frage.
-  const lager = p.musterLager && !afEintragFuer(p)?.status ? `Musterlager${p.musterLager.ort ? ` ${p.musterLager.ort}` : ''}` : '';
-  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName, lager].filter(v => v && v !== 'UNGEKLAERT');
-  return `<li class="lf-posten${ampelRand(x.ampel?.stufe)}"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div></div>${warteChip(x)}</li>`;
+  // Gross statt Kleintext: wer hier bestellt, muss sehen, dass das Muster schon im Haus liegt (Benutzer 24.11.).
+  const lager = imLagerVon(p, afEintragFuer(p)?.status);
+  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName].filter(v => v && v !== 'UNGEKLAERT');
+  return `<li class="lf-posten${ampelRand(x.ampel?.stufe)}"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div>${lager ? lagerPlakette(lager.ort, lager.stattLieferant ? 'nicht beim Lieferanten bestellen' : '') : ''}</div>${warteChip(x)}</li>`;
 }
 
 function postenListe(titel, liste, namen, max) {

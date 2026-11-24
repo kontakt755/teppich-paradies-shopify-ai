@@ -94,3 +94,17 @@ export function stueckJeArt(jeArt = {}) {
   if (sonst > 0) teile.push(`${sonst} Stück`);
   return teile.join(' · ') || '0 Stück';
 }
+
+/**
+ * Liegt dieses Muster schon im eigenen Musterlager? Fuer die Plakette "IM LAGER" in Bestellen und Packstation.
+ * `musterLager`: von dort zugeteilt (nur solange noch nichts gebucht ist). `musterLagerMoeglich`: laeuft ueber
+ * den Lieferanten, liegt aber frei im Lager - dann `stattLieferant`, damit niemand (nach)bestellt.
+ * Persoenlich vorbeigebracht (`eigen_vorbei`) liegt nicht im Lagerfach.
+ * @returns {{ort: string, stattLieferant: boolean}|null}
+ */
+export function imLagerVon(p, status = null) {
+  if (!p?.istMuster) return null;
+  if (p.musterLager && !status && p.musterHerkunft !== 'eigen_vorbei') return { ort: p.musterLager.ort || '', stattLieferant: false };
+  if (p.musterLagerMoeglich && (!status || status === 'bestellt')) return { ort: p.musterLagerMoeglich.ort || '', stattLieferant: true };
+  return null;
+}
