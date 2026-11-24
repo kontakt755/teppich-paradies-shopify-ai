@@ -101,6 +101,23 @@ class Zwischenpruefer(unittest.TestCase):
         f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"Der Betrag wird per Lastschrift eingezogen. IBAN {LIEF}")])
         self.assertTrue(any("Lastschrift" in x for x in f))
 
+    def test_codex_runde_3(self):
+        # „2 % Skonto. Fracht 5,00 EUR“: 5,00 ist kein Skontobetrag
+        f, _ = pruefen(pain(("100", 95.0, LIEF, "RE 100 abzgl Skonto 5,00 EUR")), [beleg("100", 100.0, f"innerhalb von 10 Tagen mit 2 % Skonto. Fracht 5,00 EUR IBAN {LIEF}")])
+        self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
+        # Staffel: 4 % nur 3 Tage (bis 13.11.), 2 % 10 Tage; am 15.11. sind 4 % abgelaufen, 2 % gehen
+        staffel = f"innerhalb von 3 Tagen mit 4 % Skonto, innerhalb von 10 Tagen mit 2 % Skonto IBAN {LIEF}"
+        f, _ = pruefen(pain(("100", 96.0, LIEF, "RE 100 abzgl Skonto 4,00 EUR")), [beleg("100", 100.0, staffel)])
+        self.assertTrue(any("abgelaufen" in x for x in f))
+        f, _ = pruefen(pain(("100", 98.0, LIEF, "RE 100 abzgl Skonto 2,00 EUR")), [beleg("100", 100.0, staffel)])
+        self.assertEqual(f, [])
+        # Unbekanntes Brutto: „Gesamtbetrag netto“ zaehlt nicht
+        f, _ = pruefen(pain(("100", 84.03, LIEF, "RE 100")), [beleg("100", None, f"Gesamtbetrag netto 84,03 EUR Gesamtbetrag brutto 100,00 EUR IBAN {LIEF}")])
+        self.assertTrue(any("Rechnungswert im Archiv unbekannt" in x for x in f))
+        # XML-Zahlungsart 59 (Lastschrift) ohne das Wort
+        f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"<ram:TypeCode>59</ram:TypeCode> IBAN {LIEF}")])
+        self.assertTrue(any("Lastschrift" in x for x in f))
+
     def test_bankexport_mit_spalte_iban(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:
