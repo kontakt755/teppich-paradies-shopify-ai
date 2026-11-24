@@ -9,7 +9,9 @@
     widerspruechlich).
   - Kategorie: Beschreibung mit <h2>Häufige Fragen</h2> und Fragen als <h3>,
     nur auf Vorlagen, die die Beschreibung vollstaendig zeigen und keine eigene
-    FAQ-Section haben (Standard, farbuebersicht, standardteppiche).
+    FAQ-Section haben (Standard, farbuebersicht, standardteppiche und die
+    Vorlagen mit blocks/tp-kategorie-text aus tpsf_kategorietext; teppichboden
+    und vinylboden-klickvinyl haben eine eigene FAQ-Section und fehlen bewusst).
   - Seite: Inhalt mit <h2>Häufige Fragen</h2>, nur Standardvorlage (page.json);
     page.teppichreinigung und page.verlegung-berlin-nord haben FAQ-Sections.
 
@@ -24,7 +26,8 @@
         render 'tp-faq-beschreibung-structured-data', html: product.description, seiten_url: canonical_url
       endunless
     when 'collection'
-      if template.suffix == blank or template.suffix == 'farbuebersicht' or template.suffix == 'standardteppiche'
+      assign tpsf_kategorietext = 'teppichboden-wolle,teppichfliesen,teppichboden-nadelvlies,teppichboden-velours,teppichboden-sisal,teppichboden-hochflor,teppichboden-schlinge,sonderposten,zubehoer-unterkategorie,vinylboden-klebevinyl,vinylboden-rollenvinyl,linoleumboden' | split: ','
+      if template.suffix == blank or template.suffix == 'farbuebersicht' or template.suffix == 'standardteppiche' or tpsf_kategorietext contains template.suffix
         render 'tp-faq-beschreibung-structured-data', html: collection.description, seiten_url: canonical_url, ebene: 'h2'
       endif
     when 'page'

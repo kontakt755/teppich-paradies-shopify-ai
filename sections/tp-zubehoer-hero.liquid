@@ -16,7 +16,7 @@
   assign heading = section.settings.heading | default: collection.title
   assign lead = section.settings.text
   if lead == blank and collection.description != blank
-    assign lead = collection.description | strip_html
+    assign lead = collection.description | split: '<h2' | first | strip_html
   endif
   assign hero_image = section.settings.image
   assign max_motive = 4
