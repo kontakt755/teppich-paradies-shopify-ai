@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { createHash } from 'node:crypto';
-import { durchgang, entwurfAblegen, holeAusDropbox, ordner, pruefeAuftrag } from '../lib/mail-entwuerfe.mjs';
+import { execFileSync } from 'node:child_process';
+import { durchgang, entwurfAblegen, gitHolen, holeAusDropbox, ordner, pruefeAuftrag } from '../lib/mail-entwuerfe.mjs';
 import { main } from '../scripts/mail-entwuerfe.mjs';
 
 const ZUGANG = { benutzer: 'kontakt@beispiel.test', passwort: 'geheim', absender: 'kontakt@beispiel.test', absenderName: 'Beispiel' };
@@ -176,4 +177,25 @@ test('anhaenge_git: Erlaubnisliste, Pfad nur unter ausgabe/, voller Commit, Typ'
     assert.match(g({ dateien: [{ pfad, sha256: 'c'.repeat(64) }] }).fehler, /Git-Pfad/, pfad);
   assert.match(g({ dateien: [{ pfad: 'ausgabe/x.exe', sha256: 'c'.repeat(64) }] }).fehler, /Dateityp/);
   assert.match(g({ dateien: [{ pfad: 'ausgabe/x.xlsx', sha256: 'kurz' }] }).fehler, /sha256/);
+});
+
+test('gitHolen: genau aus dem Commit (lokales Repository statt GitHub), unbekannter Pfad/Commit = Auftrag falsch', () => {
+  const quelle = tmp();
+  const git = (...a) => execFileSync('git', ['-C', quelle, ...a], { stdio: 'pipe' }).toString().trim();
+  git('init', '-q');
+  git('config', 'uploadpack.allowAnySHA1InWant', 'true');
+  fs.mkdirSync(path.join(quelle, 'ausgabe/2026-11'), { recursive: true });
+  fs.writeFileSync(path.join(quelle, 'ausgabe/2026-11/VMA Ä.xlsx'), XLSX);
+  git('add', '.');
+  git('-c', 'user.name=t', '-c', 'user.email=t@beispiel.test', 'commit', '-qm', 'eins');
+  const commit = git('rev-parse', 'HEAD');
+  fs.writeFileSync(path.join(quelle, 'ausgabe/2026-11/VMA Ä.xlsx'), 'geaendert');
+  git('-c', 'user.name=t', '-c', 'user.email=t@beispiel.test', 'commit', '-qam', 'zwei');
+  const cache = tmp();
+  const o = { cache, url: quelle };
+  assert.deepEqual(gitHolen('kontakt755/teppich-paradies-vma', commit, 'ausgabe/2026-11/VMA Ä.xlsx', o), XLSX);
+  assert.deepEqual(gitHolen('kontakt755/teppich-paradies-vma', commit, 'ausgabe/2026-11/VMA Ä.xlsx', o), XLSX, 'zweiter Abruf aus dem Zwischenspeicher');
+  assert.throws(() => gitHolen('kontakt755/teppich-paradies-vma', commit, 'ausgabe/fehlt.xlsx', o), e => e.auftragFalsch === true);
+  assert.throws(() => gitHolen('kontakt755/teppich-paradies-vma', 'f'.repeat(40), 'ausgabe/x.xlsx', o), e => e.auftragFalsch === true);
+  assert.throws(() => gitHolen('kontakt755/teppich-paradies-vma', 'f'.repeat(40), 'ausgabe/x.xlsx', { cache, url: path.join(quelle, 'gibt-es-nicht') }), e => e.auftragFalsch === false);
 });
