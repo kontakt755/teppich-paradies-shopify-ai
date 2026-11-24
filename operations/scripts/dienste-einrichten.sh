@@ -65,11 +65,12 @@ SICHERUNG_LABEL="net.teppich-paradies.sicherung"
 AUSSER_HAUS_LABEL="net.teppich-paradies.sicherung-ausser-haus"
 NACHZIEHEN_LABEL="net.teppich-paradies.nachziehen"
 GEL_DIESEL_LABEL="net.teppich-paradies.gel-diesel"
+SPIEGEL_LABEL="net.teppich-paradies.spiegel-waechter"
 SAMMELDATEI_LABEL="net.teppich-paradies.sammeldatei"
 MAIL_ENTWUERFE_LABEL="net.teppich-paradies.mail-entwuerfe"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--sammeldatei" && "$1" != "--mail-entwuerfe" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --sammeldatei | --mail-entwuerfe]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--spiegel-waechter" && "$1" != "--sammeldatei" && "$1" != "--mail-entwuerfe" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --spiegel-waechter | --sammeldatei | --mail-entwuerfe]\n' >&2
   exit 1
 fi
 
@@ -258,6 +259,16 @@ gel_diesel_einrichten() {
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-gel-diesel.log"
 }
 
+spiegel_waechter_einrichten() {
+  schritt "Waechter gegen fremde Spiegelseiten, taeglich 7:10 (${SPIEGEL_LABEL})"
+  vorlage_einrichten "${SPIEGEL_LABEL}" || return 1
+  ok "Eingerichtet: taeglich 7:10 Uhr; ohne KI, nur lesende Abrufe."
+  if [[ ! -f "${HOME}/tp-dashboard/operations/scripts/spiegel-waechter.mjs" ]]; then
+    fehlt "Das Skript fehlt in ~/tp-dashboard noch - erst main nachziehen (npm run -s betrieb:nachziehen -- --status)."
+  fi
+  hinweis "Probe: cd ~/tp-dashboard && npm run -s spiegel:waechter -- --trocken"
+}
+
 sammeldatei_einrichten() {
   schritt "SEPA-Sammeldatei freitags 10 Uhr (${SAMMELDATEI_LABEL})"
   if [[ ! -f "${HOME}/teppich-paradies-analyse/zahlungen/konfiguration.json" ]]; then
@@ -293,6 +304,10 @@ if [[ "${1:-}" == "--mail-entwuerfe" ]]; then
 fi
 if [[ "${1:-}" == "--sammeldatei" ]]; then
   sammeldatei_einrichten
+  exit 0
+fi
+if [[ "${1:-}" == "--spiegel-waechter" ]]; then
+  spiegel_waechter_einrichten
   exit 0
 fi
 if [[ "${1:-}" == "--gel-diesel" ]]; then

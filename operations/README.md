@@ -1461,3 +1461,12 @@ Sync-Dienst neu.
 - **Ohne zweite Kopie ausser Haus** sind bei einem Plattenschaden, einem Diebstahl oder einer
   vollen Platte Original und Sicherung zugleich weg. Das ist eine Entscheidung des Inhabers
   (Abschnitt „Taegliche Betriebssicherung“).
+
+### Spiegel-Wächter (fremde Kopien des Shops)
+
+`npm run -s spiegel:waechter` (`-- --trocken` zeigt nur an; `scripts/spiegel-waechter.mjs`, Test `tests/spiegel-waechter.test.mjs`)
+prüft täglich 7:10 ohne KI, ob eine fremde Domain unseren Shop spiegelt (`Shopify.shop = "sjjyq1-6w…"` im HTML, Header
+`powered-by: Shopify`): die bekannte `.live`-Seite und `teppich-paradies.(shop|store|online|de|com)`. Befund: bekannte Seite
+ohne Host-Sperre (`snippets/tp-host-sperre.liquid`, Merkmal `split('').reverse`) = P0, unbekannter Host = P1. Er meldet nur beim
+Wechsel (Mac-Mitteilung, To-do per `npm run task`, Status `routinen/spiegel-waechter/status.json`). Einrichten:
+`bash operations/scripts/dienste-einrichten.sh --spiegel-waechter`.
