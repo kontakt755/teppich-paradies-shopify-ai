@@ -199,6 +199,10 @@ class Zwischenpruefer(unittest.TestCase):
         self.assertEqual(z.skonto_basis(unstimmig, 7153), 0)
         f, _ = pruefen(pain(("100", 69.99, LIEF, "RE 100 abzgl Skonto 1,54 EUR")), [beleg("100", 71.53, f"{unstimmig} #SKONTO#TAGE=10#PROZENT=04.00# IBAN {LIEF}")])
         self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
+        # anderer Namensraum-Praefix und Attribute (Codex Runde 3); Basis 0 sperrt auch 1 Cent
+        anders = '<x:SpecifiedTradeSettlementHeaderMonetarySummation a="1"><x:LineTotalAmount>38.40</x:LineTotalAmount><x:ChargeTotalAmount currencyID="EUR">21.71</x:ChargeTotalAmount><x:TaxBasisTotalAmount>60.11</x:TaxBasisTotalAmount></x:SpecifiedTradeSettlementHeaderMonetarySummation>'
+        self.assertEqual(z.skonto_basis(anders, 7153), round(7153 * 38.40 / 60.11))
+        self.assertEqual(z.skonto_pruefen("2 % Skonto", "2026-11-20", 1, 0, "2026-11-21")[0], "Skontobasis ungeklaert: der Erzeuger zahlt voll")
 
     def test_bankexport_mit_spalte_iban(self):
         import tempfile

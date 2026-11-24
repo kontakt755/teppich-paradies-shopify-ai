@@ -138,8 +138,8 @@ def skonto_stufen(text, rechnungsdatum):
 def skonto_basis(xml_text, brutto_cent):
     """Skontobasis einer XRechnung wie im Erzeuger: mit Zuschlaegen (Fracht) und ohne angegebene Basis nur der
     Warenanteil, brutto x Warensumme / Steuerbasis; geht die Summe nicht auf, der volle Betrag."""
-    block = re.search(r"<(?:ram:)?SpecifiedTradeSettlementHeaderMonetarySummation>(.*?)</(?:ram:)?SpecifiedTradeSettlementHeaderMonetarySummation>", xml_text, re.S)
-    feld = lambda n: (lambda m: float(m.group(1)) if m else None)(re.search(rf"<(?:ram:)?{n}[^>]*>\s*([\d.]+)\s*<", block.group(1))) if block else None
+    block = re.search(r"<(?:[\w.-]+:)?SpecifiedTradeSettlementHeaderMonetarySummation\b[^>]*>(.*?)</(?:[\w.-]+:)?SpecifiedTradeSettlementHeaderMonetarySummation>", xml_text, re.S)
+    feld = lambda n: (lambda m: float(m.group(1)) if m else None)(re.search(rf"<(?:[\w.-]+:)?{n}\b[^>]*>\s*([\d.]+)\s*<", block.group(1))) if block else None
     zuschlag, ware, basis, nachlass = feld("ChargeTotalAmount") or 0, feld("LineTotalAmount"), feld("TaxBasisTotalAmount"), feld("AllowanceTotalAmount") or 0
     explizit = re.findall(r"#SKONTO#TAGE=\d+#PROZENT=[\d.]+#BASISBETRAG=(\d+(?:\.\d{1,2})?)#", xml_text)
     if explizit:
@@ -154,6 +154,8 @@ def skonto_basis(xml_text, brutto_cent):
 def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute, teilbasis_sperrt=True):
     """@returns (None, frist) wenn der Abzug zu einer noch laufenden Stufe passt, sonst (Grund, None).
     Satz und Frist gehoeren zusammen: eine abgelaufene hoehere Stufe zaehlt nicht."""
+    if brutto_cent <= 0:
+        return "Skontobasis ungeklaert: der Erzeuger zahlt voll", None
     stufen = skonto_stufen(text, rechnungsdatum)
     # Nur fuer reine PDF-Rechnungen (wie der Erzeuger): bei XML rechnet der Erzeuger die Basis aus den Summen
     # (z. B. Skonto nur auf den Warenanteil ohne Fracht); dort zaehlt nur die Obergrenze Satz x Rechnungsbetrag.
