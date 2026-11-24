@@ -5,7 +5,7 @@ description: Verbindliche Regeln fuer das Horizon-Theme - Bloecke in templates/*
 
 # Theme-Regeln
 
-Ausgelagert aus `AGENTS.md` (2026-10-16, ohne inhaltliche Aenderung). Die harten
+Die harten
 Grenzen (NIEMALS-Liste, Deploy, Vor jedem Commit) stehen weiter dort.
 
 ## Fallstricke 1–3 aus „Was hier immer wieder schiefging“

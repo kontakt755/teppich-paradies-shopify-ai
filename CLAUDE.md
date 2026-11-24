@@ -25,8 +25,7 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 ## Sitzung
 
 - **Hauptmodell** kommt aus `~/.claude/settings.json`; Subagenten waehlen ihr
-  Modell nach der Regel oben. Es gibt keinen Router und keine Voranalyse
-  (entfernt 2026-09-30, siehe `.claude/README.md`).
+  Modell nach der Regel oben.
 - **Sitzungen im Repository starten**, nicht auf dem Schreibtisch oder im
   Home-Ordner — sonst fehlen Hooks, Skills und das Projekt-Gedaechtnis.
   App-Worktrees liegen unter `.claude/worktrees/`; die Regeln zu Arbeitskopien

@@ -16,7 +16,7 @@ jedem Punkt auch, welches unserer Werkzeuge ihn schon abdeckt.
   Was gefunden wird, steht im Bericht; umgesetzt wird spaeter in einer eigenen
   Aufgabe nach `AGENTS.md` (Branch, PR, Guards, Deploy-Kette).
 - **Bericht ist oeffentlich** (Repository). Keine Lieferantennamen (nur
-  Pseudonyme Lieferant A bis D), keine Theme-IDs, keine Tokens, keine
+  Pseudonyme Lieferant A, B, C …), keine Theme-IDs, keine Tokens, keine
   Kundendaten, keine Rabattcodes. Auch nicht aus Guard-Ausgaben abschreiben -
   `theme:guard` druckt die Live-ID.
 - **Keine Code-Bloecke blind uebernehmen.** Die Vorlagen der Upstream-Skills
