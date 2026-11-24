@@ -809,6 +809,14 @@ Gmail nur noch Senden.
   JSON, ungültige Adresse, Pfad im Anhangsnamen, Dateityp außer pdf/jpg/png/txt/csv/zip/docx/xlsx,
   über 20 MB) gehen mit `FEHLER.txt` nach `fehler/`. Fehlt ein Anhang noch (Sync unterwegs), wartet
   der Auftrag bis zu 24 h. Scheitert die Anmeldung oder das Netz, bleibt er liegen.
+- **Aus der Cloud (Cloud-Sitzung, ChatGPT):** Auftrag als Textdatei in den Dropbox-Ordner
+  `~/Dropbox/TP Mail-Entwuerfe/` (über den Dropbox-Konnektor; anderer Ordner: `TP_MAIL_DROPBOX`). Jeder
+  Lauf verschiebt alle Dateien von dort nach `eingang/`, danach liegt nichts mehr in der Dropbox.
+- **Formular statt fertigem PDF:** `"formular": {"vorlage": "antrag.pdf", "werte": {"Feld": "Wert"}, "name": "Antrag Müller.pdf"}`.
+  Die leere Vorlage liegt einmalig in `mail-entwuerfe/vorlagen/` (oder neben dem Auftrag). Der Mac füllt sie
+  mit `scripts/pdf_formular.py` (Python aus `~/.venvs/analyse`, anderes: `TP_PYTHON`); Feldnamen und
+  erlaubte Werte zeigt `pdf_formular.py felder <vorlage>`. Falsches Feld oder falscher Wert: Auftrag nach
+  `fehler/`. Das ausgefüllte PDF und seine Vorschau (PNG) liegen danach in `erledigt/`.
 - Anhangsnamen erscheinen in der Mail ohne Umlaute und Leerzeichen (`Formular ä 1.pdf` → `Formular_a_1.pdf`).
 - Dienst: Vorlage `launchagents/net.teppich-paradies.mail-entwuerfe.plist.vorlage`, Einrichten mit
   `bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe` (Plist zeigt auf `~/tp-dashboard`).

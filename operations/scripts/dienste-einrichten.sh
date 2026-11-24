@@ -283,6 +283,7 @@ mail_entwuerfe_einrichten() {
   if [[ ! -f "${HOME}/tp-dashboard/operations/scripts/mail-entwuerfe.mjs" ]]; then
     fehlt "Das Skript fehlt in ~/tp-dashboard noch - erst main nachziehen; bis dahin schlaegt der Lauf fehl."
   fi
+  hinweis "Aus der Cloud: Auftraege in ~/Dropbox/TP Mail-Entwuerfe/, Formularvorlagen in ~/teppich-paradies-analyse/mail-entwuerfe/vorlagen/"
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-mail-entwuerfe.log"
 }
 
