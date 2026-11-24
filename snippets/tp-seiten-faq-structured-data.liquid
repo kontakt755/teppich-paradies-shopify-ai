@@ -1,0 +1,35 @@
+{%- doc -%}
+  FAQPage-JSON-LD aus einer FAQ, die sichtbar im gepflegten Text steht
+  (SEO Phase 3, 2026-11-24). Eingebunden einmal in layout/theme.liquid.
+
+  - Produkt: Beschreibung mit <h3>Häufige Fragen</h3> und Fragen als <h4>
+    (z. B. Vorwerk Modena Meterware). Nicht auf den Vorlagen einfassung und
+    wunschmass-fertig - dort gibt snippets/tp-product-structured-data den
+    FAQPage-Knoten schon aus (zwei Knoten je URL wertet Google als
+    widerspruechlich).
+  - Kategorie: Beschreibung mit <h2>Häufige Fragen</h2> und Fragen als <h3>,
+    nur auf Vorlagen, die die Beschreibung vollstaendig zeigen und keine eigene
+    FAQ-Section haben (Standard, farbuebersicht, standardteppiche).
+  - Seite: Inhalt mit <h2>Häufige Fragen</h2>, nur Standardvorlage (page.json);
+    page.teppichreinigung und page.verlegung-berlin-nord haben FAQ-Sections.
+
+  Der Parser (snippets/tp-faq-beschreibung-structured-data) gibt nichts aus,
+  wenn die Ueberschrift fehlt - Texte ohne FAQ bleiben ohne Markup.
+{%- enddoc -%}
+
+{%- liquid
+  case template.name
+    when 'product'
+      unless product.template_suffix == 'einfassung' or product.template_suffix == 'wunschmass-fertig'
+        render 'tp-faq-beschreibung-structured-data', html: product.description, seiten_url: canonical_url
+      endunless
+    when 'collection'
+      if template.suffix == blank or template.suffix == 'farbuebersicht' or template.suffix == 'standardteppiche'
+        render 'tp-faq-beschreibung-structured-data', html: collection.description, seiten_url: canonical_url, ebene: 'h2'
+      endif
+    when 'page'
+      if template.suffix == blank
+        render 'tp-faq-beschreibung-structured-data', html: page.content, seiten_url: canonical_url, ebene: 'h2'
+      endif
+  endcase
+-%}
