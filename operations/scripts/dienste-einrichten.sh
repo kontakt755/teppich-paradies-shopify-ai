@@ -15,6 +15,7 @@
 #   bash operations/scripts/dienste-einrichten.sh --postfach-entwuerfe
 #   bash operations/scripts/dienste-einrichten.sh --gel-diesel
 #   bash operations/scripts/dienste-einrichten.sh --sammeldatei
+#   bash operations/scripts/dienste-einrichten.sh --bank-abruf
 #   bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe
 #
 # --mail-entwuerfe richtet net.teppich-paradies.mail-entwuerfe ein: alle 5 Minuten Gmail-Entwuerfe
@@ -66,10 +67,11 @@ AUSSER_HAUS_LABEL="net.teppich-paradies.sicherung-ausser-haus"
 NACHZIEHEN_LABEL="net.teppich-paradies.nachziehen"
 GEL_DIESEL_LABEL="net.teppich-paradies.gel-diesel"
 SAMMELDATEI_LABEL="net.teppich-paradies.sammeldatei"
+BANK_ABRUF_LABEL="net.teppich-paradies.bank-abruf"
 MAIL_ENTWUERFE_LABEL="net.teppich-paradies.mail-entwuerfe"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--sammeldatei" && "$1" != "--mail-entwuerfe" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --sammeldatei | --mail-entwuerfe]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--sammeldatei" && "$1" != "--mail-entwuerfe" && "$1" != "--bank-abruf" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --sammeldatei | --mail-entwuerfe | --bank-abruf]\n' >&2
   exit 1
 fi
 
@@ -270,6 +272,25 @@ sammeldatei_einrichten() {
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-sammeldatei.log"
 }
 
+bank_abruf_einrichten() {
+  schritt "Kontoumsaetze per FinTS lesen, taeglich 6:30 und freitags 9:45 (${BANK_ABRUF_LABEL})"
+  if [[ ! -f "${HOME}/tp-dashboard/operations/scripts/bank_fints_abruf.py" ]]; then
+    fehler "~/tp-dashboard hat bank_fints_abruf.py noch nicht - erst main nachziehen (npm run -s betrieb:nachziehen -- --status)."
+    return 1
+  fi
+  if ! security find-generic-password -s tp-fints-commerzbank -a pin >/dev/null 2>&1; then
+    fehler "PIN fehlt im Schluesselbund (Dienst tp-fints-commerzbank, Konto pin)."
+    return 1
+  fi
+  vorlage_einrichten "${BANK_ABRUF_LABEL}" || return 1
+  ok "Eingerichtet: Umsaetze nur lesen, CSV nach laden-entlastung-2026-11/bank-export/."
+  hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-bank-abruf.log"
+}
+
+if [[ "${1:-}" == "--bank-abruf" ]]; then
+  bank_abruf_einrichten
+  exit 0
+fi
 mail_entwuerfe_einrichten() {
   schritt "Gmail-Entwuerfe aus dem Ordner (${MAIL_ENTWUERFE_LABEL})"
   if [[ ! -f "${HOME}/teppich-paradies-analyse/nachfassen/postfach.json" ]]; then

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.bank-abruf</string>
+
+  <!-- Kontoumsaetze des Geschaeftskontos per FinTS NUR LESEN (operations/scripts/bank_fints_abruf.py)
+       nach laden-entlastung-2026-11/bank-export/, damit Sammeldatei und Zwischenpruefer ohne Handexport
+       aktuell sind. Taeglich 6:30 und freitags 9:45 vor net.teppich-paradies.sammeldatei (10 Uhr).
+       Zugangsdaten nur im Schluesselbund (Dienst tp-fints-commerzbank). Verlangt die Bank eine Freigabe
+       (PSD2, etwa alle 90 Tage), bricht der Lauf mit Exit 2 ab; dann im Terminal mit -\-warten 300 starten.
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-bank-abruf -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>date; exec __HOME__/.venvs/analyse/bin/python operations/scripts/bank_fints_abruf.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>__HOME__/tp-dashboard</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+  <!-- Verpasste Zeiten im Ruhezustand holt launchd beim Aufwachen nach. Wochentag 5 ist Freitag. -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>45</integer></dict>
+  </array>
+  <key>RunAtLoad</key><false/>
+  <key>ProcessType</key><string>Background</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/teppich-paradies-bank-abruf.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/teppich-paradies-bank-abruf.log</string>
+</dict>
+</plist>
