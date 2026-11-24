@@ -1,0 +1,72 @@
+{
+  "id": "RAT-TB-020",
+  "handle": "teppichboden-schlafzimmer",
+  "title": "Teppichboden fürs Schlafzimmer: Flor, Nutzungsklasse und Material",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Auswahl & Kaufberatung"
+  ],
+  "cluster": "teppichboden/auswahl",
+  "parent": "ratgeber-teppichboden",
+  "intent": "kaufberatung",
+  "frage": "Welcher Teppichboden eignet sich fürs Schlafzimmer?",
+  "begriff": "teppichboden schlafzimmer",
+  "nebenfragen": [
+    "Welche Nutzungsklasse reicht im Schlafzimmer?",
+    "Velours oder Hochflor im Schlafzimmer?",
+    "Teppichboden im Schlafzimmer mit Fußbodenheizung?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "welcher-teppichboden-fuer-welchen-raum",
+    "teppichboden-richtig-ausmessen",
+    "teppichboden-pflegen-und-flecken-entfernen"
+  ],
+  "naechster_schritt": "teppichboden-richtig-ausmessen",
+  "lexikon": [
+    "florhoehe",
+    "fussbodenheizung",
+    "nutzungsklasse",
+    "velours"
+  ],
+  "quellen": [
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Einsatzbereiche textiler Beläge (EN 1307, Klassen Wohn-/Objektbereich)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/textile-bodenbelaege/einsatzbereiche-von-textilen-belaegen-959259"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Technische Daten der Teppichboeden im Shop",
+      "url": "/collections/teppichboden"
+    }
+  ],
+  "bilder": [],
+  "pruefung": {
+    "zyklus_monate": 12,
+    "naechste": "2027-11-24",
+    "grund": "Sortiment und Macharten aendern sich mit dem Angebot"
+  },
+  "expert_input": [],
+  "excerpt": "Weicher Velours oder Hochflor, Nutzungsklasse 21 bis 23, Material und Farbe: worauf es bei Teppichboden im Schlafzimmer ankommt.",
+  "seo": {
+    "title": "Teppichboden fürs Schlafzimmer: Flor und Klasse",
+    "description": "Teppichboden im Schlafzimmer: Velours oder Hochflor, welche Nutzungsklasse reicht, welches Material passt und wie Sie die Farbe sicher wählen."
+  },
+  "metafields": {
+    "kurzantwort": "Fürs Schlafzimmer eignet sich ein weicher Teppichboden mit Velours- oder Hochflor-Oberfläche. Weil die Beanspruchung gering ist, reicht meist eine Nutzungsklasse von 21 bis 23. Material und Farbe prüfen Sie am besten am Muster, eine Fußbodenheizung nur nach Herstellerangabe.",
+    "art": "Kaufberatung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "muster",
+      "rechner"
+    ],
+    "kollektion": "teppichboden-schlafzimmer",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

@@ -14,7 +14,10 @@
   "nebenfragen": [
     "Gehen Wellen wieder weg?",
     "Ist das ein Reklamationsfall?",
-    "Kann ich das selbst beheben?"
+    "Kann ich das selbst beheben?",
+    "Teppich wellig: was tun?",
+    "Wie bekomme ich Wellen aus einem losen Teppich?",
+    "Was tun bei eingerollten Ecken?"
   ],
   "status": "freigegeben",
   "verwandte": [
@@ -72,10 +75,10 @@
     "grund": "Schadensbilder ändern sich nicht"
   },
   "expert_input": [],
-  "excerpt": "Wellen haben selten eine einzige Ursache. Diese Übersicht grenzt ein, woran es liegen kann – und was Sie prüfen sollten, bevor Sie jemanden rufen.",
+  "excerpt": "Wellen haben selten eine einzige Ursache. Diese Übersicht grenzt ein, woran es liegen kann – bei verlegtem Teppichboden und bei einem losen Teppich.",
   "seo": {
-    "title": "Teppichboden wirft Wellen: Ursachen und was hilft",
-    "description": "Wellen im Teppichboden: mögliche Ursachen von loser Verlegung bis Restfeuchte, was Sie selbst prüfen können und wann ein Fachbetrieb ran muss."
+    "title": "Teppich wellig: Ursachen und was hilft",
+    "description": "Teppichboden oder loser Teppich wellig? Mögliche Ursachen von Verlegung bis Rolle, was Sie selbst tun können und wann ein Fachbetrieb ran muss."
   },
   "metafields": {
     "kurzantwort": "Wellen entstehen, wenn sich der Belag durch Temperatur, Feuchte oder fehlende Akklimatisierung bewegt und nicht fest genug fixiert oder verklebt ist. Ein lose oder schwach befestigter Belag lässt sich meist neu ausrichten und vollflächig befestigen; Feuchte im Untergrund muss vorher behoben werden.",
