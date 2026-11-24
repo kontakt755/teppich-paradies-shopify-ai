@@ -2,14 +2,20 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
+import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 const hook = path.resolve(import.meta.dirname, '../../.claude/hooks/theme-delete-guard.mjs');
 
 /** Gibt die Entscheidung des Hooks zurueck: 'deny' oder null (durchgelassen). */
-function entscheidung(command) {
+function entscheidung(command, themen = []) {
+  // Themeliste aus einer Datei statt live aus Shopify (offline, schnell).
+  const datei = path.join(mkdtempSync(path.join(tmpdir(), 'themen-')), 'liste.json');
+  writeFileSync(datei, JSON.stringify(themen));
   const res = spawnSync(process.execPath, [hook], {
     input: JSON.stringify({ tool_input: { command } }),
     encoding: 'utf8',
+    env: { ...process.env, TP_THEMELISTE_TEST: datei },
   });
   assert.equal(res.status, 0, `Hook brach ab: ${res.stderr}`);
   if (!res.stdout.trim()) return null;
@@ -78,4 +84,20 @@ test('Fliesstext im Heredoc bleibt Text', () => {
     'MSG',
   ].join('\n');
   assert.equal(entscheidung(cmd), null);
+});
+
+test('Ausnahme: shopify theme delete fuer belegte Wegwerf-Themes', () => {
+  const lt = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../../domains/shopify/live-theme.json'), 'utf8'));
+  const themen = [
+    { id: 11, name: 'Wegwerf Bewertungen', role: 'unpublished' },
+    { id: 12, name: 'Filterkorrektur', role: 'unpublished' },
+    { id: Number(lt.fallback.themeId), name: 'Wegwerf Fallback', role: 'unpublished' },
+  ];
+  assert.equal(entscheidung('shopify theme delete -t 11 --force', themen), null);
+  assert.equal(entscheidung('shopify theme delete --theme=11 -f', themen), null);
+  assert.equal(entscheidung('shopify theme delete -t 12 --force', themen), 'deny');
+  assert.equal(entscheidung('shopify theme delete -t 11 -t 12 --force', themen), 'deny');
+  assert.equal(entscheidung(`shopify theme delete -t ${lt.fallback.themeId} --force`, themen), 'deny');
+  assert.equal(entscheidung('shopify theme delete --development', themen), 'deny');
+  assert.equal(entscheidung('curl -d "mutation { themeDelete(id: 11) }" x', themen), 'deny');
 });
