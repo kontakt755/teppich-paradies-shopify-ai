@@ -9,8 +9,8 @@
 // diesen Weg nur Prosa.
 //
 // Was verweigert wird:
-//   - themeDelete, immer (Rueckfallpunkt eines Live-Gangs, siehe
-//     theme-delete-guard.mjs). Der MCP sperrt das heute selbst; dieser Hook
+//   - themeDelete (Rueckfallpunkt eines Live-Gangs, siehe
+//     theme-delete-guard.mjs) - ausser fuer Wegwerf-Themes (istWegwerfTheme). Der MCP sperrt das heute selbst; dieser Hook
 //     haengt nicht davon ab, dass das so bleibt.
 //   - jede Mutation, die die Fallback-ID aus domains/shopify/live-theme.json
 //     (fallback.themeId) traegt - damit auch themePublish/themeUpdate und
@@ -33,6 +33,7 @@
 // Shopify-Admin - oder hebt die Regel hier bewusst auf, nicht der Agent.
 
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 
 // Mutation -> Name des Arguments, dessen Liste die zu loeschenden IDs traegt.
 // null: Einzelloeschung, jede ID im Argument zaehlt.
@@ -46,6 +47,42 @@ export const LOESCHEN = {
 };
 
 export const THEME_IMMER = new Set(['themeDelete']);
+
+// Ausnahme (Benutzer 24.11.2026): Wegwerf-Themes darf der Agent loeschen.
+// Belegt wird das nicht aus der Mutation (die traegt nur die ID), sondern aus
+// Shopify selbst: Name enthaelt "Wegwerf", Rolle unpublished/development, und
+// die ID steht nicht in live-theme.json (live, preview, fallback, arbeit).
+// Ist die Themeliste nicht lesbar, bleibt es gesperrt.
+const STORE = 'sjjyq1-6w.myshopify.com';
+
+function geschuetzteThemeIds() {
+  try {
+    const datei = new URL('../../domains/shopify/live-theme.json', import.meta.url);
+    const j = JSON.parse(readFileSync(datei, 'utf8'));
+    return new Set(['live', 'preview', 'fallback', 'arbeit'].map((k) => String(j?.[k]?.themeId ?? '')).filter(Boolean));
+  } catch {
+    return null;
+  }
+}
+
+function themeListe() {
+  try {
+    const res = spawnSync('shopify', ['theme', 'list', '--store', STORE, '--json'], { encoding: 'utf8', timeout: 30000 });
+    if (res.status !== 0) return null;
+    return JSON.parse(res.stdout.slice(res.stdout.indexOf('[')));
+  } catch {
+    return null;
+  }
+}
+
+/** true, wenn genau dieses Theme ein loeschbares Wegwerf-Theme ist. */
+export function istWegwerfTheme(id, { themen = themeListe, geschuetzt = geschuetzteThemeIds() } = {}) {
+  const nr = String(id ?? '').match(/(\d+)\s*$/)?.[1];
+  if (!nr || !geschuetzt || geschuetzt.has(nr)) return false;
+  const liste = typeof themen === 'function' ? themen() : themen;
+  const t = Array.isArray(liste) ? liste.find((x) => String(x?.id) === nr) : null;
+  return !!t && /wegwerf/i.test(String(t.name)) && /^(unpublished|development)$/i.test(String(t.role));
+}
 
 function fallbackThemeId() {
   try {
@@ -176,7 +213,7 @@ function grobeIdZahl(query, variablen) {
  * Entscheidung fuer eine Mutation. Gibt einen Grund (Text) zurueck, wenn sie
  * verweigert wird, sonst null.
  */
-export function pruefe({ query, variables } = {}, { fallbackId = fallbackThemeId() } = {}) {
+export function pruefe({ query, variables } = {}, { fallbackId = fallbackThemeId(), wegwerf = istWegwerfTheme } = {}) {
   if (typeof query !== 'string' || !query.trim()) return null;
   const variablen = variables && typeof variables === 'object' ? variables : {};
 
@@ -200,6 +237,8 @@ export function pruefe({ query, variables } = {}, { fallbackId = fallbackThemeId
 
   for (const { name, args } of gefunden) {
     if (THEME_IMMER.has(name)) {
+      const themeIds = args ? ids(args.id) : [];
+      if (themeIds.length === 1 && wegwerf(themeIds[0])) continue;
       return `${name} loescht ein Theme unwiederbringlich und nimmt den Rueckfallpunkt eines Live-Gangs weg`;
     }
     let anzahl;

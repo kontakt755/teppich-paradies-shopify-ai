@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const hook = path.resolve(import.meta.dirname, '../../.claude/hooks/shopify-mcp-guard.mjs');
-const { pruefe } = await import(hook);
+const { pruefe, istWegwerfTheme } = await import(hook);
 const FALLBACK = JSON.parse(
   readFileSync(path.resolve(import.meta.dirname, '../../domains/shopify/live-theme.json'), 'utf8'),
 ).fallback.themeId;
@@ -59,9 +59,37 @@ test('Hook-Prozess: Begruendung nennt Hook und Mutation', () => {
   assert.match(grund, /menuDelete/);
 });
 
-test('themeDelete ist immer gesperrt', () => {
-  assert.ok(gesperrt('mutation { themeDelete(id: "gid://shopify/OnlineStoreTheme/1") { deletedThemeId } }'));
-  assert.ok(gesperrt('mutation T($id: ID!) { themeDelete(id: $id) { deletedThemeId } }', { id: 'gid://shopify/OnlineStoreTheme/1' }));
+test('themeDelete ist gesperrt, ausser fuer ein belegtes Wegwerf-Theme', () => {
+  const nein = { wegwerf: () => false };
+  const ja = { wegwerf: () => true };
+  const q = 'mutation { themeDelete(id: "gid://shopify/OnlineStoreTheme/1") { deletedThemeId } }';
+  assert.notEqual(pruefe({ query: q }, nein), null);
+  assert.notEqual(pruefe({ query: 'mutation T($id: ID!) { themeDelete(id: $id) { deletedThemeId } }', variables: { id: 'gid://shopify/OnlineStoreTheme/1' } }, nein), null);
+  assert.equal(pruefe({ query: q }, ja), null);
+  assert.equal(pruefe({ query: 'mutation T($id: ID!) { themeDelete(id: $id) { deletedThemeId } }', variables: { id: 'gid://shopify/OnlineStoreTheme/1' } }, ja), null);
+  // Fallback bleibt gesperrt, auch wenn die Pruefung "Wegwerf" sagen wuerde.
+  assert.notEqual(pruefe({ query: `mutation { themeDelete(id: "gid://shopify/OnlineStoreTheme/${FALLBACK}") { deletedThemeId } }` }, ja), null);
+});
+
+test('istWegwerfTheme: nur unveroeffentlicht, "Wegwerf" im Namen, nicht in live-theme.json', () => {
+  const themen = [
+    { id: 11, name: 'Wegwerf Bewertungen', role: 'unpublished' },
+    { id: 12, name: 'w375-handy-test (Wegwerf)', role: 'development' },
+    { id: 13, name: 'Wegwerf live', role: 'live' },
+    { id: 14, name: 'Arbeitstheme', role: 'unpublished' },
+    { id: 15, name: 'Wegwerf, aber geschuetzt', role: 'unpublished' },
+  ];
+  const geschuetzt = new Set(['15']);
+  const pruef = (id) => istWegwerfTheme(id, { themen, geschuetzt });
+  assert.equal(pruef('gid://shopify/OnlineStoreTheme/11'), true);
+  assert.equal(pruef('12'), true);
+  assert.equal(pruef('gid://shopify/OnlineStoreTheme/13'), false);
+  assert.equal(pruef('gid://shopify/OnlineStoreTheme/14'), false);
+  assert.equal(pruef('gid://shopify/OnlineStoreTheme/15'), false);
+  assert.equal(pruef('gid://shopify/OnlineStoreTheme/99'), false);
+  // Themeliste nicht lesbar oder live-theme.json fehlt: gesperrt.
+  assert.equal(istWegwerfTheme('11', { themen: () => null, geschuetzt }), false);
+  assert.equal(istWegwerfTheme('11', { themen, geschuetzt: null }), false);
 });
 
 test('jede Mutation mit der Fallback-ID ist gesperrt', () => {
