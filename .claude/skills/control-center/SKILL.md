@@ -14,9 +14,9 @@ funktionieren** – im Browser, am Handy, mit echten Daten (als Kopie).
 - `docs/control-center/ARCHITEKTUR.md` (Betriebsarten, Netzmodus mit Passwort,
   Einkauf, Heute, Datenaktualisierung) und die letzten Changelog-Eintraege:
   `npm run -s changelog` (eine Datei je Eintrag unter `docs/control-center/changelog/`;
-  die alte `CHANGELOG.md` ist seit 2026-10-29 eingefroren).
+  die alte `CHANGELOG.md` ist eingefroren).
 - `AGENTS.md` Abschnitt "Arbeitskopien" (issues.json/bodenwissen.json sind erzeugt, nicht im Git) und Punkt 8
-  (Lieferanten nur als Pseudonym A-D).
+  (Lieferanten nur als Pseudonym A, B, C …).
 
 ## Harte Regeln
 
@@ -41,7 +41,7 @@ sechs PRs in einer Stunde). Deshalb:
 - Eigener Worktree auf frischem `origin/main`, nie im geteilten Checkout.
 - Vor dem Start: `gh pr list --search "dashboard OR Control Center"` und die
   Dateien offener PRs ansehen – wer fasst gerade dieselbe Ansicht an? Die
-  Oberflaeche ist seit 2026-10-01 in Module zerlegt (`ansichten/<route>.mjs`,
+  Oberflaeche ist in Module zerlegt (`ansichten/<route>.mjs`,
   `bausteine/`, `kern/`; Aufbau und Andockstellen: `docs/ai-dashboard/README.md`).
   Eine Aenderung an einer Ansicht bleibt in deren Modul.
 - Kleine, thematisch geschlossene PRs. Vor dem PR `git fetch && git rebase
@@ -137,7 +137,7 @@ kann dafuer weg?
    Bei neuem Verhalten auch `ARCHITEKTUR.md`.
 8. PR mit `Closes #<n>`, danach `npm run task -- review <n> --note "PR #…"`.
 9. Nach dem Merge zieht der Dienst `net.teppich-paradies.nachziehen` den Betrieb selbst
-   nach (seit 2026-10-26, #1710; Ablauf: `operations/README.md`, „Dienst-Checkout
+   nach (Ablauf: `operations/README.md`, „Dienst-Checkout
    automatisch nachziehen“): prueft alle 5 Minuten, buendelt Aenderungen mit Neustart
    (15 Minuten Ruhe auf main, hoechstens 30 Minuten nach dem aeltesten neuen Commit),
    erst in einer Probekopie getestet, nach einem Codex-Musterlauf und zwei Minuten ohne
@@ -253,7 +253,7 @@ Vor dem Umsetzen als Aufgabe anlegen und mit dem Inhaber abstimmen:
   Person Aufgaben hat.
 
 
-## Regeln aus CLAUDE.md (ausgelagert, #670)
+## Weitere Regeln
 
 `docs/ai-dashboard/` ist das Control Center; Konzept in `docs/control-center/`
 (**vor Aenderungen am Dashboard lesen**). `scripts/build-dashboard-data.mjs`
@@ -272,9 +272,7 @@ lesen (oder den Subagenten `control-center` beauftragen). Sichtpruefung im Brows
 mit Datenkopie: `npm run dashboard:pruefen` (Desktop + Handy, JS-Fehler, seitliches
 Scrollen; `--offen` fuer Klicktests).
 
-`issues.json` und `bodenwissen.json` sind seit 2026-09-30 **nicht mehr im Git**
-(`.gitignore`); bis dahin committete `dashboard-data.yml` sie alle 30 Minuten
-auf `main` — 29 % aller Commits und die Ursache der „fetch first"-Pushfehler.
+`issues.json` und `bodenwissen.json` sind **nicht im Git** (`.gitignore`).
 Dateien trotzdem gezielt mit `git add <datei>` stagen, nie `git add -A`.
 → `docs/lessons/dashboard-issues-json.md` (Vorgeschichte)
 

@@ -5,9 +5,9 @@ description: Theme-Aenderungen von main ueber Preview ins Live-Theme bringen (wo
 
 # Deploy-Kette
 
-Ausgelagert aus CLAUDE.md (#670). Die Punkte 4 und 5 aus `AGENTS.md` („Was hier immer wieder schiefging“) gelten weiter; Live-Theme nur ueber `domains/shopify/live-theme.json` bestimmen.
+Die Punkte 4 und 5 aus `AGENTS.md` („Was hier immer wieder schiefging“) gelten weiter; Live-Theme nur ueber `domains/shopify/live-theme.json` bestimmen.
 
-## Preview-Theme (bis 2026-10-16 in AGENTS.md, Punkt 4)
+## Preview-Theme
 
 **4. Nie von Hand ins Preview-Theme pushen.**
 Das Live-Gate verlangt `previewDiffCount === 0`, also Preview exakt gleich
@@ -65,8 +65,7 @@ Auskunft.
 
 Bricht ein Gate ab, ist das ein echter Befund — Ursache beheben, niemals das
 Gate ausbauen. Ein abgelehnter Push mit „fetch first" heisst: jemand hat
-parallel nach `main` gepusht (einen Dashboard-Bot gibt es seit 2026-09-30 nicht
-mehr) — `git pull --rebase origin main`, dann erneut pushen.
+parallel nach `main` gepusht — `git pull --rebase origin main`, dann erneut pushen.
 
 ### In Remote-Sessions (claude.ai/code)
 
