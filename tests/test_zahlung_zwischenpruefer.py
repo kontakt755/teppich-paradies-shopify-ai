@@ -140,6 +140,16 @@ class Zwischenpruefer(unittest.TestCase):
         f, _ = pruefen(pain(("100", 98.0, LIEF, "RE 100 abzgl Skonto 2,00 EUR")), [b])
         self.assertTrue(any("nicht lesbar" in x for x in f))
 
+    def test_codex_pr_2303_runde_2(self):
+        self.assertIsNone(z.brutto_aus_summen("100,00 19,00 119,00 Rabatt 11,90 Gesamt 107,10"))
+        self.assertEqual(z.rechnungsdatum_aus_text("Rechnungsdatum 20.11.2026 zahlbar bis 23. November 2026"), "2026-11-20")
+        self.assertIsNone(z.rechnungsdatum_aus_text("zahlbar bis 23. November 2026"))
+        self.assertIsNone(z.rechnungsdatum_aus_text("Rechnungsdatum: 03/11/2026 Berlin 23. November 2026"))
+        self.assertEqual(z.rechnungsdatum_aus_text("Berlin 23. November 2026"), "2026-11-23")
+        t = f"Rechnungsbetrag 119,00 10 Tage -3% Skonto (Frachtkosten ausgenommen) IBAN {LIEF}"
+        f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [beleg("100", 119.0, t)])
+        self.assertTrue(any("Teil des Betrags" in x for x in f))
+
     def test_bankexport_mit_spalte_iban(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:

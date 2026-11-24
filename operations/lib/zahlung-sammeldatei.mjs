@@ -180,6 +180,8 @@ export function bruttoAusSummen(text) {
     const st = Math.round(n * q / 100);
     if (st > 0 && da.has(st) && da.has(n + st)) treffer.add(n + st);
   }
+  // Rabatt, Abzug, Anzahlung oder negative Betraege: das Gesamt liegt dann nicht am Ende der Rechenprobe.
+  if (/rabatt|nachlass|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)-\s*\d+,\d{2}/i.test(String(text ?? ''))) return null;
   // Nur das Rechnungsgesamt: der groesste Betrag im Text (eine Positionssumme daneben zaehlt nicht).
   return treffer.size === 1 && [...treffer][0] === Math.max(...werte) ? [...treffer][0] / 100 : null;
 }
@@ -187,7 +189,10 @@ export function bruttoAusSummen(text) {
 const MONATE = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
 /** Genau ein ausgeschriebenes Datum („23. November 2026“) im Text, sonst null. */
 export function monatsDatum(text) {
-  const d = new Set([...String(text ?? '').matchAll(/(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})/gi)]
+  // Ist ein Rechnungsdatum beschriftet, aber nicht lesbar (z. B. 03/11/2026): nicht raten.
+  if (/rechnungsdatum|datum\s*:/i.test(String(text ?? ''))) return null;
+  // Zahlungsziel oder Lieferdatum („zahlbar bis 23. November 2026“) ist kein Rechnungsdatum.
+  const d = new Set([...String(text ?? '').matchAll(/(?<!(?:bis|zahlbar|f(?:ä|ae)llig|sp(?:ä|ae)testens|vom|ab|lieferung|liefertermin)[^\n]{0,15})(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})/gi)]
     .map(m => `${m[3]}-${String(MONATE.indexOf(m[2].toLowerCase().replace('maerz', 'märz')) + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`));
   return d.size === 1 ? [...d][0] : null;
 }
@@ -228,7 +233,11 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rech
     const verschieden = new Set(stufen.map(m => `${Number(m[1])}|${m[2]}`));
     const satz = verschieden.size === 1 ? Number(stufen[0][2].replace(',', '.')) : NaN;
     // Eingeschraenkte Basis („nur auf den Warenwert“, „ohne Fracht“, skontofaehig): nicht selbst rechnen.
-    const eingeschraenkt = /skonto\s*[,:]?\s*(?:nur|auf|ausgenommen|ohne|nicht|exkl)|skontof(?:ä|ae)hig|nicht\s+skont|warenwert|ohne\s+(?:fracht|versand)/i.test(t);
+    // Nach der Stufe darf nur das Nettoziel folgen („30 Tage Netto“ / „ohne Abzug“); jede Einschraenkung irgendwo sperrt.
+    const ende = stufen.length ? stufen[0].index + stufen[0][0].length : 0;
+    const danach = stufen.length ? t.slice(ende, ende + 60) : 'keine Stufe';
+    const nurNettoziel = /^[\s,.;:]*(?:$|\n|(?:innerhalb\s+(?:von\s+)?)?\d{1,3}\s+Tag(?:e|en)[\s,]*(?:netto|ohne\s+abzug|rein\s+netto)\b)/i.test(danach);
+    const eingeschraenkt = !nurNettoziel || /ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|nicht\s+skont|warenwert|nur\s+auf|ohne\s+(?:fracht|versand|porto)|fracht\w*\s*\(|\(\s*(?:ohne|nicht|exkl)/i.test(t);
     if ((t.match(/skonto/gi) || []).length !== stufen.length || !(satz > 0 && satz <= 5) || eingeschraenkt || !/^\d{4}-\d{2}-\d{2}$/.test(rdatum || '')) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
     const betrag = Math.round(brutto * satz) / 100;
     kopf.skonto = { bis: tagPlus(rdatum, Number(stufen[0][1])), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 };

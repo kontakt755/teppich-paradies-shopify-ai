@@ -640,6 +640,7 @@ test('Spaltensatz aus der Texterkennung: Brutto nur ueber die Rechenprobe Netto 
   assert.equal(bruttoAusSummen('100,00 € 19,00 € 119,00 € 200,00 € 38,00 € 238,00 €'), null); // zwei Kandidaten
   assert.equal(bruttoAusSummen('100,00 19,00 119,00 50,00 169,00'), null); // Positionssumme, nicht das Gesamt
   assert.equal(bruttoAusSummen('123,50 23,47 146,97'), 146.97); // Halbcent kaufmaennisch
+  assert.equal(bruttoAusSummen('100,00 19,00 119,00 Rabatt 11,90 Gesamt 107,10'), null); // Rabatt nach der Steuer
   // Rechnungsdatum fehlt im Archiv: ausgeschrieben im Text („23. November 2026“), nie der Maileingang
   const ohne = { nummer: '115-2026', brutto: null, waehrung: null, datum: '2026-11-25', rechnungsdatum: null };
   assert.equal(pdfRechnungPruefen({ ...ohne, text: ocr }, { iban: LIEFER }).status, 'unklar');
@@ -651,4 +652,8 @@ test('Spaltensatz aus der Texterkennung: Brutto nur ueber die Rechenprobe Netto 
   // Textebene und Texterkennung nennen dieselbe Stufe: zaehlt einmal; ein weiteres Skonto-Wort sperrt
   assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}\nZahlbar: 10 Tage -3% Skonto` }, { iban: LIEFER }).status, 'ok');
   assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}\nkein Skonto auf Fracht` }, { iban: LIEFER }).status, 'unklar');
+  // Codex Runde 2: Einschraenkung in Klammern, Zahlungsziel als einziges ausgeschriebenes Datum, unlesbares beschriftetes Datum
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr.replace('-3% Skonto', '-3% Skonto (Frachtkosten ausgenommen)')}` }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `zahlbar bis 23. November 2026\n${ocr}` }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Rechnungsdatum: 03/11/2026\nBerlin 23. November 2026\n${ocr}` }, { iban: LIEFER }).status, 'unklar');
 });
