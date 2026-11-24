@@ -13,11 +13,15 @@
  * (dropboxOrdner()); der Dienst holt ihn von dort nach eingang/. Statt eines fertigen PDFs kann
  * der Auftrag "formular": { "vorlage": "x.pdf", "werte": {Feld: Wert}, "name": "y.pdf" } tragen -
  * der Mac fuellt die Vorlage (aus eingang/ oder vorlagen/) mit scripts/pdf_formular.py.
+ * Fertige Dateien aus einem privaten Repository (z. B. VMA als .xlsx) kommen per
+ * "anhaenge_git": { repo, commit, dateien: [{ pfad, sha256 }] } - der Mac liest sie genau aus diesem
+ * Commit (gh api) und vergleicht die Pruefsumme.
  */
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { adresse, baueNachricht } from './smtp.mjs';
@@ -84,6 +88,22 @@ export function formularFuellen(vorlage, werte, ziel, { python = process.env.TP_
 /** Anzeigename im Mailkopf: smtp.mjs erlaubt nur [A-Za-z0-9._-]. */
 export const anzeigeName = n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-100);
 
+/** Nur aus diesen Repositorys, nur unterhalb des genannten Ordners. */
+export const GIT_ERLAUBT = Object.freeze({ 'kontakt755/teppich-paradies-vma': 'ausgabe/' });
+
+/** Liest eine Datei genau aus einem Commit (gh api, rohe Bytes). 404 heisst: Auftrag falsch. */
+export function gitHolen(repo, commit, pfad, { gh = process.env.TP_GH || ['/opt/homebrew/bin/gh', '/usr/local/bin/gh'].find(p => fs.existsSync(p)) || 'gh' } = {}) {
+  const url = `repos/${repo}/contents/${pfad.split('/').map(encodeURIComponent).join('/')}?ref=${commit}`;
+  try {
+    return execFileSync(gh, ['api', '-H', 'Accept: application/vnd.github.raw', url], { stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000, maxBuffer: 40 * 1024 * 1024 });
+  } catch (e) {
+    const meldung = String(e.stderr || e.message).trim().split('\n').pop().slice(0, 160);
+    const fehler = new Error(`Git: ${pfad}: ${meldung}`);
+    fehler.auftragFalsch = /HTTP 404/.test(meldung);
+    throw fehler;
+  }
+}
+
 const liste = w => (w == null ? [] : Array.isArray(w) ? w : [w]);
 
 /**
@@ -111,6 +131,23 @@ export function pruefeAuftrag(roh, verzeichnis, { alterMs = 0 } = {}) {
     summe += inhalt.length;
     anhaenge.push({ datei: name, name: anzeigeName(name), typ, inhalt });
   }
+  let git = null;
+  if (roh.anhaenge_git != null) {
+    const g = roh.anhaenge_git;
+    const basis = GIT_ERLAUBT[g?.repo];
+    if (!basis) return { fehler: `"anhaenge_git.repo" nicht erlaubt: ${String(g?.repo).slice(0, 60)}` };
+    if (!/^[0-9a-f]{40}$/.test(String(g.commit))) return { fehler: '"anhaenge_git.commit" muss ein voller Commit-Hash sein' };
+    if (!Array.isArray(g.dateien) || !g.dateien.length) return { fehler: '"anhaenge_git.dateien" fehlt' };
+    const dateien = [];
+    for (const d of g.dateien) {
+      const pfad = String(d?.pfad ?? '');
+      if (!pfad.startsWith(basis) || pfad.split('/').some(t => !t || t === '.' || t === '..') || /[\\\0]/.test(pfad)) return { fehler: `Git-Pfad ungültig (nur unter ${basis}): ${pfad.slice(0, 80)}` };
+      if (!TYPEN[path.extname(pfad).slice(1).toLowerCase()]) return { fehler: `Dateityp nicht erlaubt: ${pfad.slice(0, 80)}` };
+      if (!/^[0-9a-f]{64}$/.test(String(d.sha256))) return { fehler: `sha256 fehlt oder ungültig: ${pfad.slice(0, 80)}` };
+      dateien.push({ pfad, sha256: d.sha256 });
+    }
+    git = { repo: g.repo, commit: g.commit, dateien };
+  }
   let formular = null;
   if (roh.formular != null) {
     const f = roh.formular;
@@ -123,7 +160,7 @@ export function pruefeAuftrag(roh, verzeichnis, { alterMs = 0 } = {}) {
     formular = { vorlage, werte: f.werte, name: anzeigeName(f.name || f.vorlage) };
   }
   if (summe > ANHAENGE_MAX_BYTES) return { fehler: `Anhänge zu groß (${Math.round(summe / 1048576)} MB, höchstens 20)` };
-  return { auftrag: { an, cc, betreff: roh.betreff.trim(), text: roh.text, anhaenge }, formular };
+  return { auftrag: { an, cc, betreff: roh.betreff.trim(), text: roh.text, anhaenge }, formular, git };
 }
 
 /** Legt eine fertige Nachricht (RFC 822) als Entwurf ab: APPEND in den Ordner mit \Drafts. */
@@ -148,7 +185,7 @@ function verschiebe(dateien, von, nach) {
  * Ein Durchgang ueber eingang/. Ergebnis je Auftrag { datei, status: angelegt|fehler|wartet, grund? }.
  * Scheitert das Ablegen (Netz, Anmeldung), bleibt der Auftrag liegen und der Fehler geht nach oben.
  */
-export async function durchgang({ privat, zugang, ablegen = entwurfAblegen, fuellen = formularFuellen, jetzt = new Date() }) {
+export async function durchgang({ privat, zugang, ablegen = entwurfAblegen, fuellen = formularFuellen, holen = gitHolen, jetzt = new Date() }) {
   const o = ordner(privat);
   fs.mkdirSync(o.eingang, { recursive: true, mode: 0o700 });
   const ergebnis = [];
@@ -172,6 +209,20 @@ export async function durchgang({ privat, zugang, ablegen = entwurfAblegen, fuel
         p.auftrag.anhaenge.push({ name: p.formular.name, typ: 'application/pdf', inhalt: fs.readFileSync(ziel) });
       } catch (e) { p.fehler = e.message; }
     }
+    if (p.git && !p.fehler) {
+      try {
+        for (const d of p.git.dateien) {
+          const inhalt = holen(p.git.repo, p.git.commit, d.pfad);
+          if (createHash('sha256').update(inhalt).digest('hex') !== d.sha256) throw Object.assign(new Error(`sha256 weicht ab: ${d.pfad}`), { auftragFalsch: true });
+          p.auftrag.anhaenge.push({ name: anzeigeName(path.posix.basename(d.pfad)), typ: TYPEN[path.extname(d.pfad).slice(1).toLowerCase()], inhalt });
+        }
+      } catch (e) {
+        // Netz oder Anmeldung: Auftrag bleibt liegen. Falscher Pfad, Commit oder Pruefsumme: fehler/.
+        if (!e.auftragFalsch) { if (gefuellt) fs.rmSync(gefuellt, { recursive: true, force: true }); throw e; }
+        p.fehler = e.message;
+      }
+    }
+    if (!p.fehler && p.auftrag.anhaenge.reduce((n, a) => n + a.inhalt.length, 0) > ANHAENGE_MAX_BYTES) p.fehler = 'Anhänge zu groß (höchstens 20 MB)';
     if (p.fehler) {
       verschiebe(mit, o.eingang, path.join(o.fehler, stempel));
       fs.writeFileSync(path.join(o.fehler, stempel, 'FEHLER.txt'), `${p.fehler}\n`);
