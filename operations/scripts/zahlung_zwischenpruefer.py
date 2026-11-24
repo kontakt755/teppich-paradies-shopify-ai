@@ -139,6 +139,8 @@ def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute):
     """@returns (None, frist) wenn der Abzug zu einer noch laufenden Stufe passt, sonst (Grund, None).
     Satz und Frist gehoeren zusammen: eine abgelaufene hoehere Stufe zaehlt nicht."""
     stufen = skonto_stufen(text, rechnungsdatum)
+    if re.search(r"ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|skontierf|nicht\s+skont|nicht\s+abzugsf|material|waren|fracht|versand|porto|nur\s+auf|teilbetrag|\(\s*(?:ohne|nicht|exkl)", text, re.I) and not any(b is not None for _, _, b in stufen):
+        return "Skonto nur auf einen Teil des Betrags: selbst pruefen", None
     if not stufen:
         return "Skontobedingung auf der Rechnung nicht lesbar", None
     passend = [f for f, satz, betrag in stufen if (abzug == betrag if betrag is not None else abzug <= round(brutto_cent * satz / 100) + 1)]
@@ -146,6 +148,43 @@ def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute):
         return "Abzug passt zu keiner Skontostufe der Rechnung", None
     laufend = [f for f in passend if f >= heute]
     return (None, max(laufend)) if laufend else (f"Skontofrist am {max(passend)} abgelaufen", None)
+
+
+def brutto_aus_summen(text):
+    """Genau ein Betrag X mit Netto N und Steuer S (19 % oder 7 %, auf den Cent) und N + S = X im Text; sonst None."""
+    werte = {int(m.replace(".", "").replace(",", "")) for m in re.findall(r"(?<![0-9.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})(?![0-9])", text)}
+    steuer = lambda n, q: (n * q + 50) // 100  # kaufmaennisch wie Math.round im Erzeuger (Cent, positiv)
+    treffer = {n + steuer(n, q) for n in werte for q in (19, 7) if steuer(n, q) > 0 and steuer(n, q) in werte and n + steuer(n, q) in werte}
+    beschriftet = {m for m in re.findall(r"(?:Rechnungsbetrag|Gesamtbetrag|Zahlbetrag|zu zahlen|Endbetrag|Gesamtsumme)[ \t]*:?[ \t]*(?:EUR|€)?[ \t]*(\d{1,3}(?:\.\d{3})*,\d{2})", text, re.I)}
+    if len(beschriftet) > 1:
+        return None
+    if re.search(r"rabatt|nachlass|abzug|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)[-−–]\s*\d+,\d{2}|\d,\d{2}\s*[-−–](?!\s*\d)", text, re.I):
+        return None
+    # Nur das Rechnungsgesamt: der groesste Betrag im Text.
+    return treffer.pop() / 100 if len(treffer) == 1 and max(treffer) == max(werte) else None
+
+
+MONATE = ["januar", "februar", "maerz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"]
+
+
+def rechnungsdatum_aus_text(text, vor=None):
+    """Beschriftetes Rechnungsdatum (dd.mm.yyyy), sonst ein ausgeschriebenes Datum direkt hinter dem Ort der
+    Vorlage am Zeilenanfang („Berlin 23. November 2026“); bei beschriftetem, aber unlesbarem Datum None."""
+    beschriftet = {f"{j}-{int(m):02d}-{int(t):02d}" for t, m, j in re.findall(r"Rechnungsdatum\s*:?\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})", text, re.I)}
+    if len(beschriftet) == 1:
+        return beschriftet.pop()
+    if not vor or re.search(r"rechnungsdatum|datum\s*:", text, re.I):
+        return None
+    d = {f"{j}-{MONATE.index(m.lower().replace('ä', 'ae')) + 1:02d}-{int(t):02d}"
+         for t, m, j in re.findall(rf"(?:^|\n)[ \t]*{re.escape(vor)},?[ \t]+(\d{{1,2}})\.[ \t]*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)[ \t]+(\d{{4}})", text, re.I)}
+    if len(d) != 1:
+        return None
+    tag = d.pop()
+    try:
+        date.fromisoformat(tag)
+    except ValueError:
+        return None
+    return tag
 
 
 def ocr_text(pfad):
@@ -192,7 +231,7 @@ def archiv_lesen(privat):
                 merk["t"] = " ".join(teile)
                 return merk["t"]
             belege.append({"schluessel": b.get("anbieterSchluessel"), "nummer": str(b.get("rechnungsnummer") or ""), "brutto": b.get("brutto"),
-                           "datum": b.get("rechnungsdatum") or b.get("tag") or "", "art": b.get("art"), "datei": b.get("datei"), "text": text,
+                           "datum": b.get("rechnungsdatum") or b.get("tag") or "", "rechnungsdatum": b.get("rechnungsdatum"), "art": b.get("art"), "datei": b.get("datei"), "text": text, "xml": bool(b.get("xmlDatei")),
                            "pfad": ordner / b["datei"] if b.get("datei") and str(b["datei"]).lower().endswith(".pdf") else None})
     return belege
 
@@ -235,12 +274,18 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=No
             fehler.append(f"{wer}: Beleg ist eine Gutschrift")
         text = glaetten(b["text"]())
         # Bankverbindung nur als Bild im PDF: lokale Texterkennung (macOS Vision) nachlegen.
-        if nur_zeichen(z["iban"]) not in nur_zeichen(text) and b.get("pfad"):
+        if (nur_zeichen(z["iban"]) not in nur_zeichen(text) or b["brutto"] is None) and b.get("pfad"):
             text += " " + ocr_text(b["pfad"])
         if re.search(r"lastschrift|eingezogen|abgebucht|abbuchen|bankeinzug|mandat|<(?:ram:)?TypeCode>\s*59\s*</", text, re.I):
             fehler.append(f"{wer}: Rechnung nennt Lastschrift oder Einzug")
         if nur_zeichen(z["iban"]) not in nur_zeichen(text):
             fehler.append(f"{wer}: IBAN steht nicht auf der Rechnung")
+        vorlage = (lieferanten.get(b["schluessel"]) or {}).get("vorlage") or {}
+        # Rechenprobe nur fuer Lieferanten mit bestaetigter Vorlage (wie der Erzeuger).
+        brutto = b["brutto"] if b["brutto"] is not None else (brutto_aus_summen(text) if vorlage.get("rechenprobe") is True else None)
+        if brutto is not None and b["brutto"] is None:
+            hinweise.append(f"{wer}: Rechnungsbetrag {brutto:.2f} aus Netto + MwSt der Rechnung ermittelt")
+            b = {**b, "brutto": brutto}
         if b["brutto"] is None:
             betrag = f"{z['cent'] // 100},{z['cent'] % 100:02d}"
             if re.search(rf"(Gesamtbetrag|Rechnungsbetrag|Endbetrag|zu zahlen|Zahlbetrag)(?:(?!netto)[^0-9]){{0,30}}(^|[^0-9.,]){betrag}($|[^0-9])", text, re.I):
@@ -255,7 +300,17 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=No
                 hinweise.append(f"{wer}: Rechnung nennt Skonto, die Datei zahlt den vollen Betrag")
             elif abzug > 0:
                 genannt = f"{abzug // 100},{abzug % 100:02d}"
-                grund, frist = skonto_pruefen(text, b["datum"], abzug, cent(b["brutto"]), heute)
+                # Reine PDF ohne XML: Skonto nur mit Vorlage, deren Bedingungen wortgleich drinstehen; ausserhalb davon
+                # kein Skonto-/Netto-Hinweis, und keine widerspruechlichen Gesamtbetraege (wie der Erzeuger).
+                flach = re.sub(r"\s+", " ", text)
+                bed = re.sub(r"\s+", " ", str(vorlage.get("bedingungen") or "")).strip()
+                gesamt = {x for x in re.findall(r"(?:Rechnungsbetrag|Gesamtbetrag|Zahlbetrag|zu zahlen|Endbetrag|Gesamtsumme)[ \t]*:?[ \t]*(?:EUR|€)?[ \t]*(\d{1,3}(?:\.\d{3})*,\d{2})", text, re.I)}
+                if not b.get("xml") and (not bed or bed not in flach or re.search(r"skonto|netto|basis|betrag\s+ohne|abzugsf", flach.replace(bed, " "), re.I)):
+                    fehler.append(f"{wer}: Skonto aus der PDF nur mit wortgleich bestaetigten Bedingungen des Lieferanten")
+                elif not b.get("xml") and (len(gesamt) > 1 or (gesamt and cent(gesamt.pop().replace(".", "").replace(",", ".")) != cent(b["brutto"]))):
+                    fehler.append(f"{wer}: widerspruechliche Gesamtbetraege auf der Rechnung")
+                # Skontofrist nur ab belegtem Rechnungsdatum (Archiv oder ausgeschrieben im Text), nie ab dem Maileingang.
+                grund, frist = skonto_pruefen(text, b.get("rechnungsdatum") or rechnungsdatum_aus_text(text, vorlage.get("datumVor")), abzug, cent(b["brutto"]), heute)
                 if abzug > cent(b["brutto"]) * SKONTO_MAX or genannt not in z["zweck"] or grund:
                     fehler.append(f"{wer}: Abzug {genannt} EUR nicht als Skonto belegt (Rechnung {b['brutto']:.2f}){': ' + grund if grund else ''}")
                 else:

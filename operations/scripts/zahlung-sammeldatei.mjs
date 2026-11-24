@@ -53,8 +53,8 @@ export function ocrText(pfad) {
   return r.status === 0 ? String(r.stdout || '') : '';
 }
 
-/** PDF-Text; fehlt die erwartete IBAN darin, wird zusaetzlich die Texterkennung angehaengt. */
-export const mitOcr = (text, iban, pfad, ocr) => (!iban || nurIban(text).includes(iban) ? text : `${text}\n${ocr(pfad)}`);
+/** PDF-Text; fehlt die erwartete IBAN (oder der Betrag) darin, wird zusaetzlich die Texterkennung angehaengt. */
+export const mitOcr = (text, iban, pfad, ocr, betragFehlt = false) => ((!iban || nurIban(text).includes(iban)) && !betragFehlt ? text : `${text}\n${ocr(pfad)}`);
 const nurIban = s => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 /** Rechnungen aller archivierten Monate; XML- bzw. PDF-Text nur fuer konfigurierte Lieferanten. */
@@ -85,8 +85,9 @@ function belegeLesen(privat, lieferanten, pdf, ocr = ocrText) {
           if (tag < PDF_AB) { vorStart += 1; continue; }
           const pdfPfad = path.join(ordner, b.datei);
           const roh = b.pdfLesbar && fs.existsSync(pdfPfad) ? String(pdf(fs.readFileSync(pdfPfad))?.text || '') : '';
-          const text = roh && mitOcr(roh, lieferanten[b.anbieterSchluessel].iban, pdfPfad, ocr);
-          belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, waehrung: b.waehrung || null, datum: tag || null } });
+          // Ohne Betrag im Archiv steht er meist nur im Bild: dann ebenfalls Texterkennung.
+          const text = roh && mitOcr(roh, lieferanten[b.anbieterSchluessel].iban, pdfPfad, ocr, b.brutto == null);
+          belege.push({ schluessel: b.anbieterSchluessel, datei: b.datei, xml: null, pdf: { text, nummer: b.rechnungsnummer || null, brutto: b.brutto ?? null, waehrung: b.waehrung || null, datum: tag || null, rechnungsdatum: b.rechnungsdatum || null } });
           continue;
         }
         // Fehlt in der XML das Empfaengerkonto, darf es im PDF derselben Mail stehen (nur bei Bedarf gelesen).
