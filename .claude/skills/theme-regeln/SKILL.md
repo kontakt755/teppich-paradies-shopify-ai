@@ -107,6 +107,7 @@ Je nach Änderung sinnvoll und risikobasiert prüfen:
 
 - Desktop
 - Mobile bei ca. 390 px
+- Bei Produktseite, Galerie, Warenkorb und Video zusätzlich mit Playwright-WebKit (Safari-Engine, viele Kunden kaufen am iPhone), nicht nur Chromium: `~/.venvs/playwright/bin/python`, `p.webkit.launch()`, `is_mobile=True`, Breite 390 px; vorher `scrollWidth == innerWidth` prüfen (Gedächtnis `handy_messung_playwright_ueberlauf`). Fehlt WebKit: `~/.venvs/playwright/bin/python -m playwright install webkit`
 - Browser-Konsole
 - Theme Check
 - Links und Bilder
