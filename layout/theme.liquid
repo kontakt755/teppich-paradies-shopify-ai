@@ -6,6 +6,7 @@
   lang="{{ request.locale.iso_code }}"
 >
   <head>
+    {%- render 'tp-host-sperre' -%}
     {%- if settings.favicon != blank -%}
       <link
         rel="icon"
