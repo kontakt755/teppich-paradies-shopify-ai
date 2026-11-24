@@ -8,10 +8,13 @@
        (operations/scripts/mail-entwuerfe.mjs): je Auftrag eine JSON-Datei plus Anhaenge daneben,
        IMAP APPEND in den Entwuerfe-Ordner von kontakt@, danach nach erledigt/ bzw. fehler/.
        Sendet nie. Leerer Eingang: keine Anmeldung. Ohne KI-Kontingent.
-       Laeuft aus dem Dienst-Checkout ~/tp-dashboard.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard. dataless-erlauben.py erlaubt das Nachladen
+       von Dropbox-Dateien, die nur online liegen (sonst EDEADLK unter launchd, 24.11.2026).
        Einrichten: bash operations/scripts/dienste-einrichten.sh -\-mail-entwuerfe -->
   <key>ProgramArguments</key>
   <array>
+    <string>/usr/bin/python3</string>
+    <string>__HOME__/tp-dashboard/operations/scripts/dataless-erlauben.py</string>
     <string>__NODE_PFAD__</string>
     <string>__HOME__/tp-dashboard/operations/scripts/mail-entwuerfe.mjs</string>
   </array>

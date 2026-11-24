@@ -602,6 +602,8 @@ export const STATUS_DATEIEN = Object.freeze([
   { id: 'spiegel-waechter', datei: 'spiegel-waechter/status.json', titel: 'Fremde Spiegelseiten des Shops', label: 'net.teppich-paradies.spiegel-waechter', fenster: null, stummNachMin: 2_880 },
   { id: 'codex-stand', datei: 'ki-stand/codex.json', titel: 'Codex-Kontingent', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 180 },
   { id: 'muster-versand', datei: 'ki-stand/muster.json', titel: 'Musterautomatik', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 180 },
+  // Alle 5 Minuten; meldet selbst, wenn eine Dropbox-Datei laenger als 15 Minuten nicht lesbar ist.
+  { id: 'mail-entwuerfe', datei: 'mail-entwuerfe/status.json', titel: 'Mail-Entwürfe aus der Dropbox', label: 'net.teppich-paradies.mail-entwuerfe', fenster: null, stummNachMin: 60 },
   { id: 'claude-stand', datei: 'ki-stand/claude.json', titel: 'Claude-Code-Stand', label: 'net.teppich-paradies.ki-stand', fenster: null, stummNachMin: 12_000 },
 ]);
 
