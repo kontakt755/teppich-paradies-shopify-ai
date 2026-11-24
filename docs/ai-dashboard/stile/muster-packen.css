@@ -53,7 +53,9 @@
 .mp-hier-da { color: var(--text); font-weight: 600; }
 /* Lagermuster: der Packer muss sofort sehen, dass und wo er es im Haus greift (09.11.). */
 /* Schon im Haus: faellt am Muster auf, damit niemand auf den Lieferanten wartet. */
-.mp-lager { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--warn); color: var(--surface); font-size: 1rem; font-weight: 700; }
+/* Gross und fett (Benutzer 24.11.): eigene Zeile ueber dem Kleintext, mit Haken und Wort - nicht nur Farbe. */
+.lager-plakette { display: block; width: fit-content; max-width: 100%; margin: 2px 0 6px; padding: 6px 14px; border: 2px solid var(--text); border-radius: 8px; background: var(--warn); color: var(--surface); font-size: 1.3rem; line-height: 1.2; font-weight: 800; letter-spacing: .02em; overflow-wrap: anywhere; }
+.lager-plakette-zusatz { display: block; font-size: .9rem; font-weight: 700; letter-spacing: 0; }
 /* Noch nicht bestellt samt Grund: die Farbe traegt die Plakette darueber, der Text bleibt neutral. */
 .mp-hier-offen { color: var(--text-2); }
 .mp-ohne-aufkleber { color: var(--text-2); }

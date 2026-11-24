@@ -7,7 +7,8 @@ import { gruppierePositionenNachKunde } from '../../lib/einkauf-kundengruppen.mj
 import { afNorm } from '../../lib/einkauf-lieferanten.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { warteAmpel, warteWort, warteTitel } from '../../lib/ampel.mjs';
-import { ampelPlakette } from '../../bausteine/ampel.mjs';
+import { ampelPlakette, lagerPlakette } from '../../bausteine/ampel.mjs';
+import { imLagerVon } from '../../lib/musterlager-bestand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, geldText } from '../../kern/helfer.mjs';
 import { emptyState, stoerungState, bandItem } from '../../bausteine/karten.mjs';
 import {
@@ -84,7 +85,8 @@ function afStatusZelle(p) {
     const woher = p.musterLager && p.musterHerkunft !== 'eigen_vorbei'
       ? `aus dem Musterlager${p.musterLager.ort ? ` · ${p.musterLager.ort}` : ''}`
       : MUSTER_HERKUNFT_KURZ[p.musterHerkunft] || 'aus dem eigenen Musterlager';
-    return `<div class="small muted">Stand: ${esc(woher)}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
+    const lager = imLagerVon(p, status);
+    return `${lager ? lagerPlakette(lager.ort) : ''}<div class="small muted">Stand: ${esc(woher)}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
   }
   // Direkt vom Lieferanten zum Kunden (Vermerk oder Lieferweg "Hersteller → Kunde"): nach "bestellt"
   // kommt "raus" - bei uns kommt nichts an.
@@ -100,7 +102,9 @@ function afStatusZelle(p) {
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
   const selbstText = selbstStandText(selbstStand(p, eintrag), lw?.weg, eintrag);
-  const stand = `<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${lieferantenstandBlock(p, eintrag)}${uebernahmeBlock([p])}`
+  // Laeuft ueber den Lieferanten, liegt aber frei im Musterlager: gross davor, damit niemand (nach)bestellt.
+  const imLager = imLagerVon(p, status);
+  const stand = `${imLager ? lagerPlakette(imLager.ort, 'nicht beim Lieferanten bestellen') : ''}<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${lieferantenstandBlock(p, eintrag)}${uebernahmeBlock([p])}`
     // Steht im Musterlager, ist aber leer bzw. aufgebraucht: deshalb wieder beim Lieferanten.
     + (!status && p.musterLagerLeer ? `<div class="small muted">Musterlager: ${esc(p.musterLagerLeer.artLabel)} leer${p.musterLagerLeer.ort ? ` (${esc(p.musterLagerLeer.ort)})` : ''}</div>` : '');
   // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.
