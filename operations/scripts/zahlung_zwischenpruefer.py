@@ -141,11 +141,14 @@ def skonto_basis(xml_text, brutto_cent):
     block = re.search(r"<(?:ram:)?SpecifiedTradeSettlementHeaderMonetarySummation>(.*?)</(?:ram:)?SpecifiedTradeSettlementHeaderMonetarySummation>", xml_text, re.S)
     feld = lambda n: (lambda m: float(m.group(1)) if m else None)(re.search(rf"<(?:ram:)?{n}[^>]*>\s*([\d.]+)\s*<", block.group(1))) if block else None
     zuschlag, ware, basis, nachlass = feld("ChargeTotalAmount") or 0, feld("LineTotalAmount"), feld("TaxBasisTotalAmount"), feld("AllowanceTotalAmount") or 0
-    if zuschlag <= 0 or re.search(r"BASISBETRAG=", xml_text):
+    explizit = re.findall(r"#SKONTO#TAGE=\d+#PROZENT=[\d.]+#BASISBETRAG=(\d+(?:\.\d{1,2})?)#", xml_text)
+    if explizit:
+        return round(float(explizit[0]) * 100) if len(set(explizit)) == 1 else 0
+    if zuschlag <= 0:
         return brutto_cent
     if ware and basis and not nachlass and round((ware + zuschlag) * 100) == round(basis * 100):
         return round(brutto_cent * ware / basis)
-    return brutto_cent
+    return 0  # Basis ungeklaert: der Erzeuger zahlt dann voll, jeder Abzug ist ein Fehler
 
 
 def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute, teilbasis_sperrt=True):

@@ -193,6 +193,13 @@ class Zwischenpruefer(unittest.TestCase):
         f, _ = pruefen(pain(("100", 68.67, LIEF, "RE 100 abzgl Skonto 2,86 EUR")), [beleg("100", 71.53, t)])
         self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
 
+    def test_xml_skontobasis_codex_2307(self):
+        self.assertEqual(z.skonto_basis("#SKONTO#TAGE=10#PROZENT=04.00#BASISBETRAG=38.40#", 7153), 3840)
+        unstimmig = "<ram:SpecifiedTradeSettlementHeaderMonetarySummation><ram:LineTotalAmount>32.26</ram:LineTotalAmount><ram:ChargeTotalAmount>27.85</ram:ChargeTotalAmount><ram:TaxBasisTotalAmount>70.00</ram:TaxBasisTotalAmount></ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
+        self.assertEqual(z.skonto_basis(unstimmig, 7153), 0)
+        f, _ = pruefen(pain(("100", 69.99, LIEF, "RE 100 abzgl Skonto 1,54 EUR")), [beleg("100", 71.53, f"{unstimmig} #SKONTO#TAGE=10#PROZENT=04.00# IBAN {LIEF}")])
+        self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
+
     def test_bankexport_mit_spalte_iban(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:
