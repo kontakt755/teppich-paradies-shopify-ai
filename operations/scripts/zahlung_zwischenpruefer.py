@@ -148,6 +148,13 @@ def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute):
     return (None, max(laufend)) if laufend else (f"Skontofrist am {max(passend)} abgelaufen", None)
 
 
+def brutto_aus_summen(text):
+    """Genau ein Betrag X mit Netto N und Steuer S (19 % oder 7 %, auf den Cent) und N + S = X im Text; sonst None."""
+    werte = {cent(m.replace(".", "").replace(",", ".")) for m in re.findall(r"(?<![0-9.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})(?![0-9])", text)}
+    treffer = {n + round(n * q / 100) for n in werte for q in (19, 7) if round(n * q / 100) > 0 and round(n * q / 100) in werte and n + round(n * q / 100) in werte}
+    return treffer.pop() / 100 if len(treffer) == 1 else None
+
+
 def ocr_text(pfad):
     """Texterkennung ueber pdf_ocr.swift; ohne swift (Linux, CI) leer."""
     import subprocess
@@ -235,12 +242,16 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=No
             fehler.append(f"{wer}: Beleg ist eine Gutschrift")
         text = glaetten(b["text"]())
         # Bankverbindung nur als Bild im PDF: lokale Texterkennung (macOS Vision) nachlegen.
-        if nur_zeichen(z["iban"]) not in nur_zeichen(text) and b.get("pfad"):
+        if (nur_zeichen(z["iban"]) not in nur_zeichen(text) or b["brutto"] is None) and b.get("pfad"):
             text += " " + ocr_text(b["pfad"])
         if re.search(r"lastschrift|eingezogen|abgebucht|abbuchen|bankeinzug|mandat|<(?:ram:)?TypeCode>\s*59\s*</", text, re.I):
             fehler.append(f"{wer}: Rechnung nennt Lastschrift oder Einzug")
         if nur_zeichen(z["iban"]) not in nur_zeichen(text):
             fehler.append(f"{wer}: IBAN steht nicht auf der Rechnung")
+        brutto = b["brutto"] if b["brutto"] is not None else brutto_aus_summen(text)
+        if brutto is not None and b["brutto"] is None:
+            hinweise.append(f"{wer}: Rechnungsbetrag {brutto:.2f} aus Netto + MwSt der Rechnung ermittelt")
+            b = {**b, "brutto": brutto}
         if b["brutto"] is None:
             betrag = f"{z['cent'] // 100},{z['cent'] % 100:02d}"
             if re.search(rf"(Gesamtbetrag|Rechnungsbetrag|Endbetrag|zu zahlen|Zahlbetrag)(?:(?!netto)[^0-9]){{0,30}}(^|[^0-9.,]){betrag}($|[^0-9])", text, re.I):

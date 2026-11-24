@@ -168,14 +168,31 @@ export const pdfTextGlaetten = text => String(text ?? '')
   .replace(/\b(?:[A-Za-zÄÖÜäöü] ){3,}[A-Za-zÄÖÜäöü]\b/g, m => m.replace(/ /g, ''))
   .replace(/(\d) +, *(\d{2})(?!\d)/g, '$1,$2');
 
+/**
+ * Bruttobetrag ohne Beschriftung: genau ein Betrag X, fuer den Netto N und Steuer S (19 % oder 7 % von N,
+ * auf den Cent) mit N + S = X im Text stehen. Mehrdeutig oder nichts: null.
+ */
+export function bruttoAusSummen(text) {
+  const werte = [...new Set([...String(text ?? '').matchAll(/(?<![0-9.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})(?![0-9])/g)].map(m => cent(betragLesen(m[1]))))];
+  const da = new Set(werte);
+  const treffer = new Set();
+  for (const n of werte) for (const q of [19, 7]) {
+    const st = Math.round(n * q / 100);
+    if (st > 0 && da.has(st) && da.has(n + st)) treffer.add(n + st);
+  }
+  return treffer.size === 1 ? [...treffer][0] / 100 : null;
+}
+
 export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { iban }) {
   const t = pdfTextGlaetten(text);
   // Fehlen Nummer oder Betrag im Archiv: derselbe Leser wie belege:monat, auf dem geglaetteten Text
   // (er schliesst Netto-Zeilen aus und gibt bei mehreren verschiedenen Betraegen nichts zurueck).
-  if (!nummer || brutto === null || brutto === undefined) {
+  if (!nummer || brutto === null || brutto === undefined || !waehrung) {
     const felder = pdfTextLesen(t);
     nummer ||= felder.nummer ?? null;
-    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? null;
+    // Spaltensatz (Texterkennung): Beschriftung und Betrag stehen getrennt; dann zaehlt nur die Rechenprobe.
+    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? bruttoAusSummen(t);
+    waehrung ||= felder.waehrung;
   }
   // Ausdruecklich als Anhang einer Rechnung bezeichnet (Leistungsuebersicht), ohne Storno oder Korrektur.
   const anhang = /(anhang|anlage)\s+zu(r)?\s+rechnung/i.test(t) && !/gutschrift|storno|korrektur/i.test(t);
@@ -191,8 +208,18 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { 
   if (!/^[A-Za-z0-9][A-Za-z0-9/._-]{2,29}$/.test(nummer || '') || !nurZeichen(t).includes(nurZeichen(nummer))) return unklar('Rechnungsnummer nicht sicher im PDF');
   if (typeof brutto !== 'number' || !(brutto > 0) || !betragImText(t, brutto)) return unklar('Rechnungsbetrag nicht sicher im PDF');
   if (/gutschrift|storno|korrekturrechnung/i.test(t)) return unklar('PDF nennt Gutschrift oder Storno');
-  // Skonto: eine schon mit Abzug bezahlte Rechnung erkennt der Bankabgleich ohne Skontobetrag nicht sicher.
-  if (/skonto/i.test(t)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+  // Skonto nur mit genau einer lesbaren Stufe (Tage + Satz) und Rechnungsdatum, gerechnet auf den Rechnungsbetrag
+  // (so zahlt der Inhaber, z. B. 105,11 -> 100,91 am 09.11.2026). Sonst von Hand.
+  if (/skonto/i.test(t)) {
+    const stufen = [...t.matchAll(/(?:innerhalb\s+(?:von\s+)?)?(\d{1,3})\s+Tag(?:e|en)\s+(?:mit\s+|abz(?:ü|ue)glich\s+)?-?\s*(\d{1,2}(?:,\d{1,2})?)\s*%\s*Skonto/gi)];
+    // PDF-Text plus Texterkennung nennen dieselbe Stufe zweimal: gleiche Stufen zaehlen einmal,
+    // aber jedes Wort Skonto muss zu einer gelesenen Stufe gehoeren.
+    const verschieden = new Set(stufen.map(m => `${Number(m[1])}|${m[2]}`));
+    const satz = verschieden.size === 1 ? Number(stufen[0][2].replace(',', '.')) : NaN;
+    if ((t.match(/skonto/gi) || []).length !== stufen.length || !(satz > 0 && satz <= 5) || !/^\d{4}-\d{2}-\d{2}$/.test(datum || '')) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+    const betrag = Math.round(brutto * satz) / 100;
+    kopf.skonto = { bis: tagPlus(datum, Number(stufen[0][1])), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 };
+  }
   if (/lastschrift|abgebucht|eingezogen|bankeinzug|einzugserm|mandat/i.test(t)) return unklar('PDF nennt Lastschrift oder Einzug');
   if (/bereits (bezahlt|beglichen|erhalten)|dankend erhalten|vorkasse|anzahlung|abschlag|teilzahlung|paypal|kreditkarte/i.test(t)) return unklar('PDF nennt Vorkasse, Anzahlung oder schon bezahlt');
   if (!nurZeichen(t).includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht im PDF');

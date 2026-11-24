@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { auswaehlen, ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt, lastschriftFazit } from '../lib/zahlung-sammeldatei.mjs';
+import { auswaehlen, ibanGueltig, naechsterLauf, zahlungsbedingungenLesen, rechnungPruefen, pdfRechnungPruefen, painGegenpruefen, umsatzPdfLesen, xrechnungSkontoLesen, mailInhalt, lastschriftFazit, bruttoAusSummen } from '../lib/zahlung-sammeldatei.mjs';
 import { sammelLauf, laufMailen, exporteHolen, exporteZusammenfuehren, mitOcr } from '../scripts/zahlung-sammeldatei.mjs';
 
 // Alle Daten erfunden. IBANs aus Fantasie-Kontonummern mit gerechneter Pruefziffer.
@@ -248,7 +248,9 @@ const PDF_TEXT = `Rechnung Nr. R-2026-501\nRechnungsdatum 03.11.2026\nGesamtbetr
 test('PDF-Rechnung: Nummer, Betrag und IBAN muessen im Text stehen; Einzug, Vorkasse, Gutschrift sind unklar', () => {
   const r = { text: PDF_TEXT, nummer: 'R-2026-501', brutto: 1234.5, waehrung: 'EUR', datum: '2026-11-03' };
   assert.equal(pdfRechnungPruefen({ ...r, waehrung: 'CHF' }, { iban: LIEFER }).status, 'unklar');
-  assert.equal(pdfRechnungPruefen({ ...r, waehrung: null }, { iban: LIEFER }).status, 'unklar');
+  // Archiv ohne Waehrung: sie muss eindeutig im Text stehen
+  assert.equal(pdfRechnungPruefen({ ...r, waehrung: null, text: PDF_TEXT.replace(' EUR', '') }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...r, waehrung: null }, { iban: LIEFER }).status, 'ok');
   assert.equal(pdfRechnungPruefen(r, { iban: LIEFER }).status, 'ok');
   assert.equal(pdfRechnungPruefen(r, { iban: FREMD }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ ...r, brutto: 234.5 }, { iban: LIEFER }).status, 'unklar'); // 234,50 steckt nur in 1.234,50
@@ -598,8 +600,13 @@ test('Fehler 20.11.2026: Datum mit Leerzeichen, Skonto nur auf Ware, Skonto-Vors
   // Summen gehen nicht auf: voller Betrag
   assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=04.00#', { datum: '2026-11-06', brutto: 302.24, zuschlaege: 4.98, warensumme: 249, steuerbasis: 260 }).vollerBetrag, true);
   const pdf = pdfRechnungPruefen({ text: `Rechnung Nr. 417546 Gesamtbetrag 105,11 Zahlbar innerhalb von 10 Tagen mit 4% Skonto, innerhalb von 30 Tagen ohne Abzug. IBAN ${LIEFER}`, nummer: '417546', brutto: 105.11, waehrung: 'EUR', datum: '2026-11-06' }, { iban: LIEFER });
-  assert.equal(pdf.status, 'unklar');
-  assert.match(pdf.grund, /Vorschlag: 4 % Skonto bis 2026-11-16 = 100,91 EUR/);
+  // Eine lesbare Stufe: Skonto auf den Rechnungsbetrag (so am 09.11.2026 bezahlt: 100,91)
+  assert.equal(pdf.status, 'ok');
+  assert.deepEqual(pdf.skonto, { bis: '2026-11-16', betrag: 4.2, zahlbetrag: 100.91 });
+  // Zwei Stufen: von Hand, mit Vorschlag
+  const zwei = pdfRechnungPruefen({ text: `Rechnung Nr. 417546 Gesamtbetrag 105,11 Zahlbar innerhalb von 10 Tagen mit 4% Skonto, innerhalb von 20 Tagen mit 2% Skonto. IBAN ${LIEFER}`, nummer: '417546', brutto: 105.11, waehrung: 'EUR', datum: '2026-11-06' }, { iban: LIEFER });
+  assert.equal(zwei.status, 'unklar');
+  assert.match(zwei.grund, /Vorschlag: 4 % Skonto bis 2026-11-16 = 100,91 EUR/);
 });
 
 test('Wochenfazit: wiederkehrende Ueberweisungen, Stand der Lastschrift-Anfrage, eigene Umbuchung zaehlt nicht', () => {
@@ -625,4 +632,17 @@ test('IBAN nur als Bild im PDF: Texterkennung nur dann, und nur ihr Ergebnis zae
   // Erkennt die Texterkennung nichts, bleibt die IBAN unbelegt
   assert.equal(pdfRechnungPruefen({ text: mitOcr('Rechnung Nr. 700099 Gesamtbetrag 50,00', LIEFER, 'x.pdf', () => ''), nummer: '700099', brutto: 50, waehrung: 'EUR' }, { iban: LIEFER }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ text: mitOcr('Rechnung Nr. 700099 Gesamtbetrag 50,00', LIEFER, 'x.pdf', ocr), nummer: '700099', brutto: 50, waehrung: 'EUR' }, { iban: LIEFER }).status, 'ok');
+});
+
+test('Spaltensatz aus der Texterkennung: Brutto nur ueber die Rechenprobe Netto + MwSt', () => {
+  const ocr = `Rechnung Nr.115-2026\nGesamt:\nzzgl. 19% MwSt:\nRechnungsbetrag:\n406,29 €\n23,52 €\n429,81 €\n81,66 €\n511,47 €\nZahlbar: 10 Tage -3% Skonto\n30 Tage Netto\nIBAN: ${LIEFER}`;
+  assert.equal(bruttoAusSummen(ocr), 511.47);
+  assert.equal(bruttoAusSummen('100,00 € 19,00 € 119,00 € 200,00 € 38,00 € 238,00 €'), null); // zwei Kandidaten
+  const r = pdfRechnungPruefen({ text: ocr, nummer: '115-2026', brutto: null, waehrung: null, datum: '2026-11-23' }, { iban: LIEFER });
+  assert.equal(r.status, 'ok');
+  assert.equal(r.brutto, 511.47);
+  assert.deepEqual(r.skonto, { bis: '2026-12-03', betrag: 15.34, zahlbetrag: 496.13 });
+  // Textebene und Texterkennung nennen dieselbe Stufe: zaehlt einmal; ein weiteres Skonto-Wort sperrt
+  assert.equal(pdfRechnungPruefen({ text: `${ocr}\nZahlbar: 10 Tage -3% Skonto`, nummer: '115-2026', brutto: null, waehrung: null, datum: '2026-11-23' }, { iban: LIEFER }).status, 'ok');
+  assert.equal(pdfRechnungPruefen({ text: `${ocr}\nkein Skonto auf Fracht`, nummer: '115-2026', brutto: null, waehrung: null, datum: '2026-11-23' }, { iban: LIEFER }).status, 'unklar');
 });

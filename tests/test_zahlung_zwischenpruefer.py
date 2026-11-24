@@ -118,6 +118,14 @@ class Zwischenpruefer(unittest.TestCase):
         f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"<ram:TypeCode>59</ram:TypeCode> IBAN {LIEF}")])
         self.assertTrue(any("Lastschrift" in x for x in f))
 
+    def test_spaltensatz_brutto_aus_netto_und_steuer(self):
+        text = f"Gesamt: zzgl. 19% MwSt: Rechnungsbetrag: 429,81 € 81,66 € 511,47 € Zahlbar: 10 Tage -3% Skonto IBAN {LIEF}"
+        self.assertEqual(z.brutto_aus_summen(text), 511.47)
+        b = {**beleg("115-2026", None, text), "datum": "2026-11-13"}
+        f, h = pruefen(pain(("115-2026", 496.13, LIEF, "RE 115-2026 abzgl Skonto 15,34 EUR")), [b])
+        self.assertEqual(f, [])
+        self.assertTrue(any("511.47 aus Netto + MwSt" in x for x in h))
+
     def test_bankexport_mit_spalte_iban(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:
