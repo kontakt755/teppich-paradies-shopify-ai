@@ -51,6 +51,7 @@ Harte technische Grenzen (force-push, `reset --hard`, Branch löschen, Theme lö
 - Bei einem Hindernis selbstständig eine sichere Alternative prüfen.
 - Nicht wegen GitHub, Authentifizierung oder Nebeninfrastruktur unnötig vom eigentlichen Shopify-Auftrag abweichen.
 - Keine unnötigen großen Refactorings durchführen, wenn eine kleine robuste Änderung reicht.
+- **Wiederkehrendes wird ein Skript, die KI urteilt nur.** Läuft ein Ablauf zum dritten Mal gleich (Abruf, Abgleich, Zählung, Export, feste Klickfolge), gehört er in ein Skript unter `operations/scripts/` oder `scripts/`. Reihenfolge der Wege: API, dann `fetch`/curl, dann Playwright, Klicken durch die KI zuletzt. Geplante Aufgaben prüfen ohne KI vor und starten Claude nur, wenn es etwas zu beurteilen gibt (Muster: `vorpruefung` in `operations/lib/routinen.mjs`). Kein Skript für Einmaliges, für Portale mit Klickverbot oder Login-Sperre und für Außenwirkung ohne Freigabe.
 - Mobile und Desktop berücksichtigen und bestehende Funktionen regressionsprüfen.
 - Vor dem Livegang die konkret betroffenen Funktionen risikobasiert testen.
 - Nach dem Livegang den echten öffentlichen Shop ohne Preview-Parameter kontrollieren.
