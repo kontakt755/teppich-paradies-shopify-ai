@@ -37,6 +37,13 @@ def worte(name):
     return {w for w in re.split(r"[^a-z0-9]+", s) if len(w) >= 4 and w not in RECHTSFORM}
 
 
+def gleicher_name(a, b):
+    """Ohne IBAN: alle kennzeichnenden Worte des kuerzeren Namens im laengeren (ein gemeinsames Wort reicht nicht)."""
+    wa, wb = worte(a), worte(b)
+    kurz, lang = sorted((wa, wb), key=len)
+    return bool(kurz) and kurz <= lang
+
+
 def iban_gueltig(iban):
     s = nur_zeichen(iban)
     if not re.fullmatch(r"[A-Z]{2}\d{2}[A-Z0-9]{11,30}", s):
@@ -91,8 +98,11 @@ def bank_lesen(ordner):
             except ValueError:
                 continue
             text_ = f"{z.get('Buchungstext') or ''} {z.get('Verwendungszweck') or ''}"
-            ibans = [i for i in re.findall(r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b", z.get("Buchungstext") or "") if iban_gueltig(i)]
-            buchungen.append({"datum": f"{j}-{m}-{t}", "betrag": betrag, "name": z.get("Empfänger") or "", "ibans": ibans, "text": text_})
+            # Commerzbank: Empfaenger-IBAN im Buchungstext („IBAN Kontoinhaber“ ist das eigene Konto); andere Exporte: Spalte IBAN.
+            quellen = f"{z.get('Buchungstext') or ''} {z.get('IBAN') or ''} {z.get('IBAN Empfänger') or ''}"
+            ibans = [i for i in re.findall(r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b", quellen.replace(" ", " ")) if iban_gueltig(i)]
+            name = next((z.get(k) for k in ("Empfänger", "Beguenstigter", "Begünstigter", "Begünstigter/Zahlungspflichtiger", "Beguenstigter/Zahlungspflichtiger", "Name") if z.get(k)), "")
+            buchungen.append({"datum": f"{j}-{m}-{t}", "betrag": betrag, "name": name, "ibans": ibans, "text": text_})
     return buchungen
 
 
@@ -104,12 +114,33 @@ def glaetten(text):
 
 def skonto_belegt(text, abzug, brutto_cent):
     """Abzug steht als Betrag auf der Rechnung oder passt zu einem dort genannten Skontosatz (eine Cent Rundung)."""
-    if re.search(rf"(^|[^0-9.,]){abzug // 100},{abzug % 100:02d}($|[^0-9])", text):
+    b = rf"{abzug // 100},{abzug % 100:02d}"
+    if re.search(rf"Skonto[^0-9]{{0,40}}(^|[^0-9.,]){b}($|[^0-9])|(^|[^0-9.,]){b}[^0-9]{{0,20}}Skonto", text, re.I):
         return True
     saetze = [float(x.replace(",", ".")) for x in re.findall(r"(\d{1,2}(?:[.,]\d{1,2})?)\s*%\s*Skonto", text, re.I)]
     saetze += [float(x) for x in re.findall(r"#SKONTO#TAGE=\d+#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#", text, re.I)]
     saetze = [x for x in saetze if 0 < x <= SKONTO_MAX * 100]
     return bool(saetze) and abzug <= round(brutto_cent * max(saetze) / 100) + 1
+
+
+def skonto_frist(text, rechnungsdatum):
+    """Spaeteste lesbare Skontofrist (ISO) oder None: „Zahlung bis 27.11.26 2,00 % Skonto“, XRechnung-Kennung
+    „#SKONTO#TAGE=10#“ oder „innerhalb von 10 Tagen mit 4 % Skonto“ / „10 Tage -3% Skonto“ ab Rechnungsdatum."""
+    fristen = []
+    for t, m, j in re.findall(r"Zahlung bis (\d{1,2})[. ](\d{1,2})[. ](\d{2,4})\s+\d{1,2},\d{2}\s*%\s*Skonto", text, re.I):
+        try:
+            fristen.append(date(int(j) + (2000 if len(j) == 2 else 0), int(m), int(t)))
+        except ValueError:
+            return None
+    try:
+        start = date.fromisoformat(rechnungsdatum)
+    except (TypeError, ValueError):
+        start = None
+    tage = [int(x) for x, p in re.findall(r"#SKONTO#TAGE=(\d{1,3})#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#", text, re.I) if float(p) > 0]
+    tage += [int(x) for x in re.findall(r"(\d{1,3})\s+Tag(?:e|en)\s+(?:mit\s+|abz\w*\s+)?-?\s*\d{1,2}(?:,\d{1,2})?\s*%\s*Skonto", text, re.I)]
+    if tage and start:
+        fristen += [date.fromordinal(start.toordinal() + n) for n in tage]
+    return max(fristen).isoformat() if fristen else None
 
 
 def pdf_text(pfad):
@@ -150,9 +181,10 @@ def archiv_lesen(privat):
     return belege
 
 
-def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere):
+def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=None):
     """@returns (fehler, hinweise) als Listen von Saetzen."""
     fehler, hinweise = [], []
+    heute = heute or date.today().isoformat()
     kopf, zahlungen = sepa_lesen(xml)
     gesamt = sum(z["cent"] or 0 for z in zahlungen)
     if not zahlungen:
@@ -186,12 +218,14 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere):
         if b["art"] == "gutschrift":
             fehler.append(f"{wer}: Beleg ist eine Gutschrift")
         text = glaetten(b["text"]())
+        if re.search(r"lastschrift|eingezogen|abgebucht|abbuchen|bankeinzug|mandat", text, re.I):
+            fehler.append(f"{wer}: Rechnung nennt Lastschrift oder Einzug")
         if nur_zeichen(z["iban"]) not in nur_zeichen(text):
             fehler.append(f"{wer}: IBAN steht nicht auf der Rechnung")
         if b["brutto"] is None:
             betrag = f"{z['cent'] // 100},{z['cent'] % 100:02d}"
-            if re.search(rf"(^|[^0-9.,]){betrag}($|[^0-9])", text):
-                hinweise.append(f"{wer}: Rechnungswert nicht im Archiv, Betrag {betrag} steht aber auf der Rechnung")
+            if re.search(rf"(Gesamtbetrag|Rechnungsbetrag|Endbetrag|zu zahlen|Zahlbetrag)[^0-9]{{0,30}}(^|[^0-9.,]){betrag}($|[^0-9])", text, re.I):
+                hinweise.append(f"{wer}: Rechnungswert nicht im Archiv, Gesamtbetrag {betrag} steht aber auf der Rechnung")
             else:
                 fehler.append(f"{wer}: Rechnungswert im Archiv unbekannt")
         else:
@@ -205,13 +239,19 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere):
                 if abzug > cent(b["brutto"]) * SKONTO_MAX or not re.search(r"skonto", text, re.I) or genannt not in z["zweck"] or not skonto_belegt(text, abzug, cent(b["brutto"])):
                     fehler.append(f"{wer}: Abzug {genannt} EUR nicht als Skonto belegt (Rechnung {b['brutto']:.2f})")
                 else:
-                    hinweise.append(f"{wer}: Skonto {genannt} EUR ({abzug / cent(b['brutto']) * 100:.1f} %) – Frist auf der Rechnung beachten")
+                    frist = skonto_frist(text, b["datum"])
+                    if not frist:
+                        fehler.append(f"{wer}: Skontofrist auf der Rechnung nicht lesbar")
+                    elif frist < heute:
+                        fehler.append(f"{wer}: Skontofrist am {frist} abgelaufen")
+                    else:
+                        hinweise.append(f"{wer}: Skonto {genannt} EUR ({abzug / cent(b['brutto']) * 100:.1f} %), Frist {frist} – bis dahin freigeben")
         for x in buchungen:
-            gleicher = nur_zeichen(z["iban"]) in x["ibans"] or (konfig and worte(x["name"]) & worte(lieferanten[konfig[0]].get("name")))
+            gleicher = nur_zeichen(z["iban"]) in x["ibans"] if x["ibans"] else bool(konfig) and gleicher_name(x["name"], lieferanten[konfig[0]].get("name"))
             if x["betrag"] < 0 and gleicher and x["datum"] >= (b["datum"] or "") and nummer_im(x["text"], nummer):
                 fehler.append(f"{wer}: laut Kontoauszug schon bezahlt am {x['datum']} ({-x['betrag']:.2f} EUR)")
                 break
-        frueher = {i for x in buchungen if x["betrag"] < 0 and konfig and worte(x["name"]) & worte(lieferanten[konfig[0]].get("name")) for i in x["ibans"]}
+        frueher = {i for x in buchungen if x["betrag"] < 0 and konfig and gleicher_name(x["name"], lieferanten[konfig[0]].get("name")) for i in x["ibans"]}
         if frueher and nur_zeichen(z["iban"]) not in frueher:
             hinweise.append(f"{wer}: frueher an eine andere IBAN dieses Namens gezahlt – Konto vor Freigabe pruefen")
         if not frueher:

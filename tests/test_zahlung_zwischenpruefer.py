@@ -31,12 +31,12 @@ LIEFERANTEN = {"muster.de": {"name": "Muster Teppich GmbH", "iban": LIEF}, "zieh
 
 
 def pruefen(xml, belege, buchungen=(), andere=None):
-    return z.datei_pruefen("neu.xml", xml, lieferanten=LIEFERANTEN, belege=belege, buchungen=list(buchungen), andere=andere or {})
+    return z.datei_pruefen("neu.xml", xml, lieferanten=LIEFERANTEN, belege=belege, buchungen=list(buchungen), andere=andere or {}, heute="2026-11-15")
 
 
 class Zwischenpruefer(unittest.TestCase):
     def test_saubere_datei_mit_skonto(self):
-        f, h = pruefen(pain(("100", 98.0, LIEF, "RE 100 abzgl Skonto 2,00 EUR")), [beleg("100", 100.0, f"2 % Skonto IBAN {LIEF}")])
+        f, h = pruefen(pain(("100", 98.0, LIEF, "RE 100 abzgl Skonto 2,00 EUR")), [beleg("100", 100.0, f"innerhalb von 10 Tagen mit 2 % Skonto IBAN {LIEF}")])
         self.assertEqual(f, [])
         self.assertTrue(any("Skonto 2,00" in x for x in h))
 
@@ -68,7 +68,7 @@ class Zwischenpruefer(unittest.TestCase):
         f, _ = pruefen(pain(("100", 95.0, LIEF, "RE 100 abzgl Skonto 5,00 EUR")), [beleg("100", 100.0, f"2 % Skonto IBAN {LIEF}")])
         self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
         # Skontobetrag steht woertlich auf der Rechnung (Lieferant A rechnet auf den Warenanteil)
-        f, _ = pruefen(pain(("100", 98.4, LIEF, "RE 100 abzgl Skonto 1,60 EUR")), [beleg("100", 100.0, f"Skonto 1,60 EUR IBAN {LIEF}")])
+        f, _ = pruefen(pain(("100", 98.4, LIEF, "RE 100 abzgl Skonto 1,60 EUR")), [beleg("100", 100.0, f"Zahlung bis 23 11 26 2,00 % Skonto 1,60 EUR Zahlung 98,40 EUR IBAN {LIEF}")])
         self.assertEqual(f, [])
         # Zweimal dieselbe Rechnung in einer Datei
         f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100"), ("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"IBAN {LIEF}")])
@@ -80,6 +80,35 @@ class Zwischenpruefer(unittest.TestCase):
         # Gleiche Nummer bei anderem Konto in anderer Datei sperrt nicht, gleiches Konto sperrt
         f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"IBAN {LIEF}")], andere={"a.xml": {(FREMD, "100")}, "b.xml": {(LIEF, "100")}})
         self.assertEqual([x for x in f if "steht auch" in x], ["Muster Teppich GmbH RE 100: steht auch in b.xml"])
+
+
+    def test_codex_runde_2(self):
+        ok = f"Zahlbar innerhalb von 10 Tagen mit 2 % Skonto. IBAN {LIEF}"
+        # Betrag „5,00“ steht als Fracht, nicht als Skonto: 5 % bleiben unbelegt
+        f, _ = pruefen(pain(("100", 95.0, LIEF, "RE 100 abzgl Skonto 5,00 EUR")), [beleg("100", 100.0, f"Fracht 5,00 EUR {ok}")])
+        self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
+        # Abgelaufene Skontofrist (Rechnung 10.11., 3 Tage)
+        f, _ = pruefen(pain(("100", 98.0, LIEF, "RE 100 abzgl Skonto 2,00 EUR")), [beleg("100", 100.0, f"innerhalb von 3 Tagen mit 2 % Skonto IBAN {LIEF}")])
+        self.assertTrue(any("Skontofrist am 2026-11-13 abgelaufen" in x for x in f))
+        # Ein gemeinsames Namenswort ohne IBAN ist kein Empfaengernachweis
+        andere = {"datum": "2026-11-12", "betrag": -7.0, "name": "Andere Teppich GmbH", "ibans": [], "text": "Rechnung 100"}
+        f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"IBAN {LIEF}")], buchungen=[andere])
+        self.assertFalse(any("schon bezahlt" in x for x in f))
+        # Unbekanntes Brutto: nur der Gesamtbetrag zaehlt, nicht der Nettobetrag
+        f, _ = pruefen(pain(("100", 84.03, LIEF, "RE 100")), [beleg("100", None, f"Netto 84,03 EUR Gesamtbetrag 100,00 EUR IBAN {LIEF}")])
+        self.assertTrue(any("Rechnungswert im Archiv unbekannt" in x for x in f))
+        # Rechnung nennt Einzug
+        f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"Der Betrag wird per Lastschrift eingezogen. IBAN {LIEF}")])
+        self.assertTrue(any("Lastschrift" in x for x in f))
+
+    def test_bankexport_mit_spalte_iban(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            Path(d, "a.csv").write_text(f"Buchungstag;Beguenstigter;IBAN;Verwendungszweck;Betrag\n12.11.2026;Muster Teppich GmbH;{LIEF};RE 100;-100,00\n", "utf-8")
+            b = z.bank_lesen(d)
+        self.assertEqual((b[0]["name"], b[0]["ibans"]), ("Muster Teppich GmbH", [LIEF]))
+        f, _ = pruefen(pain(("100", 100.0, LIEF, "RE 100")), [beleg("100", 100.0, f"IBAN {LIEF}")], buchungen=b)
+        self.assertTrue(any("schon bezahlt am 2026-11-12" in x for x in f))
 
 
 if __name__ == "__main__":
