@@ -699,11 +699,27 @@
         "padding-block-start": 40,
         "padding-block-end": 40
       }
+    },
+    "bewertungen": {
+      "type": "tp-bewertungen",
+      "blocks": {
+        "judgeme_widget": {
+          "type": "shopify://apps/judge-me-reviews/blocks/review_widget/61ccd3b1-a9f2-4160-9fe9-4fec8413e5d8",
+          "settings": {
+            "product": "{{product}}"
+          }
+        }
+      },
+      "block_order": [
+        "judgeme_widget"
+      ],
+      "settings": {}
     }
   },
   "order": [
     "main",
     "zubehoer",
+    "bewertungen",
     "product_recommendations_qggXJq",
     "beratung"
   ]

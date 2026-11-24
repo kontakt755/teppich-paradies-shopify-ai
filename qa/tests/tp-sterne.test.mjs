@@ -13,7 +13,10 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const lies = (datei) => readFileSync(path.join(root, datei), 'utf8')
   .replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '')
   .replace(/{%\s*stylesheet\s*%}[\s\S]*?{%\s*endstylesheet\s*%}/g, '');
-const engine = new Liquid({ templates: { 'tp-sterne': lies('snippets/tp-sterne.liquid') } });
+const engine = new Liquid({ templates: {
+  'tp-sterne': lies('snippets/tp-sterne.liquid'),
+  'tp-bewertungshinweis': lies('snippets/tp-bewertungshinweis.liquid'),
+} });
 const sterne = (metafields, groesse = 'seite', ziel = '') =>
   engine.parseAndRender("{% render 'tp-sterne', product: product, groesse: groesse, ziel: ziel %}", { product: { metafields }, groesse, ziel });
 const bewertet = (rating, count) => ({ reviews: { rating: { value: { rating, scale_max: 5, scale_min: 1 } }, rating_count: { value: count } } });
@@ -36,6 +39,8 @@ test('echte Bewertung: Wert mit Komma, Anzahl, Fuellbreite, Vorleser-Text', asyn
   assert.match(html, /\(12 Bewertungen\)/);
   assert.match(html, /width: 96(\.0)?%/);
   assert.match(html, /aria-label="Bewertet mit 4,8 von 5 Sternen, 12 Bewertungen"/);
+  assert.match(html, /tp-bewertungshinweis/, 'Hinweis nach § 5b UWG an jeder Note');
+  assert.doesNotMatch(html, /Google/, 'Produktnote nie mit Google-Quelle');
 });
 
 test('Einzahl und ganze Note', async () => {

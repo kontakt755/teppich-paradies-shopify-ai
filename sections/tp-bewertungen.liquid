@@ -1,0 +1,38 @@
+{%- comment -%}
+  Produktbewertungen: Sprungziel #bewertungen fuer die Sterne unter dem Titel
+  (blocks/tp-produkt-sterne.liquid) und Platz fuer das Bewertungs-Widget der
+  App (App-Block). Das Formular bleibt auch ohne Bewertung sichtbar, damit
+  Kunden ueber die QR-Karte bewerten koennen. Der Hinweis nach § 5b UWG steht
+  vor dem Widget, weil es oben die Note zeigt (docs/weiterentwicklung/bewertungen.md).
+{%- endcomment -%}
+<div id="bewertungen" class="tp-bewertungen">
+  {%- render 'tp-bewertungshinweis', kurz: true -%}
+  {% content_for 'blocks' %}
+</div>
+
+{% stylesheet %}
+  .tp-bewertungen {
+    max-width: var(--page-width, 120rem);
+    margin-inline: auto;
+    padding-inline: var(--page-margin, 20px);
+    padding-block: 32px;
+    scroll-margin-top: 80px;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Produktbewertungen",
+  "tag": "section",
+  "blocks": [
+    {
+      "type": "@app"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Produktbewertungen"
+    }
+  ]
+}
+{% endschema %}
