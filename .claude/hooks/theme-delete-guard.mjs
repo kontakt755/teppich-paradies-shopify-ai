@@ -20,9 +20,10 @@
 // fuer Agenten, die ueber dieses Repository arbeiten. Ein Mensch im
 // Shopify-Admin bleibt davon unberuehrt; das ist Absicht.
 //
-// Bewusst ohne Ausnahmeliste fuer "unwichtige" Themes: Welches Theme
-// entbehrlich ist, entscheidet nicht der Agent. Wer wirklich eines loeschen
-// will, tut es im Shopify-Admin - dort steht eine Rueckfrage davor.
+// Einzige Ausnahme (Benutzer 24.11.2026): `shopify theme delete` fuer
+// Wegwerf-Themes. Belegt ueber istWegwerfTheme aus shopify-mcp-guard.mjs
+// (Name "Wegwerf", unveroeffentlicht, nicht in live-theme.json); jede
+// genannte ID muss das erfuellen. themeDelete per curl bleibt gesperrt.
 //
 // Kein jq: auf diesem Rechner ist jq nicht installiert, eine jq-Pipeline
 // wuerde still '{}' liefern und den Hook wirkungslos machen.
@@ -60,6 +61,21 @@ function kandidaten(segment) {
   return out;
 }
 
+import { istWegwerfTheme } from './shopify-mcp-guard.mjs';
+import { readFileSync } from 'node:fs';
+
+/** IDs hinter -t/--theme; null, wenn keine eindeutig lesbar ist. */
+export function themeIds(teil) {
+  const ids = [...teil.matchAll(/(?:^|\s)(?:-t|--theme)(?:=|\s+)["']?([^\s"']+)/g)].map((m) => m[1]);
+  return ids.length && ids.every((x) => /^\d+$/.test(x)) ? ids : null;
+}
+
+// Nur fuer Tests: Themeliste aus einer Datei statt live aus Shopify.
+function themen() {
+  const f = process.env.TP_THEMELISTE_TEST;
+  return f ? JSON.parse(readFileSync(f, 'utf8')) : undefined;
+}
+
 const REGELN = [
   [
     /^shopify["'`]?\s+theme\s+delete\b/,
@@ -86,6 +102,11 @@ for (const segment of segmente(command)) {
   for (const teil of kandidaten(segment)) {
     for (const [muster, grund] of REGELN) {
       if (muster.test(teil)) {
+        if (muster === REGELN[0][0]) {
+          const ids = themeIds(teil);
+          const liste = themen();
+          if (ids && ids.every((id) => istWegwerfTheme(id, liste ? { themen: liste } : undefined))) continue;
+        }
         process.stdout.write(`${JSON.stringify({
           hookSpecificOutput: {
             hookEventName: 'PreToolUse',
