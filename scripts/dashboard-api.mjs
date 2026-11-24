@@ -93,6 +93,8 @@ import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as servic
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
 import { ladenTodos, ladenMailZeilen, gruppiereMails, wareUnterwegs, wareAngekommen, zuschnitte } from '../docs/ai-dashboard/lib/laden.mjs';
+import { leseErgebnisse as leseRechnungspruefung, ergebnissePfad as rechnungspruefungPfad } from '../operations/lib/rechnungspruefung.mjs';
+import { rechnungsStand, rechnungLadenZeilen } from '../docs/ai-dashboard/lib/rechnungspruefung.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { lexwareAngebotePfad, lexwareNachfassPfad, nachfassFaellig, alterTage } from '../operations/lib/lexware-angebote.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
@@ -3218,12 +3220,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      */
     einkaufBelege(benutzer = null) {
       const dir = privatDirPath || privatDir();
+      // Rechnungspruefung (w-414): steht in jeder Antwort, auch wenn Belege oder Bestellungen fehlen.
+      const mitPreisen = !benutzer || benutzer.rolle === 'inhaber';
+      const rechnungen = this._rechnungspruefung({ mitBetraegen: mitPreisen });
       let ablage;
       try { ablage = leseBelege(lieferbelegePfad(dir)); }
-      catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message }; throw e; }
+      catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message, rechnungen }; throw e; }
       const k = this._lieferantenKontext();
       // Ohne Bestellungen ist weder "kein Shop-Auftrag" noch "nichts zu pruefen" belegt.
-      if (!k.modell || !k.exportGueltig) return { verfuegbar: false, fehler: true, hinweis: k.hinweis || 'orders.json hat kein gültiges Bestellformat – bitte die Daten aktualisieren.' };
+      if (!k.modell || !k.exportGueltig) return { verfuegbar: false, fehler: true, hinweis: k.hinweis || 'orders.json hat kein gültiges Bestellformat – bitte die Daten aktualisieren.', rechnungen };
       const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
       const kandidaten = kandidatenAus(zeilen, k.statusAlle);
       // Lieferant: aus der Absenderdomain; ohne Treffer der, den ein Mensch beim Zuordnen gewaehlt hat.
@@ -3234,7 +3239,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const belege = ordneAlleZu(mitLieferant, kandidaten, { absender: ablage.absender })
         .sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
       const { zeilen: abgleichZeilen, abweichungen } = belegAbgleich({ belege, kandidaten, jetzt: now() });
-      const mitPreisen = !benutzer || benutzer.rolle === 'inhaber';
       const absenderZeilen = [k.stammdaten.absender?.kontaktName, k.stammdaten.absender?.firma];
       abweichungen.unshift(...einkaufUeberVerkauf({ belege, kandidaten }).map(w => (mitPreisen
         ? { ...w, entwurf: vertreterNachricht(w, { vertreter: k.stammdaten.lieferanten?.[w.lieferant]?.vertreter, absender: absenderZeilen }) }
@@ -3253,8 +3257,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         letzterLauf: ablage.laeufe.at(-1) || null,
         // Die gelesenen Einkaufspreise bleiben im Server - die Belegliste geht an jede Rolle.
         belege: belege.map(({ preise, ...b }) => b), zeilen: abgleichZeilen, abweichungen, auftraege, auswahl, lieferanten,
-        absender: ablage.absender,
+        absender: ablage.absender, rechnungen,
       };
+    },
+
+    /**
+     * Ergebnisse des Rechnungspruefers (operations/scripts/rechnungen-pruefen.mjs) fuer Heute und Laden.
+     * "Erledigt"/"Gesehen" im Laden blendet eine Rechnung aus (Ablage laden-telefonisch, Schluessel "rechnung:").
+     * Einkaufspreise und der Entwurf an den Lieferanten nur mit mitBetraegen (Inhaber). Kaputte Datei = null.
+     */
+    _rechnungspruefung({ mitBetraegen = false } = {}) {
+      const dir = privatDirPath || privatDir();
+      try {
+        return rechnungsStand(leseRechnungspruefung(rechnungspruefungPfad(dir)), { jetzt: now(), gesehen: leseLadenTelefonisch(ladenTelefonischPfad(dir)), mitBetraegen });
+      } catch { return null; }
     },
 
     /** Entscheidung zu einem Beleg oder Absender. Person aus der Sitzung; Bestellungen gegen das Modell geprueft. */
@@ -4968,6 +4984,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const mails = ladenMails(dir, { jetzt });
       const mit = e => ({ ...e, zustaendig: zustaendig[e.schluessel] || null });
       const telefonisch = leseLadenTelefonisch(ladenTelefonischPfad(dir));
+      const rechnungen = this._rechnungspruefung();
       // "Ware unterwegs": Rechnungen aus der Lieferbeleg-Ablage, nur von Lieferanten der privaten Stammdaten.
       // Ohne Stammdaten gibt es keine Zuordnung - dann ein Hinweis statt Zeilen.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
@@ -4988,7 +5005,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ware,
         verfuegbar: true, personen, jetzt: jetzt.toISOString(),
         mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: gruppiereMails(ladenMailZeilen(mails.eintraege.map(m => ({ ...m, lieferantenpost: ware.eingerichtet && Boolean(lieferantZurDomain(domainVon(m.adresse || ''), { stammdaten, absender: belegAbsender })) })), { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit)) },
-        todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)), zuschnitte: schnitte }, { jetzt }).map(mit),
+        todos: [...ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)), zuschnitte: schnitte }, { jetzt }), ...rechnungLadenZeilen(rechnungen, { jetzt })].map(mit),
+        // Wochenzeile und "nicht pruefbar" der Rechnungspruefung, ohne Einkaufspreise (die Ansicht hat keine Rolle).
+        rechnungen: rechnungen && { letzterLauf: rechnungen.letzterLauf, woche: rechnungen.woche, nichtPruefbar: rechnungen.nichtPruefbar },
         // Ohne Bestelldaten fehlen nur die Rueckrufe und wartenden Kunden - von Hand angelegte Aufgaben gibt es trotzdem.
         bestelldatenFehlen: !modell,
       };

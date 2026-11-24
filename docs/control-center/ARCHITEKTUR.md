@@ -3321,3 +3321,38 @@ Benutzer beantwortet sie unter „Entscheidungen“, der nächste Lauf macht wei
   `write`-Liste). Rolle „lesen“ bekommt für beides 403; `von` kommt aus der Sitzung. Eine Frage wird nur einmal beantwortet.
 - **Ansicht:** Abschnitt oben in `ansichten/freigaben.mjs`; Zahl über `registriereNavZaehler({ freigaben })` im Zähler
   „Weitere Bereiche“/„Mehr“, auf Heute eine Zeile (`werkbankFragenZeile`). Geladen nur, wenn `darfAnsicht('freigaben')`.
+
+## 36. Rechnungsprüfung im Probebetrieb (24.11.2026, Werkbank w-414, #2301)
+
+Jede Warenrechnung aus dem Rechnungsarchiv wird der Auftragsbestätigung (AB) desselben Lieferantenauftrags zugeordnet
+und Position für Position verglichen (Artikel, Menge, Einzelpreis, Fracht und Zuschläge). Die Absprache mit dem
+Vertreter prüft weiter ein Mensch an der AB; der Prüfer übernimmt nur den mechanischen Teil.
+
+- **Ablauf:** `operations/scripts/rechnungen-pruefen.mjs` läuft freitags nach `belege:monat --schreiben` mit (Dienst
+  `net.teppich-paradies.sammeldatei`, Aufruf aus `belege-monat.mjs`; ein Fehler hält weder Archiv noch Sammeldatei
+  auf), von Hand `npm run -s rechnungen:pruefen -- --monat JJJJ-MM [--schreiben]`. Geprüft werden neue Rechnungen und
+  solche, die in den letzten 14 Tagen nicht prüfbar waren. AB-PDFs holt er nur lesend aus dem Postfach (wie die
+  Lieferbelege, `pdfTexte`), gespeichert wird nie ein Text.
+- **Logik:** `operations/lib/rechnungspruefung.mjs`, rein und ohne KI. Zuordnung nur über eine Auftragsnummer des
+  Lieferanten, die in AB (PDF oder Dateiname) und Rechnung steht; bei geänderter AB zählt die jüngste, eine
+  Sammelrechnung über mehrere Aufträge wird gegen alle gefundenen ABs geprüft. factur-x (CII) wird zeilenweise gelesen;
+  PDF-Text (Rechnung ohne XML und alle ABs) besteht die **Rechenprobe**: Menge × Preis = Betrag je Zeile, die Summe
+  der Zeilen steht gedruckt auf dem Beleg (oder ergibt mit 19 % den Bruttobetrag). Prozentzuschläge auf eine Position
+  werden in den Effektivpreis eingerechnet. Ergebnis je Rechnung genau eins: `passt`, `abweichung` (Position,
+  AB-Wert, Rechnungswert, Differenz in Euro; Toleranz 0,05 € je Position, Mehrmenge ab 0,5 %) oder `nicht_pruefbar`
+  mit Grund (keine AB, Beleg nicht sicher lesbar, Position in keiner gefundenen AB). Fracht, Zuschnitt, Mindermenge
+  und andere Zuschläge werden nur gemeldet, wenn die AB diese Art nirgends nennt oder einen anderen Prozentsatz.
+- **Ablage (privat):** `$TP_PRIVAT_DIR/rechnungspruefung/ergebnisse.json` (je Rechnung, Schlüssel sha256 des PDFs,
+  dazu die Läufe) und `einstellungen.json`: `mailAnVerkauf` (Standard aus), `verkaufAn`, `warenlieferanten`
+  { Rechnungsdomain: AB-Domain | null } für Lieferanten, deren Rechnung von woanders kommt oder die keine AB mailen.
+  Warenlieferant ist sonst, wer ABs per Mail schickt oder in den Lieferanten-Stammdaten steht.
+- **Anzeige** (`docs/ai-dashboard/lib/rechnungspruefung.mjs`): Abweichungen rot auf „Heute“ (über
+  `/api/einkauf/belege` → `rechnungen`, auch ohne Bestelldaten) und als rote Zeile „Rechnung prüfen“ unter „Zu tun“
+  in der Ansicht Laden mit „Erledigt“ (Ablage `laden-telefonisch.json`, Schlüssel `rechnung:<16 Hex>`); die Plakette
+  folgt der Frist einer Laden-Aufgabe. Darunter der Abschnitt **Rechnungen** mit der Wochenzeile „geprüft · passt ·
+  offen“ als Lebenszeichen (bleibt der Lauf mehr als 8 Tage aus, wird sie gelb und auf Heute steht ein To-do) und,
+  eingeklappt, die nicht prüfbaren der letzten 14 Tage mit „Gesehen“. Einkaufspreise und der Entwurf an den
+  Lieferanten (Knopf „Text für den Lieferanten“, nur kopieren, nie senden) nur für den Inhaber.
+- **Mail an verkauf@:** vorbereitet, aber aus. Mit `mailAnVerkauf: true` geht je Rechnung mit Abweichung genau eine
+  Mail (ohne Einkaufspreise) an `verkaufAn`; eingeschaltet wird das erst nach ausdrücklichem Ja des Benutzers. Nie
+  eine Mail an Lieferanten.
