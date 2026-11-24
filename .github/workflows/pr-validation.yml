@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
+      # Fuer tests/test_pdf_formular.py (lokal ueberspringt bares python3 ohne pypdf)
+      - run: pip install pypdf
       - run: npm ci
       # Fuer themecheck:guard (Theme Check laeuft offline, keine Anmeldung).
       # Dieselbe Version wie auf dem Mac, damit Baseline und Befunde gleich sind.
