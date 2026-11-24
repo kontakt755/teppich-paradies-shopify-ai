@@ -107,9 +107,9 @@ test('Kork bekommt eine getrennte Vorlage und Klick-/Klebeziele; vorhandenes Pro
   assert.doesNotMatch(JSON.stringify(parkett), /Parkett [&u]|Parkett und Kork|vereint Parkett/);
   assert.doesNotMatch(JSON.stringify(kork), /Parkett|Valdoro/);
   assert.deepEqual(kork.sections.main, parkett.sections.main);
-  for (const name of ['laminat', 'parkett', 'kork']) assert.deepEqual(json(name).order, ['hero', 'auswahl', 'main', 'guide']);
-  // Linoleum: Kategorietext (blocks/tp-kategorie-text) zwischen Raster und Ratgeber
-  assert.deepEqual(json('linoleumboden').order, ['hero', 'auswahl', 'main', 'tp_kategorie_beschreibung', 'guide']);
+  assert.deepEqual(json('kork').order, ['hero', 'auswahl', 'main', 'guide']);
+  // Linoleum, Laminat, Parkett: Kategorietext (blocks/tp-kategorie-text) zwischen Raster und Ratgeber
+  for (const name of ['linoleumboden', 'laminat', 'parkett']) assert.deepEqual(json(name).order, ['hero', 'auswahl', 'main', 'tp_kategorie_beschreibung', 'guide']);
 });
 
 test('Neue SectionRendering-Auswahl nutzt aktuellen Pfad fuer Filter, Sortierung und Back/Forward', async () => {
