@@ -270,9 +270,8 @@
     "tp_farben": {
       "type": "tp-farbuebersicht",
       "settings": {
-        "produkt": "vorwerk-modena-teppichboden-400cm-500cm",
-        "titel": "Vorwerk Modena: alle [anzahl] Farben mit Farbcode",
-        "text": "<p>Ein Klick auf eine Farbe öffnet die Meterware in dieser Farbe. Als Teppich nach Maß gibt es Modena in denselben Farben.</p>"
+        "titel": "[kategorie]: alle [anzahl] Farben mit Farbcode",
+        "text": "<p>Ein Klick auf eine Farbe öffnet die Meterware in dieser Farbe. Als Teppich nach Maß gibt es [kategorie] in denselben Farben.</p>"
       }
     }
   },
