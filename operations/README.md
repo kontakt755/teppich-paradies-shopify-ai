@@ -661,9 +661,12 @@ unabhängig vom Alter - eine vor Monaten aufgegebene, nie ausgelieferte
 Bestellung darf im Control Center nicht verschwinden. Das ersetzt die
 vorherige Regel "letzte 50 Bestellungen nach `updatedAt`", bei der eine um
 15 Uhr eingegangene Bestellung an einem geschäftigen Tag erst am nächsten
-Lauf sichtbar wurde. Zwischen den Seiten wird bei knappem Guthaben laut dem
-von Shopify gemeldeten `extensions.cost.throttleStatus` gewartet
-(`wartenBeiThrottle`), statt mit `THROTTLED` abzubrechen. Die Quellvarianten
+Lauf sichtbar wurde. Zwischen den Seiten wird laut dem von Shopify gemeldeten
+`extensions.cost.throttleStatus` gewartet (`wartenBeiThrottle`), bis das
+Guthaben die verlangten Kosten der nächsten Seite deckt (eine Bestellseite
+verlangt 959 Punkte, kostet echt rund 80). Meldet Shopify trotzdem
+`THROTTLED`, wartet der Admin-Zugang (`workflow/graphql-proxy.mjs`) die
+fehlende Zeit ab und versucht dieselbe Abfrage genau einmal neu. Die Quellvarianten
 der Muster werden ebenfalls ohne festes Limit geladen: `nodes(ids:)` nimmt
 bis zu 250 IDs je Aufruf, bei mehr wird in Gruppen nachgeladen.
 
