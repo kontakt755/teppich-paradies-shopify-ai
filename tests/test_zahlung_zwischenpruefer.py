@@ -185,11 +185,12 @@ class Zwischenpruefer(unittest.TestCase):
 
     def test_xml_mit_fracht_skonto_nur_auf_ware(self):
         # XRechnung mit Frachtzuschlag: der Erzeuger zieht 4 % nur vom Warenanteil ab (1,54 statt 2,86) – das ist kein Fehler
-        t = f"#SKONTO#TAGE=10#PROZENT=04.00# Frachtzuschlag 27,85 IBAN {LIEF}"
+        summen = "<ram:SpecifiedTradeSettlementHeaderMonetarySummation><ram:LineTotalAmount>32.26</ram:LineTotalAmount><ram:ChargeTotalAmount>27.85</ram:ChargeTotalAmount><ram:TaxBasisTotalAmount>60.11</ram:TaxBasisTotalAmount></ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
+        t = f"{summen} #SKONTO#TAGE=10#PROZENT=04.00# Frachtzuschlag 27,85 IBAN {LIEF}"
         f, _ = pruefen(pain(("100", 69.99, LIEF, "RE 100 abzgl Skonto 1,54 EUR")), [beleg("100", 71.53, t)])
         self.assertEqual(f, [])
-        # mehr als der Satz auf den ganzen Betrag bleibt ein Fehler
-        f, _ = pruefen(pain(("100", 68.0, LIEF, "RE 100 abzgl Skonto 3,53 EUR")), [beleg("100", 71.53, t)])
+        # 4 % auf den ganzen Betrag (2,86) ist mehr als auf den Warenanteil erlaubt
+        f, _ = pruefen(pain(("100", 68.67, LIEF, "RE 100 abzgl Skonto 2,86 EUR")), [beleg("100", 71.53, t)])
         self.assertTrue(any("nicht als Skonto belegt" in x for x in f))
 
     def test_bankexport_mit_spalte_iban(self):
