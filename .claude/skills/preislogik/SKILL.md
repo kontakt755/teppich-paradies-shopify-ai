@@ -5,7 +5,7 @@ description: Preisregeln des Inhabers - Produktaktionen und Rabatt bei Teppichbo
 
 # Preislogik
 
-Ausgelagert aus `AGENTS.md` (2026-10-16, ohne inhaltliche Aenderung). Preise
+Preise
 verändern steht weiter auf der Liste „NIEMALS ohne ausdrückliche Freigabe“ in
 `AGENTS.md`.
 

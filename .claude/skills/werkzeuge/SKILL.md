@@ -5,7 +5,7 @@ description: Uebersicht aller Projekt-Werkzeuge (npm run ...) mit Zweck und Zeit
 
 # Werkzeuge
 
-Ausgelagert aus `AGENTS.md` (2026-10-16, ohne inhaltliche Aenderung). Die
+Die
 Pflicht-Zeitpunkte (vor jedem Deploy, vor jedem Merge, vor jedem Commit, nach
 jedem Import) nennt `AGENTS.md` weiter selbst.
 
@@ -25,7 +25,7 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise vor dem Push |
 | `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte (lokal und laut GitHub - der sieht keine Merge-Treiber), PRs, die noch in die eingefrorene `CHANGELOG.md` schreiben |
 | `npm run pr:doctor:melden` | dasselbe als idempotenter PR-Kommentar (CI: Push auf `main`, alle 6 h) |
-| `npm run changelog:guard` | Changelog des Control Centers (laeuft in `pruefen`): Dateiname `JJJJ-MM-TT-<kurzname>.md`, Kopfzeile mit Datum, Pflichtabschnitte unter `docs/control-center/changelog/`; `CHANGELOG.md` eingefroren seit 2026-10-29 |
+| `npm run changelog:guard` | Changelog des Control Centers (laeuft in `pruefen`): Dateiname `JJJJ-MM-TT-<kurzname>.md`, Kopfzeile mit Datum, Pflichtabschnitte unter `docs/control-center/changelog/`; `CHANGELOG.md` eingefroren |
 | `npm run -s ki:stand [-- --trocken]` | Codex-Kontingent, Musterautomatik, Claude-Version; **stündlich automatisch** (`net.teppich-paradies.ki-stand`). Große Aufbau-Prüfung vierteljährlich von Hand: `/aufbau-pruefen` (Workflow, nur bei Wochenlimit unter etwa 50 %) |
 | `npm run -s changelog [-- --letzte N \| --namen]` | die letzten Changelog-Eintraege des Control Centers lesen (Standard 10, neueste zuerst) |
 | `npm run auslauf:pruefen` | **woechentlich automatisch**: gibt es jeden Artikel noch beim Lieferanten (A Schnellsuche, C/D/E Produktseite, I aus dem Verlauf des Bestandsabgleichs; B nur offline)? Schreibt `$TP_PRIVAT_DIR/auslauf/status.json`, Befunde als To-do; nur lesend |
