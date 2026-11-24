@@ -70,6 +70,7 @@
     "belege": "node operations/scripts/lieferbelege.mjs",
     "entwuerfe": "node operations/scripts/postfach-entwuerfe.mjs",
     "belege:monat": "node operations/scripts/belege-monat.mjs",
+    "rechnungen:pruefen": "node operations/scripts/rechnungen-pruefen.mjs",
     "belege:bank": "node operations/scripts/belege-bank.mjs",
     "zahlung:sammeldatei": "node operations/scripts/zahlung-sammeldatei.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",

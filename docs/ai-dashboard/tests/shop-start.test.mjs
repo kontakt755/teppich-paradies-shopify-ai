@@ -36,7 +36,7 @@ function start(query = '', session = {}, { todos = [], abgleich = null, bestellu
     istNurLesend: () => false, darfAnsicht,
     // Rote To-dos oben (w-206): echte problemeBlock, die Ableitung liefert die uebergebenen To-dos.
     problemeBlock, problemOrderIds, rotMuster, nurProbleme, rotstand: { neu: new Set(), vortag: null }, meldeRotstand: () => {}, seitText: () => 'seit gestern', aufraeumenUnterProblem, arbeitsquellenStand, shopifyAbgleich: { daten: abgleich }, leiteTodosAb: (q, opt) => { sichten.push(opt.sicht); return todos; }, sortiereTodos: x => x,
-    nachfassTodo: () => ({}), belegTodos: () => [], shopifyAbgleichTodos: () => [], datenstandTodo: () => [], veralteteQuellen: () => [],
+    nachfassTodo: () => ({}), belegTodos: () => [], rechnungTodos: () => [], shopifyAbgleichTodos: () => [], datenstandTodo: () => [], veralteteQuellen: () => [],
     belege: { daten: null }, akquiseFaellig: () => [], hausverwaltungenFaellig: () => [], hinweisText: x => x, sichtFuer: () => 'laden',
     esc: s => String(s ?? ''), alterText: t => `${t} Tage`,
     // Inhaberzeile (Rundgang 26.10., #44): eigener Baustein, hier nur ihr Platz und ihre Abrufe.

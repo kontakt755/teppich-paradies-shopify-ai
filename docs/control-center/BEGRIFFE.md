@@ -369,6 +369,10 @@ gebraeuchlich), Erfassen.
   7 Tagen eine Rechnung gekommen, die Ware ist dann meist schon verladen. „Gesehen“ blendet die Zeile aus.
 - **Ware beim Kunden / beim Kettler angekommen · beim Lieferanten abgeholt · Lieferschein unklar (12.11.)** = Zeilen im
   selben Abschnitt aus den digitalen Lieferscheinen von Lieferant A. Lieferungen in den Laden stehen dort nicht.
+- **Rechnung prüfen / Rechnungen (24.11.)** = rote Zeile unter „Zu tun“ in der Ansicht Laden: die automatische
+  Rechnungsprüfung hat eine Abweichung zur Auftragsbestätigung gefunden; „Erledigt“ nimmt sie heraus. Abschnitt
+  **Rechnungen** darunter: „geprüft · passt · offen“ der letzten 7 Tage und, eingeklappt, **nicht automatisch prüfbar**
+  (keine AB gefunden oder Beleg nicht sicher lesbar) mit „Gesehen“.
 - **Übernehmen / Wer? / Zurückgeben** = ein Eintrag im Laden wird von einer Person übernommen (Name per Knopf, kein
   Login je Person) und wieder freigegeben. Plakette: „<Name> kümmert sich · seit …“.
 - **Aufgabe dazu** = eine von Hand angelegte Aufgabe im Laden (Rolle schneiden, Rechnung kontrollieren, Angebot

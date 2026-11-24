@@ -32,6 +32,7 @@ export class GraphQLProxy {
     this.apiVersion = options.apiVersion || process.env.SHOPIFY_API_VERSION || DEFAULT_API_VERSION;
     this.token = options.token ?? process.env.SHOPIFY_ADMIN_TOKEN ?? null;
     this.fetch = options.fetch || globalThis.fetch;
+    this.warten = options.warten || ((ms) => new Promise((r) => setTimeout(r, ms)));
     this.requestLog = [];
     if (this.token && /^atkn_/.test(this.token)) {
       // App-Automatisierungstoken; liefert an der Admin API "Invalid API key or
@@ -50,8 +51,8 @@ export class GraphQLProxy {
 
   /**
    * LIVE: fuehrt die Query aus und liefert `data`. Wirft bei HTTP-Fehlern und
-   * bei GraphQL-`errors`. userErrors einer Mutation bleiben in `data` und
-   * werden vom Aufrufer bewertet.
+   * bei GraphQL-`errors` (nach THROTTLED erst nach einem Neuversuch). userErrors
+   * einer Mutation bleiben in `data` und werden vom Aufrufer bewertet.
    * SAMMELN: protokolliert nur und liefert null.
    */
   async execute(query, variables = {}) {
@@ -61,22 +62,35 @@ export class GraphQLProxy {
       console.log(`📡 GraphQL-Call gesammelt (${this.requestLog.length} total, kein Token)`);
       return null;
     }
-    const response = await this.fetch(this.endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': this.token },
-      body: JSON.stringify({ query, variables }),
-    });
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw new Error(`Shopify Admin API HTTP ${response.status}${response.status === 401 ? ' (Token ungueltig oder ohne Scope)' : ''}: ${text.slice(0, 200)}`);
+    for (let versuch = 0; ; versuch += 1) {
+      const response = await this.fetch(this.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': this.token },
+        body: JSON.stringify({ query, variables }),
+      });
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`Shopify Admin API HTTP ${response.status}${response.status === 401 ? ' (Token ungueltig oder ohne Scope)' : ''}: ${text.slice(0, 200)}`);
+      }
+      const body = await response.json();
+      // Auch eine gedrosselte Antwort nennt Kosten und Guthaben - daraus rechnen sich die Wartezeiten.
+      const cost = body.extensions?.cost;
+      request.cost = cost?.actualQueryCost ?? null;
+      request.requestedCost = cost?.requestedQueryCost ?? null;
+      request.throttleStatus = cost?.throttleStatus ?? null;
+      if (Array.isArray(body.errors) && body.errors.length) {
+        // THROTTLED heisst: nicht ausgefuehrt, weil das Guthaben unter den verlangten Kosten lag. Warten,
+        // bis es reicht (plus 1 s Luft), dann genau ein Neuversuch (AGENTS.md: hoechstens ein Retry).
+        if (versuch === 0 && body.errors.some(e => e.extensions?.code === 'THROTTLED')) {
+          const s = cost?.throttleStatus;
+          const fehlt = Math.max(0, (cost?.requestedQueryCost ?? 0) - (s?.currentlyAvailable ?? 0));
+          await this.warten(1000 + (s?.restoreRate > 0 ? Math.ceil((fehlt / s.restoreRate) * 1000) : 0));
+          continue;
+        }
+        throw new Error(`Shopify GraphQL: ${body.errors.map(e => e.message).join('; ').slice(0, 300)}`);
+      }
+      return body.data ?? {};
     }
-    const body = await response.json();
-    if (Array.isArray(body.errors) && body.errors.length) {
-      throw new Error(`Shopify GraphQL: ${body.errors.map(e => e.message).join('; ').slice(0, 300)}`);
-    }
-    request.cost = body.extensions?.cost?.actualQueryCost ?? null;
-    request.throttleStatus = body.extensions?.cost?.throttleStatus ?? null;
-    return body.data ?? {};
   }
 
   /** Speichert alle Aufrufe (ohne Token) fuer Nachvollziehbarkeit und Batch-Export. */

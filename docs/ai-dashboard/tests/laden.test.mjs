@@ -14,6 +14,7 @@ import { ladenTodos, liegtZuLange, teileSpalte, ladenMailZeilen, wareUnterwegs, 
 import { lieferbelegePfad } from '../../../operations/lib/lieferbelege.mjs';
 import { stammdatenPfad } from '../../../operations/lib/lieferanten.mjs';
 import { ladenPostfachPfad, ladenMailsPfad } from '../../../operations/lib/laden-mails.mjs';
+import { ergebnissePfad as rechnungspruefungPfad } from '../../../operations/lib/rechnungspruefung.mjs';
 
 const JETZT = new Date('2026-11-10T10:00:00Z');
 const vorTagen = n => new Date(JETZT.getTime() - n * 86400000).toISOString();
@@ -163,6 +164,27 @@ test('API: Uebersicht, Aufgabe anlegen, uebernehmen, zurueckgeben, erledigen', (
   api.ladenAufgabeErledigen({ id });
   assert.deepEqual(api.ladenUebersicht().todos.map(t => t.schluessel), ['rueckruf:mail-m1'], 'Erledigtes erscheint nicht mehr');
   assert.deepEqual(JSON.parse(fs.readFileSync(ladenZustaendigPfad(dir), 'utf8')), {}, 'Zustaendigkeit der erledigten Aufgabe ist weg');
+});
+
+test('API: Rechnungspruefung - Abweichung rot unter Zu tun, ohne Einkaufspreise; Erledigt nimmt sie heraus; Heute mit Betraegen nur fuer den Inhaber', () => {
+  const { dir, api } = umgebung();
+  fs.mkdirSync(path.dirname(rechnungspruefungPfad(dir)), { recursive: true });
+  fs.writeFileSync(rechnungspruefungPfad(dir), JSON.stringify({ laeufe: [{ am: vorTagen(1) }], rechnungen: {
+    x: { schluessel: 'abc123', anbieter: 'Lieferant X', nummer: 'R-1', eingang: vorTagen(1), ergebnis: 'abweichung', brutto: 99, abweichungen: [{ position: 'Testware', art: 'preis', ab: 10, rechnung: 11, differenz: 5 }] },
+    y: { schluessel: 'def456', anbieter: 'Lieferant Y', nummer: 'R-2', eingang: vorTagen(2), ergebnis: 'nicht_pruefbar', grund: 'keine AB gefunden', abweichungen: [] },
+  } }));
+  let d = api.ladenUebersicht();
+  const zeile = d.todos.find(t => t.schluessel === 'rechnung:abc123');
+  assert.equal(zeile.rot, true);
+  assert.doesNotMatch(JSON.stringify(d), /"ab":10|"brutto"/, 'die Ansicht Laden bekommt keine Einkaufspreise');
+  assert.deepEqual(d.rechnungen.woche, { geprueft: 2, passt: 0, offen: 2 });
+  assert.deepEqual(d.rechnungen.nichtPruefbar.map(e => e.schluessel), ['def456']);
+  assert.equal(api.einkaufBelege({ rolle: 'mitarbeiter' }).rechnungen.abweichungen[0].entwurf, undefined, 'Entwurf nur fuer den Inhaber');
+  assert.match(api.einkaufBelege({ rolle: 'inhaber' }).rechnungen.abweichungen[0].entwurf.text, /Gutschrift über 5,00 €/);
+  api.ladenTelefonischSetzen({ schluessel: 'rechnung:abc123' });
+  d = api.ladenUebersicht();
+  assert.equal(d.todos.some(t => t.schluessel === 'rechnung:abc123'), false, 'Erledigt = weg');
+  assert.equal(api.einkaufBelege().rechnungen.abweichungen.length, 0, 'auch auf Heute');
 });
 
 test('API: Mails aus dem Zwischenspeicher, Fehler und Stand gehen mit; frischer Speicher loest keinen Abruf aus', () => {

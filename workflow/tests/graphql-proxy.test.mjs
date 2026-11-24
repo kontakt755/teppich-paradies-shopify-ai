@@ -33,6 +33,29 @@ test('HTTP 401 und GraphQL-errors werden zu klaren Fehlern, kein stilles undefin
   await assert.rejects(() => pErr.execute('query { x }'), /Shopify GraphQL: Field x/);
 });
 
+test('THROTTLED: wartet, bis das Guthaben die verlangten Kosten deckt, und versucht es genau einmal neu', async () => {
+  // Werte aus der Messung vom 24.11.2026: Bestellseite verlangt 959, Guthaben 922, 100 Punkte je Sekunde.
+  const gedrosselt = okResponse(null, {
+    errors: [{ message: 'Throttled', extensions: { code: 'THROTTLED' } }],
+    extensions: { cost: { requestedQueryCost: 959, throttleStatus: { maximumAvailable: 2000, currentlyAvailable: 922, restoreRate: 100 } } },
+  });
+  const gut = okResponse({ x: 1 }, { extensions: { cost: { requestedQueryCost: 959, actualQueryCost: 80, throttleStatus: { maximumAvailable: 2000, currentlyAvailable: 979, restoreRate: 100 } } } });
+  const antworten = [gedrosselt, gut];
+  const gewartet = [];
+  const proxy = new GraphQLProxy({ token: 'shpat_test', fetch: async () => antworten.shift(), warten: async (ms) => { gewartet.push(ms); } });
+  assert.deepEqual(await proxy.execute('query { x }'), { x: 1 });
+  assert.deepEqual(gewartet, [1370], '37 fehlende Punkte / 100 je Sekunde + 1 s Luft');
+  assert.equal(proxy.requestLog.length, 1, 'ein Aufruf, auch mit Neuversuch');
+  assert.equal(proxy.requestLog[0].requestedCost, 959);
+  assert.equal(proxy.requestLog[0].cost, 80);
+
+  // Bleibt Shopify bei der Drosselung, gilt der Fehler nach dem einen Neuversuch.
+  let aufrufe = 0;
+  const bleibt = new GraphQLProxy({ token: 'shpat_test', fetch: async () => { aufrufe += 1; return gedrosselt; }, warten: async () => {} });
+  await assert.rejects(() => bleibt.execute('query { x }'), /Shopify GraphQL: Throttled/);
+  assert.equal(aufrufe, 2);
+});
+
 test('atkn_-Token wird sofort abgelehnt - die Admin API braucht shpat_', () => {
   assert.throws(() => new GraphQLProxy({ token: 'atkn_abc' }), /atkn_/);
 });

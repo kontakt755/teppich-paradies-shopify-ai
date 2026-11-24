@@ -31,6 +31,7 @@ import {
 } from '../lib/todos.mjs';
 import { versandLaeuft, teileNachfassen, nachfassTodo } from '../lib/muster-nachfassen.mjs';
 import { belegTodos } from '../lib/lieferbelege.mjs';
+import { rechnungTodos } from '../lib/rechnungspruefung.mjs';
 import { state } from '../kern/zustand.mjs';
 import { esc, fmtDateTime, plural } from '../kern/helfer.mjs';
 import { darfAnsicht } from '../kern/router.mjs';
@@ -364,6 +365,8 @@ function todosDerSicht(sicht, q, nf, opt = todoOptionen(sicht)) {
     ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
     ...postfachAbgleichTodo(nfLaden),
     ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
+    // Rechnungspruefung (w-414): kommt mit /api/einkauf/belege, auch ohne Bestelldaten.
+    ...(darfAnsicht('einkauf') ? rechnungTodos(belege.daten?.rechnungen) : []),
     // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
     ...shopifyAbgleichTodos(Date.now(), { lieferantName }),
     // Veraltete Daten: ein To-do fuer den Inhaber, bis der Sync-Dienst wieder liefert (lib/datenstand.mjs).
