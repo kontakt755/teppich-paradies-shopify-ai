@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { durchgang, entwurfAblegen, ordner, pruefeAuftrag } from '../lib/mail-entwuerfe.mjs';
+import { durchgang, entwurfAblegen, holeAusDropbox, ordner, pruefeAuftrag } from '../lib/mail-entwuerfe.mjs';
 import { main } from '../scripts/mail-entwuerfe.mjs';
 
 const ZUGANG = { benutzer: 'kontakt@beispiel.test', passwort: 'geheim', absender: 'kontakt@beispiel.test', absenderName: 'Beispiel' };
@@ -64,7 +64,7 @@ test('Netzfehler: Auftrag bleibt liegen', async () => {
 });
 
 test('main: leerer Eingang meldet nicht an', async () => {
-  assert.equal(await main({ privat: tmp(), zugangLesen: () => assert.fail('keine Anmeldung') }), 0);
+  assert.equal(await main({ privat: tmp(), dropbox: null, zugangLesen: () => assert.fail('keine Anmeldung') }), 0);
 });
 
 test('entwurfAblegen: APPEND mit Literal nur in den \\Drafts-Ordner, kein Senden', async () => {
@@ -88,4 +88,49 @@ test('entwurfAblegen: APPEND mit Literal nur in den \\Drafts-Ordner, kein Senden
   assert.equal(append, 'A3 APPEND "[Gmail]/Entw&APw-rfe" (\\Draft \\Seen) {21}\r\n');
   assert.ok(gesendet.includes('Subject: x\r\n\r\nHallo\r\n'));
   assert.ok(!gesendet.some(t => /SMTP|STORE|EXPUNGE|COPY/.test(t)));
+});
+
+test('Dropbox: Dateien wandern nach eingang/, Unterordner, versteckte und belegte Namen bleiben', () => {
+  const privat = tmp();
+  const quelle = path.join(tmp(), 'TP Mail-Entwuerfe');
+  const { eingang } = ordner(privat);
+  fs.mkdirSync(path.join(quelle, 'unter'), { recursive: true });
+  fs.mkdirSync(eingang, { recursive: true });
+  for (const n of ['a.json', '.dropbox', 'b.json']) fs.writeFileSync(path.join(quelle, n), n);
+  fs.writeFileSync(path.join(eingang, 'b.json'), 'alt');
+  assert.deepEqual(holeAusDropbox(quelle, eingang), ['a.json']);
+  assert.deepEqual(fs.readdirSync(quelle).sort(), ['.dropbox', 'b.json', 'unter']);
+  assert.equal(fs.readFileSync(path.join(eingang, 'a.json'), 'utf8'), 'a.json');
+  assert.deepEqual(holeAusDropbox(null, eingang), []);
+});
+
+test('Formular: Vorlage aus vorlagen/ wird gefuellt, angehaengt und bleibt liegen; Fehler beim Fuellen -> fehler/', async () => {
+  const privat = tmp();
+  const o = ordner(privat);
+  fs.mkdirSync(o.vorlagen, { recursive: true });
+  fs.writeFileSync(path.join(o.vorlagen, 'antrag.pdf'), '%PDF leer');
+  auftrag(privat, 'f.json', { an: 'k@beispiel.test', betreff: 'Antrag', text: 'anbei', formular: { vorlage: 'antrag.pdf', werte: { Name: 'Muster' }, name: 'Antrag Müller.pdf' } });
+  const gefuellt = [];
+  const fuellen = (vorlage, werte, ziel) => { gefuellt.push([path.basename(vorlage), werte]); fs.writeFileSync(ziel, '%PDF gefuellt'); fs.writeFileSync(`${ziel}.png`, 'png'); };
+  const abgelegt = [];
+  const e = await durchgang({ privat, zugang: ZUGANG, ablegen: async (z, d) => abgelegt.push(d), fuellen });
+  assert.deepEqual(e, [{ datei: 'f.json', status: 'angelegt' }]);
+  assert.deepEqual(gefuellt, [['antrag.pdf', { Name: 'Muster' }]]);
+  assert.match(abgelegt[0], /filename="Antrag_Muller\.pdf"/);
+  assert.ok(abgelegt[0].includes(Buffer.from('%PDF gefuellt').toString('base64')));
+  assert.ok(fs.existsSync(path.join(o.vorlagen, 'antrag.pdf')), 'Vorlage aus vorlagen/ bleibt');
+  const [erl] = fs.readdirSync(o.erledigt);
+  assert.deepEqual(fs.readdirSync(path.join(o.erledigt, erl)).sort(), ['Antrag_Muller.pdf', 'Antrag_Muller.pdf.png', 'f.json']);
+
+  auftrag(privat, 'g.json', { an: 'k@beispiel.test', betreff: 'x', text: 'y', formular: { vorlage: 'antrag.pdf', werte: { Falsch: 1 } } });
+  const f = await durchgang({ privat, zugang: ZUGANG, ablegen: async () => assert.fail('nie ablegen'), fuellen: () => { throw new Error('Formular: unbekanntes Feld Falsch'); } });
+  assert.deepEqual(f, [{ datei: 'g.json', status: 'fehler', grund: 'Formular: unbekanntes Feld Falsch' }]);
+});
+
+test('Formular: Pruefung der Angaben, fehlende Vorlage wartet', () => {
+  const v = tmp();
+  const basis = { an: 'a@b.de', betreff: 'x', text: 'y' };
+  assert.match(pruefeAuftrag({ ...basis, formular: { vorlage: '../x.pdf', werte: {} } }, v).fehler, /vorlage/);
+  assert.match(pruefeAuftrag({ ...basis, formular: { vorlage: 'x.pdf', werte: [] } }, v).fehler, /werte/);
+  assert.match(pruefeAuftrag({ ...basis, formular: { vorlage: 'x.pdf', werte: {} } }, v).warten, /Formularvorlage/);
 });

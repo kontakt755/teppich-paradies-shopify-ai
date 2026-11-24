@@ -11,15 +11,16 @@ import { fileURLToPath } from 'node:url';
 import { privatDir } from '../lib/routinen.mjs';
 import { lesePostfach } from '../lib/nachfass-versand.mjs';
 import { postfachZugangPfad } from '../lib/postfach-vorpruefung.mjs';
-import { durchgang, ordner } from '../lib/mail-entwuerfe.mjs';
+import { dropboxOrdner, durchgang, holeAusDropbox, ordner } from '../lib/mail-entwuerfe.mjs';
 
-export async function main({ privat = privatDir(), aus = t => console.log(t), zugangLesen = lesePostfach, ablegen } = {}) {
+export async function main({ privat = privatDir(), dropbox = dropboxOrdner(), aus = t => console.log(t), zugangLesen = lesePostfach, ablegen, fuellen } = {}) {
   const { eingang } = ordner(privat);
+  for (const n of holeAusDropbox(dropbox, eingang)) aus(`${new Date().toISOString()} aus Dropbox geholt: ${n}`);
   // Leerer Eingang: nichts tun, auch keine Anmeldung.
   if (!fs.existsSync(eingang) || !fs.readdirSync(eingang).some(n => n.endsWith('.json') && !n.startsWith('.'))) return 0;
   const z = zugangLesen(postfachZugangPfad(privat));
   if (!z.zugang) throw new Error(`kein Postfach-Zugang (${z.hinweis || 'nachfassen/postfach.json'})`);
-  const ergebnis = await durchgang({ privat, zugang: z.zugang, ...(ablegen ? { ablegen } : {}) });
+  const ergebnis = await durchgang({ privat, zugang: z.zugang, ...(ablegen ? { ablegen } : {}), ...(fuellen ? { fuellen } : {}) });
   for (const e of ergebnis) aus(`${new Date().toISOString()} ${e.status} ${e.datei}${e.grund ? `: ${e.grund}` : ''}`);
   return ergebnis.some(e => e.status === 'fehler') ? 1 : 0;
 }
