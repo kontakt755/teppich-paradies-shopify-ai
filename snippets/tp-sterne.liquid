@@ -50,6 +50,8 @@
     <span class="tp-sterne__wert" aria-hidden="true">{{ tst_text }}</span>
     <span class="tp-sterne__anzahl" aria-hidden="true">({{ tst_anzahl }}{% if groesse != 'karte' %} {{ tst_wort }}{% endif %})</span>
   </{{ tst_tag }}>
+  {%- comment -%} Hinweis an jeder Note (Inhaber 2026-11-04, § 5b UWG) {%- endcomment -%}
+  {%- render 'tp-bewertungshinweis', kurz: true -%}
 {%- endif -%}
 
 {% stylesheet %}

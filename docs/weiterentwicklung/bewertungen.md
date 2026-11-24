@@ -1,6 +1,19 @@
 # Produktbewertungen mit Sternen
 
-> **Entscheidung 2026-10-08:** keine Bewertungs-App. Die Google-Unternehmensbewertung bleibt das
+> **Entscheidung 2026-11-24 (Benutzer, SEO-Strategie):** Bewertungs-App Judge.me „Forever Free“ ist
+> installiert. Einstellungen in der App: automatische Bewertungsanfragen (Inland, international, Kasse)
+> **aus** – Bitten nur an Kunden mit Einwilligung, sonst per QR-Karte im Paket; eigene Rich Snippets
+> (JSON-LD) **aus** (das Theme gibt `aggregateRating` aus); Google-Business-Sync **aus**; jede Bewertung
+> wird von Hand freigegeben (Judge.me veröffentlicht nach 14 Tagen ohne Entscheidung automatisch –
+> negative echte Bewertungen werden veröffentlicht, nur Spam wird abgelehnt). App-Einbettung ist im
+> Live- und im Preview-Theme an (`settings_data.json`, nicht im Repository). Das Formular steht im
+> Abschnitt `sections/tp-bewertungen.liquid` (`#bewertungen`) in allen Produktvorlagen, mit dem
+> freigegebenen Hinweis „Wir prüfen nicht …“ davor und an jeder Note (`tp-sterne`); das Abzeichen
+> „Verifizierter Käufer“ ist ausgeblendet. Google Shopping (Produktbewertungen im Merchant Center)
+> gibt es nur im Tarif „Awesome“ (rund 14 €/Monat) – erst entscheiden, wenn genug Bewertungen da sind.
+> Die Entscheidung vom 2026-10-08 unten ist damit überholt.
+
+> **Entscheidung 2026-10-08 (überholt):** keine Bewertungs-App. Die Google-Unternehmensbewertung bleibt das
 > Vertrauenssignal (Block `tp-bewertungsbeleg`). Grund: rund 22 bezahlte Online-Bestellungen in
 > 90 Tagen auf ~1.290 Produkte – Produktbewertungen kämen zu langsam, um zu wirken. Die
 > Sterne-Darstellung (`tp-sterne`, `tp-produkt-sterne`, `tp-card-sterne`, `aggregateRating`) bleibt
