@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
+import { createHash } from 'node:crypto';
 import { durchgang, entwurfAblegen, holeAusDropbox, ordner, pruefeAuftrag } from '../lib/mail-entwuerfe.mjs';
 import { main } from '../scripts/mail-entwuerfe.mjs';
 
@@ -133,4 +134,46 @@ test('Formular: Pruefung der Angaben, fehlende Vorlage wartet', () => {
   assert.match(pruefeAuftrag({ ...basis, formular: { vorlage: '../x.pdf', werte: {} } }, v).fehler, /vorlage/);
   assert.match(pruefeAuftrag({ ...basis, formular: { vorlage: 'x.pdf', werte: [] } }, v).fehler, /werte/);
   assert.match(pruefeAuftrag({ ...basis, formular: { vorlage: 'x.pdf', werte: {} } }, v).warten, /Formularvorlage/);
+});
+
+const VMA = 'kontakt755/teppich-paradies-vma';
+const COMMIT = 'a'.repeat(40);
+const sha = b => createHash('sha256').update(b).digest('hex');
+const XLSX = Buffer.from('PK\x03\x04 erfundene Tabelle');
+
+test('anhaenge_git: Datei genau aus dem Commit, Pruefsumme stimmt -> Anhang', async () => {
+  const privat = tmp();
+  auftrag(privat, 'v.json', { an: 'k@beispiel.test', betreff: 'VMA', text: 'anbei', anhaenge_git: { repo: VMA, commit: COMMIT, dateien: [{ pfad: 'ausgabe/2026-11/VMA Müller.xlsx', sha256: sha(XLSX) }] } });
+  const geholt = [];
+  const abgelegt = [];
+  const e = await durchgang({ privat, zugang: ZUGANG, ablegen: async (z, d) => abgelegt.push(d), holen: (...a) => { geholt.push(a); return XLSX; } });
+  assert.deepEqual(e, [{ datei: 'v.json', status: 'angelegt' }]);
+  assert.deepEqual(geholt, [[VMA, COMMIT, 'ausgabe/2026-11/VMA Müller.xlsx']]);
+  assert.match(abgelegt[0], /spreadsheetml\.sheet; name="VMA_Muller\.xlsx"/);
+  assert.ok(abgelegt[0].includes(XLSX.toString('base64')));
+});
+
+test('anhaenge_git: falsche Pruefsumme oder 404 -> fehler/, Netzfehler -> bleibt liegen', async () => {
+  const privat = tmp();
+  const ablegen = async () => assert.fail('nie ablegen');
+  auftrag(privat, 'a.json', { an: 'k@beispiel.test', betreff: 'x', text: 'y', anhaenge_git: { repo: VMA, commit: COMMIT, dateien: [{ pfad: 'ausgabe/a.xlsx', sha256: 'b'.repeat(64) }] } });
+  assert.deepEqual(await durchgang({ privat, zugang: ZUGANG, ablegen, holen: () => XLSX }), [{ datei: 'a.json', status: 'fehler', grund: 'sha256 weicht ab: ausgabe/a.xlsx' }]);
+  auftrag(privat, 'b.json', { an: 'k@beispiel.test', betreff: 'x', text: 'y', anhaenge_git: { repo: VMA, commit: COMMIT, dateien: [{ pfad: 'ausgabe/b.xlsx', sha256: sha(XLSX) }] } });
+  const nichtDa = () => { throw Object.assign(new Error('Git: ausgabe/b.xlsx: gh: Not Found (HTTP 404)'), { auftragFalsch: true }); };
+  assert.equal((await durchgang({ privat, zugang: ZUGANG, ablegen, holen: nichtDa }))[0].status, 'fehler');
+  auftrag(privat, 'c.json', { an: 'k@beispiel.test', betreff: 'x', text: 'y', anhaenge_git: { repo: VMA, commit: COMMIT, dateien: [{ pfad: 'ausgabe/c.xlsx', sha256: sha(XLSX) }] } });
+  await assert.rejects(durchgang({ privat, zugang: ZUGANG, ablegen, holen: () => { throw new Error('Git: Zeitlimit'); } }), /Zeitlimit/);
+  assert.ok(fs.existsSync(path.join(ordner(privat).eingang, 'c.json')));
+});
+
+test('anhaenge_git: Erlaubnisliste, Pfad nur unter ausgabe/, voller Commit, Typ', () => {
+  const v = tmp();
+  const g = (x) => pruefeAuftrag({ an: 'a@b.de', betreff: 'x', text: 'y', anhaenge_git: { repo: VMA, commit: COMMIT, dateien: [{ pfad: 'ausgabe/x.xlsx', sha256: 'c'.repeat(64) }], ...x } }, v);
+  assert.ok(g({}).git);
+  assert.match(g({ repo: 'kontakt755/anderes' }).fehler, /nicht erlaubt/);
+  assert.match(g({ commit: 'abc123' }).fehler, /Commit/);
+  for (const pfad of ['ausgabe/../geheim.xlsx', 'quelle/x.xlsx', '/ausgabe/x.xlsx', 'ausgabe//x.xlsx', 'ausgabe\\..\\x.xlsx'])
+    assert.match(g({ dateien: [{ pfad, sha256: 'c'.repeat(64) }] }).fehler, /Git-Pfad/, pfad);
+  assert.match(g({ dateien: [{ pfad: 'ausgabe/x.exe', sha256: 'c'.repeat(64) }] }).fehler, /Dateityp/);
+  assert.match(g({ dateien: [{ pfad: 'ausgabe/x.xlsx', sha256: 'kurz' }] }).fehler, /sha256/);
 });

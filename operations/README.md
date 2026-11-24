@@ -817,6 +817,14 @@ Gmail nur noch Senden.
   mit `scripts/pdf_formular.py` (Python aus `~/.venvs/analyse`, anderes: `TP_PYTHON`); Feldnamen und
   erlaubte Werte zeigt `pdf_formular.py felder <vorlage>`. Falsches Feld oder falscher Wert: Auftrag nach
   `fehler/`. Das ausgefüllte PDF und seine Vorschau (PNG) liegen danach in `erledigt/`.
+- **Fertige Dateien aus einem privaten Repository** (z. B. VMA als `.xlsx`, die ein Cloud-Chat nicht
+  über die Dropbox hochladen kann):
+  `"anhaenge_git": {"repo": "kontakt755/teppich-paradies-vma", "commit": "<voller Hash>", "dateien": [{"pfad": "ausgabe/2026-11/<Datei>.xlsx", "sha256": "<Prüfsumme>"}]}`.
+  Der Mac liest jede Datei genau aus diesem Commit (`gh api`, Konto des Mac) und vergleicht die Prüfsumme.
+  Erlaubt sind nur Repositorys aus `GIT_ERLAUBT` in `lib/mail-entwuerfe.mjs` (bisher nur dieses, nur unter
+  `ausgabe/`), Pfade ohne `..`, Dateitypen und 20-MB-Grenze wie bei `anhaenge`. Falsche Prüfsumme, falscher
+  Pfad oder Commit (GitHub meldet 404, auch ohne Leserecht des Mac-Kontos): Auftrag nach `fehler/`.
+  Zeitlimit oder Netz: Auftrag bleibt liegen. `gh` aus `/opt/homebrew/bin`, anderes: `TP_GH`.
 - Anhangsnamen erscheinen in der Mail ohne Umlaute und Leerzeichen (`Formular ä 1.pdf` → `Formular_a_1.pdf`).
 - Dienst: Vorlage `launchagents/net.teppich-paradies.mail-entwuerfe.plist.vorlage`, Einrichten mit
   `bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe` (Plist zeigt auf `~/tp-dashboard`).
