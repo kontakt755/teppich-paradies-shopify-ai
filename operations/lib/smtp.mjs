@@ -65,6 +65,7 @@ function datumKopf(d) {
  * @param {object} p
  * @param {string|{name?: string, adresse: string}} p.von
  * @param {string[]} p.an
+ * @param {string[]} [p.cc]  nur fuer Entwuerfe (lib/mail-entwuerfe.mjs); sendeMail schickt nicht an Cc
  * @param {string} p.betreff
  * @param {string} p.text
  * @param {string} [p.messageId]
@@ -72,7 +73,7 @@ function datumKopf(d) {
  * @param {{name: string, typ: string, inhalt: Buffer|string}[]} [p.anhaenge]
  * @returns {{ messageId: string, daten: string }}
  */
-export function baueNachricht({ von, an, betreff, text, messageId = null, datum = new Date(), anhaenge = [] } = {}) {
+export function baueNachricht({ von, an, cc = [], betreff, text, messageId = null, datum = new Date(), anhaenge = [] } = {}) {
   const vonAdresse = typeof von === 'string' ? adresse(von) : adresse(von?.adresse);
   if (!vonAdresse) throw new SmtpFehler('Absenderadresse fehlt oder ist ungültig', { schritt: 'nachricht' });
   const empfaenger = (Array.isArray(an) ? an : [an]).map(adresse).filter(Boolean);
@@ -83,6 +84,7 @@ export function baueNachricht({ von, an, betreff, text, messageId = null, datum 
     `Date: ${datumKopf(datum)}`,
     `From: ${absenderKopf(typeof von === 'string' ? { adresse: vonAdresse } : { ...von, adresse: vonAdresse })}`,
     `To: ${empfaenger.join(', ')}`,
+    ...(cc.length ? [`Cc: ${cc.map(adresse).filter(Boolean).join(', ')}`] : []),
     `Subject: ${kodiereKopf(betreff)}`,
     `Message-ID: ${id}`,
     'MIME-Version: 1.0',
