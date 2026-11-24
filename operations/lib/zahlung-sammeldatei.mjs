@@ -37,14 +37,15 @@ export function naechsterLauf(heute) {
   throw new Error(`kein Lauftag nach ${heute}`);
 }
 
-const DATUM = String.raw`(\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2}))`;
+// Lieferant A druckt das Datum manchmal mit Leerzeichen statt Punkten („23 11 26“, Rechnung vom 09.11.2026).
+const DATUM = String.raw`(\d{1,2}[. ]\d{1,2}[. ](?:\d{4}|\d{2}))`;
 const BETRAG = String.raw`(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})`;
 const SKONTO_ZEILE = new RegExp(`Zahlung bis ${DATUM} ${BETRAG} % Skonto ${BETRAG} EUR Zahlung ${BETRAG} EUR`, 'g');
 const NETTO_ZEILE = new RegExp(`Nettof(?:ä|ae)lligkeit ${DATUM} netto Zahlung ${BETRAG} EUR`, 'g');
 
 /** Kalendertag, den es wirklich gibt (kein 31.02.). */
 const echterTag = (text) => {
-  const iso = datumLesen(text);
+  const iso = datumLesen(String(text).replace(/ /g, '.'));
   return iso && !Number.isNaN(Date.parse(`${iso}T00:00:00Z`)) && tagPlus(iso, 0) === iso ? iso : null;
 };
 
@@ -91,6 +92,7 @@ export function rechnungPruefen(xml, { iban }, pdfText = () => '') {
     ?? xrechnungSkontoLesen(abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n'), {
       datum: f.datum, brutto: f.brutto,
       zuschlaege: Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'ChargeTotalAmount') || 0),
+      ...summenLesen(xml),
     });
   // Ohne lesbares Skonto nur, wenn in keinem Bedingungsblock Skonto steht: dann ist der volle Betrag richtig.
   // Roh gelesen, damit auch CDATA oder andere Unterfelder zaehlen.
@@ -117,7 +119,14 @@ export function rechnungPruefen(xml, { iban }, pdfText = () => '') {
  * Skonto als XRechnung-Kennung „#SKONTO#TAGE=10#PROZENT=4.00#“ (optional „BASISBETRAG=…#“), gerechnet
  * vom Rechnungsdatum. Nur genau eine Kennung mit mehr als 0 %; sonst null (dann sperrt der Aufrufer).
  */
-export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0 }) {
+/** Warensumme, Steuerbasis und Nachlaesse aus dem Summenblock (fuer Skonto nur auf den Warenanteil). */
+const summenLesen = (xml) => {
+  const s = abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation');
+  const zahl = n => { const w = blatt(s, n); return w === '' ? null : Number(w); };
+  return { warensumme: zahl('LineTotalAmount'), steuerbasis: zahl('TaxBasisTotalAmount'), nachlaesse: zahl('AllowanceTotalAmount') || 0 };
+};
+
+export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0, warensumme = null, steuerbasis = null, nachlaesse = 0 }) {
   // Jede Kennung muss vollstaendig lesbar sein; ein uebriges Feld (z. B. „BASISBETRAG=50,00#“) sperrt.
   const alle = [...String(text ?? '').matchAll(/#SKONTO#TAGE=(\d{1,3})#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#(?:BASISBETRAG=(\d+(?:\.\d{1,2})?)#)?(?![A-Z]+=)/gi)];
   if (alle.length !== (String(text ?? '').match(/#SKONTO#/gi) || []).length) return null;
@@ -127,9 +136,15 @@ export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0 }) {
   const tagOk = Boolean(tag) && !Number.isNaN(tag.getTime()) && tag.toISOString().slice(0, 10) === datum;
   if (treffer.length !== 1 || !tagOk || !(brutto > 0)) return null;
   const [, tage, prozent, basisText] = treffer[0];
-  // Zuschlaege (Fracht) ohne angegebene Basis: Skontobasis unbekannt, lieber voll zahlen als zu wenig.
-  if (basisText === undefined && zuschlaege > 0) return { nettoFaellig: null, nettoBetrag: brutto, skonto: null, vollerBetrag: true };
-  const basis = basisText === undefined ? brutto : Number(basisText);
+  // Zuschlaege (Fracht) ohne angegebene Basis: Skonto nur auf den Warenanteil, brutto im Verhaeltnis
+  // Warensumme zu Steuerbasis (so zahlt der Inhaber: Lieferant AKO 4037401, 302,24 -> 290,39 am 06.11.2026).
+  // Nur wenn die Summen aufgehen; sonst lieber voll zahlen als zu wenig.
+  let basis = basisText === undefined ? brutto : Number(basisText);
+  if (basisText === undefined && zuschlaege > 0) {
+    const stimmig = warensumme > 0 && steuerbasis > 0 && !nachlaesse && cent(warensumme + zuschlaege) === cent(steuerbasis);
+    if (!stimmig) return { nettoFaellig: null, nettoBetrag: brutto, skonto: null, vollerBetrag: true };
+    basis = Math.round(brutto * warensumme / steuerbasis * 100) / 100;
+  }
   if (!(basis > 0) || cent(basis) > cent(brutto) || Number(prozent) > 5) return null;
   const betrag = Math.round(basis * Number(prozent)) / 100;
   return { nettoFaellig: null, nettoBetrag: brutto, skonto: { bis: tagPlus(datum, Number(tage)), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 } };
@@ -165,7 +180,12 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { 
   // Ausdruecklich als Anhang einer Rechnung bezeichnet (Leistungsuebersicht), ohne Storno oder Korrektur.
   const anhang = /(anhang|anlage)\s+zu(r)?\s+rechnung/i.test(t) && !/gutschrift|storno|korrektur/i.test(t);
   const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true, anhang };
-  const unklar = grund => ({ ...kopf, status: 'unklar', grund });
+  // Fuer die Handzahlung: „innerhalb von 10 Tagen mit 4% Skonto“ als Vorschlag ausrechnen (nie automatisch gezahlt).
+  const sk = /innerhalb\s+(?:von\s+)?(\d{1,3})\s+Tagen\s+(?:mit|abz(?:ü|ue)glich)\s+(\d{1,2}(?:,\d{1,2})?)\s*%\s*Skonto/i.exec(t);
+  const vorschlag = sk && typeof brutto === 'number' && brutto > 0 && /^\d{4}-\d{2}-\d{2}$/.test(datum || '') && Number(sk[2].replace(',', '.')) <= 5
+    ? (() => { const betrag = Math.round(brutto * Number(sk[2].replace(',', '.'))) / 100; return `; Vorschlag: ${sk[2]} % Skonto bis ${tagPlus(datum, Number(sk[1]))} = ${((cent(brutto) - cent(betrag)) / 100).toFixed(2).replace('.', ',')} EUR`; })()
+    : '';
+  const unklar = grund => ({ ...kopf, status: 'unklar', grund: grund + vorschlag });
   if (!t.trim()) return unklar('PDF-Text nicht lesbar');
   if (waehrung !== 'EUR') return unklar('Währung nicht eindeutig EUR');
   if (!/^[A-Za-z0-9][A-Za-z0-9/._-]{2,29}$/.test(nummer || '') || !nurZeichen(t).includes(nurZeichen(nummer))) return unklar('Rechnungsnummer nicht sicher im PDF');
@@ -188,7 +208,7 @@ export function konfigPruefen(k) {
   for (const [schluessel, l] of Object.entries(k.lieferanten || {})) {
     const lastschrift = l.zahlart === 'lastschrift';
     if (!lastschrift && (!String(l.name || '').trim() || !ibanGueltig(l.iban))) throw new Error(`Konfiguration: Lieferant ${schluessel} braucht name und gültige iban`);
-    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift };
+    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift, sepaAnfrage: String(l.sepaAnfrage || '').trim() };
   }
   // Optional: an wen Pruefliste und Datei nach dem Lauf gehen (Benutzer 20.11.2026: Laden-Postfach).
   const mailAn = k.mailAn === undefined ? null : String(k.mailAn).trim().toLowerCase();
@@ -373,6 +393,29 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
   return { heute, naechster, zeilen };
 }
 
+/**
+ * Wochenfazit (Benutzer 24.11.2026): an wen wir in den letzten `tage` Tagen mindestens zweimal
+ * ueberwiesen haben – Kandidaten, um beim Empfaenger eine SEPA-Lastschrift anzufragen. Eingetragene
+ * Lieferanten erkennt der Name (namePasst), ihr Stand steht in konfiguration.json unter `sepaAnfrage`.
+ * @returns [{ name, anzahl, summe, letzte, stand }] meiste Ueberweisungen zuerst
+ */
+export function lastschriftFazit({ buchungen, konfig, heute, tage = 90 }) {
+  const ab = tagPlus(heute, -tage);
+  const eigen = nurZeichen(konfig.auftraggeber.name);
+  const gruppen = new Map();
+  for (const b of buchungen || []) {
+    if (b.art !== 'ueberweisung' || !(b.betrag < 0) || b.datum < ab || !String(b.name || '').trim() || nurZeichen(b.name) === eigen) continue;
+    const l = Object.entries(konfig.lieferanten).find(([k, x]) => !x.lastschrift && namePasst(b.name, { anbieter: x.name, anbieterSchluessel: k }))?.[1];
+    // Ohne Eintrag: Name ohne Umlaute und Satzzeichen („Timzo … Teppichböden“ = „… Teppichboeden“).
+    const k = l ? `L:${l.name}` : nurZeichen(String(b.name).replace(/[äöüÄÖÜß]/g, c => UMLAUT[c]));
+    const g = gruppen.get(k) || { name: l?.name || String(b.name).trim(), anzahl: 0, cent: 0, letzte: '', stand: l?.sepaAnfrage || '' };
+    g.anzahl += 1; g.cent += cent(-b.betrag); if (b.datum > g.letzte) g.letzte = b.datum;
+    gruppen.set(k, g);
+  }
+  return [...gruppen.values()].filter(g => g.anzahl >= 2).sort((a, b) => b.anzahl - a.anzahl || b.cent - a.cent)
+    .map(({ cent: c, ...g }) => ({ ...g, summe: c / 100 }));
+}
+
 const UMLAUT = { ä: 'ae', ö: 'oe', ü: 'ue', Ä: 'Ae', Ö: 'Oe', Ü: 'Ue', ß: 'ss' };
 /** SEPA-Zeichensatz; das & im Firmennamen hat die Bank im Handversuch angenommen (Namensabgleich). */
 const sepaText = (s, max) => String(s ?? '').replace(/[äöüÄÖÜß]/g, c => UMLAUT[c]).replace(/[^A-Za-z0-9/?:().,'+ &-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -456,6 +499,8 @@ export function mailInhalt(prueflisteText, { lauf, datei, zahlungen, summe }) {
   const de = n => n.toFixed(2).replace('.', ',');
   const inDatei = auswahl('IN DATEI').map(f => `- ${f[1]}, Rechnung ${f[2]} vom ${f[3]}: ${f[8]} EUR (${f[9]})`);
   const unklar = auswahl('UNKLAR').map(f => `- ${f[1]}, Rechnung ${f[2] || '?'} vom ${f[3] || '?'}${f[4] ? `, ${f[4]} EUR` : ''}: ${f[9]}`);
+  const sepa = [...auswahl('SEPA anfragen').map(f => `- ${f[1]}: ${f[2]} Überweisungen, ${f[3]} EUR (letzte ${f[4]}) – Lastschrift anfragen`),
+    ...auswahl('SEPA angefragt').map(f => `- ${f[1]}: ${f[2]} Überweisungen, ${f[3]} EUR – ${f[5]}`)];
   const warnung = /ACHTUNG/.test(zeilen[1] || '') ? zeilen[1].replace(/^.*?ACHTUNG: /, 'ACHTUNG: ') : '';
   const betreff = `${datei ? `Sammelüberweisung ${lauf}: ${zahlungen} Zahlungen, ${de(summe)} EUR` : `Sammelüberweisung ${lauf}: keine Datei`}${unklar.length ? `, ${unklar.length} von Hand prüfen` : ''}${warnung ? ' – Kontoauszug prüfen' : ''}`;
   const text = [
@@ -464,6 +509,8 @@ export function mailInhalt(prueflisteText, { lauf, datei, zahlungen, summe }) {
     datei ? 'Bitte erst die Prüfliste ansehen, dann die Datei im Online-Banking hochladen und freigeben.' : '',
     '', `In der Datei (${zahlungen}):`, ...(inDatei.length ? inDatei : ['- nichts']),
     '', `Von Hand prüfen (${unklar.length}):`, ...(unklar.length ? unklar : ['- nichts']),
+    ...(unklar.length && /letzte Buchung/.test(zeilen[1] || '') ? [`Bezahlt erkennt das Programm nur bis zur letzten Buchung im Kontoauszug (${(/letzte Buchung (\S+)/.exec(zeilen[1]) || [])[1]}). Was danach von Hand überwiesen wurde, kann hier noch stehen.`] : []),
+    ...(sepa.length ? ['', `Wochenfazit wiederkehrende Überweisungen (${sepa.length}):`, ...sepa] : []),
     '', zeilen[1] || '',
   ].filter((z, i, a) => z !== '' || a[i - 1] !== '');
   return { betreff, text: text.join('\n') };
@@ -473,7 +520,7 @@ const STATUS_TEXT = { zahlen: 'IN DATEI', spaeter: 'später', bezahlt: 'bezahlt'
 const REIHENFOLGE = ['zahlen', 'unklar', 'gutschrift', 'lastschrift', 'spaeter', 'vorgemerkt', 'bezahlt', 'erledigt'];
 
 /** Pruefliste fuer den Inhaber (Semikolon, Excel-tauglich). */
-export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdfAb = '', summeCent }) {
+export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdfAb = '', summeCent, fazit = [] }) {
   const kopf = [
     `Sammelüberweisung Lauf ${auswahl.heute}; nächster Lauf ${auswahl.naechster}`,
     abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.luecke || abgleich.fehler || abgleich.zeilenNichtLesbar ? ` – ACHTUNG: KONTOAUSZUG UNVOLLSTÄNDIG${abgleich.luecke ? ` (Lücke ${abgleich.luecke})` : ''}${abgleich.fehler ? ` (${abgleich.fehler} Datei(en) nicht lesbar)` : ''}${abgleich.zeilenNichtLesbar ? ` (${abgleich.zeilenNichtLesbar} Buchung(en) nicht lesbar)` : ''}: keine Datei. Umsätze der letzten 30 Tage bei der Commerzbank als CSV in Downloads speichern, dann neu laufen lassen` : abgleich.aktuell ? '' : `; danach schützt die Vormerkliste vor doppelter Zahlung (Lieferantenrechnungen nicht von Hand überweisen; ein neuer CSV-Export in Downloads ist freiwillig)`}` : 'ACHTUNG: Kein Kontoauszug-Export gefunden: keine Datei. Einmal die Umsätze der letzten 90 Tage bei der Commerzbank als CSV in Downloads speichern.',
@@ -486,5 +533,7 @@ export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdf
   for (const z of sortiert) {
     zeilen.push([STATUS_TEXT[z.status], csvFeld(z.lieferant), csvFeld(z.nummer), z.datum || '', de(z.brutto), de(z.skonto?.betrag), z.skonto?.bis || '', z.nettoFaellig || '', de(z.zahlbetrag), csvFeld(z.grund), csvFeld(z.beleg)].join(';'));
   }
-  return `\uFEFF${[...kopf, ...zeilen].join('\r\n')}\r\n`;
+  const sepa = fazit.length ? ['', 'Wiederkehrende Überweisungen (letzte 90 Tage): per SEPA-Lastschrift anfragen?', 'Status;Empfänger;Überweisungen;Summe;letzte;Stand',
+    ...fazit.map(f => [f.stand ? 'SEPA angefragt' : 'SEPA anfragen', csvFeld(f.name), f.anzahl, de(f.summe), f.letzte, csvFeld(f.stand)].join(';'))] : [];
+  return `\uFEFF${[...kopf, ...zeilen, ...sepa].join('\r\n')}\r\n`;
 }
