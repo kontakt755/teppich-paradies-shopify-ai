@@ -638,7 +638,7 @@ test('IBAN nur als Bild im PDF: Texterkennung nur dann, und nur ihr Ergebnis zae
 
 test('Spaltensatz aus der Texterkennung: Brutto nur ueber die Rechenprobe Netto + MwSt', () => {
   const ocr = `Rechnung Nr.115-2026\nGesamt:\nzzgl. 19% MwSt:\nRechnungsbetrag:\n406,29 €\n23,52 €\n429,81 €\n81,66 €\n511,47 €\nZahlbar: 10 Tage -3% Skonto\n30 Tage Netto\nIBAN: ${LIEFER}`;
-  const V = { skontoTage: 10, skontoProzent: 3, rechenprobe: true };
+  const V = { skontoTage: 10, skontoProzent: 3, rechenprobe: true, datumVor: 'Berlin' };
   assert.equal(bruttoAusSummen(ocr), 511.47);
   assert.equal(bruttoAusSummen('100,00 € 19,00 € 119,00 € 200,00 € 38,00 € 238,00 €'), null); // zwei Kandidaten
   assert.equal(bruttoAusSummen('100,00 19,00 119,00 50,00 169,00'), null); // Positionssumme, nicht das Gesamt
@@ -660,6 +660,10 @@ test('Spaltensatz aus der Texterkennung: Brutto nur ueber die Rechenprobe Netto 
   assert.equal(bruttoAusSummen('100,00 19,00 119,00 −11,90 107,10'), null);
   assert.equal(pdfRechnungPruefen({ ...ohne, text: `Lieferdatum 23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
   assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 32. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
+  // Codex #2306: Zahlungsziel ueber Zeilenumbruch, widerspruechliche Gesamtbetraege, Einschraenkung in der Folgezeile
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Zahlbar bis\n23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\nRechnungsbetrag 511,47\nZahlbetrag 400,00\n${ocr}` }, { iban: LIEFER, vorlage: V }).brutto === 511.47 && pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\nRechnungsbetrag 511,47\nZahlbetrag 400,00\n${ocr}` }, { iban: LIEFER, vorlage: V }).status === 'ok', false);
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr.replace('-3% Skonto', '-3% Skonto\nauf den Materialwert')}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
   // Textebene und Texterkennung nennen dieselbe Stufe: zaehlt einmal; ein weiteres Skonto-Wort sperrt
   assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}\nZahlbar: 10 Tage -3% Skonto` }, { iban: LIEFER, vorlage: V }).status, 'ok');
   assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}\nkein Skonto auf Fracht` }, { iban: LIEFER, vorlage: V }).status, 'unklar');

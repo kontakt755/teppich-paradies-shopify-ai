@@ -188,11 +188,12 @@ export function bruttoAusSummen(text) {
 
 const MONATE = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
 /** Genau ein ausgeschriebenes Datum („23. November 2026“) im Text, sonst null. */
-export function monatsDatum(text) {
+export function monatsDatum(text, vor) {
   // Ist ein Rechnungsdatum beschriftet, aber nicht lesbar (z. B. 03/11/2026): nicht raten.
-  if (/rechnungsdatum|datum\s*:/i.test(String(text ?? ''))) return null;
-  // Zahlungsziel oder Lieferdatum („zahlbar bis 23. November 2026“) ist kein Rechnungsdatum.
-  const d = new Set([...String(text ?? '').matchAll(/(?<!(?:bis|zahlbar|f(?:ä|ae)llig|sp(?:ä|ae)testens|vom|ab|liefer\w*|leistung\w*)[^\n]{0,15})(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})/gi)]
+  if (!vor || /rechnungsdatum|datum\s*:/i.test(String(text ?? ''))) return null;
+  // Nur direkt hinter dem Ort der Vorlage, auf derselben Zeile (Zahlungsziel oder Lieferdatum stehen anders).
+  const ort = vor.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+  const d = new Set([...String(text ?? '').matchAll(new RegExp(`(?:^|\\n)[ \\t]*${ort},?[ \\t]+(\\d{1,2})\\.[ \\t]*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)[ \\t]+(\\d{4})`, 'gi'))]
     .map(m => `${m[3]}-${String(MONATE.indexOf(m[2].toLowerCase().replace('maerz', 'märz')) + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`));
   return d.size === 1 && echterIsoTag([...d][0]) ? [...d][0] : null;
 }
@@ -203,14 +204,16 @@ const echterIsoTag = iso => /^\d{4}-\d{2}-\d{2}$/.test(iso || '') && !Number.isN
 export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rechnungsdatum }, { iban, vorlage = null }) {
   const t = pdfTextGlaetten(text);
   // Skontofrist nur ab einem belegten Rechnungsdatum (Archiv oder Text), nie ab dem Eingangstag der Mail.
-  const rdatum = rechnungsdatum ?? (rechnungsdatum === undefined ? datum : null) ?? pdfTextLesen(t).datum ?? monatsDatum(t);
+  // Aus dem Text nur das beschriftete Datum oder ein ausgeschriebenes direkt hinter dem Ort der Vorlage („Berlin 23. November 2026“).
+  const rdatum = rechnungsdatum ?? (rechnungsdatum === undefined ? datum : null) ?? pdfTextLesen(t).datum ?? (vorlage?.datumVor ? monatsDatum(t, vorlage.datumVor) : null);
   // Fehlen Nummer oder Betrag im Archiv: derselbe Leser wie belege:monat, auf dem geglaetteten Text
   // (er schliesst Netto-Zeilen aus und gibt bei mehreren verschiedenen Betraegen nichts zurueck).
   if (!nummer || brutto === null || brutto === undefined || !waehrung) {
     const felder = pdfTextLesen(t);
     nummer ||= felder.nummer ?? null;
     // Spaltensatz (Texterkennung): Beschriftung und Betrag stehen getrennt; dann zaehlt nur die Rechenprobe.
-    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? (vorlage?.rechenprobe ? bruttoAusSummen(t) : null);
+    // Widerspruechliche beschriftete Gesamtbetraege: nicht rechnen.
+    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? (vorlage?.rechenprobe && !felder.betragMehrdeutig ? bruttoAusSummen(t) : null);
     waehrung ||= felder.waehrung;
   }
   // Ausdruecklich als Anhang einer Rechnung bezeichnet (Leistungsuebersicht), ohne Storno oder Korrektur.
@@ -240,7 +243,8 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rech
     const ende = stufen.length ? stufen[0].index + stufen[0][0].length : 0;
     const danach = stufen.length ? t.slice(ende, ende + 60) : 'keine Stufe';
     const nurNettoziel = /^[\s,.;:]*(?:$|\n|(?:innerhalb\s+(?:von\s+)?)?\d{1,3}\s+Tag(?:e|en)[\s,]*(?:netto|ohne\s+abzug|rein\s+netto)\b)/i.test(danach);
-    const eingeschraenkt = !nurNettoziel || /ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|nicht\s+skont|warenwert|nur\s+auf|ohne\s+(?:fracht|versand|porto)|fracht\w*\s*\(|\(\s*(?:ohne|nicht|exkl)/i.test(t);
+    // Jeder Hinweis auf eine Teilbasis irgendwo in der Rechnung sperrt (auch ueber Zeilenumbrueche hinweg).
+    const eingeschraenkt = !nurNettoziel || /ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|skontierf|nicht\s+skont|nicht\s+abzugsf|material|waren|fracht|versand|porto|nur\s+auf|teilbetrag|\(\s*(?:ohne|nicht|exkl)/i.test(t);
     // Nur mit Vorlage und nur, wenn die Rechnung genau deren Stufe nennt (sonst ist etwas anders: von Hand).
     const wieVorlage = Boolean(vorlage) && verschieden.size === 1 && Number(stufen[0][1]) === vorlage.skontoTage && satz === vorlage.skontoProzent;
     if (!wieVorlage || (t.match(/skonto/gi) || []).length !== stufen.length || eingeschraenkt || !echterIsoTag(rdatum)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
@@ -266,7 +270,7 @@ export function konfigPruefen(k) {
     // reinen PDF-Rechnung automatisch gerechnet, und nur der Betrag dieses Lieferanten darf aus der Rechenprobe kommen.
     const v = l.vorlage;
     if (v !== undefined && !(Number.isInteger(v?.skontoTage) && v.skontoTage > 0 && v.skontoTage <= 60 && v.skontoProzent > 0 && v.skontoProzent <= 5)) throw new Error(`Konfiguration: Lieferant ${schluessel} hat eine ungültige vorlage`);
-    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift, sepaAnfrage: String(l.sepaAnfrage || '').trim(), vorlage: v ? { skontoTage: v.skontoTage, skontoProzent: Number(v.skontoProzent), rechenprobe: v.rechenprobe === true } : null };
+    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift, sepaAnfrage: String(l.sepaAnfrage || '').trim(), vorlage: v ? { skontoTage: v.skontoTage, skontoProzent: Number(v.skontoProzent), rechenprobe: v.rechenprobe === true, datumVor: String(v.datumVor || '').trim() || null } : null };
   }
   // Optional: an wen Pruefliste und Datei nach dem Lauf gehen (Benutzer 20.11.2026: Laden-Postfach).
   const mailAn = k.mailAn === undefined ? null : String(k.mailAn).trim().toLowerCase();

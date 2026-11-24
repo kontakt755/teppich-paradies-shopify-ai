@@ -139,7 +139,7 @@ def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute):
     """@returns (None, frist) wenn der Abzug zu einer noch laufenden Stufe passt, sonst (Grund, None).
     Satz und Frist gehoeren zusammen: eine abgelaufene hoehere Stufe zaehlt nicht."""
     stufen = skonto_stufen(text, rechnungsdatum)
-    if re.search(r"ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|nicht\s+skont|warenwert|nur\s+auf|ohne\s+(?:fracht|versand|porto)|fracht\w*\s*\(|\(\s*(?:ohne|nicht|exkl)", text, re.I) and not any(b is not None for _, _, b in stufen):
+    if re.search(r"ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|skontierf|nicht\s+skont|nicht\s+abzugsf|material|waren|fracht|versand|porto|nur\s+auf|teilbetrag|\(\s*(?:ohne|nicht|exkl)", text, re.I) and not any(b is not None for _, _, b in stufen):
         return "Skonto nur auf einen Teil des Betrags: selbst pruefen", None
     if not stufen:
         return "Skontobedingung auf der Rechnung nicht lesbar", None
@@ -155,6 +155,9 @@ def brutto_aus_summen(text):
     werte = {int(m.replace(".", "").replace(",", "")) for m in re.findall(r"(?<![0-9.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})(?![0-9])", text)}
     steuer = lambda n, q: (n * q + 50) // 100  # kaufmaennisch wie Math.round im Erzeuger (Cent, positiv)
     treffer = {n + steuer(n, q) for n in werte for q in (19, 7) if steuer(n, q) > 0 and steuer(n, q) in werte and n + steuer(n, q) in werte}
+    beschriftet = {m for m in re.findall(r"(?:Rechnungsbetrag|Gesamtbetrag|Zahlbetrag|zu zahlen|Endbetrag|Gesamtsumme)\s*:?\s*(?:EUR|€)?\s*(\d{1,3}(?:\.\d{3})*,\d{2})", text, re.I)}
+    if len(beschriftet) > 1:
+        return None
     if re.search(r"rabatt|nachlass|abzug|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)[-−–]\s*\d+,\d{2}", text, re.I):
         return None
     # Nur das Rechnungsgesamt: der groesste Betrag im Text.
@@ -164,22 +167,16 @@ def brutto_aus_summen(text):
 MONATE = ["januar", "februar", "maerz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"]
 
 
-def rechnungsdatum_aus_text(text):
-    """Beschriftetes Rechnungsdatum (dd.mm.yyyy), sonst genau ein ausgeschriebenes Datum, das kein
-    Zahlungsziel oder Lieferdatum ist; bei beschriftetem, aber unlesbarem Datum None (wie der Erzeuger)."""
+def rechnungsdatum_aus_text(text, vor=None):
+    """Beschriftetes Rechnungsdatum (dd.mm.yyyy), sonst ein ausgeschriebenes Datum direkt hinter dem Ort der
+    Vorlage am Zeilenanfang („Berlin 23. November 2026“); bei beschriftetem, aber unlesbarem Datum None."""
     beschriftet = {f"{j}-{int(m):02d}-{int(t):02d}" for t, m, j in re.findall(r"Rechnungsdatum\s*:?\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})", text, re.I)}
     if len(beschriftet) == 1:
         return beschriftet.pop()
-    if re.search(r"rechnungsdatum|datum\s*:", text, re.I):
+    if not vor or re.search(r"rechnungsdatum|datum\s*:", text, re.I):
         return None
-    return monats_datum(text)
-
-
-def monats_datum(text):
-    """Genau ein ausgeschriebenes Datum („23. November 2026“), nicht nach bis/zahlbar/faellig/vom/Lieferung."""
     d = {f"{j}-{MONATE.index(m.lower().replace('ä', 'ae')) + 1:02d}-{int(t):02d}"
-         for vor, t, m, j in re.findall(r"([^\n]{0,25}?)(?<!\d)(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})", text, re.I)
-         if not re.search(r"(bis|zahlbar|f(ä|ae)llig|sp(ä|ae)testens|vom|ab|liefer\w*|leistung\w*)\W*$", vor, re.I)}
+         for t, m, j in re.findall(rf"(?:^|\n)[ \t]*{re.escape(vor)},?[ \t]+(\d{{1,2}})\.[ \t]*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)[ \t]+(\d{{4}})", text, re.I)}
     if len(d) != 1:
         return None
     tag = d.pop()
@@ -304,7 +301,7 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=No
             elif abzug > 0:
                 genannt = f"{abzug // 100},{abzug % 100:02d}"
                 # Skontofrist nur ab belegtem Rechnungsdatum (Archiv oder ausgeschrieben im Text), nie ab dem Maileingang.
-                grund, frist = skonto_pruefen(text, b.get("rechnungsdatum") or rechnungsdatum_aus_text(text), abzug, cent(b["brutto"]), heute)
+                grund, frist = skonto_pruefen(text, b.get("rechnungsdatum") or rechnungsdatum_aus_text(text, vorlage.get("datumVor")), abzug, cent(b["brutto"]), heute)
                 if abzug > cent(b["brutto"]) * SKONTO_MAX or genannt not in z["zweck"] or grund:
                     fehler.append(f"{wer}: Abzug {genannt} EUR nicht als Skonto belegt (Rechnung {b['brutto']:.2f}){': ' + grund if grund else ''}")
                 else:
