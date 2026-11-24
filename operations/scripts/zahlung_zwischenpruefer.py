@@ -148,6 +148,16 @@ def skonto_pruefen(text, rechnungsdatum, abzug, brutto_cent, heute):
     return (None, max(laufend)) if laufend else (f"Skontofrist am {max(passend)} abgelaufen", None)
 
 
+def ocr_text(pfad):
+    """Texterkennung ueber pdf_ocr.swift; ohne swift (Linux, CI) leer."""
+    import subprocess
+    try:
+        r = subprocess.run(["swift", str(Path(__file__).with_name("pdf_ocr.swift")), str(pfad)], capture_output=True, text=True, timeout=300)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return r.stdout if r.returncode == 0 else ""
+
+
 def pdf_text(pfad):
     import logging
     from pypdf import PdfReader  # nur hier: Tests laufen ohne pypdf
@@ -182,7 +192,8 @@ def archiv_lesen(privat):
                 merk["t"] = " ".join(teile)
                 return merk["t"]
             belege.append({"schluessel": b.get("anbieterSchluessel"), "nummer": str(b.get("rechnungsnummer") or ""), "brutto": b.get("brutto"),
-                           "datum": b.get("rechnungsdatum") or b.get("tag") or "", "art": b.get("art"), "datei": b.get("datei"), "text": text})
+                           "datum": b.get("rechnungsdatum") or b.get("tag") or "", "art": b.get("art"), "datei": b.get("datei"), "text": text,
+                           "pfad": ordner / b["datei"] if b.get("datei") and str(b["datei"]).lower().endswith(".pdf") else None})
     return belege
 
 
@@ -223,6 +234,9 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=No
         if b["art"] == "gutschrift":
             fehler.append(f"{wer}: Beleg ist eine Gutschrift")
         text = glaetten(b["text"]())
+        # Bankverbindung nur als Bild im PDF: lokale Texterkennung (macOS Vision) nachlegen.
+        if nur_zeichen(z["iban"]) not in nur_zeichen(text) and b.get("pfad"):
+            text += " " + ocr_text(b["pfad"])
         if re.search(r"lastschrift|eingezogen|abgebucht|abbuchen|bankeinzug|mandat|<(?:ram:)?TypeCode>\s*59\s*</", text, re.I):
             fehler.append(f"{wer}: Rechnung nennt Lastschrift oder Einzug")
         if nur_zeichen(z["iban"]) not in nur_zeichen(text):
