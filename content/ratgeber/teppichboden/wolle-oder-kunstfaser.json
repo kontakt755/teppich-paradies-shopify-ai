@@ -1,0 +1,67 @@
+{
+  "id": "RAT-TB-021",
+  "handle": "wolle-oder-kunstfaser",
+  "title": "Wolle oder Kunstfaser: Welcher Teppichboden ist besser?",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Auswahl & Kaufberatung"
+  ],
+  "cluster": "teppichboden/auswahl",
+  "parent": "ratgeber-teppichboden",
+  "intent": "kaufberatung",
+  "frage": "Wolle oder Kunstfaser: Welcher Teppichboden ist besser?",
+  "begriff": "wollteppichboden oder kunstfaser",
+  "nebenfragen": [
+    "Wolle oder Polyamid?",
+    "Ist Polyester als Teppichboden geeignet?",
+    "Was kann Polypropylen?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "welcher-teppichboden-fuer-welchen-raum",
+    "teppichboden-pflegen-und-flecken-entfernen"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [
+    "nutzungsklasse"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Technische Daten der Teppichboeden im Shop",
+      "url": "/collections/teppichboden"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Vorwerk: Wollteppich reinigen",
+      "url": "https://www.vorwerk.com/de/de/c/home/rezepte-und-ideen/ideenreich/kobold/wissen/wollteppich-reinigen"
+    }
+  ],
+  "bilder": [],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-11-24",
+    "grund": "Fasereigenschaften aendern sich nicht"
+  },
+  "expert_input": [],
+  "excerpt": "Wolle, Polyamid, Polyester oder Polypropylen: die Eigenschaften der Fasern im Vergleich und wann welche Faser für Ihren Raum passt.",
+  "seo": {
+    "title": "Wolle oder Kunstfaser: Teppichboden im Vergleich",
+    "description": "Wolle, Polyamid, Polyester, Polypropylen: Stärken und Schwächen der Fasern im Teppichboden und welche zu Raum und Nutzung passt."
+  },
+  "metafields": {
+    "kurzantwort": "Wolle nimmt Feuchte auf, erholt sich gut und gilt als schwer entflammbar, braucht aber schonende Fleckbehandlung. Polyamid ist strapazierfähig und rückstellfähig, Polyester weich und farbbrillant, Polypropylen feuchteunempfindlich. Welche Faser passt, hängt von Raum und Anspruch ab.",
+    "art": "Kaufberatung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "muster"
+    ],
+    "kollektion": "teppichboden-wolle",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

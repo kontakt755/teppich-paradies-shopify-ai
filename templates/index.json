@@ -542,6 +542,20 @@
             "links": "Teppichboden Meterware|/collections/teppichboden\nVinylboden|/collections/vinylboden-1\nKlickvinyl|/collections/vinylboden-klickvinyl\nLinoleumboden|/collections/linoleumboden-1\nSockelleisten|/collections/bodenleisten\nMuster bestellen|/pages/muster"
           }
         },
+        "l3": {
+          "type": "liste",
+          "settings": {
+            "titel": "Ratgeber",
+            "links": "Alle Ratgeber|/pages/ratgeber\nTeppichboden verlegen: Kosten pro m²|/blogs/ratgeber-teppichboden/teppichboden-verlegen-kosten-pro-m2\nWolle oder Kunstfaser?|/blogs/ratgeber-teppichboden/wolle-oder-kunstfaser\nTeppich ketteln: Ablauf|/blogs/ratgeber-teppichboden/teppich-ketteln-ablauf\nTeppichfliesen im Büro|/blogs/ratgeber-teppichboden/teppichfliesen-im-buero\nTeppich wellig: was tun?|/blogs/ratgeber-teppichboden/teppichboden-wirft-wellen"
+          }
+        },
+        "l4": {
+          "type": "liste",
+          "settings": {
+            "titel": "Teppichboden nach Raum",
+            "links": "Teppichboden fürs Schlafzimmer|/collections/teppichboden-schlafzimmer\nTeppichboden fürs Kinderzimmer|/collections/teppichboden-kinderzimmer\nBüro & Gewerbe|/collections/teppichboden-buero-gewerbe\nWollteppichboden|/collections/teppichboden-wolle\nTeppich nach Maß|/collections/teppich-nach-mass\nTeppich ketteln lassen|/pages/kettelteppich-nach-mass"
+          }
+        },
         "l2": {
           "type": "liste",
           "settings": {
@@ -552,7 +566,9 @@
       },
       "block_order": [
         "l1",
-        "l2"
+        "l2",
+        "l3",
+        "l4"
       ]
     },
     "tp_start_muster": {

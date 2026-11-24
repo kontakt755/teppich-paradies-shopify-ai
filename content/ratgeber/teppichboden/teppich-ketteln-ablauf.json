@@ -1,0 +1,62 @@
+{
+  "id": "RAT-TB-011",
+  "handle": "teppich-ketteln-ablauf",
+  "title": "Teppich ketteln: Ablauf, Einfassungen und was sich eignet",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Abschluss & Leisten"
+  ],
+  "cluster": "teppichboden/planen-messen",
+  "parent": "ratgeber-teppichboden",
+  "intent": "anleitung",
+  "frage": "Wie läuft das Ketteln eines Teppichs ab?",
+  "begriff": "teppich ketteln",
+  "nebenfragen": [
+    "Was bedeutet Ketteln?",
+    "Wie läuft Teppich ketteln lassen ab?",
+    "Was ist der Unterschied zu Paspel und umgeschlagener Kante?",
+    "Welche Ware lässt sich ketteln?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "teppichboden-richtig-ausmessen",
+    "verschnitt-bei-teppichboden",
+    "teppichboden-pflegen-und-flecken-entfernen"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Kettelteppich nach Maß: Ablauf, Einfassungen, eigene Ware",
+      "url": "/pages/kettelteppich-nach-mass"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 12,
+    "naechste": "2027-11-24",
+    "grund": "Einfassungen und Ablauf hängen vom Angebot ab"
+  },
+  "expert_input": [],
+  "excerpt": "Beim Ketteln wird die Schnittkante mit Garn eingefasst. Der Ablauf vom Maß bis zur Lieferung, die drei Einfassungsarten und welche Ware sich eignet.",
+  "seo": {
+    "title": "Teppich ketteln: Ablauf und Einfassungen erklärt",
+    "description": "Was bedeutet Teppich ketteln? Ablauf vom Maß bis zur Lieferung, Kettelung, Paspel und umgeschlagene Kante im Vergleich und welche Ware sich eignet."
+  },
+  "metafields": {
+    "kurzantwort": "Beim Ketteln wird die Schnittkante eines Teppichs mit Garn umstochen, damit der Rand nicht ausfranst. Bei einem Teppich nach Maß wählen Sie Maß, Qualität und Einfassung; eigene Ware lässt sich nach Anfrage mit Material, Maß und Foto ketteln. Neben der Kettelung gibt es Paspel und umgeschlagene Kante.",
+    "art": "Anleitung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "rechner",
+      "muster"
+    ],
+    "kollektion": "teppich-nach-mass",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}
