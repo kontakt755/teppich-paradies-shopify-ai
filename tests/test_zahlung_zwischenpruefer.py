@@ -27,7 +27,7 @@ def beleg(nummer, brutto, text, art="rechnung", schluessel="muster.de"):
     return {"schluessel": schluessel, "nummer": nummer, "brutto": brutto, "datum": "2026-11-10", "rechnungsdatum": "2026-11-10", "art": art, "datei": f"{nummer}.pdf", "text": lambda: text}
 
 
-LIEFERANTEN = {"muster.de": {"name": "Muster Teppich GmbH", "iban": LIEF}, "zieht.de": {"zahlart": "lastschrift"}}
+LIEFERANTEN = {"muster.de": {"name": "Muster Teppich GmbH", "iban": LIEF, "vorlage": {"skontoTage": 10, "skontoProzent": 3, "rechenprobe": True}}, "zieht.de": {"zahlart": "lastschrift"}}
 
 
 def pruefen(xml, belege, buchungen=(), andere=None):
@@ -149,6 +149,19 @@ class Zwischenpruefer(unittest.TestCase):
         t = f"Rechnungsbetrag 119,00 10 Tage -3% Skonto (Frachtkosten ausgenommen) IBAN {LIEF}"
         f, _ = pruefen(pain(("100", 115.43, LIEF, "RE 100 abzgl Skonto 3,57 EUR")), [beleg("100", 119.0, t)])
         self.assertTrue(any("Teil des Betrags" in x for x in f))
+
+    def test_codex_pr_2303_runde_3(self):
+        self.assertIsNone(z.brutto_aus_summen("100,00 19,00 119,00 Abzug 11,90 Gesamt 107,10"))
+        self.assertIsNone(z.brutto_aus_summen("100,00 19,00 119,00 −11,90 107,10"))
+        self.assertIsNone(z.rechnungsdatum_aus_text("Lieferdatum 23. November 2026"))
+        self.assertIsNone(z.rechnungsdatum_aus_text("Berlin 32. November 2026"))
+        self.assertEqual(z.rechnungsdatum_aus_text("Rechnungsdatum 20. 11. 2026"), "2026-11-20")
+        # Ohne Vorlage keine Rechenprobe
+        alt = dict(LIEFERANTEN)
+        alt["muster.de"] = {"name": "Muster Teppich GmbH", "iban": LIEF}
+        text = f"Berlin 13. November 2026 429,81 € 81,66 € 511,47 € IBAN {LIEF}"
+        f, _ = z.datei_pruefen("neu.xml", pain(("115", 511.47, LIEF, "RE 115")), lieferanten=alt, belege=[{**beleg("115", None, text), "rechnungsdatum": None}], buchungen=[], andere={}, heute="2026-11-15")
+        self.assertTrue(any("unbekannt" in x for x in f))
 
     def test_bankexport_mit_spalte_iban(self):
         import tempfile

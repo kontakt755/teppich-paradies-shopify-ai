@@ -600,9 +600,11 @@ test('Fehler 20.11.2026: Datum mit Leerzeichen, Skonto nur auf Ware, Skonto-Vors
   // Summen gehen nicht auf: voller Betrag
   assert.equal(xrechnungSkontoLesen('#SKONTO#TAGE=10#PROZENT=04.00#', { datum: '2026-11-06', brutto: 302.24, zuschlaege: 4.98, warensumme: 249, steuerbasis: 260 }).vollerBetrag, true);
   const pdf = pdfRechnungPruefen({ text: `Rechnung Nr. 417546 Gesamtbetrag 105,11 Zahlbar innerhalb von 10 Tagen mit 4% Skonto, innerhalb von 30 Tagen ohne Abzug. IBAN ${LIEFER}`, nummer: '417546', brutto: 105.11, waehrung: 'EUR', datum: '2026-11-06' }, { iban: LIEFER });
-  // Eine lesbare Stufe: Skonto auf den Rechnungsbetrag (so am 09.11.2026 bezahlt: 100,91)
-  assert.equal(pdf.status, 'ok');
-  assert.deepEqual(pdf.skonto, { bis: '2026-11-16', betrag: 4.2, zahlbetrag: 100.91 });
+  // Ohne Vorlage: von Hand mit Vorschlag; mit bestaetigter Vorlage (10 Tage 4 %): Skonto auf den Rechnungsbetrag
+  assert.equal(pdf.status, 'unklar');
+  const mitVorlage = pdfRechnungPruefen({ text: `Rechnung Nr. 417546 Gesamtbetrag 105,11 Zahlbar innerhalb von 10 Tagen mit 4% Skonto, innerhalb von 30 Tagen ohne Abzug. IBAN ${LIEFER}`, nummer: '417546', brutto: 105.11, waehrung: 'EUR', datum: '2026-11-06' }, { iban: LIEFER, vorlage: { skontoTage: 10, skontoProzent: 4 } });
+  assert.equal(mitVorlage.status, 'ok');
+  assert.deepEqual(mitVorlage.skonto, { bis: '2026-11-16', betrag: 4.2, zahlbetrag: 100.91 });
   // Zwei Stufen: von Hand, mit Vorschlag
   const zwei = pdfRechnungPruefen({ text: `Rechnung Nr. 417546 Gesamtbetrag 105,11 Zahlbar innerhalb von 10 Tagen mit 4% Skonto, innerhalb von 20 Tagen mit 2% Skonto. IBAN ${LIEFER}`, nummer: '417546', brutto: 105.11, waehrung: 'EUR', datum: '2026-11-06' }, { iban: LIEFER });
   assert.equal(zwei.status, 'unklar');
@@ -636,6 +638,7 @@ test('IBAN nur als Bild im PDF: Texterkennung nur dann, und nur ihr Ergebnis zae
 
 test('Spaltensatz aus der Texterkennung: Brutto nur ueber die Rechenprobe Netto + MwSt', () => {
   const ocr = `Rechnung Nr.115-2026\nGesamt:\nzzgl. 19% MwSt:\nRechnungsbetrag:\n406,29 €\n23,52 €\n429,81 €\n81,66 €\n511,47 €\nZahlbar: 10 Tage -3% Skonto\n30 Tage Netto\nIBAN: ${LIEFER}`;
+  const V = { skontoTage: 10, skontoProzent: 3, rechenprobe: true };
   assert.equal(bruttoAusSummen(ocr), 511.47);
   assert.equal(bruttoAusSummen('100,00 € 19,00 € 119,00 € 200,00 € 38,00 € 238,00 €'), null); // zwei Kandidaten
   assert.equal(bruttoAusSummen('100,00 19,00 119,00 50,00 169,00'), null); // Positionssumme, nicht das Gesamt
@@ -643,17 +646,25 @@ test('Spaltensatz aus der Texterkennung: Brutto nur ueber die Rechenprobe Netto 
   assert.equal(bruttoAusSummen('100,00 19,00 119,00 Rabatt 11,90 Gesamt 107,10'), null); // Rabatt nach der Steuer
   // Rechnungsdatum fehlt im Archiv: ausgeschrieben im Text („23. November 2026“), nie der Maileingang
   const ohne = { nummer: '115-2026', brutto: null, waehrung: null, datum: '2026-11-25', rechnungsdatum: null };
-  assert.equal(pdfRechnungPruefen({ ...ohne, text: ocr }, { iban: LIEFER }).status, 'unklar');
-  assert.equal(pdfRechnungPruefen({ ...ohne, text: `${ocr}\nZahlbar: 10 Tage -3% Skonto nur auf den Warenwert\nBerlin 23. November 2026` }, { iban: LIEFER }).status, 'unklar');
-  const r = pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}` }, { iban: LIEFER });
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: ocr }, { iban: LIEFER, vorlage: V }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `${ocr}\nZahlbar: 10 Tage -3% Skonto nur auf den Warenwert\nBerlin 23. November 2026` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
+  const r = pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V });
   assert.equal(r.status, 'ok');
   assert.equal(r.brutto, 511.47);
   assert.deepEqual(r.skonto, { bis: '2026-12-03', betrag: 15.34, zahlbetrag: 496.13 });
+  // Ohne Vorlage keine Rechenprobe und kein Skonto; andere Stufe als die Vorlage: von Hand
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}` }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: { ...V, skontoProzent: 2 } }).status, 'unklar');
+  // Codex Runde 3: Abzug / Unicode-Minus, Lieferdatum, unmoeglicher Tag
+  assert.equal(bruttoAusSummen('100,00 19,00 119,00 Abzug 11,90 Gesamt 107,10'), null);
+  assert.equal(bruttoAusSummen('100,00 19,00 119,00 −11,90 107,10'), null);
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Lieferdatum 23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 32. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
   // Textebene und Texterkennung nennen dieselbe Stufe: zaehlt einmal; ein weiteres Skonto-Wort sperrt
-  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}\nZahlbar: 10 Tage -3% Skonto` }, { iban: LIEFER }).status, 'ok');
-  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}\nkein Skonto auf Fracht` }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}\nZahlbar: 10 Tage -3% Skonto` }, { iban: LIEFER, vorlage: V }).status, 'ok');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr}\nkein Skonto auf Fracht` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
   // Codex Runde 2: Einschraenkung in Klammern, Zahlungsziel als einziges ausgeschriebenes Datum, unlesbares beschriftetes Datum
-  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr.replace('-3% Skonto', '-3% Skonto (Frachtkosten ausgenommen)')}` }, { iban: LIEFER }).status, 'unklar');
-  assert.equal(pdfRechnungPruefen({ ...ohne, text: `zahlbar bis 23. November 2026\n${ocr}` }, { iban: LIEFER }).status, 'unklar');
-  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Rechnungsdatum: 03/11/2026\nBerlin 23. November 2026\n${ocr}` }, { iban: LIEFER }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Berlin 23. November 2026\n${ocr.replace('-3% Skonto', '-3% Skonto (Frachtkosten ausgenommen)')}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `zahlbar bis 23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
+  assert.equal(pdfRechnungPruefen({ ...ohne, text: `Rechnungsdatum: 03/11/2026\nBerlin 23. November 2026\n${ocr}` }, { iban: LIEFER, vorlage: V }).status, 'unklar');
 });

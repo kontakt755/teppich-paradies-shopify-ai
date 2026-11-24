@@ -181,7 +181,7 @@ export function bruttoAusSummen(text) {
     if (st > 0 && da.has(st) && da.has(n + st)) treffer.add(n + st);
   }
   // Rabatt, Abzug, Anzahlung oder negative Betraege: das Gesamt liegt dann nicht am Ende der Rechenprobe.
-  if (/rabatt|nachlass|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)-\s*\d+,\d{2}/i.test(String(text ?? ''))) return null;
+  if (/rabatt|nachlass|abzug|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)[-−–]\s*\d+,\d{2}/i.test(String(text ?? ''))) return null;
   // Nur das Rechnungsgesamt: der groesste Betrag im Text (eine Positionssumme daneben zaehlt nicht).
   return treffer.size === 1 && [...treffer][0] === Math.max(...werte) ? [...treffer][0] / 100 : null;
 }
@@ -192,12 +192,15 @@ export function monatsDatum(text) {
   // Ist ein Rechnungsdatum beschriftet, aber nicht lesbar (z. B. 03/11/2026): nicht raten.
   if (/rechnungsdatum|datum\s*:/i.test(String(text ?? ''))) return null;
   // Zahlungsziel oder Lieferdatum („zahlbar bis 23. November 2026“) ist kein Rechnungsdatum.
-  const d = new Set([...String(text ?? '').matchAll(/(?<!(?:bis|zahlbar|f(?:ä|ae)llig|sp(?:ä|ae)testens|vom|ab|lieferung|liefertermin)[^\n]{0,15})(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})/gi)]
+  const d = new Set([...String(text ?? '').matchAll(/(?<!(?:bis|zahlbar|f(?:ä|ae)llig|sp(?:ä|ae)testens|vom|ab|liefer\w*|leistung\w*)[^\n]{0,15})(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})/gi)]
     .map(m => `${m[3]}-${String(MONATE.indexOf(m[2].toLowerCase().replace('maerz', 'märz')) + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`));
-  return d.size === 1 ? [...d][0] : null;
+  return d.size === 1 && echterIsoTag([...d][0]) ? [...d][0] : null;
 }
 
-export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rechnungsdatum }, { iban }) {
+/** ISO-Tag, den es gibt (kein 31.11.); ungueltige Daten sperren statt den Lauf abzubrechen. */
+const echterIsoTag = iso => /^\d{4}-\d{2}-\d{2}$/.test(iso || '') && !Number.isNaN(Date.parse(`${iso}T00:00:00Z`)) && new Date(`${iso}T00:00:00Z`).toISOString().slice(0, 10) === iso;
+
+export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rechnungsdatum }, { iban, vorlage = null }) {
   const t = pdfTextGlaetten(text);
   // Skontofrist nur ab einem belegten Rechnungsdatum (Archiv oder Text), nie ab dem Eingangstag der Mail.
   const rdatum = rechnungsdatum ?? (rechnungsdatum === undefined ? datum : null) ?? pdfTextLesen(t).datum ?? monatsDatum(t);
@@ -207,7 +210,7 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rech
     const felder = pdfTextLesen(t);
     nummer ||= felder.nummer ?? null;
     // Spaltensatz (Texterkennung): Beschriftung und Betrag stehen getrennt; dann zaehlt nur die Rechenprobe.
-    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? bruttoAusSummen(t);
+    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? (vorlage?.rechenprobe ? bruttoAusSummen(t) : null);
     waehrung ||= felder.waehrung;
   }
   // Ausdruecklich als Anhang einer Rechnung bezeichnet (Leistungsuebersicht), ohne Storno oder Korrektur.
@@ -238,7 +241,9 @@ export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rech
     const danach = stufen.length ? t.slice(ende, ende + 60) : 'keine Stufe';
     const nurNettoziel = /^[\s,.;:]*(?:$|\n|(?:innerhalb\s+(?:von\s+)?)?\d{1,3}\s+Tag(?:e|en)[\s,]*(?:netto|ohne\s+abzug|rein\s+netto)\b)/i.test(danach);
     const eingeschraenkt = !nurNettoziel || /ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|nicht\s+skont|warenwert|nur\s+auf|ohne\s+(?:fracht|versand|porto)|fracht\w*\s*\(|\(\s*(?:ohne|nicht|exkl)/i.test(t);
-    if ((t.match(/skonto/gi) || []).length !== stufen.length || !(satz > 0 && satz <= 5) || eingeschraenkt || !/^\d{4}-\d{2}-\d{2}$/.test(rdatum || '')) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+    // Nur mit Vorlage und nur, wenn die Rechnung genau deren Stufe nennt (sonst ist etwas anders: von Hand).
+    const wieVorlage = Boolean(vorlage) && verschieden.size === 1 && Number(stufen[0][1]) === vorlage.skontoTage && satz === vorlage.skontoProzent;
+    if (!wieVorlage || (t.match(/skonto/gi) || []).length !== stufen.length || eingeschraenkt || !echterIsoTag(rdatum)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
     const betrag = Math.round(brutto * satz) / 100;
     kopf.skonto = { bis: tagPlus(rdatum, Number(stufen[0][1])), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 };
   }
@@ -257,7 +262,11 @@ export function konfigPruefen(k) {
   for (const [schluessel, l] of Object.entries(k.lieferanten || {})) {
     const lastschrift = l.zahlart === 'lastschrift';
     if (!lastschrift && (!String(l.name || '').trim() || !ibanGueltig(l.iban))) throw new Error(`Konfiguration: Lieferant ${schluessel} braucht name und gültige iban`);
-    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift, sepaAnfrage: String(l.sepaAnfrage || '').trim() };
+    // Vorlage (vom Inhaber bestaetigte Zahlungsbedingungen, Benutzer 24.11.2026): nur damit wird Skonto aus einer
+    // reinen PDF-Rechnung automatisch gerechnet, und nur der Betrag dieses Lieferanten darf aus der Rechenprobe kommen.
+    const v = l.vorlage;
+    if (v !== undefined && !(Number.isInteger(v?.skontoTage) && v.skontoTage > 0 && v.skontoTage <= 60 && v.skontoProzent > 0 && v.skontoProzent <= 5)) throw new Error(`Konfiguration: Lieferant ${schluessel} hat eine ungültige vorlage`);
+    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift, sepaAnfrage: String(l.sepaAnfrage || '').trim(), vorlage: v ? { skontoTage: v.skontoTage, skontoProzent: Number(v.skontoProzent), rechenprobe: v.rechenprobe === true } : null };
   }
   // Optional: an wen Pruefliste und Datei nach dem Lauf gehen (Benutzer 20.11.2026: Laden-Postfach).
   const mailAn = k.mailAn === undefined ? null : String(k.mailAn).trim().toLowerCase();

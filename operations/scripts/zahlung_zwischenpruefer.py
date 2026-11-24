@@ -155,7 +155,7 @@ def brutto_aus_summen(text):
     werte = {int(m.replace(".", "").replace(",", "")) for m in re.findall(r"(?<![0-9.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})(?![0-9])", text)}
     steuer = lambda n, q: (n * q + 50) // 100  # kaufmaennisch wie Math.round im Erzeuger (Cent, positiv)
     treffer = {n + steuer(n, q) for n in werte for q in (19, 7) if steuer(n, q) > 0 and steuer(n, q) in werte and n + steuer(n, q) in werte}
-    if re.search(r"rabatt|nachlass|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)-\s*\d+,\d{2}", text, re.I):
+    if re.search(r"rabatt|nachlass|abzug|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)[-−–]\s*\d+,\d{2}", text, re.I):
         return None
     # Nur das Rechnungsgesamt: der groesste Betrag im Text.
     return treffer.pop() / 100 if len(treffer) == 1 and max(treffer) == max(werte) else None
@@ -167,7 +167,7 @@ MONATE = ["januar", "februar", "maerz", "april", "mai", "juni", "juli", "august"
 def rechnungsdatum_aus_text(text):
     """Beschriftetes Rechnungsdatum (dd.mm.yyyy), sonst genau ein ausgeschriebenes Datum, das kein
     Zahlungsziel oder Lieferdatum ist; bei beschriftetem, aber unlesbarem Datum None (wie der Erzeuger)."""
-    beschriftet = {f"{j}-{int(m):02d}-{int(t):02d}" for t, m, j in re.findall(r"Rechnungsdatum\s*:?\s*(\d{1,2})\.(\d{1,2})\.(\d{4})", text, re.I)}
+    beschriftet = {f"{j}-{int(m):02d}-{int(t):02d}" for t, m, j in re.findall(r"Rechnungsdatum\s*:?\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})", text, re.I)}
     if len(beschriftet) == 1:
         return beschriftet.pop()
     if re.search(r"rechnungsdatum|datum\s*:", text, re.I):
@@ -179,8 +179,15 @@ def monats_datum(text):
     """Genau ein ausgeschriebenes Datum („23. November 2026“), nicht nach bis/zahlbar/faellig/vom/Lieferung."""
     d = {f"{j}-{MONATE.index(m.lower().replace('ä', 'ae')) + 1:02d}-{int(t):02d}"
          for vor, t, m, j in re.findall(r"([^\n]{0,25}?)(?<!\d)(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})", text, re.I)
-         if not re.search(r"(bis|zahlbar|f(ä|ae)llig|sp(ä|ae)testens|vom|ab|lieferung|liefertermin)\W*$", vor, re.I)}
-    return d.pop() if len(d) == 1 else None
+         if not re.search(r"(bis|zahlbar|f(ä|ae)llig|sp(ä|ae)testens|vom|ab|liefer\w*|leistung\w*)\W*$", vor, re.I)}
+    if len(d) != 1:
+        return None
+    tag = d.pop()
+    try:
+        date.fromisoformat(tag)
+    except ValueError:
+        return None
+    return tag
 
 
 def ocr_text(pfad):
@@ -276,7 +283,9 @@ def datei_pruefen(name, xml, *, lieferanten, belege, buchungen, andere, heute=No
             fehler.append(f"{wer}: Rechnung nennt Lastschrift oder Einzug")
         if nur_zeichen(z["iban"]) not in nur_zeichen(text):
             fehler.append(f"{wer}: IBAN steht nicht auf der Rechnung")
-        brutto = b["brutto"] if b["brutto"] is not None else brutto_aus_summen(text)
+        vorlage = (lieferanten.get(b["schluessel"]) or {}).get("vorlage") or {}
+        # Rechenprobe nur fuer Lieferanten mit bestaetigter Vorlage (wie der Erzeuger).
+        brutto = b["brutto"] if b["brutto"] is not None else (brutto_aus_summen(text) if vorlage.get("rechenprobe") is True else None)
         if brutto is not None and b["brutto"] is None:
             hinweise.append(f"{wer}: Rechnungsbetrag {brutto:.2f} aus Netto + MwSt der Rechnung ermittelt")
             b = {**b, "brutto": brutto}
