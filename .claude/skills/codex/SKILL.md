@@ -55,7 +55,7 @@ npm run -s ki:frag -- review-stand 1234              # Exit 0 nur, wenn das letz
   Runde, Zeit) und Befundzeile (P1/P2/P3).
 - Folgerunden bekommen die Befunde der vorigen Runde mitgeschickt; Codex prueft
   zuerst, ob sie behoben sind. Ab Runde 4 warnt das Skript: dann die Ursache
-  klaeren statt weiterzudrehen (`AGENTS.md`, „Zusammenarbeit Claude und Codex“).
+  klaeren statt weiterzudrehen (Abschnitt „Zusammenarbeit Claude und Codex“ unten).
 - Haelt Codex das Antwortformat nicht ein (z. B. „Pruefung nicht moeglich“),
   zaehlt das nicht als Review und nicht als Runde: Rohtext unter
   `…-unverwertbar.txt`, Exit 1.
@@ -117,3 +117,13 @@ npm run -s ki:frag -- umsetzen einstieg-rest "Korrektur: ..."                   
   **Exit 3**. Nicht wiederholen - Stand sichern (`npm run -s handoff`), allein
   weiterarbeiten oder aufhoeren und den Benutzer informieren. Kritische Merges
   dann mit `/code-review` auf Stufe high und Bestaetigung (AGENTS.md, „Review“).
+
+## Zusammenarbeit Claude und Codex
+
+Aus `AGENTS.md` hierher verschoben; die allgemeinen Punkte (nacheinander, Ausgangsstand, fertig heißt belegt, Retries) stehen weiter dort.
+
+- **Claude führt:** klärt den Auftrag, entscheidet, wer umsetzt und wer prüft, führt Ergebnisse zusammen und berichtet. Der Benutzer ist kein Bote: was Claude per `ki:frag` selbst fragen kann, fragt Claude selbst.
+- **Standard ist allein:** planen → umsetzen → testen → den eigenen Diff kritisch gegenlesen. Diese Selbstprüfung wird als solche benannt. Codex kommt dazu, wenn ein zweiter Blick etwas bringt: Review vor kritischen Merges (`AGENTS.md`, „Review“), eine strittige Annahme, ein Plan mit großer Wirkung.
+- **Codex setzt um** (Freigabe Benutzer 2026-10-24), wenn eine Aufgabe klar abgegrenzt ist und eine unabhängige Prüfung durch Claude lohnt: `npm run -s ki:frag -- umsetzen <thema> "Auftrag"` mit Ziel, Abnahmekriterien und Dateien. Codex ändert nur Dateien in seiner eigenen, frischen Arbeitskopie (`.claude/worktrees/codex-<thema>`, ohne Netz und Zugangsdaten) und committet nicht. Claude liest den Diff, testet (`npm run -s pruefen`), committet mit dem Hinweis „Umgesetzt von Codex, geprüft von Claude“, pusht und öffnet den PR; Korrekturen laufen als weitere Runde in derselben Kopie. Das Review vor kritischen Merges macht dann Claude (`/code-review`), nicht Codex am eigenen Ergebnis. Nie für Arbeit mit Wirkung nach außen (Shopify, Mails, Deploys) — die bleibt bei Claude.
+- **Höchstens drei Review-Runden je PR** (das Skript warnt ab der vierten). Danach nicht weiterdrehen, sondern die Ursache benennen (Auftrag unklar, falscher Prüfgegenstand, echter Zielkonflikt) und dem Benutzer vorlegen.
+- **Kontingent erschöpft** (`ki:frag` endet mit Exit 3, oder das eigene Limit naht): nicht wiederholen. Stand sichern — Zwischenstand als Commit auf den Branch, `npm run -s handoff` — und allein weiterarbeiten oder dort aufhören. Kritische Merges dann wie in `AGENTS.md` unter „Review“ beschrieben.

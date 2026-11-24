@@ -11,7 +11,7 @@ anderes: keine weiteren PRs, keine fremden Branches. Fehlt die Nummer,
 nachfragen statt raten.
 
 Ohne Aufruf des Benutzers gilt dieser Ablauf nur in den beiden stehenden
-Freigaben aus `AGENTS.md`: „Chat-Waechter“ und „Eigenen PR selbst mergen“
+Freigaben „Chat-Waechter“ (Abschnitt unten) und „Eigenen PR selbst mergen“ (`AGENTS.md`)
 (unkritische PRs; kritische bleiben beim Benutzer).
 
 Jeder Schritt wird mit der Ausgabe seines Befehls belegt. Bricht ein Schritt
@@ -155,3 +155,12 @@ Bericht, kurz (`AGENTS.md`, „Kommunikation“): Merge-Commit (kurzer SHA),
 Checks, Review-Stand bei kritischen PRs, Ergebnis von `pr:doctor`, was
 ausgerollt wurde (Theme: Preview und Live, Dashboard: Dienst neu gestartet)
 oder warum nichts.
+
+## Chat-Wächter (stehende Freigabe des Benutzers, 2026-11-11, aus `AGENTS.md` hierher verschoben)
+
+Die geplante Aufgabe `chat-waechter` bringt offene Chats weiter, ohne dass der Benutzer jede Empfehlung einzeln bestätigt. Die Freigabe gilt nur für diese Aufgabe und nur in diesen Grenzen; für alle anderen Sitzungen gilt der Abschnitt „Eigenen PR selbst mergen“ in `AGENTS.md`.
+
+- **Darf:** in einem wartenden Chat die von Claude empfohlene Option wählen oder die Arbeit fortsetzen lassen (je Chat und Lauf eine vollständige Nachricht), fertige Chats archivieren und **unkritische PRs selbst nach Skill `ship` mergen**, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Voraussetzung je PR: offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch, und der zugehörige Chat meldet die Arbeit als fertig. Höchstens drei Merges je Lauf, nacheinander.
+- **Stoppt und legt vor:** kritische PRs (Preise, SKUs, Varianten, Massenimporte, Checkout, Deploy-Kette, `.claude/hooks/`, dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · Schreiben in Google Ads, Meta oder Merchant Center · alles, was Geld kostet oder ein Budget ändert · Mails an Kunden und Lieferanten · Fragen, die nur der Inhaber entscheidet · Chats ohne klare Empfehlung.
+- **Vorlegen heißt:** im Bericht des Laufs je Punkt den Chat und die eine Zeile nennen, die der Benutzer dort schreiben müsste. Der Wächter gibt in fremden Chats nie eine Freigabe für einen gestoppten Punkt weiter.
+- Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund für den Bericht, kein Hindernis zum Umgehen.
