@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-const quelle = readFileSync(new URL('../../sections/tp-start-kontakt.liquid', import.meta.url), 'utf8');
+const quelle = readFileSync(new URL('../../assets/tp-start-kontakt.css', import.meta.url), 'utf8');
 
 test('Raster der Kontakt-Section haben keine Spalte mit nacktem 1fr', () => {
   const nackt = [...quelle.matchAll(/\.tp-kon__(grid|form|fh-wrap)\s*\{[^}]*grid-template-columns:([^;}]*)/g)]

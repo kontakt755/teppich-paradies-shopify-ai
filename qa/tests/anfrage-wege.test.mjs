@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 const sampleSource = readFileSync(new URL('../../assets/tp-sample-request.js', import.meta.url), 'utf8');
-const contactSource = readFileSync(new URL('../../sections/tp-start-kontakt.liquid', import.meta.url), 'utf8');
+// CSS liegt seit 25.11.2026 in assets/tp-start-kontakt.css (laedt nur, wo die Section rendert)
+const contactSource = readFileSync(new URL('../../sections/tp-start-kontakt.liquid', import.meta.url), 'utf8') + readFileSync(new URL('../../assets/tp-start-kontakt.css', import.meta.url), 'utf8');
 function node() {
   const attributes = new Map(), handlers = new Map();
   return { value: '', required: false, hidden: false, textContent: '', children: [], attributes, handlers,

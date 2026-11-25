@@ -1,0 +1,501 @@
+/* Abschnitte nur der Startseite: aus den Abschnitten ausgelagert, laedt nur dort (nicht im themeweiten styles.css). */
+/* sections/tp-start-hero.liquid */
+  .tp-hero { background: #f6f2ec; border-bottom: 1px solid #e6e0d8; }
+  .tp-hero__wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; min-height: 480px; padding-top: 40px; padding-bottom: 40px; }
+  .tp-hero__eyebrow { color: #4a443f; }
+  /* Hoechstens zwei Zeilen ab 1024 px (gemessen 2026-10-15: 28 px bei 1024, 36 px ab 1280 bei 586 px Spalte); am Telefon drei. */
+  .tp-hero__h1 { font-size: var(--tp-fs-2xl); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; margin: 0; color: #1d1a17; text-wrap: balance; }
+  .tp-hero__h1 em { font-style: normal; color: inherit; }
+  .tp-hero__sub { font-size: var(--tp-fs-lg); color: #4a443f; max-width: 52ch; margin: 16px 0 26px; line-height: 1.5; }
+  /* Die Absaetze kommen aus dem Richtext-Feld; der aeussere Abstand steht oben. */
+  .tp-hero__sub p { margin: 0; }
+  .tp-hero__sub p + p { margin-top: 0.6em; }
+  .tp-hero__ctas { display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; }
+  .tp-hero__textlink { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: #1d1a17; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  .tp-hero__textlink:hover { text-decoration-thickness: 2px; }
+  .tp-hero__meta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 22px; font-size: var(--tp-fs-md); color: #4a443f; }
+  .tp-hero__meta a { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: #1d1a17; text-decoration: none; min-height: 44px; }
+  .tp-hero__meta svg { width: 17px; height: 17px; }
+  .tp-hero__rating { background: #fff; border: 1px solid #e6e0d8; border-radius: 999px; padding: 0 12px 0 8px; font-size: var(--tp-fs-sm); }
+  .tp-hero__stars { color: #e5a51c; letter-spacing: 1px; font-size: var(--tp-fs-md); }
+  .tp-hero__rating small { color: var(--tp-muted, #655e57); font-size: var(--tp-fs-xs); font-weight: 400; }
+  /* width: 0 + min-width: 100 %: Der Hinweis richtet sich nach der Note und macht die Kompaktzeile nicht breiter. */
+  .tp-hero__meta .tp-bewertungshinweis { flex-basis: 100%; width: 0; min-width: 100%; margin: -8px 0 0; }
+  .tp-hero__media { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 5 / 4; box-shadow: 0 10px 30px rgba(29, 26, 23, 0.1); background: #ede7de; }
+  .tp-hero__img, .tp-hero__platzhalter svg { width: 100%; height: 100%; object-fit: cover; object-position: center 60%; display: block; }
+  .tp-hero__cap { position: absolute; left: 14px; bottom: 14px; background: rgba(29, 26, 23, 0.82); color: #fff; font-size: var(--tp-fs-sm); padding: 7px 12px; border-radius: 999px; }
+  /* .tp-hero davor: .tp-s-wrap (tp-startseite.css, laedt spaeter) setzt sonst
+     padding: 0 und der Text klebt an der Suchleiste - am Desktop haelt die
+     min-height den Abstand, darunter nicht. */
+  @media (max-width: 1023px) { .tp-hero__wrap { gap: 28px; min-height: 0; } .tp-hero .tp-hero__wrap { padding-top: 28px; padding-bottom: 28px; } }
+  @media (max-width: 767px) {
+    .tp-hero__wrap { grid-template-columns: 1fr; gap: 20px; }
+    .tp-hero .tp-hero__wrap { padding-top: 20px; padding-bottom: 28px; }
+    /* Text vor Bild: H1 und Buttons gehoeren in den ersten Bildschirm (Audit B-06) */
+    .tp-hero__media { aspect-ratio: 16 / 10; border-radius: 12px; }
+    .tp-hero__h1 { font-size: var(--tp-fs-xl); }
+    .tp-hero__sub { font-size: var(--tp-fs-md); margin: 12px 0 18px; }
+    .tp-hero__ctas .tp-s-btn { flex: 1 1 100%; }
+    .tp-hero__meta { gap: 12px 16px; font-size: var(--tp-fs-sm); margin-top: 8px; }
+  }
+  @media (max-width: 389px) { .tp-hero__h1 { font-size: var(--tp-fs-xl); } .tp-hero__rating { width: 100%; } }
+
+  /* Kompakt: eine Spalte, Unterzeile + Textlink + Bewertung als eine Zeile. */
+  .tp-hero.tp-hero--kompakt .tp-hero__wrap { display: block; min-height: 0; padding-top: 28px; padding-bottom: 20px; }
+  .tp-hero--kompakt .tp-hero__copy { display: flex; flex-wrap: wrap; align-items: center; gap: 0 28px; }
+  .tp-hero--kompakt .tp-hero__eyebrow, .tp-hero--kompakt .tp-hero__h1 { flex: 1 1 100%; }
+  .tp-hero--kompakt .tp-hero__h1 { margin-bottom: 8px; }
+  .tp-hero--kompakt .tp-hero__sub { margin: 0; font-size: var(--tp-fs-md); }
+  .tp-hero--kompakt .tp-hero__meta { margin-top: 0; }
+  @media (max-width: 767px) {
+    .tp-hero.tp-hero--kompakt .tp-hero__wrap { padding-top: 18px; padding-bottom: 12px; }
+    .tp-hero--kompakt .tp-hero__copy { column-gap: 18px; }
+    .tp-hero--kompakt .tp-hero__sub { flex: 1 1 100%; font-size: var(--tp-fs-md); margin-bottom: 2px; }
+    .tp-hero--kompakt .tp-hero__ctas { flex: 0 1 auto; }
+    .tp-hero--kompakt .tp-hero__ctas .tp-s-btn { flex: 0 1 auto; }
+  }
+
+/* sections/tp-start-kategorien.liquid */
+  .tp-kat { scroll-margin-top: var(--header-height, 0px); }
+  /* Sieben Kategorien in einer Reihe; ab Tablet vier, dann drei je Zeile. */
+  .tp-kat__list { display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; }
+  .tp-kat__card { position: relative; border-radius: 14px; overflow: hidden; background: #ede7de; aspect-ratio: 4 / 5; display: block; color: #fff; text-decoration: none; }
+  .tp-kat__img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
+  .tp-kat__card:hover .tp-kat__img { transform: scale(1.05); }
+  /* V8 (Design-Runde 3): dunklerer Verlauf, damit Titel und Unterzeile auch
+     auf hellen Bildern (Bodenleisten, Zubehoer) sicher lesbar sind. */
+  .tp-kat__card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(20, 16, 12, 0.9) 0%, rgba(20, 16, 12, 0.6) 35%, rgba(20, 16, 12, 0) 65%); }
+  .tp-kat__t { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1; }
+  .tp-kat__t strong { display: block; font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.15; }
+  .tp-kat__t small { display: block; font-size: var(--tp-fs-sm); opacity: 0.92; margin-top: 3px; }
+  .tp-kat__n { position: absolute; top: 12px; right: 12px; z-index: 1; background: rgba(255, 255, 255, 0.92); color: #1d1a17; font-size: var(--tp-fs-xs); font-weight: 600; padding: 4px 9px; border-radius: 999px; }
+  .tp-kat__dots { display: none; }
+  @media (max-width: 1279px) { .tp-kat__list { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 991px) { .tp-kat__list { grid-template-columns: repeat(3, 1fr); } }
+  /* Neun Kategorien (seit Laminat und Parkett): neun 4:5-Karten in einer Reihe
+     waeren nur rund 120 px breit. Ab 992 px deshalb fuenf Spalten in zwei Zeilen,
+     die erste Karte (Teppichboden) hoch ueber beide Zeilen, die uebrigen quer 5:4.
+     Darunter drei mal drei Karten 4:3. Das Telefon behaelt den Slider. */
+  @media (min-width: 992px) {
+    .tp-kat__list:not(.tp-kat__list--gross):is([data-anzahl="9"], [data-anzahl="10"]) { grid-template-columns: repeat(5, 1fr); }
+    .tp-kat__list:not(.tp-kat__list--gross):is([data-anzahl="9"], [data-anzahl="10"]) .tp-kat__card { aspect-ratio: 5 / 4; }
+    .tp-kat__list:not(.tp-kat__list--gross)[data-anzahl="9"] .tp-kat__card:first-child { grid-row: span 2; aspect-ratio: auto; }
+  }
+  @media (min-width: 768px) and (max-width: 991px) {
+    .tp-kat__list:not(.tp-kat__list--gross):is([data-anzahl="9"], [data-anzahl="10"]) .tp-kat__card { aspect-ratio: 4 / 3; }
+  }
+  /* Erste zwei Karten gross: vier Spalten, die grossen ueber je zwei. Bei zehn
+     Karten ergibt das eine Reihe gross und zwei Reihen mit je vier Karten. */
+  /* Direkt unter dem kompakten Hero: weniger Abstand nach oben, damit die
+     grossen Karten ganz im ersten Bildschirm stehen (1440 x 900 und 390 x 844). */
+  .tp-kat.tp-kat--gross { padding-top: 32px; }
+  @media (max-width: 767px) {
+    .tp-kat.tp-kat--gross { padding-top: 20px; }
+    .tp-kat--gross .tp-s-sec-head { margin-bottom: 14px; }
+    .tp-kat__list--gross .tp-kat__card { aspect-ratio: 1 / 1; }
+  }
+  @media (min-width: 768px) {
+    .tp-kat__list--gross { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .tp-kat__list--gross .tp-kat__card { aspect-ratio: 1 / 1; }
+    .tp-kat__list--gross .tp-kat__card--gross { grid-column: span 2; aspect-ratio: 4 / 3; }
+    .tp-kat__card--gross .tp-kat__t { left: 20px; right: 20px; bottom: 18px; }
+    .tp-kat__card--gross .tp-kat__t strong { font-size: var(--tp-fs-xl); }
+    .tp-kat__card--gross .tp-kat__t small { font-size: var(--tp-fs-md); }
+  }
+  @media (min-width: 992px) {
+    .tp-kat__list--gross .tp-kat__card { aspect-ratio: 4 / 3; }
+    .tp-kat__list--gross .tp-kat__card--gross { aspect-ratio: 16 / 9; }
+    .tp-kat__card--gross .tp-kat__t strong { font-size: var(--tp-fs-xl); }
+  }
+  @media (max-width: 767px) {
+    .tp-kat__list { display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; padding: 0 var(--tp-pad) 4px; margin: 0 calc(-1 * var(--tp-pad)); scrollbar-width: none; }
+    .tp-kat__list::-webkit-scrollbar { display: none; }
+    .tp-kat__card { flex: 0 0 68%; scroll-snap-align: start; aspect-ratio: 4 / 4.6; }
+    .tp-kat__t strong { font-size: var(--tp-fs-lg); }
+    .tp-kat__dots { display: flex; justify-content: center; gap: 6px; margin-top: 14px; }
+    .tp-kat__dots i { width: 6px; height: 6px; border-radius: 50%; background: #d5cec4; transition: width 0.2s; }
+    .tp-kat__dots i.on { background: #1d1a17; width: 18px; border-radius: 3px; }
+  }
+  @media (max-width: 389px) { .tp-kat__card { flex-basis: 76%; } }
+
+/* sections/tp-start-muster.liquid */
+  .tp-muster {
+    border-top: 1px solid #e6e0d8;
+    border-bottom: 1px solid #e6e0d8;
+    background: #faf7f3;
+  }
+
+  .tp-muster__wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 40px;
+    align-items: center;
+    padding-top: 36px;
+    padding-bottom: 36px;
+  }
+
+  .tp-muster__eyebrow {
+    margin: 0 0 8px;
+    font-size: var(--tp-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    /* dunkel statt rot: Rot nur fuer Preis, Rabatt und Hauptknopf (w-096) */
+    color: #4a443f;
+  }
+
+  .tp-muster__titel {
+    margin: 0 0 10px;
+    font-size: var(--tp-fs-xl);
+    line-height: 1.22;
+    color: #1d1a17;
+  }
+
+  .tp-muster__lead {
+    margin: 0 0 18px;
+    font-size: var(--tp-fs-md);
+    line-height: 1.55;
+    color: #4a443f;
+  }
+
+  .tp-muster__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    /* 44 px Mindesthoehe - dieselbe Regel, die am 2026-09-15 fuer die
+       uebrigen Bedienelemente nachgezogen wurde. */
+    min-height: 44px;
+    padding: 0 22px;
+    border-radius: 999px;
+    /* V2-Korrektur: Muster bestellen ist Nebenaktion - Schwarz-Outline wie die
+       uebrigen Nebenknoepfe; Rot bleibt der Hauptaktion und den Akzentwoertern. */
+    background: #fff;
+    color: #1d1a17;
+    border: 1.5px solid #1d1a17;
+    font-size: var(--tp-fs-md);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .tp-muster__cta svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  .tp-muster__cta:hover {
+    background: #f5f5f5;
+  }
+
+  .tp-muster__cta:focus-visible {
+    outline: 2px solid #1d1a17;
+    outline-offset: 3px;
+  }
+
+  .tp-muster__hinweis {
+    margin: 10px 0 0;
+    font-size: var(--tp-fs-xs);
+    color: var(--tp-muted, #655e57);
+  }
+
+  .tp-muster__schritte {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+  }
+
+  .tp-muster__schritte li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .tp-muster__nr {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e6e0d8;
+    display: grid;
+    place-items: center;
+    font-size: var(--tp-fs-sm);
+    font-weight: 700;
+    color: #1d1a17;
+  }
+
+  .tp-muster__schritt-text b {
+    display: block;
+    font-size: var(--tp-fs-md);
+    font-weight: 600;
+    color: #1d1a17;
+    line-height: 1.35;
+  }
+
+  .tp-muster__schritt-text small {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--tp-fs-sm);
+    line-height: 1.45;
+    color: var(--tp-muted, #655e57);
+  }
+
+  /* Am Telefon untereinander: zwei Spalten quetschen die Schrittzeilen auf
+     zwei Woerter je Zeile. Die Schritte stehen unter dem Knopf, weil der
+     Knopf die Handlung ist und die Schritte nur erklaeren, was danach kommt. */
+  @media (max-width: 767px) {
+    .tp-muster__wrap {
+      grid-template-columns: 1fr;
+      gap: 22px;
+      padding-top: 26px;
+      padding-bottom: 26px;
+    }
+
+    .tp-muster__titel {
+      font-size: var(--tp-fs-xl);
+    }
+
+    .tp-muster__lead {
+      font-size: var(--tp-fs-sm);
+    }
+
+    .tp-muster__cta {
+      width: 100%;
+    }
+  }
+
+/* sections/tp-zwei-wege.liquid */
+  .tp-zw {
+    padding: 40px 20px;
+  }
+
+  .tp-zw__grid {
+    /* Gleiche Inhaltskante wie die TP-Sections der Startseite (Audit B-16) */
+    max-width: calc(var(--tp-container, 1240px) - 2 * var(--tp-pad, 24px));
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(var(--tp-zw-online), minmax(0, 1fr)) repeat(var(--tp-zw-service), minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .tp-zw__box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 28px 24px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+    background: var(--color-background);
+  }
+
+  .tp-zw__box--online {
+    grid-column: span var(--tp-zw-online);
+  }
+
+  .tp-zw__box--service {
+    grid-column: span var(--tp-zw-service);
+  }
+
+  .tp-zw__eyebrow {
+    margin: 0;
+    font-size: var(--tp-fs-sm);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-foreground);
+    /* 0.75 statt 0.65: 5,9:1 statt 4,35:1 auf Weiss */
+    opacity: 0.75;
+  }
+
+  .tp-zw__title {
+    margin: 0;
+    font-size: var(--tp-fs-xl);
+    line-height: 1.2;
+  }
+
+  .tp-zw__text {
+    margin: 0;
+    font-size: var(--tp-fs-md);
+    line-height: 1.5;
+  }
+  .tp-zw__mobile-copy { display: none; }
+
+  .tp-zw__list {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tp-zw__list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: var(--tp-fs-md);
+    line-height: 1.4;
+  }
+
+  .tp-zw__list li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+    flex: 0 0 auto;
+  }
+
+  .tp-zw__cta {
+    margin-top: auto;
+    padding-top: 14px;
+  }
+
+  .tp-zw__cta--primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 44 px Mindesthoehe fuer Touch, wie in PR #118 fuer den ganzen Shop gesetzt */
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 12px 22px;
+    border-radius: 8px;
+    background: var(--color-foreground);
+    color: var(--color-background);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tp-zw__phone {
+    margin: 10px 0 0;
+    font-size: var(--tp-fs-md);
+  }
+
+  .tp-zw__phone a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-zw__desktop-copy { display: none; }
+    .tp-zw__mobile-copy { display: block; }
+    .tp-zw {
+      padding: 24px 16px;
+    }
+
+    .tp-zw__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .tp-zw__box--online,
+    .tp-zw__box--service {
+      grid-column: auto;
+    }
+
+    /* Untereinander gewinnt die obere Box fast alles - deshalb ist die
+       Reihenfolge eine Einstellung und kein fester Wert. */
+    .tp-zw__grid--mobile-service .tp-zw__box--service {
+      order: -1;
+    }
+
+    .tp-zw__box {
+      padding: 22px 18px;
+    }
+
+    .tp-zw__title {
+      font-size: var(--tp-fs-xl);
+    }
+  }
+  .tp-zw__plz { margin: 4px 0 16px; }
+
+/* sections/tp-start-so-gehts.liquid */
+  .tp-sg__liste { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .tp-sg__schritt { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--tp-line, #e6e0d8); border-radius: 14px; background: #fff; }
+  /* Bild absolut: sonst setzt ein Hochformatfoto als Flex-Kind seine eigene
+     Hoehe durch (min-height: auto) und die Karte wird doppelt so hoch. */
+  .tp-sg__bild { position: relative; min-height: 0; overflow: hidden; aspect-ratio: 4 / 3; background: #ede7de; }
+  .tp-sg__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tp-sg__text { display: flex; flex: 1; flex-direction: column; gap: 8px; padding: 18px 20px 14px; }
+  .tp-sg__kopf { display: flex; align-items: center; gap: 10px; }
+  .tp-sg__nr { display: inline-flex; flex: 0 0 28px; align-items: center; justify-content: center; height: 28px; border-radius: 50%; background: var(--tp-ink, #1d1a17); color: #fff; font-size: var(--tp-fs-sm); font-weight: 700; }
+  .tp-sg__titel { margin: 0; font-size: var(--tp-fs-lg); font-weight: 700; line-height: 1.2; color: var(--tp-ink, #1d1a17); }
+  .tp-sg__beschreibung { font-size: var(--tp-fs-md); line-height: 1.5; color: var(--tp-ink-2, #4a443f); }
+  .tp-sg__beschreibung p { margin: 0; }
+  .tp-sg__link { display: inline-flex; align-items: center; align-self: flex-start; min-height: 44px; margin-top: auto; font-weight: 600; color: var(--tp-ink, #1d1a17); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  .tp-sg__plz { margin-top: 20px; }
+  .tp-sg__plz .tp-vg__check { max-width: 560px; }
+  /* Unter 992 px: Bild links, Text rechts - drei flache Karten statt drei hoher. */
+  @media (max-width: 991px) {
+    .tp-sg__liste { grid-template-columns: 1fr; gap: 12px; }
+    .tp-sg__schritt { flex-direction: row; }
+    .tp-sg__bild { flex: 0 0 38%; aspect-ratio: auto; min-height: 150px; }
+  }
+  /* F: am Telefon alle drei Bilder im selben Format (vorher streckte der
+     Text jedes Bild auf eigene Hoehe: 0,49 bis 0,76). Quadrat oben links. */
+  @media (max-width: 767px) {
+    .tp-sg__bild { flex-basis: 36%; min-height: 0; aspect-ratio: 1 / 1; align-self: flex-start; }
+    .tp-sg__text { gap: 6px; padding: 12px 14px 6px; }
+    .tp-sg__kopf { gap: 8px; }
+    .tp-sg__nr { flex-basis: 24px; height: 24px; font-size: var(--tp-fs-xs); }
+    .tp-sg__titel { font-size: var(--tp-fs-md); }
+    .tp-sg__beschreibung { font-size: var(--tp-fs-sm); line-height: 1.45; }
+  }
+
+/* sections/tp-start-projekte.liquid */
+  .tp-proj__grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 14px; height: 520px; }
+  .tp-proj__item { position: relative; height: 100%; border-radius: 14px; overflow: hidden; background: #ede7de; display: block; }
+  .tp-proj__item:first-child { grid-row: 1 / 3; }
+  .tp-proj__img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
+  .tp-proj__item:hover .tp-proj__img { transform: scale(1.04); }
+  .tp-proj__cap { position: absolute; left: 12px; bottom: 12px; background: rgba(29, 26, 23, 0.82); color: #fff; font-size: var(--tp-fs-sm); padding: 6px 11px; border-radius: 999px; }
+  .tp-proj__ctas { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+  @media (max-width: 1023px) {
+    .tp-proj__grid { height: auto; grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+    .tp-proj__item { aspect-ratio: 4 / 3; }
+    .tp-proj__item:first-child { grid-row: auto; grid-column: 1 / 3; aspect-ratio: 16 / 9; }
+  }
+  @media (max-width: 767px) { .tp-proj__grid { gap: 10px; } }
+
+/* sections/tp-start-seo.liquid */
+  .tp-seo__wrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; }
+  .tp-seo__text { color: var(--tp-ink-2, #4a443f); margin-top: 12px; max-width: 62ch; }
+  .tp-seo__text p { margin: 0 0 12px; }
+  .tp-seo__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .tp-seo__h4 { font-size: var(--tp-fs-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--tp-muted, #655e57); margin: 0 0 8px; font-weight: 600; }
+  .tp-seo__cols ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  /* Klickziel mind. 24 px hoch (WCAG 2.5.8, Audit 11.11. Befund 5) */
+  .tp-seo__cols a { display: inline-flex; align-items: center; min-block-size: 24px; color: var(--tp-ink-2, #4a443f); font-size: var(--tp-fs-md); text-decoration: none; }
+  .tp-seo__cols a:hover { color: var(--tp-ink, #1d1a17); }
+  @media (max-width: 1023px) { .tp-seo__wrap { grid-template-columns: 1fr; gap: 32px; } }
+  @media (max-width: 339px) { .tp-seo__cols { grid-template-columns: 1fr; } }
+
+/* sections/tp-start-fachhandel.liquid */
+  .tp-fh__wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .tp-fh__media { border-radius: 16px; overflow: hidden; aspect-ratio: 4 / 3; box-shadow: 0 10px 30px rgba(29, 26, 23, 0.1); background: var(--tp-bg-3, #ede7de); }
+  .tp-fh__img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tp-fh__text { color: var(--tp-ink-2, #4a443f); max-width: 56ch; margin-top: 10px; }
+  .tp-fh__facts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; margin: 24px 0; }
+  .tp-fh__fact b { display: block; font-size: var(--tp-fs-lg); font-weight: 700; line-height: 1.1; color: var(--tp-ink, #1d1a17); }
+  .tp-fh__fact span { font-size: var(--tp-fs-sm); color: var(--tp-muted, #655e57); }
+  .tp-fh__ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  @media (max-width: 1023px) { .tp-fh__wrap { grid-template-columns: 1fr; gap: 28px; } }
+  @media (max-width: 767px) { .tp-fh__facts { gap: 14px; } .tp-fh__fact b { font-size: var(--tp-fs-lg); } }
+
+/* sections/tp-start-tabs.liquid */
+  .tp-tabs { padding-top: var(--tp-sec); }
+  .tp-tabs__list { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tp-tabs__tab { padding: 9px 16px; border-radius: 999px; border: 1.5px solid var(--tp-line-2, #d5cec4); background: #fff; font: inherit; font-weight: 500; font-size: var(--tp-fs-md); min-height: 42px; cursor: pointer; color: var(--tp-ink, #1d1a17); }
+  .tp-tabs__tab[aria-selected="true"] { background: var(--tp-ink, #1d1a17); color: #fff; border-color: var(--tp-ink, #1d1a17); }
+  @media (max-width: 767px) {
+    .tp-tabs__list { overflow-x: auto; flex-wrap: nowrap; margin: 0 calc(-1 * var(--tp-pad)); padding: 0 var(--tp-pad) 2px; scrollbar-width: none; }
+    .tp-tabs__list::-webkit-scrollbar { display: none; }
+    /* Reiter scrollen statt schrumpfen: sonst brach "Leisten & Zubehoer" auf
+       drei Zeilen um, und alle Reiter wurden 92 px hoch. */
+    .tp-tabs__tab { flex-shrink: 0; white-space: nowrap; }
+  }

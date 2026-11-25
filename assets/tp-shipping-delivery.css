@@ -1,0 +1,78 @@
+/* Aus sections/tp-shipping-delivery.liquid ausgelagert: laedt nur, wo der Abschnitt rendert (nicht im themeweiten styles.css). */
+  .tp-shipping-delivery {
+    padding-block: clamp(36px, 6vw, 72px);
+  }
+
+  .tp-shipping-delivery__intro {
+    max-width: 720px;
+    margin-bottom: clamp(28px, 4vw, 44px);
+  }
+
+  .tp-shipping-delivery__intro h1 {
+    margin: 4px 0 12px;
+  }
+
+  .tp-shipping-delivery__intro > p:last-child {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
+  .tp-shipping-delivery__eyebrow {
+    margin: 0;
+    color: #8d714c;
+    font-size: var(--tp-fs-sm);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .tp-shipping-delivery__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .tp-shipping-delivery article {
+    padding: clamp(20px, 3vw, 28px);
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    border-radius: 10px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.02);
+  }
+
+  .tp-shipping-delivery article h2 {
+    margin: 0 0 10px;
+    font-size: var(--tp-fs-lg);
+  }
+
+  .tp-shipping-delivery article p {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.74);
+    line-height: 1.55;
+  }
+
+  .tp-shipping-delivery article p + p {
+    margin-top: 10px;
+  }
+
+  .tp-shipping-delivery__contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 12px;
+  }
+
+  .tp-shipping-delivery__contact a {
+    color: inherit;
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-shipping-delivery__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .tp-shipping-delivery article h2 {
+      font-size: var(--tp-fs-lg);
+    }
+  }

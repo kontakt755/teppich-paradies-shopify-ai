@@ -1,3 +1,4 @@
+{{ 'tp-wahlhilfe.css' | asset_url | stylesheet_tag }}
 {%- comment -%}
   TP Wahlhilfe: zwei bis vier Karten, die eine Kategorie nach einem Kennwert
   ordnen (z. B. Kunstrasen nach Florhoehe) und direkt auf die passenden
@@ -31,19 +32,6 @@
     </div>
   </div>
 </section>
-
-{% stylesheet %}
-  .tp-wh__intro { color: #4a443f; max-width: 68ch; margin: 8px 0 0; }
-  .tp-wh__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
-  .tp-wh__card { border: 1px solid #e6e0d8; border-radius: 12px; padding: 20px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
-  .tp-wh__card p { margin: 0; color: #4a443f; }
-  .tp-wh__wert { align-self: flex-start; font-size: var(--tp-fs-sm); font-weight: 700; letter-spacing: .02em; color: #fff; background: #5f7a52; border-radius: 999px; padding: 3px 10px; }
-  .tp-wh__liste { list-style: none; padding: 0; margin: 6px 0 0; border-top: 1px solid #eee7de; }
-  .tp-wh__liste a { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #eee7de; color: #1d1a17; text-decoration: none; min-height: 44px; align-items: center; }
-  .tp-wh__liste a:hover span:first-child { text-decoration: underline; }
-  .tp-wh__preis { color: #4a443f; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  @media (max-width: 989px) { .tp-wh__grid { grid-template-columns: 1fr; } }
-{% endstylesheet %}
 
 {% schema %}
 {

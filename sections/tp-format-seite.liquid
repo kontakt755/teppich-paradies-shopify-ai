@@ -1,3 +1,4 @@
+{{ 'tp-format-seite.css' | asset_url | stylesheet_tag }}
 {%- comment -%}
   Format-Seite "Teppich 200 x 300 cm" (Nr. 149, Vollanalyse 2026-11-03): gefragte
   Masse, die es nicht als fertige Standardgroesse gibt, gehen ueber Teppich nach Mass.
@@ -96,25 +97,6 @@
   {%- endif -%}
   </div>
 </section>
-
-{% stylesheet %}
-  .tp-format { padding-block: 32px 48px; }
-  .tp-format__inhalt { max-width: 760px; }
-  .tp-format__kicker { margin: 0 0 8px; font-size: var(--tp-fs-sm); font-weight: 500; color: #595959; }
-  .tp-format h1 { margin: 0 0 16px; font-size: var(--tp-fs-2xl); font-weight: 700; }
-  .tp-format h2 { margin: 32px 0 8px; font-size: var(--tp-fs-lg); font-weight: 600; }
-  .tp-format__lead { margin: 0 0 20px; font-size: var(--tp-fs-md); }
-  .tp-format__knopf { display: inline-block; }
-  .tp-format__punkte { margin: 20px 0 0; padding-left: 20px; font-size: var(--tp-fs-sm); }
-  .tp-format__preise { width: 100%; margin: 0; border-collapse: collapse; font-size: var(--tp-fs-sm); }
-  .tp-format__preise th, .tp-format__preise td { padding: 8px 0; border: 0; border-bottom: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12); background: none; font-weight: 400; text-align: left; vertical-align: top; }
-  .tp-format__preise td { padding-left: 12px; text-align: right; white-space: nowrap; }
-  .tp-format__preise strong { font-weight: 600; }
-  .tp-format__lz { display: block; font-size: var(--tp-fs-xs); color: #595959; }
-  .tp-format__hinweis { margin: 8px 0 0; font-size: var(--tp-fs-xs); color: #595959; }
-  .tp-format__links { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; padding: 0; list-style: none; }
-  .tp-format a:not(.button) { color: var(--tp-ink); text-decoration: underline; text-underline-offset: 2px; }
-{% endstylesheet %}
 
 {% schema %}
 {
