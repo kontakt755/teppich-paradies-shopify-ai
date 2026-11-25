@@ -1,3 +1,4 @@
+{{ 'tp-start-abschnitte.css' | asset_url | stylesheet_tag }}
 {%- comment -%}
   TP Produkt-Tabs: Ueberschrift plus Reiter, die die nachfolgenden Produktlisten
   (Sections vom Typ product-list) ein- und ausblenden. Die Produktlisten selbst
@@ -71,20 +72,6 @@
     html{{ tp_tabs_alle_leer }} #shopify-section-{{ section.id }} { display: none; }
   {%- endif -%}
 </style>
-
-{% stylesheet %}
-  .tp-tabs { padding-top: var(--tp-sec); }
-  .tp-tabs__list { display: flex; gap: 6px; flex-wrap: wrap; }
-  .tp-tabs__tab { padding: 9px 16px; border-radius: 999px; border: 1.5px solid var(--tp-line-2, #d5cec4); background: #fff; font: inherit; font-weight: 500; font-size: var(--tp-fs-md); min-height: 42px; cursor: pointer; color: var(--tp-ink, #1d1a17); }
-  .tp-tabs__tab[aria-selected="true"] { background: var(--tp-ink, #1d1a17); color: #fff; border-color: var(--tp-ink, #1d1a17); }
-  @media (max-width: 767px) {
-    .tp-tabs__list { overflow-x: auto; flex-wrap: nowrap; margin: 0 calc(-1 * var(--tp-pad)); padding: 0 var(--tp-pad) 2px; scrollbar-width: none; }
-    .tp-tabs__list::-webkit-scrollbar { display: none; }
-    /* Reiter scrollen statt schrumpfen: sonst brach "Leisten & Zubehoer" auf
-       drei Zeilen um, und alle Reiter wurden 92 px hoch. */
-    .tp-tabs__tab { flex-shrink: 0; white-space: nowrap; }
-  }
-{% endstylesheet %}
 
 {% javascript %}
   (function () {
