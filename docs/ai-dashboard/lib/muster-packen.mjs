@@ -561,6 +561,51 @@ export function handTreffer(kundenListe = [], eingabe = '', ausserhalb = [], { m
     eingelegt: alle.filter(x => x.muster.abgehakt || x.kunde.bereich === 'gepackt'), ausserhalb: s.ausserhalb, fertig: s.fertig, fertigGenauer: s.fertigGenauer };
 }
 
+// Zahlen mit Einheit dahinter ("10 mm", "400 cm") sind Masse, keine Farbnummer.
+const EINHEITEN = new Set(['mm', 'cm', 'm', 'm2', 'g', 'kg', 'gm2', 'qm']);
+// Warengruppen und Zusaetze, die auf vielen Etiketten stehen - sie unterscheiden kein Produkt.
+const ALLGEMEIN = new Set(['teppichboden', 'teppich', 'boden', 'vinyl', 'vinylboden', 'designboden', 'designboeden', 'linoleum', 'nadelvlies',
+  'laminat', 'parkett', 'kupon', 'rolle', 'bahnen', 'fliese', 'fliesen', 'click', 'klick', 'muster', 'farbe', 'color', 'colour', 'art']);
+const nummerSchluessel = v => { const c = kompakt(norm(v)); return /^\d+$/.test(c) ? c.replace(/^0+(?=\d)/, '') : c; };
+
+/**
+ * "Muster kommt an" per Foto (25.11.): Text vom Lieferantenetikett (Texterkennung am Mac) gegen die offenen
+ * Muster. Lieber kein Treffer als ein falscher: ein Muster zaehlt nur, wenn seine Farbnummer als ganzes Wort
+ * (oder zwei benachbarte, "3N 55") UND ein Wort aus Produktname oder Kollektion im Text stehen. Ohne
+ * Farbnummer im Datensatz gibt es keinen Fototreffer - dann bleibt Eintippen.
+ * @returns {{treffer: {kunde: object, muster: object}[], arten: {kunde: object, muster: object}[]}}
+ *   `treffer` in Packreihenfolge; `arten` = je verschiedenem Muster (Produkt + Farbnummer) der erste Treffer,
+ *   also der Umschlag, der am laengsten wartet. Genau eine Art = eindeutig.
+ */
+export function fotoTreffer(kundenListe = [], fotoText = '') {
+  const toks = norm(fotoText).split(/[^a-z0-9]+/).filter(Boolean);
+  const nummern = new Set();
+  toks.forEach((t, i) => {
+    if (!EINHEITEN.has(toks[i + 1])) nummern.add(nummerSchluessel(t));
+    if (i && !EINHEITEN.has(toks[i + 1])) nummern.add(nummerSchluessel(toks[i - 1] + t));
+  });
+  const worte = new Set(toks);
+  // Nur Woerter, die das Produkt von allen anderen offenen Produkten unterscheiden ("Feeling", nicht
+  // "Teppichboden" oder "Trend"): sonst passte ein Etikett "Teppichboden Alamo 30" auf "Feeling 30".
+  const offen = kundenListe.filter(k => k.bereich !== 'gepackt').flatMap(k => (k.muster || []).filter(m => !m.abgehakt && !m.gesperrt).map(m => ({ k, m })));
+  const nameWoerter = m => [...new Set(norm(m.vorher?.produktname || m.vorher?.kollektion).split(/[^a-z]+/).filter(w => w.length >= 3 && !ALLGEMEIN.has(w)))];
+  const produkt = m => nameWoerter(m).sort().join(' ');
+  const jeWort = new Map();
+  for (const { m } of offen) for (const w of nameWoerter(m)) jeWort.set(w, (jeWort.get(w) || new Set()).add(produkt(m)));
+  const treffer = [];
+  for (const { k, m } of offen) {
+    const v = m.vorher || {};
+    if (!text(v.farbnummer) || !nummern.has(nummerSchluessel(v.farbnummer))) continue;
+    if (nameWoerter(m).some(w => jeWort.get(w).size === 1 && worte.has(w))) treffer.push({ kunde: k, muster: m });
+  }
+  const je = new Map();
+  for (const x of treffer) {
+    const art = `${norm(x.muster.vorher.produktname || x.muster.vorher.kollektion)}|${nummerSchluessel(x.muster.vorher.farbnummer)}`;
+    if (!je.has(art)) je.set(art, x);
+  }
+  return { treffer, arten: [...je.values()] };
+}
+
 /**
  * Sammelliste (09.11.): alle noch nicht eingelegten Muster der packbereiten Umschlaege, gleiche Muster
  * zusammengefasst, nach Fach sortiert - ein Gang durchs Lager. Lagermuster ohne Fach und angekommene
