@@ -456,7 +456,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     // Rolle "lesen": 403.
     // Foto vom Lieferantenetikett: POST erkennt den Text (write-Liste, Rolle "lesen": 403), GET holt neue Fotos ab.
     else if (simple === 'kunden/muster-foto' && req.method === 'POST') result = await api.kundenMusterFoto(await readJson(req, MAX_BODY_UPLOAD), { benutzer });
-    else if (simple === 'kunden/muster-foto') result = api.kundenMusterFotos({ seit: url.searchParams.get('seit') || '' });
+    else if (simple === 'kunden/muster-foto') result = await api.kundenMusterFotos({ seit: url.searchParams.get('seit') || '' });
     else if (simple === 'kunden/muster-packen' && req.method === 'GET') result = api.kundenMusterPacken();
     else if (simple === 'kunden/muster-packen' && req.method === 'POST') result = await api.kundenMusterPackenSchreiben(await readJson(req), benutzer);
     else if (simple === 'kunden/musteretiketten' && req.method === 'POST') result = await api.kundenMusteretikettenVormerken(await readJson(req), benutzer);
