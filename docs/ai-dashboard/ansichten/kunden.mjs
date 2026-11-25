@@ -14,7 +14,6 @@ import { ensureLexwareAngebote, lexwareFaelligAnzahl, lexwareKlick, viewKundenAn
 import { fallMarkeSetzen, viewKundenFaelle } from './kunden/faelle.mjs';
 import { ensureServiceanfragen, serviceKlick, serviceOffenAnzahl, viewKundenServiceanfragen } from './kunden/serviceanfragen.mjs';
 import { ensureMusterPacken, musterPackenKlick, musterPackenOffen, viewKundenMusterPacken } from './kunden/muster-packen.mjs';
-import { musterFotoKlick } from './kunden/muster-foto.mjs';
 import { kundenLinkWert } from '../lib/kunden-linkwert.mjs';
 
 /** Alte Links mit Klartext-Schluessel oeffnen weiter; die Adresszeile zeigt danach nur den Kurzwert. */
@@ -126,7 +125,6 @@ export function kundenKlickAkte(e) {
   if (fallMarke) { e.preventDefault(); fallMarkeSetzen(fallMarke.dataset.fallMarke, fallMarke.dataset.grund); return true; }
   if (musterwirkungKlick(e)) return true;
   if (serviceKlick(e)) return true;
-  if (musterFotoKlick(e)) return true;
   if (musterPackenKlick(e)) return true;
   if (musterAnrufeKlick(e)) return true;
   if (lexwareKlick(e)) return true;

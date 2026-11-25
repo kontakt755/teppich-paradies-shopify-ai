@@ -128,7 +128,6 @@ import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, 
 import { musterwirkung } from '../operations/lib/musterwirkung.mjs';
 import { packhilfeDaten } from '../operations/lib/packhilfe-daten.mjs';
 import { musterPackliste, ohneMusterMoeglich } from '../docs/ai-dashboard/lib/muster-packen.mjs';
-import { fotoText as fotoTextStandard } from '../operations/lib/foto-text.mjs';
 import { musterPackenPfad, setzeGedruckt, setzeGepackt, setzeHaken, setzeKlaeren, vermerkeVersandProblem, entferneVersandProbleme, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
 const execFileP = promisify(execFile);
@@ -733,7 +732,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), nachfassPostfachLesen = null, sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null, begleitblattPdf = null, begleitblattQr = undefined, fotoText = fotoTextStandard } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), nachfassPostfachLesen = null, sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null, begleitblattPdf = null, begleitblattQr = undefined } = {}) {
   const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -877,11 +876,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     if (!host || !/^[a-z0-9.-]+(:\d+)?$/.test(host)) return null;
     return `https://${host}`;
   }
-
-  // Fotos vom Lieferantenetikett (kundenMusterFoto): nur Text, nur im Speicher. Der Zaehler startet bei der
-  // Uhrzeit, damit ein wartender Mac nach einem Neustart des Dienstes keine neuen Fotos verpasst.
-  const musterFotos = [];
-  let musterFotoZaehler = Date.now();
 
   let sonderpostenOhneZugangGemeldet = false;
   function sonderpostenOhneZugang() {
@@ -2180,30 +2174,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const r = RATGEBER.find(x => x.schluessel === schluessel);
       if (!r) throw new ApiError(404, 'Diesen Ratgeber gibt es nicht.');
       return { inhalt: fs.readFileSync(path.join(RATGEBER_ORDNER, 'pdf', r.datei)), typ: 'application/pdf', name: `Ratgeber ${ratgeberKurzTitel(r)}.pdf` };
-    },
-
-    /**
-     * "Muster kommt an" per Foto (25.11.): Handy oder Mac schickt ein Foto vom Lieferantenetikett, der Mac
-     * erkennt den Text. Nur der Text bleibt, und nur im Speicher (die letzten zehn), damit der Mac, der den
-     * QR-Code zeigt, ein Foto vom Handy abholen kann. Das Bild wird nicht gespeichert.
-     */
-    async kundenMusterFoto({ bild } = {}, { benutzer = null } = {}) {
-      const roh = typeof bild === 'string' ? bild.replace(/^data:image\/[a-z+.-]+;base64,/i, '') : '';
-      if (!roh || !/^[A-Za-z0-9+/=\s]+$/.test(roh)) throw new ApiError(400, 'Kein Foto empfangen.');
-      const daten = Buffer.from(roh, 'base64');
-      if (daten.length < 100 || daten.length > 15 * 1024 * 1024) throw new ApiError(400, 'Das Foto ist leer oder größer als 15 MB.');
-      let erkannt;
-      try { erkannt = await fotoText(daten); } catch (e) { throw new ApiError(502, e.message); }
-      const eintrag = { id: ++musterFotoZaehler, zeit: now().toISOString(), text: String(erkannt).slice(0, 4000), von: benutzer?.name || benutzer?.kuerzel || null };
-      musterFotos.push(eintrag);
-      if (musterFotos.length > 10) musterFotos.shift();
-      return eintrag;
-    },
-
-    /** Fotos nach `seit` (id) fuer den Mac, der auf das Handy wartet; `seit` leer = nur der aktuelle Zaehler. */
-    kundenMusterFotos({ seit = '' } = {}) {
-      const ab = Number(seit);
-      return { letzte: musterFotoZaehler, netzAdresse: sonderpostenNetzAdresse(), fotos: Number.isFinite(ab) && seit !== '' ? musterFotos.filter(f => f.id > ab) : [] };
     },
 
     /**

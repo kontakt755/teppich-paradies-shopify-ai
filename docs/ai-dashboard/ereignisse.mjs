@@ -44,7 +44,6 @@ import {
 } from './ansichten/organisation.mjs';
 import { openMeinPasswort, teamKlick, teamAenderung } from './ansichten/team.mjs';
 import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
-import { musterFotoAenderung } from './ansichten/kunden/muster-foto.mjs';
 import { socialEingabe, socialAbsenden, socialKlick } from './ansichten/social.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
 import { freigabenAbsenden } from './ansichten/freigaben.mjs';
@@ -146,7 +145,6 @@ export function bindEvents() {
     if (versandkostenEingabe(e)) return;
     if (prozesseEingabe(e)) return;
     if (fotosAenderung(e)) return;
-    if (musterFotoAenderung(e)) return;
     if (socialEingabe(e)) return;
     if (orgAenderungAnhang(e)) return;
     if (teamAenderung(e)) return;

@@ -743,31 +743,3 @@ test('Musterversand: erstatten nur bei bezahltem Versand mit gesperrtem Muster; 
   const ohneSperre = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(97, '2026-12-02', 'Berta Beispiel', [pos(971, '101')], { musterversand: 'bezahlt' })] }).kunden[0];
   assert.equal(musterversandErstattung(ohneSperre).erstatten.length, 0, 'nichts fehlt: nichts erstatten');
 });
-
-test('fotoTreffer: nur Farbnummer UND Produktname zusammen, Masse zaehlen nicht, aelteste Bestellung zuerst', async () => {
-  const { fotoTreffer } = await import('../lib/muster-packen.mjs');
-  const r = musterPackliste({ produkte, schluesselVon, jetzt, statusVon: () => 'geliefert',
-    haken: { 'gid://shopify/LineItem/31': { zeit: 'x' } },
-    auftraege: [
-      auftrag(2, '2026-10-19T09:00:00Z', 'Bea Test', [pos(21, '101')]),
-      auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')]),
-      auftrag(3, '2026-10-18T09:00:00Z', 'Cem Test', [pos(31, '101')]),
-    ] });
-  const name = x => `${x.kunde.name}/${x.muster.lineItemId.split('/').pop()}`;
-  // Sand 11 auf dem Etikett: Anna und Bea brauchen es, Cem hat es schon eingelegt.
-  const sand = fotoTreffer(r.kunden, 'LIEFERANTENWARE\nSAND 400\nFarbe 011\n100% PA');
-  assert.deepEqual(sand.treffer.map(name), ['Anna Test/11', 'Bea Test/21']);
-  assert.deepEqual(sand.arten.map(name), ['Anna Test/11'], 'eindeutig: ein Muster, der aelteste Umschlag');
-  // Nummer ohne Produktname, Produktname ohne Nummer, Nummer nur als Mass: kein Treffer.
-  assert.equal(fotoTreffer(r.kunden, 'Farbe 11').treffer.length, 0);
-  assert.equal(fotoTreffer(r.kunden, 'Lieferantenware Sand').treffer.length, 0);
-  assert.equal(fotoTreffer(r.kunden, 'Sand 11').treffer.length, 2);
-  assert.equal(fotoTreffer(r.kunden, 'Lieferantenware Sand 11 mm Florhoehe').treffer.length, 0);
-  assert.equal(fotoTreffer(r.kunden, 'Teppichboden Sand 11').treffer.length, 2, 'Warengruppe stoert nicht');
-  assert.equal(fotoTreffer(r.kunden, 'Sand 111').treffer.length, 0, 'Teilzahl zaehlt nicht');
-  // Zwei Etiketten auf einem Foto: zwei Arten, nicht eindeutig.
-  assert.equal(fotoTreffer(r.kunden, 'Sand 11 / Grau 22').arten.length, 2);
-  // Ein Wort, das mehrere offene Produkte tragen, unterscheidet nichts.
-  assert.equal(fotoTreffer(r.kunden, 'Lieferantenware 11').treffer.length, 0);
-  assert.equal(fotoTreffer(r.kunden, '').treffer.length, 0);
-});
