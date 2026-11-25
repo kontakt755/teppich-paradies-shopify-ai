@@ -7,7 +7,47 @@
 {%- endcomment -%}
 <div id="bewertungen" class="tp-bewertungen">
   {%- render 'tp-bewertungshinweis', kurz: true -%}
-  {% content_for 'blocks' %}
+  {%- comment -%}
+    Widget erst laden, wenn es gebraucht wird (25.11.2026): Steht es beim Laden
+    im DOM, holt der App-Loader rund 330 KB vor dem Produktbild (LCP). Deshalb
+    liegt es in einem template und kommt rein, sobald der Bereich naeher als
+    800 px ist, ueber #bewertungen/#judgeme angesprungen wird oder ein
+    Judge.me-Link (QR-Karte, judgeme_* in der Adresse) die Seite oeffnet.
+    shortcut: der App-Loader laeuft nur einmal (jdgm._loaderExecuted); er wird
+    zurueckgesetzt und neu eingefuegt. Aendert Judge.me das, bleibt der Bereich
+    leer - nach App-Updates hier nachsehen.
+  {%- endcomment -%}
+  <template id="tp-bewertungen-app">{% content_for 'blocks' %}</template>
+  <div data-tp-bewertungen-app></div>
+  <script>
+    (() => {
+      const vorlage = document.getElementById('tp-bewertungen-app');
+      const platz = document.querySelector('[data-tp-bewertungen-app]');
+      const bereich = document.getElementById('bewertungen');
+      let geladen = false;
+      const laden = () => {
+        if (geladen) return;
+        geladen = true;
+        platz.replaceWith(vorlage.content.cloneNode(true));
+        const alt = document.querySelector('script[src*="judgeme"][src*="/loader.js"]');
+        if (!alt || !window.jdgm) return;
+        window.jdgm._loaderExecuted = false;
+        const neu = document.createElement('script');
+        neu.src = alt.src;
+        document.body.append(neu);
+      };
+      const direkt = () => /bewertungen|judgeme/.test(location.hash + location.search);
+      if (direkt() || (window.Shopify && Shopify.designMode) || !('IntersectionObserver' in window)) return laden();
+      window.addEventListener('hashchange', () => direkt() && laden());
+      const beobachter = new IntersectionObserver((eintraege) => {
+        if (eintraege.some((e) => e.isIntersecting)) {
+          beobachter.disconnect();
+          laden();
+        }
+      }, { rootMargin: '800px 0px' });
+      beobachter.observe(bereich);
+    })();
+  </script>
   {%- comment -%}
     Datenschutz-Hinweis im Formular der App: Die Formulartexte lassen sich im
     Gratis-Tarif nicht aendern, und das Formular oeffnet als eigenes Fenster
