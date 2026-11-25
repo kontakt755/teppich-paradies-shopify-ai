@@ -14,6 +14,8 @@
     und vinylboden-klickvinyl haben eine eigene FAQ-Section und fehlen bewusst).
   - Seite: Inhalt mit <h2>Häufige Fragen</h2>, nur Standardvorlage (page.json);
     page.teppichreinigung und page.verlegung-berlin-nord haben FAQ-Sections.
+  - Ratgeber-Artikel: Inhalt mit <h2>Häufige Fragen</h2> und Fragen als <h3>
+    (alle Artikelvorlagen; keine hat eine eigene FAQ-Section).
 
   Der Parser (snippets/tp-faq-beschreibung-structured-data) gibt nichts aus,
   wenn die Ueberschrift fehlt - Texte ohne FAQ bleiben ohne Markup.
@@ -34,5 +36,7 @@
       if template.suffix == blank
         render 'tp-faq-beschreibung-structured-data', html: page.content, seiten_url: canonical_url, ebene: 'h2'
       endif
+    when 'article'
+      render 'tp-faq-beschreibung-structured-data', html: article.content, seiten_url: canonical_url, ebene: 'h2'
   endcase
 -%}
