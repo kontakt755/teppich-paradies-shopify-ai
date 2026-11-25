@@ -733,7 +733,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), nachfassPostfachLesen = null, sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null, begleitblattPdf = null, begleitblattQr = undefined, fotoText = fotoTextStandard, musterFotoOrdner = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), nachfassPostfachLesen = null, sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null, launchAgentsDir = null, ratgeberPdf = null, begleitblattPdf = null, begleitblattQr = undefined, fotoText = fotoTextStandard } = {}) {
   const serviceLaden = createServiceLadenAbgleich({ root, env, jetzt: () => now().getTime() });
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -882,35 +882,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   // Uhrzeit, damit ein wartender Mac nach einem Neustart des Dienstes keine neuen Fotos verpasst.
   const musterFotos = [];
   let musterFotoZaehler = Date.now();
-  const merkeFoto = (text, von) => {
-    const eintrag = { id: ++musterFotoZaehler, zeit: now().toISOString(), text: String(text || '').slice(0, 4000), von };
-    musterFotos.push(eintrag);
-    if (musterFotos.length > 10) musterFotos.shift();
-    return eintrag;
-  };
-  // Dropbox-Ordner "Musterfotos" (25.11.): das Android-Handy laedt dort hoch, der Mac holt beim Abfragen ab,
-  // liest den Text und schiebt das Foto nach "erledigt" (nichts wird geloescht). Ein Lauf zur Zeit.
-  const fotoOrdner = musterFotoOrdner ?? env.TP_MUSTERFOTO_ORDNER ?? path.join(os.homedir(), 'Library', 'CloudStorage', 'Dropbox', 'Musterfotos');
-  let fotoOrdnerLauf = null;
-  function fotoOrdnerAbholen() {
-    fotoOrdnerLauf ??= (async () => {
-      let namen;
-      try { namen = await fs.promises.readdir(fotoOrdner); } catch (e) { if (e.code === 'ENOENT') return; throw e; }
-      for (const name of namen.filter(n => !n.startsWith('.') && /\.(jpe?g|png|heic|heif)$/i.test(n)).sort().slice(0, 5)) {
-        const datei = path.join(fotoOrdner, name);
-        const st = await fs.promises.stat(datei).catch(() => null);
-        // Dropbox schreibt noch: beim naechsten Abruf.
-        if (!st?.isFile() || !st.size || Date.now() - st.mtimeMs < 3000) continue;
-        let text = '';
-        try { text = await fotoText(await fs.promises.readFile(datei)); } catch (e) { logFehler('muster-foto', String(e?.message || e)); }
-        const erledigt = path.join(fotoOrdner, 'erledigt');
-        await fs.promises.mkdir(erledigt, { recursive: true });
-        await fs.promises.rename(datei, path.join(erledigt, `${now().toISOString().replace(/[:.]/g, '-')}-${name}`));
-        merkeFoto(text, 'Dropbox');
-      }
-    })().finally(() => { fotoOrdnerLauf = null; });
-    return fotoOrdnerLauf;
-  }
 
   let sonderpostenOhneZugangGemeldet = false;
   function sonderpostenOhneZugang() {
@@ -2223,15 +2194,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (daten.length < 100 || daten.length > 15 * 1024 * 1024) throw new ApiError(400, 'Das Foto ist leer oder größer als 15 MB.');
       let erkannt;
       try { erkannt = await fotoText(daten); } catch (e) { throw new ApiError(502, e.message); }
-      return merkeFoto(erkannt, benutzer?.name || benutzer?.kuerzel || null);
+      const eintrag = { id: ++musterFotoZaehler, zeit: now().toISOString(), text: String(erkannt).slice(0, 4000), von: benutzer?.name || benutzer?.kuerzel || null };
+      musterFotos.push(eintrag);
+      if (musterFotos.length > 10) musterFotos.shift();
+      return eintrag;
     },
 
-    /**
-     * Fotos nach `seit` (id) fuer den Mac, der auf das Handy wartet; `seit` leer = nur der aktuelle Zaehler.
-     * Holt vorher neue Fotos aus dem Dropbox-Ordner; ein Fehler dort haelt die Abfrage nicht auf.
-     */
-    async kundenMusterFotos({ seit = '' } = {}) {
-      try { await fotoOrdnerAbholen(); } catch (e) { logFehler('muster-foto', String(e?.message || e)); }
+    /** Fotos nach `seit` (id) fuer den Mac, der auf das Handy wartet; `seit` leer = nur der aktuelle Zaehler. */
+    kundenMusterFotos({ seit = '' } = {}) {
       const ab = Number(seit);
       return { letzte: musterFotoZaehler, netzAdresse: sonderpostenNetzAdresse(), fotos: Number.isFinite(ab) && seit !== '' ? musterFotos.filter(f => f.id > ab) : [] };
     },
