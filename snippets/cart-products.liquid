@@ -229,7 +229,9 @@
                           aria-label="{{ 'accessibility.nested_product' | t: product_title: item.product.title, parent_title: item.parent_relationship.parent.title | escape }}"
                         {% endif %}
                       >
-                        {{- item.product.title -}}
+                        {%- comment -%} Anzeigetitel wie H1 und Karte: ohne angehaengte Rollenbreiten (w-450) {%- endcomment -%}
+                        {%- capture tp_korb_titel -%}{%- render 'tp-anzeigetitel', product: item.product -%}{%- endcapture -%}
+                        {{- tp_korb_titel | strip | escape -}}
                       </a>
                     </p>
                     {%- render 'tp-cart-gruppe', line_item: item, teil: 'hinweis' -%}

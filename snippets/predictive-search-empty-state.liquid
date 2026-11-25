@@ -22,6 +22,13 @@
         assign collection = settings.empty_state_collection | default: collections.all
         assign default_title = 'content.search_results_resource_products' | t
         assign title = settings.empty_state_collection.title | default: default_title
+        # Ohne gewaehlte Kollektion kamen die alphabetisch ersten Produkte des
+        # Shops (Abschlussprofile). Dann lieber die Hauptkategorie in ihrer
+        # Empfehlungs-Reihenfolge (w-444). Die Einstellung geht weiter vor.
+        if settings.empty_state_collection == blank and collections['teppichboden'].id != blank
+          assign collection = collections['teppichboden']
+          assign title = collection.title
+        endif
       %}
       {% paginate collection.products by 4 %}
         {% assign products = collection.products %}
