@@ -22,7 +22,7 @@ const SKRIPTE = {
   qrcode: { src: 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js', sri: 'sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k' },
 };
 const geladen = {};
-function ladeSkript(name) {
+export function ladeSkript(name) {
   if (!geladen[name]) {
     geladen[name] = new Promise((ok, fehler) => {
       const s = document.createElement('script');
