@@ -457,6 +457,22 @@
         margin-block: 12px 0;
       }
     }
+
+    /* Titel und Aktionshinweis stehen im HTML hinter der Galerie. Bei langsamer
+       Leitung malte der Browser die Galerie zuerst oben und schob sie dann
+       zweimal nach unten (Lighthouse CLS 0,218, 25.11.2026). Bis der Trenner
+       nach Titel und Hinweis geparst ist (in allen Produktvorlagen vorhanden),
+       bleibt die Galerie unsichtbar; nach 3 s erscheint sie in jedem Fall. */
+    .product-information__grid:not(:has(.product-details .divider)) .product-information__media {
+      visibility: hidden;
+      animation: tp-galerie-zeigen 0s 3s forwards;
+    }
+  }
+
+  @keyframes tp-galerie-zeigen {
+    to {
+      visibility: visible;
+    }
   }
 
   /* Desktop styles */
