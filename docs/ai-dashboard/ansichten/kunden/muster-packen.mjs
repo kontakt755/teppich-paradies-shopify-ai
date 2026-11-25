@@ -50,7 +50,6 @@ import { packRotZaehlung } from '../../lib/ampel.mjs';
 import { ampelPlakette, ampelRand, ausgelaufenPlakette, lagerPlakette } from '../../bausteine/ampel.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { kunden } from './gemeinsam.mjs';
-import { aktuellesFoto, fotoDruckFaellig, fotoDrucken, fotoKopfHtml, fotoReihe, istHandySeite } from './muster-foto.mjs';
 
 let packOffen = null;
 let packFehler = null;
@@ -783,9 +782,7 @@ function viewMusterKommtAn(d) {
       <p id="mpHandHilfe" class="small muted">Hersteller, Produkt oder Farbnummer eintippen – oder Kunde, Bestellnummer.</p>
     </div>`;
   const meldung = handMeldungHtml(d);
-  const fotoTeil = fotoKopfHtml() + fotoErgebnisHtml(d, lesend);
-  if (istHandySeite() && !q) return fotoTeil + feld + meldung;
-  if (!q) return fotoTeil + feld + meldung + viewNachLaden(d);
+  if (!q) return feld + meldung + viewNachLaden(d);
   const mitFertigen = suchwert(state.route.params, 'mpfertig') === q;
   const t = handTreffer(d.kunden, q, d.ausserhalb || [], { mitFertigen });
   const karten = t.karten.length ? `<h2 class="mp-titel mp-ohne-pfeil">${t.karten.length === 1 ? 'Gehört in' : `${t.karten.length} offene Muster passen – ältere Bestellung zuerst`}</h2>
@@ -796,45 +793,7 @@ function viewMusterKommtAn(d) {
     `<li class="mp-aussen"><div><strong>${esc(umschlagKennung(k))}</strong> · ${esc(k.name)} · ${esc(m.vorher?.produktname || m.bestellt.titel)}${m.vorher?.farbnummer ? ` <strong>Farbnr. ${esc(m.vorher.farbnummer)}</strong>` : ''}</div><div class="small muted">${k.bereich === 'gepackt' ? 'Umschlag ist schon gepackt' : 'liegt schon im Umschlag'}</div></li>`).join('')}</ul></section>` : '';
   const nichts = !t.karten.length && !t.eingelegt.length && !t.ausserhalb.length
     ? `<div class="mp-arbeitsleer"><p>${t.fertig ? 'Kein offener Umschlag braucht dieses Muster – es passt nur zu schon gepackten oder versandten Bestellungen.' : 'Nichts gefunden. Weniger Wörter versuchen, z. B. nur die Farbnummer.'}</p></div>` : '';
-  return `${fotoTeil}${feld}${meldung}${fehlen}${fertigHinweis(t.fertig, mitFertigen, q, t.fertigGenauer)}${karten}${mehr}${schon}${t.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], t.ausserhalb) : ''}${nichts}`;
-}
-
-/**
- * Ergebnis des letzten Fotos: je erkanntem Muster eine Karte, nach Umschlag sortiert (Paket fuer Paket),
- * oben "Alle Aufkleber drucken". Nach einem neuen Foto oeffnet sich der Druck einmal von selbst (nicht am
- * Handy). Abgehakte Muster fallen beim naechsten Zeichnen heraus.
- */
-function fotoErgebnisHtml(d, lesend) {
-  const f = aktuellesFoto();
-  if (!f) return '';
-  const reihe = fotoReihe(d.kunden, f.text);
-  const etiketten = reihe.flatMap(x => aufkleberFuerMuster(x.muster));
-  if (fotoDruckFaellig() && etiketten.length) queueMicrotask(() => fotoDrucken(reihe));
-  const umschlaege = new Set(reihe.map(x => x.kunde.packSchluessel)).size;
-  const text = `<details class="small muted"><summary>Gelesener Text</summary><pre class="mp-foto-text">${esc(f.text || '(nichts erkannt)')}</pre></details>`;
-  if (!reihe.length) {
-    return `<div class="notice mp-meldung" role="status"><strong>Auf dem Foto kein offenes Muster sicher erkannt.</strong> Gezählt wird nur, wenn Produktname und Farbnummer lesbar sind. Näher ran fotografieren oder die Farbnummer unten eintippen.${text}</div>`;
-  }
-  return `<section class="mp-arbeitsliste" aria-label="Erkannt auf dem Foto">
-    <h2 class="mp-titel mp-ohne-pfeil">Auf dem Foto: ${plural(reihe.length, 'Muster', 'Muster')} für ${plural(umschlaege, 'Umschlag', 'Umschläge')}</h2>
-    <p class="small">Zähl nach: Liegen mehr Muster im Paket, fehlt bei ihnen Name oder Farbnummer auf dem Foto – die tippst du unten ein. Vor dem Aufkleben Bild und Farbnummer vergleichen.</p>
-    ${etiketten.length ? `<div class="mp-summe"><button type="button" class="btn btn-primary" data-mp-foto-drucken>Alle ${etiketten.length} Aufkleber drucken</button></div>` : ''}
-    <div class="mp-karten">${reihe.map(x => karteHtml(x, { lesend })).join('')}</div>${komplettHtml(reihe)}${text}</section>`;
-}
-
-/**
- * Umschlaege, die mit diesem Foto komplett sind (Wunsch 25.11.): die Umschlagkarte mit "Alle da – gepackt,
- * verschicken…". Nicht von selbst verschickt - der Knopf bucht in Shopify mit Versandmail, das gehoert
- * hinter das Zukleben; die Karte fragt wie immer einmal nach.
- */
-function komplettHtml(reihe) {
-  const vomFoto = new Set(reihe.map(x => x.muster.lineItemId));
-  const komplett = [...new Map(reihe.map(x => [x.kunde.packSchluessel, x.kunde])).values()]
-    .filter(k => k.bereich !== 'gepackt' && k.muster.every(m => m.abgehakt || m.gesperrt || vomFoto.has(m.lineItemId)));
-  if (!komplett.length) return '';
-  return `<h2 class="mp-titel mp-ohne-pfeil">Mit diesem Foto komplett</h2>
-    <p class="small">Alle Muster dieser Umschläge sind da. Aufkleben, einlegen, zukleben – dann „Alle da – gepackt, verschicken…“. Das bucht in Shopify und schickt dem Kunden die Versandmail.</p>
-    <div class="mp-kunden">${komplett.map((k, i) => kundeHtml(k, 900 + i, { offenBeiSuche: true })).join('')}</div>`;
+  return `${feld}${meldung}${fehlen}${fertigHinweis(t.fertig, mitFertigen, q, t.fertigGenauer)}${karten}${mehr}${schon}${t.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], t.ausserhalb) : ''}${nichts}`;
 }
 
 /** Eine grosse Karte je passendem Muster: was draufsteht, wohin es gehoert, zwei Knoepfe. */
