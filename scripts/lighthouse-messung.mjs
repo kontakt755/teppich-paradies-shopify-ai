@@ -62,6 +62,8 @@ export const SEITEN = [
   { id: 'kollektion', name: 'Kollektion Teppichboden', pfad: '/collections/teppichboden' },
   { id: 'nachmass', name: 'Teppich nach Mass', pfad: '/collections/teppich-nach-mass' },
   { id: 'pdp', name: 'PDP Piumera', pfad: '/products/piumera-teppichboden-400cm-500cm' },
+  { id: 'kettel', name: 'Kettel-Seite', pfad: '/pages/kettelteppich-nach-mass' },
+  { id: 'modena', name: 'PDP Modena', pfad: '/products/vorwerk-modena-teppichboden-400cm-500cm' },
 ];
 
 /** Ausgangswerte vom 2026-09-22 (audit/shop-2-0-prelaunch/06-TESTS.md), je ein Lauf. */
@@ -169,12 +171,13 @@ export function zusammenfassen(laeufe) {
 async function vorpruefung(seiten) {
   const pfade = new Set();
   for (const s of seiten) {
-    const antwort = await fetch(BASIS + s.pfad, { redirect: 'manual' });
-    if (antwort.status !== 200) {
-      const ziel = antwort.headers.get('location') ?? '-';
-      throw new Error(`${s.pfad}: HTTP ${antwort.status} statt 200 (Ziel: ${ziel}). Umleitung wuerde mitgemessen.`);
-    }
-    const t = themePfad(await antwort.text());
+    // curl statt fetch: Shopify antwortet dem fetch von Node mit 429 (Bot-Schutz, 25.11.2026)
+    const r = spawnSync('curl', ['-s', '-A', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36',
+      '-H', 'Accept: text/html', '-H', 'Accept-Language: de-DE', '-w', '\n%{http_code} %{redirect_url}', BASIS + s.pfad], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    const ende = r.stdout.lastIndexOf('\n');
+    const [status, ziel = '-'] = r.stdout.slice(ende + 1).split(' ');
+    if (status !== '200') throw new Error(`${s.pfad}: HTTP ${status} statt 200 (Ziel: ${ziel || '-'}). Umleitung wuerde mitgemessen.`);
+    const t = themePfad(r.stdout.slice(0, ende));
     if (!t) throw new Error(`${s.pfad}: kein /cdn/shop/t/<n>/ im HTML, Theme nicht bestimmbar.`);
     console.log(`  OK  ${s.pfad.padEnd(46)} 200 ohne Umleitung, Theme-Pfad t/${t}`);
     pfade.add(t);
