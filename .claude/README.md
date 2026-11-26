@@ -36,7 +36,7 @@
 Rechner einmal installiert werden, nachdem der Ordner als vertrauenswuerdig bestaetigt ist:
 
 ```
-claude plugin install godmode@godmode --marketplace NoobyGains/godmode --scope project
+claude plugin install godmode --marketplace NoobyGains/godmode --scope project
 ```
 
 In einer Sitzung geht dasselbe mit `/plugin marketplace add NoobyGains/godmode` und
