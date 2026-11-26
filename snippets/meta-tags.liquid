@@ -230,6 +230,13 @@
   content="{{ og_description | escape_once }}"
 >
 
+{%- if request.page_type == 'metaobject' and metaobject.system.type == 'tp_teppichfarbe' -%}
+  {%- comment -%} Farbseite ohne Produkt oder Variante (archiviert, geloescht) ist leer: nicht indexieren {%- endcomment -%}
+  {%- if metaobject.produkt.value == blank or metaobject.variante.value == blank -%}
+    <meta name="robots" content="noindex">
+  {%- endif -%}
+{%- endif -%}
+
 {%- liquid
   # Vorschaubild beim Teilen. page_image ist auf Produkt- und Artikelseiten
   # gesetzt, auf Kollektionen nur bei gepflegtem Kollektionsbild und auf
