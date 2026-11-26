@@ -32,21 +32,40 @@ function meldeApiFehler(methode, pfad, status, text) {
   try { window.dispatchEvent(new CustomEvent('tp-api-fehler', { detail: `${methode} ${pfad} → ${status || 'keine Verbindung'}: ${text || ''}` })); } catch { /* nur Zusatzinfo */ }
 }
 
-export async function fetchEinkauf(path) {
+/**
+ * Pausen zwischen den Leseversuchen. Nach einem Update startet der Dienst am Mac neu und ist
+ * ein paar Sekunden weg - das soll niemand als Fehler sehen. Nur fuer Lesen: ein Schreibzugriff
+ * wird nie wiederholt.
+ */
+export const LESE_PAUSEN_MS = Object.freeze([700, 2000, 4000]);
+
+async function holeGeduldig(path, pausen) {
+  for (let i = 0; ; i += 1) {
+    try {
+      const r = await fetch(path, { cache: 'no-store' });
+      if (r.status !== 502 || i >= pausen.length) return r;
+    } catch (e) {
+      if (i >= pausen.length) throw e;
+    }
+    await new Promise(fertig => setTimeout(fertig, pausen[i]));
+  }
+}
+
+export async function fetchEinkauf(path, { pausen = LESE_PAUSEN_MS } = {}) {
   try {
-    const r = await fetch(path, { cache: 'no-store' });
+    const r = await holeGeduldig(path, pausen);
     if (!r.ok) {
       // "HTTP 500" sagt niemandem etwas, und eine Stoerung sah bisher aus wie
       // "nichts zu tun" - beides in derselben blassen Box.
       let roh = null;
       try { roh = (await r.json())?.error || null; } catch { /* kein JSON im Fehlerfall */ }
       meldeApiFehler('GET', path, r.status, roh);
-      return { verfuegbar: false, fehler: true, status: r.status, hinweis: fehlerText(r.status, roh) };
+      return { verfuegbar: false, fehler: true, status: r.status, verbindung: r.status === 502, hinweis: fehlerText(r.status, roh) };
     }
     return await r.json();
   } catch (e) {
     meldeApiFehler('GET', path, 0, e.message);
-    return { verfuegbar: false, fehler: true, hinweis: 'Keine Verbindung zum Dashboard am Mac. Läuft es noch?', roh: e.message };
+    return { verfuegbar: false, fehler: true, verbindung: true, hinweis: 'Keine Verbindung zum Dashboard am Mac. Läuft es noch?', roh: e.message };
   }
 }
 

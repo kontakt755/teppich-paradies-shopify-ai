@@ -790,6 +790,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       sofortLauf();
     }
     if (NEUBAU_MINUTEN > 0) {
+      // Der Start wartet nicht mehr auf GitHub: Aufgabenstand sofort nach dem Oeffnen des Ports holen.
+      if (!process.env.TP_DASHBOARD_DATENKOPIE) regelmaessigNeubauen();
       setInterval(regelmaessigNeubauen, NEUBAU_MINUTEN * 60_000).unref();
       console.log(`Aufgabendaten (issues.json) werden alle ${NEUBAU_MINUTEN} Minuten neu geholt.`);
     }

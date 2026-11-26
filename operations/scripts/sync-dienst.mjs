@@ -7,7 +7,7 @@
  *   node operations/scripts/sync-dienst.mjs
  *   TP_SYNC_INTERVALL_MINUTEN=5 node operations/scripts/sync-dienst.mjs
  *
- * Intervall: TP_SYNC_INTERVALL_MINUTEN (Minuten, Standard 10). Ein Lauf
+ * Intervall: TP_SYNC_INTERVALL_MINUTEN (Minuten, Standard 5). Ein Lauf
  * startet sofort, dann nach jedem Intervall wieder - unabhaengig davon, wie
  * lange der vorherige Lauf brauchte (kein Ueberlappen: die Wartezeit beginnt
  * erst, wenn aktualisieren() fertig ist).
@@ -42,7 +42,7 @@ import { mitZeitstempel } from '../lib/zeitstempel.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-export const STANDARD_INTERVALL_MINUTEN = 10;
+export const STANDARD_INTERVALL_MINUTEN = 5;
 
 /** @returns {number} Minuten, wirft bei ungueltigem Wert statt still auf den Standard zu fallen. */
 export function leseIntervallMinuten(env = process.env) {
@@ -103,8 +103,9 @@ export function erzeugeLauf({ lexikonMinuten = leseLexikonMinuten(), bestandMinu
   const erfolgAm = { lexikon: null, bestand: null };
   return async () => {
     const faellig = Object.keys(takt).filter((teil) => erfolgAm[teil] === null || jetzt() - erfolgAm[teil] >= takt[teil] * 60000);
-    // Reihenfolge wie bisher: Lexikon zuerst, Bestand zuletzt.
-    const nur = [...(faellig.includes('lexikon') ? ['lexikon'] : []), ...SCHNELLE_TEILE, ...(faellig.includes('bestand') ? ['bestand'] : [])];
+    // Bestellungen und Kunden zuerst: nach einem Neustart sind sie so nach Sekunden frisch statt
+    // erst nach der Lexikon-Massenabfrage (rund zweieinhalb Minuten).
+    const nur = [...SCHNELLE_TEILE, ...(faellig.includes('lexikon') ? ['lexikon'] : []), ...(faellig.includes('bestand') ? ['bestand'] : [])];
     const r = await aktualisiereFn({ nur });
     for (const teil of faellig) {
       if ((r?.ergebnisse ?? []).some((e) => e.teil === teil && e.erfolg)) erfolgAm[teil] = jetzt();

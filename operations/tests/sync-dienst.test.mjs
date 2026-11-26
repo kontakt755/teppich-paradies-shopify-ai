@@ -141,7 +141,9 @@ test('erzeugeLauf: Lagerbestand nur stuendlich - im ersten Lauf, dann erst nach 
   assert.deepEqual(aufrufe.map((n) => n.includes('bestand')), [true, true, false, false, true]);
   // Bestand steht am Ende - wie bisher, wenn er mitlaeuft.
   assert.equal(aufrufe[0].at(-1), 'bestand');
-  assert.equal(aufrufe[0][0], 'lexikon');
+  // Bestellungen zuerst, damit sie nach einem Neustart sofort frisch sind.
+  assert.equal(aufrufe[0][0], 'bestellungen');
+  assert.ok(aufrufe[0].indexOf('lexikon') > aufrufe[0].indexOf('warenkoerbe'));
   assert.deepEqual(aufrufe[2], ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe']);
   assert.equal(leseBestandMinuten({}), STANDARD_BESTAND_MINUTEN);
   assert.equal(leseBestandMinuten({ TP_SYNC_BESTAND_MINUTEN: '15' }), 15);

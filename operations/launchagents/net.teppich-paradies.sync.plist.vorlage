@@ -55,7 +55,7 @@
   <key>EnvironmentVariables</key>
   <dict>
     <key>TP_SYNC_INTERVALL_MINUTEN</key>
-    <string>10</string>
+    <string>5</string>
   </dict>
 
   <!-- Beim Anmelden starten und nach jedem Ende neu starten, auch nach einem
