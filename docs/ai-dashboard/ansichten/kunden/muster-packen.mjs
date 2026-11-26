@@ -254,8 +254,22 @@ function hierHtml(k) {
     + `${offen ? `<span class="small mp-hier-offen">${esc(`${plural(offen, 'Muster', 'Muster')} noch nicht bestellt${gruende.length ? `: ${gruende.join('; ')}` : ''}`)}</span>` : ''}`;
 }
 
+/** Kopfzeile (26.11.): welche Muster noch kommen muessen, ohne Aufklappen. Lager und Gesperrtes sagen Stempel bzw. Plakette. */
+function fehltHtml(k) {
+  if (k.bereich === 'gepackt') return '';
+  const fehlen = k.muster.filter(m => !m.abgehakt && !m.gesperrt && !m.lagerMoeglich && ['bestellt', 'offen'].includes(m.stand));
+  if (!fehlen.length) return '';
+  const name = m => `${(m.etikett?.serie ? `${m.etikett.serie} ${m.etikett.farbe || ''}` : `${kurzName(m.bestellt.titel).replace(/^Muster:?\s+/, '')} ${m.bestellt.farbe || ''}`).trim()}`;
+  const rest = fehlen.length > 3 ? ` · +${fehlen.length - 3} weitere` : '';
+  // Je Lieferant einmal nennen, nicht hinter jedem Muster.
+  const je = new Map();
+  for (const m of fehlen.slice(0, 3)) je.set(m.lieferant || '', [...(je.get(m.lieferant || '') || []), name(m)]);
+  const text = [...je].map(([lieferant, namen]) => `${namen.join(' · ')}${lieferant ? ` – ${lieferant}` : ''}`).join('; ');
+  return `<span class="small mp-fehlt-liste">${esc(`Fehlt: ${text}${rest}`)}</span>`;
+}
+
 /** Plaketten-Gruende, deren Wort schon eine Tageszahl traegt ("Überfällig · 17 Tage beim Lieferanten", "Hängt · 3 Werktage"). */
-const PLAKETTE_MIT_TAGEN = new Set(['ueberfaellig', 'nachhaken', 'haengt']);
+const PLAKETTE_MIT_TAGEN = new Set(['ueberfaellig', 'nachhaken', 'haengt', 'liegt']);
 const tagKurz = iso => new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
 
 /**
@@ -275,6 +289,7 @@ function datumHtml(k) {
   const beimLieferanten = k.muster.map(m => m.bestelltAm).filter(gueltig).sort();
   return `${zeile ? `<span class="small muted">${esc(zeile)}</span>` : ''}`
     + hierHtml(k)
+    + fehltHtml(k)
     + `${beimLieferanten.length ?`<span class="small muted">${esc(`beim Lieferanten bestellt${wannText(beimLieferanten, tagDatum)}`)}</span>` : ''}`;
 }
 
@@ -286,7 +301,10 @@ function bestelldatenHtml(k) {
 
 const adresseText = a => [a?.strasse, [a?.plz, a?.ort].filter(Boolean).join(' ')].filter(v => v && v !== '–').join(', ');
 
-const BEREICH_TEXT = Object.freeze({ packen: 'packbereit', warten: 'wartet auf Ware', klaeren: 'zu klären', gepackt: 'gepackt' });
+const BEREICH_TEXT = Object.freeze({ packen: 'packbereit', warten: 'wartet auf Ware', klaeren: 'zu klären', direkt: 'kommt vom Hersteller', gepackt: 'gepackt' });
+
+/** Reiter eines Umschlags: reiner Direktversand steht nicht unter "Zu klären" (26.11.). */
+const reiterVon = k => (k.nurDirekt ? 'direkt' : k.bereich);
 
 /**
  * Weitere Umschlaege desselben Empfaengers (andere Bestelltage, Rueckmeldung 29.10.): ohne
@@ -307,8 +325,8 @@ function weitereHtml(k) {
  * steht nur das Wort - die Zahl steht schon daneben.
  */
 function rotImReiter(liste, bereich) {
-  if (!['packen', 'klaeren', 'warten', 'gepackt'].includes(bereich)) return '';
-  const imReiter = liste.filter(k => k.bereich === bereich);
+  if (!['packen', 'klaeren', 'warten', 'direkt', 'gepackt'].includes(bereich)) return '';
+  const imReiter = liste.filter(k => reiterVon(k) === bereich);
   const { n, wort } = packRotZaehlung(imReiter);
   return n ? `<span class="mp-filterampel">${ampelPlakette('rot', n === imReiter.length ? wort : `${n} ${wort}`)}</span>` : '';
 }
@@ -564,7 +582,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set(), hauptkno
       </div>
       <div class="mp-meta">
         ${ampel ? ampelPlakette(ampel.stufe, ampel.wort, { titel: ampel.titel }) : ''}
-        <span class="small muted">${k.muster.length} Muster${nachbestelltKopf(k)} · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
+        <span class="small muted">${k.muster.length} Muster${nachbestelltKopf(k)} · ${BEREICH_TEXT[reiterVon(k)] || 'gepackt'}</span>
         ${datumHtml(k)}
         ${gepacktKopfHtml(k, { hauptknopf })}
       </div>
@@ -626,18 +644,20 @@ export function viewKundenMusterPacken() {
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const zielKunde = d.kunden.find(k => k.packSchluessel === ziel);
   // "Alle offenen" zuerst und als Standard: jede Musterbestellung steht sofort in der Packstation.
-  const bereiche = [['offen', 'Alle offenen'], ['packen', 'Packbereit'], ['klaeren', 'Zu klären'], ['warten', 'Wartet auf Ware'], ['gepackt', 'Gepackt'], ['erledigt', 'Erledigt']];
+  const bereiche = [['offen', 'Alle offenen'], ['packen', 'Packbereit'], ['klaeren', 'Zu klären'], ['warten', 'Wartet auf Ware'], ['direkt', 'Vom Hersteller'], ['gepackt', 'Gepackt'], ['erledigt', 'Erledigt']];
   const erledigt = erledigteBestellungen(d.ausserhalb);
   const angefordert = state.route.params.get('mpbereich');
-  const aktiv = suche ? 'alle' : zielKunde?.bereich || (bereiche.some(([b]) => b === angefordert) || angefordert === 'alle' ? angefordert : 'offen');
+  const aktiv = suche ? 'alle' : (zielKunde && reiterVon(zielKunde)) || (bereiche.some(([b]) => b === angefordert) || angefordert === 'alle' ? angefordert : 'offen');
   const linkFuer = bereich => {
     const p = new URLSearchParams(state.route.params);
     p.set('tab', 'muster'); p.set('mpbereich', bereich);
     p.delete('umschlag'); p.delete('mpq'); p.delete('mp');
     return `#/kunden?${p}`;
   };
-  const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => {
-    const n = b === 'erledigt' ? erledigt.length : d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : k.bereich === b)).length;
+  // "Vom Hersteller" erscheint nur, wenn dort etwas steht.
+  const reiter = bereiche.filter(([b]) => b !== 'direkt' || aktiv === b || d.kunden.some(k => reiterVon(k) === b));
+  const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${reiter.map(([b, label]) => {
+    const n = b === 'erledigt' ? erledigt.length : d.kunden.filter(k => (b === 'offen' ? k.bereich !== 'gepackt' : reiterVon(k) === b)).length;
     // 0 tritt zurueck (grau), damit die Listen mit Arbeit hervorstechen.
     return `<a class="btn${aktiv === b ? ' btn-primary' : n ? '' : ' mp-null'}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${n}</span>${rotImReiter(d.kunden, b)}</a>`;
   }).join('')}</nav>`;
@@ -648,13 +668,13 @@ export function viewKundenMusterPacken() {
   const treffer = new Map((gefunden?.treffer || []).map(t => [t.packSchluessel, new Set(t.muster)]));
   // Offene Arbeit nach Dringlichkeit: erst Packbereites, dann zu Klaerendes, dann Wartendes; in jeder
   // Gruppe zuerst die Umschlaege, in denen schon Muster liegen.
-  const RANG = { packen: 0, klaeren: 1, warten: 2 };
+  const RANG = { packen: 0, klaeren: 1, warten: 2, direkt: 3 };
   // Innerhalb der Gruppe zuerst, was den Kunden aufhaelt (Ampel rot), dann angefangene Umschlaege (#1720).
   const rot = k => k.ampel?.stufe === 'rot';
-  const reihe = (x, y) => (RANG[x.bereich] ?? 3) - (RANG[y.bereich] ?? 3) || rot(y) - rot(x) || angefangen(y) - angefangen(x);
+  const reihe = (x, y) => (RANG[reiterVon(x)] ?? 4) - (RANG[reiterVon(y)] ?? 4) || rot(y) - rot(x) || angefangen(y) - angefangen(x);
   const imReiter = gefunden ? d.kunden.filter(k => treffer.has(k.packSchluessel))
     : aktiv === 'offen' ? d.kunden.filter(k => k.bereich !== 'gepackt').sort(reihe)
-      : aktiv === 'alle' ? d.kunden : d.kunden.filter(k => k.bereich === aktiv).sort(reihe);
+      : aktiv === 'alle' ? d.kunden : d.kunden.filter(k => reiterVon(k) === aktiv).sort(reihe);
   // Bei Suche, Direktlink und Gepacktem gilt der Umschlagfilter nicht - dort soll nichts verschwinden.
   const umschlagGilt = !gefunden && !zielKunde && !['gepackt', 'erledigt'].includes(aktiv);
   // Object.hasOwn: "constructor" aus der Adresszeile ist kein Filter (TypeError beim Seitentitel, Review 29.10.).
@@ -692,7 +712,7 @@ export function viewKundenMusterPacken() {
   // Beide Druckknoepfe teilen eine Zeile: am Handy rueckt die erste Bestellung nach oben.
   const blaetter = blaetterKnopf(sichtbar.filter(k => !k.gepackt));
   const druck = druckTeile || blaetter ? `<div class="mp-summe mp-drucken">${druckTeile}${blaetter}</div>` : '';
-  const leerText = suche ? (gefunden.ausserhalb.length ? 'Kein offener Umschlag passt – siehe unten.' : gefunden.fertig ? 'Kein offener Umschlag passt – nur schon gepackte oder versandte Bestellungen.' : 'Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen. Weniger Wörter versuchen, z. B. nur die Farbnummer.') : imReiter.length && umschlag ? UMSCHLAG_LEER[umschlag] : aktiv === 'offen' ? 'Gerade keine offene Musterbestellung.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : 'Nichts offen: jeder gepackte Umschlag ist als verschickt eingetragen.';
+  const leerText = suche ? (gefunden.ausserhalb.length ? 'Kein offener Umschlag passt – siehe unten.' : gefunden.fertig ? 'Kein offener Umschlag passt – nur schon gepackte oder versandte Bestellungen.' : 'Nichts gefunden – weder in der Packliste noch in anderen Musterbestellungen. Weniger Wörter versuchen, z. B. nur die Farbnummer.') : imReiter.length && umschlag ? UMSCHLAG_LEER[umschlag] : aktiv === 'offen' ? 'Gerade keine offene Musterbestellung.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : aktiv === 'direkt' ? 'Gerade kommt nichts direkt vom Hersteller.' : 'Nichts offen: jeder gepackte Umschlag ist als verschickt eingetragen.';
   const leer = `<div class="mp-arbeitsleer"><p>${leerText}</p>${imReiter.length && umschlag ? `<p><a href="${esc(umschlagLink(''))}">Alle ${plural(imReiter.length, 'Umschlag', 'Umschläge')} dieser Liste zeigen</a></p>`
     : ['packen', 'offen'].includes(aktiv) && !suche ? `<p>Eingetroffene Muster legst du unter <a href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a> ein, oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
   const titel = (aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1])

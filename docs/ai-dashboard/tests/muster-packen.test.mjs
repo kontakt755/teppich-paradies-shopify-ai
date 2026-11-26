@@ -743,3 +743,24 @@ test('Musterversand: erstatten nur bei bezahltem Versand mit gesperrtem Muster; 
   const ohneSperre = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(97, '2026-12-02', 'Berta Beispiel', [pos(971, '101')], { musterversand: 'bezahlt' })] }).kunden[0];
   assert.equal(musterversandErstattung(ohneSperre).erstatten.length, 0, 'nichts fehlt: nichts erstatten');
 });
+
+test('Packbereit mit Alter (26.11.): ab 2 Tagen gelb, ab 4 Tagen rot, gezaehlt ab dem letzten Wareneingang', () => {
+  const bau = geliefertAm => musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-10T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')])],
+    eintragVon: (o, l) => ({ status: 'geliefert', geliefertAm: l.endsWith('/11') ? '2026-10-12T09:00:00Z' : geliefertAm }) }).kunden[0];
+  const frisch = bau('2026-10-20T09:00:00Z');
+  assert.equal(frisch.bereich, 'packen');
+  assert.equal(frisch.packbereitTage, 1);
+  assert.equal(frisch.ampel.stufe, null);
+  assert.deepEqual([bau('2026-10-19T09:00:00Z').ampel.stufe, bau('2026-10-19T09:00:00Z').ampel.wort], ['gelb', 'Liegt bereit · 2 Tage']);
+  assert.deepEqual([bau('2026-10-17T09:00:00Z').ampel.stufe, bau('2026-10-17T09:00:00Z').ampel.wort], ['rot', 'Liegt bereit · 4 Tage']);
+});
+
+test('Reiner Direktversand (26.11.) ist markiert; mit weiterem Klaerfall bleibt er "zu klaeren"', () => {
+  const nur = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Cem Test', [pos(11, '101', { musterRoute: 'SUPPLIER_DIRECT' })])] }).kunden[0];
+  assert.equal(nur.nurDirekt, true);
+  assert.equal(nur.ampel.stufe, 'gelb', 'noch nicht bestellt bleibt sichtbar');
+  assert.notEqual(nur.ampel.grund, 'pruefen');
+  const gemischt = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(2, '2026-10-20T09:00:00Z', 'Dana Test', [pos(21, '101', { musterRoute: 'SUPPLIER_DIRECT' }), pos(22, '102')])] }).kunden[0];
+  assert.equal(gemischt.nurDirekt, false);
+  assert.equal(gemischt.bereich, 'klaeren');
+});

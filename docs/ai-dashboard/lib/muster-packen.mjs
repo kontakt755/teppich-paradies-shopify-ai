@@ -284,6 +284,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           ...(haengtWerktage ? { haengtWerktage } : {}),
           ...(offenTage !== null ? { offenTage } : {}),
           ...(direkt(a, p) ? { direkt: true } : {}),
+          ...(stand === 'da' && belegt(eintrag?.geliefertAm) ? { geliefertAm: text(eintrag.geliefertAm) } : {}),
         };
         m.ampel = packMusterAmpel(m, { jetzt, bestellenRotAb: FRISTEN.bestellen[1] });
         g.muster.push(m);
@@ -330,6 +331,14 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       // Ein Haken bestaetigt das physisch eingelegte Muster, sonst braucht es bestaetigten Bestand.
       bereich: istGepackt ? 'gepackt' : klaerung || gesperrt || hinweise.length || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
     };
+    // Nichts zu klaeren ausser "der Hersteller schickt direkt": eigener Reiter statt "Zu klaeren" (26.11.).
+    umschlag.nurDirekt = !istGepackt && muster.every(m => m.direkt) && !klaerung && !gesperrt && !g.teilweiseErstattet && !unvollstaendig.length && !adressAufkleber.fehlt.length;
+    // Packbereit seit dem letzten Wareneingang; ohne Beleg (Lagermuster) seit der Kundenbestellung.
+    if (umschlag.bereich === 'packen') {
+      const seitWann = muster.map(m => m.geliefertAm || m.abgehakt?.zeit || bestellungen.find(b => b.orderId === m.orderId)?.datum).filter(belegt)
+        .sort((x, y) => Date.parse(x) - Date.parse(y)).at(-1);
+      umschlag.packbereitTage = kalendertage(seitWann, jetzt);
+    }
     umschlag.ampel = packUmschlagAmpel(umschlag, { versandProblem: text(versandProbleme?.[pk]?.problem) || null });
     return umschlag;
   };
@@ -341,7 +350,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     // Weitere Umschlaege desselben Empfaengers (andere Bestelltage): die Ansicht nennt sie in der
     // Kopfzeile, damit niemand die Bestellungen verwechselt.
     for (const u of umschlaege) {
-      u.weitere = umschlaege.filter(x => x !== u).map(x => ({ packSchluessel: x.packSchluessel, bestellungen: x.bestellungen.map(b => b.orderName), seit: x.seit, bereich: x.bereich }));
+      u.weitere = umschlaege.filter(x => x !== u).map(x => ({ packSchluessel: x.packSchluessel, bestellungen: x.bestellungen.map(b => b.orderName), seit: x.seit, bereich: x.nurDirekt ? 'direkt' : x.bereich }));
     }
     liste.push(...umschlaege);
   }
