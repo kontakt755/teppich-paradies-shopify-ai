@@ -729,3 +729,30 @@ test('Bereits im Lager (26.11.): Stempel in der Kopfzeile, Filter und Hinweis un
   assert.doesNotMatch(kopf(ohne), /mp-stempel-lager/);
   assert.doesNotMatch(ohne, /mp-stempel-lager/);
 });
+
+test('Kopfzeile nennt die fehlenden Muster mit Lieferant (26.11.)', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const k = kunde(1, 'warten');
+  const m = k.muster[0];
+  k.muster = [{ ...m, lieferant: 'Lieferant A' }, { ...m, lineItemId: 'l2', etikett: { serie: 'Test', farbe: 'Grau' }, stand: 'offen' },
+    { ...m, lineItemId: 'l3', stand: 'da' }, { ...m, lineItemId: 'l4', stand: 'lager' }, { ...m, lineItemId: 'l5', stand: 'bestellt', abgehakt: { zeit: 'x' } }];
+  assert.match(kopf(ansicht('tab=muster', [k])), /<span class="small mp-fehlt-liste">Fehlt: Test Sand – Lieferant A; Test Grau<\/span>/);
+  k.muster = [1, 2, 3, 4, 5].map(n => ({ ...m, lineItemId: `x${n}` }));
+  assert.match(kopf(ansicht('tab=muster', [k])), /Fehlt: Test Sand · Test Sand · Test Sand · \+2 weitere/);
+  assert.doesNotMatch(ansicht('tab=muster', [kunde(2, 'packen')].map(u => ({ ...u, muster: [{ ...u.muster[0], stand: 'da' }] }))), /mp-fehlt-liste/);
+});
+
+test('Reiner Direktversand steht im Reiter "Vom Hersteller", nicht unter "Zu klären" (26.11.)', () => {
+  const direkt = { ...kunde(1, 'klaeren'), direktversand: true, nurDirekt: true };
+  const liste = [direkt, kunde(2, 'klaeren'), kunde(3, 'warten')];
+  const reihe = html => [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  const alle = ansicht('tab=muster', liste);
+  assert.match(alle, /Zu klären <span class="mp-filterzahl">1</);
+  assert.match(alle, /Vom Hersteller <span class="mp-filterzahl">1</);
+  assert.deepEqual(reihe(alle), ['order2', 'order3', 'order1']);
+  assert.deepEqual(reihe(ansicht('tab=muster&mpbereich=klaeren', liste)), ['order2']);
+  const h = ansicht('tab=muster&mpbereich=direkt', liste);
+  assert.deepEqual(reihe(h), ['order1']);
+  assert.match(h, /kommt vom Hersteller/);
+  assert.deepEqual(reihe(ansicht('tab=muster&umschlag=order1', liste)), ['order1']);
+});
