@@ -45,6 +45,8 @@
 .mp-stempelzeile { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
 .mp-stempel { display: inline-flex; align-items: center; padding: 3px 10px; border: 2px solid var(--text); border-radius: 6px; color: var(--text); font-size: .85rem; font-weight: 700; }
 .mp-stempel-drin { border-color: var(--warn); background: var(--warn); color: var(--surface); }
+/* Bereits im Lager (26.11.): dieselbe Flaeche wie die Plakette am Muster. */
+.mp-stempel-lager { border-color: var(--text); background: var(--warn); color: var(--surface); }
 .mp-karte-ziel .mp-stempelzeile { margin: 2px 0; }
 /* Weitere Umschlaege desselben Empfaengers (andere Bestelltage, 29.10.): in der Kopfzeile, damit niemand die Bestellungen verwechselt. */
 .mp-weitere { margin: 2px 0 4px; color: var(--text-2); }

@@ -232,22 +232,20 @@ function warteAnmerkung(k) {
  */
 /**
  * Kopfzeile, ohne Aufklappen (Inhaber 29.10.: "wichtig ist immer zu sehen, ob wir es schon hier haben oder
- * ob es bestellt wurde"): was schon im Haus ist - im Umschlag, angekommen oder im Musterlager samt Ort.
+ * ob es bestellt wurde"): was schon im Haus ist - im Umschlag oder angekommen. Das Musterlager sagt der
+ * Stempel darueber (lagerStempel).
  * Was beim Lieferanten bestellt ist, steht in der Zeile darunter.
  */
 function hierHtml(k) {
   if (k.bereich === 'gepackt') return '';
   const drin = k.muster.filter(m => m.abgehakt).length;
   const da = k.muster.filter(m => !m.abgehakt && m.stand === 'da').length;
-  const lager = k.muster.filter(m => !m.abgehakt && m.stand === 'lager');
-  const orte = [...new Set(lager.map(m => m.lagerOrt).filter(Boolean))];
   const offeneMuster = k.muster.filter(m => !m.abgehakt && m.stand === 'offen' && !m.gesperrt);
   const offen = offeneMuster.length;
   const gruende = [...new Set(offeneMuster.map(m => m.automatikGrund).filter(Boolean))];
   const teile = [
     drin ? `${drin} im Umschlag` : '',
     da ? `${da} angekommen` : '',
-    lager.length ? `${lager.length} im Musterlager${orte.length ? ` (${orte.join(', ')})` : ''}` : '',
   ].filter(Boolean);
   // "n Muster kommen nicht" steht auf der Plakette darueber (Ampel); die Farbe traegt nur sie.
   // Liegt nur etwas im Umschlag, sagt das schon die Plakette links ("5 von 6 Mustern schon im Umschlag").
@@ -319,16 +317,33 @@ function rotImReiter(liste, bereich) {
 const angefangen = k => k.bereich !== 'gepackt' && k.muster.some(m => m.abgehakt);
 
 /**
+ * Muster eines Umschlags, die noch ins Kuvert muessen und im eigenen Musterlager liegen: von dort zugeteilt
+ * oder beim Lieferanten bestellt, aber frei im Lager. Gesperrte zaehlen nicht (die Zeile zeigt "kommt nicht").
+ */
+const imLagerOffen = k => k.bereich === 'gepackt' ? [] : k.muster.filter(m => !m.abgehakt && !m.gesperrt && (m.stand === 'lager' || m.lagerMoeglich));
+
+/** Stempel in der Kopfzeile (26.11.): ohne Aufklappen sehen, was nicht mehr vom Lieferanten kommen muss. */
+function lagerStempel(k) {
+  const lager = imLagerOffen(k);
+  if (!lager.length) return '';
+  const n = k.muster.length;
+  const orte = [...new Set(lager.map(m => (m.stand === 'lager' ? m.lagerOrt : m.lagerMoeglich.ort)).filter(Boolean))];
+  const was = lager.length < n ? `${lager.length} von ${n} Mustern bereits im Lager` : n === 1 ? 'Muster bereits im Lager' : `Alle ${n} Muster bereits im Lager`;
+  return `<span class="mp-stempel mp-stempel-lager">✓ ${esc(`${was}${orte.length ? ` – Fach ${orte.join(', ')}` : ''}`)}</span>`;
+}
+
+/**
  * Filter "Umschlag:" (Inhaber 28.10.). "Noch vorbereiten" sind genau die Karten, bei denen Schritt 1
  * "Bestellung drucken" leuchtet - ein Haken zaehlt dort schon als gedruckt. Die Chips schliessen sich
  * nicht aus: ein vorbereiteter Umschlag kann auch schon Muster enthalten.
  */
-const UMSCHLAG = [['', 'alle'], ['vorbereiten', 'noch vorbereiten'], ['vorbereitet', 'vorbereitet'], ['drin', 'Muster schon drin']];
-const UMSCHLAG_PASST = { vorbereiten: k => !istGedruckt(k) && !angefangen(k), vorbereitet: istGedruckt, drin: angefangen };
+const UMSCHLAG = [['', 'alle'], ['vorbereiten', 'noch vorbereiten'], ['vorbereitet', 'vorbereitet'], ['drin', 'Muster schon drin'], ['lager', 'bereits im Lager']];
+const UMSCHLAG_PASST = { vorbereiten: k => !istGedruckt(k) && !angefangen(k), vorbereitet: istGedruckt, drin: angefangen, lager: k => imLagerOffen(k).length > 0 };
 const UMSCHLAG_LEER = {
   vorbereiten: 'Alle Umschläge in dieser Liste sind vorbereitet.',
   vorbereitet: 'In dieser Liste ist noch kein Umschlag vorbereitet.',
   drin: 'In dieser Liste liegen noch in keinem Umschlag Muster.',
+  lager: 'Für diese Liste liegt kein Muster im Musterlager.',
 };
 
 /**
@@ -340,6 +355,7 @@ function stempelHtml(k) {
   if (k.bereich === 'gepackt') return '';
   const drin = k.muster.filter(m => m.abgehakt).length, n = k.muster.length;
   const teile = [
+    lagerStempel(k),
     k.gedruckt ? `<span class="mp-stempel">Umschlag vorbereitet · ${esc(datumKurz(k.gedruckt.zeit))}</span>` : '',
     drin ? `<span class="mp-stempel mp-stempel-drin">${drin < n ? `${drin} von ${n} Mustern schon im Umschlag` : n === 1 ? 'Muster liegt im Umschlag' : `Alle ${n} Muster im Umschlag`}</span>` : '',
   ].filter(Boolean);
@@ -681,11 +697,14 @@ export function viewKundenMusterPacken() {
     : ['packen', 'offen'].includes(aktiv) && !suche ? `<p>Eingetroffene Muster legst du unter <a href="#/kunden?tab=muster&amp;mp=laden">Muster kommt an</a> ein, oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
   const titel = (aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1])
     + (umschlag ? ` · Umschlag ${UMSCHLAG.find(([w]) => w === umschlag)[1]}` : '');
+  // Packbereit zeigt nur vollstaendige Umschlaege: Lagermuster in den uebrigen nicht uebersehen (26.11.).
+  const lagerDaneben = aktiv === 'packen' && !gefunden ? d.kunden.filter(k => k.bereich !== 'packen' && imLagerOffen(k).length).length : 0;
+  const lagerHinweis = lagerDaneben ? `<p class="notice"><a href="${esc(`${linkFuer('offen')}&mpumschlag=lager`)}">${lagerDaneben === 1 ? '1 weiterer Umschlag hat Muster bereits im Lager' : `${lagerDaneben} weitere Umschläge haben Muster bereits im Lager`}</a></p>` : '';
   if (aktiv === 'erledigt') return `${umschalter}${kopf}${filter}${ausschlussHinweis}${suchfeld()}${erledigtHtml(erledigt)}`;
   return `${umschalter}${kopf}${filter}${umschlagFilter}${ausschlussHinweis}
     ${suchfeld(`<button type="button" class="btn btn-sm btn-ghost" data-mp-eigene>Eigene Aufkleber…</button>`)}
     ${suche ? `<p class="small muted">Die Suche berücksichtigt alle offenen Umschläge und auch Musterbestellungen außerhalb der Packliste – auch Hersteller, Herstellerprodukt, Kollektion, Farb- und Artikelnummer. Alle Kunden und Produkte findest du über die Suche oben.${(sichtbar.length || gefunden.ausserhalb.length) && gefunden.fehlen.length ? ` Nicht gefunden: ${gefunden.fehlen.map(w => `„${esc(w)}“`).join(', ')} – gezeigt ${!sichtbar.length ? 'sind die Bestellungen, die' : sichtbar.length === 1 ? 'ist der Umschlag, der' : 'sind die Umschläge, die'} zu den übrigen Wörtern am besten ${sichtbar.length === 1 ? 'passt' : 'passen'}.` : ''} <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>${fertigHinweis(gefunden.fertig, mitFertigen, suche, gefunden.fertigGenauer)}` : ''}
-    ${druck}<section class="mp-arbeitsliste" aria-label="${esc(titel)}">${aktiv === 'gepackt' && !gefunden ? gepacktBereich(sichtbar, leer) : `<h2 class="mp-titel">${esc(titel)}</h2>
+    ${druck}<section class="mp-arbeitsliste" aria-label="${esc(titel)}">${aktiv === 'gepackt' && !gefunden ? gepacktBereich(sichtbar, leer) : `<h2 class="mp-titel">${esc(titel)}</h2>${lagerHinweis}
     ${sichtbar.length ? `<div class="mp-kunden">${sichtbar.map((k, i) => kundeHtml(k, i + 1, { offenBeiSuche: aufklappen, treffer: treffer.get(k.packSchluessel) })).join('')}</div>` : leer}`}</section>
     ${gefunden?.ausserhalb.length ? ausserhalbHtml(d.ausserhalb || [], gefunden.ausserhalb) : ''}
     <p class="small muted">Fehlt eine Bestellung? <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Bestellungen – Muster →</a>.</p>`;

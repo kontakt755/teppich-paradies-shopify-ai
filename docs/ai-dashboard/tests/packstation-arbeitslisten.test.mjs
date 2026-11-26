@@ -434,7 +434,8 @@ test('Kopfzeile sagt ohne Aufklappen, was schon hier liegt (mit Lagerort) und wa
   const k = kunde(1, 'packen');
   k.muster = [{ ...k.muster[0], stand: 'lager', lagerOrt: 'Resteladen' }, { ...k.muster[0], lineItemId: 'l2', stand: 'lager', lagerOrt: 'Resteladen' },
     { ...k.muster[0], lineItemId: 'l3', stand: 'da' }, { ...k.muster[0], lineItemId: 'l4', stand: 'da', abgehakt: { zeit: 'x' } }];
-  assert.match(kopf(ansicht('tab=muster', [k])), /<span class="small mp-hier-da">Liegt hier: 1 im Umschlag · 1 angekommen · 2 im Musterlager \(Resteladen\)<\/span>/);
+  assert.match(kopf(ansicht('tab=muster', [k])), /<span class="small mp-hier-da">Liegt hier: 1 im Umschlag · 1 angekommen<\/span>/);
+  assert.match(kopf(ansicht('tab=muster', [k])), /2 von 4 Mustern bereits im Lager – Fach Resteladen/);
   const w = kunde(2, 'warten');
   w.muster = [{ ...w.muster[0], stand: 'offen' }];
   const h = kopf(ansicht('tab=muster', [w]));
@@ -701,4 +702,30 @@ test('Kopf am Handy: beide Druckknoepfe teilen eine Zeile, der Platzhalter ist k
   assert.match(druck, /data-mp-blatt/);
   assert.doesNotMatch(html.match(/<div class="toolbar mp-suche">[\s\S]*?<\/div>/)[0], /data-mp-blatt/);
   assert.match(html, /placeholder="Muster oder Kunde"/);
+});
+
+test('Bereits im Lager (26.11.): Stempel in der Kopfzeile, Filter und Hinweis unter Packbereit', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const reihe = html => [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  const teils = kunde(2, 'warten');
+  teils.muster = [{ ...teils.muster[0], stand: 'lager', lagerOrt: 'Büro' }, { ...teils.muster[0], lineItemId: 'l2b', stand: 'bestellt' }];
+  const ganz = kunde(3, 'klaeren');
+  ganz.muster = [{ ...ganz.muster[0], stand: 'bestellt', lagerMoeglich: { id: 'ml-1', ort: null } }];
+  const liste = [kunde(1, 'packen'), teils, ganz];
+
+  const alle = ansicht('tab=muster', liste);
+  assert.match(alle, /<span class="mp-stempel mp-stempel-lager">✓ 1 von 2 Mustern bereits im Lager – Fach Büro<\/span>/);
+  assert.match(alle, /<span class="mp-stempel mp-stempel-lager">✓ Muster bereits im Lager<\/span>/);
+  assert.match(alle, /bereits im Lager<span class="c">2<\/span>/);
+  assert.deepEqual(reihe(ansicht('tab=muster&mpumschlag=lager', liste)).sort(), ['order2', 'order3']);
+  assert.match(ansicht('tab=muster&mpbereich=packen', liste), /<a href="#\/kunden\?tab=muster&amp;mpbereich=offen&amp;mpumschlag=lager">2 weitere Umschläge haben Muster bereits im Lager<\/a>/);
+
+  // Eingelegt, gesperrt oder gepackt: kein Stempel.
+  const drin = kunde(4, 'packen');
+  drin.muster = [{ ...drin.muster[0], stand: 'lager', abgehakt: { zeit: 'x' } }];
+  const zu = kunde(5, 'klaeren');
+  zu.muster = [{ ...zu.muster[0], stand: 'bestellt', lagerMoeglich: { id: 'ml-2' }, gesperrt: { imShop: true } }];
+  const ohne = ansicht('tab=muster', [drin, zu]);
+  assert.doesNotMatch(kopf(ohne), /mp-stempel-lager/);
+  assert.doesNotMatch(ohne, /mp-stempel-lager/);
 });
