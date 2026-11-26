@@ -90,5 +90,5 @@ test('Eigenes Template bewahrt natives Raster, Filter, Sortierung und Pagination
   assert.deepEqual(customized.sections.main.settings, original.settings);
   assert.deepEqual(customized.sections.main.blocks.filters, original.blocks.filters);
   assert.deepEqual(customized.sections.main.blocks['product-card'].block_order, original.blocks['product-card'].block_order);
-  assert.deepEqual(customized.order, ['section', 'teppicharten', 'main']);
+  assert.deepEqual(customized.order, ['section', 'teppicharten', 'main', 'tp_kategorie_beschreibung']);
 });
