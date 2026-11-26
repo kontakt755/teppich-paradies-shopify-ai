@@ -114,6 +114,14 @@
         >
           {{ product.title | escape }}
         </p>
+        {%- comment -%}
+          Gesamtpreis des Rechners am Handy (Kaufanalyse 26.11.2026). Fuellt
+          assets/sticky-add-to-cart.js mit dem Text des Rechners.
+        {%- endcomment -%}
+        <p class="sticky-add-to-cart__gesamt" data-testid="sticky-total-display" hidden>
+          <span class="visually-hidden">Gesamtpreis</span>
+          <span class="sticky-add-to-cart__gesamt-wert"></span>
+        </p>
         <div
           class="sticky-add-to-cart__variant"
           data-testid="sticky-variant-title"
@@ -339,6 +347,10 @@
     font-weight: var(--font-weight-semibold);
   }
 
+  .sticky-add-to-cart__gesamt {
+    display: none;
+  }
+
   .sticky-add-to-cart__button {
     height: var(--height-buy-buttons);
     position: relative;
@@ -538,6 +550,30 @@
     .sticky-add-to-cart__bar .sticky-add-to-cart__price,
     .sticky-add-to-cart__bar .sticky-add-to-cart__price * {
       font-size: var(--tp-fs-sm);
+    }
+  }
+
+  /* Gesamtpreis des Rechners: am Handy ueber Mass bzw. Farbe in der
+     Infospalte. Dort passt er auch unter 390 px neben "Muster" und
+     Warenkorb-Knopf; der Preis der Leiste (m²) weicht ihm. */
+  @media screen and (max-width: 749px) {
+    .sticky-add-to-cart__bar .sticky-add-to-cart__gesamt:not([hidden]) {
+      display: block;
+      margin: 0;
+      white-space: nowrap;
+      font-size: var(--tp-fs-md);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--tp-hauptaktion, #c8102e);
+    }
+
+    .sticky-add-to-cart__bar:has(.sticky-add-to-cart__gesamt:not([hidden])) .sticky-add-to-cart__price {
+      display: none;
+    }
+
+    /* Der Preis wird nie gekuerzt, dafuer gibt der Knopf Breite ab. */
+    .sticky-add-to-cart__bar .sticky-add-to-cart__info:has(.sticky-add-to-cart__gesamt:not([hidden])) {
+      min-width: 6.5rem;
     }
   }
 
