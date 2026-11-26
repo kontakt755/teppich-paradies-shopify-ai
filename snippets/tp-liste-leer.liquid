@@ -1,0 +1,15 @@
+{%- doc -%}
+  Marke einer leeren Produktliste (sections/product-list, "Ohne Produkte ausblenden").
+  Blendet zugleich den zugehoerigen Reiter in sections/tp-start-tabs aus, schon beim
+  Aufbau der Seite. Bewusst hier und nicht als "html:has(...)" im Reiter-Abschnitt:
+  eine :has-Regel an html laesst den Browser bei jeder DOM-Aenderung die Stile der
+  ganzen Seite neu berechnen (Startseite 26.11.: rund vier Fuenftel der Stilzeit).
+  Im Theme-Editor bleiben alle Reiter sichtbar.
+
+  @param {string} section_id - section.id der Produktliste
+{%- enddoc -%}
+<div data-tp-liste-leer hidden></div>
+{%- unless request.design_mode -%}
+  {%- assign tp_ll_key = section_id | split: '__' | last -%}
+  <style>.tp-tabs .tp-tabs__tab[data-tp-target="{{ tp_ll_key }}"] { display: none; }</style>
+{%- endunless -%}

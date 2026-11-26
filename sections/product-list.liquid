@@ -63,10 +63,11 @@
   "Aktuelle Angebote" lesen dieselbe Kollektion mit verschiedenen Vorlagen
   (Rolle, Fliese); ein Reiter ohne passende Karte zeigte sonst Kopf und
   "Alle ansehen" ohne Inhalt. Statt der Liste steht dann nur die Marke
-  data-tp-liste-leer, an der sections/tp-start-tabs den Reiter ausblendet.
+  data-tp-liste-leer (snippets/tp-liste-leer), die auch den Reiter in
+  sections/tp-start-tabs ausblendet.
 {%- endcomment -%}
 {%- if section.settings.tp_leer_ausblenden and section.settings.collection.products_count == 0 -%}
-<div data-tp-liste-leer hidden></div>
+{%- render 'tp-liste-leer', section_id: section.id -%}
 {%- elsif tp_wk_modus == 'aus' -%}
 {%- else -%}
 {%- capture tp_pl_ausgabe -%}
@@ -306,7 +307,7 @@
 {%- endcapture -%}
 {%- assign tp_pl_karten = list_items | strip -%}
 {%- if section.settings.tp_leer_ausblenden and tp_pl_karten == blank -%}
-<div data-tp-liste-leer hidden></div>
+{%- render 'tp-liste-leer', section_id: section.id -%}
 {%- else -%}
 {{ tp_pl_ausgabe }}
 {%- endif -%}
