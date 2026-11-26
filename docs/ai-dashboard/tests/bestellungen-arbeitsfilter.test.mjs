@@ -163,3 +163,11 @@ test('Warenliste: Teillieferung zeigt denselben Satz wie "Je Auftrag", ein besta
   assert.equal(naechster(zeileHtml(html, 'TEIL')), satz);
   assert.equal(naechster(zeileHtml(html, 'TERMIN')), 'Ware kommt bis 12.11.2026');
 });
+
+test('Dringendes zuerst: der naechste Schritt steht je Zeile nur einmal, der Warte-Hinweis bleibt', () => {
+  const { html } = ansicht('tab=bestellungen&bart=ware&bsort=wichtigkeit', [zeile('A1')]);
+  const schritt = html.match(/data-l="Nächster Schritt">([^<]+)</)[1];
+  const hinweise = [...html.matchAll(/<span class="bq-grund[^"]*">([^<]*)<\/span>/g)].map(m => m[1]);
+  assert.equal(hinweise.length, 2, 'Tabelle und Handykarte zeigen den Hinweis');
+  for (const h of hinweise) { assert.match(h, /^wartet seit \d+ Tag/); assert.ok(!h.includes(schritt), h); }
+});

@@ -392,7 +392,12 @@ export function viewKundenBestellungen() {
   // Bei "Wichtigkeit" steht am Kunden, warum er oben ist (seine dringendste Bestellung).
   const grund = g => {
     const w = sort === 'wichtigkeit' ? g.zeilen.map(z => z.wichtigkeit).filter(Boolean).sort((a, b) => a.rang - b.rang)[0] : null;
-    return w ? `<span class="bq-grund bq-rang-${w.rang}">${esc(w.grund)}</span>` : '';
+    if (!w) return '';
+    // Was die Zeile schon unter "Naechster Schritt" sagt, wiederholt der Hinweis nicht.
+    const text = g.zeilen.map(z => arbeitsstand(z).naechstes).filter(Boolean)
+      .reduce((t, schritt) => t.split(schritt).join(''), w.grund)
+      .replace(/(,\s*){2,}/g, ', ').replace(/· ,\s*/, '· ').replace(/[\s,·]+$/, '');
+    return text ? `<span class="bq-grund bq-rang-${w.rang}">${esc(text)}</span>` : '';
   };
   const gruppenkopf = g => `<tr class="bq-gruppenkopf"><th colspan="4" scope="rowgroup"><span>${esc(g.name)}</span>${grund(g)}<span class="small muted">${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></th></tr>`;
   // Ein Kunde, eine Bestellung (der Normalfall): keine eigene Kopfzeile - der Name stand sonst zweimal
