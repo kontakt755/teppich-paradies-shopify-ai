@@ -15,6 +15,7 @@ const lies = (d) => fs.readFileSync(path.join(root, d), 'utf8');
 const ohneDoc = (s) => s.replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/, '');
 const ohneScript = (s) => s.replace(/<script[^>]*tp-preisklassen\.js[^>]*><\/script>/, '');
 const ohneBloecke = (s) => s
+  .replace(/\{\{ 'tp-preisklassen\.css' \| asset_url \| stylesheet_tag \}\}\n/, '')
   .replace(/{%-?\s*stylesheet\s*-?%}[\s\S]*?{%-?\s*endstylesheet\s*-?%}/, '')
   .replace(/{%-?\s*schema\s*-?%}[\s\S]*?{%-?\s*endschema\s*-?%}/, '');
 

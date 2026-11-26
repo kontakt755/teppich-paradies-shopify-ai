@@ -1,0 +1,23 @@
+{
+  "stand": "2026-11-26",
+  "hinweis": "Eingaben fuer operations/scripts/kettel-wegvergleich.mjs. Alle Betraege netto. Jeder Wert nennt seine Quelle oder steht ausdruecklich als 'unbelegt – Annahme'.",
+  "werte": {
+    "ekRohwareJeM2": { "wert": 13.39, "einheit": "€/m²", "quelle": "Händlerportal Lieferant A, vom Inhaber am 19.10.2026 gelesen: Beispiel-Rohware 400-cm-Rolle, gleicher m²-Preis in AB #1035. Nur EIN Artikel – für andere Linien unbelegt." },
+    "zugabeM": { "wert": 0.03, "einheit": "m je Seite", "quelle": "Vorgabe Aufgabe #2225 (3 cm Zugabe für den Kettler). Ob Lieferant A die Zugabe ohne Zuschnittgebühr liefert: unbelegt – Annahme ja (Beleg 16.10.: Fertigmaß ohne Zuschnittgebühr)." },
+    "kettlerBis6qmJeLfm": { "wert": 3.45, "einheit": "€/lfm", "quelle": "Kettler-Rechnung RE-4790 (private Stammdaten absender.kettelservice.kosten)" },
+    "kettlerAb6qmJeLfm": { "wert": 4.95, "einheit": "€/lfm", "quelle": "Kettler-Rechnung RE-4790; angekündigter Sonderpreis 2,49 €/lfm noch nie berechnet, daher nicht verwendet" },
+    "arbeitMin": { "wert": 15, "einheit": "min je Auftrag", "quelle": "unbelegt – Annahme: Kettelauftrag schreiben, Abholung abstimmen, GEL-Auftrag anlegen" },
+    "stundensatz": { "wert": 30, "einheit": "€/h", "quelle": "unbelegt – Annahme, wie in docs/analyse/kettelweg-paket-2026-10-19.md" },
+    "fahrtGebuendelt": { "wert": 0, "einheit": "€", "quelle": "Annahme: Abholung bei Lieferant A und Fahrt zum Kettler liegen auf einer ohnehin geplanten Berlin-Tour (Inhaber 19.10.: 'ihr fahrt regelmäßig hin')" },
+    "fahrtEigens": { "wert": 63.6, "einheit": "€", "quelle": "docs/analyse/kettelweg-paket-2026-10-19.md: 62 km × 0,30 € + 1,5 h × 30 €/h (Stundensatz unbelegt – Annahme)" },
+    "lieferantKettelnJeLfm": { "wert": 5, "einheit": "€/lfm", "quelle": "Lieferant A mündlich ca. 5 €/m (Benutzer 12.11.2026, private Stammdaten); Rechnungen bisher 3,90 / 5,50 / 7,50 €/m" },
+    "lieferantFracht": { "wert": 24.9, "einheit": "€ je Lieferung", "quelle": "Rechnungen Lieferant A 180393, 187350: Logistik 19,90 + Diesel 5 – belegt für LKW-Lieferung IN DEN LADEN. Für Direktversand einer 3–4 m langen Rolle an eine Privatadresse: unbelegt – Annahme gleicher Betrag" },
+    "lieferantMindermenge": { "wert": 18, "einheit": "€", "quelle": "Rechnungen Lieferant A 180393, 187350; Servicepreisliste Boden 04/2025" },
+    "lieferantMindermengeUnterEk": { "wert": 300, "einheit": "€ Auftragswert", "quelle": "Servicepreisliste Boden Lieferant A 04/2025 (unter 300 € Auftragswert)" }
+  },
+  "gel": {
+    "2x3": { "wert": 62.65, "einheit": "€", "quelle": "berechneVersand (docs/ai-dashboard/lib/versandkosten.mjs) mit privatem GEL-Tarif, Diesel bis 29.11.2026, am 26.11.2026 gerechnet: Rolle 202 × 21 × 21 cm, 16 kg (mittlere Linie 8,6 mm, 2,65 kg/m² aus gel-gls-kettelware-2026-11-09.md), Abholung 10585 Berlin, Ziel Privatadresse 04109, Depot-Avis, Transportversicherung. Dünn 52 €, dick 79 €. Verpackung nicht gewogen (w-228 offen)" },
+    "3x4": { "wert": 78.49, "einheit": "€", "quelle": "wie 2x3: Rolle 302 × 23 × 23 cm, 32 kg. Dünn 63 €, dick 111 €" },
+    "4x5": { "wert": 146.2, "einheit": "€", "quelle": "wie 2x3: Rolle 402 × 26 × 26 cm, 53 kg, über 320 cm = XXL-Zuschlag. Dünn 119 €, dick (70 kg) nicht berechenbar" }
+  }
+}

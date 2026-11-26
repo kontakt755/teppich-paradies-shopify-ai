@@ -52,7 +52,7 @@ test('Kontaktseite: Abstand unter der Ueberschrift, kein leerer Abschnitt', () =
   }
   assert.deepEqual(t.order, ['main', 'tp_bewertung', 'contact_form_DKFg93']);
   // tp-startseite.css (.tp-s-wrap) laedt spaeter und setzte den Innenabstand auf 0
-  assert.match(read('sections/tp-start-trust.liquid'), /\.tp-trust \.tp-trust__wrap \{[^}]*padding-top: 18px; padding-bottom: 18px;/);
+  assert.match(read('assets/tp-start-trust.css'), /\.tp-trust \.tp-trust__wrap \{[^}]*padding-top: 18px; padding-bottom: 18px;/);
 });
 
 test('Treppentabelle: Tastatur, Beschriftung, kurzer Spaltenkopf am Handy, Wisch-Hinweis', () => {

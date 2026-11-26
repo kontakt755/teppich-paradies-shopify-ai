@@ -31,6 +31,11 @@ test('Der Plan trifft den Aufbau einer bestehenden Restrolle', () => {
   assert.equal(feld(plan, 'tpr0011:quelle', 'florhohe').value, 'ca. 14 mm');
   assert.equal(feld(plan, 'tpr0011:quelle', 'florklasse').value, 'Hochflor');
   assert.equal(feld(plan, 'tpr0011:quelle', 'vergleich_ist_uvp').value, 'true');
+  const label = plan.metafields.filter(m => m.key === 'custom_label_0');
+  assert.deepEqual(label.map(m => [m.owner, m.namespace, m.value, m.ownerVariant]), [
+    ['tpr0011:quelle', 'mm-google-shopping', 'restrolle', true],
+    ['tpr0011:kettelteppich', 'mm-google-shopping', 'restrolle', true],
+  ]);
 });
 
 test('Sichtbarkeit und Tags halten Flow und Rechner am Laufen', () => {

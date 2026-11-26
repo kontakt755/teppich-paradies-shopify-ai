@@ -74,71 +74,14 @@ Erforderlich, Marketing + Analysen. Code einfügen → Speichern → Verbinden.
 Danach das alte Pixel **„GTM-KRXFFDSL Checkout Tracking“** trennen (erledigt) und löschen
 (fremdes Meta-Pixel 1997776204331503). Nicht wieder verbinden: Es sendet ebenfalls ein GA4-`purchase`.
 
-```js
-// Teppich Paradies - Funnel und Musterbestellung (2026-10-02)
-// GA4-purchase fuer Warenkaeufe > 0 EUR kommt von hier (seit 12.10.): Die Google-&-YouTube-App meldet
-// Kaeufe nur an Google Ads, das GTM-Pixel ist getrennt. Meta-Kauf weiter nur ueber die Facebook-App.
-const GA4 = 'G-3KKWHJHS0D';
-const META_PIXEL = '1401914534871545';
-
-const s = document.createElement('script');
-s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA4;
-s.async = true;
-document.head.appendChild(s);
-window.dataLayer = window.dataLayer || [];
-function gtag() { dataLayer.push(arguments); }
-gtag('js', new Date());
-gtag('config', GA4, { send_page_view: false });
-
-!function (f, b, e, v, n, t, sc) {
-  if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
-  if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
-  t = b.createElement(e); t.async = !0; t.src = v; sc = b.getElementsByTagName(e)[0]; sc.parentNode.insertBefore(t, sc);
-}(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', META_PIXEL);
-
-// Muster: SKU M-..., TP-MUSTER-... oder Produkttyp Musterservice
-function istMuster(li) {
-  const v = li.variant || {};
-  const sku = v.sku || '';
-  const typ = (v.product && v.product.type) || '';
-  return sku.startsWith('M-') || sku.startsWith('TP-MUSTER-') || typ === 'Musterservice';
-}
-
-const themeEvents = ['tp_farbe_gewaehlt', 'tp_masse_eingegeben', 'tp_muster_cta_klick', 'tp_muster_im_warenkorb',
-  'tp_in_den_warenkorb_konfiguriert', 'tp_lead_call', 'tp_lead_whatsapp', 'tp_lead_mail', 'tp_lead_form_submit',
-  'tp_beratung_ja', 'tp_beratung_nein', 'tp_masspruefung_ja', 'tp_verlegung_angefragt', 'tp_newsletter_anmeldung_erfolg',
-  'tp_ratgeber_cta_klick'];
-themeEvents.forEach(function (name) {
-  analytics.subscribe(name, function (e) { gtag('event', name, e.customData || {}); });
-});
-
-analytics.subscribe('checkout_completed', function (e) {
-  const co = e.data.checkout;
-  const items = co.lineItems || [];
-  const muster = items.filter(istMuster);
-  const ware = items.filter(function (li) { return !istMuster(li); });
-  const wert = Number((co.totalPrice && co.totalPrice.amount) || 0);
-  const typ = ware.length === 0 ? 'muster' : (muster.length ? 'misch' : 'ware');
-  const tid = (co.order && co.order.id) || co.token || '';
-  gtag('event', 'tp_bestellung_typ', { typ: typ, wert: wert, transaction_id: tid, muster_anzahl: muster.length });
-  if (typ === 'muster' || wert === 0) {
-    gtag('event', 'sample_order', { muster_anzahl: muster.length, transaction_id: tid, value: 0, currency: 'EUR' });
-    fbq('trackCustom', 'Musterbestellung', { muster_anzahl: muster.length, value: 0, currency: 'EUR' }, { eventID: 'muster-' + tid });
-  } else {
-    gtag('event', 'purchase', {
-      transaction_id: String(tid),
-      value: wert,
-      currency: co.currencyCode || 'EUR',
-      items: ware.map(function (li) {
-        const v = li.variant || {};
-        return { item_id: v.sku || String(v.id || ''), item_name: li.title || '', price: Number((v.price && v.price.amount) || 0), quantity: li.quantity || 1 };
-      })
-    });
-    fbq('trackCustom', 'KaufWare', { value: wert, currency: 'EUR' }, { eventID: 'ware-' + tid });
-  }
-});
-```
+**Seit 26.11.2026 steht der Code nur noch in `domains/marketing/tp-funnel-pixel.js`**
+(1:1 so im Admin, Test `qa/tests/tp-funnel-pixel.test.mjs`). Er sendet kein
+eigenes GA4-`purchase`. Neu: Ads-Conversion **„Kauf Ware“** (`AW-10991759596/<Label>`)
+bei `checkout_completed`, nur wenn mindestens ein Artikel kein Muster ist
+(Produkttyp `Musterservice` = Muster), Wert = Bestell-Gesamtbetrag brutto,
+`transaction_id` = Bestell-ID. „Wert > 0“ wäre falsch, weil Muster ab 01.12. 4,99 €
+Versand kosten. Ohne Label sendet der Code nichts an Ads. Entscheidung Inhaber 26.11.:
+diese Aktion primär, „Google Shopping App Purchase“ sekundär.
 
 Folgeschritte nach dem Verbinden:
 - GA4: `sample_order` als Schlüsselereignis markieren; in Google Ads als

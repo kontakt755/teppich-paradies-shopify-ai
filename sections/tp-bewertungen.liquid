@@ -1,3 +1,4 @@
+{{ 'tp-bewertungen.css' | asset_url | stylesheet_tag }}
 {%- comment -%}
   Produktbewertungen: Sprungziel #bewertungen fuer die Sterne unter dem Titel
   (blocks/tp-produkt-sterne.liquid) und Platz fuer das Bewertungs-Widget der
@@ -80,32 +81,6 @@
     })();
   </script>
 </div>
-
-{% stylesheet %}
-  .tp-bewertungen {
-    max-width: var(--page-width, 120rem);
-    margin-inline: auto;
-    padding-inline: var(--page-margin, 20px);
-    padding-block: 32px;
-    scroll-margin-top: 80px;
-  }
-
-  /* Im Formular erbt der Satz Schrift und Farbe vom Datenschutz-Satz der App */
-  .tp-bewertung-ds {
-    margin: 8px 0 0;
-  }
-
-  .jdgm-write-review-modal > .tp-bewertung-ds {
-    margin: 16px 24px 24px;
-    font-size: var(--tp-fs-xs);
-    text-align: center;
-  }
-
-  .tp-bewertung-ds a {
-    color: inherit;
-    text-decoration: underline;
-  }
-{% endstylesheet %}
 
 {% schema %}
 {

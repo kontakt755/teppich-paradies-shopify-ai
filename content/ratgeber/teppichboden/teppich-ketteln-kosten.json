@@ -1,0 +1,67 @@
+{
+  "id": "RAT-TB-018",
+  "handle": "teppich-ketteln-kosten",
+  "title": "Teppich ketteln: Kosten je Meter und Rechenbeispiele",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Abschluss & Leisten"
+  ],
+  "cluster": "teppichboden/planen-messen",
+  "parent": "ratgeber-teppichboden",
+  "intent": "planung",
+  "frage": "Was kostet es, einen Teppich ketteln zu lassen?",
+  "begriff": "teppich ketteln kosten",
+  "nebenfragen": [
+    "Was kostet Teppich ketteln pro Meter?",
+    "Wird nach Fläche oder Umfang abgerechnet?",
+    "Was kostet es, eigene Ware ketteln zu lassen?",
+    "Wie lange dauert das Ketteln?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "teppich-ketteln-ablauf",
+    "teppichboden-richtig-ausmessen",
+    "verschnitt-bei-teppichboden"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Kettelservice: 19,00 € je laufendem Meter (Shop-Produkt kettelservice, Stand November 2026)",
+      "url": "/products/kettelservice"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Teppich ketteln lassen: Kettelservice in Oranienburg",
+      "url": "/pages/kettelteppich-nach-mass"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 6,
+    "naechste": "2027-05-25",
+    "grund": "Kettelpreis und Rechenbeispiel hängen an Shop-Preisen"
+  },
+  "expert_input": [],
+  "excerpt": "Was kostet Teppich ketteln lassen? 19,00 € je laufendem Meter Kante beim Teppich nach Maß, Rechenbeispiele nach Umfang, eigene Ware und Versand.",
+  "seo": {
+    "title": "Teppich ketteln Kosten: Preis je Meter mit Beispielen",
+    "description": "Teppich ketteln lassen: 19,00 € je laufendem Meter Kante beim Teppich nach Maß, Rechenbeispiele für 160 × 230 bis 300 × 400 cm, eigene Ware auf Anfrage."
+  },
+  "metafields": {
+    "kurzantwort": "Beim Teppich nach Maß aus unserem Sortiment kostet die Kettelung 19,00 € je laufendem Meter Kante inklusive MwSt., zentimetergenau nach dem Umfang (Stand November 2026). Bei 200 × 300 cm sind das 190,00 €, dazu kommt der Preis der Fläche. Bei Vorwerk ist die Kettelung im Quadratmeterpreis enthalten, mitgebrachte Ware nach Anfrage.",
+    "art": "Planung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "rechner",
+      "muster"
+    ],
+    "kollektion": "teppich-nach-mass",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

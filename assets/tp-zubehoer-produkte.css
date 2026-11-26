@@ -1,0 +1,57 @@
+/* Aus sections/tp-zubehoer-produkte.liquid ausgelagert: laedt nur, wo der Abschnitt rendert (nicht im themeweiten styles.css). */
+  .tp-zubehoer-produkte {
+    scroll-margin-top: 96px;
+  }
+
+  .tp-zubehoer-produkte__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-block-end: 16px;
+  }
+
+  .tp-zubehoer-produkte__heading {
+    margin: 0;
+  }
+
+  .tp-zubehoer-produkte__intro {
+    margin: 6px 0 0;
+    color: rgb(var(--color-foreground-rgb) / 0.75);
+    font-size: var(--tp-fs-md);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .tp-zubehoer-produkte__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    color: var(--color-foreground);
+    font-size: var(--tp-fs-sm);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid var(--color-border);
+    border-radius: var(--style-border-radius-pills);
+  }
+
+  .tp-zubehoer-produkte__more:hover,
+  .tp-zubehoer-produkte__more:focus-visible {
+    border-color: var(--color-foreground);
+  }
+
+  .tp-zubehoer-produkte__nachladen {
+    margin-top: 16px;
+    font-size: var(--tp-fs-sm);
+  }
+
+  .tp-zubehoer-produkte__nachladen button {
+    min-height: 44px;
+    margin-right: 12px;
+    padding: 8px 12px;
+    font: inherit;
+    cursor: pointer;
+  }

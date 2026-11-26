@@ -34,7 +34,10 @@
   # "TeppichParadies" gegen einen ausformulierten <title> (gemessen 2026-09-23).
   # Bundesweit statt lokal ausgerichtet (SEO-Audit 2026-09-30, QW 1): das
   # lokale Ranking haengt am Google-Unternehmensprofil, nicht an diesem Titel.
-  assign tp_startseite_titel = 'Teppichboden & Vinylboden online kaufen | Teppich Paradies'
+  # Seit 2026-11-25 ohne Kategoriebegriffe: die Startseite stand bei "teppichboden kaufen",
+  # "teppichfliesen" und "linoleum boden" vor den Kategorien (Search Console, SEO-Bericht 2).
+  # Die Begriffe gehoeren den Kategorieseiten; die Startseite verlinkt dorthin.
+  assign tp_startseite_titel = 'Teppich Paradies – Bodenbeläge vom Fachgeschäft in Oranienburg'
   assign og_title = page_title | default: tp_marke
   assign tp_canonical_url = canonical_url | default: request.origin
   # Alte ?page=2-Links der Mass-Teppiche zeigen bei bis zu 250 Qualitaeten

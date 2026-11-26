@@ -82,6 +82,10 @@ export function planeNeueRestrolle(rolle, { locationId } = {}) {
     // Aus der eigenen Messung gerechnet, kein Herstellerbeleg: haelt die Rolle in ihrer Hoehenkategorie.
     { owner: `${key}:quelle`, namespace: 'custom', key: 'florklasse', type: 'single_line_text_field', value: florklasseAusMm(flor) },
   );
+  // Shopping Teppichboden schliesst das Label aus, die Restrollen-Kampagne nimmt es (26.11.2026).
+  for (const role of ['quelle', 'kettelteppich']) {
+    metafields.push({ owner: `${key}:${role}`, namespace: 'mm-google-shopping', key: 'custom_label_0', type: 'single_line_text_field', value: 'restrolle', ownerVariant: true });
+  }
   if (uvp != null) metafields.push({ owner: `${key}:quelle`, namespace: 'preis', key: 'vergleich_ist_uvp', type: 'boolean', value: 'true' });
   for (const role of ['raummass', 'kettelteppich']) {
     metafields.push(

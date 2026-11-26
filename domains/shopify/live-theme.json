@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-11-25T11:01:35Z",
-    "verifiedBy": "Shopify Admin API (role MAIN) am 25.11. nach workflow:live aus dem Deploy-Worktree (main 866b1483, #2341 Judge.me spaeter laden, Galerie ohne Sprung)."
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-11-25T11:01:35Z",
-    "verifiedBy": "Bisheriges Live-Theme, nach workflow:live (main 866b1483) als Preview getauscht."
+    "verifiedAt": "2026-11-26T08:47:06Z",
+    "verifiedBy": "Shopify Admin API (role MAIN) am 26.11. nach workflow:live aus dem Deploy-Worktree (main ab9087eb, #2357 Teppich nach Mass: Ueberblick mit Formen, Preis 80 x 150 cm und Lieferzeit)."
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-11-26T08:47:06Z",
+    "verifiedBy": "Bisheriges Live-Theme, nach workflow:live (main ab9087eb) als Preview getauscht; Admin API role UNPUBLISHED."
   },
   "fallback": {
     "themeId": "206590509390",
