@@ -266,6 +266,17 @@ class StickyAddToCartComponent extends Component {
         this.#ekKaufweg = kaufweg;
         kaufweg.addEventListener('input', () => this.#syncTargetState(), { signal: this.#abortController.signal });
       }
+      // Der Preis selbst: Konfigurator ([data-rechnung]) bzw. Rollenware ([data-total]).
+      const preisfeld = kaufweg.querySelector('[data-rechnung]') ?? kaufweg.querySelector('[data-total]');
+      if (preisfeld) {
+        this.#targetStateObserver.observe(preisfeld, {
+          attributes: true,
+          attributeFilter: ['hidden'],
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+      }
       // Wechsel zu einer Anfrage-Form verbirgt nur den Konfigurator, nicht den Knopf.
       const konfig = kaufweg.querySelector('[data-konfig]');
       if (konfig) this.#targetStateObserver.observe(konfig, { attributes: true, attributeFilter: ['hidden'] });
@@ -283,6 +294,8 @@ class StickyAddToCartComponent extends Component {
     const target = this.#targetAddToCartButton;
     const { addToCartButton } = this.refs;
     if (!addToCartButton) return;
+
+    this.#syncGesamtpreis();
 
     if (!target || !target.closest('.tp-kaufweg')) {
       this.#targetUsable = true;
@@ -312,7 +325,8 @@ class StickyAddToCartComponent extends Component {
     // die Rollenvariante (65,90 €/m²); der Einfass-Konfigurator fuehrt den
     // Preis je 0,01 m² (0,89 €), den snippets/price.liquid ausserhalb der
     // Produktkarte nicht umrechnet. Deshalb steht hier der Gesamtpreis des
-    // Rechners ([data-total]); der Konfigurator traegt ihn schon im Button.
+    // Rechners ([data-total]); beim Konfigurator bleibt dieses Feld aus, sein
+    // Gesamtpreis kommt am Handy ueber #syncGesamtpreis.
     const priceElement = this.querySelector('.sticky-add-to-cart__price');
     if (priceElement) {
       const kaufweg = target.closest('.tp-kaufweg');
@@ -338,6 +352,44 @@ class StickyAddToCartComponent extends Component {
     }
 
     this.#updateButtonText();
+  }
+
+  /**
+   * Gesamtpreis in der Leiste am Handy (sections/product-information.liquid
+   * zeigt ihn nur dort und blendet dafuer den Preis der Leiste aus). Es ist
+   * genau der Text, den der Rechner anzeigt - hier wird nichts gerechnet.
+   * Ohne gueltige Eingabe bleibt die Leiste wie ohne diesen Zusatz. Paketware
+   * bleibt bewusst beim m²-Preis (Entscheidung 26.11.2026).
+   */
+  #syncGesamtpreis() {
+    const feld = this.querySelector('.sticky-add-to-cart__gesamt');
+    const wert = this.querySelector('.sticky-add-to-cart__gesamt-wert');
+    if (!feld || !wert) return;
+    const text = this.#rechnerGesamtpreis(this.#targetAddToCartButton);
+    if (wert.textContent !== text) wert.textContent = text;
+    feld.hidden = !text;
+  }
+
+  /**
+   * @param {HTMLButtonElement | null} target - Kaufbutton des Rechners
+   * @returns {string} angezeigter Gesamtpreis des Rechners oder ''
+   */
+  #rechnerGesamtpreis(target) {
+    const kaufweg = target?.closest('.tp-kaufweg');
+    if (!kaufweg) return '';
+    let feld;
+    if (kaufweg.hasAttribute('data-tp-ek')) {
+      // Einfass-Konfigurator: Preisblock und Knopf sind nur bei gueltigem Mass da.
+      const rechnung = kaufweg.querySelector('[data-rechnung]');
+      if (target.hidden || !rechnung || rechnung.closest('[hidden]')) return '';
+      feld = rechnung.querySelector('[data-summe]');
+    } else {
+      // Farbe ohne Zuschnitt: der Rechner blendet seinen Preis per Klasse aus.
+      if (kaufweg.classList.contains('tp-rwc-no-service')) return '';
+      feld = kaufweg.querySelector('[data-total]');
+    }
+    const text = (feld?.textContent || '').trim();
+    return text === '–' ? '' : text;
   }
 
   /**
