@@ -240,12 +240,6 @@ class StickyAddToCartComponent extends Component {
     this.#targetUsable = true;
 
     if (!button || !button.closest('.tp-kaufweg')) {
-      // Paket-Rechner: er meldet seinen Gesamtpreis als data-tp-gesamt.
-      const paket = button?.closest('.tp-paket-auswahl');
-      if (paket) {
-        this.#targetStateObserver = new MutationObserver(() => this.#syncGesamtpreis());
-        this.#targetStateObserver.observe(paket, { attributes: true, attributeFilter: ['data-tp-gesamt'] });
-      }
       this.#syncTargetState();
       return;
     }
@@ -364,7 +358,8 @@ class StickyAddToCartComponent extends Component {
    * Gesamtpreis in der Leiste am Handy (sections/product-information.liquid
    * zeigt ihn nur dort und blendet dafuer den Preis der Leiste aus). Es ist
    * genau der Text, den der Rechner anzeigt - hier wird nichts gerechnet.
-   * Ohne gueltige Eingabe bleibt die Leiste wie ohne diesen Zusatz.
+   * Ohne gueltige Eingabe bleibt die Leiste wie ohne diesen Zusatz. Paketware
+   * bleibt bewusst beim m²-Preis (Entscheidung 26.11.2026).
    */
   #syncGesamtpreis() {
     const feld = this.querySelector('.sticky-add-to-cart__gesamt');
@@ -381,7 +376,7 @@ class StickyAddToCartComponent extends Component {
    */
   #rechnerGesamtpreis(target) {
     const kaufweg = target?.closest('.tp-kaufweg');
-    if (!kaufweg) return target?.closest('.tp-paket-auswahl')?.getAttribute('data-tp-gesamt') ?? '';
+    if (!kaufweg) return '';
     let feld;
     if (kaufweg.hasAttribute('data-tp-ek')) {
       // Einfass-Konfigurator: Preisblock und Knopf sind nur bei gueltigem Mass da.

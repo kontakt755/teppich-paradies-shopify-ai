@@ -983,16 +983,6 @@
         totalDisplay.textContent = formatMoney(totalCents);
       }
 
-      // Fuer die klebende Kaufleiste (assets/sticky-add-to-cart.js): derselbe
-      // Gesamtpreis, aber nur bei gueltiger Flaeche oder selbst erhoehter
-      // Paketzahl - sonst bleibt die Leiste beim m²-Preis.
-      const feldStand = sqmInput ? evaluateSqmInput(sqmInput.value).state : 'empty';
-      if (feldStand === 'ok' || (feldStand === 'empty' && packages > 1)) {
-        component.setAttribute('data-tp-gesamt', formatMoney(totalCents));
-      } else {
-        component.removeAttribute('data-tp-gesamt');
-      }
-
       renderDeviation(hatEingabe, packages);
 
       return packages;
@@ -1202,10 +1192,7 @@
         // Unvollständige/ungültige/unsichere Zwischenzustände lassen die
         // zuletzt gültige Anzeige unverändert stehen - nie eine stille
         // Teilzahl übernehmen (TP-001/TP-002).
-        if (result.state === 'invalid' || result.state === 'unsafe') {
-          component.removeAttribute('data-tp-gesamt');
-          return;
-        }
+        if (result.state === 'invalid' || result.state === 'unsafe') return;
 
         desiredSqm = result.state === 'ok' ? result.value : 0;
         // Neue Flaeche = wieder die Empfehlung.

@@ -5,9 +5,9 @@ import vm from 'node:vm';
 
 // Kaufanalyse 26.11.2026: Am Handy stand der Preis weit unter dem Massfeld,
 // die Kaufleiste nannte ihn nicht (Einfass-Konfigurator: ausgeblendet;
-// Rollenware unter 390 px: dem Muster-Knopf gewichen; Paketware: nur der
-// m²-Preis). Die Leiste uebernimmt jetzt am Handy genau den Gesamtpreis, den
-// der Rechner anzeigt - sie rechnet nichts. Die echte Klasse laeuft im
+// Rollenware unter 390 px: dem Muster-Knopf gewichen). Die Leiste uebernimmt
+// jetzt am Handy genau den Gesamtpreis, den der Rechner anzeigt - sie rechnet
+// nichts. Paketware bleibt beim m²-Preis. Die echte Klasse laeuft im
 // DOM-Adapter.
 
 const source = readFileSync(new URL('../../assets/sticky-add-to-cart.js', import.meta.url), 'utf8');
@@ -159,19 +159,12 @@ test('Rollenware: derselbe Text wie [data-total], ohne Mass nichts', () => {
   assert.equal(r.stand(), null);
 });
 
-test('Paketware: nur wenn der Rechner einen Gesamtpreis meldet, sonst unveraendert', () => {
+test('Paketware: Leiste bleibt beim m²-Preis (Entscheidung 26.11.2026)', () => {
   const l = leiste();
   const paket = new Node();
   const cta = new Node('In den Warenkorb');
   cta.ancestors.set('.tp-paket-auswahl', paket);
   l.sticky.testTarget(cta);
-  assert.equal(l.stand(), null);
-  assert.ok(l.beobachtet(paket));
-  paket.setAttribute('data-tp-gesamt', '421,36 €');
-  l.aendern();
-  assert.equal(l.stand(), '421,36 €');
-  paket.removeAttribute('data-tp-gesamt');
-  l.aendern();
   assert.equal(l.stand(), null);
   assert.equal(l.preis.textContent, '35,90 €/m²');
   assert.equal(l.preis.style.display, undefined);

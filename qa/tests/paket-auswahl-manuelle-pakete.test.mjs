@@ -79,7 +79,6 @@ function rechner({ waste = true } = {}) {
     get pakete() { return nodes['[data-package-display]'].textContent; },
     get flaeche() { return nodes['[data-sqm-display]'].textContent; },
     get preis() { return nodes['[data-total-display]'].textContent; },
-    get leiste() { return component.getAttribute('data-tp-gesamt'); },
     get hinweisSichtbar() { return !nodes['[data-package-hint]'].hidden; },
     get hinweis() { return nodes['[data-package-hint-text]'].textContent.replace(/ /g, ' '); },
     get empfehlung() { return nodes['[data-package-hint-detail]'].textContent; },
@@ -201,23 +200,4 @@ test('Minus stoppt bei einem Paket', () => {
   for (let i = 0; i < 5; i += 1) r.minus();
   assert.equal(r.pakete, '1');
   assert.equal(r.hinweis, 'Für Ihre 3,00 m² fehlen 1,012 m². Die empfohlene Reserve entfällt.');
-});
-
-// Die klebende Kaufleiste uebernimmt data-tp-gesamt (assets/sticky-add-to-cart.js):
-// derselbe Text wie "Gesamtpreis" im Rechner, nur bei gueltiger Flaeche oder
-// selbst erhoehter Paketzahl.
-test('Gesamtpreis fuer die Kaufleiste: nur bei gueltiger Eingabe, immer wie im Rechner', () => {
-  const r = rechner();
-  assert.equal(r.leiste, null);
-  r.tippe('18');
-  assert.equal(r.leiste, r.preis);
-  r.minus();
-  assert.equal(r.leiste, r.preis);
-  r.tippe('abc');
-  assert.equal(r.leiste, null);
-  r.tippe('18');
-  r.tippe('');
-  assert.equal(r.leiste, null);
-  r.plus();
-  assert.equal(r.leiste, r.preis);
 });
