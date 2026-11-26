@@ -424,6 +424,10 @@
                 "titel": "Preis, Lieferzeit und Bestellung"
               },
               "blocks": {}
+            },
+            "tp_farbseiten_links": {
+              "type": "tp-farbseiten-links",
+              "settings": {}
             }
           },
           "block_order": [
@@ -448,6 +452,7 @@
             "tp_produkt_akkordeon_technik",
             "tp_mass_faq_1",
             "text_aEtTtq",
+            "tp_farbseiten_links",
             "tp_bildnachweis_desktop"
           ]
         }

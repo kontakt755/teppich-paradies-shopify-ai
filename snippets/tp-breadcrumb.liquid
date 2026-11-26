@@ -28,6 +28,12 @@
     assign tp_bc_aktiv = true
     assign tp_bc_titel = page.title
     assign tp_bc_url = page.url
+  elsif request.page_type == 'metaobject' and metaobject.system.type == 'tp_teppichfarbe' and metaobject.variante.value != blank and metaobject.produkt.value != blank
+    # Farbseite (Test Esmera): Start > Teppich nach Mass > Produkt > Farbe; die Kette steht fest, nicht im Menue
+    assign tp_bc_aktiv = true
+    assign tp_bc_farbseite = true
+    assign tp_bc_titel = metaobject.variante.value.option1
+    assign tp_bc_url = metaobject.system.url
   endif
 
   if template.suffix contains 'ratgeber'
@@ -137,6 +143,11 @@
         endif
       endfor
     endfor
+
+    if tp_bc_farbseite
+      assign tp_bc_eltern_titel = 'Teppich nach Maß' | append: tp_bc_sep | append: metaobject.produkt.value.title
+      assign tp_bc_eltern_urls = routes.collections_url | append: '/teppich-nach-mass' | append: tp_bc_sep | append: metaobject.produkt.value.url
+    endif
 
     assign tp_bc_titel_liste = tp_bc_eltern_titel | split: tp_bc_sep
     assign tp_bc_url_liste = tp_bc_eltern_urls | split: tp_bc_sep
