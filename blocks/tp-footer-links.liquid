@@ -153,6 +153,11 @@
       {%- endcomment -%}
       <li class="tp-footer-links__widerruf-zeile"><a class="tp-footer-links__widerruf" href="/pages/vertrag-widerrufen">Vertrag widerrufen</a></li>
     </ul>
+    {%- comment -%}
+      Allgemeiner Hinweis auf der ganzen Website (Leitlinien der Kommission
+      zur harmonisierten Mitteilung), Produktseiten zeigen ihn zusaetzlich.
+    {%- endcomment -%}
+    {% render 'tp-gewaehrleistung', kompakt: true %}
   </nav>
 </div>
 {%- comment -%}
