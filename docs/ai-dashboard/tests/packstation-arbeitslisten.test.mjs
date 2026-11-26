@@ -693,3 +693,12 @@ test('Ampel (06.11.): Reiter zaehlen rote Umschlaege, Rot steht oben, ein Rand j
   assert.match(ansicht('tab=muster&umschlag=order10', [eingelegtOffen]), /<li class="mp-zeile mp-ab">[\s\S]*?<span class="muted">noch nicht bestellt<\/span>/, 'eingelegt, Stand nie nachgetragen: ruhig, kein Bernstein');
   assert.doesNotMatch(html, /wait-warn/, 'keine zweite Bernstein-Regel neben der Ampel');
 });
+
+test('Kopf am Handy: beide Druckknoepfe teilen eine Zeile, der Platzhalter ist kurz', () => {
+  const html = ansicht('tab=muster', [kunde(1, 'packen')]);
+  const druck = html.match(/<div class="mp-summe mp-drucken">[\s\S]*?<\/div>/)[0];
+  assert.match(druck, /data-mp-alle/);
+  assert.match(druck, /data-mp-blatt/);
+  assert.doesNotMatch(html.match(/<div class="toolbar mp-suche">[\s\S]*?<\/div>/)[0], /data-mp-blatt/);
+  assert.match(html, /placeholder="Muster oder Kunde"/);
+});

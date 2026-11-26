@@ -140,6 +140,10 @@
   .mp-hier > summary { padding-block: 11px; }
   .mp-packer-info { padding-block: 8px; }
   .mp-suche input[type="search"] { min-width: 0; flex-basis: 120px; }
+  .mp-drucken { gap: 6px; }
+  .mp-drucken .btn { flex: 1 1 0; min-width: 0; min-height: 44px; padding-inline: 8px; white-space: normal; font-size: .82rem; }
+  /* Die Ueberschrift wiederholt den markierten Filter darueber; am Handy nur noch fuer Vorleser. */
+  .mp-arbeitsliste > .mp-titel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 /* Zweite Zeile "Umschlag:" (28.10.), wirkt zusammen mit der Arbeitsliste darueber. */
 .mp-umschlagfilter { align-items: center; margin: -8px 0 16px; }
