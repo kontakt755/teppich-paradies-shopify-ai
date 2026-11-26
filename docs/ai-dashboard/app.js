@@ -38,6 +38,7 @@ import { viewTeam } from './ansichten/team.mjs';
 import { viewFotos } from './ansichten/fotos.mjs';
 import { viewAkquise } from './ansichten/akquise.mjs';
 import { viewHausverwaltungen } from './ansichten/hausverwaltungen.mjs';
+import { viewAusschreibungen } from './ansichten/ausschreibungen.mjs';
 import { viewSonderposten } from './ansichten/sonderposten.mjs';
 import { viewBildrechte } from './ansichten/bildrechte.mjs';
 import { viewSocial } from './ansichten/social.mjs';
@@ -60,7 +61,7 @@ import { starteDienstversion } from './bausteine/dienstversion.mjs';
 import { kundenMenueZahl } from './lib/serviceanfragen.mjs';
 import { faelleFuerMenue } from './ansichten/kunden/faelle.mjs';
 
-const VIEWS = { heute: viewHeute, zuschnitt: viewZuschnitt, laden: viewLaden,prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, akquise: viewAkquise, hausverwaltungen: viewHausverwaltungen, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
+const VIEWS = { heute: viewHeute, zuschnitt: viewZuschnitt, laden: viewLaden,prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, akquise: viewAkquise, hausverwaltungen: viewHausverwaltungen, ausschreibungen: viewAusschreibungen, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 async function init() {
   registriereAnsichten(VIEWS);

@@ -3366,3 +3366,15 @@ Vertreter prüft weiter ein Mensch an der AB; der Prüfer übernimmt nur den mec
 - **Mail an verkauf@:** seit 24.11. eingeschaltet (Ja des Benutzers). Mit `mailAnVerkauf: true` geht je Rechnung mit
   Abweichung genau eine Mail mit Beträgen an `verkaufAn`, auch für noch nicht gemeldete der letzten 30 Tage
   (`gemeldetAm`). Nie eine Mail an Lieferanten.
+
+## 37. Ausschreibungen (26.11.2026, Issue #2371)
+
+Ansicht `#/ausschreibungen` (nur Inhaber; Server: `NUR_INHABER` `ausschreibungen/liste`). Ohne KI bei jedem
+Öffnen aktuell: `GET /api/ausschreibungen/liste` liest jedes Mal frisch `$TP_PRIVAT_DIR/ausschreibungen/status.json`
+(Suchlauf, `operations/scripts/ausschreibungen-pruefen.mjs`) und je Ordner den Kopfblock am Anfang der `CHECKLISTE.md`
+(`<!-- uebersicht` mit `schluessel: wert`-Zeilen: status, titel, auftraggeber, ort, leistung, portal, frist, nebenfrist,
+stand, naechster_schritt, treffer). Zusammenführen als reine Funktion in `lib/ausschreibungen.mjs`: Ordner haben
+Vorrang, Suchtreffer ohne Ordner (Zuordnung über `treffer:` = id oder Link) stehen als „ungeprüft“, abgelaufene
+Treffer fallen weg, Ordner ohne Kopfblock zeigen „Kopfblock fehlt“. Frist ≤ 7 Tage ist bernsteinfarben, überschrittene
+offene Fristen rot. Nur lesend; Daten bleiben lokal, nichts davon im Repository. Wer an einem Verfahren arbeitet,
+pflegt den Kopfblock mit (Format: `LIESMICH-UEBERSICHT.md` im lokalen Ausschreibungen-Ordner).

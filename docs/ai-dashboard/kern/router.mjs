@@ -20,6 +20,8 @@ const ANSICHT_ROLLEN = {
   // Shop-Wache und Ratgeber sind Website-Arbeit: Erreichbarkeit von Seiten,
   // Ladezeiten, Texte fuer den Shop. Das Team hat damit nichts zu tun.
   shopwache: 'inhaber', ratgeber: 'inhaber',
+  // Ausschreibungen: Fristen, Kalkulation und Abgabe macht der Inhaber (Server: NUR_INHABER).
+  ausschreibungen: 'inhaber',
   // Akquise (#1447) ist seit 2026-10-20 fuer Mitarbeiter offen; "lesen" schreibt nichts (Server).
 };
 
@@ -33,7 +35,7 @@ export function darfAnsicht(view) {
 export function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const bekannt = ['heute', 'zuschnitt', 'prozesse','arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'hausverwaltungen', 'bildrechte', 'social', 'team', 'laden'].includes(path) ? path : 'heute';
+  const bekannt = ['heute', 'zuschnitt', 'prozesse','arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'hausverwaltungen', 'ausschreibungen', 'bildrechte', 'social', 'team', 'laden'].includes(path) ? path : 'heute';
   const view = darfAnsicht(bekannt) ? bekannt : 'heute';
   const params = new URLSearchParams(query);
   // Nachfrage-Mails stehen seit 07.11.2026 unter Kunden › Kunden nach Produkt fragen (w-284) - alte

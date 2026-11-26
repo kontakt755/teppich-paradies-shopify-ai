@@ -1,0 +1,23 @@
+/* Ausschreibungen (ansichten/ausschreibungen.mjs). Nur Tokens aus app.css - keine festen Farben. */
+.aus-abschnitt { margin-top: 18px; }
+.aus-ueberschrift { margin: 0 0 6px; font-size: 1.05rem; }
+.aus-liste { display: grid; gap: 12px; margin-top: 8px; }
+.aus-karte { display: grid; gap: 6px; overflow-wrap: anywhere; }
+.aus-karte.aus-nah-karte { border-left: 3px solid var(--warn); }
+.aus-karte.aus-vorbei-karte { border-left: 3px solid var(--crit); }
+.aus-kopf { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
+.aus-titel { margin: 0; font-size: 1rem; }
+.aus-pillen { display: flex; gap: 6px; flex: none; }
+.aus-meta { color: var(--text-2); }
+.aus-leistung { margin: 0; }
+.aus-fakten { margin: 0; display: grid; gap: 4px; }
+.aus-fakt { display: grid; grid-template-columns: 9.5rem 1fr; gap: 8px; }
+.aus-fakt dt { color: var(--text-2); }
+.aus-fakt dd { margin: 0; }
+.aus-nah { color: var(--warn); font-weight: 600; }
+.aus-vorbei { color: var(--crit); font-weight: 600; }
+.aus-hinweis { margin: 0; color: var(--warn); font-weight: 600; }
+.aus-link { justify-self: start; }
+@media (max-width: 560px) {
+  .aus-fakt { grid-template-columns: 1fr; gap: 0; }
+}
