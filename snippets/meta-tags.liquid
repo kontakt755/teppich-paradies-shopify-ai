@@ -230,6 +230,13 @@
   content="{{ og_description | escape_once }}"
 >
 
+{%- if request.page_type == 'metaobject' and metaobject.system.type == 'tp_teppichfarbe' -%}
+  {%- comment -%} Farbseite ohne Produkt oder Variante (archiviert, geloescht) ist leer: nicht indexieren {%- endcomment -%}
+  {%- if metaobject.produkt.value == blank or metaobject.variante.value == blank -%}
+    <meta name="robots" content="noindex">
+  {%- endif -%}
+{%- endif -%}
+
 {%- liquid
   # Vorschaubild beim Teilen. page_image ist auf Produkt- und Artikelseiten
   # gesetzt, auf Kollektionen nur bei gepflegtem Kollektionsbild und auf
@@ -250,6 +257,10 @@
   # waeren die schoenere Quelle, sind hier aber tote Zweige. Bleibt das Logo:
   # als Vorschau schwach, aber der Unterschied zwischen "Shop erkennbar" und
   # "graue Textzeile" im Chat.
+  # Farbseite (Metaobjekt tp_teppichfarbe): Variantenbild der Farbe statt Logo
+  if tp_og_bild == blank and request.page_type == 'metaobject' and metaobject.system.type == 'tp_teppichfarbe'
+    assign tp_og_bild = metaobject.variante.value.featured_image
+  endif
   if tp_og_bild == blank
     assign tp_og_bild = settings.logo
   endif
@@ -351,6 +362,9 @@
   {%- if request.page_type == 'product' -%}
     {%- comment -%} page_title kommt schon maskiert: escape machte aus "&" ein sichtbares "&amp;" (2026-11-12) {%- endcomment -%}
     {{ optimized_page_title | escape_once }}
+  {%- elsif request.page_type == 'metaobject' and metaobject.system.type == 'tp_teppichfarbe' -%}
+    {%- comment -%} Farbseite: der SEO-Titel des Eintrags gilt unveraendert (ohne Marken-Anhang), er traegt schon Qualitaet und Kante {%- endcomment -%}
+    {{ page_title | escape_once }}
   {%- elsif request.page_type == 'index' and page_title == shop.name -%}
     {%- comment -%}
       Ohne Homepage-Titel in den Onlineshop-Einstellungen liefert Shopify nur

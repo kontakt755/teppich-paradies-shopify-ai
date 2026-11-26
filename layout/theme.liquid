@@ -152,7 +152,7 @@
       data-template="{{ template }}"
     >
       {%- comment -%} Brotkrumen + BreadcrumbList fuer Kollektions- und Inhaltsseiten; Ausschluesse im Snippet {%- endcomment -%}
-      {% if request.page_type == 'collection' or request.page_type == 'page' %}{% render 'tp-breadcrumb' %}{% endif %}
+      {% if request.page_type == 'collection' or request.page_type == 'page' or request.page_type == 'metaobject' %}{% render 'tp-breadcrumb' %}{% endif %}
       {{ content_for_layout }}
     </main>
 

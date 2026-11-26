@@ -10,7 +10,8 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const ALT = /Bis zu 2 (Muster kostenlos|Farben)|Bis zu zwei (Farben|Farbmuster)|bis zu zwei Muster (kostenlos|schicken|sind)/i;
 
 test('Shoptexte und Social-Vorlage nennen die Musterregel einheitlich', () => {
-  const dateien = ['sections', 'snippets', 'blocks', 'templates'].flatMap((o) => readdirSync(path.join(root, o)).map((n) => `${o}/${n}`));
+  // rekursiv und nur Dateien: templates/metaobject/ ist ein Unterordner (Farbseiten)
+  const dateien = ['sections', 'snippets', 'blocks', 'templates'].flatMap((o) => readdirSync(path.join(root, o), { withFileTypes: true, recursive: true }).filter((e) => e.isFile()).map((e) => path.relative(root, path.join(e.parentPath, e.name))));
   const offen = dateien.filter((d) => ALT.test(readFileSync(path.join(root, d), 'utf8')));
   assert.deepEqual(offen, []);
   assert.doesNotMatch(readFileSync(path.join(root, 'social/lib/texte.mjs'), 'utf8'), /bis zu 3 Muster/);

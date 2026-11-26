@@ -1,0 +1,51 @@
+{% doc %}
+  Links von der Produktseite eines Teppichs nach Mass auf die eigenen Farbseiten
+  (Metaobjekt tp_teppichfarbe, Test an Esmera). Rendert nur, wenn zu diesem Produkt
+  veroeffentlichte (aktive) Eintraege existieren; Entwuerfe liefert Liquid nicht aus.
+  Ohne Eintraege bleibt die Produktseite unveraendert (kein Markup).
+{% enddoc %}
+{%- capture tp_fl_liste -%}
+  {%- for tp_fl_e in metaobjects.tp_teppichfarbe.values -%}
+    {%- if tp_fl_e.produkt.value.id == closest.product.id -%}
+      <li><a href="{{ tp_fl_e.system.url }}">{{ tp_fl_e.variante.value.option1 | escape }}</a></li>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- assign tp_fl_liste = tp_fl_liste | strip -%}
+{%- if tp_fl_liste != blank -%}
+  <nav class="tp-fl" aria-labelledby="tp-fl-{{ block.id }}" {{ block.shopify_attributes }}>
+    <p class="tp-fl__titel" id="tp-fl-{{ block.id }}">{{ block.settings.titel | escape }}</p>
+    <ul class="tp-fl__liste" role="list">{{ tp_fl_liste }}</ul>
+  </nav>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-fl { margin: 8px 0; }
+  .tp-fl__titel { margin: 0 0 4px; font-size: var(--tp-fs-sm); font-weight: 600; }
+  .tp-fl__liste { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; padding: 0; list-style: none; font-size: var(--tp-fs-sm); }
+  .tp-fl__liste a { color: var(--tp-ink, currentColor); text-decoration: underline; text-underline-offset: 2px; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Farbseiten-Links",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Zeigt Links auf die Farbseiten dieses Produkts, sobald es veröffentlichte gibt. Sonst bleibt der Block leer."
+    },
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Diese Farbe einzeln ansehen"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Farbseiten-Links"
+    }
+  ]
+}
+{% endschema %}
