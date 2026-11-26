@@ -1,4 +1,4 @@
-// Vinyl-Muster: kostenlos, aber hoechstens 2 je Bestellung (Inhaber 02.11.2026).
+// Vinyl-Muster: hoechstens 2 je Bestellung (Inhaber 02.11.2026); Versand 4,99 € je Bestellung (Mustergebuehr-Test).
 // Durchgesetzt im Musterkonfigurator (assets/tp-sample-checkout-core.js +
 // tp-sample-checkout.js), sichtbar gemacht auf der Produktseite
 // (snippets/tp-muster-grenze, blocks/tp-muster-cta, blocks/tp-rollware-rechner).
@@ -113,6 +113,7 @@ const block = read('blocks/tp-muster-cta.liquid')
   .replace(/\{% stylesheet %\}[\s\S]*?\{% endstylesheet %\}/, '')
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
   .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze')
+  .replace("render 'tp-herstellermuster', product: product", "echo ''")
   .replace("render 'tp-muster-hinweis', kontext: 'produkt'", "echo ''")
   .replace("render 'tp-muster-lager', product: product", "echo ''");
 
@@ -121,7 +122,7 @@ const cta = (tp_test_grenze) => liquid.parseAndRender(block, {
   tp_test_url: '/pages/muster?produkt=eiche-klick',
   tp_test_grenze,
   routes: { cart_url: '/cart' },
-  block: { id: 'tp_muster_cta_1', shopify_attributes: '', settings: { label: 'Kostenloses Muster anfragen', hinweis: 'Bis zu 2 Farben, versandkostenfrei' } },
+  block: { id: 'tp_muster_cta_1', shopify_attributes: '', settings: { label: 'Muster bestellen', hinweis: 'Bis zu 2 Farben' } },
 });
 
 const offenerLink = /<a class="tp-muster-cta__link-[^"]+" href="\/pages\/muster\?produkt=eiche-klick"([^>]*)>/;
@@ -130,7 +131,7 @@ const vollKnopf = /<button class="[^"]*tp-muster-cta-voll"[^>]*disabled[^>]*>/;
 test('Produktseite: Vinyl unter der Grenze zeigt den Hinweis statt "Bis zu 2 Farben"', async () => {
   const html = await cta('vinyl');
   assert.doesNotMatch(html.match(offenerLink)[1], /hidden/);
-  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung/);
+  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung\. Versand 4,99 € je Bestellung/);
   assert.doesNotMatch(html, /Bis zu 2 Farben/);
   assert.match(html.match(vollKnopf)[0], /hidden/, 'deaktivierter Knopf liegt verborgen bereit');
   assert.match(html, /data-tp-muster-grenze="vinyl"/);
@@ -142,7 +143,7 @@ test('Produktseite: bei 2 Vinyl-Mustern ist der Knopf deaktiviert und erklaert',
   assert.doesNotMatch(html.match(vollKnopf)[0], /hidden/);
   assert.match(html.match(offenerLink)[1], /hidden/, 'Link zum Konfigurator verborgen');
   // Nach cart:update wird der Link wieder sichtbar - dann mit Vinyl-Hinweis, nicht "Bis zu 2 Farben"
-  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung/);
+  assert.match(html, /Höchstens 2 Vinyl-Muster je Bestellung\. Versand 4,99 € je Bestellung/);
   assert.doesNotMatch(html, /Bis zu 2 Farben/);
   assert.match(html, /<p class="tp-muster-cta-grenze"[^>]*data-tp-mg-voll>\s*2 von 2 Vinyl-Mustern im Warenkorb/);
   assert.match(html, /href="\/cart"/);
@@ -150,7 +151,8 @@ test('Produktseite: bei 2 Vinyl-Mustern ist der Knopf deaktiviert und erklaert',
 
 test('Produktseite: Teppichboden unveraendert', async () => {
   const html = await cta('');
-  assert.match(html, /Bis zu 2 Farben, versandkostenfrei/);
+  assert.match(html, /Muster bestellen/);
+  assert.match(html, /Bis zu 2 Farben/);
   assert.doesNotMatch(html, /Vinyl-Muster|data-tp-m|<button|tp-muster-grenze\.js/);
 });
 
@@ -391,17 +393,18 @@ test('Grenzlogik: 2 normal, 3 mit Lagermuster, kein 3. ohne, Vinyl unveraendert'
 
 // --- Rollenrechner: Beschriftung des Musterknopfs ---
 // Vinyl von der Rolle hat oft nur die Option "Breite"; der Knopf hiess dann
-// "Kostenloses Muster in 200 cm". Farbe ist die erste Option ausser Breite,
+// "Muster in 200 cm bestellen". Farbe ist die erste Option ausser Breite,
 // sonst der Tag "farbe: ...".
 const rechner = read('blocks/tp-rollware-rechner.liquid');
 const rcStart = rechner.indexOf("{%- liquid\n    capture tp_rc_muster_url");
 const rcLiquid = rechner.slice(rcStart, rechner.indexOf('-%}', rcStart) + 3)
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
-  .replace("render 'tp-muster-grenze', product: product", "echo ''");
+  .replace("render 'tp-muster-grenze', product: product", "echo ''")
+  .replace("render 'tp-herstellermuster', product: product", "echo ''");
 
 async function rcKnopf(product, url = '/pages/muster?produkt=x') {
   const out = await liquid.parseAndRender(rcLiquid + '{{ tp_rc_muster_text }}|{{ tp_rc_muster_url }}', {
-    product, block: { settings: { muster_label: 'Kostenloses Muster in {farbe}' } }, tp_test_url: url,
+    product, block: { settings: { muster_label: 'Muster in {farbe} bestellen' } }, tp_test_url: url,
   });
   return out.trim();
 }
@@ -409,21 +412,21 @@ async function rcKnopf(product, url = '/pages/muster?produkt=x') {
 test('Rollenrechner: Musterknopf nennt die Farbe, nicht die Breite', async () => {
   assert.ok(rcStart > 0, 'Liquid-Block im Rechner nicht gefunden');
   const nurBreite = { options_with_values: [{ name: 'Breite' }], selected_or_first_available_variant: { options: ['200 cm'] }, tags: ['art: vinyl', 'farbe: eiche grau'] };
-  assert.equal(await rcKnopf(nurBreite), 'Kostenloses Muster in Eiche grau|/pages/muster?produkt=x&farbe=Eiche+grau');
+  assert.equal(await rcKnopf(nurBreite), 'Muster in Eiche grau bestellen|/pages/muster?produkt=x&farbe=Eiche+grau');
   const breiteFarbe = { options_with_values: [{ name: 'Breite' }, { name: 'Farbe' }], selected_or_first_available_variant: { options: ['300 cm', 'Eiche Beige'] }, tags: [] };
-  assert.match(await rcKnopf(breiteFarbe), /^Kostenloses Muster in Eiche Beige\|/);
+  assert.match(await rcKnopf(breiteFarbe), /^Muster in Eiche Beige bestellen\|/);
   const farbeBreite = { options_with_values: [{ name: 'Farbe' }, { name: 'Breite' }], selected_or_first_available_variant: { options: ['Grau Anthrazit', '200 cm'] }, tags: [] };
-  assert.match(await rcKnopf(farbeBreite), /^Kostenloses Muster in Grau Anthrazit\|/);
+  assert.match(await rcKnopf(farbeBreite), /^Muster in Grau Anthrazit bestellen\|/);
 });
 
 // Restrollen (07.11.) haben nur "Default Title" und oft keinen Farbtag: dann
-// stand "Kostenloses Muster in" ohne Farbe im Knopf. Ohne bekannte Farbe gilt
+// stand "Muster in" ohne Farbe im Knopf. Ohne bekannte Farbe gilt
 // die zweite Beschriftung; der Tag "farbe: gruen" wird zum Anzeigenamen.
 test('Rollenrechner: ohne Farboption und Farbtag kein haengendes "in"', async () => {
   const ohneAlles = { options_with_values: [{ name: 'Title' }], selected_or_first_available_variant: { options: ['Default Title'] }, tags: ['restposten'] };
-  assert.equal(await rcKnopf(ohneAlles), 'Kostenloses Muster bestellen|/pages/muster?produkt=x&farbe=');
+  assert.equal(await rcKnopf(ohneAlles), 'Muster bestellen|/pages/muster?produkt=x&farbe=');
   const mitTag = { options_with_values: [{ name: 'Title' }], selected_or_first_available_variant: { options: ['Default Title'] }, tags: ['farbe: gruen'] };
-  assert.equal(await rcKnopf(mitTag), 'Kostenloses Muster in Grün|/pages/muster?produkt=x&farbe=Gr%C3%BCn');
+  assert.equal(await rcKnopf(mitTag), 'Muster in Grün bestellen|/pages/muster?produkt=x&farbe=Gr%C3%BCn');
 });
 
 // Sauberlauf von der Rolle (Tag ohne-muster) bekam bis 09.10. als Musterziel

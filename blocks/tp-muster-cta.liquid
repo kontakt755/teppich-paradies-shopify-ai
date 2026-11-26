@@ -19,8 +19,8 @@
   - Laminat, Parkett, Kork: wegen des hoeheren Musterwerts nur auf Anfrage
     (Inhaber 14.10.2026). Der Knopf fuehrt zum Kontaktformular
     (thema=musteranfrage, assets/tp-sample-request.js) statt in den
-    Musterkonfigurator. Knopftext "Muster anfragen" ohne "kostenlos"
-    (Inhaber 28.10.2026, Werkbank w-161).
+    Musterkonfigurator. Knopftext "Muster anfragen", ohne Preisangabe
+    (Inhaber 28.10.2026, Werkbank w-161; Mustergebuehr-Test ab 01.12.2026).
   - Tag muster-klebevariante (Klickvinyl dieses Lieferanten): Das Muster gibt es
     nur als Klebe-Ausfuehrung im gleichen Dekor; das sagt die Zusatzzeile direkt
     im Knopf (auch mobil sichtbar). Dieselbe Zeile zeigt der Musterkonfigurator
@@ -77,6 +77,10 @@
     endcapture
     assign tp_mc_grenze = tp_mc_grenze | strip
   endunless
+  # Herstellermuster (snippets/tp-herstellermuster): kostenlos direkt vom Hersteller
+  capture tp_mc_hersteller
+    render 'tp-herstellermuster', product: product
+  endcapture
   # Geschenkgutschein: kein Muster (w-034)
   if product.gift_card?
     assign tp_mc_url = ''
@@ -94,9 +98,11 @@
         Muster anfragen
         <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Weil diese Muster wertiger sind, senden wir sie nach kurzer Anfrage zu – wir stimmen Ihr Dekor mit Ihnen ab.</small>
       {%- else -%}
-        {{ block.settings.label | default: 'Kostenloses Muster anfragen' | escape }}
+        {{ block.settings.label | default: 'Muster bestellen' | escape }}
         {%- if tp_mc_grenze != blank -%}
-          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Höchstens 2 Vinyl-Muster je Bestellung, versandkostenfrei</small>
+          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Höchstens 2 Vinyl-Muster je Bestellung. Versand 4,99 € je Bestellung</small>
+        {%- elsif tp_mc_hersteller contains 'ja' -%}
+          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Muster kostenlos, Versand direkt vom Hersteller</small>
         {%- elsif block.settings.hinweis != blank -%}
           <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</small>
         {%- endif -%}
@@ -113,7 +119,7 @@
     {%- unless tp_mc_anfrage -%}{%- render 'tp-muster-lager', product: product -%}{%- endunless -%}
     {%- if tp_mc_grenze != blank -%}
       <button class="tp-muster-cta__link-{{ tp_mc_id }} tp-muster-cta-voll" type="button" disabled aria-describedby="tp-muster-cta-grenze-{{ tp_mc_id }}" data-tp-mg-voll{% unless tp_mc_grenze == 'voll' %} hidden{% endunless %}>
-        {{- block.settings.label | default: 'Kostenloses Muster anfragen' | escape -}}
+        {{- block.settings.label | default: 'Muster bestellen' | escape -}}
       </button>
       <p class="tp-muster-cta-grenze" id="tp-muster-cta-grenze-{{ tp_mc_id }}" data-tp-mg-voll{% unless tp_mc_grenze == 'voll' %} hidden{% endunless %}>
         2 von 2 Vinyl-Mustern im Warenkorb – mehr sind je Bestellung nicht möglich.
@@ -210,14 +216,14 @@
       "type": "text",
       "id": "label",
       "label": "Beschriftung",
-      "default": "Kostenloses Muster anfragen"
+      "default": "Muster bestellen"
     },
     {
       "type": "text",
       "id": "hinweis",
       "label": "Zeile darunter (leer = ausgeblendet)",
-      "info": "Nur Zusagen nennen, die auch gelten. Der kostenlose Musterversand liegt im Versandprofil \"Kostenlose Muster\".",
-      "default": "Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei"
+      "info": "Nur Zusagen nennen, die auch gelten. Der Musterversand kostet 4,99 € je Bestellung (Tarif im Versandprofil der Muster).",
+      "default": "Versand 4,99 € je Bestellung"
     }
   ],
   "presets": [

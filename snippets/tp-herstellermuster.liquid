@@ -1,0 +1,48 @@
+{%- doc -%}
+  Einzige Stelle im Theme, die entscheidet, ob ein Muster ein Herstellermuster
+  ist: Der Hersteller schickt es kostenlos direkt an den Kunden (Inhaber
+  21.11.2026, Versandprofil "Herstellermuster kostenlos"). Alles andere kostet
+  4,99 € Versand (Mustergebuehr-Test ab 01.12.2026).
+
+  Aufruf: {% render 'tp-herstellermuster', product: product %} gibt "ja" oder
+  "nein" aus (auswerten mit contains 'ja'). Gilt fuer das Quellprodukt und fuer
+  das Musterprodukt der Warenkorbzeile (Handle "muster-<Quellhandle>").
+  {% render 'tp-herstellermuster', liste: true %} gibt die Handle-Liste von H
+  als JSON aus; die Musterseite gibt sie an assets/tp-sample-checkout-core.js
+  (isHerstellerMuster) weiter, damit Liquid und JS dieselbe Liste nutzen.
+
+  Regel:
+  1. Vendor Vorwerk oder JAB Anstoetz (wie bisher), ausser Tag sonderposten
+     (Sonderposten liegen im Lager, nicht beim Hersteller).
+  2. Lieferant H: Vendor ist TeppichParadies, im Theme gibt es kein lesbares
+     Merkmal (einkauf.lieferant und grosshandel.sku sind nicht fuer die
+     Storefront freigegeben, Tags fehlen). shortcut: feste Handle-Liste, bei
+     jedem neuen Produkt von H ergaenzen (sonst bleibt sein Muster im Profil
+     kostenlos, die Seite sagt aber 4,99 €); upgrade: sobald ein Tag oder Metafeld "herstellermuster" an den Produkten steht.
+     Stand 21.11.2026: 33 Produkte, 2.550 Mustervarianten gemeinsam mit D und E
+     im Profil "Herstellermuster kostenlos".
+
+  @param {object} [product] - Quell- oder Musterprodukt
+  @param {boolean} [liste] - true: statt ja/nein die H-Handles als JSON
+{%- enddoc -%}
+{%- liquid
+  assign tphm_h = 'arvessa-teppichboden-400cm belisca-teppichboden-400cm bergana-teppichboden-400cm-500cm brumina-teppichboden-400cm-500cm bruneva-teppichboden-400cm coravia-teppichboden-400cm corlana-teppichboden-400cm-500cm corsella-teppichboden-400cm corvina-teppichboden-400cm dunessa-teppichboden-400cm-500cm feldessa-teppichboden-400cm felisa-teppichboden-400cm-500cm fiordessa-teppichboden-400cm-500cm karessa-teppichboden-400cm lanzetta-teppichboden-400cm-500cm linara-teppichboden-400cm linvara-teppichboden-400cm marlena-teppichboden-400cm-500cm mavena-teppichboden-400cm mirvella-teppichboden-400cm nivessa-teppichboden-400cm olvessa-teppichboden-400cm-500cm ondessa-teppichboden-400cm-500cm ordella-teppichboden-400cm safrella-teppichboden-400cm solvina-teppichboden-400cm sovrana-teppichboden-400cm tavessa-teppichboden-400cm tessira-teppichboden-400cm tramella-teppichboden-400cm varenta-teppichboden-400cm-500cm velaria-teppichboden-400cm zandora-teppichboden-400cm' | split: ' '
+  if liste
+    echo tphm_h | json
+  else
+    assign tphm_treffer = 'nein'
+    assign tphm_vendor = product.vendor | default: '' | downcase | strip
+    assign tphm_tags = product.tags | default: ''
+    unless tphm_tags contains 'sonderposten'
+      if tphm_vendor == 'vorwerk' or tphm_vendor == 'jab anstoetz'
+        assign tphm_treffer = 'ja'
+      else
+        assign tphm_handle = product.handle | default: '' | remove_first: 'muster-'
+        if tphm_h contains tphm_handle
+          assign tphm_treffer = 'ja'
+        endif
+      endif
+    endunless
+    echo tphm_treffer
+  endif
+-%}

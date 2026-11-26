@@ -274,7 +274,7 @@
                 "messen_link": "/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen",
                 "muster_anzeigen": true,
                 "lieferzeit": "2–5 Werktage",
-                "muster_label": "Kostenloses Muster in {farbe}"
+                "muster_label": "Muster in {farbe} bestellen"
               },
               "blocks": {}
             },
@@ -320,8 +320,8 @@
               "type": "tp-muster-cta",
               "disabled": true,
               "settings": {
-                "label": "Kostenloses Muster anfragen",
-                "hinweis": "Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei"
+                "label": "Muster bestellen",
+                "hinweis": "Versand 4,99 € je Bestellung"
               }
             },
             "tp_zubehoer_empfehlung": {

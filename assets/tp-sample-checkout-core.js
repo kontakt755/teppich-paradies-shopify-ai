@@ -2,7 +2,7 @@
   var SAMPLE_HANDLE = 'kostenloses-muster';
   // Hoechstens 2 Muster je Bestellung, fuer alle Kunden (Inhaber 02.11.2026;
   // der Abonnenten-Bonus entfaellt). Die Grenze ist wie bisher nur eine
-  // Browser-Grenze - Muster sind kostenlos, es gibt keine serverseitige Pruefung.
+  // Browser-Grenze, es gibt keine serverseitige Pruefung.
   var MAX_SAMPLES = 2;
   // Lager-Bonus (Inhaber 11.11.2026, w-325): 1 Muster zusaetzlich, sobald mindestens
   // eines der Muster ein "Muster auf Lager" ist (markSofort). Die Warenkorbzeile
@@ -10,8 +10,7 @@
   // mehrere Produkte und Tabs am Warenkorb haengt. Die Vinyl-Grenze bleibt.
   var LAGER_BONUS = 1;
 
-  // Vinyl-Muster kosten uns Geld (Inhaber 13.10.2026): sie bleiben fuer den
-  // Kunden kostenlos, aber hoechstens 2 je Bestellung. Gezaehlt werden Warenkorbzeilen mit der Property
+  // Vinyl-Muster kosten uns Geld (Inhaber 13.10.2026): hoechstens 2 je Bestellung. Gezaehlt werden Warenkorbzeilen mit der Property
   // _Muster_Gruppe = vinyl (setzt buildCartItems). Dieselbe Typliste steht in
   // snippets/tp-muster-grenze.liquid (Knopf auf der Produktseite).
   // Teppichboden und alle anderen Muster: unveraendert die Gesamtgrenze oben.
@@ -32,11 +31,15 @@
 
   // Sonderposten (Tag sonderposten) liegen bei uns im Lager - dort passt der
   // Hinweis "kommt direkt vom Hersteller" nicht (Rundgang 06.11.2026).
-  function isHerstellerMuster(product) {
+  // Lieferant H (Vendor TeppichParadies) hat im Theme kein lesbares Merkmal:
+  // handlesH ist die Liste aus snippets/tp-herstellermuster (Musterseite gibt sie
+  // weiter), dieselbe wie im Liquid. Herstellermuster = kostenlos (Inhaber 21.11.2026).
+  function isHerstellerMuster(product, handlesH) {
     if (!product) return false;
     var tags = Array.isArray(product.tags) ? product.tags : String(product.tags || '').split(',');
     var sonderposten = tags.some(function (tag) { return String(tag || '').trim().toLowerCase() === 'sonderposten'; });
     if (sonderposten) return false;
+    if (Array.isArray(handlesH) && handlesH.indexOf(String(product.handle || '')) !== -1) return true;
     return HERSTELLER_MUSTER.indexOf(String(product.vendor || '').trim().toLowerCase()) !== -1;
   }
 
@@ -49,7 +52,7 @@
 
   // Fuer diese neu importierten Produktarten wurden bewusst keine Muster
   // angelegt (Laminat, Parkett, Kork: Muster nur auf Anfrage, Inhaber 14.10.2026).
-  // Ohne Sperre wuerde der Konfigurator den generischen kostenlosen
+  // Ohne Sperre wuerde der Konfigurator den generischen
   // Musterartikel fuer ein nicht vorhandenes physisches Muster verwenden.
   function canSample(product) {
     if (!product) return false;
@@ -150,7 +153,7 @@
   // Musterzeilen erkennt man an der Property _Muster_ID, nicht an einer
   // Varianten-ID: seit 2026-09-16 hat jedes Muster eine eigene Variante im
   // Musterprodukt seiner Qualitaet ("Muster Piumera Teppichboden" / Farbe).
-  // Das Sammelprodukt "Kostenloses Muster" bleibt nur als Rueckfall.
+  // Das Sammelprodukt (Handle kostenloses-muster) bleibt nur als Rueckfall.
   function getSampleState(cart) {
     var keys = new Set();
     var vinylCount = 0;
@@ -409,7 +412,7 @@
       };
       // Mit eigener Variante stehen Produkt und Farbe im Titel der Zeile
       // ("Muster Piumera Teppichboden - Taupe Dunkel"). Nur der Rueckfall auf
-      // das Sammelprodukt "Kostenloses Muster" braucht sie als Properties,
+      // das Sammelprodukt (Handle kostenloses-muster) braucht sie als Properties,
       // sonst wuesste niemand, welches Muster gemeint ist.
       if (!eigeneVariante) {
         properties.Produkt = args.product.title;
