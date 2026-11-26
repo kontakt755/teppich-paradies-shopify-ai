@@ -146,7 +146,8 @@
 
   {%- capture tfi_farbenliste -%}
     {%- for tfi_e in metaobjects.tp_teppichfarbe.values -%}
-      {%- if tfi_e.produkt.value.id == tfi_p.id and tfi_e.system.handle != eigene -%}
+      {%- comment -%} Eintrag mit geloeschter Variante ergaebe einen Link ohne Text {%- endcomment -%}
+      {%- if tfi_e.produkt.value.id == tfi_p.id and tfi_e.system.handle != eigene and tfi_e.variante.value != blank -%}
         <li><a href="{{ tfi_e.system.url }}">{{ tfi_e.variante.value.option1 | escape }}</a></li>
       {%- endif -%}
     {%- endfor -%}

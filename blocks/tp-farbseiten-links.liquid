@@ -6,7 +6,7 @@
 {% enddoc %}
 {%- capture tp_fl_liste -%}
   {%- for tp_fl_e in metaobjects.tp_teppichfarbe.values -%}
-    {%- if tp_fl_e.produkt.value.id == closest.product.id -%}
+    {%- if tp_fl_e.produkt.value.id == closest.product.id and tp_fl_e.variante.value != blank -%}
       <li><a href="{{ tp_fl_e.system.url }}">{{ tp_fl_e.variante.value.option1 | escape }}</a></li>
     {%- endif -%}
   {%- endfor -%}
