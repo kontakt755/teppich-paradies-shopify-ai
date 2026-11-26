@@ -137,9 +137,9 @@ Aktionen und Streichpreise bei Teppichboden, Preisstufen der gekettelten Fußlei
 
 Claude führt und arbeitet standardmäßig allein; Codex prüft vor kritischen Merges oder setzt per `ki:frag -- umsetzen` in eigener Kopie um; höchstens drei Review-Runden je PR; bei erschöpftem Kontingent (Exit 3) Stand sichern. Vollständige Regeln (gelten auch für Codex): `.claude/skills/codex/SKILL.md`, Abschnitt „Zusammenarbeit Claude und Codex“.
 
-- **Nacheinander, nicht parallel:** eine Aufgabe, eine Arbeitskopie, ein Schreiber. Zusätzliche parallele Agenten oder Sitzungen nur mit Freigabe des Benutzers; lesende Subagenten für breite Suchen sind erlaubt, ihr Ergebnis wird abgewartet.
+- **Parallel nur getrennt:** parallele Agenten sind erlaubt, wenn jeder Teil eine eigene Arbeitskopie und keine gemeinsamen Dateien hat. Agent-Teams (Agenten, die sich während der Arbeit abstimmen) nur mit Freigabe des Benutzers.
 - **Ausgangsstand zuerst:** vor der ersten Änderung `git status` festhalten. Was dort schon geändert ist, stammt von anderen Sitzungen — erhalten, nicht überschreiben, nicht als eigene Arbeit ausgeben.
-- **Fertig heißt belegt:** umgesetzt und getestet, mit Befehl und Ergebnis. Was nicht getestet werden konnte, steht ausdrücklich als ungetestet im Bericht.
+- **Fertig heißt belegt** (Befehl und Ergebnis, Ungetestetes ausdrücklich nennen): `godmode:completion-gate`.
 - Externe 429/503/Timeouts: höchstens ein unmittelbarer Script-Retry (`workflow/retry.mjs`). Einzige Ausnahme: Der HTTP-Check der Preview direkt nach dem Push prüft 5xx (Kaltstart) bis zu zweimal mit Wartezeit nach (`PREVIEW_HTTP_WAITS_MS`); 4xx und bleibende 5xx brechen ab, die Wartezeiten nicht verlängern. Cloud-/Proxy-403 bei Storefront-Zugriff heißt: lokal auf dem Mac ausführen.
 
 ## Chat-Wächter (stehende Freigabe des Benutzers, 2026-11-11)
@@ -155,19 +155,39 @@ Eine Sitzung fragt bei einem unkritischen PR nicht mehr „Soll ich mergen?“, 
 - **Weiter nur mit Ja des Benutzers:** kritische PRs (Liste unter „Chat-Wächter“ oben, dazu dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · PRs, deren Titel oder Auftrag einen Termin nennt („erst ab …“) · wenn der Benutzer für diesen Auftrag „nur PR“, „nicht mergen“ oder „nur Plan“ gesagt hat.
 - Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund: melden und die eine Zeile nennen, die der Benutzer schreiben müsste, nicht umgehen.
 
+## Arbeitsmodus godmode
+
+Die Skills des Plugins godmode (Planung, test-first, Review, Nachweis vor „fertig“) gelten für alle Sitzungen. Bei Widerspruch gilt diese Datei.
+
+- **Keine Rückfragen aus godmode:** Wo `intent-discovery`, `rationale` oder `merge-protocol` den Benutzer wählen lassen wollen, die empfohlene Option nehmen, als „vorläufig“ kennzeichnen und weiterarbeiten. Gefragt wird nur in den Fällen aus „Selbst entscheiden“.
+- **Abschluss** immer nach Skill `ship`, nie nach den Optionen von `merge-protocol`.
+- **test-first** bei Liquid- und Theme-Dateien: Der Test sind die Guards (`npm run -s pruefen`), die Preview und ein Screenshot.
+- **cross-model-review** läuft über `npm run -s ki:frag -- review <PR>` (Codex), Pflicht nur bei kritischen PRs (Liste unter „Chat-Wächter“); sonst prüft Claude.
+- **knowledge-capture** schreibt in den Gedächtnis-Vault nach dessen Regeln (Abschnitt „Gedächtnis, Übergaben und Review“). Neue Regeln nur per PR.
+- Modellwahl je Aufgabe und Subagent: `godmode:model-routing`.
+
+## Selbst entscheiden
+
+Ohne Frage erledigen und danach in einer Zeile berichten:
+
+- alles zum Ablauf: Reihenfolge, anfangen, weitermachen, Fehler beheben, neue Sitzung oder hier
+- fertige, geprüfte Arbeit mergen und live stellen, auch wenn ein Gate vorher abbrach und die Ursache behoben ist (Grenzen: „Eigenen PR selbst mergen“)
+- Speichern, Einreichen und Anlegen im Browser, wenn es zum Auftrag gehört
+- temporäre Dateien, Kopien und alte Worktrees aufräumen
+- technische Wege wählen (Skript oder Dienst, Bibliothek, Aufbau)
+- Werkbank-Einträge anlegen und verknüpfen
+
+Weiter fragen, aber gebündelt in **einer** Frage am Ende, nicht mittendrin:
+
+- Preise, Rabatte, Werbebudget
+- was Kunden sehen und Geschmackssache ist: Bildwahl, Wortlaut, Knopf-Beschriftung
+- alles aus „NIEMALS ohne ausdrückliche Freigabe“
+
+Keine Schlussfragen der Art „Soll ich …?“: Gehört der nächste Schritt zum Auftrag, wird er gemacht. Nennt der Auftrag eine Außenwirkung ausdrücklich (z. B. „Storniere Bestellung 1234 und erstatte 59,90 €“), ist das die Freigabe; nicht noch einmal fragen. Unklare Daten werden nicht erfragt, sondern als offener Fall dokumentiert (Abschnitt „Produktdaten“).
+
 ## Kommunikation
 
-Der Benutzer möchte möglichst wenig Rückfragen.
-
-Bei klaren, reversiblen Aufgaben: analysieren → umsetzen → testen → live prüfen → kurz berichten.
-
-Nur nachfragen, wenn:
-
-- eine wichtige geschäftliche Entscheidung fehlt
-- Daten nicht eindeutig belegbar sind
-- eine irreversible oder riskante Änderung nötig wäre
-- Kosten ausgelöst würden
-- mehrere fachlich unterschiedliche Lösungen erhebliche Auswirkungen hätten
+Bei klaren, reversiblen Aufgaben: analysieren → umsetzen → testen → live prüfen → kurz berichten. Wann gefragt wird: „Selbst entscheiden“.
 
 Abschlussberichte kompakt halten:
 

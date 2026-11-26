@@ -4,7 +4,7 @@
 
 | Datei | Zweck |
 |---|---|
-| `settings.json` | registriert die Hooks und die Freigaben (`permissions.allow`) |
+| `settings.json` | registriert die Hooks, die Freigaben (`permissions.allow`) und das Plugin godmode (siehe unten) |
 | `hooks/session-start.sh` | zeigt den Kurzstand des Control Centers und offene Übergaben an Claude aus dem Vault (`scripts/uebergaben.mjs --an claude --kurz`; beides immer) und in Remote-Sessions den Projektzustand samt Abhängigkeiten (siehe unten) |
 | `hooks/gedaechtnis-sync.sh` | Gedächtnis-Ordner (Obsidian-Vault) per Git: pull bei SessionStart, push bei SessionEnd. Findet den Vault über den Hauptcheckout, also auch aus Worktrees (bis 24.10. lief er dort ins Leere). Fehler stehen auf stderr; mit `--streng` (so ruft `npm run gedaechtnis:sync` ihn auf, z. B. für Codex) endet er dann mit Exit 1, als Hook nie |
 | `hooks/hauptcheckout-nachziehen.sh` | aus `session-start.sh`: zieht den Hauptcheckout still auf `origin/main`, nur wenn er losgelöst und sauber ist (nie Worktrees, Branches oder geänderte Dateien; ohne Netz nichts) |
@@ -27,6 +27,22 @@
 | `skills/theme-audit/` | nur lesendes Theme-Audit mit Pruefliste; uebernommen aus zwei MIT-Skills (Quellen in `QUELLEN.md`), Bericht nach `docs/audits/` |
 | `hooks/pre-commit-unmerged-branch.sh`, `hooks/SETUP.md` | Git-Pre-Commit-Hook gegen Commits auf alten, nie gemergten Branches (warnt ab 7, blockiert ab 30 Tagen; AGENTS.md Fallstrick 6). Vergleicht seit 16.10. mit `origin/main` statt dem lokalen `main`. Wirkt nur, wenn er je Rechner installiert ist (`hooks/SETUP.md`; auf dem Mac seit 16.10.) |
 | `agents/control-center.md` | Dashboard-Mitarbeiter (Subagent), arbeitet nach dem Skill oben |
+
+## Plugin godmode (Arbeitsmodus, `AGENTS.md`)
+
+`settings.json` traegt die Marketplace-Quelle (`extraKnownMarketplaces`, GitHub `NoobyGains/godmode`) und
+`enabledPlugins: {"godmode@godmode": true}`. **Das installiert das Plugin nicht von selbst:** Laut Doku
+(code.claude.com/docs/en/plugins/loading.md, „Enabled in project settings but not installed“) muss es je
+Rechner einmal installiert werden, nachdem der Ordner als vertrauenswuerdig bestaetigt ist:
+
+```
+claude plugin install godmode --marketplace NoobyGains/godmode --scope project
+```
+
+In einer Sitzung geht dasselbe mit `/plugin marketplace add NoobyGains/godmode` und
+`/plugin install godmode@godmode --scope project`. Die Plugin-Dateien liegen unter `~/.claude/plugins`
+und gelten damit auch fuer alle Worktrees dieses Rechners. Fehlt das Plugin, zeigt `/plugin` unter
+„Errors“ den Hinweis „isn't installed here“. Arbeitsdateien des Plugins (`.godmode/`) sind ignoriert.
 
 ## Was bewusst nicht mehr hier liegt
 
