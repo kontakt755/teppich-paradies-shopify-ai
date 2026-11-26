@@ -123,11 +123,11 @@ export function viewHilfe() {
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Unter <b>Weitere Bereiche</b> auf <b>Bestellen</b>, Reiter <b>Je Lieferant</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
+        <li>Unter <b>Weitere Bereiche</b> auf <b>Bestellen</b>, Reiter <b>Je Lieferant</b>: je Lieferant eine Karte mit Zahlen und Knöpfen – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. <b>Positionen zeigen</b> klappt die Liste auf, <b>Zuerst klären</b> oben öffnet sich ebenfalls erst auf Klick. Was schon beim Kunden ist, zählt dort als erledigt.</li>
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
         <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – Warenbestellungen schickst du selbst ab. Nur vollständige Muster, die uns der Lieferant kostenlos schickt, kann das Dashboard selbst per Mail bestellen – die stehen dann schon als „bestellt“ da. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
-        <li><b>Positionen bearbeiten</b> klappt die einzelnen Artikel auf: Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen.</li>
+        <li>Danach <b>Positionen bearbeiten</b> (bei Artikeln ohne Lieferant sofort): Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen.</li>
         <li>Versehentlich „bestellt“ geklickt? <b>Rückgängig</b> direkt danach, oder später <b>Zurück auf offen…</b> am Artikel bzw. <b>Alle zurück auf offen…</b> an der Karte.</li>
         <li>Muster selbst da (Katalog, Musterlager)? <b>Haben wir da…</b> am Muster oder in der Kundenakte: dann wird es nicht bestellt, sondern erscheint als „Muster vorbeibringen“ bzw. „Muster verschicken“ – mit Ort des Kunden.</li>
       </ol>

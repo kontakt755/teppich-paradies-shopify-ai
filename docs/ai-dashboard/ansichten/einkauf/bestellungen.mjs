@@ -275,6 +275,20 @@ export function einkaufAuftragZeile(a) {
 // "Eingetroffen" = bei uns angekommen, noch nicht beim Kunden. Danach ist der Einkauf fertig.
 const AF_FILTER_LABEL = { offen: 'Noch zu bestellen', bestellt: 'Bestellt', eingetroffen: 'Bei uns eingetroffen', erledigt: 'Erledigt' };
 
+/**
+ * "Zuerst klären" zugeklappt mit Zahlen; Auf/Zu merkt ereignisse.mjs (data-collapsible).
+ * Bei einer ausgewaehlten Bestellung (auftrag=) steht es offen, ohne die gemerkte Wahl zu aendern.
+ */
+function zuerstKlaerenKarte(klaeren, rot, einzeln) {
+  let offen = einzeln;
+  try { if (!einzeln) offen = localStorage.getItem('tp-heute-einkauf-klaeren') === '1'; } catch { /* ohne Speicher: zu */ }
+  const zahlen = [rot ? `<span class="wait-crit">${rot} blockiert</span>` : '', klaeren.length > rot ? `<span class="wait-warn">${klaeren.length - rot} prüfen</span>` : ''].filter(Boolean).join(' · ');
+  return `<details class="card section plain-details problem-card"${einzeln ? '' : ' data-collapsible="einkauf-klaeren"'}${offen ? ' open' : ''}>
+      <summary><h2>Zuerst klären</h2><span class="preview">${zahlen}</span></summary>
+      <div><p class="small muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</p><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></div>
+    </details>`;
+}
+
 /** Filter nach Auftragsfluss-Schritt. Ohne Auswahl: alles ausser "Erledigt". */
 function afFilterChips(allePositionen) {
   const zaehler = { offen: 0, bestellt: 0, eingetroffen: 0, erledigt: 0, eigen: 0, gesperrt: 0 };
@@ -327,7 +341,7 @@ export function viewEinkaufBestellungen() {
       ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}
       ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}
     </div>
-    ${klaeren.length ? `<section class="card problem-card"><div class="card-head"><h2>Zuerst klären</h2><span class="more muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</span></div><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></section>` : ''}
+    ${klaeren.length ? zuerstKlaerenKarte(klaeren, rot, !!auftragId) : ''}
     <div class="section-bar"><h2 class="section-title" style="margin:0">${art === 'muster' ? 'Muster bestellen je Lieferant' : art === 'ware' ? 'Ware bestellen je Lieferant' : 'Bestellen je Lieferant'}</h2>${afFilterChips([...ware, ...muster])}</div>
     ${abgeschlossen}
     ${lieferantenKartenHtml({ gruppeKarte: einkaufGruppeKarte, daten: d })}
