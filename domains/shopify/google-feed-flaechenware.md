@@ -143,6 +143,17 @@ einen Variantenpreis je cm bzw. je 0,01 m² und standen mit 0,18 bis 1,76 EUR in
   Feed nicht liefert, bleibt aus Shopping (das Skript hat deshalb keinen Vorher-Abgleich).
 - **Titel:** Produkttitel, alle Optionswerte (Farbe, Staerke, Ausfuehrung), Beispielgroesse.
 
+## Grundpreis ohne sichtbaren Grundpreis im Shop (seit 2026-11-26)
+
+Die Google-&-YouTube-App sendet `unit_pricing_measure` nur bei `showUnitPrice = true`.
+Der Shop zeigt den Grundpreis bewusst nicht (Inhaber 2026-11-26). Deshalb schreibt der
+Job `grundpreis` in `.github/workflows/feed-tnm-preise.yml`
+(`operations/scripts/feed-grundpreis-abruf.mjs`) die Zusatzquelle `tp-grundpreis.txt`
+auf `feed-daten`: Varianten von Teppichboden, Vinyl von der Rolle und Sauberlauf im
+Google-Kanal mit `unitPriceMeasurement` in m² und `showUnitPrice = false`, ohne die IDs
+aus `tp-tnm-preise.txt` und `tp-nachmass-preise.txt`. Faellt die Zeilenzahl unter 80 %
+des Vortags, bleibt die alte Datei stehen.
+
 ## Wie der Variantenausschluss technisch geht
 
 Der Shopify-Google-Kanal kennt keinen Ausschluss einzelner Varianten. Zwei Wege:

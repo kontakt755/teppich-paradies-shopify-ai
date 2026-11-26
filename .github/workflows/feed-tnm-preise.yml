@@ -132,11 +132,64 @@ jobs:
           git commit -q -m "Nach-Mass-Beispiel-Endpreise $(date -u +%F)"
           git push -q origin feed-daten
 
+  # Grundpreis (m²) fuer Teppichboden, Vinyl von der Rolle und Sauberlauf: die App
+  # sendet ihn nur bei showUnitPrice=true, der Shop bleibt aber ohne sichtbaren
+  # Grundpreis (Inhaber 26.11.2026). Nach nachmass, weil die IDs beider Dateien
+  # ausgenommen werden und nie zwei Jobs gleichzeitig auf feed-daten pushen.
+  grundpreis:
+    needs: nachmass
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    env:
+      HAT_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID != '' }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Admin-Token holen (client_credentials)
+        if: ${{ env.HAT_CLIENT_ID == 'true' }}
+        env:
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+        run: node scripts/shopify-oauth.mjs --grant client-credentials --github-env
+
+      - name: Andere Quellen vom Zweig feed-daten holen
+        run: |
+          git fetch --depth=1 origin feed-daten
+          git show origin/feed-daten:tp-tnm-preise.txt > tnm.txt
+          git show origin/feed-daten:tp-nachmass-preise.txt > nachmass.txt
+          git show origin/feed-daten:tp-grundpreis.txt > vorher.txt || rm -f vorher.txt
+
+      - name: Grundpreis-Datei erzeugen
+        env:
+          SHOPIFY_ADMIN_TOKEN: ${{ env.SHOPIFY_ADMIN_TOKEN || secrets.SHOPIFY_ADMIN_TOKEN }}
+        run: node operations/scripts/feed-grundpreis-abruf.mjs --aus tp-grundpreis.txt --ohne tnm.txt --ohne nachmass.txt --vorher vorher.txt
+
+      - name: Auf feed-daten veroeffentlichen
+        run: |
+          mkdir veroeffentlichung && cd veroeffentlichung
+          git init -q -b feed-daten
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git fetch -q --depth=1 origin feed-daten
+          git checkout -q -B feed-daten FETCH_HEAD
+          cp ../tp-grundpreis.txt .
+          git add tp-grundpreis.txt
+          if git diff --cached --quiet; then echo "keine Aenderung"; exit 0; fi
+          git commit -q -m "Grundpreis-Zusatzquelle $(date -u +%F)"
+          git push -q origin feed-daten
+
   # Fehllaeufe blieben unbemerkt (30.10.-03.11.2026): Jeder Fehllauf meldet sich
   # im selben offenen Issue, Weg wie datenschutz-pruefung.yml. Eigener Job, damit
   # nur er Issues schreiben darf; das Issue nach der Behebung von Hand schliessen.
   alarm:
-    needs: [preise, nachmass]
+    needs: [preise, nachmass, grundpreis]
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     permissions:
