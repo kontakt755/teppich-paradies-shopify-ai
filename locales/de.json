@@ -1221,6 +1221,7 @@
             "description_transactional_html": "Sie erhalten möglicherweise Textnachrichten zu Bestellbestätigungen und Versandaktualisierungen. Antworten Sie mit dem Wort STOPPEN, um das Abo abzubestellen. Antworten Sie mit dem Wort HILFE, um Unterstützung anzufordern. Die Häufigkeit der Nachrichten variiert. Es fallen u. U. Gebühren für die Nachrichten und Datennutzung an. Schauen Sie sich unsere %{privacy_policy_modal_link} und %{terms_of_service_modal_link} an."
           }
         },
+        "accept_marketing_checkbox_label": "Neuigkeiten, Angebote und eine Bitte um Bewertung per E-Mail erhalten (jederzeit abbestellbar)",
         "post_accept_marketing_checkbox_label": "Sie haben ein Abonnement für Neuigkeiten und Angebote per E-Mail abgeschlossen",
         "pending_accept_marketing_checkbox_label": "Überprüfen Sie Ihre E-Mails, um Ihr Abonnement für Neuigkeiten und Angebote zu bestätigen",
         "whatsapp": {
