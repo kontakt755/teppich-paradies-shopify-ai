@@ -89,12 +89,12 @@ test('#25 Herstellermuster (M-VW-, M-JAB-): direkt vom Hersteller, getrennte Ums
     line('Muster Testmarke Bingo Teppichboden', 'M-VW-TEST-5Y91-400', {}, 'Silbergrau (5Y91)'),
     line('Muster Testvelours Teppich nach Maß', 'M-TEST_036', {}, 'Sand'),
   ] });
-  assert.match(html, /bestellen wir für Sie beim Hersteller und schicken sie weiter/);
+  assert.match(html, /schickt der Hersteller direkt an Sie – in einer eigenen Sendung/);
   assert.match(html, /Muster Testmarke Bingo Teppichboden – Silbergrau \(5Y91\) \(vom Hersteller\)/);
   assert.doesNotMatch(html, /Muster Testvelours Teppich nach Maß – Sand \(direkt/);
   assert.doesNotMatch(html, /in den nächsten Werktagen/);
   const jab = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [line('Muster Testvinyl', 'M-JAB-TEST-1'), line('Testleiste', 'TEST_1')] });
-  assert.match(jab, /einige vom Hersteller kommen etwas später in einer eigenen Sendung/);
+  assert.match(jab, /einige direkt vom Hersteller in einer eigenen Sendung/);
   const eigen = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [line('Muster Testvelours', 'M-TEST_036')] });
   assert.match(eigen, /in den nächsten Werktagen per Post/);
   assert.doesNotMatch(eigen, /Hersteller/);
@@ -318,7 +318,7 @@ test('Herstellermuster kostenlos: eigener Satz ohne Gutschein, Mischkorb erklaer
   sendung[0].line_item.product = { handle: 'muster-arvessa-teppichboden-400cm' };
   const vers = await eng.parseAndRender(versand, { ...vctx(sendung), shipping_price: 0, line_items: [hZeile] });
   assert.match(vers, /\(vom Hersteller\)/);
-  // Herstellermuster gehen ueber den Laden: was in dieser Sendung steht, ist unterwegs (23.11.2026)
+  // Versandmail nennt nur, was in dieser Sendung ist; Herstellermuster kommen direkt (Inhaber 26.11.2026)
   assert.doesNotMatch(vers, /eigenen Sendung/);
 });
 
