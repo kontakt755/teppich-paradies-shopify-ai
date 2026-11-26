@@ -1376,10 +1376,34 @@
         "padding-block-start": 32,
         "padding-block-end": 32
       }
+    },
+    "tp_mass_ueberblick": {
+      "type": "tp-mass-ueberblick",
+      "settings": {
+        "heading": "Formen, Preise und Lieferzeit",
+        "text": "Eine Auswahl unserer Qualitäten mit dem Endpreis für 80 × 150 cm. Gefertigt wird jeder Teppich erst nach Ihrer Bestellung.",
+        "beispiele": [
+          "aurelis-teppich-nach-mass",
+          "esmera-teppich-nach-mass",
+          "quarzo-teppich-nach-mass",
+          "juniva-teppich-nach-mass",
+          "allora-teppich-nach-mass",
+          "velora-teppich-nach-mass"
+        ],
+        "rund": [
+          "piumera-teppich-nach-mass",
+          "sisola-teppich-nach-mass",
+          "sisara-teppich-nach-mass",
+          "fibrella-teppich-nach-mass"
+        ],
+        "rund_fertig": "runde-teppiche",
+        "laeufer": "laeufer-nach-mass"
+      }
     }
   },
   "order": [
     "tp_teppiche_hero",
+    "tp_mass_ueberblick",
     "tp_teppiche_gruppen",
     "tp_gruppe_sonderposten",
     "tp_gruppe_flauschig",
