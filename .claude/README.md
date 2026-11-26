@@ -42,7 +42,9 @@ claude plugin install godmode --marketplace NoobyGains/godmode --scope project
 In einer Sitzung geht dasselbe mit `/plugin marketplace add NoobyGains/godmode` und
 `/plugin install godmode@godmode --scope project`. Die Plugin-Dateien liegen unter `~/.claude/plugins`
 und gelten damit auch fuer alle Worktrees dieses Rechners. Fehlt das Plugin, zeigt `/plugin` unter
-„Errors“ den Hinweis „isn't installed here“. Arbeitsdateien des Plugins (`.godmode/`) sind ignoriert.
+„Errors“ den Hinweis „isn't installed here“. In Remote-Sessions (claude.ai/code) installiert
+`hooks/godmode-installieren.sh` es beim Sitzungsstart selbst (aus `session-start.sh`; in einer echten
+Cloud-Sitzung noch nicht erprobt, moeglich ist, dass es erst ab der zweiten Sitzung des Containers laedt). Arbeitsdateien des Plugins (`.godmode/`) sind ignoriert.
 
 ## Was bewusst nicht mehr hier liegt
 
