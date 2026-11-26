@@ -29,7 +29,7 @@ export function bestellArbeitsstand(z = {}) {
   const beleg = belegtFertigGrund(z);
   if (beleg) return { stand: beleg, naechstes: 'Nichts mehr zu tun' };
   const raus = z.fulfillmentstatus === 'FULFILLED' || (z.fortschritt?.minStufe || 0) >= 3;
-  if (z.abgehakt && !raus) return { stand: 'Manuell abgehakt', naechstes: 'Versand wurde dadurch nicht gebucht' };
+  if (z.abgehakt && !raus) return { stand: 'Von Hand abgehakt', naechstes: 'Der Versand ist damit noch nicht gebucht' };
   const n = z.naechsterSchritt;
   const stand = raus ? 'Versandt' : z.fortschritt?.stufe === 'geliefert' ? 'Ware eingetroffen' : z.fortschritt?.stufe === 'bestellt' ? 'Beim Lieferanten bestellt' : 'In Bearbeitung';
   const probleme = (z.wasFehlt || []).filter(t => t !== 'Noch nicht versendet');
@@ -44,7 +44,7 @@ export function bestellPruefgruende(z = {}) {
   if (z.testbestellung || z.storniert) return [];
   const gruende = [];
   if (z.fortschritt?.unklar) gruende.push('Artikel nicht vollständig nachverfolgbar');
-  if (z.abgehakt && !z.fertig && z.fulfillmentstatus !== 'FULFILLED' && !(z.fortschritt?.minStufe >= 3)) gruende.push('Manuell abgehakt, Versand noch offen');
+  if (z.abgehakt && !z.fertig && z.fulfillmentstatus !== 'FULFILLED' && !(z.fortschritt?.minStufe >= 3)) gruende.push('Von Hand abgehakt, Versand noch offen');
   if (z.shopifyVersandVermerk === 'nachholen' || z.versandHinweis) gruende.push('Versandbuchung prüfen');
   return gruende;
 }

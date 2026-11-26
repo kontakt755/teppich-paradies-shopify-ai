@@ -84,7 +84,7 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now(), lieferantName = 
   else if (unklar) arbeit = { stand: 'Warenstand prüfen', naechstes: 'Warenpositionen und aktuellen Bestellstand prüfen' };
   else if (fehlteile.length) arbeit = { ...arbeit, naechstes: 'Fehlmenge / Wareneingang klären' };
   else if (versandOffen) arbeit = { ...arbeit, naechstes: 'Versandbuchung prüfen und gegebenenfalls nachholen' };
-  else if (manuellOffen) arbeit = { ...arbeit, naechstes: 'Manueller Haken: Waren- und Versandstand prüfen' };
+  else if (manuellOffen) arbeit = { ...arbeit, naechstes: 'Prüfen: Ist die Ware da und verschickt?' };
   else if (warenKlaerung.length) arbeit = { ...arbeit, naechstes: warenKlaerung.join(' · ') };
   else if (zahlungOffen && (raus || z.fulfillmentstatus === 'FULFILLED')) arbeit = { ...arbeit, naechstes: 'Zahlungseingang prüfen' };
   const zahlung = z.zahlungsstatus;
