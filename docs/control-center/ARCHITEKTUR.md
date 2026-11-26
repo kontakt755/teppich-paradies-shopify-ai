@@ -655,6 +655,8 @@ DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`)
   summiert `ueberfaellig.auftraege` der Karten (`nachfassenSumme()`). Hilfsfunktionen ohne DOM in
   `lib/einkauf-uebersicht.mjs`. „Ist eingetroffen“ an bestellter Ware setzt `geliefert` (derselbe
   Schritt wie in der Tabelle). Aufgeklappt („Positionen bearbeiten“) bleiben die Tabellen unverändert.
+  Seit 26.11.2026 ist jede Karte zuerst zu (Zahlen und Knöpfe je Schritt), „Positionen zeigen“ bringt die
+  Schritte mit Positionen; „Zuerst klären“ ist zugeklappt, `af`, `lf` und `auftrag` öffnen direkt.
 - **Ein Hauptknopf je Bestellweg** (`ware.weg`): „Bestellmail öffnen", „Im Portal bestellen" (öffnet
   das Portal in neuem Tab und zugleich den Dialog), „Anrufen". Ohne Bestellweg: „Bestellliste öffnen".
   „Muster bestellen" erscheint, wenn Muster offen sind.

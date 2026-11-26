@@ -2,7 +2,7 @@
 // nicht "Nachhaken". Einkauf "Je Lieferant" und "Je Auftrag". Erfundene Daten, Lieferanten nur als Pseudonym.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lieferantenKartenHtml } from '../ansichten/einkauf/lieferanten.mjs';
+import { lieferantenKartenHtml, setzeKartenStufe } from '../ansichten/einkauf/lieferanten.mjs';
 import { viewEinkaufAblauf } from '../ansichten/einkauf/ablauf.mjs';
 import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
@@ -38,7 +38,14 @@ function mit(query, fn) {
 const plaketten = html => [...html.matchAll(/class="ampel ampel-(rot|gelb)"[^>]*>(?:<span[^>]*>[^<]*<\/span>)([^<]*)</g)].map(m => `${m[1]}: ${m[2]}`);
 
 test('Je Lieferant: bei uns "Liegt seit 8 Tagen hier" statt "Nachhaken · 8 Tage", beim Lieferanten mit Bezug - Farben gleich', () => {
-  const html = mit('tab=lieferant', () => lieferantenKartenHtml({ daten: einkauf.bestellungen, gruppeKarte: () => '' }));
+  const zeichne = () => mit('tab=lieferant', () => lieferantenKartenHtml({ daten: einkauf.bestellungen, gruppeKarte: () => '' }));
+  // Zugeklappt: Zahl und Knopf, keine Positionen.
+  const zu = zeichne();
+  assert.deepEqual(plaketten(zu), []);
+  assert.match(zu, /Nachfassen <b>[\s\S]*data-lf-stufe="positionen"[^>]*>Positionen zeigen \(3\)</);
+  setzeKartenStufe('A', 'positionen');
+  const html = zeichne();
+  setzeKartenStufe('A', null);
   assert.deepEqual(plaketten(html).sort(), ['gelb: Liegt seit 8 Tagen hier', 'gelb: Nachhaken · 9 Tage beim Lieferanten', 'rot: Überfällig · 17 Tage beim Lieferanten']);
   assert.doesNotMatch(html, /Nachhaken · 8 Tage/);
   assert.match(html, /title="Seit 8 Tagen bei uns – an den Kunden rausgeben"/);

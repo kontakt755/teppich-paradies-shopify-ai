@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { viewEinkaufBestellungen } from '../ansichten/einkauf/bestellungen.mjs';
 import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { state } from '../kern/zustand.mjs';
+import { setzeKartenStufe } from '../ansichten/einkauf/lieferanten.mjs';
 
 const senf = { orderId: 'o1', orderName: '#TEST1', lineItemId: 'g1', titel: 'Muster Testfliese', farbe: 'Senf (1)', sku: 'M-TEST-1', istMuster: true,
   grosshaendlerId: 'UNGEKLAERT', idGrund: 'Quellvariante ohne ID-Metafeld', bestellmenge: { menge: 1, text: '1 Muster' }, kundenmenge: '1', orderDatum: '2026-11-04' };
@@ -24,8 +25,11 @@ function ansicht(gesperrteMuster) {
     einkauf.bestellungen = daten(gesperrteMuster);
     einkauf.auftragsstatus = { positionen: {} };
     einkauf.lieferanten = { lieferanten: [{ id: 'A', stammdaten: { name: 'Lieferant A' } }] };
+    // Die Tabellen stehen erst nach dem Klick da.
+    for (const id of ['A', 'UNGEKLAERT']) setzeKartenStufe(id, 'bearbeiten');
     return viewEinkaufBestellungen();
   } finally {
+    for (const id of ['A', 'UNGEKLAERT']) setzeKartenStufe(id, null);
     state.route.params = vorher.params; state.route.view = vorher.view;
     einkauf.bestellungen = vorher.b; einkauf.auftragsstatus = vorher.s; einkauf.lieferanten = vorher.l;
   }
