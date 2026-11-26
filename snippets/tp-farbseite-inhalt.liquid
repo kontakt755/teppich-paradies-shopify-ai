@@ -1,6 +1,6 @@
 {%- doc -%}
   Inhalt einer Farbseite (Metaobjekt tp_teppichfarbe, Test "eigene Seite je Farbe"):
-  Bild und Raumbild der Farbe, belegte Eckdaten, Preisbeispiel, Knopf in den Rechner,
+  Kantenbild (Variante) und danach Raumbild der Farbe, belegte Eckdaten, Preisbeispiel, Knopf in den Rechner,
   Musterhinweis, Links zu den anderen Farben. Nur Werte aus den Produktdaten; nichts
   wird erfunden, keine Produktbeschreibung kopiert, kein grosshandel.sku.
 
@@ -97,14 +97,14 @@
   </header>
 
   <div class="tp-farbseite__bilder">
-    {%- if tfi_raum != blank -%}
-      <figure class="tp-farbseite__bild">
-        {{ tfi_raum | image_url: width: 1200 | image_tag: width: 1200, widths: '400, 600, 800, 1200', sizes: '(min-width: 750px) 50vw, 100vw', alt: tfi_raum.alt, loading: 'eager', fetchpriority: 'high' }}
-      </figure>
-    {%- endif -%}
     {%- if tfi_bild != blank -%}
       <figure class="tp-farbseite__bild">
-        {{ tfi_bild | image_url: width: 1200 | image_tag: width: 1200, widths: '400, 600, 800, 1200', sizes: '(min-width: 750px) 50vw, 100vw', alt: tfi_bild.alt, loading: 'lazy' }}
+        {{ tfi_bild | image_url: width: 1200 | image_tag: width: 1200, widths: '400, 600, 800, 1200', sizes: '(min-width: 750px) 50vw, 100vw', alt: tfi_bild.alt, loading: 'eager', fetchpriority: 'high' }}
+      </figure>
+    {%- endif -%}
+    {%- if tfi_raum != blank -%}
+      <figure class="tp-farbseite__bild">
+        {{ tfi_raum | image_url: width: 1200 | image_tag: width: 1200, widths: '400, 600, 800, 1200', sizes: '(min-width: 750px) 50vw, 100vw', alt: tfi_raum.alt, loading: 'lazy' }}
       </figure>
     {%- endif -%}
   </div>

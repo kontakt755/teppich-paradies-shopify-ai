@@ -147,7 +147,7 @@ export function freigabeliste(produkt, p) {
   z.push('| # | Farbe | Handle (URL-Ende) | Title (Zeichen) | H1 | Meta (Zeichen) | Bildwahl |');
   z.push('|---|---|---|---|---|---|---|');
   p.eintraege.forEach((e, i) => {
-    const bild = [e.bilder.raumbild ? 'Raumbild' : null, e.bilder.variante ? 'Variantenbild (Kante)' : null].filter(Boolean).join(' + ');
+    const bild = [e.bilder.variante ? 'Variantenbild (Kante)' : null, e.bilder.raumbild ? 'Raumbild' : null].filter(Boolean).join(' + ');
     z.push(`| ${i + 1} | ${e.farbe} | ${e.handle} | ${e.titel} (${e.titelLaenge}) | ${e.ueberschrift} | ${e.meta} (${e.metaLaenge}) | ${bild} |`);
   });
   if (p.ausgelassen.length) {
@@ -164,7 +164,7 @@ export function freigabeliste(produkt, p) {
   z.push('');
   z.push('## Bildbestand');
   const ohneMuster = p.eintraege.filter((e) => !e.bilder.musterfoto).map((e) => e.farbe);
-  z.push(`- Variantenbild (gekettelte Kante) und Raumansicht liegen fuer ${p.eintraege.filter((e) => e.bilder.variante && e.bilder.raumbild).length} von ${p.eintraege.length} Farben vor; die Seite zeigt das Raumbild zuerst, dann das Variantenbild.`);
+  z.push(`- Variantenbild (gekettelte Kante) und Raumansicht liegen fuer ${p.eintraege.filter((e) => e.bilder.variante && e.bilder.raumbild).length} von ${p.eintraege.length} Farben vor; die Seite zeigt das Variantenbild (Kante) zuerst, dann das Raumbild.`);
   z.push(`- Musterfoto (nicht auf der Farbseite verwendet) fehlt bei: ${ohneMuster.length ? ohneMuster.join(', ') : 'keiner Farbe'}.`);
   z.push('');
   return z.join('\n');
