@@ -5,7 +5,7 @@
 const GA4 = 'G-3KKWHJHS0D';
 const META_PIXEL = '1401914534871545';
 const ADS = 'AW-10991759596';
-const ADS_KAUF_WARE_LABEL = ''; // Label der Ads-Aktion "Kauf Ware" (legt der Inhaber an); leer = nichts senden
+const ADS_KAUF_WARE_LABEL = 'Jyz2COmE4b8dEOzho_ko'; // Label der Ads-Aktion "Kauf Ware" (legt der Inhaber an); leer = nichts senden
 
 const s = document.createElement('script');
 s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA4;
