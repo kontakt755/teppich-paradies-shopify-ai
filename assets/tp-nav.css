@@ -823,6 +823,14 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   }
 }
 
+/* Steht die Suchzeile unter dem Kopf (oben auf der Seite), waere die Lupe im
+   Kopf ein zweiter Weg zur selben Suche. Sie bleibt nur unsichtbar, damit das
+   Logo mittig bleibt, und erscheint, sobald der Kopf klebt und die Suchzeile
+   weggescrollt ist. */
+#header-group:has(.tp-hs) #header-component:not([data-sticky-state='active']) search-button.search-action {
+  visibility: hidden;
+}
+
 /* ------------------------------------------------------------------
    Desktop: Kontakt als Symbolkacheln (snippets/tp-kontakt-nav.liquid)
    Telefon dunkel, WhatsApp gruen (Grundregel in tp-mega-menu.css), Standort
