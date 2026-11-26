@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Ausschreibungen Bodenbelag im Umkreis Oranienburg (woechentlich, Vorschlag: montags 4:30):
+ * Ausschreibungen Bodenbelag bis 50 km um Oranienburg (woechentlich, Vorschlag: montags 4:30):
  *
  *   npm run ausschreibungen:pruefen                 # TED + letzte 7 Tagesexporte + RSS bund.de/Berlin + Liste dtvp.de
  *   npm run ausschreibungen:pruefen -- --tage 14    # weiter zurueck

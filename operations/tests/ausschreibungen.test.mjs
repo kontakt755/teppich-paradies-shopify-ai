@@ -79,9 +79,13 @@ test('bereinigen und neuSeit', () => {
   ], '2026-10-19').map(t => t.id), ['nah', 'berlin', 'ohne-frist', 'eu-klartext', 'eu']);
 });
 
-test('Umkreis: NUTS-3 genau, Berlin als Land, sonst PLZ', () => {
+test('Umkreis: PLZ bis 50 km, sonst NUTS-3, Berlin als Land', () => {
   assert.equal(imUmkreis('DE40A', ''), true);
-  assert.equal(imUmkreis('DE402', '16515'), false);
+  assert.equal(imUmkreis('DE409', ''), false, 'Maerkisch-Oderland liegt ueberwiegend weiter als 50 km');
+  assert.equal(imUmkreis('DE402', '16515'), true, 'die PLZ ist genauer als der Kreis');
+  assert.equal(imUmkreis('DE4', '15344'), true, 'Strausberg 47 km');
+  assert.equal(imUmkreis('DE4', '14770'), false, 'Brandenburg an der Havel 60 km');
+  assert.equal(imUmkreis('DE4', '15526'), false, 'Bad Saarow ueber 70 km');
   assert.equal(imUmkreis('DE3', ''), true);
   assert.equal(imUmkreis('DE4', '16515'), true);
   assert.equal(imUmkreis('DE4', '03046'), false);

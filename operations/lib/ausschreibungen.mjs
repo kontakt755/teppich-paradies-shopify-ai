@@ -6,6 +6,7 @@
  * Nationale Bekanntmachungen (z. B. vom Vergabemarktplatz Brandenburg) tragen dort nur
  * die grobe Region DE3/DE4, die PLZ im Ortsfeld ("15745 Wildau") und keine Frist.
  */
+import fs from 'node:fs';
 import { titelKurz, sichereUrl, kleineZuerst } from '../../docs/ai-dashboard/lib/akquise.mjs';
 
 /**
@@ -13,28 +14,37 @@ import { titelKurz, sichereUrl, kleineZuerst } from '../../docs/ai-dashboard/lib
  * 45432130 Bodenbelagsarbeiten) sowie Lieferung von Teppichen 3953xxxx und Bodenbelaegen 441122xx.
  */
 export const CPV = ['454321', '3953', '441122'];
-/** NUTS-3 im Umkreis Oranienburg: Oberhavel, Havelland, Barnim, Berlin + Nachbarkreise. */
-export const NUTS = ['DE40A', 'DE409', 'DE405', 'DE300', 'DE408', 'DE403', 'DE404'];
 /**
- * Unterschwellige Bekanntmachungen tragen meist nur das Land ("DE4") und die PLZ des Ausfuehrungsorts.
- * shortcut: PLZ-Anfaenge statt Entfernung (Berlin 10/12/13/14, Potsdam bis Rathenow 144-147,
- * Strausberg 153, Oberhavel/Barnim/Ruppin 160-168); eine Umkreisrechnung erst, wenn das zu grob wird.
+ * Inhaber 26.11.2026: nur Ausschreibungen bis 50 km um Oranienburg, darueber lohnt es sich nicht.
+ * NUTS-3 fuer die TED-Suche (ganze Kreise, deshalb nur die, die ueberwiegend in 50 km liegen):
+ * Berlin, Oberhavel, Barnim, Havelland, Potsdam.
  */
-const PLZ_UMKREIS = /^(1[023]|14[0-7]|153|16[0-8])/;
+export const NUTS = ['DE300', 'DE40A', 'DE405', 'DE408', 'DE404'];
+export const MAX_KM = 50;
+/**
+ * Luftlinie Oranienburg -> PLZ-Mittelpunkt aus den Daten des Verlegegebiets (GeoNames, bis 90 km).
+ * Eine PLZ, die dort fehlt, liegt weiter als 90 km.
+ */
+const ENTFERNUNG = JSON.parse(fs.readFileSync(new URL('../../assets/tp-verlegegebiet-orte.json', import.meta.url), 'utf8')).plz;
+export const entfernungKm = plz => (/^\d{5}$/.test(String(plz)) ? (ENTFERNUNG[plz]?.[0] ?? Infinity) : null);
 /** Suchwoerter im Titel - fuer Feeds ohne CPV und Bekanntmachungen mit zu allgemeiner CPV. */
 const BODEN = /bodenbel[aä]g|bodenleg|teppich|linoleum|parkett/i;
 
 const cpvPasst = id => CPV.some(p => String(id || '').startsWith(p));
 const plzAus = text => String(text || '').match(/\b\d{5}\b/)?.[0] || '';
 
-/** Region passt: NUTS-3 aus der Liste, Berlin als Land, sonst (Brandenburg oder ohne Angabe) die PLZ im Umkreis. */
+/**
+ * Region passt: mit PLZ entscheidet die Entfernung (bis MAX_KM), sonst NUTS-3 aus der Liste,
+ * Berlin als Land oder Brandenburg ganz ohne PLZ.
+ */
 export function imUmkreis(nuts, plz) {
+  const km = entfernungKm(plz);
+  if (km !== null) return km <= MAX_KM;
   const n = String(nuts || '');
   if (n.length >= 5) return NUTS.includes(n);
   if (n.startsWith('DE3')) return true;
   // Brandenburg ganz ohne PLZ ist selten (2 von 312 im November 2026): lieber zeigen als uebersehen.
-  if (n.startsWith('DE4') && !plz) return true;
-  return (!n || n.startsWith('DE4')) && PLZ_UMKREIS.test(String(plz));
+  return n.startsWith('DE4');
 }
 
 export function tedAbfrage(abTag) {
