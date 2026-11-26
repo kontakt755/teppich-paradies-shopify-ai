@@ -102,6 +102,7 @@ import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefeReferenz } from '../docs/ai-dashboard/lib/akquise.mjs';
 import { wendeHvAenderungAn, leererBestand as leererHvBestand } from '../docs/ai-dashboard/lib/hausverwaltungen.mjs';
+import { fuehreZusammen as fuehreAusschreibungenZusammen } from '../docs/ai-dashboard/lib/ausschreibungen.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, korrigiereRollenbestand, SonderpostenFehler, ladenStandAusProtokoll } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { fragenPfad, leseFragen, frageBeantworten, fragenUebersicht, WerkbankFrageFehler } from '../operations/lib/werkbank-fragen.mjs';
@@ -5404,6 +5405,35 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       fs.writeFileSync(tmp, JSON.stringify({ firmen: stand }, null, 2), { mode: 0o600 });
       fs.renameSync(tmp, q.status);
       return { ok: true, firma: { id, ...neu } };
+    },
+
+    /**
+     * Ausschreibungen-Uebersicht: liest bei JEDEM Abruf frisch, ohne KI. status.json (Suchlauf) plus
+     * je Ordner den Kopfblock der CHECKLISTE.md ($TP_PRIVAT_DIR/ausschreibungen/). Nur lesend;
+     * Zusammenfuehren und Regeln: docs/ai-dashboard/lib/ausschreibungen.mjs.
+     */
+    async ausschreibungenListe() {
+      const dir = path.join(privatDirPath || privatDir(), 'ausschreibungen');
+      let eintraege;
+      try { eintraege = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) {
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Auf diesem Rechner gibt es noch keine Ausschreibungen (Ordner fehlt).' };
+        throw new ApiError(500, `Ordner ausschreibungen nicht lesbar: ${e?.code || e?.message}`);
+      }
+      const ordner = [];
+      for (const e of eintraege.filter(x => x.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
+        let roh;
+        try { roh = fs.readFileSync(path.join(dir, e.name, 'CHECKLISTE.md'), 'utf8'); } catch (err) {
+          if (err?.code === 'ENOENT') continue; // Ordner ohne Checkliste (z. B. die Bietermappe) ist kein Verfahren
+          throw new ApiError(500, `CHECKLISTE.md in ${e.name} nicht lesbar: ${err?.code || err?.message}`);
+        }
+        ordner.push({ name: e.name, text: roh.slice(0, 6000) }); // der Kopfblock steht ganz oben
+      }
+      // Kaputtes status.json blockiert die Ordner nicht - die Ansicht sagt dann, dass der Suchlauf fehlt.
+      let status = null, statusHinweis = '';
+      try { status = this._privatJson(path.join(privatDirPath || privatDir(), 'ausschreibungen', 'status.json'), null); } catch (e) { statusHinweis = e.message; }
+      if (!status && !statusHinweis) statusHinweis = 'Der Suchlauf hat noch nie ein Ergebnis geschrieben.';
+      const heute = kalendertag(now());
+      return { verfuegbar: true, heute, statusHinweis, ...fuehreAusschreibungenZusammen({ ordner, status, heute }) };
     },
 
     /**
