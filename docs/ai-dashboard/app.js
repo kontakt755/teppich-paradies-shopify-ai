@@ -58,6 +58,7 @@ import { bindEvents } from './ereignisse.mjs';
 import { pruefeAntworten } from './bausteine/fehler-melden.mjs';
 import { starteDatenstand, zeichneDatenstand } from './bausteine/datenstand.mjs';
 import { starteDienstversion } from './bausteine/dienstversion.mjs';
+import { starteNachOben } from './bausteine/nach-oben.mjs';
 import { kundenMenueZahl } from './lib/serviceanfragen.mjs';
 import { faelleFuerMenue } from './ansichten/kunden/faelle.mjs';
 
@@ -88,6 +89,7 @@ async function init() {
   // Betriebsdaten (Bestellungen, Kunden, Lexikon) holt die offene Seite selbst nach.
   starteDatenstand();
   starteDienstversion();
+  starteNachOben();
 }
 
 init();
