@@ -7,7 +7,9 @@
 # Die Installation startet selbst eine kurze Claude-Sitzung, deren
 # SessionStart-Hook wieder hier landet - ohne diese Sperre eine Endlosschleife.
 [ -n "${TP_GODMODE_INSTALL:-}" ] && exit 0
-[ -d "$HOME/.claude/plugins/cache/godmode" ] && exit 0
+# Die Installationsliste zaehlt, nicht der Cache-Ordner: der bleibt nach einer
+# Deinstallation liegen.
+grep -q '"godmode@godmode"' "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null && exit 0
 command -v claude >/dev/null 2>&1 || exit 0
 
 # timeout gibt es im Cloud-Container (Linux), auf dem Mac nicht.

@@ -13,7 +13,7 @@ import path from 'node:path';
 
 const SKRIPT = path.resolve(import.meta.dirname, 'godmode-installieren.sh');
 
-function lauf({ cache = false, claudeExit = 0, extraEnv = {} } = {}) {
+function lauf({ cache = false, registriert = false, claudeExit = 0, extraEnv = {} } = {}) {
   const tmp = mkdtempSync(path.join(tmpdir(), 'godmode-hook-'));
   const home = path.join(tmp, 'home');
   const bin = path.join(tmp, 'bin');
@@ -21,6 +21,11 @@ function lauf({ cache = false, claudeExit = 0, extraEnv = {} } = {}) {
   mkdirSync(home);
   mkdirSync(bin);
   if (cache) mkdirSync(path.join(home, '.claude/plugins/cache/godmode'), { recursive: true });
+  if (registriert) {
+    mkdirSync(path.join(home, '.claude/plugins'), { recursive: true });
+    writeFileSync(path.join(home, '.claude/plugins/installed_plugins.json'),
+      JSON.stringify({ plugins: { 'godmode@godmode': [{ scope: 'project' }] } }));
+  }
   writeFileSync(path.join(bin, 'claude'),
     `#!/bin/bash\necho "$TP_GODMODE_INSTALL|$*" >> "${protokoll}"\nexit ${claudeExit}\n`);
   chmodSync(path.join(bin, 'claude'), 0o755);
@@ -40,9 +45,14 @@ test('fehlt das Plugin, wird es einmal fuer das Projekt installiert', () => {
 });
 
 test('ist das Plugin schon da, wird claude nicht aufgerufen', () => {
-  const r = lauf({ cache: true });
+  const r = lauf({ cache: true, registriert: true });
   assert.equal(r.status, 0);
   assert.deepEqual(r.aufrufe, []);
+});
+
+test('ein verwaister Cache-Ordner ohne Eintrag in der Installationsliste zaehlt nicht', () => {
+  const r = lauf({ cache: true });
+  assert.equal(r.aufrufe.length, 1);
 });
 
 test('ruft sich nicht selbst auf, wenn die Installation eine Sitzung startet', () => {
