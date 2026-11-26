@@ -179,11 +179,12 @@
   .tp-farbseite__kopf { max-width: 760px; }
   .tp-farbseite__kicker { margin: 0 0 8px; font-size: var(--tp-fs-sm); font-weight: 500; color: #595959; }
   .tp-farbseite__titel { margin: 0 0 12px; font-size: var(--tp-fs-xl); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
-  .tp-farbseite__lead { margin: 0 0 20px; font-size: var(--tp-fs-md); }
-  .tp-farbseite__bilder { display: grid; gap: 12px; grid-template-columns: 1fr; margin: 0 0 8px; }
+  /* doppelte Klasse: das Theme nullt sonst den Abstand erster/letzter Absaetze und Ueberschriften */
+  .tp-farbseite .tp-farbseite__lead { margin: 0 0 20px; font-size: var(--tp-fs-md); }
+  .tp-farbseite__bilder { display: grid; gap: 12px; grid-template-columns: 1fr; align-items: start; margin: 0 0 8px; }
   .tp-farbseite__bild { margin: 0; border-radius: 8px; overflow: hidden; background: #f4f4f4; }
   .tp-farbseite__bild img { display: block; width: 100%; height: auto; }
-  .tp-farbseite__h2 { margin: 28px 0 8px; font-size: var(--tp-fs-lg); font-weight: 600; }
+  .tp-farbseite .tp-farbseite__h2 { margin: 28px 0 8px; font-size: var(--tp-fs-lg); font-weight: 600; }
   .tp-farbseite__hinweis { margin: 4px 0 0; font-size: var(--tp-fs-xs); color: #595959; }
   .tp-farbseite__liste { display: grid; gap: 0; margin: 0; max-width: 760px; }
   .tp-farbseite__liste > div { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12); font-size: var(--tp-fs-sm); }
