@@ -83,7 +83,8 @@ export function aktualisiereNavigation() {
   const kundenTab = !state.route.params.get('kunde') ? state.route.params.get('tab') : null;
   const kundenHauptpunkt = ['bestellungen', 'muster', 'anrufe'].includes(kundenTab) ? kundenTab : null;
   const musterBestellen = state.route.params.get('tab') === 'lieferant' && state.route.params.get('art') === 'muster' && state.route.params.get('af') === 'offen';
-  const einkaufPunkt = musterBestellen ? 'muster' : state.route.params.get('tab') === 'musterlager' ? 'lager' : null;
+  const lieferantenSeite = state.route.params.get('tab') === 'lieferanten' || Boolean(state.route.params.get('lieferant'));
+  const einkaufPunkt = musterBestellen ? 'muster' : lieferantenSeite ? 'lieferanten' : state.route.params.get('tab') === 'musterlager' ? 'lager' : null;
   document.querySelectorAll('[data-nav]').forEach(a => {
     const tabPasst = view !== 'kunden' || (a.dataset.navTab || null) === kundenHauptpunkt;
     const einkaufPasst = view !== 'einkauf' || (a.dataset.navEinkauf || null) === einkaufPunkt;

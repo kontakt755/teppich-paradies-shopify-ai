@@ -881,7 +881,7 @@ täglich:
 
 ```
 npm run daten:sync-dienst
-TP_SYNC_INTERVALL_MINUTEN=5 npm run daten:sync-dienst   # Standard 10
+TP_SYNC_INTERVALL_MINUTEN=5 npm run daten:sync-dienst   # Standard 5
 ```
 
 Das Lexikon (Massenabfrage ueber alle Produkte) laeuft nur alle

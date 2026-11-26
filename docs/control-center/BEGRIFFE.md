@@ -29,6 +29,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Kunden & Einkauf, Shop & Inhalte, Verwaltung (Menuegruppen) | **Weitere Bereiche** | Eine aufklappbare Gruppe statt drei (2026-11-11, #2143); aeltere Zeilen hier nennen noch die alten Gruppennamen. Technik, Entscheidungen, Bereiche, Kennzahlen und Verlauf ohne Menuepunkt (Werkbank) |
 | – (neu 03.11.) | **Wer kettelt?** | Frage im Bestelldialog je gekettelten Teppich: „Lieferant kettelt, direkt an Kunden“ oder „Unser Kettler“; in der Kundenakte kurz „Kettelt“ |
 | Einkauf | **Bestellen** | Menue und Seitentitel; gemeint ist immer: wir bestellen beim Lieferanten. Die Bestellungen der Kunden heissen weiter „Bestellungen“ |
+| – (neu 26.11.) | **Lieferanten** | eigener Menüpunkt: eine Karte je Lieferant mit „Portal öffnen“, Telefon, E-Mail, Kundennummer und offenen Zahlen |
 | Lexikon | **Lexikon** (bleibt, Inhaber/Mitarbeiter 21.10.) | Menue, Seite, Handy-Leiste |
 | Belege (Reiter) | **Lieferantenpost** | Reiter unter „Bestellen“; ein einzelnes Stueck ist ein „Schreiben“ |
 | AB | **Auftragsbestätigung** | ausgeschrieben in Ueberschriften und Feldern |

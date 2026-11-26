@@ -6,7 +6,7 @@
  * Reine Funktionen ohne DOM und ohne Netz.
  *
  * Die Grenzen folgen dem Takt des Sync-Dienstes (operations/scripts/sync-dienst.mjs): Bestellungen,
- * Kunden, Angebote und Warenkoerbe kommen alle 10 Minuten, Lexikon und Lagerbestand stuendlich.
+ * Kunden, Angebote und Warenkoerbe kommen alle 5 bis 10 Minuten, Lexikon und Lagerbestand stuendlich.
  * Drei verpasste Laeufe sind kein Zufall mehr - dann soll es jemand merken.
  */
 

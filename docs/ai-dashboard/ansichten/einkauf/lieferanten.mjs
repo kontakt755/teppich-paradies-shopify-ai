@@ -67,6 +67,9 @@ function karten(d = einkauf.bestellungen || {}) {
   }).filter(k => !['muster', 'ware'].includes(state.route.params.get('art')) || k.wareGruppen.length || k.musterGruppen.length);
 }
 
+/** Alle Lieferanten (Stammdaten und offene Bestellungen) - fuer das Verzeichnis. */
+export const lieferantenListe = () => karten();
+
 function kundenNamen() {
   const m = new Map();
   for (const a of einkauf.bestellungen?.auftraege || []) {
@@ -970,7 +973,7 @@ export function viewEinkaufLieferant(id) {
   ensureEinkaufBestellungen();
   ensureEinkaufAuftragsstatus();
   ensureEinkaufLieferanten();
-  const zurueck = '<a class="lf-zurueck" href="#/einkauf">‹ Bestellen</a>';
+  const zurueck = '<a class="lf-zurueck" href="#/einkauf?tab=lieferanten">‹ Alle Lieferanten</a>';
   const b = einkauf.bestellungen;
   if ((!b && einkauf.loadingBestellungen) || (!einkauf.lieferanten && einkauf.loadingLieferanten)) return `${zurueck}<div class="empty">Lade Lieferant …</div>`;
   if (b?.fehler) return zurueck + stoerungState(b, 'Die Bestelldaten');
