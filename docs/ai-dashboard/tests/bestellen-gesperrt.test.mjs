@@ -105,3 +105,14 @@ test('Lieferantenkarte: nur ein gesperrtes Muster offen - kein Knopf "Muster bes
   assert.ok(k.offenGesamt >= 2, 'das gesperrte Muster bleibt offene Arbeit');
   assert.equal(k.ueberfaellig.stufe, 'crit');
 });
+
+test('Tabellenzeile: ein Knopf offen, alles Weitere unter "Mehr" (26.11.2026)', () => {
+  const html = ansicht([]);
+  const zellen = [...html.matchAll(/<td data-l="Stand">([\s\S]*?)<\/td>/g)].map(m => m[1]);
+  assert.ok(zellen.length);
+  for (const z of zellen) {
+    assert.equal([...z.replace(/<details class="af-mehr">[\s\S]*?<\/details>/g, '').matchAll(/<button/g)].length, 1);
+    assert.match(z, /<summary[^>]*>Mehr<\/summary>[\s\S]*Liefertermin \/ Wareneingang…[\s\S]*Haben wir da…/);
+  }
+  assert.doesNotMatch(html, /<td data-l="Lieferant">(?:(?!<\/td>)[\s\S])*class="btn/);
+});

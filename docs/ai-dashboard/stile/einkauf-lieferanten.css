@@ -76,6 +76,15 @@
 .lf-gruppe.has-gap { border-left: 0; }
 .lf-gruppe .card-head { flex-wrap: wrap; }
 
+/* Tabellenzeile: ein Hauptknopf, daneben "Mehr" mit allem Weiteren. */
+.af-knoepfe { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; margin-top: 6px; }
+.af-mehr > summary { list-style: none; cursor: pointer; }
+.af-mehr > summary::-webkit-details-marker { display: none; }
+.af-mehr > summary::after { content: " ▾"; }
+.af-mehr[open] { flex-basis: 100%; }
+.af-mehr[open] > summary::after { content: " ▴"; }
+.af-mehr-inhalt { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 6px; }
+
 /* Rolle "lesen": Schreibaktionen im Einkauf ausblenden (der Server lehnt sie ohnehin ab). */
 body.rolle-lesen [data-af-set],
 body.rolle-lesen [data-af-sammel],

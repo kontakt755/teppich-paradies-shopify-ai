@@ -30,17 +30,23 @@ function ortszeit(iso) {
 
 /** Stand und Knoepfe in der Positionszeile (Einkauf). Leer fuer Muster, Eigenleistung und Lagerware. */
 export function lieferantenstandBlock(p, eintrag = afEintragFuer(p)) {
-  if (!mitLieferantenstand(p, eintrag)) return '';
+  const { zeile, knoepfe } = lieferantenstandTeile(p, eintrag);
+  return `${zeile}${knoepfe.length ? `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${knoepfe.join('')}</div>` : ''}`;
+}
+
+/** Dasselbe getrennt: die Tabelle zeigt die Zeile offen und legt die Knoepfe unter "Mehr". */
+export function lieferantenstandTeile(p, eintrag = afEintragFuer(p)) {
+  if (!mitLieferantenstand(p, eintrag)) return { zeile: '', knoepfe: [] };
   const st = lieferantenStand(eintrag);
   const status = eintrag?.status || null;
   const zeile = st.text ? `<div class="small${st.ton === 'crit' ? ' wait-crit' : st.ton === 'warn' ? ' wait-warn' : ' muted'}">${esc(st.text)}</div>` : '';
-  if (istNurLesend()) return zeile;
+  if (istNurLesend()) return { zeile, knoepfe: [] };
   const daten = `data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}"`;
   const knopf = (schritt, text, haupt = false) => `<button type="button" class="btn btn-sm${haupt ? '' : ' btn-ghost'}" data-ls-schritt="${schritt}" ${daten}>${esc(text)}</button>`;
   const knoepfe = !status ? [knopf('anfrage', st.stufe === 'angefragt' ? 'Anfrage ändern…' : 'Lieferant angefragt…')]
     : status === 'bestellt' ? [knopf('ab', eintrag?.beschaffung?.ab ? 'AB ändern…' : 'AB eingegangen…', st.abFehlt), knopf('bestelldaten', 'Bestelldaten…')]
       : [];
-  return `${zeile}${knoepfe.length ? `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${knoepfe.join('')}</div>` : ''}`;
+  return { zeile, knoepfe };
 }
 
 /** Zahlen fuer das Band oben im Einkauf - dieselbe Ableitung wie die Zeile je Position. */
