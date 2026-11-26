@@ -127,7 +127,7 @@ export function viewHilfe() {
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
         <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – Warenbestellungen schickst du selbst ab. Nur vollständige Muster, die uns der Lieferant kostenlos schickt, kann das Dashboard selbst per Mail bestellen – die stehen dann schon als „bestellt“ da. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
-        <li>Danach <b>Positionen bearbeiten</b> (bei Artikeln ohne Lieferant sofort): Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen.</li>
+        <li>Danach <b>Positionen bearbeiten</b> (bei Artikeln ohne Lieferant sofort): Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen. Je Zeile steht ein Knopf für den nächsten Schritt, alles Weitere unter <b>Mehr</b>.</li>
         <li>Versehentlich „bestellt“ geklickt? <b>Rückgängig</b> direkt danach, oder später <b>Zurück auf offen…</b> am Artikel bzw. <b>Alle zurück auf offen…</b> an der Karte.</li>
         <li>Muster selbst da (Katalog, Musterlager)? <b>Haben wir da…</b> am Muster oder in der Kundenakte: dann wird es nicht bestellt, sondern erscheint als „Muster vorbeibringen“ bzw. „Muster verschicken“ – mit Ort des Kunden.</li>
       </ol>

@@ -11,6 +11,13 @@ const istMusterPosition = (orderId, lineItemId) => Boolean(alleAuftraege().find(
 
 export function uebernahmeBlock(positionen) {
   if (!einkauf.auftragsstatus?.verfuegbar) return '<p class="small muted">Übernahmestand noch nicht verfügbar.</p>';
+  const { text, knopf } = uebernahmeTeile(positionen);
+  return `<div class="small" style="margin:6px 0;overflow-wrap:anywhere">${esc(text || 'Noch nicht übernommen')}${knopf ? `<div class="btn-row">${knopf}</div>` : ''}</div>`;
+}
+
+/** Wer uebernommen hat (leer = niemand) und der passende Knopf - getrennt fuer die Tabelle. */
+export function uebernahmeTeile(positionen) {
+  if (!einkauf.auftragsstatus?.verfuegbar) return { text: 'Übernahmestand noch nicht verfügbar.', knopf: '' };
   const ps = (positionen || []).filter(p => p.orderId && p.lineItemId);
   const mit = ps.map(afEintragFuer).filter(e => e?.uebernahme);
   const namen = [...new Set(mit.map(uebernahmeText))];
@@ -18,7 +25,7 @@ export function uebernahmeBlock(positionen) {
   const inhaber = !state.session?.benutzer || state.session.benutzer.rolle === 'inhaber';
   const data = `data-einkauf-positionen="${esc(JSON.stringify(ps.map(p => ({ orderId: p.orderId, lineItemId: p.lineItemId }))))}"`;
   const knopf = (a, t) => `<button type="button" class="btn btn-sm btn-ghost" data-einkauf-uebernahme="${a}" ${data}>${t}</button>`;
-  return `<div class="small" style="margin:6px 0;overflow-wrap:anywhere">${esc(namen.join(' · ') || 'Noch nicht übernommen')}${istNurLesend() || !ps.length ? '' : `<div class="btn-row">${fremd ? (inhaber ? knopf('uebernehmen', 'Als Inhaber übernehmen') : '<span class="muted">Eine fremde Übernahme kann der Inhaber ändern.</span>') : mit.length ? knopf('freigeben', 'Meine Übernahme freigeben') : knopf('nehmen', 'Ich übernehme')}</div>`}</div>`;
+  return { text: namen.join(' · '), knopf: istNurLesend() || !ps.length ? '' : fremd ? (inhaber ? knopf('uebernehmen', 'Als Inhaber übernehmen') : '<span class="muted">Eine fremde Übernahme kann der Inhaber ändern.</span>') : mit.length ? knopf('freigeben', 'Meine Übernahme freigeben') : knopf('nehmen', 'Ich übernehme') };
 }
 async function schreiben(payload) {
   const r = await fetch('/api/einkauf/auftragsstatus', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
