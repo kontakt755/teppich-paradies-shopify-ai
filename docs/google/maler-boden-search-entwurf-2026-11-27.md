@@ -1,6 +1,6 @@
 # Search-Entwurf: Malerarbeiten + Boden aus einer Hand
 
-Stand 27.11.2026, Konto `334-557-2870`. **Entwurf, nichts im Ads-Konto angewendet.** Die Kampagne bleibt pausiert, bis die Seite live ist, die Formular-Conversion nachgewiesen ist und der Inhaber Budget und Wortlaut freigibt. Zahlen (Suchvolumen, CPC) aus dem Keyword Planner vom 27.11.2026, Deutschland, keine Kontodaten dieser Kampagne.
+Stand 27.11.2026, Konto `334-557-2870`. **Im Konto angelegt (27.11.2026, pausiert), noch nicht aktiviert.** Kampagne `customers/3345572870/campaigns/24559975091`, Budget 8 €/Tag, zwei Anzeigengruppen mit je einer Suchanzeige, Gebiet Berlin, Oberhavel, Oranienburg, Bernau bei Berlin (Präsenz), politische Werbung: nein. **Noch offen:** negative Keywords (Liste unten) als eigener Entwurf, Sitelinks, Conversion-Ziel `Kontaktformular` als Kampagnenziel, Gebotsanpassung nach Ort; Anzeigengruppen tragen den Platzhalter-CPC 0,01 € (greift bei „Klicks maximieren“ nicht, im Konto trotzdem prüfen). Die Kampagne bleibt pausiert, bis die Seite live ist, die Formular-Conversion nachgewiesen ist und der Inhaber Budget und Wortlaut freigibt. Zahlen (Suchvolumen, CPC) aus dem Keyword Planner vom 27.11.2026, Deutschland, keine Kontodaten dieser Kampagne.
 
 ## Kampagne `TP | Search | Maler + Boden lokal`
 
