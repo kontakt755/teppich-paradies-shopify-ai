@@ -1,7 +1,7 @@
 {
   "format": "tp-tnm-endpreis-v1",
   "ok": true,
-  "erstellt": "2026-11-26T14:03:54.318Z",
+  "erstellt": "2026-11-27T14:01:49.572Z",
   "theme": "live",
   "produkte": 411,
   "varianten": 4359,
@@ -296,7 +296,7 @@
     },
     {
       "id": "gid://shopify/Product/16074947068238",
-      "updatedAt": "2026-11-26T10:41:05Z",
+      "updatedAt": "2026-11-27T06:36:50Z",
       "variantIds": [
         "60835787309390",
         "60835787342158",
@@ -1297,7 +1297,7 @@
     },
     {
       "id": "gid://shopify/Product/16121040634190",
-      "updatedAt": "2026-11-26T10:41:29Z",
+      "updatedAt": "2026-11-27T07:21:31Z",
       "variantIds": [
         "61071261892942",
         "61071261925710",
@@ -1561,7 +1561,7 @@
     },
     {
       "id": "gid://shopify/Product/16123456749902",
-      "updatedAt": "2026-11-26T10:41:33Z",
+      "updatedAt": "2026-11-26T16:04:57Z",
       "variantIds": [
         "61086939054414",
         "61086939087182",
@@ -6841,7 +6841,7 @@
   ],
   "kanalFreigabe": false,
   "hinweis": "Das Manifest veroeffentlicht keine Produkte. Freigabe erst nach verarbeiteter Endpreisquelle.",
-  "katalogHash": "b5b8972a1808b338e0982ba12c48877b78825a02363abfd963d13ddabddf7f41",
+  "katalogHash": "86a20ea57aff1c3e421e6d3520d9b61c03061ea9f0434def6bcba6fb0a90b9ce",
   "entnahmen": [],
   "vorherGoogle": 4359,
   "vorherMeta": 4359
