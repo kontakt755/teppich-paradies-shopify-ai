@@ -40,10 +40,11 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, aufkleberFuer, aufkleberFuerMuster, frueherGepackt, gepacktNichtVerschickt, umschlagMusterIds, handTreffer, musterNachLaden, offeneSuche, ohneMusterMoeglich, sammelliste, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, aufkleberFuer, aufkleberFuerMuster, frueherGepackt, gepacktNichtVerschickt, umschlagMusterIds, handTreffer, musterNachLaden, nachhakEntwurf, nachhakbar, offeneSuche, ohneMusterMoeglich, sammelliste, umschlagKennung } from '../../lib/muster-packen.mjs';
 import { parseRoute } from '../../kern/router.mjs';
 import { suchVerweis, suchwert } from '../../lib/suchverweis.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { textDialog } from '../../bausteine/text-dialog.mjs';
 import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { GESPERRT_GRUND, GESPERRT_KURZ, gesperrteNamen, oeffneKundeInformieren, versandErstattungHtml } from './muster-gesperrt.mjs';
 import { packRotZaehlung } from '../../lib/ampel.mjs';
@@ -266,6 +267,13 @@ function fehltHtml(k) {
   for (const m of fehlen.slice(0, 3)) je.set(m.lieferant || '', [...(je.get(m.lieferant || '') || []), name(m)]);
   const text = [...je].map(([lieferant, namen]) => `${namen.join(' · ')}${lieferant ? ` – ${lieferant}` : ''}`).join('; ');
   return `<span class="small mp-fehlt-liste">${esc(`Fehlt: ${text}${rest}`)}</span>`;
+}
+
+/** Je Lieferant mit zu lange offenen Mustern ein Knopf: oeffnet den Mail-Entwurf, gesendet wird von Hand. */
+function nachhakKnoepfe(k, lesend) {
+  if (lesend || k.bereich === 'gepackt') return '';
+  const je = new Map(k.muster.filter(nachhakbar).map(m => [m.lieferantId, m.lieferant || `Lieferant ${m.lieferantId}`]));
+  return [...je].map(([id, name]) => `<button type="button" class="btn btn-sm" data-mp-nachhaken="${esc(id)}">${esc(`Bei ${name} nachhaken…`)}</button>`).join('');
 }
 
 /** Plaketten-Gruende, deren Wort schon eine Tageszahl traegt ("Überfällig · 17 Tage beim Lieferanten", "Hängt · 3 Werktage"). */
@@ -588,7 +596,7 @@ function kundeHtml(k, nr, { offenBeiSuche = false, treffer = new Set(), hauptkno
       </div>
     </summary>
     ${frage === 'verschickt' && !lesend ? versandFrageHtml(k, frage) : ''}
-    ${blattKnopf(k) ? `<div class="mp-aktionen mp-blatt-zeile">${blattKnopf(k)}</div>` : ''}
+    ${blattKnopf(k) || nachhakKnoepfe(k, lesend) ? `<div class="mp-aktionen mp-blatt-zeile">${blattKnopf(k)}${nachhakKnoepfe(k, lesend)}</div>` : ''}
     ${bestelldatenHtml(k)}
     ${gesperrte.length ? `<p class="notice crit">${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : `Diese ${gesperrte.length} Muster kommen nicht`)} – ${esc(gesperrteNamen(gesperrte).join('; '))}. Der Kunde erfährt das nicht von selbst, bitte informieren.${andereBleiben ? ` Die übrigen Muster können danach ohne ${gesperrte.length === 1 ? 'dieses' : 'diese'} raus.` : gesperrte.some(m => ohneMusterMoeglich(k, m)) ? ' Danach „Ohne dieses Muster weiter packen“ wählen; die Ware der Bestellung bleibt davon unberührt.' : ''}</p>` : ''}
     ${versandErstattungHtml(k)}
@@ -1236,6 +1244,14 @@ export function musterPackenKlick(e) {
     e.preventDefault();
     const k = liste.find(x => x.packSchluessel === informieren.dataset.mpInformieren);
     if (k) oeffneKundeInformieren(k, { lesend: istNurLesend(), danach: packlisteErneutLaden });
+    return true;
+  }
+  const nachhaken = e.target.closest('[data-mp-nachhaken]');
+  if (nachhaken) {
+    e.preventDefault();
+    const d = kunden.musterPacken, id = nachhaken.dataset.mpNachhaken, kontakt = d.lieferantenKontakte?.[id] || {};
+    const entwurf = nachhakEntwurf(d.kunden, id, kontakt);
+    textDialog({ titel: `Bei ${kontakt.name || `Lieferant ${id}`} nachhaken – ${plural(entwurf.anzahl, 'Muster', 'Muster')}`, ...entwurf });
     return true;
   }
   const ohne = e.target.closest('[data-mp-ohne]');

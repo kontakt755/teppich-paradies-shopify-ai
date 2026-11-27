@@ -756,3 +756,12 @@ test('Reiner Direktversand steht im Reiter "Vom Hersteller", nicht unter "Zu kl�
   assert.match(h, /kommt vom Hersteller/);
   assert.deepEqual(reihe(ansicht('tab=muster&umschlag=order1', liste)), ['order1']);
 });
+
+test('Ueberfaelliger Umschlag traegt je Lieferant den Knopf "nachhaken" (27.11.)', () => {
+  const k = kunde(1, 'warten');
+  const rot = { ...k.muster[0], lieferantId: 'A', lieferant: 'Lieferant A', ampel: { stufe: 'rot', grund: 'ueberfaellig', wort: 'Überfällig', titel: '' } };
+  k.muster = [rot, { ...rot, lineItemId: 'l2' }, { ...rot, lineItemId: 'l3', lieferantId: 'B', lieferant: 'Lieferant B' }];
+  const html = ansicht('tab=muster', [k]);
+  assert.deepEqual([...html.matchAll(/data-mp-nachhaken="([^"]+)">([^<]+)</g)].map(x => [x[1], x[2]]), [['A', 'Bei Lieferant A nachhaken…'], ['B', 'Bei Lieferant B nachhaken…']]);
+  assert.doesNotMatch(ansicht('tab=muster', [kunde(2, 'warten')]), /data-mp-nachhaken/);
+});

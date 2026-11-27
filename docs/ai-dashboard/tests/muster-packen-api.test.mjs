@@ -481,3 +481,14 @@ test('Reine Musterbestellung und Bestellung mit Ware im selben Umschlag: erst da
   assert.deepEqual(danach.muster.map(m => m.lineItemId), [ohneWare.lineItemId]);
   assert.equal(umschlagAbschliessbar(danach), true, 'jetzt schliesst der Dialog die reine Musterbestellung ab');
 });
+
+test('GET liefert den Musterkontakt der Lieferanten fuers Nachhaken', t => {
+  const { api, dir } = umgebung(t);
+  const lexikon = path.join(dir, 'lexikon/produkte.json');
+  const daten = JSON.parse(fs.readFileSync(lexikon, 'utf8'));
+  daten.produkte[0].varianten[0].einkauf.lieferant = 'A';
+  fs.writeFileSync(lexikon, JSON.stringify(daten));
+  fs.mkdirSync(path.join(dir, 'lieferanten'));
+  fs.writeFileSync(path.join(dir, 'lieferanten/stammdaten.json'), JSON.stringify({ lieferanten: { A: { anzeigename: 'Lieferant A', kundennummer: '4711', muster: { weg: 'mail', mail: 'muster@lieferant-a.example', telefon: null } } } }));
+  assert.deepEqual(api.kundenMusterPacken().lieferantenKontakte.A, { name: 'Lieferant A', mail: 'muster@lieferant-a.example', telefon: null, kundennummer: '4711' });
+});
