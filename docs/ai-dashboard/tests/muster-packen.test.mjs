@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, offeneSuche, packSchluessel, packSuche, sammelliste, STAND_TEXT, musterversandErstattung } from '../lib/muster-packen.mjs';
+import { musterPackliste, aufkleberFuer, aufkleberFuerMuster, handTreffer, offeneSuche, packSchluessel, packSuche, sammelliste, STAND_TEXT, musterversandErstattung, nachhakbar, nachhakEntwurf } from '../lib/muster-packen.mjs';
 import { adressEtikett, adressLayout, ABSENDER } from '../lib/adress-etiketten.mjs';
 import { ETIKETT_FORMATE } from '../lib/muster-etiketten.mjs';
 
@@ -763,4 +763,23 @@ test('Reiner Direktversand (26.11.) ist markiert; mit weiterem Klaerfall bleibt 
   const gemischt = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(2, '2026-10-20T09:00:00Z', 'Dana Test', [pos(21, '101', { musterRoute: 'SUPPLIER_DIRECT' }), pos(22, '102')])] }).kunden[0];
   assert.equal(gemischt.nurDirekt, false);
   assert.equal(gemischt.bereich, 'klaeren');
+});
+
+test('Nachhaken (27.11.): Entwurf sammelt alle ueberfaelligen Muster eines Lieferanten, ohne Kundennamen', () => {
+  const m = (id, orderName, extra = {}) => ({ lineItemId: id, orderName, lieferantId: 'A', lieferant: 'Lieferant A', stand: 'bestellt', bestelltAm: '2026-10-05T07:00:00Z',
+    bestellt: { titel: 'Muster Testboden', farbe: 'Sand' }, vorher: { produktname: 'Ware SAND 400', farbnummer: '11', artikelnummer: 'ART-1' }, ampel: { stufe: 'rot', grund: 'ueberfaellig' }, ...extra });
+  const liste = [
+    { name: 'Anna Test', muster: [m('1', '#T1'), m('2', '#T1', { stand: 'da', ampel: { stufe: null } }), m('3', '#T1', { abgehakt: { zeit: 'x' } })] },
+    { name: 'Bert Test', muster: [m('4', '#T2', { vorher: null }), m('5', '#T2', { lieferantId: 'B' }), m('6', '#T2', { lagerMoeglich: { id: 'ml' } }), m('7', '#T2', { ampel: { stufe: null } })] },
+  ];
+  assert.deepEqual(liste.flatMap(k => k.muster.filter(nachhakbar).map(x => x.lineItemId)), ['1', '4', '5']);
+  const e = nachhakEntwurf(liste, 'A', { mail: 'muster@lieferant-a.example', telefon: '000', kundennummer: '4711' });
+  assert.equal(e.an, 'muster@lieferant-a.example');
+  assert.equal(e.anzahl, 2);
+  assert.equal(e.betreff, 'Nachfrage Musterbestellung – 2 Muster offen (Kundennummer 4711)');
+  assert.match(e.text, /- Ware SAND 400, Farbnr\. 11, Art\.-Nr\. ART-1 – bestellt am 05\.10\.2026 \(unsere Bestellung #T1\)\n- Testboden Sand – bestellt am 05\.10\.2026 \(unsere Bestellung #T2\)/);
+  assert.doesNotMatch(e.text, /Anna|Bert/);
+  const ohne = nachhakEntwurf(liste, 'A');
+  assert.equal(ohne.an, '');
+  assert.doesNotMatch(ohne.betreff, /Kundennummer/);
 });

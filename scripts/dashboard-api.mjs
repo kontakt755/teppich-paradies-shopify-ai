@@ -2334,7 +2334,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       });
       try {
         const gespeicherte = leseGrossbriefe(grossbriefPfad(dir));
-        return { verfuegbar: true, ...liste, ...(sperrenFehler ? { sperrenFehler } : {}),
+        // Musterkontakt je Lieferant der offenen Umschlaege, fuer den Entwurf "nachhaken" (nur private Stammdaten).
+        const lieferantenKontakte = Object.fromEntries([...new Set(liste.kunden.flatMap(k => k.muster.map(m => m.lieferantId)).filter(Boolean))].map(id => {
+          const s = stammdatenFuer(stammdaten, id);
+          return [id, { name: s.name || s.anzeigename || `Lieferant ${id}`, mail: s.muster?.mail || null, telefon: s.muster?.telefon || null, kundennummer: s.kundennummer && s.kundennummer !== 'UNGEKLAERT' ? s.kundennummer : null }];
+        }));
+        return { verfuegbar: true, ...liste, lieferantenKontakte, ...(sperrenFehler ? { sperrenFehler } : {}),
           kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte) })),
           versandProbleme: Object.entries(stand.versandProbleme || {}).map(([packSchluessel, e]) => ({ packSchluessel, orderIds: e.orderIds || [], bestellungen: e.bestellungen || [], meldung: e.problem || 'Ergebnis unbekannt', am: e.problemAm || null })) };
       } catch (e) { throw new ApiError(500, e.message); }

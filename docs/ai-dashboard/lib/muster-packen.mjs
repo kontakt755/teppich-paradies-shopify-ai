@@ -264,6 +264,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           nachbestelltAm: belegt(p.nachbestelltAm) && !Number.isNaN(new Date(p.nachbestelltAm).getTime()) ? text(p.nachbestelltAm) : null,
           vorher: v,
           lieferant: v?.lieferant ? lieferantVon(v.lieferant) : null,
+          ...(v?.lieferant ? { lieferantId: text(v.lieferant) } : {}),
           bild: v?.bild || null,
           abgehakt: haken[z.lineItemId] ? { zeit: haken[z.lineItemId].zeit || null, von: haken[z.lineItemId].von || null } : null,
           stand,
@@ -594,4 +595,33 @@ export function sammelliste(kundenListe = []) {
   const rang = z => (z.fach ? 0 : z.stand === 'lager' ? 1 : 2);
   return [...je.values()].sort((a, b) => rang(a) - rang(b) || namen.compare(a.fach || '', b.fach || '')
     || namen.compare(a.titel, b.titel) || namen.compare(a.farbe, b.farbe));
+}
+
+/** Beim Lieferanten bestellt und laut Ampel zu lange unterwegs: hier lohnt das Nachfragen. */
+export const nachhakbar = m => m.stand === 'bestellt' && !m.abgehakt && !m.lagerMoeglich && !m.gesperrt && !!m.lieferantId && ['termin', 'ueberfaellig', 'nachhaken'].includes(m.ampel?.grund);
+
+/**
+ * Mail-Entwurf "wo bleiben die Muster?" (27.11.): alle nachhakbaren Muster eines Lieferanten ueber alle
+ * Umschlaege, in dessen Bezeichnungen. Kundennamen gehen nicht mit. Gesendet wird nur von Hand.
+ * @param {object} kontakt  { mail, telefon, kundennummer } aus den privaten Stammdaten
+ */
+export function nachhakEntwurf(kundenListe = [], lieferantId, kontakt = {}) {
+  const offen = (kundenListe || []).flatMap(k => k.muster).filter(m => m.lieferantId === lieferantId && nachhakbar(m))
+    .sort((a, b) => text(a.bestelltAm).localeCompare(text(b.bestelltAm)));
+  const datum = iso => (Number.isNaN(Date.parse(iso)) ? '' : new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' }));
+  const zeile = m => {
+    const v = m.vorher || {};
+    const ware = v.produktname
+      ? [v.produktname, v.farbnummer ? `Farbnr. ${v.farbnummer}` : '', v.artikelnummer ? `Art.-Nr. ${v.artikelnummer}` : ''].filter(Boolean).join(', ')
+      : `${text(m.bestellt.titel).replace(/^Muster:?\s+/, '')} ${text(m.bestellt.farbe)}`.trim();
+    return `- ${ware}${datum(m.bestelltAm) ? ` – bestellt am ${datum(m.bestelltAm)}` : ''} (unsere Bestellung ${m.orderName})`;
+  };
+  const nummer = kontakt?.kundennummer ? ` (Kundennummer ${kontakt.kundennummer})` : '';
+  return {
+    anzahl: offen.length,
+    an: kontakt?.mail || '',
+    telefon: kontakt?.telefon || '',
+    betreff: `Nachfrage Musterbestellung – ${offen.length} Muster offen${nummer}`,
+    text: `Guten Tag,\n\nfolgende Muster haben wir bestellt und noch nicht erhalten:\n\n${offen.map(zeile).join('\n')}\n\nBitte nennen Sie uns kurz den voraussichtlichen Liefertermin.\n\nVielen Dank und freundliche Grüße\nTeppich Paradies Oranienburg`,
+  };
 }
