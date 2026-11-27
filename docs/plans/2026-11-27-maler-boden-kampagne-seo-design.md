@@ -1,6 +1,6 @@
 # Malerarbeiten + Boden aus einer Hand: Kampagne und SEO
 
-Datum: 2026-11-27. Status: **Entwurf, wartet auf Freigabe des Inhabers.** Vorläufige Wahl nach `AGENTS.md` (Abschnitt godmode): Option B aus der Rationale, "kleine Version mit sauberer Messung".
+Datum: 2026-11-27. Status: **Entwurf; Umsetzung im Repository fertig, nicht live. Inhaber hat die offenen Punkte an Claude übergeben (27.11.2026).** Vorläufige Wahl nach `AGENTS.md` (Abschnitt godmode): Option B aus der Rationale, "kleine Version mit sauberer Messung".
 
 ## Intent
 
@@ -43,7 +43,7 @@ Anti-Ziele (wäre ein Fehlschlag): Anzeigen oder Seiten versprechen etwas, das d
 - Template `page.maler-oranienburg.json` aus vorhandenen `tp-`-Blöcken (kein neuer Bautyp, vorher Skill `theme-regeln`).
 - Inhalt: H1 "Maler Oranienburg: Wände streichen lassen" (Title unter 60 Zeichen); Leistungen nur, was der Inhaber bestätigt (Wände, Decken, tapezieren innen); Ablauf (kostenloses Aufmaß, Angebot, Termin); Block "Boden und Wand aus einer Hand"; Einsatzgebiet (Oranienburg, Oberhavel, Berlin); echte Vorher-Nachher-Fotos; kurze FAQ (Dauer, Möbel, Farbwahl, Kosten); Formular mit `?thema=maler`.
 - Kontaktformular: Thema `maler` ist noch nicht vorhanden (`sections/contact-form.liquid` kennt `muster`, `verlegung`, `angebot`, `reklamation`) und wird ergänzt, damit Anfragen unterscheidbar sind.
-- Strukturierte Daten: Service/LocalBusiness-JSON-LD nach dem Muster von `snippets/tp-treppen-schema.liquid`; nur belegte Angaben.
+- Strukturierte Daten: eigener Service-Knoten in `sections/tp-maler-service.liquid` mit `provider` auf `#organization` aus `sections/header.liquid` (kein zweites LocalBusiness); FAQ-Daten aus `tp-start-faq`. `snippets/tp-treppen-schema.liquid` ist kein JSON-LD, sondern eine SVG-Skizze.
 - Verlinkung: von `verlegeservice`, `verlegung-berlin-nord`, `boden-malerarbeiten` und den Ratgeber-Seiten. Menü nur über `scripts/menue-umbau.mjs`, in diesem Vorhaben nicht angefasst.
 - Korrektur: Text "Partnerbetrieb" in `tp-verlege-ablauf` an die Aussage des Inhabers anpassen.
 
@@ -94,3 +94,10 @@ Branch, PR, `npm run -s pruefen`, main, Preview, Live nach Skill `deploy`. Remot
 ### Außerhalb des Umfangs
 
 Fassade, Shop-Produkte für Wandfarbe, Preisänderungen, Hauptmenü, bestehende Kampagnen (Ausnahme: Hinweis auf die Marken-Kampagne ohne Impressionen).
+
+## Entscheidungen (agent's call, vorläufig)
+
+- Kein Rabatt und kein Preis auf Seite und in Anzeigen; leere Zeile `kombi_vorteil` in der Section.
+- Leistungen: Wände, Decken, tapezieren innen. Keine Fassade.
+- Berlin ganz im Zielgebiet, Gebote nach Nähe angepasst; Budget 8 €/Tag und Zielpreis bis 50 € je Anfrage sind Annahmen.
+- Umsetzung: `templates/page.maler-oranienburg.json`, `sections/tp-maler-service.liquid`, Formular-Thema `maler`, Control-Center-Leistung `maler`, Entwürfe unter `docs/google/maler-boden-search-entwurf-2026-11-27.md`, `docs/seo/gbp-malerarbeiten-2026-11-27.md`, Livegang in `domains/shopify/maler-oranienburg-livegang.md`.

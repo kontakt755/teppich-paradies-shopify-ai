@@ -1,0 +1,213 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      },
+      "disabled": true
+    },
+    "tp_maler": {
+      "type": "tp-maler-service",
+      "blocks": {
+        "wand": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Wände streichen",
+            "text": "Neuer Anstrich für Wohnräume, Schlafzimmer, Kinderzimmer, Flur und Küche. Farbe und Umfang besprechen wir vor Ort mit Ihnen."
+          }
+        },
+        "decke": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Decken streichen",
+            "text": "Auch die Decken bekommen einen frischen, gleichmäßigen Anstrich, damit der Raum als Ganzes stimmt."
+          }
+        },
+        "tapete": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Tapezieren (innen)",
+            "text": "Maler- und Tapezierarbeiten im Innenbereich, zum Beispiel beim Wohnungswechsel oder vor dem Einzug."
+          }
+        },
+        "kombi": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Boden und Wand zusammen",
+            "text": "Teppichboden, Vinyl, Laminat und Parkett verlegen wir, die Wände streichen wir im selben Auftrag."
+          }
+        }
+      },
+      "block_order": [
+        "wand",
+        "decke",
+        "tapete",
+        "kombi"
+      ],
+      "settings": {}
+    },
+    "tp_verlege_ablauf": {
+      "type": "tp-verlege-ablauf",
+      "settings": {
+        "maler": true
+      }
+    },
+    "faq": {
+      "type": "tp-start-faq",
+      "settings": {
+        "heading": "Häufige Fragen zu Malerarbeiten",
+        "erste_offen": true
+      },
+      "blocks": {
+        "q1": {
+          "type": "frage",
+          "settings": {
+            "frage": "Wie läuft eine Anfrage ab?",
+            "antwort": "<p>Rufen Sie an, schreiben Sie uns oder schicken Sie Fotos der Räume per WhatsApp. Wir melden uns am nächsten Werktag, sehen uns die Räume an und erstellen Ihnen ein Angebot.</p>"
+          }
+        },
+        "q2": {
+          "type": "frage",
+          "settings": {
+            "frage": "Welche Malerarbeiten übernehmen Sie?",
+            "antwort": "<p>Wir streichen Wände und Decken und tapezieren im Innenbereich, zum Beispiel bei Renovierung oder Wohnungswechsel. Außenarbeiten und Fassaden gehören nicht dazu.</p>"
+          }
+        },
+        "q3": {
+          "type": "frage",
+          "settings": {
+            "frage": "Kann ich Boden und Wände im selben Auftrag bekommen?",
+            "antwort": "<p>Ja. Wir verlegen <a href=\"/pages/liefer-verlegeservice\">Teppichboden und Vinyl</a>, Laminat und Parkett und streichen die Wände dazu. Sie haben dafür einen Ansprechpartner.</p>"
+          }
+        },
+        "q4": {
+          "type": "frage",
+          "settings": {
+            "frage": "Wo sind Sie tätig?",
+            "antwort": "<p>In Oranienburg und im Umkreis von etwa 50 km sowie in Berlin. Weiter entfernt auf Anfrage. Details zur Bodenverlegung finden Sie unter <a href=\"/pages/verlegung-berlin-nord\">Verlegung in Berlin-Nord</a>.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4"
+      ]
+    },
+    "tp_bewertung": {
+      "type": "tp-start-trust",
+      "settings": {
+        "rating_wert": "",
+        "rating_text": "",
+        "rating_link": ""
+      },
+      "blocks": {
+        "selbst": {
+          "type": "aussage",
+          "settings": {
+            "text": "Malerarbeiten durch unser eigenes Team"
+          }
+        },
+        "hand": {
+          "type": "aussage",
+          "settings": {
+            "text": "Boden und Wand aus einer Hand"
+          }
+        },
+        "gebiet": {
+          "type": "aussage",
+          "settings": {
+            "text": "Oranienburg, Oberhavel und Berlin"
+          }
+        }
+      },
+      "block_order": [
+        "selbst",
+        "hand",
+        "gebiet"
+      ]
+    },
+    "tp_anfrage": {
+      "type": "tp-start-kontakt",
+      "settings": {
+        "heading": "Malerarbeiten anfragen",
+        "text": "Rufen Sie an, schicken Sie Fotos per WhatsApp oder schreiben Sie uns. Wir melden uns am nächsten Werktag.",
+        "telefon": "03301 573 37 20",
+        "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
+        "whatsapp": "https://wa.me/491792612211",
+        "anliegen": "Malerarbeiten",
+        "betreff": "Anfrage Malerarbeiten",
+        "form_text": "Für Malerarbeiten und, wenn Sie möchten, gleich den neuen Boden dazu. Bitte nennen Sie Ihre Postleitzahl.",
+        "nachricht_label": "Nachricht (Postleitzahl, Räume, ungefähre Fläche, Wunsch)",
+        "wa_text": "Fotos der Räume schicken – wir antworten in den Öffnungszeiten.",
+        "foto_hinweis": "Fotos der Räume oder einen Grundriss schicken Sie uns am einfachsten per WhatsApp.",
+        "formular_zuerst": true
+      }
+    },
+    "google_bewertungen": {
+      "type": "google",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main",
+    "tp_maler",
+    "tp_verlege_ablauf",
+    "faq",
+    "tp_bewertung",
+    "tp_anfrage",
+    "google_bewertungen"
+  ]
+}

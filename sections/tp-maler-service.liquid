@@ -1,0 +1,167 @@
+{%- comment -%}
+  TP Maler-Service: Einstieg der Seite /pages/maler-oranienburg (Template
+  page.maler-oranienburg) - Malerarbeiten und Boden aus einer Hand.
+
+  Aufbau:
+    1. Einstieg mit der einzigen H1 der Seite und der Hauptaktion
+       (Anfrage, Anrufen, WhatsApp: snippets/tp-service-hauptaktion)
+    2. Leistungen als Karten (Block "leistung") - nur, was der Betrieb
+       bestaetigt hat
+    3. Boden und Wand aus einer Hand; die Zeile "kombi_vorteil" bleibt leer,
+       bis der Inhaber einen Vorteil festlegt (Preise und Rabatte sind seine
+       Entscheidung)
+    4. Einsatzgebiet
+
+  Strukturierte Daten: ein Service-Knoten mit provider auf die Organisation
+  aus sections/header.liquid (#organization). Das Einsatzgebiet steht als
+  Ortsliste in "gebiet_liste". Die FAQ-Daten kommen aus tp-start-faq.
+  Kein LocalBusiness hier: das gibt es schon im Kopf.
+
+  Die Seite hat kein Hauptmenue-Element: Der Link kommt von den
+  Verlegeseiten (Werkbank: Menue nur mit scripts/menue-umbau.mjs).
+{%- endcomment -%}
+
+<section class="tp-s-sec tp-maler" id="tp-maler" aria-labelledby="tp-maler-h1">
+  <div class="tp-s-wrap">
+    <header class="tp-maler__kopf">
+      {%- if section.settings.eyebrow != blank -%}
+        <span class="tp-s-eyebrow">{{ section.settings.eyebrow | escape }}</span>
+      {%- endif -%}
+      <h1 id="tp-maler-h1" class="tp-maler__titel">{{ section.settings.heading | escape }}</h1>
+      {%- if section.settings.sub != blank -%}
+        <p class="tp-maler__sub">{{ section.settings.sub | escape }}</p>
+      {%- endif -%}
+      <div class="tp-maler__aktionen">
+        {%- render 'tp-service-hauptaktion', label: section.settings.anfrage_knopf, ziel: '/pages/maler-oranienburg#tp-anfrage' -%}
+      </div>
+    </header>
+
+    {%- if section.blocks.size > 0 -%}
+      <ul class="tp-maler__karten" role="list">
+        {%- for block in section.blocks -%}
+          <li class="tp-maler__karte" {{ block.shopify_attributes }}>
+            <h2 class="tp-maler__karte-titel">{{ block.settings.titel | escape }}</h2>
+            <p>{{ block.settings.text | escape }}</p>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+</section>
+
+{%- if section.settings.kombi_heading != blank -%}
+  <section class="tp-s-sec tp-s-sec--band tp-maler-kombi" aria-labelledby="tp-maler-kombi-h2">
+    <div class="tp-s-wrap tp-maler-kombi__wrap">
+      <h2 id="tp-maler-kombi-h2" class="tp-s-h2">{{ section.settings.kombi_heading | escape }}</h2>
+      {%- if section.settings.kombi_text != blank -%}
+        <p class="tp-maler-kombi__text">{{ section.settings.kombi_text | escape }}</p>
+      {%- endif -%}
+      {%- if section.settings.kombi_vorteil != blank -%}
+        <p class="tp-maler-kombi__vorteil"><strong>{{ section.settings.kombi_vorteil | escape }}</strong></p>
+      {%- endif -%}
+      {%- if section.settings.gebiet_text != blank -%}
+        <p class="tp-maler-kombi__gebiet">{{ section.settings.gebiet_text | escape }}</p>
+      {%- endif -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{%- liquid
+  assign tm_gebiete = section.settings.gebiet_liste | split: ','
+  assign tm_name = section.settings.service_name | default: 'Malerarbeiten und Bodenverlegung'
+-%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": {{ tm_name | json }},
+  "serviceType": "Malerarbeiten innen",
+  "description": {{ section.settings.sub | strip_html | json }},
+  "url": {{ canonical_url | json }},
+  "provider": { "@id": {{ request.origin | append: '/#organization' | json }} },
+  "areaServed": [
+    {%- for tm_ort in tm_gebiete -%}
+      { "@type": "AdministrativeArea", "name": {{ tm_ort | strip | json }} }{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  ],
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": {{ tm_name | json }},
+    "itemListElement": [
+      {%- for block in section.blocks -%}
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": {{ block.settings.titel | json }} } }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  }
+}
+</script>
+
+{% stylesheet %}
+  .tp-maler__kopf { max-width: 760px; }
+  .tp-maler__titel {
+    font-size: var(--tp-fs-2xl);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    color: var(--tp-ink);
+    text-wrap: balance;
+  }
+  .tp-maler__sub { font-size: var(--tp-fs-md); color: var(--tp-muted); margin: 0 0 20px; max-width: 62ch; }
+  .tp-maler__aktionen { margin-bottom: 32px; }
+  .tp-maler__karten {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .tp-maler__karte {
+    border: 1px solid #e6e0d8;
+    border-radius: 12px;
+    padding: 20px;
+    background: #fff;
+  }
+  .tp-maler__karte-titel { font-size: var(--tp-fs-lg); font-weight: 600; margin: 0 0 8px; color: var(--tp-ink); }
+  .tp-maler__karte p { margin: 0; color: #4a443f; font-size: var(--tp-fs-md); }
+  .tp-maler-kombi__wrap { max-width: 760px; }
+  .tp-maler-kombi__text,
+  .tp-maler-kombi__gebiet { margin: 12px 0 0; font-size: var(--tp-fs-md); color: #4a443f; max-width: 62ch; }
+  .tp-maler-kombi__vorteil { margin: 12px 0 0; font-size: var(--tp-fs-md); color: var(--tp-ink); }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Maler-Service",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Kleine Überschrift", "default": "Maler- und Bodenarbeiten aus einer Hand" },
+    { "type": "text", "id": "heading", "label": "Überschrift (H1)", "default": "Maler in Oranienburg: Wände streichen lassen" },
+    { "type": "textarea", "id": "sub", "label": "Einleitung", "default": "Wir streichen Ihre Wände und Decken und verlegen auf Wunsch gleich den neuen Boden. Ein Ansprechpartner, ein Angebot – in Oranienburg, Oberhavel und Berlin." },
+    { "type": "text", "id": "anfrage_knopf", "label": "Text des Anfrage-Knopfs", "default": "Malerarbeiten anfragen" },
+    { "type": "header", "content": "Boden und Wand" },
+    { "type": "text", "id": "kombi_heading", "label": "Überschrift", "default": "Boden und Wand aus einer Hand" },
+    { "type": "textarea", "id": "kombi_text", "label": "Text", "default": "Wer renoviert, braucht meist beides. Bei uns bekommen Sie Aufmaß, Angebot und Ausführung für Boden und Wände von einem Ansprechpartner. Das spart Abstimmung." },
+    { "type": "text", "id": "kombi_vorteil", "label": "Kombi-Vorteil", "info": "Bleibt leer, bis ein Vorteil festgelegt ist (Preise und Rabatte entscheidet der Inhaber)." },
+    { "type": "textarea", "id": "gebiet_text", "label": "Einsatzgebiet", "default": "Wir arbeiten in Oranienburg und im Umkreis von etwa 50 km sowie in Berlin. Weiter entfernt auf Anfrage." },
+    { "type": "header", "content": "Strukturierte Daten" },
+    { "type": "text", "id": "service_name", "label": "Name der Leistung", "default": "Malerarbeiten und Bodenverlegung" },
+    { "type": "text", "id": "gebiet_liste", "label": "Einsatzgebiet (Orte, mit Komma getrennt)", "default": "Oranienburg, Oberhavel, Berlin" }
+  ],
+  "blocks": [
+    {
+      "type": "leistung",
+      "name": "Leistung",
+      "limit": 8,
+      "settings": [
+        { "type": "text", "id": "titel", "label": "Titel", "default": "Wände streichen" },
+        { "type": "textarea", "id": "text", "label": "Text", "default": "Neuer Anstrich für Wohnräume, Flur und Küche. Farbe und Umfang besprechen wir vor Ort." }
+      ]
+    }
+  ],
+  "presets": [
+    { "name": "TP Maler-Service" }
+  ]
+}
+{% endschema %}

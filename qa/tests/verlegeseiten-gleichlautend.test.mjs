@@ -17,6 +17,7 @@ const SEITEN = {
   verlegeservice: false,
   wohnungsunternehmen: true,
   'boden-malerarbeiten': true,
+  'maler-oranienburg': true,
 };
 
 test('Jede Verlegeseite zeigt den Baustein Termine und Angebot, Malerarbeiten nur wo vorgesehen', () => {
@@ -34,6 +35,8 @@ test('Baustein nennt Vorlauf, Festpreisangebot und Hereintragen', () => {
   assert.match(s, /etwa 3 Wochen nach Auftrag/);
   assert.match(s, /verbindliches Festpreisangebot – auch als Privatkunde/);
   assert.match(s, /Maler- und Tapezierarbeiten/);
+  // Malerarbeiten macht der Betrieb selbst (Inhaber 27.11.2026): kein Partnerbetrieb im Text.
+  assert.doesNotMatch(s, /Partnerbetrieb/i);
   assert.ok(s.toLowerCase().includes(HEREINTRAGEN.toLowerCase()));
 });
 

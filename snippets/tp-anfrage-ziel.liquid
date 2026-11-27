@@ -25,7 +25,7 @@
 {%- liquid
   assign taz_eigen = ''
   if template.name == 'page'
-    assign taz_vorlagen = 'verlegeservice,teppichboden-verlegen,vinylboden-verlegen,treppenverlegung,teppichreinigung' | split: ','
+    assign taz_vorlagen = 'verlegeservice,teppichboden-verlegen,vinylboden-verlegen,treppenverlegung,teppichreinigung,maler-oranienburg' | split: ','
     if taz_vorlagen contains template.suffix
       assign taz_eigen = '#tp-anfrage'
     endif

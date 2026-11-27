@@ -272,6 +272,7 @@
       angebot: 'Angebotsanfrage',
       beratung: 'Beratungstermin',
       musteranfrage: 'Musteranfrage',
+      maler: 'Maleranfrage',
       reklamation: 'Reklamation'
     };
     var thema = params.get('thema');
@@ -292,7 +293,7 @@
     // Verlegung und Angebot brauchen den Ort (Einzugsgebiet) und fuer das
     // Aufmass einen Rueckruf: PLZ und Telefon einblenden, beide freiwillig
     // (Rundgang 26.10.2026; ob die PLZ Pflicht wird, entscheidet der Inhaber).
-    if (thema === 'verlegung' || thema === 'angebot') root.setAttribute('data-anfrage-felder', '');
+    if (thema === 'verlegung' || thema === 'angebot' || thema === 'maler') root.setAttribute('data-anfrage-felder', '');
     // Reklamation: Feld Bestellnummer zeigen und freischalten. Freiwillig,
     // weil die Hinweise keine Voraussetzung fuer die Reklamation sind.
     if (thema === 'reklamation') {
@@ -322,6 +323,7 @@
       if (thema === 'angebot') zeilen.push('Bitte senden Sie mir ein Angebot' + (produkt ? ' für ' + produkt : '') + '.');
       else if (thema === 'beratung') zeilen.push('Ich möchte einen Beratungstermin vereinbaren' + (produkt ? ' zu ' + produkt : '') + '.');
       else if (thema === 'verlegung') zeilen.push('Ich interessiere mich für die Verlegung' + (produkt ? ' von ' + produkt : '') + '.');
+      else if (thema === 'maler') zeilen.push('Ich interessiere mich für Malerarbeiten (Wände streichen, Boden und Wand aus einer Hand).');
       else if (thema === 'musteranfrage') zeilen.push('Ich interessiere mich für ein Muster' + (produkt ? ' von ' + produkt : '') + '. Bitte melden Sie sich zur Abstimmung.');
       var variante = params.get('variante');
       if (variante) zeilen.push('Variante: ' + variante);
