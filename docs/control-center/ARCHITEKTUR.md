@@ -1625,8 +1625,13 @@ Styles `stile/serviceanfragen.css`.
   `Anliegen:`, `Wunschzeitraum:` (freiwillig, seit 2026-10-26, kommt in die Notiz), `Text:`.
   `ausFormularMail()` füllt daraus den Dialog; Leistung zuerst aus dem Betreff, sonst aus dem Anliegen
   („Mieterwechsel / mehrere Wohnungen“ zählt als Verlegeservice). Musteranfragen
-  (`Id: ContactForm-sample`) werden abgelehnt. Ein Test prüft, dass jedes Feld und jedes Anliegen des
-  Formulars im Mail-Leser eingeordnet ist.
+  (`Id: ContactForm-sample` oder Feld `Produkt`) werden abgelehnt. Ein Test prüft, dass jedes Feld und
+  jedes Anliegen des Formulars im Mail-Leser eingeordnet ist.
+- **Maß-Konfigurator (seit 2026-11-28):** „Schablone“ und „Skizze“
+  (`blocks/tp-einfass-konfigurator.liquid`) schicken keinen Betreff, sondern `Produkt:`, `Farbe:`,
+  `Form:` (beginnt mit „Schablone“ bzw. „Skizze“), Name, E-Mail, `Phone:` und Text. Das Feld `Form`
+  macht daraus trotz `Produkt:` eine Service-Anfrage: Leistung „Sonstiges“, Herkunft „Maß-Konfigurator“,
+  Produkt, Farbe und Form stehen in der Notiz. `Phone:` wird für jedes Formular als Telefon gelesen.
 - **Auswertung oben:** letzte 8 Kalenderwochen inklusive der laufenden, je Woche und je Quelle
   (mit gewonnen/verloren); beide zählen dieselbe Menge.
 - **Automatische Übernahme (seit 2026-10-16, Inhaber: ja):** Der Dienst liest kein Postfach. Das tut
@@ -1635,7 +1640,8 @@ Styles `stile/serviceanfragen.css`.
   Mails von `mailer@shopify.com`, legt sie als JSON in sein Scratchpad und ruft
   `npm run -s service -- uebernehmen --datei <json>` (`operations/scripts/serviceanfragen.mjs`).
   Übernommen wird nur, was `automatischUebernehmbar()` erlaubt: die festen Betreffe der Serviceseiten
-  (`BETREFF_SERVICE`) und die Startseite mit Anliegen Verlegen/Aufmaß/Mieterwechsel/Treppe. Eine Mail nie zweimal
+  (`BETREFF_SERVICE`), die Startseite mit Anliegen Verlegen/Aufmaß/Mieterwechsel/Treppe und
+  Schablone/Skizze aus dem Maß-Konfigurator. Eine Mail nie zweimal
   (`mailId`), eine schon von Hand erfasste Anfrage nicht noch einmal (gleiche E-Mail oder Telefonnummer
   innerhalb von 7 Tagen). Übersprungene Mails merkt sich `serviceanfragen-postfach.json` (schreibt nur
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
