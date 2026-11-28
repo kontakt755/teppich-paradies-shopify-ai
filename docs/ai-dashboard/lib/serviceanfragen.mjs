@@ -100,8 +100,11 @@ export function pruefeFelder(roh = {}, { teil = false } = {}) {
  * Mail geprueft). tests/serviceanfragen.test.mjs prueft, dass jedes Feld aus
  * sections/tp-start-kontakt.liquid hier steht. "Muster" schickt die
  * Musterberatung im Warenkorb (snippets/tp-muster-beratungsanfrage.liquid).
+ * "Farbe" und "Form" schickt der Mass-Konfigurator
+ * (blocks/tp-einfass-konfigurator.liquid); sein Telefonfeld contact[phone]
+ * heisst in der Mail "Phone" (geprueft an echten Mails vom 17.10. und 01.11.2026).
  */
-export const MAILFELDER = Object.freeze(['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Muster', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Anliegen', 'Wunschzeitraum', 'Text', 'Nachricht']);
+export const MAILFELDER = Object.freeze(['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Farbe', 'Form', 'Muster', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Phone', 'Anliegen', 'Wunschzeitraum', 'Text', 'Nachricht']);
 const FELD_ZEILE = new RegExp(`^\\s*(${MAILFELDER.map(f => f.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')).join('|')})\\s*:\\s*(.*)$`);
 
 /**
@@ -141,6 +144,14 @@ export function leistungAus({ betreff = '', anliegen = '' } = {}) {
 }
 
 /**
+ * Mass-Konfigurator: Die Formen "Schablone" und "Skizze" kann man nicht in den
+ * Warenkorb legen, sie kommen als Formular-Mail ohne Betreff. Das Feld "Form"
+ * beginnt mit dem Namen der Form (assets/tp-einfass-konfigurator.js).
+ */
+const MASS_FORM = /^(Schablone|Skizze)\b/;
+const HERKUNFT_KONFIGURATOR = 'Maß-Konfigurator';
+
+/**
  * Liest eine eingefuegte Formular-Mail. Gibt die Felder fuer den Dialog
  * zurueck, oder `{ erkannt: false, grund }`, wenn es keine Service-Anfrage ist
  * (Musterbestellung) oder gar keine Formular-Mail.
@@ -159,7 +170,9 @@ export function ausFormularMail(roh) {
   if (!felder.Betreff && !felder.Name && !felder['E-Mail']) {
     return { erkannt: false, grund: 'Das sieht nicht nach einer Formular-Mail aus („Betreff:“, „Name:“ und „E-Mail:“ fehlen).' };
   }
-  if (/sample/i.test(wert('Id')) || felder.Produkt) {
+  const massanfrage = MASS_FORM.test(wert('Form'));
+  // Ein Feld "Produkt" tragen auch Musteranfragen - nur Schablone/Skizze ist Service.
+  if (/sample/i.test(wert('Id')) || (felder.Produkt && !massanfrage)) {
     return { erkannt: false, grund: 'Das ist eine Musteranfrage, keine Service-Anfrage.' };
   }
   const betreff = wert('Betreff');
@@ -170,19 +183,20 @@ export function ausFormularMail(roh) {
   // Freiwilliges Feld im Anfrageformular seit 26.10.2026 - landet in der Notiz.
   const zeitraum = wert('Wunschzeitraum');
   const nachricht = wert('Text') || wert('Nachricht');
-  const notiz = [anliegen && `Anliegen: ${anliegen}`, zeitraum && `Wunschzeitraum: ${zeitraum}`, nachricht].filter(Boolean).join('\n');
+  const angaben = (massanfrage ? ['Produkt', 'Farbe', 'Form'] : []).map(k => wert(k) && `${k}: ${wert(k)}`);
+  const notiz = [...angaben, anliegen && `Anliegen: ${anliegen}`, zeitraum && `Wunschzeitraum: ${zeitraum}`, nachricht].filter(Boolean).join('\n');
   return {
     erkannt: true,
-    betreff, anliegen,
+    betreff, anliegen, massanfrage,
     // Nur fuer die Musterberatung (rueckrufAusMail): Musterliste und Kundentext getrennt.
     muster: wert('Muster'), nachricht,
     felder: {
       datum: datumAusBetreffzeile(roh),
       name: text(wert('Name'), GRENZEN.name),
-      telefon: text(wert('Telefon'), GRENZEN.telefon),
+      telefon: text(wert('Telefon') || wert('Phone'), GRENZEN.telefon),
       email: text(wert('E-Mail'), GRENZEN.email),
       plz: text(wert('Plz'), GRENZEN.plz),
-      herkunft: text([betreff, kampagne].filter(Boolean).join(' · '), GRENZEN.herkunft),
+      herkunft: text([betreff || (massanfrage && HERKUNFT_KONFIGURATOR), kampagne].filter(Boolean).join(' · '), GRENZEN.herkunft),
       leistung: leistungAus({ betreff, anliegen }),
       quelle: istAnzeige(kampagne) ? 'werbung' : 'formular',
       notiz: text(notiz, GRENZEN.notiz),
@@ -243,10 +257,14 @@ export function rueckrufAusMail(ergebnis) {
   };
 }
 
-/** Ergebnis von ausFormularMail() -> darf es ohne Menschen in die Liste? */
+/**
+ * Ergebnis von ausFormularMail() -> darf es ohne Menschen in die Liste?
+ * Ja bei festem Service-Betreff, Startseite mit Service-Anliegen oder
+ * Schablone/Skizze aus dem Mass-Konfigurator.
+ */
 export function automatischUebernehmbar(ergebnis) {
   if (!ergebnis?.erkannt) return { ok: false, grund: ergebnis?.grund || 'keine Formular-Mail' };
-  if (BETREFF_SERVICE.includes(ergebnis.betreff)) return { ok: true };
+  if (ergebnis.massanfrage || BETREFF_SERVICE.includes(ergebnis.betreff)) return { ok: true };
   if (ergebnis.betreff === BETREFF_STARTSEITE) {
     return ANLIEGEN_SERVICE.includes(ergebnis.anliegen)
       ? { ok: true }
