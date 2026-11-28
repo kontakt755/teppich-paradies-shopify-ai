@@ -166,7 +166,10 @@ const ZIEL_TEXT = { kunde: 'direkt vom Lieferanten', kettler: 'über unseren Ket
  * Gewinn eines Kaufs. warnungFuer(auftrag, { standardweg }) liefert bestellWarnung(..., immer: true);
  * mit standardweg: true rechnet sie bearbeitete Ware ohne Vermerk mit dem ueblichen Weg.
  */
-export function gewinnJeKauf({ auftrag, roh, warnungFuer, beleg = null, belegTarife = {}, gebuehr = null, gebuehrTarif = null }) {
+export function gewinnJeKauf({ auftrag: offen, roh, warnungFuer, beleg = null, belegTarife = {}, gebuehr = null, gebuehrTarif = null }) {
+  // Rueckblick: gerechnet wird mit der ganzen bestellten Menge. Nach dem Versand ist die offene Menge 0
+  // und mit ihr die Einkaufsmenge - der Einkauf waere zu klein und der Gewinn zu schoen.
+  const auftrag = { ...offen, positionen: (offen.positionen ?? []).map(p => (p.bestellSoll ? { ...p, bestellmenge: p.bestellSoll } : p)) };
   const e = erloes(roh);
   const rohZeilen = new Map(zeilenVon(roh).map(z => [z.id, z]));
   const titelVon = id => (auftrag.positionen.find(p => p.lineItemId === id)?.titel ?? 'Artikel');

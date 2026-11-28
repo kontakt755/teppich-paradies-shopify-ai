@@ -202,6 +202,14 @@ test('Kauf unter Ziel nur wegen der Gebuehr: Ursache ist die Gebuehr, nicht ein 
   assert.match(f.hinweis, /Zahlungsgebühr/);
 });
 
+test('Versandte Ware: der Einkauf rechnet mit der bestellten Menge, nicht mit der offenen', () => {
+  const rechne = extra => gewinnJeKauf({ auftrag: auftrag([pos('l1', { bestellmenge: { menge: 2.5, einheit: 'lfm', text: '2,50 lfm, 400 cm breit' }, ...extra })]), roh: roh(), warnungFuer: warnungMit(EK([eZeile('ART-1', 6)])), gebuehr: 1 });
+  const offen = rechne({});
+  const versandt = rechne({ bestellmenge: { menge: 0, einheit: 'lfm', text: '0,00 lfm, 400 cm breit' }, bestellSoll: { menge: 2.5, einheit: 'lfm', text: '2,50 lfm, 400 cm breit' } });
+  assert.deepEqual([versandt.ware, versandt.rohertrag], [offen.ware, offen.rohertrag]);
+  assert.equal(offen.ware, 60);
+});
+
 test('Teppich nach Mass in 0,01 m²: je m² gezeigt, nicht je Einheit', () => {
   const z = eZeile('TNM-1', 20, { vk_einheit: '0,01 m² (Konfigurator)', menge_bezug: 0.01, ek_vk_einheit: 0.2, vk_brutto: 0.39 });
   const e = ekJeVerkaufseinheit(z, variante('Taupe', 0.39, 'm2', 39));
