@@ -377,7 +377,7 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
   if (abholung) { /* kein Posten */ } else if (zuschlaege.every(Boolean)) {
     const n = zuschlaege.length;
     const text = new Set(zuschlaege.map(x => x.text)).size === 1 ? zuschlaege[0].text : 'Lieferung vom Lieferanten';
-    posten.push({ text: n > 1 ? `${text} (${n} Lieferungen)` : text, betrag: summe(zuschlaege.map(x => x.betrag)), art: 'weg' });
+    posten.push({ text: n > 1 ? `${text} (${n} Lieferungen)` : text, betrag: summe(zuschlaege.map(x => x.betrag)), art: 'weg', vomLieferanten: true });
   } else offen.push(lieferant === 'UNGEKLAERT' ? 'Lieferant nicht zugeordnet' : 'Lieferkosten des Lieferanten nicht hinterlegt');
   if (ziel === 'kettler') {
     const kanten = eintraege.filter(e => wirdGekettelt(e.p.ausfuehrung));
@@ -416,7 +416,7 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
  *
  * @returns {object|null} null, wenn nichts vom Normalfall abweicht
  */
-export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tarif, statusAlle = {}, absender = null, nahPlz = /^$/, ladenPlz = null, mindestmenge = {}, jetzt = new Date(), lieferantName = id => `Lieferant ${id}` }) {
+export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tarif, statusAlle = {}, absender = null, nahPlz = /^$/, ladenPlz = null, mindestmenge = {}, jetzt = new Date(), lieferantName = id => `Lieferant ${id}`, immer = false }) {
   // Rollenkomponente eines Bundles: reiner Bestandsabgang, das Material steht schon an der Teppichzeile.
   // Sie kostet keinen Einkauf und keinen Weg, ihr Verkaufspreis zaehlt aber im Netto.
   const ware = (auftrag?.positionen ?? []).filter(p => !p.istMuster && !p.eigenleistung && p.masspruefung?.status !== 'bestand' && Number(p.mengeBestellt) > 0);
@@ -587,7 +587,8 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     kopf = 'Rohertrag unbekannt';
   }
   const auffaelligeHinweise = hinweise.filter(h => !h.nurZusatz);
-  if (!kopf && !auffaelligeHinweise.length) return null;
+  if (!kopf && !auffaelligeHinweise.length && !immer) return null;
+  if (!kopf && !auffaelligeHinweise.length) kopf = `Rohertrag etwa ${euro(rohertrag)}${quote !== null ? ` (${Math.round(quote * 100)} %)` : ''}`;
   if (!kopf) { stufe = 'warn'; kopf = `Mehrkosten möglich, Rohertrag etwa ${euro(rohertrag)}${quote !== null ? ` (${Math.round(quote * 100)} %)` : ''}`; }
   if (stufe === 'leise' && auffaelligeHinweise.length) stufe = 'warn';
 
@@ -604,7 +605,7 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   if (versandVeraltet) anmerkungen.push('Versand mit dem letzten hinterlegten Dieselwert gerechnet.');
   if (mindermengeGeschaetzt) anmerkungen.push('Mindermenge je Bestellung geschätzt, die Sammellieferung kann darüber liegen.');
 
-  return {
+  const ergebnis = {
     orderId: auftrag.id,
     orderName: auftrag.name,
     stufe,
@@ -620,6 +621,17 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     rohertragAuffaellig: kostenUeberVerkauf || rohertrag !== null && (rohertrag < 0 || (quote !== null && quote < SCHWELLEN.rohertragQuote)
       || (rohertragVerschnitt !== null && (rohertragVerschnitt < 0 || (quoteVerschnitt !== null && quoteVerschnitt < SCHWELLEN.rohertragQuote)))),
   };
+  // Bausteine der Rechnung fuer die Ansicht "Onlineshop" (onlineshop-gewinn.mjs). Nicht aufzaehlbar:
+  // Sie wandern in keine Antwort mit, auch nicht ueber warnungFuerInhaber().
+  Object.defineProperty(ergebnis, 'details', {
+    enumerable: false,
+    value: {
+      netto, ekBekannt, ekSumme: r2(ekSumme), offen: [...new Set(offen)], eigeneZustellung, versandVeraltet,
+      posten: posten.map(x => ({ text: x.text, betrag: r2(x.betrag), art: x.art, vomLieferanten: x.vomLieferanten === true })),
+      positionen: eintraege.map(e => ({ lineItemId: e.p.lineItemId, ekSumme: istZahl(e.m.ekSumme) ? r2(e.m.ekSumme) : null, zeile: e.m.zeile ?? null, ziel: e.ziel, vermerkt: e.vermerkt, wegBelegt: e.wegBelegt, flaeche: e.m.flaeche, vollerollenbreite: e.m.vollerollenbreite, ekJeM2: e.m.ekJeM2 })),
+    },
+  });
+  return ergebnis;
 }
 
 /**

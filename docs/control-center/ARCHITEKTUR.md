@@ -3380,3 +3380,26 @@ Vorrang, Suchtreffer ohne Ordner (Zuordnung über `treffer:` = id oder Link) ste
 Treffer fallen weg, Ordner ohne Kopfblock zeigen „Kopfblock fehlt“. Frist ≤ 7 Tage ist bernsteinfarben, überschrittene
 offene Fristen rot. Nur lesend; Daten bleiben lokal, nichts davon im Repository. Wer an einem Verfahren arbeitet,
 pflegt den Kopfblock mit (Format: `LIESMICH-UEBERSICHT.md` im lokalen Ausschreibungen-Ordner).
+
+## 38. Onlineshop: Gewinn je Kauf und Preiskontrolle (28.11.2026, Issue #2407)
+
+`#/onlineshop` (Reiter `?teil=preise`) liest `GET /api/onlineshop/gewinn` (nur lesen, kein Schreibpfad).
+Wer es sehen darf, entscheidet allein `darfOnlineshop()` in `operations/lib/onlineshop-gewinn.mjs`
+(heute: Inhaber und Notzugang); `darfPfad` im Server und die Antwort fragen beide dort,
+`ANSICHT_ROLLEN.onlineshop` steuert nur die Navigation.
+
+- **Kaeufe:** bezahlte Bestellungen mit Ware (keine Muster, Test-, stornierte oder ganz erstattete);
+  Erloes aus `currentTotalPriceSet` minus `currentTotalTaxSet` (Erstattungen und Aenderungen sind
+  darin), ohne Steuer in Shopify mit 19 % herausgerechnet.
+- **Kosten:** zuerst die Belegsammlung der neuesten `rentabilitaet-JJJJ-MM-TT/belege-daten.json`
+  (Klasse R/AB = belegt, A = geschaetzt, U = nicht verwendet), Zahlungsgebuehr aus `zahlungen.json`,
+  sonst nach dem Tarif in `belege-daten.json`. Ohne Beleg rechnet `bestellWarnung(…, immer: true)`
+  wie im Bestelldialog; Zusatz nur hier: volle Rollenbreite als Verschnitt (Annahme in der Zeile).
+  Fehlt Einkauf, Lieferkosten oder Gebuehrentarif, ist die Zeile „unbekannt“ ohne Zahl.
+- **Preiskontrolle:** Ziel `ZIEL_ROHERTRAG = 0.3`. Je Position zaehlt fuer die Preisfrage der
+  Einkauf ohne Verschnitt (Beleg, sonst EK-Liste je Verkaufseinheit). Sortiment: aktive Varianten
+  aus `lexikon/produkte.json` gegen die EK-Liste (Zuordnung ueber Handle und Variantentitel, sonst
+  SKU), nur wenn `preisJeEinheit` zur Einheit der EK-Liste passt (m², 0,01 m² Konfigurator, Paket,
+  Stueck) und sich der Preis seit der Liste nicht mehr als verdoppelt/halbiert hat; sonst
+  „nicht vergleichbar“. EK-Aufschlag je Lieferant aus den Stammdaten.
+- Die Rechnungspruefung (w-414) ist keine Quelle: ihre Rechnungen sind keiner Kundenbestellung zugeordnet.
