@@ -1,9 +1,12 @@
 ---
-name: ship
-description: Einen fertigen Pull Request nach main bringen und bei Bedarf ausrollen - Aenderungen ansehen, bei kritischen Aenderungen Codex-Review, CI gruen, Deploy-Fenster frei, Merge-Commit, pr:doctor, danach Theme- oder Dashboard-Deploy und die eigene Arbeitskopie entfernen. Verwenden bei "/ship <PR-Nummer>", "merge <PR-Nummer>", "PR mergen", "PR mergen und ausrollen". Der Aufruf ist die ausdrueckliche Freigabe, genau diesen PR zu mergen und, wenn noetig, zu deployen.
+name: tp-ship
+description: Einen fertigen Pull Request nach main bringen und bei Bedarf ausrollen - Aenderungen ansehen, bei kritischen Aenderungen Codex-Review, CI gruen, Deploy-Fenster frei, Merge-Commit, pr:doctor, danach Theme- oder Dashboard-Deploy und die eigene Arbeitskopie entfernen. Verwenden bei "/tp-ship <PR-Nummer>", "merge <PR-Nummer>", "PR mergen", "PR mergen und ausrollen". Der Aufruf ist die ausdrueckliche Freigabe, genau diesen PR zu mergen und, wenn noetig, zu deployen.
 ---
 
-# PR mergen und ausrollen (`/ship <PR-Nummer>`)
+# PR mergen und ausrollen (`/tp-ship <PR-Nummer>`)
+
+Aufruf: `/tp-ship <PR-Nummer>` oder „merge #N“. `/ship` ist ein eingebauter
+Befehl von Claude Code (mergt nie) und laedt diesen Skill nicht.
 
 Der Aufruf ist die ausdrueckliche Freigabe des Benutzers, **genau diesen** PR
 zu mergen und, falls er Theme oder Dashboard aendert, auszurollen. Fuer nichts
@@ -160,7 +163,7 @@ oder warum nichts.
 
 Die geplante Aufgabe `chat-waechter` bringt offene Chats weiter, ohne dass der Benutzer jede Empfehlung einzeln bestätigt. Die Freigabe gilt nur für diese Aufgabe und nur in diesen Grenzen; für alle anderen Sitzungen gilt der Abschnitt „Eigenen PR selbst mergen“ in `AGENTS.md`.
 
-- **Darf:** in einem wartenden Chat die von Claude empfohlene Option wählen oder die Arbeit fortsetzen lassen (je Chat und Lauf eine vollständige Nachricht), fertige Chats archivieren und **unkritische PRs selbst nach Skill `ship` mergen**, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Voraussetzung je PR: offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch, und der zugehörige Chat meldet die Arbeit als fertig. Höchstens drei Merges je Lauf, nacheinander.
+- **Darf:** in einem wartenden Chat die von Claude empfohlene Option wählen oder die Arbeit fortsetzen lassen (je Chat und Lauf eine vollständige Nachricht), fertige Chats archivieren und **unkritische PRs selbst nach Skill `tp-ship` mergen**, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Voraussetzung je PR: offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch, und der zugehörige Chat meldet die Arbeit als fertig. Höchstens drei Merges je Lauf, nacheinander.
 - **Stoppt und legt vor:** kritische PRs (Preise, SKUs, Varianten, Massenimporte, Checkout, Deploy-Kette, `.claude/hooks/`, dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · Schreiben in Google Ads, Meta oder Merchant Center · alles, was Geld kostet oder ein Budget ändert · Mails an Kunden und Lieferanten · Fragen, die nur der Inhaber entscheidet · Chats ohne klare Empfehlung.
 - **Vorlegen heißt:** im Bericht des Laufs je Punkt den Chat und die eine Zeile nennen, die der Benutzer dort schreiben müsste. Der Wächter gibt in fremden Chats nie eine Freigabe für einen gestoppten Punkt weiter.
 - Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund für den Bericht, kein Hindernis zum Umgehen.
