@@ -140,8 +140,8 @@ const CTA = {
     'Fragen zum eigenen Projekt? Rufen Sie an (03301 573 37 20) oder kommen Sie im Laden in Oranienburg vorbei.',
   ],
   produkt: [
-    'Im Shop ansehen: teppich-paradies.net – bis zu 2 Muster kostenlos.',
-    'Muster bestellen und zu Hause vergleichen – bis zu 2 Muster sind kostenlos.',
+    'Im Shop ansehen: teppich-paradies.net – bis zu 2 Muster je Bestellung.',
+    'Muster bestellen und zu Hause vergleichen – bis zu 2 Muster je Bestellung.',
     'Im Laden in Oranienburg zum Anfassen oder online unter teppich-paradies.net.',
   ],
   angebot: [
