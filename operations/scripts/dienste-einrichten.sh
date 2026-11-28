@@ -16,6 +16,10 @@
 #   bash operations/scripts/dienste-einrichten.sh --gel-diesel
 #   bash operations/scripts/dienste-einrichten.sh --sammeldatei
 #   bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe
+#   bash operations/scripts/dienste-einrichten.sh --zugaenge
+#
+# --zugaenge richtet net.teppich-paradies.zugaenge ein: prueft taeglich 8 Uhr nur lesend, ob die
+# Anmeldungen noch gelten (operations/scripts/zugaenge-pruefen.mjs). Plist zeigt auf ~/tp-dashboard.
 #
 # --mail-entwuerfe richtet net.teppich-paradies.mail-entwuerfe ein: alle 5 Minuten Gmail-Entwuerfe
 # mit Anhang aus ~/teppich-paradies-analyse/mail-entwuerfe/eingang/ anlegen, nie senden
@@ -68,9 +72,10 @@ GEL_DIESEL_LABEL="net.teppich-paradies.gel-diesel"
 SPIEGEL_LABEL="net.teppich-paradies.spiegel-waechter"
 SAMMELDATEI_LABEL="net.teppich-paradies.sammeldatei"
 MAIL_ENTWUERFE_LABEL="net.teppich-paradies.mail-entwuerfe"
+ZUGAENGE_LABEL="net.teppich-paradies.zugaenge"
 
-if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--spiegel-waechter" && "$1" != "--sammeldatei" && "$1" != "--mail-entwuerfe" ) ]]; then
-  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --spiegel-waechter | --sammeldatei | --mail-entwuerfe]\n' >&2
+if [[ "$#" -gt 1 || ( "$#" -eq 1 && "$1" != "--nur-sicherung" && "$1" != "--nur-nachziehen" && "$1" != "--routinen" && "$1" != "--postfach-entwuerfe" && "$1" != "--gel-diesel" && "$1" != "--spiegel-waechter" && "$1" != "--sammeldatei" && "$1" != "--mail-entwuerfe" && "$1" != "--zugaenge" ) ]]; then
+  printf 'Aufruf: bash operations/scripts/dienste-einrichten.sh [--nur-sicherung | --nur-nachziehen | --routinen | --postfach-entwuerfe | --gel-diesel | --spiegel-waechter | --sammeldatei | --mail-entwuerfe | --zugaenge]\n' >&2
   exit 1
 fi
 
@@ -306,6 +311,21 @@ mail_entwuerfe_einrichten() {
   hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-mail-entwuerfe.log"
 }
 
+zugaenge_einrichten() {
+  schritt "Zugangs-Waechter, taeglich 8:00 (${ZUGAENGE_LABEL})"
+  vorlage_einrichten "${ZUGAENGE_LABEL}" || return 1
+  ok "Eingerichtet: taeglich 8:00 Uhr; ohne KI, nur lesende Pruefungen."
+  if [[ ! -f "${HOME}/tp-dashboard/operations/scripts/zugaenge-pruefen.mjs" ]]; then
+    fehlt "Das Skript fehlt in ~/tp-dashboard noch - erst main nachziehen (npm run -s betrieb:nachziehen -- --status)."
+  fi
+  hinweis "Probe: cd ~/tp-dashboard && node operations/scripts/zugaenge-pruefen.mjs --trocken"
+  hinweis "Log: ${HOME}/Library/Logs/teppich-paradies-zugaenge.log"
+}
+
+if [[ "${1:-}" == "--zugaenge" ]]; then
+  zugaenge_einrichten
+  exit 0
+fi
 if [[ "${1:-}" == "--mail-entwuerfe" ]]; then
   mail_entwuerfe_einrichten
   exit 0

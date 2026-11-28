@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.zugaenge</string>
+
+  <!-- Zugangs-Waechter (operations/scripts/zugaenge-pruefen.mjs): prueft taeglich 8:00 nur lesend, ob
+       die Anmeldungen noch gelten, schreibt $TP_PRIVAT_DIR/zugaenge/status.json und meldet neu
+       abgelaufene am Mac. Ohne KI-Kontingent, meldet sich nirgends neu an.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard.
+       Einrichten: bash operations/scripts/dienste-einrichten.sh -\-zugaenge -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__HOME__/tp-dashboard/operations/scripts/zugaenge-pruefen.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>__HOME__/tp-dashboard</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>PATH</key><string>__NODE_DIR__:__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+  <!-- Verpasste Zeiten im Ruhezustand holt launchd beim Aufwachen nach. -->
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>0</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>ProcessType</key><string>Background</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/teppich-paradies-zugaenge.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/teppich-paradies-zugaenge.log</string>
+</dict>
+</plist>
