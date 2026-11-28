@@ -402,19 +402,23 @@ export function preisKontrolleKaeufe(zeilen, { preise, ekAufschlag = {}, gebuehr
       const schluessel = `${pos.handle}|${pos.variante}`;
       const fall = preisFaelle.get(schluessel) ?? {
         handle: pos.handle, titel: pos.titel, variante: pos.variante, einheit: text, kaeufe: [], fehlt: 0, mitKante: false,
-        noetigBrutto: 0, verkauftBrutto: null, heuteBrutto: heuteNetto === null ? null : r2(heuteNetto * (1 + MWST)), guete: e.guete,
+        noetigBrutto: null, verkauftBrutto: null, heuteBrutto: null, abstand: -Infinity, guete: e.guete,
       };
       fall.kaeufe.push(z.name);
       fall.mitKante = fall.mitKante || kanteJe > 0;
       fall.mitKettelservice = fall.mitKettelservice || kanteErloes > 0;
       fall.fehlt = r2(fall.fehlt + (noetig - verkauftNetto) * pos.menge / faktor);
-      fall.noetigBrutto = Math.max(fall.noetigBrutto, aufCent(noetig * (1 + MWST)));
-      fall.verkauftBrutto = fall.verkauftBrutto === null ? r2(verkauftNetto * (1 + MWST)) : Math.min(fall.verkauftBrutto, r2(verkauftNetto * (1 + MWST)));
+      // Der Kettelservice haengt am Mass: noetig, verkauft und heute immer aus demselben Kauf, und zwar aus
+      // dem mit der groessten Luecke - sonst verschwindet ein offener Fall hinter einem gedeckten.
+      const noetigB = aufCent(noetig * (1 + MWST));
+      const heuteB = heuteNetto === null ? null : r2(heuteNetto * (1 + MWST));
+      const abstand = heuteB === null ? Infinity : r2(noetigB - heuteB);
+      if (abstand > fall.abstand) Object.assign(fall, { abstand, noetigBrutto: noetigB, heuteBrutto: heuteB, verkauftBrutto: r2(verkauftNetto * (1 + MWST)) });
       fall.verlust = fall.verlust || quote < 0;
       preisFaelle.set(schluessel, fall);
     }
   }
-  const faelle = [...preisFaelle.values()].map(f => ({
+  const faelle = [...preisFaelle.values()].map(({ abstand, ...f }) => ({
     ...f,
     stand: f.heuteBrutto === null ? 'heute-unbekannt' : f.heuteBrutto + 0.005 >= f.noetigBrutto ? 'angehoben' : 'offen',
   })).sort((a, b) => (b.verlust === true) - (a.verlust === true) || b.fehlt - a.fehlt);

@@ -170,6 +170,31 @@ test('Fertiger Teppich: Kante im Preis, ohne Vermerk direkt vom Hersteller, Mind
   assert.ok(zeile.hinweise.some(h => /Annahme: Fertiger Teppich direkt vom Hersteller, Kante im Einkaufspreis, berechnet mindestens 3 m²/.test(h)));
 });
 
+test('Fertiger Teppich mit hinterlegtem Kettelpreis des Lieferanten: Kante nicht doppelt', () => {
+  const rug = eZeile('RUG-2', 30, { produktart: 'Teppich nach Maß', vk_einheit: '0,01 m² (Konfigurator)', menge_bezug: 0.01, ek_vk_einheit: 0.3, quelle: 'Herstellerliste netto, Spalte rug_kettelung' });
+  const kosten = { lieferanten: { E: { paket: null, paketBisCm: null, paketBisKg: null, fracht: 40, mindermenge: null, mindermengeUnterEk: null, ekAufschlag: 0, anKundenNurImLiefergebiet: false, kettelnJeLfm: 4 } }, kettler: null };
+  const teppich = pos('t1', { lieferant: 'E', grosshaendlerId: 'RUG-2', sku: 'RUG-2', mengeBestellt: 200, nettoGesamt: 300, masspruefung: { einheit: '× 0,01 m²' },
+    ausfuehrung: ['Fertigmaß: 100 × 200 cm (Rechteck)', 'Einfassung: Gekettelt, umlaufend 6,00 m, Garn Ton in Ton'] });
+  const w = bestellWarnung({ auftrag: auftrag([teppich]), kosten, ek: EK([rug]), tarif: null, statusAlle: {}, absender: null, nahPlz: /^1/, jetzt: new Date('2099-03-06T10:00:00Z'), immer: true });
+  assert.deepEqual(w.details.posten.map(x => [x.art, x.betrag]), [['weg', 40]]);
+});
+
+test('Preisfall mit zwei Kaeufen derselben Variante: der offene bleibt offen, in jeder Reihenfolge', () => {
+  const kauf = (name, netto, ek, neben) => ({ name, datum: '2099-03-05', guete: 'belegt', netto: netto + neben, brutto: (netto + neben) * 1.19, ware: ek, verschnitt: 0, kettel: 10, zuschlag: 0, weg: 0, gebuehr: 1, rohertrag: 0, quote: 0, nettoNebenleistung: neben,
+    positionen: [{ titel: 'Testteppich', variante: 'Grau', handle: 'tt', einheit: '× 0,01 m²', menge: 100, netto, ek, ekBeleg: ek, ekZeile: null }] });
+  const preise = preisIndex([produkt('tt', [variante('Grau', 1.19, 'm2', 119)])]);
+  const offen = kauf('#T7', 100, 100, 0);
+  // Unter Ziel verkauft, heute aber gedeckt (mit seinem groesseren Kettelservice).
+  const gedeckt = kauf('#T8', 80, 90, 50);
+  assert.equal(preisKontrolleKaeufe([gedeckt], { preise }).preisFaelle[0].stand, 'angehoben');
+  for (const reihe of [[offen, gedeckt], [gedeckt, offen]]) {
+    const [f] = preisKontrolleKaeufe(reihe, { preise }).preisFaelle;
+    assert.equal(f.stand, 'offen');
+    assert.ok(f.noetigBrutto > f.heuteBrutto);
+    assert.deepEqual(f.kaeufe.slice().sort(), ['#T7', '#T8']);
+  }
+});
+
 test('Teppich nach Mass in 0,01 m²: je m² gezeigt, nicht je Einheit', () => {
   const z = eZeile('TNM-1', 20, { vk_einheit: '0,01 m² (Konfigurator)', menge_bezug: 0.01, ek_vk_einheit: 0.2, vk_brutto: 0.39 });
   const e = ekJeVerkaufseinheit(z, variante('Taupe', 0.39, 'm2', 39));

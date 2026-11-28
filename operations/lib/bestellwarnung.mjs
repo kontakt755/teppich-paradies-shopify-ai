@@ -413,7 +413,8 @@ function wegEinerGruppe({ lieferant, ziel, eintraege, kosten, adresse, nah, kett
     }
   }
   if (ziel === 'kunde' && betrag(k?.kettelnJeLfm) !== null) {
-    const meter = eintraege.filter(e => wirdGekettelt(e.p.ausfuehrung)).map(e => kanteMeter(e.p.ausfuehrung));
+    // Beim fertigen Teppich steckt die Kante schon im Einkaufspreis - nie ein zweites Mal rechnen.
+    const meter = eintraege.filter(e => !e.fertig && wirdGekettelt(e.p.ausfuehrung)).map(e => kanteMeter(e.p.ausfuehrung));
     if (meter.some(x => x === null)) offen.push('Kantenlänge unbekannt');
     const betragLieferant = summe(meter.filter(x => x !== null)) * k.kettelnJeLfm;
     if (betragLieferant > 0) posten.push({ text: 'Ketteln beim Lieferanten', betrag: betragLieferant, art: 'kettel' });
