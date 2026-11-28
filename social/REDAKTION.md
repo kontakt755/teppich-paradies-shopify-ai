@@ -192,8 +192,9 @@ den Boden und sind verworfen. Kein KI-Hinweis im Bild.
    stimmen. Ergebnis in einem Satz in `ki_abgleich`. Passt es nicht: kein Reel,
    im Bericht nennen (Juniva 16.10.: das KI-Kettelbild zeigte Noppen statt feiner
    Schlingen). Solche Reels gibt immer der Inhaber frei.
-5. Bildunterschrift als Datei: was zu sehen ist, ein Fachdetail, das kostenlose
-   Muster – **ohne Preis** (der steht im Video und wird geprüft). Dann
+5. Bildunterschrift als Datei: was zu sehen ist, ein Fachdetail, der Hinweis auf
+   die Musterbestellung (nie „kostenlos“ oder „gratis“: Der Musterversand kostet
+   ab 01.12.2026) – **ohne Preis** (der steht im Video und wird geprüft). Dann
    `npm run -s social -- produkt-reel <auftrag.json> --text-datei <pfad>`.
    Der Befehl prüft live, rendert (rund eine Minute), misst die Schärfe und legt
    das Reel in die Freigabe; bricht er ab, nennt er den Grund.

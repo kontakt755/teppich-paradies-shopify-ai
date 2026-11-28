@@ -76,7 +76,7 @@ eine Facebook-Seite ansteuern, mit der das Instagram-Konto verknüpft ist.
    | Online-Shop | `https://www.teppich-paradies.net/?utm_source=instagram&utm_medium=social&utm_campaign=bio` |
    | Verlegung anfragen | `https://www.teppich-paradies.net/pages/liefer-verlegeservice?utm_source=instagram&utm_medium=social&utm_campaign=bio` |
    | Unsere Arbeit | `https://www.teppich-paradies.net/pages/unsere-arbeit?utm_source=instagram&utm_medium=social&utm_campaign=bio` |
-   | Kostenlose Muster | `https://www.teppich-paradies.net/pages/muster?utm_source=instagram&utm_medium=social&utm_campaign=bio` |
+   | Muster bestellen | `https://www.teppich-paradies.net/pages/muster?utm_source=instagram&utm_medium=social&utm_campaign=bio` |
    | Impressum | `https://www.teppich-paradies.net/pages/impressum` |
 
 5. **Aktionsbeitrag vom 11.02.2025 prüfen** und, falls überholt, archivieren.

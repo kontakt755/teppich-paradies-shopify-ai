@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { TYPEN } from '../lib/status.mjs';
 import { besonderheitSauber, cta, kontaktFehler, fertigerText, grundtext, hashtags, pruefeText, shopLink } from '../lib/texte.mjs';
 
 const GUT = 'Heute haben wir in Oranienburg einen alten Teppichboden entfernt, den Untergrund vorbereitet und anschließend neuen Klebevinyl verlegt.';
@@ -22,6 +23,12 @@ test('Hinweise: Duzen, Preis, Superlativ, Emojis', () => {
   assert.match(h('Jetzt ab 24,90 € je Quadratmeter.'), /Preis/);
   assert.match(h('Die größte Auswahl der Region.'), /Superlativ/);
   assert.match(h('🔥💯'), /Emoji/);
+});
+
+test('Handlungsaufrufe versprechen keine Gratismuster (Musterversand kostet ab 01.12.2026)', () => {
+  const aufrufe = Object.keys(TYPEN).flatMap(typ => [0, 1, 2].map(i => cta(typ, i)));
+  assert.ok(aufrufe.some(a => /Muster/.test(a)), 'der Muster-Hinweis bleibt');
+  assert.deepEqual(aufrufe.filter(a => /Muster/.test(a) && /kostenlos|kostenfrei|gratis/i.test(a)), []);
 });
 
 test('Hashtags: lokal nur bei bekanntem Ort, Facebook sparsam', () => {
