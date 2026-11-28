@@ -22,6 +22,7 @@
     { "name": "Suche", "path": "/search?q=teppichboden", "type": "search", "indexExpected": false, "rollFacetExpected": true },
     { "name": "Warenkorb", "path": "/cart", "type": "cart", "indexExpected": false },
     { "name": "Versand & Lieferung", "path": "/pages/versand-lieferung", "type": "page", "indexExpected": true, "recommendation": { "title": "Versand & Lieferung | Teppich Paradies", "description": "Informationen zu Versandarten, Lieferzeiten und der Anlieferung von Teppichboden, Vinylboden, Rollenware und Paketware bei Teppich Paradies." } },
+    { "name": "Maler Oranienburg", "path": "/pages/maler-oranienburg", "type": "page", "indexExpected": true, "recommendation": { "title": "Maler Oranienburg: Wände streichen lassen – TeppichParadies", "description": "Wände und Decken streichen, tapezieren und auf Wunsch gleich den neuen Boden: Maler- und Bodenarbeiten aus einer Hand in Oranienburg, Oberhavel und Berlin." } },
     { "name": "Teppichboden PDP", "path": "/products/piumera-teppichboden-400cm-500cm", "type": "product", "productKind": "roll", "indexExpected": true },
     { "name": "Rollen-Vinyl PDP", "path": "/products/marano-eiche-braun-vinylboden-von-der-rolle", "type": "product", "productKind": "roll", "indexExpected": true },
     { "name": "Klickvinyl PDP", "path": "/products/turku-eiche-nordisch-klickvinyl-7mm", "type": "product", "productKind": "package", "indexExpected": true },

@@ -18,6 +18,7 @@ const SEITEN = {
   'vinylboden-verlegen': 'sections/vinylboden-verlegen.liquid',
   treppenverlegung: 'sections/treppenverlegun.liquid',
   verlegeservice: 'sections/tp-verlegeservice.liquid',
+  'maler-oranienburg': 'sections/tp-maler-service.liquid',
 };
 
 test('jede Serviceseite zeigt die Hauptaktion im Einstieg', () => {

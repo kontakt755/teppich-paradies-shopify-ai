@@ -9,9 +9,9 @@
  * nicht zu sagen, was Verlegeservice und Werbung bringen.
  */
 
-export const LEISTUNG = Object.freeze(['verlegeservice', 'treppe', 'aufmass', 'sonstiges']);
+export const LEISTUNG = Object.freeze(['verlegeservice', 'treppe', 'aufmass', 'maler', 'sonstiges']);
 export const LEISTUNG_LABEL = Object.freeze({
-  verlegeservice: 'Verlegeservice', treppe: 'Treppe', aufmass: 'Aufmaß', sonstiges: 'Sonstiges',
+  verlegeservice: 'Verlegeservice', treppe: 'Treppe', aufmass: 'Aufmaß', maler: 'Malerarbeiten', sonstiges: 'Sonstiges',
 });
 
 export const QUELLE = Object.freeze(['formular', 'mail', 'telefon', 'whatsapp', 'laden', 'werbung']);
@@ -129,9 +129,11 @@ function datumAusBetreffzeile(roh) {
  */
 export function leistungAus({ betreff = '', anliegen = '' } = {}) {
   const b = betreff.toLowerCase();
+  if (b.includes('maler')) return 'maler';
   if (b.includes('treppe')) return 'treppe';
   if (b.includes('verleg')) return 'verlegeservice';
   const a = anliegen.toLowerCase();
+  if (a.includes('maler')) return 'maler';
   if (a.includes('treppe')) return 'treppe';
   if (a.includes('verlegen')) return 'verlegeservice';
   // "Mieterwechsel / mehrere Wohnungen" (seit 26.10.2026): Boeden fuer Vermieter
@@ -209,10 +211,11 @@ export const BETREFF_SERVICE = Object.freeze([
   'Anfrage Teppichboden verlegen',
   'Anfrage Vinylboden verlegen',
   'Anfrage Treppenverlegung',
+  'Anfrage Malerarbeiten',
 ]);
 /** Startseite: Formular ohne eigenen Betreff - Service nur bei diesem Anliegen. */
 export const BETREFF_STARTSEITE = 'Anfrage von der Startseite';
-export const ANLIEGEN_SERVICE = Object.freeze(['Boden verlegen lassen', 'Aufmaß und Angebot', 'Mieterwechsel / mehrere Wohnungen', 'Treppe belegen lassen']);
+export const ANLIEGEN_SERVICE = Object.freeze(['Boden verlegen lassen', 'Aufmaß und Angebot', 'Mieterwechsel / mehrere Wohnungen', 'Treppe belegen lassen', 'Malerarbeiten']);
 /** Auswahl "Ich moechte" im Formular, die bewusst keine Service-Anfrage ist. */
 export const ANLIEGEN_KEIN_SERVICE = Object.freeze(['Beratung zum Produkt', 'Muster bestellen', 'Rückruf']);
 /**

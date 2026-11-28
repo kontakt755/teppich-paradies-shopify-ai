@@ -70,6 +70,13 @@ test('Mehrbahnen-Zuschnitt und optionaler Raum bleiben in der vorbereiteten Verl
   assert.match(p.message.value,/Breite 400 cm, Länge 1120 cm/);
   const normal=samplePage('?thema=verlegung&produkt=Alvento');assert.doesNotMatch(normal.message.value,/Zuschnitt:|Raum: 550/);
 });
+test('Thema maler: Betreff Maleranfrage, PLZ und Telefon sichtbar, Nachricht vorgeschlagen',()=>{
+  const p=samplePage('?thema=maler');
+  assert.equal(p.hidden.get('Betreff').value,'Maleranfrage');
+  assert.equal(p.root.getAttribute('data-anfrage-felder'),'');
+  assert.match(p.message.value,/Malerarbeiten/);
+  const mitText=samplePage('?thema=maler',{message:'Mein Text'});assert.equal(mitText.message.value,'Mein Text');
+});
 test('Vorhandene Kundennachricht wird durch Kontext nicht ueberschrieben',()=>{
   const p=samplePage('?thema=verlegung&zuschnitt=2%20Bahnen',{message:'Mein bereits geschriebener Text'});assert.equal(p.message.value,'Mein bereits geschriebener Text');
 });

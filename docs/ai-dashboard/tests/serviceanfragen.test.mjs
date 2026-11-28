@@ -200,6 +200,10 @@ test('Leistung: Betreff der Serviceseite gewinnt, sonst das Anliegen', () => {
   assert.equal(leistungAus({ betreff: 'Anfrage Vinylboden verlegen' }), 'verlegeservice');
   assert.equal(leistungAus({ betreff: 'Anfrage von der Startseite', anliegen: 'Aufmaß und Angebot' }), 'aufmass');
   assert.equal(leistungAus({ betreff: 'Anfrage Teppichreinigung', anliegen: 'Teppichreinigung' }), 'sonstiges');
+  // Malerarbeiten (Seite maler-oranienburg, 27.11.2026): eigene Leistung, auch wenn Boden im Anliegen steht
+  assert.equal(leistungAus({ betreff: 'Anfrage Malerarbeiten', anliegen: 'Boden verlegen lassen' }), 'maler');
+  assert.equal(leistungAus({ betreff: 'Anfrage von der Startseite', anliegen: 'Malerarbeiten' }), 'maler');
+  assert.ok(BETREFF_SERVICE.includes('Anfrage Malerarbeiten'));
   assert.equal(leistungAus({ betreff: '', anliegen: 'Treppe belegen lassen' }), 'treppe');
 });
 
