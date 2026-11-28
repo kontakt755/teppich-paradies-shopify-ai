@@ -144,13 +144,13 @@ Claude führt und arbeitet standardmäßig allein; Codex prüft vor kritischen M
 
 ## Chat-Wächter (stehende Freigabe des Benutzers, 2026-11-11)
 
-Die geplante Aufgabe `chat-waechter` darf wartende Chats mit der empfohlenen Option weiterbringen, fertige Chats archivieren und unkritische PRs nach Skill `ship` mergen. Grenzen und Ablauf (gelten auch für Codex): `.claude/skills/ship/SKILL.md`, Abschnitt „Chat-Wächter“. Kritisch und damit nur mit Ja des Benutzers: Preise, SKUs, Varianten, Massenimporte, Checkout, Deploy-Kette, `.claude/hooks/`, die Chat-Wächter-Regeln; im Zweifel kritisch.
+Die geplante Aufgabe `chat-waechter` darf wartende Chats mit der empfohlenen Option weiterbringen, fertige Chats archivieren und unkritische PRs nach Skill `tp-ship` mergen. Grenzen und Ablauf (gelten auch für Codex): `.claude/skills/tp-ship/SKILL.md`, Abschnitt „Chat-Wächter“. Kritisch und damit nur mit Ja des Benutzers: Preise, SKUs, Varianten, Massenimporte, Checkout, Deploy-Kette, `.claude/hooks/`, die Chat-Wächter-Regeln; im Zweifel kritisch.
 
 ## Eigenen PR selbst mergen (stehende Freigabe des Benutzers, 2026-11-12)
 
-Eine Sitzung fragt bei einem unkritischen PR nicht mehr „Soll ich mergen?“, sondern mergt ihn selbst nach Skill `ship`, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Grund: Der Benutzer hat diese Frage vom 03. bis 12.11. praktisch immer mit Ja beantwortet.
+Eine Sitzung fragt bei einem unkritischen PR nicht mehr „Soll ich mergen?“, sondern mergt ihn selbst nach Skill `tp-ship`, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Grund: Der Benutzer hat diese Frage vom 03. bis 12.11. praktisch immer mit Ja beantwortet.
 
-- **Nur der eigene PR:** den diese Sitzung für ihren Auftrag geöffnet hat. Fremde PRs mergt nur der Chat-Wächter oder der Benutzer per `/ship`.
+- **Nur der eigene PR:** den diese Sitzung für ihren Auftrag geöffnet hat. Fremde PRs mergt nur der Chat-Wächter oder der Benutzer per `/tp-ship` bzw. „merge #N“.
 - **Voraussetzung:** Auftrag vollständig umgesetzt und getestet, offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch.
 - **Weiter nur mit Ja des Benutzers:** kritische PRs (Liste unter „Chat-Wächter“ oben, dazu dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · PRs, deren Titel oder Auftrag einen Termin nennt („erst ab …“) · wenn der Benutzer für diesen Auftrag „nur PR“, „nicht mergen“ oder „nur Plan“ gesagt hat.
 - Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund: melden und die eine Zeile nennen, die der Benutzer schreiben müsste, nicht umgehen.
@@ -160,7 +160,7 @@ Eine Sitzung fragt bei einem unkritischen PR nicht mehr „Soll ich mergen?“, 
 Die Skills des Plugins godmode (Planung, test-first, Review, Nachweis vor „fertig“) gelten für alle Sitzungen. Bei Widerspruch gilt diese Datei.
 
 - **Keine Rückfragen aus godmode:** Wo `intent-discovery`, `rationale` oder `merge-protocol` den Benutzer wählen lassen wollen, die empfohlene Option nehmen, als „vorläufig“ kennzeichnen und weiterarbeiten. Gefragt wird nur in den Fällen aus „Selbst entscheiden“.
-- **Abschluss** immer nach Skill `ship`, nie nach den Optionen von `merge-protocol`.
+- **Abschluss** immer nach Skill `tp-ship`, nie nach den Optionen von `merge-protocol`.
 - **test-first** bei Liquid- und Theme-Dateien: Der Test sind die Guards (`npm run -s pruefen`), die Preview und ein Screenshot.
 - **cross-model-review** läuft über `npm run -s ki:frag -- review <PR>` (Codex), Pflicht nur bei kritischen PRs (Liste unter „Chat-Wächter“); sonst prüft Claude.
 - **knowledge-capture** schreibt in den Gedächtnis-Vault nach dessen Regeln (Abschnitt „Gedächtnis, Übergaben und Review“). Neue Regeln nur per PR.
