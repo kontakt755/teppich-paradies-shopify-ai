@@ -225,9 +225,16 @@
                   assign tk_mindest = tk_mp | times: 100 | round
                 endif
                 assign tk_ml = tk_p.metafields.service.max_laenge_cm.value | times: 1
+                # Ohne service.formen gibt es nur Rechteck (wie im Konfigurator).
+                assign tk_formen = tk_p.metafields.service.formen.value | join: ',' | downcase | remove: ' '
+                if tk_formen == blank
+                  assign tk_formen = 'rechteck'
+                endif
+                assign tk_formen = tk_formen | split: ','
               -%}
               {
                 "art": {{ tk_art | json }},
+                "formen": {{ tk_formen | json }},
                 "url": {{ tk_p.url | json }},
                 "aktiv": {% if tk_p.id == product.id %}true{% else %}false{% endif %},
                 "inkl": {% if tk_art == 'ketteln' and tk_ki != 'true' %}false{% else %}true{% endif %},

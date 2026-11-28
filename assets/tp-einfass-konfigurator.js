@@ -768,9 +768,11 @@
           url.searchParams.set('variant', String(ziel[0]));
           url.searchParams.delete('breite');
           url.searchParams.delete('laenge');
+          url.searchParams.delete('form');
           if (mass) {
             url.searchParams.set('breite', String(mass.w));
             if (mass.f !== 'rund') url.searchParams.set('laenge', String(mass.l));
+            url.searchParams.set('form', mass.f);
           }
           url.hash = 'tp-ek-kanten';
           kachel.setAttribute('href', url.href);
@@ -783,8 +785,10 @@
           var separat = k.art === 'ketteln' && !k.inkl;
           var maxWk = rolleCm > 0 ? M.maxBreiteCm(rolleCm, k.art) : 0;
           var probleme = M.pruefeMasse({ form: mass.f, w: mass.w, l: mass.l, maxW: maxWk, maxL: Number(k.max_l) || 0, minW: minCm, minL: minCm, richtung: rollenRichtung });
-          if (probleme.length) {
-            summe.textContent = 'In diesem Maß nicht möglich';
+          // k.formen: service.formen des Zielprodukts - dort nicht angebotene Form ohne Preis.
+          var ohneForm = k.formen && k.formen.indexOf(mass.f) < 0;
+          if (ohneForm || probleme.length) {
+            summe.textContent = ohneForm ? 'In dieser Form nicht möglich' : 'In diesem Maß nicht möglich';
             kachel.classList.add('is-zu-gross');
           } else if (!separat || kettelK > 0) {
             summe.textContent = euro(M.summeCent({
@@ -1077,6 +1081,8 @@
     function zuschnittText(p) {
       var teile = [d.produkt];
       if (target && target.farbe) teile.push(target.farbe);
+      // Ohne die Form saehe ein ovaler Teppich auf dem Lieferschein wie ein Rechteck aus.
+      if (p['Form'] && p['Form'] !== FORM.rechteck) teile.push(p['Form']);
       if (p['Maße']) teile.push(p['Maße']);
       if (p['Einfassung']) teile.push(p['Einfassung']);
       if (p['Bandfarbe']) teile.push('Band ' + p['Bandfarbe']);

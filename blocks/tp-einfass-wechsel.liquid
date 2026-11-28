@@ -206,6 +206,12 @@
               url.searchParams.delete(feld);
               if (Number.isFinite(wert) && wert > 0) url.searchParams.set(feld, String(wert));
             });
+            var gewaehlt = konfig && konfig.querySelector('input[name^="tp-ek-form-"]:checked');
+            var form = gewaehlt ? gewaehlt.value : new URLSearchParams(window.location.search).get('form');
+            url.searchParams.delete('form');
+            if (form === 'rund' || form === 'oval') url.searchParams.set('form', form);
+            // Bei Rund ist die Laenge ausgeblendet und kann einen alten Wert tragen.
+            if (form === 'rund') url.searchParams.delete('laenge');
             {% endif %}
             a.setAttribute('href', url.href);
           });

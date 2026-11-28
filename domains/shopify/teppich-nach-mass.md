@@ -49,6 +49,9 @@ Die Preislogik bleibt unverändert: Variantenpreis × Menge, abgerechnet durch S
 - **Einfassprodukte:** Der Variantenpreis gilt pro 0,01 m² (`custom.preis_pro_001_qm`). Deshalb sind
   **nur volle Euro je m²** exakt darstellbar: 129 € geht, 129,90 € nicht. Der Planer meldet das als Konflikt.
 - **Rund und oval** werden nach dem umschließenden Rechteck abgerechnet, denn so viel Teppich wird zugeschnitten.
+- **Die Form geht überall mit:** Kantenkachel und Wechsel Raummaß/Gekettelt hängen `?form=` an; eine Kante,
+  deren `service.formen` die Form nicht nennt, zeigt „In dieser Form nicht möglich“ statt eines Preises. Der
+  Lieferschein-Text (`_Zuschnitt`) nennt jede Form außer Rechteck. Tests: `qa/tests/tp-einfass-form-wechsel.test.mjs`.
 
 ### Kante im m²-Preis enthalten (`service.kante_inklusive`)
 
