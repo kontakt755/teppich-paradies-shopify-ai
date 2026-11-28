@@ -318,8 +318,13 @@ test('Herstellermuster kostenlos: eigener Satz ohne Gutschein, Mischkorb erklaer
   sendung[0].line_item.product = { handle: 'muster-arvessa-teppichboden-400cm' };
   const vers = await eng.parseAndRender(versand, { ...vctx(sendung), shipping_price: 0, line_items: [hZeile] });
   assert.match(vers, /\(vom Hersteller\)/);
-  // Versandmail nennt nur, was in dieser Sendung ist; Herstellermuster kommen direkt (Inhaber 26.11.2026)
-  assert.doesNotMatch(vers, /eigenen Sendung/);
+  // Herstellermuster kommen direkt (Inhaber 26.11.2026): die Versandmail sagt es (Chat 28.11.2026),
+  // ohne Zeitangabe und nur, wenn ein Herstellermuster in dieser Sendung steht.
+  const SATZ = /Muster vom Hersteller kommen in einer eigenen Sendung\./;
+  assert.match(vers, SATZ);
+  const eigene = await eng.parseAndRender(versand, { ...vctx([mfl('M-TEST_036', 'Muster Testvelours', 'Sand', { _Muster_ID: 'x' })]), shipping_price: 0, line_items: [musterzeile] });
+  assert.match(eigene, /Ihr Muster ist unterwegs/);
+  assert.doesNotMatch(eigene, /eigenen Sendung/);
 });
 
 // ---- Ratgeber zur Bestellung: Produkttyp waehlt den Kurz-Ratgeber (PDF)
