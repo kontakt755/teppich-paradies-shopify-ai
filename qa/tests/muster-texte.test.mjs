@@ -117,6 +117,15 @@ test('Produktvorlagen: Knopf "Muster bestellen" mit Preiszeile', () => {
   }
 });
 
+// Freigegebener Wortlaut (w-410, 26.11.2026): Shoptexte sagen nicht, wer verschickt - nur die
+// Bestellmail nennt den Direktversand. Kommentare zaehlen nicht.
+const KOMMENTARE = /\{%-?\s*comment\s*-?%\}[\s\S]*?\{%-?\s*endcomment\s*-?%\}|\/\*[\s\S]*?\*\/|^\s*(\/\/|#).*$/gm;
+
+test('Shoptexte nennen keinen Direktversand vom Hersteller', () => {
+  const offen = dateien().filter((d) => /direkt (vom|beim) Hersteller/i.test(readFileSync(path.join(root, d), 'utf8').replace(KOMMENTARE, '')));
+  assert.deepEqual(offen, []);
+});
+
 // Herstellermuster (Inhaber 21.11.2026): kostenlos nur dort, wo Liquid/JS es je Muster entscheiden.
 test('Herstellermuster: Wortlaut kostenlos an Produkt, Farbauswahl, Teppich-Versand, Warenkorb, Musterseite, Versandseite', () => {
   const wort = /Muster vom Hersteller: kostenlos, auch der Versand/;
