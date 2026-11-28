@@ -1,0 +1,6 @@
+## 2026-11-28 · Maß-Anfragen „Schablone“ und „Skizze“ kommen als Service-Anfrage an
+
+- **Geaendert:** Formular-Mails des Maß-Konfigurators mit Form „Schablone“ oder „Skizze“ werden unter Kunden › Service-Anfragen angelegt (Postfach-Übernahme und „Formular-Mail einfügen“). Bisher galten sie wegen des Felds `Produkt` als Musteranfrage, und die Übernahme kannte sie ohne Betreff nicht. Leistung „Sonstiges“, Herkunft „Maß-Konfigurator“, Produkt, Farbe und Form stehen in der Notiz. Das Telefon aus Formularen mit `contact[phone]` (Mail-Feld `Phone:`) wird mitgelesen. Musteranfragen werden weiter abgewiesen.
+- **Getestet:** neue Tests zuerst rot, dann grün (`docs/ai-dashboard/tests/serviceanfragen.test.mjs`, `operations/tests/serviceanfragen.test.mjs`), `pruefen`, Klickstrecke „Formular-Mail einfügen“ gegen die Datenkopie. Mailaufbau (`Id:`, `Produkt:`, `Phone:`, Nachricht zuletzt) an echten Musterformular-Mails gelesen.
+- **Risiken/Annahmen:** Eine echte Schablone- oder Skizze-Mail lag noch nicht im Postfach; die Feldnamen `Farbe:` und `Form:` folgen den Formularnamen im Theme. Wie bei allen Formularen wird dieselbe E-Mail oder Telefonnummer innerhalb von 7 Tagen nicht ein zweites Mal angelegt.
+- **Nächste Stufe:** keine.

@@ -79,6 +79,22 @@ test('Postfach: nur Service-Betreffe, jede Mail einmal, von Hand Erfasstes nicht
   assert.ok(SICHERUNGSPFADE.includes('serviceanfragen-postfach.json'));
 });
 
+test('Postfach: Anfrage Schablone aus dem Mass-Konfigurator wird angelegt, Musteranfrage nicht', async () => {
+  const { uebernehmen } = await import('../scripts/serviceanfragen.mjs');
+  const privatDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-postfach-mass-'));
+  const mail = (id, text) => ({ id, von: 'mailer@shopify.com', datum: '2026-11-28T09:00:00Z', betreff: 'Neue Kundennachricht vom 28. November 2026 um 10:00', text });
+  const r = uebernehmen([
+    mail('s1', 'Id:\nTPEinfassAnfrage-abc\n\nProdukt:\nBeispielteppich\n\nFarbe:\nGrau\n\nForm:\nSchablone · Kettelteppich\n\nName:\nErika Beispiel\n\nE-Mail:\nerika@example.com\n\nPhone:\n03301 000000\n\nText:\nMit Aussparung.'),
+    mail('s2', 'Id:\nContactForm-sample\n\nBetreff:\n\nProdukt:\nBeispielboden\n\nName:\nMax Muster\n\nE-Mail:\nmax@example.com\n\nText:\nBitte ein Muster.'),
+  ], { privatDir, jetzt: new Date('2026-11-28T10:00:00Z') });
+  assert.deepEqual(r.angelegt.map(a => [a.id, a.mailId, a.leistung, a.quelle]), [['S-001', 's1', 'sonstiges', 'formular']]);
+  assert.deepEqual(r.uebersprungen.map(u => u.mailId), ['s2']);
+  assert.match(r.uebersprungen[0].grund, /Musteranfrage/);
+  const [e] = leseAlle(serviceanfragenPfad(privatDir));
+  assert.equal(e.telefon, '03301 000000');
+  assert.equal(e.notiz, 'Produkt: Beispielteppich\nFarbe: Grau\nForm: Schablone · Kettelteppich\nMit Aussparung.');
+});
+
 test('Postfach: Startseite mit "mehrere Wohnungen" und Wunschzeitraum wird angelegt', async () => {
   const { uebernehmen } = await import('../scripts/serviceanfragen.mjs');
   const privatDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-postfach-'));

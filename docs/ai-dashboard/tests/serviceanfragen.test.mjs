@@ -11,7 +11,7 @@ import path from 'node:path';
 import {
   ausFormularMail, leistungAus, pruefeFelder, auswertung, kalenderwoche, wochenStart, ServiceanfrageFehler,
   automatischUebernehmbar, istAnzeige, BETREFF_SERVICE, BETREFF_STARTSEITE, BETREFF_KEIN_SERVICE,
-  MAILFELDER, ANLIEGEN_SERVICE, ANLIEGEN_KEIN_SERVICE,
+  MAILFELDER, ANLIEGEN_SERVICE, ANLIEGEN_KEIN_SERVICE, rueckrufAusMail,
 } from '../lib/serviceanfragen.mjs';
 
 const REPO = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..');
@@ -70,6 +70,100 @@ test('Formular-Mail: Musteranfrage und fremder Text werden nicht uebernommen', (
   assert.equal(muster.erkannt, false);
   assert.match(muster.grund, /Musteranfrage/);
   assert.equal(ausFormularMail('Hallo, bitte rufen Sie zurück.').erkannt, false);
+});
+
+// Formular im Mass-Konfigurator (blocks/tp-einfass-konfigurator.liquid): kein
+// Betreff, dafuer Produkt, Farbe und Form. Das Telefonfeld contact[phone]
+// nennt Shopify in der Mail "Phone".
+const MASS_MAIL = `Neue Kundennachricht vom 28. November 2026 um 10:12
+
+Du hast eine neue Nachricht über das Kontaktformular deines
+Onlineshops erhalten.
+
+Ländercode:
+DE
+
+Id:
+TPEinfassAnfrage-abc123
+
+Produkt:
+Beispielteppich nach Maß
+
+Farbe:
+Grau 12
+
+Form:
+Schablone · Kettelteppich
+
+Name:
+Erika Beispiel
+
+E-Mail:
+erika@example.com
+
+Phone:
+03301 000000
+
+Text:
+Ungefähr 3 x 2 m mit Aussparung.
+Form: wie ein L`;
+
+test('Mass-Konfigurator: Schablone und Skizze sind Service-Anfragen, mit Produkt, Farbe und Form in der Notiz', () => {
+  const r = ausFormularMail(MASS_MAIL);
+  assert.equal(r.erkannt, true);
+  assert.deepEqual(r.felder, {
+    datum: '2026-11-28', name: 'Erika Beispiel', telefon: '03301 000000', email: 'erika@example.com', plz: '',
+    herkunft: 'Maß-Konfigurator', leistung: 'sonstiges', quelle: 'formular',
+    notiz: 'Produkt: Beispielteppich nach Maß\nFarbe: Grau 12\nForm: Schablone · Kettelteppich\nUngefähr 3 x 2 m mit Aussparung.\nForm: wie ein L',
+  });
+  assert.deepEqual(automatischUebernehmbar(r), { ok: true });
+  assert.equal(rueckrufAusMail(r), null);
+  const skizze = ausFormularMail(MASS_MAIL.replace('Schablone · Kettelteppich', 'Skizze · Einfassband'));
+  assert.deepEqual(automatischUebernehmbar(skizze), { ok: true });
+  assert.match(skizze.felder.notiz, /^Produkt: .*\nFarbe: Grau 12\nForm: Skizze · Einfassband\n/);
+  // ohne Farbwahl keine leere Zeile
+  assert.match(ausFormularMail(MASS_MAIL.replace('Grau 12', '')).felder.notiz, /^Produkt: Beispielteppich nach Maß\nForm: Schablone/);
+  // aus der Gmail-Ansicht kopiert: Feld und Wert in einer Zeile
+  const zeile = ausFormularMail('Produkt: Beispielteppich\nFarbe: Beige\nForm: Skizze · Paspel\nName: A B\nE-Mail: a@example.com\nPhone: 030 12345\nText: Erker');
+  assert.equal(zeile.erkannt, true);
+  assert.equal(zeile.felder.email, 'a@example.com');
+  assert.equal(zeile.felder.telefon, '030 12345');
+  assert.equal(zeile.felder.notiz, 'Produkt: Beispielteppich\nFarbe: Beige\nForm: Skizze · Paspel\nErker');
+});
+
+test('Mass-Konfigurator: Musteranfragen bleiben abgewiesen', () => {
+  const abgewiesen = mail => {
+    const r = ausFormularMail(mail);
+    assert.equal(r.erkannt, false);
+    assert.match(r.grund, /Musteranfrage/);
+    assert.equal(automatischUebernehmbar(r).ok, false);
+  };
+  // Musterformular: Produktfeld ohne Form
+  abgewiesen('Id:\nContactForm-sample\n\nProdukt:\nX\n\nName:\nA B\n\nE-Mail:\na@example.com\n\nPhone:\n\nText:\nForm: Skizze');
+  abgewiesen('Produkt:\nX\n\nName:\nA B\n\nE-Mail:\na@example.com');
+  // Die Muster-Kennung gewinnt immer; eine andere Form (Rechteck) macht keine Service-Anfrage daraus.
+  abgewiesen(MASS_MAIL.replace('TPEinfassAnfrage-abc123', 'ContactForm-sample'));
+  abgewiesen(MASS_MAIL.replace('Schablone · Kettelteppich', 'Rechteck · Kettelteppich'));
+});
+
+test('Theme: Mail-Leser kennt die Felder und Anfrage-Formen des Mass-Konfigurators', () => {
+  const quelle = fs.readFileSync(path.join(REPO, 'blocks/tp-einfass-konfigurator.liquid'), 'utf8');
+  const standard = { id: 'Id', name: 'Name', email: 'E-Mail', phone: 'Phone', body: 'Text' };
+  const felder = [...quelle.matchAll(/name="contact\[([^\]]+)\]"/g)].map(m => standard[m[1]] || m[1]);
+  assert.ok(['Produkt', 'Farbe', 'Form', 'Phone'].every(f => felder.includes(f)), felder.join(', '));
+  for (const f of felder) assert.ok(MAILFELDER.includes(f), `Formularfeld „${f}“ in MAILFELDER (lib/serviceanfragen.mjs) eintragen`);
+  assert.equal(felder.at(-1), 'Text', 'Nachricht bleibt das letzte Feld');
+  const skript = fs.readFileSync(path.join(REPO, 'assets/tp-einfass-konfigurator.js'), 'utf8');
+  assert.match(skript, /q\('\[data-anfrage-form\]'\)\.value = FORM\[f\] \+/, 'das Feld „Form“ beginnt mit dem Namen der Form');
+  const anfrage = /var ANFRAGE = \{([\s\S]*?)\n  \};/.exec(skript)[1];
+  const formen = [...anfrage.matchAll(/^    (\w+): \{/gm)].map(m => m[1]);
+  assert.ok(formen.length >= 2, formen.join(', '));
+  const namen = /var FORM = \{([^}]*)\}/.exec(skript)[1];
+  for (const f of formen) {
+    const name = new RegExp(`${f}: '([^']+)'`).exec(namen)[1];
+    const r = ausFormularMail(MASS_MAIL.replace('Schablone · Kettelteppich', `${name} · Kettelteppich`));
+    assert.equal(r.erkannt, true, `Anfrage-Form „${name}“ in lib/serviceanfragen.mjs einordnen`);
+  }
 });
 
 test('Formular-Mail: fremde Felder vor dem Text haengen nicht am vorigen Wert', () => {
