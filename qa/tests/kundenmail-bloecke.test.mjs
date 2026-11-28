@@ -62,6 +62,8 @@ test('Versandbestaetigung: Tracking-Button, Spedition bei Meterware, Inhalt', as
 });
 
 // ---- #25 Bestellbestaetigung: Abholung, keine Sendungsverfolgung, Herstellermuster, Lieferzeit
+// EU-Gewaehrleistungsmitteilung (w-405) nennt "Hersteller" selbst - Herstellermuster-Pruefungen nur davor
+const ohneGw = (h) => h.split("Ihre gesetzlichen Gewährleistungsrechte")[0];
 const mitLz = (l, lz) => ({ ...l, product: { metafields: { service: { lieferzeit: lz } } } });
 
 test('#25 Ware: keine Sendungsverfolgung versprechen, nur "wir melden uns"', async () => {
@@ -97,7 +99,7 @@ test('#25 Herstellermuster (M-VW-, M-JAB-): direkt vom Hersteller, getrennte Ums
   assert.match(jab, /einige direkt vom Hersteller in einer eigenen Sendung/);
   const eigen = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [line('Muster Testvelours', 'M-TEST_036')] });
   assert.match(eigen, /in den nächsten Werktagen per Post/);
-  assert.doesNotMatch(eigen, /Hersteller/);
+  assert.doesNotMatch(ohneGw(eigen), /Hersteller/);
 });
 
 test('#25 Lieferzeit je Warenposition aus service.lieferzeit, nur wenn gepflegt', async () => {
@@ -287,7 +289,7 @@ test('Mustergebuehr: ohne Metafeld kein leerer Code, Eingabe escaped, kein "kost
   assert.match(text, /&lt;b&gt;X1&lt;\/b&gt;<\/strong>/);
   for (const [name, quelle] of [['Bestellmail', bestell], ['Versandmail', versand]]) {
     // einzige Ausnahme: Herstellermuster bleiben kostenlos (Inhaber 21.11.2026)
-    const ohneHersteller = quelle.replace(/\{%-? comment[\s\S]*?endcomment -?%\}/g, '').replace(/^\s*#.*$/gm, '').replace('Ihre Muster vom Hersteller sind kostenlos', '').replace('Muster vom Hersteller sind kostenlos', '');
+    const ohneHersteller = quelle.replace(/TP-GEWAEHRLEISTUNG START[\s\S]*TP-GEWAEHRLEISTUNG ENDE/, '').replace(/\{%-? comment[\s\S]*?endcomment -?%\}/g, '').replace(/^\s*#.*$/gm, '').replace('Ihre Muster vom Hersteller sind kostenlos', '').replace('Muster vom Hersteller sind kostenlos', '');
     assert.doesNotMatch(ohneHersteller, /kostenlos|gratis/i, name);
     // Der echte Code gehoert ins Shop-Metafeld, nie ins oeffentliche Repository
     assert.doesNotMatch(quelle, /Gutscheincode:\s*<strong[^>]*>(?!\{\{)/, name);
@@ -312,7 +314,7 @@ test('Herstellermuster kostenlos: eigener Satz ohne Gutschein, Mischkorb erklaer
   // Teiltreffer und leerer Handle sind keine Herstellermuster
   for (const [fall, zeile] of Object.entries({ Teiltreffer: teil, 'ohne Handle': ohneHandle })) {
     const html = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, shipping_price: 0, line_items: [zeile] });
-    assert.doesNotMatch(html, /Hersteller/, fall);
+    assert.doesNotMatch(ohneGw(html), /Hersteller/, fall);
   }
   const sendung = [mfl('M-H-TEST-1', 'Muster Arvessa Teppichboden', 'Sand', { _Muster_ID: 'x' })];
   sendung[0].line_item.product = { handle: 'muster-arvessa-teppichboden-400cm' };
@@ -363,4 +365,22 @@ test('Ratgeber: Muster, Zubehoer und fehlender Produkttyp bekommen keinen', asyn
   const misch = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [mitTyp(line('Testvelours', 'T1'), 'Teppichboden'), mitTyp(line('Muster Testvinyl', 'M-T2'), 'Klickvinyl')] });
   assert.match(misch, /ratgeber-teppichboden\.pdf/);
   assert.doesNotMatch(misch, /ratgeber-klickvinyl\.pdf/);
+});
+
+test('w-405 EU-Gewaehrleistungsmitteilung am Ende jeder Bestellbestaetigung (Ware, Muster, Abholung)', async () => {
+  const faelle = [
+    { attributes: {}, line_items: [line('Testvelours Teppichboden', 'TEST_400')] },
+    { attributes: {}, line_items: [line('Muster Testvelours', 'M-TEST_400', { _Muster_ID: 'x' })] },
+    { attributes: { Beratung: 'Ja', Telefon: '0176 1' }, delivery_method: 'pick-up', line_items: [line('AKO Prima', 'TEST_80')] },
+  ];
+  for (const f of faelle) {
+    const html = await eng.parseAndRender(bestell, { ...base, ...f });
+    assert.match(html, /Ihre gesetzlichen Gewährleistungsrechte/);
+    assert.match(html, /src="https:\/\/www\.teppich-paradies\.net\/cdn\/shop\/files\/eu-gewaehrleistung-de\.png"/);
+    assert.match(html, /alt="Gesetzliche Gewährleistung: Mindestens zwei Jahre/);
+    assert.match(html, /href="https:\/\/europa\.eu\/youreurope\/garantien"/);
+    // eigener Abschnitt ganz am Ende des Blocks
+    assert.ok(html.lastIndexOf('Gewährleistungsrechte') > html.lastIndexOf('Fragen zu Ihrer Bestellung') , 'Hinweis steht am Ende');
+  }
+  assert.ok(existsSync(join(B, 'eu-gewaehrleistung-de.png')), 'Grafik der Kommission liegt fuer den Upload bereit');
 });

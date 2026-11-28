@@ -290,3 +290,21 @@ Tests: `qa/tests/kundenmail-bloecke.test.mjs`,
 `qa/tests/bestellmail-beratung.test.mjs`. Nach dem Einsetzen im Admin die
 Testbenachrichtigung senden und eine Testbestellung (Tag `TESTBESTELLUNG`)
 mit Beratung Ja prüfen.
+
+## EU-Gewährleistungsmitteilung in der Bestellbestätigung (w-405)
+
+Freigabe Inhaber 26.11.2026. Am Ende von `bestellbestaetigung-block.liquid`
+steht zwischen `TP-GEWAEHRLEISTUNG START/ENDE` die harmonisierte Mitteilung zur
+gesetzlichen Gewährleistung (Anhang I DVO (EU) 2025/1960, Pflicht seit
+27.09.2026) – in jeder Bestellbestätigung (Ware, Muster, Abholung). Die Grafik
+der Kommission ist unverändert (deutsche Fassung, als PNG, weil Outlook kein
+WebP zeigt), dazu der Link auf europa.eu/youreurope/garantien, wie es die
+Leitlinien der Kommission verlangen. Theme-Seite: PR #2275 (`tp-gewaehrleistung`).
+
+Einsetzen **erst nach dem Merge von #2286 und der Schaltung am 01.12.**
+(die geplante Aufgabe vom 01.12. prüft die Admin-Blöcke per Prüfsumme gegen
+#2286): zuerst `eu-gewaehrleistung-de.png` aus diesem Ordner unter
+Inhalte → Dateien mit genau diesem Namen hochladen und prüfen, dass
+`https://www.teppich-paradies.net/cdn/shop/files/eu-gewaehrleistung-de.png`
+lädt; dann den Block wie oben ersetzen, Prüfsumme abgleichen, Vorschau und
+Testmail ansehen. Rückbau: Text zwischen den Markierungen löschen.
