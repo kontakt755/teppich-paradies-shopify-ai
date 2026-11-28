@@ -788,6 +788,22 @@ die Überschrift „Abrechnung KW …“ nennt schon die Folgewoche und wird nic
   den Dienst als stumm.
 - Nicht dabei: der GLS-Floater (monatlich, andere Formel) – bleibt von Hand.
 
+## Zugangs-Wächter (täglich 8:00)
+
+Meldet abgelaufene Anmeldungen, bevor Arbeit daran hängen bleibt (AGENTS.md, „Anmeldungen und
+Freigaben“). `scripts/zugaenge-pruefen.mjs` prüft nur lesend und ohne KI: Claude-Abo, GitHub,
+Apps Script und Shopify CLI. Das Firmenpostfach meldet er nicht selbst an, sondern liest den Stand
+der Postfach-Dienste (höchstens 72 Stunden alt). Bank und Zahlungsdienste prüft er nicht, er
+meldet sich nirgends neu an.
+
+- Stand: `$TP_PRIVAT_DIR/zugaenge/status.json` – je Zugang `zustand` (`ok`, `rot`, `unklar`),
+  `seit`, `geprueft` und der `handgriff`. `unklar` heißt Netz, Zeitlimit oder Programm fehlt.
+- Mac-Mitteilung nur, wenn ein Zugang neu `rot` wird. Werkbank-Eintrag und Handy-Push macht die
+  Aufgabe `werkbank-abgleich` anhand des Stands.
+- Dienst: Vorlage `launchagents/net.teppich-paradies.zugaenge.plist.vorlage`, Einrichten mit
+  `bash operations/scripts/dienste-einrichten.sh --zugaenge`, läuft aus `~/tp-dashboard`.
+  Protokoll: `~/Library/Logs/teppich-paradies-zugaenge.log`.
+
 ## Mail-Entwürfe aus dem Ordner (alle 5 Minuten)
 
 Für Entwürfe mit Anhang, die eine KI nicht selbst hochladen kann (Cloud-Sitzung, geplante

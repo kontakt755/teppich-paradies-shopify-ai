@@ -158,6 +158,7 @@ export const DIENSTE_ORDNER = 'dienste';
  */
 export const NICHT_GESICHERT = Object.freeze({
   'nachfassen/postfach.json': 'Zugang zum Firmenpostfach - neu anlegen',
+  'zugaenge/status.json': 'Stand des Zugangs-Waechters - der naechste Lauf schreibt ihn neu',
   'mail-entwuerfe': 'Durchgangsordner fuer Entwurfsauftraege - die Entwuerfe liegen in Gmail, vorlagen/ sind Kopien leerer Formulare',
   'laden-postfach.json': 'Zugang zum Laden-Postfach - neu anlegen',
   'laden-mails.json': 'Zwischenspeicher der Laden-Mails - wird beim naechsten Abruf neu aufgebaut',

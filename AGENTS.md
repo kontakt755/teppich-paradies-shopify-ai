@@ -185,6 +185,22 @@ Weiter fragen, aber gebündelt in **einer** Frage am Ende, nicht mittendrin:
 
 Keine Schlussfragen der Art „Soll ich …?“: Gehört der nächste Schritt zum Auftrag, wird er gemacht. Nennt der Auftrag eine Außenwirkung ausdrücklich (z. B. „Storniere Bestellung 1234 und erstatte 59,90 €“), ist das die Freigabe; nicht noch einmal fragen. Unklare Daten werden nicht erfragt, sondern als offener Fall dokumentiert (Abschnitt „Produktdaten“).
 
+## Anmeldungen und Freigaben
+
+Eine Anmeldung oder Freigabe hält nur den betroffenen Schritt an, nie den Auftrag (Inhaber 2026-11-28).
+
+**Grenzen, auch mit Erlaubnis:** kein Anmelden mit Passwort (auch nicht Browser-Autofill plus Klick), keine gespeicherten Passwörter auslesen, kein CAPTCHA lösen, keine Einmalcodes beschaffen, keine Freigabedialoge bestätigen, keine eigenen Sperren lockern, kein Skript, das eines davon übernimmt. Anmeldecodes nie über den Chat.
+
+1. Zuerst einen Weg ohne Anmeldung nehmen: Connector, API, öffentliche Seite, bestehende Sitzung.
+2. Sonst das Fenster in Claude in Chrome öffnen und alles vorbereiten. Für den Benutzer bleiben nur Passwort, Code, Zustimmung und Absende-Klick. Bei Terminal-Anmeldungen den einen Befehl nennen.
+3. `PushNotification`: Dienst, der eine Handgriff, wo.
+4. Werkbank-Eintrag (Gedächtnis `werkbank_shop_technik`): `status: wartet-inhaber`, `verantwortlich: inhaber`, `frage` = Handgriff, `naechsterSchritt` = wie es weitergeht. Ein offener Eintrag je Zugang, keine Geheimnisse.
+5. Alle unabhängigen Schritte weiter erledigen.
+6. Fortsetzen: Bei Terminal-Anmeldungen wartet ein Hintergrundbefehl, bis die lesende Prüfung grün ist (höchstens 1 Stunde). Browser-Seiten nach den übrigen Schritten erneut ansehen. Endet die Sitzung vorher, steht die Fortsetzung in der Werkbank, Schlusszeile „Offen: …“.
+7. Eine abgelehnte Anmeldung nie wiederholen (Kontosperre).
+
+Dasselbe gilt für Sperren des Auto-Modus. Wiederholt sich eine, gehört der Ablauf in einen schon freigegebenen Weg (Mac-Dienst). Abgelaufene Zugänge meldet vorab der Zugangs-Wächter (`operations/README.md`).
+
 ## Kommunikation
 
 Bei klaren, reversiblen Aufgaben: analysieren → umsetzen → testen → live prüfen → kurz berichten. Wann gefragt wird: „Selbst entscheiden“.
