@@ -362,12 +362,22 @@ export function preisKontrolleKaeufe(zeilen, { preise, ekAufschlag = {}, gebuehr
     const satz = gebuehrTarif && istZahl(gebuehrTarif.prozentBrutto) ? { prozent: gebuehrTarif.prozentBrutto / 100, fix: gebuehrTarif.fix ?? 0 }
       : { prozent: z.brutto > 0 ? z.gebuehr / z.brutto : 0, fix: 0 };
     const mindest = mindestBrutto(z.ware + z.kettel + z.zuschlag + z.weg, satz);
+    // Heute schon gedeckt? Derselbe Kauf zu den heutigen Shop-Preisen (Versand und Nebenleistungen wie damals,
+    // Kosten wie damals). Nur wenn jede Ware heute einen Preis hat - sonst bleibt der Fall offen.
+    const heuteJe = z.positionen.map(p => ({ p, heute: istZahl(p.netto) && p.menge > 0 ? preise.fuerPosition(p) : null }));
+    const heuteNetto = heuteJe.length && heuteJe.every(x => x.heute)
+      ? z.netto + summe(heuteJe.map(x => x.heute.variante.preis / (1 + MWST) * x.p.menge - x.p.netto)) : null;
+    const heuteBrutto = heuteNetto === null ? null : r2(heuteNetto * (1 + MWST));
+    const gedeckt = heuteNetto > 0 && (preisFall
+      ? (heuteNetto - ware - z.kettel) / heuteNetto >= ZIEL_ROHERTRAG
+      : mindest !== null && heuteBrutto + 0.005 >= mindest);
     kaufFaelle.push({
       name: z.name, datum: z.datum, titel: [...new Set(z.positionen.map(p => p.titel))].join(', '), guete: z.guete,
       netto: z.netto, brutto: z.brutto, rohertrag: z.rohertrag, quote: z.quote, herstellQuote,
       ware, kante: z.kettel, verschnitt: z.verschnitt, zuschlag: z.zuschlag, weg: z.weg, gebuehr: z.gebuehr,
       ursache: preisFall ? 'preis' : 'kosten', groesste, groessteBetrag: r2(betrag), hinweis: URSACHE_HINWEIS[groesste],
       mindestBrutto: mindest, mehrBrutto: mindest === null ? null : r2(mindest - z.brutto),
+      heuteBrutto, stand: gedeckt ? 'angehoben' : 'offen',
     });
     // Auch in einem Kauf, den sonst die Kosten druecken, kann eine einzelne Ware zu billig sein.
     // Kante gehoert der Ware, wenn es genau eine gibt; sonst nur die Ware selbst (Kante nicht zuzuordnen).
@@ -408,7 +418,8 @@ export function preisKontrolleKaeufe(zeilen, { preise, ekAufschlag = {}, gebuehr
     ...f,
     stand: f.heuteBrutto === null ? 'heute-unbekannt' : f.heuteBrutto + 0.005 >= f.noetigBrutto ? 'angehoben' : 'offen',
   })).sort((a, b) => (b.verlust === true) - (a.verlust === true) || b.fehlt - a.fehlt);
-  return { preisFaelle: faelle, kaufFaelle: kaufFaelle.sort((a, b) => a.quote - b.quote) };
+  // Offene zuerst: dort ist noch etwas zu tun.
+  return { preisFaelle: faelle, kaufFaelle: kaufFaelle.sort((a, b) => (a.stand === 'angehoben') - (b.stand === 'angehoben') || a.quote - b.quote) };
 }
 
 // ------------------------------------------------------------------ Teil 2 B: ganzes Sortiment

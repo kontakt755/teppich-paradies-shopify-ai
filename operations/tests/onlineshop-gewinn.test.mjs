@@ -112,7 +112,10 @@ test('Preiskontrolle aus Kaeufen: Preisfall mit noetigem Preis, Kontrolle gegen 
   assert.deepEqual([a.preisFaelle[0].noetigBrutto, a.preisFaelle[0].verkauftBrutto, a.preisFaelle[0].stand, a.preisFaelle[0].einheit], [6.8, 5.95, 'offen', 'je m²']);
   assert.equal(a.kaufFaelle[0].ursache, 'preis');
   const heuteReicht = preisIndex([produkt('test', [variante('Test', 6.9, 'm2', 6.9, { sku: 'ART-1' })])]);
-  assert.equal(preisKontrolleKaeufe([zeile], { preise: heuteReicht }).preisFaelle[0].stand, 'angehoben', 'inzwischen angehoben');
+  const b = preisKontrolleKaeufe([zeile], { preise: heuteReicht });
+  assert.equal(b.preisFaelle[0].stand, 'angehoben', 'inzwischen angehoben');
+  assert.deepEqual([a.kaufFaelle[0].stand, b.kaufFaelle[0].stand], ['offen', 'angehoben'], 'auch der Kauf selbst gilt dann nicht mehr als offen');
+  assert.equal(preisKontrolleKaeufe([zeile], { preise: preisIndex([]) }).kaufFaelle[0].stand, 'offen', 'ohne heutigen Preis bleibt er offen');
 });
 
 test('Kauf unter Ziel: reicht die Ware, sind Zuschlaege die groesste Ursache; Mindestbetrag mit Gebuehr', () => {

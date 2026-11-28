@@ -147,7 +147,7 @@ function kaufFallZeile(f, ziel) {
     <td data-l="Erlös brutto" class="num">${euro(f.brutto)}</td>
     <td data-l="Hätte mindestens bringen müssen" class="num ${f.quote < 0 ? 'os-crit' : 'os-warn'}"><b>${euro(f.mindestBrutto)}</b>${f.mehrBrutto > 0 ? `<div class="small">${euro(f.mehrBrutto)} mehr</div>` : ''}</td>
     <td data-l="Rohertrag" class="num ${stufe(f.quote, ziel)}">${prozent(f.quote)}</td>
-    <td data-l="Größte Ursache"><b>${esc(URSACHE_TEXT[f.groesste] ?? f.groesste)}</b> ${euro(f.groessteBetrag)}<div class="small muted">${esc(f.hinweis)}</div></td>
+    <td data-l="Größte Ursache"><b>${esc(URSACHE_TEXT[f.groesste] ?? f.groesste)}</b> ${euro(f.groessteBetrag)}<div class="small muted">${f.stand === 'angehoben' ? `${f.ursache === 'preis' ? 'Warenpreis' : 'Preis'} reicht inzwischen (heute ${euro(f.heuteBrutto)} für diesen Kauf)` : esc(f.hinweis)}</div></td>
   </tr>`;
 }
 
