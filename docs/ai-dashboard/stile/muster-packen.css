@@ -45,15 +45,20 @@
 .mp-stempelzeile { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
 .mp-stempel { display: inline-flex; align-items: center; padding: 3px 10px; border: 2px solid var(--text); border-radius: 6px; color: var(--text); font-size: .85rem; font-weight: 700; }
 .mp-stempel-drin { border-color: var(--warn); background: var(--warn); color: var(--surface); }
+/* Bereits im Lager (26.11.): dieselbe Flaeche wie die Plakette am Muster. */
+.mp-stempel-lager { border-color: var(--text); background: var(--warn); color: var(--surface); }
 .mp-karte-ziel .mp-stempelzeile { margin: 2px 0; }
 /* Weitere Umschlaege desselben Empfaengers (andere Bestelltage, 29.10.): in der Kopfzeile, damit niemand die Bestellungen verwechselt. */
 .mp-weitere { margin: 2px 0 4px; color: var(--text-2); }
 .mp-weitere a { font-weight: 600; }
 /* Kopfzeile: was schon im Haus ist (Inhaber 29.10.) - neutral, aber kraeftiger als die Datumszeile. */
 .mp-hier-da { color: var(--text); font-weight: 600; }
+.mp-fehlt-liste { color: var(--text); overflow-wrap: anywhere; }
 /* Lagermuster: der Packer muss sofort sehen, dass und wo er es im Haus greift (09.11.). */
 /* Schon im Haus: faellt am Muster auf, damit niemand auf den Lieferanten wartet. */
-.mp-lager { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--warn); color: var(--surface); font-size: 1rem; font-weight: 700; }
+/* Gross und fett (Benutzer 24.11.): eigene Zeile ueber dem Kleintext, mit Haken und Wort - nicht nur Farbe. */
+.lager-plakette { display: block; width: fit-content; max-width: 100%; margin: 2px 0 6px; padding: 6px 14px; border: 2px solid var(--text); border-radius: 8px; background: var(--warn); color: var(--surface); font-size: 1.3rem; line-height: 1.2; font-weight: 800; letter-spacing: .02em; overflow-wrap: anywhere; }
+.lager-plakette-zusatz { display: block; font-size: .9rem; font-weight: 700; letter-spacing: 0; }
 /* Noch nicht bestellt samt Grund: die Farbe traegt die Plakette darueber, der Text bleibt neutral. */
 .mp-hier-offen { color: var(--text-2); }
 .mp-ohne-aufkleber { color: var(--text-2); }
@@ -69,6 +74,9 @@
 .mp-gesperrt { color: var(--crit); font-weight: 600; }
 .mp-ohne { margin-left: 6px; }
 .mp-stand { padding-top: 6px; color: var(--text-2); }
+/* Lange Plakette ("Überfällig · 18 Tage beim Lieferanten") umbricht in der schmalen Standspalte, sonst
+   schiebt sie am Handy die ganze Seite breiter (27.11.). */
+.mp-stand .ampel { white-space: normal; border-radius: 10px; }
 .mp-ab .mp-vorher, .mp-ab .mp-nachher, .mp-ab .mp-bild { opacity: .5; }
 
 .mp-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
@@ -138,6 +146,10 @@
   .mp-hier > summary { padding-block: 11px; }
   .mp-packer-info { padding-block: 8px; }
   .mp-suche input[type="search"] { min-width: 0; flex-basis: 120px; }
+  .mp-drucken { gap: 6px; }
+  .mp-drucken .btn { flex: 1 1 0; min-width: 0; min-height: 44px; padding-inline: 8px; white-space: normal; font-size: .82rem; }
+  /* Die Ueberschrift wiederholt den markierten Filter darueber; am Handy nur noch fuer Vorleser. */
+  .mp-arbeitsliste > .mp-titel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 /* Zweite Zeile "Umschlag:" (28.10.), wirkt zusammen mit der Arbeitsliste darueber. */
 .mp-umschlagfilter { align-items: center; margin: -8px 0 16px; }

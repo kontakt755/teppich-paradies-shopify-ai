@@ -434,7 +434,8 @@ test('Kopfzeile sagt ohne Aufklappen, was schon hier liegt (mit Lagerort) und wa
   const k = kunde(1, 'packen');
   k.muster = [{ ...k.muster[0], stand: 'lager', lagerOrt: 'Resteladen' }, { ...k.muster[0], lineItemId: 'l2', stand: 'lager', lagerOrt: 'Resteladen' },
     { ...k.muster[0], lineItemId: 'l3', stand: 'da' }, { ...k.muster[0], lineItemId: 'l4', stand: 'da', abgehakt: { zeit: 'x' } }];
-  assert.match(kopf(ansicht('tab=muster', [k])), /<span class="small mp-hier-da">Liegt hier: 1 im Umschlag · 1 angekommen · 2 im Musterlager \(Resteladen\)<\/span>/);
+  assert.match(kopf(ansicht('tab=muster', [k])), /<span class="small mp-hier-da">Liegt hier: 1 im Umschlag · 1 angekommen<\/span>/);
+  assert.match(kopf(ansicht('tab=muster', [k])), /2 von 4 Mustern bereits im Lager – Fach Resteladen/);
   const w = kunde(2, 'warten');
   w.muster = [{ ...w.muster[0], stand: 'offen' }];
   const h = kopf(ansicht('tab=muster', [w]));
@@ -692,4 +693,75 @@ test('Ampel (06.11.): Reiter zaehlen rote Umschlaege, Rot steht oben, ein Rand j
   const eingelegtOffen = mit(kunde(10, 'packen'), [{ stand: 'offen', abgehakt: { zeit: 'x' } }]);
   assert.match(ansicht('tab=muster&umschlag=order10', [eingelegtOffen]), /<li class="mp-zeile mp-ab">[\s\S]*?<span class="muted">noch nicht bestellt<\/span>/, 'eingelegt, Stand nie nachgetragen: ruhig, kein Bernstein');
   assert.doesNotMatch(html, /wait-warn/, 'keine zweite Bernstein-Regel neben der Ampel');
+});
+
+test('Kopf am Handy: beide Druckknoepfe teilen eine Zeile, der Platzhalter ist kurz', () => {
+  const html = ansicht('tab=muster', [kunde(1, 'packen')]);
+  const druck = html.match(/<div class="mp-summe mp-drucken">[\s\S]*?<\/div>/)[0];
+  assert.match(druck, /data-mp-alle/);
+  assert.match(druck, /data-mp-blatt/);
+  assert.doesNotMatch(html.match(/<div class="toolbar mp-suche">[\s\S]*?<\/div>/)[0], /data-mp-blatt/);
+  assert.match(html, /placeholder="Muster oder Kunde"/);
+});
+
+test('Bereits im Lager (26.11.): Stempel in der Kopfzeile, Filter und Hinweis unter Packbereit', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const reihe = html => [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  const teils = kunde(2, 'warten');
+  teils.muster = [{ ...teils.muster[0], stand: 'lager', lagerOrt: 'Büro' }, { ...teils.muster[0], lineItemId: 'l2b', stand: 'bestellt' }];
+  const ganz = kunde(3, 'klaeren');
+  ganz.muster = [{ ...ganz.muster[0], stand: 'bestellt', lagerMoeglich: { id: 'ml-1', ort: null } }];
+  const liste = [kunde(1, 'packen'), teils, ganz];
+
+  const alle = ansicht('tab=muster', liste);
+  assert.match(alle, /<span class="mp-stempel mp-stempel-lager">✓ 1 von 2 Mustern bereits im Lager – Fach Büro<\/span>/);
+  assert.match(alle, /<span class="mp-stempel mp-stempel-lager">✓ Muster bereits im Lager<\/span>/);
+  assert.match(alle, /bereits im Lager<span class="c">2<\/span>/);
+  assert.deepEqual(reihe(ansicht('tab=muster&mpumschlag=lager', liste)).sort(), ['order2', 'order3']);
+  assert.match(ansicht('tab=muster&mpbereich=packen', liste), /<a href="#\/kunden\?tab=muster&amp;mpbereich=offen&amp;mpumschlag=lager">2 weitere Umschläge haben Muster bereits im Lager<\/a>/);
+
+  // Eingelegt, gesperrt oder gepackt: kein Stempel.
+  const drin = kunde(4, 'packen');
+  drin.muster = [{ ...drin.muster[0], stand: 'lager', abgehakt: { zeit: 'x' } }];
+  const zu = kunde(5, 'klaeren');
+  zu.muster = [{ ...zu.muster[0], stand: 'bestellt', lagerMoeglich: { id: 'ml-2' }, gesperrt: { imShop: true } }];
+  const ohne = ansicht('tab=muster', [drin, zu]);
+  assert.doesNotMatch(kopf(ohne), /mp-stempel-lager/);
+  assert.doesNotMatch(ohne, /mp-stempel-lager/);
+});
+
+test('Kopfzeile nennt die fehlenden Muster mit Lieferant (26.11.)', () => {
+  const kopf = html => html.match(/<summary class="mp-kopf">([\s\S]*?)<\/summary>/)[1];
+  const k = kunde(1, 'warten');
+  const m = k.muster[0];
+  k.muster = [{ ...m, lieferant: 'Lieferant A' }, { ...m, lineItemId: 'l2', etikett: { serie: 'Test', farbe: 'Grau' }, stand: 'offen' },
+    { ...m, lineItemId: 'l3', stand: 'da' }, { ...m, lineItemId: 'l4', stand: 'lager' }, { ...m, lineItemId: 'l5', stand: 'bestellt', abgehakt: { zeit: 'x' } }];
+  assert.match(kopf(ansicht('tab=muster', [k])), /<span class="small mp-fehlt-liste">Fehlt: Test Sand – Lieferant A; Test Grau<\/span>/);
+  k.muster = [1, 2, 3, 4, 5].map(n => ({ ...m, lineItemId: `x${n}` }));
+  assert.match(kopf(ansicht('tab=muster', [k])), /Fehlt: Test Sand · Test Sand · Test Sand · \+2 weitere/);
+  assert.doesNotMatch(ansicht('tab=muster', [kunde(2, 'packen')].map(u => ({ ...u, muster: [{ ...u.muster[0], stand: 'da' }] }))), /mp-fehlt-liste/);
+});
+
+test('Reiner Direktversand steht im Reiter "Vom Hersteller", nicht unter "Zu klären" (26.11.)', () => {
+  const direkt = { ...kunde(1, 'klaeren'), direktversand: true, nurDirekt: true };
+  const liste = [direkt, kunde(2, 'klaeren'), kunde(3, 'warten')];
+  const reihe = html => [...html.matchAll(/data-mp-kunde="(order\d)"/g)].map(m => m[1]);
+  const alle = ansicht('tab=muster', liste);
+  assert.match(alle, /Zu klären <span class="mp-filterzahl">1</);
+  assert.match(alle, /Vom Hersteller <span class="mp-filterzahl">1</);
+  assert.deepEqual(reihe(alle), ['order2', 'order3', 'order1']);
+  assert.deepEqual(reihe(ansicht('tab=muster&mpbereich=klaeren', liste)), ['order2']);
+  const h = ansicht('tab=muster&mpbereich=direkt', liste);
+  assert.deepEqual(reihe(h), ['order1']);
+  assert.match(h, /kommt vom Hersteller/);
+  assert.deepEqual(reihe(ansicht('tab=muster&umschlag=order1', liste)), ['order1']);
+});
+
+test('Ueberfaelliger Umschlag traegt je Lieferant den Knopf "nachhaken" (27.11.)', () => {
+  const k = kunde(1, 'warten');
+  const rot = { ...k.muster[0], lieferantId: 'A', lieferant: 'Lieferant A', ampel: { stufe: 'rot', grund: 'ueberfaellig', wort: 'Überfällig', titel: '' } };
+  k.muster = [rot, { ...rot, lineItemId: 'l2' }, { ...rot, lineItemId: 'l3', lieferantId: 'B', lieferant: 'Lieferant B' }];
+  const html = ansicht('tab=muster', [k]);
+  assert.deepEqual([...html.matchAll(/data-mp-nachhaken="([^"]+)">([^<]+)</g)].map(x => [x[1], x[2]]), [['A', 'Bei Lieferant A nachhaken…'], ['B', 'Bei Lieferant B nachhaken…']]);
+  assert.doesNotMatch(ansicht('tab=muster', [kunde(2, 'warten')]), /data-mp-nachhaken/);
 });

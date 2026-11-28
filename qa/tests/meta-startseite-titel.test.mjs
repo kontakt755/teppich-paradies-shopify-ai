@@ -6,6 +6,7 @@
 // fuer den fehlenden Homepage-Titel, og_title nicht. Beide lesen jetzt
 // dieselbe Variable - dieser Test haelt sie zusammen.
 // Seit 2026-09-30 bundesweit formuliert (SEO-Audit, Quick Win 1).
+// Seit 2026-11-25 ohne Kategoriebegriffe (SEO-Bericht 2, Startseite entlasten).
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -16,10 +17,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const src = readFileSync(join(root, 'snippets', 'meta-tags.liquid'), 'utf8');
 
 test('Der Startseitentitel steht genau einmal als Literal im Snippet', () => {
-  const treffer = src.match(/Teppichboden & Vinylboden online kaufen \| Teppich Paradies/g) || [];
+  const treffer = src.match(/Teppich Paradies – Bodenbeläge vom Fachgeschäft in Oranienburg/g) || [];
   assert.equal(treffer.length, 1,
     `Der Titel steht ${treffer.length}x im Quelltext - er gehoert genau einmal in tp_startseite_titel.`);
-  assert.match(src, /assign tp_startseite_titel = 'Teppichboden & Vinylboden online kaufen \| Teppich Paradies'/);
+  assert.match(src, /assign tp_startseite_titel = 'Teppich Paradies – Bodenbeläge vom Fachgeschäft in Oranienburg'/);
 });
 
 test('og:title uebernimmt den Startseitentitel, wenn Shopify nur den Shopnamen liefert', () => {

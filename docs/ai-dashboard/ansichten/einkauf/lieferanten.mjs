@@ -14,7 +14,8 @@ import {
 import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../../lib/einkauf-uebersicht.mjs';
 import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { warteWort, warteTitel } from '../../lib/ampel.mjs';
-import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
+import { ampelPlakette, ampelRand, lagerPlakette } from '../../bausteine/ampel.mjs';
+import { imLagerVon } from '../../lib/musterlager-bestand.mjs';
 import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { lieferwegVon } from '../../lib/lieferweg.mjs';
 import { state } from '../../kern/zustand.mjs';
@@ -29,12 +30,19 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import {
   einkauf, afEintragFuer, anzeigeWert, afWarteText, markiereAlsBestellt,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, ensureEinkaufLieferanten,
-  setzeZurueckAufOffen, ladeStandNeu, zurueckGruppen, openMusterHerkunftDialog, kundeUndOrt, musterSchrittKnopf,
+  setzeZurueckAufOffen, ladeStandNeu, zurueckGruppen, openMusterHerkunftDialog, kundeUndOrt, musterSchrittKnopf, positionsGruppe,
 } from './auftragsfluss.mjs';
 
-// Welche Karten ihre Positionen zeigen. Als Zustand im Modul (nicht <details>): jede
-// Statusaenderung zeichnet neu, und ein zugeklapptes <details> wird am Handy trotzdem gelayoutet.
-const aufgeklappt = new Set();
+// Wie weit eine Karte offen ist: ohne Eintrag zu (Zahlen und Hauptknoepfe), "positionen" zeigt die
+// Arbeitsschritte mit jeder Position, "bearbeiten" die Tabellen. Als Zustand im Modul (nicht
+// <details>): jede Statusaenderung zeichnet neu, und ein zugeklapptes <details> wird am Handy
+// trotzdem gelayoutet.
+const kartenStufe = new Map();
+
+/** Karte eines Lieferanten auf- oder zuklappen: 'positionen', 'bearbeiten' oder null (zu). */
+export function setzeKartenStufe(id, stufe) {
+  if (stufe) kartenStufe.set(id, stufe); else kartenStufe.delete(id);
+}
 
 const detailLink = id => `#/einkauf?lieferant=${encodeURIComponent(id)}`;
 
@@ -65,6 +73,9 @@ function karten(d = einkauf.bestellungen || {}) {
     gesperrt: p => gesperrt.has(p.lineItemId),
   }).filter(k => !['muster', 'ware'].includes(state.route.params.get('art')) || k.wareGruppen.length || k.musterGruppen.length);
 }
+
+/** Alle Lieferanten (Stammdaten und offene Bestellungen) - fuer das Verzeichnis. */
+export const lieferantenListe = () => karten();
 
 function kundenNamen() {
   const m = new Map();
@@ -108,9 +119,10 @@ function postenZeile(x, namen) {
   // Bei Mustern auch der Ort: so sieht man, ob der Kunde in der Naehe wohnt (vorbeibringen).
   const ort = p.istMuster ? kundeUndOrt(p.orderId).ort : '';
   // Aus dem Musterlager: wo es liegt - das ist beim Verschicken die erste Frage.
-  const lager = p.musterLager && !afEintragFuer(p)?.status ? `Musterlager${p.musterLager.ort ? ` ${p.musterLager.ort}` : ''}` : '';
-  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName, lager].filter(v => v && v !== 'UNGEKLAERT');
-  return `<li class="lf-posten${ampelRand(x.ampel?.stufe)}"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div></div>${warteChip(x)}</li>`;
+  // Gross statt Kleintext: wer hier bestellt, muss sehen, dass das Muster schon im Haus liegt (Benutzer 24.11.).
+  const lager = imLagerVon(p, afEintragFuer(p)?.status);
+  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName].filter(v => v && v !== 'UNGEKLAERT');
+  return `<li class="lf-posten${ampelRand(x.ampel?.stufe)}"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div>${lager ? lagerPlakette(lager.ort, lager.stattLieferant ? 'nicht beim Lieferanten bestellen' : '') : ''}</div>${warteChip(x)}</li>`;
 }
 
 function postenListe(titel, liste, namen, max) {
@@ -260,47 +272,59 @@ function nachfassKnopf(k) {
  * bestellen, 3. Nachfassen (bestellt, wartet zu lange - Ware und Muster); darunter ruhig, was
  * im Plan laeuft. Ein Posten steht genau in einem Abschnitt.
  */
-function arbeitsSchritte(k, namen) {
+function arbeitsSchritte(k, namen, { kurz = false } = {}) {
   const teile = [];
+  // Zugeklappt ("kurz") bleiben je Schritt Ueberschrift, Zahl und Knopf - ohne Satz und Positionen.
+  const kopf = (titel, zahl, knopf, opt = {}) => stufeKopf(titel, zahl, knopf, kurz ? { ...opt, zusatz: '' } : opt);
+  const liste = html => (kurz ? '' : html());
   const w = k.ware.zuBestellen;
   // Gesperrt (Lieferant kann nicht liefern): nie bestellen - steht unter "Muster nicht lieferbar" (#1996).
   const m = k.muster.zuBestellen.filter(x => x.ampel?.grund !== 'gesperrt');
   if (w.length) {
     const zeigen = w.slice(0, 8);
-    teile.push(`<section class="lf-schritt">${stufeKopf('Ware bestellen', w.length, wareKnopf(k, 'btn btn-primary'))}
-      ${stufeListe(zeigen.map(x => wareZeile(x, namen)), w.length - zeigen.length, 'weitere – „Positionen bearbeiten"')}</section>`);
+    teile.push(`<section class="lf-schritt">${kopf('Ware bestellen', w.length, wareKnopf(k, 'btn btn-primary'))}
+      ${liste(() => stufeListe(zeigen.map(x => wareZeile(x, namen)), w.length - zeigen.length, 'weitere – „Positionen bearbeiten"'))}</section>`);
   }
   if (m.length) {
     const g = jeKommission(m);
-    teile.push(`<section class="lf-schritt">${stufeKopf('Muster bestellen', fuerKunden(m), musterKnopf(k, w.length ? 'btn' : 'btn btn-primary'))}
-      ${stufeListe(g.slice(0, 6).map(x => musterZeile(x, namen)), g.length - Math.min(g.length, 6), 'weitere Kunden')}</section>`);
+    teile.push(`<section class="lf-schritt">${kopf('Muster bestellen', fuerKunden(m), musterKnopf(k, w.length ? 'btn' : 'btn btn-primary'))}
+      ${liste(() => stufeListe(g.slice(0, 6).map(x => musterZeile(x, namen)), g.length - Math.min(g.length, 6), 'weitere Kunden'))}</section>`);
   }
   const ue = k.ueberfaellig;
   if (ue.stufe && k.zugeordnet) {
     const satz = `${plural(ue.anzahl, 'Position', 'Positionen')}, die älteste seit ${plural(ue.maxTage, 'Tag', 'Tagen')} – ${ue.stufe === 'crit' ? 'überfällig' : 'beim Lieferanten nachhaken'}.`;
-    teile.push(`<section class="lf-schritt lf-nachfassen ${ue.stufe}">${stufeKopf('Nachfassen', ue.auftraege === 1 ? '1 Auftrag' : `${ue.auftraege} Aufträge`, nachfassKnopf(k), { zusatz: esc(satz) })}
-      ${stufeListe(laufendZeilen(ue.positionen, namen).map(z => z.html), 0, '')}</section>`);
+    teile.push(`<section class="lf-schritt lf-nachfassen ${ue.stufe}">${kopf('Nachfassen', ue.auftraege === 1 ? '1 Auftrag' : `${ue.auftraege} Aufträge`, nachfassKnopf(k), { zusatz: esc(satz) })}
+      ${liste(() => stufeListe(laufendZeilen(ue.positionen, namen).map(z => z.html), 0, ''))}</section>`);
   }
   // Liegt zu lange bei uns: rausgeben - das ist unsere Arbeit, kein Anruf beim Lieferanten.
   const lbu = k.liegtBeiUns;
   if (lbu?.stufe) {
     const satz = `${plural(lbu.anzahl, 'Position liegt', 'Positionen liegen')} bei uns, die älteste seit ${plural(lbu.maxTage, 'Tag', 'Tagen')} – an den Kunden rausgeben oder Abholung klären.`;
     const knopf = `<a class="btn" href="#/einkauf?${new URLSearchParams({ af: 'eingetroffen', lf: k.id })}">Rausgeben</a>`;
-    teile.push(`<section class="lf-schritt lf-nachfassen ${lbu.stufe}">${stufeKopf('Liegt bei uns', lbu.auftraege === 1 ? '1 Auftrag' : `${lbu.auftraege} Aufträge`, knopf, { zusatz: esc(satz) })}
-      ${stufeListe(laufendZeilen(lbu.positionen, namen).map(z => z.html), 0, '')}</section>`);
+    teile.push(`<section class="lf-schritt lf-nachfassen ${lbu.stufe}">${kopf('Liegt bei uns', lbu.auftraege === 1 ? '1 Auftrag' : `${lbu.auftraege} Aufträge`, knopf, { zusatz: esc(satz) })}
+      ${liste(() => stufeListe(laufendZeilen(lbu.positionen, namen).map(z => z.html), 0, ''))}</section>`);
   }
   // Der Lieferant kann das Muster nicht liefern (Mustersperre), bestellt oder noch nicht: nicht nachfassen,
   // sondern den Kunden informieren - das geht in der Packstation. Eigener Abschnitt, damit kein
   // rotes Muster unter "Bestellt, im Plan" verschwindet.
   const nichtLieferbar = [...k.muster.zuBestellen, ...k.muster.bestellt].filter(x => x.ampel?.grund === 'gesperrt');
   if (nichtLieferbar.length) {
-    teile.push(`<section class="lf-schritt lf-nachfassen crit">${stufeKopf('Muster nicht lieferbar', fuerKunden(nichtLieferbar), '<a class="btn" href="#/kunden?tab=muster">Packstation</a>', { zusatz: 'Der Lieferant kann diese Muster nicht liefern – Kunde informieren.' })}
-      ${stufeListe(jeKommission(nichtLieferbar).map(g => musterZeile(g, namen)), 0, '')}</section>`);
+    teile.push(`<section class="lf-schritt lf-nachfassen crit">${kopf('Muster nicht lieferbar', fuerKunden(nichtLieferbar), '<a class="btn" href="#/kunden?tab=muster">Packstation</a>', { zusatz: 'Der Lieferant kann diese Muster nicht liefern – Kunde informieren.' })}
+      ${liste(() => stufeListe(jeKommission(nichtLieferbar).map(g => musterZeile(g, namen)), 0, ''))}</section>`);
   }
   // Ruhig darunter: was wir selbst da haben und was im Plan laeuft (nicht ueberfaellig).
   const ruhig = [];
   // Lagerware: steht beim Lieferanten im Shop, wird aber von uns zugeschnitten und verschickt (Heute › Von uns abschicken).
   const ausLager = k.ware.eigen || [];
+  const imPlan = [...k.ware.bestellt, ...k.muster.bestellt].filter(x => !x.warnstufe && x.ampel?.grund !== 'gesperrt');
+  const da = [...k.ware.eingetroffen, ...k.muster.eingetroffen].filter(x => !x.warnstufe);
+  if (kurz) {
+    // Zugeklappt reicht fuer das Ruhige eine Zeile mit Zahlen.
+    const zahlen = [['Aus eigenem Lager', ausLager.length], ['Muster haben wir da', (k.muster.eigen || []).length], ['Bestellt, im Plan', imPlan.length], ['Bei uns eingetroffen', da.length]]
+      .filter(([, n]) => n).map(([t, n]) => `${t} <b>${n}</b>`);
+    if (zahlen.length) teile.push(`<p class="lf-schritt lf-zahlen">${zahlen.join(' · ')}</p>`);
+    return teile.join('');
+  }
   if (ausLager.length) {
     ruhig.push(stufeKopf('Aus eigenem Lager – nicht bestellen', ausLager.length, '<a class="btn btn-sm" href="#/heute">Von uns abschicken</a>', { klasse: 'lf-ruhig' })
       + stufeListe(ausLager.slice(0, 4).map(x => wareZeile(x, namen)), ausLager.length - Math.min(ausLager.length, 4), 'weitere Positionen'));
@@ -311,11 +335,9 @@ function arbeitsSchritte(k, namen) {
     ruhig.push(stufeKopf('Muster haben wir da – verschicken oder vorbeibringen', fuerKunden(eigen), '', { klasse: 'lf-ruhig' })
       + stufeListe(g.slice(0, 4).map(x => musterZeile(x, namen, { herkunft: true })), g.length - Math.min(g.length, 4), 'weitere Kunden'));
   }
-  const imPlan = [...k.ware.bestellt, ...k.muster.bestellt].filter(x => !x.warnstufe && x.ampel?.grund !== 'gesperrt');
   if (imPlan.length) {
     ruhig.push(stufeKopf('Bestellt, im Plan', imPlan.length, '', { klasse: 'lf-ruhig' }) + ruhigeListe(laufendZeilen(imPlan, namen), 3));
   }
-  const da = [...k.ware.eingetroffen, ...k.muster.eingetroffen].filter(x => !x.warnstufe);
   if (da.length) {
     ruhig.push(stufeKopf('Bei uns eingetroffen', da.length, '', { klasse: 'lf-ruhig' }) + ruhigeListe(laufendZeilen(da, namen), 2));
   }
@@ -336,13 +358,19 @@ export function kartenAnzahl(k, af = null) {
 }
 
 function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }) {
-  const offen = aufgeklappt.has(k.id) || state.route.params.get('lf') === k.id || !k.zugeordnet || !!af;
-  const zu = [...k.ware.zuBestellen, ...k.muster.zuBestellen];
+  // Ein Filter (Schritt, Lieferant, Auftrag) ist schon der Klick, mit dem man die Positionen sehen will.
+  const auftrag = !!state.route.params.get('auftrag');
+  const festOffen = !!af || (auftrag && !k.zugeordnet);
+  const offen = festOffen || kartenStufe.get(k.id) === 'bearbeiten' || state.route.params.get('lf') === k.id;
+  const positionen = !offen && k.zugeordnet && (auftrag || kartenStufe.get(k.id) === 'positionen');
+  const zu = !offen && !positionen;
   const laufend = nachWartezeit([...k.ware.bestellt, ...k.ware.eingetroffen, ...k.muster.bestellt, ...k.muster.eingetroffen]);
   const anzahl = kartenAnzahl(k, af);
   // Zugeklappt stehen die Bestellknoepfe bei "Zu bestellen"; aufgeklappt (Tabellen) unten im Fuss.
   const knoepfe = offen ? bestellKnoepfe(k) : '';
-  const vorschau = offen ? '' : arbeitsSchritte(k, namen);
+  // Ohne Lieferant gibt es keine Bestellschritte, nur die Zahl - zuordnen geht in der Tabelle.
+  const vorschau = offen ? '' : k.zugeordnet ? arbeitsSchritte(k, namen, { kurz: zu })
+    : `<p class="lf-schritt lf-zahlen">${[['Ware', k.wareGruppen], ['Muster', k.musterGruppen]].map(([t, g]) => [t, g.reduce((n, x) => n + x.positionen.filter(p => positionsGruppe(p) !== 'erledigt').length, 0)]).filter(([, n]) => n).map(([t, n]) => `${t} <b>${n}</b>`).join(' · ')}</p>`;
   // Sammelaktion fuer die ganze Karte: alles, was hier schon einen Schritt hat, zurueck auf offen.
   const gesetzt = (af === 'erledigt' ? [...k.ware.erledigt, ...k.muster.erledigt] : laufend).map(x => x.pos).filter(p => p.lineItemId);
   const zurueckId = `lf-${k.id}`;
@@ -353,12 +381,17 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
   const tabellen = !offen ? '' : k.wareGruppen.map(g => gruppeKarte(g, alleGruppen.indexOf(g), 'ware', { eingebettet: true })).join('')
     + k.musterGruppen.map(g => gruppeKarte(g, alleMusterGruppen.indexOf(g), 'muster', { eingebettet: true })).join('');
   const kopfName = k.zugeordnet ? `<a href="${detailLink(k.id)}" title="Kontakt, Bestellweg und Verlauf">${esc(k.name)}</a>` : esc(k.name);
-  return `<article class="card lf-karte${offen ? ' lf-offen' : ''}">
-    <div class="lf-kopf"><h3 class="lf-name">${kopfName}</h3>${wegZeile(k)}</div>
+  const knopf = (stufe, text, auf = false) => `<button type="button" class="btn btn-ghost lf-aufklappen" data-lf-auf="${esc(k.id)}" data-lf-stufe="${stufe}" aria-expanded="${auf}">${text}</button>`;
+  const fuss = offen ? (festOffen ? '' : knopf('', 'Positionen einklappen', true))
+    : !k.zugeordnet ? knopf('bearbeiten', `Positionen bearbeiten (${anzahl})`)
+      : zu ? knopf('positionen', `Positionen zeigen (${anzahl})`)
+        : knopf('bearbeiten', `Positionen bearbeiten (${anzahl})`) + (auftrag ? '' : `<button type="button" class="btn btn-ghost" data-lf-auf="${esc(k.id)}" data-lf-stufe="" aria-expanded="true">Einklappen</button>`);
+  return `<article class="card lf-karte${offen ? ' lf-offen' : ''}${zu ? ' lf-zu' : ''}">
+    <div class="lf-kopf"><h3 class="lf-name">${kopfName}</h3>${zu && k.zugeordnet ? '' : wegZeile(k)}</div>
     ${offen ? ueberfaelligHinweis(k) : ''}
     ${vorschau}
     ${offen ? `<div class="lf-tabellen">${tabellen || '<p class="lf-rest">Kein Artikel in diesem Schritt.</p>'}</div>` : ''}
-    <div class="lf-fuss">${knoepfe}${zurueck}<button type="button" class="btn btn-ghost lf-aufklappen" data-lf-auf="${esc(k.id)}" aria-expanded="${offen}">${offen ? 'Positionen einklappen' : `Positionen bearbeiten (${anzahl})`}</button></div>
+    ${knoepfe || zurueck || fuss ? `<div class="lf-fuss">${knoepfe}${zurueck}${fuss}</div>` : ''}
   </article>`;
 }
 
@@ -843,11 +876,9 @@ export function einkaufKlickLieferanten(e) {
   const auf = e.target.closest('[data-lf-auf]');
   if (auf) {
     const id = auf.dataset.lfAuf;
-    if (auf.getAttribute('aria-expanded') === 'true') {
-      aufgeklappt.delete(id);
-      // Kam die Karte ueber ?lf= aufgeklappt an, muss der Parameter weg - sonst bleibt sie offen.
-      if (state.route.params.get('lf') === id) { state.route.params.delete('lf'); history.replaceState(null, '', `#/einkauf${state.route.params.toString() ? `?${state.route.params}` : ''}`); }
-    } else aufgeklappt.add(id);
+    setzeKartenStufe(id, auf.dataset.lfStufe);
+    // Kam die Karte ueber ?lf= aufgeklappt an, muss der Parameter weg - sonst bleibt sie offen.
+    if (!auf.dataset.lfStufe && state.route.params.get('lf') === id) { state.route.params.delete('lf'); state.route.params.set('tab', 'lieferant'); history.replaceState(null, '', `#/einkauf?${state.route.params}`); }
     render();
     return true;
   }
@@ -968,7 +999,7 @@ export function viewEinkaufLieferant(id) {
   ensureEinkaufBestellungen();
   ensureEinkaufAuftragsstatus();
   ensureEinkaufLieferanten();
-  const zurueck = '<a class="lf-zurueck" href="#/einkauf">‹ Bestellen</a>';
+  const zurueck = '<a class="lf-zurueck" href="#/einkauf?tab=lieferanten">‹ Alle Lieferanten</a>';
   const b = einkauf.bestellungen;
   if ((!b && einkauf.loadingBestellungen) || (!einkauf.lieferanten && einkauf.loadingLieferanten)) return `${zurueck}<div class="empty">Lade Lieferant …</div>`;
   if (b?.fehler) return zurueck + stoerungState(b, 'Die Bestelldaten');

@@ -37,14 +37,15 @@ export function naechsterLauf(heute) {
   throw new Error(`kein Lauftag nach ${heute}`);
 }
 
-const DATUM = String.raw`(\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2}))`;
+// Lieferant A druckt das Datum manchmal mit Leerzeichen statt Punkten („23 11 26“, Rechnung vom 09.11.2026).
+const DATUM = String.raw`(\d{1,2}[. ]\d{1,2}[. ](?:\d{4}|\d{2}))`;
 const BETRAG = String.raw`(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})`;
 const SKONTO_ZEILE = new RegExp(`Zahlung bis ${DATUM} ${BETRAG} % Skonto ${BETRAG} EUR Zahlung ${BETRAG} EUR`, 'g');
 const NETTO_ZEILE = new RegExp(`Nettof(?:ä|ae)lligkeit ${DATUM} netto Zahlung ${BETRAG} EUR`, 'g');
 
 /** Kalendertag, den es wirklich gibt (kein 31.02.). */
 const echterTag = (text) => {
-  const iso = datumLesen(text);
+  const iso = datumLesen(String(text).replace(/ /g, '.'));
   return iso && !Number.isNaN(Date.parse(`${iso}T00:00:00Z`)) && tagPlus(iso, 0) === iso ? iso : null;
 };
 
@@ -91,6 +92,7 @@ export function rechnungPruefen(xml, { iban }, pdfText = () => '') {
     ?? xrechnungSkontoLesen(abschnitte(xml, 'SpecifiedTradePaymentTerms').join('\n'), {
       datum: f.datum, brutto: f.brutto,
       zuschlaege: Number(blatt(abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation'), 'ChargeTotalAmount') || 0),
+      ...summenLesen(xml),
     });
   // Ohne lesbares Skonto nur, wenn in keinem Bedingungsblock Skonto steht: dann ist der volle Betrag richtig.
   // Roh gelesen, damit auch CDATA oder andere Unterfelder zaehlen.
@@ -117,7 +119,14 @@ export function rechnungPruefen(xml, { iban }, pdfText = () => '') {
  * Skonto als XRechnung-Kennung „#SKONTO#TAGE=10#PROZENT=4.00#“ (optional „BASISBETRAG=…#“), gerechnet
  * vom Rechnungsdatum. Nur genau eine Kennung mit mehr als 0 %; sonst null (dann sperrt der Aufrufer).
  */
-export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0 }) {
+/** Warensumme, Steuerbasis und Nachlaesse aus dem Summenblock (fuer Skonto nur auf den Warenanteil). */
+const summenLesen = (xml) => {
+  const s = abschnitt(xml, 'SpecifiedTradeSettlementHeaderMonetarySummation');
+  const zahl = n => { const w = blatt(s, n); return w === '' ? null : Number(w); };
+  return { warensumme: zahl('LineTotalAmount'), steuerbasis: zahl('TaxBasisTotalAmount'), nachlaesse: zahl('AllowanceTotalAmount') || 0 };
+};
+
+export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0, warensumme = null, steuerbasis = null, nachlaesse = 0 }) {
   // Jede Kennung muss vollstaendig lesbar sein; ein uebriges Feld (z. B. „BASISBETRAG=50,00#“) sperrt.
   const alle = [...String(text ?? '').matchAll(/#SKONTO#TAGE=(\d{1,3})#PROZENT=(\d{1,2}(?:\.\d{1,2})?)#(?:BASISBETRAG=(\d+(?:\.\d{1,2})?)#)?(?![A-Z]+=)/gi)];
   if (alle.length !== (String(text ?? '').match(/#SKONTO#/gi) || []).length) return null;
@@ -127,9 +136,15 @@ export function xrechnungSkontoLesen(text, { datum, brutto, zuschlaege = 0 }) {
   const tagOk = Boolean(tag) && !Number.isNaN(tag.getTime()) && tag.toISOString().slice(0, 10) === datum;
   if (treffer.length !== 1 || !tagOk || !(brutto > 0)) return null;
   const [, tage, prozent, basisText] = treffer[0];
-  // Zuschlaege (Fracht) ohne angegebene Basis: Skontobasis unbekannt, lieber voll zahlen als zu wenig.
-  if (basisText === undefined && zuschlaege > 0) return { nettoFaellig: null, nettoBetrag: brutto, skonto: null, vollerBetrag: true };
-  const basis = basisText === undefined ? brutto : Number(basisText);
+  // Zuschlaege (Fracht) ohne angegebene Basis: Skonto nur auf den Warenanteil, brutto im Verhaeltnis
+  // Warensumme zu Steuerbasis (so zahlt der Inhaber: Lieferant AKO 4037401, 302,24 -> 290,39 am 06.11.2026).
+  // Nur wenn die Summen aufgehen; sonst lieber voll zahlen als zu wenig.
+  let basis = basisText === undefined ? brutto : Number(basisText);
+  if (basisText === undefined && zuschlaege > 0) {
+    const stimmig = warensumme > 0 && steuerbasis > 0 && !nachlaesse && cent(warensumme + zuschlaege) === cent(steuerbasis);
+    if (!stimmig) return { nettoFaellig: null, nettoBetrag: brutto, skonto: null, vollerBetrag: true };
+    basis = Math.round(brutto * warensumme / steuerbasis * 100) / 100;
+  }
   if (!(basis > 0) || cent(basis) > cent(brutto) || Number(prozent) > 5) return null;
   const betrag = Math.round(basis * Number(prozent)) / 100;
   return { nettoFaellig: null, nettoBetrag: brutto, skonto: { bis: tagPlus(datum, Number(tage)), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 } };
@@ -153,26 +168,97 @@ export const pdfTextGlaetten = text => String(text ?? '')
   .replace(/\b(?:[A-Za-zÄÖÜäöü] ){3,}[A-Za-zÄÖÜäöü]\b/g, m => m.replace(/ /g, ''))
   .replace(/(\d) +, *(\d{2})(?!\d)/g, '$1,$2');
 
-export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum }, { iban }) {
+/**
+ * Bruttobetrag ohne Beschriftung: genau ein Betrag X, fuer den Netto N und Steuer S (19 % oder 7 % von N,
+ * auf den Cent) mit N + S = X im Text stehen. Mehrdeutig oder nichts: null.
+ */
+export function bruttoAusSummen(text) {
+  const werte = [...new Set([...String(text ?? '').matchAll(/(?<![0-9.,])(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})(?![0-9])/g)].map(m => cent(betragLesen(m[1]))))];
+  const da = new Set(werte);
+  const treffer = new Set();
+  for (const n of werte) for (const q of [19, 7]) {
+    const st = Math.round(n * q / 100);
+    if (st > 0 && da.has(st) && da.has(n + st)) treffer.add(n + st);
+  }
+  // Rabatt, Abzug, Anzahlung oder negative Betraege: das Gesamt liegt dann nicht am Ende der Rechenprobe.
+  if (/rabatt|nachlass|abzug|abz(?:ü|ue)g|abzgl|gutschrift|anzahlung|bereits|teilzahlung|(?:^|\s)[-−–]\s*\d+,\d{2}|\d,\d{2}\s*[-−–](?!\s*\d)/i.test(String(text ?? ''))) return null;
+  // Nur das Rechnungsgesamt: der groesste Betrag im Text (eine Positionssumme daneben zaehlt nicht).
+  return treffer.size === 1 && [...treffer][0] === Math.max(...werte) ? [...treffer][0] / 100 : null;
+}
+
+const MONATE = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
+/** Genau ein ausgeschriebenes Datum („23. November 2026“) im Text, sonst null. */
+export function monatsDatum(text, vor) {
+  // Ist ein Rechnungsdatum beschriftet, aber nicht lesbar (z. B. 03/11/2026): nicht raten.
+  if (!vor || /rechnungsdatum|datum\s*:/i.test(String(text ?? ''))) return null;
+  // Nur direkt hinter dem Ort der Vorlage, auf derselben Zeile (Zahlungsziel oder Lieferdatum stehen anders).
+  const ort = vor.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+  const d = new Set([...String(text ?? '').matchAll(new RegExp(`(?:^|\\n)[ \\t]*${ort},?[ \\t]+(\\d{1,2})\\.[ \\t]*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)[ \\t]+(\\d{4})`, 'gi'))]
+    .map(m => `${m[3]}-${String(MONATE.indexOf(m[2].toLowerCase().replace('maerz', 'märz')) + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`));
+  return d.size === 1 && echterIsoTag([...d][0]) ? [...d][0] : null;
+}
+
+/** ISO-Tag, den es gibt (kein 31.11.); ungueltige Daten sperren statt den Lauf abzubrechen. */
+const echterIsoTag = iso => /^\d{4}-\d{2}-\d{2}$/.test(iso || '') && !Number.isNaN(Date.parse(`${iso}T00:00:00Z`)) && new Date(`${iso}T00:00:00Z`).toISOString().slice(0, 10) === iso;
+
+export function pdfRechnungPruefen({ text, nummer, brutto, waehrung, datum, rechnungsdatum }, { iban, vorlage = null }) {
   const t = pdfTextGlaetten(text);
+  // Skontofrist nur ab einem belegten Rechnungsdatum (Archiv oder Text), nie ab dem Eingangstag der Mail.
+  // Aus dem Text nur das beschriftete Datum oder ein ausgeschriebenes direkt hinter dem Ort der Vorlage („Berlin 23. November 2026“).
+  const rdatum = rechnungsdatum ?? (rechnungsdatum === undefined ? datum : null) ?? pdfTextLesen(t).datum ?? (vorlage?.datumVor ? monatsDatum(t, vorlage.datumVor) : null);
   // Fehlen Nummer oder Betrag im Archiv: derselbe Leser wie belege:monat, auf dem geglaetteten Text
   // (er schliesst Netto-Zeilen aus und gibt bei mehreren verschiedenen Betraegen nichts zurueck).
-  if (!nummer || brutto === null || brutto === undefined) {
+  if (!nummer || brutto === null || brutto === undefined || !waehrung) {
     const felder = pdfTextLesen(t);
     nummer ||= felder.nummer ?? null;
-    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? null;
+    // Spaltensatz (Texterkennung): Beschriftung und Betrag stehen getrennt; dann zaehlt nur die Rechenprobe.
+    // Widerspruechliche beschriftete Gesamtbetraege: nicht rechnen.
+    if (brutto === null || brutto === undefined) brutto = felder.brutto ?? (vorlage?.rechenprobe && !felder.betragMehrdeutig ? bruttoAusSummen(t) : null);
+    waehrung ||= felder.waehrung;
   }
   // Ausdruecklich als Anhang einer Rechnung bezeichnet (Leistungsuebersicht), ohne Storno oder Korrektur.
   const anhang = /(anhang|anlage)\s+zu(r)?\s+rechnung/i.test(t) && !/gutschrift|storno|korrektur/i.test(t);
   const kopf = { nummer: nummer ?? null, datum: datum ?? null, brutto: brutto ?? null, skonto: null, nettoFaellig: null, pdf: true, anhang };
-  const unklar = grund => ({ ...kopf, status: 'unklar', grund });
+  // Fuer die Handzahlung: „innerhalb von 10 Tagen mit 4% Skonto“ als Vorschlag ausrechnen (nie automatisch gezahlt).
+  const sk = /innerhalb\s+(?:von\s+)?(\d{1,3})\s+Tagen\s+(?:mit|abz(?:ü|ue)glich)\s+(\d{1,2}(?:,\d{1,2})?)\s*%\s*Skonto/i.exec(t);
+  const vorschlag = sk && typeof brutto === 'number' && brutto > 0 && /^\d{4}-\d{2}-\d{2}$/.test(datum || '') && Number(sk[2].replace(',', '.')) <= 5
+    ? (() => { const betrag = Math.round(brutto * Number(sk[2].replace(',', '.'))) / 100; return `; Vorschlag: ${sk[2]} % Skonto bis ${tagPlus(datum, Number(sk[1]))} = ${((cent(brutto) - cent(betrag)) / 100).toFixed(2).replace('.', ',')} EUR`; })()
+    : '';
+  const unklar = grund => ({ ...kopf, status: 'unklar', grund: grund + vorschlag });
   if (!t.trim()) return unklar('PDF-Text nicht lesbar');
   if (waehrung !== 'EUR') return unklar('Währung nicht eindeutig EUR');
   if (!/^[A-Za-z0-9][A-Za-z0-9/._-]{2,29}$/.test(nummer || '') || !nurZeichen(t).includes(nurZeichen(nummer))) return unklar('Rechnungsnummer nicht sicher im PDF');
   if (typeof brutto !== 'number' || !(brutto > 0) || !betragImText(t, brutto)) return unklar('Rechnungsbetrag nicht sicher im PDF');
   if (/gutschrift|storno|korrekturrechnung/i.test(t)) return unklar('PDF nennt Gutschrift oder Storno');
-  // Skonto: eine schon mit Abzug bezahlte Rechnung erkennt der Bankabgleich ohne Skontobetrag nicht sicher.
-  if (/skonto/i.test(t)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+  // Skonto nur mit genau einer lesbaren Stufe (Tage + Satz) und Rechnungsdatum, gerechnet auf den Rechnungsbetrag
+  // (so zahlt der Inhaber, z. B. 105,11 -> 100,91 am 09.11.2026). Sonst von Hand.
+  if (/skonto/i.test(t)) {
+    const stufen = [...t.matchAll(/(?:innerhalb\s+(?:von\s+)?)?(\d{1,3})\s+Tag(?:e|en)\s+(?:mit\s+|abz(?:ü|ue)glich\s+)?-?\s*(\d{1,2}(?:,\d{1,2})?)\s*%\s*Skonto/gi)];
+    // PDF-Text plus Texterkennung nennen dieselbe Stufe zweimal: gleiche Stufen zaehlen einmal,
+    // aber jedes Wort Skonto muss zu einer gelesenen Stufe gehoeren.
+    const verschieden = new Set(stufen.map(m => `${Number(m[1])}|${m[2]}`));
+    const satz = verschieden.size === 1 ? Number(stufen[0][2].replace(',', '.')) : NaN;
+    // Eingeschraenkte Basis („nur auf den Warenwert“, „ohne Fracht“, skontofaehig): nicht selbst rechnen.
+    // Nach der Stufe darf nur das Nettoziel folgen („30 Tage Netto“ / „ohne Abzug“); jede Einschraenkung irgendwo sperrt.
+    const ende = stufen.length ? stufen[0].index + stufen[0][0].length : 0;
+    const danach = stufen.length ? t.slice(ende, ende + 60) : 'keine Stufe';
+    const nurNettoziel = /^[\s,.;:]*(?:$|\n|(?:innerhalb\s+(?:von\s+)?)?\d{1,3}\s+Tag(?:e|en)[\s,]*(?:netto|ohne\s+abzug|rein\s+netto)\b)/i.test(danach);
+    // Jeder Hinweis auf eine Teilbasis irgendwo in der Rechnung sperrt (auch ueber Zeilenumbrueche hinweg).
+    const eingeschraenkt = !nurNettoziel || /ausgenommen|ausgeschlossen|exkl|skontof(?:ä|ae)hig|skontierf|nicht\s+skont|nicht\s+abzugsf|material|waren|fracht|versand|porto|nur\s+auf|teilbetrag|\(\s*(?:ohne|nicht|exkl)/i.test(t);
+    // Nur mit Vorlage und nur, wenn die Rechnung genau deren Stufe nennt (sonst ist etwas anders: von Hand).
+    // Positivliste: die bestaetigten Bedingungen stehen wortgleich (Leerraum egal) in der Rechnung, und ausserhalb
+    // davon nennt sie weder Skonto noch Netto/Basis noch eine Teilbasis.
+    const flach = t.replace(/\s+/g, ' ');
+    const rest = vorlage?.bedingungen ? flach.split(vorlage.bedingungen).join(' ') : flach;
+    const wieVorlage = Boolean(vorlage?.bedingungen) && flach.includes(vorlage.bedingungen) && !/skonto|netto|basis|betrag\s+ohne|abzugsf/i.test(rest)
+      && verschieden.size === 1 && Number(stufen[0][1]) === vorlage.skontoTage && satz === vorlage.skontoProzent;
+    // Widerspruechliche beschriftete Gesamtbetraege oder ein anderer als der Archivbetrag: nicht rechnen.
+    const gesamt = pdfTextLesen(t);
+    const widerspruch = gesamt.betragMehrdeutig || (gesamt.brutto != null && cent(gesamt.brutto) !== cent(brutto));
+    if (!wieVorlage || widerspruch || (t.match(/skonto/gi) || []).length !== stufen.length || eingeschraenkt || !echterIsoTag(rdatum)) return unklar('PDF nennt Skonto: Betrag selbst prüfen');
+    const betrag = Math.round(brutto * satz) / 100;
+    kopf.skonto = { bis: tagPlus(rdatum, Number(stufen[0][1])), betrag, zahlbetrag: (cent(brutto) - cent(betrag)) / 100 };
+  }
   if (/lastschrift|abgebucht|eingezogen|bankeinzug|einzugserm|mandat/i.test(t)) return unklar('PDF nennt Lastschrift oder Einzug');
   if (/bereits (bezahlt|beglichen|erhalten)|dankend erhalten|vorkasse|anzahlung|abschlag|teilzahlung|paypal|kreditkarte/i.test(t)) return unklar('PDF nennt Vorkasse, Anzahlung oder schon bezahlt');
   if (!nurZeichen(t).includes(iban)) return unklar('IBAN aus der Konfiguration steht nicht im PDF');
@@ -188,7 +274,11 @@ export function konfigPruefen(k) {
   for (const [schluessel, l] of Object.entries(k.lieferanten || {})) {
     const lastschrift = l.zahlart === 'lastschrift';
     if (!lastschrift && (!String(l.name || '').trim() || !ibanGueltig(l.iban))) throw new Error(`Konfiguration: Lieferant ${schluessel} braucht name und gültige iban`);
-    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift };
+    // Vorlage (vom Inhaber bestaetigte Zahlungsbedingungen, Benutzer 24.11.2026): nur damit wird Skonto aus einer
+    // reinen PDF-Rechnung automatisch gerechnet, und nur der Betrag dieses Lieferanten darf aus der Rechenprobe kommen.
+    const v = l.vorlage;
+    if (v !== undefined && !(Number.isInteger(v?.skontoTage) && v.skontoTage > 0 && v.skontoTage <= 60 && v.skontoProzent > 0 && v.skontoProzent <= 5)) throw new Error(`Konfiguration: Lieferant ${schluessel} hat eine ungültige vorlage`);
+    lieferanten[schluessel] = { name: String(l.name || schluessel).trim(), iban: iban(l.iban), zweck: String(l.verwendungszweck || '').trim(), lastschrift, sepaAnfrage: String(l.sepaAnfrage || '').trim(), vorlage: v ? { skontoTage: v.skontoTage, skontoProzent: Number(v.skontoProzent), rechenprobe: v.rechenprobe === true, datumVor: String(v.datumVor || '').trim() || null, bedingungen: String(v.bedingungen || '').replace(/\s+/g, ' ').trim() || null } : null };
   }
   // Optional: an wen Pruefliste und Datei nach dem Lauf gehen (Benutzer 20.11.2026: Laden-Postfach).
   const mailAn = k.mailAn === undefined ? null : String(k.mailAn).trim().toLowerCase();
@@ -351,7 +441,19 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
     .map(z => ({ ...z, brutto: null, skonto: null, nurNachDatum: true, quelle: z }));
   const treffer = buchungen ? bankAbgleich(buchungen, [...ok, ...unklare], { ...fremdeLieferanten, ...konfig.lieferanten }, geprueft.filter(z => z.nummer)) : new Map();
   const bank = new Map([...treffer].map(([k, v]) => [k.quelle || k, v]));
+  // Gutschrift gilt als verrechnet, wenn eine spaetere Zahlung an denselben Empfaenger sie im Zweck nennt.
+  // Die Bank zerreisst Text an Zeilengrenzen („Gut schrift Nummer208860TP050“, „Gutschrift 1051 90“).
+  const alle = { ...fremdeLieferanten, ...konfig.lieferanten };
+  const verrechnet = (z) => {
+    const muster = new RegExp(`GUT\\s?SCHRIFT[^0-9]{0,20}${[...String(z.nummer).toUpperCase()].map(c => c.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('\\s?')}(?![0-9])`);
+    return (buchungen || []).find(x => x.betrag < 0 && (!z.datum || x.datum >= z.datum) && muster.test(String(x.zweck).toUpperCase())
+      && ((x.iban && x.iban === alle[z.schluessel]?.iban) || namePasst(x.name, { anbieter: alle[z.schluessel]?.name, anbieterSchluessel: z.schluessel })));
+  };
   const zeilen = geprueft.map((z) => {
+    if (z.status === 'gutschrift' && z.nummer) {
+      const b = verrechnet(z);
+      return b ? { ...z, status: 'erledigt', grund: `laut Kontoauszug am ${b.datum} mit einer Zahlung verrechnet` } : z;
+    }
     if (z.status === 'unklar') {
       const t = bank.get(z);
       return t && !t.mehrdeutig ? { ...z, status: 'bezahlt', grund: `laut Kontoauszug am ${t.buchung.datum} (Nummer im Verwendungszweck; vorher: ${z.grund})` } : z;
@@ -371,6 +473,29 @@ export function auswaehlen({ belege, fremde = [], erledigt = {}, konfig, buchung
     return { ...z, status: 'zahlen', zahlbetrag: r.brutto, mitSkonto: false, grund: r.pdf ? 'PDF-Rechnung: voller Betrag' : r.skonto ? 'Skonto verfallen, voller Betrag' : 'voller Betrag' };
   });
   return { heute, naechster, zeilen };
+}
+
+/**
+ * Wochenfazit (Benutzer 24.11.2026): an wen wir in den letzten `tage` Tagen mindestens zweimal
+ * ueberwiesen haben – Kandidaten, um beim Empfaenger eine SEPA-Lastschrift anzufragen. Eingetragene
+ * Lieferanten erkennt der Name (namePasst), ihr Stand steht in konfiguration.json unter `sepaAnfrage`.
+ * @returns [{ name, anzahl, summe, letzte, stand }] meiste Ueberweisungen zuerst
+ */
+export function lastschriftFazit({ buchungen, konfig, heute, tage = 90 }) {
+  const ab = tagPlus(heute, -tage);
+  const eigen = nurZeichen(konfig.auftraggeber.name);
+  const gruppen = new Map();
+  for (const b of buchungen || []) {
+    if (b.art !== 'ueberweisung' || !(b.betrag < 0) || b.datum < ab || !String(b.name || '').trim() || nurZeichen(b.name) === eigen) continue;
+    const l = Object.entries(konfig.lieferanten).find(([k, x]) => !x.lastschrift && namePasst(b.name, { anbieter: x.name, anbieterSchluessel: k }))?.[1];
+    // Ohne Eintrag: Name ohne Umlaute und Satzzeichen („Timzo … Teppichböden“ = „… Teppichboeden“).
+    const k = l ? `L:${l.name}` : nurZeichen(String(b.name).replace(/[äöüÄÖÜß]/g, c => UMLAUT[c]));
+    const g = gruppen.get(k) || { name: l?.name || String(b.name).trim(), anzahl: 0, cent: 0, letzte: '', stand: l?.sepaAnfrage || '' };
+    g.anzahl += 1; g.cent += cent(-b.betrag); if (b.datum > g.letzte) g.letzte = b.datum;
+    gruppen.set(k, g);
+  }
+  return [...gruppen.values()].filter(g => g.anzahl >= 2).sort((a, b) => b.anzahl - a.anzahl || b.cent - a.cent)
+    .map(({ cent: c, ...g }) => ({ ...g, summe: c / 100 }));
 }
 
 const UMLAUT = { ä: 'ae', ö: 'oe', ü: 'ue', Ä: 'Ae', Ö: 'Oe', Ü: 'Ue', ß: 'ss' };
@@ -456,6 +581,8 @@ export function mailInhalt(prueflisteText, { lauf, datei, zahlungen, summe }) {
   const de = n => n.toFixed(2).replace('.', ',');
   const inDatei = auswahl('IN DATEI').map(f => `- ${f[1]}, Rechnung ${f[2]} vom ${f[3]}: ${f[8]} EUR (${f[9]})`);
   const unklar = auswahl('UNKLAR').map(f => `- ${f[1]}, Rechnung ${f[2] || '?'} vom ${f[3] || '?'}${f[4] ? `, ${f[4]} EUR` : ''}: ${f[9]}`);
+  const sepa = [...auswahl('SEPA anfragen').map(f => `- ${f[1]}: ${f[2]} Überweisungen, ${f[3]} EUR (letzte ${f[4]}) – Lastschrift anfragen`),
+    ...auswahl('SEPA angefragt').map(f => `- ${f[1]}: ${f[2]} Überweisungen, ${f[3]} EUR – ${f[5]}`)];
   const warnung = /ACHTUNG/.test(zeilen[1] || '') ? zeilen[1].replace(/^.*?ACHTUNG: /, 'ACHTUNG: ') : '';
   const betreff = `${datei ? `Sammelüberweisung ${lauf}: ${zahlungen} Zahlungen, ${de(summe)} EUR` : `Sammelüberweisung ${lauf}: keine Datei`}${unklar.length ? `, ${unklar.length} von Hand prüfen` : ''}${warnung ? ' – Kontoauszug prüfen' : ''}`;
   const text = [
@@ -464,6 +591,8 @@ export function mailInhalt(prueflisteText, { lauf, datei, zahlungen, summe }) {
     datei ? 'Bitte erst die Prüfliste ansehen, dann die Datei im Online-Banking hochladen und freigeben.' : '',
     '', `In der Datei (${zahlungen}):`, ...(inDatei.length ? inDatei : ['- nichts']),
     '', `Von Hand prüfen (${unklar.length}):`, ...(unklar.length ? unklar : ['- nichts']),
+    ...(unklar.length && /letzte Buchung/.test(zeilen[1] || '') ? [`Bezahlt erkennt das Programm nur bis zur letzten Buchung im Kontoauszug (${(/letzte Buchung (\S+)/.exec(zeilen[1]) || [])[1]}). Was danach von Hand überwiesen wurde, kann hier noch stehen.`] : []),
+    ...(sepa.length ? ['', `Wochenfazit wiederkehrende Überweisungen (${sepa.length}):`, ...sepa] : []),
     '', zeilen[1] || '',
   ].filter((z, i, a) => z !== '' || a[i - 1] !== '');
   return { betreff, text: text.join('\n') };
@@ -473,7 +602,7 @@ const STATUS_TEXT = { zahlen: 'IN DATEI', spaeter: 'später', bezahlt: 'bezahlt'
 const REIHENFOLGE = ['zahlen', 'unklar', 'gutschrift', 'lastschrift', 'spaeter', 'vorgemerkt', 'bezahlt', 'erledigt'];
 
 /** Pruefliste fuer den Inhaber (Semikolon, Excel-tauglich). */
-export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdfAb = '', summeCent }) {
+export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdfAb = '', summeCent, fazit = [] }) {
   const kopf = [
     `Sammelüberweisung Lauf ${auswahl.heute}; nächster Lauf ${auswahl.naechster}`,
     abgleich.moeglich ? `Bezahlt-Abgleich: ${abgleich.buchungen} Buchungen aus ${abgleich.dateien} Datei(en), letzte Buchung ${abgleich.bis}${abgleich.luecke || abgleich.fehler || abgleich.zeilenNichtLesbar ? ` – ACHTUNG: KONTOAUSZUG UNVOLLSTÄNDIG${abgleich.luecke ? ` (Lücke ${abgleich.luecke})` : ''}${abgleich.fehler ? ` (${abgleich.fehler} Datei(en) nicht lesbar)` : ''}${abgleich.zeilenNichtLesbar ? ` (${abgleich.zeilenNichtLesbar} Buchung(en) nicht lesbar)` : ''}: keine Datei. Umsätze der letzten 30 Tage bei der Commerzbank als CSV in Downloads speichern, dann neu laufen lassen` : abgleich.aktuell ? '' : `; danach schützt die Vormerkliste vor doppelter Zahlung (Lieferantenrechnungen nicht von Hand überweisen; ein neuer CSV-Export in Downloads ist freiwillig)`}` : 'ACHTUNG: Kein Kontoauszug-Export gefunden: keine Datei. Einmal die Umsätze der letzten 90 Tage bei der Commerzbank als CSV in Downloads speichern.',
@@ -486,5 +615,7 @@ export function pruefliste({ auswahl, abgleich, datei, andere, vorStart = 0, pdf
   for (const z of sortiert) {
     zeilen.push([STATUS_TEXT[z.status], csvFeld(z.lieferant), csvFeld(z.nummer), z.datum || '', de(z.brutto), de(z.skonto?.betrag), z.skonto?.bis || '', z.nettoFaellig || '', de(z.zahlbetrag), csvFeld(z.grund), csvFeld(z.beleg)].join(';'));
   }
-  return `\uFEFF${[...kopf, ...zeilen].join('\r\n')}\r\n`;
+  const sepa = fazit.length ? ['', 'Wiederkehrende Überweisungen (letzte 90 Tage): per SEPA-Lastschrift anfragen?', 'Status;Empfänger;Überweisungen;Summe;letzte;Stand',
+    ...fazit.map(f => [f.stand ? 'SEPA angefragt' : 'SEPA anfragen', csvFeld(f.name), f.anzahl, de(f.summe), f.letzte, csvFeld(f.stand)].join(';'))] : [];
+  return `\uFEFF${[...kopf, ...zeilen, ...sepa].join('\r\n')}\r\n`;
 }

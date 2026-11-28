@@ -10,7 +10,7 @@
 import { $, esc } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { state } from '../../kern/zustand.mjs';
-import { umschlagAbschliessbar } from '../../lib/muster-packen.mjs';
+import { umschlagAbschliessbar, musterversandErstattung } from '../../lib/muster-packen.mjs';
 import { musterKurz, fuelleText, mailtoLink, ersatzFarben, NICHT_VERFUEGBAR_VORLAGE } from '../../lib/muster-nachfassen.mjs';
 import { setzeSchritt } from './zeitleiste.mjs';
 
@@ -24,6 +24,17 @@ export const GESPERRT_KURZ = Object.freeze({ imShop: `${GESPERRT_GRUND.imShop} �
  * nicht immer eindeutig, zwei Farben derselben Linie sahen im roten Hinweis gleich aus (05.11.).
  */
 export const gesperrteNamen = gesperrte => musterKurz(gesperrte.map(m => ({ istMuster: true, titel: m.bestellt.titel, farbe: m.bestellt.farbe })));
+
+/**
+ * Hinweis zur Erstattung des Musterversands - nur Text und Link, das Control Center erstattet nie selbst.
+ * Erscheint nur bei bezahltem Musterversand; Gratisbestellungen zeigen nichts.
+ */
+export function versandErstattungHtml(k) {
+  const { erstatten, erstattet } = musterversandErstattung(k);
+  const links = erstatten.map(b => (b.adminUrl ? `<a href="${esc(b.adminUrl)}" target="_blank" rel="noopener">${esc(b.orderName)} in Shopify öffnen</a>` : esc(b.orderName))).join(' · ');
+  return `${erstatten.length ? `<p class="notice warn"><strong>4,99 € in Shopify erstatten (komplett), lieferbare Muster trotzdem verschicken.</strong> Nur den Versand erstatten, keine Muster-Position auswählen – sonst fällt die Bestellung aus der Packstation. ${links}</p>` : ''}${
+    erstattet.length ? `<p class="small"><strong>Versand erstattet</strong> (${esc(erstattet.map(b => b.orderName).join(', '))}) – die lieferbaren Muster gehen trotzdem raus.</p>` : ''}`;
+}
 
 let vorlage = null;
 
@@ -45,7 +56,7 @@ export function oeffneKundeInformieren(k, { lesend = false, danach } = {}) {
     <h2 id="mpInfoTitel">Kunde informieren · ${esc(k.name)}</h2>
     <p>${esc(gesperrte.length === 1 ? 'Dieses Muster kommt nicht' : 'Diese Muster kommen nicht')} – ${esc(farben.join('; '))}. Gesendet wird hier nichts: Text kopieren oder im Mailprogramm öffnen.</p>
     ${lagerFarben.length ? `<p class="small">Sofort aus dem Musterlager: ${esc(lagerFarben.join(', '))} – die Mail bietet dem Kunden diese Farben als Ersatz an.</p>` : ''}
-    <p class="small">Hat der Kunde den Musterversand bezahlt: die 4,99 € in Shopify ganz erstatten. Die übrigen Muster gehen trotzdem raus.</p>
+    ${versandErstattungHtml(k)}
     <p class="small"><span class="muted">Betreff:</span> <span data-mp-info-betreff>${esc(erste.betreff || '')}</span></p>
     <label class="visually-hidden" for="mpInfoText">Text der E-Mail</label>
     <textarea id="mpInfoText" readonly rows="23">${esc(erste.text || '')}</textarea>

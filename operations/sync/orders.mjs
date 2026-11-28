@@ -209,15 +209,20 @@ export function normalisiereLineItem(li) {
  * Leaky-Bucket-Guthaben mehr uebrig laesst. Ohne Wartung wirft die naechste
  * Seite THROTTLED, und die Bestellliste bricht mittendrin ab.
  *
- * Sicherheitsabstand: 10% von maximumAvailable. Bleibt currentlyAvailable
- * darunter, wird bis knapp darueber gewartet (Zeit = fehlendes Guthaben /
- * restoreRate Punkte pro Sekunde).
+ * Sicherheitsabstand: die VERLANGTEN Kosten der letzten Abfrage (die naechste
+ * Seite verlangt dasselbe), mindestens 10% von maximumAvailable. Shopify lehnt
+ * ab, sobald das Guthaben unter den verlangten Kosten liegt, nicht erst bei
+ * leerem Konto: eine Bestellseite verlangt 959 Punkte und kostet echt rund 80.
+ * Mit 10% allein scheiterte ab etwa 31 Seiten jeder Lauf (w-419, 24.11.2026).
+ * Bleibt currentlyAvailable darunter, wird bis dahin gewartet (Zeit =
+ * fehlendes Guthaben / restoreRate Punkte pro Sekunde).
  */
 export async function wartenBeiThrottle(proxy, { warten = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
-  const status = proxy.requestLog?.at(-1)?.throttleStatus;
+  const letzte = proxy.requestLog?.at(-1);
+  const status = letzte?.throttleStatus;
   if (!status || !(status.restoreRate > 0)) return 0;
   const { currentlyAvailable, restoreRate, maximumAvailable = 1000 } = status;
-  const puffer = maximumAvailable * 0.1;
+  const puffer = Math.max(maximumAvailable * 0.1, letzte.requestedCost ?? 0);
   if (currentlyAvailable >= puffer) return 0;
   const ms = Math.ceil(((puffer - currentlyAvailable) / restoreRate) * 1000);
   await warten(ms);

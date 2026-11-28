@@ -5,7 +5,7 @@
 // klang nach etwas anderem; die Regel heisst "Bis zu zwei Muster je Bestellung".
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -16,15 +16,11 @@ const ALT = /Bis zu 2 (Muster kostenlos|Farben)|Bis zu zwei (Farben|Farbmuster)|
 const ORDNER = ['sections', 'snippets', 'blocks', 'templates', 'assets', 'locales', 'layout', 'config'];
 const ENDUNGEN = /\.(liquid|json|js|css)$/;
 
+// Rekursiv und nur Dateien: templates/metaobject/ ist ein Unterordner (Farbseiten).
 function dateien() {
-  const aus = [];
-  for (const o of ORDNER) {
-    for (const n of readdirSync(path.join(root, o))) {
-      const rel = `${o}/${n}`;
-      if (statSync(path.join(root, rel)).isFile() && ENDUNGEN.test(n)) aus.push(rel);
-    }
-  }
-  return aus;
+  return ORDNER.flatMap((o) => readdirSync(path.join(root, o), { withFileTypes: true, recursive: true })
+    .filter((e) => e.isFile() && ENDUNGEN.test(e.name))
+    .map((e) => path.relative(root, path.join(e.parentPath, e.name)).split(path.sep).join('/')));
 }
 
 // Verboten: kostenlos / gratis / kostenfrei / versandkostenfrei im selben Satz wie "Muster".

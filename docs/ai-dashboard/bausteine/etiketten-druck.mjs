@@ -354,9 +354,16 @@ async function drucken() {
       pruefeAbbruch();
       status(`Drucke ${etiketten.length} Aufkleber über den Mac …`, k);
       const canvas = document.createElement('canvas'), kopfBild = document.createElement('canvas');
-      const seiten = etiketten.map(e => { zeichne(canvas, e, druck.versatz); return alsSeite(aufDruckkopf(canvas, kopfBild, B1_KOPF)); });
-      await orgSchreiben('/api/etiketten/mac-druck', { dichte, seiten });
-      pruefeAbbruch();
+      // In Bloecken wie beim Bluetooth-Weg: der Server nimmt hoechstens 200 Seiten je Aufruf, ein groesserer
+      // Sammeldruck brach sonst mit "1 bis 200 Seiten erwartet" ab (Dienstprotokoll 09.11.).
+      for (const block of druckBloecke(etiketten)) {
+        if (block.start) status(`Drucke Aufkleber ${basisAb + block.start + 1} bis ${basisAb + block.start + block.etiketten.length} von ${alleGewaehlt.length} über den Mac …`, k);
+        const seiten = block.etiketten.map(e => { zeichne(canvas, e, druck.versatz); return alsSeite(aufDruckkopf(canvas, kopfBild, B1_KOPF)); });
+        await orgSchreiben('/api/etiketten/mac-druck', { dichte, seiten });
+        // Fertige Bloecke zaehlen: bricht ein spaeterer ab, laesst sich ab dort weiterdrucken.
+        gesendet = gedruckt = block.start + block.etiketten.length;
+        pruefeAbbruch();
+      }
     } else {
     client = await verbinden(weg, k, pruefeAbbruch);
     pruefeAbbruch();

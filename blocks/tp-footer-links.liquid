@@ -51,8 +51,10 @@
       {%- else -%}
         <li><a href="/pages/muster">Muster bestellen</a></li>
         <li><a href="/pages/liefer-verlegeservice">Verlegeservice</a></li>
+        <li><a href="/pages/kettelteppich-nach-mass">Teppich ketteln lassen</a></li>
         <li><a href="/pages/firmenkunden">Für Firmenkunden</a></li>
         <li><a href="/pages/wohnungsunternehmen">Für Wohnungsunternehmen</a></li>
+        <li><a href="/pages/verlegung-berlin-nord">Teppichboden Berlin &amp; Oranienburg</a></li>
         {%- if tp_footer_shipping_page != blank -%}
           <li><a href="{{ tp_footer_shipping_page.url }}">Versand &amp; Lieferung</a></li>
         {%- endif -%}
@@ -76,6 +78,27 @@
           <li><a href="{{ tp_fl_reklamation.url }}">Reklamation</a></li>
         {%- endunless -%}
       {%- endif -%}
+    </ul>
+  </nav>
+
+  {%- comment -%}
+    SEO 24.11.: Ratgeber und Raum-Einstiegsseiten bekommen Links von jeder Seite.
+    Kategorien nur, wenn sie Produkte haben (sonst toter Link).
+  {%- endcomment -%}
+  <nav aria-labelledby="tp-footer-ratgeber-{{ block.id }}">
+    <h2 id="tp-footer-ratgeber-{{ block.id }}" class="tp-footer-links__heading">Ratgeber</h2>
+    <ul role="list">
+      <li><a href="/pages/ratgeber">Alle Ratgeber</a></li>
+      <li><a href="/blogs/ratgeber-teppichboden/teppichboden-verlegen-kosten-pro-m2">Verlegen: Kosten pro m²</a></li>
+      <li><a href="/blogs/ratgeber-teppichboden/wolle-oder-kunstfaser">Wolle oder Kunstfaser?</a></li>
+      <li><a href="/blogs/ratgeber-teppichboden/teppichboden-wirft-wellen">Teppich wellig: was tun?</a></li>
+      {%- assign tp_fl_raeume = 'teppichboden-schlafzimmer,teppichboden-kinderzimmer' | split: ',' -%}
+      {%- for tp_fl_raum in tp_fl_raeume -%}
+        {%- assign tp_fl_k = collections[tp_fl_raum] -%}
+        {%- if tp_fl_k.products_count > 0 -%}
+          <li><a href="{{ tp_fl_k.url }}">{{ tp_fl_k.title | escape }}</a></li>
+        {%- endif -%}
+      {%- endfor -%}
     </ul>
   </nav>
 
@@ -130,6 +153,11 @@
       {%- endcomment -%}
       <li class="tp-footer-links__widerruf-zeile"><a class="tp-footer-links__widerruf" href="/pages/vertrag-widerrufen">Vertrag widerrufen</a></li>
     </ul>
+    {%- comment -%}
+      Allgemeiner Hinweis auf der ganzen Website (Leitlinien der Kommission
+      zur harmonisierten Mitteilung), Produktseiten zeigen ihn zusaetzlich.
+    {%- endcomment -%}
+    {% render 'tp-gewaehrleistung', kompakt: true %}
   </nav>
 </div>
 {%- comment -%}
@@ -175,12 +203,12 @@
 
   .tp-footer-links {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 28px;
     width: 100%;
   }
 
-  /* B4: vier Spalten brauchen die volle Footer-Breite; Newsletter und
+  /* B4: fuenf Spalten brauchen die volle Footer-Breite; Newsletter und
      Zahlarten ruecken in die Zeile darunter. */
   .footer-content > .tp-footer-links {
     grid-column: 1 / -1;

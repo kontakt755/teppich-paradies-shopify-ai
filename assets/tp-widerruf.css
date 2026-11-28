@@ -1,0 +1,50 @@
+/* Aus sections/tp-widerruf.liquid ausgelagert: laedt nur, wo der Abschnitt rendert (nicht im themeweiten styles.css). */
+  .tp-wr { padding-block: 32px 56px; }
+  .tp-wr__inhalt { max-width: 640px; margin-inline: auto; }
+  .tp-wr__titel { margin: 0 0 12px; }
+  .tp-wr__intro { margin-bottom: 24px; }
+  .tp-wr__schrittname { font-weight: 600; margin: 0 0 16px; }
+  .tp-wr__feld { display: grid; gap: 6px; margin-bottom: 16px; }
+  .tp-wr__feld label { font-weight: 600; }
+  .tp-wr__feld input,
+  .tp-wr__feld textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: max(16px, 1em);
+    color: inherit;
+    background: var(--color-input-background, #fff);
+    border: 1px solid rgb(var(--color-foreground-rgb, 0 0 0) / 0.35);
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+  .tp-wr__feld small { opacity: 0.75; }
+  .tp-wr__honig { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  .tp-wr__fehler { color: #b3261e; font-weight: 600; }
+  .tp-wr__pflicht { font-size: var(--tp-fs-sm); opacity: 0.75; }
+  .tp-wr .button { min-height: 48px; }
+  .tp-wr__knoepfe { display: flex; flex-wrap: wrap; gap: 12px; }
+  .tp-wr__zusammenfassung {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin: 0 0 20px;
+    padding: 16px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 0 0 0) / 0.15);
+    border-radius: 8px;
+  }
+  .tp-wr__zusammenfassung dt { font-weight: 600; }
+  .tp-wr__zusammenfassung dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .tp-wr__fertig h2 { margin-top: 0; }
+  .tp-wr__eingang { font-weight: 600; }
+  .tp-wr__fuss { margin-top: 32px; font-size: var(--tp-fs-sm); }
+  .tp-wr__schritt:focus { outline: none; }
+
+  @media screen and (max-width: 749px) {
+    .tp-wr { padding-block: 20px 40px; }
+    .tp-wr__zusammenfassung { grid-template-columns: 1fr; gap: 2px; }
+    .tp-wr__zusammenfassung dd { margin-bottom: 8px; }
+    .tp-wr__knoepfe .button { width: 100%; }
+    .tp-wr__weiter { width: 100%; }
+  }

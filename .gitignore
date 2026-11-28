@@ -30,6 +30,8 @@ cookies*.json
 .claude/api_usage.db
 .claude/api_usage.db-shm
 .claude/api_usage.db-wal
+# Arbeitsdateien des Plugins godmode (Plaene, Nachweise je Sitzung)
+.godmode/
 
 # Dependencies and package-manager noise
 node_modules/

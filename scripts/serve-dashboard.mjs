@@ -323,6 +323,11 @@ const NUR_INHABER = new Set([
   'org/pruefen',
   // Claude-Verbrauch (#671): Sitzungstitel aller KI-Sitzungen - Inhabersache wie "Insights".
   'verbrauch/claude',
+  // Lexware-Angebote: Kunde, Betrag und Link ins Angebot. Mitarbeiter sollen keine Einsicht in
+  // Lexware haben (Inhaber 2026-11-23); bisher sperrte nur die Oberflaeche nichts davon.
+  'angebote/lexware',
+  // Ausschreibungen (Fristen, Preise, Entscheidungen): Inhabersache wie die Ansicht selbst.
+  'ausschreibungen/liste',
 ]);
 
 function darfPfad(benutzer, simple, taskOp) {
@@ -339,7 +344,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|version|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/kettelversand|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/muster-anrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|angebote\/lexware|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/ratgeber-druck|kunden\/ratgeber-vorlage|kunden\/muster-begleitblatt|kunden\/muster-packen|kunden\/musterwirkung|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/bestellung-abhaken|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|sitzungen\/abmelden|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|hausverwaltungen\/liste|hausverwaltungen\/speichern|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|sonderposten\/bestand|bildrechte\/liste|laden\/zahlen|laden\/uebersicht|laden\/zustaendig|laden\/aufgabe-erledigt|laden\/aufgabe|laden\/telefonisch|heute\/rotstand|fehler\/melden|fehler\/liste|werkbank\/fragen|werkbank\/antworten|fehler\/bild|etiketten\/mac-druck)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|version|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/kettelversand|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/muster-anrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|angebote\/lexware|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/ratgeber-druck|kunden\/ratgeber-vorlage|kunden\/muster-begleitblatt|kunden\/muster-packen|kunden\/musterwirkung|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/bestellung-abhaken|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|sitzungen\/abmelden|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|hausverwaltungen\/liste|hausverwaltungen\/speichern|ausschreibungen\/liste|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|sonderposten\/bestand|bildrechte\/liste|laden\/zahlen|laden\/uebersicht|laden\/zustaendig|laden\/aufgabe-erledigt|laden\/aufgabe|laden\/telefonisch|heute\/rotstand|fehler\/melden|fehler\/liste|werkbank\/fragen|werkbank\/antworten|fehler\/bild|etiketten\/mac-druck)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -532,6 +537,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'akquise/liste') result = await api.akquiseListe();
     else if (simple === 'akquise/aendern') result = await api.akquiseAendern(await readJson(req), benutzer);
     else if (simple === 'akquise/referenz') result = await api.akquiseReferenz(await readJson(req), benutzer);
+    else if (simple === 'ausschreibungen/liste') result = await api.ausschreibungenListe();
     else if (simple === 'hausverwaltungen/liste') result = await api.hausverwaltungenListe();
     else if (simple === 'hausverwaltungen/speichern') result = await api.hausverwaltungenSpeichern(await readJson(req), benutzer);
     else if (simple === 'einkauf/kundentermin') result = await api.einkaufKundentermin(await readJson(req), benutzer);
@@ -784,6 +790,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       sofortLauf();
     }
     if (NEUBAU_MINUTEN > 0) {
+      // Der Start wartet nicht mehr auf GitHub: Aufgabenstand sofort nach dem Oeffnen des Ports holen.
+      if (!process.env.TP_DASHBOARD_DATENKOPIE) regelmaessigNeubauen();
       setInterval(regelmaessigNeubauen, NEUBAU_MINUTEN * 60_000).unref();
       console.log(`Aufgabendaten (issues.json) werden alle ${NEUBAU_MINUTEN} Minuten neu geholt.`);
     }

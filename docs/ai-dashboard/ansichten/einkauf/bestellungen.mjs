@@ -7,7 +7,8 @@ import { gruppierePositionenNachKunde } from '../../lib/einkauf-kundengruppen.mj
 import { afNorm } from '../../lib/einkauf-lieferanten.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { warteAmpel, warteWort, warteTitel } from '../../lib/ampel.mjs';
-import { ampelPlakette } from '../../bausteine/ampel.mjs';
+import { ampelPlakette, lagerPlakette } from '../../bausteine/ampel.mjs';
+import { imLagerVon } from '../../lib/musterlager-bestand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, geldText } from '../../kern/helfer.mjs';
 import { emptyState, stoerungState, bandItem } from '../../bausteine/karten.mjs';
 import {
@@ -23,8 +24,8 @@ import { lieferwegPlakette } from '../../bausteine/lieferweg.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
 import { beschaffungText } from '../../lib/beschaffung.mjs';
-import { uebernahmeBlock } from './beschaffung.mjs';
-import { lieferantenstandBlock, lieferantenstandZahlen } from './lieferantenstand.mjs';
+import { uebernahmeTeile } from './beschaffung.mjs';
+import { lieferantenstandTeile, lieferantenstandZahlen } from './lieferantenstand.mjs';
 import { lieferantenKartenHtml, nachfassenSumme, bestellartDaten } from './lieferanten.mjs';
 import { ohneGesperrteKlaerung } from '../../lib/einkauf-uebersicht.mjs';
 
@@ -45,13 +46,21 @@ function lieferantLinkZelle(p) {
   // Produktseite hinterlegt ist - und immer ins Lexikon, wo Originalname,
   // Artikelnummer, Farbnummer und Bestellweg beieinanderstehen. Ohne den
   // Lexikon-Weg bliebe die Zelle bei fehlender URL eine Sackgasse.
+  // Textlinks statt Knoepfe: je Zeile soll nur ein Knopf ins Auge fallen.
   const lex = p.handle
-    ? `<div style="margin-top:4px"><a class="btn btn-sm btn-ghost" href="#" data-lex-open="${esc(p.handle)}" title="Originalname, Artikelnummer und Bestellweg im Lexikon">Im Lexikon ansehen</a></div>`
+    ? `<div style="margin-top:4px"><a class="small" href="#" data-lex-open="${esc(p.handle)}" title="Originalname, Artikelnummer und Bestellweg im Lexikon">Im Lexikon ansehen</a></div>`
     : '';
   if (hatLieferantLink(p)) {
-    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener" title="Produktseite beim Lieferanten in neuem Tab">Beim Lieferanten öffnen ↗</a>${lex}`;
+    return `<a class="small" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener" title="Produktseite beim Lieferanten in neuem Tab">Beim Lieferanten öffnen ↗</a>${lex}`;
   }
   return `<span class="small muted" title="Metafeld einkauf.lieferant_url fehlt">kein Link</span>${lex}`;
+}
+
+/** Ein Hauptknopf je Zeile, alles Weitere hinter "Mehr" (Inhaber 26.11.2026). */
+function zeilenKnoepfe(haupt, weitere) {
+  const rest = weitere.filter(Boolean);
+  if (!haupt && !rest.length) return '';
+  return `<div class="af-knoepfe">${haupt || ''}${rest.length ? `<details class="af-mehr"><summary class="btn btn-sm btn-ghost">Mehr</summary><div class="af-mehr-inhalt">${rest.join('')}</div></details>` : ''}</div>`;
 }
 
 /** Status-Zelle: aktueller Stand + Knopf fuer den naechsten Schritt. */
@@ -78,13 +87,14 @@ function afStatusZelle(p) {
   if (eigen) {
     // "Verschickt" direkt hier: bei gemischten Bestellungen (ein Muster aus dem Lager, eins vom
     // Lieferanten) gab es sonst keinen Weg, das Lagermuster allein als raus einzutragen.
-    const wahl = lesend ? '' : `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
-      <button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-status="raus" ${daten}>${esc(p.musterHerkunft === 'eigen_vorbei' ? 'Als übergeben markieren…' : 'Als verschickt markieren…')}</button>
-      <button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten}>Woher? ändern…</button></div>`;
+    const wahl = lesend ? '' : zeilenKnoepfe(
+      `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-status="raus" ${daten}>${esc(p.musterHerkunft === 'eigen_vorbei' ? 'Als übergeben markieren…' : 'Als verschickt markieren…')}</button>`,
+      [`<button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten}>Woher? ändern…</button>`]);
     const woher = p.musterLager && p.musterHerkunft !== 'eigen_vorbei'
       ? `aus dem Musterlager${p.musterLager.ort ? ` · ${p.musterLager.ort}` : ''}`
       : MUSTER_HERKUNFT_KURZ[p.musterHerkunft] || 'aus dem eigenen Musterlager';
-    return `<div class="small muted">Stand: ${esc(woher)}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
+    const lager = imLagerVon(p, status);
+    return `${lager ? lagerPlakette(lager.ort) : ''}<div class="small muted">Stand: ${esc(woher)}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
   }
   // Direkt vom Lieferanten zum Kunden (Vermerk oder Lieferweg "Hersteller → Kunde"): nach "bestellt"
   // kommt "raus" - bei uns kommt nichts an.
@@ -100,7 +110,11 @@ function afStatusZelle(p) {
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
   const selbstText = selbstStandText(selbstStand(p, eintrag), lw?.weg, eintrag);
-  const stand = `<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${lieferantenstandBlock(p, eintrag)}${uebernahmeBlock([p])}`
+  // Laeuft ueber den Lieferanten, liegt aber frei im Musterlager: gross davor, damit niemand (nach)bestellt.
+  const imLager = imLagerVon(p, status);
+  const ls = lieferantenstandTeile(p, eintrag);
+  const ue = uebernahmeTeile([p]);
+  const stand = `${imLager ? lagerPlakette(imLager.ort, 'nicht beim Lieferanten bestellen') : ''}<div class="small muted">Stand: ${esc(selbstText || afStatusText(eintrag))}${zusatz}</div>${lw ? `<div class="small">${lieferwegPlakette(lw)}${p.lagerHinweis && lw.weg === 'lager' ? ` <span class="muted">${esc(p.lagerHinweis)}</span>` : ''}</div>` : ''}<div class="small">${esc(beschaffungText(eintrag))}</div>${ls.zeile}${ue.text ? `<div class="small" style="overflow-wrap:anywhere">${esc(ue.text)}</div>` : ''}`
     // Steht im Musterlager, ist aber leer bzw. aufgebraucht: deshalb wieder beim Lieferanten.
     + (!status && p.musterLagerLeer ? `<div class="small muted">Musterlager: ${esc(p.musterLagerLeer.artLabel)} leer${p.musterLagerLeer.ort ? ` (${esc(p.musterLagerLeer.ort)})` : ''}</div>` : '');
   // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.
@@ -115,8 +129,13 @@ function afStatusZelle(p) {
   const versandFehlt = sv && ['fehler', 'unklar', 'ausstehend'].includes(sv.status) && ['raus', 'erledigt'].includes(status);
   const versand = versandFehlt ? `<div class="small wait-crit" title="${esc(sv.meldung || '')}">${sv.status === 'unklar' ? 'Versand in Shopify unklar' : sv.status === 'ausstehend' ? 'Versand noch nicht in Shopify gebucht' : 'Versand nicht in Shopify gebucht'}</div>` : '';
   if (versandFehlt && !lesend) extra.unshift(`<button type="button" class="btn btn-sm" data-versand-nachholen="${esc(p.orderId)}">In Shopify buchen</button>`);
-  const knoepfe = [btn, ...extra].filter(Boolean);
-  return `${stand}${zurueck}${warte}${grund}${nr}${versand}${knoepfe.length ? `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${knoepfe.join('')}</div>` : ''}`;
+  // Hauptknopf: gescheiterter Versand geht vor, sonst der naechste Schritt (erster Knopf).
+  // "Wieder öffnen" ist kein naechster Schritt und steht deshalb unter "Mehr".
+  const schritte = btn ? btn.split(/(?<=<\/button>)/).filter(Boolean) : [];
+  const dringend = versandFehlt && !lesend ? extra.shift() : '';
+  const haupt = dringend || (status === 'erledigt' ? '' : schritte.shift());
+  const weitere = [...schritte, ...extra, ...(lesend ? [] : [...ls.knoepfe, ue.knopf])];
+  return `${stand}${zurueck}${warte}${grund}${nr}${versand}${zeilenKnoepfe(haupt, weitere)}`;
 }
 
 /**
@@ -271,6 +290,20 @@ export function einkaufAuftragZeile(a) {
 // "Eingetroffen" = bei uns angekommen, noch nicht beim Kunden. Danach ist der Einkauf fertig.
 const AF_FILTER_LABEL = { offen: 'Noch zu bestellen', bestellt: 'Bestellt', eingetroffen: 'Bei uns eingetroffen', erledigt: 'Erledigt' };
 
+/**
+ * "Zuerst klären" zugeklappt mit Zahlen; Auf/Zu merkt ereignisse.mjs (data-collapsible).
+ * Bei einer ausgewaehlten Bestellung (auftrag=) steht es offen, ohne die gemerkte Wahl zu aendern.
+ */
+function zuerstKlaerenKarte(klaeren, rot, einzeln) {
+  let offen = einzeln;
+  try { if (!einzeln) offen = localStorage.getItem('tp-heute-einkauf-klaeren') === '1'; } catch { /* ohne Speicher: zu */ }
+  const zahlen = [rot ? `<span class="wait-crit">${rot} blockiert</span>` : '', klaeren.length > rot ? `<span class="wait-warn">${klaeren.length - rot} prüfen</span>` : ''].filter(Boolean).join(' · ');
+  return `<details class="card section plain-details problem-card"${einzeln ? '' : ' data-collapsible="einkauf-klaeren"'}${offen ? ' open' : ''}>
+      <summary><h2>Zuerst klären</h2><span class="preview">${zahlen}</span></summary>
+      <div><p class="small muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</p><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></div>
+    </details>`;
+}
+
 /** Filter nach Auftragsfluss-Schritt. Ohne Auswahl: alles ausser "Erledigt". */
 function afFilterChips(allePositionen) {
   const zaehler = { offen: 0, bestellt: 0, eingetroffen: 0, erledigt: 0, eigen: 0, gesperrt: 0 };
@@ -323,7 +356,7 @@ export function viewEinkaufBestellungen() {
       ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}
       ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}
     </div>
-    ${klaeren.length ? `<section class="card problem-card"><div class="card-head"><h2>Zuerst klären</h2><span class="more muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</span></div><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></section>` : ''}
+    ${klaeren.length ? zuerstKlaerenKarte(klaeren, rot, !!auftragId) : ''}
     <div class="section-bar"><h2 class="section-title" style="margin:0">${art === 'muster' ? 'Muster bestellen je Lieferant' : art === 'ware' ? 'Ware bestellen je Lieferant' : 'Bestellen je Lieferant'}</h2>${afFilterChips([...ware, ...muster])}</div>
     ${abgeschlossen}
     ${lieferantenKartenHtml({ gruppeKarte: einkaufGruppeKarte, daten: d })}

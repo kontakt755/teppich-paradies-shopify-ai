@@ -455,6 +455,9 @@ export function einkaufKlickBelege(ev) {
     // Steht auch auf "Heute" und an der Auftragskarte. Eingespielt ist: die Mail mit dem Beleg weiterleiten.
     const a = belege.daten?.abweichungen?.find(x => x.id === ds.blVertreter);
     if (a?.entwurf) textDialog({ titel: `Nachricht an den Vertreter: ${a.orderName}`, ...a.entwurf, nachher: `<p class="small">Am einfachsten: die Mail mit dem Beleg weiterleiten und diesen Text einfügen. ${gmailKnopf(belegVon(a.belegId))}</p>` });
+    // Rechnungspruefung (lib/rechnungspruefung.mjs): Text an Lieferant bzw. Vertreter, gesendet wird von Hand.
+    const r = belege.daten?.rechnungen?.abweichungen?.find(x => `rechnung-${x.schluessel}` === ds.blVertreter);
+    if (r?.entwurf) textDialog({ titel: `Text für den Lieferanten: ${r.anbieter || ''}`, ...r.entwurf, nachher: '<p class="small">Am einfachsten: auf die Rechnungs-Mail antworten oder den Vertreter anrufen. Gesendet wird nur von Hand.</p>' });
     return true;
   }
   if (ds.blAbsender) {

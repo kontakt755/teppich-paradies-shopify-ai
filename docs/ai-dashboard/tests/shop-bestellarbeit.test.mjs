@@ -101,7 +101,7 @@ test('manueller Haken und fehlgeschlagene Versandbuchung sind kein stiller Waren
   const a = shopBestellarbeit(daten([manuell, versand]), { jetzt });
   assert.equal(a.offen, 2);
   assert.equal(a.kontrolle, 2);
-  assert.match(a.zeilen.find(z => z.zeile.orderId === 'manuell').naechstes, /Manueller Haken/);
+  assert.match(a.zeilen.find(z => z.zeile.orderId === 'manuell').naechstes, /Ist die Ware da und verschickt/);
   assert.match(a.zeilen.find(z => z.zeile.orderId === 'versand').naechstes, /Versandbuchung prüfen/);
 });
 

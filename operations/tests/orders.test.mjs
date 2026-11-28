@@ -217,6 +217,14 @@ test('wartenBeiThrottle wartet nur, wenn wenig Guthaben uebrig ist, sonst nicht'
   assert.equal(await wartenBeiThrottle(proxy3), 0);
 });
 
+test('wartenBeiThrottle wartet, bis das Guthaben die verlangten Kosten der naechsten Seite deckt (w-419)', async () => {
+  // Messung 24.11.2026: Bestellseite verlangt 959 Punkte, echt rund 80. Bei 922 von 2000 Guthaben
+  // (weit ueber 10 %) lehnte Shopify die naechste Seite ab - jeder Lauf ab etwa 31 Seiten scheiterte.
+  const proxy = new GraphQLProxy({ token: 'shpat_test', fetch: async () => ({ ok: true, status: 200, json: async () => ({ data: { x: 1 }, extensions: { cost: { requestedQueryCost: 959, actualQueryCost: 80, throttleStatus: { maximumAvailable: 2000, currentlyAvailable: 922, restoreRate: 100 } } } }) }) });
+  await proxy.execute('query { x }');
+  assert.equal(await wartenBeiThrottle(proxy, { warten: async () => {} }), 370);
+});
+
 test('Varianten-Metafelder aus custom landen in der Liste (Rollenbreite, Farbnummer)', () => {
   assert.ok(ORDERS_QUERY.includes('custom: metafields(namespace: "custom"'), 'Varianten-custom fehlt in ORDERS_QUERY');
   const li = normalisiereLineItem({

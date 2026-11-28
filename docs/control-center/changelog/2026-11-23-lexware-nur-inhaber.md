@@ -1,0 +1,5 @@
+## 2026-11-23 · Lexware-Angebote nur noch für den Inhaber
+- **Geaendert:** Der Pfad `angebote/lexware` (offene Lexware-Angebote mit Kunde, Betrag und Link ins Angebot, lesen und Nachfass-Stand setzen) steht jetzt in `NUR_INHABER`. Bisher bekam ihn jede angemeldete Rolle, die die Adresse kannte. Unter Kunden › Angebote sehen Mitarbeiter und „lesen“ nur noch die Shop-Angebote; der Block „Lexware-Angebote nachfassen“ und die Zahl am Reiter entfallen für sie, der Abruf wird gar nicht erst gestartet.
+- **Getestet:** `docs/ai-dashboard/tests/lexware-rollen.test.mjs` – vor der Änderung 200 für `mitarbeiter`, danach 403 für `mitarbeiter` und `lesen` (GET und POST), 200 für Inhaber und Notzugang. `npm run -s pruefen`.
+- **Risiken/Annahmen:** Das Nachfassen der Lexware-Angebote (w-351) kann damit nur noch der Inhaber abhaken. Andere Pfade mit Kunden- und Einkaufsdaten sind unverändert.
+- **Nächste Stufe:** Entscheidung des Inhabers, ob Mitarbeiter weiter Shop-Angebote, Kunden- und Bestelldaten mit Beträgen sehen sollen.

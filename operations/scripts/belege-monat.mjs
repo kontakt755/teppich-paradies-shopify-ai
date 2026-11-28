@@ -397,6 +397,14 @@ async function main(args) {
   const e = await lauf({ monat, schreiben: args.includes('--schreiben'), privat, zugang: zugang.zugang });
   console.log(JSON.stringify(e, null, 1));
   if (e.fehler) process.exitCode = 1;
+  // Rechnungspruefer im Probebetrieb (w-414): neue Warenrechnungen gegen die AB. Laeuft so freitags im Dienst
+  // mit; ein Fehler dort haelt weder das Archiv noch die Sammeldatei auf.
+  if (args.includes('--schreiben')) {
+    try {
+      const { rechnungenPruefen } = await import('./rechnungen-pruefen.mjs');
+      console.log(JSON.stringify({ rechnungspruefung: await rechnungenPruefen({ privatDir: privat, monat, schreiben: true }) }));
+    } catch (f) { console.error(`Rechnungsprüfung: ${String(f?.message || f)}`); }
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

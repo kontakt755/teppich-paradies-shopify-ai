@@ -318,7 +318,7 @@ export function packMusterAmpel(m, { jetzt = Date.now(), schwellen = WARTESCHWEL
 }
 
 /** Bei gleicher Stufe gewinnt der Grund weiter vorn: was den Kunden sicher aufhaelt, vor dem, was nur dauert. */
-const PACK_GRUENDE = ['nichtEingetragen', 'versand', 'kommtNicht', 'adresse', 'zuordnung', 'termin', 'ueberfaellig', 'haengt', 'nachhaken', 'nichtBestellt', 'fehltNoch', 'pruefen', 'klaeren'];
+const PACK_GRUENDE = ['nichtEingetragen', 'versand', 'kommtNicht', 'adresse', 'zuordnung', 'termin', 'ueberfaellig', 'haengt', 'liegt', 'nachhaken', 'nichtBestellt', 'fehltNoch', 'pruefen', 'klaeren'];
 
 /**
  * Ampel eines Umschlags: die dringendste Stufe seiner Muster, dazu was nur den Umschlag betrifft.
@@ -341,6 +341,9 @@ export function packUmschlagAmpel(k, { versandProblem = null } = {}) {
   if (kommtNicht) kandidaten.push({ stufe: 'rot', grund: 'kommtNicht', wort: kommtNicht === 1 ? '1 Muster kommt nicht' : `${kommtNicht} Muster kommen nicht`, titel: 'Der Kunde erfährt das nicht von selbst – bitte informieren' });
   kandidaten.push(...muster.filter(a => a.grund !== 'kommtNicht'));
   if (k?.klaeren) kandidaten.push({ stufe: 'gelb', grund: 'fehltNoch', wort: 'Fehlt noch', titel: 'Als fehlend zurückgelegt – „Fehlendes ist da“, sobald es kommt' });
+  // Alle Muster da, aber noch nicht verschickt (26.11.): gelb ab 2, rot ab 4 Tagen.
+  const liegt = k?.bereich === 'packen' ? k.packbereitTage : null;
+  if (liegt >= PACKBEREIT_TAGE.gelb) kandidaten.push({ stufe: liegt >= PACKBEREIT_TAGE.rot ? 'rot' : 'gelb', grund: 'liegt', wort: `Liegt bereit · ${liegt} Tage`, titel: 'Alle Muster sind da – packen und zur Post', tage: liegt });
   if (k?.direktversand) kandidaten.push({ stufe: 'gelb', grund: 'pruefen', wort: 'Direktversand prüfen', titel: 'Vom Lieferanten direkt an den Kunden – nicht hier packen' });
   else if (k?.hinweise?.length) kandidaten.push({ stufe: 'gelb', grund: 'pruefen', wort: 'Restumfang prüfen', titel: 'Teilweise erstattet – offene Muster mit der Bestellung abgleichen' });
   if (k?.bereich === 'klaeren') kandidaten.push({ stufe: 'gelb', grund: 'klaeren', wort: 'Zu klären', titel: '' });
@@ -352,7 +355,8 @@ export function packUmschlagAmpel(k, { versandProblem = null } = {}) {
 }
 
 /** Wort hinter der Zahl roter Umschlaege in den Reitern ("Wartet auf Ware 13 · × 2 überfällig"). */
-const ROT_WORT = Object.freeze({ nichtEingetragen: 'nicht eingetragen', versand: 'nicht eingetragen', kommtNicht: 'blockiert', adresse: 'blockiert', zuordnung: 'blockiert', termin: 'überfällig', ueberfaellig: 'überfällig', haengt: 'überfällig' });
+const ROT_WORT = Object.freeze({ nichtEingetragen: 'nicht eingetragen', versand: 'nicht eingetragen', kommtNicht: 'blockiert', adresse: 'blockiert', zuordnung: 'blockiert', termin: 'überfällig', ueberfaellig: 'überfällig', haengt: 'überfällig', liegt: 'liegt bereit' });
+const PACKBEREIT_TAGE = Object.freeze({ gelb: 2, rot: 4 });
 
 /**
  * Rote Umschlaege einer Arbeitsliste: Anzahl und ein Wort. Haben alle denselben Grund, sagt das Wort

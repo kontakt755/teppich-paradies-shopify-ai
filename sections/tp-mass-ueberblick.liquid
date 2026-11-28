@@ -1,0 +1,162 @@
+{%- comment -%}
+  Ueberblick vor der Produktauswahl der Kollektion Teppich nach Mass (SEO-Strategie
+  2026-11, Massnahme 3): je ausgewaehlter Qualitaet Formen, Kante, Endpreis fuer
+  80 x 150 cm und Lieferzeit, darunter die Einstiege "rund" und "Laeufer".
+
+  Alles aus den Produktdaten, nichts im Editor getippt:
+  - Formen aus service.formen (wie blocks/tp-einfass-konfigurator), leer = Rechteck
+  - Preis aus snippets/tp-mass-beispiel (dieselbe Rechnung wie Konfigurator und
+    Warenkorb), guenstigste lieferbare Farbe; passt 80 x 150 nicht, entfaellt die Zeile
+  - Lieferzeit nur aus service.lieferzeit, sonst Strich
+  - "Rund" zeigt nur Produkte, deren service.formen wirklich "Rund" enthaelt
+  Bewusst keine Schleife ueber die Kollektion (Renderlimit, docs/lessons/renderzeit-kollektionsseite.md).
+{%- endcomment -%}
+{%- liquid
+  assign s = section.settings
+  assign tp_mu_param = 'breite=80&amp;laenge=150'
+-%}
+<section class="tp-tep tp-tep-sec tp-mu" aria-labelledby="tp-mu-{{ section.id }}">
+  <div class="tp-tep-wrap">
+    <h2 class="tp-tep-h2" id="tp-mu-{{ section.id }}">{{ s.heading | escape }}</h2>
+    {%- if s.text != blank -%}<p class="tp-tep-lead">{{ s.text | escape }}</p>{%- endif -%}
+
+    {%- capture tp_mu_zeilen -%}
+      {%- for tp_mu_p in s.beispiele -%}
+        {%- assign tp_mu_v = nil -%}
+        {%- assign tp_mu_preis = '' -%}
+        {%- for tp_mu_kand in tp_mu_p.variants -%}
+          {%- if tp_mu_kand.available and tp_mu_kand.price > 0 and tp_mu_kand.metafields.service.einfassen.value == 'Verfügbar' -%}
+            {%- if tp_mu_v == nil or tp_mu_kand.price < tp_mu_v.price -%}
+              {%- capture tp_mu_erg -%}{%- render 'tp-mass-beispiel', product: tp_mu_p, variant: tp_mu_kand, groessen: '80x150' -%}{%- endcapture -%}
+              {%- assign tp_mu_erg = tp_mu_erg | strip -%}
+              {%- if tp_mu_erg != blank -%}
+                {%- assign tp_mu_preis = tp_mu_erg -%}
+                {%- assign tp_mu_v = tp_mu_kand -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- if tp_mu_preis != blank -%}
+          {%- liquid
+            assign tp_mu_formen = ''
+            for tp_mu_f in tp_mu_p.metafields.service.formen.value
+              assign tp_mu_fs = tp_mu_f | strip
+              if tp_mu_fs != blank
+                if tp_mu_formen != blank
+                  assign tp_mu_formen = tp_mu_formen | append: ', '
+                endif
+                assign tp_mu_formen = tp_mu_formen | append: tp_mu_fs
+              endif
+            endfor
+            if tp_mu_formen == blank
+              assign tp_mu_formen = 'Rechteck'
+            endif
+            assign tp_mu_cent = tp_mu_preis | split: '|' | slice: 2 | first | times: 1
+            assign tp_mu_lz = tp_mu_p.metafields.service.lieferzeit.value | strip
+          -%}
+          {%- capture tp_mu_kante -%}{%- render 'tp-mass-kante-wort', product: tp_mu_p -%}{%- endcapture -%}
+          {%- assign tp_mu_kante = tp_mu_kante | strip | split: '|' -%}
+          <tr>
+            <th scope="row"><a href="{{ tp_mu_p.url }}?variant={{ tp_mu_v.id }}&amp;{{ tp_mu_param }}">{{ tp_mu_p.title | remove: ' Teppich nach Maß' | remove: ' Kettelteppich nach Maß' | escape }}</a>{% if tp_mu_kante[0] != blank %}<span class="tp-mu__kante">{{ tp_mu_kante[0] | escape }}</span>{% endif %}</th>
+            <td data-label="Formen">{{ tp_mu_formen | escape }}</td>
+            <td data-label="80 × 150 cm">{% if tp_mu_p.price_min != tp_mu_p.price_max %}ab {% endif %}<strong>{{ tp_mu_cent | money_without_trailing_zeros }}</strong></td>
+            <td data-label="Lieferzeit">{% if tp_mu_lz != blank %}{{ tp_mu_lz | escape }}{% else %}siehe Produkt{% endif %}</td>
+          </tr>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if tp_mu_zeilen != blank -%}
+      <div class="tp-mu__tabelle">
+        <table>
+          <thead><tr><th scope="col">Qualität</th><th scope="col">Formen</th><th scope="col">Preis 80 × 150 cm</th><th scope="col">Lieferzeit</th></tr></thead>
+          <tbody>{{ tp_mu_zeilen }}</tbody>
+        </table>
+      </div>
+      <p class="tp-mu__hinweis">Endpreise für 80 × 150 cm in der günstigsten Farbe, inkl. Kante und MwSt. Jedes andere Maß rechnet der Rechner oben oder die Produktseite.</p>
+    {%- endif -%}
+
+    <div class="tp-mu__wege">
+      {%- capture tp_mu_rund -%}
+        {%- for tp_mu_p in s.rund -%}
+          {%- assign tp_mu_hat_rund = false -%}
+          {%- for tp_mu_f in tp_mu_p.metafields.service.formen.value -%}
+            {%- assign tp_mu_fk = tp_mu_f | strip | downcase -%}
+            {%- if tp_mu_fk == 'rund' -%}{%- assign tp_mu_hat_rund = true -%}{%- endif -%}
+          {%- endfor -%}
+          {%- if tp_mu_hat_rund and tp_mu_p.available -%}
+            <li><a href="{{ tp_mu_p.url }}">{{ tp_mu_p.title | remove: ' Teppich nach Maß' | escape }}</a></li>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if tp_mu_rund != blank -%}
+        <div class="tp-mu__weg">
+          <h3>Runder Teppich nach Maß</h3>
+          <p>Diese Qualitäten gibt es auch rund, den Durchmesser wählen Sie im Rechner der Produktseite:</p>
+          <ul role="list">{{ tp_mu_rund }}</ul>
+          {%- if s.rund_fertig != blank and s.rund_fertig.products_count > 0 -%}
+            <p><a href="{{ s.rund_fertig.url }}">Runde Teppiche in festen Größen</a></p>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+      {%- if s.laeufer != blank and s.laeufer.products_count > 0 -%}
+        <div class="tp-mu__weg">
+          <h3>Läufer nach Maß</h3>
+          <p>Für Flur und Treppe: Sisal- und Kokosläufer in Ihrer Länge, auf Wunsch eingefasst.</p>
+          <p><a href="{{ s.laeufer.url }}">{{ s.laeufer.title | escape }} ansehen</a></p>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-mu .tp-tep-lead { margin: 8px 0 20px; }
+  .tp-mu__tabelle { overflow-x: auto; }
+  .tp-mu table { width: 100%; border-collapse: collapse; font-size: var(--tp-fs-md); }
+  .tp-mu th, .tp-mu td { text-align: left; padding: 10px 12px; border-bottom: 1px solid rgb(0 0 0 / .1); vertical-align: top; }
+  .tp-mu thead th { font-size: var(--tp-fs-sm); font-weight: 500; color: #595959; }
+  .tp-mu tbody th { font-weight: 600; }
+  .tp-mu tbody th a { color: var(--tp-ink); }
+  .tp-mu__kante { display: block; font-weight: 400; font-size: var(--tp-fs-sm); color: #595959; }
+  .tp-mu__hinweis { font-size: var(--tp-fs-sm); color: #595959; margin-top: 10px; }
+  .tp-mu__wege { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 28px; }
+  .tp-mu__weg { border: 1px solid rgb(0 0 0 / .1); border-radius: 8px; padding: 16px 20px; }
+  .tp-mu__weg h3 { font-size: var(--tp-fs-lg); font-weight: 600; margin: 0 0 6px; }
+  .tp-mu__weg p, .tp-mu__weg li { font-size: var(--tp-fs-md); }
+  .tp-mu__weg ul { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 0; margin: 8px 0; list-style: none; }
+  .tp-mu__weg a { color: var(--tp-ink); text-decoration: underline; }
+  @media (max-width: 749px) {
+    .tp-mu thead { display: none; }
+    .tp-mu tr { display: block; padding: 10px 0; border-bottom: 1px solid rgb(0 0 0 / .1); }
+    .tp-mu th, .tp-mu td { display: block; border: 0; padding: 2px 0; }
+    .tp-mu td::before { content: attr(data-label) ": "; color: #595959; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Maß-Überblick",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Formen, Preise und Lieferzeit" },
+    { "type": "text", "id": "text", "label": "Text" },
+    {
+      "type": "product_list",
+      "id": "beispiele",
+      "label": "Qualitäten in der Tabelle",
+      "limit": 8,
+      "info": "Teppiche nach Maß. Formen, Preis und Lieferzeit kommen aus den Produktdaten; passt 80 × 150 cm nicht, entfällt die Zeile."
+    },
+    {
+      "type": "product_list",
+      "id": "rund",
+      "label": "Qualitäten für „rund“",
+      "limit": 10,
+      "info": "Nur Produkte mit „Rund“ in service.formen werden gezeigt."
+    },
+    { "type": "collection", "id": "rund_fertig", "label": "Runde Teppiche in festen Größen" },
+    { "type": "collection", "id": "laeufer", "label": "Läufer nach Maß" }
+  ],
+  "presets": [{ "name": "TP Maß-Überblick" }]
+}
+{% endschema %}

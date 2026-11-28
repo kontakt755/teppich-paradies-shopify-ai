@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { viewEinkaufBestellungen } from '../ansichten/einkauf/bestellungen.mjs';
 import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { state } from '../kern/zustand.mjs';
+import { setzeKartenStufe } from '../ansichten/einkauf/lieferanten.mjs';
 
 const senf = { orderId: 'o1', orderName: '#TEST1', lineItemId: 'g1', titel: 'Muster Testfliese', farbe: 'Senf (1)', sku: 'M-TEST-1', istMuster: true,
   grosshaendlerId: 'UNGEKLAERT', idGrund: 'Quellvariante ohne ID-Metafeld', bestellmenge: { menge: 1, text: '1 Muster' }, kundenmenge: '1', orderDatum: '2026-11-04' };
@@ -24,8 +25,11 @@ function ansicht(gesperrteMuster) {
     einkauf.bestellungen = daten(gesperrteMuster);
     einkauf.auftragsstatus = { positionen: {} };
     einkauf.lieferanten = { lieferanten: [{ id: 'A', stammdaten: { name: 'Lieferant A' } }] };
+    // Die Tabellen stehen erst nach dem Klick da.
+    for (const id of ['A', 'UNGEKLAERT']) setzeKartenStufe(id, 'bearbeiten');
     return viewEinkaufBestellungen();
   } finally {
+    for (const id of ['A', 'UNGEKLAERT']) setzeKartenStufe(id, null);
     state.route.params = vorher.params; state.route.view = vorher.view;
     einkauf.bestellungen = vorher.b; einkauf.auftragsstatus = vorher.s; einkauf.lieferanten = vorher.l;
   }
@@ -100,4 +104,15 @@ test('Lieferantenkarte: nur ein gesperrtes Muster offen - kein Knopf "Muster bes
   assert.deepEqual([k.zahlen.musterOffen, k.zahlen.musterGesperrt], [0, 1]);
   assert.ok(k.offenGesamt >= 2, 'das gesperrte Muster bleibt offene Arbeit');
   assert.equal(k.ueberfaellig.stufe, 'crit');
+});
+
+test('Tabellenzeile: ein Knopf offen, alles Weitere unter "Mehr" (26.11.2026)', () => {
+  const html = ansicht([]);
+  const zellen = [...html.matchAll(/<td data-l="Stand">([\s\S]*?)<\/td>/g)].map(m => m[1]);
+  assert.ok(zellen.length);
+  for (const z of zellen) {
+    assert.equal([...z.replace(/<details class="af-mehr">[\s\S]*?<\/details>/g, '').matchAll(/<button/g)].length, 1);
+    assert.match(z, /<summary[^>]*>Mehr<\/summary>[\s\S]*Liefertermin \/ Wareneingang…[\s\S]*Haben wir da…/);
+  }
+  assert.doesNotMatch(html, /<td data-l="Lieferant">(?:(?!<\/td>)[\s\S])*class="btn/);
 });

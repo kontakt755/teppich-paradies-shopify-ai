@@ -5,7 +5,7 @@
 .lf-name { font-family: var(--serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif); font-weight: 600; letter-spacing: 0; }
 
 /* ---------- Karten im Reiter "Bestellungen" ---------- */
-.lf-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 12px; }
+.lf-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 14px; align-items: start; margin-top: 12px; }
 /* Aufgeklappt braucht die Tabelle die ganze Breite. */
 .lf-karte.lf-offen { grid-column: 1 / -1; }
 .lf-karte { padding: 0; min-width: 0; overflow: hidden; }
@@ -47,6 +47,11 @@
 .lf-ruhig .lf-stufe-titel h4 b { color: var(--text-2); letter-spacing: 0; }
 .lf-schritt-ruhig .lf-posten .t { font-weight: 550; }
 .lf-fuer { font-weight: 500; color: var(--text-3); }
+/* Zugeklappte Karte: je Schritt eine Zeile aus Zahl und Knopf. */
+.lf-zu .lf-kopf { padding-bottom: 8px; }
+.lf-zu .lf-stufe { padding-top: 8px; padding-bottom: 2px; }
+.lf-zahlen { margin: 0; padding: 10px 18px 2px; font-size: .88rem; color: var(--text-2); }
+.lf-zahlen b { font-variant-numeric: tabular-nums; }
 .lf-stufe .btn { min-height: 44px; }
 .lf-stufe a.btn:hover { text-decoration: none; }
 .lf-stufe a.btn:not(.btn-primary) { color: var(--text); }
@@ -70,6 +75,15 @@
 .lf-gruppe { padding: 12px 0 4px; border-top: 1px solid var(--line); margin: 0; }
 .lf-gruppe.has-gap { border-left: 0; }
 .lf-gruppe .card-head { flex-wrap: wrap; }
+
+/* Tabellenzeile: ein Hauptknopf, daneben "Mehr" mit allem Weiteren. */
+.af-knoepfe { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; margin-top: 6px; }
+.af-mehr > summary { list-style: none; cursor: pointer; }
+.af-mehr > summary::-webkit-details-marker { display: none; }
+.af-mehr > summary::after { content: " ▾"; }
+.af-mehr[open] { flex-basis: 100%; }
+.af-mehr[open] > summary::after { content: " ▴"; }
+.af-mehr-inhalt { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 6px; }
 
 /* Rolle "lesen": Schreibaktionen im Einkauf ausblenden (der Server lehnt sie ohnehin ab). */
 body.rolle-lesen [data-af-set],
@@ -125,12 +139,14 @@ body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
 .lf-balken + p { padding: 0 18px 6px; }
 
 @media (max-width: 1080px) {
-  .lf-raster, .lf-spalten { grid-template-columns: minmax(0, 1fr); }
+  .lf-spalten { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
   .lf-kopf { padding: 14px 15px 10px; }
   .lf-stufe { padding-left: 15px; padding-right: 15px; }
   .lf-stufe .btn { flex: 1 1 100%; }
+  .lf-zu .lf-stufe .btn { flex: 0 0 auto; }
+  .lf-zahlen { padding-left: 15px; padding-right: 15px; }
   .lf-posten { align-items: flex-start; flex-wrap: wrap; }
   /* Mit Knopf: Wartezeit und Knopf unter den Text, der Knopf ueber die Breite (Daumen). */
   .lf-posten:has(.lf-zeilenknopf) .lf-posten-rechts { flex-basis: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; min-width: 0; }
@@ -160,3 +176,10 @@ body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
 .lf-kosten-rechnung td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; font-variant-numeric: tabular-nums; }
 .lf-kosten-ergebnis td { font-weight: 600; border-top: 1px solid var(--line, currentColor); }
 .lf-kosten-leise { margin: 4px 0; }
+
+/* Verzeichnis "Lieferanten": gleich hohe Karten, am Handy eine Spalte. */
+.lv-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 14px; }
+.lv-karte { display: flex; flex-direction: column; gap: 10px; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.lv-karte h3, .lv-karte p, .lv-karte dl { margin: 0; }
+.lv-offen, .lv-knoepfe, .lv-fuss { display: flex; flex-wrap: wrap; gap: 6px; }
+.lv-fuss { margin-top: auto; }

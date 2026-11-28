@@ -54,6 +54,9 @@ if [ ! -d node_modules ]; then
   npm install --no-audit --no-fund
 fi
 
+# godmode-Plugin (Arbeitsmodus, AGENTS.md) fuer diesen Container installieren.
+bash .claude/hooks/godmode-installieren.sh || true
+
 echo ""
 echo "── Projektzustand ──────────────────────────────────────────"
 

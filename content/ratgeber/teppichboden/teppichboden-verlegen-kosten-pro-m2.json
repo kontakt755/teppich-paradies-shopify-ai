@@ -1,0 +1,63 @@
+{
+  "id": "RAT-TB-009",
+  "handle": "teppichboden-verlegen-kosten-pro-m2",
+  "title": "Teppichboden verlegen lassen: Was kostet es pro m²?",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Verlegen"
+  ],
+  "cluster": "teppichboden/verlegen",
+  "parent": "ratgeber-teppichboden",
+  "intent": "planung",
+  "frage": "Was kostet es, Teppichboden verlegen zu lassen, pro Quadratmeter?",
+  "begriff": "teppichboden verlegen kosten",
+  "nebenfragen": [
+    "Wovon hängen die Verlegekosten ab?",
+    "Was kostet lose Verlegung, Fixierung, Verklebung?",
+    "Was kommt zum Quadratmeterpreis dazu?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "teppichboden-verlegen-lose-fixieren-oder-kleben",
+    "untergrund-pruefen-und-vorbereiten",
+    "verschnitt-bei-teppichboden"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [
+    "fixierung"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Teppichboden verlegen lassen: Preise und Konditionen (Stand November 2026)",
+      "url": "/pages/teppichboden-verlegen-lassen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 6,
+    "naechste": "2027-05-24",
+    "grund": "Preise und Konditionen des Verlegeservice ändern sich"
+  },
+  "expert_input": [],
+  "excerpt": "Lose Verlegung, Verlegeband, Fixierung oder Verklebung: was die Verlegung pro Quadratmeter kostet, was zusätzlich anfallen kann und wie Sie zum verbindlichen Festpreis kommen.",
+  "seo": {
+    "title": "Teppichboden verlegen: Kosten pro m² im Überblick",
+    "description": "Was kostet Teppichboden verlegen pro m²? Preise für lose Verlegung, Fixierung und Verklebung, dazu Untergrund, Treppen und Anfahrt. Stand November 2026."
+  },
+  "metafields": {
+    "kurzantwort": "Bei uns kostet die lose Verlegung 8,95 €/m² (mindestens 129 € je Auftrag), mit Fixierung oder Verklebung 9,95 bis 11,95 €/m², Stand November 2026. Untergrundarbeiten, Entfernen des alten Belags, Treppen und Anfahrt kommen je nach Aufmaß hinzu. Verbindlich ist das Festpreisangebot nach dem kostenlosen Aufmaß.",
+    "art": "Planung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "verlegeservice",
+      "zubehoer"
+    ],
+    "kollektion": "teppichboden",
+    "zubehoer_kollektion": "zubehoer-kleber-fixierung",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

@@ -37,7 +37,7 @@ import { ladeStandNeu } from './auftragsfluss.mjs';
 import { oeffneEtikettenDruck, etikettenFuerBestellung } from '../../bausteine/etiketten-druck.mjs';
 import { gesamtAusNochDa, nachLieferant, nochDaZaehlbar, stueckJeArt } from '../../lib/musterlager-bestand.mjs';
 import { musterlagerAmpel } from '../../lib/ampel.mjs';
-import { ampelPlakette, ampelRand } from '../../bausteine/ampel.mjs';
+import { ampelPlakette, ampelRand, ausgelaufenPlakette } from '../../bausteine/ampel.mjs';
 
 export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -336,7 +336,7 @@ function bindeProduktSuche(form) {
       // Musterprodukte selbst nicht anbieten - das Original fuehrt zu denselben Farben.
       const items = (d?.treffer?.items || []).filter(x => x.produktgruppe !== 'Musterservice');
       treffer.innerHTML = items.length
-        ? items.map(x => `<button type="button" class="ml-treffer-knopf" data-ml-handle="${esc(x.handle)}"><span>${esc(x.titel)}</span><span class="small muted">${esc([x.produktgruppe, x.farbenAnzahl ? plural(x.farbenAnzahl, 'Farbe', 'Farben') : null].filter(Boolean).join(' · '))}</span></button>`).join('')
+        ? items.map(x => `<button type="button" class="ml-treffer-knopf" data-ml-handle="${esc(x.handle)}"><span>${esc(x.titel)}${x.status === 'ARCHIVED' ? ` ${ausgelaufenPlakette()}` : ''}</span><span class="small muted">${esc([x.produktgruppe, x.farbenAnzahl ? plural(x.farbenAnzahl, 'Farbe', 'Farben') : null].filter(Boolean).join(' · '))}</span></button>`).join('')
         : `<p class="small muted">${d?.verfuegbar === false ? esc(d.hinweis || 'Lexikon nicht verfügbar.') : 'Kein Produkt gefunden.'}</p>`;
     }, 250);
   });
@@ -374,7 +374,7 @@ function oeffneSperren() {
     treffer.innerHTML = '';
     suche.value = d.titel;
     const box = form.querySelector('[data-ml-farben]');
-    form.querySelector('[data-ml-produkt]').textContent = `Farben von ${d.titel}`;
+    form.querySelector('[data-ml-produkt]').textContent = `Farben von ${d.titel}${d.ausgelaufen ? ' (ausgelaufen – nicht mehr im Shop)' : ''}`;
     const wahl = d.farben.filter(f => f.sperrbar);
     form.querySelector('[data-ml-farbliste]').innerHTML = wahl.length
       ? wahl.map(f => `<label><input type="radio" name="farbe" value="${esc(f.farbe)}"${f.gesperrt ? ' disabled' : ''}> ${esc(f.farbe)}${f.gesperrt ? ' <span class="muted small">(schon gesperrt)</span>' : ''}</label>`).join('')
@@ -439,7 +439,7 @@ function oeffneEinlagern(vorgabe = null) {
       treffer.innerHTML = '';
       suche.value = d.titel;
       const box = form.querySelector('[data-ml-farben]');
-      form.querySelector('[data-ml-produkt]').textContent = `Farben von ${d.titel}`;
+      form.querySelector('[data-ml-produkt]').textContent = `Farben von ${d.titel}${d.ausgelaufen ? ' (ausgelaufen – nicht mehr im Shop)' : ''}`;
       form.querySelector('[data-ml-farbliste]').innerHTML = d.farben.length
         ? d.farben.map(f => `<label><input type="checkbox" value="${esc(f.farbe)}"${d.farben.length === 1 ? ' checked' : ''}> ${esc(f.farbe)}${f.imLager ? ' <span class="muted small">(schon im Lager)</span>' : ''}</label>`).join('')
         : '<p class="small muted">Keine Farbe mit Artikelnummer – im Lexikon prüfen.</p>';

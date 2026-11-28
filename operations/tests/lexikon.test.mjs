@@ -204,6 +204,13 @@ test('archivierte Produkte fehlen im Lexikon, auch archivierte Muster (Export la
   const modell = aufbereiten({ produkte: [aktiv, archiviert, muster] }, { jetzt: JETZT });
   assert.deepEqual(modell.produkte.map((p) => p.handle), ['fortiva-teppichboden']);
   assert.equal(modell.anzahl, 1);
+  // Ausgelaufenes bleibt auffindbar, aber getrennt: `produkte` heisst weiter "gibt es im Shop".
+  assert.deepEqual(modell.archiviert.map((p) => [p.handle, p.status]),
+    [['fortiva-teppich-nach-mass', 'ARCHIVED'], ['muster-fortiva-teppich-nach-mass', 'ARCHIVED']]);
+});
+
+test('ohne archivierte Produkte gibt es kein Feld archiviert', () => {
+  assert.equal(Object.hasOwn(aufbereiten({ produkte: [produkt({ handle: 'fortiva-teppichboden' })] }, { jetzt: JETZT }), 'archiviert'), false);
 });
 
 test('archiviertes Muster zaehlt nicht als vorhandenes Muster - weder ueber den Handle noch ueber einkauf.muster_variante', () => {

@@ -661,9 +661,12 @@ unabhängig vom Alter - eine vor Monaten aufgegebene, nie ausgelieferte
 Bestellung darf im Control Center nicht verschwinden. Das ersetzt die
 vorherige Regel "letzte 50 Bestellungen nach `updatedAt`", bei der eine um
 15 Uhr eingegangene Bestellung an einem geschäftigen Tag erst am nächsten
-Lauf sichtbar wurde. Zwischen den Seiten wird bei knappem Guthaben laut dem
-von Shopify gemeldeten `extensions.cost.throttleStatus` gewartet
-(`wartenBeiThrottle`), statt mit `THROTTLED` abzubrechen. Die Quellvarianten
+Lauf sichtbar wurde. Zwischen den Seiten wird laut dem von Shopify gemeldeten
+`extensions.cost.throttleStatus` gewartet (`wartenBeiThrottle`), bis das
+Guthaben die verlangten Kosten der nächsten Seite deckt (eine Bestellseite
+verlangt 959 Punkte, kostet echt rund 80). Meldet Shopify trotzdem
+`THROTTLED`, wartet der Admin-Zugang (`workflow/graphql-proxy.mjs`) die
+fehlende Zeit ab und versucht dieselbe Abfrage genau einmal neu. Die Quellvarianten
 der Muster werden ebenfalls ohne festes Limit geladen: `nodes(ids:)` nimmt
 bis zu 250 IDs je Aufruf, bei mehr wird in Gruppen nachgeladen.
 
@@ -785,6 +788,62 @@ die Überschrift „Abrechnung KW …“ nennt schon die Folgewoche und wird nic
   den Dienst als stumm.
 - Nicht dabei: der GLS-Floater (monatlich, andere Formel) – bleibt von Hand.
 
+## Mail-Entwürfe aus dem Ordner (alle 5 Minuten)
+
+Für Entwürfe mit Anhang, die eine KI nicht selbst hochladen kann (Cloud-Sitzung, geplante
+Aufgabe, ChatGPT): Anhänge und **zuletzt** eine JSON-Datei nach
+`$TP_PRIVAT_DIR/mail-entwuerfe/eingang/` legen:
+
+```json
+{ "an": ["kunde@beispiel.de"], "cc": [], "betreff": "…", "text": "Klartext …", "anhaenge": ["formular.pdf"] }
+```
+
+`npm run -s mail-entwuerfe` (`scripts/mail-entwuerfe.mjs`, Logik `lib/mail-entwuerfe.mjs`, Tests
+`tests/mail-entwuerfe.test.mjs`) baut daraus die Mail (`baueNachricht` aus `lib/smtp.mjs`) und legt sie
+per IMAP `APPEND` in den Ordner mit dem Kennzeichen `\Drafts` von kontakt@ – Zugang wie der
+Nachfass-Versand (`nachfassen/postfach.json`, App-Passwort), kein eigenes OAuth. Der Benutzer klickt in
+Gmail nur noch Senden.
+
+- **Sendet nie:** kein SMTP-Aufruf, `APPEND` nur in den Entwürfe-Ordner.
+- Danach liegen Auftrag und Anhänge unter `erledigt/<Zeit>-<Name>/`. Unbrauchbare Aufträge (kaputtes
+  JSON, ungültige Adresse, Pfad im Anhangsnamen, Dateityp außer pdf/jpg/png/txt/csv/zip/docx/xlsx,
+  über 20 MB) gehen mit `FEHLER.txt` nach `fehler/`. Fehlt ein Anhang noch (Sync unterwegs), wartet
+  der Auftrag bis zu 24 h. Scheitert die Anmeldung oder das Netz, bleibt er liegen.
+- **Aus der Cloud (Cloud-Sitzung, ChatGPT):** Auftrag als Textdatei in den Dropbox-Ordner
+  `~/Dropbox/TP Mail-Entwuerfe/` (über den Dropbox-Konnektor; anderer Ordner: `TP_MAIL_DROPBOX`). Jeder
+  Lauf verschiebt alle Dateien von dort nach `eingang/`, danach liegt nichts mehr in der Dropbox.
+  **Einrichtungsschritt:** den Ordner im Finder per Rechtsklick auf „Offline verfügbar“ stellen.
+  Über den Konnektor abgelegte Dateien liegen sonst nur als Online-Platzhalter vor, und ein
+  launchd-Dienst darf sie nicht herunterladen (EDEADLK, im Protokoll „Unknown system error -11“; erster
+  Cloud-Auftrag 24.11.2026). Zusätzlich startet die Plist Node über `scripts/dataless-erlauben.py`
+  (`setiopolicy_np`, erlaubt das Nachladen; unter launchd geprüft). Eine nicht lesbare Datei bleibt
+  liegen und wird jeden Lauf neu versucht; die übrigen Dateien und `eingang/` laufen weiter. Hängt
+  eine Datei länger als 15 Minuten, wird der Dienst im Control Center rot („Dropbox-Datei nur online,
+  Ordner offline verfügbar machen“, Statusdatei `routinen/mail-entwuerfe/status.json`) und der Mac
+  zeigt eine Mitteilung.
+- **Formular statt fertigem PDF:** `"formular": {"vorlage": "antrag.pdf", "werte": {"Feld": "Wert"}, "name": "Antrag Müller.pdf"}`.
+  Die leere Vorlage liegt einmalig in `mail-entwuerfe/vorlagen/` (oder neben dem Auftrag). Der Mac füllt sie
+  mit `scripts/pdf_formular.py` (Python aus `~/.venvs/analyse`, anderes: `TP_PYTHON`); Feldnamen und
+  erlaubte Werte zeigt `pdf_formular.py felder <vorlage>`. Falsches Feld oder falscher Wert: Auftrag nach
+  `fehler/`. Das ausgefüllte PDF und seine Vorschau (PNG) liegen danach in `erledigt/`.
+- **Fertige Dateien aus einem privaten Repository** (z. B. VMA als `.xlsx`, die ein Cloud-Chat nicht
+  über die Dropbox hochladen kann):
+  `"anhaenge_git": {"repo": "kontakt755/teppich-paradies-vma", "commit": "<voller Hash>", "dateien": [{"pfad": "ausgabe/2026-11/<Datei>.xlsx", "sha256": "<Prüfsumme>"}]}`.
+  Der Mac holt genau diesen Commit per SSH mit dem Deploy-Key `~/.ssh/vma_deploy` (nur lesend, im
+  VMA-Repository unter Settings → Deploy keys eingetragen; anderer Schlüssel: `TP_VMA_SCHLUESSEL`) in
+  `mail-entwuerfe/git/`, liest die Datei mit `git cat-file` und vergleicht die Prüfsumme. Verbunden wird
+  nur gegen den veröffentlichten Host-Schlüssel von GitHub.
+  Erlaubt sind nur Repositorys aus `GIT_ERLAUBT` in `lib/mail-entwuerfe.mjs` (bisher nur dieses, nur unter
+  `ausgabe/`), Pfade ohne `..`, Dateitypen und 20-MB-Grenze wie bei `anhaenge`. Falsche Prüfsumme, falscher
+  Pfad oder Commit: Auftrag nach `fehler/`. Kein Zugang (Schlüssel fehlt), Zeitlimit oder Netz: Auftrag
+  bleibt liegen und steht im Protokoll.
+- Anhangsnamen erscheinen in der Mail ohne Umlaute und Leerzeichen (`Formular ä 1.pdf` → `Formular_a_1.pdf`).
+- Dienst: Vorlage `launchagents/net.teppich-paradies.mail-entwuerfe.plist.vorlage`, Einrichten mit
+  `bash operations/scripts/dienste-einrichten.sh --mail-entwuerfe` (Plist zeigt auf `~/tp-dashboard`).
+  Leerer Eingang: keine Anmeldung. Protokoll `~/Library/Logs/teppich-paradies-mail-entwuerfe.log`.
+- Im Control Center meldet der Dienst bisher nur Dropbox-Dateien, die nicht abgeholt werden können;
+  unbrauchbare Aufträge stehen weiter nur im Protokoll und in `fehler/`.
+
 ## Google-Bewertung im Shop (monatlich)
 
 `npm run -s google-bewertung -- --schreiben` holt Note und Anzahl aus der Datenquelle des
@@ -822,7 +881,7 @@ täglich:
 
 ```
 npm run daten:sync-dienst
-TP_SYNC_INTERVALL_MINUTEN=5 npm run daten:sync-dienst   # Standard 10
+TP_SYNC_INTERVALL_MINUTEN=5 npm run daten:sync-dienst   # Standard 5
 ```
 
 Das Lexikon (Massenabfrage ueber alle Produkte) laeuft nur alle
@@ -1411,3 +1470,12 @@ Sync-Dienst neu.
 - **Ohne zweite Kopie ausser Haus** sind bei einem Plattenschaden, einem Diebstahl oder einer
   vollen Platte Original und Sicherung zugleich weg. Das ist eine Entscheidung des Inhabers
   (Abschnitt „Taegliche Betriebssicherung“).
+
+### Spiegel-Wächter (fremde Kopien des Shops)
+
+`npm run -s spiegel:waechter` (`-- --trocken` zeigt nur an; `scripts/spiegel-waechter.mjs`, Test `tests/spiegel-waechter.test.mjs`)
+prüft täglich 7:10 ohne KI, ob eine fremde Domain unseren Shop spiegelt (`Shopify.shop = "sjjyq1-6w…"` im HTML, Header
+`powered-by: Shopify`): die bekannte `.live`-Seite und `teppich-paradies.(shop|store|online|de|com)`. Befund: bekannte Seite
+ohne Host-Sperre (`snippets/tp-host-sperre.liquid`, Merkmal `split('').reverse`) = P0, unbekannter Host = P1. Er meldet nur beim
+Wechsel (Mac-Mitteilung, To-do per `npm run task`, Status `routinen/spiegel-waechter/status.json`). Einrichten:
+`bash operations/scripts/dienste-einrichten.sh --spiegel-waechter`.

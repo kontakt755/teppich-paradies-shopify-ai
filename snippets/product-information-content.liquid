@@ -106,11 +106,18 @@
       # Ebenso befristete Aktionskollektionen (black-week-2026, Titel "Black
       # Week: 15 % auf Teppichboden und Vinyl"): sie enthalten "Teppichboden"
       # und sind laenger als jede Unterkategorie (Rundgang 2026-11-06, SEO-02).
+      # Ebenso Raum- und Zielgruppen-Kollektionen ("Teppichboden fuers
+      # Kinderzimmer", "... fuer Buero & Gewerbe"; im Titel steht " fuer" mit
+      # Umlaut): keine Hierarchieebene, aber laenger als "Teppichboden
+      # Hochflor" (Durchsicht 2026-11-25, w-450).
       for tp_c in product.collections
         if tp_c.handle contains 'angebote-'
           continue
         endif
         if tp_c.handle contains 'black-week'
+          continue
+        endif
+        if tp_c.title contains ' für'
           continue
         endif
         assign tp_c_ende = tp_c.handle | slice: -4, 4
@@ -132,6 +139,9 @@
           if tp_c.handle contains 'black-week'
             continue
           endif
+          if tp_c.title contains ' für'
+            continue
+          endif
           assign tp_c_ende = tp_c.handle | slice: -4, 4
           if tp_c_ende == '-alt'
             continue
@@ -151,6 +161,9 @@
             continue
           endif
           if tp_c.handle contains 'black-week'
+            continue
+          endif
+          if tp_c.title contains ' für'
             continue
           endif
           assign tp_c_ende = tp_c.handle | slice: -4, 4
@@ -456,6 +469,22 @@
         order: 0;
         margin-block: 12px 0;
       }
+    }
+
+    /* Titel und Aktionshinweis stehen im HTML hinter der Galerie. Bei langsamer
+       Leitung malte der Browser die Galerie zuerst oben und schob sie dann
+       zweimal nach unten (Lighthouse CLS 0,218, 25.11.2026). Bis der Trenner
+       nach Titel und Hinweis geparst ist (in allen Produktvorlagen vorhanden),
+       bleibt die Galerie unsichtbar; nach 3 s erscheint sie in jedem Fall. */
+    .product-information__grid:not(:has(.product-details .divider)) .product-information__media {
+      visibility: hidden;
+      animation: tp-galerie-zeigen 0s 3s forwards;
+    }
+  }
+
+  @keyframes tp-galerie-zeigen {
+    to {
+      visibility: visible;
     }
   }
 

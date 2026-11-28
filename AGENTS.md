@@ -18,7 +18,7 @@ Arbeite immer im aktuellen Repository Root und verlasse dich nicht auf fest codi
 - **Eine Aufgabe = eine Arbeitskopie.** Neue Worktrees unter `.claude/worktrees/<thema>` (Claude-App) oder `~/Developer/tp-<thema>`; keine neuen `~/tp-wt-*`. Nach dem Merge wird der Worktree entfernt: `npm run -s worktrees:aufraeumen` zeigt, was weg darf, `-- --entfernen` entfernt nur gemergte, saubere, seit 24 h ruhende Kopien ohne laufenden Prozess (Branches bleiben).
 - **Den Hauptcheckout nie bearbeiten.** Er steht losgelöst auf `origin/main` (aktualisieren: `git fetch origin && git checkout --detach origin/main`); von dort laufen die Hooks aller Sitzungen. Zwischenstände gehören auf einen Branch, nicht in den Working Tree oder den Stash.
 - **Der Branch `main` gehört dem Deploy-Worktree.** `workflow:preview` und `workflow:live` verlangen `branch === main`, und git erlaubt jeden Branch nur in einer Arbeitskopie. Deploys laufen deshalb in einem eigenen Worktree auf `main` (z. B. `~/Developer/tp-deploy`), nie im Hauptcheckout.
-- `docs/ai-dashboard/issues.json` und `bodenwissen.json` sind erzeugte Dateien und seit 2026-09-30 nicht mehr im Git (lokal: `npm run dashboard`). Nie `git add -A`. KI-Sitzungen führen ihre Aufgabe per `npm run task`.
+- `docs/ai-dashboard/issues.json` und `bodenwissen.json` sind erzeugte Dateien und nicht im Git (lokal: `npm run dashboard`). Nie `git add -A`. KI-Sitzungen führen ihre Aufgabe per `npm run task`.
 
 ## Welches Theme ist live?
 
@@ -51,6 +51,7 @@ Harte technische Grenzen (force-push, `reset --hard`, Branch löschen, Theme lö
 - Bei einem Hindernis selbstständig eine sichere Alternative prüfen.
 - Nicht wegen GitHub, Authentifizierung oder Nebeninfrastruktur unnötig vom eigentlichen Shopify-Auftrag abweichen.
 - Keine unnötigen großen Refactorings durchführen, wenn eine kleine robuste Änderung reicht.
+- **Wiederkehrendes wird ein Skript, die KI urteilt nur.** Läuft ein Ablauf zum dritten Mal gleich (Abruf, Abgleich, Zählung, Export, feste Klickfolge), gehört er in ein Skript unter `operations/scripts/` oder `scripts/`. Reihenfolge der Wege: API, dann `fetch`/curl, dann Playwright, Klicken durch die KI zuletzt. Geplante Aufgaben prüfen ohne KI vor und starten Claude nur, wenn es etwas zu beurteilen gibt (Muster: `vorpruefung` in `operations/lib/routinen.mjs`). Kein Skript für Einmaliges, für Portale mit Klickverbot oder Login-Sperre und für Außenwirkung ohne Freigabe.
 - Mobile und Desktop berücksichtigen und bestehende Funktionen regressionsprüfen.
 - Vor dem Livegang die konkret betroffenen Funktionen risikobasiert testen.
 - Nach dem Livegang den echten öffentlichen Shop ohne Preview-Parameter kontrollieren.
@@ -129,29 +130,21 @@ Aktionen und Streichpreise bei Teppichboden, Preisstufen der gekettelten Fußlei
 - **Regeln** stehen nur im Repository (diese Datei, `docs/lessons/`, Skills). Wer eine neue Regel findet, ändert sie dort per PR.
 - **Der Gedächtnis-Vault** (`~/.claude/projects/<projekt>/memory`, zugleich Obsidian-Vault, privates Repo `tp-claude-gedaechtnis`) enthält nur, was nicht aus dem Repository folgt: Entscheidungen des Inhabers, Datenquellen der Lieferanten, Shopify-Fallen, Vorlieben des Benutzers. Keine Zwischenstände, keine Theme-IDs, keine Kopien von Regeln. Dateinamen in snake_case, Wikilinks mit genau diesem Dateinamen. `.claude/hooks/gedaechtnis-sync.sh` holt beim Sitzungsstart und pusht am Sitzungsende (findet den Vault auch aus Worktrees); Codex ruft `npm run gedaechtnis:sync -- pull|push` auf, das bei Fehlern mit Exit 1 abbricht statt still weiterzulaufen.
 - **Übergaben zwischen Claude und Codex** nur auf ausdrücklichen Auftrag: `Zusammenarbeit/Start.md` im Vault lesen, je Übergabe eine Datei unter `Zusammenarbeit/Aufgaben/` nach der Vorlage dort. Pflichtinhalt: Ziel, Abnahmekriterien, Ausgangsstand (Branch und Commit oder PR), betroffene Dateien, gelaufene Tests mit Ergebnis, offene Punkte — und **genau ein** `zustaendig` (sonst ist niemand dran). Keine Secrets oder Kundendaten. Offene Übergaben an Claude zeigt der Sitzungsstart; Codex sieht seine mit `npm run -s uebergaben -- --an codex`, alle zeigt `npm run -s uebergaben`.
-- **Direkte Rückfrage Claude ↔ Codex** (nur lesend, ohne Übergabedatei): `npm run -s ki:frag -- codex|claude "Frage"`, fortsetzen mit `npm run -s ki:frag -- weiter codex|claude "…"`, Diffs per stdin. Die Antwort ist eine zweite Meinung, keine Quelle. Schreibarbeit gibt Claude nur über `umsetzen` an Codex (unten), sonst bleibt sie eine Übergabe. Zugangsdaten (Shopify, GitHub, Lexware, SumUp, Tokens) gibt das Skript nicht an die andere KI weiter. Details: `.claude/skills/codex/SKILL.md`.
-- **Review:** Es gibt keinen Router und kein Pflicht-Review nach jeder Antwort (entfernt 2026-09-30). Vor dem Merge von Änderungen an Preisen, SKUs, Varianten, Massenimporten, Checkout oder der Deploy-Kette einen zweiten Blick auf den **PR-Diff** holen — nie auf den geteilten Working Tree. Ein Codex-Review zählt nur mit festem Prüfgegenstand: `npm run -s ki:frag -- review <PR>` bindet es an den Head-Commit, prüft in einer sauberen Kopie und legt es ab; vor dem Merge muss `npm run -s ki:frag -- review-stand <PR>` „aktuell“ melden (jeder neue Commit macht es veraltet, ein offener P1 blockiert; hält Claude einen P1 für falsch, entscheidet der Benutzer). Ist Codex am Limit (Exit 3), gilt ersatzweise `/code-review` auf Stufe high plus Bestätigung des Benutzers für genau diesen PR; im PR steht es als Claude-Prüfung (Inhaber 2026-11-03). `/code-review` in Claude Code ist eine Claude-Prüfung und heißt auch so, nie „Codex-Review“.
+- **Direkte Rückfrage Claude ↔ Codex** (nur lesend, ohne Übergabedatei): `npm run -s ki:frag -- codex|claude "Frage"`, fortsetzen mit `npm run -s ki:frag -- weiter codex|claude "…"`, Diffs per stdin. Die Antwort ist eine zweite Meinung, keine Quelle. Schreibarbeit gibt Claude nur über `umsetzen` an Codex (Skill `codex`), sonst bleibt sie eine Übergabe. Zugangsdaten (Shopify, GitHub, Lexware, SumUp, Tokens) gibt das Skript nicht an die andere KI weiter. Details: `.claude/skills/codex/SKILL.md`.
+- **Review:** Kein Pflicht-Review nach jeder Antwort. Vor dem Merge von Änderungen an Preisen, SKUs, Varianten, Massenimporten, Checkout oder der Deploy-Kette einen zweiten Blick auf den **PR-Diff** holen — nie auf den geteilten Working Tree. Ein Codex-Review zählt nur mit festem Prüfgegenstand: `npm run -s ki:frag -- review <PR>` bindet es an den Head-Commit, prüft in einer sauberen Kopie und legt es ab; vor dem Merge muss `npm run -s ki:frag -- review-stand <PR>` „aktuell“ melden (jeder neue Commit macht es veraltet, ein offener P1 blockiert; hält Claude einen P1 für falsch, entscheidet der Benutzer). Ist Codex am Limit (Exit 3), gilt ersatzweise `/code-review` auf Stufe high plus Bestätigung des Benutzers für genau diesen PR; im PR steht es als Claude-Prüfung (Inhaber 2026-11-03). `/code-review` in Claude Code ist eine Claude-Prüfung und heißt auch so, nie „Codex-Review“.
 
 ### Zusammenarbeit Claude und Codex
 
-- **Claude führt:** klärt den Auftrag, entscheidet, wer umsetzt und wer prüft, führt Ergebnisse zusammen und berichtet. Der Benutzer ist kein Bote: was Claude per `ki:frag` selbst fragen kann, fragt Claude selbst.
-- **Standard ist allein:** planen → umsetzen → testen → den eigenen Diff kritisch gegenlesen. Diese Selbstprüfung wird als solche benannt. Codex kommt dazu, wenn ein zweiter Blick etwas bringt: Review vor kritischen Merges (oben), eine strittige Annahme, ein Plan mit großer Wirkung.
-- **Codex setzt um** (Freigabe Benutzer 2026-10-24), wenn eine Aufgabe klar abgegrenzt ist und eine unabhängige Prüfung durch Claude lohnt: `npm run -s ki:frag -- umsetzen <thema> "Auftrag"` mit Ziel, Abnahmekriterien und Dateien. Codex ändert nur Dateien in seiner eigenen, frischen Arbeitskopie (`.claude/worktrees/codex-<thema>`, ohne Netz und Zugangsdaten) und committet nicht. Claude liest den Diff, testet (`npm run -s pruefen`), committet mit dem Hinweis „Umgesetzt von Codex, geprüft von Claude“, pusht und öffnet den PR; Korrekturen laufen als weitere Runde in derselben Kopie. Das Review vor kritischen Merges macht dann Claude (`/code-review`), nicht Codex am eigenen Ergebnis. Nie für Arbeit mit Wirkung nach außen (Shopify, Mails, Deploys) — die bleibt bei Claude.
-- **Nacheinander, nicht parallel:** eine Aufgabe, eine Arbeitskopie, ein Schreiber. Zusätzliche parallele Agenten oder Sitzungen nur mit Freigabe des Benutzers; lesende Subagenten für breite Suchen sind erlaubt, ihr Ergebnis wird abgewartet.
+Claude führt und arbeitet standardmäßig allein; Codex prüft vor kritischen Merges oder setzt per `ki:frag -- umsetzen` in eigener Kopie um; höchstens drei Review-Runden je PR; bei erschöpftem Kontingent (Exit 3) Stand sichern. Vollständige Regeln (gelten auch für Codex): `.claude/skills/codex/SKILL.md`, Abschnitt „Zusammenarbeit Claude und Codex“.
+
+- **Parallel nur getrennt:** parallele Agenten sind erlaubt, wenn jeder Teil eine eigene Arbeitskopie und keine gemeinsamen Dateien hat. Agent-Teams (Agenten, die sich während der Arbeit abstimmen) nur mit Freigabe des Benutzers.
 - **Ausgangsstand zuerst:** vor der ersten Änderung `git status` festhalten. Was dort schon geändert ist, stammt von anderen Sitzungen — erhalten, nicht überschreiben, nicht als eigene Arbeit ausgeben.
-- **Höchstens drei Review-Runden je PR** (das Skript warnt ab der vierten). Danach nicht weiterdrehen, sondern die Ursache benennen (Auftrag unklar, falscher Prüfgegenstand, echter Zielkonflikt) und dem Benutzer vorlegen.
-- **Kontingent erschöpft** (`ki:frag` endet mit Exit 3, oder das eigene Limit naht): nicht wiederholen. Stand sichern — Zwischenstand als Commit auf den Branch, `npm run -s handoff` — und allein weiterarbeiten oder dort aufhören. Kritische Merges dann wie unter „Review“ beschrieben.
-- **Fertig heißt belegt:** umgesetzt und getestet, mit Befehl und Ergebnis. Was nicht getestet werden konnte, steht ausdrücklich als ungetestet im Bericht.
+- **Fertig heißt belegt** (Befehl und Ergebnis, Ungetestetes ausdrücklich nennen): `godmode:completion-gate`.
 - Externe 429/503/Timeouts: höchstens ein unmittelbarer Script-Retry (`workflow/retry.mjs`). Einzige Ausnahme: Der HTTP-Check der Preview direkt nach dem Push prüft 5xx (Kaltstart) bis zu zweimal mit Wartezeit nach (`PREVIEW_HTTP_WAITS_MS`); 4xx und bleibende 5xx brechen ab, die Wartezeiten nicht verlängern. Cloud-/Proxy-403 bei Storefront-Zugriff heißt: lokal auf dem Mac ausführen.
 
 ## Chat-Wächter (stehende Freigabe des Benutzers, 2026-11-11)
 
-Die geplante Aufgabe `chat-waechter` bringt offene Chats weiter, ohne dass der Benutzer jede Empfehlung einzeln bestätigt. Die Freigabe gilt nur für diese Aufgabe und nur in diesen Grenzen; für alle anderen Sitzungen gilt der Abschnitt „Eigenen PR selbst mergen“ unten.
-
-- **Darf:** in einem wartenden Chat die von Claude empfohlene Option wählen oder die Arbeit fortsetzen lassen (je Chat und Lauf eine vollständige Nachricht), fertige Chats archivieren und **unkritische PRs selbst nach Skill `ship` mergen**, inklusive des dort beschriebenen Theme- oder Dashboard-Deploys. Voraussetzung je PR: offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch, und der zugehörige Chat meldet die Arbeit als fertig. Höchstens drei Merges je Lauf, nacheinander.
-- **Stoppt und legt vor:** kritische PRs (Preise, SKUs, Varianten, Massenimporte, Checkout, Deploy-Kette, `.claude/hooks/`, dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · Schreiben in Google Ads, Meta oder Merchant Center · alles, was Geld kostet oder ein Budget ändert · Mails an Kunden und Lieferanten · Fragen, die nur der Inhaber entscheidet · Chats ohne klare Empfehlung.
-- **Vorlegen heißt:** im Bericht des Laufs je Punkt den Chat und die eine Zeile nennen, die der Benutzer dort schreiben müsste. Der Wächter gibt in fremden Chats nie eine Freigabe für einen gestoppten Punkt weiter.
-- Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund für den Bericht, kein Hindernis zum Umgehen.
+Die geplante Aufgabe `chat-waechter` darf wartende Chats mit der empfohlenen Option weiterbringen, fertige Chats archivieren und unkritische PRs nach Skill `ship` mergen. Grenzen und Ablauf (gelten auch für Codex): `.claude/skills/ship/SKILL.md`, Abschnitt „Chat-Wächter“. Kritisch und damit nur mit Ja des Benutzers: Preise, SKUs, Varianten, Massenimporte, Checkout, Deploy-Kette, `.claude/hooks/`, die Chat-Wächter-Regeln; im Zweifel kritisch.
 
 ## Eigenen PR selbst mergen (stehende Freigabe des Benutzers, 2026-11-12)
 
@@ -159,22 +152,42 @@ Eine Sitzung fragt bei einem unkritischen PR nicht mehr „Soll ich mergen?“, 
 
 - **Nur der eigene PR:** den diese Sitzung für ihren Auftrag geöffnet hat. Fremde PRs mergt nur der Chat-Wächter oder der Benutzer per `/ship`.
 - **Voraussetzung:** Auftrag vollständig umgesetzt und getestet, offen gegen `main`, kein Entwurf, CI grün, `npm run -s deploy:frei` frei, kein uncommitteter Stand auf dem Branch.
-- **Weiter nur mit Ja des Benutzers:** kritische PRs (Liste wie beim Chat-Wächter unter „Stoppt und legt vor“, dazu dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · PRs, deren Titel oder Auftrag einen Termin nennt („erst ab …“) · wenn der Benutzer für diesen Auftrag „nur PR“, „nicht mergen“ oder „nur Plan“ gesagt hat.
+- **Weiter nur mit Ja des Benutzers:** kritische PRs (Liste unter „Chat-Wächter“ oben, dazu dieser Abschnitt; im Zweifel kritisch) · alles aus „NIEMALS ohne ausdrückliche Freigabe“ · PRs, deren Titel oder Auftrag einen Termin nennt („erst ab …“) · wenn der Benutzer für diesen Auftrag „nur PR“, „nicht mergen“ oder „nur Plan“ gesagt hat.
 - Ein blockierender Hook oder die Sperre des Auto-Modus ist ein Befund: melden und die eine Zeile nennen, die der Benutzer schreiben müsste, nicht umgehen.
+
+## Arbeitsmodus godmode
+
+Die Skills des Plugins godmode (Planung, test-first, Review, Nachweis vor „fertig“) gelten für alle Sitzungen. Bei Widerspruch gilt diese Datei.
+
+- **Keine Rückfragen aus godmode:** Wo `intent-discovery`, `rationale` oder `merge-protocol` den Benutzer wählen lassen wollen, die empfohlene Option nehmen, als „vorläufig“ kennzeichnen und weiterarbeiten. Gefragt wird nur in den Fällen aus „Selbst entscheiden“.
+- **Abschluss** immer nach Skill `ship`, nie nach den Optionen von `merge-protocol`.
+- **test-first** bei Liquid- und Theme-Dateien: Der Test sind die Guards (`npm run -s pruefen`), die Preview und ein Screenshot.
+- **cross-model-review** läuft über `npm run -s ki:frag -- review <PR>` (Codex), Pflicht nur bei kritischen PRs (Liste unter „Chat-Wächter“); sonst prüft Claude.
+- **knowledge-capture** schreibt in den Gedächtnis-Vault nach dessen Regeln (Abschnitt „Gedächtnis, Übergaben und Review“). Neue Regeln nur per PR.
+- Modellwahl je Aufgabe und Subagent: `godmode:model-routing`.
+
+## Selbst entscheiden
+
+Ohne Frage erledigen und danach in einer Zeile berichten:
+
+- alles zum Ablauf: Reihenfolge, anfangen, weitermachen, Fehler beheben, neue Sitzung oder hier
+- fertige, geprüfte Arbeit mergen und live stellen, auch wenn ein Gate vorher abbrach und die Ursache behoben ist (Grenzen: „Eigenen PR selbst mergen“)
+- Speichern, Einreichen und Anlegen im Browser, wenn es zum Auftrag gehört
+- temporäre Dateien, Kopien und alte Worktrees aufräumen
+- technische Wege wählen (Skript oder Dienst, Bibliothek, Aufbau)
+- Werkbank-Einträge anlegen und verknüpfen
+
+Weiter fragen, aber gebündelt in **einer** Frage am Ende, nicht mittendrin:
+
+- Preise, Rabatte, Werbebudget
+- was Kunden sehen und Geschmackssache ist: Bildwahl, Wortlaut, Knopf-Beschriftung
+- alles aus „NIEMALS ohne ausdrückliche Freigabe“
+
+Keine Schlussfragen der Art „Soll ich …?“: Gehört der nächste Schritt zum Auftrag, wird er gemacht. Nennt der Auftrag eine Außenwirkung ausdrücklich (z. B. „Storniere Bestellung 1234 und erstatte 59,90 €“), ist das die Freigabe; nicht noch einmal fragen. Unklare Daten werden nicht erfragt, sondern als offener Fall dokumentiert (Abschnitt „Produktdaten“).
 
 ## Kommunikation
 
-Der Benutzer möchte möglichst wenig Rückfragen.
-
-Bei klaren, reversiblen Aufgaben: analysieren → umsetzen → testen → live prüfen → kurz berichten.
-
-Nur nachfragen, wenn:
-
-- eine wichtige geschäftliche Entscheidung fehlt
-- Daten nicht eindeutig belegbar sind
-- eine irreversible oder riskante Änderung nötig wäre
-- Kosten ausgelöst würden
-- mehrere fachlich unterschiedliche Lösungen erhebliche Auswirkungen hätten
+Bei klaren, reversiblen Aufgaben: analysieren → umsetzen → testen → live prüfen → kurz berichten. Wann gefragt wird: „Selbst entscheiden“.
 
 Abschlussberichte kompakt halten:
 

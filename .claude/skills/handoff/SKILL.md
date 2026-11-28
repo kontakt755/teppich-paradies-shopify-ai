@@ -17,7 +17,7 @@ ungefragt zusammen - was dabei verloren geht, weiss danach niemand.
   naehert oder ein Teilziel erreicht ist und der Rest eine frische Sitzung
   lohnt - vor dem Auto-Compact, nicht danach.
 - `ki:frag` endet mit Exit 3 oder das eigene Limit naht: Stand sichern und
-  Uebergabe (`AGENTS.md`, „Zusammenarbeit Claude und Codex“).
+  Uebergabe (Skill `codex`, „Zusammenarbeit Claude und Codex“).
 
 ## Ablauf
 

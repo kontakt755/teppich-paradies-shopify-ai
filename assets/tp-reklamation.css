@@ -1,0 +1,57 @@
+/* Aus sections/tp-reklamation.liquid ausgelagert: laedt nur, wo der Abschnitt rendert (nicht im themeweiten styles.css). */
+  .tp-rk__kopf { max-width: 720px; margin-bottom: 32px; }
+  .tp-rk__intro { margin-top: 12px; color: var(--tp-muted, #595959); font-size: var(--tp-fs-md); }
+  .tp-rk__intro p { margin: 0; }
+  .tp-rk__schritte {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 980px;
+  }
+  .tp-rk__schritt {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 22px;
+    border: 1px solid var(--tp-line, #e6e0d8);
+    border-radius: var(--tp-r, 10px);
+    background: #fff;
+  }
+  .tp-rk__nr {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--tp-bg-2, #f6f2ec);
+    color: var(--tp-ink, #1d1a17);
+    font-weight: 700;
+    font-size: var(--tp-fs-md);
+  }
+  .tp-rk__text { margin-top: 6px; color: var(--tp-ink-2, #4a443f); font-size: var(--tp-fs-md); line-height: 1.55; }
+  .tp-rk__text p { margin: 0; }
+  .tp-rk__text p + p { margin-top: 8px; }
+  .tp-rk__wege { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .tp-rk__wege-hinweis { margin: 10px 0 0; color: var(--tp-muted, #595959); font-size: var(--tp-fs-sm); max-width: 62ch; }
+  .tp-rk__rechte {
+    margin-top: 28px;
+    max-width: 720px;
+    padding: 16px 18px;
+    border-left: 3px solid var(--tp-line-2, #d5cec4);
+    background: var(--tp-bg-2, #f6f2ec);
+    color: var(--tp-ink-2, #4a443f);
+    font-size: var(--tp-fs-sm);
+    line-height: 1.55;
+  }
+  .tp-rk__rechte p { margin: 0; }
+  .tp-rk__rechte p + p { margin-top: 8px; }
+  @media (max-width: 749px) {
+    .tp-rk__schritte { grid-template-columns: 1fr; }
+    .tp-rk__schritt { padding: 18px 16px; gap: 12px; }
+    .tp-rk__wege .tp-s-btn { flex: 1 1 100%; }
+  }

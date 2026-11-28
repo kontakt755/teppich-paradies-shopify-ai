@@ -478,4 +478,12 @@ test('Musterversand erstattet: reine Musterbestellung bleibt bezahlt; erstattete
   assert.ok(!stand([musterM]).hinweise.some(h => /Zahlung/.test(h)));
   assert.equal(stand([{ ...musterM, currentQuantity: 0 }, musterFrei]).bezahlt, 'REFUNDED', 'Position erstattet = raus');
   assert.equal(stand([musterM, paket]).bezahlt, 'REFUNDED', 'mit Ware gilt die Regel nicht');
+  // Kennzeichen fuer die Packstation (w-399): erstattet / bezahlt / nichts bei Gratisbestellung und Ware.
+  const summe = betrag => ({ currentTotalPriceSet: { shopMoney: { amount: betrag, currencyCode: 'EUR' } } });
+  const mit = (zeilen, extra) => aufbereiten({ orders: [bestellung(9, zeilen, extra)], quellvarianten: [quellvariante] }, { jetzt: new Date('2026-12-07T00:00:00Z') }).auftraege[0].musterversand;
+  assert.equal(stand([musterM]).musterversand, 'erstattet');
+  assert.equal(mit([musterM], { displayFinancialStatus: 'PAID', ...summe('4.99') }), 'bezahlt');
+  assert.equal(mit([musterM], { displayFinancialStatus: 'PAID', ...summe('0.00') }), undefined, 'kostenlose Musterbestellung: kein Hinweis');
+  assert.equal(mit([musterM, paket], { displayFinancialStatus: 'PAID', ...summe('104.99') }), undefined, 'mit Ware: kein Musterversand');
+  assert.equal(mit([musterM], { displayFinancialStatus: 'PARTIALLY_REFUNDED', ...summe('2.00') }), undefined, 'Teilerstattung bleibt Restumfang pruefen');
 });

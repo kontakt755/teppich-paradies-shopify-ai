@@ -406,7 +406,7 @@ Höchstens fünf Einträge; jeder Eintrag zeigt die Gründe.
 
 | Rolle | Wer | Was | Wie durchgesetzt |
 |---|---|---|---|
-| `inhaber` | Inhaber, Notzugang (Einzelpasswort) | alles, auch Entwicklung, Freigaben, Umsatzzahlen, Zugänge | `NUR_INHABER` in `scripts/serve-dashboard.mjs`; GitHub-Aktionen laufen unter dem `gh`-Konto des Macs |
+| `inhaber` | Inhaber, Notzugang (Einzelpasswort) | alles, auch Entwicklung, Freigaben, Umsatzzahlen, Lexware-Angebote, Zugänge | `NUR_INHABER` in `scripts/serve-dashboard.mjs`; GitHub-Aktionen laufen unter dem `gh`-Konto des Macs |
 | `mitarbeiter` | Laden, Einkauf, Monteure | Kundengeschäft, Einkauf, Aufgaben, Sonderposten | Schreibpfade in der `write`-Liste; Inhaber-Ansichten (`ANSICHT_ROLLEN`) nicht erreichbar |
 | `lesen` | wer nur schauen soll | nur Ansicht; „Fehler melden“ darf jeder | jeder Schreibpfad 403; Knöpfe ausgeblendet (`istNurLesend`, `data-nicht-lesen`) |
 
@@ -655,6 +655,8 @@ DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`)
   summiert `ueberfaellig.auftraege` der Karten (`nachfassenSumme()`). Hilfsfunktionen ohne DOM in
   `lib/einkauf-uebersicht.mjs`. „Ist eingetroffen“ an bestellter Ware setzt `geliefert` (derselbe
   Schritt wie in der Tabelle). Aufgeklappt („Positionen bearbeiten“) bleiben die Tabellen unverändert.
+  Seit 26.11.2026 ist jede Karte zuerst zu (Zahlen und Knöpfe je Schritt), „Positionen zeigen“ bringt die
+  Schritte mit Positionen; „Zuerst klären“ ist zugeklappt, `af`, `lf` und `auftrag` öffnen direkt.
 - **Ein Hauptknopf je Bestellweg** (`ware.weg`): „Bestellmail öffnen", „Im Portal bestellen" (öffnet
   das Portal in neuem Tab und zugleich den Dialog), „Anrufen". Ohne Bestellweg: „Bestellliste öffnen".
   „Muster bestellen" erscheint, wenn Muster offen sind.
@@ -675,6 +677,11 @@ DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`)
   „Portal“ oder „Anrufen“. Ohne Stammdaten steht dort, was fehlt („Was fehlt?“ führt zum Lieferant-Detail,
   wenn es einen Eintrag gibt). Daten: `link.schnellzugriff` bzw. `original.schnellzugriff` aus
   `/api/lexikon/produkt` (`operations/README.md`, „Schnellzugriff im Lexikon“).
+- **Ausgelaufenes bleibt auffindbar (seit 2026-11-24):** Der Lexikon-Export lädt auch archivierte Produkte und führt sie
+  getrennt unter `archiviert` (nicht in `produkte` – das heißt weiter „gibt es im Shop“). Nur Suchen und Zuordnungen lesen
+  beides (`_lexikonMitArchiv()` in `dashboard-api.mjs`): Produktsuche und Produktblatt, Einlagern im Musterlager, Packstation,
+  Druckliste. Die Oberfläche kennzeichnet sie mit „! Ausgelaufen“; Musterautomatik, Bestellampel, Kauflinks und Vorschläge
+  bleiben ohne Archiv, ein Musteraufkleber entsteht für Ausgelaufenes nicht.
 
 ### 8b. Muster: Inhalt auf einen Blick und Musterlager (seit 2026-10-13)
 
@@ -889,6 +896,10 @@ Musterversand ganz, die lieferbaren Muster gehen trotzdem raus. `nurMusterversan
 (`operations/lib/muster.mjs`): reine Musterbestellung, voll erstattet, keine Position entfernt, nicht
 storniert (eine Teilerstattung bleibt „Restumfang prüfen“). Die Bestellübersicht führt sie dann als `bezahlt: PAID` (Automatik, Packliste, Listen laufen
 weiter), die Musterwirkung zählt sie mit. Storniert oder Positionen erstattet: wie bisher heraus.
+Die Bestellung trägt dazu `musterversand`: `bezahlt` (reine Musterbestellung, bezahlt, Betrag > 0) oder `erstattet`;
+Gratisbestellungen tragen nichts. Die Packstation zeigt bei `bezahlt` und einem gesperrten Muster den Hinweis
+„4,99 € in Shopify erstatten (komplett)“ mit Link zur Bestellung (`musterversandErstattung()`,
+`versandErstattungHtml()`), bei `erstattet` das Kennzeichen „Versand erstattet“. Erstattet wird nie vom Control Center.
 
 **Kennzahl „Ø je Bestellung ohne Muster“** (seit 2026-10-12, bis 19.11. „Ø je bezahlter Bestellung“): Umsatz geteilt durch die Bestellungen **mit
 Betrag** – Musterbestellungen zählen nicht mit (vorher lag der Schnitt dadurch bei einem
@@ -3321,3 +3332,51 @@ Benutzer beantwortet sie unter „Entscheidungen“, der nächste Lauf macht wei
   `write`-Liste). Rolle „lesen“ bekommt für beides 403; `von` kommt aus der Sitzung. Eine Frage wird nur einmal beantwortet.
 - **Ansicht:** Abschnitt oben in `ansichten/freigaben.mjs`; Zahl über `registriereNavZaehler({ freigaben })` im Zähler
   „Weitere Bereiche“/„Mehr“, auf Heute eine Zeile (`werkbankFragenZeile`). Geladen nur, wenn `darfAnsicht('freigaben')`.
+
+## 36. Rechnungsprüfung im Probebetrieb (24.11.2026, Werkbank w-414, #2301)
+
+Jede Warenrechnung aus dem Rechnungsarchiv wird der Auftragsbestätigung (AB) desselben Lieferantenauftrags zugeordnet
+und Position für Position verglichen (Artikel, Menge, Einzelpreis, Fracht und Zuschläge). Die Absprache mit dem
+Vertreter prüft weiter ein Mensch an der AB; der Prüfer übernimmt nur den mechanischen Teil.
+
+- **Ablauf:** `operations/scripts/rechnungen-pruefen.mjs` läuft freitags nach `belege:monat --schreiben` mit (Dienst
+  `net.teppich-paradies.sammeldatei`, Aufruf aus `belege-monat.mjs`; ein Fehler hält weder Archiv noch Sammeldatei
+  auf), von Hand `npm run -s rechnungen:pruefen -- --monat JJJJ-MM [--schreiben]`. Geprüft werden neue Rechnungen und
+  solche, die in den letzten 14 Tagen nicht prüfbar waren. AB-PDFs holt er nur lesend aus dem Postfach (wie die
+  Lieferbelege, `pdfTexte`), gespeichert wird nie ein Text.
+- **Logik:** `operations/lib/rechnungspruefung.mjs`, rein und ohne KI. Zuordnung nur über eine Auftragsnummer des
+  Lieferanten, die in AB (PDF oder Dateiname) und Rechnung steht; bei geänderter AB zählt die jüngste, eine
+  Sammelrechnung über mehrere Aufträge wird gegen alle gefundenen ABs geprüft. factur-x (CII) wird zeilenweise gelesen;
+  PDF-Text (Rechnung ohne XML und alle ABs) besteht die **Rechenprobe**: Menge × Preis = Betrag je Zeile, die Summe
+  der Zeilen steht gedruckt auf dem Beleg (oder ergibt mit 19 % den Bruttobetrag). Prozentzuschläge auf eine Position
+  werden in den Effektivpreis eingerechnet. Ergebnis je Rechnung genau eins: `passt`, `abweichung` (Position,
+  AB-Wert, Rechnungswert, Differenz in Euro; Toleranz 0,05 € je Position, Mehrmenge ab 0,5 %) oder `nicht_pruefbar`
+  mit Grund (keine AB, Beleg nicht sicher lesbar, Position in keiner gefundenen AB). Fracht, Zuschnitt, Mindermenge
+  und andere Zuschläge werden nur gemeldet, wenn die AB diese Art nirgends nennt oder einen anderen Prozentsatz.
+- **Ablage (privat):** `$TP_PRIVAT_DIR/rechnungspruefung/ergebnisse.json` (je Rechnung, Schlüssel sha256 des PDFs,
+  dazu die Läufe) und `einstellungen.json`: `mailAnVerkauf` (Standard aus), `verkaufAn`, `warenlieferanten`
+  { Rechnungsdomain: AB-Domain | null } für Lieferanten, deren Rechnung von woanders kommt oder die keine AB mailen.
+  Warenlieferant ist sonst, wer ABs per Mail schickt oder in den Lieferanten-Stammdaten steht.
+- **Anzeige** (`docs/ai-dashboard/lib/rechnungspruefung.mjs`): Abweichungen rot auf „Heute“ (über
+  `/api/einkauf/belege` → `rechnungen`, auch ohne Bestelldaten) und als rote Zeile „Rechnung prüfen“ unter „Zu tun“
+  in der Ansicht Laden mit „Erledigt“ (Ablage `laden-telefonisch.json`, Schlüssel `rechnung:<16 Hex>`); die Plakette
+  folgt der Frist einer Laden-Aufgabe. Darunter der Abschnitt **Rechnungen** mit der Wochenzeile „geprüft · passt ·
+  offen“ als Lebenszeichen (bleibt der Lauf mehr als 8 Tage aus, wird sie gelb und auf Heute steht ein To-do) und,
+  eingeklappt, die nicht prüfbaren der letzten 14 Tage mit „Gesehen“. Einkaufspreise und der Entwurf an den
+  Lieferanten (Knopf „Text für den Lieferanten“ auf Heute, nur kopieren, nie senden) für alle – Benutzer 24.11.:
+  Mitarbeiter dürfen hier EK sehen (anders als bei „Einkauf über Verkauf“).
+- **Mail an verkauf@:** seit 24.11. eingeschaltet (Ja des Benutzers). Mit `mailAnVerkauf: true` geht je Rechnung mit
+  Abweichung genau eine Mail mit Beträgen an `verkaufAn`, auch für noch nicht gemeldete der letzten 30 Tage
+  (`gemeldetAm`). Nie eine Mail an Lieferanten.
+
+## 37. Ausschreibungen (26.11.2026, Issue #2371)
+
+Ansicht `#/ausschreibungen` (nur Inhaber; Server: `NUR_INHABER` `ausschreibungen/liste`). Ohne KI bei jedem
+Öffnen aktuell: `GET /api/ausschreibungen/liste` liest jedes Mal frisch `$TP_PRIVAT_DIR/ausschreibungen/status.json`
+(Suchlauf, `operations/scripts/ausschreibungen-pruefen.mjs`) und je Ordner den Kopfblock am Anfang der `CHECKLISTE.md`
+(`<!-- uebersicht` mit `schluessel: wert`-Zeilen: status, titel, auftraggeber, ort, leistung, portal, frist, nebenfrist,
+stand, naechster_schritt, treffer). Zusammenführen als reine Funktion in `lib/ausschreibungen.mjs`: Ordner haben
+Vorrang, Suchtreffer ohne Ordner (Zuordnung über `treffer:` = id oder Link) stehen als „ungeprüft“, abgelaufene
+Treffer fallen weg, Ordner ohne Kopfblock zeigen „Kopfblock fehlt“. Frist ≤ 7 Tage ist bernsteinfarben, überschrittene
+offene Fristen rot. Nur lesend; Daten bleiben lokal, nichts davon im Repository. Wer an einem Verfahren arbeitet,
+pflegt den Kopfblock mit (Format: `LIESMICH-UEBERSICHT.md` im lokalen Ausschreibungen-Ordner).

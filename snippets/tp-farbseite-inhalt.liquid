@@ -1,0 +1,205 @@
+{%- doc -%}
+  Inhalt einer Farbseite (Metaobjekt tp_teppichfarbe, Test "eigene Seite je Farbe"):
+  Kantenbild (Variante) und danach Raumbild der Farbe, belegte Eckdaten, Preisbeispiel, Knopf in den Rechner,
+  Musterhinweis, Links zu den anderen Farben. Nur Werte aus den Produktdaten; nichts
+  wird erfunden, keine Produktbeschreibung kopiert, kein grosshandel.sku.
+
+  Das Snippet kennt nur Produkt und Variante und ist deshalb unabhaengig vom
+  Metaobjekt pruefbar (sections/tp-farbseite reicht die Eintragsdaten durch).
+
+  Preis: gerechnet in snippets/tp-mass-beispiel (80 x 150 cm), dieselbe Rechnung wie
+  Konfigurator, Warenkorb und Produkt-JSON-LD. Ohne Ergebnis entfaellt die Zeile.
+  Kein zweites Offer im JSON-LD: nur BreadcrumbList und WebPage mit Verweis auf die @id
+  der Variante im Product-JSON-LD der Produktseite.
+
+  @param {object} produkt - Teppich nach Mass
+  @param {object} variante - die Farbe
+  @param {string} ueberschrift - H1 des Eintrags
+  @param {string} beschreibung - Meta-Beschreibung des Eintrags (fuer WebPage)
+  @param {string} seiten_url - relative URL der Farbseite (metaobject.system.url)
+  @param {string} [eigene] - Handle des eigenen Eintrags (Auslassung in der Farbenliste)
+{%- enddoc -%}
+{%- liquid
+  assign tfi_p = produkt
+  assign tfi_v = variante
+  assign tfi_farbe = tfi_v.option1
+  assign tfi_farb_teile = tfi_farbe | split: ' ('
+  assign tfi_farbname = tfi_farb_teile[0]
+  assign tfi_basis = tfi_p.metafields.custom.teppich_basis_daten.value
+  assign tfi_qualitaet = tfi_basis.qualitaet
+  assign tfi_breite = tfi_basis.breite[tfi_farbe]
+  assign tfi_max_l = tfi_p.metafields.service.max_laenge_cm.value
+  if tfi_breite == blank
+    assign tfi_breite = tfi_p.metafields.service.max_breite_cm.value
+  endif
+  assign tfi_formen = tfi_p.metafields.service.formen.value | join: ', '
+
+  capture tfi_kante
+    render 'tp-mass-kante-wort', product: tfi_p
+  endcapture
+  assign tfi_kante = tfi_kante | strip | split: '|'
+  capture tfi_lieferzeit
+    render 'tp-mass-lieferzeit', product: tfi_p
+  endcapture
+  assign tfi_lieferzeit = tfi_lieferzeit | strip
+
+  # Bilder: Variantenbild + Raumbild der Farbe (Alt-Text nennt " | Farbe: <Farbe> |", wie tp-farbe-raumbild)
+  assign tfi_marker = ' | Farbe: ' | append: tfi_farbe | append: ' |'
+  assign tfi_raum = nil
+  for tfi_m in tfi_p.media
+    if tfi_m.alt contains tfi_marker and tfi_m.alt contains 'Raumansicht'
+      assign tfi_raum = tfi_m
+      break
+    endif
+  endfor
+  assign tfi_bild = tfi_v.featured_media
+
+  capture tfi_bsp
+    render 'tp-mass-beispiel', product: tfi_p, variant: tfi_v, groessen: '80x150'
+  endcapture
+  assign tfi_bsp = tfi_bsp | strip | split: '|'
+  assign tfi_param = ''
+  if tfi_bsp.size > 2
+    assign tfi_param = '&breite=' | append: tfi_bsp[0] | append: '&laenge=' | append: tfi_bsp[1]
+  endif
+  # Einleitungssatz nur aus belegten Teilen, als eine Zeichenkette (kein Leerraum vor dem Doppelpunkt)
+  assign tfi_lead = tfi_p.title | append: ' in ' | append: tfi_farbname
+  if tfi_qualitaet != blank
+    assign tfi_lead = tfi_lead | append: ': ' | append: tfi_qualitaet
+  endif
+  if tfi_kante[0] != blank
+    assign tfi_lead = tfi_lead | append: ', ' | append: tfi_kante[0]
+  endif
+  assign tfi_lead = tfi_lead | append: '.'
+  if tfi_formen != blank
+    assign tfi_lead = tfi_lead | append: ' Form: ' | append: tfi_formen
+    if tfi_breite != blank and tfi_max_l != blank
+      assign tfi_lead = tfi_lead | append: ', bis ' | append: tfi_breite | append: ' × ' | append: tfi_max_l | append: ' cm'
+    endif
+    assign tfi_lead = tfi_lead | append: '.'
+  endif
+  assign tfi_lead = tfi_lead | append: ' Den Endpreis für Ihr Maß sehen Sie sofort im Rechner.'
+  assign tfi_ziel = tfi_p.url | append: '?variant=' | append: tfi_v.id | append: tfi_param
+  assign tfi_ursprung = request.origin
+  assign tfi_seite_abs = tfi_ursprung | append: seiten_url
+  assign tfi_var_id = tfi_ursprung | append: tfi_ziel | append: '#variant'
+
+  capture tfi_muster
+    render 'tp-musteroption', product: tfi_p
+  endcapture
+  assign tfi_muster = tfi_muster | strip
+-%}
+<article class="tp-farbseite" data-tp-farbseite>
+  <header class="tp-farbseite__kopf">
+    <p class="tp-farbseite__kicker">Teppich nach Maß · Farbe {{ tfi_farbname | escape }}</p>
+    <h1 class="tp-farbseite__titel">{{ ueberschrift | escape }}</h1>
+    <p class="tp-farbseite__lead">{{ tfi_lead | escape }}</p>
+  </header>
+
+  <div class="tp-farbseite__bilder">
+    {%- if tfi_bild != blank -%}
+      <figure class="tp-farbseite__bild">
+        {{ tfi_bild | image_url: width: 1200 | image_tag: width: 1200, widths: '400, 600, 800, 1200', sizes: '(min-width: 750px) 50vw, 100vw', alt: tfi_bild.alt, loading: 'eager', fetchpriority: 'high' }}
+      </figure>
+    {%- endif -%}
+    {%- if tfi_raum != blank -%}
+      <figure class="tp-farbseite__bild">
+        {{ tfi_raum | image_url: width: 1200 | image_tag: width: 1200, widths: '400, 600, 800, 1200', sizes: '(min-width: 750px) 50vw, 100vw', alt: tfi_raum.alt, loading: 'lazy' }}
+      </figure>
+    {%- endif -%}
+  </div>
+  <p class="tp-farbseite__hinweis">Beispielbilder, die Farbe kann abweichen.</p>
+
+  <section class="tp-farbseite__daten" aria-labelledby="tp-farbseite-daten">
+    <h2 id="tp-farbseite-daten" class="tp-farbseite__h2">Eckdaten</h2>
+    <dl class="tp-farbseite__liste">
+      <div><dt>Farbe</dt><dd>{{ tfi_farbe | escape }}</dd></div>
+      {%- if tfi_qualitaet != blank -%}<div><dt>Material und Flor</dt><dd>{{ tfi_qualitaet | escape }}</dd></div>{%- endif -%}
+      {%- if tfi_kante[0] != blank -%}<div><dt>Kante</dt><dd>{{ tfi_kante[0] | capitalize | escape }}</dd></div>{%- endif -%}
+      {%- if tfi_formen != blank -%}<div><dt>Form</dt><dd>{{ tfi_formen | escape }}</dd></div>{%- endif -%}
+      {%- if tfi_breite != blank and tfi_max_l != blank -%}<div><dt>Größte Maße</dt><dd>bis {{ tfi_breite }} × {{ tfi_max_l }} cm</dd></div>{%- endif -%}
+      {%- if tfi_lieferzeit != blank -%}<div><dt>Lieferzeit</dt><dd>{{ tfi_lieferzeit | escape }}</dd></div>{%- endif -%}
+    </dl>
+  </section>
+
+  {%- if tfi_bsp.size > 2 -%}
+    {%- assign tfi_cent = tfi_bsp[2] | times: 1 -%}
+    {%- assign tfi_alt = tfi_bsp[3] | times: 1 -%}
+    <section class="tp-farbseite__preis" aria-labelledby="tp-farbseite-preis">
+      <h2 id="tp-farbseite-preis" class="tp-farbseite__h2">Preisbeispiel</h2>
+      <p class="tp-farbseite__preiszeile">
+        {{ tfi_bsp[0] }} × {{ tfi_bsp[1] }} cm:
+        {%- if tfi_alt > tfi_cent %} <s><span class="visually-hidden">statt </span>{{ tfi_alt | money_without_trailing_zeros }}</s>{% endif %}
+        <strong>{{ tfi_cent | money_without_trailing_zeros }}</strong>
+      </p>
+      <p class="tp-farbseite__hinweis">Inkl. {{ tfi_kante[1] | default: 'Kante' | escape }} und MwSt.{% if settings.tp_versand_frei_ab != blank %} Versand in Deutschland ab {{ settings.tp_versand_frei_ab }}&nbsp;€ Bestellwert kostenlos.{% endif %}</p>
+    </section>
+  {%- endif -%}
+
+  <p class="tp-farbseite__aktion">
+    <a class="button" href="{{ tfi_ziel | replace: '&', '&amp;' }}">Maß eingeben und Preis berechnen</a>
+  </p>
+
+  {%- if tfi_muster != blank -%}
+    <p class="tp-farbseite__muster">Ob ein Muster dieser Farbe lieferbar ist und was es kostet, steht auf der <a href="{{ tfi_p.url }}?variant={{ tfi_v.id }}">Produktseite</a>.</p>
+  {%- endif -%}
+
+  {%- capture tfi_farbenliste -%}
+    {%- for tfi_e in metaobjects.tp_teppichfarbe.values -%}
+      {%- comment -%} Eintrag mit geloeschter Variante ergaebe einen Link ohne Text {%- endcomment -%}
+      {%- if tfi_e.produkt.value.id == tfi_p.id and tfi_e.system.handle != eigene and tfi_e.variante.value != blank -%}
+        <li><a href="{{ tfi_e.system.url }}">{{ tfi_e.variante.value.option1 | escape }}</a></li>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- assign tfi_farbenliste = tfi_farbenliste | strip -%}
+  {%- if tfi_farbenliste != blank -%}
+    <nav class="tp-farbseite__farben" aria-labelledby="tp-farbseite-farben">
+      <h2 id="tp-farbseite-farben" class="tp-farbseite__h2">Weitere Farben</h2>
+      <ul class="tp-farbseite__farbliste" role="list">{{ tfi_farbenliste }}</ul>
+    </nav>
+  {%- endif -%}
+  <p class="tp-farbseite__zurueck"><a href="{{ tfi_p.url }}?variant={{ tfi_v.id }}">Zur Produktseite {{ tfi_p.title | escape }}</a> · <a href="{{ collections['teppich-nach-mass'].url }}">Alle Teppiche nach Maß</a></p>
+</article>
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": {{ tfi_seite_abs | append: '#webpage' | json }},
+    "url": {{ tfi_seite_abs | json }},
+    "name": {{ ueberschrift | json }},
+    "description": {{ beschreibung | json }},
+    "inLanguage": "de-DE",
+    "about": { "@id": {{ tfi_var_id | json }} }
+  }
+</script>
+
+{% stylesheet %}
+  .tp-farbseite { max-width: 1100px; margin: 0 auto; padding: 16px 16px 48px; box-sizing: border-box; }
+  .tp-farbseite__kopf { max-width: 760px; }
+  .tp-farbseite__kicker { margin: 0 0 8px; font-size: var(--tp-fs-sm); font-weight: 500; color: #595959; }
+  .tp-farbseite__titel { margin: 0 0 12px; font-size: var(--tp-fs-xl); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+  /* doppelte Klasse: das Theme nullt sonst den Abstand erster/letzter Absaetze und Ueberschriften */
+  .tp-farbseite .tp-farbseite__lead { margin: 0 0 20px; font-size: var(--tp-fs-md); }
+  .tp-farbseite__bilder { display: grid; gap: 12px; grid-template-columns: 1fr; align-items: start; margin: 0 0 8px; }
+  .tp-farbseite__bild { margin: 0; border-radius: 8px; overflow: hidden; background: #f4f4f4; }
+  .tp-farbseite__bild img { display: block; width: 100%; height: auto; }
+  .tp-farbseite .tp-farbseite__h2 { margin: 28px 0 8px; font-size: var(--tp-fs-lg); font-weight: 600; }
+  .tp-farbseite__hinweis { margin: 4px 0 0; font-size: var(--tp-fs-xs); color: #595959; }
+  .tp-farbseite__liste { display: grid; gap: 0; margin: 0; max-width: 760px; }
+  .tp-farbseite__liste > div { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12); font-size: var(--tp-fs-sm); }
+  .tp-farbseite__liste dt { font-weight: 500; color: #595959; }
+  .tp-farbseite__liste dd { margin: 0; overflow-wrap: anywhere; }
+  .tp-farbseite__preiszeile { margin: 0; font-size: var(--tp-fs-lg); }
+  .tp-farbseite__preiszeile strong { font-weight: 600; }
+  .tp-farbseite__aktion { margin: 24px 0 8px; }
+  .tp-farbseite__muster { margin: 8px 0 0; font-size: var(--tp-fs-sm); }
+  .tp-farbseite__farbliste { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; padding: 0; list-style: none; font-size: var(--tp-fs-sm); }
+  .tp-farbseite__zurueck { margin: 28px 0 0; font-size: var(--tp-fs-sm); }
+  .tp-farbseite a:not(.button) { color: var(--tp-ink, currentColor); text-decoration: underline; text-underline-offset: 2px; }
+  @media (min-width: 750px) {
+    .tp-farbseite { padding-block: 24px 64px; }
+    .tp-farbseite__bilder { grid-template-columns: 1fr 1fr; }
+  }
+{% endstylesheet %}

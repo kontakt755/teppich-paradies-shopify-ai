@@ -31,6 +31,20 @@ export const ohneMusterMoeglich = (k, m) => !!m?.gesperrt
   && (k.muster.some(x => !x.gesperrt) || k.bestellungen.some(b => b.orderId === m.orderId && b.mitWare));
 
 /** Darf "Kunde informieren…" abschliessen? Der Schritt gilt je ganze Bestellung, also nie, wo Ware oder ein lieferbares Muster dranhaengt. */
+/**
+ * Erstattungsregel Musterversand (Inhaber 19.11.2026): fehlt ein Muster, erstattet ein Mensch in Shopify die
+ * 4,99 € ganz; die uebrigen Muster gehen trotzdem raus. Nur fuer Bestellungen mit bezahltem Musterversand.
+ * shortcut: der Hinweis haengt am gesperrten Muster im Umschlag; nach "Ohne dieses Muster weiter packen" ist er weg.
+ * Aendern, falls Erstattungen in der Praxis vergessen werden (dann den Schritt je Position auswerten).
+ * @param {object} k  Umschlag aus der Packliste
+ * @returns {{erstatten: object[], erstattet: object[]}}  erstatten = Bestellungen mit gesperrtem Muster, noch nicht erstattet
+ */
+export function musterversandErstattung(k) {
+  const fehlt = new Set((k.muster || []).filter(m => m.gesperrt).map(m => m.orderId));
+  const b = k.bestellungen || [];
+  return { erstatten: b.filter(x => x.musterversand === 'bezahlt' && fehlt.has(x.orderId)), erstattet: b.filter(x => x.musterversand === 'erstattet') };
+}
+
 export const umschlagAbschliessbar = k => k.muster.every(m => m.gesperrt) && !k.bestellungen.some(b => b.mitWare);
 
 export const umschlagKennung = k => (k.bestellungen || []).map(b => b.orderName).filter(Boolean).join(' / ') || k.packSchluessel;
@@ -213,7 +227,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       if (a.bezahlt === 'PARTIALLY_REFUNDED') { g.teilweiseErstattet = true; g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.'); }
       if (positionen.some(p => direkt(a, p))) { g.direktversand = true; g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.'); }
       // Gleiche Regel wie auftragsart(): mit Ware kennt die Bestellung den Schritt "Muster nicht verfuegbar" nicht.
-      g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null, ...((a.positionen || []).some(p => p?.istMuster !== true) ? { mitWare: true } : {}) });
+      g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null, ...((a.positionen || []).some(p => p?.istMuster !== true) ? { mitWare: true } : {}),
+        ...(a.musterversand ? { musterversand: a.musterversand, adminUrl: a.adminUrl || null } : {}) });
       // Die neueste Bestellung traegt die aktuellste Anschrift.
       if (!g.adresse || (a.datum || '') >= (g.adresse.datum || '')) {
         g.adresse = { ...(a.details?.lieferadresse || {}), datum: a.datum || '' };
@@ -242,10 +257,14 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           bestellt: { titel: text(p.titel), farbe: text(p.farbe) },
           // Produkt in der Produktsuche: "Ins Lager aufnehmen" holt darueber alle Breiten der Farbe.
           produktHandle: text(z.produktHandle) || null,
+          // Bestelltes (Muster-)Produkt ist im Shop archiviert: einen Aufkleber gibt es dafuer bewusst nicht mehr
+          // (der QR-Code fuehrte ins Leere) - die Zeile sagt aber, warum, statt nur "Zuordnung fehlt".
+          ...(produkte.get(p.handle)?.status === 'ARCHIVED' ? { ausgelaufen: true } : {}),
           // Nachtraeglich zur Bestellung hinzugefuegt (Bestellbearbeitung in Shopify), sonst null.
           nachbestelltAm: belegt(p.nachbestelltAm) && !Number.isNaN(new Date(p.nachbestelltAm).getTime()) ? text(p.nachbestelltAm) : null,
           vorher: v,
           lieferant: v?.lieferant ? lieferantVon(v.lieferant) : null,
+          ...(v?.lieferant ? { lieferantId: text(v.lieferant) } : {}),
           bild: v?.bild || null,
           abgehakt: haken[z.lineItemId] ? { zeit: haken[z.lineItemId].zeit || null, von: haken[z.lineItemId].von || null } : null,
           stand,
@@ -266,6 +285,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
           ...(haengtWerktage ? { haengtWerktage } : {}),
           ...(offenTage !== null ? { offenTage } : {}),
           ...(direkt(a, p) ? { direkt: true } : {}),
+          ...(stand === 'da' && belegt(eintrag?.geliefertAm) ? { geliefertAm: text(eintrag.geliefertAm) } : {}),
         };
         m.ampel = packMusterAmpel(m, { jetzt, bestellenRotAb: FRISTEN.bestellen[1] });
         g.muster.push(m);
@@ -312,6 +332,14 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       // Ein Haken bestaetigt das physisch eingelegte Muster, sonst braucht es bestaetigten Bestand.
       bereich: istGepackt ? 'gepackt' : klaerung || gesperrt || hinweise.length || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
     };
+    // Nichts zu klaeren ausser "der Hersteller schickt direkt": eigener Reiter statt "Zu klaeren" (26.11.).
+    umschlag.nurDirekt = !istGepackt && muster.every(m => m.direkt) && !klaerung && !gesperrt && !g.teilweiseErstattet && !unvollstaendig.length && !adressAufkleber.fehlt.length;
+    // Packbereit seit dem letzten Wareneingang; ohne Beleg (Lagermuster) seit der Kundenbestellung.
+    if (umschlag.bereich === 'packen') {
+      const seitWann = muster.map(m => m.geliefertAm || m.abgehakt?.zeit || bestellungen.find(b => b.orderId === m.orderId)?.datum).filter(belegt)
+        .sort((x, y) => Date.parse(x) - Date.parse(y)).at(-1);
+      umschlag.packbereitTage = kalendertage(seitWann, jetzt);
+    }
     umschlag.ampel = packUmschlagAmpel(umschlag, { versandProblem: text(versandProbleme?.[pk]?.problem) || null });
     return umschlag;
   };
@@ -323,7 +351,7 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     // Weitere Umschlaege desselben Empfaengers (andere Bestelltage): die Ansicht nennt sie in der
     // Kopfzeile, damit niemand die Bestellungen verwechselt.
     for (const u of umschlaege) {
-      u.weitere = umschlaege.filter(x => x !== u).map(x => ({ packSchluessel: x.packSchluessel, bestellungen: x.bestellungen.map(b => b.orderName), seit: x.seit, bereich: x.bereich }));
+      u.weitere = umschlaege.filter(x => x !== u).map(x => ({ packSchluessel: x.packSchluessel, bestellungen: x.bestellungen.map(b => b.orderName), seit: x.seit, bereich: x.nurDirekt ? 'direkt' : x.bereich }));
     }
     liste.push(...umschlaege);
   }
@@ -567,4 +595,33 @@ export function sammelliste(kundenListe = []) {
   const rang = z => (z.fach ? 0 : z.stand === 'lager' ? 1 : 2);
   return [...je.values()].sort((a, b) => rang(a) - rang(b) || namen.compare(a.fach || '', b.fach || '')
     || namen.compare(a.titel, b.titel) || namen.compare(a.farbe, b.farbe));
+}
+
+/** Beim Lieferanten bestellt und laut Ampel zu lange unterwegs: hier lohnt das Nachfragen. */
+export const nachhakbar = m => m.stand === 'bestellt' && !m.abgehakt && !m.lagerMoeglich && !m.gesperrt && !!m.lieferantId && ['termin', 'ueberfaellig', 'nachhaken'].includes(m.ampel?.grund);
+
+/**
+ * Mail-Entwurf "wo bleiben die Muster?" (27.11.): alle nachhakbaren Muster eines Lieferanten ueber alle
+ * Umschlaege, in dessen Bezeichnungen. Kundennamen gehen nicht mit. Gesendet wird nur von Hand.
+ * @param {object} kontakt  { mail, telefon, kundennummer } aus den privaten Stammdaten
+ */
+export function nachhakEntwurf(kundenListe = [], lieferantId, kontakt = {}) {
+  const offen = (kundenListe || []).flatMap(k => k.muster).filter(m => m.lieferantId === lieferantId && nachhakbar(m))
+    .sort((a, b) => text(a.bestelltAm).localeCompare(text(b.bestelltAm)));
+  const datum = iso => (Number.isNaN(Date.parse(iso)) ? '' : new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' }));
+  const zeile = m => {
+    const v = m.vorher || {};
+    const ware = v.produktname
+      ? [v.produktname, v.farbnummer ? `Farbnr. ${v.farbnummer}` : '', v.artikelnummer ? `Art.-Nr. ${v.artikelnummer}` : ''].filter(Boolean).join(', ')
+      : `${text(m.bestellt.titel).replace(/^Muster:?\s+/, '')} ${text(m.bestellt.farbe)}`.trim();
+    return `- ${ware}${datum(m.bestelltAm) ? ` – bestellt am ${datum(m.bestelltAm)}` : ''} (unsere Bestellung ${m.orderName})`;
+  };
+  const nummer = kontakt?.kundennummer ? ` (Kundennummer ${kontakt.kundennummer})` : '';
+  return {
+    anzahl: offen.length,
+    an: kontakt?.mail || '',
+    telefon: kontakt?.telefon || '',
+    betreff: `Nachfrage Musterbestellung – ${offen.length} Muster offen${nummer}`,
+    text: `Guten Tag,\n\nfolgende Muster haben wir bestellt und noch nicht erhalten:\n\n${offen.map(zeile).join('\n')}\n\nBitte nennen Sie uns kurz den voraussichtlichen Liefertermin.\n\nVielen Dank und freundliche Grüße\nTeppich Paradies Oranienburg`,
+  };
 }

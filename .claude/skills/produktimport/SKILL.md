@@ -1,6 +1,6 @@
 ---
 name: produktimport
-description: Neue Produkte aus einer Lieferantenquelle in Shopify anlegen (Teppichboden, Vinyl, Linoleum, Fliesen, Zubehoer) - Namensregeln klaeren, Rohdaten per curl erheben, productSet, Medien, Veroeffentlichung, Gegenprobe. Verwenden bei "Produkte importieren", "neue Linie anlegen", Lieferantenlinks vom Inhaber und bevor das erste productSet laeuft. Ersetzt den alten Import-Skill aus dem Claude-Konto.
+description: Neue Produkte aus einer Lieferantenquelle in Shopify anlegen (Teppichboden, Vinyl, Linoleum, Fliesen, Zubehoer) - Namensregeln klaeren, Rohdaten per curl erheben, productSet, Medien, Veroeffentlichung, Gegenprobe. Verwenden bei "Produkte importieren", "neue Linie anlegen", Lieferantenlinks vom Inhaber und bevor das erste productSet laeuft.
 ---
 
 # Produktimport

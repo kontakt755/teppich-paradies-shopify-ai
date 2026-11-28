@@ -1,0 +1,51 @@
+/* Aus sections/tp-preisklassen.liquid ausgelagert: laedt nur, wo der Abschnitt rendert (nicht im themeweiten styles.css). */
+  tp-preisklassen { display: block; }
+  tp-preisklassen[aria-busy='true'] .tp-pk__kachel { opacity: 0.6; }
+  .tp-pk__nav { min-width: 0; max-width: 100%; }
+  .tp-pk__kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-block-end: 12px; }
+  .tp-pk__titel { margin: 0; font-size: var(--tp-fs-lg); font-weight: 600; line-height: 1.25; }
+  .tp-pk__lead { margin: 0; font-size: var(--tp-fs-sm); color: #595959; }
+  .tp-pk__alle { font-size: var(--tp-fs-sm); font-weight: 500; color: var(--tp-ink, #1d1a17); text-decoration: underline; text-underline-offset: 3px; }
+  .tp-pk__liste { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .tp-pk__kachel {
+    display: flex; flex-direction: column; gap: 2px; height: 100%;
+    padding: 14px 16px; border: 1px solid var(--tp-line, #e6e0d8); border-radius: 12px;
+    background: var(--tp-bg-2, #f6f2ec); color: var(--tp-ink, #1d1a17); text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .tp-pk__kachel:hover { border-color: var(--tp-ink, #1d1a17); }
+  .tp-pk__kachel:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+  .tp-pk__kachel--aktiv { border-color: var(--tp-ink, #1d1a17); background: var(--tp-ink, #1d1a17); color: #fff; }
+  .tp-pk__name { font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.25; }
+  .tp-pk__bereich { font-size: var(--tp-fs-md); font-weight: 500; line-height: 1.3; }
+  .tp-pk__anzahl { font-size: var(--tp-fs-sm); color: #595959; line-height: 1.3; }
+  .tp-pk__kachel--aktiv .tp-pk__anzahl { color: rgb(255 255 255 / 0.8); }
+  /* Bis Tablet eine waagerecht wischbare Zeile, wie die Unterkategorien:
+     fuenf Kacheln in eine Telefonbreite zu zwaengen wuerde die Preise umbrechen. */
+  @media screen and (max-width: 1024px) {
+    .tp-pk__liste {
+      display: flex; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+      padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+    }
+    .tp-pk__liste::-webkit-scrollbar { display: none; }
+    .tp-pk__liste > li { flex: none; width: 152px; scroll-snap-align: start; }
+    .tp-pk__kachel { padding: 12px 14px; }
+  }
+  /* Handy-Kompaktansicht (w-375, nur Testkategorien): Preisklassen als schmale
+     Chips in einer Zeile. Die Trefferzahl bleibt fuer Screenreader im Text. */
+  @media screen and (max-width: 749px) {
+    .tp-pk--kompakt .tp-pk__lead { display: none; }
+    .tp-pk--kompakt .tp-pk__kopf { margin-block-end: 8px; }
+    .tp-pk--kompakt .tp-pk__titel { font-size: var(--tp-fs-md); }
+    .tp-pk--kompakt .tp-pk__liste { gap: 8px; }
+    .tp-pk--kompakt .tp-pk__liste > li { width: auto; }
+    .tp-pk--kompakt .tp-pk__kachel {
+      position: relative; /* haelt die versteckte Trefferzahl (absolut) im wischbaren Streifen, sonst waechst die Seite seitwaerts */
+      flex-direction: row; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 999px; white-space: nowrap;
+    }
+    .tp-pk--kompakt .tp-pk__name,
+    .tp-pk--kompakt .tp-pk__bereich { font-size: var(--tp-fs-sm); }
+    .tp-pk--kompakt .tp-pk__anzahl {
+      position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
+  }

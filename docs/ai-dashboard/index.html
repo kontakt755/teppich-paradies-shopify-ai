@@ -39,6 +39,7 @@
   <link rel="stylesheet" href="./stile/sonderposten.css">
   <link rel="stylesheet" href="./stile/akquise.css">
   <link rel="stylesheet" href="./stile/hausverwaltungen.css">
+  <link rel="stylesheet" href="./stile/ausschreibungen.css">
   <link rel="stylesheet" href="./stile/muster.css">
   <link rel="stylesheet" href="./stile/bestellungen.css">
   <link rel="stylesheet" href="./stile/muster-packen.css">
@@ -72,6 +73,7 @@
         <a href="#/einkauf?tab=lieferant&amp;art=muster&amp;af=offen" data-nav="einkauf" data-nav-einkauf="muster" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Muster bestellen</span></a>
         <a href="#/kunden?tab=muster" data-nav="kunden" data-nav-tab="muster" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3zM3 7l4-4h10l4 4M12 3v17M3 12h18"/></svg><span>Packstation</span><span class="nav-count" data-nav-zahl="packen" hidden></span></a>
         <a href="#/kunden?tab=anrufe" data-nav="kunden" data-nav-tab="anrufe"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h3l2 5-2.500 1.500a12 12 0 0 0 6 6L16 13l5 2v3a3 3 0 0 1-3 3A15 15 0 0 1 3 6a3 3 0 0 1 3-3z"/></svg><span>Kunden nach Produkt fragen</span><span class="nav-count" data-nav-zahl="fragen" hidden></span></a>
+        <a href="#/einkauf?tab=lieferanten" data-nav="einkauf" data-nav-einkauf="lieferanten"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9l6 3V9l6 3V5h4v15zM8 16.500h2M13 16.500h2"/></svg><span>Lieferanten</span></a>
         <!-- Ohne nav-haupt: unten in der Handyleiste ist kein Platz, deshalb steht es dort im Blatt "Mehr". -->
         <a href="#/einkauf?tab=musterlager" data-nav="einkauf" data-nav-einkauf="lager"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.500 12 4l8 4.500V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM8 20v-7h8v7M8 16.500h8"/></svg><span>Musterlager</span></a>
         <a href="#/lexikon" data-nav="lexikon" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.200"/><path d="m16 16 4.500 4.500"/></svg><span>Lexikon</span></a>
@@ -85,6 +87,7 @@
             <a href="#/einkauf" data-nav="einkauf"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Bestellen</span><span class="nav-count" data-nav-zahl="einkauf" hidden></span></a>
             <a href="#/akquise" data-nav="akquise"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V8l8-4 8 4v12M9 20v-6h6v6"/></svg><span>Genossenschaften</span></a>
             <a href="#/hausverwaltungen" data-nav="hausverwaltungen"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20V6l7-3v17M12 9h7v11M8 8v.2M8 12v.2M8 16v.2M15.5 13v.2M15.5 16.5v.2"/></svg><span>Hausverwaltungen</span></a>
+            <a href="#/ausschreibungen" data-nav="ausschreibungen" data-nur-inhaber><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/></svg><span>Ausschreibungen</span></a>
             <a href="#/sonderposten" data-nav="sonderposten"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.500h7.200l8.300 8.300a1.400 1.400 0 0 1 0 2l-4.700 4.700a1.400 1.400 0 0 1-2 0L4.500 11.200V4.500z"/><circle cx="8.300" cy="8.300" r="1.300"/></svg><span>Sonderposten</span></a>
             <a href="#/bildrechte" data-nav="bildrechte" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="5" width="17" height="14" rx="1.500"/><circle cx="9" cy="10" r="1.600"/><path d="m4 17.500 5-4.500 3.500 3 3-2.500 4.500 4"/></svg><span>Bildrechte</span></a>
             <a href="#/social" data-nav="social" data-nicht-mitarbeiter data-nicht-lesen><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17.500" cy="6" r="2.500"/><circle cx="6.500" cy="12" r="2.500"/><circle cx="17.500" cy="18" r="2.500"/><path d="m8.700 10.800 6.600-3.600M8.700 13.200l6.600 3.600"/></svg><span>Social Media</span></a>

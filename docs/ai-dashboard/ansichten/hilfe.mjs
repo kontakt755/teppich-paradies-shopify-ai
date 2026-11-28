@@ -70,7 +70,7 @@ const ABLAEUFE = [
     '<b>3 · Zukleben und verschicken</b>: Umschlag zukleben, dann <b>Umschlag gepackt – verschicken…</b> und in der Karte bestätigen. Gepackt heißt verschickt: der Kunde bekommt sofort die Versandmail, danach geht der Umschlag zur Post. Zurücknehmen geht dann nicht mehr.',
     'Steht etwas im Reiter <b>Gepackt</b>, wurde es nie als verschickt eingetragen. Liegt der Umschlag noch im Regal: zur Post und <b>Verschickt – Kunde informieren…</b>. War er schon früher raus: <b>War schon früher raus…</b> (ohne Versandmail).',
     'Kommt ein Paket Muster vom Lieferanten: Reiter <b>Muster kommt an</b>. Eintippen, was auf dem Muster steht – die Karte sagt, in welchen Umschlag es gehört.',
-    'Kommt ein Muster nicht und der Kunde hat den Musterversand bezahlt: die 4,99 € in Shopify ganz erstatten, die übrigen Muster trotzdem verschicken.',
+    'Kommt ein Muster nicht und der Kunde hat den Musterversand bezahlt (ab 01.12.): die <b>4,99 € in Shopify ganz erstatten</b>, die übrigen Muster trotzdem verschicken. Die Packstation zeigt dann den Hinweis mit dem Link zur Bestellung. Erstatten kann nur ein Mensch in Shopify. Dabei nur den Versand erstatten, keine Muster-Position auswählen und nichts teilweise erstatten. Danach steht am Umschlag <b>Versand erstattet</b>, er bleibt in der Packstation, bis die Muster raus sind.',
     '<b>× Rot</b> heißt: der Kunde wartet auf uns – ein Muster kommt nicht, eine Angabe fehlt, beim Lieferanten seit 14 Tagen bestellt, seit 7 Tagen bezahlt und nicht bestellt oder nie als verschickt eingetragen. <b>! Gelb</b>: seit 7 Tagen bestellt (nachhaken), noch nicht bestellt oder zu klären. Ohne Zeichen ist alles in Ordnung. Die Reiter oben zählen die roten Umschläge.',
   ]],
   ['Genossenschaft anschreiben', [
@@ -123,11 +123,11 @@ export function viewHilfe() {
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Unter <b>Weitere Bereiche</b> auf <b>Bestellen</b>, Reiter <b>Je Lieferant</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
+        <li>Unter <b>Weitere Bereiche</b> auf <b>Bestellen</b>, Reiter <b>Je Lieferant</b>: je Lieferant eine Karte mit Zahlen und Knöpfen – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. <b>Positionen zeigen</b> klappt die Liste auf, <b>Zuerst klären</b> oben öffnet sich ebenfalls erst auf Klick. Was schon beim Kunden ist, zählt dort als erledigt.</li>
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
         <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – Warenbestellungen schickst du selbst ab. Nur vollständige Muster, die uns der Lieferant kostenlos schickt, kann das Dashboard selbst per Mail bestellen – die stehen dann schon als „bestellt“ da. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
-        <li><b>Positionen bearbeiten</b> klappt die einzelnen Artikel auf: Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen.</li>
+        <li>Danach <b>Positionen bearbeiten</b> (bei Artikeln ohne Lieferant sofort): Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen. Je Zeile steht ein Knopf für den nächsten Schritt, alles Weitere unter <b>Mehr</b>.</li>
         <li>Versehentlich „bestellt“ geklickt? <b>Rückgängig</b> direkt danach, oder später <b>Zurück auf offen…</b> am Artikel bzw. <b>Alle zurück auf offen…</b> an der Karte.</li>
         <li>Muster selbst da (Katalog, Musterlager)? <b>Haben wir da…</b> am Muster oder in der Kundenakte: dann wird es nicht bestellt, sondern erscheint als „Muster vorbeibringen“ bzw. „Muster verschicken“ – mit Ort des Kunden.</li>
       </ol>

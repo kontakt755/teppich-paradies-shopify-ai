@@ -1,0 +1,76 @@
+{
+  "id": "RAT-TB-010",
+  "handle": "teppichfliesen-im-buero",
+  "title": "Teppichfliesen im Büro: Wann sie sich lohnen und worauf es ankommt",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Auswahl & Kaufberatung"
+  ],
+  "cluster": "teppichboden/auswahl",
+  "parent": "ratgeber-teppichboden",
+  "intent": "kaufberatung",
+  "frage": "Wann sind Teppichfliesen im Büro die bessere Wahl?",
+  "begriff": "teppichfliesen büro",
+  "nebenfragen": [
+    "Welche Nutzungsklasse brauche ich im Büro?",
+    "Sind Teppichfliesen für Bürostuhlrollen geeignet?",
+    "Fixierung oder Kleber bei Teppichfliesen?",
+    "Fliese 50×50 oder Planke?"
+  ],
+  "status": "freigegeben",
+  "verwandte": [
+    "welcher-teppichboden-fuer-welchen-raum",
+    "teppichboden-verlegen-lose-fixieren-oder-kleben",
+    "untergrund-pruefen-und-vorbereiten"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [
+    "fixierung",
+    "nutzungsklasse",
+    "stuhlrolleneignung"
+  ],
+  "quellen": [
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Einsatzbereiche textiler Beläge (EN 1307, Klassen Wohn-/Objektbereich)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/textile-bodenbelaege/einsatzbereiche-von-textilen-belaegen-959259"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Stuhlrolleneignung (Rollen nach DIN EN 12529)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/glossar-a-z/stuhlrolleneignung-953155"
+    },
+    {
+      "art": "hausangabe",
+      "titel": "Technische Daten der Teppichfliesen im Shop",
+      "url": "/collections/teppichfliesen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 12,
+    "naechste": "2027-11-24",
+    "grund": "Sortiment und Normhinweise ändern sich mit dem Angebot"
+  },
+  "expert_input": [],
+  "excerpt": "Austauschbar, abschnittsweise verlegbar, geeignet für Hohlraumböden: wann Teppichfliesen im Büro sinnvoll sind und welche Nutzungsklasse, Stuhlrollen und Fixierung dazugehören.",
+  "seo": {
+    "title": "Teppichfliesen im Büro: Nutzungsklasse und Stuhlrollen",
+    "description": "Teppichfliesen im Büro: wann sie sich lohnen, welche Nutzungsklasse (32/33) gilt, was bei Stuhlrollen zählt und wie Fliesen fixiert werden."
+  },
+  "metafields": {
+    "kurzantwort": "Teppichfliesen lohnen sich im Büro, wenn einzelne Bereiche austauschbar bleiben sollen, abschnittsweise im laufenden Betrieb verlegt wird oder ein Hohlraumboden vorhanden ist. Üblich ist Nutzungsklasse 32, bei viel Laufverkehr 33. Für Bürostuhlrollen zählt die Eignung des einzelnen Produkts, für den Halt eine Fliesenfixierung statt Kleber.",
+    "art": "Kaufberatung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "muster",
+      "zubehoer"
+    ],
+    "kollektion": "teppichfliesen",
+    "zubehoer_kollektion": "zubehoer-kleber-fixierung",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

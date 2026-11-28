@@ -1,0 +1,100 @@
+{{ 'tp-farbuebersicht.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  Farbuebersicht einer Qualitaet auf ihrer Kategorie (SEO Phase 3, 2026-11-24):
+  je Farbe eine Kachel mit Variantenbild, Name und Farbcode; der Klick oeffnet
+  das Produkt mit dieser Farbe vorausgewaehlt (?variant=). Ersetzt 34
+  Einzelprodukte je Farbe - Varianten und SKUs bleiben unveraendert.
+
+  Farbe = Produktoption "Farbe" im Format "Name (Code)". Fehlt die Klammer,
+  steht nur der Name auf der Kachel. Ziel ist die erste Variante der Farbe
+  (bei Modena 400 cm).
+  shortcut: Kachelbild = Bild der ersten Variante ohne Pruefung auf Serienfotos
+  (wie in snippets/tp-leisten-farbkachel); erst noetig, wenn ein Produkt mit
+  geteilten Variantenbildern hier eingetragen wird.
+
+  Ohne eingetragenes Produkt (SEO Phase 4): erstes Produkt der Kategorie vom
+  Typ Teppichboden mit Option Farbe (die Meterware), sonst das erste mit Farbe.
+  So reicht die Vorlage collection.farbuebersicht fuer jede Qualitaets-Kategorie.
+  [kategorie] in Ueberschrift und Text = Titel der Kategorie.
+{%- endcomment -%}
+
+{%- liquid
+  assign tp_fu_produkt = section.settings.produkt
+  if tp_fu_produkt == blank and collection
+    for tp_fu_p in collection.products limit: 50
+      if tp_fu_p.options_by_name['Farbe'] == blank
+        continue
+      endif
+      if tp_fu_p.type == 'Teppichboden'
+        assign tp_fu_produkt = tp_fu_p
+        break
+      endif
+      if tp_fu_produkt == blank
+        assign tp_fu_produkt = tp_fu_p
+      endif
+    endfor
+  endif
+  assign tp_fu_option = tp_fu_produkt.options_by_name['Farbe']
+  assign tp_fu_kategorie = collection.title | default: tp_fu_produkt.title
+-%}
+
+{%- if tp_fu_option != blank -%}
+  {%- assign tp_fu_index = tp_fu_option.position | minus: 1 -%}
+  <div class="tp-fu" aria-labelledby="tp-fu-titel-{{ section.id }}">
+    <h2 id="tp-fu-titel-{{ section.id }}" class="tp-fu__titel">
+      {{- section.settings.titel | replace: '[anzahl]', tp_fu_option.values.size | replace: '[kategorie]', tp_fu_kategorie | escape -}}
+    </h2>
+    {%- if section.settings.text != blank -%}
+      <div class="tp-fu__text rte">{{ section.settings.text | replace: '[kategorie]', tp_fu_kategorie }}</div>
+    {%- endif -%}
+    <ul class="tp-fu__raster" role="list">
+      {%- for tp_fu_wert in tp_fu_option.values -%}
+        {%- liquid
+          assign tp_fu_voll = tp_fu_wert.name | default: tp_fu_wert
+          assign tp_fu_variante = null
+          for tp_fu_v in tp_fu_produkt.variants
+            if tp_fu_v.options[tp_fu_index] == tp_fu_voll
+              assign tp_fu_variante = tp_fu_v
+              break
+            endif
+          endfor
+          assign tp_fu_teile = tp_fu_voll | split: ' ('
+          assign tp_fu_name = tp_fu_teile | first
+          assign tp_fu_code = ''
+          if tp_fu_teile.size > 1
+            assign tp_fu_code = tp_fu_teile | last | remove: ')'
+          endif
+        -%}
+        {%- if tp_fu_variante -%}
+          <li class="tp-fu__kachel">
+            <a href="{{ tp_fu_variante.url }}" class="tp-fu__link">
+              <span class="tp-fu__bild">
+                {%- if tp_fu_variante.featured_image -%}
+                  {{- tp_fu_variante.featured_image | image_url: width: 300 | image_tag: loading: 'lazy', sizes: '(min-width: 750px) 160px, 30vw', widths: '150, 220, 300', alt: '' -}}
+                {%- endif -%}
+              </span>
+              <span class="tp-fu__name">{{ tp_fu_name | escape }}</span>
+              {%- if tp_fu_code != blank -%}
+                <span class="tp-fu__code">Farbcode {{ tp_fu_code | escape }}</span>
+              {%- endif -%}
+            </a>
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Farbübersicht",
+  "tag": "section",
+  "class": "tp-fu-section",
+  "settings": [
+    { "type": "product", "id": "produkt", "label": "Produkt mit der Option Farbe", "info": "Leer = Meterware der Kategorie automatisch" },
+    { "type": "text", "id": "titel", "label": "Überschrift ([anzahl] = Zahl der Farben, [kategorie] = Kategorietitel)", "default": "[kategorie]: alle [anzahl] Farben mit Farbcode" },
+    { "type": "richtext", "id": "text", "label": "Text unter der Überschrift" }
+  ],
+  "presets": [{ "name": "TP Farbübersicht" }]
+}
+{% endschema %}

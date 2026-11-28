@@ -1,21 +1,6 @@
 # TeppichParadies — Claude Code
 
-## Modellwahl und effiziente Ressourcennutzung – hoechste Prioritaet
-
-Waehle fuer jede Aufgabe eigenstaendig das am besten geeignete verfuegbare KI-Modell.
-
-Grundprinzip: So schnell und kostenguenstig wie moeglich, aber so leistungsfaehig wie noetig.
-
-* Einfache Aufgaben: schnelle, kostenguenstige Modelle fuer Routinearbeiten, Dateisuche, einfache Codeaenderungen, Formatierungen und Zusammenfassungen.
-* Mittlere Aufgaben: ausgewogene Modelle fuer normale Programmierung, Fehlerbehebungen, Analysen und die Umsetzung klar definierter Funktionen.
-* Komplexe Aufgaben: leistungsstarke Modelle fuer Architekturentscheidungen, schwierige Fehleranalysen, sicherheitskritische Aenderungen und umfangreiche Programmieraufgaben.
-* Aufgaben aufteilen: einfache Teilaufgaben moeglichst an guenstigere Subagenten delegieren, sofern das insgesamt Ressourcen spart.
-* Eskalation: nur dann zu einem leistungsfaehigeren Modell wechseln, wenn Komplexitaet, Risiko oder fehlgeschlagene Loesungsversuche es rechtfertigen.
-* Qualitaetskontrolle: nie auf Kosten von Zuverlaessigkeit, Sicherheit oder korrekten Ergebnissen sparen.
-* Keine unnoetigen Modellwechsel: den Aufwand durch Kontextuebertragung, erneutes Einlesen und Koordination mitrechnen.
-
-Diese Entscheidung trifft Claude automatisch und ohne Rueckfrage, soweit die Umgebung eine Modellauswahl unterstuetzt.
-Ziel ist die bestmoegliche Kombination aus Qualitaet, Geschwindigkeit, Tokenverbrauch und Kosten.
+**Modellwahl:** so guenstig wie moeglich, so stark wie noetig, je Aufgabe und Subagent nach `godmode:model-routing`.
 
 @AGENTS.md
 
@@ -25,8 +10,7 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 ## Sitzung
 
 - **Hauptmodell** kommt aus `~/.claude/settings.json`; Subagenten waehlen ihr
-  Modell nach der Regel oben. Es gibt keinen Router und keine Voranalyse
-  (entfernt 2026-09-30, siehe `.claude/README.md`).
+  Modell nach der Regel oben.
 - **Sitzungen im Repository starten**, nicht auf dem Schreibtisch oder im
   Home-Ordner — sonst fehlen Hooks, Skills und das Projekt-Gedaechtnis.
   App-Worktrees liegen unter `.claude/worktrees/`; die Regeln zu Arbeitskopien
@@ -63,7 +47,7 @@ Kein Pflicht-Review. Fuer die in `AGENTS.md` genannten kritischen Aenderungen
 vor dem Merge den PR pruefen lassen: Codex mit `npm run -s ki:frag -- review <PR>`
 (an den Head-Commit gebunden, vor dem Merge `review-stand <PR>`) oder
 `/code-review` als Claude-Pruefung. Ablauf allein/mit Codex, Rundenlimit und
-Kontingent: `AGENTS.md`, Abschnitt „Zusammenarbeit Claude und Codex“.
+Kontingent: Skill `codex`, Abschnitt „Zusammenarbeit Claude und Codex“.
 
 ## Hooks und Berechtigungen
 

@@ -93,6 +93,8 @@ import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as servic
 import { createServiceLadenAbgleich, serviceMitLaden } from './service-laden-abgleich.mjs';
 import { ladenPersonenPfad, ladenZustaendigPfad, ladenAufgabenPfad, lesePersonen as leseLadenPersonen, leseZustaendig as leseLadenZustaendig, setzeZustaendig as setzeLadenZustaendig, leseAufgaben as leseLadenAufgaben, ladenTelefonischPfad, leseTelefonisch as leseLadenTelefonisch, setzeTelefonisch as setzeLadenTelefonisch, legeAufgabeAn as legeLadenAufgabeAn, erledigeAufgabe as erledigeLadenAufgabe, kundeWartet, ladenMails, LadenFehler } from '../operations/lib/laden.mjs';
 import { ladenTodos, ladenMailZeilen, gruppiereMails, wareUnterwegs, wareAngekommen, zuschnitte } from '../docs/ai-dashboard/lib/laden.mjs';
+import { leseErgebnisse as leseRechnungspruefung, ergebnissePfad as rechnungspruefungPfad } from '../operations/lib/rechnungspruefung.mjs';
+import { rechnungsStand, rechnungLadenZeilen } from '../docs/ai-dashboard/lib/rechnungspruefung.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { lexwareAngebotePfad, lexwareNachfassPfad, nachfassFaellig, alterTage } from '../operations/lib/lexware-angebote.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
@@ -100,6 +102,7 @@ import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefeReferenz } from '../docs/ai-dashboard/lib/akquise.mjs';
 import { wendeHvAenderungAn, leererBestand as leererHvBestand } from '../docs/ai-dashboard/lib/hausverwaltungen.mjs';
+import { fuehreZusammen as fuehreAusschreibungenZusammen } from '../docs/ai-dashboard/lib/ausschreibungen.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, korrigiereRollenbestand, SonderpostenFehler, ladenStandAusProtokoll } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { fragenPfad, leseFragen, frageBeantworten, fragenUebersicht, WerkbankFrageFehler } from '../operations/lib/werkbank-fragen.mjs';
@@ -2313,7 +2316,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       };
       const liste = musterPackliste({
         auftraege: modell.auftraege || [],
-        produkte: new Map(katalog.map(p => [p.handle, p])),
+        // Mit Ausgelaufenem: die Zeile eines Musters, dessen Produkt inzwischen archiviert ist, sagt dann "ausgelaufen".
+        produkte: new Map(this._lexikonMitArchiv().map(p => [p.handle, p])),
         ersatzVon,
         // Grund samt Beginn: haengt ein Muster laenger, ist es in der Packstation rot wie das To-do auf Heute.
         automatikFallVon: (orderId, lineItemId) => automatik.auftraege[orderId]?.klaeren.find(e => e.lineItemIds?.includes(lineItemId)) || null,
@@ -2330,7 +2334,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       });
       try {
         const gespeicherte = leseGrossbriefe(grossbriefPfad(dir));
-        return { verfuegbar: true, ...liste, ...(sperrenFehler ? { sperrenFehler } : {}),
+        // Musterkontakt je Lieferant der offenen Umschlaege, fuer den Entwurf "nachhaken" (nur private Stammdaten).
+        const lieferantenKontakte = Object.fromEntries([...new Set(liste.kunden.flatMap(k => k.muster.map(m => m.lieferantId)).filter(Boolean))].map(id => {
+          const s = stammdatenFuer(stammdaten, id);
+          return [id, { name: s.name || s.anzeigename || `Lieferant ${id}`, mail: s.muster?.mail || null, telefon: s.muster?.telefon || null, kundennummer: s.kundennummer && s.kundennummer !== 'UNGEKLAERT' ? s.kundennummer : null }];
+        }));
+        return { verfuegbar: true, ...liste, lieferantenKontakte, ...(sperrenFehler ? { sperrenFehler } : {}),
           kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte) })),
           versandProbleme: Object.entries(stand.versandProbleme || {}).map(([packSchluessel, e]) => ({ packSchluessel, orderIds: e.orderIds || [], bestellungen: e.bestellungen || [], meldung: e.problem || 'Ergebnis unbekannt', am: e.problemAm || null })) };
       } catch (e) { throw new ApiError(500, e.message); }
@@ -2495,9 +2504,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         // Wie beim Einlagern aus der Produktsuche: alle Breiten der Farbe, damit jede Bestellung dieser Farbe das Stueck findet.
         let ziel = null, farbe = null;
         // Erst das Produkt vom Aufkleber, sonst das Produkt der Produktsuche, das diese Artikelnummer fuehrt.
-        const perSku = () => this._lexikonProdukte().find(x => !String(x.handle).startsWith('muster-') && (x.varianten || []).some(v => musterSchluessel({ sku: v.sku }) === key))?.handle;
+        const perSku = () => this._lexikonMitArchiv().find(x => !String(x.handle).startsWith('muster-') && (x.varianten || []).some(v => musterSchluessel({ sku: v.sku }) === key))?.handle;
         for (const h of [m.produktHandle, perSku()]) {
-          ziel = this._musterlagerProdukt(h);
+          ziel = this._musterlagerProdukt(h, { mitArchiv: true });
           farbe = ziel?.farben.find(f => f.schluessel.includes(key)) || null;
           if (farbe) break;
         }
@@ -3218,12 +3227,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      */
     einkaufBelege(benutzer = null) {
       const dir = privatDirPath || privatDir();
+      // Rechnungspruefung (w-414): steht in jeder Antwort, auch wenn Belege oder Bestellungen fehlen.
+      const mitPreisen = !benutzer || benutzer.rolle === 'inhaber';
+      const rechnungen = this._rechnungspruefung();
       let ablage;
       try { ablage = leseBelege(lieferbelegePfad(dir)); }
-      catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message }; throw e; }
+      catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message, rechnungen }; throw e; }
       const k = this._lieferantenKontext();
       // Ohne Bestellungen ist weder "kein Shop-Auftrag" noch "nichts zu pruefen" belegt.
-      if (!k.modell || !k.exportGueltig) return { verfuegbar: false, fehler: true, hinweis: k.hinweis || 'orders.json hat kein gültiges Bestellformat – bitte die Daten aktualisieren.' };
+      if (!k.modell || !k.exportGueltig) return { verfuegbar: false, fehler: true, hinweis: k.hinweis || 'orders.json hat kein gültiges Bestellformat – bitte die Daten aktualisieren.', rechnungen };
       const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
       const kandidaten = kandidatenAus(zeilen, k.statusAlle);
       // Lieferant: aus der Absenderdomain; ohne Treffer der, den ein Mensch beim Zuordnen gewaehlt hat.
@@ -3234,7 +3246,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const belege = ordneAlleZu(mitLieferant, kandidaten, { absender: ablage.absender })
         .sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
       const { zeilen: abgleichZeilen, abweichungen } = belegAbgleich({ belege, kandidaten, jetzt: now() });
-      const mitPreisen = !benutzer || benutzer.rolle === 'inhaber';
       const absenderZeilen = [k.stammdaten.absender?.kontaktName, k.stammdaten.absender?.firma];
       abweichungen.unshift(...einkaufUeberVerkauf({ belege, kandidaten }).map(w => (mitPreisen
         ? { ...w, entwurf: vertreterNachricht(w, { vertreter: k.stammdaten.lieferanten?.[w.lieferant]?.vertreter, absender: absenderZeilen }) }
@@ -3253,8 +3264,21 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         letzterLauf: ablage.laeufe.at(-1) || null,
         // Die gelesenen Einkaufspreise bleiben im Server - die Belegliste geht an jede Rolle.
         belege: belege.map(({ preise, ...b }) => b), zeilen: abgleichZeilen, abweichungen, auftraege, auswahl, lieferanten,
-        absender: ablage.absender,
+        absender: ablage.absender, rechnungen,
       };
+    },
+
+    /**
+     * Ergebnisse des Rechnungspruefers (operations/scripts/rechnungen-pruefen.mjs) fuer Heute und Laden.
+     * "Erledigt"/"Gesehen" im Laden blendet eine Rechnung aus (Ablage laden-telefonisch, Schluessel "rechnung:").
+     * Mit Einkaufspreisen und Entwurf an den Lieferanten fuer alle (Benutzer 24.11.: Mitarbeiter duerfen EK sehen).
+     * Kaputte Datei = null.
+     */
+    _rechnungspruefung() {
+      const dir = privatDirPath || privatDir();
+      try {
+        return rechnungsStand(leseRechnungspruefung(rechnungspruefungPfad(dir)), { jetzt: now(), gesehen: leseLadenTelefonisch(ladenTelefonischPfad(dir)), mitBetraegen: true });
+      } catch { return null; }
     },
 
     /** Entscheidung zu einem Beleg oder Absender. Person aus der Sitzung; Bestellungen gegen das Modell geprueft. */
@@ -3731,10 +3755,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           offen.get(p.musterLager.id).push({ orderId: a.id, orderName: a.name, kunde: kunde(a), wartetAufLieferant: lagerWartetAufLieferant(a, statusAlle) });
         }
       }
-      const gruppen = new Map(this._lexikonProdukte().map(x => [x.handle, x.produktgruppe || null]));
+      const gruppen = new Map(this._lexikonMitArchiv().map(x => [x.handle, x.produktgruppe || null]));
       const { index: acIndex, jeSku } = this._resteIndex();
       // Lieferant je Eintrag ueber die Artikelnummern, der Name kommt aus den privaten Stammdaten.
-      const lieferantJe = lagerLieferantJeSchluessel(this._lexikonProdukte(), kennungAusLexikon);
+      const lieferantJe = lagerLieferantJeSchluessel(this._lexikonMitArchiv(), kennungAusLexikon);
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
       const lieferantVon = e => { const id = lagerLieferantVon(e, lieferantJe); return id ? { id, name: stammdatenFuer(stammdaten, id).name || `Lieferant ${id}` } : null; };
       return {
@@ -3906,8 +3930,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Farben eines Lexikon-Produkts zum Einlagern, mit Kennzeichen "schon im Lager". */
     einkaufMusterlagerFarben({ handle = '' } = {}) {
       const dir = privatDirPath || privatDir();
-      const ziel = this._musterlagerProdukt(handle);
+      const ziel = this._musterlagerProdukt(handle, { mitArchiv: true });
       if (!ziel) return { verfuegbar: false, hinweis: 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.' };
+      // Ausgelaufen: einlagern geht (das Muster liegt ja hier), im Shop sperren nicht - dort gibt es nichts mehr.
+      const ausgelaufen = ziel.produkt.status === 'ARCHIVED';
       let imLager = new Set();
       try { imLager = new Set(leseLager(musterlagerPfad(dir)).eintraege.filter(e => !e.leer).flatMap(e => e.schluessel)); } catch { /* Lager kaputt: nur ohne Kennzeichen */ }
       // Fuer "Muster sperren…": welche Farbe einen eigenen Musterartikel hat und welche schon gesperrt ist.
@@ -3915,19 +3941,19 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { sperren = sperrStand(leseSperren(mustersperrePfad(dir))); } catch { /* Ablage kaputt: der Musterlager-Reiter meldet es, Sperren lehnt der Server ab */ }
       return {
         verfuegbar: true, handle: ziel.produkt.handle, titel: lagerKurzTitel(ziel.produkt.titel), produktgruppe: ziel.produkt.produktgruppe || null,
-        bild: ziel.produkt.bild || null,
+        bild: ziel.produkt.bild || null, ...(ausgelaufen ? { ausgelaufen: true } : {}),
         farben: ziel.farben.map(f => {
           const skus = musterSkusDerFarbe(ziel.muster, f.farbe);
-          return { ...f, imLager: f.schluessel.some(k => imLager.has(k)), sperrbar: skus.length === 1, gesperrt: skus.some(sku => sperren.has(sku)) };
+          return { ...f, imLager: f.schluessel.some(k => imLager.has(k)), sperrbar: skus.length === 1 && !ausgelaufen, gesperrt: skus.some(sku => sperren.has(sku)) };
         }),
       };
     },
 
     /** Lexikon-Produkt samt Musterprodukt und Farben; auch wenn das Musterprodukt selbst gewaehlt wurde. */
-    _musterlagerProdukt(handle) {
+    _musterlagerProdukt(handle, { mitArchiv = false } = {}) {
       const h = String(handle || '').trim();
       if (!h) return null;
-      const produkte = this._lexikonProdukte();
+      const produkte = mitArchiv ? this._lexikonMitArchiv() : this._lexikonProdukte();
       const je = new Map(produkte.map(x => [x.handle, x]));
       const gewaehlt = je.get(h);
       if (!gewaehlt) return null;
@@ -3980,7 +4006,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const { handle, farben, schluessel, titel, farbe, art, anzahl, ort, notiz } = payload;
           let ziele;
           if (handle && Array.isArray(farben) && farben.length) {
-            const z = this._musterlagerProdukt(handle);
+            const z = this._musterlagerProdukt(handle, { mitArchiv: true });
             if (!z) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.');
             const gesucht = new Set(farben.map(f => String(f)));
             ziele = z.farben.filter(f => gesucht.has(f.farbe)).map(f => ({ titel: lagerKurzTitel(z.produkt.titel), farbe: f.ganzerArtikel ? null : f.farbe, handle: z.produkt.handle, schluessel: f.schluessel }));
@@ -4081,7 +4107,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const { aktion, vorgangId, eintraege, druckauftragId, entfernenIds } = payload;
       let eintrag;
       if (aktion === 'vormerken') {
-        const produkte = this._lexikonProdukte();
+        const produkte = this._lexikonMitArchiv();
         const je = new Map(produkte.map(p => [p.handle, p]));
         const produkt = je.get(payload.handle);
         if (!produkt) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden. Bitte neu suchen.');
@@ -4145,8 +4171,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       const begriffe = suchbegriffe(q);
       const passendJe = new Map();
+      // Ausgelaufenes nur bei einer Suche und hinter den lieferbaren Treffern; beim Durchblaettern bleibt die Liste, wie sie war.
       const treffer = begriffe.length
-        ? daten.produkte.filter(p => {
+        ? this._lexikonMitArchiv().filter(p => {
           const t = lexikonTreffer(p, begriffe);
           if (t.passt) passendJe.set(p, t.varianten);
           return t.passt;
@@ -4260,7 +4287,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           befehl: 'npm run lexikon:export',
         };
       }
-      const produkt = daten.produkte.find(p => p.handle === handle);
+      const produkt = this._lexikonMitArchiv().find(p => p.handle === handle);
       if (!produkt) return { verfuegbar: false, quelle: file, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
       // Rueckweg zum Kunden: wer wartet gerade auf genau dieses Produkt? Wer im
       // Kundengespraech nachschlaegt, sieht so sofort, dass da noch etwas offen
@@ -4503,9 +4530,22 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return Array.isArray(daten?.produkte) ? daten.produkte : [];
     },
 
+    /**
+     * Produkte samt Ausgelaufenem (`archiviert` im Export, Status ARCHIVED). Nur fuer Suchen und Zuordnungen:
+     * im Laden liegen dazu weiter Muster und alte Bestellungen (Benutzer 2026-11-24). Alles, was "gibt es im
+     * Shop" bedeutet (Musterautomatik, Bestellampel, Kauflinks, Vorschlaege), bleibt bei _lexikonProdukte().
+     */
+    _lexikonMitArchiv() {
+      const daten = readJsonGecacht(path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json'));
+      const produkte = Array.isArray(daten?.produkte) ? daten.produkte : [];
+      if (!Array.isArray(daten?.archiviert) || !daten.archiviert.length) return produkte;
+      if (this._archivCache?.daten !== daten) this._archivCache = { daten, alle: [...produkte, ...daten.archiviert] };
+      return this._archivCache.alle;
+    },
+
     /** Lieferantenangaben je Bestellposition; ein kaputtes Lexikon darf die Kundensuche am Telefon nicht stoppen. */
     _positionSuchtext() {
-      try { return positionSuchtext(this._lexikonProdukte()); } catch { return null; }
+      try { return positionSuchtext(this._lexikonMitArchiv()); } catch { return null; }
     },
 
     /**
@@ -4968,6 +5008,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const mails = ladenMails(dir, { jetzt });
       const mit = e => ({ ...e, zustaendig: zustaendig[e.schluessel] || null });
       const telefonisch = leseLadenTelefonisch(ladenTelefonischPfad(dir));
+      const rechnungen = this._rechnungspruefung();
       // "Ware unterwegs": Rechnungen aus der Lieferbeleg-Ablage, nur von Lieferanten der privaten Stammdaten.
       // Ohne Stammdaten gibt es keine Zuordnung - dann ein Hinweis statt Zeilen.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
@@ -4988,7 +5029,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ware,
         verfuegbar: true, personen, jetzt: jetzt.toISOString(),
         mails: { eingerichtet: mails.eingerichtet, stand: mails.stand ?? null, fehler: mails.fehler ?? null, laeuft: Boolean(mails.laeuft), eintraege: gruppiereMails(ladenMailZeilen(mails.eintraege.map(m => ({ ...m, lieferantenpost: ware.eingerichtet && Boolean(lieferantZurDomain(domainVon(m.adresse || ''), { stammdaten, absender: belegAbsender })) })), { jetzt }).filter(e => !telefonisch[e.schluessel]).map(mit)) },
-        todos: ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)), zuschnitte: schnitte }, { jetzt }).map(mit),
+        todos: [...ladenTodos({ rueckrufe, kundeWartet: wartet, aufgaben: leseLadenAufgaben(ladenAufgabenPfad(dir)), zuschnitte: schnitte }, { jetzt }), ...rechnungLadenZeilen(rechnungen, { jetzt })].map(mit),
+        // Wochenzeile und "nicht pruefbar" der Rechnungspruefung, ohne Einkaufspreise (die Ansicht hat keine Rolle).
+        rechnungen: rechnungen && { letzterLauf: rechnungen.letzterLauf, woche: rechnungen.woche, nichtPruefbar: rechnungen.nichtPruefbar },
         // Ohne Bestelldaten fehlen nur die Rueckrufe und wartenden Kunden - von Hand angelegte Aufgaben gibt es trotzdem.
         bestelldatenFehlen: !modell,
       };
@@ -5367,6 +5410,35 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       fs.writeFileSync(tmp, JSON.stringify({ firmen: stand }, null, 2), { mode: 0o600 });
       fs.renameSync(tmp, q.status);
       return { ok: true, firma: { id, ...neu } };
+    },
+
+    /**
+     * Ausschreibungen-Uebersicht: liest bei JEDEM Abruf frisch, ohne KI. status.json (Suchlauf) plus
+     * je Ordner den Kopfblock der CHECKLISTE.md ($TP_PRIVAT_DIR/ausschreibungen/). Nur lesend;
+     * Zusammenfuehren und Regeln: docs/ai-dashboard/lib/ausschreibungen.mjs.
+     */
+    async ausschreibungenListe() {
+      const dir = path.join(privatDirPath || privatDir(), 'ausschreibungen');
+      let eintraege;
+      try { eintraege = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) {
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Auf diesem Rechner gibt es noch keine Ausschreibungen (Ordner fehlt).' };
+        throw new ApiError(500, `Ordner ausschreibungen nicht lesbar: ${e?.code || e?.message}`);
+      }
+      const ordner = [];
+      for (const e of eintraege.filter(x => x.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
+        let roh;
+        try { roh = fs.readFileSync(path.join(dir, e.name, 'CHECKLISTE.md'), 'utf8'); } catch (err) {
+          if (err?.code === 'ENOENT') continue; // Ordner ohne Checkliste (z. B. die Bietermappe) ist kein Verfahren
+          throw new ApiError(500, `CHECKLISTE.md in ${e.name} nicht lesbar: ${err?.code || err?.message}`);
+        }
+        ordner.push({ name: e.name, text: roh.slice(0, 6000) }); // der Kopfblock steht ganz oben
+      }
+      // Kaputtes status.json blockiert die Ordner nicht - die Ansicht sagt dann, dass der Suchlauf fehlt.
+      let status = null, statusHinweis = '';
+      try { status = this._privatJson(path.join(privatDirPath || privatDir(), 'ausschreibungen', 'status.json'), null); } catch (e) { statusHinweis = e.message; }
+      if (!status && !statusHinweis) statusHinweis = 'Der Suchlauf hat noch nie ein Ergebnis geschrieben.';
+      const heute = kalendertag(now());
+      return { verfuegbar: true, heute, statusHinweis, ...fuehreAusschreibungenZusammen({ ordner, status, heute }) };
     },
 
     /**

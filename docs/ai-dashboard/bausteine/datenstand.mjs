@@ -106,9 +106,24 @@ const pruefe = erzeugeArbeitsabgleich({
   fehlerMelden: text => { arbeitsFehler = text; zeichneDatenstand(); },
 });
 
+/**
+ * Eine Ansicht, die waehrend eines Neustarts geladen hat, behielt ihren Verbindungsfehler bis
+ * zum Klick auf "Nochmal versuchen". Solche Staende verwerfen: das naechste Zeichnen laedt neu.
+ * Andere Fehler (Berechtigung, 500) bleiben stehen.
+ */
+export function verwirfVerbindungsfehler(quellen) {
+  let n = 0;
+  for (const q of quellen) if (q.lesen()?.verbindung) { q.setzen(null); n += 1; }
+  return n;
+}
+
 /** Einmal beim Start (app.js): derselbe Takt prueft Arbeitsstand und schreibt die Datumszeile. */
 export function starteDatenstand() {
   const tick = async () => {
+    if (state.capabilities.mode === 'local' && !document.hidden && !beschaeftigt()) {
+      const aktualisierung = { lesen: () => einkauf.aktualisierung, setzen: d => { einkauf.aktualisierung = d; } };
+      if (verwirfVerbindungsfehler([...arbeitsQuellen(), aktualisierung])) render();
+    }
     await pruefe();
     if (state.capabilities.mode === 'local' && !document.hidden && !beschaeftigt()) ensureOrgDaten();
     zeichneDatenstand();

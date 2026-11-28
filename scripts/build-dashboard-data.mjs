@@ -22,6 +22,9 @@
  * Mit --weiter-mit-alten-daten (Start des Dienstes, `npm run dashboard`) endet er
  * stattdessen mit 0, sobald eine alte Datei da ist: ein GitHub-Ausfall darf den
  * Neustart nach einem Update nicht verhindern, die Aufgaben sind dann nur aelter.
+ * Mit --nur-wenn-fehlt (ebenfalls Start des Dienstes) tut er nichts, wenn schon eine Datei da
+ * ist: der Abruf dauert rund 25 s, so lange war das Dashboard nach jedem Update nicht
+ * erreichbar. Der Dienst holt den frischen Stand direkt nach dem Start selbst.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -126,6 +129,7 @@ export function abrufFehler(error, { weiter = false, vorhanden = false } = {}) {
 }
 
 function main() {
+  if (process.argv.includes('--nur-wenn-fehlt') && existsSync(OUT)) { console.log('issues.json vorhanden - der Dienst erneuert sie nach dem Start.'); return; }
   let issues;
   let labels;
   try {

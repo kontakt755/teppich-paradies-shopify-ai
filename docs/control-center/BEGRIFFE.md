@@ -25,9 +25,11 @@ Leute im Laden genauso wie fuer alte Hasen).
 |---|---|---|
 | Akquise | **Genossenschaften** (Seite: „Genossenschaften & Hausverwaltungen“) | Menue, Seite, To-do „Genossenschaften: N Firmen nachfassen“; enthaelt auch Ausschreibungen. Nicht verwechseln mit „Neue Aufträge“ der Auftrags-App-Zahlen |
 | – (neu 28.10.) | **Hausverwaltungen** | Menue „Kunden & Einkauf“, Seite und To-do „Hausverwaltungen: N wieder melden“; Verwaltungen mit Ansprechpartner, Objekten und Angeboten. Die Erstansprache bleibt unter „Genossenschaften“ |
+| – (neu 26.11.) | **Ausschreibungen** | Menue „Weitere Bereiche“ (nur Inhaber), Seite „Ausschreibungen“: öffentliche Verfahren offen nach Frist, darunter „Neu im Suchlauf, noch nicht geprüft“ und „Erledigt oder abgesagt“. Pillen: In Arbeit, Wir bieten, Beobachten, Extern, Abgegeben, Nicht geboten, Verpasst, Ungeprüft |
 | Kunden & Einkauf, Shop & Inhalte, Verwaltung (Menuegruppen) | **Weitere Bereiche** | Eine aufklappbare Gruppe statt drei (2026-11-11, #2143); aeltere Zeilen hier nennen noch die alten Gruppennamen. Technik, Entscheidungen, Bereiche, Kennzahlen und Verlauf ohne Menuepunkt (Werkbank) |
 | – (neu 03.11.) | **Wer kettelt?** | Frage im Bestelldialog je gekettelten Teppich: „Lieferant kettelt, direkt an Kunden“ oder „Unser Kettler“; in der Kundenakte kurz „Kettelt“ |
 | Einkauf | **Bestellen** | Menue und Seitentitel; gemeint ist immer: wir bestellen beim Lieferanten. Die Bestellungen der Kunden heissen weiter „Bestellungen“ |
+| – (neu 26.11.) | **Lieferanten** | eigener Menüpunkt: eine Karte je Lieferant mit „Portal öffnen“, Telefon, E-Mail, Kundennummer und offenen Zahlen |
 | Lexikon | **Lexikon** (bleibt, Inhaber/Mitarbeiter 21.10.) | Menue, Seite, Handy-Leiste |
 | Belege (Reiter) | **Lieferantenpost** | Reiter unter „Bestellen“; ein einzelnes Stueck ist ein „Schreiben“ |
 | AB | **Auftragsbestätigung** | ausgeschrieben in Ueberschriften und Feldern |
@@ -369,6 +371,11 @@ gebraeuchlich), Erfassen.
   7 Tagen eine Rechnung gekommen, die Ware ist dann meist schon verladen. „Gesehen“ blendet die Zeile aus.
 - **Ware beim Kunden / beim Kettler angekommen · beim Lieferanten abgeholt · Lieferschein unklar (12.11.)** = Zeilen im
   selben Abschnitt aus den digitalen Lieferscheinen von Lieferant A. Lieferungen in den Laden stehen dort nicht.
+- **Rechnung prüfen / Rechnungen (24.11.)** = rote Zeile unter „Zu tun“ in der Ansicht Laden: die automatische
+  Rechnungsprüfung hat eine Abweichung zur Auftragsbestätigung gefunden (mit AB-Preis, Rechnungspreis und Betrag zu
+  viel; dieselbe Meldung kommt einmal als Mail an verkauf@); „Erledigt“ nimmt sie heraus. Abschnitt
+  **Rechnungen** darunter: „geprüft · passt · offen“ der letzten 7 Tage und, eingeklappt, **nicht automatisch prüfbar**
+  (keine AB gefunden oder Beleg nicht sicher lesbar) mit „Gesehen“.
 - **Übernehmen / Wer? / Zurückgeben** = ein Eintrag im Laden wird von einer Person übernommen (Name per Knopf, kein
   Login je Person) und wieder freigegeben. Plakette: „<Name> kümmert sich · seit …“.
 - **Aufgabe dazu** = eine von Hand angelegte Aufgabe im Laden (Rolle schneiden, Rechnung kontrollieren, Angebot

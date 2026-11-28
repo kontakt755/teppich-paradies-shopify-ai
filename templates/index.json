@@ -13,10 +13,10 @@
       "type": "tp-start-hero",
       "settings": {
         "eyebrow": "",
-        "headline": "<p>Teppichboden und Vinyl nach Maß, vom Fachgeschäft in Oranienburg.</p>",
+        "headline": "<p>Bodenbeläge nach Maß, vom Fachgeschäft in Oranienburg.</p>",
         "subline": "<p>Böden zugeschnitten, geliefert und auf Wunsch verlegt.</p>",
-        "cta1_label": "",
-        "cta1_link": "#tp-kategorien",
+        "cta1_label": "Teppich nach Maß berechnen",
+        "cta1_link": "shopify://collections/teppich-nach-mass",
         "cta2_label": "Verlegung anfragen (bis 50 km)",
         "cta2_link": "#tp-anfrage",
         "telefon": "",
@@ -532,14 +532,29 @@
     "tp_start_seo": {
       "type": "tp-start-seo",
       "settings": {
-        "heading": "Teppichboden, Vinyl und Linoleum vom Fachhandel in Oranienburg"
+        "heading": "Bodenbeläge vom Fachhandel in Oranienburg",
+        "text": "<p>Teppich Paradies ist Fachhändler für Bodenbeläge in Oranienburg bei Berlin. Unser Sortiment finden Sie in den Kategorien: <a href=\"/collections/teppichboden\" title=\"Teppichboden kaufen\">Teppichboden kaufen</a>, <a href=\"/collections/teppichfliesen\" title=\"Teppichfliesen\">Teppichfliesen</a>, <a href=\"/collections/linoleumboden-1\" title=\"Linoleumboden\">Linoleumboden</a>, <a href=\"/collections/vinylboden-1\" title=\"Vinylboden\">Vinylboden</a> und <a href=\"/collections/teppich-nach-mass\" title=\"Teppich nach Maß\">Teppich nach Maß</a> – mit Preis pro Quadratmeter und bis zu zwei Mustern je Bestellung.</p><p>Für Kunden in Oranienburg, Oberhavel und im Norden Berlins übernimmt unser Team Aufmaß, Lieferung, Untergrundvorbereitung und die fachgerechte Verlegung – auch auf Treppen sowie in Praxen, Büros und Gastronomie.</p>"
       },
       "blocks": {
         "l1": {
           "type": "liste",
           "settings": {
             "titel": "Sortiment & Muster",
-            "links": "Teppichboden Meterware|/collections/teppichboden\nVinylboden|/collections/vinylboden-1\nKlickvinyl|/collections/vinylboden-klickvinyl\nLinoleumboden|/collections/linoleumboden-1\nSockelleisten|/collections/bodenleisten\nMuster bestellen|/pages/muster"
+            "links": "Teppichboden kaufen|/collections/teppichboden\nTeppichfliesen|/collections/teppichfliesen\nVinylboden|/collections/vinylboden-1\nKlickvinyl|/collections/vinylboden-klickvinyl\nLinoleumboden|/collections/linoleumboden-1\nSockelleisten|/collections/bodenleisten\nMuster bestellen|/pages/muster"
+          }
+        },
+        "l3": {
+          "type": "liste",
+          "settings": {
+            "titel": "Ratgeber",
+            "links": "Alle Ratgeber|/pages/ratgeber\nTeppichboden verlegen: Kosten pro m²|/blogs/ratgeber-teppichboden/teppichboden-verlegen-kosten-pro-m2\nWolle oder Kunstfaser?|/blogs/ratgeber-teppichboden/wolle-oder-kunstfaser\nTeppich ketteln: Ablauf|/blogs/ratgeber-teppichboden/teppich-ketteln-ablauf\nTeppichfliesen im Büro|/blogs/ratgeber-teppichboden/teppichfliesen-im-buero\nTeppich wellig: was tun?|/blogs/ratgeber-teppichboden/teppichboden-wirft-wellen"
+          }
+        },
+        "l4": {
+          "type": "liste",
+          "settings": {
+            "titel": "Teppichboden nach Raum",
+            "links": "Teppichboden fürs Schlafzimmer|/collections/teppichboden-schlafzimmer\nTeppichboden fürs Kinderzimmer|/collections/teppichboden-kinderzimmer\nBüro & Gewerbe|/collections/teppichboden-buero-gewerbe\nWollteppichboden|/collections/teppichboden-wolle\nTeppich nach Maß|/collections/teppich-nach-mass\nTeppich ketteln lassen|/pages/kettelteppich-nach-mass"
           }
         },
         "l2": {
@@ -552,7 +567,9 @@
       },
       "block_order": [
         "l1",
-        "l2"
+        "l2",
+        "l3",
+        "l4"
       ]
     },
     "tp_start_muster": {

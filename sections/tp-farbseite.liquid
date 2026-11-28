@@ -1,0 +1,37 @@
+{%- comment -%}
+  Farbseite (Metaobjekt tp_teppichfarbe, Vorlage templates/metaobject/tp_teppichfarbe.json):
+  eigene, indexierbare Seite je Farbe eines Teppichs nach Mass (Test an Esmera).
+  Der Eintrag liefert H1, Variante, Produkt; Titel und Meta-Beschreibung setzt
+  Shopify aus seo_titel/seo_beschreibung (renderable), Canonical ist die Seite selbst
+  (snippets/meta-tags). Der Inhalt steht in snippets/tp-farbseite-inhalt.
+  Fehlen Variante oder Produkt (z. B. Variante geloescht), bleibt die Seite leer
+  statt zu raten.
+{%- endcomment -%}
+{%- liquid
+  assign tp_fs_produkt = metaobject.produkt.value
+  assign tp_fs_variante = metaobject.variante.value
+-%}
+<div class="tp-farbseite-section section section--page-width">
+  {%- if tp_fs_produkt != blank and tp_fs_variante != blank -%}
+    {%- render 'tp-farbseite-inhalt',
+      produkt: tp_fs_produkt,
+      variante: tp_fs_variante,
+      ueberschrift: metaobject.ueberschrift.value,
+      beschreibung: metaobject.seo_beschreibung.value,
+      seiten_url: metaobject.system.url,
+      eigene: metaobject.system.handle
+    -%}
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "TP Farbseite",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Inhalt und Texte kommen aus dem Eintrag (Teppichfarbe-Seite) und den Produktdaten."
+    }
+  ]
+}
+{% endschema %}

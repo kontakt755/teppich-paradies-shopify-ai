@@ -24,3 +24,15 @@ export function ampelPlakette(stufe, wort, { titel = '', haken = false } = {}) {
   }
   return `<span class="ampel ampel-${stufe}"${titel ? ` title="${esc(titel)}"` : ''}><span class="ampel-zeichen" aria-hidden="true">${ZEICHEN[stufe]}</span>${esc(wort)}</span>`;
 }
+
+/**
+ * Grosse Plakette "IM LAGER - Fach ...": das Muster liegt schon im eigenen Musterlager. Steht am Muster in der
+ * Packstation und in "Bestellen", damit niemand beim Lieferanten bestellt oder darauf wartet, was schon da ist
+ * (Benutzer 24.11.). Wort und Haken tragen die Aussage, nicht die Farbe allein. Styles: stile/muster-packen.css.
+ */
+export function lagerPlakette(ort = '', zusatz = '') {
+  return `<strong class="lager-plakette"><span aria-hidden="true">✓ </span>IM LAGER${ort ? ` – Fach ${esc(ort)}` : ''}${zusatz ? `<span class="lager-plakette-zusatz">${esc(zusatz)}</span>` : ''}</strong>`;
+}
+
+/** "! Ausgelaufen": das Produkt ist im Shop archiviert. Es bleibt auffindbar (Muster, alte Bestellungen), ist aber nicht mehr lieferbar. */
+export const ausgelaufenPlakette = () => ampelPlakette('gelb', 'Ausgelaufen', { titel: 'Im Shop archiviert – nicht mehr lieferbar, nicht mehr bestellen' });

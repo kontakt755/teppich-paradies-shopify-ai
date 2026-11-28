@@ -1,0 +1,100 @@
+{{ 'tp-bewertungen.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  Produktbewertungen: Sprungziel #bewertungen fuer die Sterne unter dem Titel
+  (blocks/tp-produkt-sterne.liquid) und Platz fuer das Bewertungs-Widget der
+  App (App-Block). Das Formular bleibt auch ohne Bewertung sichtbar, damit
+  Kunden ueber die QR-Karte bewerten koennen. Der Hinweis nach § 5b UWG steht
+  vor dem Widget, weil es oben die Note zeigt (docs/weiterentwicklung/bewertungen.md).
+{%- endcomment -%}
+<div id="bewertungen" class="tp-bewertungen">
+  {%- render 'tp-bewertungshinweis', kurz: true -%}
+  {%- comment -%}
+    Widget erst laden, wenn es gebraucht wird (25.11.2026): Steht es beim Laden
+    im DOM, holt der App-Loader rund 330 KB vor dem Produktbild (LCP). Deshalb
+    liegt es in einem template und kommt rein, sobald der Bereich naeher als
+    800 px ist, ueber #bewertungen/#judgeme angesprungen wird oder ein
+    Judge.me-Link (QR-Karte, judgeme_* in der Adresse) die Seite oeffnet.
+    shortcut: der App-Loader laeuft nur einmal (jdgm._loaderExecuted); er wird
+    zurueckgesetzt und neu eingefuegt. Aendert Judge.me das, bleibt der Bereich
+    leer - nach App-Updates hier nachsehen.
+  {%- endcomment -%}
+  <template id="tp-bewertungen-app">{% content_for 'blocks' %}</template>
+  <div data-tp-bewertungen-app></div>
+  <script>
+    (() => {
+      const vorlage = document.getElementById('tp-bewertungen-app');
+      const platz = document.querySelector('[data-tp-bewertungen-app]');
+      const bereich = document.getElementById('bewertungen');
+      let geladen = false;
+      const laden = () => {
+        if (geladen) return;
+        geladen = true;
+        platz.replaceWith(vorlage.content.cloneNode(true));
+        const alt = document.querySelector('script[src*="judgeme"][src*="/loader.js"]');
+        if (!alt || !window.jdgm) return;
+        window.jdgm._loaderExecuted = false;
+        const neu = document.createElement('script');
+        neu.src = alt.src;
+        document.body.append(neu);
+      };
+      const direkt = () => /bewertungen|judgeme/.test(location.hash + location.search);
+      if (direkt() || (window.Shopify && Shopify.designMode) || !('IntersectionObserver' in window)) return laden();
+      window.addEventListener('hashchange', () => direkt() && laden());
+      const beobachter = new IntersectionObserver((eintraege) => {
+        if (eintraege.some((e) => e.isIntersecting)) {
+          beobachter.disconnect();
+          laden();
+        }
+      }, { rootMargin: '800px 0px' });
+      beobachter.observe(bereich);
+    })();
+  </script>
+  {%- comment -%}
+    Datenschutz-Hinweis im Formular der App: Die Formulartexte lassen sich im
+    Gratis-Tarif nicht aendern, und das Formular oeffnet als eigenes Fenster
+    ausserhalb dieses Abschnitts. Das Skript haengt den Hinweis deshalb unten
+    in den Block mit dem Datenschutz-Satz der App (der nur auf Judge.me verweist),
+    sonst unten an das Formularfenster (.jdgm-write-review-modal).
+    shortcut: haengt an der Klasse der App; aendert Judge.me sie, fehlt der
+    Hinweis still - nach App-Updates im Formular nachsehen.
+  {%- endcomment -%}
+  <template id="tp-bewertung-ds">
+    <p class="tp-bewertung-ds">
+      Mit dem Absenden willigen Sie ein, dass wir Ihre Bewertung mit Ihrem Namen veröffentlichen. Ihre
+      E-Mail-Adresse wird nicht veröffentlicht. Mehr dazu in unserer
+      <a href="{{ shop.privacy_policy.url | default: '/policies/privacy-policy' }}" target="_blank">Datenschutzerklärung</a>.
+    </p>
+  </template>
+  <script>
+    (() => {
+      const vorlage = document.getElementById('tp-bewertung-ds');
+      const anhaengen = () => {
+        for (const fenster of document.querySelectorAll('.jdgm-write-review-modal')) {
+          const stellen = fenster.querySelectorAll('.jdgm-write-review-modal__gdpr-statement');
+          for (const stelle of stellen) {
+            if (!stelle.querySelector('.tp-bewertung-ds')) stelle.append(vorlage.content.cloneNode(true));
+          }
+          if (!stellen.length && !fenster.querySelector('.tp-bewertung-ds')) fenster.append(vorlage.content.cloneNode(true));
+        }
+      };
+      new MutationObserver(anhaengen).observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
+</div>
+
+{% schema %}
+{
+  "name": "TP Produktbewertungen",
+  "tag": "section",
+  "blocks": [
+    {
+      "type": "@app"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Produktbewertungen"
+    }
+  ]
+}
+{% endschema %}

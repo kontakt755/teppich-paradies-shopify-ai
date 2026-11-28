@@ -172,6 +172,9 @@ test('bezahlter Musterversand: 4,99 € bleibt Muster, Muster + Ware ist Warenka
     mitSumme(bestellung(4, 104.99, { positionen: [muster, ware] }), 100),     // Muster + Ware unter der Freigrenze
   ], { jetzt: JETZT }).zeitraeume['7'];
   assert.deepEqual(z.muster, { bestellungen: 3, kunden: 1, versandEinnahmen: 9.98 });
+  // Erstattungsregel (w-399): ein ganz erstatteter Musterversand ist keine Einnahme.
+  const mitErstattung = schnappschuss([mitSumme(bestellung(1, 4.99, { positionen: [muster] }), 0), mitSumme(bestellung(5, 4.99, { positionen: [muster], status: 'REFUNDED' }), 0)], { jetzt: JETZT }).zeitraeume['7'];
+  assert.deepEqual(mitErstattung.muster, { bestellungen: 1, kunden: 1, versandEinnahmen: 4.99 });
   assert.equal(z.ware.bestellungen, 1);
   assert.equal(z.ware.umsatz, 100);
   assert.equal(z.umsatz, 114.97);

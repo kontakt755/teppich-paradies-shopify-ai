@@ -21,8 +21,11 @@ export function ensureKundenAngebote() {
   });
 }
 
+// Lexware ist Inhabersache; der Server antwortet anderen Rollen mit 403 (NUR_INHABER).
+function darfLexware() { const r = state.session?.benutzer?.rolle; return !r || r === 'inhaber'; }
+
 export function ensureLexwareAngebote() {
-  if (kunden.lexware || kunden.loadingLexware) return;
+  if (!darfLexware() || kunden.lexware || kunden.loadingLexware) return;
   kunden.loadingLexware = true;
   fetchEinkauf('/api/angebote/lexware').then(d => {
     kunden.lexware = d; kunden.loadingLexware = false;
@@ -59,6 +62,7 @@ function lexwareZeile(z) {
  * Angenommene oder abgelehnte Angebote fallen beim naechsten Abruf von selbst heraus.
  */
 function lexwareBlock() {
+  if (!darfLexware()) return '';
   ensureLexwareAngebote();
   const d = kunden.lexware;
   if (!d && kunden.loadingLexware) return `<div class="empty">Lade Lexware-Angebote …</div>`;
@@ -178,11 +182,11 @@ export function viewKundenAngebote() {
   if (!d && kunden.loadingAngebote) return `<div class="empty">Lade Angebote …</div>`;
   if (d?.fehler) return stoerungState(d, 'Die Angebote');
   const lexware = lexwareBlock();
-  if (!d || !d.verfuegbar) return lexware;
+  if (!d || !d.verfuegbar) return lexware || emptyState('Noch keine Shop-Angebote abgerufen.', d?.hinweis || '');
   const offen = (d.angebote || []).filter(a => ANGEBOT_OFFEN.has(a.status));
   const rest = (d.angebote || []).filter(a => !ANGEBOT_OFFEN.has(a.status));
   return `${lexware}
-    <h2 style="margin:22px 0 6px">Shop-Angebote</h2>
+    <h2 style="margin:${lexware ? 22 : 0}px 0 6px">Shop-Angebote</h2>
     <p class="small muted" style="margin:0 0 10px">Angebote sind Entwurfsbestellungen aus Shopify. „Offen" heißt: verschickt oder angelegt, aber noch nicht bezahlt – dort wartet jemand auf eine Antwort.</p>
     ${offen.length && !d.kontodaten && !istNurLesend() ? '<p class="notice warn">Für den WhatsApp-Text fehlen die Kontodaten oder die IBAN stimmt nicht. Bitte den Inhaber fragen.</p>' : ''}
     <div class="rows">${offen.length ? offen.map(a => angebotZeile(a, d.kontodaten)).join('') : emptyState('Kein offenes Angebot.', 'Nichts zu tun.')}</div>
