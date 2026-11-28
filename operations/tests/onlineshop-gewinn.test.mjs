@@ -195,6 +195,13 @@ test('Preisfall mit zwei Kaeufen derselben Variante: der offene bleibt offen, in
   }
 });
 
+test('Kauf unter Ziel nur wegen der Gebuehr: Ursache ist die Gebuehr, nicht ein Verschnitt von 0', () => {
+  const z = { name: '#T9', datum: '2099-03-05', guete: 'belegt', netto: 100, brutto: 119, ware: 70, verschnitt: 0, kettel: 0, zuschlag: 0, weg: 0, gebuehr: 3, rohertrag: 27, quote: 0.27, positionen: [] };
+  const [f] = preisKontrolleKaeufe([z], { preise: preisIndex([]) }).kaufFaelle;
+  assert.deepEqual([f.ursache, f.groesste, f.groessteBetrag], ['kosten', 'gebuehr', 3]);
+  assert.match(f.hinweis, /Zahlungsgebühr/);
+});
+
 test('Teppich nach Mass in 0,01 m²: je m² gezeigt, nicht je Einheit', () => {
   const z = eZeile('TNM-1', 20, { vk_einheit: '0,01 m² (Konfigurator)', menge_bezug: 0.01, ek_vk_einheit: 0.2, vk_brutto: 0.39 });
   const e = ekJeVerkaufseinheit(z, variante('Taupe', 0.39, 'm2', 39));

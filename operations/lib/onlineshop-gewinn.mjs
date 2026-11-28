@@ -336,6 +336,7 @@ const URSACHE_HINWEIS = {
   verschnitt: 'Mindestpreis oder Mindestfläche je Teppich prüfen (Verschnitt)',
   zuschlag: 'Mindermengen- bzw. Lieferaufschlag prüfen',
   weg: 'Versandaufschlag prüfen',
+  gebuehr: 'Preis knapp: schon die Zahlungsgebühr drückt unter das Ziel',
 };
 
 /**
@@ -356,7 +357,7 @@ export function preisKontrolleKaeufe(zeilen, { preise, ekAufschlag = {}, gebuehr
     const preisFall = herstellQuote !== null && herstellQuote < ZIEL_ROHERTRAG;
     const teile = preisFall
       ? [['ware', ware], ['kante', z.kettel]]
-      : [['verschnitt', z.verschnitt], ['zuschlag', z.zuschlag], ['weg', z.weg]];
+      : [['verschnitt', z.verschnitt], ['zuschlag', z.zuschlag], ['weg', z.weg], ['gebuehr', z.gebuehr]];
     const [groesste, betrag] = teile.reduce((a, b) => (b[1] > a[1] ? b : a));
     // Gebuehrensatz: Tarif, sonst aus der belegten Gebuehr dieses Kaufs.
     const satz = gebuehrTarif && istZahl(gebuehrTarif.prozentBrutto) ? { prozent: gebuehrTarif.prozentBrutto / 100, fix: gebuehrTarif.fix ?? 0 }

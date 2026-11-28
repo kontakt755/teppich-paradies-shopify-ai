@@ -138,7 +138,7 @@ function preisFallZeile(f) {
   </tr>`;
 }
 
-const URSACHE_TEXT = { ware: 'Ware', kante: 'Kante', verschnitt: 'Verschnitt', zuschlag: 'Lieferzuschläge', weg: 'Weg zum Kunden' };
+const URSACHE_TEXT = { ware: 'Ware', kante: 'Kante', verschnitt: 'Verschnitt', zuschlag: 'Lieferzuschläge', weg: 'Weg zum Kunden', gebuehr: 'Zahlungsgebühr' };
 
 function kaufFallZeile(f, ziel) {
   return `<tr>
