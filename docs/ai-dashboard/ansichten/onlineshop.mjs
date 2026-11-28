@@ -87,15 +87,14 @@ function kaufZeile(z, ziel) {
   // Ohne Rechnung bleiben die Kostenzellen leer; am Handy fallen sie ganz weg (Karte statt Zeile).
   const geld = (label, x) => `<td data-l="${label}" class="num${bekannt ? '' : ' os-leer'}">${bekannt ? euro(x) : '–'}</td>`;
   return `<tr>
-    <td data-l="Kauf"><div class="cell-title">${esc(z.name)}</div><div class="small muted">${esc(tag(z.datum))}</div></td>
+    <td data-l="Kauf"><div class="cell-title">${esc(z.name)}</div><div class="small muted">${esc(tag(z.datum))}</div>${gueteMarke(z.guete)}</td>
     <td data-l="Ware" class="os-ware">${esc(z.titel)}${fehlt}${annahmen}</td>
     <td data-l="Erlös netto" class="num">${euro(z.netto)}</td>
     ${geld('Einkauf', z.ware)}
     ${geld('Ketteln, Zuschläge', bekannt ? z.kettel + z.zuschlag : null)}
     ${geld('Weg zum Kunden', z.weg)}
-    ${geld('Zahlungsgebühr', z.gebuehr)}
+    ${geld('Gebühr', z.gebuehr)}
     <td data-l="Rohertrag" class="num ${stufe(z.quote, ziel)}${bekannt ? '' : ' os-leer'}"><b>${bekannt ? euro(z.rohertrag) : '–'}</b>${bekannt ? `<div class="small">${prozent(z.quote)}</div>` : ''}</td>
-    <td data-l="Güte">${gueteMarke(z.guete)}</td>
   </tr>`;
 }
 
@@ -121,7 +120,7 @@ function teilGewinn(d) {
     <p class="small muted os-erklaerung">Rohertrag = Erlös netto minus Einkauf, Ketteln und Zuschläge, Weg zum Kunden und Zahlungsgebühr. Summen zählen nur Käufe, deren Kosten bekannt sind. Werbung, Muster und Arbeitszeit sind nicht enthalten.${ausText ? ` Nicht gezählt: ${esc(ausText)}.` : ''}</p>
     <div class="chips">${chip('', 'Alle Käufe', alle.length)}${chip('unter', `Unter ${Math.round(ziel * 100)} %`, unter.length)}${chip('unbekannt', 'Kosten unbekannt', unbekannt.length)}</div>
     ${sichtbar.length ? `<div class="table-scroll"><table class="tasks compact os-tabelle"><thead><tr>
-      <th>Kauf</th><th>Ware</th><th class="num">Erlös netto</th><th class="num">Einkauf</th><th class="num">Ketteln, Zuschläge</th><th class="num">Weg zum Kunden</th><th class="num">Zahlungs­gebühr</th><th class="num">Rohertrag</th><th>Güte</th>
+      <th>Kauf</th><th>Ware</th><th class="num">Erlös netto</th><th class="num">Einkauf</th><th class="num">Ketteln, Zuschläge</th><th class="num">Weg</th><th class="num">Gebühr</th><th class="num">Rohertrag</th>
     </tr></thead><tbody>${sichtbar.map(z => kaufZeile(z, ziel)).join('')}</tbody></table></div>${seitenLeiste(liste.length, seite)}`
     : emptyState('Keine Käufe in dieser Auswahl.', '')}`;
 }
@@ -134,28 +133,30 @@ function preisFallZeile(f) {
     <td data-l="Verkauft zu" class="num">${euro(f.verkauftBrutto)} <span class="small muted">${esc(f.einheit)}</span></td>
     <td data-l="Heute" class="num">${f.heuteBrutto === null ? '<span class="muted">nicht im Shop gefunden</span>' : euro(f.heuteBrutto)}</td>
     <td data-l="Nötig mindestens" class="num ${f.verlust ? 'os-crit' : 'os-warn'}"><b>${euro(f.noetigBrutto)}</b></td>
-    <td data-l="Käufe">${esc(f.kaeufe.join(', '))}</td>
+    <td data-l="Käufe">${esc(f.kaeufe.join(', '))}${f.mitKante ? `<div class="small muted">mit Kante${f.mitKettelservice ? ' und Kettelservice' : ''}, bei diesem Maß</div>` : ''}</td>
     <td data-l="Güte">${gueteMarke(f.guete)}</td>
   </tr>`;
 }
 
+const URSACHE_TEXT = { ware: 'Ware', kante: 'Kante', verschnitt: 'Verschnitt', zuschlag: 'Lieferzuschläge', weg: 'Weg zum Kunden' };
+
 function kaufFallZeile(f, ziel) {
-  const kosten = [f.verschnitt && `Verschnitt ${euro(f.verschnitt)}`, (f.kettel + f.zuschlag) && `Ketteln, Zuschläge ${euro(f.kettel + f.zuschlag)}`, f.weg && `Weg ${euro(f.weg)}`, f.gebuehr && `Gebühr ${euro(f.gebuehr)}`].filter(Boolean).join(' · ');
   return `<tr>
-    <td data-l="Kauf"><div class="cell-title">${esc(f.name)}</div><div class="small muted">${esc(tag(f.datum))}</div></td>
+    <td data-l="Kauf"><div class="cell-title">${esc(f.name)}</div><div class="small muted">${esc(tag(f.datum))}</div>${gueteMarke(f.guete)}</td>
     <td data-l="Ware" class="os-ware">${esc(f.titel)}</td>
-    <td data-l="Erlös netto" class="num">${euro(f.netto)}</td>
-    <td data-l="Kosten außer Ware" class="small">${esc(kosten || '–')}</td>
-    <td data-l="Rohertrag" class="num ${stufe(f.quote, ziel)}"><b>${prozent(f.quote)}</b></td>
-    <td data-l="Fehlt bis Ziel" class="num">${euro(f.fehlt)}</td>
-    <td data-l="Güte">${gueteMarke(f.guete)}</td>
+    <td data-l="Erlös brutto" class="num">${euro(f.brutto)}</td>
+    <td data-l="Hätte mindestens bringen müssen" class="num ${f.quote < 0 ? 'os-crit' : 'os-warn'}"><b>${euro(f.mindestBrutto)}</b>${f.mehrBrutto > 0 ? `<div class="small">${euro(f.mehrBrutto)} mehr</div>` : ''}</td>
+    <td data-l="Rohertrag" class="num ${stufe(f.quote, ziel)}">${prozent(f.quote)}</td>
+    <td data-l="Größte Ursache"><b>${esc(URSACHE_TEXT[f.groesste] ?? f.groesste)}</b> ${euro(f.groessteBetrag)}<div class="small muted">${esc(f.hinweis)}</div></td>
   </tr>`;
 }
+
+const KANTE_TEXT = { enthalten: 'Kante im Einkaufspreis', mitgerechnet: 'Kante mitgerechnet', kettelservice: 'Kante und Kettelservice mitgerechnet', ohne: 'ohne Kante gerechnet' };
 
 function sortimentZeile(p, ziel) {
   const [von, bis] = p.heuteBrutto;
   return `<tr>
-    <td data-l="Produkt"><div class="cell-title">${esc(p.titel)}</div><div class="small muted">${esc(p.gruppe)}${p.verkauft ? ' · schon verkauft' : ''}</div></td>
+    <td data-l="Produkt"><div class="cell-title">${esc(p.titel)}</div><div class="small muted">${esc(p.gruppe)}${p.verkauft ? ' · schon verkauft' : ''}${p.kante ? ` · ${esc(KANTE_TEXT[p.kante])}` : ''}</div></td>
     <td data-l="Varianten unter Ziel" class="num">${p.varianten}${p.verlustVarianten ? ` <span class="os-crit">(${p.verlustVarianten} mit Verlust)</span>` : ''}</td>
     <td data-l="Rohertrag heute" class="num ${stufe(p.schlechtesteQuote, ziel)}">${von === bis ? '' : 'ab '}${prozent(p.schlechtesteQuote)}</td>
     <td data-l="Preis heute" class="num">${von === bis ? euro(von) : `${euro(von)} bis ${euro(bis)}`} <span class="small muted">${esc(p.einheit)}</span></td>
@@ -170,26 +171,24 @@ function teilPreise(d) {
   const k = d.kaeufeKontrolle;
   const offen = k.preisFaelle.filter(f => f.stand !== 'angehoben');
   const angehoben = k.preisFaelle.filter(f => f.stand === 'angehoben');
-  const wegen = k.kostenFaelle.filter(f => f.ursache === 'kosten');
-  const preisSumme = k.kostenFaelle.filter(f => f.ursache === 'preis');
   const s = d.sortiment;
   const seite = Math.max(1, Number(state.route.params.get('sseite')) || 1);
   const zahl = n => Number(n).toLocaleString('de-DE');
-  const tabelleKauf = l => `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Kauf</th><th>Ware</th><th class="num">Erlös netto</th><th>Kosten außer Ware</th><th class="num">Rohertrag</th><th class="num">Fehlt bis Ziel</th><th>Güte</th></tr></thead><tbody>${l.map(f => kaufFallZeile(f, ziel)).join('')}</tbody></table></div>`;
+  const ref = d.kanteReferenz ? `${d.kanteReferenz.breiteCm} × ${d.kanteReferenz.laengeCm} cm` : 'ein Referenzmaß';
   return `<p class="os-regel">Ziel: ${zielText} Rohertrag vom Netto. <span class="os-crit">Rot</span> heißt Verlust, <span class="os-warn">Bernstein</span> unter Ziel. Maßgeblich ist immer der heutige Shop-Preis; alle Preise brutto mit 19 %. Preise ändert nur der Inhaber, diese Seite ändert nichts.</p>
-    <section class="os-abschnitt"><h2>Aus echten Käufen: der Preis war zu niedrig</h2>
-      <p class="small muted">Schon der Einkauf der Ware lässt weniger als ${zielText}. Nötig ist mindestens der genannte Preis je Verkaufseinheit, ohne Versand.</p>
+    <section class="os-abschnitt"><h2>Käufe unter ${zielText}: was sie hätten bringen müssen</h2>
+      <p class="small muted">Mindestbetrag brutto, damit nach Einkauf, Kante, Verschnitt, Zuschlägen, Weg und Zahlungsgebühr ${zielText} bleiben. Ketteln und Einfassen gehören bei Maßware zu den Herstellkosten: Reichen Ware und Kante nicht, ist es der Preis.</p>
+      ${k.kaufFaelle.length ? `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Kauf</th><th>Ware</th><th class="num">Erlös brutto</th><th class="num">Hätte mindestens bringen müssen</th><th class="num">Rohertrag</th><th>Größte Ursache</th></tr></thead><tbody>${k.kaufFaelle.map(f => kaufFallZeile(f, ziel)).join('')}</tbody></table></div>`
+        : emptyState('Kein rechenbarer Kauf unter dem Ziel.', '')}
+    </section>
+    <section class="os-abschnitt"><h2>Produkte, deren Preis nicht reicht</h2>
+      <p class="small muted">Aus den Käufen oben: Ware (und Kante, wenn sie dieser Ware gehört) lässt weniger als ${zielText}. Nötig ist mindestens der genannte Preis je Verkaufseinheit, ohne Versand.</p>
       ${offen.length ? `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Produkt</th><th class="num">Verkauft zu</th><th class="num">Heute</th><th class="num">Nötig mindestens</th><th>Käufe</th><th>Güte</th></tr></thead><tbody>${offen.map(preisFallZeile).join('')}</tbody></table></div>`
         : emptyState('Kein offener Preisfall aus Käufen.', angehoben.length ? 'Alle zu günstig verkauften Produkte sind inzwischen angehoben.' : '')}
       ${angehoben.length ? `<p class="small muted">Inzwischen angehoben: ${angehoben.map(f => `${esc(f.titel)} (${esc(f.kaeufe.join(', '))}: damals ${euro(f.verkauftBrutto)}, heute ${euro(f.heuteBrutto)})`).join('; ')}.</p>` : ''}
-      ${preisSumme.length ? `<h3 class="os-unter">Wareneinkauf zu hoch, aber nicht einem Produkt zuzuordnen</h3><p class="small muted">Mehrere Waren in einem Kauf, der Einkauf ist nur als Summe belegt. Preise der Produkte prüfen.</p>${tabelleKauf(preisSumme)}` : ''}
-    </section>
-    <section class="os-abschnitt"><h2>Aus echten Käufen: nicht der Preis, sondern die Kosten</h2>
-      <p class="small muted">Die Ware selbst erreicht das Ziel, erst Verschnitt, Lieferzuschläge, Versand und Gebühr drücken den Kauf darunter. Hier hilft kein höherer Preis, sondern ein Mindermengen- oder Versandaufschlag – prüfen.</p>
-      ${wegen.length ? tabelleKauf(wegen) : emptyState('Kein Kauf, bei dem nur die Kosten das Problem sind.', '')}
     </section>
     <section class="os-abschnitt"><h2>Ganzes Sortiment: heutiger Preis gegen Einkauf</h2>
-      <p class="small muted">Aktive Varianten mit Einkaufspreis, ohne Versand und Zuschläge. Zuerst Verlust, dann schon verkaufte Produkte.</p>
+      <p class="small muted">Aktive Varianten mit Einkaufspreis, ohne Versand und Zuschläge. Zuerst Verlust, dann schon verkaufte Produkte. Bei Teppich nach Maß, dessen Einkauf nur das Material nennt, ist die Kante für ${esc(ref)} mit dem Kettlertarif mitgerechnet, ebenso der Kettelservice, den der Kunde dafür extra zahlt (${zahl(s.kanteMitgerechnet ?? 0)} Varianten); kleinere Teppiche brauchen mehr Kante je m². „Nötig mindestens“ ist der Preis der Variante ohne Kettelservice.${s.ohneKante ? ` ${zahl(s.ohneKante)} Varianten sind ohne Kante gerechnet, weil nicht belegt ist, ob sie im Einkauf steckt.` : ''}</p>
       <p class="os-zaehler">${zahl(s.geprueft)} Varianten geprüft · ${zahl(s.ohneEk)} ohne Einkaufspreis · ${zahl(s.nichtVergleichbar)} nicht vergleichbar · <b>${zahl(s.unterZiel)} unter Ziel</b>${s.verlust ? ` · <b class="os-crit">${zahl(s.verlust)} mit Verlust</b>` : ' · keine mit Verlust'}</p>
       ${s.produkte.length ? `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Produkt</th><th class="num">Varianten unter Ziel</th><th class="num">Rohertrag heute</th><th class="num">Preis heute</th><th class="num">Nötig mindestens</th><th>Güte</th></tr></thead><tbody>${s.produkte.slice((seite - 1) * JE_SEITE, seite * JE_SEITE).map(p => sortimentZeile(p, ziel)).join('')}</tbody></table></div>${seitenLeiste(s.produkte.length, seite, 'sseite')}`
         : emptyState('Im Sortiment liegt kein heutiger Preis unter dem Ziel.', '')}

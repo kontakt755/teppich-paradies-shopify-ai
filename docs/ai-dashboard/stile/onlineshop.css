@@ -24,3 +24,8 @@
 @media (max-width: 1100px) {
   .os-tabelle td.os-leer { display: none; }
 }
+.os-guete-zelle, td .os-guete { margin-top: 4px; }
+@media (min-width: 1101px) {
+  /* Betraege nicht mitten im Wort umbrechen ("0,00" / "€"), die Ware-Spalte gibt nach. */
+  .os-tabelle td.num { white-space: nowrap; }
+}

@@ -87,10 +87,12 @@ const DATEN = {
       { titel: 'Testboden', variante: 'Grau', einheit: 'je m²', kaeufe: ['#T3'], noetigBrutto: 13.6, verkauftBrutto: 11.9, heuteBrutto: 11.9, guete: 'geschaetzt', verlust: true, stand: 'offen' },
       { titel: 'Testspachtel', variante: '10 kg', einheit: 'je Stück', kaeufe: ['#T0'], noetigBrutto: 50, verkauftBrutto: 40, heuteBrutto: 60, guete: 'belegt', verlust: false, stand: 'angehoben' },
     ],
-    kostenFaelle: [{ ursache: 'kosten', name: '#T4', datum: '2099-03-02T10:00:00Z', titel: 'Testläufer', netto: 30, rohertrag: 2, quote: 0.07, kosten: 12, verschnitt: 0, kettel: 0, zuschlag: 8, weg: 3, gebuehr: 1, fehlt: 7, guete: 'belegt' }],
+    kaufFaelle: [{ ursache: 'kosten', name: '#T4', datum: '2099-03-02T10:00:00Z', titel: 'Testläufer', netto: 30, brutto: 35.7, rohertrag: 2, quote: 0.07, ware: 18, kante: 0, verschnitt: 0, zuschlag: 8, weg: 3, gebuehr: 1, guete: 'belegt',
+      groesste: 'zuschlag', groessteBetrag: 8, hinweis: 'Mindermengen- bzw. Lieferaufschlag prüfen', mindestBrutto: 50.12, mehrBrutto: 14.42 }],
   },
-  sortiment: { geprueft: 1200, ohneEk: 300, nichtVergleichbar: 20, imZiel: 870, unterZiel: 10, verlust: 0, produkte: [
-    { titel: 'Testteppich nach Maß', gruppe: 'Teppich nach Maß', verkauft: false, einheit: 'je m²', varianten: 4, verlustVarianten: 0, schlechtesteQuote: 0.25, heuteBrutto: [39, 39], noetigBrutto: 41.5, guete: 'geschaetzt', verlust: false },
+  kanteReferenz: { breiteCm: 200, laengeCm: 300 },
+  sortiment: { geprueft: 1200, ohneEk: 300, nichtVergleichbar: 20, imZiel: 870, unterZiel: 10, verlust: 0, kanteMitgerechnet: 40, ohneKante: 5, produkte: [
+    { titel: 'Testteppich nach Maß', gruppe: 'Teppich nach Maß', verkauft: false, einheit: 'je m²', kante: 'ohne', varianten: 4, verlustVarianten: 0, schlechtesteQuote: 0.25, heuteBrutto: [39, 39], noetigBrutto: 41.5, guete: 'geschaetzt', verlust: false },
   ], nichtVergleichbarGruende: [{ grund: 'Shop verkauft je Stück, EK-Liste rechnet je m²', anzahl: 20, beispiele: ['Testboden Wunschmaß'] }] },
 };
 
@@ -101,7 +103,7 @@ test('Ansicht Gewinn: Monat mit Abdeckung, Verlust rot, unbekannt ohne Zahl mit 
   assert.match(html, /Testboden &lt;i&gt;/);
   assert.match(html, /class="num os-crit"><b>-13,00 €<\/b>/);
   assert.match(html, /Fehlt: Einkaufspreis fehlt: Testkleber/);
-  assert.match(html, /os-guete-unbekannt">unbekannt/);
+  assert.match(html, /<div class="cell-title">#T1<\/div><div class="small muted">[^<]*<\/div><span class="os-guete os-guete-unbekannt">unbekannt/, 'Güte steht unter der Kaufnummer');
   assert.doesNotMatch(html, /<button[^>]*data-(preis|speichern|aendern)/, 'kein Knopf, der Preise aendert');
 });
 
@@ -112,7 +114,11 @@ test('Ansicht Preiskontrolle: offene Preisfaelle, angehoben ausserhalb der Handl
   assert.match(handlung, /Testboden/);
   assert.doesNotMatch(handlung, /Testspachtel/);
   assert.match(html, /Inzwischen angehoben: Testspachtel \(#T0: damals 40,00 €, heute 60,00 €\)/);
-  assert.match(html, /Mindermengen- oder Versandaufschlag/);
+  assert.match(html, /<b>50,12 €<\/b><div class="small">14,42 € mehr<\/div>/);
+  assert.match(html, /<b>Lieferzuschläge<\/b> 8,00 €<div class="small muted">Mindermengen- bzw. Lieferaufschlag prüfen/);
+  assert.match(html, /Kante für 200 × 300 cm mit dem Kettlertarif mitgerechnet, ebenso der Kettelservice, den der Kunde dafür extra zahlt \(40 Varianten\)/);
+  assert.match(html, /Teppich nach Maß · ohne Kante gerechnet/);
+  assert.doesNotMatch(html, /hilft kein höherer Preis/);
   assert.match(html, /1.200 Varianten geprüft · 300 ohne Einkaufspreis · 20 nicht vergleichbar · <b>10 unter Ziel<\/b> · keine mit Verlust/);
   assert.match(html, /Nicht vergleichbar: 20 Varianten/);
 });

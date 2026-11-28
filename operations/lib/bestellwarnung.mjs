@@ -170,11 +170,31 @@ function mengePasstZumMass(p, masse) {
 }
 
 /**
+ * Preis des FERTIGEN Teppichs (Kante oder Einfassung inklusive)? Belegt nur ueber die EK-Zeile selbst:
+ *   - Spalte "rug_…" einer Hersteller-Preisliste (Kettelung, Premium, Deluxe je m²), oder
+ *   - Massware aus einer "Teppiche PL" (Preisliste fertiger Teppiche: Umkettelung, Paspel, Cover je m²).
+ * Eine Zeile "nur Material" (Rolle) ist nie ein Fertigpreis. Mindestflaeche nur, wenn die Zeile sie nennt
+ * ("unter 3 m² werden 3 m² berechnet"). Fuer Fertigpreise wird nie zusaetzlich unser Kettler gerechnet.
+ */
+const MASSWARE = /^(Teppich|Läufer) nach Maß$/;
+export function fertigpreis(zeile) {
+  if (!zeile || /nur Material/i.test(zeile.bemerkung ?? '')) return null;
+  const quelle = String(zeile.quelle ?? '');
+  const fertig = /Spalte rug_(kettelung|premium|deluxe)/i.test(quelle) || (/\bTeppiche PL\b/.test(quelle) && MASSWARE.test(zeile.produktart ?? ''));
+  if (!fertig) return null;
+  const min = String(zeile.bemerkung ?? '').match(/unter (\d+(?:,\d+)?) m² werden \1 m² berechnet/);
+  return { minM2: min ? Number(min[1].replace(',', '.')) : null };
+}
+
+/**
  * Was diese Position nicht sicher rechenbar macht. Jeder Grund fuehrt zu "Rohertrag unbekannt": Die
  * Warnung schaetzt nur, was belegt ist, und rechnet nichts aus einer Vermutung schoen.
  */
-function unsicherheiten({ p, ziel, wegBelegt, kettelpreis = null }) {
+function unsicherheiten({ p, ziel, wegBelegt, kettelpreis = null, fertig = null }) {
   const gruende = [];
+  // Fertiger Teppich vom Hersteller: Kante und Einfassung stecken im Preis. Geht er trotzdem ueber
+  // unseren Kettler, ist der Fertigpreis nicht der Materialeinkauf - dann keine Zahl.
+  if (fertig && ziel === 'kettler') gruende.push('Weg über unseren Kettler vermerkt, die EK-Liste nennt nur den Preis des fertigen Teppichs');
   const masse = fertigmass(p);
   const gekettelt = wirdGekettelt(p.ausfuehrung);
   // Dieser Rechner verkauft rund und oval nach echter Flaeche; das Mass steht nur in den Properties.
@@ -183,10 +203,10 @@ function unsicherheiten({ p, ziel, wegBelegt, kettelpreis = null }) {
   else if (masse && !formRechenbar(masse)) gruende.push(`Form „${masse.form}“, dafür gibt es keine Rechenregel`);
   else if (masse && !mengePasstZumMass(p, masse)) gruende.push('Menge, sie passt nicht zum Fertigmaß');
   if (['abweichung', 'unlesbar', 'waise'].includes(p.masspruefung?.status)) gruende.push('Menge, die Maßprüfung ist offen');
-  if (gekettelt && ziel !== 'kettler' && !(ziel === 'kunde' && kettelpreis !== null)) gruende.push('Ketteln außerhalb unseres Kettlers, Preis nicht hinterlegt');
+  if (gekettelt && !fertig && ziel !== 'kettler' && !(ziel === 'kunde' && kettelpreis !== null)) gruende.push('Ketteln außerhalb unseres Kettlers, Preis nicht hinterlegt');
   // Die Kettlerpreise sind nur fuer gerade Kanten belegt.
-  if (gekettelt && ziel === 'kettler' && (masse?.rund || masse?.form === 'Rund' || masse?.form === 'Oval')) gruende.push('Ketteln rund oder oval, Preis nicht belegt');
-  if (!gekettelt && (p.ausfuehrung ?? []).some(mussEingefasstWerden)) gruende.push('Einfassung, Kosten nicht hinterlegt');
+  if (gekettelt && !fertig && ziel === 'kettler' && (masse?.rund || masse?.form === 'Rund' || masse?.form === 'Oval')) gruende.push('Ketteln rund oder oval, Preis nicht belegt');
+  if (!gekettelt && !fertig && (p.ausfuehrung ?? []).some(mussEingefasstWerden)) gruende.push('Einfassung, Kosten nicht hinterlegt');
   if (!wegBelegt) gruende.push('Lieferweg schon bearbeiteter Ware, er ist nicht vermerkt');
   return gruende;
 }
@@ -218,6 +238,7 @@ function volleBreiteM2({ breiteCm, laengeCm }, rolle) {
 /** Was vom Lieferanten kommt und was das je Fall kostet. */
 function mengeUndEinkauf(p, ek, { ziel, ekAufschlag = 0 }) {
   const zeile = ekZeile(p, ek);
+  const fertig = fertigpreis(zeile);
   // Paketware wird in Paketen verkauft und bezahlt, auch wenn der Preis je m² gilt.
   const verkauft = zeile?.vk_einheit === 'Paket' || p.bestellmenge?.einheit === 'paket' ? null : verkaufteFlaeche(p);
   const masse = fertigmass(p);
@@ -228,7 +249,8 @@ function mengeUndEinkauf(p, ek, { ziel, ekAufschlag = 0 }) {
   let vollerollenbreite = null;
   if (stueck) {
     flaeche = stueck.breiteCm * stueck.laengeCm / 1e4;
-    vollerollenbreite = volleBreiteM2(stueck, rolle);
+    // Fertiger Teppich: der Hersteller berechnet die Flaeche (mindestens die genannte), keinen Verschnitt.
+    vollerollenbreite = fertig ? null : volleBreiteM2(stueck, rolle);
   } else if (verkauft !== null && p.bestellmenge?.einheit === 'lfm' && rolle) {
     flaeche = Number(p.bestellmenge.menge) * rolle / 100;
   }
@@ -238,7 +260,9 @@ function mengeUndEinkauf(p, ek, { ziel, ekAufschlag = 0 }) {
     if (je !== null && flaeche !== null) ekSumme = je * flaeche;
     else if (verkauft === null && istZahl(zeile.ek_vk_einheit)) ekSumme = zeile.ek_vk_einheit * (1 + ekAufschlag) * Number(p.mengeBestellt);
   }
-  return { zeile, verkauft, flaeche, rolle, vollerollenbreite, ekJeM2: je, ekSumme, stueck };
+  // Mindestflaeche des Herstellers (z. B. unter 3 m² werden 3 m² berechnet) gilt nur fuer den Einkauf.
+  if (fertig?.minM2 && je !== null && flaeche !== null && flaeche < fertig.minM2) ekSumme = je * fertig.minM2;
+  return { zeile, verkauft, flaeche, rolle, vollerollenbreite, ekJeM2: je, ekSumme, stueck, fertig };
 }
 
 // ------------------------------------------------------------------ Packstueck und Versand
@@ -432,12 +456,16 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
   const stand = p => statusAlle[positionKey(auftrag.id, p.lineItemId)];
   const standardziel = p => {
     const masse = fertigmass(p);
+    // Fertiger Teppich: ohne Vermerk kommt er fertig vom Hersteller (Inhaber 03.11.: wer kettelt, wird Fall
+    // fuer Fall geklaert). Nie den Fertigpreis zum Kettler schicken.
+    if (fertigpreis(ekZeile(p, ek))) return 'kunde';
     return wirdGekettelt(p.ausfuehrung) && masse && !masse.unlesbar && absender?.kettelservice ? 'kettler' : 'kunde';
   };
   const eintraege = ware.map(p => {
     const { ziel, vermerkt, wegBelegt } = lieferweg({ mailZiel: zielVon.get(p.lineItemId)?.ziel, stand: stand(p), standard: standardziel(p) });
     const k = kosten.lieferanten[p.lieferant] ?? null;
-    return { p, ziel: ziel === 'baustelle' ? 'kunde' : ziel, vermerkt, wegBelegt, kettelpreis: k?.kettelnJeLfm ?? null, teiler: zielVon.get(p.lineItemId)?.teiler ?? 1, m: mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k?.ekAufschlag ?? 0 }) };
+    const m = mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k?.ekAufschlag ?? 0 });
+    return { p, ziel: ziel === 'baustelle' ? 'kunde' : ziel, vermerkt, wegBelegt, kettelpreis: k?.kettelnJeLfm ?? null, teiler: zielVon.get(p.lineItemId)?.teiler ?? 1, fertig: m.fertig, m };
   });
 
   const zeilenNetto = (auftrag.positionen ?? []).map(p => p.nettoGesamt);
@@ -628,7 +656,7 @@ export function bestellWarnung({ auftrag, mailsMitPosition = [], kosten, ek, tar
     value: {
       netto, ekBekannt, ekSumme: r2(ekSumme), offen: [...new Set(offen)], eigeneZustellung, versandVeraltet,
       posten: posten.map(x => ({ text: x.text, betrag: r2(x.betrag), art: x.art, vomLieferanten: x.vomLieferanten === true })),
-      positionen: eintraege.map(e => ({ lineItemId: e.p.lineItemId, ekSumme: istZahl(e.m.ekSumme) ? r2(e.m.ekSumme) : null, zeile: e.m.zeile ?? null, ziel: e.ziel, vermerkt: e.vermerkt, wegBelegt: e.wegBelegt, flaeche: e.m.flaeche, vollerollenbreite: e.m.vollerollenbreite, ekJeM2: e.m.ekJeM2 })),
+      positionen: eintraege.map(e => ({ lineItemId: e.p.lineItemId, ekSumme: istZahl(e.m.ekSumme) ? r2(e.m.ekSumme) : null, zeile: e.m.zeile ?? null, ziel: e.ziel, vermerkt: e.vermerkt, wegBelegt: e.wegBelegt, flaeche: e.m.flaeche, vollerollenbreite: e.m.vollerollenbreite, ekJeM2: e.m.ekJeM2, fertig: e.m.fertig ?? null })),
     },
   });
   return ergebnis;
@@ -693,7 +721,7 @@ export function kettelwegVergleich({ auftrag, lineItemIds = [], kosten, ek, tari
   const faelltOhnehinAn = ware.some(p => p.lieferant === lieferant && !ids.has(p.lineItemId));
   const netto = summe(teppiche.map(p => p.nettoGesamt).filter(istZahl));
   const kostenVon = ziel => {
-    const es = teppiche.map(p => ({ p, ziel, vermerkt: false, wegBelegt: true, kettelpreis: k.kettelnJeLfm, m: mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k.ekAufschlag ?? 0 }) }));
+    const es = teppiche.map(p => { const m = mengeUndEinkauf(p, ek, { ziel, ekAufschlag: k.ekAufschlag ?? 0 }); return { p, ziel, vermerkt: false, wegBelegt: true, kettelpreis: k.kettelnJeLfm, fertig: m.fertig, m }; });
     if (es.flatMap(unsicherheiten).length) return null;
     const gruppe = { lieferant, ziel, kosten, adresse, nah, kettlerAdresse: absender.kettelservice, ladenPlz, netto, tarif, jetzt, teiler: 1 };
     const r = wegEinerGruppe({ ...gruppe, eintraege: es, lieferungen: [{ neu: true, eintraege: es }] });

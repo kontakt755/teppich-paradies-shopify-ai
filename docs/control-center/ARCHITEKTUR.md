@@ -3402,4 +3402,20 @@ Wer es sehen darf, entscheidet allein `darfOnlineshop()` in `operations/lib/onli
   SKU), nur wenn `preisJeEinheit` zur Einheit der EK-Liste passt (m², 0,01 m² Konfigurator, Paket,
   Stueck) und sich der Preis seit der Liste nicht mehr als verdoppelt/halbiert hat; sonst
   „nicht vergleichbar“. EK-Aufschlag je Lieferant aus den Stammdaten.
+- **Fertigpreis:** `fertigpreis(zeile)` in `operations/lib/bestellwarnung.mjs` erkennt EK-Zeilen, die
+  den fertigen Teppich samt Kante meinen (Quelle `Spalte rug_*` bzw. Preisliste „Teppiche PL“ bei
+  Teppich/Laeufer nach Mass, nicht bei Bemerkung „nur Material“); Mindestflaeche aus der Bemerkung.
+  Solche Positionen gehen standardmaessig direkt vom Hersteller zum Kunden, ohne Verschnitt und nie
+  zusaetzlich ueber unseren Kettler; mit Kettler-Vermerk bleibt der Rohertrag „unbekannt“.
+  Bestelldialog und Onlineshop rechnen damit gleich.
+- **Kaeufe unter Ziel:** `preisKontrolleKaeufe` liefert `kaufFaelle` mit `mindestBrutto`
+  (B ≥ (K + fix) / ((1 − Z)/1,19 − p), p = prozentuale Gebuehr), `mehrBrutto` und der groessten
+  Ursache (Ware, Kante, Verschnitt, Lieferzuschlaege, Weg). Ketteln/Einfassen sind Herstellkosten:
+  reichen Ware + Kante abzueglich Kettelservice-Erloes nicht fuer 30 %, ist es ein Preisfall
+  (`ursache: 'preis'`, Produktzeile in `preisFaelle`).
+- **Kante im Sortiment:** fuer Teppich nach Mass mit reinem Materialpreis rechnet `kanteFuer` die
+  Kante fuer `KANTE_REFERENZ` (200 × 300 cm) mit dem Kettlertarif aus den Stammdaten und zieht den
+  Kettelservice-Erloes (Lexikon-Produkt `kettelservice`) ab; Fertigpreise „Kante im Einkaufspreis“,
+  nicht belegte Faelle „ohne Kante gerechnet“ (Zaehler in der Antwort).
+- `dashboard-pruefen.mjs` kennt zusaetzlich `--breiten 1280` (nicht im Standardlauf) fuer breite Tabellen.
 - Die Rechnungspruefung (w-414) ist keine Quelle: ihre Rechnungen sind keiner Kundenbestellung zugeordnet.

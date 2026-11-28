@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bestellWarnung } from '../lib/bestellwarnung.mjs';
+import { bestellWarnung, fertigpreis } from '../lib/bestellwarnung.mjs';
 import {
   ZIEL_ROHERTRAG, kaufArt, erloes, kostenAusBeleg, gewinnJeKauf, monatsKopf, preisIndex,
-  preisKontrolleKaeufe, ekJeVerkaufseinheit, preisKontrolleSortiment, fuerRolle, darfOnlineshop,
+  preisKontrolleKaeufe, ekJeVerkaufseinheit, preisKontrolleSortiment, fuerRolle, darfOnlineshop, mindestBrutto, KANTE_REFERENZ,
 } from '../lib/onlineshop-gewinn.mjs';
 
 // Nur erfundene Werte: Artikel, Preise, Kostensaetze und Bestellnummern gibt es nicht.
@@ -110,19 +110,61 @@ test('Preiskontrolle aus Kaeufen: Preisfall mit noetigem Preis, Kontrolle gegen 
   const a = preisKontrolleKaeufe([zeile], { preise: heuteZuNiedrig });
   assert.equal(a.preisFaelle.length, 1);
   assert.deepEqual([a.preisFaelle[0].noetigBrutto, a.preisFaelle[0].verkauftBrutto, a.preisFaelle[0].stand, a.preisFaelle[0].einheit], [6.8, 5.95, 'offen', 'je m²']);
-  assert.equal(a.kostenFaelle.length, 0);
+  assert.equal(a.kaufFaelle[0].ursache, 'preis');
   const heuteReicht = preisIndex([produkt('test', [variante('Test', 6.9, 'm2', 6.9, { sku: 'ART-1' })])]);
   assert.equal(preisKontrolleKaeufe([zeile], { preise: heuteReicht }).preisFaelle[0].stand, 'angehoben', 'inzwischen angehoben');
 });
 
-test('Preiskontrolle aus Kaeufen: reicht der Preis, sind Versand und Zuschlaege das Problem', () => {
-  // Einkauf 3/m² bei 6 netto: 50 % Warenmarge. Erst 30 Lieferkosten druecken den Kauf unter das Ziel.
+test('Kauf unter Ziel: reicht die Ware, sind Zuschlaege die groesste Ursache; Mindestbetrag mit Gebuehr', () => {
+  // Einkauf 3/m² bei 6 netto: Ware 50 %. Erst 30 Lieferkosten druecken den Kauf unter das Ziel.
   const zeile = gewinnJeKauf({ auftrag: auftrag([pos('l1', { nettoGesamt: 60 })]), roh: roh({ brutto: 71.4, steuer: 11.4 }), warnungFuer: warnungMit(EK([eZeile('ART-1', 3)])), gebuehr: 1 });
-  const a = preisKontrolleKaeufe([zeile], { preise: preisIndex([]) });
+  const a = preisKontrolleKaeufe([zeile], { preise: preisIndex([]), gebuehrTarif: TARIF });
   assert.equal(a.preisFaelle.length, 0);
-  assert.equal(a.kostenFaelle.length, 1);
-  assert.equal(a.kostenFaelle[0].ursache, 'kosten');
-  assert.equal(a.kostenFaelle[0].kosten, 31);
+  const f = a.kaufFaelle[0];
+  assert.deepEqual([f.ursache, f.groesste, f.groessteBetrag], ['kosten', 'zuschlag', 30]);
+  assert.match(f.hinweis, /Mindermengen/);
+  // 60 Kosten ohne Gebuehr: B/1,19 x 0,7 - B x 2,5 % - 0,35 >= 60  ->  B >= 60,35 / 0,5632 = 107,15
+  assert.equal(f.mindestBrutto, mindestBrutto(60, { prozent: 0.025, fix: 0.35 }));
+  assert.equal(f.mindestBrutto, 107.15);
+  assert.equal(f.mehrBrutto, 35.75);
+});
+
+test('Kante gehoert zu den Herstellkosten: reichen Ware und Kante nicht, ist es ein Preisfall', () => {
+  const z = { name: '#T5', datum: '2099-03-05', guete: 'belegt', netto: 100, brutto: 119, ware: 55, verschnitt: 0, kettel: 20, zuschlag: 0, weg: 5, gebuehr: 3, rohertrag: 17, quote: 0.17,
+    positionen: [{ titel: 'Testteppich', variante: 'Grau', handle: 'tt', einheit: '× 0,01 m²', menge: 400, netto: 100, ek: 55, ekZeile: null }] };
+  const a = preisKontrolleKaeufe([z], { preise: preisIndex([produkt('tt', [variante('Grau', 0.3, 'm2', 30)])]) });
+  assert.deepEqual([a.kaufFaelle[0].ursache, a.kaufFaelle[0].groesste], ['preis', 'ware']);
+  // Ware 55 + Kante 20 auf 4 m²: 18,75 netto/m² -> noetig 18,75 / 0,7 x 1,19 = 31,88 brutto je m²
+  assert.deepEqual([a.preisFaelle[0].noetigBrutto, a.preisFaelle[0].mitKante, a.preisFaelle[0].stand], [31.88, true, 'offen']);
+  // Hat der Kunde die Kante als Kettelservice extra bezahlt, zaehlt dieser Erloes zur Ware: kein Preisfall.
+  const mitService = preisKontrolleKaeufe([{ ...z, nettoNebenleistung: 40 }], { preise: preisIndex([]) });
+  assert.equal(mitService.preisFaelle.length, 0);
+});
+
+test('Fertiger Teppich: Kante im Preis, ohne Vermerk direkt vom Hersteller, Mindestflaeche, nie zusaetzlich unser Kettler', () => {
+  const rug = eZeile('RUG-1', 30, { produktart: 'Teppich nach Maß', vk_einheit: '0,01 m² (Konfigurator)', menge_bezug: 0.01, ek_vk_einheit: 0.3,
+    quelle: 'Herstellerliste netto, Spalte rug_kettelung', bemerkung: 'Rugs: unter 3 m² werden 3 m² berechnet; Direktlieferung 40 € je Auftrag' });
+  assert.deepEqual(fertigpreis(rug), { minM2: 3 });
+  assert.equal(fertigpreis({ ...rug, bemerkung: 'nur Material (Rolle); Kettel-/Einfasskosten und Verschnitt fehlen', quelle: 'UVP x Faktor' }), null);
+  assert.deepEqual(fertigpreis({ ...rug, quelle: 'Teppiche PL 2099, UVP netto x Faktor', bemerkung: '' }), { minM2: null });
+  assert.equal(fertigpreis({ ...rug, produktart: 'Teppichboden', quelle: 'Teppiche PL 2099', bemerkung: '' }), null, 'Rollenware aus derselben Liste ist kein Fertigpreis');
+  const kosten = { lieferanten: { E: { paket: null, paketBisCm: null, paketBisKg: null, fracht: 40, mindermenge: null, mindermengeUnterEk: null, ekAufschlag: 0, anKundenNurImLiefergebiet: false } }, kettler: { bis6qmJeLfm: 4, ab6qmJeLfm: 5 } };
+  const teppich = pos('t1', { lieferant: 'E', grosshaendlerId: 'RUG-1', sku: 'RUG-1', mengeBestellt: 200, nettoGesamt: 300, masspruefung: { einheit: '× 0,01 m²' },
+    ausfuehrung: ['Fertigmaß: 100 × 200 cm (Rechteck)', 'Einfassung: Gekettelt, umlaufend 6,00 m, Garn Ton in Ton'] });
+  const basis = { auftrag: auftrag([teppich]), kosten, ek: EK([rug]), tarif: null, absender: { kettelservice: { plz: '10000' } }, nahPlz: /^1/, jetzt: new Date('2099-03-06T10:00:00Z'), immer: true };
+  const w = bestellWarnung({ ...basis, statusAlle: {} });
+  // 2 m² verkauft, 3 m² berechnet: 90 Einkauf + 40 Lieferpauschale, kein Ketteln, keine offene Frage
+  assert.deepEqual(w.details.offen, []);
+  assert.equal(w.details.ekSumme, 90);
+  assert.deepEqual(w.details.posten.map(x => [x.art, x.betrag]), [['weg', 40]]);
+  assert.equal(w.details.positionen[0].ziel, 'kunde');
+  assert.equal(w.rohertrag, 300 - 90 - 40);
+  // Ueber unseren Kettler vermerkt: der Fertigpreis ist nicht der Materialeinkauf - keine Zahl.
+  const vermerkt = bestellWarnung({ ...basis, statusAlle: { 'o1::t1': { ueber: 'kettler', status: 'bestellt', bestelltAm: '2099-03-01' } } });
+  assert.equal(vermerkt.rohertrag, null);
+  assert.ok(vermerkt.details.offen.some(g => /fertigen Teppichs/.test(g)));
+  const zeile = gewinnJeKauf({ auftrag: auftrag([teppich]), roh: roh({ brutto: 357, steuer: 57, zeilen: [{ id: 't1', quantity: 200 }] }), warnungFuer: () => w, gebuehr: 5 });
+  assert.ok(zeile.hinweise.some(h => /Annahme: Fertiger Teppich direkt vom Hersteller, Kante im Einkaufspreis, berechnet mindestens 3 m²/.test(h)));
 });
 
 test('Teppich nach Mass in 0,01 m²: je m² gezeigt, nicht je Einheit', () => {
@@ -170,6 +212,30 @@ test('Sortiment: Verlust zuerst, dann verkauft; Zaehler fuer geprueft, ohne EK, 
   assert.deepEqual(s.produkte.map(p => p.handle), ['verlust', 'verkauft', 'knapp']);
   assert.equal(s.produkte[0].noetigBrutto, 17, 'EK 10 / 0,7 x 1,19 = 17,00');
   assert.equal(s.nichtVergleichbarGruende[0].anzahl, 1);
+});
+
+test('Sortiment: Kante bei Material-EK fuer das Referenzmass mitgerechnet, Fertigpreis ohne, unbelegt sichtbar ohne Kante', () => {
+  assert.deepEqual(KANTE_REFERENZ, { breiteCm: 200, laengeCm: 300 });
+  const tnm = (handle, extra) => eZeile(`${handle}-1`, 20, { handle, variante: 'Rot', produktart: 'Teppich nach Maß', vk_einheit: '0,01 m² (Konfigurator)', menge_bezug: 0.01, ek_vk_einheit: 0.2, ...extra });
+  const ek = [
+    tnm('material', { bemerkung: 'nur Material (Rolle); Kettel-/Einfasskosten und Verschnitt fehlen' }),
+    tnm('fertig', { quelle: 'Liste, Spalte rug_premium' }),
+    tnm('unklar', { quelle: 'Kosten pro Artikel' }),
+  ];
+  // 33,32 brutto je m² = 28 netto: 20 EK = 28,6 %, unter Ziel. Mit Kante 10 m x 3 / 6 m² = 5 je m²: 25 EK.
+  const produkte = ['material', 'fertig', 'unklar'].map(h => produkt(h, [variante('Rot', 0.3332, 'm2', 33.32)]));
+  const s = preisKontrolleSortiment({ produkte, ekZeilen: ek, kettler: { bis6qmJeLfm: 3, ab6qmJeLfm: 4 } });
+  const je = Object.fromEntries(s.produkte.map(p => [p.handle, p]));
+  assert.deepEqual([je.material.kante, je.fertig.kante, je.unklar.kante], ['mitgerechnet', 'enthalten', 'ohne']);
+  assert.equal(je.material.noetigBrutto, 42.5, '25 / 0,7 x 1,19 = 42,50 je m²');
+  assert.equal(je.fertig.noetigBrutto, 34);
+  assert.deepEqual([s.kanteMitgerechnet, s.ohneKante], [1, 1]);
+  // Kettelservice 19 brutto je m: 10 m x 15,97 / 6 m² = 26,61 Erloes je m² zusaetzlich - Kante gedeckt.
+  const mitService = preisKontrolleSortiment({ produkte, ekZeilen: ek, kettler: { bis6qmJeLfm: 3, ab6qmJeLfm: 4 }, kettelVkJeLfmBrutto: 19 });
+  assert.equal(mitService.produkte.some(p => p.handle === 'material'), false);
+  assert.equal(mitService.kanteMitgerechnet, 1);
+  const ohneTarif = preisKontrolleSortiment({ produkte, ekZeilen: ek });
+  assert.equal(ohneTarif.produkte.find(p => p.handle === 'material').kante, 'ohne', 'ohne Kettlertarif keine erfundene Kante');
 });
 
 test('Sortiment: EK-Aufschlag des Lieferanten zaehlt mit', () => {

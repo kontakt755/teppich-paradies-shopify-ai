@@ -74,7 +74,7 @@ import {
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import { warnungenAnhaengen, bestellWarnung, leseEkListe, leseLieferkosten } from '../operations/lib/bestellwarnung.mjs';
-import { kaufArt, gewinnJeKauf, monatsKopf, preisIndex, preisKontrolleKaeufe, preisKontrolleSortiment, fuerRolle as onlineshopFuerRolle, darfOnlineshop, ZIEL_ROHERTRAG } from '../operations/lib/onlineshop-gewinn.mjs';
+import { kaufArt, gewinnJeKauf, monatsKopf, preisIndex, preisKontrolleKaeufe, preisKontrolleSortiment, KANTE_REFERENZ, fuerRolle as onlineshopFuerRolle, darfOnlineshop, ZIEL_ROHERTRAG } from '../operations/lib/onlineshop-gewinn.mjs';
 import { leseStammdaten, stammdatenPfad, stammdatenFuer, markiereWegVorschlag, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff, kennungAusLexikon, KETTLER_NAH_PLZ } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
@@ -4133,16 +4133,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const preise = preisIndex(produkte);
       const ekAufschlag = Object.fromEntries(Object.entries(kosten.lieferanten).map(([id, x]) => [id, x.ekAufschlag ?? 0]));
       const sortiment = preisKontrolleSortiment({
-        produkte, ekZeilen: ek.handles ? [...ek.handles.values()].flat() : [], ekAufschlag,
+        produkte, ekZeilen: ek.handles ? [...ek.handles.values()].flat() : [], ekAufschlag, kettler: kosten.kettler,
+        // Kettelservice des Shops: je 0,01 laufenden Meter verkauft, Preis je Meter = x 100.
+        kettelVkJeLfmBrutto: (() => { const v = produkte.find(p => p.handle === 'kettelservice')?.varianten?.[0]; return Number(v?.preis) > 0 ? v.preis * 100 : null; })(),
         verkaufteHandles: new Set(zeilen.flatMap(z => z.positionen.map(p => p.handle)).filter(Boolean)),
       });
       if (!ek.verfuegbar) hinweise.push('EK-Liste fehlt: ohne sie gibt es weder Schätzung noch Sortimentsprüfung.');
       if (!produkte.length) hinweise.push('Lexikon-Export fehlt: heutige Preise unbekannt.');
       return onlineshopFuerRolle({
         verfuegbar: true, ziel: ZIEL_ROHERTRAG, stand: { bestellungen: k.modell.erstellt ?? null, ekListe: ek.stand ?? null, belege: belegStand },
-        hinweise, ausgeschlossen, monate: monatsKopf(zeilen),
+        hinweise, ausgeschlossen, monate: monatsKopf(zeilen), kanteReferenz: KANTE_REFERENZ,
         kaeufe: zeilen.map(({ positionen, orderId, ...z }) => ({ ...z, titel: [...new Set(positionen.map(p => p.titel))].join(', ') })),
-        kaeufeKontrolle: preisKontrolleKaeufe(zeilen, { preise, ekAufschlag }),
+        kaeufeKontrolle: preisKontrolleKaeufe(zeilen, { preise, ekAufschlag, gebuehrTarif }),
         sortiment,
       }, benutzer);
     },

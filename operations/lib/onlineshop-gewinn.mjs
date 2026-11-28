@@ -16,11 +16,14 @@
  * alles mit erfundenen Daten pruefbar bleibt. Keine Werte im Repository.
  */
 
+import { fertigpreis } from './bestellwarnung.mjs';
+
 /**
  * Ziel-Rohertrag vom Netto. Quelle: EK-Liste des Inhabers, Spalte "max. Rabatt bis 30 % Rohertrag"
  * (ek-liste/ZUSAMMENFASSUNG-2026-10-19.md). Gilt fuer Kaeufe nach allen Kosten, im Sortiment ohne Versand.
  */
 export const ZIEL_ROHERTRAG = 0.3;
+const MASSWARE_ART = /^(Teppich|Läufer) nach Maß$/;
 export const MWST = 0.19;
 
 /** Was bei der Belegsammlung als belegt zaehlt (R = Rechnung, AB = Auftragsbestaetigung). */
@@ -199,6 +202,12 @@ export function gewinnJeKauf({ auftrag, roh, warnungFuer, beleg = null, belegTar
         hinweise.push(`Annahme: Lieferweg nicht vermerkt, gerechnet mit dem üblichen Weg (${wege}).`);
       }
       if (w?.details?.positionen?.some(p => p.zeile?.sicherheit === 'abgeleitet')) hinweise.push('Einkauf aus der abgeleiteten EK-Liste.');
+      // Fertiger Teppich: Kante im Preis, kein Kettler; Mindestflaeche und Lieferpauschale des Herstellers.
+      const fertige = (w?.details?.positionen ?? []).filter(p => p.fertig);
+      if (fertige.length) {
+        const min = [...new Set(fertige.map(p => p.fertig.minM2).filter(Boolean))];
+        hinweise.push(`${fertige.some(p => !p.vermerkt) ? 'Annahme: ' : ''}Fertiger Teppich direkt vom Hersteller, Kante im Einkaufspreis${min.length ? `, berechnet mindestens ${min.join(' bzw. ')} m²` : ''}, Lieferpauschale des Herstellers in den Zuschlägen.`);
+      }
     }
   }
 
@@ -216,9 +225,11 @@ export function gewinnJeKauf({ auftrag, roh, warnungFuer, beleg = null, belegTar
     return {
       lineItemId: p.lineItemId, titel: p.titel ?? 'Artikel', variante: p.farbe ?? '', handle: p.handle ?? null, sku: p.sku ?? null, lieferant: p.lieferant ?? null,
       einheit: p.masspruefung?.einheit ?? '', menge: Number(p.mengeBestellt), netto: positionsNetto(p, rohZeilen.get(p.lineItemId)),
-      ek: d?.ekSumme ?? null, ekZeile: d?.zeile ?? null,
+      ek: d?.ekSumme ?? null, ekZeile: d?.zeile ?? null, fertig: Boolean(d?.fertig),
     };
   });
+  // Eigenleistungen (Kettelservice, Fertigungspauschale) bringen Erloes fuer Kante und Fertigung.
+  const nettoNebenleistung = r2(summe((auftrag.positionen ?? []).filter(p => p.eigenleistung && !p.istMuster).map(p => positionsNetto(p, rohZeilen.get(p.lineItemId)) ?? 0)));
   // Belegt und nur eine Ware: dann gehoert der belegte Einkauf genau dieser Position.
   // Fuer die Preisfrage zaehlt der Einkauf ohne Verschnitt.
   if (ausBeleg?.nurEinePosition && positionen.length === 1) { positionen[0].ekBeleg = r2(ausBeleg.ware - ausBeleg.verschnitt); }
@@ -226,7 +237,7 @@ export function gewinnJeKauf({ auftrag, roh, warnungFuer, beleg = null, belegTar
   const rechenbar = kosten !== null && gebuehrBetrag !== null && !gruende.length;
   const zeile = {
     orderId: auftrag.id, name: auftrag.name, datum: auftrag.datum, monat: String(auftrag.datum ?? '').slice(0, 7),
-    brutto: e.brutto, netto: e.netto, erstattetBrutto: e.erstattetBrutto,
+    brutto: e.brutto, netto: e.netto, erstattetBrutto: e.erstattetBrutto, nettoNebenleistung,
     guete: rechenbar ? guete : 'unbekannt', gruende: [...new Set(gruende)], hinweise: [...new Set(hinweise)],
     ware: null, verschnitt: null, kettel: null, zuschlag: null, weg: null, gebuehr: null, gebuehrGuete: null, rohertrag: null, quote: null,
     positionen,
@@ -295,16 +306,13 @@ const aufCent = x => Math.ceil(x * 100 - 1e-6) / 100;
 // ------------------------------------------------------------------ Teil 2 A: aus echten Kaeufen
 
 /**
- * Kaeufe unter dem Ziel. Liegt eine Ware selbst unter dem Ziel, ist der Preis das Problem (Fall je
- * Produkt, mit noetigem Preis). Reicht der Preis jeder Ware und erst Versand, Zuschlaege und Gebuehr
- * druecken den Kauf unter das Ziel, ist es ein Kostenfall: Mindermengen- oder Versandaufschlag pruefen.
- */
-/**
- * Einkauf einer Position fuer die Preisfrage, in dieser Reihenfolge: belegt (ohne Verschnitt), EK-Liste je
- * Verkaufseinheit (wenn die Einheit passt), sonst der geschaetzte Einkauf dieses Kaufs.
+ * Einkauf einer Position fuer die Preisfrage, in dieser Reihenfolge: belegt (ohne Verschnitt), fertiger
+ * Teppich (geschaetzter Einkauf mit Mindestflaeche), EK-Liste je Verkaufseinheit (wenn die Einheit passt),
+ * sonst der geschaetzte Einkauf dieses Kaufs.
  */
 function ekFuerPreis(pos, ekAufschlag) {
   if (istZahl(pos.ekBeleg)) return { ek: pos.ekBeleg, guete: 'belegt' };
+  if (pos.fertig && istZahl(pos.ek)) return { ek: pos.ek, guete: 'geschaetzt' };
   const z = pos.ekZeile;
   const passt = z && istZahl(z.ek_vk_einheit) && ((z.vk_einheit === '0,01 m² (Konfigurator)' && pos.einheit === '× 0,01 m²')
     || (z.vk_einheit === 'm²' && pos.einheit === 'm²') || (z.vk_einheit === 'Paket' && pos.einheit !== 'm²' && pos.einheit !== '× 0,01 m²')
@@ -313,53 +321,94 @@ function ekFuerPreis(pos, ekAufschlag) {
   return istZahl(pos.ek) ? { ek: pos.ek, guete: 'geschaetzt' } : null;
 }
 
-export function preisKontrolleKaeufe(zeilen, { preise, ekAufschlag = {} }) {
+/**
+ * Was ein Kauf mindestens brutto haette bringen muessen, damit nach allen Kosten das Ziel bleibt.
+ * Die Zahlungsgebuehr waechst mit dem Preis: B/1,19 x (1 - Ziel) - B x p - fix >= Kosten.
+ */
+export function mindestBrutto(kostenOhneGebuehr, { prozent, fix = 0 }) {
+  const nenner = (1 - ZIEL_ROHERTRAG) / (1 + MWST) - prozent;
+  return nenner > 0 ? aufCent((kostenOhneGebuehr + fix) / nenner) : null;
+}
+
+const URSACHE_HINWEIS = {
+  ware: 'Preis je m² bzw. Stück erhöhen',
+  kante: 'Preis je m² oder Mindestpreis für kleine Maße erhöhen (Kante)',
+  verschnitt: 'Mindestpreis oder Mindestfläche je Teppich prüfen (Verschnitt)',
+  zuschlag: 'Mindermengen- bzw. Lieferaufschlag prüfen',
+  weg: 'Versandaufschlag prüfen',
+};
+
+/**
+ * Jeder Kauf unter dem Ziel mit "haette mindestens X Euro brutto bringen muessen" und der groessten
+ * Ursache. Ketteln und Einfassen gehoeren bei Massware zu den Herstellkosten: Reichen Ware und Kante
+ * nicht fuer das Ziel, ist es ein Preisfall. Sonst druecken Verschnitt, Lieferzuschlaege oder Weg den Kauf
+ * darunter - dann ist die groesste davon die Ursache.
+ * Dazu je Produkt der noetige Preis je Verkaufseinheit (Kante anteilig, wenn sie einer Ware gehoert) und
+ * die Kontrolle gegen den heutigen Preis ("inzwischen angehoben").
+ */
+export function preisKontrolleKaeufe(zeilen, { preise, ekAufschlag = {}, gebuehrTarif = null }) {
   const preisFaelle = new Map();
-  const kostenFaelle = [];
+  const kaufFaelle = [];
   for (const z of zeilen) {
     if (z.rohertrag === null || z.quote === null || z.quote >= ZIEL_ROHERTRAG) continue;
-    let preisProblem = false;
+    const ware = r2(z.ware - z.verschnitt);
+    const herstellQuote = z.netto > 0 ? (z.netto - ware - z.kettel) / z.netto : null;
+    const preisFall = herstellQuote !== null && herstellQuote < ZIEL_ROHERTRAG;
+    const teile = preisFall
+      ? [['ware', ware], ['kante', z.kettel]]
+      : [['verschnitt', z.verschnitt], ['zuschlag', z.zuschlag], ['weg', z.weg]];
+    const [groesste, betrag] = teile.reduce((a, b) => (b[1] > a[1] ? b : a));
+    // Gebuehrensatz: Tarif, sonst aus der belegten Gebuehr dieses Kaufs.
+    const satz = gebuehrTarif && istZahl(gebuehrTarif.prozentBrutto) ? { prozent: gebuehrTarif.prozentBrutto / 100, fix: gebuehrTarif.fix ?? 0 }
+      : { prozent: z.brutto > 0 ? z.gebuehr / z.brutto : 0, fix: 0 };
+    const mindest = mindestBrutto(z.ware + z.kettel + z.zuschlag + z.weg, satz);
+    kaufFaelle.push({
+      name: z.name, datum: z.datum, titel: [...new Set(z.positionen.map(p => p.titel))].join(', '), guete: z.guete,
+      netto: z.netto, brutto: z.brutto, rohertrag: z.rohertrag, quote: z.quote, herstellQuote,
+      ware, kante: z.kettel, verschnitt: z.verschnitt, zuschlag: z.zuschlag, weg: z.weg, gebuehr: z.gebuehr,
+      ursache: preisFall ? 'preis' : 'kosten', groesste, groessteBetrag: r2(betrag), hinweis: URSACHE_HINWEIS[groesste],
+      mindestBrutto: mindest, mehrBrutto: mindest === null ? null : r2(mindest - z.brutto),
+    });
+    // Auch in einem Kauf, den sonst die Kosten druecken, kann eine einzelne Ware zu billig sein.
+    // Kante gehoert der Ware, wenn es genau eine gibt; sonst nur die Ware selbst (Kante nicht zuzuordnen).
+    const kanteJe = z.positionen.length === 1 ? z.kettel : 0;
+    // ... und mit ihr der Erloes, den der Kunde dafuer separat bezahlt hat (Kettelservice).
+    const kanteErloes = kanteJe > 0 ? (z.nettoNebenleistung ?? 0) : 0;
     for (const pos of z.positionen) {
       const e = ekFuerPreis(pos, ekAufschlag);
       if (!e || !istZahl(pos.netto) || !(pos.netto > 0) || !(pos.menge > 0)) continue;
-      const quote = (pos.netto - e.ek) / pos.netto;
+      const kosten = e.ek + kanteJe;
+      const netto = pos.netto + kanteErloes;
+      const quote = (netto - kosten) / netto;
       if (quote >= ZIEL_ROHERTRAG) continue;
-      preisProblem = true;
       const { faktor, text } = einheitDerPosition(pos);
-      const ekJe = e.ek / pos.menge * faktor;
-      const verkauftNetto = pos.netto / pos.menge * faktor;
-      const noetig = noetigNetto(ekJe);
+      const kostenJe = kosten / pos.menge * faktor;
+      const nebenJe = kanteErloes / pos.menge * faktor;
+      // Verkauft und heute je Einheit samt Kettelservice dieses Masses: nur so passen sie zum noetigen Preis.
+      const verkauftNetto = netto / pos.menge * faktor;
+      const noetig = noetigNetto(kostenJe);
       const heute = preise.fuerPosition(pos);
-      const heuteNetto = heute ? heute.variante.preis / (1 + MWST) * faktor : null;
+      const heuteNetto = heute ? heute.variante.preis / (1 + MWST) * faktor + nebenJe : null;
       const schluessel = `${pos.handle}|${pos.variante}`;
       const fall = preisFaelle.get(schluessel) ?? {
-        handle: pos.handle, titel: pos.titel, variante: pos.variante, einheit: text, kaeufe: [], fehlt: 0,
+        handle: pos.handle, titel: pos.titel, variante: pos.variante, einheit: text, kaeufe: [], fehlt: 0, mitKante: false,
         noetigBrutto: 0, verkauftBrutto: null, heuteBrutto: heuteNetto === null ? null : r2(heuteNetto * (1 + MWST)), guete: e.guete,
       };
       fall.kaeufe.push(z.name);
+      fall.mitKante = fall.mitKante || kanteJe > 0;
+      fall.mitKettelservice = fall.mitKettelservice || kanteErloes > 0;
       fall.fehlt = r2(fall.fehlt + (noetig - verkauftNetto) * pos.menge / faktor);
       fall.noetigBrutto = Math.max(fall.noetigBrutto, aufCent(noetig * (1 + MWST)));
       fall.verkauftBrutto = fall.verkauftBrutto === null ? r2(verkauftNetto * (1 + MWST)) : Math.min(fall.verkauftBrutto, r2(verkauftNetto * (1 + MWST)));
       fall.verlust = fall.verlust || quote < 0;
       preisFaelle.set(schluessel, fall);
     }
-    if (!preisProblem) {
-      // Laesst schon der Wareneinkauf (ohne Verschnitt) weniger als das Ziel, ist es doch der Preis -
-      // nur nicht einer Position zuzuordnen (mehrere Waren, Einkauf nur als Summe belegt).
-      const warenQuote = z.netto > 0 ? (z.netto - (z.ware - z.verschnitt)) / z.netto : null;
-      kostenFaelle.push({
-        ursache: warenQuote !== null && warenQuote < ZIEL_ROHERTRAG ? 'preis' : 'kosten', warenQuote,
-        name: z.name, datum: z.datum, netto: z.netto, rohertrag: z.rohertrag, quote: z.quote,
-        kosten: r2(z.verschnitt + z.kettel + z.zuschlag + z.weg + z.gebuehr), verschnitt: z.verschnitt, kettel: z.kettel, zuschlag: z.zuschlag, weg: z.weg, gebuehr: z.gebuehr, fehlt: r2(ZIEL_ROHERTRAG * z.netto - z.rohertrag), guete: z.guete,
-        titel: [...new Set(z.positionen.map(p => p.titel))].join(', '),
-      });
-    }
   }
   const faelle = [...preisFaelle.values()].map(f => ({
     ...f,
     stand: f.heuteBrutto === null ? 'heute-unbekannt' : f.heuteBrutto + 0.005 >= f.noetigBrutto ? 'angehoben' : 'offen',
   })).sort((a, b) => (b.verlust === true) - (a.verlust === true) || b.fehlt - a.fehlt);
-  return { preisFaelle: faelle, kostenFaelle: kostenFaelle.sort((a, b) => a.quote - b.quote) };
+  return { preisFaelle: faelle, kaufFaelle: kaufFaelle.sort((a, b) => a.quote - b.quote) };
 }
 
 // ------------------------------------------------------------------ Teil 2 B: ganzes Sortiment
@@ -395,14 +444,40 @@ export function ekJeVerkaufseinheit(z, v) {
  * Aktive Varianten mit EK gegen den heutigen Preis, ohne Versand. Gruppiert je Produkt, zuerst Verlust,
  * dann schon verkaufte Produkte, dann nach Abstand zum Ziel.
  */
-export function preisKontrolleSortiment({ produkte = [], ekZeilen = [], ekAufschlag = {}, verkaufteHandles = new Set() }) {
+/**
+ * Referenzmass fuer die Kante, wenn die EK-Liste nur das Material nennt: 200 x 300 cm, also 10 m Kante auf
+ * 6 m². Je kleiner der Teppich, desto mehr Kante je m² - das Referenzmass steht deshalb in der Ansicht.
+ */
+export const KANTE_REFERENZ = Object.freeze({ breiteCm: 200, laengeCm: 300 });
+
+/**
+ * Kante einer Variante: 'enthalten' (Fertigpreis), 'mitgerechnet' (nur Material, Kettlertarif fuer das
+ * Referenzmass dazu) oder 'ohne' (Massware, Kante nicht belegt - ohne Kante gerechnet). null: keine Massware.
+ */
+function kanteFuer(z, kettler, kettelVkJeLfmNetto) {
+  if (!MASSWARE_ART.test(z.produktart ?? '')) return null;
+  if (fertigpreis(z)) return { art: 'enthalten', jeM2: 0, erloesJeM2: 0 };
+  if (/nur Material/i.test(z.bemerkung ?? '') && kettler && istZahl(kettler.bis6qmJeLfm)) {
+    const { breiteCm: b, laengeCm: l } = KANTE_REFERENZ;
+    const m2 = b * l / 1e4;
+    const meter = 2 * (b + l) / 100;
+    const satz = m2 > 6 ? (kettler.ab6qmJeLfm ?? kettler.bis6qmJeLfm) : kettler.bis6qmJeLfm;
+    // Der Kunde zahlt die Kante als Kettelservice je laufenden Meter extra - Kosten UND Erloes gehoeren dazu.
+    const erloes = istZahl(kettelVkJeLfmNetto) ? meter * kettelVkJeLfmNetto / m2 : 0;
+    return { art: erloes ? 'kettelservice' : 'mitgerechnet', jeM2: meter * satz / m2, erloesJeM2: erloes };
+  }
+  return { art: 'ohne', jeM2: 0, erloesJeM2: 0 };
+}
+
+export function preisKontrolleSortiment({ produkte = [], ekZeilen = [], ekAufschlag = {}, verkaufteHandles = new Set(), kettler = null, kettelVkJeLfmBrutto = null }) {
+  const kettelVkNetto = istZahl(kettelVkJeLfmBrutto) ? kettelVkJeLfmBrutto / (1 + MWST) : null;
   const ekJe = new Map();
   for (const z of ekZeilen) {
     if (!z?.handle) continue;
     ekJe.set(`${z.handle}|${normTitel(z.variante)}`, z);
     if (z.sku && !ekJe.has(`${z.handle}|sku:${z.sku}`)) ekJe.set(`${z.handle}|sku:${z.sku}`, z);
   }
-  const zaehler = { geprueft: 0, ohneEk: 0, nichtVergleichbar: 0, imZiel: 0, unterZiel: 0, verlust: 0 };
+  const zaehler = { geprueft: 0, ohneEk: 0, nichtVergleichbar: 0, imZiel: 0, unterZiel: 0, verlust: 0, kanteMitgerechnet: 0, ohneKante: 0 };
   const nichtVergleichbar = new Map();
   const jeProdukt = new Map();
   for (const p of produkte) {
@@ -421,21 +496,27 @@ export function preisKontrolleSortiment({ produkte = [], ekZeilen = [], ekAufsch
         continue;
       }
       const aufschlag = ekAufschlag[v.einkauf?.lieferant] ?? 0;
-      const ek = e.ek * (1 + aufschlag);
-      const vkNetto = v.preis / (1 + MWST);
+      const kante = kanteFuer(z, kettler, kettelVkNetto);
+      if (['mitgerechnet', 'kettelservice'].includes(kante?.art)) zaehler.kanteMitgerechnet += 1;
+      if (kante?.art === 'ohne') zaehler.ohneKante += 1;
+      // Kante je Verkaufseinheit: e.faktor Einheiten ergeben einen m² (Konfigurator 100, sonst 1).
+      const ek = e.ek * (1 + aufschlag) + (kante?.jeM2 ?? 0) / e.faktor;
+      const kanteErloes = (kante?.erloesJeM2 ?? 0) / e.faktor;
+      const vkNetto = v.preis / (1 + MWST) + kanteErloes;
       const quote = (vkNetto - ek) / vkNetto;
       if (quote >= ZIEL_ROHERTRAG) { zaehler.imZiel += 1; continue; }
       zaehler.unterZiel += 1;
       if (quote < 0) zaehler.verlust += 1;
       const g = jeProdukt.get(p.handle) ?? {
         handle: p.handle, titel: p.titel, gruppe: p.produktgruppe ?? '', adminUrl: p.adminUrl ?? null, verkauft: verkaufteHandles.has(p.handle),
-        einheit: e.text, varianten: 0, verlustVarianten: 0, schlechtesteQuote: 1, heuteBrutto: [Infinity, -Infinity], noetigBrutto: 0, guete: 'belegt', beispiele: [],
+        einheit: e.text, kante: kante?.art ?? null, varianten: 0, verlustVarianten: 0, schlechtesteQuote: 1, heuteBrutto: [Infinity, -Infinity], noetigBrutto: 0, guete: 'belegt', beispiele: [],
       };
       g.varianten += 1;
       if (quote < 0) g.verlustVarianten += 1;
       g.schlechtesteQuote = Math.min(g.schlechtesteQuote, quote);
       g.heuteBrutto = [Math.min(g.heuteBrutto[0], v.preis * e.faktor), Math.max(g.heuteBrutto[1], v.preis * e.faktor)];
-      g.noetigBrutto = Math.max(g.noetigBrutto, aufCent(noetigNetto(ek) * (1 + MWST) * e.faktor));
+      // Noetig ist der Preis der Variante selbst; den Kettelservice zahlt der Kunde ohnehin dazu.
+      g.noetigBrutto = Math.max(g.noetigBrutto, aufCent((noetigNetto(ek) - kanteErloes) * (1 + MWST) * e.faktor));
       if (z.sicherheit !== 'belegt') g.guete = 'geschaetzt';
       if (g.beispiele.length < 3) g.beispiele.push(v.titel);
       jeProdukt.set(p.handle, g);

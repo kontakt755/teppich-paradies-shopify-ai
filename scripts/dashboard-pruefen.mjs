@@ -74,6 +74,8 @@ const ALLE_ANSICHTEN = ['heute', 'zuschnitt', 'prozesse','prozesse?prozess=angeb
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
 // der Baustelle), ist das Handy kein Sonderfall mehr: jede Ansicht wird bei jeder Breite geprueft.
 const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800'], [390, 844, 'handy'], [360, 740, 'b360']];
+// Nur auf Wunsch (--breiten 1280): kleiner Laptop, wo breite Tabellen zuerst eng werden.
+const ZUSATZ_BREITEN = [[1280, 800, 'b1280']];
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 // ausschreibungen: gross (Vergabeunterlagen), die Ansicht liest nur.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'bildrechte', 'ek-liste', 'ausschreibungen'];
@@ -261,8 +263,9 @@ async function main() {
       ? zugaenge.map(z => ({ rolle: z.rolle, body: { name: z.kuerzel, passwort: z.passwort } }))
       : [{ rolle: null, body: { passwort } }];
     const alleAnsichten = args.ansichten || ALLE_ANSICHTEN;
-    const breiten = args.breiten ? BREITEN.filter(b => args.breiten.includes(b[0])) : BREITEN;
-    if (!breiten.length) throw new Error(`--breiten kennt nur ${BREITEN.map(b => b[0]).join(', ')}`);
+    const alle = [...BREITEN, ...ZUSATZ_BREITEN].sort((a, b) => b[0] - a[0]);
+    const breiten = args.breiten ? alle.filter(b => args.breiten.includes(b[0])) : BREITEN;
+    if (!breiten.length) throw new Error(`--breiten kennt nur ${alle.map(b => b[0]).join(', ')}`);
     for (const anmeldung of anmeldungen) {
       // Eigener Kontext je Rolle: keine Sitzung und kein Zwischenstand der vorigen Rolle.
       const kontext = await browser.createBrowserContext();
