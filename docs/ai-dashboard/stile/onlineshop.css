@@ -1,0 +1,31 @@
+/* Onlineshop (ansichten/onlineshop.mjs). Nur Tokens aus app.css - keine festen Farben. */
+.os-monate { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 14px 0 6px; }
+.os-monat { display: grid; gap: 4px; }
+.os-monat-titel { margin: 0; font-size: 1rem; }
+.os-monat-zahl { font-size: var(--tp-fs-lg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.os-erklaerung { margin: 6px 0 12px; }
+.os-crit { color: var(--crit); }
+.os-warn { color: var(--warn); }
+.os-ware { min-width: 12rem; overflow-wrap: anywhere; }
+.os-annahmen { margin-top: 4px; }
+.os-annahmen summary { cursor: pointer; }
+.os-annahmen div { margin-top: 2px; }
+.os-grund { margin-top: 4px; color: var(--warn); font-weight: 600; }
+.os-guete { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .78rem; border: 1px solid var(--line-strong); color: var(--text-2); white-space: nowrap; }
+.os-guete-unbekannt { border-style: dashed; color: var(--text-3); }
+.os-seiten { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.os-regel { margin: 14px 0 4px; }
+.os-abschnitt { margin-top: 22px; }
+.os-abschnitt h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.os-unter { margin: 16px 0 2px; font-size: .95rem; }
+.os-zaehler { margin: 6px 0 10px; overflow-wrap: anywhere; }
+.os-details { margin-top: 10px; }
+.os-details summary { cursor: pointer; }
+@media (max-width: 1100px) {
+  .os-tabelle td.os-leer { display: none; }
+}
+.os-guete-zelle, td .os-guete { margin-top: 4px; }
+@media (min-width: 1101px) {
+  /* Betraege nicht mitten im Wort umbrechen ("0,00" / "€"), die Ware-Spalte gibt nach. */
+  .os-tabelle td.num { white-space: nowrap; }
+}

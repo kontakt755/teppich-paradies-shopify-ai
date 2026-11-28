@@ -3395,3 +3395,42 @@ Vorrang, Suchtreffer ohne Ordner (Zuordnung über `treffer:` = id oder Link) ste
 Treffer fallen weg, Ordner ohne Kopfblock zeigen „Kopfblock fehlt“. Frist ≤ 7 Tage ist bernsteinfarben, überschrittene
 offene Fristen rot. Nur lesend; Daten bleiben lokal, nichts davon im Repository. Wer an einem Verfahren arbeitet,
 pflegt den Kopfblock mit (Format: `LIESMICH-UEBERSICHT.md` im lokalen Ausschreibungen-Ordner).
+
+## 38. Onlineshop: Gewinn je Kauf und Preiskontrolle (28.11.2026, Issue #2407)
+
+`#/onlineshop` (Reiter `?teil=preise`) liest `GET /api/onlineshop/gewinn` (nur lesen, kein Schreibpfad).
+Wer es sehen darf, entscheidet allein `darfOnlineshop()` in `operations/lib/onlineshop-gewinn.mjs`
+(heute: Inhaber und Notzugang); `darfPfad` im Server und die Antwort fragen beide dort,
+`ANSICHT_ROLLEN.onlineshop` steuert nur die Navigation.
+
+- **Kaeufe:** bezahlte Bestellungen mit Ware (keine Muster, Test-, stornierte oder ganz erstattete);
+  Erloes aus `currentTotalPriceSet` minus `currentTotalTaxSet` (Erstattungen und Aenderungen sind
+  darin), ohne Steuer in Shopify mit 19 % herausgerechnet.
+- **Kosten:** zuerst die Belegsammlung der neuesten `rentabilitaet-JJJJ-MM-TT/belege-daten.json`
+  (Klasse R/AB = belegt, A = geschaetzt, U = nicht verwendet), Zahlungsgebuehr aus `zahlungen.json`,
+  sonst nach dem Tarif in `belege-daten.json`. Ohne Beleg rechnet `bestellWarnung(…, immer: true)`
+  wie im Bestelldialog; Zusatz nur hier: volle Rollenbreite als Verschnitt (Annahme in der Zeile).
+  Fehlt Einkauf, Lieferkosten oder Gebuehrentarif, ist die Zeile „unbekannt“ ohne Zahl.
+- **Preiskontrolle:** Ziel `ZIEL_ROHERTRAG = 0.3`. Je Position zaehlt fuer die Preisfrage der
+  Einkauf ohne Verschnitt (Beleg, sonst EK-Liste je Verkaufseinheit). Sortiment: aktive Varianten
+  aus `lexikon/produkte.json` gegen die EK-Liste (Zuordnung ueber Handle und Variantentitel, sonst
+  SKU), nur wenn `preisJeEinheit` zur Einheit der EK-Liste passt (m², 0,01 m² Konfigurator, Paket,
+  Stueck) und sich der Preis seit der Liste nicht mehr als verdoppelt/halbiert hat; sonst
+  „nicht vergleichbar“. EK-Aufschlag je Lieferant aus den Stammdaten.
+- **Fertigpreis:** `fertigpreis(zeile)` in `operations/lib/bestellwarnung.mjs` erkennt EK-Zeilen, die
+  den fertigen Teppich samt Kante meinen (Quelle `Spalte rug_*` bzw. Preisliste „Teppiche PL“ bei
+  Teppich/Laeufer nach Mass, nicht bei Bemerkung „nur Material“); Mindestflaeche aus der Bemerkung.
+  Solche Positionen gehen standardmaessig direkt vom Hersteller zum Kunden, ohne Verschnitt und nie
+  zusaetzlich ueber unseren Kettler; mit Kettler-Vermerk bleibt der Rohertrag „unbekannt“.
+  Bestelldialog und Onlineshop rechnen damit gleich.
+- **Kaeufe unter Ziel:** `preisKontrolleKaeufe` liefert `kaufFaelle` mit `mindestBrutto`
+  (B ≥ (K + fix) / ((1 − Z)/1,19 − p), p = prozentuale Gebuehr), `mehrBrutto` und der groessten
+  Ursache (Ware, Kante, Verschnitt, Lieferzuschlaege, Weg). Ketteln/Einfassen sind Herstellkosten:
+  reichen Ware + Kante abzueglich Kettelservice-Erloes nicht fuer 30 %, ist es ein Preisfall
+  (`ursache: 'preis'`, Produktzeile in `preisFaelle`).
+- **Kante im Sortiment:** fuer Teppich nach Mass mit reinem Materialpreis rechnet `kanteFuer` die
+  Kante fuer `KANTE_REFERENZ` (200 × 300 cm) mit dem Kettlertarif aus den Stammdaten und zieht den
+  Kettelservice-Erloes (Lexikon-Produkt `kettelservice`) ab; Fertigpreise „Kante im Einkaufspreis“,
+  nicht belegte Faelle „ohne Kante gerechnet“ (Zaehler in der Antwort).
+- `dashboard-pruefen.mjs` kennt zusaetzlich `--breiten 1280` (nicht im Standardlauf) fuer breite Tabellen.
+- Die Rechnungspruefung (w-414) ist keine Quelle: ihre Rechnungen sind keiner Kundenbestellung zugeordnet.

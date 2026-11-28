@@ -22,6 +22,9 @@ const ANSICHT_ROLLEN = {
   shopwache: 'inhaber', ratgeber: 'inhaber',
   // Ausschreibungen: Fristen, Kalkulation und Abgabe macht der Inhaber (Server: NUR_INHABER).
   ausschreibungen: 'inhaber',
+  // Onlineshop: Einkauf, Rohertrag und Preiskontrolle. Entschieden wird im Server: darfOnlineshop()
+  // in operations/lib/onlineshop-gewinn.mjs; hier nur die Navigation.
+  onlineshop: 'inhaber',
   // Akquise (#1447) ist seit 2026-10-20 fuer Mitarbeiter offen; "lesen" schreibt nichts (Server).
 };
 
@@ -35,7 +38,7 @@ export function darfAnsicht(view) {
 export function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const bekannt = ['heute', 'zuschnitt', 'prozesse','arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'hausverwaltungen', 'ausschreibungen', 'bildrechte', 'social', 'team', 'laden'].includes(path) ? path : 'heute';
+  const bekannt = ['heute', 'zuschnitt', 'prozesse','arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'hausverwaltungen', 'ausschreibungen', 'onlineshop', 'bildrechte', 'social', 'team', 'laden'].includes(path) ? path : 'heute';
   const view = darfAnsicht(bekannt) ? bekannt : 'heute';
   const params = new URLSearchParams(query);
   // Nachfrage-Mails stehen seit 07.11.2026 unter Kunden › Kunden nach Produkt fragen (w-284) - alte
@@ -76,6 +79,7 @@ export function setParam(key, value) {
   if (['bl', 'bg'].includes(key)) p.delete('bs');
   if (['bq', 'bfilter', 'bsort', 'bdir', 'bart'].includes(key)) p.delete('bseite');
   if (key === 'blf') p.delete('bls');
+  if (key === 'g' || key === 'teil') p.delete('seite');
   if (key === 'blq') p.delete('blp');
   if (key !== 'view' && key !== 'task' && p.get('view') && ['status'].includes(key)) p.delete('view');
   verbergeSuchbegriffe(p);

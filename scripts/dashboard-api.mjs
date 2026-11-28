@@ -73,7 +73,8 @@ import {
   benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN, pruefePasswort,
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
-import { warnungenAnhaengen } from '../operations/lib/bestellwarnung.mjs';
+import { warnungenAnhaengen, bestellWarnung, leseEkListe, leseLieferkosten } from '../operations/lib/bestellwarnung.mjs';
+import { kaufArt, gewinnJeKauf, monatsKopf, preisIndex, preisKontrolleKaeufe, preisKontrolleSortiment, KANTE_REFERENZ, fuerRolle as onlineshopFuerRolle, darfOnlineshop, ZIEL_ROHERTRAG } from '../operations/lib/onlineshop-gewinn.mjs';
 import { leseStammdaten, stammdatenPfad, stammdatenFuer, markiereWegVorschlag, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff, kennungAusLexikon, KETTLER_NAH_PLZ } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
@@ -4067,6 +4068,87 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Fehlt die Datei, liefert diese Funktion nur den Hinweis samt Befehl,
      * der den Export erzeugen wuerde - keine erfundenen Zahlen.
      */
+    /**
+     * Ansicht "Onlineshop" (#/onlineshop): Gewinn je Kauf und Preiskontrolle. Nur lesen, aendert keinen
+     * Preis. Wer es sehen darf, entscheidet allein darfOnlineshop() (Server-Pfad und Antwort fragen beide dort).
+     * Quellen im Privatordner: Bestellungen, EK-Liste, Lieferkosten, Versandtarife, Lexikon (heutige
+     * Preise) und die Belegsammlung der neuesten Rentabilitaetsrechnung (rentabilitaet-*): Kosten je Kauf
+     * aus Rechnung/AB und belegte Zahlungsgebuehren. Rechenregeln: operations/lib/onlineshop-gewinn.mjs.
+     */
+    onlineshopGewinn(benutzer = null) {
+      if (!darfOnlineshop(benutzer)) return onlineshopFuerRolle(null, benutzer);
+      const dir = privatDirPath || privatDir();
+      const k = this._lieferantenKontext();
+      if (!k.modell) return { verfuegbar: false, hinweis: k.hinweis };
+      const roh = new Map((exportOrders(readJsonIfExists(path.join(dir, 'bestelluebersicht', 'orders.json'))) || []).map(o => [o?.id, o]));
+      const kosten = leseLieferkosten(stammdatenPfad(dir));
+      const ek = leseEkListe(dir);
+      const tarif = kettelTarife(path.join(dir, 'versandkosten', 'tarife.json')).tarif ?? null;
+      const absender = k.stammdaten?.absender ?? null;
+      const lieferantName = id => k.stammdaten?.lieferanten?.[id]?.name ?? `Lieferant ${id}`;
+      // Belegsammlung: der neueste Ordner rentabilitaet-JJJJ-MM-TT mit belege-daten.json.
+      let belege = null;
+      let gebuehren = {};
+      let belegStand = null;
+      const hinweise = [];
+      try {
+        const ordner = fs.readdirSync(dir).filter(n => /^rentabilitaet-\d{4}-\d{2}-\d{2}$/.test(n) && fs.existsSync(path.join(dir, n, 'belege-daten.json'))).sort().at(-1);
+        if (ordner) {
+          belegStand = ordner.replace('rentabilitaet-', '');
+          belege = JSON.parse(fs.readFileSync(path.join(dir, ordner, 'belege-daten.json'), 'utf8'));
+          try { gebuehren = JSON.parse(fs.readFileSync(path.join(dir, ordner, 'zahlungen.json'), 'utf8')).gebuehr ?? {}; }
+          catch (e) { if (e.code !== 'ENOENT') hinweise.push('Zahlungsgebühren der Belegsammlung nicht lesbar, sie werden geschätzt.'); }
+        } else hinweise.push('Keine Belegsammlung gefunden: alle Kosten sind geschätzt.');
+      } catch (e) {
+        if (e.code !== 'ENOENT') hinweise.push('Belegsammlung nicht lesbar: alle Kosten sind geschätzt.');
+        belege = null;
+      }
+      const t = belege?.tarife ?? null;
+      const gebuehrTarif = t && Number.isFinite(t.zahlung_prozent_brutto) ? { prozentBrutto: t.zahlung_prozent_brutto, fix: t.zahlung_fix ?? 0 } : null;
+      const jetzt = now();
+      // Standardweg: der Vermerk "bearbeitet" ohne Weg zaehlt dann nicht - die Zeile nennt die Annahme.
+      const ohneStatus = auftrag => {
+        const kopie = { ...k.statusAlle };
+        for (const p of auftrag.positionen ?? []) {
+          const key = positionKey(auftrag.id, p.lineItemId);
+          if (kopie[key] && !UEBER_WERTE.includes(kopie[key].ueber)) kopie[key] = { ...kopie[key], status: null };
+        }
+        return kopie;
+      };
+      const warnungFuer = (auftrag, { standardweg }) => {
+        try {
+          return bestellWarnung({ auftrag, kosten, ek, tarif, statusAlle: standardweg ? ohneStatus(auftrag) : k.statusAlle, absender, nahPlz: KETTLER_NAH_PLZ, ladenPlz: absender?.lieferanschrift?.plz || null, jetzt, lieferantName, immer: true });
+        } catch { return null; }
+      };
+      const ausgeschlossen = {};
+      const zeilen = [];
+      for (const auftrag of k.modell.auftraege) {
+        const o = roh.get(auftrag.id);
+        const art = kaufArt(auftrag, o);
+        if (art !== 'ware') { ausgeschlossen[art] = (ausgeschlossen[art] || 0) + 1; continue; }
+        zeilen.push(gewinnJeKauf({ auftrag, roh: o, warnungFuer, beleg: belege?.kauefe?.[auftrag.name] ?? null, belegTarife: t ?? {}, gebuehr: gebuehren[auftrag.name] ?? null, gebuehrTarif }));
+      }
+      zeilen.sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+      const produkte = this._lexikonProdukte();
+      const preise = preisIndex(produkte);
+      const ekAufschlag = Object.fromEntries(Object.entries(kosten.lieferanten).map(([id, x]) => [id, x.ekAufschlag ?? 0]));
+      const sortiment = preisKontrolleSortiment({
+        produkte, ekZeilen: ek.handles ? [...ek.handles.values()].flat() : [], ekAufschlag, kettler: kosten.kettler,
+        // Kettelservice des Shops: je 0,01 laufenden Meter verkauft, Preis je Meter = x 100.
+        kettelVkJeLfmBrutto: (() => { const v = produkte.find(p => p.handle === 'kettelservice')?.varianten?.[0]; return Number(v?.preis) > 0 ? v.preis * 100 : null; })(),
+        verkaufteHandles: new Set(zeilen.flatMap(z => z.positionen.map(p => p.handle)).filter(Boolean)),
+      });
+      if (!ek.verfuegbar) hinweise.push('EK-Liste fehlt: ohne sie gibt es weder Schätzung noch Sortimentsprüfung.');
+      if (!produkte.length) hinweise.push('Lexikon-Export fehlt: heutige Preise unbekannt.');
+      return onlineshopFuerRolle({
+        verfuegbar: true, ziel: ZIEL_ROHERTRAG, stand: { bestellungen: k.modell.erstellt ?? null, ekListe: ek.stand ?? null, belege: belegStand },
+        hinweise, ausgeschlossen, monate: monatsKopf(zeilen), kanteReferenz: KANTE_REFERENZ,
+        kaeufe: zeilen.map(({ positionen, orderId, ...z }) => ({ ...z, titel: [...new Set(positionen.map(p => p.titel))].join(', ') })),
+        kaeufeKontrolle: preisKontrolleKaeufe(zeilen, { preise, ekAufschlag, gebuehrTarif }),
+        sortiment,
+      }, benutzer);
+    },
+
     einkaufKennzahlen() {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'kennzahlen', 'shop-snapshot.json');

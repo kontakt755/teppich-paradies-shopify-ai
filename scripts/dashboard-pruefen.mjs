@@ -68,12 +68,14 @@ import { ladePuppeteer } from './puppeteer-laden.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'zuschnitt', 'prozesse','prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferanten', 'einkauf?lieferant=A', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=anrufe', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'hausverwaltungen', 'ausschreibungen', 'team', 'hilfe', 'laden'];
+const ALLE_ANSICHTEN = ['heute', 'zuschnitt', 'prozesse','prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferanten', 'einkauf?lieferant=A', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=anrufe', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'hausverwaltungen', 'ausschreibungen', 'onlineshop', 'onlineshop?teil=preise', 'team', 'hilfe', 'laden'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
 // der Baustelle), ist das Handy kein Sonderfall mehr: jede Ansicht wird bei jeder Breite geprueft.
 const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800'], [390, 844, 'handy'], [360, 740, 'b360']];
+// Nur auf Wunsch (--breiten 1280): kleiner Laptop, wo breite Tabellen zuerst eng werden.
+const ZUSATZ_BREITEN = [[1280, 800, 'b1280']];
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 // ausschreibungen: gross (Vergabeunterlagen), die Ansicht liest nur.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'bildrechte', 'ek-liste', 'ausschreibungen'];
@@ -97,7 +99,7 @@ const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation'
 // Spiegel von ANSICHT_ROLLEN in docs/ai-dashboard/kern/router.mjs: diese Ansichten sieht nur der
 // Inhaber; Mitarbeiter und "lesen" landen dort ohnehin auf "Heute". "social" ist fuer "lesen"
 // ausgeblendet (data-nicht-lesen).
-const NUR_INHABER = ['arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'team', 'shopwache', 'ratgeber'];
+const NUR_INHABER = ['arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'team', 'shopwache', 'ratgeber', 'onlineshop'];
 const NICHT_LESEN = ['social'];
 const ROLLEN = ['inhaber', 'mitarbeiter', 'lesen'];
 
@@ -149,6 +151,14 @@ function kopieFuellen(quelle, ziel) {
     if (!fs.existsSync(path.join(quelle, n))) continue;
     fs.mkdirSync(path.dirname(path.join(ziel, n)), { recursive: true });
     fs.cpSync(path.join(quelle, n), path.join(ziel, n), { recursive: true });
+  }
+  // Ansicht "Onlineshop": aus der neuesten Rentabilitaetsrechnung nur die zwei Dateien, die sie liest
+  // (der Ordner selbst enthaelt Belege als PDF und Text).
+  const renta = fs.readdirSync(quelle).filter(n => /^rentabilitaet-\d{4}-\d{2}-\d{2}$/.test(n)).sort().at(-1);
+  for (const datei of renta ? ['belege-daten.json', 'zahlungen.json'] : []) {
+    if (!fs.existsSync(path.join(quelle, renta, datei))) continue;
+    fs.mkdirSync(path.join(ziel, renta), { recursive: true });
+    fs.copyFileSync(path.join(quelle, renta, datei), path.join(ziel, renta, datei));
   }
 }
 
@@ -253,8 +263,9 @@ async function main() {
       ? zugaenge.map(z => ({ rolle: z.rolle, body: { name: z.kuerzel, passwort: z.passwort } }))
       : [{ rolle: null, body: { passwort } }];
     const alleAnsichten = args.ansichten || ALLE_ANSICHTEN;
-    const breiten = args.breiten ? BREITEN.filter(b => args.breiten.includes(b[0])) : BREITEN;
-    if (!breiten.length) throw new Error(`--breiten kennt nur ${BREITEN.map(b => b[0]).join(', ')}`);
+    const alle = [...BREITEN, ...ZUSATZ_BREITEN].sort((a, b) => b[0] - a[0]);
+    const breiten = args.breiten ? alle.filter(b => args.breiten.includes(b[0])) : BREITEN;
+    if (!breiten.length) throw new Error(`--breiten kennt nur ${alle.map(b => b[0]).join(', ')}`);
     for (const anmeldung of anmeldungen) {
       // Eigener Kontext je Rolle: keine Sitzung und kein Zwischenstand der vorigen Rolle.
       const kontext = await browser.createBrowserContext();
