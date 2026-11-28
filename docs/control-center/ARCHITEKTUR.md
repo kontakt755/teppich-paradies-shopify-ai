@@ -1624,9 +1624,18 @@ Styles `stile/serviceanfragen.css`.
   `tp-start-kontakt`, z. B. „Anfrage Treppenverlegung“), `Name:`, `Plz:`, `E-Mail:`, `Telefon:`,
   `Anliegen:`, `Wunschzeitraum:` (freiwillig, seit 2026-10-26, kommt in die Notiz), `Text:`.
   `ausFormularMail()` füllt daraus den Dialog; Leistung zuerst aus dem Betreff, sonst aus dem Anliegen
-  („Mieterwechsel / mehrere Wohnungen“ zählt als Verlegeservice). Musteranfragen
-  (`Id: ContactForm-sample` oder Feld `Produkt`) werden abgelehnt. Ein Test prüft, dass jedes Feld und
+  („Mieterwechsel / mehrere Wohnungen“ zählt als Verlegeservice). Mails mit `Id: ContactForm-sample`
+  oder Feld `Produkt` werden abgelehnt (Musteranfrage, Reklamation), außer sie kommen von der
+  Produktseite oder aus dem Maß-Konfigurator (siehe unten). Ein Test prüft, dass jedes Feld und
   jedes Anliegen des Formulars im Mail-Leser eingeordnet ist.
+- **Produktseite (seit 2026-11-28):** `/pages/kontakt?thema=…` (`assets/tp-sample-request.js`) setzt im
+  Formular `ContactForm-sample` den Betreff und das Feld `Produkt`. „Verlegeanfrage“,
+  „Angebotsanfrage“ und „Beratungstermin“ (`BETREFF_PRODUKTSEITE`) sind Service-Anfragen: Leistung
+  „Verlegeservice“ bei der Verlegeanfrage, sonst „Sonstiges“, Herkunft ist der Betreff, das Produkt
+  steht in der Notiz. „Musteranfrage“, „Kostenlose Musteranfrage“, „Reklamation“ und „Anfrage zum
+  Produkt“ bleiben abgewiesen. Ein Test gleicht die Betreffe mit dem Theme-Skript und die Felder mit
+  `sections/contact-form.liquid` ab. Vor dem 2026-11-28 geprüfte Mails stehen schon in
+  `serviceanfragen-postfach.json` und werden nicht erneut gelesen (bei Bedarf von Hand einfügen).
 - **Maß-Konfigurator (seit 2026-11-28):** „Schablone“ und „Skizze“
   (`blocks/tp-einfass-konfigurator.liquid`) schicken keinen Betreff, sondern `Produkt:`, `Farbe:`,
   `Form:` (beginnt mit „Schablone“ bzw. „Skizze“), Name, E-Mail, `Phone:` und Text. Das Feld `Form`
@@ -1640,8 +1649,8 @@ Styles `stile/serviceanfragen.css`.
   Mails von `mailer@shopify.com`, legt sie als JSON in sein Scratchpad und ruft
   `npm run -s service -- uebernehmen --datei <json>` (`operations/scripts/serviceanfragen.mjs`).
   Übernommen wird nur, was `automatischUebernehmbar()` erlaubt: die festen Betreffe der Serviceseiten
-  (`BETREFF_SERVICE`), die Startseite mit Anliegen Verlegen/Aufmaß/Mieterwechsel/Treppe und
-  Schablone/Skizze aus dem Maß-Konfigurator. Eine Mail nie zweimal
+  (`BETREFF_SERVICE`), die drei Produktseiten-Betreffe, die Startseite mit Anliegen
+  Verlegen/Aufmaß/Mieterwechsel/Treppe und Schablone/Skizze aus dem Maß-Konfigurator. Eine Mail nie zweimal
   (`mailId`), eine schon von Hand erfasste Anfrage nicht noch einmal (gleiche E-Mail oder Telefonnummer
   innerhalb von 7 Tagen). Übersprungene Mails merkt sich `serviceanfragen-postfach.json` (schreibt nur
   das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die

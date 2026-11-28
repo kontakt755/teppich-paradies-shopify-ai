@@ -103,8 +103,10 @@ export function pruefeFelder(roh = {}, { teil = false } = {}) {
  * "Farbe" und "Form" schickt der Mass-Konfigurator
  * (blocks/tp-einfass-konfigurator.liquid); sein Telefonfeld contact[phone]
  * heisst in der Mail "Phone" (geprueft an echten Mails vom 17.10. und 01.11.2026).
+ * "Strasse Und Hausnummer", "Ort" und "Bestellnummer" kommen von der
+ * Kontaktseite (sections/contact-form.liquid).
  */
-export const MAILFELDER = Object.freeze(['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Farbe', 'Form', 'Muster', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Phone', 'Anliegen', 'Wunschzeitraum', 'Text', 'Nachricht']);
+export const MAILFELDER = Object.freeze(['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Farbe', 'Form', 'Muster', 'Name', 'Straße Und Hausnummer', 'Plz', 'Ort', 'Bestellnummer', 'E-Mail', 'Telefon', 'Phone', 'Anliegen', 'Wunschzeitraum', 'Text', 'Nachricht']);
 const FELD_ZEILE = new RegExp(`^\\s*(${MAILFELDER.map(f => f.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')).join('|')})\\s*:\\s*(.*)$`);
 
 /**
@@ -152,9 +154,25 @@ const MASS_FORM = /^(Schablone|Skizze)\b/;
 const HERKUNFT_KONFIGURATOR = 'Maß-Konfigurator';
 
 /**
+ * Anfragen von der Produktseite und den Knoepfen "Verlegung anfragen"
+ * (/pages/kontakt?thema=…, assets/tp-sample-request.js): dasselbe Formular wie
+ * die Musteranfrage (Kennung "sample", Feld "Produkt"), aber mit eigenem
+ * Betreff. Nur diese drei sind Service - Musteranfrage, Reklamation und
+ * "Anfrage zum Produkt" stehen in BETREFF_KEIN_SERVICE.
+ */
+export const BETREFF_PRODUKTSEITE = Object.freeze(['Verlegeanfrage', 'Angebotsanfrage', 'Beratungstermin']);
+
+/** Warum eine Mail mit Produktfeld nicht in die Liste kommt. */
+function abweisGrund(betreff) {
+  if (betreff === 'Reklamation') return 'Das ist eine Reklamation, keine Service-Anfrage.';
+  if (betreff === 'Anfrage zum Produkt') return 'Das ist eine „Anfrage zum Produkt“ ohne Thema, keine Service-Anfrage.';
+  return 'Das ist eine Musteranfrage, keine Service-Anfrage.';
+}
+
+/**
  * Liest eine eingefuegte Formular-Mail. Gibt die Felder fuer den Dialog
  * zurueck, oder `{ erkannt: false, grund }`, wenn es keine Service-Anfrage ist
- * (Musterbestellung) oder gar keine Formular-Mail.
+ * (Musterbestellung, Reklamation) oder gar keine Formular-Mail.
  */
 export function ausFormularMail(roh) {
   const zeilen = String(roh ?? '').replace(/\r\n?/g, '\n').split('\n');
@@ -171,11 +189,13 @@ export function ausFormularMail(roh) {
     return { erkannt: false, grund: 'Das sieht nicht nach einer Formular-Mail aus („Betreff:“, „Name:“ und „E-Mail:“ fehlen).' };
   }
   const massanfrage = MASS_FORM.test(wert('Form'));
-  // Ein Feld "Produkt" tragen auch Musteranfragen - nur Schablone/Skizze ist Service.
-  if (/sample/i.test(wert('Id')) || (felder.Produkt && !massanfrage)) {
-    return { erkannt: false, grund: 'Das ist eine Musteranfrage, keine Service-Anfrage.' };
-  }
   const betreff = wert('Betreff');
+  const produktseite = BETREFF_PRODUKTSEITE.includes(betreff);
+  // Die Kennung "sample" und das Feld "Produkt" tragen auch Musteranfragen -
+  // Service ist das nur mit Produktseiten-Betreff oder als Schablone/Skizze.
+  if (!produktseite && (/sample/i.test(wert('Id')) || (felder.Produkt && !massanfrage))) {
+    return { erkannt: false, grund: abweisGrund(betreff) };
+  }
   const anliegen = wert('Anliegen');
   // Feld "Herkunft" setzt das Anfrageformular seit 16.10.2026 selbst
   // (sections/tp-start-kontakt.liquid), z. B. "Google-Anzeige · Kampagne Treppen".
@@ -183,7 +203,10 @@ export function ausFormularMail(roh) {
   // Freiwilliges Feld im Anfrageformular seit 26.10.2026 - landet in der Notiz.
   const zeitraum = wert('Wunschzeitraum');
   const nachricht = wert('Text') || wert('Nachricht');
-  const angaben = (massanfrage ? ['Produkt', 'Farbe', 'Form'] : []).map(k => wert(k) && `${k}: ${wert(k)}`);
+  // Der Mailtext bricht lange Produktnamen um - in der Notiz wieder eine Zeile.
+  const zeile = k => wert(k).replace(/\s*\n\s*/g, ' ');
+  const angabenFelder = massanfrage ? ['Produkt', 'Farbe', 'Form'] : produktseite ? ['Produkt'] : [];
+  const angaben = angabenFelder.map(k => zeile(k) && `${k}: ${zeile(k)}`);
   const notiz = [...angaben, anliegen && `Anliegen: ${anliegen}`, zeitraum && `Wunschzeitraum: ${zeitraum}`, nachricht].filter(Boolean).join('\n');
   return {
     erkannt: true,
@@ -235,8 +258,9 @@ export const ANLIEGEN_KEIN_SERVICE = Object.freeze(['Beratung zum Produkt', 'Mus
  * rueckrufAusMail() liest die Mail fuer die Rueckrufliste (Kunden > Rueckrufe & Beratungen).
  */
 export const BETREFF_MUSTERBERATUNG = 'RÜCKRUF – Musterberatung';
-/** Bekannte Betreffe ohne Service-Anfrage (Reinigung, Boden-Finder, Musterberatung). */
-export const BETREFF_KEIN_SERVICE = Object.freeze(['Anfrage Teppichreinigung', 'Boden-Finder: persönliche Vorschläge', BETREFF_MUSTERBERATUNG]);
+/** Bekannte Betreffe ohne Service-Anfrage (Reinigung, Boden-Finder, Muster, Reklamation). */
+export const BETREFF_KEIN_SERVICE = Object.freeze(['Anfrage Teppichreinigung', 'Boden-Finder: persönliche Vorschläge', BETREFF_MUSTERBERATUNG,
+  'Musteranfrage', 'Kostenlose Musteranfrage', 'Reklamation', 'Anfrage zum Produkt']);
 
 export const RUECKRUF_GRENZEN = Object.freeze({ muster: 30, musterZeile: 200, nachricht: 2000 });
 
@@ -259,12 +283,12 @@ export function rueckrufAusMail(ergebnis) {
 
 /**
  * Ergebnis von ausFormularMail() -> darf es ohne Menschen in die Liste?
- * Ja bei festem Service-Betreff, Startseite mit Service-Anliegen oder
- * Schablone/Skizze aus dem Mass-Konfigurator.
+ * Ja bei festem Service-Betreff, Produktseiten-Betreff, Startseite mit
+ * Service-Anliegen oder Schablone/Skizze aus dem Mass-Konfigurator.
  */
 export function automatischUebernehmbar(ergebnis) {
   if (!ergebnis?.erkannt) return { ok: false, grund: ergebnis?.grund || 'keine Formular-Mail' };
-  if (ergebnis.massanfrage || BETREFF_SERVICE.includes(ergebnis.betreff)) return { ok: true };
+  if (ergebnis.massanfrage || BETREFF_SERVICE.includes(ergebnis.betreff) || BETREFF_PRODUKTSEITE.includes(ergebnis.betreff)) return { ok: true };
   if (ergebnis.betreff === BETREFF_STARTSEITE) {
     return ANLIEGEN_SERVICE.includes(ergebnis.anliegen)
       ? { ok: true }

@@ -11,8 +11,9 @@
  * als JSON in seinem Scratchpad ab - [{ id, von, datum, betreff, text }] - und
  * ruft dieses Skript im Dienst-Checkout auf. Uebernommen wird nur, was
  * automatischUebernehmbar() erlaubt (feste Betreffe der Serviceseiten,
- * Schablone/Skizze aus dem Mass-Konfigurator); dieselbe Mail nie zweimal,
- * eine schon von Hand erfasste Anfrage nicht noch einmal. Die Musterberatung aus dem Warenkorb ("RÜCKRUF – Musterberatung")
+ * Verlegung/Angebot/Beratungstermin von der Produktseite, Schablone/Skizze
+ * aus dem Mass-Konfigurator); dieselbe Mail nie zweimal, eine schon von Hand
+ * erfasste Anfrage nicht noch einmal. Die Musterberatung aus dem Warenkorb ("RÜCKRUF – Musterberatung")
  * wird seit 2026-11-06 ein Rueckruf in rueckrufe.json (Kunden > Rueckrufe &
  * Beratungen) statt uebersprungen. Die Ausgabe nennt nur Nummern und Gruende,
  * keine Kundendaten.

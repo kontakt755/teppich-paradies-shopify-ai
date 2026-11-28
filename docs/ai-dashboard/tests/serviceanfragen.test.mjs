@@ -11,7 +11,7 @@ import path from 'node:path';
 import {
   ausFormularMail, leistungAus, pruefeFelder, auswertung, kalenderwoche, wochenStart, ServiceanfrageFehler,
   automatischUebernehmbar, istAnzeige, BETREFF_SERVICE, BETREFF_STARTSEITE, BETREFF_KEIN_SERVICE,
-  MAILFELDER, ANLIEGEN_SERVICE, ANLIEGEN_KEIN_SERVICE, rueckrufAusMail,
+  MAILFELDER, ANLIEGEN_SERVICE, ANLIEGEN_KEIN_SERVICE, rueckrufAusMail, BETREFF_PRODUKTSEITE,
 } from '../lib/serviceanfragen.mjs';
 
 const REPO = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..');
@@ -208,6 +208,131 @@ test('Jeder Betreff aus den Theme-Templates ist eingeordnet (Service oder bewuss
   // Feste Betreffe anderer Formulare im Theme
   const theme = ['sections/tp-boden-finder.liquid', 'snippets/tp-muster-beratungsanfrage.liquid'].map(d => fs.readFileSync(path.join(REPO, d), 'utf8')).join('\n');
   for (const [, wert] of theme.matchAll(/name="contact\[Betreff\]" value="([^"{]+)"/g)) assert.ok(bekannt.has(wert), `Betreff „${wert}“ einordnen`);
+});
+
+// Produktseite -> /pages/kontakt?thema=… (assets/tp-sample-request.js): dieselbe
+// Formular-Kennung wie die Musteranfrage und ein Feld "Produkt", aber mit Betreff.
+const PRODUKT_MAIL = `Neue Kundennachricht vom 17. Oktober 2026 um 14:33
+
+Du hast eine neue Nachricht über das Kontaktformular deines
+Onlineshops erhalten.
+
+Ländercode:
+DE
+
+Id:
+ContactForm-sample
+
+Betreff:
+Verlegeanfrage
+
+Produkt:
+Beispielvinyl Beton Mittelgrau –
+Klickvinyl 4,5mm
+
+Produkt Handle:
+beispielvinyl-beton-mittelgrau
+
+Produkt Link:
+https://shop.example/products/beispielvinyl-beton-mittelgrau
+
+Name:
+Erika Beispiel
+
+E-Mail:
+erika@example.com
+
+Straße Und Hausnummer:
+
+Plz:
+16515
+
+Ort:
+
+Phone:
+03301 000000
+
+Text:
+Ich interessiere mich für die Verlegung.
+Fläche / Raum: Küche, ca. 15 qm`;
+const mitBetreff = betreff => PRODUKT_MAIL.replace('Verlegeanfrage', betreff);
+
+test('Produktseite: Verlegeanfrage ist eine Service-Anfrage, das Produkt steht in der Notiz', () => {
+  const r = ausFormularMail(PRODUKT_MAIL);
+  assert.equal(r.erkannt, true);
+  assert.deepEqual(r.felder, {
+    datum: '2026-10-17', name: 'Erika Beispiel', telefon: '03301 000000', email: 'erika@example.com', plz: '16515',
+    herkunft: 'Verlegeanfrage', leistung: 'verlegeservice', quelle: 'formular',
+    notiz: 'Produkt: Beispielvinyl Beton Mittelgrau – Klickvinyl 4,5mm\nIch interessiere mich für die Verlegung.\nFläche / Raum: Küche, ca. 15 qm',
+  });
+  assert.deepEqual(automatischUebernehmbar(r), { ok: true });
+  assert.equal(rueckrufAusMail(r), null);
+});
+
+test('Produktseite: Angebot und Beratungstermin sind Service, auch ohne Produkt', () => {
+  for (const betreff of ['Angebotsanfrage', 'Beratungstermin']) {
+    const r = ausFormularMail(mitBetreff(betreff));
+    assert.equal(r.erkannt, true, betreff);
+    assert.equal(r.felder.leistung, 'sonstiges');
+    assert.equal(r.felder.herkunft, betreff);
+    assert.match(r.felder.notiz, /^Produkt: Beispielvinyl /);
+    assert.deepEqual(automatischUebernehmbar(r), { ok: true });
+  }
+  // Link der Serviceseiten ohne Produkt (?thema=verlegung): keine leere Zeile in der Notiz
+  const ohne = ausFormularMail(PRODUKT_MAIL.replace('Beispielvinyl Beton Mittelgrau –\nKlickvinyl 4,5mm', ''));
+  assert.equal(ohne.erkannt, true);
+  assert.match(ohne.felder.notiz, /^Ich interessiere mich/);
+  // mit Kampagne aus dem Formular
+  const werbung = ausFormularMail(PRODUKT_MAIL.replace('Produkt:\n', 'Herkunft:\nGoogle-Anzeige · Kampagne Vinyl\n\nProdukt:\n'));
+  assert.equal(werbung.felder.quelle, 'werbung');
+  assert.equal(werbung.felder.herkunft, 'Verlegeanfrage · Google-Anzeige · Kampagne Vinyl');
+  // aus der Gmail-Ansicht kopiert: Feld und Wert in einer Zeile
+  const zeile = ausFormularMail('Id: ContactForm-sample\nBetreff: Angebotsanfrage\nProdukt: Beispielboden\nName: A B\nE-Mail: a@example.com\nStraße Und Hausnummer: Weg 1\nPlz: 16515\nOrt: Beispielort\nTelefon: 030 12345\nText: 40 m²');
+  assert.equal(zeile.felder.email, 'a@example.com');
+  assert.equal(zeile.felder.plz, '16515');
+  assert.equal(zeile.felder.telefon, '030 12345');
+  assert.equal(zeile.felder.notiz, 'Produkt: Beispielboden\n40 m²');
+});
+
+test('Produktseite: Musteranfrage, Reklamation und Anfrage ohne Thema bleiben abgewiesen', () => {
+  for (const [betreff, grund] of [
+    ['Musteranfrage', /Musteranfrage/],
+    ['Kostenlose Musteranfrage', /Musteranfrage/],
+    ['', /Musteranfrage/],
+    ['Reklamation', /Reklamation/],
+    ['Anfrage zum Produkt', /Anfrage zum Produkt/],
+  ]) {
+    const r = ausFormularMail(mitBetreff(betreff));
+    assert.equal(r.erkannt, false, betreff);
+    assert.match(r.grund, grund);
+    assert.equal(automatischUebernehmbar(r).ok, false);
+  }
+  // Der Betreff zaehlt, nicht der Kundentext.
+  assert.equal(ausFormularMail(`${mitBetreff('Reklamation')}\nBetreff: Verlegeanfrage`).erkannt, false);
+});
+
+test('Theme: jeder Betreff und jedes Feld des Kontaktformulars ist im Mail-Leser eingeordnet', () => {
+  const skript = fs.readFileSync(path.join(REPO, 'assets/tp-sample-request.js'), 'utf8');
+  const themen = /var themen = \{([\s\S]*?)\};/.exec(skript);
+  assert.ok(themen, 'Themen der Produktseite gefunden');
+  const betreffe = [
+    ...[...themen[1].matchAll(/\w+: '([^']+)'/g)].map(m => m[1]),
+    /feld\('Betreff', betreff \|\| '([^']+)'\)/.exec(skript)[1],
+    ...[...skript.matchAll(/setHiddenField\('Betreff', '([^']+)'\)/g)].map(m => m[1]),
+  ];
+  assert.ok(betreffe.length >= 7, betreffe.join(', '));
+  for (const b of betreffe) {
+    assert.ok(BETREFF_PRODUKTSEITE.includes(b) !== BETREFF_KEIN_SERVICE.includes(b), `Betreff „${b}“ in lib/serviceanfragen.mjs einordnen`);
+  }
+  for (const b of BETREFF_PRODUKTSEITE) assert.ok(betreffe.includes(b), `„${b}“ setzt das Theme nicht mehr`);
+
+  const quelle = fs.readFileSync(path.join(REPO, 'sections/contact-form.liquid'), 'utf8');
+  const standard = { id: 'Id', name: 'Name', email: 'E-Mail', phone: 'Phone', body: 'Text' };
+  const mailName = feld => standard[feld] || feld.split(/[ -]/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  const felder = [...quelle.matchAll(/name="contact\[([^\]]+)\]"/g)].map(m => mailName(m[1]));
+  assert.ok(felder.includes('Produkt Handle') && felder.includes('Ort'), felder.join(', '));
+  for (const f of felder) assert.ok(MAILFELDER.includes(f), `Formularfeld „${f}“ in MAILFELDER (lib/serviceanfragen.mjs) eintragen`);
+  assert.equal(felder.at(-1), 'Text', 'Nachricht bleibt das letzte Feld');
 });
 
 test('Formular-Mail: Wunschzeitraum landet in der Notiz, "mehrere Wohnungen" ist Verlegeservice', () => {
