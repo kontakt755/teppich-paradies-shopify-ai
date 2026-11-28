@@ -314,8 +314,8 @@
             "tp_muster_cta_1": {
               "type": "tp-muster-cta",
               "settings": {
-                "label": "Kostenloses Muster anfragen",
-                "hinweis": "Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei"
+                "label": "Muster bestellen",
+                "hinweis": "Musterversand 4,99 € je Bestellung · ab 150 € Einkauf angerechnet"
               }
             },
             "tp_bewertungsbeleg_fixpreis": {

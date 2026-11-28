@@ -109,13 +109,26 @@
     if (vinylEl) vinylEl.hidden = false;
   }
 
-  // JAB und Vorwerk: Muster kommt direkt vom Hersteller (statt "ca. A5").
+  // Handles von Lieferant H aus snippets/tp-herstellermuster (eine Liste fuer Liquid und JS).
+  function herstellerHandles() {
+    var el = document.querySelector('script[data-tp-hersteller-handles]');
+    try { return JSON.parse(el ? el.textContent : '[]') || []; } catch (e) { return []; }
+  }
+
+  function istHersteller() {
+    return core.isHerstellerMuster(product, herstellerHandles());
+  }
+
+  // Vorwerk, JAB, H: Muster kommt kostenlos direkt vom Hersteller (statt "ca. A5",
+  // ohne Anrechnung ab 150 €: es wurde nichts bezahlt).
   function showHerstellerHinweis() {
-    if (!core.isHerstellerMuster(product)) return;
+    if (!istHersteller()) return;
     var infoEl = root.querySelector('[data-sample-info]');
     var herstellerEl = root.querySelector('[data-sample-hersteller]');
+    var anrechnungEl = root.querySelector('[data-sample-anrechnung]');
     if (!herstellerEl) return;
     if (infoEl) infoEl.hidden = true;
+    if (anrechnungEl) anrechnungEl.hidden = true;
     herstellerEl.hidden = false;
   }
 
@@ -194,7 +207,7 @@
     gridEl.textContent = '';
     // Gemessen 09.11.2026 (Shopify-Bestellungen ab 16.10., Bestellung bis Versandbuchung, mittlere 60 %):
     // Lieferant 37 Bestellungen 3-8 Werktage, Hersteller 23 Bestellungen 4-10 - gleich in snippets/tp-muster-lieferzeit.
-    var lieferzeit = core.isHerstellerMuster(product)
+    var lieferzeit = istHersteller()
       ? 'vom Hersteller, Versand meist nach 4–\u206010 Werktagen'
       : 'Versand meist nach 3–\u20608 Werktagen';
 
@@ -371,7 +384,7 @@
 
     // Musterprodukt der Qualitaet zuerst (eigene Variante je Farbe). Fehlt es
     // bei einem Teppich nach Mass, das Musterprodukt des Teppichbodens
-    // (ladeBasisMuster). Das Sammelprodukt "Kostenloses Muster" bleibt der
+    // (ladeBasisMuster). Das Sammelprodukt (Handle kostenloses-muster) bleibt der
     // Rueckfall fuer alles, was keine eigene Mustervariante findet.
     function fetchOptional(url) {
       return fetchJson(url).catch(function () { return null; });
@@ -427,6 +440,9 @@
         // dann nicht zum Hinweis darunter (Laminat, Parkett, Kork, ohne Muster).
         var infoEl = root.querySelector('[data-sample-info]');
         if (infoEl) infoEl.hidden = true;
+        // Dasselbe gilt fuer die Zeile mit der Anrechnung ab 150 €: Anfrage und "keine Muster" ohne Preisangabe.
+        var anrechnungEl = root.querySelector('[data-sample-anrechnung]');
+        if (anrechnungEl) anrechnungEl.hidden = true;
         // Kein Warenkorbweg: Auswahl-Intro und Knopf passen nicht, der Hinweis
         // steht neutral statt als Fehler (Rundgang 06.11.2026).
         var introEl = root.querySelector('[data-sample-intro]');
@@ -434,10 +450,10 @@
         submitEl.hidden = true;
         var produktLink = { text: 'Zurück zu ' + product.title, href: '/products/' + handle };
         if (musterAufAnfrage(product)) {
-          // Laminat, Parkett, Kork: kostenlos, aber nur auf Anfrage
+          // Laminat, Parkett, Kork: Muster nur auf Anfrage, ohne Preisangabe
           // (Inhaber 14.10.2026, blocks/tp-muster-cta). Alte Links landen hier.
-          // Linktext ohne "kostenlos" wie der Knopf auf der Produktseite (w-161).
-          zeigeOhneMuster('Muster für ' + product.title + ' sind kostenlos wie alle unsere Muster. Weil sie wertiger sind, senden wir sie nach kurzer Anfrage zu.', [
+          // Linktext wie der Knopf auf der Produktseite (w-161).
+          zeigeOhneMuster('Muster für ' + product.title + ' gibt es auf Anfrage. Wir melden uns bei Ihnen.', [
             { text: 'Muster anfragen', href: '/pages/kontakt?thema=musteranfrage&produkt=' + encodeURIComponent(product.title) + '&handle=' + encodeURIComponent(product.handle) },
             produktLink,
           ]);

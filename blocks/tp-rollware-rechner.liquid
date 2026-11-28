@@ -599,15 +599,15 @@
       render 'tp-musteroption', product: product
     endcapture
     assign tp_rc_muster_url = tp_rc_muster_url | strip
-    assign tp_rc_muster_vorlage = block.settings.muster_label | default: 'Kostenloses Muster in {farbe}'
-    assign tp_rc_muster_ohne_farbe = block.settings.muster_label_ohne_farbe | default: 'Kostenloses Muster bestellen'
+    assign tp_rc_muster_vorlage = block.settings.muster_label | default: 'Muster in {farbe} bestellen'
+    assign tp_rc_muster_ohne_farbe = block.settings.muster_label_ohne_farbe | default: 'Muster bestellen'
     # Farbe = erste Option, die nicht die Breite ist. Vinyl von der Rolle hat
-    # oft nur "Breite" - frueher stand dann "Kostenloses Muster in 200 cm" im
+    # oft nur "Breite" - frueher stand dann "Muster in 200 cm" im
     # Knopf. Ohne Farboption greift der Tag "farbe: ..." wie bei Default Title;
     # der Tag ist Filterschreibweise ("gruen"), deshalb laeuft er durch
     # tp-color-label-mapping (Gruen -> Gruen mit Umlaut). Ist gar keine Farbe
     # bekannt (Restrollen ohne Tag), steht die zweite Beschriftung ohne {farbe}
-    # im Knopf - vorher ein haengendes "Kostenloses Muster in".
+    # im Knopf - vorher ein haengendes "Muster in".
     assign tp_rc_start_farbe = 'Default Title'
     assign tp_rc_start_variante = product.selected_or_first_available_variant
     for tp_rc_opt in product.options_with_values
@@ -654,6 +654,20 @@
       render 'tp-muster-grenze', product: product
     endcapture
     assign tp_rc_muster_grenze = tp_rc_muster_grenze | strip
+    # Herstellermuster (snippets/tp-herstellermuster): kostenlos, sonst stuende hier faelschlich 4,99 €
+    capture tp_rc_hersteller
+      render 'tp-herstellermuster', product: product
+    endcapture
+    # Der Knopf selbst sagt kostenlos; das JS liest dieselbe Vorlage aus data-muster-vorlage
+    if tp_rc_hersteller contains 'ja' and tp_rc_muster_grenze == blank
+      assign tp_rc_muster_vorlage = 'Kostenloses Muster vom Hersteller: {farbe}'
+      assign tp_rc_muster_ohne_farbe = 'Kostenloses Muster vom Hersteller'
+      if tp_rc_start_farbe == blank
+        assign tp_rc_muster_text = tp_rc_muster_ohne_farbe
+      else
+        assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
+      endif
+    endif
   -%}
   {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
     {%- comment -%}
@@ -667,7 +681,7 @@
       {%- comment -%} Muster dieser Farbe im Musterlager: sofort lieferbar (09.11.2026, snippets/tp-muster-lager) {%- endcomment -%}
       {%- render 'tp-muster-lager', product: product -%}
       {%- if tp_rc_muster_grenze != blank -%}
-        <p class="tp-rwc-muster-grenze" data-tp-mg-offen{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>Kostenlos, höchstens 2 Vinyl-Muster je Bestellung</p>
+        <p class="tp-rwc-muster-grenze" data-tp-mg-offen{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>Höchstens 2 Vinyl-Muster je Bestellung. Musterversand 4,99 € je Bestellung</p>
         <button class="tp-rwc-muster" type="button" disabled aria-describedby="tp-rwc-muster-grenze-{{ tp_rc_id }}" data-tp-mg-voll{% unless tp_rc_muster_grenze == 'voll' %} hidden{% endunless %}>
           {{- tp_rc_muster_text | escape -}}
         </button>
@@ -675,6 +689,8 @@
           2 von 2 Vinyl-Mustern im Warenkorb – mehr sind je Bestellung nicht möglich. <a href="{{ routes.cart_url }}">Zum Warenkorb</a>
         </p>
         <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
+      {%- else -%}
+        <p class="tp-rwc-muster-grenze">{% if tp_rc_hersteller contains 'ja' %}Für Sie kostenlos, auch der Versand{% else %}Musterversand 4,99 € je Bestellung · ab 150 € Einkauf angerechnet{% endif %}</p>
       {%- endif -%}
       {%- comment -%} Geduld-Hinweis, voruebergehend und abschaltbar (TP Versand, snippets/tp-muster-hinweis); auf Rollenware ist tp-muster-cta abgeschaltet {%- endcomment -%}
       {%- render 'tp-muster-hinweis', kontext: 'produkt' -%}
@@ -1597,7 +1613,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
     if (!name || name === 'Default Title') name = musterLink.getAttribute('data-muster-fallback-farbe') || '';
     if (!name) {
-      musterLink.textContent = musterLink.getAttribute('data-muster-ohne-farbe') || 'Kostenloses Muster bestellen';
+      musterLink.textContent = musterLink.getAttribute('data-muster-ohne-farbe') || 'Muster bestellen';
       return;
     }
     musterLink.textContent = (musterLink.getAttribute('data-muster-vorlage') || '').replace('{farbe}', name);
@@ -3291,14 +3307,14 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
       "id": "muster_label",
       "label": "Beschriftung",
       "info": "{farbe} wird durch die gewaehlte Farbe ersetzt.",
-      "default": "Kostenloses Muster in {farbe}"
+      "default": "Muster in {farbe} bestellen"
     },
     {
       "type": "text",
       "id": "muster_label_ohne_farbe",
       "label": "Beschriftung ohne Farboption",
       "info": "Fuer Produkte mit nur einer Variante (z. B. Restrollen), bei denen keine Farbe gewaehlt wird.",
-      "default": "Kostenloses Muster bestellen"
+      "default": "Muster bestellen"
     },
     {
       "type": "header",

@@ -35,8 +35,8 @@ test('Muster-Aufruf steht direkt unter der Farbwahl und vor dem Konfigurator', (
 test('Muster-Aufruf behaelt seine Einstellungen (nur die Position aendert sich)', () => {
   const id = order[index('tp-muster-cta')];
   assert.deepEqual(details.blocks[id].settings, {
-    label: 'Kostenloses Muster anfragen',
-    hinweis: 'Bis zu zwei Muster je Bestellung kostenlos, versandkostenfrei',
+    label: 'Muster bestellen',
+    hinweis: 'Musterversand 4,99 € je Bestellung · ab 150 € Einkauf angerechnet',
   });
 });
 

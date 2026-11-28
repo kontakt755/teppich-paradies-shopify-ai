@@ -89,12 +89,12 @@ test('#25 Herstellermuster (M-VW-, M-JAB-): direkt vom Hersteller, getrennte Ums
     line('Muster Testmarke Bingo Teppichboden', 'M-VW-TEST-5Y91-400', {}, 'Silbergrau (5Y91)'),
     line('Muster Testvelours Teppich nach Maß', 'M-TEST_036', {}, 'Sand'),
   ] });
-  assert.match(html, /schickt der Hersteller selbst an Sie – auch in getrennten Umschlägen/);
-  assert.match(html, /Muster Testmarke Bingo Teppichboden – Silbergrau \(5Y91\) \(direkt vom Hersteller\)/);
+  assert.match(html, /schickt der Hersteller direkt an Sie – in einer eigenen Sendung/);
+  assert.match(html, /Muster Testmarke Bingo Teppichboden – Silbergrau \(5Y91\) \(vom Hersteller\)/);
   assert.doesNotMatch(html, /Muster Testvelours Teppich nach Maß – Sand \(direkt/);
   assert.doesNotMatch(html, /in den nächsten Werktagen/);
   const jab = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [line('Muster Testvinyl', 'M-JAB-TEST-1'), line('Testleiste', 'TEST_1')] });
-  assert.match(jab, /einige direkt vom Hersteller und in getrennten Umschlägen/);
+  assert.match(jab, /einige direkt vom Hersteller in einer eigenen Sendung/);
   const eigen = await eng.parseAndRender(bestell, { ...base, attributes: {}, line_items: [line('Muster Testvelours', 'M-TEST_036')] });
   assert.match(eigen, /in den nächsten Werktagen per Post/);
   assert.doesNotMatch(eigen, /Hersteller/);
@@ -219,7 +219,7 @@ test('Musterkasten: Farblink mit Variante und UTM, Rechner-Knopf, Widerspruchssa
   assert.match(html, /<strong>Testvelours Teppichboden<\/strong> – Creme \(069\)/);
   assert.ok(html.includes(`href="https://www.teppich-paradies.net/products/testvelours-teppichboden?variant=123&amp;${UTM}&amp;utm_content=farbe"`));
   assert.match(html, /utm_content=rechner"[^>]*>Menge und Preis berechnen</);
-  assert.match(html, /Testmarke Teppich nach Maß<\/strong> – Grau <span[^>]*>\(direkt vom Hersteller\)/);
+  assert.match(html, /Testmarke Teppich nach Maß<\/strong> – Grau <span[^>]*>\(vom Hersteller\)/);
   assert.ok(html.includes(`products/testmarke-teppich-nach-mass?${UTM}&amp;utm_content=rechner"`), 'ohne Properties: Handle ohne "muster-", keine Variante');
   assert.match(html, />Wunschmaß eingeben und Preis sehen</);
   assert.match(html, /jederzeit widersprechen[^<]*<a href="mailto:laden@example\.com"/);
@@ -286,10 +286,45 @@ test('Mustergebuehr: ohne Metafeld kein leerer Code, Eingabe escaped, kein "kost
   const text = await eng.parseAndRender(bestell, { ...base, attributes: {}, shipping_price: 499, line_items: [musterzeile], shop: { metafields: { custom: { muster_gutscheincode: '<b>X1</b>' } } } });
   assert.match(text, /&lt;b&gt;X1&lt;\/b&gt;<\/strong>/);
   for (const [name, quelle] of [['Bestellmail', bestell], ['Versandmail', versand]]) {
-    assert.doesNotMatch(quelle.replace(/\{%-? comment[\s\S]*?endcomment -?%\}/g, ''), /kostenlos|gratis/i, name);
+    // einzige Ausnahme: Herstellermuster bleiben kostenlos (Inhaber 21.11.2026)
+    const ohneHersteller = quelle.replace(/\{%-? comment[\s\S]*?endcomment -?%\}/g, '').replace(/^\s*#.*$/gm, '').replace('Ihre Muster vom Hersteller sind kostenlos', '').replace('Muster vom Hersteller sind kostenlos', '');
+    assert.doesNotMatch(ohneHersteller, /kostenlos|gratis/i, name);
     // Der echte Code gehoert ins Shop-Metafeld, nie ins oeffentliche Repository
     assert.doesNotMatch(quelle, /Gutscheincode:\s*<strong[^>]*>(?!\{\{)/, name);
   }
+});
+
+test('Herstellermuster kostenlos: eigener Satz ohne Gutschein, Mischkorb erklaert die 4,99 EUR, Lieferant H ueber genaue Handle-Liste', async () => {
+  const vw = line('Muster Testmarke Bingo Teppichboden', 'M-VW-TEST-5Y91-400', {}, 'Silbergrau (5Y91)');
+  const hZeile = { ...line('Muster Arvessa Teppichboden', 'M-H-TEST-1', {}, 'Sand'), product: { handle: 'muster-arvessa-teppichboden-400cm' } };
+  const teil = { ...line('Muster Fremd', 'M-TEST_1', {}, 'Sand'), product: { handle: 'muster-bergana-teppichboden-400cm' } };
+  const ohneHandle = { ...line('Muster Fremd', 'M-TEST_2', {}, 'Sand'), product: { handle: '' } };
+  for (const [fall, zeilen] of Object.entries({ Praefix: [vw], 'Lieferant H': [hZeile] })) {
+    const nur = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, shipping_price: 0, line_items: zeilen });
+    assert.match(nur, /Ihre Muster vom Hersteller sind kostenlos, auch der Versand\./, fall);
+    assert.match(nur, /\(vom Hersteller\)/, fall);
+    assert.doesNotMatch(nur, /Gutschein|4,99|150 €/, fall);
+    assert.ok(!nur.includes(CODE), fall);
+  }
+  const misch = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, shipping_price: 499, line_items: [vw, musterzeile] });
+  assert.match(misch, /Die 4,99 € gelten für die übrigen Muster\. Muster vom Hersteller sind kostenlos\./);
+  assert.match(misch, KASTEN);
+  // Teiltreffer und leerer Handle sind keine Herstellermuster
+  for (const [fall, zeile] of Object.entries({ Teiltreffer: teil, 'ohne Handle': ohneHandle })) {
+    const html = await eng.parseAndRender(bestell, { ...base, ...mitCode, attributes: {}, shipping_price: 0, line_items: [zeile] });
+    assert.doesNotMatch(html, /Hersteller/, fall);
+  }
+  const sendung = [mfl('M-H-TEST-1', 'Muster Arvessa Teppichboden', 'Sand', { _Muster_ID: 'x' })];
+  sendung[0].line_item.product = { handle: 'muster-arvessa-teppichboden-400cm' };
+  const vers = await eng.parseAndRender(versand, { ...vctx(sendung), shipping_price: 0, line_items: [hZeile] });
+  assert.match(vers, /\(vom Hersteller\)/);
+  // Herstellermuster kommen direkt (Inhaber 26.11.2026): die Versandmail sagt es (Chat 28.11.2026),
+  // ohne Zeitangabe und nur, wenn ein Herstellermuster in dieser Sendung steht.
+  const SATZ = /Muster vom Hersteller kommen in einer eigenen Sendung\./;
+  assert.match(vers, SATZ);
+  const eigene = await eng.parseAndRender(versand, { ...vctx([mfl('M-TEST_036', 'Muster Testvelours', 'Sand', { _Muster_ID: 'x' })]), shipping_price: 0, line_items: [musterzeile] });
+  assert.match(eigene, /Ihr Muster ist unterwegs/);
+  assert.doesNotMatch(eigene, /eigenen Sendung/);
 });
 
 // ---- Ratgeber zur Bestellung: Produkttyp waehlt den Kurz-Ratgeber (PDF)

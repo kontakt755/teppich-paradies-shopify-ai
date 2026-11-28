@@ -555,7 +555,7 @@
         "a2": {
           "type": "aussage",
           "settings": {
-            "text": "Bis zu zwei Muster je Bestellung kostenlos",
+            "text": "Muster: vom Hersteller kostenlos, sonst 4,99 € Versand, ab 150 € Einkauf angerechnet",
             "link": "shopify://pages/muster"
           }
         },

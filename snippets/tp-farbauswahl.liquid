@@ -195,7 +195,9 @@
 
       {%- if muster_url != blank -%}
         <div class="tp-fa__fuss">
-          <a class="tp-fa__muster" href="{{ muster_url }}" data-tp-fa-muster>Kostenloses Muster anfragen</a>
+          <a class="tp-fa__muster" href="{{ muster_url }}" data-tp-fa-muster>Muster bestellen</a>
+          {%- capture tp_fa_hersteller -%}{%- render 'tp-herstellermuster', product: product -%}{%- endcapture -%}
+          <small class="tp-fa__muster-preis">{% if tp_fa_hersteller contains 'ja' %}Muster vom Hersteller: kostenlos, auch der Versand{% else %}Musterversand 4,99 € je Bestellung{% endif %}</small>
         </div>
       {%- endif -%}
     </dialog>
@@ -458,6 +460,12 @@
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+
+  .tp-fa__muster-preis {
+    display: block;
+    font-size: var(--tp-fs-xs);
+    opacity: 0.75;
   }
 
   /* Telefon: Bottom Sheet. Ueberschreibt die Vollbild-Vorgabe von .dialog-modal. */

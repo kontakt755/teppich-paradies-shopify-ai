@@ -28,14 +28,30 @@ test('Herstellermuster: nur JAB Anstoetz und Vorwerk, egal wie geschrieben', () 
   assert.equal(core.isHerstellerMuster(null), false);
 });
 
+test('Herstellermuster: Lieferant H ueber Handle-Liste, dieselbe Liste wie im Liquid', () => {
+  const core = ladeCore();
+  const h = ['arvessa-teppichboden-400cm'];
+  assert.equal(core.isHerstellerMuster({ vendor: 'TeppichParadies', handle: 'arvessa-teppichboden-400cm' }, h), true);
+  assert.equal(core.isHerstellerMuster({ vendor: 'TeppichParadies', handle: 'anderes-teppichboden-400cm' }, h), false);
+  assert.equal(core.isHerstellerMuster({ vendor: 'TeppichParadies', handle: 'arvessa-teppichboden-400cm' }), false);
+  assert.equal(core.isHerstellerMuster({ vendor: 'TeppichParadies', handle: 'arvessa-teppichboden-400cm', tags: ['sonderposten'] }, h), false);
+  const liste = read('snippets/tp-herstellermuster.liquid').match(/assign tphm_h = '([^']+)'/)[1].split(' ');
+  assert.equal(liste.length, 33);
+  assert.ok(liste.includes('arvessa-teppichboden-400cm'));
+  assert.match(read('sections/tp-sample-checkout.liquid'), /data-tp-hersteller-handles>\{%- render 'tp-herstellermuster', liste: true/);
+});
+
 test('Musterseite nennt Groesse und Versand, ohne Ankunftszeit', () => {
   const section = read('sections/tp-sample-checkout.liquid');
   const info = /<p class="tp-sample__info" data-sample-info>([^<]+)<\/p>/.exec(section);
   assert.ok(info, 'Zeile unter der Ueberschrift');
-  assert.equal(info[1], 'Muster ca. A5 · kostenloser Versand');
+  assert.equal(info[1], 'Muster ca. A5 · Musterversand 4,99 € je Bestellung');
+  // Mustergebuehr-Test: Anrechnung und Gutscheincode stehen immer sichtbar darunter
+  assert.match(section, /data-sample-anrechnung>Die 4,99 € rechnen wir Ihnen ab 150 € Warenwert an\. Den Gutscheincode finden Sie in Ihrer Bestellbestätigung\./);
   const hersteller = /<p class="tp-sample__info" data-sample-hersteller hidden>([^<]+)<\/p>/.exec(section);
   assert.ok(hersteller, 'Herstellerzeile, anfangs versteckt');
-  assert.match(hersteller[1], /direkt vom Hersteller/);
+  assert.equal(hersteller[1], 'Muster vom Hersteller: kostenlos, auch der Versand');
+  assert.doesNotMatch(hersteller[1], /4,99/);
   assert.doesNotMatch(info[1] + hersteller[1], /Werktag|Tage/, 'keine Lieferzeit ohne Festlegung des Inhabers');
   // Reihenfolge: direkt unter der Ueberschrift
   assert.ok(section.indexOf('data-sample-info') > section.indexOf('</h1>'));
@@ -46,7 +62,7 @@ test('Konfigurator tauscht die Zeile bei Herstellermustern', () => {
   const js = read('assets/tp-sample-checkout.js');
   assert.match(js, /function showHerstellerHinweis\(\)/);
   assert.match(js, /showVinylLimit\(\);\s*showHerstellerHinweis\(\);/);
-  assert.match(js, /core\.isHerstellerMuster\(product\)/);
+  assert.match(js, /core\.isHerstellerMuster\(product, herstellerHandles\(\)\)/);
   // Ohne Musterweg (Laminat, Parkett, Kork, ohne-muster) keine Zeile zu Groesse und Versand
   assert.match(js, /if \(!core\.canSample\(product\)\) \{\s*loadingEl\.hidden = true;[\s\S]{0,200}?querySelector\('\[data-sample-info\]'\);\s*if \(infoEl\) infoEl\.hidden = true;/);
 });
@@ -155,6 +171,7 @@ async function ohneMuster(produkt) {
     fehler: rootEl.querySelector('[data-sample-error]'),
     intro: rootEl.querySelector('[data-sample-intro]'),
     submit: rootEl.querySelector('[data-sample-submit]'),
+    anrechnung: rootEl.querySelector('[data-sample-anrechnung]'),
   };
 }
 
@@ -163,6 +180,7 @@ test('Produkt ohne Muster: neutraler Hinweis mit Beratung und Rueckweg, ohne Int
   assert.equal(r.fehler.hidden, true, 'kein roter Fehlerkasten');
   assert.equal(r.hinweis.hidden, false);
   assert.equal(r.hinweis.textContent, 'Für diesen Boden gibt es leider keine Muster. Wir beraten Sie gern.');
+  assert.equal(r.anrechnung.hidden, true, 'ohne Muster auch keine Zeile zur Anrechnung');
   assert.deepEqual(r.links, [
     { text: 'Beratung anfragen', href: '/pages/kontakt?thema=beratung' },
     { text: 'Zurück zu Ethona Teppichfliese 50x50cm', href: '/products/ethona-teppichfliese-50x50cm' },
@@ -171,14 +189,16 @@ test('Produkt ohne Muster: neutraler Hinweis mit Beratung und Rueckweg, ohne Int
   assert.equal(r.submit.hidden, true);
 });
 
-test('Laminat: Link "Muster anfragen" ohne "Kostenloses", neutral', async () => {
+test('Laminat: Link "Muster anfragen" ohne Preis und ohne "kostenlos", neutral', async () => {
   const r = await ohneMuster({ handle: 'ribe-eiche-sand-laminat-8mm', id: 4, title: 'Ribe Eiche Sand Laminat 8mm', type: 'Laminat', tags: [], variants: [] });
   assert.equal(r.fehler.hidden, true);
   assert.equal(r.hinweis.hidden, false);
   assert.equal(r.links[0].text, 'Muster anfragen');
   assert.match(r.links[0].href, /^\/pages\/kontakt\?thema=musteranfrage&produkt=Ribe%20Eiche/);
+  assert.equal(r.anrechnung.hidden, true, 'Anfrage ohne Preisangabe: keine Zeile zur Anrechnung ab 150 €');
   assert.equal(r.links[1].href, '/products/ribe-eiche-sand-laminat-8mm');
   assert.equal(r.intro.hidden, true);
   assert.equal(r.submit.hidden, true);
-  assert.doesNotMatch(read('assets/tp-sample-checkout.js'), /Kostenloses Muster anfragen/);
+  assert.doesNotMatch(read('assets/tp-sample-checkout.js'), /Kostenloses Muster anfragen|sind kostenlos wie alle/);
+  assert.match(read('assets/tp-sample-checkout.js'), /gibt es auf Anfrage\. Wir melden uns bei Ihnen\./);
 });

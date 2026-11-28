@@ -71,7 +71,7 @@
     });
   }
 
-  setHiddenField('Betreff', 'Kostenlose Musteranfrage');
+  setHiddenField('Betreff', 'Musteranfrage');
 
   var handle = params.get('produkt');
   if (!handle) return;
@@ -85,7 +85,7 @@
 
       var introText = root.querySelector('[data-tp-intro]');
       if (introText) {
-        introText.textContent = 'Wir senden Ihnen gerne ein Muster von ' + product.title + '.';
+        introText.textContent = 'Wir senden Ihnen gerne ein Muster von ' + product.title + '. Musterversand 4,99 € je Bestellung, ab 150 € Warenwert angerechnet.';
       }
 
       var nameEl = root.querySelector('[data-tp-product-name]');
@@ -249,7 +249,7 @@
   // Dieselbe Regel wie snippets/tp-musteroption und canSample in
   // assets/tp-sample-checkout-core.js (qa/tests/muster-produktwahl.test.mjs
   // prueft den Gleichlauf): Laminat, Parkett, Kork, Zubehoer und ohne-muster
-  // haben keinen kostenlosen Musterweg.
+  // haben keinen Musterweg ueber den Warenkorb.
   function hatMusterweg(product) {
     var typ = String(product.type || '').trim().toLowerCase();
     if (['laminat', 'parkett', 'kork'].indexOf(typ) !== -1) return false;
@@ -265,8 +265,8 @@
   // Bis 2026-09-27 kam ?produkt= hier an und wurde ignoriert - die Anfrage
   // erreichte uns ohne Produkt und ohne Betreff.
   function anfrageVorbelegen(params) {
-    // musteranfrage: Laminat, Parkett, Kork (Muster kostenlos, aber nur auf
-    // Anfrage, siehe blocks/tp-muster-cta) - Anfrage statt Musterkonfigurator.
+    // musteranfrage: Laminat, Parkett, Kork (Muster nur auf Anfrage,
+    // ohne Preisangabe, siehe blocks/tp-muster-cta) - Anfrage statt Musterkonfigurator.
     var themen = {
       verlegung: 'Verlegeanfrage',
       angebot: 'Angebotsanfrage',

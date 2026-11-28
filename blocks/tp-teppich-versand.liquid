@@ -16,6 +16,9 @@
     render 'tp-musteroption', product: product
   endcapture
   assign tp_tv2_sample_url = tp_tv2_sample_url | strip
+  capture tp_tv2_hersteller
+    render 'tp-herstellermuster', product: product
+  endcapture
   assign tp_tv2_delivery_time = block.settings.delivery_time | strip
   assign tp_tv2_shipping_page = pages['versand-lieferung']
   assign tp_tv2_versandart = product.metafields.custom.versandart.value | downcase | strip
@@ -24,7 +27,7 @@
 <div class="tp-teppich-versand-{{ tp_tv2_id }}" {{ block.shopify_attributes }}>
   {%- if tp_tv2_sample_url != blank -%}
     <a class="tp-teppich-versand__sample-{{ tp_tv2_id }}" href="{{ tp_tv2_sample_url }}">
-      Kostenloses Muster anfragen
+      {% if tp_tv2_hersteller contains 'ja' %}Muster vom Hersteller bestellen · kostenlos, auch der Versand{% else %}Muster bestellen · Musterversand 4,99 € je Bestellung{% endif %}
     </a>
   {%- endif -%}
 
