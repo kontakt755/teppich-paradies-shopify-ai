@@ -9,6 +9,13 @@
   und Teppich nach Mass rechnen die Aktion nicht in den Kopfpreis ein. Abgerechnet wird ueber den automatischen Shopify-Rabatt. Kein Countdown,
   keine Verknappung.
 
+  Teppich nach Mass (custom.preis_pro_001_qm und service.einfassung) bekommt eine
+  zweite Zeile: Karte, Kopfpreis und Konfigurator zeigen den vollen Preis, der
+  Rabatt kommt erst im Warenkorb. Ausgenommen heisst nur, was als eigene Zeile
+  berechnet wird: Kettelservice (Ketteln ohne service.kante_inklusive) und
+  Fertigungspauschale (Art "fertig"). Steckt die Kante im m2-Preis, wird nichts
+  als ausgenommen genannt.
+
   Darunter, unabhaengig von einer Aktion: der Hinweis fuer Auslaufkollektionen
   (Produkt-Tag "auslauf") und fuer Sonderposten von der Rolle (Produkt-Tag
   "sonderposten") mit dem echten Restbestand aus Shopify, ausserdem der Verweis
@@ -26,9 +33,24 @@
     assign tah_teile = tah_raw | split: '|'
     assign tah_prozent = tah_teile[0]
     assign tah_ende = tah_teile[1] | date: '%d.%m.%Y'
+    assign tah_abzug = ''
+    assign tah_art = tah_produkt.metafields.service.einfassung.value | append: '' | strip | downcase
+    if tah_produkt.metafields.custom.preis_pro_001_qm.value == true and tah_art != ''
+      assign tah_kante_inkl = tah_produkt.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+      if tah_art == 'ketteln' and tah_kante_inkl != 'true'
+        assign tah_abzug = 'Der Rabatt gilt für die Teppichfläche und wird im Warenkorb abgezogen. Die Kettelung ist vom Rabatt ausgenommen.'
+      elsif tah_art == 'fertig'
+        assign tah_abzug = 'Der Rabatt gilt für die Teppichfläche und wird im Warenkorb abgezogen. Die Fertigungspauschale ist vom Rabatt ausgenommen.'
+      else
+        assign tah_abzug = 'Der Rabatt wird im Warenkorb abgezogen.'
+      endif
+    endif
   -%}
   <p class="tp-aktion-hinweis" data-tp-aktion="{{ tah_prozent }}" {{ block.shopify_attributes }}>
     <span class="tp-aktion-hinweis__text">Aktion −{{ tah_prozent }}&nbsp;% bis {{ tah_ende }}</span>
+    {%- if tah_abzug != blank %}
+    <span class="tp-aktion-hinweis__abzug">{{ tah_abzug }}</span>
+    {%- endif %}
   </p>
 {%- endif -%}
 
@@ -196,6 +218,11 @@
 
 
   .tp-aktion-hinweis__text {
+    color: var(--color-foreground);
+  }
+
+  .tp-aktion-hinweis__abzug {
+    flex-basis: 100%;
     color: var(--color-foreground);
   }
 {% endstylesheet %}
